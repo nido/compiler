@@ -51,7 +51,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <strings.h>
-#include <alloca.h>
+#include "W_alloca.h"
 #include <list.h>
 #include <vector.h>
 #include "topcode.h"
@@ -177,7 +177,7 @@ void Machine_To_Pseudo(TOP pseudo, TOP machine)
 {
   cur_pseudo = new PSEUDO_OP_INFO;
   pseudos.push_back(cur_pseudo);
-  bzero(cur_pseudo, sizeof(PSEUDO_OP_INFO));
+  BZERO(cur_pseudo, sizeof(PSEUDO_OP_INFO));
   cur_pseudo->from_opc = machine;
   cur_pseudo->to_opc = pseudo;
   cur_pseudo->dir = MACHINE_TO_PSEUDO;
@@ -193,7 +193,7 @@ void Pseudo_To_Machine(TOP machine, TOP pseudo)
 {
   cur_pseudo = new PSEUDO_OP_INFO;
   pseudos.push_back(cur_pseudo);
-  bzero(cur_pseudo, sizeof(PSEUDO_OP_INFO));
+  BZERO(cur_pseudo, sizeof(PSEUDO_OP_INFO));
   cur_pseudo->from_opc = pseudo;
   cur_pseudo->to_opc = machine;
   cur_pseudo->dir = PSEUDO_TO_MACHINE;
@@ -466,7 +466,7 @@ void ISA_Pseudo_End(void)
 		 "  ISA_PSEUDO_to_machine = 1\n"
 		 "} ISA_PSEUDO_DIRECTION;\n");
 
-  fprintf(hfile, "\nextern TOP ISA_PSEUDO_Translate(TOP opc,\n"
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern TOP ISA_PSEUDO_Translate(TOP opc,\n"
 		   "                                INT64 *r,\n"
 		   "                                INT64 *o,\n"
 		   "                                ISA_PSEUDO_DIRECTION dir);\n");
