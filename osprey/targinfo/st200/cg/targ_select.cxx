@@ -127,7 +127,7 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
   if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
     if(TN_is_global_reg(btn)) {
-      Build_OP(TOP_mtb, btn, tn, ops);
+      Build_OP(TOP_mfb, tn, btn, ops);
     }
     else {
       DevAssert(cmp, ("TOP_Branch_To_Reg\n"));
