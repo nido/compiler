@@ -326,6 +326,9 @@ typedef struct op {
   mUINT16	orig_idx;	/* index of orig op before unrolling */
   mINT16	scycle;		/* Start cycle */
   mUINT16	flags;		/* attributes associated with OP */
+#ifdef TARG_ST
+  mUINT16	flags2;		/* [CL] attributes extension */
+#endif
   mTOP		opr;		/* Opcode. topcode.h */
   mUINT8	unrolling;	/* which unrolled replication (if any) */
   mUINT8	results;	/* Number of results */
@@ -359,6 +362,9 @@ typedef struct op {
 #define OP_variant(o)	((o)->variant)
 #define OP_scycle(o)	((o)->scycle)
 #define OP_flags(o)	((o)->flags)
+#ifdef TARG_ST // [CL] attributes extension
+#define OP_flags2(o)	((o)->flags2)
+#endif
 
 /* These are rvalues */
 #define OP_next(o)	((o)->next+0)
@@ -456,6 +462,11 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_TAG 	  0x8000 /* OP has tag */
 #endif
 
+#ifdef TARG_ST // [CL] attributes extension
+#define OP_MASK_PROLOGUE   0x0001 /* OP belongs to prologue */
+#define OP_MASK_EPILOGUE   0x0002 /* OP belongs to epilogue */
+#endif
+
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
 # define Set_OP_glue(o)		(OP_flags(o) |= OP_MASK_GLUE)
 # define Reset_OP_glue(o)	(OP_flags(o) &= ~OP_MASK_GLUE)
@@ -513,6 +524,16 @@ enum OP_COND_DEF_KIND {
 # define OP_has_tag(o)		(OP_flags(o) & OP_MASK_TAG)
 # define Set_OP_has_tag(o)	(OP_flags(o) |= OP_MASK_TAG)
 # define Reset_OP_has_tag(o) 	(OP_flags(o) &= ~OP_MASK_TAG)
+#endif
+
+#ifdef TARG_ST
+// [CL] attributes extension to track prologue/epilogue (used for debug)
+# define OP_prologue(o)		(OP_flags2(o) & OP_MASK_PROLOGUE)
+# define Set_OP_prologue(o)	(OP_flags2(o) |= OP_MASK_PROLOGUE)
+# define Reset_OP_prologue(o)	(OP_flags2(o) &= ~OP_MASK_PROLOGUE)
+# define OP_epilogue(o)		(OP_flags2(o) & OP_MASK_EPILOGUE)
+# define Set_OP_epilogue(o)	(OP_flags2(o) |= OP_MASK_EPILOGUE)
+# define Reset_OP_epilogue(o)	(OP_flags2(o) &= ~OP_MASK_EPILOGUE)
 #endif
 
 extern BOOL OP_cond_def( const OP*);
@@ -962,6 +983,9 @@ inline void OP_Change_To_Noop(OP *op)
   op->opnds = 0;
   op->results = 0;
   OP_flags(op) = 0;
+#ifdef TARG_ST // [CL] attributes extension
+  OP_flags2(op) = 0;
+#endif
 }
 
 #ifdef TARG_ST
