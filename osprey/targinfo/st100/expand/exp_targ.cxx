@@ -66,6 +66,7 @@
 #include "symtab.h"
 #include "opcode.h"
 #include "intrn_info.h"
+#include "wutil.h"      /* for WN_intrinsic_return_ty */
 #include "const.h"	/* needed to manipulate target/host consts */
 #include "targ_const.h"	/* needed to manipulate target/host consts */
 #include "cgir.h"
@@ -94,6 +95,7 @@ static BOOL Disable_Const_Mult_Opt = FALSE;
  * but for now we can use other routine that create a real dup tn. */
 #define DUP_TN(tn)	Dup_TN_Even_If_Dedicated(tn)
 
+#if 0
 /* ====================================================================
  *   WN_intrinsic_return_ty
  *
@@ -181,6 +183,7 @@ WN_intrinsic_return_ty (
    
    return ret_ty;
 } /* WN_intrinsic_return_ty */
+#endif
 
 /* ====================================================================
  *   Pick_Imm_Form_TOP (regform)
@@ -485,7 +488,7 @@ void
 Exp_Immediate (
   TN *dest, 
   TN *src, 
-  TYPE_ID mtype, 
+  BOOL is_signed,
   OPS *ops
 )
 {
@@ -506,9 +509,9 @@ Exp_Immediate (
     // now val is the "real" offset
   }
 
-  switch (mtype) {
+  switch (TN_register_class(dest)) {
 
-    case MTYPE_B:
+    case ISA_REGISTER_CLASS_guard:
       if (val == 0) {
 	Build_OP (TOP_GP32_CLRG_GT_BR, dest, True_TN, src, ops);
       }
@@ -520,14 +523,7 @@ Exp_Immediate (
       }
       break;
 
-    case MTYPE_I1:
-    case MTYPE_I2:
-    case MTYPE_I4:
-    case MTYPE_I5:
-    case MTYPE_U1:
-    case MTYPE_U2:
-    case MTYPE_U4:
-    case MTYPE_U5:
+    case ISA_REGISTER_CLASS_du:
 
       if (ISA_LC_Value_In_Class (val, LC_s16)) {
 	Build_OP (TOP_GP32_MAKE_GT_DR_S16, dest, True_TN, src, ops);
@@ -565,8 +561,7 @@ Exp_Immediate (
       }
       break;
 
-    case MTYPE_A4:
-    case MTYPE_A8:
+    case ISA_REGISTER_CLASS_au:
 
       if (ISA_LC_Value_In_Class (val, LC_s16)) {
 	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, src, ops);
@@ -592,7 +587,7 @@ Exp_Immediate (
       break;
 
     default:
-      FmtAssert(0, ("Exp_Immediate: unknown MTYPE %s", MTYPE_name(mtype)));
+      FmtAssert(0, ("Exp_Immediate: unknown register class"));
   }
 
   return;
@@ -609,7 +604,7 @@ Expand_Immediate (TN *dest, TN *src, TYPE_ID mtype, OPS *ops)
 	    ("unexpected non-constant in Expand_Immediate"));
   FmtAssert((TN_has_value(src) || TN_is_symbol(src)), 
 	    ("expected value or const in Expand_Immediate"));
-  Exp_Immediate (dest, src, mtype, ops);
+  Exp_Immediate (dest, src, MTYPE_signed(mtype) ? TRUE : FALSE, ops);
 }
 
 /* ====================================================================
@@ -1265,7 +1260,7 @@ Expand_Multiply (
     // Need to get the constant of the right length
     constant = Targ_To_Host(Host_To_Targ(rmtype, constant));
     val_tn = Gen_Literal_TN(constant, 8);
-    Exp_Immediate(result, val_tn, MTYPE_is_signed(rmtype), ops);
+    Exp_Immediate(result, val_tn, MTYPE_signed(rmtype), ops);
     return;
   }
 
@@ -1898,11 +1893,16 @@ Expand_Binary_Complement (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Is_True(TN_register_class(dest) == TN_register_class(src),
+	  ("inconsistent data"));
 
   /* complement == nor src $0 */
-  Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, True_TN, 
-                                  Gen_Literal_TN(-1, 4), src, ops);
+  TN *src2 = Build_TN_Like (src);
+  Build_OP (TOP_GP32_MAKE_GT_DR_S16, src2, True_TN, Gen_Literal_TN(0, 4), ops);
+  Build_OP (TOP_GP32_NOR_GT_DR_DR_DR, dest, True_TN, src, src2, ops);
+
+  //Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, True_TN, src,
+  //                               Gen_Literal_TN(-1, 4), ops);
 }
 
 
@@ -3528,111 +3528,6 @@ Exp_COPY (
   return;
 }
 
-/* ====================================================================
- *   Exp_Intrinsic_Op
- * ====================================================================
- */
-void
-Exp_Intrinsic_Op (
-  INTRINSIC id, 
-  INT num_results,
-  INT num_opnds,
-  TN *result[], 
-  TN *opnd[],
-  OPS *ops
-)
-{
-  switch (id) {
-
-    case INTRN_MPSSE:
-      Build_OP (TOP_GP32_MPSSLL_GT_DR_DR_DR, result[0], True_TN, 
-                                                   opnd[0], opnd[1], ops);
-      break;
-
-    case INTRN_MASSE:
-      Build_OP (TOP_GP32_MASSLL_GT_DR_DR_DR_DR, result[0], True_TN, 
-                                            opnd[0], opnd[1], opnd[2], ops);
-      break;
-
-    // Following only appear in Lai_Code:
-    // TODO: make this a default ?
-    case INTRN_DIVW:
-    case INTRN_DIVUW:
-      {
-	INT i;
-	TN *args[10];
-
-	// Some intrinsics map to the ISA opcodes. If we're generating the
-	// Lai_Code some intrinsics map to function calls. 
-	// Exp_Intrinsic_Op () returns TOP_intrncall for such intrinsics.
-	// The first operand TN of a TOP_intrncall is a symbolic TN
-	// indicating the function name for a function to be called.
-	// We need to pass a ST representing this function.
-	// We do not have the ST for it because it's in the library
-	// So create a dummy func ST for this function.
-	TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
-	ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
-
-	// operand 0 is the predicate
-	args[0] = True_TN;
-
-	// operand 1 is the intrinsic name
-	args[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
-
-	// operands 2 .. num_opnds+2 are operands
-	for (i = 0; i < num_opnds; i++) {
-	  args[i+2] = opnd[i];
-	}
-
-	// create intrcall op
-	OP* intrncall_op = Mk_VarOP(TOP_intrncall, num_results, num_opnds+2, result, args);
-	OPS_Append_Op(ops, intrncall_op);
-      }
-      break;
-
-    default:
-      FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op"));
-  }
-
-  return;
-}
-
-/* ======================================================================
- *   Get_Intrinsic_Size_Mtype
- * ======================================================================
- */
-static TYPE_ID
-Get_Intrinsic_Size_Mtype (
-  INTRINSIC id
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  switch (id) {
-  default:
-	#pragma mips_frequency_hint NEVER
-  	FmtAssert(FALSE, ("Unexpected intrinsic %d", id));
-	/*NOTREACHED*/
-  }
-}
-
-/* ======================================================================
- *   Intrinsic_Returns_New_Value
- * ======================================================================
- */
-static BOOL
-Intrinsic_Returns_New_Value (
-  INTRINSIC id
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  switch (id) {
-  default:
-	return FALSE;
-  }
-}
-
 /* ======================================================================
  *   Expand_TOP_intrncall
  * 
@@ -3652,32 +3547,6 @@ Expand_TOP_intrncall (
 {
   FmtAssert(FALSE, ("Expand_TOP_intrncall NYI"));
   /*NOTREACHED*/
-}
-
-/* ======================================================================
- *   Exp_Intrinsic_Call
- *
- *   initial expansion of intrinsic call (may not be complete lowering).
- *   return result TN (if set).
- *   If the intrinsic requires a label and loop (2 bb's)
- *   then ops is for first bb and ops2 is for bb after the label.
- *   Otherwise only ops is filled in.
- * ======================================================================
- */
-TN *
-Exp_Intrinsic_Call (
-  INTRINSIC id, 
-  TN *op0, 
-  TN *op1, 
-  TN *op2, 
-  OPS *ops, 
-  LABEL_IDX *label, 
-  OPS *loop_ops
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  return NULL;
 }
 
 /* ======================================================================
@@ -3868,35 +3737,3 @@ Expand_Const (
   Exp_Load (mtype, mtype, dest, TN_var(src), 0, ops, V_NONE);
 }
 
-#if 0
-/* ====================================================================
- *   Target_Has_Immediate_Operand (parent, expr)
- * ====================================================================
- */
-BOOL
-Target_Has_Immediate_Operand (
-  WN *parent, 
-  WN *expr
-)
-{
-  if (WN_operator(parent) == OPR_INTRINSIC_CALL
-	&& (((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I4)
-	 || ((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I8))) {
-    // can optimize for some constants
-    return TRUE;
-  }
-
-  // adds and subs can handle immediates as second operand:
-  if (WN_operator(parent) == OPR_ADD) {
-    return TRUE;
-  }
-
-  if (WN_operator(parent) == OPR_SUB) {
-    if (WN_kid1(parent) == expr) 
-      return TRUE;
-  }
-
-  // default to false, which really means "don't know"
-  return FALSE;
-}
-#endif
