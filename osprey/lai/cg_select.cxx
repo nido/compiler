@@ -48,7 +48,8 @@
  *                               WN mem information
  *
  * The following flags to drive the heuristics.
- * -CG:select_factor="1.0"       extra gain for flattening a branch
+ * -CG:select_factor="1.05"      factor to reduce the cost of the 
+ *                               ifconverted region
  *
  * ====================================================================
  * ====================================================================
@@ -133,7 +134,7 @@ op_list load_i;
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
-const char* CG_select_factor = "1.0";
+const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */
 INT branch_penalty = 3;
 
@@ -687,7 +688,8 @@ Sort_Stores(void)
 // Test if a hammock is suitable for select conversion
 
 static BOOL
-Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
+Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
+                         BB *tail)
 {
   BBLIST *bb1, *bb2;
 
@@ -697,9 +699,8 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
     if (bb1 != bb2)
       break;
   }
-
-  float prob1 = BBLIST_prob(bb1);
-  float prob2 = BBLIST_prob(bb2);
+  float taken_prob = BBLIST_prob(bb1);
+  float fallthr_prob = BBLIST_prob(bb2);
 
   CG_SCHED_EST *sehead = CG_SCHED_EST_Create(head, &MEM_Select_pool,
                                              SCHED_EST_FOR_IF_CONV);
@@ -711,7 +712,7 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   INT exp_len = BB_length(head);
   BB *bb;
 
-  FOR_ALL_BB_SET_members(region1, bb) {
+  FOR_ALL_BB_SET_members(taken_reg, bb) {
     exp_len += BB_length(bb);
 
     CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
@@ -720,7 +721,7 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
     CG_SCHED_EST_Delete(tmp_est);
   }
 
-  FOR_ALL_BB_SET_members(region2, bb) {
+  FOR_ALL_BB_SET_members(fallthru_reg, bb) {
     exp_len += BB_length(bb);
 
     CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
@@ -755,8 +756,8 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   cycles2 = MAX(cycles2, 0);
 
   // pondarate cost of each region taken separatly.
-  float est_cost_bbs = (((float)(cycles1) * prob1) +
-                        ((float)(cycles2) * prob2) +
+  float est_cost_bbs = (((float)(cycles1) * taken_prob) +
+                        ((float)(cycles2) * fallthr_prob) +
                         (float)cyclesh + (float)branch_penalty);
 
   if (Trace_Select_Candidates) {
@@ -771,10 +772,10 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   DevAssert(op, ("Invalid conditional block"));
   CG_SCHED_EST_Ignore_Op(sehead, op);
 
-  FOR_ALL_BB_SET_members(region1, bb)
+  FOR_ALL_BB_SET_members(taken_reg, bb)
     if (op = BB_branch_op(bb))
       CG_SCHED_EST_Ignore_Op(se1, op);
-  FOR_ALL_BB_SET_members(region2, bb)
+  FOR_ALL_BB_SET_members(fallthru_reg, bb)
     if (op = BB_branch_op(bb))
       CG_SCHED_EST_Ignore_Op(se2, op);
 
@@ -790,9 +791,19 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   // higher select_factor means ifc more aggressive.
   float select_factor = atof(CG_select_factor);
 
+  if (select_factor == 0.0) return FALSE;
+
+  // If we are in a loop that have good chances to be unrolled, boost factor.
+  if (BB_loophead (head) && BB_in_succs (tail, head)) {
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "LoopHammock\n");
+    }
+    select_factor += 0.05;
+  }
+
   // cost of if converted region. prob is one. Remove the select factor.
   float est_cost_ifc = (float)cyclesh / select_factor;
-  
+    
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %d / %f\n", cyclesh, select_factor);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_bbs, est_cost_ifc);
@@ -897,7 +908,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
 
   if (Check_Suitable_Hammock (*tail, *target, *fall_thru, &t_set, &ft_set)) {
-    return Check_Profitable_Select(head, t_set, ft_set);
+    return Check_Profitable_Select(head, t_set, ft_set, *tail);
   }
   else
     return FALSE;
