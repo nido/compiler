@@ -4936,6 +4936,8 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMOD) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_PIPELINE) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPTRIP) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPSEQ) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
 	WN *pragma = stmt;
 	if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {

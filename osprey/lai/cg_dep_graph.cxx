@@ -249,6 +249,17 @@ static LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb);
 static BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg);
 static BB *ops_same_loop(OP *op1, OP *op2);
 
+/* [CG] Define this to handle pragma loopseq */
+#define ENABLE_LOOPSEQ
+
+#endif
+
+#ifdef ENABLE_LOOPSEQ
+static UINT32 get_op_kind(OP *op);
+static void Add_LOOPSEQ_Arc(OP *prev_op, OP *next_op, UINT8 *omega, int lex_neg);
+static void Add_LOOPSEQ_Arcs(BB* bb);
+static UINT32 CG_Get_BB_Loopseq_Mask(BB *bb);
+static BOOL get_cg_loopseq(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg);
 #endif
 
 // -----------------------------------------------------------------------
@@ -1468,6 +1479,54 @@ static INT32 **mem_op_lat_0;		/* latencies to 0-omega descendents  */
 					/*  not a descendent; note that      */
 					/*  NO_DEP must be less than all     */
 					/*  possible latencies (INT16)	     */
+
+#ifdef ENABLE_LOOPSEQ
+/* pragma loopseq kind. */
+#define LOOPSEQ_UNDEF	0
+#define LOOPSEQ_READ	1
+#define LOOPSEQ_WRITE	2
+#define LOOPSEQ_LAST	31	// Must remain the last one
+
+/* Utilitary function to memory op kind. */
+#define OP_KIND_UNKNOWN	0
+#define OP_KIND_LOAD	1
+#define OP_KIND_PREFIN	2
+#define OP_KIND_STORE	3
+#define OP_KIND_PREFOUT	4
+#define OP_KIND_LAST	31	// Must remain the last one
+
+static UINT32 
+get_op_kind(OP *op)
+{
+  if (OP_load(op)) return OP_KIND_LOAD;
+  if (OP_store(op)) return OP_KIND_STORE;
+  /* Always IN for ST200. Todo, get prefetch kind for store prefetch architectures. */
+  if (OP_prefetch(op)) return OP_KIND_PREFIN;
+  return OP_KIND_UNKNOWN;
+}
+
+static void 
+Add_LOOPSEQ_Arc(OP *prev_op, OP *next_op, UINT8 *omega, int lex_neg)
+{
+  if (!OP_spill(prev_op) && !OP_spill(next_op))
+    if (get_cg_loopseq(prev_op, next_op, omega, lex_neg))
+      new_arc_with_latency(CG_DEP_MISC, prev_op, next_op, 0 /*the latency*/, 0, 0, FALSE);
+}
+
+static void 
+Add_LOOPSEQ_Arcs(BB* bb)
+{
+  OP *op;
+  OP *next_op;
+  FOR_ALL_BB_OPs(bb, op) {
+    UINT32 kind = get_op_kind(op);
+    for (next_op = OP_next(op); next_op; next_op = OP_next(next_op)) {
+      Add_LOOPSEQ_Arc(op, next_op, NULL, 0);
+    }
+  }
+}
+
+#endif
 
 static void make_prefetch_arcs(OP *op, BB *bb)
 /* --------------------------------------------------
@@ -4272,6 +4331,11 @@ Compute_BB_Graph(BB *bb, TN_SET *need_anti_out_dep)
 
   // Build target-dependent (if any) MISC arcs .
   Add_MISC_Arcs(bb);
+
+#ifdef ENABLE_LOOPSEQ
+  // [CG] Add user specified LOOPSEQ arcs
+  Add_LOOPSEQ_Arcs(bb);
+#endif
 }
 
 
@@ -4347,6 +4411,11 @@ Compute_Region_Graph(list<BB*> bb_list)
 
     // Build target-dependent (if any) MISC arcs .
     Add_MISC_Arcs(*bb_iter);
+
+#ifdef ENABLE_LOOPSEQ
+    // [CG] Add user specified LOOPSEQ arcs
+    Add_LOOPSEQ_Arcs(*bb_iter);
+#endif
   }
 
   // If <include_control_arcs>, generate all PREBR and POSTBR dependence arcs.
@@ -5046,7 +5115,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     FOR_ALL_BB_STLLIST_ITEMS_FWD(bb_list, bb_iter) {
       BB *bb = *bb_iter;
       FOR_ALL_BB_OPs(bb, op) {
-	if (OP_load(op) || OP_like_store(op)) {
+	if (OP_load(op) || OP_like_store(op) || OP_prefetch(op)) {
 	  num_mem_ops++;
 	}
       }
@@ -5064,7 +5133,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     FOR_ALL_BB_STLLIST_ITEMS_FWD(bb_list, bb_iter) {
       BB *bb = *bb_iter;
       FOR_ALL_BB_OPs(bb, op) {
-	if (OP_load(op) || OP_like_store(op))
+	if (OP_load(op) || OP_like_store(op) || OP_prefetch(op))
 	  mem_ops[op_idx++] = op;
       }
     }
@@ -5092,6 +5161,11 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 	  (OP_load(succ) ? CG_DEP_MEMIN : CG_DEP_MEMOUT);
 
 	if (OP_volatile(succ) && OP_volatile(op)) kind = CG_DEP_MEMVOL;
+
+#ifdef ENABLE_LOOPSEQ
+	// [CG] Treat user specified sequencial arcs.
+	Add_LOOPSEQ_Arc(op, succ, cyclic ? &omega : NULL, op_idx >= succ_idx);
+#endif
 
 	if (kind == CG_DEP_MEMREAD && !include_memread_arcs) continue;
 
@@ -5161,7 +5235,6 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     /* Make add_mem_arcs_from/to crash immediately when <mem_ops> not right */
     mem_ops = NULL;
   }
-
  return_point:
   CG_DEP_Addr_Analysis = old_addr_analysis;
 }
@@ -5284,7 +5357,6 @@ BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg)
   INT32 idx1 = 0;
   INT32 idx2 = 0;
   
-  
   if (CG_DEP_ignore_pragmas) goto dependent;
 
   // Get common loop head
@@ -5316,6 +5388,94 @@ BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg)
   if (omega == NULL && dist > 0) return FALSE;
   if (omega != NULL) *omega = dist;
   return TRUE;
+}
+
+#endif
+
+#ifdef ENABLE_LOOPSEQ
+/*
+ * CG_Get_BB_Loopseq_Mask
+ *
+ * Returns loopseq information attached to the BB.
+ * The return value is a mask, result of oring the
+ * different loopseq pragmas.
+ * Note that the bb should be a loop header
+ * to get loop dependencies.
+ * The loopseq pragma may appear multiple times
+ * for a loop, for instance in :
+ * #pragma loopseq READ	// request order for memory reads
+ * #pragma loopseq WRITE // request order for memory writes
+ * In this case this function returns
+ * the mask (1<<LOOPSEQ_READ)|(1<<LOOPSEQ_WRITE)
+ */
+static 
+UINT32 CG_Get_BB_Loopseq_Mask(BB *bb)
+{
+  BB *head;
+  UINT32 mask = 0;
+  
+  // Get a tentative header of the loop containing bb
+  head = bb;
+
+  ANNOTATION *annot;
+  for (annot = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+       annot != NULL;
+       annot = ANNOT_Get(ANNOT_next(annot), ANNOT_PRAGMA)) {
+    if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPSEQ) {
+      WN *pragma = ANNOT_pragma(annot);
+      UINT32 kind = (UINT32)WN_pragma_arg1(pragma);
+      mask |= (1<<kind);
+    } 
+  }
+  return mask;
+}
+
+/*
+ * get_cg_loopseq ()
+ *
+ * Compute dependencies between operations in the same loop
+ * based on loopseq pragmas.
+ * No dependency is generated if no loopseq pragma is found on the loop
+ * header.
+ */
+static BOOL
+get_cg_loopseq(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg)
+{
+  INT32 dist = -1;
+  BB *head;
+  UINT32 kind1, kind2;
+  UINT32 mask;
+  
+  /* If off, ignore this pragmas. */
+  if (CG_DEP_ignore_pragmas) goto noseq;
+
+  /* Only apply to operations in lexical order. */
+  if (lex_neg || pred_op == succ_op) goto noseq;
+
+  /* Get common loop head. */
+  if (!(head = ops_same_loop(pred_op, succ_op))) goto noseq;
+
+  kind1 = get_op_kind(pred_op);
+  kind2 = get_op_kind(succ_op);
+
+  mask = CG_Get_BB_Loopseq_Mask(head);
+  if ((mask & (1<<LOOPSEQ_READ)) &&
+      (kind1 == OP_KIND_LOAD || kind1 == OP_KIND_PREFIN) &&
+      (kind2 == OP_KIND_LOAD || kind2 == OP_KIND_PREFIN))
+    // Sequentialize READ and PREFETCH IN
+    dist = 0;
+  else if ((mask & (1<<LOOPSEQ_WRITE)) &&
+	   (kind1 == OP_KIND_STORE || kind1 == OP_KIND_PREFOUT) &&
+	   (kind2 == OP_KIND_STORE || kind2 == OP_KIND_PREFOUT))
+    // Sequentialize WRITE and PREFETCH OUT
+    dist = 0;
+
+  if (dist == 0) {
+    if (omega != NULL) *omega = 0;
+    return TRUE;
+  }
+ noseq:
+  return FALSE;
 }
 
 #endif

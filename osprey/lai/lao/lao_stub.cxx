@@ -634,8 +634,10 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
-	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
+	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL ||
+		  kind == CG_DEP_MISC) {
 		unsigned type = DependenceKind_Other;
+		if (kind == CG_DEP_MISC) type = DependenceKind_Seq;
 		if (kind == CG_DEP_MEMIN) type = DependenceKind_Flow;
 		if (kind == CG_DEP_MEMOUT) type = DependenceKind_Output;
 		if (kind == CG_DEP_MEMANTI) type = DependenceKind_Anti;
