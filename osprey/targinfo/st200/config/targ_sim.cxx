@@ -706,6 +706,26 @@ Get_Current_Float_Preg_Num (
 }
 
 /* ====================================================================
+ *   Get_Preg_Alignment
+ *
+ *   Pregs list begins on a double word alignment.
+ *   Depending on preg it is either 4 or 8 bytes aligned.
+ *   If preg is 0 (parm on stack), return alignment 0.
+ * ====================================================================
+ */
+static inline INT
+Get_Preg_Alignment (
+  PREG_NUM preg
+)
+{
+  if (preg == 0) return 0;
+  
+  if ((preg % 2) == 0) return 4;
+
+  else return 8;
+}
+
+/* ====================================================================
  *   Get_Parameter_Location
  * ====================================================================
  */
@@ -792,15 +812,6 @@ Get_Parameter_Location (
 
     case MTYPE_A4:
 
-      if (Target_Byte_Sex == BIG_ENDIAN) {
-	/* want to right-justify the object */
-	ploc.start_offset += (MTYPE_RegisterSize(SIM_INFO.ptr_type) -
-			      ploc.size);
-      }
-      else {
-	/* Pad to word; leave address alone ? */
-          rpad = (MTYPE_RegisterSize(SIM_INFO.ptr_type) - ploc.size);
-      }
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
       Current_Int_Param_Num++;
       break;
@@ -808,20 +819,40 @@ Get_Parameter_Location (
     case MTYPE_I8:
     case MTYPE_U8:
 
-      FmtAssert(FALSE,("Get_Parameter_Location: passing I8/U8"));
-
+      //
+      // These occupy two registers. This must be aligned on an
+      // 8-byte boundary, so may skip a slot
+      //
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
-      Current_Int_Param_Num++;
-      if (MTYPE_size_reg(SIM_INFO.int_type) < MTYPE_size_reg(pmtype)) {
+      if (Get_Preg_Alignment(ploc.reg) == 4) {
+	//
+	// skip one slot if the next still fits the register list
+	//
 	Current_Int_Param_Num++;
-	/* adjust Last_Fixed_Param in varargs case */
-	if (Last_Fixed_Param < INT_MAX)
-	  ++Last_Fixed_Param;
+	ploc.start_offset += MTYPE_RegisterSize(SIM_INFO.int_type);
+	ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
       }
+
+      // takes two registers:
+      Current_Int_Param_Num = Current_Int_Param_Num + 2;
+
+      //
+      // TODO: depending on endianness, the First_PLOC_reg() and
+      //       Next_PLOC_reg(), see targ_sim_body.h, should take
+      //       either first or second of these two.
+      //
+
+      /* adjust Last_Fixed_Param in varargs case */
+      if (Last_Fixed_Param < INT_MAX)
+	++Last_Fixed_Param;
+
       break;
 	
     case MTYPE_F4:
     case MTYPE_F8:
+
+      FmtAssert(FALSE,("F4/F8 are passed"));
+
 	/* want to left-justify the object */
         ++Current_Float_Param_Num;
 	rpad = MTYPE_RegisterSize(SIM_INFO.flt_type) - ploc.size;
@@ -835,6 +866,9 @@ Get_Parameter_Location (
 	break;
 	
     case MTYPE_FQ:
+
+      FmtAssert(FALSE,("FQ are passed"));
+
         ++Current_Float_Param_Num;
 	if (Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats) {
 	    /* varargs causes float args to be int regs */
@@ -853,6 +887,9 @@ Get_Parameter_Location (
     case MTYPE_C4:
     case MTYPE_C8:
     case MTYPE_CQ:
+
+      FmtAssert(FALSE,("Complex are passed"));
+
         ++Current_Float_Param_Num;
 	ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
 	Current_Param_Num++;
@@ -864,6 +901,9 @@ Get_Parameter_Location (
 	
     case MTYPE_M:
         {
+
+	  FmtAssert(FALSE,("MTYPE_M are passed"));
+
 	  ploc.size = TY_size (ty);
 	  INT psize = TY_size (ty) / MTYPE_RegisterSize(SIM_INFO.int_type);
 	  /* round up */
@@ -901,7 +941,7 @@ Get_Parameter_Location (
   Current_Offset = ploc.start_offset + ploc.size + rpad;
 
 #if 0
-  // Arthur: What is this ??
+  // Arthur: What is this ?? must be rotating registers ...
   if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
     PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
   else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))

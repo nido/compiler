@@ -137,12 +137,6 @@
 #undef QUAD_PRECISION_SUPPORTED
 #endif
 
-/*
-extern double atof(const char *);
-extern double sqrt(double);
-extern INT32 atoi(const char *);
-*/
-
 /* This initailization must be static because it may be used
  * before first call to Targ_WhirlOp.  Also WARNING: It requires
  * that TCON_ty field be first one in TCON
@@ -158,7 +152,6 @@ static TCON Targ_Power(TCON base, TCON exp, BOOL *folded, TYPE_ID btype);
 TCON Targ_Conv ( TYPE_ID ty_to, TCON c ); /* Defined later, used in Targ_WhirlOp */
 
 
-
 /* ====================================================================
  * This is the safe way of converting a QUAD_TYPE to a quad and vice
  * versa, and replaces:
@@ -216,6 +209,213 @@ RLD_To_R16(long double q)
 }
 #endif
 
+/* ====================================================================
+ *   Representation for long doubles
+ * ====================================================================
+ */
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  float lo;
+  float hi;
+#else
+  float hi;
+  float lo;
+#endif
+} DOUBLE;
+
+typedef union DOUBLE_REPRESENTATION {
+   double  a_doubletype;
+   DOUBLE  a_double;
+} Double_Representation;
+
+static DOUBLE
+R8_To_RD(double dt)
+{
+   Double_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static double
+RD_To_R8(DOUBLE d)
+{
+   Double_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+/* ====================================================================
+ *   Extract_Double_Hi/Extract_Double_Lo
+ * ====================================================================
+ */
+TCON
+Extract_Double_Hi(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
+
+  TCON_ty(c) = MTYPE_F4;
+  Set_TCON_R4(c, doubleTemp.hi);
+  return c;
+}
+
+
+TCON
+Extract_Double_Lo(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
+
+  TCON_ty(c) = MTYPE_F4;
+  Set_TCON_R4(c, doubleTemp.lo);
+  return c;
+}
+
+/* ====================================================================
+ *   Representation for long long
+ * ====================================================================
+ */
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  INT32 lo;
+  INT32 hi;
+#else
+  INT32 hi;
+  INT32 lo;
+#endif
+} SLONGLONG;
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  UINT32 lo;
+  UINT32 hi;
+#else
+  UINT32 hi;
+  UINT32 lo;
+#endif
+} ULONGLONG;
+
+typedef union LONGLONG_REPRESENTATION {
+   INT64 a_doubletype;
+   SLONGLONG  a_double;
+} LongLong_Representation;
+
+typedef union ULONGLONG_REPRESENTATION {
+   UINT64 a_doubletype;
+   ULONGLONG  a_double;
+} ULongLong_Representation;
+
+static SLONGLONG
+I8_To_RL(long long dt)
+{
+   LongLong_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static INT64
+RL_To_I8(SLONGLONG d)
+{
+   LongLong_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+static ULONGLONG
+U8_To_RL(long long dt)
+{
+   ULongLong_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static INT64
+RL_To_U8(ULONGLONG d)
+{
+   ULongLong_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+/* ====================================================================
+ *   Extract_LongLong_Hi/Extract_LongLong_Lo
+ * ====================================================================
+ */
+TCON
+Extract_LongLong_Hi(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  switch (TCON_ty(v)) {
+
+  case MTYPE_I8:
+    SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
+
+    TCON_ty(c) = MTYPE_I4;
+    TCON_I4(c) = longlongTemp.hi;
+    break;
+
+  case MTYPE_U8:
+    ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
+
+    TCON_ty(c) = MTYPE_U4;
+    TCON_U4(c) = ulonglongTemp.hi;
+    break;
+
+  default:
+    break;
+  }
+
+  return c;
+}
+
+
+TCON
+Extract_LongLong_Lo(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  switch (TCON_ty(v)) {
+
+  case MTYPE_I8:
+    SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
+
+    TCON_ty(c) = MTYPE_I4;
+    TCON_I4(c) = longlongTemp.lo;
+    break;
+
+  case MTYPE_U8:
+    ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
+
+    TCON_ty(c) = MTYPE_U4;
+    TCON_U4(c) = ulonglongTemp.lo;
+    break;
+
+  default:
+    break;
+  }
+
+  return c;
+}
+
+/* ====================================================================
+ *   Check_TCON
+ * ====================================================================
+ */
 #ifdef Is_True_On
 void
 Check_TCON ( TCON *tc )
@@ -2438,12 +2638,15 @@ Targ_Conv (
     case FROM_TO(MTYPE_I1, MTYPE_I8):
     case FROM_TO(MTYPE_B, MTYPE_I8):
 
+       TCON_I8(r) = (INT64)TCON_I4(c);
+       break;
+
     case FROM_TO(MTYPE_I4, MTYPE_I5):
     case FROM_TO(MTYPE_I2, MTYPE_I5):
     case FROM_TO(MTYPE_I1, MTYPE_I5):
     case FROM_TO(MTYPE_B, MTYPE_I5):
 
-       TCON_I8(r) = TCON_v0(c);
+       TCON_I8(r) = (INT64)TCON_v0(c);
        break;
 
     case FROM_TO(MTYPE_U8, MTYPE_I8):

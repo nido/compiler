@@ -725,7 +725,6 @@ OPCODE_To_INTRINSIC (
 	}
       }
 
-
       break;
 
     case OPR_REM:

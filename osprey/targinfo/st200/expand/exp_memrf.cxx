@@ -794,7 +794,7 @@ Exp_Extract_Bits (
   TOP extr_op;
   TN *tmp;
 
-  // LX is LITTLE_ENDIAN:
+  // for LX as LITTLE_ENDIAN:
   if (MTYPE_is_class_integer(rtype)) {
     // The sequence is shift left 32-bit_size; 
     //                 shift right (bit_offset+bit_size):
@@ -802,7 +802,7 @@ Exp_Extract_Bits (
     Build_OP(TOP_shl_i, tmp, src_tn, 
       Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset-bit_size, 4), ops);
     extr_op = MTYPE_signed(rtype) ? TOP_shr_i : TOP_shru_i;
-    Build_OP(extr_op, tgt_tn, True_TN, tmp, 
+    Build_OP(extr_op, tgt_tn, tmp, 
                   Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size,4), ops);
   }
   else {
@@ -832,15 +832,27 @@ Exp_Deposit_Bits (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  FmtAssert(FALSE,("not implemented"));
+  FmtAssert(bit_size != 0, ("size of bit field cannot be 0"));
 
-  FmtAssert((bit_size > 0 && bit_size < 40), 
-       ("Exp_Deposit_Bits: size of bit field cannot be %d", bit_size));
+  UINT targ_bit_offset = bit_offset;
+  if (Target_Byte_Sex == BIG_ENDIAN) {
+    targ_bit_offset = MTYPE_bit_size(desc) - bit_offset - bit_size;
+  }
+
+  //
+  // generate the following sequence (if there is a faster one,
+  // we'll find it later)
+  //
+  // extract bits returns sign-extended TN
+  //    tmp1 = extract_bits src1, 0 .. targ_bit_offset
+  //    tmp2 = extract_bits src2, targ_bit_offset .. targ_bit_offset+bit_size
+  //    tmp3 = extract_bits src1, targ_bit_offset+bit_size .. 32
+  //    tmp4 = shl tmp3, 32-bit_size
+  //    tmp5 = 
 
   FmtAssert(rtype == MTYPE_U4,
 	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
-
-  UINT targ_bit_offset = bit_offset;
 
   if (Target_Byte_Sex == BIG_ENDIAN) {
     targ_bit_offset = MTYPE_bit_size(desc) - bit_offset - bit_size;
