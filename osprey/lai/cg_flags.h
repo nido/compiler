@@ -335,9 +335,7 @@ extern BOOL  HB_allow_tail_duplication;
 extern BOOL  HB_exclude_calls;
 extern BOOL  HB_exclude_pgtns;
 extern BOOL  HB_skip_hammocks;
-#ifdef TARG_ST200
 extern BOOL  HB_force_hyperblocks;
-#endif
 
 /* GRA_LIVE: */
 extern BOOL GRA_LIVE_Phase_Invoked;

@@ -201,10 +201,7 @@ BOOL GCM_Enable_Fill_Delay_Slots = TRUE;
 // ====================================================================
 
 BOOL Enable_Fill_Delay_Slots = TRUE;
-
-// TODO: set the default value here and ovewrite in target-specific
-//       initialization part.
-#if defined(TARG_IA64) || defined(TARG_ST200)
+#if defined(TARG_IA64)
 BOOL LOCS_Enable_Bundle_Formation = TRUE;
 #else
 BOOL LOCS_Enable_Bundle_Formation = FALSE;
@@ -273,6 +270,8 @@ const char* HB_memory_hazard_multiplier = "1.0";
 const char* HB_base_probability_contribution = "0.1";
 BOOL  HB_require_alias = TRUE;
 BOOL  HB_loops = FALSE;
+BOOL  HB_loops_with_exits = FALSE;
+BOOL  HB_complex_non_loop = FALSE;
 BOOL  HB_general_use_pq = FALSE;
 BOOL  HB_general_from_top = FALSE;
 BOOL  HB_allow_tail_duplication = FALSE;
@@ -282,6 +281,7 @@ BOOL  HB_skip_hammocks = TRUE;	// until bugs fixed
 BOOL  HB_simple_ifc = TRUE;
 BOOL  HB_simple_ifc_set = FALSE;
 INT   HB_min_blocks = 2;
+BOOL HB_force_hyperblocks = TRUE;
 
 BOOL EMIT_pjump_all = TRUE;
 BOOL EMIT_use_cold_section = TRUE;
