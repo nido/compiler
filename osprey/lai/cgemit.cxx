@@ -43,6 +43,7 @@
 #include <elfaccess.h>
 #include "W_alloca.h"
 #include <stdlib.h>
+#include <unistd.h> // for unlink()
 #include <cmplrs/rcodes.h>
 #include <stamp.h>
 #include <vector>
@@ -82,6 +83,8 @@
 #include "cg_flags.h"
 #include "calls.h"                 /* for Frame_Len */
 #include "cgexp.h"                 /* for Exp_Simulated_OP, etc. */
+
+#include "eh_region.h"             /* For EH_Get_PU_Range_ST */
 
 #include "cgtarget.h"
 #include "cgemit.h"
@@ -1531,7 +1534,6 @@ Init_Section (
   scn_entsize = Get_Section_Elf_Entsize(STB_section_idx(st));
 
   if (generate_elf_symbols) {
-#if 0
     em_scn[last_scn].scninfo = Em_New_Section (ST_name(st), 
 		  scn_type, scn_flags, scn_entsize, STB_align(st));
 
@@ -1542,7 +1544,6 @@ Init_Section (
     }
     Set_ST_elf_index(st,
 	      Em_Create_Section_Symbol (em_scn[last_scn].scninfo));
-#endif
   }
   else {
     /* set dummy value just so don't redo this */
@@ -2131,6 +2132,42 @@ Setup_Text_Section_For_BB (
   }
 }
 
+static LABEL_IDX       prev_pu_last_label  = LABEL_IDX_ZERO;
+static Dwarf_Unsigned  prev_pu_base_elfsym = 0;
+static PU_IDX          prev_pu_pu_idx      = (PU_IDX) 0;
+static Dwarf_Unsigned  prev_pu_end_offset_from_last_label = 0;
+static char           *prev_pu_last_label_name = NULL;
+static Dwarf_Unsigned  prev_pu_last_offset = 0;
+
+static void
+cache_last_label_info(LABEL_IDX      label_idx,
+                      Dwarf_Unsigned base_elf_idx,
+                      PU_IDX         pu_idx,
+                      Dwarf_Unsigned end_offset)
+{
+  prev_pu_last_label  = label_idx;
+  prev_pu_base_elfsym = base_elf_idx;
+  prev_pu_pu_idx      = pu_idx;
+  prev_pu_end_offset_from_last_label = end_offset;
+  prev_pu_last_label_name = LABEL_name(label_idx);
+  prev_pu_last_offset = Get_Label_Offset(label_idx);
+}
+
+static void
+end_previous_text_region(pSCNINFO scninfo,
+                         INT      end_offset)
+{
+  Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
+                                         end_offset,
+                                         Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+                                                               prev_pu_last_label,
+                                                               prev_pu_base_elfsym,
+                                                               prev_pu_pu_idx,
+                                                               prev_pu_last_label_name,
+                                                               prev_pu_last_offset),
+                                         prev_pu_end_offset_from_last_label);
+}
+
 /* ====================================================================
  *   Setup_Text_Section_For_PU
  *
@@ -2155,7 +2192,6 @@ Setup_Text_Section_For_PU (
 
   Initial_Pu_Label = LABEL_IDX_ZERO;
 
-#if 0
   if (! Object_Code && generate_elf_symbols) {
     // didn't actually write instructions,
     // but want the offset to be up-to-date.
@@ -2163,7 +2199,6 @@ Setup_Text_Section_For_PU (
 		em_scn[STB_scninfo_idx(orig_text_base)].scninfo,
 		text_PC);
   }
-#endif
 
   if (Section_For_Each_Function || PU_in_elf_section(current_pu)) {
     /* create new text section */
@@ -2202,7 +2237,6 @@ Setup_Text_Section_For_PU (
   Set_STB_scninfo_idx(FP_Sym, STB_scninfo_idx(text_base));
 
   cur_section = text_base;
-#if 0
   if (generate_elf_symbols) {
     text_section = em_scn[STB_scninfo_idx(text_base)].scninfo;
     PU_section = text_section;
@@ -2210,7 +2244,6 @@ Setup_Text_Section_For_PU (
     Is_True(i == text_PC, ("Setup_Text_Section_For_PU: PC doesn't match"));
     text_PC = i;
   }
-#endif
 
   if (Assembly) fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ST_name(text_base));
   if (Lai_Code) fprintf (Lai_File, "\n\t%s %s\n", AS_SECTION, ST_name(text_base));
@@ -2257,7 +2290,6 @@ Setup_Text_Section_For_PU (
 
   /* check if we are changing sections. */
   if (text_base != old_base) {
-#if 0
     if (generate_elf_symbols && old_base != NULL) {
       pSCNINFO old_section = em_scn[STB_scninfo_idx(old_base)].scninfo;
       // Arange is symbolic; line number entries (if used) are not.
@@ -2271,7 +2303,6 @@ Setup_Text_Section_For_PU (
 			ST_elf_index(text_base)),
 			Offset_From_Last_Label);
     }
-#endif
   }
 
   PC = text_PC;
@@ -4203,7 +4234,6 @@ EMT_Begin_File (
         Has_GP_Groups = TRUE;
   }
 
-#if 0
   if (Object_Code || CG_emit_asm_dwarf) {
 	generate_dwarf = TRUE;
 	generate_elf_symbols = TRUE;
@@ -4248,17 +4278,16 @@ EMT_Begin_File (
     	Em_Add_Comment (buff);
     }
 
+#if 0
     if ( EMIT_interface_section ) Interface_Scn_Begin_File();
-  }
 #endif
+  }
 
   Init_ST_elf_index(GLOBAL_SYMTAB);
-#if 0
   if (generate_dwarf) {
     Cg_Dwarf_Begin (!Use_32_Bit_Pointers);
   }
   Cg_Dwarf_Gen_Asm_File_Table ();
-#endif
 
   if (Assembly) {
     ASM_DIR_NOREORDER();
@@ -4479,13 +4508,14 @@ EMT_Emit_PU (
   Process_Initos_And_Literals (CURRENT_SYMTAB);
   Process_Bss_Data (CURRENT_SYMTAB);
 
-#if 0
   if (generate_dwarf) {
     Elf64_Word symindex;
     INT eh_offset;
     BOOL has_exc_scopes = PU_has_exc_scopes(ST_pu(pu));
+#if 0
     if (Object_Code)
     	Em_Add_New_Event (EK_PEND, PC - ISA_INST_BYTES, 0, 0, 0, PU_section);
+#endif
     /* get exception handling info */ 
     if (!CXX_Exceptions_On && has_exc_scopes) {
       eh_offset = symindex = (Elf64_Word)DW_DLX_EH_OFFSET_UNAVAILABLE;
@@ -4515,13 +4545,11 @@ EMT_Emit_PU (
 		// us specify ranges symbolically.
 		Initial_Pu_PC, PC);
   }
-#endif
 
   PU_Size = PC - Initial_Pu_PC;
   Set_STB_size (PU_base, PC);
   text_PC = PC;
 
-#if 0
   if (generate_dwarf) {
     // The final label in this PU is liable to get used in computing
     // arguments to Em_Dwarf_End_Text_Region_Semi_Symbolic, so we need
@@ -4532,6 +4560,7 @@ EMT_Emit_PU (
 		Offset_From_Last_Label);
   }
 
+#if 0
   Finalize_Unwind_Info();
 #endif
 
@@ -4710,19 +4739,19 @@ EMT_End_File( void )
   }
 #endif
 
-#if 0
   if (generate_elf_symbols && PU_section != NULL) {
-    end_previous_text_region(PU_section, Em_Get_Section_Offset(PU_section));
+    end_previous_text_region(PU_section, text_PC);
   }
 
+#if 0
   if (Object_Code) {
     Em_Options_Scn();
   }
+#endif
   if (generate_dwarf) {
     // must write out dwarf unwind info before text section is ended
     Cg_Dwarf_Finish (PU_section);
   }
-#endif
 
   /* Write out the initialized data to the object file. */
   for (i = 1; i <= last_scn; i++) {
@@ -4770,24 +4799,20 @@ EMT_End_File( void )
     }
   }
 
-#if 0
   INT dwarf_section_count = 0;
 
   if (generate_dwarf) {
     dwarf_section_count = Em_Dwarf_Prepare_Output ();
   }
-#endif
 
   if (Assembly) {
     fprintf(Asm_File, "\t## %s %d\n", AS_GPVALUE, GP_DISP);
     //    ASM_DIR_GPVALUE();
-#if 0
     if (CG_emit_asm_dwarf) {
       Cg_Dwarf_Write_Assembly_From_Symbolic_Relocs(Asm_File,
 						   dwarf_section_count,
 						   !Use_32_Bit_Pointers);
     }
-#endif
   }
   if (Lai_Code) {
     fprintf(Lai_File, "//\t%s %d\n", AS_GPVALUE, GP_DISP);
