@@ -483,7 +483,12 @@ Is_There_OP_Dependence(OP *op, OP *prev_op)
 
   INT j;
 
+#ifdef TARG_ST200
+  INT16 latency;
+  if (CGTARG_Dependence_Required(prev_op, op, &latency)) return TRUE;
+#else
   if (CGTARG_Dependence_Required(prev_op, op)) return TRUE;
+#endif
 
   for (j = 0; j < OP_results(prev_op); ++j) {
     TN *result_tn = OP_result(prev_op, j);
@@ -1394,15 +1399,16 @@ Make_Bundles (
       if (Clock < estart) {
 	// Add the <stop_bit> marker appropriately.
 	// TODO: need to be refined further.
-	OP *last_real_op = Last_Real_OP(op);
-	Set_OP_end_group(last_real_op);
-	VECTOR_Reset (*bundle_vector);
-#if 0
-	if (Trace_HB) {
-	  fprintf(TFile, "  advancing clock with stop bit\n");
+	//	OP *last_real_op = Last_Real_OP(op);
+	//	Set_OP_end_group(last_real_op);
+	if (!OP_end_group(OP_prev(op))) {
+	  Set_OP_end_group(OP_prev(op));
+	  VECTOR_Reset (*bundle_vector);
+	  if (Trace_HB) {
+	    fprintf(TFile, "  advancing clock with stop bit\n");
+	  }
+	  Clock++;
 	}
-#endif
-	Clock++;
       }
 
       // If dependence is still pending, fill with noop bundles

@@ -376,10 +376,50 @@ CGTARG_Get_unc_Variant (
 BOOL
 CGTARG_Dependence_Required (
   OP *pred_op, 
-  OP *succ_op
+  OP *succ_op,
+  INT *latency
 )
 {
+  // Arcs between an OP that defines a dedicated call register and the
+  // call OP. I do it here because the usual REGIN/OUT mechanism
+  // want me to tell it to which opnd the dependence is attached.
+  // There is no opnd corresponding to dedicated call registers, so ...
+  // I just hope that associating all of these to opnd 0 using MISC
+  // arcs will work.
 
+  // TODO: would be nice to condition it with include_assigned_registers
+
+  if (!OP_call(succ_op)) return FALSE;
+
+  INT i;
+  BOOL need_dependence = FALSE;
+  INT max_latency = 0;
+  for (i = 0; i < OP_results(pred_op); i++) {
+    TN *result = OP_result(pred_op,i);
+    if (TN_is_register(result) && TN_is_dedicated(result)) {
+      REGISTER reg = TN_register(result);
+      ISA_REGISTER_CLASS rclass = TN_register_class (result);
+      INT cur_latency;
+	 
+      // regs which have implicit meaning.
+      if(REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass), reg) ||
+	 REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg)) {
+	
+	need_dependence = TRUE;
+	// just time to compute (all operands access same):
+	FmtAssert(OP_opnds(pred_op) > 0,("Arthur doesn't understand"));
+	cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) -
+	  TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
+	if (cur_latency > max_latency)
+	  max_latency = cur_latency;
+      }
+    }
+  }
+
+  *latency = max_latency;
+  return need_dependence;
+
+#if 0
   BOOL read_write_predicate,	   // all TOPs which read/write predicate regs
        write_predicate,		   // all TOPs which write predicate regs
        read_write_status_field;    // all TOPs which read/write a specific
@@ -466,7 +506,6 @@ CGTARG_Dependence_Required (
   // br.ret,
   // clrrrb.
 
-  /*
   if (OP_code(pred_op)  == TOP_alloc &&
       (OP_code(succ_op) == TOP_flushrs ||
        OP_code(succ_op) == TOP_br_cexit,
@@ -478,8 +517,11 @@ CGTARG_Dependence_Required (
        OP_code(succ_op) == TOP_br_ret ||
        OP_code(succ_op) == TOP_clrrrb ||
        OP_code(succ_op) == TOP_clrrrb_pr)) return TRUE;
-  */
+
   return FALSE;
+
+#endif
+
 }
 
 /* ====================================================================
@@ -1610,7 +1652,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 	else {
 	  BB_Insert_Op_Before(OP_bb(op), op, noop);
  	  OP_scycle(noop) = -1;
-	  prev_op = noop;
+	  prev_op = (slot_avail) ? op : noop;
 	}
 	Set_OP_bundled (noop);
 	TI_BUNDLE_Reserve_Slot (bundle, i, ISA_EXEC_Slot_Prop(template_bit, i));
@@ -1627,7 +1669,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 
     // set <end_group> marker if the bundle is full
     if (prev_op) {
-      // if we added a noop:
+      // if we added a noop after:
       Set_OP_end_group(prev_op);
       VECTOR_Reset (*bundle_vector);
     }
