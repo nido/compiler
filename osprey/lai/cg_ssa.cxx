@@ -180,7 +180,7 @@ tn_stack_top (
 typedef struct _Dom_Tree_node {
   BB *_M_data;
   BB *_M_parent;
-  BB_SET *_M_kids;
+  BB_LIST *_M_kids;
 } DOM_TREE;
 
 #define DOM_TREE_node(t)   (t->_M_data)
@@ -198,9 +198,7 @@ static DOM_TREE *dom_map;
 #define BB_children(bb)          (dom_map[BB_id(bb)]._M_kids)
 
 inline void Add_BB_child(BB *bb, BB *child) {
-  dom_map[BB_id(bb)]._M_kids = BB_SET_Union1D(dom_map[BB_id(bb)]._M_kids,
-					      child,
-					      &ssa_pool);
+  dom_map[BB_id(bb)]._M_kids = BB_LIST_Push(child, dom_map[BB_id(bb)]._M_kids, &ssa_pool);
 }
 
 /* ================================================================
@@ -232,7 +230,10 @@ DOM_TREE_Print (
 
     // BBs dominated by BB
     fprintf(file, "   kids: ");
-    BB_SET_Print(BB_children(bb), file);
+    for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
+      BB *kid = BB_LIST_first(elist);
+      fprintf(file, "%d ", BB_id(kid));
+    }
     fprintf(file, "\n");
 
     fprintf(file, "%s\n", DBar);
@@ -265,8 +266,7 @@ DOM_TREE_Initialize ()
 					      PU_BB_Count+2);
 
   for (i = 1; i < PU_BB_Count+2; i++) {
-    dom_map[i]._M_kids = BB_SET_Create_Empty(PU_BB_Count+2,
-					     &ssa_pool);
+    dom_map[i]._M_kids = NULL;
   }
 
   //  RID *rid = BB_rid(REGION_First_BB);
@@ -276,20 +276,22 @@ DOM_TREE_Initialize ()
   // The immediate dominator of BBi is the BB with the same set of
   // dominators except for BBi itself:
   //
+  BB_SET *match, *check;
+  match = BB_SET_Create_Empty(PU_BB_Count+2, &ssa_pool);
+  check = BB_SET_Create_Empty(PU_BB_Count+2, &ssa_pool);
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    BB_SET *match, *check;
     BB *cur;
 
     // 
     // match is the BS (set of dominators) to be matched:
     //
-    match = BB_SET_Copy(BB_dom_set(bb), &MEM_local_pool);  // bb's dom set ...
+    match = BB_SET_CopyD(match, BB_dom_set(bb), &ssa_pool);
     match = BB_SET_Difference1D(match, bb);	       // ... except bb.
 
     // 
     // match is also the set of dominators to check:
     //
-    check = BB_SET_Copy(match, &MEM_local_pool);  // Check all bb's dominators ...
+    check = BB_SET_CopyD(check, match, &ssa_pool);  // Check all bb's dominators ...
 
     //
     // Now go check them.  We start with the last (highest numbered)
@@ -523,7 +525,8 @@ void SSA_Prepend_Phi_To_BB (
 //
 // dominance frontier blocks for each BB in the region
 //
-static BB_SET **DF;
+static BB_LIST **DF;
+static BB_SET *DF_bb;
 
 /* ================================================================
  *   compute_dominance_frontier
@@ -537,16 +540,16 @@ compute_dominance_frontier (
   BOOL *visited
 )
 {
-  BB *kid;
 
   // if we've visited this BB while processing another
   // region_entry, return with peace
   if (visited[BB_id(bb)]) return;
 
   // allocate the DF set
-  DF[BB_id(bb)] = BB_SET_Create_Empty(PU_BB_Count+2, &ssa_pool);
+  DF[BB_id(bb)] = NULL;
 
-  FOR_ALL_BB_SET_members(BB_children(bb), kid) {
+  for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
+    BB *kid = BB_LIST_first(elist);
     compute_dominance_frontier (kid, visited);
   }
 
@@ -555,6 +558,7 @@ compute_dominance_frontier (
   //
   // local
   //
+  BB_SET_ClearD(DF_bb);
   BBLIST *succs;
   FOR_ALL_BB_SUCCS(x, succs) {
     BB* y = BBLIST_item(succs);
@@ -563,20 +567,27 @@ compute_dominance_frontier (
       // bb does not dominate it's successor => successor
       // is in dominance frontier
       //
-      DF[BB_id(x)] = BB_SET_Union1D(DF[BB_id(x)], y, &ssa_pool);
+      DF_bb = BB_SET_Union1D(DF_bb, y, &ssa_pool);
     }
   }
 
   //
   // up
   //
-  FOR_ALL_BB_SET_members(BB_children(bb),kid) {
-    BB *y, *z = kid;
-    FOR_ALL_BB_SET_members(DF[BB_id(z)],y) {
+  for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
+    BB *z = BB_LIST_first(elist);
+    Is_True(z != x, ("Inconsistent dominator tree"));
+    for (BB_LIST *dflist = DF[BB_id(z)]; dflist; dflist = BB_LIST_rest(dflist)) {
+      BB *y = BB_LIST_first(dflist);
       if (BB_dominator(y) != x) {
-	DF[BB_id(x)] = BB_SET_Union1D(DF[BB_id(x)], y, &ssa_pool);
+	DF_bb = BB_SET_Union1D(DF_bb, y, &ssa_pool);
       }
     }
+  }
+
+  BB *y;
+  FOR_ALL_BB_SET_members(DF_bb,y) {
+    DF[BB_id(x)] = BB_LIST_Push(y, DF[BB_id(x)], &ssa_pool);
   }
 
   // mark as visited
@@ -607,12 +618,14 @@ SSA_Compute_Dominance_Frontier ()
   //
   // Initialize the dominance frontier structure
   //
-  DF = (BB_SET **)TYPE_MEM_POOL_ALLOC_N(BB_SET *, 
+  DF = (BB_LIST **)TYPE_MEM_POOL_ALLOC_N(BB_LIST *, 
 					&ssa_pool, 
 					PU_BB_Count+2 );
 
   visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+2));
   BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
+
+  DF_bb = BB_SET_Create_Empty(PU_BB_Count+2, &ssa_pool);
 
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
     compute_dominance_frontier (bb, visited);
@@ -625,7 +638,10 @@ SSA_Compute_Dominance_Frontier ()
     fprintf(TFile, "<ssa> DOMINANCE FRONTIERS: \n");
     for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       fprintf(TFile, "  BB%d : ", BB_id(bb));
-      BB_SET_Print(DF[BB_id(bb)], TFile);
+      for (BB_LIST *elist = DF[BB_id(bb)]; elist; elist = BB_LIST_rest(elist)) {
+	BB *df = BB_LIST_first(elist);
+	fprintf(TFile, "%d ", BB_id(df));
+      }
       fprintf(TFile, "\n--------------------\n");
     }
   }
@@ -744,6 +760,8 @@ finalize_tn_def_map ()
  *         for that BB.
  * ================================================================
  */
+static BB_SET *Phi_Functions_work;
+static BB_SET *Phi_Functions_has_already;
 static void
 SSA_Place_Phi_Functions (
   TN *tn
@@ -757,15 +775,13 @@ SSA_Place_Phi_Functions (
   // accumulated in memory for all TNs
   MEM_POOL_Push(&MEM_local_pool);
 
-  BB_SET *work = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
+  Phi_Functions_work = BB_SET_ClearD(Phi_Functions_work);
   BB_LIST *p;
   for (p = TN_is_def_in(tn); p != NULL; p = BB_LIST_rest(p)) {
-    work = BB_SET_Union1(work, BB_LIST_first(p), &MEM_local_pool);
+    Phi_Functions_work = BB_SET_Union1D(Phi_Functions_work, BB_LIST_first(p), &MEM_local_pool);
   }
   //BB_SET *work = BB_SET_Copy(TN_is_def_in(tn), &MEM_local_pool);
-  BB_SET *has_already = BB_SET_Create_Empty(PU_BB_Count+2, 
-					    &MEM_local_pool);
-  FOR_ALL_BB_SET_members(work, bb) {
+  FOR_ALL_BB_SET_members(Phi_Functions_work, bb) {
     work_lst.push_back(bb);
   }
 
@@ -773,7 +789,7 @@ SSA_Place_Phi_Functions (
     fprintf(TFile, "\n  --> ");
     Print_TN(tn, FALSE);
     fprintf(TFile, " ");
-    BB_SET_Print(work, TFile);
+    BB_SET_Print(Phi_Functions_work, TFile);
     fprintf(TFile, "\n");
   }
 
@@ -785,9 +801,12 @@ SSA_Place_Phi_Functions (
   fprintf(TFile, "\n");
 #endif
 
+  Phi_Functions_has_already = BB_SET_ClearD(Phi_Functions_has_already);
+
   for (bbi = work_lst.begin(); bbi != work_lst.end(); bbi++) {
     BB *sc;
-    FOR_ALL_BB_SET_members(DF[BB_id(*bbi)], sc) {
+    for (BB_LIST *dflist = DF[BB_id(*bbi)]; dflist; dflist = BB_LIST_rest(dflist)) {
+      sc = BB_LIST_first(dflist);
       //
       // if a phi-function for 'tn' has not yet been added to 'sc'
       // and 'tn' is actually live in 'sc', add the phi-function
@@ -795,18 +814,18 @@ SSA_Place_Phi_Functions (
 
       if (Trace_SSA_Build) {
 	fprintf(TFile, "    BB%d: df node BB%d: ", BB_id(*bbi), BB_id(sc));
-	fprintf(TFile, " %s, %s\n", BB_SET_MemberP(has_already, sc) ? "has already" : "no phi yet", GTN_SET_MemberP(BB_live_in(sc), tn) ? "live in" : "not live in");
+	fprintf(TFile, " %s, %s\n", BB_SET_MemberP(Phi_Functions_has_already, sc) ? "has already" : "no phi yet", GTN_SET_MemberP(BB_live_in(sc), tn) ? "live in" : "not live in");
       }
 
-      if (!BB_SET_MemberP(has_already, sc) &&
+      if (!BB_SET_MemberP(Phi_Functions_has_already, sc) &&
 	                     GTN_SET_MemberP(BB_live_in(sc), tn)) {
 
 	//fprintf(TFile, "    placing a PHI in BB%d\n", BB_id(sc));
 
         SSA_Place_Phi_In_BB (tn, sc);
-        has_already = BB_SET_Union1(has_already, sc, &MEM_local_pool);
-        if (!BB_SET_MemberP(work, sc)) {
-          work = BB_SET_Union1(work, sc, &MEM_local_pool);
+        Phi_Functions_has_already = BB_SET_Union1D(Phi_Functions_has_already, sc, &MEM_local_pool);
+        if (!BB_SET_MemberP(Phi_Functions_work, sc)) {
+          Phi_Functions_work = BB_SET_Union1D(Phi_Functions_work, sc, &MEM_local_pool);
 	  work_lst.push_back(sc);
         }
       }
@@ -991,8 +1010,8 @@ SSA_Rename_BB (
   //
   // rename the dominated subtree of this BB
   //
-  BB *kid;
-  FOR_ALL_BB_SET_members(BB_children(bb),kid) {
+  for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
+    BB *kid = BB_LIST_first(elist);
     SSA_Rename_BB (kid, visited);
   }
 
@@ -1058,6 +1077,9 @@ SSA_Rename ()
     fprintf(TFile, "<ssa> Placing the PHI-nodes: \n");
   }
 
+  Phi_Functions_work = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
+  Phi_Functions_has_already = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
+
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     OP *op;
     FOR_ALL_BB_OPs_FWD (bb, op) {
@@ -1068,7 +1090,7 @@ SSA_Rename ()
 	                         TN_SET_MemberP(tn_seen, tn)) continue;
 
 	SSA_Place_Phi_Functions (tn);
-	tn_seen = TN_SET_Union1(tn_seen, tn, &MEM_local_pool);
+	tn_seen = TN_SET_Union1D(tn_seen, tn, &MEM_local_pool);
       }
     }
   }
@@ -1169,8 +1191,8 @@ SSA_Enter (
 
   /* Why + 2?  Nobody seems to know.
    */
-  region_exit_set  = BB_SET_Create(PU_BB_Count + 2,&ssa_pool);
-  region_entry_set = BB_SET_Create(PU_BB_Count + 2,&ssa_pool);
+  region_exit_set  = BB_SET_Create_Empty(PU_BB_Count + 2,&ssa_pool);
+  region_entry_set = BB_SET_Create_Empty(PU_BB_Count + 2,&ssa_pool);
 
   // Initialize some auxilliary data structures
   Set_Entries_Exits(rid);
