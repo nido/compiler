@@ -1052,44 +1052,61 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs);
 
-// Make a LAO LoopInfo from the BB_List supplied.
+#define LAO_OPS_LIMIT 128	// Maximum number of OPs to compute memory dependences.
+
+// Make a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
-lao_makeLoopInfo(BB_List& bb_list, bool cyclic) {
+lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
   LoopInfo loopinfo = NULL;
-  BB *bb = bb_list.front();
-  BasicBlock basicblock = CGIR_BB_to_BasicBlock(bb);
-  // Get the BB LoopInfo.
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
+  BB *head_bb = LOOP_DESCR_loophead(loop);
+  BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
+    // Make the LoopInfo for this loop.
     CGIR_LI cgir_li = ANNOT_loopinfo(annot);
-    loopinfo = Interface_makeLoopInfo(interface, cgir_li, basicblock);
-    // Compute the memory dependence graph.
-    CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
-    BB_List::iterator bb_iter;
-    for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
-      OP *op = NULL;
-      FOR_ALL_BB_OPs(*bb_iter, op) {
-	ARC_LIST *arcs = NULL;
-	if (_CG_DEP_op_info(op)) {
-	  Operation orig_operation = CGIR_OP_to_Operation(op);
-	  for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
-	    ARC *arc = ARC_LIST_first(arcs);
-	    CG_DEP_KIND kind = ARC_kind(arc);
-	    if (ARC_is_mem(arc)) {
-	      bool definite = ARC_is_definite(arc);
-	      int latency = ARC_latency(arc), omega = ARC_omega(arc);
-	      OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
-	      Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
-	      Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-	      Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-		  orig_operation, dest_operation, latency, omega, definite);
-	      //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
-	    }
-	  }
-	} else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+    loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block);
+    // Make a BB_List of the loop body and compute its op_count.
+    BB *bb = NULL;
+    BB_List bb_list;
+    int nest_level = BB_nest_level(head_bb), op_count = 0;
+    BB_SET *loop_set = LOOP_DESCR_bbset(loop);
+    FOR_ALL_BB_SET_members(loop_set, bb) {
+      if (BB_nest_level(bb) == nest_level) {
+	op_count += BB_length(bb);
+	bb_list.push_back(bb);
       }
+      if (op_count >= LAO_OPS_LIMIT) break;
     }
-    CG_DEP_Delete_Graph(&bb_list);
+    // Compute the memory dependence graph.
+    if (op_count < LAO_OPS_LIMIT) {
+      bool cyclic = BB_innermost(head_bb) && pipeline > 0;
+      CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
+      BB_List::iterator bb_iter;
+      for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
+	OP *op = NULL;
+	FOR_ALL_BB_OPs(*bb_iter, op) {
+	  ARC_LIST *arcs = NULL;
+	  if (_CG_DEP_op_info(op)) {
+	    Operation orig_operation = CGIR_OP_to_Operation(op);
+	    for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
+	      ARC *arc = ARC_LIST_first(arcs);
+	      CG_DEP_KIND kind = ARC_kind(arc);
+	      if (ARC_is_mem(arc)) {
+		bool definite = ARC_is_definite(arc);
+		int latency = ARC_latency(arc), omega = ARC_omega(arc);
+		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
+		Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
+		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
+		Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
+		    orig_operation, dest_operation, latency, omega, definite);
+		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
+	      }
+	    }
+	  } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+	}
+      }
+      CG_DEP_Delete_Graph(&bb_list);
+    }
   }
   return loopinfo;
 }
@@ -1140,8 +1157,12 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
     }
   }
   // Make the LoopInfos for the bodyBBs.
-  //lao_makeLoopInfo(bodyBBs, pipeline > 0);
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
+    BB *bb = *bb_iter;
+    if (BB_loophead(bb)) {
+      LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
+      lao_makeLoopInfo(loop, pipeline);
+    }
   }
   //
   result = LAO_Optimize(lao_optimizations);
@@ -1253,8 +1274,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&lao_loop_pool);
   //
   // Software pipeline the innermost loops.
-  if (lao_optimizations & Optimization_Prepass &&
-      CG_LAO_schedule > 1 && CG_LAO_pipeline > 1) {
+  if (lao_optimizations & Optimization_Prepass && CG_LAO_pipeline > 1) {
     while (loop != NULL && BB_innermost(LOOP_DESCR_loophead(loop))) {
       result != lao_optimize_LOOP(loop, lao_optimizations);
       loop = LOOP_DESCR_next(loop);
@@ -1286,7 +1306,8 @@ lao_optimize_PU(unsigned lao_optimizations) {
     }
   }
   //
-  //result |= lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
+  // Call the lower level lao_optimize function with pipeline at 0 or 1.
+  result |= lao_optimize(entryBBs, bodyBBs, exitBBs, CG_LAO_pipeline > 0, lao_optimizations);
   //
   Free_Dominators_Memory();
   MEM_POOL_Pop(&lao_loop_pool);
