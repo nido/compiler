@@ -3110,7 +3110,8 @@ Spill_Live_Range (
       if (same_res == FALSE) {
 	resnum = 0;
       }
-      else if (TN_Pair_In_OP(op, spill_tn, prev_tn)) {
+
+      if (same_res && TN_Pair_In_OP(op, spill_tn, prev_tn)) {
 #else
       if (OP_same_res(op) && TN_Pair_In_OP(op, spill_tn, prev_tn)) {
 #endif
