@@ -5121,7 +5121,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     SINGLE_BB_DOLOOP_UNROLL,
     SINGLE_BB_WHILELOOP_SWP,
     SINGLE_BB_WHILELOOP_UNROLL,
-    MULTI_BB_DOLOOP
+    MULTI_BB_DOLOOP,
+    MULTI_BB_WHILELOOP
   };
 
   //    if (Is_Inner_Loop(loop)) {
@@ -5177,9 +5178,15 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
   } else if (has_trip_count) {
     action = MULTI_BB_DOLOOP;
+#ifdef TARG_ST
+  } else {
+    action = MULTI_BB_WHILELOOP;
+  }
+#else
   } else {
     action = NO_LOOP_OPT;
   }
+#endif
 
   switch (action) {
 
@@ -5223,10 +5230,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
 
+#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Postincr generation / After RW removal ***");
 
-#ifndef TARG_ST
       //  Form postincr form
       if (!Prepare_Loop_For_SWP_2(cg_loop, trace_loop_opt))
 	return FALSE;
@@ -5243,11 +5250,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** before ebo 1 and unrolling / after fix recurrences ***");
-#endif
 
       cg_loop.Recompute_Liveness();
-
-#ifndef TARG_ST
       cg_loop.EBO_Before_Unrolling();  
 
       if (SWP_Options.Predicate_Promotion) {
@@ -5291,10 +5295,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 				  trace_loop_opt);
       cg_loop.Recompute_Liveness();
       Fix_Backpatches(cg_loop, trace_loop_opt);
-	
+#endif
+
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
-#endif
 
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
@@ -5364,8 +5368,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
       }
 
-#ifndef TARG_ST
       cg_loop.Recompute_Liveness();
+
+#ifndef TARG_ST
       cg_loop.EBO_After_Unrolling();
 #endif
 
@@ -5388,10 +5393,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       // Prolog and Epilog are needed for SWP loop.
       if (!cg_loop.Has_prolog_epilog()) return FALSE;
 
-#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
 
+#ifndef TARG_ST
       if (Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt)) {
 
 	Gen_SWP_Branch(cg_loop, false/*is_doloop*/);
@@ -5431,6 +5436,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	}
       }
 #endif
+
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
@@ -5448,10 +5454,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     {
       CG_LOOP cg_loop(loop);
 
-#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
 
+#ifndef TARG_ST
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
 
@@ -5459,6 +5465,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
 #endif
+
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
@@ -5479,13 +5486,14 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       // prolog needed to load loop counter
       if (!cg_loop.Has_prolog_epilog()) return FALSE;
 
-#ifndef TARG_ST
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_DOLOOP ***");
       }
 
+#ifndef TARG_ST
       Gen_Counted_Loop_Branch(cg_loop);
 #endif
+
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
@@ -5502,13 +5510,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
     break;
 
-  case NO_LOOP_OPT:
-#if defined(TARG_ST)
+#ifdef TARG_ST
+  case MULTI_BB_WHILELOOP:
+    //
+    // Benoit wants to optimize these.
+    //
     if (CG_enable_LAO) {
       CG_LOOP cg_loop(loop);
-      // Prolog and Epilog are needed for cg_loop.Recompute_Liveness()
-      if (!cg_loop.Has_prolog_epilog()) return FALSE;
-
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
       if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule)) {
@@ -5516,7 +5524,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
       break;
     }
+    // FALLTHROUGH ...
 #endif
+
+  case NO_LOOP_OPT:
     return FALSE;
 
   default:
