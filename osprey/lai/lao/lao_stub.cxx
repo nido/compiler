@@ -22,8 +22,9 @@
 #include "erglob.h"
 #include "tracing.h"
 
-#include "lao_init.h"
+#include "cg_flags.h"
 
+#include "lao_init.h"
 extern "C" {
 #define this THIS
 #define operator OPERATOR
@@ -625,27 +626,20 @@ Open64_finalUpdateBB(CGIR_BB cgir_bb, CGIR_BB cgir_head) {
 /*--------------------------- lao_init / lao_fini ----------------------------*/
 
 // Optimize a LOOP_DESCR through the LAO.
-static bool lao_optimize_LOOP(CG_LOOP *cg_loop, Configuration lao_configuration);
+static bool lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_optimizations);
 
 // Optimize a HB through the LAO.
-static bool lao_optimize_HB(HB *hb, Configuration lao_configuration);
+static bool lao_optimize_HB(HB *hb, unsigned lao_optimizations);
 
 // Optimize a Function through the LAO.
-static bool lao_optimize_FUNC(Configuration lao_configuration);
+static bool lao_optimize_FUNC(unsigned lao_optimizations);
 
 static void CGIR_print(void);
 
-CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(CG_LOOP *cg_loop, Configuration lao_configuration);
-CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, Configuration lao_configuration);
-CG_EXPORTED extern bool (*lao_optimize_FUNC_p)(Configuration lao_configuration);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(CG_LOOP *cg_loop, unsigned lao_optimizations);
+CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
+CG_EXPORTED extern bool (*lao_optimize_FUNC_p)(unsigned lao_optimizations);
 CG_EXPORTED extern void (*CGIR_print_p)(void);
-
-#ifdef __cplusplus
-extern "C" {
-void lao_init(void);
-void lao_fini(void);
-}
-#endif
 
 // Initialization of the LAO, needs to be called once.
 void
@@ -942,6 +936,10 @@ lao_init() {
       if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__COUNT);
       else RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
     }
+    // initialize the LAO_Configuration
+    *Configuration__SCHEDULE(LAO_Configuration) = CG_LAO_schedule;
+    *Configuration__PIPELINE(LAO_Configuration) = CG_LAO_pipeline;
+    *Configuration__SPECULATE(LAO_Configuration) = CG_LAO_speculate;
   }
 }
 
@@ -1012,8 +1010,8 @@ lao_makeLoopInfo(BB_List& bb_list, bool cyclic) {
 
 // Low-level LAO_optimize entry point.
 static bool
-lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, Configuration lao_configuration) {
-  bool cyclic = Configuration_PIPELINE(lao_configuration) > 0;
+lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao_optimizations) {
+  bool cyclic = Configuration_PIPELINE(LAO_Configuration) > 0;
   bool result = false;
   BB_List nonexitBBs;
   BB_List::iterator bb_iter;
@@ -1095,7 +1093,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, Configuratio
   // Make the LoopInfos for the bodyBBs.
   lao_makeLoopInfo(bodyBBs, cyclic);
   //
-  result = LAO_Optimize(lao_configuration);
+  result = LAO_Optimize(lao_optimizations);
   if (result) {
     Interface_updateCGIR(interface, Open64_finalUpdate);
     if (getenv("PRINT")) CGIR_print();
@@ -1109,7 +1107,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, Configuratio
 
 // Optimize a LOOP_DESCR inner loop through the LAO.
 static bool
-lao_optimize_LOOP(CG_LOOP *cg_loop, Configuration lao_configuration) {
+lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_optimizations) {
   BB_List entryBBs, bodyBBs, exitBBs;
   bool result = false;
   //
@@ -1143,7 +1141,7 @@ lao_optimize_LOOP(CG_LOOP *cg_loop, Configuration lao_configuration) {
     }
     //
     // Call the main lao_optimize entry point.
-    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_configuration);
+    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
   }
   //
   return result;
@@ -1151,7 +1149,7 @@ lao_optimize_LOOP(CG_LOOP *cg_loop, Configuration lao_configuration) {
 
 // Optimize a HB through the LAO.
 static bool
-lao_optimize_HB(HB *hb, Configuration lao_configuration) {
+lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
   BB_List entryBBs, bodyBBs, exitBBs;
   bool result = false;
   //
@@ -1176,7 +1174,7 @@ lao_optimize_HB(HB *hb, Configuration lao_configuration) {
   //
   if (getenv("HB")) {
     fprintf(TFile, "HB_optimize\n");
-    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_configuration);
+    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
   }
   //
   return result;
@@ -1184,7 +1182,7 @@ lao_optimize_HB(HB *hb, Configuration lao_configuration) {
 
 // Optimize a function through the LAO.
 static bool
-lao_optimize_FUNC(Configuration lao_configuration) {
+lao_optimize_FUNC(unsigned lao_optimizations) {
 fprintf(TFile, "Function_optimize\n");
   BB_List entryBBs, bodyBBs, exitBBs;
   BBLIST *bl;
@@ -1211,7 +1209,7 @@ fprintf(TFile, "Function_optimize\n");
       bodyBBs.push_back(bp);
   }
   //
-  result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_configuration);
+  result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
   //
   return result;
 }
