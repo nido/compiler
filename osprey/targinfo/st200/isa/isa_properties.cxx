@@ -582,6 +582,10 @@ main()
   /* ====================================== */ 
   store = ISA_Property_Create ("store"); 
   Instruction_Group (store, 
+		 TOP_pswset_i, 
+		 TOP_pswset_ii, 
+		 TOP_pswclr_i, 
+		 TOP_pswclr_ii, 
 		 TOP_stb_i, 
 		 TOP_stb_ii, 
 		 TOP_sth_i, 
@@ -792,6 +796,10 @@ main()
 		 TOP_ldbu_ii, 
 		 TOP_ldbu_d_i, 
 		 TOP_ldbu_d_ii, 
+		 TOP_pswset_i, 
+		 TOP_pswset_ii, 
+		 TOP_pswclr_i, 
+		 TOP_pswclr_ii, 
 		 TOP_stb_i, 
 		 TOP_stb_ii, 
 		 TOP_UNDEFINED); 
@@ -836,6 +844,10 @@ main()
 		 TOP_ldbu_ii, 
 		 TOP_ldbu_d_i, 
 		 TOP_ldbu_d_ii, 
+		 TOP_pswset_i, 
+		 TOP_pswset_ii, 
+		 TOP_pswclr_i, 
+		 TOP_pswclr_ii, 
 		 TOP_stb_i, 
 		 TOP_stb_ii, 
 		 TOP_UNDEFINED); 
