@@ -101,6 +101,11 @@ CGTARG_Preg_Register_And_Class (
     regnum = preg - Int_Preg_Min_Offset;
     rclass = ISA_REGISTER_CLASS_integer;
   }
+  else if (preg >= Branch_Preg_Min_Offset && 
+		            preg <= Branch_Preg_Max_Offset) {
+    regnum = preg - Branch_Preg_Min_Offset;
+    rclass = ISA_REGISTER_CLASS_branch;
+  }
   else if (preg == 0) {
     FmtAssert(FALSE, ("preg = 0"));
     /* 0 not considered part of normal int group for error purposes,
@@ -716,7 +721,24 @@ CGTARG_Dependence_Required (
   // I just hope that associating all of these to opnd 0 using MISC
   // arcs will work.
 
-  // TODO: would be nice to condition it with include_assigned_registers
+  if (OP_code(pred_op) == TOP_asm) {
+    *latency = 1;
+    return TRUE;
+  }
+
+  if (OP_code(succ_op) == TOP_asm) {
+    INT max_latency = 1;
+
+    if (OP_opnds(pred_op) > 0) {
+      for (INT i = 0; i < OP_results(pred_op); i++) {
+	INT cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) - TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
+	if (cur_latency > max_latency+1) max_latency = cur_latency;
+      }
+    }
+
+    *latency = max_latency;
+    return TRUE;
+  }
 
   if (!OP_call(succ_op)) return FALSE;
 
@@ -735,12 +757,17 @@ CGTARG_Dependence_Required (
 	 REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg)) {
 	
 	need_dependence = TRUE;
-	// just time to compute (all operands access same):
-	FmtAssert(OP_opnds(pred_op) > 0,("Arthur doesn't understand"));
-	cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) -
+	if (OP_code(pred_op) == TOP_asm) {
+	  max_latency = 1;
+	}
+	else {
+	  // just time to compute (all operands access same):
+	  FmtAssert(OP_opnds(pred_op) > 0,("Arthur doesn't understand"));
+	  cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) -
 	  TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
-	if (cur_latency > max_latency)
-	  max_latency = cur_latency;
+	  if (cur_latency > max_latency)
+	    max_latency = cur_latency;
+	}
       }
     }
   }
@@ -752,110 +779,6 @@ CGTARG_Dependence_Required (
     *latency = max_latency - 1 - CGTARG_Branch_Taken_Penalty();
 
   return need_dependence;
-
-#if 0
-  BOOL read_write_predicate,	   // all TOPs which read/write predicate regs
-       write_predicate,		   // all TOPs which write predicate regs
-       read_write_status_field;    // all TOPs which read/write a specific
-                                   // status field regs
-
-  read_write_predicate = FALSE;
-  write_predicate = FALSE;
-  read_write_status_field = FALSE;
-
-  OP *hazard_op = NULL;
-
-  // The dependences that need to be preserved are:
-
-
-  if (hazard_op) {
-    OP *other_op = (hazard_op == pred_op) ? succ_op : pred_op;
-
-    // Special case other instruction being an fsetc instruction as 
-    // it has an implicit read of .s0 
-
-    TN *status_field; // the status field reg written by hazard_op
-    if (read_write_status_field) {
-      status_field = OP_opnd(hazard_op, 1);
-      //      if (OP_code(other_op) == TOP_fsetc &&
-      //	  TN_enum(status_field) == ECV_sf_s0) return TRUE;
-    }
-
-    INT k;
-    for (k = 0; k < OP_opnds(other_op); k++) {
-      TN *opnd_tn = OP_opnd(other_op, k);
-
-      if (TN_is_constant(opnd_tn)) {
-	if (read_write_status_field &&
-	    TN_is_enum(opnd_tn) &&
-	    TN_enum(opnd_tn) == TN_enum(status_field)) return TRUE;
-	continue;
-      }
-
-      if (TN_is_const_reg(opnd_tn)) continue;
-
-      REGISTER reg = TN_register(opnd_tn);
-      ISA_REGISTER_CLASS reg_class = TN_register_class(opnd_tn);
-
-      //      if (read_write_predicate &&
-      //	  reg_class == ISA_REGISTER_CLASS_branch) return TRUE;
-
-      if (reg == REGISTER_UNDEFINED) continue;
-    }
-
-    for (k = 0; k < OP_results(other_op); k++) {
-      TN *result_tn = OP_result(other_op, k);
-
-      if (TN_is_const_reg(result_tn)) continue;
-
-      REGISTER reg = TN_register(result_tn);
-      ISA_REGISTER_CLASS reg_class = TN_register_class(result_tn);
-
-      // can have conflict with op that writes to predicate,
-      // even though haven't assigned registers yet.
-      //      if (write_predicate &&
-      //	   reg_class == ISA_REGISTER_CLASS_guard) return TRUE;
-
-      if (reg == REGISTER_UNDEFINED) continue;
-    }
-  }
-
-  // The following descriptions below present target-specific ordering
-  // constraints that must be respected. They can't fit in the same
-  // instruction group.
-  //
-  // alloc
-  //
-  // WITH ANY OF THE BELOW
-  //
-  // flushrs, 
-  // move from ar.bpstore, 
-  // move from ar.rnat, 
-  // br.cexit, 
-  // br.ctop,
-  // br.wexit, 
-  // br.wtop, 
-  // br.call, 
-  // br.ia, 
-  // br.ret,
-  // clrrrb.
-
-  if (OP_code(pred_op)  == TOP_alloc &&
-      (OP_code(succ_op) == TOP_flushrs ||
-       OP_code(succ_op) == TOP_br_cexit,
-       OP_code(succ_op) == TOP_br_ctop ||
-       OP_code(succ_op) == TOP_br_wexit ||
-       OP_code(succ_op) == TOP_br_wtop ||
-       OP_code(succ_op) == TOP_br_call ||
-       OP_code(succ_op) == TOP_br_ia ||
-       OP_code(succ_op) == TOP_br_ret ||
-       OP_code(succ_op) == TOP_clrrrb ||
-       OP_code(succ_op) == TOP_clrrrb_pr)) return TRUE;
-
-  return FALSE;
-
-#endif
-
 }
 
 /* ====================================================================
@@ -974,16 +897,17 @@ CGTARG_TN_For_Asm_Operand (
   }
     
   else if (strchr("gmr", *constraint)) {
-    TYPE_ID rtype = (load != NULL ? WN_rtype(load) : MTYPE_I8);
+    TYPE_ID rtype = (load != NULL ? WN_rtype(load) : MTYPE_I4);
     FmtAssert(MTYPE_is_integral(rtype),
               ("ASM operand does not satisfy its constraint"));
     ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
   }
   
-  else if (*constraint == 'f') {
-    TYPE_ID rtype = (load != NULL ? WN_rtype(load) : MTYPE_F8);
-    FmtAssert(MTYPE_is_float(rtype),
-              ("ASM operand does not satisfy its constraint"));
+  else if (strchr("b", *constraint)) {
+    TYPE_ID rtype = MTYPE_B;
+    //    if (load != NULL && WN_rtype(load) != MTYPE_B) {
+    //      DevWarn("ASM operand does not satisfy MTYPE_B constraint");
+    //    }
     ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
   }
 

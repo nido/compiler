@@ -94,96 +94,6 @@ static BOOL Disable_Const_Mult_Opt = FALSE;
  * but for now we can use other routine that create a real dup tn. */
 #define DUP_TN(tn)	Dup_TN_Even_If_Dedicated(tn)
 
-#if 0
-/* ====================================================================
- *   WN_intrinsic_return_ty
- *
- *   Similar to the one in be/whirl2c/wn_attr.cxx
- *   TODO: move to the intrn_info.cxx or something.
- * ====================================================================
- */
-static TY_IDX
-WN_intrinsic_return_ty (
-  INTRINSIC intr_opc
-)
-{
-   TY_IDX ret_ty;
-
-   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
-     ("Exp_Intrinsic_Op: Intrinsic Opcode (%d) out of range", intr_opc));
-
-   switch (INTRN_return_kind(intr_opc))
-   {
-   case IRETURN_UNKNOWN:
-     FmtAssert(FALSE,("Exp_Intrinsic_Op: cannot have UNKNOWN IRETURN type"));
-     break;
-   case IRETURN_V:
-      ret_ty = MTYPE_To_TY(MTYPE_V);
-      break;
-   case IRETURN_I1:
-      ret_ty = MTYPE_To_TY(MTYPE_I1);
-      break;
-   case IRETURN_I2:
-      ret_ty = MTYPE_To_TY(MTYPE_I2);
-      break;
-   case IRETURN_I4:
-      ret_ty = MTYPE_To_TY(MTYPE_I4);
-      break;
-   case IRETURN_I8:
-      ret_ty = MTYPE_To_TY(MTYPE_I8);
-      break;
-   case IRETURN_U1:
-      ret_ty = MTYPE_To_TY(MTYPE_U1);
-      break;
-   case IRETURN_U2:
-      ret_ty = MTYPE_To_TY(MTYPE_U2);
-      break;
-   case IRETURN_U4:
-      ret_ty = MTYPE_To_TY(MTYPE_U4);
-      break;
-   case IRETURN_U8:
-      ret_ty = MTYPE_To_TY(MTYPE_U8);
-      break;
-   case IRETURN_F4:
-      ret_ty = MTYPE_To_TY(MTYPE_F4);
-      break;
-   case IRETURN_F8:
-      ret_ty = MTYPE_To_TY(MTYPE_F8);
-      break;
-   case IRETURN_FQ:
-      ret_ty = MTYPE_To_TY(MTYPE_FQ);
-      break;
-   case IRETURN_C4:
-      ret_ty = MTYPE_To_TY(MTYPE_C4);
-      break;
-   case IRETURN_C8:
-      ret_ty = MTYPE_To_TY(MTYPE_C8);
-      break;
-   case IRETURN_CQ:
-      ret_ty = MTYPE_To_TY(MTYPE_CQ);
-      break;
-      /*
-   case IRETURN_PV:
-      ret_ty = Stab_Pointer_To(Stab_Mtype_To_Ty(MTYPE_V));
-      break;
-   case IRETURN_PU1:
-      ret_ty = Stab_Pointer_To(Stab_Mtype_To_Ty(MTYPE_U1));
-      break;
-   case IRETURN_DA1:
-      ret_ty = WN_Tree_Type(WN_kid0(call));
-      break;
-      */
-   default:
-      Is_True(FALSE,
-	      ("Unexpected INTRN_RETKIND in WN_intrinsic_return_ty()"));
-      ret_ty = MTYPE_To_TY(MTYPE_V);
-      break;
-   }
-
-   return ret_ty;
-} /* WN_intrinsic_return_ty */
-#endif
-
 /* ====================================================================
  *   Pick_Imm_Form_TOP (regform)
  * ====================================================================
@@ -324,13 +234,7 @@ Expand_Convert_Length (
           Build_OP (TOP_sxtb_r, dest, src, ops);
       }
       else {
-#if 0
-	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(24,4), ops);
-	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(24,4), ops);
-#else
 	Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(0xff,4), ops);
-#endif
       }
     }
     else if (new_length == 16) {
@@ -339,13 +243,7 @@ Expand_Convert_Length (
           Build_OP (TOP_sxth_r, dest, src, ops);
       }
       else {
-#if 0
-	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(16,4), ops);
-	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(16,4), ops);
-#else
 	Build_OP (TOP_zxth_r, dest, src, ops);
-#endif
       }
     }
     else if (new_length < 16) {
@@ -1522,19 +1420,6 @@ Expand_Binary_And_Or (
 	                       ("wrong register class of the dest register"));
 
   Build_OP (action, dest, src1, src2, ops);
-
-#if 0
-  // mtype indicates what type of intermediate result is used:
-  if (Register_Class_For_Mtype(mtype) != TN_register_class(dest)) {
-    TN *tmp = Build_RCLASS_TN (Register_Class_For_Mtype(mtype));
-    Build_OP (action, tmp, src1, src2, ops);
-    Exp_COPY (dest, tmp, ops);
-  }
-  else {
-    Build_OP (action, dest, src1, src2, ops);
-  }
-#endif
-
   return;
 }
 
@@ -1665,20 +1550,6 @@ Expand_Binary_Nor (
 )
 {
   FmtAssert(FALSE,("Not Implemented"));
-
-#if 0
-  // nor is or s1,s2; xor -1
-  //
-  // NOTE: if one of the operands is constant, the expansion
-  // could be 'andcm ~imm,s2' which is one inst if the complemented
-  // constant fits in the immed. But testing has not found a
-  // case where this would occur, so leave it out. -- Ken
-  TN *tmp = Build_TN_Like(dest);
-  Expand_Binary_And_Or (TOP_GP32_OR_GT_DR_DR_DR, tmp,
-                                          src1, src2, mtype, ops);
-  Expand_Binary_And_Or (TOP_GP32_XOR_GT_DR_DR_DR, dest,
-			  tmp, Gen_Literal_TN(-1, 4), mtype, ops);
-#endif
 }
 
 /* ====================================================================
@@ -2175,37 +2046,6 @@ Optimize_Select (
   TOP  cmp;
   BOOL reversed;
 
-#if 0
-  // The comparison opnds must be the same as the src opnds.
-  if (cond1 == src1 && cond2 == src2) {
-    reversed = FALSE;
-  } else if (cond1 == src2 && cond2 == src1) {
-    reversed = TRUE;
-  } else {
-    return FALSE;
-  }
-
-  // Now optimize according to the type of comparison.
-  switch (cmp) {
-    case TOP_GP32_EQW_GT_BR_DR_DR:
-    case TOP_GP32_EQW_GT_BR_DR_U8:
-
-    case TOP_GP32_NEW_GT_BR_DR_DR:
-    case TOP_GP32_NEW_GT_BR_DR_U8:
-
-    case TOP_GP32_GTW_GT_BR_DR_DR:
-    case TOP_GP32_GTW_GT_BR_DR_U8:
-
-    case TOP_GP32_LTW_GT_BR_DR_DR:
-    case TOP_GP32_LTW_GT_BR_DR_U8:
-    default:
-      return FALSE;
-  }
-
-  FmtAssert(FALSE,("Optimize_Select: Unhandled compare %s",
-		                                TOP_Name(cmp)));
-
-#endif
   return FALSE;
 }
 
@@ -2398,22 +2238,6 @@ Exp_Select_And_Condition (
       //      ("unexpected compare op for V_BR_PEQ/V_BR_PNE"));
 
       FmtAssert(FALSE,("Not Implemented"));
-
-#if 0
-      // tmp = (cmp_kid1 == cmp_kid2)
-      TN *tmp = Build_TN_Of_Mtype (MTYPE_I8);
-      Build_OP (TOP_GP32_MAKE_GT_DR_S16, tmp, True_TN,
-                                        Gen_Literal_TN(1, 8), &newops);
-      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid1,
-                                   Gen_Literal_TN(1, 8), tmp, &newops);
-      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid2,
-                                   Gen_Literal_TN(1, 8), tmp, &newops);
-
-      //      cmp = (variant == V_BR_PEQ) ? TOP_GP32_NEW_GT_BR_DR_DR :
-                                              TOP_GP32_EQW_GT_BR_DR_DR;
-      cmp_kid1 = tmp;
-      cmp_kid2 = Zero_TN;
-#endif
     }
     break;
   case V_BR_NONE:
@@ -2585,23 +2409,6 @@ Expand_Float_Compares(
 )
 {
   FmtAssert(FALSE,("Not Implemented"));
-#if 0
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    // return result of comparison in a predicate register
-    TN *p1 = dest;
-    TN *p2 = Get_Complement_TN(dest);
-    Build_OP (cmp_opcode, p1, p2, True_TN, src1, src2, ops);
-  } else {
-    TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
-    TN *p2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
-    Build_OP (cmp_opcode, p1, p2, True_TN, src1, src2, ops);
-    // can either do unconditional copy of 0,
-    // or predicated copy of 0 followed by predicated copy of 1.
-    // Expand_Copy (dest, Zero_TN, MTYPE_I8, ops);
-    Build_OP (TOP_GP32_MOVE_GT_DR_DR, dest, p2, Zero_TN, ops);
-    Build_OP (TOP_GP32_MAKE_GT_DR_S16, dest, p1, Gen_Literal_TN(1, 4), ops);
-  }
-#endif
 }
 
 /* ====================================================================
@@ -3041,12 +2848,6 @@ Expand_Const (
   FmtAssert(TN_is_symbol(src), ("Expand_Const: src not a symbol TN"));
 
   TCON tc = ST_tcon_val(TN_var(src));
-#if 0
-  union {
-    INT32 i;
-    float f;
-  } val;
-#endif
   //
   // This is called normally for floating-point and company
   // Since we keep them in integer registers, just make a mov
@@ -3055,18 +2856,7 @@ Expand_Const (
   switch (TCON_ty(tc)) {
 
   case MTYPE_F4:
-    //
-    // For now I do the bit-pattern directly, eventually we should
-    // try to make a mov from a symbol TN into an integer TN and
-    // handle it in emit const in asm phase.
-    //
     Build_OP(TOP_mov_i, dest, src, ops);
-#if 0
-    val.f = tc.vals.fval;
-    Build_OP(TOP_mov_i, dest, Gen_Literal_TN(val.i, 4), ops);
-
-    fprintf(TFile, "generated fp const !!!\n");
-#endif
     break;
 
   default:
@@ -3075,21 +2865,6 @@ Expand_Const (
     dump_tn (src);
     FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
   }
-
-#if 0
-  FmtAssert(FALSE,("Not Implemented"));
-
-
-  if (Targ_Is_Zero(tc)) {
-    // copy 0
-    Build_OP (TOP_noop, dest, True_TN, FZero_TN, ops);
-    return;
-  }
-
-  // load from memory
-  Exp_Load (mtype, mtype, dest, TN_var(src), 0, ops, V_NONE);
-#endif
-
   return;
 }
 

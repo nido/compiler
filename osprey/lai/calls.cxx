@@ -503,17 +503,6 @@ Generate_Entry (BB *bb, BOOL gra_run)
 	Callee_Saved_Regs_Mask[cl] = 
 	  REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], TN_register(RA_TN));
       }
-#if 0
-      //
-      // Spills are handled by the GRA. RA_TN may be allocatable.
-      //
-      //      Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-      //      Set_OP_no_move_before_gra(OPS_last(&ops));
-      else if (PU_Has_Calls && gra_run) {
-	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-	Set_OP_no_move_before_gra(OPS_last(&ops));
-      }
-#endif
       else {
 	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
@@ -1222,17 +1211,6 @@ Generate_Exit (
       if (CG_gen_callee_saved_regs_mask && 
 	  (PU_Has_Calls || CG_localize_tns)) {
       }
-#if 0
-      //
-      // Spills are handled by the GRA. RA_TN may be allocatable.
-      //
-      if (gra_run && PU_Has_Calls) {
-	if (!CG_gen_callee_saved_regs_mask) {
-	  Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
-	  Set_OP_no_move_before_gra(OPS_last(&ops));
-	}
-      }
-#endif
       else {
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
@@ -2011,12 +1989,6 @@ Adjust_Exit (
       incr = Frame_Len_TN;
     }
 
-#if 0
-  } else if (CGTARG_Can_Fit_Immediate_In_Add_Instruction (frame_len)) {
-    OPS ops = OPS_EMPTY;
-    OP *op;
-#endif
-
     /* Replace the SP adjust placeholder with the new adjustment OP
      */
     Exp_ADD (Pointer_Mtype, SP_TN, SP_TN, incr, &ops);
@@ -2038,34 +2010,6 @@ Adjust_Exit (
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
   } 
-#if 0
-else {
-    // Arthur: If immediate offset exeeds what an instruction can
-    //         handle => we must have exceeded the SMALL_MODEL
-    //         stack size, which should have been set to the size
-    //         addressable with a single immediate instruction.
-
-    // It's a pain -- I might need to emit a series of sp = sp - const
-    // to get where I want to be ...
-    OPS ops = OPS_EMPTY;
-    OP *op;
-
-    /* Replace the SP adjust placeholder with the new adjustment OP
-     */
-    Exp_ADD (Pointer_Mtype, SP_TN, SP_TN, incr, &ops);
-    BB_Insert_Ops_Before(bb, sp_adj, &ops);
-    BB_Remove_Op(bb, sp_adj);
-    FOR_ALL_OPS_OPs_FWD(&ops, op) OP_srcpos(op) = OP_srcpos(sp_adj);
-    sp_adj = OPS_last(&ops);
-
-    if (Trace_EE) {
-      fprintf(TFile, "\nNew stack frame de-allocation:\n");
-      FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
-    }
-    DevWarn("Stack de-allocation of %llu", frame_len);
-    //FmtAssert(FALSE, ("Can't handle stack de-allocation of %lld", frame_len));
-  }
-#endif
 
   /* Point to the [possibly] new SP adjust OP
    */

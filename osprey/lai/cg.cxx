@@ -451,11 +451,6 @@ CG_Generate_Code(
     Localize_or_Replace_Dedicated_TNs();
   }
 
-#if 0
-  fprintf(TFile, "%s CFG After Localize_or_Replace_Dedicated_TNs\n %s\n", DBar, DBar);
-  Print_All_BBs ();
-#endif
-
   // If using feedback, incorporate into the CFG as early as possible.
   // This phase also fills in any missing feedback using heuristics.
   if (CG_PU_Has_Feedback) {
@@ -517,10 +512,6 @@ CG_Generate_Code(
   if (CG_opt_level > 1) {
 #ifdef TARG_ST
     if (CG_enable_ssa) {
-      //
-      // Experimental SSA framework: invoked at optimization levels
-      // above 1, when CG_localize_tns is not ON.
-      //
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
       Check_for_Dump(TP_SSA, NULL);
@@ -617,19 +608,6 @@ CG_Generate_Code(
 
     // Now done just before IGLS because we want to include regions in
     // loops.
-#if 0
-#ifdef TARG_ST
-    // Perform superblock formation after select if-conversion. 
-    //
-    // TODO: do it in SSA when tail duplication works in SSA.
-    //       Depending on the CGTARG_Supports_Predication(), do
-    //       either Hyper- or Super- block formation.
-    //
-    HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
-    if (frequency_verify)
-      FREQ_Verify("Hyperblock Formation");
-#endif
-#endif
 
     // GRA_LIVE_Init only done if !CG_localize_tns
     if (CG_enable_loop_optimizations && !CG_localize_tns) {

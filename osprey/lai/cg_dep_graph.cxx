@@ -1183,6 +1183,12 @@ CG_DEP_Latency(OP *pred, OP *succ, CG_DEP_KIND kind, UINT8 opnd)
 {
   TOP popcode = OP_code(pred);
   TOP sopcode = OP_code(succ);
+#ifdef TARG_ST200
+  // Arthur: hack for handling asms
+  if (sopcode == TOP_asm) {
+    opnd = 0;
+  }
+#endif
   INT16 latency = CG_DEP_Oper_Latency(popcode, sopcode, kind, opnd);
 
   if (OP_load(pred) && kind == CG_DEP_REGIN) {

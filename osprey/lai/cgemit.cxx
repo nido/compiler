@@ -2010,6 +2010,11 @@ Process_Bss_Data (
     if (!STB_nobits(base))
       continue;	/* not a bss symbol */
 
+#ifdef TARG_ST200
+    if (ST_assigned_to_dedicated_preg(sym))
+      continue;
+#endif
+
 #ifdef TARG_ST
     // [CG]: Ensure section is initialized
     Init_Section(base); 

@@ -1181,6 +1181,21 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       }
     }
 
+#ifdef TARG_ST200
+    if (OP_code(xop) == TOP_asm) {
+      ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, xop);
+      ISA_REGISTER_CLASS rc;
+      FOR_ALL_ISA_REGISTER_CLASS(rc) {
+	REGISTER reg;
+	for (reg = REGISTER_SET_Choose(ASM_OP_clobber_set(asm_info)[rc]);
+	     reg != REGISTER_UNDEFINED;
+	     reg = REGISTER_SET_Choose_Next(ASM_OP_clobber_set(asm_info)[rc], reg)) {
+	  Wired_TN_Reference(gbb, rc, reg, wired_locals);
+	}
+      }
+    }
+#endif
+
     if ( CGTARG_Is_Preference_Copy(xop) )
       Complement_Copy(xop, gbb, pref_list);
     else if ( ! OP_glue(xop) ) {

@@ -1564,7 +1564,11 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 	REGISTER prefer_reg = LR_prefer_reg (clr);
 
         if (prefer_reg == REGISTER_UNDEFINED) {
-          if (TN_is_local_reg(result_tn) && (unused_tn_def[result_cl] != NULL) && !OP_side_effects(op)) {
+          if (TN_is_local_reg(result_tn) && (unused_tn_def[result_cl] != NULL) && !OP_side_effects(op)
+#ifdef TARG_ST200
+	      && (OP_code(op) != TOP_asm)
+#endif
+) {
             result_tn = unused_tn_def[result_cl];
             Set_OP_result(op,resnum,result_tn);
 
@@ -1932,6 +1936,7 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
       return FALSE;
     }
 
+    
     // Check if the instruction is a self copy.  don't care about this
     // if calculating fat points
     if (!Calculating_Fat_Points() &&
@@ -1948,6 +1953,28 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
       *redundant_code = TRUE;
     }
   }
+
+#ifdef TARG_ST200
+  if (BB_asm(bb)) {
+    ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_ASMINFO);
+    Is_True(ant, ("ASMINFO annotation info not present"));
+    ASMINFO *info = ANNOT_asminfo(ant);
+    ISA_REGISTER_CLASS rc;
+
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      REGISTER_SET clobbers = ASMINFO_kill(info)[rc];
+      for (REGISTER reg = REGISTER_SET_Choose(clobbers);
+		    reg != REGISTER_UNDEFINED;
+		    reg = REGISTER_SET_Choose_Next(clobbers, reg)) {
+
+        if (REGISTER_SET_MemberP(REGISTER_CLASS_callee_saves(rc),reg)) {
+          Callee_Saved_Regs_Used[rc] = 
+	    REGISTER_SET_Union1(Callee_Saved_Regs_Used[rc],reg);
+        }
+      }
+    }
+  }
+#endif
 
   if (Calculating_Fat_Points()) {
     failing_class = ISA_REGISTER_CLASS_UNDEFINED;

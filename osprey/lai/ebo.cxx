@@ -4822,6 +4822,27 @@ Find_BB_TNs (BB *bb)
       }
     }
 
+#ifdef TARG_ST200
+    if (OP_code(op) == TOP_asm) {
+      ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, op);
+      ISA_REGISTER_CLASS rc;
+      FOR_ALL_ISA_REGISTER_CLASS(rc) {
+	REGISTER_SET regset = ASM_OP_clobber_set(asm_info)[rc];
+	for (REGISTER reg = REGISTER_SET_Choose(regset);
+	     reg != REGISTER_UNDEFINED;
+	     reg = REGISTER_SET_Choose_Next(regset, reg)) {
+	  TN* ctn = Build_Dedicated_TN (rc, reg,0);
+	  set_tn_info(ctn, NULL);
+
+	  if (EBO_Trace_Data_Flow) {
+	    fprintf(TFile,"%sASM clobbers tninfo for\n\t",EBO_trace_pfx); Print_TN(ctn,FALSE);fprintf(TFile,"\n");
+	  }
+
+	}
+      }
+    }
+#endif /* TARG_ST200 */
+
     if ((num_opnds == 0) && (OP_results(op) == 0)) continue;
 
     if (EBO_Trace_Data_Flow) {
@@ -4965,6 +4986,9 @@ Find_BB_TNs (BB *bb)
              !TN_is_gra_homeable(tn_replace) ||
              (tninfo_replace->in_bb == bb)) &&
             (TN_register_class(actual_tn) == TN_register_class(tn_replace)) &&
+#ifdef TARG_ST200
+	    (!(has_assigned_reg(actual_tn) && OP_code(op) == TOP_asm)) &&
+#endif
             (!has_assigned_reg(actual_tn) ||
              (ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)) == ISA_REGISTER_SUBCLASS_UNDEFINED) ||
 	     (has_assigned_reg(tn_replace) &&

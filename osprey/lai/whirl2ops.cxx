@@ -4402,9 +4402,11 @@ Find_Asm_Out_Parameter_Load (const WN* stmt, PREG_NUM preg_num, ST** ded_st)
       *ded_st = WN_st(stmt);
     }
   }
+#ifndef TARG_ST200
   else {
     DevWarn("didn't find out store for asm preg %d", preg_num);
   }
+#endif
   return ret_load;
 }
 
@@ -4481,6 +4483,10 @@ Handle_ASM (const WN* asm_wn)
     }
   }
   
+#ifdef TARG_ST200
+  OPS reload_ops = OPS_EMPTY;
+#endif
+
   // process ASM output parameters:
   // the out stores must directly follow the ASM,
   // while the constraints are in kid1
@@ -4532,6 +4538,17 @@ Handle_ASM (const WN* asm_wn)
     // negative preg with new_preg mapped to ASM operand TN
     // it is possible that wopt optimized away the output store
     if (load) {
+
+#ifdef TARG_ST200
+      if (TN_register_class(tn) != Register_Class_For_Mtype(WN_rtype(load))) {
+	FmtAssert(TN_register_class(tn) == ISA_REGISTER_CLASS_branch, 
+		  ("confused"));
+	TN* tmp = Build_RCLASS_TN (Register_Class_For_Mtype(WN_rtype(load)));
+	Exp_COPY(tmp, tn, &reload_ops);
+	tn = tmp;
+      }
+#endif
+
       PREG_NUM new_preg = TN_To_PREG(tn);
       if (new_preg == 0) {
         char preg_name[16];
@@ -4587,6 +4604,16 @@ Handle_ASM (const WN* asm_wn)
     // we should create a TN even if it's an immediate
     // constraints on immediates are target-specific
     if (TN_is_register(tn)) {
+#ifdef TARG_ST200
+      if (TN_register_class(tn) != Register_Class_For_Mtype(WN_rtype(load))) {
+	FmtAssert(TN_register_class(tn) == ISA_REGISTER_CLASS_branch, 
+		  ("confused"));
+	TN* tmp = Build_RCLASS_TN (Register_Class_For_Mtype(WN_rtype(load)));
+	Expand_Expr (load, NULL, tmp);
+	Exp_COPY(tn, tmp, &New_OPs);
+      }
+      else
+#endif
       Expand_Expr (load, NULL, tn);
     }
   }
@@ -4598,6 +4625,19 @@ Handle_ASM (const WN* asm_wn)
   }
   OPS_Append_Op(&New_OPs, asm_op);
   OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
+#ifdef TARG_ST200
+  // TODO: Determine what ASM_livein/out are ?
+  ASMINFO* info = TYPE_PU_ALLOC (ASMINFO);
+  ISA_REGISTER_CLASS rc;
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    ASMINFO_livein(info)[rc] = REGISTER_SET_EMPTY_SET;
+    ASMINFO_liveout(info)[rc] = REGISTER_SET_EMPTY_SET;
+    ASMINFO_kill(info)[rc] = ASM_OP_clobber_set(asm_info)[rc];
+  }
+  BB_Add_Annotation(Cur_BB, ANNOT_ASMINFO, info);
+  Start_New_Basic_Block ();
+  OPS_Append_Ops(&New_OPs, &reload_ops);
+#endif
 }
 
 
