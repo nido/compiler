@@ -300,9 +300,9 @@ void RES_WORD::Output_All(FILE* fd)
   else {
     // Important special case.  We don't need a vector of resource words at all
     // and can just use a scalar.
-    fprintf(fd,"const SI_RRW SI_RRW_initializer = 0x%llx;\n",
+    fprintf(fd,"TARGINFO_EXPORTED const SI_RRW SI_RRW_initializer = 0x%llx;\n",
                res_words.front()->initializer);
-    fprintf(fd,"const SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
+    fprintf(fd,"TARGINFO_EXPORTED const SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
                res_words.front()->overuse_mask);
   }
 }
@@ -396,8 +396,8 @@ void RES::Output_All( FILE* fd )
   for ( i = 0; i < total; ++i )
     resources[i]->Output(fd);
 
-  fprintf(fd,"const int SI_resource_count = %d;\n",total);
-  fprintf(fd,"SI_RESOURCE * const SI_resources[] = {");
+  fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
+  fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * const SI_resources[] = {");
 
   bool is_first = true;
   for ( i = 0; i < total; ++i ) {
@@ -771,7 +771,7 @@ void ISLOT::Output_All(FILE* fd)
 {
   list<ISLOT*>::iterator isi;
 
-  fprintf(fd,"const int SI_issue_slot_count = %d;\n",count);
+  fprintf(fd,"TARGINFO_EXPORTED const int SI_issue_slot_count = %d;\n",count);
 
   for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
     ISLOT* islot = *isi;
@@ -783,9 +783,9 @@ void ISLOT::Output_All(FILE* fd)
   }
 
   if ( count == 0 )
-    fprintf(fd,"SI_ISSUE_SLOT * const SI_issue_slots[1] = {0};\n");
+    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * const SI_issue_slots[1] = {0};\n");
   else {
-    fprintf(fd,"SI_ISSUE_SLOT * const SI_issue_slots[%d] = {",count);
+    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * const SI_issue_slots[%d] = {",count);
 
     bool is_first = true;
     for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
@@ -1232,7 +1232,7 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
     (*iig)->Output(fd);
   }
 
-  fprintf(fd,"SI * const SI_ID_si[] = {");
+  fprintf(fd,"TARGINFO_EXPORTED SI * const SI_ID_si[] = {");
 
   bool is_first = true;
   for (iig = instruction_groups.begin();
@@ -1245,7 +1245,7 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
 
   fprintf(fd,"\n};\n");
 
-  fprintf(fd,"const int SI_ID_count = %d;\n",count);
+  fprintf(fd,"TARGINFO_EXPORTED const int SI_ID_count = %d;\n",count);
 
   fprintf(fd,"\n"); // One extra new line to separate from what follows.
 
@@ -1314,7 +1314,7 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
 {
   int i;
 
-  fprintf(fd,"SI * const SI_top_si[%d] = {",TOP_count);
+  fprintf(fd,"TARGINFO_EXPORTED SI * const SI_top_si[%d] = {",TOP_count);
 
   bool err = false;
   bool is_first = true;
