@@ -1162,17 +1162,25 @@ Localize_or_Replace_Dedicated_TNs(void)
 
       for ( opndnum = 0; opndnum < OP_opnds( op ); opndnum++ ) {
 	tn = OP_opnd( op, opndnum );
+
 	if ( TN_is_constant(tn) || TN_is_zero_reg(tn))
 	  continue;
+
 	if ( ! TN_is_dedicated(tn) )
 	  continue;
+
 	// Use of non-allocatable registers ($sp, $gp) is OK
 	if ( ! REGISTER_allocatable(TN_register_class(tn), TN_register(tn)) )
 	  continue;
+
 	// use of $25 in a call OP is OK. We will localize the def if needed
-	if ( TN_is_ep_reg(tn) && OP_call(op) ) 
+	if (TN_is_ep_reg(tn) && OP_call(op)) 
 	  continue;
 #ifdef TARG_ST
+	// use of RA_TN in a call is OK. Localize the def ?
+	if (tn == RA_TN && OP_call(op))
+	  continue;
+
 	// Arthur: this is more generic now
 	if (OP_same_res(op,0) == opndnum)
 #else
@@ -1183,6 +1191,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 
 	if ( non_region_def_bb == bb ) // the def is already local
 	  continue;
+
 	else if ( non_region_def_bb ) {
 	  // replace this use by a use of new_tn and add a copy new_tn <- tn
 	  // in non_region_def_bb
