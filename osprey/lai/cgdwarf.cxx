@@ -2335,11 +2335,19 @@ static void check_reloc_fmt_and_size(Elf64_Word     reloc_scn_type,
 #ifdef __GNUC__
 struct UINT32_unaligned {
   UINT32 val;
+#if 0 // [CL] aligned() is not meant to reduce alignment
 } __attribute__ ((aligned(1)));
+#else
+} __attribute__ ((packed));
+#endif
 
 struct UINT64_unaligned {
   UINT64 val;
+#if 0 // [CL] aligned() is not meant to reduce alignment
 } __attribute__ ((aligned(1)));
+#else
+} __attribute__ ((packed));
+#endif
 #else
 #pragma pack(1)
 struct UINT32_unaligned {
