@@ -48,8 +48,7 @@
  *                               WN mem information
  *
  * The following flags to drive the heuristics.
- * -CG:select_factor="16.0"       gain for replacing a branch by a select
- * -CG:select_disload_cost="4.0" cost to speculate a load
+ * -CG:select_factor="2.0"       extra gain for flattening a branch
  *
  * ====================================================================
  * ====================================================================
@@ -132,10 +131,9 @@ op_list load_i;
  * ====================================================================
  */
 BOOL CG_select_spec_loads = TRUE;
-BOOL CG_select_allow_dup = FALSE;
+BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
-const char* CG_select_factor = "16.0";
-const char* CG_select_disload_cost = "4.0";
+const char* CG_select_factor = "2.0";
 
 /* ================================================================
  *
@@ -702,96 +700,96 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
       bb2 = bblist;
   }
 
-  INT32 exp_len = BB_length(head);
+  INT exp_len = BB_length(head);
 
   float prob1 = BBLIST_prob(bb1);
   float prob2 = BBLIST_prob(bb2);
 
-  UINT cycles1 = 0;
-  UINT cycles2 = 0;
+  CG_SCHED_EST *sehead = CG_SCHED_EST_Create(head, &MEM_Select_pool,
+                                             SCHED_EST_FOR_IF_CONV |
+                                             SCHED_EST_USE_DEP_GRAPH);
+  CG_SCHED_EST *se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
+                                                SCHED_EST_FOR_IF_CONV |
+                                                SCHED_EST_USE_DEP_GRAPH);
+  CG_SCHED_EST *se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
+                                                SCHED_EST_FOR_IF_CONV |
+                                                SCHED_EST_USE_DEP_GRAPH);
 
   FOR_ALL_BB_SET_members(region1, bb) {
     exp_len += BB_length(bb);
 
-    CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
-                                           SCHED_EST_FOR_IF_CONV);
-
-    if (Trace_Select_Candidates)
-      CG_SCHED_EST_Print(Select_TFile, se);
-
-    cycles1 += CG_SCHED_EST_Cycles(se);
-    CG_SCHED_EST_Delete(se);
+    CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
+                                                SCHED_EST_FOR_IF_CONV |
+                                                SCHED_EST_USE_DEP_GRAPH);
+    CG_SCHED_EST_Append_Scheds(se1, tmp_est);
+    CG_SCHED_EST_Delete(tmp_est);
   }
 
   FOR_ALL_BB_SET_members(region2, bb) {
     exp_len += BB_length(bb);
 
-    CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
-                                           SCHED_EST_FOR_IF_CONV);
-
-    if (Trace_Select_Candidates)
-      CG_SCHED_EST_Print(Select_TFile, se);
-
-    cycles2 += CG_SCHED_EST_Cycles(se);
-    CG_SCHED_EST_Delete(se);
+    CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
+                                                SCHED_EST_FOR_IF_CONV |
+                                                SCHED_EST_USE_DEP_GRAPH);
+    CG_SCHED_EST_Append_Scheds(se2, tmp_est);
+    CG_SCHED_EST_Delete(tmp_est);
   }
 
-  // higher est_cost_branch means ifc more aggressive.
-  INT32 est_cost_branch = atoi(CG_select_factor);
-
   //If new block is bigger than CG_bblength_max, reject.
-  if ((exp_len - est_cost_branch) >= CG_split_BB_length) {
+  if (exp_len >= CG_split_BB_length) {
     if (Trace_Select_Candidates) {
       fprintf (Select_TFile, "expected new block too big. reject\n");
     }
     return FALSE;
   }
 
-  UINT32 mem1 = 0;
-  UINT32 mem2 = 0;
-
-  // check speculative memory loads costs.
-  op_list::iterator i_iter;
-  op_list::iterator i_end;
-  i_iter = load_i.begin();
-  i_end = load_i.end();
-  while(i_iter != i_end) {
-    if (BB_SET_MemberP(region1, OP_bb(*i_iter)))
-      mem1++;
-    else if (BB_SET_MemberP(region2, OP_bb(*i_iter)))
-      mem2++;
-    else
-      DevAssert(FALSE, ("invalid spec load."));
-
-    i_iter++;
-  }
-
-  // cost to speculate a load.
-  UINT32 disload_cost =  atoi(CG_select_disload_cost);
-  mem1 *= disload_cost;
-  mem2 *= disload_cost;
-
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "region1: cycles %d, mem %d, prob %f\n",
-             cycles1, mem1, prob1);    
-    fprintf (Select_TFile, "region2: cycles %d, mem %d, prob %f\n",
-             cycles2, mem2, prob2);
+    CG_SCHED_EST_Print(Select_TFile, sehead);
+    fprintf (Select_TFile, "\n");
+    CG_SCHED_EST_Print(Select_TFile, se1);
+    fprintf (Select_TFile, "\n");
+    CG_SCHED_EST_Print(Select_TFile, se2);
+    fprintf (Select_TFile, "\n");
   }
 
-  cycles1 += mem1;
-  cycles2 += mem2;
+  INT cyclesh = CG_SCHED_EST_Resource_Cycles(sehead);
+  INT cycles1 = CG_SCHED_EST_Resource_Cycles(se1);
+  INT cycles2 = CG_SCHED_EST_Resource_Cycles(se2);
 
   // pondarate cost of each region taken separatly.
-  float est_cost_bbs = (((float)(cycles1) * prob1) + ((float)(cycles2) * prob2));
+  float est_cost_bbs = (((float)(cycles1) * prob1) + ((float)(cycles2) * prob2) + (float)cyclesh);
 
-  // cost of if converted region. prob is one. Remove branch.
-  float est_cost_ifc = (float)cycles1 + cycles2 - est_cost_branch;
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "noifc region: head %d, bb1 %d, bb2 %d\n",
+             cyclesh, cycles1, cycles2);
+  }
+
+  // cost of if converted region. prob is one.
+  CG_SCHED_EST_Append_Scheds(sehead, se1);
+  CG_SCHED_EST_Append_Scheds(sehead, se2);
+
+  // Resulting block will not have branches. 
+  OP *op = BB_branch_op(head);
+  DevAssert(op, ("Invalid conditional block"));
+  CG_SCHED_EST_Ignore_Op(sehead, op);
+  FOR_ALL_BB_SET_members(region1, bb)
+    if (op = BB_branch_op(bb))
+      CG_SCHED_EST_Ignore_Op(sehead, op);
+  FOR_ALL_BB_SET_members(region2, bb)
+    if (op = BB_branch_op(bb))
+      CG_SCHED_EST_Ignore_Op(sehead, op);
+
+  cyclesh = CG_SCHED_EST_Resource_Cycles(sehead);
+
+  // higher select_factor means ifc more aggressive.
+  INT select_factor = atoi(CG_select_factor);
+
+  // cost of if converted region. prob is one. Remove the select factor.
+  float est_cost_ifc = (float)(cyclesh - select_factor);
   
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: cycles %d, saving branch %d\n",
-             cycles1 + cycles2, est_cost_branch);
-    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n",
-             est_cost_bbs, est_cost_ifc);
+    fprintf (Select_TFile, "ifc region: BBs %d - %d\n", cyclesh, select_factor);
+    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_bbs, est_cost_ifc);
   }
 
   // If estimated cost of if convertion is a win, do it.

@@ -405,13 +405,7 @@ static OPTION_DESC Options_CG[] = {
 
   { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
     0, 0, 0,	&CG_select_factor, NULL,
-    "Factor by which to increase branch removal benefit."
-  },
-
-  { OVK_NAME,	OV_INTERNAL, TRUE, "select_disload_cost", "",
-    0, 0, 0,	&CG_select_disload_cost, NULL,
-    "Factor by which to increase cost of speculative loads."
-  },
+    "Extra gain in cycles for flattening a branch"},
 
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "LAO_enable", "",
