@@ -2669,14 +2669,44 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     // Determine whether removing op will require inserting TN copies
     // IMPROVE THIS LATER!
     if ( ! OP_has_predicate( change.op )
-	 || OP_opnd( change.op, OP_PREDICATE_OPND ) == True_TN )
+	 || OP_opnd( change.op, OP_PREDICATE_OPND ) == True_TN ) {
       for ( INT res = OP_results( change.op ) - 1; res >= 0; --res ) {
 	TN *tn_result = OP_result( change.op, res );
 	change.need_copy[res] =
 	  ( ! entry.result_unique[res] ||
 	    GRA_LIVE_TN_Live_Outof_BB( tn_result, CG_LOOP_epilog ) ||
 	    change.new_tns[res] == tn_result /* Fix for pv779607 */ );
+#ifdef TARG_ST
+	// FdF 20050228: Imported from PathScale
+	/* A copy is needed if <tn_result> is exposed. */
+	if( !change.need_copy[res] ){
+	  for( index_dup = oppor_index - 2; index_dup >= 0; index_dup-- ){
+	    if( tn_result == opportunities[index_dup].new_tns[res] ){
+	      change.need_copy[res] = TRUE;
+	      break;
+	    }
+	  }
+	}
+#endif
       }
+    }
+
+#ifdef TARG_ST
+    // FdF 20050228: Imported from PathScale. Fixes bug 160B/35
+    /* To avoid a body tn in the prolog being re-defined, we need to create a
+       new tn, and a copy for it. (bug#358, bug#2912)
+    */
+    for( int start_omega = 1; start_omega <= change.omega; start_omega++ ){
+      for( INT res = OP_results( change.op ) - 1; res >= 0; --res ){
+	if( CG_LOOP_Backpatch_Find_Non_Body_TN(CG_LOOP_prolog,
+					       change.new_tns[res],
+					       start_omega) != NULL ){
+	  change.new_tns[res] = Build_TN_Like( change.new_tns[res] );
+	  change.need_copy[res] = true;
+	}
+      }
+    }
+#endif
   }
 
   // Display opportunities
