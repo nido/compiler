@@ -271,7 +271,8 @@ COMMON_TARG_EXP_CXX_SRCS =	\
   exp_branch.cxx		\
   exp_pred.cxx			\
   exp_memrf.cxx			\
-  exp_divrem.cxx
+  exp_divrem.cxx		\
+  exp_intrinsic.cxx
 
 COMMON_TARG_CG_CXX_SRCS =	\
   targ_calls.cxx		\

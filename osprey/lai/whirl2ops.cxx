@@ -3037,6 +3037,9 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   INTRN_RETKIND rkind = INTRN_return_kind(id);
   INT numkids = WN_kid_count(expr);
   TN  *kids[10];
+  TN  *res[2];
+  INT numopnds = 0;
+  INT numrests = 0;
 
   // It can only be a cg_intrinsic and there always is a corresponding
   // OPs sequence for it or else we're generating Lai_Code !
@@ -3045,7 +3048,7 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 
 #ifdef TARG_ST
   FmtAssert(numkids < 10, ("unexpected number of kids in intrinsic_op"));
-  for (i = 0; i < numkids; i++) {
+  for (i = 0; i < WN_kid_count(expr); i++) {
     kids[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
   }
 
@@ -3054,27 +3057,50 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
     // This intrinsic op should has been preprocessed so that a pair
     // of result values that it returns are parameters.
     Is_True(result == NULL, ("result set for 64 bit intrinsic"));
+    //
+    // There are 2 results normally:
+    //
+    numrests = 2;
+    for (i = 0; i < numrests; i++) {
+      res[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
+    }
   }
-  else if (rkind != IRETURN_UNKNOWN && result == NULL) {
-    result = Allocate_Result_TN(expr, NULL);
+  else if (rkind != IRETURN_UNKNOWN) {
+    if (result == NULL) {
+      result = Allocate_Result_TN(expr, NULL);
+    }
+    numrests = 1;
+    res[0] = result;
+  }
+
+  //
+  // The rest of kids are operands
+  //
+  numopnds = WN_kid_count(expr) - numrests;
+  for (i = 0; i < numopnds; i++) {
+    kids[i] = Expand_Expr(WN_kid(expr,i+numrests), expr, NULL);
   }
 
   if (Trace_Exp) {
     fprintf(TFile, "exp_intrinsic_op %s: ", INTRN_c_name(id));
-    if (result != NULL) Print_TN(result, FALSE);
+    for (i = 0; i < numrests-1; i++) {
+      Print_TN(res[i], FALSE);
+      fprintf(TFile, ", ");
+    }
+    Print_TN(res[numrests-1], FALSE);
     fprintf(TFile, " :- ");
-    for (i = 0; i < numkids-1; i++) {
+    for (i = 0; i < numopnds-1; i++) {
       Print_TN(kids[i], FALSE);
       fprintf(TFile, ", ");
     }
-    Print_TN(kids[numkids-1], FALSE);
+    Print_TN(kids[numopnds-1], FALSE);
     fprintf(TFile, "\n");
   }
 
   /* for debuggging */
   OP *Last_OP = OPS_last(&New_OPs);
 
-  Exp_Intrinsic_Op (id, (result == NULL) ? 0:1, numkids, &result, kids, &New_OPs);
+  Exp_Intrinsic_Op (id, numrests, numopnds, res, kids, &New_OPs);
 
 #else
   kids[0] = Expand_Expr(WN_kid0(expr), expr, NULL);

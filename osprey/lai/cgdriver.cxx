@@ -1028,7 +1028,7 @@ Configure_CG_Options(void)
     CG_enable_ssa = (CG_opt_level > 1) ? TRUE : FALSE;
   }
   else {
-    if (CG_opt_level < 2) {
+    if (CG_enable_ssa && (CG_opt_level < 2)) {
       DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
       CG_enable_ssa = FALSE;
     }
