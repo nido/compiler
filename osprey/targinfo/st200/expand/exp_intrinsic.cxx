@@ -294,15 +294,28 @@ Expand__st220syscall(
 )
 {
     /*
-      syscall expect an immediate argument. 
-      I don't know if this can be checked in upper layers.
-      Range should also be checked.
+      First, syscall expects an immediate argument. I cannot be generated another way.
+      I don't know if this can be checked in upper layers. Range should also be checked.
+      As the expansion is seen as an INTRINSIC_CALL, the vlaue if constant is seen
+      as rematerializable. 
+      Note that in hight optimization levels, some constant-propagation stuff may
+      work thus enabling to write __syscall(s) where is a const int, but
+      this does not work under low optimization levels (the generated WHIRL
+      cannot be used to determine the constant)
+      Finally, this intrinsic cannot be used when intrinsics are not inlined
+      since it does not have a register interface.
+      Mabe this (having a syscall as a function) could be solved with some self-modifying-code hack ?
     */
-    if (TN_has_value(i0)) {
+    if (TN_is_rematerializable(i0)) {
+	WN *wn = TN_home(i0) ;
+	if (WN_operator_is(wn, OPR_INTCONST)) {
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-	TN *cunknown = Gen_Literal_TN(__EXTS32TOS64(TN_value(i0)), 4) ;
-#undef __EXTS32TOS64
-	Build_OP (	TOP_syscall,	cunknown, 	ops) ;
+	    TN *cunknown = Gen_Literal_TN(__EXTS32TOS64(WN_const_val(wn)), 4) ;
+#undef __EXTS32TOS64	
+	    Build_OP (	TOP_syscall,	cunknown, 	ops) ;
+	} else {
+	    DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
+	}
     } else {
 	DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
     }
