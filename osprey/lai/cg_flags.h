@@ -196,8 +196,11 @@ extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
 extern BOOL CG_enable_LAO;	/* Enable LAO in cg */
+
+#ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */
 extern INT32 CG_cgg_level;
+#endif
 
 extern BOOL CG_enable_BB_splitting;
 #define CG_bblength_default 300      /* default value for CG_split_BB_length */

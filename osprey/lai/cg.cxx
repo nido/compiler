@@ -719,6 +719,11 @@ CG_Generate_Code(
       Check_for_Dump (TP_FIND_GLOB, NULL);
     } else {
       GRA_LIVE_Rename_TNs ();
+#if 0
+      fprintf(TFile, "%s CFG After GRA_LIVE_Rename_TNs\n%s\n", DBar, DBar);
+      Print_All_BBs ();
+#endif
+
     }
 
     if (GRA_redo_liveness) {
@@ -773,11 +778,6 @@ CG_Generate_Code(
     Stop_Timer ( T_EBO_CU );
     Check_for_Dump ( TP_EBO, NULL );
   }
-
-#if 0
-  fprintf(TFile, "%s CFG Before IGLS_Schedule_Region\n%s\n", DBar, DBar);
-  Print_All_BBs ();
-#endif
 
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // Arthur: here rather than in igls.cxx

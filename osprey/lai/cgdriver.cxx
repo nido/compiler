@@ -389,7 +389,7 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_enable_LAO, NULL },
 #endif
 
-#ifdef TARG_ST
+#ifdef CGG_ENABLED
   { OVK_BOOL,	OV_INTERNAL, TRUE, "cgg_opt", "",
     0, 0, 0,	&CG_enable_cgg, NULL },
 

@@ -103,8 +103,7 @@
 #include "betarget.h"    /* for Target_Has_Immediate_Operand */
 #endif
 
-//CGG_DEV{
-#if defined(TARG_ST) && defined(CGG_ENABLED)
+#if defined(CGG_ENABLED)
 #include "targ_cgg_exp.h"
 static TN * Expand_Expr_local (WN *expr, WN *parent, TN *result);
 static void Expand_Statement_local (WN *stmt);
@@ -114,7 +113,6 @@ static void Expand_Statement (WN *stmt);
 #else
 #define CGG_STATIC static
 #endif
-//}CGG_DEV
 
 
 #ifdef EMULATE_LONGLONG
@@ -131,7 +129,11 @@ static BOOL Trace_WhirlToOp = FALSE;
 /* reference to a dedicated TN in Cur_BB */
 static BOOL dedicated_seen;
 
+#ifdef CGG_ENABLED
 CGG_STATIC BOOL In_Glue_Region = FALSE;	/* in glue-code region */
+#else
+static BOOL In_Glue_Region = FALSE;	/* in glue-code region */
+#endif
 
 /* Forward declarations. */
 static TN * Expand_Expr (WN *expr, WN *parent, TN *result);
@@ -150,11 +152,19 @@ static INT16 WHIRL_Compare_To_OP_variant (OPCODE opcode, BOOL invert);
 static OPS New_OPs;
 
 static OP *Last_Processed_OP;
+#ifdef CGG_ENABLED
 CGG_STATIC SRCPOS current_srcpos;
+#else
+static SRCPOS current_srcpos;
+#endif
 static INT total_bb_insts;
 
 /* The current basic block being generated. */
+#ifdef CGG_ENABLED
 CGG_STATIC BB *Cur_BB;
+#else
+static BB *Cur_BB;
+#endif
 
 static RID **region_stack_base;
 static RID **region_stack_ptr;
@@ -172,7 +182,11 @@ static WN *last_loop_pragma;
  * op processed for the memory op to wn mapping.
  */
 
+#ifdef CGG_ENABLED
 CGG_STATIC OP *Last_Mem_OP;
+#else
+static OP *Last_Mem_OP;
+#endif
 OP_MAP OP_to_WN_map;
 static OP_MAP predicate_map = NULL;
 static WN_MAP WN_to_OP_map;
@@ -607,7 +621,11 @@ Allocate_Result_TN (
 
 /* set the op2wn mappings for memory ops
  */
+#ifdef CGG_ENABLED
 CGG_STATIC void
+#else
+static void
+#endif
 Set_OP_To_WN_Map(WN *wn)
 {
   OP *op;
@@ -3193,7 +3211,11 @@ Get_Non_Local_Label_Name (SYMTAB_IDX level, LABEL_IDX index)
 // It is much simpler since now we don't need to create STs for
 // label numbers.  The only thing we might need to do is create a
 // LABEL_name.
+#ifdef CGG_ENABLED
 CGG_STATIC LABEL_IDX
+#else
+static LABEL_IDX
+#endif
 Get_WN_Label (WN *wn)
 {
   LABEL_IDX label = WN_label_number(wn);
@@ -3251,15 +3273,13 @@ Get_WN_Label (WN *wn)
  * level nodes).
  * ====================================================================
  */
-//CGG_DEV{
-#if defined(TARG_ST) && defined(CGG_ENABLED)
+#if defined(CGG_ENABLED)
 static TN *
 Expand_Expr_local (
 #else
 static TN *
 Expand_Expr (
 #endif
-//}CGG_DEV
 
   WN *expr, 
   WN *parent, 
@@ -4620,15 +4640,13 @@ static SRCPOS get_loop_srcpos(WN *body_label)
  *   them to the current basic block.
  * ====================================================================
  */
-//CGG_DEV{
-#if defined(TARG_ST) && defined(CGG_ENABLED)
+#if defined(CGG_ENABLED)
 void
 Expand_Statement_local (
 #else
-void
+static void
 Expand_Statement (
 #endif
-//}CGG_DEV
 
   WN *stmt
 ) 
@@ -5030,7 +5048,7 @@ Convert_WHIRL_To_OPs (
 
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
-#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+#if defined(CGG_ENABLED) //CGG_DEV
     if (CG_enable_cgg) {
       CGG_Start_function(tree);
       CGG_Start_bb(tree);
@@ -5044,7 +5062,7 @@ Convert_WHIRL_To_OPs (
     stmt = WN_entry_first( tree );
     break;
   case OPC_REGION:
-#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+#if defined(CGG_ENABLED) //CGG_DEV
     if (CG_enable_cgg) {
       CGG_Start_region(tree);
       CGG_Start_bb(tree);
@@ -5135,7 +5153,7 @@ Convert_WHIRL_To_OPs (
 
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
-#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+#if defined(CGG_ENABLED) //CGG_DEV
     if (CG_enable_cgg) CGG_End_function(tree);
 #endif
     break;
@@ -5172,7 +5190,7 @@ Convert_WHIRL_To_OPs (
 		FALSE);
 	
     }
-#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+#if defined(CGG_ENABLED) //CGG_DEV
     if (CG_enable_cgg) CGG_End_region(tree);
 #endif 
    break;
@@ -5210,8 +5228,6 @@ Whirl2ops_Initialize (
   last_loop_pragma = NULL;
   OP_Asm_Map = OP_MAP_Create();
 
-//CGG_DEV{
-#ifdef TARG_ST
 #ifdef CGG_ENABLED
   if (CG_enable_cgg) {
     CGG_Set_Level(CG_cgg_level);
@@ -5219,8 +5235,7 @@ Whirl2ops_Initialize (
     CGG_Initialize();
   }
 #endif
-#endif
-//}CGGDEV
+  return;
 }
 
 /* ====================================================================
@@ -5257,16 +5272,15 @@ Whirl2ops_Finalize (void)
     WN_MAP_Delete(WN_To_Hilo_map);
     WN_To_Hilo_map = WN_MAP_UNDEFINED;
   }
-//CGG_DEV{
+#endif
+
 #ifdef CGG_ENABLED
   if (CG_enable_cgg) CGG_Finalize();
 #endif
-//}CGGDEV
-#endif
+  return;
 }
 
 //CGG_DEV{
-#ifdef TARG_ST
 #ifdef CGG_ENABLED
 
 /*
@@ -5452,5 +5466,3 @@ Expand_Expr(WN *expr, WN *parent, TN *result)
   return result;
 }
 #endif
-#endif
-//}CGG_DEV
