@@ -147,7 +147,7 @@ COMMON_TARG_BE_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/be
 COMMON_TARG_CG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cg
 COMMON_TARG_EMIT_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/emit
 COMMON_TARG_EXP_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/expand
-COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 
 # These are the directories in which to look for source files.
 
@@ -201,7 +201,8 @@ DERIVED_SRCS = 	\
   op_list.cxx 	\
   st_list.cxx 	\
   tn_list.cxx	\
-  void_list.cxx
+  void_list.cxx \
+  cg_loop_scc_prop.cxx
 
 # remove all derived files with make clobber.
 LDIRT = $(DERIVED_INCS) $(DERIVED_INCS:.h=.c) $(DERIVED_INCS:.h=.cxx) *.pch
@@ -250,37 +251,51 @@ LAI_CXX_SRCS = 		\
   $(COMMON_TARG_EM_CXX_SRCS)\
   $(COMMON_TARG_EXP_CXX_SRCS)\
   $(COMMON_TARG_CG_CXX_SRCS)\
-  tn_map.cxx		\
-  op_map.cxx		\
-  bb_map.cxx		\
-  label_util.cxx	\
-  tcon_util.cxx		\
-  comment.cxx		\
-  tag.cxx		\
-  variants.cxx		\
-  init.cxx		\
-  register.cxx		\
-  tnutil.cxx		\
-  oputil.cxx		\
-  bbutil.cxx 		\
-  bblist.cxx		\
-  cg_region.cxx		\
-  freq.cxx		\
   annotations.cxx	\
-  note.cxx		\
-  lai_flags.cxx		\
-  driver.cxx		\
-  lai.cxx		\
+  bblist.cxx		\
+  bbutil.cxx 		\
+  bb_map.cxx		\
   calls.cxx		\
-  emit.cxx		\
-  reg_live.cxx		\
-  whirl2ops.cxx		\
-  expand.cxx		\
+  cflow.cxx		\
+  cgdriver.cxx		\
+  cgexp.cxx		\
+  cgprep.cxx		\
   cg_cflow.cxx		\
+  cg_db_op.cxx		\
+  cg_dep_graph.cxx	\
+  cg_flags.cxx		\
   cg_ir.cxx       	\
+  cg_loop.cxx		\
+  cg_loop_scc.cxx	\
+  cg_region.cxx		\
+  cg_sched_est.cxx	\
+  cg_spill.cxx		\
+  comment.cxx		\
+  dominate.cxx		\
   eh_region.cxx		\
+  emit.cxx		\
+  findloops.cxx		\
+  freq.cxx		\
   gtn_tn_set.cxx        \
   gtn_universe.cxx      \
+  gra_live.cxx		\
+  init.cxx		\
+  lai.cxx		\
+  label_util.cxx	\
+  localize.cxx		\
+  note.cxx		\
+  oputil.cxx		\
+  op_map.cxx		\
+  pqs.cxx		\
+  pqs_cg.cxx		\
+  register.cxx		\
+  reg_live.cxx		\
+  tag.cxx		\
+  tcon_util.cxx		\
+  tnutil.cxx		\
+  tn_map.cxx		\
+  variants.cxx		\
+  whirl2ops.cxx		\
   $(DERIVED_SRCS)
 
 ifeq ($(BUILD_PCH), USE_PCH)
@@ -329,7 +344,7 @@ endif
 # File containing the list of symbols exported outside of cg.so
 #----------------------------------------------------------------------
 ifeq ($(BUILD_COMPILER), EDG)
-EXPORT_LIST = -exports_file $(BE_CG_DIR)/Exported
+EXPORT_LIST = -exports_file $(BE_LAI_DIR)/Exported
 else
 EXPORT_LIST = 
 endif
@@ -515,6 +530,12 @@ DERIVED_INCS += bb_set.h bb_set.td
 bb_set.h : bb_set.td
 bb_set.td : $(SETGEN) $(BE_LAI_DIR)/gen_bb_set
 	csh -f $(BE_LAI_DIR)/gen_bb_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+
+DERIVED_INCS += cg_loop_scc_prop.h
+cg_loop_scc_prop.cxx : cg_loop_scc_prop.h
+cg_loop_scc_prop.h :	$(COMMON_UTIL_DIR)/gen_x_prop.csh               \
+$(BE_LAI_DIR)/gen_cg_loop_scc_prop.csh
+	csh -f	$(BE_LAI_DIR)/gen_cg_loop_scc_prop.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += tn_prop.h
 tn_prop.cxx : tn_prop.h
