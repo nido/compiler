@@ -2974,6 +2974,22 @@ Expand_Const (
 
   TCON tc = ST_tcon_val(TN_var(src));
 
+  //
+  // This is called normally for floating-point and company
+  // Since we keep them in integer registers, just make a mov
+  //
+
+  switch (TCON_ty(tc)) {
+
+  case MTYPE_F4:
+    Build_OP(TOP_mov_i, dest, src, ops);
+    break;
+
+  default:
+    FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
+  }
+
+#if 0
   FmtAssert(FALSE,("Not Implemented"));
 
 
@@ -2985,6 +3001,9 @@ Expand_Const (
 
   // load from memory
   Exp_Load (mtype, mtype, dest, TN_var(src), 0, ops, V_NONE);
+#endif
+
+  return;
 }
 
 /* ====================================================================

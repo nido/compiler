@@ -3347,8 +3347,8 @@ Targ_Print ( char *fmt, TCON c )
 /* ====================================================================
  *   Targ_To_Host
  *
- *   Convert target constant, eg. I5 on ST100 into a host constant, eg.
- *   TCON_I8(c) on IA32.
+ *   Convert target constant represented as a TCON into a host 
+ *   constant value
  * ====================================================================
  */
 INT64

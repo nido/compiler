@@ -586,6 +586,10 @@ OPCODE_To_INTRINSIC (
       case MTYPE_U8: id = INTRN_DIVUL; break;
       case MTYPE_F4: id = INTRN_DIVS; break;
       case MTYPE_F8: id = INTRN_DIVD; break;
+
+      case MTYPE_U4: id = INTRN_UDIVSI3; break;
+      case MTYPE_I4: id = INTRN_DIVSI3; break;
+
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for DIV", 
 			 MTYPE_name(rtype)));
@@ -729,15 +733,11 @@ OPCODE_To_INTRINSIC (
 
     case OPR_REM:
       switch (rtype) {
-#if 0
-      case MTYPE_I4: id = INTRN_MODW; break;
-      case MTYPE_I8: id = INTRN_MODL; break;
-      case MTYPE_I5: id = INTRN_MODE; break;
+      case MTYPE_U4: id = INTRN_UMODSI3; break;
+      case MTYPE_I4: id = INTRN_MODSI3; break;
+      case MTYPE_U8: id = INTRN_UMODDI3; break;
+      case MTYPE_I8: id = INTRN_MODDI3; break;
 
-      case MTYPE_U4: id = INTRN_MODUW; break;
-      case MTYPE_U8: id = INTRN_MODUL; break;
-      case MTYPE_U5: id = INTRN_MODUE; break;
-#endif
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown REM opcode"));
       }
