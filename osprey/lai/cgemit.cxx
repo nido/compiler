@@ -904,11 +904,18 @@ Print_Label (
     }
     
     if (moveable) {
-      fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_MOVEABLE);
+      fprintf (pfile, ", %s, %s", AS_TYPE_OBJECT, AS_MOVEABLE);
     }
     else {
-      fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+      fprintf (pfile, ", %s", AS_TYPE_OBJECT);
     }
+#  ifdef AS_USED
+    /* TB: add gnu used  attibute when needed */
+    if (ST_is_used(st)) {
+      fprintf (pfile, ", %s", AS_USED);
+    }
+#endif
+    fprintf (pfile, "\n");
 #  else
     fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
 #  endif
