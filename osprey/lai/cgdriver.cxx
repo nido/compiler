@@ -861,7 +861,9 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &EMIT_stop_bits_for_asm, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_explicit_bundles", "",
     0, 0, 0, &EMIT_explicit_bundles, NULL },
+#ifndef TARG_ST
   { OVK_COUNT },
+#endif
 
   // Misc:
   { OVK_BOOL,	OV_INTERNAL, TRUE,  "gra_live_predicate_aware", "",
