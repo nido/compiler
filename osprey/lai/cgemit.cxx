@@ -84,6 +84,12 @@
 #include "cgexp.h"                 /* for Exp_Simulated_OP, etc. */
 
 #include "cgtarget.h"
+#include "cgemit.h"
+#include "cgemit_targ.h"
+#include "em_elf.h"
+#include "cgdwarf.h"
+#include "cgdwarf_targ.h"
+#include "em_dwarf.h"
 
 #include "ti_asm.h"
 #include "ti_errors.h"
@@ -430,8 +436,9 @@ PC_Incr_N (
   return pc;
 }
 
+#if 0
 /* ====================================================================
- *    CGEMIT_Weak_Alias (sym, stringsym)
+ *    CGEMIT_Weak_Alias (sym, stringsym, file)
  *
  *    TODO: Target dependent !
  * ====================================================================
@@ -458,6 +465,7 @@ CGEMIT_Alias (ST *sym, ST *strongsym, FILE *file)
 {
   fprintf (file, "\t.set %s#, %s#\n", ST_name(sym), ST_name(strongsym));
 }
+#endif
 
 /* ====================================================================
  *    r_qualified_name
@@ -497,7 +505,7 @@ r_qualified_name (
  *    EMT_Write_Qualified_Name (FILE *f, ST *st)
  * ====================================================================
  */
-static void
+void
 EMT_Write_Qualified_Name (
   FILE *f, 
   ST *st
@@ -509,6 +517,7 @@ EMT_Write_Qualified_Name (
   vstr_end(buf);
 }
 
+#if 0
 /* ====================================================================
  *    CGEMIT_Exit_In_Asm ()
  *
@@ -527,6 +536,7 @@ CGEMIT_Exit_In_Asm (FILE *file, ST *pu)
   fprintf (file, "\t%s\n", AS_END);
 #endif
 }
+#endif
 
 /* ====================================================================
  *    Print_Dynsym (pfile, st)
@@ -656,7 +666,7 @@ Print_Common (
  *    already.
  * ====================================================================
  */
-static mINT32
+mINT32
 EMT_Put_Elf_Symbol (
   ST *sym
 )
@@ -2983,6 +2993,7 @@ Verify_Instruction (
   }
 }
 
+#if 0
 /* ====================================================================
  *   CGEMIT_Prn_File_Dir_In_Asm
  *
@@ -3019,6 +3030,7 @@ CGEMIT_Prn_Line_Dir_In_Asm (USRCPOS usrcpos)
 		USRCPOS_linenum(usrcpos),
 		USRCPOS_column(usrcpos));
 }
+#endif
 
 /* ====================================================================
  *   print_source
@@ -3039,6 +3051,7 @@ print_source (
   return;
 }
 
+#if 0
 /* ====================================================================
  *   Cg_Dwarf_Add_Line_Entry
  *
@@ -3083,6 +3096,7 @@ Cg_Dwarf_Add_Line_Entry (
 
   last_srcpos = srcpos;
 }
+#endif
 
 /* ====================================================================
  *   Assemble_OP
@@ -3207,6 +3221,7 @@ Generate_Asm_String (
   return asm_string;
 }
 
+#if 0
 /* ====================================================================
  *   CGEMIT_Prn_Ent_In_Asm
  *
@@ -3261,6 +3276,7 @@ CGEMIT_Prn_Ent_In_Asm (
 
   return;
 }
+#endif
 
 /* ====================================================================
  *   Assemble_Simulated_OP
@@ -4601,12 +4617,7 @@ EMT_Emit_PU (
 
   /* Emit the stuff needed at the end of the PU. */
   if (AS_END) {
-    CGEMIT_Exit_In_Asm(Output_File, pu);
-#if 0
-    fprintf (Output_File, "\t%s\t", AS_END);
-    EMT_Write_Qualified_Name(Output_File, pu);
-    fprintf (Output_File, "\n");
-#endif
+    CGEMIT_Exit_In_Asm(pu);
   }
 
   /* Emit the initialized data associated with this PU. */
@@ -4791,12 +4802,8 @@ EMT_End_File( void )
       }
 
       if (Assembly) {
-	CGEMIT_Weak_Alias (sym, strongsym, Asm_File);
+	CGEMIT_Weak_Alias (sym, strongsym);
 	Print_Dynsym (Asm_File, sym);
-      }
-      if (Lai_Code) {
-	CGEMIT_Weak_Alias (sym, strongsym, Lai_File);
-	Print_Dynsym (Lai_File, sym);
       }
 #if 0
       if (Object_Code) {
@@ -4815,14 +4822,15 @@ EMT_End_File( void )
 	if ( ! ST_is_export_local(sym)) {
 	  fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
 	}
-	CGEMIT_Alias (sym, ST_base(sym), Asm_File);
+	CGEMIT_Alias (sym, ST_base(sym));
       }
+#if 0
       if (Lai_Code) {
 	if (!ST_is_export_local(sym)) {
 	  fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
 	}
-	CGEMIT_Alias (sym, ST_base(sym), Lai_File);
       }
+#endif
     }
     else if (ST_class(sym) == CLASS_FUNC && ST_emit_symbol(sym)
 	// possible to have local not-used emit_symbols,

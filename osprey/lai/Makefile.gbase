@@ -285,14 +285,16 @@ COMMON_TARG_EXP_CXX_SRCS =	\
 COMMON_TARG_CG_CXX_SRCS =	\
   targ_calls.cxx		\
   targ_cg.cxx			\
+  targ_cgdwarf.cxx		\
+  targ_cgemit.cxx		\
+  targ_ebo.cxx			\
   targ_loop_recur.cxx		\
   targ_op.cxx			\
   targ_register.cxx		\
+  targ_select.cxx		\
   targ_swp.cxx			\
   targ_swp_bundle.cxx		\
-  targ_tn.cxx			\
-  targ_ebo.cxx			\
-  targ_select.cxx
+  targ_tn.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
@@ -329,6 +331,7 @@ CG_CXX_SRCS = 		\
   cflow.cxx		\
   cg.cxx		\
   cgdriver.cxx		\
+  cgdwarf.cxx		\
   cgemit.cxx		\
   cgexp.cxx		\
   cgprep.cxx		\

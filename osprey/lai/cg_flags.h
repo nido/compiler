@@ -319,7 +319,6 @@ extern const char* HB_call_hazard_multiplier;
 extern const char* HB_memory_hazard_multiplier;
 extern const char* HB_min_path_priority_ratio;
 extern const char* HB_base_probability_contribution;
-extern INT   HB_max_blocks;
 extern const char* HB_min_priority;
 extern const char* HB_max_sched_growth;
 extern BOOL  HB_require_alias;
@@ -330,12 +329,14 @@ extern BOOL  HB_simple_ifc;
 extern BOOL  HB_simple_ifc_set;
 extern BOOL  HB_general_use_pq;
 extern BOOL  HB_general_from_top;
-extern INT   HB_min_blocks;
 extern BOOL  HB_allow_tail_duplication;
 extern BOOL  HB_exclude_calls;
 extern BOOL  HB_exclude_pgtns;
 extern BOOL  HB_skip_hammocks;
-extern BOOL  HB_force_hyperblocks;
+extern BOOL  HB_superblocks;
+
+extern INT   HB_max_blocks;
+extern INT   HB_min_blocks;
 
 /* GRA_LIVE: */
 extern BOOL GRA_LIVE_Phase_Invoked;
@@ -352,8 +353,8 @@ extern BOOL EMIT_stop_bits_for_volatile_asm;
 extern BOOL EMIT_explicit_bundles;
 
 extern BOOL CG_emit_asm_dwarf;
-extern BOOL CG_emit_unwind_directives;
 extern BOOL CG_emit_unwind_info;
+extern BOOL CG_emit_unwind_directives;
 
 /*
  * CGEXPand flags 

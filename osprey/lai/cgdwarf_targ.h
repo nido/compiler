@@ -1,6 +1,6 @@
 /*
 
-  Copyright (C) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+  Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2 of the GNU General Public License as
@@ -32,39 +32,34 @@
 
 */
 
-#ifndef cgemit_INCLUDED
-#define cgemit_INCLUDED
 
-/* Initialize for emitting of a source file: */
-extern void EMT_Begin_File (
-  char *process_name,	/* Back end process name */
-  char *options 	/* Option string used for compilation */
-);
+#ifndef cgdwarf_targ_INCLUDED
+#define cgdwarf_targ_INCLUDED
 
-/* Finalize for emitting of a source file: */
-extern void EMT_End_File ( void );
+extern BOOL Trace_Dwarf;
 
-/* Emit the contents of a PU: */
-extern void EMT_Emit_PU ( ST *pu, DST_IDX pu_dst, WN *rwn);
+/* construct the fde for the current procedure. */
+extern Dwarf_P_Fde Build_Fde_For_Proc (Dwarf_P_Debug  dw_dbg,
+				       BB            *firstbb,
+				       LABEL_IDX      begin_label,
+				       LABEL_IDX      end_label,
+				       INT32          end_offset,
+				       // The following two arguments
+				       // need to go away once
+				       // libunwind gives us an
+				       // interface that supports
+				       // symbolic ranges.
+				       INT       low_pc,
+				       INT       high_pc);
 
-/* put symbol in elf symbol table */ 
-extern mINT32 EMT_Put_Elf_Symbol (ST *sym);
+extern void Check_Dwarf_Rel(const Elf32_Rel &);
+extern void Check_Dwarf_Rel(const Elf64_Rel &);
+extern void Check_Dwarf_Rela(const Elf64_Rela &);
+extern void Check_Dwarf_Rela(const Elf32_Rela &);
+extern BOOL Is_Dwarf_Section_To_Emit(const char *name);
 
-/* change existing elf symbol to undefined */
-extern void EMT_Change_Symbol_To_Undefined (ST *sym);
+extern void Init_Unwind_Info (BOOL trace);
+extern void Finalize_Unwind_Info(void);
+extern void Emit_Unwind_Directives_For_OP(OP *op, FILE *f);
 
-/* change existing elf symbol to weak binding */
-extern void EMT_Change_Symbol_To_Weak (ST *sym);
-
-/*
- * Check if bb should be aligned,
- * and return number of instructions it should be aligned with.
- */
-extern INT32 Check_If_Should_Align_BB (BB *bb, INT32 curpc);
-
-/* Write a qualified name to a file. */
-extern void EMT_Write_Qualified_Name (FILE *f, ST *st);
-
-#endif /* cgemit_INCLUDED */
-
-
+#endif /* cgdwarf_targ_INCLUDED */

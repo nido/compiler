@@ -261,7 +261,6 @@ const char* GRA_spill_count_factor_string = "0.5";
 
 BOOL  HB_formation = TRUE;
 BOOL  HB_static_freq_heuristics = TRUE;
-INT   HB_max_blocks = 20;
 const char* HB_max_sched_growth = "4.1";
 const char* HB_min_path_priority_ratio = "0.05";
 const char* HB_min_priority = "0.002";
@@ -278,10 +277,12 @@ BOOL  HB_allow_tail_duplication = FALSE;
 BOOL  HB_exclude_calls = FALSE;
 BOOL  HB_exclude_pgtns = TRUE;	// until bugs fixed
 BOOL  HB_skip_hammocks = TRUE;	// until bugs fixed
-BOOL  HB_simple_ifc = TRUE;
+BOOL  HB_simple_ifc = FALSE;
 BOOL  HB_simple_ifc_set = FALSE;
+BOOL  HB_superblocks = FALSE;
+
+INT   HB_max_blocks = 20;
 INT   HB_min_blocks = 2;
-BOOL HB_force_hyperblocks = TRUE;
 
 BOOL EMIT_pjump_all = TRUE;
 BOOL EMIT_use_cold_section = TRUE;
