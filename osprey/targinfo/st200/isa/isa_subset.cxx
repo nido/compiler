@@ -40,6 +40,7 @@
 main() 
 { 
   ISA_SUBSET st220; 
+  ISA_SUBSET st200; 
 
 
   ISA_Subset_Begin("st200"); 
@@ -293,6 +294,15 @@ main()
 		 TOP_mtb, 
 		 TOP_mfb, 
 		 TOP_return, 
+		 TOP_UNDEFINED); 
+
+  st200 = ISA_Subset_Create(st220,"st200"); 
+
+  /* ==================================================================== 
+   *             st200_st200 Instructions 
+   * ==================================================================== 
+   */ 
+  Instruction_Group(st200, 
 		 TOP_asm, 
 		 TOP_intrncall, 
 		 TOP_spadjust, 
