@@ -87,6 +87,9 @@ UINT Stack_Pointer_Preg_Offset	= 32;	/* register sp */
 UINT Frame_Pointer_Preg_Offset	= 24;	/* register fp */
 UINT Static_Link_Preg_Offset		= 29;
 UINT Struct_Return_Preg_Offset  = 16;   /* returning structs */
+#ifdef TARG_ST //[TB]
+UINT Function_Link_Preg_Offset  = 28;   /* register lk(p11). function link register (for mcount call) */
+#endif
 
 static mDED_PREG_NUM Input_Base_Preg = 0;
 static mDED_PREG_NUM Output_Base_Preg = 0;
