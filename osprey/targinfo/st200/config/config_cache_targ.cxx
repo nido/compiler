@@ -64,7 +64,8 @@ void MHD::Initialize()
 {
   if ( Is_Target_st220() ||
        Is_Target_st230() ||
-       Is_Target_st231() ) {
+       Is_Target_st231() ||
+       Is_Target_st235() ) {
 
     Non_Blocking_Loads      = FALSE;
     Loop_Overhead_Base      = 6;

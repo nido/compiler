@@ -231,6 +231,7 @@ Isa_Name ( TARGET_ISA b)
     case TARGET_ISA_ST220: return "ST220";
     case TARGET_ISA_ST230: return "ST230";
     case TARGET_ISA_ST231: return "ST231";
+    case TARGET_ISA_ST235: return "ST235";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -249,6 +250,7 @@ Targ_Name ( TARGET_PROCESSOR b)
     case TARGET_st221: return "st221";
     case TARGET_st230: return "st230";
     case TARGET_st231: return "st231";
+    case TARGET_st235: return "st235";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -306,13 +308,17 @@ Prepare_Target ( void )
       isa = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
     }
-    if ( strcasecmp ( ISA_Name, "ST230" ) == 0 ) {
+    else if ( strcasecmp ( ISA_Name, "ST230" ) == 0 ) {
       isa = TARGET_ISA_ST230;
       targ_default = TARGET_st230;
     }
-    if ( strcasecmp ( ISA_Name, "ST231" ) == 0 ) {
+    else if ( strcasecmp ( ISA_Name, "ST231" ) == 0 ) {
       isa = TARGET_ISA_ST231;
       targ_default = TARGET_st231;
+    }
+    else if ( strcasecmp ( ISA_Name, "ST235" ) == 0 ) {
+      isa = TARGET_ISA_ST235;
+      targ_default = TARGET_st235;
     }
     else {
       ErrMsg ( EC_Inv_TARG, "isa", ISA_Name );
@@ -350,6 +356,9 @@ Prepare_Target ( void )
     else if ( strcasecmp ( Processor_Name, "st231" ) == 0 ) {
       targ = TARGET_st231;
     }
+    else if ( strcasecmp ( Processor_Name, "st235" ) == 0 ) {
+      targ = TARGET_st235;
+    }
     else {
       ErrMsg ( EC_Inv_TARG, "processor", Processor_Name );
       targ = TARGET_UNDEF;
@@ -376,6 +385,9 @@ Prepare_Target ( void )
       break;
     case TARGET_st231:
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST231;
+      break;
+   case TARGET_st235:
+      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST235;
       break;
     case TARGET_UNDEF:
       Target = targ_default;
