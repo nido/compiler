@@ -3840,7 +3840,7 @@ Assemble_Bundles(BB *bb)
   BOOL bundle_has_prologue;
   BOOL bundle_has_epilogue;
   BOOL previous_bundle_has_prologue=FALSE;
-  BOOL previous_bundle_has_epilogue=FALSE;
+  BOOL epilogue_has_started=FALSE;
 #endif
 
 #ifdef TARG_ST
@@ -3991,6 +3991,7 @@ Assemble_Bundles(BB *bb)
      */
 #ifdef TARG_ST200
     BOOL force_dwarf=FALSE;
+    SRCPOS line;
 
     // [CL] The bundler has already taken care of prologue/epilogue
     // concerns when forming bundles:
@@ -4000,7 +4001,7 @@ Assemble_Bundles(BB *bb)
     // [CL] If this bundle has epilogue code, and the previous one
     // hadn't, then we consider that epilogue starts here,
     // and thus we force output of debug info for this bundle
-    if (bundle_has_epilogue && !previous_bundle_has_epilogue) {
+    if (bundle_has_epilogue && !epilogue_has_started) {
       force_dwarf = TRUE;
     }
 
@@ -4015,8 +4016,24 @@ Assemble_Bundles(BB *bb)
       force_dwarf = FALSE;
     }
 
+    line = OP_srcpos(slot_op[0]);
+
+    if ( (!force_dwarf || (line == 0)) && (Opt_Level > 0) ) {
+      OP *sl_op;
+      slot = 0;
+      do {
+	sl_op = slot_op[slot];
+	if ((OP_srcpos(sl_op) != 0) && (!OP_prologue(sl_op)) && (!OP_epilogue(sl_op))){
+	  force_dwarf = TRUE;
+	  line = OP_srcpos(sl_op);
+	  break;
+	}
+	slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+      } while (!OP_end_group(sl_op));
+    }
+
     /* Generate debug info for the 1st op of the bundle */
-    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]), force_dwarf);
+    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), line, force_dwarf);
 #endif
 
     OP *sl_op;
@@ -4053,7 +4070,9 @@ Assemble_Bundles(BB *bb)
 #ifdef TARG_ST
     // [CL]
     previous_bundle_has_prologue = bundle_has_prologue;
-    previous_bundle_has_epilogue = bundle_has_epilogue;
+    if (bundle_has_epilogue) {
+      epilogue_has_started = TRUE;
+    }
 #endif
   }
   if (Assembly) {
