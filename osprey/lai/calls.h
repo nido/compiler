@@ -117,6 +117,13 @@ extern PREG_NUM GP_Preg;
 extern PREG_NUM Return_Int_Preg[2];
 extern PREG_NUM Return_Float_Preg[2];
 
+#ifdef TARG_ST100
+/* regs that need to be saved at prolog and restored at epilog. */
+extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
+/* calculate callee saved register mask size */
+extern INT CGTARG_Callee_Saved_Regs_Mask_Size(void);
+#endif
+
 /* assign a special preg to each CALLEE_tn.  also ra, and gp */
 extern void Init_Callee_Saved_Regs_for_REGION( ST *pu, BOOL is_region );
 
@@ -134,6 +141,6 @@ extern BOOL LC_Used_In_PU;	/* flag whether LC_TN was used */
 extern void Optimize_Tail_Calls( ST* pu );
 
 /* Target-specific ABI definitions */
-#include "calls_targ.h"
+#include "targ_calls.h"
 
 #endif /* lai_calls_INCLUDED */

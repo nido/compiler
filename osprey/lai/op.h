@@ -295,7 +295,7 @@
 #include "targ_isa_properties.h"
 #include "targ_isa_hazards.h"
 #include "targ_isa_bundle.h"
-#include "op_targ.h"
+#include "targ_op.h"
 
 /* Declare some structures from elsewhere: */
 struct tn;  /* TODO: should not use it since tn.h included */
@@ -683,7 +683,9 @@ inline ISA_OPERAND_USE OP_opnd_use(OP *op, INT opnd)
 #define OP_f_group(o)           (TOP_is_f_group(OP_code(o)))
 #define OP_l_group(o)           (TOP_is_l_group(OP_code(o)))
 #define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
+
 #define OP_uniq_res(o)		(TOP_is_uniq_res(OP_code(o)))
+#define OP_same_res(o)          (TOP_is_same_res(OP_code(o)))
 
 #define OP_unsafe(o)            (TOP_is_unsafe(OP_code(o)))
 
@@ -823,8 +825,6 @@ Copy_Asm_OP_Annot(OP* new_op, OP* op)
 
 // Returns TRUE if <op> is a barrier node.
 #define OP_Is_Barrier CGTARG_Is_OP_Barrier
-
-#define OP_same_res(o)             (TOP_same_res(OP_code(o)))
 
 // check if an operation that saves all the predicate registers
 #define OP_save_predicates(o)      (TOP_save_predicates(OP_code(o)))

@@ -689,6 +689,15 @@ Preg_Is_Rematerializable (
     /* disallow complex data types, but allow common blocks (which sorta
      * look like a complex data type).
      */
+    if (GRA_home == TRUE && !Disallowed_Homeable(sym) &&
+	ST_class(sym) == CLASS_VAR) {
+      if (ST_gprel(basesym) ||
+	  (ST_is_split_common(basesym) && ST_gprel(ST_full(basesym)))
+	  || ST_on_stack(sym)) {
+	*gra_homeable = TRUE;
+	return home;
+      }
+    }
     return NULL;
   }
   if (MTYPE_is_complex(OPCODE_rtype(opc)))
@@ -800,6 +809,33 @@ PREG_To_TN (
     if (CGTARG_Preg_Register_And_Class(preg_num, &rclass, &reg)) {
       Is_True(!Is_Predicate_REGISTER_CLASS(rclass),
 		           ("don't support dedicate predicate pregs"));
+#ifdef HAS_STACKED_REGISTERS
+	if (ABI_PROPERTY_Is_stacked(
+		rclass,
+		REGISTER_machine_id(rclass, reg) )) 
+	{
+		reg = REGISTER_Allocate_Stacked_Register(
+			(Is_Int_Output_Preg(preg_num) ? ABI_PROPERTY_caller 
+						      : ABI_PROPERTY_callee),
+			rclass, reg);
+
+		if (PU_has_syscall_linkage(Get_Current_PU())
+			&& ! Is_Int_Output_Preg(preg_num)) 
+		{
+			// syscall linkage means the input parameters
+			// are preserved in the PU, so can restart.  
+			// So mark the stacked register such that it
+			// won't be available for future allocation
+			// (i.e. it can be used if in whirl, but LRA
+			// won't ever allocate it).
+			// Note that we are assuming here that the only
+			// stacked pregs whirl2ops will see will be either
+			// input or output parameters.  If this is not true,
+			// then instead will need to iterate thru params.
+			REGISTER_Unallocate_Stacked_Register (rclass, reg);
+		}
+	}
+#endif
       tn = Build_Dedicated_TN(rclass, reg, ST_size(preg_st));
 
 #ifdef EMULATE_LONGLONG
@@ -829,6 +865,24 @@ PREG_To_TN (
       /* create a TN for this PREG. */
       TYPE_ID mtype = TY_mtype(ST_type(preg_st));
       tn = Set_TN_For_PREG (preg_num, mtype);
+    }
+
+    if (CGSPILL_Rematerialize_Constants) {
+      BOOL gra_homeable = FALSE;
+      WN *home= Preg_Is_Rematerializable(preg_num, &gra_homeable);
+
+      if (home) {
+	if (gra_homeable) {
+	  if (TN_number(tn) < GRA_non_home_lo ||
+	      TN_number(tn) > GRA_non_home_hi) {
+	    Set_TN_is_gra_homeable(tn);
+	    Set_TN_home (tn, home);
+	  }
+	} else {
+	  Set_TN_is_rematerializable(tn);
+	  Set_TN_home (tn, home);
+	}
+      }
     }
 
     if (Get_Trace (TP_CGEXP, 16)) {
@@ -1341,6 +1395,10 @@ Handle_LDA (
 
   if (result == NULL) {
     result = Allocate_Result_TN (lda, NULL);
+    if (CGSPILL_Rematerialize_Constants) {
+      Set_TN_is_rematerializable(result);
+      Set_TN_home (result, lda);
+    }
   }
 
   Last_Mem_OP = OPS_last(&New_OPs);
@@ -3199,6 +3257,10 @@ Expand_Expr (
   case OPR_CONST:
     if (result == NULL) {
       result = Allocate_Result_TN (expr, NULL);
+      if (CGSPILL_Rematerialize_Constants) {
+	Set_TN_is_rematerializable(result);
+	Set_TN_home (result, expr);
+      }
     }
     opnd_tn[0] = Gen_Symbol_TN (WN_st(expr), 0, 0);
     num_opnds = 1;
@@ -3279,6 +3341,12 @@ Expand_Expr (
 	if (Zero_TN && TN_is_const_reg(Zero_TN) && WN_const_val(expr) == 0) 
 	  return Zero_TN;
       }
+    }
+
+    if (CGSPILL_Rematerialize_Constants && result == NULL) {
+      result = Allocate_Result_TN (expr, NULL);
+      Set_TN_is_rematerializable(result);
+      Set_TN_home (result, expr);
     }
 
     opnd_tn[0] = const_tn;
@@ -3860,14 +3928,19 @@ Handle_CONDBR (
   TN *operand0, *operand1;
   TN *target_tn;
 
+#ifdef TARG_ST100
   condition = WN_kid0 (branch);
 
   // Inverting a FALSEBR depends on the target implementation.
   // For example, on the ST100 branches are active on FALSE condition
   // and should not be inverted. Thus, inverting should be delegated
   // to the machine dependent Expand_Branch.
-
   variant = WHIRL_Compare_To_OP_variant (WN_opcode(condition));
+#else
+  condition = WN_kid0 (branch);
+  invert = (WN_opcode(branch) == OPC_FALSEBR);
+  variant = WHIRL_Compare_To_OP_variant (WN_opcode(condition), invert);
+#endif
 
   if (variant != V_BR_NONE) {
     operand0 = Expand_Expr (WN_kid0(condition), condition, NULL);
@@ -3889,15 +3962,21 @@ Handle_CONDBR (
 	      && WN_class(condition) == CLASS_PREG,
 	      ("MTYPE_B TRUEBR/FALSEBR condition must be preg or relop"));
 
+#ifdef TARG_ST100
+      // Arthur: invert or not is target dependent
+      //
+      variant = (WN_opcode(branch) == OPC_FALSEBR) ? 
+                                               V_BR_P_FALSE : V_BR_P_TRUE;
+      operand1 = NULL;
+#else
       operand1 = NULL;
       variant = V_BR_P_TRUE;
 
-      /*
       if (invert) {
 	PREG_NUM preg2_num = WN_load_offset(condition) + 1;
 	operand0 = PREG_To_TN_Array[preg2_num];
       }
-      */
+#endif
     }
     else if (Zero_TN && TN_is_const_reg(Zero_TN)) { 
       operand1 = Zero_TN;

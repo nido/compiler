@@ -653,6 +653,9 @@ typedef struct {
   mBOOL             reg_allocatable[REGISTER_MAX + 1];
   const char       *reg_name[REGISTER_MAX + 1];
 
+#ifdef TARG_ST100
+  mBOOL             is_ptr;
+#endif
   mBOOL             can_store;
   mBOOL		    multiple_save;
   mUINT16           register_count;
@@ -708,6 +711,10 @@ REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
                                 (REGISTER_CLASS_info[x].function_argument)
 #define REGISTER_CLASS_shrink_wrap(x)				\
                                 (REGISTER_CLASS_info[x].shrink_wrap)
+#ifdef TARG_ST100
+#define REGISTER_CLASS_is_ptr(x)				\
+                                (REGISTER_CLASS_info[x].is_ptr)
+#endif
 #define REGISTER_CLASS_can_store(x)				\
                                 (REGISTER_CLASS_info[x].can_store)
 #define REGISTER_CLASS_multiple_save(x)				\
@@ -1163,17 +1170,11 @@ extern void Mark_Specified_Registers_As_Not_Allocatable (void);
  * ==================================================================== 
  */
 
-extern void Initialize_Register_Class(ISA_REGISTER_CLASS);
+// target-specific register class initializations
+extern void CGTARG_Initialize_Register_Class(ISA_REGISTER_CLASS rclass);
 
-/* whether REGISTER_CLASS re-initialization required */
-extern BOOL REGISTER_Check_Alloc_Status (ISA_REGISTER_CLASS);
-
-// user wants this not to be allocatable.
-extern BOOL REGISTER_set_allocatable (ISA_REGISTER_CLASS, REGISTER);
-extern BOOL REGISTER_set_not_allocatable (ISA_REGISTER_CLASS, REGISTER);
-extern void Set_Register_Never_Allocatable (char *);
-extern void Set_Register_Never_Allocatable (PREG_NUM);
-extern void Set_Register_Not_Allocatable (void);
+// given regname (from asm), return its register class
+extern ISA_REGISTER_CLASS CGTARG_Regname_Register_Class(char *regname); 
 
 // Assembly name for this register class.
 #define ISA_REGISTER_CLASS_ASM_Name _ISA_REGISTER_CLASS_ASM_Name 
@@ -1194,6 +1195,6 @@ extern void Set_Register_Not_Allocatable (void);
 // Returns the set of allocated rotating registers.
 #define REGISTER_Get_Requested_Rotating_Registers _REGISTER_Get_Requested_Rotating_Registers
 
-#include "register_targ.h"
+#include "targ_register.h"
 
 #endif /* REGISTER_INCLUDED */

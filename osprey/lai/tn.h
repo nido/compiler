@@ -386,6 +386,12 @@ extern TN_NUM First_REGION_TN;	/* The first non-dedicated TN in the current REGI
 extern TN **TN_Vec;		/* Mapping from number to TN */
 #define TNvec(i) TN_Vec[i]
 
+#ifdef TARG_ST100
+/* Made the ded_tns[][] a global table because used in the target
+ * specific part of the compiler
+ */
+extern TN *Ded_TNs[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#endif
 
 // The following are special-purpose TNs required in the compiler for
 // specific purposes.  
@@ -549,6 +555,12 @@ extern BOOL Potential_Immediate_TN_Expr (
 /* Initialize machine specific dedicated TNs */
 extern void Init_Dedicated_TNs (void);
 
-#include "tn_targ.h"
+/* Initialize machine specific dedicated TNs */
+extern void CGTARG_Init_Dedicated_TNs (void);
+
+/* Format const TN value depending on relocation*/
+extern INT64 CGTARG_TN_Value (TN *t, INT64 base_ofst);
+
+#include "targ_tn.h"
 
 #endif /* tn_INCLUDED */

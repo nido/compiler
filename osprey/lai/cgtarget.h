@@ -819,6 +819,6 @@ extern void CGTARG_Result_Live_Range( void* lrange, OP* op, INT32 offset );
 extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
                                        INT32  offset );
 
-#include "cg_targ.h"
+#include "targ_cg.h"
 
 #endif /* CGTARGET_INCLUDED */

@@ -108,7 +108,11 @@ TN *Link_TN;
  * register-class/register pair. We save pointers to them here
  * so we can get at them later.
  */
+#ifdef TARG_ST100
+TN *Ded_TNs[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#else
 static TN *ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#endif
 
 /* The register TNs are in a table named TNvec, indexed by their TN
  * numbers in the range 1..Last_TN.  The first part of the table, the
@@ -361,6 +365,12 @@ Gen_Register_TN (
     TNvec(Last_TN) = tn;
     if ( size > 16 ) ErrMsg ( EC_TN_Size, size );
     Set_TN_size(tn, size);
+#ifdef TARG_ST100
+    // Arthur: this is target dependent. 
+    // TODO: parametrize this.
+#else
+    if ( rclass == ISA_REGISTER_CLASS_float)  Set_TN_is_float(tn);
+#endif
     Set_TN_register_class(tn, rclass);
     return tn;
   }
@@ -567,6 +577,12 @@ Create_Dedicated_TN (
 )
 {
   INT size = REGISTER_bit_size(rclass, reg) / 8;
+#ifdef TARG_ST100
+  // Arthur: this is target dependent
+  BOOL is_float = FALSE;
+#else
+  BOOL is_float = rclass == ISA_REGISTER_CLASS_float;
+#endif
 
   /* Allocate the dedicated TN at file level, because we reuse them 
    * for all PUs.
@@ -580,6 +596,7 @@ Create_Dedicated_TN (
   Set_TN_register_class(tn, rclass);
   Set_TN_register(tn, reg);
   Set_TN_size(tn, size);
+  if ( is_float ) Set_TN_is_float(tn);
   return(tn);
 }
 
@@ -596,7 +613,11 @@ Build_Dedicated_TN (
   INT size
 )
 {
+#ifdef TARG_ST100
+  return Ded_TNs[rclass][reg];
+#else
   return ded_tns[rclass][reg];
+#endif
 }
 
 /* ====================================================================
@@ -615,10 +636,17 @@ Init_Dedicated_TNs (void)
 	 reg <= REGISTER_CLASS_last_register(rclass);
 	 reg++) {
       ++tnum;
+#ifdef TARG_ST100
+      Ded_TNs[rclass][reg] = Create_Dedicated_TN(rclass, reg);
+#else
       ded_tns[rclass][reg] = Create_Dedicated_TN(rclass, reg);
+#endif
     }
   }
 
+#ifdef TARG_ST100
+  CGTARG_Init_Dedicated_TNs();
+#else
   /* Initialize the dedicated integer register TNs: */
   Zero_TN = ded_tns[REGISTER_CLASS_zero][REGISTER_zero];
   Ep_TN = ded_tns[REGISTER_CLASS_ep][REGISTER_ep];
@@ -631,12 +659,15 @@ Init_Dedicated_TNs (void)
   FOne_TN = ded_tns[REGISTER_CLASS_fone][REGISTER_fone];
   LC_TN = ded_tns[REGISTER_CLASS_lc][REGISTER_lc];
   Link_TN = ded_tns[REGISTER_CLASS_link][REGISTER_link];
+#endif
 
+#ifdef TARG_IA64
   /* allocate gp tn.  this may use a caller saved register, so
    * we don't use the one allocated for $gp above.
    */
   ++tnum; 
   GP_TN = Create_Dedicated_TN (REGISTER_CLASS_gp, REGISTER_gp);
+#endif
   Last_Dedicated_TN = tnum;
 
   return;
@@ -898,7 +929,8 @@ Init_TNs_For_PU (void)
    * changed by the last PU.  otherwise, Convert_WHIRL_To_OPs et. al.,
    * get confused.
    */
-  Set_TN_register(GP_TN, REGISTER_gp);
+  if (Gen_GP_Relative)
+    Set_TN_register(GP_TN, REGISTER_gp);
 }
 
 /* ====================================================================

@@ -1160,8 +1160,10 @@ Live_Init(
   if (BB_call(bb)) {
     GTN_UNIVERSE_Add_TN(SP_TN);
     GTN_SET_Union1D (BB_live_out(bb), SP_TN, &liveness_pool);
-    GTN_UNIVERSE_Add_TN(GP_TN);
-    GTN_SET_Union1D (BB_live_out(bb), GP_TN, &liveness_pool);
+    if (Gen_GP_Relative) {
+      GTN_UNIVERSE_Add_TN(GP_TN);
+      GTN_SET_Union1D (BB_live_out(bb), GP_TN, &liveness_pool);
+    }
   }
 
   BB_defreach_in(bb)  = GTN_SET_ClearD(BB_defreach_in(bb));

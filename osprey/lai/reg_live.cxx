@@ -70,20 +70,12 @@
 #include "whirl2ops.h"
 #include "dominate.h"
 #include "findloops.h"
-/* #include "cg_vector.h" */
+#include "cg_vector.h"
 #include "gtn_universe.h"
 #include "gtn_set.h"
 #include "data_layout.h"
 
 #include "reg_live.h"
-
-/* --------------------------------------------------------------------
- *   Add dedicated registers to the livein/liveout sets for pu.
- * --------------------------------------------------------------------
- */
-extern void Compute_Dedicated_PU_Livein (ST *pu_st, REGSET livein);
-extern void Compute_Dedicated_PU_Liveout (ST *pu_st, REGSET liveout);
-extern void Compute_Call_Livein (ST *call_st, BB *, REGSET livein);
 
 static BOOL Trace_Register_Liveness = FALSE;
 
@@ -274,12 +266,46 @@ Compute_PU_Regs (
     Compute_Parameter_Regs (ST_pu_type(pu_st), 
 	                  PU_Info_tree_ptr(Current_PU_Info), livein);
     // add sp, gp, ep, ra to the livein set.
-    Compute_Dedicated_PU_Livein (pu_st, livein);
+    livein[REGISTER_CLASS_sp] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_sp], REGISTER_sp);
+#ifdef TARG_ST100
+    //
+    // Arthur: some of these may not be defined on a given target.
+    //         In this case the class/reg pairs are not defined.
+    //         check for validity
+    //
+    if (GP_TN != NULL) {
+      livein[REGISTER_CLASS_gp] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_gp], REGISTER_gp);
+    }
+    if (Ep_TN != NULL) {
+      livein[REGISTER_CLASS_ep] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_ep], REGISTER_ep);
+    }
+    if (RA_TN != NULL) {
+      livein[REGISTER_CLASS_ra] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_ra], REGISTER_ra);
+    }
+#else
+    livein[REGISTER_CLASS_gp] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_gp], REGISTER_gp);
+    livein[REGISTER_CLASS_ep] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_ep], REGISTER_ep);
+    livein[REGISTER_CLASS_ra] = 
+	REGISTER_SET_Union1 (livein[REGISTER_CLASS_ra], REGISTER_ra);
+#endif
 
     // add all the callee-save registers to the livein set.
     FOR_ALL_ISA_REGISTER_CLASS(rc) {
       livein[rc] = REGISTER_SET_Union (livein[rc], 
 				    REGISTER_CLASS_callee_saves(rc));
+    }
+    // If current procedure is a nested function, add the static-link 
+    // register to the livein set for the procedure.
+    if (PU_is_nested_func(Pu_Table[ST_pu(pu_st)])) {
+      livein[REGISTER_CLASS_static_link] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_static_link], 
+				       REGISTER_static_link);
     }
   }
 
@@ -306,7 +332,9 @@ Compute_PU_Regs (
 				     REGISTER_CLASS_callee_saves(rc));
     }
 
-    Compute_Dedicated_PU_Liveout (pu_st, liveout);
+    // add sp to list of liveout registers.
+    liveout[REGISTER_CLASS_sp] = 
+	REGISTER_SET_Union1 (liveout[REGISTER_CLASS_sp], REGISTER_sp);
   }
 }
 
@@ -345,10 +373,51 @@ Compute_Call_Regs (
   if (livein != NULL) {
     // add the parameter registers to the livein set.
     Compute_Parameter_Regs (call_ty, call_wn, livein);
-    Compute_Call_Livein (call_st, bb, livein);
+
+    // If calling a nested function, add the static-link register to the 
+    // livein set for the call.
+    if (call_st != NULL && PU_is_nested_func(Pu_Table[ST_pu(call_st)])) {
+      livein[REGISTER_CLASS_static_link] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_static_link], 
+				       REGISTER_static_link);
+    }
+
+    // add sp, gp to the livein set.
+#ifdef TARG_ST100
+    // Arthur: GP may not be defined. Check it here.
+    if (GP_TN != NULL) {
+      livein[REGISTER_CLASS_gp] = 
+		REGISTER_SET_Union1 (livein[REGISTER_CLASS_gp], REGISTER_gp);
+    }
+#else
+    livein[REGISTER_CLASS_gp] = 
+		REGISTER_SET_Union1 (livein[REGISTER_CLASS_gp], REGISTER_gp);
+#endif
+    livein[REGISTER_CLASS_sp] = 
+		REGISTER_SET_Union1 (livein[REGISTER_CLASS_sp], REGISTER_sp);
+
+    // add t9 if PIC call.
+#ifdef TARG_ST100
+    if (opr != OPR_CALL && Gen_PIC_Calls && Ep_TN != NULL) {
+#else
+    if (opr != OPR_CALL && Gen_PIC_Calls) {
+#endif
+      livein[REGISTER_CLASS_ep] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_ep], REGISTER_ep);
+    }
 
     // add ra and callee saves if tail call.
     if (BB_tail_call(bb)) {
+#ifdef TARG_ST100
+      // Arthur: RA_TN is not necessarily defined on this target
+      if (RA_TN != NULL) {
+	livein[REGISTER_CLASS_ra] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_ra], REGISTER_ra);
+      }
+#else
+      livein[REGISTER_CLASS_ra] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_ra], REGISTER_ra);
+#endif
       FOR_ALL_ISA_REGISTER_CLASS(cl) {
 	REGISTER_SET callee_saves = REGISTER_CLASS_callee_saves(cl);
 	livein[cl] = REGISTER_SET_Union(livein[cl], callee_saves);
@@ -610,6 +679,7 @@ REG_LIVE_Prolog_Temps(
 	 tn != GTN_SET_CHOOSE_FAILURE;
 	 tn = GTN_SET_Choose_Next(BB_live_out(bb), tn)
     ) {
+      FmtAssert(TN_is_global_reg(tn),("TN%d is not global",TN_number(tn)));
       if (TN_register(tn) != REGISTER_UNDEFINED) {
 	cl = TN_register_class(tn);
 	live[cl] = REGISTER_SET_Union1(live[cl], TN_register(tn));

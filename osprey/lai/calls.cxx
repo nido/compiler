@@ -96,6 +96,13 @@ INT64 Frame_Len;
 SAVE_REG *Callee_Saved_Regs;
 INT32 Callee_Saved_Regs_Count;
 
+#ifdef TARG_ST100
+/* 
+ * regs that need to be saved at prolog and restored at epilog.
+ */
+REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
+#endif
+
 /* Special PREGs associated with save locations for Callee Saved registers */
 PREG_NUM *Callee_Saved_Pregs;
 PREG_NUM Caller_FP_Preg;
@@ -194,7 +201,11 @@ Setup_GP_TN_For_PU (
   else if (Force_GP_Prolog) {
     GP_Setup_Code = need_code;
   }
+#ifdef TARG_ST100
+  else if (Gen_GP_Relative && !Is_Caller_Save_GP &&
+#else
   else if (!Is_Caller_Save_GP &&
+#endif
 	(Gen_PIC_Call_Shared || Gen_PIC_Shared) &&
 	ST_visible_outside_dso(pu) ) {
 
@@ -232,16 +243,35 @@ Setup_GP_TN_For_PU (
    * are present.
    */
   if (Use_Scratch_GP(GP_Setup_Code == need_code)) {
-    /* not implemented */
-    reg = REGISTER_gp;
+    REGISTER_SET caller_saves;
+    REGISTER_SET func_val;
+    REGISTER_SET func_arg;
+
+    REGISTER_Set_Allocatable(REGISTER_CLASS_gp, REGISTER_gp, TRUE);
+
+    /* exclude function return and argument registers from our choices */
+    caller_saves = REGISTER_CLASS_caller_saves(REGISTER_CLASS_gp);
+    func_val = REGISTER_CLASS_function_value(REGISTER_CLASS_gp);
+    caller_saves = REGISTER_SET_Difference(caller_saves, func_val);
+    func_arg = REGISTER_CLASS_function_argument(REGISTER_CLASS_gp);
+    caller_saves = REGISTER_SET_Difference(caller_saves, func_arg);
+
+    reg = REGISTER_SET_Choose(caller_saves);
+    if ( reg == REGISTER_UNDEFINED ) {
+      /* no caller saved register available for some reason.  this
+       * should not happen, but we'll fail gracefully and just use
+       * gp.
+       */
+      DevWarn("No caller saved register to replace $gp in leaf routine.\n");
+      reg = REGISTER_gp;
+    }
   }
   else {
     /* use gp */
     reg = REGISTER_gp;
   }
+  REGISTER_Set_Allocatable(REGISTER_CLASS_gp, reg, FALSE);
   Set_TN_register(GP_TN, reg);
-
-  return;
 }
 
 /* =======================================================================
@@ -260,7 +290,8 @@ Init_Callee_Saved_Regs_for_REGION (
   ISA_REGISTER_CLASS cl;
   TN *stn;
 
-  Setup_GP_TN_For_PU( pu );
+  if (Gen_GP_Relative)
+    Setup_GP_TN_For_PU( pu );
 
   if (NULL != RA_TN /* IA-32 doesn't have ra reg. */) {
     /* initialize the return address map: */
@@ -322,6 +353,14 @@ Init_Callee_Saved_Regs_for_REGION (
   }
 
   Callee_Saved_Regs_Count = i;
+
+#ifdef TARG_ST100
+  // Arthur: initialize callee saved regs mask also
+  FOR_ALL_ISA_REGISTER_CLASS(cl) {
+    Callee_Saved_Regs_Mask[cl] = REGISTER_SET_EMPTY_SET;
+  }
+#endif
+
   return;
 }
 
@@ -370,9 +409,9 @@ Generate_Entry (BB *bb, BOOL gra_run)
   }
 
   if (!BB_handler(bb)) {
-#if 0
+
     EETARG_Save_Pfs (Caller_Pfs_TN, &ops);	// alloc
-#endif
+
     /* Initialize the stack pointer (this is a placeholder; Adjust_Entry
      * will replace it to the actual sequence once we know the size of
      * the frame):
@@ -410,14 +449,19 @@ Generate_Entry (BB *bb, BOOL gra_run)
     ENTRYINFO_sp_adj(ent_info) = OPS_last(&ops);
   }
 
-  if ( gra_run ) {
+#ifdef TARG_ST100
+  if (gra_run && !CG_gen_callee_saved_regs_mask) {
+#else
+  if (gra_run) {
+#endif
     /* Copy from the callee saves registers to register TNs */
-    for ( callee_num = 0; callee_num < Callee_Saved_Regs_Count; ++callee_num ) {
+    for (callee_num = 0; 
+	 callee_num < Callee_Saved_Regs_Count; 
+	 ++callee_num ) {
       TN *callee_tn = CALLEE_tn(callee_num);
-      if (    TN_is_save_reg(callee_tn) 
-	  && !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
-      {
-        Exp_COPY ( callee_tn, CALLEE_ded_tn(callee_num), &ops );
+      if (TN_is_save_reg(callee_tn) &&
+	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn))) {
+	Exp_COPY ( callee_tn, CALLEE_ded_tn(callee_num), &ops );
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
     }
@@ -428,7 +472,6 @@ Generate_Entry (BB *bb, BOOL gra_run)
    * to the save-tn for it. 
    */
   if (NULL != RA_TN) {
-#if 0
     if ( PU_has_return_address(Get_Current_PU()) ) {
       // This is broken for IA-32.  On IA-32, the return address is always
       // at a constant offset from the frame pointer, specifically it is
@@ -449,6 +492,36 @@ Generate_Entry (BB *bb, BOOL gra_run)
       CGSPILL_Store_To_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb);
     }
     else {
+#ifdef TARG_ST100
+      if (gra_run && PU_Has_Calls) {
+	if (CG_gen_callee_saved_regs_mask) {
+	  // 
+	  // Add RA_TN to the callee saved registers mask
+	  //
+	  ISA_REGISTER_CLASS cl = TN_register_class(RA_TN);
+	  Callee_Saved_Regs_Mask[cl] = 
+	    REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], 
+				TN_register(RA_TN));
+	}
+	else {
+	  // Because the routine has calls, gra will need to spill it ...
+	  // but it is an implicitely used register on ST100. It's easier
+	  // to handle it here for now.
+	  // TODO: understand how to handle this properly ??
+	  //
+	  ST *ra_sv_sym = CGSPILL_Get_TN_Spill_Location(RA_TN, CGSPILL_LCL);
+	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
+	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
+	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
+	  Exp_COPY (ra_sv_tn, RA_TN, &ops);
+	  CGSPILL_Store_To_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb);
+	}
+      }
+      else {
+	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
+#else
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
       {
@@ -467,14 +540,17 @@ Generate_Entry (BB *bb, BOOL gra_run)
         Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops );
       }
       Set_OP_no_move_before_gra(OPS_last(&ops));
+#endif
     }
-#endif
-    Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
   }
-#if 0
+
+#ifdef TARG_ST100
+  if ( gra_run && !CG_gen_callee_saved_regs_mask) 
+#else
   if ( gra_run ) 
-    EETARG_Save_Extra_Callee_Tns (&ops);
 #endif
+    EETARG_Save_Extra_Callee_Tns (&ops);
+
   /* Save the old GP and setup a new GP if required */
   if (GP_Setup_Code == need_code) {
 
@@ -525,7 +601,14 @@ Generate_Entry (BB *bb, BOOL gra_run)
       Exp_ADD (Pointer_Mtype, GP_TN, Ep_TN, got_disp_tn, &ops);
     }
   } 
+#ifdef TARG_ST100
+  else if (Gen_GP_Relative && 
+	   Is_Caller_Save_GP && 
+	   PU_Has_Calls && 
+	   !Constant_GP
+#else
   else if (Is_Caller_Save_GP && PU_Has_Calls && !Constant_GP
+#endif
 	&& PREG_To_TN_Array[Caller_GP_Preg] != NULL) 
   {
 	// need to save old gp but don't need to setup new gp.
@@ -792,7 +875,7 @@ Optimize_Tail_Calls (
 
       /* Replace the call OP with a jump.
        */
-      jmp_op = CGTARG_Build_Jump_Instead_Of_Call (call_op);
+      jmp_op = EETARG_Build_Jump_Instead_Of_Call (call_op);
       Set_OP_tail_call(jmp_op);
       BB_Insert_Op_Before(call_bb, call_op, jmp_op);
       BB_Remove_Op(call_bb, call_op);
@@ -1088,10 +1171,14 @@ Generate_Exit (
       Exp_COPY (GP_TN, Caller_GP_TN, &ops);
     }
   }
-#if 0
+
+#ifdef TARG_ST100
+  if ( gra_run && !CG_gen_callee_saved_regs_mask)
+#else
   if ( gra_run )
-    EETARG_Restore_Extra_Callee_Tns (&ops);
 #endif
+    EETARG_Restore_Extra_Callee_Tns (&ops);
+
   if (NULL != RA_TN) {
     if (PU_has_return_address(Get_Current_PU())) {
       /* If the return address builtin is required, restore RA_TN from the 
@@ -1111,7 +1198,28 @@ Generate_Exit (
       Exp_COPY (RA_TN, ra_sv_tn, &ops);
     }
     else {
-#if 0
+#ifdef TARG_ST100
+      if (gra_run && PU_Has_Calls) {
+	if (!CG_gen_callee_saved_regs_mask) {
+	  // Because the routine has calls, gra will need to spill it ...
+	  // but it is an implicitely used register on ST100. It's easier
+	  // to handle it here for now.
+	  // TODO: understand how to handle this properly ??
+	  //
+	  ST *ra_sv_sym = TN_spill(RA_TN);
+	  //CGSPILL_Get_TN_Spill_Location(RA_TN, CGSPILL_LCL);
+	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
+	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
+	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
+	  CGSPILL_Load_From_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb_epi);
+	  Exp_COPY (RA_TN, ra_sv_tn, &ops);
+	}
+      }
+      else {
+	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
+#else
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
       {
@@ -1127,19 +1235,22 @@ Generate_Exit (
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
       }
       Set_OP_no_move_before_gra(OPS_last(&ops));
-#else
-	/* Copy back the return address register from the save_tn. */
-	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 #endif
     }
   }
-#if 0
+
+#ifdef TARG_ST100
+  if (gra_run && !CG_gen_callee_saved_regs_mask) {
+#else
   if ( gra_run ) {
+#endif
     /* Copy from register TNs to the callee saves registers */
-    for ( callee_num = 0; callee_num < Callee_Saved_Regs_Count; ++callee_num ) {
+    for ( callee_num = 0; 
+	  callee_num < Callee_Saved_Regs_Count; 
+	  ++callee_num ) {
       TN *callee_tn = CALLEE_tn(callee_num);
-      if (    TN_is_save_reg(callee_tn) 
-	  && !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
+      if (TN_is_save_reg(callee_tn) &&
+	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
       {
         Exp_COPY ( CALLEE_ded_tn(callee_num), callee_tn, &ops );
 	Set_OP_no_move_before_gra(OPS_last(&ops));
@@ -1150,7 +1261,7 @@ Generate_Exit (
   if (PU_Has_Calls) {
     EETARG_Restore_Pfs (Caller_Pfs_TN, &ops);
   }
-#endif
+
   /* Restore the stack pointer.
    */
   if (Gen_Frame_Pointer && !PUSH_FRAME_POINTER_ON_STACK) {
@@ -1259,7 +1370,7 @@ Init_Entry_Exit_Code (
   Gen_Frame_Pointer = (Current_PU_Stack_Model != SMODEL_SMALL);
 
   // target-specific code (e.g. for stacked registers)
-  CGTARG_Init_Entry_Exit_Code (pu_wn, Gen_Frame_Pointer);
+  EETARG_Init_Entry_Exit_Code (pu_wn, Gen_Frame_Pointer);
 
   Init_Pregs ();
 
@@ -1662,7 +1773,7 @@ Adjust_Entry (
   ENTRYINFO_sp_adj(ent_info) = ent_adj;
 
   // possible do target-dependent fixups
-  CGTARG_Fixup_Entry_Code (bb);
+  EETARG_Fixup_Entry_Code (bb);
 }
 
 
@@ -1728,7 +1839,7 @@ Adjust_Exit (
    * or leave it unchanged.
    */
   if (PUSH_FRAME_POINTER_ON_STACK) {
-    OP* op = CGTARG_High_Level_Procedure_Exit ();
+    OP* op = EETARG_High_Level_Procedure_Exit ();
     BB_Insert_Op_After (bb, sp_adj, op);
     BB_Remove_Op (bb, sp_adj);
     sp_adj = op;
@@ -1789,6 +1900,11 @@ Adjust_Exit (
   /* Point to the [possibly] new SP adjust OP
    */
   EXITINFO_sp_adj(exit_info) = sp_adj;
+
+#ifdef TARG_ST100
+  // possible do target-dependent fixups
+  EETARG_Fixup_Exit_Code (bb);
+#endif
 }
 
 /* ====================================================================
@@ -1860,6 +1976,41 @@ Adjust_Entry_Exit_Code (
 )
 {
   BB_LIST *elist;
+
+#ifdef TARG_ST100
+
+  if (Trace_EE) {
+    INT callee_num;
+
+    fprintf(TFile, "<calls> Callee saved regs used by %s\n", ST_name(pu));
+    ISA_REGISTER_CLASS cl;
+    FOR_ALL_ISA_REGISTER_CLASS(cl) {
+      fprintf(TFile, "    ISA_REGISTER_CLASS_%s: ", 
+               ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(cl)));
+      REGISTER_SET_Print(Callee_Saved_Regs_Mask[cl], TFile);
+      fprintf(TFile, "\n");
+    }
+    fprintf(TFile, "\n");
+
+    for (callee_num = 0; callee_num < Callee_Saved_Regs_Count; callee_num++) {
+      TN *tn = CALLEE_tn(callee_num);
+      REGISTER reg = TN_save_reg(tn);
+      cl = TN_save_rclass(tn);
+
+      fprintf(TFile, "    ");
+      Print_TN(tn, FALSE);
+      fprintf(TFile, " (%d:%d): ", TN_save_rclass(tn), TN_save_reg(tn));
+
+      //      ISA_REGISTER_CLASS cl = TN_register_class(tn);
+      //      REGISTER reg = TN_register(tn);
+      if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[cl], reg)) {
+	fprintf (TFile, "saved TN%d saved from reg %d:%d", 
+                                                  TN_number(tn), cl, reg);
+      }
+      fprintf(TFile, "\n");
+    }
+  }
+#endif
 
   for (elist = Entry_BB_Head; elist; elist = BB_LIST_rest(elist)) {
     Adjust_Entry(BB_LIST_first(elist));

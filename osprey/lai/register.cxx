@@ -119,6 +119,20 @@ const CLASS_REG_PAIR CLASS_REG_PAIR_undef =
 const REGISTER_SET REGISTER_SET_EMPTY_SET = { 0 };
 #endif /* ISA_REGISTER_MAX >= 64 */
 
+/* Track the "allocatable" state of each register.
+ */
+enum {
+  AS_default = 0,	/* the default is what targ_info says */
+  AS_allocatable = 1,
+  AS_not_allocatable = 2
+};
+
+static mUINT8 reg_alloc_status[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+
+// list of registers that should not be allocated, both globally and locally.
+static vector< pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers;
+static vector< pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers_in_pu;
+
 
 /* ====================================================================
  *
@@ -172,7 +186,6 @@ REGISTER_SET_Range(UINT low, UINT high)
   return set;
 #endif /* ISA_REGISTER_MAX < 64 */
 }
-
 
 /* ====================================================================
  *   Mark_Specified_Registers_As_Not_Allocatable
@@ -288,6 +301,234 @@ Mark_Specified_Registers_As_Not_Allocatable ()
  */
 
 /* ====================================================================
+ *  Initialize_Register_Class
+ *
+ *  Initialize the register class 'rclass'. A register class may be
+ *  intialized multiple times.
+ * ====================================================================
+ */
+static void
+Initialize_Register_Class(
+  ISA_REGISTER_CLASS rclass
+)
+{
+  INT32              i;
+  const ISA_REGISTER_CLASS_INFO *icinfo = ISA_REGISTER_CLASS_Info(rclass);
+  const char        *rcname         = ISA_REGISTER_CLASS_INFO_Name(icinfo);
+  INT		     bit_size       = ISA_REGISTER_CLASS_INFO_Bit_Size(icinfo);
+  INT                first_isa_reg  = ISA_REGISTER_CLASS_INFO_First_Reg(icinfo);
+  INT                last_isa_reg   = ISA_REGISTER_CLASS_INFO_Last_Reg(icinfo);
+  INT                register_count = last_isa_reg - first_isa_reg + 1;
+
+  REGISTER_SET       allocatable    = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET       caller         = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET       callee         = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET       func_argument  = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET       func_value     = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET       shrink_wrap    = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET	     stacked        = REGISTER_SET_EMPTY_SET;
+  REGISTER_SET	     rotating       = REGISTER_SET_EMPTY_SET;
+
+
+  /* Verify we have a valid rclass and that the type used to implement 
+   * a register set is large enough.
+   */
+  FmtAssert(rclass >= ISA_REGISTER_CLASS_MIN && 
+	    rclass <= ISA_REGISTER_CLASS_MAX,
+	                       ("invalide register class %d", (INT)rclass));
+  FmtAssert((sizeof(REGISTER_SET) * 8) >= register_count,
+	    ("REGISTER_SET type cannot represent all registers in "
+	     "the class %s", rcname));
+
+  REGISTER_CLASS_name(rclass) = rcname;
+
+  /* Now make sets of various register properties:
+   */
+  for (i = 0; i < register_count; ++i) {
+    INT      isa_reg        = i + first_isa_reg;
+    REGISTER reg            = i + REGISTER_MIN;
+    BOOL     is_allocatable = ABI_PROPERTY_Is_allocatable(rclass, isa_reg);
+    INT      alloc_status   = reg_alloc_status[rclass][reg];
+
+    /* CG likes to pretend that a class with only one register can't
+     * be allocated, so perpetuate that illusion.
+     */
+    if (register_count <= 1) is_allocatable = FALSE;
+
+    switch ( alloc_status ) {
+      case AS_allocatable:
+	is_allocatable = TRUE;
+	break;
+      case AS_not_allocatable:
+	is_allocatable = FALSE;
+	break;
+      case AS_default:
+	break;
+      default:
+	Is_True(FALSE, ("unhandled allocations status: %d", alloc_status));
+    }
+
+    if (is_allocatable) {
+      allocatable = REGISTER_SET_Union1(allocatable, reg);
+
+#ifdef TARG_ST100
+      if (Gen_GP_Relative && ABI_PROPERTY_Is_global_ptr(rclass, isa_reg)) {
+	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
+	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
+	if (Constant_GP) {
+	  //        if (GP_Is_Preserved) {
+	  /* neither caller nor callee saved (always preserved). */
+	} else if (Is_Caller_Save_GP) {
+	  /* caller-saved. */
+	  caller = REGISTER_SET_Union1(caller, reg);
+	} else {
+	  /* callee-saved. */
+	  callee = REGISTER_SET_Union1(callee, reg);
+	}
+      }
+#else
+      if ( ABI_PROPERTY_Is_global_ptr(rclass, isa_reg) ) {
+        if ( GP_Is_Preserved ) {
+          /* neither caller nor callee saved (always preserved). */
+        } else if ( Is_Caller_Save_GP ) {
+          /* caller-saved. */
+          caller = REGISTER_SET_Union1(caller, reg);
+        } else {
+          /* callee-saved. */
+          callee = REGISTER_SET_Union1(callee, reg);
+        }
+      }
+#endif
+      else {
+        if (ABI_PROPERTY_Is_callee(rclass, isa_reg)) {
+          callee = REGISTER_SET_Union1(callee, reg);
+          shrink_wrap = REGISTER_SET_Union1(shrink_wrap, reg);
+        }
+        if (ABI_PROPERTY_Is_caller(rclass, isa_reg))
+          caller = REGISTER_SET_Union1(caller, reg);
+        if (ABI_PROPERTY_Is_func_arg(rclass, isa_reg))
+          func_argument = REGISTER_SET_Union1(func_argument, reg);
+        if (ABI_PROPERTY_Is_func_val(rclass, isa_reg))
+          func_value = REGISTER_SET_Union1(func_value, reg);
+        if (ABI_PROPERTY_Is_ret_addr(rclass, isa_reg))
+          shrink_wrap = REGISTER_SET_Union1(shrink_wrap, reg);
+        if ( ABI_PROPERTY_Is_stacked(rclass, isa_reg) )
+          stacked = REGISTER_SET_Union1(stacked, reg);
+      }
+    }
+
+    REGISTER_bit_size(rclass, reg) = bit_size;
+    REGISTER_machine_id(rclass, reg) = isa_reg;
+    REGISTER_allocatable(rclass, reg) = is_allocatable;
+    REGISTER_name(rclass, reg) = 
+                   ISA_REGISTER_CLASS_INFO_Reg_Name(icinfo, isa_reg);
+
+    if ( ABI_PROPERTY_Is_frame_ptr(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fp, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_fp, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_static_link(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_static_link, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_static_link, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_global_ptr(rclass, isa_reg) ) {
+#ifdef TARG_ST100
+      if (Gen_GP_Relative) {
+	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
+	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
+      }
+#else
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
+#endif
+    }
+    else if ( ABI_PROPERTY_Is_ret_addr(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ra, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_ra, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_stack_ptr(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_sp, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_entry_ptr(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ep, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_ep, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_zero(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_zero, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_zero, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_prev_funcstate(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_pfs, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_pfs, rclass);
+    }
+#ifdef TARG_ST100
+    //
+    // Arthur: More to possible ABI:
+    //
+    else if ( ABI_PROPERTY_Is_link(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_link, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_link, rclass);
+    }
+#endif
+    else if ( ABI_PROPERTY_Is_loop_count(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_lc, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_lc, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_epilog_count(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ec, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_ec, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_true_predicate(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_true, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_true, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_fzero(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fzero, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_fzero, rclass);
+    }
+    else if ( ABI_PROPERTY_Is_fone(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fone, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_fone, rclass);
+    }
+  }
+
+  REGISTER_CLASS_universe(rclass)          =
+	REGISTER_SET_Range(REGISTER_MIN, REGISTER_MIN + register_count - 1);
+  REGISTER_CLASS_allocatable(rclass)       = allocatable;
+  REGISTER_CLASS_callee_saves(rclass)      = callee;
+  REGISTER_CLASS_caller_saves(rclass)      = caller;
+  REGISTER_CLASS_function_argument(rclass) = func_argument;
+  REGISTER_CLASS_function_value(rclass)    = func_value;
+  REGISTER_CLASS_shrink_wrap(rclass)       = shrink_wrap;
+  REGISTER_CLASS_register_count(rclass)    = register_count;
+  REGISTER_CLASS_stacked(rclass)           = stacked;
+  REGISTER_CLASS_rotating(rclass)          = rotating;
+#ifdef TARG_ST100
+    REGISTER_CLASS_is_ptr(rclass)
+	= ISA_REGISTER_CLASS_INFO_Is_Ptr(icinfo);
+#endif
+  REGISTER_CLASS_can_store(rclass)
+	= ISA_REGISTER_CLASS_INFO_Can_Store(icinfo);
+  REGISTER_CLASS_multiple_save(rclass)
+	= ISA_REGISTER_CLASS_INFO_Multiple_Save(icinfo);
+
+#ifdef TARG_ST100
+  CGTARG_Initialize_Register_Class (rclass);
+#else
+  /* There are multiple integer return regs -- v0 is the lowest
+   * of the set.
+   */
+  if (rclass == ISA_REGISTER_CLASS_integer) {
+    Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_v0, REGISTER_SET_Choose(func_value));
+    Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_v0, rclass);
+  }
+#endif
+
+  return;
+}
+
+/* ====================================================================
  *   Initialize_Register_Subclasses
  *
  *   Initialize the register subclass information cache.
@@ -326,36 +567,24 @@ Initialize_Register_Subclasses(void)
 }
 
 /* ====================================================================
- *   Initialize_Register_Classes
- * ====================================================================
- */
-static void
-Initialize_Register_Classes ()
-{
-  ISA_REGISTER_CLASS rclass;
-
-  /*  Create the register classes for all the target registers.
-   */
-  FOR_ALL_ISA_REGISTER_CLASS( rclass ) {
-    Initialize_Register_Class(rclass);
-  }
-
-  return;
-}
-
-/* ====================================================================
  *   REGISTER_Begin
  * ====================================================================
  */
 void
 REGISTER_Begin (void)
 {
+  ISA_REGISTER_CLASS rclass;
+
   /*  Create the register classes for all the target registers.
    */
-  Initialize_Register_Classes ();
+  FOR_ALL_ISA_REGISTER_CLASS( rclass ) {
+	Initialize_Register_Class(rclass);
+#ifdef HAS_STACKED_REGISTERS
+    	REGISTER_Init_Stacked(rclass);
+#endif
+  }
   Initialize_Register_Subclasses();
   Init_Mtype_RegClass_Map();
-  return;
 }
 
 struct Dont_Allocate_Dreg
@@ -367,8 +596,7 @@ struct Dont_Allocate_Dreg
     ISA_REGISTER_CLASS rclass;
     REGISTER reg;
     CGTARG_Preg_Register_And_Class(preg, &rclass, &reg);
-    if (REGISTER_set_not_allocatable (rclass, reg))
-      Initialize_Register_Class(rclass);
+    REGISTER_Set_Allocatable (rclass, reg, FALSE /* is_allocatable */);
   }
 };
  
@@ -388,12 +616,37 @@ REGISTER_Pu_Begin(void)
    * is all registers are set to their "default".
    */
   FOR_ALL_ISA_REGISTER_CLASS( rclass ) {
-    if (REGISTER_Check_Alloc_Status(rclass)) 
-      Initialize_Register_Class(rclass);
+    REGISTER reg;
+    BOOL re_init = FALSE;
+
+    for ( reg = REGISTER_MIN;
+	  reg <= REGISTER_CLASS_last_register(rclass);
+	  reg++
+    ) {
+      if ( reg_alloc_status[rclass][reg] != AS_default) {
+	reg_alloc_status[rclass][reg] = AS_default;
+	re_init = TRUE;
+      }
+    }
+
+    if ( re_init ) Initialize_Register_Class(rclass);
+
+    // always reset rotating register set
+    REGISTER_CLASS_rotating(rclass) = REGISTER_SET_EMPTY_SET;
+
+#ifdef HAS_STACKED_REGISTERS
+    REGISTER_Init_Stacked(rclass);
+#endif
   }
 
-  Set_Register_Not_Allocatable ();
-
+  // now check for any registers that user doesn't want allocated
+  vector< pair< ISA_REGISTER_CLASS, REGISTER > >::iterator r;
+  for (r = dont_allocate_these_registers.begin(); 
+	r != dont_allocate_these_registers.end(); 
+	++r)
+  {
+	REGISTER_Set_Allocatable ((*r).first, (*r).second, FALSE /* is_allocatable */);
+  }
   // also check for user register variables in PU (local dreg list).
   if ( ST_ATTR_Table_Size (CURRENT_SYMTAB)) {
     For_all (St_Attr_Table, CURRENT_SYMTAB, 
@@ -413,11 +666,9 @@ void
 REGISTER_Reset_FP (void)
 {
   ISA_REGISTER_CLASS rclass;
-  BOOL status;
-
   if (FRAME_POINTER_REQUIRED_FOR_PU && FP_TN != NULL) {
     rclass = TN_register_class(FP_TN);
-    status = REGISTER_set_not_allocatable (rclass, TN_register(FP_TN));
+    reg_alloc_status[rclass][TN_register(FP_TN)] = AS_not_allocatable;
     Initialize_Register_Class(rclass);
   }
 }
@@ -713,6 +964,31 @@ CLASS_REG_PAIR_Print(
 }
 
 /* ====================================================================
+ *
+ *  REGISTER_Set_Allocatable
+ *
+ *  See interface description
+ *
+ * ====================================================================
+ */
+void
+REGISTER_Set_Allocatable(
+  ISA_REGISTER_CLASS rclass,
+  REGISTER           reg,
+  BOOL               is_allocatable
+)
+{
+  INT prev_status = reg_alloc_status[rclass][reg];
+  INT new_status  = is_allocatable ? AS_allocatable : AS_not_allocatable;
+
+  if ( prev_status != new_status ) {
+    reg_alloc_status[rclass][reg] = new_status;
+
+    Initialize_Register_Class(rclass);
+  }
+}
+
+/* ====================================================================
  * ====================================================================
  *
  * Tracing
@@ -925,3 +1201,25 @@ REGISTER_CLASS_Trace_All(void)
   }
 }
 
+// user wants given register to not be allocatable in file.
+void
+Set_Register_Never_Allocatable (char *regname) 
+{
+	ISA_REGISTER_CLASS rclass = CGTARG_Regname_Register_Class(regname);
+	REGISTER reg;
+
+	reg = REGISTER_MIN + atoi(regname+1);
+	FmtAssert(reg <= REGISTER_CLASS_last_register(rclass),
+		("%s is not a valid register", regname));
+	dont_allocate_these_registers.push_back( make_pair( rclass, reg ));
+}
+
+// user wants given register to not be allocatable in file.
+void
+Set_Register_Never_Allocatable (PREG_NUM preg) 
+{
+  ISA_REGISTER_CLASS rclass;
+  REGISTER reg;
+  CGTARG_Preg_Register_And_Class(preg, &rclass, &reg);
+  dont_allocate_these_registers.push_back( make_pair( rclass, reg ));
+}
