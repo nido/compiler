@@ -641,10 +641,18 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
 	      ("Rematerializable TN%d has a spill loc", TN_number(tn)));
     opcode = WN_opcode (home);
     opr = OPCODE_operator(opcode);
-    /* make sure st is allocated. */
-    if (OPCODE_has_sym(opcode) && WN_st(home) != NULL) {
-      Allocate_Object (WN_st(home));
-    }
+#ifdef TARG_ST
+    if (OPCODE_has_sym(opcode) && WN_st(home) != NULL &&
+        !(opr == OPR_CONST &&
+          MTYPE_is_float(WN_rtype(home)) &&
+          !CG_floating_const_in_memory)) {
+#else
+      if (OPCODE_has_sym(opcode) && WN_st(home) != NULL) {
+#endif
+        /* make sure st is allocated. */
+        Allocate_Object (WN_st(home));
+      }
+
     switch (opr) {
     case OPR_LDID:
       /* homing load */
