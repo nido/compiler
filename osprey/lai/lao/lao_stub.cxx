@@ -828,6 +828,9 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   if (LAI_Interface_Operation_isVolatile(operation)) {
     DevWarn("Operation volatile on LAO side");
   }
+  if (LAI_Interface_Operation_isHoisted(operation)) {
+    Set_OP_hoisted(new_op);
+  }
   // Set scycle
   OP_scycle(new_op) = issueDate;
   //
@@ -859,6 +862,9 @@ CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   Is_True(iteration == 0, ("OP_update must not change OP_unrolling"));
   Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
+  if (LAI_Interface_Operation_isHoisted(operation)) {
+    Set_OP_hoisted(cgir_op);
+  }
   // Set scycle.
   OP_scycle(cgir_op) = issueDate;
 }
@@ -938,7 +944,7 @@ CGIR_BB_update(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_O
   for (int opCount = 0; operations[opCount] != NULL; opCount++) {
     OPS_Append_Op(&ops, operations[opCount]);
     if (OP_unrolling(operations[opCount]) != 0)
-      Is_True(OP_unroll_bb(operations[opCount]), ("Unrolled operation with NULL unroll_bb"));
+      Set_OP_unroll_bb(operations[opCount], cgir_bb);
   }
   BB_Append_Ops(cgir_bb, &ops);
   // Remove the LOOPINFO if any.
