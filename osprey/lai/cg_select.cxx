@@ -929,6 +929,12 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     joint_block = bb2_target;
   }
 
+  if (Trace_Select_Gen) {
+    fprintf (TFile, "Convert if BB%d BB%d BB%d BB%d BB%d BB%d\n",
+             BB_id(bb1), BB_id(bb1_fall_thru), BB_id(bb1_target),
+             BB_id(bb2), BB_id(bb2_fall_thru), BB_id(bb2_target));
+  }
+
   OP *br1_op = BB_branch_op(bb1);
   OP *br2_op = BB_branch_op(bb2);
 
@@ -992,9 +998,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   }
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
-  fprintf (TFile, "After target logif bb...\n");
-  Print_All_BBs();
-  BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
     
   // if needed, update phi operands and new edge from head.
 
@@ -1018,7 +1021,10 @@ Simplify_Logifs(BB *bb1, BB *bb2)
       OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
       OP_MAP_Set(phi_op_map, phi, new_phi);
     }
+    BB_Update_Phis(joint_block);  
   }
+  else
+    BB_Update_Phis(fall_thru_block);
 }
 
 /* ================================================================
@@ -1274,6 +1280,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Calculate_Dominators();
 
+  draw_CFG();
+
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *bbb;
@@ -1330,6 +1338,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
+
+  draw_CFG();
 
   GRA_LIVE_Recalc_Liveness(rid);
 
