@@ -403,8 +403,11 @@ CGIR_OP_identity(CGIR_OP cgir_op) {
 
 // Create a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+  int argCount = 0, resCount = 0;
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
+  for (argCount = 0; arguments[argCount] != NULL; argCount++);
+  for (resCount = 0; results[resCount] != NULL; resCount++);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
   CGPREP_Init_Op(new_op);
   // _CG_LOOP_info_map may not be defined for multi-bb loops.
@@ -424,23 +427,24 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
 
 // Update a CGIR_OP.
 static void
-CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN results[], int unrolled, int iteration, int issueDate) {
   BB *bb = OP_bb(cgir_op);
   if (bb != NULL) BB_Remove_Op(bb, cgir_op);
+  int argCount = 0, resCount = 0;
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
   }
+  for (argCount = 0; arguments[argCount] != NULL; argCount++) {
+    CGIR_TN cgir_tn = arguments[argCount];
+    if (OP_opnd(cgir_op, argCount) != cgir_tn) Set_OP_opnd(cgir_op, argCount, cgir_tn);
+  }
   Is_True(argCount == OP_opnds(cgir_op), ("OP_opnds mismatch in CGIR_update_OP"));
-  for (int i = 0; i < argCount; i++) {
-    CGIR_TN cgir_tn = arguments[i];
-    if (OP_opnd(cgir_op, i) != cgir_tn) Set_OP_opnd(cgir_op, i, cgir_tn);
+  for (resCount = 0; results[resCount] != NULL; resCount++) {
+    CGIR_TN cgir_tn = results[resCount];
+    if (OP_result(cgir_op, resCount) != cgir_tn) Set_OP_result(cgir_op, resCount, cgir_tn);
   }
   Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
-  for (int i = 0; i < resCount; i++) {
-    CGIR_TN cgir_tn = results[i];
-    if (OP_result(cgir_op, i) != cgir_tn) Set_OP_result(cgir_op, i, cgir_tn);
-  }
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
   // Set scycle.
   OP_scycle(cgir_op) = (issueDate == -1) ? 0 : issueDate;
@@ -454,21 +458,21 @@ CGIR_BB_identity(CGIR_BB cgir_bb) {
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, unsigned optimizations) {
+CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
-  for (int i = 0; i < labelCount; i++) {
-    CGIR_LAB cgir_lab = labels[i];
+  for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
+    CGIR_LAB cgir_lab = labels[labelCount];
     // code borrowed from Gen_Label_For_BB
     Set_Label_BB(cgir_lab, new_bb);
     BB_Add_Annotation(new_bb, ANNOT_LABEL, (void *)cgir_lab);
   }
   // Add the operations.
   OPS ops = OPS_EMPTY;
-  for (int i = 0; i < opCount; i++) {
-    OPS_Append_Op(&ops, operations[i]);
-    if (OP_unrolling(operations[i]) != 0)
-      Set_OP_unroll_bb(operations[i], new_bb);
+  for (int opCount = 0; operations[opCount] != NULL; opCount++) {
+    OPS_Append_Op(&ops, operations[opCount]);
+    if (OP_unrolling(operations[opCount]) != 0)
+      Set_OP_unroll_bb(operations[opCount], new_bb);
   }
   BB_Append_Ops(new_bb, &ops);
   // Add the cgir_li.
@@ -506,10 +510,10 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, unsigned optimizations) {
+CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
   // Add the labels.
-  for (int i = 0; i < labelCount; i++) {
-    CGIR_LAB cgir_lab = labels[i];
+  for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
+    CGIR_LAB cgir_lab = labels[labelCount];
     if (!Is_Label_For_BB(cgir_lab, cgir_bb)) {
       // code borrowed from Gen_Label_For_BB
       Set_Label_BB(cgir_lab, cgir_bb);
@@ -519,10 +523,10 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   // Add the operations.
   BB_Remove_All(cgir_bb);
   OPS ops = OPS_EMPTY;
-  for (int i = 0; i < opCount; i++) {
-    OPS_Append_Op(&ops, operations[i]);
-    if (OP_unrolling(operations[i]) != 0)
-      Is_True(OP_unroll_bb(operations[i]), ("Unrolled operation with NULL unroll_bb"));
+  for (int opCount = 0; operations[opCount] != NULL; opCount++) {
+    OPS_Append_Op(&ops, operations[opCount]);
+    if (OP_unrolling(operations[opCount]) != 0)
+      Is_True(OP_unroll_bb(operations[opCount]), ("Unrolled operation with NULL unroll_bb"));
   }
   BB_Append_Ops(cgir_bb, &ops);
   // Remove the cgir_li if any.
@@ -697,7 +701,7 @@ lao_init() {
     TOP__Operator[TOP_andl_ii_r] = Operator_CODE_ANDL_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_andl_r_b] = Operator_CODE_ANDL_BDEST_SRC1_SRC2;
     TOP__Operator[TOP_andl_r_r] = Operator_CODE_ANDL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_asm] = Operator_CODE_ASM15_DEST_SRC1_SRC2;
+    TOP__Operator[TOP_asm] = Operator_MACRO_ASMCALL;
 //  TOP__Operator[TOP_begin_pregtn] = Operator_PSEUDO_;
     TOP__Operator[TOP_br] = Operator_CODE_BR_BCOND_BTARG;
     TOP__Operator[TOP_break] = Operator_CODE_BREAK;
