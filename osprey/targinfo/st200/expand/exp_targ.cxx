@@ -1009,7 +1009,6 @@ Expand_Multiply (
   TN      *dest = result;
   TYPE_ID  mtype = rmtype;
   BOOL     has_const = FALSE;
-  BOOL is_signed = FALSE;
   TOP opcode = TOP_UNDEFINED;
 
 #if 0
@@ -1020,8 +1019,6 @@ Expand_Multiply (
   dump_tn (src1);
   dump_tn (src2);
 #endif
-
-  is_signed = MTYPE_signed(s1mtype) || MTYPE_signed(s2mtype);
 
   //
   // Check for two constants
@@ -1063,11 +1060,22 @@ Expand_Multiply (
       return;
     has_const = TRUE;
   }
-        
+
+
+  if (TN_has_value(src2)) {
+    INT64 value = TN_value(src2);
+    if (value >= -(1<<15) && value < (1<<15)-1) {
+      s2mtype = MTYPE_I2;
+    } else if (value >= 0 && value < (1<<16)-1) {
+      s2mtype = MTYPE_U2;
+    }
+  }
+
   switch (mtype) {
   case MTYPE_U2:
   case MTYPE_I2:
-    // short <- short * short */
+  case MTYPE_U4:
+  case MTYPE_I4:
     if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
       opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
       Build_OP(opcode, dest, src1, src2, ops);
@@ -1078,52 +1086,27 @@ Expand_Multiply (
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+    else if (s2mtype == MTYPE_U2) {
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
-    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-      FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+    else if (s2mtype == MTYPE_I2) {
+      opcode = has_const ? TOP_mull_i : TOP_mull_r;
       Build_OP(opcode, dest, src1, src2, ops);
+    } 
+    
+    else if (!has_const && s1mtype == MTYPE_U2) {
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, dest, src2, src1, ops);
+    }
+
+    else if (!has_const && s1mtype == MTYPE_I2) {
+      opcode = has_const ? TOP_mull_i : TOP_mull_r;
+      Build_OP(opcode, dest, src2, src1, ops);
     }
 
     else {
-      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI2 (%d = %d * %d)",
-                        rmtype, s1mtype, s2mtype));
-    }
-
-    break;
-
-  case MTYPE_I4:
-  case MTYPE_U4:
-    // first handle optimised special cases
-
-    // word <- half * half
-    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
-      opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
-      opcode = has_const ? TOP_mulll_i : TOP_mulll_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
-    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
-
-    // word <- word * word
-    else if (!has_const &&
-             ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
-              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
-              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
-              (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4))) {
       TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
       TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
@@ -1131,45 +1114,6 @@ Expand_Multiply (
       opcode = has_const ? TOP_mulhs_i : TOP_mulhs_r;
       Build_OP(opcode, tmp2, src1, src2, ops);
       Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
-    }
-
-    else {
-      // word <- half * word
-      // if we have a word argument. It can only be at pos1.
-      // unless it is a constant with size < 65535.
-      if (s2mtype == MTYPE_I4 || s2mtype == MTYPE_U4) {
-        BOOL needSwap = true;
-        if (has_const) {
-          if (TN_value(src2) > 65535) {
-            TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-            Build_OP (TOP_mov_i, tmp, src2, ops);
-            src2 = tmp;
-            has_const = false;
-          }
-          else
-            needSwap = false;
-        }
- 
-        if (needSwap) {
-          // swap operands and types.
-          TN *tmp;
-          TYPE_ID tmpmtype;
-          tmp = src2;
-          src2 = src1;
-          src1 = tmp;
-          tmpmtype = s2mtype;
-          s2mtype = s1mtype;
-          s1mtype = tmpmtype;
-        }
-      }
-
-      if (MTYPE_signed(s2mtype))
-	//if (is_signed)
-        opcode = has_const ? TOP_mull_i : TOP_mull_r;
-      else
-        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;        
-        
-      Build_OP(opcode, dest, src1, src2, ops);
     }
     break;
 
