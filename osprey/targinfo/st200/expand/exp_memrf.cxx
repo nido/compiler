@@ -428,17 +428,27 @@ Expand_Composed_Load (
   TYPE_ID rtype= OPCODE_rtype(op);
   TYPE_ID desc = OPCODE_desc(op);
 
+  if (MTYPE_is_float(rtype)) {
+    switch(rtype) {
+    case MTYPE_F4:
+      Expand_Composed_Load (OPC_I4I4LDID, result, base, disp, variant, ops);
+      break;
+    case MTYPE_F8:
+      Expand_Composed_Load (OPC_I8I8LDID, result, base, disp, variant, ops);
+      break;
+    default:
+      FmtAssert(FALSE, ("Expand_Composed_Load doesn't handle %s",
+			MTYPE_name(rtype)));
+    }
+    return;
+  }
+    
   INT32		alignment, nLoads, i;
   OPCODE	new_opcode, unsigned_opcode;
   TYPE_ID	new_desc;
   TN		*tmpV[8];
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
-
-  // (cbr) loading unaligned floats ? can't have F4U1 load
-  if (!MTYPE_is_class_integer(rtype)) {
-    rtype = MTYPE_U4;
-  }
 
   // unsigned opcode for all but the most significant bits
   unsigned_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
@@ -543,6 +553,21 @@ Expand_Composed_Store (
   OPS *ops
 )
 {
+  if (MTYPE_is_float(mtype)) {
+    switch(mtype) {
+    case MTYPE_F4:
+      Expand_Composed_Store (MTYPE_I4, obj, base, disp, variant, ops);
+      break;
+    case MTYPE_F8:
+      Expand_Composed_Store (MTYPE_I8, obj, base, disp, variant, ops);
+      break;
+    default:
+      FmtAssert(FALSE, ("Expand_Composed_Store doesn't handle %s",
+			MTYPE_name(mtype)));
+    }
+    return;
+  }
+
   INT32		alignment, nStores;
   TYPE_ID	new_desc;
 
