@@ -306,12 +306,6 @@ Operator_to_CGIR_TOP(Operator lir_operator) {
 
 /*-------------------- LIR Interface Call-Back Functions ---------------------*/
 
-// Identity of a CGIR_LAB.
-static uint32_t
-CGIR_LAB_identity(CGIR_LAB cgir_lab) {
-  return cgir_lab;
-}
-
 // Create a CGIR_LAB.
 static CGIR_LAB
 CGIR_LAB_create(CGIR_LAB cgir_lab, const char *name) {
@@ -328,12 +322,6 @@ static void
 CGIR_LAB_update(CGIR_LAB cgir_lab, const char *name) {
 }
 
-// Identity of a CGIR_SYM.
-static uint32_t
-CGIR_SYM_identity(CGIR_SYM cgir_sym) {
-  return cgir_sym;
-}
-
 // Create a CGIR_SYM.
 static CGIR_SYM
 CGIR_SYM_create(CGIR_SYM cgir_sym) {
@@ -342,12 +330,6 @@ CGIR_SYM_create(CGIR_SYM cgir_sym) {
 // Update a CGIR_SYM.
 static void
 CGIR_SYM_update(CGIR_SYM cgir_sym) {
-}
-
-// Identity of a CGIR_TN.
-static uint32_t
-CGIR_TN_identity(CGIR_TN cgir_tn) {
-  return (uintptr_t)cgir_tn/sizeof(*cgir_tn);
 }
 
 // Create a Dedicated CGIR_TN.
@@ -398,12 +380,6 @@ CGIR_TN_update(CGIR_TN cgir_tn) {
   // TODO: commit register allocation.
 }
 
-// Identity of a CGIR_OP.
-static uint32_t
-CGIR_OP_identity(CGIR_OP cgir_op) {
-  return (uintptr_t)cgir_op/OP_sizeof(0, 0);
-}
-
 // Create a CGIR_OP.
 static CGIR_OP
 CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN results[], int unrolled, int iteration, int issueDate) {
@@ -452,12 +428,6 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
   // Set scycle.
   OP_scycle(cgir_op) = issueDate;
-}
-
-// Identity of a CGIR_BB.
-static uint32_t
-CGIR_BB_identity(CGIR_BB cgir_bb) {
-  return (uintptr_t)cgir_bb/sizeof(*cgir_bb);
 }
 
 // Create a CGIR_BB.
@@ -604,12 +574,6 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
   }
 }
 
-// Identity of a CGIR_LI.
-static uint32_t
-CGIR_LI_identity(CGIR_LI cgir_li) {
-  return (uintptr_t)cgir_li/sizeof(*cgir_li);
-}
-
 // Create a CGIR_LI.
 static CGIR_LI
 CGIR_LI_create(CGIR_LI cgir_li, int unrolled) {
@@ -667,13 +631,10 @@ lao_init() {
     lao_optimize_PU_p = lao_optimize_PU;
     CGIR_print_p = CGIR_print;
     // Initialize the callback pointers.
-    *CGIR_CallBack__LAB_identity(callback) = CGIR_LAB_identity;
     *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
     *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
-    *CGIR_CallBack__SYM_identity(callback) = CGIR_SYM_identity;
     *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
     *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
-    *CGIR_CallBack__TN_identity(callback) = CGIR_TN_identity;
     *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
     *CGIR_CallBack__PseudoReg_TN_create(callback) = CGIR_PseudoReg_TN_create;
     *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
@@ -681,17 +642,14 @@ lao_init() {
     *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
     *CGIR_CallBack__Label_TN_create(callback) = CGIR_Label_TN_create;
     *CGIR_CallBack__TN_update(callback) = CGIR_TN_update;
-    *CGIR_CallBack__OP_identity(callback) = CGIR_OP_identity;
     *CGIR_CallBack__OP_create(callback) = CGIR_OP_create;
     *CGIR_CallBack__OP_update(callback) = CGIR_OP_update;
-    *CGIR_CallBack__BB_identity(callback) = CGIR_BB_identity;
     *CGIR_CallBack__BB_create(callback) = CGIR_BB_create;
     *CGIR_CallBack__BB_update(callback) = CGIR_BB_update;
     *CGIR_CallBack__BB_chain(callback) = CGIR_BB_chain;
     *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
     *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
     *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
-    *CGIR_CallBack__LI_identity(callback) = CGIR_LI_identity;
     *CGIR_CallBack__LI_create(callback) = CGIR_LI_create;
     *CGIR_CallBack__LI_update(callback) = CGIR_LI_update;
     // initialize the TOP__Operator array
@@ -1181,7 +1139,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   LAO_INIT();
-  Interface_open(interface, callback, 5,
+  Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipelining, CG_LAO_pipelining,
@@ -1238,7 +1196,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   unsigned optimizations = LAO_Optimize(lao_optimizations);
   if (optimizations != 0) {
-    Interface_updateCGIR(interface);
+    Interface_updateCGIR(interface, callback);
     if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   }
   //
