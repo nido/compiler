@@ -113,6 +113,7 @@ typedef struct {
   op_list tkstrs;
   op_list ntkstrs;
   list<int> ifarg_idx;
+  list<bool> need_bh;
 } store_t;
 store_t store_i;
 op_list load_i;
@@ -127,7 +128,6 @@ INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.2";
 static float select_factor;
 static int branch_penalty;
-static float cond_store_penalty = 1;
 
 /* ================================================================
  *
@@ -254,6 +254,7 @@ clear_spec_lists()
   store_i.tkstrs.clear();
   store_i.ntkstrs.clear();
   store_i.ifarg_idx.clear();
+  store_i.need_bh.clear();
 }
 
 static void
@@ -537,8 +538,8 @@ Are_Not_Aliased(OP* op1, OP* op2)
 
 // Unsafe to speculate loads and promote stores in the same time if they
 // share the same address.
-BOOL
-Check_ReadWrite_Dependencies(op_list strs)
+static void
+Check_ReadWrite_Dependencies(op_list strs, list<bool> &bh_list)
 {
   // Since we are also promoting loads, be carefull that they
   // can't alias with stores since we are changing the op order.
@@ -550,6 +551,8 @@ Check_ReadWrite_Dependencies(op_list strs)
     op_list::iterator i2_end  = load_i.end();
     OP *stw_op = *i1_iter;
 
+    bool nbh = FALSE;
+
     while(i2_iter != i2_end) {
       OP *ldw_op = *i2_iter;
       if (OP_bb(stw_op) == OP_bb(ldw_op) && OP_Precedes (stw_op, ldw_op)) {
@@ -559,15 +562,14 @@ Check_ReadWrite_Dependencies(op_list strs)
             Print_OP (stw_op);
             Print_OP (ldw_op);
           }
-          return FALSE;
+          nbh = TRUE;
         }
       }
       i2_iter++;
     }
+    bh_list.push_back(nbh);
     i1_iter++;
   }
-
-  return TRUE;
 }
 
 static UINT
@@ -586,6 +588,7 @@ Handle_Odd_Stores(op_list strs1, op_list &strs2)
     //    TN *ofst = Gen_Literal_TN (0, 4);
     strs2.push_back(0);
     store_i.ifarg_idx.push_back(OP_find_opnd_use(op1, OU_base));
+    store_i.need_bh.push_back(FALSE);
     count++;
   }
   return count;
@@ -694,8 +697,15 @@ Sort_Stores(void)
     // if the stores were moved from their original location, and if they
     // may alias with a load, then it's unsafe to promote them
     // taken block will be promoted first.
-    if (! Check_ReadWrite_Dependencies(store_i.tkstrs))
-      return 0;
+    Check_ReadWrite_Dependencies(store_i.tkstrs, store_i.need_bh);
+  }
+  else {
+    op_list::iterator i1_iter = store_i.tkstrs.begin();
+    op_list::iterator i1_end  = store_i.tkstrs.end();
+    while(i1_iter != i1_end) {
+      store_i.need_bh.push_back(FALSE);
+      i1_iter++;
+    }
   }
 
   return count;
@@ -867,10 +877,6 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     CG_SCHED_EST_Delete(se1);
   if (se2)
     CG_SCHED_EST_Delete(se2);
-
-  // Stores will be merged together.
-  int sdiff = MIN (store_i.ntkstrs.size(), store_i.tkstrs.size());
-  cyclesh -= sdiff * cond_store_penalty;  
 
   // cost of if converted region. prob is one. 
   float est_cost_after = cyclesh / select_factor;
@@ -1074,6 +1080,25 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
             DevAssert(TN_is_global_reg(res), ("can find a def for a local tn"));
         }
       }
+    }
+  }
+}
+
+
+// promoted tns was global because they ended up inside a phi.
+// Now that they are converted into a select and the blocks have
+// been merged, that might not be true.
+static void
+BB_Localize_Tns (BB *bb) 
+{
+  OP *op;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {  
+    for (UINT8 i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op, 0);
+
+      if (!GTN_SET_MemberP(BB_live_out(bb),tn))
+        Reset_TN_is_global_reg(tn); 
     }
   }
 }
@@ -1348,6 +1373,9 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail)
 
   Rename_PHIs(dup_tn_map, to_bb, tail, first_bb);
 
+  Free_Dominators_Memory();
+  Calculate_Dominators();
+
   dup_bbs++;
 }
 
@@ -1424,45 +1452,74 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
   while (!store_i.tkstrs.empty()) {
     OP* op1 = store_i.tkstrs.front();
     OP* op2 = store_i.ntkstrs.front();
-    UINT8 opnd_idx = store_i.ifarg_idx.front();
+    bool nbh = store_i.need_bh.front();
     OPS ops = OPS_EMPTY;
 
-    Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
+    if (nbh) {
+      UINT8 opnd_idx = OP_find_opnd_use(op1, OU_base);
+      Expand_Cond_Store (cond_tn, false_br, op1, NULL, opnd_idx, &ops);
+      Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
-   if (Trace_Select_Gen) {
-     fprintf(Select_TFile, "<select> Insert selects stores in BB%d", BB_id(bb));
-     Print_OPS (&ops); 
-     fprintf (Select_TFile, "\n");
-   }
+      if (Trace_Select_Gen) {
+        fprintf(Select_TFile, "<select> Insert conditional store in BB%d", BB_id(bb));
+        Print_OPS (&ops); 
+        fprintf (Select_TFile, "\n");
+      }
 
-   select_count++;
+      BB_Insert_Ops_Before (bb, op1, &ops);
+      select_count++;
 
-   // Store address didn't change or it is a conditional black hole store.
-   // Pass WN information
-   if ((op1 == NULL || op2 == NULL) ||
-       (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval)))
-     Copy_WN_For_Memory_OP(OPS_last(&ops), op1 == NULL ? op2 : op1);
+      OPS_Init(&ops);
+      Expand_Cond_Store (cond_tn, false_br, NULL, op2, opnd_idx, &ops);
+      Copy_WN_For_Memory_OP(OPS_last(&ops), op2);
+      if (Trace_Select_Gen) {
+        fprintf(Select_TFile, "<select> Insert conditional store in BB%d", BB_id(bb));
+        Print_OPS (&ops); 
+        fprintf (Select_TFile, "\n");
+      }
 
-   /* in case there is no pair of stores just insert it
-      respecting the original order of instructions.
-      else, possible read write dependencies have been checked. Insert the
-      sinked pair of stores at the end */
-   if (!op2) 
-     BB_Insert_Ops_Before (bb, op1, &ops);
-   else if (!op1) 
-     BB_Insert_Ops_Before (bb, op2, &ops);
-   else {
-     BB_Update_OP_Order(bb);
+      BB_Insert_Ops_Before (bb, op2, &ops);
+      select_count++;
+    }
+    else {
+      UINT8 opnd_idx = store_i.ifarg_idx.front();
+      Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
 
-     if (OP_Precedes (op2, op1)) {
-       OP *temp_op;
-       temp_op = op1;
-       op1 = op2;
-       op2 = temp_op;
-     }
+      if (Trace_Select_Gen) {
+        fprintf(Select_TFile, "<select> Insert selects stores in BB%d", BB_id(bb));
+        Print_OPS (&ops); 
+        fprintf (Select_TFile, "\n");
+      }
 
-     BB_Insert_Ops_Before (bb, op2, &ops);
-   }
+      select_count++;
+
+      // Store address didn't change or it is a conditional black hole store.
+      // Pass WN information
+      if ((op1 == NULL || op2 == NULL) ||
+          (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval)))
+        Copy_WN_For_Memory_OP(OPS_last(&ops), op1 == NULL ? op2 : op1);
+
+      /* in case there is no pair of stores just insert it
+         respecting the original order of instructions.
+         else, possible read write dependencies have been checked. Insert the
+         sinked pair of stores at the end */
+      if (!op2) 
+        BB_Insert_Ops_Before (bb, op1, &ops);
+      else if (!op1) 
+        BB_Insert_Ops_Before (bb, op2, &ops);
+      else {
+        BB_Update_OP_Order(bb);
+        
+        if (OP_Precedes (op2, op1)) {
+          OP *temp_op;
+          temp_op = op1;
+          op1 = op2;
+          op2 = temp_op;
+        }
+
+        BB_Insert_Ops_Before (bb, op2, &ops);
+      }
+    }
 
    if (op1)
      old_ops.push_front(op1);
@@ -1472,6 +1529,7 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    store_i.tkstrs.pop_front();
    store_i.ntkstrs.pop_front();
    store_i.ifarg_idx.pop_front();
+   store_i.need_bh.pop_front();
   }
 
    BB_Remove_Ops(bb, old_ops);
@@ -1794,14 +1852,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     BB_Recomp_Phis(bb, bb1, bb2, bb == joint_block);
     BB_Update_Phis(bb);
   }
-
-  // recompute
-  GRA_LIVE_Compute_Liveness_For_BB(bb1);
-  GRA_LIVE_Compute_Liveness_For_BB(else_block);
-  GRA_LIVE_Compute_Liveness_For_BB(joint_block);
-
-  // Promoted instructions might not be global anymore.
-  GRA_LIVE_Rename_TNs_For_BB(bb1);
 }
 
 /* ================================================================
@@ -1822,9 +1872,11 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
     Print_BB (head);
     fprintf (TFile, "\n fall_thrus are\n");
+    Print_BB (fall_thru_bb);
     BB_SET_Print (ft_set, Select_TFile);
     
     fprintf (TFile, "\n targets are\n");
+    Print_BB (target_bb);
     BB_SET_Print (t_set, Select_TFile);
 
     fprintf (TFile, "\n tail is\n");
@@ -2025,14 +2077,9 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     Promote_BB_Chain (head, fall_thru_bb, tail);
   }
 
-  // GRA_LIVE_Compute_Liveness_For_BB(head);
-
-  // Promoted instructions might not be global anymore.
-  //  BB_Localize_Tns (head);
-
-   // to avoid extending condition's lifetime, we keep the comp instruction
-   // at the end, just before the selects.
-   //  BB_Move_Op_To_End(head, head, cmp);
+  // to avoid extending condition's lifetime, we keep the comp instruction
+  // at the end, just before the selects.
+  //  BB_Move_Op_To_End(head, head, cmp);
 
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects in BB%d", BB_id(head));
@@ -2067,6 +2114,10 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
    // Maintain SSA.
    BB_Update_Phis(tail);
+
+   // Promoted instructions might not be global anymore.
+   GRA_LIVE_Compute_Liveness_For_BB(head);
+   BB_Localize_Tns (head);
 
    if (Trace_Select_Gen) {
      fprintf (TFile, "\nEnd Select_Fold from BB%d\n", BB_id(head));
@@ -2104,8 +2155,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Identify_Logifs_Candidates();
 
-  Calculate_Dominators();
-
   GRA_LIVE_Recalc_Liveness(rid);
 
   if_bb_map = BB_MAP_Create();
@@ -2121,6 +2170,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Simplify_Logifs(bb, bbb);
 
+      GRA_LIVE_Compute_Liveness_For_BB(bb);
+      BB_Localize_Tns(bb);
+
 #ifdef Is_True_On
       Sanity_Check();
 #endif
@@ -2131,6 +2183,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
+  Calculate_Dominators();
+
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *tail;
@@ -2139,9 +2193,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     
     BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
     BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
-
-    Free_Dominators_Memory();
-    Calculate_Dominators();
 
     if (Is_Hammock (bb, t_set, ft_set, &tail)) {
       Initialize_Hammock_Memory();
@@ -2153,9 +2204,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Finalize_Hammock_Memory();
   
-      GRA_LIVE_Recalc_Liveness(rid);
-      GRA_LIVE_Rename_TNs();
-
       // if bb is still a logif, that means that there was a merge.
       // need to update logif map
       if (BB_kind (bb) == BBKIND_LOGIF) {
@@ -2173,7 +2221,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   BB_MAP_Delete(if_bb_map);
 
-  // TODO: track liveness
+  // needed for out of ssa
   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
