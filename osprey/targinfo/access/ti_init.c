@@ -422,6 +422,34 @@ UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID id )
 /****************************************************************************
  ****************************************************************************/
 
+typedef INT tsi_operand_access_time_t(TOP, INT);
+typedef INT tsi_result_available_time_t(TOP, INT);
+
+INT
+TSI_Operand_Access_Time( TOP top, INT operand_index )
+{
+  static tsi_operand_access_time_t * so_call = 0;
+  if (! so_call && !(so_call = (tsi_operand_access_time_t *)
+		     dlsym(targ_handler, "TSI_Operand_Access_Time")))
+    return 0;
+
+  return so_call (top, operand_index);
+}
+
+INT
+TSI_Result_Available_Time( TOP top, INT result_index )
+{
+  static tsi_result_available_time_t * so_call = 0;
+  if (! so_call && !(so_call = (tsi_result_available_time_t *)
+		     dlsym(targ_handler, "TSI_Result_Available_Time")))
+    return 0;
+
+  return so_call (top, result_index);
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
 typedef INT si_id_count_t(void);
 typedef const SI_RESOURCE_ID_SET* si_id_ii_cycle_resource_ids_used_t(SI_ID, INT);
 
