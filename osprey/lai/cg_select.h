@@ -78,6 +78,6 @@ typedef struct {
   BB *fall_thru;
   BB *target;
   BOOL inverted;
-} bb_if;
+} logif_info;
 
 #endif /* SELECT_H_INCLUDED */

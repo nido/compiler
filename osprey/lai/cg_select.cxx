@@ -42,6 +42,7 @@
 #include <list.h>
 #include "defs.h"
 #include "config.h"
+#include "config_TARG.h"
 #include "tracing.h"
 #include "timing.h"
 #include "cgir.h"
@@ -228,9 +229,9 @@ static BOOL
 BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
 {
   BBLIST *edge;
-  bb_if *logif;
+  logif_info *logif;
 
-  logif = (bb_if *)BB_MAP_Get(if_bb_map, bb);
+  logif = (logif_info *)BB_MAP_Get(if_bb_map, bb);
   if (logif) {
     *fall_thru = logif->fall_thru;
     *target    = logif->target;
@@ -243,7 +244,7 @@ BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
     if (*target != *fall_thru) break;
   }
 
-  logif = (bb_if*)malloc(sizeof(bb_if));
+  logif = (logif_info*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(logif_info));
   logif->fall_thru = *fall_thru;
   logif->target    = *target;
   logif->inverted  = FALSE;
@@ -492,7 +493,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
   FOR_ALL_BB_OPs_FWD(bb, op) {
     if (! OP_Can_Be_Speculative(op)) {
       if (OP_memory (op)) {
-        if (Eager_Level < EAGER_MEMORY || OP_volatile(op))
+        if (! Force_Memory_Dismiss || OP_volatile(op))
           return FALSE;
 
         if (OP_load (op)) {
@@ -504,7 +505,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
 
           lop = Dup_OP (op);
           OP_Change_Opcode(lop, ld_top); 
-          Set_OP_speculative(lop);             // set the OP_speculative flag.
+          Set_OP_speculative(lop);  
 
           load_i.first.push_front(op);
           load_i.second.push_front(lop);
@@ -516,7 +517,8 @@ Can_Speculate_BB(BB *bb, op_list *stores)
            stores->push_front(op);
         }
       }
-      return FALSE;
+      else
+        return FALSE;
     }
   }
 
@@ -852,7 +854,7 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
     *fall_thru2 = *target2;
     *target2 = tmpbb;
 
-    bb_if *logif = (bb_if *)BB_MAP_Get(if_bb_map, fall_thru1);
+    logif_info *logif = (logif_info *)BB_MAP_Get(if_bb_map, fall_thru1);
     logif->inverted = TRUE;
     logif->fall_thru = *fall_thru2;
     logif->target = *target2;
@@ -991,16 +993,15 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   if (joint_block == BB_next(bb1)) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, fall_thru_block, 0.5L, joint_block);
+    Target_Logif_BB(bb1, fall_thru_block, BB_freq(fall_thru_block), joint_block);
   }
   else {
-    Target_Logif_BB(bb1, joint_block, 0.5L, fall_thru_block);
+    Target_Logif_BB(bb1, joint_block, BB_freq(joint_block), fall_thru_block);
   }
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
     
   // if needed, update phi operands and new edge from head.
-
   BB *phi_block = invert ? fall_thru_block : joint_block;
 
   if (joint_block == phi_block) {

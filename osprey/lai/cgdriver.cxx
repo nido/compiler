@@ -1047,9 +1047,7 @@ Configure_CG_Options(void)
 #endif
 
   if (!CG_enable_select_overridden) {
-    // enable when full validated...
-    //    CG_enable_select =  (CG_opt_level > 0) ? CGTARG_Can_Select() : FALSE;
-    CG_enable_select =  FALSE;
+    CG_enable_select =  (CG_opt_level > 0) ? CGTARG_Can_Select() : FALSE;
   }
 
   if (CG_enable_select && !CG_enable_ssa) {
