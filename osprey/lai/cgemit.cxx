@@ -909,8 +909,24 @@ Print_Label (
     fprintf (pfile, "\t%s\t", AS_GLOBAL);
     EMT_Write_Qualified_Name(pfile, st);
     fprintf(pfile, "\n");
-  }
+    // [CL] output as hidden/internal so that we are close to the
+    // export_local meaning
+#ifdef AS_INTERNAL
+    if (ST_export(st) == EXPORT_LOCAL_INTERNAL) {
+      fprintf (pfile, "\t%s\t", AS_INTERNAL);
+      EMT_Write_Qualified_Name(pfile, st);
+      fprintf(pfile, "\n");
+    } else
 #endif
+#ifdef AS_HIDDEN
+      {
+	fprintf (pfile, "\t%s\t", AS_HIDDEN);
+	EMT_Write_Qualified_Name(pfile, st);
+	fprintf(pfile, "\n");
+      }
+#endif
+#endif
+  }
   if (ST_class(st) == CLASS_VAR) {
     fprintf (pfile, "\t%s\t", AS_TYPE);
     EMT_Write_Qualified_Name (pfile, st);
@@ -2136,6 +2152,22 @@ Process_Initos_And_Literals (
 	fprintf(Output_File, "\t%s\t", AS_GLOBAL);
 	EMT_Write_Qualified_Tcon_Name(Output_File, st);
 	fprintf(Output_File, "\n");
+	// [CL] output as hidden/internal so that we are close to the
+	// export_local meaning
+#ifdef AS_INTERNAL
+	if (ST_export(st) == EXPORT_LOCAL_INTERNAL) {
+	  fprintf (Output_File, "\t%s\t", AS_INTERNAL);
+	  EMT_Write_Qualified_Name(Output_File, st);
+	  fprintf(Output_File, "\n");
+	} else
+#endif
+#ifdef AS_HIDDEN
+	  {
+	    fprintf (Output_File, "\t%s\t", AS_HIDDEN);
+	    EMT_Write_Qualified_Name(Output_File, st);
+	    fprintf(Output_File, "\n");
+	  }
+#endif
       }
       EMT_Write_Qualified_Tcon_Name(Output_File, st);
       fprintf(Output_File, ":\n");
