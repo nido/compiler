@@ -95,10 +95,6 @@ endif
 
 ifeq ($(BUILD_TARGET), ST200)
 HOSTDEFS += -DTARG_ST200  -DSUPPORTS_SELECT
-
- ifdef LAOBUILD
-  HOSTDEFS += -DST_LAO
- endif
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
