@@ -137,6 +137,7 @@ TARG_LIBELF = $(TARGDIR)/libelf
 TARG_LIBELFUTIL = $(TARGDIR)/libelfutil
 TARG_LIBDWARF = $(TARGDIR)/libdwarf
 TARG_LIBUNWIND = $(TARGDIR)/libunwindP
+TARG_LIBIBERTY = $(TARGDIR)/libiberty
 
 #----------------------------------------------------------------------
 #  List of directories, and source files of interest
@@ -633,7 +634,8 @@ else
  endif
 CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
 	     $(TARG_LIBELFUTIL)/libelfutil.a \
-	     $(TARG_LIBELF)/libelf.a
+	     $(TARG_LIBELF)/libelf.a \
+	     $(TARG_LIBIBERTY)/libiberty.a
 LLDLIBS += $(CGDEPLIBS)
 endif
 

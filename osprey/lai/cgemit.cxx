@@ -107,6 +107,11 @@
 #include "targ_isa_bundle.h"
 #include "targ_isa_operands.h"
 
+#ifdef TARG_ST
+/* (cbr) demangler interface */
+#include "../gnu_common/include/demangle.h"
+#endif
+
 BE_EXPORTED extern void Early_Terminate (INT status);
 
 #define PAD_SIZE_LIMIT	2048	/* max size to be padded in a section */
@@ -3418,7 +3423,14 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
     if (ant != NULL) {
 	ST *call_sym = CALLINFO_call_st(ANNOT_callinfo(ant));
 	if (call_sym != NULL) {
-		comment = vstr_concat(comment, ST_name(call_sym));
+#ifdef TARG_ST
+          /* (cbr) demangle name */
+          char *cp_name = cplus_demangle(ST_name(call_sym), DMGL_NO_OPTS);
+          if (cp_name)
+            comment = vstr_concat(comment, cp_name);
+          else
+#endif
+            comment = vstr_concat(comment, ST_name(call_sym));
 	}
     }
   }
@@ -3446,7 +3458,7 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
   if ((Assembly || Lai_Code)
       && List_Notes
       && (vstr_len(comment) > 0 || strlen(cycle_info) > 0)) {
-    fprintf (Output_File, "\t%s  %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
+    fprintf (Output_File, "\t%s %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
   }
   fputc ('\n', Output_File);
 #else
@@ -5398,9 +5410,17 @@ EMT_Emit_PU (
 #endif
   if ( Assembly ) {
 #ifdef TARG_ST
-    if ( List_Notes )
+    if ( List_Notes ) {
 #endif
-    fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
+#ifdef TARG_ST
+      /* (cbr) demangle name */
+      char *cp_name = cplus_demangle(ST_name(pu), DMGL_NO_OPTS);
+      if (cp_name)
+        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, cp_name );
+      else
+#endif
+        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
+    }
 #ifdef TARG_ST
     // [CL] force alignment when starting a new function
     // (as alignment constraints in hb_hazards.cxx:Make_Bundles()
