@@ -1363,7 +1363,7 @@ CGTARG_Adjust_Latency (
   // 2. Instructions writing into a PC must be followed
   //    by 1 cycle (bundle) before a TOP_br can be issued.
   //	Treated by ti_si.
-
+*
   // 3. Load instructions (resp arith instruction) writing LR register
   //    must be followed by 3 cycles delay (resp 2 cycles delay) 
   //    before one of the following may be issued:
@@ -1402,7 +1402,8 @@ CGTARG_Adjust_Latency (
   if (kind == CG_DEP_REGOUT && *latency < 1) *latency = 1;
   
   // 9. Special latency on register R0.0, even on output dependence.
-  if (OP_opnd(succ_op, opnd) == Zero_TN)
+  if ((kind == CG_DEP_REGIN && OP_opnd(succ_op, opnd) == Zero_TN) ||
+      ((kind == CG_DEP_REGOUT || kind == CG_DEP_REGANTI) && OP_opnd(pred_op, opnd) == Zero_TN))
     *latency = 0;
 
   return;
