@@ -369,7 +369,7 @@ main (int argc, char *argv[])
 		 TOP_stw_i, 
 		 TOP_sth_i, 
 		 TOP_stb_i, 
-		 TOP_pft, 
+		 TOP_pft_i, 
 		 TOP_prgadd, 
 		 TOP_prgset, 
 		 TOP_UNDEFINED); 
@@ -383,6 +383,7 @@ main (int argc, char *argv[])
 		 TOP_stw_ii, 
 		 TOP_sth_ii, 
 		 TOP_stb_ii, 
+		 TOP_pft_ii, 
 		 TOP_UNDEFINED); 
 
   Any_Operand_Access_Time(2); 

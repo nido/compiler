@@ -79,7 +79,8 @@ main()
 		p33, 	// mfb: idest = scond 
 		p34, 	// clz: idest = src1 
 		p35, 	// cache opcodes 
-		p36; 	// sync
+		p36, 	// cacheE: isrc2, src1 / imml
+		p37; 	// sync
 
   OPND_ADJ_TYPE	no_adj; 
 
@@ -342,9 +343,18 @@ main()
   p35 = ISA_Pack_Type_Create("p35"); 
   Operand(0, 0, 0, 6); 
   Instruction_Pack_Group(p35, 
-	TOP_pft, 	 0x10000000UL,
+	TOP_pft_i, 	 0x10000000UL,
 	TOP_prgadd, 	 0x10000000UL,
 	TOP_prgset, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p36: ===== */
+  p36 = ISA_Pack_Type_Create("p36"); 
+  Operand(0, 0, 0, 6); 
+  Next_Word();
+  Operand(0, 9, 0, 23);
+  Instruction_Pack_Group(p36, 
+	TOP_pft_ii, 	 0x10000000UL, 0x10000000UL,
 	TOP_UNDEFINED); 
 
   /* =====  p30: ===== */ 
@@ -388,9 +398,9 @@ main()
 	TOP_slctf_i, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-  /* =====  p36: ===== */ 
-  p36 = ISA_Pack_Type_Create("p36"); 
-  Instruction_Pack_Group(p36, 
+  /* =====  p37: ===== */ 
+  p37 = ISA_Pack_Type_Create("p37"); 
+  Instruction_Pack_Group(p37, 
 	TOP_sync, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 

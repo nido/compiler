@@ -771,13 +771,14 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_cache", 
-		 TOP_pft, 
+		 TOP_pft_i, 
+		 TOP_pft_ii, 
 		 TOP_prgadd, 
 		 TOP_prgset, 
 		 TOP_UNDEFINED); 
 
-  Operand (0, isrc2); 
-  Operand (1, src1); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
 
 
 

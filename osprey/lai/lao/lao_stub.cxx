@@ -889,7 +889,8 @@ lao_init() {
     TOP__Operator[TOP_orl_ii_r] = Operator_CODE_ORL_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_orl_r_b] = Operator_CODE_ORL_BDEST_SRC1_SRC2;
     TOP__Operator[TOP_orl_r_r] = Operator_CODE_ORL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_pft] = Operator_CODE_PFT_ISRC2_SRC1;
+    TOP__Operator[TOP_pft_i] = Operator_CODE_PFT_ISRC2_SRC1;
+    TOP__Operator[TOP_pft_ii] = Operator_CODE_PFT_ISRCX_SRC1;
     TOP__Operator[TOP_phi] = Operator_PSEUDO_PHI;
     TOP__Operator[TOP_prgadd] = Operator_CODE_PRGADD_ISRC2_SRC1;
     TOP__Operator[TOP_prgins] = Operator_CODE_PRGINS;
