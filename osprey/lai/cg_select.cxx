@@ -130,16 +130,16 @@ static void
 CG_SELECT_Statistics()
 {
   if (select_count || logif_count)
-    fprintf (stdout, "========= %s ======= \n", ST_name(Get_Current_PU_ST()));
+    fprintf (TFile, "========= %s ======= \n", ST_name(Get_Current_PU_ST()));
 
   if (select_count) 
-    fprintf (stdout, "<cg_select> converted %d moves \n", select_count);
+    fprintf (TFile, "<cg_select> converted %d moves \n", select_count);
 
   if (logif_count) 
-    fprintf (stdout, "<cg_select> reduced %d logifs \n", logif_count);
+    fprintf (TFile, "<cg_select> reduced %d logical expressions \n", logif_count);
 
   if (spec_instrs_count) 
-    fprintf (stdout, "<cg_select> %d instrs were converted \n", spec_instrs_count);
+    fprintf (TFile, "<cg_select> speculated %d instrs \n", spec_instrs_count);
 
 }
 
@@ -281,9 +281,9 @@ Get_In_Edge_Pos (BB* in_bb, BB* bb)
 }
 
 static BOOL
-Can_Merge_BB (BB *bb_first, BB *bb_second, OP *br_op)
+Can_Merge_BB (BB *bb_first, BB *bb_second)
 {
-  if (br_op && BB_call(bb_second))
+  if (BB_Fall_Thru_Successor(bb_first) != bb_second)
     return FALSE;
 
   if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
@@ -1228,24 +1228,19 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   // create a new edge.
   if (edge_needed)
     Link_Pred_Succ_with_Prob(head, tail, 1.0);
-
-  //  fprintf (TFile, "simple fall through BB%d BB%d done\n", BB_id(head), BB_id(tail));
-  //  Print_All_BBs();
+  else
+    Change_Succ_Prob (head, tail, 1.0);
 
   // finally, if we had a branch, put it back.
-  // goto should be the last instruction.
   if (br_op) {
     BB *fall_thru = BB_Fall_Thru_Successor(head);
     if (fall_thru != tail) {
-      Add_Goto(head, tail);
-      //      BB_Append_Op (head, br_op);
+      BB_Append_Op (head, br_op);
     }
-    else
-      br_op = NULL;
   }
 
   // Simplify CFG and maintain SSA information.
-  if (Can_Merge_BB (head, tail, br_op)) {
+  if (Can_Merge_BB (head, tail)) {
     BB_Merge(head, tail);
     BBLIST *succ;
     
@@ -1258,13 +1253,31 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     FOR_ALL_BB_SUCCS(head, succ) {
       BB *bb = BBLIST_item(succ);
       
-      FOR_ALL_BB_PHI_OPs(bb ,phi) {
+      FOR_ALL_BB_PHI_OPs(bb, phi) {
         Change_PHI_Predecessor (phi, tail, head);
       }
     }
   }
-  else
+  else {
     BB_Update_Phis(tail);
+
+#if 0
+    if (! edge_needed) {
+      if (target_bb != tail) {
+        FOR_ALL_BB_PHI_OPs(tail, phi) {
+          Change_PHI_Predecessor (phi, target_bb, head);
+        }
+      }
+
+      if (fall_thru_bb != tail) {
+        FOR_ALL_BB_PHI_OPs(tail, phi) {
+          Change_PHI_Predecessor (phi, fall_thru_bb, head);
+        }
+      }
+    }
+#endif
+
+  }
 }
 
 /* ================================================================
