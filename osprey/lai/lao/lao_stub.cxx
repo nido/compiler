@@ -62,7 +62,7 @@ BB_MAP CG_LAO_Region_Map;
 
 
 /*-------------------------- Interface for target dependencies -------*/
-#include "targ_cgir_lao.h"
+#include "lao_cgir.h"
 
 /*--------------------------- lao_init / lao_fini ----------------------------*/
 extern "C" {

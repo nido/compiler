@@ -453,8 +453,8 @@ endif
 
 ifdef LAO_ENABLED
 CG_CXX_SRCS +=	\
-  targ_cgir_lao.cxx \
-  lao_stub.cxx
+  lao_stub.cxx \
+  lao_target.cxx
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
