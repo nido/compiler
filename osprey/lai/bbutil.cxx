@@ -1960,6 +1960,9 @@ BB_MAP BB_Postorder_Map(BB_SET *region, BB *entry)
       max_id = map_postorder(por_map, region, BB_LIST_first(entries),
                              max_id);
   }
+
+  BB_MAP_Delete(visited_map);
+
   return por_map;
 }
 #endif
