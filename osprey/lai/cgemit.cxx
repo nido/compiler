@@ -5347,6 +5347,7 @@ EMT_End_File( void )
     }
 #endif
 
+#ifndef TARG_ST200
     if (Assembly) {
       UINT32 tmp, power;
       power = 0;
@@ -5361,6 +5362,7 @@ EMT_End_File( void )
       fprintf (Lai_File, "\t%s %s\n", AS_SECTION, ST_name(sym));
       fprintf(Lai_File, "\t%s %d\n", AS_ALIGN,STB_align(sym));
     }
+#endif
   }
 
   INT dwarf_section_count = 0;
