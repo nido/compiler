@@ -495,6 +495,12 @@ Can_Speculate_BB(BB *bb, op_list *stores)
     return FALSE;
 
   FOR_ALL_BB_OPs_FWD(bb, op) {
+    // for now, an asm is a black box that can contain several instruction.
+    // don't know how to if convert.
+    if (OP_code(op) == TOP_asm) {
+      return FALSE;
+    }
+
     if (! OP_Can_Be_Speculative(op)) {
       if (OP_memory (op) && !OP_volatile(op)) {
 
