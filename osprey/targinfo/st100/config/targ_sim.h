@@ -39,6 +39,41 @@
 extern "C" {
 #endif
 
+/* some definitions for the dedicated hardware pregs: */
+
+#define Int_Preg_Min_Offset              1
+#define Int_Preg_Max_Offset             16
+#define Ptr_Preg_Min_Offset             17
+#define Ptr_Preg_Max_Offset             32
+#define Float_Preg_Min_Offset            1
+#define Float_Preg_Max_Offset            0
+#define Branch_Preg_Min_Offset          33
+#define Branch_Preg_Max_Offset          48
+#define Fcc_Preg_Min_Offset              1
+#define Fcc_Preg_Max_Offset              0
+#define Last_Dedicated_Preg_Offset       Branch_Preg_Max_Offset
+
+/* The offsets for return registers are fixed: */
+#define First_Int_Preg_Return_Offset	 1	/* register v0 */
+#define Last_Int_Preg_Return_Offset	 2	/* register v1 */
+#define First_Ptr_Preg_Return_Offset    17
+#define Last_Ptr_Preg_Return_Offset     17
+#define First_Float_Preg_Return_Offset	 0	/* register f0 */
+#define Last_Float_Preg_Return_Offset	 1	/* register f2 */
+
+/* Parameter placement */
+#define First_Int_Preg_Param_Offset	 1	/* register a0 */
+#define First_Ptr_Preg_Param_Offset     17
+#define First_Float_Preg_Param_Offset	 0	/* register fa0 */
+
+#define Stack_Pointer_Preg_Offset	32	/* register sp */
+#define Frame_Pointer_Preg_Offset	24	/* register fp */
+#define Static_Link_Preg_Offset		29
+#define Struct_Return_Preg_Offset       16   /* returning structs */
+#ifdef TARG_ST //[TB]
+#define Function_Link_Preg_Offset       28   /* register lk(p11). function link register (for mcount call) */
+#endif
+
 /* most of the interface is shared between targets */
 #include "targ_sim_core.h"
 

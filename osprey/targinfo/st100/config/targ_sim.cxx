@@ -56,41 +56,6 @@
 #include "targ_sim.h"
 #include "targ_sim_body.h"
 
-/* some definitions for the dedicated hardware pregs: */
-
-UINT Int_Preg_Min_Offset              =  1;
-UINT Int_Preg_Max_Offset           =  16;
-UINT Ptr_Preg_Min_Offset              =  17;
-UINT Ptr_Preg_Max_Offset           =  32;
-UINT Float_Preg_Min_Offset         =  1;
-UINT Float_Preg_Max_Offset         =  0;
-UINT Branch_Preg_Min_Offset        =  33;
-UINT Branch_Preg_Max_Offset        =  48;
-UINT Fcc_Preg_Min_Offset           =  1;
-UINT Fcc_Preg_Max_Offset           =  0;
-UINT Last_Dedicated_Preg_Offset    =  Branch_Preg_Max_Offset;
-
-/* The offsets for return registers are fixed: */
-UINT First_Int_Preg_Return_Offset	= 1;	/* register v0 */
-UINT Last_Int_Preg_Return_Offset	= 2;	/* register v1 */
-UINT First_Ptr_Preg_Return_Offset       = 17;
-UINT Last_Ptr_Preg_Return_Offset        = 17;
-UINT First_Float_Preg_Return_Offset	= 0;	/* register f0 */
-UINT Last_Float_Preg_Return_Offset	= 1;	/* register f2 */
-
-/* Parameter placement */
-UINT First_Int_Preg_Param_Offset	= 1;	/* register a0 */
-UINT First_Ptr_Preg_Param_Offset        = 17;
-UINT First_Float_Preg_Param_Offset	= 0;	/* register fa0 */
-
-UINT Stack_Pointer_Preg_Offset	= 32;	/* register sp */
-UINT Frame_Pointer_Preg_Offset	= 24;	/* register fp */
-UINT Static_Link_Preg_Offset		= 29;
-UINT Struct_Return_Preg_Offset  = 16;   /* returning structs */
-#ifdef TARG_ST //[TB]
-UINT Function_Link_Preg_Offset  = 28;   /* register lk(p11). function link register (for mcount call) */
-#endif
-
 static mDED_PREG_NUM Input_Base_Preg = 0;
 static mDED_PREG_NUM Output_Base_Preg = 0;
 
