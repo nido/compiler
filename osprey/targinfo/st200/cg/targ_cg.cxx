@@ -1651,7 +1651,7 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	    extra_slot_reqd = TRUE;
 	  }
 	}
-	else if (ST_gprel(base_st)) {
+	else if (ST_gprel(base_st) && !OP_xfer(op)) {
 	  extra_slot_reqd = TRUE;
 	}
 	else if (ST_class(st) == CLASS_CONST) {
