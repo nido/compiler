@@ -570,7 +570,11 @@ extern BOOL CGTARG_branch_taken_penalty_overridden;
 
 // If a BB ends in an unconditional branch, turn it into a 
 // conditional branch with TRUE predicate.
+#ifdef TARG_ST
+extern void Make_Branch_Conditional(BB *bb, TN *pred_tn, BOOL cond);
+#else
 extern void Make_Branch_Conditional(BB *bb);
+#endif
 
 // Given a branch OP, which operand is the first branch target and how
 // many branch targets are there?
@@ -804,13 +808,6 @@ extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum, 
 					 INT ops_to_check);
 
-#ifdef TARG_ST
-// Advance schedule by one clock cycle filling with noops
-extern void CGTARG_Add_Noop_Group (OP *op, 
-				   TI_BUNDLE *bundle, 
-				   VECTOR *bundle_vector);
-
-#endif
 // Handle all bundle hazards.
 extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
 					TI_BUNDLE              *bundle, 

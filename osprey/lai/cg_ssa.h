@@ -76,8 +76,10 @@ extern INT32 CG_ssa_algorithm;
  * ========================================================================
  */
 extern TN_MAP tn_ssa_map;
-#define TN_ssa_def(t)        ((OP *)TN_MAP_Get(tn_ssa_map, tn))
-#define Set_TN_ssa_def(t,o)  (TN_MAP_Set(tn_ssa_map, tn, o))
+#define TN_ssa_def(t)        ((OP *)TN_MAP_Get(tn_ssa_map, t))
+inline void Set_TN_ssa_def(TN *t, OP *o) {
+  if (tn_ssa_map != NULL) TN_MAP_Set(tn_ssa_map, t, o);
+}
 
 //
 // Iterate over PHI-nodes in BB

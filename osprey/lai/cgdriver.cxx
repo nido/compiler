@@ -381,7 +381,7 @@ static OPTION_DESC Options_CG[] = {
     "Enable if conversion using select op"},
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
-    0, 0, 0,	&CG_select_allow_dup, NULL,
+    0, 0, 0,	&CG_SELECT_allow_dup, NULL,
     "Allow basic blocks duplication for select if conversion"},
 
 #ifdef TARG_ST
@@ -1145,46 +1145,6 @@ Configure_CG_Options(void)
   // target specific CG option setting
   Configure_CG_Target();
 
-  // Check the LOCS_Enable_Bundle_Formation for consistency
-#if 0
-  if (Lai_Code && LOCS_Enable_Bundle_Formation) {
-    // DevWarn for now until I figure out how to emit a real
-    // warning. I will also need to use overriden flag because
-    // the LOCS_Enable_Bundle_Formation is ON by default, but
-    // I do not need to issue a warning if it is not explicitely
-    // requested in the command line by the user.
-    DevWarn("CG: Ignoring LOCS_Enable_Bundle_Formation set for lai.");
-    LOCS_Enable_Bundle_Formation = FALSE;
-  }
-
-  // Disable scheduling, etc. for some targets
-  // Temporarily here. When the cg is complete, such options should be
-  // set using -CG:
-  //    locs_form_bundles=
-  //    all_scheduler=
-  //    enable_thr=
-  //    lra_reorder=
-  //    callee_reg_mask=
-  //    etc.
-#ifdef TARG_ST
-  IGLS_Enable_All_Scheduling = FALSE;
-  CG_enable_thr = FALSE;
-  LRA_do_reorder = FALSE;
-  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
-  CG_LOOP_force_ifc = 0;
-
-  HB_skip_hammocks = FALSE;
-#endif
-#endif
-
-#ifdef TARG_ST100
-  //IGLS_Enable_All_Scheduling = FALSE;
-  if (!Lai_Code) {
-    // Generate the push/pop sequence
-    CG_gen_callee_saved_regs_mask = TRUE;
-  }
-#endif
-
   return;
 }
 
@@ -1359,22 +1319,13 @@ Prepare_Source (void)
     Assembly = TRUE;
   }
 
-#if defined(TARG_ST100) || defined(TARG_ST200)
+#if defined(TARG_ST)
   if (Object_Code) {
     FmtAssert(FALSE,("SORRY: object code not generated for this target"));
   }
-#ifdef TARG_ST200
-  if (Lai_Code) {
-    FmtAssert(FALSE,("SORRY: LAI not available for this target"));
-  }
 #endif
 
-#else
-  if (Lai_Code) {
-    FmtAssert(FALSE,("SORRY: LAI not available for this target"));
-  }
-#endif
-
+#if 0
   if (Lai_Code) {
     if (Lai_File_Name == NULL) {
       /* Replace source file extension to get assembly file name: */
@@ -1387,6 +1338,7 @@ Prepare_Source (void)
       Terminate (1);
     }
   }
+#endif
 
   if ( Assembly ) {
     if ( Asm_File_Name == NULL ) {

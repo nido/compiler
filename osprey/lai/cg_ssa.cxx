@@ -39,7 +39,7 @@
 #include "cgexp.h"
 #include "cg_ssa.h"
 
-INT32 CG_ssa_algorithm = 1;
+INT32 CG_ssa_algorithm = 2;
 
 //
 // Memory pool for allocating things during SSA construction.
@@ -602,7 +602,6 @@ SSA_Compute_Dominance_Frontier ()
 
   if (Trace_dom_frontier) {
     fprintf(TFile, "<ssa> Build Dominance Frontier\n");
-    fflush(TFile);
   }
 
   //
@@ -976,7 +975,6 @@ SSA_Rename_BB (
   // order of pushing since it's here where I really rename all the
   // destination TNs.
   //
-
   FOR_ALL_BB_OPs_REV(bb,op) {
     //
     // rename result TNs
@@ -991,6 +989,12 @@ SSA_Rename_BB (
 	new_tn = tn_stack_pop(tn);
 	Set_OP_result(op,i,new_tn);
 	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
+#if 0
+	fprintf(TFile, "  setting TN_ssa_def for ");
+	Print_TN(new_tn, FALSE);
+	fprintf(TFile, " to ");
+	Print_OP(op);
+#endif
       }
     }
   }
@@ -1047,24 +1051,29 @@ SSA_Rename ()
   }
 
   finalize_tn_def_map();
-
-  //
-  // visit nodes in the dominator tree order renaming TNs
-  //
-
-  //  if (Trace_SSA_Build) {
-  //    fprintf(TFile, "<ssa> Renaming TNs: \n");
-  //  }
-
   initialize_tn_stack();
 
   BOOL *visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+2));
   BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
 
+  //
+  // visit nodes in the dominator tree order renaming TNs
+  //
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
     SSA_Rename_BB (bb, visited);
   }
 
+#if 0
+  fprintf(TFile, "  TN SSA MAPPING: \n\n");
+  for (INT i = First_Regular_TN; i < Last_TN; i++) {
+    Print_TN(TNvec(i), FALSE);
+    fprintf(TFile, "  --> ");
+    if (((OP *)TN_MAP_Get(tn_ssa_map, TNvec(i)))) 
+      Print_OP_No_SrcLine((OP *)TN_MAP_Get(tn_ssa_map, TNvec(i)));
+    else 
+      fprintf(TFile, "\n");
+  }
+#endif
   return;
 }
 
@@ -1772,7 +1781,7 @@ merge_phiCongruenceClasses (
     Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
     current = PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
 
-#if 1
+#if 0
     if (Trace_SSA_Out) {
       fprintf(TFile, "setting class for ");
       Print_TN(tn, FALSE);
@@ -1787,7 +1796,7 @@ merge_phiCongruenceClasses (
   Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
   current = PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
 
-#if 1
+#if 0
   if (Trace_SSA_Out) {
     fprintf(TFile, "setting class for ");
     Print_TN(tn, FALSE);
@@ -2292,27 +2301,54 @@ Eliminate_Phi_Resource_Interference()
   BB *bb;
   OP *op;
 
-  /*
-   * Set of candidate resources for inserting copies as described
-   * in VC's paper
-   */
-  TN_LIST *candidateResourceSet = NULL;
+  if (Trace_SSA_Out) {
+    fprintf(TFile, "-----------------------------------------------\n");
+    fprintf(TFile, "        Eliminate_Phi_Resource_Interference    \n");
+    fprintf(TFile, "-----------------------------------------------\n");
+  }
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_PHI_OPs(bb, op) {
       PHI_CONGRUENCE_CLASS *cc1, *cc2;
 
+      /*
+       * Set of candidate resources for inserting copies as described
+       * in VC's paper
+       */
+      TN_LIST *candidateResourceSet = NULL;
+
       // does result interfere with any of the operands ?
       cc1 = phiCongruenceClass(OP_result(op,0));
       Is_True(cc1 != NULL,("empty congruence class for TN%d", TN_number(OP_result(op,0))));
 
+#if 0
+      if (Trace_SSA_Out) {
+	fprintf(TFile, "<SSA>    ");
+	Print_OP(op);
+	fprintf(TFile, "          result CC: ");
+	PHI_CONGRUENCE_CLASS_Print(cc1);
+	fprintf(TFile,"\n");
+      }
+#endif
+
       for (i = 0; i < OP_opnds(op); i++) {
 	cc2 = phiCongruenceClass(OP_opnd(op,i));
 	Is_True(cc1 != NULL,("empty congruence class"));
-
+#if 0
+	if (Trace_SSA_Out) {
+	  fprintf(TFile, "          opnd %d CC: ", i);
+	  PHI_CONGRUENCE_CLASS_Print(cc2);
+	  fprintf(TFile,"\n");
+	}
+#endif
 	if (phi_resources_interfere(cc1, cc2)) {
-	  TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
-	  TN_LIST_Push(OP_result(op,0), candidateResourceSet, &MEM_local_pool);
+	  candidateResourceSet = TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
+	  candidateResourceSet = TN_LIST_Push(OP_result(op,0), candidateResourceSet, &MEM_local_pool);
+#if 0
+	  if (Trace_SSA_Out) {
+	    fprintf(TFile, "          found interference\n");
+	  }
+#endif
 	}
       }
 
@@ -2329,8 +2365,8 @@ Eliminate_Phi_Resource_Interference()
 	  if (OP_opnd(op,i) == OP_opnd(op,j)) continue;
 
 	  if (phi_resources_interfere(cc1, cc2)) {
-	    TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
-	    TN_LIST_Push(OP_opnd(op,j), candidateResourceSet, &MEM_local_pool);
+	    candidateResourceSet = TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
+	    candidateResourceSet = TN_LIST_Push(OP_opnd(op,j), candidateResourceSet, &MEM_local_pool);
 	  }
 	}
       } // operands
@@ -2342,16 +2378,30 @@ Eliminate_Phi_Resource_Interference()
 	   p != NULL; 
 	   p = TN_LIST_rest(p)) {
 	TN *tn = TN_LIST_first(p);
+
 	if (TN_ssa_def(tn) == op) {
 	  // this is a PHI result
+#if 0
+	  if (Trace_SSA_Out) {
+	    fprintf(TFile, "<SSA> Inserting a copy for ");
+	    Print_TN(tn, FALSE);
+	    fprintf(TFile, " in BB%d\n", BB_id(bb));
+	  }
+#endif
 	  insert_result_copy(op, bb);
 	}
 	else {
 	  // must be one of the PHI operands
 	  for (i = 0; i < OP_opnds(op); i++) {
 	    if (OP_opnd(op,i) == tn) {
-	      insert_operand_copy(op, i, bb);
-	      break;
+#if 0
+	      if (Trace_SSA_Out) {
+		fprintf(TFile, "<SSA> Inserting a copy for ");
+		Print_TN(tn, FALSE);
+		fprintf(TFile, " in BB%d\n", BB_id(Get_PHI_Predecessor(op,i)));
+	      }
+#endif
+	      insert_operand_copy(op, i, Get_PHI_Predecessor(op,i));
 	    }
 	  }
 	}
@@ -2546,6 +2596,7 @@ SSA_Remove_Phi_Nodes (
   FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map not deleted"));
   MEM_POOL_Pop(&tn_map_pool);
   TN_MAP_Delete(tn_ssa_map);
+  tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
   OP_MAP_Delete(phi_op_map);
 
   MEM_POOL_Pop (&ssa_pool);
