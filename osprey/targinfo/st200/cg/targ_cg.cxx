@@ -80,6 +80,10 @@ static TOP CGTARG_Invert_Table[TOP_count+1];
 
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
 
+static BOOL earliest_regclass_use_initialized = FALSE;
+static INT earliest_regclass_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_SUBCLASS_MAX+1];
+static INT earliest_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
+
 /* ====================================================================
  *   CGTARG_Preg_Register_And_Class
  * ====================================================================
@@ -1378,83 +1382,142 @@ is_constant_register (mUINT16 class_n_reg)
     || class_n_reg == CLASS_AND_REG_fone;
 }
 
+static void
+init_register_use (void)
+{
+  // Initialize earliest_regclass_use, an array containing
+  // the earliest cycle on which a register of each { class, subclass }
+  // may be accessed as an operand.
+  // Also initialize earliest_reg_use, an array containing
+  // the earliest cycle on which a register of each { class, reg }
+  // may be accessed as an operand.
+  int i, j;
+  for (i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) {
+    for (j = 0; j <= ISA_REGISTER_SUBCLASS_MAX; j++) {
+      earliest_regclass_use[i][j] = INT_MAX;
+    }
+    for (j = 0; j <= ISA_REGISTER_MAX; j++) {
+      earliest_reg_use[i][j] = INT_MAX;
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, (TOP)i)
+	&& !TOP_is_dummy ((TOP)i)) {
+      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info ((TOP)i);
+      const INT n_opnds = ISA_OPERAND_INFO_Operands (oinfo);
+      for (INT opnd = 0; opnd < n_opnds; opnd++) {
+	const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand (oinfo, opnd);
+	if (ISA_OPERAND_VALTYP_Is_Register (otype)) {
+	  ISA_REGISTER_CLASS c = ISA_OPERAND_VALTYP_Register_Class (otype);
+	  ISA_REGISTER_SUBCLASS sc =
+	    ISA_OPERAND_VALTYP_Register_Subclass (otype);
+	  INT usetime = TSI_Operand_Access_Time ((TOP)i, opnd);
+	  if (earliest_regclass_use[c][sc] > usetime) {
+	    earliest_regclass_use[c][sc] = usetime;
+	    // printf ("%s, opnd %d: setting earliest_regclass_use[%d][%d] to %d\n",
+	    // TOP_Name((TOP)i), opnd, (int)c, (int)sc, (int)usetime);
+	  }
+	}
+      }
+    }
+  }
+  // We can write a value to a subclass, then read it from a more general 
+  // class, so subclasses are given the minimum of their usetype and the
+  // class usetype.
+  FOR_ALL_ISA_REGISTER_CLASS(i) {
+    INT usetime = earliest_regclass_use[i][ISA_REGISTER_SUBCLASS_UNDEFINED];
+    FOR_ALL_ISA_REGISTER_SUBCLASS(j) {
+      if (earliest_regclass_use[i][j] > usetime) {
+	earliest_regclass_use[i][j] = usetime;
+      }
+    }
+  }
+  // We are not allowed to write a value to a class then
+  // read it from a subclass unless a dedicated register is used,
+  // so do not propagate subclass earliest
+  // time to class earliest time.
+  
+  // Now set earliest_reg_use, based on the class information.
+  // For a register that lives in multiple subclasses, we have
+  // to assume the earliest-use of all those subclasses.
+  ISA_REGISTER_SUBCLASS sc;
+  FOR_ALL_ISA_REGISTER_SUBCLASS(sc) {
+    const ISA_REGISTER_SUBCLASS_INFO *info =
+      ISA_REGISTER_SUBCLASS_Info(sc);
+    ISA_REGISTER_CLASS c = ISA_REGISTER_SUBCLASS_INFO_Class (info);
+    INT count = ISA_REGISTER_SUBCLASS_INFO_Count (info);
+    for (INT member = 0; member < count; member++) {
+      UINT r = ISA_REGISTER_SUBCLASS_INFO_Member (info, member);
+      if (earliest_reg_use[c][r] > earliest_regclass_use[c][sc]) {
+	earliest_reg_use[c][r] = earliest_regclass_use[c][sc];
+	//printf ("Setting earliest_reg_use[%d][%d] = %d\n",
+	//		(int)c, (int)r, (int)earliest_reg_use[c][r]);
+      }
+    }
+  }
+
+  earliest_regclass_use_initialized = TRUE;
+}
+
+static INT
+get_earliest_regclass_use (ISA_REGISTER_CLASS c,
+			   ISA_REGISTER_SUBCLASS sc)
+{
+  if (!earliest_regclass_use_initialized) {
+    init_register_use();
+  }
+  INT usetime = earliest_regclass_use[c][sc];
+  FmtAssert (usetime != INT_MAX, ("earliest_regclass_use not set for class = %d, subclass = %d\n", (int)c, (int)sc));
+  return usetime;
+}
+
+static INT
+get_earliest_reg_use (ISA_REGISTER_CLASS rclass, REGISTER reg) {
+  if (!earliest_regclass_use_initialized) {
+    init_register_use();
+  }
+  INT usetime = earliest_reg_use[rclass][reg - REGISTER_MIN];
+  FmtAssert (usetime != INT_MAX, ("earliest_reg_use not set for class = %d, register = %d\n", (int)rclass, (int)reg));
+  return usetime;
+}
+
 /* ====================================================================
  *   CGTARG_Max_RES_Latency
  * ====================================================================
  */
 INT32
 CGTARG_Max_RES_Latency (
-  OP *op,
-  INT idx
-)
+			OP *op,
+			INT idx
+			)
 {
-  INT i;
-  INT latency;
-
   //	asm latency always forced to 1.
   if (OP_code(op) == TOP_asm) {
-    latency = 1;
+    return 1;
   }
-  else {
-    INT result_avail = TSI_Result_Available_Time (OP_code (op), idx);
-    INT first_opnd_read = INT_MAX;
-
-    for (i = 0; i < OP_opnds(op); i++) {
-      INT opnd_read;
-      if (TN_is_constant(OP_opnd (op, i))) {
-	opnd_read = result_avail - 1;
-      } else {
-	opnd_read = TSI_Operand_Access_Time (OP_code (op), i);
-      }
-      if (opnd_read < first_opnd_read) {
-	first_opnd_read = opnd_read;
-      }
-    }
-    
-    if (first_opnd_read == INT_MAX) {
-      // An operation with results but no operands.
-      first_opnd_read = 0;
-    }
-    latency = result_avail - first_opnd_read;
-    
-    //	Now handle special operand cases
-    
-    
-    // Load instructions (resp arith instruction) writing LR register
-    //    must be followed by 3 cycles delay (resp 2 cycles delay) 
-    //    before one of the following may be issued:
-    //         TOP_icall
-    //         TOP_igoto
-    //         TOP_return
-    
-    if (TN_register_and_class(OP_result(op,idx)) == CLASS_AND_REG_ra) {
-      INT opnd_read = TSI_Operand_Access_Time (TOP_icall, 0);
-      latency = MAX (latency, result_avail - opnd_read);
-      // The previous calculation works for loads, but alu ops
-      // writing R63 need an extra cycle, because there is no
-      // forwarding of the alu result to the SLR used by a branch op.
-      if (! OP_load (op)) {
-	latency++;
-      }
-    }
-    
-    //    Instructions writing into a branch register must be followed
-    //    by 2 cycle (bundle) before 
-    //         TOP_br 
-    //         TOP_brf 
-    //    can be issued that uses this register.
-    
-    else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch) {
-      latency = result_avail - TSI_Operand_Access_Time (TOP_br, 0);
-    }
-
-    //    Instructions writing into regiser r0.0 have a 0 latency.
-    
-    else if (is_constant_register (TN_register_and_class (OP_result (op, idx)))) {
-      latency = 0;
-    }
+  //    Instructions writing into regiser r0.0 have a 0 latency.
+  if (is_constant_register (TN_register_and_class (OP_result (op, idx)))) {
+    return 0;
   }
-
+  INT result_avail = TSI_Result_Available_Time (OP_code (op), idx);
+  INT opnd_used;
+  if (TN_is_dedicated(OP_result(op,idx))) {
+    opnd_used = get_earliest_reg_use(TN_register_class(OP_result(op,idx)),
+				     TN_register(OP_result(op,idx)));
+  } else {
+    ISA_REGISTER_CLASS c = OP_result_reg_class (op, idx);
+    ISA_REGISTER_SUBCLASS sc = OP_result_reg_subclass (op, idx);
+    opnd_used = get_earliest_regclass_use (c, sc);
+  }
+  INT latency = result_avail - opnd_used;
+  // ALU ops reading r63 still need an extra cycle of latency because
+  // there is no forwarding of the alu result to the SLR used by a branch op.
+  // This is not handled in the machine description, so catch it here.
+  if (TN_register_and_class(OP_result(op,idx)) == CLASS_AND_REG_ra
+      && ! OP_load (op)) {
+    latency++;
+  }
+  
   return latency;
 }
 
