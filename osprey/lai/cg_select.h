@@ -78,7 +78,6 @@ BB_Remove_Ops (BB* bb, op_list ops)
 typedef struct {
   BB *fall_thru;
   BB *target;
-  BOOL inverted;
 } logif_info;
 
 //

@@ -139,7 +139,6 @@ CG_SELECT_Statistics()
 
   if (spec_instrs_count) 
     fprintf (TFile, "<cg_select> speculated %d instrs \n", spec_instrs_count);
-
 }
 
 /* ================================================================
@@ -234,17 +233,19 @@ Find_Immediate_Postdominator(BB* bb, BB* then_bb, BB* else_bb)
   return ipdom;
 }
 
-static BOOL
+static void
 BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
 {
   BBLIST *edge;
   logif_info *logif;
 
+  DevAssert (BB_kind(bb) == BBKIND_LOGIF, ("BB_Fall_Thru_and_Target_Succs"));
+
   logif = (logif_info *)BB_MAP_Get(if_bb_map, bb);
   if (logif) {
     *fall_thru = logif->fall_thru;
     *target    = logif->target;
-    return logif->inverted;
+    return;
   }
 
   *fall_thru = BB_Fall_Thru_Successor(bb);
@@ -253,30 +254,14 @@ BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
     if (*target != *fall_thru) break;
   }
 
+  DevAssert (*fall_thru && *target, ("BB_Fall_Thru_and_Target_Succs"));
+  
   logif = (logif_info*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(logif_info));
   logif->fall_thru = *fall_thru;
   logif->target    = *target;
-  logif->inverted  = FALSE;
   BB_MAP_Set(if_bb_map, bb, logif);
 
-  return logif->inverted;
-
-}
-
-static UINT8
-Get_In_Edge_Pos (BB* in_bb, BB* bb)
-{
-  BBLIST *pred_edge;
-  UINT8 pos = 0;
-
-  FOR_ALL_BB_PREDS(bb, pred_edge) {
-    BB *pred = BBLIST_item(pred_edge);
-    if (in_bb == pred)
-      return pos;
-    ++pos;
-  }
-
-  FmtAssert(FALSE, ("no edge for bb %d in bb %d\n", BB_id(bb), BB_id(in_bb)));
+  return;
 }
 
 static BOOL
@@ -288,13 +273,17 @@ Can_Merge_BB (BB *bb_first, BB *bb_second)
   if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
     return FALSE;
 
+  if (BB_Has_Exc_Label(bb_second) ||
+      BB_Has_Addr_Taken_Label(bb_second) ||
+      BB_Has_Outer_Block_Label(bb_second))
+    return FALSE;
+
   return TRUE;
 }
 
 static void
 BB_Merge (BB *bb_first, BB *bb_second)
 {
-  OP* op;
   BB *succ;
   BBLIST *bl;
   OP *br;
@@ -310,7 +299,7 @@ BB_Merge (BB *bb_first, BB *bb_second)
   //
   OP* op_next;
   OP* last = BB_last_op(bb_first);
-  for (op = BB_first_op(bb_second); op; op = op_next) {
+  for (OP *op = BB_first_op(bb_second); op; op = op_next) {
     op_next = OP_next(op);
     if (last) {
       BB_Move_Op(bb_first, last, bb_second, op, FALSE);
@@ -392,9 +381,7 @@ BB_Localize_Tns (BB *bb)
   OP *op;
 
   FOR_ALL_BB_OPs_FWD(bb, op) {  
-    UINT8 i;
-
-    for (i = 0; i < OP_results(op); i++) {
+    for (UINT8 i = 0; i < OP_results(op); i++) {
       TN *tn = OP_result(op, 0);
 
       if (!GTN_SET_MemberP(BB_live_out(bb),tn))
@@ -409,13 +396,25 @@ BB_Localize_Tns (BB *bb)
  *
  * ================================================================
  */
+static UINT8 
+Get_TN_Pos_in_PHI (OP *phi, BB *bb)
+{
+  UINT8 nopnds = OP_opnds(phi);
+
+  for (UINT8 i = 0; i < nopnds; i++) {
+    if (Get_PHI_Predecessor (phi, i) == bb)
+      return i;
+  }
+
+  FmtAssert(FALSE, ("didn't find pos for BB%d in phi\n", BB_id(bb)));
+}
+
 static void
 Change_PHI_Predecessor (OP *phi, BB *old_pred, BB *pred)
 {
   UINT8 nopnds = OP_opnds(phi);
-  UINT8 i;
 
-  for (i = 0; i < nopnds; i++) {
+  for (UINT8 i = 0; i < nopnds; i++) {
     if (Get_PHI_Predecessor (phi, i) == old_pred)
       Set_PHI_Predecessor (phi, i, pred);
   }
@@ -451,12 +450,10 @@ BB_Update_Phis(BB *bb)
  * ================================================================
  */
 // Create a map of conditional blocks sorted in postorder. That makes it
-// easy to iterate through possible hammocks regions.
+// easy to iterate through possible if regions.
 static void
 Identify_Logifs_Candidates(void)
 {
-  BB *bb;
-
   postord_map = BB_Postorder_Map(NULL, NULL);
 
   // maximum size.
@@ -464,7 +461,7 @@ Identify_Logifs_Candidates(void)
   max_cand_id = 0;
 
   // Make a list of logifs blocks
-  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     INT32 bb_id = BB_MAP32_Get(postord_map, bb);
     DevAssert(bb_id >= 0 && bb_id <= PU_BB_Count, ("bad <postord_map> value"));
     // we are interested only with reachable conditional head BBs
@@ -570,7 +567,7 @@ BB_Check_Memops(void)
 
 // Test if a hammock is suitable for select conversion
 // For now, the heuristic is simply the # of instructions to speculate.
-//  later: compute dependence heigh, use freq informations.
+//  later: compute dependence heigh, use freq information.
 
 UINT max_select_instrs = 1000;
 
@@ -783,16 +780,13 @@ Dead_BB (BB *bb)
   OP *op;
 
   FOR_ALL_BB_OPs_FWD(bb, op) {  
-    UINT8 i;
-
-    for (i = 0; i < OP_results(op); i++) {
+    for (UINT8 i = 0; i < OP_results(op); i++) {
       TN *tn = OP_result(op, 0);
       if (GTN_SET_MemberP(BB_live_out(bb), tn))
         return FALSE;
     }
-
-    return TRUE;
   }
+  return TRUE;
 }
 
 static BOOL
@@ -826,14 +820,14 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
 {
   OP *br1 = BB_branch_op (bb1);
   OP *br2 = BB_branch_op (bb2);
-  
+
   FmtAssert(br1 && OP_cond(br1), ("BB doesn't end in a conditional branch."));
   FmtAssert(br2 && OP_cond(br2), ("BB doesn't end in a conditional branch."));
 
   BOOL needInvert = OP_code (br1) != OP_code (br2);
 
   BB_Fall_Thru_and_Target_Succs(bb2, fall_thru2, target2);
-  
+
   if (target1 == *target2 || fall_thru1 == *fall_thru2) {
     if (needInvert) {
       if (! Negate_Cmp_BB(br2))
@@ -843,28 +837,29 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
   }
 
   if (target1 == *fall_thru2 || fall_thru1 == *target2) {
-    // if needInvert, don't revert the condition.
-    if (! needInvert)
-      if (! Negate_Cmp_BB(br2))
-        return FALSE;
+    // if needInvert, don't need to do anything. 
+    if (needInvert) {
+      BB *tmpbb = *fall_thru2;
+      *fall_thru2 = *target2;
+      *target2 = tmpbb;
 
-    BB *tmpbb = *fall_thru2;
-    *fall_thru2 = *target2;
-    *target2 = tmpbb;
+      logif_info *logif = (logif_info *)BB_MAP_Get(if_bb_map, bb2);
+      DevAssert(logif, ("Select: unmapped logif"));
 
-    logif_info *logif = (logif_info *)BB_MAP_Get(if_bb_map, fall_thru1);
-    logif->inverted = TRUE;
-    logif->fall_thru = *fall_thru2;
-    logif->target = *target2;
+      logif->target = *target2;
+      logif->fall_thru = *fall_thru2;
 
-    return TRUE;
+      return TRUE;
+    }
+
+    return Negate_Cmp_BB(br2);
   }
-  
+
   return FALSE;
 }
 
 // Test if bb is the head of a region that can be converted with logical
-// expressions. (ex: if (p1) if (p0) ... = if (p1 && p0) ...)
+// expressions. (ex: if (p1) if (p0) ... = if (p1 && p0 && ...)
 // Returns the head of the second if region or null
 //
 // A well formed logical expression is a sequence of 2 blocks containing
@@ -910,12 +905,10 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 {
   BB *bb1_fall_thru, *bb1_target, *bb2_fall_thru, *bb2_target;
   BB *fall_thru_block, *joint_block;
-  BB *bb;
-  BOOL invert;
   BOOL AndNeeded;
 
   BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
-  invert = BB_Fall_Thru_and_Target_Succs(bb2, &bb2_fall_thru, &bb2_target);
+  BB_Fall_Thru_and_Target_Succs(bb2, &bb2_fall_thru, &bb2_target);
 
   if (bb1_fall_thru == bb2_fall_thru) {
     // if (a && b)
@@ -928,6 +921,25 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     AndNeeded = FALSE;
     fall_thru_block = bb2_fall_thru;
     joint_block = bb2_target;
+  }
+
+  // Compute probabilities for the new edge.
+  float prob1 = 0.0;
+  float prob2 = 0.0;
+  BBLIST *bblist;
+  FOR_ALL_BB_SUCCS(bb1, bblist) {
+    BB *succ = BBLIST_item(bblist);
+    if (succ == joint_block) {
+      prob1 = BBLIST_prob(bblist);
+      break;
+    }
+  }
+  FOR_ALL_BB_SUCCS(bb2, bblist) {
+    BB *succ = BBLIST_item(bblist);
+    if (succ == joint_block) {
+      prob2 = BBLIST_prob(bblist);
+      break;
+    }
   }
 
   if (Trace_Select_Gen) {
@@ -949,22 +961,23 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   TN *branch_tn = Build_TN_Like (b1tn1);
   TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
 
-  UINT8 bb_pos = Get_In_Edge_Pos (bb2, joint_block);
-
   // remember succ list.
   BBLIST *succs = BB_succs(bb2);
   BB_SET *succ_set = BB_SET_Create_Empty(BB_succs_len (bb2), &MEM_Select_pool);
-  BBLIST *item;
-
-  FOR_ALL_BBLIST_ITEMS(succs,item){
-    bb = BBLIST_item(item);
+  FOR_ALL_BBLIST_ITEMS(succs,bblist) {
+    BB *bb = BBLIST_item(bblist);
     succ_set = BB_SET_Union1(succ_set, bb, &MEM_Select_pool);
   }
+
+  // make joint_block a fall_thru of bb1.
+  BOOL invert = FALSE;
+  if (BB_Fall_Thru_Successor (bb1) == bb2 &&
+      BB_Fall_Thru_Successor (bb2) == joint_block)
+    invert = TRUE;
 
   BB_Remove_Branch(bb1);
   BB_Remove_Branch(bb2);
   Promote_BB(bb2, bb1);
-  Unlink_Pred_Succ (bb1, fall_thru_block);
 
   OPS ops = OPS_EMPTY;
 
@@ -986,30 +999,40 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   BB_Append_Ops (bb1, &ops);
 
-  if (joint_block == BB_next(bb1)) {
+  if (AndNeeded)
+    prob1 = 1.0 - (prob1 * prob2);
+  else
+    prob1 = MAX (prob1, prob2);
+
+
+  Unlink_Pred_Succ (bb1, joint_block);
+  Unlink_Pred_Succ (bb1, fall_thru_block);
+
+  if (invert) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, fall_thru_block, 1.0L - BB_freq(joint_block),
-                    joint_block);
+    Target_Logif_BB(bb1, fall_thru_block, 1.0 - prob1, joint_block);
   }
-  else {
-    Target_Logif_BB(bb1, joint_block, BB_freq(joint_block), fall_thru_block);
-  }
+  else
+    Target_Logif_BB(bb1, joint_block, prob1, fall_thru_block);
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
+  BB_MAP_Set(if_bb_map, bb2, NULL);
     
+  BB *bb;
   FOR_ALL_BB_SET_members(succ_set, bb) {
     OP *phi;
-
     if (bb == joint_block) {
       FOR_ALL_BB_PHI_OPs(bb, phi) {
+        UINT8 old_pos = Get_TN_Pos_in_PHI (phi, bb2);
+
         TN *result[1];
         UINT8 j = 0;
-        UINT8 i = 0;
         UINT8 nopnds = OP_opnds(phi)-1;
         TN *opnd[nopnds];
-        for (i = 0; i < OP_opnds(phi); i++) {
-          if (i != bb_pos)
+
+        for (UINT8 i = 0; i < OP_opnds(phi); i++) {
+          if (i != old_pos)
             opnd[j++] = OP_opnd(phi, i);
         }
         
@@ -1044,8 +1067,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   //  fprintf (TFile, "Select_Fold %d %d %d %d\n", BB_id(head), BB_id (target_bb),
   //           BB_id (fall_thru_bb), BB_id (tail));
 
-  UINT8 taken_pos = Get_In_Edge_Pos(target_bb == tail ? head : target_bb, tail);
-  UINT8 nottaken_pos = Get_In_Edge_Pos(fall_thru_bb == tail ? head : fall_thru_bb, tail);
 
   // keep a list of newly created conditional move / compare
   // and phis to remove
@@ -1063,10 +1084,24 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
-    UINT8 i;
-    TN *select_tn;
-    TN *true_tn = NULL;
-    TN *false_tn = NULL;
+    UINT8 taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ? head : target_bb);
+    UINT8 nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ? head : fall_thru_bb);
+
+    TN *true_tn   = OP_opnd(phi, taken_pos);
+    TN *false_tn  = OP_opnd(phi, nottaken_pos); 
+    TN *select_tn = OP_result (phi, 0);
+
+    if (variant == V_BR_P_FALSE) {
+      TN *temp_tn = false_tn;
+      false_tn = true_tn;
+      true_tn = temp_tn;
+    }
+
+    DevAssert(true_tn && false_tn, ("Select: undef TN"));
+
+    // for now we only handle single result tn.
+    // we don't need to go through (i = 0; i < OP_results(op); i++) loop.
+    DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
 
     if (Trace_Select_Gen) {
       fprintf(TFile, "<select> handle phi ");
@@ -1075,46 +1110,10 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       Print_BB (tail);
     }
 
-    // We need to find the tn's that map to the correct position.
-    // tn's are not necessary in the same order than the predecessors.
-    // need to check where cg_ssa has mapped them.
-    BB *taken_bb    = Get_PHI_Predecessor (phi, taken_pos);
-    BB *nottaken_bb = Get_PHI_Predecessor (phi, nottaken_pos);
-
-    for (i = 0; i < OP_opnds(phi); i++) {
-      TN *tn = OP_opnd(phi,i);
-      if (i == taken_pos)
-          true_tn = tn;
-      if (i == nottaken_pos) 
-          false_tn = tn;
-    }
-
-    // deal with undef operands.
-    DevAssert(true_tn && false_tn, ("Select undef TNs. not yet"));
-
-    // make sure that select operands are in the same order than phi operands.
-    // Select operands must match predecessors order.
-    BOOL reord_ops = (Get_In_Edge_Pos (taken_bb,tail) != taken_pos) ||
-      (Get_In_Edge_Pos (nottaken_bb,tail) != nottaken_pos);
-      
-    // (if brf && !reord) || (if br && reord))
-    if ((variant == V_BR_P_FALSE) != reord_ops) {
-      TN *temp_tn = false_tn;
-      false_tn = true_tn;
-      true_tn = temp_tn;
-    }
-      
-    // for now we only handle single result tn.
-    // we don't need to go through (i = 0; i < OP_results(op); i++) loop.
-    DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
-        
-    select_tn = OP_result (phi, 0);
-    
     if (BB_preds_len(tail) != 2) 
-      select_tn =  Dup_TN(select_tn);
+      select_tn = Dup_TN(select_tn);
     
-    Expand_Select (select_tn, cond_tn, true_tn, false_tn,
-                   MTYPE_I4, FALSE, &cmov_ops);
+    Expand_Select (select_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &cmov_ops);
     select_count++;
 
     if (BB_preds_len(tail) > 2) {
@@ -1128,19 +1127,17 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       // new args goes last if we know that a new edge will be inserted.
       // else, replace old phi tn with newly create select tn.
       if (edge_needed) {
-        for (i = 0; i < OP_opnds(phi); i++) {
+        for (UINT8 i = 0; i < OP_opnds(phi); i++) {
           if (i != taken_pos && i != nottaken_pos)
             opnd[j++] = OP_opnd(phi, i);
         }
         opnd[j] = select_tn;
       }
       else {
-        for (i = 0; i < OP_opnds(phi); i++) {
+        for (UINT8 i = 0; i < OP_opnds(phi); i++) {
           if (i != taken_pos && i != nottaken_pos)
             opnd[j++] = OP_opnd(phi, i);
-          else  if (i == nottaken_pos && fall_thru_bb == tail)
-            opnd[j++] = select_tn;
-          else  if (i == taken_pos && target_bb == tail)
+          else if ((i == nottaken_pos || i == taken_pos) && Get_PHI_Predecessor (phi, i) == head)
             opnd[j++] = select_tn;
         }
       }
