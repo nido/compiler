@@ -3550,7 +3550,7 @@ mul_fix_operands (
 {
   TOP opcode = OP_code(op);
   BB *bb = OP_bb(op);
-  TN *res = OP_result(op, 0);
+  TN *res;
 
   // Check operands
   if (OP_results(op) != 1 ||
