@@ -88,8 +88,6 @@ static OP_MAP phi_op_map = NULL;
 pair<op_list, op_list> store_i;
 pair<op_list, op_list> load_i;
 
-BB * bbs_tail_dup[2];
-
 /* ================================================================
  *
  *   Traces
@@ -196,9 +194,6 @@ clear_spec_lists()
   load_i.second.clear();
   store_i.first.clear();
   store_i.second.clear();
-
-  bbs_tail_dup[0] = NULL;
-  bbs_tail_dup[1] = NULL;
 }
 
 static void
@@ -226,9 +221,8 @@ Find_Immediate_Postdominator(BB* bb, BB* then_bb, BB* else_bb)
   if (BB_SET_MemberP(BB_pdom_set(bb), else_bb))
     return else_bb;
 
-  if ((ipdom = BB_Unique_Successor(then_bb)) == BB_Unique_Successor(else_bb))
-    if (ipdom && ! BB_SET_MemberP(BB_pdom_set(bb), ipdom)) 
-      return NULL;
+  if ((ipdom = BB_Unique_Successor(then_bb)) != BB_Unique_Successor(else_bb))
+    return NULL;
 
   return ipdom;
 }
@@ -281,19 +275,11 @@ Get_In_Edge_Pos (BB* in_bb, BB* bb)
 static BOOL
 Can_Merge_BB (BB *bb_first, BB *bb_second, OP *br_op)
 {
-  BBLIST *edge;
-
   if (br_op && BB_call(bb_second))
     return FALSE;
 
   if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
     return FALSE;
-
-  //  FOR_ALL_BB_SUCCS(bb_second, edge) {
-  //    BB *pred = BBLIST_item(edge);
-  //    if (pred == bb_first)
-  //      return FALSE;
-  //  }
 
   return TRUE;
 }
@@ -445,144 +431,6 @@ Rename_Locals(OP* op, hTN_MAP dup_tn_map)
     }
     i++;
   }
-}
-
-/* ================================================================
- *
- *   Tail duplication
- *
- * ================================================================
- */
-static BB *
-Copy_BB_For_Tail_Duplication(BB* old_bb)
-{
-  BB* new_bb = NULL;
-
-  new_bb = Gen_BB_Like(old_bb);
-
-  //
-  // Copy the ops to the new block.
-  //
-  OP *op;
-  MEM_POOL_Push(&MEM_local_pool);
-  hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
-
-  FOR_ALL_BB_OPs_FWD(old_bb, op) {
-    OP *new_op = Dup_OP(op);
-    Copy_WN_For_Memory_OP(new_op, op);
-    BB_Append_Op(new_bb, new_op);
-    Rename_Locals(new_op, dup_tn_map);
-  }
-  MEM_POOL_Pop(&MEM_local_pool);
-
-  //
-  // Take care of the annotations.
-  //
-  switch (BB_kind(old_bb)) {
-  case BBKIND_CALL:
-    BB_Copy_Annotations(new_bb, old_bb, ANNOT_CALLINFO);
-    break;
-
-  case BBKIND_TAIL_CALL:
-    BB_Copy_Annotations(new_bb, old_bb, ANNOT_CALLINFO);
-    //
-    // NOTE FALLTHRU
-    //
-  case BBKIND_RETURN:
-    {
-      BB_Copy_Annotations(new_bb, old_bb, ANNOT_EXITINFO);
-      OP *b_op;
-      OP *suc_op;
-      ANNOTATION *ant = ANNOT_Get(BB_annotations(new_bb), ANNOT_EXITINFO);
-      EXITINFO *exit_info = ANNOT_exitinfo(ant);
-      EXITINFO *new_info = TYPE_PU_ALLOC(EXITINFO);
-      OP *sp_adj = EXITINFO_sp_adj(exit_info);
-      *new_info = *exit_info;
-      if (sp_adj) {
-	for (suc_op = BB_last_op(old_bb), b_op = BB_last_op(new_bb);
-	     suc_op != sp_adj;
-	     suc_op = OP_prev(suc_op), b_op = OP_prev(b_op))
-	  ;
-	EXITINFO_sp_adj(new_info) = b_op;
-      }
-      ant->info = new_info;
-
-      Set_BB_exit(new_bb);
-      Exit_BB_Head = BB_LIST_Push(new_bb, Exit_BB_Head, &MEM_pu_pool);
-      break;
-    }
-  }
-
-  return new_bb;
-
-}
-
-/////////////////////////////////////
-static void
-Fixup_Arcs(BB* entry, BB* old_bb, BB* new_bb, BB* fall_thru)
-/////////////////////////////////////
-//
-//  Fix up input arcs to the new block from blocks outside the hyperblock,
-//  and add successor arcs.
-//
-/////////////////////////////////////
-{
-  BBLIST* bl;
-  float new_freq = 0.0;
-
-  //
-  // Move predecessor arcs from outside of the hyperblock to new block.
-  //
-  for (bl = BB_preds(old_bb); bl != NULL;) {
-    BB* pred = BBLIST_item(bl);
-    bl = BBLIST_next(bl);
-
-    //
-    // Calculate block frequency.
-    //
-    BBLIST* blsucc = BB_Find_Succ(pred, old_bb);
-
-    //
-    // Now, it's either a block not selected for the hyperblock, or
-    // a block that's already been duplicated, or it is an unduplicated
-    // member of the hyperblock and we need do nothing.
-    //
-    if (pred == entry) {
-      continue;
-    } else {
-      new_freq += BB_freq(pred) * BBLIST_prob(blsucc);
-      if (BB_Fall_Thru_Successor(pred) == old_bb) {
-	Change_Succ(pred, old_bb, new_bb);
-      } else {
-	BB_Retarget_Branch(pred, old_bb, new_bb);
-      }
-    }
-  }
-
-  BB_freq(new_bb) = new_freq;
-}
-
-static void
-Tail_Duplicate(BB* entry, BB* side_entrance, BB* fall_thru)
-{
-  BBLIST* bl;
-  BB* dup =  Copy_BB_For_Tail_Duplication(side_entrance);
-
-  if (Trace_Select_Dup) 
-    fprintf(TFile, "<Select> Tail duplicating BB:%d.  Duplicate BB%d\n",
-	    BB_id(side_entrance), BB_id(dup));
-  
-
-  //
-  // Update the arcs and liveness.
-  //
-  Fixup_Arcs(entry, side_entrance, dup, fall_thru);
-
-  //
-  // Add block, and any block added to compensate for a fall thru out
-  // of the hammock.
-  //
-  Insert_BB(dup, fall_thru);
 }
 
 /* ================================================================
@@ -825,13 +673,8 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
       if (BB_succs_len (bb) != 1)
         return FALSE; 
 
-      if (BB_preds_len (bb) != 1) {
-        if (BB_preds_len (bb) == 2) {
-          bbs_tail_dup[0] = bb;
-        }
-        else
-          return FALSE; 
-      }
+      if (BB_preds_len (bb) != 1)
+        return FALSE; 
 
       found_taken = TRUE;
     }
@@ -839,13 +682,8 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
       if (BB_succs_len (bb) != 1)
         return FALSE; 
 
-      if (BB_preds_len (bb) != 1) {
-        if (BB_preds_len (bb) == 2) {
-          bbs_tail_dup[1] = bb;
-        }
-        else
-          return FALSE; 
-      }
+      if (BB_preds_len (bb) != 1)
+        return FALSE; 
 
       found_not_taken = TRUE;
     }
@@ -1075,22 +913,22 @@ Is_Double_Logif(BB* bb)
 
   if (BB_kind(target) == BBKIND_LOGIF) {
     if (BB_preds_len(target) == 1
-        && sec_fall_thru == fall_thru
         && Can_Speculate_BB(target, NULL)
         && Dead_BB (target)
         && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
-                                    &sec_fall_thru, &sec_target))
+                                    &sec_fall_thru, &sec_target)
+        && sec_fall_thru == fall_thru)
       return target;
   }
 
   // try the other side
   if (BB_kind(fall_thru) == BBKIND_LOGIF) {
     if (BB_preds_len(fall_thru) == 1
-        && sec_target == target
         && Can_Speculate_BB(fall_thru, NULL)
         && Dead_BB (fall_thru)
         && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
-                                    &sec_fall_thru, &sec_target))
+                                    &sec_fall_thru, &sec_target)
+        && sec_target == target)
       return fall_thru;
   }
   
@@ -1180,10 +1018,9 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     
   // if needed, update phi operands and new edge from head.
   BB *phi_block = invert ? fall_thru_block : joint_block;
+  OP *phi;
 
   if (joint_block == phi_block) {
-    OP *phi;
-
     FOR_ALL_BB_PHI_OPs(phi_block, phi) {
       TN *result[1];
       UINT8 j = 0;
@@ -1201,8 +1038,11 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     }
     BB_Update_Phis(joint_block);  
   }
-  else
-    BB_Update_Phis(fall_thru_block);
+  else {
+    FOR_ALL_BB_PHI_OPs(fall_thru_block, phi) {
+      Change_PHI_Predecessor (phi, bb2, bb1);
+    }
+  }
 }
 
 /* ================================================================
@@ -1215,7 +1055,6 @@ static void
 Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 {
   OP *phi;
-  BOOL edge_needed = FALSE;
 
   //  fprintf (TFile, "\nin Select_Fold\n");
   //  Print_All_BBs();
@@ -1294,12 +1133,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
                    MTYPE_I4, FALSE, &cmov_ops);
     select_count++;
 
-    // If the block has only 2 incoming merges, just replace phi's tn by the
-    // new tn. else we need to create a new def and insert it into the phi
-    // operands at the  place of the old edges.
-    if (target_bb != tail && fall_thru_bb != tail)
-      edge_needed = TRUE;
-
     if (BB_preds_len(tail) > 2) {
       // replace old tn in the phi OP      
       // New tn is last in phi.
@@ -1329,6 +1162,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Remove_Op(head, br_op);
 
   br_op = NULL;
+
+  // if 2 sides are removed, we'll need a new edge.
+  BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
 
   // promote the instructions from the sides bblocks.
   // Promote_BB will remove the old empty bblock
@@ -1496,18 +1332,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
-      if (bbs_tail_dup[0]) {
-        DevWarn("<select> tail duplicate BB%d not enabled\n", BB_id (bbs_tail_dup[0]));
-        //        Tail_Duplicate(bb, bbs_tail_dup[0], tail);
-        continue;
-      }
-
-      if (bbs_tail_dup[1]) {
-        DevWarn("<select> tail duplicate BB%d not enabled\n", BB_id (bbs_tail_dup[1]));
-        //        Tail_Duplicate(bb, bbs_tail_dup[1], tail);
-        continue;
-      }
-
       if (Trace_Select_Gen) {
         fprintf (TFile, "\n********** BEFORE SELECT FOLD BB%d ************\n",
                  BB_id(bb));
