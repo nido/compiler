@@ -53,6 +53,7 @@
 #include <sys/elf_whirl.h>	    /* for WHIRL_REVISION */
 #include <ctype.h>
 #include "defs.h"
+#include "dso.h"		    /* for load_so() */
 #include "config.h"
 #include "config_debug.h"
 #include "config_list.h"
@@ -94,6 +95,10 @@
 #include "cgdriver.h"
 #include "register.h"
 #include "pqs_cg.h"
+
+#ifdef TARG_ST
+#include "laoinit.h"
+#endif
 
 #ifdef __CYGWIN__
 #include "W_errno.h"
@@ -1406,6 +1411,45 @@ CG_Process_Command_Line (
   return;
 } /* CG_Process_Command_Line */
 
+// **************** symbols defined in lao.so ****************
+
+#ifdef TARG_ST
+
+#if defined(__linux__) || defined(_NO_WEAK_SUPPORT_)
+
+BE_EXPORTED void (*lao_init_p) (void);
+BE_EXPORTED void (*lao_fini_p) (void);
+
+BE_EXPORTED extern void (*lao_init_p) (void);
+#define lao_init (*lao_init_p)
+
+BE_EXPORTED extern void (*lao_fini_p) ();
+#define lao_fini (*lao_fini_p)
+
+#else 
+
+#pragma weak lao_init
+#pragma weak lao_fini
+
+#endif // __linux__ || _NO_WEAK_SUPPORT_
+
+static void* lao_handler = NULL;
+
+// Also, define here function pointers to other entry points in the
+// LAO library.
+
+BE_EXPORTED bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
+BE_EXPORTED bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
+BE_EXPORTED bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+
+#endif
+
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+#define SO_EXT ".dll"
+#else
+#define SO_EXT ".so"
+#endif
+
 /* ====================================================================
  *   CG_Init ()
  *
@@ -1432,9 +1476,11 @@ CG_Init (void)
    * prefetch_ahead fromn LNO */
   //    Configure_prefetch_ahead();
 
-#ifdef LAO_ENABLED
-    extern void lao_init();
+#ifdef TARG_ST
+  if (CG_enable_LAO) {
+    lao_handler = load_so ("lao"SO_EXT, CG_Path, Show_Progress);
     lao_init();
+  }
 #endif
 
   return;
@@ -1449,9 +1495,15 @@ CG_Init (void)
 void
 CG_Fini (void)
 {
-#ifdef LAO_ENABLED
-    extern void lao_fini();
+
+#ifdef TARG_ST
+
+  if (CG_enable_LAO) {
     lao_fini();
+    close_so(lao_handler);
+    lao_handler = NULL;
+  }
+
 #endif
 
   /* List global symbols if desired: */

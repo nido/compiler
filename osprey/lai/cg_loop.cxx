@@ -173,7 +173,7 @@
 #include "hb.h"
 #include "gra_live.h"
 
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
 #include "lao_stub.h"
 #endif
 
@@ -5289,11 +5289,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 #endif
 
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll ***");
-	if (lao_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
+	if (lao_optimize_LOOP(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5352,11 +5352,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_After_Unrolling();
 #endif
 
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnroll ***");
-	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5414,11 +5414,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	}
       }
 #endif
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind ***");
-	if (lao_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
+	if (lao_optimize_LOOP(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5442,11 +5442,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
 #endif
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnwind ***");
-	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
+	if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5469,11 +5469,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       Gen_Counted_Loop_Branch(cg_loop);
 #endif
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnroll ***");
-	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5486,12 +5486,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     break;
 
   case NO_LOOP_OPT:
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
     if (CG_enable_LAO) {
       CG_LOOP cg_loop(loop);
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
-      if (lao_optimize(&cg_loop, LAO_LoopSchedule)) {
+      if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule)) {
 	cg_loop.Recompute_Liveness();
       }
       break;

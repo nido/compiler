@@ -115,10 +115,6 @@ HOSTDEFS += -DOPT_EXPORTED=$(DLLIMPORT)
 HOSTDEFS += -DCG_EXPORTED=$(DLLEXPORT)
 endif
 
-ifeq ($(BUILD_VARIANT), LAO_BUILD)
-HOSTDEFS += -DLAO_ENABLED
-endif
-
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
 
@@ -141,6 +137,7 @@ BE_DIR 			= $(BUILD_TOT)/be
 BE_COM_DIR 		= $(BE_DIR)/com
 BE_BE_DIR		= $(BE_DIR)/be
 BE_CG_DIR 		= $(BUILD_TOT)/lai
+BE_LAO_DIR 		= $(BE_CG_DIR)/lao
 BE_CG_GRA_DIR		= $(BE_CG_DIR)/gra_mon
 BE_REGION_DIR 		= $(BE_DIR)/region
 BE_PROMPF_DIR		= $(BE_DIR)/prompf_anl
@@ -183,13 +180,10 @@ HEADER_DIRS = 		\
   $(BE_PROMPF_DIR)	\
   $(BE_OPT_DIR)		\
   $(TARG_TARG_INFO_DIR)	\
-  $(TARG_BE)
+  $(TARG_BE)		\
+  $(BE_LAO_DIR)
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
-
-ifeq ($(BUILD_VARIANT), LAO_BUILD)
-HEADER_DIRS += $(ROOT)/LAO/include
-endif
 
 #----------------------------------------------------------------------
 # Build derived files
@@ -402,11 +396,6 @@ ifeq ($(BUILD_TARGET),ST200)
 
   # SSA stuff:
   CG_CXX_SRCS +=  cg_ssa.cxx
-
-  ifeq ($(BUILD_VARIANT), LAO_BUILD)
-   # LAO SWP stuff
-   CG_CXX_SRCS += lao_stub.cxx
- endif
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
@@ -685,16 +674,6 @@ ifeq ($(BUILD_HOST), IA64)
  ifeq ($(BUILD_COMPILER), SGI)
   STD_DSO_LOADOPTS += -Wl,-relax
  endif
-endif
-
-ifeq ($(BUILD_VARIANT), LAO_BUILD)
- LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so
- LINK_DSOS += $(ROOT)/LAO/lib/libCSD.so
- LINK_DSOS += $(ROOT)/LAO/lib/libSCD.so
- LINK_DSOS += $(ROOT)/LAO/lib/libLIR.so
- LINK_DSOS += $(ROOT)/LAO/lib/libSWP.so
- LINK_DSOS += $(ROOT)/LAO/lib/libLAO.so
- LINK_DSOS += -Wl,-rpath=$(ROOT)/LAO/lib
 endif
 
 cg.so: $(CG_CXX_OBJS) $(CG_C_OBJS) $(TARG_BE)/$(BE_DSO) \

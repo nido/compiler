@@ -86,7 +86,7 @@
 #include "hb_sched.h"
 #include "hb_hazards.h"
 /* #include "targ_proc_properties.h" */
-#if defined(TARG_ST) && defined(LAO_ENABLED)
+#if defined(TARG_ST)
 #include "lao_stub.h"
 #endif
 
@@ -116,6 +116,7 @@
 //	 invoke post-GRA global scheduling (post-GCM) phase
 //
 // ======================================================================
+
 void
 IGLS_Schedule_Region (BOOL before_regalloc)
 {
@@ -205,22 +206,26 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       HB_Remove_Deleted_Blocks();
       list<HB*>::iterator hbi;
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
-#if defined(TARG_ST) && defined(LAO_ENABLED)
-	// Call the LAO for all the hyperblocks.
-	lao_optimize(*hbi, LAO_TraceSchedule);
-#else
-	if (!Sched) {
-	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
+#if defined(TARG_ST)
+	if (CG_enable_LAO) {
+	  // Call the LAO for all the hyperblocks.
+	  lao_optimize_HB(*hbi, LAO_TraceSchedule);
 	}
-
-	// Check to see if not SWP'd.
-	list<BB*> hb_blocks;
-	Get_HB_Blocks_List(hb_blocks,*hbi);
-	if (Can_Schedule_HB(hb_blocks)) {
-	  Sched->Init(hb_blocks, hbs_type, NULL);
-	  Sched->Schedule_HB(hb_blocks);
-	}
+	else
 #endif
+	  {
+	    if (!Sched) {
+	      Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
+	    }
+
+	    // Check to see if not SWP'd.
+	    list<BB*> hb_blocks;
+	    Get_HB_Blocks_List(hb_blocks,*hbi);
+	    if (Can_Schedule_HB(hb_blocks)) {
+	      Sched->Init(hb_blocks, hbs_type, NULL);
+	      Sched->Schedule_HB(hb_blocks);
+	    }
+	  }
       }
     }
 
@@ -306,22 +311,26 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       HB_Remove_Deleted_Blocks();
       list<HB*>::iterator hbi;
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
-#if defined(TARG_ST) && defined(LAO_ENABLED)
-	// Call the LAO for all the hyperblocks.
-	lao_optimize(*hbi, LAO_TraceSchedule + LAO_PostPass);
-#else
-	if (!Sched) {
-	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
+#if defined(TARG_ST)
+	if (CG_enable_LAO) {
+	  // Call the LAO for all the hyperblocks.
+	  lao_optimize_HB(*hbi, LAO_TraceSchedule + LAO_PostPass);
 	}
-
-	// Check to see if not SWP'd.
-	list<BB*> hb_blocks;
-	Get_HB_Blocks_List(hb_blocks,*hbi);
-	if (Can_Schedule_HB(hb_blocks)) {
-	  Sched->Init(hb_blocks, hbs_type, NULL);
-	  Sched->Schedule_HB(hb_blocks);
-	}
+	else
 #endif
+	  {
+	    if (!Sched) {
+	      Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
+	    }
+
+	    // Check to see if not SWP'd.
+	    list<BB*> hb_blocks;
+	    Get_HB_Blocks_List(hb_blocks,*hbi);
+	    if (Can_Schedule_HB(hb_blocks)) {
+	      Sched->Init(hb_blocks, hbs_type, NULL);
+	      Sched->Schedule_HB(hb_blocks);
+	    }
+	  }
       }
     }
 
