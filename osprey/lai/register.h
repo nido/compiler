@@ -922,6 +922,11 @@ extern CLASS_REG_PAIR		CLASS_REG_PAIR_link;
 #define REGISTER_CLASS_link	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_link)
 #define CLASS_AND_REG_link	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_link)
 
+extern CLASS_REG_PAIR		CLASS_REG_PAIR_rs;
+#define REGISTER_rs		CLASS_REG_PAIR_reg(CLASS_REG_PAIR_rs)
+#define REGISTER_CLASS_rs	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_rs)
+#define CLASS_AND_REG_rs	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_rs)
+
 extern const CLASS_REG_PAIR		CLASS_REG_PAIR_undef;
 
 /* Exported functions

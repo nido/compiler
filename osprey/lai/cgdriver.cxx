@@ -164,7 +164,7 @@ static OPTION_DESC Options_CG_SWP[] = {
 
   /* General software pipelining options */
 
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "", NULL,
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "on", NULL,
     0, 0, 0,	&Enable_SWP, &Enable_SWP_overridden },
 
   { OVK_INT32,	OV_INTERNAL,	TRUE, "sched_direction", "sched_dir",

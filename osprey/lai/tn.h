@@ -408,6 +408,7 @@ extern	TN *True_TN;		// TN for true condition (predicate)
 extern  TN *FZero_TN;		// Floating zero (0.0) register TN
 extern  TN *FOne_TN;		// Floating one (1.0) register TN
 extern  TN *Link_TN;            // Link TN for indirect branching
+extern  TN *RS_TN;              // TN for returning structs by value
 
 /* ====================================================================
  * Prototypes of external routines.
@@ -436,6 +437,7 @@ extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER reg, INT si
 #define TN_is_ep_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_ep)
 #define TN_is_fp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_fp)
 #define TN_is_ra_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_ra)
+#define TN_is_rs_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_rs)
 #define TN_is_zero_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_zero)
 #define TN_is_static_link_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_static_link)
 #define TN_is_link_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_link)

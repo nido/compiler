@@ -102,7 +102,10 @@ TN *True_TN;
 TN *FZero_TN;
 TN *FOne_TN;
 TN *LC_TN;
+#ifdef TARG_ST
 TN *Link_TN;
+TN *RS_TN;
+#endif
 
 /* We currently always use the same dedicated TN for each
  * register-class/register pair. We save pointers to them here
@@ -644,6 +647,8 @@ Init_Dedicated_TNs (void)
                  NULL : ded_tns[REGISTER_CLASS_fp][REGISTER_fp];
   RA_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ra) == REGISTER_UNDEFINED ?
                  NULL : ded_tns[REGISTER_CLASS_ra][REGISTER_ra];
+  RS_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_rs) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_rs][REGISTER_rs];
   Pfs_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_pfs) == REGISTER_UNDEFINED ?
                  NULL : ded_tns[REGISTER_CLASS_pfs][REGISTER_pfs];
   True_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_true) == REGISTER_UNDEFINED ?
