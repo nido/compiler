@@ -89,8 +89,7 @@ CGEMIT_Prn_Ent_In_Asm (
 
   fprintf (Asm_File, "\t%s\t", AS_ENT);
 
-  // TODO: uncomment in main branch once binutils are ready
-  //EMT_Write_Qualified_Name(Asm_File, pu);
+  EMT_Write_Qualified_Name(Asm_File, pu);
 
   for (ent_list = Entry_BB_Head; 
        ent_list; 
@@ -121,8 +120,7 @@ void
 CGEMIT_Exit_In_Asm (ST *pu) 
 {
   fprintf (Asm_File, "\t%s\t", AS_END);
-  // TODO: uncomment in main branch once binutils are ready
-  //EMT_Write_Qualified_Name(Asm_File, pu);
+  EMT_Write_Qualified_Name(Asm_File, pu);
   fprintf (Asm_File, "\n");
 }
 
@@ -292,10 +290,8 @@ void
 CGEMIT_Begin_File_In_Asm (void)
 {
   // For the st200 target we emit core target information
-  // TODO: uncomment in main branch once binutils are 
-  // ready
 #define AS_ASSUME ".assume"
-  //fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Targ_Name(Target));
+  fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Targ_Name(Target));
   if (Target_ABI != ABI_ST200_embedded) {
     // Only specify ABI if it is not the embedded ABI.
     fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Abi_Name (Target_ABI));
