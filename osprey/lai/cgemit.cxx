@@ -36,12 +36,12 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
-#include <bstring.h>
+#include "W_errno.h"
+#include "W_bstring.h"
 #include <elf.h>
 #include <libelf.h>
 #include <elfaccess.h>
-#include <alloca.h>
+#include "W_alloca.h"
 #include <stdlib.h>
 #include <cmplrs/rcodes.h>
 #include <stamp.h>
@@ -101,7 +101,7 @@
 #include "targ_isa_bundle.h"
 #include "targ_isa_operands.h"
 
-extern void Early_Terminate (INT status);
+BE_EXPORTED extern void Early_Terminate (INT status);
 
 #define PAD_SIZE_LIMIT	2048	/* max size to be padded in a section */
 
@@ -127,7 +127,12 @@ enum { IHOT=FALSE, ICOLD=TRUE };
 #define Set_BB_cold	Set_BB_local_flag1
 #define Reset_BB_cold	Reset_BB_local_flag1
 
+#ifndef _NO_WEAK_SUPPORT_
 extern const char __Release_ID[];
+#else
+BE_EXPORTED extern const char **__Release_ID_p;
+#define __Release_ID (*__Release_ID_p)
+#endif
 
 /* ====================================================================
  *    Global data
