@@ -173,10 +173,8 @@
 #include "hb.h"
 #include "gra_live.h"
 
-#ifdef TARG_ST
-#ifdef LAO_ENABLED
+#if defined(TARG_ST) && defined(LAO_ENABLED)
 #include "lao_stub.h"
-#endif
 #endif
 
 /* Error tolerance for feedback-based frequency info */
@@ -2345,17 +2343,23 @@ static void unroll_guard_unrolled_body(LOOP_DESCR *loop,
 	    orig_trip_count_tn,
 	    Gen_Literal_TN(log2(ntimes), trip_size),
 	    &ops);
+#ifdef TARG_ST
     Exp_OP3v(OPC_FALSEBR,
 	     NULL,
 	     Gen_Label_TN(continuation_lbl,0),
 	     new_trip_count_tn,
 	     Zero_TN,
-#ifdef TARG_ST
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
-#else
-	     V_BR_I8EQ,
-#endif
 	     &ops);
+#else 
+    Exp_OP3v(OPC_FALSEBR,
+	     NULL,
+	     Gen_Label_TN(continuation_lbl,0),
+	     new_trip_count_tn,
+	     Zero_TN,
+	     V_BR_I8EQ,
+	     &ops);
+#endif
     BB_Append_Ops(CG_LOOP_prolog, &ops);
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, continuation_bb, ztrip_prob);
     Change_Succ_Prob(CG_LOOP_prolog, BB_next(CG_LOOP_prolog), 1.0 - ztrip_prob);
@@ -2915,17 +2919,23 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	      &prolog_ops);
     
     continuation_label = Gen_Label_For_BB(remainder_tail);
+#ifdef TARG_ST
     Exp_OP3v(OPC_FALSEBR,
 	     NULL,
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
 	     Zero_TN,
-#ifdef TARG_ST
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
-#else
-	     V_BR_I8EQ,
-#endif
 	     &zero_trip_guard_ops);
+#else
+    Exp_OP3v(OPC_FALSEBR,
+	     NULL,
+	     Gen_Label_TN(continuation_label,0),
+	     new_trip_count,
+	     Zero_TN,
+	     V_BR_I8EQ,
+	     &zero_trip_guard_ops);
+#endif
 
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, remainder_tail, ztrip_prob);
     if (freqs || BB_freq_fb_based(CG_LOOP_prolog))
@@ -2978,17 +2988,23 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 		new_trip_count,
 		Gen_Literal_TN(-1, trip_size),
 		&body_ops);
+#ifdef TARG_ST
 	Exp_OP3v(OPC_TRUEBR,
 		 NULL,
 		 Gen_Label_TN(continuation_label,0),
 		 new_trip_count,
 		 Zero_TN,
-#ifdef TARG_ST
 		 trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
-#else
-		 V_BR_I8EQ,
-#endif
 		 &body_ops);
+#else
+	Exp_OP3v(OPC_TRUEBR,
+		 NULL,
+		 Gen_Label_TN(continuation_label,0),
+		 new_trip_count,
+		 Zero_TN,
+		 V_BR_I8EQ,
+		 &body_ops);
+#endif
       }
       else {
         Set_BB_unrollings(unrolled_body, unroll_times);
@@ -3349,17 +3365,23 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 	    trip_count,
 	    Gen_Literal_TN(ntimes-1, trip_size),
 	    &ops);
+#ifdef TARG_ST
     Exp_OP3v(OPC_FALSEBR,
 	     NULL,
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
 	     Zero_TN,
-#ifdef TARG_ST
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
-#else
-	     V_BR_I8EQ,
-#endif
 	     &ops);
+#else
+    Exp_OP3v(OPC_FALSEBR,
+	     NULL,
+	     Gen_Label_TN(continuation_label,0),
+	     new_trip_count,
+	     Zero_TN,
+	     V_BR_I8EQ,
+	     &ops);
+#endif
     BB_Append_Ops(CG_LOOP_prolog, &ops);
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, remainder_epilog, ztrip_prob);
     if (freqs)
@@ -4072,17 +4094,23 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
   continuation_bb = CG_LOOP_epilog;
   continuation_lbl = Gen_Label_For_BB(continuation_bb);
 
+#ifdef TARG_ST
   Exp_OP3v(OPC_FALSEBR,
 	   NULL,
 	   Gen_Label_TN(continuation_lbl,0),
 	   unrolled_trip_count,
 	   Zero_TN,
-#ifdef TARG_ST
 	   V_BR_I4EQ,
-#else
-	   V_BR_I8EQ,
-#endif
 	   &ops);
+#else
+  Exp_OP3v(OPC_FALSEBR,
+	   NULL,
+	   Gen_Label_TN(continuation_lbl,0),
+	   unrolled_trip_count,
+	   Zero_TN,
+	   V_BR_I8EQ,
+	   &ops);
+#endif
   BB_Append_Ops(CG_LOOP_prolog, &ops);
   Link_Pred_Succ_with_Prob(CG_LOOP_prolog, continuation_bb, ztrip_prob);
   Change_Succ_Prob(CG_LOOP_prolog, BB_next(CG_LOOP_prolog), 1.0 - ztrip_prob);
@@ -5176,7 +5204,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	// Replace regular branch with loop-count branches.
 	// There will be a call EBO to delete the loop-exit test evaluations.
 	Gen_Counted_Loop_Branch(cg_loop);
-#if 0
+#ifndef TARG_ST
       // Generate SWP branches, eg. doing stuff to prolog/epilog, etc.
       // target-specific
       Gen_SWP_Branch(cg_loop, true /* is_doloop */);
@@ -5312,9 +5340,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       } 
       else {
-#ifndef TARG_ST
 	Perform_Read_Write_Removal(loop);
-#endif
 
 	// Break recurrences will compute dep-graph itself
 	Fix_Recurrences_Before_Unrolling(cg_loop);
@@ -5328,13 +5354,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
+#endif
 
 #if defined(TARG_ST) && defined(LAO_ENABLED)
       if (CG_enable_LAO)
 	if (LAO_optimize(&cg_loop, LAO_LoopSchedule /* + LAO_LoopUnroll */)) {
 	  cg_loop.Recompute_Liveness();
 	}
-#endif
 #endif
       break;
     }
@@ -5405,11 +5431,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
+#ifndef TARG_ST
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
 
-#ifndef TARG_ST
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
@@ -5434,8 +5460,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_DOLOOP ***");
       }
-
 #ifndef TARG_ST
+
       Gen_Counted_Loop_Branch(cg_loop);
 #endif
 #if defined(TARG_ST) && defined(LAO_ENABLED)
