@@ -163,6 +163,8 @@ ifeq ($(HOST_OS),CYGWIN_NT)
 COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
 #COMPILER_LOC=/apa/comp/pro64-cygwin/install/x-mallinfo-cygwin32-1.3.12/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
+# (cbr)
+YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
 PREFIX=i686-pc-cygwin32-
 endif
 
