@@ -4633,14 +4633,7 @@ EMT_Assemble_BB (
     ent = ANNOT_entryinfo(ant);
     entry_srcpos = ENTRYINFO_srcpos(ent);
     entry_sym = ENTRYINFO_name(ent);
-#ifndef TARG_ST
-    // [CG]: Don't get name so early as STRTAB does not guaranty
-    // that string pointer are persistent. As Cg_Dwarf_Add_Line_Entry
-    // creates strings wirth STRTAB, the entry_name may be invalid if
-    // a reallocation occurs. 
-    // WE MUST REIMPLEMENT THE STRTAB MODULE!!!
     entry_name = ST_name(entry_sym);
-#endif
 
     /* Set an initial line number so that if the first inst in the BB
      * has no srcpos, then we'll be ok.
@@ -4651,10 +4644,6 @@ EMT_Assemble_BB (
 #else
     if (entry_srcpos)
       Cg_Dwarf_Add_Line_Entry (PC, entry_srcpos);
-#endif
-
-#ifdef TARG_ST
-    entry_name = ST_name(entry_sym);
 #endif
 
     if (ST_is_not_used(entry_sym)) {
