@@ -508,8 +508,9 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
+    int unrolled = BB_unrollings(cgir_bb);
     // make the BasicBlock
-    basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode,
+    basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
 	labelCount, labels, operationCount, operations);
     // more the BasicBlock
     int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
@@ -556,28 +557,35 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
   if (loopinfo == NULL) {
     BB *head_bb = LOOP_DESCR_loophead(cgir_ld);
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
+    int pipelining = annot == NULL ? CG_LAO_pipelining : 0;
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
     if (cgir_li != NULL) {
       TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
+      Temporary tripcount = trip_count_tn != NULL ?
+	  CGIR_TN_to_Temporary(trip_count_tn) : NULL;
       if (trip_count_tn != NULL && TN_is_constant(trip_count_tn)) {
 	uint64_t trip_count = TN_value(trip_count_tn);
 	int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
 	uint64_t trip_factor = trip_count & -trip_count;
 	int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
-	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	    ConfigurationItem_Pipelining, CG_LAO_pipelining,
+	loopinfo = LAI_Interface_makeLoopInfo(interface,
+	    cgir_ld, head_block, tripcount,
+	    ConfigurationItem_Pipelining, pipelining,
 	    ConfigurationItem_MinTrip, min_trip_count,
 	    ConfigurationItem_Modulus, min_trip_factor,
 	    ConfigurationItem_Residue, 0,
 	    ConfigurationItem__);
       } else {
-	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	    ConfigurationItem_Pipelining, CG_LAO_pipelining,
+	loopinfo = LAI_Interface_makeLoopInfo(interface,
+	    cgir_ld, head_block, tripcount,
+	    ConfigurationItem_Pipelining, pipelining,
 	    ConfigurationItem__);
       }
     } else {
-      loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	  ConfigurationItem_Pipelining, CG_LAO_pipelining,
+      loopinfo = LAI_Interface_makeLoopInfo(interface,
+	  cgir_ld, head_block, NULL,
+	  ConfigurationItem_Pipelining, pipelining,
 	  ConfigurationItem__);
     }
     // Fill the LoopInfo dependence table.
@@ -614,7 +622,8 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	  if (_CG_DEP_op_info(op)) {
 	    Operation orig_operation = CGIR_OP_to_Operation(op);
 	    if (OP_memory(op) || OP_barrier(op)) {
-	      LAI_Interface_LoopInfo_setDependenceNode(interface, loopinfo, orig_operation);
+	      WN *wn = Get_WN_From_Memory_OP(op);
+	      LAI_Interface_LoopInfo_setDependenceNode(interface, loopinfo, orig_operation, wn);
 	    }
 	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	      ARC *arc = ARC_LIST_first(arcs);
@@ -780,7 +789,7 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
 
 // Create a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
+CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[]) {
   int iteration = LAI_Interface_Operation_iteration(operation);
   int issueDate = LAI_Interface_Operation_issueDate(operation);
   LAI_Operator opr = LAI_Interface_Operation_operator(operation);
@@ -796,8 +805,6 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   if (cgir_op != NULL) {
     Set_OP_orig_idx(new_op, OP_map_idx(cgir_op));
     Copy_WN_For_Memory_OP(new_op, cgir_op);
-    // Set unrolling.
-    Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
   // Add spill information
   if (LAI_Interface_Operation_isSpillCode(operation)) {
@@ -828,6 +835,9 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   if (LAI_Interface_Operation_isVolatile(operation)) {
     DevWarn("Operation volatile on LAO side");
   }
+  // Set unrolling.
+  Set_OP_unrolling(new_op, iteration);
+  // Set hoisting.
   if (LAI_Interface_Operation_isHoisted(operation)) {
     Set_OP_hoisted(new_op);
   }
@@ -839,7 +849,7 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
 
 // Update a CGIR_OP.
 static void
-CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
+CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[]) {
   int iteration = LAI_Interface_Operation_iteration(operation);
   int issueDate = LAI_Interface_Operation_issueDate(operation);
   LAI_Operator opr = LAI_Interface_Operation_operator(operation);
@@ -859,9 +869,10 @@ CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
     CGIR_TN cgir_tn = results[resCount];
     if (OP_result(cgir_op, resCount) != cgir_tn) Set_OP_result(cgir_op, resCount, cgir_tn);
   }
-  Is_True(iteration == 0, ("OP_update must not change OP_unrolling"));
   Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
-  Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
+  // Set unrolling.
+  Set_OP_unrolling(cgir_op, iteration);
+  // Set hoisting.
   if (LAI_Interface_Operation_isHoisted(operation)) {
     Set_OP_hoisted(cgir_op);
   }
@@ -1011,7 +1022,7 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, int preds, int succs) {
 
 // Create a CGIR_LD.
 static CGIR_LD
-CGIR_LD_create(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
+CGIR_LD_create(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn) {
   // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
   Is_True(0, ("CGIR_LD_create should not be called"));
   return cgir_ld;
@@ -1019,7 +1030,7 @@ CGIR_LD_create(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
 
 // Update a CGIR_LD.
 static void
-CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
+CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn) {
   int unrolled = LAI_Interface_LoopInfo_unrolled(loopInfo);
   Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_update"));
   // We only update the LOOPINFOs for use by LOOP_DESCR_Detect_Loops.
@@ -1124,8 +1135,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     BBLIST *bblist = NULL;
     FOR_ALL_BB_SUCCS(orig_bb, bblist) {
       BB *succ_bb = BBLIST_item(bblist);
+      float probability = BBLIST_prob(bblist);
+      if (probability < 0.0 || probability > 1.0)
+	DevWarn("Inconsistent probability %f between BB %d and BB %d",
+	    probability, BB_id(orig_bb), BB_id(succ_bb));
       BasicBlock head_block = CGIR_BB_to_BasicBlock(succ_bb);
-      LAI_Interface_linkBasicBlocks(interface, tail_block, head_block, BBLIST_prob(bblist));
+      LAI_Interface_linkBasicBlocks(interface, tail_block, head_block, probability);
     }
   }
   //
