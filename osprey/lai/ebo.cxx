@@ -1491,6 +1491,16 @@ EBO_delete_reload_across_dependency (
   if ((size_succ != size_pred) ||
       (size_succ != size_intervening)) return FALSE;
 
+  /* [CG] if size of the reloaded TN is greater. We return. We may generate
+     a select with extract however. */
+  if (TN_size(OP_result(op, 0)) != size_succ) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sSize mismatch for Store - Store - Load combination: load size %d for tn size %d\n",
+	      EBO_trace_pfx,size_succ,TN_size(OP_result(op, 0)));
+    }
+    return FALSE;
+  }
+
   if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
    /* The increment must be preserved. */
     if (EBO_Trace_Data_Flow) {
