@@ -544,6 +544,34 @@ CG_Generate_Code(
 	  FREQ_Verify("Heuristic Frequency Computation");
       }
 
+#ifdef TARG_ST
+
+      // Arthur: there is a possibility that (like if-conversion)
+      //         select generation is more related to the superblock
+      //         formation than we think it is. We may do both at
+      //         the same time eventually. For now, first do select
+      //         then find superblocks.
+      // TODO: need HB_force_if_conversion flag ??
+
+#ifdef SUPPORTS_SELECT
+      // Perform select generation (partial predication if-conversion). 
+      if (CG_enable_select) {
+	Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
+	if (frequency_verify)
+	  FREQ_Verify("Select Formation");
+      }
+      draw_CFG();
+#endif
+
+      // Perform hyperblock formation (if-conversion), if target can
+      // predicate, and superblock formation if target supports select.
+      if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+	HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+	if (frequency_verify)
+	  FREQ_Verify("Hyberblock Formation");
+      }
+#endif
+
 #ifdef IA64
       // Perform hyperblock formation (if-conversion).  Only works for
       // IA-64 at the moment. 
@@ -558,16 +586,6 @@ CG_Generate_Code(
 	if (frequency_verify)
 	  FREQ_Verify("Hyberblock Formation");
       }
-#endif
-
-#ifdef SUPPORTS_SELECT
-      // Perform select generation (partial predication if-conversion). 
-      if (CG_enable_select) {
-	Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
-	if (frequency_verify)
-	  FREQ_Verify("Select Formation");
-      }
-      draw_CFG();
 #endif
 
 #ifdef TARG_ST
@@ -663,20 +681,6 @@ CG_Generate_Code(
       }
 #endif
     }
-
-#ifdef TARG_ST200
-      if (HB_force_hyperblocks) {
-        HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
-#if defined(LAO_ENABLED) && defined(LAO_EXPERIMENT)
-	// Call the LAO for all the hyperblocks.
-	HB_Remove_Deleted_Blocks();
-	list<HB*>::iterator hbi;
-	for (hbi = HB_list.begin(); hbi != HB_list.end(); hbi++) {
-	  LAO_optimize(*hbi, LAO_TraceSchedule);
-	}
-#endif
-      }
-#endif
 
     if (!Get_Trace (TP_CGEXP, 1024))
       Reuse_Temp_TNs = TRUE;	/* for spills */
