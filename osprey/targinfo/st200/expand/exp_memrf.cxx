@@ -60,6 +60,19 @@
 #include "strtab.h"
 #include "symtab.h"
 
+/*
+ * [CG] temporary flag 
+ * (until all the compiler is fixed concerning misaligned accesses)
+ * If set this flag tells the expander to decompose a misaligned access.
+ * If not set the compiler forces a misaligned access (generate an
+ * access as if it were not misaligned).
+ * At the end this should be a target dependent and/or user level flag.
+ * However currently the compiler itself generate misaligned access, and
+ * we don't know how to differenciate this with user generated misaligned
+ * accesses. Thus we are obliged to force it.
+ */
+#define GEN_MISALIGNED_ACCESS
+
 /* ====================================================================
  *   Expand_Lda
  * ====================================================================
@@ -356,8 +369,6 @@ Adjust_Addr_TNs (
     }
   } else {
 
-    FmtAssert(FALSE,("immediate offset exceeded 32-bits"));
-
     TN *tmp = Build_TN_Of_Mtype (Pointer_Mtype);
     // because disp may be symbolic reloc on base,
     // want to still add it with base and create new base and disp.
@@ -389,8 +400,6 @@ Expand_Composed_Load (
   OPCODE	new_opcode;
   TYPE_ID	new_desc;
   TN		*tmpV[8];
-
-  DevWarn("misaligned load encountered");
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
   new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
@@ -471,6 +480,32 @@ Expand_Composed_Load (
   return;
 }
 
+
+/* ====================================================================
+ *   Expand_Forced_Misaligned_Load
+ *
+ *   Generate a load at the given addr + offset as if the load was
+ *   correctly aligned. This should end into a runtime error for
+ *   machines with unaligned access not supported.
+ *   It is an alternative to Expand_Composed_Load.
+ *   Called from Expand_Misaligned_Load only.
+ * ====================================================================
+ */
+static void
+Expand_Forced_Misaligned_Load (
+  OPCODE op, 
+  TN *result, 
+  TN *base, 
+  TN *disp, 
+  OPS *ops
+  )
+{
+  TN *new_base = Build_TN_Of_Mtype (Pointer_Mtype);
+  TN *new_offset = Gen_Literal_TN(0, 4);
+  Expand_Add (new_base, base, disp, Pointer_Mtype, ops);
+  Expand_Load (op, result, new_base, new_offset, ops);
+}
+
 /* ====================================================================
  *   Expand_Misaligned_Load
  * ====================================================================
@@ -485,7 +520,13 @@ Expand_Misaligned_Load (
   OPS *ops
 )
 {
+  DevWarn("misaligned load encountered: TODO : differenciate between compiler an user generated");
+
+#ifdef GEN_MISALIGNED_ACCESS
   Expand_Composed_Load (op, result, base, disp, variant, ops);
+#else
+  Expand_Forced_Misaligned_Load(op, result, base, disp, ops);
+#endif
 }
 
 /* ====================================================================
@@ -505,8 +546,6 @@ Expand_Composed_Store (
   TOP		top;
   INT32		alignment, nStores;
   TYPE_ID	new_desc;
-
-  FmtAssert(FALSE,("Not Implemented"));
 
   new_desc =	Composed_Align_Type(mtype, variant, &alignment, &nStores);
   //  top = Pick_Store_Instruction (new_desc);
@@ -532,6 +571,31 @@ Expand_Composed_Store (
 }
 
 /* ====================================================================
+ *   Expand_Forced_Misaligned_Store
+ *
+ *   Generate a store at the given addr + offset as if the store was
+ *   correctly aligned. This should end into a runtime error for
+ *   machines with unaligned access not supported.
+ *   It is an alternative to Expand_Composed_Store.
+ *   Called from Expand_Misaligned_Store only.
+ * ====================================================================
+ */
+static void
+Expand_Forced_Misaligned_Store (
+  TYPE_ID mtype, 
+  TN *obj_tn, 
+  TN *base_tn, 
+  TN *disp_tn, 
+  OPS *ops
+  )
+{
+  TN *new_base = Build_TN_Of_Mtype (Pointer_Mtype);
+  TN *new_offset = Gen_Literal_TN(0, 4);
+  Expand_Add (new_base, base_tn, disp_tn, Pointer_Mtype, ops);
+  Expand_Store (mtype, obj_tn, new_base, new_offset, ops);
+}
+
+/* ====================================================================
  *   Expand_Misaligned_Store
  * ====================================================================
  */
@@ -545,7 +609,13 @@ Expand_Misaligned_Store (
   OPS *ops
 )
 {
+  DevWarn("misaligned store encountered: TODO : differenciate between compiler an user generated");
+
+#ifdef GEN_MISALIGNED_ACCESS
   Expand_Composed_Store (mtype, obj_tn, base_tn, disp_tn, variant, ops);
+#else
+  Expand_Forced_Misaligned_Store (mtype, obj_tn, base_tn, disp_tn, ops);
+#endif
 }
 
 /* ====================================================================
