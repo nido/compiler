@@ -103,11 +103,12 @@ else
 CVERSION = 
 TARG_BE_DIR = $(TARGDIR)/be
 endif
-LAO_ROOT ?= $(ROOT)
+LAO_PREFIX ?= $(ROOT)/LAO
 
 #----------------------------------------------------------------------
 #  Compiler Options
 #----------------------------------------------------------------------
+HOSTDEFS += -DHAVE_CONFIG_H
 HOSTDEFS += -Dsgi
 HOSTDEFS += -DBACK_END -DMONGOOSE_BE
 HOSTDEFS += -Dlonglong
@@ -184,7 +185,12 @@ HEADER_DIRS = 		\
   $(BE_OPT_DIR)		\
   $(TARG_TARG_INFO_DIR)	\
   $(TARG_LAI_DIR)	\
-  $(LAO_ROOT)/LAO/include   \
+  $(LAO_PREFIX)/include/CCL	\
+  $(LAO_PREFIX)/include/ENUM	\
+  $(LAO_PREFIX)/include/CSD	\
+  $(LAO_PREFIX)/include/LIR	\
+  $(LAO_PREFIX)/include/SCD	\
+  $(LAO_PREFIX)/include/LAO	\
   $(TARG_BE)
 
 #----------------------------------------------------------------------
@@ -241,11 +247,11 @@ HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 endif
 
 LAO_DSOS =
-LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLAO.a
-LAO_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.a
-LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLIR.a
-LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCSD.a
-LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCCL.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libSCD.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libLIR.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libCSD.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libCCL.a
 LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO) $(TARGET_DSO)
 STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 

@@ -34,8 +34,6 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#define CCL_NO_STDINT
-#define CCL_NO_STDBOOL
 #include "LAO.h"
 #undef operator
 #undef this
