@@ -714,6 +714,13 @@ CGTARG_Dependence_Required (
   INT *latency
 )
 {
+
+  // Force asm to stay at end of block
+  if (OP_code(succ_op) == TOP_asm) {
+    *latency = 1;
+    return TRUE;
+  }
+
   // Arcs between an OP that defines a dedicated call register and the
   // call OP. I do it here because the usual REGIN/OUT mechanism
   // want me to tell it to which opnd the dependence is attached.
@@ -721,62 +728,35 @@ CGTARG_Dependence_Required (
   // I just hope that associating all of these to opnd 0 using MISC
   // arcs will work.
 
-  if (OP_code(pred_op) == TOP_asm) {
-    *latency = 1;
-    return TRUE;
-  }
-
-  if (OP_code(succ_op) == TOP_asm) {
-    INT max_latency = 1;
-
-    if (OP_opnds(pred_op) > 0) {
-      for (INT i = 0; i < OP_results(pred_op); i++) {
-	INT cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) - TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
-	if (cur_latency > max_latency+1) max_latency = cur_latency;
-      }
-    }
-
-    *latency = max_latency;
-    return TRUE;
-  }
-
   if (!OP_call(succ_op)) return FALSE;
 
   INT i;
   BOOL need_dependence = FALSE;
   INT max_latency = 0;
+
+  // First compute the max of result latencies for pred_op.
   for (i = 0; i < OP_results(pred_op); i++) {
     TN *result = OP_result(pred_op,i);
     if (TN_is_register(result) && TN_is_dedicated(result)) {
       REGISTER reg = TN_register(result);
       ISA_REGISTER_CLASS rclass = TN_register_class (result);
       INT cur_latency;
-	 
+      
       // regs which have implicit meaning.
       if(REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass), reg) ||
 	 REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg)) {
 	
 	need_dependence = TRUE;
-	if (OP_code(pred_op) == TOP_asm) {
-	  max_latency = 1;
-	}
-	else {
-	  // just time to compute (all operands access same):
-	  FmtAssert(OP_opnds(pred_op) > 0,("Arthur doesn't understand"));
-	  cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) -
-	  TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
-	  if (cur_latency > max_latency)
-	    max_latency = cur_latency;
-	}
+	cur_latency = CGTARG_Max_RES_Latency(pred_op, i);
+	if (cur_latency > max_latency) max_latency = cur_latency;
       }
     }
   }
 
-  // CL: the call insn already accounts for 1 more cycle plus the
-  // latency of the branch
-  *latency = 0;
-  if (max_latency > (1 + CGTARG_Branch_Taken_Penalty()))
-    *latency = max_latency - 1 - CGTARG_Branch_Taken_Penalty();
+  // Remove cyles lost by branch taken.
+  max_latency -= 1 + CGTARG_Branch_Taken_Penalty();
+  if (max_latency < 0) max_latency = 0;
+  *latency = max_latency;
 
   return need_dependence;
 }
@@ -1278,94 +1258,15 @@ CGTARG_Max_OP_Latency (
 )
 {
   INT i;
-  INT latency;
+  INT max_latency;
 
-  latency = 1;
-
-  //    Instructions writing into a branch register must be followed
-  //    by 2 cycle (bundle) before 
-  //         TOP_br 
-  //         TOP_brf 
-  //    can be issued that uses this register.
-
-  //    Instructions writing LR register must be followed by 3 cycles
-  //    (bundles) before one of the following may be issued:
-  //         TOP_icall
-  //         TOP_igoto
-  //         TOP_return
+  max_latency = 0;
 
   for (i = 0; i < OP_results(op); i++) {
-    if (OP_result(op,i) == RA_TN) {
-      if (latency < 4) latency = 4;
-    }
-    else if (TN_register_class(OP_result(op,i)) == ISA_REGISTER_CLASS_branch)
-      if (latency < 3) latency = 3;
+    INT latency = CGTARG_Max_RES_Latency(op, i); 
+    if (latency > max_latency) max_latency = latency;
   }
-
-  switch (OP_code(op)) {
-  case TOP_ldw_i: 
-  case TOP_ldw_ii: 
-  case TOP_ldw_d_i: 
-  case TOP_ldw_d_ii: 
-  case TOP_ldh_i: 
-  case TOP_ldh_ii: 
-  case TOP_ldh_d_i: 
-  case TOP_ldh_d_ii: 
-  case TOP_ldhu_i: 
-  case TOP_ldhu_ii: 
-  case TOP_ldhu_d_i: 
-  case TOP_ldhu_d_ii: 
-  case TOP_ldb_i: 
-  case TOP_ldb_ii: 
-  case TOP_ldb_d_i: 
-  case TOP_ldb_d_ii: 
-  case TOP_ldbu_i: 
-  case TOP_ldbu_ii: 
-  case TOP_ldbu_d_i: 
-  case TOP_ldbu_d_ii: 
-  case TOP_mull_r:
-  case TOP_mullu_r:
-  case TOP_mulh_r:
-  case TOP_mulhu_r:
-  case TOP_mulll_r:
-  case TOP_mulllu_r:
-  case TOP_mullh_r:
-  case TOP_mullhu_r:
-  case TOP_mulhh_r:
-  case TOP_mulhhu_r:
-  case TOP_mulhs_r:
-  case TOP_mull_i:
-  case TOP_mull_ii:
-  case TOP_mullu_i:
-  case TOP_mullu_ii:
-  case TOP_mulh_i:
-  case TOP_mulh_ii:
-  case TOP_mulhu_i:
-  case TOP_mulhu_ii:
-  case TOP_mulll_i:
-  case TOP_mulll_ii:
-  case TOP_mulllu_i:
-  case TOP_mulllu_ii:
-  case TOP_mullh_i:
-  case TOP_mullh_ii:
-  case TOP_mullhu_i:
-  case TOP_mullhu_ii:
-  case TOP_mulhh_i:
-  case TOP_mulhh_ii:
-  case TOP_mulhhu_i:
-  case TOP_mulhhu_ii:
-  case TOP_mulhs_i:
-  case TOP_mulhs_ii:
-  case TOP_mulhhs_r:
-  case TOP_mulhhs_i:
-  case TOP_mulhhs_ii:
-  case TOP_mullhus_r:
-  case TOP_mullhus_i:
-  case TOP_mullhus_ii:
-    if (latency < 3) latency = 3;
-  }
-
-  return latency;
+  return max_latency;
 }
 
 /* ====================================================================
@@ -1381,13 +1282,23 @@ CGTARG_Max_RES_Latency (
   INT i;
   INT latency;
 
+  //	asm latency always forced to 1.
+  if (OP_code(op) == TOP_asm) return 1;
+
+  //	Most instructions have 1 cycle latency
   latency = 1;
 
-  //    Instructions writing into a branch register must be followed
-  //    by 2 cycle (bundle) before 
-  //         TOP_br 
-  //         TOP_brf 
-  //    can be issued that uses this register.
+  //	Default based on scheduling group
+  //	Instructions of group "LOAD" and "LOAD_IMM" have 3 cycles latency
+  if (TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_i) ||
+      TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_ii))
+    latency = 3;
+  //	Instructions of group "MUL" and "MUL_IMM" have 3 cycles latency
+  else if (TSI_Id(OP_code(op)) == TSI_Id(TOP_mull_i) ||
+	   TSI_Id(OP_code(op)) == TSI_Id(TOP_mull_ii))
+    latency = 3;
+  
+  //	Now handle special operand cases
 
   //    Instructions writing LR register must be followed by 3 cycles
   //    (bundles) before one of the following may be issued:
@@ -1398,71 +1309,15 @@ CGTARG_Max_RES_Latency (
   if (OP_result(op,idx) == RA_TN) {
     if (latency < 4) latency = 4;
   }
+
+  //    Instructions writing into a branch register must be followed
+  //    by 2 cycle (bundle) before 
+  //         TOP_br 
+  //         TOP_brf 
+  //    can be issued that uses this register.
+
   else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch)
     if (latency < 3) latency = 3;
-
-  switch (OP_code(op)) {
-  case TOP_ldw_i: 
-  case TOP_ldw_ii: 
-  case TOP_ldw_d_i: 
-  case TOP_ldw_d_ii: 
-  case TOP_ldh_i: 
-  case TOP_ldh_ii: 
-  case TOP_ldh_d_i: 
-  case TOP_ldh_d_ii: 
-  case TOP_ldhu_i: 
-  case TOP_ldhu_ii: 
-  case TOP_ldhu_d_i: 
-  case TOP_ldhu_d_ii: 
-  case TOP_ldb_i: 
-  case TOP_ldb_ii: 
-  case TOP_ldb_d_i: 
-  case TOP_ldb_d_ii: 
-  case TOP_ldbu_i: 
-  case TOP_ldbu_ii: 
-  case TOP_ldbu_d_i: 
-  case TOP_ldbu_d_ii: 
-  case TOP_mull_r:
-  case TOP_mullu_r:
-  case TOP_mulh_r:
-  case TOP_mulhu_r:
-  case TOP_mulll_r:
-  case TOP_mulllu_r:
-  case TOP_mullh_r:
-  case TOP_mullhu_r:
-  case TOP_mulhh_r:
-  case TOP_mulhhu_r:
-  case TOP_mulhs_r:
-  case TOP_mull_i:
-  case TOP_mull_ii:
-  case TOP_mullu_i:
-  case TOP_mullu_ii:
-  case TOP_mulh_i:
-  case TOP_mulh_ii:
-  case TOP_mulhu_i:
-  case TOP_mulhu_ii:
-  case TOP_mulll_i:
-  case TOP_mulll_ii:
-  case TOP_mulllu_i:
-  case TOP_mulllu_ii:
-  case TOP_mullh_i:
-  case TOP_mullh_ii:
-  case TOP_mullhu_i:
-  case TOP_mullhu_ii:
-  case TOP_mulhh_i:
-  case TOP_mulhh_ii:
-  case TOP_mulhhu_i:
-  case TOP_mulhhu_ii:
-  case TOP_mulhs_i:
-  case TOP_mulhs_ii:
-  case TOP_mulhhs_r:
-  case TOP_mulhhs_i:
-  case TOP_mulhhs_ii:
-  case TOP_mullhus_r:
-  case TOP_mullhus_i:
-  case TOP_mullhus_ii:
-    if (latency < 3) latency = 3;
-  }
 
   return latency;
 }
@@ -1484,55 +1339,41 @@ CGTARG_Adjust_Latency (
   const TOP pred_code = OP_code(pred_op);
   const TOP succ_code = OP_code(succ_op);
 
-  /* (cbr) those latencies are now emitted from Chess. */
-#if 0
   // 1. Instructions writing into a branch register must be followed
-  //    by 1 cycle (bundle) before 
+  //    by 2 cycle (bundle) before 
   //         TOP_br 
   //         TOP_brf 
   //    can be issued that uses this register.
+  //	Treated by ti_si.
 
-  if (succ_code == TOP_br || succ_code == TOP_brf) {
-    // operand 0 is the branch register
-    TN *cond = OP_opnd(succ_op, 0);
-    for (i = 0; i < OP_results(pred_op); i++) {
-      if (OP_result(pred_op,i) == cond)
-	*latency += 1;
-    }
-  }
-#endif
 
   // 2. Instructions writing into a PC must be followed
   //    by 1 cycle (bundle) before a TOP_br can be issued.
+  //	Treated by ti_si.
 
   // 3. Instructions writing LR register must be followed by 3 cycles
   //    (bundles) before one of the following may be issued:
   //         TOP_icall
   //         TOP_igoto
   //         TOP_return
-  for (i = 0; i < OP_results(pred_op); i++) {
-    if (OP_result(pred_op,i) == RA_TN) {
-#if 0
-      *latency += 3;
-#endif
-// CL: latency should be at least 3, not 3 more
-//     than already required
-      if (succ_code == TOP_icall || succ_code == TOP_igoto || succ_code == TOP_return)
-	if (*latency < 3) {
-	  *latency = 3;
-	}
-    }
-  }
+  //	Treated by ti_si.
 	
   // 4. TOP_prgins must be followed by 3 cycles (bundles) before
   //    issueing a TOP_syncins instruction
+  //	TODO ?
 
   // 5. Instructions writing SAVED_PC must be followed by 4 cycles
   //    (bundles) before issueing the TOP_rfi instruction.
+  //	TODO ?
 
   // 6 ... more about TOP_rfi
+  //	TODO ?
 
-
+  // 7. Special asm latencies
+  //    For input treated by the standard READ/WRITE latencies
+  //	For output, force to 1.
+  if (pred_code == TOP_asm) *latency = 1;
+  
   return;
 }
 

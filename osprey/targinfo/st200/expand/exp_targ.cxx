@@ -95,23 +95,6 @@ static BOOL Disable_Const_Mult_Opt = FALSE;
 #define DUP_TN(tn)	Dup_TN_Even_If_Dedicated(tn)
 
 /* ====================================================================
- *   Pick_Imm_Form_TOP (regform)
- * ====================================================================
- */
-static TOP
-Pick_Imm_Form_TOP (
-  TOP regform
-)
-{
-  switch (regform) {
-    case TOP_xor_r: return TOP_xor_i;
-    case TOP_and_r: return TOP_and_i;
-
-    default: return regform;
-  }
-}
-
-/* ====================================================================
  *   Expand_Copy (tgt_tn, guard, src_tn, ops)
  * ====================================================================
  */
