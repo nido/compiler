@@ -1507,16 +1507,23 @@ Make_Bundles (
 	// before we bundle the transfer out of BB, handle the
 	// latencies that may still be pending
 
-#ifdef TARG_ST200
-	// CL: the xfer OP accounts for 1 more cycle
-	pending_latency--;
-#endif
 	if (Trace_HB) fprintf(TFile, "  OP_xfer: pending latency = %d\n", pending_latency);
 
 	//
 	// If we need to wait longer than the dependence, do it
 	//
+#ifdef TARG_ST200
+	// FdF: Earliest estart for a branch is pending_latency, minus
+	// 1 to account for the cycle of the br, minus
+	// CGTARG_Branch_Taken_Penalty(), to account for the latency
+	// of the branch taken. If the branch is not taken, empty
+	// bundles will be added after the branch while Clock < pending_latency.
+
+	INT earliest_estart = pending_latency - 1 - CGTARG_Branch_Taken_Penalty();
+	if (earliest_estart > estart) estart = earliest_estart;
+#else
 	if (pending_latency > estart) estart = pending_latency;
+#endif
       }
 
       // If dependence is still pending, fill with noop cycles
@@ -1633,7 +1640,12 @@ Make_Bundles (
   } /* FOR_ALL_BB_OPs_FWD */
  
   // while there are pending latencies, add noop cycles
+  // FdF: No need to fill the pending latency if the bb cannot be left by a fall thru.
+#ifdef TARG_ST200
+    if (Clock < pending_latency && BB_Fall_Thru_Successor(bb)) {
+#else
   if (Clock < pending_latency) {
+#endif
 
     if (Trace_HB) fprintf(TFile,"  adding noops for pending latency ...\n");
 
