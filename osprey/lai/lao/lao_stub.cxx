@@ -1067,7 +1067,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   // 
   //
   // Get stack model
-  int stackmodel = 
+  int stackModel = 
     Current_PU_Stack_Model == SMODEL_SMALL   ? 0 : 
     Current_PU_Stack_Model == SMODEL_LARGE   ? 1 :
     Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
@@ -1075,7 +1075,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
   LAI_Interface_open(interface, name,
-      ConfigurationItem_StackModel, stackmodel,
+      ConfigurationItem_StackModel, stackModel,
       ConfigurationItem_SchedKind, CG_LAO_schedkind,
       ConfigurationItem_AllocKind, CG_LAO_allockind,
       ConfigurationItem_RegionType, CG_LAO_regiontype,
