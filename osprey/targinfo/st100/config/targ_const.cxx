@@ -103,6 +103,8 @@
 #include "quadsim.h"
 #include <math.h>
 
+#if 0
+
 /* For fp_class */
 
 #define DMANTWIDTH      52
@@ -137,12 +139,6 @@
 #undef QUAD_PRECISION_SUPPORTED
 #endif
 
-/*
-extern double atof(const char *);
-extern double sqrt(double);
-extern INT32 atoi(const char *);
-*/
-
 /* This initailization must be static because it may be used
  * before first call to Targ_WhirlOp.  Also WARNING: It requires
  * that TCON_ty field be first one in TCON
@@ -157,8 +153,6 @@ static TCON Targ_Power(TCON base, TCON exp, BOOL *folded, TYPE_ID btype);
 
 TCON Targ_Conv ( TYPE_ID ty_to, TCON c ); /* Defined later, used in Targ_WhirlOp */
 
-
-
 /* ====================================================================
  * This is the safe way of converting a QUAD_TYPE to a quad and vice
  * versa, and replaces:
@@ -6030,3 +6024,4 @@ TCON Targ_IntrinsicOp ( UINT32 intrinsic, TCON c[], BOOL *folded)
    return (c0);
 }
 
+#endif /* 0 */

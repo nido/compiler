@@ -56,6 +56,8 @@
 #ifndef targ_const_private_INCLUDED
 #define targ_const_private_INCLUDED
 
+#if 0
+
 #undef  TCON_ty
 #define TCON_ty(c)	((c).ty)
 
@@ -76,12 +78,16 @@
 #define TCON_I8(c)	((c).vals.i0)
 #define TCON_U8(c)	((c).vals.k0)
 
+#endif /* 0 */
+
 /* special TCON accessors for simplifier:
 	I8I4CVT and U8I4CVT are nops for MIPS III and above and are removed.
 	It is possible for kids to have a types I8, U8, I4, U4.	*/
-#define TCON_I8U8I4U4(c)   (MTYPE_is_signed(TCON_ty(c)) ? \
+#define TCON_I8U8I4U4(c)   (MTYPE_signed(TCON_ty(c)) ? \
 		    ((TCON_ty(c) == MTYPE_I8) ? TCON_I8(c) : TCON_I4(c)) : \
 		    ((TCON_ty(c) == MTYPE_U8) ? TCON_U8(c) : TCON_U4(c)))
+
+#if 0
 
 #define TCON_R8(c)	((c).vals.dval)
 #define TCON_R16(c)	((c).vals.qval)
@@ -120,5 +126,7 @@ extern char *Targ_Append_To_Dbuf (char *, char);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* 0 */
 
 #endif /* targ_const_private_INCLUDED */

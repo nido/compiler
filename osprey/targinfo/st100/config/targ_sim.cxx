@@ -46,13 +46,13 @@
 #define TRACE_EXIT(x)
 #define TRACE_EXIT_i(x,i)
 
-#include <limits.h>
+#include "W_limits.h"
 #include "defs.h"
 #include "mtypes.h"
 #include "errors.h"
 #include "erglob.h"
 #include "stab.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "targ_sim.h"
 #include "targ_sim_body.h"
 

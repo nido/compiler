@@ -405,42 +405,27 @@ Expand_Load (
 
 	tmp = Build_TN_Of_Mtype(Pointer_Mtype);
 
-	// emit a makewa/makeha/makeba depending on mtype
-	// emit makea; shra; load while LAO does not know makeha/makewa
+	// emit makea; shra; load 
 	switch (mtype) {
 	case MTYPE_I4:
 	case MTYPE_U4:
 	case MTYPE_A4:
-#if 0
-	  if (Lai_Code) {
-	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
-	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
-	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
+	  {
+	  TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	  Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	  Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
                                       Pointer_Mtype, shift_aright, ops);
 	  }
-	  else {
-	    Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
-	  }
-#else
-	  Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
-#endif
 	  break;
 
 	case MTYPE_I2:
 	case MTYPE_U2:
-#if 0
-	  if (Lai_Code) {
-	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
-	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
-	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
+	  {
+	  TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	  Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	  Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
                                       Pointer_Mtype, shift_aright, ops);
 	  }
-	  else {
-	    Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
-	  }
-#else
-	  Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
-#endif
 	  break;
 
 	case MTYPE_I1:
@@ -723,36 +708,22 @@ Expand_Store (
 	case MTYPE_I4:
 	case MTYPE_U4:
 	case MTYPE_A4:
-#if 0
-	  if (Lai_Code) {
-	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
-	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
-	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
+	  {
+	  TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	  Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	  Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
                                       Pointer_Mtype, shift_aright, ops);
 	  }
-	  else {
-	    Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
-	  }
-#else
-	  Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
-#endif
 	  break;
 
 	case MTYPE_I2:
 	case MTYPE_U2:
-#if 0
-	  if (Lai_Code) {
-	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
-	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
-	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
+	  {
+	  TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	  Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	  Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
                                       Pointer_Mtype, shift_aright, ops);
 	  }
-	  else {
-	    Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
-	  }
-#else
-	  Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
-#endif
 	  break;
 
 	case MTYPE_I1:
