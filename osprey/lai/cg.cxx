@@ -626,15 +626,10 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
-    // (cbr) SSA should be reconstructer after changing the CFG.
-    // For now do that after we got out of SSA.
-    // Perform hyperblock formation (if-conversion), if target can
-    // predicate, and superblock formation if target supports select.
-    if (CGTARG_Can_Select()) {
-      HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
-      if (frequency_verify)
-	FREQ_Verify("Hyberblock Formation");
-    }
+    // Perform superblock formation after select if-conversion. 
+    HB_Form_Superblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+    if (frequency_verify)
+      FREQ_Verify("Superblock Formation");
 #endif
 
     // GRA_LIVE_Init only done if !CG_localize_tns

@@ -89,12 +89,9 @@ void Configure_CG_Target() {
   // Reorder while LRA
   LRA_do_reorder = FALSE;
 
-  // HB stuff: everything's OFF by default
-  HB_simple_ifc = TRUE;
+  // HB_Superblocks formation
   HB_superblocks = TRUE;
-  //HB_loops_with_exits = FALSE;
   HB_complex_non_loop = TRUE;
-  //HB_skip_hammocks = FALSE;
-
+  HB_skip_hammocks = FALSE;
   return;
 }

@@ -130,8 +130,6 @@ Verify_HB(
       // (cbr) This code crashes if the region is a loop. need to test
       // if the block has already been processed, meaning we are in a loop.
       // Don't recurse in that case.
-      // This is in contradition with the above commments. I don't underdand
-      // them.
       if (BB_SET_MemberP(*processed_bbs, succ))
         skip_succ = TRUE;
 #endif
@@ -525,6 +523,8 @@ Select_Blocks(HB* hb, list<HB_PATH*>& hb_paths, BOOL profitable_ifc)
     }
 
     BOOL tolerate_increase = TRUE;
+
+    if (! HB_superblocks)
     for (++path; path != hb_paths.end(); path++) {
       if (HB_Trace(HB_TRACE_SELECT)) {
 	HB_PATH_Trace(*path);
