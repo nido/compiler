@@ -210,7 +210,7 @@ BOOL CG_LOOP_ooo_unroll_heuristics_set = FALSE;
 UINT32 CG_LOOP_reorder_buffer_size = 16;
 UINT32 CG_LOOP_cache_miss_threshold = 33;
 
-BOOL CG_LOOP_unroll_multi_bb = TRUE;
+BOOL CG_LOOP_unroll_multi_bb = FALSE;
 BOOL CG_LOOP_unroll_non_trip_countable = TRUE;
 BOOL CG_LOOP_unroll_multi_make_remainder_loop = TRUE;
 BOOL CG_LOOP_create_loop_prologs;	/* see Configure_CG_Options() */

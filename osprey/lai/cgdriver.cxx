@@ -173,6 +173,7 @@ static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 static BOOL CG_LOOP_unroll_multi_bb_overridden = FALSE;
+static BOOL IPFEC_Enable_LICM_overridden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
@@ -548,7 +549,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_multi_bb", "",
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
-    1, 0, 2,	&IPFEC_Enable_LICM, NULL },
+    1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
     TRUE, 0, 0, &CG_NOPs_to_GOTO, NULL },
 #endif
@@ -1094,8 +1095,13 @@ Configure_CG_Options(void)
     }
   }
 
-  if (!CG_LOOP_unroll_multi_bb_overridden)
-    CG_LOOP_unroll_multi_bb = FALSE;
+  if ((Opt_Level >= 2) && !CG_LOOP_unroll_multi_bb_overridden) {
+    CG_LOOP_unroll_multi_bb = TRUE;
+  }
+
+  if ((Opt_Level >= 2) && !IPFEC_Enable_LICM_overridden) {
+    IPFEC_Enable_LICM = 2;
+  }
 
 #else
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
