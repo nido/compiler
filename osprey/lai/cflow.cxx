@@ -6751,6 +6751,11 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   }
 #endif
 
+#ifdef TARG_ST
+  // [CG]: Don't clone under localize_tn as cloning will duplicate
+  // locals and no renaming is performed.
+  if (!CG_localize_tns)
+#endif
   if (freqs_computed && (current_flags & CFLOW_CLONE)) {
     if (CFLOW_Trace_Clone) {
       #pragma mips_frequency_hint NEVER
