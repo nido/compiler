@@ -476,8 +476,6 @@ Preconfigure_Target ( void )
   // Disable unsafe optimizations at any level. Can only be enabled on
   // command line.
   Simp_Unsafe_Relops = FALSE;
-  Simp_Fold_Unsigned_Relops = FALSE;
-  Allow_wrap_around_opt = FALSE;
   //
   // Enable_CVT_Folding will try to remove the CVTs, specifically
   // from LDID/ILOAD/STID/ISTORE, which we can not tolerate.
