@@ -941,6 +941,11 @@ CIO_RWTRAN::Mark_Op_For_Prolog( OP *op, const UINT8 omega )
   if ( Is_DB_OP_Init( op ) )
     DB_Copy_Aux_OP( op_prolog, op );
 
+#ifdef TARG_ST
+  //[CG]: Propagate memory information
+  Copy_WN_For_Memory_OP(op_prolog, op);
+#endif
+
   // Step (4)  Recursively copy definitions of all operands into prolog
   ARC_LIST *arcs = ARC_LIST_Find( OP_preds( op ), CG_DEP_REGIN, DONT_CARE );
   while ( arcs ) {
@@ -1424,6 +1429,19 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
     return;
   }
 
+#ifdef TARG_ST
+  extern void Expand_Cond_Store (TN *, BOOL, OP *, OP *, UINT8, OPS *ops);
+  // [CG]: Use target dependent cond store generation
+  UINT8 opnd_base   = OP_find_opnd_use( op, OU_base   );
+  OPS ops_cond_store = OPS_EMPTY;
+  Expand_Cond_Store (tn_predicate, FALSE, op, NULL, opnd_base, &ops_cond_store);
+
+  Copy_WN_For_Memory_OP(OPS_last(&ops_cond_store), op);
+
+  OPS_Insert_Ops_After( ops, op, &ops_cond_store );
+  OPS_Remove_Op( ops, op );
+
+#else
   Generate_Black_Holes();
 
   // If the OP is an indexed memory OP, the offset is a symbol, or if
@@ -1479,6 +1497,7 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   TN *tn_base = OP_opnd( op, opnd_base );
   TN *tn_safe_base  = Build_TN_Like( tn_base );
   TOP code = CGTARG_Which_OP_Select( TN_size( tn_base ) * 8, FALSE, FALSE );
+  OP *op_select = Mk_OP( code, tn_safe_base, tn_predicate, tn_base, tn_hole_base );
   OP *op_select = Mk_OP( code, tn_safe_base, Zero_TN, Zero_TN, Zero_TN );
   Set_OP_selcondopnd( op_select, tn_predicate );
   // I MAY HAVE THESE NEXT TWO BACKWARDS
@@ -1496,6 +1515,7 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   // It may be used by mem deps.
   Set_OP_black_hole(op);
 #endif
+#endif /* TARG_ST */
 }
 
 
@@ -1537,6 +1557,11 @@ CIO_RWTRAN::Mark_Op_For_Epilog( OP *op, const UINT8 omega )
   OP *op_epilog = Dup_OP( op );
   if ( Is_DB_OP_Init( op ) )
     DB_Copy_Aux_OP( op_epilog, op );
+
+#ifdef TARG_ST
+  //[CG]: Propagate memory information
+  Copy_WN_For_Memory_OP(op_epilog, op);
+#endif
 
   // Step (3)  Determine state of each operand:
   //   0 = loop invariant
@@ -3041,15 +3066,16 @@ CIO_RWTRAN::Transform_Arcs( BB *body )
 BOOL
 CIO_RWTRAN::Write_Removal( BB *body )
 {
+#ifndef TARG_ST
+  // [CG]: Conditional store generation works (black hole store), so it's ok.
+  // for all target.
+
   // Until the alternate predication code is ready, only remove writes
   // if the trip count is a known constant value, or if predication is
   // available on this target.
-  if ( ! TN_has_value( _trip_count_tn ) && ! CGTARG_Can_Predicate() ) {
-#ifndef TARG_ST
-    DevWarn( "CIO_RWTRAN::Read_Write_Removal predication not activated" );
-#endif
+  if ( ! TN_has_value( _trip_count_tn ) && ! CGTARG_Can_Predicate() )
     return FALSE;
-  }
+#endif
 
   // Identify and sort potentially optimizable OPs and ARCs
   Sort_Ops( body );                            // Generate _op_ordering

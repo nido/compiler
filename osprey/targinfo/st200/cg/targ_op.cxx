@@ -432,8 +432,8 @@ CGTARG_Which_OP_Select (
   BOOL is_fcc 
 )
 {
-  FmtAssert( FALSE, ( "CGTARG_Which_OP_Select: Unsupported Target") );
-  /*NOTREACHED*/
+  if (!is_float && !is_fcc) return TOP_slct_r;
+  return TOP_UNDEFINED;
 }
 
 /* ====================================================================
