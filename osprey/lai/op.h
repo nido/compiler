@@ -465,6 +465,7 @@ enum OP_COND_DEF_KIND {
 #ifdef TARG_ST // [CL] attributes extension
 #define OP_MASK_PROLOGUE   0x0001 /* OP belongs to prologue */
 #define OP_MASK_EPILOGUE   0x0002 /* OP belongs to epilogue */
+#define OP_MASK_BLACK_HOLE 0x0004 /* Store OP may store into a black hole */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -534,6 +535,9 @@ enum OP_COND_DEF_KIND {
 # define OP_epilogue(o)		(OP_flags2(o) & OP_MASK_EPILOGUE)
 # define Set_OP_epilogue(o)	(OP_flags2(o) |= OP_MASK_EPILOGUE)
 # define Reset_OP_epilogue(o)	(OP_flags2(o) &= ~OP_MASK_EPILOGUE)
+# define OP_black_hole(o)	(OP_flags2(o) & OP_MASK_BLACK_HOLE)
+# define Set_OP_black_hole(o)	(OP_flags2(o) |= OP_MASK_BLACK_HOLE)
+# define Reset_OP_black_hole(o)	(OP_flags2(o) &= ~OP_MASK_BLACK_HOLE)
 #endif
 
 extern BOOL OP_cond_def( const OP*);

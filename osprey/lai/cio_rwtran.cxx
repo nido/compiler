@@ -1490,6 +1490,12 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
 
   Set_OP_opnd( op, opnd_base, tn_safe_base );
   OPS_Insert_Op_Before( ops, op, op_select );
+
+#ifdef TARG_ST
+  // [CG]: Set the OP_blackhole flag for the balck hole store
+  // It may be used by mem deps.
+  Set_OP_black_hole(op);
+#endif
 }
 
 

@@ -1185,16 +1185,10 @@ Configure_CG_Options(void)
     CG_enable_select = FALSE;
   }
 
-  /* If not overidden, set LAO_optimization and LAO_speculation
-     according to Opt_Level. */
+  /* If not overidden, set LAO_optimization according to Opt_Level. */
 
   if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
     CG_LAO_optimizations = 11;
-
-  if (!CG_LAO_speculation_overridden && (Opt_Level > 2)) {
-    CG_LAO_speculation_overridden = TRUE;
-    CG_LAO_speculation = 3;
-  }
 
   // [FdF]: Ignore LAO options if opt_level < 2
   
@@ -1574,7 +1568,11 @@ CG_Init (void)
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
     if (!CG_LAO_schedtype_overridden) CG_LAO_schedtype = 1;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
-    if (!CG_LAO_speculation_overridden) CG_LAO_speculation = 0;
+    if (!CG_LAO_speculation_overridden) {
+      if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
+      else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
+      else CG_LAO_speculation = 3;
+    }
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
     if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
     if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;

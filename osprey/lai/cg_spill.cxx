@@ -968,10 +968,18 @@ static BOOL Is_Aliased_With_Home(TN *tn, OP* op)
 {
   if (OP_store(op) || OP_load(op)) {
     WN *wn = Get_WN_From_Memory_OP(op);
+#ifdef TARG_ST
+      // [CG] Treat black_hole
+    if (!OP_black_hole(op) && wn != NULL) {
+      ALIAS_RESULT alias = Aliased(Alias_Manager, TN_home(tn), wn);
+      return alias == SAME_LOCATION;
+    }
+#else
     if (wn != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, TN_home(tn), wn);
       return alias == SAME_LOCATION;
     }
+#endif
   }
   return FALSE;
 }

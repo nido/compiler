@@ -239,6 +239,7 @@ Expand_Cond_Store (
 {
   TN *tns[3];
   TN *true_tn, *false_tn;
+  BOOL is_black_hole = FALSE;
 
   if (!op1) {
     op1 = op2;
@@ -255,6 +256,7 @@ Expand_Cond_Store (
   tns[offsetidx] = OP_opnd(op1, offsetidx);
 
   if (!op2) {
+    is_black_hole = TRUE;
     TY_IDX ty = MTYPE_To_TY(Pointer_Mtype);
     false_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
 
@@ -352,4 +354,5 @@ Expand_Cond_Store (
 #endif
 
   Expand_Store (desc, val, base, ofst, ops);
+  if (is_black_hole) Set_OP_black_hole(OPS_last(ops));
 }

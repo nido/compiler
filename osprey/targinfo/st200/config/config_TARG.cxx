@@ -94,6 +94,11 @@ static BOOL Slow_CVTDL_Set = FALSE;
 BOOL SYNC_Allowed = TRUE;
 BOOL Slow_CVTDL = FALSE;
 
+#ifdef TARG_ST
+//[CG]: Enable Dismissible Loads generation.
+BOOL Enable_Dismissible_Load = TRUE;
+#endif
+
 /* Target machine specification options.  This group defines the target
  * ABI, ISA, processor, and FPR count.  It should also be the home for
  * options like specifying processor revisions.
@@ -128,6 +133,12 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_INT32,  OV_INTERNAL,    FALSE, "stack_alignment", "sta",
     16,  4, 64, &Target_Stack_Alignment, NULL,
     "Specify the alignment of a stack frame" },
+#ifdef TARG_ST
+  // [CG]
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "dismissible_load", "",
+    0, 0, 0,    &Enable_Dismissible_Load, NULL,
+    "Enable generation of dismissible load" },
+#endif
 
   /* Unimplemented options: */
   /* Obsolete options: */

@@ -495,27 +495,28 @@ Can_Speculate_BB(BB *bb, op_list *stores)
       BB_Has_Outer_Block_Label(bb))
     return FALSE;
 
-  FOR_ALL_BB_OPs_FWD(bb, op) {
-    // for now, an asm is a black box that can contain several instruction.
-    // don't know how to if convert.
-    if (OP_code(op) == TOP_asm) {
-      return FALSE;
-    }
+  // [CG]: Nothing can be speculated
+  if (Eager_Level == EAGER_NONE) return FALSE;
 
+  FOR_ALL_BB_OPs_FWD(bb, op) {
     if (! OP_Can_Be_Speculative(op)) {
       if (OP_memory (op) && !OP_volatile(op)) {
 
         if (OP_load (op)) {
-          if (! CG_select_spec_loads)
-            return FALSE;
-          load_i.push_front(op);
+          if (Enable_Dismissible_Load && CG_select_spec_loads)
+	    load_i.push_front(op);
+	  else
+	    return FALSE;
         }
 
         else if (OP_store (op)) {
-           if (!stores)
-             return FALSE;
-           stores->push_front(op);
+           if (stores)
+	     stores->push_front(op);
+	   else
+	     return FALSE;
         }
+	else
+	  return FALSE;
       }
       else
         return FALSE;
@@ -536,6 +537,10 @@ Are_Same_Location(OP* op1, OP* op2)
     WN *wn2 = Get_WN_From_Memory_OP(op2);
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
+#ifdef TARG_ST
+      // [CG] Check that ops are not black_hole
+      if (!OP_black_hole(op1) && !OP_black_hole(op2))
+#endif
       if (alias == SAME_LOCATION)
         return TRUE;
     }
@@ -1443,9 +1448,11 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 
    select_count++;
 
-   // Store address didn't change. Pass WN information
-   if (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
-     Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
+   // Store address didn't change or it is a conditional black hole store.
+   // Pass WN information
+   if ((op1 == NULL || op2 == NULL) ||
+       (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval)))
+     Copy_WN_For_Memory_OP(OPS_last(&ops), op1 == NULL ? op2 : op1);
 
    if (!op2) {
      BB_Insert_Ops_Before (bb, op1, &ops);

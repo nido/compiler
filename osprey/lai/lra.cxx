@@ -1995,6 +1995,13 @@ Compute_Livethrough_Set (BB *bb)
       }
     }
   }
+  FOR_ALL_ISA_REGISTER_CLASS(cl) {
+    if (Do_LRA_Trace(Trace_LRA)) {
+      fprintf (TFile, "(BB:%d, cl:%d) \n\tLivethrough set:", BB_id(bb), cl);
+      REGISTER_SET_Print (livethrough[cl], TFile);
+      fprintf (TFile, "\n");
+    }
+  }
 }
 
 
@@ -2704,6 +2711,13 @@ Analyze_Spilling_Live_Range (
     else {
       // even if there is a def available, we still need to insert a COPY
       // which may not get deleted.
+#ifdef TARG_ST
+      // [CG] If the last def is a copy the copy will be removed
+      OP *last_def_op = OP_VECTOR_element(Insts_Vector, last_def);
+      if (last_def_op && OP_Copy_Operand(last_def_op) >= 0) {
+	cost += 0.0;
+      } else
+#endif
       cost += 0.5;
     }
   }
@@ -2985,10 +2999,21 @@ Spill_Live_Range (
     // For local TNs, check if the current OP references the TN we want to 
     // spill. For global TNs, check if the current OP references the register
     // assigned to the global TN.
+#ifdef TARG_ST
+    // [CG]: In addition, if it'a an xfer op and a global tn, we don't reload as the 
+    // move at end of block for global tn will do it
+    // This may happen for instance for return operation that reference the link register.
+    if ((is_local_tn && 
+         OP_Refs_TN (op, spill_tn)) ||
+        (!is_local_tn && 
+         OP_Refs_Reg (op, spill_cl, spill_reg) &&
+	 !OP_xfer(op)))
+#else
     if ((is_local_tn && 
          OP_Refs_TN (op, spill_tn)) ||
         (!is_local_tn && 
          OP_Refs_Reg (op, spill_cl, spill_reg)))
+#endif
     {
 #ifdef TARG_ST
       // Arthur: If the use of spill_tn is a store to the spill location, we 

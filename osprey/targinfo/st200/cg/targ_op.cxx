@@ -146,6 +146,9 @@ BOOL OP_Can_Be_Speculative (
   if (OP_call (op))
     return FALSE;
 
+  // [CG] Not clear if we can speculate an asm
+  if (OP_code(op) == TOP_asm) return FALSE;
+
   switch (Eager_Level) {
    case EAGER_NONE:
 
@@ -192,6 +195,9 @@ BOOL OP_Can_Be_Speculative (
   }
 
   if (!OP_memory (op)) return TRUE;
+
+  /* prefetch are speculative. */
+  if (OP_prefetch (op)) return TRUE;
 
   /* This is a memory reference */
 
@@ -541,6 +547,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(ldb_d);
       CASE_TOP_I(ldhu_d);
       CASE_TOP_I(ldbu_d);
+      CASE_TOP_I(pft);
     }
   } else if (opnd == 1) {
     switch(regform) {
@@ -762,6 +769,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP_I(ldb_d):
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
+      CASE_TOP_I(pft):
       return 32;
     
     CASE_TOP(slct):
@@ -881,6 +889,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_I(ldb_d):
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
+      CASE_TOP_I(pft):
       return TRUE;
 
       CASE_TOP(minu):

@@ -107,6 +107,11 @@ BE_EXPORTED extern BOOL Madd_Allowed;	/* Generate madd instructions? */
 BE_EXPORTED extern BOOL SYNC_Allowed;
 BE_EXPORTED extern BOOL Slow_CVTDL;
 
+#ifdef TARG_ST
+/* [CG]: Enable Dismissible Loads generation.  */
+BE_EXPORTED extern BOOL Enable_Dismissible_Load;
+#endif
+
 /* ====================================================================
  * List of global variables that are set by the -TARG option group
  * These also appear in config_targ.h, and are implicitly included by

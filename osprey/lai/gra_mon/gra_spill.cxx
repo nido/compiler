@@ -417,8 +417,12 @@ Spill_Homeable_TN(
       WN *wn = Get_WN_From_Memory_OP(op);
       if (wn != NULL) {
 	alias = Aliased(Alias_Manager, TN_home(orig_tn), wn);
+#ifdef TARG_ST
+	// [CG]: Handle black hole
+	if (!OP_black_hole(op) && alias == SAME_LOCATION) {
+#else
 	if (alias == SAME_LOCATION) {
-
+#endif
 	  //
 	  // we need the store if we've defined the TN previosly in
 	  // the block (we have to store somewhere since we've defined

@@ -896,8 +896,18 @@ void Exp_Prefetch (
   OPS* ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
+  FmtAssert(opc == TOP_UNDEFINED,
+            ("Prefetch opcode should be selected in Exp_Prefetch"));
+  
+  opc = TOP_pft_i;
+  if (!TN_has_value(src2)) {
+    TN* tmp = Build_TN_Like(src1);
+    Expand_Add (tmp, src1, src2, Pointer_Mtype, ops);
+    src1 = tmp;
+    src2 = Gen_Literal_TN (0, 4);
+  }
+  opc = TOP_opnd_immediate_variant(opc, 0, TN_value(src2));
+  Build_OP(opc, src2, src1, ops);
   return;
 }
 

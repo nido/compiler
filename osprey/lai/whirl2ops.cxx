@@ -3851,7 +3851,7 @@ BOOL label_is_external ( INT *num, WN *wn, BB *bb )
  */
 BOOL Prefetch_Kind_Enabled( WN *wn )
 {
-  return FALSE;
+  return CG_enable_prefetch;
 }
 
 /* =======================================================================

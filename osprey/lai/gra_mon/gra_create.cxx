@@ -1042,9 +1042,16 @@ OP_Refs_Home(OP* op, TN* home_tn)
 {
   WN* wn = Get_WN_From_Memory_OP(op);
   if (wn != NULL) {
+#ifdef TARG_ST
+    // [CG]: Handle black hole 
+    if (!OP_black_hole(op) && Aliased(Alias_Manager, TN_home(home_tn), wn) == SAME_LOCATION) {
+      return TRUE;
+    }
+#else
     if (Aliased(Alias_Manager, TN_home(home_tn), wn) == SAME_LOCATION) {
       return TRUE;
     } 
+#endif
   }
   return FALSE;
 }

@@ -1923,6 +1923,11 @@ inline BOOL under_same_cond_tn(OP *pred_op, OP *succ_op, UINT8 omega)
   UINT8 pred_guard_omega, succ_guard_omega;
   BOOL pred_invguard, succ_invguard;
 
+#ifdef TARG_ST
+  // [CG]: Treat black hole stores in this function
+  if (OP_black_hole(pred_op) || OP_black_hole(succ_op)) return FALSE;
+#endif
+
   Get_Memory_OP_Predicate_Info(pred_op, &pred_guard, &pred_guard_omega,
 			       &pred_invguard);
   Get_Memory_OP_Predicate_Info(succ_op, &succ_guard, &succ_guard_omega,
@@ -2121,6 +2126,12 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (omega == NULL && lex_neg) 
     return FALSE;
 
+  /* Handle same op in the non cyclic case. */
+  if (omega == NULL && pred_op == succ_op) {
+    *definite = TRUE;
+    return TRUE;
+  }
+
   /* Prefetches don't alias anything (but see make_prefetch_arcs) */
   if (OP_prefetch(pred_op) || OP_prefetch(succ_op)) 
     return FALSE;
@@ -2208,6 +2219,18 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
       break;
     }
   }
+
+#ifdef TARG_ST
+  // [CG]: Try do determine no dependency information based on loop
+  // pragmas in the case where the ops are not spill ops
+  if (!OP_spill(pred_op) && !OP_spill(succ_op)) {
+    if (!get_cg_loopdep(pred_op, succ_op, omega, lex_neg)) {
+      info_src = "CG (loop dep info)";
+      return verify_mem(FALSE, definite, omega, pred_op, succ_op, 
+			cg_result, info_src);
+    }
+  }
+#endif
 
   /* Our address analysis was disabled, didn't produce a definitive answer,
    * or we're verifying memory dependence info, so now resort to auxiliary
@@ -2309,10 +2332,6 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     }
 
 #ifdef TARG_ST
-    if (get_cg_loopdep(pred_op, succ_op, omega, lex_neg) == FALSE)
-      return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-			info_src);
-
     // [CG] This enables better dependence checking when cross iteration
     // dependency is not requested
     if (omega == NULL && !lex_neg)
@@ -2628,6 +2647,29 @@ CG_DEP_Call_Aliases(OP *call_op, OP *op, BOOL read, BOOL write)
   return TRUE;
 }
 
+#ifdef TARG_ST
+// -----------------------------------------------------------------------
+// This fuctions returns memory dependence information for 2 operations.
+// The 2 operations can be in different BB, however, prev_op must
+// precede op in a topological traversal of the acyclic graph.
+// It does not require building the dependence graph.
+// It should be used for simple query on 2 operations when the
+// dependence graph is not available.
+// It should not be used for cyclic dependencies
+// -----------------------------------------------------------------------
+BOOL 
+CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *definite)
+{
+  BOOL old = CG_DEP_Addr_Analysis;
+  BOOL aliased;
+  // disable address analysis which requires the dependence graph
+  CG_DEP_Addr_Analysis = FALSE;
+  aliased = get_mem_dep(memop1, memop2, definite, NULL, 0);
+  CG_DEP_Addr_Analysis = old;
+  return aliased;
+}
+
+#else
 BOOL 
 CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical)
 /* -----------------------------------------------------------------------
@@ -2739,6 +2781,7 @@ CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical)
   if (identical) *identical = FALSE;
   return TRUE;
 }
+#endif
 
 // ======================================================================
 // Can_OP_Move_Across_Call
@@ -5018,26 +5061,6 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     mem_ops = NULL;
   }
 
-}
-
-// -----------------------------------------------------------------------
-// This fuctions returns memory dependence information for 2 operations.
-// The 2 operations can be in different BB, however, prev_op must
-// precede op in a topological traversal of the acyclic graph.
-// It does not require building the dependence graph.
-// It should be used for simple query on 2 operations when the
-// dependence graph is not available.
-// -----------------------------------------------------------------------
-BOOL 
-CG_DEP_Mem_Aliased(OP *prev_op, OP *op, BOOL *definite, UINT8 *omega)
-{
-  BOOL old = CG_DEP_Addr_Analysis;
-  BOOL aliased;
-  // disable address analysis which requires the dependence graph
-  CG_DEP_Addr_Analysis = FALSE;
-  aliased = get_mem_dep(prev_op, op, definite, omega, 0);
-  CG_DEP_Addr_Analysis = old;
-  return aliased;
 }
 
 /*

@@ -2188,7 +2188,7 @@ EBO_Memory_Sequence (
   TOP pred_opcode;
   EBO_OP_INFO *pred_opinfo;
 
-  if (!OP_load(op) && !OP_store(op)) return FALSE;
+  if (!OP_load(op) && !OP_store(op) && !OP_prefetch(op)) return FALSE;
 
   if (EBO_Trace_Execution) {
     INT i;
@@ -3994,11 +3994,6 @@ Constant_Created:
 
 #endif /* TARG_ST */
 
-#ifdef TARG_ST
-// [CG]: import dep query from cg
-extern BOOL CG_DEP_Mem_Aliased(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega);
-#endif
-
 /* =====================================================================
  *   find_duplicate_mem_op
  *
@@ -4276,8 +4271,8 @@ find_duplicate_mem_op (BB *bb,
 #ifdef CG_DEP_ALIAS
       {
 	{
-	  int definite;
-	  int aliased = CG_DEP_Mem_Aliased(pred_op, op, &definite, NULL);
+	  BOOL definite;
+	  int aliased = CG_DEP_Mem_Ops_Alias(pred_op, op, &definite);
           result = aliased ? POSSIBLY_ALIASED: NOT_ALIASED;
           result = definite ? SAME_LOCATION: result;
 #else
@@ -4300,6 +4295,7 @@ find_duplicate_mem_op (BB *bb,
               but we know that they may not be.  This is because if-conversion
               may create something called a "black hole".  It is hard to believe
               that the optimizations we do will be OK in this situation. */
+	    /* CG: TODO mark OP as conditional store to handle this case. */
             if (OP_store(op)) opinfo->op_must_not_be_moved = TRUE;
             break;
           }
@@ -5085,14 +5081,12 @@ Find_BB_TNs (BB *bb)
       }
 
 #ifdef TARG_ST
-      if (!op_replaced &&
-	  OP_load(op)) {
+      if (!op_replaced) {
 	op_replaced = EBO_Memory_Sequence (op, opnd_tn, opnd_tninfo);
       }
 #endif
       if (!op_replaced &&
-          !in_delay_slot &&
-          (OP_store(op) || OP_load(op))) {
+          !in_delay_slot) {
         op_replaced = EBO_Special_Sequence ( op, opnd_tn, orig_tninfo);
       }
       if (!op_replaced &&
@@ -5114,7 +5108,7 @@ Find_BB_TNs (BB *bb)
                !OP_access_reg_bank(op)) {
       if (!in_delay_slot) {
        /* Can we evaluate the expression at compile time? */
-        if (opnds_constant && (num_opnds > 1)) {
+        if (opnds_constant && (num_opnds >= 1)) {
           if (OP_xfer(op)) {
            /* If we remove a conditional branch and alter the flow, we
               may have created dead code that could cause later processing

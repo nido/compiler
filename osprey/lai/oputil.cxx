@@ -888,6 +888,7 @@ void Print_OP_No_SrcLine(const OP *op)
 #ifdef TARG_ST
   if (OP_spill(op)) fprintf (TFile, " spill");
   if (OP_ssa_move(op)) fprintf (TFile, " ssa_move");
+  if (OP_black_hole(op)) fprintf (TFile, " black_hole");
 #endif
 
   if (wn = Get_WN_From_Memory_OP(op)) {

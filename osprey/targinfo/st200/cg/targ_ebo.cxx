@@ -500,6 +500,14 @@ EBO_combine_adjacent_loads(
 
 /* =====================================================================
  *   EBO_replace_subset_load_with_extract
+ *
+ * For a Store - Load sequence where we have
+ * 1. store at offset_pred of size_pred
+ * 2. load at offset_succ of size_succ
+ * 
+ * Currently only handle the case where:
+ * offset_pred == offset_succ == 0 and size_pred == size_succ
+ * In this case we must emit the load extension.
  * =====================================================================
  */
 BOOL
@@ -514,7 +522,39 @@ EBO_replace_subset_load_with_extract (
 )
 {
   INT byte_offset = offset_succ - offset_pred;
-
+  
+  if (offset_pred == 0 && offset_pred == offset_succ &&
+      size_pred == size_succ) {
+    if (TN_size(succ_result) > size_succ) {
+      TOP new_opcode = TOP_UNDEFINED;
+      TN *tn1;
+      TN *tn2;
+      if (size_succ == 2) {
+	new_opcode = TOP_is_unsign(OP_code(op)) ? TOP_zxth_r : TOP_sxth_r;
+	tn1 = pred_result;
+	tn2 = NULL;
+      } else if (size_succ == 1) {
+	if (TOP_is_unsign(OP_code(op))) {
+	  new_opcode = TOP_and_i;
+	  tn1 = pred_result;
+	  tn2 = Gen_Literal_TN(0xff, 4);
+	} else {
+	  new_opcode = TOP_sxtb_r;
+	  tn1 = pred_result;
+	  tn2 = NULL;
+	}
+      }
+      if (new_opcode == TOP_UNDEFINED) return FALSE;
+      OP *new_op;
+      new_op = Mk_OP(new_opcode, succ_result,tn1,tn2);
+      OP_srcpos(new_op) = OP_srcpos(op);
+      BB_Insert_Op_After(OP_bb(op), op, new_op);
+      
+      return TRUE;
+      
+    }
+  }
+  
   return FALSE;
 }
 
@@ -3978,6 +4018,24 @@ op_match_neg(OP *op,
 }
 
 static BOOL
+op_match_not(OP *op, 
+	     EBO_TN_INFO **opnd_tninfo, 
+	     TN **op0_tn, 
+	     EBO_TN_INFO **op0_tninfo)
+{
+  TOP top = OP_code(op);
+  TN *opnd;
+
+  if (!OP_ixor(op)) return FALSE;
+  if (!(TN_Has_Value(OP_opnd(op, 1)) && 
+	(TN_Value(OP_opnd(op, 1)) & 0xFFFFFFFF) == 0xFFFFFFFF)) return FALSE;
+  *op0_tn = OP_opnd(op, 0);
+  *op0_tninfo = opnd_tninfo[0];
+  return TRUE;
+}
+
+
+static BOOL
 op_match_unary(OP *op, 
 	     EBO_TN_INFO **opnd_tninfo, 
 	     TN **op0_tn, 
@@ -4113,6 +4171,7 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     return FALSE;
   }
   if (new_tn1 == NULL) {
+    if (TN_is_symbol(new_tn0)) return FALSE;
     if (TN_has_value(new_tn0))
       new_top = TOP_opnd_immediate_variant(new_top, 0, TN_value(new_tn0));
   } else {
@@ -4124,6 +4183,7 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       new_tninfo1 = new_tninfo0;
       new_tninfo0 = tmp_tninfo;
     }
+    if (TN_is_symbol(new_tn1)) return FALSE;
     if (TN_has_value(new_tn1)) {
       new_top = TOP_opnd_immediate_variant(new_top, 1, TN_value(new_tn1));
     }
@@ -4258,6 +4318,7 @@ select_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     if (TN_Value(opnd_tn[0]) == 0) idx = variant == V_COND_FALSE ? 1 : 2;
     else idx = variant == V_COND_FALSE ? 2 : 1;
     new_opcode = TOP_mov_r;
+    if (TN_is_symbol(opnd_tn[idx])) return FALSE;
     if (TN_has_value(opnd_tn[idx])) 
       new_opcode = TOP_opnd_immediate_variant(new_opcode, 0, TN_value(opnd_tn[idx]));
     if (new_opcode == TOP_UNDEFINED) return FALSE;
@@ -4273,6 +4334,7 @@ select_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     if ((variant == V_COND_FALSE && TN_Value(opnd_tn[1]) == 0 && TN_Value(opnd_tn[2]) == 1) ||
 	(variant == V_COND_TRUE && TN_Value(opnd_tn[1]) == 1 && TN_Value(opnd_tn[2]) == 0)) {
       new_opcode = TOP_mfb;
+      if (TN_is_symbol(opnd_tn[0])) return FALSE;
       if (TN_has_value(opnd_tn[0])) 
 	new_opcode = TOP_opnd_immediate_variant(new_opcode, 0, TN_value(opnd_tn[0]));
       if (new_opcode == TOP_UNDEFINED) return FALSE;
@@ -4521,6 +4583,11 @@ mtb_op_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   if (do_copy) {
     OPS ops = OPS_EMPTY;
     Exp_COPY(OP_result(op,0), lhs_tn, &ops);
+    if (EBO_in_peep && OP_next(OPS_first(&ops)) != NULL) {
+      /* If the copy needs multiple instructions, we 
+	 may have generated non dedicated tns while register allocation is already done. */
+      return FALSE;
+    }
     if (EBO_in_loop) EBO_OPS_omega (&ops, lhs_tn, lhs_tninfo);
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     BB_Insert_Ops(bb, op, &ops, FALSE);
@@ -4589,6 +4656,75 @@ mfb_op_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     fprintf(TFile,"Convert mfb/op into %s\n", TOP_Name(new_top));
   return TRUE;
 }
+
+/*
+ * and_or_sequence
+ *
+ * Convert :
+ * - (and (not a) b) into (andc a b)
+ * - (or (not a) b) into (orc a b)
+ */
+static BOOL
+and_or_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  TOP top = OP_code(op);
+  TN *not_tn, *lhs_tn, *rhs_tn;
+  EBO_TN_INFO *not_tninfo, *lhs_tninfo, *rhs_tninfo;
+  EBO_OP_INFO *def_opinfo;
+
+  if (!OP_iand(op) && !OP_ior(op)) return FALSE;
+
+  if (find_def_opinfo(opnd_tninfo[0], &def_opinfo) &&
+      op_match_not(def_opinfo->in_op,
+		   def_opinfo->actual_opnd, 
+		   &not_tn, &not_tninfo)) {
+    lhs_tn = not_tn;
+    lhs_tninfo = not_tninfo;
+    rhs_tn = opnd_tn[1];
+    rhs_tninfo = opnd_tninfo[1];
+    goto replace;
+  } 
+  if (find_def_opinfo(opnd_tninfo[1], &def_opinfo) &&
+      op_match_not(def_opinfo->in_op,
+		   def_opinfo->actual_opnd, 
+		   &not_tn, &not_tninfo)) {
+    lhs_tn = not_tn;
+    lhs_tninfo = not_tninfo;
+    rhs_tn = opnd_tn[0];
+    rhs_tninfo = opnd_tninfo[0];
+    goto replace;
+  } 
+  return FALSE;
+ replace:
+  BB *bb = OP_bb(op);
+  TOP new_top;
+  if ((lhs_tninfo != NULL && !EBO_tn_available (bb, lhs_tninfo)) ||
+      (rhs_tninfo != NULL && !EBO_tn_available (bb, rhs_tninfo)))
+    return FALSE;
+
+  // Find new top
+  if (OP_iand(op)) new_top = TOP_andc_r;
+  if (OP_ior(op)) new_top = TOP_orc_r;
+  if (TN_is_symbol(lhs_tn)) return FALSE;
+  if (TN_has_value(lhs_tn))
+    new_top = TOP_opnd_immediate_variant(new_top, 0, TN_value(lhs_tn));
+  if (new_top == TOP_UNDEFINED) return FALSE;
+  if (TN_is_symbol(rhs_tn)) return FALSE;
+  if (TN_has_value(rhs_tn))
+    new_top = TOP_opnd_immediate_variant(new_top, 1, TN_value(rhs_tn));
+  if (new_top == TOP_UNDEFINED) return FALSE;
+
+		    
+  OP *new_op;
+  new_op = Mk_OP(new_top, OP_result(op,0), lhs_tn, rhs_tn);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, lhs_tninfo, rhs_tninfo);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert and/or into  %s\n", TOP_Name(new_top));
+  return TRUE;
+}
+
 
 static BOOL
 base_offset_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
@@ -4775,6 +4911,8 @@ EBO_Special_Sequence (
   if (OP_memory(op) && base_offset_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
   if (ext_move_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+
+  if (and_or_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
   if (operand_special_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
