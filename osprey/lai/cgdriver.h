@@ -70,6 +70,7 @@ extern void CG_Process_Command_Line (INT, char **, INT, char **);
 extern void CG_Configure_Opt_Level( INT opt_level );
 extern void CG_Init (void);	/* init once per compilation */
 extern void CG_Fini (void);	/* finalize once per compilation */
+extern void gdb_Print_All_BBs(void);
 
 #ifdef __cplusplus
 }
