@@ -37,7 +37,11 @@
 #include "erbe.h"
 #include "glob.h"
 #include "tracing.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "config.h"
 
 #include "symtab.h"

@@ -57,7 +57,11 @@ static const char source_file[] = __FILE__;
 #include "errors.h"
 #include "config_cache.h"
 #include "config_lno.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "config_platform.h"
 
 void MHD::Initialize()

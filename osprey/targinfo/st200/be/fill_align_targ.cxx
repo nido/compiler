@@ -35,7 +35,11 @@
 
 #include "defs.h"
 #include "errors.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "config_platform.h"
 
 void Fill_Align_Initialize_Parameters(INT *L1_sz, INT *L2_sz, INT *pg_sz)
