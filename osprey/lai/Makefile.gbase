@@ -275,12 +275,8 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_cg.cxx		\
   targ_op.cxx		\
   targ_register.cxx	\
-  targ_tn.cxx		
-
-#add the hyperblock sources
-ifeq ($(BUILD_TARGET), ST100)
-  BE_CG_TARG_CXX_SRCS += targ_hb.cxx
-endif
+  targ_tn.cxx		\
+  targ_ebo.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
@@ -333,6 +329,7 @@ CG_CXX_SRCS = 		\
   cg_vector.cxx		\
   comment.cxx		\
   dominate.cxx		\
+  ebo.cxx		\
   findloops.cxx		\
   freq.cxx		\
   gcm.cxx		\
@@ -362,6 +359,21 @@ CG_CXX_SRCS = 		\
 ifeq ($(BUILD_TARGET),IA64)
   CG_CXX_SRCS +=  pqs.cxx
   CG_CXX_SRCS +=  pqs_cg.cxx
+endif
+
+ifeq ($(BUILD_TARGET),ST100)
+  CG_CXX_SRCS +=  pqs.cxx
+  CG_CXX_SRCS +=  pqs_cg.cxx
+  CG_CXX_SRCS +=  targ_pqs.cxx
+  CG_CXX_SRCS +=  targ_hb.cxx
+
+  # SSA stuff:
+  CG_CXX_SRCS +=  cg_ssa.cxx
+endif
+
+ifeq ($(BUILD_TARGET),ST200)
+  # SSA stuff:
+  CG_CXX_SRCS +=  cg_ssa.cxx
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
