@@ -48,7 +48,7 @@
   * =========================================================================
   */
 #ifdef TARG_ST
-extern BOOL IPFEC_Enable_LICM;
+extern INT32 IPFEC_Enable_LICM;
 #endif
-extern void Perform_Loop_Invariant_Code_Motion (CG_LOOP*);
+extern void Perform_Loop_Invariant_Code_Motion (void);
 

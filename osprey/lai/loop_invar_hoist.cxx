@@ -74,6 +74,22 @@
   *    architecture specific dependences beteen instructions which could 
   *    not easily observed by bare eye via comparing the TNs explicitly 
   *    defined and used between instructions. 
+  *
+  *    FdF: 14/10/2003
+  *    ---------------
+  *
+  *    I have added store sinking to this module. This has also an
+  *    impact on load hoisting. Here is a description of the
+  *    implementation.
+  *    
+  *    I introduced a new class LI_MEMORY_INFO, to group together
+  *    memory operations (load and store) that refer to the same
+  *    invariant memory location. These operations are identified by
+  *    Identify_Memory_Groups(), called after the first pass of loop
+  *    invariant code motion. Then, the algorithm checks if
+  *    scalarizations of all load and store in a MEMORY group is valid
+  *    and profitable. If it is, load hoisting is performed and store
+  *    sinking is performed.
   *  
   * =========================================================================
   * =========================================================================
@@ -90,6 +106,7 @@
 #include "op.h"
 #include "bb.h"
 #include "bb_set.h"
+#include "freq.h"
 
 #include "gtn_universe.h"    /* for GTN_SET_xxx() */
 #include "gtn_set.h"
@@ -103,8 +120,13 @@
 #include "error.h"
 #endif
 #include "cg_loop.h"    /* for LOOP_DESCR */
+
 #ifdef TARG_ST
-BOOL IPFEC_Enable_LICM = FALSE;
+#include "cgexp.h"
+#include "config_TARG.h"
+#include "cg_select.h"
+
+INT32 IPFEC_Enable_LICM = 0;
 #endif
 
     /* STL OP vector */
@@ -194,6 +216,9 @@ public:
      * =============================================================
      * =============================================================
      */
+#ifdef TARG_ST
+class LI_MEMORY_INFO;
+#endif
 class LI_OP_INFO_MGR;
 class LI_OP_INFO {
 friend class LI_OP_INFO_MGR;
@@ -203,10 +228,18 @@ private:
                      *             |-- max{level(pred)} + 1:otherwise.
                      *             +-- -1: invalid
                      */                
+#ifdef TARG_ST
+    LI_MEMORY_INFO * _memory; /* Memory info for this operation. */
+#endif
+
     void Set_Level (INT32 l) { _level = (INT16)l; }
 
 public:
+#ifdef TARG_ST
+    LI_OP_INFO  (void): _def_loop_invar(FALSE), _level(0), _memory(NULL) {};
+#else
     LI_OP_INFO  (void): _def_loop_invar(FALSE), _level(0) {};
+#endif
     ~LI_OP_INFO (void) {};
     BOOL Def_Loop_Invar (void) const { return _def_loop_invar; }
     void Set_Def_Loop_Invar   (void) { _def_loop_invar = TRUE; }
@@ -214,6 +247,10 @@ public:
 
     INT32 Level         (void) const { return (INT32)_level; }
     BOOL  Invalid_Level (void) const { return _level == -1; } 
+#ifdef TARG_ST
+    void Set_Memory_Group (LI_MEMORY_INFO *memory) { _memory = memory; }
+    LI_MEMORY_INFO *Get_Memory_Group (void) { return _memory; }
+#endif
 };
 
 class LI_OP_INFO_MGR {
@@ -493,6 +530,10 @@ private:
     OP_Vector _ld_ops,   /* all loads in this loop */ 
               _store_ops,/* all stores in this loop*/ 
               _call_ops; /* all calls in this loop */
+#ifdef TARG_ST
+    BB* _epilog;	/* corresponding epilogue */
+    LI_MEMORY_INFO *_memory_groups; /* List of memory groups. */
+#endif
 
     BOOL It_Is_Constant_TN (TN* t) const {
         return TN_is_const_reg(t) || TN_is_constant (t) || t == GP_TN; }
@@ -578,10 +619,26 @@ private:
     BOOL Ignore_Loop_With_Few_Interation (void);
     BOOL Code_Motion_Is_Profitable (OP*);
 
+#ifdef TARG_ST
+    void Identify_Memory_Groups (void);
+    INT32 Perform_Scalarization (LI_MEMORY_INFO *);
+    BOOL Scalarization_Is_Profitable (LI_MEMORY_INFO *, BOOL);
+    void Set_Memory_Group (OP *);
+    LI_MEMORY_INFO *Get_Memory_Group (OP *);
+    BOOL Invariant_Address (OP *);
+    BOOL Ambiguous_Alias (OP *);
+    LI_MEMORY_INFO *Lookup_Memory (OP *);
+    BOOL Dom_All_Loop_Exits (LI_MEMORY_INFO* );
+#endif
+
 public:
         /* Construction & Destruction
          */
+#ifdef TARG_ST
+    LOOP_INVAR_CODE_MOTION  (LOOP_DESCR* l, BB* prolog, BB *epilog);
+#else
     LOOP_INVAR_CODE_MOTION  (LOOP_DESCR* l, BB* prolog);
+#endif
     ~LOOP_INVAR_CODE_MOTION (void) {} 
 
     INT32 Perform_Code_Motion (void);
@@ -590,6 +647,7 @@ public:
          */
     BOOL Loop_Has_Call (void) const  { return Is_Call_Loop(_loop);}
     const LOOP_DESCR* Loop (void) const { return _loop;}
+    GTN_SET* Get_liveout_defs(void) { return _liveout_defs; }
 
     void Dump (FILE* f=stderr);
     #ifdef Is_True_On    
@@ -781,7 +839,7 @@ LOOP_INVAR_CODE_MOTION :: Find_Out_All_Exits (void) {
             BB *succ = BBLIST_item(succs);
             if (!BB_SET_MemberP(bbs, succ) && 
                 find (_loop_exits.begin(), 
-                      _loop_exits.end(), succ) == _loop_exits.end()) {
+                      _loop_exits.end(), bb) == _loop_exits.end()) {
                 _loop_exits.push_back (bb);
             }
         }
@@ -836,14 +894,21 @@ LOOP_INVAR_CODE_MOTION :: Init (void) {
     return TRUE;
 }
 
-
+#ifdef TARG_ST
+LOOP_INVAR_CODE_MOTION::LOOP_INVAR_CODE_MOTION (LOOP_DESCR* l, BB* prolog, BB* epilog):
+#else
 LOOP_INVAR_CODE_MOTION::LOOP_INVAR_CODE_MOTION (LOOP_DESCR* l, BB* prolog):
+#endif
     CXX_MEM_POOL("Loop Invariant Code Motion", FALSE),
     _mp((*this)()), _loop_exits (_mp), _loop_invar_defs(_mp), 
     _ld_ops (_mp), _store_ops(_mp), _call_ops(_mp),
     _loop(l), _op_info(l, _mp) {
 
     _prolog   = prolog; 
+#ifdef TARG_ST
+    _memory_groups = NULL;
+    _epilog   = epilog; 
+#endif
 
     Init ();
 }
@@ -934,7 +999,8 @@ LOOP_INVAR_CODE_MOTION :: Unique_Reaching_Def_Inside_Loop
         /* def should dominate <opnd>
          */
     if (OP_bb(op) != OP_bb(def)) {
-        if (BB_SET_MemberP (BB_dom_set(home), OP_bb(def))) { 
+      // FdF: Fixed to !BB_SET_MemberP
+        if (!BB_SET_MemberP (BB_dom_set(home), OP_bb(def))) { 
             return FALSE; 
         }
     } else {
@@ -999,6 +1065,11 @@ LOOP_INVAR_CODE_MOTION :: Mark_Dep_OPs_As_Non_Loop_Invar (OP* op) {
 
         LI_TN_INFO* tninfo = (LI_TN_INFO*)hTN_MAP_Get (_tn_info, res);
         OP_Vector* ops = (OP_Vector*)tninfo->Uses ();
+
+#ifdef TARG_ST
+	// FdF: Mark the TN as non invariant also.
+	tninfo->Reset_Loop_Invar ();
+#endif
 
         for (OP_Vector_Iter iter = ops->begin (); 
              iter != ops->end (); iter++) {
@@ -1130,9 +1201,13 @@ LOOP_INVAR_CODE_MOTION :: Alias_With_Call (OP* op, OP* call) {
          * !CG_DEP_Can_OP_Move_Across_Call with any call. So we handle
          * this special case at the remainding of this function. 
          */
-#ifndef TARG_ST
+
+#ifdef TARG_ST
+    return alias;
+#else
     if (OP_code(op) != TOP_addl) { return TRUE; }
 #endif
+
         /* If one of the source operands is not constant, we 
          * conservatively think <op> and <call> alias. 
          */
@@ -1328,10 +1403,27 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
          */
       /* the larger prob-thresold the small latency
        */ 
+#ifdef TARG_ST
+    #define PROG_SCALE          (100)
+    INT32 LOW_PROB_FOR_ALU_OP = (70);
+    INT32 LOW_PROB_FOR_LD_OP  = (40);
+    INT32 LOW_PROB_FOR_LONG_LATENCY = (40);
+
+    if (getenv("PROB_ALU"))
+      LOW_PROB_FOR_ALU_OP = atoi(getenv("PROB_ALU"));
+
+    if (getenv("PROB_LD"))
+      LOW_PROB_FOR_LD_OP = atoi(getenv("PROB_LD"));
+
+    if (getenv("PROB_LONG"))
+      LOW_PROB_FOR_LONG_LATENCY = atoi(getenv("PROB_LONG"));
+
+#else
     #define PROG_SCALE          (100)
     #define LOW_PROB_FOR_ALU_OP (70)
     #define LOW_PROB_FOR_LD_OP  (40)
     #define LOW_PROB_FOR_LONG_LATENCY (40)
+#endif
 
     float freq1 = BB_freq (loop_ent), freq2 = BB_freq (home);
     freq1 = (freq1 < 1.0f) ? 1.0f : freq1;
@@ -1449,13 +1541,13 @@ LOOP_INVAR_CODE_MOTION :: Illegal_Or_Nonprofitable (OP* loopinvar) {
 #else
         if (!CGTARG_Can_Be_Speculative (loopinvar)) return TRUE;
 #endif
-#ifdef TARG_IA64
             /* To make life easier, we do not perform code motion for 
              * speculated loads(ld.s, ld.a and ld.sa).
              */
-        if (CGTARG_Is_OP_Speculative (loopinvar)) { 
-            return TRUE; 
-        }
+#ifdef TARG_ST
+	if (OP_Is_Speculative (loopinvar)) return TRUE;
+#else
+	if (CGTARG_Is_OP_Speculative (loopinvar)) return TRUE; 
 #endif
             /* It will kill variables that are live extend the loop. 
              */
@@ -1478,6 +1570,323 @@ LOOP_INVAR_CODE_MOTION :: Illegal_Or_Nonprofitable (OP* loopinvar) {
 
     return FALSE; 
 }
+
+#ifdef TARG_ST
+    /* ===========================================================
+     * ===========================================================
+     * 
+     * class LI_MEMORY_INFO
+     *   
+     *    Memory groups information for loop invariant addresses
+     *
+     * ===========================================================
+     * ===========================================================
+     */
+class LI_MEMORY_INFO {
+private:
+
+    TN *_baseTN;          /* The base and offset of this invariant loop address. */
+    TN *_offsetTN;
+    BOOL _hoisted;	  /* Whether operations in this memory group */
+    BOOL _sunk;		  /* have already been hoisted or sunk. */
+    OP_Vector _mem_ops;   /* List of memory operations that access
+                             this loop invariant memory location. */
+    TN *_scalarTN;        /* TN used for the scalarization of the
+                             memory accesses. */
+    TN *_addrTN;	  /* TN to be used at a store location to set
+                             the speculated store address. */
+    LI_MEMORY_INFO *_next; /* Linked list of LI_MEMORY_INFO. Head is
+			     pointed to by
+			     LOOP_INVAR_CODE_MOTION::_memory_groups. */
+
+public:
+    LI_MEMORY_INFO (MEM_POOL* mp, TN *baseTN, TN *offsetTN);
+    ~LI_MEMORY_INFO (void) {}
+
+    void Add_Memory_OP(OP *memop) { _mem_ops.push_back (memop); }
+    OP_Vector Get_Memory_OPS(void) { return _mem_ops; }
+    BOOL Same_Address (TN *baseTN, TN *offsetTN) { return (baseTN == _baseTN && offsetTN == _offsetTN); }
+    TN *base(void) { return _baseTN; }
+    TN *offset(void) { return _offsetTN; }
+    BOOL Hoisted(void) { return _hoisted; }
+    void Set_Hoisted(void) { _hoisted = TRUE; }
+    BOOL Sunk(void) { return _sunk; }
+    void Set_Sunk(void) { _sunk = TRUE; }
+    TN *Get_Scalar(void) { return _scalarTN; }
+    void Set_Scalar(TN *v) { _scalarTN = v; }
+    TN *Get_Addr(void) { return _addrTN; }
+    void Set_Addr(TN *tn) { _addrTN = tn; }
+    LI_MEMORY_INFO *Next(void) { return _next; }
+    void *Link(LI_MEMORY_INFO *next) { _next = next; }
+};
+
+LI_MEMORY_INFO :: LI_MEMORY_INFO (MEM_POOL* mp, TN *baseTN, TN *offsetTN) :
+    _mem_ops(mp), _scalarTN(NULL), _addrTN(NULL), _hoisted(FALSE), _sunk(FALSE) {
+    _baseTN = baseTN;
+    _offsetTN = offsetTN;
+}
+
+void
+LOOP_INVAR_CODE_MOTION :: Set_Memory_Group ( OP * memop ) {
+
+    /* If there is already a MEMORY for this address, use it and add
+       memop to the list of operations for this MEMORY. Otherwise, create
+       a new MEMORY. */
+    LI_MEMORY_INFO *memory;
+
+    memory = Lookup_Memory(memop);
+    memory->Add_Memory_OP(memop);
+    LI_OP_INFO *meminfo = Get_OP_Info(memop);
+    meminfo->Set_Memory_Group(memory);
+}
+
+LI_MEMORY_INFO *
+LOOP_INVAR_CODE_MOTION :: Get_Memory_Group ( OP * memop ) {
+    LI_OP_INFO *meminfo = Get_OP_Info(memop);
+    return (meminfo != NULL) ? meminfo->Get_Memory_Group() : NULL;
+}
+
+LI_MEMORY_INFO *
+LOOP_INVAR_CODE_MOTION :: Lookup_Memory ( OP * memop ) {
+    TN *baseTN, *offsetTN;
+
+    baseTN = OP_opnd(memop, OP_find_opnd_use(memop, OU_base));
+    offsetTN = OP_opnd(memop, OP_find_opnd_use(memop, OU_offset));
+
+    for (LI_MEMORY_INFO *memory = _memory_groups; memory; memory = memory->Next()) {
+	if (memory->Same_Address(baseTN, offsetTN))
+	    return memory;
+    }
+
+    /* Create a new MEMORY_INFO */
+    LI_MEMORY_INFO *memory = CXX_NEW(LI_MEMORY_INFO(_mp, baseTN, offsetTN), _mp);
+    memory->Link(_memory_groups);
+    _memory_groups = memory;
+
+    return memory;
+}
+
+/* Returns TRUE if this BB, or all predecessors of this BB, contains
+   at least one load or store operation. Returns FALSE otherwise. */
+
+static BOOL
+checkMemop(BB *bb, OP_Vector mem_ops, BB *loophead, BB_SET *visited) {
+
+    if (BB_SET_MemberP(visited, bb))
+	return FALSE;
+
+    for (OP_Vector_Iter st_iter = mem_ops.begin();
+	 st_iter != mem_ops.end (); st_iter ++) {
+	OP *memop = *st_iter;
+	/* Dismissible loads must be ignored. */
+	if (((OP_load(memop) && !OP_Is_Speculative(memop)) ||
+	     OP_store(memop)) &&
+	    (OP_bb(memop) == bb))
+	    return TRUE;
+    }
+
+    if (bb == loophead)
+	return FALSE;
+
+    BB_SET *bbset = BB_SET_Union1D(visited, bb, NULL);
+    Is_True(bbset == visited, ("Union1D must not create a new BB_SET"));
+
+    BBLIST *P;
+    FOR_ALL_BB_PREDS (bb, P) {
+	BB *pred = BBLIST_item(P);
+	if (!checkMemop(pred, mem_ops, loophead, visited)) {
+	    BB_SET_Difference1D(visited, bb);
+	    return FALSE;
+	}
+    }
+    
+    BB_SET_Difference1D(visited, bb);
+    return TRUE;
+}
+
+/* Check that every path from a loop exit to the head of the loop
+   contains a load or store operation. */
+BOOL
+LOOP_INVAR_CODE_MOTION :: Dom_All_Loop_Exits (LI_MEMORY_INFO *memory) {
+
+    Is_True(memory, ("memory must no be NULL"));
+    BB_SET *visited = BB_SET_Create_Empty(PU_BB_Count+2, _mp);
+
+    for (BB_Lst_Iter iter = _loop_exits.begin (); 
+         iter != _loop_exits.end (); iter++) {
+
+        BB* exit_bb = *iter;
+	Is_True(BB_SET_EmptyP(visited), ("visited must be empty"));
+	if (!checkMemop(exit_bb, memory->Get_Memory_OPS(), LOOP_DESCR_loophead(_loop), visited))
+	    return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* Check if the address for a memory operation is loop
+   invariant. Volatile operations must not be considered as
+   invariant. */
+BOOL
+LOOP_INVAR_CODE_MOTION :: Invariant_Address (OP* op) {
+
+    int offset_opnd, base_opnd;
+    TN *offset_tn, *base_tn;
+    BOOL invariant;
+
+    Is_True(OP_load(op) || OP_store(op), ("Must be load or store"));
+
+    if (OP_volatile(op))
+        return FALSE;
+
+    offset_opnd = OP_find_opnd_use(op, OU_offset);
+    base_opnd = OP_find_opnd_use(op, OU_base);
+    Is_True(offset_opnd >= 0 && base_opnd >= 0, ("Missing base or offset on memory operation"));
+    offset_tn = OP_opnd(op, offset_opnd);
+    base_tn = OP_opnd(op, base_opnd);
+
+    invariant = ((It_Is_Constant_TN (offset_tn) ||
+		  All_Reaching_Def_are_Outside_Of_Loop (op, offset_opnd) ||
+		  (It_Is_Loop_Invar_TN (offset_tn) &&
+		  Unique_Reaching_Def_Inside_Loop (op, offset_opnd))) &&
+		 (It_Is_Constant_TN (base_tn) ||
+		  All_Reaching_Def_are_Outside_Of_Loop (op, base_opnd) ||
+		  (It_Is_Loop_Invar_TN (base_tn) &&
+		  Unique_Reaching_Def_Inside_Loop (op, base_opnd))));
+
+    return invariant;
+}
+
+/* Check if op is aliased with operations that are not explicitely at
+   the same loop invariant address. */
+
+BOOL
+LOOP_INVAR_CODE_MOTION :: Ambiguous_Alias (OP *op) {
+
+    BOOL  definite=FALSE;
+
+    if (Loop_Has_Call ()) {
+        for (OP_Vector_Iter iter = _call_ops.begin (); 
+             iter != _call_ops.end (); iter++) {
+
+            if (Alias_With_Call (op, *iter)) { return TRUE; }
+        }
+    }
+
+    if (OP_store (op)) {
+        for (OP_Vector_Iter ld_iter = _ld_ops.begin ();
+             ld_iter != _ld_ops.end (); ld_iter ++) {
+            
+            OP* op_load = *ld_iter;
+
+	    /* Operation was already moved out of loop or removed. */
+	    if (OP_bb(op_load) == _prolog || OP_bb(op_load) == NULL)
+	      continue;
+
+	    /* Ignore aliasing with load operations in the same MEMORY
+               group, since load operations will be hoisted. */
+
+	    if ((Get_Memory_Group(op) == NULL) ||
+		(Get_Memory_Group(op) != Get_Memory_Group(op_load)))
+		if (CG_DEP_Mem_Ops_Alias (op, op_load, &definite)) {
+		    return TRUE;
+            }
+        }
+    }
+
+    if (OP_load (op) || OP_store (op)) {
+        for (OP_Vector_Iter st_iter = _store_ops.begin ();
+             st_iter != _store_ops.end (); st_iter ++) {
+
+            OP* op_like_st = *st_iter;
+            if (!OP_store (op_like_st)) { 
+                    /* e.g CGTARG_Is_OP_Intrinsic(). ref OP_like_store() 
+                     * for details 
+                     */
+                return TRUE; 
+            }
+
+	    /* Operation was already moved out of loop or removed. */
+	    if (OP_bb(op_like_st) == _epilog || OP_bb(op_like_st) == NULL)
+	      continue;
+
+	    /* Ignore aliasing with store operations in the same MEMORY
+               group, since store operations will be sunk. */
+
+	    if ((Get_Memory_Group(op) == NULL) ||
+		(Get_Memory_Group(op) != Get_Memory_Group(op_like_st)))
+		if (CG_DEP_Mem_Ops_Alias (op, op_like_st, &definite)) {
+		    return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+/* For memory operation based on loop invariant addresses, associate a
+   LI_MEMORY_INFO, so as to group together memory operations that
+   unambiguously access to the same memory location. */
+
+void
+LOOP_INVAR_CODE_MOTION :: Identify_Memory_Groups (void) {
+
+    for (OP_Vector_Iter st_iter = _ld_ops.begin ();
+	 st_iter != _ld_ops.end (); st_iter ++) {
+	OP* op_load = *st_iter;
+	/* op_load may have already been hoisted. */
+	if (OP_bb(op_load) == _prolog) continue;
+	if (Invariant_Address (op_load)) {
+	    Set_Memory_Group (op_load);
+	}
+    }
+
+    for (OP_Vector_Iter st_iter = _store_ops.begin ();
+	 st_iter != _store_ops.end (); st_iter ++) {
+	OP* op_like_st = *st_iter;
+	if (!OP_store (op_like_st))
+	    continue;
+	/* op_store have not yet been sunk. */
+	if (Invariant_Address (op_like_st)) {
+	    Set_Memory_Group (op_like_st);
+	}
+    }
+}
+
+BOOL
+LOOP_INVAR_CODE_MOTION :: Scalarization_Is_Profitable (LI_MEMORY_INFO *memory, BOOL speculate) {
+    int countLoad, countStore;
+    OP_Vector mem_ops;
+
+    /* In case of speculation, check if dismissible loads are
+       allowed. */
+    if (speculate && !Enable_Dismissible_Load)
+	return FALSE;
+
+    /* Count the number of load and store operations. */
+
+    countLoad = 0;
+    countStore = 0;
+    mem_ops = memory->Get_Memory_OPS();
+    for (OP_Vector_Iter st_iter = mem_ops.begin();
+	 st_iter != mem_ops.end (); st_iter ++) {
+	OP *mem_op = *st_iter;
+
+	if (OP_load(mem_op)) countLoad ++;
+
+	else if (OP_store(mem_op)) countStore ++;
+    }
+
+    /* If there are only store operations and an epilog could not be
+       created, do not perform scalarization since it will only add a
+       new variable in the loop. */
+    if (countLoad == 0 && _epilog == NULL)
+	return FALSE;
+
+    return TRUE;
+}
+
+#endif
 
     /* =============================================================
      *
@@ -1534,8 +1943,246 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
             code_motion_num ++;
         }
     }
+
+    /* At this point, invariant loop hoisting has been performed on
+       memory operations not in alias with other operations in the
+       loop. We will now consider memory operations that refer to the
+       same loop invariant memory location and see if we can scalarize
+       them by hoisting the loads and sinking the stores. */
+
+#ifdef TARG_ST
+    if (IPFEC_Enable_LICM < 2)
+      return code_motion_num;
+
+    /* Add tags on explicit memory references, so as to group together
+       memory operations to a same location. */
+    Identify_Memory_Groups ();
+
+    /* Check and perform hoisting and sinking on memory groups. */
+    for (LI_MEMORY_INFO *memory = _memory_groups; memory; memory = memory->Next()) {
+	code_motion_num += Perform_Scalarization (memory);
+    }
+#endif
+
     return code_motion_num;
 }
+
+#ifdef TARG_ST
+/* This function will generate a copy or sign extension operation
+   between the original TN in the memory operation and the new scalar
+   variable. */
+
+static void
+Scalarize_OP(OP *memop, TN *scalar) {
+    OPS New_OPs = OPS_EMPTY;
+
+    if (OP_load(memop)) {
+	/* generate a sign extension operation if needed. */
+	INT size = OP_Mem_Ref_Bytes(memop);
+	if (TN_size(scalar) > size) {
+	    TOP opcode;
+	    TN *arg2 = NULL;
+	    OP *scalar_op;
+	    if (size == 2) {
+		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_zxth_r : TOP_sxth_r;
+	    }
+	    else if (size == 1) {
+		if (TOP_is_unsign(OP_code(memop))) {
+		    opcode = TOP_and_i;
+		    arg2 = Gen_Literal_TN(0xff, 4);
+		}
+		else {
+		    opcode = TOP_sxtb_r;
+		}
+	    }
+	    scalar_op = Mk_OP(opcode, OP_result(memop, 0), scalar, arg2);
+	    OPS_Append_Op(&New_OPs, scalar_op);
+	}
+	else
+	    Exp_COPY(OP_result(memop, 0), scalar, &New_OPs);
+    }
+
+    else if (OP_store(memop))
+	Exp_COPY(scalar, OP_opnd(memop, OP_find_opnd_use(memop, OU_storeval)), &New_OPs);
+
+    else Is_True(0, ("Only load and store can be scalarized"));
+
+    BB_Insert_Ops(OP_bb(memop), memop, &New_OPs, TRUE);	
+}
+
+/* Load and store operations in a same MEMORY group are in alias. To
+   check if these operations can be hoisted or sunk, we ignore aliases
+   between operations in a same MEMORY group.
+
+   We first check if all paths from loophead to any loop exit go
+   through a non speculative load or store memory operation. If this
+   is not the case, this means that hoisting or sinking will be
+   speculative.
+
+   Then we compute the cost of replacing memory accesses by a scalar
+   variable. Scalarization introduces a cost of one new live-range for
+   the whole loop. This means that there is no reason to move only
+   parts of the load or store operations in a memory group, all
+   operations of a MEMORY group will be moved at the cost of one extra
+   live-range. This cost can be avoided if the def of one load, or the
+   use of one store, can be used as the scalar variable.
+
+   Hoisting load operations may have significant benefits due to the
+   long latency of these operations. Sinking store operations will
+   introduce less benefits. The benefit will only be greater to the
+   cost of one extra live range in loops where the register pressure
+   is small.
+
+   Speculation do not introduce extra cost for load operations. For
+   store operations however, speculation adds another live-range for a
+   TN to keep the adress at which a speculative store must be
+   peformed. This address is initialized to a black-hole location in
+   the prolog, and then changed to the actual store address if a store
+   would have been performed in the loop.
+
+*/
+
+INT32
+LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
+    INT32 code_motion_num = 0;
+    BOOL perform = TRUE;
+    BOOL speculate = FALSE;
+    
+
+    /* Check if other operations in the loop are in alias with
+       operations in this MEMORY group. Aliasing must be checked
+       against call and store operations, and also against load
+       operations if the group contains store operations. */
+
+    /* memoryOP will be a store operation if there is one, a load
+       operation otherwise. */
+    OP *memoryOP = NULL;
+    OP_Vector mem_ops = memory->Get_Memory_OPS();
+    //    memoryOP = mem_ops.back();
+    for (OP_Vector_Iter st_iter = mem_ops.begin();
+	 st_iter != mem_ops.end (); st_iter ++) {
+	OP *mem_op = *st_iter;
+
+	memoryOP = mem_op;
+	if (OP_store(mem_op))
+	    break;
+    }
+    Is_True(memoryOP != NULL, ("At least one load or store operation in a MEMORY group."));
+
+    /* Check that all memory ops access the memory location with the
+       same size. */
+    
+    for (OP_Vector_Iter st_iter = mem_ops.begin();
+	 st_iter != mem_ops.end (); st_iter ++) {
+	OP *mem_op = *st_iter;
+
+	if (OP_Mem_Ref_Bytes(mem_op) != OP_Mem_Ref_Bytes(memoryOP)) {
+	    perform = FALSE;
+	    break;
+	}
+    }
+
+    /* Check there is no alias with other operations in the loop. */
+    perform = perform && !Ambiguous_Alias(memoryOP);
+
+    /* Check if scalarization will require speculation. */
+    speculate = perform && !Dom_All_Loop_Exits (memory);
+
+    /* Check if load hoisting will be beneficial. If there is no load,
+       check if store sinking will be beneficial. */
+
+    if (perform && !Scalarization_Is_Profitable (memory, speculate))
+        perform = FALSE;
+
+    if (!perform)
+	return code_motion_num;
+
+    if (memory->Get_Scalar() == NULL) {
+	TN *scalar;
+	if (OP_load(memoryOP))
+	    scalar = Dup_TN(OP_result(memoryOP, 0));
+	else
+	    scalar = Dup_TN_Even_If_Dedicated(OP_opnd(memoryOP, OP_find_opnd_use(memoryOP, OU_storeval)));
+	memory->Set_Scalar(scalar);
+    }
+
+    for (OP_Vector_Iter st_iter = mem_ops.begin();
+	 st_iter != mem_ops.end (); st_iter ++) {
+	OP *mem_op = *st_iter;
+
+	if (OP_load(mem_op)) {
+
+	    /* Insert loaddef = scalar */
+	    Scalarize_OP(mem_op, memory->Get_Scalar());
+
+	    /* Change the load into a speculative load. */
+	    if (speculate && !memory->Hoisted()) {
+		if (!OP_Is_Speculative(mem_op)) {
+		    /* Create a dismissible load */
+		    TOP ld_top = CGTARG_Speculative_Load (mem_op);
+		    DevAssert(ld_top != TOP_UNDEFINED, ("couldnt find a speculative load"));
+
+		    OP_Change_Opcode(mem_op, ld_top); 
+		    Set_OP_speculative(mem_op);  
+		}
+	    }
+
+	    if (!memory->Hoisted()) {
+		Set_OP_result(mem_op, 0, memory->Get_Scalar());
+		Perform_Code_Motion(mem_op);
+		memory->Set_Hoisted();
+	    }
+	    else BB_Remove_Op(OP_bb(mem_op), mem_op);
+	    code_motion_num ++;
+	}
+	else {
+
+	    /* Insert scalar = storeval */
+	    Scalarize_OP(mem_op, memory->Get_Scalar());
+
+	    /* If _epilog is not defined, store operations cannot be
+               moved out of the loop. */
+	    if (_epilog == NULL)
+	      continue;
+
+	    if (speculate && !memory->Sunk()) {
+		OPS New_OPs = OPS_EMPTY;
+
+		/* Generate a black-hole location and set
+                   memory->Addr() to it in the prolog. */
+
+		TN *addrTN = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+		memory->Set_Addr(addrTN);
+		Expand_BlackHole(mem_op, addrTN, &New_OPs);
+		BB_Append_Ops(_prolog, &New_OPs);
+
+		/* Generate a store operation in the epilog. */
+		OPS_Remove_All(&New_OPs);
+		Set_OP_opnd(mem_op, OP_find_opnd_use(mem_op, OU_storeval), memory->Get_Scalar());
+		Expand_CondStoreOP(mem_op, addrTN, &New_OPs);
+		BB_Append_Ops(_epilog, &New_OPs);
+		memory->Set_Sunk();
+	    }
+
+	    /* Insert addr = storeaddr in case of speculation. */
+	    if (speculate) {
+		OPS New_OPs = OPS_EMPTY;
+		Expand_CondStoreAddr(mem_op, memory->Get_Addr(), &New_OPs);
+		BB_Insert_Ops_After(OP_bb(mem_op), mem_op, &New_OPs);
+	    }
+
+	    if (!memory->Sunk()) {
+		Perform_Code_Motion(mem_op);
+		memory->Set_Sunk();
+	    }
+	    else BB_Remove_Op(OP_bb(mem_op), mem_op);
+	    code_motion_num ++;
+	}
+    }
+
+    return code_motion_num;
+}
+#endif
 
     /* ==============================================================
      * 
@@ -1547,7 +2194,13 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
      */
 void
 LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (OP* linvar) {
-            
+
+#ifdef TARG_ST
+  if (OP_store(linvar)) {
+    BB_Move_Op_To_Start (_epilog, OP_bb(linvar), linvar);
+  }
+  else
+#endif
     BB_Move_Op_To_End (_prolog, OP_bb(linvar), linvar);
 
     /* we need to change the result TNs to be global version since 
@@ -1676,8 +2329,11 @@ Skip_Loop_Invar_Code_Motion (LOOP_DESCR* loop) {
      * =================================================================
      */
 static void
+#ifdef TARG_ST
+Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, BB* epilog, MEM_POOL* mp) {
+#else
 Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, MEM_POOL* mp) {
-
+#endif
         /* set initial value of BB_pdom_set(prolog)
          */
     BB* head = LOOP_DESCR_loophead(l);
@@ -1689,6 +2345,24 @@ Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, MEM_POOL* mp) {
         Set_BB_dom_set (prolog, dom_pro);
     }
      
+    if (epilog) {
+	BBLIST *p;
+	BS* dom_epi = NULL;
+	FOR_ALL_BB_PREDS (epilog, p) {
+	    BB* pred = BBLIST_item (p);
+	    dom_epi = (dom_epi == NULL)
+		? BS_Copy(BB_dom_set(pred), mp)
+		: BS_IntersectionD(dom_epi, BB_dom_set(pred));
+	}
+	dom_epi = BS_Union1D (dom_epi, (BS_ELT)BB_id(epilog), mp);
+	Set_BB_dom_set (epilog, dom_epi);
+
+	/* Post dominators are only partially updated. */
+	BS* pdom_epi = BS_Copy(BB_pdom_set(BB_Unique_Successor(epilog)), mp);
+	pdom_epi = BS_Union1D(pdom_epi, BB_id(epilog), mp);
+	Set_BB_pdom_set (epilog, pdom_epi);
+    }
+
         /* propagate the changes
          */
     for (BB* b = REGION_First_BB; b; b = BB_next(b)) {
@@ -1701,6 +2375,16 @@ Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, MEM_POOL* mp) {
             dom_set = BS_Union1D (dom_set, BB_id(prolog), mp);
             Set_BB_dom_set (b, dom_set);
         }
+
+	/* <epilog> dominates <b> iff (1)<epilog> == <b>
+	 *    or (2)-<head> dominate <b> and <b> is not in body(l).
+	 */
+	if (epilog &&
+	    BS_MemberP(BB_dom_set(b), BB_id(head)) &&
+	    !BS_MemberP(LOOP_DESCR_bbset(l), BB_id(b))) {
+	    dom_set = BS_Union1D (dom_set, BB_id(epilog), mp);
+	    Set_BB_dom_set (b, dom_set);
+	}
     }
 }
 
@@ -1748,6 +2432,113 @@ Create_Loop_Prologue (LOOP_DESCR* l) {
     return like_prolog;
 }
 
+#ifdef TARG_ST
+
+/* Most of the following code for creation of loop epilog is taken
+   from cg_loop.cxx. */
+
+static void retarget_loop_exits(LOOP_DESCR *loop, BB *from, BB *to)
+/* -----------------------------------------------------------------------
+ * Requires: <to> is inserted where intended in BB chain
+ *
+ * Change all exits from <loop> to <from> so they exit to <to> instead.
+ * Updates pred/succ lists and frequency info.
+ * -----------------------------------------------------------------------
+ */
+{
+  BBLIST *preds = BB_preds(from);
+  while (preds) {
+    BB *pred = BBLIST_item(preds);
+    preds = BBLIST_next(preds);
+    if (BB_SET_MemberP(LOOP_DESCR_bbset(loop), pred))
+      if (!BB_Retarget_Branch(pred, from, to))
+	/* must fall-through to <from> */
+	Change_Succ(pred, from, to);
+  }
+}
+
+static BOOL all_bbs_in(BBLIST *list, BB_SET *bbs)
+/* -----------------------------------------------------------------------
+ * Return TRUE iff all BBs in <list> are members of <bbs>.
+ * -----------------------------------------------------------------------
+ */
+{
+  BBLIST *item;
+  FOR_ALL_BBLIST_ITEMS(list, item)
+    if (!BB_SET_MemberP(bbs, BBLIST_item(item))) return FALSE;
+  return TRUE;
+}
+
+/* We can create an epilog node if the loop has one single exit, or
+   all the exits have the same unique successor. */
+static BB*
+Create_Loop_Epilogue (LOOP_DESCR* l) {
+    BB* like_epilog = NULL;
+    BB_SET* body = LOOP_DESCR_bbset (l);
+    BOOL freqs = FREQ_Frequencies_Computed();
+
+    BB *bb;
+    FOR_ALL_BB_SET_members(body, bb) {
+        BBLIST* s;
+        FOR_ALL_BB_SUCCS (bb, s) {
+            BB* succ = BBLIST_item (s);
+            if (!BB_SET_MemberP (body, succ)) {
+		if (like_epilog && succ != like_epilog)
+		    return NULL;
+		like_epilog = succ;
+	    }
+	}
+    }
+
+    /* This is an infinite loop. */
+    if (like_epilog == NULL)
+	return NULL;
+
+    /* Code from cg_loop.cxx */
+
+    BB *next = like_epilog;
+    BB *ftp = BB_Fall_Thru_Predecessor(next);
+    BBKIND ftp_kind = ftp ? BB_kind(ftp) : BBKIND_UNKNOWN;
+    LOOP_DESCR *enclosing = LOOP_DESCR_Next_Enclosing_Loop(l);
+    like_epilog = Gen_And_Insert_BB_Before(next);
+    BB_rid(like_epilog) = BB_rid(LOOP_DESCR_loophead(l));
+    Set_BB_gra_spill(like_epilog);
+    if (BB_freq_fb_based(LOOP_DESCR_loophead(l))) Set_BB_freq_fb_based(like_epilog);
+    if (ftp && !BB_SET_MemberP(LOOP_DESCR_bbset(l), ftp)) {
+	/*
+	 * Since <ftp> isn't in loop, we don't want it to fall through
+	 * to like_epilog.  It was falling through to <next>, so we'll
+	 * make it either branch to <next> or fall through to a new BB
+	 * that branches to <next>.  */
+	if (ftp_kind == BBKIND_GOTO) {
+	    BBLIST *bbl = BB_Find_Succ(ftp, next);
+	    Add_Goto(ftp, next);
+	    BBLIST_prob(bbl) = 1.0F;	/* otherwise is incremented to 2.0 */
+	} else {
+	    BB *new_bb = Gen_And_Insert_BB_After(ftp);
+	    BB_rid(new_bb) = BB_rid(LOOP_DESCR_loophead(l));
+	    if (BB_freq_fb_based(like_epilog)) Set_BB_freq_fb_based(new_bb);
+	    Change_Succ(ftp, next, new_bb);
+	    Add_Goto(new_bb, next);
+	    GRA_LIVE_Compute_Liveness_For_BB(new_bb);
+	}
+    }
+    retarget_loop_exits(l, next, like_epilog);
+    Link_Pred_Succ_with_Prob(like_epilog, next, 1.0);
+    if (freqs || BB_freq_fb_based(next))
+	BB_freq(next) += BB_freq(like_epilog);
+    GRA_LIVE_Compute_Liveness_For_BB(like_epilog);
+
+    /* Add like_epilog to appropriate LOOP_DESCRs, if any.
+     * It can belong only to loops enclosing this one, so
+     * we don't bother checking any others.  */
+    if (enclosing &&
+	all_bbs_in(BB_preds(like_epilog), LOOP_DESCR_bbset(enclosing)))
+	LOOP_DESCR_Add_BB(enclosing, like_epilog);
+
+    return like_epilog;
+}
+#endif
 
     /* ==================================================================
      * 
@@ -1760,6 +2551,8 @@ Create_Loop_Prologue (LOOP_DESCR* l) {
 void
 Perform_Loop_Invariant_Code_Motion (void) {
 
+    INT32 code_motion_num;
+
     CXX_MEM_POOL local_mp("LICM", FALSE);
 
     MEM_POOL loop_descr_pool;
@@ -1771,6 +2564,8 @@ Perform_Loop_Invariant_Code_Motion (void) {
     GRA_LIVE_Init (NULL);
     Calculate_Dominators ();
 
+    code_motion_num = 0;
+
     for (LOOP_DESCR *l = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
          l; l = LOOP_DESCR_next(l)) {
 
@@ -1781,10 +2576,24 @@ Perform_Loop_Invariant_Code_Motion (void) {
         if (!prolog) { continue; }
         Reset_BB_gra_spill (prolog);
 
-        Maintain_Dominator_Info (l, prolog, local_mp());
+#ifdef TARG_ST
+        BB* epilog;
+        epilog = Create_Loop_Epilogue (l);
+        if (epilog) Reset_BB_gra_spill (epilog);
+#endif
 
+#ifdef TARG_ST
+        Maintain_Dominator_Info (l, prolog, epilog, local_mp());
+        LOOP_INVAR_CODE_MOTION licm (l, prolog, epilog);
+#else
+        Maintain_Dominator_Info (l, prolog, local_mp());
         LOOP_INVAR_CODE_MOTION licm (l, prolog);
-        licm.Perform_Code_Motion ();
+#endif
+        code_motion_num = licm.Perform_Code_Motion ();
+
+	if (code_motion_num) {
+	  fprintf(stderr, "code_motion_num=%d(%s:%d,%d)\n", code_motion_num, BB_innermost(LOOP_DESCR_loophead(l)) ? "inner" : "outer", GTN_SET_Size(BB_live_in(LOOP_DESCR_loophead(l))), GTN_SET_Size(licm.Get_liveout_defs()));
+	}
     }
 
     GRA_LIVE_Init (NULL);

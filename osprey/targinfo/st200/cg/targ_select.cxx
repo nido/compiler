@@ -222,6 +222,92 @@ Gen_Local_Symbol (TY_IDX      ty,	// type of the desired symbol
 }
 #endif
 
+void
+Expand_BlackHole (
+  OP *store_op,
+  TN *blackhole_tn,
+  OPS *ops
+  )
+{
+  TY_IDX ty = MTYPE_To_TY(Pointer_Mtype);
+
+#ifdef COMMON_SELECT_STOREDUMP
+  blackhole = Gen_Common_Symbol(ty, "__store_dump_area");
+  TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
+  Build_OP(TOP_mov_ii, blackhole_tn, tmp, ops);
+#else
+#ifdef LOCAL_SELECT_STOREDUMP
+  blackhole = Gen_Local_Symbol (ty, "__store_dump_area");
+
+#else
+#error SELECT_STOREDUMP
+#endif
+#endif
+
+  TN *offsetTN = OP_opnd(store_op, OP_find_opnd_use(store_op, OU_offset));
+  INT32 offset = 0;
+
+  if (TN_is_constant (offsetTN) && TN_has_value (offsetTN))
+    offset = -TN_value(offsetTN);
+
+  Exp_Lda (Pointer_type, blackhole_tn, blackhole, offset, OPERATOR_UNKNOWN, ops);
+}
+
+void
+Expand_CondStoreAddr (
+  OP *store_op,
+  TN *storeaddr_tn,
+  OPS *ops
+  )
+{
+  TN *offsetTN = OP_opnd(store_op, OP_find_opnd_use(store_op, OU_offset));
+
+  if (TN_is_constant (offsetTN) && TN_has_value (offsetTN))
+    offsetTN = Zero_TN;
+
+  Expand_Add (storeaddr_tn, OP_opnd(store_op, OP_find_opnd_use(store_op, OU_base)), offsetTN, Pointer_Mtype, ops);
+}
+
+void
+Expand_CondStoreOP (
+  OP *store_op,
+  TN *storeaddr_tn,
+  OPS *ops
+  )
+{
+  TN *base = storeaddr_tn;
+  TN *offset = OP_opnd(store_op, OP_find_opnd_use(store_op, OU_offset));
+  TN *val  = OP_opnd(store_op, OP_find_opnd_use(store_op, OU_storeval));
+  TYPE_ID desc;
+
+  if (!(TN_is_constant (offset) && TN_has_value (offset)))
+    offset = Gen_Literal_TN (0, 4);
+
+  switch (OP_code(store_op)) {
+  case TOP_stw_i:
+  case TOP_stw_ii:
+    desc = MTYPE_I4;
+    break;
+
+  case TOP_sth_i:
+  case TOP_sth_ii:
+    desc = MTYPE_I2;
+    break;
+
+  case TOP_stb_i:
+  case TOP_stb_ii:
+    desc = MTYPE_I1;
+    break;
+
+  default:
+    DevAssert(FALSE, ("stw"));    
+  }
+
+  Expand_Store (desc, val, base, offset, ops);
+  Copy_WN_For_Memory_OP(OPS_last(ops), store_op);
+  Set_OP_black_hole(OPS_last(ops));
+}
+
 /* --------------------------------------------------------------------
  *    One of the operands is the result of a select instruction.
  *    If it is the ofst, then must generate a correct store format.

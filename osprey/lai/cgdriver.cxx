@@ -545,8 +545,8 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_remainder_after, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_multi_bb", "",
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "LICM", "", 
-    TRUE, 0, 0,	&IPFEC_Enable_LICM, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
+    1, 0, 2,	&IPFEC_Enable_LICM, NULL },
 #endif
 
   // Cross Iteration Loop Optimization options.

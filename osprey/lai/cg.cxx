@@ -114,6 +114,7 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#include "loop_invar_hoist.h"
 #endif
 
 #ifdef LAO_ENABLED
@@ -524,6 +525,13 @@ CG_Generate_Code(
       FREQ_Verify("CFLOW (first pass)");
   }
 
+#ifdef TARG_ST
+  // FdF: Code imported from ORC2.1. Perform before SSA and if-conversion.
+    if (IPFEC_Enable_LICM && CG_opt_level > 1) {
+      Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
+      Perform_Loop_Invariant_Code_Motion ();
+    }
+#endif
   // Invoke global optimizations before register allocation at -O2 and above.
   if (CG_opt_level > 1) {
 #ifdef TARG_ST
@@ -621,15 +629,6 @@ CG_Generate_Code(
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
       }
-    }
-#endif
-
-#ifdef TARG_ST
-  // FdF: ORC2.1
-    extern void Perform_Loop_Invariant_Code_Motion (void);
-    if (IPFEC_Enable_LICM && CG_opt_level > 1) {
-      Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
-      Perform_Loop_Invariant_Code_Motion ();
     }
 #endif
 
