@@ -1303,7 +1303,7 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 
    // Store address didn't change. Pass WN information
   if (opnd_idx == OP_find_opnd_use(op1, OU_storeval))
-    Copy_WN_For_Memory_OP(OPS_last(ops), op1);
+    Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
    BB_Remove_Op (bb, op1);
    BB_Remove_Op (bb, op2);
