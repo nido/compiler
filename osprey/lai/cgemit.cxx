@@ -2422,8 +2422,13 @@ Setup_Text_Section_For_PU (
     Initial_Pu_Label = Last_Label;
   }
 
+  /* CL: Start a new "text region" for Dwarf at each
+     function start (instead of only when changing
+     sections */
+#ifndef TARG_ST
   /* check if we are changing sections. */
   if (text_base != old_base) {
+#endif
     if (generate_elf_symbols && old_base != NULL) {
       pSCNINFO old_section = em_scn[STB_scninfo_idx(old_base)].scninfo;
       // Arange is symbolic; line number entries (if used) are not.
@@ -2437,7 +2442,9 @@ Setup_Text_Section_For_PU (
 			ST_elf_index(text_base)),
 			Offset_From_Last_Label);
     }
+#ifndef TARG_ST
   }
+#endif
 
   PC = text_PC;
   PU_base = text_base;
