@@ -5153,7 +5153,8 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     return FALSE;
 
   if (tn_registers_identical(lhs_tn, rhs_tn)) {
-    fprintf(TFile, "Registers identical %d %d\n", TN_number(lhs_tn), TN_number(rhs_tn));
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile, "Registers identical %d %d\n", TN_number(lhs_tn), TN_number(rhs_tn));
     BOOL invert = FALSE;
     switch (new_variant) {
     case V_CMP_NORL: invert = TRUE; break;
