@@ -218,15 +218,24 @@ BE_DSO=be_dll.a
 IPL_DSO=ipl_dll.a
 endif
 
-LAO_DSOS = $(WOPT_DSO) $(BE_DSO) $(IPL_DSO)
-
-LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so
-LINK_DSOS += $(ROOT)/LAO/lib/libCSD.so
-LINK_DSOS += $(ROOT)/LAO/lib/libSCD.so
-LINK_DSOS += $(ROOT)/LAO/lib/libLIR.so
-LINK_DSOS += $(ROOT)/LAO/lib/libSWP.so
+ifeq ($(BUILD_VARIANT),SINGLE_LAO_SO)
+LAO_DSOS =
+LAO_DSOS += $(ROOT)/LAO/lib/libLAO.a
+LAO_DSOS += $(ROOT)/LAO/lib/libSWP.a
+LAO_DSOS += $(ROOT)/LAO/lib/libLIR.a
+LAO_DSOS += $(ROOT)/LAO/lib/libSCD.a
+LAO_DSOS += $(ROOT)/LAO/lib/libCSD.a
+LAO_DSOS += $(ROOT)/LAO/lib/libCCL.a
+LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO)
+else
 LINK_DSOS += $(ROOT)/LAO/lib/libLAO.so
+LINK_DSOS += $(ROOT)/LAO/lib/libSWP.so
+LINK_DSOS += $(ROOT)/LAO/lib/libLIR.so
+LINK_DSOS += $(ROOT)/LAO/lib/libSCD.so
+LINK_DSOS += $(ROOT)/LAO/lib/libCSD.so
+LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so
 LINK_DSOS += -Wl,-rpath=$(ROOT)/LAO/lib
+endif
 
 ifeq ($(BUILD_HOST), IA64)
 ifeq ($(BUILD_COMPILER), SGI)
