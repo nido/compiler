@@ -291,6 +291,11 @@ Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry)
 //
 /////////////////////////////////////
 {
+#ifdef TARG_ST200
+  if (BB_entry(bb) || BB_exit(bb))
+    return FALSE;
+#endif
+
   //
   // Want simple branches to deal with.
   //
@@ -299,6 +304,9 @@ Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry)
   case BBKIND_LOGIF:
     break;
   case BBKIND_CALL:
+#ifdef TARG_ST200
+    if (! HB_force_hyperblocks)
+#endif
     if (!CGTARG_Can_Predicate_Calls() || HB_exclude_calls) {
       return FALSE;
     }
