@@ -91,7 +91,7 @@ Config_Target_From_ELF (
     if ((Target != TARGET_st220) && (Target != TARGET_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st220));
     }
-    if (Target_ABI == TARGET_UNDEF) {
+    if (Target_ABI == ABI_UNDEF) {
       Target = TARGET_st220;
     }
     break;
@@ -99,7 +99,7 @@ Config_Target_From_ELF (
     if ((Target != TARGET_st230) && (Target != TARGET_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st230));
     }
-    if (Target_ABI == TARGET_UNDEF) {
+    if (Target_ABI == ABI_UNDEF) {
       Target = TARGET_st230;
     }
     break;
