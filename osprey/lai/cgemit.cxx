@@ -1742,6 +1742,10 @@ Process_Bss_Data (
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
       if (size > 0) {
+        if (Assembly || Lai_Code) {
+          fprintf(Output_File, "\t%s %d\n", AS_ALIGN, TY_align(ST_type(sym)));
+        }
+
 	if (Assembly)
 	  ASM_DIR_SKIP(Asm_File, (INT32)size);
 	if (Lai_Code)
