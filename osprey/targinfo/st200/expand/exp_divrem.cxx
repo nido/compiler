@@ -351,6 +351,15 @@ Expand_Divide_By_Constant (
 	 * (p2) shr result=numer,pow2(abs(dvsr))
 	 * if (dvsr<0) sub result=0,result
 	 */
+#if 1 /* CGuillon: better sequence for ST200 */
+	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+
+	Build_OP(TOP_cmplt_r_b, p1, numer, Zero_TN, ops);
+	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
+
+	Build_OP(TOP_slct_r, t1, p1, t0, numer, ops);
+	Build_OP(TOP_shr_i, t2, t1, Gen_Literal_TN(pow2, 4), ops);
+#else
 	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
 	TN *t3 = Build_TN_Of_Mtype(mtype);
 
@@ -360,6 +369,7 @@ Expand_Divide_By_Constant (
 	Build_OP(TOP_shr_i, t1, t0, Gen_Literal_TN(pow2, 4), ops);
 	Build_OP(TOP_shr_i, t3, numer, Gen_Literal_TN(pow2, 4), ops);
 	Build_OP(TOP_slct_r, t2, p1, t1, t3, ops);
+#endif
       }
       if (dvsr < 0) {
 	// must negate the result
