@@ -5568,6 +5568,10 @@ EMT_Emit_PU (
   // the final text_sequence dependent upon the location of the
   // beginning of the next PU)
   if (generate_dwarf) {
+    cache_last_label_info (Last_Label,
+			   Em_Create_Section_Symbol(PU_section),
+			   ST_pu(pu),
+			   PC2Addr(Offset_From_Last_Label));
     end_previous_text_region(PU_section, Addr2PC(PC));
   }
 #endif
