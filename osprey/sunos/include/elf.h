@@ -39,7 +39,7 @@
 
 /*#include <inttypes.h> */
 /* stdint.h is the C99 standard */
-#include <stdint.h>
+#include <W_stdint.h>
 
 
 #include <sys/elftypes.h>
