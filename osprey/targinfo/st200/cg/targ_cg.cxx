@@ -2138,17 +2138,6 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 				      slot+1)) {
       slot_avail = TRUE;
     }
-
-    //
-    // Handle imml/immr myself ...
-    //
-    else {
-      if ((slot != 3 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_imml), slot + 1)) ||
-	  (slot > 0 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_immr), slot - 1))) {
-
-	slot_avail = TRUE;
-      }
-    }
   }
   else {
     slot_avail = TI_BUNDLE_Slot_Available (bundle, *prop, slot);
