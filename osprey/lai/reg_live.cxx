@@ -352,6 +352,9 @@ Compute_PU_Regs (
  *		t9 (if pic-call)
  *		static-link (if call to nested function)
  *		ra, callee-saves (for tail calls)
+#ifdef TARG_ST
+ *              rs (if call returns struct by value)
+#endif
  *
  *      liveout: return registers for call
  *
@@ -427,6 +430,26 @@ Compute_Call_Regs (
 	livein[cl] = REGISTER_SET_Union(livein[cl], callee_saves);
       }
     }
+
+#ifdef TARG_ST
+    // Arthur: use prototype to determine a call returning struct 
+    //       coerced to void
+    TY_IDX prototype;
+    if (WN_operator(call_wn) == OPR_ICALL) 
+      prototype = WN_ty(call_wn);
+    else {
+      ST_IDX func_stidx = WN_st_idx(call_wn);
+      PU_IDX puidx = ST_pu(St_Table[func_stidx]);
+      prototype = PU_prototype(Pu_Table[puidx]);
+    }
+    RETURN_INFO return_info = Get_Return_Info(TY_ret_type(prototype),
+                                              No_Simulated);
+    // If returning a structure by value through a dedicated register
+    if (RETURN_INFO_return_via_return_reg(return_info)) {
+      livein[REGISTER_CLASS_rs] = 
+		  REGISTER_SET_Union1 (livein[REGISTER_CLASS_rs], REGISTER_rs);
+    }
+#endif
   }
 
   if (liveout != NULL) {
