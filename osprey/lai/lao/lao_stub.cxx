@@ -2,6 +2,9 @@
 #include <vector.h>
 
 #include "bb.h"
+#include "wn.h"
+#include "wn_core.h"
+#include "wn_util.h"
 #include "cg_region.h"
 #include "freq.h"
 #include "label_util.h"
@@ -327,14 +330,20 @@ Operation_to_CGIR_OP(Operation operation) {
   return cgir_op;
 }
 
+// Convert LIR LoopInfo to CGIR_LI
+static inline CGIR_LI
+LoopInfo_to_CGIR_LI(LoopInfo loopinfo) {
+  Is_True(loopinfo != NULL, ("LoopInfo_to_CGIR_LI passed a NULL LoopInfo"));
+  CGIR_LI cgir_li = Interface_updateLI(interface, loopinfo);
+  return cgir_li;
+}
 
 /*-------------------- LIR Interface Call-Back Functions ---------------------*/
 
 // Create a CGIR_LAB from a LIR Label.
 static CGIR_LAB
-CGIR_LAB_create(Label label) {
+CGIR_LAB_create(Label label, const char *name) {
   CGIR_LAB cgir_lab = 0;
-  String name = Interface_Label_name(interface, label);
   // code borrowed from Gen_Label_For_BB
   LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, cgir_lab);
   LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
@@ -343,7 +352,7 @@ CGIR_LAB_create(Label label) {
 
 // Update a CGIR_LAB from a LIR Label.
 static void
-CGIR_LAB_update(CGIR_LAB cgir_lab, Label label) {
+CGIR_LAB_update(CGIR_LAB cgir_lab, Label label, const char *name) {
 }
 
 // Create a CGIR_SYM from a LIR Symbol.
@@ -407,8 +416,8 @@ CGIR_TN_update(CGIR_TN cgir_tn, TempName tempname) {
 
 // Create a CGIR_OP from a LIR Operation.
 static CGIR_OP
-CGIR_OP_create(Operation operation, int argCount, TempName arguments[], int resCount, TempName results[]) {
-  TOP top = Operator_to_CGIR_TOP(Interface_Operation_operator(interface, operation));
+CGIR_OP_create(Operation operation, Operator OPERATOR, int argCount, TempName arguments[], int resCount, TempName results[], int issueDate) {
+  TOP top = Operator_to_CGIR_TOP(OPERATOR);
   CGIR_TN *argTNs = (CGIR_TN *)alloca(sizeof(CGIR_TN)*argCount);
   for (int i = 0; i < argCount; i++) {
     argTNs[i] = TempName_to_CGIR_TN(arguments[i]);
@@ -418,14 +427,14 @@ CGIR_OP_create(Operation operation, int argCount, TempName arguments[], int resC
     resTNs[i] = TempName_to_CGIR_TN(results[i]);
   }
   CGIR_OP cgir_op = Mk_VarOP(top, resCount, argCount, resTNs, argTNs);
-  // TODO: issue dates, flags, etc.
+  // TODO: issueDate
   return cgir_op;
 }
 
 // Update a CGIR_OP from a LIR Operation.
 static void
-CGIR_OP_update(CGIR_OP cgir_op, Operation operation, int argCount, TempName arguments[], int resCount, TempName results[]) {
-  TOP top = Operator_to_CGIR_TOP(Interface_Operation_operator(interface, operation));
+CGIR_OP_update(CGIR_OP cgir_op, Operation operation, Operator OPERATOR, int argCount, TempName arguments[], int resCount, TempName results[], int issueDate) {
+  TOP top = Operator_to_CGIR_TOP(OPERATOR);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
   }
@@ -439,31 +448,38 @@ CGIR_OP_update(CGIR_OP cgir_op, Operation operation, int argCount, TempName argu
     CGIR_TN cgir_tn = TempName_to_CGIR_TN(results[i]);
     if (OP_result(cgir_op, i) != cgir_tn) Set_OP_result(cgir_op, i, cgir_tn);
   }
-  // TODO: issue dates, flags, etc.
+  // TODO: issueDate
 }
 
 // Create a CGIR_BB from a LIR BasicBlock.
 static CGIR_BB
-CGIR_BB_create(BasicBlock basicblock, int labelCount, Label labels[], int opCount, Operation operations[]) {
+CGIR_BB_create(BasicBlock basicblock, int labelCount, Label labels[], int opCount, Operation operations[], LoopInfo loopinfo) {
   CGIR_BB cgir_bb = Gen_BB();
+  // Process the labels.
   for (int i = 0; i < labelCount; i++) {
     CGIR_LAB cgir_lab = Label_to_CGIR_LAB(labels[i]);
     // code borrowed from Gen_Label_For_BB
     Set_Label_BB(cgir_lab, cgir_bb);
     BB_Add_Annotation(cgir_bb, ANNOT_LABEL, (void *)cgir_lab);
   }
+  // Process the operations.
   OPS ops = OPS_EMPTY;
   for (int i = 0; i < opCount; i++) {
     OPS_Append_Op(&ops, Operation_to_CGIR_OP(operations[i]));
   }
   BB_Append_Ops(cgir_bb, &ops);
-  // TODO: loopinfo, flags, etc.
+  // Process the loopinfo.
+  if (loopinfo != NULL) {
+    CGIR_LI cgir_li = LoopInfo_to_CGIR_LI(loopinfo);
+    BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
+  }
   return cgir_bb;
 }
 
 // Update a CGIR_BB from a LIR BasicBlock.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, BasicBlock basicblock, int labelCount, Label labels[], int opCount, Operation operations[]) {
+CGIR_BB_update(CGIR_BB cgir_bb, BasicBlock basicblock, int labelCount, Label labels[], int opCount, Operation operations[], LoopInfo loopinfo) {
+  // Process the labels.
   for (int i = 0; i < labelCount; i++) {
     CGIR_LAB cgir_lab = Label_to_CGIR_LAB(labels[i]);
     if (!Is_Label_For_BB(cgir_lab, cgir_bb)) {
@@ -472,13 +488,22 @@ CGIR_BB_update(CGIR_BB cgir_bb, BasicBlock basicblock, int labelCount, Label lab
       BB_Add_Annotation(cgir_bb, ANNOT_LABEL, (void *)cgir_lab);
     }
   }
+  // Process the operations.
   BB_Remove_All(cgir_bb);
   OPS ops = OPS_EMPTY;
   for (int i = 0; i < opCount; i++) {
     OPS_Append_Op(&ops, Operation_to_CGIR_OP(operations[i]));
   }
   BB_Append_Ops(cgir_bb, &ops);
-  // TODO: loopinfo, flags, etc.
+  // Process the loopinfo.
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
+  if (annot != NULL) {
+    ANNOT_Unlink(BB_annotations(cgir_bb), annot);
+  }
+  if (loopinfo != NULL) {
+    CGIR_LI cgir_li = LoopInfo_to_CGIR_LI(loopinfo);
+    BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
+  }
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -508,15 +533,22 @@ CGIR_BB_unlink(CGIR_BB cgir_bb) {
 
 // Create a CGIR_LI from a LIR LoopInfo.
 static CGIR_LI
-CGIR_LI_create(LoopInfo loopinfo) {
-  // TODO
-  return NULL;
+CGIR_LI_create(LoopInfo loopinfo, int unrolling) {
+  LoopInfo orig_loopinfo = Interface_LoopInfo_duplicateOf(interface, loopinfo);
+  Is_True(orig_loopinfo != NULL, ("Interface_LoopInfo_duplicateOf returned NULL"));
+  CGIR_LI orig_li = LoopInfo_to_CGIR_LI(orig_loopinfo);
+  WN *wn = WN_COPY_Tree(LOOPINFO_wn(orig_li));
+  WN_loop_trip_est(wn) /= unrolling;
+  WN_loop_trip_est(wn) += 1;
+  CGIR_LI cgir_li = TYPE_P_ALLOC(LOOPINFO);
+  LOOPINFO_wn(cgir_li) = wn;
+  LOOPINFO_srcpos(cgir_li) = LOOPINFO_srcpos(orig_li);
+  return cgir_li;
 }
 
 // Update a CGIR_LI from a LIR LoopInfo.
 static void
-CGIR_LI_update(CGIR_LI cgir_li, LoopInfo loopinfo) {
-  // TODO
+CGIR_LI_update(CGIR_LI cgir_li, LoopInfo loopinfo, int unrolling) {
 }
 
 /*--------------------------- lao_init / lao_fini ----------------------------*/
