@@ -5118,6 +5118,9 @@ BB *ops_same_loop(OP *op1, OP *op2)
     INT32 unroll2_id =  OP_unroll_bb(op2) ? BB_id(OP_unroll_bb(op2)): BB_id(OP_bb(op2));
     INT32 unroll1 = OP_unroll_bb(op1) ? BB_unrollings(OP_unroll_bb(op1)):0; 
     INT32 unroll2 = OP_unroll_bb(op2) ? BB_unrollings(OP_unroll_bb(op2)):0; 
+    if ((unroll1 != unroll2) &&
+	(!OP_unroll_bb(op1) || !OP_unroll_bb(op2)))
+      return NULL;
     DevAssert(unroll1 == unroll2,
 	      ("Unrolling mismatch (%d != %d) for ops (BB:%d,idx:%d) in BB:%dand (BB:%d,idx:%d) in BB:%d with same loop head BB:%d \n", 
 	       unroll1, unroll2,
