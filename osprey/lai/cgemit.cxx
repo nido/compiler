@@ -1723,6 +1723,22 @@ Process_Bss_Data (
   INT64 next_ofst;
   INT64 size;
 
+#ifdef TARG_ST
+  //
+  // can have overlapping symbols that are equivalenced.
+  // assume here that if multiple symbols with same offset,
+  // are sorted so that largest size is last.
+  //
+  // align must come before the label. But if multiple labels
+  // with the same offset overlap, need to align at the
+  // strongest alignment. Thus, Arthur's using a list to
+  // accumulate the labels while they refer to the equivalenced
+  // symbols and looking for the strongest alignment.
+  //
+  list<ST*> equivalenced_symbols;
+  INT32 align = 0;
+#endif
+
   for (bssp = bss_list.begin(); bssp != bss_list.end(); ++bssp) {
 
     sym = *bssp;
@@ -1735,10 +1751,16 @@ Process_Bss_Data (
     Change_Section_Origin (base, ofst);
     if (Assembly || Lai_Code) {
       size = TY_size(ST_type(sym));
-      if (Assembly)
-	Print_Label (Asm_File, sym, size);
-      if (Lai_Code)
-	Print_Label (Lai_File, sym, size);
+#ifdef TARG_ST
+      // Save alignment before continuing
+      if (TY_align(ST_type(sym)) > align) {
+	align = TY_align(ST_type(sym));
+      }
+      // Do not print the label yet
+#else
+      Print_Label (Output_File, sym, size);
+#endif
+
       // before emitting space,
       // first check whether next symbol has same offset.
       // can have overlapping symbols that are equivalenced.
@@ -1748,6 +1770,11 @@ Process_Bss_Data (
 	if (next_base == base && next_ofst == ofst) {
 	  // skip to next iteration
 	  // so label printed before space emitted.
+#ifdef TARG_ST
+	  // Save label in the equvalenced symbol list before
+	  // continueing
+	  equivalenced_symbols.push_back(sym);
+#endif
 	  continue;
 	}
 	else if (next_base == base && next_ofst < (ofst+size)) {
@@ -1756,13 +1783,33 @@ Process_Bss_Data (
 	  size = next_ofst - ofst;
 	}
       }
+
+#ifdef TARG_ST
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
       if (size > 0) {
-        if (Assembly || Lai_Code) {
-          fprintf(Output_File, "\t%s %d\n", AS_ALIGN, TY_align(ST_type(sym)));
-        }
+	// Time to print out the alignment and the labels
+	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, align);
+	list<ST*>::iterator esyms;
+	// Print the previously eqivalenced symbols
+	for (esyms = equivalenced_symbols.begin();
+	     esyms != equivalenced_symbols.end();
+	     esyms++) {
+	  Print_Label (Output_File, *esyms, TY_size(ST_type(*esyms)));
+	}
+	// clear the list
+	equivalenced_symbols.clear();
+	// reset align
+	align = 0;
 
+	// Print the last/current one
+	Print_Label (Output_File, sym, size);
+#else
+      // assume here that if multiple symbols with same offset,
+      // are sorted so that largest size is last.
+      if (size > 0) {
+	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, TY_align(ST_type(sym)));
+#endif
 	if (Assembly)
 	  ASM_DIR_SKIP(Asm_File, (INT32)size);
 	if (Lai_Code)
@@ -2469,7 +2516,7 @@ r_assemble_opnd (
       rname = vname;
     }
 
-    if (i == OP_PREDICATE_OPND && OP_has_predicate(op)) {
+    if (OP_has_predicate(op) && i == OP_PREDICATE_OPND) {
 #ifdef TARG_IA64
       vstr_sprintf(buf, start, ISA_PRINT_PREDICATE, rname);
 #else
@@ -2727,7 +2774,8 @@ Verify_Operand (
 
   /*
   if (Trace_Inst) {
-    fprintf(TFile, "checking %s ", res_or_opnd);
+    Print_OP(op);
+    fprintf(TFile, "\n >> checking %s ", res_or_opnd);
     Print_TN(tn, TRUE);
     fprintf(TFile, "\n");
   }
@@ -2836,24 +2884,24 @@ Verify_Instruction (
   oinfo = ISA_OPERAND_Info(top);
 
   INT results = OP_results(op);
-  if (results != TOP_fixed_results(top)) {
-    FmtAssert(TOP_is_var_opnds(top) && results > TOP_fixed_results(top),
+  if (results != OP_fixed_results(op)) {
+    FmtAssert(TOP_is_var_opnds(top) && results > OP_fixed_results(op),
 	      ("wrong number of results (%d) for %s",
 	       results,
 	       TOP_Name(top)));
-    results = TOP_fixed_results(top); // can only verify fixed results
+    results = OP_fixed_results(op); // can only verify fixed results
   }
   for (i = 0; i < results; ++i) {
     Verify_Operand(oinfo, op, i, TRUE);
   }
 
   INT opnds = OP_opnds(op);
-  if (opnds != TOP_fixed_opnds(top)) {
-    FmtAssert(TOP_is_var_opnds(top) && opnds > TOP_fixed_opnds(top),
+  if (opnds != OP_fixed_opnds(op)) {
+    FmtAssert(TOP_is_var_opnds(top) && opnds > OP_fixed_opnds(op),
 	      ("wrong number of operands (%d) for %s",
 	       opnds,
 	       TOP_Name(top)));
-    opnds = TOP_fixed_opnds(top); // can only verify fixed operands
+    opnds = OP_fixed_opnds(op); // can only verify fixed operands
   }
   for (i = 0; i < opnds; ++i) {
     Verify_Operand(oinfo, op, i, FALSE);
