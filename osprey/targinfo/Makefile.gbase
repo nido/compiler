@@ -925,7 +925,7 @@ st2%.c: st2%_si_gen$(BEXE)
 st2%_si_gen$(BEXE): st2%_si.o si_gen.a build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-st2%_si.o: st2%.cxx targ_isa_subset.h topcode.h si_gen.h
+st2%_si.o: st2%_si.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 #
