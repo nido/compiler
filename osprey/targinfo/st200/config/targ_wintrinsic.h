@@ -86,8 +86,15 @@
 
   INTRN_ABSL       = INTRINSIC_GENERAL_LAST+76,
 
+  /* These are part of run-time support provided on the ST200
+   * targets. At the run-time lowering stage the OPR_SQRT
+   * WHIRL operators become these, so we can properly generate
+   * code for them */
+  INTRN_SQRTS       = INTRINSIC_GENERAL_LAST+77,
+  INTRN_SQRTD       = INTRINSIC_GENERAL_LAST+78,
+
   /* INTRN_LAST_ST200_INTRINSIC */
-  INTRINSIC_TARG_LAST  = INTRINSIC_GENERAL_LAST+76,
+  INTRINSIC_TARG_LAST  = INTRINSIC_GENERAL_LAST+78,
 
 
 

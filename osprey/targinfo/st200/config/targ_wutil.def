@@ -83,3 +83,6 @@
   INTRN_MAXUL,                  "MAXUL",
 
   INTRN_ABSL,                   "ABSL",
+
+  INTRN_SQRTS,                   "SQRTS",
+  INTRN_SQRTD,                   "SQRTD",

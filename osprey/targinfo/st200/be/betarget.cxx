@@ -774,6 +774,22 @@ OPCODE_To_INTRINSIC (
       }
       break;
 
+    case OPR_SQRT:
+      Is_True(rtype == MTYPE_F4 || rtype == MTYPE_F8,
+	      ("OPR_SQRT: unknown rtype type"));
+      switch (rtype) {
+      case MTYPE_F4:
+	id = INTRN_SQRTS;
+	break;
+      case MTYPE_F8: 
+	id = INTRN_SQRTD;
+	break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: %s ??", 
+                                            OPCODE_name(opcode)));
+      }
+      break;
+
     case OPR_TRUNC:
       Is_True(desc == MTYPE_F4 || desc == MTYPE_F8,
 	      ("OPR_TRUNC: unknown desc type"));
