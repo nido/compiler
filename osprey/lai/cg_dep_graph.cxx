@@ -240,41 +240,6 @@ static BOOL include_control_arcs;
 static BOOL tracing;
 
 
-//
-// =====================================================================
-//		      Barrier/Intrinsic Support
-// =====================================================================
-//
-
-// All that's necessary is to treat the barrier and intrinsic OPs
-// like stores when constructing the graph.  WOPT alias analysis
-// (or our conservative assumptions when no Alias_Manager given)
-// will do the right thing.
-
-inline BOOL OP_like_barrier(OP *op)
-{
-#ifdef TARG_ST
-  return (OP_Is_Barrier(op) || OP_Alloca_Barrier(op));
-#else
-  return (CGTARG_Is_OP_Barrier(op) || OP_Alloca_Barrier(op));
-#endif
-}
-
-inline BOOL OP_like_store(OP *op)
-{
-  BOOL like_store = (OP_store(op) || CGTARG_Is_OP_Intrinsic(op) ||
-#ifdef TARG_ST
-		     OP_like_barrier(op));
-#else
-		     CGTARG_Is_OP_Barrier(op) || OP_code(op) == TOP_asm);
-
-  like_store |= OP_like_barrier(op);
-#endif
-
-
-  return like_store;
-}
-
 #ifdef TARG_ST
 //
 // Loopdep informations
