@@ -2178,7 +2178,6 @@ Optimize_Select (
   TOP  cmp;
   BOOL reversed;
 
-  FmtAssert(FALSE,("Not Implemented"));
 #if 0
   // The comparison opnds must be the same as the src opnds.
   if (cond1 == src1 && cond2 == src2) {
@@ -2210,6 +2209,7 @@ Optimize_Select (
 		                                TOP_Name(cmp)));
 
 #endif
+  return FALSE;
 }
 
 /* ====================================================================
@@ -2229,12 +2229,12 @@ Expand_Compare_And_Select (
   OPS *ops
 )
 {
+  TYPE_ID mtype;
+
   // Look for special cases to optimize
   if (Optimize_Select(variant, cond1, cond2, dest, opposite_dest,
 		      true_tn, false_tn, is_float, ops)) return;
 
-  FmtAssert(FALSE,("Not Implemented"));
-#if 0
   // Expand
   //
   //      dst, opposite_dst = (cond1 cmp cond2) ? true_tn : false_tn
@@ -2242,30 +2242,36 @@ Expand_Compare_And_Select (
   // into:
   //
   //      p1 = (src1 cmp src2)
-  //      p2 = (src1 !cmp src2)
-  // p1?  dst = true_tn
-  // p2?  dst = false_tn
+  // p1?  dst = p1? true_tn : false_tn
   // p1?  opposite_dst = true_tn
-  // p2?  opposite_dst = false_tn
+  // !p1?  opposite_dst = false_tn
   //
 
-  TOP cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, ops);
-  variant = Negate_BR_Variant(variant);
-  TOP cmp2 = Pick_Compare_TOP (&variant, &cond1, &cond2, ops);
+  TOP cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, FALSE, ops);
 
-  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
-  TN *p2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
-
-  Build_OP (cmp1, p1, True_TN, cond1, cond2, ops);
-  Build_OP (cmp2, p2, True_TN, cond1, cond2, ops);
-
-  Expand_Copy (dest, p1, true_tn, ops);
-  Expand_Copy (dest, p2, false_tn, ops);
-  if (opposite_dest) {
-    Expand_Copy (opposite_dest, p2, true_tn, ops);
-    Expand_Copy (opposite_dest, p1, false_tn, ops);
+  switch (variant) {
+    case V_BR_I4GE:
+    case V_BR_I4GT:
+    case V_BR_I4LE:
+    case V_BR_I4LT:
+    case V_BR_I4EQ:
+    case V_BR_I4NE:
+      mtype = MTYPE_I4;
+      break;
+  default:
+    FmtAssert(FALSE,("Not Implemented"));
   }
-#endif
+
+  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+
+  Build_OP (cmp1, p1, cond1, cond2, ops);
+
+  Expand_Select (dest, p1, true_tn, false_tn, mtype, is_float, ops);
+
+  if (opposite_dest) {
+    FmtAssert(FALSE,("Not Implemented"));
+  }
+
   return;
 }
 
@@ -2284,39 +2290,27 @@ Expand_Select (
   OPS *ops
 )
 {
+  TOP select;
   const BOOL is_float = MTYPE_is_float(mtype);
 
-  FmtAssert(FALSE,("Not Implemented"));
-#if 0
-  if (TN_register_class(cond_tn) == ISA_REGISTER_CLASS_guard) {
-    TOP tmove, fmove;
-    TN *p1 = cond_tn;
-    TN *p2 = Get_Complement_TN(cond_tn);
-    if (is_float) {
-      ;
-    } else {
-      tmove = TN_has_value(true_tn) ? TOP_GP32_MAKE_GT_DR_S16 :
-                                             TOP_GP32_MOVE_GT_DR_DR;
-      fmove = TN_has_value(false_tn) ? TOP_GP32_MAKE_GT_DR_S16 :
-                                             TOP_GP32_MOVE_GT_DR_DR;
-    }
-    Build_OP (tmove, dest_tn, p1, true_tn, ops);
-    Build_OP (fmove, dest_tn, p2, false_tn, ops);
-  } else {
-    // create compare of cond to 0
-    TOP cmp;
-    VARIANT variant;
-    if (float_cond)
- 	;
-    else if (MTYPE_is_size_double(mtype))
-	cmp = TOP_GP32_NEW_GT_BR_DR_DR;
-    else
-	cmp = TOP_GP32_NEW_GT_BR_DR_DR;
-    Expand_Compare_And_Select (variant, cond_tn, Zero_TN, dest_tn, NULL,
-	true_tn, false_tn,
-	is_float, ops);
+  if (TN_register_class(cond_tn) != ISA_REGISTER_CLASS_branch) {
+    FmtAssert(FALSE,("Not Implemented"));
   }
-#endif
+
+  if (TN_has_value(true_tn)) {
+    TN *tmp = true_tn;
+    true_tn = false_tn;
+    false_tn = tmp;
+    select = TOP_slctf_i;
+  }
+  else if (TN_has_value(false_tn)) {  
+    select = TOP_slct_i;
+  }
+  else {
+    select = TOP_slct_r;
+  }
+
+  Build_OP (select, dest_tn, cond_tn, true_tn, false_tn, ops);
 }
 
 /* ====================================================================
@@ -2356,10 +2350,6 @@ Exp_Select_And_Condition (
 {
   OPS newops = OPS_EMPTY;
 
-  FmtAssert(FALSE,("not implemented"));
-
-#if 0
-
   //  TOP cmp = Pick_Compare_TOP (&variant, &cmp_kid1, &cmp_kid2, &newops);
 
   switch (variant) {
@@ -2371,6 +2361,7 @@ Exp_Select_And_Condition (
 
       FmtAssert(FALSE,("Not Implemented"));
 
+#if 0
       // tmp = (cmp_kid1 == cmp_kid2)
       TN *tmp = Build_TN_Of_Mtype (MTYPE_I8);
       Build_OP (TOP_GP32_MAKE_GT_DR_S16, tmp, True_TN,
@@ -2384,6 +2375,7 @@ Exp_Select_And_Condition (
                                               TOP_GP32_EQW_GT_BR_DR_DR;
       cmp_kid1 = tmp;
       cmp_kid2 = Zero_TN;
+#endif
     }
     break;
   case V_BR_NONE:
@@ -2411,8 +2403,6 @@ Exp_Select_And_Condition (
   }
 
   OPS_Append_Ops(ops, &newops);
-
-#endif
 }
 
 /* ====================================================================
