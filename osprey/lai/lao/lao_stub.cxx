@@ -513,10 +513,10 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     int unrolled = BB_unrollings(cgir_bb);
 //if (unrolled) fprintf(stderr, "BB(%d) input unrolled %d\n", BB_id(cgir_bb), unrolled);
-    // make the BasicBlock
+    // Make the BasicBlock.
     basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
 	labelCount, labels, operationCount, operations);
-    // more the BasicBlock
+    // More the BasicBlock.
     int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
     Temporary *liveins = (Temporary *)alloca(MAX_LIVEIN_COUNT*sizeof(Temporary));
     for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
@@ -782,15 +782,6 @@ CGIR_OP_make(CGIR_OP cgir_op, LAI_Operator lai_operator, CGIR_TN arguments[], CG
     for (resCount = 0; results[resCount] != NULL; resCount++);
     cgir_op = Mk_VarOP(top, resCount, argCount, results, arguments);
     CGPREP_Init_Op(cgir_op);
-#if 0
-    if (old_op != NULL) {
-      // _CG_LOOP_info_map may not be defined for multi-bb loops.
-      if (Is_CG_LOOP_Op(old_op)) CG_LOOP_Init_Op(cgir_op);
-      // If a duplicate, set orig_idx and copy WN.
-      Set_OP_orig_idx(cgir_op, OP_map_idx(old_op));
-      Copy_WN_For_Memory_OP(cgir_op, old_op);
-    }
-#endif
   } else {
     // Update cgir_op.
     BB *bb = OP_bb(cgir_op);
@@ -813,7 +804,15 @@ CGIR_OP_make(CGIR_OP cgir_op, LAI_Operator lai_operator, CGIR_TN arguments[], CG
 
 // More of CGIR_OP.
 static void
-CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, bool isSpillCode, bool isVolatile, bool isHoisted) {
+CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, bool isSpillCode, bool isVolatile, bool isHoisted) {
+  // Copy information from orig_op if any.
+  if (orig_op != NULL) {
+    // _CG_LOOP_info_map may not be defined for multi-bb loops.
+    if (Is_CG_LOOP_Op(orig_op)) CG_LOOP_Init_Op(cgir_op);
+    // If a duplicate, set orig_idx and copy WN.
+    Set_OP_orig_idx(cgir_op, OP_map_idx(orig_op));
+    Copy_WN_For_Memory_OP(cgir_op, orig_op);
+  }
   // Set unrolling.
   Set_OP_unrolling(cgir_op, iteration);
   // Set scycle.
@@ -904,10 +903,16 @@ CGIR_BB_make(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID 
 
 // More a CGIR_BB.
 static void
-CGIR_BB_more(CGIR_BB cgir_bb, int ordering, int unrolled, bool isRegAlloc, bool isScheduled) {
+CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, int ordering, int unrolled, bool isRegAlloc, bool isScheduled) {
   // Set the CG_LAO_Region_Map.
   if (CG_LAO_Region_Map != NULL)
     BB_MAP32_Set(CG_LAO_Region_Map, cgir_bb, ordering);
+  // Set BB loop_head_bb.
+  Set_BB_loop_head_bb(cgir_bb, loop_bb);
+  CGIR_OP op = NULL;
+  FOR_ALL_BB_OPs(cgir_bb, op) {
+    Set_OP_unroll_bb(op, loop_bb);
+  }
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
 //if (unrolled) fprintf(stderr, "BB(%d) output unrolled %d\n", BB_id(cgir_bb), unrolled);
