@@ -403,24 +403,60 @@ Check_Allow_Reorder() {
 // determine if we can call the local scheduler again
 // on the block.
 //
+#ifdef TARG_ST
+// [CG]: We pass the basic block now, as rescheduling
+// decision is taken at BB granularity
+static BOOL
+Check_Allow_Reschedule(BB *bb)
+#else
 static BOOL
 Check_Allow_Reschedule()
+#endif
 {
+#ifdef TARG_ST
+  // [CG]: When LAO is enabled, rescheduling takes place only 
+  // if register_requirement > 1.5*(register avail)
+  // Rescheduling can be disabled by -Wb,-tt54:0x200
+  // Rescheduling can be forced under -Wb,-tt54:0x2000
 #ifdef LAO_ENABLED
-  if (Check_Allow_Reorder() &&
-      Trip_Count == 1 &&
-      !Get_Trace (TP_ALLOC, 0x0200) &&
-      !CG_LAO_optimizations) {
-    return TRUE;
+  if (!Check_Allow_Reorder()) return FALSE;
+  if (Trip_Count != 1) return FALSE;
+  if (Get_Trace (TP_ALLOC, 0x0200)) return FALSE;
+
+  if (!CG_LAO_optimizations) return TRUE;
+  
+  if (Get_Trace (TP_ALLOC, 0x20000)) return TRUE; /* Force even if LAO */
+
+  /* We estimate the registers request compared to the 
+     registers availability. If it is above a fixed threshold (1.5)
+     we allow rescheduling even after LAO prepass scheduler. */
+  BOOL allow = FALSE;
+  ISA_REGISTER_CLASS cl;
+  FOR_ALL_ISA_REGISTER_CLASS(cl) {
+    int n_request = LRA_Register_Request (bb, cl);
+    int n_avail = REGISTER_SET_Size(avail_set[cl]);
+    if (n_avail * 1.5  < n_request) {
+      DevWarn ("BB:%d rescheduled by LRA after LAO (lra_request:%d, lra_avail:%d)\n", BB_id(bb), n_request, n_avail);
+      allow = TRUE; break;
+    }
   }
+  return allow;
 #else
   if (Check_Allow_Reorder() &&
       Trip_Count == 1 &&
       !Get_Trace (TP_ALLOC, 0x0200)) {
     return TRUE;
   }
-#endif
   return FALSE;
+#endif
+#else
+  if (Check_Allow_Reorder() &&
+      Trip_Count == 1 &&
+      !Get_Trace (TP_ALLOC, 0x0200)) {
+    return TRUE;
+  }
+  return FALSE;
+#endif
 }
 
 //
@@ -1351,9 +1387,15 @@ Init_Fat_Point_Calculation(ISA_REGISTER_CLASS cl, INT opnum, BB *bb)
   // don't bother calculating fat points if we're just going to
   // reschedule
   //
+#ifdef TARG_ST
+  if (Check_Allow_Reschedule(bb)) {
+    return(FALSE);
+  }
+#else
   if (Check_Allow_Reschedule()) {
     return(FALSE);
   }
+#endif
   fat_point_regs_map = hTN_MAP_Create (&lra_pool);
   use_fat_point_regs = TRUE;
   fat_points = TYPE_MEM_POOL_ALLOC_N(FAT_POINTS_TYPE, &lra_pool, BB_length(bb) + 1);
@@ -3542,7 +3584,12 @@ Fix_LRA_Blues (BB *bb, TN *tn, HB_Schedule *Sched)
 
   // If this is the first attempt to spill for the bb, then try to 
   // reschedule while minimizing register pressure. 
-  if (Check_Allow_Reschedule()) {
+#ifdef TARG_ST
+   if (Check_Allow_Reschedule(bb))
+#else
+   if (Check_Allow_Reschedule())
+#endif
+     {
     if (Do_LRA_Trace(Trace_LRA_Spill)) {
       fprintf (TFile, "LRA_SPILL>> Out of Registers (BB:%d) trip:%d\nLRA_SPILL>>",
 	       BB_id(bb), Trip_Count);
