@@ -426,7 +426,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	}
 	bb_list.push_back(*bb_iter);
 	if (op_count >= LAO_OPS_LIMIT) {
-	  DevWarn("LAO_OPS_LIMIT exceeded (%d memory operations)\n", op_count);
+	  DevWarn("LAO_OPS_LIMIT exceeded (%d memory operations)", op_count);
 	  break;
 	}
       }
