@@ -586,6 +586,20 @@ OPCODE_To_INTRINSIC (
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown DIV opcode"));
     }
   }
+  else if (opr = OPR_REM) {
+    switch (rtype) {
+      case MTYPE_I4: id = INTRN_MODW; break;
+      case MTYPE_I8: id = INTRN_MODL; break;
+      case MTYPE_I5: id = INTRN_MODE; break;
+
+      case MTYPE_U4: id = INTRN_MODUW; break;
+      case MTYPE_U8: id = INTRN_MODUL; break;
+      case MTYPE_U5: id = INTRN_MODUE; break;
+
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown REM opcode"));
+    }
+  }
   else {
     FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle %s operator",
 		                                  OPERATOR_name(opr)));
