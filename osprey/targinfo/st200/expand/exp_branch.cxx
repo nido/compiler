@@ -286,14 +286,18 @@ Expand_Branch (
   FmtAssert( cond <= V_BR_LAST, ("unexpected variant in Expand_Branch"));
   FmtAssert( cond != V_BR_NONE, ("BR_NONE variant in Expand_Branch"));
 
+  if (Trace_Exp) {
+    fprintf (TFile, "<cgexp> branch cond = %lld\n", cond);
+  }
+
   // check for special case of second arg being zero.
   if (src2 != NULL && TN_is_zero(src2)) {
     switch (cond) {
       case V_BR_U8LT:	
       case V_BR_U4LT:	
 	cond = V_BR_NEVER; break;
-      case V_BR_U8GT:
-      case V_BR_U4GT:
+      case V_BR_U8GE:
+      case V_BR_U4GE:
 	cond = V_BR_ALWAYS; break;
     }
   }

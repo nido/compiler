@@ -52,11 +52,7 @@
 #include "errors.h"
 #include "erglob.h"
 #include "stab.h"
-#ifdef TARG_ST 
 #include "config_target.h"
-#else
-#include "config_targ.h"
-#endif
 #include "targ_sim.h"
 #include "targ_sim_body.h"
 

@@ -106,7 +106,11 @@ const TN_RELOCS_INFO TN_RELOCS_info[] = {
 TN*
 Gen_Predicate_TN()
 {
-  FmtAssert(FALSE,("Gen_Predicate_TN: predication not supported on this target"));
+  //
+  // We will generate a integer TN always, so we can conduct boolean
+  // arithmetic on it
+  //
+  return Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 }
 
 /* ====================================================================

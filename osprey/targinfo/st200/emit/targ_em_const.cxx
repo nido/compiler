@@ -60,8 +60,8 @@
 
 #define USE_STANDARD_TYPES 1 
 #include "defs.h"
-#include "targ_const.h"
-#include "targ_const_private.h"
+#include "symtab.h"
+#include "const.h"
 #include "erglob.h"		    /* EC_Inv_Mtype */
 #include "errors.h"		    /* Is_True(), ErrMsg(), etc. */
 #include "config_asm.h"		    /* ASM_CMNT, etc. */

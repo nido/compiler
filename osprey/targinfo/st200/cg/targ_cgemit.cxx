@@ -116,14 +116,7 @@ CGEMIT_Prn_Ent_In_Asm (
 void
 CGEMIT_Exit_In_Asm (ST *pu) 
 {
-#ifdef TARG_ST100
-  fprintf (Asm_File, "\t%s\t", AS_END);
-  EMT_Write_Qualified_Name(Asm_File, pu);
-  fprintf (Asm_File, "\n");
-#endif
-#ifdef TARG_ST200
   fprintf (Asm_File, "\t%s\n", AS_END);
-#endif
 }
 
 /* ====================================================================

@@ -37,11 +37,7 @@
 #include "erbe.h"
 #include "glob.h"
 #include "tracing.h"
-#ifdef TARG_ST
 #include "config_target.h"
-#else
-#include "config_targ.h"
-#endif
 #include "config.h"
 
 #include "symtab.h"
@@ -143,6 +139,25 @@ EETARG_Fixup_Exit_Code (
   if (!CG_gen_callee_saved_regs_mask) return;
 
   return;
+}
+
+/* =================================================================
+ *   EETARG_Callee_Saved_Regs_Mask_Size
+ *
+ *   Calculate the size of the save area needed for the callee
+ *   saved register mask.
+ * =================================================================
+ */
+INT
+EETARG_Callee_Saved_Regs_Mask_Size ()
+{
+  INT i;
+  INT size = 0;
+  UINT32 u20 = 0;
+
+  FmtAssert(FALSE,("EETARG_Callee_Saved_Regs_Mask_Size: not implemented"));
+
+  return size;
 }
 
 /* ====================================================================

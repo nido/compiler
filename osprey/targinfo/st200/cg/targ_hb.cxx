@@ -72,6 +72,13 @@ CGTARG_Check_OP_For_HB_Suitability (
   //  extern void dump_OP(const OP *op);
   //  fprintf (TFile, "CGTARG_Check_OP_For_HB_Suitability op \n");
   //  dump_OP (op);
+#ifdef IFCONV_IN_SSA
+  //
+  // Arthur: we won't if-convert all of'em
+  //
+  if (OP_memory(op))
+    return FALSE;
+#endif
 
   return TRUE; 
 }

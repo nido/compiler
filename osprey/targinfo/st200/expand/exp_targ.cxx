@@ -94,6 +94,7 @@ static BOOL Disable_Const_Mult_Opt = FALSE;
  * but for now we can use other routine that create a real dup tn. */
 #define DUP_TN(tn)	Dup_TN_Even_If_Dedicated(tn)
 
+#if 0
 /* ====================================================================
  *   WN_intrinsic_return_ty
  *
@@ -181,6 +182,7 @@ WN_intrinsic_return_ty (
 
    return ret_ty;
 } /* WN_intrinsic_return_ty */
+#endif
 
 /* ====================================================================
  *   Pick_Imm_Form_TOP (regform)
@@ -2345,7 +2347,7 @@ Expand_Select (
   TN *branch_tn;
   TN *reg_tn = true_tn;
   TOP select;
-  const BOOL is_float = MTYPE_is_float(mtype);
+  //const BOOL is_float = MTYPE_is_float(mtype);
 
   if (TN_register_class(cond_tn) != ISA_REGISTER_CLASS_branch) {
     branch_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
@@ -2807,42 +2809,6 @@ Exp_COPY (
 {
   Expand_Copy (tgt_tn, NULL, src_tn, ops);
   return;
-}
-
-/* ======================================================================
- *   Get_Intrinsic_Size_Mtype
- * ======================================================================
- */
-static TYPE_ID
-Get_Intrinsic_Size_Mtype (
-  INTRINSIC id
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  switch (id) {
-
-  default:
-    FmtAssert(FALSE, ("Unexpected intrinsic %d", id));
-    /*NOTREACHED*/
-  }
-}
-
-/* ======================================================================
- *   Intrinsic_Returns_New_Value
- * ======================================================================
- */
-static BOOL
-Intrinsic_Returns_New_Value (
-  INTRINSIC id
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  switch (id) {
-  default:
-    return FALSE;
-  }
 }
 
 /* ======================================================================

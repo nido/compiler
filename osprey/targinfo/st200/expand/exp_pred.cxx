@@ -74,14 +74,23 @@ Exp_Pred_Set (
   TOP top;
 
   Is_True((val & -2) == 0, ("can't set a predicate to %d", val));
+  Is_True(cdest == NULL,("can't set two predicates at a time"));
 
-  FmtAssert(FALSE,("Exp_Pred_Set: not implemented"));
-#if 0
-  // Do not make cdest
+  // Default predicate TN type is branch
   if (dest == NULL) dest = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
-  top = (val == 0) ? TOP_GP32_CLRG_GT_BR : TOP_GP32_SETG_GT_BR;
-  Build_OP(top, dest, True_TN, ops);
-#endif
+
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
+    top = (val == 0) ? TOP_cmpne_r_b : TOP_cmpeq_r_b;
+  }
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+    top = (val == 0) ? TOP_cmpne_r_r : TOP_cmpeq_r_r;
+  }
+  else {
+    FmtAssert(FALSE,("wrong register class"));
+  }
+
+  Build_OP(top, dest, Zero_TN, Zero_TN, ops);
+
   return;
 }
 
@@ -179,25 +188,41 @@ Exp_Generic_Pred_Calc (
   OPS* ops
 )
 {
-  TOP pred_top;
+  Is_True(TN_register_class(result1) == ISA_REGISTER_CLASS_integer,
+	  ("wrong register class"));
+  if (result2 != NULL)
+    Is_True(TN_register_class(result2) == ISA_REGISTER_CLASS_integer,
+	    ("wrong register class"));
 
-  FmtAssert(FALSE,("Not Implemented"));
- 
   switch (ctype) {
   case COMPARE_TYPE_or:
-
+    //
+    // sets result1 and result2 true if qual_pred is true
+    //
+    Build_OP(TOP_slctf_i, result1, qual_pred, result1, 
+	                                  Gen_Literal_TN(1,4), ops);
+    if (result2 != NULL)
+      Build_OP(TOP_slctf_i, result2, qual_pred, result2, 
+	                                  Gen_Literal_TN(1,4), ops);
     break;
-  case COMPARE_TYPE_and:
 
+  case COMPARE_TYPE_and:
+    //
+    // sets result1 and result2 false if qual_pred is true
+    //
+    Build_OP(TOP_slct_i, result1, qual_pred, Zero_TN, result1, ops);
+    if (result2 != NULL)
+      Build_OP(TOP_slct_i, result2, qual_pred, Zero_TN, result2, ops);
     break;
   }
-  Build_OP(pred_top, result1, result2, qual_pred, Zero_TN, Zero_TN, ops);
+
+  return;
 }
 
 /* ====================================================================
  *   Exp_True_False_Preds_For_Block
  *
- * Setup the true_tn and false_tn for a BB. The true_tn is a TN such that
+ * Setup the true_tn for a BB. The true_tn is a TN such that
  * it is true if the branch at the end of a BB is taken. If it false
  * through the false_tn will be set true.
  * 
@@ -223,7 +248,8 @@ void
 Exp_True_False_Preds_For_Block (
   BB *bb, 
   TN* &true_tn, 
-  TN * &false_tn
+  TN * &false_tn,
+  VARIANT *br_variant
 ) 
 {
    COMPARE_TYPE comp_type;
@@ -232,54 +258,51 @@ Exp_True_False_Preds_For_Block (
    OP* compare_op;
    OP* br_op = BB_branch_op(bb);
    BOOL reusing_tns;
-   VARIANT branch_variant;
+   //VARIANT branch_variant;
    DEF_KIND kind;
-
-  FmtAssert(FALSE,("Not Implemented"));
-
 
    true_tn = NULL;
    false_tn = NULL;
    reusing_tns = FALSE;
    
-   branch_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
-   Is_True(branch_variant == V_BR_P_TRUE,("Can't get predicates for block %d",BB_id(bb)));
+   *br_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
+   //Is_True(*br_variant == V_BR_P_TRUE || *br_variant == V_BR_P_FALSE,
+   //	   ("Can't get predicates for block %d",BB_id(bb)));
 
    /* Try to find the compare op */
    compare_op = TN_Reaching_Value_At_Op(tn1, br_op, &kind, TRUE);
-   /* if compare_op is in a different BB, be conservative, can't always reuse
-      the predicate, due to other non-satisfying predicate conditions, 804702*/
-   if (compare_op && kind == VAL_KNOWN && OP_bb(compare_op) == OP_bb(br_op)) {
-     if (!OP_cond_def(compare_op)) {
-       //
-       // This is the 99% case (maybe the 100% case, given the current
-       // generation schemes). The result predicates are 100% defined, so we
-       // can safely replace the opcode with the unconditional variant, and
-       // then return the two result predicates in the appropriate slots.
-       //
-       reusing_tns = TRUE;
-       OP_Change_Opcode(compare_op,CGTARG_Get_unc_Variant(OP_code(compare_op)));
-       Set_OP_cond_def_kind(compare_op,OP_ALWAYS_UNC_DEF);
 
+   /* 
+    * if compare_op is in a different BB, be conservative, can't 
+    * always reuse the predicate, due to other non-satisfying 
+    * predicate conditions, 804702
+    */
+   if (compare_op && kind == VAL_KNOWN && OP_bb(compare_op) == OP_bb(br_op)) {
+
+     reusing_tns = TRUE;
+
+     // Return the same TN in both: true/false containers.
+     // Normally, we should distinguish, but Analyze_Branch() does 
+     // not work properly
+     if (V_false_br(*br_variant)) {
+       // should really look for 'tn2' but until CFLOW is fixed ...
+       //false_tn = tn2;
+       false_tn = tn1;
+     }
+     else {
        true_tn = tn1;
-       // Get the other result as the false_tn
-       if (OP_result(compare_op,1) != tn1) {
-	 false_tn = OP_result(compare_op,1);
-       } else {
-	 false_tn = OP_result(compare_op,0);
-       }
      }
    }
 
-   if (!reusing_tns) {
-     OPS ops = OPS_EMPTY;
-     true_tn = tn1;
+   FmtAssert(reusing_tns, ("not reusing tns in BB %d",BB_id(bb)));
+
+#if 0
      false_tn = Gen_Predicate_TN();
      Exp_Pred_Set(false_tn, True_TN, 1, &ops);
      Exp_Generic_Pred_Calc(false_tn,True_TN,COMPARE_TYPE_and, true_tn, &ops);
      BB_Insert_Ops(bb,br_op,&ops,TRUE);
      DevWarn("inserting inverse predicate in BB %d",BB_id(bb));
-   }
+#endif
    
    return;
 }

@@ -3350,6 +3350,10 @@ mul_32_16_sequence (
   else if (signed0 == SIGN_EXT)
     new_opcode = signed_mul_opcode[hilo0][hilo1];
 
+  // Convert to an immediate form if tn1 is an immediate
+  if (new_opcode != TOP_UNDEFINED && TN_is_constant(tn1))
+    new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(tn1));
+
   if (new_opcode == TOP_UNDEFINED)
     return FALSE;
 
@@ -3568,6 +3572,10 @@ mul_fix_operands (
       }
     }
   }
+
+  // Convert to an immediate form if tn1 is an immediate
+  if (new_opcode != TOP_UNDEFINED && TN_is_constant(tn1))
+    new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(tn1));
 
   if (new_opcode == TOP_UNDEFINED)
     return FALSE;

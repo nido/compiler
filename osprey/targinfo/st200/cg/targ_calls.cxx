@@ -37,11 +37,7 @@
 #include "erbe.h"
 #include "glob.h"
 #include "tracing.h"
-#ifdef TARG_ST 
 #include "config_target.h"
-#else
-#include "config_targ.h"
-#endif
 #include "config.h"
 
 #include "symtab.h"
@@ -143,24 +139,5 @@ CGTARG_Get_FP_Incr (
   FmtAssert(OP_code(fp_adj) == TOP_spadjust,
 	             ("CGTARG_Get_SP_Incr: not TOP_spadjust"));
   return OP_opnd(fp_adj, 1);
-}
-
-/* =================================================================
- *   CGTARG_Callee_Saved_Regs_Mask_Size
- *
- *   Calculate the size of the save area needed for the callee
- *   saved register mask.
- * =================================================================
- */
-INT
-CGTARG_Callee_Saved_Regs_Mask_Size ()
-{
-  INT i;
-  INT size = 0;
-  UINT32 u20 = 0;
-
-  FmtAssert(FALSE,("CGTARG_Callee_Saved_Regs_Mask_Size: not implemented"));
-
-  return size;
 }
 

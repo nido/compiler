@@ -47,6 +47,9 @@ void Configure_CG_Target() {
   // ??
   CG_enable_thr = FALSE;
  
+  // Disable loop optimizations by default until debugged
+  CG_enable_loop_optimizations = FALSE;
+
   // Do not force if-conversion for loops, see CG_LOOP_Optimize()
   CG_LOOP_force_ifc = 0;
  
@@ -89,9 +92,21 @@ void Configure_CG_Target() {
   LRA_do_reorder = FALSE;
 
   // HB stuff: everything's OFF by default
+#ifdef IFCONV_IN_SSA
+  // OFF until we know it's worth it
+  //HB_formation = TRUE; 
+  // Superblock formation -- not implemented right now
   HB_superblocks = TRUE;
+  // Do simple hammock if-conversion
+  HB_simple_ifc = TRUE;
+  // Do not skip hammocks -- originally designed to go around a 
+  // performance bug in IA64
+  HB_skip_hammocks = FALSE;      /* do not skip hammock if-conv. */
+#else
+  HB_superblocks = TRUE;         /* make superblocks */
   HB_complex_non_loop = TRUE;
-  HB_skip_hammocks = FALSE;
+  HB_skip_hammocks = FALSE;      /* do not skip hammock if-conv. */
+#endif
 
   // May set this temporary OFF for development
   CIO_enable_copy_removal = FALSE;

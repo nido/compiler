@@ -77,10 +77,6 @@
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 
-#if 0
-mTOP CGTARG_Inter_RegClass_Copy_Table[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_CLASS_MAX+1][2];
-#endif
-
 static TOP CGTARG_Invert_Table[TOP_count+1];
 
 /* ====================================================================
@@ -144,7 +140,9 @@ CGTARG_Preg_Register_And_Class (
  */
 void
 Make_Branch_Conditional (
-  BB *bb
+  BB *bb,
+  TN *pred_tn,     // cond TN for branching
+  BOOL cond        // whether branches on cond TN TRUE or FALSE
 )
 {
   OP *new_br;
@@ -153,7 +151,23 @@ Make_Branch_Conditional (
 
   if (!br_op) return;
 
-  FmtAssert(FALSE,("Make_Branch_Conditional: not implemented"));
+  switch (OP_code(br_op)) {
+  case TOP_goto:
+    new_top = cond ? TOP_br : TOP_brf;
+    break;
+  case TOP_igoto:
+    new_top = cond ? TOP_br : TOP_brf;
+    break;
+  default:
+    FmtAssert(FALSE,("Can't handle %s", TOP_Name(OP_code(br_op))));
+    return;
+  }
+
+  // Make a tmp cond register so we can replace it later
+  new_br = Mk_OP(new_top, pred_tn, OP_opnd(br_op,0));
+  OP_srcpos(new_br) = OP_srcpos(br_op);
+  BB_Insert_Op_After(bb, br_op, new_br);
+  BB_Remove_Op(bb, br_op);
 }
 
 /* ====================================================================
@@ -281,6 +295,12 @@ CGTARG_Branch_Info (
 
 /* ====================================================================
  *   CGTARG_Analyze_Branch
+ *
+ *   'tn1' is TN that is set to TRUE if the branch is taken;
+ *   'tn2' is TN that is set to TRUE is the branch falls through.
+ *   TODO: but CFLOW crushes, so for now always return the cond. TN
+ *         in 'tn1'.
+ *   TODO 2: shouldn't they all be V_BR_P_TRUE ?
  * ====================================================================
  */
 INT 
@@ -293,12 +313,21 @@ CGTARG_Analyze_Branch (
   INT variant;
   TOP top = OP_code(br);
 
+  *tn1 = NULL;
+  *tn2 = NULL;
+
   switch (top) {
   case TOP_br:
     variant = V_BR_P_TRUE;
+    Set_V_true_br(variant);
+    *tn1 = OP_opnd(br, 0);
     break;
   case TOP_brf:
     variant = V_BR_P_FALSE;
+    Set_V_false_br(variant);
+    // Should really return 'tn2' but until CFLOW is fixed ...
+    //*tn2 = OP_opnd(br, 0);
+    *tn1 = OP_opnd(br, 0);
     break;
 
   default:
@@ -306,9 +335,6 @@ CGTARG_Analyze_Branch (
     variant = V_BR_NONE;
     break;
   }
-
-  *tn1 = OP_opnd(br, 0);
-  *tn2 = NULL;
 
   return variant;
 }
@@ -1415,46 +1441,6 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 }
 
 /* ====================================================================
- *   CGTARG_Add_Noop_Group
- *
- *   Fill a clock cycle following 'op' with noops.
- * ====================================================================
- */
-void
-CGTARG_Add_Noop_Group (
-  OP *op,
-  TI_BUNDLE *bundle,
-  VECTOR *bundle_vector
-)
-{
-  INT template_bit = TI_BUNDLE_Return_Template(bundle);
-  FmtAssert (template_bit != -1, ("Illegal template encoding"));
-
-  INT i;
-  FOR_ALL_SLOT_MEMBERS(bundle, i) {
-    //
-    // Advance until the next after 'op' bundle slot found
-    //
-    if (!TI_BUNDLE_slot_filled(bundle, i)) {
-      OP *noop = Mk_OP(TOP_nop);
-      BB_Insert_Op_After(OP_bb(op), op, noop);
-      OP_scycle(noop) = -1;
-      Set_OP_bundled (noop);
-      TI_BUNDLE_Reserve_Slot (bundle, i, 
-				   ISA_EXEC_Slot_Prop(template_bit, i));
-
-      // Set end group and reset bundle vector:
-      Set_OP_end_group(noop);
-      VECTOR_Reset (*bundle_vector);
-
-      break;
-    }
-  }
-
-  return;
-}
-
-/* ====================================================================
  *   CGTARG_Handle_Bundle_Hazard
  *
  *   Handle all target-specific bundle hazards in this routine.
@@ -2260,17 +2246,6 @@ void
 CGTARG_Initialize ()
 {
   INT32 i;
-
-#if 0
-  /* Initialize CGTARG_Inter_RegClass_Copy_Table: */
-  for (i = 0; i <= ISA_REGISTER_CLASS_MAX; ++i) {
-    INT j;
-    for (j = 0; j <= ISA_REGISTER_CLASS_MAX; ++j) {
-      CGTARG_Inter_RegClass_Copy_Table[i][j][FALSE] = TOP_UNDEFINED;
-      CGTARG_Inter_RegClass_Copy_Table[i][j][TRUE] = TOP_UNDEFINED;
-    }
-  }
-#endif
 
   /* TODO: tabulate in the arch data base */
 

@@ -1401,12 +1401,7 @@ Remove_Branches(HB*                  hb,
        TN *inverse_pred,*current_pred;
        // This will either grab what's already there, or else create a new
        // false predicate if it isn't there
-#ifdef TARG_ST
-       VARIANT br_variant;
-       Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred, &br_variant);
-#else
        Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred);
-#endif
        // Remove the current branch
        BB_Remove_Branch(bb);
        Unlink_Pred_Succ(bb,branch_bb);
@@ -1451,12 +1446,7 @@ Remove_Branches(HB*                  hb,
 	   
 	 // This will either grab what's already there, or else create a new
 	 // false predicate if it isn't there
-#ifdef TARG_ST
-	 VARIANT br_variant;
-	 Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred, &br_variant);
-#else
 	 Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred);
-#endif
 	 fall_thru_goto = Make_Fall_Thru_Goto(bb,fall_thru,inverse_pred,
 					      block_freq * ft_goto_prob,
 					      ft_goto_prob,
@@ -1583,9 +1573,6 @@ struct equiv_classes {
 struct control_dep_data {
   TN* true_tn;
   TN* false_tn;
-#ifdef TARG_ST
-  VARIANT br_variant;
-#endif
 
   vector <TN*> true_or_tns;
   vector <TN*> false_or_tns;
@@ -1692,11 +1679,7 @@ Insert_ORs_For_BB(BB *bb, control_dep_data *bb_cdep_data)
 static void
 Setup_True_False_Predicates(BB *bb, control_dep_data *bb_cdep_data)
 {
-#ifdef TARG_ST
-  Exp_True_False_Preds_For_Block(bb, bb_cdep_data->true_tn, bb_cdep_data->false_tn, &bb_cdep_data->br_variant);
-#else
   Exp_True_False_Preds_For_Block(bb, bb_cdep_data->true_tn, bb_cdep_data->false_tn);
-#endif
 }
 
 /////////////////////////////////////
@@ -1798,13 +1781,11 @@ Insert_Predicates(
 	//
 	if (bb_cdep_data->true_tn != NULL) {
 	  ec->pred_tn = bb_cdep_data->true_tn;
-	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
 	  // BB corresponds to pred_tn TRUE/FALSE
 	  //ec->br_dir = TRUE;
 	}
 	else {
 	  ec->pred_tn = bb_cdep_data->false_tn;
-	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
 	  //ec->br_dir = FALSE;
 	}
 	ec->br_dir = TRUE;
@@ -1815,12 +1796,10 @@ Insert_Predicates(
 #ifdef TARG_ST
 	if (bb_cdep_data->false_tn != NULL) {
 	  ec->pred_tn = bb_cdep_data->false_tn;
-	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
 	  //ec->br_dir = TRUE;
 	}
 	else {
 	  ec->pred_tn = bb_cdep_data->true_tn;
-	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
 	  //ec->br_dir = FALSE;
 	}
 	ec->br_dir = FALSE;

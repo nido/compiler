@@ -103,6 +103,8 @@
 #include "quadsim.h"
 #include "W_math.h"
 
+#if 0 /* target-independent now */
+
 /* For fp_class */
 
 #define DMANTWIDTH      52
@@ -6029,3 +6031,4 @@ TCON Targ_IntrinsicOp ( UINT32 intrinsic, TCON c[], BOOL *folded)
    return (c0);
 }
 
+#endif /* 0 */
