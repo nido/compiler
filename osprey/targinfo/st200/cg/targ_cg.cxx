@@ -966,19 +966,15 @@ void CGTARG_Load_From_Memory (
   TYPE_ID mtype = TY_mtype(ST_type(mem_loc));
 
   if (TN_register_class(tn) == ISA_REGISTER_CLASS_branch) {
-#if 0
     /* 
      * Since we can't directly load a predicate TN, first load into
      * an integer register and then set the predicate by checking for
      * a non-zero value.
      */
     TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
-    Exp_Load (mtype, mtype, temp_tn, mem_loc, 0, ops, V_NONE);
-    Build_OP (TOP_GP32_NEW_GT_BR_DR_U8, tn, True_TN, 
-                          temp_tn, Gen_Literal_TN(0, 4), ops);
-#else
-    FmtAssert(FALSE,("CGTARG_Load_From_Memory: not implemented"));
-#endif
+    Exp_Load (MTYPE_I4, MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    Build_OP(TOP_mtb, tn, temp_tn, ops);
+    DevWarn("Spill of branch register: reload\n");
   }
   else {
     /* 
@@ -999,17 +995,14 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
   TYPE_ID mtype = TY_mtype(ST_type(mem_loc));
 
   if (TN_register_class(tn) == ISA_REGISTER_CLASS_branch) {
-#if 0
     /* 
      * Since we can't directly store a predicate TN, first copy to
      * an integer register and then store.
      */
     TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
-    Build_OP (TOP_GP32_BOOL_GT_DR_BR, temp_tn, True_TN, tn, ops);
-    Exp_Store (mtype, temp_tn, mem_loc, 0, ops, V_NONE);
-#else
-    FmtAssert(FALSE,("CGTARG_Store_To_Memory: not implemented"));
-#endif
+    Build_OP(TOP_mfb, temp_tn, tn, ops);
+    Exp_Store (MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    DevWarn("Spill of branch register: store\n");
   }
   else {
     /* 
