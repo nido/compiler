@@ -709,7 +709,10 @@ inline BOOL CGTARG_Can_Predicate_Branches() {
   return PROC_has_predicate_branches(); 
 }
 inline BOOL CGTARG_Can_Predicate() { 
-  return (PROC_is_ia64_predication() || PROC_is_select()); 
+  return PROC_is_ia64_predication(); 
+}
+inline BOOL CGTARG_Can_Select() { 
+  return PROC_is_select(); 
 }
 
 extern TOP CGTARG_Parallel_Compare(OP* cmp_op, COMPARE_TYPE ctype);
