@@ -50,8 +50,8 @@
 // =======================================================================
 // =======================================================================
 
-#include <alloca.h>
-#include <math.h>
+#include "W_alloca.h"
+#include "W_math.h"
 #include "defs.h"
 #include "config.h"
 #include "config_TARG.h"
@@ -518,7 +518,7 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 
   FOR_ALL_BB_OPs_FWD (bb, op) {
     opsch = TYPE_MEM_POOL_ALLOC (OPSCH, pool);
-    bzero (opsch, sizeof (OPSCH));
+    BZERO (opsch, sizeof (OPSCH));
     OPSCH_lstart(opsch) = 0x7fff;
     BB_OP_MAP bb_map = (BB_OP_MAP) BB_MAP_Get(value_map, bb);
     BB_OP_MAP_Set (bb_map, op, opsch);
