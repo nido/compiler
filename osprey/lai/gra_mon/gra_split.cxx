@@ -113,6 +113,9 @@ static char *rcs_id = "$Source$ $Revision$";
 #include "cgir.h"
 #include "cg_region.h"
 #include "cg_spill.h"
+#ifdef TARG_ST
+#include "cgtarget.h"         /* for DEFAULT_STORE_COST */
+#endif
 #include "gtn_universe.h"
 #include "gtn_set.h"
 #include "cg_flags.h"
