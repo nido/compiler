@@ -242,21 +242,33 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 
       case MTYPE_I2:
       case MTYPE_U2:
+#if 0
+        /* (cbr) can happen, correct with packed attribute. multiple loads will
+           be issued by Expand_Misaligned_Stores */
 	FmtAssert((loc % 2) == 0, ("unaligned access"));
+#endif
 	Emit_Repeated_Constant ( fl, AS_HALF, TCON_v0(tc) & 0xffff, rc, 8);
 	rc = 0;
 	break;
 
       case MTYPE_I4:
       case MTYPE_U4:
+#if 0
+        /* (cbr) can happen, correct with packed attribute. multiple loads will
+           be issued by Expand_Misaligned_Stores */
 	FmtAssert((loc % 4) == 0, ("unaligned access"));
+#endif
 	Emit_Repeated_Constant ( fl, AS_WORD, TCON_v0(tc), rc, 4);
 	rc = 0;
 	break;
 
       case MTYPE_I8:
       case MTYPE_U8:
+#if 0
+        /* (cbr) can happen, correct with packed attribute. multiple loads will
+           be issued by Expand_Misaligned_Stores */
 	FmtAssert((loc % 8) == 0, ("unaligned access"));
+#endif
 #ifdef MULTIFLOW_SHIT_STILL_NOT_WORKING
 	{
 	  INTSC this_rc;
