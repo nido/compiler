@@ -4031,7 +4031,6 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	    if (stride != 0 && (unrolling % stride) != 0) {
 	      if (Get_Trace(TP_CGLOOP, 2))
 		fprintf(TFile, "<cgpref> pref pruned at unrolling %d.\n", unrolling);
-	      fprintf(stderr, "unroll_multi_bb: <cgpref> pref pruned at unrolling %d.\n", unrolling);
 	      continue;
 	    }
 	  }
