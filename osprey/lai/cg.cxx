@@ -674,8 +674,8 @@ CG_Generate_Code(
 	for (hbi = HB_list.begin(); hbi != HB_list.end(); hbi++) {
 	  LAO_optimize(*hbi, LAO_TraceSchedule);
 	}
-      }
 #endif
+      }
 #endif
 
     if (!Get_Trace (TP_CGEXP, 1024))
