@@ -2291,8 +2291,16 @@ Expand_Compare_And_Select (
     case V_BR_I4NE:
       mtype = MTYPE_I4;
       break;
+    case V_BR_U4GE:
+    case V_BR_U4GT:
+    case V_BR_U4LE:
+    case V_BR_U4LT:
+    case V_BR_U4EQ:
+    case V_BR_U4NE:
+      mtype = MTYPE_U4;
+      break;
   default:
-    FmtAssert(FALSE,("Not Implemented"));
+    FmtAssert(FALSE,("Not Implemented variant %d", (int)variant));
   }
 
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
@@ -2338,7 +2346,7 @@ Expand_Select (
   if (TN_has_value(true_tn)) {
     if (TN_has_value(false_tn)) {
       reg_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-      Build_OP (TOP_mov_r, reg_tn, true_tn, ops);      
+      Build_OP (TOP_mov_r, reg_tn, true_tn, ops);
     } else {
       reg_tn = false_tn;
       false_tn = true_tn;
