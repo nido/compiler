@@ -572,9 +572,9 @@ CG_Generate_Code(
 #ifdef SUPPORTS_SELECT
     if (CG_enable_ssa && CG_enable_select) {
       // Perform select generation (partial predication if-conversion). 
-      Start_Timer(T_Select);
+      Start_Timer(T_Select_CU);
       Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
-      Stop_Timer(T_Select);
+      Stop_Timer(T_Select_CU);
       if (frequency_verify)
 	FREQ_Verify("Select Conversion");
       Check_for_Dump(TP_SELECT, NULL);

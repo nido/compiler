@@ -26,6 +26,7 @@
 #include "cgtarget.h"
 #include "cgexp.h"
 #include "data_layout.h"
+#include "timing.h"
 
 #include "annotations.h"
 #include "cg_dep_graph.h"
@@ -1046,6 +1047,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     CGIR_print(TFile);
   }
 #endif
+  Start_Timer( T_LAO_Interface_CU );
+  // 
   //
   // Get stack model
   int stackmodel = 
@@ -1122,10 +1125,22 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
       }
     }
   }
+  Stop_Timer( T_LAO_Interface_CU );
+  //
+  if (lao_optimizations & Optimization_PrePass_Mask) Start_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & Optimization_RegAlloc_Mask) Start_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & Optimization_PostPass_Mask) Start_Timer( T_LAO_POST_CU );
   //
   unsigned optimizations = LAI_Interface_optimize(interface, lao_optimizations);
+  //
+  if (lao_optimizations & Optimization_PrePass_Mask) Stop_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & Optimization_RegAlloc_Mask) Stop_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & Optimization_PostPass_Mask) Stop_Timer( T_LAO_POST_CU );
+  //
   if (optimizations != 0) {
+    Start_Timer( T_LAO_Interface_CU );
     LAI_Interface_updateCGIR(interface, callback);
+    Stop_Timer( T_LAO_Interface_CU );
 #ifdef Is_True_On
     if (GETENV("CGIR_PRINT")) {
       fprintf(TFile, "*** CGIR After LAO optimize ***\n");
