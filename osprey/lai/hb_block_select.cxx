@@ -33,7 +33,7 @@
 */
 
 
-#include <math.h>
+#include "W_math.h"
 
 #include "defs.h"
 #include "config.h"
