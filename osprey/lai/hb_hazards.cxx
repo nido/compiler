@@ -2009,7 +2009,10 @@ NOPs2Goto (
   goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 4));
   BB_Insert_Op(OP_bb(op), op, goto_op, FALSE);
   
-  OP_scycle(goto_op) = OP_scycle(OP_prev(op));
+  // It is guarantee that OP_scyle(op) is correct in case it is the
+  // last OP of the basic block, while OP_scycle(OP_prev(op)) may be
+  // -1.
+  OP_scycle(goto_op) = OP_scycle(op)-1;
   Set_OP_bundled (goto_op);
   Set_OP_end_group(goto_op);
 
