@@ -564,7 +564,7 @@ CG_Generate_Code(
 	if (frequency_verify)
 	  FREQ_Verify("Select Formation");
       }
-      draw_CFG();        
+      draw_CFG();
 #endif
 
 #ifdef TARG_ST
@@ -660,6 +660,12 @@ CG_Generate_Code(
       }
 #endif
     }
+
+#ifdef TARG_ST200
+      if (HB_force_hyperblocks) {
+        HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+      }
+#endif
 
     if (!Get_Trace (TP_CGEXP, 1024))
       Reuse_Temp_TNs = TRUE;	/* for spills */
