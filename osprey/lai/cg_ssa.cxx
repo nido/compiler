@@ -1138,9 +1138,6 @@ ssa_init () {
   if (!initialized) {
     MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
     MEM_POOL_Initialize (&tn_map_pool, "tn map pool", TRUE);
-    // So that SSA_Make_Consistent() can Pop it in order to
-    // clean up memory
-    MEM_POOL_Push(&tn_map_pool);
     initialized = TRUE;
   }
 
@@ -1178,6 +1175,12 @@ SSA_Enter (
   // Corresponding Pop is done by SSA_Remove_Phi_Nodes()
   //
   MEM_POOL_Push (&ssa_pool);
+
+  // [FdF, CM 20030926] Moved from ssa_init to this point
+  // so that the pushes/popes are well-balanced
+  // So that SSA_Make_Consistent() can Pop it in order to
+  // clean up memory
+  MEM_POOL_Push(&tn_map_pool);
 
   //
   // initialize phi_op_map, deleted by the SSA_Remove_Phi_Nodes()
