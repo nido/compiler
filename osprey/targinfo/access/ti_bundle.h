@@ -212,6 +212,11 @@ typedef struct ti_bundle {
 #define FOR_ALL_SLOT_MEMBERS(bundle, i) \
      for (i = 0; i < TI_BUNDLE_slot_count(bundle); ++i)
 
+#ifdef TARG_ST
+#define FOR_ALL_SLOT_MEMBERS_IN_REVERSE(bundle, i) \
+     for (i = TI_BUNDLE_slot_count(bundle) - 1; i >= 0; --i)
+#endif
+
 inline BOOL
 TI_BUNDLE_Stop_Bit_Present(TI_BUNDLE *bundle) {
   INT i;

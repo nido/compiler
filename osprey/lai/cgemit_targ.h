@@ -32,7 +32,10 @@
 
 */
 
-
+#ifdef TARG_ST200
+// [SC]: Control emission of assembler nop insertion directives.
+extern BOOL CG_nop_insertion_directives;
+#endif
 
 // whether to use the base st for the reloc.
 extern BOOL CGEMIT_Use_Base_ST_For_Reloc (INT reloc, ST *st);
@@ -87,6 +90,12 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 #ifdef TARG_ST
 // generate procedure end directive
 extern void CGEMIT_Exit_In_Asm (ST *pu);
+
+// generate asm directives just before asm
+extern void CGEMIT_Asm_String_Prefix (OP *op, INT32 *PC);
+
+// generate asm directives just after asm
+extern void CGEMIT_Asm_String_Suffix (OP *op, INT32 *PC);
 
 // Called at begining of file.
 extern void CGEMIT_Begin_File_In_Asm (void);

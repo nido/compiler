@@ -981,10 +981,10 @@ static BOOL NOPs_to_GOTO (
     LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
 
     goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab, 0));
-    BB_Insert_Op(bb, nop_second, goto_op, FALSE);
+    BB_Insert_Op(OP_bb(op), nop_second, goto_op, FALSE);
   
-    BB_Remove_Op(bb, nop_first);
-    BB_Remove_Op(bb, nop_second);
+    BB_Remove_Op(OP_bb(op), nop_first);
+    BB_Remove_Op(OP_bb(op), nop_second);
 
     OP_scycle(goto_op) = -1;
     Set_OP_bundled (goto_op);
@@ -1012,9 +1012,6 @@ Fill_Cycle_With_Noops (
   OP *op,
   TI_BUNDLE *bundle,
   VECTOR *bundle_vector
-#ifdef TARG_ST200 // [CL]: used to track alignment. pc counts instruction words, not bytes
-  , INT32* pc
-#endif
 )
 {
   INT template_bit = TI_BUNDLE_Return_Template(bundle);
@@ -1030,7 +1027,8 @@ Fill_Cycle_With_Noops (
       // CL: only add a nop if the bundle is currently empty
       // FdF: For st221, no need for empty bundles since the hardware
       // takes care of the latency.
-      if (i==0) {
+      INT dummy;
+      if (TI_BUNDLE_Is_Empty(bundle, &dummy)) {
 	if (FORCE_NOOPS) {
 #endif
       OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
@@ -1046,8 +1044,6 @@ Fill_Cycle_With_Noops (
       Set_OP_end_group(noop);
 
 #ifdef TARG_ST200 // [CL]
-      if (!CG_NOPs_to_GOTO || !NOPs_to_GOTO(bb, op))
-	*pc += 1;
 	}
       }
       else {
@@ -1060,11 +1056,6 @@ Fill_Cycle_With_Noops (
 
       break;
     }
-#ifdef TARG_ST200 // [CL]
-    else {
-      *pc += 1;
-    }
-#endif
 
   }
 
@@ -1084,9 +1075,6 @@ Handle_Latency (
   INT estart, 
   TI_BUNDLE *bundle, 
   VECTOR *bundle_vector
-#ifdef TARG_ST200 // [CL] keep track of alignment
-  , INT32* pc
-#endif
 )
 {
   INT ti_err = TI_RC_OKAY;
@@ -1113,11 +1101,7 @@ Handle_Latency (
     }
 
     // This adds a noop group to the bundle
-#ifdef TARG_ST200 // [CL] keep track of alignment
-    Fill_Cycle_With_Noops (OP_bb(op), op, bundle, bundle_vector, pc);
-#else
     Fill_Cycle_With_Noops (OP_bb(op), op, bundle, bundle_vector);
-#endif
 
     // if the <bundle> is full, reset it
     if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
@@ -1134,27 +1118,6 @@ Handle_Latency (
 
   return;
 }
-
-#ifdef TARG_ST200 // [CL] used to keep track of alignment
-/* ====================================================================
- * Number_Of_Slots_In_Bundle
- *
- * Returns the number of slots used in a bundle.
- * ====================================================================
- */
-static INT Number_Of_Slots_In_Bundle(TI_BUNDLE *bundle)
-{
-  INT i, count=0;
-  FOR_ALL_SLOT_MEMBERS(bundle, i) {
-    if (!TI_BUNDLE_slot_filled(bundle, i)) {
-      break;
-    } else {
-      count++;
-    }
-  }
-  return count;
-}
-#endif
 
 #ifdef LAO_ENABLED
 #define SUPERBLOCK_ENABLED
@@ -1264,9 +1227,6 @@ Handle_Bundle_Hazards(
   OP *op, 
   TI_BUNDLE *bundle, 
   VECTOR *bundle_vector
-#ifdef TARG_ST200 // [CL] keep track of alignment
-  , INT32* pc
-#endif
 )
 {
   BOOL slot_avail = FALSE;
@@ -1297,9 +1257,8 @@ Handle_Bundle_Hazards(
 
   // if black_box_op, set the end_group market and quit now.
   if (!bundling_reqd) {
-#ifdef TARG_ST200 // [CL] if necessary, fill gaps with nops, then update pc
+#ifdef TARG_ST200 // [CL] if necessary, fill gaps with nops
     CGTARG_Finish_Bundle(op, bundle);
-    *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
     Set_OP_end_group(op);
 #ifdef TARG_ST200 // CL: bundles have variable length
@@ -1319,26 +1278,23 @@ Handle_Bundle_Hazards(
     }
 
     // Check for availability at slot <i> position in <bundle>.
-#ifdef TARG_ST200 // [CL] keep track of pc,
-    // and handle case were slots are not allocated in sequence
+#ifdef TARG_ST200
     // [SC]: Do not call CGTARG_Bundle_Slot_Available if the
     // resources are not available.
     if (TI_RES_RES_Resources_Available(rr_tab,OP_code(op),Clock)
 	&& CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
-					 stop_bit_reqd, NULL, TRUE, *pc, &slot_pos)) {
+					 stop_bit_reqd, NULL)) {
 #else
     if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					stop_bit_reqd, NULL)) {
 #endif
       slot_avail = TRUE;
-#ifndef TARG_ST200 // CL
       slot_pos = i;
-#endif
 
       if (Trace_HB) {
-#ifdef TARG_ST200 // CL
-	fprintf(TFile, "  is available, clock %d [%s] PC=%x\n", 
-		  Clock, TOP_Name(OP_code(op)), *pc);
+#ifdef TARG_ST200 // SC
+	fprintf(TFile, "  is available, clock %d [%s] template=%d\n", 
+		  Clock, TOP_Name(OP_code(op)), TI_BUNDLE_Return_Template(bundle));
 #else
 	fprintf(TFile, "  is available, clock %d [%s]\n", 
 		  Clock, TOP_Name(OP_code(op)));
@@ -1390,7 +1346,6 @@ Handle_Bundle_Hazards(
 
 #ifdef TARG_ST200 // [CL]
     CGTARG_Finish_Bundle(OP_prev(op), bundle);
-    *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
 
     // Bundle is full at this time, reset bundle
@@ -1420,7 +1375,6 @@ Handle_Bundle_Hazards(
 
 #ifdef TARG_ST200 // [CL]
     CGTARG_Finish_Bundle(OP_prev(op), bundle);
-    *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
 
     // set <end_group> marker
@@ -1486,19 +1440,6 @@ Make_Bundles (
   BOOL dep_graph_built = FALSE;
 #ifdef TARG_ST200 //CL: under -O0 -g, force new bundle for new source line
   static SRCPOS last_srcpos = 0;
-#endif
-#ifdef TARG_ST200 // [CL] handle alignement within hot and cold sections
-  static INT32 hot_addr=0;
-  static INT32 cold_addr=0;
-  static PU_IDX bundler_current_pu=0;
-  // [CL] We track alignment on a per-PU basis, so that we only need
-  // to maintain two counters: hot & cold.  Indeed, as the user can
-  // provide his own section name for each PU, in order to compute
-  // actual PC values for each section, we would need to change the
-  // way sections are generated: currently this process occurs much
-  // later, in cgemit.cxx, and it would require to be somewhat
-  // transfered here.
-  INT *pc;
 #endif
 
   // If superblock mode is enabled, check if we are starting a new
@@ -1581,20 +1522,6 @@ Make_Bundles (
   // Just to get things started
   if (OP_dummy(op)) BB_OP_MAP32_Set(omap, op, Clock);
 
-#ifdef TARG_ST200 // [CL]
-  if (bundler_current_pu != ST_pu(Get_Current_PU_ST())) {
-    // We changed PU since last call, so reset local PC counters
-    cold_addr = 0;
-    hot_addr = 0;
-    bundler_current_pu = ST_pu(Get_Current_PU_ST());
-  }
-  if (BB_Is_Cold(bb)) {
-    pc = &cold_addr;
-  } else {
-    pc = &hot_addr;
-  }
-#endif
-
   // Some super-blocks may start with first operation scheduled at a
   // date greater than 0.
 #ifdef SUPERBLOCK_ENABLED
@@ -1602,7 +1529,7 @@ Make_Bundles (
   OP *bb_first_op = BB_first_op(bb);
   if (BB_scheduled(bb) && CG_LAO_Region_Map) {
     for (; Clock < OP_scycle(op); Clock++) {
-      Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector, pc);
+      Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector);
       if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
 	FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
 	TI_BUNDLE_Clear (bundle);
@@ -1616,11 +1543,7 @@ Make_Bundles (
     next_op = OP_next(op);
 
     if (Trace_HB) {
-#ifdef TARG_ST200 // [CL]
-      fprintf(TFile, "<hazard at PC=%x> ", *pc);
-#else
       fprintf(TFile, "<hazard> ");
-#endif
       Print_OP_No_SrcLine(op);
     }
 
@@ -1702,7 +1625,6 @@ Make_Bundles (
 	if (!OP_end_group(OP_prev(op))) {
 #ifdef TARG_ST200 // [CL]
 	  CGTARG_Finish_Bundle(OP_prev(op), bundle);
-	  *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
 	  Set_OP_end_group(OP_prev(op));
 	  VECTOR_Reset (*bundle_vector);
@@ -1746,11 +1668,7 @@ Make_Bundles (
       }
 
       // If dependence is still pending, fill with noop cycles
-#ifdef TARG_ST200 // [CL] keep track of alignment
-      Handle_Latency (OP_prev(op), estart, bundle, bundle_vector, pc);
-#else
       Handle_Latency (OP_prev(op), estart, bundle, bundle_vector);
-#endif
 
     } /* for all OPs other than first */
 
@@ -1769,7 +1687,6 @@ Make_Bundles (
       // TODO: need to be refined further.
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(OP_prev(op), bundle);
-      *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
       Set_OP_end_group(OP_prev(op));
       VECTOR_Reset (*bundle_vector);
@@ -1783,11 +1700,7 @@ Make_Bundles (
     //
     // Iterate over the following untill we can schedule the 'op'
     //
-#ifdef TARG_ST200 // [CL] keep track of alignment
-    while (!Handle_Bundle_Hazards (op, bundle, bundle_vector, pc)) {
-#else
     while (!Handle_Bundle_Hazards (op, bundle, bundle_vector)) {
-#endif
 
       // If we did not find a template slot, the bundle should
       // have been reset;
@@ -1798,11 +1711,7 @@ Make_Bundles (
       // advance the Clock
       Clock++;
 
-#ifdef TARG_ST200 // [CL]
-      if (Trace_HB) fprintf(TFile, "  reattempting bundling at clock %d and PC %x\n", Clock, *pc);
-#else
       if (Trace_HB) fprintf(TFile, "  reattempting bundling at clock %d\n", Clock);
-#endif
     }
 
     //
@@ -1838,17 +1747,6 @@ Make_Bundles (
     if (OP_l_group(op) || (next_op == NULL)) {
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(op, bundle);
-      *pc += Number_Of_Slots_In_Bundle(bundle);
-      // [CG] Realign to DEFAULT_FUNCTION_ALIGNMENT
-      // if the opcode is an asm statement.
-      if (OP_code(op) == TOP_asm &&
-	  DEFAULT_FUNCTION_ALIGNMENT) {
-	INT word_align = DEFAULT_FUNCTION_ALIGNMENT/
-	  (ISA_INST_BYTES/ISA_MAX_SLOTS);
-	*pc = (*pc+word_align-1)/word_align*word_align;
-	if (Trace_HB) fprintf(TFile, "  realign pc to PC=%d\n", 
-			      *pc);
-      }
 #endif
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
@@ -1869,10 +1767,6 @@ Make_Bundles (
 
       if (Trace_HB) fprintf(TFile, "  bundle full \n");
 
-#ifdef TARG_ST200 // [CL]
-      // No need to fill with nops, bundle is full
-      *pc += Number_Of_Slots_In_Bundle(bundle);
-#endif
       // Reset the bundle
       TI_BUNDLE_Clear (bundle);
 
@@ -1905,7 +1799,6 @@ Make_Bundles (
     if (!OP_end_group(BB_last_op(bb))) {
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(BB_last_op(bb), bundle);
-      *pc += Number_Of_Slots_In_Bundle(bundle);
 #endif
       // Set end group and reset bundle vector:
       Set_OP_end_group(BB_last_op(bb));
@@ -1920,17 +1813,14 @@ Make_Bundles (
     }
 
     // at the end of BB
-#ifdef TARG_ST200 // [CL] keep track of alignment
     Handle_Latency (BB_last_op(bb),
-		    fallThru_latency, 
-		    bundle, 
-		    bundle_vector, pc);
+#ifdef TARG_ST200
+		    fallThru_latency,
 #else
-    Handle_Latency (BB_last_op(bb),
 		    pending_latency, 
+#endif
 		    bundle, 
 		    bundle_vector);
-#endif
   }
 
   // And, need to complete the last bundle
@@ -1938,11 +1828,7 @@ Make_Bundles (
 #ifndef TARG_ST200 // CL: ST200 has variable-length bundles
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
 #endif
-#ifdef TARG_ST200 // [CL] keep track of alignment
-      Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector, pc);
-#else
       Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector);
-#endif
 #ifndef TARG_ST200
     }
 #endif
@@ -2005,6 +1891,9 @@ Handle_All_Hazards (BB *bb)
   //         instructions.
   //
   Make_Bundles(bb, bundle, &bundle_vector);
+
+  CGTARG_Make_Bundles_Postpass(bb);
+
 #else
 
   FOR_ALL_BB_OPs_FWD (bb, op) {

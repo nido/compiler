@@ -837,9 +837,9 @@ extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum,
 					 INT ops_to_check);
 
 #ifdef TARG_ST200 // [CL]
-// Fill empty slots with nops
 extern void CGTARG_Finish_Bundle(OP                     *op, 
 				 TI_BUNDLE              *bundle);
+extern void CGTARG_Make_Bundles_Postpass(BB *bb);
 #endif
 
 // Handle all bundle hazards.
@@ -868,14 +868,7 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 					 INT                    slot,
 					 ISA_EXEC_UNIT_PROPERTY *prop,
 					 BOOL                   stop_bit_reqd,
-#ifdef TARG_ST200 // [CL]: added parameters to check alignment
-                                         const CG_GROUPING      *grouping,
-                                         BOOL check_addr=FALSE,
-                                         INT32 addr=0,
-                                         INT* reserved_slot=NULL);
-#else
                                          const CG_GROUPING      *grouping);
-#endif
 
 #ifdef TARG_ST
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);

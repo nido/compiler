@@ -86,6 +86,9 @@ struct isa_exec_unit_type {
 struct isa_bundle_type {
   const char *name;
   const char *asm_name;
+#ifdef TARG_ST
+  int bias, base;
+#endif
   int slot_count;
   ISA_EXEC_UNIT_TYPE slot[MAX_SLOTS];
   bool stop_bit[MAX_SLOTS];
@@ -160,6 +163,9 @@ static const char * const interface[] = {
   " *       in <bundle>.",
   " *",
 #ifdef TARG_ST
+  " *   INT ISA_EXEC_Slot_Count(INT bundle)",
+  " *       Return the number of slots in <bundle>.",
+  " *",
   " *   ISA_EXEC_MASK ISA_EXEC_Slot_Mask(INT bundle)",
 #else
   " *   UINT64 ISA_EXEC_Slot_Mask(INT bundle)",
@@ -304,6 +310,10 @@ void ISA_Bundle_Type_Create (const char* name, const char* asm_name,
   ISA_BUNDLE_TYPE cur_type = new isa_bundle_type;
   cur_type->name = name;
   cur_type->asm_name = asm_name;
+#ifdef TARG_ST
+  cur_type->bias = 0;
+  cur_type->base = 8;
+#endif
   cur_type->slot_count = no_slots;
   cur_type->pack_code = num_bundles;
   for (i = 0; i < no_slots; ++i) cur_type->stop_bit[i] = false;
@@ -334,6 +344,18 @@ void Slot (int slot_index, ISA_EXEC_UNIT_TYPE type)
 
   current_bundle_desc->slot[slot_index] = type;
 }
+
+#ifdef TARG_ST
+/////////////////////////////////////
+void Alignment (int bias, int base)
+/////////////////////////////////////
+//  See interface description.
+/////////////////////////////////////
+{
+  current_bundle_desc->bias = bias;
+  current_bundle_desc->base = base;
+}
+#endif
 
 /////////////////////////////////////
 void Stop (int slot_index)
@@ -446,6 +468,9 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ntypedef struct {\n"
 		  "  const char *name;\n"
 		  "  const char *asm_name;\n"
+#ifdef TARG_ST
+	          "  int bias, base;\n"
+#endif
 		  "  int slot_count;\n"
 		  "  ISA_EXEC_UNIT_PROPERTY slot[%d];\n"
 		  "  mBOOL stop[%d];\n"
@@ -470,12 +495,23 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 #endif
   for (ibi = all_bundles.begin(); ibi != all_bundles.end(); ++ibi) {
     ISA_BUNDLE_TYPE curr_exec_type = *ibi;
+#ifdef TARG_ST
+    fprintf (cfile, " {\n    \"%s\",%*s \"%s\",%*s %d, %d, %d,", 
+		    curr_exec_type->name, 
+		    13 - strlen(curr_exec_type->name), "",
+		    curr_exec_type->asm_name, 
+		    8 - strlen(curr_exec_type->asm_name), "",
+	            curr_exec_type->bias,
+	            curr_exec_type->base,
+		    curr_exec_type->slot_count);
+#else
     fprintf (cfile, " {\n    \"%s\",%*s \"%s\",%*s %d,", 
 		    curr_exec_type->name, 
 		    13 - strlen(curr_exec_type->name), "",
 		    curr_exec_type->asm_name, 
 		    8 - strlen(curr_exec_type->asm_name), "",
 		    curr_exec_type->slot_count);
+#endif
 
 #ifdef TARG_ST
     slot_mask_type slot_mask = { 0 };
@@ -525,7 +561,11 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     fprintf(cfile, " 0x%0*llx\n  },\n", slot_mask_digits, slot_mask);
 #endif
   }
+#ifdef TARG_ST
+  fprintf (cfile, "  {\n    \"template_MAX\", \"\", 0, 1, -1,\n    { -1 /* ??????? */");
+#else
   fprintf (cfile, "  {\n    \"template_MAX\", \"\", -1,\n    { -1 /* ??????? */");
+#endif
   for (i = 1; i < max_slots; ++i) fprintf (cfile, ", -1 /* ??????? */");
   fprintf (cfile, ",},\n    { FALSE");
   for (i = 1; i < max_slots; ++i) fprintf (cfile, ", FALSE");
@@ -601,11 +641,19 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                  "}\n");
 
 #ifdef TARG_ST
+  fprintf (hfile, "\ninline INT "
+                   "ISA_EXEC_Slot_Count(INT bundle)\n"
+                 "{\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
+                 "  return info->slot_count;\n"
+                 "}\n");
+
   fprintf (hfile, "\ninline ISA_EXEC_MASK "
 #else
   fprintf (hfile, "\ninline UINT64 "
 #endif
-                   "ISA_EXEC_Slot_Mask(INT bundle)\n"
+	         "ISA_EXEC_Slot_Mask(INT bundle)\n"
                  "{\n"
 		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
@@ -651,6 +699,22 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->asm_name;\n"
                  "}\n");
+#ifdef TARG_ST
+  fprintf (hfile, "\ninline INT "
+                   "ISA_EXEC_Bias(INT bundle)\n"
+                 "{\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
+                 "  return info->bias;\n"
+                 "}\n");
+  fprintf (hfile, "\ninline INT "
+                   "ISA_EXEC_Base(INT bundle)\n"
+                 "{\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
+                 "  return info->base;\n"
+                 "}\n");
+#endif
 }
 
 /* ====================================================================

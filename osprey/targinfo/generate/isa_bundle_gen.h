@@ -72,6 +72,11 @@
 //      by the routine below. <slot_count> specifies the number of intruction
 //	slots in this bundle type. 
 //
+#ifdef TARG_ST
+//  void Alignment (int bias, int base)
+//      The bundle must begin on a memory address that satisfies
+//      (address % base) == bias.
+#endif
 //  void Slot (int slot_index, Exec_Unit_Type type)
 //	The <slot_index> of the current bundling type is reserved for 
 //	execution unit <type>.
@@ -127,6 +132,9 @@ extern void Instruction_Exec_Unit_Group (ISA_EXEC_UNIT_TYPE unit_type, ...);
 extern void ISA_Bundle_Pack_Create (ISA_BUNDLE_PACK_ENDIAN endian);
 extern void Pack_Stop (int comp_pos, int bundle_pos, int width);
 extern void Pack_Template (int comp_pos, int bundle_pos, int width);
+#ifdef TARG_ST
+extern void Alignment (int bias, int base);
+#endif
 extern void Pack_Slot (int slot, int comp_pos, int bundle_pos, int width);
 
 extern void ISA_Bundle_Type_Create ( const char* name,

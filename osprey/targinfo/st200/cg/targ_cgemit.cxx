@@ -308,6 +308,39 @@ CGEMIT_Use_Base_ST_For_Reloc (
 }
 
 /* ====================================================================
+ *   CGEMIT_Asm_String_Prefix
+ *
+ *   Generate directives preceding an asm string
+ * ====================================================================
+ */
+extern void
+CGEMIT_Asm_String_Prefix (
+			  OP *op,
+			  INT32 *PC
+			  )
+{
+  if (CG_nop_insertion_directives)
+    fprintf (Asm_File, "\t%s\n", AS_ALLOW_NOPS);
+}
+
+/* ====================================================================
+ *   CGEMIT_Asm_String_Suffix
+ *
+ *   Generate directives following an asm string
+ * ====================================================================
+ */
+extern void
+CGEMIT_Asm_String_Suffix (
+			  OP *op,
+			  INT32 *PC
+			  )
+{
+  if (CG_nop_insertion_directives)
+    fprintf (Asm_File, "\t%s\n", AS_DISALLOW_NOPS);
+
+}
+
+/* ====================================================================
  *   CGEMIT_Begin_File_In_Asm
  *
  *   Outputs target dependent informations at begining of file.
@@ -317,12 +350,13 @@ void
 CGEMIT_Begin_File_In_Asm (void)
 {
   // For the st200 target we emit core target information
-#define AS_ASSUME ".assume"
   fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Targ_Name(Target));
   if (Target_ABI != ABI_ST200_embedded) {
     // Only specify ABI if it is not the embedded ABI.
     fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Abi_Name (Target_ABI));
   }
+  if (CG_nop_insertion_directives)
+    fprintf(Asm_File, "\t%s\n", AS_DISALLOW_NOPS);
  }
 
 /* ====================================================================

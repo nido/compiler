@@ -664,7 +664,6 @@ PC_Incr_N (
   return pc;
 }
 
-
 #ifdef TARG_ST
 /* ====================================================================
  *   PC_Align_N
@@ -3940,12 +3939,20 @@ Assemble_Simulated_OP (
 	fprintf(Asm_File, "\t%s\n", AS_STOP_BIT);
       }
 #endif
+#ifdef TARG_ST
+      // [SC] We need to emit directives just before the asm string
+      CGEMIT_Asm_String_Prefix(op, &PC);
+#endif
       fprintf(Asm_File, "\t%s\n", Generate_Asm_String(op, bb));
       if (AS_STOP_BIT && 
 	  (EMIT_stop_bits_for_asm ||
 	   (EMIT_stop_bits_for_volatile_asm && OP_volatile(op)) ) ) {
 	fprintf(Asm_File, "\t%s\n", AS_STOP_BIT);
       }
+#ifdef TARG_ST
+      // [SC] We need to emit directives just after the asm string
+      CGEMIT_Asm_String_Suffix(op, &PC);
+#endif
 #ifdef TARG_ST200
       // [CG] Align end of asm to 8 bytes boundary such that 
       // for ST200 the alignment is correctly tracked
@@ -3959,7 +3966,6 @@ Assemble_Simulated_OP (
 	PC = PC_Align_N(PC, DEFAULT_FUNCTION_ALIGNMENT);
       }
 #endif
-
     }
     if (Lai_Code) {
       fprintf(Lai_File, "\t%s\n", Generate_Asm_String(op, bb));
@@ -4273,34 +4279,27 @@ Assemble_Bundles(BB *bb)
 
     /* Determine template.
      */
-    for (ibundle = 0; ibundle < ISA_MAX_BUNDLES; ++ibundle) {
 #ifdef TARG_ST
-      UINT32 this_stop_mask = ISA_EXEC_Stop_Mask(ibundle);
-      BOOL match = (stop_mask == this_stop_mask);
-      if (match) {
-	INT i;
-	ISA_EXEC_MASK this_slot_mask = ISA_EXEC_Slot_Mask(ibundle);
-	for (i = 0; i < ISA_MAX_SLOTS; i++) {
-	  ISA_EXEC_UNIT_PROPERTY slot_prop, this_slot_prop;
-	  
-	  slot_prop = TI_BUNDLE_Get_Slot_Mask_Property(slot_mask, i);
-	  this_slot_prop = TI_BUNDLE_Get_Slot_Mask_Property(this_slot_mask, i);
-	  if ((slot_prop & this_slot_prop) != this_slot_prop) {
-	    match = FALSE;
-	    break;
-	  }
-	}
-      }
-      if (match) {
-	break;
-      }
+    // [SC] The ops are not guaranteed to be in the correct order
+    // in slot[] and slot_mask.  To find the correct bundle
+    // we need to try each permutation of the ops.
+    // The ops can be permuted between stop bits only.
+    // Multi-slot ops must be handled carefully to ensure
+    // that they are not split into non-adjacent slots.
+    // We also need to take alignment into account to find the
+    // correct bundle.
+    // That is all very hard to do, and all we achieve is an internal
+    // consistency check that the previous bundling was correct.
+    // So I give up and fix ibundle here.
+    ibundle = 0;
 #else
+    for (ibundle = 0; ibundle < ISA_MAX_BUNDLES; ++ibundle) {
       UINT64 this_slot_mask = ISA_EXEC_Slot_Mask(ibundle);
       UINT32 this_stop_mask = ISA_EXEC_Stop_Mask(ibundle);
       if (   (slot_mask & this_slot_mask) == this_slot_mask 
 	  && stop_mask == this_stop_mask) break;
-#endif
     }
+#endif
 
     if (Trace_Inst) {
       fprintf(TFile, "<cgemit> Bundle:\n");

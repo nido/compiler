@@ -230,6 +230,10 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 
 #define AS_IDENT	".ident"
 #define AS_COMMENT	".comment"
+#define AS_ASSUME       ".assume"
+
+#define AS_ALLOW_NOPS   ".nopinsertion"
+#define AS_DISALLOW_NOPS ".nonopinsertion"
 
 /* The directive for emitting an address depends on the target pointer
  * size.  The following is defined and initialized in config_targ.c:
