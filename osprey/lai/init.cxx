@@ -43,7 +43,7 @@
 // This file define initialization of pointer variables to symbols defined
 // in lai.so but referenced in be/be.so.
 
-#ifdef __linux__
+#if defined __linux__ || defined(_NO_WEAK_SUPPORT_)
 
 #include "defs.h"
 #include "cgdriver.h"
@@ -52,23 +52,23 @@
 #include "eh_region.h"
 
 // from be/lai/cgdriver.h
-extern void (*CG_Init_p) ();
-extern void (*CG_Fini_p) ();
-extern void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
+BE_EXPORTED extern void (*CG_Init_p) ();
+BE_EXPORTED extern void (*CG_Fini_p) ();
+BE_EXPORTED extern void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
 
 // from be/lai/cg.cxx
-extern void (*CG_PU_Initialize_p) (WN*);
-extern void (*CG_PU_Finalize_p) ();
-extern void (*CG_Change_Elf_Symbol_To_Undefined_p) (ST*);
-extern WN* (*CG_Generate_Code_p) (WN*, ALIAS_MANAGER*, DST_IDX, BOOL);
+BE_EXPORTED extern void (*CG_PU_Initialize_p) (WN*);
+BE_EXPORTED extern void (*CG_PU_Finalize_p) ();
+BE_EXPORTED extern void (*CG_Change_Elf_Symbol_To_Undefined_p) (ST*);
+BE_EXPORTED extern WN* (*CG_Generate_Code_p) (WN*, ALIAS_MANAGER*, DST_IDX, BOOL);
 extern "C" void CG_Dump_Region(FILE*, WN*);
-extern void (*CG_Dump_Region_p) (FILE*, WN*);
+BE_EXPORTED extern void (*CG_Dump_Region_p) (FILE*, WN*);
 
 // from be/cg/lai.h
 //extern WN* (*LAI_Emit_Code_p) (WN*, ALIAS_MANAGER*, DST_IDX, BOOL);
 
 // from be/cg/eh_region.h
-extern void (*EH_Generate_Range_List_p) (WN *);
+BE_EXPORTED extern void (*EH_Generate_Range_List_p) (WN *);
 
 /*
  * This function is recognized by the Linux linker and placed in the
@@ -89,5 +89,4 @@ struct LAI_INIT {
   }
 } Lai_Initializer;
 
-
-#endif // __linux__
+#endif // __linux__ || _NO_WEAK_SUPPORT_
