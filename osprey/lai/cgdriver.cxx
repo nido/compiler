@@ -105,9 +105,7 @@
 #include "lao_init.h"
 #endif
 
-#ifdef __CYGWIN__
 #include "W_errno.h"
-#endif
 
 extern void Set_File_In_Printsrc(char *); /* defined in printsrc.c */
 extern void Configure_CG_Target(void);    /* defined in cg_flags_arch.cxx */
