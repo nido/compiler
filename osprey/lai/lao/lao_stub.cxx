@@ -1177,6 +1177,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
       Configuration_Pipelining, CG_LAO_pipelining,
       Configuration_Speculation, CG_LAO_speculation,
       Configuration_LoopDep, CG_LAO_loopdep);
+
   //
   // Create the LAO BasicBlocks.
   BB_List::iterator bb_iter;
@@ -1210,7 +1211,9 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
       Interface_linkControlNodes(interface, orig_controlnode, succ_controlnode, BBLIST_prob(bblist));
     }
   }
+
   // Make the LoopInfos for the bodyBBs.
+  // Get loop headers and function entry that may have a pseudo loop descr
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BB *bb = *bb_iter;
     if (BB_loophead(bb)) {
@@ -1219,8 +1222,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
 	FmtAssert(BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
       else
 	lao_makeLoopInfo(loop, pipelining);
+    } else if (BB_entry(bb)) {
+      LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
+      if (loop != NULL) lao_makeLoopInfo(loop, pipelining);
     }
   }
+
   //
   unsigned optimizations = LAO_Optimize(lao_optimizations);
   if (optimizations != 0) {
@@ -1294,6 +1301,38 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   return lao_optimize(bodyBBs, entryBBs, exitBBs, pipelining, lao_optimizations);
 }
 
+//
+// Makes a pesudo loop descr for a single entry region at nesting
+// level 0.
+static LOOP_DESCR *make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *pool)
+{
+  LOOP_DESCR *newloop = TYPE_L_ALLOC (LOOP_DESCR);
+  BB_SET *loop_set = BB_SET_Create_Empty (PU_BB_Count + 2, pool);
+  newloop->mem_pool = pool;
+  LOOP_DESCR_bbset(newloop) = loop_set;
+  LOOP_DESCR_loophead(newloop) = entry;
+  LOOP_DESCR_nestlevel(newloop) = 0;
+  LOOP_DESCR_num_exits(newloop) = 0;
+  LOOP_DESCR_next(newloop) = NULL;
+
+  BB_List::iterator bb_iter;
+  // Fill the loop bb set
+  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
+    BB_SET_Union1D(loop_set, *bb_iter, NULL);
+    if (!BB_MAP_Get(LOOP_DESCR_map, *bb_iter)) {
+      BB_MAP_Set(LOOP_DESCR_map, *bb_iter, newloop);
+    }
+  }
+  
+  // Count the exitBBs.
+  int n_exit = 0;
+  for (bb_iter = exitBBs.begin(); bb_iter != exitBBs.end(); bb_iter++) {
+    n_exit++;
+  }
+  LOOP_DESCR_num_exits(newloop) = n_exit;
+  return newloop;
+}
+
 // Optimize the complete PU through the LAO.
 static bool
 lao_optimize_PU(unsigned lao_optimizations) {
@@ -1328,11 +1367,18 @@ lao_optimize_PU(unsigned lao_optimizations) {
   }
   //
   // List the BBs, entry BBs, exit BBs, body BBs.
+  int n_entry = 0, n_exit = 0;
   BB_List entryBBs, exitBBs, bodyBBs;
   for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    if (BB_entry(bb)) entryBBs.push_back(bb);
-    if (BB_exit(bb)) exitBBs.push_back(bb);
+    if (BB_entry(bb)) { entryBBs.push_back(bb); n_entry++; }
+    if (BB_exit(bb)) { exitBBs.push_back(bb); n_exit++; }
     bodyBBs.push_back(bb);
+  }
+  // Create a pseudo loop descr for the function entry if not done
+  if (n_entry == 1) {
+    BB *entry = *entryBBs.begin();
+    LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(entry);
+    if (loop == NULL) loop = make_pseudo_loopdescr(entry, bodyBBs, exitBBs, &lao_loop_pool);
   }
   //
   // Call the lower level lao_optimize function with pipelining=0.
