@@ -51,7 +51,9 @@ main()
     simulated,
     dummy,
     var_opnds,
-    dismissible;
+    dismissible,
+    f_group,
+    move;
 
   ISA_Properties_Begin ("st200"); 
 
@@ -60,6 +62,51 @@ main()
    *              Operator attributes descriptors 
    * ==================================================================== 
    */ 
+
+  /* ====================================== */ 
+  load = ISA_Property_Create ("load"); 
+  Instruction_Group (load, 
+		 TOP_ldw, 
+		 TOP_ldw_d, 
+		 TOP_ldh, 
+		 TOP_ldh_d, 
+		 TOP_ldhu, 
+		 TOP_ldhu_d, 
+		 TOP_ldb, 
+		 TOP_ldb_d, 
+		 TOP_ldbu, 
+		 TOP_ldbu_d, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  f_group = ISA_Property_Create ("f_group"); 
+  Instruction_Group (f_group, 
+		 TOP_call, 
+		 TOP_icall, 
+		 TOP_goto, 
+		 TOP_igoto, 
+		 TOP_rfi, 
+		 TOP_br, 
+		 TOP_brf, 
+		 TOP_return, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  ijump = ISA_Property_Create ("ijump"); 
+  Instruction_Group (ijump, 
+		 TOP_igoto, 
+		 TOP_return, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  move = ISA_Property_Create ("move"); 
+  Instruction_Group (move, 
+		 TOP_bswap_r, 
+		 TOP_sxtb_r, 
+		 TOP_sxth_r, 
+		 TOP_mov_r, 
+		 TOP_mov_i, 
+		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   simulated = ISA_Property_Create ("simulated"); 
@@ -78,21 +125,6 @@ main()
 		 TOP_ldh_d, 
 		 TOP_ldhu_d, 
 		 TOP_ldb_d, 
-		 TOP_ldbu_d, 
-		 TOP_UNDEFINED); 
-
-  /* ====================================== */ 
-  load = ISA_Property_Create ("load"); 
-  Instruction_Group (load, 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
-		 TOP_ldh, 
-		 TOP_ldh_d, 
-		 TOP_ldhu, 
-		 TOP_ldhu_d, 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
 		 TOP_ldbu_d, 
 		 TOP_UNDEFINED); 
 
@@ -124,12 +156,6 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  jump = ISA_Property_Create ("jump"); 
-  Instruction_Group (jump, 
-		 TOP_goto, 
-		 TOP_UNDEFINED); 
-
-  /* ====================================== */ 
   call = ISA_Property_Create ("call"); 
   Instruction_Group (call, 
 		 TOP_call, 
@@ -138,10 +164,9 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  ijump = ISA_Property_Create ("ijump"); 
-  Instruction_Group (ijump, 
-		 TOP_igoto, 
-		 TOP_return, 
+  jump = ISA_Property_Create ("jump"); 
+  Instruction_Group (jump, 
+		 TOP_goto, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 

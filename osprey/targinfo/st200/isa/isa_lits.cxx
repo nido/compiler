@@ -47,9 +47,9 @@ main ()
   // ISA_Create_Lit_Class(name, type, [range,...] LIT_RANGE_END) 
 
   ISA_Create_Lit_Class("s32", SIGNED, SignedBitRange(32), LIT_RANGE_END); 
-  ISA_Create_Lit_Class("u32", UNSIGNED, SignedBitRange(32), LIT_RANGE_END); 
+  ISA_Create_Lit_Class("u32", UNSIGNED, UnsignedBitRange(32), LIT_RANGE_END); 
   ISA_Create_Lit_Class("s23", SIGNED, SignedBitRange(23), LIT_RANGE_END); 
-  ISA_Create_Lit_Class("u23", UNSIGNED, SignedBitRange(23), LIT_RANGE_END); 
+  ISA_Create_Lit_Class("u23", UNSIGNED, UnsignedBitRange(23), LIT_RANGE_END); 
   ISA_Create_Lit_Class("s9", SIGNED, SignedBitRange(9), LIT_RANGE_END); 
 
   ISA_Lits_End(); 

@@ -97,7 +97,114 @@ CGTARG_Copy_Operand (
 
   case TOP_mov_r:
   case TOP_mov_i:
+    return 0;
+
+  }
+
+  return -1;
+}
+
+/* ====================================================================
+ *   CGTARG_Immediate_Operand
+ *
+ *   TODO: generate automatically. put into targ_op.h as inlined
+ * ====================================================================
+ */
+INT
+CGTARG_Immediate_Operand (
+  OP *op
+)
+{
+  switch (OP_code(op)) {
+  case TOP_add_i:
+  case TOP_shl_i:
+  case TOP_shr_i:
+  case TOP_shru_i:
+  case TOP_sh1add_i:
+  case TOP_sh2add_i:
+  case TOP_sh3add_i:
+  case TOP_sh4add_i:
+  case TOP_and_i:
+  case TOP_andc_i:
+  case TOP_or_i:
+  case TOP_orc_i:
+  case TOP_xor_i:
+  case TOP_max_i:
+  case TOP_maxu_i:
+  case TOP_min_i:
+  case TOP_minu_i:
+  case TOP_mull_i:
+  case TOP_mullu_i:
+  case TOP_mulh_i:
+  case TOP_mulhu_i:
+  case TOP_mulll_i:
+  case TOP_mulllu_i:
+  case TOP_mullh_i:
+  case TOP_mullhu_i:
+  case TOP_mulhh_i:
+  case TOP_mulhhu_i:
+  case TOP_mulhs_i:
+  case TOP_cmpeq_i_r:
+  case TOP_cmpne_i_r:
+  case TOP_cmpge_i_r:
+  case TOP_cmpgeu_i_r:
+  case TOP_cmpgt_i_r:
+  case TOP_cmpgtu_i_r:
+  case TOP_cmple_i_r:
+  case TOP_cmpleu_i_r:
+  case TOP_cmplt_i_r:
+  case TOP_cmpltu_i_r:
+  case TOP_andl_i_r:
+  case TOP_nandl_i_r:
+  case TOP_orl_i_r:
+  case TOP_norl_i_r:
+  case TOP_cmpeq_i_b:
+  case TOP_cmpne_i_b:
+  case TOP_cmpge_i_b:
+  case TOP_cmpgeu_i_b:
+  case TOP_cmpgt_i_b:
+  case TOP_cmpgtu_i_b:
+  case TOP_cmple_i_b:
+  case TOP_cmpleu_i_b:
+  case TOP_cmplt_i_b:
+  case TOP_cmpltu_i_b:
+  case TOP_andl_i_b:
+  case TOP_nandl_i_b:
+  case TOP_orl_i_b:
+  case TOP_norl_i_b:
     return 1;
+
+  case TOP_slct_i:
+  case TOP_slctf_i:
+    return 2;
+
+  case TOP_ldw:
+  case TOP_ldw_d:
+  case TOP_ldh:
+  case TOP_ldh_d:
+  case TOP_ldhu:
+  case TOP_ldhu_d:
+  case TOP_ldb:
+  case TOP_ldb_d:
+  case TOP_ldbu:
+  case TOP_ldbu_d:
+    return 0;
+
+  case TOP_stw:
+  case TOP_sth:
+  case TOP_stb:
+    return 0;
+
+  case TOP_goto:
+    return 0;
+
+  case TOP_br:
+  case TOP_brf:
+    return 1;
+
+  case TOP_sub_i:
+  case TOP_mov_i:
+    return 0;
 
   }
 

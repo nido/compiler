@@ -43,42 +43,35 @@
 main() 
 { 
   ISA_PACK_TYPE 
-		p0, 	// nop
-		p1, 	// mov
-		p2, 	// spadjust
-		p3, 	// jump
-		p4, 	// Cmp3R_Reg
-		p5, 	// Cmp3I_Br
-		p6, 	// SelectR
-		p7, 	// label
-		p8, 	// Branch
-		p9, 	// copy_br
-		p10, 	// pregtn
-		p11, 	// Load
-		p12, 	// mov
-		p13, 	// Cmp3I_Reg
-		p14, 	// fixup
-		p15, 	// noop
-		p16, 	// mov
-		p17, 	// cgen
-		p18, 	// SelectI
-		p19, 	// mov
-		p20, 	// return
-		p21, 	// Int3R
-		p22, 	// asm
-		p23, 	// rfi
-		p24, 	// icall
-		p25, 	// ijump
-		p26, 	// Imm
-		p27, 	// barrier
-		p28, 	// intrncall
-		p29, 	// Int3I
-		p30, 	// Int3I
-		p31, 	// Cmp3R_Br
-		p32, 	// SysOp
-		p33, 	// Store
-		p34, 	// call
-		p35; 	// call
+		p0, 	// Int3R: dest = src1, src2
+		p1, 	// Int3I: idest = src1, isrc2
+		p2, 	// Cmp3R_Reg: dest = src1, src2
+		p3, 	// Cmp3R_Br: bdest = src1, src2
+		p4, 	// Cmp3I_Reg: idest = src1, isrc2
+		p5, 	// Cmp3I_Br: ibdest = src1, isrc2
+		p6, 	// Imm: imm
+		p7, 	// SelectR: dest = scond, src1, src2
+		p8, 	// SelectI: idest = scond, src1, isrc2
+		p9, 	// cgen: dest, bdest = src1, src2, scond
+		p10, 	// SysOp: nada
+		p11, 	// Load: idest = isrc2, src1
+		p12, 	// Store: isrc2, src1, src2
+		p13, 	// Call: lr = btarg
+		p14, 	// Branch: bcond, btarg
+		p15, 	// Jump: btarg
+		p16, 	// Extr: immr / idest = isrc2
+		p17, 	// Ext: idest = isrc2 / imml
+		p18, 	// sub_i: idest = isrc2, src1
+		p19, 	// Icall: lr = lr
+		p20, 	// Ijump: igoto lr
+		p21, 	// rfi
+		p22, 	// nop
+		p23, 	// MoveR: dest = src2 
+		p24, 	// MoveI: idest = isrc2 
+		p25, 	// mtb: bdest = src1 
+		p26, 	// mfb: idest = scond 
+		p27, 	// cache opcodes 
+		p28; 	// sync
 
   OPND_ADJ_TYPE	no_adj; 
 
@@ -92,409 +85,362 @@ main()
 
   no_adj = Create_Operand_Adjustment("no adjustment", "O_VAL"); 
 
-/* =====  p0: ===== */ 
-  p0 = ISA_Pack_Type_Create("p0"); 
-  Instruction_Pack_Group(p0, 
-	TOP_nop, 	 0x10000000UL, 
+  /* =====  p24: ===== */ 
+  p24 = ISA_Pack_Type_Create("p24"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 12, 9); 
+  Instruction_Pack_Group(p24, 
+	TOP_mov_i, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p1: ===== */ 
-  p1 = ISA_Pack_Type_Create("p1"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p1, 
-	TOP_mov_i, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p2: ===== */ 
-  p2 = ISA_Pack_Type_Create("p2"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p2, 
-	TOP_UNDEFINED); 
-
-/* =====  p3: ===== */ 
-  p3 = ISA_Pack_Type_Create("p3"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p3, 
-	TOP_goto, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p4: ===== */ 
-  p4 = ISA_Pack_Type_Create("p4"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p4, 
-	TOP_cmpeq_r_r, 	 0x10000000UL, 
-	TOP_cmpne_r_r, 	 0x10000000UL, 
-	TOP_cmpge_r_r, 	 0x10000000UL, 
-	TOP_cmpgeu_r_r, 	 0x10000000UL, 
-	TOP_cmpgt_r_r, 	 0x10000000UL, 
-	TOP_cmpgtu_r_r, 	 0x10000000UL, 
-	TOP_cmple_r_r, 	 0x10000000UL, 
-	TOP_cmpleu_r_r, 	 0x10000000UL, 
-	TOP_cmplt_r_r, 	 0x10000000UL, 
-	TOP_cmpltu_r_r, 	 0x10000000UL, 
-	TOP_andl_r_r, 	 0x10000000UL, 
-	TOP_nandl_r_r, 	 0x10000000UL, 
-	TOP_orl_r_r, 	 0x10000000UL, 
-	TOP_norl_r_r, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p5: ===== */ 
-  p5 = ISA_Pack_Type_Create("p5"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p5, 
-	TOP_cmpeq_i_b, 	 0x10000000UL, 
-	TOP_cmpne_i_b, 	 0x10000000UL, 
-	TOP_cmpge_i_b, 	 0x10000000UL, 
-	TOP_cmpgeu_i_b, 	 0x10000000UL, 
-	TOP_cmpgt_i_b, 	 0x10000000UL, 
-	TOP_cmpgtu_i_b, 	 0x10000000UL, 
-	TOP_cmple_i_b, 	 0x10000000UL, 
-	TOP_cmpleu_i_b, 	 0x10000000UL, 
-	TOP_cmplt_i_b, 	 0x10000000UL, 
-	TOP_cmpltu_i_b, 	 0x10000000UL, 
-	TOP_andl_i_b, 	 0x10000000UL, 
-	TOP_nandl_i_b, 	 0x10000000UL, 
-	TOP_orl_i_b, 	 0x10000000UL, 
-	TOP_norl_i_b, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p6: ===== */ 
-  p6 = ISA_Pack_Type_Create("p6"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Operand (2, 0, 6, 5); 
-  Instruction_Pack_Group(p6, 
-	TOP_slct_r, 	 0x10000000UL, 
-	TOP_slctf_r, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p7: ===== */ 
-  p7 = ISA_Pack_Type_Create("p7"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p7, 
-	TOP_UNDEFINED); 
-
-/* =====  p8: ===== */ 
-  p8 = ISA_Pack_Type_Create("p8"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 0, 5); 
-  Instruction_Pack_Group(p8, 
-	TOP_br, 	 0x10000000UL, 
-	TOP_brf, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p9: ===== */ 
-  p9 = ISA_Pack_Type_Create("p9"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p9, 
-	TOP_UNDEFINED); 
-
-/* =====  p10: ===== */ 
-  p10 = ISA_Pack_Type_Create("p10"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 0, 5); 
-  Instruction_Pack_Group(p10, 
-	TOP_UNDEFINED); 
-
-/* =====  p11: ===== */ 
+  /* =====  p11: ===== */ 
   p11 = ISA_Pack_Type_Create("p11"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 11, 5); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 12, 9); 
+  Operand(1, 0, 0, 6); 
   Instruction_Pack_Group(p11, 
-	TOP_ldw, 	 0x10000000UL, 
-	TOP_ldw_d, 	 0x10000000UL, 
-	TOP_ldh, 	 0x10000000UL, 
-	TOP_ldh_d, 	 0x10000000UL, 
-	TOP_ldhu, 	 0x10000000UL, 
-	TOP_ldhu_d, 	 0x10000000UL, 
-	TOP_ldb, 	 0x10000000UL, 
-	TOP_ldb_d, 	 0x10000000UL, 
-	TOP_ldbu, 	 0x10000000UL, 
-	TOP_ldbu_d, 	 0x10000000UL, 
+	TOP_ldw, 	 0x10000000UL,
+	TOP_ldw_d, 	 0x10000000UL,
+	TOP_ldh, 	 0x10000000UL,
+	TOP_ldh_d, 	 0x10000000UL,
+	TOP_ldhu, 	 0x10000000UL,
+	TOP_ldhu_d, 	 0x10000000UL,
+	TOP_ldb, 	 0x10000000UL,
+	TOP_ldb_d, 	 0x10000000UL,
+	TOP_ldbu, 	 0x10000000UL,
+	TOP_ldbu_d, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p12: ===== */ 
-  p12 = ISA_Pack_Type_Create("p12"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p12, 
-	TOP_mfb, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p13: ===== */ 
-  p13 = ISA_Pack_Type_Create("p13"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p13, 
-	TOP_cmpeq_i_r, 	 0x10000000UL, 
-	TOP_cmpne_i_r, 	 0x10000000UL, 
-	TOP_cmpge_i_r, 	 0x10000000UL, 
-	TOP_cmpgeu_i_r, 	 0x10000000UL, 
-	TOP_cmpgt_i_r, 	 0x10000000UL, 
-	TOP_cmpgtu_i_r, 	 0x10000000UL, 
-	TOP_cmple_i_r, 	 0x10000000UL, 
-	TOP_cmpleu_i_r, 	 0x10000000UL, 
-	TOP_cmplt_i_r, 	 0x10000000UL, 
-	TOP_cmpltu_i_r, 	 0x10000000UL, 
-	TOP_andl_i_r, 	 0x10000000UL, 
-	TOP_nandl_i_r, 	 0x10000000UL, 
-	TOP_orl_i_r, 	 0x10000000UL, 
-	TOP_norl_i_r, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p14: ===== */ 
-  p14 = ISA_Pack_Type_Create("p14"); 
-  Result(0, 0, 5); 
-  Instruction_Pack_Group(p14, 
-	TOP_UNDEFINED); 
-
-/* =====  p15: ===== */ 
-  p15 = ISA_Pack_Type_Create("p15"); 
-  Instruction_Pack_Group(p15, 
-	TOP_UNDEFINED); 
-
-/* =====  p16: ===== */ 
-  p16 = ISA_Pack_Type_Create("p16"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p16, 
-	TOP_mov_r, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p17: ===== */ 
-  p17 = ISA_Pack_Type_Create("p17"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 5); 
-  Operand (1, 0, 11, 5); 
-  Operand (2, 0, 11, 5); 
-  Instruction_Pack_Group(p17, 
-	TOP_addcg, 	 0x10000000UL, 
-	TOP_divs, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p18: ===== */ 
-  p18 = ISA_Pack_Type_Create("p18"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Operand (2, 0, 6, 5); 
-  Instruction_Pack_Group(p18, 
-	TOP_slct_i, 	 0x10000000UL, 
-	TOP_slctf_i, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p19: ===== */ 
-  p19 = ISA_Pack_Type_Create("p19"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p19, 
-	TOP_mtb, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p20: ===== */ 
-  p20 = ISA_Pack_Type_Create("p20"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p20, 
-	TOP_return, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p21: ===== */ 
+  /* =====  p21: ===== */ 
   p21 = ISA_Pack_Type_Create("p21"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
   Instruction_Pack_Group(p21, 
-	TOP_add_r, 	 0x10000000UL, 
-	TOP_sub_r, 	 0x10000000UL, 
-	TOP_shl_r, 	 0x10000000UL, 
-	TOP_shr_r, 	 0x10000000UL, 
-	TOP_shru_r, 	 0x10000000UL, 
-	TOP_sh1add_r, 	 0x10000000UL, 
-	TOP_sh2add_r, 	 0x10000000UL, 
-	TOP_sh3add_r, 	 0x10000000UL, 
-	TOP_sh4add_r, 	 0x10000000UL, 
-	TOP_and_r, 	 0x10000000UL, 
-	TOP_andc_r, 	 0x10000000UL, 
-	TOP_or_r, 	 0x10000000UL, 
-	TOP_orc_r, 	 0x10000000UL, 
-	TOP_xor_r, 	 0x10000000UL, 
-	TOP_sxtb_r, 	 0x10000000UL, 
-	TOP_sxth_r, 	 0x10000000UL, 
-	TOP_max_r, 	 0x10000000UL, 
-	TOP_maxu_r, 	 0x10000000UL, 
-	TOP_min_r, 	 0x10000000UL, 
-	TOP_minu_r, 	 0x10000000UL, 
-	TOP_bswap_r, 	 0x10000000UL, 
-	TOP_mull_r, 	 0x10000000UL, 
-	TOP_mullu_r, 	 0x10000000UL, 
-	TOP_mulh_r, 	 0x10000000UL, 
-	TOP_mulhu_r, 	 0x10000000UL, 
-	TOP_mulll_r, 	 0x10000000UL, 
-	TOP_mulllu_r, 	 0x10000000UL, 
-	TOP_mullh_r, 	 0x10000000UL, 
-	TOP_mullhu_r, 	 0x10000000UL, 
-	TOP_mulhh_r, 	 0x10000000UL, 
-	TOP_mulhhu_r, 	 0x10000000UL, 
-	TOP_mulhs_r, 	 0x10000000UL, 
+	TOP_rfi, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p22: ===== */ 
+  /* =====  p2: ===== */ 
+  p2 = ISA_Pack_Type_Create("p2"); 
+  Result(0, 12, 6); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 6, 6); 
+  Instruction_Pack_Group(p2, 
+	TOP_cmpeq_r_r, 	 0x10000000UL,
+	TOP_cmpne_r_r, 	 0x10000000UL,
+	TOP_cmpge_r_r, 	 0x10000000UL,
+	TOP_cmpgeu_r_r, 	 0x10000000UL,
+	TOP_cmpgt_r_r, 	 0x10000000UL,
+	TOP_cmpgtu_r_r, 	 0x10000000UL,
+	TOP_cmple_r_r, 	 0x10000000UL,
+	TOP_cmpleu_r_r, 	 0x10000000UL,
+	TOP_cmplt_r_r, 	 0x10000000UL,
+	TOP_cmpltu_r_r, 	 0x10000000UL,
+	TOP_andl_r_r, 	 0x10000000UL,
+	TOP_nandl_r_r, 	 0x10000000UL,
+	TOP_orl_r_r, 	 0x10000000UL,
+	TOP_norl_r_r, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p25: ===== */ 
+  p25 = ISA_Pack_Type_Create("p25"); 
+  Result(0, 18, 3); 
+  Operand(0, 0, 0, 6); 
+  Instruction_Pack_Group(p25, 
+	TOP_mtb, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p6: ===== */ 
+  p6 = ISA_Pack_Type_Create("p6"); 
+  Operand(0, 0, 0, 23); 
+  Instruction_Pack_Group(p6, 
+	TOP_imml, 	 0x10000000UL,
+	TOP_immr, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p20: ===== */ 
+  p20 = ISA_Pack_Type_Create("p20"); 
+  Instruction_Pack_Group(p20, 
+	TOP_igoto, 	 0x10000000UL,
+	TOP_return, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p19: ===== */ 
+  p19 = ISA_Pack_Type_Create("p19"); 
+  Instruction_Pack_Group(p19, 
+	TOP_icall, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p1: ===== */ 
+  p1 = ISA_Pack_Type_Create("p1"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 12, 9); 
+  Instruction_Pack_Group(p1, 
+	TOP_add_i, 	 0x10000000UL,
+	TOP_shl_i, 	 0x10000000UL,
+	TOP_shr_i, 	 0x10000000UL,
+	TOP_shru_i, 	 0x10000000UL,
+	TOP_sh1add_i, 	 0x10000000UL,
+	TOP_sh2add_i, 	 0x10000000UL,
+	TOP_sh3add_i, 	 0x10000000UL,
+	TOP_sh4add_i, 	 0x10000000UL,
+	TOP_and_i, 	 0x10000000UL,
+	TOP_andc_i, 	 0x10000000UL,
+	TOP_or_i, 	 0x10000000UL,
+	TOP_orc_i, 	 0x10000000UL,
+	TOP_xor_i, 	 0x10000000UL,
+	TOP_max_i, 	 0x10000000UL,
+	TOP_maxu_i, 	 0x10000000UL,
+	TOP_min_i, 	 0x10000000UL,
+	TOP_minu_i, 	 0x10000000UL,
+	TOP_mull_i, 	 0x10000000UL,
+	TOP_mullu_i, 	 0x10000000UL,
+	TOP_mulh_i, 	 0x10000000UL,
+	TOP_mulhu_i, 	 0x10000000UL,
+	TOP_mulll_i, 	 0x10000000UL,
+	TOP_mulllu_i, 	 0x10000000UL,
+	TOP_mullh_i, 	 0x10000000UL,
+	TOP_mullhu_i, 	 0x10000000UL,
+	TOP_mulhh_i, 	 0x10000000UL,
+	TOP_mulhhu_i, 	 0x10000000UL,
+	TOP_mulhs_i, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p8: ===== */ 
+  p8 = ISA_Pack_Type_Create("p8"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 21, 3); 
+  Operand(1, 0, 0, 6); 
+  Operand(2, 0, 12, 9); 
+  Instruction_Pack_Group(p8, 
+	TOP_slct_i, 	 0x10000000UL,
+	TOP_slctf_i, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p23: ===== */ 
+  p23 = ISA_Pack_Type_Create("p23"); 
+  Result(0, 12, 6); 
+  Operand(0, 0, 6, 6); 
+  Instruction_Pack_Group(p23, 
+	TOP_bswap_r, 	 0x10000000UL,
+	TOP_sxtb_r, 	 0x10000000UL,
+	TOP_sxth_r, 	 0x10000000UL,
+	TOP_mov_r, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p22: ===== */ 
   p22 = ISA_Pack_Type_Create("p22"); 
   Instruction_Pack_Group(p22, 
+	TOP_nop, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p23: ===== */ 
-  p23 = ISA_Pack_Type_Create("p23"); 
-  Instruction_Pack_Group(p23, 
-	TOP_rfi, 	 0x10000000UL, 
+  /* =====  p12: ===== */ 
+  p12 = ISA_Pack_Type_Create("p12"); 
+  Operand(0, 0, 12, 9); 
+  Operand(1, 0, 0, 6); 
+  Operand(2, 0, 6, 6); 
+  Instruction_Pack_Group(p12, 
+	TOP_stw, 	 0x10000000UL,
+	TOP_sth, 	 0x10000000UL,
+	TOP_stb, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p24: ===== */ 
-  p24 = ISA_Pack_Type_Create("p24"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p24, 
-	TOP_icall, 	 0x10000000UL, 
+  /* =====  p14: ===== */ 
+  p14 = ISA_Pack_Type_Create("p14"); 
+  Operand(0, 0, 23, 3); 
+  Operand(1, 0, 0, 23); 
+  Instruction_Pack_Group(p14, 
+	TOP_br, 	 0x10000000UL,
+	TOP_brf, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p25: ===== */ 
-  p25 = ISA_Pack_Type_Create("p25"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p25, 
-	TOP_igoto, 	 0x10000000UL, 
+  /* =====  p5: ===== */ 
+  p5 = ISA_Pack_Type_Create("p5"); 
+  Result(0, 6, 3); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 12, 9); 
+  Instruction_Pack_Group(p5, 
+	TOP_cmpeq_i_b, 	 0x10000000UL,
+	TOP_cmpne_i_b, 	 0x10000000UL,
+	TOP_cmpge_i_b, 	 0x10000000UL,
+	TOP_cmpgeu_i_b, 	 0x10000000UL,
+	TOP_cmpgt_i_b, 	 0x10000000UL,
+	TOP_cmpgtu_i_b, 	 0x10000000UL,
+	TOP_cmple_i_b, 	 0x10000000UL,
+	TOP_cmpleu_i_b, 	 0x10000000UL,
+	TOP_cmplt_i_b, 	 0x10000000UL,
+	TOP_cmpltu_i_b, 	 0x10000000UL,
+	TOP_andl_i_b, 	 0x10000000UL,
+	TOP_nandl_i_b, 	 0x10000000UL,
+	TOP_orl_i_b, 	 0x10000000UL,
+	TOP_norl_i_b, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p26: ===== */ 
-  p26 = ISA_Pack_Type_Create("p26"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p26, 
-	TOP_imml, 	 0x10000000UL, 
-	TOP_immr, 	 0x10000000UL, 
+  /* =====  p0: ===== */ 
+  p0 = ISA_Pack_Type_Create("p0"); 
+  Result(0, 12, 6); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 6, 6); 
+  Instruction_Pack_Group(p0, 
+	TOP_add_r, 	 0x10000000UL,
+	TOP_sub_r, 	 0x10000000UL,
+	TOP_shl_r, 	 0x10000000UL,
+	TOP_shr_r, 	 0x10000000UL,
+	TOP_shru_r, 	 0x10000000UL,
+	TOP_sh1add_r, 	 0x10000000UL,
+	TOP_sh2add_r, 	 0x10000000UL,
+	TOP_sh3add_r, 	 0x10000000UL,
+	TOP_sh4add_r, 	 0x10000000UL,
+	TOP_and_r, 	 0x10000000UL,
+	TOP_andc_r, 	 0x10000000UL,
+	TOP_or_r, 	 0x10000000UL,
+	TOP_orc_r, 	 0x10000000UL,
+	TOP_xor_r, 	 0x10000000UL,
+	TOP_max_r, 	 0x10000000UL,
+	TOP_maxu_r, 	 0x10000000UL,
+	TOP_min_r, 	 0x10000000UL,
+	TOP_minu_r, 	 0x10000000UL,
+	TOP_mull_r, 	 0x10000000UL,
+	TOP_mullu_r, 	 0x10000000UL,
+	TOP_mulh_r, 	 0x10000000UL,
+	TOP_mulhu_r, 	 0x10000000UL,
+	TOP_mulll_r, 	 0x10000000UL,
+	TOP_mulllu_r, 	 0x10000000UL,
+	TOP_mullh_r, 	 0x10000000UL,
+	TOP_mullhu_r, 	 0x10000000UL,
+	TOP_mulhh_r, 	 0x10000000UL,
+	TOP_mulhhu_r, 	 0x10000000UL,
+	TOP_mulhs_r, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p27: ===== */ 
+  /* =====  p17: ===== */ 
+  p17 = ISA_Pack_Type_Create("p17"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 12, 9); 
+  Next_Word(); 
+  Operand(0, 9, 0, 23); 
+  Instruction_Pack_Group(p17, 
+	TOP_movl, 	 0x10000000UL, 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p18: ===== */ 
+  p18 = ISA_Pack_Type_Create("p18"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 12, 9); 
+  Operand(1, 0, 0, 6); 
+  Instruction_Pack_Group(p18, 
+	TOP_sub_i, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p7: ===== */ 
+  p7 = ISA_Pack_Type_Create("p7"); 
+  Result(0, 12, 6); 
+  Operand(0, 0, 21, 3); 
+  Operand(1, 0, 0, 6); 
+  Operand(2, 0, 6, 6); 
+  Instruction_Pack_Group(p7, 
+	TOP_slct_r, 	 0x10000000UL,
+	TOP_slctf_r, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p27: ===== */ 
   p27 = ISA_Pack_Type_Create("p27"); 
+  Operand(0, 0, 0, 6); 
   Instruction_Pack_Group(p27, 
+	TOP_pft, 	 0x10000000UL,
+	TOP_prgadd, 	 0x10000000UL,
+	TOP_prgset, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p28: ===== */ 
+  /* =====  p26: ===== */ 
+  p26 = ISA_Pack_Type_Create("p26"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 21, 3); 
+  Instruction_Pack_Group(p26, 
+	TOP_mfb, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p3: ===== */ 
+  p3 = ISA_Pack_Type_Create("p3"); 
+  Result(0, 18, 3); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 6, 6); 
+  Instruction_Pack_Group(p3, 
+	TOP_cmpeq_r_b, 	 0x10000000UL,
+	TOP_cmpne_r_b, 	 0x10000000UL,
+	TOP_cmpge_r_b, 	 0x10000000UL,
+	TOP_cmpgeu_r_b, 	 0x10000000UL,
+	TOP_cmpgt_r_b, 	 0x10000000UL,
+	TOP_cmpgtu_r_b, 	 0x10000000UL,
+	TOP_cmple_r_b, 	 0x10000000UL,
+	TOP_cmpleu_r_b, 	 0x10000000UL,
+	TOP_cmplt_r_b, 	 0x10000000UL,
+	TOP_cmpltu_r_b, 	 0x10000000UL,
+	TOP_andl_r_b, 	 0x10000000UL,
+	TOP_nandl_r_b, 	 0x10000000UL,
+	TOP_orl_r_b, 	 0x10000000UL,
+	TOP_norl_r_b, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p4: ===== */ 
+  p4 = ISA_Pack_Type_Create("p4"); 
+  Result(0, 6, 6); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 12, 9); 
+  Instruction_Pack_Group(p4, 
+	TOP_cmpeq_i_r, 	 0x10000000UL,
+	TOP_cmpne_i_r, 	 0x10000000UL,
+	TOP_cmpge_i_r, 	 0x10000000UL,
+	TOP_cmpgeu_i_r, 	 0x10000000UL,
+	TOP_cmpgt_i_r, 	 0x10000000UL,
+	TOP_cmpgtu_i_r, 	 0x10000000UL,
+	TOP_cmple_i_r, 	 0x10000000UL,
+	TOP_cmpleu_i_r, 	 0x10000000UL,
+	TOP_cmplt_i_r, 	 0x10000000UL,
+	TOP_cmpltu_i_r, 	 0x10000000UL,
+	TOP_andl_i_r, 	 0x10000000UL,
+	TOP_nandl_i_r, 	 0x10000000UL,
+	TOP_orl_i_r, 	 0x10000000UL,
+	TOP_norl_i_r, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p15: ===== */ 
+  p15 = ISA_Pack_Type_Create("p15"); 
+  Operand(0, 0, 0, 23); 
+  Instruction_Pack_Group(p15, 
+	TOP_goto, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p13: ===== */ 
+  p13 = ISA_Pack_Type_Create("p13"); 
+  Operand(0, 0, 0, 23); 
+  Instruction_Pack_Group(p13, 
+	TOP_call, 	 0x10000000UL,
+	TOP_UNDEFINED); 
+
+  /* =====  p28: ===== */ 
   p28 = ISA_Pack_Type_Create("p28"); 
   Instruction_Pack_Group(p28, 
+	TOP_sync, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p29: ===== */ 
-  p29 = ISA_Pack_Type_Create("p29"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p29, 
-	TOP_sub_i, 	 0x10000000UL, 
+  /* =====  p9: ===== */ 
+  p9 = ISA_Pack_Type_Create("p9"); 
+  Result(0, 12, 6); 
+  Result(1, 18, 3); 
+  Operand(0, 0, 0, 6); 
+  Operand(1, 0, 6, 6); 
+  Operand(2, 0, 21, 3); 
+  Instruction_Pack_Group(p9, 
+	TOP_addcg, 	 0x10000000UL,
+	TOP_divs, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
-/* =====  p30: ===== */ 
-  p30 = ISA_Pack_Type_Create("p30"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p30, 
-	TOP_add_i, 	 0x10000000UL, 
-	TOP_shl_i, 	 0x10000000UL, 
-	TOP_shr_i, 	 0x10000000UL, 
-	TOP_shru_i, 	 0x10000000UL, 
-	TOP_sh1add_i, 	 0x10000000UL, 
-	TOP_sh2add_i, 	 0x10000000UL, 
-	TOP_sh3add_i, 	 0x10000000UL, 
-	TOP_sh4add_i, 	 0x10000000UL, 
-	TOP_and_i, 	 0x10000000UL, 
-	TOP_andc_i, 	 0x10000000UL, 
-	TOP_or_i, 	 0x10000000UL, 
-	TOP_orc_i, 	 0x10000000UL, 
-	TOP_xor_i, 	 0x10000000UL, 
-	TOP_max_i, 	 0x10000000UL, 
-	TOP_maxu_i, 	 0x10000000UL, 
-	TOP_min_i, 	 0x10000000UL, 
-	TOP_minu_i, 	 0x10000000UL, 
-	TOP_mull_i, 	 0x10000000UL, 
-	TOP_mullu_i, 	 0x10000000UL, 
-	TOP_mulh_i, 	 0x10000000UL, 
-	TOP_mulhu_i, 	 0x10000000UL, 
-	TOP_mulll_i, 	 0x10000000UL, 
-	TOP_mulllu_i, 	 0x10000000UL, 
-	TOP_mullh_i, 	 0x10000000UL, 
-	TOP_mullhu_i, 	 0x10000000UL, 
-	TOP_mulhh_i, 	 0x10000000UL, 
-	TOP_mulhhu_i, 	 0x10000000UL, 
-	TOP_mulhs_i, 	 0x10000000UL, 
-	TOP_send_i, 	 0x10000000UL, 
-	TOP_recv_i, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p31: ===== */ 
-  p31 = ISA_Pack_Type_Create("p31"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p31, 
-	TOP_cmpeq_r_b, 	 0x10000000UL, 
-	TOP_cmpne_r_b, 	 0x10000000UL, 
-	TOP_cmpge_r_b, 	 0x10000000UL, 
-	TOP_cmpgeu_r_b, 	 0x10000000UL, 
-	TOP_cmpgt_r_b, 	 0x10000000UL, 
-	TOP_cmpgtu_r_b, 	 0x10000000UL, 
-	TOP_cmple_r_b, 	 0x10000000UL, 
-	TOP_cmpleu_r_b, 	 0x10000000UL, 
-	TOP_cmplt_r_b, 	 0x10000000UL, 
-	TOP_cmpltu_r_b, 	 0x10000000UL, 
-	TOP_andl_r_b, 	 0x10000000UL, 
-	TOP_nandl_r_b, 	 0x10000000UL, 
-	TOP_orl_r_b, 	 0x10000000UL, 
-	TOP_norl_r_b, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p32: ===== */ 
-  p32 = ISA_Pack_Type_Create("p32"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p32, 
-	TOP_prgins, 	 0x10000000UL, 
-	TOP_sbrk, 	 0x10000000UL, 
-	TOP_syscall, 	 0x10000000UL, 
-	TOP_break, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p33: ===== */ 
-  p33 = ISA_Pack_Type_Create("p33"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 5, 5); 
-  Operand (2, 0, 10, 5); 
-  Instruction_Pack_Group(p33, 
-	TOP_stw, 	 0x10000000UL, 
-	TOP_sth, 	 0x10000000UL, 
-	TOP_stb, 	 0x10000000UL, 
-	TOP_pft, 	 0x10000000UL, 
-	TOP_prgadd, 	 0x10000000UL, 
-	TOP_prgset, 	 0x10000000UL, 
-	TOP_sync, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p34: ===== */ 
-  p34 = ISA_Pack_Type_Create("p34"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p34, 
-	TOP_call, 	 0x10000000UL, 
+  /* =====  p10: ===== */ 
+  p10 = ISA_Pack_Type_Create("p10"); 
+  Instruction_Pack_Group(p10, 
+	TOP_prgins, 	 0x10000000UL,
+	TOP_sbrk, 	 0x10000000UL,
+	TOP_syscall, 	 0x10000000UL,
+	TOP_break, 	 0x10000000UL,
 	TOP_UNDEFINED); 
 
   ISA_Pack_End(); 

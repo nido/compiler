@@ -635,7 +635,8 @@ Exp_Ldst (
 	fprintf(TFile,"exp_ldst: constant ST name %s\n", cname);
       }
 
-      tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
+      Build_OP (TOP_mov_i, tn, 
+                         Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
       // want to stop at address (either that or add with 0)
       is_lda = FALSE;	// so nothing done

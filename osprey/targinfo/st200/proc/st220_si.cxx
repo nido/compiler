@@ -71,121 +71,119 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("ALU", 
+		 TOP_add_r, 
+		 TOP_sub_r, 
+		 TOP_shl_r, 
+		 TOP_shr_r, 
+		 TOP_shru_r, 
+		 TOP_sh1add_r, 
+		 TOP_sh2add_r, 
+		 TOP_sh3add_r, 
+		 TOP_sh4add_r, 
+		 TOP_and_r, 
+		 TOP_andc_r, 
+		 TOP_or_r, 
+		 TOP_orc_r, 
+		 TOP_xor_r, 
+		 TOP_max_r, 
+		 TOP_maxu_r, 
+		 TOP_min_r, 
+		 TOP_minu_r, 
+		 TOP_bswap_r, 
+		 TOP_cmpeq_r_r, 
+		 TOP_cmpne_r_r, 
+		 TOP_cmpge_r_r, 
+		 TOP_cmpgeu_r_r, 
+		 TOP_cmpgt_r_r, 
+		 TOP_cmpgtu_r_r, 
+		 TOP_cmple_r_r, 
+		 TOP_cmpleu_r_r, 
+		 TOP_cmplt_r_r, 
+		 TOP_cmpltu_r_r, 
+		 TOP_andl_r_r, 
+		 TOP_nandl_r_r, 
+		 TOP_orl_r_r, 
+		 TOP_norl_r_r, 
+		 TOP_cmpeq_r_b, 
+		 TOP_cmpne_r_b, 
+		 TOP_cmpge_r_b, 
+		 TOP_cmpgeu_r_b, 
+		 TOP_cmpgt_r_b, 
+		 TOP_cmpgtu_r_b, 
+		 TOP_cmple_r_b, 
+		 TOP_cmpleu_r_b, 
+		 TOP_cmplt_r_b, 
+		 TOP_cmpltu_r_b, 
+		 TOP_andl_r_b, 
+		 TOP_nandl_r_b, 
+		 TOP_orl_r_b, 
+		 TOP_norl_r_b, 
+		 TOP_add_i, 
+		 TOP_sub_i, 
+		 TOP_shl_i, 
+		 TOP_shr_i, 
+		 TOP_shru_i, 
+		 TOP_sh1add_i, 
+		 TOP_sh2add_i, 
+		 TOP_sh3add_i, 
+		 TOP_sh4add_i, 
+		 TOP_and_i, 
+		 TOP_andc_i, 
+		 TOP_or_i, 
+		 TOP_orc_i, 
+		 TOP_xor_i, 
+		 TOP_max_i, 
+		 TOP_maxu_i, 
+		 TOP_min_i, 
+		 TOP_minu_i, 
+		 TOP_cmpeq_i_r, 
+		 TOP_cmpne_i_r, 
+		 TOP_cmpge_i_r, 
+		 TOP_cmpgeu_i_r, 
+		 TOP_cmpgt_i_r, 
+		 TOP_cmpgtu_i_r, 
+		 TOP_cmple_i_r, 
+		 TOP_cmpleu_i_r, 
+		 TOP_cmplt_i_r, 
+		 TOP_cmpltu_i_r, 
+		 TOP_andl_i_r, 
+		 TOP_nandl_i_r, 
+		 TOP_orl_i_r, 
+		 TOP_norl_i_r, 
+		 TOP_cmpeq_i_b, 
+		 TOP_cmpne_i_b, 
+		 TOP_cmpge_i_b, 
+		 TOP_cmpgeu_i_b, 
+		 TOP_cmpgt_i_b, 
+		 TOP_cmpgtu_i_b, 
+		 TOP_cmple_i_b, 
+		 TOP_cmpleu_i_b, 
+		 TOP_cmplt_i_b, 
+		 TOP_cmpltu_i_b, 
+		 TOP_andl_i_b, 
+		 TOP_nandl_i_b, 
+		 TOP_orl_i_b, 
+		 TOP_norl_i_b, 
+		 TOP_slct_r, 
+		 TOP_slctf_r, 
+		 TOP_addcg, 
+		 TOP_divs, 
+		 TOP_slct_i, 
+		 TOP_slctf_i, 
+		 TOP_sbrk, 
+		 TOP_syscall, 
+		 TOP_break, 
+		 TOP_sxtb_r, 
+		 TOP_sxth_r, 
 		 TOP_nop, 
 		 TOP_mov_r, 
 		 TOP_mov_i, 
 		 TOP_mtb, 
 		 TOP_mfb, 
-		 TOP_add_r, 
-		 TOP_add_i, 
-		 TOP_addcg, 
-		 TOP_and_r, 
-		 TOP_and_i, 
-		 TOP_andc_r, 
-		 TOP_andc_i, 
-		 TOP_andl_r_r, 
-		 TOP_andl_r_b, 
-		 TOP_andl_i_r, 
-		 TOP_andl_i_b, 
-		 TOP_break, 
-		 TOP_bswap_r, 
-		 TOP_cmpeq_r_r, 
-		 TOP_cmpeq_r_b, 
-		 TOP_cmpeq_i_r, 
-		 TOP_cmpeq_i_b, 
-		 TOP_cmpge_r_r, 
-		 TOP_cmpge_r_b, 
-		 TOP_cmpge_i_r, 
-		 TOP_cmpge_i_b, 
-		 TOP_cmpgeu_r_r, 
-		 TOP_cmpgeu_r_b, 
-		 TOP_cmpgeu_i_r, 
-		 TOP_cmpgeu_i_b, 
-		 TOP_cmpgt_r_r, 
-		 TOP_cmpgt_r_b, 
-		 TOP_cmpgt_i_r, 
-		 TOP_cmpgt_i_b, 
-		 TOP_cmpgtu_r_r, 
-		 TOP_cmpgtu_r_b, 
-		 TOP_cmpgtu_i_r, 
-		 TOP_cmpgtu_i_b, 
-		 TOP_cmple_r_r, 
-		 TOP_cmple_r_b, 
-		 TOP_cmple_i_r, 
-		 TOP_cmple_i_b, 
-		 TOP_cmpleu_r_r, 
-		 TOP_cmpleu_r_b, 
-		 TOP_cmpleu_i_r, 
-		 TOP_cmpleu_i_b, 
-		 TOP_cmplt_r_r, 
-		 TOP_cmplt_r_b, 
-		 TOP_cmplt_i_r, 
-		 TOP_cmplt_i_b, 
-		 TOP_cmpltu_r_r, 
-		 TOP_cmpltu_r_b, 
-		 TOP_cmpltu_i_r, 
-		 TOP_cmpltu_i_b, 
-		 TOP_cmpne_r_r, 
-		 TOP_cmpne_r_b, 
-		 TOP_cmpne_i_r, 
-		 TOP_cmpne_i_b, 
-		 TOP_divs, 
-		 TOP_max_r, 
-		 TOP_max_i, 
-		 TOP_maxu_r, 
-		 TOP_maxu_i, 
-		 TOP_min_r, 
-		 TOP_min_i, 
-		 TOP_minu_r, 
-		 TOP_minu_i, 
-		 TOP_nandl_r_r, 
-		 TOP_nandl_r_b, 
-		 TOP_nandl_i_r, 
-		 TOP_nandl_i_b, 
-		 TOP_norl_r_r, 
-		 TOP_norl_r_b, 
-		 TOP_norl_i_r, 
-		 TOP_norl_i_b, 
-		 TOP_or_r, 
-		 TOP_or_i, 
-		 TOP_orc_r, 
-		 TOP_orc_i, 
-		 TOP_orl_r_r, 
-		 TOP_orl_r_b, 
-		 TOP_orl_i_r, 
-		 TOP_orl_i_b, 
-		 TOP_sbrk, 
-		 TOP_sh1add_r, 
-		 TOP_sh1add_i, 
-		 TOP_sh2add_r, 
-		 TOP_sh2add_i, 
-		 TOP_sh3add_r, 
-		 TOP_sh3add_i, 
-		 TOP_sh4add_r, 
-		 TOP_sh4add_i, 
-		 TOP_shl_r, 
-		 TOP_shl_i, 
-		 TOP_shr_r, 
-		 TOP_shr_i, 
-		 TOP_shru_r, 
-		 TOP_shru_i, 
-		 TOP_slct_r, 
-		 TOP_slct_i, 
-		 TOP_slctf_r, 
-		 TOP_slctf_i, 
-		 TOP_sub_r, 
-		 TOP_sub_i, 
-		 TOP_syscall, 
-		 TOP_sxtb_r, 
-		 TOP_sxth_r, 
-		 TOP_xor_r, 
-		 TOP_xor_i, 
-		 TOP_send_i, 
-		 TOP_recv_i, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
+  Any_Result_Available_Time(3); 
+  Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
 
 
@@ -194,32 +192,32 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("MUL", 
-		 TOP_mulh_r, 
-		 TOP_mulh_i, 
-		 TOP_mulhh_r, 
-		 TOP_mulhh_i, 
-		 TOP_mulhhu_r, 
-		 TOP_mulhhu_i, 
-		 TOP_mulhs_r, 
-		 TOP_mulhs_i, 
-		 TOP_mulhu_r, 
-		 TOP_mulhu_i, 
 		 TOP_mull_r, 
-		 TOP_mull_i, 
-		 TOP_mullh_r, 
-		 TOP_mullh_i, 
-		 TOP_mullhu_r, 
-		 TOP_mullhu_i, 
-		 TOP_mulll_r, 
-		 TOP_mulll_i, 
-		 TOP_mulllu_r, 
-		 TOP_mulllu_i, 
 		 TOP_mullu_r, 
+		 TOP_mulh_r, 
+		 TOP_mulhu_r, 
+		 TOP_mulll_r, 
+		 TOP_mulllu_r, 
+		 TOP_mullh_r, 
+		 TOP_mullhu_r, 
+		 TOP_mulhh_r, 
+		 TOP_mulhhu_r, 
+		 TOP_mulhs_r, 
+		 TOP_mull_i, 
 		 TOP_mullu_i, 
+		 TOP_mulh_i, 
+		 TOP_mulhu_i, 
+		 TOP_mulll_i, 
+		 TOP_mulllu_i, 
+		 TOP_mullh_i, 
+		 TOP_mullhu_i, 
+		 TOP_mulhh_i, 
+		 TOP_mulhhu_i, 
+		 TOP_mulhs_i, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
+  Any_Result_Available_Time(5); 
+  Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
 
 
@@ -228,21 +226,21 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("LOAD", 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
-		 TOP_ldbu_d, 
+		 TOP_ldw, 
+		 TOP_ldw_d, 
 		 TOP_ldh, 
 		 TOP_ldh_d, 
 		 TOP_ldhu, 
 		 TOP_ldhu_d, 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
+		 TOP_ldb, 
+		 TOP_ldb_d, 
+		 TOP_ldbu, 
+		 TOP_ldbu_d, 
 		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
+  Any_Result_Available_Time(5); 
+  Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
   Resource_Requirement(res_MEM, 0); 
 
@@ -252,18 +250,30 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("STORE", 
+		 TOP_stw, 
+		 TOP_sth, 
+		 TOP_stb, 
 		 TOP_pft, 
 		 TOP_prgadd, 
 		 TOP_prgset, 
-		 TOP_stb, 
-		 TOP_sth, 
-		 TOP_stw, 
+		 TOP_UNDEFINED); 
+
+  Any_Operand_Access_Time(2); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MEM, 0); 
+
+
+  ///////////////////////////////////////// 
+  //   Instructions for Scd Class EXT 
+  ///////////////////////////////////////// 
+
+  Instruction_Group("EXT", 
+		 TOP_imml, 
+		 TOP_immr, 
 		 TOP_UNDEFINED); 
 
   Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
   Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_MEM, 0); 
 
 
   ///////////////////////////////////////// 
@@ -271,12 +281,11 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("IMM", 
-		 TOP_imml, 
-		 TOP_immr, 
+		 TOP_movl, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
+  Any_Result_Available_Time(3); 
+  Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
 
 
@@ -289,8 +298,7 @@ main (int argc, char *argv[])
 		 TOP_brf, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
+  Any_Operand_Access_Time(1); 
   Resource_Requirement(res_ISSUE, 0); 
 
 
@@ -299,17 +307,38 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("CALL", 
-		 TOP_return, 
-		 TOP_call, 
-		 TOP_goto, 
-		 TOP_icall, 
-		 TOP_igoto, 
 		 TOP_prgins, 
+		 TOP_call, 
+		 TOP_icall, 
+		 TOP_UNDEFINED); 
+
+  Any_Result_Available_Time(1); 
+  Any_Operand_Access_Time(0); 
+  Resource_Requirement(res_ISSUE, 0); 
+
+
+  ///////////////////////////////////////// 
+  //   Instructions for Scd Class JUMP 
+  ///////////////////////////////////////// 
+
+  Instruction_Group("JUMP", 
+		 TOP_goto, 
+		 TOP_igoto, 
+		 TOP_return, 
+		 TOP_UNDEFINED); 
+
+  Any_Operand_Access_Time(1); 
+  Resource_Requirement(res_ISSUE, 0); 
+
+
+  ///////////////////////////////////////// 
+  //   Instructions for Scd Class RFI 
+  ///////////////////////////////////////// 
+
+  Instruction_Group("RFI", 
 		 TOP_rfi, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(0); 
-  Any_Result_Available_Time(1);		// ??? not sure 
   Resource_Requirement(res_ISSUE, 0); 
 
   Machine_Done("st220.c"); 
