@@ -5340,6 +5340,18 @@ Find_BB_TNs (BB *bb)
         if ((tnr != NULL) && (tnr != True_TN) && (tnr != Zero_TN)) {
           EBO_TN_INFO *tninfo = EBO_last_opinfo->actual_rslt[OP_Copy_Result(op)];
 
+#ifdef TARG_ST
+	  // [CG 2005/02/28] Don't propagate copy over a dedicated result.
+	  // This may lead to replacing a dedicated use into a non dedicated one.
+	  if (TN_is_dedicated(tnr)) {
+	    if (EBO_Trace_Data_Flow) {
+	      #pragma mips_frequency_hint NEVER
+              fprintf(TFile,"%sCopy not propagated for dedicated result ",EBO_trace_pfx);
+              Print_TN(tnr,FALSE);
+	      fprintf(TFile,"\n");
+	    }
+	  } else 
+#endif
           if (!OP_glue(op) && (cix >= 0)) {
             tninfo->replacement_tn = opnd_tn[cix];
             tninfo->replacement_tninfo = opnd_tninfo[cix];

@@ -3754,6 +3754,16 @@ Verify_Operand (
 		 : REGISTER_SUBCLASS_members(sc);
       if (!REGISTER_SET_MemberP(class_regs, reg)) goto incorrect_register;
     }
+#ifdef TARG_ST
+    if (sc != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+      const ISA_REGISTER_SUBCLASS_INFO *info = ISA_REGISTER_SUBCLASS_Info (sc);
+      if (ISA_REGISTER_SUBCLASS_INFO_Count (info) == 1) {
+ 	// Register TN for a singleton subclass must use a
+ 	// dedicated register.
+ 	if (! TN_is_dedicated(tn)) goto incorrect_register;
+      }
+    }
+#endif
     return;
   incorrect_register:
 #if 0
@@ -3761,6 +3771,7 @@ Verify_Operand (
       int i;
       int opndnum = OP_opnds(op);
       int resnum = OP_results(op);
+      fprintf(TFile, "Incorrect register operand in:\n");
       fprintf(TFile, "BB:%d  %s ",
 	      BB_id(OP_bb(op)),TOP_Name(OP_code(op)));
       for (i = 0; i < resnum; i++) {
