@@ -960,11 +960,7 @@ Fill_Cycle_With_Noops (
 #endif
       OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
       BB_Insert_Op_After(OP_bb(op), op, noop);
-#ifdef TARG_ST
-      OP_scycle(noop) = Clock;
-#else
       OP_scycle(noop) = -1;
-#endif
       Set_OP_bundled (noop);
       TI_BUNDLE_Reserve_Slot (bundle, i, 
 				   ISA_EXEC_Slot_Prop(template_bit, i));
@@ -1346,9 +1342,6 @@ Handle_Bundle_Hazards(
 
   // Everything's OK, reserve the entry in TI_BUNDLE.
   Set_OP_bundled (op);
-#ifdef TARG_ST
-  if (OP_scycle(op) == -1) OP_scycle(op) = Clock;
-#endif
 
   // reserve as many slots as necessary
   for (w = 0; w < ISA_PACK_Inst_Words(OP_code(op)); w++)
@@ -1779,6 +1772,13 @@ Make_Bundles (
     }
 #endif
   }
+
+#ifdef TARG_ST
+  // FdF: Make sure the last operation of the basic block have a valid
+  // scheduling date
+  if (OP_scycle(BB_last_op(bb)) == -1)
+    OP_scycle(BB_last_op(bb)) = Clock-1;
+#endif
 
   if (dep_graph_built) {
     CG_DEP_Delete_Graph (bb);
