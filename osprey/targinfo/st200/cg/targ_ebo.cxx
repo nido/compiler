@@ -1835,146 +1835,6 @@ if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fmpy()) operation.\n");
   return FALSE;
 }
  
-
-
- 
-
-
-/*
- * Function: shl_add_sequence
- *
- * Look for add(shl) sequence and replace with a single shladd
- * instruction. 
- *
- */
-static
-BOOL
-shl_add_sequence (OP *op,
-                  TN **opnd_tn,
-                  EBO_TN_INFO **opnd_tninfo)
-{
- /* Only adds of registers are transformable. */
-  TOP opcode = OP_code(op);
-  if (opcode != TOP_add) return FALSE;
-
- /* Level 1 data: */
-  BB *bb = OP_bb(op);
-  OP *l1_op0 = op;
-  TN *l1_tn0 = OP_result(l1_op0,0);
-
- /* Level 2 data: */
-  OP *l2_op0;
-  TN *l2_tn1 = OP_opnd(op,2);
-  EBO_TN_INFO *l2_tninfo0 = opnd_tninfo[1];
-  EBO_TN_INFO *l2_tninfo1 = opnd_tninfo[2];
-  EBO_OP_INFO *l2_opinfo0;
-
- /* Level 3 data: */
-  TN *l3_tn0;
-  TN *l3_tn1;
-  EBO_TN_INFO *l3_tninfo0;
-  INT64 l3_val1;
-
- /* The input to the add must be a shift-left-immediate. */
- /* Note that a shift-left-add instruction with an add   */
- /* of zero, is treated as a shift-left-immediate.       */
-  if ((l2_tninfo0 == NULL) ||
-      (l2_tninfo0->in_op == NULL) ||
-      ((OP_code(l2_tninfo0->in_op) != TOP_shl_i) &&
-       ((OP_code(l2_tninfo0->in_op) != TOP_shladd) ||
-        (OP_opnd(l2_tninfo0->in_op,3) != Zero_TN)))) {
-   /* Try the other operand of the add. */
-    l2_tn1 = OP_opnd(op,1);
-    l2_tninfo0 = l2_tninfo1;
-    l2_tninfo1 = opnd_tninfo[1];
-
-    if ((l2_tninfo0 == NULL) ||
-        (l2_tninfo0->in_op == NULL) ||
-        ((OP_code(l2_tninfo0->in_op) != TOP_shl_i) &&
-         ((OP_code(l2_tninfo0->in_op) != TOP_shladd) ||
-          (OP_opnd(l2_tninfo0->in_op,3) != Zero_TN)))) return FALSE;
-  }
-
- /* Immediate constants won't fit into the addend field. */
-  if (TN_is_constant(l2_tn1) || TN_is_symbol(l2_tn1)) return FALSE;
-
- /* Determine the inputs to the second instructions. */
-  l2_opinfo0 = locate_opinfo_entry(l2_tninfo0);
-  if ((l2_opinfo0 == NULL) ||
-      (l2_opinfo0->in_op == NULL)) return FALSE;
-
-  l2_op0 = l2_opinfo0->in_op;
-  l3_tn0 = OP_opnd(l2_op0, 1);
-  l3_tn1 = OP_opnd(l2_op0, 2);
-  l3_tninfo0 = l2_opinfo0->actual_opnd[1];
-  if ((l3_tn0 == NULL) || TN_Is_Constant(l3_tn0) ||
-      (l3_tn1 == NULL) || !TN_Is_Constant(l3_tn1) ||
-      !EBO_tn_available (bb, l3_tninfo0)) return FALSE;
-
- /* Will the shift count fit into the shladd instruction? */
-  l3_val1 = TN_value(l3_tn1);
-  if ((l3_val1 <= 0) || (l3_val1 > 4)) return FALSE;
-
- /* Replace the current instruction. */
-    OP *new_op;
-    new_op = Mk_OP(TOP_shladd, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                   l3_tn0, l3_tn1, l2_tn1);
-    OP_srcpos(new_op) = OP_srcpos(op);
-    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                        l3_tninfo0, NULL, l2_tninfo1);
-    BB_Insert_Op_After(bb, op, new_op);
-if (EBO_Trace_Optimization) fprintf(TFile,"Convert add(shl) to shladd\n");
-    return TRUE;
-}
- 
- 
-
-
- 
-
-
-/*
- * Function: iadd_special_case
- *
- * Look for integer add instructions where the first operand is
- * relocated address that is at the top of the stack.  The add
- * is unnecessary.
- */
-static
-BOOL
-iadd_special_case (OP *op,
-                   TN **opnd_tn,
-                   EBO_TN_INFO **opnd_tninfo)
-{
-  if (OP_code(op) == TOP_spadjust) return FALSE;
-
-  TN *tn = opnd_tn[1];
-  if (TN_is_constant(tn) &&
-      !TN_has_spill(tn) &&
-      TN_is_symbol(tn)) {
-    ST *st = TN_var(tn);
-    ST *base_st;
-    INT64 base_ofst;
-    INT64 val = TN_offset(tn);
-
-    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
-    if (ST_on_stack(st) &&
-        ((ST_sclass(st) == SCLASS_AUTO) ||
-         (EBO_in_peep && (ST_sclass(st) == SCLASS_FORMAL)))) {
-      val += base_ofst;
-      if (val == 0) {
-        OPS ops = OPS_EMPTY;
-        EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND), OP_result(op, 0), opnd_tn[2], &ops);
-        if (EBO_in_loop) EBO_OPS_omega (&ops, opnd_tninfo[OP_PREDICATE_OPND]);
-        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-        BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-if (EBO_Trace_Optimization) fprintf(TFile,"Replace iadd with copy\n");
-        return TRUE;
-      }
-    }
-  }
-  return FALSE;
-}
  
 
 
@@ -3798,6 +3658,162 @@ if(EBO_Trace_Optimization)fprintf(TFile,"TOP_mov_f_pr pr%d\n",i);
 #endif
 
 /* =====================================================================
+ * Function: shl_add_sequence
+ *
+ * Look for add(shl) sequence and replace with a single shladd
+ * instruction. 
+ * =====================================================================
+ */
+static BOOL
+shl_add_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  // addcg can't be transformed
+  if (opcode == TOP_addcg) return FALSE;
+
+  /* Level 1 data: */
+  BB *bb = OP_bb(op);
+  OP *l1_op0 = op;
+  TN *l1_tn0 = OP_result(l1_op0,0);
+
+  /* Level 2 data: */
+  OP *l2_op0;
+  TN *l2_tn1 = OP_opnd(op,1); // operand 2
+  EBO_TN_INFO *l2_tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *l2_tninfo1 = opnd_tninfo[1];
+  EBO_OP_INFO *l2_opinfo0;
+  
+  /* Level 3 data: */
+  TN *l3_tn0;
+  TN *l3_tn1;
+  EBO_TN_INFO *l3_tninfo0;
+  INT64 l3_val1;
+
+  /* The input to the add must be a shift-left-immediate. */
+  /* TODO: Note that a shift-left-add instruction with an add   */
+  /* of zero, is treated as a shift-left-immediate.       */
+  if ((l2_tninfo0 == NULL) ||
+      (l2_tninfo0->in_op == NULL) ||
+      ((OP_code(l2_tninfo0->in_op) != TOP_shl_i) &&
+       (OP_code(l2_tninfo0->in_op) != TOP_shl_ii)
+#if 0
+ &&
+       ((OP_code(l2_tninfo0->in_op) != TOP_shladd) ||
+        (OP_opnd(l2_tninfo0->in_op,3) != Zero_TN))
+#endif
+      )) {
+    /* Try the other operand of the add. */
+    l2_tn1 = OP_opnd(op,0);
+    l2_tninfo0 = l2_tninfo1;
+    l2_tninfo1 = opnd_tninfo[0];
+
+    if ((l2_tninfo0 == NULL) ||
+        (l2_tninfo0->in_op == NULL) ||
+        ((OP_code(l2_tninfo0->in_op) != TOP_shl_i) &&
+	 (OP_code(l2_tninfo0->in_op) != TOP_shl_ii)
+#if 0
+ &&
+         ((OP_code(l2_tninfo0->in_op) != TOP_shladd) ||
+          (OP_opnd(l2_tninfo0->in_op,3) != Zero_TN))
+#endif
+	)) return FALSE;
+  }
+
+  /* Symbols won't fit into the addend field. */
+  if (TN_is_symbol(l2_tn1)) return FALSE;
+
+  /* Determine the inputs to the second instructions. */
+  l2_opinfo0 = locate_opinfo_entry(l2_tninfo0);
+  if ((l2_opinfo0 == NULL) ||
+      (l2_opinfo0->in_op == NULL)) return FALSE;
+
+  l2_op0 = l2_opinfo0->in_op;
+  l3_tn0 = OP_opnd(l2_op0, 0);
+  l3_tn1 = OP_opnd(l2_op0, 1);
+  l3_tninfo0 = l2_opinfo0->actual_opnd[0];
+  if ((l3_tn0 == NULL) || TN_Is_Constant(l3_tn0) ||
+      (l3_tn1 == NULL) || !TN_Is_Constant(l3_tn1) ||
+      !EBO_tn_available (bb, l3_tninfo0)) return FALSE;
+
+  /* Will the shift count fit into the shXadd instruction? */
+  l3_val1 = TN_value(l3_tn1);
+  TOP new_topcode;
+  if (l3_val1 == 1) 
+    new_topcode = TN_Is_Constant(l2_tn1) ? TOP_sh1add_i : TOP_sh1add_r;
+  else if (l3_val1 == 2) 
+    new_topcode = TN_Is_Constant(l2_tn1) ? TOP_sh2add_i : TOP_sh2add_r;
+  else if (l3_val1 == 3) 
+    new_topcode = TN_Is_Constant(l2_tn1) ? TOP_sh3add_i : TOP_sh3add_r;
+  else if (l3_val1 == 4) 
+    new_topcode = TN_Is_Constant(l2_tn1) ? TOP_sh4add_i : TOP_sh4add_r;
+  else 
+    return FALSE;
+
+  /* Replace the current instruction. */
+  OP *new_op;
+  new_op = Mk_OP(new_topcode, l1_tn0, l3_tn0, l2_tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, l3_tninfo0, l2_tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert add(shl) to sh%lldadd\n", l3_val1);
+  return TRUE;
+}
+
+/* =====================================================================
+ * Function: iadd_special_case
+ *
+ * Look for integer add instructions where the first operand is
+ * relocated address that is at the top of the stack.  The add
+ * is unnecessary.
+ * =====================================================================
+ */
+static
+BOOL
+iadd_special_case (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  if (OP_code(op) == TOP_spadjust) return FALSE;
+
+  TN *tn = opnd_tn[0];
+  if (TN_is_constant(tn) &&
+      !TN_has_spill(tn) &&
+      TN_is_symbol(tn)) {
+    ST *st = TN_var(tn);
+    ST *base_st;
+    INT64 base_ofst;
+    INT64 val = TN_offset(tn);
+
+    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    if (ST_on_stack(st) &&
+        ((ST_sclass(st) == SCLASS_AUTO) ||
+         (EBO_in_peep && (ST_sclass(st) == SCLASS_FORMAL)))) {
+      val += base_ofst;
+      if (val == 0) {
+        OPS ops = OPS_EMPTY;
+        EBO_Exp_COPY(NULL, OP_result(op, 0), opnd_tn[1], &ops);
+        if (EBO_in_loop) 
+	  EBO_OPS_omega (&ops, NULL);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+	if (EBO_Trace_Optimization) 
+	  fprintf(TFile,"Replace iadd with copy\n");
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
+/* =====================================================================
  *    EBO_Special_Sequence
  *
  *    Look at an expression and it's inputs to identify special sequences
@@ -3813,12 +3829,12 @@ EBO_Special_Sequence (
 {
   TOP opcode = OP_code(op);
 
-#if 0
-
   if (OP_iadd(op)) {
-    return (shl_add_sequence ( op, opnd_tn, opnd_tninfo) ||
-            iadd_special_case( op, opnd_tn, opnd_tninfo));
+    return (shl_add_sequence (op, opnd_tn, opnd_tninfo) ||
+            iadd_special_case(op, opnd_tn, opnd_tninfo));
   }
+
+#if 0
   if (OP_store(op)) {
     return (store_sequence( op, opnd_tn, opnd_tninfo) ||
             sxt_sequence  ( op, TOP_Find_Operand_Use(OP_code(op),OU_storeval),

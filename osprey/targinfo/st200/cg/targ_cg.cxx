@@ -77,9 +77,11 @@
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 
+#if 0
 mTOP CGTARG_Inter_RegClass_Copy_Table[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_CLASS_MAX+1][2];
+#endif
 
-TOP CGTARG_Invert_Table[TOP_count+1];
+static TOP CGTARG_Invert_Table[TOP_count+1];
 
 /* ====================================================================
  *   CGTARG_Preg_Register_And_Class
@@ -375,6 +377,17 @@ CGTARG_Get_unc_Variant (
   }
   
   return (result);
+}
+
+/* ====================================================================
+ *                           Properties:
+ * ====================================================================
+ */
+
+TOP 
+CGTARG_Invert(TOP opr)
+{
+  return CGTARG_Invert_Table[(INT)opr];
 }
 
 /* ====================================================================
@@ -2252,6 +2265,7 @@ CGTARG_Initialize ()
 {
   INT32 i;
 
+#if 0
   /* Initialize CGTARG_Inter_RegClass_Copy_Table: */
   for (i = 0; i <= ISA_REGISTER_CLASS_MAX; ++i) {
     INT j;
@@ -2260,6 +2274,9 @@ CGTARG_Initialize ()
       CGTARG_Inter_RegClass_Copy_Table[i][j][TRUE] = TOP_UNDEFINED;
     }
   }
+#endif
+
+  /* TODO: tabulate in the arch data base */
 
   /* Init all table entries to TOP_UNDEFINED.
    */
