@@ -34,7 +34,7 @@
 
 
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include "defs.h"
 #include "tracing.h"
 #include "cgir.h"
@@ -141,7 +141,7 @@ Calc_Latency_To(CG_SCHED_EST *se, OP *op)
     UINT8 i;
     INT op_opnds = OP_opnds(op);
     mBOOL *found_pred_for_opnd = (mBOOL *)alloca(op_opnds * sizeof(mBOOL));
-    bzero(found_pred_for_opnd, op_opnds * sizeof(mBOOL));
+    BZERO(found_pred_for_opnd, op_opnds * sizeof(mBOOL));
 
     new_entry = 0;
     if (CG_SCHED_EST_calc_dep_graph || se->use_dep_graph)
