@@ -1279,6 +1279,12 @@ extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLAS
 
 #ifdef TARG_ST
 // Returns the set of forbidden registers for GRA.
+// We forbid some registers from being used by the GRA. Such is the
+// case of the $r0.63 on st200 which is a dedicated register for 
+// the igoto instruction. GRA should never allocate this register 
+// to a global live-range (unless dedicated to); or otherwise LRA
+// may not be able to spill a local liverange (like the one used
+// for an igoto) because of "spill beyond the end of BB, etc.
 extern REGISTER_SET CGTARG_Forbidden_GRA_Registers();
 #endif
 
