@@ -125,7 +125,8 @@ op_list load_i;
  *   flags:
  * ====================================================================
  */
-BOOL CG_select_allow_dup = TRUE;
+BOOL CG_select_allow_dup = FALSE;
+BOOL CG_select_stores = FALSE;
 const char* CG_select_factor = "16.0";
 const char* CG_select_disload_cost = "4.0";
 
@@ -599,7 +600,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
         }
 
         else if (OP_store (op)) {
-           if (! stores)
+           if (!CG_select_stores || !stores)
              return FALSE;
            stores->push_front(op);
         }
@@ -683,7 +684,7 @@ Sort_Stores(void)
     }
 
     // one arg differs. Select it.
-    if (ci <= 1) {
+    if (ci == 1 && OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2)) {
       store_i.ifarg_idx.push_back(lidx);
       ++count;
       c = 0;

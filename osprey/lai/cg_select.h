@@ -52,6 +52,7 @@
  * ====================================================================
  */
 extern BOOL CG_select_allow_dup;
+extern BOOL CG_select_stores;
 extern const char* CG_select_factor;
 extern const char* CG_select_disload_cost;
 
@@ -87,6 +88,7 @@ BB_Remove_Ops (BB* bb, op_list ops)
 typedef struct {
   BB *fall_thru;
   BB *target;
+  float prob;
 } logif_info;
 
 //

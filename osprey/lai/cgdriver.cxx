@@ -390,6 +390,10 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_select_allow_dup, NULL,
     "Allow basic blocks duplication for select if conversion"},
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_stores", "",
+    0, 0, 0,	&CG_select_stores, NULL,
+    "Allow the promotion of stores for select if conversion"},
+
   { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
     0, 0, 0,	&CG_select_factor, NULL,
     "Factor by which to increase branch removal benefit."
