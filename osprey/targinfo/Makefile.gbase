@@ -163,7 +163,7 @@ LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE) \
 	isa_registers_gen$(BEXE) isa_enums_gen$(BEXE) \
 	isa_lits_gen$(BEXE) abi_properties_gen$(BEXE) proc_gen$(BEXE) \
 	proc_properties_gen$(BEXE) isa_bundle_gen$(BEXE) si_gen.so \
-	ii_files so_locations si_gen.a *.ho *.bo
+	ii_files so_locations si_gen.a *.o
 
 
 #----------------------------------------------------------------------
@@ -227,10 +227,9 @@ TARGINFO_ACCESS_SRCS = \
 	ti_errors.c
 
 TARGINFO_ACCESS_HDRS = $(TARGINFO_ACCESS_SRCS:.c=.h)
-TARGINFO_ACCESS_HOST_OBJS = $(TARGINFO_ACCESS_SRCS:.c=.ho)
+TARGINFO_ACCESS_HOST_OBJS = $(TARGINFO_ACCESS_SRCS:.c=.o)
 
 TARG_INFO_SRCS = \
-	topcode.c		\
 	targ_isa_subset.c	\
 	targ_isa_properties.c	\
 	targ_isa_enums.c	\
@@ -244,11 +243,12 @@ TARG_INFO_SRCS = \
 	targ_isa_pseudo.c	\
 	targ_abi_properties.c	\
 	targ_isa_bundle.c	\
-	targ_proc.c		\
 	targ_proc_properties.c
 
 TARG_INFO_HDRS = $(TARG_INFO_SRCS:.c=.h)
-TARG_INFO_HOST_OBJS = $(TARG_INFO_SRCS:.c=.ho)
+TARG_INFO_HOST_OBJS = $(TARG_INFO_SRCS:.c=.o)
+TARG_INFO_HOST_OBJS += targ_isa_topcode.o
+TARG_INFO_HOST_OBJS += targ_proc_proc.o
 
 LIBTARGINFO_OBJS = \
 	$(TARGINFO_ACCESS_HOST_OBJS)	\
@@ -335,27 +335,40 @@ ti_latency.h:
 ti_errors.h:
 	ln -s $(TARGINFO_ACCESS_DIR)/ti_errors.h ti_errors.h
 
-ti_asm.ho: ti_asm.c topcode.h targ_isa_operands.h targ_isa_print.h \
+ti_asm.o: ti_asm.c topcode.h targ_isa_operands.h targ_isa_print.h \
 	  targ_isa_pack.h targ_isa_bundle.h targ_isa_decode.h \
 	  targ_isa_pseudo.h ti_errors.h ti_asm.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-ti_bundle.ho: ti_bundle.c ti_si.h targ_isa_bundle.h ti_bundle.h 
+ti_bundle.o: ti_bundle.c ti_si.h targ_isa_bundle.h ti_bundle.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-ti_latency.ho: ti_latency.c ti_si.h targ_isa_properties.h targ_isa_hazards.h \
+ti_latency.o: ti_latency.c ti_si.h targ_isa_properties.h targ_isa_hazards.h \
 	      targ_isa_subset.h ti_errors.h ti_latency.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-ti_errors.ho: ti_errors.c ti_errors.h 
+ti_errors.o: ti_errors.c ti_errors.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-gen_util.bo: gen_util.cxx gen_util.h
+#
+# File topcode.c and generated file targ_proc.c are 
+# used to build the derived topcode.o and targ_proc.o that are
+# executed in the build environment.
+# Thus special rules are needed to build targ_isa_topcode.o and
+# targ_isa_proc.o included with libtarginfo.a executed in the
+# compiler host environment.
+#
+targ_isa_topcode.o: isa_gen$(BEXE) topcode.c
+	$(CC) $(CFLAGS) -c topcode.c -o $@
+
+targ_proc_proc.o: targ_proc.c targ_proc.h
+	$(CC) $(CFLAGS) -c targ_proc.c -o $@
+
+#
+# These are built to be executed in the build environment
+#
+gen_util.o: gen_util.cxx gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
-
-targ_proc.bo: proc_gen$(BEXE) targ_proc.c
-	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_proc.c -o $@
-
 
 ifeq ($(BUILD_COMPILER), EDG)
 topcode.Exported: topcode.h
@@ -377,22 +390,20 @@ targ_proc_properties.Exported: targ_proc_properties.h
 endif
 
 ## topcode.[ch] ##
-topcode.ho: isa_gen$(BEXE) topcode.c
-	$(CC) $(CFLAGS) -c topcode.c -o $@
-topcode.bo: isa_gen$(BEXE) topcode.c
+build_topcode.o: isa_gen$(BEXE) topcode.c
 	$(BUILD_CC) $(BUILD_CFLAGS) -c topcode.c -o $@
 
 topcode.c: topcode.h
 topcode.h: isa_gen$(BEXE)
 	$(RUN) ./isa_gen$(BEXE)
 
-isa_gen$(BEXE): isa_gen.bo gen_util.bo isa.bo
+isa_gen$(BEXE): isa_gen.o gen_util.o isa.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_gen.bo: isa_gen.cxx isa_gen.h
+isa_gen.o: isa_gen.cxx isa_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa.bo: isa.cxx isa_gen.h
+isa.o: isa.cxx isa_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
@@ -402,14 +413,17 @@ targ_isa_enums.c: targ_isa_enums.h
 targ_isa_enums.h: isa_enums_gen$(BEXE)
 	$(RUN) ./isa_enums_gen$(BEXE)
 
-isa_enums_gen$(BEXE): isa_enums_gen.bo gen_util.bo isa_enums.bo
+isa_enums_gen$(BEXE): isa_enums_gen.o gen_util.o isa_enums.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_enums_gen.bo: isa_enums_gen.cxx isa_enums_gen.h
+isa_enums_gen.o: isa_enums_gen.cxx isa_enums_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_enums.bo: isa_enums.cxx isa_enums_gen.h
+isa_enums.o: isa_enums.cxx isa_enums_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_enums.o: targ_isa_enums.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_enums.c -o $@
 
 ## targ_isa_lits.[ch] ##
 
@@ -417,14 +431,17 @@ targ_isa_lits.c: targ_isa_lits.h
 targ_isa_lits.h: isa_lits_gen$(BEXE)
 	$(RUN) ./isa_lits_gen$(BEXE)
 
-isa_lits_gen$(BEXE): isa_lits_gen.bo gen_util.bo isa_lits.bo
+isa_lits_gen$(BEXE): isa_lits_gen.o gen_util.o isa_lits.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_lits_gen.bo: isa_lits_gen.cxx isa_lits_gen.h
+isa_lits_gen.o: isa_lits_gen.cxx isa_lits_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_lits.bo: isa_lits.cxx isa_lits_gen.h
+isa_lits.o: isa_lits.cxx isa_lits_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_lits.o: targ_isa_lits.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_lits.c -o $@
 
 ## targ_isa_registers.[ch] ##
 
@@ -432,15 +449,18 @@ targ_isa_registers.c: targ_isa_registers.h
 targ_isa_registers.h: isa_registers_gen$(BEXE)
 	$(RUN) ./isa_registers_gen$(BEXE)
 
-isa_registers_gen$(BEXE): isa_registers_gen.bo gen_util.bo isa_registers.bo topcode.bo \
-		targ_isa_subset.bo
+isa_registers_gen$(BEXE): isa_registers_gen.o gen_util.o isa_registers.o \
+			  build_topcode.o build_isa_subset.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_registers_gen.bo: isa_registers_gen.cxx isa_registers_gen.h targ_isa_subset.h
+isa_registers_gen.o: isa_registers_gen.cxx isa_registers_gen.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_registers.bo: isa_registers.cxx isa_registers_gen.h targ_isa_subset.h
+isa_registers.o: isa_registers.cxx isa_registers_gen.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_registers.o: targ_isa_registers.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_registers.c -o $@
 
 
 ## targ_isa_hazards.[ch] ##
@@ -449,14 +469,14 @@ targ_isa_hazards.c: targ_isa_hazards.h
 targ_isa_hazards.h: isa_hazards_gen$(BEXE)
 	$(RUN) ./isa_hazards_gen$(BEXE)
 
-isa_hazards_gen$(BEXE): isa_hazards_gen.bo gen_util.bo isa_hazards.bo topcode.bo \
-		targ_isa_subset.bo
+isa_hazards_gen$(BEXE): isa_hazards_gen.o gen_util.o isa_hazards.o \
+			build_topcode.o build_isa_subset.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_hazards_gen.bo: isa_hazards_gen.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
+isa_hazards_gen.o: isa_hazards_gen.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_hazards.bo: isa_hazards.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
+isa_hazards.o: isa_hazards.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
@@ -466,15 +486,18 @@ targ_isa_subset.c: targ_isa_subset.h
 targ_isa_subset.h: isa_subset_gen$(BEXE)
 	$(RUN) ./isa_subset_gen$(BEXE)
 
-isa_subset_gen$(BEXE): isa_subset_gen.bo gen_util.bo isa_subset.bo topcode.bo
+isa_subset_gen$(BEXE): isa_subset_gen.o gen_util.o isa_subset.o \
+			build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_subset_gen.bo: isa_subset_gen.cxx isa_subset_gen.h topcode.h
+isa_subset_gen.o: isa_subset_gen.cxx isa_subset_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_subset.bo: isa_subset.cxx isa_subset_gen.h topcode.h
+isa_subset.o: isa_subset.cxx isa_subset_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+build_isa_subset.o: targ_isa_subset.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_subset.c -o $@
 
 ## targ_isa_properties.[ch] ##
 
@@ -482,14 +505,18 @@ targ_isa_properties.c: targ_isa_properties.h
 targ_isa_properties.h: isa_properties_gen$(BEXE)
 	$(RUN) ./isa_properties_gen$(BEXE)
 
-isa_properties_gen$(BEXE): isa_properties_gen.bo gen_util.bo isa_properties.bo topcode.bo
+isa_properties_gen$(BEXE): isa_properties_gen.o gen_util.o isa_properties.o \
+			   build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_properties_gen.bo: isa_properties_gen.cxx isa_properties_gen.h topcode.h
+isa_properties_gen.o: isa_properties_gen.cxx isa_properties_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_properties.bo: isa_properties.cxx isa_properties_gen.h topcode.h
+isa_properties.o: isa_properties.cxx isa_properties_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_properties.o: targ_isa_properties.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_properties.c -o $@
 
 ## targ_isa_operands.[ch] ##
 
@@ -497,22 +524,27 @@ targ_isa_operands.c: targ_isa_operands.h
 targ_isa_operands.h: isa_operands_gen$(BEXE)
 	$(RUN) ./isa_operands_gen$(BEXE)
 
-targ_isa_operands.bo: targ_isa_operands.c targ_isa_operands.h targ_isa_properties.h
-	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+#targ_isa_operands.o: targ_isa_operands.c targ_isa_operands.h targ_isa_properties.h
+#	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
-isa_operands_gen$(BEXE): isa_operands_gen.bo gen_util.bo isa_operands.bo topcode.bo \
-		  targ_isa_registers.bo targ_isa_enums.bo targ_isa_lits.bo \
-		  targ_isa_subset.bo targ_isa_properties.bo
+isa_operands_gen$(BEXE): isa_operands_gen.o gen_util.o isa_operands.o \
+			 build_topcode.o build_isa_registers.o \
+			 build_isa_enums.o \
+			 build_isa_lits.o build_isa_subset.o \
+			 build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_operands_gen.bo: isa_operands_gen.cxx isa_operands_gen.h \
-	targ_isa_registers.h targ_isa_enums.h targ_isa_lits.h topcode.h
+isa_operands_gen.o: isa_operands_gen.cxx isa_operands_gen.h \
+		    targ_isa_registers.h targ_isa_enums.h targ_isa_lits.h \
+		    topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_operands.bo: isa_operands.cxx isa_operands_gen.h targ_isa_registers.h \
-	targ_isa_enums.h targ_isa_lits.h topcode.h
+isa_operands.o: isa_operands.cxx isa_operands_gen.h targ_isa_registers.h \
+		targ_isa_enums.h targ_isa_lits.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c -I$(COMMON_COM_DIR) $< -o $@
 
+build_isa_operands.o: targ_isa_operands.c targ_isa_operands.h targ_isa_properties.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_isa_pack.[ch] ##
 
@@ -520,14 +552,15 @@ targ_isa_pack.c: targ_isa_pack.h
 targ_isa_pack.h: isa_pack_gen$(BEXE)
 	$(RUN) ./isa_pack_gen$(BEXE)
 
-isa_pack_gen$(BEXE): gen_util.bo isa_pack_gen.bo gen_util.bo isa_pack.bo \
-	      topcode.bo targ_isa_properties.bo
+isa_pack_gen$(BEXE): gen_util.o isa_pack_gen.o gen_util.o isa_pack.o \
+	      	     build_topcode.o build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_pack_gen.bo: isa_pack_gen.cxx isa_pack_gen.h topcode.h targ_isa_properties.h
+isa_pack_gen.o: isa_pack_gen.cxx isa_pack_gen.h topcode.h \
+		targ_isa_properties.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_pack.bo: isa_pack.cxx isa_pack_gen.h topcode.h
+isa_pack.o: isa_pack.cxx isa_pack_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
@@ -537,13 +570,14 @@ targ_isa_decode.c: targ_isa_decode.h
 targ_isa_decode.h: isa_decode_gen$(BEXE)
 	$(RUN) ./isa_decode_gen$(BEXE)
 
-isa_decode_gen$(BEXE): gen_util.bo isa_decode_gen.bo gen_util.bo isa_decode.bo topcode.bo targ_isa_bundle.bo 
+isa_decode_gen$(BEXE): gen_util.o isa_decode_gen.o gen_util.o \
+			isa_decode.o build_topcode.o build_isa_bundle.o 
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_decode_gen.bo: isa_decode_gen.cxx isa_decode_gen.h topcode.h 
+isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h 
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_decode.bo: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h \
+isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h \
 	      targ_isa_pack.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
@@ -554,15 +588,17 @@ targ_isa_pseudo.c: targ_isa_pseudo.h
 targ_isa_pseudo.h: isa_pseudo_gen$(BEXE)
 	$(RUN) ./isa_pseudo_gen$(BEXE)
 
-isa_pseudo_gen$(BEXE): gen_util.bo isa_pseudo_gen.bo gen_util.bo isa_pseudo.bo topcode.bo \
-		targ_isa_operands.bo targ_isa_operands.bo targ_isa_registers.bo \
-		targ_isa_lits.bo targ_isa_enums.bo targ_isa_subset.bo
+isa_pseudo_gen$(BEXE): gen_util.o isa_pseudo_gen.o gen_util.o isa_pseudo.o \
+			build_topcode.o build_isa_operands.o \
+			build_isa_registers.o build_isa_lits.o \
+			build_isa_enums.o build_isa_subset.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_pseudo_gen.bo: isa_pseudo_gen.cxx isa_pseudo_gen.h topcode.h targ_isa_operands.h
+isa_pseudo_gen.o: isa_pseudo_gen.cxx isa_pseudo_gen.h topcode.h \
+		  targ_isa_operands.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_pseudo.bo: isa_pseudo.cxx isa_pseudo_gen.h topcode.h
+isa_pseudo.o: isa_pseudo.cxx isa_pseudo_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 ## targ_isa_print.[ch] ##
@@ -571,14 +607,14 @@ targ_isa_print.c: targ_isa_print.h
 targ_isa_print.h: isa_print_gen$(BEXE)
 	$(RUN) ./isa_print_gen$(BEXE)
 
-isa_print_gen$(BEXE): gen_util.bo isa_print_gen.bo isa_print.bo \
-	       topcode.bo targ_isa_properties.bo
+isa_print_gen$(BEXE): gen_util.o isa_print_gen.o isa_print.o build_topcode.o \
+		      build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_print_gen.bo: isa_print_gen.cxx isa_print_gen.h topcode.h targ_isa_properties.h
+isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h targ_isa_properties.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_print.bo: isa_print.cxx isa_print_gen.h topcode.h
+isa_print.o: isa_print.cxx isa_print_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
@@ -588,14 +624,14 @@ targ_abi_properties.c: targ_abi_properties.h
 targ_abi_properties.h: abi_properties_gen$(BEXE)
 	$(RUN) ./abi_properties_gen$(BEXE)
 
-abi_properties_gen$(BEXE): abi_properties_gen.bo gen_util.bo abi_properties.bo \
-		targ_isa_subset.bo targ_isa_registers.bo
+abi_properties_gen$(BEXE): abi_properties_gen.o gen_util.o abi_properties.o \
+			build_isa_subset.o build_isa_registers.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-abi_properties_gen.bo: abi_properties_gen.cxx abi_properties_gen.h targ_isa_registers.h
+abi_properties_gen.o: abi_properties_gen.cxx abi_properties_gen.h targ_isa_registers.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-abi_properties.bo: abi_properties.cxx abi_properties_gen.h targ_isa_registers.h
+abi_properties.o: abi_properties.cxx abi_properties_gen.h targ_isa_registers.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 ## targ_isa_bundle.[ch] ##
@@ -604,16 +640,19 @@ targ_isa_bundle.c: targ_isa_bundle.h
 targ_isa_bundle.h: isa_bundle_gen$(BEXE)
 	$(RUN) ./isa_bundle_gen$(BEXE)
 
-isa_bundle_gen$(BEXE): gen_util.bo isa_bundle_gen.bo gen_util.bo isa_bundle.bo \
-	topcode.bo targ_isa_properties.bo
+isa_bundle_gen$(BEXE): gen_util.o isa_bundle_gen.o gen_util.o isa_bundle.o \
+			build_topcode.o build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_bundle_gen.bo: isa_bundle_gen.cxx isa_bundle_gen.h topcode.h \
+isa_bundle_gen.o: isa_bundle_gen.cxx isa_bundle_gen.h topcode.h \
                   targ_isa_properties.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_bundle.bo: isa_bundle.cxx isa_bundle_gen.h topcode.h
+isa_bundle.o: isa_bundle.cxx isa_bundle_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_bundle.o: targ_isa_bundle.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_proc.[ch] ##
 
@@ -621,13 +660,19 @@ targ_proc.c: targ_proc.h
 targ_proc.h: proc_gen$(BEXE)
 	$(RUN) ./proc_gen$(BEXE)
 
-proc_gen$(BEXE): proc_gen.bo gen_util.bo proc.bo
+#
+# Needed for building proc_properties.o
+#
+targ_proc.o: proc_gen$(BEXE) targ_proc.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_proc.c -o $@
+
+proc_gen$(BEXE): proc_gen.o gen_util.o proc.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-proc_gen.bo: proc_gen.cxx proc_gen.h
+proc_gen.o: proc_gen.cxx proc_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-proc.bo: proc.cxx proc_gen.h
+proc.o: proc.cxx proc_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 ## targ_proc_properties.[ch] ##
@@ -636,16 +681,19 @@ targ_proc_properties.c: targ_proc_properties.h
 targ_proc_properties.h: proc_properties_gen$(BEXE)
 	$(RUN) ./proc_properties_gen$(BEXE)
 
-proc_properties_gen$(BEXE): proc_properties_gen.bo gen_util.bo proc_properties.bo targ_proc.bo
+proc_properties_gen$(BEXE): proc_properties_gen.o gen_util.o proc_properties.o targ_proc.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-proc_properties_gen.bo: proc_properties_gen.cxx proc_properties_gen.h targ_proc.h
+proc_properties_gen.o: proc_properties_gen.cxx proc_properties_gen.h targ_proc.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-proc_properties.bo: proc_properties.cxx proc_properties_gen.h targ_proc.h
+proc_properties.o: proc_properties.cxx proc_properties_gen.h targ_proc.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-si_gen.bo: si_gen.cxx si_gen.h topcode.h targ_isa_properties.h \
+#
+# Scheduling info library building
+#
+si_gen.o: si_gen.cxx si_gen.h topcode.h targ_isa_properties.h \
           targ_isa_subset.h targ_isa_operands.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
@@ -656,52 +704,21 @@ si_gen.so: si_gen.cxx topcode.h si_gen.h targ_isa_operands.h \
 	targ_isa_subset.o targ_isa_properties.o \
 	-shared -o si_gen.so -rpath $(CWD)
 else
-si_gen.so: si_gen.bo topcode.h si_gen.h targ_isa_operands.h \
-        targ_isa_operands.bo targ_isa_properties.bo targ_isa_registers.bo \
-	targ_isa_subset.bo targ_isa_enums.bo targ_isa_lits.bo
-	$(CXX) $(CXXLDFLAGS) si_gen.bo \
-	targ_isa_subset.bo targ_isa_properties.bo targ_isa_operands.bo \
-	targ_isa_registers.bo targ_isa_enums.bo targ_isa_lits.bo \
-	-shared -o $@
+si_gen.so: si_gen.o topcode.h si_gen.h targ_isa_operands.h \
+           targ_isa_operands.o targ_isa_properties.o targ_isa_registers.o \
+	   targ_isa_subset.o targ_isa_enums.o targ_isa_lits.o
+	$(CXX) $(CXXLDFLAGS) si_gen.o targ_isa_subset.o \
+                             targ_isa_properties.o targ_isa_operands.o \
+	                     targ_isa_registers.o targ_isa_enums.o \
+                             targ_isa_lits.o -shared -o $@
 
-si_gen.a: si_gen.bo topcode.h si_gen.h targ_isa_operands.h \
-        targ_isa_operands.bo targ_isa_properties.bo targ_isa_registers.bo \
-	targ_isa_subset.bo targ_isa_enums.bo targ_isa_lits.bo
-	$(BUILD_AR) rc $@ si_gen.bo \
-	targ_isa_subset.bo targ_isa_properties.bo targ_isa_operands.bo \
-	targ_isa_registers.bo targ_isa_enums.bo targ_isa_lits.bo 
+si_gen.a: si_gen.o topcode.h si_gen.h targ_isa_operands.h \
+          build_isa_operands.o build_isa_properties.o build_isa_registers.o \
+	  build_isa_subset.o build_isa_enums.o build_isa_lits.o
+	$(BUILD_AR) rc $@ si_gen.o build_isa_subset.o build_isa_properties.o \
+			  build_isa_operands.o build_isa_registers.o \
+			  build_isa_enums.o build_isa_lits.o 
 endif
-
-# list of files that do not require a specific rule
-MISC_HOST_OBJS = targ_isa_subset.ho \
-		 targ_isa_properties.ho \
-		 targ_isa_enums.ho \
-		 targ_isa_hazards.ho \
-		 targ_isa_lits.ho \
-		 targ_isa_print.ho \
-		 targ_isa_pack.ho \
-		 targ_isa_operands.ho \
-		 targ_isa_registers.ho \
-		 targ_isa_decode.ho \
-		 targ_isa_pseudo.ho \
-		 targ_abi_properties.ho \
-		 targ_isa_bundle.ho \
-		 targ_proc.ho \
-		 targ_proc_properties.ho
-
-MISC_BUILD_OBJS = targ_isa_subset.bo \
-	    	  targ_isa_registers.bo \
-		  targ_isa_enums.bo \
-		  targ_isa_lits.bo \
-		  targ_isa_properties.bo \
-		  targ_isa_bundle.bo
-
-$(MISC_BUILD_OBJS) : %.bo : %.c %.h
-	$(BUILD_CC) $(BUILD_CFLAGS) $< -c -o $@
-
-$(MISC_HOST_OBJS) : %.ho : %.c %.h
-	$(CC) $(CFLAGS) $< -c -o $@
-
 
 #----------------------------------------------------------------------
 # mips
@@ -849,20 +866,20 @@ endif
 
 ifeq ($(BUILD_TARGET), ST100)
 
-st120.so: st120.ho
+st120.so: st120.o
 	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
 
-st120.ho: st120.c ti_si.h
+st120.o: st120.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 st120.c: st120_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./st120_si_gen$(BEXE)
 
-st120_si_gen$(BEXE): si_gen.a st120_si.bo topcode.bo
-	$(CXX) $(CXXLDFLAGS) $^ -o $@
+st120_si_gen$(BEXE): si_gen.a st120_si.o build_topcode.o
+	$(BUILD_CXX) $(CXXLDFLAGS) $^ -o $@
 
-st120_si.bo: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+st120_si.o: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
+	$(BUILD_CXX) $(CXXFLAGS) -c $< -o $@
 
 endif # ST100
 
@@ -872,36 +889,36 @@ endif # ST100
 
 ifeq ($(BUILD_TARGET), ST200)
 
-st220.ho: st220.c ti_si.h
+st220.o: st220.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 st220.c: st220_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./st220_si_gen$(BEXE)
 
-st220_si_gen$(BEXE): st220_si.bo si_gen.a topcode.bo
+st220_si_gen$(BEXE): st220_si.o si_gen.a build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-st220_si.bo: st220_si.cxx targ_isa_subset.h topcode.h si_gen.h
+st220_si.o: st220_si.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
 #
 # shared library
 #
-st220.so: st220.ho
+st220.so: st220.o
 	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
 
 #
 # windows dll (+ import library)
 #
-st220.dll st220_dll.a : st220.ho st200_DllMain.ho $(LIBTARGINFO_OBJS)
+st220.dll st220_dll.a : st220.o st200_DllMain.o $(LIBTARGINFO_OBJS)
 	$(CC) --shared -o st220.dll -Wl,--out-implib,st220_dll.a \
 	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
 
 #
 # static library
 #
-libst220.a : st220.ho
+libst220.a : st220.o
 	$(AR) rc $@ $<
 
 endif # ST200
