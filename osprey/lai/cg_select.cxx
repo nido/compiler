@@ -74,11 +74,6 @@
 #include "cg_select.h"
 #include "DaVinci.h"
 
-// ====================================================================
-//   SELECT flags:
-// ====================================================================
-
-BOOL CG_select_allow_dup = FALSE;
 
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
@@ -1310,8 +1305,6 @@ void
 Convert_Select(RID *rid, const BB_REGION& bb_region)
 {
   INT i;
-
-  if (!CG_enable_select) return;
 
   Set_Error_Phase ("Select Region Formation");
 
