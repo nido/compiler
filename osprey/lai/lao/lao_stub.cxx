@@ -248,7 +248,6 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
 // Convert CGIR_BB to LIR ControlNode.
 static ControlNode
 CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
-  float frequency = BB_freq(cgir_bb);
   BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb, 0, NULL, 0, NULL);
   int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
   TempName *liveins = (TempName *)alloca(MAX_LIVEIN_COUNT*sizeof(TempName));
@@ -258,7 +257,9 @@ CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
     Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
     liveins[liveinCount++] = CGIR_TN_to_TempName(tn);
   }
-  ControlNode controlnode = Interface_makeControlNode(interface, basicblock, frequency, liveinCount, liveins);
+  intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
+  float frequency = BB_freq(cgir_bb);
+  ControlNode controlnode = Interface_makeControlNode(interface, basicblock, regionId, frequency, liveinCount, liveins);
   return controlnode;
 }
 
@@ -470,8 +471,9 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   if (cgir_li != NULL) {
     BB_Add_Annotation(new_bb, ANNOT_LOOPINFO, cgir_li);
   }
-  // Transfer annotations.
+  // Transfer annotations and attributes.
   if (cgir_bb != NULL) {
+    BB_rid(new_bb) = BB_rid(cgir_bb);
     if (BB_has_pragma(cgir_bb)) {
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_PRAGMA);
     }
@@ -1128,14 +1130,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   //
   if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
-  Interface_open(interface, 7,
+  Interface_open(interface, 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
-      Configuration_LoopDep, CG_LAO_loopdep,
-      Configuration_SCD_First, CG_LAO_scd_first,
-      Configuration_SCD_Last, CG_LAO_scd_last);
+      Configuration_LoopDep, CG_LAO_loopdep);
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
