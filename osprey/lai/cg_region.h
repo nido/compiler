@@ -37,6 +37,7 @@
 #define	cg_region_INCLUDED
 
 #include "bb.h"
+#include "bb_map.h"
 #include "tn.h"
 #include "tn_list.h"
 
@@ -151,5 +152,9 @@ extern RID* Non_Transparent_RID (RID *);
 // get list of tns in boundary set
 extern TN_LIST * REGION_Get_TN_In_List (RID *rid);
 extern TN_LIST * REGION_Get_TN_Out_List (RID *rid, INT exit_num);
+
+#ifdef TARG_ST
+extern BB_MAP CG_LAO_Region_Map;
+#endif
 
 #endif /* cg_region_INCLUDED */

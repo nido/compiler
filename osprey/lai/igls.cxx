@@ -86,6 +86,10 @@
 #include "hb_sched.h"
 #include "hb_hazards.h"
 #include "reg_live.h"
+#ifdef TARG_ST
+#include "freq.h"
+#include "lao_stub.h"
+#endif
 /* #include "targ_proc_properties.h" */
 
 
@@ -380,4 +384,41 @@ IGLS_Schedule_Region (BOOL before_regalloc)
   Stop_Timer (T_Sched_CU);
 }
 
+#ifdef TARG_ST
+void
+LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
+{
 
+  if (before_regalloc) {
+    if (CG_LAO_optimizations & Optimization_PreSched) {
+      Set_Error_Phase( "LAO Prepass Scheduling" );
+      lao_optimize_PU(Optimization_PreSched);
+      if (frequency_verify)
+	FREQ_Verify("LAO Prepass Scheduling");
+    }
+  }
+  else {
+    // Call the LAO for postpass scheduling.
+    if (CG_LAO_optimizations & Optimization_PostSched) {
+      //
+      CG_LAO_Region_Map = BB_MAP32_Create();
+      //
+      Set_Error_Phase( "LAO Postpass Scheduling" );
+      lao_optimize_PU(Optimization_PostSched);
+      if (frequency_verify)
+	FREQ_Verify("LAO Postpass Scheduling");
+    }
+    // Direct call to the bundler, and bypass the IGLS.
+    if (CG_LAO_optimizations & Optimization_Linearize) {
+      REG_LIVE_Analyze_Region();
+      Trace_HB = Get_Trace (TP_SCHED, 1);
+      for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+	if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
+	Handle_All_Hazards(bb);
+      }
+      REG_LIVE_Finish();
+      if (Assembly) Add_Scheduling_Notes_For_Loops ();
+    }
+  }
+}
+#endif

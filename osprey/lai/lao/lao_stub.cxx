@@ -80,8 +80,6 @@ extern "C" {
 
 typedef vector<BB*> BB_VECTOR;
 
-CG_EXPORTED extern BB_MAP CG_LAO_Region_Map;
-
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
 // These functions are the only ones to call the Interface_make functions.
 

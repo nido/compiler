@@ -103,7 +103,6 @@
 #include "cgtarget.h"
 #include "ebo.h"
 #include "hb.h"
-#include "hb_hazards.h"
 #ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
 #endif
@@ -134,7 +133,7 @@ RID *Current_Rid;
 TN_MAP TN_To_PREG_Map;
 
 #ifdef TARG_ST
-BB_MAP CG_LAO_Region_Map = NULL;
+BB_MAP CG_LAO_Region_Map;
 #endif
 
 /* WOPT alias manager */
@@ -295,6 +294,8 @@ CG_Region_Initialize (
 
   Current_Rid = REGION_get_rid( rwn );
 
+  CG_LAO_Region_Map = NULL;
+
   return;
 }
 
@@ -323,6 +324,11 @@ CG_Region_Finalize (WN *result_before, WN *result_after,
 	    ("CG_Region_Finalize, inconsistent region"));
 
   REGION_set_level(rid, RL_CGSCHED);
+
+  if (CG_LAO_Region_Map) {
+    BB_MAP_Delete(CG_LAO_Region_Map);
+    CG_LAO_Region_Map = NULL;
+  }
 
   if (generate_glue_code) {
     /* region entry glue code */
@@ -668,13 +674,9 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations & Optimization_PreSched) {
-    Set_Error_Phase( "LAO Prepass Scheduling" );
-    lao_optimize_PU(Optimization_PreSched);
-    if (frequency_verify)
-      FREQ_Verify("LAO Prepass Scheduling");
-  }
-  if (CG_LAO_optimizations); else
+  if (CG_LAO_optimizations)
+    LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
+  else
 #endif
   IGLS_Schedule_Region (TRUE /* before register allocation */);
   // Arthur: here rather than in igls.cxx
@@ -768,33 +770,9 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
-  // Call the LAO for postpass scheduling.
-  if (CG_LAO_optimizations & Optimization_PostSched) {
-    //
-    CG_LAO_Region_Map = BB_MAP32_Create();
-    //
-    Set_Error_Phase( "LAO Postpass Scheduling" );
-    lao_optimize_PU(Optimization_PostSched);
-    if (frequency_verify)
-      FREQ_Verify("LAO Postpass Scheduling");
-  }
-  // Direct call to the bundler, and bypass the IGLS.
-  if (CG_LAO_optimizations & Optimization_Linearize) {
-    REG_LIVE_Analyze_Region();
-    Trace_HB = Get_Trace (TP_SCHED, 1);
-    for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-      void Handle_All_Hazards(BB *bb);
-      if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
-      Handle_All_Hazards(bb);
-    }
-    REG_LIVE_Finish();
-    if (Assembly) Add_Scheduling_Notes_For_Loops ();
-  }
-  if (CG_LAO_Region_Map) {
-    BB_MAP_Delete(CG_LAO_Region_Map);
-    CG_LAO_Region_Map = NULL;
-  }
-  if (CG_LAO_optimizations); else
+  if (CG_LAO_optimizations)
+    LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
+  else
 #endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // Arthur: here rather than in igls.cxx

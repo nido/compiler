@@ -50,6 +50,4 @@ CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 CG_EXPORTED extern void (*CGIR_print_p) (FILE *file);
 #define CGIR_print (*CGIR_print_p)
 
-CG_EXPORTED extern BB_MAP CG_LAO_Region_Map;
-
 #endif /* laostub_INCLUDED */
