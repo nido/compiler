@@ -421,6 +421,10 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_select_spec_loads, NULL,
     "Allow load speculation for select if conversion"},
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_stores", "",
+    0, 0, 0,	&CG_select_spec_stores, NULL,
+    "Allow store speculation using black holes stack slots"},
+
   { OVK_INT32,	OV_INTERNAL, TRUE, "select_stores", "",
     1, 0, 3,	&CG_select_stores, NULL,
     "Allow the promotion of stores for select if conversion"},

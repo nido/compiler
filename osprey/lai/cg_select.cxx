@@ -38,7 +38,8 @@
  *
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_spec_load=TRUE     enable speculative loads
+ * -CG:select_spec_loads=TRUE    enable speculative loads
+ * -CG:select_spec_stores=TRUE   enable speculative stores using blackholes
  *
  * The following flags to drive the algorithm.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
@@ -123,12 +124,12 @@ op_list load_i;
  * ====================================================================
  */
 BOOL CG_select_spec_loads = TRUE;
+BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.2";
 static float select_factor;
 static int branch_penalty;
-static float cond_store_penalty = 1;
 
 /* ================================================================
  *
@@ -539,14 +540,15 @@ Are_Not_Aliased(OP* op1, OP* op2)
 
 // Unsafe to speculate loads and promote stores in the same time if they
 // share the same address.
-static void
+static BOOL
 Check_ReadWrite_Dependencies(op_list strs, list<bool> &bh_list)
 {
   // Since we are also promoting loads, be carefull that they
   // can't alias with stores since we are changing the op order.
   op_list::iterator i1_iter = strs.begin();
   op_list::iterator i1_end  = strs.end();
-
+  bool has_nbh = FALSE;
+    
   while(i1_iter != i1_end) {
     op_list::iterator i2_iter = load_i.begin();
     op_list::iterator i2_end  = load_i.end();
@@ -564,6 +566,7 @@ Check_ReadWrite_Dependencies(op_list strs, list<bool> &bh_list)
             Print_OP (ldw_op);
           }
           nbh = TRUE;
+          has_nbh = TRUE;
         }
       }
       i2_iter++;
@@ -571,6 +574,7 @@ Check_ReadWrite_Dependencies(op_list strs, list<bool> &bh_list)
     bh_list.push_back(nbh);
     i1_iter++;
   }
+  return has_nbh;
 }
 
 static UINT
@@ -698,7 +702,9 @@ Sort_Stores(void)
     // if the stores were moved from their original location, and if they
     // may alias with a load, then it's unsafe to promote them
     // taken block will be promoted first.
-    Check_ReadWrite_Dependencies(store_i.tkstrs, store_i.need_bh);
+    bool haddep = Check_ReadWrite_Dependencies(store_i.tkstrs, store_i.need_bh);
+    if (!CG_select_spec_stores && haddep)
+      return 0;
   }
   else {
     op_list::iterator i1_iter = store_i.tkstrs.begin();
@@ -879,10 +885,6 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   if (se2)
     CG_SCHED_EST_Delete(se2);
 
-  // Stores will be merged together.
-  int sdiff = MIN (store_i.ntkstrs.size(), store_i.tkstrs.size());
-  cyclesh -= sdiff * cond_store_penalty;  
-
   // cost of if converted region. prob is one. 
   float est_cost_after = cyclesh / select_factor;
 
@@ -913,7 +915,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     BB_Update_OP_Order(bb);
 
     // allow removing of side entries only on one of targets.
-    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup) {
+    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup && !OPT_Space) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -936,7 +938,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
 
     BB_Update_OP_Order(bb);
 
-    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup) {
+    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup && !OPT_Space) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -1085,25 +1087,6 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
             DevAssert(TN_is_global_reg(res), ("can find a def for a local tn"));
         }
       }
-    }
-  }
-}
-
-
-// promoted tns was global because they ended up inside a phi.
-// Now that they are converted into a select and the blocks have
-// been merged, that might not be true.
-static void
-BB_Localize_Tns (BB *bb) 
-{
-  OP *op;
-
-  FOR_ALL_BB_OPs_FWD(bb, op) {  
-    for (UINT8 i = 0; i < OP_results(op); i++) {
-      TN *tn = OP_result(op, 0);
-
-      if (!GTN_SET_MemberP(BB_live_out(bb),tn))
-        Reset_TN_is_global_reg(tn); 
     }
   }
 }
@@ -1526,18 +1509,18 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
       }
     }
 
-   if (op1)
-     old_ops.push_front(op1);
-   if (op2)
-     old_ops.push_front(op2);
+    if (op1)
+      old_ops.push_front(op1);
+    if (op2)
+      old_ops.push_front(op2);
 
-   store_i.tkstrs.pop_front();
-   store_i.ntkstrs.pop_front();
-   store_i.ifarg_idx.pop_front();
-   store_i.need_bh.pop_front();
-  }
+    store_i.tkstrs.pop_front();
+    store_i.ntkstrs.pop_front();
+    store_i.ifarg_idx.pop_front();
+    store_i.need_bh.pop_front();  
+}
 
-   BB_Remove_Ops(bb, old_ops);
+  BB_Remove_Ops(bb, old_ops);
 }
 
 // Check that bb has no liveout or side effects beside the conditional jump.
@@ -1864,8 +1847,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   GRA_LIVE_Compute_Liveness_For_BB(joint_block);
 
   // Promoted instructions might not be global anymore.
-  //  GRA_LIVE_Rename_TNs_For_BB(bb1);
-  BB_Localize_Tns (bb1);
+  GRA_LIVE_Rename_TNs_For_BB(bb1);
 }
 
 /* ================================================================
@@ -2215,8 +2197,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Finalize_Hammock_Memory();
   
       GRA_LIVE_Recalc_Liveness(rid);
-      //      GRA_LIVE_Rename_TNs();
-      BB_Localize_Tns (bb);
+      GRA_LIVE_Rename_TNs();
 
       // if bb is still a logif, that means that there was a merge.
       // need to update logif map
@@ -2235,6 +2216,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   BB_MAP_Delete(if_bb_map);
 
+  // TODO: track liveness
   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
