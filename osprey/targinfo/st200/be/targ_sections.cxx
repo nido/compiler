@@ -238,6 +238,10 @@ Assign_Global_Variable (
     break;
 
   default:
+    /* Check if base_st is already a section, and if so return it */
+    if (ST_class(base_st) == CLASS_BLOCK && STB_section(base_st)) {
+      return STB_section_idx(base_st);
+    }
     FmtAssert(FALSE,("Assign_Global_Variable: SCLASS %s unexpected for variable %s (base %s)", Sclass_Name(ST_sclass(base_st)), ST_name(st), ST_name(base_st)));
   }
 
