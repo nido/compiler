@@ -312,9 +312,13 @@ Expand_Convert_Length (
           Build_OP (TOP_sxtb_r, dest, src, ops);
       }
       else {
+#if 0
 	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(24,4), ops);
 	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(24,4), ops);
+#else
+	Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(0xff,4), ops);
+#endif
       }
     }
     else if (new_length == 16) {
@@ -323,9 +327,13 @@ Expand_Convert_Length (
           Build_OP (TOP_sxth_r, dest, src, ops);
       }
       else {
+#if 0
 	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(16,4), ops);
 	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(16,4), ops);
+#else
+	Build_OP (TOP_zxth_r, dest, src, ops);
+#endif
       }
     }
     else if (new_length < 16) {
@@ -2817,84 +2825,6 @@ Exp_COPY (
   Expand_Copy (tgt_tn, NULL, src_tn, ops);
   return;
 }
-
-#if 0
-/* ======================================================================
- *   Expand__addl
- *
- *   __addl expansion for 
- *
- *   Manual derivation of the following asm code:
- *
- *   #.i2model       __addl => __int64_add_int64_int64
- *   #.param __addl, r16, r17, r18, r19 => r16, r17 
- *
- *
- *   .text
- *   .proc
- *   __addl::
- *        c0      mtb     $b0.0 = $r0.0                   ## unset b0
- *        ;; 
- *        c0      addcg   $r0.16, $b0.0 = $r0.16, $r0.18, $b0.0   ## add low
-parts 
- *        ;; 
- *        c0      addcg   $r0.17, $b0.0 = $r0.17, $r0.19, $b0.0   ## add high
-parts
- *        c0      return  $r0.63
- *        ;; 
- *
- * =====================================================================
- */
-static void 
-Expand__addl (
-  TN* ol,
-  TN* oh,
-  TN* il0,
-  TN* ih0,
-  TN* il1,
-  TN* ih1,
-  OPS *ops
-)
-{
-  TN *cond1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
-  Build_OP(TOP_mtb, cond1, Zero_TN, ops) ;
-  TN *cond2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
-  Build_OP(TOP_addcg, ol, cond2, il0, il1, cond1, ops) ;
-  TN *cond3 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
-  Build_OP(TOP_addcg, oh, cond3, ih0, ih1, cond2, ops) ;
-
-  return;
-}
-
-/* ====================================================================
- *   Exp_Intrinsic_Op
- * ====================================================================
- */
-void
-Exp_Intrinsic_Op (
-  INTRINSIC id,
-  INT num_results,
-  INT num_opnds,
-  TN *result[],
-  TN *opnd[],
-  OPS *ops
-)
-{
-  switch (id) {
-
-  case INTRN_ADDL:
-    // results are passed in the opnd array:
-    Expand__addl(opnd[0], opnd[1], opnd[2], opnd[3], opnd[4], opnd[5], ops);
-    break;
-
-  default:
-    FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s", INTRN_c_name(id)));
-  }
-
-  return;
-}
-
-#endif
 
 /* ======================================================================
  *   Get_Intrinsic_Size_Mtype
