@@ -61,6 +61,7 @@
 #----------------------------------------------------------------------
 TARGDIR = $(BUILD_AREA)
 CURDIR  = .
+#LAOBUILD = /home/ferriere/sb/cvs/TOP
 
 #----------------------------------------------------------------------
 #  Include the usual commondefs
@@ -95,6 +96,10 @@ endif
 
 ifeq ($(BUILD_TARGET), ST200)
 HOSTDEFS += -DTARG_ST200 
+
+ ifdef LAOBUILD
+  HOSTDEFS += -DST_LAO
+ endif
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
@@ -119,6 +124,11 @@ TARG_LIBELF = $(TARGDIR)/libelf
 TARG_LIBELFUTIL = $(TARGDIR)/libelfutil
 TARG_LIBDWARF = $(TARGDIR)/libdwarf
 TARG_LIBUNWIND = $(TARGDIR)/libunwindP
+
+ifdef LAOBUILD
+TARG_LIBLIR2 = $(LAOBUILD)/devimage/lib
+TARG_INCLIR2 = $(LAOBUILD)/devimage/include
+endif
 
 #----------------------------------------------------------------------
 #  Generator options
@@ -390,6 +400,11 @@ ifeq ($(BUILD_TARGET),ST200)
 
   # SSA stuff:
   CG_CXX_SRCS +=  cg_ssa.cxx
+
+ ifdef LAOBUILD
+   # LAO SWP stuff
+   CG_CXX_SRCS += lao_stub.cxx
+ endif
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
@@ -490,12 +505,19 @@ else
  ifeq ($(BUILD_TARGET), IA64)
 LLDLIBS += $(TARG_LIBUNWIND)/libunwindP.a
  endif
+
+ifdef LAOBUILD
+LLDLIBS += $(TARG_LIBLIR2)/libLIR2.a \
+	$(TARG_LIBLIR2)/libCSD.a \
+	$(TARG_LIBLIR2)/libCCL.a
+endif
 LLDLIBS += $(TARG_LIBDWARF)/libdwarf.a \
 	$(TARG_LIBELFUTIL)/libelfutil.a \
 	$(TARG_LIBELF)/libelf.a \
 	$(TARG_TARG_INFO)/libtarginfo.a \
 	-lm -lc
 endif
+
 
 default: first derived_files $(TARGETS) last
 
@@ -702,3 +724,9 @@ include $(COMMONRULES)
 
 .cxx.pch:
 	$(C++F) -c $(.IMPSRC)
+
+ifdef LAOBUILD
+lao_stub.o : lao_stub.cxx
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -I$(TARG_INCLIR2) $< -o $@
+endif
+
