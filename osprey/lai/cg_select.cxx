@@ -346,108 +346,6 @@ BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
   return;
 }
 
-static BOOL
-Can_Merge_BB (BB *bb_first, BB *bb_second)
-{
-  if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
-    return FALSE;
-
-  if (BB_Has_Exc_Label(bb_second) ||
-      BB_Has_Addr_Taken_Label(bb_second) ||
-      BB_Has_Outer_Block_Label(bb_second) ||
-      BB_rid(bb_second) != BB_rid(bb_first))
-    return FALSE;
-
-  /* Reject if merged BB will be too large.
-   */
-  if (BB_length(bb_first) + BB_length(bb_second) >= CG_split_BB_length)
-    return FALSE;
-
-  if (BBlist_Len(BB_succs(bb_second)) > 1) 
-    return FALSE;
-
-  return TRUE;
-}
-
-static void
-BB_Merge (BB *bb_first, BB *bb_second)
-{
-  BB *succ;
-  BBLIST *bl;
-
-  if (Trace_Select_Merge) {
-    fprintf (Select_TFile, "BB_Merge %d %d\n",
-             BB_id (bb_first), BB_id (bb_second));
-    Print_BB (bb_first);
-    Print_BB (bb_second);
-    Print_All_BBs();
-  }
-
-  // Branch should end up into bb_second
-  OP *br = BB_Remove_Branch(bb_first);
-  FmtAssert(!(br && OP_cond(br)),
-            ("Unexpected conditional branch."));
-  FmtAssert(BB_Unique_Successor(bb_first) == bb_second,
-            ("Unexpected successor"));
-
-  //
-  // Move all of its ops to bb_first.
-  //
-  BB_Append_All(bb_first, bb_second);
-
-  if (!CG_localize_tns) {
-    GRA_LIVE_Merge_Blocks(bb_first, bb_first, bb_second);
-    Rename_TNs_For_BB(bb_first, NULL);
-  }
-
-  // Clean up the firsts pred-succ list
-  while (bl = BB_succs(bb_first)) {
-    succ = BBLIST_item(bl);
-    Unlink_Pred_Succ(bb_first, succ);
-  }
-
-  //
-  // Take bb_second out of the list.
-  //
-  Remove_BB(bb_second);
-
-  //
-  // If bb_second an exit, move the relevant info to the
-  // merged block.
-  //
-  if (BB_exit(bb_second)) {
-    BB_Transfer_Exitinfo(bb_second, bb_first);
-    Exit_BB_Head = BB_LIST_Delete(bb_second, Exit_BB_Head);
-    Exit_BB_Head = BB_LIST_Push(bb_first, Exit_BB_Head, &MEM_pu_pool);
-  }
-
-  //
-  // Transfer call info.
-  //
-  if (BB_call(bb_second)) {
-    BB_Copy_Annotations(bb_first, bb_second, ANNOT_CALLINFO);
-  }
-
-  //
-  // Move bb_second's successor arcs to bb_first.
-  //
-  FmtAssert(BBlist_Len(BB_succs(bb_second))<=1,("Too many successors"));
-
-  if (BBlist_Len(BB_succs(bb_second)) == 1) {
-    bl = BB_succs(bb_second);
-    float old_prob = BBLIST_prob(bl);
-    succ = BBLIST_item(bl);
-    Unlink_Pred_Succ(bb_second, succ);
-    Link_Pred_Succ_with_Prob(bb_first, succ, old_prob);
-  }
-
-  if (Trace_Select_Merge) {
-    fprintf (Select_TFile, "AFTER BB_Merge %d %d\n",
-             BB_id (bb_first), BB_id (bb_second));
-    Print_All_BBs();
-  }
-}
-
 // promoted tns was global because they ended up inside a phi.
 // Now that they are converted into a select and the blocks have
 // been merged, that might not be true.
@@ -580,6 +478,11 @@ Can_Speculate_BB(BB *bb, op_list *stores)
   // don't duplicate blocks with stores
   if (BB_preds_len(bb) > 1)
     stores = NULL;
+
+  if (BB_Has_Exc_Label(bb) ||
+      BB_Has_Addr_Taken_Label(bb) ||
+      BB_Has_Outer_Block_Label(bb))
+    return FALSE;
 
   FOR_ALL_BB_OPs_FWD(bb, op) {
     if (! OP_Can_Be_Speculative(op)) {
@@ -1204,7 +1107,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup, BOOL taken)
       TN *res  = phi_i ? phi_i->tns[i] : OP_opnd(phi, i);
       BB *pred = phi_i ? phi_i->preds[i] : Get_PHI_Predecessor(phi, i); 
 
-      if (pred == dup) {
+      if (BB_SET_MemberP(BB_pdom_set(dup), pred)) {
         TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
         if (new_tn) {
           opnd[i] = new_tn;
@@ -1237,85 +1140,85 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup, BOOL taken)
 
 //  Copy <old_bb> and all of its ops into BB.
 static void
-Copy_BB_For_Duplication(BB* bp, BB* to_bb, BOOL taken)
+Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
 {
   BB* new_bb = NULL;
-  hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
   OPS new_ops = OPS_EMPTY;  
-  OPS old_ops = OPS_EMPTY;
   op_list old_phis;
+  BB *first_bb = bp;
+  hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
 
-  BB *succ = BB_Unique_Successor (bp);
-  DevAssert (succ, ("Copy_bb"));
+  do {
+    OPS old_ops = OPS_EMPTY;
 
-  if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "<select> Duplicating BB%d\n", BB_id(bp));
-  }
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "<select> Duplicating BB%d\n", BB_id(bp));
+    }
 
-  //
-  // Copy the ops to the new block.
-  //
-  OP *op;
-  MEM_POOL_Push(&MEM_local_pool);
+    //
+    // Copy the ops to the new block.
+    //
+    OP *op;
+    MEM_POOL_Push(&MEM_local_pool);
 
-  FOR_ALL_BB_OPs_FWD(bp, op) {
-    if (OP_code (op) == TOP_phi) {
-      UINT8 nopnds = 0;
-      TN *opnd[BB_preds_len(bp)-1];
+    FOR_ALL_BB_OPs_FWD(bp, op) {
+      if (OP_code (op) == TOP_phi) {
+        UINT8 nopnds = 0;
+        TN *opnd[BB_preds_len(bp)-1];
       
-      for (UINT8 i = 0; i < OP_opnds(op); i++) {
-        if (Get_PHI_Predecessor (op, i) == to_bb) {
-          Exp_COPY (OP_result (op, 0), OP_opnd (op, i), &new_ops);
+        for (UINT8 i = 0; i < OP_opnds(op); i++) {
+          if (Get_PHI_Predecessor (op, i) == to_bb) {
+            Exp_COPY (OP_result (op, 0), OP_opnd (op, i), &new_ops);
+          }
+          else {
+            opnd[nopnds++] = OP_opnd (op, i);
+          }
+        }
+
+        // If the old phi had 2 TNs, each one is made into a copy.
+        // It it had more than 2 TNs, must maintain SSA by creating a new phi.
+        if (nopnds == 1) {
+          Exp_COPY (OP_result (op, 0), opnd[0], &old_ops);
+          // mark phi to be deleted.
+          old_phis.push_front(op);
         }
         else {
-          opnd[nopnds++] = OP_opnd (op, i);
+          TN *result[1];
+          
+          result[0] = OP_result (op, 0);
+          OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd); 
+          Rename_Locals (new_phi, dup_tn_map);
+          OP_MAP_Set(phi_op_map, op, new_phi);
+        }
+
+        if (OPS_length(&old_ops) != 0) {
+          Rename_Locals (OPS_last(&old_ops), dup_tn_map);
+          Rename_Globals (OPS_last(&old_ops), dup_tn_map);
         }
       }
-
-      // If the old phi had 2 TNs, each one is made into a copy.
-      // It it had more than 2 TNs, must maintain SSA by creating a new phi.
-      if (nopnds == 1) {
-        Exp_COPY (OP_result (op, 0), opnd[0], &old_ops);
-        // mark phi to be deleted.
-        old_phis.push_front(op);
-      }
-      else {
-        TN *result[1];
-
-        result[0] = OP_result (op, 0);
-        OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd); 
-        Rename_Locals (new_phi, dup_tn_map);
-        Rename_Globals (new_phi, dup_tn_map);
-        OP_MAP_Set(phi_op_map, op, new_phi);
-      }
-
-      if (OPS_length(&old_ops) != 0) {
-        Rename_Locals (OPS_last(&old_ops), dup_tn_map);
-        Rename_Globals (OPS_last(&old_ops), dup_tn_map);
+      else if (!OP_br (op)) {
+        OP* new_op = Dup_OP (op);
+        Copy_WN_For_Memory_OP(new_op, op);
+        OPS_Append_Op(&new_ops, new_op);
+        // Rename tns in the original block, that is becoming the
+        // duplicated block. original tns are promoted using new_ops.
+        Rename_Locals (op, dup_tn_map);
+        Rename_Globals (op, dup_tn_map);
+        if (OP_memory(op)) {
+          Update_Mem_Lists (op, new_op);
+        }
       }
     }
-    else if (!OP_br (op)) {
-      OP* new_op = Dup_OP (op);
-      Copy_WN_For_Memory_OP(new_op, op);
-      OPS_Append_Op(&new_ops, new_op);
-      // Rename tns in the original block, that is becoming the
-      // duplicated block. original tns are promoted using new_ops.
-      Rename_Locals (op, dup_tn_map);
-      Rename_Globals (op, dup_tn_map);
-      if (OP_memory(op)) {
-        Update_Mem_Lists (op, new_op);
-      }
-    }
-  }
 
-  BB_Remove_Ops(bp, old_phis);
-  Rename_PHIs(dup_tn_map, to_bb, succ, bp, taken);
+    BB_Remove_Ops(bp, old_phis);
+    BB_Prepend_Ops(bp, &old_ops);
+  } while ((bp = BB_Unique_Successor (bp)) != tail);
 
-  Unlink_Pred_Succ (to_bb,bp);
+  Rename_PHIs(dup_tn_map, to_bb, tail, first_bb, taken);
 
-  BB_Update_Phis(bp);
+  Unlink_Pred_Succ (to_bb,first_bb);
 
-  BB_Prepend_Ops (bp,   &old_ops);
+  BB_Update_Phis(first_bb);
   BB_Append_Ops (to_bb, &new_ops);
 
   MEM_POOL_Pop(&MEM_local_pool);
@@ -1755,12 +1658,12 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   dup_bb_phi_map = OP_MAP_Create();
 
   if (target_bb != tail && n_preds_target > 1) {
-    Copy_BB_For_Duplication(target_bb, head, TRUE);
+    Copy_BB_For_Duplication(target_bb, head, tail, TRUE);
     target_bb = tail;
     did_duplicate_bb = TRUE;
   }
   if (fall_thru_bb != tail && n_preds_fall_thru > 1) {
-    Copy_BB_For_Duplication(fall_thru_bb, head, FALSE);
+    Copy_BB_For_Duplication(fall_thru_bb, head, tail, FALSE);
     fall_thru_bb = tail;
     did_duplicate_bb = TRUE;
   }
@@ -1815,7 +1718,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     }
 
    if (Trace_Select_Gen) {
-     if (did_duplicate_bb) {
+     if (did_duplicate_bb && phi_i) {
        fprintf (TFile, "for phi res = ");
        Print_TN (phi_i->res, FALSE);
        fprintf (TFile, "\n");      
@@ -1939,31 +1842,17 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
      }
     Change_Succ_Prob (head, tail, 1.0);
    }
+   
+   // Maintain SSA.
+   BB_Update_Phis(tail);
 
-  // Cleanup CFG and maintain SSA information.
-  if (Can_Merge_BB (head, tail)) {
-    BB_Merge(head, tail);
-    BBLIST *succ;
-    
-    BB_Update_Phis(head);
+   OP_MAP_Delete(dup_bb_phi_map);
 
-    FOR_ALL_BB_SUCCS(head, succ) {
-      BB *bb = BBLIST_item(succ);
-      BB_Recomp_Phis (bb, head, tail, FALSE);
-      BB_Update_Phis(bb);
-    }
-  }
-  else {
-    BB_Update_Phis(tail);
-  }
+   // We created new GTNs, must do a global recalc liveness.
+   if (did_duplicate_bb) 
+     GRA_LIVE_Compute_Liveness_For_BB(tail);
 
-  OP_MAP_Delete(dup_bb_phi_map);
-
-  // We created new GTNs, must do a global recalc liveness.
-  if (did_duplicate_bb) 
-    GRA_LIVE_Compute_Liveness_For_BB(tail);
-
-  GRA_LIVE_Compute_Liveness_For_BB(head);
+   GRA_LIVE_Compute_Liveness_For_BB(head);
 }
 
 /* ================================================================
@@ -2029,6 +1918,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       }
       
       Initialize_Hammock_Memory();
+
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
 
 #ifdef Is_True_On
@@ -2047,10 +1937,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
-
-  // [CG] Can't be done in SSA. Moved to cg.cxx
-  //if (select_count || logif_count)
-  //CFLOW_Optimize(CFLOW_MERGE, "CFLOW (from if conversion)");
 
   BB_MAP_Delete(if_bb_map);
 
