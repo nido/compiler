@@ -353,6 +353,78 @@ Expand_Divide (
 }
 
 /* ====================================================================
+ *   Expand_Power_Of_2_Rem
+ *
+ *   Expand the sequence for remainder of a power of two. It is the
+ *   caller's job to verify that divisor is a non-zero power of two.
+ *
+ *   Expand rem(x, [+-]2^n) as follows:
+ *
+ *	Using the identities
+ *		rem(x,y) =  rem( x,-y)
+ *		rem(x,y) = -rem(-x, y)
+ *
+ *	unsigned
+ *	f=	x & MASK(n)
+ *
+ *	signed
+ *	f=	x & MASK(n)		x>=0
+ *	f=	-(-x & MASK(n))		x<0
+ * ====================================================================
+ */
+static void 
+Expand_Power_Of_2_Rem (
+  TN *result, 
+  TN *src1, 
+  INT64 src2_val, 
+  TYPE_ID mtype, 
+  OPS *ops
+)
+{
+
+  Is_True(MTYPE_is_class_integer(mtype),("wrong mtype"));
+  Is_True(MTYPE_byte_size(mtype) <= 4,("longlong ?"));
+
+  INT n = Get_Power_Of_2(src2_val, mtype);
+  INT64 nMask = (1LL << n) - 1;
+  TN *con = Gen_Literal_TN(nMask, 4);
+
+  if (MTYPE_signed(mtype)) {
+    TN *tmp1, *tmp2, *tmp3, *tmp4;
+    TN *p1;
+
+    //
+    // Test sign of src1
+    //
+    p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+    Build_OP(TOP_cmplt_r_b, p1, src1, Zero_TN, ops);
+
+    //
+    // Get absolute value of src1
+    //
+    tmp1 = Build_TN_Of_Mtype(mtype);
+    tmp2 = Build_TN_Of_Mtype(mtype);
+    Build_OP(TOP_sub_r, tmp1, Zero_TN, src1, ops);
+    Build_OP(TOP_slct_r, tmp2, p1, tmp1, src1, ops);
+
+    //
+    // Perform the AND
+    //
+    tmp3 = Build_TN_Of_Mtype(mtype);
+    Expand_Binary_And(tmp3, tmp2, con, mtype, ops);
+
+    //
+    // Negate the result if src1 was negative
+    //
+    tmp4 = Build_TN_Of_Mtype(mtype);
+    Build_OP(TOP_sub_r, tmp4, Zero_TN, tmp3, ops);
+    Build_OP(TOP_slct_r, result, p1, tmp4, tmp3, ops);
+  } else {
+    Expand_Binary_And(result, src1, con, mtype, ops);
+  }
+}
+
+/* ====================================================================
  *   Expand_Rem
  * ====================================================================
  */
@@ -365,11 +437,10 @@ Expand_Rem (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
-  /* Check for undefined operations we can detect at compile-time
-   * and when enabled, generate run-time checks.
-   */
+  //
+  // Check for undefined operations we can detect at compile-time
+  // and when enabled, generate run-time checks.
+  //
   switch (Check_Divide(src1, src2, mtype, ops)) {
   case DIVCHK_BYZERO:
   case DIVCHK_OVERFLOW:
@@ -377,11 +448,55 @@ Expand_Rem (
     return;
   }
 
-  /* Try to optimize when constant divisor.
-   */
+  //
+  // Try to optimize when constant divisor.
+  //
   INT64 src2_val;
   BOOL const_src2 = TN_Value_At_Op (src2, NULL, &src2_val);
 
+  if (const_src2) {
+    //
+    // Handle powers of 2 specially.
+    //
+    if (Is_Power_Of_2(src2_val, mtype)) {
+      Expand_Power_Of_2_Rem(result, src1, src2_val, mtype, ops);
+      return;
+    }
+
+#if 0
+    //
+    // Arthur: TODO -- implement this
+    //
+    if (CGEXP_cvrt_int_div_to_mult) {
+      TN *div_tn = Build_TN_Like (result);
+
+      if (Expand_Integer_Divide_By_Constant(div_tn, src1, src2_val, mtype, ops)) {
+	TN *mult_tn;
+
+	/* Generate a multiply:
+	 */
+	mult_tn = Build_TN_Like (result);
+	Expand_Multiply(mult_tn, div_tn, src2, mtype, ops);
+
+	/* Subtract the result of the multiply from the original value.
+	 */
+	Build_OP(TOP_sub, result, True_TN, src1, mult_tn, ops);
+	return;
+      }
+    }
+#endif
+  }
+
+#if 0
+  //
+  // Arthur: do we need this ?
+  //
+  Expand_NonConst_DivRem(NULL, result, src1, src2, mtype, ops);
+#endif
+
+  Is_True(FALSE,("not a power of 2 rem ?"));
+
+  return;
 }
 
 /* ====================================================================
