@@ -282,7 +282,12 @@ Get_Return_Info (
       {
 	UINT64 size = TY_size(Ty_Table[rtype]);
 
+#ifdef TARG_ST
+        /* (cbr) (C++ only) allocate non pod objects in caller */
+	if (!TY_is_non_pod (rtype) && SIM_INFO.max_struct_size >= size) {
+#else
 	if (SIM_INFO.max_struct_size >= size) {
+#endif
 	  INT n = (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
                     / MTYPE_RegisterSize(SIM_INFO.int_type);
 	  reg = PR_first_reg(SIM_INFO.int_results);
