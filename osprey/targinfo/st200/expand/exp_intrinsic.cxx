@@ -979,7 +979,7 @@ Expand__st200mul32(
  OPS* ops
 )
 {
-    if (Is_Target_st231()) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)) {
 	Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
     } else {
 	/* Emulated by __mulw */
@@ -999,7 +999,7 @@ Expand__st200mul64h(
  OPS* ops
 )
 {
-    if (Is_Target_st231()) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64h_r)) {
 	Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
     } else {
 	/* Emulated by __mulhw */
@@ -1029,7 +1029,7 @@ Expand__st200mul64hu(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) { 
       Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
   } else {
       /* Emulated by __mulhuw */
@@ -1074,7 +1074,7 @@ Expand__st200mulfrac(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfrac_r)) { 
       Build_OP (	TOP_mulfrac_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -1130,7 +1130,7 @@ Expand__st200prginspg(
  OPS* ops
 )
 {
-  if (Is_Target_st230() || Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginspg_i)) { 
       TN *c0 = Gen_Literal_TN(0LL, 4) ;
       Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
       Build_OP (	TOP_prginspg_i,	c0, 	o0,	ops) ;
@@ -1146,7 +1146,7 @@ Expand__st200pswclr(
  OPS* ops
 )
 {
-  if (Is_Target_st230() || Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pswclr_r)) { 
       Build_OP (	TOP_pswclr_r,	i0,	ops) ;
   } else {
       // Unsupported on st220
@@ -1160,7 +1160,7 @@ Expand__st200pswset(
  OPS* ops
 )
 {
-  if (Is_Target_st230() || Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pswset_r)) { 
       Build_OP (	TOP_pswset_r,	i0,	ops) ;
   } else {
       // Unsupported on st220
@@ -4223,7 +4223,7 @@ Expand__mulhuw(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) {
       Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -4276,7 +4276,7 @@ Expand__mulhw(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64h_r)) {
       Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -4317,7 +4317,8 @@ Expand__mull(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) {
       TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4419,7 +4420,8 @@ Expand__muln(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) {
       Build_OP (    TOP_mul32_r,    ol0,    i0,     i1,     ops) ;
       Build_OP (    TOP_mul64h_r,   oh0,    i0,     i1,     ops) ;
   } else { 
@@ -4484,7 +4486,8 @@ Expand__mulul(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) {
       TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4586,7 +4589,8 @@ Expand__mulun(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r)) {
       Build_OP (    TOP_mul32_r,    ol0,    i0,     i1,     ops) ;
       Build_OP (    TOP_mul64hu_r,   oh0,    i0,     i1,     ops) ;
   } else {
@@ -4643,7 +4647,7 @@ Expand__muluw(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)) {
       Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4671,7 +4675,7 @@ Expand__mulw(
  OPS* ops
 )
 {
-  if (Is_Target_st231()) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)) {
       Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;

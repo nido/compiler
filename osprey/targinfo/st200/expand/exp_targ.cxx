@@ -990,7 +990,7 @@ Expand_Multiply (
     opcode = TOP_mull_r; swapped = TRUE; 
   } else {
     // 32x32 multiply
-    if (Is_Target_st231()) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)) {
 	opcode = TOP_mul32_r ;
     } else {
 	TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
