@@ -166,7 +166,14 @@ Expand_Cond_Store (
     false_tn = OP_opnd(op2, idx);
   }
 
-  TN *temp_tn = Build_TN_Of_Mtype(MTYPE_I4);
+  TN *temp_tn;
+  if (TN_is_register(true_tn)) 
+    temp_tn = Build_TN_Like(true_tn);
+  else if (TN_is_register(false_tn)) 
+    temp_tn = Build_TN_Like(false_tn);
+  else 
+    temp_tn = Build_TN_Of_Mtype(MTYPE_I4);
+
   tns[idx] = temp_tn;
 
   Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops);
@@ -175,11 +182,12 @@ Expand_Cond_Store (
   TN *base = tns[OP_find_opnd_use(op1, OU_base)];
   TN *ofst = tns[OP_find_opnd_use(op1, OU_offset)];
 
-  if (TN_is_register (ofst))
+  if (TN_is_register (ofst)) {
     Build_OP (TOP_add_r, base, base, ofst, ops);
+    ofst =  Gen_Literal_TN (0, 4);
+  }
 
   TYPE_ID ttype;
-
   switch (OP_code(op1)) {
   case TOP_stw_i:
   case TOP_stw_ii:
@@ -200,5 +208,5 @@ Expand_Cond_Store (
     DevAssert(FALSE, ("stw"));    
   }
 
-  Expand_Store (ttype, val, base, Gen_Literal_TN (0, 4), ops);
+  Expand_Store (ttype, val, base, ofst, ops);
 }

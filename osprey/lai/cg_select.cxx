@@ -44,6 +44,8 @@
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  * -CG:select_stores=TRUE        promote store operands with select.
+ *                               Experimental: check the impact of losing
+ *                               WN mem information
  *
  * The following flags to drive the heuristics.
  * -CG:select_factor="16.0"       gain for replacing a branch by a select
@@ -585,7 +587,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
         }
 
         else if (OP_store (op)) {
-           if (!CG_select_stores || !stores)
+           if (!stores)
              return FALSE;
            stores->push_front(op);
         }
@@ -638,13 +640,17 @@ Sort_Stores(void)
   op_list::iterator i2_end  = store_i.ntkstrs.end();
   UINT8 c = 0;
 
+
   while(i1_iter != i1_end) {
     OP *op1 = *i1_iter;
     OP *op2 = *i2_iter;
 
+    UINT8 strval_idx = OP_find_opnd_use(op1, OU_storeval);
+    DevAssert(OP_find_opnd_use(op2, OU_storeval) == strval_idx, ("Stores."));
+
     // Stores don't differ, nothing to do. Select the result
-    if (Are_Aliased (op1, op2)) {
-      store_i.ifarg_idx.push_back(-1);
+    if (CG_select_stores && Are_Aliased (op1, op2)) {
+      store_i.ifarg_idx.push_back(strval_idx);
       ++count;
       c = 0;
       ++i1_iter;
@@ -662,17 +668,14 @@ Sort_Stores(void)
       }
     }
 
-    // same ops ?
-    if (ci == 0) {
-      ci = 1;
-      lidx = 2;
-    }
-
     // one arg differs. Select it.
-    if (ci == 1 && OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2)) {
+    // Can promote store val anytime. That doesn't change alias information.
+    if (ci == 1 &&
+        OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2) && 
+        (lidx == strval_idx || CG_select_stores)) {
       store_i.ifarg_idx.push_back(lidx);
-      ++count;
       c = 0;
+      ++count;
       ++i1_iter;
       ++i2_iter;
     }
@@ -743,9 +746,9 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   // higher est_cost_branch means ifc more aggressive.
   UINT32 est_cost_branch = atoi(CG_select_factor);
 
-  // If new block is bigger that CG_bblength_max, reject.
-  //  if ((exp_len - est_cost_branch) >= CG_split_BB_length)
-  //    return FALSE;
+  //If new block is bigger than CG_bblength_max, reject.
+  if ((exp_len - est_cost_branch) >= CG_split_BB_length)
+    return FALSE;
 
   UINT32 mem1 = 0;
   UINT32 mem2 = 0;
@@ -1281,18 +1284,10 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 {
   while (!store_i.tkstrs.empty()) {
     OPS ops = OPS_EMPTY;
-    TN *true_tn;
-    TN *false_tn;
 
     OP* op1 = store_i.tkstrs.front();
     OP* op2 = store_i.ntkstrs.front();
     UINT8 opnd_idx = store_i.ifarg_idx.front();
-
-    DevAssert(Are_Aliased (op1, op2) || (opnd_idx != -1),
-              ("can't speculate stores"));
-
-    if (opnd_idx == -1)
-      opnd_idx = 2;
 
     Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
 
@@ -1305,6 +1300,10 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    select_count++;
 
    BB_Append_Ops (bb, &ops);
+
+   // Store address didn't change. Pass WN information
+  if (opnd_idx == OP_find_opnd_use(op1, OU_storeval))
+    Copy_WN_For_Memory_OP(OPS_last(ops), op1);
 
    BB_Remove_Op (bb, op1);
    BB_Remove_Op (bb, op2);
