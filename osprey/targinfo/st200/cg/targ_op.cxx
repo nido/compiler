@@ -67,8 +67,10 @@ BOOL OP_Is_Barrier(OP *op)
   }
 
   switch (top) {
-  case TOP_prgadd:	/* data cache purge */
-  case TOP_prgset:	/* data cache purge */
+  case TOP_prgadd_i:	/* data cache purge */
+  case TOP_prgadd_ii:
+  case TOP_prgset_i:	/* data cache purge */
+  case TOP_prgset_ii:
   case TOP_sync:	/* data cache sync */
   case TOP_prgins:	/* i-cache purge */
     /*case TOP_syncins: */	/* i-cache sync. */
@@ -647,7 +649,12 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 			return TOP_##newtop##_r_r; \
 		       case TOP_##top##_r_b: \
        			return TOP_##newtop##_r_b;
-
+  if (opnd1 > opnd2) {
+    int tmp = opnd1;
+    opnd1 = opnd2;
+    opnd2 = tmp;
+  }
+  
   if (opnd1 == 0 && opnd2 == 1) {
     switch(top) {
       CASE_TOP(add);
