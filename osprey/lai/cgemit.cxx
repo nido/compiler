@@ -58,6 +58,7 @@
 #include "config_debug.h"
 #include "config_list.h"
 #include "vstring.h"
+#include "file_util.h" // [CL] for New_Extension
 #include "glob.h"
 #include "xstats.h"
 #include "targ_const.h"
@@ -4891,6 +4892,14 @@ EMT_Begin_File (
   }
 
   if ( generate_elf_symbols ) {
+#ifdef TARG_ST
+    // [CL] when generating .s file, do not
+    // overwrite/remove existing .o file
+    if ( ! Object_Code) {
+      Obj_File_Name = New_Extension (Obj_File_Name, ".tpo");
+    }
+#endif
+ 
     Obj_File = fdopen (Em_Begin_File (
 			    	Obj_File_Name, 
 			    	FALSE, 
