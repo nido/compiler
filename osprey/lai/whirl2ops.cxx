@@ -551,6 +551,23 @@ Start_New_Basic_Block (void)
   else if (BB_MAP_Get(loop_pragma_map, bb)) {
     bb = Gen_And_Append_BB (bb);
   }
+  // FdF 12/05/2004: Frequency_Hint pragmas are attached to a specific
+  // basic block. Even if empty, a basic block must be created to
+  // attach this pragma.
+  else if (BB_has_pragma(bb)) {
+    ANNOTATION *ant;
+
+    for ( ant = ANNOT_First(BB_annotations(bb), ANNOT_PRAGMA);
+	  ant != NULL;
+	  ant = ANNOT_Next(ant, ANNOT_PRAGMA)) {
+      WN *wn = ANNOT_pragma(ant);
+      WN_PRAGMA_ID pragma = (WN_PRAGMA_ID) WN_pragma(wn);
+      if (pragma == WN_PRAGMA_MIPS_FREQUENCY_HINT) {
+	bb = Gen_And_Append_BB (bb);
+	break;
+      }
+    }
+  }
 #endif
 
   if (PU_has_region(Get_Current_PU()))
@@ -4928,6 +4945,7 @@ Expand_Statement (
 	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)pragma, &MEM_pu_pool);
 	BB_MAP_Set(loop_pragma_map, Cur_BB, loop_pragmas);
 
+	// [CL] Mark prologue for debug output
       } else if (WN_pragma(stmt) == WN_PRAGMA_PREAMBLE_END) {
 	OP* op;
 	for (op=OPS_first(&New_OPs); op != NULL ; op=OP_next(op)) {
