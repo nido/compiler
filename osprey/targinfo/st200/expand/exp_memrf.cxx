@@ -417,9 +417,8 @@ Expand_Composed_Load (
   TYPE_ID rtype= OPCODE_rtype(op);
   TYPE_ID desc = OPCODE_desc(op);
 
-  // [CG] //TOP		top;
   INT32		alignment, nLoads, i;
-  OPCODE	new_opcode;
+  OPCODE	new_opcode, unsigned_opcode;
   TYPE_ID	new_desc;
   TN		*tmpV[8];
 
@@ -430,10 +429,11 @@ Expand_Composed_Load (
     rtype = MTYPE_U4;
   }
 
-  new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
-
-
-  // [CG] //top = Pick_Load_Imm_Instruction (rtype, new_desc);
+  // unsigned opcode for all but the most significant bits
+  unsigned_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
+  // opcode of the sign of desc for the most significant bits
+  new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, MTYPE_is_signed(desc));
+  
 
   Is_True(nLoads > 1, ("Expand_Composed_Load with nLoads == %d", nLoads));
 
@@ -445,71 +445,28 @@ Expand_Composed_Load (
   for (i=0; i < nLoads; i++) {
     INT idx = i ^ endian_xor;
     tmpV[idx] = Build_TN_Of_Mtype(rtype);
-    Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
-    // [CG]: use Add_Disp instead
-    if (i < nLoads-1) Add_Disp_To_Addr_TNs (&base, &disp, alignment);
-    //if (i < nLoads-1) Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
+    if (i < nLoads-1) {
+      Expand_Load (unsigned_opcode, tmpV[idx], base, disp, ops);
+      Add_Disp_To_Addr_TNs (&base, &disp, alignment);
+    } else {
+      Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
+    }
   }
 
   /* 
    * Now combine the components into the desired value.
    */
   INT nLoadBits = alignment * 8;
-  TN *tmp0 = tmpV[0]; 
-  for (i=1; i < (nLoads-1); i++) {
-    TN *tmp= Build_TN_Of_Mtype(rtype);
-    Exp_Deposit_Bits(rtype, 
-		     new_desc, 
-		     i*nLoadBits, 
-		     nLoadBits, 
-		     tmp, 
-		     tmp0,
-		     tmpV[i], 
-		     ops);
-    //    Build_OP(TOP_dep, tmp, True_TN, tmpV[i], tmp0,
-    //	       Gen_Literal_TN(i*nLoadBits, 4), Gen_Literal_TN(nLoadBits, 4), ops);
-    tmp0 = tmp;
+  TN *tmp0= Build_TN_Of_Mtype(rtype);
+  Build_OP(TOP_shl_i, tmp0, tmpV[nLoads-1], Gen_Literal_TN((nLoads-1)*nLoadBits, 4), ops);
+  for (i=nLoads-2; i >= 0; i--) {
+    TN *tmp1= Build_TN_Of_Mtype(rtype);
+    TN *tmp2= i == 0 ? result: Build_TN_Of_Mtype(rtype);
+    TN *part = tmpV[i];
+    Build_OP(TOP_shl_i, tmp1, part, Gen_Literal_TN(i*nLoadBits, 4), ops);
+    Build_OP(TOP_or_r, tmp2, tmp0, tmp1, ops);
+    tmp0 = tmp2;
   }
-  Exp_Deposit_Bits(rtype, 
-		   new_desc, 
-		   i*nLoadBits, 
-		   nLoadBits, 
-		   result, 
-		   tmp0,
-		   tmpV[i], 
-		   ops);
-
-    //  Build_OP(TOP_dep, result, True_TN, tmpV[i], tmp0,
-    //	     Gen_Literal_TN(i*nLoadBits, 4), Gen_Literal_TN(nLoadBits, 4), ops);
-
-#if 0
- The only
-   * complication is that the form of the 'dep' instruction that we
-   * need, supports a maximum length of 16 bits. Fortunately that
-   * leaves just creating a 64-bit integer from two 32-bit pieces --
-   * the mix4.r instruction handles that case.
-   */
-  INT nLoadBits = alignment * 8;
-  if (nLoadBits <= 16) {
-    TN *tmp0 = tmpV[0]; 
-    for (i = 1; i < (nLoads-1); i++) {
-      TN *tmp= Build_TN_Of_Mtype(rtype);
-      Build_OP(TOP_noop, tmp, True_TN, tmpV[i], tmp0,
-	       Gen_Literal_TN(i*nLoadBits, 4), 
-                                      Gen_Literal_TN(nLoadBits, 4), ops);
-      tmp0 = tmp;
-    }
-    Build_OP(TOP_noop, result, True_TN, tmpV[i], tmp0,
-	     Gen_Literal_TN(i*nLoadBits, 4), 
-                                      Gen_Literal_TN(nLoadBits, 4), ops);
-  } else {
-    FmtAssert(nLoadBits == 32 && nLoads == 2,
-	      ("Expand_Composed_Load: unexpected composition"));
-    Build_OP(TOP_noop, result, True_TN, tmpV[1], tmpV[0], ops);
-  }
-#endif
-
-  return;
 }
 
 
@@ -575,35 +532,25 @@ Expand_Composed_Store (
   OPS *ops
 )
 {
-  // [CG] //TOP		top;
   INT32		alignment, nStores;
   TYPE_ID	new_desc;
 
   new_desc =	Composed_Align_Type(mtype, variant, &alignment, &nStores);
-  // [CG] //top = Pick_Store_Imm_Instruction (new_desc);
 
   if (Target_Byte_Sex == BIG_ENDIAN)
-    // [CG] use Add_Disp instead
     Add_Disp_To_Addr_TNs (&base, &disp, MTYPE_alignment(mtype)-alignment);
-    //    Adjust_Addr_TNs (top, &base, &disp, 
-    //                               MTYPE_alignment(mtype)-alignment, ops);
-  Expand_Store (new_desc, obj, base, disp, ops); 
 
+  Expand_Store (new_desc, obj, base, disp, ops); 
+  
   while(--nStores >0) {
     TN *tmp = Build_TN_Of_Mtype(mtype);
     Expand_Shift(tmp, obj, Gen_Literal_TN(alignment*8, 4), 
                                                 mtype, shift_lright, ops);
     obj = tmp;
-
     if (Target_Byte_Sex == BIG_ENDIAN)
-      //[CG]
       Add_Disp_To_Addr_TNs (&base, &disp, -alignment);
-    //Adjust_Addr_TNs (top, &base, &disp, -alignment, ops);
     else 
-      //[CG]
       Add_Disp_To_Addr_TNs (&base, &disp, alignment);
-    //Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
-
     Expand_Store (new_desc, obj, base, disp, ops); 
   }
 }
@@ -966,6 +913,8 @@ Exp_Extract_Bits (
  *
  *   deposit src2_tn into a field of src1_tn returning the result in 
  *   tgt_tn.
+ *   Note that this code is endian dependent.
+ *   
  * ======================================================================
  */
 void
