@@ -518,7 +518,17 @@ CGSPILL_OP_Spill_Location (OP *op)
     } else if (OP_store(op)) {
       spill_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_storeval));
     }
+#ifdef TARG_ST
+    //
+    // Arthur: TN fields 'spill' and 'home' are shared => must
+    //         check for validity of the spill lest we conclude
+    //         that an OP is a spill because of a homeable TNs
+    //
+    if (spill_tn && TN_spill_is_valid(spill_tn)) 
+      mem_loc = TN_spill(spill_tn);
+#else
     if (spill_tn) mem_loc = TN_spill(spill_tn);
+#endif
 
     if (mem_loc &&
 	(ST_level(mem_loc) > max_spill_level ||

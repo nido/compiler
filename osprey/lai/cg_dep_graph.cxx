@@ -2205,6 +2205,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     ST *pred_spill_st = CGSPILL_OP_Spill_Location(pred_op);
     ST *succ_spill_st = CGSPILL_OP_Spill_Location(succ_op);
     info_src = "CG (spill info)";
+
     if (pred_spill_st && succ_spill_st) {
       if (succ_spill_st == pred_spill_st) {
 	/*
@@ -2229,12 +2230,28 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
 			  info_src);
       }
+#ifdef TARG_ST
+      //
+      // Arthur: a TN marked 'spill' may be stored at an any address;
+      //         the value can then be loaded into any TN => not 'spill'.
+      //         The following logic for IA64 does not work ??
+      //         It concludes the independence of such st/ld pair
+      //         when in fact this may happen.
+      //
+      //         We only know that mem OP is a spill if the base address
+      //         is on stack. Can we mark OPs as being spills ??
+      //         In any case, we don't know nothing unless the base TN
+      //         is the stack pointer. This can be taken care of in
+      //         the address analysis of CG_DEP_Address_Analyze().
+      //         Thus, if addresses are not shown different, assume
+      //         dependence !
+#else
     } else if (pred_spill_st || succ_spill_st) {
-
       /* One's a spill, and the other's not, so they're independent.  */
+
       return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
 			info_src);
-
+#endif
     } else {
 
 #if 0
@@ -3165,6 +3182,13 @@ void add_mem_arcs_from(UINT16 op_idx)
   UINT16 num_poss_0_succs = num_mem_ops - op_idx - 1;
   BOOL found_definite_memread_succ = FALSE;
 
+#ifdef TARG_ST
+    if (tracing) {
+      fprintf(TFile, "<Add_MEM_Arcs> for: ");
+      Print_OP_No_SrcLine(op);
+    }
+#endif
+
   /* Note: <mem_op_lat_0> is NULL when not pruning. */
   if (mem_op_lat_0) {
     if (mem_op_lat_0[op_idx]) {
@@ -3189,6 +3213,14 @@ void add_mem_arcs_from(UINT16 op_idx)
     OP *succ = mem_ops[succ_idx];
     ARC *arc;
     INT16 latency;
+
+#ifdef TARG_ST
+    if (tracing) {
+      fprintf(TFile, "\t ");
+      Print_OP_No_SrcLine(succ);
+    }
+#endif
+
     CG_DEP_KIND kind = OP_load(op) ?
       (OP_load(succ) ? CG_DEP_MEMREAD : CG_DEP_MEMANTI) :
       (OP_load(succ) ? CG_DEP_MEMIN : CG_DEP_MEMOUT);
@@ -3213,12 +3245,20 @@ void add_mem_arcs_from(UINT16 op_idx)
       if (latency <= mem_op_lat_0[op_idx][succ_idx-op_idx-1]) continue;
     }
 
+#if 0
+    fprintf(TFile," ... kind = %s, latency = %d\n", DEP_INFO_name(kind), latency);
+#endif
+
     if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL)) {
 
       // For OOO machine (eg. T5), non-definite memory dependences can be 
       // relaxed to edges with zero latency. The belief is that this can 
       // help avoid creating false dependences with biased critical info. 
-    
+
+#if 0
+      fprintf(TFile, " ... %s dependence exist\n", definite ? "definite" : "possible");
+#endif
+
       if (!have_latency) latency =
         (CG_DEP_Adjust_OOO_Latency && PROC_is_out_of_order() && !definite) ? 
 	0 : CG_DEP_Latency(op, succ, kind, 0);
