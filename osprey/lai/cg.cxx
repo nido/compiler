@@ -706,18 +706,22 @@ CG_Generate_Code(
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
     lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc);
     Check_for_Dump (TP_ALLOC, NULL);
-    // If Only localization was enabled, perform LRA
-    if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
-	Optimization_Localize) {
-      Set_Error_Phase( "LRA after LAO RegAlloc" );
-      // Force LRA to not use GRA informations.
-      bool old = CG_localize_tns;
-      CG_localize_tns = TRUE;
-      LRA_Allocate_Registers (!region);
-      CG_localize_tns = old;
-      Check_for_Dump (TP_ALLOC, NULL);
-    }
+  }
+  if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
+      Optimization_RegAlloc) {
+    // Full register allocation performed by LAO.
+  } else if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
+	     Optimization_Localize) {
+    // Localization performed by LAO, run LRA
+    Set_Error_Phase( "LRA after LAO RegAlloc" );
+    // Force LRA to not use GRA informations.
+    bool old = CG_localize_tns;
+    CG_localize_tns = TRUE;
+    LRA_Allocate_Registers (!region);
+    CG_localize_tns = old;
+    Check_for_Dump (TP_ALLOC, NULL);
   } else {
+  // No allocation  performed by LAO, run full GRA/LRA
 #endif
   if (!CG_localize_tns) {
     // Earlier phases (esp. GCM) might have introduced local definitions
