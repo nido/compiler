@@ -37,9 +37,7 @@ extern "C" {
 #define CCL_NO_STDBOOL
 #include "CCL.h"
 #include "CSD.h"
-#include "LAO_CGIR.h"
-#include "LAO_Driver.h"
-#include "LAO_Interface.h"
+#include "LAO.h"
 #undef operator
 #undef this
 }
