@@ -714,7 +714,8 @@ Delete_BB_Contents(BB *bp)
      */
     if (refcount != NULL && --(*refcount) == 0) {
       ST *listvar = BBINFO_vargoto_listvar(bp);
-      Set_ST_is_not_used(listvar);
+      // [CG]: commented out as work around for undefined symbol
+      //Set_ST_is_not_used(listvar);
     }
     Remove_Annotations(bp, ANNOT_SWITCH);
   }
@@ -794,7 +795,8 @@ Delete_BB(BB *bp, BOOL trace)
     INT *refcount = BBINFO_vargoto_refcount(bp);
     if (refcount != NULL && --(*refcount) == 0) {
       ST *listvar = BBINFO_vargoto_listvar(bp);
-      Set_ST_is_not_used(listvar);
+      // [CG]: commented out as work around for undefined symbol
+      //Set_ST_is_not_used(listvar);
     }
   }
 
@@ -2084,7 +2086,10 @@ Convert_Indirect_Goto_To_Direct ( BB *bp )
 	      BB_id(bp));
       return FALSE;
     }
-    if (--(*BBINFO_vargoto_refcount(bp)) == 0) Set_ST_is_not_used(listvar);
+    if (--(*BBINFO_vargoto_refcount(bp)) == 0) {
+      // [CG]: commented out as work around for undefined symbol
+      //Set_ST_is_not_used(listvar);
+    }
   }
 
   /* The preds/succs lists for <bp> should already be correct, but

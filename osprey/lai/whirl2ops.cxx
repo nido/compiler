@@ -613,13 +613,8 @@ Allocate_Result_TN (
 #endif
 }
 
-/* -----------------------------------------------------------------------
- * Return TRUE iff <wn> is a volatile memory reference.
- * -----------------------------------------------------------------------
- */
-
-
-/* set the op2wn mappings for memory ops
+/*
+ * Set the op2wn mappings for memory ops
  */
 #ifdef CGG_ENABLED
 CGG_STATIC void
@@ -637,7 +632,11 @@ Set_OP_To_WN_Map(WN *wn)
   for ( ; op != NULL; op = OP_next(op)) {
     if ( (!OP_memory(op) || OP_no_alias(op)) && !OP_call(op) 
 	&& !OP_Is_Barrier(op) && OP_code(op) != TOP_spadjust)
-    if (OP_memory(op) && WN_Is_Volatile_Mem(wn)) Set_OP_volatile(op);
+	continue;
+
+    if (OP_memory(op) && WN_Is_Volatile_Mem(wn))
+      Set_OP_volatile(op);
+
     if (OP_prefetch(op)) {
 
       /* These maps will have already been created if Alias_Manager

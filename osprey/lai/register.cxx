@@ -59,6 +59,7 @@
 #include <vector.h>
 #include "defs.h"
 #include "errors.h"
+#include "erglob.h"
 #include "tracing.h"
 #include "mempool.h"
 #include "config.h"
@@ -1211,9 +1212,13 @@ Set_Register_Never_Allocatable (char *regname)
 	ISA_REGISTER_CLASS rclass = CGTARG_Regname_Register_Class(regname);
 	REGISTER reg;
 
+	if (rclass == ISA_REGISTER_CLASS_UNDEFINED)
+	  ErrMsg (EC_Inv_Register, regname);
+
 	reg = REGISTER_MIN + atoi(regname+1);
-	FmtAssert(reg <= REGISTER_CLASS_last_register(rclass),
-		("%s is not a valid register", regname));
+	if (reg > REGISTER_CLASS_last_register(rclass))
+	  ErrMsg (EC_Inv_Register, regname);
+
 	dont_allocate_these_registers.push_back( make_pair( rclass, reg ));
 }
 

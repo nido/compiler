@@ -4839,9 +4839,16 @@ void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
       Print_OP_No_SrcLine(op);
     }
 
+
     rslt_count = OP_results(op);
     if (rslt_count == 0) goto op_is_needed;
     if (op_is_needed_globally(op)) goto op_is_needed;
+
+#ifdef TARG_ST
+    // [CG]: skip early implicit interactions
+    if (OP_has_implicit_interactions(op))
+      goto op_is_needed;
+#endif
 
    /* Check that all the result operands can be safely removed. */
     for (idx = 0; idx < rslt_count; idx++) {
