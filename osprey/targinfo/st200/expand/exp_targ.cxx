@@ -926,6 +926,11 @@ Expand_Shift_Multiply (
     INT val = Get_Power_Of_2(TN_value(src2), mtype);
     TN *tmp = Gen_Literal_TN (val, MTYPE_byte_size(mtype));
     Expand_Shift (result, src1, tmp, mtype, shift_left, ops);
+    
+    // do we need to negate the result ?
+    if (TN_value(src2) < 0) {
+      Expand_Neg (result, result, mtype, ops);      
+    }
 
     return TRUE;
   }
@@ -983,7 +988,7 @@ Expand_Multiply (
   }
 
   if (TN_has_value(src2)) {
-    if (Expand_Shift_Multiply (dest, mtype, src1, src2, ops))
+    if (Expand_Shift_Multiply (dest, mtype, src1, src2, ops)) 
       return;
     has_const = TRUE;
   }
