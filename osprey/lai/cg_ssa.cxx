@@ -391,14 +391,21 @@ Set_Entries_Exits(
 //
 #define TN_can_be_renamed(tn)  (!TN_is_dedicated(tn) && !TN_is_save_reg(tn))
 
-// First of all, I need some mapping between PHI-function opnds
-// and BB predecessors of the BB where the PHI-function lives.
-
+//
+// 1. We need some mapping between PHI-function opnds
+//    and BB predecessors of the BB where the PHI-function lives.
+//
 typedef struct phi_map_entry {
   BB **opnd_src;    /* table of pred BBs for each operand */
 } PHI_MAP_ENTRY;
 
 static OP_MAP phi_op_map = NULL;
+
+//
+// 2. We need mapping between each TN and its definition.
+//    This is exported, so everybody can have access.
+//
+TN_MAP tn_ssa_map = NULL;
 
 //
 // Mapping between phi-resource TNs and their representative name
@@ -415,7 +422,7 @@ static hTN_MAP tn_to_new_name_map = NULL;
  *   Set_PHI_Operands
  * ================================================================
  */
-void
+static void
 Set_PHI_Operands(
   OP   *phi
 )
@@ -459,6 +466,26 @@ Get_PHI_Predecessor (
   Is_True(entry != NULL,("unmapped op ?"));
 
   return entry->opnd_src[i];
+}
+
+/* ================================================================
+ *   SSA_Prepend_Phi_To_BB
+ * ================================================================
+ */
+void SSA_Prepend_Phi_To_BB (
+  OP *phi_op, 
+  BB *bb
+) 
+{
+  //
+  // add 'phi_op' to 'bb' before all other insts
+  //
+  BB_Prepend_Op(bb, phi_op);
+
+  //
+  // Some additional bookkeeping that is not done by Mk_OP
+  //
+  Set_PHI_Operands(phi_op);
 }
 
 //
@@ -624,10 +651,13 @@ SSA_Place_Phi_In_BB (
     //fprintf(TFile, "\n");
   }
 
+  SSA_Prepend_Phi_To_BB (phi_op, bb);
+
   //
   // add 'phi_op' to 'bb' before all other insts
   //
   BB_Prepend_Op(bb, phi_op);
+
   //
   // Some additional bookkeeping that is not done by Mk_OP
   //
@@ -928,6 +958,7 @@ SSA_Rename_BB (
       if (TN_can_be_renamed(tn)) {
 	new_tn = tn_stack_pop(tn);
 	Set_OP_result(op,i,new_tn);
+	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
       }
     }
   }
@@ -1051,6 +1082,11 @@ SSA_Enter (
   // initialize phi_op_map, deleted by the SSA_Remove_Phi_Nodes()
   //
   phi_op_map = OP_MAP_Create();
+
+  //
+  // initialize tn_ssa_map, deleted by the SSA_Remove_Phi_Nodes()
+  //
+  tn_ssa_map = TN_MAP_Create();
 
   /* Why + 2?  Nobody seems to know.
    */
@@ -1364,6 +1400,20 @@ IGRAPH_Clean ()
 {
 
   return;
+}
+
+/* ================================================================
+ *   IGRAPH_TNs_Interfere
+ * ================================================================
+ */
+static BOOL
+IGRAPH_TNs_Interfere (
+  TN *tn1,
+  TN *tn2
+)
+{
+  FmtAssert(FALSE,("not implemented"));
+  return FALSE;
 }
 
 /* ================================================================
@@ -1828,13 +1878,114 @@ insert_copies_blindly ()
 }
 
 /* ================================================================
+ *   phi_resources_interfere
+ * ================================================================
+ */
+static BOOL
+phi_resources_interfere (
+  PHI_CONGRUENCE_CLASS *cc1, 
+  PHI_CONGRUENCE_CLASS *cc2
+)
+{
+  TN_LIST *p1, *p2;
+  TN *tn1, *tn2;
+
+  for (p1 = PHI_CONGRUENCE_CLASS_gtns(cc1); 
+       p1 != NULL;
+       p1 = TN_LIST_rest(p1)) {
+    tn1 = TN_LIST_first(p1);
+
+    for (p2 = PHI_CONGRUENCE_CLASS_gtns(cc2); 
+	 p2 != NULL;
+	 p2 = TN_LIST_rest(p2)) {
+      tn2 = TN_LIST_first(p2);
+
+      if (IGRAPH_TNs_Interfere(tn1, tn2)) return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/* ================================================================
  *   Eliminate_Phi_Resource_Interference
  * ================================================================
  */
 static void
 Eliminate_Phi_Resource_Interference()
 {
-  FmtAssert(FALSE,("not implemented"));
+  INT i,j;
+  BB *bb;
+  OP *op;
+
+  /*
+   * Set of candidate resources for insertign copies as described
+   * in VC's paper
+   */
+  TN_LIST *candidateResourceSet;
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_PHI_OPs(bb, op) {
+      PHI_CONGRUENCE_CLASS *cc1, *cc2;
+
+      // does result interfere with any of the operands ?
+      cc1 = phiCongruenceClass(OP_result(op,0));
+      Is_True(cc1 != NULL, ("Empty congruence class for a SSA TN"));
+	
+      for (i = 0; i < OP_opnds(op); i++) {
+	cc2 = phiCongruenceClass(OP_opnd(op,i));
+
+	if (OP_result(op,0) == OP_opnd(op,i)) continue;
+
+	if (phi_resources_interfere(cc1, cc2)) {
+	  TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
+	  TN_LIST_Push(OP_result(op,0), candidateResourceSet, &MEM_local_pool);
+	}
+      }
+
+      // do operands interfere
+      for (i = 0; i < OP_opnds(op); i++) {
+	cc1 = phiCongruenceClass(OP_opnd(op,i));
+	Is_True(cc1 != NULL, ("Empty congruence class for a SSA TN"));
+
+	for (j = i+1; j < OP_opnds(op); j++) {
+	  cc2 = phiCongruenceClass(OP_opnd(op,j));
+
+	  if (OP_opnd(op,i) == OP_opnd(op,j)) continue;
+
+	  if (phi_resources_interfere(cc1, cc2)) {
+	    TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
+	    TN_LIST_Push(OP_result(op,j), candidateResourceSet, &MEM_local_pool);
+	  }
+	}
+      } // operands
+
+      //
+      // Insert necessary copies
+      //
+      TN_LIST *p;
+      for (p = candidateResourceSet; p != NULL; p = TN_LIST_rest(p)) {
+	TN *tn = TN_LIST_first(p);
+	if (TN_ssa_def(tn) == op) {
+	  // this PHI result
+	  insert_result_copy(op, 0, bb);
+	}
+	else {
+	  // must be one of the PHI operands
+	  for (i = 0; i < OP_opnds(op); i++) {
+	    if (OP_opnd(op,i) == tn) {
+	      insert_operand_copy(op, i, bb);
+	      break;
+	    }
+	  }
+	}
+      }
+
+      // Merge phiCongruenceClass's for all PHI-node resources
+      merge_phiCongruenceClasses(op);
+
+    } // for all BB PHI OPs
+  } // for all BBs
 
   return;
 }
@@ -2118,9 +2269,9 @@ SSA_Remove_Phi_Nodes (
   //
   // Delete maps
   //
-  FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map deleted"));
+  FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map not deleted"));
   MEM_POOL_Pop(&tn_map_pool);
-  //TN_MAP_Delete(tn_to_new_name_map);
+  TN_MAP_Delete(tn_ssa_map);
   OP_MAP_Delete(phi_op_map);
 
   MEM_POOL_Pop (&ssa_pool);

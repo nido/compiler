@@ -249,13 +249,21 @@ static BOOL tracing;
 
 inline BOOL OP_like_barrier(OP *op)
 {
+#ifdef TARG_ST
+  return (OP_Is_Barrier(op) || OP_Alloca_Barrier(op));
+#else
   return (CGTARG_Is_OP_Barrier(op) || OP_Alloca_Barrier(op));
+#endif
 }
 
 inline BOOL OP_like_store(OP *op)
 {
   BOOL like_store = (OP_store(op) || CGTARG_Is_OP_Intrinsic(op) || 
+#ifdef TARG_ST
+		     OP_Is_Barrier(op) || OP_code(op) == TOP_asm);
+#else
 		     CGTARG_Is_OP_Barrier(op) || OP_code(op) == TOP_asm);
+#endif
 
   like_store |= OP_like_barrier(op);
 

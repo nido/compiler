@@ -463,8 +463,9 @@ BB_Update_Phis(BB *bb)
         fprintf (TFile, "\n");
       }
 
-      BB_Prepend_Op(bb, new_phi);
-      Set_PHI_Operands(new_phi);
+      //      BB_Prepend_Op(bb, new_phi);
+      //      Set_PHI_Operands(new_phi);
+      SSA_Prepend_Phi_To_BB(new_phi, bb);
     }
 
     if (Trace_Select_Gen) {

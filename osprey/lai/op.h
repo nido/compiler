@@ -861,8 +861,6 @@ inline TN *CGTARG_Copy_Operand_TN(OP *op)
 }
 #endif
 
-inline BOOL CGTARG_Is_OP_Barrier(OP *op) { return FALSE; }
-
 inline BOOL CGTARG_Is_OP_Intrinsic(OP *op) { 
   return OP_code(op) == TOP_intrncall; 
 }
@@ -893,6 +891,7 @@ extern BOOL CGTARG_Is_Long_Latency (TOP *opcode);
 #endif
 
 #ifdef TARG_ST
+extern BOOL OP_Is_Barrier(OP *op);
 extern BOOL OP_Is_Counted_Loop(OP* op);
 extern BOOL OP_Is_Speculative_Load(OP* memop);
 extern BOOL OP_Is_Advanced_Load(OP* memop);
@@ -900,8 +899,8 @@ extern BOOL OP_Is_Check_Load(OP* memop);
 extern BOOL OP_Is_Speculative(OP *op);
 extern BOOL OP_Can_Be_Speculative (OP *op);
 extern BOOL OP_Is_Unconditional_Compare (OP *op);
-extern TOP  OP_Get_Speculative_Load (OP *op);
 #else
+inline BOOL CGTARG_Is_OP_Barrier(OP *op) { return FALSE; }
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif
 
@@ -916,9 +915,6 @@ Copy_Asm_OP_Annot(OP* new_op, OP* op)
   */
   return;
 }
-
-// Returns TRUE if <op> is a barrier node.
-#define OP_Is_Barrier CGTARG_Is_OP_Barrier
 
 // check if an operation that saves all the predicate registers
 extern BOOL OP_save_predicates(OP *op);

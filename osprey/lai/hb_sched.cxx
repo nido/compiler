@@ -875,7 +875,11 @@ HB_Schedule::Compute_BBSCH (BB *bb, BBSCH *bbsch)
 	(OPSCH_lstart(opsch) - OPSCH_estart(opsch)) == 0) { 
       critical_length = OPSCH_scycle(opsch) - Clock;
     }
+#ifdef TARG_ST
+    if (OP_Is_Barrier(op)) {
+#else
     if (CGTARG_Is_OP_Barrier(op)) {
+#endif
       Set_BB_MEM_BARRIER(bbsch);
       if (critical_length) break;
     }

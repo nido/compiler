@@ -1514,7 +1514,11 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	    OP_prev(op) : OP_next(op)) {
 
        if (OP_dummy(op)) {
+#ifdef TARG_ST
+	 if (!OP_Is_Barrier(op)) continue;
+#else
 	 if (!CGTARG_Is_OP_Barrier(op)) continue;
+#endif
 	 else if (OP_memory(cur_op)) return FALSE;
        }
 

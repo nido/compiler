@@ -602,12 +602,18 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
  * ====================================================================
  */
 
-/* Returns the high-level type of the spill operation given the
+/* 
+ * Returns the high-level type of the spill operation given the
  * TN to be spilled and the precision range of the data in it.
  */
 extern TY_IDX CGTARG_Spill_Type(TN *tn, INT range);
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
+
+/*
+ * Get speculative load opcode given 'op'
+ */
+extern TOP CGTARG_Speculative_Load (OP *op);
 
 /* ====================================================================
  *    PROC:

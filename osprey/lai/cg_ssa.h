@@ -71,12 +71,19 @@
  */
 #define TN_is_ssa_reg(t)  (TN_is_global_reg(t) && !TN_is_dedicated(t) && !TN_is_save_reg(t))
 
+/* ========================================================================
+ *   Mapping of TNs to their SSA definitions
+ * ========================================================================
+ */
+extern TN_MAP tn_ssa_map;
+#define TN_ssa_def(t)        ((OP *)TN_MAP_Get(tn_ssa_map, tn))
+#define Set_TN_ssa_def(t,o)  (TN_MAP_Set(tn_ssa_map, tn, o))
+
 //
 // Iterate over PHI-nodes in BB
 //
 #define FOR_ALL_BB_PHI_OPs(bb,op)    \
   for (op = BB_first_op(bb); op != NULL && OP_code(op) == TOP_phi; op = OP_next(op))
-
 
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Make_Consistent (RID *rid, BOOL region);
@@ -86,7 +93,12 @@ extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
-void Set_PHI_Operands(OP *phi);
+//
+// Prepend the 'phi_op' to the 'bb' and do bookkeeping
+//
+extern void SSA_Prepend_Phi_To_BB (OP *phi_op, BB *bb);
+
+//void Set_PHI_Operands(OP *phi);
 
 // Tracing flags
 #define SSA_BUILD        0x00000001  /* trace SSA build */
