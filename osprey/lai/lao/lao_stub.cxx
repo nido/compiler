@@ -19,6 +19,7 @@
 #include "gra_live.h"
 #include "cg_loop.h"
 #include "cgprep.h"
+#include "cflow.h"
 #include "dominate.h"
 #include "findloops.h"
 #include "hb.h"
@@ -511,6 +512,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     // account for isa subset. HACK.
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     int unrolled = BB_unrollings(cgir_bb);
+//if (unrolled) fprintf(stderr, "BB(%d) input unrolled %d\n", BB_id(cgir_bb), unrolled);
     // make the BasicBlock
     basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
 	labelCount, labels, operationCount, operations);
@@ -908,6 +910,7 @@ CGIR_BB_more(CGIR_BB cgir_bb, int ordering, int unrolled, bool isRegAlloc, bool 
     BB_MAP32_Set(CG_LAO_Region_Map, cgir_bb, ordering);
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
+//if (unrolled) fprintf(stderr, "BB(%d) output unrolled %d\n", BB_id(cgir_bb), unrolled);
   // Set other flags.
   if (isRegAlloc) Set_BB_reg_alloc(cgir_bb);
   if (isScheduled) Set_BB_scheduled(cgir_bb);
@@ -1169,6 +1172,7 @@ lao_optimize_pu(unsigned lao_optimizations) {
   result |= lao_optimize(bodyBBs, entryBBs, exitBBs, 0, lao_optimizations);
   //
   if (result) {
+    CFLOW_Optimize(CFLOW_UNREACHABLE, "CFLOW after LAO");
     GRA_LIVE_Recalc_Liveness(NULL);
     GRA_LIVE_Rename_TNs();
   }
