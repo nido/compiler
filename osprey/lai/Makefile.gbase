@@ -288,6 +288,7 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_cgdwarf.cxx		\
   targ_cgemit.cxx		\
   targ_ebo.cxx			\
+  targ_entry_exit.cxx		\
   targ_loop_recur.cxx		\
   targ_op.cxx			\
   targ_register.cxx		\
