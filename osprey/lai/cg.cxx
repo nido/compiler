@@ -103,6 +103,7 @@
 #include "cgtarget.h"
 #include "ebo.h"
 #include "hb.h"
+#include "hb_hazards.h"
 #ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
 #endif
@@ -783,9 +784,11 @@ CG_Generate_Code(
     Trace_HB = Get_Trace (TP_SCHED, 1);
     for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       void Handle_All_Hazards(BB *bb);
+      if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
       Handle_All_Hazards(bb);
     }
     REG_LIVE_Finish();
+    if (Assembly) Add_Scheduling_Notes_For_Loops ();
   }
   if (CG_LAO_Region_Map) {
     BB_MAP_Delete(CG_LAO_Region_Map);
