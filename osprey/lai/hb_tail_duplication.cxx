@@ -160,7 +160,11 @@ Fixup_Arcs(HB* hb, BB* old_bb, BB* new_bb, BB_MAP duplicate, BB** fall_thru,
       //
       if (BB_Fall_Thru_Successor(pred) == old_bb) {
 	Link_Pred_Succ_with_Prob(dup, new_bb, BBLIST_prob(blsucc));
+#ifdef TARG_ST200
+      } else if (BB_kind(pred) == BBKIND_LOGIF) {
+#else
       } else if (BB_kind(dup) == BBKIND_LOGIF) {
+#endif
 	Target_Cond_Branch(dup, new_bb, BBLIST_prob(blsucc));
       } else {
 	BB_Remove_Branch(dup);
@@ -205,7 +209,7 @@ Fixup_Arcs(HB* hb, BB* old_bb, BB* new_bb, BB_MAP duplicate, BB** fall_thru,
       } else {
 	Link_Pred_Succ_with_Prob(new_bb, succ, BBLIST_prob(bl));
       }
-    }	
+    }
   }
 }
 
@@ -259,7 +263,6 @@ Copy_BB_For_Tail_Duplication(HB* hb, BB* old_bb)
   BB* new_bb = NULL;
 
   new_bb = Gen_BB_Like(old_bb);
-  
 
   //
   // Copy the ops to the new block.
@@ -335,6 +338,13 @@ Tail_Duplicate(HB* hb, BB* side_entrance, BB_MAP unduplicated,
     fprintf(HB_TFile, "<HB> Tail duplicating BB:%d.  Duplicate BB%d\n",
 	    BB_id(side_entrance), BB_id(dup));
   }
+
+#ifdef TARG_ST200
+  GRA_LIVE_Compute_Liveness_For_BB(dup);  
+#endif
+
+  //  printf ("tail duplicate at %d\n", BB_id (side_entrance));
+  //  draw_flow_graph();
 
   //
   // Flag bb as having been duplicated.
