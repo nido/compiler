@@ -2913,7 +2913,7 @@ Verify_Operand (
 	if (val == nextpc) {
 	  DevWarn("branch to next instruction at PC=0x%x", PC);
 
-	  Print_OP(op);
+	  Print_OP_No_SrcLine(op);
 	  fprintf(TFile, " PC = %d; TN_offset = %lld\n", PC, offset);
 	  fprintf(TFile, " val = %lld; nextpc = %d\n", val, nextpc);
 
