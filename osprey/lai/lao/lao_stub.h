@@ -38,12 +38,6 @@ typedef enum {
 // supported by the platform. The reason is to provide a consistent
 // implementation on all platforms.
 
-CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
-#define lao_optimize_LOOP (*lao_optimize_LOOP_p)
-
-CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
-#define lao_optimize_HB (*lao_optimize_HB_p)
-
 CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 #define lao_optimize_PU (*lao_optimize_PU_p)
 

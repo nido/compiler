@@ -177,7 +177,7 @@ static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
-static BOOL CG_LAO_schedtype_overridden = FALSE;
+static BOOL CG_LAO_regiontype_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
 static BOOL CG_LAO_speculation_overridden = FALSE;
 static BOOL CG_LAO_loopdep_overridden = FALSE;
@@ -419,8 +419,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
     2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedtype", "",
-    1, 0, 3,	&CG_LAO_schedtype, &CG_LAO_schedtype_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
+    1, 0, 3,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
     1, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
@@ -1528,8 +1528,6 @@ static void* lao_handler = NULL;
 // Also, define here function pointers to other entry points in the
 // LAO library.
 
-CG_EXPORTED bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
-CG_EXPORTED bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
 CG_EXPORTED bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 CG_EXPORTED void (*CGIR_print_p) (FILE *file);
 
@@ -1570,7 +1568,7 @@ CG_Init (void)
 #ifdef TARG_ST
   if (CG_LAO_optimizations != 0) {
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
-    if (!CG_LAO_schedtype_overridden) CG_LAO_schedtype = 1;
+    if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
