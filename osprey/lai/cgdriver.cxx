@@ -404,12 +404,8 @@ static OPTION_DESC Options_CG[] = {
     "Allow load speculation for select if conversion"},
 
   { OVK_INT32,	OV_INTERNAL, TRUE, "select_stores", "",
-    1, 0, 2,	&CG_select_stores, NULL,
+    1, 0, 3,	&CG_select_stores, NULL,
     "Allow the promotion of stores for select if conversion"},
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_addr_stores", "",
-    0, 0, 0,	&CG_select_addr_stores, NULL,
-    "Allow the conversion of stores using a selected dump area"},
 
   { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
     0, 0, 0,	&CG_select_factor, NULL,
