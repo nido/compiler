@@ -496,7 +496,6 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     Set_BB_unrollings(new_bb, BB_unrollings(new_bb)*unrolled);
   //
   // Set flags.
-  if (optimizations & Optimization_PreSched) Set_BB_scheduled(new_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(new_bb);
   // Set the rid.
@@ -542,7 +541,6 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
   Set_BB_unrollings(cgir_bb, unrolled);
   // Set flags.
-  if (optimizations & Optimization_PreSched) Set_BB_scheduled(cgir_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
   // Set the rid.
@@ -1043,6 +1041,28 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
   return exit_count;
 }
 
+void Sort_topological_DFS(BB *bb, BB_SET *region_set, BB_MAP visited_map, BB_List &bblist) {
+  BBLIST *succs;
+
+  BB_MAP32_Set(visited_map, bb, 1);
+
+  FOR_ALL_BB_SUCCS(bb, succs) {
+    BB *succ_bb = BBLIST_item(succs);
+    if (!BB_MAP32_Get(visited_map, succ_bb) &&
+	BB_SET_MemberP(region_set, succ_bb)) {
+      Sort_topological_DFS(succ_bb, region_set, visited_map, bblist);
+    }
+  }
+
+  bblist.push_front(bb);
+}
+
+void Sort_topological(BB *entry, BB_SET *region_set, BB_List &bblist) {
+  BB_MAP visited_map = BB_MAP32_Create();
+  Sort_topological_DFS(entry, region_set, visited_map, bblist);
+  BB_MAP_Delete(visited_map);
+}
+
 // Declare CG_DEP_Compute_Region_MEM_Arcs().
 void 
 CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
@@ -1082,27 +1102,24 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
     loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
 	Configuration_Pipeline, pipeline);
   }
-  // Make a BB_List of the loop body and compute its op_count.
-  BB *bb = NULL;
-  BB_List bb_list;
-  int nest_level = BB_nest_level(head_bb), op_count = 0;
+
+  // Make a BB_List of the loop body and compute its op_count. This
+  // BB_List must be in topological order.
+  BB_List bb_topo_list, bb_list;
   BB_SET *loop_set = LOOP_DESCR_bbset(loop);
-#if 0
-  FOR_ALL_BB_SET_members(loop_set, bb) {
-    if (BB_nest_level(bb) == nest_level) {
-      op_count += BB_length(bb);
-      bb_list.push_back(bb);
-    }
-    if (op_count >= LAO_OPS_LIMIT) break;
-  }
-#endif
-  for (BB *bb = head_bb; bb; bb = BB_next(bb)) {
-    if (BB_SET_MemberP(loop_set, bb) &&
-	(BB_nest_level(bb) == nest_level)) {
-      op_count += BB_length(bb);
-      bb_list.push_back(bb);
+
+  Sort_topological(head_bb, loop_set, bb_topo_list);
+
+  int nest_level = BB_nest_level(head_bb), op_count = 0;
+  BB_List::iterator bb_iter;
+  for (bb_iter = bb_topo_list.begin(); bb_iter != bb_topo_list.end(); bb_iter++) {
+    if (BB_nest_level(*bb_iter) == nest_level) {
+      op_count += BB_length(*bb_iter);
+      bb_list.push_back(*bb_iter);
+      if (op_count >= LAO_OPS_LIMIT) break;
     }
   }
+
   // Compute the memory dependence graph.
   if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
     bool cyclic = BB_innermost(head_bb) != 0;
