@@ -1,6 +1,5 @@
 /*
-
-  Copyright (C) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+  Copyright (C) 2001, STMicroelectronics, All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2 of the GNU General Public License as
@@ -20,18 +19,7 @@
   You should have received a copy of the GNU General Public License along
   with this program; if not, write the Free Software Foundation, Inc., 59
   Temple Place - Suite 330, Boston MA 02111-1307, USA.
-
-  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-
 
 /* ====================================================================
  * ====================================================================
@@ -72,6 +60,7 @@
 #include "gra_live.h"
 #include "cxx_memory.h"
 #include "cg_ssa.h"
+#include "exp_targ.h"
 #include "DaVinci.h"
 
 #include "hb.h"
@@ -92,28 +81,21 @@ static OP_MAP phi_op_map = NULL;
  *
  * ================================================================
  */
-#define Trace_Select_Candidates_num 1  /* -Wb,-tt61:0x001 */
-#define Trace_Select_Gen_num        2  /* -Wb,-tt61:0x002 */
-#define Trace_Select_Spec_num       4  /* -Wb,-tt61:0x004 */
-#define Trace_Select_Merge_num      8  /* -Wb,-tt61:0x008 */
-#define Trace_Select_Stats_num      16 /* -Wb,-tt61:0x010 */
-#define Trace_Select_daVinci_num    32 /* -Wb,-tt61:0x020 */
-
-static BOOL Trace_Select_Candidates; /* Hammock selection */
-static BOOL Trace_Select_Gen;        /* Select generation */
-static BOOL Trace_Select_Spec;       /* Speculation */
-static BOOL Trace_Select_Merge;      /* Merge blocks */
-static BOOL Trace_Select_Stats;      /* Statistics */
-static BOOL Trace_Select_daVinci;    /* Sexy */
+static BOOL Trace_Select_Candidates; /* -Wb,-tt61:0x001 */
+static BOOL Trace_Select_Gen;        /* -Wb,-tt61:0x002 */
+static BOOL Trace_Select_Spec;       /* -Wb,-tt61:0x004 */
+static BOOL Trace_Select_Merge;      /* -Wb,-tt61:0x008 */
+static BOOL Trace_Select_Stats;      /* -Wb,-tt61:0x010 */
+static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x020 */
 
 static void
 Trace_Select_Init() {
-  Trace_Select_Candidates = Get_Trace(TP_SELECT, Trace_Select_Candidates_num);
-  Trace_Select_Gen        = Get_Trace(TP_SELECT, Trace_Select_Gen_num);
-  Trace_Select_Spec       = Get_Trace(TP_SELECT, Trace_Select_Spec_num);
-  Trace_Select_Merge      = Get_Trace(TP_SELECT, Trace_Select_Merge_num);
-  Trace_Select_Stats      = Get_Trace(TP_SELECT, Trace_Select_Stats_num);
-  Trace_Select_daVinci    = Get_Trace(TP_SELECT, Trace_Select_daVinci_num);
+  Trace_Select_Candidates = Get_Trace(TP_SELECT, Select_Candidates);
+  Trace_Select_Gen        = Get_Trace(TP_SELECT, Select_Gen);
+  Trace_Select_Spec       = Get_Trace(TP_SELECT, Select_Spec);
+  Trace_Select_Merge      = Get_Trace(TP_SELECT, Select_Merge);
+  Trace_Select_Stats      = Get_Trace(TP_SELECT, Select_Stats);
+  Trace_Select_daVinci    = Get_Trace(TP_SELECT, Select_daVinci);
 }
 
 MEM_POOL MEM_Select_pool;
@@ -217,27 +199,116 @@ Identify_Hammock_Candidates(void)
 
 UINT max_select_instrs = 1000;
 
+// List of of memory accesses found in if-then-else region. 
+// Load and stores lists are used in a slightly different manner:
+// Stores are mapped with their equivalent. (this might be improved with a dummy
+// store location).
+// Loads are mapped with their dismissible form. They don't need to have an
+// equivalent (a load on the other side of the hammock).
+// I keep these operation in a list because we don't want to touch the basic
+// blocks now. (we don't know yet if the hammock will be reduced).
+// OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
+
+typedef list<OP*> op_list;
+
+pair<op_list, op_list> store_i;
+pair<op_list, op_list> load_i;
+
+// temporary: I don't like the interface.
 static BOOL
-Can_Speculate(OP *op)
+Can_Speculate(BOOL first, OP *op)
 {
-  if (!OP_Can_Be_Speculative((OP *) op)) {
-    TOP ld_top;
-    if (Eager_Level >= EAGER_MEMORY && OP_load (op) && !OP_volatile(op)) {
+  // not problem.
+  if (OP_Can_Be_Speculative(op))
+    return TRUE;
+  
+  if (OP_memory (op)) {
+    if (Eager_Level < EAGER_MEMORY || OP_volatile(op))
+      return FALSE;
+
+    if (OP_load (op)) {
+      TOP ld_top;
+      OP *lop;
+
       if ((ld_top = CGTARG_Speculative_Load (op)) == TOP_UNDEFINED)
         return FALSE;
 
-      OP_Change_Opcode(op, ld_top); 
-      Set_OP_speculative(op);             // set the OP_speculative flag.
+      lop = Dup_OP (op);
+      OP_Change_Opcode(lop, ld_top); 
+      Set_OP_speculative(lop);             // set the OP_speculative flag.
+
+      load_i.first.push_back(op);
+      load_i.second.push_back(lop);
+      
+      return TRUE;
     }
-    else
-      return FALSE;
+
+    else if (OP_store (op)) {
+      if (first)
+        store_i.first.push_back(op);
+      else
+        store_i.second.push_back(op);
+
+      return TRUE;
+    }
   }
 
-  return TRUE;
+  return FALSE;
+}
+
+static BOOL
+Are_Aliased(OP* op1, OP* op2)
+{
+  if (OP_memory(op1) && OP_memory(op2)) {
+    WN *wn1 = Get_WN_From_Memory_OP(op1);
+    WN *wn2 = Get_WN_From_Memory_OP(op2);
+    if (wn1 != NULL && wn2 != NULL) {
+      ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
+      return alias == SAME_LOCATION;
+    }
+  }
+
+  return FALSE;
+}
+
+static UINT
+BB_Check_Memops(void)
+{
+  UINT count = 0;
+
+  // We don't have the same count of store. Can't spec any.
+  if (store_i.first.size() != store_i.second.size())
+    return 0;
+
+  // Each store should have an equiv.
+  op_list::iterator i1_iter = store_i.first.begin();
+  op_list::iterator i1_end  = store_i.first.end();
+  op_list::iterator i2_iter = store_i.second.begin();
+  op_list::iterator i2_end  = store_i.second.end();
+  UINT c = 0;
+
+  while(i1_iter != i1_end) {
+    if (!Are_Aliased (*i1_iter, *i2_iter)) {
+      OP * old_op = *i2_iter;     
+      i2_iter = store_i.second.erase(i2_iter);
+      // *i1_iter didn't match. failed
+      if (c++ == store_i.second.size())
+        return FALSE;
+      store_i.second.push_back(old_op);
+    }
+    else {
+      ++count;
+      ++i1_iter;
+      ++i2_iter;
+    }
+  }
+
+  return count;
 }
 
 // Test if a hammock is suitable for select conversion
 // For now, the heuristic is simply the # of instructions to speculate.
+//  later: compute dependence heigh, use freq informations.
 static BOOL
 Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
 {
@@ -258,13 +329,11 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
   if (target != ipdom) {
     FOR_ALL_BB_OPs_FWD(target, op) {
       //      Print_OP (op);
-      if (!Can_Speculate(op)) return FALSE;
+      if (!Can_Speculate(TRUE, op)) return FALSE;
       ++count;
     }
   }
   
-  // fprintf(TFile, "<select> Hammock BB%d max instr %d\n", BB_id (target), count);
-
   if (count > max_select_instrs)
     return FALSE;
 
@@ -273,12 +342,17 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
  if (fall_thru != ipdom) {
     FOR_ALL_BB_OPs_FWD(fall_thru, op) {
       //      Print_OP (op);
-      if (!Can_Speculate(op)) return FALSE;
+      if (!Can_Speculate(FALSE, op)) return FALSE;
       ++count;
     }
   }
   
- // fprintf(TFile, "<select> Hammock BB%d max instr %d\n", BB_id (fall_thru), count);
+ if (!store_i.first.empty() || !store_i.second.empty()) {
+   UINT nmem = BB_Check_Memops();
+   if (nmem == 0)
+     return FALSE;
+   count += nmem*4;
+ }
 
  return count <= max_select_instrs;
 }
@@ -357,39 +431,7 @@ Get_In_Edge_Pos (BB* in_bb, BB* bb)
     ++pos;
   }
 
-  FmtAssert(FALSE, ("can't find incoming edge for bb %d in bb %d\n",
-                    BB_id(bb), BB_id(in_bb)));
-}
-
-static OP*
-Create_Select (TN* dest_tn, TN* cond_tn, TN *true_tn, TN *false_tn,
-               VARIANT variant)
-{
-  TOP select;
-
-  if (true_tn == false_tn) {
-    // should have been already handled by eblock optimiser ?
-    FmtAssert(FALSE, ("same tns") );
-  }
-
-  switch (variant) {
-  case V_BR_P_TRUE:
-    select = TOP_slct_r;
-    break;
-  case V_BR_P_FALSE:
-    select = TOP_slctf_r;
-    break;
-  default:
-    fprintf (TFile, "\n wrong variant %d ", (int)variant);
-    FmtAssert(FALSE, ("select"));
-  }
-  
-  OP *select_op = Mk_OP (select, dest_tn, cond_tn, true_tn, false_tn);
-
-  // statistics
-  ++select_count;
-
-  return select_op;
+  FmtAssert(FALSE, ("no edge for bb %d in bb %d\n", BB_id(bb), BB_id(in_bb)));
 }
 
 /* ====================================================================
@@ -416,9 +458,6 @@ Promote_BB(BB *bp, BB *to_bb)
   if (BB_loophead(bp) || BB_entry(bp) || BB_exit(bp)) {
     DevAssert(FALSE, ("Promote_BB"));
   }
-
-  // We don't want to promote remainting branch
-  //  BB_Remove_Branch (bp);
 
   spec_instrs_count += BB_length (bp);
 
@@ -463,8 +502,6 @@ BB_Update_Phis(BB *bb)
         fprintf (TFile, "\n");
       }
 
-      //      BB_Prepend_Op(bb, new_phi);
-      //      Set_PHI_Operands(new_phi);
       SSA_Prepend_Phi_To_BB(new_phi, bb);
     }
 
@@ -480,8 +517,8 @@ BB_Update_Phis(BB *bb)
     // maintain DF ?
   }
 
-  list<OP*>::iterator phi_iter = phi_list.begin();
-  list<OP*>::iterator phi_end  = phi_list.end();
+  op_list::iterator phi_iter = phi_list.begin();
+  op_list::iterator phi_end  = phi_list.end();
   for (; phi_iter != phi_end; ++phi_iter) {
     BB_Remove_Op(bb, *phi_iter);
   }
@@ -489,29 +526,22 @@ BB_Update_Phis(BB *bb)
   phi_list.clear();
 }
 
-// The algorithms below adds the new phi operand in last position, regardless of
-// the predessor order. Reoder that here now that the edges are created.
-static void
-Move_Last_Phi_Operand_In_Pos (BB *head, BB *tail)
-{
-  UINT8 pos = Get_In_Edge_Pos (head, tail);
-
-  // Already in position, nothing to do.
-  if (pos == BB_preds_len (tail)-1)
-    return;
-
-  // not yet... waiting that to happen
-  DevAssert(FALSE, ("Move_Last_Phi_Operand_In_Pos"));
-}
-
 static BOOL
 Can_Merge_BB (BB *bb_first, BB *bb_second, OP *br_op)
 {
+  BBLIST *edge;
+
   if (br_op && BB_call(bb_second))
     return FALSE;
 
   if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
     return FALSE;
+
+  FOR_ALL_BB_SUCCS(bb_second, edge) {
+    BB *pred = BBLIST_item(edge);
+    if (pred == bb_first)
+      return FALSE;
+  }
 
   return TRUE;
 }
@@ -609,11 +639,71 @@ BB_Merge (BB *bb_first, BB *bb_second)
 }
 
 static void
+BB_Fix_Spec_Loads (BB *bb)
+{
+  DevAssert(load_i.first.size() == load_i.second.size(),
+            ("not speculative load"));    
+
+  while (!load_i.first.empty()) {
+    OP* lop = load_i.first.front();
+    OP* slop = load_i.second.front();
+
+    BB_Insert_Op_Before (bb, lop, slop);
+    BB_Remove_Op (bb, lop);
+
+    load_i.first.pop_front();
+    load_i.second.pop_front();
+  }
+}
+
+static void
+BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
+{
+  while (!store_i.first.empty()) {
+    OPS ops = OPS_EMPTY;
+    TN *true_tn;
+    TN *false_tn;
+
+    OP* i1 = store_i.first.front();
+    OP* i2 = store_i.second.front();
+    
+    DevAssert(Are_Aliased (i1, i2), ("stores are not alias"));    
+
+    if (variant == V_BR_P_TRUE) {
+      true_tn = OP_opnd(i1, 2);
+      false_tn = OP_opnd(i2, 2);
+    }
+    else if (variant == V_BR_P_FALSE) {
+      true_tn = OP_opnd(i2, 2);
+      false_tn = OP_opnd(i1, 2);
+    }
+    else
+      DevAssert(FALSE, ("variant"));    
+
+    TN *temp = CGTARG_gen_select_dest_TN();
+
+    Expand_Select (temp, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
+    Expand_Store (MTYPE_I4, temp, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
+
+    BB_Insert_Ops_After (bb, i2, &ops);
+
+    BB_Remove_Op (bb, i1);
+    BB_Remove_Op (bb, i2);
+
+    store_i.first.pop_front();
+    store_i.second.pop_front();
+  }
+}
+
+static void
 Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 {
   OP *phi;
   OP *new_phi;
   BOOL edge_needed = FALSE;
+
+  //  fprintf (TFile, "\nin Select_Fold\n");
+  //  Print_All_BBs();
 
   //  fprintf (TFile, "Select_Fold %d %d %d %d\n", BB_id(head), BB_id (target_bb),
   //           BB_id (fall_thru_bb), BB_id (tail));
@@ -622,6 +712,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   UINT8 nottaken_pos = Get_In_Edge_Pos(fall_thru_bb == tail ? head : fall_thru_bb, tail);
 
   //  fprintf (TFile, "pos: taken = %d, not_taken = %d\n", taken_pos, nottaken_pos);
+
   // keep a list of newly created conditional move / compare
   // and phis to remove
   OPS cmov_ops = OPS_EMPTY;
@@ -647,13 +738,27 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
     for (i = 0; i < OP_opnds(phi); i++) {
       TN *tn = OP_opnd(phi,i);
-      if (i == taken_pos)  true_tn = tn;
-      if (i == nottaken_pos) false_tn = tn;
+      if (i == taken_pos) {
+        if (variant == V_BR_P_TRUE)
+          true_tn = tn;
+        else if (variant == V_BR_P_FALSE)
+          false_tn = tn;
+        else
+          DevAssert(FALSE, ("variant"));    
+      }
+      if (i == nottaken_pos)  {
+        if (variant == V_BR_P_TRUE)
+          false_tn = tn;
+        else if (variant == V_BR_P_FALSE)
+          true_tn = tn;
+        else
+          DevAssert(FALSE, ("variant"));    
+      }
     }
 
     // deal with undef operands.
     if (!true_tn && !false_tn)  {
-      DevAssert(FALSE, ("undef true and false tns"));
+      DevAssert(FALSE, ("undef true and false tns. not yet"));
     }
 
     // for now we only handle single result tn.
@@ -665,11 +770,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     if (BB_preds_len(tail) != 2) 
       select_tn =  Dup_TN(select_tn);
     
-    // Expand_Compare_And_Select ?
-    OP *select_op = Create_Select (select_tn, cond_tn, true_tn, false_tn, variant);
-
-    // and remember it.
-    OPS_Append_Op(&cmov_ops, select_op);
+    Expand_Select (select_tn, cond_tn, true_tn, false_tn,
+                   MTYPE_I4, FALSE, &cmov_ops);
 
     // If the block has only 2 incoming merges, just replace phi's tn by the
     // new tn. else we need to create a new def and insert it into the phi
@@ -724,7 +826,10 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     br_op = BB_Remove_Branch(fall_thru_bb);
     Promote_BB(fall_thru_bb, head);
   }
-  
+
+  //  fprintf (TFile, "\nafter promotion\n");
+  //  Print_All_BBs();
+
   // to avoid extending condition's lifetime, we keep the comp instruction
   // at the end, just before the selects.
   //  BB_Move_Op_To_End(head, head, cmp);
@@ -738,20 +843,18 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   // Finally, insert the selects.
   BB_Append_Ops(head, &cmov_ops);
 
-  //  fprintf (TFile, "selects inserted\n");
-  //  Print_All_BBs();
+  BB_Fix_Spec_Loads (head);
+  BB_Fix_Spec_Stores (head, cond_tn, variant);
 
-  // If we have removed both outedges, create a new one.
-   if (edge_needed)
-      Link_Pred_Succ_with_Prob(head, tail, 1.0);
+  // create a new edge.
+  if (!edge_needed)
+    Unlink_Pred_Succ (head, tail);
+
+  Link_Pred_Succ_with_Prob(head, tail, 1.0);
 
   //  fprintf (TFile, "simple fall through BB%d BB%d done\n", BB_id(head), BB_id(tail));
   //  Print_All_BBs();
 
-  // Because the predecessor were not yet knowned, we have inserted the new phi
-  // operand in last position. Now put them in order.
-  Move_Last_Phi_Operand_In_Pos (head, tail);
-    
   // update phis.
   BB_Update_Phis(tail);
 
@@ -835,7 +938,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
       if (Trace_Select_Gen) {
-        fprintf (TFile, "********** BEFORE SELECT FOLD ************\n");
+        fprintf (TFile, "\n********** BEFORE SELECT FOLD ************\n");
         Print_All_BBs();
         fprintf (TFile, "******************************************\n");
       }
@@ -846,6 +949,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         fprintf (TFile, "------------------------------------------\n");
       }
     }
+    store_i.first.clear();
+    store_i.second.clear();
   }
 
   GRA_LIVE_Recalc_Liveness(rid);
@@ -857,6 +962,12 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Finalize_Select();
 }
 
+/* ================================================================
+ *
+ * daVincy output of CFG.
+ *
+ * ================================================================
+ */
 static char *
 sPrint_TN ( 
   TN *tn, 
@@ -934,12 +1045,6 @@ sPrint_TN (
   return result;
 }
 
-/* ================================================================
- *
- * sexy output of CFG.
- *
- * ================================================================
- */
 static const char *
 Node(BB* bb)
 {
