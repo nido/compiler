@@ -1415,7 +1415,7 @@ CGIR_TN_print ( const TN *tn )
 }
 
 static void
-CGIR_OP_print ( const OP *op )
+CGIR_OP_print ( const OP *op, bool bb_scheduled)
 {
   int i;
   //
@@ -1448,15 +1448,18 @@ CGIR_OP_print ( const OP *op )
     if (OP_Defs_TN(op, tn)) fprintf(TFile, "<def>");
   }
 
+  if (bb_scheduled)
+    fprintf(TFile, "\tscycle = %d", OP_scycle(op));
+
   // TBD: Print other attributes on operations.
 }
 
 static void
-CGIR_OP_prints ( const OP *op )
+CGIR_OP_prints ( const OP *op , bool bb_scheduled)
 {
   for ( ; op; op = OP_next(op)) {
     fprintf(TFile, "\t");
-    CGIR_OP_print(op);
+    CGIR_OP_print(op, bb_scheduled);
     fprintf(TFile, "       \t#line[%4d]", Srcpos_To_Line(OP_srcpos(op)));
     fprintf(TFile, "\n");
   }
@@ -1622,7 +1625,7 @@ static void
 CGIR_BB_print (BB *bp)
 {
   CGIR_BB_print_header (bp );
-  if (BB_first_op(bp))	CGIR_OP_prints (BB_first_op(bp));
+  if (BB_first_op(bp))	CGIR_OP_prints (BB_first_op(bp), BB_scheduled(bp));
 }
 
 static void
@@ -1645,9 +1648,9 @@ CGIR_Alias_print()
   fprintf(TFile, "--------------- Begin Print Alias ---------------\n");
   //
   for (elt1 = memops; elt1; elt1 = elt1->next) {
-    fprintf(TFile, "<Alias>"); CGIR_OP_print(elt1->op); fprintf(TFile, "\n");
+    fprintf(TFile, "<Alias>"); CGIR_OP_print(elt1->op, FALSE); fprintf(TFile, "\n");
     for (elt2 = memops; elt2 != elt1; elt2 = elt2->next) {
-      fprintf(TFile, "\t<with>"); CGIR_OP_print(elt2->op); fprintf(TFile, "\t");
+      fprintf(TFile, "\t<with>"); CGIR_OP_print(elt2->op, FALSE); fprintf(TFile, "\t");
       alias = CG_DEP_Mem_Ops_Alias(elt1->op, elt2->op, &identical);
       if (!alias)          fprintf(TFile, "NO-ALIAS");
       else if (!identical) fprintf(TFile, "   ALIAS");
