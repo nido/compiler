@@ -524,6 +524,41 @@ CGSPILL_Is_Spill_Location (ST *mem_loc)
 ST *
 CGSPILL_OP_Spill_Location (OP *op)
 {
+#ifdef TARG_ST
+  // [CG]: Op must be marked as spill. The spill mem location is
+  // retrieved from the offset tn instead of the register tn.
+  ST *mem_loc = NULL;
+  
+  if (!spill_ids) return NULL;
+  
+  // [CG]: op must be marked as spill
+  if (!CGSPILL_Is_Spill_Op(op)) return NULL;
+  
+  TN *spill_tn = NULL;
+  TN *offset_tn;
+  
+  if (OP_load(op) && (OP_results(op) == 1)) {
+    spill_tn = OP_result(op,0);
+    offset_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_offset));
+  } else if (OP_store(op)) {
+    spill_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_storeval));
+    offset_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_offset));
+  }
+  
+  mem_loc = TN_var(offset_tn);
+  FmtAssert(mem_loc != NULL, ("Invalid offset for a spill operation  BB:%d, OP:%d\n", BB_id(OP_bb(op)), OP_map_idx(op)));
+
+  if (spill_tn && TN_spill_is_valid(spill_tn) && TN_spill(spill_tn) != NULL) {
+    FmtAssert(TN_spill(spill_tn) == mem_loc,
+	      ("CGSPILL_OP_Spill_Location: TN_spill inconsistent with offset in BB:%d, OP:%d (OP spill: %s, TN spill: %s)\n", BB_id(OP_bb(op)), OP_map_idx(op), ST_name(mem_loc), ST_name(TN_spill(spill_tn))));
+    mem_loc = NULL;
+  }
+  
+  if (mem_loc && !CGSPILL_Is_Spill_Location(mem_loc))
+    mem_loc = NULL;
+  
+  return mem_loc;
+#else
   ST *mem_loc = NULL;
 
   if (spill_ids) {
@@ -556,6 +591,7 @@ CGSPILL_OP_Spill_Location (OP *op)
   }
 
   return mem_loc;
+#endif
 }
 
 /* ======================================================================

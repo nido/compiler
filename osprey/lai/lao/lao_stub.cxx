@@ -870,7 +870,6 @@ CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, boo
       Is_True(0, ("Invalid LAO isSpilledOP operation"));
     }
     Is_True(base_tn == SP_TN || base_tn == FP_TN, ("Invalid base TN for LAO spill op"));
-    Set_TN_spill(spilled_tn, TN_var(offset_tn));
     Set_OP_spill(cgir_op);
   }
   // Set volatile.
