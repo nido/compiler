@@ -333,8 +333,13 @@ HB_Init(void)
   HB_minimum_priority = atof(HB_min_priority);
   HB_bb_map = BB_MAP_Create();
   HB_Trace_Init();
-  // Turn off hyperblock formation if we can't predicate
+  // Turn off hyperblock formation if we can't predicate unless we force it.
+  // In that case, the hyperblock will not be if-converted.
+#ifdef TARG_ST200
+  if (!CGTARG_Can_Predicate() && !HB_force_hyperblocks) {
+#else
   if (!CGTARG_Can_Predicate()) {
+#endif
     HB_formation = 0;
   }
 }
@@ -547,7 +552,7 @@ Form_Hyperblocks(HB_CAND_TREE*        cand,
       HB_bb_list duplicate_bbs;
       if (HB_Tail_Duplicate(hb, duplicate, duplicate_bbs,
 			    post_tail_duplication)) {
-	HB_If_Convert(hb, candidate_regions);
+        HB_If_Convert(hb, candidate_regions);
 	HB_Remove_BBs_From_Hyperblocks(orig_blocks,HB_Blocks(hb));
 	HB_Map_BBs(hb);
       } 
@@ -717,3 +722,4 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   Finalize_Memory();
   Stop_Timer (T_HBF_CU);
 }
+
