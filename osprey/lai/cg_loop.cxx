@@ -116,7 +116,7 @@
    
 */
 
-#include <math.h>
+#include "W_math.h"
 #include <stdarg.h>
 #include <set.h>
 
@@ -269,7 +269,7 @@ void CG_LOOP_Init_Op(OP *op)
   } else {
     info = (_CG_LOOP_INFO *)MEM_POOL_Alloc(&MEM_phase_nz_pool, sizeof_info);
   }
-  bzero(info, sizeof_info);
+  BZERO(info, sizeof_info);
   OP_MAP_Set(_CG_LOOP_info_map, op, info);
 }
 
@@ -2280,7 +2280,9 @@ static void note_not_unrolled(BB *head, const char *reason, ...)
 
 #define is_power_of_two(i) (((i) & ((i)-1)) == 0)
 
-
+#ifdef __CYGWIN__
+#undef log2
+#endif
 
 inline UINT16 log2(UINT32 n)
 /* -----------------------------------------------------------------------
