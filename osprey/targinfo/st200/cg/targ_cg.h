@@ -132,8 +132,6 @@ extern void CGTARG_Postprocess_Asm_String (char*);
 
 extern TOP CGTARG_Invert_Table[TOP_count+1];
 
-extern TOP CGTARG_Branch_To_Reg_Table[TOP_count+1];
-
 extern mTOP CGTARG_Inter_RegClass_Copy_Table
     [ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_CLASS_MAX+1][2];
 
@@ -148,17 +146,6 @@ inline
 TOP CGTARG_Invert(TOP opr)
 {
   return CGTARG_Invert_Table[(INT)opr];
-}
-
-/* --------------------------------------------------------------------
- *    Return instruction that put the result in register class <dst2> 
- *    instead of register class <dst1>
- * --------------------------------------------------------------------
- */
-inline 
-TOP CGTARG_Branch_To_Reg(TOP opr)
-{
-  return CGTARG_Branch_To_Reg_Table[(INT)opr];
 }
 
 inline INT
