@@ -1367,11 +1367,23 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    if (op1 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
      Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
-   if (op1) 
+   if (!op2) {
      BB_Insert_Ops_Before (bb, op1, &ops);
-   else
+   }
+   else if (!op1) {
      BB_Insert_Ops_Before (bb, op2, &ops);
-     
+   }
+   else {
+     OP *sop = op1;
+     for (OP *lop = op1; lop; lop = OP_next(lop)) {
+       if (lop == op2) {
+         sop = op2;
+         break;
+       }
+     }
+     BB_Insert_Ops_Before (bb, sop, &ops);
+   }
+
    if (op1)
      old_ops.push_front(op1);
    if (op2)
