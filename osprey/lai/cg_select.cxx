@@ -299,6 +299,9 @@ Find_End_Select_Region(BB* bb, BB* then_bb, BB* else_bb)
       tail_bb = succ;
   }
 
+  // No postdom found
+  if (tail_bb == NULL) return NULL;
+
   BB *last_succ = then_bb;
   if (last_succ != tail_bb)
     while ((succ = BB_Unique_Successor (last_succ)) && succ != tail_bb)
