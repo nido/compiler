@@ -148,17 +148,10 @@ Expand_Load (
   INT64    val;
   TN      *tmp;
 
-  fflush (TFile);
-
   Is_True (TN_is_constant(ofst), ("Illegal load offset TN"));
 
   if (TN_has_value(ofst)) {
-    val = TN_value(ofst);
-    if (ISA_LC_Value_In_Class(val, LC_s32)) {
-      top = Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype);
-    } else {
-      FmtAssert(FALSE,("Expand_Load: offset larger than 32 bits"));
-    }
+    top = Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype);
   } 
   else if (TN_is_symbol(ofst)) {    
     //  
@@ -242,14 +235,7 @@ Expand_Store (
   Is_True (TN_is_constant(ofst), ("Illegal store offset TN"));
 
   if (TN_has_value(ofst)) {
-    // TN has immediate value:
-    INT64 val = TN_value(ofst);
-    if (ISA_LC_Value_In_Class(val, LC_s32)) {
-      top = Pick_Store_Imm_Instruction (mtype);
-    }
-    else {
-      FmtAssert(FALSE,("Expand_Store: offset larger than 32-bits"));
-    }
+    top = Pick_Store_Imm_Instruction (mtype);
   }
   else if (TN_is_symbol(ofst)) { 
     //

@@ -477,19 +477,7 @@ Exp_Immediate (
   switch (mtype) {
 
     case MTYPE_B:
-#if 0
-      if (val == 0) {
-	Build_OP (TOP_GP32_CLRG_GT_BR, dest, True_TN, src, ops);
-      }
-      else if (val == 1) {
-	Build_OP (TOP_GP32_SETG_GT_BR, dest, True_TN, src, ops);
-      }
-      else {
-        FmtAssert(0, ("Exp_Immediate: immediate to guard != {0,1}"));
-      }
-#else
       FmtAssert(FALSE,("Exp_Immediate: MTYPE_B not implemented"));
-#endif
       break;
 
     case MTYPE_I1:
@@ -499,7 +487,6 @@ Exp_Immediate (
     case MTYPE_U2:
     case MTYPE_U4:
     case MTYPE_A4:
-
       if (ISA_LC_Value_In_Class (val, LC_s32)) {
 	Build_OP (TOP_mov_i, dest, src, ops);
       }
@@ -579,14 +566,6 @@ Expand_Add (
 	Expand_Copy (result, NULL, src1, ops);
 	return;
       }
-#if 0
-      if (val < 0) {
-	// rather do sub than make -const, add:
-	src2 = Gen_Literal_TN (-val, MTYPE_byte_size(mtype));
-	Expand_Sub (result, src1, src2, mtype, ops);
-	return;
-      }
-#endif
       new_opcode = TOP_add_i;
     }
     // symbolic constant, gp-relative or sp-relative
@@ -658,7 +637,14 @@ Expand_Sub (
   }
   else if (TN_is_constant(src2)) {
     if (TN_has_value(src2)) {
-      src2 = Gen_Literal_TN(-TN_value(src2), 4);
+      FmtAssert(ISA_LC_Value_In_Class(TN_value(src2), LC_s32),
+		("Expand_Sub -- immediate field overflowed"));
+
+      //
+      // Only 32 bits matter anyway
+      //
+      INT64 val = (mINT32)(-TN_value(src2));
+      src2 = Gen_Literal_TN(val, 4);
       new_opcode = TOP_add_i;
     }
     else {

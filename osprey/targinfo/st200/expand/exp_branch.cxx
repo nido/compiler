@@ -418,8 +418,10 @@ Exp_Call (
       // put target in LR
       Build_OP(TOP_mov_r, RA_TN, target, ops);
 
-      fprintf(TFile,"exp_call into ");
-      Print_OP (OPS_last(ops));
+      if (Trace_Exp) {
+	fprintf(TFile,"exp_call ICALL into ");
+	Print_OP (OPS_last(ops));
+      }
 
       Build_OP(TOP_icall, RA_TN, RA_TN, ops);
       break;
