@@ -60,6 +60,7 @@
 #include "symtab.h"
 #include "const.h"
 #include "erbe.h"
+#include "ercg.h"
 #include "erglob.h"
 #include "tracing.h"
 #include "glob.h"
@@ -4606,7 +4607,9 @@ Handle_ASM (const WN* asm_wn)
     ISA_REGISTER_SUBCLASS subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
 
     TN* tn = CGTARG_TN_For_Asm_Operand(constraint, load, pref_tn, &subclass);
-
+    if (tn == NULL) {
+      ErrMsgSrcpos(EC_CG_Generic_Fatal, current_srcpos, "operand to 'asm' statement does not match constraint");
+    }
     ASM_OP_result_constraint(asm_info)[num_results] = constraint;
     ASM_OP_result_subclass(asm_info)[num_results] = subclass;
     ASM_OP_result_position(asm_info)[num_results] = 
@@ -4676,6 +4679,9 @@ Handle_ASM (const WN* asm_wn)
     ISA_REGISTER_SUBCLASS subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
 
     TN* tn = CGTARG_TN_For_Asm_Operand(constraint, load, pref_tn, &subclass);
+    if (tn == NULL) {
+      ErrMsgSrcpos(EC_CG_Generic_Fatal, current_srcpos, "operand to 'asm' statement does not match constraint");
+    }
 
     ASM_OP_opnd_constraint(asm_info)[num_opnds] = constraint;
     ASM_OP_opnd_subclass(asm_info)[num_opnds] = subclass;

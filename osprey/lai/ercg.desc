@@ -71,6 +71,17 @@ ERROR_DESC EDESC_CG[] = {
     "Try using -O%d",
     1, ET_INT, 0,0,0,0,0 },
 
+  /* Generic error messages. */
+  { EC_CG_Generic_Warning, EM_User | ES_WARNING, RAG_EN_NONE,
+    "%s",
+    1, ET_STRING, 0, 0, 0, 0, 0 },
+  { EC_CG_Generic_Error, EM_User | ES_ERRPHASE, RAG_EN_NONE,
+    "%s",
+    1, ET_STRING, 0, 0, 0, 0, 0 },
+  { EC_CG_Generic_Fatal, EM_User | ES_ERRABORT, RAG_EN_NONE,
+    "%s",
+    1, ET_STRING, 0, 0, 0, 0, 0 },
+
   /* All error descriptor lists must end with a -1 error code: */
   { -1,	0, RAG_EN_NONE, "", 0, 0,0,0,0,0,0 }
 };

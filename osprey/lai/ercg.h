@@ -75,6 +75,11 @@
 #define EC_Ill_Reg_Spill1 EC_BASE_CG+2	/* string(register-name) */
 #define EC_Ill_Reg_Spill2b EC_BASE_CG+3 /* int (suggested -O level) */
 
+/* Generic errors: */
+#define EC_CG_Generic_Warning	EC_BASE_CG+4	/* string, string */
+#define EC_CG_Generic_Error	EC_BASE_CG+5	/* string, string */
+#define EC_CG_Generic_Fatal	EC_BASE_CG+6	/* string, string */
+
 /* Start all target-specific codes here: */
 #define EC_TARGET	EC_BASE_CG+200
 

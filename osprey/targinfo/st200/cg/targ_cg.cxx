@@ -57,6 +57,7 @@
 #include "config.h"
 #include "config_TARG.h"
 #include "erglob.h"
+#include "ercg.h"
 #include "tracing.h"
 #include "data_layout.h"
 #include "const.h"
@@ -72,6 +73,7 @@
 #include "cgtarget.h"
 #include "calls.h"
 #include "cgexp.h"
+#include "config_asm.h"
 
 
 UINT32 CGTARG_branch_taken_penalty;
@@ -823,6 +825,8 @@ CGTARG_Modified_Asm_Opnd_Name(
 // -----------------------------------------------------------------------
 // Given a constraint for an ASM parameter, and the load of the matching
 // argument passed to ASM (possibly NULL), choose an appropriate TN for it
+// This function may return NULL, in this case the TN was not matched
+// and the caller must emit a fatal error message.
 // -----------------------------------------------------------------------
 TN* 
 CGTARG_TN_For_Asm_Operand (
@@ -866,16 +870,38 @@ CGTARG_TN_For_Asm_Operand (
 
   TN* ret_tn;
   
-  // TODO: check that the operand satisifies immediate range constraint
-  if (strchr(immediates, *constraint)) {
+  // The 'n' constraints only accepts constant literal values.
+  if (strchr("n", *constraint)) {
     if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG) {
       // immediate could have been put in preg by wopt
       load = Preg_Is_Rematerializable(WN_load_offset(load), NULL);
     }
-    FmtAssert(load && WN_operator(load) == OPR_INTCONST, 
-              ("Cannot find immediate operand for ASM"));
-    ret_tn = Gen_Literal_TN(WN_const_val(load), 
+    if (load && WN_operator(load) == OPR_INTCONST) {
+      ret_tn = Gen_Literal_TN(WN_const_val(load), 
+			      MTYPE_bit_size(WN_rtype(load))/8);
+    } else {
+      ErrMsg(EC_CG_Generic_Error, "input operand to 'asm' does not match constraint 'n'");
+      return NULL;
+    }
+  }
+  
+  // The 'i' constraints accepts literals and symbolic values as the
+  // address of a symbol.
+  else if (strchr("i", *constraint)) {
+    if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG) {
+      // immediate could have been put in preg by wopt
+      load = Preg_Is_Rematerializable(WN_load_offset(load), NULL);
+    }
+    if (load && WN_operator(load) == OPR_INTCONST) {
+      ret_tn = Gen_Literal_TN(WN_const_val(load), 
                             MTYPE_bit_size(WN_rtype(load))/8);
+    } else if (load && WN_operator(load) == OPR_LDA) {
+      ST *sym = WN_st(load);
+      ret_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
+    } else {
+      ErrMsg(EC_CG_Generic_Error, "input operand to 'asm' does not match constraint 'i'");
+      return NULL;
+    }
   }
 
   // digit constraint means that we should reuse a previous operand
@@ -962,11 +988,38 @@ CGTARG_Modify_Asm_String (
     }
   }
   else {
-    FmtAssert(!memory && TN_is_constant(tn) && TN_has_value(tn),
-              ("ASM operand must be a register or a numeric constant"));
-    char* buf = (char*) alloca(32);
-    sprintf(buf, "%lld", TN_value(tn));
-    name = buf;
+    FmtAssert(!memory && (TN_is_symbol(tn) || TN_has_value(tn)),
+              ("ASM operand must be a register, a literal constant or a symbolic constant"));
+    if (TN_has_value(tn)) {
+      char* buf = (char*) alloca(32);
+      sprintf(buf, "%lld", TN_value(tn));
+      name = buf;
+    } else if (TN_is_symbol(tn) && 
+	       ST_name(TN_var(tn)) &&
+	       *(ST_name(TN_var(tn))) != '\0' &&
+	       TN_offset(tn) == 0 && 
+	       TN_relocs(tn) == TN_RELOC_NONE) {
+      ST *st = TN_var(tn);
+      const char *st_name = ST_name(st);
+      // +128 is enough for all separators and suffixes added to the name
+      char* buf = (char*) alloca(strlen(st_name)+128+1);
+      // Code extracted from r_qualified_name() function in cgemit.cxx.
+      if (ST_is_export_local(st) && ST_class(st) == CLASS_VAR) {
+	if (ST_level(st) == GLOBAL_SYMTAB)
+	  sprintf (buf, "%s%s%d", st_name,
+		   Label_Name_Separator, ST_index(st));
+	else
+	  sprintf (buf, "%s%s%d%s%d", st_name,
+		   Label_Name_Separator, ST_pu(Get_Current_PU_ST()),
+		   Label_Name_Separator, ST_index(st));
+      } else {
+	sprintf (buf, "%s%s", st_name, Symbol_Name_Suffix);
+      }
+      name = buf;
+    } else {
+      FmtAssert(!memory && (TN_is_symbol(tn) || TN_has_value(tn)),
+		("ASM operand is not a valid symbolic constant"));
+    }
   }
   
   char pattern[4];
@@ -983,6 +1036,7 @@ CGTARG_Modify_Asm_String (
     }
   }
   
+    
   return asm_string;
 }
 
