@@ -213,6 +213,9 @@ static PU_IDX current_pu = 0;
 
 #ifdef TARG_ST
 static int Bundle_Count;
+// [SC]: Symbol_Def_After_Group is a symbol that should
+// be defined immediately after the current group.
+static ST *Symbol_Def_After_Group;
 #endif
 
 /* ====================================================================
@@ -3699,6 +3702,14 @@ Assemble_OP (
     }
 #endif
     fputc('\n', Asm_File);
+#ifdef TARG_ST
+    // [SC]: Output symbol after the group.
+    if (Symbol_Def_After_Group) {
+      EMT_Write_Qualified_Name (Asm_File, Symbol_Def_After_Group);
+      fprintf (Asm_File, ":\n");
+      Symbol_Def_After_Group = NULL;
+    }
+#endif
   }
 
 #if 0
@@ -3791,10 +3802,21 @@ Generate_Asm_String (
  *   Assemble a simulated OP.
  * ====================================================================
  */
+#ifdef TARG_ST
+/* [SC] if TARG_ST, Assemble_Simulated_OP has two choices:
+ *      1. it may output ops directly (as in the original open64 code), or
+ *      2. it may return ops to be inserted in the current bundle.
+ *         This allows the target to fully bundle simulated ops if
+ *      desired.
+ */
+#endif
 static void
 Assemble_Simulated_OP (
   OP *op, 
   BB *bb
+#ifdef TARG_ST
+  , OPS *ops
+#endif
 )
 {
   /* ASM is an odd case so we handle it specially. It doesn't expand
@@ -3846,18 +3868,16 @@ Assemble_Simulated_OP (
     return;
   }
 
-  OPS ops = OPS_EMPTY;
-
   if (Trace_Inst) {
     fprintf (TFile, "<cgemit> transform simulated OP: ");
     Print_OP (op);
   }
 
-  Exp_Simulated_Op (op, &ops, PC);
+  Exp_Simulated_Op (op, ops, PC, &Symbol_Def_After_Group);
 
   if (Trace_Inst) {
     fprintf (TFile, "... to: ");
-    Print_OPS (&ops);
+    Print_OPS (ops);
   }
 
 #else
@@ -3921,6 +3941,7 @@ Assemble_Ops (
   Bundle_Count = 0;
   if ((BB_first_op(bb) != NULL) && (OP_scycle(BB_first_op(bb)) != -1))
     Bundle_Count = OP_scycle(BB_first_op(bb));
+  Symbol_Def_After_Group = NULL;
 #endif
 
   FmtAssert(ISA_MAX_SLOTS == 1 || Lai_Code || !LOCS_Enable_Bundle_Formation,
@@ -3933,7 +3954,13 @@ Assemble_Ops (
     if (OP_dummy(op)) continue;		// these don't get emitted
 
     if (OP_simulated(op)) {
+#ifdef TARG_ST
+      OPS new_ops = OPS_EMPTY;
+      Assemble_Simulated_OP(op, bb, &new_ops);
+      BB_Insert_Ops_After (bb, op, &new_ops);
+#else
       Assemble_Simulated_OP(op, bb);
+#endif
       continue;
     }
 
@@ -3965,6 +3992,7 @@ Assemble_Bundles(BB *bb)
   Bundle_Count = 0;
   if ((BB_first_op(bb) != NULL) && (OP_scycle(BB_first_op(bb)) != -1))
     Bundle_Count = OP_scycle(BB_first_op(bb));
+  Symbol_Def_After_Group = NULL;
 #endif
 
   FmtAssert(Assembly,
@@ -4007,7 +4035,7 @@ Assemble_Bundles(BB *bb)
     if (OP_code(op) == TOP_asm) {
       FmtAssert(!Object_Code, ("can't emit asm in object code")); 
       Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(op));
-      Assemble_Simulated_OP(op, bb);
+      Assemble_Simulated_OP(op, bb, NULL);
       op = OP_next(op);
       continue;
     }
@@ -4032,9 +4060,20 @@ Assemble_Bundles(BB *bb)
       if (OP_dummy(op)) continue;		// these don't get emitted
 
       if (OP_simulated(op)) {
+#ifdef TARG_ST
+	OPS new_ops = OPS_EMPTY;
+	Assemble_Simulated_OP(op, bb, &new_ops);
+	BB_Insert_Ops_After (bb, op, &new_ops);
+#ifdef TARG_ST200
+	if (OPS_first(&new_ops)) {
+	  seen_end_group = FALSE;
+	}
+#endif
+#else
 	FmtAssert(slot == 0, ("can't bundle a simulated OP in BB:%d (op %s).",
 			      BB_id(bb), TOP_Name(OP_code(op))));
 	Assemble_Simulated_OP(op, bb);
+#endif
 	continue;
       }
 

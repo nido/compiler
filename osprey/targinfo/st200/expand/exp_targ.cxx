@@ -2615,7 +2615,8 @@ void
 Exp_Simulated_Op (
   const OP *op,
   OPS *ops,
-  INT pc_value
+  INT pc_value,
+  ST **symbol_def_after_group
 )
 {
   OP *newop;
@@ -2647,20 +2648,13 @@ Exp_Simulated_Op (
     break;
 
   case TOP_getpc:
-    { // clarkes: 030909 Unpleasant short-cut: write this
-      // instruction out to the asm file directly because it
-      // needs a bundle stop and a label that are not representable
-      // in CGIR.
-      TN *r = OP_result(op, 0);
-      TN *s = OP_opnd(op, 0);
-      ISA_REGISTER_CLASS rc = TN_register_class(r); 
-      REGISTER reg = TN_register(r);
-      ST *st = TN_var(s);
-      fprintf (Asm_File, "\tcall\t%s=", REGISTER_name(rc, reg));
-      EMT_Write_Qualified_Name (Asm_File, st);
-      fprintf (Asm_File, "\n\t;;\n");
-      EMT_Write_Qualified_Name (Asm_File, st);
-      fprintf (Asm_File, ":\n");
+    Build_OP (TOP_call, OP_result(op, 0), OP_opnd (op, 0), ops);
+    *symbol_def_after_group = TN_var( OP_opnd (op, 0));
+    FOR_ALL_OPS_OPs(ops, newop) {
+      OP_srcpos(newop) = OP_srcpos(op);
+      Set_OP_bundled (newop);
+      if (OP_end_group (op)) Set_OP_end_group (newop);
+      OP_scycle (newop) = OP_scycle(op);
     }
     break;
 

@@ -126,7 +126,11 @@ extern void Exp_COPY (TN *tgt_tn, TN *src_tn, OPS *ops);
  * <op>. It is used to generate offsets for branches in the sequence 
  * of instructions generated.
  */
+#ifdef TARG_ST
+extern void Exp_Simulated_Op (const OP *op, OPS *ops, INT pc_value, ST **sym);
+#else
 extern void Exp_Simulated_Op (const OP *op, OPS *ops, INT pc_value);
+#endif
 
 /* For the given simulated <op>, return the number of 
  * instructions/instruction-words that will be generated after expansion.
