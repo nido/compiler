@@ -78,9 +78,11 @@ static int lao_initialized = 0;
 void
 lao_init(void) {
 
+#ifdef Is_True_On
   if (GETENV("LAO_PID")) {
     int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
   }
+#endif
 
   if (lao_initialized++ == 0) {
     // Initialize LAO Interface (LAI)
@@ -1021,7 +1023,9 @@ LIR_CGIR_callback_init(CGIR_CallBack callback)
 static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
+#ifdef Is_True_On
   if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
+#endif
   //
   // Get stack model
   int stackmodel = 
@@ -1092,7 +1096,9 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   unsigned optimizations = Interface_optimize(interface, lao_optimizations);
   if (optimizations != 0) {
     Interface_updateCGIR(interface, callback);
+#ifdef Is_True_On
     if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
+#endif
   }
   //
   Interface_close(interface);
