@@ -96,6 +96,12 @@ static OP_MAP phi_op_map = NULL;
 pair<op_list, op_list> store_i;
 pair<op_list, op_list> load_i;
 
+/* ====================================================================
+ *   flags:
+ * ====================================================================
+ */
+BOOL CG_select_allow_dup = FALSE;
+
 /* ================================================================
  *
  *   Traces
@@ -787,7 +793,7 @@ BB_Fix_Spec_Loads (BB *bb)
 }
 
 static void
-BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
+BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 {
   while (!store_i.first.empty()) {
     OPS ops = OPS_EMPTY;
@@ -799,16 +805,14 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
     
     DevAssert(Are_Aliased (i1, i2), ("stores are not alias"));    
 
-    if (variant == V_BR_P_TRUE) {
-      true_tn = OP_opnd(i1, 2);
-      false_tn = OP_opnd(i2, 2);
-    }
-    else if (variant == V_BR_P_FALSE) {
+    if (false_br) {
       true_tn = OP_opnd(i2, 2);
       false_tn = OP_opnd(i1, 2);
     }
-    else
-      DevAssert(FALSE, ("variant"));    
+    else {
+      true_tn = OP_opnd(i1, 2);
+      false_tn = OP_opnd(i2, 2);
+    }
 
     TN *temp_tn = Build_TN_Like (true_tn);
 
@@ -1005,14 +1009,20 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   OP *br1_op = BB_branch_op(bb1);
   OP *br2_op = BB_branch_op(bb2);
 
-  // get compares return values.
-  TN *b1tn1, *b2tn1;
-  TN *tn2;
-  OP *cmp1, *cmp2;
-  VARIANT variant1 = CGTARG_Analyze_Compare(br1_op, &b1tn1, &tn2, &cmp1);
-  VARIANT variant2 = CGTARG_Analyze_Compare(br2_op, &b2tn1, &tn2, &cmp2);
+  // Get compares return values.
+  TN *branch_tn1, *branch_tn2;
+  TN *dummy;
+  VARIANT variant = CGTARG_Analyze_Branch(br1_op, &branch_tn1, &dummy);
+  CGTARG_Analyze_Branch(br2_op, &branch_tn2, &dummy);
 
-  TN *branch_tn = Build_TN_Like (b1tn1);
+  // Find the defining OPs for the tested values.
+  DEF_KIND kind;
+  OP *cmp_op1 = TN_Reaching_Value_At_Op(branch_tn1, br1_op, &kind, TRUE);
+  OP *cmp_op2 = TN_Reaching_Value_At_Op(branch_tn2, br2_op, &kind, TRUE);
+
+  DevAssert(cmp_op1 && cmp_op2, ("undef op for branch"));
+
+  BOOL  false_br = V_false_br(variant);
   TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
 
   // remember succ list.
@@ -1035,29 +1045,45 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   OPS ops = OPS_EMPTY;
 
-  b1tn1 = Expand_CMP_Reg (cmp1, b1tn1, &ops);
-  b2tn1 = Expand_CMP_Reg (cmp2, b2tn1, &ops);
+  // we need a branch_tn that will be the result of the logical op
+  branch_tn1 = Build_TN_Like (OP_opnd(br1_op, 0));
+
+  // Get the result of the comparaison in a register ready for the
+  // logical operation.
+  TN *rtn1 = Expand_CMP_Reg (cmp_op1, &ops);
+  TN *rtn2 = Expand_CMP_Reg (cmp_op2, &ops);
 
   // !a op !a -> !(a !op b)
-  AndNeeded = AndNeeded ^ (variant1 == V_BR_P_FALSE);
+  AndNeeded = AndNeeded ^ false_br;
 
   // insert new logical op.
   if (AndNeeded)
-    Expand_Logical_And (branch_tn, b1tn1, b2tn1, variant1, &ops);
+    Expand_Logical_And (branch_tn1, rtn1, rtn2, variant, &ops);
   else
-    Expand_Logical_Or (branch_tn, b1tn1, b2tn1, variant1, &ops);
+    Expand_Logical_Or (branch_tn1, rtn1, rtn2, variant, &ops);
 
+  // Stats
   logif_count++;
 
-  Expand_Branch (label_tn, branch_tn, NULL, variant1, &ops);
+  // Then create the branch.
+  variant = V_BR_P_TRUE;
+  if (false_br) {
+    Set_V_false_br(variant);
+  } else {
+    Set_V_true_br(variant);
+  }
+  Expand_Branch (label_tn, branch_tn1, NULL, variant, &ops);
 
+  // Update ops
   BB_Append_Ops (bb1, &ops);
 
+  // Update branch probabilities
   if (AndNeeded)
     prob1 = 1.0 - (prob1 * prob2);
   else
     prob1 = MAX (prob1, prob2);
 
+  // Update control flow 
   Unlink_Pred_Succ (bb1, joint_block);
   Unlink_Pred_Succ (bb1, else_block);
 
@@ -1130,7 +1156,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   // find the instruction that sets the condition.
   VARIANT variant = CGTARG_Analyze_Branch(br_op, &cond_tn, &tn2);
-
+  BOOL false_br = V_false_br(variant);
   BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
@@ -1143,7 +1169,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     TN *false_tn  = OP_opnd(phi, nottaken_pos); 
     TN *select_tn = OP_result (phi, 0);
 
-    if (variant == V_BR_P_FALSE) {
+    if (false_br) {
       TN *temp_tn = false_tn;
       false_tn = true_tn;
       true_tn = temp_tn;
@@ -1240,7 +1266,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Append_Ops(head, &cmov_ops);
 
   BB_Fix_Spec_Loads (head);
-  BB_Fix_Spec_Stores (head, cond_tn, variant);
+  BB_Fix_Spec_Stores (head, cond_tn, false_br);
 
   // create or update the new head->tail edge.
   if (edge_needed) {
@@ -1400,7 +1426,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
-  //  GRA_LIVE_Recalc_Liveness(rid);
+   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
     CG_SELECT_Statistics();
