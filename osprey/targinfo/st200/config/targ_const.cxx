@@ -82,7 +82,7 @@
 
 
 #define USE_STANDARD_TYPES 1
-#include <limits.h>
+#include "W_limits.h"
 #include <fp_class.h>
 #include "defs.h"
 #include "config.h"
@@ -101,7 +101,7 @@
 #include "const.h"
 #include "quad.h"
 #include "quadsim.h"
-#include <math.h>
+#include "W_math.h"
 
 /* For fp_class */
 
