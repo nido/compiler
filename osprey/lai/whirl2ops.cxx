@@ -4792,6 +4792,16 @@ Expand_Statement (
     }
     
     if (last_loop_pragma) {
+      for(WN *pragma = first_loop_pragma;
+	  pragma != last_loop_pragma;
+	  pragma = WN_next(pragma)) {
+	if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
+	  if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
+	      (WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
+	      (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP))
+	    BB_Add_Annotation(bb, ANNOT_PRAGMA, pragma);
+	}
+      }
       BB_Add_Annotation(bb, ANNOT_PRAGMA, last_loop_pragma);
       last_loop_pragma = NULL;
     }
@@ -4799,18 +4809,6 @@ Expand_Statement (
     if (info) {
       BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
       if (last_loop_pragma) {
-#ifdef TARG_ST
-	for(WN *pragma = first_loop_pragma;
-	    pragma != last_loop_pragma;
-	    pragma = WN_next(pragma)) {
-	  if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
-	    if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
-		(WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
-		(WN_pragma(pragma) == WN_PRAGMA_LOOPDEP))
-	      BB_Add_Annotation(bb, ANNOT_PRAGMA, pragma);
-	  }
-	}
-#endif
 	BB_Add_Annotation(bb, ANNOT_PRAGMA, last_loop_pragma);
 	last_loop_pragma = NULL;
       }
