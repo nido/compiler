@@ -2273,6 +2273,11 @@ Create_Cold_Text_Section (void)
 	Set_STB_section_idx(st, STB_section_idx(text_base));
 	Init_Section (st);
 	cold_base = st;
+
+#ifdef TARG_ST
+	// [CL] don't forget to initialize cold_section!
+	cold_section = em_scn[STB_scninfo_idx(cold_base)].scninfo;
+#endif
       }
 
       /* Check the remaining BBs in the region to verify they are
@@ -2311,6 +2316,15 @@ Setup_Text_Section_For_BB (
   if (cur_section != PU_base) {
     if (Assembly) {
       fprintf (Asm_File, "\n\t%s %s\n", AS_SECTION, ST_name(PU_base));
+#ifdef TARG_ST
+      // [CL] force alignment if we have just switched to cold
+      // section for the current PU (as alignment constraints in
+      // hb_hazards.cxx:Make_Bundles() are reset for each new
+      // PU, we must reset alignment here)
+      if ( (PU_base == cold_base) && (DEFAULT_FUNCTION_ALIGNMENT) ) {
+	fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, DEFAULT_FUNCTION_ALIGNMENT);
+      }
+#endif
     }
     if(Lai_Code) {
       fprintf (Lai_File, "\n\t%s %s\n", AS_SECTION, ST_name(PU_base));
@@ -2429,8 +2443,8 @@ void New_Debug_Line_Set_Label(INT code_address)
   Offset_From_Last_Label = 0;
 
   if (Assembly || Lai_Code) {
-    fprintf (Output_File, "%s:\t%s 0x%lx\n", 
-	     LABEL_name(Last_Label), ASM_CMNT, code_address );
+    fprintf (Output_File, "%s:\t%s\n", 
+	     LABEL_name(Last_Label), ASM_CMNT);
   }
 
   Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
@@ -3796,6 +3810,7 @@ Assemble_Bundles(BB *bb)
       fprintf(Asm_File, "\n");
     }
 
+
     /* Assemble the bundle.
      */
 #ifdef TARG_ST200
@@ -4927,6 +4942,14 @@ EMT_Emit_PU (
 #endif
   if ( Assembly ) {
     fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
+#ifdef TARG_ST
+    // [CL] force alignment when starting a new function
+    // (as alignment constraints in hb_hazards.cxx:Make_Bundles()
+    // are reset for each new PU, we must reset alignment here)
+    if (DEFAULT_FUNCTION_ALIGNMENT) {
+      fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, DEFAULT_FUNCTION_ALIGNMENT);
+    }
+#endif
     if (AS_ENT) CGEMIT_Prn_Ent_In_Asm (pu);
 #ifdef TEMPORARY_STABS_FOR_GDB
     // This is an ugly hack to enable basic debugging for IA-32 target
