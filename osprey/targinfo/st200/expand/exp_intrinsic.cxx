@@ -1184,14 +1184,9 @@ Expand__st220addcg(
 {
   TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
   TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_17_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
-#undef __EXTS32TOS64
-  Build_OP (	TOP_mtb,	b0_0_0,	i2,	ops) ;
-  Build_OP (	TOP_addcg,	ol0,	b0_0_1,	i0,	i1,	b0_0_0,	ops) ;
-  Build_OP (	TOP_mov_i,	r0_17_1,	c1,	ops) ;
-  Build_OP (	TOP_slct_r,	oh0,	b0_0_1,	r0_17_1,	Zero_TN,	ops) ;
+  Build_OP (    TOP_mtb,        b0_0_0, i2,     ops) ;
+  Build_OP (    TOP_addcg,      ol0,    b0_0_1, i0,     i1,     b0_0_0, ops) ;
+  Build_OP (    TOP_mfb,        oh0,    b0_0_1, ops) ;
 } /* Expand__st220addcg */
 
 /*
@@ -1219,14 +1214,9 @@ Expand__st220divs(
 {
   TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
   TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_17_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
-#undef __EXTS32TOS64
-  Build_OP (	TOP_mtb,	b0_0_0,	i2,	ops) ;
-  Build_OP (	TOP_divs,	ol0,	b0_0_1,	i0,	i1,	b0_0_0,	ops) ;
-  Build_OP (	TOP_mov_i,	r0_17_1,	c1,	ops) ;
-  Build_OP (	TOP_slct_r,	oh0,	b0_0_1,	r0_17_1,	Zero_TN,	ops) ;
+  Build_OP (    TOP_mtb,        b0_0_0, i2,     ops) ;
+  Build_OP (    TOP_divs,       ol0,    b0_0_1, i0,     i1,     b0_0_0, ops) ;
+  Build_OP (    TOP_mfb,        oh0,    b0_0_1, ops) ;
 } /* Expand__st220divs */
 
 /*
