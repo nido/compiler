@@ -1088,12 +1088,21 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
   BB_List bb_list;
   int nest_level = BB_nest_level(head_bb), op_count = 0;
   BB_SET *loop_set = LOOP_DESCR_bbset(loop);
+#if 0
   FOR_ALL_BB_SET_members(loop_set, bb) {
     if (BB_nest_level(bb) == nest_level) {
       op_count += BB_length(bb);
       bb_list.push_back(bb);
     }
     if (op_count >= LAO_OPS_LIMIT) break;
+  }
+#endif
+  for (BB *bb = head_bb; bb; bb = BB_next(bb)) {
+    if (BB_SET_MemberP(loop_set, bb) &&
+	(BB_nest_level(bb) == nest_level)) {
+      op_count += BB_length(bb);
+      bb_list.push_back(bb);
+    }
   }
   // Compute the memory dependence graph.
   if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
