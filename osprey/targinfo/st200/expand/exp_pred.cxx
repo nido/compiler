@@ -248,8 +248,7 @@ void
 Exp_True_False_Preds_For_Block (
   BB *bb, 
   TN* &true_tn, 
-  TN * &false_tn,
-  VARIANT *br_variant
+  TN * &false_tn
 ) 
 {
    COMPARE_TYPE comp_type;
@@ -258,15 +257,15 @@ Exp_True_False_Preds_For_Block (
    OP* compare_op;
    OP* br_op = BB_branch_op(bb);
    BOOL reusing_tns;
-   //VARIANT branch_variant;
+   VARIANT br_variant;
    DEF_KIND kind;
 
    true_tn = NULL;
    false_tn = NULL;
    reusing_tns = FALSE;
    
-   *br_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
-   //Is_True(*br_variant == V_BR_P_TRUE || *br_variant == V_BR_P_FALSE,
+   br_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
+   //Is_True(br_variant == V_BR_P_TRUE || br_variant == V_BR_P_FALSE,
    //	   ("Can't get predicates for block %d",BB_id(bb)));
 
    /* Try to find the compare op */
@@ -284,7 +283,7 @@ Exp_True_False_Preds_For_Block (
      // Return the same TN in both: true/false containers.
      // Normally, we should distinguish, but Analyze_Branch() does 
      // not work properly
-     if (V_false_br(*br_variant)) {
+     if (V_false_br(br_variant)) {
        // should really look for 'tn2' but until CFLOW is fixed ...
        //false_tn = tn2;
        false_tn = tn1;
