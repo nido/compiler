@@ -135,25 +135,26 @@ UINT disloads_count;
 static void
 CG_SELECT_Statistics()
 {
-  if (select_count || logif_count)
+  if (select_count || logif_count) {
     fprintf (Select_TFile, "========= %s ======= \n",
              ST_name(Get_Current_PU_ST()));
 
-  if (select_count) 
-    fprintf (Select_TFile, "<cg_select> converted %d moves\n",
-             select_count);
+    if (select_count) 
+      fprintf (Select_TFile, "<cg_select> converted %d moves\n",
+               select_count);
 
-  if (logif_count) 
-    fprintf (Select_TFile, "<cg_select> reduced %d logical expressions \n",
-             logif_count);
+    if (logif_count) 
+      fprintf (Select_TFile, "<cg_select> reduced %d logical expressions \n",
+               logif_count);
 
-  if (spec_instrs_count) 
-    fprintf (Select_TFile, "<cg_select> speculated %d instrs \n",
-             spec_instrs_count);
+    if (spec_instrs_count) 
+      fprintf (Select_TFile, "<cg_select> speculated %d instrs \n",
+               spec_instrs_count);
 
-  if (disloads_count) 
-    fprintf (Select_TFile, "<cg_select> speculated %d loads \n",
-             disloads_count);
+    if (disloads_count) 
+      fprintf (Select_TFile, "<cg_select> speculated %d loads \n",
+               disloads_count);
+  }
 }
 
 /* ================================================================
@@ -640,7 +641,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
       return FALSE;
   }
   
-  // very naiive heuristic... change that later when the engine is finalized.
+  // very naive heuristic... change that later when the engine is finalized.
   if (BB_length(target) > max_select_instrs)
     return FALSE;
 
@@ -1124,17 +1125,18 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   TN *cond_tn;
   TN *tn2;
-  OP *cmp;
-  OP *br_op = BB_branch_op (head);
+  OP *br_op = BB_Remove_Branch(head);
 
-  // find the instruction that set the condition.
-  VARIANT variant = CGTARG_Analyze_Compare(br_op, &cond_tn, &tn2, &cmp);
+  // find the instruction that sets the condition.
+  VARIANT variant = CGTARG_Analyze_Branch(br_op, &cond_tn, &tn2);
 
   BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
-    UINT8 taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ? head : target_bb);
-    UINT8 nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ? head : fall_thru_bb);
+    UINT8 taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ?
+                                            head : target_bb);
+    UINT8 nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ?
+                                            head : fall_thru_bb);
 
     TN *true_tn   = OP_opnd(phi, taken_pos);
     TN *false_tn  = OP_opnd(phi, nottaken_pos); 
@@ -1148,9 +1150,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
     DevAssert(true_tn && false_tn, ("Select: undef TN"));
 
-    // for now we only handle single result tn.
-    // we don't need to go through (i = 0; i < OP_results(op); i++) loop.
-    DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
+    // is it possible ?
+    DevAssert (OP_results(phi) == 1, ("Multiple results phi"));
 
     if (Trace_Select_Gen) {
       fprintf(Select_TFile, "<select> handle phi ");
@@ -1159,17 +1160,13 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       Print_BB (tail);
     }
 
-    if (BB_preds_len(tail) != 2) 
-      select_tn = Dup_TN(select_tn);
-    
-    Expand_Select (select_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &cmov_ops);
-    select_count++;
-
     if (BB_preds_len(tail) > 2) {
       TN *result[1];
       UINT8 j = 0;
       UINT8 nopnds = OP_opnds(phi)-1;
       TN *opnd[nopnds];
+
+      select_tn = Dup_TN(select_tn);
 
       // new args goes last if we know that a new edge will be inserted.
       // else, replace old phi tn with newly create select tn.
@@ -1184,7 +1181,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
         for (UINT8 i = 0; i < OP_opnds(phi); i++) {
           if (i != taken_pos && i != nottaken_pos)
             opnd[j++] = OP_opnd(phi, i);
-          else if ((i == nottaken_pos || i == taken_pos) && Get_PHI_Predecessor (phi, i) == head)
+          else if ((i == nottaken_pos || i == taken_pos) &&
+                   Get_PHI_Predecessor (phi, i) == head)
             opnd[j++] = select_tn;
         }
       }
@@ -1198,12 +1196,12 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       // Mark phi to be deleted.
       old_phis.push_front(phi);
     }
+
+    Expand_Select (select_tn, cond_tn, true_tn, false_tn, MTYPE_I4,
+                   FALSE, &cmov_ops);
+    select_count++;
   }
   
-  // It's time to remove the useless conditional branch.
-  // before the following blocks are promoted.
-  BB_Remove_Branch(head);
-
   // promote the instructions from the sides bblocks.
   // Promote_BB will remove the old empty bblock
   // BB containing a goto should be last.

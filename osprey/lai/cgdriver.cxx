@@ -372,7 +372,12 @@ static OPTION_DESC Options_CG[] = {
     "Specify method for translating out of the SSA" },
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_if_convert", "",
-    0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden },
+    0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
+    "Enable if conversion using select op"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
+    0, 0, 0,	&CG_select_allow_dup, NULL,
+    "Allow basic blocks duplication for select if conversion"},
 
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "LAO", "",

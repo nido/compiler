@@ -199,6 +199,7 @@ extern BOOL CG_enable_LAO;	/* Enable LAO in cg */
 
 #ifdef SUPPORTS_SELECT
 extern BOOL CG_enable_select;
+extern BOOL CG_select_allow_dup;
 #endif
 
 extern BOOL CG_enable_BB_splitting;

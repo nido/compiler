@@ -136,6 +136,7 @@ INT32 CG_maxblocks = 30;
 
 #ifdef SUPPORTS_SELECT
 BOOL CG_enable_select = FALSE;
+BOOL CG_select_allow_dup = FALSE;
 #endif
 
 // ====================================================================
