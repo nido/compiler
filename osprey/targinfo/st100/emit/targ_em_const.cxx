@@ -117,7 +117,7 @@ Targ_Emit_String (
     dptr = dbuf;
 
     if (loc != 0)
-	fprintf(fl, "\t%s offset %1d\n", ASM_CMNT, loc);
+	fprintf(fl, "\t%s offset %1ld\n", ASM_CMNT, loc);
     
     // if simple string, print as such
     if (len < 80 && str[len-1] == '\0' && ! Has_Control_Char(str,len-1)) {
@@ -225,7 +225,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
     Is_True ( rc > 0, ("Targ_Emit_Const: repeat count is %d", rc ) );
     
     /* loc only used here (in a comment in the output file) */
-    fprintf(fl, "\t%s offset %1d\n", ASM_CMNT, loc);
+    fprintf(fl, "\t%s offset %1ld\n", ASM_CMNT, loc);
 
     /* Loop until the repeat count is exhausted. For simple constants we'll
      * optimize the emission, otherwise we just repeat the whole directive.
@@ -321,7 +321,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
         fprintf ( fl, "\t%s\t\"", AS_STRING );
         for (INT i = 0; i < sizeof(TCON_R16(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
-	fprintf(fl, "\"\t%s quad %#lg\n", ASM_CMNT, TCON_R16(tc) );
+	fprintf(fl, "\"\t%s quad %#g\n", ASM_CMNT, TCON_R16(tc) );
 	--rc;
 	break;
 	}
@@ -332,13 +332,13 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
         fprintf ( fl, "\t%s\t\"", AS_STRING );
         for (i = 0; i < sizeof(TCON_R16(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
-	fprintf(fl, "\"\t%s complex quad real part %#lg\n", ASM_CMNT, TCON_R16(tc) );
+	fprintf(fl, "\"\t%s complex quad real part %#g\n", ASM_CMNT, TCON_R16(tc) );
 
         p = (char *) & TCON_IR16(tc);
         fprintf ( fl, "\t%s\t\"", AS_STRING );
         for (i = 0; i < sizeof(TCON_IR16(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
-	fprintf(fl, "\"\t%s complex quad imag part %#lg\n", ASM_CMNT, TCON_IR16(tc) );
+	fprintf(fl, "\"\t%s complex quad imag part %#g\n", ASM_CMNT, TCON_IR16(tc) );
 	--rc;
 	break;
 	}

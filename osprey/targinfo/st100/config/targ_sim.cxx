@@ -1166,7 +1166,12 @@ Get_Vararg_Parameter_Location (
 
 BOOL Is_Caller_Save_GP;  /* whether GP is caller-save */
 
-INT Formal_Save_Area_Size = 44;
+// Maximal space ever needed for saving parameters passed in
+// registers (4 longs + 3 ptrs)
+//
+//INT Formal_Save_Area_Size = DEFAULT_FORMAL_SAVE_AREA_SIZE;
+
+// Exists in the IA64 ABI, what for ??
 INT Stack_Offset_Adjustment = 0;
 
 extern void 
