@@ -5270,13 +5270,7 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
    * has been defined, locate the appropriate chain and create
    * the cold region.
    */
-#ifdef TARG_ST
-  /* Thierry do hot/cold optims even if CFLOW_cold_threshold is not
-     set (case of the default value)*/
-  if (cold_threshold) {
-#else
   if (CFLOW_cold_threshold) {
-#endif
     BBCHAIN *ch = last_ordered;
     /* The cold region boundary is placed between chains to avoid
      * breaking a fall-through path. The boundary occurs at the
