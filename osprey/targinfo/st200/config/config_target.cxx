@@ -387,6 +387,11 @@ Preconfigure_Target ( void )
    */
   FE_Cvtl_Opt = FALSE;
 
+  /*
+   * Whether we will generate the MTYPE_B (default FALSE)
+   */
+  WHIRL_Mtype_B_On = TRUE;
+
   /* pv #297274 describes why we cannot put initialized data in .bss */
   /* (cbr) don't change a tentative definition for a definition.
    * ref iso/iec 9899 ansi C chap 6.7.2).
