@@ -1533,6 +1533,7 @@ Add_LOOPSEQ_Arcs(BB* bb)
 
 #endif
 
+#ifdef TARG_ST
 static void make_prefetch_arcs(OP *op, BB *bb)
 /* --------------------------------------------------
  * Generate prefetch arcs for a give load store <op>.
@@ -1540,15 +1541,59 @@ static void make_prefetch_arcs(OP *op, BB *bb)
  */
 {
   if ( !CG_enable_prefetch ) return;
-#ifdef TARG_ST
   if ( !cyclic && !BB_reg_alloc(bb)) return;
   // FdF 20050128: No dependcy arcs between prefetch and store
   // operations
-  if (OP_store(op)) return;
+  if (!OP_load(op)) return;
+
   BOOL pft_is_before = TRUE;
+  WN *memwn = Get_WN_From_Memory_OP(op);
+  PF_POINTER *pf_ptr = memwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,memwn) : NULL;
+  if ( !pf_ptr) return;
+  
+  OP *pref_op;
+  FOR_ALL_BB_OPs(bb, pref_op) {
+    if (OP_prefetch(pref_op) && OP_pft_scheduled(pref_op)) {
+      WN *prefwn = Get_WN_From_Memory_OP(pref_op);
+      PF_POINTER *pf_ptr2 = prefwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,prefwn) : NULL;
+      int stride = 1; /* WN_pf_stride_1L(PF_PTR_wn_pref_1L(pf_ptr)); */
+      if (pf_ptr2 && (PF_PTR_wn_pref_1L(pf_ptr) == PF_PTR_wn_pref_1L(pf_ptr2)) &&
+	  (OP_unrolling(pref_op)/stride == OP_unrolling(op)/stride)) {
+	ARC *pref_arc;
+	if (pft_is_before)
+	  pref_arc = new_arc(CG_DEP_PREFIN, pref_op, op, 0, 0, TRUE);
+	else
+	  pref_arc = new_arc(CG_DEP_PREFIN, op, pref_op, 0, 0, TRUE);
+
+	// Only if pref_op is before op and pref_op had no memop of
+	// the group before it, latency is set to the prefetch
+	// latency.
+	Is_True (pft_is_before || !OP_pft_before(pref_op),
+		 ("Prefetch marked OP_pft_before must be before associated memops\n"));
+	INT pf_lat = (pft_is_before && OP_pft_before(pref_op)) ? CG_L1_pf_latency : 1;
+	if (Get_Trace(TP_SCHED, 4))
+	  if (pft_is_before)
+	    fprintf(TFile, "Add prefetch_arc prefetch->op(%d) in bb %d\n", pf_lat, BB_id(bb));
+	  else
+	    fprintf(TFile, "Add prefetch_arc op->prefetch(%d) in bb %d\n", pf_lat, BB_id(bb));
+	Set_ARC_latency(pref_arc, pf_lat);
+      }
+    }
+    else if (pref_op == op)
+      pft_is_before = FALSE;
+  }
+}
+
 #else
+
+static void make_prefetch_arcs(OP *op, BB *bb)
+/* --------------------------------------------------
+ * Generate prefetch arcs for a give load store <op>.
+ * --------------------------------------------------
+ */
+{
+  if ( !CG_enable_prefetch ) return;
   if ( !cyclic) return;
-#endif
   if ( !OP_store(op) && !OP_load(op)) return;
 
   WN *memwn = Get_WN_From_Memory_OP(op);
@@ -1557,50 +1602,21 @@ static void make_prefetch_arcs(OP *op, BB *bb)
   
   OP *pref_op;
   FOR_ALL_BB_OPs(bb, pref_op) {
-#ifdef TARG_ST
-    if (OP_pft_scheduled(pref_op))
-#endif
     if (OP_prefetch(pref_op)) {
       WN *prefwn = Get_WN_From_Memory_OP(pref_op);
       PF_POINTER *pf_ptr2 = prefwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,prefwn) : NULL;
-#ifdef TARG_ST
-      if (pf_ptr2 && (PF_PTR_wn_pref_1L(pf_ptr) == PF_PTR_wn_pref_1L(pf_ptr2)) &&
-	  OP_unrolling(pref_op) == OP_unrolling(op)) {
-#else
       if (pf_ptr2 == pf_ptr) {
-#endif
 	ARC *pref_arc;
 	CG_DEP_KIND kind = OP_store(op) ? CG_DEP_PREFOUT : CG_DEP_PREFIN;
-#ifdef TARG_ST
-	if (!pft_is_before)
-	  pref_arc = new_arc(kind, op, pref_op, 0, 0, TRUE);
-	else
-#endif
 	pref_arc = new_arc(kind, pref_op, op, 0, 0, TRUE);
-	
+
 	INT pf_lat = (WN_pf_stride_2L(prefwn) != 0) ?  CG_L2_pf_latency : CG_L1_pf_latency;
-#ifdef TARG_ST
-	Is_True (pft_is_before || !OP_pft_before(pref_op), ("Prefetch marked OP_pft_before must be before associated memops\n"));
-	// Only if pref_op is before op and pref_op had no memop of
-	// the group before it, latency is set to the prefetch
-	// latency.
-	if (!(pft_is_before && OP_pft_before(pref_op)))
-	  pf_lat = 1;
-	if (Get_Trace(TP_SCHED, 4))
-	  if (pft_is_before)
-	    fprintf(TFile, "Add prefetch_arc prefetch->op(%d) in bb %d\n", pf_lat, BB_id(bb));
-	  else
-	    fprintf(TFile, "Add prefetch_arc op->prefetch(%d) in bb %d\n", pf_lat, BB_id(bb));
-#endif
 	Set_ARC_latency(pref_arc, pf_lat);
       }
     }
-#ifdef TARG_ST
-    else if (pref_op == op)
-      pft_is_before = FALSE;
-#endif
   }
 }
+#endif
 
 inline UINT8 addr_omega(OP *memop, UINT8 n)
 /* -----------------------------------------------------------------------
