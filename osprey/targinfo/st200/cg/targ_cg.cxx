@@ -81,8 +81,10 @@ static TOP CGTARG_Invert_Table[TOP_count+1];
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
 
 static BOOL earliest_regclass_use_initialized = FALSE;
-static INT earliest_regclass_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_SUBCLASS_MAX+1];
-static INT earliest_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
+static INT earliest_regclass_use[ISA_REGISTER_CLASS_MAX+1];
+static INT earliest_regsubclass_use[ISA_REGISTER_SUBCLASS_MAX+1];
+static INT earliest_dedicated_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
+static INT earliest_assigned_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
 
 /* ====================================================================
  *   CGTARG_Preg_Register_And_Class
@@ -1385,21 +1387,23 @@ is_constant_register (mUINT16 class_n_reg)
 static void
 init_register_use (void)
 {
-  // Initialize earliest_regclass_use, an array containing
-  // the earliest cycle on which a register of each { class, subclass }
-  // may be accessed as an operand.
-  // Also initialize earliest_reg_use, an array containing
-  // the earliest cycle on which a register of each { class, reg }
-  // may be accessed as an operand.
-  int i, j;
+  INT i;
+  ISA_REGISTER_CLASS c;
+  ISA_REGISTER_SUBCLASS sc;
+
+  // Initialize earliest_regclass_use/earliest_regsubclass_use,
+  // arrays containing the earliest cycle on which a register of
+  // each class/subclass may be accessed as an operand.
   for (i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) {
-    for (j = 0; j <= ISA_REGISTER_SUBCLASS_MAX; j++) {
-      earliest_regclass_use[i][j] = INT_MAX;
-    }
-    for (j = 0; j <= ISA_REGISTER_MAX; j++) {
-      earliest_reg_use[i][j] = INT_MAX;
-    }
+    earliest_regclass_use[i] = INT_MAX;
   }
+  for (i = 0; i <= ISA_REGISTER_SUBCLASS_MAX; i++) {
+    earliest_regsubclass_use[i] = INT_MAX;
+  }
+
+  // Iterate over all operations, setting
+  // earliest_regclass_use and earliest_regsubclass use
+  // to the minimum operand access times found.
   for (i = 0; i < TOP_count; i++) {
     if (ISA_SUBSET_Member (ISA_SUBSET_Value, (TOP)i)
 	&& !TOP_is_dummy ((TOP)i)) {
@@ -1412,71 +1416,148 @@ init_register_use (void)
 	  ISA_REGISTER_SUBCLASS sc =
 	    ISA_OPERAND_VALTYP_Register_Subclass (otype);
 	  INT usetime = TSI_Operand_Access_Time ((TOP)i, opnd);
-	  if (earliest_regclass_use[c][sc] > usetime) {
-	    earliest_regclass_use[c][sc] = usetime;
-	    // printf ("%s, opnd %d: setting earliest_regclass_use[%d][%d] to %d\n",
-	    // TOP_Name((TOP)i), opnd, (int)c, (int)sc, (int)usetime);
+	  if (sc == ISA_REGISTER_SUBCLASS_UNDEFINED) {
+	    if (usetime < earliest_regclass_use[c]) {
+	      earliest_regclass_use[c] = usetime;
+	    }
+	  } else {
+	    if (usetime < earliest_regsubclass_use[sc]) {
+	      earliest_regsubclass_use[sc] = usetime;
+	    }
 	  }
 	}
       }
     }
   }
-  // We can write a value to a subclass, then read it from a more general 
-  // class, so subclasses are given the minimum of their usetype and the
-  // class usetype.
-  FOR_ALL_ISA_REGISTER_CLASS(i) {
-    INT usetime = earliest_regclass_use[i][ISA_REGISTER_SUBCLASS_UNDEFINED];
-    FOR_ALL_ISA_REGISTER_SUBCLASS(j) {
-      if (earliest_regclass_use[i][j] > usetime) {
-	earliest_regclass_use[i][j] = usetime;
+
+  // Now set earliest_dedicated_reg_use and earliest_assigned_reg_use,
+  // based on the class information.
+  // For a register that lives in multiple subclasses, we have
+  // to assume the earliest-use of all those subclasses.
+  // For earliest_assigned_reg_use, singleton subclasses are filtered out:
+  // dedicated registers must always be used for singleton subclass operands.
+  FOR_ALL_ISA_REGISTER_CLASS (c) {
+    REGISTER_SET rset = REGISTER_CLASS_universe (c);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      earliest_dedicated_reg_use[c][i] = earliest_regclass_use[c];
+      earliest_assigned_reg_use[c][i] = earliest_regclass_use[c];
+    }
+  }
+  FOR_ALL_ISA_REGISTER_SUBCLASS(sc) {
+    const ISA_REGISTER_SUBCLASS_INFO *info =
+      ISA_REGISTER_SUBCLASS_Info (sc);
+    ISA_REGISTER_CLASS c = ISA_REGISTER_SUBCLASS_INFO_Class (info);
+    BOOL singleton = (ISA_REGISTER_SUBCLASS_INFO_Count (info) == 1);
+    REGISTER_SET rset = REGISTER_SUBCLASS_members (sc);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      if (earliest_dedicated_reg_use[c][i] > earliest_regsubclass_use[sc]) {
+	earliest_dedicated_reg_use[c][i] = earliest_regsubclass_use[sc];
+      }
+      if (! singleton
+	  && earliest_assigned_reg_use[c][i] > earliest_regsubclass_use[sc]) {
+	earliest_assigned_reg_use[c][i] = earliest_regsubclass_use[sc];
+      }
+    }      
+  }
+
+  // Now recalculate earliest_regclass_use and
+  // earliest_regsubclass_use as the minimum
+  // earliest_assigned_reg_use for each of the members.
+  FOR_ALL_ISA_REGISTER_CLASS (c) {
+    REGISTER_SET rset = REGISTER_CLASS_universe (c);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      if (earliest_assigned_reg_use[c][i] < earliest_regclass_use[c]) {
+	earliest_regclass_use[c] = earliest_assigned_reg_use[c][i];
       }
     }
   }
-  // We are not allowed to write a value to a class then
-  // read it from a subclass unless a dedicated register is used,
-  // so do not propagate subclass earliest
-  // time to class earliest time.
-  
-  // Now set earliest_reg_use, based on the class information.
-  // For a register that lives in multiple subclasses, we have
-  // to assume the earliest-use of all those subclasses.
-  ISA_REGISTER_SUBCLASS sc;
   FOR_ALL_ISA_REGISTER_SUBCLASS(sc) {
     const ISA_REGISTER_SUBCLASS_INFO *info =
-      ISA_REGISTER_SUBCLASS_Info(sc);
+      ISA_REGISTER_SUBCLASS_Info (sc);
     ISA_REGISTER_CLASS c = ISA_REGISTER_SUBCLASS_INFO_Class (info);
-    INT count = ISA_REGISTER_SUBCLASS_INFO_Count (info);
-    for (INT member = 0; member < count; member++) {
-      UINT r = ISA_REGISTER_SUBCLASS_INFO_Member (info, member);
-      if (earliest_reg_use[c][r] > earliest_regclass_use[c][sc]) {
-	earliest_reg_use[c][r] = earliest_regclass_use[c][sc];
-	//printf ("Setting earliest_reg_use[%d][%d] = %d\n",
-	//		(int)c, (int)r, (int)earliest_reg_use[c][r]);
+    REGISTER_SET rset = REGISTER_SUBCLASS_members (sc);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      if (earliest_assigned_reg_use[c][i] < earliest_regsubclass_use[sc]) {
+	earliest_regsubclass_use[sc] = earliest_assigned_reg_use[c][i];
       }
     }
   }
 
+#if 0
+  // Debug
+  FOR_ALL_ISA_REGISTER_CLASS (c) {
+    printf ("Class %d: earliest use = %d\n", c, earliest_regclass_use[c]);
+    REGISTER_SET rset = REGISTER_CLASS_universe (c);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      printf ("  %d: earliest dedicated use = %d, assigned use = %d\n",
+	      i, earliest_dedicated_reg_use[c][i],
+	      earliest_assigned_reg_use[c][i]);
+    }
+  }
+  FOR_ALL_ISA_REGISTER_SUBCLASS (sc) {
+    printf ("Subclass %d: earliest use = %d\n", sc, earliest_regsubclass_use[sc]);
+    const ISA_REGISTER_SUBCLASS_INFO *info =
+      ISA_REGISTER_SUBCLASS_Info (sc);
+    ISA_REGISTER_CLASS c = ISA_REGISTER_SUBCLASS_INFO_Class (info);
+    REGISTER_SET rset = REGISTER_SUBCLASS_members (sc);
+    REGISTER reg;
+    FOR_ALL_REGISTER_SET_members (rset, reg) {
+      INT i = reg - REGISTER_MIN;
+      printf ("  %d: earliest dedicated use = %d, assigned use = %d\n",
+	      i, earliest_dedicated_reg_use[c][i],
+	      earliest_assigned_reg_use[c][i]);
+    }
+  }
+  // End of debug
+#endif
+
   earliest_regclass_use_initialized = TRUE;
 }
+
 
 static INT
 get_earliest_regclass_use (ISA_REGISTER_CLASS c,
 			   ISA_REGISTER_SUBCLASS sc)
 {
+  INT usetime;
   if (!earliest_regclass_use_initialized) {
     init_register_use();
   }
-  INT usetime = earliest_regclass_use[c][sc];
+  if (sc == ISA_REGISTER_SUBCLASS_UNDEFINED) {
+    usetime = earliest_regclass_use[c];
+  } else {
+    usetime = earliest_regsubclass_use[sc];
+  }
   FmtAssert (usetime != INT_MAX, ("earliest_regclass_use not set for class = %d, subclass = %d\n", (int)c, (int)sc));
   return usetime;
 }
 
 static INT
-get_earliest_reg_use (ISA_REGISTER_CLASS rclass, REGISTER reg) {
+get_earliest_dedicated_reg_use (ISA_REGISTER_CLASS rclass, REGISTER reg) {
   if (!earliest_regclass_use_initialized) {
     init_register_use();
   }
-  INT usetime = earliest_reg_use[rclass][reg - REGISTER_MIN];
+  INT usetime = earliest_dedicated_reg_use[rclass][reg - REGISTER_MIN];
+  FmtAssert (usetime != INT_MAX, ("earliest_reg_use not set for class = %d, register = %d\n", (int)rclass, (int)reg));
+  return usetime;
+}
+
+static INT
+get_earliest_assigned_reg_use (ISA_REGISTER_CLASS rclass, REGISTER reg) {
+  if (!earliest_regclass_use_initialized) {
+    init_register_use();
+  }
+  INT usetime = earliest_assigned_reg_use[rclass][reg - REGISTER_MIN];
   FmtAssert (usetime != INT_MAX, ("earliest_reg_use not set for class = %d, register = %d\n", (int)rclass, (int)reg));
   return usetime;
 }
@@ -1501,9 +1582,14 @@ CGTARG_Max_RES_Latency (
   }
   INT result_avail = TSI_Result_Available_Time (OP_code (op), idx);
   INT opnd_used;
-  if (TN_is_dedicated(OP_result(op,idx))) {
-    opnd_used = get_earliest_reg_use(TN_register_class(OP_result(op,idx)),
-				     TN_register(OP_result(op,idx)));
+  if (TN_register(OP_result(op,idx)) != REGISTER_UNDEFINED) {
+    if (TN_is_dedicated (OP_result(op, idx))) {
+      opnd_used = get_earliest_dedicated_reg_use(TN_register_class(OP_result(op,idx)),
+						 TN_register(OP_result(op,idx)));
+    } else {
+      opnd_used = get_earliest_assigned_reg_use(TN_register_class(OP_result(op,idx)),
+						TN_register(OP_result(op,idx)));
+    }
   } else {
     ISA_REGISTER_CLASS c = OP_result_reg_class (op, idx);
     ISA_REGISTER_SUBCLASS sc = OP_result_reg_subclass (op, idx);
