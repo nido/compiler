@@ -201,6 +201,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
   // the Operation arguments
   int argCount = OP_opnds(cgir_op);
   TempName *arguments = (TempName *)(argCount ? alloca(argCount*sizeof(TempName)) : NULL);
+  for (int i = 0; i < argCount; i++) Is_True(!Is_CG_LOOP_Op(cgir_op) || (OP_omega(cgir_op, i) <= 1), ("LAO called on TN with omega > 1"));
   for (int i = 0; i < argCount; i++) arguments[i] = CGIR_TN_to_TempName(OP_opnd(cgir_op, i));
   // the Operation results
   int resCount = OP_results(cgir_op);
@@ -403,7 +404,8 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
   CGPREP_Init_Op(new_op);
-  CG_LOOP_Init_Op(new_op);
+  // _CG_LOOP_info_map may not be defined for multi-bb loops.
+  if (Is_CG_LOOP_Op(cgir_op)) CG_LOOP_Init_Op(new_op);
   // If a duplicate, set orig_idx and copy WN.
   if (cgir_op != NULL) {
     Set_OP_orig_idx(new_op, OP_map_idx(cgir_op));
@@ -412,7 +414,7 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
     Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
   // Set scycle
-  OP_scycle(new_op) = issueDate;
+  OP_scycle(new_op) = (issueDate == -1) ? 0 : issueDate;
   //
   return new_op;
 }
@@ -436,7 +438,7 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
   }
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
   // Set scycle.
-  OP_scycle(cgir_op) = issueDate;
+  OP_scycle(cgir_op) = (issueDate == -1) ? 0 : issueDate;
 }
 
 // Identity of a CGIR_BB.
@@ -996,6 +998,20 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   bool result = false;
   BB_List nonexitBBs;
   BB_List::iterator bb_iter;
+  BB *bb_prev, *bb_succ;
+  //
+  // The fall-through of the last entry node must be the first body
+  // node. The fall through of body nodes must be the next node in the
+  // list of body nodes. We put no constraint on exit nodes.
+  bb_prev = entryBBs.back();
+  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
+    if (((bb_succ = BB_Fall_Thru_Successor(bb_prev)) != NULL) &&
+	(bb_succ != *bb_iter)) {
+      fprintf(TFile, "Non contiguous blocks in region\n");
+      return false;
+    }
+    bb_prev = *bb_iter;
+  }
   //
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
@@ -1029,6 +1045,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
   *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
   *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
+
   // Create the LAO BasicBlocks.
   for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
@@ -1089,7 +1106,8 @@ lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_actions) {
     // Enter the body blocks in linear order.
     BB *loop_head = LOOP_DESCR_loophead(loop);
     BB *loop_tail = LOOP_DESCR_Find_Unique_Tail(loop);
-    Is_True(loop_tail != NULL, ("NULL Tail in LOOP_DESCR"));
+    //
+    if (loop_tail == NULL) return result;
     //
     for (BB *bb = loop_head;
 	 bb && BB_prev(bb) != loop_tail;
