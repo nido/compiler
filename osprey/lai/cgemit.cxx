@@ -1171,6 +1171,7 @@ EMT_Put_Elf_Symbol (
 	case SCLASS_DGLOBAL:
 	case SCLASS_UGLOBAL:
 #ifdef TARG_ST
+      case SCLASS_PSTATIC:
 	  // [CL] looks like r_qualified_name()
 	  // When generating debug information, keep in mind that
 	  // static variables have been renamed
