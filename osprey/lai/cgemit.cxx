@@ -3148,16 +3148,6 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 
   /* emit TN comments: */
   vstring comment = vstr_begin(LBUF_LEN);
-#ifdef TARG_ST
-  if (Trace_Sched && (OP_scycle(op) >= 0)) {
-    vstr_sprintf(&comment, vstr_len(comment), "(cycle %d) ", OP_scycle(op));
-  }
-  if ((OP_scycle(op) >= 0) &&
-      (OP_scycle(op) < Bundle_Count) &&
-      (!OP_xfer(op) || Trace_Sched))
-    DevWarn("BB %d, bundle %d: operation %s was scheduled at cycle %d",
-	    BB_id(bb), Bundle_Count, TOP_Name(OP_code(op)), OP_scycle(op));
-#endif
   for (i = 0; i < OP_results(op); i++) {
     TN *tn = OP_result(op, i);
     if (TN_is_save_reg(tn)) {
@@ -3198,6 +3188,19 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 #ifdef TARG_ST
   if (OP_ssa_move(op) && vstr_len(comment) == 0) {
     comment = vstr_concat(comment, "ssa_move");
+  }
+#endif
+
+#ifdef TARG_ST
+  if (Assembly || Lai_Code) {
+    if (Trace_Sched && (OP_scycle(op) >= 0)) {
+      fprintf(Output_File, "  (cycle %d)", OP_scycle(op));
+    }
+    if ((OP_scycle(op) >= 0) &&
+	(OP_scycle(op) < Bundle_Count) &&
+	(!OP_xfer(op) || Trace_Sched))
+      DevWarn("BB %d, bundle %d: operation %s was scheduled at cycle %d",
+	      BB_id(bb), Bundle_Count, TOP_Name(OP_code(op)), OP_scycle(op));
   }
 #endif
 
