@@ -56,7 +56,7 @@
 static char *rcs_id = "$Source$ $Revision$";
 #endif
 
-#include <limits.h>
+#include "W_limits.h"
 #include "defs.h"
 #include "errors.h"
 #include "tracing.h"

@@ -48,7 +48,7 @@ static char *gra_lrange_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 
-#include <limits.h>
+#include "W_limits.h"
 #include "defs.h"
 #include "mempool.h"
 #include "errors.h"
