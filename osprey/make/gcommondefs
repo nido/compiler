@@ -70,15 +70,6 @@ COMMONTARGS= clobber clean rmtargets fluff tags
 # development systems to build the software.
 #
 
-AR	= ar
-ifeq ($(BUILD_ABI), I64BIT)
-ifeq ($(BUILD_HOST), IA32)
-AR	= ia64-sgi-linux-ar
-endif
-endif
-
-AWK	= awk
-
 SIZEDEFS = -D_LONGLONG
 
 ifeq ($(BUILD_ABI), I64BIT)
@@ -116,13 +107,97 @@ else
 ENDIAN = -D_MIPSEB
 endif
 
+
+##
+## Default definitions
+##
+ASNAME = as
+LDNAME = ld
+CCNAME = cc
+C++NAME = c++
+F77NAME = f77
+F90NAME = f90
+ARNAME = ar
+DLLTOOLNAME = dlltool
+DLLWRAPNAME = dllwrap
+NMNAME = nm
+INSTALLNAME = install
+LEXNAME	= lex
+YACCNAME= yacc
+AWKNAME	= awk
+
+# host platform definitions
+COMPILER_LOC=
+BINUTILS_LOC=
+PREFIX=
+SUFFIX=
+# build platform definitions
+BUILD_PREFIX=
+BUILD_SUFFIX=
+BUILD_COMPILER_LOC=
+BUILD_BINUTILS_LOC=
+
+##
+## GNU tools names
+##
 ifeq ($(BUILD_COMPILER), GNU)
+
+# when using cross-compilation, tools usually have a prefix.
+ifeq ($(BUILD_OS),SUNOS5)
+
+BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
+COMP_GNU_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+
+INSTALL_LOC=$(GNU_LOC)
+
+ifeq ($(HOST_OS),MINGW)
+COMPILER_LOC=/apa/gnu/SunOS5/gcc-2.95.2-mingw32-msvcrt/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-pc-mingw32msvc-
+endif
+
+ifeq ($(HOST_OS),CYGWIN_NT)
+#COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
+COMPILER_LOC=/apa/comp/pro64-cygwin/install/x-mallinfo-cygwin32-1.3.12/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i686-pc-cygwin32-
+endif
+
+ifeq ($(HOST_OS),SUNOS5)
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+endif
+
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+endif # BUILD_OS = SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
+GNU_LOC=/apa/linux/gcc/2.95.2/bin/
+COMPILER_LOC=$(GNU_LOC)
+BINUTILS_LOC=$(GNU_LOC)
+BUILD_COMPILER_LOC=$(GNU_LOC)
+BUILD_BINUTILS_LOC=$(GNU_LOC)
+endif
+
+ifeq ($(BUILD_OS),MINGW)
+SUFFIX=.exe
+endif
+
 ASNAME = gcc
 CCNAME = gcc
 C++NAME = g++
 F77 = g77
-F90 = /usr/ia32-sgi-linux/bin/sgif90
+F90 = g90
+LEX = flex
+YACC = bison
+
 endif
+
+##
+## SGI tools names
+## 
 ifeq ($(BUILD_COMPILER), SGI)
 # sgi compiler should be in path in order to be found
 ASNAME = sgicc
@@ -131,6 +206,12 @@ C++NAME = sgiCC
 F77 = sgif90
 F90 = sgif90
 endif
+
+
+##
+## EDG tools names
+##
+
 ifeq ($(BUILD_COMPILER), EDG)
 ASNAME = cc
 CCNAME = cc
@@ -139,11 +220,49 @@ F77 = f77
 F90 = f90
 endif
 
-AS	= $(ASNAME) -D_SGI_SOURCE
 
-C++	= $(C++NAME) -D_SGI_SOURCE -D_LANGUAGE_C_PLUS_PLUS
+##
+## Tools definition
+##
 
-CC	= $(CCNAME) -D_SGI_SOURCE -D_LANGUAGE_C
+# binutils
+AR      = $(BINUTILS_LOC)$(PREFIX)$(ARNAME)$(SUFFIX)
+AS	= $(BINUTILS_LOC)$(PREFIX)$(ASNAME)$(SUFFIX) 
+LD	= $(BINUTILS_LOC)$(PREFIX)$(LDNAME)$(SUFFIX)
+NM	= $(BINUTILS_LOC)$(PREFIX)$(NMNAME)$(SUFFIX)
+
+# compilers 
+C++	= $(COMPILER_LOC)$(PREFIX)$(C++NAME)$(SUFFIX)
+CC	= $(COMPILER_LOC)$(PREFIX)$(CCNAME)$(SUFFIX) 
+C++C	= $(C++)
+CXX	= $(C++)
+FC	= $(F77)
+
+# misc tools
+INSTALL = $(INSTALL_LOC)$(INSTALLNAME)
+LEX     = $(LEX_LOC)$(LEXNAME)
+YACC    = $(YACC_LOC)$(YACCNAME)
+AWK     = $(AWKNAME)$(AWKNAME)
+
+DLLTOOL = $(COMPILER_LOC)$(PREFIX)$(DLLTOOLNAME)$(SUFFIX)
+DLLTOOL_FLAGS = 
+DLLWRAP = $(COMPILER_LOC)$(PREFIX)$(DLLWRAPNAME)$(SUFFIX)
+DLLWRAP_FLAGS = --nodelete
+
+ECHO	= echo
+LINT	= glint
+SHELL	= sh
+SIZE	= size
+STRIP	= strip
+M4	= m4
+
+##
+## some useful flags
+##
+
+AS      += -D_SGI_SOURCE
+CC      += -D_SGI_SOURCE -D_LANGUAGE_C
+C++     += -D_SGI_SOURCE -D_LANGUAGE_C_PLUS_PLUS
 
 ifeq ($(BUILD_COMPILER),GNU)
 AS	+= -D__GNU_BUG_WORKAROUND
@@ -163,41 +282,62 @@ CC	+= -Wformat -funsigned-char
 C++	+= -Wformat -funsigned-char -D_NOTHREADS
 endif
 
-C++C	= $(C++)
-CXX	= $(C++)
-ECHO	= echo
-FC	= $(F77)
-LEX	= flex
-LD	= ld
+ifeq ($(BUILD_OS), CYGWIN_NT)
+AS	+= -funsigned-char
+CC	+= -Wformat -funsigned-char
+C++	+= -Wformat -funsigned-char -D_NOTHREADS
+endif
+
 ifeq ($(BUILD_ABI), I64BIT)
 ifeq ($(BUILD_HOST), IA32)
-LD	= ia64-sgi-linux-ld
+AR	= ia64-sgi-linux-ar
 endif
 endif
-LINT	= glint
-NM	= nm
-SHELL	= sh
-SIZE	= size
-STRIP	= strip
-# TLINK	= lndir
-YACC	= yacc
 
-AWK	= awk
-ECHO	= echo
-M4	= m4
+
+##
+## HEXE : extension used for executables on the host machine
+## 
+## BEXE : extension used for executables on the build machine
+##
+BEXE=
+HEXE=
+ifeq ($(HOST_OS), MINGW)
+HEXE=.exe
+endif
+ifeq ($(HOST_OS), CYGWIN_NT)
+HEXE=.exe
+endif
+ifeq ($(BUILD_OS), MINGW)
+BEXE=.exe
+endif
+ifeq ($(BUILD_OS), CYGWIN_NT)
+BEXE=.exe
+endif
 
 #
 # The native C compiler, which must be used when building programs that are
-# run on the build host from a makefile.
+# run on the build machine from a makefile.
 #
-HOST_CC  = gcc -funsigned-char -D_SGI_SOURCE -D__GNU_BUG_WORKAROUND -D_LONGLONG -D_LANGUAGE_C
-HOST_C++ = g++ -funsigned-char -D_SGI_SOURCE -D__GNU_BUG_WORKAROUND -D_NOTHREADS -D_LONGLONG -D_LANGUAGE_C_PLUS_PLUS
-HOST_CXX = $(HOST_C++)
+BUILD_CC_NAME = gcc
+BUILD_C++_NAME = g++
+BUILD_CXX_NAME = $(BUILD_C++_NAME)
+BUILD_AR_NAME = ar
 
-ifeq ($(BUILD_HOST),MIPS)
-HOST_CC  += -D_MIPS_SZPTR=32 -D_MIPS_SZINT=32 -D_MIPS_SZLONG=32
-HOST_C++ += -D_MIPS_SZPTR=32 -D_MIPS_SZINT=32 -D_MIPS_SZLONG=32
-endif
+BUILD_CC = $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CC_NAME)$(BUILD_SUFFIX)
+BUILD_C++ = $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_C++_NAME)$(BUILD_SUFFIX)
+BUILD_CXX = $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CXX_NAME)$(BUILD_SUFFIX)
+BUILD_AR = $(BUILD_BINUTILS_LOC)$(BUILD_PREFIX)$(BUILD_AR_NAME)$(BUILD_SUFFIX)
+
+BUILD_GCFLAGS= -funsigned-char -D_SGI_SOURCE -D__GNU_BUG_WORKAROUND -D_LONGLONG -D_LANGUAGE_C -I$(INCLDIR)
+BUILD_LCFLAGS= 
+BUILD_VCFLAGS=
+BUILD_CFLAGS= $(BUILD_VCFLAGS) $(BUILD_LCFLAGS) $(BUILD_GCFLAGS)
+
+BUILD_GCXXFLAGS= -funsigned-char -D_SGI_SOURCE -D__GNU_BUG_WORKAROUND -D_NOTHREADS -D_LONGLONG -D_LANGUAGE_C_PLUS_PLUS -I$(INCLDIR)
+BUILD_LCXXFLAGS=
+BUILD_VCXXFLAGS=
+BUILD_CXXFLAGS= $(BUILD_VCFLAGS) $(BUILD_LCFLAGS) $(BUILD_GCFLAGS)
 
 ifeq ($(BUILD_COMPILER), EDG)
 WOFF= -fullwarn
@@ -221,13 +361,11 @@ COMMONGOPTS=$(OPTIMIZER) $(MKDEPOPT) $(ENDIAN)
 
 CSTYLE=
 
-GCOPTS	= $(CSTYLE) $(OPTIMIZER) $(ENDIAN) $(SIZEDEFS) $(MKDEPOPT) $(WOFF)
-GCDEFS	=
+GCOPTS	+= $(CSTYLE) $(OPTIMIZER) $(ENDIAN) $(SIZEDEFS) $(MKDEPOPT) $(WOFF)
 ifeq ($(BUILD_OS), IRIX)
-GCINCS = -nostdinc -I$(INCLDIR)
-else
-GCINCS  = -I$(INCLDIR)
+GCINCS = -nostdinc
 endif
+GCINCS += -I$(INCLDIR)
 
 #
 # Cc flags, composed of:
@@ -270,7 +408,7 @@ CXXFLAGS  = $(C++FLAGS)
 
 VCXXFLAGS = $(VCXXDEFS) $(VCXXINCS) $(VCXXOPTS) $(VC++FLAGS)
 LCXXFLAGS = $(LCXXDEFS) $(LCXXINCS) $(LCXXOPTS) $(LC++FLAGS)
-GCXXFLAGS = $(GC++FLAGS)
+GCXXFLAGS = $(GC++FLAGS) $(GCXXDEFS)
 
 CXXOPTS   = $(VCXXOPTS) $(LCXXOPTS) $(GCXXOPTS) $(C++OPTS)
 CXXDEFS   = $(VCXXDEFS) $(LCXXDEFS) $(GCXXDEFS) $(C++DEFS)
@@ -286,10 +424,9 @@ C++INCS   = $(VC++INCS) $(LC++INCS) $(GC++INCS)
 
 GC++OPTS  = $(CSTYLE) $(OPTIMIZER) $(ENDIAN) $(SIZEDEFS) $(MKDEPOPT)
 ifeq ($(BUILD_OS), IRIX)
-GC++INCS  = -nostdinc -I$(INCLDIR)/CC -I$(INCLDIR)
-else
-GC++INCS  = -I$(INCLDIR)
+GC++INCS  = -nostdinc -I$(INCLDIR)/CC
 endif
+GC++INCS  += -I$(INCLDIR)
 GC++DEFS  = 
 
 #
@@ -314,7 +451,7 @@ LSRCH_64_M4 =   -L$(ROOT)/usr/lib64/mips4 -L$(ROOT)/usr/lib64
 #endif
 
 GLDOPTS=
-GLDLIBS= 
+GLDLIBS=
 GLDOPTS_I32   =
 GLDOPTS_I64   =
 GLDOPTS_N32_M3= -mips3 -n32 $(LD_QUICKSTART_INFO) -nostdlib $(LSRCH_N32_M3)
@@ -323,11 +460,15 @@ GLDOPTS_R32   = -r32 $(LD_QUICKSTART_INFO) -nostdlib $(LSRCH_R32)
 GLDOPTS_64_M3 = -mips3 -64 $(LD_QUICKSTART_INFO) -nostdlib $(LSRCH_64_M3)
 GLDOPTS_64_M4 = -mips4 -64 $(LD_QUICKSTART_INFO) -nostdlib $(LSRCH_64_M4)
 
-
 #
 # LDFLAG layout
 #
-LDFLAGS	= $(LDOPTS) $(LDLIBS) $(ENDIAN)
+LDFLAGS	= $(LDOPTS) $(LDLIBS) 
+ifneq ($(HOST_OS), MINGW)
+ifneq ($(HOST_OS), CYGWIN_NT)
+LDFLAGS += $(ENDIAN)
+endif
+endif
 LDOPTS	= $(VLDOPTS) $(LLDOPTS) $(GLDOPTS)
 LDLIBS	= $(VLDLIBS) $(LLDLIBS) $(GLDLIBS)
 
@@ -339,7 +480,6 @@ LDOPTS_N32_M4=$(VLDOPTS) $(LLDOPTS) $(LLDOPTS_N32_M4) $(GLDOPTS_N32_M4)
 LDOPTS_64    =$(VLDOPTS) $(LLDOPTS) $(LLDOPTS_64_M3) $(GLDOPTS_64)
 LDOPTS_64_M3 =$(VLDOPTS) $(LLDOPTS) $(LLDOPTS_64_M3) $(GLDOPTS_64_M3)
 LDOPTS_64_M4 =$(VLDOPTS) $(LLDOPTS) $(LLDOPTS_64_M4) $(GLDOPTS_64_M4)
-
 
 #
 # Loader options for making shared objects. By default, shared objects
@@ -378,6 +518,18 @@ else
 DSONAMEOPT  =
 endif
 
+ifndef DSO_MODE
+ifeq ($(HOST_OS),MINGW)
+DSO_MODE=DLL
+else
+ ifeq ($(HOST_OS), CYGWIN_NT)
+  DSO_MODE=DLL
+ else
+  DSO_MODE=SO
+ endif
+endif
+endif
+
 #
 # SGI specific versioning. Redefine $(DSOVERSION) to change version number.
 # Redefine $(DSOVERSIONOPT) to skip versioning.
@@ -392,17 +544,17 @@ LDDSOOPTS_N32= $(LDDSOOPTS) $(GLDDSOOPTS_N32)
 LDDSOOPTS_632= $(LDDSOOPTS) $(GLDDSOOPTS_64)
 
 # Arthur: this depends on the compiler, not the OS
+# Julien : ... not true for the -elf part !
 ifeq ($(BUILD_COMPILER), GNU)
-  GLDDSOOPTS  = -elf -shared
+  GLDDSOOPTS  = -shared # -elf
 endif
-#ifeq ($(BUILD_OS), LINUX)
-#  GLDDSOOPTS  = -elf -shared
-#endif
-#ifeq ($(BUILD_OS), SUNOS5)
-#  GLDDSOOPTS  = -G
-#endif
-ifeq ($(BUILD_OS), IRIX)
-  GLDDSOOPTS = -elf -shared -all
+ifeq ($(BUILD_OS), SUNOS5)
+ifeq ($(HOST_OS), SUNOS5)
+  GLDDSOOPTS  = -G 
+endif
+endif
+ifeq ($(BUILD_OS), LINUX)
+  GLDDSOOPTS += -elf
 endif
 
 ifeq ($(BUILD_COMPILER), EDG)
@@ -411,6 +563,25 @@ else
 # GLDDSOOPTS += $(DSONAMEOPT)
 GLDDSOOPTS +=
 endif
+
+ifeq ($(DSO_MODE), DLL)
+DLLIMPORT="__declspec (dllimport)"
+DLLEXPORT="__declspec (dllexport)"
+#GLDDSOOPTS+=-Wl,--export-all-symbols
+GLDDSOOPTS+= -Wl,--disable-auto-image-base 
+
+# building dll with the cross compiler fails when no symbol is
+# exported ! This is a quick workarround...
+ifeq ($(BUILD_OS), SUNOS5)
+ifeq ($(HOST_OS), CYGWIN_NT)
+GLDDSOOPTS+= -Wl,--exclude-symbols,_bss_end__ -Wl,--exclude-symbols,_bss_start__ -Wl,--exclude-symbols,_data_end__ -Wl,--exclude-symbols,_data_start__
+endif
+endif
+
+else
+STD_COMPILE_OPTS+=-DBE_EXPORTED= -DCG_EXPORTED= -DTARGINFO_EXPORTED= -DOPT_EXPORTED= -DW2C_EXPORTED= -DW2F_EXPORTED= -DDLLIMPORT=
+endif
+
 
 GLDDSOOPTS_N32  = $(LD_NO_UNRESOLVED) $(LD_QUICKSTART_INFO) \
 		$(DSOSTARTOPT_N32) $(DSOVERSIONOPT)
@@ -459,15 +630,6 @@ GASDEFS	= $(GCDEFS)
 GASINCS	= $(GCINCS)
 
 #
-# The install command to use.
-#
-ifeq ($(BUILD_OS), SUNOS5)
-  INSTALL = cp
-else
-  INSTALL	= install
-endif
-
-#
 # MKDEPFILE is the name of the dependency database, included by commonrules.
 #
 MKDEPFILE = Makedepend
@@ -481,15 +643,7 @@ LEXMKDEPFLAGS=
 #
 # Include directory shorthands, used in CFLAGS and LDFLAGS components.
 #
-ifeq ($(BUILD_OS), LINUX)
 INCLDIR	= $(BUILD_AREA)/include
-else
- ifeq ($(BUILD_OS), SUNOS5)
-  INCLDIR = $(BUILD_AREA)/include
- else 
-  INCLDIR = $(ROOT)/usr/include
- endif
-endif
 
 #
 # Convenient command macros that include the flags macros.
@@ -501,6 +655,7 @@ endif
 # needs to be included after your objects in the command line.
 #
 ASF	= $(AS) $(ASFLAGS)
+LDF     = $(LD) $(LDFLAGS)
 C++F	= $(CXX) $(CXXFLAGS)
 CXXF	= $(C++F)
 CCF	= $(CC) $(CFLAGS)
