@@ -1119,8 +1119,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
   Interface_open(interface, 6,
-      Configuration_LoopOpt, 1,
-      Configuration_Schedule, CG_LAO_schedule,
+      Configuration_SchedKind, CG_LAO_schedkind,
+      Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
       Configuration_SCD_First, CG_LAO_scd_first,
