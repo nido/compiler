@@ -37,7 +37,9 @@
 
 #define	_ELF_H 1
 
-#include <inttypes.h>
+/*#include <inttypes.h> */
+/* stdint.h is the C99 standard */
+#include <stdint.h>
 
 
 #include <sys/elftypes.h>

@@ -98,8 +98,16 @@ ifeq ($(BUILD_ARCH), MIPS)
   endif
 endif
 
+# Arthur: the above defines are needed in libelfutil
+#         Later, clean this up
 ifeq ($(BUILD_ARCH), IA32)
- SIZEDEFS+= 
+  SIZEDEFS += -D_MIPS_SZINT=32
+  SIZEDEFS += -D_MIPS_SZLONG=32
+endif
+
+ifeq ($(BUILD_ARCH), SPARC)
+  SIZEDEFS += -D_MIPS_SZINT=32
+  SIZEDEFS += -D_MIPS_SZLONG=32
 endif
 
 ifeq ($(BUILD_OS), LINUX)
