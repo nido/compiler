@@ -683,7 +683,8 @@ Sort_Stores(void)
     }
 
     // one arg differs. Select it.
-    if (ci <= 1) {
+    // opnt 0 must be a constant offset, so can't select it.
+    if (ci <= 1 && lidx) {
       store_i.ifarg_idx.push_back(lidx);
       ++count;
       c = 0;
