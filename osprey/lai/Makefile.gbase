@@ -91,7 +91,8 @@ TARGDEFS += -DTARG_ST100 -DSUPPORTS_PREDICATION
 endif
 
 ifeq ($(BUILD_TARGET), ST200)
-TARGDEFS += -DTARG_ST200 -DSUPPORTS_SELECT
+TARGDEFS += -DTARG_ST200 -DSUPPORTS_SELECT 
+#TARGDEFS += -DIFCONV_IN_SSA
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
@@ -284,7 +285,6 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_loop_recur.cxx		\
   targ_op.cxx			\
   targ_register.cxx		\
-  targ_select.cxx		\
   targ_swp.cxx			\
   targ_swp_bundle.cxx		\
   targ_tn.cxx
@@ -339,6 +339,7 @@ CG_CXX_SRCS = 		\
   cg_region.cxx		\
   cg_sched_est.cxx	\
   cg_spill.cxx		\
+  cg_ssa.cxx		\
   cg_swp.cxx		\
   cg_swp_allocator.cxx	\
   cg_swp_bundle.cxx	\
@@ -386,17 +387,12 @@ ifeq ($(BUILD_TARGET),ST100)
   CG_CXX_SRCS +=  pqs_cg.cxx
   CG_CXX_SRCS +=  targ_pqs.cxx
   CG_CXX_SRCS +=  targ_hb.cxx
-
-  # SSA stuff:
-  CG_CXX_SRCS +=  cg_ssa.cxx
 endif
 
 ifeq ($(BUILD_TARGET),ST200)
-  CG_CXX_SRCS +=  cg_select.cxx
-  CG_CXX_SRCS +=  targ_hb.cxx
-
-  # SSA stuff:
-  CG_CXX_SRCS +=  cg_ssa.cxx
+  CG_CXX_SRCS += cg_select.cxx
+  CG_CXX_SRCS += targ_select.cxx
+  CG_CXX_SRCS += targ_hb.cxx
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
