@@ -1168,6 +1168,29 @@ EMT_Put_Elf_Symbol (
 	case SCLASS_FSTATIC:
 	case SCLASS_DGLOBAL:
 	case SCLASS_UGLOBAL:
+#ifdef TARG_ST
+	  // [CL] looks like r_qualified_name()
+	  // When generating debug information, keep in mind that
+	  // static variables have been renamed
+	  if (ST_is_export_local(sym)) {
+	    // local var, but being written out.
+	    // so add suffix to help .s file distinguish names.
+	    // assume that statics in mult. pu's will 
+	    // get moved to global symtab, so don't need pu-num
+
+	    char local_name[strlen(ST_name(sym))+strlen(Label_Name_Separator)+20];
+	    if (ST_level(sym) == GLOBAL_SYMTAB)
+	      sprintf (local_name, "%s%s%d", ST_name(sym), Label_Name_Separator, ST_index(sym));
+	    else
+	      sprintf (local_name, "%s%s%d%s%d", ST_name(sym), Label_Name_Separator, ST_pu(Get_Current_PU_ST()), Label_Name_Separator, ST_index(sym) );
+
+	    symindex = Em_Add_New_Symbol (
+					  local_name, base_ofst, TY_size(sym_type), 
+					  symbind, STT_OBJECT, symother,
+					  Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
+	  }
+	  else
+#endif
 	  symindex = Em_Add_New_Symbol (
 			ST_name(sym), base_ofst, TY_size(sym_type), 
 			symbind, STT_OBJECT, symother,

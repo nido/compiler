@@ -770,15 +770,22 @@ put_location (
     case SCLASS_UGLOBAL:
     case SCLASS_FSTATIC:
     case SCLASS_PSTATIC:
+#ifdef TARG_ST
+      // [CL] output symbol name if it exists, rather than base name:
+      // in case attributes have been added, the name of the base
+      // make include spurious characters
+      if ( (base_st != NULL) && ((ST_name(st)==NULL) || *(ST_name(st)) == '\0')) {
+#else
       if (base_st != NULL) {
+#endif
 	dwarf_add_expr_addr_b (expr,
 			       ST_ofst(st) + offs, 
 			       Cg_Dwarf_Symtab_Entry(CGD_ELFSYM,
 						     EMT_Put_Elf_Symbol(base_st)),
 			       &dw_error);
 	if (Trace_Dwarf) {
-	  fprintf (TFile,"LocExpr: symbol = %s, offset = %lld\n", 
-			      ST_name(base_st), ST_ofst(st) + offs); 
+	  fprintf (TFile,"LocExpr: symbol = %s %s, offset = %lld\n", 
+			      ST_name(base_st), Sclass_Name(ST_sclass(st)), ST_ofst(st) + offs); 
 	}
       }
       else {
