@@ -680,7 +680,7 @@ CGIR_SYM_create(Symbol symbol, CGIR_SYM cgir_sym) {
   if (LAI_Interface_Symbol_isSpill(symbol)) {
     // We use the CGSPILL interface to generate a CGIR spill symbol
     TY_IDX ty = 
-      MTYPE_To_TY(TARG_MType_to_CGIR_TYPE_ID(LAI_Interface_Symbol_mtype(symbol)));
+      MTYPE_To_TY(MType_to_CGIR_TYPE_ID(LAI_Interface_Symbol_mtype(symbol)));
     ST *st = CGSPILL_Gen_Spill_Symbol(ty, (const char *)LAI_Interface_Symbol_name(symbol));
     return ST_st_idx(*st);
   }
@@ -705,7 +705,7 @@ static CGIR_TN
 CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   LAI_Register registre = LAI_Interface_Temporary_assigned(temporary);
   INT size = 0;		// not used in Build_Dedicated_TN
-  CLASS_REG_PAIR crp = TARG_Register_to_CGIR_CRP(registre);
+  CLASS_REG_PAIR crp = Register_to_CGIR_CRP(registre);
   return Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), size);
 }
 
@@ -713,7 +713,7 @@ CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
 static CGIR_TN
 CGIR_Virtual_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
-  ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
+  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
   INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
   INT size = (bsize + 7)/8;
   return Gen_Register_TN(irc, size);
@@ -724,11 +724,11 @@ static CGIR_TN
 CGIR_Assigned_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
   LAI_Register assigned = LAI_Interface_Temporary_assigned(temporary);
-  ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
+  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
   INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
   INT size = (bsize + 7)/8;
   TN *tn = Gen_Register_TN(irc, size);
-  CLASS_REG_PAIR crp = TARG_Register_to_CGIR_CRP(assigned);
+  CLASS_REG_PAIR crp = Register_to_CGIR_CRP(assigned);
   Set_TN_register(tn, CLASS_REG_PAIR_reg(crp));
   return tn;
 }
@@ -775,7 +775,7 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
   if (!LAI_Interface_Temporary_isDedicated(temporary) &&
       LAI_Interface_Temporary_isAssigned(temporary)) {
     CLASS_REG_PAIR cgir_crp = 
-      TARG_Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
+      Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
     Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
   }
 }
@@ -787,7 +787,7 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   int issueDate = LAI_Interface_Operation_issueDate(operation);
   LAI_Operator opr = LAI_Interface_Operation_operator(operation);
   int argCount = 0, resCount = 0;
-  TOP top = TARG_Operator_to_CGIR_TOP(opr);
+  TOP top = Operator_to_CGIR_TOP(opr);
   for (argCount = 0; arguments[argCount] != NULL; argCount++);
   for (resCount = 0; results[resCount] != NULL; resCount++);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
@@ -845,7 +845,7 @@ CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   BB *bb = OP_bb(cgir_op);
   if (bb != NULL) BB_Remove_Op(bb, cgir_op);
   int argCount = 0, resCount = 0;
-  TOP top = TARG_Operator_to_CGIR_TOP(opr);
+  TOP top = Operator_to_CGIR_TOP(opr);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
   }
