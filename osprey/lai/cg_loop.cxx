@@ -4409,15 +4409,11 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 #ifdef TARG_ST
     if (modulus > 1) {
 
-      if (ntimes < modulus) {
+      if (ntimes <= modulus) {
 	/* If ntimes is a divisor of modulus. */
 	if (modulus % ntimes == 0) {
 	  remainder_trip_count_val = residue % ntimes;
 	}
-      }
-
-      else if (ntimes == modulus) {
-	remainder_trip_count_val = residue;
       }
 
       else /* ntimes > modulus */ {
@@ -4544,6 +4540,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
       if (loopmod_ant) {
 	WN *wn = ANNOT_pragma(loopmod_ant);
+	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
 	WN_pragma_arg1(wn) = new_modulus;
 	WN_pragma_arg2(wn) = new_residue;
       }
@@ -4700,6 +4697,12 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
     Change_Succ(pred, head, &replicas[0]);
   }
 
+#ifdef TARG_ST
+  int modulus, residue;
+
+  Get_pragma_LoopMod(loop, &modulus, &residue);
+#endif
+
   /* Build the replicas.
    */
   for (INT unrolling = 0; unrolling < ntimes - 1; unrolling++) {
@@ -4737,6 +4740,15 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
       BB_Append_Op(replica, rop);
     }
 
+#ifdef TARG_ST
+    if ((modulus % ntimes == 0) && (residue % ntimes != unrolling+1)) {
+      BB_Remove_Branch(replica);
+      Link_Pred_Succ_with_Prob(replica, BB_next(replica), 1.0);
+      if (freqs)
+	BB_freq(replica) = replica_prob;
+    }
+    else {
+#endif
     OP *replica_br_op = BB_branch_op(replica);
     BOOL ok = Negate_Branch(replica_br_op);
     Is_True(ok, ("unable to negate branch %s", TOP_Name(OP_code(replica_br_op))));
@@ -4747,6 +4759,9 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
     if (freqs)
       BB_freq(replica) = replica_prob;
     replica_prob *= br_prob;
+#ifdef TARG_ST
+    }
+#endif
   }
   if (freqs)
     BB_freq(head) = replica_prob;
@@ -4767,6 +4782,21 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
     // update loopback edge
     unroll_xfer_annotations(&replicas[0], head);
     OP *br = BB_branch_op(head);
+#ifdef TARG_ST
+    if ((modulus % ntimes == 0) & (residue % ntimes != 0)) {
+      OPS ops = OPS_EMPTY;
+
+      Build_OP (TOP_goto, 
+		Gen_Label_TN(Gen_Label_For_BB(&replicas[0]),0),
+		&ops);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(br);
+      BB_Insert_Ops(OP_bb(br), br, &ops, FALSE);
+      BB_Remove_Op(OP_bb(br), br);
+      Unlink_Pred_Succ (head, loop_merge_bb);
+      Change_Succ_Prob (head, &replicas[0], 1.0);
+    }
+    else
+#endif
     Set_OP_opnd(br,
 		Branch_Target_Operand(br),
 		Gen_Label_TN(Gen_Label_For_BB(&replicas[0]),0));
@@ -4782,6 +4812,32 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   }
 
   unroll_names_finish();
+
+#ifdef TARG_ST
+  /* Update the loopmod pragma to take into account this unrolling. */
+    if (modulus > 1) {
+      INT new_modulus = 1;
+      INT new_residue = 0;
+
+      if (ntimes <= modulus) {
+	/* If ntimes is a divisor of modulus. */
+	if (modulus % ntimes == 0) {
+	  new_modulus = modulus / ntimes;
+	  new_residue = residue / ntimes;
+	}
+      }
+
+      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(&replicas[0]), ANNOT_PRAGMA);
+      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+      if (loopmod_ant) {
+	WN *wn = ANNOT_pragma(loopmod_ant);
+	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
+	WN_pragma_arg1(wn) = new_modulus;
+	WN_pragma_arg2(wn) = new_residue;
+      }
+    }
+#endif
 
   if (Get_Trace(TP_CGLOOP, 2))
     CG_LOOP_Trace_Loop(loop, "Unroll_Dowhile_Loop:"
