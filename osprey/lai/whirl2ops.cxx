@@ -3043,6 +3043,40 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   FmtAssert(Lai_Code || INTRN_cg_intrinsic(id), 
                           ("Handle_INTRINSIC_OP: not a cg INTRINSIC_OP"));
 
+#ifdef TARG_ST
+  FmtAssert(numkids < 10, ("unexpected number of kids in intrinsic_op"));
+  for (i = 0; i < numkids; i++) {
+    kids[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
+  }
+
+  if (Only_32_Bit_Ops && 
+      (MTYPE_is_longlong(WN_rtype(expr)) || MTYPE_is_double(WN_rtype(expr)))) {
+    // This intrinsic op should has been preprocessed so that a pair
+    // of result values that it returns are parameters.
+    Is_True(result == NULL, ("result set for 64 bit intrinsic"));
+  }
+  else if (rkind != IRETURN_UNKNOWN && result == NULL) {
+    result = Allocate_Result_TN(expr, NULL);
+  }
+
+  if (Trace_Exp) {
+    fprintf(TFile, "exp_intrinsic_op %s: ", INTRN_c_name(id));
+    if (result != NULL) Print_TN(result, FALSE);
+    fprintf(TFile, " :- ");
+    for (i = 0; i < numkids-1; i++) {
+      Print_TN(kids[i], FALSE);
+      fprintf(TFile, ", ");
+    }
+    Print_TN(kids[numkids-1], FALSE);
+    fprintf(TFile, "\n");
+  }
+
+  /* for debuggging */
+  OP *Last_OP = OPS_last(&New_OPs);
+
+  Exp_Intrinsic_Op (id, (result == NULL) ? 0:1, numkids, &result, kids, &New_OPs);
+
+#else
   kids[0] = Expand_Expr(WN_kid0(expr), expr, NULL);
   kids[1] = (numkids > 1) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
   kids[2] = (numkids > 2) ? Expand_Expr(WN_kid2(expr), expr, NULL) : NULL;
@@ -3068,6 +3102,7 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   OP *Last_OP = OPS_last(&New_OPs);
 
   Exp_Intrinsic_Op (id, 1, numkids, &result, kids, &New_OPs);
+#endif
 
   if (Trace_Exp) {
     OP *op;
