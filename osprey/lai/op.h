@@ -896,11 +896,14 @@ inline BOOL CGTARG_Is_OP_Intrinsic(OP *op) {
   return OP_code(op) == TOP_intrncall; 
 }
 
+#ifdef TARG_ST
+extern BOOL CGTARG_Is_OP_Addr_Incr(OP *op);
+#else
 inline BOOL CGTARG_Is_OP_Addr_Incr(OP *op)
 {
-  TOP top = OP_code(op);
   return FALSE;
 }
+#endif
 
 #ifdef TARG_ST
 #define OP_Mem_Ref_Bytes(o)  TOP_Mem_Bytes(OP_code(o))
