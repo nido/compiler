@@ -87,6 +87,11 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
  */
 #define BB_Label_Format		Local_Label_Prefix "_BB%d_%s"
 
+/* The following sprintf format is used to create a label
+ * for a source line, used to emit debug info
+ */
+#define Source_Line_Label_Format		Local_Label_Prefix "_Debug%d_%s"
+
 /* The following sprintf format is used to create a basic block label
  * from a user label name and the PU name:
  */
