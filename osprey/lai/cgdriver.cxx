@@ -408,8 +408,6 @@ static OPTION_DESC Options_CG[] = {
     "Extra gain in cycles for flattening a branch"},
 
 #ifdef TARG_ST
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "LAO_enable", "",
-    0, 0, 0,	&CG_enable_LAO, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimize", "",
     0, 0, 1024,	&CG_LAO_optimize, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedule", "",
@@ -1500,14 +1498,11 @@ CG_Init (void)
   //    Configure_prefetch_ahead();
 
 #ifdef TARG_ST
-  if (CG_enable_LAO) {
-    if (!CG_LAO_schedule_overridden) CG_LAO_schedule = 0;
+  if (CG_LAO_optimize != 0) {
+    if (!CG_LAO_schedule_overridden) CG_LAO_schedule = 1;
     if (!CG_LAO_pipeline_overridden) CG_LAO_pipeline = 0;
     if (!CG_LAO_speculate_overridden) CG_LAO_speculate = 0;
-  } else if (CG_LAO_optimize != 0) CG_enable_LAO = TRUE;
-
-  if (CG_enable_LAO) {
-    lao_handler = load_so ("lao"SO_EXT, CG_Path, Show_Progress);
+    lao_handler = load_so("lao"SO_EXT, CG_Path, Show_Progress);
     lao_init();
   }
 #endif
@@ -1527,7 +1522,7 @@ CG_Fini (void)
 
 #ifdef TARG_ST
 
-  if (CG_enable_LAO) {
+  if (CG_LAO_optimize != 0) {
     lao_fini();
     close_so(lao_handler);
     lao_handler = NULL;

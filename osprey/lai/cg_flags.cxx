@@ -91,7 +91,6 @@ BOOL CG_exclusive_prefetch = FALSE;
 BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 BOOL CG_enable_select = FALSE;
-BOOL CG_enable_LAO = FALSE;	/* Enable LAO in cg */
 INT32 CG_LAO_optimize = 0;
 INT32 CG_LAO_schedule = 0;
 INT32 CG_LAO_pipeline = 0;

@@ -728,7 +728,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_enable_LAO && CG_LAO_optimize & Optimization_PreSched) {
+  if (CG_LAO_optimize & Optimization_PreSched) {
     Set_Error_Phase( "LAO Prepass Scheduling" );
     lao_optimize_PU(Optimization_PreSched);
     if (frequency_verify)
@@ -814,14 +814,14 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // Call the LAO for postpass scheduling.
-  if (CG_enable_LAO && CG_LAO_optimize & Optimization_PostSched) {
+  if (CG_LAO_optimize & Optimization_PostSched) {
     Set_Error_Phase( "LAO Postpass Scheduling" );
     lao_optimize_PU(Optimization_PostSched);
     if (frequency_verify)
       FREQ_Verify("LAO Postpass Scheduling");
   }
   // Direct call to the bundler, and bypass the IGLS.
-  if (CG_enable_LAO && CG_LAO_optimize & Optimization_Linearize) {
+  if (CG_LAO_optimize & Optimization_Linearize) {
     for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       void Handle_All_Hazards(BB *bb);
       Handle_All_Hazards(bb);
