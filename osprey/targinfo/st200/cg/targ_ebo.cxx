@@ -675,8 +675,8 @@ OP*
 EBO_simplify_operand0 (
   OP *op,           // OP being simplified
   TN *tnr,          // result TN
-  INT64 const_val,  // constant value of opnd TN 1
-  TN *tn1           // opnd TN 2
+  INT64 const_val,  // constant value of opnd TN 0
+  TN *tn1           // opnd TN 1
 )
 {
   TOP opcode = OP_code(op);
@@ -838,8 +838,8 @@ OP*
 EBO_simplify_operand1 (
   OP *op,           // OP being simplified
   TN *tnr,          // result TN
-  TN *tn0,          // opnd TN 1
-  INT64 const_val   // constant value of opnd TN 2
+  TN *tn0,          // opnd TN 0
+  INT64 const_val   // constant value of opnd TN 1
 )
 {
   TOP opcode = OP_code(op);
@@ -858,7 +858,8 @@ EBO_simplify_operand1 (
       (opcode == TOP_shl_ii) ||
       (opcode == TOP_sub_r))) {
 
-    new_op = Mk_OP(TOP_mov_i, 
+    new_opcode = TN_Is_Constant(tn0) ? TOP_mov_i : TOP_mov_r;
+    new_op = Mk_OP(new_opcode, 
 		   tnr,
 		   tn0);
 
