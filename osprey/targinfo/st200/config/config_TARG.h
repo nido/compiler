@@ -88,6 +88,7 @@ BE_EXPORTED extern char *ABI_Name;		/* -TARG:abi=xxx */
 BE_EXPORTED extern char *Processor_Name;	/* -TARG:processor=xxx */
 BE_EXPORTED extern char *ISA_Name;		/* -TARG:isa=xxx */
 BE_EXPORTED extern INT16 Target_FPRs;	/* Number of target FP registers */
+BE_EXPORTED extern INT32 Target_Stack_Alignment; /* -TARG:stack_alignment=nn */
 BE_EXPORTED extern BOOL Pure_ABI;		/* Avoid non-ABI constructs? */
 
 /* Fault handling: */

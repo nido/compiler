@@ -75,6 +75,7 @@ char *ISA_Name = NULL;		/* -TARG:isa=xxx */
 char *Processor_Name = NULL;	/* -TARG:processor=xxx */
 static char * Platform_Name = NULL;
 INT16 Target_FPRs = 0;		/* -TARG:fp_regs=nn */
+INT32 Target_Stack_Alignment = 32; /* -TARG:stack_alignment=nn */
 BOOL Pure_ABI = FALSE;		/* Avoid non-ABI constructs? */
 
 /* Fault handling: */
@@ -124,6 +125,9 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_INT32,	OV_INTERNAL,	FALSE, "fp_regs",	"fp_r",
     32, 16, 32, &Target_FPRs,	NULL,
     "Specify number of FP registers to use (16 or 32)" },
+  { OVK_INT32,  OV_INTERNAL,    FALSE, "stack_alignment", "sta",
+    16,  4, 64, &Target_Stack_Alignment, NULL,
+    "Specify the alignment of a stack frame" },
 
   /* Unimplemented options: */
   /* Obsolete options: */

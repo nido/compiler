@@ -215,7 +215,8 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 /*
  * Alignment used for aligning the stack segments
  */
-#define DEFAULT_STACK_ALIGNMENT 32
+#define DEFAULT_STACK_ALIGNMENT Target_Stack_Alignment
+BE_EXPORTED extern INT32 Target_Stack_Alignment; /* -TARG:stack_alignment=nn */
 
 /*
  * [CG] Alignment for the code segments.
