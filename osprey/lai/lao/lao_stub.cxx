@@ -84,7 +84,7 @@ static inline Modifier
 CGIR_IEC_to_Modifier(ISA_ENUM_CLASS iec) {
   Modifier lao_modifier = IEC__Modifier[iec];
   Is_True(iec >= 0 && iec < EC_MAX, ("ISA_ENUM_CLASS out of range"));
-  Is_True(lao_modifier != Modifier_, ("Cannot map ISA_ENUM_CLASS to Modifier"));
+  Is_True(lao_modifier != Modifier__, ("Cannot map ISA_ENUM_CLASS to Modifier"));
   return lao_modifier;
 }
 
@@ -93,7 +93,7 @@ static inline Immediate
 CGIR_LC_to_Immediate(ISA_LIT_CLASS ilc) {
   Immediate lao_immediate = LC__Immediate[ilc];
   Is_True(ilc >= 0 && ilc < LC_MAX, ("ISA_LIT_CLASS out of range"));
-  Is_True(lao_immediate != Immediate_, ("Cannot map ISA_LIT_CLASS to Immediate"));
+  Is_True(lao_immediate != Immediate__, ("Cannot map ISA_LIT_CLASS to Immediate"));
   return lao_immediate;
 }
 
@@ -102,7 +102,7 @@ static inline RegClass
 CGIR_IRC_to_RegClass(ISA_REGISTER_CLASS irc) {
   RegClass lao_regClass = IRC__RegClass[irc];
   Is_True(irc >= 0 && irc <= ISA_REGISTER_CLASS_MAX, ("ISA_REGISTER_CLASS out of range"));
-  Is_True(lao_regClass != RegClass_, ("Cannot map ISA_REGISTER_CLASS to RegClass"));
+  Is_True(lao_regClass != RegClass__, ("Cannot map ISA_REGISTER_CLASS to RegClass"));
   return lao_regClass;
 }
 
@@ -121,7 +121,7 @@ static inline Operator
 CGIR_TOP_to_Operator(TOP top) {
   Operator lao_operator = TOP__Operator[top];
   Is_True(top >= 0 && top < TOP_UNDEFINED, ("TOPcode out of range"));
-  Is_True(lao_operator != Operator_, ("Cannot map TOPcode to Operator"));
+  Is_True(lao_operator != Operator__, ("Cannot map TOPcode to Operator"));
   return lao_operator;
 }
 
@@ -269,7 +269,7 @@ CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
 // Convert LIR RegClass to CGIR ISA_REGISTER_CLASS.
 static inline ISA_REGISTER_CLASS
 RegClass_to_CGIR_IRC(RegClass regClass) {
-  Is_True(regClass > RegClass_ && regClass < RegClass__, ("RegClass out of range"));
+  Is_True(regClass < RegClass__, ("RegClass out of range"));
   ISA_REGISTER_CLASS irc = RegClass__IRC[regClass];
   Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
   return irc;
@@ -290,7 +290,7 @@ Register_to_CGIR_CRP(Register registre) {
 // Convert LIR Operator to TOP.
 static inline TOP
 Operator_to_CGIR_TOP(Operator lir_operator) {
-  Is_True(lir_operator > Operator_ && lir_operator < Operator__, ("Operator out of range"));
+  Is_True(lir_operator < Operator__, ("Operator out of range"));
   TOP top = Operator__TOP[lir_operator];
   Is_True(top != TOP_UNDEFINED, ("Cannot map Operator to TOP"));
   return top;
@@ -650,7 +650,7 @@ lao_init() {
     lao_optimize_PU_p = lao_optimize_PU;
     CGIR_print_p = CGIR_print;
     // initialize the TOP__Operator array
-    for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator_;
+    for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator__;
     TOP__Operator[TOP_add_i] = Operator_CODE_ADD_IDEST_SRC1_ISRC2;
     TOP__Operator[TOP_add_ii] = Operator_CODE_ADD_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_add_r] = Operator_CODE_ADD_DEST_SRC1_SRC2;
@@ -914,15 +914,15 @@ lao_init() {
     }
     Operator__TOP[Operator_MACRO_GOTO] = TOP_goto;
     // initialize IEC__Modifier
-    for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier_;
+    for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier__;
     // initialize LC__Immediate
-    for (int i = 0; i < LC_MAX; i++) LC__Immediate[i] = Immediate_;
+    for (int i = 0; i < LC_MAX; i++) LC__Immediate[i] = Immediate__;
     LC__Immediate[0] = Immediate_I_signed_32_overflow_dont; // HACK ALERT
     LC__Immediate[LC_s32] = Immediate_I_signed_32_overflow_dont;
     LC__Immediate[LC_s23] = Immediate_I_signed_23_overflow_signed;
     LC__Immediate[LC_s9] = Immediate_I_signed_9_overflow_signed;
     // initialize IRC__RegClass
-    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegClass[i] = RegClass_;
+    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegClass[i] = RegClass__;
     IRC__RegClass[ISA_REGISTER_CLASS_integer] = RegClass_GRC;
     IRC__RegClass[ISA_REGISTER_CLASS_branch] = RegClass_BRC;
     // initialize RegClass__IRC
