@@ -3354,6 +3354,12 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 
   /* emit TN comments: */
   vstring comment = vstr_begin(LBUF_LEN);
+
+#ifdef TARG_ST
+  char cycle_info[30];
+  cycle_info[0] = '\0';
+#endif
+
   for (i = 0; i < OP_results(op); i++) {
     TN *tn = OP_result(op, i);
     if (TN_is_save_reg(tn)) {
@@ -3405,7 +3411,7 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 #ifdef TARG_ST
   if (Assembly || Lai_Code) {
     if (Trace_Sched && (OP_scycle(op) >= 0)) {
-      fprintf(Output_File, "  (cycle %d)", OP_scycle(op));
+      sprintf (cycle_info, "(cycle %d)  ", OP_scycle(op));
     }
     if ((OP_scycle(op) >= 0) &&
 	(OP_scycle(op) < Bundle_Count) &&
@@ -3418,8 +3424,8 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 #ifdef TARG_ST
   if ((Assembly || Lai_Code)
       && List_Notes
-      && vstr_len(comment) > 0) {
-    fprintf (Output_File, "\t%s  %s", ASM_CMNT, vstr_str(comment));
+      && (vstr_len(comment) > 0 || strlen(cycle_info) > 0)) {
+    fprintf (Output_File, "\t%s  %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
   }
   fputc ('\n', Output_File);
 #else
