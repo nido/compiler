@@ -207,7 +207,7 @@ extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
-extern INT32 CG_LAO_optimize;	/* LAO optimization enable */
+extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
 extern INT32 CG_LAO_schedkind;	/* LAO instruction scheduling algorithm */
 extern INT32 CG_LAO_schedtype;	/* LAO instruction scheduling type */
 extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */

@@ -412,8 +412,8 @@ static OPTION_DESC Options_CG[] = {
     "Extra gain in cycles for flattening a branch"},
 
 #ifdef TARG_ST
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimize", "",
-    0, 0, 65535,	&CG_LAO_optimize, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimizations", "",
+    0, 0, 65535,	&CG_LAO_optimizations, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
     2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedtype", "",
@@ -1156,9 +1156,9 @@ Configure_CG_Options(void)
 
   // [FdF]: Ignore LAO options if opt_level < 2
   
-  if ((CG_LAO_optimize != 0) && (CG_opt_level < 2)) {
+  if ((CG_LAO_optimizations != 0) && (CG_opt_level < 2)) {
     DevWarn("CG: Ignoring LAO options, need optimization level -O2 or higher");
-    CG_LAO_optimize = 0;
+    CG_LAO_optimizations = 0;
   }
 
 #endif  /* TARG_ST */
@@ -1517,7 +1517,7 @@ CG_Init (void)
   //    Configure_prefetch_ahead();
 
 #ifdef TARG_ST
-  if (CG_LAO_optimize != 0) {
+  if (CG_LAO_optimizations != 0) {
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
     if (!CG_LAO_schedtype_overridden) CG_LAO_schedtype = 1;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
@@ -1545,7 +1545,7 @@ CG_Fini (void)
 
 #ifdef TARG_ST
 
-  if (CG_LAO_optimize != 0) {
+  if (CG_LAO_optimizations != 0) {
     lao_fini();
     close_so(lao_handler);
     lao_handler = NULL;

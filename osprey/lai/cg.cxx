@@ -663,13 +663,13 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimize & Optimization_PreSched) {
+  if (CG_LAO_optimizations & Optimization_PreSched) {
     Set_Error_Phase( "LAO Prepass Scheduling" );
     lao_optimize_PU(Optimization_PreSched);
     if (frequency_verify)
       FREQ_Verify("LAO Prepass Scheduling");
   }
-  if (CG_LAO_optimize); else
+  if (CG_LAO_optimizations); else
 #endif
   IGLS_Schedule_Region (TRUE /* before register allocation */);
   // Arthur: here rather than in igls.cxx
@@ -749,7 +749,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // Call the LAO for postpass scheduling.
-  if (CG_LAO_optimize & Optimization_PostSched) {
+  if (CG_LAO_optimizations & Optimization_PostSched) {
 
 #ifdef TARG_ST200
     // Iterate over all the operations to change them to _ii when needed.
@@ -772,13 +772,13 @@ CG_Generate_Code(
       FREQ_Verify("LAO Postpass Scheduling");
   }
   // Direct call to the bundler, and bypass the IGLS.
-  if (CG_LAO_optimize & Optimization_Linearize) {
+  if (CG_LAO_optimizations & Optimization_Linearize) {
     for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       void Handle_All_Hazards(BB *bb);
       Handle_All_Hazards(bb);
     }
   }
-  if (CG_LAO_optimize); else
+  if (CG_LAO_optimizations); else
 #endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // Arthur: here rather than in igls.cxx
