@@ -122,7 +122,7 @@ TOP TOP_Branch_To_Reg(TOP opr)
 TN *
 Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
 {
-  TN *tn;
+  TN *tn = btn;
 
   if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
@@ -130,6 +130,21 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
       Build_OP(TOP_mfb, tn, btn, ops);
     }
     else {
+      OP *op = cmp;
+      while (op = OP_next (op)) {
+        for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
+          TN *res = OP_opnd(op, opndnum);
+          if (res == btn) {
+            Build_OP(TOP_mfb, tn, btn, ops);
+            return tn;
+          }
+        }
+      }
+
+      // the tn is not in use in the block. Can just replace the
+      // compare instruction
+      // This duplicates with some of the EBO work. keep it for now.
+      // could to the "mfb" above everytime and let EBO clean it up.
       DevAssert(cmp, ("TOP_Branch_To_Reg\n"));
       TOP cmp_top = TOP_Branch_To_Reg (OP_code(cmp));
       DevAssert(cmp_top, ("TOP_Branch_To_Reg\n"));
