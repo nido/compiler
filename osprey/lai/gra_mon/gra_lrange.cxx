@@ -565,20 +565,11 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
     allowed = REGISTER_SET_Difference(allowed,
 				      REGISTER_CLASS_callee_saves(rc));
 
-  if (   Type() != LRANGE_TYPE_LOCAL && TN_is_save_reg(Tn())
-  ) {
+  if (   Type() != LRANGE_TYPE_LOCAL && TN_is_save_reg(Tn())) {
     REGISTER sv_reg = TN_save_reg(Tn());
     REGISTER_SET singleton = REGISTER_SET_Union1(REGISTER_SET_EMPTY_SET,sv_reg);
     allowed = REGISTER_SET_Intersection(allowed,singleton);
   }
-
-#ifdef TARG_ST
-  // Forbid some registers from GRA.
-  if (Type() == LRANGE_TYPE_COMPLEMENT) {
-    REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
-    allowed = REGISTER_SET_Difference(allowed, forbidden);
-  }
-#endif
 
   switch (Type()) {
 
@@ -625,8 +616,18 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
 								  prefs));
       }
     }
+
     if ( Avoid_RA() )
       allowed = REGISTER_SET_Difference1(allowed,TN_register(RA_TN));
+
+#ifdef TARG_ST
+    // Forbid some registers from GRA.
+    if (! TN_is_save_reg(Tn())) {
+      FmtAssert(!Has_Wired_Register(), ("encountered wired reg"));
+      REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+      allowed = REGISTER_SET_Difference(allowed, forbidden);
+    }
+#endif
 
     if ( Spans_A_Call() ) {
       return REGISTER_SET_Difference(allowed,

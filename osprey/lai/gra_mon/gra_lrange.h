@@ -327,6 +327,9 @@ public:
   void Preference_Copy(LRANGE* lrange1, GRA_BB* gbb );
   void Recompute_Preference(void);
   char* Format( char* buff );
+#ifdef TARG_ST
+  void Print(FILE *file);
+#endif
 };
 
 // manages the allocation and usage of all LRANGE nodes

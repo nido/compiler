@@ -331,6 +331,15 @@ Max_Colorable_LUNIT( LUNIT** result )
   if ( split_lrange->Avoid_RA() )
     all_regs = REGISTER_SET_Difference1(all_regs,TN_register(RA_TN));
 
+#ifdef TARG_ST
+  // Forbid some registers from GRA.
+  if (!TN_is_save_reg(split_lrange->Tn())) {
+    FmtAssert(!split_lrange->Has_Wired_Register(), ("encountered wired reg"));
+    REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+    all_regs = REGISTER_SET_Difference(all_regs, forbidden);
+  }
+#endif
+
   for (iter.Init(split_lrange); ! iter.Done(); iter.Step()) {
     REGISTER_SET regs_used;
     LUNIT* lunit = iter.Current();
@@ -809,6 +818,13 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
   else if ( split_lrange->Avoid_RA() ) {
     allowed_regs = REGISTER_SET_Difference1(allowed_regs,TN_register(RA_TN));
   }
+
+#ifdef TARG_ST
+  // Forbid some registers from GRA.
+  FmtAssert(!split_lrange->Has_Wired_Register(), ("encountered wired reg"));
+  REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+  allowed_regs = REGISTER_SET_Difference(allowed_regs, forbidden);
+#endif
 
   Initialize_Priority_Queue();
   border_gbb_list_head = NULL;

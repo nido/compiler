@@ -600,6 +600,15 @@ Initialize_Priority_Queue( LRPRQ* q, GRA_REGION* region, ISA_REGISTER_CLASS cl )
                      200);
 }
 
+#ifdef TARG_ST
+void
+LRANGE::Print(FILE *file)
+{
+  char buff[100];
+  fprintf(file, "L%d: %s\n", Id(), Format(buff));
+  return;
+}
+#endif
 
 void
 LRANGE_CLIST::Print_Clist(void)
