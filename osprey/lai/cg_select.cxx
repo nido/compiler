@@ -46,6 +46,7 @@
  * -CG:select_stores=TRUE        promote store operands with select.
  *                               Experimental: check the impact of losing
  *                               WN mem information
+ * -CG:select_addr_stores=TRUE   enable if conversion on stores
  *
  * The following flags to drive the heuristics.
  * -CG:select_factor="1.05"      factor to reduce the cost of the 
@@ -134,6 +135,7 @@ op_list load_i;
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
+BOOL CG_select_addr_stores = TRUE;
 const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */
 INT branch_penalty = 3;
@@ -593,6 +595,30 @@ Check_ReadWrite_Dependencies(BOOL order_changed)
   return TRUE;
 }
 
+static UINT
+Handle_Odd_Stores(op_list strs1, op_list &strs2)
+{
+  OPS ops = OPS_EMPTY;  
+  UINT count = 0;
+
+  if (!CG_select_addr_stores)
+    return 0;
+
+  op_list::iterator i1_iter = strs1.begin();
+  op_list::iterator i1_end  = strs1.end();
+
+  while(i1_iter != i1_end) {
+    OP *op1 = *i1_iter++;
+    //    TN *tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+    //    Build_OP(TOP_mov_r, base, tn, &ops);     
+    //    TN *ofst = Gen_Literal_TN (0, 4);
+    strs2.push_back(0);
+    store_i.ifarg_idx.push_back(OP_find_opnd_use(op1, OU_base));
+    count++;
+  }
+  return count;
+}
+
 // Try to sort the stores operations using alias information.
 // If the sort failed that means we cannot speculate the blocks. abort
 // if conversion by returning FALSE.
@@ -605,8 +631,15 @@ Sort_Stores(void)
   BOOL order_changed=FALSE;
 
   // We don't have the same count of store. Can't spec any.
-  if (store_i.tkstrs.size() != store_i.ntkstrs.size())
+  if (store_i.tkstrs.size() != store_i.ntkstrs.size()) {
+    if (store_i.tkstrs.size() == 0) {
+      return Handle_Odd_Stores(store_i.ntkstrs, store_i.tkstrs);
+    }
+    if (store_i.ntkstrs.size() == 0) {
+      return Handle_Odd_Stores(store_i.tkstrs, store_i.ntkstrs);
+    }
     return 0;
+  }
 
   // Each store should have an equiv.
   op_list::iterator i1_iter = store_i.tkstrs.begin();
@@ -1327,10 +1360,12 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    select_count++;
 
    // Store address didn't change. Pass WN information
-  if (opnd_idx == OP_find_opnd_use(op1, OU_storeval))
-    Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
+   if (op1 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
+     Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
+  if (op1)
    BB_Remove_Op (bb, op1);
+  if (op2)
    BB_Remove_Op (bb, op2);
 
    store_i.tkstrs.pop_back();

@@ -54,6 +54,7 @@
 extern BOOL CG_select_spec_loads;
 extern BOOL CG_select_allow_dup;
 extern BOOL CG_select_stores;
+extern BOOL CG_select_addr_stores;
 extern const char* CG_select_factor;
 
 extern void Convert_Select(RID *, const BB_REGION&);
@@ -72,7 +73,7 @@ extern void draw_CFG(void);
 #define Select_Trace_stdout  	0x80000000
 
 // op list management
-typedef list<OP*> op_list;
+typedef list<OP*>  op_list;
 
 static inline void
 BB_Remove_Ops (BB* bb, op_list ops) 

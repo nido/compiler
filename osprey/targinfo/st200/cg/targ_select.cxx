@@ -40,6 +40,7 @@
 
 #include "cgir.h"
 #include "cgexp.h"
+#include "data_layout.h"
 #include "whirl2ops.h"
 
 /* --------------------------------------------------------------------
@@ -132,6 +133,10 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
     else {
       OP *op = cmp;
       while (op = OP_next (op)) {
+        // if the btn is only used in the conditional branch, can change
+        // cmp return value type without the need od a mfb.
+        if (OP_cond (op))
+          break;
         for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
           TN *res = OP_opnd(op, opndnum);
           if (res == btn) {
@@ -156,6 +161,22 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
   return tn;
 }
 
+// Create a common symbol to speculate the address while if converting store.
+
+static ST *blackhole;
+
+static ST *
+Gen_Common_Symbol (TY_IDX      ty,	// type of the desired symbol
+		 const char *rootname)	// root of the name to use
+{
+  if (!blackhole) {
+    blackhole = New_ST(GLOBAL_SYMTAB);
+    STR_IDX str_idx = Save_Str(rootname);
+    ST_Init(blackhole, str_idx, CLASS_VAR, SCLASS_COMMON, EXPORT_INTERNAL, ty);
+    Allocate_Object (blackhole);
+  }
+}
+
 /* --------------------------------------------------------------------
  *    One of the operands is the result of a select instruction.
  *    If it is the ofst, then must generate a correct store format.
@@ -174,17 +195,30 @@ Expand_Cond_Store (
   TN *tns[3];
   TN *true_tn, *false_tn;
 
+  if (!op1) {
+    op1 = op2;
+    op2 = NULL;
+    invert = !invert;
+  }
   tns[0] = OP_opnd(op1, 0);
   tns[1] = OP_opnd(op1, 1);
   tns[2] = OP_opnd(op1, 2);
 
-  if (invert) {
-    true_tn = OP_opnd(op2, idx);
-    false_tn = OP_opnd(op1, idx);
+  if (!op2) {
+    Gen_Common_Symbol(MTYPE_To_TY(MTYPE_I4), "__strdump");
+    TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
+    false_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+    Build_OP(TOP_mov_ii, false_tn, tmp, ops);
   }
-  else {
-    true_tn = OP_opnd(op1, idx);
+  else
     false_tn = OP_opnd(op2, idx);
+      
+  true_tn = OP_opnd(op1, idx);
+
+  if (invert) {
+    TN *tmp = false_tn;
+    false_tn = true_tn;
+    true_tn = tmp;
   }
 
   TN *temp_tn;
@@ -208,26 +242,33 @@ Expand_Cond_Store (
     ofst =  Gen_Literal_TN (0, 4);
   }
 
-  TYPE_ID ttype;
-  switch (OP_code(op1)) {
-  case TOP_stw_i:
-  case TOP_stw_ii:
-    ttype = MTYPE_I4;
-    break;
+  WN *wn1 = Get_WN_From_Memory_OP(op1);
+  TYPE_ID desc;
+  if (wn1) {
+    OPCODE opcode = WN_opcode (wn1);
+    desc = OPCODE_desc(opcode);
+  }
+  else {
+    switch (OP_code(op1)) {
+    case TOP_stw_i:
+    case TOP_stw_ii:
+      desc = MTYPE_I4;
+      break;
 
-  case TOP_sth_i:
-  case TOP_sth_ii:
-    ttype = MTYPE_I2;
-    break;
+    case TOP_sth_i:
+    case TOP_sth_ii:
+      desc = MTYPE_I2;
+      break;
 
-  case TOP_stb_i:
-  case TOP_stb_ii:
-    ttype = MTYPE_I1;
-    break;
+    case TOP_stb_i:
+    case TOP_stb_ii:
+      desc = MTYPE_I1;
+      break;
 
-  default:
-    DevAssert(FALSE, ("stw"));    
+    default:
+      DevAssert(FALSE, ("stw"));    
+    }
   }
 
-  Expand_Store (ttype, val, base, ofst, ops);
+  Expand_Store (desc, val, base, ofst, ops);
 }
