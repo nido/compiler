@@ -1293,16 +1293,20 @@ Expand_Logical_Not (
   OPS *ops
 )
 {
-{
-  TOP action;
+  TOP cmpeq;
+  TN *src2 = Zero_TN;
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch ||
-      TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    Build_OP (TOP_cmpeq, dest, Zero_TN, src, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
+    cmpeq = Pick_Compare_TOP (&variant, &src2, &src, FALSE, ops);
+  }
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+    cmpeq = Pick_Compare_TOP (&variant, &src2, &src, TRUE, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Logical_Not: unhandled cmp target TN"));
   }
+
+  Build_OP (cmpeq, dest, src2, src, ops);
 
   return;
 }
