@@ -248,13 +248,13 @@ endif
 ifeq ($(BUILD_COMPILER), GNU)
 ifeq ($(BUILD_CCACHE), CCACHE)
 
-# when using cross-compilation, tools usually have a prefix.
-ifeq ($(BUILD_OS),SUNOS5)
-
 ifndef CCACHE_DIR
 $(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
 endif
 export CCACHE_DIR
+
+# when using cross-compilation, tools usually have a prefix.
+ifeq ($(BUILD_OS),SUNOS5)
 
 BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
 COMP_GNU_LOC?=/apa/comp/SunOS5.7/ccache/bin/
@@ -287,7 +287,14 @@ BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
-error "GNU_CCACHE compiler not supported under LINUX build os"
+
+COMP_GNU_LOC=/home/guillon/local/Linux/bin/ccache /apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
+BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
+
+COMPILER_LOC=$(COMP_GNU_LOC)
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif
 
 ifeq ($(BUILD_OS),MINGW)
@@ -302,8 +309,8 @@ F90 = g90
 LEX = flex
 YACC = bison
 
-endif
-endif
+endif # BUILD_CCACHE = CCACHE
+endif # BUILD_COMPILER = GNU
 
 ##
 ## SGI tools names
