@@ -196,7 +196,6 @@ HEADER_DIRS = 		\
 #----------------------------------------------------------------------
 
 BE_LAO_CXX_SRCS = \
-  lao_init.cxx \
   lao_stub.cxx \
   targ_cgir_lao.cxx
 
