@@ -108,11 +108,7 @@ TN *Link_TN;
  * register-class/register pair. We save pointers to them here
  * so we can get at them later.
  */
-#ifdef TARG_ST100
-TN *Ded_TNs[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
-#else
 static TN *ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
-#endif
 
 /* The register TNs are in a table named TNvec, indexed by their TN
  * numbers in the range 1..Last_TN.  The first part of the table, the
@@ -365,7 +361,7 @@ Gen_Register_TN (
     TNvec(Last_TN) = tn;
     if ( size > 16 ) ErrMsg ( EC_TN_Size, size );
     Set_TN_size(tn, size);
-#ifdef TARG_ST100
+#ifdef TARG_ST
     // Arthur: this is target dependent. 
     // TODO: parametrize this.
 #else
@@ -577,7 +573,7 @@ Create_Dedicated_TN (
 )
 {
   INT size = REGISTER_bit_size(rclass, reg) / 8;
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: this is target dependent
   BOOL is_float = FALSE;
 #else
@@ -613,11 +609,7 @@ Build_Dedicated_TN (
   INT size
 )
 {
-#ifdef TARG_ST100
-  return Ded_TNs[rclass][reg];
-#else
   return ded_tns[rclass][reg];
-#endif
 }
 
 /* ====================================================================
@@ -636,16 +628,40 @@ Init_Dedicated_TNs (void)
 	 reg <= REGISTER_CLASS_last_register(rclass);
 	 reg++) {
       ++tnum;
-#ifdef TARG_ST100
-      Ded_TNs[rclass][reg] = Create_Dedicated_TN(rclass, reg);
-#else
       ded_tns[rclass][reg] = Create_Dedicated_TN(rclass, reg);
-#endif
     }
   }
 
-#ifdef TARG_ST100
-  CGTARG_Init_Dedicated_TNs();
+#ifdef TARG_ST
+  // Arthur: if register has not been declared, make TN NULL:
+  Zero_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_zero) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_zero][REGISTER_zero];
+  Ep_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ep) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_ep][REGISTER_ep];
+  SP_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_sp][REGISTER_sp];
+  FP_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fp) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_fp][REGISTER_fp];
+  RA_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_ra) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_ra][REGISTER_ra];
+  Pfs_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_pfs) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_pfs][REGISTER_pfs];
+  True_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_true) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_true][REGISTER_true];
+  FZero_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fzero) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_fzero][REGISTER_fzero];
+  FOne_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fone) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_fone][REGISTER_fone];
+  LC_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_lc) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_lc][REGISTER_lc];
+  Link_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_link) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_link][REGISTER_link];
+
+  if (Gen_GP_Relative)
+    GP_TN = ded_tns[REGISTER_CLASS_gp][REGISTER_gp];
+  else
+    GP_TN = NULL;
+
 #else
   /* Initialize the dedicated integer register TNs: */
   Zero_TN = ded_tns[REGISTER_CLASS_zero][REGISTER_zero];

@@ -101,7 +101,9 @@
 #include "gra_live.h"
 #include "reg_live.h"
 #include "targ_proc_properties.h"
+#ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
+#endif
 #include "gtn_universe.h"
 #include "gtn_set.h"
 /* #include "gcm.h" */
@@ -508,6 +510,7 @@ inline void delete_op_info(OP *op)
 BOOL
 OP_has_subset_predicate(const void *value1, const void *value2)
 {
+#ifdef SUPPORTS_PREDICATION
 
   BOOL v1P = FALSE; // value1 has a qualifying predicate.
   BOOL v2P = FALSE; // value2 has a qualifying predicate.
@@ -551,6 +554,7 @@ OP_has_subset_predicate(const void *value1, const void *value2)
     // Third, invoke PQS interface to determine if p2 is not a subset of p1.
     return (PQSCG_is_subset_of(p2, p1));
   } 
+#endif /* SUPPORTS_PREDICATION */
 
   return TRUE;
 }
@@ -558,7 +562,7 @@ OP_has_subset_predicate(const void *value1, const void *value2)
 BOOL
 OP_has_disjoint_predicate(const OP *value1, const OP *value2)
 {
-
+#ifdef SUPPORTS_PREDICATION
   // Check if OPs have associated predicates and don't execute under same
   // conditions.
 
@@ -572,6 +576,7 @@ OP_has_disjoint_predicate(const OP *value1, const OP *value2)
     // Invoke PQS interface to determine if p1 and p2 are exclusive.
     if (PQSCG_is_disjoint(p1, p2)) return TRUE;
   }
+#endif
 
   return FALSE;
 }
@@ -580,6 +585,7 @@ OP_has_disjoint_predicate(const OP *value1, const OP *value2)
 BOOL
 OP_has_subset_predicate_cyclic(OP *op1, OP *op2)
 {
+#ifdef SUPPORTS_PREDICATION
   if (!OP_cond_def(op1)) return TRUE;
 
   TN *p1 = OP_has_predicate(op1) ? OP_opnd(op1, OP_PREDICATE_OPND) : True_TN;
@@ -588,12 +594,16 @@ OP_has_subset_predicate_cyclic(OP *op1, OP *op2)
   if (!PQSCG_pqs_valid()) return FALSE;
   // Invoke PQS interface to determine if p2 is not a subset of p1.
   return (PQSCG_is_subset_of(p2, p1));
+#else
+  return TRUE;
+#endif
 }
 
 
 BOOL
 OP_has_disjoint_predicate_cyclic(OP *op1, OP *op2)
 {
+#ifdef SUPPORTS_PREDICATION
   if (PQSCG_pqs_valid() && 
       OP_has_predicate(op1) && 
       OP_has_predicate(op2)) {
@@ -604,9 +614,11 @@ OP_has_disjoint_predicate_cyclic(OP *op1, OP *op2)
     // Invoke PQS interface to determine if p1 and p2 are exclusive.
     if (PQSCG_is_disjoint(p1, p2)) return TRUE;
   }
+#endif
 
   return FALSE;
 }
+
 
 static BOOL maintain_prebr;
 static void maintain_prebr_arc(OP *op);
@@ -4066,7 +4078,14 @@ CG_DEP_Add_Op_Same_Res_Arcs(OP *op)
  */
 {
   BB *bb = OP_bb(op);
+#ifdef TARG_ST
+  // Arthur: All of this seems to imply a single result OP.
+  //         I keep it this way for now but eventually I'll have
+  //         to support multi-res OPs
+  INT16 which = TOP_is_same_res(OP_code(op),0);
+#else
   INT16 which = CGPREP_Same_Res_Opnd(op);
+#endif
   TN *opnd = OP_opnd(op, which);
   ARC_LIST *arcs = ARC_LIST_Find(OP_preds(op), CG_DEP_REGIN, which);
   
@@ -4124,7 +4143,12 @@ CG_DEP_Add_Same_Res_Arcs()
   OP *op;
   BOOL any = FALSE;
   FOR_ALL_BB_OPs(_cg_dep_bb, op) {
+#ifdef TARG_ST
+    // Arthur: guess what ... same_res !
+    if (TOP_is_same_res(OP_code(op),0) >= 0) {
+#else
     if (OP_same_res(op)) {
+#endif
       any = TRUE;
       CG_DEP_Add_Op_Same_Res_Arcs(op);
     }
@@ -4167,7 +4191,10 @@ CG_DEP_Remove_Op_Same_Res_Arcs(OP *op)
  * -----------------------------------------------------------------------
  */
 {
+#ifdef TARG_ST
+#else
   Is_True(OP_same_res(op), ("<op> not a same-res OP"));
+#endif
   remove_unnecessary_anti_or_output_arcs(OP_preds(op));
   remove_unnecessary_anti_or_output_arcs(OP_succs(op));
   if (tracing) {
@@ -4191,7 +4218,13 @@ CG_DEP_Remove_Same_Res_Arcs()
 
   OP *op;
   FOR_ALL_BB_OPs(_cg_dep_bb, op) {
-    if (OP_same_res(op)) CG_DEP_Remove_Op_Same_Res_Arcs(op);
+#ifdef TARG_ST
+    // Arthur: ...
+    if (TOP_is_same_res(OP_code(op),0) >= 0)
+#else
+    if (OP_same_res(op)) 
+#endif
+      CG_DEP_Remove_Op_Same_Res_Arcs(op);
   }
 }
 

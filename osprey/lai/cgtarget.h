@@ -544,6 +544,9 @@
 #include "ti_bundle.h"
 #include "ti_latency.h"
 
+/* Target-specific information */
+#include "targ_cg.h"
+
 /* placeholder for all hardware workarounds */
 extern void Hardware_Workarounds (void);
 
@@ -558,26 +561,8 @@ extern void CGTARG_Initialize(void);
  * ====================================================================
  */
 
-// These are evntually target dependent generated:
-#define MIN_BRANCH_DISP _MIN_BRANCH_DISP
-#define DEFAULT_BRP_BRANCH_LIMIT _DEFAULT_BRP_BRANCH_LIMIT
-#define DEFAULT_LONG_BRANCH_LIMIT _DEFAULT_LONG_BRANCH_LIMIT
-
-#define ISA_PRINT_PREDICATE _ISA_PRINT_PREDICATE
-
-// These eventually are target dependent:
-#if 0
-#define ISA_PRINT_END_GROUP _ISA_PRINT_END_GROUP        // end-of-group marker
-#define ISA_PRINT_BEGIN_BUNDLE _ISA_PRINT_BEGIN_BUNDLE  // bundle introducer
-#define ISA_PRINT_END_BUNDLE _ISA_PRINT_END_BUNDLE      // bundle terminator
-#endif
-
 extern UINT32 CGTARG_branch_taken_penalty;
 extern BOOL CGTARG_branch_taken_penalty_overridden;
-
-// Given a conditional branch with a <branch_taken_probability>
-// return TRUE if it would be beneficial to convert it to a brlikely.
-#define CGTARG_Use_Brlikely _CGTARG_Use_Brlikely
 
 // If a BB ends in an unconditional branch, turn it into a 
 // conditional branch with TRUE predicate.
@@ -709,14 +694,16 @@ typedef enum {
   COMPARE_TYPE_normal
 } COMPARE_TYPE;
 
-#define CGTARG_Can_Predicate_Calls _CGTARG_Can_Predicate_Calls
-#define CGTARG_Can_Predicate_Returns _CGTARG_Can_Predicate_Returns
-#define CGTARG_Can_Predicate_Branches _CGTARG_Can_Predicate_Branches
-#define CGTARG_Can_Predicate _CGTARG_Can_Predicate
-
 extern TOP CGTARG_Parallel_Compare(OP* cmp_op, COMPARE_TYPE ctype);
 extern BOOL CGTARG_Unconditional_Compare(OP* op, TOP* uncond_ver);
 extern BOOL CGTARG_Branches_On_True(OP* br_op, OP* cmp_op);
+
+/* ---------------------------------------------------------------------
+ *    Given a compare opcode, return the unconditional variant form. 
+ *    Return the opcode if there is no such form.
+ * ---------------------------------------------------------------------
+ */
+extern TOP CGTARG_Get_unc_Variant(TOP top);
 
 /* ====================================================================
  *   Target specific scheduling and dependence graph:
@@ -738,15 +725,17 @@ extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UI
 //
 inline BOOL CGTARG_Use_Load_Latency(OP *pred_op, TN *tn) 
 {
-#if defined(TARG_IA64) || defined (TARG_ST100)
+#if defined(TARG_IA64) || defined (TARG_ST)
   return OP_load(pred_op) && OP_result(pred_op,0) == tn;
 #else
   return TRUE;
 #endif
 }
 
+#ifdef SUPPORTS_PREDICATION
 // Returns TRUE if OP is a suitable candidate for HBF.
 extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
+#endif
 
 // Handle all the Errata hazards. These are typically workarounds
 // for bugs in particular versions of various target processors.
@@ -818,7 +807,5 @@ extern void CGTARG_Result_Live_Range( void* lrange, OP* op, INT32 offset );
 // Present the <lrange> used by <op> and it's <opnd> operand.
 extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
                                        INT32  offset );
-
-#include "targ_cg.h"
 
 #endif /* CGTARGET_INCLUDED */

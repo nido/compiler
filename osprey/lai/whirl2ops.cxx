@@ -1282,7 +1282,7 @@ Memop_Variant (
 )
 {
   VARIANT variant = V_NONE;
-#ifdef TARG_ST100
+#ifdef TARG_ST
   INT     required_alignment = MTYPE_alignment(WN_desc(memop));
 #else
   INT     required_alignment = MTYPE_RegisterSize(WN_desc(memop));
@@ -2023,7 +2023,7 @@ Expand_Expr_Mult (
   return kid_tn;
 }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
 
 /* ====================================================================
  *   Handle_MPY
@@ -2135,7 +2135,7 @@ Handle_MADD (
   return result;
 }
 
-#endif /* TARG_ST100 */
+#endif /* TARG_ST */
 
 /* ====================================================================
  *   Handle_DIVREM
@@ -3372,7 +3372,7 @@ Expand_Expr (
     else if (Is_CVTL_Opcode(opcode)) {
       opnd_tn[0] = Expand_Expr (WN_kid0(expr), expr, NULL);
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Could be Truncation or Extension:
       // It is not entirely clear whether this is machine dependent:
       // for IA64 and MIPS they make sign extensions to 32 bits.
@@ -3412,7 +3412,7 @@ Expand_Expr (
     }
     return NULL;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   case OPR_MPY:
     return Handle_MPY (expr, result, opcode);
 
@@ -3928,7 +3928,7 @@ Handle_CONDBR (
   TN *operand0, *operand1;
   TN *target_tn;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   condition = WN_kid0 (branch);
 
   // Inverting a FALSEBR depends on the target implementation.
@@ -3962,7 +3962,7 @@ Handle_CONDBR (
 	      && WN_class(condition) == CLASS_PREG,
 	      ("MTYPE_B TRUEBR/FALSEBR condition must be preg or relop"));
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: invert or not is target dependent
       //
       variant = (WN_opcode(branch) == OPC_FALSEBR) ? 

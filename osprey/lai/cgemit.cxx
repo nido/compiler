@@ -458,6 +458,25 @@ CGEMIT_Alias (ST *sym, ST *strongsym, FILE *file)
 }
 
 /* ====================================================================
+ *    CGEMIT_Exit_In_Asm ()
+ *
+ *    TODO: Target dependent !
+ * ====================================================================
+ */
+static void
+CGEMIT_Exit_In_Asm (FILE *file) 
+{
+#ifdef TARG_ST100
+  fprintf (file, "\t%s\t", AS_END);
+  EMT_Write_Qualified_Name(file, pu);
+  fprintf (file, "\n");
+#endif
+#ifdef TARG_ST200
+  fprintf (file, "\t%s\n", AS_END);
+#endif
+}
+
+/* ====================================================================
  *    r_qualified_name
  * ====================================================================
  */
@@ -1244,7 +1263,7 @@ Change_Section_Origin (
       /* switch to new section. */
       fprintf (Output_File, "\n\t%s %s\n", AS_SECTION, ST_name(base));
     }
-#ifdef TARG_ST100
+#ifdef TARG_ST
     // IA64 generates .org so next data is placed at this offset
     // within the section
     // GHS assembler interprets .org as an absolute address
@@ -1399,7 +1418,7 @@ Init_Section (
     else if (OPT_Space)
       Set_STB_align(st, ISA_INST_BYTES);
     else
-      Set_STB_align(st, TARG_Text_Alignment());
+      Set_STB_align(st, CGTARG_Text_Alignment());
   }
 
   /* save symbol for later reference */
@@ -1561,7 +1580,7 @@ Process_Initos_And_Literals (
       // may need padding between objects in same section,
       // so always change origin
       Change_Section_Origin (base, ofst);
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
       //         aligning it at 4 bytes here. I should really get
@@ -1580,7 +1599,7 @@ Process_Initos_And_Literals (
       // expand the whirl nodes.  So always reset the origin.
       Change_Section_Origin (base, ofst);
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
       //         aligning it at 4 bytes here. I should really get
@@ -2277,7 +2296,7 @@ r_apply_l_const (
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else if ( TN_has_value(t) ) {
-#ifdef TARG_ST100
+#ifdef TARG_ST
     if ( TN_size(t) <= 4 )
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
@@ -2802,7 +2821,7 @@ void
 CGEMIT_Prn_Line_Dir_In_Asm (USRCPOS usrcpos)
 {
   if(!CG_emit_asm_dwarf) {
-    fprintf (Output_File, "// "); //turn the rest into comment
+    fprintf (Output_File, ASM_CMNT_LINE); //turn the rest into comment
   }
   fprintf (Output_File, "\t.loc\t%d\t%d\t%d\n", 
 		USRCPOS_filenum(usrcpos)-1,
@@ -3085,7 +3104,7 @@ Assemble_Simulated_OP (
     return;
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: IA64 does not generate any such OPs so I don't really
   //         know what these are ??
   //         ST100 should only generate TOP_intrncall when generating
@@ -3337,7 +3356,7 @@ Assemble_Bundles(BB *bb)
     }
 #endif
     if (Assembly && EMIT_explicit_bundles) {
-      fprintf(Asm_File, "%s\n", ISA_PRINT_END_BUNDLE);
+      fprintf(Asm_File, "\t\t%s\n", ISA_PRINT_END_BUNDLE);
     }
   }
   if (Assembly) {
@@ -4396,20 +4415,11 @@ EMT_Emit_PU (
 
   /* Emit the stuff needed at the end of the PU. */
   if (AS_END) {
+    CGEMIT_Exit_In_Asm(Output_File);
+#if 0
     fprintf (Output_File, "\t%s\t", AS_END);
     EMT_Write_Qualified_Name(Output_File, pu);
     fprintf (Output_File, "\n");
-#if 0
-    if (Assembly) {
-      fprintf ( Asm_File, "\t%s\t", AS_END);
-      EMT_Write_Qualified_Name(Asm_File, pu);
-      fprintf ( Asm_File, "\n");
-    }
-    if (Lai_Code) {
-      fprintf (Lai_File, "\t%s\t", AS_END);
-      EMT_Write_Qualified_Name(Lai_File, pu);
-      fprintf (Lai_File, "\n");
-    }
 #endif
   }
 
@@ -4720,7 +4730,8 @@ EMT_End_File( void )
 #endif
 
   if (Assembly) {
-    ASM_DIR_GPVALUE();
+    fprintf(Asm_File, "\t## %s %d\n", AS_GPVALUE, GP_DISP);
+    //    ASM_DIR_GPVALUE();
 #if 0
     if (CG_emit_asm_dwarf) {
       Cg_Dwarf_Write_Assembly_From_Symbolic_Relocs(Asm_File,

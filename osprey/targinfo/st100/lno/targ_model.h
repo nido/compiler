@@ -66,6 +66,6 @@
 #define Reserved_Bool_Regs	1       // g0 ?
 
 /* How many registers is needed for a given MTYPE */
-extern INT MTYPE_Needs_Regs (TYPE_ID mtype);
+/* extern INT MTYPE_Needs_Regs (TYPE_ID mtype); */
 
 #endif /* targ_MODEL_INCLUDED */

@@ -63,6 +63,14 @@
 
 #include "em_elf.h"
 
+//
+// Various target-dependent dedicated:
+// 
+// These are not used for now, just an example of how it could be
+// done
+//
+TN *GR_TN;          // guard register
+
 /*
  * TN relocations info:
  */
@@ -98,6 +106,16 @@ const TN_RELOCS_INFO TN_RELOCS_info[] = {
   { "#da2to17" },
   { "#da18to33" }
 };
+
+/* ====================================================================
+ *   Gen_Predicate_TN
+ * ====================================================================
+ */
+TN*
+Gen_Predicate_TN()
+{
+  return Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
+}
 
 /* ====================================================================
  *   CGTARG_TN_Value
@@ -201,50 +219,3 @@ TN_Relocs_In_Asm (
   return paren;
 }
 
-//
-// Various target-dependent dedicated:
-// 
-// These are not used for now, just an example of how it could be
-// done
-//
-
-TN *GR_TN;          // guard register
-
-/* ====================================================================
- *   CGTARG_Init_Dedicated_TNs
- *
- *   Initialize target-dependent REG_CLASS,REG pairs.
- * ====================================================================
- */
-void
-CGTARG_Init_Dedicated_TNs ()
-{
-  /* Initialize the dedicated integer register TNs: */
-  //  Zero_TN = Ded_TNs[REGISTER_CLASS_zero][REGISTER_zero];
-  Zero_TN = NULL;
-  //  Ep_TN = Ded_TNs[REGISTER_CLASS_ep][REGISTER_ep];
-  Ep_TN = NULL;
-  SP_TN = Ded_TNs[REGISTER_CLASS_sp][REGISTER_sp];
-  FP_TN = Ded_TNs[REGISTER_CLASS_fp][REGISTER_fp];
-  RA_TN = Ded_TNs[REGISTER_CLASS_ra][REGISTER_ra];
-  //  Pfs_TN = Ded_TNs[REGISTER_CLASS_pfs][REGISTER_pfs];
-  Pfs_TN = NULL;
-  True_TN = Ded_TNs[REGISTER_CLASS_true][REGISTER_true];
-  //  FZero_TN = Ded_TNs[REGISTER_CLASS_fzero][REGISTER_fzero];
-  FZero_TN = NULL;
-  //  FOne_TN = Ded_TNs[REGISTER_CLASS_fone][REGISTER_fone];
-  FOne_TN = NULL;
-  LC_TN = Ded_TNs[REGISTER_CLASS_lc][REGISTER_lc];
-  Link_TN = Ded_TNs[REGISTER_CLASS_link][REGISTER_link];
-
-  if (Gen_GP_Relative)
-    GP_TN = Ded_TNs[REGISTER_CLASS_gp][REGISTER_gp];
-  else
-    GP_TN = NULL;
-
-  // Add target specific ded TNs here:
-  // Initialize target-specific special registers:
-  GR_TN = Ded_TNs[REGISTER_CLASS_gr][REGISTER_gr];
-
-  return;
-}

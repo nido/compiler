@@ -380,7 +380,7 @@ Is_Marked_For_Removal(OP *op)
 //
 static BOOL
 Check_Allow_Reorder() {
-#ifdef TARG_ST100
+#ifdef TARG_ST
   //
   // Arthur: must also check if scheduling is enabled all together
   //
@@ -938,7 +938,7 @@ Remove_Redundant_Code (BB *bb)
   do {
     OP *next_op = OP_next(op);
     if ((CGTARG_Is_Preference_Copy(op) &&
-#ifdef TARG_ST100
+#ifdef TARG_ST
 	 // Arthur: we need to consider the COPYA,COPYD, etc. as
 	 //         target copies. It seems that IA64 does not
 	 //         consider int->fp moves as a copy ... why ?
@@ -1089,12 +1089,24 @@ Is_Reg_Available (ISA_REGISTER_CLASS regclass,
     } else {
       lr_def = LR_first_def(lr);
     }
+#ifdef TARG_ST
+    // Arthur: OP_uniq_res is handled differently now
+    //         Code here seemed to suppose always a single result OP ?
+    // TODO: I should really check out which def ...
+    if (ded_lr == NULL ||
+	lr_def > LR_exposed_use(ded_lr) ||
+	(lr_def == LR_exposed_use(ded_lr) && 
+         (op = OP_VECTOR_element (Insts_Vector, LR_first_def(lr))) &&
+	 (OP_results(op) > 0 && !TOP_is_uniq_res(OP_code(op),0))))
+    {
+#else
     if (ded_lr == NULL ||
 	lr_def > LR_exposed_use(ded_lr) ||
 	(lr_def == LR_exposed_use(ded_lr) && 
          (op = OP_VECTOR_element (Insts_Vector, LR_first_def(lr))) &&
 	  !OP_uniq_res(op)))
     {
+#endif
       return TRUE;
     }
   }
@@ -1612,8 +1624,12 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
         free_result_reg[resnum] = result_reg;
         free_result_cl [resnum] = result_cl;
       }
-
+#ifdef TARG_ST
+      // Arthur: try out this logic:
+      if (TOP_is_uniq_res(OP_code(op), resnum)) uniq_result = TRUE;
+#else
       if (OP_uniq_res(op)) uniq_result = TRUE;
+#endif
     }
   }
 
@@ -2393,7 +2409,7 @@ Analyze_Spilling_Live_Range (
   BOOL pending_store = FALSE;
   BOOL spill_store_deleted = FALSE;
   BOOL already_spilled = (TN_spill(spill_tn) == NULL) ? FALSE : TRUE;
-#ifdef TARG_ST100
+#ifdef TARG_ST
   BOOL reloadable = Is_LR_Reloadable(spill_lr);
 #else
   BOOL reloadable = (already_spilled || Is_LR_Reloadable(spill_lr)) ? TRUE : FALSE;
@@ -2442,7 +2458,7 @@ Analyze_Spilling_Live_Range (
   // the spills will just happen sooner and will free up more registers
   // than the estimates (freeing less is *bad*).
   //
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: get rid of target dependency
   if (REGISTER_CLASS_is_ptr(TN_register_class(spill_tn))
 #else
@@ -2509,7 +2525,21 @@ Analyze_Spilling_Live_Range (
       // by adding 1 to it (we really should use something from targ_info
       // for this).
       //
+#ifdef TARG_ST
+      // Arthur: as usual ...
+      BOOL OP_same_res = FALSE;
+      INT res;
+      for (res = 0; res < OP_results(op); res++) {
+	if (TOP_is_same_res(OP_code(op),res) >= 0) {
+	  OP_same_res = TRUE;
+	  break;
+	}
+      }
+
+      if (OP_same_res || OP_cond_def(op)) {
+#else
       if (OP_same_res(op) || OP_cond_def(op)) {
+#endif
 	cost += 1.0;
       }
 
@@ -2554,7 +2584,7 @@ Analyze_Spilling_Live_Range (
       }
       last_def = i;
       cur_benefit = 0;
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if (reloadable || 
 	  (already_spilled && Is_OP_Spill_Load (op, spill_loc)) && (i != first_def)) {
 #else
@@ -2777,7 +2807,7 @@ Spill_Live_Range (
   BOOL spill_store_deleted = FALSE;
   BOOL def_available = FALSE;
   BOOL already_spilled = (TN_spill(spill_tn) == NULL) ? FALSE : TRUE;
-#ifdef TARG_ST100
+#ifdef TARG_ST
   //
   // Arthur: there seems to be a problem here.
   //         I do not understand it, just trying to make it work ...
@@ -2822,7 +2852,7 @@ Spill_Live_Range (
     }
     else {
       /* kludge to fix bug 386428 */
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: since there is a possibility to generate not GP-realtive
       //         code
       if (TN_is_rematerializable (spill_tn) && BB_exit (bb) && GP_TN != NULL) {
@@ -2858,7 +2888,7 @@ Spill_Live_Range (
   // loading into for the offset).  need to reduce the minimum fat point
   // at which we'll force a pending store into memory.
   //
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: get rid of target dependency
   if (REGISTER_CLASS_is_ptr(TN_register_class(spill_tn))
 #else
@@ -2910,7 +2940,7 @@ Spill_Live_Range (
         (!is_local_tn && 
          OP_Refs_Reg (op, spill_cl, spill_reg)))
     {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: If the use of spill_tn is a store to the spill location, we 
       //         don't have to load from memory. Actually, we can get rid
       //         of the store as well, since the memory contents are already
@@ -2990,7 +3020,7 @@ Spill_Live_Range (
          been saved.  If this is the first definition of the TN in the
          Live Range, there will have been no previous save.  So let's
          skip the following logic unless this TN has already been spilled. */
-#ifdef TARG_ST100
+#ifdef TARG_ST
       //
       // Arthur: there seems to be a problem.
       //         The first def can be marked already spilled if it's a
@@ -3018,11 +3048,7 @@ Spill_Live_Range (
 	Clobber_Op_Info(i, spill_cl);
         Set_OP_VECTOR_element(Insts_Vector, i, NULL);
         if (Do_LRA_Trace(Trace_LRA_Spill)) {
-#if 0
-	  if (LR_reloadable(spill_lr)) {
-#else
 	  if (reloadable) {
-#endif
 	    fprintf (TFile, "LRA_SPILL>>    Removed reloadable load at %d\n",
 		     i);
 	  } else {
@@ -3046,7 +3072,25 @@ Spill_Live_Range (
       Set_TN_spill(new_tn, spill_loc);
       local_spills++;global_spills++;
 
+#ifdef TARG_ST
+      // Arthur: I will be finding out the right resnum at the same
+      //         time
+      BOOL OP_same_res = FALSE;
+      for (resnum = 0; resnum < OP_results(op); resnum++) {
+	if (TOP_is_same_res(OP_code(op),resnum) >= 0) {
+	  OP_same_res = TRUE;
+	  break;
+	}
+      }
+      
+      // if didn't find reset resnum (because it was like this before
+      if (OP_same_res == FALSE) {
+	resnum = 0;
+      }
+      else if (TN_Pair_In_OP(op, spill_tn, prev_tn)) {
+#else
       if (OP_same_res(op) && TN_Pair_In_OP(op, spill_tn, prev_tn)) {
+#endif
 	//
 	// must insert copy to free register here.  otherwise,
 	// the register will be tied up from the first definition
@@ -4200,7 +4244,7 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
     Alloc_Regs_For_BB (bb, Sched);
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   //
   // count callee save registers used
   //
@@ -4213,7 +4257,7 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
 
   // If we are not running GRA, we need to generate the instructions to
   // save and restore callee saved registers.
-#ifdef TARG_ST100
+#ifdef TARG_ST
   //
   // Arthur: if I am generating register save mask, no need to spill
   //
@@ -4366,7 +4410,7 @@ LRA_examine_last_op_needs (BB *bb, ISA_REGISTER_CLASS cl)
 
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: get rid of target dependency
   if ((min_regs == 0) && REGISTER_CLASS_is_ptr(cl)) {
 #else

@@ -188,7 +188,7 @@ BOOL Enable_Fill_Delay_Slots = TRUE;
 
 // TODO: set the default value here and ovewrite in target-specific
 //       initialization part.
-#if defined(TARG_IA64) || defined(TARG_ST100)
+#if defined(TARG_IA64) || defined(TARG_ST200)
 BOOL LOCS_Enable_Bundle_Formation = TRUE;
 #else
 BOOL LOCS_Enable_Bundle_Formation = FALSE;

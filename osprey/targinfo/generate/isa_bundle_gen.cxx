@@ -59,7 +59,7 @@
 #include "gen_util.h"
 #include "isa_bundle_gen.h"
 
-#define MAX_SLOTS 3	// max # of slots the generator can handle
+#define MAX_SLOTS 4	// max # of slots the generator can handle
 #define TAG_SHIFT 12    // max # of bits required to encode all the
                         // execution property types.
 
@@ -587,6 +587,7 @@ static const char * const pack_comp_type_name[] = {
   "SLOT0",
   "SLOT1",
   "SLOT2",
+  "SLOT3"
 };
 
 static const char * const pack_comp_name[] = {
@@ -596,6 +597,7 @@ static const char * const pack_comp_name[] = {
   "ISA_BUNDLE_PACK_COMP_slot+0",
   "ISA_BUNDLE_PACK_COMP_slot+1",
   "ISA_BUNDLE_PACK_COMP_slot+2",
+  "ISA_BUNDLE_PACK_COMP_slot+3",
 };
 
 typedef struct {

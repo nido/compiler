@@ -94,7 +94,9 @@
 void CGPREP_Copy_TN(TN *dest, TN *src, OP *point, UINT8 omega, BOOL before);
 void CGPREP_Copy_TN_Into_BB(TN *dest, TN *src, BB *bb, OP *point, UINT8 omega, BOOL before);
 
+#ifndef TARG_ST
 INT16 CGPREP_Same_Res_Opnd(OP *op);
+#endif
 
 void CGPREP_Init_Op(OP *op);
 

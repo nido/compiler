@@ -75,7 +75,5 @@ extern ISA_PROPERTY ISA_Property_Create( const char* name );
 extern void Instruction_Group( ISA_PROPERTY property, ... );
 extern void ISA_Properties_End(void);
 
-extern void ISA_Load_Group(char *name, ... );
-extern void ISA_Store_Group(char *name, ... );
 extern void ISA_Memory_Access (int bytes, ... );
 extern void ISA_Memory_Alignment (int bytes, ... );

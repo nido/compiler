@@ -92,10 +92,6 @@ static const char * const interface[] = {
   NULL
 };
 
-// Required properties
-static ISA_PROPERTY prop_load;
-static ISA_PROPERTY prop_store;
-
 static vector <short> mem_bytes;
 static vector <short> mem_align;
 
@@ -105,60 +101,10 @@ void ISA_Properties_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
-  // First, initialize compiler required properties.
-  // Load
-  prop_load = new isa_property;
-  prop_load->name = "load";
-  prop_load->members = vector <bool> (TOP_count, false);
-  properties.push_back(prop_load);
-
-  prop_store = new isa_property;
-  prop_store->name = "store";
-  prop_store->members = vector <bool> (TOP_count, false);
-  properties.push_back(prop_store);
-
   mem_bytes = vector <short> (TOP_count, 0);
   mem_align = vector <short> (TOP_count, 0);
 
   return;
-}
-
-/* ====================================================================
- *   ISA_Load_Group
- *
- *   arguments are list of TOP_codes.
- *   'name' is dummy.
- * ====================================================================
- */
-void ISA_Load_Group(char *name, ... ) {
-  va_list ap;
-  ISA_PROPERTY property = prop_load;
-  TOP opcode;
-
-  va_start(ap, name);
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-    property->members[(int)opcode] = true;
-  }
-  va_end(ap);
-}
-
-/* ====================================================================
- *   ISA_Store_Group
- *
- *   arguments are list of TOP_codes.
- *   'name' is dummy.
- * ====================================================================
- */
-void ISA_Store_Group(char *name, ... ) {
-  va_list ap;
-  ISA_PROPERTY property = prop_store;
-  TOP opcode;
-
-  va_start(ap, name);
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-    property->members[(int)opcode] = true;
-  }
-  va_end(ap);
 }
 
 /* ====================================================================
@@ -174,11 +120,11 @@ void ISA_Memory_Access (int bytes, ... ) {
 
   va_start(ap, bytes);
   while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-    if (!prop_load->members[(int)opcode] && 
-	!prop_store->members[(int)opcode]) {
-      fprintf(stderr, "### Error: memory access specified for not load/store opcode %s \n", TOP_Name(opcode));
-      exit(EXIT_FAILURE);
-    }
+    //    if (!prop_load->members[(int)opcode] && 
+    //	!prop_store->members[(int)opcode]) {
+    //      fprintf(stderr, "### Error: memory access specified for not load/store opcode %s \n", TOP_Name(opcode));
+    //      exit(EXIT_FAILURE);
+  //    }
     mem_bytes[(int)opcode] = bytes;
   }
   va_end(ap);
@@ -197,11 +143,11 @@ void ISA_Memory_Alignment(int bytes, ... ) {
 
   va_start(ap, bytes);
   while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-    if (!prop_load->members[(int)opcode] && 
-	!prop_store->members[(int)opcode]) {
-      fprintf(stderr, "### Error: alignment specified for not load/store opcode %s \n", TOP_Name(opcode));
-      exit(EXIT_FAILURE);
-    }
+//    if (!prop_load->members[(int)opcode] && 
+//	!prop_store->members[(int)opcode]) {
+//      fprintf(stderr, "### Error: alignment specified for not load/store opcode %s \n", TOP_Name(opcode));
+//      exit(EXIT_FAILURE);
+//    }
     mem_align[(int)opcode] = bytes;
   }
   va_end(ap);
@@ -239,11 +185,31 @@ void Instruction_Group( ISA_PROPERTY property, ... )
   va_end(ap);
 }
 
-/////////////////////////////////////
+
+
+static FILE* hfile;
+static FILE* cfile;
+static FILE* efile;
+
+/* ====================================================================
+ *   emit_top_define
+ * ====================================================================
+ */
+void emit_top_define (
+  const char *prop
+)
+{
+  fprintf (hfile, "#ifndef %s \n", prop);
+  fprintf (hfile, "#define %s(t) \t (FALSE) \n", prop);
+  fprintf (hfile, "#endif \n");
+  fprintf (hfile, "\n");
+}
+
+/* ====================================================================
+ *   ISA_Properties_End
+ * ====================================================================
+ */
 void ISA_Properties_End(void)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
 {
   list<ISA_PROPERTY>::iterator isi;
   int isa_property_count;	// How many non-constant properties?
@@ -253,11 +219,11 @@ void ISA_Properties_End(void)
 #define FNAME "targ_isa_properties"
   char filename[1000];
   sprintf (filename, "%s.h", FNAME);
-  FILE* hfile = fopen(filename, "w");
+  hfile = fopen(filename, "w");
   sprintf (filename, "%s.c", FNAME);
-  FILE* cfile = fopen(filename, "w");
+  cfile = fopen(filename, "w");
   sprintf (filename, "%s.Exported", FNAME);
-  FILE* efile = fopen(filename, "w");
+  efile = fopen(filename, "w");
 
   fprintf(cfile,"#include \"%s.h\"\n\n", FNAME);
 
@@ -353,6 +319,62 @@ void ISA_Properties_End(void)
     }
   }
 
+  // Emit the rest of properties that are required by the compiler
+  // but have not been specified:
+  //    fprintf (hfile, "/* pseudo NOP */ \n");
+  //    fprintf (hfile, "#define TOP_is_noop(t) \t (t == TOP_noop) \n");
+  //    fprintf (hfile, "\n");
+
+    emit_top_define ("TOP_is_noop");
+    emit_top_define ("TOP_is_predicated");
+    emit_top_define ("TOP_is_likely");
+    emit_top_define ("TOP_is_branch_predict");
+    emit_top_define ("TOP_is_side_effects");
+
+    emit_top_define ("TOP_is_defs_fcr");
+    emit_top_define ("TOP_is_defs_fcc");
+    emit_top_define ("TOP_is_refs_fcr");
+
+    fprintf (hfile, "/* Memory instructions which are fill/spill type */\n");
+    emit_top_define ("TOP_is_mem_fill_type");
+    emit_top_define ("TOP_is_load");
+    emit_top_define ("TOP_is_store");
+    emit_top_define ("TOP_is_unalign_ld");
+    emit_top_define ("TOP_is_unalign_store");
+
+    emit_top_define ("TOP_is_jump");
+    emit_top_define ("TOP_is_ijump");
+    emit_top_define ("TOP_is_branch");
+    emit_top_define ("TOP_is_call");
+    emit_top_define ("TOP_is_select");
+
+    emit_top_define ("TOP_is_isub");
+    emit_top_define ("TOP_is_ior");
+    emit_top_define ("TOP_is_flop");
+    emit_top_define ("TOP_is_fadd");
+    emit_top_define ("TOP_is_fsub");
+    emit_top_define ("TOP_is_fmul");
+    emit_top_define ("TOP_is_fdiv");
+    emit_top_define ("TOP_is_imul");
+    emit_top_define ("TOP_is_idiv");
+    emit_top_define ("TOP_is_icmp");
+    emit_top_define ("TOP_is_madd");
+    emit_top_define ("TOP_is_itrap");
+    emit_top_define ("TOP_is_ftrap");
+    emit_top_define ("TOP_is_memtrap");
+
+    fprintf (hfile, "/* Instruction must be first in an instruction group */ \n");    
+    emit_top_define ("TOP_is_f_group");
+
+    fprintf (hfile, "/* Instruction must be last in an instruction group */ \n");
+    emit_top_define ("TOP_is_l_group");
+
+    fprintf (hfile, "/* Instruction accesses rotating register bank */ \n");
+    emit_top_define ("TOP_is_access_reg_bank");
+    emit_top_define ("TOP_is_unsafe");
+    emit_top_define ("TOP_save_predicates");
+    emit_top_define ("TOP_restore_predicates");
+
   // Emit the memory access functions:
   fprintf (hfile, "\n\n");
   fprintf (hfile, "extern const UINT32 TOP_Mem_Bytes (TOP opcode);");
@@ -370,6 +392,9 @@ void ISA_Properties_End(void)
   for (i = 1; i <= 16; i++) {
     bool opcode_exist = false;
     for (code = 0; code < TOP_count; code++) {
+
+      //      fprintf(stderr," TOP_%s ... \n",TOP_Name((TOP)code));
+
       if (mem_bytes[code] == i) {
 	opcode_exist = true;
 	fprintf (cfile, "    case TOP_%s:\n", TOP_Name((TOP)code));
@@ -410,4 +435,8 @@ void ISA_Properties_End(void)
   fprintf (cfile, "\n");
 
   Emit_Footer (hfile);
+
+  fclose(hfile);
+  fclose(cfile);
+  fclose(efile);
 }

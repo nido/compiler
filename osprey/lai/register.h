@@ -508,6 +508,71 @@
  *
  *	    Prints information about all classes to the trace file.
  *
+ *      BOOL Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass)
+ *          Returns TRUE if the rclass is the predicate register class
+ *
+ *  Special purpose registers:
+ *
+ *	CLASS_REG_PAIR     CLASS_REG_PAIR_xxx;
+ *      REGISTER           REGISTER_xxx
+ *	ISA_REGISTER_CLASS REGISTER_CLASS_xxx
+ *	mINT16             CLASS_AND_REG_xxx
+ *
+ *	    Registers which have a special purpose in the ABI or hardware.
+ *	    'xxx' is one of the following:
+ *
+ *		zero - the read zero / write sink register
+ *		ep   - entry point
+ *		gp   - global pointer
+ *		sp   - stack pointer
+ *		fp   - frame pointer
+ *		ra   - return address
+ *		v0   - integer function return value
+ *		undef- undefined class and undefined register
+ *
+ *	ISA_REGISTER_CLASS Register_Class_For_Mtype(
+ *	    TYPE_ID mtype
+ *	)
+ *
+ *	    Given an MTYPE, return the corresponding register class
+ *	    used to hold values of that type. Return 
+ *	    ISA_REGISTER_CLASS_UNDEFINED if there is no correspondence.
+ *
+ *
+ *      REGISTER_SET REGISTER_CLASS_callee_saves(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_caller_saves(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_function_argument(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_function_value(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_shrink_wrap(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_stacked(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *      REGISTER_SET REGISTER_CLASS_rotating(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+ *
+ *          Returns the REGISTER_SET within the given 'rclass' of a
+ *          particular type.
+ *
+ *  CLASS_REG_PAIR utilities
+ *	
+ *	BOOL CLASS_REG_PAIR_EqualP(
+ *	    CLASS_REG_PAIR crp1,
+ *	    CLASS_REG_PAIR crp2
+ *	)
+ *
+ *	    Determine if the two registers are equal
+ *
  * ====================================================================
  * ====================================================================
  */
@@ -520,12 +585,12 @@ static const char register_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "mtypes.h"
-
 #include "targ_abi_properties.h"
 
 struct st;
 struct op;
 struct tn;
+union class_reg_pair;
 
 /* Types
  * =====
@@ -533,10 +598,15 @@ struct tn;
 
 typedef UINT   REGISTER;
 typedef mUINT8 mREGISTER;
+typedef union class_reg_pair CLASS_REG_PAIR;
+
+/* Target-specific register info */
+#include "targ_register.h"
 
 /* define 16-bit structure to hold both the class and register number,
    and a union with an mUINT16 so that we can efficiently compare
    register class-number pairs */
+#if 0
 typedef union class_reg_pair {
   mUINT16	class_n_reg;
   struct class_reg_struct {
@@ -544,6 +614,15 @@ typedef union class_reg_pair {
     mISA_REGISTER_CLASS rclass;
     } class_reg;
 } CLASS_REG_PAIR;
+#else
+union class_reg_pair {
+  mUINT16	class_n_reg;
+  struct class_reg_struct {
+    mREGISTER 	        reg;
+    mISA_REGISTER_CLASS rclass;
+    } class_reg;
+};
+#endif
 
 /* Define the access macros
  */
@@ -653,7 +732,7 @@ typedef struct {
   mBOOL             reg_allocatable[REGISTER_MAX + 1];
   const char       *reg_name[REGISTER_MAX + 1];
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   mBOOL             is_ptr;
 #endif
   mBOOL             can_store;
@@ -711,7 +790,7 @@ REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
                                 (REGISTER_CLASS_info[x].function_argument)
 #define REGISTER_CLASS_shrink_wrap(x)				\
                                 (REGISTER_CLASS_info[x].shrink_wrap)
-#ifdef TARG_ST100
+#ifdef TARG_ST
 #define REGISTER_CLASS_is_ptr(x)				\
                                 (REGISTER_CLASS_info[x].is_ptr)
 #endif
@@ -1170,31 +1249,20 @@ extern void Mark_Specified_Registers_As_Not_Allocatable (void);
  * ==================================================================== 
  */
 
+extern char *ISA_REGISTER_CLASS_symbol[];
+#define ISA_REGISTER_CLASS_Symbol(rc) (ISA_REGISTER_CLASS_symbol[rc])
+
 // target-specific register class initializations
 extern void CGTARG_Initialize_Register_Class(ISA_REGISTER_CLASS rclass);
 
 // given regname (from asm), return its register class
 extern ISA_REGISTER_CLASS CGTARG_Regname_Register_Class(char *regname); 
 
-// Assembly name for this register class.
-#define ISA_REGISTER_CLASS_ASM_Name _ISA_REGISTER_CLASS_ASM_Name 
-
-// Returns TRUE if the rclass is the predicate register class.
-#define Is_Predicate_REGISTER_CLASS _Is_Predicate_REGISTER_CLASS
-
-// Returns TRUE if stacked register set exists for <rclass>.
-#define REGISTER_Has_Stacked_Registers _REGISTER_Has_Stacked_Registers
-
-// Returns TRUE if rotating register set exists for <rclass>.
-#define REGISTER_Has_Rotating_Registers _REGISTER_Has_Rotating_Registers
-
 // Return true if the supplied register is a rotating register
 // in the register stack for the given register class.
-#define REGISTER_Is_Rotating _REGISTER_Is_Rotating
+extern BOOL REGISTER_Is_Rotating(ISA_REGISTER_CLASS rclass, REGISTER reg);
 
-// Returns the set of allocated rotating registers.
-#define REGISTER_Get_Requested_Rotating_Registers _REGISTER_Get_Requested_Rotating_Registers
-
-#include "targ_register.h"
+// Returns the set of allocated rotating registers
+extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLASS rclass);
 
 #endif /* REGISTER_INCLUDED */

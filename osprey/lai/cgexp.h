@@ -145,7 +145,7 @@ extern TN * Exp_Intrinsic_Call (
   LABEL_IDX *label, OPS *loop_ops);
 
 /* expand intrinsic op */
-#ifdef TARG_ST100
+#ifdef TARG_ST
 /* Arthur: this is because I may have to generate them for Lai */
 extern void Exp_Intrinsic_Op (INTRINSIC id, INT num_results, INT num_opnds, TN **result, TN **opnd, OPS *ops);
 #else

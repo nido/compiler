@@ -1604,7 +1604,12 @@ Make_Fine_Grained_Interferences( GRA_BB* gbb )
 
     for ( i = OP_results(op) - 1; i >= 0; --i ) {
       if ( TN_Is_Allocatable(OP_result(op,i)) )
+#ifdef TARG_ST
+	// Arthur: will this work ??
+	if (TOP_is_uniq_res(OP_code(op),i)) {
+#else
 	if (OP_uniq_res(op)) {
+#endif
 	  remove_after = TRUE;
 	} else {
 	  Remove_From_Live_Set(live_lrange_sets,region,

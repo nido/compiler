@@ -103,7 +103,9 @@
 #include "cgtarget.h"
 /* #include "ebo.h" */  /* Too target-dependent ?? */
 #include "hb.h"
+#ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
+#endif
 #include "tag.h"
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
@@ -351,9 +353,9 @@ CG_Generate_Code(
 {
   // Some target specific check-ups:
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   if (region) {
-    FmtAssert(FALSE,("CG_Generate_Code: region code generator for the ST100"));
+    FmtAssert(FALSE,("CG_Generate_Code: region code generator for an ST target"));
   }
 #endif
 
@@ -403,7 +405,7 @@ CG_Generate_Code(
 
   // Arthur: I do not need to do it, if I am just spitting the lai
   if (!Lai_Code) {
-#ifndef TARG_ST100
+#ifndef TARG_ST
     // split large bb's to minimize compile speed and register pressure
     Split_BBs();
 #endif
@@ -435,7 +437,7 @@ CG_Generate_Code(
 
   EH_Prune_Range_List();
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   Optimize_Tail_Calls( Get_Current_PU_ST() );
 #endif
 
@@ -444,7 +446,7 @@ CG_Generate_Code(
   Stop_Timer ( T_Expand_CU );
   Check_for_Dump ( TP_CGEXP, NULL );
 
-#if 1
+#if 0
   fprintf(TFile, "%s CFG After Generate_Entry_Exit_Code\n%s\n", DBar, DBar);
   Print_All_BBs ();
 #endif
@@ -471,7 +473,7 @@ CG_Generate_Code(
 #endif
 
   if (!Lai_Code) {
-#ifndef TARG_ST100
+#ifndef TARG_ST
     if (Enable_CG_Peephole) {
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
@@ -481,7 +483,7 @@ CG_Generate_Code(
     }
 #endif
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
     // Optimize control flow (first pass)
     if (CG_opt_level > 0 && CFLOW_opt_before_cgprep) {
       // Perform all the optimizations that make things more simple.
@@ -510,7 +512,7 @@ CG_Generate_Code(
 	  FREQ_Verify("Heuristic Frequency Computation");
       }
 
-#ifndef TARG_ST100
+#ifdef IA64
       // Perform hyperblock formation (if-conversion).  Only works for
       // IA-64 at the moment. 
       //
@@ -544,7 +546,7 @@ CG_Generate_Code(
       Print_All_BBs ();
 #endif
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
       /* Optimize control flow (second pass) */
       if (CFLOW_opt_after_cgprep) {
 	CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (second pass)");
@@ -553,7 +555,7 @@ CG_Generate_Code(
       }
 #endif
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
       if (Enable_CG_Peephole) {
 	Set_Error_Phase( "Extended Block Optimizer");
 	Start_Timer( T_EBO_CU );
@@ -569,7 +571,7 @@ CG_Generate_Code(
     if (!Get_Trace (TP_CGEXP, 1024))
       Reuse_Temp_TNs = TRUE;	/* for spills */
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
     if (CGSPILL_Enable_Force_Rematerialization)
       CGSPILL_Force_Rematerialization();
 #endif
@@ -577,7 +579,7 @@ CG_Generate_Code(
     if (!region) {
       /* in case cgprep introduced a gp reference */
       Adjust_GP_Setup_Code( Get_Current_PU_ST(), FALSE /* allocate registers */ );
-#ifndef TARG_ST100
+#ifndef TARG_ST
       /* in case cgprep introduced a lc reference */
       Adjust_LC_Setup_Code();
 
@@ -625,14 +627,14 @@ CG_Generate_Code(
 	}
 
 	GRA_Allocate_Global_Registers( region );
-#if 1
+#if 0
 	fprintf(TFile, "%s CFG After GRA_Allocate_Global_Registers\n%s\n", DBar, DBar);
 	Print_All_BBs ();
 #endif
       }
 
     LRA_Allocate_Registers (!region);
-#if 1
+#if 0
     fprintf(TFile, "%s CFG After LRA_Allocate_Registers\n%s\n", DBar, DBar);
     Print_All_BBs ();
 #endif
@@ -654,7 +656,7 @@ CG_Generate_Code(
      * Then we can go through all the entry/exit blocks and fix the SP 
      * adjustment OP or delete it if the frame length is zero.
      */
-#ifdef TARG_ST100
+#ifdef TARG_ST
     // Arthur: on targets thatpush/pop register save mask, the
     //         upformal area must be offset by the size of the
     //         save area needed for that mask.
@@ -672,7 +674,7 @@ CG_Generate_Code(
   }
 
   if (!Lai_Code) {
-#ifndef TARG_ST100
+#ifndef TARG_ST
     if (Enable_CG_Peephole) {
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
@@ -682,7 +684,17 @@ CG_Generate_Code(
     }
 #endif
 
+#if 1
+    fprintf(TFile, "%s CFG Before IGLS_Schedule_Region\n%s\n", DBar, DBar);
+    Print_All_BBs ();
+#endif
+
     IGLS_Schedule_Region (FALSE /* after register allocation */);
+
+#if 1
+    fprintf(TFile, "%s CFG After IGLS_Schedule_Region\n%s\n", DBar, DBar);
+    Print_All_BBs ();
+#endif
 
     Reuse_Temp_TNs = orig_reuse_temp_tns;		/* restore */
 
@@ -745,8 +757,9 @@ CG_Generate_Code(
     WN_INSERT_BlockLast( rwn_new, result_block_after );
 
     GRA_LIVE_Finish_REGION();
+#ifdef SUPPORTS_PREDICATION
     PQSCG_term();
-
+#endif
     Stop_Timer ( T_CodeGen_CU );
     Set_Error_Phase ( "Codegen Driver" );
 
@@ -780,8 +793,9 @@ CG_Generate_Code(
     Stop_Timer(T_Region_Finalize_CU);
 
     GRA_LIVE_Finish_PU();
+#ifdef SUPPORTS_PREDICATION
     PQSCG_term();
-
+#endif
     /* List local symbols if desired: */
     if ( List_Symbols )
 	Print_symtab (Lst_File, CURRENT_SYMTAB);

@@ -96,6 +96,7 @@ REGISTER_SUBCLASS_INFO REGISTER_SUBCLASS_info[ISA_REGISTER_SUBCLASS_MAX + 1];
 ISA_REGISTER_CLASS  REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX + 1];
 REGISTER_CLASS_INFO REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
 
+#if 0
 CLASS_REG_PAIR      CLASS_REG_PAIR_zero;
 CLASS_REG_PAIR      CLASS_REG_PAIR_ep;
 CLASS_REG_PAIR      CLASS_REG_PAIR_gp;
@@ -111,9 +112,26 @@ CLASS_REG_PAIR      CLASS_REG_PAIR_true;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fzero;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fone;
 CLASS_REG_PAIR      CLASS_REG_PAIR_link;
+#endif
 
 const CLASS_REG_PAIR CLASS_REG_PAIR_undef =
   {CREATE_CLASS_N_REG(ISA_REGISTER_CLASS_UNDEFINED,REGISTER_UNDEFINED)};
+
+CLASS_REG_PAIR      CLASS_REG_PAIR_zero = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_ep = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_gp = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_sp = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_fp = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_ra = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_v0 = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_static_link = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_pfs = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_lc = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_ec = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_true = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_fzero = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_fone = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_link = CLASS_REG_PAIR_undef;
 
 #if ISA_REGISTER_MAX >= 64
 const REGISTER_SET REGISTER_SET_EMPTY_SET = { 0 };
@@ -371,7 +389,7 @@ Initialize_Register_Class(
     if (is_allocatable) {
       allocatable = REGISTER_SET_Union1(allocatable, reg);
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if (Gen_GP_Relative && ABI_PROPERTY_Is_global_ptr(rclass, isa_reg)) {
 	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
 	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
@@ -432,7 +450,7 @@ Initialize_Register_Class(
       Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_static_link, rclass);
     }
     else if ( ABI_PROPERTY_Is_global_ptr(rclass, isa_reg) ) {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if (Gen_GP_Relative) {
 	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
 	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
@@ -462,7 +480,6 @@ Initialize_Register_Class(
       Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_pfs, reg);
       Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_pfs, rclass);
     }
-#ifdef TARG_ST100
     //
     // Arthur: More to possible ABI:
     //
@@ -470,7 +487,6 @@ Initialize_Register_Class(
       Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_link, reg);
       Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_link, rclass);
     }
-#endif
     else if ( ABI_PROPERTY_Is_loop_count(rclass, isa_reg) ) {
       Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_lc, reg);
       Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_lc, rclass);
@@ -504,7 +520,7 @@ Initialize_Register_Class(
   REGISTER_CLASS_register_count(rclass)    = register_count;
   REGISTER_CLASS_stacked(rclass)           = stacked;
   REGISTER_CLASS_rotating(rclass)          = rotating;
-#ifdef TARG_ST100
+#ifdef TARG_ST
     REGISTER_CLASS_is_ptr(rclass)
 	= ISA_REGISTER_CLASS_INFO_Is_Ptr(icinfo);
 #endif
@@ -513,7 +529,7 @@ Initialize_Register_Class(
   REGISTER_CLASS_multiple_save(rclass)
 	= ISA_REGISTER_CLASS_INFO_Multiple_Save(icinfo);
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   CGTARG_Initialize_Register_Class (rclass);
 #else
   /* There are multiple integer return regs -- v0 is the lowest

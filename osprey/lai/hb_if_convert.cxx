@@ -61,6 +61,8 @@
 #include "hb_trace.h"
 #include "hb_id_candidates.h" // For use in Force_If_Convert
 
+#ifdef SUPPORTS_PREDICATION
+
 /////////////////////////////////////
 static void 
 dump_control_dependencies(char * title, HB* hb, BB_MAP control_dependences,
@@ -1818,3 +1820,5 @@ Force_If_Convert(LOOP_DESCR *loop, BOOL allow_multi_bb)
   MEM_POOL_Pop(&MEM_local_pool);
   return single_bb;
 }
+
+#endif /* SUPPORTS_PREDICATION */

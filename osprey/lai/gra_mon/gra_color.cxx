@@ -983,7 +983,7 @@ GRA_Color(void)
 
   GRA_Color_Complement(gra_region_mgr.Complement_Region());
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   //
   // count used callee saved registers
   //

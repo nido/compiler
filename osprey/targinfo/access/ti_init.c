@@ -71,15 +71,12 @@ TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *t
     INT                targ_name_len = strlen(targ_name);
     char              *targ_so_name  = alloca(targ_name_len + sizeof(".so"));
 
-/* While the target ST100 description is not complete */
-#ifndef TARG_ST100
     for (i = 0; i < targ_name_len; i++) {
       targ_so_name[i] = tolower(targ_name[i]);
     }
     strcpy(targ_so_name + targ_name_len, ".so");
 
     load_so(targ_so_name, tpath, FALSE /*verbose*/);
-#endif
 
     ISA_SUBSET_Value = tisa;
     PROCESSOR_Value = tproc;

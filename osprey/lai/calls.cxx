@@ -96,7 +96,7 @@ INT64 Frame_Len;
 SAVE_REG *Callee_Saved_Regs;
 INT32 Callee_Saved_Regs_Count;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
 /* 
  * regs that need to be saved at prolog and restored at epilog.
  */
@@ -201,7 +201,7 @@ Setup_GP_TN_For_PU (
   else if (Force_GP_Prolog) {
     GP_Setup_Code = need_code;
   }
-#ifdef TARG_ST100
+#ifdef TARG_ST
   else if (Gen_GP_Relative && !Is_Caller_Save_GP &&
 #else
   else if (!Is_Caller_Save_GP &&
@@ -354,7 +354,7 @@ Init_Callee_Saved_Regs_for_REGION (
 
   Callee_Saved_Regs_Count = i;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // Arthur: initialize callee saved regs mask also
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
     Callee_Saved_Regs_Mask[cl] = REGISTER_SET_EMPTY_SET;
@@ -449,7 +449,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     ENTRYINFO_sp_adj(ent_info) = OPS_last(&ops);
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   if (gra_run && !CG_gen_callee_saved_regs_mask) {
 #else
   if (gra_run) {
@@ -492,7 +492,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
       CGSPILL_Store_To_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb);
     }
     else {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if (gra_run && PU_Has_Calls) {
 	if (CG_gen_callee_saved_regs_mask) {
 	  // 
@@ -544,7 +544,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     }
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   if ( gra_run && !CG_gen_callee_saved_regs_mask) 
 #else
   if ( gra_run ) 
@@ -601,7 +601,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
       Exp_ADD (Pointer_Mtype, GP_TN, Ep_TN, got_disp_tn, &ops);
     }
   } 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   else if (Gen_GP_Relative && 
 	   Is_Caller_Save_GP && 
 	   PU_Has_Calls && 
@@ -984,9 +984,21 @@ Target_Unique_Exit (
 
     /* A select or unaligned load may have a use of func value TN.
      */
-    if ( OP_same_res(op) ) {
-      INT i;
+#ifdef TARG_ST
+    // Arthur: the same_res info is part of OPERAND_INFO now:
+    BOOL OP_same_res = FALSE;
+    for (i = 0; i < OP_results(op); i++) {
+      if (TOP_is_same_res(OP_code(op), i) >= 0) {
+	OP_same_res = TRUE;
+	break;
+      }
+    }
 
+    if (OP_same_res) {
+#else
+    if ( OP_same_res(op) ) {
+#endif
+      INT i;
       for ( i = 0; i < OP_opnds(op); ++i ) {
 	TN *tn = OP_opnd(op,i);
 	if ( Is_Function_Value(tn) ) {
@@ -1172,7 +1184,7 @@ Generate_Exit (
     }
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   if ( gra_run && !CG_gen_callee_saved_regs_mask)
 #else
   if ( gra_run )
@@ -1198,7 +1210,7 @@ Generate_Exit (
       Exp_COPY (RA_TN, ra_sv_tn, &ops);
     }
     else {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if (gra_run && PU_Has_Calls) {
 	if (!CG_gen_callee_saved_regs_mask) {
 	  // Because the routine has calls, gra will need to spill it ...
@@ -1239,7 +1251,7 @@ Generate_Exit (
     }
   }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   if (gra_run && !CG_gen_callee_saved_regs_mask) {
 #else
   if ( gra_run ) {
@@ -1646,6 +1658,8 @@ Adjust_Entry (
    *   SP-adjust: TOP_spadjust $sp, $sp, -Frame_Len_TN
    *   FP-adjust: TOP_spadjust $fp, $sp, Frame_Len_TN
    */
+#ifdef SUPPORTS_PREDICATION
+  // Arthur: the assumptions are different when there is no predication
   FmtAssert(   OP_code(sp_adj) == TOP_spadjust
 	    && OP_results(sp_adj) == 1
 	    && TN_is_sp_reg(OP_result(sp_adj,0))
@@ -1654,7 +1668,17 @@ Adjust_Entry (
 	    && (!OP_has_predicate(sp_adj) 
 		|| OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
 	    ("Unexpected form of entry SP-adjust OP"));
+#else
+  FmtAssert(   OP_code(sp_adj) == TOP_spadjust
+	    && OP_results(sp_adj) == 1
+	    && TN_is_sp_reg(OP_result(sp_adj,0))
+	    && TN_is_sp_reg(OP_opnd(sp_adj, 0))
+	    && sp_incr == Neg_Frame_Len_TN,
+	    ("Unexpected form of entry SP-adjust OP"));
+#endif
   if (fp_adj != sp_adj) {
+#ifdef SUPPORTS_PREDICATION
+  // Arthur: the assumptions are different when there is no predication
     FmtAssert(   OP_code(fp_adj) == TOP_spadjust 
 	      && OP_results(fp_adj) == 1
 	      /* && OP_result(fp_adj,0) == FP_TN */
@@ -1666,6 +1690,17 @@ Adjust_Entry (
 	      && ( ! OP_has_predicate(fp_adj) 
 		  || OP_opnd(fp_adj, OP_PREDICATE_OPND) == True_TN), 
 	      ("Unexpected form of entry FP-adjust OP"));
+#else
+    FmtAssert(   OP_code(fp_adj) == TOP_spadjust 
+	      && OP_results(fp_adj) == 1
+	      /* && OP_result(fp_adj,0) == FP_TN */
+	      && TN_is_dedicated_class_and_reg (OP_result(fp_adj,0), 
+					TN_register_and_class(FP_TN))
+	      && TN_is_sp_reg(OP_opnd(fp_adj, 0))
+	      && fp_incr != NULL 
+	      && fp_incr == Frame_Len_TN,
+	      ("Unexpected form of entry FP-adjust OP"));
+#endif
   }
 
   /* Perform any adjustments. We will either remove, change, or
@@ -1811,7 +1846,12 @@ Adjust_Exit (
   /* Get the operand that is the frame size increment.
    */
   if (!Gen_Frame_Pointer || PUSH_FRAME_POINTER_ON_STACK) {
+#ifdef SUPPORTS_PREDICATION
+    // Arthur: opnd is 1 when no predication
     incr = OP_opnd(sp_adj, 2);
+#else
+    incr = OP_opnd(sp_adj, 1);
+#endif
   }
 
   /* We make assumptions about what we generated in Generate_Exit.
@@ -1825,6 +1865,8 @@ Adjust_Exit (
 	      TN_is_sp_reg(OP_result(sp_adj,0)),
 	      ("Unexpected exit SP adjust OP"));
   } else {
+#ifdef SUPPORTS_PREDICATION
+    // Arthur: opnd idx is different without predication
     FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
 	      && OP_results(sp_adj) == 1
 	      && TN_is_sp_reg(OP_result(sp_adj,0))
@@ -1833,6 +1875,14 @@ Adjust_Exit (
 	      && ( ! OP_has_predicate(sp_adj) 
 		  || OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
 	      ("Unexpected form of exit SP-adjust OP"));
+#else
+    FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
+	      && OP_results(sp_adj) == 1
+	      && TN_is_sp_reg(OP_result(sp_adj,0))
+	      && TN_is_sp_reg(OP_opnd(sp_adj, 0))
+	      && incr == Frame_Len_TN,
+	      ("Unexpected form of exit SP-adjust OP"));
+#endif
   }
 
   /* Perform any adjustments. We will either remove the adjustment
@@ -1901,7 +1951,7 @@ Adjust_Exit (
    */
   EXITINFO_sp_adj(exit_info) = sp_adj;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
   // possible do target-dependent fixups
   EETARG_Fixup_Exit_Code (bb);
 #endif
@@ -1977,7 +2027,7 @@ Adjust_Entry_Exit_Code (
 {
   BB_LIST *elist;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
 
   if (Trace_EE) {
     INT callee_num;

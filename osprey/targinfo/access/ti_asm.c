@@ -57,8 +57,8 @@ static const char rcs_id[] = "$Source$ $Revision$";
 #include "ti_errors.h"
 #include "ti_asm.h"
 
-/* While the ST100 description is not complete */
-#ifndef TARG_ST100
+/* While the ST description is not complete */
+#ifndef TARG_ST
 /* ====================================================================
  *
  *  TI_ASM_Pack_Inst
@@ -218,7 +218,7 @@ INT TI_ASM_Print_Inst(
   else return st;
 }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
 
 /* ====================================================================
  *
@@ -687,4 +687,4 @@ TOP TI_ASM_Unpack_Inst(
 
   return topcode;
 }
-#endif /* ifndef TARG_ST100 */
+#endif /* ifndef TARG_ST */

@@ -84,7 +84,9 @@
 #include "whirl2ops.h"
 #include "reg_live.h"
 #include "cg_loop.h"
+#ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
+#endif
 
 static BB_LIST *region_entry_list;
 static BB_SET  *region_exit_set;
@@ -1847,10 +1849,11 @@ GRA_LIVE_Init( RID *rid )	/* RID is forced to be NULL for PU */
   } 
   else if (!force_live_gtns) Compute_Force_TNs();
 
+#ifdef SUPPORTS_PREDICATION
   if (GRA_LIVE_Predicate_Aware) {
     PQSCG_reinit(REGION_First_BB);
   }
-
+#endif
   for ( bb = REGION_First_BB; bb != NULL; bb = BB_next(bb) ) {
     GRA_LIVE_Compute_Local_Info(bb);
   }
@@ -1958,7 +1961,7 @@ void GRA_LIVE_Fini_Loop()
   epilog_bp = (CG_LOOP_BACKPATCH*)NULL;
 }
 
-
+#ifdef SUPPORTS_PREDICATION
 // Utility to get (and allocate if necessary) the TN maps for def sets and use sets
 
 static PQS_TN_SET * get_usedef_set(TN_MAP map, TN *tn) {
@@ -1970,7 +1973,7 @@ static PQS_TN_SET * get_usedef_set(TN_MAP map, TN *tn) {
   }
   return def_set;
 }
-
+#endif
 
 
 /* =======================================================================
@@ -1993,8 +1996,10 @@ GRA_LIVE_Compute_Local_Info(
   TN_LIST *tns_in, *tnl;
   TN *tn;
   TN *pred_tn;
+#ifdef SUPPORTS_PREDICATION
   PQS_TN_SET *def_set;
   PQS_TN_SET *use_set;
+#endif
   TN_MAP def_map;
   TN_MAP use_map;
   BOOL sub_from_use;
@@ -2012,6 +2017,7 @@ GRA_LIVE_Compute_Local_Info(
     }
   }
 
+#ifdef SUPPORTS_PREDICATION
   /* process all ops in reverse order */
   if (GRA_LIVE_Predicate_Aware && PQSCG_pqs_valid()) {
     MEM_POOL_Push(&PQS_mem_pool);
@@ -2093,7 +2099,10 @@ GRA_LIVE_Compute_Local_Info(
     TN_MAP_Delete(def_map);
     TN_MAP_Delete(use_map);
     MEM_POOL_Pop(&PQS_mem_pool);
-    
+#else
+  // Arthur: need an if here:
+  if (0) {
+#endif /* supports predication */
   } else {
     // Non-predicate aware form
     for ( op = BB_last_op(bb); op != NULL; op = OP_prev(op) ) {
@@ -2289,8 +2298,14 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
     for (INT i = 0; i < OP_results(op); i++) {
       TN *tn = OP_result(op, i);
       // Don't rename under the following conditions.
+#ifdef TARG_ST
+      // Arthur: we're switching to a more generic TDT interface
+      if (TN_is_dedicated(tn) || OP_cond_def(op) || 
+	  (TOP_is_same_res(OP_code(op),i) >= 0)) 
+	continue;
+#else
       if (TN_is_dedicated(tn) || OP_cond_def(op) || OP_same_res(op)) continue;
-
+#endif
       OP *last_def = (OP *) TN_MAP_Get (op_for_tn, tn);
       if (last_def != NULL) {
         // rename tn to new_tn between last_def and op.

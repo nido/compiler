@@ -43,45 +43,8 @@
  * ====================================================================
  */
 
-#ifndef calls_targ_INCLUDED
-#define calls_targ_INCLUDED
+#ifndef targ_calls_INCLUDED
+#define targ_calls_INCLUDED
 
-extern TN *CGTARG_Gen_Got_Disp_TN (void);
-extern TN *CGTARG_Gen_FP_TN (void);
-extern TN *CGTARG_Gen_GP_TN (void);
-extern TN *CGTARG_Gen_Pfs_TN (void);
 
-extern TN *CGTARG_Get_SP_Incr (OP *sp_adj);
-extern TN *CGTARG_Get_FP_Incr (OP *fp_adj);
-
-/* ====================================================================
- *   Is_Function_Value
- *
- *   Return a boolean that indicates if <tn> is a function value TN.
- * ====================================================================
- */
-inline BOOL
-Is_Function_Value(TN *tn)
-{
-  if (TN_is_dedicated(tn)) {
-    REGISTER reg = TN_register(tn);
-    ISA_REGISTER_CLASS rc = TN_register_class(tn);
-    return REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rc), reg);
-  }
-  return FALSE;
-}
-
-/* ====================================================================
- *   Is_Callee_Register
- *
- *   Return a boolean that indicates if <tn> is a callee register.
- * ====================================================================
- */
-inline BOOL
-Is_Callee_Register(TN *tn)
-{
-  return (ABI_PROPERTY_Is_callee (TN_register_class(tn),
-       REGISTER_machine_id(TN_register_class(tn), TN_register(tn))));
-}
-
-#endif /* calls_targ_INCLUDED */
+#endif /* targ_calls_INCLUDED */

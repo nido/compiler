@@ -213,6 +213,9 @@ struct TN_LIST;
 
 #include "targ_isa_enums.h"
 
+/* Target-specific TN info */
+#include "targ_tn.h"
+
 class WN;
 
 /* Define the TN number type: */
@@ -386,13 +389,6 @@ extern TN_NUM First_REGION_TN;	/* The first non-dedicated TN in the current REGI
 extern TN **TN_Vec;		/* Mapping from number to TN */
 #define TNvec(i) TN_Vec[i]
 
-#ifdef TARG_ST100
-/* Made the ded_tns[][] a global table because used in the target
- * specific part of the compiler
- */
-extern TN *Ded_TNs[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
-#endif
-
 // The following are special-purpose TNs required in the compiler for
 // specific purposes.  
 // NOTE: Don't use these TNs directly in comparisons with other TNs.
@@ -435,11 +431,38 @@ extern TN* Gen_Register_TN (ISA_REGISTER_CLASS rclass, INT size);
 
 extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER reg, INT size);
 
+/* Macros to check if a TN is a particular dedicated register. */
+#define TN_is_sp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_sp)
+#define TN_is_gp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_gp)
+#define TN_is_ep_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_ep)
+#define TN_is_fp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_fp)
+#define TN_is_ra_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_ra)
+#define TN_is_zero_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_zero)
+#define TN_is_static_link_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_static_link)
+#define TN_is_link_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_link)
+#define TN_is_pfs_reg(r)   (TN_register_and_class(r) == CLASS_AND_REG_pfs)
+#define TN_is_lc_reg(r)   (TN_register_and_class(r) == CLASS_AND_REG_lc)
+#define TN_is_ec_reg(r)   (TN_register_and_class(r) == CLASS_AND_REG_ec)
+#define TN_is_true_pred(r) (TN_register_and_class(r) == CLASS_AND_REG_true)
+#define TN_is_fzero_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_fzero)
+#define TN_is_fone_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_fone)
+
 // Check if the TN is either a constant zero or the zero register TN.
 // If you know it is a register TN, use TN_is_zero_reg directly.
 inline BOOL TN_is_zero (const TN *r) 
 {
-  return ((TN_has_value(r) && TN_value(r) == 0));
+  return ((TN_has_value(r) && TN_value(r) == 0) || (TN_is_register(r) && TN_is_zero_reg(r)));
+}
+
+// Returns TRUE if the TN represents a hardwired registers.
+inline BOOL TN_is_const_reg(const TN *r)
+{
+  return (TN_is_register(r) && 
+	  TN_is_dedicated(r) &&
+	  (TN_is_zero_reg(r) || 
+	   TN_is_true_pred(r) ||
+	   TN_is_fzero_reg(r) ||
+	   TN_is_fone_reg(r)));
 }
 
 /*
@@ -555,12 +578,25 @@ extern BOOL Potential_Immediate_TN_Expr (
 /* Initialize machine specific dedicated TNs */
 extern void Init_Dedicated_TNs (void);
 
-/* Initialize machine specific dedicated TNs */
-extern void CGTARG_Init_Dedicated_TNs (void);
-
 /* Format const TN value depending on relocation*/
 extern INT64 CGTARG_TN_Value (TN *t, INT64 base_ofst);
 
-#include "targ_tn.h"
+/*
+ * Relocation info 
+ */
+typedef struct {
+  char *name;
+} TN_RELOCS_INFO;
+extern const TN_RELOCS_INFO TN_RELOCS_info[];
+
+
+inline const char * TN_RELOCS_Name (mUINT8 rc)
+{
+  return TN_RELOCS_info[rc].name;
+}
+
+extern TN* Gen_Predicate_TN(void);
+extern BOOL TN_Use_Base_ST_For_Reloc (INT reloc, ST *st);
+extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
 
 #endif /* tn_INCLUDED */

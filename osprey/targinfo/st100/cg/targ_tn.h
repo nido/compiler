@@ -87,21 +87,7 @@
 #include "vstring.h"
 
 /* Target-specific special registers: */
-extern TN *GR_TN;          // guard register
-
-/* Macros to check if a TN is a particular dedicated register. */
-#define TN_is_zero_reg(r)  (FALSE)
-#define TN_is_sp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_sp)
-#define TN_is_gp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_gp)
-#define TN_is_fp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_fp)
-#define TN_is_ep_reg(r)    (FALSE)
-#define TN_is_ra_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_ra)
-#define TN_is_pfs_reg(r)   (FALSE)
-#define TN_is_lc_reg(r)    (TN_register_and_class(r) == CLASS_AND_REG_lc)
-#define TN_is_ec_reg(r)    (FALSE)
-#define TN_is_true_pred(r) (TN_register_and_class(r) == CLASS_AND_REG_true)
-#define TN_is_fzero_reg(r) (FALSE)
-#define TN_is_fone_reg(r)  (FALSE)
+extern struct tn *GR_TN;          // guard register
 
 /* ====================================================================
  * ====================================================================
@@ -156,12 +142,6 @@ extern TN *GR_TN;          // guard register
   TN_RELOC_IA32_ALL 	= 0x40,	
   */
 
-typedef struct {
-  char *name;
-} TN_RELOCS_INFO;
-extern const TN_RELOCS_INFO TN_RELOCS_info[];
-
-
 /* Define the TN_relocs access functions: */
 #define TN_is_reloc_gprel16(r)		(TN_relocs(r) == TN_RELOC_GPREL16)
 #define Set_TN_is_reloc_gprel16(r)	Set_TN_relocs(r,TN_RELOC_GPREL16)
@@ -204,33 +184,10 @@ extern const TN_RELOCS_INFO TN_RELOCS_info[];
 #define TN_is_reloc_hi_gpident(r)	(TN_relocs(r) == TN_RELOC_HI_GPIDENT)
 #define Set_TN_is_reloc_hi_gpident(r)	Set_TN_relocs(r,TN_RELOC_HI_GPIDENT)
 
-inline const char * TN_RELOCS_Name (mUINT8 rc)
-{
-  return TN_RELOCS_info[rc].name;
-}
-
 // ---------------------------------------------------------------------
-inline BOOL TN_is_const_reg(const TN *r)
-{
-  return (TN_is_register(r) && 
-	  TN_is_dedicated(r) &&
-	  (TN_is_true_pred(r)));
-}
-// ---------------------------------------------------------------------
-
-// ---------------------------------------------------------------------
-inline TN*
-Gen_Predicate_TN()
-{
-  return Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
-}
-// ---------------------------------------------------------------------
-inline BOOL TN_is_fcc_register (const TN *tn)
+inline BOOL TN_is_fcc_register (const struct tn *tn)
 {
   return FALSE;
 }
-
-extern BOOL TN_Use_Base_ST_For_Reloc (INT reloc, ST *st);
-extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
 
 #endif /* tn_targ_INCLUDED */

@@ -431,7 +431,7 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_HOISTED   0x0020 /* Is there a WN map attatched to a hoisted OP */
 #define OP_MASK_END_GROUP 0x0040 /* Is OP end of an instruction group */
 
-#ifndef TARG_ST100
+#ifdef TARG_IA64
 /* Arthur: unused mask */
 #define OP_MASK_M_UNIT	  0x0080 /* Is OP assigned to M unit */
 #endif
@@ -466,7 +466,7 @@ enum OP_COND_DEF_KIND {
 # define Set_OP_end_group(o)	(OP_flags(o) |= OP_MASK_END_GROUP)
 # define Reset_OP_end_group(o)	(OP_flags(o) &= ~OP_MASK_END_GROUP)
 
-#ifndef TARG_ST100
+#ifdef TARG_IA64
 # define OP_m_unit(o)		(OP_flags(o) & OP_MASK_M_UNIT)
 # define Set_OP_m_unit(o)	(OP_flags(o) |= OP_MASK_M_UNIT)
 # define Reset_OP_m_unit(o)	(OP_flags(o) &= ~OP_MASK_M_UNIT)
@@ -684,8 +684,11 @@ inline ISA_OPERAND_USE OP_opnd_use(OP *op, INT opnd)
 #define OP_l_group(o)           (TOP_is_l_group(OP_code(o)))
 #define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
 
+#ifndef TARG_ST
+/* Arthur: these are obsolete */
 #define OP_uniq_res(o)		(TOP_is_uniq_res(OP_code(o)))
 #define OP_same_res(o)          (TOP_is_same_res(OP_code(o)))
+#endif
 
 #define OP_unsafe(o)            (TOP_is_unsafe(OP_code(o)))
 
@@ -790,7 +793,7 @@ inline BOOL CGTARG_Is_OP_Addr_Incr(OP *op)
   return FALSE;
 }
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
 // How many bytes of memory a memory 'op' reads.
 inline UINT32 CGTARG_Mem_Ref_Bytes (const OP *memop)
 {

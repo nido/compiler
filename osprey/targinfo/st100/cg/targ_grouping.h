@@ -67,8 +67,8 @@
 // ====================================================================
 // ====================================================================
 
-#ifndef cg_grouping_INCLUDED
-#define cg_grouping_INCLUDED
+#ifndef targ_grouping_INCLUDED
+#define targ_grouping_INCLUDED
 
 #include <vector>
 #include "mempool_allocator.h"
@@ -459,4 +459,4 @@ public:
 }; // class CG_GROUPING
   
 
-#endif // cg_grouping_INCLUDED
+#endif // targ_grouping_INCLUDED

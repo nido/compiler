@@ -268,7 +268,7 @@ Compute_PU_Regs (
     // add sp, gp, ep, ra to the livein set.
     livein[REGISTER_CLASS_sp] = 
 	REGISTER_SET_Union1 (livein[REGISTER_CLASS_sp], REGISTER_sp);
-#ifdef TARG_ST100
+#ifdef TARG_ST
     //
     // Arthur: some of these may not be defined on a given target.
     //         In this case the class/reg pairs are not defined.
@@ -383,7 +383,7 @@ Compute_Call_Regs (
     }
 
     // add sp, gp to the livein set.
-#ifdef TARG_ST100
+#ifdef TARG_ST
     // Arthur: GP may not be defined. Check it here.
     if (GP_TN != NULL) {
       livein[REGISTER_CLASS_gp] = 
@@ -397,7 +397,7 @@ Compute_Call_Regs (
 		REGISTER_SET_Union1 (livein[REGISTER_CLASS_sp], REGISTER_sp);
 
     // add t9 if PIC call.
-#ifdef TARG_ST100
+#ifdef TARG_ST
     if (opr != OPR_CALL && Gen_PIC_Calls && Ep_TN != NULL) {
 #else
     if (opr != OPR_CALL && Gen_PIC_Calls) {
@@ -408,7 +408,7 @@ Compute_Call_Regs (
 
     // add ra and callee saves if tail call.
     if (BB_tail_call(bb)) {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       // Arthur: RA_TN is not necessarily defined on this target
       if (RA_TN != NULL) {
 	livein[REGISTER_CLASS_ra] = 

@@ -501,6 +501,7 @@ BOOL Can_Be_Immediate(OPERATOR opr,
   return FALSE;
 }
 
+#if 0
 /* ===============================================================
  *   TOP_Can_Be_Speculative (opcode)
  *
@@ -549,6 +550,7 @@ BOOL TOP_Can_Be_Speculative (TOP opcode)
 
    return FALSE;
 }
+#endif
 
 /* ===============================================================
  *   OPCODE_To_INTRINSIC

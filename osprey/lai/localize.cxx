@@ -518,7 +518,12 @@ Find_Global_TNs ( RID *rid )
         tn = OP_opnd(op, opndnum);
         if (tn == NULL || TN_is_constant(tn)) continue;
         if (TN_is_dedicated(tn)) {
+#ifdef TARG_ST
+	  // Arthur: new implementation of OP_same_res
+	  if (TOP_is_same_res(OP_code(op),0) == opndnum) {
+#else
           if (OP_same_res(op) && tn == OP_result(op,0)) {
+#endif
             /* this use is just a copy of the def */
             continue;
 	  }
@@ -732,8 +737,15 @@ Insert_Spills_Of_Globals (void)
            * if we reused the local tn throughout the block.
            * We then only spill the last local tn.
            */
+#ifdef TARG_ST
+	  // Arthur: OP_same_res again
+	  BOOL OP_same_res = (TOP_is_same_res(OP_code(op),resnum) >= 0);
+	  tninfo = Get_Local_TN_For_Global (tn, spill_tns, bb, 
+                        OP_same_res || OP_cond_def(op) /*reuse*/);
+#else
           tninfo = Get_Local_TN_For_Global (tn, spill_tns, bb, 
-                                            OP_same_res(op) || OP_cond_def(op) /*reuse*/);
+                        OP_same_res(op) || OP_cond_def(op) /*reuse*/);
+#endif
           /* replace global tn with new local tn */
           Set_OP_result(op, resnum, tninfo->local_tn);
 
@@ -1028,6 +1040,12 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  // in non_region_use_bb
 	  // We do have one exception:  OP_same_res operands, 
 	  // which have multiple defs and and use all of the same tn.
+#ifdef TARG_ST
+	  // Arthur: this is not clear to me at all.
+	  if ((TOP_is_same_res(OP_code(op),0) >= 0) &&
+	      (tn == prev_result) &&
+	      (OP_opnd(op,OP_opnds(op)-1) == prev_result)) {
+#else
 	  // There are two case:
 	  // ldl ded_tn, tn, zero_tn ; ldr ded_tn, tn, ded_tn
 	  // and copy ded_tn, tn ; select ded_tn, tn, tn, ded_tn
@@ -1036,6 +1054,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  // creates them).
 	  if (OP_same_res(op) && (tn == prev_result)
 	      && (OP_opnd(op,OP_opnds(op)-1) == prev_result)) {
+#endif
 	    // re-use new_tn everywhere
 	    Set_OP_result( op, i, new_tn );
 	    Set_OP_opnd (op, OP_opnds(op)-1, new_tn);
@@ -1099,8 +1118,13 @@ Localize_or_Replace_Dedicated_TNs(void)
 	// use of $25 in a call OP is OK. We will localize the def if needed
 	if ( TN_is_ep_reg(tn) && OP_call(op) ) 
 	  continue;
+#ifdef TARG_ST
+	// Arthur: this is more generic now
+	if (TOP_is_same_res(OP_code(op),0) == opndnum)
+#else
 	// unaligned_loads have a copy of last def as an implicit use
 	if ( OP_same_res(op) && tn == OP_result(op,0) )
+#endif
 	  continue;
 
 	if ( non_region_def_bb == bb ) // the def is already local

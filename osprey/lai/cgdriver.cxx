@@ -619,6 +619,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CG_branch_mispredict_penalty, NULL },
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_factor", "",
     0, 0, INT32_MAX, &CG_branch_mispredict_factor, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"enable_thr", "",
+    0, 0, 0,	&CG_enable_thr, NULL },
 
   { OVK_BOOL,	OV_INTERNAL, TRUE,"reverse_if_conversion", "",
     0, 0, 0,	&CG_enable_reverse_if_conversion,
@@ -627,6 +629,9 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CG_maxinss, &CG_maxinss_overridden },
   { OVK_INT32,	OV_INTERNAL, TRUE,"body_blocks_count_max", "",
     0, 0, INT32_MAX, &CG_maxblocks, NULL },
+
+  { OVK_BOOL,	OV_INTERNAL, FALSE,"callee_reg_mask", "callee_reg_mask",
+    0, 0, 0, &CG_gen_callee_saved_regs_mask, NULL },
 
   { OVK_COUNT }
 };
@@ -667,13 +672,18 @@ Configure_CG_Options(void)
     DevWarn("CG: Ignoring LOCS_Enable_Bundle_Formation set for lai.");
     LOCS_Enable_Bundle_Formation = FALSE;
   }
-#else
-  // For now just disable all together
-  LOCS_Enable_Bundle_Formation = FALSE;
 #endif
 
   // Disable scheduling, etc. for some targets
-#ifdef TARG_ST100
+  // Temporarily here. When the cg is complete, such options should be
+  // set using -CG:
+  //    locs_form_bundles=
+  //    all_scheduler=
+  //    enable_thr=
+  //    lra_reorder=
+  //    callee_reg_mask=
+  //    etc.
+#ifdef TARG_ST
   IGLS_Enable_All_Scheduling = FALSE;
   CG_enable_thr = FALSE;
   LRA_do_reorder = FALSE;
@@ -860,10 +870,16 @@ Prepare_Source (void)
     Assembly = TRUE;
   }
 
-#ifdef TARG_ST100
+#if defined(TARG_ST100) || defined(TARG_ST200)
   if (Object_Code) {
-    FmtAssert(FALSE,("SORRY: object code not generated for the ST100"));
+    FmtAssert(FALSE,("SORRY: object code not generated for this target"));
   }
+#ifdef TARG_ST200
+  if (Lai_Code) {
+    FmtAssert(FALSE,("SORRY: LAI not available for this target"));
+  }
+#endif
+
 #else
   if (Lai_Code) {
     FmtAssert(FALSE,("SORRY: LAI not available for this target"));

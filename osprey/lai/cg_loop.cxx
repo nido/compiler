@@ -4124,7 +4124,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	      &ops);
   }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   // Replace the loop-back branch with the counted loop branch
   // instruction.  It is a nop for the MIPS architecture.
   {
@@ -4664,7 +4664,7 @@ void Induction_Variables_Removal(CG_LOOP& cl,
   }
 }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
 void CG_LOOP::Determine_SWP_Unroll_Factor()
 {
   MEM_POOL_Push(&MEM_local_nz_pool);
@@ -4800,7 +4800,7 @@ void CG_LOOP::EBO_After_Unrolling()
   }
   MEM_POOL_Pop(&MEM_local_pool);
 }
-#endif /* TARG_ST100 */
+#endif /* TARG_ST */
 
 void CG_LOOP::Print(FILE *fp)
 {
@@ -4971,7 +4971,7 @@ static BOOL Loop_Amenable_For_SWP(LOOP_DESCR *loop, BOOL trace)
   }
 }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
 // Replace the loop-back branch with the counted loop branch
 // instruction.  It is a nop for the MIPS architecture.
 //
@@ -5076,7 +5076,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
   }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   if (!single_bb && 
       CG_LOOP_force_ifc > 0 &&
       Loop_Amenable_For_SWP(loop, trace_loop_opt)) {
@@ -5089,8 +5089,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   }
 #endif
 
-#ifdef TARG_ST100
-  // On the ST100 the SWP is not implemented:
+#ifdef TARG_ST
+  // On the ST100,ST200 the SWP is not implemented:
   if (single_bb) {
     if (has_trip_count) {
       action =  SINGLE_BB_DOLOOP_UNROLL;
@@ -5125,7 +5125,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
   switch (action) {
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   case SINGLE_BB_DOLOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5234,7 +5234,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
       break;
     }
-#endif /* TARG_ST100 */
+#endif /* TARG_ST */
 
   case  SINGLE_BB_DOLOOP_UNROLL:  
     {
@@ -5264,7 +5264,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
       } 
-#ifndef TARG_ST100
+#ifndef TARG_ST
       else {
 	Perform_Read_Write_Removal(loop);
 
@@ -5284,7 +5284,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       break;
     }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   case SINGLE_BB_WHILELOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5337,7 +5337,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
     }
     break;
-#endif /* TARG_ST100 */
+#endif /* TARG_ST */
 
   case SINGLE_BB_WHILELOOP_UNROLL:
     {
@@ -5351,7 +5351,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
       cg_loop.EBO_After_Unrolling();
 #endif
 
@@ -5359,7 +5359,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     break;
 
   case MULTI_BB_DOLOOP:
-#ifndef TARG_ST100
+#ifndef TARG_ST
     {
       CG_LOOP cg_loop(loop);
 
@@ -5475,7 +5475,7 @@ void Perform_Loop_Optimizations()
   MEM_POOL_Push (&loop_descr_pool);
   BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   SWP_Options.PU_Configure();
 #endif
 
@@ -5511,7 +5511,7 @@ void Perform_Loop_Optimizations()
     CG_LOOP_Optimize(loop, fixup);
   }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
   // Compute correct wrap around values for SWP loops
   for (INT i = 0; i < fixup.size(); i++)
     SWP_Fixup(fixup[i]);
@@ -5523,7 +5523,7 @@ void Perform_Loop_Optimizations()
   }
 #endif
   
-#endif /* TARG_ST100 */
+#endif /* TARG_ST */
 
   MEM_POOL_Pop (&loop_descr_pool);
   MEM_POOL_Delete(&loop_descr_pool);

@@ -433,7 +433,7 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     mem_location = TN_spill(tn);
     if (mem_location == NULL) {
       const char *root;
-#ifdef TARG_ST100
+#ifdef TARG_ST
       /*
        * Arthur: I need to use TN_register_class(tn) here, and it
        *         is 

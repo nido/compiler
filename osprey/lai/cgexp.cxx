@@ -159,7 +159,7 @@ Expand_OP (
   case OPR_ABS:
 	Expand_Abs (result, op1, rtype, ops);
 	break;
-#ifdef TARG_ST100
+#ifdef TARG_ST
 	FmtAssert(FALSE, ("Expand_OP:  MPY shouldn't have been reached"));
 #else
     case OPR_MPY:
@@ -295,7 +295,7 @@ Expand_OP (
 	Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
 	break;
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
     case OPR_MADD:
       FmtAssert(FALSE, 
 	   ("Expand_OP:  MADD shouldn't have been reached"));

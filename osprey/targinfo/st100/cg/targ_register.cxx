@@ -186,3 +186,27 @@ CGTARG_Regname_Register_Class (
   return rclass;
 }
 
+/* ====================================================================
+ *   REGISTER_Is_Rotating
+ * ====================================================================
+ */
+BOOL 
+REGISTER_Is_Rotating(
+  ISA_REGISTER_CLASS rclass, 
+  REGISTER reg
+)
+{
+  return FALSE;
+}
+
+/* ====================================================================
+ *   REGISTER_Get_Requested_Rotating_Registers
+ * ====================================================================
+ */
+REGISTER_SET 
+REGISTER_Get_Requested_Rotating_Registers (
+  ISA_REGISTER_CLASS rclass
+)
+{
+  return REGISTER_SET_EMPTY_SET;
+}

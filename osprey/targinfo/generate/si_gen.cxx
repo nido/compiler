@@ -1321,7 +1321,7 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
   for ( i = 0; i < TOP_count; ++i ) {
     bool isa_member = ISA_SUBSET_Member(machine_isa, (TOP)i);
     bool is_dummy = TOP_is_dummy((TOP)i);
-#ifdef TARG_ST100
+#ifdef TARG_ST
     // Arthur: Simulated shouldn't have any scheduling info either ?
     bool is_simulated = TOP_is_simulated((TOP)i);
 #endif
@@ -1339,7 +1339,7 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
                        TOP_Name((TOP)i));
       }
     } else {
-#ifdef TARG_ST100
+#ifdef TARG_ST
       if ( isa_member && ! is_dummy && ! is_simulated ) {
 #else  
 	if ( isa_member && ! is_dummy ) {

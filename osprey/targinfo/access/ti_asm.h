@@ -199,11 +199,8 @@
 #include <stdio.h>
 #include "topcode.h"
 
-/* While the ST100 target description is not complete */
-#ifndef TARG_ST100
 #include "targ_isa_pack.h"
 #include "targ_isa_bundle.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -246,7 +243,7 @@ typedef unsigned char mBOOL;
 #define TI_ASM_DISASM_TRUE_PRED	(0x02)
 
 /* While the ST100 target description is not complete */
-#ifndef TARG_ST100
+#ifndef TARG_ST
 extern INT TI_ASM_Pack_Inst(
   TOP topcode,
   const INT64 *result,
@@ -263,7 +260,7 @@ extern INT TI_ASM_Print_Inst(
 );
 
 /* While the ST100 target description is not complete */
-#ifndef TARG_ST100
+#ifndef TARG_ST
 extern INT TI_ASM_DisAsm_Inst(
   TOP topcode,
   INT64 *result,
@@ -302,7 +299,7 @@ extern TOP TI_ASM_Unpack_Inst(
   INT64               *opnd,
   BOOL                 xlate_pseudo
 );
-#endif /* ifndef TARG_ST100 */
+#endif /* ifndef TARG_ST */
 
 #ifdef __cplusplus
 }

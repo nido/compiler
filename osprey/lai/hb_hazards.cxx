@@ -551,7 +551,7 @@ Is_There_Group_Dependence(OP *op, VECTOR *bundle_vector)
   return FALSE;
 }
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
 // ======================================================================
 // Placeholder routine to check if placement of <op> at <slot_pos> in
 // a <bundle> can be delayed.
@@ -582,7 +582,7 @@ Delay_Scheduling_OP(OP *op, INT slot_pos, TI_BUNDLE *bundle)
 }
 #endif
 
-#ifdef TARG_ST100
+#ifdef TARG_ST
 /* ====================================================================
  *   Handle_Bundle_Hazard
  *
@@ -673,7 +673,7 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					stop_bit_reqd, NULL)) {
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
 	// Arthur: I do it in CGTARG_Bundle_Slot_Available().
 	// If there is a need to delay the scheduling of <op>...
 	if (Delay_Scheduling_OP(op, i, bundle)) continue;
@@ -691,6 +691,12 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 	}
 	break;
       }
+#if 0
+      else {
+	if (Trace_HB)
+	  fprintf(TFile, "  slot %i is not available \n", i);
+      }
+#endif
     }
   }
 
@@ -698,7 +704,7 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
   if (slot_avail) {
     Set_OP_bundled (op);
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
     // Arthur: These are reserved by CGTARG_Bundle_Slot_Available().
     TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
 
@@ -718,7 +724,7 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
     VECTOR_Add_Element (*bundle_vector, op);
 
     // Check for any hazards (nops) that may need to be filled.
-#ifdef TARG_ST100
+#ifdef TARG_ST
     Handle_Bundle_Hazard(op, bundle, bundle_vector, slot_avail, 
 				slot_pos, slot_pos, stop_bit_reqd, prop);
 #else
@@ -739,14 +745,19 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
   // If slot not available or <op> is the last op in bb, do extra stuff.
   if (!slot_avail || (BB_last_real_op(OP_bb(op)) == op) || bundle_full) {
 
+    if (Trace_HB)
+      if (!slot_avail)
+	fprintf(TFile, "  did not find available slot \n");
+
     // Pack NOPs till end of the bundle.
-#ifdef TARG_ST100
+#ifdef TARG_ST
     Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
 			   slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
 #else
     CGTARG_Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
 				 slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
 #endif
+
     // Reset the bundle
     TI_BUNDLE_Clear (bundle);
     // VECTOR_Reset (*bundle_vector);
@@ -787,12 +798,20 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 
     // Reattempt packing the <op> after clearing the bundle.
     if (!slot_avail) {
+
+      if (Trace_HB)
+	fprintf(TFile, "  reattempting packing the OP in next bundle: \n");
+
       FOR_ALL_SLOT_MEMBERS (bundle, i) {
 	stop_bit_reqd = (i > 0) && OP_f_group(op);
 	if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					  stop_bit_reqd, NULL)) {
 	  
-#ifndef TARG_ST100
+	  if (Trace_HB)
+	    fprintf(TFile, "  slot %i available \n", i);
+
+
+#ifndef TARG_ST
 	  // Arthur: I do it in CGTARG_Bundle_Slot_Available().
 	  // If there is a need to delay the scheduling of <op>...
 	  if (Delay_Scheduling_OP(op, i, bundle)) continue;
@@ -809,7 +828,7 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       FmtAssert(slot_pos != -1, ("Slot Position not a legal value"));
       Set_OP_bundled (op);
 
-#ifndef TARG_ST100
+#ifndef TARG_ST
     // Arthur: These are reserved by CGTARG_Bundle_Slot_Available().
       TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
       if (stop_pos >= 0) TI_BUNDLE_Reserve_Stop_Bit (bundle, stop_pos);
@@ -822,7 +841,7 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 	INT max_pos = (BB_last_real_op((OP_bb(op))) == op && 
 		       ISA_PACK_Inst_Words(OP_code(op)) == 1) ? 
 	  ISA_MAX_SLOTS : slot_pos;
-#ifdef TARG_ST100
+#ifdef TARG_ST
 	Handle_Bundle_Hazard (op, bundle, bundle_vector, TRUE, 
 				     slot_pos, max_pos, stop_bit_reqd, prop);
 #else

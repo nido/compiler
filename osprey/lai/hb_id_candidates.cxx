@@ -174,6 +174,9 @@ Find_Immediate_Postdominator(BB* bb)
   return NULL;
 }
 
+#ifdef SUPPORTS_PREDICATION
+// Arthur: only for predication targets
+
 /////////////////////////////////////
 BOOL
 Check_HB_For_PQS_Suitability(BB_SET* selected_hb, BB* bb_entry)
@@ -404,6 +407,8 @@ Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry)
   return TRUE;
 }
 
+#endif
+
 /////////////////////////////////////
 void
 HB_Identify_Candidates_Init()
@@ -473,6 +478,8 @@ Make_New_Region(list<HB_CAND_TREE*>&       candidates,
 
   return new_cand;
 }
+
+#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 void
@@ -671,6 +678,8 @@ Check_Region(BB**                 orig_dom,
   return retval && BS_Size(blocks) <= HB_max_blocks;
 }
 
+#endif /* SUPPORTS_PREDICATION */
+
 // See if a cand tree is a subchild of a particular parent
 
 
@@ -763,6 +772,8 @@ Insert_Parent(HB_CAND_TREE*        new_parent,
   HB_CAND_TREE_Parent_Set(child, new_parent);
   HB_CAND_TREE_Kids(new_parent).push_front(child);
 }
+
+#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 BOOL
@@ -905,6 +916,8 @@ Attempt_Merge(HB_CAND_TREE*        new_region,
   return (TRUE);
 }
 
+#endif /* SUPPORTS_PREDICATION */
+
 /////////////////////////////////////
 static void
 Add_Children(HB_CAND_TREE*            new_region, 
@@ -959,6 +972,8 @@ Check_Parent(HB_CAND_TREE*          hct_parent,
     Insert_Parent(hct_parent, hct, candidates, hct_entry_map);
   }
 }
+
+#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 void
@@ -1458,3 +1473,5 @@ HB_Identify_General_Candidates(list<HB_CAND_TREE*>&  candidates,
   MEM_POOL_Pop (&MEM_local_pool);
   Clean_Up_Candidates(candidates);
 }
+
+#endif /* SUPPORTS_PREDICATION */

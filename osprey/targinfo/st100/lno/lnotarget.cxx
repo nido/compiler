@@ -1690,4 +1690,75 @@ LNOTARGET_Set_Register_Model_Parameters (
   *num_mem_units = 2;
 }
 
+/* ====================================================================
+ *   LNOTARGET_Mtype_Registers
+ * ====================================================================
+ */
+INT
+LNOTARGET_Mtype_Registers (
+  TYPE_ID mtype
+)
+{
+  switch (mtype) {
+
+  case MTYPE_I1:
+  case MTYPE_U1:
+  case MTYPE_I2:
+  case MTYPE_U2:
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_I5:
+  case MTYPE_U5:
+    return 1;
+
+  case MTYPE_I8:
+  case MTYPE_U8:
+    return 2;
+
+  case MTYPE_A4:
+    return 1;
+
+  case MTYPE_B:
+    return 1;
+
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Mtype_Registers: mtype %s", MTYPE_name(mtype)));
+  }
+}
+
+/* ====================================================================
+ *   LNOTARGET_Mtype_Access_Bytes
+ * ====================================================================
+ */
+INT
+LNOTARGET_Access_Bytes (
+  TYPE_ID mtype
+)
+{
+  switch (mtype) {
+
+  case MTYPE_I1:
+  case MTYPE_U1:
+  case MTYPE_I2:
+  case MTYPE_U2:
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_A4:
+    return 4;
+
+  case MTYPE_I5:
+  case MTYPE_U5:
+  case MTYPE_I8:
+  case MTYPE_U8:
+    return 8;
+
+  case MTYPE_B:
+    return 1;
+
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Access_Bytes: mtype %s", MTYPE_name(mtype)));
+  }
+}
+
+
 
