@@ -155,7 +155,7 @@ intm_t TOP_fold_shr(opc_t opc, opnd_t *opnds) {
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
   intm_t op1 = fetch(opc, opnds, opnd1);
   intm_t op2 = fetch(opc, opnds, opnd2);
-  if (op2 < opc_opnd_bits(opc, opnd2))
+  if (op2 < opc_opnd_bits(opc, opnd1))
     result = op1 >> op2;
   else
     result = op1 < 0 ? -1: 0;
