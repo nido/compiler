@@ -165,6 +165,7 @@ main()
 		 TOP_bswap_r, 
 		 TOP_sxtb_r, 
 		 TOP_sxth_r, 
+		 TOP_zxth_r, 
 		 TOP_mov_r, 
 		 TOP_UNDEFINED); 
 
@@ -337,6 +338,10 @@ main()
 		 TOP_mulhhu_ii, 
 		 TOP_mulhs_i, 
 		 TOP_mulhs_ii, 
+		 TOP_mulhhs_i, 
+		 TOP_mulhhs_ii, 
+		 TOP_mullhus_i, 
+		 TOP_mullhus_ii, 
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
@@ -388,6 +393,8 @@ main()
 		 TOP_mulhh_r, 
 		 TOP_mulhhu_r, 
 		 TOP_mulhs_r, 
+		 TOP_mulhhs_r, 
+		 TOP_mullhus_r, 
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
@@ -564,6 +571,14 @@ main()
 		 TOP_UNDEFINED); 
 
   Operand (0, imm); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_clz", 
+		 TOP_clz, 
+		 TOP_UNDEFINED); 
+
+  Result (0, idest); 
+  Operand (0, src1); 
 
   /* ====================================== */ 
   Instruction_Group("O_SelectI", 

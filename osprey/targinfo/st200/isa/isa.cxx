@@ -273,6 +273,7 @@ main ()
 		 "brf",
 		 "sxtb_r",
 		 "sxth_r",
+		 "zxth_r",
 		 "nop",
 		 "mov_r",
 		 "mov_i",
@@ -280,6 +281,13 @@ main ()
 		 "mtb",
 		 "mfb",
 		 "return",
+		 "clz",
+		 "mulhhs_r",
+		 "mulhhs_i",
+		 "mulhhs_ii",
+		 "mullhus_r",
+		 "mullhus_i",
+		 "mullhus_ii",
 		 "asm",	 // simulated
 		 "intrncall",	 // simulated
 		 "spadjust",	 // simulated

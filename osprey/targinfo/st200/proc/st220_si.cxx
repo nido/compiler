@@ -223,12 +223,14 @@ main (int argc, char *argv[])
 		 TOP_break, 
 		 TOP_sxtb_r, 
 		 TOP_sxth_r, 
+		 TOP_zxth_r, 
 		 TOP_nop, 
 		 TOP_mov_r, 
 		 TOP_mov_i, 
 		 TOP_mov_ii, 
 		 TOP_mtb, 
 		 TOP_mfb, 
+		 TOP_clz, 
 		 TOP_UNDEFINED); 
 
   Any_Result_Available_Time(3); 
@@ -274,6 +276,12 @@ main (int argc, char *argv[])
 		 TOP_mulhhu_ii, 
 		 TOP_mulhs_i, 
 		 TOP_mulhs_ii, 
+		 TOP_mulhhs_r, 
+		 TOP_mulhhs_i, 
+		 TOP_mulhhs_ii, 
+		 TOP_mullhus_r, 
+		 TOP_mullhus_i, 
+		 TOP_mullhus_ii, 
 		 TOP_UNDEFINED); 
 
   Any_Result_Available_Time(5); 
