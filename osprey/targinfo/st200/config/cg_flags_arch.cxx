@@ -39,6 +39,21 @@
 
 void Configure_CG_Target() {
 
+  // By default it is OFF. There is a bug in plumhall lang.out.
+  // TODO: enable when debugged.
+  //CG_tail_call = TRUE;
+ 
+  // ??
+  CG_enable_thr = FALSE;
+ 
+  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
+  CG_LOOP_force_ifc = 0;
+ 
+  // CFLOW optimizations: ON by default
+ 
+  // disable CFLOW second pass after HB formation
+  //CFLOW_opt_after_cgprep = FALSE;
+
   // Scheduling options: scheduling is ON by default -- disable if
   //                     in development
 #ifndef LAO_ENABLED
@@ -73,13 +88,6 @@ void Configure_CG_Target() {
 
   // Reorder while LRA
   LRA_do_reorder = FALSE;
-
-  // ??
-  CG_enable_thr = FALSE;
-
-  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
-  CG_LOOP_force_ifc = 0;
-
 
   // HB stuff: everything's OFF by default
   HB_simple_ifc = TRUE;

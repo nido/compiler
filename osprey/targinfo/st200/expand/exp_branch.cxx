@@ -383,7 +383,7 @@ Exp_Indirect_Branch (
   OPS *ops
 )
 {
-  // put target in LR
+  // put target in RA_TN register
   Build_OP (TOP_mov_r, RA_TN, targ_reg, ops);
   Build_OP (TOP_igoto, RA_TN, ops);
   return;
