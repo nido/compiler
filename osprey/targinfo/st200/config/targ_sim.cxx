@@ -63,7 +63,7 @@ UINT Int_Preg_Max_Offset           =  64;
 UINT Ptr_Preg_Min_Offset              =  1;
 UINT Ptr_Preg_Max_Offset           =  0;
 UINT Float_Preg_Min_Offset         =  1;
-UINT Float_Preg_Max_Offset         =  0;
+UINT Float_Preg_Max_Offset         =  0;  
 UINT Branch_Preg_Min_Offset        =  65;
 UINT Branch_Preg_Max_Offset        =  72;
 UINT Fcc_Preg_Min_Offset           =  1;
@@ -86,6 +86,7 @@ UINT First_Float_Preg_Param_Offset	= 0;	/* register fa0 */
 UINT Stack_Pointer_Preg_Offset	= 13;	/* register sp */
 UINT Frame_Pointer_Preg_Offset	= 62;	/* register fp */
 UINT Static_Link_Preg_Offset	= 63;
+UINT Struct_Return_Preg_Offset  = 16;   /* returning structs */
 
 static mDED_PREG_NUM Input_Base_Preg = 0;
 static mDED_PREG_NUM Output_Base_Preg = 0;
@@ -111,7 +112,7 @@ SIM SIM_Info[] = {
 	0, 0, 0, 0
   },
   { /* ABI_ST200 */
-	SIM_COORD_MEM_REG | SIM_REG_STRUCTS,
+	SIM_COORD_MEM_REG | SIM_REG_STRUCTS | SIM_RET_ADDR_VIA_INT_RET,
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	{I0+16,I0+17,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,
@@ -146,8 +147,12 @@ Is_Int_Output_Preg (
   PREG_NUM preg
 )
 {
+  // Seems like rotating register stuff ...
+#if 0
   return (preg <= Output_Base_Preg 
       && preg > (Output_Base_Preg - MAX_NUMBER_OF_REGISTER_PARAMETERS));
+#endif
+  return FALSE;
 }
 
 /* ====================================================================
@@ -444,6 +449,7 @@ Get_Return_Info (
   INT32 i; 
 
   info.return_via_first_arg = FALSE;
+  info.return_via_return_reg = FALSE;
 
   switch (mtype) {
 
@@ -460,6 +466,14 @@ Get_Return_Info (
       info.count = 0;
       break;
 
+    // Floating point types are mapped to integer regs
+    case MTYPE_F4:
+
+      info.count = 1;
+      info.mtype [0] = MTYPE_I4;
+      info.preg  [0] = PR_first_reg(SIM_INFO.int_results);
+      break;
+
     case MTYPE_I1:
     case MTYPE_I2:
     case MTYPE_I4:
@@ -468,19 +482,31 @@ Get_Return_Info (
     case MTYPE_U4:
     case MTYPE_A4:
 
-      // Floating point types are mapped to integer regs
-    case MTYPE_F4:
-
       info.count = 1;
       info.mtype [0] = mtype;
       info.preg  [0] = PR_first_reg(SIM_INFO.int_results);
       break;
 
+    // Floating-point types are mapped to integer regs
+    case MTYPE_F8:
+
+      reg = PR_first_reg(SIM_INFO.int_results);
+      if (level == Use_Simulated) {
+	info.count = 1;
+	info.mtype [0] = MTYPE_I8;
+	info.preg  [0] = reg;
+      }
+      else {
+	info.count = 2;
+	info.mtype [0] = SIM_INFO.int_type;
+	info.preg  [0] = reg++;
+	info.mtype [1] = SIM_INFO.int_type;
+	info.preg  [1] = reg++;
+      }
+      break;
+
     case MTYPE_I8:
     case MTYPE_U8:
-
-      // Floating-point types are mapped to integer regs
-    case MTYPE_F8:
 
       reg = PR_first_reg(SIM_INFO.int_results);
       if (level == Use_Simulated) {
@@ -499,9 +525,17 @@ Get_Return_Info (
 
     case MTYPE_M:
 
-      info.count = 0;
-      info.return_via_first_arg = TRUE;
+      //
+      // Return Structure or Array.
+      // Aggregates with # elements <= 8 and under 256 bits are
+      // returned in registers r0.16 - r0.23.
+      // Otherwise, return in a callee buffer pointed at by r0.15.
+      //
 
+      info.count = 0;
+      info.return_via_return_reg = TRUE;
+
+#if 0
       if (SIM_INFO.max_struct_result != 0) {
 
         UINT64 size = TY_size(Ty_Table[rtype]);
@@ -595,6 +629,7 @@ Get_Return_Info (
           }
         }
       }
+#endif
       break;
 
     case MTYPE_FQ:
@@ -682,31 +717,6 @@ Get_Current_Int_Preg_Num (
   else
     return i;
 }
-
-#if 0
-/* ====================================================================
- *   Get_Current_Float_Preg_Num
- * ====================================================================
- */
-static inline PREG_NUM
-Get_Current_Float_Preg_Num (
-  Preg_Range pr
-)
-{
-  PREG_NUM i;
-  TRACE_ENTRY("Get_Current_Float_Preg_Num");
-  i = PR_first_reg(pr) + (Current_Param_Num * PR_skip_value(pr));
-  if (i > PR_last_reg(pr)) {
-    TRACE_EXIT_i("Get_Current_Float_Preg_Num", 0);
-    return 0;
-  }
-  else {
-    i = PR_first_reg(pr) + (Current_Float_Param_Num * PR_skip_value(pr));
-    TRACE_EXIT_i("Get_Current_Float_Preg_Num", i);
-    return i;
-  }
-}
-#endif
 
 /* ====================================================================
  *   Get_Preg_Alignment
@@ -1018,6 +1028,9 @@ Get_Struct_Parameter_Location (PLOC prev)
 
     if (PSTRUCT_struct && PSTRUCT_hfa &&
 	!(Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
+
+      FmtAssert(FALSE,("struct is HFA ?"));
+
       if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4) {
         PLOC_size(next) = TY_size (Be_Type_Tbl (MTYPE_F4));
         PSTRUCT_offset += TY_size (Be_Type_Tbl (MTYPE_F4));
@@ -1063,11 +1076,7 @@ Get_Struct_Parameter_Location (PLOC prev)
     } else if (PSTRUCT_first_call) {
       PSTRUCT_first_call = FALSE;
       PLOC_reg(next) = PLOC_reg(prev);
-      if (!(Is_Int_Output_Preg(PLOC_reg(next)) || IS_INT_PREG(PLOC_reg(next))))
-        PLOC_reg(next) = 0;
-    } else if (Is_Int_Output_Preg(PLOC_reg(prev))) {
-      PLOC_reg(next) =  PLOC_reg(prev) - PR_skip_value(SIM_INFO.int_args);
-      if (!Is_Int_Output_Preg(PLOC_reg(next)))
+      if (!IS_INT_PREG(PLOC_reg(next)))
         PLOC_reg(next) = 0;
     } else if (IS_INT_PREG(PLOC_reg(prev))) {
       PLOC_reg(next) =  PLOC_reg(prev) + PR_skip_value(SIM_INFO.int_args);

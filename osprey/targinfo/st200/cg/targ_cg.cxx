@@ -872,7 +872,7 @@ CGTARG_Can_Fit_Immediate_In_Add_Instruction (
   INT64 immed
 )
 {
-  return ISA_LC_Value_In_Class (immed, LC_s9);
+  return ISA_LC_Value_In_Class (immed, LC_s32);
 }
 
 /* ====================================================================
@@ -884,7 +884,7 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
   INT64 immed
 )
 {
-  return ISA_LC_Value_In_Class (immed, LC_s9);
+  return ISA_LC_Value_In_Class (immed, LC_s32);
 }
 
 /* ====================================================================

@@ -298,7 +298,13 @@ Expand_Divide_By_Constant (
     INT pow2 = Get_Power_Of_2 (src2_val, mtype);
     Build_OP (TOP_shr_i, result,
 	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
-      return TRUE;
+
+    if (src2_val < 0) {
+      // must negate the result
+      Build_OP (TOP_sub_r, result, Zero_TN, result, ops);
+    }
+
+    return TRUE;
   }
 
   return FALSE;

@@ -822,19 +822,48 @@ Exp_Deposit_Bits (
 {
   FmtAssert(bit_size != 0, ("size of bit field cannot be 0"));
 
+  // Registers are always 32 bits in size
+  FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
+	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
+
   //
   // generate the following sequence (if there is a faster one,
   // we'll find it later)
   //
-  //    tmp2 = 0..0src1[0..bit_pos]
+  //    mask = 0..01110..0       (in the bit pos required)
+  //    val  = shl src2, 32-bit_size (clear bits)
+  //    val  = shru val, 32-(bit_pos+bit_size) (place value in position)
+  //    tmp1 = mask and src1     (only bits in mask pos are valid)
+  //    tmp1 = tmp1 xor src1     (bits in mask pos are zero)
+  //    tgt_tn = tmp1 or val
+
+  TN *mask = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_mov_i, mask, Gen_Literal_TN(-1, 4), ops);
+  Build_OP(TOP_shru_i, mask, mask, 
+                  Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size,4), ops);
+  Build_OP(TOP_shl_i, mask, mask, Gen_Literal_TN(bit_offset,4), ops);
+
+  TN *val = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_shl_i, val, src2, Gen_Literal_TN(32-bit_size,4), ops);
+  Build_OP(TOP_shru_i, val, val, 
+	   Gen_Literal_TN(32-bit_size-bit_offset,4), ops);
+
+  TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_and_r, tmp1, mask, src1, ops);
+  Build_OP(TOP_xor_r, tmp1, tmp1, src1, ops);
+
+  Build_OP(TOP_or_r, tgt_tn, tmp1, val, ops);
+
+
+
+#if 0
+  //    tmp2 = 0..0src10..0     
   //    tmp5 = 0..0src2[bit_pos..bit_pos+bit_size]0..0
   //    tmp7 = src1[bit_pos+bit_size..32]0..0
   //    tmp8 = tmp2 | tmp5
   //    tgt_tn = tmp7 | tmp8
 
 
-  FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
-	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
 
   TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   TN *tmp2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
@@ -862,6 +891,7 @@ Exp_Deposit_Bits (
   TN *tmp8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   Build_OP(TOP_or_r, tmp8, tmp2, tmp5, ops);
   Build_OP(TOP_or_r, tgt_tn, tmp7, tmp8, ops);
+#endif
 
   return;
 }

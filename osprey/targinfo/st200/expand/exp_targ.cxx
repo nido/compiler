@@ -579,12 +579,14 @@ Expand_Add (
 	Expand_Copy (result, NULL, src1, ops);
 	return;
       }
+#if 0
       if (val < 0) {
 	// rather do sub than make -const, add:
 	src2 = Gen_Literal_TN (-val, MTYPE_byte_size(mtype));
 	Expand_Sub (result, src1, src2, mtype, ops);
 	return;
       }
+#endif
       new_opcode = TOP_add_i;
     }
     // symbolic constant, gp-relative or sp-relative
@@ -1096,6 +1098,7 @@ Expand_Multiply (
       else if (s2mtype == MTYPE_I2) {
         Build_OP(TOP_sxth_r, src2, src2, ops);
       }
+
 
       if (s1mtype == MTYPE_U1) {
         TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);

@@ -1926,6 +1926,12 @@ Adjust_Exit (
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
   } else {
+#if 0
+    // Arthur: If immediate offset exeeds what an instruction can
+    //         handle => we must have exceeded the SMALL_MODEL
+    //         stack size, which should have been set to the size
+    //         addressable with a single immediate instruction.
+
     // It's a pain -- I might need to emit a series of sp = sp - const
     // to get where I want to be ...
     OPS ops = OPS_EMPTY;
@@ -1944,7 +1950,9 @@ Adjust_Exit (
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
     DevWarn("Stack de-allocation of %llu", frame_len);
-    //    FmtAssert(FALSE, ("Can't handle stack de-allocation of %lld", frame_len));
+#else
+    FmtAssert(FALSE, ("Can't handle stack de-allocation of %lld", frame_len));
+#endif
   }
 
   /* Point to the [possibly] new SP adjust OP

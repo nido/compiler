@@ -1511,20 +1511,17 @@ Targ_WhirlOp (
 
     case OPC_U4TAS:
     case OPC_I4TAS:
-      /* Need to move the bits if the source is an F4 */
-      if (TCON_ty(c0) == MTYPE_F4) {
-	 TCON_v0(c0) = TCON_v1(c0);
-	 TCON_v1(c0) = 0;
-      }
       TCON_ty(c0) = OPCODE_rtype(op);
       break;
 
     case OPC_F4TAS:
+#if 0
       /* Need to move the bits if the source is not an F4 */
       if (TCON_ty(c0) != MTYPE_F4) {
 	 TCON_v1(c0) = TCON_v0(c0);
 	 TCON_v0(c0) = 0;
       }
+#endif
       TCON_ty(c0) = MTYPE_F4;
       break;
 

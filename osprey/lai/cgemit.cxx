@@ -2352,16 +2352,18 @@ r_apply_l_const (
   }
   else if ( TN_has_value(t) ) {
 #ifdef TARG_ST
-    if ( TN_size(t) <= 4 )
+    if ( TN_size(t) <= 4 ) {
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
 		    ISA_PRINT_Operand_Format(OP_code(op), opidx),
 		    (mINT32)TN_value(t) );
-    else
+    }
+    else {
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
 		    ISA_PRINT_Operand_Format(OP_code(op), opidx), 
 		    TN_value(t) );
+    }
 #else
     if ( TN_size(t) <= 4 )
       vstr_sprintf (buf, vstr_len(*buf), 
