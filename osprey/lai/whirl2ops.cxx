@@ -888,10 +888,13 @@ PREG_To_TN (
 	      WN *lopart;
 	      WN *hipart;
 	      HILO_lower_wn (home, &lopart, &hipart);
-	    //
-	    // Why is it that hipart does not matter ?
-	    //
-	    Set_TN_home (tn, lopart);
+	      //
+	      // Why is it that hipart does not matter ?
+	      //
+	      Set_TN_home (tn, lopart);
+	    }
+	    else {
+	      Set_TN_home (tn, home);
 	    }
 #else
 	    Set_TN_home (tn, home);

@@ -278,8 +278,8 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_cg.cxx		\
   targ_op.cxx		\
   targ_register.cxx	\
-  targ_tn.cxx		
-#  targ_ebo.cxx
+  targ_tn.cxx		\
+  targ_ebo.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
@@ -332,6 +332,7 @@ CG_CXX_SRCS = 		\
   cg_vector.cxx		\
   comment.cxx		\
   dominate.cxx		\
+  ebo.cxx		\
   findloops.cxx		\
   freq.cxx		\
   gcm.cxx		\
@@ -356,8 +357,6 @@ CG_CXX_SRCS = 		\
   hb_trace.cxx		\
 			\
   $(DERIVED_SRCS)
-
-#  ebo.cxx		\
 
 #add the pqs sources
 ifeq ($(BUILD_TARGET),IA64)
@@ -530,12 +529,18 @@ last : make_deps
 
 
 install:: default
-ifeq ($(INSTALL_MODE),INSTALL_SRC_DIR)
+ifeq ($(build_OS), LINUX)
+	$(STD_INSTALL) $(STD_INSTALL_READ_MASK) $(TARGETS) $(STD_MONGOOSE_OS_LOC)
+endif
+
+ifeq ($(BUILD_OS),SUNOS5)
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
 	for h in $(TARGETS); do \
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
-else
+endif
+
+ifeq ($(build_OS), IRIX)
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) cg.so
  ifeq ($(BUILD_TYPE), SHARED)
  ifndef NOSYSGEN
