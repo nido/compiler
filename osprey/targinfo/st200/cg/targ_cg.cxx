@@ -954,7 +954,7 @@ CGTARG_Spill_Type (
 
       // FdF: Spill type for branch register is I4 in memory
     case ISA_REGISTER_CLASS_branch:
-      return MTYPE_To_TY(MTYPE_I4);
+      return MTYPE_To_TY(MTYPE_I1);
 
     default:
       FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
@@ -979,8 +979,8 @@ void CGTARG_Load_From_Memory (
      * an integer register and then set the predicate by checking for
      * a non-zero value.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
-    Exp_Load (MTYPE_I4, MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    TN *temp_tn = Build_TN_Of_Mtype (mtype);
+    Exp_Load (MTYPE_I4, mtype, temp_tn, mem_loc, 0, ops, V_NONE);
     Build_OP(TOP_mtb, tn, temp_tn, ops);
     DevWarn("Spill of branch register: reload\n");
   }
@@ -1007,9 +1007,9 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
      * Since we can't directly store a predicate TN, first copy to
      * an integer register and then store.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
+    TN *temp_tn = Build_TN_Of_Mtype (mtype);
     Build_OP(TOP_mfb, temp_tn, tn, ops);
-    Exp_Store (MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    Exp_Store (mtype, temp_tn, mem_loc, 0, ops, V_NONE);
     DevWarn("Spill of branch register: store\n");
   }
   else {
