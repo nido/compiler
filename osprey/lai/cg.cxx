@@ -551,6 +551,75 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
+      if (CG_enable_ssa) {
+	//
+	//  Experimental SSA framework: 
+	//
+	//   Right after if-conversion, the SSA is
+	//   consistent and these transformations can see
+	//   all the moves, etc.
+	//
+	//   We do not know how to maintain the valid SSA during
+	//   loop unrolling and SWP, and other
+	//   optimizations that may change the control flow.
+	//   For now our phylosophy is: global scheduling is done
+	//   within hyperblocks and is thus local to them; the
+	//   loop unrolling, SWP are done to inner loops and
+	//   we will use the algorithm for updating the SSA for
+	//   just the inner loops (we know how). So, we will 
+	//   remove the PHI nodes from the inner loops before
+	//   such transformations and they will be reinserted
+	//   when we are done.
+	//
+	//   NOTE: make sure liveness is up to date
+	//
+	Set_Error_Phase("Out of SSA Translation");
+
+	//
+	// Need SSA_make_consistent() to prepare remove_phi_nodes()
+	//
+	SSA_Make_Consistent (region ? REGION_get_rid(rwn) : NULL, region);
+	//
+	// For now (temporary solution), we remove PHI-nodes here.
+	// Later, this will be done in Unroll, SWP after the DDG
+	// is constructed, etc. And the SSA will be restored upon
+	// exit from the Loop_Optimizations.
+	//
+	SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
+	Check_for_Dump(TP_SSA, NULL);
+      }
+
+      //
+      // SSA translation maintains liveness info (see Sreedhar's paper).
+      // Normally, we shouldn't need to recompute it.
+      // However, at the moment
+      //   defreach_in
+      //   defreach_out
+      //   live_def
+      //   live_use
+      // are not being updated properly by the out of SSA
+      // algorithm (I've been toolazy to look at it). So, for now
+      // just recompute the liveness.
+      // TODO: fix this.
+      //
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+      //
+      // rename TNs -- required by LRA
+      // Since Out-of-SSA translation has introduced some
+      // non-localized TNs, need to do it.
+      //
+      // TODO: when SSA is into reg alloc, no need for rename_TNs()
+      //
+      //GRA_LIVE_Rename_TNs();  // rename TNs -- required by LRA
+      //Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
+
+      //extern void GRA_LIVE_fdump_liveness(FILE *f);
+      //GRA_LIVE_fdump_liveness(TFile);
+
+      // not enabled yet
+#endif
+
+#ifdef TARG_ST
       // GRA_LIVE_Init only done if !CG_localize_tns
       if (CG_enable_loop_optimizations && !CG_localize_tns) {
 #else
@@ -631,42 +700,6 @@ CG_Generate_Code(
 #endif
 
     if (!CG_localize_tns) {
-
-#ifdef TARG_ST
-      if (CG_enable_ssa) {
-	//
-	// Experimental SSA framework: later register allocation
-	// done within it.
-	//
-	// NOTE: make sure liveness is up to date
-	//       SSA translation maintains liveness info (see 
-	//       Sreedhar's paper).
-	//
-	Set_Error_Phase("Out of SSA Translation");
-	SSA_Eliminate_Phi_Resource_Interference(region ? REGION_get_rid(rwn) : NULL, region);
-
-	//
-	// SSA_Exit() removes PHI-nodes and cleans up any storage
-	// used by the SSA.
-	//
-	SSA_Exit (region ? REGION_get_rid(rwn) : NULL, region);
-	Check_for_Dump(TP_SSA, NULL);
-	//
-	// TODO: until the reg. allocator works on the SSA directly,
-	//       we need to maintain the liveness info after the
-	//       SSA_Exit(). Unfortunately, if there is scheduling,
-	//       or something else done to the code between the
-	//       SSA_Eliminate_Phi_Resource_Interference() and the
-	//       SSA_Exit(), we can not incrementally maintain it 
-	//       during the SSA_Exit(). So, recompute for now.
-	//
-	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-	//
-	// TODO: same for Rename_TNs() bellow.
-	//
-      }
-#endif
-
       // Earlier phases (esp. GCM) might have introduced local definitions
       // and uses for global TNs. Rename them to local TNs so that GRA 
       // does not have to deal with them.
@@ -678,9 +711,6 @@ CG_Generate_Code(
 	Check_for_Dump (TP_FIND_GLOB, NULL);
       } else {
 	GRA_LIVE_Rename_TNs ();
-#if 1
-	Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
-#endif
       }
 
       if (GRA_redo_liveness) {

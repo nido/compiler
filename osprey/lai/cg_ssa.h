@@ -39,6 +39,10 @@
  *          node has not been visited -- nonsence, I started with it.
  *
  *   
+
+
+
+
  *   For building the SSA form, I use the algorithm by Cytron et al.
  *   ACM Transactions on Programming Languages and Systems, vol. 13,
  *   N. 4, October 1991, pp. 451 - 490.
@@ -78,8 +82,8 @@
 
 
 extern void SSA_Enter (RID *rid, BOOL region);
-extern void SSA_Eliminate_Phi_Resource_Interference(RID *rid, BOOL region);
-extern void SSA_Exit (RID *rid, BOOL region);
+extern void SSA_Make_Consistent (RID *rid, BOOL region);
+extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);

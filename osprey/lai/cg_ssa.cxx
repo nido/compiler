@@ -41,8 +41,9 @@
 //
 static MEM_POOL ssa_pool;
 
-static BOOL Trace_SSA_Build;                  /* -Wb,-tt45:0x100 */
-static BOOL Trace_SSA_Out;                    /* -Wb,-tt45:0x200 */
+static BOOL Trace_SSA_Build;                  /* -Wb,-tt60:0x002 */
+static BOOL Trace_SSA_Out;                    /* -Wb,-tt60:0x004 */
+static BOOL Trace_phi_removal;                /* -Wb,-tt60:0x008 */
 
 /* ================================================================
  *
@@ -397,6 +398,14 @@ typedef struct phi_map_entry {
 } PHI_MAP_ENTRY;
 
 static OP_MAP phi_op_map = NULL;
+
+//
+// Mapping between phi-resource TNs and their representative name
+// TNs
+static TN_MAP tn_to_new_name_map = NULL;
+
+#define TN_new_name(t)       ((TN *)TN_MAP_Get(tn_to_new_name_map,t))
+#define Set_TN_new_name(t,n) (TN_MAP_Set(tn_to_new_name_map,t,n))
 
 /* ================================================================
  *   Set_PHI_Operands
@@ -975,6 +984,23 @@ SSA_Rename ()
 }
 
 /* ================================================================
+ *   ssa_init
+ * ================================================================
+ */
+static void
+ssa_init () {
+  // Initialize ssa_pool once per CG compilation
+  static BOOL initialized;
+
+  if (!initialized) {
+    MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
+    initialized = TRUE;
+  }
+
+  return;
+}
+
+/* ================================================================
  *   SSA_Enter
  *
  *   Can be called two ways:
@@ -992,15 +1018,16 @@ SSA_Enter (
 )
 {
   Trace_SSA_Build = Get_Trace(TP_SSA, 0x001);
+  ssa_init();
 
   //
   // Corresponding Pop is done by SSA_Exit()
   //
-  MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
+  //MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
   MEM_POOL_Push (&ssa_pool);
 
   //
-  // initialize maps, deleted by the SSA_Exit()
+  // initialize phi_op_map, deleted by the SSA_Remove_Phi_Nodes()
   //
   phi_op_map = OP_MAP_Create();
 
@@ -1450,6 +1477,9 @@ PHI_CONGRUENCE_CLASS_TN (
 
   TN *tn = Build_RCLASS_TN(PHI_CONGRUENCE_CLASS_rc(cc));
   PHI_CONGRUENCE_CLASS_name(cc) = tn;
+  // This is a global TN
+  GTN_UNIVERSE_Add_TN(tn);
+  Set_TN_is_global_reg(tn);
   return tn;
 }
 
@@ -1694,54 +1724,23 @@ insert_copies_blindly ()
 }
 
 /* ================================================================
- *   SSA_Eliminate_Phi_Resource_Interference
+ *   Eliminate_Phi_Resource_Interference
  * ================================================================
  */
-void
-SSA_Eliminate_Phi_Resource_Interference(
-  RID *rid, 
-  BOOL region 
-)
+static void
+Eliminate_Phi_Resource_Interference()
 {
-  Trace_SSA_Out = Get_Trace(TP_SSA, 0x002);
-  Trace_Igraph = Get_Trace(TP_SSA, 0x004);
-
-  if (Trace_SSA_Out) {
-    Trace_IR(TP_SSA, "Before Translating Out of SSA", NULL);
-  }
-
-  MEM_POOL_Push(&MEM_local_pool);
-
-  initialize_phiCongruenceClasses();
-
-  if (SSA_TranslateMethod == METHOD_1) {
-    insert_copies_blindly ();
-  }
-  else {
-    //
-    // Build the interference graph
-    //
-    IGRAPH_Build();
-    FmtAssert(FALSE,("not implemented"));
-    IGRAPH_Clean(); // do I need to clean anything ??
-  }
-
-  if (Trace_SSA_Out) {
-    Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
-  }
+  FmtAssert(FALSE,("not implemented"));
 
   return;
 }
 
 /* ================================================================
- *   remove_phi_nodes
- *
- *   Remove PHI-nodes renaming their resources into a representative
- *   name.
+ *   map_phi_resources_to_new_names
  * ================================================================
  */
 static void
-remove_phi_nodes ()
+map_phi_resources_to_new_names()
 {
   INT i;
   TN *tn, *new_tn;
@@ -1749,12 +1748,168 @@ remove_phi_nodes ()
   BB *bb;
 
   if (Trace_SSA_Out) {
-    fprintf(TFile, "============ remove_phi_nodes ===========\n");
+    fprintf(TFile, "============ map_phi_resources_to_new_names ===========\n");
   }
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
     if (Trace_SSA_Out) {
+      fprintf(TFile, "============ map_phi_resources_to_new_names BB%d ===========\n",
+	      BB_id(bb));
+    }
+
+    FOR_ALL_BB_OPs_FWD(bb,op) {
+
+      if (Trace_SSA_Out) {
+	fprintf(TFile, " --> ");
+	Print_OP_No_SrcLine(op);
+	fprintf(TFile, "\n");
+      }
+
+      // if a PHI-node, do nothing - it will be removed
+      if (OP_code(op) != TOP_phi) {
+
+	for (i = 0; i < OP_opnds(op); i++) {
+	  tn = OP_opnd(op,i);
+	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
+	    if (TN_new_name(tn) == NULL) {
+	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+	      Set_TN_new_name(tn, new_tn);
+
+	      if (Trace_SSA_Out) {
+		Print_TN(tn, FALSE);
+		fprintf(TFile," Class: ");
+		GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
+		fprintf(TFile,"\n");
+		fprintf(TFile,"  new_name ");
+		Print_TN(new_tn,FALSE);
+		fprintf(TFile,"\n");
+	      }
+	    }
+	  }
+	}
+
+	for (i = 0; i < OP_results(op); i++) {
+	  tn = OP_result(op,i);
+	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
+	    if (TN_new_name(tn) == NULL) {
+	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+	      Set_TN_new_name(tn, new_tn);
+
+	      if (Trace_SSA_Out) {
+		Print_TN(tn, FALSE);
+		fprintf(TFile," Class: ");
+		GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
+		fprintf(TFile,"\n");
+		fprintf(TFile,"  new_name ");
+		Print_TN(new_tn,FALSE);
+		fprintf(TFile,"\n");
+	      }
+	    }
+	  }
+	}
+      } /* else not a TOP_phi */
+    } /* FOR_ALL_BB_OPs_FWD */
+  } /* for (bb = REGION_First_BB ... */
+
+  return;
+}
+
+/* ================================================================
+ *   SSA_Make_Consistent
+ * ================================================================
+ */
+void
+SSA_Make_Consistent (
+  RID *rid, 
+  BOOL region 
+)
+{
+  Trace_SSA_Out = Get_Trace(TP_SSA, 0x002);
+  Trace_Igraph = Get_Trace(TP_SSA, 0x004);
+
+  //
+  // Delete the tn_to_new_name map that may have been left
+  // from a previous invocation of the routine. And initialize
+  // a new one.
+  //
+  if (tn_to_new_name_map != NULL)
+    TN_MAP_Delete(tn_to_new_name_map);
+
+  //
+  // This one is temporary working pool (zeroes memory)
+  //
+  MEM_POOL_Push(&MEM_local_pool);
+
+  if (Trace_SSA_Out) {
+    Trace_IR(TP_SSA, "Before Translating Out of SSA", NULL);
+  }
+
+  //
+  // Build the interference graph
+  //
+  IGRAPH_Build();
+
+  initialize_phiCongruenceClasses();
+
+  if (SSA_TranslateMethod == METHOD_1) {
+    insert_copies_blindly ();
+  }
+  else {
+    Eliminate_Phi_Resource_Interference();
+  }
+
+  if (Trace_SSA_Out) {
+    Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
+  }
+
+  //
+  // Create a map of TNs to their representative names
+  // TNs are mapped to their phiCongruenceClass'es that will
+  // not survive this routine (they are in MEM_local_pool).
+  // This is because we want to separate removing PHI resource
+  // interference from actual removing of the PHI-nodes and 
+  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
+  // map gets replaced by the phiResourceName(tn) map.
+  //
+  tn_to_new_name_map = TN_MAP_Create();
+  map_phi_resources_to_new_names();
+
+  finalize_phiCongruenceClasses();
+
+  IGRAPH_Clean(); // do I need to clean anything ??
+
+  MEM_POOL_Pop(&MEM_local_pool);
+
+  return;
+}
+
+/* ================================================================
+ *   SSA_Remove_Phi_Nodes
+ *
+ *   Remove PHI-nodes renaming their resources into a representative
+ *   name.
+ *   IMPORTANT: - maintains the liveness info.
+ *              - removes maps and pops ssa_pool, no more trace of
+ *                the SSA in this region.
+ * ================================================================
+ */
+void
+SSA_Remove_Phi_Nodes (
+  RID *rid, 
+  BOOL region 
+)
+{
+  INT i;
+  TN *tn, *new_tn;
+  OP *op;
+  BB *bb;
+
+  Trace_phi_removal = Get_Trace(TP_SSA, 0x008);
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+
+    if (Trace_phi_removal) {
       fprintf(TFile, "============ remove_phi_nodes BB%d ===========\n",
 	      BB_id(bb));
     }
@@ -1764,7 +1919,7 @@ remove_phi_nodes ()
     while (op != NULL) {
       OP *next_op = OP_next(op);
 
-      if (Trace_SSA_Out) {
+      if (Trace_phi_removal) {
 	fprintf(TFile, " --> ");
 	Print_OP_No_SrcLine(op);
 	fprintf(TFile, "\n");
@@ -1772,7 +1927,18 @@ remove_phi_nodes ()
 
       // if a PHI-node, remove
       if (OP_code(op) == TOP_phi) {
-	if (Trace_SSA_Out) {
+
+	// First, we need to remove this OP's resources from
+	// live_in/live_out sets
+	for (i = 0; i < OP_results(op); i++) {
+	  GRA_LIVE_Remove_Live_In_GTN(bb, OP_result(op,i));
+	}
+	for (i = 0; i < OP_opnds(op); i++) {
+	  GRA_LIVE_Remove_Live_Out_GTN(Get_PHI_Predecessor(op,i),
+				       OP_opnd(op,i));
+	}
+
+	if (Trace_phi_removal) {
 	  fprintf(TFile, "  removing a phi \n\n");
 	  //	  Print_OP_No_SrcLine(op);
 	}
@@ -1783,39 +1949,36 @@ remove_phi_nodes ()
 	// Not a PHI-node, rename resources into representative name
 	for (i = 0; i < OP_opnds(op); i++) {
 	  tn = OP_opnd(op,i);
-	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
-	    new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 
-	    if (Trace_SSA_Out) {
-	      Print_TN(tn, FALSE);
-	      fprintf(TFile," Class: ");
-	      GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
-	      fprintf(TFile,"\n");
-	      fprintf(TFile,"  new_name ");
-	      Print_TN(new_tn,FALSE);
-	      fprintf(TFile,"\n");
-	    }
+	  if (!TN_is_ssa_reg(tn)) continue;
+
+	  new_tn = TN_new_name(tn);
+	  if (new_tn != NULL) {
+
+	    //if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
+	    //  new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 
 	    Set_OP_opnd(op, i, new_tn);
+
+	    // Add new_tn to live_in set of this BB
+	    GRA_LIVE_Add_Live_In_GTN(bb, new_tn);
 	  }
 	}
 
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
-	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
-	    new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 
-	    if (Trace_SSA_Out) {
-	      Print_TN(tn, FALSE);
-	      fprintf(TFile," Class: ");
-	      GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
-	      fprintf(TFile,"\n");
-	      fprintf(TFile,"  new_name ");
-	      Print_TN(new_tn,FALSE);
-	      fprintf(TFile,"\n");
-	    }
+	  if (!TN_is_ssa_reg(tn)) continue;
+
+	  new_tn = TN_new_name(tn);
+	  if (new_tn != NULL) {
+	    //if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
+	    //  new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 
 	    Set_OP_result(op, i, new_tn);
+
+	    // Add new_tn to live_out of this BB
+	    GRA_LIVE_Add_Live_Out_GTN(bb, new_tn);
 	  }
 	}
       } /* else not a TOP_phi */
@@ -1824,25 +1987,15 @@ remove_phi_nodes ()
     }
   }
 
+  //
+  // Delete maps
+  //
+  FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map deleted"));
+  TN_MAP_Delete(tn_to_new_name_map);
+  OP_MAP_Delete(phi_op_map);
+
+  MEM_POOL_Pop (&ssa_pool);
+
   return;
 }
-
-/* ================================================================
- *   SSA_Exit
- * ================================================================
- */
-void
-SSA_Exit (
-  RID *rid, 
-  BOOL region 
-)
-{
-  remove_phi_nodes();
-  finalize_phiCongruenceClasses();
-
-  MEM_POOL_Pop(&MEM_local_pool);
-  OP_MAP_Delete(phi_op_map);
-  MEM_POOL_Pop (&ssa_pool);
-}
-
 
