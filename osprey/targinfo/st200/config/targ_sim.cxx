@@ -692,8 +692,6 @@ Setup_Parameter_Locations (
   } else
     Last_Fixed_Param = INT_MAX;
 
-  Current_Param_Num = 0;
-
   Current_Int_Param_Num = 0;
   Current_Offset = 0;
 
@@ -768,6 +766,7 @@ Get_Parameter_Location (
 
   /* check for array case where fe doesn't fill in right btype */
   TYPE_ID pmtype = Fix_TY_mtype (ty);	/* Target type */
+
   ploc.size = MTYPE_RegisterSize(pmtype);
 
   if (First_Param_In_Return_Reg) {
@@ -1027,9 +1026,11 @@ Get_Struct_Parameter_Location (PLOC prev)
     }
 
     if (PSTRUCT_struct && PSTRUCT_hfa &&
-	!(Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
+	!(Current_Int_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
 
       FmtAssert(FALSE,("struct is HFA ?"));
+
+#if 0
 
       if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4) {
         PLOC_size(next) = TY_size (Be_Type_Tbl (MTYPE_F4));
@@ -1065,6 +1066,7 @@ Get_Struct_Parameter_Location (PLOC prev)
       }
 
       return next;
+#endif
     }
 
     PLOC_size(next) = ireg_size;
@@ -1099,8 +1101,9 @@ Get_Vararg_Parameter_Location (
 )
 {
   PLOC next;
-  Current_Param_Num++;
-  next.reg = Get_Current_Preg_Num (SIM_INFO.int_args);
+
+  next.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+  Current_Int_Param_Num++;
 
   if (next.reg > PR_last_reg(SIM_INFO.int_args))
   {
@@ -1119,6 +1122,7 @@ Get_Vararg_Parameter_Location (
 
   next.start_offset = Current_Offset;
   Current_Offset = next.start_offset + next.size;
+
   return next;
 }
 
