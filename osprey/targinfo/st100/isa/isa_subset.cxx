@@ -15,18 +15,18 @@
 
 main() 
 { 
-  ISA_SUBSET st100_gp32; 
-  ISA_SUBSET st100_gp16; 
+  ISA_SUBSET gp32; 
+  ISA_SUBSET gp16; 
 
 
   ISA_Subset_Begin("st100"); 
-  st100_gp32 = ISA_Subset_Create(NULL,"st100_gp32"); 
+  gp32 = ISA_Subset_Create(NULL,"gp32"); 
 
   /* ==================================================================== 
    *             ST100_gp32 Instructions 
    * ==================================================================== 
    */ 
-  Instruction_Group(st100_gp32, 
+  Instruction_Group(gp32, 
 		 TOP_GP32_ADDBA_GT_AR_AR_AR, 
 		 TOP_GP32_ADDBA_GT_AR_AR_U9, 
 		 TOP_GP32_ADDBA_GT_AR_P13_U15, 
@@ -1771,7 +1771,9 @@ main()
 		 TOP_IFR_MINUH_GT_DR_DR_DR, 
 		 TOP_IFR_MINUW_GT_DR_DR_DR, 
 		 TOP_IFR_MINW_GT_DR_DR_DR, 
+		 TOP_IFR_MULE_GT_DR_DR_DR, 
 		 TOP_IFR_MULH_GT_DR_DR_DR, 
+		 TOP_IFR_MULUE_GT_DR_DR_DR, 
 		 TOP_IFR_MULUH_GT_DR_DR_DR, 
 		 TOP_IFR_MULUW_GT_DR_DR_DR, 
 		 TOP_IFR_MULW_GT_DR_DR_DR, 
@@ -1790,13 +1792,13 @@ main()
 		 TOP_noop, 
 		 TOP_UNDEFINED); 
 
-  st100_gp16 = ISA_Subset_Create(NULL,"st100_gp16"); 
+  gp16 = ISA_Subset_Create(NULL,"gp16"); 
 
   /* ==================================================================== 
    *             ST100_gp16 Instructions 
    * ==================================================================== 
    */ 
-  Instruction_Group(st100_gp16, 
+  Instruction_Group(gp16, 
 		 TOP_GP16_ADDBA_G0T_ARL_ARH_P3, 
 		 TOP_GP16_ADDBA_G0T_ARL_ARL_P3, 
 		 TOP_GP16_ADDBA_G0T_ARL_ARL_U4, 
