@@ -58,7 +58,11 @@
 #include "wn.h"
 #include "opcode.h"
 #include "intrn_info.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 #include "betarget.h"
