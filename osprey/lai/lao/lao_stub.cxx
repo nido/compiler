@@ -465,8 +465,9 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
     }
     // make the Operation
     LAI_Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
-    operation = LAI_Interface_makeOperation(interface, cgir_op,
-	OPERATOR, argCount, arguments, resCount, results, clobberCount, clobbers);
+    int iteration = OP_unrolling(cgir_op);
+    operation = LAI_Interface_makeOperation(interface, cgir_op, OPERATOR, iteration,
+	argCount, arguments, resCount, results, clobberCount, clobbers);
     if (OP_volatile(cgir_op)) LAI_Interface_Operation_setVolatile(interface, operation);
     if (OP_prefetch(cgir_op)) LAI_Interface_Operation_setPrefetch(interface, operation);
     if (OP_barrier(cgir_op)) LAI_Interface_Operation_setBarrier(interface, operation);
