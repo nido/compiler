@@ -1488,6 +1488,19 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 }
 
 /* ====================================================================
+ *   CGTARG_Handle_Latency_Hazard
+ * ====================================================================
+ */
+void
+CGTARG_Handle_Latency_Hazard (
+  OP *op, 
+  TI_BUNDLE *bundle
+)
+{
+  return;
+}
+
+/* ====================================================================
  *   CGTARG_Handle_Bundle_Hazard
  *
  *   Handle all bundle hazards in this routine.
@@ -1504,7 +1517,8 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 			     INT                         slot_pos, 
 			     INT                         max_pos,
 			     BOOL                        stop_bit_reqd,
-			     ISA_EXEC_UNIT_PROPERTY      prop) 
+			     ISA_EXEC_UNIT_PROPERTY      prop,
+			     INT                         *clock) 
 {
   INT ti_err = TI_RC_OKAY;
   INT template_bit = TI_BUNDLE_Return_Template(bundle);

@@ -216,6 +216,209 @@ RLD_To_R16(long double q)
 }
 #endif
 
+/* ====================================================================
+ *   Representation for long doubles
+ * ====================================================================
+ */
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  float lo;
+  float hi;
+#else
+  float hi;
+  float lo;
+#endif
+} DOUBLE;
+
+typedef union DOUBLE_REPRESENTATION {
+   double  a_doubletype;
+   DOUBLE  a_double;
+} Double_Representation;
+
+static DOUBLE
+R8_To_RD(double dt)
+{
+   Double_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static double
+RD_To_R8(DOUBLE d)
+{
+   Double_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+/* ====================================================================
+ *   Extract_Double_Hi/Extract_Double_Lo
+ * ====================================================================
+ */
+TCON
+Extract_Double_Hi(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
+
+  TCON_ty(c) = MTYPE_F4;
+  Set_TCON_R4(c, doubleTemp.hi);
+  return c;
+}
+
+
+TCON
+Extract_Double_Lo(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
+
+  TCON_ty(c) = MTYPE_F4;
+  Set_TCON_R4(c, doubleTemp.lo);
+  return c;
+}
+
+/* ====================================================================
+ *   Representation for long long
+ * ====================================================================
+ */
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  INT32 lo;
+  INT32 hi;
+#else
+  INT32 hi;
+  INT32 lo;
+#endif
+} SLONGLONG;
+
+typedef	struct {
+#if HOST_IS_LITTLE_ENDIAN
+  UINT32 lo;
+  UINT32 hi;
+#else
+  UINT32 hi;
+  UINT32 lo;
+#endif
+} ULONGLONG;
+
+typedef union LONGLONG_REPRESENTATION {
+   INT64 a_doubletype;
+   SLONGLONG  a_double;
+} LongLong_Representation;
+
+typedef union ULONGLONG_REPRESENTATION {
+   UINT64 a_doubletype;
+   ULONGLONG  a_double;
+} ULongLong_Representation;
+
+static SLONGLONG
+I8_To_RL(long long dt)
+{
+   LongLong_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static INT64
+RL_To_I8(SLONGLONG d)
+{
+   LongLong_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+static ULONGLONG
+U8_To_RL(long long dt)
+{
+   ULongLong_Representation repr;
+   
+   repr.a_doubletype = dt;
+   return repr.a_double;
+}
+
+static INT64
+RL_To_U8(ULONGLONG d)
+{
+   ULongLong_Representation repr;
+   
+   repr.a_double = d;
+   return repr.a_doubletype;
+}
+
+/* ====================================================================
+ *   Extract_LongLong_Hi/Extract_LongLong_Lo
+ * ====================================================================
+ */
+TCON
+Extract_LongLong_Hi(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  switch (TCON_ty(v)) {
+
+  case MTYPE_I8:
+    SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
+
+    TCON_ty(c) = MTYPE_I4;
+    TCON_I4(c) = longlongTemp.hi;
+    break;
+
+  case MTYPE_U8:
+    ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
+
+    TCON_ty(c) = MTYPE_U4;
+    TCON_U4(c) = ulonglongTemp.hi;
+    break;
+
+  default:
+    break;
+  }
+
+  return c;
+}
+
+
+TCON
+Extract_LongLong_Lo(TCON v)
+{
+  TCON c;
+  TCON_clear(c);
+
+  switch (TCON_ty(v)) {
+
+  case MTYPE_I8:
+    SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
+
+    TCON_ty(c) = MTYPE_I4;
+    TCON_I4(c) = longlongTemp.lo;
+    break;
+
+  case MTYPE_U8:
+    ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
+
+    TCON_ty(c) = MTYPE_U4;
+    TCON_U4(c) = ulonglongTemp.lo;
+    break;
+
+  default:
+    break;
+  }
+
+  return c;
+}
+
 #ifdef Is_True_On
 void
 Check_TCON ( TCON *tc )
