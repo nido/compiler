@@ -209,7 +209,15 @@ Assign_Global_Variable (
     if (ST_is_thread_private(st)) {
       FmtAssert(FALSE,("Assign_Global_Variable: thread private ST"));
     } 
-    else sec = _SEC_BSS;
+    else {
+#ifdef TARG_ST
+      // (cbr) for named sections are progbits 
+      if (ST_has_named_section(st))
+        sec = _SEC_DATA;
+      else
+#endif
+        sec = _SEC_BSS;
+    }
     break;
 
   case SCLASS_DGLOBAL:
