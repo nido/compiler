@@ -419,7 +419,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimize", "",
     0, 0, 65535,	&CG_LAO_optimize, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
-    1, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
+    2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedtype", "",
     1, 0, 3,	&CG_LAO_schedtype, &CG_LAO_schedtype_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipeline", "",
@@ -1515,7 +1515,7 @@ CG_Init (void)
 
 #ifdef TARG_ST
   if (CG_LAO_optimize != 0) {
-    if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 1;
+    if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
     if (!CG_LAO_schedtype_overridden) CG_LAO_schedtype = 1;
     if (!CG_LAO_pipeline_overridden) CG_LAO_pipeline = 0;
     if (!CG_LAO_speculate_overridden) CG_LAO_speculate = 0;
