@@ -155,9 +155,9 @@ EBO_Can_Merge_Into_Offset (
     return TRUE;
   }
 
-  if (OP_isub(op) && TN_Is_Constant(OP_opnd(op,0))) {
-    *index = 1;
-    *immed = 0;
+  if (OP_isub(op) && TN_Is_Constant(OP_opnd(op,1))) {
+    *index = 0;
+    *immed = 1;
     return TRUE;
   }
 
