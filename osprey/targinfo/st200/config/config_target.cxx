@@ -496,7 +496,10 @@ Configure_Target ()
 
   /* Unrolling defaults */
   if (OPT_unroll_times > 0 && !OPT_unroll_times_overridden)
-    OPT_unroll_times = 4;
+    OPT_unroll_times = 8;
+
+  if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden)
+    OPT_unroll_size = 128;
 
   /* Set up the target register set: */
 
