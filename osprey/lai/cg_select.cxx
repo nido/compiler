@@ -1713,7 +1713,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   OP *cmp_op1 = TN_Reaching_Value_At_Op(branch_tn1, br1_op, &kind, TRUE);
   OP *cmp_op2 = TN_Reaching_Value_At_Op(branch_tn2, br2_op, &kind, TRUE);
 
-  BOOL  false_br = V_false_br(variant);
+  BOOL false_br = V_false_br(variant)?TRUE:FALSE;
   TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
 
   // make joint_block a fall_thru of bb1.
@@ -1827,7 +1827,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   OP *br_op = BB_Remove_Branch(head);
 
   VARIANT variant = CGTARG_Analyze_Branch(br_op, &cond_tn, &tn2);
-  BOOL false_br = V_false_br(variant);
+  BOOL false_br = V_false_br(variant)?TRUE:FALSE;
 
   BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
   UINT8 n_preds_target    =  BB_preds_len (target_bb);
