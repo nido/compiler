@@ -1355,9 +1355,10 @@ CGTARG_Adjust_Latency (
 #endif
 // CL: latency should be at least 3, not 3 more
 //     than already required
-      if (*latency < 3) {
-        *latency = 3;
-      }
+      if (succ_code == TOP_icall || succ_code == TOP_igoto || succ_code == TOP_return)
+	if (*latency < 3) {
+	  *latency = 3;
+	}
     }
   }
 	
