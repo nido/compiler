@@ -946,6 +946,57 @@ Init_Resource_Table (
   return;
 }
 
+#ifdef TARG_ST200
+// ======================================================================
+//  Replace a sequence of [;; nop ;; nop ;;] by [;; goto 1 ;;]
+//  This is activated under option -CG:nop2goto=1
+// ======================================================================
+
+static BOOL NOPs_to_GOTO (
+  BB *bb,
+  OP *op
+)
+{
+  OP *nop_first, *nop_second;
+  BOOL bundle_start;
+
+  bundle_start = op ? OP_end_group(op) : TRUE;
+  nop_first = op ? OP_next(op) : BB_first_op(bb);
+  nop_second = nop_first ? OP_next(nop_first) : NULL;
+
+  if (bundle_start && 			   // ;;
+      nop_first && OP_noop(nop_first) &&   // NOP
+      OP_end_group(nop_first) &&	   // ;;
+      nop_second && OP_noop(nop_second) && // NOP
+      OP_end_group(nop_second)) {	   // ;;
+
+    // ;; GOTO 1 ;;    
+    LABEL_IDX lab;
+    LABEL *label;
+    OP *goto_op;
+
+    label = &New_LABEL(CURRENT_SYMTAB, lab);
+    // FdF: Need the extra space, because cgemit checks if the first
+    // character is a digit
+    LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
+
+    goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab, 0));
+    BB_Insert_Op(OP_bb(op), nop_second, goto_op, FALSE);
+  
+    BB_Remove_Op(OP_bb(op), nop_first);
+    BB_Remove_Op(OP_bb(op), nop_second);
+
+    OP_scycle(goto_op) = -1;
+    Set_OP_bundled (goto_op);
+    Set_OP_end_group(goto_op);
+
+    return TRUE;
+  }
+
+  return FALSE;
+}
+#endif
+
 /* ====================================================================
  *   Fill_Cycle_With_Noops
  *
@@ -988,13 +1039,12 @@ Fill_Cycle_With_Noops (
       Set_OP_bundled (noop);
       TI_BUNDLE_Reserve_Slot (bundle, i, 
 				   ISA_EXEC_Slot_Prop(template_bit, i));
-
-#ifdef TARG_ST200 // [CL]
-      *pc += 1;
-#endif
       // Set end group and reset bundle vector:
       Set_OP_end_group(noop);
-#ifdef TARG_ST200
+
+#ifdef TARG_ST200 // [CL]
+      if (!CG_NOPs_to_GOTO || !NOPs_to_GOTO(bb, op))
+	*pc += 1;
 	}
       }
       else {
@@ -1547,11 +1597,13 @@ Make_Bundles (
 #ifdef SUPERBLOCK_ENABLED
   // Save BB_first_op
   OP *bb_first_op = BB_first_op(bb);
-  for (; Clock < OP_scycle(op); Clock++) {
-    Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector, pc);
-    if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
-      FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
-      TI_BUNDLE_Clear (bundle);
+  if (BB_scheduled(bb) && CG_LAO_Region_Map) {
+    for (; Clock < OP_scycle(op); Clock++) {
+      Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector, pc);
+      if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
+	FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+	TI_BUNDLE_Clear (bundle);
+      }
     }
   }
 #endif
@@ -1913,10 +1965,6 @@ Make_Bundles (
 
 #endif
 
-#ifdef TARG_ST200
-static void NOPs_to_GOTO(BB *bb);
-#endif
-
 // ======================================================================
 // Eliminate hazards for 'bb' by adding noops.
 // ======================================================================
@@ -1954,10 +2002,6 @@ Handle_All_Hazards (BB *bb)
   //         instructions.
   //
   Make_Bundles(bb, bundle, &bundle_vector);
-
-  if (FORCE_NOOPS && CG_NOPs_to_GOTO)
-    NOPs_to_GOTO(bb);
-
 #else
 
   FOR_ALL_BB_OPs_FWD (bb, op) {
@@ -1989,84 +2033,3 @@ Handle_All_Hazards (BB *bb)
 #endif
 
 }
-
-#ifdef TARG_ST200
-
-// ======================================================================
-//  Post-pass to replace a sequence of ;; nop ;; nop ;; by ;; goto 1 ;;
-//  This is activated under option -CG:nop2goto=1
-// ======================================================================
-
-// Create a label '.'
-static LABEL_IDX
-Gen_Label_PC() {
-  LABEL_IDX lab;
-  LABEL *label;
-
-  label = &New_LABEL(CURRENT_SYMTAB, lab);
-  // FdF: Need the extra space, because cgemit checks if the first
-  // character is a digit
-  LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
-
-  return lab;
-}
-
-// Replace the sequence ;; NOP ;; NOP ;; by ;; GOTO 1 ;;
-static OP*
-NOPs2Goto (
-  OP *op,
-  LABEL_IDX lab_PC
-)
-{
-  OP *goto_op;
-
-  goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 0));
-  BB_Insert_Op(OP_bb(op), op, goto_op, FALSE);
-  
-  // It is guarantee that OP_scyle(op) is correct in case it is the
-  // last OP of the basic block, while OP_scycle(OP_prev(op)) may be
-  // -1.
-  OP_scycle(goto_op) = OP_scycle(op)-1;
-  Set_OP_bundled (goto_op);
-  Set_OP_end_group(goto_op);
-
-  BB_Remove_Op(OP_bb(op), OP_prev(op));
-  BB_Remove_Op(OP_bb(op), op);
-
-  return goto_op;
-}
-
-#define Bundle_is_NOP(op, start) (start && OP_end_group(op) && OP_noop(op))
-
-static void NOPs_to_GOTO (
-  BB *bb
-)
-{
-  OP *op = BB_first_op(bb);
-  bool bundle_NOP; // Did we find a NOP bundle
-  bool bundle_start; // Is the current OP the first one in a bundle
-  LABEL_IDX label_PC;
-
-  // Create a new label for each basic block. It would be possible to
-  // create only one by PU, but the bundler works currently at the
-  // basic block level.
-  label_PC = Gen_Label_PC();
-
-  // Initial state
-  bundle_NOP = FALSE;
-  bundle_start = TRUE;
-  
-  while (op != NULL) {
-
-    // Previous bundle is a NOP, and the current one also
-    if (bundle_NOP && Bundle_is_NOP(op, bundle_start))
-      op = NOPs2Goto(op, label_PC);
-
-    // Set the state for the next operation.
-    bundle_NOP = (Bundle_is_NOP(op, bundle_start));
-    bundle_start = OP_end_group(op);
-    op = OP_next(op);
-  }
-}
-
-#endif
