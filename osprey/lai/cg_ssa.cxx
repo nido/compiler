@@ -415,7 +415,7 @@ static hTN_MAP tn_to_new_name_map = NULL;
  *   Set_PHI_Operands
  * ================================================================
  */
-static void
+void
 Set_PHI_Operands(
   OP   *phi
 )

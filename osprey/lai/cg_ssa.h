@@ -86,6 +86,7 @@ extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
+void Set_PHI_Operands(OP *phi);
 
 // Tracing flags
 #define SSA_BUILD        0x00000001  /* trace SSA build */
