@@ -88,6 +88,10 @@
 #include "pqs_cg.h"
 #endif
 
+#ifdef TARG_ST
+#include "cg_ssa.h"
+#endif
+
 static BB_LIST *region_entry_list;
 static BB_SET  *region_exit_set;
 static MEM_POOL gra_live_pool;
@@ -704,6 +708,31 @@ GRA_LIVE_Init_BB_Start(BB *bb)
 
   tmp_live_use     = TN_SET_Create(Last_TN + 1,&gra_live_local_pool);
   tmp_live_def     = TN_SET_Create(Last_TN + 1,&gra_live_local_pool);
+
+#ifdef TARG_ST
+  //
+  // Initialize tmp_live_use with TN operands of PHI-nodes in
+  // successor BBs. PHI-node operand use happens at the end of
+  // BB where it comes from.
+  //
+  BBLIST *succs;
+  FOR_ALL_BB_SUCCS (bb, succs) {
+    BB *succ = BBLIST_item(succs);
+    OP *op;
+    FOR_ALL_BB_PHI_OPs(succ, op) {
+      // Look for corresponding PHI-node operands
+      for (INT i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op, i);
+	if (Get_PHI_Predecessor(op, i) == bb) {
+	  tmp_live_use = TN_SET_Union1D(tmp_live_use,
+					tn,
+					&gra_live_local_pool);
+	  break;
+	}
+      }
+    }
+  }
+#endif
 }
 
 
@@ -1474,6 +1503,37 @@ GRA_LIVE_Region_Compute_Global_Live_Info(void)
   }
   while (change);
 
+#ifdef TARG_ST
+  //
+  // Arthur: We need to fixup the live_in/live_out sets in 
+  //         order to account for the special treatment of
+  //         the PHI-nodes. The result of each PHI-node
+  //         must be added to the live_in set of BB in where
+  //         the PHI-node resides. Operands of each PHI-node
+  //         must be added to the live_out set of respective
+  //         predecessor BB. Results and operands must
+  //         be global TNs.
+  INT i;
+  OP *op;
+  BB *bb;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_PHI_OPs(bb, op) {
+      // add operands to predecessor live_in
+      for (i = 0; i < OP_opnds(op); i++) {
+	GTN_UNIVERSE_Add_TN(OP_opnd(op,i));
+	GRA_LIVE_Add_Live_Out_GTN(Get_PHI_Predecessor(op,i), 
+				  OP_opnd(op,i));
+      }
+
+      // add results to live_in/globalize (if not yet)
+      for (i = 0; i < OP_results(op); i++) {
+	GTN_UNIVERSE_Add_TN(OP_result(op,i));
+	GRA_LIVE_Add_Live_In_GTN(bb, OP_result(op,i));
+      }
+    }
+  }
+#endif
+
   if (Get_Trace(TP_FIND_GLOB, 0x1)) {
 	GRA_LIVE_fdump_liveness(TFile);
   }
@@ -2107,6 +2167,26 @@ GRA_LIVE_Compute_Local_Info(
     // Non-predicate aware form
     for ( op = BB_last_op(bb); op != NULL; op = OP_prev(op) ) {
       
+#ifdef TARG_ST
+      //
+      // Arthur: Ignore operands of PHI-nodes because
+      //         they are not live-in (although live_out of
+      //         their respective predecessor BBs.
+      //
+      if (OP_code(op) == TOP_phi) {
+	for ( i = OP_results(op) - 1; i >= 0; --i ) {
+	  TN *result_tn = OP_result(op, i);
+	  if (TN_is_register(result_tn) && !TN_is_const_reg(result_tn)) {
+	    tmp_live_def = 
+	      TN_SET_Union1D(tmp_live_def,result_tn,&gra_live_local_pool);
+	    tmp_live_use = 
+	      TN_SET_Difference1D(tmp_live_use,result_tn);
+	  }
+	}
+      }
+      else {
+	// not a PHI-node
+#endif
       for ( i = OP_results(op) - 1; i >= 0; --i ) {
 	TN *result_tn = OP_result(op, i);
 	if (TN_is_register(result_tn) && !TN_is_const_reg(result_tn)) {
@@ -2132,6 +2212,9 @@ GRA_LIVE_Compute_Local_Info(
 	  tmp_live_def = TN_SET_Difference1D(tmp_live_def,opnd_tn);
 	}
       }
+#ifdef TARG_ST
+      } // closes else TOP_phi
+#endif
     }
   }
 

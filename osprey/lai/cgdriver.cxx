@@ -690,6 +690,7 @@ Configure_CG_Options(void)
 #endif
 
 #ifdef TARG_ST100
+  //IGLS_Enable_All_Scheduling = FALSE;
   if (!Lai_Code) {
     // Generate the push/pop sequence
     CG_gen_callee_saved_regs_mask = TRUE;

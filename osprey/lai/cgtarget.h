@@ -746,7 +746,7 @@ extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum, 
 					 INT ops_to_check);
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 // Handle Latency Hazards.
 extern void CGTARG_Handle_Latency_Hazard (OP *op, TI_BUNDLE *bundle);
 

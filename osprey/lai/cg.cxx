@@ -108,6 +108,10 @@
 #endif
 #include "tag.h"
 
+#ifdef TARG_ST
+#include "cg_ssa.h"
+#endif
+
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
@@ -497,6 +501,22 @@ CG_Generate_Code(
     // Invoke global optimizations before register allocation at -O2 and above.
     if (CG_opt_level > 1) {
 
+#ifdef TARG_ST
+      if (Enable_CG_SSA) {
+	//
+	// Experimental SSA framework: invoked at optimization levels
+	// above 1, when CG_localize_tns is not ON.
+	//
+	Set_Error_Phase( "CG SSA Construction");
+	SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
+	Check_for_Dump(TP_SSA, NULL);
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+	//      Trace_IR(TP_SSA, "GRA_LIVE_Recalc_Liveness", NULL);
+	extern void GRA_LIVE_fdump_liveness(FILE *f);
+	GRA_LIVE_fdump_liveness(TFile);
+      }
+#endif
+
       // Compute frequencies using heuristics when not using feedback.
       // It is important to do this after the code has been given a
       // cleanup by cflow so that it more closely resembles what it will
@@ -527,6 +547,10 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
+      // not enabled yet
+#else
+
+#ifdef TARG_ST
       // GRA_LIVE_Init only done if !CG_localize_tns
       if (CG_enable_loop_optimizations && !CG_localize_tns) {
 #else
@@ -544,6 +568,8 @@ CG_Generate_Code(
 	if (frequency_verify)
 	  FREQ_Verify("CGLOOP");
       }
+#endif
+
 #if 0
       fprintf(TFile, "%s CFG After Loop Opts\n %s\n", DBar, DBar);
       Print_All_BBs ();
@@ -567,6 +593,31 @@ CG_Generate_Code(
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
       }
+#endif
+
+#ifdef TARG_ST
+      if (Enable_CG_SSA) {
+	//
+	// Experimental SSA framework: later scheduling, register
+	// allocation done within it.
+	//
+	// NOTE: make sure liveness is up to date
+	//
+	Set_Error_Phase("Out of SSA Translation");
+	SSA_Exit (region ? REGION_get_rid(rwn) : NULL, region);
+	Check_for_Dump(TP_SSA, NULL);
+      }
+
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+      //
+      // rename TNs -- required by LRA
+      // Since Out-of-SSA translation has introduced some
+      // non-localized TNs, need to do it.
+      //
+      // TODO: when SSA is into reg alloc, no need for rename_TNs()
+      //
+      GRA_LIVE_Rename_TNs();  // rename TNs -- required by LRA
+      Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
 #endif
 
     }

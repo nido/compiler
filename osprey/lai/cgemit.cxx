@@ -458,25 +458,6 @@ CGEMIT_Alias (ST *sym, ST *strongsym, FILE *file)
 }
 
 /* ====================================================================
- *    CGEMIT_Exit_In_Asm ()
- *
- *    TODO: Target dependent !
- * ====================================================================
- */
-static void
-CGEMIT_Exit_In_Asm (FILE *file) 
-{
-#ifdef TARG_ST100
-  fprintf (file, "\t%s\t", AS_END);
-  EMT_Write_Qualified_Name(file, pu);
-  fprintf (file, "\n");
-#endif
-#ifdef TARG_ST200
-  fprintf (file, "\t%s\n", AS_END);
-#endif
-}
-
-/* ====================================================================
  *    r_qualified_name
  * ====================================================================
  */
@@ -522,11 +503,27 @@ EMT_Write_Qualified_Name (
 {
   vstring buf = vstr_begin(LBUF_LEN);
   r_qualified_name (st, &buf);
-  if (Assembly)
-    fprintf (Asm_File, "%s", vstr_str(buf));
-  if(Lai_Code)
-    fprintf (Lai_File, "%s", vstr_str(buf));
+  fprintf (f, "%s", vstr_str(buf));
   vstr_end(buf);
+}
+
+/* ====================================================================
+ *    CGEMIT_Exit_In_Asm ()
+ *
+ *    TODO: Target dependent !
+ * ====================================================================
+ */
+static void
+CGEMIT_Exit_In_Asm (FILE *file, ST *pu) 
+{
+#ifdef TARG_ST100
+  fprintf (file, "\t%s\t", AS_END);
+  EMT_Write_Qualified_Name(file, pu);
+  fprintf (file, "\n");
+#endif
+#ifdef TARG_ST200
+  fprintf (file, "\t%s\n", AS_END);
+#endif
 }
 
 /* ====================================================================
@@ -4473,7 +4470,7 @@ EMT_Emit_PU (
 
   /* Emit the stuff needed at the end of the PU. */
   if (AS_END) {
-    CGEMIT_Exit_In_Asm(Output_File);
+    CGEMIT_Exit_In_Asm(Output_File, pu);
 #if 0
     fprintf (Output_File, "\t%s\t", AS_END);
     EMT_Write_Qualified_Name(Output_File, pu);
