@@ -572,10 +572,10 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
     allowed = REGISTER_SET_Intersection(allowed,singleton);
   }
 
-#ifdef TARG_ST200
-  // Forbid registers from GRA.
+#ifdef TARG_ST
+  // Forbid some registers from GRA.
   if (Type() == LRANGE_TYPE_COMPLEMENT) {
-    REGISTER_SET forbidden = REGISTER_Get_forbidden_GRA_Registers();
+    REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
     allowed = REGISTER_SET_Difference(allowed, forbidden);
   }
 #endif
