@@ -196,6 +196,7 @@ CGEMIT_Prn_Scn_In_Asm (
   CGEMIT_Prn_Scn_In_Asm(Asm_File, ST_name(st), scn_type, scn_flags,
 			scn_entsize, STB_align(st),
 			cur_section != NULL ? ST_name(cur_section) : NULL);
+
 }
 
 /* ====================================================================
@@ -234,4 +235,19 @@ CGEMIT_Prn_File_Dir_In_Asm(
   fprintf (Asm_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
 		USRCPOS_filenum(usrcpos)-1,
 		pathname,filename);
+}
+
+/* ====================================================================
+ *   CGEMIT_Prn_File_Dir_In_Asm
+ *
+ *   whether to use the base st for the reloc
+ * ====================================================================
+ */
+extern BOOL
+CGEMIT_Use_Base_ST_For_Reloc (
+  INT reloc, 
+  ST *st
+)
+{
+  return ST_is_export_local(st);
 }

@@ -649,14 +649,21 @@ Exp_Ldst (
 
     FmtAssert(!ST_gprel(base_sym),
                  ("Exp_Ldst: %s is set gp-relarive", ST_name(base_sym)));
-
+#if 0
     // address TNs
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
+#endif
+    // address TNs
+    TN *tmp1;
 
     if (is_lda && base_ofst == 0) {
       // want to stop at address (either that or add with 0)
       tmp1 = tn;
       is_lda = FALSE;	// so nothing done
+    }
+    else {
+      // address TNs
+      tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
     }
 
     // because it is not GP-relative, just make the address

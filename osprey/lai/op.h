@@ -295,7 +295,6 @@
 #include "targ_isa_properties.h"
 #include "targ_isa_hazards.h"
 #include "targ_isa_bundle.h"
-/* #include "targ_op.h" */
 
 /* Declare some structures from elsewhere: */
 struct tn;  /* TODO: should not use it since tn.h included */
@@ -628,6 +627,11 @@ extern TOP TOP_opposite (TOP top);
 // TODO: move to targ_info
 extern TOP TOP_immediate(TOP top);
 
+// Return the nonindexed OP code corresponding to a indexed memory
+// TOP or TOP_UNDEFINED if code is not an indexed memory OP.
+// TODO: move to targ_info
+extern TOP TOP_equiv_nonindex_memory (TOP top);
+
 // If given operand can be associated
 extern BOOL OP_opnd_can_be_reassociated (OP *op, INT opnd);
 
@@ -929,6 +933,19 @@ inline void OP_Change_To_Noop(OP *op)
   op->results = 0;
   OP_flags(op) = 0;
 }
+
+#ifdef TARG_ST
+// Determine which opcode to use to copy TNs based upon whether or
+// not the value being copied is floating point, its size in bits,
+// and whether the condition to be used is a floating CC or integer
+// register.
+//
+// Arthur: moved over from cgtarg.h
+// TODO: what is it really ??
+//
+extern TOP CGTARG_Which_OP_Select (UINT16 bit_size, BOOL is_float,
+				    BOOL is_fcc);
+#endif
 
 /* ---------------------------------------------------------------------
  *			       OPS stuff

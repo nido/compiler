@@ -365,6 +365,33 @@ TOP_immediate(TOP top)
 }
 
 /* ====================================================================
+ *   TOP_equiv_nonindex_memory
+ *
+ *   TODO: belongs to the targ_info.
+ * ====================================================================
+ */
+TOP 
+TOP_equiv_nonindex_memory(TOP top)
+{
+  return TOP_UNDEFINED;
+}
+
+/* ====================================================================
+ *   CGTARG_Which_OP_Select
+ * ====================================================================
+ */
+TOP
+CGTARG_Which_OP_Select ( 
+  UINT16 bit_size, 
+  BOOL is_float, 
+  BOOL is_fcc 
+)
+{
+  FmtAssert( FALSE, ( "CGTARG_Which_OP_Select: Unsupported Target") );
+  /*NOTREACHED*/
+}
+
+/* ====================================================================
  *   OP_opnd_can_be_reassociated
  *
  *   Test whether the OPND can be reassociated with the OP.
