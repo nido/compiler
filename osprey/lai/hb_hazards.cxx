@@ -948,6 +948,10 @@ Fill_Cycle_With_Noops (
     // Advance until the next after 'op' bundle slot found
     //
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
+#ifdef TARG_ST200
+      // CL: only add a nop if the bundle is currently empty
+      if (i==0) {
+#endif
       OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
       BB_Insert_Op_After(OP_bb(op), op, noop);
       OP_scycle(noop) = -1;
@@ -957,6 +961,14 @@ Fill_Cycle_With_Noops (
 
       // Set end group and reset bundle vector:
       Set_OP_end_group(noop);
+#ifdef TARG_ST200
+      }
+      else {
+	Set_OP_end_group(op);
+      }
+      TI_BUNDLE_Clear(bundle);
+#endif
+
       VECTOR_Reset (*bundle_vector);
 
       break;
@@ -1163,12 +1175,16 @@ Handle_Bundle_Hazards(
   BB_OP_MAP32_Set(omap, op, Clock);
   TI_RES_RES_Reserve_Resources(rr_tab, OP_code(op), Clock);
 
+#ifndef TARG_ST200
   //
   // If op is last in BB, I will have to fill noops until end 
   // of bundle.
   //
   INT max_pos = (BB_last_real_op((OP_bb(op))) == op) ? 
 	                                ISA_MAX_SLOTS : slot_pos;
+#else
+  INT max_pos = slot_pos;
+#endif
 
   // Fill with noops:
   CGTARG_Handle_Bundle_Hazard(op, 
@@ -1328,6 +1344,11 @@ Make_Bundles (
 	if (!OP_end_group(OP_prev(op))) {
 	  Set_OP_end_group(OP_prev(op));
 	  VECTOR_Reset (*bundle_vector);
+#ifdef TARG_ST200 // CL: bundles have variable length
+	          // and can be reset at any time
+	  // Reset the bundle
+	  TI_BUNDLE_Clear (bundle);
+#endif
 	  if (Trace_HB) {
 	    fprintf(TFile, "  advancing clock with end group\n");
 	  }
@@ -1364,6 +1385,10 @@ Make_Bundles (
       // TODO: need to be refined further.
       Set_OP_end_group(OP_prev(op));
       VECTOR_Reset (*bundle_vector);
+#ifdef TARG_ST200
+      // Reset the bundle
+      TI_BUNDLE_Clear (bundle);
+#endif
       Clock++;
     }
 
@@ -1401,6 +1426,10 @@ Make_Bundles (
     if (OP_l_group(op)) {
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
+#ifdef TARG_ST200
+      // Reset the bundle
+      TI_BUNDLE_Clear (bundle);
+#endif
       Clock++;
     }
 
@@ -1436,6 +1465,10 @@ Make_Bundles (
       Set_OP_end_group(BB_last_op(bb));
       VECTOR_Reset (*bundle_vector);
 
+#ifdef TARG_ST200
+      // Reset the bundle
+      TI_BUNDLE_Clear (bundle);
+#endif
       // advance the Clock
       Clock++;
     }
@@ -1449,9 +1482,13 @@ Make_Bundles (
 
   // And, need to complete the last bundle
   if (!TI_BUNDLE_Is_Empty(bundle, &ti_err)) {
+#ifndef TARG_ST200 // CL: ST200 has variable-length bundles
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
+#endif
       Fill_Cycle_With_Noops (BB_last_op(bb), bundle, bundle_vector);
+#ifndef TARG_ST200
     }
+#endif
   }
 
   if (dep_graph_built) {
