@@ -800,7 +800,7 @@ EBO_simplify_operand0 (
   if (TOP_is_shadd(opcode)) {
     TN *new_tn0, *new_tn1;
     int n = TOP_shadd_amount(opcode);
-    INT64 new_val = const_val << n;
+    INT64 new_val = SEXT_32(const_val << n);
     
     if (!TN_is_register(OP_opnd(op,opnd2_idx))) return NULL;
     new_opcode = TOP_add_r;
