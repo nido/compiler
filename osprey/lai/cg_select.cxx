@@ -137,7 +137,7 @@ op_list load_i;
  */
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
-BOOL CG_select_stores = 1;
+INT32 CG_select_stores = 1;
 BOOL CG_select_addr_stores = TRUE;
 const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */

@@ -53,7 +53,7 @@
  */
 extern BOOL CG_select_spec_loads;
 extern BOOL CG_select_allow_dup;
-extern BOOL CG_select_stores;
+extern INT32 CG_select_stores;
 extern BOOL CG_select_addr_stores;
 extern const char* CG_select_factor;
 
