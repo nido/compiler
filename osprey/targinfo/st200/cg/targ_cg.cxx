@@ -1314,6 +1314,84 @@ Get_Extended_Opcode (
   return (TOP) (opcode+1);
 }
 
+// [CL]
+/* ====================================================================
+ *   Twin_Slot: returns true if slot is used by an insns
+ * that spans across two slots
+ * ====================================================================
+ */
+static BOOL Twin_Slot(
+	       TI_BUNDLE *bundle,
+	       INT slot)
+{
+  switch(slot) {
+  case 0:
+    if (TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT0_Unit)
+      return TRUE;
+    break;
+  case 1:
+    if (
+	(TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT0_Unit)
+	||
+	(TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT1_Unit)
+	)
+      return TRUE;
+    break;
+  case 2:
+    if (
+	(TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT1_Unit)
+	||
+	(TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT2_Unit)
+	)
+      return TRUE;
+    break;
+  case 3:
+    if (TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_EXT2_Unit)
+      return TRUE;
+    break;
+  }
+  return FALSE;
+}
+
+
+/* ====================================================================
+ *   Twin_Slot: move property from 'from' slot to 'to' slot
+ * ====================================================================
+ */
+static void Move_Slot(
+	       TI_BUNDLE *bundle,
+	       INT from,
+	       INT to,
+	       ISA_EXEC_UNIT_PROPERTY *to_prop
+)
+{
+  // Get property of slot with which we swap
+  ISA_EXEC_UNIT_PROPERTY new_prop = TI_BUNDLE_exec_property(bundle, from);
+
+  // insn being move will have property of
+  // destination, except for alignment constraints
+  TI_BUNDLE_Reserve_Slot(bundle, to, 
+			 *to_prop
+			 & ~ISA_EXEC_PROPERTY_Odd_Unit
+			 & ~ISA_EXEC_PROPERTY_Even_Unit);
+
+  // Free 'from' slot
+  TI_BUNDLE_slot_filled(bundle, from) =  FALSE;
+  TI_BUNDLE_stop_bit(bundle, from) = FALSE; 
+
+  // Recompute slot mask after free
+  TI_BUNDLE_slot_mask(bundle) &= ~TI_BUNDLE_exec_property(bundle, from) << 
+    (ISA_TAG_SHIFT * (ISA_MAX_SLOTS - from - 1));
+
+  TI_BUNDLE_exec_property(bundle, from) = 0;
+
+  // update new property with that of slot with which we swap
+  *to_prop = new_prop
+    | (*to_prop
+       & (ISA_EXEC_PROPERTY_Odd_Unit | ISA_EXEC_PROPERTY_Even_Unit));
+}
+
+
 /* ====================================================================
  *   CGTARG_Bundle_Slot_Available
  * ====================================================================
@@ -1324,93 +1402,19 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 			     INT                     slot,
 			     ISA_EXEC_UNIT_PROPERTY *prop, 
 			     BOOL                    stop_bit_reqd,
-			     const CG_GROUPING      *grouping)
+			     const CG_GROUPING      *grouping,
+#if 1 // [CL] keep track of alignment,
+      // and allow non-consecutive slot allocation
+			     BOOL                    check_addr,
+			     INT32                   addr,
+			     INT*                    reserved_slot
+#endif
+			     )
 {
   // If slot already filled, return FALSE.
   if (TI_BUNDLE_slot_filled(bundle, slot)) return FALSE;
 
   INT  inst_words = ISA_PACK_Inst_Words(OP_code(op));
-
-  if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
-      EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
-      EXEC_PROPERTY_is_S2_Unit(OP_code(op)) &&
-      EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
-
-    //fprintf(TFile,"  S0,S1,S2,S3\n");
-
-    if (slot == 0)
-      *prop = ISA_EXEC_PROPERTY_S0_Unit;
-    if (slot == 1)
-      *prop = ISA_EXEC_PROPERTY_S1_Unit;
-    if (slot == 2)
-      *prop = ISA_EXEC_PROPERTY_S2_Unit;
-    if (slot == 3)
-      *prop = ISA_EXEC_PROPERTY_S3_Unit;
-  }
-  else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
-	   EXEC_PROPERTY_is_S2_Unit(OP_code(op))) {
-
-    //fprintf(TFile,"  S0,S2\n");
-
-    if (slot == 0)
-      *prop = ISA_EXEC_PROPERTY_S0_Unit;
-    else if (slot == 2)
-      *prop = ISA_EXEC_PROPERTY_S2_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op))) {
-
-    //fprintf(TFile,"  S0\n");
-
-    // for example branches, etc.
-    if (slot == 0)
-      *prop = ISA_EXEC_PROPERTY_S0_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
-	   EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
-
-    //fprintf(TFile,"  S1,S3\n");
-
-    if (slot == 1)
-      *prop = ISA_EXEC_PROPERTY_S1_Unit;
-    else if (slot == 3)
-      *prop = ISA_EXEC_PROPERTY_S3_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_EXT0_Unit(OP_code(op))) {
-    if (slot == 0)
-      *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_EXT1_Unit(OP_code(op))) {
-    if (slot == 1)
-      *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_EXT2_Unit(OP_code(op))) {
-    if (slot == 2)
-      *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
-    else
-      return FALSE;
-  }
-  else {
-    FmtAssert(FALSE, 
-      ("CGTARG_Bundle_Slot_Available: unknown OP_code property 0x%x",
-             ISA_EXEC_Unit_Prop(OP_code(op))));
-  }
-
-  //fprintf(TFile," exec property 0x%x\n",*prop);
-
-  // If there is a need to delay the scheduling of <op>...
-  // It is done after determination of prop because apparently
-  // prop is needed to be returned ?
-  if (Delay_Scheduling_OP(op, slot, bundle)) return FALSE;
 
   // Need to check if extra slots are required and available within the
   // bundle (eg. anything that uses imml,immr)
@@ -1495,6 +1499,158 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
     }
   }
 
+#if 1 // [CL] First check alignment constraints
+  ISA_EXEC_UNIT_PROPERTY odd_even_prop = 0;
+  INT slot_to_swap = 0;
+  BOOL found_swap=FALSE;
+  // Relax Odd/Even constraints if an extra slot is required:
+  // is this case, the 'double' insn will always fit in
+  // two adjacent slots
+  // No need to change to extended opcode yet, as the normal
+  // one has suitable properties for alignment constraints
+  if (!extra_slot_reqd) {
+    if (EXEC_PROPERTY_is_Odd_Unit(OP_code(op))) {
+      odd_even_prop = ISA_EXEC_PROPERTY_Odd_Unit;
+      if ((addr != -1) && (((addr+slot) & 1) == 0)) {
+	// Trying to insert at an even word address.  If slot is > 0,
+	// (ie if slot==2), we can insert here if there is a previous
+	// slot where word address is odd, and that slot is not
+	// already used by and insn constrained to be at an odd
+	// address, and that slot is not used by an insn that uses 2
+	// slots (swap would not be possible)
+	for (int myslot=0; myslot<slot; myslot++) {
+	  // If myslot is candidate, and not occupied by another 'Odd'
+	  // or 'twin' op, asm will be able to swap
+	  if ( (((addr+myslot) & 1) == 1)
+	       && !(TI_BUNDLE_exec_property(bundle, myslot)
+		    & ISA_EXEC_PROPERTY_Odd_Unit)
+	       && !(Twin_Slot(bundle, myslot))
+	       ) {
+	    found_swap = TRUE;
+	    slot_to_swap = myslot;
+	    break;
+	  }
+	}
+	if (!found_swap)
+	  return FALSE;
+      }
+    } else if (EXEC_PROPERTY_is_Even_Unit(OP_code(op))) {
+      odd_even_prop = ISA_EXEC_PROPERTY_Even_Unit;
+      if ((addr != -1) && (((addr+slot) & 1) == 1)) {
+	// Same as above, with even
+	for (int myslot=0; myslot<slot; myslot++) {
+	  if ( (((addr+myslot) & 1) == 0)
+	       && !(TI_BUNDLE_exec_property(bundle, myslot)
+		    & ISA_EXEC_PROPERTY_Even_Unit)
+	       && !(Twin_Slot(bundle, myslot))
+	       ) {
+	    found_swap = TRUE;
+	    slot_to_swap = myslot;
+	    break;
+	  }
+	}
+	if (!found_swap)
+	  return FALSE;
+      }
+    }
+  }
+#endif
+
+  if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
+      EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
+      EXEC_PROPERTY_is_S2_Unit(OP_code(op)) &&
+      EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0,S1,S2,S3\n");
+
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_S0_Unit;
+    if (slot == 1)
+      *prop = ISA_EXEC_PROPERTY_S1_Unit;
+    if (slot == 2)
+      *prop = ISA_EXEC_PROPERTY_S2_Unit;
+    if (slot == 3)
+      *prop = ISA_EXEC_PROPERTY_S3_Unit;
+  }
+  else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
+	   EXEC_PROPERTY_is_S2_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0,S2\n");
+
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_S0_Unit;
+    else if (slot == 2)
+      *prop = ISA_EXEC_PROPERTY_S2_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0\n");
+
+    // for example branches, etc.
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_S0_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
+	   EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S1,S3\n");
+
+    if (slot == 1)
+      *prop = ISA_EXEC_PROPERTY_S1_Unit;
+    else if (slot == 3)
+      *prop = ISA_EXEC_PROPERTY_S3_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT0_Unit(OP_code(op))) {
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT1_Unit(OP_code(op))) {
+    if (slot == 1)
+      *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT2_Unit(OP_code(op))) {
+    if (slot == 2)
+      *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
+    else
+      return FALSE;
+  }
+  else {
+    FmtAssert(FALSE, 
+      ("CGTARG_Bundle_Slot_Available: unknown OP_code property 0x%x",
+             ISA_EXEC_Unit_Prop(OP_code(op))));
+  }
+
+#if 1 // [CL]
+  // Remember alignment constraints.
+  // Might be overwritten later if we have a insn with
+  // immediate extension
+  *prop |= odd_even_prop;
+#endif
+
+  //fprintf(TFile," exec property 0x%x\n",*prop);
+
+  // If there is a need to delay the scheduling of <op>...
+  // It is done after determination of prop because apparently
+  // prop is needed to be returned ?
+  if (Delay_Scheduling_OP(op, slot, bundle)) return FALSE;
+
+#if 1 // [CL]
+  if (found_swap) {
+    Move_Slot(bundle, slot_to_swap, slot, prop);
+    slot = slot_to_swap;
+  }
+#endif
+
   //
   // All bundles have a stop at the end, reserve it (the routine
   // TI_BUNDLE_Slot_Available() needs it to match the stop bits in 
@@ -1573,6 +1729,12 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   }
 
   TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
+
+#if 1 // [CL]
+  if (check_addr && slot_avail) {
+    *reserved_slot = slot;
+  }
+#endif
 
   return slot_avail;
 }
@@ -1741,6 +1903,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
   // fill with nops
   //
   OP *prev_op = NULL;
+#if 0 // [CL] only fill with nops when ending a bundle explicitly
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     if (i > adjusted_slot_pos) break;
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
@@ -1769,6 +1932,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
       }
     }
   }
+#endif
 
   BOOL bundle_full = TI_BUNDLE_Is_Full(bundle, &ti_err);
   FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
@@ -1791,6 +1955,42 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 
   return;
 }
+
+#if 1 // [CL]
+/* ====================================================================
+ *   CGTARG_Finish_Bundle: fill empty slots with nops
+ * ====================================================================
+ */
+void CGTARG_Finish_Bundle(OP                          *op, 
+			  TI_BUNDLE                   *bundle)
+{
+  INT template_bit = TI_BUNDLE_Return_Template(bundle);
+  FmtAssert (template_bit != -1, ("Illegal template encoding"));
+  INT i;
+  BOOL found_filled = FALSE;
+  //
+  // fill with nops
+  // Rely on assembler reordering: we can insert all necessary nops
+  // before op: no problem if op order does not match allocated
+  // slots
+  // Do a reserve parsing because no stop bit is marked
+  for (i = TI_BUNDLE_slot_count(bundle)-1; i >= 0 ; i--) {
+    if (!found_filled && TI_BUNDLE_slot_filled(bundle, i)) {
+      found_filled = TRUE;
+      continue;
+    }
+    if (found_filled && !TI_BUNDLE_slot_filled(bundle, i)) {
+      OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
+
+      BB_Insert_Op_Before(OP_bb(op), op, noop);
+      OP_scycle(noop) = -1;
+
+      Set_OP_bundled (noop);
+      TI_BUNDLE_Reserve_Slot (bundle, i, ISA_EXEC_Slot_Prop(template_bit, i));
+    }
+  }
+}
+#endif
 
 /* ====================================================================
  *   CGTARG_Handle_Errata_Hazard
