@@ -570,19 +570,19 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	uint64_t trip_factor = trip_count & -trip_count;
 	int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
 	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	    Configuration_Pipelining, CG_LAO_pipelining,
-	    Configuration_MinTrip, min_trip_count,
-	    Configuration_Modulus, min_trip_factor,
-	    Configuration_Residue, 0,
+	    ConfigurationItem_Pipelining, CG_LAO_pipelining,
+	    ConfigurationItem_MinTrip, min_trip_count,
+	    ConfigurationItem_Modulus, min_trip_factor,
+	    ConfigurationItem_Residue, 0,
 	    ConfigurationItem__);
       } else {
 	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	    Configuration_Pipelining, CG_LAO_pipelining,
+	    ConfigurationItem_Pipelining, CG_LAO_pipelining,
 	    ConfigurationItem__);
       }
     } else {
       loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
-	  Configuration_Pipelining, CG_LAO_pipelining,
+	  ConfigurationItem_Pipelining, CG_LAO_pipelining,
 	  ConfigurationItem__);
     }
     // Fill the LoopInfo dependence table.
@@ -913,7 +913,7 @@ CGIR_BB_create(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_O
   //
   // Set flags.
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
-  if (optimizations & Optimization_PostSched) Set_BB_scheduled(new_bb);
+  if (optimizations & Optimization_PostPass) Set_BB_scheduled(new_bb);
   // Set the rid.
   BB_rid(new_bb) = cgir_rid;
   //
@@ -958,7 +958,7 @@ CGIR_BB_update(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_O
     Set_BB_unrollings(cgir_bb, unrolled);
   // Set flags.
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
-  if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
+  if (optimizations & Optimization_PostPass) Set_BB_scheduled(cgir_bb);
   // Set the rid.
   BB_rid(cgir_bb) = cgir_rid;
   //
@@ -1087,12 +1087,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   // Open Interface
   LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
-      Configuration_RegionType, CG_LAO_regiontype,
-      Configuration_SchedKind, CG_LAO_schedkind,
-      Configuration_Pipelining, CG_LAO_pipelining,
-      Configuration_Speculation, CG_LAO_speculation,
-      Configuration_LoopDep, CG_LAO_loopdep,
-      Configuration_StackModel, stackmodel,
+      ConfigurationItem_RegionType, CG_LAO_regiontype,
+      ConfigurationItem_SchedKind, CG_LAO_schedkind,
+      ConfigurationItem_Pipelining, CG_LAO_pipelining,
+      ConfigurationItem_Speculation, CG_LAO_speculation,
+      ConfigurationItem_LoopDep, CG_LAO_loopdep,
+      ConfigurationItem_StackModel, stackmodel,
       ConfigurationItem__);
   //
   // Create the LAO BasicBlocks.
@@ -1220,7 +1220,7 @@ lao_optimize_pu(unsigned lao_optimizations) {
   }
   //
   // Create region map for postpass optimizations
-  if (lao_optimizations & Optimization_PostSched) {
+  if (lao_optimizations & Optimization_PostPass) {
     CG_LAO_Region_Map = BB_MAP32_Create();
   }
   //
