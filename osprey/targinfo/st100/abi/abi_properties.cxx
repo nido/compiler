@@ -87,7 +87,14 @@ static ABI_PROPERTY
 	link,
 	ret_addr,
 	loop_count,
-        true_predicate;
+        true_predicate,
+        stacked,
+        entry_ptr,
+        zero,
+        prev_funcstate,
+        epilog_count,
+        fzero,
+        fone;
 
 static void st100_abi(void)
 {
@@ -135,6 +142,8 @@ static void st100_abi(void)
 		 8,   9,  10,  11,  12,  13,  14,
 	       -1);
 
+  // GP may be or not callee saved but this is indicated
+  // elsewhere
   Reg_Property(global_ptr, ISA_REGISTER_CLASS_au, 
 		13,
 	       -1);
@@ -155,10 +164,10 @@ static void st100_abi(void)
 	       -1);
 
   Reg_Property(callee, ISA_REGISTER_CLASS_au,
-	       4, 5, 6, 7, 8,   9,  10,  11, 13,
+	       4, 5, 6, 7, 8,   9,  10, 13,
 	       -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_au,
-		 0, 1, 2, 3, 12,  14,
+		 0, 1, 2, 3, 11, 12,  14,
 	       -1);
   Reg_Property(func_arg, ISA_REGISTER_CLASS_au,
 		 0, 1, 2,
@@ -166,6 +175,7 @@ static void st100_abi(void)
   Reg_Property(func_val, ISA_REGISTER_CLASS_au,
 		 0,
 	       -1);
+  // ret address is always callee saved, so don't add to callee
   Reg_Property(ret_addr, ISA_REGISTER_CLASS_au, 
 	       11,
 	       -1);
@@ -180,6 +190,14 @@ static void st100_abi(void)
 	       -1);
   Reg_Property(true_predicate, ISA_REGISTER_CLASS_guard, 
 	       15,
+	       -1);
+
+  Reg_Property(callee, ISA_REGISTER_CLASS_guard,
+	         5,   6,   7,   8,   9,  10,  11,  12, 
+	       13,  14,
+	       -1);
+  Reg_Property(caller, ISA_REGISTER_CLASS_guard,
+		 0,   1,   2,   3,   4,
 	       -1);
 
   // loop register class:
@@ -214,6 +232,13 @@ main()
   ret_addr = Create_Reg_Property("ret_addr");
   loop_count = Create_Reg_Property("loop_count");
   true_predicate = Create_Reg_Property("true_predicate");
+  stacked = Create_Reg_Property("stacked");
+  entry_ptr = Create_Reg_Property("entry_ptr");
+  zero = Create_Reg_Property("zero");
+  prev_funcstate = Create_Reg_Property("prev_funcstate");
+  epilog_count = Create_Reg_Property("epilog_count");
+  fzero = Create_Reg_Property("fzero");
+  fone = Create_Reg_Property("fone");
 
   ///////////////////////////////////////
   Begin_ABI("st100");

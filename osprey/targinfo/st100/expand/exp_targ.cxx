@@ -664,11 +664,11 @@ Pick_Constant_Add (
       }
       else if (val % 2 == 0 && ISA_LC_Value_In_Class((val >> 1), LC_u9)) {
 	new_opcode = TOP_GP32_ADDHA_GT_AR_AR_U9;
-	*src2 = Gen_Literal_TN(val>>1, Pointer_Size);
+	//	*src2 = Gen_Literal_TN(val>>1, Pointer_Size);
       }
       else if (val % 4 == 0 && ISA_LC_Value_In_Class((val >> 2), LC_u9)) {
 	new_opcode = TOP_GP32_ADDWA_GT_AR_AR_U9;
-	*src2 = Gen_Literal_TN(val>>2, Pointer_Size);
+	//	*src2 = Gen_Literal_TN(val>>2, Pointer_Size);
       }
       else {
 	new_opcode = TOP_GP32_ADDBA_GT_AR_AR_AR;
@@ -829,27 +829,21 @@ Pick_Constant_Sub (
 
     case MTYPE_A4:
 
-      if (val % 4 == 0) {
-	if (ISA_LC_Value_In_Class((val >> 2), LC_u9)) {
-	  new_opcode = TOP_GP32_SUBWA_GT_AR_AR_U9;
-	  break;
-	}
-      }
-
-      if (val % 2 == 0) {
-	if (ISA_LC_Value_In_Class((val >> 1), LC_u9)) {
-	  new_opcode = TOP_GP32_SUBHA_GT_AR_AR_U9;
-	  break;
-	}
-      }
-
       if (ISA_LC_Value_In_Class(val, LC_u9)) {
 	new_opcode = TOP_GP32_SUBBA_GT_AR_AR_U9;
-	break;
       }
-
-      new_opcode = TOP_GP32_SUBBA_GT_AR_AR_AR;
-      *src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
+      else if (val % 2 == 0 && ISA_LC_Value_In_Class((val >> 1), LC_u9)) {
+	new_opcode = TOP_GP32_SUBHA_GT_AR_AR_U9;
+	//	*src2 = Gen_Literal_TN(val>>1, Pointer_Size);
+      }
+      else if (val % 4 == 0 && ISA_LC_Value_In_Class((val >> 2), LC_u9)) {
+	new_opcode = TOP_GP32_SUBWA_GT_AR_AR_U9;
+	//	*src2 = Gen_Literal_TN(val>>2, Pointer_Size);
+      }
+      else {
+	new_opcode = TOP_GP32_SUBBA_GT_AR_AR_AR;
+	*src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
+      }
       break;
 
     default:
@@ -2212,7 +2206,7 @@ Expand_Bool_Comparison (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  FmtAssert(FALSE,("Expand_Bool_Comparison: not implemented"));
 
 #if 0
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
@@ -2271,7 +2265,7 @@ Expand_Int_Less (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2311,7 +2305,7 @@ Expand_Int_Less_Equal (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2354,7 +2348,7 @@ Expand_Int_Equal (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2414,7 +2408,7 @@ Expand_Int_Not_Equal (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2454,7 +2448,7 @@ Expand_Int_Greater_Equal (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2498,7 +2492,7 @@ Expand_Int_Greater (
   //  Expand_Int_Comparison (action, dest, src1, src2, ops);
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2559,7 +2553,7 @@ Expand_Ptr_Not_Equal (
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+    Build_OP (action, dest, True_TN, src1, src2, ops);
   } 
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -2631,6 +2625,8 @@ Expand_Bool_Not_Equal (
   OPS *ops
 )
 {
+  FmtAssert(FALSE,("Not Implemented"));
+
   Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
 }
 

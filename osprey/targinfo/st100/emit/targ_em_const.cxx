@@ -316,6 +316,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 	break;
 	}
 
+#if 0
       case MTYPE_FQ: {
         char *p = (char *) & TCON_R16(tc);
         fprintf ( fl, "\t%s\t\"", AS_STRING );
@@ -342,6 +343,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 	--rc;
 	break;
 	}
+#endif
 
       case MTYPE_STRING: {
 	INTSC count;

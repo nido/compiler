@@ -54,7 +54,6 @@
 #include "stab.h"
 #include "config_targ.h"
 #include "targ_sim.h"
-
 #include "targ_sim_body.h"
 
 /* some definitions for the dedicated hardware pregs: */
@@ -1171,8 +1170,9 @@ BOOL Is_Caller_Save_GP;  /* whether GP is caller-save */
 //
 //INT Formal_Save_Area_Size = DEFAULT_FORMAL_SAVE_AREA_SIZE;
 
-// Exists in the IA64 ABI, what for ??
-INT Stack_Offset_Adjustment = 0;
+// Exists in the IA64 ABI.
+// Used to account for push/pop area on ST100
+INT Stack_Offset_Adjustment = STACK_OFFSET_ADJUSTMENT;
 
 extern void 
 Init_Targ_Sim (void)

@@ -73,12 +73,13 @@ Exp_Pred_Set (
 {
   TOP top;
 
-  FmtAssert(FALSE,("Not Implemented"));
-
   Is_True((val & -2) == 0, ("can't set a predicate to %d", val));
-  Alloc_Result_TNs(dest, cdest);
-  top = (val == 0) ? TOP_noop : TOP_noop;
-  Build_OP(top, dest, cdest, True_TN, Zero_TN, Zero_TN, ops);
+
+  // Do not make cdest
+  if (dest == NULL) dest = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
+  top = (val == 0) ? TOP_GP32_CLRG_GT_BR : TOP_GP32_SETG_GT_BR;
+  Build_OP(top, dest, True_TN, ops);
+  return;
 }
 
 /* ====================================================================
@@ -109,6 +110,8 @@ Exp_Pred_Copy (
 
 /* ====================================================================
  *   Exp_Pred_Compliment
+ *
+ *   dest, cdest, and src must all be of rclass guard.
  * ====================================================================
  */
 void 
@@ -119,16 +122,12 @@ Exp_Pred_Complement (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
   if (TN_is_true_pred(src)) {
     Exp_Pred_Set(dest, cdest, !1, ops);
     return;
   }
 
-  Alloc_Result_TNs(dest, cdest);
-  Build_OP(TOP_noop, dest, cdest, True_TN, Zero_TN, Zero_TN, ops);
-  Build_OP(TOP_noop, dest, cdest, src, Zero_TN, Zero_TN, ops);
+  Build_OP(TOP_GP32_NOTG_GT_BR_BR, dest, True_TN, src, ops);
 }
 
 /* ====================================================================

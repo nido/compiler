@@ -3566,9 +3566,12 @@ TCON
 Host_To_Targ_Quad(QUAD_TYPE v)
 {
   static TCON c;
-  
+
+  FmtAssert(FALSE,("Host_To_Targ_Quad: not implemented"));
+#if 0
   TCON_ty(c) = MTYPE_FQ;
   TCON_R16(c) = v;
+#endif
   return c;
 }
 
@@ -3577,9 +3580,12 @@ Host_To_Targ_Complex_Quad(QUAD_TYPE real, QUAD_TYPE imag)
 {
   static TCON c;
  
+  FmtAssert(FALSE,("Host_To_Targ_Complex_Quad: not implemented"));
+#if 0
   TCON_ty(c) = MTYPE_CQ;
   TCON_R16(c) = real;
   TCON_IR16(c) = imag;
+#endif
   return c;
 }
 

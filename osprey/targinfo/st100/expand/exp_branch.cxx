@@ -396,13 +396,20 @@ Expand_Branch (
   case V_BR_NEVER:
     Is_True(cmp == TOP_UNDEFINED, 
 	    ("unexpected compare op for %s", BR_Variant_Name(cond)));
+    if ((cond == V_BR_ALWAYS && !false_br) ||
+	(cond == V_BR_NEVER && false_br)) {
+#if 0
+      // Arthur: I must use the above because it does not seem to 
+      //         work with the gcc 92.5 on Linux !
+      //
     if ((cond == V_BR_ALWAYS) ^ false_br) {
+#endif
       // Unconditional branch for ALWAYS/!false_br and NEVER/false_br
       Build_OP (TOP_GP32_GOTO_S25, targ, ops);
     }
     break;
 
-    /*
+#if 0
   case V_BR_PEQ:
   case V_BR_PNE:
     {
@@ -428,16 +435,31 @@ Expand_Branch (
 	        targ, ops);
     }
     break;
-    */
+#endif
+
+  case V_BR_P_FALSE:
+    Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
+    // false branch on a predicate, directly supported on the ST100
+    // use src1
+    Build_OP (TOP_GP32_GOTO_GF_S21, src1, targ, ops);
+    break;
 
   case V_BR_P_TRUE:
     Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
+    // TRUEBR is not directly supported, use src2 as a compliment
+    // because truebr must have been reversed
+    //
+    tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
+    Exp_Pred_Complement(tmp, True_TN, src1, ops);
+    src1 = tmp;
+#if 0
     if (!false_br) {
       DevWarn("inverted V_BR_P_TRUE");
       tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
       Exp_Pred_Complement(tmp, True_TN, src1, ops);
       src1 = tmp;
     }
+#endif
     Build_OP (TOP_GP32_GOTO_GF_S21, src1, targ, ops);
     break;
 
@@ -497,7 +519,11 @@ Exp_Return (
   OPS *ops
 )
 {
-  Build_OP (TOP_GP32_RTS_GT, True_TN, ops);
+  Build_OP (TOP_GP32_RTS_GT, 
+	    True_TN, 
+	    Build_Dedicated_TN(ISA_REGISTER_CLASS_au, 
+			       REGISTER_ra, Pointer_Size),
+	    ops);
   return;
 }
 
