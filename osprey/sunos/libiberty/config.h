@@ -223,3 +223,6 @@
 
 /* Define if you have the <unistd.h> header file.  */
 #define HAVE_UNISTD_H 1
+
+/* Define if you have the <limits.h> header file.  */
+#define HAVE_LIMITS_H 1
