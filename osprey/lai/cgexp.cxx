@@ -293,7 +293,7 @@ Expand_OP (
 	break;
 
   case OPR_SELECT:
-	Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
+    Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
 	break;
 
 #ifdef TARG_ST
