@@ -1692,7 +1692,9 @@ Check_Dwarf_Rela(const Elf32_Rela &current_reloc)
 static char *drop_these[] = {
       // Assembler generates .debug_line from directives itself, so we
       // don't output it.
+#ifndef TARG_ST200 /* CLYON: ST200 gas does not understand .loc directives */
 	".debug_line",
+#endif
      // gdb does not use the MIPS sections
      // debug_weaknames, etc.
 	".debug_weaknames",
