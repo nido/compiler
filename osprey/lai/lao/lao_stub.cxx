@@ -516,12 +516,12 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
-    LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
+    LAI_InstrMode instrMode = CGIR_IS_to_InstrMode((ISA_SUBSET)!Is_Target_st220());
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
     // Make the BasicBlock.
-    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
+    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrMode, unrolled,
 	labelCount, labels, operationCount, operations, regionId, frequency);
     // Force the fully unrolled loop bodies to start a new scheduling region,
     // else the memory dependences will not be correct: bug pro-release-1-4-0-B/1.
