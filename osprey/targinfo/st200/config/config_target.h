@@ -243,7 +243,15 @@ BE_EXPORTED extern INT32 Target_Stack_Alignment; /* -TARG:stack_alignment=nn */
  * stated that we must ensure provision for double word accesses
  * and interleaved memory. Thus the alignement is 32.
  */
-#define DEFAULT_DATA_ALIGNMENT 32
+/*
+ * [clarkes] 030515: The ST200 ABI requirement for data alignment
+ * does not apply to the whole section, just to objects within the
+ * section.  A section is already given the alignment of the most
+ * strictly aligned object within the section, so
+ * there is no additional alignment required here.
+ * This is specified by setting DEFAULT_DATA_ALIGNMENT to zero.
+ */
+#define DEFAULT_DATA_ALIGNMENT 0
 
 /* ====================================================================
  *
