@@ -89,6 +89,10 @@
  *	  Return the maximum latency this op can have to any
  *	  successor.
  *
+ *	INT32 CGTARG_Max_RES_Latency(OP op, INT i)
+ *	  Return the maximum latency this result in op can have to any
+ *	  successor.
+ *
  *	BOOL CGTARG_Use_Brlikely(float branch_taken_probability)
  *	  Given a conditional branch with a <branch_taken_probability>
  *	  return TRUE if it would be beneficial to convert it to a brlikely.
@@ -792,8 +796,9 @@ inline INT32 CGTARG_Branch_Taken_Penalty(void)
     CGTARG_branch_taken_penalty : 1;
 }
 
-#ifdef TARG_ST
 INT32 CGTARG_Max_OP_Latency(OP *op);
+#ifdef TARG_ST
+INT32 CGTARG_Max_RES_Latency(OP *op, INT i);
 #endif
 
 #ifdef TARG_ST200

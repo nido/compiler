@@ -1691,19 +1691,21 @@ Make_Bundles (
     if (!OP_xfer(op)) {
       INT latency = 0;
 #ifdef TARG_ST
-      BOOL liveout = FALSE;
       INT i;
       for (i = 0; i < OP_results(op); i++) {
 	TN *result_tn = OP_result(op,i);
 	if (TN_is_register(result_tn)) {
 	  ISA_REGISTER_CLASS result_cl = TN_register_class (result_tn);
 	  REGISTER result_reg = TN_register (result_tn);
-	  liveout |= REG_LIVE_Outof_BB (result_cl, result_reg, bb);
+	  if (REG_LIVE_Outof_BB (result_cl, result_reg, bb)) {
+	    INT res_latency = CGTARG_Max_RES_Latency (op, i);
+	    latency = res_latency > latency ? res_latency : latency;
+	  }
 	}
       }
-      if (liveout)
+#else
+      latency = CGTARG_Max_OP_Latency (op);
 #endif
-	latency = CGTARG_Max_OP_Latency (op);
       if (Clock+latency > pending_latency) pending_latency = Clock+latency;
 
       if (Trace_HB) fprintf(TFile, "  max latency = %d [pending %d]\n", 

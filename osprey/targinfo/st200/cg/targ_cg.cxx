@@ -1385,6 +1385,45 @@ CGTARG_Max_OP_Latency (
 }
 
 /* ====================================================================
+ *   CGTARG_Max_RES_Latency
+ * ====================================================================
+ */
+INT32
+CGTARG_Max_RES_Latency (
+  OP *op,
+  INT idx
+)
+{
+  INT i;
+  INT latency;
+
+  latency = 1;
+
+  //    Instructions writing into a branch register must be followed
+  //    by 2 cycle (bundle) before 
+  //         TOP_br 
+  //         TOP_brf 
+  //    can be issued that uses this register.
+
+  //    Instructions writing LR register must be followed by 3 cycles
+  //    (bundles) before one of the following may be issued:
+  //         TOP_icall
+  //         TOP_igoto
+  //         TOP_return
+
+  if (OP_result(op,idx) == RA_TN) {
+    if (latency < 4) latency = 4;
+  }
+  else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch)
+    if (latency < 3) latency = 3;
+
+  if (OP_load(op) || OP_imul(op) || OP_fmul(op))
+    if (latency < 3) latency = 3;
+
+  return latency;
+}
+
+/* ====================================================================
  *   CGTARG_Adjust_Latency
  * ====================================================================
  */
