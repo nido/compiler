@@ -456,9 +456,17 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   }
   // Transfer annotations.
   if (cgir_bb != NULL) {
+    if (BB_has_pragma(cgir_bb)) {
+      BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_PRAGMA);
+    }
+    Is_True(!BB_entry(cgir_bb), ("Cannot update a CGIR BB with ENTRY property"));
+    Is_True(!BB_exit(cgir_bb), ("Cannot update a CGIR BB with EXIT property"));
     if (BB_call(cgir_bb)) {
       Set_BB_call(new_bb);
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_CALLINFO);
+    }
+    if (BB_has_note(cgir_bb)) {
+      BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_NOTE);
     }
   }
   return new_bb;
@@ -487,7 +495,7 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
 #if 0
   ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
-    ANNOT_Unlink(BB_annotations(cgir_bb), annot);
+    BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
   }
   if (cgir_li != NULL) {
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
