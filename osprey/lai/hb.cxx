@@ -548,7 +548,11 @@ Form_Hyperblocks(HB_CAND_TREE*        cand,
       HB_bb_list duplicate_bbs;
       if (HB_Tail_Duplicate(hb, duplicate, duplicate_bbs,
 			    post_tail_duplication)) {
-        HB_If_Convert(hb, candidate_regions);
+
+	if (!HB_superblocks) {
+	  HB_If_Convert(hb, candidate_regions);
+	}
+
 	HB_Remove_BBs_From_Hyperblocks(orig_blocks,HB_Blocks(hb));
 	HB_Map_BBs(hb);
       } 
@@ -577,7 +581,7 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   list<HB_CAND_TREE*> candidate_regions; // List of all the candidates
   BB_SET *orig_blocks; // Working bitset temp
 
-  if (!HB_formation || !(HB_simple_ifc || HB_complex_non_loop)) {
+  if (!(HB_formation || HB_superblocks) || !(HB_simple_ifc || HB_complex_non_loop)) {
     return;
   }
 
@@ -648,19 +652,21 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
     HB_Trace_Candidates("First General Pass", candidate_regions);
   }
 
-  //
-  // Now, try to fully if-convert from the bottom of the candidate tree.
-  //
-  BOOL leaves_converted = FALSE;
-  if (HB_simple_ifc) {
-    Convert_Candidate_Leaves(candidate_regions, &leaves_converted);
-    if (HB_Trace(HB_TRACE_DRAWFLOW2)) {
-      draw_flow_graph();
+  if (HB_formation) {
+    //
+    // Now, try to fully if-convert from the bottom of the candidate tree.
+    //
+    BOOL leaves_converted = FALSE;
+    if (HB_simple_ifc) {
+      Convert_Candidate_Leaves(candidate_regions, &leaves_converted);
+      if (HB_Trace(HB_TRACE_DRAWFLOW2)) {
+	draw_flow_graph();
+      }
     }
-  }
 
-  if (leaves_converted && Get_Trace(TKIND_IR, TP_HBF, REGION_First_BB)) {
-    Trace_IR(TP_HBF, "After Initial If-conversion", NULL);
+    if (leaves_converted && Get_Trace(TKIND_IR, TP_HBF, REGION_First_BB)) {
+      Trace_IR(TP_HBF, "After Initial If-conversion", NULL);
+    }
   }
 
   if (HB_complex_non_loop) {
@@ -677,7 +683,11 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
       //
       // Skip candidates that were fully converted above.
       //
+#ifdef TARG_ST
+      if (HB_superblocks || !HB_CAND_TREE_Check_Flag(*cands, HCT_FULLY_CONVERTED)) {
+#else
       if (!HB_CAND_TREE_Check_Flag(*cands, HCT_FULLY_CONVERTED)) {
+#endif
 	Form_Hyperblocks(*cands, duplicate, FALSE, candidate_regions,orig_blocks);
       }
     }
@@ -730,6 +740,7 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   Stop_Timer (T_HBF_CU);
 }
 
+#if 0
 /////////////////////////////////////
 void
 HB_Form_Superblocks(RID *rid, const BB_REGION& bb_region)
@@ -854,4 +865,5 @@ HB_Form_Superblocks(RID *rid, const BB_REGION& bb_region)
   Stop_Timer (T_HBF_CU);
 }
 
+#endif
 

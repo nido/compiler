@@ -685,22 +685,28 @@ replace_phi_with_cmov (
     Print_OP(op);
   }
 
+  BB *pred;
+  BBLIST *preds;
+
 #if 0
+  preds = BB_preds(bb);
   predicate_data *bb_pdt = (predicate_data*)BB_MAP_Get(predicate_info,bb);
   BB_SET *cds = bb_pdt->control_dependences;
   //
   // We need to find the BB common to control dependence sets of all
   // incoming edges.
   //
-  BB *pred;
-  BBLIST *preds = BB_preds(bb);
   BB_SET *cds_intersection;
   predicate_data *pred_pdt;
   BB_SET *pred_cds;
+
+#if 0
+  // Don't care for dependencies of this BB !!!
   if (!BB_SET_EmptyP(cds)) {
     cds_intersection = BB_SET_Copy(cds, &MEM_local_pool);
   }
   else {
+#endif
     // initialize with the first predecessor
     preds = BB_preds(bb);
     pred = BBLIST_item(preds);
@@ -708,7 +714,9 @@ replace_phi_with_cmov (
     pred_cds = pdt->control_dependences;
     cds_intersection = BB_SET_Copy(pred_cds, &MEM_local_pool);
     preds = BBLIST_next(preds);
+#if 0
   }
+#endif
 
   while (preds != NULL) {
     pred = BBLIST_item(preds);
@@ -725,8 +733,6 @@ replace_phi_with_cmov (
   
 
 #endif
-
-  BBLIST *preds;
 
   // 
   // We will generate a select with the opnd[0] corresponding

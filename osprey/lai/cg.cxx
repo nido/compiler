@@ -635,9 +635,9 @@ CG_Generate_Code(
     //       Depending on the CGTARG_Supports_Predication(), do
     //       either Hyper- or Super- block formation.
     //
-    HB_Form_Superblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+    HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
     if (frequency_verify)
-      FREQ_Verify("Superblock Formation");
+      FREQ_Verify("Hyperblock Formation");
 #endif
 #endif
 

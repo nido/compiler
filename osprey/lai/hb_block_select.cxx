@@ -525,7 +525,13 @@ Select_Blocks(HB* hb, list<HB_PATH*>& hb_paths, BOOL profitable_ifc)
     BOOL tolerate_increase = TRUE;
 #if defined(TARG_ST) && !defined(IFCONV_IN_SSA)
     // C.Bruel did not want to do this if forming superblocks ...
-    if (! HB_superblocks)
+    if (HB_superblocks) {
+      if (HB_Trace(HB_TRACE_SELECT)) {
+	  fprintf(HB_TFile,
+		  "<HB>   Selection terminated. Chosen max priority path for the superblock.\n\n");
+      }
+    }
+    else 
 #endif
     for (++path; path != hb_paths.end(); path++) {
       if (HB_Trace(HB_TRACE_SELECT)) {
