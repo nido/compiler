@@ -4671,7 +4671,12 @@ emit_global_symbols ()
     ST* sym = &St_Table(GLOBAL_SYMTAB,i);
 
     if (ST_class(sym) == CLASS_BLOCK && STB_section(sym)) {
-      Init_Section(sym);
+#ifdef TARG_ST200
+      /* (cbr) size can be 0 if created temporary before a named section */
+      /* don't create it */
+      if (STB_size(sym))
+#endif
+        Init_Section(sym);
     }
 
     // emit commons here so order is preserved for datapools
@@ -5293,6 +5298,12 @@ EMT_End_File( void )
     if (ST_class(sym) == CLASS_BLOCK && STB_section(sym)) {
       if (Emit_Global_Data && SEC_is_merge(STB_section_idx(sym)) )
 	continue;	// merge sections go in each .o
+#ifdef TARG_ST200
+      /* (cbr) size can be 0 if created temporary before a named section */
+      /* don't create it */
+      if (!STB_size(sym))
+        continue;
+#endif
       Init_Section(sym);
     }
     // emit commons here so order is preserved for datapools
