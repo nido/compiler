@@ -652,22 +652,6 @@ Sort_Stores(void)
     }
   }
 
-  if (count) {
-    i1_iter = store_i.first.begin();
-    i1_end  = store_i.first.end();
-    i2_iter = store_i.second.begin();
-    while(i1_iter != i1_end) {
-      fprintf (TFile, "in SORTSTORES Stores aliases\n");
-      Print_OP (*i1_iter);
-      Print_OP (*i2_iter);
-      fprintf (TFile, "\n");
-      DevAssert(Are_Aliased (*i1_iter, *i2_iter), ("stores are not alias"));    
-
-      ++i1_iter;
-      ++i2_iter;
-    }
-  }
-    
   return count;
 }
 
@@ -931,69 +915,73 @@ Rename_Globals(OP* op, hTN_MAP dup_tn_map)
 static void
 Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail)
 {
-  OP *op;
+  OP *phi;
 
-  FOR_ALL_BB_OPs_FWD(tail, op) {  
-    for (UINT8 i = 0; i < OP_opnds(op); i++) {
-      TN *res = OP_opnd(op, i);
-      if (TN_is_register(res) && TN_is_global_reg(res) && 
-          !TN_is_dedicated(res)) {
-        TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
+  FOR_ALL_BB_PHI_OPs(tail, phi) { 
+    phi_info *phi_i = NULL;
+    phi_info *new_phi;
 
-        // If this the op is a phi don't replace the tn
-        // but record the new information.
-        if (OP_code (op) == TOP_phi) {
-          TN *result[1];
-          UINT8 nopnds;
-          phi_info *phi_i = NULL;
+    UINT8 nopnds;
+    TN **opnd;
+    BB **preds;
 
-          // Check if this phi was already remapped by a previous
-          // duplication. In which case use the cached information.
-          if (phi_i = (phi_info*)OP_MAP_Get(dup_bb_phi_map, op)) {
-            if (!new_tn) new_tn = res;
-            nopnds = phi_i->npreds;
-          }
-          else {
-            if (!new_tn) continue;
-            nopnds = OP_opnds(op);
-          }
+    // Check if this phi was already remapped.
+    if (phi_i = (phi_info*)OP_MAP_Get(dup_bb_phi_map, phi)) {
+      nopnds = phi_i->npreds;
 
-          // nopnds+1 to make room for the new tn.
-          TN **opnd = (TN**)MEM_POOL_Alloc(&MEM_Select_pool,
-                                           (nopnds+1) * sizeof(TN*));
-          BB **preds = (BB**)MEM_POOL_Alloc(&MEM_Select_pool,
-                                            (nopnds+1) * sizeof(BB*));
+      // nopnds+1 to make room for the new tn.
+      opnd = (TN**)MEM_POOL_Realloc(&MEM_Select_pool,
+                                    phi_i->tns, nopnds * sizeof(TN*),
+                                    (nopnds+1) * sizeof(TN*));
+      preds = (BB**)MEM_POOL_Realloc(&MEM_Select_pool,
+                                     phi_i->preds, nopnds * sizeof(BB*),
+                                     (nopnds+1) * sizeof(BB*));
 
-          // Create the new phi information
-          for (i = 0; i < nopnds; i++) { 
-            TN *ntn = phi_i ? phi_i->tns[i] : OP_opnd(op, i);
-            if (res == ntn)
-              opnd[i] = new_tn;
-            else
-              opnd[i] = ntn;
-            preds[i] = phi_i ? phi_i->preds[i] : Get_PHI_Predecessor(op, i);
-          }
-
-          opnd[i] = res;
-          preds[i] = head;
-          result[0] = OP_result(op, 0);
-          
-          phi_info *new_phi = phi_i ? phi_i :
-            (phi_info *)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_info));
-          
-          new_phi->npreds = nopnds+1;
-          new_phi->res    = result[0];
-          new_phi->preds  = preds;
-          new_phi->tns    = opnd;
-
-          if (! phi_i)
-            OP_MAP_Set(dup_bb_phi_map, op, new_phi);
-        }
-        else
-          if (new_tn)
-            Set_OP_opnd(op, i, new_tn);
-      }
+      new_phi = phi_i;
     }
+    else {
+      nopnds = OP_opnds(phi);
+      
+      // nopnds+1 to make room for the new tn.
+      opnd = (TN**)MEM_POOL_Alloc(&MEM_Select_pool,
+                                  (nopnds+1) * sizeof(TN*));
+      preds = (BB**)MEM_POOL_Alloc(&MEM_Select_pool,
+                                   (nopnds+1) * sizeof(BB*));
+
+      new_phi = (phi_info *)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_info));
+      OP_MAP_Set(dup_bb_phi_map, phi, new_phi);
+    }
+
+    // Create and map the new phi.
+    UINT8 i = 0;
+    TN *old_tn;
+    for (; i < nopnds; i++) {
+      TN *res  = phi_i ? phi_i->tns[i] : OP_opnd(phi, i);
+      BB *pred = phi_i ? phi_i->preds[i] : Get_PHI_Predecessor(phi, i); 
+
+      TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
+
+
+      if (new_tn) {
+        opnd[i] = new_tn;
+        preds[i] = pred;
+        old_tn = res;
+      }
+      else {
+        new_tn = res;
+        opnd[i] = new_tn;
+      }
+
+      preds[i] = pred;
+    }
+
+    opnd[i] = old_tn;
+    preds[i] = head;
+
+    new_phi->npreds = nopnds+1;
+    new_phi->res    = OP_result(phi, 0);
+    new_phi->preds  = preds;
+    new_phi->tns    = opnd;
   }
 }
 
@@ -1238,7 +1226,7 @@ Negate_Branch_BB (OP *br)
 
 static BOOL
 Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
-                         BB **fall_thru2, BB **target2)
+                         BB **fall_thru2, BB **target2, BOOL *cmp_invert)
 {
   OP *br1 = BB_branch_op (bb1);
   OP *br2 = BB_branch_op (bb2);
@@ -1253,15 +1241,12 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
   BB_Fall_Thru_and_Target_Succs(bb2, fall_thru2, target2);
 
   if (target1 == *target2 || fall_thru1 == *fall_thru2) {
-    if (needInvert) {
-      if (! Negate_Cmp_BB(br2))
-        return FALSE;
-    }
+    *cmp_invert = needInvert;
     return TRUE;
   }
 
   if (target1 == *fall_thru2 || fall_thru1 == *target2) {
-    // if needInvert, don't need to do anything. 
+    // if needInvert, just swap the branches
     if (needInvert) {
       BB *tmpbb = *fall_thru2;
       *fall_thru2 = *target2;
@@ -1273,10 +1258,12 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
       logif->target = *target2;
       logif->fall_thru = *fall_thru2;
 
+      *cmp_invert = FALSE;
       return TRUE;
     }
 
-    return Negate_Cmp_BB(br2);
+    *cmp_invert = TRUE;
+    return TRUE;
   }
 
   return FALSE;
@@ -1296,6 +1283,7 @@ static BB*
 Is_Double_Logif(BB* bb)
 {
   BB *fall_thru, *target, *sec_fall_thru, *sec_target;
+  BOOL cmp_invert;
 
   // Find fall_thru and taken BBs.
   BB_Fall_Thru_and_Target_Succs(bb, &fall_thru, &target);
@@ -1305,9 +1293,14 @@ Is_Double_Logif(BB* bb)
         && Can_Speculate_BB(target, NULL)
         && Dead_BB (target)
         && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
-                                    &sec_fall_thru, &sec_target)
-        && sec_fall_thru == fall_thru)
+                                    &sec_fall_thru, &sec_target, &cmp_invert)
+        && sec_fall_thru == fall_thru) {
+      if (cmp_invert) {
+        if (! Negate_Cmp_BB(BB_branch_op (target)))
+          return NULL;
+      }
       return target;
+    }
   }
 
   // try the other side
@@ -1316,9 +1309,14 @@ Is_Double_Logif(BB* bb)
         && Can_Speculate_BB(fall_thru, NULL)
         && Dead_BB (fall_thru)
         && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
-                                    &sec_fall_thru, &sec_target)
-        && sec_target == target)
+                                    &sec_fall_thru, &sec_target, &cmp_invert)
+        && sec_target == target) {
+      if (cmp_invert) {
+        if (! Negate_Cmp_BB(BB_branch_op (fall_thru)))
+          return NULL;
+      }
       return fall_thru;
+    }
   }
   
   return NULL;
@@ -1475,6 +1473,9 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     BB_Recomp_Phis(bb, bb1, bb2, bb == joint_block);
     BB_Update_Phis(bb);
   }
+
+  // Promoted instructions might not be global anymore.
+  BB_Localize_Tns (bb1);
 
   GRA_LIVE_Compute_Liveness_For_BB(bb1);
 }
