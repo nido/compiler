@@ -1345,17 +1345,24 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 
 // Check that bb has no liveout or side effects beside the conditional jump.
 static BOOL
-Dead_BB (BB *bb)
+Dead_BB (BB *bb, BB *other_bb)
 {
   OP *op;
 
-  FOR_ALL_BB_OPs_FWD(bb, op) {  
-    for (UINT8 i = 0; i < OP_results(op); i++) {
-      TN *tn = OP_result(op, 0);
-      if (GTN_SET_MemberP(BB_live_out(bb), tn))
+  FOR_ALL_BB_PHI_OPs(other_bb, op) {
+    for (UINT8 i = 0; i < OP_opnds(op); i++) {
+      if (OP_bb(TN_ssa_def(OP_opnd(op, i))) == bb)
         return FALSE;
     }
   }
+
+  FOR_ALL_BB_OPs(bb, op) {  
+    for (UINT8 i = 0; i < OP_results(op); i++) {
+      if (GTN_SET_MemberP(BB_live_in(other_bb), OP_result(op, i)))
+        return FALSE;
+    }
+  }
+
   return TRUE;
 }
 
@@ -1455,7 +1462,7 @@ Is_Double_Logif(BB* bb)
   if (BB_kind(target) == BBKIND_LOGIF) {
     if (BB_preds_len(target) == 1
         && Can_Speculate_BB(target, NULL)
-        && Dead_BB (target)
+        && Dead_BB (target, fall_thru)
         && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
         && sec_fall_thru == fall_thru) {
@@ -1471,7 +1478,7 @@ Is_Double_Logif(BB* bb)
   if (BB_kind(fall_thru) == BBKIND_LOGIF) {
     if (BB_preds_len(fall_thru) == 1
         && Can_Speculate_BB(fall_thru, NULL)
-        && Dead_BB (fall_thru)
+        && Dead_BB (fall_thru, target)
         && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
         && sec_target == target) {
@@ -1901,6 +1908,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Identify_Logifs_Candidates();
 
   Calculate_Dominators();
+
+  GRA_LIVE_Recalc_Liveness(rid);
 
   if_bb_map = BB_MAP_Create();
 
