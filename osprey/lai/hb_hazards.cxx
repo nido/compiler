@@ -1983,7 +1983,7 @@ Handle_All_Hazards (BB *bb)
 #ifdef TARG_ST200
 
 // ======================================================================
-//  Post-pass to replace a sequence of ;; nop ;; nop ;; by ;; goto .+4 ;;
+//  Post-pass to replace a sequence of ;; nop ;; nop ;; by ;; goto 1 ;;
 //  This is activated under option -CG:nop2goto=1
 // ======================================================================
 
@@ -1994,12 +1994,14 @@ Gen_Label_PC() {
   LABEL *label;
 
   label = &New_LABEL(CURRENT_SYMTAB, lab);
-  LABEL_Init (*label, Save_Str("."), LKIND_DEFAULT);
+  // FdF: Need the extra space, because cgemit checks if the first
+  // character is a digit
+  LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
 
   return lab;
 }
 
-// Replace the sequence ;; NOP ;; NOP ;; by ;; GOTO .+4 ;;
+// Replace the sequence ;; NOP ;; NOP ;; by ;; GOTO 1 ;;
 static OP*
 NOPs2Goto (
   OP *op,
@@ -2008,7 +2010,7 @@ NOPs2Goto (
 {
   OP *goto_op;
 
-  goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 4));
+  goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 0));
   BB_Insert_Op(OP_bb(op), op, goto_op, FALSE);
   
   // It is guarantee that OP_scyle(op) is correct in case it is the
