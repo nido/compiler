@@ -462,7 +462,8 @@ extern BOOL CG_LOOP_optimize_multi_targ;
 extern BOOL CG_LOOP_optimize_non_trip_countable;
 
 #ifdef TARG_ST
-extern BOOL CG_LOOP_unwind;
+extern BOOL CG_LOOP_unroll_do_unwind;
+extern BOOL CG_LOOP_unroll_remainder_after;
 #endif
 /* Exported functions.
  */

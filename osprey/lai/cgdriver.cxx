@@ -534,8 +534,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_remainder_fully", "unroll_remainder_full",
     0, 0, 0, &CG_LOOP_unroll_remainder_fully, NULL },
 #ifdef TARG_ST
-  { OVK_BOOL,	OV_INTERNAL, TRUE,"unwind", "",
-    TRUE, 0, 0, &CG_LOOP_unwind, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_do_unwind", "",
+    TRUE, 0, 0, &CG_LOOP_unroll_do_unwind, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_remainder_after", "",
+    TRUE, 0, 0, &CG_LOOP_unroll_remainder_after, NULL },
 #endif
 
   // Cross Iteration Loop Optimization options.

@@ -189,7 +189,8 @@ BOOL CG_LOOP_unroll_fully = TRUE;
 BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 
 #ifdef TARG_ST
-BOOL CG_LOOP_unwind = FALSE;
+BOOL CG_LOOP_unroll_do_unwind = FALSE;
+BOOL CG_LOOP_unroll_remainder_after = FALSE;
 #endif
 
 #ifdef MIPS_UNROLL
@@ -2598,9 +2599,76 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
   return unrolled_body;
 }
 
+#ifdef TARG_ST
+BOOL
+Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, UINT32 ntimes) {
+  OP *br_op = BB_branch_op(body);
+  OP *cmp_op;
+  TN *tn1, *tn2;
 
+  if (!is_power_of_two(ntimes)) 
+    return FALSE;
 
+  if (!br_op || !OP_cond(br_op))
+    return FALSE;
+
+  VARIANT variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp_op);
+  if (!cmp_op)
+    return FALSE;
+
+  if (tn1 != trip_count_tn && tn2 != trip_count_tn) {
+    // Check if there is not a copy at loop entry. */
+    if (trip_count_bb) {
+      OP *def_op = BB_last_op(trip_count_bb);
+      while (def_op) {
+	if (OP_move(def_op) && OP_result(def_op, 0) == trip_count_tn)
+	  break;
+	def_op = OP_prev(def_op);
+      }
+      if (def_op)
+	trip_count_tn = OP_opnd(def_op, 0);
+      if (tn1 != trip_count_tn && tn2 != trip_count_tn)
+	return FALSE;
+    }
+    else
+      return FALSE;
+  }
+
+  TN *trip_count_floor;
+  
+  if (TN_is_constant(trip_count_tn)) {
+    INT32 new_trip_count_val = TN_value(trip_count_tn) & (-ntimes);
+    trip_count_floor = Gen_Literal_TN(new_trip_count_val, 4);
+  }
+  else {
+
+  /* Create a new TN trip_count_floor = trip_count_tn & (-times) */
+    trip_count_floor = Build_TN_Like(trip_count_tn);
+    OPS prolog_ops = OPS_EMPTY;
+    INT32 trip_size = TN_size(trip_count_tn);
+
+    Exp_OP2(trip_size == 4 ? OPC_U4BAND : OPC_U8BAND,
+	    trip_count_floor,
+	    trip_count_tn,
+	    Gen_Literal_TN(-ntimes, trip_size),
+	    &prolog_ops);
+    BB_Append_Ops(CG_LOOP_prolog, &prolog_ops);
+  }
+
+  if (OP_opnd(cmp_op, 0) == trip_count_tn)
+    Set_OP_opnd(cmp_op, 0, trip_count_floor);
+  else
+    Set_OP_opnd(cmp_op, 1, trip_count_floor);
+
+  return TRUE;
+}
+#endif
+
+#ifdef TARG_ST
+void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes, BOOL remainder_after)
+#else
 void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
+#endif
 /* -----------------------------------------------------------------------
  * Turn LOOP_DESCR_loophead(loop) into a "remainder" loop in preparation
  * for a version being unrolled <ntimes>.  The remainder loop executes
@@ -2775,10 +2843,25 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   // prolog_backpatches and epilog_backpatches are redefined to the
   // backpatch lists we want to work on at any given time.
 
-  CG_LOOP_BACKPATCH *remainder_prolog_backpatches = prolog_backpatches;
-  CG_LOOP_BACKPATCH *remainder_epilog_backpatches = NULL;
-  CG_LOOP_BACKPATCH *main_loop_prolog_backpatches = NULL;
-  CG_LOOP_BACKPATCH *main_loop_epilog_backpatches = epilog_backpatches;
+  CG_LOOP_BACKPATCH *main_loop_prolog_backpatches;
+  CG_LOOP_BACKPATCH *main_loop_epilog_backpatches;
+  CG_LOOP_BACKPATCH *remainder_prolog_backpatches;
+  CG_LOOP_BACKPATCH *remainder_epilog_backpatches;
+
+#ifdef TARG_ST
+  if (remainder_after) {
+    main_loop_prolog_backpatches = prolog_backpatches;
+    main_loop_epilog_backpatches = NULL;
+    remainder_prolog_backpatches = NULL;
+    remainder_epilog_backpatches = epilog_backpatches;
+  } else
+#endif
+  {
+    remainder_prolog_backpatches = prolog_backpatches;
+    remainder_epilog_backpatches = NULL;
+    main_loop_prolog_backpatches = NULL;
+    main_loop_epilog_backpatches = epilog_backpatches;
+  }
 
   // Generate remainder_epilog_backpatches and main_loop_prolog_backpatches
 
@@ -2840,9 +2923,16 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
       }
     }
   }
-
-  remainder_epilog_backpatches = epilog_backpatches;
-  main_loop_prolog_backpatches = prolog_backpatches;
+#ifdef TARG_ST
+  if (remainder_after) {
+    main_loop_epilog_backpatches = epilog_backpatches;
+    remainder_prolog_backpatches = prolog_backpatches;
+  } else
+#endif
+  {
+    remainder_epilog_backpatches = epilog_backpatches;
+    main_loop_prolog_backpatches = prolog_backpatches;
+  }
 
   // Remove notations from the remainder loop
   remainder_tail = Gen_BB_Like(body);
@@ -2882,6 +2972,14 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   OPS zero_trip_guard_ops = OPS_EMPTY;
   OPS prolog_ops = OPS_EMPTY;
   BOOL const_trip = TN_is_constant(trip_count);
+
+#ifdef TARG_ST
+  BB* SAVE_prolog = CG_LOOP_prolog;
+  if (remainder_after) {
+    extend_epilog(loop);
+    CG_LOOP_prolog = CG_LOOP_epilog;
+  }
+#endif
 
   if (const_trip) {
     /* If trip count is a constant, see how many times the remainder
@@ -3123,6 +3221,12 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   note_remainder_head(first_remainder_body, ntimes,
 		      TN_is_constant(new_trip_count)
 		      ? TN_value(new_trip_count) : 0);
+
+#ifdef TARG_ST
+  if (remainder_after) {
+    CG_LOOP_prolog = SAVE_prolog;
+  }
+#endif
 
   // Delete all remainder loop backpatchs
   for (bp = CG_LOOP_Backpatch_First(CG_LOOP_prolog, NULL); bp;
@@ -4090,10 +4194,17 @@ void trace_loop(LOOP_DESCR *loop)
   CG_LOOP_Trace_Loop(loop, "");
 }
 
-
+#ifdef TARG_ST
+static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
+				 LOOPINFO *unrolled_info,
+				 TN *unrolled_trip_count,
+				 TN *trip_count,
+				 UINT32 ntimes)
+#else
 static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 				 LOOPINFO *unrolled_info,
 				 TN *unrolled_trip_count)
+#endif
 {
   INT64 trip_est = WN_loop_trip_est(LOOPINFO_wn(unrolled_info));
   float ztrip_prob = 1.0 / MAX(trip_est, 1);
@@ -4109,12 +4220,13 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
   continuation_lbl = Gen_Label_For_BB(continuation_bb);
 
 #ifdef TARG_ST
+  INT32 trip_size = TN_size(trip_count);
   Exp_OP3v(OPC_FALSEBR,
 	   NULL,
 	   Gen_Label_TN(continuation_lbl,0),
-	   unrolled_trip_count,
-	   Zero_TN,
-	   V_BR_I4EQ,
+	   trip_count,
+	   Gen_Literal_TN(ntimes, trip_size),
+	   trip_size == 4 ? V_BR_I4LT : V_BR_I8LT,
 	   &ops);
 #else
   Exp_OP3v(OPC_FALSEBR,
@@ -4231,7 +4343,18 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
    */
   if (gen_remainder_loop) {
     // CG_DEP_Delete_Graph(head);
+
+#ifdef TARG_ST
+    BOOL remainder_after = CG_LOOP_unroll_remainder_after;
+    if (remainder_after) {
+      remainder_after = Check_remainder_after(unrolled_body, cl.Trip_count_bb(), trip_count_tn, ntimes);
+      if (!remainder_after)
+	DevWarn("unroll_make_remainder_loop: remainder loop could not be put after unrolled loop");
+    }
+    Unroll_Make_Remainder_Loop(cl, ntimes, remainder_after);
+#else
     Unroll_Make_Remainder_Loop(cl, ntimes);
+#endif
   }
 
   /* Update loop descriptor for unrolled loop */
@@ -4250,7 +4373,11 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
    * This also creates a new trip count TN for <unrolled_info>.
    */
   if (gen_unrolled_loop_guard)
+#ifdef TARG_ST
+    Unroll_Do_Loop_guard(loop, unrolled_info, unrolled_trip_count, trip_count_tn, ntimes);
+#else
     Unroll_Do_Loop_guard(loop, unrolled_info, unrolled_trip_count);
+#endif
 
   /* Fixup prolog backpatches.  Replace body TNs and omegas as if
    * they're uses in the zeroth unrolling.  */
@@ -5208,7 +5335,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   }
 
   if (single_bb) {
-    if (has_trip_count && !CG_LOOP_unwind) {
+#ifdef TARG_ST
+    if (has_trip_count && !CG_LOOP_unroll_do_unwind)
+#else
+    if (has_trip_count)
+#endif
+    {
       if (Enable_SWP)
 	action =  SINGLE_BB_DOLOOP_SWP;
       else 
