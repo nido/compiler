@@ -4834,10 +4834,7 @@ void CG_LOOP::EBO_Before_Unrolling()
     // verify that all OPs in the region has omega and other invariants ...
     bb_region.Verify();  
 
-    // TODO: call ebo_before_unrolling(bb_region) here
-#ifndef TARG_ST
     EBO_before_unrolling(&bb_region);
-#endif
   }
 
   MEM_POOL_Pop(&MEM_local_pool);
@@ -4856,9 +4853,7 @@ void CG_LOOP::EBO_After_Unrolling()
     }
 
     // TODO: call ebo_after_unrolling(bb_region) here
-#ifndef TARG_ST
     EBO_after_unrolling(&bb_region);
-#endif
   }
   MEM_POOL_Pop(&MEM_local_pool);
 }
@@ -5209,10 +5204,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before loop canonicalization ***");
 
-#ifndef TARG_ST
       if (!Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt))
 	return FALSE;
 
+#ifndef TARG_ST
       //      if (PROC_has_counted_loops())
       // Replace regular branch with loop-count branches.
       // There will be a call EBO to delete the loop-exit test evaluations.
@@ -5239,7 +5234,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
 
-#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Postincr generation / After RW removal ***");
 
@@ -5261,7 +5255,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** before ebo 1 and unrolling / after fix recurrences ***");
 
       cg_loop.Recompute_Liveness();
-      cg_loop.EBO_Before_Unrolling();  
+      cg_loop.EBO_Before_Unrolling();
 
       if (SWP_Options.Predicate_Promotion) {
 	list<BB*> bbl;
@@ -5291,7 +5285,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before implicit prefetch / after fix recurrences 2 ***");
 
+#ifndef TARG_ST
       Gen_Implicit_Prefetches(cg_loop, trace_loop_opt);
+#endif
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Ind. Var. Removal / after implicit prefetch  ***");
@@ -5304,7 +5300,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 				  trace_loop_opt);
       cg_loop.Recompute_Liveness();
       Fix_Backpatches(cg_loop, trace_loop_opt);
-#endif
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
@@ -5358,23 +5353,20 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
 	Perform_Read_Write_Removal(loop);
 
-#ifndef TARG_ST
 	// Break recurrences will compute dep-graph itself
 	Fix_Recurrences_Before_Unrolling(cg_loop);
 
 	if (cg_loop.Unroll_factor() > 1) {
 	  Unroll_Do_Loop(cg_loop, cg_loop.Unroll_factor());
 	}
-#endif
+
 	cg_loop.Recompute_Liveness();
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
       }
 
       cg_loop.Recompute_Liveness();
 
-#ifndef TARG_ST
       cg_loop.EBO_After_Unrolling();
-#endif
 
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
@@ -5398,10 +5390,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
 
-#ifndef TARG_ST
       if (Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt)) {
-
+#ifndef TARG_ST
 	Gen_SWP_Branch(cg_loop, false/*is_doloop*/);
+#endif
 
 	cg_loop.Recompute_Liveness();
 	cg_loop.Build_CG_LOOP_Info();
@@ -5415,6 +5407,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	cg_loop.Recompute_Liveness();
 	Prepare_Loop_For_SWP_2(cg_loop, trace_loop_opt);
 
+#ifndef TARG_ST
 	Convert_While_Loop_to_Fully_Predicated_Form(cg_loop);
 
 	if (SWP_Options.Predicate_Promotion) {
@@ -5422,6 +5415,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  bbl.push_front(cg_loop.Loop_header());
 	  CG_DEP_Prune_Dependence_Arcs(bbl, TRUE, trace_loop_opt);
 	}
+#endif
 
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_SWP ***");
@@ -5429,6 +5423,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	cg_loop.Recompute_Liveness();
 	Fix_Backpatches(cg_loop, trace_loop_opt);
 
+#ifndef TARG_ST
 	if (!Perform_SWP(cg_loop, fixup, false /*doloop*/)) {
 	  
 	  //  Undo SWP preparations, if SWP failed
@@ -5437,9 +5432,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  cg_loop.Recompute_Liveness();
 	}
       }
-#endif
-
-#if defined(TARG_ST)
+#else
+      }
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind ***");
@@ -5459,14 +5453,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
 
-#ifndef TARG_ST
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
 
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
-#endif
 
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
@@ -5485,7 +5477,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     {
       CG_LOOP cg_loop(loop);
 
-      // prolog needed to load loop counter
+      // prolog needed to load loop counter. Epilog needed for
+      // cg_loop.Recompute_Liveness
       if (!cg_loop.Has_prolog_epilog()) return FALSE;
 
       if (trace_loop_opt) {
@@ -5517,11 +5510,20 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       // Prolog and Epilog are needed for cg_loop.Recompute_Liveness()
       if (!cg_loop.Has_prolog_epilog()) return FALSE;
 
+      if (trace_loop_opt) {
+	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_WHILELOOP ***");
+      }
+
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
       if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule)) {
 	cg_loop.Recompute_Liveness();
       }
+
+      if (trace_loop_opt) {
+	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_WHILELOOP ***");
+      }
+
       break;
     }
     // FALLTHROUGH ...
