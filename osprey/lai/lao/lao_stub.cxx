@@ -41,6 +41,12 @@ extern "C" {
 #undef this
 }
 
+// Map CGIR ISA_SUBSET to LIR InstrMode.
+static InstrMode IS__InstrMode[ISA_SUBSET_MAX+1];
+
+// Map LIR InstrMode to CGIR ISA_SUBSET.
+static ISA_SUBSET InstrMode__IS[InstrMode__COUNT];
+
 // Map CGIR TOP to LIR Operator.
 static Operator TOP__Operator[TOP_UNDEFINED];
 
@@ -72,15 +78,6 @@ typedef vector<BB*> BB_VECTOR;
 
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
 // These functions are the only ones to call the Interface_make functions.
-
-// Convert CGIR TOP to LIR Operator.
-static inline Operator
-CGIR_TOP_to_Operator(TOP top) {
-  Operator lao_operator = TOP__Operator[top];
-  Is_True(top >= 0 && top < TOP_UNDEFINED, ("TOPcode out of range"));
-  Is_True(lao_operator != Operator_, ("Cannot map TOPcode to Operator"));
-  return lao_operator;
-}
 
 // Convert CGIR ISA_ENUM_CLASS to LIR Modifier.
 static inline Modifier
@@ -117,6 +114,15 @@ CGIR_CRP_to_Register(CLASS_REG_PAIR crp) {
   RegClass regclass = CGIR_IRC_to_RegClass(irc);
   Register lowreg = RegClass_lowreg(regclass);
   return (Register)(lowreg + (reg - 1));
+}
+
+// Convert CGIR TOP to LIR Operator.
+static inline Operator
+CGIR_TOP_to_Operator(TOP top) {
+  Operator lao_operator = TOP__Operator[top];
+  Is_True(top >= 0 && top < TOP_UNDEFINED, ("TOPcode out of range"));
+  Is_True(lao_operator != Operator_, ("Cannot map TOPcode to Operator"));
+  return lao_operator;
 }
 
 // Convert CGIR_LAB to LIR Label.
