@@ -59,6 +59,7 @@ CGTARG_Use_Brlikely(float branch_taken_probability)
   return FALSE;
 }
 
+#if 0
 /* ====================================================================
  *    Predication:
  * ====================================================================
@@ -67,6 +68,7 @@ inline BOOL CGTARG_Can_Predicate_Calls() { return FALSE; }
 inline BOOL CGTARG_Can_Predicate_Returns() { return FALSE; }
 inline BOOL CGTARG_Can_Predicate_Branches() { return FALSE; }
 inline BOOL CGTARG_Can_Predicate() { return FALSE; }
+#endif
 
 /* ====================================================================
  *    ISA properties:

@@ -699,6 +699,19 @@ typedef enum {
   COMPARE_TYPE_normal
 } COMPARE_TYPE;
 
+inline BOOL CGTARG_Can_Predicate_Calls() { 
+  return PROC_has_predicate_calls(); 
+}
+inline BOOL CGTARG_Can_Predicate_Returns() { 
+  return PROC_has_predicate_returns(); 
+}
+inline BOOL CGTARG_Can_Predicate_Branches() { 
+  return PROC_has_predicate_branches(); 
+}
+inline BOOL CGTARG_Can_Predicate() { 
+  return (PROC_is_ia64_predication() || PROC_is_select()); 
+}
+
 extern TOP CGTARG_Parallel_Compare(OP* cmp_op, COMPARE_TYPE ctype);
 extern BOOL CGTARG_Unconditional_Compare(OP* op, TOP* uncond_ver);
 extern BOOL CGTARG_Branches_On_True(OP* br_op, OP* cmp_op);
