@@ -346,7 +346,9 @@ Exp_Indirect_Branch (
   OPS *ops
 )
 {
-  Build_OP (TOP_goto, targ_reg, ops);
+  // put target in LR
+  Build_OP (TOP_mov_r, RA_TN, targ_reg, ops);
+  Build_OP (TOP_igoto, RA_TN, ops);
   return;
 }
 
