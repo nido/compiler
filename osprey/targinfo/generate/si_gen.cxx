@@ -53,7 +53,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <limits.h>
+#include "W_limits.h"
 #include <stdarg.h>
 #include <list.h>
 #include <map.h>
@@ -1096,7 +1096,7 @@ void INSTRUCTION_GROUP::Output_II_Info(FILE* fd)
       bad_iis[i / bits_per_long_long] |= (1ULL << (i % bits_per_long_long));
     }
   }
-  
+ 
   // Print vector of pointers to the II relative resource requirements
 
   fprintf(fd,"static const SI_RR %s[] = {",
