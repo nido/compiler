@@ -605,11 +605,13 @@ void
 LRANGE_CLIST::Print_Clist(void)
 {
   LRANGE *lr;
+  char buff[100];
+
   for (lr = first; lr != last; lr = lr->clist_next) {
-    printf("%d ", lr->id);
+    fprintf(TFile, "L%d: %s\n", lr->id, lr->Format(buff));
   }
   if (lr != NULL) {
-    printf("%d \n", lr->id);
+    fprintf(TFile, "L%d: %s\n", lr->id, lr->Format(buff));
   }
 }
 
@@ -756,6 +758,8 @@ Simplify( GRA_REGION* region, ISA_REGISTER_CLASS rc, LRANGE_CLIST* cl )
   // prepended to the front of the coloring list.  Notice how these have been
   // forcefully held out of simplification.
   pcl.Append(cl);
+
+  //pcl.Print_Clist();
 
   FmtAssert(LRPRQ_Size(&ready) == 0,
             ("Ready priority queue not empty after simplification"));
