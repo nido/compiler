@@ -1362,7 +1362,7 @@ Write_Symbol (
   INT32	repeat		/* Repeat count */
 #ifdef TARG_ST
   /* (cbr) support for half address relocation */
-  ,  INT32 osize = Pointer_Size  /* Output size */
+  ,  BOOL halfword = 0  /* Output size */
 #endif
 )
 {
@@ -1370,7 +1370,12 @@ Write_Symbol (
   ST *basesym;
   INT64 base_ofst = 0;
   // pSCNINFO scn = em_scn[scn_idx].scninfo;
+#ifdef TARG_ST
+  /* (cbr) support for half address relocation */
+  INT address_size = halfword ? 2 : ((Use_32_Bit_Pointers) ? 4 : 8);
+#else
   INT address_size = ((Use_32_Bit_Pointers) ? 4 : 8);
+#endif
 
   if ( Trace_Init ) {
     #pragma mips_frequency_hint NEVER
@@ -1449,7 +1454,7 @@ Write_Symbol (
     if (Assembly) {
 #ifdef TARG_ST
       /* (cbr) support for half address relocation */
-      if (osize == 2 && osize != address_size)
+      if (halfword)
         fprintf (Output_File, "\t%s\t",  AS_HALF);
       else
 #endif
@@ -1676,7 +1681,7 @@ Write_INITV (
           
 	default:
           scn_ofst = Write_Symbol ( st, INITV_ofst(inv),
-                                    scn_idx, scn_ofst, INITV_repeat1(inv), 2);
+                                    scn_idx, scn_ofst, INITV_repeat1(inv), true);
 	   break;
       }
       break;
