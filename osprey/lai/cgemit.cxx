@@ -3629,6 +3629,8 @@ Assemble_Ops (
 
 #ifdef TARG_ST
   Bundle_Count = 0;
+  if (BB_first_op(bb) != NULL)
+    Bundle_Count = OP_scycle(BB_first_op(bb));
 #endif
 
   FmtAssert(ISA_MAX_SLOTS == 1 || Lai_Code || !LOCS_Enable_Bundle_Formation,
@@ -3671,6 +3673,8 @@ Assemble_Bundles(BB *bb)
 
 #ifdef TARG_ST
   Bundle_Count = 0;
+  if (BB_first_op(bb) != NULL)
+    Bundle_Count = OP_scycle(BB_first_op(bb));
 #endif
 
   FmtAssert(Assembly,
