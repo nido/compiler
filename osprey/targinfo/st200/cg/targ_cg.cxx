@@ -290,11 +290,10 @@ CGTARG_Analyze_Branch (
 {
   INT variant;
 
-  FmtAssert(FALSE, ("CGTARG_Analyze_Branch: not implemented"));
-
   *tn1 = NULL;
   *tn2 = NULL;
 
+  /* TO DO. investigate */
   switch (OP_code(br)) {
 
   default:
