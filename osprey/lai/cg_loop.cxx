@@ -4490,12 +4490,12 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   MEM_POOL_Pop(&MEM_local_nz_pool);
 }
 
-INT32 CG_LOOP::Get_Unroll_Times(BOOL &pragma_unroll)
+INT32 CG_LOOP::Get_Unroll_Times(ANNOTATION *&pragma_unroll)
 {
   BB *head = LOOP_DESCR_loophead(loop);
   INT32 unroll_times;
 
-  pragma_unroll = FALSE;
+  pragma_unroll = NULL;
   unroll_times = CG_LOOP_unroll_times_max;
 
   ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
@@ -4504,7 +4504,7 @@ INT32 CG_LOOP::Get_Unroll_Times(BOOL &pragma_unroll)
   if (unroll_ant) {
     WN *wn = ANNOT_pragma(unroll_ant);
     unroll_times = MAX(1, WN_pragma_arg1(wn));
-    pragma_unroll = TRUE;
+    pragma_unroll = unroll_ant;
   }
 
   return unroll_times;
@@ -4525,7 +4525,7 @@ bool CG_LOOP::Determine_Unroll_Fully()
   LOOPINFO *info = LOOP_DESCR_loopinfo(Loop());
   TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
   BB *head = LOOP_DESCR_loophead(loop);
-  BOOL pragma_unroll;
+  ANNOTATION *pragma_unroll;
   INT32 unroll_times_max = Get_Unroll_Times(pragma_unroll);
 
   if (BB_Has_Exc_Label(head))
@@ -4543,7 +4543,7 @@ bool CG_LOOP::Determine_Unroll_Fully()
   INT32 const_trip_count = TN_value(trip_count_tn);
   INT32 body_len = BB_length(head);
 
-  if ((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) ||
+  if (((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) && !pragma_unroll) ||
       (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
        (unroll_times_max >= const_trip_count))) {
 
@@ -4566,7 +4566,7 @@ void CG_LOOP::Determine_Unroll_Factor()
   BB *head = LOOP_DESCR_loophead(loop);
   BOOL trace = Get_Trace(TP_CGLOOP, 2);
   INT32 unroll_times_max;
-  BOOL pragma_unroll;
+  ANNOTATION *pragma_unroll;
 
   Set_unroll_factor(1);
 
@@ -4612,7 +4612,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 	 *   (b1) unrolled size <= OPT:unroll_size, or
 	 *   (b2) (OPT:unroll_size=0 || pragma_unroll) and unroll_times_max >= trip count
 	 */
-	((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) ||
+	(((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) && !pragma_unroll) ||
 	 (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
 	  (unroll_times_max >= const_trip_count)))) {
 
@@ -5467,6 +5467,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   case MULTI_BB_DOLOOP:
     {
       CG_LOOP cg_loop(loop);
+      ANNOTATION *pragma_unroll;
 
       // prolog needed to load loop counter. Epilog needed for
       // cg_loop.Recompute_Liveness
@@ -5477,6 +5478,15 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
 
       Gen_Counted_Loop_Branch(cg_loop);
+
+      if ((cg_loop.Get_Unroll_Times(pragma_unroll) > 1) && pragma_unroll) {
+	BB *head = LOOP_DESCR_loophead(cg_loop.Loop());
+	/* Raise a warning. */
+	DevWarn("BB %d: pragma unroll ignored on multi-bb loop", BB_id(head));
+	
+	/* Remove pragma unroll annotation to avoid further warning. */
+	ANNOT_Unlink(BB_annotations(head), pragma_unroll);
+      }
 
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_DOLOOP ***");
