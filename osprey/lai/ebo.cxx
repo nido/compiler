@@ -2112,8 +2112,16 @@ EBO_Constant_Operand0 (
 
   if (OP_opnds(op) < (OP_has_predicate(op) ? 2 : 1)) return FALSE;
 
-  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
-  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  if (OP_select(op)) {
+    l0_opnd1_idx = 1;
+    l0_opnd2_idx = 2;
+  }
+  else {
+    l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  }
+
+
   tn0 = opnd_tn[l0_opnd1_idx];
   tn1 = (l0_opnd2_idx >= 0) ? opnd_tn[l0_opnd2_idx] : NULL;
 
@@ -2875,8 +2883,15 @@ EBO_Constant_Operand1 (
 
   if (OP_opnds(op) < (OP_has_predicate(op) ? 3 : 2)) return FALSE;
 
-  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
-  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  if (OP_select(op)) {
+    l0_opnd1_idx = 1;
+    l0_opnd2_idx = 2;
+  }
+  else {
+    l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  }
+
   tn0 = opnd_tn[l0_opnd1_idx];
   tn1 = opnd_tn[l0_opnd2_idx];
 
@@ -4584,8 +4599,17 @@ Find_BB_TNs (BB *bb)
 	    /* Consider special case optimizations. */
 #ifdef TARG_ST
 	    // The ST target description takes care of this
-	    INT o1_idx = OP_find_opnd_use(op, OU_opnd1);
-	    INT o2_idx = OP_find_opnd_use(op, OU_opnd2);
+            INT o1_idx;
+            INT o2_idx;
+
+            if (OP_select(op)) {
+              o1_idx = 1;
+              o2_idx = 2;
+            }
+            else {
+              o1_idx = OP_find_opnd_use(op, OU_opnd1);
+              o2_idx = OP_find_opnd_use(op, OU_opnd2);
+            }
 #else
             INT o2_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd2) won't work for all the cases we care about */
             INT o1_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd1) won't work for all the cases we care about */
