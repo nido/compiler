@@ -666,6 +666,16 @@ CG_Generate_Code(
 #endif
       Stop_Timer ( T_EBO_CU );
       Check_for_Dump ( TP_EBO, NULL );
+
+      // FdF: Useful to run CFLOW_optimize again because EBO may have
+      // propagated constants such that conditional branches become
+      // inconditional.
+      /* Optimize control flow (third pass) */
+      if (CFLOW_opt_after_cgprep) {
+	CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (third pass)");
+	if (frequency_verify)
+	  FREQ_Verify("CFLOW (third pass)");
+      }
     }
   } /* CG_opt_level > 1 */ 
 
