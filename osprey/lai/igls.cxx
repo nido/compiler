@@ -311,7 +311,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       HB_Remove_Deleted_Blocks();
       list<HB*>::iterator hbi;
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
-	lao_optimize_HB(*hbi, /*Optimization_Postpass*/ 0x8);
+	lao_optimize_HB(*hbi, /*Optimization_Postpass*/ 0x2);
       }
     }
     else

@@ -1458,9 +1458,9 @@ static void* lao_handler = NULL;
 // Also, define here function pointers to other entry points in the
 // LAO library.
 
-CG_EXPORTED bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
-CG_EXPORTED bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
-CG_EXPORTED bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
+CG_EXPORTED bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
+CG_EXPORTED bool (*lao_optimize_BB_p)(BB *bb, unsigned lao_optimizations);
 CG_EXPORTED void (*CGIR_print_p) (void);
 
 #endif

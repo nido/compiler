@@ -626,19 +626,19 @@ Open64_finalUpdateBB(CGIR_BB cgir_bb, CGIR_BB cgir_head) {
 /*--------------------------- lao_init / lao_fini ----------------------------*/
 
 // Optimize a LOOP_DESCR through the LAO.
-static bool lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_optimizations);
+static bool lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations);
 
 // Optimize a HB through the LAO.
 static bool lao_optimize_HB(HB *hb, unsigned lao_optimizations);
 
 // Optimize a Function through the LAO.
-static bool lao_optimize_FUNC(unsigned lao_optimizations);
+static bool lao_optimize_BB(BB *bb, unsigned lao_optimizations);
 
 static void CGIR_print(void);
 
-CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(CG_LOOP *cg_loop, unsigned lao_optimizations);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
 CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
-CG_EXPORTED extern bool (*lao_optimize_FUNC_p)(unsigned lao_optimizations);
+CG_EXPORTED extern bool (*lao_optimize_BB_p)(BB *bb, unsigned lao_optimizations);
 CG_EXPORTED extern void (*CGIR_print_p)(void);
 
 // Initialization of the LAO, needs to be called once.
@@ -651,7 +651,7 @@ lao_init() {
     // initialize the PRO64/LAO interface pointers
     lao_optimize_LOOP_p = lao_optimize_LOOP;
     lao_optimize_HB_p = lao_optimize_HB;
-    lao_optimize_FUNC_p = lao_optimize_FUNC;
+    lao_optimize_BB_p = lao_optimize_BB;
     CGIR_print_p = CGIR_print;
     // initialize the TOP__Operator array
     for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator_;
@@ -950,13 +950,97 @@ lao_fini() {
     // Release the PRO64/LAO interface pointers.
     lao_optimize_LOOP_p = NULL;
     lao_optimize_HB_p = NULL;
-    lao_optimize_FUNC_p = NULL;
+    lao_optimize_BB_p = NULL;
     CGIR_print_p = NULL;
   }
 }
 
 
 /*-------------------------- LAO Utility Functions----------------------------*/
+
+// Initialize the interface call-back pointers.
+static void
+lao_initializeCallBack() {
+  *Interface__CGIR_LAB_identity(interface) = CGIR_LAB_identity;
+  *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
+  *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
+  *Interface__CGIR_SYM_identity(interface) = CGIR_SYM_identity;
+  *Interface__CGIR_SYM_create(interface) = CGIR_SYM_create;
+  *Interface__CGIR_SYM_update(interface) = CGIR_SYM_update;
+  *Interface__CGIR_TN_identity(interface) = CGIR_TN_identity;
+  *Interface__CGIR_Dedicated_TN_create(interface) = CGIR_Dedicated_TN_create;
+  *Interface__CGIR_PseudoReg_TN_create(interface) = CGIR_PseudoReg_TN_create;
+  *Interface__CGIR_Modifier_TN_create(interface) = CGIR_Modifier_TN_create;
+  *Interface__CGIR_Absolute_TN_create(interface) = CGIR_Absolute_TN_create;
+  *Interface__CGIR_Symbol_TN_create(interface) = CGIR_Symbol_TN_create;
+  *Interface__CGIR_Label_TN_create(interface) = CGIR_Label_TN_create;
+  *Interface__CGIR_TN_update(interface) = CGIR_TN_update;
+  *Interface__CGIR_OP_identity(interface) = CGIR_OP_identity;
+  *Interface__CGIR_OP_create(interface) = CGIR_OP_create;
+  *Interface__CGIR_OP_update(interface) = CGIR_OP_update;
+  *Interface__CGIR_BB_identity(interface) = CGIR_BB_identity;
+  *Interface__CGIR_BB_create(interface) = CGIR_BB_create;
+  *Interface__CGIR_BB_update(interface) = CGIR_BB_update;
+  *Interface__CGIR_BB_chain(interface) = CGIR_BB_chain;
+  *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
+  *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
+  *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
+  *Interface__CGIR_BB_linkFallThru(interface) = CGIR_BB_linkFallThru;
+  *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
+  *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
+  *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
+  *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
+}
+
+// Find the entry BBs of a BB_SET.
+static int lao_fill_entry_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &entryBBs) {
+  int entry_count = 0;
+  BB *head_bb = bodyBBs.front();
+  BB *fall_entry_bb = BB_Fall_Thru_Predecessor(head_bb);
+  BBLIST* pred_list = NULL;
+  FOR_ALL_BB_PREDS(head_bb, pred_list) {
+    BB* pred_bb = BBLIST_item(pred_list);
+    if (!BB_SET_MemberP(body_set, pred_bb)) {
+      if (pred_bb != fall_entry_bb) {
+	entryBBs.push_back(pred_bb);
+	++entry_count;
+      }
+    }
+  }
+  if (fall_entry_bb != NULL) {
+    entryBBs.push_back(fall_entry_bb);
+    ++entry_count;
+  }
+  return entry_count;
+}
+
+// Find the exit BBs of a BB_SET.
+static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exitBBs) {
+  int exit_count = 0;
+  BB *tail_bb = bodyBBs.back();
+  BB *fall_exit_bb = BB_Fall_Thru_Successor(tail_bb);
+  if (fall_exit_bb != NULL) {
+    exitBBs.push_back(fall_exit_bb);
+//cerr << "lao_fill_exit_bblist_(" << BB_id(tail_bb) << ")(" << BB_id(fall_exit_bb) << ")\n";
+    ++exit_count;
+  }
+  list<BB*>::iterator bb_iter;
+  FOR_ALL_BB_STLLIST_ITEMS_FWD(bodyBBs, bb_iter) {
+    BB *body_bb = *bb_iter;
+    BBLIST* succ_list = NULL;
+    FOR_ALL_BB_SUCCS(body_bb, succ_list) {
+      BB* succ_bb = BBLIST_item(succ_list);
+      if (!BB_SET_MemberP(body_set, succ_bb) &&
+	  succ_bb != fall_exit_bb &&
+	  !CGIR_in_BB_List(exitBBs, succ_bb)) {
+	exitBBs.push_back(succ_bb);
+//cerr << "lao_fill_exit_bblist(" << BB_id(succ_bb) << ")\n";
+	++exit_count;
+      }
+    }
+  }
+  return exit_count;
+}
 
 // Declare CG_DEP_Compute_Region_MEM_Arcs().
 void 
@@ -1010,56 +1094,17 @@ lao_makeLoopInfo(BB_List& bb_list, bool cyclic) {
 
 // Low-level LAO_optimize entry point.
 static bool
-lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao_optimizations) {
-  bool cyclic = Configuration_PIPELINE(LAO_Configuration) > 0;
+lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
   bool result = false;
-  BB_List nonexitBBs;
-  BB_List::iterator bb_iter;
-  BB *bb_succ;
-  //
-  // The fall-through of the last entry node must be the first body
-  // node. (see LAO_Interface.xcc:Interface_updateCGIR).
-  if (((bb_succ = BB_Fall_Thru_Successor(entryBBs.back())) != NULL) &&
-      (bb_succ != bodyBBs.front())) {
-    fprintf(TFile, "Last entry block do not fall-through to first body block.\n");
-    return false;
-  }
   //
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
   Interface_open(interface);
-  // initialize the interface call-back pointers
-  *Interface__CGIR_LAB_identity(interface) = CGIR_LAB_identity;
-  *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
-  *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
-  *Interface__CGIR_SYM_identity(interface) = CGIR_SYM_identity;
-  *Interface__CGIR_SYM_create(interface) = CGIR_SYM_create;
-  *Interface__CGIR_SYM_update(interface) = CGIR_SYM_update;
-  *Interface__CGIR_TN_identity(interface) = CGIR_TN_identity;
-  *Interface__CGIR_Dedicated_TN_create(interface) = CGIR_Dedicated_TN_create;
-  *Interface__CGIR_PseudoReg_TN_create(interface) = CGIR_PseudoReg_TN_create;
-  *Interface__CGIR_Modifier_TN_create(interface) = CGIR_Modifier_TN_create;
-  *Interface__CGIR_Absolute_TN_create(interface) = CGIR_Absolute_TN_create;
-  *Interface__CGIR_Symbol_TN_create(interface) = CGIR_Symbol_TN_create;
-  *Interface__CGIR_Label_TN_create(interface) = CGIR_Label_TN_create;
-  *Interface__CGIR_TN_update(interface) = CGIR_TN_update;
-  *Interface__CGIR_OP_identity(interface) = CGIR_OP_identity;
-  *Interface__CGIR_OP_create(interface) = CGIR_OP_create;
-  *Interface__CGIR_OP_update(interface) = CGIR_OP_update;
-  *Interface__CGIR_BB_identity(interface) = CGIR_BB_identity;
-  *Interface__CGIR_BB_create(interface) = CGIR_BB_create;
-  *Interface__CGIR_BB_update(interface) = CGIR_BB_update;
-  *Interface__CGIR_BB_chain(interface) = CGIR_BB_chain;
-  *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
-  *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
-  *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
-  *Interface__CGIR_BB_linkFallThru(interface) = CGIR_BB_linkFallThru;
-  *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
-  *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
-  *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
-  *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
-
+  lao_initializeCallBack();
+  //
   // Create the LAO BasicBlocks.
+  BB_List nonexitBBs;
+  BB_List::iterator bb_iter;
   for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setEntry(interface, basicblock);
@@ -1091,9 +1136,9 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
     }
   }
   // Make the LoopInfos for the bodyBBs.
-  lao_makeLoopInfo(bodyBBs, cyclic);
+  lao_makeLoopInfo(bodyBBs, pipeline > 0);
   //
-  result = LAO_Optimize(lao_optimizations);
+  //result = LAO_Optimize(lao_optimizations);
   if (result) {
     Interface_updateCGIR(interface, Open64_finalUpdate);
     if (getenv("PRINT")) CGIR_print();
@@ -1107,111 +1152,90 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
 
 // Optimize a LOOP_DESCR inner loop through the LAO.
 static bool
-lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_optimizations) {
-  BB_List entryBBs, bodyBBs, exitBBs;
-  bool result = false;
+lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
+  Is_True(Is_Inner_Loop(loop), ("lao_optimize_LOOP must be called on inner loop"));
+  BB *head_bb = LOOP_DESCR_loophead(loop);
+  BB_SET *body_set = LOOP_DESCR_bbset(loop);
   //
-  LOOP_DESCR *loop = cg_loop->Loop();
-  // BB_innermost is not maintained by loop unrolling.
-  // if (BB_innermost(LOOP_DESCR_loophead(loop)))
-  {
-    //
-    entryBBs.push_back(CG_LOOP_prolog);
-    //
-    // Enter the body blocks in linear order.
-    BB *loop_head = LOOP_DESCR_loophead(loop);
-    BB *loop_tail = LOOP_DESCR_Find_Unique_Tail(loop);
-    BB *bb;
-    //
-    if (loop_tail == NULL) return result;
-    //
-    // Put loop head first, because last entry BB may fall through to it.
-    bodyBBs.push_back(loop_head);
-    FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb) {
-      if (bb != loop_head) bodyBBs.push_back(bb);
-      //
-      BBLIST *succs = NULL;
-      FOR_ALL_BB_SUCCS(bb, succs) {
-	BB *succ = BBLIST_item(succs);
-	if (!BB_SET_MemberP(LOOP_DESCR_bbset(loop), succ)) {
-	  // Ensure that a bb is not put twice in the exitBBs.
-	  if (!CGIR_in_BB_List(exitBBs, succ)) exitBBs.push_back(succ);
-	}
-      }
-    }
-    //
-    // Call the main lao_optimize entry point.
-    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
+  // Compute the pipeline value.
+  bool prepass = (lao_optimizations & Optimization_Prepass) != 0;
+  BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
+  int pipeline = 1 + 2*(tail_bb != NULL)*prepass;
+  if (pipeline > CG_LAO_pipeline) pipeline = CG_LAO_pipeline;
+  //
+  // Adjust control-flow if required.
+  if (pipeline > 1) {
+    // Software pipelining (implies prepass scheduling).
+    BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
+  } else if (pipeline > 0) {
+    // Loop scheduling (prepass or postpass scheduling).
+  } else {
+    // Acyclic scheduling (prepass or postpass scheduling).
   }
   //
-  return result;
+  // Compute the body BBs.
+  BB_List bodyBBs;
+  int body_count = 0;
+  for (BB *bb = head_bb; bb != BB_next(tail_bb); bb = BB_next(bb)) {
+    if (BB_SET_MemberP(body_set, bb)) {
+      bodyBBs.push_back(bb);
+      body_count++;
+    }
+  }
+  Is_True(body_count == BB_SET_Size(body_set), ("lao_optimize_LOOP computed incorrect body"));
+  //
+  // Compute the entry BBs.
+  BB_List entryBBs;
+  int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
+  //
+  // Compute the exit BBs.
+  BB_List exitBBs;
+  int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
+  Is_True(exit_count == LOOP_DESCR_num_exits(loop), ("lao_optimize_LOOP computed incorrect exits"));
+  //
+  // Call the lower level lao_optimize function.
+  return lao_optimize(entryBBs, bodyBBs, exitBBs, pipeline, lao_optimizations);
 }
 
 // Optimize a HB through the LAO.
 static bool
 lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
-  BB_List entryBBs, bodyBBs, exitBBs;
-  bool result = false;
+  BB *head_bb = HB_Entry(hb);
+  BB_SET *body_set = HB_Blocks(hb);
   //
-  entryBBs.push_back(HB_Entry(hb));
-  //
-  BB *bb = NULL;
-  // TODO: ensure the proper linear order of BBs
-  FOR_ALL_BB_SET_members(HB_Blocks(hb), bb) {
-    if (!CGIR_in_BB_List(entryBBs, bb)) {
-      bodyBBs.push_back(bb);
-    }
-    //
-    BBLIST *succs = NULL;
-    FOR_ALL_BB_SUCCS(bb, succs) {
-      BB *succ = BBLIST_item(succs);
-      if (!HB_Contains_Block(hb, succ)) {
-	if (!CGIR_in_BB_List(exitBBs, succ))
-	  exitBBs.push_back(succ);
-      }
-    }
+  // Call lao_optimize_LOOP if HB is an inner loop.
+  LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(head_bb);
+  if (loop != NULL && LOOP_DESCR_loophead(loop) == head_bb &&
+      BB_SET_Size(body_set) == BB_SET_Size(LOOP_DESCR_bbset(loop))) {
+    return lao_optimize_LOOP(loop, lao_optimizations);
   }
   //
-  if (getenv("HB")) {
-    fprintf(TFile, "HB_optimize\n");
-    result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
-  }
+  // Compute the body BBs.
+  BB_List &bodyBBs = *HB_Blocks_List(hb);
+  Is_True(bodyBBs.front() == head_bb, ("lao_optimize_HB computed incorrect body"));
   //
-  return result;
+  // Compute the entry BBs.
+  BB_List entryBBs;
+  int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
+  //
+  // Compute the exit BBs.
+  BB_List exitBBs;
+  int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
+  //Is_True(exitBBs.front() == HB_Fall_Thru_Exit(hb),
+      //("lao_optimize_HB computed incorrect exits: BB(%d) != BB(%d)",
+	  //BB_id(exitBBs.front()), BB_id(HB_Fall_Thru_Exit(hb))));
+  //
+  // Call the lower level lao_optimize function with pipeline=0.
+  return lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
 }
 
-// Optimize a function through the LAO.
+// Optimize a single BB through the LAO.
 static bool
-lao_optimize_FUNC(unsigned lao_optimizations) {
-fprintf(TFile, "Function_optimize\n");
-  BB_List entryBBs, bodyBBs, exitBBs;
-  BBLIST *bl;
-  BB *bp;
-  int predCount, succCount;
-  bool result = false;
+lao_optimize_BB(BB *bb, unsigned lao_optimizations) {
   //
-  for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
-    predCount = 0;
-    FOR_ALL_BB_PREDS (bp, bl) {
-      predCount ++;
-    }
-    succCount = 0;
-    FOR_ALL_BB_SUCCS (bp, bl) {
-      succCount ++;
-    }
-    if (predCount == 0) {
-      entryBBs.push_back(bp);
-    }
-    else if (succCount == 0) {
-      exitBBs.push_back(bp);
-    }
-    else
-      bodyBBs.push_back(bp);
-  }
+  //result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
   //
-  result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
-  //
-  return result;
+  return false;
 }
 
 /*-------------------------- CGIR Print Functions ----------------------------*/
