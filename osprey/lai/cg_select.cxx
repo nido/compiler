@@ -223,7 +223,7 @@ Can_Speculate(OP *op)
   if (!OP_Can_Be_Speculative((OP *) op)) {
     TOP ld_top;
     if (Eager_Level >= EAGER_MEMORY && OP_load (op) && !OP_volatile(op)) {
-      if ((ld_top = OP_Get_Speculative_Load (op)) == TOP_UNDEFINED)
+      if ((ld_top = CGTARG_Speculative_Load (op)) == TOP_UNDEFINED)
         return FALSE;
 
       OP_Change_Opcode(op, ld_top); 
