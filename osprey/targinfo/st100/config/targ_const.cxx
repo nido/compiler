@@ -3067,6 +3067,9 @@ Targ_Print ( char *fmt, TCON c )
 
 /* ====================================================================
  *   Targ_To_Host
+ *
+ *   Convert target constant, eg. I5 on ST100 into a host constant, eg.
+ *   TCON_I8(c) on IA32.
  * ====================================================================
  */
 INT64
@@ -3075,6 +3078,7 @@ Targ_To_Host (
 )
 {
   mINT32 i32;
+  mINT64 i64;
 
   switch (TCON_ty(c)) {
     case MTYPE_B:
@@ -3085,14 +3089,20 @@ Targ_To_Host (
     case MTYPE_I2:
       i32 = TCON_I4(c);
       return ((i32&0x8000) ? 0xffffffffffff0000ll : 0ll) | (i32&0xffff);
+    case MTYPE_I4:
+      return TCON_I4(c);
+    case MTYPE_I5:
+      i64 = TCON_I8(c);
+      return ((i64&0x800000000ll) ? 
+                        0xffffffff00000000ll : 0ll) | (i64&0xfffffffffll);
     case MTYPE_U1:
       return  (TCON_U4(c)&0xff);
     case MTYPE_U2:
       return  (TCON_U4(c)&0xffff);
     case MTYPE_U4:
       return (TCON_U4(c)&0x00000000ffffffffll);
-    case MTYPE_I4:
-      return TCON_I4(c);
+    case MTYPE_U5:
+      return (TCON_U8(c)&0x0000000fffffffffll);
     case MTYPE_I8:
       return TCON_I8(c);
     case MTYPE_U8:
@@ -3106,8 +3116,12 @@ Targ_To_Host (
 
   return 0;
 } /* Targ_To_Host */
-
+
 #ifndef MONGOOSE_BE
+/* ====================================================================
+ *   Targ_To_Signed_Host
+ * ====================================================================
+ */
 INT64
 Targ_To_Signed_Host ( TCON c )
 {
@@ -3159,9 +3173,6 @@ Host_To_Targ (
   TCON_clear(c);
 
   switch (ty) {
-    default:
-      ErrMsg (EC_Inv_Mtype, Mtype_Name(ty), "Host_To_Targ");
-
     case MTYPE_B:
     case MTYPE_I1:
     case MTYPE_I2:
@@ -3173,15 +3184,27 @@ Host_To_Targ (
       TCON_ty(c) = ty;
       TCON_I8(c) = v; /* Don't change the upper bits */
       return c;
+    case MTYPE_I5:
+    case MTYPE_U5:
+      // On this host, IA32, the I5/U5 constants are kept in 64-bit
+      // quantities, so do not change the upper bits
     case MTYPE_I8:
     case MTYPE_U8:
       TCON_ty(c) = ty;
       TCON_I8(c) = v;
       return c;
+
+    default:
+      FmtAssert(FALSE,("Host_To_Targ: unknown Mtype %s", MTYPE_name(ty)));
+      /*      ErrMsg (EC_Inv_Mtype, Mtype_Name(ty), "Host_To_Targ"); */
+
   }
 } /* Host_To_Targ */
 
-
+/* ====================================================================
+ *   Host_To_Targ_Float
+ * ====================================================================
+ */
 TCON
 Host_To_Targ_Float ( TYPE_ID ty, double v )
 {
