@@ -413,7 +413,7 @@ Check_Allow_Reschedule()
   if (Check_Allow_Reorder() &&
       Trip_Count == 1 &&
       !Get_Trace (TP_ALLOC, 0x0200) &&
-      !(CG_LAO_optimizations & Optimization_PreSched)) {
+      !CG_LAO_optimizations) {
     return TRUE;
   }
 #else
