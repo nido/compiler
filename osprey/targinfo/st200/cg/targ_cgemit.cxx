@@ -34,6 +34,7 @@
 #include "targ_isa_lits.h"
 #include "vstring.h"
 #include "config_asm.h"
+#include "config_list.h"
 #include "em_elf.h"
 #include "dwarf_DST_mem.h"         /* for DST_IDX */
 #include "symtab.h"
@@ -219,6 +220,10 @@ CGEMIT_Prn_Line_Dir_In_Asm (
   USRCPOS usrcpos
 )
 {
+#ifdef TARG_ST200
+  if (!List_Notes) return;
+#endif
+
 #ifndef TARG_ST200 /* CLYON: for ST200, comment .loc directives
 		     (unsupported by gas) */
   if(!CG_emit_asm_dwarf) {
@@ -245,6 +250,10 @@ CGEMIT_Prn_File_Dir_In_Asm(
   const char *filename
 )
 {
+#ifdef TARG_ST200
+  if (!List_Notes) return;
+#endif
+
   if(!CG_emit_asm_dwarf) {
     fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
   }
