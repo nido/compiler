@@ -120,12 +120,6 @@
 #include <stdarg.h>
 #include <set.h>
 
-// Do not redefine these types
-
-#define _INT8_T
-#define _INTPTR_T
-#define _UINTPTR_T
-
 #include "defs.h"
 #include "config.h"
 #include "errors.h"
@@ -179,7 +173,7 @@
 #include "hb.h"
 #include "gra_live.h"
 
-#ifdef ST_LAO
+#ifdef LAO_ENABLED
 #include "lao_stub.h"
 #endif
 
@@ -5256,10 +5250,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 
-#ifdef ST_LAO
+#ifdef LAO_ENABLED
       // Arthur: place for LAO plug-in
       //         test that things bellow build
-      if (!Perform_SWP(loop, (LAO_SWP_ACTION)action)) {
+      if (!Perform_SWP(cg_loop, (LAO_SWP_ACTION)action)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	cg_loop.Recompute_Liveness();
