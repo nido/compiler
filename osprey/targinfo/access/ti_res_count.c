@@ -35,7 +35,6 @@
 
 
 static const char source_file[] = __FILE__;
-static const char rcs_id[] = "$Source$ $Revision$";
 
 #include <stdio.h>
 #include "W_math.h"	/* for ceil */

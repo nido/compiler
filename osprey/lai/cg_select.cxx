@@ -25,10 +25,6 @@
  * ====================================================================
  *
  * Module: cg_select.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: comment.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *
@@ -68,7 +64,6 @@
 #ifndef COMMENT_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char swp_note_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 extern void COMMENT_Add(BB *bb, STR_IDX text);

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: config_targ.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  *
  * Description:

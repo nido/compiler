@@ -34,10 +34,6 @@
 
 //  Spill functions for GRA
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_SPILL_INCLUDED
@@ -46,7 +42,6 @@
 #ifndef GRA_SPILL_RCS_ID
 #define GRA_SPILL_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_spill_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

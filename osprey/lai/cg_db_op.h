@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: cg_db_op.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   8-Oct-95 - Original Version

@@ -80,10 +80,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef isa_print_gen_INCLUDED
 #define isa_print_gen_INCLUDED
@@ -91,7 +87,6 @@
 #include "gen_util_gen.h"
 
 #ifdef _KEEP_RCS_ID
-static const char isa_operands_gen_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef __cplusplus

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: cflow.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  23-Jan-92 - Original Version

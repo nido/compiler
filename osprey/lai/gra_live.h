@@ -37,10 +37,6 @@
  * =======================================================================
  *
  * Module: gra_live.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *

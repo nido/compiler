@@ -32,10 +32,6 @@
 
 */
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 //  Description: GRA Live Units
 //
 //      This data structure started its life (in the Chow GRA) as an
@@ -75,7 +71,6 @@
 #ifndef GRA_LUNIT_RCS_ID
 #define GRA_LUNIT_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_lunit_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -43,10 +43,6 @@ extern "C" {
  * ====================================================================
  *
  * Module: config_targ.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  15-Jun-91 - Original Version

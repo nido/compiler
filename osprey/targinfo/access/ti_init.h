@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: ti_init.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Synopsis:
  *
@@ -64,7 +60,6 @@
 #define ti_init_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char ti_init_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "targ_abi_properties.h"

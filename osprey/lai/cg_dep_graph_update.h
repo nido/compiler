@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cg_dep_graph_update.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

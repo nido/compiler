@@ -78,10 +78,6 @@
 //
 /////////////////////////////////////
 //
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include "targ_isa_registers.h"
 

@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: op_map.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

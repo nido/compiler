@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: dominate.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

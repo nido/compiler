@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: ti_res_count.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   16-Oct-91 - Original Version
@@ -170,7 +166,6 @@ extern "C" {
 #endif
 
 #ifdef _KEEP_RCS_ID
-static const char ti_res_count_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 typedef struct ti_res_count TI_RES_COUNT;

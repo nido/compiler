@@ -50,10 +50,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #define UNDEFINED -1
 

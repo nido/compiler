@@ -29,10 +29,6 @@
  * =======================================================================
  *
  *  Module: targ_ebo.cxx
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

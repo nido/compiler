@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: ti_errors.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Synopsis:
  *
@@ -60,7 +56,6 @@
 #define ti_errors_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char ti_errors_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef __cplusplus

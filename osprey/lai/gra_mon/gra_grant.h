@@ -77,10 +77,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_GRANT_INCLUDED
@@ -89,7 +85,6 @@
 #ifndef GRA_GRANT_RCS_ID
 #define GRA_GRANT_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_grant_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

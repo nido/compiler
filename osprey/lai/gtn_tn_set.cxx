@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: gtn_tn_set.c
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

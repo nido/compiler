@@ -41,10 +41,6 @@
 //
 /////////////////////////////////////
 //
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include <stddef.h>
 #include <stdlib.h>

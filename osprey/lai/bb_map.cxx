@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: bb_map.c
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *
@@ -57,7 +53,6 @@
 
 #ifdef _KEEP_RCS_ID
 static char *source_file = __FILE__;
-static char *rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "defs.h"

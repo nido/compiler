@@ -36,10 +36,6 @@
 //  
 //  Generate PROCESSOR properties information
 ///////////////////////////////////////
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include <stddef.h>
 #include "targ_proc.h"

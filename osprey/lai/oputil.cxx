@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: oputil.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  12-Oct-89 - Original Version

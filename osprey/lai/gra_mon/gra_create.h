@@ -60,10 +60,6 @@
 
 
 /*
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  */
 
 
@@ -73,7 +69,6 @@
 #ifndef CREATE_RCS_ID
 #define CREATE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *create_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

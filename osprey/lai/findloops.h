@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: findloops.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: tnutil.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

@@ -50,11 +50,6 @@
 //
 /////////////////////////////////////
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
-//  $Source$
 
 #ifdef USE_PCH
 #include "cg_pch.h"
@@ -62,7 +57,6 @@
 #pragma hdrstop
 
 #ifdef _KEEP_RCS_ID
-static char *rcs_id = "$Source$ $Revision$";
 #endif
 // [HK]
 #if __GNUC__ >=3

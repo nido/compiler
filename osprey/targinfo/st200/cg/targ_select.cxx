@@ -25,10 +25,6 @@
  * ====================================================================
  *
  * Module: targ_select.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

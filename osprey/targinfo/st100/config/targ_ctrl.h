@@ -43,10 +43,6 @@ extern "C" {
  * ====================================================================
  *
  * Module: targ_ctrl.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *
@@ -59,7 +55,6 @@ extern "C" {
 
 
 #ifdef _KEEP_RCS_ID
-static char *targ_ctrl_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 static STR_LIST Targ_1 = {"ST100", NULL};

@@ -111,16 +111,11 @@
 //
 /////////////////////////////////////
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef isa_pseudo_gen_INCLUDED
 #define isa_pseudo_gen_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char isa_pseudo_gen_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef __cplusplus

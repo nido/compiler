@@ -46,9 +46,5 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 extern void ISA_Create (const char *isa_name, ...);

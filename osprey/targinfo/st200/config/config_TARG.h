@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: config_TARG.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  11-Apr-96 - Original Version
@@ -70,7 +66,6 @@
 
 #ifdef _KEEP_RCS_ID
 /*REFERENCED*/
-static char *config_TARG_h_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef __cplusplus

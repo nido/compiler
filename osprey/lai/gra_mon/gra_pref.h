@@ -81,10 +81,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_PREFERENCE_INCLUDED
@@ -93,7 +89,6 @@
 #ifndef GRA_PREFERENCE_RCS_ID
 #define GRA_PREFERENCE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_preference_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

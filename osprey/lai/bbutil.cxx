@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: bbutil.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  22-Sept-89 - Original Version

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: cg_loop_scc.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   16-Oct-91 - Original Version

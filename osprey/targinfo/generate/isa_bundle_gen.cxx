@@ -40,10 +40,6 @@
 //  within a bundle.
 //
 /////////////////////////////////////
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include "W_alloca.h"
 #include <stddef.h>

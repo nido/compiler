@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: ti_latency.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Synopsis:
  *
@@ -166,7 +162,6 @@ extern "C" {
 #endif
 
 #ifdef _KEEP_RCS_ID
-static const char ti_latency_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 inline INT TI_LATENCY_Load_Cycle(TOP opcode)

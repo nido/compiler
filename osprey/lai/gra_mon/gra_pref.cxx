@@ -44,10 +44,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifdef USE_PCH
 #include "cg_pch.h"

@@ -61,10 +61,6 @@
 //      inteferences in random order, but already know that we will represent
 //      the result as a bitset instead of a vector.)
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_INTERFERE_INCLUDED
@@ -73,7 +69,6 @@
 #ifndef GRA_INTERFERE_RCS_ID
 #define GRA_INTERFERE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_interfere_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

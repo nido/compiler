@@ -34,10 +34,6 @@
 #
 #
 
-### $Revision$
-### $Date$
-### $Author$
-### $Source$
 
 ###########################################################################
 ###
@@ -1018,10 +1014,6 @@ sub OUTFILES {
   printf(HFILE_MTYPES " * ==================================================================== \n");
   printf(HFILE_MTYPES " * \n");
   printf(HFILE_MTYPES " * Module: mtypes.h \n");
-#  printf(HFILE_MTYPES " * \$Revision$ \n");
-#  printf(HFILE_MTYPES " * \$Date$ \n");
-#  printf(HFILE_MTYPES " * \$Author$ \n");
-#  printf(HFILE_MTYPES " * \$Source$ \n");
   printf(HFILE_MTYPES " * \n");
   printf(HFILE_MTYPES " * Revision history: \n");
   printf(HFILE_MTYPES " *  11-Oct-89 - Original Version \n");

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: expand.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

@@ -48,10 +48,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_COLOR_INCLUDED
@@ -59,7 +55,6 @@
 #ifndef GRA_COLOR_RCS_ID
 #define GRA_COLOR_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_color_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

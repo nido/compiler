@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: op.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * CGIR operation structure (OP) and utility routines.
  *

@@ -36,10 +36,6 @@
  * ====================================================================
  *
  *  Module: register.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   07-May-93 - Original Version
@@ -581,7 +577,6 @@
 #define REGISTER_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char register_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "mtypes.h"

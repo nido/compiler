@@ -38,10 +38,6 @@
 ### ======================================================================
 ###
 ### Module: gen_tn_list.csh
-### $Revision$
-### $Date$
-### $Author$
-### $Source$
 ### Revision history:
 ###   27-Feb-92 - Original version
 ###

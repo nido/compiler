@@ -42,10 +42,6 @@
 //
 /////////////////////////////////////
 //
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include <strings.h>
 #include <stddef.h>

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: cgtarget.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

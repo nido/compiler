@@ -3,10 +3,6 @@
  * ====================================================================
  *
  * Module: properties.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * CGIR semantic properties on opcodes.
  *

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: targ_const.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  10-Feb-95 - Original Version

@@ -56,10 +56,6 @@
 //
 ////////////////////////////////////
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef gen_util_INCLUDED
 #define gen_util_INCLUDED

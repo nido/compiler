@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: cg_loop_recur.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   03-Mar-94 - Original Version
@@ -83,7 +79,6 @@
 #define cg_loop_recur_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char cg_loop_recur_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef TARG_ST

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: cflow.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

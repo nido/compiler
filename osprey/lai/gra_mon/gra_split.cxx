@@ -81,14 +81,9 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifdef _KEEP_RCS_ID
-static char *rcs_id = "$Source$ $Revision$";
 #endif
 
 #ifdef USE_PCH

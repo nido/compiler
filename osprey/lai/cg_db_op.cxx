@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cg_db_op.c
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

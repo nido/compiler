@@ -40,10 +40,6 @@
  * ====================================================================
  *
  * Module: calls.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  03-Oct-91 - Original Version

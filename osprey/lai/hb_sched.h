@@ -37,10 +37,6 @@
 * ====================================================================
 *
 * Module: hb_sched.h
-* $Revision$
-* $Date$
-* $Author$
-* $Source$
 *
 * Description:
 *

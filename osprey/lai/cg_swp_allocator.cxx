@@ -38,10 +38,6 @@
 // =======================================================================
 //
 //  Module: cg_swp_allocator.cxx
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 //
 //  Revision comments:
 //

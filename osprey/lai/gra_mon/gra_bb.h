@@ -32,10 +32,6 @@
 
 */
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 //  Description:
 //
@@ -62,7 +58,6 @@
 #ifndef GRA_BB_RCS_ID
 #define GRA_BB_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_bb_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: ebo_special.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

@@ -36,10 +36,6 @@
  * ====================================================================
  *
  * Module: whirl2ops.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

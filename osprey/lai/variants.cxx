@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: variants.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *
@@ -51,7 +47,6 @@
  */
 
 #ifdef _KEEP_RCS_ID
-static const char rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "defs.h"

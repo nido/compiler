@@ -57,10 +57,6 @@
 
 
 /*
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  */
 
 
@@ -70,7 +66,6 @@
 #ifndef LRANGE_SUBUNIVERSE_RCS_ID
 #define LRANGE_SUBUNIVERSE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *lrange_subuniverse_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: cg_loop_mii.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision history:
  *   16-Oct-91 - Original Version
@@ -140,7 +136,6 @@
 #define CG_LOOP_MII_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static const char cg_loop_mii_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 extern INT32       CG_LOOP_min_ii;

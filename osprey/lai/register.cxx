@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: register.c
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  17-May-93 - Original Version

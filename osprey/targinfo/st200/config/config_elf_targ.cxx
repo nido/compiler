@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: config_elf_targ.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

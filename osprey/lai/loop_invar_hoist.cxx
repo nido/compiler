@@ -32,10 +32,6 @@
   * 
   * Module: loop_invar_hoist.cxx
   *
-  * $Revision$
-  * $Date$ 
-  * $Author$
-  * $Source$
   *
   * Revision comments:
   * 

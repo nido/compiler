@@ -38,10 +38,6 @@
 // =======================================================================
 //
 //  Module: cio_rwtran.h
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 //
 //  Revision comments:
 //

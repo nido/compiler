@@ -37,10 +37,6 @@
 ### ======================================================================
 ###
 ### Module: gen_void_list.sh
-### $Revision$
-### $Date$
-### $Author$
-### $Source$
 ### Revision history:
 ###   27-Feb-92 - Original version
 ###

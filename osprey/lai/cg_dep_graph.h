@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cg_dep_graph.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *
@@ -392,7 +388,6 @@
 #define CG_DEP_GRAPH_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static char *cg_dep_graph_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 // [HK]

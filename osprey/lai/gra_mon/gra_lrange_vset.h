@@ -43,10 +43,6 @@
 //      protection against adding the same element twice -- this is handled by
 //      GRA_INTEFERE.
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_LRANGE_VSET_INCLUDED
@@ -55,7 +51,6 @@
 #ifndef GRA_LRANGE_VSET_RCS_ID
 #define GRA_LRANGE_VSET_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_lrange_vset_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -63,10 +63,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 typedef struct isa_property *ISA_PROPERTY;
 

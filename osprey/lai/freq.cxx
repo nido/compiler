@@ -36,10 +36,6 @@
 /* ====================================================================
  *
  * Module: freq.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

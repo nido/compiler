@@ -40,10 +40,6 @@
  * =======================================================================
  *
  *  Module: note.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *
@@ -168,7 +164,6 @@
  * ======================================================================= */
 
 #ifdef _KEEP_RCS_ID
-static char *notes_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 typedef enum {

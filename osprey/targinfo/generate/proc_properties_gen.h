@@ -61,10 +61,6 @@
 //
 /////////////////////////////////////
 //
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 typedef struct proc_property *PROC_PROPERTY;
 

@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: gtn_universe.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: bb_map.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

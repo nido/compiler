@@ -36,10 +36,6 @@
  * ====================================================================
  *
  * Module: cgdriver.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  20-Feb-95 - Original Version

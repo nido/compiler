@@ -38,10 +38,6 @@
 ///////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #include <stddef.h>
 #include "isa_registers_gen.h"

@@ -326,9 +326,6 @@
  */
 
 /*  $REVISION: $
- *  $Date$
- *  $Author$
- *  $Source$
  */
 
 #ifndef SI_INCLUDED
@@ -339,7 +336,6 @@ extern "C" {
 #ifndef SI_RCS_ID
 #define SI_RCS_ID
 #ifdef _KEEP_RCS_ID
-static const char SI_rcs_id[] = "$Source$ $Revision$";
 #endif
 #endif
 

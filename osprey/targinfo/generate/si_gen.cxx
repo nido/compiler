@@ -44,10 +44,6 @@
 //
 /////////////////////////////////////
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #include <assert.h>

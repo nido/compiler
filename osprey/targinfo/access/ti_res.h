@@ -37,10 +37,6 @@
  * ====================================================================
  *
  *  Module: ti_res.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Synopsis:
  *
@@ -80,7 +76,6 @@ extern "C" {
 #endif
 
 #ifdef _KEEP_RCS_ID
-static const char ti_res_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 inline INT TI_RES_Cycle_Count(TOP opcode)

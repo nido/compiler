@@ -45,10 +45,6 @@
 //
 ////////////////////////////////////
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef gen_util_gen_INCLUDED
 #define gen_util_gen_INCLUDED

@@ -43,10 +43,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifdef USE_PCH
 #include "cg_pch.h"
@@ -54,7 +50,6 @@
 #pragma hdrstop
 
 #ifdef _KEEP_RCS_ID
-static char *rcs_id = "$Source$ $Revision$";
 #endif
 
 #include "defs.h"

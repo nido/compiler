@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: config_platform.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  11-May-96 - Original Version
@@ -69,7 +65,6 @@
 #define config_platform_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static char *config_platform_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #ifdef __cplusplus

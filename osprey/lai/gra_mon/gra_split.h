@@ -63,10 +63,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_SPLIT_INCLUDED
@@ -75,7 +71,6 @@
 #ifndef GRA_SPLIT_RCS_ID
 #define GRA_SPLIT_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_split_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

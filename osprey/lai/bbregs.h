@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: bbregs.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  21-may-93 - Original Version
@@ -56,7 +52,6 @@
 #define bbregs_INCLUDED
 
 #ifdef _KEEP_RCS_ID
-static char *bbregs_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "defs.h"

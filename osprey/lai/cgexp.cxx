@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: cgexp.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * History:  extracted target-independent parts from expand.cxx
  *

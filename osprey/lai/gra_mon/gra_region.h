@@ -35,9 +35,6 @@
 //  GRA region encapsulation
 
 //  $revision: $
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef GRA_REGION_INCLUDED
 #define GRA_REGION_INCLUDED
@@ -45,7 +42,6 @@
 #ifndef GRA_REGION_RCS_ID
 #define GRA_REGION_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_region_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -102,10 +102,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef ISA_REGISTERS_GEN_INCLUDED
@@ -116,7 +112,6 @@ extern "C" {
 #ifndef ISA_REGISTERS_GEN_RCS_ID
 #define ISA_REGISTERS_GEN_RCS_ID
 #ifdef _KEEP_RCS_ID
-static const char isa_registers_gen_rcs_id[] = "$Source$ $Revision$";
 #endif
 #endif
 

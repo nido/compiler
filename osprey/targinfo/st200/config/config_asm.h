@@ -43,10 +43,6 @@ extern "C" {
  * ====================================================================
  *
  * Module: config_asm.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  17-Jun-91 - Original Version
@@ -65,7 +61,6 @@ extern "C" {
 
 
 #ifdef _KEEP_RCS_ID
-static char *config_asm_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #define Label_Name_Separator "_"

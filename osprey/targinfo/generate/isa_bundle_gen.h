@@ -102,10 +102,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef isa_bundle_gen_INCLUDED
 #define isa_bundle_gen_INCLUDED

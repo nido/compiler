@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: note.c
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

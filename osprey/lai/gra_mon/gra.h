@@ -62,17 +62,12 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 #ifndef GRA_INCLUDED
 #define GRA_INCLUDED
 #ifndef GRA_RCS_ID
 #define GRA_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

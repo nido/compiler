@@ -41,10 +41,6 @@
 //
 /////////////////////////////////////
 //
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 typedef struct operand_value_type *OPERAND_VALUE_TYPE;
 

@@ -63,9 +63,5 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 extern void PROC_Create (const char *proc_name, ...);

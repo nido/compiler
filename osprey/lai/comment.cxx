@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: comment.cxx
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

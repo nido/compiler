@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cgprep.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

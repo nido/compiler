@@ -40,10 +40,6 @@
  * ====================================================================
  *
  * Module: variants.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  01-Nov-89 - Original Version (STAPUFT GE/PE)
@@ -60,7 +56,6 @@
  */
 
 #ifdef _KEEP_RCS_ID
-static const char variants_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 /* Type used to hold a variant:

@@ -173,10 +173,6 @@
 /////////////////////////////////////
 
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$
 
 
 #ifndef GRA_TRACE_INCLUDED
@@ -184,7 +180,6 @@
 #ifndef GRA_TRACE_RCS_ID
 #define GRA_TRACE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_trace_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

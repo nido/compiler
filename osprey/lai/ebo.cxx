@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: ebo.cxx
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

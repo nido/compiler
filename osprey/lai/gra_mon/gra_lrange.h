@@ -32,10 +32,6 @@
 
 */
 
-//  $Revision$
-//  $Date$
-//  $Author$
-//  $Source$ 
 // Description: GRA Live Ranges & Coloring Lists
   
   
@@ -44,7 +40,6 @@
 #ifndef GRA_LRANGE_RCS_ID  
 #define GRA_LRANGE_RCS_ID
 #ifdef _KEEP_RCS_ID
-static char *gra_lrange_rcs_id = "$Source$ $Revision$";
 #endif
 #endif
 

@@ -40,10 +40,6 @@
  * ====================================================================
  *
  * Module: ercg.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  02-Nov-89 - Original Version

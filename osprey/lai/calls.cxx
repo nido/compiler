@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: calls.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Revision history:
  *  04-Oct-91 - Original Version

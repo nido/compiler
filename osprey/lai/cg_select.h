@@ -26,10 +26,6 @@
  * ====================================================================
  *
  * Module: cg_select.h
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

@@ -37,10 +37,6 @@
  * ====================================================================
  *
  * Module: betarget.cxx
- * $Revision$
- * $Date$
- * $Author$
- * $Source$
  *
  * Description:
  *

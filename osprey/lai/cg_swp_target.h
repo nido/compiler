@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cg_swp_target.cxx
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Description:
  *  ============

@@ -31,10 +31,6 @@
   * =========================================================================
   * 
   * Module: loop_invar_hoist.h 
-  * $Revision$
-  * $Date$ 
-  * $Author$
-  * $Source$
   *
   * Revision comments:
   * 

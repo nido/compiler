@@ -37,10 +37,6 @@
  * =======================================================================
  *
  *  Module: cg_loop.h
- *  $Revision$
- *  $Date$
- *  $Author$
- *  $Source$
  *
  *  Revision comments:
  *

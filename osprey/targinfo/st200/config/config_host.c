@@ -35,7 +35,6 @@
 
 
 static char *source_file = __FILE__;
-static char *rcs_id = "$Source$ $Revision$";
 
 #include "defs.h"
 #include "config.h"
