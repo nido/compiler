@@ -2436,7 +2436,9 @@ Cg_Dwarf_Add_Line_Entry (
 			   file_table[file_idx].file_size);
       }
       file_table[file_idx].already_processed = TRUE;
-#ifndef linux
+#ifndef TARG_ST
+      /* (cbr) be consistant with solaris when cross compiling */
+      //#ifndef linux 
       // for irix, only need .file when new file,
       // as subsequent .locs use file number.
       if (Assembly) {
@@ -2447,7 +2449,9 @@ Cg_Dwarf_Add_Line_Entry (
 #endif
     }
 
-#ifdef linux
+#ifdef TARG_ST
+    /* (cbr) be consistant with solaris when cross compiling */
+    //#ifdef linux
     // For linux, emit .file whenever file changes,
     // as it applies to all following  line directives,
     // whatever the spelling.
