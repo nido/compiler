@@ -395,7 +395,21 @@ Exp_Local_Jump (
   OPS *ops
 )
 {
-  FmtAssert(FALSE, ("NYI: Exp_Local_Jump"));
+#ifdef TARG_ST  
+  TN *targ;
+  ANNOTATION *ant;
+  LABEL_IDX lab;
+
+  FmtAssert(offset == 0, ("Offset is non null in Exp_Local_Jump"));
+  /* first get a label attached to this BB */
+  ant = ANNOT_First (BB_annotations(bb), ANNOT_LABEL);
+  lab = ANNOT_label(ant);
+
+  targ = Gen_Label_TN (lab, offset);
+  Build_OP (TOP_goto, targ, ops);
+#else
+   FmtAssert(FALSE, ("NYI: Exp_Local_Jump"));
+#endif
 }
 
 /* ====================================================================
