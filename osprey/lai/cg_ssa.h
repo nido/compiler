@@ -84,4 +84,11 @@ extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
 
+// Tracing flags
+#define SSA_BUILD      0x00000001
+#define SSA_MAKE_CONST 0x00000002
+#define SSA_IGRAPH     0x00000004
+#define SSA_REMOVE_PHI 0x00000008
+#define SSA_DOM_FRONT  0x00000010
+
 #endif /* cg_ssa_INCLUDED */

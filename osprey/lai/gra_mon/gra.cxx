@@ -241,9 +241,11 @@ GRA_Allocate_Global_Registers( BOOL is_region )
 
   Finalize_Memory();
 
+#ifndef TARG_ST
   // Dump out OPs after GRA
   if (Get_Trace(TKIND_IR, TP_GRA, REGION_First_BB))
     Trace_IR(TP_GRA, "GRA", NULL);
+#endif
 
   GRA_pu_num++;
 

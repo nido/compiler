@@ -516,8 +516,8 @@ CG_Generate_Code(
 	Check_for_Dump(TP_SSA, NULL);
 	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
 	//      Trace_IR(TP_SSA, "GRA_LIVE_Recalc_Liveness", NULL);
-	extern void GRA_LIVE_fdump_liveness(FILE *f);
-	GRA_LIVE_fdump_liveness(TFile);
+	//extern void GRA_LIVE_fdump_liveness(FILE *f);
+	//GRA_LIVE_fdump_liveness(TFile);
       }
 #endif
 
@@ -721,9 +721,9 @@ CG_Generate_Code(
       }
 
       GRA_Allocate_Global_Registers( region );
-#if 0
-      fprintf(TFile, "%s CFG After GRA_Allocate_Global_Registers\n%s\n", DBar, DBar);
-      Print_All_BBs ();
+#ifdef TARG_ST
+    // moved here rather than in gra.cxx
+    Check_for_Dump (TP_GRA, NULL);
 #endif
     }
 
@@ -790,10 +790,9 @@ CG_Generate_Code(
 #endif
 
     IGLS_Schedule_Region (FALSE /* after register allocation */);
-
-#if 0
-    fprintf(TFile, "%s CFG After IGLS_Schedule_Region\n%s\n", DBar, DBar);
-    Print_All_BBs ();
+#ifdef TARG_ST
+    // here rather than in igls.cxx
+    Check_for_Dump (TP_SCHED, NULL);
 #endif
 
     Reuse_Temp_TNs = orig_reuse_temp_tns;		/* restore */

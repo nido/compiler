@@ -4313,7 +4313,12 @@ Find_BB_TNs (BB *bb)
           }
         } else if (num_opnds > 1) {
           if (OP_results(op) > 0) {
-           /* Consider special case optimizations. */
+	    /* Consider special case optimizations. */
+#ifdef TARG_ST
+	    // The ST target description takes care of this
+	    INT o1_idx = OP_find_opnd_use(op, OU_opnd1);
+	    INT o2_idx = OP_find_opnd_use(op, OU_opnd2);
+#else
             INT o2_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd2) won't work for all the cases we care about */
             INT o1_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd1) won't work for all the cases we care about */
             if (op_is_predicated) {
@@ -4329,6 +4334,7 @@ Find_BB_TNs (BB *bb)
               o1_idx = (num_opnds > 0) ? 0 : -1;
               o2_idx = (num_opnds > 1) ? 1 : -1;
             }
+#endif
 
 #ifdef TARG_ST
             if (same_res) {

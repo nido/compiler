@@ -594,7 +594,7 @@ Delay_Scheduling_OP(OP *op, INT slot_pos, TI_BUNDLE *bundle)
 }
 #endif
 
-#ifdef TARG_ST
+#if 0
 /* ====================================================================
  *   Handle_Bundle_Hazard
  *
@@ -645,6 +645,8 @@ Handle_Bundle_Hazard (OP                          *op,
 }
 
 #endif
+
+#if 0
 
 // ======================================================================
 // Placeholder for all issues related to formation of legal bundles.
@@ -1119,6 +1121,8 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 #endif /* TARG_ST */
 }
 
+#endif /* 0 */
+
 // ======================================================================
 // Handle the case of possible additive hazards (when a post-hazard is
 // added to a pre-hazard to come up with a combined hazard). An example
@@ -1258,12 +1262,15 @@ Init_Resource_Table (
 }
 
 /* ====================================================================
- *   Handle_Latency_Hazard
+ *   Handle_Latency
+ *
+ *   Add noop cycles before 'op' until Clock reaches 'estart' time.
+ *   
  * ====================================================================
  */
 static void 
-Handle_Latency_Hazard (
-  OP *op, 
+Handle_Latency (
+  OP *op,                 // before this noops are inserted
   INT estart, 
   TI_BUNDLE *bundle, 
   VECTOR *bundle_vector
@@ -1271,20 +1278,23 @@ Handle_Latency_Hazard (
 {
   INT ti_err = TI_RC_OKAY;
 
+  // 'op' should have been bundled and no unfilled slots before
+  // it in the template.
+  FmtAssert(OP_bundled(op), ("OP not bundled ?"));
+
+  if (Trace_HB) fprintf(TFile, "  handling latency: clock %d, estart %d\n", Clock, estart);
+
   //
-  // Fill estart-Clock cycles preceeding 'op' with noops
+  // Fill estart-Clock cycles following the 'op' with noops
   //
   for (; Clock < estart; Clock++) {
 
     if (Trace_HB) {
-      fprintf(TFile, "  adding noop bundle at cycle %d\n", Clock);
+      fprintf(TFile, "  adding noops at clock %d (%d)\n", Clock, estart);
     }
 
-    CGTARG_Handle_Latency_Hazard (op, bundle);
-
-    // Set end group and reset bundle vector:
-    Set_OP_end_group(OP_prev(op));
-    VECTOR_Reset (*bundle_vector);
+    // This adds a noop group to the bundle
+    CGTARG_Add_Noop_Group (op, bundle, bundle_vector);
 
     // if the <bundle> is full, reset it
     if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
@@ -1303,6 +1313,216 @@ Handle_Latency_Hazard (
 }
 
 /* ====================================================================
+ *   Handle_Bundle_Hazards
+ *
+ *  Placeholder for all issues related to formation of legal bundles.
+ *  Specific functionalities include: legal insts grouping within a bundle,
+ *  Insertion of necessary nops and stop bits. 
+ * ====================================================================
+ */
+static BOOL
+Handle_Bundle_Hazards(
+  OP *op, 
+  TI_BUNDLE *bundle, 
+  VECTOR *bundle_vector
+)
+{
+
+  BOOL slot_avail = FALSE;
+
+  // Legal values:
+  // <slot_pos> : 0, 1,.. ISA_MAX_SLOTS - 1
+  // <stop_pos> : -1, 0, 1, ... ISA_MAX_SLOTS - 1
+  // the extra "-1" stop_pos indicates a group dependence outside the
+  // context of the current bundle but still need to be preserved.
+
+  INT slot_pos = -1; // not a legal value
+  INT stop_pos = -2; // not a legal value
+
+  // If <op> already bundled, ignore..
+  if (OP_bundled(op)) return TRUE;
+
+  INT i;
+  ISA_EXEC_UNIT_PROPERTY prop;
+  INT ti_err = TI_RC_OKAY;
+  BOOL stop_bit_reqd = FALSE;
+
+  // No need to process black-box OPs (eg. TOP_asm, TOP_intrncall, etc)
+  // For those, cases, finish, the current bundle, insert stop bits around
+  // these OPs, and continue.
+
+  BOOL bundling_reqd = (OP_code(op) != TOP_asm);
+  INT w;
+
+  // if black_box_op, set the end_group market and quit now.
+  if (!bundling_reqd) {
+    Set_OP_end_group(op);
+    Clock++;
+    return TRUE;
+  }
+
+  // Check whether there is a slot available in current bundle
+  FOR_ALL_SLOT_MEMBERS (bundle, i) {
+
+    if (Trace_HB) {
+      fprintf(TFile, "  slot %d ", i);
+    }
+
+    // Check for availability at slot <i> position in <bundle>.
+    if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
+					stop_bit_reqd, NULL)) {
+      slot_avail = TRUE;
+      slot_pos = i;
+
+      if (Trace_HB) {
+	fprintf(TFile, "  is available, clock %d [%s]\n", 
+		  Clock, TOP_Name(OP_code(op)));
+      }
+
+      break;
+    }
+
+    if (Trace_HB) fprintf(TFile, "\n");
+  }
+
+  //
+  // If slot not available, do extra stuff, return FALSE
+  //
+  if (!slot_avail) {
+    if (Trace_HB) fprintf(TFile, "  did not find available slot \n");
+
+    // if <bundle> is empty, no need to do anything. just check to see if
+    // a stop_bit is required.
+    if (TI_BUNDLE_Is_Empty(bundle, &ti_err)) {
+      OP *last_real_op = Last_Real_OP(op);
+      FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+      if (stop_bit_reqd) Set_OP_end_group(last_real_op);
+      return FALSE;
+    }
+
+    // Process simulated ops
+    if (OP_simulated(op)) {
+      TOP adjust_top = CGTARG_Simulated_Top(op, prop);
+      OP_Change_Opcode(op, adjust_top);
+    }
+
+    //    
+    // Fill with nops, finish previous bundle
+    //
+    CGTARG_Handle_Bundle_Hazard(op, 
+				bundle, 
+				bundle_vector, 
+				slot_avail, 
+				slot_pos, 
+				ISA_MAX_SLOTS, 
+				stop_bit_reqd, 
+				prop);
+
+    // Bundle is full at this time, reset bundle
+    TI_BUNDLE_Clear (bundle);
+
+    return FALSE;
+  }
+
+  // slot available, verify counted resource availability
+  BOOL resources_avail = 
+	       TI_RES_RES_Resources_Available(rr_tab,OP_code(op),Clock);
+
+  // If counted resource conflict - return FALSE
+  if (!resources_avail) {
+    // Just reset bundle_vector and restart the process
+    // TODO: I should normally handle the resource conflict.
+    //       For now I assume that resetting the instr group
+    //       does it. -- generalize
+    //
+
+    if (Trace_HB) fprintf(TFile,"  counted resource conflict\n");
+
+    // set <end_group> marker
+    Set_OP_end_group(OP_prev(op));
+    VECTOR_Reset (*bundle_vector);
+
+    return FALSE;
+  }
+
+  // Everything's OK, reserve the entry in TI_BUNDLE.
+  Set_OP_bundled (op);
+
+  // reserve as many slots as necessary
+  for (w = 0; w < ISA_PACK_Inst_Words(OP_code(op)); w++)
+    TI_BUNDLE_Reserve_Slot (bundle, slot_pos+w, prop);
+
+  VECTOR_Add_Element (*bundle_vector, op);
+
+  // set the OP map and register resource usage
+  BB_OP_MAP32_Set(omap, op, Clock);
+  TI_RES_RES_Reserve_Resources(rr_tab, OP_code(op), Clock);
+
+  //
+  // If op is last in BB, I will have to fill noops until end 
+  // of bundle.
+  //
+  INT max_pos = (BB_last_real_op((OP_bb(op))) == op) ? 
+	                                ISA_MAX_SLOTS : slot_pos;
+
+  // Fill with noops:
+  CGTARG_Handle_Bundle_Hazard(op, 
+			      bundle, 
+			      bundle_vector, 
+			      TRUE, 
+			      slot_pos, 
+			      max_pos, 
+			      stop_bit_reqd, 
+			      prop);
+
+  return TRUE;
+}
+
+/* ====================================================================
+ *   Compute_Max_OP_Latency
+ *
+ *   Calculate the max possible latency this 'op' can have to any
+ *   successor.
+ * ====================================================================
+ */
+static INT
+Compute_Max_OP_Latency (
+  OP *op
+)
+{
+  INT i;
+  INT min_opnd = 1000, max_res = 0;
+  INT latency = 0;
+
+  if (OP_store(op)) {
+    // keep it simple for now
+    return 0;
+  }
+
+  if (OP_load(op)) {
+    // number of cycles to load the operand
+    //latency = TI_LATENCY_Load_Cycle(OP_code(op));
+    // simple for now, 0
+  }
+
+  // minimum cycle in which any operand may be read
+  for (i = 0; i < OP_opnds(op); i++) {
+    min_opnd = TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) < min_opnd ?
+      TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) : min_opnd;
+  }
+
+  // maximum cycle in which any result is available
+  for (i = 0; i < OP_results(op); i++) {
+    max_res = TI_LATENCY_Result_Available_Cycle(OP_code(op), i) > max_res ?
+      TI_LATENCY_Result_Available_Cycle(OP_code(op), i) : max_res;
+  }
+
+  latency = latency < (max_res-min_opnd) ? (max_res-min_opnd) : latency;
+
+  return latency;
+}
+
+/* ====================================================================
  *   Make_Bundles
  * ====================================================================
  */
@@ -1313,6 +1533,7 @@ Make_Bundles (
   VECTOR *bundle_vector
 ) 
 {
+  INT ti_err = TI_RC_OKAY;
   BOOL dep_graph_built = FALSE;
 
   if (BB_length(bb) == 0) return;
@@ -1346,6 +1567,10 @@ Make_Bundles (
   // start "scheduling" at this cycle
   //
   Clock = 0;
+
+  // This helps handling latencies that may still be pending 
+  // when all OPs are processed
+  INT pending_latency = 0;
 
   // Now iterate through the ops.
   OP *next_op;
@@ -1399,26 +1624,131 @@ Make_Bundles (
 	  Set_OP_end_group(OP_prev(op));
 	  VECTOR_Reset (*bundle_vector);
 	  if (Trace_HB) {
-	    fprintf(TFile, "  advancing clock with stop bit\n");
+	    fprintf(TFile, "  advancing clock with end group\n");
 	  }
 	  Clock++;
 	}
       }
 
-      // If dependence is still pending, fill with noop bundles
-      Handle_Latency_Hazard (op, estart, bundle, bundle_vector);
+      // Check for latencies that may still be pending
+      if (OP_xfer(op)) {
+	// before we bundle the transfer out of BB, handle the
+	// latencies that may still be pending
+
+	if (Trace_HB) fprintf(TFile, "  OP_xfer: pending latency = %d\n", pending_latency);
+
+	//
+	// If we need to wait longer than the dependence, do it
+	//
+	if (pending_latency > estart) estart = pending_latency;
+      }
+
+      // If dependence is still pending, fill with noop cycles
+      Handle_Latency (OP_prev(op), estart, bundle, bundle_vector);
 
     } /* for all OPs other than first */
 
+    //
     // Now, we're guaranteed that there are no pending dependencies
     //
-    Check_For_Bundle_Hazards (op, bundle, bundle_vector);
+
+    // Set the <end_group> flag if op
+    // has to be first instruction in a group.
+    if (OP_f_group(op) && OP_prev(op) && !OP_end_group(OP_prev(op))) {
+      // Add the <stop_bit> marker appropriately.
+      // TODO: need to be refined further.
+      Set_OP_end_group(OP_prev(op));
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
+    }
+
+    //
+    // Iterate over the following untill we can schedule the 'op'
+    //
+    while (!Handle_Bundle_Hazards (op, bundle, bundle_vector)) {
+
+      // If we did not find a template slot, the bundle should
+      // have been reset;
+      // If we had a counted resource conflict, as well;
+      // Advance the Clock and retry.
+      //
+
+      // advance the Clock
+      Clock++;
+
+      if (Trace_HB) fprintf(TFile, "  reattempting bundling at clock %d\n", Clock);
+    }
+
+    //
+    // After having bundled this 'op', track its latency
+    //
+    // We do not need any more pending latency stuff, if it's a xfer
+    if (!OP_xfer(op)) {
+      INT latency = Compute_Max_OP_Latency (op);
+      if (Clock+latency > pending_latency) pending_latency = Clock+latency;
+
+      if (Trace_HB) fprintf(TFile, "  max latency = %d [pending %d]\n", 
+			    latency, pending_latency);
+    }
+
+    // Set the <end_group> flag if
+    // <op> has to be last inst in the instruction group. 
+    if (OP_l_group(op)) {
+      Set_OP_end_group(op);
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
+    }
+
+    //
+    // If bundle is full (and if it was the last op in BB it must be
+    // full as well), advance the clock.
+    //
+    BOOL bundle_full = TI_BUNDLE_Is_Full(bundle, &ti_err);
+    FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+    if (bundle_full) {
+
+      if (Trace_HB) fprintf(TFile, "  bundle full \n");
+
+      // Reset the bundle
+      TI_BUNDLE_Clear (bundle);
+
+      Clock++;
+    }
 
     // go to next original OP
     op = next_op;
 
   } /* FOR_ALL_BB_OPs_FWD */
  
+  // while there are pending latencies, add noop cycles
+  if (Clock < pending_latency) {
+
+    if (Trace_HB) fprintf(TFile,"  adding noops for pending latency ...\n");
+
+    // First, end the current group, if need to
+    if (!OP_end_group(BB_last_op(bb))) {
+      // Set end group and reset bundle vector:
+      Set_OP_end_group(BB_last_op(bb));
+      VECTOR_Reset (*bundle_vector);
+
+      // advance the Clock
+      Clock++;
+    }
+
+    // at the end of BB
+    Handle_Latency (BB_last_op(bb),
+		    pending_latency, 
+		    bundle, 
+		    bundle_vector);
+  }
+
+  // And, need to complete the last bundle
+  if (!TI_BUNDLE_Is_Empty(bundle, &ti_err)) {
+    while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
+      CGTARG_Add_Noop_Group (BB_last_op(bb), bundle, bundle_vector);
+    }
+  }
+
   if (dep_graph_built) {
     CG_DEP_Delete_Graph (bb);
   }

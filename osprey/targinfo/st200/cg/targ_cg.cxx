@@ -1348,15 +1348,16 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 }
 
 /* ====================================================================
- *   CGTARG_Handle_Latency_Hazard
+ *   CGTARG_Add_Noop_Group
  *
- *   Fill a cycle preceeding 'op' with noops.
+ *   Fill a clock cycle following 'op' with noops.
  * ====================================================================
  */
 void
-CGTARG_Handle_Latency_Hazard (
+CGTARG_Add_Noop_Group (
   OP *op,
-  TI_BUNDLE *bundle
+  TI_BUNDLE *bundle,
+  VECTOR *bundle_vector
 )
 {
   INT template_bit = TI_BUNDLE_Return_Template(bundle);
@@ -1364,13 +1365,21 @@ CGTARG_Handle_Latency_Hazard (
 
   INT i;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
+    //
+    // Advance until the next after 'op' bundle slot found
+    //
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
       OP *noop = Mk_OP(TOP_nop);
-      BB_Insert_Op_Before(OP_bb(op), op, noop);
+      BB_Insert_Op_After(OP_bb(op), op, noop);
       OP_scycle(noop) = -1;
       Set_OP_bundled (noop);
       TI_BUNDLE_Reserve_Slot (bundle, i, 
 				   ISA_EXEC_Slot_Prop(template_bit, i));
+
+      // Set end group and reset bundle vector:
+      Set_OP_end_group(noop);
+      VECTOR_Reset (*bundle_vector);
+
       break;
     }
   }
@@ -1392,8 +1401,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 			     INT                         slot_pos, 
 			     INT                         max_pos,
 			     BOOL                        stop_bit_reqd,
-			     ISA_EXEC_UNIT_PROPERTY      prop,
-			     INT                         *clock) 
+			     ISA_EXEC_UNIT_PROPERTY      prop)
 {
   INT i;
   INT ti_err = TI_RC_OKAY;
@@ -1568,7 +1576,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
     }
-    *clock = *clock + 1;
+    //    *clock = *clock + 1;
   }
 
   return;

@@ -44,6 +44,7 @@ static MEM_POOL ssa_pool;
 static BOOL Trace_SSA_Build;                  /* -Wb,-tt60:0x002 */
 static BOOL Trace_SSA_Out;                    /* -Wb,-tt60:0x004 */
 static BOOL Trace_phi_removal;                /* -Wb,-tt60:0x008 */
+static BOOL Trace_dom_frontier;               /* -Wb,-tt60:0x010 */
 
 /* ================================================================
  *
@@ -295,7 +296,7 @@ DOM_TREE_Initialize ()
 
   }
 
-  if (Trace_SSA_Build) 
+  if (Trace_dom_frontier) 
     DOM_TREE_Print(TFile);
 
   return;
@@ -540,7 +541,7 @@ SSA_Compute_Dominance_Frontier ()
   BB *bb;
   BOOL *visited;  //  whether DF has been computed for this BB
 
-  if (Trace_SSA_Build) {
+  if (Trace_dom_frontier) {
     fprintf(TFile, "<ssa> Build Dominance Frontier\n");
     fflush(TFile);
   }
@@ -562,7 +563,7 @@ SSA_Compute_Dominance_Frontier ()
   //
   // debugging
   //
-  if (Trace_SSA_Build) {
+  if (Trace_dom_frontier) {
     fprintf(TFile, "<ssa> DOMINANCE FRONTIERS: \n");
     for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       fprintf(TFile, "  BB%d : ", BB_id(bb));
@@ -835,9 +836,11 @@ SSA_Rename_BB (
 
   if (visited[BB_id(bb)]) return;
 
+#if 0
   if (Trace_SSA_Build) {
     fprintf(TFile, "  BB%d: \n", BB_id(bb));
   }
+#endif
 
   FOR_ALL_BB_OPs_FWD(bb, op) {
 
@@ -977,9 +980,9 @@ SSA_Rename ()
   // visit nodes in the dominator tree order renaming TNs
   //
 
-  if (Trace_SSA_Build) {
-    fprintf(TFile, "<ssa> Renaming TNs: \n");
-  }
+  //  if (Trace_SSA_Build) {
+  //    fprintf(TFile, "<ssa> Renaming TNs: \n");
+  //  }
 
   initialize_tn_stack();
 
@@ -1031,7 +1034,8 @@ SSA_Enter (
   BOOL region 
 )
 {
-  Trace_SSA_Build = Get_Trace(TP_SSA, 0x001);
+  Trace_SSA_Build = Get_Trace(TP_SSA, SSA_BUILD);
+  Trace_dom_frontier = Get_Trace(TP_SSA, SSA_DOM_FRONT);
   ssa_init();
 
   //
@@ -1524,13 +1528,13 @@ merge_phiCongruenceClasses (
     }
 
     Set_phiCongruenceClass(tn,current);
-
+#if 0
     fprintf(TFile, "setting class for ");
     Print_TN(tn, FALSE);
     fprintf(TFile, " to class: ");
     GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
     fprintf(TFile,"\n");
-
+#endif
   }
 
   for (i = 0; i < OP_results(phi_op); i++) {
@@ -1555,7 +1559,7 @@ merge_phiCongruenceClasses (
   if (Trace_SSA_Out) {
     fprintf(TFile, "=== Merge_PhiCongruenceClasses ");
     Print_OP(phi_op);
-    fprintf(TFile, "\n  Class: ");
+    fprintf(TFile, "  Class: ");
     GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
     fprintf(TFile,"\n");
   }
@@ -1670,17 +1674,21 @@ insert_operand_copy (
   Set_OP_ssa_move(OPS_last(&ops));
 
   // Insert before the BB's last OP
-  FmtAssert(!BB_call(in_bb),("SSA predecessor is a call BB"));
-  OP *br = BB_branch_op(in_bb);
+  OP *point = NULL;
+  if (BB_call(in_bb)) {
+    // insert before the call - last OP in the 'in_bb'
+    point = BB_last_op(in_bb);
+  }
+  else {
+    point = BB_branch_op(in_bb);
+  }
 
-  if (br != NULL) {
-    BB_Insert_Ops_Before(in_bb, br, &ops);
+  if (point != NULL) {
+    BB_Insert_Ops_Before(in_bb, point, &ops);
   }
   else {
     BB_Append_Ops(in_bb, &ops);
   }
-
-  //BB_Append_Ops(in_bb, &ops);
 
   return;
 }
@@ -1868,8 +1876,8 @@ SSA_Make_Consistent (
   BOOL region 
 )
 {
-  Trace_SSA_Out = Get_Trace(TP_SSA, 0x002);
-  Trace_Igraph = Get_Trace(TP_SSA, 0x004);
+  Trace_SSA_Out = Get_Trace(TP_SSA, SSA_MAKE_CONST);
+  Trace_Igraph = Get_Trace(TP_SSA, SSA_IGRAPH);
 
   //
   // Delete the tn_to_new_name map that may have been left
@@ -1956,7 +1964,7 @@ SSA_Remove_Phi_Nodes (
   OP *op;
   BB *bb;
 
-  Trace_phi_removal = Get_Trace(TP_SSA, 0x008);
+  Trace_phi_removal = Get_Trace(TP_SSA, SSA_REMOVE_PHI);
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
