@@ -1260,64 +1260,6 @@ Handle_Call_Site (
   return;
 }
 
-#if 0
-
-/* ====================================================================
- *   WN_intrinsic_name
- *
- *   This is the same as in be/whirl2c/wn_attr.cxx
- *
- *   TODO: This will be moved to the intrinsic part when it works.
- * ====================================================================
- */
-
-/* INTRN_c_name() is only implemented when defined(BUILD_WHIRL2C), while
- * we must use INTRN_specific_name() when defined(BUILD_WHIRL2F).  To 
- * abstract away from this, we define the macro INTRN_high_level_name.
- * NOT TRUE anymore, but keep this cause I'm not sure which they really want.
- */
-#ifdef BUILD_WHIRL2C
-#define INTRN_high_level_name INTRN_c_name
-#else /*BUILD_WHIRL2F*/
-#define INTRN_high_level_name INTRN_specific_name
-#endif
-
-static const char *
-WN_intrinsic_name(INTRINSIC intr_opc)
-{
-   const char *name;
-   
-   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
-	   ("Intrinsic Opcode (%d) out of range", intr_opc)); 
-
-   if (INTRN_high_level_name(intr_opc) != NULL)
-      name = INTRN_high_level_name(intr_opc);
-#ifdef BUILD_WHIRL2F
-   else
-   {
-      ASSERT_WARN(FALSE, 
-		  (DIAG_A_STRING,
-		   Concat2_Strings("Missing intrinsic name ", 
-				   get_intrinsic_name(intr_opc))));
-      name = get_intrinsic_name(intr_opc);
-   }
-#else /*BUILD_WHIRL2C*/
-   else if (INTRN_rt_name(intr_opc) != NULL)
-      name = INTRN_rt_name(intr_opc);
-   else
-   {
-      Is_True(FALSE, 
-	      ("Expected \"high_level\" or \"rt\" name in WN_intrinsic_name()"));
-      name =
-	 Concat3_Strings("<INTR: ", Number_as_String(intr_opc, "%lld"), ">");
-   }
-#endif /*BUILD_WHIRL2F*/
-
-   return name;
-} /* WN_intrinsic_name */
-
-#endif
-
 /* ====================================================================
  *   Memop_Variant
  *
