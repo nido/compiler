@@ -640,7 +640,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
 	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL ||
-		  kind == CG_DEP_MISC) {
+		  kind == CG_DEP_MISC || kind == CG_DEP_PREFIN) {
 		unsigned type = DependenceKind_Other;
 		if (kind == CG_DEP_MISC) type = DependenceKind_Seq;
 		if (kind == CG_DEP_MEMIN) type = DependenceKind_Flow;
@@ -648,6 +648,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		if (kind == CG_DEP_MEMANTI) type = DependenceKind_Anti;
 		if (kind == CG_DEP_MEMREAD) type = DependenceKind_Input;
 		if (kind == CG_DEP_SPILLIN) type = DependenceKind_Spill;
+		if (kind == CG_DEP_PREFIN) type = DependenceKind_Input;
 		if (ARC_is_definite(arc)) type += DependenceKind_Definite;
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
