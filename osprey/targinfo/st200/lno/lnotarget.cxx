@@ -1779,7 +1779,7 @@ LNOTARGET_Mtype_Registers (
  * ====================================================================
  */
 INT
-LNOTARGET_Access_Bytes (
+LNOTARGET_Mtype_Access_Bytes (
   TYPE_ID mtype
 )
 {
@@ -1801,7 +1801,7 @@ LNOTARGET_Access_Bytes (
     return 1;
 
   default:
-    FmtAssert(FALSE,("LNOTARGET_Access_Bytes: mtype %s", MTYPE_name(mtype)));
+    FmtAssert(FALSE,("LNOTARGET_Mtype_Access_Bytes: mtype %s", MTYPE_name(mtype)));
   }
 }
 
