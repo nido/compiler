@@ -12,18 +12,8 @@
 #ifndef laostub_INCLUDED
 #define laostub_INCLUDED
 
-#include "W_math.h"
-#include <stdarg.h>
-#include <set.h>
-
-#include "defs.h"
-#include "config.h"
-#include "errors.h"
-#include "cg_loop.h"
-#include "hb.h"
-
 /*! 
-  Optimization_Phase -- MUST BE SAME AS IN LAO_Driver.h!
+  Optimization_Phase -- MUST BE SAME AS IN LAO.h!
 */  
 typedef enum {
   Optimization_Linearize = 0x1,
@@ -35,7 +25,10 @@ typedef enum {
   Optimization_EnableSSA = 0x40,
   Optimization_StartBlock = 0x100,
   Optimization_StopBlock = 0x200,
-  Optimization_Localize = 0x400
+  Optimization_Localize = 0x400,
+  Optimization_Force_PostPass = 0x1000,
+  Optimization_Force_RegAlloc = 0x2000,
+  Optimization_Force_PrePass = 0x4000
 } Optimization_Phase;
 
 /*
@@ -53,23 +46,31 @@ typedef enum {
  */
 #define LAO_Optimization_Mask_PrePass (\
     Optimization_PreSched | \
+    Optimization_Force_PrePass | \
     0)
 #define LAO_Optimization_Mask_RegAlloc (\
     Optimization_Localize | \
     Optimization_RegAlloc | \
+    Optimization_Force_RegAlloc | \
     0)
 #define LAO_Optimization_Mask_PostPass (\
     Optimization_PostSched | \
+    Optimization_Force_PostPass | \
     0)
 
 // We don't rely on the weak mechanisms for these symbols, even if
 // supported by the platform. The reason is to provide a consistent
 // implementation on all platforms.
+// We use dlsym to find the functions in lao.so and to initialize
+// these
 
-CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
+extern void (*lao_init_p)(void);
+#define lao_init (*lao_init_p)
+
+extern void (*lao_fini_p) (FILE *file);
+#define lao_fini (*lao_fini_p)
+
+extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 #define lao_optimize_PU (*lao_optimize_PU_p)
-
-CG_EXPORTED extern void (*CGIR_print_p) (FILE *file);
-#define CGIR_print (*CGIR_print_p)
 
 #endif /* laostub_INCLUDED */

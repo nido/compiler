@@ -156,7 +156,8 @@ INCLUDE_DIR 		= $(ROOT)/usr/include
 # These are the directories in which to look for source files.
 
 SRC_DIRS = \
-  $(BE_LAO_DIR)
+  $(BE_LAO_DIR) \
+  $(BE_LAO_DIR)/$(BUILD_TARGET_DIR)
 
 HEADER_DIRS = 		\
   $(SRC_DIRS)		\
@@ -197,7 +198,7 @@ HEADER_DIRS = 		\
 BE_LAO_CXX_SRCS = \
   lao_init.cxx \
   lao_stub.cxx \
-
+  targ_cgir_lao.cxx
 
 ifeq ($(BUILD_PCH), USE_PCH)
 LAO_PCH_OBJS = $(BE_LAO_CXX_SRCS:.cxx=.o)
@@ -243,8 +244,8 @@ HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 endif
 
 LAO_DSOS =
-LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLAI.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSCD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libGRA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSSA.a
@@ -252,7 +253,6 @@ LAO_DSOS += $(LAO_PREFIX)/lib/libPFA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLIR.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCSD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCCL.a
-LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(BE_DSO)  $(CG_DSO)
 STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 

@@ -101,10 +101,6 @@
 #include "cg_select.h"              /* for SELECT flags */
 #endif
 
-#ifdef TARG_ST
-#include "lao_init.h"
-#endif
-
 #include "W_errno.h"
 
 extern void Set_File_In_Printsrc(char *); /* defined in printsrc.c */
@@ -1502,7 +1498,7 @@ CG_Process_Command_Line (
 // **************** symbols defined in lao.so ****************
 
 #ifdef TARG_ST
-
+#if 0
 #if defined(__linux__) || defined(_NO_WEAK_SUPPORT_)
 
 CG_EXPORTED void (*lao_init_p) (void);
@@ -1520,14 +1516,18 @@ CG_EXPORTED extern void (*lao_fini_p) ();
 #pragma weak lao_fini
 
 #endif // __linux__ || _NO_WEAK_SUPPORT_
+#endif
+
+#include <dlfcn.h>		    /* for dlsym() */
 
 static void* lao_handler = NULL;
 
-// Also, define here function pointers to other entry points in the
+// Define here function pointers to entry points in the
 // LAO library.
 
-CG_EXPORTED bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-CG_EXPORTED void (*CGIR_print_p) (FILE *file);
+void (*lao_fini_p)(void);
+void (*lao_init_p) (void);
+bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 
 #endif
 
@@ -1577,7 +1577,10 @@ CG_Init (void)
     if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
     if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;
     lao_handler = load_so("lao"SO_EXT, CG_Path, Show_Progress);
-    lao_init();
+    lao_init_p = (void (*)(void))dlsym(lao_handler, "lao_init");
+    lao_fini_p = (void (*)(void))dlsym(lao_handler, "lao_fini");
+    lao_optimize_PU_p = (bool (*)(unsigned))dlsym(lao_handler, "lao_optimize_PU");
+    (*lao_init_p)();
   }
 #endif
 
@@ -1597,7 +1600,7 @@ CG_Fini (void)
 #ifdef TARG_ST
 
   if (CG_LAO_optimizations != 0) {
-    lao_fini();
+    (*lao_fini_p)();
     close_so(lao_handler);
     lao_handler = NULL;
   }

@@ -21,6 +21,9 @@
 #include "dominate.h"
 #include "findloops.h"
 #include "hb.h"
+#include "cgtarget.h"
+#include "cgexp.h"
+#include "data_layout.h"
 
 #include "annotations.h"
 #include "cg_dep_graph.h"
@@ -31,20 +34,82 @@
 
 #include "cg_flags.h"
 
-#include "lao_init.h"
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#include "LAI.e"
+#include "LAI.h"
 #undef operator
 #undef this
 }
+
+/*-------------------------- This stub interface -------*/
+extern "C" {
+  extern void lao_init(void);
+  extern void lao_fini(void);
+  extern bool lao_optimize_PU(unsigned lao_optimizations);
+}
+
+/*-------------------------- Interface for target dependencies -------*/
+#include "targ_cgir_lao.h"
+
+/*--------------------------- lao_init / lao_fini ----------------------------*/
+extern "C" {
+#include <unistd.h>
+}
+
+#ifdef Is_True_On
+static void CGIR_print(FILE *file);
+// For debug only
+extern "C" char *getenv(const char *);
+#define GETENV(x) getenv(x)
+#else
+#define GETENV(x) ((char *)0)
+#endif
+
+// The CGIR_CallBack structure and its pointer.
+static CGIR_CallBack_ callback_, *callback = &callback_;
+// Forward reference to the callback initialization function.
+static void LIR_CGIR_callback_init(CGIR_CallBack callback);
+
+// Variable used to skip multiple lao_init / lao_fini calls.
+static int lao_initialized = 0;
+
+// Initialization of the LAO, needs to be called once per running process.
+void
+lao_init(void) {
+
+  if (GETENV("LAO_PID")) {
+    int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
+  }
+
+  if (lao_initialized++ == 0) {
+    // Initialize LAO Interface (LAI)
+    LAI_Initialize();
+    // Initialize the LIR->CGIR callback object
+    LIR_CGIR_callback_init(callback);
+    // Initialize the target dependent LIR<->CGIR interface
+    TARG_CGIR_LAI_Init();
+  }
+}
+
+// Finalization of the LAO, needs to be called once.
+void
+lao_fini(void) {
+  if (--lao_initialized == 0) {
+    // Finalize target dependent interface
+    TARG_CGIR_LAI_Fini();
+    LAI_Finalize();
+  }
+}
+
+
+/*-------------------------- CGIR Utility Functions ------------------*/
 
 #define OP_gnu_asm(op)	(OP_code(op) == TOP_asm)
 
 extern OP_MAP OP_Asm_Map;
 
-BOOL
+static BOOL
 OP_clobber_reg(OP *op) {
   if (OP_call(op)) return TRUE;
   if (OP_gnu_asm(op)) {
@@ -58,20 +123,14 @@ OP_clobber_reg(OP *op) {
   return FALSE;
 }
 
-BOOL
+static BOOL
 OP_barrier(OP *op) {
   if (OP_Is_Barrier(op)) return TRUE;
   return FALSE;
 }
 
-// Declare CG_DEP_Compute_Region_MEM_Arcs().
-CG_EXPORTED void 
-CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
-			    BOOL         compute_cyclic, 
-			    BOOL         memread_arcs);
 
-
-/*-------------------------- LAO Utility Functions----------------------------*/
+/*-------------------------- LAO Utility Functions-------------------------*/
 
 typedef list<BB*> BB_List;
 
@@ -111,100 +170,9 @@ lao_topsort(BB *entry, BB_SET *region_set, BB_List &bblist) {
   BB_MAP_Delete(visited_map);
 }
 
-// The CGIR_CallBack structure and its pointer.
-static CGIR_CallBack_ callback_, *callback = &callback_;
-
-// Map CGIR ISA_SUBSET to LIR InstrMode.
-static InstrMode IS__InstrMode[ISA_SUBSET_MAX+1];
-
-// Map LIR InstrMode to CGIR ISA_SUBSET.
-static ISA_SUBSET InstrMode__IS[InstrMode__];
-
-// Map CGIR TOP to LIR Operator.
-static Operator TOP__Operator[TOP_UNDEFINED];
-
-// Map LIR Operator to CGIR TOP.
-static TOP Operator__TOP[Operator__];
-
-// Map CGIR ISA_ENUM_CLASS to LIR Modifier.
-static Modifier IEC__Modifier[EC_MAX];
-
-// Map CGIR Literal to LIR Immediate.
-static Immediate LC__Immediate[LC_MAX];
-
-// Map CGIR ISA_REGISTER_CLASS to LIR RegClass.
-// WARNING! ISA_REGISTER_CLASS reaches ISA_REGISTER_CLASS_MAX
-static RegClass IRC__RegClass[ISA_REGISTER_CLASS_MAX+1];
-
-// Map LIR RegClass to CGIR ISA_REGISTER_CLASS.
-static ISA_REGISTER_CLASS RegClass__IRC[RegClass__];
-
-// Variable used to skip multiple lao_init / lao_fini calls.
-static int lao_initialized = 0;
-
-extern "C" {
-#include <unistd.h>
-}
-
-typedef vector<BB*> BB_VECTOR;
-
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
-// These functions are the only ones to call the Interface_make functions.
-
-// Convert ISA_SUBSET to LIR InstrMode. DOES NOT WORK YET!
-static inline InstrMode
-CGIR_IS_to_InstrMode(ISA_SUBSET is) {
-  InstrMode lao_instrmode = IS__InstrMode[is];
-  Is_True(is >= 0 && is <= ISA_SUBSET_MAX, ("ISA_SUBSET out of range"));
-  Is_True(lao_instrmode != InstrMode__, ("Cannot map ISA_SUBSET to InstrMode"));
-  return lao_instrmode;
-}
-
-// Convert CGIR ISA_ENUM_CLASS to LIR Modifier.
-static inline Modifier
-CGIR_IEC_to_Modifier(ISA_ENUM_CLASS iec) {
-  Modifier lao_modifier = IEC__Modifier[iec];
-  Is_True(iec >= 0 && iec < EC_MAX, ("ISA_ENUM_CLASS out of range"));
-  Is_True(lao_modifier != Modifier__, ("Cannot map ISA_ENUM_CLASS to Modifier"));
-  return lao_modifier;
-}
-
-// Convert CGIR ISA_LIT_CLASS to LIR Immediate.
-static inline Immediate
-CGIR_LC_to_Immediate(ISA_LIT_CLASS ilc) {
-  Immediate lao_immediate = LC__Immediate[ilc];
-  Is_True(ilc >= 0 && ilc < LC_MAX, ("ISA_LIT_CLASS out of range"));
-  Is_True(lao_immediate != Immediate__, ("Cannot map ISA_LIT_CLASS to Immediate"));
-  return lao_immediate;
-}
-
-// Convert CGIR ISA_REGISTER_CLASS to LIR RegClass.
-static inline RegClass
-CGIR_IRC_to_RegClass(ISA_REGISTER_CLASS irc) {
-  RegClass lao_regClass = IRC__RegClass[irc];
-  Is_True(irc >= 0 && irc <= ISA_REGISTER_CLASS_MAX, ("ISA_REGISTER_CLASS out of range"));
-  Is_True(lao_regClass != RegClass__, ("Cannot map ISA_REGISTER_CLASS to RegClass"));
-  return lao_regClass;
-}
-
-// Convert CGIR CLASS_REG_PAIR to LIR Register.
-static inline Register
-CGIR_CRP_to_Register(CLASS_REG_PAIR crp) {
-  mREGISTER reg = CLASS_REG_PAIR_reg(crp);
-  ISA_REGISTER_CLASS irc = CLASS_REG_PAIR_rclass(crp);
-  RegClass regClass = CGIR_IRC_to_RegClass(irc);
-  Register lowReg = RegClass_lowReg(regClass);
-  return (Register)(lowReg + (reg - 1));
-}
-
-// Convert CGIR TOP to LIR Operator.
-static inline Operator
-CGIR_TOP_to_Operator(TOP top) {
-  Operator lao_operator = TOP__Operator[top];
-  Is_True(top >= 0 && top < TOP_UNDEFINED, ("TOPcode out of range"));
-  Is_True(lao_operator != Operator__, ("Cannot map TOPcode to Operator"));
-  return lao_operator;
-}
+// These functions are the only ones to call and must only call the 
+// Interface_make functions.
 
 // Convert CGIR_LAB to LIR Label.
 static inline Label
@@ -216,6 +184,65 @@ CGIR_LAB_to_Label(CGIR_LAB cgir_lab) {
   return label;
 }
 
+// Convert CGIR_ST_CLASS to LIR SClass
+static inline LAI_SClass
+CGIR_ST_CLASS_to_SClass(ST_CLASS sclass)
+{
+  static LAI_SClass sclasses[CLASS_COUNT] = {
+    LAI_SClass_UNDEF,	// CLASS_UNK
+    LAI_SClass_VAR,	// CLASS_VAR
+    LAI_SClass_FUNC,	// CLASS_FUNC
+    LAI_SClass_CONST,	// CLASS_CONST
+    LAI_SClass_PREG,	// CLASS_PREG
+    LAI_SClass_BLOCK,	// CLASS_BLOCK
+    LAI_SClass_UNDEF	// CLASS_NAME has no LAI mapping
+  };
+  return sclasses[sclass];
+}
+
+// Convert CGIR_ST_SCLASS to LIR SStorage
+static inline LAI_SStorage
+CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage)
+{
+  static LAI_SStorage sstorages[SCLASS_COUNT] = {
+    LAI_SStorage_UNDEF,		// SCLASS_UNKNOWN
+    LAI_SStorage_AUTO,		// SCLASS_AUTO
+    LAI_SStorage_FORMAL,	// SCLASS_FORMAL
+    LAI_SStorage_FORMAL_REF,	// SCLASS_FORMAL_REF
+    LAI_SStorage_PSTATIC,	// SCLASS_PSTATIC
+    LAI_SStorage_FSTATIC,	// SCLASS_FSTATIC
+    LAI_SStorage_COMMON,	// SCLASS_COMMON
+    LAI_SStorage_EXTERN,	// SCLASS_EXTERN
+    LAI_SStorage_UGLOBAL,	// SCLASS_UGLOBAL
+    LAI_SStorage_DGLOBAL,	// SCLASS_DGLOBAL
+    LAI_SStorage_TEXT,		// SCLASS_TEXT
+    LAI_SStorage_REG,		// SCLASS_REG
+    LAI_SStorage_UNDEF,		// SCLASS_CPLINIT not mapped
+    LAI_SStorage_UNDEF,		// SCLASS_EH_REGION not mapped
+    LAI_SStorage_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
+    LAI_SStorage_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
+    LAI_SStorage_UNDEF,		// SCLASS_COMMENT not mapped 
+    LAI_SStorage_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
+  };
+  return sstorages[sstorage];
+}
+
+// Convert CGIR_ST_EXPORT to LIR SExport
+static inline LAI_SExport
+CGIR_ST_EXPORT_to_SExport(ST_EXPORT sexport)
+{
+  static LAI_SExport sexports[EXPORT_COUNT] = {
+    LAI_SExport_LOCAL,			// EXPORT_LOCAL
+    LAI_SExport_LOCAL_INTERNAL,		// EXPORT_LOCAL_INTERNAL
+    LAI_SExport_GLOBAL_INTERNAL,	// EXPORT_INTERNAL
+    LAI_SExport_GLOBAL_HIDDEN,		// EXPORT_HIDDEN
+    LAI_SExport_GLOBAL_PROTECTED,	// EXPORT_PROTECTED
+    LAI_SExport_GLOBAL_PREEMPTIBLE,	// EXPORT_PREEMPTIBLE
+    LAI_SExport_UNDEF			// EXPORT_OPTIONAL not mapped
+  };
+  return sexports[sexport];
+}
+
 // Convert CGIR_SYM to LIR Symbol.
 static inline Symbol
 CGIR_SYM_to_Symbol(CGIR_SYM cgir_sym) {
@@ -224,12 +251,57 @@ CGIR_SYM_to_Symbol(CGIR_SYM cgir_sym) {
     if (ST_class(cgir_sym) == CLASS_CONST) {
       char buffer[64];
       sprintf(buffer, "CONST#%llu", (uint64_t)cgir_sym);
-      symbol = Interface_makeSymbol(interface, cgir_sym, String_S(buffer));
+      symbol = Interface_makeSymbol(interface, cgir_sym, buffer);
     } else {
       symbol = Interface_makeSymbol(interface, cgir_sym, ST_name(cgir_sym));
     }
+    Interface_Symbol_setClasses(interface, symbol, 
+				CGIR_ST_CLASS_to_SClass(ST_sym_class(St_Table[cgir_sym])),
+				CGIR_ST_SCLASS_to_SStorage(ST_storage_class(St_Table[cgir_sym])),
+				CGIR_ST_EXPORT_to_SExport(ST_export(St_Table[cgir_sym])));
   }
   return symbol;
+}
+
+static inline Temporary CGIR_TN_to_Temporary(CGIR_TN cgir_tn);
+
+// Returns a TN for the rematerializable value
+static Temporary
+CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
+{
+  WN *home = TN_home(cgir_tn);
+  Temporary temporary = NULL;
+  switch (WN_operator(home)) {
+  case OPR_LDA: {
+    Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+    ST *var_st = WN_st(home);
+    ST_IDX st_idx = ST_st_idx(*var_st);
+    int64_t offset = WN_lda_offset(home);
+    TN * tn = Gen_Symbol_TN (var_st, offset, 0);
+    temporary = CGIR_TN_to_Temporary(tn);
+  } break;
+  case OPR_INTCONST: {
+    if (WN_rtype(home) == MTYPE_I4 ||
+	WN_rtype(home) == MTYPE_U4) {
+      TN *tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
+      temporary = CGIR_TN_to_Temporary(tn);
+    } else {
+      // Currently not handled.
+    }
+  } break;
+  case OPR_CONST: {
+    // Currently not handled.
+  } break;
+  }
+  return temporary;
+}
+
+// Returns a TN for the homeable value
+static Temporary
+CGIR_TN_HOME_to_Temporary(CGIR_TN cgir_tn)
+{
+  DevWarn("Should pass TN_is_gra_homeable to LAO for TN%d\n", TN_number(cgir_tn));
+  return NULL;
 }
 
 // Convert CGIR_TN to LIR Temporary.
@@ -240,36 +312,59 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     if (TN_is_register(cgir_tn)) {
       if (TN_is_dedicated(cgir_tn)) {
 	CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	temporary = Interface_makeDedicatedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
+	// On the open64 side, the dedicated property can be set to a temporary register not
+	// in the initial dedicated set. And additional information such as home location
+	// may be set on such dedicated registers.
+	// On the LAO side, dedicated temporaries are shared, so we create dedicated temporaries
+	// only if the cgir_tn is in the initial dedicated set. Otherwise we create an
+	// assigned temporary and set the dedicated flag.
+	if (Build_Dedicated_TN(CLASS_REG_PAIR_rclass(tn_crp), CLASS_REG_PAIR_reg(tn_crp), 0) == cgir_tn)
+	  temporary = Interface_makeDedicatedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	else {
+	  temporary = Interface_makeAssignRegTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	  Interface_Temporary_setDedicated(interface, temporary);
+	}
       } else if (TN_register(cgir_tn) != REGISTER_UNDEFINED) {
 	CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	temporary = Interface_makeAssignRegTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
+	temporary = Interface_makeAssignRegTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
       } else {
 	ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
-	temporary = Interface_makePseudoRegTemporary(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
+	temporary = Interface_makePseudoRegTemporary(interface, cgir_tn, TARG_CGIR_IRC_to_RegClass(tn_irc));
+      }
+      // Pass special tn flags
+      if (TN_is_rematerializable(cgir_tn)) {
+	Temporary remat = CGIR_TN_REMAT_to_Temporary(cgir_tn);
+	if (remat != NULL) {
+	  Interface_Temporary_setRematerializable(interface, temporary, remat);
+	}
+      } else if (TN_is_gra_homeable(cgir_tn)) {
+	Temporary home = CGIR_TN_HOME_to_Temporary(cgir_tn);
+	if (home != NULL) {
+	  Interface_Temporary_setHomeable(interface, temporary, home);
+	}
       }
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	temporary = Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
       } else if (TN_is_enum(cgir_tn)) {
 	ISA_ENUM_CLASS_VALUE value = TN_enum(cgir_tn);
-	Modifier modifier = CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
+	Modifier modifier = TARG_CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
 	temporary = Interface_makeModifierTemporary(interface, cgir_tn, modifier, value);
       } else {
 	Is_True(FALSE, ("Unknown constant TN type."));
@@ -295,8 +390,8 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
     Temporary *results = (Temporary *)(resCount ? alloca(resCount*sizeof(Temporary)) : NULL);
     for (int i = 0; i < resCount; i++) results[i] = CGIR_TN_to_Temporary(OP_result(cgir_op, i));
     // the Operation clobber
-    int regCount = 0;
-    int registers[Register__];
+    int clobberCount = 0;
+    int clobbers[ISA_REGISTER_CLASS_COUNT*ISA_REGISTER_MAX];
     if (OP_clobber_reg(cgir_op)) {
       ISA_REGISTER_CLASS irc;
       FOR_ALL_ISA_REGISTER_CLASS(irc) {
@@ -312,15 +407,15 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
 	     reg = REGISTER_SET_Choose_Next(regset, reg)) {
 	  TN* cgir_tn = Build_Dedicated_TN(irc, reg, 0);
 	  CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	  registers[regCount++] = CGIR_CRP_to_Register(tn_crp);
+	  clobbers[clobberCount++] = TARG_CGIR_CRP_to_Register(tn_crp);
 	}
       }
-      Is_True(regCount > 0, ("Empty register clobber list"));
+      Is_True(clobberCount > 0, ("Empty register clobber list"));
     }
     // make the Operation
-    Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
+    Operator OPERATOR = TARG_CGIR_TOP_to_Operator(OP_code(cgir_op));
     operation = Interface_makeOperation(interface, cgir_op,
-	OPERATOR, argCount, arguments, resCount, results, regCount, registers);
+	OPERATOR, argCount, arguments, resCount, results, clobberCount, clobbers);
     if (OP_volatile(cgir_op)) Interface_Operation_setVolatile(interface, operation);
     if (OP_prefetch(cgir_op)) Interface_Operation_setPrefetch(interface, operation);
     if (OP_barrier(cgir_op)) Interface_Operation_setBarrier(interface, operation);
@@ -359,8 +454,12 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
       Is_True(operationCount < MAX_OPERATION_COUNT, ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
+
+    // For instruction mode currently the targ interface does not
+    // account for isa subset. HACK.
+    InstrMode instrmode = TARG_CGIR_IS_to_InstrMode((ISA_SUBSET)0);
+
     // make the BasicBlock
-    InstrMode instrmode = Is_Target_st221() ? InstrMode_ST221 : InstrMode_ST220;
     basicblock = Interface_makeBasicBlock(interface, cgir_bb, instrmode,
 	labelCount, labels, operationCount, operations);
     // more the BasicBlock
@@ -369,12 +468,32 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
 	 tn != GTN_SET_CHOOSE_FAILURE;
 	 tn = GTN_SET_Choose_Next(BB_live_in(cgir_bb), tn)) {
-      Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
-      liveins[liveinCount++] = CGIR_TN_to_Temporary(tn);
+      Temporary temp = CGIR_TN_to_Temporary(tn);
+      // All live in are global
+      Interface_Temporary_setGlobal(interface, temp);
+      // We only take live-in that are defreach_in
+      if (GRA_LIVE_TN_Live_Into_BB(tn, cgir_bb)) {
+	Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
+	liveins[liveinCount++] = temp;
+      }
+    }
+    int liveoutCount = 0, MAX_LIVEOUT_COUNT = 16384;
+    Temporary *liveouts = (Temporary *)alloca(MAX_LIVEOUT_COUNT*sizeof(Temporary));
+    for (TN *tn = GTN_SET_Choose(BB_live_out(cgir_bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn = GTN_SET_Choose_Next(BB_live_out(cgir_bb), tn)) {
+      Temporary temp = CGIR_TN_to_Temporary(tn);
+      // All live out are global
+      Interface_Temporary_setGlobal(interface, temp);
+      // We only take live-out that are defreach_out
+      if (GRA_LIVE_TN_Live_Outof_BB(tn, cgir_bb)) {
+	Is_True(liveoutCount < MAX_LIVEOUT_COUNT, ("BB has more than MAX_LIVEOUT_COUNT liveouts"));
+	liveouts[liveoutCount++] = temp;
+      }
     }
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
-    Interface_moreBasicBlock(interface, basicblock, regionId, frequency, liveinCount, liveins);
+    Interface_moreBasicBlock(interface, basicblock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
   }
   return basicblock;
 }
@@ -459,8 +578,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
 		Is_True(pred_op == op, ("Error in lao_setDependences"));
-		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-		Interface_LoopInfo_setDependenceArc(interface, loopinfo,
+		Operation dest_operation = CGIR_OP_to_Operation(succ_op);		Interface_LoopInfo_setDependenceArc(interface, loopinfo,
 		    orig_operation, dest_operation, latency, omega, (DependenceType)type);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
@@ -474,44 +592,12 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
   return loopinfo;
 }
 
-/*-------------------- LIR -> CGIR Conversion Fonctions ----------------------*/
-
-// Convert LIR RegClass to CGIR ISA_REGISTER_CLASS.
-static inline ISA_REGISTER_CLASS
-RegClass_to_CGIR_IRC(RegClass regClass) {
-  Is_True(regClass < RegClass__, ("RegClass out of range"));
-  ISA_REGISTER_CLASS irc = RegClass__IRC[regClass];
-  Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
-  return irc;
-}
-
-// Convert LIR Register to CGIR CLASS_REG_PAIR.
-static inline CLASS_REG_PAIR
-Register_to_CGIR_CRP(Register registre) {
-  RegClass regClass = Register_regClass(registre);
-  Register lowReg = RegClass_lowReg(regClass);
-  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
-  REGISTER reg = (registre - lowReg) + 1;
-  CLASS_REG_PAIR crp;
-  Set_CLASS_REG_PAIR(crp, irc, reg);
-  return crp;
-}
-
-// Convert LIR Operator to TOP.
-static inline TOP
-Operator_to_CGIR_TOP(Operator lir_operator) {
-  Is_True(lir_operator < Operator__, ("Operator out of range"));
-  TOP top = Operator__TOP[lir_operator];
-  Is_True(top != TOP_UNDEFINED, ("Cannot map Operator to TOP"));
-  return top;
-}
-
-
-/*-------------------- LIR Interface Call-Back Functions ---------------------*/
+/*-------------------- LIR -> CGIR Interface Call-Backs -------------------*/
 
 // Create a CGIR_LAB.
 static CGIR_LAB
-CGIR_LAB_create(CGIR_LAB cgir_lab, const char *name) {
+CGIR_LAB_create(Label label, CGIR_LAB cgir_lab) {
+  const char *name = LAI_Label_name(label);
   CGIR_LAB new_lab = 0;
   // code borrowed from Gen_Label_For_BB
   LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, new_lab);
@@ -522,72 +608,131 @@ CGIR_LAB_create(CGIR_LAB cgir_lab, const char *name) {
 
 // Update a CGIR_LAB.
 static void
-CGIR_LAB_update(CGIR_LAB cgir_lab, const char *name) {
+CGIR_LAB_update(Label label, CGIR_LAB cgir_lab) {
+  // should not be modified
 }
 
 // Create a CGIR_SYM.
 static CGIR_SYM
-CGIR_SYM_create(CGIR_SYM cgir_sym) {
+CGIR_SYM_create(Symbol symbol, CGIR_SYM cgir_sym) {
+  // Currently LAO is allowed to generate:
+  // - spill symbols
+  // - that's all
+  
+  // Spill symbol.
+  if (LAI_Symbol_isSpill(symbol)) {
+    // We use the CGSPILL interface to generate a CGIR spill symbol
+    TY_IDX ty = 
+      MTYPE_To_TY(TARG_MType_to_CGIR_TYPE_ID(LAI_Symbol_mtype(symbol)));
+    ST *st = CGSPILL_Gen_Spill_Symbol(ty, (const char *)LAI_Symbol_name(symbol));
+    return ST_st_idx(*st);
+  }
+  return (CGIR_SYM)0;
 }
 
 // Update a CGIR_SYM.
 static void
-CGIR_SYM_update(CGIR_SYM cgir_sym) {
+CGIR_SYM_update(Symbol symbol, CGIR_SYM cgir_sym) {
+  // Currently LAO is allowed to update:
+  // - symbol referenced by a symbol Temporary
+  //   This case occurs for generation of homed/rematerialized spill by LAO
+  //   where the remat symbol was passed without being allocated yet.
+  //   The symbol is not modified, but should be allocated is not.
+  if (!Is_Allocated(&St_Table[cgir_sym])) {
+    Allocate_Object(&St_Table[cgir_sym]);
+  }
 }
 
 // Create a Dedicated CGIR_TN.
 static CGIR_TN
-CGIR_Dedicated_TN_create(CGIR_TN cgir_tn, Register registre) {
-  int size = 0;		// not used in Build_Dedicated_TN
-  CLASS_REG_PAIR crp = Register_to_CGIR_CRP(registre);
+CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+  Register registre = LAI_Temporary_assigned(temporary);
+  INT size = 0;		// not used in Build_Dedicated_TN
+  CLASS_REG_PAIR crp = TARG_Register_to_CGIR_CRP(registre);
   return Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), size);
 }
 
 // Create a PseudoReg CGIR_TN.
 static CGIR_TN
-CGIR_PseudoReg_TN_create(CGIR_TN cgir_tn, RegClass regClass) {
-  int size = (RegClass_bitWidth(regClass) + 7)/8;
-  return Gen_Register_TN(RegClass_to_CGIR_IRC(regClass), size);
+CGIR_PseudoReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+  RegClass regClass = LAI_Temporary_regClass(temporary);
+  ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
+  INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
+  INT size = (bsize + 7)/8;
+  return Gen_Register_TN(irc, size);
+}
+
+// Create an AssignReg CGIR_TN.
+static CGIR_TN
+CGIR_AssignReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+  RegClass regClass = LAI_Temporary_regClass(temporary);
+  Register assigned = LAI_Temporary_assigned(temporary);
+  ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
+  INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
+  INT size = (bsize + 7)/8;
+  TN *tn = Gen_Register_TN(irc, size);
+  CLASS_REG_PAIR crp = TARG_Register_to_CGIR_CRP(assigned);
+  Set_TN_register(tn, CLASS_REG_PAIR_reg(crp));
+  return tn;
 }
 
 // Create a Modifier CGIR_TN.
 static CGIR_TN
-CGIR_Modifier_TN_create(CGIR_TN cgir_tn, Modifier modifier) {
-  Is_True(0, ("CGIR_Modifier_TN_create not implemented"));
+CGIR_Modifier_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+  Modifier modifier = LAI_Temporary_modifier(temporary);
+  FmtAssert(0, ("CGIR_Modifier_TN_create not implemented"));
   return NULL;
 }
 
 // Create an Absolute CGIR_TN.
 static CGIR_TN
-CGIR_Absolute_TN_create(CGIR_TN cgir_tn, Immediate immediate, int64_t value) {
-  int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
+CGIR_Absolute_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+  Immediate immediate = LAI_Temporary_immediate(temporary);
+  int64_t value = LAI_Temporary_value(temporary);
+  INT size = (value >= (int64_t)0x80000000 && 
+	      value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
   return Gen_Literal_TN(value, size);
 }
 
 // Create a Symbol CGIR_TN.
 static CGIR_TN
-CGIR_Symbol_TN_create(CGIR_TN cgir_tn, Immediate immediate, CGIR_SYM cgir_sym, int64_t offset) {
-  Is_True(0, ("CGIR_Symbol_TN_create not implemented"));
-  return NULL;
+CGIR_Symbol_TN_create(Temporary temporary, CGIR_TN cgir_tn, CGIR_SYM cgir_sym) {
+  int64_t offset = LAI_Temporary_offset(temporary);
+  return Gen_Symbol_TN (&St_Table[cgir_sym], offset, 0);
 }
 
 // Create a Label CGIR_TN.
 static CGIR_TN
-CGIR_Label_TN_create(CGIR_TN cgir_tn, Immediate immediate, CGIR_LAB cgir_lab) {
+CGIR_Label_TN_create(Temporary temporary, CGIR_TN cgir_tn, CGIR_LAB cgir_lab) {
   return Gen_Label_TN(cgir_lab, 0);
 }
 
 // Update a CGIR_TN.
 static void
-CGIR_TN_update(CGIR_TN cgir_tn) {
-  // TODO: commit register allocation.
+CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
+  // Currently LAO is allowed to update:
+  // - pseudo temporaries into assigned temporary
+  // - that's all
+
+  // Temporary that were assigned
+  if (!LAI_Temporary_isDedicated(temporary) &&
+      LAI_Temporary_isAssignReg(temporary)) {
+    CLASS_REG_PAIR cgir_crp = 
+      TARG_Register_to_CGIR_CRP(LAI_Temporary_assigned(temporary));
+    Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
+  }
 }
 
 // Create a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
+  int iteration = LAI_Operation_iteration(operation);
+  int issueDate = LAI_Operation_issueDate(operation);
+  Operator opr = LAI_Operation_operator(operation);
   int argCount = 0, resCount = 0;
-  TOP top = Operator_to_CGIR_TOP(OPERATOR);
+  TOP top;
+
+  top = TARG_Operator_to_CGIR_TOP(opr);
   for (argCount = 0; arguments[argCount] != NULL; argCount++);
   for (resCount = 0; results[resCount] != NULL; resCount++);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
@@ -601,6 +746,38 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
     // Set unrolling.
     Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
+
+  // Add spill information
+  if (LAI_Operation_isSpillCode(operation)) {
+    TN *spilled_tn;
+    TN *offset_tn;
+    TN *base_tn;
+    if (OP_store(new_op)) {
+      int val_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_storeval);
+      int offset_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_offset);
+      int base_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_base);
+      spilled_tn = OP_opnd(new_op, val_idx);
+      offset_tn = OP_opnd(new_op, offset_idx);
+      base_tn = OP_opnd(new_op, base_idx);
+    } else if (OP_load(new_op) && OP_results(new_op) == 1) {
+      int offset_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_offset);
+      int base_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_base);
+      spilled_tn = OP_result(new_op, 0);
+      offset_tn = OP_opnd(new_op, offset_idx);
+      base_tn = OP_opnd(new_op, base_idx);
+    } else {
+      Is_True(0, ("Invalid LAO isSpilledOP operation"));
+    }
+    Is_True(base_tn == SP_TN || base_tn == FP_TN, ("Invalid base TN for LAO spill op"));
+    Set_TN_spill(spilled_tn, TN_var(offset_tn));
+    Set_OP_spill(new_op);
+  }
+
+  // TODO: shouldn't we add volatile  information 
+  if (LAI_Operation_isVolatile(operation)) {
+    DevWarn("Operation volatile on LAO side");
+  }
+
   // Set scycle
   OP_scycle(new_op) = issueDate;
   //
@@ -609,11 +786,14 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
 
 // Update a CGIR_OP.
 static void
-CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
+  int iteration = LAI_Operation_iteration(operation);
+  int issueDate = LAI_Operation_issueDate(operation);
+  Operator opr = LAI_Operation_operator(operation);
   BB *bb = OP_bb(cgir_op);
   if (bb != NULL) BB_Remove_Op(bb, cgir_op);
   int argCount = 0, resCount = 0;
-  TOP top = Operator_to_CGIR_TOP(OPERATOR);
+  TOP top = TARG_Operator_to_CGIR_TOP(opr);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
   }
@@ -635,7 +815,9 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
+CGIR_BB_create(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, unsigned optimizations) {
+  int unrolled = LAI_BasicBlock_unrolled(basicBlock);
+  int ordering = LAI_BasicBlock_ordering(basicBlock);
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
   for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
@@ -688,7 +870,9 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RI
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
+CGIR_BB_update(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, unsigned optimizations) {
+  int unrolled = LAI_BasicBlock_unrolled(basicBlock);
+  int ordering = LAI_BasicBlock_ordering(basicBlock);
   // Add the labels.
   for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
     CGIR_LAB cgir_lab = labels[labelCount];
@@ -747,7 +931,7 @@ CGIR_BB_link(CGIR_BB orig_cgir_bb, CGIR_BB dest_cgir_bb, float probability) {
 
 // Unlink all the predecessors and successors of a CGIR_BB in the CGIR.
 static void
-CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
+CGIR_BB_unlink(CGIR_BB cgir_bb, int preds, int succs) {
   BBLIST *edge;
   //
   // Remove successor edges.
@@ -771,7 +955,7 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
 
 // Create a CGIR_LD.
 static CGIR_LD
-CGIR_LD_create(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
+CGIR_LD_create(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
   // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
   Is_True(0, ("CGIR_LD_create should not be called"));
   return cgir_ld;
@@ -779,7 +963,8 @@ CGIR_LD_create(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
 
 // Update a CGIR_LD.
 static void
-CGIR_LD_update(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
+CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
+  int unrolled = LAI_LoopInfo_unrolled(loopInfo);
   Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_update"));
   // We only update the LOOPINFOs for use by LOOP_DESCR_Detect_Loops.
   ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
@@ -800,28 +985,10 @@ CGIR_LD_update(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
   }
 }
 
-
-/*--------------------------- lao_init / lao_fini ----------------------------*/
-
-// Optimize a PU through the LAO.
-static bool lao_optimize_PU(unsigned lao_optimizations);
-
-static void CGIR_print(FILE *file);
-
-CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-CG_EXPORTED extern void (*CGIR_print_p)(FILE *file);
-
-// Initialization of the LAO, needs to be called once.
-void
-lao_init() {
-  if (GETENV("LAO_PID")) {
-    int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
-  }
-  if (lao_initialized++ == 0) {
-    LAO_Initialize();
-    // initialize the PRO64/LAO interface pointers
-    lao_optimize_PU_p = lao_optimize_PU;
-    CGIR_print_p = CGIR_print;
+// Initialization of the LIR->CGIR callbacks object.
+static void
+LIR_CGIR_callback_init(CGIR_CallBack callback)
+{
     // Initialize the callback pointers.
     *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
     *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
@@ -829,6 +996,7 @@ lao_init() {
     *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
     *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
     *CGIR_CallBack__PseudoReg_TN_create(callback) = CGIR_PseudoReg_TN_create;
+    *CGIR_CallBack__AssignReg_TN_create(callback) = CGIR_AssignReg_TN_create;
     *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
     *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
     *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
@@ -844,319 +1012,31 @@ lao_init() {
     *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
     *CGIR_CallBack__LD_create(callback) = CGIR_LD_create;
     *CGIR_CallBack__LD_update(callback) = CGIR_LD_update;
-    // initialize the TOP__Operator array
-    for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator__;
-    TOP__Operator[TOP_add_i] = Operator_CODE_ADD_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_add_ii] = Operator_CODE_ADD_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_add_r] = Operator_CODE_ADD_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_addcg] = Operator_CODE_ADDCG_DEST_BDEST_SRC1_SRC2_SCOND;
-    TOP__Operator[TOP_and_i] = Operator_CODE_AND_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_and_ii] = Operator_CODE_AND_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_and_r] = Operator_CODE_AND_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_andc_i] = Operator_CODE_ANDC_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_andc_ii] = Operator_CODE_ANDC_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_andc_r] = Operator_CODE_ANDC_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_andl_i_b] = Operator_CODE_ANDL_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_andl_ii_b] = Operator_CODE_ANDL_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_andl_i_r] = Operator_CODE_ANDL_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_andl_ii_r] = Operator_CODE_ANDL_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_andl_r_b] = Operator_CODE_ANDL_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_andl_r_r] = Operator_CODE_ANDL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_asm] = Operator_MACRO_GNUASM;
-//  TOP__Operator[TOP_begin_pregtn] = Operator_PSEUDO_;
-    TOP__Operator[TOP_br] = Operator_CODE_BR_BCOND_BTARG;
-    TOP__Operator[TOP_break] = Operator_CODE_BREAK;
-    TOP__Operator[TOP_brf] = Operator_CODE_BRF_BCOND_BTARG;
-    TOP__Operator[TOP_bswap_r] = Operator_CODE_BSWAP_IDEST_SRC1;
-//  TOP__Operator[TOP_bwd_bar] = Operator_PSEUDO_;
-    TOP__Operator[TOP_call] = Operator_CODE_CALL_BTARG;
-    TOP__Operator[TOP_clz_r] = Operator_CODE_CLZ_IDEST_SRC1;
-    TOP__Operator[TOP_cmpeq_i_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpeq_ii_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpeq_i_r] = Operator_CODE_CMPEQ_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpeq_ii_r] = Operator_CODE_CMPEQ_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpeq_r_b] = Operator_CODE_CMPEQ_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpeq_r_r] = Operator_CODE_CMPEQ_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpge_i_b] = Operator_CODE_CMPGE_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpge_ii_b] = Operator_CODE_CMPGE_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpge_i_r] = Operator_CODE_CMPGE_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpge_ii_r] = Operator_CODE_CMPGE_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpge_r_b] = Operator_CODE_CMPGE_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpge_r_r] = Operator_CODE_CMPGE_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgeu_i_b] = Operator_CODE_CMPGEU_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgeu_ii_b] = Operator_CODE_CMPGEU_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgeu_i_r] = Operator_CODE_CMPGEU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgeu_ii_r] = Operator_CODE_CMPGEU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgeu_r_b] = Operator_CODE_CMPGEU_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgeu_r_r] = Operator_CODE_CMPGEU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgt_i_b] = Operator_CODE_CMPGT_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgt_ii_b] = Operator_CODE_CMPGT_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgt_i_r] = Operator_CODE_CMPGT_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgt_ii_r] = Operator_CODE_CMPGT_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgt_r_b] = Operator_CODE_CMPGT_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgt_r_r] = Operator_CODE_CMPGT_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgtu_i_b] = Operator_CODE_CMPGTU_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgtu_ii_b] = Operator_CODE_CMPGTU_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgtu_i_r] = Operator_CODE_CMPGTU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpgtu_ii_r] = Operator_CODE_CMPGTU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpgtu_r_b] = Operator_CODE_CMPGTU_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpgtu_r_r] = Operator_CODE_CMPGTU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmple_i_b] = Operator_CODE_CMPLE_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmple_ii_b] = Operator_CODE_CMPLE_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmple_i_r] = Operator_CODE_CMPLE_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmple_ii_r] = Operator_CODE_CMPLE_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmple_r_b] = Operator_CODE_CMPLE_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmple_r_r] = Operator_CODE_CMPLE_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpleu_i_b] = Operator_CODE_CMPLEU_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpleu_ii_b] = Operator_CODE_CMPLEU_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpleu_i_r] = Operator_CODE_CMPLEU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpleu_ii_r] = Operator_CODE_CMPLEU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpleu_r_b] = Operator_CODE_CMPLEU_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpleu_r_r] = Operator_CODE_CMPLEU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmplt_i_b] = Operator_CODE_CMPLT_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmplt_ii_b] = Operator_CODE_CMPLT_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmplt_i_r] = Operator_CODE_CMPLT_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmplt_ii_r] = Operator_CODE_CMPLT_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmplt_r_b] = Operator_CODE_CMPLT_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmplt_r_r] = Operator_CODE_CMPLT_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpltu_i_b] = Operator_CODE_CMPLTU_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpltu_ii_b] = Operator_CODE_CMPLTU_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpltu_i_r] = Operator_CODE_CMPLTU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpltu_ii_r] = Operator_CODE_CMPLTU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpltu_r_b] = Operator_CODE_CMPLTU_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpltu_r_r] = Operator_CODE_CMPLTU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpne_i_b] = Operator_CODE_CMPNE_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpne_ii_b] = Operator_CODE_CMPNE_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpne_i_r] = Operator_CODE_CMPNE_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_cmpne_ii_r] = Operator_CODE_CMPNE_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_cmpne_r_b] = Operator_CODE_CMPNE_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_cmpne_r_r] = Operator_CODE_CMPNE_DEST_SRC1_SRC2;
-//  TOP__Operator[TOP_copy_br] = Operator_PSEUDO_;
-//  TOP__Operator[TOP_dfixup] = Operator_PSEUDO_;
-    TOP__Operator[TOP_divs] = Operator_CODE_DIVS_DEST_BDEST_SRC1_SRC2_SCOND;
-//  TOP__Operator[TOP_end_pregtn] = Operator_PSEUDO_;
-//  TOP__Operator[TOP_ffixup] = Operator_PSEUDO_;
-//  TOP__Operator[TOP_fwd_bar] = Operator_PSEUDO_;
-    TOP__Operator[TOP_goto] = Operator_CODE_GOTO_BTARG;
-    TOP__Operator[TOP_icall] = Operator_CODE_ICALL;
-//  TOP__Operator[TOP_ifixup] = Operator_PSEUDO_;
-    TOP__Operator[TOP_igoto] = Operator_CODE_IGOTO;
-    TOP__Operator[TOP_imml] = Operator_CODE_IMML_IMM;
-    TOP__Operator[TOP_immr] = Operator_CODE_IMMR_IMM;
-    TOP__Operator[TOP_intrncall] = Operator_MACRO_IFRCALL;
-    TOP__Operator[TOP_label] = Operator_PSEUDO_LABEL;
-    TOP__Operator[TOP_ldb_d_i] = Operator_CODE_LDBD_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldb_d_ii] = Operator_CODE_LDBD_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldb_i] = Operator_CODE_LDB_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldb_ii] = Operator_CODE_LDB_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldbu_d_i] = Operator_CODE_LDBUD_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldbu_d_ii] = Operator_CODE_LDBUD_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldbu_i] = Operator_CODE_LDBU_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldbu_ii] = Operator_CODE_LDBU_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldh_d_i] = Operator_CODE_LDHD_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldh_d_ii] = Operator_CODE_LDHD_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldh_i] = Operator_CODE_LDH_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldh_ii] = Operator_CODE_LDH_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldhu_d_i] = Operator_CODE_LDHUD_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldhu_d_ii] = Operator_CODE_LDHUD_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldhu_i] = Operator_CODE_LDHU_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldhu_ii] = Operator_CODE_LDHU_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldw_d_i] = Operator_CODE_LDWD_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldw_d_ii] = Operator_CODE_LDWD_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_ldw_i] = Operator_CODE_LDW_IDESTL_ISRC2_SRC1;
-    TOP__Operator[TOP_ldw_ii] = Operator_CODE_LDW_IDESTL_ISRCX_SRC1;
-    TOP__Operator[TOP_max_i] = Operator_CODE_MAX_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_max_ii] = Operator_CODE_MAX_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_max_r] = Operator_CODE_MAX_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_maxu_i] = Operator_CODE_MAXU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_maxu_ii] = Operator_CODE_MAXU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_maxu_r] = Operator_CODE_MAXU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_mfb] = Operator_CODE_MFB_IDEST_SCOND;
-    TOP__Operator[TOP_min_i] = Operator_CODE_MIN_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_min_ii] = Operator_CODE_MIN_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_min_r] = Operator_CODE_MIN_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_minu_i] = Operator_CODE_MINU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_minu_ii] = Operator_CODE_MINU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_minu_r] = Operator_CODE_MINU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_mov_i] = Operator_CODE_MOV_IDEST_ISRC2;
-    TOP__Operator[TOP_mov_ii] = Operator_CODE_MOV_IDEST_ISRCX;
-    TOP__Operator[TOP_mov_r] = Operator_CODE_MOV_DEST_SRC2;
-    TOP__Operator[TOP_mtb] = Operator_CODE_MTB_BDEST_SRC1;
-    TOP__Operator[TOP_mulh_i] = Operator_CODE_MULH_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulh_ii] = Operator_CODE_MULH_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulh_r] = Operator_CODE_MULH_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulhh_i] = Operator_CODE_MULHH_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulhh_ii] = Operator_CODE_MULHH_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulhh_r] = Operator_CODE_MULHH_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulhhs_i] = Operator_CODE_MULHHS_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulhhs_ii] = Operator_CODE_MULHHS_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulhhs_r] = Operator_CODE_MULHHS_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulhhu_i] = Operator_CODE_MULHHU_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulhhu_ii] = Operator_CODE_MULHHU_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulhhu_r] = Operator_CODE_MULHHU_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulhs_i] = Operator_CODE_MULHS_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulhs_ii] = Operator_CODE_MULHS_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulhs_r] = Operator_CODE_MULHS_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulhu_i] = Operator_CODE_MULHU_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulhu_ii] = Operator_CODE_MULHU_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulhu_r] = Operator_CODE_MULHU_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mull_i] = Operator_CODE_MULL_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mull_ii] = Operator_CODE_MULL_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mull_r] = Operator_CODE_MULL_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mullh_i] = Operator_CODE_MULLH_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mullh_ii] = Operator_CODE_MULLH_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mullh_r] = Operator_CODE_MULLH_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mullhu_i] = Operator_CODE_MULLHU_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mullhu_ii] = Operator_CODE_MULLHU_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mullhu_r] = Operator_CODE_MULLHU_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mullhus_i] = Operator_CODE_MULLHUS_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mullhus_ii] = Operator_CODE_MULLHUS_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mullhus_r] = Operator_CODE_MULLHUS_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulll_i] = Operator_CODE_MULLL_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulll_ii] = Operator_CODE_MULLL_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulll_r] = Operator_CODE_MULLL_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mulllu_i] = Operator_CODE_MULLLU_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mulllu_ii] = Operator_CODE_MULLLU_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mulllu_r] = Operator_CODE_MULLLU_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_mullu_i] = Operator_CODE_MULLU_IDESTL_SRC1_ISRC2;
-    TOP__Operator[TOP_mullu_ii] = Operator_CODE_MULLU_IDESTL_SRC1_ISRCX;
-    TOP__Operator[TOP_mullu_r] = Operator_CODE_MULLU_DESTL_SRC1_SRC2;
-    TOP__Operator[TOP_nandl_i_b] = Operator_CODE_NANDL_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_nandl_ii_b] = Operator_CODE_NANDL_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_nandl_i_r] = Operator_CODE_NANDL_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_nandl_ii_r] = Operator_CODE_NANDL_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_nandl_r_b] = Operator_CODE_NANDL_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_nandl_r_r] = Operator_CODE_NANDL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_noop] = Operator_PSEUDO_NOP;
-    TOP__Operator[TOP_nop] = Operator_CODE_NOP;
-    TOP__Operator[TOP_norl_i_b] = Operator_CODE_NORL_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_norl_ii_b] = Operator_CODE_NORL_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_norl_i_r] = Operator_CODE_NORL_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_norl_ii_r] = Operator_CODE_NORL_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_norl_r_b] = Operator_CODE_NORL_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_norl_r_r] = Operator_CODE_NORL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_or_i] = Operator_CODE_OR_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_or_ii] = Operator_CODE_OR_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_or_r] = Operator_CODE_OR_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_orc_i] = Operator_CODE_ORC_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_orc_ii] = Operator_CODE_ORC_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_orc_r] = Operator_CODE_ORC_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_orl_i_b] = Operator_CODE_ORL_IBDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_orl_ii_b] = Operator_CODE_ORL_IBDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_orl_i_r] = Operator_CODE_ORL_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_orl_ii_r] = Operator_CODE_ORL_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_orl_r_b] = Operator_CODE_ORL_BDEST_SRC1_SRC2;
-    TOP__Operator[TOP_orl_r_r] = Operator_CODE_ORL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_pft_i] = Operator_CODE_PFT_ISRC2_SRC1;
-    TOP__Operator[TOP_pft_ii] = Operator_CODE_PFT_ISRCX_SRC1;
-    TOP__Operator[TOP_phi] = Operator_PSEUDO_PHI;
-    TOP__Operator[TOP_prgadd_i] = Operator_CODE_PRGADD_ISRC2_SRC1;
-    TOP__Operator[TOP_prgadd_ii] = Operator_CODE_PRGADD_ISRCX_SRC1;
-    TOP__Operator[TOP_prgins] = Operator_CODE_PRGINS;
-    TOP__Operator[TOP_prgset_i] = Operator_CODE_PRGSET_ISRC2_SRC1;
-    TOP__Operator[TOP_prgset_ii] = Operator_CODE_PRGSET_ISRCX_SRC1;
-    TOP__Operator[TOP_psi] = Operator_PSEUDO_PSI;
-    TOP__Operator[TOP_return] = Operator_MACRO_RETURN;
-    TOP__Operator[TOP_rfi] = Operator_CODE_RFI;
-    TOP__Operator[TOP_sbrk] = Operator_CODE_SBRK;
-    TOP__Operator[TOP_sh1add_i] = Operator_CODE_SH1ADD_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_sh1add_ii] = Operator_CODE_SH1ADD_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_sh1add_r] = Operator_CODE_SH1ADD_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_sh2add_i] = Operator_CODE_SH2ADD_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_sh2add_ii] = Operator_CODE_SH2ADD_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_sh2add_r] = Operator_CODE_SH2ADD_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_sh3add_i] = Operator_CODE_SH3ADD_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_sh3add_ii] = Operator_CODE_SH3ADD_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_sh3add_r] = Operator_CODE_SH3ADD_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_sh4add_i] = Operator_CODE_SH4ADD_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_sh4add_ii] = Operator_CODE_SH4ADD_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_sh4add_r] = Operator_CODE_SH4ADD_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_shl_i] = Operator_CODE_SHL_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_shl_ii] = Operator_CODE_SHL_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_shl_r] = Operator_CODE_SHL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_shr_i] = Operator_CODE_SHR_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_shr_ii] = Operator_CODE_SHR_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_shr_r] = Operator_CODE_SHR_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_shru_i] = Operator_CODE_SHRU_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_shru_ii] = Operator_CODE_SHRU_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_shru_r] = Operator_CODE_SHRU_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_slct_i] = Operator_CODE_SLCT_IDEST_SCOND_SRC1_ISRC2;
-    TOP__Operator[TOP_slct_ii] = Operator_CODE_SLCT_IDEST_SCOND_SRC1_ISRCX;
-    TOP__Operator[TOP_slct_r] = Operator_CODE_SLCT_DEST_SCOND_SRC1_SRC2;
-    TOP__Operator[TOP_slctf_i] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRC2;
-    TOP__Operator[TOP_slctf_ii] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRCX;
-    TOP__Operator[TOP_slctf_r] = Operator_CODE_SLCTF_DEST_SCOND_SRC1_SRC2;
-    TOP__Operator[TOP_spadjust] = Operator_MACRO_ADJUST;
-    TOP__Operator[TOP_stb_i] = Operator_CODE_STB_ISRC2_SRC1_SRC2;
-    TOP__Operator[TOP_stb_ii] = Operator_CODE_STB_ISRCX_SRC1_SRC2;
-    TOP__Operator[TOP_sth_i] = Operator_CODE_STH_ISRC2_SRC1_SRC2;
-    TOP__Operator[TOP_sth_ii] = Operator_CODE_STH_ISRCX_SRC1_SRC2;
-    TOP__Operator[TOP_stw_i] = Operator_CODE_STW_ISRC2_SRC1_SRC2;
-    TOP__Operator[TOP_stw_ii] = Operator_CODE_STW_ISRCX_SRC1_SRC2;
-    TOP__Operator[TOP_sub_i] = Operator_CODE_SUB_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_sub_ii] = Operator_CODE_SUB_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_sub_r] = Operator_CODE_SUB_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_sxtb_r] = Operator_CODE_SXTB_IDEST_SRC1;
-    TOP__Operator[TOP_sxth_r] = Operator_CODE_SXTH_IDEST_SRC1;
-    TOP__Operator[TOP_sync] = Operator_CODE_SYNC;
-    TOP__Operator[TOP_syscall] = Operator_CODE_SYSCALL;
-    TOP__Operator[TOP_xor_i] = Operator_CODE_XOR_IDEST_SRC1_ISRC2;
-    TOP__Operator[TOP_xor_ii] = Operator_CODE_XOR_IDEST_SRC1_ISRCX;
-    TOP__Operator[TOP_xor_r] = Operator_CODE_XOR_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_zxth_r] = Operator_CODE_ZXTH_IDEST_SRC1;
-    // initialize Operator__TOP;
-    for (int i = 0; i < Operator__; i++) Operator__TOP[i] = TOP_UNDEFINED;
-    for (int i = 0; i < TOP_UNDEFINED; i++) {
-      if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__);
-      else Operator__TOP[TOP__Operator[i]] = (TOP)i;
-    }
-    Operator__TOP[Operator_MACRO_GOTO] = TOP_goto;
-    // initialize IEC__Modifier
-    for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier__;
-    // initialize LC__Immediate
-    for (int i = 0; i < LC_MAX; i++) LC__Immediate[i] = Immediate__;
-    LC__Immediate[0] = Immediate_I_signed_32_overflow_dont; // HACK ALERT
-    LC__Immediate[LC_s32] = Immediate_I_signed_32_overflow_dont;
-    LC__Immediate[LC_s23] = Immediate_I_signed_23_overflow_signed;
-    LC__Immediate[LC_s9] = Immediate_I_signed_9_overflow_signed;
-    // initialize IRC__RegClass
-    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegClass[i] = RegClass__;
-    IRC__RegClass[ISA_REGISTER_CLASS_integer] = RegClass_GRC;
-    IRC__RegClass[ISA_REGISTER_CLASS_branch] = RegClass_BRC;
-    // initialize RegClass__IRC
-    for (int i = 0; i < RegClass__; i++) RegClass__IRC[i] = ISA_REGISTER_CLASS_UNDEFINED;
-    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) {
-      if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__);
-      else RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
-    }
-  }
-}
-
-// Finalization of the LAO, needs to be called once.
-void
-lao_fini() {
-  if (--lao_initialized == 0) {
-    // Release the PRO64/LAO interface pointers.
-    lao_optimize_PU_p = NULL;
-    CGIR_print_p = NULL;
-    LAO_Finalize();
-  }
 }
 
 
-/*----------------------- LAO Optimization Functions -------------------------*/
+/*----------------------- LAO Optimization Functions -----------------------*/
 
 // Low-level LAO_optimize entry point.
 static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
   if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
-  Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
+  //
+  // Get stack model
+  int stackmodel = 
+    Current_PU_Stack_Model == SMODEL_SMALL   ? 0 : 
+    Current_PU_Stack_Model == SMODEL_LARGE   ? 1 :
+    Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
+  //
+  // Open Interface
+  Interface_open(interface, ST_name(Get_Current_PU_ST()), 6,
       Configuration_RegionType, CG_LAO_regiontype,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_Pipelining, CG_LAO_pipelining,
       Configuration_Speculation, CG_LAO_speculation,
-      Configuration_LoopDep, CG_LAO_loopdep);
+      Configuration_LoopDep, CG_LAO_loopdep,
+      Configuration_StackModel, stackmodel);
   //
   // Create the LAO BasicBlocks.
   BB_List::iterator bb_iter;
@@ -1254,7 +1134,7 @@ make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *p
 }
 
 // Optimize the complete PU through the LAO.
-static bool
+bool
 lao_optimize_PU(unsigned lao_optimizations) {
 //cerr << "lao_optimize_PU(" << lao_optimizations << ")\n";
   bool result = false;
@@ -1295,6 +1175,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   return result;
 }
 
+#ifdef Is_True_On
 /*-------------------------- CGIR Print Functions ----------------------------*/
 
 typedef struct OP_list {
@@ -1312,7 +1193,7 @@ static OP_list * OP_list_new(OP_list *head)
   return head;
 }
 
-void
+static void
 CGIR_TN_print ( const TN *tn, FILE *file )
 {
   //
@@ -1385,7 +1266,7 @@ CGIR_TN_print ( const TN *tn, FILE *file )
   }
 }
 
-void
+static void
 CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
 {
   int i;
@@ -1419,13 +1300,13 @@ CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
     if (OP_Defs_TN(op, tn)) fprintf(file, "<def>");
   }
 
-  if (bb_scheduled)
+  //if (bb_scheduled)
     fprintf(file, "\tscycle = %d", OP_scycle(op));
 
   // TBD: Print other attributes on operations.
 }
 
-void
+static void
 CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
 {
   for (OP *op = OPS_first(ops) ; op; op = OP_next(op)) {
@@ -1436,7 +1317,7 @@ CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
   }
 }
 
-void
+static void
 CGIR_BB_print_header (BB *bp, FILE *file)
 {
   BBLIST *bl;
@@ -1593,14 +1474,14 @@ CGIR_BB_print_header (BB *bp, FILE *file)
   return;
 }
 
-void
+static void
 CGIR_BB_print (BB *bp, FILE *file)
 {
   CGIR_BB_print_header (bp, file);
   if (BB_first_op(bp))	CGIR_OPS_print (&bp->ops, BB_scheduled(bp), file);
 }
 
-void
+static void
 CGIR_Alias_print(FILE *file)
 {
   OP_list *memops = NULL, *elt1, *elt2;
@@ -1635,7 +1516,7 @@ CGIR_Alias_print(FILE *file)
   fprintf(file, "---------------- End Print Alias ----------------\n");
 }
 
-void
+static void
 CGIR_print( FILE *file)
 {
   BB *bp;
@@ -1650,3 +1531,4 @@ CGIR_print( FILE *file)
   fprintf(file, "-------- CFG End --------\n");
 }
 
+#endif // Is_True_On
