@@ -401,6 +401,37 @@ BB_Localize_Tns (BB *bb)
  *
  * ================================================================
  */
+// After replacing 2 preds with one, SSA information must be maintained
+// by replacing the phis instead of fixing them.
+static void
+BB_Recomp_Phis (BB *bb)
+{
+  OP *phi;
+
+  FOR_ALL_BB_PHI_OPs(bb, phi) {
+    BBLIST* edge;
+    TN *result[1];
+    UINT8 nopnds = OP_opnds(phi)-1;
+    TN *opnd[nopnds];
+    UINT8 pred_num = 0;
+
+    FOR_ALL_BB_PREDS (bb, edge) { 
+      BB *pred = BBLIST_item(edge);
+      for (UINT8 i = 0; i < OP_opnds(phi); i++) { 
+        if (Get_PHI_Predecessor (phi, i) == pred) {
+          opnd[pred_num] = OP_opnd(phi, i);
+          break;
+        }
+      }
+      pred_num++;
+    }
+
+    result[0] = OP_result(phi, 0);
+    OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+    OP_MAP_Set(phi_op_map, phi, new_phi);
+  }
+}
+
 static UINT8 
 Get_TN_Pos_in_PHI (OP *phi, BB *bb)
 {
@@ -1008,7 +1039,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   else
     prob1 = MAX (prob1, prob2);
 
-
   Unlink_Pred_Succ (bb1, joint_block);
   Unlink_Pred_Succ (bb1, else_block);
 
@@ -1037,33 +1067,18 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     
   BB *bb;
   FOR_ALL_BB_SET_members(succ_set, bb) {
-    OP *phi;
     if (bb == joint_block) {
-      FOR_ALL_BB_PHI_OPs(bb, phi) {
-        UINT8 old_pos = Get_TN_Pos_in_PHI (phi, bb2);
-
-        TN *result[1];
-        UINT8 j = 0;
-        UINT8 nopnds = OP_opnds(phi)-1;
-        TN *opnd[nopnds];
-
-        for (UINT8 i = 0; i < OP_opnds(phi); i++) {
-          if (i != old_pos)
-            opnd[j++] = OP_opnd(phi, i);
-        }
-        
-        result[0] = OP_result(phi, 0);
-        OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-        OP_MAP_Set(phi_op_map, phi, new_phi);
-      }
-      BB_Update_Phis(bb);  
+      BB_Recomp_Phis (bb);
+      BB_Update_Phis(bb);
     }
     else {
+      OP *phi;
       FOR_ALL_BB_PHI_OPs(bb, phi) {
         Change_PHI_Predecessor (phi, bb2, bb1);
       }
     }
   }
+
   GRA_LIVE_Compute_Liveness_For_BB(bb1);
 }
 
