@@ -36,7 +36,7 @@
 
 
 #include "math.h"   /* Must be before defs.h */
-#include "limits.h"
+#include "W_limits.h"
 #include "defs.h"
 #include "erglob.h"
 #include "tracing.h"
