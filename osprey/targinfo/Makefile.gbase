@@ -178,19 +178,19 @@ SO_TARGETS = st120.so
 endif
 
 ifeq ($(BUILD_TARGET), ST200)
-LDIRT += st200_si_gen$(BEXE)
+LDIRT += st220_si_gen$(BEXE) st230_si_gen$(BEXE) st231_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
-SO_TARGETS = libst200.a
+SO_TARGETS = libst220.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = st220.dll libtarginfo.dll
+SO_TARGETS = st220.dll st230.dll st231.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = st220.so
+SO_TARGETS = st220.so st230.so st231.so
 endif
 
 endif # ST200
@@ -916,29 +916,29 @@ ifeq ($(BUILD_TARGET), ST200)
 ti_si.o: ti_si.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-st220.o: st220.c ti_si.h
+st2%.o: st2%.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-st220.c: st200_si_gen$(BEXE)
-	$(SETPATH) $(RUN) ./st200_si_gen$(BEXE)
+st2%.c: st2%_si_gen$(BEXE)
+	$(SETPATH) $(RUN) ./$<
 
-st200_si_gen$(BEXE): st200_si.o si_gen.a build_topcode.o
+st2%_si_gen$(BEXE): st2%_si.o si_gen.a build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-st200_si.o: st200_si.cxx targ_isa_subset.h topcode.h si_gen.h
+st2%_si.o: st2%.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 #
 # shared library
 #
-st220.so: st220.o ti_si.o
-	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) st220.o ti_si.o -o $@
+st2%.so: st2%.o ti_si.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< ti_si.o -o $@
 
 #
 # windows dll (+ import library)
 #
-st220.dll st220_dll.a : st220.o  ti_si.o st220_DllMain.o 
-	$(CC) --shared -o st220.dll -Wl,--out-implib,st220_dll.a \
+st2%.dll st2%_dll.a : st2%.o  ti_si.o st2%_DllMain.o 
+	$(CC) --shared -o st2%.dll -Wl,--out-implib,st2%_dll.a \
 	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
 
 #
