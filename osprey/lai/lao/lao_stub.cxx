@@ -938,6 +938,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   }
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
+    Interface_setBody(interface, basicblock);
     nonexitBBs.push_back(*bb_iter);
     fprintf(TFile, "BB_body(%d)\n", BB_id(*bb_iter));
   }
@@ -963,9 +964,11 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   LoopInfo loopinfo = lao_makeLoopInfo(bodyBBs, cyclic);
   //
   result = LAO_Optimize(lao_actions);
-  if (result) Interface_updateCGIR(interface);
+  if (result) {
+    Interface_updateCGIR(interface);
+    if (getenv("PRINT")) CGIR_print();
+  }
   //
-  if (getenv("PRINT")) CGIR_print();
   Interface_close(interface);
   //
   return result;
@@ -1429,9 +1432,7 @@ CGIR_print()
     fprintf ( TFile,"\n" );
   }
   //
-  CGIR_Alias_print();
-  //
-  // Print live-analysis information
+  //CGIR_Alias_print();
   fprintf(TFile, "-------- CFG End --------\n");
 }
 
