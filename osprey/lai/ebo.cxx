@@ -4032,7 +4032,7 @@ EBO_Fold_Constant_Expression (
       }
     }
   
-  } else if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) {
+  } else if (tn1 != NULL && (TN_is_symbol(tn0) || TN_is_symbol(tn1))) {
     if (TN_is_symbol(tn0) && TN_is_symbol(tn1)) return FALSE;
     if (OP_iadd(op) || OP_isub(op)) {
       if (OP_iadd(op) && TN_is_symbol(tn1)) { TN *tmp = tn0; tn0 = tn1; tn1 = tmp; }
