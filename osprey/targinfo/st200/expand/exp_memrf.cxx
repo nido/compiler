@@ -632,6 +632,10 @@ Exp_Ldst (
     // address TNs
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
 
+#if 0
+    //
+    // These two are similar !!
+    //
     if (ST_class(sym) == CLASS_CONST) {
       //      char *cname = Get_TCON_name (ST_tcon(sym));
 
@@ -649,6 +653,7 @@ Exp_Ldst (
       is_lda = FALSE;	// so nothing done
     }
     else {
+#endif
 
       if (is_lda && base_ofst == 0) {
 	// want to stop at address (either that or add with 0)
@@ -669,7 +674,9 @@ Exp_Ldst (
 
       // add offset to address
       ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
+#if 0
     }
+#endif
   }
 
   if (is_store) {
