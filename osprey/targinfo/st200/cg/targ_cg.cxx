@@ -1654,8 +1654,9 @@ static void Move_Slot(
   TI_BUNDLE_stop_bit(bundle, from) = FALSE; 
 
   // Recompute slot mask after free
-  TI_BUNDLE_slot_mask(bundle) &= ~TI_BUNDLE_exec_property(bundle, from) << 
-    (ISA_TAG_SHIFT * (ISA_MAX_SLOTS - from - 1));
+  ISA_EXEC_MASK slot_mask = TI_BUNDLE_slot_mask(bundle);
+  slot_mask = TI_BUNDLE_Set_Slot_Mask_Property(slot_mask, from, 0);
+  Set_TI_BUNDLE_slot_mask (bundle, slot_mask);
 
   TI_BUNDLE_exec_property(bundle, from) = 0;
 

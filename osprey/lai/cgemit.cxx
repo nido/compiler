@@ -4140,7 +4140,11 @@ Assemble_Bundles(BB *bb)
   for (op = BB_first_op(bb);;) {
 #endif
     ISA_BUNDLE bundle;
+#ifdef TARG_ST
+    ISA_EXEC_MASK slot_mask;
+#else
     UINT64 slot_mask;
+#endif
     UINT stop_mask;
     INT slot;
     OP *slot_op[ISA_MAX_SLOTS];
@@ -4163,7 +4167,11 @@ Assemble_Bundles(BB *bb)
     /* Gather up the OPs for the bundle.
      */
     stop_mask = 0;
+#ifdef TARG_ST
+    memset(&slot_mask, 0, sizeof(slot_mask));
+#else
     slot_mask = 0;
+#endif
 #ifdef TARG_ST200
     for (slot = 0; op && !seen_end_group; op = OP_next(op)) {
 #else
@@ -4213,7 +4221,12 @@ Assemble_Bundles(BB *bb)
 		  ("multi-word inst extends past end of bundle in BB:%d.",
 		   BB_id(bb)));
         slot_op[slot++] = op;
+#ifdef TARG_ST
+	slot_mask = TI_BUNDLE_Set_Slot_Mask_Property(slot_mask, slot - 1,
+						     ISA_EXEC_Unit_Prop(OP_code(op)));
+#else
         slot_mask = (slot_mask << ISA_TAG_SHIFT) | ISA_EXEC_Unit_Prop(OP_code(op));
+#endif
         stop_mask = stop_mask << 1;
       }
       stop_mask |= (seen_end_group != 0);
@@ -4243,7 +4256,7 @@ Assemble_Bundles(BB *bb)
 #ifdef TARG_ST200
     // CL: recalibrate to ISA_MAX_SLOTS bundle length
     for(int w=slot; w<ISA_MAX_SLOTS; w++) {
-      slot_mask <<= ISA_TAG_SHIFT;
+      // [SC] removed. slot_mask <<= ISA_TAG_SHIFT; 
       stop_mask <<= 1;
     }
 #endif
@@ -4261,10 +4274,32 @@ Assemble_Bundles(BB *bb)
     /* Determine template.
      */
     for (ibundle = 0; ibundle < ISA_MAX_BUNDLES; ++ibundle) {
+#ifdef TARG_ST
+      UINT32 this_stop_mask = ISA_EXEC_Stop_Mask(ibundle);
+      BOOL match = (stop_mask == this_stop_mask);
+      if (match) {
+	INT i;
+	ISA_EXEC_MASK this_slot_mask = ISA_EXEC_Slot_Mask(ibundle);
+	for (i = 0; i < ISA_MAX_SLOTS; i++) {
+	  ISA_EXEC_UNIT_PROPERTY slot_prop, this_slot_prop;
+	  
+	  slot_prop = TI_BUNDLE_Get_Slot_Mask_Property(slot_mask, i);
+	  this_slot_prop = TI_BUNDLE_Get_Slot_Mask_Property(this_slot_mask, i);
+	  if ((slot_prop & this_slot_prop) != this_slot_prop) {
+	    match = FALSE;
+	    break;
+	  }
+	}
+      }
+      if (match) {
+	break;
+      }
+#else
       UINT64 this_slot_mask = ISA_EXEC_Slot_Mask(ibundle);
       UINT32 this_stop_mask = ISA_EXEC_Stop_Mask(ibundle);
       if (   (slot_mask & this_slot_mask) == this_slot_mask 
 	  && stop_mask == this_stop_mask) break;
+#endif
     }
 
     if (Trace_Inst) {
@@ -4284,9 +4319,15 @@ Assemble_Bundles(BB *bb)
       //          Print_OP_No_SrcLine (slot_op[slot]);
       //        }
       //      }
+#ifdef TARG_ST
+      FmtAssert(ibundle != ISA_MAX_BUNDLES,
+	       ("couldn't find bundle for slot mask=0x%0llx, stop mask=0x%x in BB:%d\n",
+	        slot_mask.v[0], stop_mask, BB_id(bb)));
+#else
       FmtAssert(ibundle != ISA_MAX_BUNDLES,
 	       ("couldn't find bundle for slot mask=0x%0llx, stop mask=0x%x in BB:%d\n",
 	        slot_mask, stop_mask, BB_id(bb)));
+#endif
     }
 
     /* Bundle prefix
@@ -4967,7 +5008,11 @@ Pad_BB_With_Noops (
 
   if (ISA_MAX_SLOTS > 1) {
     INT ibundle;
+#ifdef TARG_ST
+    ISA_EXEC_MASK slot_mask;
+#else
     UINT64 slot_mask;
+#endif
 
     /* Choose a bundle for the nops. For now we just pick the first
      * bundle without a stop bit. We could chose more smartly based
@@ -4983,9 +5028,13 @@ Pad_BB_With_Noops (
       INT slot = ISA_MAX_SLOTS - 1;
       do {
 	ISA_EXEC_UNIT_PROPERTY unit;
+#ifdef TARG_ST
+	unit = TI_BUNDLE_Get_Slot_Mask_Property (slot_mask, slot);
+#else
 	unit =  (ISA_EXEC_UNIT_PROPERTY)(
 		  (slot_mask >> (ISA_TAG_SHIFT * slot)) 
 		& ((1 << ISA_TAG_SHIFT) - 1));
+#endif
 	Exp_Noop(&new_ops);
 	new_op = OPS_last(&new_ops);
 	OP_scycle(new_op) = OP_scycle(BB_last_op(bb));
