@@ -1198,7 +1198,14 @@ CGTARG_Adjust_Latency (
   //         TOP_return
   for (i = 0; i < OP_results(pred_op); i++) {
     if (OP_result(pred_op,i) == RA_TN) {
+#if 0
       *latency += 3;
+#endif
+// CL: latency should be at least 3, not 3 more
+//     than already required
+      if (*latency < 3) {
+        *latency = 3;
+      }
     }
   }
 	
