@@ -113,6 +113,55 @@ ifneq ($(BUILD_COMPILER), EDG)
 	-@rm $(MKDEPFILE).tmp
 endif
 
+.PRECIOUS : %_DllMain.c %_DllMain.ho %.def %.exp %_dll.a
+
+%_DllMain.c :
+	@echo '#if defined(__CYGWIN32__) || defined(__MINGW32__)'        >  $@
+	@echo '#include <windows.h>'                                     >> $@
+	@echo 'BOOL APIENTRY DllMain (HINSTANCE hInst, DWORD reason,'    >> $@
+	@echo '                       LPVOID reserved /* Not used. */ )' >> $@
+	@echo '{'                                                        >> $@
+	@echo '  switch (reason)'                                        >> $@
+	@echo '  {'                                                      >> $@
+	@echo '   case DLL_PROCESS_ATTACH:'                              >> $@
+	@echo '    // Code to run when the DLL is loaded'                >> $@
+	@echo '    break;'                                               >> $@
+	@echo ' '                                                        >> $@
+	@echo '   case DLL_PROCESS_DETACH:'                              >> $@
+	@echo '    // Code to run when the DLL is freed'                 >> $@
+	@echo '    break;'                                               >> $@
+	@echo ' '                                                        >> $@
+	@echo '   case DLL_THREAD_ATTACH:'                               >> $@
+	@echo '    // Code to run when a thread is created during the'   >> $@
+	@echo '    // DLLs lifetime'                                     >> $@
+	@echo '    break;'                                               >> $@
+	@echo ' '                                                        >> $@
+	@echo '   case DLL_THREAD_DETACH:'                               >> $@
+	@echo '    // Code to run when a thread ends normally.'          >> $@
+	@echo '    break;'                                               >> $@
+	@echo '  }'                                                      >> $@
+	@echo '  return TRUE;'                                           >> $@
+	@echo '}'                                                        >> $@
+	@echo '#endif'                                                   >> $@
+
+%_DllMain.ho : %_DllMain.c
+	$(CC) $(CFLAGS) $< -c -o $@
+
+
+ifeq ($(DSO_MODE),DLL)
+LDIRT+=*_dll_entry.* *_DllMain.* *_tmp_c.a *_tmp_C.a *.exp *.def *.base *_dll.a
+endif
+
+#
+# A useful rule to generate an output of the preprocessor
+#
+ifeq ($(BUILD_COMPILER),GNU)
+%_err.i %_out.i : %.c
+	$(CC) $(CFLAGS) -v -dD -dI -E -H $< 2> $*_err.i 1> $*_out.i
+%_err.i %_out.i : %.cxx
+	$(CXX) $(CXXFLAGS) -v -dD -dI -E -H $< 2> $*_err.i 1> $*_out.i
+endif
+
 #
 # Include the make dependency file if it exists.
 #
