@@ -329,7 +329,7 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
   Temporary temporary = NULL;
   switch (WN_operator(home)) {
   case OPR_LDA: {
-    Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+    LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
     ST *var_st = WN_st(home);
     ST_IDX st_idx = ST_st_idx(*var_st);
     int64_t offset = WN_lda_offset(home);
@@ -402,25 +402,25 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
-	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	temporary = LAI_Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
-	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = LAI_Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
-	Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = LAI_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
       } else if (TN_is_enum(cgir_tn)) {
 	ISA_ENUM_CLASS_VALUE value = TN_enum(cgir_tn);
-	Modifier modifier = TARG_CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
+	LAI_Modifier modifier = TARG_CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
 	temporary = LAI_Interface_makeModifierTemporary(interface, cgir_tn, modifier, value);
       } else {
 	Is_True(FALSE, ("Unknown constant TN type."));
@@ -469,7 +469,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
       Is_True(clobberCount > 0, ("Empty register clobber list"));
     }
     // make the Operation
-    Operator OPERATOR = TARG_CGIR_TOP_to_Operator(OP_code(cgir_op));
+    LAI_Operator OPERATOR = TARG_CGIR_TOP_to_Operator(OP_code(cgir_op));
     operation = LAI_Interface_makeOperation(interface, cgir_op,
 	OPERATOR, argCount, arguments, resCount, results, clobberCount, clobbers);
     if (OP_volatile(cgir_op)) LAI_Interface_Operation_setVolatile(interface, operation);
@@ -512,7 +512,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
-    InstrMode instrmode = TARG_CGIR_IS_to_InstrMode((ISA_SUBSET)0);
+    LAI_InstrMode instrmode = TARG_CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     // make the BasicBlock
     basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode,
 	labelCount, labels, operationCount, operations);
@@ -637,7 +637,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		Is_True(pred_op == op, ("Error in lao_setDependences"));
 		Operation dest_operation = CGIR_OP_to_Operation(succ_op);		
 		LAI_Interface_LoopInfo_setDependenceArc(interface, loopinfo,
-		    orig_operation, dest_operation, latency, omega, (DependenceType)type);
+		    orig_operation, dest_operation, latency, omega, (LAI_DependenceType)type);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
@@ -704,7 +704,7 @@ CGIR_SYM_update(Symbol symbol, CGIR_SYM cgir_sym) {
 // Create a Dedicated CGIR_TN.
 static CGIR_TN
 CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  Register registre = LAI_Interface_Temporary_assigned(temporary);
+  LAI_Register registre = LAI_Interface_Temporary_assigned(temporary);
   INT size = 0;		// not used in Build_Dedicated_TN
   CLASS_REG_PAIR crp = TARG_Register_to_CGIR_CRP(registre);
   return Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), size);
@@ -713,7 +713,7 @@ CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
 // Create a PseudoReg CGIR_TN.
 static CGIR_TN
 CGIR_PseudoReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
+  LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
   ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
   INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
   INT size = (bsize + 7)/8;
@@ -723,8 +723,8 @@ CGIR_PseudoReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
 // Create an AssignReg CGIR_TN.
 static CGIR_TN
 CGIR_AssignReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
-  Register assigned = LAI_Interface_Temporary_assigned(temporary);
+  LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
+  LAI_Register assigned = LAI_Interface_Temporary_assigned(temporary);
   ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
   INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
   INT size = (bsize + 7)/8;
@@ -737,7 +737,7 @@ CGIR_AssignReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
 // Create a Modifier CGIR_TN.
 static CGIR_TN
 CGIR_Modifier_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  Modifier modifier = LAI_Interface_Temporary_modifier(temporary);
+  LAI_Modifier modifier = LAI_Interface_Temporary_modifier(temporary);
   FmtAssert(0, ("CGIR_Modifier_TN_create not implemented"));
   return NULL;
 }
@@ -745,7 +745,7 @@ CGIR_Modifier_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
 // Create an Absolute CGIR_TN.
 static CGIR_TN
 CGIR_Absolute_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  Immediate immediate = LAI_Interface_Temporary_immediate(temporary);
+  LAI_Immediate immediate = LAI_Interface_Temporary_immediate(temporary);
   int64_t value = LAI_Interface_Temporary_value(temporary);
   INT size = (value >= (int64_t)0x80000000 && 
 	      value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
@@ -773,11 +773,21 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
   // - that's all
   //
   // Temporary that were assigned
+  if (TN_is_register(cgir_tn)) {
+    fprintf(TFile, "Updating TN%d: ", TN_number(cgir_tn));
+    Print_TN(cgir_tn, TRUE);
+    fprintf(TFile, "\n");
+  }
   if (!LAI_Interface_Temporary_isDedicated(temporary) &&
       LAI_Interface_Temporary_isAssignReg(temporary)) {
     CLASS_REG_PAIR cgir_crp = 
       TARG_Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
     Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
+    fprintf(TFile, "from Register %d: ", LAI_Interface_Temporary_assigned(temporary));
+    fprintf(TFile, "into TN%d (reg %d): ", TN_number(cgir_tn), CLASS_REG_PAIR_reg(cgir_crp));
+    Print_TN(cgir_tn, TRUE);
+    fprintf(TFile, "\n");
+    
   }
 }
 
@@ -786,7 +796,7 @@ static CGIR_OP
 CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
   int iteration = LAI_Interface_Operation_iteration(operation);
   int issueDate = LAI_Interface_Operation_issueDate(operation);
-  Operator opr = LAI_Interface_Operation_operator(operation);
+  LAI_Operator opr = LAI_Interface_Operation_operator(operation);
   int argCount = 0, resCount = 0;
   TOP top = TARG_Operator_to_CGIR_TOP(opr);
   for (argCount = 0; arguments[argCount] != NULL; argCount++);
@@ -842,7 +852,7 @@ static void
 CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[], int unrolled) {
   int iteration = LAI_Interface_Operation_iteration(operation);
   int issueDate = LAI_Interface_Operation_issueDate(operation);
-  Operator opr = LAI_Interface_Operation_operator(operation);
+  LAI_Operator opr = LAI_Interface_Operation_operator(operation);
   BB *bb = OP_bb(cgir_op);
   if (bb != NULL) BB_Remove_Op(bb, cgir_op);
   int argCount = 0, resCount = 0;
