@@ -318,7 +318,7 @@ Composed_Align_Type (
 
   *alignment =	new_align;
   *partials =	MTYPE_alignment(mtype) / new_align;
-  //  return Mtype_AlignmentClass(new_align, (MTYPE_type_class(mtype));
+ //  return Mtype_AlignmentClass(new_align, (MTYPE_type_class(mtype));
   return Mtype_AlignmentClass(new_align, MTYPE_CLASS_UNSIGNED_INTEGER );
 }
 
@@ -424,7 +424,15 @@ Expand_Composed_Load (
   TN		*tmpV[8];
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
+
+  // (cbr) loading unaligned floats ? can't have F4U1 load
+  if (!MTYPE_is_class_integer(rtype)) {
+    rtype = MTYPE_U4;
+  }
+
   new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
+
+
   // [CG] //top = Pick_Load_Imm_Instruction (rtype, new_desc);
 
   Is_True(nLoads > 1, ("Expand_Composed_Load with nLoads == %d", nLoads));
@@ -1030,6 +1038,11 @@ Expand_Lda_Label (
   OPS *ops
 )
 {
+#if 0
+  Print_TN (dest, TRUE );
+  Print_TN (lab, TRUE );
+#endif
+
   // [CG]: On the ST200 base model, address of a label
   // is the absolute address
   Build_OP (TOP_mov_i, dest, lab, ops);
