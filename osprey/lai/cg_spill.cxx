@@ -1003,6 +1003,13 @@ CGSPILL_Insert_Ops_Before (BB *bb, OP *point, OPS *ops)
      * change the point to be the SP adjustment OP.
      */
     OP *first_copy = Find_First_Copy(bb);
+#ifdef TARG_ST
+    // FdF 20041206: Basic blocks marked EXIT&CALL (tail call or
+    // noreturn call) may not have an spadjust.
+    if (first_copy == NULL)
+      FmtAssert (BB_call(bb), ("Exit BB with no sp_adj_op"));
+    else
+#endif
     if (OP_Follows(point, first_copy)) point = first_copy;
   }
   else {
