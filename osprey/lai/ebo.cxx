@@ -974,6 +974,9 @@ find_index_and_offset (
   }
 }
 
+#ifndef TARG_ST
+  // [CG]: Obsolete. This functionality is handled by EBO_Memory_Sequence
+
 /* =======================================================================
  *   merge_memory_offsets
  * =======================================================================
@@ -1148,6 +1151,7 @@ merge_memory_offsets (
   }
 
 }
+#endif
 
 #ifdef TARG_ST
 
@@ -2163,7 +2167,6 @@ EBO_delete_duplicate_op (
  *    EBO_Memory_Sequence
  *
  *    Look for sequence such as add/(load|store).
- *    Modifies the operation directly.
  * =====================================================================
  */
 BOOL
@@ -2183,6 +2186,9 @@ EBO_Memory_Sequence (
   TN *tn_base;
   TN *tn_offset;
   INT64 offset_val;
+  ST *offset_sym = NULL;
+  INT32 offset_relocs;
+  
 
   OP *pred_op;
   TOP pred_opcode;
@@ -2209,9 +2215,15 @@ EBO_Memory_Sequence (
   tn_base = opnd_tn[l0_base_idx];
   tn_offset = opnd_tn[l0_offset_idx];
 
-  if (!TN_has_value(tn_offset)) return FALSE;
-  offset_val = TN_value(tn_offset);
+  if (TOP_opnd_use_bits(opcode, l0_base_idx) != TOP_opnd_use_bits(opcode, l0_offset_idx)) return FALSE;
 
+  if (TN_Has_Value(tn_offset) || TN_is_symbol(tn_offset)) {
+    offset_val = TN_is_symbol(tn_offset)? TN_offset(tn_offset): TN_Value(tn_offset);
+    offset_val = sext(offset_val, TOP_opnd_use_bits(opcode, l0_offset_idx));
+    offset_sym = TN_is_symbol(tn_offset)? TN_var(tn_offset): NULL;
+    offset_relocs = TN_is_symbol(tn_offset)? TN_relocs(tn_offset): 0;
+  } else return FALSE;
+  
   tninfo = opnd_tninfo[l0_base_idx];
   if (tninfo == NULL) return FALSE;
   pred_op = tninfo->in_op;
@@ -2231,36 +2243,72 @@ EBO_Memory_Sequence (
   TN *ptn1 = OP_opnd(pred_op, ptn1_idx);
   EBO_TN_INFO *ptn0_tninfo;
   INT64 pred_val;
+  ST *pred_sym = NULL;
+  INT32 pred_relocs;
 
-  if (TN_Has_Value(ptn1)) {
-    pred_val = TN_Value(ptn1);
+  if (TOP_opnd_use_bits(pred_opcode, ptn1_idx) != TOP_opnd_use_bits(pred_opcode, ptn0_idx)) return FALSE;
+  if (TOP_opnd_use_bits(pred_opcode, ptn1_idx) != TOP_opnd_use_bits(opcode, l0_offset_idx)) return FALSE;
+      
+  if (TN_Has_Value(ptn1) || TN_is_symbol(ptn1)) {
+    pred_val = TN_is_symbol(ptn1)? TN_offset(ptn1): TN_Value(ptn1);
+    pred_val = sext(pred_val, TOP_opnd_use_bits(pred_opcode, ptn1_idx));
+    pred_sym = TN_is_symbol(ptn1)? TN_var(ptn1): NULL;
+    pred_relocs = TN_is_symbol(ptn1)? TN_relocs(ptn1): 0;
     ptn0_tninfo = pred_opinfo->actual_opnd[ptn0_idx];
-  } else if (TN_Has_Value(ptn0) && OP_iadd(pred_op)) {
-    pred_val = TN_Value(ptn0);
+  } else if (OP_iadd(pred_op) && (TN_Has_Value(ptn0) || TN_is_symbol(ptn0))) {
+    pred_val = TN_is_symbol(ptn0)? TN_offset(ptn0): TN_Value(ptn0);
+    pred_val = sext(pred_val, TOP_opnd_use_bits(pred_opcode, ptn0_idx));
+    pred_sym = TN_is_symbol(ptn0)? TN_var(ptn0): NULL;
+    pred_relocs = TN_is_symbol(ptn0)? TN_relocs(ptn0): 0;
     ptn0 = ptn1;
     ptn0_tninfo = pred_opinfo->actual_opnd[ptn1_idx];
   } else return FALSE;
   
+  // [CG]: It seems that we can't modify symbol offsets
+  // as Base_Symbol_And_Offset_For_Addressing will change
+  if (pred_sym != NULL || offset_sym != NULL) return FALSE;
+
   if (!EBO_tn_available (bb, ptn0_tninfo)) return FALSE;
 
   TOP new_opcode;
   OP *new_op;
   UINT64 new_offset_val;
+  ST *new_sym = NULL;
+  INT32 new_relocs;
+  TN *new_offset_tn;
 
+  if (pred_sym != NULL && offset_sym != NULL) return FALSE;
+  if (offset_sym != NULL) {
+    new_sym = offset_sym;
+    new_relocs = offset_relocs;
+  }
+  if (pred_sym != NULL) {
+    new_sym = pred_sym;
+    new_relocs = pred_relocs;
+  }
   if (OP_iadd(pred_op)) 
     new_offset_val = offset_val + pred_val;
-  else if (OP_isub(pred_op))
+  else if (OP_isub(pred_op) && pred_sym == NULL)
     new_offset_val = offset_val - pred_val;
-  else FmtAssert(0,("unexpected opcode"));
+  else return FALSE;
+
+  new_offset_val = sext(new_offset_val, TN_size(OP_result(pred_op, 0))*8);
   
-  new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, new_offset_val);
+  if (new_sym != NULL) {
+    new_offset_tn = Gen_Symbol_TN(new_sym, new_offset_val, new_relocs);
+    new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, 0xFFFFFFFF);
+  } else {
+    new_offset_tn = Gen_Literal_TN(new_offset_val, TN_size(ptn0));
+    new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, new_offset_val);
+  }
+
   
-  /* Ensure that the opcode is not changed by the new immediate. */
-  if (new_opcode == opcode) {
+  if (new_opcode != TOP_UNDEFINED) {
     new_op = Dup_OP(op);
+    OP_code(new_op) = new_opcode;
     OP_srcpos(new_op) = OP_srcpos(op);
     Set_OP_opnd (new_op, l0_base_idx, ptn0);
-    Set_OP_opnd (new_op, l0_offset_idx, Gen_Literal_TN(new_offset_val, TN_size(ptn0)));
+    Set_OP_opnd (new_op, l0_offset_idx, new_offset_tn);
     if (OP_memory(op)) Copy_WN_For_Memory_OP (new_op, op);
     if (EBO_in_loop) {
       EBO_OP_omega(new_op, ptn0, ptn0_tninfo);
@@ -3558,7 +3606,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
 	OP_unrolling(op) &&
 	(OP_iadd(op) || OP_isub(op))) {
 
-      new_const_val = (pred_val + const_val << 64-TN_size(tnr)*8) >> 64-TN_size(tnr)*8;
+      new_const_val = sext(pred_val + const_val,  TN_size(tnr)*8);
       new_opcode = TOP_opnd_immediate_variant(opcode, l0_opnd2_idx, new_const_val);
 
       if (new_opcode != TOP_UNDEFINED) {
@@ -4029,19 +4077,20 @@ find_duplicate_mem_op (BB *bb,
     fprintf(TFile,"%sEnter find_duplicate_mem_op\n",EBO_trace_pfx);
   }
   
-  if (!(OP_load(op) || OP_store(op) || OP_prefetch(op))) return FALSE;
+  if (!(OP_load(op) || OP_store(op))) return FALSE;
 
  /* Determine the indexes of the address components of this memory op. */
   INT succ_base_idx = TOP_Find_Operand_Use(OP_code(op),OU_base);
   INT succ_offset_idx = TOP_Find_Operand_Use(OP_code(op),OU_offset);
 
+#ifndef TARG_ST
+  // [CG]: Obsolete
   if ((succ_base_idx >= 0) && (succ_offset_idx >= 0) &&
       TN_Is_Constant(opnd_tn[succ_offset_idx])) {
    /* Look for merge-able expressions. */
     merge_memory_offsets (op, succ_base_idx, opnd_tn, actual_tninfo, opnd_tninfo);
   }
-
-  if (!(OP_load(op) || OP_store(op))) return FALSE;
+#endif
 
  /* Determine the address components of this memory op. */
   TN *succ_base_tn = (succ_base_idx >= 0) ? opnd_tn[succ_base_idx] : NULL;
@@ -4801,6 +4850,10 @@ Find_BB_TNs (BB *bb)
     FmtAssert(num_opnds <= max_opnds, ("dynamic array allocation was too small!"));
 
 #ifdef TARG_ST
+    // [CG]: Don't understand what that's for. Always set no_barriers_encountered to false.
+    no_barriers_encountered = FALSE;
+#else
+#ifdef TARG_ST
     if (OP_Is_Barrier(op) || OP_access_reg_bank(op)) {
 #else
     if (CGTARG_Is_OP_Barrier(op) || OP_access_reg_bank(op)) {
@@ -4823,6 +4876,7 @@ Find_BB_TNs (BB *bb)
         no_barriers_encountered = FALSE;
       }
     }
+#endif
 
 #ifdef TARG_ST200
     if (OP_code(op) == TOP_asm) {
