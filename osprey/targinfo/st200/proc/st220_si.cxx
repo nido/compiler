@@ -518,6 +518,7 @@ main (int argc, char *argv[])
 		 TOP_goto, 
 		 TOP_igoto, 
 		 TOP_return, 
+		 TOP_syncins, 
 		 TOP_UNDEFINED); 
 
   Any_Operand_Access_Time(1); 

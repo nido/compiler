@@ -1427,7 +1427,7 @@ Expand__st220syncins(
  OPS* ops
 )
 {
-    /* NA in isa_operands.cxx Build_OP (	TOP_syncins,	ops) ; */
+  Build_OP (	TOP_syncins,	ops) ;
 } /* Expand__st220syncins */
 
 /*
