@@ -4941,7 +4941,9 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
 	WN *pragma = stmt;
 	if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
-	  enum LOOPDEP loopdep;
+	    // [HK] using typedef-name  after `enum' is no more allowed in gcc-3-4-0
+//  	  enum LOOPDEP loopdep;
+	  LOOPDEP loopdep;
 	  if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
 	  else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
 	  else loopdep = LOOPDEP_PARALLEL;
