@@ -152,10 +152,6 @@ ifeq ($(DSO_MODE),DLL)
 LDIRT+=*_dll_entry.* *_DllMain.* *_tmp_c.a *_tmp_C.a *.exp *.def *.base *_dll.a
 endif
 
-ifeq ($(HOST_OS),CYGWIN_NT)
-LDIRT+=config_target.h
-endif
-
 #
 # A useful rule to generate an output of the preprocessor
 #

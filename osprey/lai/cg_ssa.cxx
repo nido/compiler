@@ -8,7 +8,7 @@
 #include "cxx_memory.h"
 #include "glob.h"
 #include "bitset.h"
-#ifndef __CYGWIN__
+#ifndef TARG_ST 
 #include "config_targ.h"
 #else
 #include "config_target.h"

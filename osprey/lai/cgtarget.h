@@ -527,7 +527,7 @@
 #include "cg_flags.h"
 #include "cg_dep_graph.h"
 #include "cg_vector.h"
-#ifdef __CYGWIN__
+#ifdef TARG_ST 
 #include "config_target.h"
 #else
 #include "config_targ.h"

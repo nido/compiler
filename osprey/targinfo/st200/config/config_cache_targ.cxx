@@ -57,7 +57,7 @@ static const char source_file[] = __FILE__;
 #include "errors.h"
 #include "config_cache.h"
 #include "config_lno.h"
-#ifdef __CYGWIN__
+#ifdef TARG_ST 
 #include "config_target.h"
 #else
 #include "config_targ.h"

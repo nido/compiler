@@ -35,7 +35,7 @@
 #include "defs.h"
 #include "stab.h"
 #include "stblock.h"
-#ifdef __CYGWIN__
+#ifdef TARG_ST 
 #include "config_target.h"
 #else
 #include "config_targ.h"

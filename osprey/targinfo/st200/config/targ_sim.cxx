@@ -52,7 +52,7 @@
 #include "errors.h"
 #include "erglob.h"
 #include "stab.h"
-#ifdef __CYGWIN__
+#ifdef TARG_ST 
 #include "config_target.h"
 #else
 #include "config_targ.h"
