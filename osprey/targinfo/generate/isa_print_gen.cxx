@@ -82,6 +82,7 @@ struct list_info {
   isa_print_type *type;
   unsigned char	 args;  // Number of sprintf arguments
   unsigned char	 arg[MAX_LISTING_OPERANDS]; 
+  char *fmt[MAX_LISTING_OPERANDS]; // this operand format in listing
   int index;		
   bool have_name;
 };
@@ -248,7 +249,7 @@ void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
 }
 
 /////////////////////////////////////
-void Name (void)
+void Name (char *fmt)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -259,12 +260,13 @@ void Name (void)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = NAME;
+  current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
   current_print_desc->have_name = true;
 }
 
 /////////////////////////////////////
-void Operand (int operand_index)
+void Operand (int operand_index, char *fmt)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -280,11 +282,12 @@ void Operand (int operand_index)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = OPND+operand_index;
+  current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
 }
 
 /////////////////////////////////////
-void Result (int result_index)
+void Result (int result_index, char *fmt)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -300,6 +303,7 @@ void Result (int result_index)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = RESULT+result_index;
+  current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
 }
 
@@ -383,7 +387,8 @@ void ISA_Print_End(void)
   fprintf(hfile, "\ntypedef struct {\n"
 		"  const char *format;\n"
   		"  mUINT8 comp[%d];\n" 
-		"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS);
+  		"  const char *fmt[%d];\n" 
+		"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS,MAX_LISTING_OPERANDS);
 
   fprintf(hfile, "\nextern const ISA_PRINT_INFO ISA_PRINT_info[%d];\n",
 						list_index + 1);
@@ -402,6 +407,9 @@ void ISA_Print_End(void)
   	LISTING_INFO curr_type = *isi;
 	sprintf (buf, "\"%s\",", curr_type->type->format_string);
 	fprintf (cfile, isa_print_format_format, buf);
+
+	// printout component types
+	fprintf (cfile, "\n%17s {", "");
 	for (int i = 0; i < curr_type->args; i++) {
 	    fprintf (cfile, isa_print_args_format,
 			Print_Name(curr_type->arg[i]),
@@ -411,10 +419,27 @@ void ISA_Print_End(void)
 	}
 	fprintf (cfile, isa_print_args_format, Print_Name(END), space);
 	fprintf (cfile, "},");
+	/*
 	fprintf (cfile, isa_print_type_format, 
 			curr_type->type->name,
 			curr_type->args);
+	*/
 	fprintf (cfile, "\n");
+
+	// printout component formats:
+	fprintf (cfile, "%17s {", "");
+	for (int i = 0; i < curr_type->args-1; i++) {
+	  fprintf (cfile, " \"%s\",", curr_type->fmt[i]);
+	  fprintf (cfile, isa_print_type_format, curr_type->type->name, i);
+	  fprintf (cfile, "\n%19s", "");
+	}
+	fprintf (cfile, " \"%s\" ", curr_type->fmt[curr_type->args-1]);
+	fprintf (cfile, "}");
+	fprintf (cfile, isa_print_type_format, 
+			curr_type->type->name,
+			curr_type->args-1);
+	fprintf (cfile, "\n  },\n");
+
   }
   fprintf (cfile, "};\n");
 
@@ -454,6 +479,11 @@ void ISA_Print_End(void)
 		 "  return info->comp[index];\n"
 		 "}\n");
 
+  fprintf(hfile, "\ninline const char* ISA_PRINT_INFO_Fmt(const ISA_PRINT_INFO *info, INT index)\n"
+		 "{\n"
+		 "  return info->fmt[index];\n"
+		 "}\n");
+
   if (asmname) {
     fprintf(cfile, "\nconst char * const ISA_PRINT_asmname[] = {\n");
     for (top = 0; top < TOP_count; ++top) {
@@ -476,6 +506,9 @@ void ISA_Print_End(void)
 		   "}\n");
   }
 
+  //
+  // Emit function ISA_PRINT_Operand_Is_Part_Of_Name:
+  //
   fprintf(hfile, "\nextern BOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex);\n");
   fprintf(efile, "ISA_PRINT_Operand_Is_Part_Of_Name\n");
   fprintf(cfile, "\nBOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex)\n"
@@ -509,6 +542,32 @@ void ISA_Print_End(void)
   		"  }\n"
   		"  return 0;\n"
 		"}\n");
+
+  //
+  // Emit function ISA_PRINT_Operand_Format:
+  //
+  fprintf(hfile, "\nextern const char* ISA_PRINT_Operand_Format(TOP topcode, INT opindex);\n");
+  fprintf(efile, "ISA_PRINT_Operand_Format\n");
+  fprintf(cfile, "\n/* ====================================================================\n"
+	         " *  ISA_PRINT_Format_Opnd\n"
+	         " * ====================================================================\n"
+	         " */\n"
+	  "const char* ISA_PRINT_Operand_Format(TOP topcode, INT opindex)\n"
+	  "{\n"
+	  "  INT i;\n"
+	  "  INT comp;\n"
+	  "  const ISA_PRINT_INFO *pinfo = ISA_PRINT_Info(topcode);\n"
+	  "\n"
+	  "  i = 0;\n"
+	  "  do {\n"
+	  "    comp = ISA_PRINT_INFO_Comp(pinfo, i);\n"
+	  "    if (ISA_PRINT_COMP_opnd <= comp && comp < ISA_PRINT_COMP_result) {\n"
+	  "	 if ((comp - ISA_PRINT_COMP_opnd) == opindex) {\n"
+	  "        return ISA_PRINT_INFO_Fmt(pinfo, i);\n"
+	  "      }\n"
+	  "    }\n"
+	  "  } while (++i, comp != ISA_PRINT_COMP_end);\n"
+	  "}\n");
 
   Emit_Footer (hfile);
 }

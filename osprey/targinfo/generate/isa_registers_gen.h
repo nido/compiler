@@ -125,6 +125,7 @@ typedef struct isa_register_class *ISA_REGISTER_CLASS;
 void ISA_Registers_Begin( const char* archname );
 ISA_REGISTER_CLASS ISA_Register_Class_Create( const char *name,
 					      int bit_size,
+					      bool is_ptr,
 					      bool can_store,
 					      bool multiple_save );
 void ISA_Register_Set( ISA_REGISTER_CLASS rclass,

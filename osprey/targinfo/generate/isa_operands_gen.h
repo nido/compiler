@@ -154,6 +154,8 @@ typedef UINT32 OPERANDS_GROUP_OPERAND_USES;
 extern OPERAND_USE_TYPE base;
 extern OPERAND_USE_TYPE offset;
 extern OPERAND_USE_TYPE storeval;
+extern OPERAND_USE_TYPE implicit;
+extern OPERAND_USE_TYPE uniq_res;
 
 // External functions:
 
@@ -181,7 +183,10 @@ extern void Operand (int operand_index,
 		     OPERAND_VALUE_TYPE operand_type,
 		     OPERAND_USE_TYPE operand_use = 0);
 extern void Relocatable (int operand_index);
-extern void Result (int result_index, OPERAND_VALUE_TYPE result_type);
+extern void Result (int result_index, 
+		    OPERAND_VALUE_TYPE result_type,
+		    OPERAND_USE_TYPE result_use = 0);
+extern void Same_Res (int operand_index);
 extern void ISA_Operands_End(void);
 
 #ifdef __cplusplus

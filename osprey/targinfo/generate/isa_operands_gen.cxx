@@ -87,6 +87,7 @@ typedef struct operands_group {
   //  vector <OPERAND_USE_TYPE> res_use;
   vector <OPERANDS_GROUP_OPERAND_USES> opnd_use;
   vector <OPERANDS_GROUP_OPERAND_USES> res_use;
+  vector <mUINT8> same_res;
   bool is_load;
   bool is_store;
   bool base;
@@ -111,6 +112,8 @@ static int max_results = 0;
 static int max_valtypes = 0;
 static int max_groups = 0;
 static int max_uses = 0;
+
+static int cur_res_index;
 
 /* The generated interface description:
  */
@@ -265,6 +268,8 @@ static const char * const interface[] = {
 OPERAND_USE_TYPE base;
 OPERAND_USE_TYPE offset;
 OPERAND_USE_TYPE storeval;
+OPERAND_USE_TYPE implicit;
+OPERAND_USE_TYPE uniq_res;
 
 /////////////////////////////////////
 void ISA_Operands_Begin( const char* /* name */ )
@@ -293,6 +298,18 @@ void ISA_Operands_Begin( const char* /* name */ )
   storeval->name = "storeval";
   storeval->index = max_uses++;
   all_use_types.push_back(storeval);
+
+  // 4. implicit
+  implicit = new operand_use_type;
+  implicit->name = "implicit";
+  implicit->index = max_uses++;
+  all_use_types.push_back(implicit);
+
+  // 5. uniq_res
+  uniq_res = new operand_use_type;
+  uniq_res->name = "uniq_res";
+  uniq_res->index = max_uses++;
+  all_use_types.push_back(uniq_res);
 
   return;
 }
@@ -415,7 +432,9 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 {
   if (!strcmp(name, "base") ||
       !strcmp(name, "offset") ||
-      !strcmp(name, "storeval")) {
+      !strcmp(name, "storeval") ||
+      !strcmp(name, "implicit") ||
+      !strcmp(name, "uniq_res")) {
     fprintf(stderr, "### Error: built-in operand use %s redefined.\n",
 		    name);
     exit(EXIT_FAILURE);
@@ -453,6 +472,7 @@ void Instruction_Group( const char *name, ... )
   //  oper_group->res_use = vector<OPERAND_USE_TYPE>();
   oper_group->opnd_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->res_use = vector<OPERANDS_GROUP_OPERAND_USES>();
+  oper_group->same_res = vector<mUINT8>();
   oper_group->is_load = false;
   oper_group->is_store = false;
   oper_group->base = false;
@@ -490,6 +510,8 @@ void Instruction_Group( const char *name, ... )
   va_end(ap);
 
   all_groups.push_back (oper_group);
+
+  cur_res_index = -1;
 }
 
 /* ====================================================================
@@ -518,6 +540,8 @@ void Operand (int operand_index,
 				    (OPERANDS_GROUP_OPERAND_USES)NULL);
   }
 
+  // check if this is not the first call to this routine that this
+  // operand type is consistent.
   if (cur_oper_group->operands[operand_index] != NULL) {
     if (cur_oper_group->operands[operand_index] != operand_type) {
       fprintf(stderr, "### Error: %s has more than one operand type\n",
@@ -538,11 +562,11 @@ void Operand (int operand_index,
   }
 }
 
-/////////////////////////////////////
+/* ====================================================================
+ *   Relocatable
+ * ====================================================================
+ */
 void Relocatable (int operand_index)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
 {
   if (cur_oper_group->relocatable_opnd >= 0) {
     fprintf(stderr, "### Error: %s has more than one relocatable operand\n",
@@ -552,11 +576,18 @@ void Relocatable (int operand_index)
   cur_oper_group->relocatable_opnd = operand_index;
 }
 
-/////////////////////////////////////
-void Result (int result_index, OPERAND_VALUE_TYPE result_type)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
+/* ====================================================================
+ *   Result
+ *
+ *   Arthur: allow several calls to this for the same result
+ *           specify result use, eg. implicit, uniq_res
+ * ====================================================================
+ */
+void Result (
+  int result_index, 
+  OPERAND_VALUE_TYPE result_type,
+  OPERAND_USE_TYPE result_use
+)
 {
   if (result_index > max_results) max_results = result_index;
 
@@ -572,9 +603,51 @@ void Result (int result_index, OPERAND_VALUE_TYPE result_type)
     cur_oper_group->res_use.insert(cur_oper_group->res_use.end(),
 				    incr,
 				    (OPERANDS_GROUP_OPERAND_USES)NULL);
+    cur_oper_group->same_res.insert(cur_oper_group->same_res.end(),
+				    incr,
+				    (mUINT8)NULL);
   }
-  cur_oper_group->results[result_index] = result_type;
-  cur_oper_group->res_use[result_index] = (OPERANDS_GROUP_OPERAND_USES)NULL;
+
+  // check if this is not the first call to this routine that this
+  // result type is consistent.
+  if (cur_oper_group->results[result_index] != NULL) {
+    if (cur_oper_group->results[result_index] != result_type) {
+      fprintf(stderr, "### Error: %s has more than one result type\n",
+		    cur_oper_group->name);
+      exit(EXIT_FAILURE);
+    }
+  }
+  else {
+    cur_oper_group->results[result_index] = result_type;
+  }
+
+  // Add this result use to the set of this operand uses
+  if (result_use != (OPERAND_USE_TYPE)NULL) {
+    cur_oper_group->res_use[result_index] |= 1 << (result_use->index + 1);
+  }
+
+  //  cur_oper_group->res_use[result_index] = (OPERANDS_GROUP_OPERAND_USES)NULL;
+  cur_res_index = result_index;
+}
+
+/* ====================================================================
+ *   Same_Res
+ * ====================================================================
+ */
+void Same_Res (int operand_index)
+{
+  if (cur_res_index < 0) {
+    fprintf(stderr, "### Error: Same_Res() called before Result() for %s\n",
+		                     cur_oper_group->name);
+    exit(EXIT_FAILURE);
+  }
+
+  if (cur_oper_group->same_res[cur_res_index] > 0) {
+    fprintf(stderr, "### Error: result %d of %s has more than one same_res\n",
+		    cur_res_index, cur_oper_group->name);
+    exit(EXIT_FAILURE);
+  }
+  cur_oper_group->same_res[cur_res_index] = operand_index+1;
 }
 
 
@@ -594,6 +667,7 @@ void ISA_Operands_End(void)
   int last_literal = -1;
   int flag_mask = 0;
   unsigned long long use_mask = 0;
+  unsigned long long def_mask = 0;
   const char *max_operands_name = "ISA_OPERAND_max_operands";
   const char *max_results_name = "ISA_OPERAND_max_results";
   enum {
@@ -709,8 +783,11 @@ void ISA_Operands_End(void)
 		  "  mUINT16 ouse[%s];\n"
 		  "  mUINT8 results;\n"
 		  "  mUINT8 result[%s];\n"
+		  "  mUINT16 ruse[%s];\n"
+		  "  mINT8 same_res[%s];\n"
 		  "} ISA_OPERAND_INFO;\n",
-		  max_operands_name, max_operands_name, max_results_name);
+	          max_operands_name, max_operands_name, 
+	          max_results_name, max_results_name, max_results_name);
   fprintf(efile, "ISA_OPERAND_info\n");
 
   fprintf(cfile, "\nconst ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
@@ -720,6 +797,8 @@ void ISA_Operands_End(void)
     vector<OPERAND_VALUE_TYPE>::iterator oper_iter;
     //    vector<OPERAND_USE_TYPE>::iterator use_iter;
     vector<OPERANDS_GROUP_OPERAND_USES>::iterator use_iter;
+    vector<mUINT8>::iterator idx_iter;
+
     OPERANDS_GROUP oper_group = *ogi;
 
     pos = fprintf(cfile, "  { %d, {", oper_group->opnd_count);
@@ -747,7 +826,10 @@ void ISA_Operands_End(void)
       }
       pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
     }
+#if 0
     fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
+#endif
+    fprintf(cfile, " },\n");
 
     pos = fprintf(cfile, "       {");
     for (i = 0, use_iter = oper_group->opnd_use.begin(); 
@@ -784,7 +866,10 @@ void ISA_Operands_End(void)
       //      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", use_type_index);
       pos += fprintf(cfile, "%s0x%08x", i == 0 ? " " : ", ", use_type);
     }
+#if 0
     fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
+#endif
+    fprintf(cfile, " },\n");
 
     pos = fprintf(cfile, "    %d, {", oper_group->result_count);
     for (i = 0, oper_iter = oper_group->results.begin(); 
@@ -803,8 +888,58 @@ void ISA_Operands_End(void)
       }
       pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
     }
+    //    fprintf(cfile, " } },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
+#if 0
+    fprintf(cfile, " }, %*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
+#endif
+    fprintf(cfile, " },\n");
+
+    //
+    // Arthur: print out the results use types
+    //
+    pos = fprintf(cfile, "       {");
+    for (i = 0, use_iter = oper_group->res_use.begin(); 
+	 i < max_results;
+	 ++i
+    ) {
+      OPERANDS_GROUP_OPERAND_USES def_type = 0;
+      int def_type_index = 0;
+      if (use_iter != oper_group->res_use.end()) {
+	def_type = *use_iter;
+	if (def_type) {
+	  def_mask |= def_type;
+	} else {
+	  def_mask |= 1; // OU_UNDEFINED
+	}
+	++use_iter;
+      }
+      pos += fprintf(cfile, "%s0x%08x", i == 0 ? " " : ", ", def_type);
+    }
+#if 0
+    fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
+#endif
+    fprintf(cfile, " },\n");
+
+    //
+    // Arthur: print out the same_res table
+    //
+    pos = fprintf(cfile, "       {");
+    for (i = 0, idx_iter = oper_group->same_res.begin(); 
+	 i < max_results;
+	 ++i
+    ) {
+      int same_res_index = -1;
+      if (idx_iter != oper_group->same_res.end()) {
+	if (*idx_iter != 0) {
+	  same_res_index = *idx_iter - 1;
+	}
+	++idx_iter;
+      }
+      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", same_res_index);
+    }
     fprintf(cfile, " } },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
   }
+
   fprintf(cfile, "};\n");
 
   info_index_type = max_groups < 256 ? "mUINT8" : "mUINT16";
@@ -957,6 +1092,20 @@ void ISA_Operands_End(void)
 		 "  return (ISA_OPERAND_USE)oinfo->ouse[opnd];\n"
 		 "}\n");
 
+  fprintf(hfile, "\ninline ISA_OPERAND_USE ISA_OPERAND_INFO_Def(\n"
+		 "  const ISA_OPERAND_INFO *oinfo,\n"
+		 "  INT res)\n"
+		 "{\n"
+		 "  return (ISA_OPERAND_USE)oinfo->ruse[res];\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline mINT8 ISA_OPERAND_INFO_Same_Res(\n"
+		 "  const ISA_OPERAND_INFO *oinfo,\n"
+		 "  INT res)\n"
+		 "{\n"
+		 "  return (ISA_OPERAND_USE)oinfo->same_res[res];\n"
+		 "}\n");
+
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_Any_Use(ISA_OPERAND_USE ouse)\n"
 		 "{\n"
 	  //		 "  return (0x%016llxULL & (1ULL << ouse)) != 0;\n"
@@ -1048,6 +1197,25 @@ void ISA_Operands_End(void)
 		 "  }\n"
 		 "}\n");
 */
+
+  fprintf(hfile, "\nextern mINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx);\n");
+  fprintf(efile, "TOP_Same_Res_Operand\n");
+  fprintf(cfile, "\nmINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx)\n"
+		 "{\n"
+		 "  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(topcode);\n"
+		 "  return ISA_OPERAND_INFO_Same_Res(oinfo, residx);\n"
+		 "}\n");
+
+  fprintf(hfile, "\nextern BOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx);\n");
+  fprintf(efile, "TOP_Result_Is_Uniq_Res\n");
+  fprintf(cfile, "\nBOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx)\n"
+		 "{\n"
+		 "  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(topcode);\n"
+		 "  ISA_OPERAND_USE this_def = ISA_OPERAND_INFO_Def(oinfo, residx);\n"
+		 "  if (this_def & OU_uniq_res) return TRUE;\n"
+		 "  return FALSE;\n"
+		 "}\n");
+
 
   Emit_Footer (hfile);
 }

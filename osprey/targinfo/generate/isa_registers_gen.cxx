@@ -76,6 +76,7 @@ typedef struct isa_register_subclass {
 struct isa_register_class {
   const char *name;
   int bit_size;
+  bool is_ptr;
   bool can_store;
   bool multiple_save;
   int min_reg;
@@ -284,6 +285,7 @@ void ISA_Registers_Begin( const char* /* name */ )
 ISA_REGISTER_CLASS ISA_Register_Class_Create(
   const char *name,
   int bit_size,
+  bool is_ptr,
   bool can_store,
   bool multiple_save
 )
@@ -295,6 +297,21 @@ ISA_REGISTER_CLASS ISA_Register_Class_Create(
   rclasses.push_back(result);
   result->name = name;
   result->bit_size = bit_size;
+
+  // Arthur: check that only one class is a ptr class
+  if (is_ptr) {
+    list <ISA_REGISTER_CLASS>::iterator rc_iter;
+    for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
+      ISA_REGISTER_CLASS rclass = *rc_iter;
+      if (rclass->is_ptr) {
+	fprintf(stderr, "### Error: attempt to specify two ptr rclasses.\n");
+	fprintf(stderr, "### Error: current %s, previous %s\n", 
+		name, rclass->name);
+      }
+    }
+  }
+
+  result->is_ptr = is_ptr;
   result->can_store = can_store;
   result->multiple_save = multiple_save;
   return result;
@@ -357,6 +374,7 @@ void ISA_Registers_End(void)
   list <ISA_REGISTER_CLASS>::iterator rc_iter;
   list <ISA_REGISTER_SUBCLASS>::iterator rsc_iter;
   int i;
+  bool ptr_specified;
 
   int max_reg = 0;
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
@@ -378,6 +396,13 @@ void ISA_Registers_End(void)
     rclass->max_reg = class_max;
     rclass->min_reg = class_min;
     if (class_max > max_reg) max_reg = class_max;
+
+    if (rclass->is_ptr) ptr_specified = true;
+  }
+
+  // Arthur: check that the ptr class is specified
+  if (!ptr_specified) {
+    fprintf(stderr, "### Error: ptr rclass has not been specified.\n");
   }
 
 #define FNAME "targ_isa_registers"
@@ -434,6 +459,7 @@ void ISA_Registers_End(void)
 		 "  mUINT8 min_regnum;\n"
 		 "  mUINT8 max_regnum;\n"
 		 "  mUINT8 bit_size;\n"
+		 "  mBOOL is_ptr;\n"
 		 "  mBOOL can_store;\n"
 		 "  mBOOL multiple_save;\n"
 		 "  const char *name;\n"
@@ -444,8 +470,8 @@ void ISA_Registers_End(void)
 
   fprintf(cfile, "\nconst ISA_REGISTER_CLASS_INFO"
 		   " ISA_REGISTER_CLASS_info[] = {\n");
-  fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, \"%s\", { 0 } },\n",
-		 0, 0, -1, 0, 0, 0, "UNDEFINED");
+  fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
+		 0, 0, -1, 0, 0, 0, 0, "UNDEFINED");
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
     ISA_REGISTER_CLASS rclass = *rc_iter;
     list<ISA_REGISTER_SET>::iterator reg_iter;
@@ -454,11 +480,12 @@ void ISA_Registers_End(void)
 	 ++reg_iter
     ) {
       ISA_REGISTER_SET regset = *reg_iter;
-      fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, \"%s\",",
+      fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\",",
 	      regset->isa_mask,
 	      regset->min_regnum,
 	      regset->max_regnum,
 	      rclass->bit_size,
+	      rclass->is_ptr,
 	      rclass->can_store,
 	      rclass->multiple_save,
 	      rclass->name);
@@ -604,6 +631,13 @@ void ISA_Registers_End(void)
 		 ")\n"
 		 "{\n"
 		 "  return info->bit_size;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline BOOL ISA_REGISTER_CLASS_INFO_Is_Ptr(\n"
+		 "  const ISA_REGISTER_CLASS_INFO *info\n"
+		 ")\n"
+		 "{\n"
+		 "  return info->is_ptr;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_REGISTER_CLASS_INFO_Can_Store(\n"
