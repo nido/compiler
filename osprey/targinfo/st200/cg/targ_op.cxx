@@ -54,7 +54,6 @@
  *   OP_Is_Barrier
  *
  *   TODO: Perhaps it can be done by associating a TOP property ?
- *   TODO: Perhaps treat here memory clobber asm ?
  * ====================================================================
  */
 BOOL OP_Is_Barrier(OP *op) 
