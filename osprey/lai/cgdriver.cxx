@@ -163,9 +163,13 @@ static char *option_string;
 static OPTION_DESC Options_CG_SWP[] = {
 
   /* General software pipelining options */
-
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL,	FALSE, "enable", NULL,
+    0, 0, 0,	&Enable_SWP, &Enable_SWP_overridden },
+#else
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "", NULL,
     0, 0, 0,	&Enable_SWP, &Enable_SWP_overridden },
+#endif
 
   { OVK_INT32,	OV_INTERNAL,	TRUE, "sched_direction", "sched_dir",
     0, 0, INT32_MAX,	&SWP_Options.Sched_Direction, NULL },
@@ -926,6 +930,10 @@ Configure_CG_Options(void)
   }
   else {
     Enable_SWP = CG_opt_level >= 2;
+
+    if (!Enable_SWP)
+      DevWarn("Configure_CG_Options: SWP=ON but Opt_Level < 2; ignoring SWP");
+
   }
 #else
   if (!Enable_SWP_overridden)
