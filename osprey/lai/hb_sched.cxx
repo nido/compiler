@@ -185,6 +185,9 @@ INT
 Memory_OP_Base_Opndnum (OP *op)
 {
   INT opnd_num;
+#ifdef TARG_ST
+  opnd_num = TOP_Find_Operand_Use(OP_code(op), OU_base);
+#else
   if (OP_store(op) || OP_prefetch(op)) {
     opnd_num = 1;
   }
@@ -192,6 +195,7 @@ Memory_OP_Base_Opndnum (OP *op)
     Is_True (OP_load(op), ("OP not a memory OP."));
     opnd_num = 0;
   }
+#endif
   return opnd_num;
 }
 
@@ -200,7 +204,9 @@ INT
 Memory_OP_Offset_Opndnum (OP *op)
 {
   INT opnd_num;
-
+#ifdef TARG_ST
+  opnd_num = TOP_Find_Operand_Use(OP_code(op), OU_offset);
+#else
   if (OP_store(op) || OP_prefetch(op)) {
     opnd_num = 2;
   }
@@ -208,6 +214,7 @@ Memory_OP_Offset_Opndnum (OP *op)
     Is_True (OP_load(op), ("OP not a memory OP."));
     opnd_num = 1;
   }
+#endif
   return opnd_num;
 }
 
@@ -1146,6 +1153,18 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
 {
   INT i;
 
+#ifdef TARG_ST
+  INT32 cur_cycle;
+  {
+    OP *op = BB_last_op(bb);
+    OPSCH *opsch = OP_opsch(op, _hb_map);
+    cur_cycle = ((is_fwd) ? OPSCH_scycle(opsch) : OPSCH_scycle(opsch) - Clock) + 1;
+  }
+
+  // FdF: update OP_scycle only if the new scheduled is better
+  if (cur_cycle < _max_sched) {
+#endif
+
   // Set the OP_scycle field for all the OPs. Also, reset the OPSCH_visited
   // flag. It is used in the Adjust_Ldst_Offsets routine.
   for (i = VECTOR_count(_sched_vector) - 1; i >= 0; i--) {
@@ -1154,8 +1173,14 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
     Reset_OPSCH_visited (opsch);
     OP_scycle(op) = (is_fwd) ? OPSCH_scycle(opsch) : OPSCH_scycle(opsch) - Clock;
   }
+#ifdef TARG_ST
+  }
+  FmtAssert ((cur_cycle >= _max_sched) || (cur_cycle == (OP_scycle(BB_last_op(bb)) + 1)),
+	     ("HB_SCHED: Inconsistent scycle."));
+#else
 
   INT32 cur_cycle = OP_scycle(BB_last_op(bb)) + 1;
+#endif
 
   // If current cycle estimate is better than <max_sched>, then ONLY dump
   // the Sched_Vector buffer. Otherwise, preserve the previous one.
