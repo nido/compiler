@@ -212,6 +212,7 @@ extern INT32 CG_LAO_schedkind;	/* LAO instruction scheduling algorithm */
 extern INT32 CG_LAO_schedtype;	/* LAO instruction scheduling type */
 extern INT32 CG_LAO_pipeline;	/* LAO software pipelining level */
 extern INT32 CG_LAO_speculate;	/* LAO control speculation level */
+extern INT32 CG_LAO_loopdep;	/* LAO loop dependence level */
 extern INT32 CG_LAO_scd_first;	/* LAO first BasicBlock scheduled */
 extern INT32 CG_LAO_scd_last;	/* LAO last BasicBlock scheduled */
 

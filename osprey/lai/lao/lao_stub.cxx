@@ -1085,17 +1085,19 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
       if (op_count >= LAO_OPS_LIMIT) break;
     }
     // Compute the memory dependence graph.
-    if (op_count < LAO_OPS_LIMIT) {
+    if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
       bool cyclic = BB_innermost(head_bb) != 0;
       CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
       BB_List::iterator bb_iter;
       for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
 	OP *op = NULL;
 	FOR_ALL_BB_OPs(*bb_iter, op) {
-	  ARC_LIST *arcs = NULL;
 	  if (_CG_DEP_op_info(op)) {
 	    Operation orig_operation = CGIR_OP_to_Operation(op);
-	    for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
+	    if (OP_memory(op)) {
+	      Interface_Operation_setMemDepInfo(interface, orig_operation);
+	    }
+	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
 	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
@@ -1126,11 +1128,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   //
   if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
-  Interface_open(interface, 6,
+  Interface_open(interface, 7,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
+      Configuration_LoopDep, CG_LAO_loopdep,
       Configuration_SCD_First, CG_LAO_scd_first,
       Configuration_SCD_Last, CG_LAO_scd_last);
   lao_initializeInterface();
