@@ -526,7 +526,12 @@ CG_Generate_Code(
       }
 #endif
 
+#ifdef TARG_ST
+      // GRA_LIVE_Init only done if !CG_localize_tns
+      if (CG_enable_loop_optimizations && !CG_localize_tns) {
+#else
       if (CG_enable_loop_optimizations) {
+#endif
 	Set_Error_Phase("CGLOOP");
 	Start_Timer(T_Loop_CU);
 	// Optimize loops (mostly innermost)
