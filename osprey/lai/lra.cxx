@@ -96,6 +96,10 @@
 #include "hb_sched.h"
 /* #include "ebo.h" */
 
+#ifdef TARG_ST200
+#include "lao_stub.h"
+#endif
+
 #define TN_is_local_reg(r)   (!(TN_is_dedicated(r) | TN_is_global_reg(r)))
 
 /* regs that need to be saved at prolog and restored at epilog: */
@@ -405,11 +409,20 @@ Check_Allow_Reorder() {
 static BOOL
 Check_Allow_Reschedule()
 {
+#ifdef TARG_ST200
+  if (Check_Allow_Reorder() &&
+      Trip_Count == 1 &&
+      !Get_Trace (TP_ALLOC, 0x0200) &&
+      !(CG_LAO_optimize & Optimization_PreSched)) {
+    return TRUE;
+  }
+#else
   if (Check_Allow_Reorder() &&
       Trip_Count == 1 &&
       !Get_Trace (TP_ALLOC, 0x0200)) {
     return TRUE;
   }
+#endif
   return FALSE;
 }
 
