@@ -148,6 +148,8 @@ Expand_Load (
   INT64    val;
   TN      *tmp;
 
+  fflush (TFile);
+
   Is_True (TN_is_constant(ofst), ("Illegal load offset TN"));
 
   if (TN_has_value(ofst)) {
@@ -639,6 +641,9 @@ Exp_Ldst (
 
       Build_OP (TOP_mov_i, tn, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
+
+      base_tn = tn;
+      ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
 
       // want to stop at address (either that or add with 0)
       is_lda = FALSE;	// so nothing done
