@@ -289,7 +289,7 @@ Expand_Branch (
     if ((cond == V_BR_ALWAYS && !false_br) ||
 	(cond == V_BR_NEVER && false_br)) {
       // Unconditional branch for ALWAYS/!false_br and NEVER/false_br
-      Build_OP (TOP_goto, targ, ops);
+      Build_OP (TOP_goto, RA_TN, targ, ops);
     }
     break;
 
