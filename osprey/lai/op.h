@@ -574,10 +574,10 @@ extern BOOL OP_has_implicit_interactions(OP*);
 /*
  * Convenience access macros for properties of the OP 
  */
-#define OP_br(o)                (OP_xfer(o) & !OP_call(o))
-#define OP_memory(o)		(OP_load(o) | OP_store(o) | OP_prefetch(o))
-#define OP_unalign_mem(o)	(OP_unalign_ld(o) | OP_unalign_store(o))
-#define OP_uncond(o)            (OP_xfer(o) & !OP_cond(o))
+#define OP_br(o)                (OP_xfer(o) && !OP_call(o))
+#define OP_memory(o)		(OP_load(o) || OP_store(o) || OP_prefetch(o))
+#define OP_unalign_mem(o)	(OP_unalign_ld(o) || OP_unalign_store(o))
+#define OP_uncond(o)            (OP_xfer(o) && !OP_cond(o))
 
 #define OP_operand_info(o)	(ISA_OPERAND_Info(OP_code(o)))
 #define OP_has_hazard(o)	(ISA_HAZARD_TOP_Has_Hazard(OP_code(o)))
