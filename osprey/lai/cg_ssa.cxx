@@ -1214,10 +1214,10 @@ SSA_Enter (
 //
 
 // We set a 'tn_imap' entry for each PHI-function resource.
-// There may be at most twice the number of PHI-functions
-// (operands+results) PHI resources. This includes 1 potential
-// copy TN for each PHI-function present at the beginnig of
-// the SSA_Make_Consistent() process.
+// There may be at most as many copies made as there are operands +
+// results of the PHI functions (one copy for each operand/result in
+// the worst case for each PHI-function present at the beginnig of
+// the SSA_Make_Consistent() process). 
 
 //
 // PHI resources interference map, IGRAPH
@@ -1233,6 +1233,16 @@ static hTN_MAP32 tn_idx_map;
 
 static INT last_tn_idx;
 
+/* ================================================================
+ *   IGRAPH_init_tn
+ *
+ *   Initialize the following info for each TN:
+ *
+ *   tn_imap      -- bitvector indicating interference TNs
+ *   tn_idx_map   -- INT32 map indicating index of this TN in IGRAPH
+ *   idx_tn_table -- indicates which TN is registered at given idx
+ * ================================================================
+ */
 inline void IGRAPH_init_tn (TN *tn) {
   last_tn_idx++;
   FmtAssert(last_tn_idx <= tn_map_size,("tn_map overflowed ?"));
@@ -1244,6 +1254,9 @@ inline void IGRAPH_init_tn (TN *tn) {
 
 // Interference Graph Tracing
 static BOOL Trace_Igraph;
+
+// Whether IGRAPH is in use
+static BOOL Igraph_Used = FALSE;
 
 /* ================================================================
  *   IGRAPH_print_tn
@@ -1301,11 +1314,12 @@ IGRAPH_Initialize ()
   OP *op;
   BB *bb;
 
+#if 0
   //
   // Traverse the CFG and count the number of PHI-nodes 
   // operands+results. Twice this+1 is the size of BS to allocate
   // for each IGRAPH entry; and also how many entries there will
-  // be.
+  // be. This accounts for all potential copy TNs.
   //
   tn_map_size = 0;
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
@@ -1313,14 +1327,17 @@ IGRAPH_Initialize ()
       tn_map_size += OP_opnds(op) + OP_results(op);
     }
   }
+#endif
+
+  // tn_map_size is calculated by the initialize_ssa_translation
 
   tn_imap = (BS **)TYPE_MEM_POOL_ALLOC_N(BS *, 
 					&MEM_local_pool, 
-					tn_map_size+1);
+					2*tn_map_size+1);
 
   idx_tn_table = (TN **)TYPE_MEM_POOL_ALLOC_N(TN *, 
 					&MEM_local_pool, 
-					tn_map_size+1);
+					2*tn_map_size+1);
 
   tn_idx_map = hTN_MAP32_Create(&MEM_local_pool);
 
@@ -1342,6 +1359,7 @@ IGRAPH_Clean ()
 
   // normally everything will go away with the MEM_local_pool.
 
+  Igraph_Used = FALSE;
   return;
 }
 
@@ -1535,6 +1553,9 @@ IGRAPH_Build ()
     IGRAPH_Print(TFile);
   }
 
+  // Make sure the SSA algorithms know that we're using it
+  Igraph_Used = TRUE;
+
   return;
 }
 
@@ -1573,25 +1594,21 @@ typedef struct _phiCongruenceClass {
 #define PHI_CONGRUENCE_CLASS_gtns(cc)  (cc->gtns)
 
 //
-// Arthur: I associate a congruence class to each GTN.
-//         Each GTN will be pointing to a pointer to a
+// Arthur: 
+//         SSA related TNs will be pointing to a pointer to a
 //         CONGRUENCE_CLASS. Thus, when phiCongruenceClasses
 //         are merged, it is sufficient to change the
-//         phiCongruenceClass pointer so that all GTNs
+//         phiCongruenceClass pointer so that all TNs
 //         pointing at this phiCongruenceClass are pointing
 //         to the new phiCongruenceClass.
 //
-//         In my implementation, if a phiCongruenceClass
-//         of a TN is NULL -- that really means that it only
-//         contains that TN itself and nothing else.
-//         Once some PHI-node resources are merged into a
-//         phiCongruenceClass, that PHI-node's TNs are made 
-//         to point at this phiCongruenceClass.
-//
 
 hTN_MAP phiCongruenceClass_map;
-#define phiCongruenceClass(tn)  ((PHI_CONGRUENCE_CLASS *)hTN_MAP_Get(phiCongruenceClass_map,tn))
-#define Set_phiCongruenceClass(tn,cc) (hTN_MAP_Set(phiCongruenceClass_map,tn,cc))
+
+#define phiCongruenceClass(tn) \
+       ((PHI_CONGRUENCE_CLASS *)hTN_MAP_Get(phiCongruenceClass_map,tn))
+#define Set_phiCongruenceClass(tn,cc) \
+       (hTN_MAP_Set(phiCongruenceClass_map,tn,cc))
 
 /* ================================================================
  *   PHI_CONGRUENCE_CLASS_make
@@ -1613,11 +1630,11 @@ PHI_CONGRUENCE_CLASS_make(
 }
 
 /* ================================================================
- *   PHI_CONGRUENCE_CLASS_Add_GTN
+ *   PHI_CONGRUENCE_CLASS_Add_TN
  * ================================================================
  */
 static void
-PHI_CONGRUENCE_CLASS_Add_GTN (
+PHI_CONGRUENCE_CLASS_Add_TN (
   PHI_CONGRUENCE_CLASS *cc,
   TN *tn
 )
@@ -1661,7 +1678,7 @@ PHI_CONGRUENCE_CLASS_Merge (
   for (p = PHI_CONGRUENCE_CLASS_gtns(cc2); p != NULL; p = TN_LIST_rest(p)) {
     TN *tn = TN_LIST_first(p);
     if (!PHI_CONGRUENCE_CLASS_Member(cc1,tn)) {
-      PHI_CONGRUENCE_CLASS_Add_GTN (cc1, tn);
+      PHI_CONGRUENCE_CLASS_Add_TN (cc1, tn);
     }
   }
 
@@ -1677,15 +1694,23 @@ PHI_CONGRUENCE_CLASS_TN (
   PHI_CONGRUENCE_CLASS *cc
 )
 {
+  // In order to reduce the number of TNs, use the first TN
+  // in the congruence class as its representative name:
+  //
+  // TODO: won't need PHI_CONGRUENCE_CLASS_name !
+  //
+#if 0
   if (PHI_CONGRUENCE_CLASS_name(cc)) 
     return PHI_CONGRUENCE_CLASS_name(cc);
 
   TN *tn = Build_RCLASS_TN(PHI_CONGRUENCE_CLASS_rc(cc));
   PHI_CONGRUENCE_CLASS_name(cc) = tn;
-  // This is a global TN
-  //GTN_UNIVERSE_Add_TN(tn);
-  //Set_TN_is_global_reg(tn);
+
   return tn;
+#else
+  Is_True(cc != NULL,("empty congruence class"));
+  return TN_LIST_first(PHI_CONGRUENCE_CLASS_gtns(cc));
+#endif
 }
 
 /* ================================================================
@@ -1734,12 +1759,17 @@ merge_phiCongruenceClasses (
 
   for (i = 0; i < OP_opnds(phi_op); i++) {
     tn = OP_opnd(phi_op,i);
+#if 0
     if (phiCongruenceClass(tn) != NULL) {
       PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
     }
     else {
-      PHI_CONGRUENCE_CLASS_Add_GTN(current, tn);
+      PHI_CONGRUENCE_CLASS_Add_TN(current, tn);
     }
+#else
+    Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
+    PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
+#endif
 
     Set_phiCongruenceClass(tn,current);
 #if 0
@@ -1748,7 +1778,6 @@ merge_phiCongruenceClasses (
       Print_TN(tn, FALSE);
       fprintf(TFile, " to class: ");
       PHI_CONGRUENCE_CLASS_Print(current);
-      //GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
       fprintf(TFile,"\n");
     }
 #endif
@@ -1756,12 +1785,17 @@ merge_phiCongruenceClasses (
 
   for (i = 0; i < OP_results(phi_op); i++) {
     tn = OP_result(phi_op,i); 
+#if 0
     if (phiCongruenceClass(tn) != NULL) {
       PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
     }
     else {
-      PHI_CONGRUENCE_CLASS_Add_GTN(current, tn);
+      PHI_CONGRUENCE_CLASS_Add_TN(current, tn);
     }
+#else
+    Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
+    PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
+#endif
 
     Set_phiCongruenceClass(tn,current);
 
@@ -1779,8 +1813,6 @@ merge_phiCongruenceClasses (
 
   if (Trace_SSA_Out) {
     TN_LIST *p;
-    //fprintf(TFile, "=== Merge_PhiCongruenceClasses ");
-    //Print_OP(phi_op);
     fprintf(TFile, "  Class: ");
     for (p = PHI_CONGRUENCE_CLASS_gtns(current); 
 	   p != NULL;
@@ -1788,13 +1820,13 @@ merge_phiCongruenceClasses (
 	Print_TN(TN_LIST_first(p), FALSE);
 	fprintf(TFile," ");
       }
-    //GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
     fprintf(TFile,"\n");
   }
 
   return;
 }
 
+#if 0
 /* ================================================================
  *   initialize_phiCongruenceClasses
  *
@@ -1822,9 +1854,178 @@ initialize_phiCongruenceClasses ()
 static void
 finalize_phiCongruenceClasses ()
 {
-#if 0
-  phiCongruenceClass_map_size = 0;
+  return;
+}
 #endif
+
+/* ================================================================
+ *   initialize_ssa_translation
+ *
+ *   Initialize PhiCongruenceClasses, IGRAPH, if necessary, etc.
+ * ================================================================
+ */
+static void
+initialize_ssa_translation () 
+{
+  INT i;
+  OP *op;
+  BB *bb;
+
+  // PhiCongruenceClasses
+  phiCongruenceClass_map = hTN_MAP_Create(&MEM_local_pool);
+
+  // IGRAPH size
+  tn_map_size = 0;
+
+  //
+  // Traverse the CFG performing:
+  //
+  //   1. initialization of PhiCongruenceClasses for all PHI
+  //      resources;
+  //   2. count the number of PHI-nodes operands+results. 
+  //      Twice this+1 is the size of BS to allocate
+  //      for each IGRAPH entry; and also how many entries there will
+  //      be. This accounts for all potential copy TNs.
+  //
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_PHI_OPs (bb, op) {
+      
+      // Initialize PhiCongruenceClasses for PHI resources:
+
+      if (phiCongruenceClass(OP_result(op,0)) == NULL) {
+	PHI_CONGRUENCE_CLASS *cc = 
+	  PHI_CONGRUENCE_CLASS_make(TN_register_class(OP_result(op,0)));
+	Set_phiCongruenceClass(OP_result(op,0), cc);
+	PHI_CONGRUENCE_CLASS_Add_TN(cc, OP_result(op,0));
+      }
+
+      for (i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op,i);
+	if (phiCongruenceClass(tn) == NULL) {
+	  PHI_CONGRUENCE_CLASS *cc = 
+	       PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
+	  Set_phiCongruenceClass(tn, cc);
+	  PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+	}
+      }
+
+      // update the IGRAPH size:
+      tn_map_size += OP_opnds(op) + OP_results(op);
+    }
+  }
+
+  //
+  // Delete the tn_to_new_name map that may have been left
+  // from a previous invocation of the routine. And initialize
+  // a new one.
+  //
+  MEM_POOL_Pop(&tn_map_pool);
+  // Push it again and create the map
+  MEM_POOL_Push(&tn_map_pool);
+  //
+  // Create a map of TNs to their representative names
+  // TNs are mapped to their phiCongruenceClass'es that will
+  // not survive this routine (they are in MEM_local_pool).
+  // This is because we want to separate removing PHI resource
+  // interference from actual removing of the PHI-nodes and 
+  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
+  // map gets replaced by the phiResourceName(tn) map.
+  //
+  tn_to_new_name_map = hTN_MAP_Create(&tn_map_pool);
+
+  return;
+}
+
+/* ================================================================
+ *   map_phi_resources_to_new_names
+ * ================================================================
+ */
+static void
+map_phi_resources_to_new_names()
+{
+  INT i;
+  TN *tn, *new_tn;
+  OP *op;
+  BB *bb;
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+
+    if (Trace_SSA_Out) {
+      fprintf(TFile, "============ map_phi_resources_to_new_names BB%d ===========\n",
+	      BB_id(bb));
+    }
+
+    FOR_ALL_BB_OPs_FWD(bb,op) {
+
+      if (Trace_SSA_Out) {
+	fprintf(TFile, " --> ");
+	Print_OP_No_SrcLine(op);
+	fprintf(TFile, "\n");
+      }
+
+      // if a PHI-node, do nothing - it will be removed
+      if (OP_code(op) != TOP_phi) {
+
+	for (i = 0; i < OP_opnds(op); i++) {
+	  tn = OP_opnd(op,i);
+	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
+	    if (TN_new_name(tn) == NULL) {
+	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+	      Set_TN_new_name(tn, new_tn);
+
+	      if (Trace_SSA_Out) {
+		Print_TN(tn, FALSE);
+		fprintf(TFile," Class: ");
+		PHI_CONGRUENCE_CLASS_Print(phiCongruenceClass(tn));
+		fprintf(TFile,"\n");
+		fprintf(TFile,"  new_name ");
+		Print_TN(new_tn,FALSE);
+		fprintf(TFile,"\n");
+	      }
+	    }
+	  }
+	}
+
+	for (i = 0; i < OP_results(op); i++) {
+	  tn = OP_result(op,i);
+	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
+	    if (TN_new_name(tn) == NULL) {
+	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+	      Set_TN_new_name(tn, new_tn);
+
+	      if (Trace_SSA_Out) {
+		Print_TN(tn, FALSE);
+		fprintf(TFile," Class: ");
+		PHI_CONGRUENCE_CLASS_Print(phiCongruenceClass(tn));
+		fprintf(TFile,"\n");
+		fprintf(TFile,"  new_name ");
+		Print_TN(new_tn,FALSE);
+		fprintf(TFile,"\n");
+	      }
+	    }
+	  }
+	}
+      } /* else not a TOP_phi */
+    } /* FOR_ALL_BB_OPs_FWD */
+  } /* for (bb = REGION_First_BB ... */
+
+  return;
+}
+
+/* ================================================================
+ *   finalize_ssa_translation
+ * ================================================================
+ */
+static void
+finalize_ssa_translation () 
+{
+  //
+  // Before the CongruenceClasses are destroyed, we need to map
+  // all involved TNs onto CongruenceClass representative names.
+  //
+  map_phi_resources_to_new_names();
+
+  return;
 }
 
 /* ================================================================
@@ -1864,8 +2065,10 @@ insert_operand_copy (
   // new_tn is global (because live-out of BB)
   GTN_UNIVERSE_Add_TN(new_tn);
 
+#if 0
   // update Liveness
-  //GRA_LIVE_Add_Live_Out_GTN(in_bb, new_tn);
+  GRA_LIVE_Add_Live_Out_GTN(in_bb, new_tn);
+#endif
 
   // Remove tn from bb's LiveOut set if it is not LiveIn
   // or used in a PHI-node of any other bb's successor
@@ -1887,11 +2090,12 @@ insert_operand_copy (
     }
   }
 
+#if 0
   // not liveout, we should update the LiveOut set
-  //GRA_LIVE_Remove_Live_Out_GTN(in_bb, tn);
+  GRA_LIVE_Remove_Live_Out_GTN(in_bb, tn);
+#endif
 
-  // 'tn' may no longer be global TN
-
+  // 'tn' may no longer be global TN.
   // There is no way to remove 'tn' from the GTN_UNIVERSE.
   // I may need to replace 'tn' with a new TN.
   // Let it remain for now and just reset is_global_reg 
@@ -1924,42 +2128,63 @@ liveout:
     BB_Append_Ops(in_bb, &ops);
   }
 
+  // Create a congruence class for new_tn
+  PHI_CONGRUENCE_CLASS *cc = 
+    PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
+  Set_phiCongruenceClass(new_tn,cc);
+  PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+
+  // Update interference graph
+  if (Igraph_Used) {
+    // Build interference edges between new_tn and live_out[in_bb]
+    for (tn = GTN_SET_Choose(BB_live_out(in_bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn = GTN_SET_Choose_Next(BB_live_out(in_bb), tn)) {
+      if (TN_is_ssa_reg(tn)) IGRAPH_Add_Interference(tn, new_tn);
+    }
+  }
+
   return;
 }
 
 /* ================================================================
  *   insert_result_copy
  *
- *   Insert a copy of given result TN at the beginning of given BB
+ *   Insert a copy of PHI result TN at the beginning of given BB
  *   (right after the PHI-nodes).
- *   Maintain the up-to-date Liveness information.
- *   Must maintain the global/local attribute for TNs because this
- *   is tested by TN_is_ssa_reg(tn).
+ *   Update interference graph.
+ *
+ *   NOTE: Must maintain the global/local attribute for TNs because 
+ *         this is tested by TN_is_ssa_reg(tn).
+ *
  *   Return new TN.
  * ================================================================
  */
 static void
 insert_result_copy (
   OP   *phi_op,
-  INT8  res_idx,
+  //INT8  res_idx,
   BB   *in_bb
 )
 {
-  TN *tn = OP_result(phi_op, res_idx);
+  //TN *tn = OP_result(phi_op, res_idx);
+  TN *tn = OP_result(phi_op, 0);
   TN *new_tn = Dup_TN(tn);
 
   // replace old tn in the phi OP
-  Set_OP_result(phi_op, res_idx, new_tn);
+  Set_OP_result(phi_op, 0, new_tn);
+  //Set_OP_result(phi_op, res_idx, new_tn);
 
   // new_tn is global (because PHI result and => live_in)
   GTN_UNIVERSE_Add_TN(new_tn);
 
+#if 0
   // update Liveness
-  //GRA_LIVE_Remove_Live_In_GTN(in_bb, tn);
-  //GRA_LIVE_Add_Live_In_GTN(in_bb, new_tn);
+  GRA_LIVE_Remove_Live_In_GTN(in_bb, tn);
+  GRA_LIVE_Add_Live_In_GTN(in_bb, new_tn);
+#endif
 
-  // 'tn' may no longer be SSA
-
+  // 'tn' may no longer be SSA.
   // There is no way to remove a TN from the GTN_UNIVERSE.
   // If 'tn' is not live out of the 'in_bb', it should become
   // not global. 
@@ -1978,6 +2203,22 @@ insert_result_copy (
   OP *point = NULL;
   FOR_ALL_BB_PHI_OPs(in_bb,point);
   BB_Insert_Ops_Before(in_bb, point, &ops);
+
+  // Create a congruence class for new_tn
+  PHI_CONGRUENCE_CLASS *cc = 
+    PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
+  Set_phiCongruenceClass(new_tn,cc);
+  PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+
+  // Update interference graph
+  if (Igraph_Used) {
+    // Build interference edges between new_tn and live_in[in_bb]
+    for (tn = GTN_SET_Choose(BB_live_in(in_bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn = GTN_SET_Choose_Next(BB_live_in(in_bb), tn)) {
+      if (TN_is_ssa_reg(tn)) IGRAPH_Add_Interference(tn, new_tn);
+    }
+  }
 
   return;
 }
@@ -2000,10 +2241,8 @@ insert_copies_blindly ()
 	insert_operand_copy(op, i, Get_PHI_Predecessor(op,i));
       }
 
-      // insert copies for results
-      for (i = 0; i < OP_results(op); i++) {
-	insert_result_copy(op, i, bb);
-      }
+      // insert copies for result
+      insert_result_copy(op, bb);
 
       // Merge phiCongruenceClass's for all PHI-node resources
       merge_phiCongruenceClasses(op);
@@ -2055,7 +2294,7 @@ Eliminate_Phi_Resource_Interference()
   OP *op;
 
   /*
-   * Set of candidate resources for insertign copies as described
+   * Set of candidate resources for inserting copies as described
    * in VC's paper
    */
   TN_LIST *candidateResourceSet;
@@ -2066,12 +2305,13 @@ Eliminate_Phi_Resource_Interference()
 
       // does result interfere with any of the operands ?
       cc1 = phiCongruenceClass(OP_result(op,0));
-      Is_True(cc1 != NULL, ("Empty congruence class for a SSA TN"));
-	
+      Is_True(cc1 != NULL,("empty congruence class"));
+
       for (i = 0; i < OP_opnds(op); i++) {
 	cc2 = phiCongruenceClass(OP_opnd(op,i));
+	Is_True(cc1 != NULL,("empty congruence class"));
 
-	if (OP_result(op,0) == OP_opnd(op,i)) continue;
+	//if (OP_result(op,0) == OP_opnd(op,i)) continue;
 
 	if (phi_resources_interfere(cc1, cc2)) {
 	  TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
@@ -2082,11 +2322,13 @@ Eliminate_Phi_Resource_Interference()
       // do operands interfere
       for (i = 0; i < OP_opnds(op); i++) {
 	cc1 = phiCongruenceClass(OP_opnd(op,i));
-	Is_True(cc1 != NULL, ("Empty congruence class for a SSA TN"));
+	Is_True(cc1 != NULL,("empty congruence class"));
 
 	for (j = i+1; j < OP_opnds(op); j++) {
 	  cc2 = phiCongruenceClass(OP_opnd(op,j));
+	  Is_True(cc1 != NULL,("empty congruence class"));
 
+	  // do not add to candidateResourceSet if the same
 	  if (OP_opnd(op,i) == OP_opnd(op,j)) continue;
 
 	  if (phi_resources_interfere(cc1, cc2)) {
@@ -2103,8 +2345,8 @@ Eliminate_Phi_Resource_Interference()
       for (p = candidateResourceSet; p != NULL; p = TN_LIST_rest(p)) {
 	TN *tn = TN_LIST_first(p);
 	if (TN_ssa_def(tn) == op) {
-	  // this PHI result
-	  insert_result_copy(op, 0, bb);
+	  // this is a PHI result
+	  insert_result_copy(op, bb);
 	}
 	else {
 	  // must be one of the PHI operands
@@ -2127,84 +2369,6 @@ Eliminate_Phi_Resource_Interference()
 }
 
 /* ================================================================
- *   map_phi_resources_to_new_names
- * ================================================================
- */
-static void
-map_phi_resources_to_new_names()
-{
-  INT i;
-  TN *tn, *new_tn;
-  OP *op;
-  BB *bb;
-
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-
-    if (Trace_SSA_Out) {
-      fprintf(TFile, "============ map_phi_resources_to_new_names BB%d ===========\n",
-	      BB_id(bb));
-    }
-
-    FOR_ALL_BB_OPs_FWD(bb,op) {
-
-      if (Trace_SSA_Out) {
-	fprintf(TFile, " --> ");
-	Print_OP_No_SrcLine(op);
-	fprintf(TFile, "\n");
-      }
-
-      // if a PHI-node, do nothing - it will be removed
-      if (OP_code(op) != TOP_phi) {
-
-	for (i = 0; i < OP_opnds(op); i++) {
-	  tn = OP_opnd(op,i);
-	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
-	    if (TN_new_name(tn) == NULL) {
-	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
-	      Set_TN_new_name(tn, new_tn);
-
-	      if (Trace_SSA_Out) {
-		Print_TN(tn, FALSE);
-		fprintf(TFile," Class: ");
-		PHI_CONGRUENCE_CLASS_Print(phiCongruenceClass(tn));
-		//GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
-		fprintf(TFile,"\n");
-		fprintf(TFile,"  new_name ");
-		Print_TN(new_tn,FALSE);
-		fprintf(TFile,"\n");
-	      }
-	    }
-	  }
-	}
-
-	for (i = 0; i < OP_results(op); i++) {
-	  tn = OP_result(op,i);
-	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
-	    if (TN_new_name(tn) == NULL) {
-	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
-	      Set_TN_new_name(tn, new_tn);
-
-	      if (Trace_SSA_Out) {
-		Print_TN(tn, FALSE);
-		fprintf(TFile," Class: ");
-		PHI_CONGRUENCE_CLASS_Print(phiCongruenceClass(tn));
-		//GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn)), TFile);
-		fprintf(TFile,"\n");
-		fprintf(TFile,"  new_name ");
-		Print_TN(new_tn,FALSE);
-		fprintf(TFile,"\n");
-	      }
-	    }
-	  }
-	}
-      } /* else not a TOP_phi */
-    } /* FOR_ALL_BB_OPs_FWD */
-  } /* for (bb = REGION_First_BB ... */
-
-  return;
-}
-
-/* ================================================================
  *   SSA_Make_Consistent
  * ================================================================
  */
@@ -2217,13 +2381,12 @@ SSA_Make_Consistent (
   Trace_SSA_Out = Get_Trace(TP_SSA, SSA_MAKE_CONST);
   Trace_Igraph = Get_Trace(TP_SSA, SSA_IGRAPH);
 
+#if 0
   //
   // Delete the tn_to_new_name map that may have been left
   // from a previous invocation of the routine. And initialize
   // a new one.
   //
-  //if (tn_to_new_name_map != NULL)
-  //  TN_MAP_Delete(tn_to_new_name_map);
   MEM_POOL_Pop(&tn_map_pool);
   // Push it again and create the map
   MEM_POOL_Push(&tn_map_pool);
@@ -2237,6 +2400,7 @@ SSA_Make_Consistent (
   // map gets replaced by the phiResourceName(tn) map.
   //
   tn_to_new_name_map = hTN_MAP_Create(&tn_map_pool);
+#endif
 
   //
   // This one is temporary working pool (zeroes memory)
@@ -2252,12 +2416,11 @@ SSA_Make_Consistent (
   //
   repair_machine_ssa();
 
-  //
-  // Build the interference graph
-  //
-  //IGRAPH_Build();
+  initialize_ssa_translation();
 
+#if 0
   initialize_phiCongruenceClasses();
+#endif
 
   switch (CG_ssa_algorithm) {
   case 1: 
@@ -2280,11 +2443,13 @@ SSA_Make_Consistent (
     Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
   }
 
+#if 0
   map_phi_resources_to_new_names();
 
   finalize_phiCongruenceClasses();
+#endif
 
-  //IGRAPH_Clean();
+  finalize_ssa_translation();
 
   MEM_POOL_Pop(&MEM_local_pool);
 
