@@ -234,8 +234,10 @@ CGTARG_Predicate_OP (
 /* ====================================================================
  *   OP_Copy_Operand
  *
- *   TODO: generate automatically ?? at leats some obvious ones
- *         coherently with the isa property ?
+ *   Test and return operand for copy operations.
+ *   Return the operand index if the operation is a copy from an
+ *   immediate value or a register to a register of the same class.
+ *   Returns -1 if the operation is not a copy.
  * ====================================================================
  */
 INT 
@@ -278,10 +280,42 @@ OP_Copy_Operand (
   case TOP_mov_i:
   case TOP_mov_ii:
     return 0;
-
   }
 
+  // [CG]: Some ops may be marked as copy
+  // while they are part of a sequence.
+  // This treats the branch copy which is:
+  // mov_i t, -1
+  // addcg r0, dst = r0, t, src (copy)
+  if (OP_copy(op)) {
+    if (opcode == TOP_addcg) return 2;
+  }
+    
   return -1;
+}
+
+/* ====================================================================
+ *   OP_Copy_Result
+ *
+ *   Returns the result operand index for operations
+ *   that have a defined OP_Copy_Operand.
+ * ====================================================================
+ */
+INT 
+OP_Copy_Result (
+  OP *op
+)
+{
+
+  // [CG]: Some ops may be marked as copy
+  // while they are part of a sequence.
+  // This treats the branch copy which is:
+  // mov_i t, -1
+  // addcg r0, dst = r0, t, src (copy)
+  if (OP_copy(op)) {
+    if (OP_code(op) == TOP_addcg) return 1;
+  }
+  return 0;
 }
 
 /* ====================================================================
@@ -361,6 +395,7 @@ TOP_immediate(TOP top)
 
   return TOP_UNDEFINED;
 }
+
 
 /* ====================================================================
  *   TOP_equiv_nonindex_memory
@@ -461,5 +496,461 @@ OP_Is_Unconditional_Compare (
 )
 {
   return (OP_icmp(op));
+}
+
+
+/*
+ * TOP_opnd_immediate_variant
+ *
+ * Returns the TOP immediate variant, depending on the immediate value.
+ * Target dependant.
+ * The reg form may be a register or immediate opcode.
+ * opnd is the operand number that may be replaced (0..2).
+ * imm is the immediate value that should be encoded.
+ * Returns TOP_UNDEFINED, if no immediate variant is available.
+ */
+TOP
+TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
+{
+  int s9 = 0;
+  if (imm >= -(1<<8) && imm < (1<<8)) s9 = 1;
+
+#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii: \
+			return s9 ? TOP_##top##_i : TOP_##top##_ii;
+#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii: \
+			return s9 ? TOP_##top##_i : TOP_##top##_ii;
+#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
+			return s9 ? TOP_##top##_i_r : TOP_##top##_ii_r; \
+		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b: \
+			return s9 ? TOP_##top##_i_b : TOP_##top##_ii_b;
+
+  if (opnd == 0) {
+    switch(regform) {
+      CASE_TOP(mov);
+      CASE_TOP(sub);
+      CASE_TOP_I(stw);
+      CASE_TOP_I(sth);
+      CASE_TOP_I(stb);
+      CASE_TOP_I(ldw);
+      CASE_TOP_I(ldh);
+      CASE_TOP_I(ldb);
+      CASE_TOP_I(ldhu);
+      CASE_TOP_I(ldbu);
+      CASE_TOP_I(ldw_d);
+      CASE_TOP_I(ldh_d);
+      CASE_TOP_I(ldb_d);
+      CASE_TOP_I(ldhu_d);
+      CASE_TOP_I(ldbu_d);
+    }
+  } else if (opnd == 1) {
+    switch(regform) {
+      CASE_TOP(add);
+      CASE_TOP(shl);
+      CASE_TOP(shr);
+      CASE_TOP(shru);
+      CASE_TOP(sh1add);
+      CASE_TOP(sh2add);
+      CASE_TOP(sh3add);
+      CASE_TOP(sh4add);
+      CASE_TOP(and);
+      CASE_TOP(andc);
+      CASE_TOP(or);
+      CASE_TOP(orc);
+      CASE_TOP(xor);
+      CASE_TOP(mullhus);
+      CASE_TOP(max);
+      CASE_TOP(maxu);
+      CASE_TOP(min);
+      CASE_TOP(minu);
+      CASE_TOP(mulhhs);
+      CASE_TOP(mull);
+      CASE_TOP(mullu);
+      CASE_TOP(mulh);
+      CASE_TOP(mulhu);
+      CASE_TOP(mulll);
+      CASE_TOP(mulllu);
+      CASE_TOP(mullh);
+      CASE_TOP(mullhu);
+      CASE_TOP(mulhh);
+      CASE_TOP(mulhhu);
+      CASE_TOP(mulhs);
+      CASE_TOP_BR(cmpeq);
+      CASE_TOP_BR(cmpne);
+      CASE_TOP_BR(cmpge);
+      CASE_TOP_BR(cmpgeu);
+      CASE_TOP_BR(cmpgt);
+      CASE_TOP_BR(cmpgtu);
+      CASE_TOP_BR(cmple);
+      CASE_TOP_BR(cmpleu);
+      CASE_TOP_BR(cmplt);
+      CASE_TOP_BR(cmpltu);
+      CASE_TOP_BR(andl);
+      CASE_TOP_BR(nandl);
+      CASE_TOP_BR(orl);
+      CASE_TOP_BR(norl);
+    }
+  } else if (opnd == 2) {
+    switch(regform) {
+      CASE_TOP(slct);
+      CASE_TOP(slctf);
+    }
+  }
+  return TOP_UNDEFINED;
+#undef CASE_TOP
+#undef CASE_TOP_I
+#undef CASE_TOP_BR
+}
+
+/*
+ * TOP_opnd_swapped_variant
+ * Returns the TOP corresponding to an invertion of the 2 operands index.
+ * For commutative tops on the index, return the same top.
+ * For inversible tops, return the inversed top.
+ */
+TOP
+TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
+{
+#define CASE_TOP(top) case TOP_##top##_r: \
+			return TOP_##top##_r;
+#define CASE_TOP_INV(top,newtop) case TOP_##top##_r: \
+			return TOP_##newtop##_r;
+#define CASE_TOP_BR(top) case TOP_##top##_r_r: \
+			return TOP_##top##_r_r; \
+		       case TOP_##top##_r_b: \
+       			return TOP_##top##_r_b;
+#define CASE_TOP_BR_INV(top,newtop) case TOP_##top##_r_r: \
+			return TOP_##newtop##_r_r; \
+		       case TOP_##top##_r_b: \
+       			return TOP_##newtop##_r_b;
+
+  if (opnd1 == 0 && opnd2 == 1) {
+    switch(top) {
+      CASE_TOP(add);
+      CASE_TOP(and);
+      CASE_TOP(or);
+      CASE_TOP(xor);
+      CASE_TOP(max);
+      CASE_TOP(maxu);
+      CASE_TOP(min);
+      CASE_TOP(minu);
+      CASE_TOP(mulll);
+      CASE_TOP(mulllu);
+      CASE_TOP(mulhh);
+      CASE_TOP(mulhhu);
+      CASE_TOP_BR(cmpeq);
+      CASE_TOP_BR(cmpne);
+      CASE_TOP_BR(andl);
+      CASE_TOP_BR(orl);
+      CASE_TOP_BR_INV(cmpge,cmplt);
+      CASE_TOP_BR_INV(cmpgeu,cmpltu);
+      CASE_TOP_BR_INV(cmpgt,cmple);
+      CASE_TOP_BR_INV(cmpgtu,cmpleu);
+      CASE_TOP_BR_INV(cmple,cmpgt);
+      CASE_TOP_BR_INV(cmpleu,cmpgtu);
+      CASE_TOP_BR_INV(cmplt,cmpge);
+      CASE_TOP_BR_INV(cmpltu,cmpgeu);
+    }
+  } else if (opnd1 == 1 && opnd2 == 2) {
+    switch(top) {
+      CASE_TOP_INV(slct, slctf);
+      CASE_TOP_INV(slctf, slct);
+    }
+  }
+  return TOP_UNDEFINED;
+#undef CASE_TOP
+#undef CASE_TOP_INV
+#undef CASE_TOP_BR
+#undef CASE_TOP_BR_INV
+}
+
+/*
+ * TOP_result_register_variant
+ * Returns the TOP variant for generating a result in the given register
+ * class with the same operand types.
+ * The reg form may be a register or immediate opcode.
+ * rslt is the result number that may be replaced (0..1).
+ */
+TOP
+TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
+{
+
+#define CASE_TOP(top) case TOP_##top##_r_b: case TOP_##top##_r_r: \
+			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_r_b : TOP_##top##_r_r; \
+		      case TOP_##top##_i_b: case TOP_##top##_i_r: \
+			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_i_b : TOP_##top##_i_r; \
+		      case TOP_##top##_ii_b: case TOP_##top##_ii_r: \
+			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_ii_b : TOP_##top##_ii_r; \
+
+  if (rslt == 0) {
+    switch(regform) {
+      CASE_TOP(cmpeq);
+      CASE_TOP(cmpne);
+      CASE_TOP(cmpge);
+      CASE_TOP(cmpgeu);
+      CASE_TOP(cmpgt);
+      CASE_TOP(cmpgtu);
+      CASE_TOP(cmple);
+      CASE_TOP(cmpleu);
+      CASE_TOP(cmplt);
+      CASE_TOP(cmpltu);
+      CASE_TOP(andl);
+      CASE_TOP(nandl);
+      CASE_TOP(orl);
+      CASE_TOP(norl);
+      case TOP_mtb:
+      case TOP_mov_r:
+	return regclass == ISA_REGISTER_CLASS_branch ? TOP_mtb : TOP_mov_r;
+      case TOP_mfb:
+	return regclass == ISA_REGISTER_CLASS_branch ? TOP_UNDEFINED : TOP_mfb;
+    }
+  }
+  return TOP_UNDEFINED;
+#undef CASE_TOP
+}
+
+/*
+ * TOP_opnd_use_bits
+ * Return the effective bits used for the given operand.
+ * In case of immediate operand, returns the used bits after the
+ * optional sign extension.
+ * Return -1 for undefined semantic
+ */
+INT
+TOP_opnd_use_bits(TOP top, int opnd)
+{
+#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii
+#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
+#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
+		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
+  switch(top) {
+    CASE_TOP(sub):
+      CASE_TOP(add):
+      CASE_TOP(sh1add):
+      CASE_TOP(sh2add):
+      CASE_TOP(sh3add):
+      CASE_TOP(sh4add):
+      CASE_TOP(and):
+      CASE_TOP(andc):
+      CASE_TOP(or):
+      CASE_TOP(orc):
+      CASE_TOP(xor):
+      CASE_TOP(max):
+      CASE_TOP(maxu):
+      CASE_TOP(min):
+      CASE_TOP(minu):
+      CASE_TOP_BR(cmpeq):
+      CASE_TOP_BR(cmpne):
+      CASE_TOP_BR(cmpge):
+      CASE_TOP_BR(cmpgeu):
+      CASE_TOP_BR(cmpgt):
+      CASE_TOP_BR(cmpgtu):
+      CASE_TOP_BR(cmple):
+      CASE_TOP_BR(cmpleu):
+      CASE_TOP_BR(cmplt):
+      CASE_TOP_BR(cmpltu):
+      CASE_TOP_BR(andl):
+      CASE_TOP_BR(nandl):
+      CASE_TOP_BR(orl):
+      CASE_TOP_BR(norl):
+      CASE_TOP_I(ldw):
+      CASE_TOP_I(ldh):
+      CASE_TOP_I(ldb):
+      CASE_TOP_I(ldhu):
+      CASE_TOP_I(ldbu):
+      CASE_TOP_I(ldw_d):
+      CASE_TOP_I(ldh_d):
+      CASE_TOP_I(ldb_d):
+      CASE_TOP_I(ldhu_d):
+      CASE_TOP_I(ldbu_d):
+      return 32;
+    
+    CASE_TOP(slct):
+      CASE_TOP(slctf):
+      return opnd == 0 ? 1: 32;
+    
+    CASE_TOP(mov):
+  case TOP_bswap_r:
+  case TOP_mtb:
+      return 32;
+    
+  case TOP_sxth_r:
+  case TOP_zxth_r:
+    return 16;
+  case TOP_sxtb_r:
+    return 8;
+    
+  case TOP_mfb:
+    return 1;
+  case TOP_addcg:
+  case TOP_divs:
+    return opnd == 2 ? 1: 32;
+    
+    CASE_TOP(shl):
+      CASE_TOP(shr):
+      CASE_TOP(shru):
+      return opnd == 0 ? 32: 8;
+    
+
+    CASE_TOP(mulll):
+    CASE_TOP(mulllu):
+    return 16;
+
+    CASE_TOP(mull):
+    CASE_TOP(mullu):
+    CASE_TOP(mullhus):
+      return opnd == 0 ? 32: 16;
+
+    CASE_TOP(mullh):
+    CASE_TOP(mullhu):
+      return opnd == 0 ? 16: 32;
+
+
+    CASE_TOP(mulh):
+    CASE_TOP(mulhh):
+    CASE_TOP(mulhhs):
+    CASE_TOP(mulhhu):
+    CASE_TOP(mulhs):
+    CASE_TOP(mulhu):
+      return 32;
+
+    CASE_TOP_I(stw):
+      return opnd == 2 ? 32: 32;
+    CASE_TOP_I(sth):
+      return opnd == 2 ? 16: 32;
+    CASE_TOP_I(stb):
+      return opnd == 2 ? 8: 32;
+  }
+  
+  return -1;
+#undef CASE_TOP
+#undef CASE_TOP_I
+#undef CASE_TOP_BR
+}
+
+/*
+ * TOP_opnd_use_signed
+ * Returns true if the extension os the effective use bits is
+ * signed for the semantic of the TOP.
+ * For instance a 32x16->32 unsigned multiply should have the following 
+ * properties:
+ * TOP_opnd_use_bits(top, opnd1) == 32
+ * TOP_opnd_use_signed(top, opnd1) == FALSE
+ * TOP_opnd_use_bits(top, opnd2) == 16
+ * TOP_opnd_use_signed(top, opnd2) == FALSE
+ *
+ * Default is to return -1 for undefined semantic.
+ */
+INT
+TOP_opnd_use_signed(TOP top, int opnd)
+{
+#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii
+#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
+#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
+		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
+  switch(top) {
+    CASE_TOP(sub):
+      CASE_TOP(add):
+      CASE_TOP(sh1add):
+      CASE_TOP(sh2add):
+      CASE_TOP(sh3add):
+      CASE_TOP(sh4add):
+      CASE_TOP(and):
+      CASE_TOP(andc):
+      CASE_TOP(or):
+      CASE_TOP(orc):
+      CASE_TOP(xor):
+      CASE_TOP(max):
+      CASE_TOP(min):
+      CASE_TOP_BR(cmpeq):
+      CASE_TOP_BR(cmpne):
+      CASE_TOP_BR(cmpge):
+      CASE_TOP_BR(cmpgt):
+      CASE_TOP_BR(cmple):
+      CASE_TOP_BR(cmplt):
+      CASE_TOP_BR(andl):
+      CASE_TOP_BR(nandl):
+      CASE_TOP_BR(orl):
+      CASE_TOP_BR(norl):
+      CASE_TOP_I(ldw):
+      CASE_TOP_I(ldh):
+      CASE_TOP_I(ldb):
+      CASE_TOP_I(ldhu):
+      CASE_TOP_I(ldbu):
+      CASE_TOP_I(ldw_d):
+      CASE_TOP_I(ldh_d):
+      CASE_TOP_I(ldb_d):
+      CASE_TOP_I(ldhu_d):
+      CASE_TOP_I(ldbu_d):
+      return TRUE;
+
+      CASE_TOP(minu):
+      CASE_TOP(maxu):
+      CASE_TOP_BR(cmpgeu):
+      CASE_TOP_BR(cmpgtu):
+      CASE_TOP_BR(cmpleu):
+      CASE_TOP_BR(cmpltu):
+	return FALSE;
+
+    CASE_TOP(slct):
+      CASE_TOP(slctf):
+      return opnd == 0 ? FALSE: TRUE;
+    
+    CASE_TOP(mov):
+  case TOP_bswap_r:
+  case TOP_mtb:
+      return TRUE;
+    
+  case TOP_sxth_r:
+  case TOP_sxtb_r:
+    return TRUE;
+
+  case TOP_zxth_r:
+    return FALSE;
+
+  case TOP_mfb:
+    return FALSE;
+  case TOP_addcg:
+  case TOP_divs:
+    return opnd == 2 ? FALSE: TRUE;
+    
+    CASE_TOP(shl):
+      CASE_TOP(shr):
+      return opnd == 0 ? TRUE: FALSE;
+
+      CASE_TOP(shru):
+      return opnd == 0 ? FALSE: FALSE;
+    
+
+    CASE_TOP(mulll):
+    return TRUE;
+    CASE_TOP(mulllu):
+    return FALSE;
+
+    CASE_TOP(mull):
+      return TRUE;
+    CASE_TOP(mullu):
+      return FALSE;
+
+    CASE_TOP(mullhus):
+    CASE_TOP(mullh):
+    CASE_TOP(mullhu):
+    CASE_TOP(mulh):
+    CASE_TOP(mulhh):
+    CASE_TOP(mulhhs):
+    CASE_TOP(mulhhu):
+    CASE_TOP(mulhs):
+    CASE_TOP(mulhu):
+      return TRUE;
+
+    CASE_TOP_I(stw):
+    CASE_TOP_I(sth):
+    CASE_TOP_I(stb):
+      return TRUE;
+  }
+  
+  return TRUE;
+#undef CASE_TOP
+#undef CASE_TOP_I
+#undef CASE_TOP_BR
 }
 

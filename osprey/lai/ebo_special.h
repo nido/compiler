@@ -216,6 +216,12 @@ BOOL EBO_Special_Sequence (OP *op,
 			   TN **opnd_tn,
 			   EBO_TN_INFO **opnd_tninfo);
 
+
+// [CG]
+// Returns a replacement TN not caught by OP_effectivelly_copy.
+// The replacement TN must be a literal TN.
+extern TN *EBO_literal_replacement_tn(OP *op);
+
 #else
 
 INT EBO_Copy_Operand (OP *op);

@@ -760,17 +760,21 @@ Pointer_Heuristic(
    */
   variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp);
 #ifdef TARG_ST
-  /* [CG]: We handle filter V_BR_FALSE case. */
-  /* [CG]: Should we invert in this case ? */
-  /*BOOL false_br = V_false_br(variant);
-    if (false_br) invert = !invert;*/
+  /* [CG]: We handle V_BR_FALSE case. */
+  if (V_false_br(variant)) invert = !invert;
   variant = V_br_condition(variant);
+  if (variant == V_BR_NONE) return FALSE;
 #endif
+
   switch (variant) {
   case V_BR_I4EQ:
   case V_BR_U4EQ:
   case V_BR_I8EQ:
   case V_BR_U8EQ:
+  case V_BR_I4EQ0:
+  case V_BR_U4EQ0:
+  case V_BR_I8EQ0:
+  case V_BR_U8EQ0:
     invert = !invert;
     break;
 
@@ -778,6 +782,10 @@ Pointer_Heuristic(
   case V_BR_U4NE:
   case V_BR_I8NE:
   case V_BR_U8NE:
+  case V_BR_I4NE0:
+  case V_BR_U4NE0:
+  case V_BR_I8NE0:
+  case V_BR_U8NE0:
     break;
 
   default:
@@ -786,8 +794,8 @@ Pointer_Heuristic(
 
   /* At least one of the operands must be a pointer.
    */
-  if (   !Is_Pointer(tn1, br_op)
-      && !Is_Pointer(tn2, br_op)
+  if (!Is_Pointer(tn1, br_op)
+      && (tn2 == NULL || !Is_Pointer(tn2, br_op))
       && !WN_Is_Pointer(WN_kid0(cond_wn))
       && !WN_Is_Pointer(WN_kid1(cond_wn))
    ) return FALSE;
@@ -833,24 +841,26 @@ Opcode_Heuristic(
    */
   variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp);
 #ifdef TARG_ST
-  /* [CG]: We handle filter V_BR_FALSE case. */
-  /* [CG]: Should we invert in this case ? */
-  /*BOOL false_br = V_false_br(variant);
-    if (false_br) invert = !invert;*/
+  /* [CG]: We handle V_BR_FALSE case. */
+  if (V_false_br(variant)) invert = !invert;
   variant = V_br_condition(variant);
+  if (variant == V_BR_NONE) return FALSE;
 #endif
 
   /* Determine if any of the operands are constant. Also check the
    * operands to make sure they are not pointers.
    */
-  if (   tn2 == NULL
-      || Is_Pointer(tn1, br_op)
-      || Is_Pointer(tn2, br_op)) return FALSE;
-  isconst = TN_Value_At_Op(tn2, br_op, &val);
-  if (!isconst) {
-    isconst = TN_Value_At_Op(tn1, br_op, &val);
-    if (!isconst) return FALSE;
-    variant = Invert_BR_Variant(variant);
+  if (Is_Pointer(tn1, br_op) ||
+      (tn2 != NULL && Is_Pointer(tn2, br_op))) return FALSE;
+
+  if (tn2 == NULL) isconst = TRUE; /* Single operand compare */
+  else {
+    isconst = TN_Value_At_Op(tn2, br_op, &val);
+    if (!isconst) {
+      isconst = TN_Value_At_Op(tn1, br_op, &val);
+      if (!isconst) return FALSE;
+      variant = Invert_BR_Variant(variant);
+    }
   }
 
   /* If we have the original whirl, examine the comparison operands and
@@ -911,6 +921,12 @@ Opcode_Heuristic(
   case V_BR_U8GE:
     if ((UINT64)val > 1) return FALSE;
     break;
+#ifdef TARG_ST
+    // [CG] The ball larus heuristic does not
+    // compare integers to constant!
+  default:
+    return FALSE;
+#else
   case V_BR_I4EQ:
   case V_BR_U4EQ:
   case V_BR_I8EQ:
@@ -922,11 +938,23 @@ Opcode_Heuristic(
   case V_BR_I8NE:
   case V_BR_U8NE:
     break;
+  case V_BR_I4EQ0:
+  case V_BR_U4EQ0:
+  case V_BR_I8EQ0:
+  case V_BR_U8EQ0:
+    invert = !invert;
+    break;
+  case V_BR_I4NE0:
+  case V_BR_U4NE0:
+  case V_BR_I8NE0:
+  case V_BR_U8NE0:
+    break;
   default:
     #pragma mips_frequency_hint NEVER
     DevWarn("Opcode_Heuristic: unexpected branch variant %s", 
 	    BR_Variant_Name(variant));
     return FALSE;
+#endif
   }
 
   /* We've satisfied the condition -- return the probability according
@@ -3222,5 +3250,6 @@ FREQ_Verify(const char *caller)
     }
   }
 
+  if (!all_ok) DevWarn("Freq estimate inconsistant after %s", caller);
   return all_ok;
 }

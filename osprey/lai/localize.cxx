@@ -527,7 +527,11 @@ Find_Global_TNs ( RID *rid )
             /* this use is just a copy of the def */
             continue;
 	  }
+#ifdef TARG_ST
+	  if (OP_copy(op) && tn == OP_result(op,OP_Copy_Result(op))) {
+#else
 	  if (OP_copy(op) && tn == OP_result(op,0)) {
+#endif
             /* this use is just a self-copy, will disappear */
             continue;
 	  }

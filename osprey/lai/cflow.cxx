@@ -5985,7 +5985,11 @@ Estimate_BB_Length(BB *bb)
       TN *tn;
 
       if (!OP_copy(op)) continue;
+#ifdef TARG_ST
+      if (   !TN_is_save_reg(tn = OP_result(op,OP_Copy_Result(op))) 
+#else
       if (   !TN_is_save_reg(tn = OP_result(op,0)) 
+#endif
           && !TN_is_save_reg(tn = OP_opnd(op, OP_Copy_Operand(op)))) continue;
 
       rc = TN_register_class(tn);
@@ -6026,7 +6030,11 @@ Create_Sched_Est(BB *bb, MEM_POOL *pool)
       TN *tn;
 
       if (!OP_copy(op)) continue;
+#ifdef TARG_ST
+      if (   !TN_is_save_reg(tn = OP_result(op,OP_Copy_Result(op))) 
+#else
       if (   !TN_is_save_reg(tn = OP_result(op,0)) 
+#endif
           && !TN_is_save_reg(tn = OP_opnd(op, OP_Copy_Operand(op)))) continue;
 
       rc = TN_register_class(tn);

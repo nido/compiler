@@ -86,6 +86,13 @@ Negate_BR_Variant(VARIANT variant)
   case V_BR_I8LT0: variant = V_BR_I8GE0; break;
   case V_BR_I8LE0: variant = V_BR_I8GT0; break;
 
+  case V_BR_I4EQ0: variant = V_BR_I4NE0; break;
+  case V_BR_I4NE0: variant = V_BR_I4EQ0; break;
+  case V_BR_I4GT0: variant = V_BR_I4LE0; break;
+  case V_BR_I4GE0: variant = V_BR_I4LT0; break;
+  case V_BR_I4LT0: variant = V_BR_I4GE0; break;
+  case V_BR_I4LE0: variant = V_BR_I4GT0; break;
+
   case V_BR_I8EQ: variant = V_BR_I8NE; break;
   case V_BR_I8NE: variant = V_BR_I8EQ; break;
   case V_BR_I8GT: variant = V_BR_I8LE; break;
@@ -99,6 +106,13 @@ Negate_BR_Variant(VARIANT variant)
   case V_BR_U8GE0: variant = V_BR_U8LT0; break;
   case V_BR_U8LT0: variant = V_BR_U8GE0; break;
   case V_BR_U8LE0: variant = V_BR_U8GT0; break;
+
+  case V_BR_U4EQ0: variant = V_BR_U4NE0; break;
+  case V_BR_U4NE0: variant = V_BR_U4EQ0; break;
+  case V_BR_U4GT0: variant = V_BR_U4LE0; break;
+  case V_BR_U4GE0: variant = V_BR_U4LT0; break;
+  case V_BR_U4LT0: variant = V_BR_U4GE0; break;
+  case V_BR_U4LE0: variant = V_BR_U4GT0; break;
 
   case V_BR_U8EQ: variant = V_BR_U8NE; break;
   case V_BR_U8NE: variant = V_BR_U8EQ; break;
@@ -318,6 +332,18 @@ Invert_BR_Variant (
   case V_BR_U8GE0:
   case V_BR_U8LT0:
   case V_BR_U8LE0:
+  case V_BR_I4EQ0:
+  case V_BR_I4NE0:
+  case V_BR_I4GT0:
+  case V_BR_I4GE0:
+  case V_BR_I4LT0:
+  case V_BR_I4LE0:
+  case V_BR_U4EQ0:
+  case V_BR_U4NE0:
+  case V_BR_U4GT0:
+  case V_BR_U4GE0:
+  case V_BR_U4LT0:
+  case V_BR_U4LE0:
   case V_BR_F_FALSE:
   case V_BR_F_TRUE:
   case V_BR_P_TRUE:
@@ -374,6 +400,13 @@ BR_Variant_Name (
   case V_BR_I8LT0:   return is_false ? "!I8LT0"   : "I8LT0";
   case V_BR_I8LE0:   return is_false ? "!I8LE0"   : "I8LE0";
 
+  case V_BR_I4EQ0:   return is_false ? "!I4EQ0"   : "I4EQ0";
+  case V_BR_I4NE0:   return is_false ? "!I4NE0"   : "I4NE0";
+  case V_BR_I4GT0:   return is_false ? "!I4GT0"   : "I4GT0";
+  case V_BR_I4GE0:   return is_false ? "!I4GE0"   : "I4GE0";
+  case V_BR_I4LT0:   return is_false ? "!I4LT0"   : "I4LT0";
+  case V_BR_I4LE0:   return is_false ? "!I4LE0"   : "I4LE0";
+
   case V_BR_I8EQ:    return is_false ? "!I8EQ"    : "I8EQ";
   case V_BR_I8NE:    return is_false ? "!I8NE"    : "I8NE";
   case V_BR_I8GT:    return is_false ? "!I8GT"    : "I8GT";
@@ -387,6 +420,13 @@ BR_Variant_Name (
   case V_BR_U8GE0:   return is_false ? "!U8GE0"   : "U8GE0";
   case V_BR_U8LT0:   return is_false ? "!U8LT0"   : "U8LT0";
   case V_BR_U8LE0:   return is_false ? "!U8LE0"   : "U8LE0";
+
+  case V_BR_U4EQ0:   return is_false ? "!U4EQ0"   : "U4EQ0";
+  case V_BR_U4NE0:   return is_false ? "!U4NE0"   : "U4NE0";
+  case V_BR_U4GT0:   return is_false ? "!U4GT0"   : "U4GT0";
+  case V_BR_U4GE0:   return is_false ? "!U4GE0"   : "U4GE0";
+  case V_BR_U4LT0:   return is_false ? "!U4LT0"   : "U4LT0";
+  case V_BR_U4LE0:   return is_false ? "!U4LE0"   : "U4LE0";
 
   case V_BR_U8EQ:    return is_false ? "!U8EQ"    : "U8EQ";
   case V_BR_U8NE:    return is_false ? "!U8NE"    : "U8NE";

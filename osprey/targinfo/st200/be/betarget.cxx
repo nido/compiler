@@ -883,5 +883,43 @@ OPCODE_To_INTRINSIC (
   return id;
 }
 
+/* ===============================================================
+ *   WN_To_INTRINSIC
+ *
+ *   Tree based selection of intrinsics.
+ *   Pass opcode and WN kids.
+ *   Return INTRINSIC and modified kids.
+ *   Call OPCODE_To_INTRINSIC when no optimization
+ *   is possible on kids.
+ * ===============================================================
+ */
+INTRINSIC
+WN_To_INTRINSIC (
+ OPCODE opcode, WN *kids[]
+)
+{
+  OPERATOR opr   = OPCODE_operator (opcode);
+  TYPE_ID  rtype = OPCODE_rtype (opcode);
+  TYPE_ID  desc  = OPCODE_desc  (opcode);
+  INTRINSIC id = INTRINSIC_INVALID;
 
+  // [CG]: select 32x32->64 multiplies
+  if (opcode == OPC_I8MPY || opcode == OPC_U8MPY) {
+    if (WN_opcode(kids[0]) == OPC_I8I4CVT &&
+	WN_opcode(kids[1]) == OPC_I8I4CVT) {
+      id = INTRN_MULN;
+      kids[0] = WN_kid0(kids[0]);
+      kids[1] = WN_kid0(kids[1]);
+    } else if (WN_opcode(kids[0]) == OPC_U8U4CVT &&
+	       WN_opcode(kids[1]) == OPC_U8U4CVT) {
+      id = INTRN_MULUN;
+      kids[0] = WN_kid0(kids[0]);
+      kids[1] = WN_kid0(kids[1]);
+    }
+  }
 
+  if (id == INTRINSIC_INVALID) {
+    return OPCODE_To_INTRINSIC(opcode);
+  }
+  return id;
+}

@@ -592,7 +592,11 @@ Spill_Prolog_Epilog_Save_LUNIT(LRANGE* lrange, LUNIT* lunit, GRA_BB* gbb,
     // Find the copy from the dedicated TN.
     //
     for (op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+#ifdef TARG_ST
+      if (OP_copy(op) && tn == OP_Copy_Result_TN(op)) {
+#else
       if (OP_copy(op) && tn == OP_result(op, 0)) {
+#endif
 	break;
       }
     }

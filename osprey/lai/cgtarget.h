@@ -262,6 +262,14 @@
  *	  If 'op' performs a copy operation, return the TN of
  *	  the source operand; otherwise return NULL.
  *
+ *	INT CGTARG_Copy_Result(OP *op)
+ *	  If 'op' is a copy operation, return the index of
+ *	  the result; otherwise return -1.
+ *
+ *	TN *CGTARG_Copy_Result_TN(OP *op)
+ *	  If 'op' is a copy operation, return the TN of
+ *	  the result; otherwise return NULL.
+ *
  *	BOOL CGTARG_Is_Copy(OP *op)
  *	  Return a boolean indicating if 'op' performs a copy operation.
  *

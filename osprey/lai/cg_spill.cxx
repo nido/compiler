@@ -724,7 +724,9 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
     //
     // Mark the actual load as a spill
     //
-    Set_OP_spill(OPS_last(ops));
+    OP *op = OPS_last(ops);
+    while(!OP_load(op)) op = OP_prev(op);
+    Set_OP_spill(op);
   }
   Max_Sdata_Elt_Size = max_sdata_save;
 }
@@ -773,7 +775,9 @@ CGSPILL_Store_To_Memory (TN *src_tn, ST *mem_loc, OPS *ops,
   //
   // Mark the actual store as a spill
   //
-  Set_OP_spill(OPS_last(ops));
+  OP *op = OPS_last(ops);
+  while(!OP_store(op)) op = OP_prev(op);
+  Set_OP_spill(op);
 
   Max_Sdata_Elt_Size = max_sdata_save;
 }
@@ -803,7 +807,11 @@ static OP* Find_Last_Copy(BB *bb)
     OP *tmp_op;
     for (tmp_op = OP_next(last_copy_op); tmp_op;
 	 tmp_op = OP_next(tmp_op)) {
+#ifdef TARG_ST
+      if (OP_copy(tmp_op) && TN_is_save_reg(OP_result(tmp_op,OP_Copy_Result(tmp_op)))) {
+#else
       if (OP_copy(tmp_op) && TN_is_save_reg(OP_result(tmp_op,0))) {
+#endif
 	last_copy_op = tmp_op;
       }
     }

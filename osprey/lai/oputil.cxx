@@ -893,7 +893,7 @@ void Print_OP_No_SrcLine(const OP *op)
     char buf[500];
     buf[0] = '\0';
     if (Alias_Manager) Print_alias_info (buf, Alias_Manager, wn);
-    fprintf(TFile, " WN=0x%lx %s", wn, buf);
+    fprintf(TFile, " WN=0x%p %s", wn, buf);
   }
   if (OP_unrolling(op)) {
     UINT16 unr = OP_unrolling(op);

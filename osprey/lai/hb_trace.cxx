@@ -84,9 +84,9 @@ HB_PATH_Trace(HB_PATH* path)
 /////////////////////////////////////
 {
   fprintf(HB_TFile, "<HB> Path data:\n");
-  fprintf(HB_TFile, "<HB>   Priority: %lf\n", HB_PATH_Priority(path));
-  fprintf(HB_TFile, "<HB>   Probability: %lf\n", HB_PATH_Probability(path));
-  fprintf(HB_TFile, "<HB>   Hazard Multiplier: %lf\n",
+  fprintf(HB_TFile, "<HB>   Priority: %f\n", HB_PATH_Priority(path));
+  fprintf(HB_TFile, "<HB>   Probability: %f\n", HB_PATH_Probability(path));
+  fprintf(HB_TFile, "<HB>   Hazard Multiplier: %f\n",
 	  HB_PATH_Hazard_Multiplier(path));
   fprintf(HB_TFile, "<HB>   Number Ops: %d\n", HB_PATH_Num_Ops(path));
   fprintf(HB_TFile, "<HB>   Schedule Height: %d\n",

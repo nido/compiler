@@ -744,7 +744,11 @@ Can_Be_Tail_Call (
   FOR_ALL_BB_OPs_FWD(exit_bb, op) {
     if (OP_copy(op)) {
       TN *src = OP_opnd(op, OP_Copy_Operand(op));
+#ifdef TARG_ST
+      TN *dst = OP_result(op, OP_Copy_Result(op));
+#else
       TN *dst = OP_result(op,0);
+#endif
       BOOL src_is_fval = Is_Function_Value(src);
       BOOL dst_is_fval = Is_Function_Value(dst);
 
@@ -1923,9 +1927,15 @@ Adjust_Exit (
    *   <copy> $sp, ...
    */
   if (Gen_Frame_Pointer && !PUSH_FRAME_POINTER_ON_STACK) {
+#ifdef TARG_ST
+    FmtAssert(OP_copy(sp_adj) &&
+	      TN_is_sp_reg(OP_result(sp_adj,OP_Copy_Result(sp_adj))),
+	      ("Unexpected exit SP adjust OP"));
+#else
     FmtAssert(OP_copy(sp_adj) &&
 	      TN_is_sp_reg(OP_result(sp_adj,0)),
 	      ("Unexpected exit SP adjust OP"));
+#endif
   } else {
     FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
 	      && OP_results(sp_adj) == 1

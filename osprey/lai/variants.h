@@ -180,27 +180,40 @@ typedef UINT64 VARIANT;
 #define V_BR_U5LT	89	/* 4-byte unsigned integer A < B */
 #define V_BR_U5LE	90	/* 4-byte unsigned integer A <= B */
 
+/* [CG] add single operand [IU]4 variants */
+#define V_BR_I4EQ0	91	/* Signed integer A = 0 */
+#define V_BR_I4NE0	92	/* Signed integer A != 0 */
+#define V_BR_I4GT0	93	/* Signed integer A > 0 */
+#define V_BR_I4GE0	94	/* Signed integer A >= 0 */
+#define V_BR_I4LT0	95	/* Signed integer A < 0 */
+#define V_BR_I4LE0	96	/* Signed integer A <= 0 */
+#define V_BR_U4EQ0	97	/* Unsigned integer A = 0 */
+#define V_BR_U4NE0	98	/* Unsigned integer A != 0 */
+#define V_BR_U4GT0	99	/* Unsigned integer A > 0 */
+#define V_BR_U4GE0	100	/* Unsigned integer A >= 0 */
+#define V_BR_U4LT0	101	/* Unsigned integer A < 0 */
+#define V_BR_U4LE0	102	/* Unsigned integer A <= 0 */
 
-#define V_BR_F_FALSE	91	/* Floating point (fcc) false */
-#define V_BR_F_TRUE	92	/* Floating point (fcc) true */
+#define V_BR_F_FALSE	200	/* Floating point (fcc) false */
+#define V_BR_F_TRUE	201	/* Floating point (fcc) true */
 
-#define V_BR_P_TRUE	93	/* Predicate true */
-#define V_BR_PEQ	94	/* Predicate A = B */
-#define V_BR_PNE	95	/* Predicate A != B */
+#define V_BR_P_TRUE	210	/* Predicate true */
+#define V_BR_PEQ	211	/* Predicate A = B */
+#define V_BR_PNE	212	/* Predicate A != B */
 
-#define V_BR_CLOOP	96	/* Counted loop */
-#define V_BR_CTOP	97	/* Mod-sched counted loop (top) */
-#define V_BR_CEXIT	98	/* Mod-sched counted loop (exit) */
-#define V_BR_WTOP	99	/* Mod-sched while loop (top) */
-#define V_BR_WEXIT	100	/* Mod-sched while loop (exit) */
+#define V_BR_CLOOP	220	/* Counted loop */
+#define V_BR_CTOP	221	/* Mod-sched counted loop (top) */
+#define V_BR_CEXIT	222	/* Mod-sched counted loop (exit) */
+#define V_BR_WTOP	223	/* Mod-sched while loop (top) */
+#define V_BR_WEXIT	224	/* Mod-sched while loop (exit) */
 
-#define V_BR_ALWAYS	101	/* Unconditional branch */
-#define V_BR_NEVER	102	/* Never branch */
-#define V_BR_LAST	103	/* Last one defined */
+#define V_BR_ALWAYS	230	/* Unconditional branch */
+#define V_BR_NEVER	231	/* Never branch */
+#define V_BR_LAST	232	/* Last one defined */
 
 /* V_BR_MASK *must* be 2^n - 1, and be at least as large as  */
 /* V_BR_LAST */
-#define V_BR_MASK	0x7f	/* Mask for branch condition */
+#define V_BR_MASK	0xff	/* Mask for branch condition */
 
 #define V_br_condition(v)	((v) & V_BR_MASK)
 
@@ -209,7 +222,7 @@ typedef UINT64 VARIANT;
  * separate from the branch condition.
  * True-branch is the default, 0 value.
  */
-#define V_BR_FALSE	0x0080	/* do false branch rather than true branch */
+#define V_BR_FALSE	0x0100	/* do false branch rather than true branch */
 #define V_false_br(v)	(v & V_BR_FALSE)
 #define Set_V_false_br(v)	(v |= V_BR_FALSE)
 #define Set_V_true_br(v)	(v &= ~V_BR_FALSE)
@@ -232,7 +245,7 @@ extern const char *BR_Variant_Name(VARIANT variant);
 /*
  * Store select variants to generate select on fcc
  */
-#define V_SELECT_FCC	0x0080	/* do not generate integer cc */
+#define V_SELECT_FCC	0x0100	/* do not generate integer cc */
 #define V_select_fcc_only(v)		(v & V_SELECT_FCC)
 #define Set_V_select_fcc_only(v)	(v |= V_SELECT_FCC)
 
@@ -331,5 +344,42 @@ extern const char *BR_Variant_Name(VARIANT variant);
 #define Set_V_spadjust_minus(v)		((v) |= V_SPADJUST_MINUS)
 #define Reset_V_spadjust_plus(v)	((v) &= ~V_SPADJUST_PLUS)
 #define Reset_V_spadjust_minus(v)	((v) &= ~V_SPADJUST_MINUS)
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Variants for is_cond and is_select operations
+ * as returned by TOP_cond_variant(top)
+ *
+ * ====================================================================
+ */
+#define V_COND_NONE		0
+#define V_COND_TRUE		1
+#define V_COND_FALSE		2
+
+/* ====================================================================
+ *
+ * Variants for is_cmp operations
+ * as returned by TOP_cmp_variant(top)
+ *
+ * ====================================================================
+ */
+#define V_CMP_NONE		0
+#define V_CMP_EQ		1	/* opnd1 == opnd2 */
+#define V_CMP_NE		2	/* opnd1 != opnd2 */
+#define V_CMP_GT		3	/* opnd1 > opnd2 */
+#define V_CMP_GTU		4	/* opnd1 u> opnd2 */
+#define V_CMP_GE		5	/* opnd1 >= opnd2 */
+#define V_CMP_GEU		6	/* opnd1 u>= opnd2 */
+#define V_CMP_LT		7	/* opnd1 < opnd2 */
+#define V_CMP_LTU		8	/* opnd1 u< opnd2 */
+#define V_CMP_LE		9	/* opnd1 <= opnd2 */
+#define V_CMP_LEU	       10	/* opnd1 u<= opnd2 */
+#define V_CMP_ANDL	       11	/* (opnd1 != 0) && (opnd2 != 0) */
+#define V_CMP_NANDL	       12	/* !((opnd1 != 0) && (opnd2 != 0)) */
+#define V_CMP_ORL	       13	/* (opnd1 != 0) || (opnd2 != 0) */
+#define V_CMP_NORL	       14	/* !((opnd1 != 0) || (opnd2 != 0)) */
+
+#endif /*TARG_ST*/
 
 #endif /* variants_INCLUDED */

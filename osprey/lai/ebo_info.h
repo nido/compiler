@@ -163,6 +163,10 @@ typedef struct local_tn_info {
         TN *local_tn;			/* My name. */
 	TN *replacement_tn;		/* Rename TN with this new name. */
 	EBO_TN_INFO *replacement_tninfo;/* Rename TN with this tninfo.   */
+#ifdef TARG_ST
+	TN *copy_tn;			/* Alternative physical replacement TN. */
+	EBO_TN_INFO *copy_tninfo;	/* Alternative physical replacement tninfo.   */
+#endif
 	EBO_TN_INFO *predicate_tninfo;	/* link to predicate tninfo. */
         BB *in_bb;			/* The defining BB. */
         OP *in_op;			/* The defining OP. */
@@ -318,6 +322,10 @@ get_new_tninfo (BB *current_bb, OP *current_op, TN *local_tn)
   tninfo->local_tn = local_tn;
   tninfo->replacement_tn = NULL;
   tninfo->replacement_tninfo = NULL;
+#ifdef TARG_ST
+  tninfo->copy_tn = NULL;
+  tninfo->copy_tninfo = NULL;
+#endif
   tninfo->predicate_tninfo = NULL;
   tninfo->omega = 0;
   tninfo->in_bb = current_bb;

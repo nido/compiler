@@ -581,6 +581,15 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_isub(o)		(TOP_is_sub(OP_code(o)) && OP_intop(o))
 #define OP_ixor(o)		(TOP_is_Xor(OP_code(o)) && OP_intop(o))
 
+#ifdef TARG_ST
+//[CG]: Added semantic queries
+#define OP_ishl(o)		(TOP_is_shl(OP_code(o)) && OP_intop(o))
+#define OP_ishr(o)		(TOP_is_shr(OP_code(o)) && OP_intop(o))
+#define OP_ishru(o)		(TOP_is_shru(OP_code(o)) && OP_intop(o))
+#define OP_sext(o)		(TOP_is_sext(OP_code(o)))
+#define OP_zext(o)		(TOP_is_zext(OP_code(o)))
+#endif
+
 #define TOP_is_predicated(t)    (TOP_is_guard_t(t) || TOP_is_guard_f(t))
 #define OP_has_predicate(o)	(TOP_is_predicated(OP_code(o)))
 #define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
@@ -646,6 +655,8 @@ extern BOOL OP_has_implicit_interactions(OP*);
  */
 #ifdef TARG_ST
 extern INT OP_Copy_Operand(OP *op);
+extern INT OP_Copy_Result(OP *op);
+
 //inline INT OP_Predicate_Operand(OP *op) {
 //  return OP_find_opnd_use(op, OU_predicate);
 //}
@@ -700,6 +711,15 @@ inline TN *OP_base_update_tn(OP *op)
     return OP_opnd(op,opnd);
   return NULL;
 }
+
+extern TOP TOP_opnd_immediate_variant(TOP top, int opnd, INT64 imm);
+extern TOP TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2);
+extern TOP TOP_result_register_variant(TOP top, int rslt, ISA_REGISTER_CLASS regclass);
+extern INT TOP_opnd_use_bits(TOP top, int opnd);
+extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
+
+extern VARIANT TOP_cond_variant(TOP top);
+extern VARIANT TOP_cmp_variant(TOP top);
 
 #endif
 
@@ -904,6 +924,11 @@ inline TN *OP_Copy_Operand_TN(OP *op)
 {
   INT iopnd = OP_Copy_Operand(op);
   return (iopnd < 0) ? NULL : OP_opnd(op,iopnd);
+}
+inline TN *OP_Copy_Result_TN(OP *op)
+{
+  INT ires = OP_Copy_Result(op);
+  return (ires < 0) ? NULL : OP_result(op,ires);
 }
 #else
 inline TN *CGTARG_Copy_Operand_TN(OP *op)

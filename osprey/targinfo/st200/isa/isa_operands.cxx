@@ -26,6 +26,8 @@
 // So we don't define unsigned lit classes.
 #define CG_FIX_1_0_7_A_DDTS_13517
 
+#define CG_SEMANTICS
+
 main() 
 { 
 
@@ -43,7 +45,8 @@ main()
         storeval, 
         target, 
         postincr, 
-        predicate, 
+        predicate,
+        condition, /* [CG]: used for select and branch. */
         uniq_res, 
         implicit, 
         opnd1, 
@@ -122,6 +125,7 @@ main()
   target = Create_Operand_Use("target"); 
   postincr = Create_Operand_Use("postincr"); 
   predicate = Create_Operand_Use("predicate"); 
+  condition = Create_Operand_Use("condition"); 
   uniq_res = Create_Operand_Use("uniq_res"); 
   implicit = Create_Operand_Use("implicit"); 
   opnd1 = Create_Operand_Use("opnd1"); 
@@ -155,7 +159,7 @@ main()
 		 TOP_brf, 
 		 TOP_UNDEFINED); 
 
-  Operand (0, bcond); 
+  Operand (0, bcond, condition); 
   Operand (1, btarg, target); 
 
   /* ====================================== */ 
@@ -192,7 +196,11 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
+#ifdef CG_SEMANTICS
+  Operand (0, isrc2, opnd1); 
+#else
   Operand (0, isrc2); 
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_move", 
@@ -204,7 +212,9 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
-  Operand (0, src2); 
+#ifdef CG_SEMANTICS
+  Operand (0, src2, opnd1); 
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_ijump", 
@@ -286,7 +296,7 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
-  Operand (0, bcond, predicate); 
+  Operand (0, bcond, condition); 
   Operand (1, src1, opnd1); 
   Operand (2, src2, opnd2); 
 
@@ -727,7 +737,7 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
-  Operand (0, bcond, predicate); 
+  Operand (0, bcond, condition); 
   Operand (1, src1, opnd1); 
   Operand (2, isrc2, opnd2); 
 

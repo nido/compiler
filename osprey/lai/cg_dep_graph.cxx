@@ -1619,10 +1619,11 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
           defop_base_tn = NULL;
         }
       } else if (OP_copy(defop)) {
-        result_num = 0;
 #ifdef TARG_ST
+        result_num = OP_Copy_Result(defop);
         defop_base_tn = OP_opnd(defop, OP_Copy_Operand(defop));
 #else
+        result_num = 0;
         defop_base_tn = OP_opnd(defop, OP_COPY_OPND);
 #endif
         *base_tn = defop_base_tn;
@@ -2222,7 +2223,8 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     //         as a spill and stored anywhere). We decided to mark
     //         OPs as OP_spill(op). 
     //
-    if (OP_spill(pred_op) && OP_spill(succ_op)) {
+    if (CGSPILL_Is_Spill_Op(pred_op) && CGSPILL_Is_Spill_Op(succ_op) &&
+	pred_spill_st && succ_spill_st) {
 #else
     if (pred_spill_st && succ_spill_st) {
 #endif
@@ -2250,7 +2252,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 			  info_src);
       }
 #ifdef TARG_ST
-    } else if (OP_spill(pred_op) || OP_spill(succ_op)) {
+    } else if (CGSPILL_Is_Spill_Op(pred_op) || CGSPILL_Is_Spill_Op(succ_op)) {
 #else
     } else if (pred_spill_st || succ_spill_st) {
 #endif
@@ -2582,7 +2584,8 @@ CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical)
   if (wn1 == NULL || wn2 == NULL) {
     ST *spill_st1 = CGSPILL_OP_Spill_Location(memop1);
     ST *spill_st2 = CGSPILL_OP_Spill_Location(memop2);
-    if (spill_st1 && spill_st2) {
+    if (CGSPILL_Is_Spill_Op(memop1) && CGSPILL_Is_Spill_Op(memop2) &&
+	spill_st1 && spill_st2) {
       if (spill_st2 == spill_st1) {
 	/*
 	 * They're in the same spill set, so there's a definite dependence.
@@ -4936,5 +4939,26 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
   }
 
 }
+
+// -----------------------------------------------------------------------
+// This fuctions returns memory dependence information for 2 operations.
+// The 2 operations can be in different BB, however, prev_op must
+// precede op in a topological traversal of the acyclic graph.
+// It does not require building the dependence graph.
+// It should be used for simple query on 2 operations when the
+// dependence graph is not available.
+// -----------------------------------------------------------------------
+BOOL 
+CG_DEP_Mem_Aliased(OP *prev_op, OP *op, BOOL *definite, UINT8 *omega)
+{
+  BOOL old = CG_DEP_Addr_Analysis;
+  BOOL aliased;
+  // disable address analysis which requires the dependence graph
+  CG_DEP_Addr_Analysis = FALSE;
+  aliased = get_mem_dep(prev_op, op, definite, omega, 0);
+  CG_DEP_Addr_Analysis = old;
+  return aliased;
+}
+
 #endif
 

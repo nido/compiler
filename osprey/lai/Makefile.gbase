@@ -420,6 +420,8 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += cg_select.cxx
   CG_CXX_SRCS += targ_select.cxx
   CG_CXX_SRCS += targ_hb.cxx
+  CG_CXX_SRCS += top_properties.cxx
+
 
 #CGG_DEV{
   ifeq ($(BUILD_VARIANT), CGG_BUILD)

@@ -485,9 +485,15 @@ inline BOOL TNs_Are_Equivalent(TN *tn1, TN *tn2)
 /* Build a TN that matches the register class */
 inline TN* Build_RCLASS_TN (ISA_REGISTER_CLASS rclass)
 {
+#ifdef TARG_ST
+  // Ensure size is > 0 !
+  return Gen_Register_TN (rclass, 
+	(REGISTER_bit_size(rclass, REGISTER_CLASS_last_register(rclass))+7)/8);
+#else
 	return Gen_Register_TN (rclass, 
 		(REGISTER_bit_size(rclass, 
 		 REGISTER_CLASS_last_register(rclass))/8) );
+#endif
 }
 
 // ---------------------------------------------------------------------

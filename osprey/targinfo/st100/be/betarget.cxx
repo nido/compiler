@@ -656,3 +656,28 @@ OPCODE_To_INTRINSIC (
 
   return id;
 }
+
+/* ===============================================================
+ *   WN_To_INTRINSIC
+ *
+ *   Tree based selection of intrinsics.
+ *   Pass opcode and WN kids.
+ *   Return INTRINSIC and modified kids.
+ *   Call OPCODE_To_INTRINSIC when no optimization
+ *   is possible on kids.
+ * ===============================================================
+ */
+INTRINSIC
+WN_To_INTRINSIC (
+ OPCODE opcode, WN *kids[]
+)
+{
+  INTRINSIC id = INTRINSIC_INVALID;
+
+  // Insert here special tree based optims
+
+  if (id == INTRINSIC_INVALID) {
+    return OPCODE_To_INTRINSIC(opcode);
+  }
+  return id;
+}

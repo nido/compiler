@@ -219,10 +219,182 @@ TOP_br_variant (
   case TOP_cmpne_i_r:
   case TOP_cmpne_ii_r:
     return V_BR_I4NE;
+    
+  case TOP_mtb:
+    return V_BR_I4NE0;
   }
 
   return V_BR_NONE;
 }
+
+
+/* ====================================================================
+ *   TOP_cmp_variant
+ *
+ *   Returns the variant for the interpretation of the semantic of
+ *   opcodes having the TOP_is_cmp property.
+ *   Must be interpreted as:
+ *   result is true if OU_opnd1 <variant> OU_opnd2 is true
+ * ====================================================================
+ */
+VARIANT
+TOP_cmp_variant(TOP top)
+{
+  switch (top) {
+  case TOP_cmpeq_r_b:
+  case TOP_cmpeq_i_b:
+  case TOP_cmpeq_ii_b:
+  case TOP_cmpeq_r_r:
+  case TOP_cmpeq_i_r:
+  case TOP_cmpeq_ii_r:
+    return V_CMP_EQ;
+
+  case TOP_cmpne_r_b:
+  case TOP_cmpne_i_b:
+  case TOP_cmpne_ii_b:
+  case TOP_cmpne_r_r:
+  case TOP_cmpne_i_r:
+  case TOP_cmpne_ii_r:
+    return V_CMP_NE;
+
+  case TOP_cmpge_r_b:
+  case TOP_cmpge_i_b:
+  case TOP_cmpge_ii_b:
+  case TOP_cmpge_r_r:
+  case TOP_cmpge_i_r:
+  case TOP_cmpge_ii_r:
+    return V_CMP_GE;
+
+  case TOP_cmpgeu_r_b:
+  case TOP_cmpgeu_i_b:
+  case TOP_cmpgeu_ii_b:
+  case TOP_cmpgeu_r_r:
+  case TOP_cmpgeu_i_r:
+  case TOP_cmpgeu_ii_r:
+    return V_CMP_GEU;
+
+  case TOP_cmpgt_r_b:
+  case TOP_cmpgt_i_b:
+  case TOP_cmpgt_ii_b:
+  case TOP_cmpgt_r_r:
+  case TOP_cmpgt_i_r:
+  case TOP_cmpgt_ii_r:
+    return V_CMP_GT;
+
+  case TOP_cmpgtu_r_b:
+  case TOP_cmpgtu_i_b:
+  case TOP_cmpgtu_ii_b:
+  case TOP_cmpgtu_r_r:
+  case TOP_cmpgtu_i_r:
+  case TOP_cmpgtu_ii_r:
+    return V_CMP_GTU;
+
+  case TOP_cmple_r_b:
+  case TOP_cmple_i_b:
+  case TOP_cmple_ii_b:
+  case TOP_cmple_r_r:
+  case TOP_cmple_i_r:
+  case TOP_cmple_ii_r:
+    return V_CMP_LE;
+
+  case TOP_cmpleu_r_b:
+  case TOP_cmpleu_i_b:
+  case TOP_cmpleu_ii_b:
+  case TOP_cmpleu_r_r:
+  case TOP_cmpleu_i_r:
+  case TOP_cmpleu_ii_r:
+    return V_CMP_LEU;
+
+  case TOP_cmplt_r_b:
+  case TOP_cmplt_i_b:
+  case TOP_cmplt_ii_b:
+  case TOP_cmplt_r_r:
+  case TOP_cmplt_i_r:
+  case TOP_cmplt_ii_r:
+    return V_CMP_LT;
+
+  case TOP_cmpltu_r_b:
+  case TOP_cmpltu_i_b:
+  case TOP_cmpltu_ii_b:
+  case TOP_cmpltu_r_r:
+  case TOP_cmpltu_i_r:
+  case TOP_cmpltu_ii_r:
+    return V_CMP_LTU;
+
+  case TOP_andl_r_b:
+  case TOP_andl_i_b:
+  case TOP_andl_ii_b:
+  case TOP_andl_r_r:
+  case TOP_andl_i_r:
+  case TOP_andl_ii_r:
+    return V_CMP_ANDL;
+
+  case TOP_nandl_r_b:
+  case TOP_nandl_i_b:
+  case TOP_nandl_ii_b:
+  case TOP_nandl_r_r:
+  case TOP_nandl_i_r:
+  case TOP_nandl_ii_r:
+    return V_CMP_NANDL;
+
+  case TOP_orl_r_b:
+  case TOP_orl_i_b:
+  case TOP_orl_ii_b:
+  case TOP_orl_r_r:
+  case TOP_orl_i_r:
+  case TOP_orl_ii_r:
+    return V_CMP_ORL;
+
+  case TOP_norl_r_b:
+  case TOP_norl_i_b:
+  case TOP_norl_ii_b:
+  case TOP_norl_r_r:
+  case TOP_norl_i_r:
+  case TOP_norl_ii_r:
+    return V_CMP_NORL;
+  }
+
+  FmtAssert(0, ("TOP_cmp_variant undefined for TOP %s", TOP_Name(top)));
+  return V_CMP_NONE;
+}
+
+/* ====================================================================
+ *   TOP_cond_variant
+ *
+ *   Returns the variant for the interpretation of the OU_condition operand
+ *   for an opcode having the TOP_is_select or TOP_is_cond semantic.
+ *
+ *   Possible values of variants are V_COND_TRUE or V_COND_FALSE.
+ *   The select semantic is:
+ *   (OU_condition == 0 ? OU_opnd1: OU_opnd2) if variant = V_COND_FALSE
+ *   else OU_condition != 0 ? OU_opnd1: OU_opnd2) if variant != V_COND_FALSE
+ *   The cond branch semantic is:
+ *   branch taken if OU_condition == 0 if variant == V_COND_FALSE
+ *   branch taken if OU_condition != 0 if variant != V_COND_FALSE
+ *
+ * ====================================================================
+ */
+
+VARIANT
+TOP_cond_variant(TOP top)
+{
+  switch (top) {
+  case TOP_slct_r:
+  case TOP_slct_i:
+  case TOP_slct_ii:
+  case TOP_br:
+    return V_COND_TRUE;
+
+  case TOP_slctf_r:
+  case TOP_slctf_i:
+  case TOP_slctf_ii:
+  case TOP_brf:
+    return V_COND_FALSE;
+  }
+  FmtAssert(0, ("TOP_cond_variant undefined for TOP %s", TOP_Name(top)));
+  return V_COND_NONE;
+}
+
 
 /* ====================================================================
  *   Make_Branch_Conditional
@@ -434,96 +606,6 @@ CGTARG_Analyze_Branch (
   return variant;
 }
 
-static VARIANT
-compare_variant (
-  OP *op
-)
-{
-  switch (OP_code(op)) {
-  case TOP_cmpeq_r_b:
-  case TOP_cmpeq_i_b:
-  case TOP_cmpeq_ii_b:
-  case TOP_cmpeq_r_r:
-  case TOP_cmpeq_i_r:
-  case TOP_cmpeq_ii_r:
-    return V_BR_I4EQ;
-
-  case TOP_cmpge_r_b:
-  case TOP_cmpge_i_b:
-  case TOP_cmpge_ii_b:
-  case TOP_cmpge_r_r:
-  case TOP_cmpge_i_r:
-  case TOP_cmpge_ii_r:
-    return V_BR_I4GE;
-
-  case TOP_cmpgeu_r_b:
-  case TOP_cmpgeu_i_b:
-  case TOP_cmpgeu_ii_b:
-  case TOP_cmpgeu_r_r:
-  case TOP_cmpgeu_i_r:
-  case TOP_cmpgeu_ii_r:
-    return V_BR_U4GE;
-
-  case TOP_cmpgt_r_b:
-  case TOP_cmpgt_i_b:
-  case TOP_cmpgt_ii_b:
-  case TOP_cmpgt_r_r:
-  case TOP_cmpgt_i_r:
-  case TOP_cmpgt_ii_r:
-    return V_BR_I4GT;
-
-  case TOP_cmpgtu_r_b:
-  case TOP_cmpgtu_i_b:
-  case TOP_cmpgtu_ii_b:
-  case TOP_cmpgtu_r_r:
-  case TOP_cmpgtu_i_r:
-  case TOP_cmpgtu_ii_r:
-    return V_BR_U4GT;
-
-  case TOP_cmple_r_b:
-  case TOP_cmple_i_b:
-  case TOP_cmple_ii_b:
-  case TOP_cmple_r_r:
-  case TOP_cmple_i_r:
-  case TOP_cmple_ii_r:
-    return V_BR_I4LE;
-
-  case TOP_cmpleu_r_b:
-  case TOP_cmpleu_i_b:
-  case TOP_cmpleu_ii_b:
-  case TOP_cmpleu_r_r:
-  case TOP_cmpleu_i_r:
-  case TOP_cmpleu_ii_r:
-    return V_BR_U4LE;
-
-  case TOP_cmplt_r_b:
-  case TOP_cmplt_i_b:
-  case TOP_cmplt_ii_b:
-  case TOP_cmplt_r_r:
-  case TOP_cmplt_i_r:
-  case TOP_cmplt_ii_r:
-    return V_BR_I4LT;
-
-  case TOP_cmpltu_r_b:
-  case TOP_cmpltu_i_b:
-  case TOP_cmpltu_ii_b:
-  case TOP_cmpltu_r_r:
-  case TOP_cmpltu_i_r:
-  case TOP_cmpltu_ii_r:
-    return V_BR_U4LT;
-
-  case TOP_cmpne_r_b:
-  case TOP_cmpne_i_b:
-  case TOP_cmpne_ii_b:
-  case TOP_cmpne_r_r:
-  case TOP_cmpne_i_r:
-  case TOP_cmpne_ii_r:
-    return V_BR_I4NE;
-  }
-
-  return V_BR_NONE;
-}
-
 /* ====================================================================
  *   CGTARG_Analyze_Compare
  * ====================================================================
@@ -560,33 +642,28 @@ CGTARG_Analyze_Compare (
   }
 #endif
 
+  *compare_op = NULL;
+  *tn1 = NULL;
+  *tn2 = NULL;
+  variant = V_BR_NONE;
+
   /* Attempt to find the defining OP for the tested value.
    */
   def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
   
-  //
-  // Make sure we've found one
-  //
   if (def_op != NULL) {
-    if (OP_code(def_op) == TOP_phi) {
-      def_op = NULL;
-    }
-    else if (OP_code(def_op) == TOP_mtb) {
-      def_op = NULL;
-    }
-    else {
-      FmtAssert(OP_opnds(def_op) == 2, ("confused by the compare op"));
-      variant = compare_variant(def_op);
-      if (false_br) Set_V_false_br(variant);
+    variant = TOP_br_variant(OP_code(def_op));
+    if (variant != V_BR_NONE) {
       cond_tn1 = OP_opnd(def_op, 0);
-      cond_tn2 = OP_opnd(def_op, 1);
+      cond_tn2 = OP_opnds(def_op) >= 2 ? OP_opnd(def_op, 1): NULL;
+
+      /* [CG] : Set false branch variant if needed. */
+      if (false_br) Set_V_false_br(variant);
+      *compare_op = def_op;
+      *tn1 = cond_tn1;
+      *tn2 = cond_tn2;
     }
   }
-
-  *compare_op = def_op;
-
-  *tn1 = cond_tn1;
-  *tn2 = cond_tn2;
   return variant;
 }
 
@@ -1046,7 +1123,6 @@ CGTARG_Spill_Type (
     case ISA_REGISTER_CLASS_integer:
       return MTYPE_To_TY(MTYPE_I4);
 
-      // FdF: Spill type for branch register is I4 in memory
     case ISA_REGISTER_CLASS_branch:
       return MTYPE_To_TY(MTYPE_I1);
 
@@ -1629,8 +1705,6 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	  // Not xfer -- reserve the following slot
 	  //
 	  if (!OP_xfer(op)) {
-	    // only mov is allowed this way !!!
-	    FmtAssert((OP_code(op) == TOP_mov_i) || (OP_code(op) == TOP_mov_ii),("extended not mov"));
 	    extra_slot_reqd = TRUE;
 	  }
 	}
@@ -1684,7 +1758,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 
   extra_slot_reqd = (OP_inst_words(op) == 2);
   FmtAssert(extra_slot_reqd || !CGTARG_need_extended_Opcode(op, &etop),
-	    ("CGTARG_Bundle_Slot_Available: Internal Error"));
+	    ("CGTARG_Bundle_Slot_Available: opcode extension invalid: BB:%d TOP: %s", BB_id(OP_bb(op)), TOP_Name(OP_code(op))));
 
 #if 1 // [CL] First check alignment constraints
   ISA_EXEC_UNIT_PROPERTY odd_even_prop = 0;
@@ -2705,6 +2779,31 @@ CGTARG_Initialize ()
   CGTARG_Invert_Table[TOP_cmpne_r_r]   = TOP_cmpeq_r_r;
   CGTARG_Invert_Table[TOP_cmpne_i_r]   = TOP_cmpeq_i_r;
   CGTARG_Invert_Table[TOP_cmpne_ii_r]  = TOP_cmpeq_ii_r;
+  CGTARG_Invert_Table[TOP_andl_r_r]  = TOP_nandl_r_r;
+  CGTARG_Invert_Table[TOP_andl_i_r]  = TOP_nandl_i_r;
+  CGTARG_Invert_Table[TOP_andl_ii_r]  = TOP_nandl_ii_r;
+  CGTARG_Invert_Table[TOP_nandl_r_r]  = TOP_andl_r_r;
+  CGTARG_Invert_Table[TOP_nandl_i_r]  = TOP_andl_i_r;
+  CGTARG_Invert_Table[TOP_nandl_ii_r]  = TOP_andl_ii_r;
+  CGTARG_Invert_Table[TOP_orl_r_r]  = TOP_norl_r_r;
+  CGTARG_Invert_Table[TOP_orl_i_r]  = TOP_norl_i_r;
+  CGTARG_Invert_Table[TOP_orl_ii_r]  = TOP_norl_ii_r;
+  CGTARG_Invert_Table[TOP_norl_r_r]  = TOP_orl_r_r;
+  CGTARG_Invert_Table[TOP_norl_i_r]  = TOP_orl_i_r;
+  CGTARG_Invert_Table[TOP_norl_ii_r]  = TOP_orl_ii_r;
+  CGTARG_Invert_Table[TOP_andl_r_b]  = TOP_nandl_r_b;
+  CGTARG_Invert_Table[TOP_andl_i_b]  = TOP_nandl_i_b;
+  CGTARG_Invert_Table[TOP_andl_ii_b]  = TOP_nandl_ii_b;
+  CGTARG_Invert_Table[TOP_nandl_r_b]  = TOP_andl_r_b;
+  CGTARG_Invert_Table[TOP_nandl_i_b]  = TOP_andl_i_b;
+  CGTARG_Invert_Table[TOP_nandl_ii_b]  = TOP_andl_ii_b;
+  CGTARG_Invert_Table[TOP_orl_r_b]  = TOP_norl_r_b;
+  CGTARG_Invert_Table[TOP_orl_i_b]  = TOP_norl_i_b;
+  CGTARG_Invert_Table[TOP_orl_ii_b]  = TOP_norl_ii_b;
+  CGTARG_Invert_Table[TOP_norl_r_b]  = TOP_orl_r_b;
+  CGTARG_Invert_Table[TOP_norl_i_b]  = TOP_orl_i_b;
+  CGTARG_Invert_Table[TOP_norl_ii_b]  = TOP_orl_ii_b;
+
 
   return;
 }

@@ -586,11 +586,13 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
       Set_OP_flag1( op );
       eligible_OP_count++;
 
+#ifndef TARG_ST
       // Some of the code below assumes that copy OPs have exactly one
       // result TN.
       Is_True( OP_results( op ) == 1,
 	       ( "CIO_RWTRAN::CIO_Copy_Remove copy OP has %d != 1"
 		 " result TNs", OP_results( op ) ) );
+#endif
     } else {
       Reset_OP_flag1( op );
     }
@@ -678,11 +680,12 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
     OP *op = cio_copy_table[index].op;
     if ( ! OP_flag1( op ) ) continue;
 
-    TN *tn_old = OP_result( op, 0 );
 #ifdef TARG_ST
+    TN *tn_old = OP_result(op, OP_Copy_Result(op));
     TN *tn_new = OP_opnd(op, OP_Copy_Operand(op));
     UINT8 omega_change = OP_omega(op, OP_Copy_Operand(op));
 #else
+    TN *tn_old = OP_result( op, 0 );
     TN *tn_new = OP_opnd( op, OP_COPY_OPND );
     UINT8 omega_change = OP_omega( op, OP_COPY_OPND );
 #endif

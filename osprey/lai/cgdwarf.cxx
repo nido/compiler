@@ -2332,7 +2332,7 @@ static void check_reloc_fmt_and_size(Elf64_Word     reloc_scn_type,
 {
 }
 
-#ifdef linux
+#ifdef __GNUC__
 struct UINT32_unaligned {
   UINT32 val;
 } __attribute__ ((aligned(1)));

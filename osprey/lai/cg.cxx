@@ -116,6 +116,10 @@
 #include "lao_stub.h"
 #endif
 
+#ifdef TARG_ST
+#include "top_properties.h"
+#endif
+
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
@@ -214,6 +218,15 @@ CG_PU_Initialize (
     // start tracing at beginning of cg.
     MEM_Tracing_Enable();
   }
+
+#ifdef TARG_ST
+  // [CG]: In debug mod we perform on check on topcode
+#ifndef RELEASE
+  for(int i = 0; i <= TOP_count; ++i) {
+    FmtAssert(TOP_check_properties((TOP)i), ("topcode %s as inconsistant properties", TOP_Name((TOP)i)));
+  }
+#endif
+#endif
 
   return;
 }
@@ -502,7 +515,6 @@ CG_Generate_Code(
 
   // Invoke global optimizations before register allocation at -O2 and above.
   if (CG_opt_level > 1) {
-
 #ifdef TARG_ST
     if (CG_enable_ssa) {
       //
@@ -515,32 +527,31 @@ CG_Generate_Code(
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     }
 #endif
-
-#ifdef BCO_ENABLED /* Thierry */
-    // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
   } //CG_opt_level > 1
-  if (CG_opt_level > 1 || CG_emit_bb_freqs) {
-#endif /* BCO_Enabled Thierry */
-    // Compute frequencies using heuristics when not using feedback.
-    // It is important to do this after the code has been given a
-    // cleanup by cflow so that it more closely resembles what it will
-    // to the later phases of cg.
-    if (!CG_PU_Has_Feedback) {
-      Set_Error_Phase("FREQ");
-      Start_Timer (T_Freq_CU);
-      FREQ_Compute_BB_Frequencies();
-      Stop_Timer (T_Freq_CU);
-      if (frequency_verify)
-	FREQ_Verify("Heuristic Frequency Computation");
+  
+#ifdef BCO_ENABLED /* Thierry */
+  // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
+  if (CG_opt_level > 1 || CG_emit_bb_freqs)
+#else
+  if (CG_opt_level > 1)
+#endif
+    {
+      // Compute frequencies using heuristics when not using feedback.
+      // It is important to do this after the code has been given a
+      // cleanup by cflow so that it more closely resembles what it will
+      // to the later phases of cg.
+      if (!CG_PU_Has_Feedback) {
+	Set_Error_Phase("FREQ");
+	Start_Timer (T_Freq_CU);
+	FREQ_Compute_BB_Frequencies();
+	Stop_Timer (T_Freq_CU);
+	if (frequency_verify)
+	  FREQ_Verify("Heuristic Frequency Computation");
+      }
     }
 
-#ifdef BCO_ENABLED /* Thierry */
-  } //CG_opt_level > 1
   if (CG_opt_level > 1) {
-    // Thierry end
-#endif /* BCO_Enabled Thierry */
 #ifdef TARG_ST
-
 #ifdef SUPPORTS_SELECT
     if (CG_enable_select) {
       // Perform select generation (partial predication if-conversion). 
@@ -554,9 +565,10 @@ CG_Generate_Code(
       Check_for_Dump(TP_SELECT, NULL);
     }
 #endif
-
 #endif
+  }
 
+  if (CG_opt_level > 1) {
 #if defined(TARG_IA64)
     //
     // Perform hyperblock formation (if-conversion). 
@@ -589,8 +601,18 @@ CG_Generate_Code(
 #ifdef TARG_ST
     // [CG] Run control flow opt after SSA.
     // Currently enabled only if select_if_convert is true
-    if (CG_enable_ssa && CG_enable_select)
+    // Run also an EBO pre pass after if-conversion as
+    // merge points may have been removed
+    if (CG_enable_ssa && CG_enable_select) {
       CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
+      if (CG_enable_peephole) {
+	Set_Error_Phase("Extended Block Optimizer (after ssa)");
+	Start_Timer(T_EBO_CU);
+	EBO_Pre_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+	Stop_Timer ( T_EBO_CU );
+	Check_for_Dump ( TP_EBO, NULL );
+      }
+    }
 #endif
 
     // Now done just before IGLS because we want to include regions in
@@ -673,6 +695,21 @@ CG_Generate_Code(
    */
 
 #ifdef TARG_ST
+#ifdef TARG_ST200
+  // Iterate over all the operations to change them to _ii when needed.
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+      TOP etop;
+      if (OP_inst_words(op) == 2)
+	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
+      if (CGTARG_need_extended_Opcode(op, &etop)) {
+	if (OP_inst_words(op) == 1)
+	  OP_Change_Opcode(op, etop);
+      }
+    }
+  }
+#endif
+
   // Call the LAO for software pipelining and prepass scheduling.
   if (CG_LAO_optimizations)
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);

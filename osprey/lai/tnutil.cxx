@@ -80,8 +80,14 @@
 #include "stblock.h"
 #include "data_layout.h"	// for FP/SP
 
+#ifdef TARG_ST
+// Ensure > 0
+#define DEFAULT_RCLASS_SIZE(rc)	\
+	((REGISTER_bit_size(rc, REGISTER_CLASS_last_register(rc))+7)/8)
+#else
 #define DEFAULT_RCLASS_SIZE(rc)	\
 	(REGISTER_bit_size(rc, REGISTER_CLASS_last_register(rc))/8)
+#endif
 
 /* ====================================================================
  *
@@ -615,7 +621,12 @@ Create_Dedicated_TN (
   REGISTER reg
 )
 {
-  INT size = REGISTER_bit_size(rclass, reg) / 8;
+#ifdef TARG_ST
+  // Ensure size is always > 0 !
+  INT size = (REGISTER_bit_size(rclass, reg)+7)/8;
+#else
+  INT size = REGISTER_bit_size(rclass, reg)/8;
+#endif
 #ifdef TARG_ST
   // Arthur: this is target dependent
   BOOL is_float = FALSE;

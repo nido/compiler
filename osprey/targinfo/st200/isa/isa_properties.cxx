@@ -38,9 +38,23 @@
 #include "topcode.h" 
 #include "isa_properties_gen.h" 
 
+// [CG]: Added semantic for some standard operations
+// properties added are:
+// shl, shr, shru: shifts left, right, unsigned right. 
+// sext, zext: sign and zero extensions
+// mul: applicable only on pure multiplications
+#define CG_SEMANTICS
+
 main() 
 { 
   ISA_PROPERTY 
+#ifdef CG_SEMANTICS
+    shl,
+    shr,
+    shru,
+    zext,
+    sext,
+#endif
     move,
     cond_move,
     jump,
@@ -102,10 +116,12 @@ main()
   /* ====================================== */ 
   move = ISA_Property_Create ("move"); 
   Instruction_Group (move, 
+#ifndef CG_SEMANTICS
 		 TOP_bswap_r, 
 		 TOP_sxtb_r, 
 		 TOP_sxth_r, 
 		 TOP_zxth_r, 
+#endif
 		 TOP_mov_r, 
 		 TOP_mov_i, 
 		 TOP_mov_ii, 
@@ -386,6 +402,23 @@ main()
 
   /* ====================================== */ 
   mul = ISA_Property_Create ("mul"); 
+#ifdef CG_SEMANTICS
+  Instruction_Group (mul, 
+                 TOP_mull_r, 
+		 TOP_mull_i, 
+		 TOP_mull_ii, 
+		 TOP_mullu_r, 
+		 TOP_mullu_i, 
+		 TOP_mullu_ii, 
+		 TOP_mulll_r, 
+		 TOP_mulll_i, 
+		 TOP_mulll_ii, 
+		 TOP_mulllu_r, 
+		 TOP_mulllu_i, 
+		 TOP_mulllu_ii, 
+		 TOP_UNDEFINED);
+
+#else
   Instruction_Group (mul, 
 		 TOP_mull_r, 
 		 TOP_mullu_r, 
@@ -421,6 +454,7 @@ main()
 		 TOP_mulhs_i, 
 		 TOP_mulhs_ii, 
 		 TOP_UNDEFINED); 
+#endif
 
   /* ====================================== */ 
   div = ISA_Property_Create ("div"); 
@@ -798,6 +832,46 @@ main()
   l_group = ISA_Property_Create ("l_group"); 
   Instruction_Group (l_group, 
 		 TOP_UNDEFINED); 
+
+#ifdef CG_SEMANTICS
+  /* ====================================== */ 
+  shl = ISA_Property_Create ("shl"); 
+  Instruction_Group (shl, 
+		     TOP_shl_r, 
+		     TOP_shl_i,
+		     TOP_shl_ii,
+		     TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  shr = ISA_Property_Create ("shr"); 
+  Instruction_Group (shr, 
+		     TOP_shr_r, 
+		     TOP_shr_i,
+		     TOP_shr_ii,
+		     TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  shru = ISA_Property_Create ("shru"); 
+  Instruction_Group (shru, 
+		     TOP_shru_r, 
+		     TOP_shru_i,
+		     TOP_shru_ii,
+		     TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  zext = ISA_Property_Create ("zext"); 
+  Instruction_Group (zext, 
+		     TOP_zxth_r, 
+		     TOP_UNDEFINED);
+
+  /* ====================================== */ 
+  sext = ISA_Property_Create ("sext"); 
+  Instruction_Group (sext, 
+		     TOP_sxth_r, 
+		     TOP_sxtb_r, 
+		     TOP_UNDEFINED);
+#endif
+
 
   /* ====================================== */ 
   /*         Memory Access Size 1          */ 

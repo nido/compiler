@@ -88,7 +88,7 @@
 
 #ifdef TARG_ST
 extern void EBO_Set_OP_omega (OP *op, ...);
-extern void EBO_OPS_omega (OPS *ops, EBO_TN_INFO *pred_tninfo);
+extern void EBO_OPS_omega (OPS *ops, TN *opnd, EBO_TN_INFO *opnd_tninfo);
 #endif
 
 inline

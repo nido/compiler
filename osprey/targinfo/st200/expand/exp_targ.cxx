@@ -228,41 +228,47 @@ Expand_Copy (
 
       if (tgt_rc == ISA_REGISTER_CLASS_integer) {
 	Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
+	Set_OP_copy (OPS_last(ops));
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_branch) {
 	Build_OP(TOP_mtb, tgt_tn, src_tn, ops);
       }
-      else {
-	FmtAssert(FALSE,("Expand_Copy: not supported"));
-      }
+      else goto unsupported;
       break;
 
     case ISA_REGISTER_CLASS_branch:
 
       if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	//FmtAssert(FALSE,("Expand_Copy: b -> b ??"));
-	// Move through an integer
-	TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	Build_OP(TOP_mfb, tmp, src_tn, ops);
-	Build_OP(TOP_mtb, tgt_tn, tmp, ops);
+	// [CG] Generating a branch copy need 2 instructions
+	// We use addcg r0, dest, r0, -1, src.
+	// The addcg instruction effectivelly performs the copy
+	// in one instruction even if the constant -1 needs an
+	// instruction. Thus we can mark the addcg as a copy op.
+	// It is not clear if generating a tmp is safe. What happens
+	// if the copy is generated after reg alloc ?
+	// We don't use a simulated instruction due to the need for
+	// a temporary register.
+	// DevWarn("generating branch copy");
+	TN *tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	Build_OP(TOP_mov_i, tmp, Gen_Literal_TN(-1,4), ops);
+	Build_OP(TOP_addcg, Zero_TN, tgt_tn, Zero_TN, tmp, src_tn, ops);
+	Set_OP_copy (OPS_last(ops));
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_integer) {
 	Build_OP(TOP_mfb, tgt_tn, src_tn, ops);
       }
-      else {
-	FmtAssert(FALSE,("Expand_Copy: not supported"));
-      }
-      return;
+      else goto unsupported;
+      break;
 
     default:
-
-      FmtAssert(FALSE,
-         ("Expand_Copy: unsupported copy %s -> %s",
-	    ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)),
-	    ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc))));
+      goto unsupported;
   }
-
-  Set_OP_copy (OPS_last(ops));
+  return;
+ unsupported:
+  FmtAssert(FALSE,
+	    ("Expand_Copy: unsupported copy %s -> %s",
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)),
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc))));
   return;
 }
 
@@ -484,42 +490,28 @@ Exp_Immediate (
   if (TN_has_value(src)) {
     val = TN_value(src);
   }
-  else if (TN_is_symbol(src)) {
-
-    FmtAssert(FALSE,("Exp_Immediate: symbol TN"));
-
-    ST *base;
-    Base_Symbol_And_Offset_For_Addressing (TN_var(src),
-                                      TN_offset(src), &base, &val);
-    // now val is the "real" offset
-  }
 
   switch (TN_register_class(dest)) {
-
-    case ISA_REGISTER_CLASS_branch:
-      FmtAssert(FALSE,("Exp_Immediate: MTYPE_B not implemented"));
-      break;
-
-    case ISA_REGISTER_CLASS_integer:
-#if 0
-    case MTYPE_I1:
-    case MTYPE_I2:
-    case MTYPE_I4:
-    case MTYPE_U1:
-    case MTYPE_U2:
-    case MTYPE_U4:
-    case MTYPE_A4:
-#endif
-      if (ISA_LC_Value_In_Class (val, LC_s32)) {
-	Build_OP (TOP_mov_i, dest, src, ops);
-      }
-      else {
-	FmtAssert(0, ("Exp_Immediate: large immediate value 0x%llx", val));
-      }
-      break;
-
-    default:
-      FmtAssert(0, ("Exp_Immediate: unknown ISA_REGISTER_CLASS"));
+  case ISA_REGISTER_CLASS_branch:
+    FmtAssert(TN_has_value(src),("Exp_Immediate: MTYPE_B <- symbol is invalid"));
+    if (val == 0) {
+      Build_OP(TOP_mtb, dest, Zero_TN, ops);
+    } else {
+      Build_OP(TOP_cmpeq_r_b, dest, Zero_TN, Zero_TN, ops);
+    }
+    break;
+    
+  case ISA_REGISTER_CLASS_integer:
+    if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_s9)) {
+      if (val == 0) Build_OP (TOP_mov_r, dest, Zero_TN, ops);
+      else Build_OP (TOP_mov_i, dest, src, ops);
+    } else {
+      Build_OP (TOP_mov_ii, dest, src, ops);
+    }
+    break;
+    
+  default:
+    FmtAssert(0, ("Exp_Immediate: unknown ISA_REGISTER_CLASS"));
   }
 
   return;
@@ -1258,6 +1250,11 @@ Expand_Normalize_Logical (
   OPS *ops
 )
 {
+  // [CG]: Should not be called on this target as normalization is
+  // not necessary
+  // 
+  FmtAssert(0,("Expand_Normalize_Logical should not be called"));
+  
   //
   // If src is not 0, make it 1
   //
@@ -3061,7 +3058,7 @@ Expand_Const (
     //
     // For now I do the bit-pattern directly, eventually we should
     // try to make a mov from a symbol TN into an integer TN and
-    // handle it in emit const in assm phase.
+    // handle it in emit const in asm phase.
     //
     Build_OP(TOP_mov_i, dest, src, ops);
 #if 0

@@ -312,6 +312,23 @@ OP_Copy_Operand (
 }
 
 /* ====================================================================
+ *   OP_Copy_Result
+ *
+ *   [CG] Added this function for support of multiple result copy ops.
+ *   TODO: generate automatically ?? at leats some obvious ones
+ *         coherently with the isa property ?
+ * ====================================================================
+ */
+INT 
+OP_Copy_Result (
+  OP *op
+)
+{
+  return 0;
+}
+
+
+/* ====================================================================
  *   CGTARG_Noop_Top
  * ====================================================================
  */

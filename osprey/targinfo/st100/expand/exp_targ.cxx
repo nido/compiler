@@ -229,6 +229,7 @@ Expand_Copy (
 
       if (tgt_rc == ISA_REGISTER_CLASS_du) {
 	Build_OP(TOP_GP32_MOVE_GT_DR_DR, tgt_tn, guard, src_tn, ops);
+	Set_OP_copy (OPS_last(ops));
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_au) {
 	Build_OP(TOP_GP32_COPYA_GT_AR_DR, tgt_tn, guard, src_tn, ops);
@@ -245,6 +246,7 @@ Expand_Copy (
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_au) {
 	Build_OP(TOP_GP32_MOVEA_GT_AR_AR, tgt_tn, guard, src_tn, ops);
+	Set_OP_copy (OPS_last(ops));
       }
       else {
 	FmtAssert(FALSE,("Expand_Copy: not supported"));
@@ -255,6 +257,7 @@ Expand_Copy (
 
       if (tgt_rc == ISA_REGISTER_CLASS_guard) {
 	Build_OP(TOP_GP32_MOVEG_GT_BR_BR, tgt_tn, guard, src_tn, ops);
+	Set_OP_copy (OPS_last(ops));
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_du) {
 	Build_OP(TOP_GP32_BOOL_GT_DR_BR, tgt_tn, guard, src_tn, ops);
@@ -272,7 +275,6 @@ Expand_Copy (
 	    ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc))));
   }
 
-  Set_OP_copy (OPS_last(ops));
   return;
 }
 

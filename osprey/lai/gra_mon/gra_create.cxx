@@ -788,10 +788,11 @@ Complement_Copy( OP* op, GRA_BB *gbb, list<GRA_PREF_CAND*>& pref_list )
 //
 /////////////////////////////////////
 {
-  TN* result        = OP_result(op,0);
 #ifdef TARG_ST
+  TN* result        = OP_Copy_Result_TN(op);
   TN* opnd          = OP_Copy_Operand_TN(op);
 #else
+  TN* result        = OP_result(op,0);
   TN* opnd          = CGTARG_Copy_Operand_TN(op);
 #endif
   LRANGE* result_lr = NULL;

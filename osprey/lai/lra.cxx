@@ -972,10 +972,10 @@ Remove_Redundant_Code (BB *bb)
 	 //         Thus, not only equivalence of TN_register matters
 	 //         but also its register class.
 	 //
-	 LRA_TN_register(OP_result(op,0)) ==
+	 LRA_TN_register(OP_result(op,OP_Copy_Result(op))) ==
 	 LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op))) &&
 
-	 TN_register_class(OP_result(op,0)) ==
+	 TN_register_class(OP_result(op,OP_Copy_Result(op))) ==
 	 TN_register_class(OP_opnd(op, OP_Copy_Operand(op)))) ||
 #else
 	 LRA_TN_register(OP_result(op,0)) ==
@@ -990,7 +990,7 @@ Remove_Redundant_Code (BB *bb)
       // to a function with one arg being an unnamed const
       // and where we miss the dependency because the TN
       // which holds that arg is not marked as dedicated.
-    if (TN_is_dedicated(OP_result(op,0)) ) {
+    if (TN_is_dedicated(OP_result(op,OP_Copy_Result(op)))) {
       Set_TN_is_dedicated(OP_opnd(op, OP_Copy_Operand(op)));
     }
 #endif
@@ -1939,12 +1939,11 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
          (CGTARG_Is_Preference_Copy(op) &&
 #ifdef TARG_ST // CL: ensure source is a register
 	  TN_is_register(OP_opnd(op, OP_Copy_Operand(op))) &&
-#endif
-	  LRA_TN_register(OP_result(op,0)) ==
-#ifdef TARG_ST
-	          LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op)))))) {
+	  LRA_TN_register(OP_result(op,OP_Copy_Result(op))) ==
+	    LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op)))))) {
 #else
-	          LRA_TN_register(OP_opnd(op, CGTARG_Copy_Operand(op)))))) {
+          LRA_TN_register(OP_result(op,0)) ==
+	    LRA_TN_register(OP_opnd(op, CGTARG_Copy_Operand(op)))))) {
 #endif
       *redundant_code = TRUE;
     }
@@ -4403,7 +4402,11 @@ LRA_Estimate_Fat_Points (
         if (!LR_assigned(clr)) {
           if (TN_is_local_reg(tn) || (!regs_in_use &&
               ((LR_def_cnt(clr) != 0 && opnum <= LR_exposed_use(clr)) ||
+#ifdef TARG_ST
+	      (OP_copy(op) && !TN_is_local_reg(OP_result(op,OP_Copy_Result(op)))))))
+#else
 	      (OP_copy(op) && !TN_is_local_reg(OP_result(op,0))))))
+#endif
           {
             Set_LR_assigned(clr);
 	    inuse[regclass]++;
