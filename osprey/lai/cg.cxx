@@ -551,10 +551,6 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
-      // not enabled yet
-#else
-
-#ifdef TARG_ST
       // GRA_LIVE_Init only done if !CG_localize_tns
       if (CG_enable_loop_optimizations && !CG_localize_tns) {
 #else
@@ -572,7 +568,6 @@ CG_Generate_Code(
 	if (frequency_verify)
 	  FREQ_Verify("CGLOOP");
       }
-#endif
 
 #ifndef TARG_ST
       /* Optimize control flow (second pass) */

@@ -96,7 +96,7 @@ enum BASE_UPDATE {
   IMM_BASE_UPDATE = 2,  // OP has immediate base-update variant
 };
 
-#ifdef TARG_IA64
+#if defined(TARG_IA64) || defined(TARG_ST200)
 
 // The following functions defined in ia64/cg_swp_target.cxx.
 
@@ -104,22 +104,34 @@ extern void SWP_Exp_COPY(TN *result, TN *opnd, OPS *ops);
 
 extern INT32 SWP_Max_Slots_Per_Cycle();
 
+#ifdef TARG_IA64
 void SWP_Loop_Init_Fini(bool is_doloop,
 			INT stage_count,
 			OPS *prolog_ops,
 			OPS *body_ops,
 			OPS *epilog_ops);
+#else
+extern void SWP_Loop_Init_Fini(bool is_doloop,
+			INT stage_count,
+			OPS *prolog_ops,
+			OPS *body_ops,
+			OPS *epilog_ops);
+#endif
 
 extern BOOL Prepare_Loop_For_SWP_1(CG_LOOP& cl, bool trace);
 
 extern BOOL Prepare_Loop_For_SWP_2(CG_LOOP& cl, bool trace);
 
+#ifdef TARG_IA64
 extern void Convert_While_Loop_to_Fully_Predicated_Form(CG_LOOP& cl);
+#endif
 
 extern BOOL Remove_Non_Definite_Dependence(CG_LOOP &cl, bool cg_loop_init, bool trace);
 
 extern BASE_UPDATE OP_base_update_kind(OP *op);
 
+#ifdef TARG_IA64
+// Arthur: we have this from target description -- OU_base
 extern INT32 OP_base_opnd_num(OP *op);
 
 extern INT32 OP_base_res_num(OP *op);
@@ -127,15 +139,22 @@ extern INT32 OP_base_res_num(OP *op);
 extern INT32 OP_incr_opnd_num(OP *op);
  
 extern BOOL Imm_Value_In_Range(OP *op, INT64 imm);
+#endif
 
+// Generate a target_specific SWP branching
 extern void Gen_SWP_Branch(CG_LOOP &cl, bool is_doloop);
 
-extern void Gen_SWP_Branch_Predict(BB *body, BB *prolog, BB *epilog);
-
+// Undo target-specific SWP branching
 extern void Undo_SWP_Branch(CG_LOOP &cl, bool is_doloop);
+
+#ifdef TARG_IA64
+extern void Gen_SWP_Branch_Predict(BB *body, BB *prolog, BB *epilog);
 
 extern void Gen_Implicit_Prefetches(CG_LOOP &cl, bool trace);
 
+// Arthur: Base_update_tn() looks like autoincrementing load/stores.
+//         This is declared in the op.h.
+//       
 inline TN* Base_update_tn(OP *op)
 {
   if (OP_load(op)) {
@@ -147,6 +166,7 @@ inline TN* Base_update_tn(OP *op)
   }
   return NULL;
 }
+#endif
 
 #else
 
@@ -208,4 +228,4 @@ inline TN* Base_update_tn(OP *op) { }
 
 #endif
 
-#endif
+#endif /* CG_SWP_TARGET_INCLUDED */

@@ -588,14 +588,10 @@ public:
   void Recompute_Liveness();
   bool Determine_Unroll_Fully();
   void Determine_Unroll_Factor();
-#ifndef TARG_ST
   void Determine_SWP_Unroll_Factor();
-#endif
   void Build_CG_LOOP_Info();
-#ifndef TARG_ST
   void EBO_Before_Unrolling();
   void EBO_After_Unrolling();
-#endif
   void Print(FILE *fp);
   void Verify();
 

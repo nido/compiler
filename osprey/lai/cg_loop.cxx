@@ -159,17 +159,17 @@
 #include "dominate.h"
 #include "ti_res_count.h"
 #include "cg_loop_scc.h"
-/* #include "cg_loop_recur.h"
-#include "cg_loop_mii.h" */
+#include "cg_loop_recur.h"
+#include "cg_loop_mii.h" 
 #include "freq.h"
 #include "cg_region.h"
 #include "cg_sched_est.h"
 #include "cg_loop.h"
-/* #include "cg_swp.h"
-#include "cg_swp_options.h" */
+#include "cg_swp.h"
+#include "cg_swp_options.h"
 #include "findloops.h"
 #include "dominate.h"
-/* #include "ebo.h" */
+#include "ebo.h"
 #include "hb.h"
 #include "gra_live.h"
 
@@ -4124,24 +4124,26 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	      &ops);
   }
 
-#ifndef TARG_ST
-  // Replace the loop-back branch with the counted loop branch
-  // instruction.  It is a nop for the MIPS architecture.
-  {
-    OPS body_ops = OPS_EMPTY;
-    OP *br_op = BB_branch_op(head);
-    TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
-
-    CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn,
-				 ntimes, label_tn, &ops, &body_ops);
-    if (OPS_length(&body_ops) > 0) {
-      BB_Remove_Op(head, br_op);
-      BB_Append_Ops(head, &body_ops);
-      CGPREP_Init_Op(BB_branch_op(head));
-      CG_LOOP_Init_Op(BB_branch_op(head));
-    }
-  }
+#ifdef TARG_ST
+  // Arthur: only do it if processor architecture supports.
+  if (PROC_has_counted_loops())
 #endif
+    // Replace the loop-back branch with the counted loop branch
+    // instruction.  It is a nop for the MIPS architecture.
+    {
+      OPS body_ops = OPS_EMPTY;
+      OP *br_op = BB_branch_op(head);
+      TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
+
+      CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn,
+				 ntimes, label_tn, &ops, &body_ops);
+      if (OPS_length(&body_ops) > 0) {
+	BB_Remove_Op(head, br_op);
+	BB_Append_Ops(head, &body_ops);
+	CGPREP_Init_Op(BB_branch_op(head));
+	CG_LOOP_Init_Op(BB_branch_op(head));
+      }
+    }
 
   /* Initialize the TN renamer */
   unroll_names_init(loop, ntimes, &MEM_phase_nz_pool);
@@ -4664,7 +4666,6 @@ void Induction_Variables_Removal(CG_LOOP& cl,
   }
 }
 
-#ifndef TARG_ST
 void CG_LOOP::Determine_SWP_Unroll_Factor()
 {
   MEM_POOL_Push(&MEM_local_nz_pool);
@@ -4777,7 +4778,9 @@ void CG_LOOP::EBO_Before_Unrolling()
     bb_region.Verify();  
 
     // TODO: call ebo_before_unrolling(bb_region) here
+#ifndef TARG_ST
     EBO_before_unrolling(&bb_region);
+#endif
   }
 
   MEM_POOL_Pop(&MEM_local_pool);
@@ -4796,11 +4799,12 @@ void CG_LOOP::EBO_After_Unrolling()
     }
 
     // TODO: call ebo_after_unrolling(bb_region) here
+#ifndef TARG_ST
     EBO_after_unrolling(&bb_region);
+#endif
   }
   MEM_POOL_Pop(&MEM_local_pool);
 }
-#endif /* TARG_ST */
 
 void CG_LOOP::Print(FILE *fp)
 {
@@ -4971,11 +4975,18 @@ static BOOL Loop_Amenable_For_SWP(LOOP_DESCR *loop, BOOL trace)
   }
 }
 
-#ifndef TARG_ST
-// Replace the loop-back branch with the counted loop branch
-// instruction.  It is a nop for the MIPS architecture.
-//
-void Gen_Counted_Loop_Branch(CG_LOOP& cl)
+/* ====================================================================
+ *   Gen_Counted_Loop_Branch
+ *
+ *   If architecture supports counted loop branches, replace the 
+ *   loop-back branch with the counted loop branch instruction. 
+ *   It is a nop for the MIPS architecture and ST200.
+ * ====================================================================
+ */
+void 
+Gen_Counted_Loop_Branch(
+  CG_LOOP& cl
+)
 {
   TN *trip_count_tn = cl.Trip_count_tn();
   BB *prolog = cl.Prolog_end();
@@ -4987,7 +4998,11 @@ void Gen_Counted_Loop_Branch(CG_LOOP& cl)
   OP *br_op = BB_branch_op(tail);
 
   // Already converted into counted loop!
+#ifdef TARG_ST
+  if (OP_Is_Counted_Loop(br_op)) return;
+#else
   if (CGTARG_OP_is_counted_loop(br_op)) return;
+#endif
 
   TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
   CGTARG_Generate_Branch_Cloop(br_op, trip_count_tn, trip_count_tn, 1,
@@ -4999,11 +5014,15 @@ void Gen_Counted_Loop_Branch(CG_LOOP& cl)
     BB_Append_Ops(prolog, &ops);
   }
 }
-#endif
 
-//  Fix backpatches.  Some backpatches are obsoleted because
-//  EBO and other optimizations has deleted the def and uses
-//
+/* ====================================================================
+ *   Fix_Backpatches
+ *
+ *   Fix backpatches.  Some backpatches are obsoleted because
+ *   EBO and other optimizations has deleted the def and uses
+ *
+ * ====================================================================
+ */
 void Fix_Backpatches(CG_LOOP& cl, bool trace)
 {
   vector<pair<BB*, CG_LOOP_BACKPATCH *> > dead_bp;
@@ -5076,34 +5095,22 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
   }
 
-#ifndef TARG_ST
   if (!single_bb && 
       CG_LOOP_force_ifc > 0 &&
       Loop_Amenable_For_SWP(loop, trace_loop_opt)) {
 
     BB *new_single_bb;
+#ifdef TARG_ST
+    // Arthur: if-conversion not implemented yet
+    new_single_bb = NULL;
+#else
     new_single_bb = Force_If_Convert(loop, CG_LOOP_force_ifc >=2);
+#endif
     if (new_single_bb) {
       single_bb = TRUE;
     }
   }
-#endif
 
-#ifdef TARG_ST
-  // On the ST100,ST200 the SWP is not implemented:
-  if (single_bb) {
-    if (has_trip_count) {
-      action =  SINGLE_BB_DOLOOP_UNROLL;
-    }
-    else {
-      action = SINGLE_BB_WHILELOOP_UNROLL;
-    }
-  } else if (has_trip_count) {
-    action = MULTI_BB_DOLOOP;
-  } else {
-    action = NO_LOOP_OPT;
-  }
-#else
   if (single_bb) {
     if (has_trip_count) {
       if (Enable_SWP)
@@ -5121,11 +5128,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   } else {
     action = NO_LOOP_OPT;
   }
-#endif
 
   switch (action) {
 
-#ifndef TARG_ST
   case SINGLE_BB_DOLOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5138,9 +5143,15 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (!Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt))
 	return FALSE;
 
-      // Replace regular branch with loop-count branches.
-      // There will be a call EBO to delete the loop-exit test evaluations.
-      Gen_Counted_Loop_Branch(cg_loop);
+#ifdef TARG_ST
+      if (PROC_has_counted_loops())
+#endif
+	// Replace regular branch with loop-count branches.
+	// There will be a call EBO to delete the loop-exit test evaluations.
+	Gen_Counted_Loop_Branch(cg_loop);
+
+      // Generate SWP branches, eg. doing stuff to prolog/epilog, etc.
+      // target-specific
       Gen_SWP_Branch(cg_loop, true /* is_doloop */);
 
       cg_loop.Recompute_Liveness();
@@ -5156,9 +5167,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	return TRUE;
       }
 
+#ifndef TARG_ST
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
-	
+#endif
+
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Postincr generation / After RW removal ***");
 
@@ -5179,8 +5192,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** before ebo 1 and unrolling / after fix recurrences ***");
 
+#ifndef TARG_ST
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_Before_Unrolling();  
+#endif
 
       if (SWP_Options.Predicate_Promotion) {
 	list<BB*> bbl;
@@ -5200,7 +5215,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before ebo 2/ after unrolling  ***");
 
+#ifndef TARG_ST
       cg_loop.EBO_Before_Unrolling();
+#endif
 
       BB_Verify_OP_Order(cg_loop.Loop_header());
 
@@ -5210,7 +5227,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before implicit prefetch / after fix recurrences 2 ***");
 
+#ifndef TARG_ST
       Gen_Implicit_Prefetches(cg_loop, trace_loop_opt);
+#endif
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Ind. Var. Removal / after implicit prefetch  ***");
@@ -5227,14 +5246,22 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 
+#ifdef TARG_ST
+      // Arthur: place for LAO plug-in
+      //         test that things bellow build
+      Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
+      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+      cg_loop.Recompute_Liveness();
+#else
       if (!Perform_SWP(cg_loop, fixup, true /*doloop*/)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	cg_loop.Recompute_Liveness();
       }
+#endif
+
       break;
     }
-#endif /* TARG_ST */
 
   case  SINGLE_BB_DOLOOP_UNROLL:  
     {
@@ -5255,6 +5282,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_DOLOOP_UNROLL ***");
 
+#ifndef TARG_ST
       cg_loop.Recompute_Liveness();
       cg_loop.Determine_Unroll_Factor();
 
@@ -5264,7 +5292,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
       } 
-#ifndef TARG_ST
       else {
 	Perform_Read_Write_Removal(loop);
 
@@ -5284,7 +5311,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       break;
     }
 
-#ifndef TARG_ST
   case SINGLE_BB_WHILELOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5295,6 +5321,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
 
+#ifndef TARG_ST
       if (Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt)) {
 
 	Gen_SWP_Branch(cg_loop, false/*is_doloop*/);
@@ -5313,13 +5340,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
 	Convert_While_Loop_to_Fully_Predicated_Form(cg_loop);
 
-#if 0
 	if (SWP_Options.Predicate_Promotion) {
 	  list<BB*> bbl;
 	  bbl.push_front(cg_loop.Loop_header());
 	  CG_DEP_Prune_Dependence_Arcs(bbl, TRUE, trace_loop_opt);
 	}
-#endif
 
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_SWP ***");
@@ -5335,9 +5360,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  cg_loop.Recompute_Liveness();
 	}
       }
+#endif /* TARG_ST */
     }
     break;
-#endif /* TARG_ST */
+
 
   case SINGLE_BB_WHILELOOP_UNROLL:
     {
@@ -5348,10 +5374,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
-      Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
-      cg_loop.Recompute_Liveness();
 
 #ifndef TARG_ST
+      Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
+      cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
 #endif
 
@@ -5359,7 +5385,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     break;
 
   case MULTI_BB_DOLOOP:
-#ifndef TARG_ST
     {
       CG_LOOP cg_loop(loop);
 
@@ -5370,13 +5395,14 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_DOLOOP ***");
       }
 
+#ifndef TARG_ST
       Gen_Counted_Loop_Branch(cg_loop);
+#endif
 
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_DOLOOP ***");
       }
     }
-#endif
     break;
 
   case NO_LOOP_OPT:
@@ -5475,9 +5501,7 @@ void Perform_Loop_Optimizations()
   MEM_POOL_Push (&loop_descr_pool);
   BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
-#ifndef TARG_ST
   SWP_Options.PU_Configure();
-#endif
 
   Calculate_Dominators();		/* needed for loop recognition */
 
@@ -5511,7 +5535,6 @@ void Perform_Loop_Optimizations()
     CG_LOOP_Optimize(loop, fixup);
   }
 
-#ifndef TARG_ST
   // Compute correct wrap around values for SWP loops
   for (INT i = 0; i < fixup.size(); i++)
     SWP_Fixup(fixup[i]);
@@ -5523,8 +5546,6 @@ void Perform_Loop_Optimizations()
   }
 #endif
   
-#endif /* TARG_ST */
-
   MEM_POOL_Pop (&loop_descr_pool);
   MEM_POOL_Delete(&loop_descr_pool);
 

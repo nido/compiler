@@ -274,11 +274,14 @@ COMMON_TARG_EXP_CXX_SRCS =	\
   exp_divrem.cxx
 
 COMMON_TARG_CG_CXX_SRCS =	\
-  targ_calls.cxx	\
-  targ_cg.cxx		\
-  targ_op.cxx		\
-  targ_register.cxx	\
-  targ_tn.cxx		\
+  targ_calls.cxx		\
+  targ_cg.cxx			\
+  targ_loop_recur.cxx		\
+  targ_op.cxx			\
+  targ_register.cxx		\
+  targ_swp.cxx			\
+  targ_swp_bundle.cxx		\
+  targ_tn.cxx			\
   targ_ebo.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
@@ -324,10 +327,17 @@ CG_CXX_SRCS = 		\
   cg_flags_arch.cxx	\
   cg_ir.cxx       	\
   cg_loop.cxx		\
+  cg_loop_mii.cxx	\
+  cg_loop_recur.cxx	\
   cg_loop_scc.cxx	\
   cg_region.cxx		\
   cg_sched_est.cxx	\
   cg_spill.cxx		\
+  cg_swp.cxx		\
+  cg_swp_allocator.cxx	\
+  cg_swp_bundle.cxx	\
+  cg_swp_emit.cxx	\
+  cg_swp_sched.cxx	\
   cg_thr.cxx		\
   cg_vector.cxx		\
   comment.cxx		\

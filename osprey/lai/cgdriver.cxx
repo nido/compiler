@@ -85,10 +85,10 @@
 #include "cg_dep_graph_update.h"    /* more CG_DEP knobs */
 /* #include "cio.h"      */              /* for rw, cicse etc ...*/
 #include "cg_loop.h"                /* for unrolling */
-/* #include "cg_loop_recur.h"	*/    /* recurrence fixing */
+#include "cg_loop_recur.h"	    /* recurrence fixing */
 #include "cgtarget.h"		    /* target-dependent stuff */
 #include "gcm.h"		    /* for GCM options */
-/* #include "cg_sched_est.h"	*/    /* for CG_SCHED_EST options */
+#include "cg_sched_est.h"           /* for CG_SCHED_EST options */
 /* #include "targ_proc_properties.h" */
 /* #include "cgdriver_arch.h" */
 #include "cgdriver.h"
@@ -158,6 +158,50 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
+
+/* Software pipelining options: */
+static OPTION_DESC Options_CG_SWP[] = {
+
+  /* General software pipelining options */
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "", NULL,
+    0, 0, 0,	&Enable_SWP, &Enable_SWP_overridden },
+
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "sched_direction", "sched_dir",
+    0, 0, INT32_MAX,	&SWP_Options.Sched_Direction, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "heuristics", "heur",
+    0, 0, INT32_MAX,	&SWP_Options.Heuristics, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "opt", "opt",
+    0, 0, INT32_MAX,	&SWP_Options.Opt_Level, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "while_loop", NULL,
+    0, 0, 0,	&SWP_Options.Enable_While_Loop, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "min_unroll_times", "min_unr",
+    0, 0, INT32_MAX,	&SWP_Options.Min_Unroll_Times, &SWP_Options.Max_Unroll_Times_Set },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "max_unroll_times", "max_unr",
+    0, 0, INT32_MAX,	&SWP_Options.Max_Unroll_Times, &SWP_Options.Max_Unroll_Times_Set },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "bundle", NULL,
+    TRUE, 0, 0,	&SWP_Options.Enable_Bundling, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "postincr", "posti",
+    0, 0, 0,	&SWP_Options.Enable_Post_Incr, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "start_ii", "start",
+    0, 0, INT32_MAX,	&SWP_Options.Starting_II, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "workaround", "work", 
+    0, 0, 0,	&SWP_Options.Enable_Workaround, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "critical_threshold", "critical",
+    0, 0, INT32_MAX,	&SWP_Options.Critical_Threshold, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "prep_only", "", 
+    0, 0, 0,	&SWP_Options.Prep_Only, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "min_retry", "", 
+    0, 0, 0,	&SWP_Options.Min_Retry, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "implicit_prefetch", "", 
+    0, 0, 0,	&SWP_Options.Implicit_Prefetch, &SWP_Options.Implicit_Prefetch_Set },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "predicate_promotion", "", 
+    0, 0, 0,	&SWP_Options.Predicate_Promotion, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "enable_brp", "", 
+    0, 0, 0,	&SWP_Options.Enable_BRP, NULL },
+
+  { OVK_COUNT }		/* List terminator -- must be last */
+};
 
 /* Global register allocator options */
 static OPTION_DESC Options_GRA[] = {
@@ -363,6 +407,35 @@ static OPTION_DESC Options_CG[] = {
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "loop_opt", "loop_opt",
     0, 0, 0,	&CG_enable_loop_optimizations, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_non_trip_countable", "opt_non_trip",
+    0, 0, 0,	&CG_LOOP_optimize_non_trip_countable, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_lno_winddown_cache", NULL,
+    0, 0, 0,	&CG_LOOP_optimize_lno_winddown_cache, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_lno_winddown_reg", NULL,
+    0, 0, 0,	&CG_LOOP_optimize_lno_winddown_reg, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_non_innermost", "opt_non_inner",
+    0, 0, 0,	&CG_LOOP_optimize_non_innermost, NULL },
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "fix_recurrences", "",
+    0, 0, 0,    &CG_LOOP_fix_recurrences,
+		&CG_LOOP_fix_recurrences_specified },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "back_substitution", "",
+    0, 0, 0,    &CG_LOOP_back_substitution,
+		&CG_LOOP_back_substitution_specified },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "back_substitution_variant", "",
+    0, 0, 0,    &CG_LOOP_back_substitution_variant,
+		&CG_LOOP_back_substitution_variant_specified },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "interleave_reductions", "",
+    0, 0, 0,    &CG_LOOP_interleave_reductions,
+		&CG_LOOP_interleave_reductions_specified },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "interleave_posti", "",
+    0, 0, 0,    &CG_LOOP_interleave_posti,
+		&CG_LOOP_interleave_posti_specified },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "reassociate", "reassoc",
+    0, 0, 0,    &CG_LOOP_reassociate,
+		&CG_LOOP_reassociate_specified },
+  { OVK_INT32, OV_INTERNAL, TRUE, "recurrence_min_omega", "",
+    0, 0, INT32_MAX, &CG_LOOP_recurrence_min_omega, NULL },
 
   // CG Unrolling options - see also OPT:unroll_times_max:unroll_size.
 
@@ -845,17 +918,16 @@ Configure_CG_Options(void)
   if (!CG_localize_tns_Set)
     CG_localize_tns = (CG_opt_level <= 1);
 
-#if 0
-  if ( ! Enable_SWP_overridden )
+  if (!Enable_SWP_overridden)
   {
-    // Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
+    Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
 #ifdef TARG_IA64
     Enable_SWP = CG_opt_level >= 2;
 #else
-    Enable_SWP = FALSE;
+    // Arthur: at -O2, SWP may be enabled under an explicit option
+    Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
 #endif
   }
-#endif
 
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
@@ -899,6 +971,7 @@ Configure_CG_Options(void)
 #if 0
   if ( !CG_enable_spec_idiv_overridden && Enable_Spec_Idiv_For_Target() )
     CG_enable_spec_idiv = FALSE;
+#endif
 
   if ( ! CG_LOOP_fix_recurrences_specified
        && (      CG_LOOP_back_substitution
@@ -913,6 +986,10 @@ Configure_CG_Options(void)
   }
 
   if ( Enable_SWP && ! Enable_LOH_overridden )
+#ifdef TARG_ST
+    Enable_LOH = FALSE; // don't know what it is exactly and how to
+                        // parametrize the proc_properties.cxx 
+#else
     Enable_LOH = Enable_LOH_For_Target();
 #endif
 
@@ -987,6 +1064,8 @@ Configure_CG_Options(void)
   IGLS_Enable_All_Scheduling = FALSE;
   CG_enable_thr = FALSE;
   LRA_do_reorder = FALSE;
+  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
+  CG_LOOP_force_ifc = 0;
 #endif
 
 #ifdef TARG_ST100

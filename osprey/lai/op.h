@@ -581,6 +581,13 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_find_opnd_use(o,u)	(TOP_Find_Operand_Use(OP_code(o),(u)))
 #define OP_has_result(o)        (OP_results(o) != 0)
 
+/* _fixed_results and _fixed_opnds return how many fixed
+ * results/operands an instruction has (OP_result/OP_opnds includes
+ * any variable operands in the count).
+ */
+#define OP_fixed_results(o)	(ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(OP_code(o))))
+#define OP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(OP_code(o))))
+
 /*
  * If 'op' performs a copy operation, return the index of
  * the source operand; otherwise return -1.
@@ -594,13 +601,43 @@ extern INT OP_Copy_Operand(OP *op);
 extern INT CGTARG_Copy_Operand(OP *op);
 #endif
 
-/* _fixed_results and _fixed_opnds return how many fixed
- * results/operands an instruction has (OP_result/OP_opnds includes
- * any variable operands in the count).
- */
-#define OP_fixed_results(o)	(ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(OP_code(o))))
-#define OP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(OP_code(o))))
+#ifdef TARG_ST
+// OP is associative
+extern BOOL OP_is_associative(OP *op);
 
+// The other opnd involved in reassociation
+extern INT OP_other_opnd(OP *op, INT this_opnd);
+
+// Give the opposite form, e.g,  - => +,  + => -.
+// TODO: move to targ_info
+extern TOP TOP_opposite (TOP top);
+
+// Give immediate form.
+// TODO: move to targ_info
+extern TOP TOP_immediate(TOP top);
+
+// If given operand can be associated
+extern BOOL OP_opnd_can_be_reassociated (OP *op, INT opnd);
+
+/*
+ * If a load/store OP autoincrements/decrements its base TN, by
+ * convention that's the following one
+ * NOTE: moved here from cg_swp_target.h
+ */
+inline INT TOP_base_update_tn(TOP top)
+{
+  if (TOP_is_load(top)) {
+    if (ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(top)) == 2)
+      return 1;
+  } else if (TOP_is_store(top)) {
+    if (ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(top)) == 1)
+      return 0;
+  }
+  return -1;
+}
+
+#define OP_base_update_tn(o)	(OP_opnd(o,TOP_base_update_tn(OP_code(o))))
+#endif
 
 /* Result must not be same as operand */ 
 inline BOOL OP_uniq_res(OP *op, INT i) { 
@@ -844,6 +881,7 @@ extern BOOL CGTARG_Is_Long_Latency (TOP *opcode);
 #endif
 
 #ifdef TARG_ST
+extern BOOL OP_Is_Counted_Loop(OP* op);
 extern BOOL OP_Is_Speculative_Load(OP* memop);
 extern BOOL OP_Is_Advanced_Load(OP* memop);
 extern BOOL OP_Is_Check_Load(OP* memop);

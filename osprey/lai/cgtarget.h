@@ -727,7 +727,7 @@ extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency)
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op);
 #endif
 extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UINT8 opnd, INT *latency);
-
+extern INT  CGTARG_ARC_Sched_Latency(ARC *arc);
 
 //  Returns TRUE if the dependence between the latency
 //  between pred_op and succ_op is the load_latency
@@ -798,6 +798,8 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 // Checks to see if <stop> bit is available at <slot> position in the
 // bundle.
 extern BOOL CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot);
+
+extern INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace);
 
 /* ====================================================================
  *   Target specific tree height reduction:

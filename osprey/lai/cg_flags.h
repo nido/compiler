@@ -368,6 +368,25 @@ extern BOOL CGEXP_opt_float_div_by_const;
 extern const char *CGEXP_fdiv_algorithm;
 extern const char *CGEXP_sqrt_algorithm;
 
+// ====================================================================
+//   CG_LOOP:
+// ====================================================================
+
+/* Recurrence breaking flags */
+extern BOOL CG_LOOP_fix_recurrences;
+extern BOOL CG_LOOP_fix_recurrences_specified;
+extern BOOL CG_LOOP_back_substitution;
+extern BOOL CG_LOOP_back_substitution_specified;
+extern BOOL CG_LOOP_back_substitution_variant;
+extern BOOL CG_LOOP_back_substitution_variant_specified;
+extern BOOL CG_LOOP_interleave_reductions;
+extern BOOL CG_LOOP_interleave_reductions_specified;
+extern BOOL CG_LOOP_interleave_posti;
+extern BOOL CG_LOOP_interleave_posti_specified;
+extern BOOL CG_LOOP_reassociate;
+extern BOOL CG_LOOP_reassociate_specified;
+extern INT32 CG_LOOP_recurrence_min_omega;
+
 /*
  * CGTARG flags 
  */

@@ -303,6 +303,33 @@ const char *CGEXP_fdiv_algorithm = "sgi";
 const char *CGEXP_sqrt_algorithm = "sgi";
 
 // ====================================================================
+//   CG_LOOP:
+// ====================================================================
+
+/* Recurrence Breaking flags */
+#ifdef MIPS
+// Disable fix recurrence because CG_DEF_Op_Opnd_Changed
+//   is no longer supported for MIPS.  
+//
+BOOL CG_LOOP_fix_recurrences = FALSE;
+#else
+BOOL CG_LOOP_fix_recurrences = TRUE;
+#endif
+
+BOOL CG_LOOP_fix_recurrences_specified = FALSE;
+BOOL CG_LOOP_back_substitution = TRUE;
+BOOL CG_LOOP_back_substitution_specified = FALSE;
+BOOL CG_LOOP_back_substitution_variant = TRUE;
+BOOL CG_LOOP_back_substitution_variant_specified = FALSE;
+BOOL CG_LOOP_interleave_reductions = TRUE;
+BOOL CG_LOOP_interleave_reductions_specified = FALSE;
+BOOL CG_LOOP_interleave_posti = TRUE;
+BOOL CG_LOOP_interleave_posti_specified = FALSE;
+BOOL CG_LOOP_reassociate = TRUE;
+BOOL CG_LOOP_reassociate_specified = FALSE;
+INT32 CG_LOOP_recurrence_min_omega = 0;
+
+// ====================================================================
 //   CGTARG:
 // ====================================================================
 

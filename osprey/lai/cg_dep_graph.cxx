@@ -3772,7 +3772,11 @@ void Build_Cyclic_Arcs(BB *bb)
       for (i = 0; i < tn_defs.size(); i++) {
 	INT def_num = tn_defs[i];
 	OP *op = op_vec[def_num];
+#ifdef TARG_ST
+	if (OP_base_update_tn(op) == tn)
+#else
 	if (Base_update_tn(op) == tn)
+#endif
 	  definite_dep = false;
       }
 
@@ -3866,7 +3870,11 @@ void Build_Cyclic_Arcs(BB *bb)
     for (i = 0; i < tn_defs.size(); i++) {
       INT def_num = tn_defs[i];
       OP *op = op_vec[def_num];
+#ifdef TARG_ST
+      if (OP_base_update_tn(op) == tn)
+#else
       if (Base_update_tn(op) == tn)
+#endif
 	definite_dep = false;
     }
 

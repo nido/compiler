@@ -76,7 +76,6 @@
 #include "timing.h"
 #include "cgexp.h"
 #include "cgtarget.h"
-
 /*
 #include "cio.h"
 #include "cio_rwtran.h"
@@ -98,19 +97,13 @@
 #include "findloops.h"
 #include "cg_loop.h"
 #include "cg_loop_scc.h"
-/*
 #include "cg_loop_mii.h"
 #include "cg_loop_recur.h"
-*/
 #include "findloops.h"
 #include "freq.h"
-/*
 #include "cg_sched_est.h"
-*/
 #include "label_util.h"
-/*
 #include "cg_swp.h"
-*/
 #include "cgprep.h"
 #include "cg_region.h"
 
