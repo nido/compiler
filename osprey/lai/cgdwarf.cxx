@@ -2725,48 +2725,6 @@ Cg_Dwarf_Output_Asm_Bytes_Elf_Relocs (FILE          *asm_file,
   fflush(asm_file);
 }
 
-/* CLYON: this function is borrowed from libdwarf/dwarf_util.c
-   and copied here because it is not meant to be available
-   outside libdwarf */
-/*
-  A byte-swapping version of memcpy
-  for cross-endian use.
-  Only 2,4,8 should be lengths passed in.
-*/
-static void * Cg_Dwarf_memcpy_swap_bytes(void *s1, const void *s2,size_t len)
-{
-  void *orig_s1 = s1;
-  unsigned char *targ = (unsigned char *)s1;
-  unsigned char *src  = (unsigned char *)s2;
-
-  if(len == 4) {
-    targ[3] = src[0];
-    targ[2] = src[1];
-    targ[1] = src[2];
-    targ[0] = src[3];
-  } else if (len == 8) {
-    targ[7] = src[0];
-    targ[6] = src[1];
-    targ[5] = src[2];
-    targ[4] = src[3];
-    targ[3] = src[4];
-    targ[2] = src[5];
-    targ[1] = src[6];
-    targ[0] = src[7];
-  } else if(len == 2) {
-    targ[1] = src[0];
-    targ[0] = src[1];
-  }
-  /* should NOT get below here: is not the intended use */
-  else if(len == 1) {
-    targ[0] = src[0];
-  } else {
-    memcpy(s1,s2,len);
-  }
-
-  return orig_s1;
-}
-
 // Symbolic assembler output where the input
 // is symbolic relocations created by libdwarf
 // (as opposed to the elf binary relocations
@@ -2911,9 +2869,11 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       /* Handle endianness issues */
       if (Target_Byte_Sex != Host_Byte_Sex) {
 	ofst_tmp = 0;
-	Cg_Dwarf_memcpy_swap_bytes((char*)&ofst_tmp + sizeof(ofst) - current_reloc_size,
-				   (char*)&ofst + sizeof(ofst) - current_reloc_size,
-				   current_reloc_size);
+	for (int i=0; i<current_reloc_size; i++) {
+	  ofst_tmp <<= 8;
+	  ofst_tmp |= ofst & 0xFF;
+	  ofst >>= 8;
+	}
 	ofst = ofst_tmp;
       }
 
