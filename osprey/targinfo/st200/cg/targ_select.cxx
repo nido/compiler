@@ -317,13 +317,17 @@ Expand_Cond_Store (
     ofst =  Gen_Literal_TN (0, 4);
   }
 
-  WN *wn1 = Get_WN_From_Memory_OP(op1);
   TYPE_ID desc;
+
+#if 0
+  WN *wn1 = Get_WN_From_Memory_OP(op1);
+
   if (wn1) {
     OPCODE opcode = WN_opcode (wn1);
     desc = OPCODE_desc(opcode);
   }
   else {
+#endif
     switch (OP_code(op1)) {
     case TOP_stw_i:
     case TOP_stw_ii:
@@ -343,7 +347,9 @@ Expand_Cond_Store (
     default:
       DevAssert(FALSE, ("stw"));    
     }
+#if 0
   }
+#endif
 
   Expand_Store (desc, val, base, ofst, ops);
 }
