@@ -94,6 +94,8 @@ BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 BOOL  CG_enable_BB_splitting = TRUE;
 INT32 CG_split_BB_length = CG_bblength_default;
 
+INT32 CG_ssa_algorithm = 1;
+
 INT32 CG_L1_ld_latency = 0;
 INT32 CG_L2_ld_latency = 0;
 INT32 CG_z_conf_L1_ld_latency = 0;

@@ -3064,6 +3064,13 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
     for (i = 0; i < numrests; i++) {
       res[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
     }
+    //
+    // The rest of kids are operands
+    //
+    numopnds = WN_kid_count(expr) - numrests;
+    for (i = 0; i < numopnds; i++) {
+      kids[i] = Expand_Expr(WN_kid(expr,i+numrests), expr, NULL);
+    }
   }
   else if (rkind != IRETURN_UNKNOWN) {
     if (result == NULL) {
@@ -3071,14 +3078,13 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
     }
     numrests = 1;
     res[0] = result;
-  }
-
-  //
-  // The rest of kids are operands
-  //
-  numopnds = WN_kid_count(expr) - numrests;
-  for (i = 0; i < numopnds; i++) {
-    kids[i] = Expand_Expr(WN_kid(expr,i+numrests), expr, NULL);
+    //
+    // All kids are operands
+    //
+    numopnds = WN_kid_count(expr);
+    for (i = 0; i < numopnds; i++) {
+      kids[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
+    }
   }
 
   if (Trace_Exp) {

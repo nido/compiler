@@ -65,9 +65,10 @@
 #ifndef cg_ssa_INCLUDED
 #define cg_ssa_INCLUDED
 
-//
-// Renamable TNs
-//
+/* ========================================================================
+ *   Renamable TNs
+ * ========================================================================
+ */
 #define TN_is_ssa_reg(t)  (TN_is_global_reg(t) && !TN_is_dedicated(t) && !TN_is_save_reg(t))
 
 //

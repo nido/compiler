@@ -586,37 +586,34 @@ CG_Generate_Code(
 	// exit from the Loop_Optimizations.
 	//
 	SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
+#if 0
+	//
+	// SSA translation maintains liveness info (see Sreedhar's paper).
+	// Normally, we shouldn't need to recompute it.
+	// However, at the moment
+	//   defreach_in
+	//   defreach_out
+	//   live_def
+	//   live_use
+	// are not being updated properly by the out of SSA
+	// algorithm (I've been toolazy to look at it). So, for now
+	// just recompute the liveness.
+	// TODO: fix this.
+	//
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+#endif
+	//
+	// rename TNs -- required by LRA
+	// Since Out-of-SSA translation has introduced some
+	// non-localized TNs, need to do it.
+	//
+	// TODO: when SSA is into reg alloc, no need for rename_TNs()
+	//
+	//GRA_LIVE_Rename_TNs();  // rename TNs -- required by LRA
+	//Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
+
 	Check_for_Dump(TP_SSA, NULL);
       }
-
-      //
-      // SSA translation maintains liveness info (see Sreedhar's paper).
-      // Normally, we shouldn't need to recompute it.
-      // However, at the moment
-      //   defreach_in
-      //   defreach_out
-      //   live_def
-      //   live_use
-      // are not being updated properly by the out of SSA
-      // algorithm (I've been toolazy to look at it). So, for now
-      // just recompute the liveness.
-      // TODO: fix this.
-      //
-      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-      //
-      // rename TNs -- required by LRA
-      // Since Out-of-SSA translation has introduced some
-      // non-localized TNs, need to do it.
-      //
-      // TODO: when SSA is into reg alloc, no need for rename_TNs()
-      //
-      //GRA_LIVE_Rename_TNs();  // rename TNs -- required by LRA
-      //Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
-
-      //extern void GRA_LIVE_fdump_liveness(FILE *f);
-      //GRA_LIVE_fdump_liveness(TFile);
-
-      // not enabled yet
 #endif
 
 #ifdef TARG_ST

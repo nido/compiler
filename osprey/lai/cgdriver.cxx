@@ -357,6 +357,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa", "",
     0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
+    1, 1, 3, &CG_ssa_algorithm, NULL,
+    "Specify method for translating out of the SSA" },
+
   // EBO options:
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",

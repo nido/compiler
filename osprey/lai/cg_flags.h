@@ -195,6 +195,8 @@ extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 
+extern INT32 CG_ssa_algorithm;
+
 extern BOOL CG_enable_BB_splitting;
 #define CG_bblength_default 300      /* default value for CG_split_BB_length */
 #define CG_bblength_min	 100	     /* don't let the value get too small */

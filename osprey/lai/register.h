@@ -609,10 +609,17 @@ typedef union class_reg_pair CLASS_REG_PAIR;
 #if 0
 typedef union class_reg_pair {
   mUINT16	class_n_reg;
+#if HOST_IS_LITTLE_ENDIAN
   struct class_reg_struct {
     mREGISTER 	        reg;
     mISA_REGISTER_CLASS rclass;
     } class_reg;
+#else
+  struct class_reg_struct {
+    mISA_REGISTER_CLASS rclass;
+    mREGISTER 	        reg;
+    } class_reg;
+#endif
 } CLASS_REG_PAIR;
 #else
 union class_reg_pair {
