@@ -1378,8 +1378,68 @@ CGTARG_Max_OP_Latency (
       if (latency < 3) latency = 3;
   }
 
-  if (OP_load(op) || OP_imul(op) || OP_fmul(op))
+  switch (OP_code(op)) {
+  case TOP_ldw_i: 
+  case TOP_ldw_ii: 
+  case TOP_ldw_d_i: 
+  case TOP_ldw_d_ii: 
+  case TOP_ldh_i: 
+  case TOP_ldh_ii: 
+  case TOP_ldh_d_i: 
+  case TOP_ldh_d_ii: 
+  case TOP_ldhu_i: 
+  case TOP_ldhu_ii: 
+  case TOP_ldhu_d_i: 
+  case TOP_ldhu_d_ii: 
+  case TOP_ldb_i: 
+  case TOP_ldb_ii: 
+  case TOP_ldb_d_i: 
+  case TOP_ldb_d_ii: 
+  case TOP_ldbu_i: 
+  case TOP_ldbu_ii: 
+  case TOP_ldbu_d_i: 
+  case TOP_ldbu_d_ii: 
+  case TOP_mull_r:
+  case TOP_mullu_r:
+  case TOP_mulh_r:
+  case TOP_mulhu_r:
+  case TOP_mulll_r:
+  case TOP_mulllu_r:
+  case TOP_mullh_r:
+  case TOP_mullhu_r:
+  case TOP_mulhh_r:
+  case TOP_mulhhu_r:
+  case TOP_mulhs_r:
+  case TOP_mull_i:
+  case TOP_mull_ii:
+  case TOP_mullu_i:
+  case TOP_mullu_ii:
+  case TOP_mulh_i:
+  case TOP_mulh_ii:
+  case TOP_mulhu_i:
+  case TOP_mulhu_ii:
+  case TOP_mulll_i:
+  case TOP_mulll_ii:
+  case TOP_mulllu_i:
+  case TOP_mulllu_ii:
+  case TOP_mullh_i:
+  case TOP_mullh_ii:
+  case TOP_mullhu_i:
+  case TOP_mullhu_ii:
+  case TOP_mulhh_i:
+  case TOP_mulhh_ii:
+  case TOP_mulhhu_i:
+  case TOP_mulhhu_ii:
+  case TOP_mulhs_i:
+  case TOP_mulhs_ii:
+  case TOP_mulhhs_r:
+  case TOP_mulhhs_i:
+  case TOP_mulhhs_ii:
+  case TOP_mullhus_r:
+  case TOP_mullhus_i:
+  case TOP_mullhus_ii:
     if (latency < 3) latency = 3;
+  }
 
   return latency;
 }
@@ -1417,8 +1477,68 @@ CGTARG_Max_RES_Latency (
   else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch)
     if (latency < 3) latency = 3;
 
-  if (OP_load(op) || OP_imul(op) || OP_fmul(op))
+  switch (OP_code(op)) {
+  case TOP_ldw_i: 
+  case TOP_ldw_ii: 
+  case TOP_ldw_d_i: 
+  case TOP_ldw_d_ii: 
+  case TOP_ldh_i: 
+  case TOP_ldh_ii: 
+  case TOP_ldh_d_i: 
+  case TOP_ldh_d_ii: 
+  case TOP_ldhu_i: 
+  case TOP_ldhu_ii: 
+  case TOP_ldhu_d_i: 
+  case TOP_ldhu_d_ii: 
+  case TOP_ldb_i: 
+  case TOP_ldb_ii: 
+  case TOP_ldb_d_i: 
+  case TOP_ldb_d_ii: 
+  case TOP_ldbu_i: 
+  case TOP_ldbu_ii: 
+  case TOP_ldbu_d_i: 
+  case TOP_ldbu_d_ii: 
+  case TOP_mull_r:
+  case TOP_mullu_r:
+  case TOP_mulh_r:
+  case TOP_mulhu_r:
+  case TOP_mulll_r:
+  case TOP_mulllu_r:
+  case TOP_mullh_r:
+  case TOP_mullhu_r:
+  case TOP_mulhh_r:
+  case TOP_mulhhu_r:
+  case TOP_mulhs_r:
+  case TOP_mull_i:
+  case TOP_mull_ii:
+  case TOP_mullu_i:
+  case TOP_mullu_ii:
+  case TOP_mulh_i:
+  case TOP_mulh_ii:
+  case TOP_mulhu_i:
+  case TOP_mulhu_ii:
+  case TOP_mulll_i:
+  case TOP_mulll_ii:
+  case TOP_mulllu_i:
+  case TOP_mulllu_ii:
+  case TOP_mullh_i:
+  case TOP_mullh_ii:
+  case TOP_mullhu_i:
+  case TOP_mullhu_ii:
+  case TOP_mulhh_i:
+  case TOP_mulhh_ii:
+  case TOP_mulhhu_i:
+  case TOP_mulhhu_ii:
+  case TOP_mulhs_i:
+  case TOP_mulhs_ii:
+  case TOP_mulhhs_r:
+  case TOP_mulhhs_i:
+  case TOP_mulhhs_ii:
+  case TOP_mullhus_r:
+  case TOP_mullhus_i:
+  case TOP_mullhus_ii:
     if (latency < 3) latency = 3;
+  }
 
   return latency;
 }
