@@ -2178,6 +2178,15 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 	    else BB_Remove_Op(OP_bb(mem_op), mem_op);
 	    code_motion_num ++;
 	}
+
+    }
+
+    /* Initialize the scalar in the prolog, if not yet, to avoid any
+       uninitialized use. */		
+    if (speculate && !memory->Hoisted()) {
+        OPS New_OPs = OPS_EMPTY;
+        Build_OP(TOP_mov_r, memory->Get_Scalar(), Zero_TN, &New_OPs);
+        BB_Append_Ops(_prolog, &New_OPs);
     }
 
     return code_motion_num;
