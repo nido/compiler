@@ -463,22 +463,38 @@ Get_Return_Info (
     case MTYPE_I1:
     case MTYPE_I2:
     case MTYPE_I4:
-    case MTYPE_I5:
     case MTYPE_U1:
     case MTYPE_U2:
     case MTYPE_U4:
-    case MTYPE_U5:
+    case MTYPE_A4:
+
+      // Floating point types are mapped to integer regs
+    case MTYPE_F4:
 
       info.count = 1;
       info.mtype [0] = mtype;
       info.preg  [0] = PR_first_reg(SIM_INFO.int_results);
       break;
 
-    case MTYPE_A4:
+    case MTYPE_I8:
+    case MTYPE_U8:
 
-      info.count = 1;
-      info.mtype [0] = mtype;
-      info.preg  [0] = PR_first_reg(SIM_INFO.ptr_results);
+      // Floating-point types are mapped to integer regs
+    case MTYPE_F8:
+
+      reg = PR_first_reg(SIM_INFO.int_results);
+      if (level == Use_Simulated) {
+	info.count = 1;
+	info.mtype [0] = mtype;
+	info.preg  [0] = reg;
+      }
+      else {
+	info.count = 2;
+	info.mtype [0] = SIM_INFO.int_type;
+	info.preg  [0] = reg++;
+	info.mtype [1] = SIM_INFO.int_type;
+	info.preg  [1] = reg++;
+      }
       break;
 
     case MTYPE_M:
@@ -581,25 +597,6 @@ Get_Return_Info (
       }
       break;
 
-    case MTYPE_I8:
-    case MTYPE_U8:
-      reg = PR_first_reg(SIM_INFO.int_results);
-      if (level == Use_Simulated) {
-	info.count = 1;
-	info.mtype [0] = mtype;
-	info.preg  [0] = reg;
-      }
-      else {
-	info.count = 2;
-	info.mtype [0] = SIM_INFO.int_type;
-	info.preg  [0] = reg++;
-	info.mtype [1] = SIM_INFO.int_type;
-	info.preg  [1] = reg++;
-      }
-      break;
-
-    case MTYPE_F4:
-    case MTYPE_F8:
     case MTYPE_FQ:
     case MTYPE_C4:
     case MTYPE_C8:
@@ -621,7 +618,11 @@ Get_Return_Info (
 } /* Get_Return_Info */
 
 static INT Current_Int_Param_Num = 0;
+
+#if 0
 static INT Current_Float_Param_Num = -1;
+#endif
+
 static INT Current_Offset;
 static BOOL First_Param_In_Return_Reg = FALSE;
 
@@ -682,6 +683,7 @@ Get_Current_Int_Preg_Num (
     return i;
 }
 
+#if 0
 /* ====================================================================
  *   Get_Current_Float_Preg_Num
  * ====================================================================
@@ -704,6 +706,7 @@ Get_Current_Float_Preg_Num (
     return i;
   }
 }
+#endif
 
 /* ====================================================================
  *   Get_Preg_Alignment
@@ -810,6 +813,9 @@ Get_Parameter_Location (
       Current_Int_Param_Num++;
       break;
 
+      // Floating-point types are mapped to integer regs
+    case MTYPE_F4:
+
     case MTYPE_A4:
 
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
@@ -818,6 +824,9 @@ Get_Parameter_Location (
 
     case MTYPE_I8:
     case MTYPE_U8:
+
+      // Floating-point types are mapped to integer regs
+    case MTYPE_F8:
 
       //
       // These occupy two registers. This must be aligned on an
@@ -848,27 +857,10 @@ Get_Parameter_Location (
 
       break;
 	
-    case MTYPE_F4:
-    case MTYPE_F8:
-
-      FmtAssert(FALSE,("F4/F8 are passed"));
-
-	/* want to left-justify the object */
-        ++Current_Float_Param_Num;
-	rpad = MTYPE_RegisterSize(SIM_INFO.flt_type) - ploc.size;
-	if (Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats) {
-	    /* varargs causes float args to be int regs */
-	    ploc.reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-	} else {
-	    ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
-	    ploc.vararg_reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-	}
-	break;
-	
     case MTYPE_FQ:
 
       FmtAssert(FALSE,("FQ are passed"));
-
+#if 0
         ++Current_Float_Param_Num;
 	if (Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats) {
 	    /* varargs causes float args to be int regs */
@@ -882,6 +874,7 @@ Get_Parameter_Location (
 	if (Last_Fixed_Param < INT_MAX)
 	    ++Last_Fixed_Param;
 	Current_Float_Param_Num++;
+#endif
 	break;
 	
     case MTYPE_C4:
@@ -889,7 +882,7 @@ Get_Parameter_Location (
     case MTYPE_CQ:
 
       FmtAssert(FALSE,("Complex are passed"));
-
+#if 0
         ++Current_Float_Param_Num;
 	ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
 	Current_Param_Num++;
@@ -897,13 +890,14 @@ Get_Parameter_Location (
 	if (Last_Fixed_Param < INT_MAX)
 	    ++Last_Fixed_Param;
 	Current_Float_Param_Num++;
+#endif
 	break;
 	
     case MTYPE_M:
         {
 
 	  FmtAssert(FALSE,("MTYPE_M are passed"));
-
+#if 0
 	  ploc.size = TY_size (ty);
 	  INT psize = TY_size (ty) / MTYPE_RegisterSize(SIM_INFO.int_type);
 	  /* round up */
@@ -930,6 +924,8 @@ Get_Parameter_Location (
 	    if (Last_Fixed_Param < INT_MAX)
 	    	Last_Fixed_Param += psize - 1;
 	  }
+#endif
+
 	}
 	break;
 	

@@ -1377,7 +1377,7 @@ Expand_Binary_Complement (
   Is_True(MTYPE_is_class_integer(mtype),("not integer for complement"));
 
   /* complement == xor src 0xffffffff */
-  Build_OP (TOP_xor_i, dest, Gen_Literal_TN(-1, 4), src, ops);
+  Build_OP (TOP_xor_i, dest, src, Gen_Literal_TN(-1, 4), ops);
 }
 
 
@@ -1505,7 +1505,7 @@ Expand_Binary_And (
   // If src1 is constant, reverse the operands
   //
   if (TN_is_constant(src1)) {
-    FmtAssert(TN_is_register(src2),("both operands to a BOR constant"));
+    FmtAssert(TN_is_register(src2),("wrong operands"));
     Expand_Binary_And (dest, src2, src1, mtype, ops);
     return;
   }
@@ -1537,16 +1537,26 @@ Expand_Binary_Or (
   // If src1 is constant, reverse the operands
   //
   if (TN_is_constant(src1)) {
-    FmtAssert(TN_is_register(src2),("both operands to a BOR constant"));
+    FmtAssert(TN_is_register(src2),("wrong operands"));
     Expand_Binary_Or (dest, src2, src1, mtype, ops);
     return;
   }
 
-  if (TN_is_constant(src2)) {
-    Expand_Binary_And_Or (TOP_or_i, dest, src1, src2, mtype, ops);
-  }
-  else {
-    Expand_Binary_And_Or (TOP_or_r, dest, src1, src2, mtype, ops);
+  switch (mtype) {
+
+  case MTYPE_I4:
+  case MTYPE_U4:
+
+    if (TN_is_constant(src2)) {
+      Build_OP (TOP_or_i, dest, src1, src2, ops);
+    }
+    else {
+      Build_OP (TOP_or_r, dest, src1, src2, ops);
+    }
+    break;
+
+  default:
+    FmtAssert(FALSE, ("Expand_Binary_Xor: mtype not handled"));
   }
 
   return;
@@ -1565,11 +1575,25 @@ Expand_Binary_Xor (
   OPS *ops
 )
 {
+  if (TN_is_constant(src1)) {
+    Is_True(TN_is_register(src2),("wrong operands"));
+    Expand_Binary_Xor (dest, src2, src1, mtype, ops);
+    return;
+  }
+
   switch (mtype) {
+
   case MTYPE_I4:
   case MTYPE_U4:
-    Expand_Binary_And_Or (TOP_xor_r, dest, src1, src2, mtype, ops);
+
+    if (TN_is_constant(src2)) {
+      Build_OP (TOP_xor_i, dest, src1, src2, ops);
+    }
+    else {
+      Build_OP (TOP_xor_r, dest, src1, src2, ops);
+    }
     break;
+
   default:
     FmtAssert(FALSE, ("Expand_Binary_Xor: mtype not handled"));
   }

@@ -103,9 +103,6 @@ CGTARG_Preg_Register_And_Class (
     regnum = preg - Int_Preg_Min_Offset;
     rclass = ISA_REGISTER_CLASS_integer;
   }
-  else if (Preg_Offset_Is_Ptr(preg)) {
-    FmtAssert(FALSE,("CGTARG_Preg_Register_And_Class: PTR PREGs not supported on this target"));
-  }
   else if (preg == 0) {
     FmtAssert(FALSE, ("preg = 0"));
     /* 0 not considered part of normal int group for error purposes,

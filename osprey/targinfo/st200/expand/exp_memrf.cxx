@@ -113,7 +113,8 @@ Pick_Load_Imm_Instruction (
   case MTYPE_I2: top = TOP_ldh_i; break;
   case MTYPE_U2: top = TOP_ldhu_i; break;
   case MTYPE_I4:
-  case MTYPE_U4: 
+  case MTYPE_U4:
+  case MTYPE_F4: 
   case MTYPE_A4: top = TOP_ldw_i; break;
   case MTYPE_V:
     if (rtype != MTYPE_V) {
@@ -210,6 +211,7 @@ Pick_Store_Imm_Instruction (
   case MTYPE_U2: top = TOP_sth_i; break;
   case MTYPE_I4:
   case MTYPE_U4:
+  case MTYPE_F4:
   case MTYPE_A4: top = TOP_stw_i; break;
 
   default:
@@ -827,46 +829,53 @@ Exp_Deposit_Bits (
   UINT bit_offset, 
   UINT bit_size,
   TN *tgt_tn, 
-  TN *src1_tn, 
-  TN *src2_tn, 
+  TN *src1, 
+  TN *src2, 
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("not implemented"));
   FmtAssert(bit_size != 0, ("size of bit field cannot be 0"));
-
-  UINT targ_bit_offset = bit_offset;
-  if (Target_Byte_Sex == BIG_ENDIAN) {
-    targ_bit_offset = MTYPE_bit_size(desc) - bit_offset - bit_size;
-  }
 
   //
   // generate the following sequence (if there is a faster one,
   // we'll find it later)
   //
-  // extract bits returns sign-extended TN
-  //    tmp1 = extract_bits src1, 0 .. targ_bit_offset
-  //    tmp2 = extract_bits src2, targ_bit_offset .. targ_bit_offset+bit_size
-  //    tmp3 = extract_bits src1, targ_bit_offset+bit_size .. 32
-  //    tmp4 = shl tmp3, 32-bit_size
-  //    tmp5 = 
+  //    tmp2 = 0..0src1[0..bit_pos]
+  //    tmp5 = 0..0src2[bit_pos..bit_pos+bit_size]0..0
+  //    tmp7 = src1[bit_pos+bit_size..32]0..0
+  //    tmp8 = tmp2 | tmp5
+  //    tgt_tn = tmp7 | tmp8
 
-  FmtAssert(rtype == MTYPE_U4,
+
+  FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
 
-  if (Target_Byte_Sex == BIG_ENDIAN) {
-    targ_bit_offset = MTYPE_bit_size(desc) - bit_offset - bit_size;
-  }
+  TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  TN *tmp2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_shl_i, tmp1, src1, 
+	         Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset, 4), ops);
+  Build_OP(TOP_shru_i, tmp2, tmp1, 
+                  Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset,4), ops);
 
-  if (bit_size <= 16) {
-    /*
-    Build_OP(TOP_noop, tgt_tn, True_TN, src2_tn, src1_tn,
-	     Gen_Literal_TN(targ_bit_offset, 4), Gen_Literal_TN(bit_size, 4), ops);
-    */
-    return;
-  }
+  TN *tmp3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  TN *tmp4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  TN *tmp5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_shru_i, tmp3, src2, Gen_Literal_TN(bit_offset,4), ops);
+  Build_OP(TOP_shl_i, tmp4, tmp3, 
+	       Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size, 4), ops);
+  Build_OP(TOP_shru_i, tmp5, tmp4, 
+     Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset-bit_size,4), ops);
 
-  // bit_size > 16 requires 3 instructions
+  TN *tmp6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  TN *tmp7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_shru_i, tmp6, src1, 
+                          Gen_Literal_TN(bit_offset+bit_size,4), ops);
+  Build_OP(TOP_shl_i, tmp7, tmp6, 
+                          Gen_Literal_TN(bit_offset+bit_size,4), ops);
+
+  TN *tmp8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_or_r, tmp8, tmp2, tmp5, ops);
+  Build_OP(TOP_or_r, tgt_tn, tmp7, tmp8, ops);
 
   return;
 }
