@@ -48,6 +48,17 @@ static BOOL Trace_dom_frontier;               /* -Wb,-tt60:0x010 */
 
 /* ================================================================
  *
+ *   Mapping TNs -> BBs where they are defined
+ *
+ * ================================================================
+ */
+
+static TN_MAP tn_def_map = NULL;
+
+#define TN_is_def_in(t)        ((BB_LIST *)TN_MAP_Get(tn_def_map,t))
+
+/* ================================================================
+ *
  *   Renaming stack management
  *
  * ================================================================
@@ -653,16 +664,6 @@ SSA_Place_Phi_In_BB (
 
   SSA_Prepend_Phi_To_BB (phi_op, bb);
 
-  //
-  // add 'phi_op' to 'bb' before all other insts
-  //
-  BB_Prepend_Op(bb, phi_op);
-
-  //
-  // Some additional bookkeeping that is not done by Mk_OP
-  //
-  Set_PHI_Operands(phi_op);
-
   /*
   fprintf(TFile, "BB%d:\n", BB_id(OP_bb(phi_op)));
   for (i = 0; i < num_opnds; i++) {
@@ -673,6 +674,48 @@ SSA_Place_Phi_In_BB (
   return;
 }
 
+/* ================================================================
+ *  initialize_tn_def_map
+ * ================================================================
+ */
+static void
+initialize_tn_def_map ()
+{
+  INT i;
+  BB *bb;
+  OP *op;
+
+  tn_def_map = TN_MAP_Create();
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_OPs_FWD(bb, op) {
+
+      //fprintf(TFile,"BB%d : ", BB_id(bb));
+      //Print_OP(op);
+
+      for (i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op,i);
+	BB_LIST *p = TN_is_def_in(tn);
+	TN_MAP_Set(tn_def_map, tn, BB_LIST_Push(bb, p, &MEM_local_pool));
+      }
+    }
+  }
+
+  return;
+}
+
+/* ================================================================
+ *  finalize_tn_def_map
+ * ================================================================
+ */
+static void
+finalize_tn_def_map ()
+{
+  TN_MAP_Delete(tn_def_map);
+  return;
+}
+
+#if 0
 /* ================================================================
  *   TN_is_def_in
  *
@@ -693,6 +736,10 @@ TN_is_def_in (
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs_FWD(bb, op) {
+
+      //fprintf(TFile,"BB%d : ", BB_id(bb));
+      //Print_OP(op);
+
       for (i = 0; i < OP_results(op); i++) {
 	if (OP_result(op,i) == tn) {
 	  set = BB_SET_Union1(set, bb, &MEM_local_pool);
@@ -703,6 +750,7 @@ TN_is_def_in (
 
   return set;
 }
+#endif
 
 /* ================================================================
  *   SSA_Place_Phi_Functions ()
@@ -728,22 +776,24 @@ SSA_Place_Phi_Functions (
   // accumulated in memory for all TNs
   MEM_POOL_Push(&MEM_local_pool);
 
+  BB_SET *work = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
+  BB_LIST *p;
+  for (p = TN_is_def_in(tn); p != NULL; p = BB_LIST_rest(p)) {
+    work = BB_SET_Union1(work, BB_LIST_first(p), &MEM_local_pool);
+  }
+  //BB_SET *work = BB_SET_Copy(TN_is_def_in(tn), &MEM_local_pool);
+  BB_SET *has_already = BB_SET_Create_Empty(PU_BB_Count+2, 
+					    &MEM_local_pool);
+  FOR_ALL_BB_SET_members(work, bb) {
+    work_lst.push_back(bb);
+  }
+
   if (Trace_SSA_Build) {
     fprintf(TFile, "\n  --> ");
     Print_TN(tn, FALSE);
     fprintf(TFile, " ");
-    BB_SET_Print(TN_is_def_in(tn), TFile);
+    BB_SET_Print(work, TFile);
     fprintf(TFile, "\n");
-  }
-
-  //
-  // initialize the working set
-  //
-  BB_SET *work = BB_SET_Copy(TN_is_def_in(tn), &MEM_local_pool);
-  BB_SET *has_already = BB_SET_Create_Empty(PU_BB_Count+2, 
-					    &MEM_local_pool);
-  FOR_ALL_BB_SET_members(TN_is_def_in(tn), bb) {
-    work_lst.push_back(bb);
   }
 
 #if 0
@@ -984,6 +1034,8 @@ SSA_Rename ()
   //
   SSA_Compute_Dominance_Frontier ();
 
+  initialize_tn_def_map();
+
   //
   // has given TN been processed by the renaming algorithm ?
   //
@@ -1010,6 +1062,8 @@ SSA_Rename ()
   if (Trace_SSA_Build) {
     Trace_IR(TP_SSA, "AFTER PHI_NODES INSERTION", NULL);
   }
+
+  finalize_tn_def_map();
 
   //
   // visit nodes in the dominator tree order renaming TNs
