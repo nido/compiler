@@ -13,8 +13,12 @@
 #include "tn_map.h"
 #include "gtn_universe.h"
 #include "gtn_tn_set.h"
+#include "gra.h"
+#include "gra_live.h"
 #include "cg_loop.h"
 #include "cgprep.h"
+#include "dominate.h"
+#include "findloops.h"
 #include "hb.h"
 
 #include "cg_dep_graph.h"
@@ -617,14 +621,14 @@ static bool lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations);
 // Optimize a HB through the LAO.
 static bool lao_optimize_HB(HB *hb, unsigned lao_optimizations);
 
-// Optimize a Function through the LAO.
-static bool lao_optimize_BB(BB *bb, unsigned lao_optimizations);
+// Optimize a PU through the LAO.
+static bool lao_optimize_PU(unsigned lao_optimizations);
 
 static void CGIR_print(void);
 
 CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
 CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
-CG_EXPORTED extern bool (*lao_optimize_BB_p)(BB *bb, unsigned lao_optimizations);
+CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 CG_EXPORTED extern void (*CGIR_print_p)(void);
 
 // Initialization of the LAO, needs to be called once.
@@ -637,7 +641,7 @@ lao_init() {
     // initialize the PRO64/LAO interface pointers
     lao_optimize_LOOP_p = lao_optimize_LOOP;
     lao_optimize_HB_p = lao_optimize_HB;
-    lao_optimize_BB_p = lao_optimize_BB;
+    lao_optimize_PU_p = lao_optimize_PU;
     CGIR_print_p = CGIR_print;
     // initialize the TOP__Operator array
     for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator_;
@@ -922,10 +926,6 @@ lao_init() {
       if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__COUNT);
       else RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
     }
-    // initialize the LAO_Configuration
-    *Configuration__SCHEDULE(LAO_Configuration) = CG_LAO_schedule;
-    *Configuration__PIPELINE(LAO_Configuration) = CG_LAO_pipeline;
-    *Configuration__SPECULATE(LAO_Configuration) = CG_LAO_speculate;
   }
 }
 
@@ -936,7 +936,7 @@ lao_fini() {
     // Release the PRO64/LAO interface pointers.
     lao_optimize_LOOP_p = NULL;
     lao_optimize_HB_p = NULL;
-    lao_optimize_BB_p = NULL;
+    lao_optimize_PU_p = NULL;
     CGIR_print_p = NULL;
   }
 }
@@ -944,9 +944,10 @@ lao_fini() {
 
 /*-------------------------- LAO Utility Functions----------------------------*/
 
-// Initialize the interface call-back pointers.
+// Initialize the interface pointers.
 static void
-lao_initializeCallBack() {
+lao_initializeInterface() {
+  // Initialize the interface call-back functions.
   *Interface__CGIR_LAB_identity(interface) = CGIR_LAB_identity;
   *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
   *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
@@ -976,6 +977,11 @@ lao_initializeCallBack() {
   *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
   *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
   *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
+  // Initialize the interface configuration.
+  Configuration configuration = Interface_configuration(interface);
+  *Configuration__SCHEDULE(configuration) = CG_LAO_schedule;
+  *Configuration__PIPELINE(configuration) = CG_LAO_pipeline;
+  *Configuration__SPECULATE(configuration) = CG_LAO_speculate;
 }
 
 typedef list<BB*> BB_List;
@@ -1021,7 +1027,6 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
   BB *fall_exit_bb = BB_Fall_Thru_Successor(tail_bb);
   if (fall_exit_bb != NULL) {
     exitBBs.push_back(fall_exit_bb);
-//cerr << "lao_fill_exit_bblist_(" << BB_id(tail_bb) << ")(" << BB_id(fall_exit_bb) << ")\n";
     ++exit_count;
   }
   list<BB*>::iterator bb_iter;
@@ -1034,7 +1039,6 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
 	  succ_bb != fall_exit_bb &&
 	  !lao_in_bblist(exitBBs, succ_bb)) {
 	exitBBs.push_back(succ_bb);
-//cerr << "lao_fill_exit_bblist(" << BB_id(succ_bb) << ")\n";
 	++exit_count;
       }
     }
@@ -1100,7 +1104,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
   Interface_open(interface);
-  lao_initializeCallBack();
+  lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
   BB_List nonexitBBs;
@@ -1136,10 +1140,12 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
     }
   }
   // Make the LoopInfos for the bodyBBs.
-  lao_makeLoopInfo(bodyBBs, pipeline > 0);
+  //lao_makeLoopInfo(bodyBBs, pipeline > 0);
+  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
+  }
   //
-  //result = LAO_Optimize(lao_optimizations);
-  if (result) {
+  result = LAO_Optimize(lao_optimizations);
+  if (0 && result) {
     Interface_updateCGIR(interface, Open64_finalUpdate);
     if (getenv("PRINT")) CGIR_print();
   }
@@ -1153,9 +1159,11 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
 // Optimize a LOOP_DESCR inner loop through the LAO.
 static bool
 lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
-  Is_True(Is_Inner_Loop(loop), ("lao_optimize_LOOP must be called on inner loop"));
+  Is_True(BB_innermost(LOOP_DESCR_loophead(loop)),
+      ("lao_optimize_LOOP must be called on inner loop"));
   BB *head_bb = LOOP_DESCR_loophead(loop);
   BB_SET *body_set = LOOP_DESCR_bbset(loop);
+//cerr << "lao_optimize_LOOP(" << BB_id(head_bb) << ", " << lao_optimizations << ")\n";
   //
   // Compute the pipeline value.
   bool prepass = (lao_optimizations & Optimization_Prepass) != 0;
@@ -1166,14 +1174,15 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   // Adjust control-flow if required.
   if (pipeline > 1) {
     // Software pipelining (implies prepass scheduling).
-    BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
+    //BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
+    //GRA_LIVE_Compute_Liveness_For_BB(prolog_bb);
   } else if (pipeline > 0) {
     // Loop scheduling (prepass or postpass scheduling).
   } else {
     // Acyclic scheduling (prepass or postpass scheduling).
   }
   //
-  // Compute the body BBs.
+  // List the body BBs.
   BB_List bodyBBs;
   int body_count = 0;
   for (BB *bb = head_bb; bb != BB_next(tail_bb); bb = BB_next(bb)) {
@@ -1184,11 +1193,11 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   }
   Is_True(body_count == BB_SET_Size(body_set), ("lao_optimize_LOOP computed incorrect body"));
   //
-  // Compute the entry BBs.
+  // List the entry BBs.
   BB_List entryBBs;
   int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
   //
-  // Compute the exit BBs.
+  // List the exit BBs.
   BB_List exitBBs;
   int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
   Is_True(exit_count == LOOP_DESCR_num_exits(loop), ("lao_optimize_LOOP computed incorrect exits"));
@@ -1202,28 +1211,25 @@ static bool
 lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
   BB *head_bb = HB_Entry(hb);
   BB_SET *body_set = HB_Blocks(hb);
-if (lao_optimizations & Optimization_Prepass); else return false;
   //
   // Call lao_optimize_LOOP if HB is an inner loop.
   LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(head_bb);
-cerr << "HB header BB(" << BB_id(head_bb) << ")\n";
   if (loop != NULL) {
-cerr << "Loop header BB(" << BB_id(LOOP_DESCR_loophead(loop)) << ")\n";
     if (Is_Inner_Loop(loop) && LOOP_DESCR_loophead(loop) == head_bb &&
 	BB_SET_Size(body_set) == BB_SET_Size(LOOP_DESCR_bbset(loop))) {
       return lao_optimize_LOOP(loop, lao_optimizations);
     }
   }
   //
-  // Compute the body BBs.
+  // List the body BBs.
   BB_List &bodyBBs = *HB_Blocks_List(hb);
   Is_True(bodyBBs.front() == head_bb, ("lao_optimize_HB computed incorrect body"));
   //
-  // Compute the entry BBs.
+  // List the entry BBs.
   BB_List entryBBs;
   int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
   //
-  // Compute the exit BBs.
+  // List the exit BBs.
   BB_List exitBBs;
   int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
   //Is_True(exitBBs.front() == HB_Fall_Thru_Exit(hb),
@@ -1234,13 +1240,59 @@ cerr << "Loop header BB(" << BB_id(LOOP_DESCR_loophead(loop)) << ")\n";
   return lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
 }
 
-// Optimize a single BB through the LAO.
+// Optimize the complete PU through the LAO.
 static bool
-lao_optimize_BB(BB *bb, unsigned lao_optimizations) {
+lao_optimize_PU(unsigned lao_optimizations) {
+//cerr << "lao_optimize_PU(" << lao_optimizations << ")\n";
+  bool result = false;
+  MEM_POOL lao_loop_pool;
+  MEM_POOL_Initialize(&lao_loop_pool, "LAO loop_descriptors", TRUE);
   //
-  //result = lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
+  MEM_POOL_Push(&lao_loop_pool);
+  Calculate_Dominators();
+  LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&lao_loop_pool);
   //
-  return false;
+  // Software pipeline the innermost loops.
+  if (lao_optimizations & Optimization_Prepass &&
+      CG_LAO_schedule > 1 && CG_LAO_pipeline > 1) {
+    while (loop != NULL && BB_innermost(LOOP_DESCR_loophead(loop))) {
+      result != lao_optimize_LOOP(loop, lao_optimizations);
+      loop = LOOP_DESCR_next(loop);
+    }
+  }
+  //
+  // Update the LOOP_DESCRs in order to update the BB fields.
+  if (result) {
+    Free_Dominators_Memory();
+    MEM_POOL_Pop(&lao_loop_pool);
+    //
+    GRA_LIVE_Recalc_Liveness(NULL);
+    GRA_LIVE_Rename_TNs();
+    //
+    MEM_POOL_Push(&lao_loop_pool);
+    Calculate_Dominators();
+    LOOP_DESCR_Detect_Loops(&lao_loop_pool);
+  }
+  //
+  // List the BBs, entry BBs, exit BBs, body BBs.
+  BB_List entryBBs, exitBBs, bodyBBs;
+  for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    if (BB_entry(bb)) {
+      entryBBs.push_back(bb);
+    } else if (BB_exit(bb)) {
+      exitBBs.push_back(bb);
+    } else {
+      bodyBBs.push_back(bb);
+    }
+  }
+  //
+  //result |= lao_optimize(entryBBs, bodyBBs, exitBBs, lao_optimizations);
+  //
+  Free_Dominators_Memory();
+  MEM_POOL_Pop(&lao_loop_pool);
+  //
+  MEM_POOL_Delete(&lao_loop_pool);
+  return result;
 }
 
 /*-------------------------- CGIR Print Functions ----------------------------*/

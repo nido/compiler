@@ -113,6 +113,7 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#include "lao_stub.h"
 #endif
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
@@ -715,10 +716,12 @@ CG_Generate_Code(
   }
 
 #ifdef TARG_ST
-  if (CG_opt_level > 1) {
-    HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+  // Call the LAO for software pipelining and prepass scheduling.
+  if (CG_enable_LAO && (CG_LAO_schedule > 0)) {
+    Set_Error_Phase( "LAO Prepass Scheduling" );
+    lao_optimize_PU(/*Optimization_Prepass*/ 0x8);
     if (frequency_verify)
-      FREQ_Verify("Hyperblock Formation");
+      FREQ_Verify("LAO Prepass Scheduling");
   }
 #endif
 

@@ -86,9 +86,6 @@
 #include "hb_sched.h"
 #include "hb_hazards.h"
 /* #include "targ_proc_properties.h" */
-#if defined(TARG_ST)
-#include "lao_stub.h"
-#endif
 
 
 // ======================================================================
@@ -200,17 +197,6 @@ IGLS_Schedule_Region (BOOL before_regalloc)
   if (before_regalloc) {
     if (!should_we_schedule) return;
 
-#if defined(TARG_ST)
-    if (CG_enable_LAO && (CG_LAO_schedule > 0)) {
-      HB_Remove_Deleted_Blocks();
-      list<HB*>::iterator hbi;
-      FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
-	lao_optimize_HB(*hbi, /*Optimization_Prepass*/ 0x8);
-      }
-    }
-    else
-#endif
-
     // Do HB scheduling for all HBs generated (before register allocation).
     if (IGLS_Enable_HB_Scheduling && IGLS_Enable_PRE_HB_Scheduling &&
 	should_we_global_schedule) {
@@ -305,17 +291,6 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       Start_Timer (T_Sched_CU);
 
     } /* should_we_do_thr */
-
-#if defined(TARG_ST)
-    if (CG_enable_LAO && (CG_LAO_schedule > 0)) {
-      HB_Remove_Deleted_Blocks();
-      list<HB*>::iterator hbi;
-      FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
-	lao_optimize_HB(*hbi, /*Optimization_Postpass*/ 0x2);
-      }
-    }
-    else
-#endif
 
     // Do HB scheduling for all HBs generated (after register allocation).
     if (IGLS_Enable_HB_Scheduling && IGLS_Enable_POST_HB_Scheduling &&

@@ -32,8 +32,8 @@ CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_op
 CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
 #define lao_optimize_HB (*lao_optimize_HB_p)
 
-CG_EXPORTED extern bool (*lao_optimize_BB_p)(BB *bb, unsigned lao_optimizations);
-#define lao_optimize_BB (*lao_optimize_BB_p)
+CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
+#define lao_optimize_PU (*lao_optimize_PU_p)
 
 CG_EXPORTED extern void (*CGIR_print_p) (void);
 #define CGIR_print (*CGIR_print_p)
