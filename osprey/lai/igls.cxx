@@ -413,8 +413,10 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
       REG_LIVE_Analyze_Region();
       Trace_HB = Get_Trace (TP_SCHED, 1);
       for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-	if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
 	Handle_All_Hazards(bb);
+	// Handle_All_Hazards will have fixed branch operations with
+	// scheduling date -1
+	if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
       }
       REG_LIVE_Finish();
       if (Assembly) Add_Scheduling_Notes_For_Loops ();

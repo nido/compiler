@@ -420,7 +420,7 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
     Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
   // Set scycle
-  OP_scycle(new_op) = (issueDate == -1) ? 0 : issueDate;
+  OP_scycle(new_op) = issueDate;
   //
   return new_op;
 }
@@ -447,7 +447,7 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
   Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
   // Set scycle.
-  OP_scycle(cgir_op) = (issueDate == -1) ? 0 : issueDate;
+  OP_scycle(cgir_op) = issueDate;
 }
 
 // Identity of a CGIR_BB.
