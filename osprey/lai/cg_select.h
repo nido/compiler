@@ -72,7 +72,7 @@ extern void draw_CFG(void);
 #define Select_Trace_stdout  	0x80000000
 
 // op list management
-typedef slist<OP*> op_list;
+typedef list<OP*> op_list;
 
 static inline void
 BB_Remove_Ops (BB* bb, op_list ops) 
