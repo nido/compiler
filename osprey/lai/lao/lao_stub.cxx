@@ -953,6 +953,11 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   BB_List nonexitBBs;
   BB_List::iterator bb_iter;
   //
+  // Do not optimize region with call inside (TBD)
+  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
+    if (BB_call(*bb_iter))
+      return false;
+  }
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
   Interface_open(interface);
