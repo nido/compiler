@@ -58,9 +58,6 @@ main()
     predicate_calls,            /* can predicate calls */
     predicate_returns,          /* can predicate returns */
     bundles,			/* executes insts as sequence of bundles */
-#ifdef TARG_ST
-    scoreboard,			/* Inter bundle hazards are scoreboarded */
-#endif
     prefetch,                   /* supports prefetch instructions */
     enable_prefetch,            /* implicitely enables prefetch */
     enable_prefetch_ahead,      /* enables prefetch to L2 cache */
@@ -100,7 +97,6 @@ main()
   superscalar = PROC_Property_Create ("is_superscalar");
   Processor_Group (superscalar,
 			PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
 
   ia64_predication = PROC_Property_Create ("is_ia64_predication");
@@ -110,7 +106,6 @@ main()
   select = PROC_Property_Create ("is_select");
   Processor_Group (select,
 			PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
 
   predicate_branches = PROC_Property_Create ("has_predicate_branches");
@@ -133,26 +128,16 @@ main()
   bundles = PROC_Property_Create ("has_bundles");
   Processor_Group (bundles,
 			PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
-
-#ifdef TARG_ST
-  bundles = PROC_Property_Create ("has_scoreboard");
-  Processor_Group (bundles,
-			PROCESSOR_st221,
-			PROCESSOR_UNDEFINED);
-#endif
 
   prefetch = PROC_Property_Create ("has_prefetch");
   Processor_Group (prefetch,
 			PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
 
   enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
   Processor_Group (enable_prefetch,
 		        PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
 
   enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");
@@ -174,7 +159,6 @@ main()
   delayed_exception = PROC_Property_Create ("has_delayed_exception");
   Processor_Group (delayed_exception,
 			PROCESSOR_st220,
-			PROCESSOR_st221,
 			PROCESSOR_UNDEFINED);
 
   /* Does the target have a fast recip instruction? 

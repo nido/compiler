@@ -261,8 +261,7 @@ BE_EXPORTED extern INT32 Target_Stack_Alignment; /* -TARG:stack_alignment=nn */
  */
 
 /* Do we need to force NOOPs in empty cycles? */
-#define FORCE_NOOPS	FALSE
-
+#define FORCE_NOOPS	(Is_Target_st220()?TRUE:FALSE)
 
 /*================================================================*/
 /* Architecture specific options. Variables are set in config_targ.cxx,
