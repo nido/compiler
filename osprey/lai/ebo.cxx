@@ -376,6 +376,36 @@ inline void clear_bb_flag(BB *first_bb)
 /* ===================================================================== */
 
 static
+BOOL EBO_Fix_Select_Same_Args (OP *op,
+			       TN **opnd_tn,
+			       EBO_TN_INFO **opnd_tninfo)
+{
+  TN *res = OP_result(op, 0);
+  TN *tn1;
+  TN *tn2;
+
+  /* For special case optimizations, check the OPTIMAL operands. */
+  tn1 = opnd_tn[1];
+  tn2 = opnd_tn[2];
+
+  if (tn_registers_identical(tn1, tn2)) {
+    /* We can optimize this! But return the ACTUAL operand. */
+    OPS ops = OPS_EMPTY;
+    Exp_COPY(res, OP_opnd(op, 1), &ops);
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    if (EBO_Trace_Optimization) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"Optimize select - operands are the same\n");
+    }
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/* ===================================================================== */
+
+static
 BOOL EBO_Fix_Same_Res_Op (OP *op,
                           TN **opnd_tn,
                           EBO_TN_INFO **opnd_tninfo)
@@ -406,21 +436,13 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
     TN *tn1;
     TN *tn2;
 
+    if (EBO_Fix_Select_Same_Args(op, opnd_tn, opnd_tninfo)) {
+      return TRUE;
+    }
+
    /* For special case optimizations, check the OPTIMAL operands. */
     tn1 = opnd_tn[1];
     tn2 = opnd_tn[2];
-
-    if (tn_registers_identical(tn1, tn2)) {
-     /* We can optimize this! But return the ACTUAL operand. */
-      OPS ops = OPS_EMPTY;
-      Exp_COPY(res, OP_opnd(op, 1), &ops);
-      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-      if (EBO_Trace_Optimization) {
-        #pragma mips_frequency_hint NEVER
-        fprintf(TFile,"Optimize select - operands are the same\n");
-      }
-      return TRUE;
-    }
 
     if (TN_is_global_reg(tn1) &&
         (opnd_tninfo[1] != NULL) &&
@@ -3220,7 +3242,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
 
       new_const_val = pred_val + const_val;
       new_opcode = opcode;
-      
+
       if (TOP_Can_Have_Immediate(new_const_val, new_opcode)) {
 	new_op = Mk_OP (new_opcode, tnr, ptn0, Gen_Literal_TN(new_const_val, TN_size(tn0)));
 	OP_srcpos(new_op) = OP_srcpos(op);
@@ -4669,6 +4691,10 @@ Find_BB_TNs (BB *bb)
           if (!op_replaced) {
             op_replaced = EBO_Special_Sequence (op, opnd_tn, orig_tninfo);
           }
+#ifdef TARG_ST
+	  if (!op_replaced && OP_select(op))
+	    op_replaced = EBO_Fix_Select_Same_Args(op, opnd_tn, opnd_tninfo);
+#endif
         }
       }
 
