@@ -194,7 +194,7 @@ HEADER_DIRS = 		\
   $(LAO_PREFIX)/include/SSA	\
   $(LAO_PREFIX)/include/GRA	\
   $(LAO_PREFIX)/include/SCD	\
-  $(LAO_PREFIX)/include/PRO	\
+  $(LAO_PREFIX)/include/LAI	\
   $(TARG_BE)
 
 #----------------------------------------------------------------------
@@ -251,7 +251,7 @@ HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 endif
 
 LAO_DSOS =
-LAO_DSOS += $(LAO_PREFIX)/lib/libPRO.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libLAI.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSCD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libGRA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSSA.a

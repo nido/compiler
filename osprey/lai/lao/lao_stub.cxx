@@ -34,7 +34,7 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#include "PRO.h"
+#include "LAI.h"
 #undef operator
 #undef this
 }
@@ -1151,7 +1151,7 @@ static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
   if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
-  CodeRegion coderegion = Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
+  Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipelining, CG_LAO_pipelining,
@@ -1209,7 +1209,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     }
   }
   //
-  unsigned optimizations = LAO_Optimize(coderegion, lao_optimizations);
+  unsigned optimizations = Interface_optimize(interface, lao_optimizations);
   if (optimizations != 0) {
     Interface_updateCGIR(interface, callback);
     if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
