@@ -2246,12 +2246,17 @@ Create_Cold_Text_Section (void)
 {
   BB *bb;
 
+  FmtAssert(text_base != NULL, ("emit: text_base is null"));
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    if (EMIT_use_cold_section && BB_Is_Cold(bb)) {
+#ifdef TARG_ST
+    // [CG] hot/cold placement for .text section only
+    if (Is_Text_Section(text_base) &&
+#else 
+    if (
+#endif
+	EMIT_use_cold_section && BB_Is_Cold(bb)) {
       if (cold_base == NULL) {
 	ST *st = Copy_ST(text_base);
-	FmtAssert(text_base != NULL,
-		  ("emit: text_base is null"));
 	Set_ST_blk(st, Copy_BLK(ST_blk(text_base)));
 	Set_ST_name (st, Save_Str2(ELF_TEXT, ".cold"));
 	Set_STB_size (st, 0);
@@ -2417,6 +2422,11 @@ Setup_Text_Section_For_PU (
 
   Set_STB_scninfo_idx(SP_Sym, STB_scninfo_idx(text_base));
   Set_STB_scninfo_idx(FP_Sym, STB_scninfo_idx(text_base));
+
+#ifdef TARG_ST
+  // [CG] Setup cold section from here as we need text_base
+  Create_Cold_Text_Section();
+#endif
 
   cur_section = text_base;
   if (generate_elf_symbols) {
@@ -4790,9 +4800,8 @@ EMT_Emit_PU (
   }
 
 #ifdef TARG_ST
-  // [CG]: Create_Cold_Text_Section() after setup of text section
+  // [CG]: Create_Cold_Text_Section() into Setup_Text_Section_For_PU()
   Setup_Text_Section_For_PU (pu);
-  Create_Cold_Text_Section();
 #else
   Create_Cold_Text_Section();
 
