@@ -1268,7 +1268,7 @@ Configure_CG_Options(void)
 #ifdef TARG_ST200
   // Force the replacement of ;; NOP ;; NOP ;; bundles by ;; GOTO .+4
   // ;; on the st220 target.
-  if (Is_Target_st220() && !CG_NOPs_to_GOTO_overridden) {
+  if (Is_Target_st220() && !CG_NOPs_to_GOTO_overridden && (CG_opt_level > 1)) {
     CG_NOPs_to_GOTO = TRUE;
   }
 #endif
