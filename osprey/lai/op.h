@@ -273,8 +273,8 @@
  * ==================================================================== */
 
 
-#ifndef st100_op_INCLUDED
-#define st100_op_INCLUDED
+#ifndef op_INCLUDED
+#define op_INCLUDED
 
 /* Include the values for the variant field: */
 #include "variants.h"
@@ -282,20 +282,23 @@
 /* to get the definition of SRCPOS. */
 #include "srcpos.h"
 
-#include "targ_isa_operands.h"
-#include "targ_isa_properties.h"
-
 /* to get Is_True */
 #include "errors.h"
 
-/* to get definition of REGISTER */
-#include "register.h"
+/* to get definition of TN */
+#include "tn.h"
 
 /* to get TYPE_MEM_POOL_ALLOC */
 #include "mempool.h"
 
+#include "targ_isa_operands.h"
+#include "targ_isa_properties.h"
+#include "targ_isa_hazards.h"
+#include "targ_isa_bundle.h"
+#include "op_targ.h"
+
 /* Declare some structures from elsewhere: */
-struct tn;
+struct tn;  /* TODO: should not use it since tn.h included */
 struct bb;
 
 /* ---------------------------------------------------------------------
@@ -427,7 +430,12 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_VOLATILE  0x0010 /* Is OP a volatile Memop? */
 #define OP_MASK_HOISTED   0x0020 /* Is there a WN map attatched to a hoisted OP */
 #define OP_MASK_END_GROUP 0x0040 /* Is OP end of an instruction group */
+
+#ifndef TARG_ST100
+/* Arthur: unused mask */
 #define OP_MASK_M_UNIT	  0x0080 /* Is OP assigned to M unit */
+#endif
+
 #define OP_MASK_TAIL_CALL 0x0100 /* Is OP a tail call? */
 #define OP_MASK_BUNDLED	  0x0200 /* Is OP bundled? */
 #define OP_MASK_SPECULATIVE  0x0400 /* Is OP a speculative live-range op? */
@@ -457,9 +465,13 @@ enum OP_COND_DEF_KIND {
 # define OP_end_group(o)	(OP_flags(o) & OP_MASK_END_GROUP)
 # define Set_OP_end_group(o)	(OP_flags(o) |= OP_MASK_END_GROUP)
 # define Reset_OP_end_group(o)	(OP_flags(o) &= ~OP_MASK_END_GROUP)
+
+#ifndef TARG_ST100
 # define OP_m_unit(o)		(OP_flags(o) & OP_MASK_M_UNIT)
 # define Set_OP_m_unit(o)	(OP_flags(o) |= OP_MASK_M_UNIT)
 # define Reset_OP_m_unit(o)	(OP_flags(o) &= ~OP_MASK_M_UNIT)
+#endif
+
 # define OP_tail_call(o)	(OP_flags(o) & OP_MASK_TAIL_CALL)
 # define Set_OP_tail_call(o)	(OP_flags(o) |= OP_MASK_TAIL_CALL)
 # define Reset_OP_tail_call(o)	(OP_flags(o) &= ~OP_MASK_TAIL_CALL)
@@ -607,11 +619,224 @@ inline ISA_OPERAND_USE OP_opnd_use(OP *op, INT opnd)
  * results/operands an instruction has (OP_result/OP_opnds includes
  * any variable operands in the count).
  */
-#define TOP_fixed_results(o)	(ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(o)))
-#define TOP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(o)))
 #define OP_fixed_results(o)	(TOP_fixed_results(OP_code(o)))
 #define OP_fixed_opnds(o)	(TOP_fixed_opnds(OP_code(o)))
-
+
+/* Convenience access macros for properties of the OP */
+/* TODO: define all the macros for OP properties. */
+#define OP_noop(o)		(TOP_is_noop(OP_code(o)))
+#define OP_load(o)		(TOP_is_load(OP_code(o)))
+#define OP_store(o)		(TOP_is_store(OP_code(o)))
+#define OP_memory(o)		(OP_load(o) | OP_store(o))
+/* Memory instructions which are fill/spill type */
+#define OP_mem_fill_type(o)     (TOP_is_mem_fill_type(OP_code(o)))
+#define OP_call(o)		(TOP_is_call(OP_code(o)))
+#define OP_dummy(o)		(TOP_is_dummy(OP_code(o)))
+#define OP_unalign_ld(o)	(TOP_is_unalign_ld(OP_code(o)))
+#define OP_unalign_store(o)	(TOP_is_unalign_store(OP_code(o)))
+#define OP_unalign_mem(o)	(OP_unalign_ld(o) | OP_unalign_store(o))
+#define OP_jump(o)		(TOP_is_jump(OP_code(o)))
+#define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
+#define OP_side_effects(o)	(TOP_is_side_effects(OP_code(o)))
+#define OP_var_opnds(o)		(TOP_is_var_opnds(OP_code(o)))
+
+/* Is conditional branch OP ? */
+#define OP_cond(o)              (TOP_is_branch(OP_code(o)))
+
+/* Is OP a branch ? */
+#define  OP_br(o)               (TOP_is_jump(OP_code(o)) || TOP_is_ijump(OP_code(o)) || TOP_is_branch(OP_code(o)))
+
+/* Is control transfer OP ? */
+#define OP_xfer(o)              (OP_br(o) || TOP_is_call(OP_code(o)))
+
+/* Is OP a likely branch ? */
+#define OP_likely(o)            (TOP_is_likely(OP_code(o)))
+
+/* Is it a simulated OP ? */
+#define OP_simulated(o)         (TOP_is_simulated(OP_code(o)))
+#define OP_intrinsic(o)         (TOP_is_intrinsic(OP_code(o)))
+
+/* Is it a prefetch OP ? */
+#define OP_prefetch(o)          (FALSE)
+
+#define OP_has_predicate(o)     (TOP_is_predicated(OP_code(o)))
+
+#define OP_uncond(o)            (OP_xfer(o) && !OP_cond(o))
+#define OP_branch_predict(o)	(TOP_is_branch_predict(OP_code(o)))
+
+#define OP_defs_fcr(o)		(TOP_is_defs_fcr(OP_code(o)))
+#define OP_defs_fcc(o)		(TOP_is_defs_fcc(OP_code(o)))
+#define OP_refs_fcr(o)		(TOP_is_refs_fcr(OP_code(o)))
+#define OP_select(o)		(TOP_is_select(OP_code(o)))
+#define OP_isub(o)		(TOP_is_isub(OP_code(o)))
+#define OP_ior(o)               (TOP_is_ior(OP_code(o)))
+#define OP_flop(o)		(TOP_is_flop(OP_code(o)))
+#define OP_fadd(o)		(TOP_is_fadd(OP_code(o)))
+#define OP_fsub(o)		(TOP_is_fsub(OP_code(o)))
+#define OP_fmul(o)		(TOP_is_fmul(OP_code(o)))
+#define OP_fdiv(o)		(TOP_is_fdiv(OP_code(o)))
+#define OP_imul(o)		(TOP_is_fmul(OP_code(o)))
+#define OP_idiv(o)		(TOP_is_fdiv(OP_code(o)))
+#define OP_icmp(o)		(TOP_is_icmp(OP_code(o)))
+#define OP_madd(o)		(TOP_is_madd(OP_code(o)))
+
+#define OP_f_group(o)           (TOP_is_f_group(OP_code(o)))
+#define OP_l_group(o)           (TOP_is_l_group(OP_code(o)))
+#define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
+#define OP_uniq_res(o)		(TOP_is_uniq_res(OP_code(o)))
+
+#define OP_unsafe(o)            (TOP_is_unsafe(OP_code(o)))
+
+/* Hazard related stuff: */
+#define OP_has_hazard(o)	(ISA_HAZARD_TOP_Has_Hazard(OP_code(o)))
+
+/* Is it an iadd OP ?:
+ *  -- in oputil.cxx to determine if OP sets offset;
+ *  -- in tnutil.cxx to ...
+ *
+ * OP_iadd(o) -- iadd is a isa_property that means integer add 
+ *               operator (see common/targ_info/ia64/isa_properties.cxx)
+ *               used in cg/cg_dep_graph.cxx (perhaps other places ??)
+ */
+#define OP_is_iadd(o)           (FALSE)
+#define OP_is_ior(o)            (FALSE)
+#define OP_iadd(o)              (FALSE)
+
+#define OP_operand_info(o)	(ISA_OPERAND_Info(OP_code(o)))
+#define OP_immediate_opnd(o)	(TOP_Immediate_Operand(OP_code(o),NULL))
+#define OP_has_immediate(o)	(OP_immediate_opnd(o) >= 0)
+#define OP_find_opnd_use(o,u)	(TOP_Find_Operand_Use(OP_code(o),(u)))
+
+// Arthur: some stuff that I moved over from the cgtarget.h
+
+extern void CGTARG_Init_OP_cond_def_kind(OP *);
+
+//#define OP_Noop_Top  CGTARG_Noop_Top
+// Return the noop OP on given FU on the target
+//#define CGTARG_Noop _CGTARG_Noop
+
+// If 'op' performs a copy operation, return the index of
+// the source operand; otherwise return -1.
+extern INT CGTARG_Copy_Operand(OP *op);
+
+// Return a boolean indicating if 'op' performs a copy operation.
+inline BOOL CGTARG_Is_Copy(OP *op)
+{
+  return CGTARG_Copy_Operand(op) >= 0;
+}
+
+// Return a boolean indicating if 'op' performs a copy operation
+// that is a candidate for preferencing.  Does extra consistency
+// checks.  This is the preferred method for testing for a copy
+// before invoking CGTARG_Copy_Operand() and friends.
+inline BOOL CGTARG_Is_Preference_Copy (OP* op) 
+{
+  if (OP_copy(op)) {
+    if (CGTARG_Is_Copy(op)) {
+      return TRUE;
+    } else {
+      //
+      // Ops that are to be deleted sometimes have their opcode temporarily
+      // set to nop prior to deletion (principally in lra).
+      //
+      Is_True(OP_code(op) == TOP_noop, 
+          ("Op_copy set on non-copy op %s", TOP_Name(OP_code(op))));
+      return FALSE;
+    }
+  }
+  return FALSE;
+}
+
+// Returns the right opcode for simulated TOP which matches 
+// ISA_EXEC_UNIT_PROPERTY.
+inline TOP CGTARG_Simulated_Top (OP *op, ISA_EXEC_UNIT_PROPERTY unit)
+{
+  TOP top = OP_code(op);
+ 
+  /* Prune the obvious cases. */
+  if (!TOP_is_simulated(top)) return top;
+
+  /* Placeholder for itemizing specific simulated ops */
+  switch (top) {
+
+  case TOP_noop:
+    return CGTARG_Noop_Top(unit);
+
+  default:
+    // TOP_intrncall, TOP_spadjust, TOP_copy_br, TOP_asm,
+    return top;
+  }
+}
+
+// If 'op' performs a copy operation, return the TN of
+// the source operand; otherwise return NULL.
+inline TN *CGTARG_Copy_Operand_TN(OP *op)
+{
+  INT iopnd = CGTARG_Copy_Operand(op);
+  return (iopnd < 0) ? NULL : OP_opnd(op,iopnd);
+}
+
+inline BOOL CGTARG_Is_OP_Barrier(OP *op) { return FALSE; }
+
+inline BOOL CGTARG_Is_OP_Intrinsic(OP *op) { 
+  return OP_code(op) == TOP_intrncall; 
+}
+
+inline BOOL CGTARG_Is_OP_Addr_Incr(OP *op)
+{
+  TOP top = OP_code(op);
+  return FALSE;
+}
+
+#ifdef TARG_ST100
+// How many bytes of memory a memory 'op' reads.
+inline UINT32 CGTARG_Mem_Ref_Bytes (const OP *memop)
+{
+  FmtAssert(OP_load(memop) || OP_store(memop), ("not a load or store"));
+  return TOP_Mem_Bytes(OP_code(memop));
+}
+
+// Is this 'op' a long latency OP for the purpose of GCM.
+// TODO: define a cut-out latency CGTARG_long_latency_limit and
+//       a compiler switch allowing to change it. Then implement
+//       this routine.
+inline BOOL CGTARG_Is_Long_Latency (TOP opcode)
+{
+  return FALSE;
+}
+#else
+extern UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop);
+extern BOOL CGTARG_Is_Long_Latency (TOP *opcode);
+#endif
+
+// Copy ASM_OP_ANNOT when duplicating an OP.
+inline void
+Copy_Asm_OP_Annot(OP* new_op, OP* op) 
+{
+  /*
+  if (OP_code(op) == TOP_asm) {
+    OP_MAP_Set(OP_Asm_Map, new_op, OP_MAP_Get(OP_Asm_Map, op));
+  }
+  */
+  return;
+}
+
+// Returns TRUE if <op> is a barrier node.
+#define OP_Is_Barrier CGTARG_Is_OP_Barrier
+
+#define OP_same_res(o)             (TOP_same_res(OP_code(o)))
+
+// check if an operation that saves all the predicate registers
+#define OP_save_predicates(o)      (TOP_save_predicates(OP_code(o)))
+
+// check if an operation that restores all the predicate registers
+#define OP_restore_predicates(o)   (TOP_restore_predicates(OP_code(o)))
+
+inline void OP_Change_To_Noop(OP *op)
+{
+  ;
+}
+
 /* ---------------------------------------------------------------------
  *			       OPS stuff
  * ---------------------------------------------------------------------
@@ -782,6 +1007,8 @@ inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3,
   OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8, t9));
 }
 
+extern void CGTARG_Predicate_OP(struct bb *bb, OP *op, struct tn *pred_tn);
+
 /* Determine if the op defines/references the given TN result/operand. */
 extern BOOL OP_Defs_TN(const OP *op, const struct tn *res);
 extern BOOL OP_Refs_TN(const OP *op, const struct tn *opnd);
@@ -790,6 +1017,8 @@ extern BOOL OP_Refs_TN(const OP *op, const struct tn *opnd);
 extern BOOL OP_Defs_Reg(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg);
 extern BOOL OP_Refs_Reg(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg);
 
+// Replace 'op's opcode with 'opc'. Make shure it is the same
+// type of OP.
 inline void OP_Change_Opcode(OP *op, TOP opc)
 {
   /*
@@ -825,10 +1054,20 @@ inline INT32 OP_Order(OP *op1, OP *op2)
   return -(op1->order < op2->order) | (op2->order < op1->order);
 }
 
+// Returns the last real OP preceeding <op>, i.e with ignoring all dummy OPs.
+inline OP *Last_Real_OP(OP *op)
+{
+  OP *last_real_op;
+  for (last_real_op = OP_prev(op); last_real_op; last_real_op = OP_prev(last_real_op)) {
+    if (!OP_dummy(last_real_op)) break;
+  }
 
-/* Count the number of real ops/instruction-words emitted by the op.
- */
+  return last_real_op;
+}
+
+// Count the number of real ops/instruction-words emitted by the op.
 extern INT16 OP_Real_Ops( const OP *op );
+extern INT OP_Real_Inst_Words( const OP *op );
 
 /* ======================================================================
  * Macros to traverse the OPs within a basic block. Use of these macros
@@ -942,7 +1181,5 @@ TN_Opernum_In_OP (OP* op, struct tn *tn)
   return -1;
 }
 
-#include "op_targ.h"
-
-#endif /* st100_op_INCLUDED */
+#endif /* op_INCLUDED */
 

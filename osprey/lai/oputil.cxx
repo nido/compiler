@@ -91,7 +91,7 @@
 #include "xstats.h"
 #include "tag.h"
 
-#include "targ_isa_hazards.h"
+/* #include "targ_isa_hazards.h" */ /* Should be included through op.h */
 
 /* Allocate OPs for the duration of the PU. */
 #define OP_Alloc(size)  ((OP *)Pu_Alloc(size))
@@ -1015,6 +1015,26 @@ OP_Real_Ops( const OP *op )
     return Simulated_Op_Real_Ops (op);
   }
   return 1;
+}
+
+/* ====================================================================
+ *
+ * OP_Real_Inst_Words - How many instruction words does this op really 
+ * represent, i.e. will be emitted.
+ *
+ * ====================================================================
+ */
+
+INT
+OP_Real_Inst_Words( const OP *op )
+{
+  if ( op == NULL || OP_dummy(op) ) {
+    return 0;
+  }
+  else if ( OP_simulated(op) ) {
+    return Simulated_Op_Real_Inst_Words (op);
+  }
+  return OP_inst_words(op);
 }
 
 /* ====================================================================
