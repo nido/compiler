@@ -35,11 +35,15 @@ extern "C" {
 #define __STDBOOL_H__
 #include "CCL.h"
 #include "CSD.h"
+#include "LAO_CGIR.h"
 #include "LAO_Driver.h"
 #include "LAO_Interface.h"
 #undef operator
 #undef this
 }
+
+// The CGIR_CallBack structure and its pointer.
+static CGIR_CallBack_ callback_, *callback = &callback_;
 
 // Map CGIR ISA_SUBSET to LIR InstrMode.
 static InstrMode IS__InstrMode[ISA_SUBSET_MAX+1];
@@ -649,6 +653,34 @@ lao_init() {
     lao_optimize_HB_p = lao_optimize_HB;
     lao_optimize_PU_p = lao_optimize_PU;
     CGIR_print_p = CGIR_print;
+    // Initialize the callback pointers.
+    *CGIR_CallBack__LAB_identity(callback) = CGIR_LAB_identity;
+    *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
+    *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
+    *CGIR_CallBack__SYM_identity(callback) = CGIR_SYM_identity;
+    *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
+    *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
+    *CGIR_CallBack__TN_identity(callback) = CGIR_TN_identity;
+    *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
+    *CGIR_CallBack__PseudoReg_TN_create(callback) = CGIR_PseudoReg_TN_create;
+    *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
+    *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
+    *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
+    *CGIR_CallBack__Label_TN_create(callback) = CGIR_Label_TN_create;
+    *CGIR_CallBack__TN_update(callback) = CGIR_TN_update;
+    *CGIR_CallBack__OP_identity(callback) = CGIR_OP_identity;
+    *CGIR_CallBack__OP_create(callback) = CGIR_OP_create;
+    *CGIR_CallBack__OP_update(callback) = CGIR_OP_update;
+    *CGIR_CallBack__BB_identity(callback) = CGIR_BB_identity;
+    *CGIR_CallBack__BB_create(callback) = CGIR_BB_create;
+    *CGIR_CallBack__BB_update(callback) = CGIR_BB_update;
+    *CGIR_CallBack__BB_chain(callback) = CGIR_BB_chain;
+    *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
+    *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
+    *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
+    *CGIR_CallBack__LI_identity(callback) = CGIR_LI_identity;
+    *CGIR_CallBack__LI_create(callback) = CGIR_LI_create;
+    *CGIR_CallBack__LI_update(callback) = CGIR_LI_update;
     // initialize the TOP__Operator array
     for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator__;
     TOP__Operator[TOP_add_i] = Operator_CODE_ADD_IDEST_SRC1_ISRC2;
@@ -949,39 +981,6 @@ lao_fini() {
 
 /*-------------------------- LAO Utility Functions----------------------------*/
 
-// Initialize the interface pointers.
-static void
-lao_initializeInterface() {
-  // Initialize the interface call-back functions.
-  *Interface__CGIR_LAB_identity(interface) = CGIR_LAB_identity;
-  *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
-  *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
-  *Interface__CGIR_SYM_identity(interface) = CGIR_SYM_identity;
-  *Interface__CGIR_SYM_create(interface) = CGIR_SYM_create;
-  *Interface__CGIR_SYM_update(interface) = CGIR_SYM_update;
-  *Interface__CGIR_TN_identity(interface) = CGIR_TN_identity;
-  *Interface__CGIR_Dedicated_TN_create(interface) = CGIR_Dedicated_TN_create;
-  *Interface__CGIR_PseudoReg_TN_create(interface) = CGIR_PseudoReg_TN_create;
-  *Interface__CGIR_Modifier_TN_create(interface) = CGIR_Modifier_TN_create;
-  *Interface__CGIR_Absolute_TN_create(interface) = CGIR_Absolute_TN_create;
-  *Interface__CGIR_Symbol_TN_create(interface) = CGIR_Symbol_TN_create;
-  *Interface__CGIR_Label_TN_create(interface) = CGIR_Label_TN_create;
-  *Interface__CGIR_TN_update(interface) = CGIR_TN_update;
-  *Interface__CGIR_OP_identity(interface) = CGIR_OP_identity;
-  *Interface__CGIR_OP_create(interface) = CGIR_OP_create;
-  *Interface__CGIR_OP_update(interface) = CGIR_OP_update;
-  *Interface__CGIR_BB_identity(interface) = CGIR_BB_identity;
-  *Interface__CGIR_BB_create(interface) = CGIR_BB_create;
-  *Interface__CGIR_BB_update(interface) = CGIR_BB_update;
-  *Interface__CGIR_BB_chain(interface) = CGIR_BB_chain;
-  *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
-  *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
-  *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
-  *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
-  *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
-  *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
-}
-
 typedef list<BB*> BB_List;
 
 // Test if a BB belongs to a BB_List.
@@ -1050,7 +1049,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs);
 
-#define LAO_OPS_LIMIT 2048	// Maximum number of OPs to compute memory dependences.
+#define LAO_OPS_LIMIT 4096	// Maximum number of OPs to compute memory dependences.
 
 // Make a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
@@ -1147,13 +1146,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   //
   if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   LAO_INIT();
-  Interface_open(interface, 5,
+  Interface_open(interface, callback, 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
       Configuration_LoopDep, CG_LAO_loopdep);
-  lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
   BB_List::iterator bb_iter;
