@@ -1131,6 +1131,24 @@ builtin_function ("__st220mullu",
                      tree_cons(NULL_TREE, unsigned_type_node, endlink))),
                    BUILT_IN_ST220MULLU, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__st220pft",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220PFT, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220prgadd",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220PRGADD, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220prgset",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220PRGSET, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__stod",
                    build_function_type( double_type_node, 
                      tree_cons(NULL_TREE, float_type_node, endlink)),

@@ -168,6 +168,69 @@ Expand__st220mullu(
 */
 
 /*
+ * Expansion of st220pft based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220pft(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
+  Build_OP (	TOP_pft,	o0,	ops) ;
+} /* Expand__st220pft */
+
+/*
+@@@  case INTRN_ST220PFT:
+@@@    Expand__st220pft(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220prgadd based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220prgadd(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
+  Build_OP (	TOP_prgadd,	o0,	ops) ;
+} /* Expand__st220prgadd */
+
+/*
+@@@  case INTRN_ST220PRGADD:
+@@@    Expand__st220prgadd(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220prgset based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220prgset(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
+  Build_OP (	TOP_prgset,	o0,	ops) ;
+} /* Expand__st220prgset */
+
+/*
+@@@  case INTRN_ST220PRGSET:
+@@@    Expand__st220prgset(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of absch based on validated and scheduled basic assembly source.
 */
 static void
@@ -4986,6 +5049,15 @@ Exp_Intrinsic_Op (
     break ;
     case INTRN_ST220MULLU:
       Expand__st220mullu(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220PFT:
+      Expand__st220pft(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220PRGADD:
+      Expand__st220prgadd(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220PRGSET:
+      Expand__st220prgset(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ABSCH:
       Expand__absch(result[0],opnd[0],ops) ;

@@ -775,6 +775,18 @@
       iopc = INTRN_ST220MULLU ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_ST220PFT:
+      iopc = INTRN_ST220PFT ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220PRGADD:
+      iopc = INTRN_ST220PRGADD ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220PRGSET:
+      iopc = INTRN_ST220PRGSET ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_STOD:
       iopc = INTRN_STOD ;
       intrinsic_op = TRUE ;
