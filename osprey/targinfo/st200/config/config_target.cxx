@@ -534,7 +534,7 @@ Configure_Target ()
   }
   if (OPT_unroll_size > 0 && !OPT_unroll_times_overridden) {
     if (Opt_Level == 2) {
-      OPT_unroll_size = 64;
+      OPT_unroll_size = Opt_ForSize ? 20 : 64;
     } else if (Opt_Level > 2) {
       OPT_unroll_size = 64;
     }
