@@ -215,7 +215,7 @@ BOOL LOCS_Enable_Scheduling = TRUE;
 // ====================================================================
 
 BOOL IGLS_Enable_HB_Scheduling = TRUE;
-BOOL IGLS_Enable_PRE_HB_Scheduling = FALSE;
+BOOL IGLS_Enable_PRE_HB_Scheduling = TRUE;
 BOOL IGLS_Enable_POST_HB_Scheduling = TRUE;
 BOOL IGLS_Enable_All_Scheduling = TRUE;
 

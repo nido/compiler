@@ -113,9 +113,6 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
-#ifdef LAO_ENABLED
-#include "lao_stub.h"
-#endif
 #endif
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */

@@ -86,6 +86,9 @@
 #include "hb_sched.h"
 #include "hb_hazards.h"
 /* #include "targ_proc_properties.h" */
+#if defined(TARG_ST) && defined(LAO_ENABLED)
+#include "lao_stub.h"
+#endif
 
 
 // ======================================================================
@@ -202,6 +205,10 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       HB_Remove_Deleted_Blocks();
       list<HB*>::iterator hbi;
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
+#if defined(TARG_ST) && defined(LAO_ENABLED)
+	// Call the LAO for all the hyperblocks.
+	LAO_optimize(*hbi, LAO_TraceSchedule);
+#else
 	if (!Sched) {
 	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
 	}
@@ -213,6 +220,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 	  Sched->Init(hb_blocks, hbs_type, NULL);
 	  Sched->Schedule_HB(hb_blocks);
 	}
+#endif
       }
     }
 
@@ -298,9 +306,14 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       HB_Remove_Deleted_Blocks();
       list<HB*>::iterator hbi;
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
+#if defined(TARG_ST) && defined(LAO_ENABLED)
+	// Call the LAO for all the hyperblocks.
+	LAO_optimize(*hbi, LAO_TraceSchedule + LAO_PostPass);
+#else
 	if (!Sched) {
 	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
 	}
+
 	// Check to see if not SWP'd.
 	list<BB*> hb_blocks;
 	Get_HB_Blocks_List(hb_blocks,*hbi);
@@ -308,6 +321,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 	  Sched->Init(hb_blocks, hbs_type, NULL);
 	  Sched->Schedule_HB(hb_blocks);
 	}
+#endif
       }
     }
 
