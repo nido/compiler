@@ -113,7 +113,7 @@ INT32 CG_branch_mispredict_penalty= -1;		/* means not set */
 INT32 CG_branch_mispredict_factor= -1;		/* means not set */
 
 BOOL CG_warn_bad_freqs = FALSE;
-BOOL CG_enable_loop_optimizations = TRUE;
+BOOL CG_enable_loop_optimizations = FALSE;
 BOOL CG_enable_feedback = FALSE;
 BOOL CG_tail_call = FALSE;
 
