@@ -169,6 +169,8 @@ BOOL OP_Can_Be_Speculative (
   // [CG] Not clear if we can speculate an asm
   if (OP_code(op) == TOP_asm) return FALSE;
 
+  if (OP_Is_Barrier(op)) return FALSE;
+
   switch (Eager_Level) {
    case EAGER_NONE:
 
