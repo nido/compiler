@@ -38,7 +38,7 @@ static const char source_file[] = __FILE__;
 static const char rcs_id[] = "$Source$ $Revision$";
 
 #include <stdio.h>
-#include <math.h>	/* for ceil */
+#include "W_math.h"	/* for ceil */
 
 #include "defs.h"
 #include "erglob.h"
@@ -78,8 +78,8 @@ TI_RES_COUNT_Alloc(
 
   counts->vec = TYPE_MEM_POOL_ALLOC_N(double, pool, SI_resource_count);
   if ( !MEM_POOL_Zeroed(pool) ) {
-    bzero(counts->vec, sizeof(double) * SI_resource_count);
-    bzero(counts->bad_ii, sizeof(counts->bad_ii));
+    BZERO(counts->vec, sizeof(double) * SI_resource_count);
+    BZERO(counts->bad_ii, sizeof(counts->bad_ii));
   }
   return counts;
 }
