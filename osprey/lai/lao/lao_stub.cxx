@@ -1166,8 +1166,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   Interface_open(interface, callback, 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
-      Configuration_Pipelining, CG_LAO_pipeline,
-      Configuration_Speculation, CG_LAO_speculate,
+      Configuration_Pipelining, CG_LAO_pipelining,
+      Configuration_Speculation, CG_LAO_speculation,
       Configuration_LoopDep, CG_LAO_loopdep);
   //
   // Create the LAO BasicBlocks.
@@ -1237,7 +1237,7 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   //
   // Compute the pipelining value.
   BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
-  int pipelining = (tail_bb != NULL)*CG_LAO_pipeline;
+  int pipelining = (tail_bb != NULL)*CG_LAO_pipelining;
   bool prepass = (lao_optimizations & Optimization_PreSched) != 0;
   //
   // Adjust the control-flow if required.
@@ -1299,7 +1299,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&lao_loop_pool);
   //
   // Software pipeline the innermost loops.
-  if (lao_optimizations & Optimization_PreSched && CG_LAO_pipeline > 0) {
+  if (lao_optimizations & Optimization_PreSched && CG_LAO_pipelining > 0) {
     while (loop != NULL && BB_innermost(LOOP_DESCR_loophead(loop))) {
       result != lao_optimize_LOOP(loop, lao_optimizations);
       loop = LOOP_DESCR_next(loop);
