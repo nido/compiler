@@ -591,23 +591,16 @@ Tail_Duplicate(BB* entry, BB* side_entrance, BB* fall_thru)
  *
  * ================================================================
  */
-// Make a copy of a phi op, using the same tn as return value in order to no
-// break uses. The implementation (there is 2 same defs during a short time)
-// make it possible without maintaining a phi's defs list.
-// The original phi should be removed.
-static OP*
-Dup_PHI (OP* phi)
+static void
+Change_PHI_Predecessor (OP *phi, BB *old_pred, BB *pred)
 {
-  TN *result[1];
-  UINT8 j = 0;
   UINT8 nopnds = OP_opnds(phi);
-  TN *opnd[nopnds];
-  for (j = 0; j < OP_opnds(phi); j++) {
-    opnd[j] = OP_opnd(phi, j);
-  }
-  result[0] = OP_result(phi, 0);
+  UINT8 i;
 
-  return Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+  for (i = 0; i < nopnds; i++) {
+    if (Get_PHI_Predecessor (phi, i) == old_pred)
+      Set_PHI_Predecessor (phi, i, pred);
+  }
 }
 
 // Remove old phis or replace it with a new one from phi_op_map.
@@ -624,11 +617,10 @@ BB_Update_Phis(BB *bb)
 
     new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
 
-    if (! new_phi)
-      new_phi = Dup_PHI(phi);
-
-    phi_list.push_front(phi);
-    SSA_Prepend_Phi_To_BB(new_phi, bb);
+    if (new_phi) {
+      phi_list.push_front(phi);
+      SSA_Prepend_Phi_To_BB(new_phi, bb);
+    }
   }
   
   BB_Remove_Ops(bb, phi_list);
@@ -1083,22 +1075,22 @@ Is_Double_Logif(BB* bb)
 
   if (BB_kind(target) == BBKIND_LOGIF) {
     if (BB_preds_len(target) == 1
+        && sec_fall_thru == fall_thru
         && Can_Speculate_BB(target, NULL)
-        && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
-                                    &sec_fall_thru, &sec_target)
         && Dead_BB (target)
-        && sec_fall_thru == fall_thru)
+        && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
+                                    &sec_fall_thru, &sec_target))
       return target;
   }
 
   // try the other side
   if (BB_kind(fall_thru) == BBKIND_LOGIF) {
     if (BB_preds_len(fall_thru) == 1
+        && sec_target == target
         && Can_Speculate_BB(fall_thru, NULL)
-        && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
-                                    &sec_fall_thru, &sec_target)
         && Dead_BB (fall_thru)
-        && sec_target == target)
+        && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
+                                    &sec_fall_thru, &sec_target))
       return fall_thru;
   }
   
@@ -1408,7 +1400,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       
       FOR_ALL_BB_PHI_OPs(bb,op) {
         // make phi here instead of that...
-        Change_PHI_Predecessor (bb, tail, head, op);
+        Change_PHI_Predecessor (op, tail, head);
       }
     }
 
@@ -1467,8 +1459,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Calculate_Dominators();
 
-  //  draw_CFG();
-
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *bbb;
@@ -1507,13 +1497,13 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
       if (bbs_tail_dup[0]) {
-        DevWarn("<select> tail duplicate BB%d not implemented\n", BB_id (bbs_tail_dup[0]));
+        DevWarn("<select> tail duplicate BB%d not enabled\n", BB_id (bbs_tail_dup[0]));
         //        Tail_Duplicate(bb, bbs_tail_dup[0], tail);
         continue;
       }
 
       if (bbs_tail_dup[1]) {
-        DevWarn("<select> tail duplicate BB%d not implemented\n", BB_id (bbs_tail_dup[1]));
+        DevWarn("<select> tail duplicate BB%d not enabled\n", BB_id (bbs_tail_dup[1]));
         //        Tail_Duplicate(bb, bbs_tail_dup[1], tail);
         continue;
       }
@@ -1537,8 +1527,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
-
-  //  draw_CFG();
 
   GRA_LIVE_Recalc_Liveness(rid);
 
