@@ -1025,6 +1025,12 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
   }
 }
 
+// Discard a CGIR_BB.
+static void
+CGIR_BB_discard(CGIR_BB cgir_bb) {
+  BB_Remove_All(cgir_bb);
+}
+
 // Initialization of the LIR->CGIR callbacks object.
 static void
 LIR_CGIR_callback_init(CGIR_CallBack callback) {
@@ -1041,6 +1047,7 @@ LIR_CGIR_callback_init(CGIR_CallBack callback) {
   *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
   *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
   *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
+  *CGIR_CallBack__BB_discard(callback) = CGIR_BB_discard;
 }
 
 
