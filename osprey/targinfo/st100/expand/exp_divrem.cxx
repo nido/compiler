@@ -245,7 +245,7 @@ Is_Power_Of_2 (
 }
 
 /* ====================================================================
- *   Is_Power_OF_2
+ *   Get_Power_OF_2
  * ====================================================================
  */
 static INT
@@ -319,6 +319,19 @@ Expand_Divide_By_Constant (
   FmtAssert(mtype == MTYPE_I4 || mtype == MTYPE_U4,
 	         ("Expand_Divide_By_Constant: mtype not handled"));
 
+  if (Is_Power_Of_2 (src2_val, mtype)) {
+    INT pow2 = Get_Power_Of_2 (src2_val, mtype);
+    if (ISA_LC_Value_In_Class (pow2, LC_u5)) {
+      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
+	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
+      return result;
+    }
+  }
+
+  src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
+  Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
+
+  /*
   switch (src2_val) {
     case 2: 
       // a shift:
@@ -326,10 +339,26 @@ Expand_Divide_By_Constant (
 	    src1, Gen_Literal_TN (1, MTYPE_byte_size(mtype)), ops);
       break;
 
+    case 4:
+      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
+	    src1, Gen_Literal_TN (2, MTYPE_byte_size(mtype)), ops);
+      break;
+
+    case 8:
+      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
+	    src1, Gen_Literal_TN (3, MTYPE_byte_size(mtype)), ops);
+      break;
+
+    case 16:
+      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
+	    src1, Gen_Literal_TN (4, MTYPE_byte_size(mtype)), ops);
+      break;
+
     default:
       src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
       Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
   }
+  */
 
   return result;
 }

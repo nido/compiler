@@ -50,7 +50,7 @@
 #include "tn.h"
 #include "op.h"
 #include "targ_isa_lits.h"
-#include "lai.h"
+#include "cg.h"
 #include "cg_flags.h"
 #include "cgexp.h"
 #include "stblock.h"
@@ -858,8 +858,12 @@ Exp_Ldst (
     fprintf(TFile, "ofst %lld \n", base_ofst);
   }
 
-  if (base_sym == SP_Sym || base_sym == FP_Sym) {
-    base_tn = (base_sym == SP_Sym) ? SP_TN : FP_TN;
+  if (ST_on_stack(sym)) {
+    // formals on small stack are not assigned to sp/fp yet
+    // cause base is not finished, but they will be assigned to SP.
+    // So only use FP if already based on FP.
+    /*  if (base_sym == SP_Sym || base_sym == FP_Sym) { */
+    base_tn = (base_sym == FP_Sym) ? FP_TN : SP_TN;
     if (sym == base_sym) {
       // can have direct reference to SP or FP,
       // e.g. if actual stored to stack.

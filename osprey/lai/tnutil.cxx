@@ -634,6 +634,7 @@ Init_Dedicated_TNs (void)
   /* allocate gp tn.  this may use a caller saved register, so
    * we don't use the one allocated for $gp above.
    */
+  ++tnum; 
   GP_TN = Create_Dedicated_TN (REGISTER_CLASS_gp, REGISTER_gp);
   Last_Dedicated_TN = tnum;
 

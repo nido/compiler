@@ -140,11 +140,10 @@
 #include "wn_util.h"
 #include "whirl2ops.h"
 
-/* #include "cg.h" */
+#include "cg.h"
 /* #include "register.h" */	/* needed for "gra.h" */
 /* #include "tn_set.h" */	/* needed for "gra.h" */
 /* #include "gra.h" */
-#include "lai.h"
 #include "gra_live.h"
 #include "bb_set.h"
 #include "gtn_universe.h"
@@ -4133,6 +4132,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	      &ops);
   }
 
+#ifndef TARG_ST100
   // Replace the loop-back branch with the counted loop branch
   // instruction.  It is a nop for the MIPS architecture.
   {
@@ -4149,6 +4149,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
       CG_LOOP_Init_Op(BB_branch_op(head));
     }
   }
+#endif
 
   /* Initialize the TN renamer */
   unroll_names_init(loop, ntimes, &MEM_phase_nz_pool);
@@ -4978,7 +4979,7 @@ static BOOL Loop_Amenable_For_SWP(LOOP_DESCR *loop, BOOL trace)
   }
 }
 
-
+#ifndef TARG_ST100
 // Replace the loop-back branch with the counted loop branch
 // instruction.  It is a nop for the MIPS architecture.
 //
@@ -5006,7 +5007,7 @@ void Gen_Counted_Loop_Branch(CG_LOOP& cl)
     BB_Append_Ops(prolog, &ops);
   }
 }
-
+#endif
 
 //  Fix backpatches.  Some backpatches are obsoleted because
 //  EBO and other optimizations has deleted the def and uses
@@ -5083,9 +5084,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
   }
 
-#ifdef TARG_ST100
-    FmtAssert(FALSE,("CG_LOOP_Optimize: Force_If_Convert not implemented")); 
-#else
+#ifndef TARG_ST100
   if (!single_bb && 
       CG_LOOP_force_ifc > 0 &&
       Loop_Amenable_For_SWP(loop, trace_loop_opt)) {
@@ -5098,6 +5097,21 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   }
 #endif
 
+#ifdef TARG_ST100
+  // On the ST100 the SWP is not implemented:
+  if (single_bb) {
+    if (has_trip_count) {
+      action =  SINGLE_BB_DOLOOP_UNROLL;
+    }
+    else {
+      action = SINGLE_BB_WHILELOOP_UNROLL;
+    }
+  } else if (has_trip_count) {
+    action = MULTI_BB_DOLOOP;
+  } else {
+    action = NO_LOOP_OPT;
+  }
+#else
   if (single_bb) {
     if (has_trip_count) {
       if (Enable_SWP)
@@ -5105,22 +5119,21 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       else 
 	action =  SINGLE_BB_DOLOOP_UNROLL;
     } else {
-#ifdef TARG_ST100
-      FmtAssert(FALSE,("CG_LOOP_Optimize: SWP_Options not implemented")); 
-#else
       if (Enable_SWP && SWP_Options.Enable_While_Loop)
 	action = SINGLE_BB_WHILELOOP_SWP;
       else if (CG_LOOP_unroll_non_trip_countable) 
 	action = SINGLE_BB_WHILELOOP_UNROLL;
-#endif
     }
   } else if (has_trip_count) {
     action = MULTI_BB_DOLOOP;
   } else {
     action = NO_LOOP_OPT;
   }
+#endif
 
   switch (action) {
+
+#ifndef TARG_ST100
   case SINGLE_BB_DOLOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5151,9 +5164,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	return TRUE;
       }
 
-#ifdef TARG_ST100
-      FmtAssert(FALSE,("CG_LOOP_Optimize: Perform_Read_Write_Removal/SWP not implemented"));
-#else
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
 	
@@ -5230,9 +5240,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	cg_loop.Recompute_Liveness();
       }
-#endif /* Read_Write_Removal/SWP not implemented */
       break;
     }
+#endif /* TARG_ST100 */
 
   case  SINGLE_BB_DOLOOP_UNROLL:  
     {
@@ -5261,10 +5271,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	// should find all such CSEs after full unrolling.
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
-      } else {
-#ifdef TARG_ST100
-      FmtAssert(FALSE,("CG_LOOP_Optimize: Perform_Read_Write_Removal not implemented"));
-#else
+      } 
+#ifndef TARG_ST100
+      else {
 	Perform_Read_Write_Removal(loop);
 
 	// Break recurrences will compute dep-graph itself
@@ -5275,18 +5284,15 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	}
 	cg_loop.Recompute_Liveness();
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
-#endif /* Read_Write_Removal not implemented */
       }
 
       cg_loop.Recompute_Liveness();
-#ifdef TARG_ST100
-      FmtAssert(FALSE,("CG_LOOP_Optimize: EBO_After_Unrolling not implemented"));
-#else
       cg_loop.EBO_After_Unrolling();
 #endif
       break;
     }
 
+#ifndef TARG_ST100
   case SINGLE_BB_WHILELOOP_SWP:
     {
       CG_LOOP cg_loop(loop);
@@ -5297,9 +5303,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
 
-#ifdef TARG_ST100
-	FmtAssert(FALSE,("CG_LOOP_Optimize: SWP not implemented"));
-#else
       if (Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt)) {
 
 	Gen_SWP_Branch(cg_loop, false/*is_doloop*/);
@@ -5340,9 +5343,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  cg_loop.Recompute_Liveness();
 	}
       }
-#endif /* SWP not implemented */
     }
     break;
+#endif /* TARG_ST100 */
 
   case SINGLE_BB_WHILELOOP_UNROLL:
     {
@@ -5355,15 +5358,16 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Determine_Unroll_Factor();
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
-#ifdef TARG_ST100
-      FmtAssert(FALSE,("CG_LOOP_Optimize: EBO_After_Unrolling not implemented"));
-#else
+
+#ifndef TARG_ST100
       cg_loop.EBO_After_Unrolling();
 #endif
+
     }
     break;
 
   case MULTI_BB_DOLOOP:
+#ifndef TARG_ST100
     {
       CG_LOOP cg_loop(loop);
 
@@ -5380,6 +5384,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_DOLOOP ***");
       }
     }
+#endif
     break;
 
   case NO_LOOP_OPT:
@@ -5478,9 +5483,7 @@ void Perform_Loop_Optimizations()
   MEM_POOL_Push (&loop_descr_pool);
   BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
-#ifdef TARG_ST100
-  FmtAssert(FALSE,("Perform_Loop_Optimizations: SWP_Options not implemented"));
-#else
+#ifndef TARG_ST100
   SWP_Options.PU_Configure();
 #endif
 
@@ -5516,9 +5519,7 @@ void Perform_Loop_Optimizations()
     CG_LOOP_Optimize(loop, fixup);
   }
 
-#ifdef TARG_ST100
-  FmtAssert(FALSE,("Perform_Loop_Optimizations: SWP not implemented"));
-#else
+#ifndef TARG_ST100
   // Compute correct wrap around values for SWP loops
   for (INT i = 0; i < fixup.size(); i++)
     SWP_Fixup(fixup[i]);

@@ -75,7 +75,7 @@
 #include "cgir.h"
 #include "region_util.h"
 #include "cg_region.h"
-#include "lai.h"
+#include "cg.h"
 #include "calls.h"
 #include "cgtarget.h"
 #include "cgexp.h"
@@ -1542,6 +1542,369 @@ TN_CORRESPOND_Get (
 }
 
 /* ====================================================================
+ *   U4ExprHasUpperBitZero
+ *
+ *   Determine if the upper bit:31 is zero
+ * ====================================================================
+ */
+static BOOL U4ExprHasUpperBitZero(WN *wn)
+{
+  switch(WN_opcode(wn)) {
+
+  case OPC_U4LSHR:
+   /*
+    *  if we shift by a non zero amount, the expression sign bit will be zero
+    */
+    if (WN_operator_is(WN_kid1(wn), OPR_INTCONST))
+    {
+      if (0 < WN_const_val(WN_kid1(wn)))
+	return TRUE;
+    }
+    break;
+
+  case OPC_U4BAND:
+   /*
+    *  if the constant sign bit is zero, the expression sign bit will be zero
+    */
+    if (WN_operator_is(WN_kid1(wn), OPR_INTCONST))
+    {
+      if ((WN_const_val(WN_kid1(wn)) & 0x80000000) == 0)
+	return TRUE;
+    }
+    break;
+  }
+
+  return FALSE;
+}
+
+/* ======================================================================
+ *   Is_CVT_Noop
+ *
+ *   Some CVTs are noops on a given architecture. This should really
+ *   have two parts: target-independent and target-dependent. 
+ *   WHIRL processing being target-independent can't entirely avoid 
+ *   generating these.
+ * ======================================================================
+ */
+static BOOL
+Is_CVT_Noop (
+  WN *cvt, 
+  WN *parent
+)
+{
+  /*
+   * All int to int sign conversions are noops in C.
+   */
+  if (WN_opcode(cvt) == OPC_I4U4CVT || WN_opcode(cvt) == OPC_U4I4CVT ||
+      WN_opcode(cvt) == OPC_I5U5CVT || WN_opcode(cvt) == OPC_U5I5CVT ||
+      WN_opcode(cvt) == OPC_I8U8CVT || WN_opcode(cvt) == OPC_U8I8CVT) {
+	// normally this is removed before cg, but sometimes not
+	return TRUE;
+  }
+
+  if (Enable_CVT_Opt) {
+
+    switch(WN_opcode(cvt)) {
+
+#ifdef TARG_IA64
+    case OPC_F8F4CVT:
+    case OPC_F4F8CVT:
+	if (WN_operator(parent) == OPR_TAS) {
+		/* for IA-64, the tas (getf) does the size conversion too,
+		 * so don't need the cvt. */
+		return TRUE;
+	}
+	break;
+#endif
+    case OPC_U8I4CVT:
+    case OPC_I8I4CVT:
+     /*
+      *  if 32-bit ints are sign-extended to 64-bit, then is a nop.
+      */
+      if (!Split_64_Bit_Int_Ops && !Only_Unsigned_64_Bit_Ops)
+      {
+	return TRUE;
+      }
+      break;
+
+    case OPC_U5I4CVT:
+    case OPC_I5I4CVT:
+      /*
+       *  Arthur:
+       *
+       *  On ST100 the Split_64_Bit_Int_Ops MUST be TRUE, so that 32-bit 
+       *  values are properly sign-extended in 40-bit registers.
+       *  This may seem as an ugly sharing of the functionality -- it
+       *  is not. Split_64_Bit_Int_Ops seems to mean that int ops will be
+       *  operated upon as 32-bit entities, not 64-bit entities, and the
+       *  compiler manipulates WHIRL accordingly. It means that 32-bit
+       *  values are operated upon as 32-bit values, not 40-bit values on
+       *  the ST100. Now, whether I5I4CVT is a noop is architecture
+       *  dependent: on ST100 32-bit values are kept properly sign-extended
+       *  in 40-bit registers, so it's a noop; on TI C55x, 40-bit takes 2
+       *  registers and it wouldn't be a noop.
+       */
+      if (Split_64_Bit_Int_Ops || Only_Unsigned_64_Bit_Ops) {
+	return TRUE;
+      }
+      break;
+
+    case OPC_U8U4CVT:
+    case OPC_I8U4CVT:
+#ifndef EMULATE_LONGLONG
+     /*
+      *  if we can determine the upper bit:31 is zero, the cast is a nop
+      */
+      if (U4ExprHasUpperBitZero(WN_kid0(cvt)))
+      {
+	return TRUE;
+      }
+#endif
+      break;
+
+    case OPC_I4U8CVT:
+    case OPC_I4I5CVT:
+    case OPC_I4I8CVT:
+    case OPC_U4U8CVT:
+    case OPC_U4I5CVT:
+    case OPC_U4I8CVT:
+    case OPC_I5U8CVT:
+    case OPC_I5I8CVT:
+    case OPC_U5U8CVT:
+    case OPC_U5I8CVT:
+     /*
+      *  For truncation converts, the memory operation will
+      *  perform the necessary truncation.
+      */
+      if (parent)
+      {
+	switch(WN_opcode(parent))
+	{
+	case OPC_I4STID:
+	case OPC_U4STID:
+	case OPC_I5STID:
+	case OPC_U5STID:
+	  if (WN_class(parent) != CLASS_PREG)
+	  {
+	    return TRUE;
+	  }
+	  break;
+
+	case OPC_I4ISTORE:
+	case OPC_U4ISTORE:
+	case OPC_I5ISTORE:
+	case OPC_U5ISTORE:
+	  return TRUE;
+	}
+      }
+      break;
+
+    case OPC_I4CVTL:
+    case OPC_U4CVTL:
+    case OPC_I5CVTL:
+    case OPC_U5CVTL:
+    case OPC_I8CVTL:
+    case OPC_U8CVTL:
+     /*
+      *  For truncation converts, the memory operation will
+      *  perform the necessary truncation.
+      */
+      if (parent)
+      {
+	switch(WN_operator(parent))
+	{
+	case OPR_STID:
+	  if (MTYPE_size_reg(WN_desc(parent)) ==  WN_cvtl_bits(cvt)
+		&& WN_class(parent) != CLASS_PREG)
+	  {
+	    return TRUE;
+	  }
+	  break;
+
+	case OPR_ISTORE:
+	  if (MTYPE_size_reg(WN_desc(parent)) ==  WN_cvtl_bits(cvt))
+	  {
+	    return TRUE;
+	  }
+	}
+      }
+      break;
+    }
+  }
+  
+  return FALSE;
+}
+
+/* ======================================================================
+ *   Is_CVTL_Opcode
+ *
+ *   CVTL opcodes are either CVTLs or CVT that change the integer size.
+ * ======================================================================
+ */
+static BOOL
+Is_CVTL_Opcode (
+  OPCODE opc
+)
+{
+  switch (opc) {
+    case OPC_U8I4CVT:
+    case OPC_U8U4CVT:
+    case OPC_U8I5CVT:
+    case OPC_U8U5CVT:
+
+    case OPC_I8I4CVT:
+    case OPC_I8U4CVT:
+    case OPC_I8I5CVT:
+    case OPC_I8U5CVT:
+
+    case OPC_U5I4CVT:
+    case OPC_U5U4CVT:
+    case OPC_U5I8CVT:
+    case OPC_U5U8CVT:
+
+    case OPC_I5I4CVT:
+    case OPC_I5U4CVT:
+    case OPC_I5I8CVT:
+    case OPC_I5U8CVT:
+  
+    case OPC_I4I8CVT:
+    case OPC_I4U8CVT:
+    case OPC_I4I5CVT:
+    case OPC_I4U5CVT:
+
+    case OPC_U4U8CVT:
+    case OPC_U4I8CVT:
+    case OPC_U4U5CVT:
+    case OPC_U4I5CVT:
+
+    case OPC_I8CVTL:
+    case OPC_I5CVTL:
+    case OPC_I4CVTL:
+    case OPC_U8CVTL:
+    case OPC_U5CVTL:
+    case OPC_U4CVTL:
+      return TRUE;
+    default:
+      return FALSE;
+  }
+}
+
+/* ====================================================================
+ *   Get_mtype_for_mult
+ *
+ *   This determines which mtype is really needed for a multiply.
+ *   This mimics the Expand_Expr () handling of some OPERATORs. If
+ *   you make a change here - look there too.
+ * ====================================================================
+ */
+static TYPE_ID
+Get_mtype_for_mult (
+  WN *expr,
+  WN *parent
+)
+{
+  TYPE_ID mtype;
+
+  switch (WN_operator(expr)) {
+    /*
+     * MTYPEs of LDID. ILOAD should be derived from WN_desc() rather
+     * than WN_rtype 
+     * TODO: perhaps it's just a OPERATOR_is_load()
+     *       which would include ILDBITS, LDBITS, MLOAD as well ??)
+     */
+    case OPR_LDID:
+    case OPR_ILOAD:
+      mtype = WN_desc(expr);
+      break;
+
+    case OPR_CVTL:
+      if (Is_CVT_Noop(expr, parent)) {
+	mtype = Get_mtype_for_mult (WN_kid0(expr), parent);
+      }
+      else {
+	mtype = MTYPE_TransferSize(WN_cvtl_bits(expr)>>3, WN_rtype(expr));
+      }
+      break;
+
+    case OPR_CVT:
+      if (Is_CVT_Noop(expr, parent)) {
+	mtype = Get_mtype_for_mult (WN_kid0(expr), parent);
+      }
+      else if (Is_CVTL_Opcode(WN_opcode(expr))) {
+	mtype = Get_mtype_for_mult (WN_kid0(expr), expr);
+      }
+      else {
+	mtype = WN_rtype(expr);
+      }
+
+    default:
+      mtype = WN_rtype(expr);
+  }
+
+  return mtype;
+}
+
+/* ====================================================================
+ *   Expand_Expr_Mult
+ *
+ *   This determines which mtype is really needed for a multiply.
+ *   This mimics the Expand_Expr () handling of some OPERATORs. 
+ * ====================================================================
+ */
+static TN*
+Expand_Expr_Mult (
+  WN      *expr,
+  TYPE_ID *mtype,
+  WN *parent
+)
+{
+  TN *kid_tn;
+
+  switch (WN_operator(expr)) {
+    /*
+     * MTYPEs of LDID. ILOAD should be derived from WN_desc() rather
+     * than WN_rtype 
+     * TODO: perhaps it's just a OPERATOR_is_load()
+     *       which would include ILDBITS, LDBITS, MLOAD as well ??)
+     */
+    case OPR_LDID:
+    case OPR_ILOAD:
+      kid_tn = Expand_Expr (expr, parent, NULL);
+      *mtype = WN_desc(expr);
+      break;
+
+    case OPR_CVTL:
+      if (Is_CVT_Noop(expr, parent)) {
+	kid_tn = Expand_Expr_Mult (WN_kid0(expr), mtype, parent);
+      }
+      else {
+	kid_tn = Expand_Expr (expr, parent, NULL);
+	*mtype = MTYPE_TransferSize(WN_cvtl_bits(expr)>>3, WN_rtype(expr));
+      }
+      break;
+
+    case OPR_CVT:
+      if (Is_CVT_Noop(expr, parent)) {
+	kid_tn = Expand_Expr_Mult (WN_kid0(expr), mtype, parent);
+      }
+      else if (Is_CVTL_Opcode(WN_opcode(expr))) {
+	kid_tn = Expand_Expr_Mult (WN_kid0(expr), mtype, expr);
+      }
+      else {
+	kid_tn = Expand_Expr (expr, parent, NULL);
+	*mtype = WN_rtype(expr);
+      }
+      break;
+
+    default:
+      kid_tn = Expand_Expr (expr, parent, NULL);
+      *mtype = WN_rtype(expr);
+  }
+
+  return kid_tn;
+}
+
+/* ====================================================================
  *   Handle_MPY
  * ====================================================================
  */
@@ -1552,29 +1915,114 @@ Handle_MPY (
   OPCODE opcode
 )
 {
+  OP *Last_OP;
   TN *kid0_tn, *kid1_tn;
+  TYPE_ID mtype0, mtype1;
 
   if (result == NULL) {
     result = Allocate_Result_TN (expr, NULL);
   }
 
   /* call make MULT with mtypes of arguments: */
+  /*
   kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
   kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+  */
+
+  kid0_tn = Expand_Expr_Mult (WN_kid0(expr), &mtype0, expr);
+  kid1_tn = Expand_Expr_Mult (WN_kid1(expr), &mtype1, expr);
 
   if (Trace_Exp) {
     #pragma mips_frequency_hint NEVER
     fprintf(TFile, "exp_mul %s: ", OPCODE_name(opcode));
     Print_TN(result, FALSE);
+    fprintf(TFile, " (%s) :- ", MTYPE_name(WN_rtype(expr)));
+    Print_TN(kid0_tn, FALSE);
+    fprintf(TFile, " (%s) ", MTYPE_name(mtype0));
+    Print_TN(kid1_tn, FALSE);
+    fprintf(TFile, " (%s) \n", MTYPE_name(mtype1));
+  }
+
+  /* for debuggging */
+  Last_OP = OPS_last(&New_OPs);
+
+  /*
+  Expand_Multiply (result, WN_rtype(expr), 
+		   kid0_tn, Get_mtype_for_mult(WN_kid0(expr), expr), 
+		   kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr), 
+		   &New_OPs);
+  */
+
+  Expand_Multiply (result, WN_rtype(expr), 
+		   kid0_tn, mtype0, 
+		   kid1_tn, mtype1, 
+		   &New_OPs);
+
+  if (Trace_Exp) {
+    OP *op;
+    if (Last_OP) op = OP_next(Last_OP);
+    else op = OPS_first(&New_OPs);
+
+    while (op != NULL) {
+      fprintf(TFile, " into "); Print_OP (op);
+      op = OP_next(op);
+    }
+  }
+
+  return result;
+}
+
+/* ====================================================================
+ *   Handle_MADD
+ * ====================================================================
+ */
+static TN *
+Handle_MADD (
+  WN *expr, 
+  TN *result,
+  OPCODE opcode
+)
+{
+  OP *Last_OP;
+  TN *kid0_tn, *kid1_tn, *kid2_tn;
+
+  if (result == NULL) {
+    result = Allocate_Result_TN (expr, NULL);
+  }
+
+  /* call make MADD with mtypes of arguments: */
+  kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
+  kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+  kid2_tn = Expand_Expr (WN_kid2(expr), expr, NULL);
+
+  if (Trace_Exp) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile, "exp_madd %s: ", OPCODE_name(opcode));
+    Print_TN(result, FALSE);
     fprintf(TFile, " :- ");
     Print_TN(kid0_tn, FALSE);
     fprintf(TFile, " ");
     Print_TN(kid1_tn, FALSE);
+    fprintf(TFile, " ");
+    Print_TN(kid2_tn, FALSE);
     fprintf(TFile, " \n");
   }
 
-  Expand_Multiply (result, WN_rtype(expr), kid0_tn, 
-    WN_rtype(WN_kid0(expr)), kid1_tn, WN_rtype(WN_kid1(expr)), &New_OPs);
+  /* for debuggging */
+  Last_OP = OPS_last(&New_OPs);
+  Expand_Madd (result, WN_rtype(expr), 
+	       kid0_tn, WN_rtype(WN_kid0(expr)), 
+	       kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr),
+	       kid2_tn, Get_mtype_for_mult(WN_kid2(expr), expr),
+	       &New_OPs);
+
+  if (Trace_Exp) {
+    OP *op = OP_next(Last_OP);
+    while (op != NULL) {
+      fprintf(TFile, " into "); Print_OP (op);
+      op = OP_next(op);
+    }
+  }
 
   return result;
 }
@@ -1614,6 +2062,10 @@ Handle_DIVREM (
   return result;
 }
 
+/* ====================================================================
+ *   Handle_DIVPART
+ * ====================================================================
+ */
 static TN *
 Handle_DIVPART(WN *expr, WN *parent, TN *result)
 {
@@ -1633,6 +2085,10 @@ Handle_DIVPART(WN *expr, WN *parent, TN *result)
   return result;
 }
 
+/* ====================================================================
+ *   Handle_REMPART
+ * ====================================================================
+ */
 static TN *
 Handle_REMPART(WN *expr, WN *parent, TN *result)
 {
@@ -1655,6 +2111,10 @@ Handle_REMPART(WN *expr, WN *parent, TN *result)
   return result;
 }
 
+/* ====================================================================
+ *   Handle_MINMAX
+ * ====================================================================
+ */
 static TN *
 Handle_MINMAX(WN *expr, WN *parent, TN *result, OPCODE opcode)
 {
@@ -1681,6 +2141,10 @@ Handle_MINMAX(WN *expr, WN *parent, TN *result, OPCODE opcode)
   return result;
 }
 
+/* ====================================================================
+ *   Handle_MINPART
+ * ====================================================================
+ */
 static TN *
 Handle_MINPART(WN *expr, WN *parent, TN *result)
 {
@@ -1700,6 +2164,10 @@ Handle_MINPART(WN *expr, WN *parent, TN *result)
   return result;
 }
 
+/* ====================================================================
+ *   Handle_MAXPART
+ * ====================================================================
+ */
 static TN *
 Handle_MAXPART(WN *expr, WN *parent, TN *result)
 {
@@ -1780,7 +2248,10 @@ Handle_ILOAD (
   return result;
 }
 
-
+/* ====================================================================
+ *   Handle_ILDBITS
+ * ====================================================================
+ */
 static TN *
 Handle_ILDBITS (WN *ildbits, TN *result, OPCODE opcode)
 {
@@ -1971,7 +2442,10 @@ Handle_STBITS (
   }
 }
 
-
+/* ====================================================================
+ *   Handle_COMPOSE_BITS
+ * ====================================================================
+ */
 static TN *
 Handle_COMPOSE_BITS (WN *compbits, TN *result, OPCODE opcode)
 {
@@ -1986,7 +2460,10 @@ Handle_COMPOSE_BITS (WN *compbits, TN *result, OPCODE opcode)
   return result;
 }
 
-
+/* ====================================================================
+ *   Handle_ISTORE
+ * ====================================================================
+ */
 static void
 Handle_ISTORE (WN *istore, OPCODE opcode)
 {
@@ -2251,11 +2728,14 @@ Handle_SELECT (
   return result;
 }
 
-/*
-**	Try to change logical operations into binary operations
-**
-**	If the operands are boolean, then we can use the binary version
-*/
+/* ====================================================================
+ *   Handle_LAND_LIOR
+ *
+ *	Try to change logical operations into binary operations
+ *
+ *	If the operands are boolean, then we can use the binary version
+ * ====================================================================
+ */
 static TN*
 Handle_LAND_LIOR(WN *expr, WN *parent, TN *result)
 {
@@ -2275,6 +2755,10 @@ Handle_LAND_LIOR(WN *expr, WN *parent, TN *result)
   return result;
 }
 
+/* ====================================================================
+ *   Handle_LNOT
+ * ====================================================================
+ */
 static TN*
 Handle_LNOT(WN *expr, WN *parent, TN *result)
 {
@@ -2306,217 +2790,6 @@ Handle_LNOT(WN *expr, WN *parent, TN *result)
   }
 
   return result;
-}
-
-static BOOL U4ExprHasUpperBitZero(WN *wn)
-{
-  switch(WN_opcode(wn))
-  {
-  case OPC_U4LSHR:
-   /*
-    *  if we shift by a non zero amount, the expression sign bit will be zero
-    */
-    if (WN_operator_is(WN_kid1(wn), OPR_INTCONST))
-    {
-      if (0 < WN_const_val(WN_kid1(wn)))
-	return TRUE;
-    }
-    break;
-
-  case OPC_U4BAND:
-   /*
-    *  if the constant sign bit is zero, the expression sign bit will be zero
-    */
-    if (WN_operator_is(WN_kid1(wn), OPR_INTCONST))
-    {
-      if ((WN_const_val(WN_kid1(wn)) & 0x80000000) == 0)
-	return TRUE;
-    }
-    break;
-  }
-  return FALSE;
-}
-
-/* ======================================================================
- *   Is_CVT_Noop
- * ======================================================================
- */
-static BOOL
-Is_CVT_Noop (
-  WN *cvt, 
-  WN *parent
-)
-{
-  /*
-   * All int to int sign conversions are noops in C.
-   */
-  if (WN_opcode(cvt) == OPC_I4U4CVT || WN_opcode(cvt) == OPC_U4I4CVT ||
-      WN_opcode(cvt) == OPC_I5U5CVT || WN_opcode(cvt) == OPC_U5I5CVT ||
-      WN_opcode(cvt) == OPC_I8U8CVT || WN_opcode(cvt) == OPC_U8I8CVT) {
-	// normally this is removed before cg, but sometimes not
-	return TRUE;
-  }
-
-  if (Enable_CVT_Opt) {
-
-    switch(WN_opcode(cvt)) {
-
-#ifdef TARG_IA64
-    case OPC_F8F4CVT:
-    case OPC_F4F8CVT:
-	if (WN_operator(parent) == OPR_TAS) {
-		/* for IA-64, the tas (getf) does the size conversion too,
-		 * so don't need the cvt. */
-		return TRUE;
-	}
-	break;
-#endif
-    case OPC_U8I4CVT:
-    case OPC_I8I4CVT:
-     /*
-      *  if 32-bit ints are sign-extended to 64-bit, then is a nop.
-      */
-      if ( ! Split_64_Bit_Int_Ops && ! Only_Unsigned_64_Bit_Ops)
-      {
-	return TRUE;
-      }
-      break;
-
-    case OPC_U8U4CVT:
-    case OPC_I8U4CVT:
-#ifndef EMULATE_LONGLONG
-      /*
-      *  if we can determine the upper bit:31 is zero, the cast is a nop
-      */
-      if (U4ExprHasUpperBitZero(WN_kid0(cvt)))
-      {
-	return TRUE;
-      }
-#endif
-      break;
-
-    case OPC_I4U8CVT:
-    case OPC_I4I5CVT:
-    case OPC_I4I8CVT:
-    case OPC_U4U8CVT:
-    case OPC_U4I5CVT:
-    case OPC_U4I8CVT:
-    case OPC_I5U8CVT:
-    case OPC_I5I8CVT:
-    case OPC_U5U8CVT:
-    case OPC_U5I8CVT:
-     /*
-      *  For truncation converts, the memory operation will
-      *  perform the necessary truncation.
-      */
-      if (parent)
-      {
-	switch(WN_opcode(parent))
-	{
-	case OPC_I4STID:
-	case OPC_U4STID:
-	case OPC_I5STID:
-	case OPC_U5STID:
-	  if (WN_class(parent) != CLASS_PREG)
-	  {
-	    return TRUE;
-	  }
-	  break;
-
-	case OPC_I4ISTORE:
-	case OPC_U4ISTORE:
-	case OPC_I5ISTORE:
-	case OPC_U5ISTORE:
-	  return TRUE;
-	}
-      }
-      break;
-    case OPC_I4CVTL:
-    case OPC_U4CVTL:
-    case OPC_I8CVTL:
-    case OPC_U8CVTL:
-     /*
-      *  For truncation converts, the memory operation will
-      *  perform the necessary truncation.
-      */
-      if (parent)
-      {
-	switch(WN_operator(parent))
-	{
-	case OPR_STID:
-	  if (MTYPE_size_reg(WN_desc(parent)) ==  WN_cvtl_bits(cvt)
-		&& WN_class(parent) != CLASS_PREG)
-	  {
-	    return TRUE;
-	  }
-	  break;
-
-	case OPR_ISTORE:
-	  if (MTYPE_size_reg(WN_desc(parent)) ==  WN_cvtl_bits(cvt))
-	  {
-	    return TRUE;
-	  }
-	}
-      }
-      break;
-    }
-  }
-  
-  return FALSE;
-}
-
-/* ======================================================================
- *   Is_CVTL_Opcode
- *
- *   CVTL opcodes are either CVTLs or CVT that change the integer size.
- * ======================================================================
- */
-static BOOL
-Is_CVTL_Opcode (
-  OPCODE opc
-)
-{
-  switch (opc) {
-    case OPC_U8I4CVT:
-    case OPC_U8U4CVT:
-    case OPC_U8I5CVT:
-    case OPC_U8U5CVT:
-
-    case OPC_I8I4CVT:
-    case OPC_I8U4CVT:
-    case OPC_I8I5CVT:
-    case OPC_I8U5CVT:
-
-    case OPC_U5I4CVT:
-    case OPC_U5U4CVT:
-    case OPC_U5I8CVT:
-    case OPC_U5U8CVT:
-
-    case OPC_I5I4CVT:
-    case OPC_I5U4CVT:
-    case OPC_I5I8CVT:
-    case OPC_I5U8CVT:
-  
-    case OPC_I4I8CVT:
-    case OPC_I4U8CVT:
-    case OPC_I4I5CVT:
-    case OPC_I4U5CVT:
-
-    case OPC_U4U8CVT:
-    case OPC_U4I8CVT:
-    case OPC_U4U5CVT:
-    case OPC_U4I5CVT:
-
-    case OPC_I8CVTL:
-    case OPC_I5CVTL:
-    case OPC_I4CVTL:
-    case OPC_U8CVTL:
-    case OPC_U5CVTL:
-    case OPC_U4CVTL:
-      return TRUE;
-    default:
-      return FALSE;
-  }
 }
 
 /* ======================================================================
@@ -2595,7 +2868,10 @@ Handle_DEALLOCA (WN *tree)
   Set_OP_To_WN_Map (tree);
 }
 
-
+/* ======================================================================
+ *   Handle_INTRINSIC_OP
+ * ======================================================================
+ */
 static TN*
 Handle_INTRINSIC_OP (WN *expr, TN *result)
 {
@@ -2603,20 +2879,26 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   INTRN_RETKIND rkind = INTRN_return_kind(id);
   INT numkids = WN_kid_count(expr);
   TN *kid0 = Expand_Expr(WN_kid0(expr), expr, NULL);
-  TN *kid1 = (numkids == 2) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
-  FmtAssert(numkids <= 2, ("unexpected number of kids in intrinsic_op"));
+  TN *kid1 = (numkids > 1) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
+  TN *kid2 = (numkids > 2) ? Expand_Expr(WN_kid2(expr), expr, NULL) : NULL;
+  FmtAssert(numkids <= 3, ("unexpected number of kids in intrinsic_op"));
 
   if (rkind != IRETURN_UNKNOWN && result == NULL) {
     result = Allocate_Result_TN(expr, NULL);
   }
 
-  Exp_Intrinsic_Op (id, result, kid0, kid1, &New_OPs);
+  Exp_Intrinsic_Op (id, result, kid0, kid1, kid2, &New_OPs);
   return result;
 }
 
-// Return name for nonlocal label, given level and label number.
-// Must be fixed name across PU's; the goto won't find the real
-// label_idx in the parent pu, it will just have the level and index.
+/* ======================================================================
+ *   Get_Non_Local_Label_Name 
+ *
+ *   Return name for nonlocal label, given level and label number.
+ *   Must be fixed name across PU's; the goto won't find the real
+ *   label_idx in the parent pu, it will just have the level and index.
+ * ======================================================================
+ */
 static STR_IDX
 Get_Non_Local_Label_Name (SYMTAB_IDX level, LABEL_IDX index)
 {
@@ -2977,6 +3259,9 @@ Expand_Expr (
 
   case OPR_MPY:
     return Handle_MPY (expr, result, opcode);
+
+  case OPR_MADD:
+    return Handle_MADD (expr, result, opcode);
 
   case OPR_DIVREM:
       return Handle_DIVREM(expr, parent, result, opcode);

@@ -930,43 +930,75 @@ LNOTARGET_Int_Bxor_Res (TI_RES_COUNT* resource_count)
 }
 
 double
-LNOTARGET_Int_Land_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Land_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Land_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_and);  
-  return 1.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_AND_GT_DR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Land_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Cand_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Cand_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Cand_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_and);  
-  return 1.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_AND_GT_DR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Cand_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Lior_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Lior_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Lior_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_or);  
-  return 1.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_OR_GT_DR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Lior_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Cior_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Cior_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Cior_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_or);  
-  return 1.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+  case MTYPE_U4:
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_OR_GT_DR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Cior_Res: mtype"));
+  }
 }
 
 double
@@ -1024,75 +1056,135 @@ LNOTARGET_Int_Lshr_Res (TI_RES_COUNT* resource_count, BOOL eight_bytes)
 }
 
 double
-LNOTARGET_Int_Eq_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Eq_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Eq_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_eq);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_EQW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_EQUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_EQE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Eq_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Ne_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Ne_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Ne_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_ne);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_NEW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_NEUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_NEE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Ne_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Gt_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Gt_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Gt_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_gt);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GTW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GTUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GTE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Gt_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Ge_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Ge_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Ge_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_ge);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GEW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GEUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GEE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Ge_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Lt_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Lt_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Lt_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_lt);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LTW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LTUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LTE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Lt_Res: mtype"));
+  }
 }
 
 double
-LNOTARGET_Int_Le_Res (TI_RES_COUNT* resource_count)
+LNOTARGET_Int_Le_Res (
+  TI_RES_COUNT* resource_count,
+  TYPE_ID mtype
+)
 {
-  FmtAssert(FALSE,("LNOTARGET_Int_Le_Res: not implemented"));
-  /*
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_le);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
-  TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov_i);
-  return 3.0;
-  */
+  switch (mtype) {
+  case MTYPE_I4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LEW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_U4:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LEUW_GT_BR_DR_DR);
+    return 1.0;
+  case MTYPE_I5:
+  case MTYPE_U5:
+    TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LEE_GT_BR_DR_DR);
+    return 1.0;
+  default:
+    FmtAssert(FALSE,("LNOTARGET_Int_Le_Res: mtype"));
+  }
 }
 
 double

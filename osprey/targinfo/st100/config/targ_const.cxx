@@ -892,16 +892,31 @@ Targ_WhirlOp (
 #endif     
     case OPC_I8I4CVT:
     case OPC_I8U4CVT:
+    case OPC_I8A4CVT:
+    case OPC_I8BCVT:
+
     case OPC_U8I4CVT:
     case OPC_U8U4CVT:
+    case OPC_U8A4CVT:
+    case OPC_U8BCVT:
+
     case OPC_I4I8CVT:
     case OPC_I4U8CVT:
+    case OPC_I4A4CVT:
+    case OPC_I4A8CVT:
+    case OPC_I4BCVT:
+
     case OPC_U4I8CVT:
     case OPC_U4U8CVT:
-    case OPC_I8BCVT:
-    case OPC_U8BCVT:
-    case OPC_I4BCVT:
+    case OPC_U4A4CVT:
+    case OPC_U4A8CVT:
     case OPC_U4BCVT:
+
+    case OPC_A4I8CVT:
+    case OPC_A4U8CVT:
+    case OPC_A4I4CVT:
+    case OPC_A4U4CVT:
+
       c0 = Targ_Conv(OPCODE_desc(op),c0);
       c0 = Targ_Conv(optype, c0);
       break;
@@ -2417,18 +2432,38 @@ Targ_Conv (
     case FROM_TO(MTYPE_F4, MTYPE_I8):
       TCON_I8(r) = (INT64)TCON_R4(c);
       break;
+
     case FROM_TO(MTYPE_I4, MTYPE_I8):
     case FROM_TO(MTYPE_I2, MTYPE_I8):
     case FROM_TO(MTYPE_I1, MTYPE_I8):
     case FROM_TO(MTYPE_B, MTYPE_I8):
+
+    case FROM_TO(MTYPE_I4, MTYPE_I5):
+    case FROM_TO(MTYPE_I2, MTYPE_I5):
+    case FROM_TO(MTYPE_I1, MTYPE_I5):
+    case FROM_TO(MTYPE_B, MTYPE_I5):
+
        TCON_I8(r) = TCON_v0(c);
        break;
+
     case FROM_TO(MTYPE_U8, MTYPE_I8):
+    case FROM_TO(MTYPE_U5, MTYPE_I8):
+
+    case FROM_TO(MTYPE_U8, MTYPE_I5):
+    case FROM_TO(MTYPE_U5, MTYPE_I5):
+
        TCON_I8(r) = TCON_U8(c);
        break;
+
+    case FROM_TO(MTYPE_A4, MTYPE_I8):
     case FROM_TO(MTYPE_U4, MTYPE_I8):
     case FROM_TO(MTYPE_U2, MTYPE_I8):
     case FROM_TO(MTYPE_U1, MTYPE_I8):
+
+    case FROM_TO(MTYPE_A4, MTYPE_I5):
+    case FROM_TO(MTYPE_U4, MTYPE_I5):
+    case FROM_TO(MTYPE_U2, MTYPE_I5):
+    case FROM_TO(MTYPE_U1, MTYPE_I5):
        TCON_I8(r) = TCON_u0(c);
        break;
 
@@ -2471,6 +2506,11 @@ Targ_Conv (
     case FROM_TO(MTYPE_I8, MTYPE_I1):
        TCON_v0(r) = TCON_I8(c);
        break;
+    case FROM_TO(MTYPE_I5, MTYPE_I4):
+    case FROM_TO(MTYPE_I5, MTYPE_I2):
+    case FROM_TO(MTYPE_I5, MTYPE_I1):
+       TCON_v0(r) = TCON_I8(c);
+       break;
     case FROM_TO(MTYPE_I4, MTYPE_I2):
     case FROM_TO(MTYPE_I4, MTYPE_I1):
     case FROM_TO(MTYPE_I2, MTYPE_I4):
@@ -2485,6 +2525,12 @@ Targ_Conv (
     case FROM_TO(MTYPE_U8, MTYPE_I1):
        TCON_v0(r) = TCON_U8(c);
        break;
+    case FROM_TO(MTYPE_U5, MTYPE_I4):
+    case FROM_TO(MTYPE_U5, MTYPE_I2):
+    case FROM_TO(MTYPE_U5, MTYPE_I1):
+       TCON_v0(r) = TCON_U8(c);
+       break;
+    case FROM_TO(MTYPE_A4, MTYPE_I4):
     case FROM_TO(MTYPE_U4, MTYPE_I4):
     case FROM_TO(MTYPE_U4, MTYPE_I2):
     case FROM_TO(MTYPE_U4, MTYPE_I1):
@@ -2520,6 +2566,11 @@ Targ_Conv (
       TCON_U8(r) = (UINT64)TCON_R4(c);
       break;
     case FROM_TO(MTYPE_I8, MTYPE_U8):
+    case FROM_TO(MTYPE_I8, MTYPE_U5):
+       TCON_U8(r) = TCON_I8(c);
+       break;
+    case FROM_TO(MTYPE_I5, MTYPE_U8):
+    case FROM_TO(MTYPE_I5, MTYPE_U5):
        TCON_U8(r) = TCON_I8(c);
        break;
     case FROM_TO(MTYPE_I4, MTYPE_U8):
@@ -2528,6 +2579,8 @@ Targ_Conv (
     case FROM_TO(MTYPE_B, MTYPE_U8):
        TCON_U8(r) = TCON_v0(c);
        break;
+
+    case FROM_TO(MTYPE_A4, MTYPE_U8):
     case FROM_TO(MTYPE_U4, MTYPE_U8):
     case FROM_TO(MTYPE_U2, MTYPE_U8):
     case FROM_TO(MTYPE_U1, MTYPE_U8):
@@ -2568,13 +2621,23 @@ Targ_Conv (
     case FROM_TO(MTYPE_F4, MTYPE_U1):
       TCON_u0(r) = (UINT32)TCON_R4(c);
       break;
+
     case FROM_TO(MTYPE_I8, MTYPE_U4):
     case FROM_TO(MTYPE_I8, MTYPE_A4):
     case FROM_TO(MTYPE_I8, MTYPE_U2):
     case FROM_TO(MTYPE_I8, MTYPE_U1):
     case FROM_TO(MTYPE_I8, MTYPE_B):
+
+    case FROM_TO(MTYPE_I5, MTYPE_U4):
+    case FROM_TO(MTYPE_I5, MTYPE_A4):
+    case FROM_TO(MTYPE_I5, MTYPE_U2):
+    case FROM_TO(MTYPE_I5, MTYPE_U1):
+    case FROM_TO(MTYPE_I5, MTYPE_B):
+
        TCON_u0(r) = TCON_I8(c);
        break;
+
+    case FROM_TO(MTYPE_I4, MTYPE_A4):
     case FROM_TO(MTYPE_I4, MTYPE_U4):
     case FROM_TO(MTYPE_I4, MTYPE_U2):
     case FROM_TO(MTYPE_I4, MTYPE_U1):
@@ -2590,13 +2653,24 @@ Targ_Conv (
     case FROM_TO(MTYPE_B, MTYPE_U4):
        TCON_v0(r) = TCON_v0(c);
        break;
-    case FROM_TO(MTYPE_U8, MTYPE_U4):
+
     case FROM_TO(MTYPE_U8, MTYPE_A4):
+    case FROM_TO(MTYPE_U8, MTYPE_U4):
     case FROM_TO(MTYPE_U8, MTYPE_U2):
     case FROM_TO(MTYPE_U8, MTYPE_U1):
     case FROM_TO(MTYPE_U8, MTYPE_B):
+
+    case FROM_TO(MTYPE_U5, MTYPE_A4):
+    case FROM_TO(MTYPE_U5, MTYPE_U4):
+    case FROM_TO(MTYPE_U5, MTYPE_U2):
+    case FROM_TO(MTYPE_U5, MTYPE_U1):
+    case FROM_TO(MTYPE_U5, MTYPE_B):
+
        TCON_u0(r) = TCON_U8(c);
        break;
+
+    case FROM_TO(MTYPE_A4, MTYPE_U4):
+    case FROM_TO(MTYPE_U4, MTYPE_A4):
     case FROM_TO(MTYPE_U4, MTYPE_U2):
     case FROM_TO(MTYPE_U4, MTYPE_U1):
     case FROM_TO(MTYPE_U4, MTYPE_B):
@@ -2952,6 +3026,8 @@ Targ_Print ( char *fmt, TCON c )
       sprintf(r, fmt, TCON_v0(c));
       break;
 
+    case MTYPE_I5:
+    case MTYPE_U5:
     case MTYPE_I8:
     case MTYPE_U8:
       if (fmt == NULL) fmt = "%1lld";
@@ -4503,6 +4579,9 @@ Targ_Is_Integral ( TCON tc, INT64 *iv )
       *iv = TCON_u0(tc);
       return TRUE;
 
+    case MTYPE_I5:
+    case MTYPE_U5:
+      // I5/U5 are represented as 64-bit quantities
     case MTYPE_I8:
     case MTYPE_U8:
       *iv = TCON_I8(tc);
@@ -4658,6 +4737,9 @@ BOOL Targ_Is_Zero ( TCON t )
        * -0.0 will == 0.0, so add check for sign bit. */
       return (TCON_R4(t) == 0.0 && TCON_v0(t) == 0);
       //       return TCON_v1(t) == 0;
+    case MTYPE_I5:
+    case MTYPE_U5:
+      // I5 and U5 are represented as 64-bit
     case MTYPE_I8:
     case MTYPE_U8:
       return (TCON_v0(t)|TCON_v1(t)) == 0;

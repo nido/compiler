@@ -552,6 +552,7 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
 
 extern UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop);
 
+extern TY_IDX CGTARG_Spill_Type(TN *tn);
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
 
@@ -572,8 +573,36 @@ inline BOOL CGTARG_Is_Copy(OP *op)
   return CGTARG_Copy_Operand(op) >= 0;
 }
 
+/* ====================================================================
+ *                      OP target interface
+ * ====================================================================
+ */
 
-/* Scheduling and Dependence Graph stuff: */
+extern void CGTARG_Predicate_OP(BB* bb, OP* op, TN* pred_tn);
+
+/* ====================================================================
+ *                 Predication target interface
+ * ====================================================================
+ */
+
+typedef enum {
+  COMPARE_TYPE_unc,
+  COMPARE_TYPE_or,
+  COMPARE_TYPE_orcm,
+  COMPARE_TYPE_and,
+  COMPARE_TYPE_andcm,
+  COMPARE_TYPE_or_andcm,
+  COMPARE_TYPE_and_orcm,
+  COMPARE_TYPE_normal
+} COMPARE_TYPE;
+
+extern TOP CGTARG_Parallel_Compare(OP* cmp_op, COMPARE_TYPE ctype);
+extern BOOL CGTARG_Unconditional_Compare(OP* op, TOP* uncond_ver);
+
+/* ====================================================================
+ *              Scheduling and Dependence Graph Interface
+ * ====================================================================
+ */
 
 inline INT32 CGTARG_Branch_Taken_Penalty(void)
 {
@@ -596,5 +625,8 @@ inline BOOL CGTARG_Use_Load_Latency(OP *pred_op, TN *tn)
   return TRUE;
 #endif
 }
+
+/* Returns TRUE if OP is a suitable candidate for HBF. */
+extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 
 #endif /* lai_targ_INCLUDED */

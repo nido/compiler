@@ -445,13 +445,23 @@ Exp_Immediate (
 	Build_OP (TOP_GP32_MAKE_GT_DR_S16, dest, True_TN, src, ops);
       }
       else if (ISA_LC_Value_In_Class (val, LC_s32)) {
+	/*
+	 * This is all good but it's too early to expand:
+	 */
+	/*
 	tmp = Gen_Literal_TN(val >> 16, TN_size(dest));
 	Build_OP (TOP_GP32_MAKE_GT_DR_S16, dest, True_TN, tmp, ops);
 	tmp = Gen_Literal_TN((val & 0x00000000000fffff), TN_size(dest));
 	Build_OP (TOP_GP32_MORE_GT_DR_U16, dest, True_TN, dest, tmp, ops);
+	*/
+	Build_OP (TOP_GP32_MAKEB_GT_DR_S32, dest, True_TN, src, ops);
       }
       else if (ISA_LC_Value_In_Class (val, LC_s40)) {
 	// must fit into 40 bit:
+	/*
+	 * This is all good but it's too early to expand:
+	 */
+	/*
 	tmp = Gen_Literal_TN(val >> 32, MTYPE_byte_size(mtype));
 	Build_OP (TOP_GP32_MAKE_GT_DR_S16, dest, True_TN, tmp, ops);
 	tmp = Gen_Literal_TN(((val >> 16) & 0x00000000000fffff), 
@@ -459,6 +469,8 @@ Exp_Immediate (
 	Build_OP (TOP_GP32_MORE_GT_DR_U16, dest, True_TN, dest, tmp, ops);
 	tmp = Gen_Literal_TN((val & 0x00000000000fffff), TN_size(dest));
 	Build_OP (TOP_GP32_MORE_GT_DR_U16, dest, True_TN, dest, tmp, ops);
+	*/
+	Build_OP (TOP_GP32_MAKEK_GT_DR_S40, dest, True_TN, src, ops);
       }
       else {
 	FmtAssert(0, ("Exp_Immediate: unexpected immediate value"));
@@ -471,11 +483,17 @@ Exp_Immediate (
       if (ISA_LC_Value_In_Class (val, LC_s16)) {
 	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, src, ops);
       }
-      else if (ISA_LC_Value_In_Class (val, LC_s32)) {
+      else if (ISA_LC_Value_In_Class (val, LC_u32)) {
+	/*
+	 * This is all good but it's too early to expand:
+	 */
+	/*
 	tmp = Gen_Literal_TN(val >> 16, TN_size(dest));
 	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, tmp, ops);
 	tmp = Gen_Literal_TN((val & 0x000000000000ffff), TN_size(dest));
 	Build_OP (TOP_GP32_MOREA_GT_AR_U16, dest, True_TN, dest, tmp, ops);
+	*/
+	Build_OP (TOP_GP32_MAKEBA_GT_AR_U32, dest, True_TN, src, ops);
       }
       else {
 	FmtAssert(0, ("Exp_Immediate: immediate > 32"));
@@ -1173,14 +1191,7 @@ Expand_Multiply (
     // is src2 of the same type as result ?
     // as long as I need to move to DU, I might as well
     // do it before, so the possible shift range is larger
-    if (MTYPE_is_class_integer(rmtype) &&
-	                      !MTYPE_is_class_integer(s2mtype)) {
-      TN *tmp = Build_TN_Of_Mtype (rmtype);
-      Exp_COPY (tmp, src2, ops);
-      s2mtype = rmtype;
-      src2 = tmp;
-    }
-    else if (!MTYPE_is_class_integer(s2mtype)){
+    if (!MTYPE_is_class_integer(rmtype)) {
       // I will make the move later, now generate for *s2mtype
       dest = Build_TN_Of_Mtype (s2mtype);
       mtype = s2mtype;
@@ -1193,14 +1204,7 @@ Expand_Multiply (
     // is src1 of the same type as result ?
     // as long as I need to move to DU, I might as well
     // do it before, so the possible shift range is larger
-    if (MTYPE_is_class_integer(rmtype) &&
-	                        !MTYPE_is_class_integer(s1mtype)) {
-      TN *tmp = Build_TN_Of_Mtype (rmtype);
-      Exp_COPY (tmp, src1, ops);
-      s1mtype = rmtype;
-      src1 = tmp;
-    }
-    else if (!MTYPE_is_class_integer(s1mtype)) {
+    if (!MTYPE_is_class_integer(rmtype)) {
       // I will make the move later, now generate for s1mtype
       dest = Build_TN_Of_Mtype (s1mtype);
       mtype = s1mtype;
@@ -1212,40 +1216,115 @@ Expand_Multiply (
   // If I did not generate the optimized sequence, emit intrinsics
   if (!done) {
     // We can only perform multiplication in the DU
-    if (!MTYPE_is_class_integer(rmtype)) {
+    if (MTYPE_is_class_pointer(rmtype)) {
       mtype = MTYPE_I4;
       dest = Build_TN_Of_Mtype (mtype);
+
+      // MTYPEs of operands must be the same as mtype, i.e.
+      // I must move them first into the DU
+      if (TN_is_register(src1)) {
+	TN *tmp = Build_TN_Of_Mtype (mtype);
+	Exp_COPY (tmp, src1, ops);
+	src1 = tmp;
+      }
+      if (TN_is_register(src2)) {
+	TN *tmp = Build_TN_Of_Mtype (mtype);
+	Exp_COPY (tmp, src2, ops);
+	src2 = tmp;
+      }
+    }
+    else if (!MTYPE_is_class_integer(rmtype)) {
+      FmtAssert(FALSE,("Expand_Multiply: can't handle mtype %s",
+                                              MTYPE_name(rmtype)));
     }
 
-    // MTYPEs of operands must be the same as mtype:
-    if (TN_is_register(src1) && s1mtype != mtype) {
-      TN *tmp = Build_TN_Of_Mtype (mtype);
-      Exp_COPY (tmp, src1, ops);
-      src1 = tmp;
-    }
-
-    if (TN_is_register(src2) && s2mtype != mtype) {
-      TN *tmp = Build_TN_Of_Mtype (mtype);
-      Exp_COPY (tmp, src2, ops);
-      src2 = tmp;
-    }
-
+    // I have some integer result mtype.
+    // I should try to strength reduce the expression:
+    TOP opcode = TOP_UNDEFINED;
     switch (mtype) {
+
       case MTYPE_I2:
-	Build_OP (TOP_IFR_MULH_GT_DR_DR_DR, dest, True_TN, src1, src2, ops);
+	if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2 ||
+	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2 ||
+	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2 ||
+	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+	  opcode = TOP_IFR_MULH_GT_DR_DR_DR;
 	break;
+
       case MTYPE_U2:
-	Build_OP (TOP_IFR_MULUH_GT_DR_DR_DR, dest, True_TN, src1, src2, ops);
+	if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+	  opcode = TOP_IFR_MULUH_GT_DR_DR_DR;
 	break;
+
       case MTYPE_I4:
-	Build_OP (TOP_IFR_MULW_GT_DR_DR_DR, dest, True_TN, src1, src2, ops);
+	if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ||
+	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
+	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
+	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
+	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2) 
+	  opcode = TOP_IFR_MULW_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
+	  opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2)
+	  opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
 	break;
+
       case MTYPE_U4:
-	Build_OP (TOP_IFR_MULUW_GT_DR_DR_DR, dest, True_TN, src1, src2, ops);
+	if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4)
+	  opcode = TOP_IFR_MULUW_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
 	break;
+
+      case MTYPE_I5:
+	if (s1mtype == MTYPE_I5 && s2mtype == MTYPE_I5 ||
+	    s1mtype == MTYPE_I5 && s2mtype == MTYPE_U5 ||
+	    s1mtype == MTYPE_U5 && s2mtype == MTYPE_I5 ||
+	    s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
+	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ) 
+	  opcode = TOP_IFR_MULE_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
+	  opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2)
+	  opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	break;
+
+      case MTYPE_U5:
+	if (s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
+	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 )
+	  opcode = TOP_IFR_MULUE_GT_DR_DR_DR;
+	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
+	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	break;
+
       default:
-	FmtAssert(FALSE, ("Expand_Multiply: mtype %s\n", MTYPE_name(mtype)));
+	FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n", 
+                                                         MTYPE_name(mtype)));
     }
+
+    if (opcode == TOP_UNDEFINED)
+      FmtAssert(FALSE, ("Expand_Multiply: can't make mpy %s <- %s * %s",
+	       MTYPE_name(mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
+
+    Build_OP (opcode, dest, True_TN, src1, src2, ops);
 
   } /* if (!done) */
 
@@ -1281,6 +1360,7 @@ Expand_Madd (
    *   because WHIRL will not generate explicit conversions for
    *   some types of operands, eg. A4 + I4
    */
+  /*
   if (TN_is_register(src0) && 
       (Register_Class_For_Mtype(rmtype) != TN_register_class(src0))) {
     tmp = Build_TN_Of_Mtype (rmtype);
@@ -1299,10 +1379,22 @@ Expand_Madd (
     Exp_COPY (tmp, src2, ops);
     src2 = tmp;
   }
+  */
 
-  /* I currently only make a MADD in the AU if possible:
+  /*
+   * Make sure that result and src0 have integer MTYPEs.
    */
-  if (rmtype == MTYPE_A4) {
+  FmtAssert(MTYPE_is_class_integer(rmtype) && 
+	    MTYPE_is_class_integer(s0mtype), 
+            ("Expand_Madd: mtypes messed %s += %s + a*b", 
+                         MTYPE_name(rmtype), MTYPE_name(s0mtype)));
+
+  switch (rmtype) {
+
+  case MTYPE_A4:
+    /* 
+     * make a MADD in the AU if possible:
+     */
     if (TN_has_value(src2)) {
       switch (TN_value(src2)) {
 	case 1:
@@ -1335,21 +1427,96 @@ Expand_Madd (
 	  FmtAssert(0, 
 	    ("Expand_Madd: not handled AU const %lld\n", TN_value(src2)));
       }
+      return;
+
     } /* TN_has_value(src2) */
-  }
+    break;
 
-  else if (rmtype == MTYPE_I4 ||
-	   rmtype == MTYPE_U4) {
-    
-  }
+    /* 
+     * TODO: make it table driven, if we keep this design
+     */
+  case MTYPE_I4:
 
-  else {
-    FmtAssert(0, ("Expand_Madd: unknown MTYPE %s", MTYPE_name(rmtype)));
+    FmtAssert(MTYPE_size_min(s0mtype) == 32, 
+	      ("Expand_Madd: I4 = %s + a*b", MTYPE_name(s0mtype)));
+
+    if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
+      Build_OP (TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) 
+      Build_OP (TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) 
+      Build_OP (TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+      Build_OP (TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else
+      FmtAssert(FALSE, ("Expand_Madd: I4 = %s + %s * %s", 
+	MTYPE_name(s0mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
+    break;
+
+  case MTYPE_U4:
+
+    FmtAssert(s0mtype == MTYPE_U4, 
+	      ("Expand_Madd: U4 = %s + a*b", MTYPE_name(s0mtype)));
+
+    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+      Build_OP (TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else
+      FmtAssert(FALSE, ("Expand_Madd: MTYPE_U4 -- operands messed"));
+    break;
+
+  case MTYPE_I5:
+
+    FmtAssert(MTYPE_size_min(s0mtype) <= 40, 
+	      ("Expand_Madd: I5 = %s + a*b", MTYPE_name(s0mtype)));
+
+    if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
+      Build_OP (TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) 
+      Build_OP (TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) 
+      Build_OP (TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+      Build_OP (TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) 
+      Build_OP (TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else
+      FmtAssert(FALSE, ("Expand_Madd: I5 = I5 + %s * %s", 
+			MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
+    break;
+
+  case MTYPE_U5:
+
+    FmtAssert(s0mtype == MTYPE_U5, 
+	      ("Expand_Madd: U5 = %s + a*b", MTYPE_name(s0mtype)));
+
+    if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) 
+      Build_OP (TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
+                      result, True_TN, src0, src1, src2, ops);
+    else
+      FmtAssert(FALSE, ("Expand_Madd: MTYPE_U5 -- operands messed"));
+    break;
+
+  default:
+    FmtAssert(0, ("Expand_Madd: unknown format MTYPE %s", 
+		                                MTYPE_name(rmtype)));
+
   }
 
   /* make a MPY and an ADD */
+  /*
   Expand_Multiply (tmp, MTYPE_I4, src1, s1mtype, src2, s2mtype, ops);
   Expand_Add (result, src0, tmp, rmtype, ops);
+  */
 
   return;
 }
@@ -2440,10 +2607,9 @@ Expand_Select (
  */
 BOOL
 Check_Select_Expansion (
-  OPCODE compare)
+  OPCODE compare
+)
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
   // in order to get optimal code,
   // don't evaluate the condition first,
   // but pass the condition and kids to exp_select,
@@ -2468,17 +2634,18 @@ Exp_Select_And_Condition (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
   OPS newops = OPS_EMPTY;
-  TOP cmp = Pick_Compare_TOP (&variant, &cmp_kid1, &cmp_kid2, &newops);
+
+  //  TOP cmp = Pick_Compare_TOP (&variant, &cmp_kid1, &cmp_kid2, &newops);
 
   switch (variant) {
   case V_BR_PEQ:
   case V_BR_PNE:
     {
-      Is_True(cmp == TOP_UNDEFINED, 
-	      ("unexpected compare op for V_BR_PEQ/V_BR_PNE"));
+      //      Is_True(cmp == TOP_UNDEFINED, 
+      //      ("unexpected compare op for V_BR_PEQ/V_BR_PNE"));
+
+      FmtAssert(FALSE,("Not Implemented"));
 
       // tmp = (cmp_kid1 == cmp_kid2)
       TN *tmp = Build_TN_Of_Mtype (MTYPE_I8);
@@ -2489,7 +2656,7 @@ Exp_Select_And_Condition (
       Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid2, 
                                    Gen_Literal_TN(1, 8), tmp, &newops);
 
-      cmp = (variant == V_BR_PEQ) ? TOP_GP32_NEW_GT_BR_DR_DR : 
+      //      cmp = (variant == V_BR_PEQ) ? TOP_GP32_NEW_GT_BR_DR_DR : 
                                               TOP_GP32_EQW_GT_BR_DR_DR;
       cmp_kid1 = tmp;
       cmp_kid2 = Zero_TN;
@@ -2500,7 +2667,8 @@ Exp_Select_And_Condition (
     FmtAssert(FALSE, ("Exp_Select_And_Condition given br_none variant"));
     /*NOTREACHED*/
   default:
-    FmtAssert(cmp != TOP_UNDEFINED, ("Exp_Select_And_Condition: unexpected comparison"));
+    //    FmtAssert(cmp != TOP_UNDEFINED, 
+    //                ("Exp_Select_And_Condition: unexpected comparison"));
     break;
   }
 
@@ -3018,11 +3186,51 @@ Exp_Intrinsic_Op (
   INTRINSIC id, 
   TN *result, 
   TN *op0, 
-  TN * /* op1 */, 
+  TN *op1, 
+  TN *op2, 
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  switch (id) {
+
+  case INTRN_MPSSE:
+    Build_OP (TOP_IFR_MPSSE_GT_DR_DR_DR, result, True_TN, op0, op1, ops);
+    break;
+
+  case INTRN_MASSE:
+    Build_OP (TOP_IFR_MASSE_GT_DR_DR_DR_DR, result, True_TN, op0, op1, op2, ops);
+    break;
+
+  case INTRN_I4FFS:
+    {
+      /* Return the position of the first bit set in op0.  The least 
+       * significant bit is position 1 and the most significant position 32.
+       * Return 0 if no bits are set.
+       *
+       * For non-zero values of op0, we use popcnt to compute the bit
+       * position. To do so, we adjust op0 so that it has the number of 
+       * one bits set corresponding to the least significant bit set.
+       * The subtract 1 (adds) and xor accomplish the conversion.
+       */
+      /*
+      TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_predicate);
+      TN *p2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_predicate);
+      TN *t1 = Build_TN_Of_Mtype (MTYPE_I4);
+      TN *t2 = Build_TN_Of_Mtype (MTYPE_I4);
+      Build_OP (TOP_cmp_eq, p1, p2, True_TN, op0, Zero_TN, ops);
+      Build_OP (TOP_adds, t1, True_TN, Gen_Literal_TN(-1, 4), op0, ops);
+      Build_OP (TOP_xor, t2, True_TN, t1, op0, ops);
+      Build_OP (TOP_mov, result, p1, Zero_TN, ops);
+      Build_OP (TOP_popcnt, result, p2, t2, ops);
+      */
+    }
+    break;
+
+  default:
+    #pragma mips_frequency_hint NEVER
+    FmtAssert (FALSE, ("WHIRL_To_OPs: illegal intrinsic op"));
+    /*NOTREACHED*/
+  }
 
   return;
 }
@@ -3243,128 +3451,6 @@ void
 Exp_Noop (OPS *ops)
 {
   Build_OP (TOP_noop, True_TN, Gen_Literal_TN(0, 4), ops);
-}
-
-/* ====================================================================
- *   Exp_Generic_Pred_Calc
- *
- *   Generate a generic 2-result predicate operation.
- *   COMPARE_type_or sets result1 and result2 true if qual_pred is true
- *   COMPARE_type_and sets result1 and result2 false if qual_pred is true
- * ====================================================================
- */
-static void 
-Exp_Generic_Pred_Calc (
-  TN* result1, 
-  TN *result2, 
-  COMPARE_TYPE ctype,
-  TN *qual_pred, 
-  OPS* ops
-)
-{
-  TOP pred_top;
-
-  FmtAssert(FALSE,("Not Implemented"));
- 
-  switch (ctype) {
-  case COMPARE_TYPE_or:
-
-    break;
-  case COMPARE_TYPE_and:
-
-    break;
-  }
-  Build_OP(pred_top, result1, result2, qual_pred, Zero_TN, Zero_TN, ops);
-}
-
-/* ====================================================================
- *   Exp_True_False_Preds_For_Block
- *
- * Setup the true_tn and false_tn for a BB. The true_tn is a TN such that
- * it is true if the branch at the end of a BB is taken. If it false
- * through the false_tn will be set true.
- * 
- * This routine works by trying to find the compare which generates the
- * branch predicate for the block. Assuming it finds one, and it's of the
- * right form (i.e. an unc form), it attempts to simply re-use the two TN's
- * it generates. 
- *
- * Right now, if it doesn't find it, it asserts, but I don't think this is
- * going to happen, given the current way we generate things.
- *
- * The above can happen if we are trying to generate the false predicate
- * for a block that has a branch which came from a previous pass of
- * hyperblock formation. In this case, we don't have a single defining
- * compare. So if we have a predicate Pb, (which is the predicate used for
- * the branch, we wan't Pf such that Pf is TRUE if Pb is false and the block
- * is executed.  We can accomplish this by initializing Pf to 1 under the
- * block predicate, and setting it to 0 if Pb is TRUE.
- *
- * ====================================================================
- */ 
-void
-Exp_True_False_Preds_For_Block (
-  BB *bb, 
-  TN* &true_tn, 
-  TN * &false_tn
-) 
-{
-   COMPARE_TYPE comp_type;
-   TN* tn1;
-   TN* tn2;
-   OP* compare_op;
-   OP* br_op = BB_branch_op(bb);
-   BOOL reusing_tns;
-   VARIANT branch_variant;
-   DEF_KIND kind;
-
-  FmtAssert(FALSE,("Not Implemented"));
-
-
-   true_tn = NULL;
-   false_tn = NULL;
-   reusing_tns = FALSE;
-   
-   branch_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
-   Is_True(branch_variant == V_BR_P_TRUE,("Can't get predicates for block %d",BB_id(bb)));
-
-   /* Try to find the compare op */
-   compare_op = TN_Reaching_Value_At_Op(tn1, br_op, &kind, TRUE);
-   /* if compare_op is in a different BB, be conservative, can't always reuse
-      the predicate, due to other non-satisfying predicate conditions, 804702*/
-   if (compare_op && kind == VAL_KNOWN && OP_bb(compare_op) == OP_bb(br_op)) {
-     if (!OP_cond_def(compare_op)) {
-       //
-       // This is the 99% case (maybe the 100% case, given the current
-       // generation schemes). The result predicates are 100% defined, so we
-       // can safely replace the opcode with the unconditional variant, and
-       // then return the two result predicates in the appropriate slots.
-       //
-       reusing_tns = TRUE;
-       OP_Change_Opcode(compare_op,CGTARG_Get_unc_Variant(OP_code(compare_op)));
-       Set_OP_cond_def_kind(compare_op,OP_ALWAYS_UNC_DEF);
-
-       true_tn = tn1;
-       // Get the other result as the false_tn
-       if (OP_result(compare_op,1) != tn1) {
-	 false_tn = OP_result(compare_op,1);
-       } else {
-	 false_tn = OP_result(compare_op,0);
-       }
-     }
-   }
-
-   if (!reusing_tns) {
-     OPS ops = OPS_EMPTY;
-     true_tn = tn1;
-     false_tn = Gen_Predicate_TN();
-     Exp_Pred_Set(false_tn, True_TN, 1, &ops);
-     Exp_Generic_Pred_Calc(false_tn,True_TN,COMPARE_TYPE_and, true_tn, &ops);
-     BB_Insert_Ops(bb,br_op,&ops,TRUE);
-     DevWarn("inserting inverse predicate in BB %d",BB_id(bb));
-   }
-   
-   return;
 }
 
 /* ====================================================================

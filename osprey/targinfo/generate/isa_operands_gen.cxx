@@ -640,7 +640,7 @@ void ISA_Operands_End(void)
   fprintf (hfile, "\ntypedef struct {\n"
 		  "  mUINT8 opnds;\n"
 		  "  mUINT8 opnd[%s];\n"
-		  "  mUINT8 ouse[%s];\n"
+		  "  mUINT16 ouse[%s];\n"
 		  "  mUINT8 results;\n"
 		  "  mUINT8 result[%s];\n"
 		  "} ISA_OPERAND_INFO;\n",
