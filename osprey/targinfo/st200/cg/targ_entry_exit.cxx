@@ -38,7 +38,7 @@
 #include "glob.h"
 #include "tracing.h"
 #ifdef TARG_ST
-#include "config_target.h
+#include "config_target.h"
 #else
 #include "config_targ.h"
 #endif
