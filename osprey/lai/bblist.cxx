@@ -32,7 +32,7 @@
 
 */
 
-
+#include <malloc.h>
 
 #include "defs.h"
 #include "erglob.h"
