@@ -949,6 +949,7 @@ Init_Resource_Table (
  */
 static void
 Fill_Cycle_With_Noops (
+  BB *bb,
   OP *op,
   TI_BUNDLE *bundle,
   VECTOR *bundle_vector
@@ -971,7 +972,10 @@ Fill_Cycle_With_Noops (
       if (i==0) {
 #endif
       OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
-      BB_Insert_Op_After(OP_bb(op), op, noop);
+      if (op)
+	BB_Insert_Op_After(OP_bb(op), op, noop);
+      else
+	BB_Insert_Op_Before(bb, BB_first_op(bb), noop);
       OP_scycle(noop) = -1;
       Set_OP_bundled (noop);
       TI_BUNDLE_Reserve_Slot (bundle, i, 
@@ -1048,9 +1052,9 @@ Handle_Latency (
 
     // This adds a noop group to the bundle
 #ifdef TARG_ST200 // [CL] keep track of alignment
-    Fill_Cycle_With_Noops (op, bundle, bundle_vector, pc);
+    Fill_Cycle_With_Noops (NULL, op, bundle, bundle_vector, pc);
 #else
-    Fill_Cycle_With_Noops (op, bundle, bundle_vector);
+    Fill_Cycle_With_Noops (NULL, op, bundle, bundle_vector);
 #endif
 
     // if the <bundle> is full, reset it
@@ -1446,6 +1450,9 @@ Make_Bundles (
   //
   omap = BB_OP_MAP32_Create(bb,&MEM_local_pool);
 
+  OP *next_op;
+  OP *op = BB_first_op(bb);
+
   //
   // start "scheduling" at this cycle
   //
@@ -1455,13 +1462,15 @@ Make_Bundles (
   // when all OPs are processed
 #ifdef TARG_ST200
   static INT pending_latency = 0;
-  /* FdF: If fallThru predecessor is in the same superblock keep the
-     computed pending latency, otherwise reset it to 0. */
 #ifdef SUPERBLOCK_SCHED
   if ((CG_LAO_Region_Map != NULL) &&
       (BB_Fall_Thru_Predecessor(bb) != NULL) &&
       (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0) &&
       (BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, BB_Fall_Thru_Predecessor(bb)))) {
+    // FdF: We are on a non-entry basic block of a super block.
+    // Clock is set to the scheduling date of the first operation
+    // pending_latency is inherited from the fall-thru predecessor.
+    Clock = OP_scycle(op);
   }
   else
 #endif
@@ -1470,16 +1479,6 @@ Make_Bundles (
   INT pending_latency = 0;
 #endif
 
-  // Now iterate through the ops.
-  OP *next_op;
-  OP *op = BB_first_op(bb);
-
-  // FdF: Because the bundler now uses the scheduling dates to fill
-  // the bundles, unless latencies contraints are not met.
-#ifdef TARG_ST200
-  Clock = OP_scycle(op) == -1 ? 0 : OP_scycle(op);
-#endif
-    
   // Just to get things started
   if (OP_dummy(op)) BB_OP_MAP32_Set(omap, op, Clock);
 
@@ -1494,6 +1493,18 @@ Make_Bundles (
     pc = &cold_addr;
   } else {
     pc = &hot_addr;
+  }
+#endif
+
+  // Some super-blocks may start with first operation scheduled at a
+  // date greater than 0.
+#ifdef SUPERBLOCK_SCHED
+  for (; Clock < OP_scycle(op); Clock++) {
+    Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector, pc);
+    if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
+      FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+      TI_BUNDLE_Clear (bundle);
+    }
   }
 #endif
 
@@ -1808,9 +1819,9 @@ Make_Bundles (
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
 #endif
 #ifdef TARG_ST200 // [CL] keep track of alignment
-      Fill_Cycle_With_Noops (BB_last_op(bb), bundle, bundle_vector, pc);
+      Fill_Cycle_With_Noops (NULL, BB_last_op(bb), bundle, bundle_vector, pc);
 #else
-      Fill_Cycle_With_Noops (BB_last_op(bb), bundle, bundle_vector);
+      Fill_Cycle_With_Noops (NULL, BB_last_op(bb), bundle, bundle_vector);
 #endif
 #ifndef TARG_ST200
     }

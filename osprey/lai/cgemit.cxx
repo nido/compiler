@@ -3671,7 +3671,7 @@ Assemble_Ops (
 
 #ifdef TARG_ST
   Bundle_Count = 0;
-  if (BB_first_op(bb) != NULL)
+  if ((BB_first_op(bb) != NULL) && (OP_scycle(BB_first_op(bb)) != -1))
     Bundle_Count = OP_scycle(BB_first_op(bb));
 #endif
 
@@ -3715,7 +3715,7 @@ Assemble_Bundles(BB *bb)
 
 #ifdef TARG_ST
   Bundle_Count = 0;
-  if (BB_first_op(bb) != NULL)
+  if ((BB_first_op(bb) != NULL) && (OP_scycle(BB_first_op(bb)) != -1))
     Bundle_Count = OP_scycle(BB_first_op(bb));
 #endif
 
