@@ -2587,9 +2587,11 @@ Targ_Conv (
       Set_TCON_R4(r, __c_sngl_q(R16_To_RQ(TCON_R16(c)), &err));
       break;
 #endif /* TARG_NEEDS_QUAD_OPS */
+
     case FROM_TO(MTYPE_F8, MTYPE_F4):
       TCON_R4(r) = TCON_R8(c);
       break;
+
     case FROM_TO(MTYPE_I8, MTYPE_F4):
       TCON_R4(r) = TCON_I8(c);
       break;

@@ -89,6 +89,7 @@
 #define TCON_IR8(c)	((c).cmplxval.dival)
 #define TCON_IR16(c)	((c).cmplxval.qival)
 /* The internal representation of 32-bit floats may be double: */
+/*
 #ifdef TCON_R4_IS_DOUBLE
 #define TCON_R4(c)	TCON_R8(c)
 #define TCON_IR4(c)	TCON_IR8(c)
@@ -96,6 +97,9 @@
 #define TCON_R4(c)	((c).vals.f.fval)
 #define TCON_IR4(c)	((c).cmplxval.fival)
 #endif
+*/
+#define TCON_R4(c)	((c).vals.f.fval)
+#define TCON_IR4(c)	((c).cmplxval.fival)
 /* Complex imaginary parts */
 
 
