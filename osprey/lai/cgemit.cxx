@@ -880,7 +880,15 @@ Print_Label (
   }
   Base_Symbol_And_Offset (st, &base_st, &base_ofst);
   EMT_Write_Qualified_Name (pfile, st);
+#ifdef TARG_ST
+  if (List_Notes) {
+    fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT, base_ofst);
+  } else {
+    fprintf (pfile, ":\n");
+  }
+#else
   fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT, base_ofst);
+#endif
   Print_Dynsym (pfile, st);
 }
 
@@ -1648,6 +1656,9 @@ Write_INITO (
   }
 
   if (Assembly || Lai_Code) {
+#ifdef TARG_ST
+    if (List_Notes)
+#endif
     fprintf (Output_File, "\t%s end of initialization for %s\n", 
                                               ASM_CMNT, ST_name(sym));
   }
@@ -2627,8 +2638,13 @@ void New_Debug_Line_Set_Label(INT code_address)
   Offset_From_Last_Label = 0;
 
   if (Assembly || Lai_Code) {
+#ifdef TARG_ST
+    fprintf (Output_File, "%s:\n", 
+	     LABEL_name(Last_Label));
+#else
     fprintf (Output_File, "%s:\t%s\n", 
 	     LABEL_name(Last_Label), ASM_CMNT);
+#endif
   }
 
   Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
@@ -3349,7 +3365,12 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
     put_TN_comment (OP_opnd(op,i), add_name, &comment);
   }
 
+#ifndef TARG_ST
+  /* SC: Do this only if we have a comment.  We do not know
+     yet, so do it later.
+  */
   if (Assembly || Lai_Code) fprintf (Output_File, "\t%s", ASM_CMNT);
+#endif
   if (vstr_len(comment) == 0) {
     WN *wn = Get_WN_From_Memory_OP (op);
     if (wn && Alias_Manager) {
@@ -3394,8 +3415,16 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
   }
 #endif
 
-  if (Assembly || Lai_Code) 
+#ifdef TARG_ST
+  if ((Assembly || Lai_Code)
+      && List_Notes
+      && vstr_len(comment) > 0) {
+    fprintf (Output_File, "\t%s  %s", ASM_CMNT, vstr_str(comment));
+  }
+  fputc ('\n', Output_File);
+#else
     fprintf (Output_File, "  %s\n", vstr_str(comment));
+#endif
 
   vstr_end(comment);
 
@@ -3640,7 +3669,7 @@ Assemble_OP (
   if (OP_end_group(op) && Assembly) {
     fprintf(Asm_File, "\t %s", ISA_PRINT_END_GROUP);
 #ifdef TARG_ST
-    if (Trace_Sched) {
+    if (Trace_Sched && List_Notes) {
       fprintf(Asm_File, " %s (bundle %d)", ASM_CMNT, Bundle_Count);
       Bundle_Count ++;
     }
@@ -4162,8 +4191,13 @@ Assemble_Bundles(BB *bb)
     if (Assembly) {
       if (EMIT_explicit_bundles) {
 	fprintf(Asm_File, "%s", ISA_PRINT_END_BUNDLE);
+#ifdef TARG_ST
+	fprintf(Asm_File, "\n");
+      }
+#else
       }
       fprintf(Asm_File, "\n");
+#endif
     }
 
 #ifdef TARG_ST
@@ -4174,9 +4208,11 @@ Assemble_Bundles(BB *bb)
     }
 #endif
   }
+#ifndef TARG_ST
   if (Assembly) {
     fprintf(Asm_File, "\n");
   }
+#endif
 }
 
 /* ====================================================================
@@ -4537,8 +4573,16 @@ EMT_Assemble_BB (
        ant = ANNOT_Next (ant, ANNOT_LABEL)) {
     LABEL_IDX lab = ANNOT_label(ant);
     if (Assembly || Lai_Code) {
+#ifdef TARG_ST
+      if (List_Notes)
+	fprintf (Output_File, "%s:\t%s 0x%llx\n", 
+		 LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
+      else
+	fprintf (Output_File, "%s:\n", LABEL_name(lab));
+#else
       fprintf (Output_File, "%s:\t%s 0x%llx\n", 
 		   LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
+#endif
     }
 #ifndef TARG_IA64
 
@@ -4564,7 +4608,15 @@ EMT_Assemble_BB (
   st = BB_st(bb);
   if (st) {
     if (Assembly || Lai_Code) {
+#ifdef TARG_ST
+      if (List_Notes) {
+	fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT, ST_ofst(st));
+      } else {
+	fprintf (Output_File, "%s:\n", ST_name(st));
+      }
+#else
       fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT, ST_ofst(st));
+#endif
     }
 
     Is_True (ST_ofst(st) == PC, ("st %s offset %lld doesn't match PC %d", 
@@ -5282,6 +5334,9 @@ EMT_Emit_PU (
   }
 #endif
   if ( Assembly ) {
+#ifdef TARG_ST
+    if ( List_Notes )
+#endif
     fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
 #ifdef TARG_ST
     // [CL] force alignment when starting a new function
@@ -5738,6 +5793,9 @@ EMT_End_File( void )
   }
 
   if (Assembly) {
+#ifdef TARG_ST
+    if (List_Notes)
+#endif
     fprintf(Asm_File, "\t## %s %d\n", AS_GPVALUE, GP_DISP);
     //    ASM_DIR_GPVALUE();
     if (CG_emit_asm_dwarf) {
