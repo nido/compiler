@@ -90,6 +90,7 @@ BOOL CG_enable_pf_L2_st = FALSE;
 BOOL CG_exclusive_prefetch = FALSE;
 BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
+BOOL CG_enable_LAO = FALSE;	/* Enable LAO in cg */
 
 BOOL  CG_enable_BB_splitting = TRUE;
 INT32 CG_split_BB_length = CG_bblength_default;

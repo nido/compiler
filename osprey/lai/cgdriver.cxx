@@ -365,6 +365,11 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select", "",
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden },
 
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL,	FALSE, "LAO", "",
+    0, 0, 0,	&CG_enable_LAO, NULL },
+#endif
+
   // EBO options:
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",

@@ -195,6 +195,7 @@ extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern INT32 CG_ssa_algorithm;
+extern BOOL CG_enable_LAO;	/* Enable LAO in cg */
 
 #ifdef SUPPORTS_SELECT
 extern BOOL CG_enable_select;

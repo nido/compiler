@@ -5248,9 +5248,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
 #if defined(TARG_ST) && defined(LAO_ENABLED)
 	// Call the LAO to pipeline the loop.
-      if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
-	cg_loop.Recompute_Liveness();
-      }
+      if (CG_enable_LAO)
+	if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
+	  cg_loop.Recompute_Liveness();
+	}
 #else
       if (!Perform_SWP(cg_loop, fixup, true /*doloop*/)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
@@ -5308,9 +5309,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_After_Unrolling();
 #endif
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-      if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
-	cg_loop.Recompute_Liveness();
-      }
+      if (CG_enable_LAO)
+	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	  cg_loop.Recompute_Liveness();
+	}
 #endif
       break;
     }
@@ -5366,9 +5368,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
 #endif /* TARG_ST */
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-      if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
-	cg_loop.Recompute_Liveness();
-      }
+      if (CG_enable_LAO)
+	if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
+	  cg_loop.Recompute_Liveness();
+	}
 #endif
     }
     break;
@@ -5390,9 +5393,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_After_Unrolling();
 #endif
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-      if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
-	cg_loop.Recompute_Liveness();
-      }
+      if (CG_enable_LAO)
+	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
+	  cg_loop.Recompute_Liveness();
+	}
 #endif
 
     }
@@ -5413,9 +5417,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       Gen_Counted_Loop_Branch(cg_loop);
 #endif
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-      if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
-	cg_loop.Recompute_Liveness();
-      }
+      if (CG_enable_LAO)
+	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	  cg_loop.Recompute_Liveness();
+	}
 #endif
 
       if (trace_loop_opt) {
@@ -5426,7 +5431,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
   case NO_LOOP_OPT:
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-    {
+    if (CG_enable_LAO) {
       CG_LOOP cg_loop(loop);
       if (LAO_optimize(&cg_loop, LAO_LoopSchedule)) {
 	cg_loop.Recompute_Liveness();
