@@ -1713,12 +1713,32 @@ Traverse_Global_DST (void)
   if (Trace_Dwarf) {
 	fprintf(TFile, "Trace Global DST\n");
   }
+
+#ifdef TARG_ST
+  // [CL] Only emit 'necessary' info:
+  // only emit types if they are referred to;
+  // thus we keep adding debug info until no
+  // new reference is generated.
+  BOOL found_new_ref = TRUE;
+
+  while (found_new_ref) {
+    found_new_ref = FALSE;
+#endif
+
   /* visit subsequent siblings at this level */
   for (idx = DST_first_child (cu_idx);	/* start at beginning */
        !DST_IS_NULL(idx);
        idx = DST_INFO_sibling(DST_INFO_IDX_TO_PTR(idx)))
   {
     info = DST_INFO_IDX_TO_PTR (idx);
+
+#ifdef TARG_ST
+    // [CL] Skip this DST if it has already been
+    // handled in a previous pass
+    if (DST_IS_info_mark(DST_INFO_flag(info)))
+      continue;	/* already traversed */
+#endif
+
     /* only traverse non-subp's */
     if (DST_INFO_tag(info) == DW_TAG_subprogram
       || DST_INFO_tag(info) == DW_TAG_entry_point)
@@ -1727,9 +1747,35 @@ Traverse_Global_DST (void)
     /* All DST entries other than subprograms are attached as children
      * of the compile_unit die.
      */
+#ifdef TARG_ST
+    // [CL] Only generate type info if there is a
+    // reference to it
+    switch (DST_INFO_tag(info)) {
+    case DW_TAG_const_type:
+    case DW_TAG_volatile_type:
+    case DW_TAG_pointer_type:
+    case DW_TAG_reference_type:
+    case DW_TAG_typedef:
+    case DW_TAG_ptr_to_member_type:
+    case DW_TAG_array_type:
+    case DW_TAG_subrange_type:
+    case DW_TAG_structure_type:
+    case DW_TAG_class_type:
+    case DW_TAG_union_type:
+      if (!DST_INFO_dieptr (info))
+	continue;
+    }
+#endif
+
     parent = CGD_enclosing_proc[GLOBAL_LEVEL];
     (void) preorder_visit (idx, parent, NULL, LOCAL_LEVEL, TRUE /* visit children */);
     DST_SET_info_mark(DST_INFO_flag(info));	/* mark has been traversed */
+
+#ifdef TARG_ST
+    // [CL] keep on looping
+    found_new_ref = TRUE;
+  }
+#endif
   }
 }
 
@@ -1880,6 +1926,12 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   /* turn off generation of dwarf information from DSTs. */
   if (Disable_DST) return;
 
+#ifndef TARG_ST
+  // [CL] No longer process globals first: In order to generate only
+  // 'necessary' info, we generate all PUs first, then remaining
+  // globals, and only needed types.  This is to avoid generating type
+  // pointers to types with only local scope where local scope has
+  // been discarded by DFE
   if ( ! processed_globals) {
 	// do this once, before PU info.
 	// we do this here rather than in Begin routine
@@ -1887,6 +1939,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 	Traverse_Global_DST ();	// emit global types before PUs
 	processed_globals = TRUE;
   }
+#endif
 
   if (Trace_Dwarf)
 	fprintf(TFile, "dwarf for %s:\n", ST_name(PU_st));
@@ -2022,7 +2075,14 @@ Cg_Dwarf_Begin (BOOL is_64bit)
 void Cg_Dwarf_Finish (pSCNINFO text_scninfo)
 {
   if (Disable_DST) return;
+#ifndef TARG_ST
   Traverse_Extra_DST();	/* do final pass for any info not emitted yet */
+#else
+  // [CL] emit global types and variables after PUs
+  // so that only needed (ie referenced) types
+  // are emitted
+  Traverse_Global_DST ();
+#endif
 }
 
 typedef struct {
