@@ -1457,6 +1457,7 @@ Write_INITO (
  * Thus the current section offset must be updated.
  * For each data emitted do:
  * Change_Section_Origin(st_sect, ofst);
+ * Check_Section_Alignement(st_sect, object_align)
  * ... emit object ...
  * Add_To_Section_Offset(st_sect, object_size);
  * ====================================================================
@@ -1466,6 +1467,16 @@ Add_To_Section_Offset (ST *base, INT64 size)
 {
   em_scn[STB_scninfo_idx(base)].scn_ofst += size;
 }		       
+
+static void
+Check_Section_Alignment (ST *base, int align)
+{
+  INT64 current = em_scn[STB_scninfo_idx(base)].scn_ofst;
+  INT64 aligned = align == 0 ? current : 
+    ((current + (align - 1)) / align) * align;
+  FmtAssert(aligned == current,
+	    ("object alignment mismatch offset in section %s: offset is %lld, alignment is %d", ST_name(base), current, align));
+}
 #endif
 
 /* ====================================================================
@@ -1757,6 +1768,9 @@ Process_Initos_And_Literals (
       // may need padding between objects in same section,
       // so always change origin
       Change_Section_Origin (base, ofst);
+#ifdef TARG_ST
+      Check_Section_Alignment (base, TY_align(ST_type(st)));
+#endif
 #if 0
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
@@ -1778,7 +1792,9 @@ Process_Initos_And_Literals (
       // by offset, because they are allocated on the fly as we
       // expand the whirl nodes.  So always reset the origin.
       Change_Section_Origin (base, ofst);
-
+#ifdef TARG_ST
+      Check_Section_Alignment (base, TY_align(ST_type(st)));
+#endif
 #if 0
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
@@ -1823,6 +1839,9 @@ Process_Distr_Array ()
                 ("inito (%s) not allocated?", ST_name(st)));
       Init_Section(base);
       Change_Section_Origin(base, ofst);
+#ifdef TARG_ST
+      Check_Section_Alignment (base, TY_align(ST_type(st)));
+#endif
       Write_INITO(ino, STB_scninfo_idx(base), ofst);
 #ifdef TARG_ST
       Add_To_Section_Offset(base, TY_size(ST_type(st)));
@@ -1968,13 +1987,16 @@ Process_Bss_Data (
 	     esyms++) {
 	  Print_Label (Output_File, *esyms, TY_size(ST_type(*esyms)));
 	}
+	// Print the last/current one
+	Print_Label (Output_File, sym, size);
+
+	Check_Section_Alignment (base, align);
+
 	// clear the list
 	equivalenced_symbols.clear();
 	// reset align
 	align = 0;
 
-	// Print the last/current one
-	Print_Label (Output_File, sym, size);
 #else
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
