@@ -264,7 +264,6 @@ static inline ISA_REGISTER_CLASS
 RegClass_to_CGIR_IRC(RegClass regclass) {
   Is_True(regclass > RegClass_ && regclass < RegClass__COUNT, ("RegClass out of range"));
   ISA_REGISTER_CLASS irc = RegClass__IRC[regclass];
-  Is_True(IRC__RegClass[irc] == regclass, ("Unexpected error in RegClass_to_CGIR_IRC"));
   Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
   return irc;
 }
@@ -286,7 +285,6 @@ static inline TOP
 Operator_to_CGIR_TOP(Operator lir_operator) {
   Is_True(lir_operator > Operator_ && lir_operator < Operator__COUNT, ("Operator out of range"));
   TOP top = Operator__TOP[lir_operator];
-  Is_True(TOP__Operator[top] == lir_operator, ("Unexpected error in Operator_to_CGIR_TOP"));
   Is_True(top != TOP_UNDEFINED, ("Cannot map Operator to TOP"));
   return top;
 }
@@ -554,22 +552,26 @@ CGIR_BB_link(CGIR_BB orig_cgir_bb, CGIR_BB dest_cgir_bb, float probability) {
 
 // Unlink all the predecessors and successors of a CGIR_BB in the CGIR.
 static void
-CGIR_BB_unlink(CGIR_BB cgir_bb) {
+CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
   BBLIST *edge;
   //
   // Remove successor edges.
-  FOR_ALL_BB_SUCCS(cgir_bb, edge) {
-    BB *succ = BBLIST_item(edge);
-    BBlist_Delete_BB(&BB_preds(succ), cgir_bb);
+  if (succs) {
+    FOR_ALL_BB_SUCCS(cgir_bb, edge) {
+      BB *succ = BBLIST_item(edge);
+      BBlist_Delete_BB(&BB_preds(succ), cgir_bb);
+    }
+    BBlist_Free(&BB_succs(cgir_bb));
   }
-  BBlist_Free(&BB_succs(cgir_bb));
   //
   // Remove predecessor edges.
-  FOR_ALL_BB_PREDS(cgir_bb, edge) {
-    BB *pred = BBLIST_item(edge);
-    BBlist_Delete_BB(&BB_succs(pred), cgir_bb);
+  if (preds) {
+    FOR_ALL_BB_PREDS(cgir_bb, edge) {
+      BB *pred = BBLIST_item(edge);
+      BBlist_Delete_BB(&BB_succs(pred), cgir_bb);
+    }
+    BBlist_Free(&BB_preds(cgir_bb));
   }
-  BBlist_Free(&BB_preds(cgir_bb));
 }
 
 // Identity of a CGIR_LI.
@@ -1114,7 +1116,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 
 // Low-level LAO_optimize entry point.
 static bool
-lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
+lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
   //
   if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
@@ -1126,36 +1128,35 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
-  BB_List nonexitBBs;
   BB_List::iterator bb_iter;
-  for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
-    BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
-    Interface_setEntry(interface, basicblock);
-    nonexitBBs.push_back(*bb_iter);
-    //fprintf(TFile, "BB_entry(%d)\n", BB_id(*bb_iter));
-  }
+  // First enter the bodyBBs.
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setBody(interface, basicblock);
-    nonexitBBs.push_back(*bb_iter);
     //fprintf(TFile, "BB_body(%d)\n", BB_id(*bb_iter));
   }
+  // Then enter the entryBBs.
+  for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
+    BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
+    Interface_setEntry(interface, basicblock);
+    //fprintf(TFile, "BB_entry(%d)\n", BB_id(*bb_iter));
+  }
+  // Last enter the exitBBs.
   for (bb_iter = exitBBs.begin(); bb_iter != exitBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setExit(interface, basicblock);
     //fprintf(TFile, "BB_exit(%d)\n", BB_id(*bb_iter));
   }
   // Make the control-flow nodes and the control-flow arcs.
-  for (bb_iter = nonexitBBs.begin(); bb_iter != nonexitBBs.end(); bb_iter++) {
+  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BB *orig_bb = *bb_iter;
     ControlNode orig_controlnode = CGIR_BB_to_ControlNode(orig_bb);
+    if (lao_in_bblist(exitBBs, orig_bb)) continue;
     BBLIST *bblist = NULL;
     FOR_ALL_BB_SUCCS(orig_bb, bblist) {
       BB *succ_bb = BBLIST_item(bblist);
-      if (lao_in_bblist(exitBBs, succ_bb) || lao_in_bblist(nonexitBBs, succ_bb)) {
-	ControlNode succ_controlnode = CGIR_BB_to_ControlNode(succ_bb);
-	Interface_linkControlNodes(interface, orig_controlnode, succ_controlnode, BBLIST_prob(bblist));
-      }
+      ControlNode succ_controlnode = CGIR_BB_to_ControlNode(succ_bb);
+      Interface_linkControlNodes(interface, orig_controlnode, succ_controlnode, BBLIST_prob(bblist));
     }
   }
   // Make the LoopInfos for the bodyBBs.
@@ -1202,7 +1203,7 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
     // Non software pipelining (prepass or postpass scheduling).
   }
   //
-  // List the body BBs.
+  // List the body_BBs.
   BB_List bodyBBs;
   int body_count = 0;
   for (BB *bb = head_bb; bb != BB_next(tail_bb); bb = BB_next(bb)) {
@@ -1213,17 +1214,30 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   }
   Is_True(body_count == BB_SET_Size(body_set), ("lao_optimize_LOOP computed incorrect body"));
   //
-  // List the entry BBs.
+  // List the entry_BBs.
   BB_List entryBBs;
   int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
   //
-  // List the exit BBs.
+  // List the exit_BBs.
   BB_List exitBBs;
   int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
   Is_True(exit_count == LOOP_DESCR_num_exits(loop), ("lao_optimize_LOOP computed incorrect exits"));
   //
+  // Append the entryBBs to the bodyBBs.
+  entryBBs.reverse();
+  BB_List::iterator bb_iter;
+  for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
+    bodyBBs.push_front(*bb_iter);
+  }
+  entryBBs.reverse();
+  //
+  // Prepend the exitBBs to the bodyBBs.
+  for (bb_iter = exitBBs.begin(); bb_iter != exitBBs.end(); bb_iter++) {
+    bodyBBs.push_back(*bb_iter);
+  }
+  //
   // Call the lower level lao_optimize function.
-  return lao_optimize(entryBBs, bodyBBs, exitBBs, pipeline, lao_optimizations);
+  return lao_optimize(bodyBBs, entryBBs, exitBBs, pipeline, lao_optimizations);
 }
 
 // Optimize the complete PU through the LAO.
@@ -1262,17 +1276,13 @@ lao_optimize_PU(unsigned lao_optimizations) {
   // List the BBs, entry BBs, exit BBs, body BBs.
   BB_List entryBBs, exitBBs, bodyBBs;
   for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    if (BB_entry(bb)) {
-      entryBBs.push_back(bb);
-    } else if (BB_exit(bb)) {
-      exitBBs.push_back(bb);
-    } else {
-      bodyBBs.push_back(bb);
-    }
+    if (BB_entry(bb)) entryBBs.push_back(bb);
+    if (BB_exit(bb)) exitBBs.push_back(bb);
+    bodyBBs.push_back(bb);
   }
   //
   // Call the lower level lao_optimize function with pipeline=0.
-  result |= lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
+  result |= lao_optimize(bodyBBs, entryBBs, exitBBs, 0, lao_optimizations);
   //
   if (result) {
     GRA_LIVE_Recalc_Liveness(NULL);
