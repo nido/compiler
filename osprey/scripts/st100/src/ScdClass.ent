@@ -1,0 +1,385 @@
+<tr> <th>LCR</th> <tc>Load Control Register</tc>
+    <td>I0_A0_GU<!--MR-->, I1_A1_GU<!--MR-->,,,,,</td>
+    <td>-1,	-1,	7,	-1,	7,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>LSR</th> <tc>Load Status Register</tc>
+    <td>I0_A0_SR<!--MR-->, I1_A1_SL_SR<!--MR-->, A0_SR<!--MR-->, A1_SL_SR<!--MR-->,,,</td>
+    <td>-1,	-1,	-1,	-1,	-1,	-1,	0,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>2</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>6</td><!--setDecoupling-->
+    <td>Load</td><!--sliwclass-->
+</tr>
+<tr> <th>LBR</th> <tc>Load Boolean Register</tc>
+    <td>I0_A0_G0_G1<!--MR-->, I1_A1_G0_G1<!--MR-->, A0_G0_G1<!--MR-->, A1_G0_G1_SL<!--MR-->,,,</td>
+    <td>1,	1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td><!-- AU/DU wait for guard -->
+    <td>1,	4,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>6</td><!--setDecoupling-->
+    <td>Load</td><!--sliwclass-->
+</tr>
+<tr> <th>LAR</th> <tc>Load Address Register</tc>
+    <td>I0_A0<!--MR-->, I1_A1<!--MR-->, A0<!--MR-->, A1_SL<!--MR-->,,,</td>
+    <td>6,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>2</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Load</td><!--sliwclass-->
+</tr>
+<tr> <th>LDR</th> <tc>Load Data Register</tc>
+    <td>I0_A0<!--MR-->, I1_A1_SL<!--MR-->, A0<!--MR-->, A1_SL<!--MR-->,,,</td>
+    <td>1,	-1,	-1,	0,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	4,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>2</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>5</td><!--setDecoupling-->
+    <td>Load</td><!--sliwclass-->
+</tr>
+<tr> <th>SCR</th> <tc>Store Control Register</tc>
+    <td>I0_A0_GU<!--MR-->, I1_A1_GU<!--MR-->,,,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>SSR</th> <tc>Store Status Registers</tc>
+    <td>I0_A0_SL<!--MR-->, I1_A1<!--MR-->, A0_SL<!--MR-->, A1<!--MR-->,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Store</td><!--sliwclass-->
+</tr>
+<tr> <th>SBR</th> <tc>Store Boolean Register</tc>
+    <td>I0_A0_SL<!--MR-->, I1_A1<!--MR-->, A0_SL<!--MR-->, A1<!--MR-->,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Store</td><!--sliwclass-->
+</tr>
+<tr> <th>SAR</th> <tc>Store Address Register</tc>
+    <td>I0_A0_SL<!--MR-->, I1_A1<!--MR-->, A0_SL<!--MR-->, A1<!--MR-->,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Store</td><!--sliwclass-->
+</tr>
+<tr> <th>SDR</th> <tc>Store Data Register</tc>
+    <td>I0_A0_SL<!--MR-->, I1_A1<!--MR-->, A0_SL<!--MR-->, A1<!--MR-->,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Store</td><!--sliwclass-->
+</tr>
+<tr> <th>EXP</th> <tc>Expanded instruction</tc>
+    <td>I1_EX,,,,,,</td>
+    <td>1,	1,	1,	1,	1,	-1,	1,	1,	2,	1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>D2A</th> <tc>COPYA, COPYSA</tc>
+    <td>I0_A0_SL_T0, I1_A1_T1, A0_T0_SL, A1_T1,,,</td>
+    <td>5,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Store</td><!--sliwclass-->
+</tr>
+<tr> <th>A2D</th> <tc>COPYD</tc>
+    <td>I0_A0_T1, I1_A1_T0, A0_T1, A1_T0_SL,,,</td>
+    <td>-1,	-1,	-1,	0,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>-3</td><!--setDecoupling-->
+    <td>Load</td><!--sliwclass-->
+</tr>
+<tr> <th>B2D</th> <tc>BOOL, BOOLP</tc>
+    <td>I0_D0_G0, I1_D1_G1, D0_G0, D1_G1,,,</td>
+    <td>-1,	-1,	-1,	2,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_gmi</td><!--sliwclass-->
+</tr>
+<tr> <th>AOP</th> <tc>AU Operation</tc>
+    <td>I0_A0, I1_A1, A0_SL, A1,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>AU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>AGM</th> <tc>AU GMI</tc>
+    <td>I0_A0_G0_T1, I1_A1_G1_T0, A0_G0_T1_SL, A1_G1_T0,,,</td>
+    <td>1,	1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>-3</td><!--setDecoupling-->
+    <td>AU_gmi</td><!--sliwclass-->
+</tr>
+<tr> <th>SCE</th> <tc>Single Cycle Execute</tc>
+    <td>I0_D0, I1_D1, D0, D1,,,</td>
+    <td>-1,	-1,	-1,	1,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>SGM</th> <tc>Single Cycle GMI</tc>
+    <td>I0_D0_G0, I1_D1_G1, D0_G0, D1_G1,,,</td>
+    <td>-1,	1,	-1,	1,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_gmi</td><!--sliwclass-->
+</tr>
+<tr> <th>DGM</th> <tc>Double Cycle GMI</tc>
+    <td>I0_D0_G0, I1_D1_G1, D0_G0, D1_G1,,,</td>
+    <td>-1,	1,	-1,	2,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_gmi</td><!--sliwclass-->
+</tr>
+<tr> <th>DCE</th> <tc>Double Cycle Execute</tc>
+    <td>I0_D0, I1_D1, D0, D1,,,</td>
+    <td>-1,	-1,	-1,	2,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>MAC</th> <tc>Multiply ACcumulate</tc>
+    <td>I0_D0, I1_D1, D0, D1,,,</td>
+    <td>-1,	-1,	-1,	2,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>FOP</th> <tc>Flag Operation</tc>
+    <td>I0_D0, I1_D1, D0, D1,,,</td>
+    <td>-1,	-1,	-1,	-1,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>0,	0,	0,	0,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>FGM</th> <tc>Flag Test GMI</tc>
+    <td>I0_D0_G0, I1_D1_G1, D0_G0, D1_G1,,,</td>
+    <td>-1,	1,	-1,	-1,	-1,	-1,	1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>DU_gmi</td><!--sliwclass-->
+</tr>
+<tr> <th>BRA</th> <tc>Branch Operation</tc>
+    <td>I1_A1_GU, A0_GU,,,,,</td>
+    <td>1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	4,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>CU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>SUB</th> <tc>Subroutine call</tc>
+    <td>I1_A1_GU,,,,,,</td>
+    <td>1,	1,	1,	1,	1,	-1,	1,	1,	4,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>SWE</th> <tc>Software Exception</tc>
+    <td>I1_A1_GU, A0_A1_D0_D1,,,,,</td>
+    <td>1,	1,	1,	1,	1,	-1,	1,	1,	4,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>Interrupt</td><!--sliwclass-->
+</tr>
+<tr> <th>A2C</th> <tc>AU to Loop Counter</tc>
+    <td>I0_A0_GU, I1_A1_GU, A0_GU,,,,</td>
+    <td>-1,	-1,	-1,	-1,	5,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>CU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>D2C</th> <tc>DU to Loop Counter</tc>
+    <td>I0_A0_GU, I1_A1_GU, A0_GU_T0_SL,,,,</td>
+    <td>-1,	-1,	-1,	-1,	9,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>CU_set</td><!--sliwclass-->
+</tr>
+<tr> <th>LSE</th> <tc>Set Loop Start or End</tc>
+    <td>I0_A0_GU, I1_A1_GU,,,,,</td>
+    <td>-1,	-1,	-1,	-1,	1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel (CHESS 1.27 bug)-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>CIM</th> <tc>Change Instruction Mode</tc>
+    <td>I1_A1_GU, A0,,,,,</td>
+    <td>-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>CU_op</td><!--sliwclass-->
+</tr>
+<tr> <th>SMD</th> <tc>Change Instruction Mode to SLIW</tc>
+    <td>I1_A1_GU,,,,,,</td>
+    <td>-1,	-1,	1,	-1,	-1,	-1,	-1,	-1,	1,	-1	</td>
+    <td>1,	1,	0,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>PSR</th> <tc>PSR register update</tc>
+    <td>I0_A0_GU, I1_A1_GU,,,,,</td>
+    <td>-1,	-1,	1,	-1,	-1,	-1,	-1,	-1,	1,	-1	</td>
+    <td>0,	0,	0,	0,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>SYN</th> <tc>SYNchronize</tc>
+    <td>I1_A1_GU,,,,,,</td>
+    <td>-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	6,	-1	</td>
+    <td>0,	0,	0,	0,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>-1</td><!--shadowLatency-->
+    <td>1</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
+<tr> <th>NOP</th> <tc>NO Operation</tc>
+    <td>I0, I1, A0, A1, D0, D1,</td>
+    <td>-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1,	-1	</td>
+    <td>0,	0,	0,	0,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>0</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td>NOP</td><!--sliwclass-->
+</tr>
+<tr> <th>NULL</th> <tc>NULL resources and latencies</tc>
+    <td>_,,,,,,</td>
+    <td>0,	0,	0,	0,	0,	-1,	0,	0,	0,	0	</td>
+    <td>1,	1,	1,	1,	0,	0,	0,	0,	0,	0	</td>
+    <!--AR	BR	CR	DR	LR	MR	SR	DM	PC	BA	-->
+    <td>-1</td><!--speculateLevel-->
+    <td>0</td><!--shadowLatency-->
+    <td>0</td><!--isDecoupled-->
+    <td>0</td><!--setDecoupling-->
+    <td></td><!--sliwclass-->
+</tr>
