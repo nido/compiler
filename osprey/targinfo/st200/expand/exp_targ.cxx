@@ -1049,23 +1049,6 @@ Expand_Multiply (
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
-    // word <- half * word
-    else if ((s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4) || 
-             (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4) ||
-             (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2) || 
-             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2) ||
-             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2)) {
-      if (s1mtype == MTYPE_I2 || s2mtype == MTYPE_I2)
-        opcode = has_const ? TOP_mull_i : TOP_mull_r;
-      else
-        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
-
     // word <- word * word
     else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
@@ -1080,13 +1063,24 @@ Expand_Multiply (
       Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
     }
 
-    // general case
+    // word <- half * word
     else {
       // if we have a word argument. It can only be at pos1.
+      // unless it is a constant with size < 65535.
       if (s2mtype == MTYPE_I4 || s2mtype != MTYPE_U4) {
-        TN *tmp = src2;
-        src2 = src1;
-        src1 = tmp;
+        if (has_const) {
+          if (TN_value(src2) > 65535) {
+            TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+            Build_OP (TOP_mov_i, tmp, src2, ops);
+            src2 = tmp;
+            has_const = false;
+          }
+        }
+        else {
+          TN *tmp = src2;
+          src2 = src1;
+          src1 = tmp;
+        }
       }
 
       if (s1mtype == MTYPE_I1) {
