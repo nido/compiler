@@ -267,11 +267,11 @@ COMMON_TARG_EXP_CXX_SRCS =	\
   exp_divrem.cxx
 
 COMMON_TARG_CG_CXX_SRCS =	\
-  cg_targ.cxx		\
-  register_targ.cxx	\
-  tn_targ.cxx		\
-  op_targ.cxx		\
-  calls_targ.cxx	\
+  targ_calls.cxx	\
+  targ_cg.cxx		\
+  targ_op.cxx		\
+  targ_register.cxx	\
+  targ_tn.cxx		\
 			\
   targ_hb.cxx
 
