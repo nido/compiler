@@ -154,6 +154,9 @@ static BOOL generate_elf_symbols = FALSE;
 static BOOL Trace_Init    = FALSE;	/* Data initialization trace */
 static BOOL Trace_Inst    = FALSE;	/* Noop-insertion trace */
 static BOOL Trace_Elf     = FALSE;	/* Miscellaneous ELF trace */
+#ifdef TARG_ST
+static BOOL Trace_Sched   = FALSE;	// Trace issue dates and bundle count. */
+#endif
 // static BOOL Trace_Longbr  = FALSE;	/* trace handling of long branches */
 
 static FILE *Output_File;               /* write to Asm or Lai file */
@@ -3023,6 +3026,10 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 
   /* emit TN comments: */
   vstring comment = vstr_begin(LBUF_LEN);
+#ifdef TARG_ST
+  if (Trace_Sched && (OP_scycle(op) >= 0))
+    vstr_sprintf(&comment, vstr_len(comment), "(scycle %d) ", OP_scycle(op));
+#endif
   for (i = 0; i < OP_results(op); i++) {
     TN *tn = OP_result(op, i);
     if (TN_is_save_reg(tn)) {
@@ -3227,6 +3234,10 @@ Verify_Instruction (
   }
 }
 
+#ifdef TARG_ST
+static int Bundle_Count;
+#endif
+
 /* ====================================================================
  *   Assemble_OP
  *
@@ -3268,9 +3279,15 @@ Assemble_OP (
   }
 
   if (OP_end_group(op) && Assembly) {
-    fprintf(Asm_File, "\t %s\n", ISA_PRINT_END_GROUP);
+    fprintf(Asm_File, "\t %s", ISA_PRINT_END_GROUP);
+#ifdef TARG_ST
+    if (Trace_Sched) {
+      fprintf(Asm_File, " %s (bundle %d)", ASM_CMNT, Bundle_Count);
+      Bundle_Count ++;
+    }
+#endif
+    fputc('\n', Asm_File);
   }
-
 
 #if 0
   if (Object_Code) {
@@ -3485,6 +3502,10 @@ Assemble_Ops (
 {
   OP *op;
 
+#ifdef TARG_ST
+  Bundle_Count = 0;
+#endif
+
   FmtAssert(ISA_MAX_SLOTS == 1 || Lai_Code || !LOCS_Enable_Bundle_Formation,
 	    ("Assemble_Ops shouldn't have been called"));
 
@@ -3522,6 +3543,10 @@ static void
 Assemble_Bundles(BB *bb)
 {
   OP *op;
+
+#ifdef TARG_ST
+  Bundle_Count = 0;
+#endif
 
   FmtAssert(Assembly,
 	    ("Assemble_Bundles shouldn't have been called"));
@@ -4590,6 +4615,9 @@ EMT_Begin_File (
   /* Initialize: */
   Trace_Elf	= Get_Trace ( TP_EMIT, 2 );
   Trace_Init	= Get_Trace ( TP_EMIT, 4 );
+#ifdef TARG_ST
+  Trace_Sched   = Get_Trace ( TP_SCHED,1 );
+#endif
 
   // Which one to write into ?
   if (Assembly) Output_File = Asm_File;
