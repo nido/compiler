@@ -56,6 +56,9 @@
 #include "freq.h"
 #include "whirl2ops.h"
 #include "dominate.h"
+#include "gtn_universe.h"
+#include "gtn_set.h"
+#include "gtn_tn_set.h"
 #include "gra_live.h"
 #include "cxx_memory.h"
 #include "cg_ssa.h"
@@ -181,14 +184,18 @@ Initialize_Hammock_Memory()
 }
 
 static void
-Finalize_Hammock_Memory()
+clear_spec_lists()
 {
-  OP_MAP_Delete(phi_op_map);
-
   load_i.first.clear();
   load_i.second.clear();
   store_i.first.clear();
   store_i.second.clear();
+}
+
+static void
+Finalize_Hammock_Memory()
+{
+  OP_MAP_Delete(phi_op_map);
 }
 
 /* ================================================================
@@ -333,7 +340,7 @@ BB_Merge (BB *bb_first, BB *bb_second)
   }
 
   //
-  // Transfer call info if merged block will now contain a call.
+  // Transfer call info.
   //
   if (BB_call(bb_second)) {
     BB_Copy_Annotations(bb_first, bb_second, ANNOT_CALLINFO);
@@ -372,6 +379,26 @@ BB_Merge (BB *bb_first, BB *bb_second)
   //    HB_Exit_Set(hb, bb_first);
   //   }
   // Replace_Block(bb_first,bb_second,candidate_regions);
+}
+
+// promoted tns was global because they ended up inside a phi.
+// Now that they are converted into a select and the blocks have
+// been merged, that might not be true.
+static void
+BB_Localize_Tns (BB *bb) 
+{
+  OP *op;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {  
+    UINT8 i;
+
+    for (i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op, 0);
+
+      if (!GTN_SET_MemberP(BB_live_out(bb),tn))
+        Reset_TN_is_global_reg(tn); 
+    }
+  }
 }
 
 /* ================================================================
@@ -484,12 +511,12 @@ Can_Speculate_BB(BB *bb, op_list *stores)
         }
 
         else if (OP_store (op)) {
-          //          if (! stores)
-            return FALSE;
-          
-            //          stores->push_front(op);
+           if (! stores)
+             return FALSE;
+           stores->push_front(op);
         }
       }
+      return FALSE;
     }
   }
 
@@ -688,6 +715,7 @@ Promote_BB(BB *bp, BB *to_bb)
     BBlist_Delete_BB(&BB_succs(pred), bp);
   }
   BBlist_Free(&BB_preds(bp));
+
 }
 
 static void
@@ -753,7 +781,19 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
 static BOOL
 Dead_BB (BB *bb)
 {
-  return TRUE;
+  OP *op;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {  
+    UINT8 i;
+
+    for (i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op, 0);
+      if (GTN_SET_MemberP(BB_live_out(bb), tn))
+        return FALSE;
+    }
+
+    return TRUE;
+  }
 }
 
 static BOOL
@@ -1121,6 +1161,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     Promote_BB(fall_thru_bb, head);
   }
 
+  // Promoted instructions might not be global anymore.
+  BB_Localize_Tns (head);
+
   //  fprintf (TFile, "\nafter promotion\n");
   //  Print_All_BBs();
 
@@ -1234,8 +1277,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Calculate_Dominators();
 
 #if 0
-
   draw_CFG();
+
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *bbb;
@@ -1261,8 +1304,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         fprintf (TFile, "------------------------------------------\n");
       }
     }
+    clear_spec_lists();
   }
-
 #endif
 
   draw_CFG();
@@ -1293,6 +1336,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         fprintf (TFile, "------------------------------------------\n");
       }
     }
+    clear_spec_lists();
   }
 
   GRA_LIVE_Recalc_Liveness(rid);
