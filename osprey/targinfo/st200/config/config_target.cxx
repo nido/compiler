@@ -194,14 +194,19 @@ static struct bnm {
 } bnb[4];
 static INT16 bnb_used = 0;
 
-#ifndef MONGOOSE_BE
+#if !defined MONGOOSE_BE || defined TARG_ST
+/* clarkes: This function is used when writing the
+   .assume assembler directive, so the ABI names must
+   match what .assume expects.
+*/
 char *
 Abi_Name ( TARGET_ABI b)
 {
   char *r;
 
   switch ( b ) {
-    case ABI_ST200:     return "st200";
+    case ABI_ST200_embedded:     return "lx-embedded-abi";
+    case ABI_ST200_PIC:          return "pic-abi";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -209,7 +214,7 @@ Abi_Name ( TARGET_ABI b)
       return r;
   }
 }
-#endif /* MONGOOSE_BE */
+#endif /* !defined MONGOOSE_BE || defined TARG_ST */
 
 char *
 Isa_Name ( TARGET_ISA b)
@@ -269,11 +274,18 @@ Prepare_Target ( void )
 
   /* First check the ABI from -TARG:abi=xxx: */
   if ( ABI_Name != NULL ) {
-    if ( strcasecmp ( ABI_Name, "ST200" ) == 0 ) {
-      Target_ABI = ABI_ST200;
+    if ( strcasecmp ( ABI_Name, "ST200" ) == 0
+	 || strcmp ( ABI_Name, "lx-embedded-abi") == 0) {
+      Target_ABI = ABI_ST200_embedded;
       isa_default = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
-    } else {
+    }
+    else if ( strcmp ( ABI_Name, "pic-abi") == 0) {
+      Target_ABI = ABI_ST200_PIC;
+      isa_default = TARGET_ISA_ST220;
+      targ_default = TARGET_st220;
+    }
+    else {
       ErrMsg ( EC_Inv_TARG, "abi", ABI_Name );
     }
   }
@@ -301,9 +313,6 @@ Prepare_Target ( void )
    * and if one is default the other:
    */
   switch ( Target_ISA ) {
-    case TARGET_ISA_ST220:
-      if (Target_ABI == ABI_UNDEF) Target_ABI = ABI_ST200;
-      break;
     case TARGET_ISA_UNDEF:
       Target_ISA = isa_default;
       break;
@@ -341,18 +350,20 @@ Prepare_Target ( void )
     case TARGET_st220:
     case TARGET_st221:
     case TARGET_st230:
-      if (Target_ABI == ABI_UNDEF) Target_ABI = ABI_ST200;
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST220;
       break;
     case TARGET_UNDEF:
       Target = targ_default;
       if ( Target == TARGET_UNDEF ) {
         /* Default everything: */
-        Target_ABI = ABI_ST200;
 	Target_ISA = TARGET_ISA_ST220;
 	Target = TARGET_st220;
       }
       break;
+  }
+
+  if (Target_ABI == ABI_UNDEF) {
+      Target_ABI = ABI_ST200_embedded;
   }
 
   /* Now deal with FP register count: */
@@ -409,7 +420,7 @@ Preconfigure_Target ( void )
   // if ( Kernel_Code ) 
   Zeroinit_in_bss = FALSE;
 
-  Gen_PIC_Calls = FALSE;	// ld handle's pic calls for IA-64
+  Gen_PIC_Calls = FALSE;	// ld handles pic calls for ST200
   GP_Is_Preserved = FALSE;
 
   Split_Quad_Ops = TRUE;
@@ -647,7 +658,7 @@ Set_Target_ABI (
   } else {	/* 32 */
     switch (Target_ABI) {
     case ABI_UNDEF:
-      Target_ABI = ABI_ST200;
+      Target_ABI = ABI_ST200_embedded;
       break;
     default:
       /* All ST200 ABIs are 32 bits. */
@@ -711,10 +722,6 @@ Configure_Source_Target ( char * /* filename */ )
 
   if ( DEBUG_Trap_Uv )
     FP_Exception_Enable_Min |= FPX_V;
-
-// TMP: ignore cpic until we figure out what to do with it
-  if (Gen_PIC_Call_Shared)
-	Gen_PIC_Call_Shared = FALSE;
 
   // [FdF] Revert some settings from config.cxx with -O3
   // [CM] We also need to do it whatever the optimization level is

@@ -1652,7 +1652,7 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	  }
 	}
 	else if (ST_gprel(base_st)) {
-	  FmtAssert(FALSE,("GP-relative not supported"));
+	  extra_slot_reqd = TRUE;
 	}
 	else if (ST_class(st) == CLASS_CONST) {
 	  // Handle floating-point constants
@@ -1681,8 +1681,10 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	  // TODO: investigate -- shouldn't we have generated a
 	  // label TN ??
 	  // Not xfer -- reserve the following slot
+	  // clarkes: 030910: getpc expands to a call instruction,
+	  // but is not really a transfer op.
 	  //
-	  if (!OP_xfer(op)) {
+	  if (!OP_xfer(op) && OP_code(op) != TOP_getpc) {
 	    extra_slot_reqd = TRUE;
 	  }
 	}

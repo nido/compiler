@@ -152,8 +152,14 @@ static BOOL Trace_EE = FALSE;	/* Trace entry/exit processing */
  * the pu.  we do this in leaf routines if there are no regions
  * and gra will be run.
  */
+#ifdef TARG_ST
+#define Use_Scratch_GP(need_gp_setup) \
+((need_gp_setup) && !PU_Has_Calls && !PU_has_region(Get_Current_PU()) \
+ && !PU_Has_Asm)
+#else
 #define Use_Scratch_GP(need_gp_setup) \
 ((need_gp_setup) && !PU_Has_Calls && !PU_has_region(Get_Current_PU()))
+#endif
 
 /* ====================================================================
  *   Init_Pregs
@@ -586,6 +592,8 @@ Generate_Entry (BB *bb, BOOL gra_run)
       /* Add it to ep to get the new GP: */
       Exp_ADD (Pointer_Mtype, GP_TN, Ep_TN, got_disp_tn, &ops);
     }
+    else
+      Exp_GP_Init (GP_TN, st, &ops);
   } 
 #ifdef TARG_ST
   else if (Gen_GP_Relative && 

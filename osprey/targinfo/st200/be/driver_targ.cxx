@@ -52,8 +52,11 @@ Initialize_Targ_Info (void)
   PROCESSOR proc;
 
   switch (Target_ABI) {
-  case ABI_ST200:
-    abi = ABI_PROPERTIES_ABI_st200;
+  case ABI_ST200_embedded:
+    abi = ABI_PROPERTIES_ABI_st200_embedded;
+    break;
+  case ABI_ST200_PIC:
+    abi = ABI_PROPERTIES_ABI_st200_PIC;
     break;
   default:
     FmtAssert(FALSE, ("targinfo doesn't handle abi: %d\n", Target_ABI));

@@ -47,6 +47,7 @@
 #include "cg_flags.h"
 #include "op.h"
 #include "cgexp.h"
+#include "targ_sim.h"
 
 /* ====================================================================
  *   Initialize_Branch_Variants
@@ -458,8 +459,24 @@ Exp_Call (
       break;
 
     case OPR_ICALL:
-      // put target in LR
-      Build_OP(TOP_mov_r, RA_TN, target, ops);
+      if ((Gen_PIC_Shared || Gen_PIC_Call_Shared) && Is_Caller_Save_GP) {
+	// ST200 PIC ABI, caller-sets-gp model.
+	// In this model, function pointers point to descriptors.
+	//
+	// target points to function descriptor.
+	// Load 0(target) into LR and 4(target) into GP.
+	OPCODE opc = OPCODE_make_op (OPR_LDID, Pointer_Mtype, Pointer_Mtype);
+	Expand_Load (opc, GP_TN, target,
+		     Gen_Literal_TN (Pointer_Size, Pointer_Size), ops);
+	Set_OP_no_alias (OPS_last (ops));
+	Expand_Load (opc, RA_TN, target,
+		     Gen_Literal_TN (0, Pointer_Size), ops);
+	Set_OP_no_alias (OPS_last (ops));
+      }
+      else {
+	// put target in LR
+	Build_OP(TOP_mov_r, RA_TN, target, ops);
+      }
 
       if (Trace_Exp) {
 	fprintf(TFile,"exp_call ICALL into ");

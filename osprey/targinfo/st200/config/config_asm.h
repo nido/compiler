@@ -205,6 +205,9 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_FMASK	".fmask"
 #define AS_FRAME	".fframe"
 #define AS_GLOBAL 	".global"
+#define AS_INTERNAL     ".internal"
+#define AS_HIDDEN       ".hidden"
+#define AS_PROTECTED    ".protected"
 #define AS_GPVALUE	".gpvalue"
 
 #define AS_BSS		".lcomm"
@@ -234,8 +237,9 @@ BE_EXPORTED extern char *AS_ADDRESS_UNALIGNED;
 
 /* Defines for emission of special relocations */
 #define AS_GPREL	"@gprel"
-#define AS_LTOFF	"@ltoff"
-#define AS_FPTR		"@fptr"
+#define AS_LTOFF	"@gotoff"
+#define AS_FPTR		((Is_Caller_Save_GP \
+                        && (Gen_PIC_Shared || Gen_PIC_Call_Shared)) ? "@fptr" : 0)
 #define AS_GP_REL	(char *)NULL
 #define AS_NEGATE	(char *)NULL
 

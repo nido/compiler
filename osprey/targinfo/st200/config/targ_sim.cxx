@@ -79,8 +79,17 @@ SIM SIM_Info[] = {
 	0, 0, 0, 
 	0, 0, 0, 0
   },
-  { /* ABI_ST200 */
-	SIM_COORD_MEM_REG | SIM_REG_STRUCTS | SIM_RET_ADDR_VIA_INT_RET,
+  { /* ABI_ST200_embedded */
+        SIM_COORD_MEM_REG | SIM_REG_STRUCTS | SIM_RET_ADDR_VIA_INT_RET,
+	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,
+	0, 64, -64, 
+	32, 32, I0+62, I0+25
+  },
+  { /* ABI_ST200_PIC */
+	SIM_COORD_MEM_REG | SIM_REG_STRUCTS | SIM_RET_ADDR_VIA_INT_RET
+	| SIM_CALLER_SAVE_GP,
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,

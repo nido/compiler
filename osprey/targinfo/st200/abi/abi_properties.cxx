@@ -91,8 +91,10 @@ static ABI_PROPERTY
         fzero,
         fone;
 
-static void st200_abi(void)
+static void st200_abi_common(void)
 {
+  // Set properties common to all ST200 ABIs.
+
   static const char *integer_names[] = {
     NULL,   NULL,   NULL,   NULL,   NULL,   NULL,   NULL,   NULL,
     NULL,   NULL,   NULL,   NULL,   "$sp",   NULL,   NULL,   NULL,
@@ -114,7 +116,7 @@ static void st200_abi(void)
 
   Reg_Property(allocatable, ISA_REGISTER_CLASS_integer,
 	       1,   2,   3,   4,   5,   6,   7,   8,
-	       9,  10,  11,  13,  14,  15,  16,  17,
+	       9,  10,  11,            15,  16,  17,
               18,  19,  20,  21,  22,  23,  24,  25,
               26,  27,  28,  29,  30,  31,  32,  33,
               34,  35,  36,  37,  38,  39,  40,  41,
@@ -128,7 +130,7 @@ static void st200_abi(void)
 	       -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_integer,
                                                   8,
-	       9,  10,  11,  13,  14,  15,  16,  17,
+	       9,  10,  11,            15,  16,  17,
               18,  19,  20,  21,  22,  23,  24,  25,
               26,  27,  28,  29,  30,  31,  32,  33,
               34,  35,  36,  37,  38,  39,  40,  41,
@@ -188,6 +190,31 @@ static void st200_abi(void)
   return;
 }
 
+static void st200_embedded_abi(void)
+{
+  st200_abi_common();
+  /* Embedded ABI treats r13 and r14 as allocatable. */
+  Reg_Property(allocatable, ISA_REGISTER_CLASS_integer,
+	       13,
+	       14,
+	       -1);
+  /* Embedded ABI treats r13 and r14 as callee-save. */
+  Reg_Property(callee, ISA_REGISTER_CLASS_integer,
+               13,
+               14,
+	       -1);
+
+}
+
+static void st200_pic_abi(void)
+{
+  st200_abi_common();
+  /* PIC ABI treats r14 as unallocatable - it is the global
+     pointer. */
+  /* PIC ABI treats r13 as unallocatable - it is reserved
+     for future use as the thread pointer. */
+}
+
 main()
 {
   ABI_Properties_Begin("st200");
@@ -215,8 +242,10 @@ main()
   fone = Create_Reg_Property("fone");
 
   ///////////////////////////////////////
-  Begin_ABI("st200");
-  st200_abi();
+  Begin_ABI("st200_embedded");
+  st200_embedded_abi();
+  Begin_ABI("st200_PIC");
+  st200_pic_abi();
 
   ABI_Properties_End();
 }

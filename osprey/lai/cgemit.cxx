@@ -747,6 +747,53 @@ EMT_Write_Qualified_Tcon_Name (
   fprintf (f, "%s", vstr_str(buf));
   vstr_end(buf);
 }
+
+/* ====================================================================
+ *    EMT_Visibility
+ *
+ * If the assembler can support the ELF visibilities (i.e. if
+ * AS_HIDDEN et al are defined) then use them.
+ *
+ * ====================================================================
+ */
+static
+void EMT_Visibility (
+  FILE *f,			
+  ST_EXPORT eclass,
+  ST *st
+  )
+{
+  const char *dir;
+
+  switch (eclass)
+    {
+#ifdef AS_INTERNAL
+    case EXPORT_INTERNAL:
+      dir = AS_INTERNAL;
+      break;
+#endif
+#ifdef AS_HIDDEN
+    case EXPORT_HIDDEN:
+      dir = AS_HIDDEN;
+      break;
+#endif
+#ifdef AS_PROTECTED
+    case EXPORT_PROTECTED:
+      dir = AS_PROTECTED;
+      break;
+#endif
+    default:
+      dir = 0;
+      break;
+    }
+
+  if (dir) {
+    fprintf (f, "\t%s\t", dir);
+    EMT_Write_Qualified_Name (f, st);
+    fprintf (f, "\n");
+  }
+    
+}
 #endif
 
 /* ====================================================================
@@ -807,6 +854,7 @@ Print_Label (
     fprintf (pfile, "\t%s\t", AS_GLOBAL);
     EMT_Write_Qualified_Name(pfile, st);
     fprintf(pfile, "\n");
+    EMT_Visibility (pfile, ST_export(st), st);
   }
 #ifdef TARG_ST
   // [CL] handle the case of generation of symtab.s
@@ -865,6 +913,11 @@ Print_Common (
       EMT_Write_Qualified_Name(pfile, st);
       fprintf ( pfile, "\n");
     }
+#ifdef TARG_ST
+    else
+      // clarkes 090307
+      EMT_Visibility (pfile, ST_export(st), st);
+#endif
     fprintf ( pfile, "\t%s\t", AS_COM);
     EMT_Write_Qualified_Name(pfile, st);
     fprintf (pfile, ", %lld, %d\n", 
@@ -920,6 +973,9 @@ EMT_Put_Elf_Symbol (
 	    EMT_Write_Qualified_Name(Asm_File, sym);
 	    fprintf ( Asm_File, "\n");
 	  }
+	  // clarkes 090307
+	  else
+	    EMT_Visibility (Asm_File, ST_export(sym), sym);
 #endif
 	fprintf (Asm_File, "\t%s\t", AS_TYPE);
 	EMT_Write_Qualified_Name (Asm_File, sym);
@@ -942,6 +998,10 @@ EMT_Put_Elf_Symbol (
           EMT_Write_Qualified_Name(Asm_File, sym);
           fprintf ( Asm_File, "\n");
         }
+	// clarkes 090307
+	else {
+	  EMT_Visibility ( Asm_File, ST_export(sym), sym);
+	}
       }
     }
 #endif
@@ -997,7 +1057,7 @@ EMT_Put_Elf_Symbol (
 		      ST_name(sym), 0, TY_size(sym_type),
 		      symbind, STT_OBJECT, symother,
 		      ST_is_gp_relative(sym) ? SHN_MIPS_SUNDEFINED : SHN_UNDEF);
-	  if (Assembly)
+	  if (Assembly) {
 	    if (ST_is_weak_symbol(sym)) {
 	      fprintf ( Asm_File, "\t%s\t", AS_WEAK);
 	      EMT_Write_Qualified_Name(Asm_File, sym);
@@ -1005,7 +1065,11 @@ EMT_Put_Elf_Symbol (
 	    }
 	    else {
 	      fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
+#ifdef TARG_ST
+	      EMT_Visibility ( Asm_File, ST_export(sym), sym);
+#endif
 	    }
+	  }
 	  break;
 	case SCLASS_COMMON:
 	  if (sym != base_st && ST_sclass(base_st) == SCLASS_COMMON) {
@@ -1061,8 +1125,12 @@ EMT_Put_Elf_Symbol (
 	    EMT_Write_Qualified_Name(Asm_File, sym);
 	    fprintf ( Asm_File, "\n");
 	  }
-	  else
+	  else {
 	    fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
+#ifdef TARG_ST
+	    EMT_Visibility (Asm_File, ST_export(sym), sym);
+#endif
+	  }
 #ifdef TARG_ST
 	  // [CL] be consistent with the case when we
 	  // don't generate elf symbols above
@@ -1267,17 +1335,18 @@ Write_Symbol (
       // Arthur: the way a function pointer is emitted depends on
       //         whether or not we're generating GP-relative, GOT,
       //         etc. Does not it ??
+      // clarkes: Yes, so encapsulate that in the AS_FPTR macro.
       //
       else if (ST_class(sym) == CLASS_FUNC) {
-	if (Gen_GP_Relative) {
-	  FmtAssert(FALSE,("GP relative not supported"));
+	if (AS_FPTR) {
+	  fprintf (Output_File, " %s(", AS_FPTR);
 	}
-	else {
-	  //fprintf (Output_File, " %s(", AS_FPTR);
-	  EMT_Write_Qualified_Name (Output_File, sym);
-	  //fprintf (Output_File, " %+lld)\n", sym_ofst);
-	  fprintf (Output_File, "%+lld\n", sym_ofst);
+	EMT_Write_Qualified_Name (Output_File, sym);
+	fprintf (Output_File, "%+lld", sym_ofst);
+	if (AS_FPTR) {
+	  fputc (')', Output_File);
 	}
+	fputc ('\n', Output_File);
       }
 #else
       else if (ST_class(sym) == CLASS_FUNC && AS_FPTR) {
@@ -2862,6 +2931,15 @@ r_apply_l_const (
 	//
 	// Print out a symbolic name
 	//
+	if (TN_relocs(t) != 0) {
+
+	  hexfmt = TRUE;
+	  print_TN_offset = TRUE;
+	  // add name to comments in case was confused by gp_disp.
+	  add_name = TRUE;
+	  paren = TN_Relocs_In_Asm (t, st, buf, &val);
+	  *buf = vstr_concat (*buf, "(" );
+	}
 #ifndef TARG_ST
 	vstr_sprintf (buf, vstr_len(*buf), "%s_UNNAMED_CONST_%d", Local_Label_Prefix, ST_tcon(st));
 #else
@@ -3939,7 +4017,15 @@ Assemble_Bundles(BB *bb)
 #endif
 
     }
+#ifdef TARG_ST
+      // clarkes 030910: to allow other ops in a bb after
+      // a simulated op
+      if (slot == 0) {
+	  continue;
+      }
+#else
     if (slot == 0) break;
+#endif
 
 #ifdef TARG_ST200
     // CL: recalibrate to ISA_MAX_SLOTS bundle length
@@ -5075,7 +5161,6 @@ EMT_Begin_File (
     if (*ism_name != '\0')
     	fprintf ( Asm_File, "\t%s%s\t%s\n", ASM_CMNT, "ism", ism_name);
     List_Compile_Options ( Asm_File, "\t"ASM_CMNT, FALSE, TRUE, TRUE );
-
     /* TODO: do we need to do .interface stuff for asm files? */
   }
 
@@ -5255,8 +5340,19 @@ EMT_Emit_PU (
 	|| PU_src_lang(Get_Current_PU()) == PU_F90_LANG) &&
 	ST_sclass(sym) == SCLASS_EXTERN && 
 	! ST_is_export_local(sym)) {
+#ifdef TARG_ST
+      if (Assembly) {
+	fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	EMT_Visibility (Asm_File, ST_export(sym), sym);
+      }
+      if (Lai_Code) {
+	fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	EMT_Visibility (Lai_File, ST_export(sym), sym);
+      }
+#else
       if (Assembly) fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
       if (Lai_Code) fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+#endif
       if (Object_Code) EMT_Put_Elf_Symbol (sym);
     }
 
@@ -5530,6 +5626,9 @@ EMT_End_File( void )
       if (Assembly) {
 	if ( ! ST_is_export_local(sym)) {
 	  fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+#ifdef TARG_ST
+	  EMT_Visibility (Asm_File, ST_export(sym), sym);
+#endif
 	}
 	CGEMIT_Alias (sym, ST_base(sym));
       }
@@ -5550,9 +5649,15 @@ EMT_End_File( void )
       (void)EMT_Put_Elf_Symbol(sym);
       if (Assembly) {
 	fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+#ifdef TARG_ST
+	EMT_Visibility(Asm_File, ST_export(sym), sym);
+#endif
       }
       if (Lai_Code) {
 	fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+#ifdef TARG_ST
+	EMT_Visibility(Lai_File, ST_export(sym), sym);
+#endif
       }
     }
   }

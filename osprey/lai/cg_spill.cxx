@@ -1396,7 +1396,8 @@ CGSPILL_Force_Rematerialization(void)
  * ======================================================================*/
 void CGSPILL_Attach_Lda_Remat(TN *tn, TYPE_ID typ, INT64 offset, ST *st)
 {
-  if (CGSPILL_Rematerialize_Constants) {
+  if (CGSPILL_Rematerialize_Constants
+      && CGTARG_Address_Constants_Are_Rematerializable_p) {
     OPCODE opc = OPCODE_make_op(OPR_LDA, typ, MTYPE_V);
     WN *wn = WN_CreateLda(opc, offset, (TY_IDX) NULL, st);
     if (wn) {

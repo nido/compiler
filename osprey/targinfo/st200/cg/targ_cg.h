@@ -60,6 +60,29 @@ CGTARG_Use_Brlikely(float branch_taken_probability)
 #define CGSPILL_DEFAULT_STORE_COST 1.25F
 #define CGSPILL_DEFAULT_RESTORE_COST 3.25F
 
+/* When (Gen_GP_Relative && Is_Caller_Save_GP && !Constant_GP),
+   the CGIR contains instructions to restore the GP after a
+   function call.
+   The LAO scheduler can migrate these instructions, leaving
+   places in the code where GP is not valid.  It is not safe to
+   rematerialize expressions involving GP in these places.
+   It is not possible to determine these places until after scheduling,
+   so disable any rematerialization of expressions involving the
+   GP when running the LAO scheduler.
+   The open64 scheduler also appears to migrate forwards the
+   instruction that loads the new GP for an indirect function call,
+   so that it is moved before expressions that may be rematerialized
+   from the GOT, so always disable rematerialization of expressions
+   involving GP.
+*/
+#define CGTARG_GP_Expressions_Are_Rematerializable_p  \
+        ! (Gen_GP_Relative && Is_Caller_Save_GP \
+           && !Constant_GP)
+
+#define CGTARG_Address_Constants_Are_Rematerializable_p \
+        (! Gen_GP_Relative || CGTARG_GP_Expressions_Are_Rematerializable_p)
+
+
 /* ====================================================================
  *    ASM:
  * ====================================================================

@@ -99,79 +99,24 @@
 /* the following represent various relocations on symbolic values.  
  * The values are represented by a symbol table element.
  */
-#define  TN_RELOC_NONE	      0x00
-#define  TN_RELOC_NEG         0x01
-#define  TN_RELOC_GPREL16     0x02	/* gp-relative reference to symbol */
-#define  TN_RELOC_LOW16	      0x03	/* Bits 0..15 of symbolic val */
-#define  TN_RELOC_HIGH16      0x04	/* Bits 16..31 of symbol */
-#define  TN_RELOC_HIGHER      0x05	/* Bits 32..47 of symbol */
-#define  TN_RELOC_HIGHEST     0x06	/* Bits 48..63 of symbol */
-#define  TN_RELOC_GOT_DISP    0x07
-#define  TN_RELOC_GOT_PAGE    0x08
-#define  TN_RELOC_GOT_OFST    0x09
-#define  TN_RELOC_CALL16      0x0a
-#define  TN_RELOC_GOT_HI16    0x0b
-#define  TN_RELOC_GOT_LO16    0x0c
-#define  TN_RELOC_CALL_HI16   0x0d
-#define  TN_RELOC_CALL_LO16   0x0e
-#define  TN_RELOC_GPSUB       0x0f	/* gp - sym (pic2 prolog) */
-#define  TN_RELOC_LO_GPSUB    0x10
-#define  TN_RELOC_HI_GPSUB    0x11
-#define  TN_RELOC_GPIDENT     0x12      /* gp value (pic1 prolog) */
-#define  TN_RELOC_LO_GPIDENT  0x13
-#define  TN_RELOC_HI_GPIDENT  0x14
-
-#define TN_RELOC_DA_0_14      0x15
-#define TN_RELOC_DA_1_15      0x16
-#define TN_RELOC_DA_2_16      0x17
-#define TN_RELOC_DA_0_15      0x18
-#define TN_RELOC_DA_16_31     0x19
-#define TN_RELOC_DA_1_16      0x20
-#define TN_RELOC_DA_17_32     0x21
-#define TN_RELOC_DA_2_17      0x22
-#define TN_RELOC_DA_18_33     0x23
+#define  TN_RELOC_NONE	          0x00
+#define  TN_RELOC_GOT_DISP        0x01  /* equivalent to R_LX_GPREL */
+#define  TN_RELOC_GOTOFF          0x02
+#define  TN_RELOC_GOTOFF_FPTR     0x03
+#define  TN_RELOC_GPIDENT         0x04
+#define  TN_RELOC_GPSUB           0x05
+#define  TN_RELOC_NEG_GOT_DISP    0x06  /* R_LX_NEG_GPREL */
 
 /* Define the TN_relocs access functions: */
-#define TN_is_reloc_gprel16(r)		(TN_relocs(r) == TN_RELOC_GPREL16)
-#define Set_TN_is_reloc_gprel16(r)	Set_TN_relocs(r,TN_RELOC_GPREL16)
-#define TN_is_reloc_low16(r)		(TN_relocs(r) == TN_RELOC_LOW16)
-#define Set_TN_is_reloc_low16(r)	Set_TN_relocs(r,TN_RELOC_LOW16)
-#define TN_is_reloc_high16(r)		(TN_relocs(r) == TN_RELOC_HIGH16)
-#define Set_TN_is_reloc_high16(r)	Set_TN_relocs(r,TN_RELOC_HIGH16)
-#define TN_is_reloc_higher(r)		(TN_relocs(r) == TN_RELOC_HIGHER)
-#define Set_TN_is_reloc_higher(r)	Set_TN_relocs(r,TN_RELOC_HIGHER)
-#define TN_is_reloc_highest(r)		(TN_relocs(r) == TN_RELOC_HIGHEST)
-#define Set_TN_is_reloc_highest(r)	Set_TN_relocs(r,TN_RELOC_HIGHEST)
-#define TN_is_reloc_got_disp(r)		(TN_relocs(r) == TN_RELOC_GOT_DISP)
-#define Set_TN_is_reloc_got_disp(r)	Set_TN_relocs(r,TN_RELOC_GOT_DISP)
-#define TN_is_reloc_got_page(r)		(TN_relocs(r) == TN_RELOC_GOT_PAGE)
-#define Set_TN_is_reloc_got_page(r)	Set_TN_relocs(r,TN_RELOC_GOT_PAGE)
-#define TN_is_reloc_got_ofst(r)		(TN_relocs(r) == TN_RELOC_GOT_OFST)
-#define Set_TN_is_reloc_got_ofst(r)	Set_TN_relocs(r,TN_RELOC_GOT_OFST)
-#define TN_is_reloc_call16(r)		(TN_relocs(r) == TN_RELOC_CALL16)
-#define Set_TN_is_reloc_call16(r)	Set_TN_relocs(r,TN_RELOC_CALL16)
-#define TN_is_reloc_got_hi16(r)		(TN_relocs(r) == TN_RELOC_GOT_HI16)
-#define Set_TN_is_reloc_got_hi16(r)	Set_TN_relocs(r,TN_RELOC_GOT_HI16)
-#define TN_is_reloc_got_lo16(r)		(TN_relocs(r) == TN_RELOC_GOT_LO16)
-#define Set_TN_is_reloc_got_lo16(r)	Set_TN_relocs(r,TN_RELOC_GOT_LO16)
-#define TN_is_reloc_call_hi16(r)	(TN_relocs(r) == TN_RELOC_CALL_HI16)
-#define Set_TN_is_reloc_call_hi16(r)	Set_TN_relocs(r,TN_RELOC_CALL_HI16)
-#define TN_is_reloc_call_lo16(r)	(TN_relocs(r) == TN_RELOC_CALL_LO16)
-#define Set_TN_is_reloc_call_lo16(r)	Set_TN_relocs(r,TN_RELOC_CALL_LO16)
-#define TN_is_reloc_neg(r)		(TN_relocs(r) == TN_RELOC_NEG)
-#define Set_TN_is_reloc_neg(r)		Set_TN_relocs(r,TN_RELOC_NEG)
-#define TN_is_reloc_gpsub(r)		(TN_relocs(r) == TN_RELOC_GPSUB)
-#define Set_TN_is_reloc_gpsub(r)	Set_TN_relocs(r,TN_RELOC_GPSUB)
-#define TN_is_reloc_lo_gpsub(r)		(TN_relocs(r) == TN_RELOC_LO_GPSUB)
-#define Set_TN_is_reloc_lo_gpsub(r)	Set_TN_relocs(r,TN_RELOC_LO_GPSUB)
-#define TN_is_reloc_hi_gpsub(r)		(TN_relocs(r) == TN_RELOC_HI_GPSUB)
-#define Set_TN_is_reloc_hi_gpsub(r)	Set_TN_relocs(r,TN_RELOC_HI_GPSUB)
-#define TN_is_reloc_gpident(r)		(TN_relocs(r) == TN_RELOC_GPIDENT)
-#define Set_TN_is_reloc_gpident(r)	Set_TN_relocs(r,TN_RELOC_GPIDENT)
-#define TN_is_reloc_lo_gpident(r)	(TN_relocs(r) == TN_RELOC_LO_GPIDENT)
-#define Set_TN_is_reloc_lo_gpident(r)	Set_TN_relocs(r,TN_RELOC_LO_GPIDENT)
-#define TN_is_reloc_hi_gpident(r)	(TN_relocs(r) == TN_RELOC_HI_GPIDENT)
-#define Set_TN_is_reloc_hi_gpident(r)	Set_TN_relocs(r,TN_RELOC_HI_GPIDENT)
+#define TN_is_reloc_none(r)             (TN_relocs(r) == TN_RELOC_NONE)
+#define Set_TN_is_reloc_none(r)         Set_TN_relocs(r,TN_RELOC_NONE)
+#define TN_is_reloc_got_disp(r)         (TN_relocs(r) == TN_RELOC_GOT_DISP)
+#define Set_TN_is_reloc_got_disp(r)     Set_TN_relocs(r,TN_RELOC_GOT_DISP)
+#define TN_is_reloc_gotoff_fptr(r)      (TN_relocs(r) == TN_RELOC_GOTOFF_FPTR)
+#define Set_TN_is_reloc_gotoff_fptr(r)  Set_TN_relocs(r,TN_RELOC_GOTOFF_FPTR)
+#define TN_is_reloc_neg_got_disp(r)     (TN_relocs(r) == TN_RELOC_NEG_GOT_DISP)
+#define Set_TN_is_reloc_neg_got_disp(r) Set_TN_relocs(r,TN_RELOC_NEG_GOT_DISP)
+#define TN_is_reloc_neg(r)              (0)
 
 // ---------------------------------------------------------------------
 inline BOOL TN_is_fcc_register (const TN *tn)

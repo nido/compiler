@@ -287,8 +287,11 @@ CGEMIT_Begin_File_In_Asm (void)
   // ready
 #define AS_ASSUME ".assume"
   //fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Targ_Name(Target));
-
-}
+  if (Target_ABI != ABI_ST200_embedded) {
+    // Only specify ABI if it is not the embedded ABI.
+    fprintf (Asm_File, "\t%s\t%s\n", AS_ASSUME, Abi_Name (Target_ABI));
+  }
+ }
 
 /* ====================================================================
  *   CGEMIT_End_File_In_Asm

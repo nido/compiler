@@ -224,6 +224,9 @@ extern void Exp_Noop (OPS *ops);
 /* build spadjust op */
 extern void Exp_Spadjust (TN *dest, TN *size, VARIANT variant, OPS *ops);
 
+/* expand GP initialization */
+extern void Exp_GP_Init (TN *dest, ST *st, OPS *ops);
+
 /* 
  *  Generate a generic 2-result predicate operation.
  *  COMPARE_type_or sets result1 and result2 true if qual_pred is true

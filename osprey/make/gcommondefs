@@ -145,8 +145,8 @@ ifeq ($(BUILD_COMPILER), GNU)
 # when using cross-compilation, tools usually have a prefix.
 ifeq ($(BUILD_OS),SUNOS5)
 
-BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
-COMP_GNU_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+BINUTILS_GNU_LOC=/pd/binutils/2.11.2/bin/
+COMP_GNU_LOC=/pd/gcc/2.95.2/bin/
 
 INSTALL_LOC=$(BINUTILS_GNU_LOC)
 
@@ -164,7 +164,7 @@ PREFIX=i686-pc-cygwin32-
 endif
 
 ifeq ($(HOST_OS),SUNOS5)
-COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+COMPILER_LOC=$(COMP_GNU_LOC)
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif
 
@@ -174,8 +174,8 @@ BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
-COMP_GNU_LOC=/apa/gnu/Linux/gcc/gcc-2.95.2/bin/
-BINUTILS_GNU_LOC=/apa/gnu/Linux/bin/
+COMP_GNU_LOC=/home/afra/users/clarkes/gcc/install-rh8/bin/
+BINUTILS_GNU_LOC=/usr/bin/
 
 COMPILER_LOC=$(COMP_GNU_LOC)
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)

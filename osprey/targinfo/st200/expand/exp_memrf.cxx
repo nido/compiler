@@ -84,31 +84,6 @@ Expand_Lda (TN *dest, TN *src, OPS *ops)
 }
 
 /* ====================================================================
- *   Gen_Offset_TN
- *
- *   Depending on the object's section and size, make offset TN
- * ====================================================================
- */
-static TN*
-Gen_Offset_TN (
-  ST *sym,
-  INT64 ofst,
-  TYPE_ID mtype,
-  ST *base_sym,
-  OPS *ops
-)
-{
-  UINT16     tn_reloc = TN_RELOC_NONE;
-  UINT8        reloc_size = MTYPE_byte_size(mtype);
-  SECTION_IDX  sec = STB_section_idx (base_sym);
-  TN          *ofst_tn;
-
-  FmtAssert(FALSE,("Gen_Offset_TN: not implemented"));
-
-  return ofst_tn;
-}
-
-/* ====================================================================
  *   Pick_Load_Imm_Instruction
  * ====================================================================
  */
@@ -180,15 +155,10 @@ Expand_Load (
     // Some symbols don't have their base fixed (formals on small
     // stack) but it's OK with the large offsets:
     //
-    if (TN_is_gp_reg(base)) {
-      FmtAssert(FALSE, ("Expand_Load: gp relative ??"));
-    }
-    else {
-      //
-      // SP/FP relative
-      //
-      top = Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype);
-    } 
+    //
+    // SP/FP/GP relative
+    //
+    top = Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype);
   }
   else {
     FmtAssert(FALSE,("unexpected constant in Expand_Load"));
@@ -261,12 +231,7 @@ Expand_Store (
     Base_Symbol_And_Offset_For_Addressing (TN_var(ofst), 
                                  TN_offset(ofst), &base_sym, &base_ofst);
 
-    if (TN_is_gp_reg(base)) {
-      FmtAssert(FALSE, ("Expand_Store: gp relative ??"));
-    }
-    else {
-      top = Pick_Store_Imm_Instruction (mtype);
-    }
+    top = Pick_Store_Imm_Instruction (mtype);
   }
   else {
     FmtAssert(FALSE,("unexpected constant in Expand_Store"));
@@ -678,15 +643,11 @@ Exp_Ldst (
            (ST_class(base_sym) == CLASS_BLOCK || 
                                      ST_class(base_sym)==CLASS_VAR) &&
 	   ST_gprel(base_sym)) {
-    FmtAssert(FALSE,("Exp_Ldst: GP-relative"));
     // gp-relative reference
     PU_References_GP = TRUE;
     base_tn = GP_TN;
     // Use rtype for size of LDA
-    ofst_tn = Gen_Offset_TN (sym, ofst, 
-	            is_lda ? OPCODE_rtype(opcode) : OPCODE_desc(opcode), 
-		    base_sym, 
-		    &newops);
+    ofst_tn = Gen_Symbol_TN (sym, ofst, TN_RELOC_GOT_DISP);
 
     if (Constant_GP) {
       // GP-relative where GP never changes
@@ -699,11 +660,39 @@ Exp_Ldst (
       ;
     }
   }
+  else if (Gen_PIC_Shared || Gen_PIC_Call_Shared) {
+    TN *tmp;
+    INT32 reloc;
+
+    // Load address of sym from GOT
+    if (ST_class(sym) == CLASS_FUNC && Is_Caller_Save_GP)
+      reloc = TN_RELOC_GOTOFF_FPTR;
+    else
+      reloc = TN_RELOC_GOTOFF;
+
+    if (is_lda && ofst == 0) {
+      tmp = tn;       // put value from GOT directly into tn
+      is_lda = FALSE; // suppress next add
+    }
+    else
+      tmp = Build_TN_Of_Mtype (Pointer_Mtype);
+    PU_References_GP = TRUE;
+    Expand_Load (OPCODE_make_signed_op(OPR_LDID,
+				       Pointer_Mtype, Pointer_Mtype, FALSE),
+		 tmp, GP_TN, Gen_Symbol_TN (sym, 0, reloc), &newops);
+    // GOT address should not alias
+    Set_OP_no_alias (OPS_last (&newops));
+    base_tn = tmp;
+    // add offset to address
+    ofst_tn = Gen_Literal_TN (ofst, Pointer_Size);
+  }
   else {
     // Not gp-relative reference
 
     FmtAssert(!ST_gprel(base_sym),
-                 ("Exp_Ldst: %s is set gp-relarive", ST_name(base_sym)));
+                 ("Exp_Ldst: %s is set gp-relative", ST_name(base_sym)));
+    FmtAssert(!Gen_PIC_Shared && ! Gen_PIC_Call_Shared,
+	      ("Exp_Ldst: Absolute reference forbidden by ABI"));
 #if 0
     // address TNs
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
@@ -1002,9 +991,24 @@ Expand_Lda_Label (
   Print_TN (lab, TRUE );
 #endif
 
-  // [CG]: On the ST200 base model, address of a label
-  // is the absolute address
-  Build_OP (TOP_mov_i, dest, lab, ops);
+  if (Gen_GP_Relative) {
+    // [clarkes]: For gp-relative model, address of a label
+    // can be obtained by adding offset to PC, or by loading
+    // from initialized data.
+    // Adding offset to PC is painful on ST200, as it requires
+    // a call instruction, and overwrites R63, so instead load
+    // from initialized data.
+    Set_TN_is_reloc_got_disp (lab);
+    Expand_Load (OPCODE_make_signed_op(OPR_LDID, Pointer_Mtype,
+				       Pointer_Mtype, FALSE),
+		 dest, GP_TN, lab, ops);
+    Set_OP_no_alias (OPS_last (ops));
+  }
+  else {
+    // [CG]: On the ST200 base model, address of a label
+    // is the absolute address
+    Build_OP (TOP_mov_i, dest, lab, ops);
+  }
 
 #if 0
   // CG: commented out

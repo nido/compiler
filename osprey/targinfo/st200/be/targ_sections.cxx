@@ -38,6 +38,7 @@
 #include "config_target.h"
 #include "data_layout.h"
 #include "sections.h"
+#include "be_symtab.h"
 #include "targ_sections.h"
 #include "targ_isa_bundle.h" // for ISA_INST_BYTES
 
@@ -51,44 +52,88 @@ Corresponding_Short_Section (
   SECTION_IDX sec
 )
 {
+  /* clarkes:
+   * For ST200, assume all data can be placed in short sections.
+   * Note 1: elsewhere the compiler assumes that it is not possible to
+   * use gp-relative accesses for data that is not in a short section.
+   * Note 2: Corresponding_Short_Section is only ever called for
+   * symbols that can not be preempted, so for ST200 set gprel
+   * attribute for every symbol that reaches here.
+   */
   SECTION_IDX newsec;
 
-  switch ( sec ) {
-   case _SEC_DATA:      newsec = _SEC_SDATA;
-   // cygnus doesn't handle srdata
-   // case _SEC_RDATA:     newsec = _SEC_SRDATA;
-   case _SEC_BSS:       newsec = _SEC_SBSS;
-   default:		newsec == sec;
-   }
+  switch (sec) {
+  case _SEC_DATA:  newsec = _SEC_SDATA;  break;
+  case _SEC_RDATA: newsec = _SEC_SRDATA; break;
+  case _SEC_BSS:   newsec = _SEC_SBSS;   break;
+  default:         newsec = sec;         break;
+  }
 
-  if (newsec == sec) return sec;  // won't be shortened
-#if 0
-  if (sec == _SEC_SDATA1 && ST_class(st) == CLASS_CONST) {
-     /* by default put all short .rodata items into .srdata, unless 
-      * we can put it into an appropriate merge section.
-      */
-     TCON tcon = STC_val(st);
-     switch (TCON_ty (tcon)) {
-       case MTYPE_F4:
-       case MTYPE_I4:
-       case MTYPE_U4:
-	 newsec = _SEC_SDATA4;
-	 break;
-       case MTYPE_F8:
-       case MTYPE_I8:
-       case MTYPE_U8:
-	 newsec = _SEC_SDATA4;
-	 break;
-       case MTYPE_FQ:
-	 newsec = _SEC_SDATA4;
-	 break;
-     }
-   }
-#endif
-   Set_ST_gprel(st);
-   return newsec;
+  Set_ST_gprel(st);
+  return newsec;
 }
 
+/* ====================================================================
+ *    Initv_Contains_Address
+ * ====================================================================
+ */
+static BOOL
+Initv_Contains_Address (INITV_IDX initv_idx)
+{
+  for ( ; initv_idx != INITV_IDX_ZERO; initv_idx = INITV_next (initv_idx)) {
+    switch (INITV_kind(Initv_Table[initv_idx])) {
+    case INITVKIND_SYMOFF:
+    case INITVKIND_LABEL:
+      return TRUE;
+    case INITVKIND_ZERO:
+    case INITVKIND_ONE:
+    case INITVKIND_VAL:
+    case INITVKIND_PAD:
+      break;
+    case INITVKIND_BLOCK:
+      if (Initv_Contains_Address (INITV_blk (initv_idx)))
+	return TRUE;
+      else
+	break;
+    case INITVKIND_SYMDIFF:
+    case INITVKIND_SYMDIFF16:
+      break;
+    default:
+      FmtAssert(FALSE, ("Initializer_Contains_Address: unknown initvkind"));
+      break;
+    }
+  }
+  return FALSE;
+}    
+
+/* ====================================================================
+ *    Initializer_Contains_Address
+ * ====================================================================
+ */
+static BOOL
+Initializer_Contains_Address (ST *st)
+{
+  INITV_IDX initv_idx;
+  if (!ST_is_initialized (st)
+      || ST_init_value_zero (st)
+      || ST_class (st) == CLASS_CONST)
+    return FALSE;
+
+  initv_idx = ST_has_initv (st);
+
+  if (initv_idx == 0)
+    // Cannot find initializer.
+    // Be pessimistic: assume it contains an address.  
+    // This can happen for jump tables, as the initializer is not created
+    // until after we have chosen the section for the jump table.
+    // Another possibility here: look at the type of the symbol to see if
+    // the type contains pointers.
+    // FmtAssert(FALSE,("Initializer_Contains_Address: cannot find initializer"));
+    return TRUE;
+
+  return Initv_Contains_Address (initv_idx);
+}
+  
 /* ====================================================================
  *    Assign_Static_Variable
  * ====================================================================
@@ -101,8 +146,11 @@ Assign_Static_Variable (ST *st)
   if (ST_is_thread_private(st)) {
     FmtAssert(FALSE,("Assign_Static_Variable: thread private ST"));
   }
-  else if (ST_is_initialized(st) && !ST_init_value_zero (st))
-    sec = (ST_is_constant(st) ? _SEC_RDATA : _SEC_DATA);
+  else if (ST_is_initialized(st)
+	   && !ST_init_value_zero (st))
+    sec = (ST_is_constant(st)
+	   && ! (Gen_GP_Relative && Initializer_Contains_Address (st)))
+      ? _SEC_RDATA : _SEC_DATA;
   else
     sec = _SEC_BSS;
 
@@ -134,7 +182,9 @@ Assign_Global_Variable (
       FmtAssert(FALSE,("Assign_Global_Variable: thread private ST"));
       //sec = _SEC_LDATA;
     }
-    else if (ST_is_constant(st)) sec = _SEC_RDATA;
+    else if (ST_is_constant(st)
+	     && !(Gen_GP_Relative && Initializer_Contains_Address (st)))
+      sec = _SEC_RDATA;
     else sec = _SEC_DATA;
     break;
 

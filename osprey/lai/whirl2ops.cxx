@@ -728,8 +728,9 @@ Preg_Is_Rematerializable (
      */
     if (GRA_home == TRUE && !Disallowed_Homeable(sym) &&
 	ST_class(sym) == CLASS_VAR) {
-      if (ST_gprel(basesym) ||
-	  (ST_is_split_common(basesym) && ST_gprel(ST_full(basesym)))
+      if (((ST_gprel(basesym) ||
+	   (ST_is_split_common(basesym) && ST_gprel(ST_full(basesym))))
+	   && CGTARG_GP_Expressions_Are_Rematerializable_p)
 	  || ST_on_stack(sym)) {
 	*gra_homeable = TRUE;
 	return home;
@@ -743,6 +744,9 @@ Preg_Is_Rematerializable (
 	return NULL;
   if (OPCODE_has_sym(opc) && ST_is_uplevelTemp(WN_st(home)))
 	return NULL;
+  if (WN_operator(home) == OPR_LDA
+      && ! CGTARG_Address_Constants_Are_Rematerializable_p)
+        return NULL;
 
   return home;
 }
@@ -1282,7 +1286,7 @@ Handle_Call_Site (
 
   // if caller-save-gp and not defined in own dso, then restore gp.
   // if call_st == null, then indirect call, and assume external.
-  if (Is_Caller_Save_GP && !Constant_GP
+  if (Gen_GP_Relative && Is_Caller_Save_GP && !Constant_GP
 	&& (call_st == NULL || ST_export(call_st) == EXPORT_PREEMPTIBLE))
   {
     // restore old gp
@@ -1425,7 +1429,8 @@ Handle_LDA (
 
   if (result == NULL) {
     result = Allocate_Result_TN (lda, NULL);
-    if (CGSPILL_Rematerialize_Constants) {
+    if (CGSPILL_Rematerialize_Constants
+	&& CGTARG_Address_Constants_Are_Rematerializable_p) {
       Set_TN_is_rematerializable(result);
       Set_TN_home (result, lda);
     }
@@ -4469,7 +4474,9 @@ Handle_ASM (const WN* asm_wn)
 
   ISA_REGISTER_SUBCLASS opnd_sc[OP_MAX_FIXED_OPNDS];
   BZERO(opnd_sc, sizeof(opnd_sc));
-  
+
+  PU_Has_Asm = TRUE;
+
   CGTARG_Init_Asm_Constraints();
 
   ASM_OP_ANNOT* asm_info = TYPE_PU_ALLOC(ASM_OP_ANNOT);

@@ -54,6 +54,9 @@ struct bb;
 
 extern BOOL PU_Has_Calls;
 extern BOOL PU_References_GP;
+#ifdef TARG_ST
+extern BOOL PU_Has_Asm;
+#endif
 
 extern BOOL CG_PU_Has_Feedback;
 

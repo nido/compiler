@@ -77,6 +77,8 @@
 #include "w2op.h"
 #include "label_util.h"
 #include "whirl2ops.h"
+#include "dwarf_DST_mem.h"
+#include "cgemit.h"
 
 #include "topcode.h"
 #include "targ_isa_lits.h"
@@ -484,11 +486,8 @@ Expand_Add (
 
       // If src1 (base) is gp, I am dealing with a gp-relative
       // address production
-      if (TN_is_gp_reg(src1) && ofst != 0) {
-	// Should be add_i because src2 must have a reloc ...
-	Build_OP(TOP_add_i, tmp, src1, src2, ops);
-	src1 = tmp;
-	src2 = Gen_Literal_TN(ofst, Pointer_Size);
+      // If src1 is lr, I am dealing with gp initialization code
+      if (TN_is_gp_reg(src1) || TN_is_ra_reg(src1)) {
 	new_opcode = TOP_add_i;
       }
       else if (ST_on_stack(TN_var(src2))) {
@@ -505,7 +504,7 @@ Expand_Add (
 	new_opcode = TOP_add_i;
       }
       else {
-        // just makea and hope that 16bit offset suffices:
+        // just mov
         Build_OP (TOP_mov_i, tmp, src2, ops);
         src2 = tmp;
 	new_opcode = TOP_add_r;
@@ -2682,7 +2681,9 @@ Exp_Simulated_Op (
 {
   OP *newop;
 
-  FmtAssert(0, ("Exp_Simulated_Op for top TOP_intrncall should not be reached"));
+  if (OP_code(op) != TOP_getpc) {
+    FmtAssert(0, ("Exp_Simulated_Op for top TOP_intrncall should not be reached"));
+  }
 
   switch (OP_code(op)) {
 
@@ -2706,10 +2707,29 @@ Exp_Simulated_Op (
     }
     break;
 
+  case TOP_getpc:
+    { // clarkes: 030909 Unpleasant short-cut: write this
+      // instruction out to the asm file directly because it
+      // needs a bundle stop and a label that are not representable
+      // in CGIR.
+      TN *r = OP_result(op, 0);
+      TN *s = OP_opnd(op, 0);
+      ISA_REGISTER_CLASS rc = TN_register_class(r); 
+      REGISTER reg = TN_register(r);
+      ST *st = TN_var(s);
+      fprintf (Asm_File, "\tcall\t%s=", REGISTER_name(rc, reg));
+      EMT_Write_Qualified_Name (Asm_File, st);
+      fprintf (Asm_File, "\n\t;;\n");
+      EMT_Write_Qualified_Name (Asm_File, st);
+      fprintf (Asm_File, ":\n");
+    }
+    break;
+
   default:
     FmtAssert(FALSE, ("simulated OP %s not handled", TOP_Name(OP_code(op))));
     /*NOTREACHED*/
   }
+
 }
 
 /* ======================================================================
@@ -2724,6 +2744,7 @@ Simulated_Op_Real_Ops(const OP *op)
   case TOP_intrncall:
     return Expand_TOP_intrncall (op, NULL, TRUE, 0);
   case TOP_spadjust:
+  case TOP_getpc:
     return 1;
   default:
 
@@ -2746,6 +2767,7 @@ Simulated_Op_Real_Inst_Words(const OP *op)
 {
     switch (OP_code(op)) {
     case TOP_spadjust:
+    case TOP_getpc:
 	return 1;
     case TOP_asm:
 	// this is a hack; will be a multiple of 3, but don't know
@@ -2814,6 +2836,36 @@ Exp_Noop (OPS *ops)
 {
   // On this machine there is only one noop:
   Build_OP (TOP_nop, ops);
+}
+
+/* ====================================================================
+ *   Exp_GP_Init
+ * ====================================================================
+ */
+void
+Exp_GP_Init (
+  TN *dest,
+  ST *fn_st,
+  OPS *ops
+)
+{
+  static INT Temp_Index = 0;
+
+  TN *call_dest_tn;
+  TN *neg_gprel_tn;
+ 
+  // Generate a symbol for the label to call.  It has
+  // to be a symbol (not a label) because we need to
+  // apply a reloc to it later.
+  ST *st = New_ST (CURRENT_SYMTAB);
+  STR_IDX str_idx = Save_Str2i ("L?", ".gpinit_", Temp_Index++);
+  ST_Init (st, str_idx, CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
+	  ST_pu (fn_st));
+  call_dest_tn = Gen_Symbol_TN (st, 0, 0);
+  Build_OP (TOP_getpc, RA_TN, call_dest_tn, ops);
+
+  neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);
+  Expand_Add (dest, RA_TN, neg_gprel_tn, Pointer_Mtype, ops);
 }
 
 /* ====================================================================

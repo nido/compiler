@@ -131,6 +131,9 @@ BOOL Trace_REGION_Interface = FALSE;
 
 BOOL PU_Has_Calls;
 BOOL PU_References_GP;
+#ifdef TARG_ST
+BOOL PU_Has_Asm;
+#endif
 
 BOOL CG_PU_Has_Feedback;
 
@@ -165,6 +168,9 @@ CG_PU_Initialize (
 
   PU_Has_Calls = FALSE;
   PU_References_GP = FALSE;
+#ifdef TARG_ST
+  PU_Has_Asm = FALSE;
+#endif
 
   CG_Configure_Opt_Level((pu_num < CG_skip_before ||
 			   pu_num > CG_skip_after  ||

@@ -98,10 +98,14 @@ extern "C" {
 
 typedef enum {
   ABI_UNDEF,	/* Undefined */
-  ABI_ST200	/* 32-bit */
+  ABI_ST200_embedded, /* 32-bit */
+  ABI_ST200_PIC       /* 32-bit PIC */
 } TARGET_ABI;
 
 BE_EXPORTED extern TARGET_ABI Target_ABI;
+
+/* return the target name for ABI */
+BE_EXPORTED extern char *Abi_Name (TARGET_ABI abi);
 
 /* ================ */
 /* Target processor */
@@ -172,6 +176,21 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 
 /* maximum gspace (gp-relative) size */
 #define DEFAULT_GSPACE		0x3fffff
+
+/* The ST200 can handle arbitrary sized short data sections, so place
+ * as much as possible in them.  Set these to their maximum values.
+ */
+#define MAX_SDATA_ELT_SIZE	((INT32)0x7fffffff)
+#define DEF_SDATA_ELT_SIZE      ((INT32)0x7fffffff)
+
+/* On ST200, the short rodata section is .srdata, the normal rodata section is
+   .rodata.
+   .srdata can be accessed GP-relative but cannot be shared, whereas
+   .rodata cannot be accessed GP-relative but can be shared.
+   To take advantage of the faster access for .srdata, but the space-saving of
+   .rodata, only place small objects in .srdata.
+ */
+#define DEF_SRDATA_ELT_SIZE     ((INT32)8)
 
 /* How big is a large object? */
 #define DEFAULT_LARGE_OBJECT_BYTES	64

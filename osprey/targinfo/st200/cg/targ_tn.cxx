@@ -67,36 +67,13 @@
  * TN relocations info:
  */
 const TN_RELOCS_INFO TN_RELOCS_info[] = {
-  { "" },
-  { "-" },
-  { "#gprel16" },
-  { "#lo#" },
-  { "#hi" },
-  { "#higher" },
-  { "#highest" },
-  { "#got_disp" },
-  { "#got_page" },
-  { "#got_ofst" },
-  { "#call16" },
-  { "#got_hi16" },
-  { "#got_lo16" },
-  { "#call_hi16" },
-  { "#call_lo16" },
-  { "#gpsub" },
-  { "#lo_gpsub" },
-  { "#hi_gpsub" },
-  { "#gpident" },
-  { "#lo_gpident" },
-  { "#hi_gpident" },
-  { "#da0to14" },
-  { "#da1to15" },
-  { "#da2to16" },
-  { "#da0to15" },
-  { "#da16to31" },
-  { "#da1to16" },
-  { "#da17to32" },
-  { "#da2to17" },
-  { "#da18to33" }
+  { ""               },   /* TN_RELOC_NONE        */
+  { "@gprel"         },   /* TN_RELOC_GOT_DISP    */
+  { "@gotoff"        },   /* TN_RELOC_GOTOFF      */
+  { "@gotoff(@fptr"  },   /* TN_RELOC_GOTOFF_FPTR */
+  { NULL,            },   /* TN_RELOC_GPIDENT     */
+  { NULL,            },   /* TN_RELOC_GPSUB       */
+  { "@neggprel",     },   /* TN_RELOC_NEG_GOT_DISP*/
 };
 
 /* ====================================================================
@@ -125,20 +102,10 @@ CGTARG_TN_Value (
 {
   INT64 val = base_ofst + TN_offset(t);
 
-  if (TN_is_reloc_neg(t)) {
-    val = -val;
-  }
-  if ( TN_is_reloc_low16(t) ) {
-    val = val & 0xffff;
-  } else if ( TN_is_reloc_high16(t) ) {
-    val = ( ( val - (short)val ) >> 16) & 0xffff;
-  } else if ( TN_is_reloc_higher(t) ) {
-    val = ( ( val + 0x80008000LL ) >> 32 ) & 0xffff;
-  } else if ( TN_is_reloc_highest(t) ) {
-    val = ( ( val + 0x800080008000LL ) >> 48 ) & 0xffff;
-  }
+  FmtAssert (TN_is_reloc_none(t), ("CGTARG_TN_Value: unexpected reloc TN"));
 
   return val;
+
 }
 
 /* ====================================================================
@@ -169,44 +136,14 @@ TN_Relocs_In_Asm (
 )
 {
   INT paren = 1;	// num parens
-  // only add in GP_DISP if based on gprel section
-  // not if based on ipa-generated extern.
-  if (ST_class(st) == CLASS_BLOCK && STB_section(st)) {
-    *val -= GP_DISP;
-  }
-  switch (TN_relocs(t)) {
-    case TN_RELOC_DA_0_14:
-      *buf = vstr_concat (*buf, "%da0to14");
-      break;
-    case TN_RELOC_DA_1_15:
-      *buf = vstr_concat (*buf, "%da1to15");
-      break;
-    case TN_RELOC_DA_2_16:
-      *buf = vstr_concat (*buf, "%da2to16");
-      break;
-    case TN_RELOC_DA_0_15:
-      *buf = vstr_concat (*buf, "%da0to15");
-      break;
-    case TN_RELOC_DA_16_31:
-      *buf = vstr_concat (*buf, "%da16to31");
-      break;
-    case TN_RELOC_DA_1_16:
-      *buf = vstr_concat (*buf, "%da1to16");
-      break;
-    case TN_RELOC_DA_17_32:
-      *buf = vstr_concat (*buf, "%da17to32");
-      break;
-    case TN_RELOC_DA_2_17:
-      *buf = vstr_concat (*buf, "%da2to17");
-      break;
-    case TN_RELOC_DA_18_33:
-      *buf = vstr_concat (*buf, "%da18to33");
-      break;
-    default:
-      #pragma mips_frequency_hint NEVER
-      FmtAssert (FALSE, ("relocs_asm: illegal reloc TN"));
-      /*NOTREACHED*/
-  }
+  const char *str;
+  const char *c;
+
+  str = TN_RELOCS_info[TN_relocs(t)].name;
+  FmtAssert (str, ("TN_Relocs_In_Asm: illegal reloc TN (%d)", (int)TN_relocs(t)));
+  *buf = vstr_concat (*buf, str);
+  for (c = strchr (str, '('); c; c = strchr (c + 1, '('))
+    paren++;
 
   return paren;
 }
