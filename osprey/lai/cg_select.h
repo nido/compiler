@@ -74,4 +74,10 @@ BB_Remove_Ops (BB* bb, op_list ops)
   ops.clear();
 }
 
+typedef struct {
+  BB *fall_thru;
+  BB *target;
+  BOOL inverted;
+} bb_if;
+
 #endif /* SELECT_H_INCLUDED */

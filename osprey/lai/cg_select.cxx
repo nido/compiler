@@ -24,7 +24,7 @@
 /* ====================================================================
  * ====================================================================
  *
- * Module: cgtarget.cxx
+ * Module: cg_select.cxx
  * $Revision$
  * $Date$
  * $Author$
@@ -32,15 +32,14 @@
  *
  * Description:
  *
- * Simplifies successive conditional jumps into logical expressions.
  * If-convert if-then-else (hammocks) regions using selects.
+ * Simplifies successive conditional jumps into logical expressions.
  *
  * ====================================================================
  * ====================================================================
  */
 
 #include <list.h>
-#include <stack.h>
 #include "defs.h"
 #include "config.h"
 #include "tracing.h"
@@ -57,7 +56,6 @@
 #include "freq.h"
 #include "whirl2ops.h"
 #include "dominate.h"
-#include "findloops.h"
 #include "gra_live.h"
 #include "cxx_memory.h"
 #include "cg_ssa.h"
@@ -68,6 +66,7 @@
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
 static INT32  max_cand_id;	// Max value in hammock candidates.
+static BB_MAP if_bb_map;        // Map fall_thru and targets of logif
 
 // Mapping between old and new PHIs
 static OP_MAP phi_op_map = NULL;
@@ -110,18 +109,24 @@ Trace_Select_Init() {
 
 MEM_POOL MEM_Select_pool;
 UINT select_count;
+UINT logif_count;
 UINT spec_instrs_count;
 
 static void
 CG_SELECT_Statistics()
 {
-  if (select_count) {
+  if (select_count || logif_count)
     fprintf (stdout, "========= %s ======= \n", ST_name(Get_Current_PU_ST()));
+
+  if (select_count) 
     fprintf (stdout, "<cg_select> converted %d moves \n", select_count);
-  }
-  if (spec_instrs_count) {
+
+  if (logif_count) 
+    fprintf (stdout, "<cg_select> reduced %d logifs \n", logif_count);
+
+  if (spec_instrs_count) 
     fprintf (stdout, "<cg_select> %d instrs were converted \n", spec_instrs_count);
-  }
+
 }
 
 /* ================================================================
@@ -146,11 +151,13 @@ Initialize_Memory()
     did_init = TRUE;
   }
   MEM_POOL_Push(&MEM_Select_pool);
+  if_bb_map = BB_MAP_Create();
 }
 
 static void
 Finalize_Memory()
 {
+  BB_MAP_Delete(if_bb_map);
   Free_Dominators_Memory();
   MEM_POOL_Pop(&MEM_Select_pool);
 }
@@ -163,6 +170,7 @@ Finalize_Select(void)
   BB_MAP_Delete(postord_map);
   max_cand_id = 0;
   select_count = 0;
+  logif_count = 0;
   spec_instrs_count = 0;
 }
 
@@ -185,7 +193,7 @@ Finalize_Hammock_Memory()
 
 /* ================================================================
  *
- *   Hammock Selection
+ *   Misc routines to manipulate the CFG.
  *
  * ================================================================
  */
@@ -209,239 +217,33 @@ Find_Immediate_Postdominator(BB* bb, BB* then_bb, BB* else_bb)
   return ipdom;
 }
 
-// Create a map of conditional blocks sorted in postorder. That makes it
-// easy to iterate through possible hammocks regions.
-static void
-Identify_Hammock_Candidates(void)
-{
-  BB *bb;
-
-  postord_map = BB_Postorder_Map(NULL, NULL);
-
-  // maximum size.
-  cand_vec = TYPE_MEM_POOL_ALLOC_N(BB *, &MEM_Select_pool, PU_BB_Count);
-  max_cand_id = 0;
-
-  // Make a list of hammock candidates.
-  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
-    INT32 bb_id = BB_MAP32_Get(postord_map, bb);
-    DevAssert(bb_id >= 0 && bb_id <= PU_BB_Count, ("bad <postord_map> value"));
-    // we are interested only with reachable conditional head BBs
-    if (bb_id > 0 && BB_kind (bb) == BBKIND_LOGIF) { 
-      max_cand_id = MAX(bb_id, max_cand_id);
-      cand_vec[bb_id - 1] = bb;
-    }
-    else {
-      cand_vec[bb_id - 1] = NULL;
-    }
-  }
-}
-
-// temporary: Until we have a good heuristic.
-UINT max_select_instrs = 1000;
-
-// temporary: I don't like the interface.
 static BOOL
-Can_Speculate(BOOL first, OP *op)
-{
-  // not problem.
-  if (OP_Can_Be_Speculative(op))
-    return TRUE;
-  
-  if (OP_memory (op)) {
-    if (Eager_Level < EAGER_MEMORY || OP_volatile(op))
-      return FALSE;
-
-    if (OP_load (op)) {
-      TOP ld_top;
-      OP *lop;
-
-      if ((ld_top = CGTARG_Speculative_Load (op)) == TOP_UNDEFINED)
-        return FALSE;
-
-      lop = Dup_OP (op);
-      OP_Change_Opcode(lop, ld_top); 
-      Set_OP_speculative(lop);             // set the OP_speculative flag.
-
-      load_i.first.push_front(op);
-      load_i.second.push_front(lop);
-      
-      return TRUE;
-    }
-
-    else if (OP_store (op)) {
-      if (first)
-        store_i.first.push_front(op);
-      else
-        store_i.second.push_front(op);
-
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-}
-
-static BOOL
-Are_Aliased(OP* op1, OP* op2)
-{
-  if (OP_memory(op1) && OP_memory(op2)) {
-    WN *wn1 = Get_WN_From_Memory_OP(op1);
-    WN *wn2 = Get_WN_From_Memory_OP(op2);
-    if (wn1 != NULL && wn2 != NULL) {
-      ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
-      return alias == SAME_LOCATION;
-    }
-  }
-
-  return FALSE;
-}
-
-static UINT
-BB_Check_Memops(void)
-{
-  UINT count = 0;
-
-  // We don't have the same count of store. Can't spec any.
-  if (store_i.first.size() != store_i.second.size())
-    return 0;
-
-  // Each store should have an equiv.
-  op_list::iterator i1_iter = store_i.first.begin();
-  op_list::iterator i1_end  = store_i.first.end();
-  op_list::iterator i2_iter = store_i.second.begin();
-  op_list::iterator i2_end  = store_i.second.end();
-  UINT c = 0;
-
-  while(i1_iter != i1_end) {
-    if (!Are_Aliased (*i1_iter, *i2_iter)) {
-      OP * old_op = *i2_iter;     
-      i2_iter = store_i.second.erase(i2_iter);
-      // *i1_iter didn't match. failed
-      if (c++ == store_i.second.size())
-        return FALSE;
-      store_i.second.push_front(old_op);
-    }
-    else {
-      ++count;
-      ++i1_iter;
-      ++i2_iter;
-    }
-  }
-
-  return count;
-}
-
-// Test if a hammock is suitable for select conversion
-// For now, the heuristic is simply the # of instructions to speculate.
-//  later: compute dependence heigh, use freq informations.
-static BOOL
-Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
-{
-  UINT count = 0;
-  OP* op;
-
-  if (Trace_Select_Candidates) {
-    fprintf(TFile, "<select> Found Hammock : ");
-    fprintf(TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
-            BB_id(target), BB_id(fall_thru), BB_id(ipdom));
-  }
-    
-  //  Print_BB (target);
-  //  Print_BB (fall_thru);
-
-  // Count instructions in each side.
-  // and check types.
-  if (target != ipdom) {
-    FOR_ALL_BB_OPs_FWD(target, op) {
-      //      Print_OP (op);
-      if (!Can_Speculate(TRUE, op)) return FALSE;
-      ++count;
-    }
-  }
-  
-  if (count > max_select_instrs)
-    return FALSE;
-
-  count = 0;
- 
- if (fall_thru != ipdom) {
-    FOR_ALL_BB_OPs_FWD(fall_thru, op) {
-      //      Print_OP (op);
-      if (!Can_Speculate(FALSE, op)) return FALSE;
-      ++count;
-    }
-  }
-  
- if (!store_i.first.empty() || !store_i.second.empty()) {
-   UINT nmem = BB_Check_Memops();
-   if (nmem == 0)
-     return FALSE;
-   count += nmem*4;
- }
-
- return count <= max_select_instrs;
-}
-
-static BOOL
-Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail) 
+BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
 {
   BBLIST *edge;
-  BOOL found_taken = FALSE;
-  BOOL found_not_taken = FALSE;
-  
-  if (Trace_Select_Candidates) {
-    fprintf (TFile, "<select> is hammock BB%d ? \n", BB_id(head));
-    Print_BB_Header (head, FALSE, TRUE);
+  bb_if *logif;
+
+  logif = (bb_if *)BB_MAP_Get(if_bb_map, bb);
+  if (logif) {
+    *fall_thru = logif->fall_thru;
+    *target    = logif->target;
+    return logif->inverted;
   }
 
-  // Find fall_thru and taken BBs.
-  *fall_thru = BB_Fall_Thru_Successor(head);
-  FOR_ALL_BB_SUCCS(head, edge) {
+  *fall_thru = BB_Fall_Thru_Successor(bb);
+  FOR_ALL_BB_SUCCS(bb, edge) {
     *target = BBLIST_item(edge);
     if (*target != *fall_thru) break;
   }
 
-  if (Trace_Select_Candidates) {
-    fprintf (TFile, "<select> target BB%d ? fall_thru BB%d\n",
-             BB_id(*target), BB_id(*fall_thru));
-  }
+  logif = (bb_if*)malloc(sizeof(bb_if));
+  logif->fall_thru = *fall_thru;
+  logif->target    = *target;
+  logif->inverted  = FALSE;
+  BB_MAP_Set(if_bb_map, bb, logif);
 
-  // to do: tail duplicate to create hammocks if sides have more than
-  // one succ or pred.
+  return logif->inverted;
 
-  // Starting from immediate post dominator, get the 2 conditional blocks.
-  *tail = Find_Immediate_Postdominator(head, *target, *fall_thru);
-  if (*tail == NULL)
-    return FALSE;
-
-  FOR_ALL_BB_PREDS (*tail, edge) { 
-    BB *bb = BBLIST_item(edge);
-    if (bb == *target) {
-      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
-        return FALSE; 
-
-      found_taken = TRUE;
-    }
-    else if (bb == *fall_thru) {
-      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
-        return FALSE; 
-
-      found_not_taken = TRUE;
-    }
-    else if (bb == head && *tail == *target) {
-      found_taken = TRUE;
-    }
-    else if (bb == head && *tail == *fall_thru) {
-      found_not_taken = TRUE;
-    }
-
-    if (found_taken && found_not_taken) {
-      return Check_Suitable_Hammock (*tail, *target, *fall_thru);
-    }
-  }  
-
-  return FALSE;
 }
 
 static UINT8
@@ -458,96 +260,6 @@ Get_In_Edge_Pos (BB* in_bb, BB* bb)
   }
 
   FmtAssert(FALSE, ("no edge for bb %d in bb %d\n", BB_id(bb), BB_id(in_bb)));
-}
-
-/* ================================================================
- *
- *   Hammock Conversion
- *
- * ================================================================
- */
-
-// Delete a BB, i.e. moving all its OPs to its predecessor
-// and remove it from the list of BBs for the region/PU.
-static void
-Promote_BB(BB *bp, BB *to_bb)
-{
-  BBLIST *edge;
-  
-  // Sanity checks. We can only have one predecessor, where cond is set.
-  BB *pred = BB_Unique_Predecessor(bp);
-  DevAssert(to_bb == pred, ("Promote_BB"));
-
-  // Sanity checks. Thoses cases cannot happen inside a hammock
-  if (BB_loophead(bp) || BB_entry(bp) || BB_exit(bp)) {
-    DevAssert(FALSE, ("Promote_BB"));
-  }
-
-  spec_instrs_count += BB_length (bp);
-
-  // Move all OPs from BB.
-  BB_Append_All (to_bb, bp);
-
-  // Remove from BB chain.
-  Remove_BB(bp);
-  
-  // Remove successor edges.
-  FOR_ALL_BB_SUCCS(bp, edge) {
-    BB *succ = BBLIST_item(edge);
-    BBlist_Delete_BB(&BB_preds(succ), bp);
-  }
-  BBlist_Free(&BB_succs(bp));
-
-  // Remove predecessor edges.
-  FOR_ALL_BB_PREDS(bp, edge) {
-    BB *pred = BBLIST_item(edge);
-    BBlist_Delete_BB(&BB_succs(pred), bp);
-  }
-  BBlist_Free(&BB_preds(bp));
-}
-
-// Make a copy of a phi op, using the same tn as return value in order to no
-// break uses. The implementation (there is 2 same defs during a short time)
-// make it possible without maintaining a phi's defs list.
-// The original phi should be removed.
-static OP*
-Dup_PHI (OP* phi)
-{
-  TN *result[1];
-  UINT8 j = 0;
-  UINT8 nopnds = OP_opnds(phi);
-  TN *opnd[nopnds];
-  for (j = 0; j < OP_opnds(phi); j++) {
-    opnd[j] = OP_opnd(phi, j);
-  }
-  result[0] = OP_result(phi, 0);
-
-  return Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-}
-
-// Remove old phis or replace it with a new one from phi_op_map.
-// Note that we cannot use the same list to insert selects because they
-// would be inserted in the 'head' bblock.
-static void
-BB_Update_Phis(BB *bb)
-{
-  OP *phi;
-  op_list phi_list;
-  
-  FOR_ALL_BB_PHI_OPs(bb,phi) {
-    OP *new_phi;
-
-    new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
-
-    if (! new_phi) {
-      new_phi = Dup_PHI(phi);
-      phi_list.push_front(phi);
-    }
-
-    SSA_Prepend_Phi_To_BB(new_phi, bb);
-  }
-  
-  BB_Remove_Ops(bb, phi_list);
 }
 
 static BOOL
@@ -662,6 +374,322 @@ BB_Merge (BB *bb_first, BB *bb_second)
   // Replace_Block(bb_first,bb_second,candidate_regions);
 }
 
+/* ================================================================
+ *
+ *   Misc routines to manipulate the SSA's Phis.
+ *
+ * ================================================================
+ */
+// Make a copy of a phi op, using the same tn as return value in order to no
+// break uses. The implementation (there is 2 same defs during a short time)
+// make it possible without maintaining a phi's defs list.
+// The original phi should be removed.
+static OP*
+Dup_PHI (OP* phi)
+{
+  TN *result[1];
+  UINT8 j = 0;
+  UINT8 nopnds = OP_opnds(phi);
+  TN *opnd[nopnds];
+  for (j = 0; j < OP_opnds(phi); j++) {
+    opnd[j] = OP_opnd(phi, j);
+  }
+  result[0] = OP_result(phi, 0);
+
+  return Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+}
+
+// Remove old phis or replace it with a new one from phi_op_map.
+// Note that we cannot use the same list to insert selects because they
+// would be inserted in the 'head' bblock.
+static void
+BB_Update_Phis(BB *bb)
+{
+  OP *phi;
+  op_list phi_list;
+  
+  FOR_ALL_BB_PHI_OPs(bb,phi) {
+    OP *new_phi;
+
+    new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
+
+    if (! new_phi)
+      new_phi = Dup_PHI(phi);
+
+    phi_list.push_front(phi);
+    SSA_Prepend_Phi_To_BB(new_phi, bb);
+  }
+  
+  BB_Remove_Ops(bb, phi_list);
+}
+
+/* ================================================================
+ *
+ *   Hammock Selection
+ *
+ * ================================================================
+ */
+// Create a map of conditional blocks sorted in postorder. That makes it
+// easy to iterate through possible hammocks regions.
+static void
+Identify_Hammock_Candidates(void)
+{
+  BB *bb;
+
+  postord_map = BB_Postorder_Map(NULL, NULL);
+
+  // maximum size.
+  cand_vec = TYPE_MEM_POOL_ALLOC_N(BB *, &MEM_Select_pool, PU_BB_Count);
+  max_cand_id = 0;
+
+  // Make a list of hammock candidates.
+  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    INT32 bb_id = BB_MAP32_Get(postord_map, bb);
+    DevAssert(bb_id >= 0 && bb_id <= PU_BB_Count, ("bad <postord_map> value"));
+    // we are interested only with reachable conditional head BBs
+    if (bb_id > 0 && BB_kind (bb) == BBKIND_LOGIF) { 
+      max_cand_id = MAX(bb_id, max_cand_id);
+      cand_vec[bb_id - 1] = bb;
+    }
+    else {
+      cand_vec[bb_id - 1] = NULL;
+    }
+  }
+}
+
+static BOOL
+Can_Speculate_BB(BB *bb, op_list *stores)
+{
+  OP* op;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    if (! OP_Can_Be_Speculative(op)) {
+      if (OP_memory (op)) {
+        if (Eager_Level < EAGER_MEMORY || OP_volatile(op))
+          return FALSE;
+
+        if (OP_load (op)) {
+          TOP ld_top;
+          OP *lop;
+
+          if ((ld_top = CGTARG_Speculative_Load (op)) == TOP_UNDEFINED)
+            return FALSE;
+
+          lop = Dup_OP (op);
+          OP_Change_Opcode(lop, ld_top); 
+          Set_OP_speculative(lop);             // set the OP_speculative flag.
+
+          load_i.first.push_front(op);
+          load_i.second.push_front(lop);
+        }
+
+        else if (OP_store (op)) {
+          //          if (! stores)
+            return FALSE;
+          
+            //          stores->push_front(op);
+        }
+      }
+    }
+  }
+
+  return TRUE;
+}
+
+static BOOL
+Are_Aliased(OP* op1, OP* op2)
+{
+  if (OP_memory(op1) && OP_memory(op2)) {
+    WN *wn1 = Get_WN_From_Memory_OP(op1);
+    WN *wn2 = Get_WN_From_Memory_OP(op2);
+    if (wn1 != NULL && wn2 != NULL) {
+      ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
+      return alias == SAME_LOCATION;
+    }
+  }
+
+  return FALSE;
+}
+
+static UINT
+BB_Check_Memops(void)
+{
+  UINT count = 0;
+
+  // We don't have the same count of store. Can't spec any.
+  if (store_i.first.size() != store_i.second.size())
+    return 0;
+
+  // Each store should have an equiv.
+  op_list::iterator i1_iter = store_i.first.begin();
+  op_list::iterator i1_end  = store_i.first.end();
+  op_list::iterator i2_iter = store_i.second.begin();
+  op_list::iterator i2_end  = store_i.second.end();
+  UINT c = 0;
+
+  while(i1_iter != i1_end) {
+    if (!Are_Aliased (*i1_iter, *i2_iter)) {
+      OP * old_op = *i2_iter;     
+      i2_iter = store_i.second.erase(i2_iter);
+      // *i1_iter didn't match. failed
+      if (c++ == store_i.second.size())
+        return FALSE;
+      store_i.second.push_front(old_op);
+    }
+    else {
+      ++count;
+      ++i1_iter;
+      ++i2_iter;
+    }
+  }
+
+  return count;
+}
+
+// Test if a hammock is suitable for select conversion
+// For now, the heuristic is simply the # of instructions to speculate.
+//  later: compute dependence heigh, use freq informations.
+
+UINT max_select_instrs = 1000;
+
+static BOOL
+Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
+{
+  if (Trace_Select_Candidates) {
+    fprintf(TFile, "<select> Found Hammock : ");
+    fprintf(TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
+            BB_id(target), BB_id(fall_thru), BB_id(ipdom));
+  }
+    
+  //  Print_BB (target);
+  //  Print_BB (fall_thru);
+
+  if (target != ipdom) {
+    if (! Can_Speculate_BB(target, &store_i.first))
+      return FALSE;
+  }
+  
+  // very naiive heuristic... change that later when the engine is finalized.
+  if (BB_length(target) > max_select_instrs)
+    return FALSE;
+
+  if (fall_thru != ipdom) {
+    if (! Can_Speculate_BB(fall_thru, &store_i.second))
+      return FALSE;
+  }
+  
+  // Check if we have the same set of memory stores in both sides.
+  if (!store_i.first.empty() || !store_i.second.empty()) {
+    if (!BB_Check_Memops())
+      return FALSE;
+  }
+
+  return BB_length(fall_thru) <= max_select_instrs;
+}
+
+static BOOL
+Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail) 
+{
+  BBLIST *edge;
+  BOOL found_taken = FALSE;
+  BOOL found_not_taken = FALSE;
+  BOOL invert;
+
+  if (Trace_Select_Candidates) {
+    fprintf (TFile, "<select> is hammock BB%d ? \n", BB_id(head));
+    Print_BB_Header (head, FALSE, TRUE);
+  }
+
+  // Find fall_thru and taken BBs.
+  BB_Fall_Thru_and_Target_Succs(head, fall_thru, target);
+
+  if (Trace_Select_Candidates) {
+    fprintf (TFile, "<select> target BB%d ? fall_thru BB%d\n",
+             BB_id(*target), BB_id(*fall_thru));
+  }
+
+  // to do: tail duplicate to create hammocks if sides have more than
+  // one succ or pred.
+
+  // Starting from immediate post dominator, get the 2 conditional blocks.
+  *tail = Find_Immediate_Postdominator(head, *target, *fall_thru);
+  if (*tail == NULL)
+    return FALSE;
+
+  FOR_ALL_BB_PREDS (*tail, edge) { 
+    BB *bb = BBLIST_item(edge);
+    if (bb == *target) {
+      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
+        return FALSE; 
+
+      found_taken = TRUE;
+    }
+    else if (bb == *fall_thru) {
+      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
+        return FALSE; 
+
+      found_not_taken = TRUE;
+    }
+    else if (bb == head && *tail == *target) {
+      found_taken = TRUE;
+    }
+    else if (bb == head && *tail == *fall_thru) {
+      found_not_taken = TRUE;
+    }
+
+    if (found_taken && found_not_taken) {
+      return Check_Suitable_Hammock (*tail, *target, *fall_thru);
+    }
+  }  
+
+  return FALSE;
+}
+
+/* ================================================================
+ *
+ *   Hammock Conversion
+ *
+ * ================================================================
+ */
+// Delete a BB, i.e. moving all its OPs to its predecessor
+// and remove it from the list of BBs for the region/PU.
+static void
+Promote_BB(BB *bp, BB *to_bb)
+{
+  BBLIST *edge;
+  
+  // Sanity checks. We can only have one predecessor, where cond is set.
+  BB *pred = BB_Unique_Predecessor(bp);
+  DevAssert(to_bb == pred, ("Promote_BB"));
+
+  // Sanity checks. Thoses cases cannot happen inside a hammock
+  if (BB_loophead(bp) || BB_entry(bp) || BB_exit(bp)) {
+    DevAssert(FALSE, ("Promote_BB"));
+  }
+
+  spec_instrs_count += BB_length (bp);
+
+  // Move all OPs from BB.
+  BB_Append_All (to_bb, bp);
+
+  // Remove from BB chain.
+  Remove_BB(bp);
+  
+  // Remove successor edges.
+  FOR_ALL_BB_SUCCS(bp, edge) {
+    BB *succ = BBLIST_item(edge);
+    BBlist_Delete_BB(&BB_preds(succ), bp);
+  }
+  BBlist_Free(&BB_succs(bp));
+
+  // Remove predecessor edges.
+  FOR_ALL_BB_PREDS(bp, edge) {
+    BB *pred = BBLIST_item(edge);
+    BBlist_Delete_BB(&BB_succs(pred), bp);
+  }
+  BBlist_Free(&BB_preds(bp));
+}
+
 static void
 BB_Fix_Spec_Loads (BB *bb)
 {
@@ -707,6 +735,8 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
     TN *temp_tn = Build_TN_Like (true_tn);
 
     Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
+    select_count++;
+
     Expand_Store (MTYPE_I4, temp_tn, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
 
     BB_Insert_Ops_After (bb, i2, &ops);
@@ -719,6 +749,246 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
   }
 }
 
+// Check that bb has no liveout or side effects beside the conditional jump.
+static BOOL
+Dead_BB (BB *bb)
+{
+  return TRUE;
+}
+
+static BOOL
+Negate_Cmp_BB (OP *br)
+{
+  DEF_KIND kind;
+  
+  OP *cmp_op = TN_Reaching_Value_At_Op(OP_opnd(br, 0), br, &kind, TRUE);
+  TOP new_cmp = CGTARG_Invert(OP_code(cmp_op));
+  if (new_cmp == TOP_UNDEFINED)
+    return FALSE;
+
+  OP_Change_Opcode(cmp_op, new_cmp);
+  return TRUE;
+}
+
+static BOOL
+Negate_Branch_BB (OP *br)
+{
+  TOP new_cmp = CGTARG_Invert(OP_code(br));
+  if (new_cmp == TOP_UNDEFINED)
+    return FALSE;
+
+  OP_Change_Opcode(br, new_cmp);
+  return TRUE;
+}
+
+static BOOL
+Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
+                         BB **fall_thru2, BB **target2)
+{
+  OP *br1 = BB_branch_op (bb1);
+  OP *br2 = BB_branch_op (bb2);
+  
+  FmtAssert(br1 && OP_cond(br1), ("BB doesn't end in a conditional branch."));
+  FmtAssert(br2 && OP_cond(br2), ("BB doesn't end in a conditional branch."));
+
+  BOOL needInvert = OP_code (br1) != OP_code (br2);
+
+  BB_Fall_Thru_and_Target_Succs(bb2, fall_thru2, target2);
+  
+  if (target1 == *target2 || fall_thru1 == *fall_thru2) {
+    if (needInvert) {
+      if (! Negate_Cmp_BB(br2))
+        return FALSE;
+    }
+    return TRUE;
+  }
+
+  if (target1 == *fall_thru2 || fall_thru1 == *target2) {
+    // if needInvert, don't revert the condition.
+    if (! needInvert)
+      if (! Negate_Cmp_BB(br2))
+        return FALSE;
+
+    BB *tmpbb = *fall_thru2;
+    *fall_thru2 = *target2;
+    *target2 = tmpbb;
+
+    bb_if *logif = (bb_if *)BB_MAP_Get(if_bb_map, fall_thru1);
+    logif->inverted = TRUE;
+    logif->fall_thru = *fall_thru2;
+    logif->target = *target2;
+
+    return TRUE;
+  }
+  
+  return FALSE;
+}
+
+// Test if bb is the head of a region that can be converted with logical
+// expressions. (ex: if (p1) if (p0) ... = if (p1 && p0) ...)
+// Returns the head of the second if region or null
+//
+// A well formed logical expression is a sequence of 2 blocks containing
+// a conditional jump, for which one direct successor is in common.
+// This is done regardless of the branches directions, as it is
+// possible (with respect to the available concrete instructions) to
+// transform any pattern in a pure and or or expression.
+// Normalizejumps will try to retrieve such a pattern.
+static BB*
+Is_Double_Logif(BB* bb)
+{
+  BB *fall_thru, *target, *sec_fall_thru, *sec_target;
+
+  // Find fall_thru and taken BBs.
+  BB_Fall_Thru_and_Target_Succs(bb, &fall_thru, &target);
+
+  if (BB_kind(target) == BBKIND_LOGIF) {
+    if (BB_preds_len(target) == 1
+        && Can_Speculate_BB(target, NULL)
+        && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
+                                    &sec_fall_thru, &sec_target)
+        && Dead_BB (target)
+        && sec_fall_thru == fall_thru)
+      return target;
+  }
+
+  // try the other side
+  if (BB_kind(fall_thru) == BBKIND_LOGIF) {
+    if (BB_preds_len(fall_thru) == 1
+        && Can_Speculate_BB(fall_thru, NULL)
+        && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
+                                    &sec_fall_thru, &sec_target)
+        && Dead_BB (fall_thru)
+        && sec_target == target)
+      return fall_thru;
+  }
+  
+  return NULL;
+}
+
+// XXX todo: compute and map succ infos once.
+static void 
+Simplify_Logifs(BB *bb1, BB *bb2)
+{
+  BB *bb1_fall_thru, *bb1_target, *bb2_fall_thru, *bb2_target;
+  BB *fall_thru_block, *joint_block;
+  BOOL invert;
+  BOOL AndNeeded;
+
+  BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
+  invert = BB_Fall_Thru_and_Target_Succs(bb2, &bb2_fall_thru, &bb2_target);
+
+  if (bb1_fall_thru == bb2_fall_thru) {
+    // if (a && b)
+    AndNeeded = TRUE;
+    fall_thru_block = bb2_target;
+    joint_block = bb2_fall_thru;
+  }
+  else if (bb1_target == bb2_target) {
+    // if (a || b)
+    AndNeeded = FALSE;
+    fall_thru_block = bb2_fall_thru;
+    joint_block = bb2_target;
+  }
+
+  OP *br1_op = BB_branch_op(bb1);
+  OP *br2_op = BB_branch_op(bb2);
+
+  // get compares return values.
+  TN *b1tn1, *b2tn1;
+  TN *tn2;
+  OP *cmp1, *cmp2;
+  VARIANT variant1 = CGTARG_Analyze_Compare(br1_op, &b1tn1, &tn2, &cmp1);
+  VARIANT variant2 = CGTARG_Analyze_Compare(br2_op, &b2tn1, &tn2, &cmp2);
+
+  TN *branch_tn = Build_TN_Like (b1tn1);
+  TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
+
+  UINT8 bb_pos = Get_In_Edge_Pos (bb2, joint_block);
+
+  BB_Remove_Branch(bb1);
+  BB_Remove_Branch(bb2);
+  Promote_BB(bb2, bb1);
+
+  OPS ops = OPS_EMPTY;
+
+  if (TN_register_class(b1tn1) == ISA_REGISTER_CLASS_branch) {
+     TOP cmp_top = CGTARG_Branch_To_Reg (OP_code(cmp1));
+     DevAssert(cmp_top, ("CGTARG_Branch_To_Reg\n"));
+     b1tn1 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+     Build_OP (cmp_top, b1tn1, OP_opnd(cmp1, 0), OP_opnd(cmp1, 1), &ops);
+     BB_Remove_Op(bb1, cmp1);
+  }
+
+  if (TN_register_class(b2tn1) == ISA_REGISTER_CLASS_branch) {
+     TOP cmp_top = CGTARG_Branch_To_Reg (OP_code(cmp2));
+     DevAssert(cmp_top, ("CGTARG_Branch_To_Reg\n"));
+     b2tn1 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+     Build_OP (cmp_top, b2tn1, OP_opnd(cmp2, 0), OP_opnd(cmp2, 1), &ops);
+     BB_Remove_Op(bb1, cmp2);
+  }
+    
+  // insert new logical op.
+  if (AndNeeded)
+    Expand_Logical_And (branch_tn, b1tn1, b2tn1, variant1, &ops);
+  else
+    Expand_Logical_Or (branch_tn, b1tn1, b2tn1, variant1, &ops);
+
+  logif_count++;
+
+  Expand_Branch (label_tn, branch_tn, NULL, variant1, &ops);
+
+  BB_Append_Ops (bb1, &ops);
+
+  // !a AndNeeded !a -> !(a !needAnd b)
+  if (AndNeeded)
+    FmtAssert(FALSE, ("and needed. don't know yet"));
+  else {
+    if (joint_block == bb1->next) {
+      br1_op = BB_branch_op(bb1);
+      Negate_Branch_BB (br1_op);
+      Target_Logif_BB(bb1, fall_thru_block, 0.5L, joint_block);
+    }
+    else {
+      Target_Logif_BB(bb1, joint_block, 0.5L, fall_thru_block);
+    }
+
+    BB_MAP_Set(if_bb_map, bb1, NULL);
+  }
+    
+  // if needed, update phi operands and new edge from head.
+
+  BB *phi_block = invert ? fall_thru_block : joint_block;
+
+  if (joint_block == phi_block) {
+    OP *phi;
+
+    FOR_ALL_BB_PHI_OPs(phi_block, phi) {
+      TN *result[1];
+      UINT8 j = 0;
+      UINT8 i = 0;
+      UINT8 nopnds = OP_opnds(phi)-1;
+      TN *opnd[nopnds];
+      for (i = 0; i < OP_opnds(phi); i++) {
+        if (i != bb_pos)
+          opnd[j++] = OP_opnd(phi, i);
+      }
+
+      result[0] = OP_result(phi, 0);
+      OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+      OP_MAP_Set(phi_op_map, phi, new_phi);
+    }
+  }
+
+  BB_Update_Phis(phi_block);
+}
+
+/* ================================================================
+ *
+ *   If flattening
+ *
+ * ================================================================
+ */
 static void
 Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 {
@@ -733,8 +1003,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   UINT8 taken_pos = Get_In_Edge_Pos(target_bb == tail ? head : target_bb, tail);
   UINT8 nottaken_pos = Get_In_Edge_Pos(fall_thru_bb == tail ? head : fall_thru_bb, tail);
-
-  //  fprintf (TFile, "pos: taken = %d, not_taken = %d\n", taken_pos, nottaken_pos);
 
   // keep a list of newly created conditional move / compare
   // and phis to remove
@@ -754,7 +1022,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     TN *select_tn;
     TN *true_tn = NULL;
     TN *false_tn = NULL;
-    
+
     if (Trace_Select_Gen) {
       fprintf(TFile, "<select> handle phi ");
       Print_OP (phi);
@@ -762,31 +1030,35 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       Print_BB (tail);
     }
 
+    // We need to find the tn's that map to the correct position.
+    // tn's are not necessary in the same order than the predecessors.
+    // need to check where cg_ssa has mapped them.
+    BB *taken_bb    = Get_PHI_Predecessor (phi, taken_pos);
+    BB *nottaken_bb = Get_PHI_Predecessor (phi, nottaken_pos);
+
     for (i = 0; i < OP_opnds(phi); i++) {
       TN *tn = OP_opnd(phi,i);
-      if (i == taken_pos) {
-        if (variant == V_BR_P_TRUE)
+      if (i == taken_pos)
           true_tn = tn;
-        else if (variant == V_BR_P_FALSE)
+      if (i == nottaken_pos) 
           false_tn = tn;
-        else
-          DevAssert(FALSE, ("variant"));    
-      }
-      if (i == nottaken_pos)  {
-        if (variant == V_BR_P_TRUE)
-          false_tn = tn;
-        else if (variant == V_BR_P_FALSE)
-          true_tn = tn;
-        else
-          DevAssert(FALSE, ("variant"));    
-      }
     }
 
     // deal with undef operands.
-    if (!true_tn && !false_tn)  {
-      DevAssert(FALSE, ("undef true and false tns. not yet"));
-    }
+    DevAssert(true_tn && false_tn, ("Select undef TNs. not yet"));
 
+    // make sure that select operands are in the same order than phi operands.
+    // Select operands must match predecessors order.
+    BOOL reord_ops = (Get_In_Edge_Pos (taken_bb,tail) != taken_pos) ||
+      (Get_In_Edge_Pos (nottaken_bb,tail) != nottaken_pos);
+      
+    // (if brf && !reord) || (if br && reord))
+    if ((variant == V_BR_P_FALSE) != reord_ops) {
+      TN *temp_tn = false_tn;
+      false_tn = true_tn;
+      true_tn = temp_tn;
+    }
+      
     // for now we only handle single result tn.
     // we don't need to go through (i = 0; i < OP_results(op); i++) loop.
     DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
@@ -798,6 +1070,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     
     Expand_Select (select_tn, cond_tn, true_tn, false_tn,
                    MTYPE_I4, FALSE, &cmov_ops);
+    select_count++;
 
     // If the block has only 2 incoming merges, just replace phi's tn by the
     // new tn. else we need to create a new def and insert it into the phi
@@ -894,19 +1167,23 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   // candidates for eventual nested hammocks.
   if (Can_Merge_BB (head, tail, br_op)) {
     BB_Merge(head, tail);
+    BBLIST *succ;
+    
+    FOR_ALL_BB_SUCCS(head, succ) {
+      BB *bb = BBLIST_item(succ);
+      OP *op;
+      
+      FOR_ALL_BB_PHI_OPs(bb,op) {
+        Change_PHI_Predecessor (bb, tail, head, op);
+      }
+    }
+
     tail = head;
   }
   
   // Insert new phis and update ssa information.
   BB_Update_Phis(tail);
 }
-
-/* ================================================================
- *
- *   Logical optimisations
- *
- * ================================================================
- */
 
 /* ================================================================
  *
@@ -924,7 +1201,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Trace_Select_Init();
 
   if (Trace_Select_Spec) {
-    fprintf (TFile, "<select> speculative model is eager");
+    fprintf (TFile, "<select> speculative model is eager ");
     switch (Eager_Level) {
     case EAGER_NONE:
       fprintf (TFile, "none\n");      
@@ -954,15 +1231,42 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Identify_Hammock_Candidates();
 
-  if (! max_cand_id)
-    return;
-  
   Calculate_Dominators();
 
-  // Compute_Branch_Probabilities ?
+#if 0
 
-  // Iterate though candidates and find Hammocks
-  // a Hammock is designated by its head.
+  draw_CFG();
+  for (i = 0; i < max_cand_id; i++) {
+    BB *bb = cand_vec[i];
+    BB *bbb;
+
+    if (bb == NULL) continue;
+
+    if (bbb = Is_Double_Logif(bb)) {
+      if (Trace_Select_Gen) {
+        fprintf (TFile, "\n********** BEFORE LOGICAL OPTS BB%d ***********\n",
+                 BB_id(bb));
+        Print_All_BBs();
+        fprintf (TFile, "******************************************\n");
+      }
+        
+      Initialize_Hammock_Memory();
+      Simplify_Logifs(bb, bbb);
+      Finalize_Hammock_Memory();
+      cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
+      
+      if (Trace_Select_Gen) {
+        fprintf (TFile, "---------- AFTER LOGICAL OPTS -------------\n");
+        Print_All_BBs();
+        fprintf (TFile, "------------------------------------------\n");
+      }
+    }
+  }
+
+#endif
+
+  draw_CFG();
+
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *tail;
@@ -973,7 +1277,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
       if (Trace_Select_Gen) {
-        fprintf (TFile, "\n********** BEFORE SELECT FOLD ************\n");
+        fprintf (TFile, "\n********** BEFORE SELECT FOLD BB%d ************\n",
+                 BB_id(bb));
         Print_All_BBs();
         fprintf (TFile, "******************************************\n");
       }
@@ -997,6 +1302,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   }
   
   Finalize_Select();
+
+  draw_CFG();
 }
 
 /* ================================================================
