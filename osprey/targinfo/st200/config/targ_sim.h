@@ -67,8 +67,9 @@ extern "C" {
 #define First_Float_Preg_Param_Offset	0	/* register fa0 */
 
 #define Stack_Pointer_Preg_Offset	13	/* register sp */
-#define Frame_Pointer_Preg_Offset	62	/* register fp */
-#define Static_Link_Preg_Offset	        63
+/* [SC] match fp setting in targinfo/st200/abi/abi_properties.cxx */
+#define Frame_Pointer_Preg_Offset	8	/* register fp */
+#define Static_Link_Preg_Offset	        9
 #define Struct_Return_Preg_Offset       16   /* returning structs */
 #ifdef TARG_ST //[TB]
 #define Function_Link_Preg_Offset       64   /* function link register (for mcount call) */

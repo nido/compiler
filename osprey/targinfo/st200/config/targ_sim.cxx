@@ -741,6 +741,14 @@ Get_Vararg_Parameter_Location (
   return next;
 }
 
+#ifdef TARG_ST
+// [SC] Return the type of a nested function trampoline.
+TYPE_ID Get_Nested_Fn_Trampoline_Type ()
+{
+  return Make_Array_Type (MTYPE_U8, 1, 5);
+}
+#endif
+
 /* ====================================================================
  *   Init_Targ_Sim
  * ====================================================================

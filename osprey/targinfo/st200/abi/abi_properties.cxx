@@ -163,7 +163,7 @@ static void st200_abi_common(void)
 	       -1);
 
   Reg_Property(static_link, ISA_REGISTER_CLASS_integer, 
-		62,
+		8,
 	       -1);
 
   // ret address is always callee saved, so don't add to callee
