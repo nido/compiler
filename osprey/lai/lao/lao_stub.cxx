@@ -1043,9 +1043,9 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
 
 void Sort_topological_DFS(BB *bb, BB_SET *region_set, BB_MAP visited_map, BB_List &bblist) {
   BBLIST *succs;
-
+  //
   BB_MAP32_Set(visited_map, bb, 1);
-
+  //
   FOR_ALL_BB_SUCCS(bb, succs) {
     BB *succ_bb = BBLIST_item(succs);
     if (!BB_MAP32_Get(visited_map, succ_bb) &&
@@ -1053,7 +1053,7 @@ void Sort_topological_DFS(BB *bb, BB_SET *region_set, BB_MAP visited_map, BB_Lis
       Sort_topological_DFS(succ_bb, region_set, visited_map, bblist);
     }
   }
-
+  //
   bblist.push_front(bb);
 }
 
@@ -1073,7 +1073,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 
 // Make a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
-lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
+lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
   LoopInfo loopinfo = NULL;
   BB *head_bb = LOOP_DESCR_loophead(loop);
   BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
@@ -1088,19 +1088,19 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
       uint64_t trip_factor = trip_count & -trip_count;
       int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
       loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 4,
-	  Configuration_Pipeline, pipeline,
+	  Configuration_Pipelining, pipelining,
 	  Configuration_MinTrip, min_trip_count,
 	  Configuration_Modulus, min_trip_factor,
 	  Configuration_Residue, 0);
     } else {
       loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
-	  Configuration_Pipeline, pipeline);
+	  Configuration_Pipelining, pipelining);
     }
   } else {
     // Create a dummy CGIR_LI and make the LoopInfo.
     CGIR_LI cgir_li = CGIR_LI_create(NULL, 0);
     loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
-	Configuration_Pipeline, pipeline);
+	Configuration_Pipelining, pipelining);
   }
 
   // Make a BB_List of the loop body and compute its op_count. This
@@ -1159,15 +1159,15 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 
 // Low-level LAO_optimize entry point.
 static bool
-lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
+lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
   if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   LAO_INIT();
   Interface_open(interface, callback, 5,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_SchedType, CG_LAO_schedtype,
-      Configuration_Pipeline, CG_LAO_pipeline,
-      Configuration_Speculate, CG_LAO_speculate,
+      Configuration_Pipelining, CG_LAO_pipeline,
+      Configuration_Speculation, CG_LAO_speculate,
       Configuration_LoopDep, CG_LAO_loopdep);
   //
   // Create the LAO BasicBlocks.
@@ -1210,7 +1210,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
       if (loop == NULL)
 	FmtAssert(BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
       else
-	lao_makeLoopInfo(loop, pipeline);
+	lao_makeLoopInfo(loop, pipelining);
     }
   }
   //
@@ -1235,13 +1235,13 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   BB_SET *body_set = LOOP_DESCR_bbset(loop);
 //cerr << "lao_optimize_LOOP(" << BB_id(head_bb) << ", " << lao_optimizations << ")\n";
   //
-  // Compute the pipeline value.
+  // Compute the pipelining value.
   BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
-  int pipeline = (tail_bb != NULL)*CG_LAO_pipeline;
+  int pipelining = (tail_bb != NULL)*CG_LAO_pipeline;
   bool prepass = (lao_optimizations & Optimization_PreSched) != 0;
   //
   // Adjust the control-flow if required.
-  if (pipeline > 0 && prepass) {
+  if (pipelining > 0 && prepass) {
     // Software pipelining (implies prepass scheduling).
     //BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
     //GRA_LIVE_Compute_Liveness_For_BB(prolog_bb);
@@ -1283,7 +1283,7 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   }
   //
   // Call the lower level lao_optimize function.
-  return lao_optimize(bodyBBs, entryBBs, exitBBs, pipeline, lao_optimizations);
+  return lao_optimize(bodyBBs, entryBBs, exitBBs, pipelining, lao_optimizations);
 }
 
 // Optimize the complete PU through the LAO.
@@ -1327,7 +1327,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
     bodyBBs.push_back(bb);
   }
   //
-  // Call the lower level lao_optimize function with pipeline=0.
+  // Call the lower level lao_optimize function with pipelining=0.
   result |= lao_optimize(bodyBBs, entryBBs, exitBBs, 0, lao_optimizations);
   //
   if (result) {
