@@ -732,6 +732,12 @@ void BB_Remove_Ops(BB *bb, OPS *ops)
 
 void BB_Remove_All(BB *bb)
 {
+#ifdef TARG_ST
+  /* FDF: Because ops is emptied by BB_Remove_Ops ! */
+  OP *op;
+  FOR_ALL_OPS_OPs(&bb->ops, op) op->bb = NULL;
+#endif
+
   BB_Remove_Ops(bb, &bb->ops);
   BB_next_op_map_idx(bb) = 0;
 }
