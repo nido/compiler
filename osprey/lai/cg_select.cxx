@@ -856,6 +856,83 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Finalize_Select();
 }
 
+static char *
+sPrint_TN ( 
+  TN *tn, 
+  char *buf 
+)
+{
+  char *result = buf;
+
+  if (tn == NULL) {
+    buf += sprintf ( buf, "--nil--");
+    return result;
+  }
+
+  if (TN_is_constant(tn)) {
+    if ( TN_has_value(tn)) {
+      buf += sprintf ( buf, "(0x%llx)", TN_value(tn) );
+      if (TN_size(tn) == 4 && 
+	  TN_value(tn) >> 32 != 0 &&
+	  TN_value(tn) >> 31 != -1)
+	buf += sprintf ( buf, "!!! TN_value=0x%llx is too big to fit in a word",
+			 TN_value(tn));
+    }
+    else if (TN_is_enum(tn)) {
+      buf += sprintf ( buf, "(enum:%s)", ISA_ECV_Name(TN_enum(tn)) );
+    }
+    else if ( TN_is_label(tn) ) {
+      LABEL_IDX lab = TN_label(tn);
+      const char *name = LABEL_name(lab);
+      INT64 offset = TN_offset(tn);
+      if ( offset == 0 ) {
+	buf += sprintf ( buf, "(lab:%s)", name );
+      }
+      else {
+	buf += sprintf ( buf, "(lab:%s+%lld)", name, offset );
+      }
+    } 
+    else if ( TN_is_tag(tn) ) {
+      LABEL_IDX lab = TN_label(tn);
+      const char *name = LABEL_name(lab);
+      buf += sprintf ( buf, "(tag:%s)", name );
+    }
+    else if ( TN_is_symbol(tn) ) {
+      ST *var = TN_var(tn);
+
+      buf += sprintf ( buf, "(sym" );
+      buf += sprintf ( buf, TN_RELOCS_Name(TN_relocs(tn)) );
+
+      if (ST_class(var) == CLASS_CONST)
+      	buf += sprintf ( buf, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));
+      else
+      	buf += sprintf ( buf, ":%s%+lld)", ST_name(var), TN_offset(tn) );
+    } 
+  }
+  else {  /* register TN */
+    if (TN_is_global_reg(tn)) {
+      buf += sprintf ( buf, "GTN%d", TN_number(tn) );
+    }
+    else {
+      buf += sprintf ( buf, "TN%d", TN_number(tn) );
+    }
+    if (TN_register(tn) != REGISTER_UNDEFINED) {
+      if (TN_register(tn) <= REGISTER_CLASS_last_register(TN_register_class(tn))) {
+	buf += sprintf (buf, "(%s)", 
+		REGISTER_name(TN_register_class(tn), TN_register(tn)));
+      } else {
+	buf += sprintf (buf, "(%d,%d)", TN_register_class(tn), TN_register(tn));
+      }
+    }
+    if (TN_is_save_reg(tn)) {
+	buf += sprintf (buf, "(sv:%s)", 
+		REGISTER_name(TN_save_rclass(tn), TN_save_reg(tn)));
+    }
+  }
+  
+  return result;
+}
+
 /* ================================================================
  *
  * sexy output of CFG.
@@ -887,7 +964,9 @@ Node(BB* bb)
     int i;
  
    for (i = 0; i < OP_results(op); i++) {
-      p += sprintf(p, "%d ", TN_number(OP_result(op, i)));
+     p = sPrint_TN (OP_result(op, i), p);
+     p += strlen (p);
+     p += sprintf(p, " ");
     }
 
    if (OP_results(op))
@@ -896,7 +975,9 @@ Node(BB* bb)
    p += sprintf(p, " %s ", TOP_Name(OP_code(op)));
 
     for (i = 0; i < OP_opnds(op); i++) {
-      p += sprintf(p, "%d ", TN_number(OP_result(op, i)));
+     p = sPrint_TN (OP_opnd(op, i), p);
+     p += strlen (p);
+     p += sprintf(p, " ");
     }
 
     p += sprintf(p, "\\n");
