@@ -77,8 +77,6 @@ extern "C" {
 
 typedef vector<BB*> BB_VECTOR;
 
-static void CGIR_print();
-
 
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
 // These functions are the only ones to call the Interface_make functions.
@@ -338,6 +336,17 @@ LoopInfo_to_CGIR_LI(LoopInfo loopinfo) {
   return cgir_li;
 }
 
+// The following functions only access the original CGIR object from a
+// LAO object, but do not perform any update.
+
+static inline CGIR_BB
+BasicBlock_get_CGIR_BB(BasicBlock basicblock) {
+  Is_True(basicblock != NULL, ("BasicBlock_get_CGIR_BB passed a NULL BasicBlock"));
+  CGIR_BB cgir_bb = Interface_getBB(interface, basicblock);
+  return cgir_bb;
+}
+
+
 /*-------------------- LIR Interface Call-Back Functions ---------------------*/
 
 // Create a CGIR_LAB from a LIR Label.
@@ -473,6 +482,16 @@ CGIR_BB_create(BasicBlock basicblock, int labelCount, Label labels[], int opCoun
     CGIR_LI cgir_li = LoopInfo_to_CGIR_LI(loopinfo);
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
+
+  BasicBlock orig_basicblock = Interface_BasicBlock_duplicateOf(interface, basicblock);
+  if (orig_basicblock != NULL) {
+    CGIR_BB orig_bb = BasicBlock_get_CGIR_BB(orig_basicblock);
+    if (BB_call(orig_bb)) {
+      Set_BB_call(cgir_bb);
+      BB_Copy_Annotations(cgir_bb, orig_bb, ANNOT_CALLINFO);
+    }
+  }
+
   return cgir_bb;
 }
 
@@ -579,9 +598,12 @@ static bool lao_optimize_HB(HB *hb, unsigned lao_actions);
 // Optimize a Function through the LAO.
 static bool lao_optimize_FUNC(unsigned lao_actions);
 
+static void CGIR_print(void);
+
 CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(CG_LOOP *cg_loop, unsigned lao_actions);
 CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_actions);
 CG_EXPORTED extern bool (*lao_optimize_FUNC_p)(unsigned lao_actions);
+CG_EXPORTED extern void (*CGIR_print_p)(void);
 
 #ifdef __cplusplus
 extern "C" {
@@ -601,6 +623,7 @@ lao_init() {
     lao_optimize_LOOP_p = lao_optimize_LOOP;
     lao_optimize_HB_p = lao_optimize_HB;
     lao_optimize_FUNC_p = lao_optimize_FUNC;
+    CGIR_print_p = CGIR_print;
     // initialize the TOP__Operator array
     for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator_;
     TOP__Operator[TOP_add_i] = Operator_CODE_ADD_IDEST_SRC1_ISRC2;
@@ -889,6 +912,7 @@ lao_fini() {
     lao_optimize_LOOP_p = NULL;
     lao_optimize_HB_p = NULL;
     lao_optimize_FUNC_p = NULL;
+    CGIR_print_p = NULL;
   }
 }
 
@@ -953,11 +977,6 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   BB_List nonexitBBs;
   BB_List::iterator bb_iter;
   //
-  // Do not optimize region with call inside (TBD)
-  for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
-    if (BB_call(*bb_iter))
-      return false;
-  }
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
   Interface_open(interface);

@@ -91,4 +91,7 @@ CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
 CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
 #define lao_optimize_FUNC (*lao_optimize_FUNC_p)
 
+CG_EXPORTED extern void (*CGIR_print_p) (void);
+#define CGIR_print (*CGIR_print_p)
+
 #endif /* laostub_INCLUDED */
