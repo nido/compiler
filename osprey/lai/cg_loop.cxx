@@ -2926,7 +2926,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   CG_LOOP_DEF tn_def(body);
 
   OP *op;
-#ifdef TARG_ST
+#ifdef PROLOG_OPT//TARG_ST
   // FdF: Prevent unrolling from creating uninitialized uses
   OPS uninit_ops = OPS_EMPTY;
 #endif
@@ -2940,7 +2940,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	  && GTN_SET_MemberP(BB_live_in(CG_LOOP_epilog), tn)) {
 	CG_LOOP_Backpatch_Add(CG_LOOP_epilog, tn, tn, 0);
 	CG_LOOP_Backpatch_Add(CG_LOOP_prolog, tn, tn, 1);
-#ifdef TARG_ST
+#ifdef PROLOG_OPT//TARG_ST
 	// FdF: Prevent unrolling from creating uninitialized uses. If
 	// the loop has a non-zero trip count and tn was not live-in
 	// of the loop, initialize the TN to zero.
@@ -2968,7 +2968,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
     }
   }
 
-#ifdef TARG_ST
+#ifdef PROLOG_OPT//TARG_ST
     // FdF: Prevent unrolling from creating uninitialized uses
     BB_Prepend_Ops(CG_LOOP_prolog, &uninit_ops);
 #endif
