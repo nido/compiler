@@ -677,7 +677,9 @@ CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name) {
   if (cgir_lab == 0) {
     // Create cgir_lab.
     // code borrowed from Gen_Label_For_BB
-    LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, cgir_lab);
+      // [HK] have to specify the cast for Cygwin gcc-3.3.1
+//     LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, cgir_lab);
+    LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, (LABEL_IDX&)cgir_lab);
     LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
   } else {
     // Update cgir_lab.

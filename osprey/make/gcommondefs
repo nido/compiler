@@ -161,11 +161,13 @@ endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
 COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
+#COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
 #COMPILER_LOC=/apa/comp/pro64-cygwin/install/x-mallinfo-cygwin32-1.3.12/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
 # (cbr)
 YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
 PREFIX=i686-pc-cygwin32-
+#PREFIX=i386-pc-cygwin-
 endif
 
 ifeq ($(HOST_OS),SUNOS5)
@@ -177,7 +179,6 @@ endif
 
 BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
 BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-
 endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
@@ -188,8 +189,10 @@ YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
 
 ifeq ($(HOST_OS),CYGWIN_NT)
 COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
+#COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i386-pc-cygwin-
+PREFIX=i686-pc-cygwin32-
+#PREFIX=i386-pc-cygwin-
 endif
 
 COMPILER_LOC=$(COMP_GNU_LOC)
@@ -202,6 +205,10 @@ ifeq ($(BUILD_OS),MINGW)
 SUFFIX=.exe
 endif
 
+# [HK] 
+GCC=$(COMPILER_LOC)/$(PREFIX)gcc
+GNU_VERSION:=$(shell echo | $(GCC) -dM -E -  | grep "define __GNUC__" | awk '{print $$3;}')
+
 ASNAME = gcc
 CCNAME = gcc
 C++NAME = g++
@@ -209,6 +216,7 @@ F77 = g77
 F90 = g90
 LEX = flex
 YACC = bison
+
 
 endif
 ifeq ($(BUILD_COMPILER), OPEN64)
@@ -263,6 +271,7 @@ endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
 CCACHE_PATH=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/i686-pc-cygwin32/bin/
+#CCACHE_PATH=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/i386-pc-cygwin/bin/
 export CCACHE_PATH
 BINUTILS_LOC=$(COMPILER_LOC)
 endif
