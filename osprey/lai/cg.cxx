@@ -707,6 +707,12 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
+  if (CG_LAO_optimizations & Optimization_EnableSSA) {
+    lao_optimize_pu(Optimization_EnableSSA);
+    // Insert Live-analysis here
+    GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+  }
+
   // Call the LAO for software pipelining and prepass scheduling.
   if (CG_LAO_optimizations)
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
