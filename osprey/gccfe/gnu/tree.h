@@ -1493,8 +1493,13 @@ struct tree_type
 /* In a FUNCTION_DECL, nonzero means a built in function.  */
 #define DECL_BUILT_IN(NODE) (DECL_BUILT_IN_CLASS (NODE) != NOT_BUILT_IN)
 /* For a builtin function, identify which part of the compiler defined it.  */
+#if __GNUC__==2 && __GNUC_MINOR__==95
+#define DECL_BUILT_IN_CLASS(NODE) \
+((enum built_in_class)FUNCTION_DECL_CHECK (NODE)->decl.built_in_class)
+#else
 #define DECL_BUILT_IN_CLASS(NODE) \
 (FUNCTION_DECL_CHECK (NODE)->decl.built_in_class)
+#endif
 
 /* Used in VAR_DECLs to indicate that the variable is a vtable.
    Used in FIELD_DECLs for vtable pointers.
