@@ -678,7 +678,7 @@ lao_init() {
     TOP__Operator[TOP_bswap_r] = Operator_CODE_BSWAP_IDEST_SRC1;
 //  TOP__Operator[TOP_bwd_bar] = Operator_PSEUDO_;
     TOP__Operator[TOP_call] = Operator_CODE_CALL_BTARG;
-    TOP__Operator[TOP_clz] = Operator_CODE_CLZ_IDEST_SRC1;
+    TOP__Operator[TOP_clz_r] = Operator_CODE_CLZ_IDEST_SRC1;
     TOP__Operator[TOP_cmpeq_i_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRC2;
     TOP__Operator[TOP_cmpeq_ii_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRCX;
     TOP__Operator[TOP_cmpeq_i_r] = Operator_CODE_CMPEQ_IDEST_SRC1_ISRC2;
@@ -858,9 +858,11 @@ lao_init() {
     TOP__Operator[TOP_pft_i] = Operator_CODE_PFT_ISRC2_SRC1;
     TOP__Operator[TOP_pft_ii] = Operator_CODE_PFT_ISRCX_SRC1;
     TOP__Operator[TOP_phi] = Operator_PSEUDO_PHI;
-    TOP__Operator[TOP_prgadd] = Operator_CODE_PRGADD_ISRC2_SRC1;
+    TOP__Operator[TOP_prgadd_i] = Operator_CODE_PRGADD_ISRC2_SRC1;
+    TOP__Operator[TOP_prgadd_ii] = Operator_CODE_PRGADD_ISRCX_SRC1;
     TOP__Operator[TOP_prgins] = Operator_CODE_PRGINS;
-    TOP__Operator[TOP_prgset] = Operator_CODE_PRGSET_ISRC2_SRC1;
+    TOP__Operator[TOP_prgset_i] = Operator_CODE_PRGSET_ISRC2_SRC1;
+    TOP__Operator[TOP_prgset_ii] = Operator_CODE_PRGSET_ISRCX_SRC1;
     TOP__Operator[TOP_psi] = Operator_PSEUDO_PSI;
     TOP__Operator[TOP_return] = Operator_MACRO_RETURN;
     TOP__Operator[TOP_rfi] = Operator_CODE_RFI;

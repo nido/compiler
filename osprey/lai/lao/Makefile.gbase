@@ -83,6 +83,10 @@ ifndef TARG_CG_DIR
 TARG_CG_DIR = $(BUILD_AREA)/lai
 endif
 
+ifndef TARG_INFO_DIR
+TARG_INFO_DIR = $(BUILD_AREA)/targ_info
+endif
+
 
 #----------------------------------------------------------------------
 #  Include the usual commondefs
@@ -348,7 +352,7 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(WOPT_DSO) .; fi
 	if [ ! -h $(IPL_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(IPL_DSO) .; fi
 	if [ ! -h $(CG_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(CG_DSO) .; fi
-	if [ ! -h $(TARGET_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(TARGET_DSO) .; fi
+	if [ ! -h $(TARGET_DSO) ]; then ln -sf $(TARG_INFO_DIR)/$(TARGET_DSO) .; fi
 endif
 
 first:
