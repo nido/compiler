@@ -114,6 +114,9 @@ INT32 CG_branch_mispredict_factor= -1;		/* means not set */
 
 BOOL CG_warn_bad_freqs = FALSE;
 BOOL CG_enable_loop_optimizations = FALSE;
+#ifdef BCO_ENABLED /* Thierry */
+BOOL CG_emit_bb_freqs = FALSE;
+#endif /* BCO_Enabled Thierry */
 BOOL CG_enable_feedback = FALSE;
 BOOL CG_tail_call = FALSE;
 

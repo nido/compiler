@@ -154,7 +154,7 @@ static BOOL generate_elf_symbols = FALSE;
 static BOOL Trace_Init    = FALSE;	/* Data initialization trace */
 static BOOL Trace_Inst    = FALSE;	/* Noop-insertion trace */
 static BOOL Trace_Elf     = FALSE;	/* Miscellaneous ELF trace */
-static BOOL Trace_Longbr  = FALSE;	/* trace handling of long branches */
+// static BOOL Trace_Longbr  = FALSE;	/* trace handling of long branches */
 
 static FILE *Output_File;               /* write to Asm or Lai file */
 
@@ -781,6 +781,7 @@ EMT_Put_Elf_Symbol (
   ST *sym
 )
 {
+
   unsigned char symbind;
   unsigned char symother;
   Elf64_Word symindex;
@@ -995,7 +996,7 @@ Write_TCON (
 )
 {
   BOOL add_null = TCON_add_null(*tcon);
-  pSCNINFO scn = em_scn[scn_idx].scninfo;
+  // pSCNINFO scn = em_scn[scn_idx].scninfo;
 
   if (Trace_Init) {
     #pragma mips_frequency_hint NEVER
@@ -1041,7 +1042,7 @@ Write_Symbol (
   INT32 i;
   ST *basesym;
   INT64 base_ofst = 0;
-  pSCNINFO scn = em_scn[scn_idx].scninfo;
+  // pSCNINFO scn = em_scn[scn_idx].scninfo;
   INT address_size = ((Use_32_Bit_Pointers) ? 4 : 8);
 
   if ( Trace_Init ) {
@@ -1286,7 +1287,7 @@ Write_INITV (
   LABEL_IDX lab;
   TCON tcon;
   ST *st;
-  pSCNINFO scn = em_scn[scn_idx].scninfo;
+  // pSCNINFO scn = em_scn[scn_idx].scninfo;
 
   switch ( INITV_kind(inv) ) {
     case INITVKIND_ZERO:
@@ -1315,7 +1316,7 @@ Write_INITV (
 
 	case SCLASS_FORMAL:
 	{ /* EH this-pointer */
-	  ST * base = ST_base(st);
+	  // ST * base = ST_base(st);
 	  INT  ofst = ST_ofst(st);
 	  tcon = Host_To_Targ(MTYPE_I4, ofst);
 	  scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat1(inv));
@@ -1383,7 +1384,7 @@ Write_INITO (
   Elf64_Xword scn_ofst	/* Section offset to emit it at */
 )
 {
-  pSCNINFO scn = em_scn[scn_idx].scninfo;
+  // pSCNINFO scn = em_scn[scn_idx].scninfo;
   Elf64_Xword inito_ofst;
   ST *sym;
   ST *base;
@@ -3188,7 +3189,7 @@ Assemble_OP (
 )
 {
   INT words;
-  INT i;
+  // INT i;
 
   if (Trace_Inst) {
     fprintf(TFile, "<cgemit> ");
@@ -3715,6 +3716,106 @@ Emit_Loop_Note (
 #endif
   }
 }
+
+#ifdef BCO_ENABLED /* Thierry */
+static BB_NUM PU_BB_Count_for_profile;	// Number of BB with profile info
+static BB_NUM PU_BB_current_idx_for_profile = 0; /* Current index of BB being treated */ 
+
+/* Add profil_info commands */
+#define PI_FUNCBEGIN 0x01 
+#define PI_FUNCEND 0x02 
+#define FREQS_SCALE 50 /* multiplication factor of bb frequencies (fregs are converted from float to int) */
+
+/* ====================================================================
+ *   EMT_ProfileInfo_BB
+ *
+ *   Emit .profile_info for this BB.
+ *   Emit frequency info about BB.
+ *
+ * ====================================================================
+ */
+static void
+EMT_ProfileInfo_BB ( 
+  BB *bb, 
+  WN *rwn 
+)
+{
+  char * label_name;
+  ANNOTATION *ant;
+  LABEL_IDX lab;
+  FILE *file = Asm_File;
+  const char *prefix = file == Asm_File ? ASM_CMNT_LINE : "";
+
+  if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return;
+  FmtAssert(Assembly && CG_emit_bb_freqs, ("EMT_ProfileInfo_BB calls only with -CG:emit-bb-freqs"));
+
+  /* first get a label attached to this BB */
+
+  ant = ANNOT_First (BB_annotations(bb), ANNOT_LABEL);
+  assert(ant != NULL);
+  lab = ANNOT_label(ant);
+  label_name = LABEL_name(lab);
+    
+  PU_BB_current_idx_for_profile++;
+  FmtAssert( PU_BB_current_idx_for_profile <= PU_BB_Count_for_profile, ("Current BB index is over BB count!"));
+    
+  fprintf(file, "\t%s\t%s %s BB name\n", AS_WORD,
+	  label_name, prefix);
+  
+  fprintf(file, "\t%s\t%d %s BB index\n", AS_WORD,
+	  PU_BB_current_idx_for_profile, prefix);
+  
+  fprintf(file, "\t%s\t%d %s BB frequency\n", AS_WORD,
+	  (int) (BB_freq(bb) * FREQS_SCALE), prefix);
+}
+
+/* ====================================================================
+ *   EMT_ProfileInfo_Header_PU
+ *
+ *   Emit .profile_info header for this PU.
+ * ====================================================================
+ */
+static void
+EMT_ProfileInfo_PU ( 
+  ST      *pu,
+  DST_IDX  pu_dst, 
+  WN      *rwn
+)
+{
+  BB *bb; 
+  
+  if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return;
+  FmtAssert( Assembly && CG_emit_bb_freqs, ("EMT_ProfileInfo_Header_PU calls only with -CG:emit-bb-freqs"));
+  /* Emit header of .profile_info for this PU */
+  // HEADER
+  /* Reset current BB index to 0 */
+  PU_BB_current_idx_for_profile = 0;
+  fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ".profile_info");
+  fprintf (Asm_File, "\t%s\t0x%x %s PI_FUNCBEGIN %s\n",AS_WORD,
+	   PI_FUNCBEGIN, ASM_CMNT_LINE, ST_name(pu));
+  fprintf (Asm_File, "\t%s\t%s %s Function address\n",AS_WORD,
+	   ST_name(pu), ASM_CMNT_LINE);
+  
+  /* compute PU_BB_Count because PU_BB_Count is wrong here??? */
+  PU_BB_Count_for_profile = 0;
+  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    PU_BB_Count_for_profile++;
+  }
+  fprintf (Asm_File, "\t%s\t%d %s number of BBs\n",AS_WORD,
+	   PU_BB_Count_for_profile, ASM_CMNT_LINE);
+  
+    // BBS
+  /* Emit profile_info for each basic block in the PU */
+  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    EMT_ProfileInfo_BB (bb, rwn);
+  }
+
+  // FOOTER
+  fprintf(Asm_File, "\t%s\t 0x%x %s PI_FUNCEND %s\n",AS_WORD,
+	  PI_FUNCEND, ASM_CMNT_LINE,ST_name(pu));
+
+}
+#endif /* BCO_Enabled Thierry */
 
 /* ====================================================================
  *   EMT_Assemble_BB
@@ -4482,7 +4583,7 @@ EMT_Emit_PU (
   INT i;
 
   Trace_Inst	= Get_Trace ( TP_EMIT,1 );
-  BOOL trace_unwind = Get_Trace (TP_EMIT, 64);
+  // BOOL trace_unwind = Get_Trace (TP_EMIT, 64);
 
   if (Trace_Inst) {
     fprintf(TFile, "%s CFG before cgemit \n%s", DBar, DBar);
@@ -4647,6 +4748,12 @@ EMT_Emit_PU (
   if (AS_END) {
     CGEMIT_Exit_In_Asm(pu);
   }
+
+#ifdef BCO_ENABLED /* Thierry */
+  /* Emit the profile_info associated with this PU. */
+  if (Assembly && CG_emit_bb_freqs) 
+    EMT_ProfileInfo_PU(pu, pu_dst, rwn);
+#endif /* BCO_Enabled Thierry */
 
   /* Emit the initialized data associated with this PU. */
   Process_Initos_And_Literals (CURRENT_SYMTAB);

@@ -335,6 +335,12 @@ static OPTION_DESC Options_CG[] = {
 
   // Generic CG options.
 
+#ifdef BCO_ENABLED /* Thierry */
+  /* Thierry */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "emit_bb_freqs", "",
+    0, 0, 0,	&CG_emit_bb_freqs, NULL, "Emit .profile_info with basic block frequncies (estimated or feedback)" },
+
+#endif /* BCO_Enabled Thierry */
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_bad_freqs", "",
     0, 0, 0,	&CG_warn_bad_freqs, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "skip_before", "skip_b",

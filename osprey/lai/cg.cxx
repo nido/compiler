@@ -507,6 +507,11 @@ CG_Generate_Code(
     }
 #endif
 
+#ifdef BCO_ENABLED /* Thierry */
+    // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
+  } //CG_opt_level > 1
+  if (CG_opt_level > 1 || CG_emit_bb_freqs) {
+#endif /* BCO_Enabled Thierry */
     // Compute frequencies using heuristics when not using feedback.
     // It is important to do this after the code has been given a
     // cleanup by cflow so that it more closely resembles what it will
@@ -520,6 +525,11 @@ CG_Generate_Code(
 	FREQ_Verify("Heuristic Frequency Computation");
     }
 
+#ifdef BCO_ENABLED /* Thierry */
+  } //CG_opt_level > 1
+  if (CG_opt_level > 1) {
+    // Thierry end
+#endif /* BCO_Enabled Thierry */
 #ifdef TARG_ST
 
     // Arthur: there is a possibility that (like if-conversion)
@@ -673,7 +683,7 @@ CG_Generate_Code(
       Stop_Timer ( T_EBO_CU );
       Check_for_Dump ( TP_EBO, NULL );
     }
-  }
+  } /* CG_opt_level > 1 */ 
 
   if (!Get_Trace (TP_CGEXP, 1024))
     Reuse_Temp_TNs = TRUE;	/* for spills */

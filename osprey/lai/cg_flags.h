@@ -59,7 +59,16 @@
  *  BOOL LAI_warn_bad_freqs
  *	Whenever a phase notices that freq related data is wrong or
  *      inconsistent, it can warn when this flag is true.
+ * 
+*/
+#ifdef BCO_ENABLED /* Thierry */
+/*
+ *  BOOL CG_emit_bb_freqs
+ *	Emit Basic Block frequencies in .profile_info sextion
  *
+ */
+#endif /* BCO_Enabled Thierry */
+ /*
  *  BOOL CG_enable_loop_optimizations
  *	Enable the innermost loop optimizations (CGPREP). This includes
  *	loop unrolling, r/w elimination, recurrence breaking, SWP.
@@ -165,6 +174,9 @@
 
 
 extern BOOL CG_warn_bad_freqs;
+#ifdef BCO_ENABLED /* Thierry */
+extern BOOL CG_emit_bb_freqs;
+#endif /* BCO_Enabled Thierry */
 
 extern INT32 CG_skip_after;
 extern INT32 CG_skip_before;
