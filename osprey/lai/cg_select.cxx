@@ -1574,24 +1574,27 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     joint_block = bb2_target;
   }
 
-  // Compute probabilities for the new edge.
-  float prob1 = 0.0;
-  float prob2 = 0.0;
+  // Compute probability for the new bb1->else edge
+  // prob(bb1->else) = prob(bb1->bb2) * prob(bb2->else)
+  // Note that for the other edge, we have:
+  // prob(bb1->joint) = 1 - prob(bb1->else)
+  float prob1 = 0.0, prob2 = 0.0;
   BBLIST *bblist;
   FOR_ALL_BB_SUCCS(bb1, bblist) {
     BB *succ = BBLIST_item(bblist);
-    if (succ == joint_block) {
+    if (succ == bb2) {
       prob1 = BBLIST_prob(bblist);
       break;
     }
   }
   FOR_ALL_BB_SUCCS(bb2, bblist) {
     BB *succ = BBLIST_item(bblist);
-    if (succ == joint_block) {
+    if (succ == else_block) {
       prob2 = BBLIST_prob(bblist);
       break;
     }
   }
+  prob1 *= prob2;
 
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Convert if BB%d BB%d BB%d BB%d BB%d BB%d\n",
@@ -1661,12 +1664,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   // Commit dismissible loads
   BB_Fix_Spec_Loads (bb1);
 
-  // Update branch probabilities
-  if (AndNeeded)
-    prob1 = 1.0 - (prob1 * prob2);
-  else
-    prob1 = MAX (prob1, prob2);
-
   // Update control flow 
   Unlink_Pred_Succ (bb1, joint_block);
   Unlink_Pred_Succ (bb1, else_block);
@@ -1679,6 +1676,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     not_taken_bb = joint_block;
   }
   else {
+    prob1 = 1.0 - prob1;
     taken_bb = joint_block;
     not_taken_bb = else_block;
   }
