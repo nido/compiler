@@ -187,6 +187,12 @@ Assign_Static_Variable (ST *st)
 	   && ! (Gen_GP_Relative && Initializer_Contains_Address (st)))
       ? _SEC_RDATA : _SEC_DATA;
   else
+#ifdef TARG_ST
+      // (cbr) for named sections are progbits 
+      if (ST_has_named_section(st))
+        sec = _SEC_DATA;
+      else
+#endif
     sec = _SEC_BSS;
 
   return sec;
