@@ -130,5 +130,7 @@ Expand_CMP_Reg (OP *cmp, TN *tn, OPS *ops)
     BB_Remove_Op(OP_bb(cmp), cmp);
     return new_tn;
   }
+
+  return tn;
 }
 
