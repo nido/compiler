@@ -339,7 +339,6 @@ CGIR_SYM_update(CGIR_SYM cgir_sym) {
 // Identity of a CGIR_TN.
 static uint32_t
 CGIR_TN_identity(CGIR_TN cgir_tn) {
-  if (cgir_tn == NULL) return (uint32_t)-1;
   return (uintptr_t)cgir_tn/sizeof(*cgir_tn);
 }
 
@@ -394,8 +393,7 @@ CGIR_TN_update(CGIR_TN cgir_tn) {
 // Identity of a CGIR_OP.
 static uint32_t
 CGIR_OP_identity(CGIR_OP cgir_op) {
-  if (cgir_op == NULL) return (uint32_t)-1;
-  return OP_map_idx(cgir_op);
+  return (uintptr_t)cgir_op/OP_sizeof(0, 0);
 }
 
 // Create a CGIR_OP.
@@ -440,8 +438,7 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
 // Identity of a CGIR_BB.
 static uint32_t
 CGIR_BB_identity(CGIR_BB cgir_bb) {
-  if (cgir_bb == NULL) return (uint32_t)-1;
-  return BB_id(cgir_bb);
+  return (uintptr_t)cgir_bb/sizeof(*cgir_bb);
 }
 
 // Create a CGIR_BB.
