@@ -201,8 +201,8 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 /* The directive for emitting an address depends on the target pointer
  * size.  The following is defined and initialized in config_targ.c:
  */
-extern char *AS_ADDRESS;
-extern char *AS_ADDRESS_UNALIGNED;
+BE_EXPORTED extern char *AS_ADDRESS;
+BE_EXPORTED extern char *AS_ADDRESS_UNALIGNED;
 
 /* Defines for emission of special relocations */
 #define AS_GPREL	"@gprel"

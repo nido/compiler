@@ -175,68 +175,68 @@ static const char ti_res_count_rcs_id[] = "$Source$ $Revision$";
 
 typedef struct ti_res_count TI_RES_COUNT;
 
-extern TI_RES_COUNT *
+BE_EXPORTED extern TI_RES_COUNT *
 TI_RES_COUNT_Alloc(
   MEM_POOL *pool
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Add_Op_Resources(
   TI_RES_COUNT *counts,
   TOP           opcode
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Add_Op_Resources_Scaled(
   TI_RES_COUNT *counts,
   TOP           opcode,
   double	factor
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Subtract_Op_Resources(
   TI_RES_COUNT *counts,
   TOP           opcode
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Subtract_Op_Resources_Scaled(
   TI_RES_COUNT *counts,
   TOP           opcode,
   double	factor
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Add(
   TI_RES_COUNT *sum,
   TI_RES_COUNT *addend1,
   TI_RES_COUNT *addend2
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Subtract(
   TI_RES_COUNT *difference,
   TI_RES_COUNT *minuend,
   TI_RES_COUNT *subtrahend
 );
 
-extern double
+BE_EXPORTED extern double
 TI_RES_COUNT_Min_Cycles(
   TI_RES_COUNT *counts
 );
 
-extern INT32
+BE_EXPORTED extern INT32
 TI_RES_COUNT_Min_II(
   TI_RES_COUNT *counts
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Print(
   FILE *fp,
   TI_RES_COUNT *res
 );
 
-extern void
+BE_EXPORTED extern void
 TI_RES_COUNT_Emit_Note(
   const char *prefix,		       
   FILE *fp,

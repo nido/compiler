@@ -145,9 +145,9 @@ void PROC_Create (const char *proc_name, ...)
 		"};\n");
 
   fprintf(hfile,"\n#define PROCESSOR_count %d\n", instruction_count);
-  fprintf(hfile,"\nextern PROCESSOR PROCESSOR_Value;\n");
+  fprintf(hfile,"\nTARGINFO_EXPORTED extern PROCESSOR PROCESSOR_Value;\n");
   fprintf(cfile,"\nPROCESSOR PROCESSOR_Value = PROCESSOR_UNDEFINED;\n");
-  fprintf(hfile,"\nextern const char* PROCESSOR_Name(PROCESSOR proc);\n");
+  fprintf(hfile,"\nTARGINFO_EXPORTED extern const char* PROCESSOR_Name(PROCESSOR proc);\n");
   fprintf(efile,"PROCESSOR_Name\n");
   fprintf(cfile,"\nconst char* PROCESSOR_Name(PROCESSOR proc)\n"
 		"{\n"

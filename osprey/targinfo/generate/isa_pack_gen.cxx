@@ -653,7 +653,7 @@ void ISA_Pack_End(void)
   if (inst_words > 1) {
     fprintf(efile, "ISA_PACK_inst_words\n");
 
-    fprintf(cfile, "\nconst mUINT8 ISA_PACK_inst_words[%d] = {\n", TOP_count);
+    fprintf(cfile, "\nTARGINFO_EXPORTED const mUINT8 ISA_PACK_inst_words[%d] = {\n", TOP_count);
     for (top = 0; top < TOP_count; ++top ) {
       op_assembly *op_pack = op_packs[top];
       int words = op_pack ? op_pack->desc->max_word + 1 
@@ -667,7 +667,7 @@ void ISA_Pack_End(void)
 
   fprintf(hfile, "\ninline UINT64 ISA_PACK_Init_Mask(TOP topcode, INT iword)\n"
 		 "{\n"
-		 "  extern const mUINT%d ISA_PACK_init_mask[%d][%d];\n"
+		 "  TARGINFO_EXPORTED extern const mUINT%d ISA_PACK_init_mask[%d][%d];\n"
 		 "  return ISA_PACK_init_mask[(INT)topcode][iword];\n"
 		 "}\n",
 		 init_digits * 4,
@@ -679,7 +679,7 @@ void ISA_Pack_End(void)
   if (inst_words == 1) {
     fprintf(hfile, "  return TOP_is_dummy(topcode) ? 0 : 1;\n");
   } else {
-    fprintf(hfile, "  extern const mUINT8 ISA_PACK_inst_words[%d];\n"
+    fprintf(hfile, "  TARGINFO_EXPORTED extern const mUINT8 ISA_PACK_inst_words[%d];\n"
 		   "  return ISA_PACK_inst_words[(INT)topcode];\n",
 		   TOP_count);
   }
@@ -687,8 +687,8 @@ void ISA_Pack_End(void)
 
   fprintf(hfile, "\ninline const ISA_PACK_INFO *ISA_PACK_Info(TOP topcode)\n"
 		 "{\n"
-		 "  extern const %s ISA_PACK_info_index[];\n"
-		 "  extern const ISA_PACK_INFO ISA_PACK_info[];\n"
+		 "  TARGINFO_EXPORTED extern const %s ISA_PACK_info_index[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_PACK_INFO ISA_PACK_info[];\n"
 		 "  INT index = ISA_PACK_info_index[(INT)topcode];\n"
 		 "  return index == 0 ? 0 : &ISA_PACK_info[index];\n"
 		 "}\n",
@@ -782,13 +782,13 @@ void ISA_Pack_End(void)
 
   fprintf(hfile, "\ninline const ISA_PACK_ADJ_INFO *ISA_PACK_Adj_Info(TOP topcode)\n"
 		 "{\n"
-		 "  extern const ISA_PACK_ADJ_INFO ISA_PACK_adj_info[];\n"
-		 "  extern const mUINT8 ISA_PACK_adj_info_index[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_PACK_ADJ_INFO ISA_PACK_adj_info[];\n"
+		 "  TARGINFO_EXPORTED extern const mUINT8 ISA_PACK_adj_info_index[];\n"
 		 "  INT index = ISA_PACK_adj_info_index[(INT)topcode];\n"
 		 "  return index == 0 ? 0 : &ISA_PACK_adj_info[index];\n"
 		 "}\n");
 
-  fprintf(hfile, "\nextern void ISA_PACK_Adjust_Operands(const ISA_PACK_ADJ_INFO *info,\n"
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern void ISA_PACK_Adjust_Operands(const ISA_PACK_ADJ_INFO *info,\n"
 		 "                                       INT64 *opnd,\n"
 		 "                                       BOOL invert);\n");
 

@@ -33,9 +33,9 @@
 */
 
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include <stdio.h>
-#include <limits.h>
+#include "W_limits.h"
 #include <assert.h>
 
 #include "ti_si.h"

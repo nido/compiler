@@ -395,6 +395,11 @@ typedef const struct {
   mUINT8 bit_index;
 } SI_RESOURCE;
 
+TARGINFO_EXPORTED extern const INT SI_resource_count;
+#pragma weak SI_resource_count
+
+TARGINFO_EXPORTED extern SI_RESOURCE* const SI_resources[];
+#pragma weak SI_resources
 
 inline const char* SI_RESOURCE_Name( SI_RESOURCE* res )
 {
@@ -420,12 +425,6 @@ inline UINT SI_RESOURCE_Bit_Index( SI_RESOURCE* res )
 {
   return res->bit_index;
 }
-
-extern const INT SI_resource_count;
-#pragma weak SI_resource_count
-
-extern SI_RESOURCE* const SI_resources[];
-#pragma weak SI_resources
 
 inline const char* SI_RESOURCE_ID_Name( SI_RESOURCE_ID id )
 {
@@ -488,10 +487,10 @@ SI_RESOURCE_ID_SET_Complement( SI_RESOURCE_ID_SET s )
 /* SI_RRW -- A resource reservation word */
 typedef mUINT64 SI_RRW;
 
-extern const SI_RRW SI_RRW_initializer;
+TARGINFO_EXPORTED extern const SI_RRW SI_RRW_initializer;
 #pragma weak SI_RRW_initializer
 
-extern const SI_RRW SI_RRW_overuse_mask;
+TARGINFO_EXPORTED extern const SI_RRW SI_RRW_overuse_mask;
 #pragma weak SI_RRW_overuse_mask
 
 inline SI_RRW SI_RRW_Initial(void)
@@ -538,10 +537,10 @@ inline INT SI_ISSUE_SLOT_Avail_Per_Cycle( SI_ISSUE_SLOT* slot )
   return slot->avail_per_cycle;
 }
 
-extern const INT SI_issue_slot_count;
+TARGINFO_EXPORTED extern const INT SI_issue_slot_count;
 #pragma weak SI_issue_slot_count
 
-extern SI_ISSUE_SLOT* const SI_issue_slots[];
+TARGINFO_EXPORTED extern SI_ISSUE_SLOT* const SI_issue_slots[];
 #pragma weak SI_issue_slots
 
 inline INT SI_ISSUE_SLOT_Count(void)
@@ -626,7 +625,7 @@ typedef const struct {
   mUINT8 write_write_interlock;
 } SI;
 
-extern SI* const SI_top_si[];
+TARGINFO_EXPORTED extern SI* const SI_top_si[];
 #pragma weak SI_top_si
 
 inline const char* TSI_Name( TOP top )
@@ -725,7 +724,7 @@ inline INT TSI_Write_Write_Interlock( TOP top )
 /****************************************************************************
  ****************************************************************************/
 
-extern const INT SI_ID_count;
+TARGINFO_EXPORTED extern const INT SI_ID_count;
 #pragma weak SI_ID_count
 
 inline INT SI_ID_Count(void)
@@ -733,7 +732,7 @@ inline INT SI_ID_Count(void)
   return SI_ID_count;
 }
 
-extern SI* const SI_ID_si[];
+TARGINFO_EXPORTED extern SI* const SI_ID_si[];
 #pragma weak SI_ID_si
 
 inline const SI_RESOURCE_ID_SET*

@@ -120,7 +120,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern char *Targ_Append_To_Dbuf (char *, char);
+BE_EXPORTED extern char *Targ_Append_To_Dbuf (char *, char);
 #ifdef __cplusplus
 }
 #endif

@@ -203,7 +203,7 @@ void PROC_Properties_End(void)
     int_suffix = "ULL";
     int_size = 64;
   }
-  fprintf (hfile, "\nextern const %s PROC_PROPERTIES_flags[];\n\n", int_type);
+  fprintf (hfile, "\nTARGINFO_EXPORTED extern const %s PROC_PROPERTIES_flags[];\n\n", int_type);
   fprintf (efile, "PROC_PROPERTIES_flags\n");
   fprintf (cfile,"const %s PROC_PROPERTIES_flags[] = {\n", int_type);
 

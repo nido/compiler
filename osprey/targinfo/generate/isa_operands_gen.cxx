@@ -755,7 +755,7 @@ void ISA_Operands_End(void)
 
   fprintf(efile, "ISA_OPERAND_operand_types\n");
 
-  fprintf(cfile, "\nconst ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[] = {\n");
+  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[] = {\n");
   for (ivti = all_operand_types.begin(); ivti != all_operand_types.end(); ++ivti) {
     unsigned int flags;
     OPERAND_VALUE_TYPE val_type = *ivti;
@@ -801,7 +801,7 @@ void ISA_Operands_End(void)
 	          max_results_name, max_results_name, max_results_name);
   fprintf(efile, "ISA_OPERAND_info\n");
 
-  fprintf(cfile, "\nconst ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
+  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
   for (ogi = all_groups.begin(); ogi != all_groups.end(); ++ogi) {
     int i;
     int pos;
@@ -957,7 +957,7 @@ void ISA_Operands_End(void)
   assert(max_groups <= 0xffff);
 
   fprintf (efile, "ISA_OPERAND_info_index\n");
-  fprintf (cfile, "\nconst %s ISA_OPERAND_info_index[] = {\n", info_index_type);
+  fprintf (cfile, "\nTARGINFO_EXPORTED const %s ISA_OPERAND_info_index[] = {\n", info_index_type);
   for (code = 0; code < TOP_count; code++) {
     OPERANDS_GROUP oper_group = op_groups[code];
     fprintf (cfile, "  %3d,  /* %s: %s */\n",
@@ -968,7 +968,7 @@ void ISA_Operands_End(void)
   fprintf (cfile, "};\n");
 
   fprintf(efile, "ISA_OPERAND_relocatable_opnd\n");
-  fprintf(cfile, "\nconst mINT8 ISA_OPERAND_relocatable_opnd[] = {\n");
+  fprintf(cfile, "\nTARGINFO_EXPORTED const mINT8 ISA_OPERAND_relocatable_opnd[] = {\n");
   for (code = 0; code < TOP_count; code++) {
     OPERANDS_GROUP oper_group = op_groups[code];
     fprintf(cfile, "  %2d,  /* %s */\n",
@@ -980,8 +980,8 @@ void ISA_Operands_End(void)
   fprintf(hfile, "\ninline const ISA_OPERAND_INFO *"
 		   "ISA_OPERAND_Info(TOP topcode)\n"
 		 "{\n"
-		 "  extern const %s ISA_OPERAND_info_index[];\n"
-		 "  extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
+		 "  TARGINFO_EXPORTED extern const %s ISA_OPERAND_info_index[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
 		 "  INT index = ISA_OPERAND_info_index[(INT)topcode];\n"
 		 "  return &ISA_OPERAND_info[index];\n"
 		 "}\n",
@@ -997,7 +997,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT opnd)\n"
 		 "{\n"
-		 "  extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
 		 "  INT index = oinfo->opnd[opnd];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1012,7 +1012,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT result)\n"
 		 "{\n"
-		 "  extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
 		 "  INT index = oinfo->result[result];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1132,7 +1132,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf(hfile, "\nextern INT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Immediate_Operand\n");
   fprintf(cfile, "\nINT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
 		 "{\n"
@@ -1166,11 +1166,11 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf(hfile, "\nextern INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Relocatable_Operand\n");
   fprintf(cfile, "\nINT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
 		 "{\n"
-		 "  extern const mINT8 ISA_OPERAND_relocatable_opnd[];\n"
+		 "  TARGINFO_EXPORTED extern const mINT8 ISA_OPERAND_relocatable_opnd[];\n"
 		 "  INT iopnd = ISA_OPERAND_relocatable_opnd[(INT)topcode];\n"
 		 "  if (lclass && iopnd >= 0) {\n"
 		 "    const ISA_OPERAND_INFO *opinfo = ISA_OPERAND_Info(topcode);\n"
@@ -1180,7 +1180,7 @@ void ISA_Operands_End(void)
 		 "  return iopnd;\n"
 		 "}\n");
 
-  fprintf(hfile, "\nextern BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode);\n");
   fprintf(efile, "TOP_Can_Have_Immediate\n");
   fprintf(cfile, "\nBOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode)\n"
 		 "{\n"
@@ -1196,7 +1196,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf(hfile, "\nextern INT TOP_Find_Operand_Use(TOP topcode, "
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Find_Operand_Use(TOP topcode, "
 		 "ISA_OPERAND_USE use);\n");
   fprintf(efile, "TOP_Find_Operand_Use\n");
   fprintf(cfile, "\nINT TOP_Find_Operand_Use(TOP topcode, ISA_OPERAND_USE use)\n"
@@ -1240,7 +1240,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf(hfile, "\nextern mINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern mINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx);\n");
   fprintf(efile, "TOP_Same_Res_Operand\n");
   fprintf(cfile, "\nmINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx)\n"
 		 "{\n"
@@ -1248,7 +1248,7 @@ void ISA_Operands_End(void)
 		 "  return ISA_OPERAND_INFO_Same_Res(oinfo, residx);\n"
 		 "}\n");
 
-  fprintf(hfile, "\nextern BOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern BOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx);\n");
   fprintf(efile, "TOP_Result_Is_Uniq_Res\n");
   fprintf(cfile, "\nBOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx)\n"
 		 "{\n"

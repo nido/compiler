@@ -244,7 +244,7 @@ void ISA_Properties_End(void)
     int_suffix = "ULL";
     int_size = 64;
   }
-  fprintf (hfile, "extern const %s ISA_PROPERTIES_flags[];\n\n", int_type);
+  fprintf (hfile, "TARGINFO_EXPORTED extern const %s ISA_PROPERTIES_flags[];\n\n", int_type);
   fprintf (efile, "ISA_PROPERTIES_flags\n");
   fprintf (cfile,"const %s ISA_PROPERTIES_flags[] = {\n", int_type);
 
@@ -304,14 +304,14 @@ void ISA_Properties_End(void)
 
   // Emit the memory access properties:
   fprintf (hfile, "\n\n");
-  fprintf (hfile, "extern const UINT32 TOP_Mem_Bytes (TOP opcode);");
+  fprintf (hfile, "TARGINFO_EXPORTED extern const UINT32 TOP_Mem_Bytes (TOP opcode);");
   fprintf (hfile, "\n");
-  fprintf (hfile, "extern const UINT32 TOP_Mem_Alignment (TOP opcode);");
+  fprintf (hfile, "TARGINFO_EXPORTED extern const UINT32 TOP_Mem_Alignment (TOP opcode);");
   fprintf (hfile, "\n\n");
 
-  fprintf (hfile, "extern TOP TOP_Immediate_Compare (TOP opcode, INT64 const_val);");
+  fprintf (hfile, "TARGINFO_EXPORTED extern TOP TOP_Immediate_Compare (TOP opcode, INT64 const_val);");
   fprintf (hfile, "\n");
-  fprintf (hfile, "extern TOP TOP_Reverse_Compare (TOP opcode);");
+  fprintf (hfile, "TARGINFO_EXPORTED extern TOP TOP_Reverse_Compare (TOP opcode);");
   fprintf (hfile, "\n\n");
 
   fprintf (cfile, "\n");

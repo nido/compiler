@@ -207,70 +207,70 @@ static const char ti_res_res_rcs_id[] = "$Source$ $Revision$";
 
 typedef struct ti_res_res TI_RES_RES;
 
-extern TI_RES_RES *TI_RES_RES_Alloc(
+BE_EXPORTED extern TI_RES_RES *TI_RES_RES_Alloc(
   BOOL      cyclic,
   MEM_POOL *pool
 );
 
-extern void TI_RES_RES_Has_TOP(
+BE_EXPORTED extern void TI_RES_RES_Has_TOP(
   TI_RES_RES *res,
   TOP         opcode
 );
 
-extern void TI_RES_RES_Set_BB_Cycle_Count(
+BE_EXPORTED extern void TI_RES_RES_Set_BB_Cycle_Count(
   TI_RES_RES  *res,
   INT          cycles
 );
 
-extern BOOL TI_RES_RES_Resources_Available(
+BE_EXPORTED extern BOOL TI_RES_RES_Resources_Available(
   TI_RES_RES  *res,
   TOP          opcode,
   INT          cycle
 );
 
-extern void TI_RES_RES_Reserve_Resources(
+BE_EXPORTED extern void TI_RES_RES_Reserve_Resources(
   TI_RES_RES  *res,
   TOP          opcode,
   INT          cycle
 );
 
-extern void TI_RES_RES_Unreserve_Resources(
+BE_EXPORTED extern void TI_RES_RES_Unreserve_Resources(
   TI_RES_RES  *res,
   TOP          opcode,
   INT          cycle
 );
 
-extern BOOL TI_RES_RES_Is_Bad_II(
+BE_EXPORTED extern BOOL TI_RES_RES_Is_Bad_II(
   TI_RES_RES  *res,
   INT          ii
 );
 
-extern BOOL TI_RES_RES_Resources_Relevant(
+BE_EXPORTED extern BOOL TI_RES_RES_Resources_Relevant(
   TI_RES_RES  *res,
   TOP          opcode1,
   TOP          opcode2,
   INT          offset
 );
 
-extern BOOL TI_RES_RES_Resources_Equivalent(
+BE_EXPORTED extern BOOL TI_RES_RES_Resources_Equivalent(
   TI_RES_RES  *res,
   TOP          opcode1,
   TOP          opcode2
 );
 
-extern BOOL TI_RES_RES_Resources_Grainy(
+BE_EXPORTED extern BOOL TI_RES_RES_Resources_Grainy(
   TI_RES_RES  *res,
   TOP          opcode
 );
 
-extern BOOL TI_RES_RES_Resources_Length(
+BE_EXPORTED extern BOOL TI_RES_RES_Resources_Length(
   TI_RES_RES  *res,
   TOP          opcode
 );
 
-extern void TI_RES_RES_Print(FILE *fp, TI_RES_RES *res);
+BE_EXPORTED extern void TI_RES_RES_Print(FILE *fp, TI_RES_RES *res);
 
-extern BOOL TI_RES_RES_Equal(TI_RES_RES *res1, TI_RES_RES *res2);
+BE_EXPORTED extern BOOL TI_RES_RES_Equal(TI_RES_RES *res1, TI_RES_RES *res2);
 
 #ifdef __cplusplus
 }

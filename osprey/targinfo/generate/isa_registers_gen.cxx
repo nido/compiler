@@ -468,7 +468,7 @@ void ISA_Registers_End(void)
 
   fprintf(efile, "ISA_REGISTER_CLASS_info\n");
 
-  fprintf(cfile, "\nconst ISA_REGISTER_CLASS_INFO"
+  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_REGISTER_CLASS_INFO"
 		   " ISA_REGISTER_CLASS_info[] = {\n");
   fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
 		 0, 0, -1, 0, 0, 0, 0, "UNDEFINED");
@@ -508,7 +508,7 @@ void ISA_Registers_End(void)
 
   fprintf(efile, "ISA_REGISTER_CLASS_info_index\n");
 
-  fprintf(cfile, "\nmUINT8 ISA_REGISTER_CLASS_info_index[] = {\n");
+  fprintf(cfile, "\nTARGINFO_EXPORTED mUINT8 ISA_REGISTER_CLASS_info_index[] = {\n");
   fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s */\n", 0, "UNDEFINED");
   int index = 1;
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
@@ -563,7 +563,7 @@ void ISA_Registers_End(void)
 
   fprintf(efile, "ISA_REGISTER_SUBCLASS_info\n");
 
-  fprintf(cfile, "\nconst ISA_REGISTER_SUBCLASS_INFO"
+  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_REGISTER_SUBCLASS_INFO"
 		   " ISA_REGISTER_SUBCLASS_info[] = {\n");
   fprintf(cfile, "  { \"%s\", ISA_REGISTER_CLASS_%s, 0, { 0 }, { 0 } },\n", 
 		 "UNDEFINED", "UNDEFINED");
@@ -606,8 +606,8 @@ void ISA_Registers_End(void)
 		 "  ISA_REGISTER_CLASS rc\n"
 		 ")\n"
 		 "{\n"
-		 "  extern const ISA_REGISTER_CLASS_INFO ISA_REGISTER_CLASS_info[];\n"
-		 "  extern mUINT8 ISA_REGISTER_CLASS_info_index[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_REGISTER_CLASS_INFO ISA_REGISTER_CLASS_info[];\n"
+		 "  TARGINFO_EXPORTED extern mUINT8 ISA_REGISTER_CLASS_info_index[];\n"
 		 "  INT index = ISA_REGISTER_CLASS_info_index[(INT)rc];\n"
 		 "  return &ISA_REGISTER_CLASS_info[index];\n"
 		 "}\n");
@@ -673,7 +673,7 @@ void ISA_Registers_End(void)
 		 "  ISA_REGISTER_SUBCLASS sc\n"
 		 ")\n"
 		 "{\n"
-		 "  extern const ISA_REGISTER_SUBCLASS_INFO ISA_REGISTER_SUBCLASS_info[];\n"
+		 "  TARGINFO_EXPORTED extern const ISA_REGISTER_SUBCLASS_INFO ISA_REGISTER_SUBCLASS_info[];\n"
 		 "  return &ISA_REGISTER_SUBCLASS_info[sc];\n"
 		 "}\n");
 
@@ -714,7 +714,7 @@ void ISA_Registers_End(void)
 		 "  return info->reg_name[n];\n"
 		 "}\n");
 
-  fprintf(hfile, "\nextern void ISA_REGISTER_Initialize(void);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern void ISA_REGISTER_Initialize(void);\n");
 
   fprintf(efile, "ISA_REGISTER_Initialize\n");
 

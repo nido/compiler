@@ -84,27 +84,27 @@ extern "C" {
  */
 
 /* General target control: */
-extern char *ABI_Name;		/* -TARG:abi=xxx */
-extern char *Processor_Name;	/* -TARG:processor=xxx */
-extern char *ISA_Name;		/* -TARG:isa=xxx */
-extern INT16 Target_FPRs;	/* Number of target FP registers */
-extern BOOL Pure_ABI;		/* Avoid non-ABI constructs? */
+BE_EXPORTED extern char *ABI_Name;		/* -TARG:abi=xxx */
+BE_EXPORTED extern char *Processor_Name;	/* -TARG:processor=xxx */
+BE_EXPORTED extern char *ISA_Name;		/* -TARG:isa=xxx */
+BE_EXPORTED extern INT16 Target_FPRs;	/* Number of target FP registers */
+BE_EXPORTED extern BOOL Pure_ABI;		/* Avoid non-ABI constructs? */
 
 /* Fault handling: */
-extern BOOL Force_FP_Precise_Mode;	/* Force precise FP traps? */
-extern BOOL Force_Memory_Dismiss;	/* Force mem fault dismissal? */
-extern BOOL Force_Page_Zero;		/* Force mapping page zero? */
-extern BOOL Force_SMM;			/* Force sequential memory? */
-extern char *FP_Excp_Max;		/* Max FP trap enables */
-extern char *FP_Excp_Min;		/* Min FP trap enables */
+BE_EXPORTED extern BOOL Force_FP_Precise_Mode;	/* Force precise FP traps? */
+BE_EXPORTED extern BOOL Force_Memory_Dismiss;	/* Force mem fault dismissal? */
+BE_EXPORTED extern BOOL Force_Page_Zero;		/* Force mapping page zero? */
+BE_EXPORTED extern BOOL Force_SMM;			/* Force sequential memory? */
+BE_EXPORTED extern char *FP_Excp_Max;		/* Max FP trap enables */
+BE_EXPORTED extern char *FP_Excp_Min;		/* Min FP trap enables */
 
 /* Force calls to be indirect (i.e. use address in register)? */
-extern BOOL Force_Jalr;
+BE_EXPORTED extern BOOL Force_Jalr;
 
 /* Miscellaneous target instruction features: */
-extern BOOL Madd_Allowed;	/* Generate madd instructions? */
-extern BOOL SYNC_Allowed;
-extern BOOL Slow_CVTDL;
+BE_EXPORTED extern BOOL Madd_Allowed;	/* Generate madd instructions? */
+BE_EXPORTED extern BOOL SYNC_Allowed;
+BE_EXPORTED extern BOOL Slow_CVTDL;
 
 /* ====================================================================
  * List of global variables that are set by the -TARG option group

@@ -158,7 +158,7 @@ void ISA_Create (const char *isa_name, ...)
 
   fprintf(hfile,"\n#define TOP_count %d\n", instruction_count);
 
-  fprintf(hfile,"\nextern const char* TOP_Name(TOP topcode);\n");
+  fprintf(hfile,"\nTARGINFO_EXPORTED extern const char* TOP_Name(TOP topcode);\n");
   fprintf(efile,"TOP_Name\n");
   fprintf(cfile,"\nconst char* TOP_Name(TOP topcode)\n{\n"
                 "  return top_names[(int)topcode];\n"

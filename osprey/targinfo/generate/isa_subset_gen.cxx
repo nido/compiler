@@ -218,11 +218,11 @@ void ISA_Subset_End(void)
   fprintf(cfile,"  \"UNDEFINED\"\n"
 		"};\n");
 
-  fprintf(hfile,"extern ISA_SUBSET ISA_SUBSET_Value;\n\n");
+  fprintf(hfile,"TARGINFO_EXPORTED extern ISA_SUBSET ISA_SUBSET_Value;\n\n");
   fprintf(efile,"ISA_SUBSET_Value\n");
   fprintf(cfile,"ISA_SUBSET ISA_SUBSET_Value = ISA_SUBSET_UNDEFINED;\n\n");
 
-  fprintf(hfile,"extern const char* ISA_SUBSET_Name( ISA_SUBSET subset );\n");
+  fprintf(hfile,"TARGINFO_EXPORTED extern const char* ISA_SUBSET_Name( ISA_SUBSET subset );\n");
   fprintf(efile,"ISA_SUBSET_Name\n");
   fprintf(cfile,"const char* ISA_SUBSET_Name( ISA_SUBSET subset ) {\n");
   fprintf(cfile,"  return isa_subset_names[(INT)subset];\n");
@@ -253,7 +253,7 @@ void ISA_Subset_End(void)
 		"  }\n");
   fprintf(cfile,"};\n");
 
-  fprintf(hfile,"extern INT ISA_SUBSET_Member( ISA_SUBSET subset,\n"
+  fprintf(hfile,"TARGINFO_EXPORTED extern INT ISA_SUBSET_Member( ISA_SUBSET subset,\n"
                 "                              TOP opcode );\n");
   fprintf(efile,"ISA_SUBSET_Member\n");
   fprintf(cfile,
