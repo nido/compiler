@@ -360,8 +360,7 @@ Can_Merge_BB (BB *bb_first, BB *bb_second)
   if (BB_length(bb_first) + BB_length(bb_second) >= CG_split_BB_length)
     return FALSE;
 
-  if (BB_kind (bb_second) == BBKIND_LOGIF &&
-      BBLIST_item(BBlist_Fall_Thru_Succ(bb_second)) != BB_next(bb_first)) 
+  if (BBlist_Len(BB_succs(bb_second)) > 1) 
     return FALSE;
 
   return TRUE;
@@ -372,7 +371,7 @@ BB_Merge (BB *bb_first, BB *bb_second)
 {
   BB *succ;
   BBLIST *bl;
-  
+
   if (Trace_Select_Merge) {
     fprintf (Select_TFile, "BB_Merge %d %d\n",
              BB_id (bb_first), BB_id (bb_second));
@@ -391,16 +390,11 @@ BB_Merge (BB *bb_first, BB *bb_second)
   //
   // Move all of its ops to bb_first.
   //
-  OP* op_next;
-  OP* last = BB_last_op(bb_first);
-  for (OP *op = BB_first_op(bb_second); op; op = op_next) {
-    op_next = OP_next(op);
-    if (last) {
-      BB_Move_Op(bb_first, last, bb_second, op, FALSE);
-    } else {
-      BB_Append_Op (bb_first, op);
-    }
-    last = op;
+  BB_Append_All(bb_first, bb_second);
+
+  if (!CG_localize_tns) {
+    GRA_LIVE_Merge_Blocks(bb_first, bb_first, bb_second);
+    Rename_TNs_For_BB(bb_first, NULL);
   }
 
   // Clean up the firsts pred-succ list
@@ -434,26 +428,19 @@ BB_Merge (BB *bb_first, BB *bb_second)
   //
   // Move bb_second's successor arcs to bb_first.
   //
-  FmtAssert(BBlist_Len(BB_succs(bb_second))<=2,("Too many successors"));
+  FmtAssert(BBlist_Len(BB_succs(bb_second))<=1,("Too many successors"));
+
   if (BBlist_Len(BB_succs(bb_second)) == 1) {
     bl = BB_succs(bb_second);
     float old_prob = BBLIST_prob(bl);
     succ = BBLIST_item(bl);
     Unlink_Pred_Succ(bb_second, succ);
     Link_Pred_Succ_with_Prob(bb_first, succ, old_prob);
-  } else {
-    while (bl = BB_succs(bb_second)) {
-      succ = BBLIST_item(bl);
-      Unlink_Pred_Succ(bb_second, succ);
-      Link_Pred_Succ(bb_first, succ);
-    }
   }
 
   if (Trace_Select_Merge) {
     fprintf (Select_TFile, "AFTER BB_Merge %d %d\n",
              BB_id (bb_first), BB_id (bb_second));
-    Print_BB (bb_first);
-    Print_BB (bb_second);
     Print_All_BBs();
   }
 }
