@@ -30,9 +30,9 @@ main()
     mul,
     div,
     cmp,
-    and,
-    or,
-    xor,
+    And,
+    Or,
+    Xor,
     madd,
     mmalu,
     mmmul,
@@ -79,15 +79,10 @@ main()
 		 TOP_GP32_LOOPDIS, 
 		 TOP_GP32_LOOPENA, 
 		 TOP_GP32_NOP, 
-		 TOP_GP32_POPRTE_RSET, 
-		 TOP_GP32_POPRTE_U20, 
-		 TOP_GP32_POPRTS_RSET, 
-		 TOP_GP32_POPRTS_U20, 
 		 TOP_GP32_POP_RSET, 
 		 TOP_GP32_POP_U20, 
 		 TOP_GP32_PUSH_RSET, 
 		 TOP_GP32_PUSH_U20, 
-		 TOP_GP32_RTE, 
 		 TOP_GP32_SETILE0_S16, 
 		 TOP_GP32_SETILE1_S16, 
 		 TOP_GP32_SETILE2_S16, 
@@ -114,6 +109,11 @@ main()
   jump = ISA_Property_Create ("jump"); 
   Instruction_Group (jump, 
 		 TOP_GP32_GOTO_S25, 
+		 TOP_GP32_POPRTE_RSET, 
+		 TOP_GP32_POPRTE_U20, 
+		 TOP_GP32_POPRTS_RSET, 
+		 TOP_GP32_POPRTS_U20, 
+		 TOP_GP32_RTE, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -607,6 +607,19 @@ main()
   /* ====================================== */ 
   add = ISA_Property_Create ("add"); 
   Instruction_Group (add, 
+		 TOP_GP32_ADDBA_GT_AR_AR_AR, 
+		 TOP_GP32_ADDBA_GT_AR_AR_U9, 
+		 TOP_GP32_ADDBA_GT_AR_P13_U15, 
+		 TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 
+		 TOP_GP32_ADDBA_GT_MD_AR_AR_U5, 
+		 TOP_GP32_ADDCP_GT_DR_DR_DR, 
+		 TOP_GP32_ADDCP_GT_DR_DR_U8, 
+		 TOP_GP32_ADDCW_GT_DR_DR_DR, 
+		 TOP_GP32_ADDCW_GT_DR_DR_U8, 
+		 TOP_GP32_ADDHA_GT_AR_AR_AR, 
+		 TOP_GP32_ADDHA_GT_AR_AR_U9, 
+		 TOP_GP32_ADDHA_GT_AR_P13_U15, 
+		 TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -630,18 +643,18 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  and = ISA_Property_Create ("and"); 
-  Instruction_Group (and, 
+  And = ISA_Property_Create ("And"); 
+  Instruction_Group (And, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  or = ISA_Property_Create ("or"); 
-  Instruction_Group (or, 
+  Or = ISA_Property_Create ("Or"); 
+  Instruction_Group (Or, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  xor = ISA_Property_Create ("xor"); 
-  Instruction_Group (xor, 
+  Xor = ISA_Property_Create ("Xor"); 
+  Instruction_Group (Xor, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -756,6 +769,7 @@ main()
   /* ====================================== */ 
   unsign = ISA_Property_Create ("unsign"); 
   Instruction_Group (unsign, 
+		 TOP_GP32_MPSUHH_GT_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -825,19 +839,6 @@ main()
   guard_t = ISA_Property_Create ("guard_t"); 
   Instruction_Group (guard_t, 
 		 TOP_spadjust, 
-		 TOP_GP32_ADDBA_GT_AR_AR_AR, 
-		 TOP_GP32_ADDBA_GT_AR_AR_U9, 
-		 TOP_GP32_ADDBA_GT_AR_P13_U15, 
-		 TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 
-		 TOP_GP32_ADDBA_GT_MD_AR_AR_U5, 
-		 TOP_GP32_ADDCP_GT_DR_DR_DR, 
-		 TOP_GP32_ADDCP_GT_DR_DR_U8, 
-		 TOP_GP32_ADDCW_GT_DR_DR_DR, 
-		 TOP_GP32_ADDCW_GT_DR_DR_U8, 
-		 TOP_GP32_ADDHA_GT_AR_AR_AR, 
-		 TOP_GP32_ADDHA_GT_AR_AR_U9, 
-		 TOP_GP32_ADDHA_GT_AR_P13_U15, 
-		 TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 
 		 TOP_GP32_ADDHA_GT_MD_AR_AR_U5, 
 		 TOP_GP32_ADDP_GT_DR_DR_DR, 
 		 TOP_GP32_ADDP_GT_DR_DR_U8, 
@@ -1521,7 +1522,6 @@ main()
 		 TOP_GP32_MPSSHL_GT_DR_DR_DR, 
 		 TOP_GP32_MPSSLH_GT_DR_DR_DR, 
 		 TOP_GP32_MPSSLL_GT_DR_DR_DR, 
-		 TOP_GP32_MPSUHH_GT_DR_DR_DR, 
 		 TOP_GP32_MPSUHL_GT_DR_DR_DR, 
 		 TOP_GP32_MPSULH_GT_DR_DR_DR, 
 		 TOP_GP32_MPSULL_GT_DR_DR_DR, 

@@ -63,32 +63,17 @@ CGTARG_Use_Brlikely(float branch_taken_probability)
   return FALSE;
 }
 
-#if 0
 /* ====================================================================
- *    Predication:
+ *   Spilling:
  * ====================================================================
  */
-inline BOOL CGTARG_Can_Predicate_Calls() { return TRUE; }
-inline BOOL CGTARG_Can_Predicate_Returns() { return TRUE; }
-inline BOOL CGTARG_Can_Predicate_Branches() { return TRUE; }
-inline BOOL CGTARG_Can_Predicate() { return TRUE; }
-#endif
-
-/* ====================================================================
- *    ISA properties:
- * ====================================================================
- */
+#define CGSPILL_DEFAULT_STORE_COST 1.25F
+#define CGSPILL_DEFAULT_RESTORE_COST 1.25F
 
 /* ====================================================================
  *    ASM:
  * ====================================================================
  */
-
-inline const char*
-CGTARG_Top_Name(TOP opr)
-{
-  return ISA_PRINT_AsmName(opr);
-}
 
 /* call init routine once per asm stmt */
 extern void CGTARG_Init_Asm_Constraints(void);
@@ -131,44 +116,6 @@ extern void CGTARG_Postprocess_Asm_String (char*);
  *                    Code Generation stuff
  * ====================================================================
  */
-
-extern TOP CGTARG_Invert_Table[TOP_count+1];
-
-extern mTOP CGTARG_Inter_RegClass_Copy_Table
-    [ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_CLASS_MAX+1][2];
-
-/* --------------------------------------------------------------------
- *    Return the inverse of <opr>. TOP_UNDEFINED is returned
- *    if there is no inverse. Note that the inverse of an
- *    instruction that takes an immediate does not also necessarily
- *    take an immediate. 
- * --------------------------------------------------------------------
- */
-inline 
-TOP CGTARG_Invert(TOP opr)
-{
-  return CGTARG_Invert_Table[(INT)opr];
-}
-
-inline INT
-CGTARG_Text_Alignment (void)
-{
-  return ISA_INST_BYTES;
-}
-
-/* --------------------------------------------------------------------
- *    Returns the copy instruction for moving data from register
- *    class <src> to <dst> in single or double precision according
- *    to <is_double>. Returns TOP_UNDEFINED if there is no
- *    such instruction.
- * --------------------------------------------------------------------
- */
-inline TOP CGTARG_Inter_RegClass_Copy(ISA_REGISTER_CLASS dst,
-				      ISA_REGISTER_CLASS src,
-				      BOOL is_double)
-{
-  return (TOP)CGTARG_Inter_RegClass_Copy_Table[src][dst][is_double];
-}
 
 inline TN *CGTARG_gen_trip_count_TN (INT32 trip_size) 
 { 

@@ -57,7 +57,7 @@
 #include "topcode.h"
 #include "wn.h"
 #include "opcode.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 #include "betarget.h"
@@ -66,8 +66,24 @@
 BOOL Targ_Lower_Float_To_Unsigned = FALSE;
 BOOL Targ_Lower_Unsigned_To_Float = FALSE;
 
-// largest signed offset possible in small-frame stack model
-//INT Max_Small_Frame_Offset = 0x1fff;    // 13 bits
+/* ============================================================
+ *
+ * BOOL mem_offset_must_be_split(WN_OFFSET offset)
+ * WN_OFFSET mem_offset_hi(WN_OFFSET offset)
+ * WN_OFFSET mem_offset_lo(WN_OFFSET offset)
+ *
+ * Returns TRUE iff <offset> must be split for a target-machine memory
+ * reference.  If so, mem_offset_hi(offset) returns the high part of
+ * the split offset, and mem_offset_lo(offset) returns the low part of
+ * the split offset.
+ * 
+ * ============================================================
+ */
+BOOL 
+mem_offset_must_be_split (INT64 offset)
+{
+  return FALSE;
+}
 
 /* ============================================================
  *    OPCODE_To_TOP (opcode)

@@ -57,7 +57,7 @@ static const char source_file[] = __FILE__;
 #include "errors.h"
 #include "config_cache.h"
 #include "config_lno.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "config_platform.h"
 
 void MHD::Initialize()

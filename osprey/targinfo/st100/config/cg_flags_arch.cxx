@@ -32,9 +32,72 @@
 
 */
 
-
 #include "defs.h"
 #include "cg_flags.h"
+#include "cg_loop.h"      /* for cg_loop flags */
+#include "cio.h"          /* for cio_rwtran flags */
 
-BOOL HB_loops_with_exits = FALSE;
-BOOL HB_complex_non_loop = TRUE;
+void Configure_CG_Target() {
+
+  // Generate the push/pop sequence
+  CG_gen_callee_saved_regs_mask = TRUE;
+
+  // By default it is OFF. There is a bug in plumhall lang.out.
+  // TODO: enable when debugged.
+  //CG_tail_call = TRUE;
+ 
+  // ??
+  CG_enable_thr = FALSE;
+ 
+  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
+  CG_LOOP_force_ifc = 0;
+ 
+  // CFLOW optimizations: ON by default
+ 
+  // disable CFLOW second pass after HB formation
+  //CFLOW_opt_after_cgprep = FALSE;
+
+  // Scheduling options: scheduling is ON by default -- disable if
+  //                     in development
+
+  // disable HB scheduling
+  IGLS_Enable_HB_Scheduling = FALSE;
+  IGLS_Enable_PRE_HB_Scheduling = FALSE;
+  IGLS_Enable_POST_HB_Scheduling = FALSE;
+
+  // disable local BB scheduling
+  //LOCS_Enable_Scheduling = FALSE;
+  //LOCS_PRE_Enable_Scheduling = FALSE;
+  //LOCS_POST_Enable_Scheduling = FALSE;
+
+  // Bundle formation is OFF by default
+  LOCS_Enable_Bundle_Formation = FALSE;
+
+  // GCM settings: ON by default
+  GCM_Enable_Scheduling = FALSE;
+  GCM_Speculative_Loads = FALSE;
+  GCM_Predicated_Loads = FALSE;
+  GCM_Motion_Across_Calls = FALSE;
+  GCM_Min_Reg_Usage = TRUE;
+  GCM_Pointer_Spec = FALSE;
+  GCM_Eager_Ptr_Deref = FALSE;
+  GCM_Test = FALSE;
+  GCM_Enable_Cflow = FALSE;
+  GCM_PRE_Enable_Scheduling = FALSE;
+  GCM_POST_Enable_Scheduling = FALSE;
+  GCM_Enable_Fill_Delay_Slots = FALSE;
+
+  // Reorder while LRA
+  LRA_do_reorder = FALSE;
+
+  // HB stuff: everything's OFF by default
+  //HB_complex_non_loop = TRUE;
+  //HB_skip_hammocks = FALSE;
+
+  // May set this temporary OFF for development
+  CIO_enable_copy_removal = FALSE;
+  CIO_enable_read_removal = FALSE;
+  CIO_enable_write_removal = FALSE;
+
+  return;
+}

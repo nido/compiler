@@ -50,6 +50,17 @@
 #include "cgir.h"
 
 /* ====================================================================
+ *   OP_Is_Barrier
+ *
+ *   TODO: Perhaps it can be done by associating a TOP property ?
+ * ====================================================================
+ */
+BOOL OP_Is_Barrier(OP *op) 
+{
+  return FALSE;
+}
+
+/* ====================================================================
  *   OP_is_counted_loop
  * ====================================================================
  */
@@ -382,6 +393,33 @@ TOP_immediate(TOP top)
 }
 
 /* ====================================================================
+ *   TOP_equiv_nonindex_memory
+ *
+ *   TODO: belongs to the targ_info.
+ * ====================================================================
+ */
+TOP 
+TOP_equiv_nonindex_memory(TOP top)
+{
+  return TOP_UNDEFINED;
+}
+
+/* ====================================================================
+ *   CGTARG_Which_OP_Select
+ * ====================================================================
+ */
+TOP
+CGTARG_Which_OP_Select ( 
+  UINT16 bit_size, 
+  BOOL is_float, 
+  BOOL is_fcc 
+)
+{
+  FmtAssert( FALSE, ( "CGTARG_Which_OP_Select: not implemented") );
+  /*NOTREACHED*/
+}
+
+/* ====================================================================
  *   OP_opnd_can_be_reassociated
  *
  *   Test whether the OPND can be reassociated with the OP.
@@ -708,7 +746,7 @@ Hack_For_Printing_Push_Pop (
 {
 
   if (OP_code(op) == TOP_GP32_PUSH_U20 || OP_code(op) == TOP_GP32_POP_U20) {
-    fputc ('\t', file);
+    fputc ('\t\t', file);
     if (OP_code(op) == TOP_GP32_PUSH_U20) {
       fprintf (file, " push ");
       RegMask_pretty(TN_value(OP_opnd(op,0)), TRUE, file);

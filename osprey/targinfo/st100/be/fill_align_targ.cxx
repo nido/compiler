@@ -35,7 +35,7 @@
 
 #include "defs.h"
 #include "errors.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "config_platform.h"
 
 void Fill_Align_Initialize_Parameters(INT *L1_sz, INT *L2_sz, INT *pg_sz)

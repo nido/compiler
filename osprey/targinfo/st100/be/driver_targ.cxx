@@ -36,7 +36,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "config.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "ti_init.h"
 
 /* ====================================================================

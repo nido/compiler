@@ -178,26 +178,6 @@ endif
 ifeq ($(BUILD_TARGET), ST200)
 LDIRT += st220_si_gen$(BEXE)
 
-ifeq ($(BUILD_TARGET), MIPS)
-LDIRT += r10000_si_gen r8000_si_gen r5000_si_gen r4000_si_gen 
-SO_TARGETS = \
-	r10000.so	\
-	r8000.so	\
-	r5000.so	\
-	r4000.so
-endif
-ifeq ($(BUILD_TARGET), IA64)
-LDIRT += itanium_si_gen
-SO_TARGETS = \
-	itanium.so
-endif
-ifeq ($(BUILD_TARGET), IA32)
-LDIRT += pentium_si_gen
-SO_TARGETS = \
-	pentium.so
-endif
-
-
 # building static library
 ifeq ($(DSO_MODE),STATIC)
 SO_TARGETS = libst220.a
@@ -212,6 +192,27 @@ SO_TARGETS = st220.so
 endif
 
 endif # ST200
+
+ifeq ($(BUILD_TARGET), MIPS)
+LDIRT += r10000_si_gen r8000_si_gen r5000_si_gen r4000_si_gen 
+SO_TARGETS = \
+	r10000.so	\
+	r8000.so	\
+	r5000.so	\
+	r4000.so
+endif
+
+ifeq ($(BUILD_TARGET), IA64)
+LDIRT += itanium_si_gen
+SO_TARGETS = \
+	itanium.so
+endif
+
+ifeq ($(BUILD_TARGET), IA32)
+LDIRT += pentium_si_gen
+SO_TARGETS = \
+	pentium.so
+endif
 
 TARG_INFO_LIB = libtarginfo.a
 LIB_LOC = $(STD_MONGOOSE_LOC)
@@ -866,8 +867,8 @@ endif
 
 ifeq ($(BUILD_TARGET), ST100)
 
-st120.so: st120.o
-	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
+#st120.so: st120.o
+#	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
 
 st120.o: st120.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -875,11 +876,30 @@ st120.o: st120.c ti_si.h
 st120.c: st120_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./st120_si_gen$(BEXE)
 
-st120_si_gen$(BEXE): si_gen.a st120_si.o build_topcode.o
-	$(BUILD_CXX) $(CXXLDFLAGS) $^ -o $@
+st120_si_gen$(BEXE): st120_si.o si_gen.a build_topcode.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 st120_si.o: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
-	$(BUILD_CXX) $(CXXFLAGS) -c $< -o $@
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+#
+# shared library
+#
+st120.so: st120.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
+
+#
+# windows dll (+ import library)
+#
+st120.dll st120_dll.a : st120.o st100_DllMain.o $(LIBTARGINFO_OBJS)
+	$(CC) --shared -o st120.dll -Wl,--out-implib,st120_dll.a \
+	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
+
+#
+# static library
+#
+libst120.a : st120.o
+	$(AR) rc $@ $<
 
 endif # ST100
 

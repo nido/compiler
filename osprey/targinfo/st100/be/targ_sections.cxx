@@ -35,7 +35,7 @@
 #include "defs.h"
 #include "stab.h"
 #include "stblock.h"
-#include "config_targ.h"
+#include "config_target.h"
 #include "data_layout.h"
 #include "sections.h"
 #include "targ_sections.h"
