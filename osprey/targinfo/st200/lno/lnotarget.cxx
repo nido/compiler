@@ -51,6 +51,8 @@ Mult_Latency (
 {
   INT latency;
 
+  FmtAssert(FALSE,("not implemented"));
+
   if (rtype == MTYPE_I4 || rtype == MTYPE_U4) {
     // __MULW
     latency = 6;
@@ -88,22 +90,6 @@ LNOTARGET_Opcode_Lat (
   // the function calls => not subject to all this ...
 
   switch (opcode) {
-    case OPC_I4ADD:
-      return LNOTARGET_Top_Latency(TOP_GP32_ADD_GT_DR_DR_DR);
-    case OPC_U4ADD:
-      return LNOTARGET_Top_Latency(TOP_GP32_ADDU_GT_DR_DR_DR);
-    case OPC_I8ADD:
-      return 2*LNOTARGET_Top_Latency(TOP_GP32_ADD_GT_DR_DR_DR);
-    case OPC_U8ADD:
-      return 2*LNOTARGET_Top_Latency(TOP_GP32_ADDU_GT_DR_DR_DR);
-    case OPC_I4SUB:
-      return LNOTARGET_Top_Latency(TOP_GP32_SUB_GT_DR_DR_DR);
-    case OPC_U4SUB:
-      return LNOTARGET_Top_Latency(TOP_GP32_SUBU_GT_DR_DR_DR);
-    case OPC_I8SUB:
-      return 2*LNOTARGET_Top_Latency(TOP_GP32_SUB_GT_DR_DR_DR);
-    case OPC_U8SUB:
-      return 2*LNOTARGET_Top_Latency(TOP_GP32_SUBU_GT_DR_DR_DR);
     case OPC_I4MPY:
       return Mult_Latency(MTYPE_I4);
     case OPC_U4MPY:
@@ -112,10 +98,6 @@ LNOTARGET_Opcode_Lat (
       return Mult_Latency(MTYPE_I8);
     case OPC_U8MPY:
       return Mult_Latency(MTYPE_U8);
-    case OPC_BI4LT: 
-      return LNOTARGET_Top_Latency(TOP_GP32_LTW_GT_BR_DR_DR);
-    case OPC_BU4LT:  
-      return LNOTARGET_Top_Latency(TOP_GP32_LTUW_GT_BR_DR_DR);
 
     case OPC_I4F4LT: 
     case OPC_I4F8LT:
@@ -196,10 +178,16 @@ LNOTARGET_Loop_Inc_Test_Res (
   return;
 }
 
+/* ====================================================================
+ *   LNOTARGET_Cvt_Res
+ *
+ *   ??
+ * ====================================================================
+ */
 double
 LNOTARGET_Cvt_Res (TI_RES_COUNT* resource_count, OPCODE opcode)
 {
-  /*
+#if 0
   switch(opcode) {
     case OPC_F4I4CVT: 
     case OPC_F4I8CVT: 
@@ -290,7 +278,7 @@ LNOTARGET_Cvt_Res (TI_RES_COUNT* resource_count, OPCODE opcode)
       TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_fnorm_s);
       return 1.0;
   }
-  */
+#endif
   return 0.0;
 }
 
@@ -298,10 +286,10 @@ double
 LNOTARGET_FP_Madd_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 {
   FmtAssert (FALSE,("LNOTARGET_FP_Madd_Res: not implemented"));
-  /*
+#if 0
   TOP fma = (mtype == MTYPE_F4 ? TOP_fma_s : TOP_fma_d);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fma);
-  */
+#endif
   return 1.0;
 }
 
@@ -418,7 +406,7 @@ double
 LNOTARGET_FP_Sqrt_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 {
   FmtAssert(FALSE,("LNOTARGET_FP_Sqrt_Res: not implemented"));
-  /*
+#if 0
   BOOL is_double = (MTYPE_is_size_double(mtype) != 0);
   TOP fnma = is_double ? TOP_fnma_d : TOP_fnma_s;
   TOP fma  = is_double ? TOP_fma_d  : TOP_fma_s;
@@ -456,7 +444,8 @@ LNOTARGET_FP_Sqrt_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 
   TI_RES_COUNT_Add_Op_Resources(resource_count, fma);
   return (is_double ? 24.0 : 19.0);
-  */
+#endif
+  return 0.0;
 }
  
 double
@@ -465,7 +454,7 @@ LNOTARGET_FP_Exp_Res (TI_RES_COUNT* resource_count,
                       INT num_multiplies)
 {
   FmtAssert(FALSE,("LNOTARGET_FP_Exp_Res: not implemented"));
-  /*
+#if 0
   INT i;
   switch (intr) {
     case INTRN_F4I4EXPEXPR: 
@@ -499,68 +488,68 @@ LNOTARGET_FP_Exp_Res (TI_RES_COUNT* resource_count,
       }
       return 4*num_multiplies;
   }
+#endif
   return 0.0;
-  */
 }
 
 double
 LNOTARGET_Complex_Add_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 {
   FmtAssert(FALSE,("LNOTARGET_Complex_Add_Res: not implemented"));
-  /*
+#if 0
   TOP fadd = (mtype == MTYPE_C4 ? TOP_fadd_s : TOP_fadd_d);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fadd);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fadd);
+#endif
   return 2.0;
-  */
 }
 
 double
 LNOTARGET_Complex_Mult_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 {
   FmtAssert(FALSE,("LNOTARGET_Complex_Mult_Res: not implemented"));
-  /*
+#if 0
   TOP fmpy = (mtype == MTYPE_C4 ? TOP_fmpy_s : TOP_fmpy_d);
   TOP fma  = (mtype == MTYPE_C4 ? TOP_fma_s  : TOP_fma_d);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fmpy);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fmpy);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fma);
   TI_RES_COUNT_Add_Op_Resources(resource_count, fma);
+#endif
   return 4.0;
-  */
 }
 
 double
 LNOTARGET_Complex_Neg_Res (TI_RES_COUNT* resource_count, TYPE_ID mtype)
 {
   FmtAssert(FALSE,("LNOTARGET_Complex_Neg_Res: not implemented"));
-  /*
+#if 0
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_fneg);
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_fneg);
+#endif
   return 2.0;
-  */
 }
 
 double
 LNOTARGET_Int_Select_Res (TI_RES_COUNT* resource_count)
 {
   FmtAssert(FALSE,("LNOTARGET_Int_Select_Res: not implemented"));
-  /*
+#if 0
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_cmp_ne);
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);
+#endif
   return 3.0;
-  */
 }
 
 double
 LNOTARGET_Int_Cvtl_Res (TI_RES_COUNT* resource_count)
 {
   FmtAssert(FALSE,("LNOTARGET_Int_Cvtl_Res: not implemented"));
-  /*
+#if 0
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_extr);
+#endif
   return 1.0;
-  */
 }
 
 double
@@ -611,6 +600,8 @@ LNOTARGET_Int_Lnot_Res (TI_RES_COUNT* resource_count)
 double
 LNOTARGET_Int_Mult_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Mult_Res: not implemented"));
+#if 0
   if (rtype == MTYPE_I2) {
     // a 16 = 16 x 16 multiply, __MULH
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_MPSSLL_GT_DR_DR_DR);
@@ -672,6 +663,8 @@ LNOTARGET_Int_Mult_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
     FmtAssert(FALSE,("LNOTARGET_Int_Mult_Res: unknown mtype %s", 
                                                    MTYPE_name(rtype)));
   }
+#endif
+  return 0.0;
 }
 
 /* ====================================================================
@@ -681,6 +674,8 @@ LNOTARGET_Int_Mult_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
 double
 LNOTARGET_Int_Add_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Add_Res: not implemented"));
+#if 0
   switch (rtype) {
   case MTYPE_I1:
   case MTYPE_U1:
@@ -696,6 +691,8 @@ LNOTARGET_Int_Add_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
     FmtAssert(FALSE,("LNOTARGET_Int_Add_Res: unknown mtype %s", 
                                                   MTYPE_name(rtype)));
   }
+#endif
+  return 1.0;
 }
 
 /* ====================================================================
@@ -705,6 +702,8 @@ LNOTARGET_Int_Add_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
 double
 LNOTARGET_Int_Sub_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Sub_Res: not implemented"));
+#if 0
   switch (rtype) {
   case MTYPE_I1:
   case MTYPE_U1:
@@ -720,13 +719,15 @@ LNOTARGET_Int_Sub_Res (TI_RES_COUNT* resource_count, TYPE_ID rtype)
     FmtAssert(FALSE,("LNOTARGET_Int_Add_Res: unknown mtype %s", 
                                                   MTYPE_name(rtype)));
   }
+#endif
+  return 1.0;
 }
 
 double
 LNOTARGET_Int_Div_Res (TI_RES_COUNT* resource_count, BOOL eight_bytes)
 {
   FmtAssert(FALSE,("LNOTARGET_Int_Div_Res: not implemented"));
-  /*
+#if 0
   TOP fnma = eight_bytes ? TOP_fnma : TOP_fnma_d;
   TOP fma  = eight_bytes ? TOP_fma  : TOP_fma_d;
   TOP fmpy = eight_bytes ? TOP_fmpy : TOP_fmpy_d;
@@ -752,14 +753,15 @@ LNOTARGET_Int_Div_Res (TI_RES_COUNT* resource_count, BOOL eight_bytes)
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_fcvt_fx_trunc);  
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_getf_sig);  
   return (eight_bytes ? 18.0 : 16.0);
-  */
+#endif
+  return 0.0;
 }
 
 double
 LNOTARGET_Int_Mod_Res (TI_RES_COUNT* resource_count, BOOL eight_bytes)
 {
   FmtAssert(FALSE,("LNOTARGET_Int_Mod_Res: not implemented"));
-  /*
+#if 0
   TOP fnma = eight_bytes ? TOP_fnma   : TOP_fnma_d;
   TOP fma  = eight_bytes ? TOP_fma    : TOP_fma_d;
   TOP fmpy = eight_bytes ? TOP_fmpy   : TOP_fmpy_d;
@@ -793,7 +795,8 @@ LNOTARGET_Int_Mod_Res (TI_RES_COUNT* resource_count, BOOL eight_bytes)
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_add);  
   TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_mov);  
   return (eight_bytes ? 25.0 : 23.0);
-  */
+#endif
+  return 0.0;
 }
 
 double
@@ -935,6 +938,8 @@ LNOTARGET_Int_Land_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Land_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -945,6 +950,8 @@ LNOTARGET_Int_Land_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Land_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -953,6 +960,8 @@ LNOTARGET_Int_Cand_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Cand_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -963,6 +972,8 @@ LNOTARGET_Int_Cand_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Cand_Res: mtype"));
   }
+#endif
+  return 1.0;
 }
 
 double
@@ -971,6 +982,8 @@ LNOTARGET_Int_Lior_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Lior_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -981,6 +994,8 @@ LNOTARGET_Int_Lior_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Lior_Res: mtype"));
   }
+#endif
+  return 1.0;
 }
 
 double
@@ -989,6 +1004,8 @@ LNOTARGET_Int_Cior_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Cior_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -999,6 +1016,8 @@ LNOTARGET_Int_Cior_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Cior_Res: mtype"));
   }
+#endif
+  return 1.0;
 }
 
 double
@@ -1007,6 +1026,8 @@ LNOTARGET_Int_Shl_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Shl_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -1017,6 +1038,8 @@ LNOTARGET_Int_Shl_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Shl_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1025,6 +1048,8 @@ LNOTARGET_Int_Ashr_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Ashr_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
   case MTYPE_U4:
@@ -1037,6 +1062,8 @@ LNOTARGET_Int_Ashr_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Ashr_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1061,6 +1088,8 @@ LNOTARGET_Int_Eq_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Eq_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_EQW_GT_BR_DR_DR);
@@ -1075,6 +1104,8 @@ LNOTARGET_Int_Eq_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Eq_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1083,6 +1114,8 @@ LNOTARGET_Int_Ne_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Ne_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_NEW_GT_BR_DR_DR);
@@ -1097,6 +1130,8 @@ LNOTARGET_Int_Ne_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Ne_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1105,6 +1140,8 @@ LNOTARGET_Int_Gt_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Gt_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GTW_GT_BR_DR_DR);
@@ -1119,6 +1156,8 @@ LNOTARGET_Int_Gt_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Gt_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1127,6 +1166,8 @@ LNOTARGET_Int_Ge_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Ge_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_GEW_GT_BR_DR_DR);
@@ -1141,6 +1182,8 @@ LNOTARGET_Int_Ge_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Ge_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1149,6 +1192,8 @@ LNOTARGET_Int_Lt_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Lt_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LTW_GT_BR_DR_DR);
@@ -1163,6 +1208,8 @@ LNOTARGET_Int_Lt_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Lt_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1171,6 +1218,8 @@ LNOTARGET_Int_Le_Res (
   TYPE_ID mtype
 )
 {
+  FmtAssert(FALSE,("LNOTARGET_Int_Le_Res: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I4:
     TI_RES_COUNT_Add_Op_Resources(resource_count, TOP_GP32_LEW_GT_BR_DR_DR);
@@ -1185,6 +1234,8 @@ LNOTARGET_Int_Le_Res (
   default:
     FmtAssert(FALSE,("LNOTARGET_Int_Le_Res: mtype"));
   }
+#endif
+  return 0.0;
 }
 
 double
@@ -1450,7 +1501,8 @@ LNOTARGET_Max_Lat (
 )
 {
   INT latency;
-
+  FmtAssert(FALSE,("LNOTARGET_Max_Lat: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I1:
   case MTYPE_I2:
@@ -1492,6 +1544,7 @@ LNOTARGET_Max_Lat (
     FmtAssert(FALSE,("LNOTARGET_Int_Max_Lat: unknown MTYPE_%s", 
 		     MTYPE_name(mtype)));
   }
+#endif
   return latency;
 }
 
@@ -1505,7 +1558,8 @@ LNOTARGET_Min_Lat (
 )
 {
   INT latency;
-
+  FmtAssert(FALSE,("LNOTARGET_Min_Lat: not implemented"));
+#if 0
   switch (mtype) {
   case MTYPE_I1:
   case MTYPE_I2:
@@ -1547,6 +1601,7 @@ LNOTARGET_Min_Lat (
     FmtAssert(FALSE,("LNOTARGET_Int_Min_Lat: unknown MTYPE_%s", 
 		     MTYPE_name(mtype)));
   }
+#endif
   return latency;
 }
 
