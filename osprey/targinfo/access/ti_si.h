@@ -627,10 +627,7 @@ inline INT SI_RESOURCE_TOTAL_Total_Used( SI_RESOURCE_TOTAL* pair )
 typedef const SI_RRW* SI_RR;
 
 #ifdef TARG_ST
-#if defined(BE)
-BE_EXPORTED
-#endif
-extern UINT SI_RR_Length(SI_RR);
+BE_EXPORTED extern UINT SI_RR_Length(SI_RR);
 extern SI_RRW SI_RR_Cycle_RRW( SI_RR, UINT);
 #else
 inline UINT SI_RR_Length( SI_RR req )
