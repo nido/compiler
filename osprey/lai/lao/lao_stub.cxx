@@ -691,7 +691,7 @@ CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name) {
 
 // Make a CGIR_SYM.
 static CGIR_SYM
-CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_BasicType lai_basicType) {
+CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_NativeType lai_nativeType) {
   if (cgir_sym == 0) {
     // Create cgir_sym.
     // Currently LAO is allowed to create:
@@ -699,7 +699,7 @@ CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_BasicType l
     // Spill symbol.
     if (isSpill) {
       // We use the CGSPILL interface to generate a CGIR spill symbol
-      TY_IDX ty = MTYPE_To_TY(BasicType_to_CGIR_TYPE_ID(lai_basicType));
+      TY_IDX ty = MTYPE_To_TY(NativeType_to_CGIR_TYPE_ID(lai_nativeType));
       ST *st = CGSPILL_Gen_Spill_Symbol(ty, name);
       cgir_sym = ST_st_idx(*st);
     }
