@@ -1023,18 +1023,16 @@ Expand_Multiply (
   //
   // Check for two constants
   //
-  if ((TN_has_value(src1) || TN_is_rematerializable(src1)) &&
-      (TN_has_value(src2) || TN_is_rematerializable(src2))) {
+  // [CG]: Don't handle rematerializables any more as they can be symbolic
+  if (TN_has_value(src1) && TN_has_value(src2)) {
     // Two constants can sometimes occur because of DIVREM production in
     TN *val_tn;
     INT64    constant;
-    constant = TN_has_value(src1) ?
-                           TN_value(src1) : WN_const_val(TN_home(src1));
-    constant *= TN_has_value(src2) ?
-                           TN_value(src2) : WN_const_val(TN_home(src2));
+    constant = TN_value(src1) * TN_value(src2);
+
     // Need to get the constant of the right length
     constant = Targ_To_Host(Host_To_Targ(rmtype, constant));
-    val_tn = Gen_Literal_TN(constant, 8);
+    val_tn = Gen_Literal_TN(constant, TN_size(result));
     Exp_Immediate(result, val_tn, MTYPE_signed(rmtype), ops);
     return;
   }
