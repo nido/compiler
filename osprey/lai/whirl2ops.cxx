@@ -4783,6 +4783,17 @@ Expand_Statement (
     	/* start of a new basic block */
     	bb = Add_Label(Get_WN_Label (stmt));
     }
+#ifdef TARG_ST
+    // (cbr) we don't necessary have LOOPINFO. put keep pragma
+    if (info) {
+      BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
+    }
+    
+    if (last_loop_pragma) {
+      BB_Add_Annotation(bb, ANNOT_PRAGMA, last_loop_pragma);
+      last_loop_pragma = NULL;
+    }
+#else
     if (info) {
       BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
       if (last_loop_pragma) {
@@ -4790,6 +4801,7 @@ Expand_Statement (
 	last_loop_pragma = NULL;
       }
     }
+#endif
     break;
   case OPC_ALTENTRY:
     Handle_Entry (stmt);
