@@ -1050,7 +1050,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs);
 
-#define LAO_OPS_LIMIT 128	// Maximum number of OPs to compute memory dependences.
+#define LAO_OPS_LIMIT 2048	// Maximum number of OPs to compute memory dependences.
 
 // Make a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
