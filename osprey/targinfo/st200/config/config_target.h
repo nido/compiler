@@ -188,6 +188,18 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
    Is_Target_ISA_ST231() ? TOP_ST231_pswset : \
    Is_Target_ISA_ST235() ? TOP_ST235_pswset : \
    TOP_UNDEFINED)
+#define TOP_sync \
+  (Is_Target_ISA_ST220() ? TOP_ST220_sync : \
+   Is_Target_ISA_ST230() ? TOP_ST230_sync : \
+   Is_Target_ISA_ST231() ? TOP_ST231_sync : \
+   Is_Target_ISA_ST235() ? TOP_ST235_sync : \
+   TOP_UNDEFINED)
+#define TOP_syncins \
+  (Is_Target_ISA_ST220() ? TOP_ST220_syncins : \
+   Is_Target_ISA_ST230() ? TOP_ST230_syncins : \
+   Is_Target_ISA_ST231() ? TOP_ST231_syncins : \
+   Is_Target_ISA_ST235() ? TOP_ST235_syncins : \
+   TOP_UNDEFINED)
 
 /* Do we need to implement quad float? */
 /* #define TARG_NEEDS_QUAD_OPS */

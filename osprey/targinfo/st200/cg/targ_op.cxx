@@ -827,7 +827,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
   case TOP_mfb:
     return 1;
   case TOP_addcg:
-  case TOP_divs:
+  case TOP_divs_b_b_r:
     return opnd == 2 ? 1: 32;
     
     CASE_TOP(shl):
@@ -963,7 +963,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
   case TOP_mfb:
     return FALSE;
   case TOP_addcg:
-  case TOP_divs:
+  case TOP_divs_b_b_r:
     return opnd == 2 ? FALSE: TRUE;
     
     CASE_TOP(shl):
