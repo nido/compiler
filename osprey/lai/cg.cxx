@@ -663,18 +663,12 @@ CG_Generate_Code(
      * adjustment OP or delete it if the frame length is zero.
      */
 #ifdef TARG_ST
-    // Arthur: on targets thatpush/pop register save mask, the
-    //         upformal area must be offset by the size of the
-    //         save area needed for that mask.
-    //         The Stack_Offset_Adjustment can be used for this
-    //         purpose. It should be set here to the size of
-    //         the needed area.
     if (CG_gen_callee_saved_regs_mask) {
-      INT mask = CGTARG_Callee_Saved_Regs_Mask_Size();
-      Set_Stack_Offset_Adjustment_For_PU(mask);
-      INT64 frame = Finalize_Stack_Frame();
-      // The register mask OPs will increment the stack pointer themselves:
-      Set_Frame_Len (frame - mask);
+      //
+      // The register mask OPs will increment the stack pointer 
+      // themselves:
+      //
+      Set_Frame_Len (Finalize_Stack_Frame() - CGTARG_Callee_Saved_Regs_Mask_Size());
     }
     else {
       Set_Frame_Len (Finalize_Stack_Frame());

@@ -239,11 +239,15 @@ Compute_Return_Regs (TY_IDX call_ty, REGSET return_regs)
   }
 
   else {
+#ifdef TARG_ST
+    FmtAssert(FALSE,("WHIRL_Return_Info must be on"));
+#else
     Get_Return_Mtypes (TY_ret_type(call_ty),
 		       No_Simulated, &retmtype[0], &retmtype[1]);
     Get_Return_Pregs (retmtype[0], retmtype[1], &retpreg[0], &retpreg[1]);
     Add_PREG_To_REGSET (retpreg[0], return_regs);
     Add_PREG_To_REGSET (retpreg[1], return_regs);
+#endif
   }
 }
 

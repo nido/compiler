@@ -1544,29 +1544,6 @@ Expand_Binary_Nor (
 }
 
 /* ====================================================================
- *   Expand_Int_Comparison
- * ====================================================================
- */
-static void
-Expand_Int_Comparison (
-  TOP action,
-  TN *dest,
-  TN *src1,
-  TN *src2,
-  OPS *ops
-)
-{
-  FmtAssert(TN_register_class(dest) == ISA_REGISTER_CLASS_integer,
-	      ("Expand_Int_Comparison: cmp target TN not int"));
-
-  TN *tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  // build comparison OP, result is in integer register:
-  Build_OP (action, tmp, src1, src2, ops);
-
-  return;
-}
-
-/* ====================================================================
  *   Expand_Bool_Comparison
  * ====================================================================
  */
@@ -1613,7 +1590,7 @@ Expand_Int_Less (
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Less: unhandled cmp target TN"));
@@ -1647,14 +1624,13 @@ Expand_Int_Less_Equal (
                                                   Mtype_Name(desc)));
   }
 
-  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, True_TN, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Less_Equal: unhandled cmp target TN"));
@@ -1693,11 +1669,11 @@ Expand_Int_Equal (
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, True_TN, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Equal: unhandled cmp target TN"));
@@ -1740,11 +1716,11 @@ Expand_Int_Not_Equal (
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, True_TN, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Not_Equal: unhandled cmp target TN"));
@@ -1780,11 +1756,11 @@ Expand_Int_Greater_Equal (
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, True_TN, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Greater_Equal: unhandled cmp target TN"));
@@ -1821,11 +1797,11 @@ Expand_Int_Greater (
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, True_TN, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Expand_Int_Comparison (action, dest, src1, src2, ops);
+    Build_OP (action, dest, src1, src2, ops);
   }
   else {
     FmtAssert(FALSE, ("Expand_Int_Greater: unhandled cmp target TN"));

@@ -132,11 +132,7 @@ Is_Return_Preg (
 )
 {
   return (preg >= First_Int_Preg_Return_Offset
-	                 && preg <= Last_Int_Preg_Return_Offset) ||
-    (preg >= First_Ptr_Preg_Return_Offset 
-                         && preg <= Last_Ptr_Preg_Return_Offset) ||
-    (preg >= First_Float_Preg_Return_Offset 
-                         && preg <= Last_Float_Preg_Return_Offset);
+	                 && preg <= Last_Int_Preg_Return_Offset);
 }
 
 /* ====================================================================
@@ -166,9 +162,7 @@ Is_Formal_Preg (
 )
 {
   return ((preg >= PR_first_reg(SIM_INFO.int_args) &&
-	                   preg <= PR_last_reg(SIM_INFO.int_args)) ||
-	  (preg >= PR_first_reg(SIM_INFO.ptr_args) &&
-	                   preg <= PR_last_reg(SIM_INFO.ptr_args)) );
+	                   preg <= PR_last_reg(SIM_INFO.int_args)));
 }
 
 static BOOL Struct_Is_HFA (const TY_IDX, Mtype_Return_Level, TYPE_ID&);
@@ -422,42 +416,6 @@ Is_Simulated_Type (
   }
 }
 
-/* This routine figures out the mtypes of the return registers that are 
- * used for returning an object of the given type.
- * This returns the mtypes to use for the CALL opcode in high-level whirl.
- * This means that returns of simulated objects, like FQ, are just shown
- * as returning FQ, which will later be split into F8F8.
- * However, structures that return in registers are specified explicitly.
- */
-/*ARGSUSED*/
-extern void
-Get_Return_Mtypes (
-  TY_IDX rtype,		/* The result type */
-  Mtype_Return_Level level,	/* whether to lower the mtypes */
-  TYPE_ID *mreg1,	/* out: mtype for result register 1 */
-  TYPE_ID *mreg2)	/* out: mtype for result register 2 */
-{
-  Fail_FmtAssertion (
-    ("Get_Return_Mtypes should not be invoked; invoke Get_Return_Info instead"));
-}
-
-/* This routine figures out which return registers are to be used
- * for returning an object with the given mtypes.
- * It is assumed that the mtypes will be determined by calling
- * Get_Return_Mtypes.
- */
-/*ARGSUSED*/
-extern void
-Get_Return_Pregs (
-  TYPE_ID mreg1,	/* in:  mtype for result register 1 */
-  TYPE_ID mreg2,	/* in:  mtype for result register 2 */
-  PREG_NUM *rreg1,	/* out: result register 1 */
-  PREG_NUM *rreg2)	/* out: result register 2 */
-{
-  Fail_FmtAssertion (
-    ("Get_Return_Pregs should not be invoked; invoke Get_Return_Info instead"));
-}
-
 /* ====================================================================
  *   Get_Return_Info
  *
@@ -663,9 +621,8 @@ Get_Return_Info (
 } /* Get_Return_Info */
 
 static INT Current_Int_Param_Num = 0;
-static INT Current_Ptr_Param_Num = 0;
 static INT Current_Float_Param_Num = -1;
-static INT Current_Offset = 0;
+static INT Current_Offset;
 static BOOL First_Param_In_Return_Reg = FALSE;
 
 /* ====================================================================
@@ -702,15 +659,10 @@ Setup_Parameter_Locations (
   Current_Param_Num = 0;
 
   Current_Int_Param_Num = 0;
-  Current_Ptr_Param_Num = 0;
-  Current_Float_Param_Num = -1;
   Current_Offset = 0;
 
-  // obsolete ??
-  Last_Param_Offset = 0;
-
   return plocNULL;
-} // Setup_Parameter_Locations
+} 
 
 /* ====================================================================
  *   Get_Current_Int_Preg_Num
@@ -724,24 +676,6 @@ Get_Current_Int_Preg_Num (
   PREG_NUM i;
 
   i = PR_first_reg(pr) + (Current_Int_Param_Num * PR_skip_value(pr));
-  if (i > PR_last_reg(pr))
-    return 0;
-  else
-    return i;
-}
-
-/* ====================================================================
- *   Get_Current_Ptr_Preg_Num
- * ====================================================================
- */
-static inline PREG_NUM
-Get_Current_Ptr_Preg_Num (
-  Preg_Range pr
-)
-{
-  PREG_NUM i;
-
-  i = PR_first_reg(pr) + (Current_Ptr_Param_Num * PR_skip_value(pr));
   if (i > PR_last_reg(pr))
     return 0;
   else
@@ -784,13 +718,12 @@ Get_Parameter_Location (
   PLOC ploc;				// return location
 
   ploc.reg = 0;
-  //  ploc.start_offset = Last_Param_Offset;
   ploc.start_offset = Current_Offset;
   ploc.size = 0;
   ploc.vararg_reg = 0;               // to silence purify
 
-  /*
-     NEVER REACHED ??
+#if 0
+  // Arthur: NEVER REACHED ??
   if (TY_kind (ty) == KIND_VOID) {
     if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
       PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
@@ -798,7 +731,7 @@ Get_Parameter_Location (
       PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
     return ploc;
   }
-  */
+#endif
 
   /* check for array case where fe doesn't fill in right btype */
   TYPE_ID pmtype = Fix_TY_mtype (ty);	/* Target type */
@@ -814,23 +747,24 @@ Get_Parameter_Location (
     return ploc;
   }
 
-  /*   I may nedd to check for alignment later ??
+#if 0
+  // Arthur:  I may nedd to check for alignment later ??
   ++Current_Param_Num;
   if (TY_align_exp (ty) == 4 && (Current_Param_Num % 2) == 1) {
 
     FmtAssert(FALSE,("Get_Parameter_Location: type quad aligned"));
-  */
+
     /* skip a parameter slot so quad-aligned */
-  /*
+
     ++Current_Param_Num;
-  */
+
     /* adjust Last_Fixed_Param in varargs case */
-  /*
+
     if (Last_Fixed_Param < INT_MAX)
       ++Last_Fixed_Param;
     ploc.start_offset += MTYPE_RegisterSize(SIM_INFO.flt_type);
   }
-  */
+#endif
 
   INT rpad = 0;			/* padding to right of object */
 
@@ -842,15 +776,14 @@ Get_Parameter_Location (
     case MTYPE_U2:
     case MTYPE_I4:
     case MTYPE_U4:
-    case MTYPE_I5:
-    case MTYPE_U5:
+
       if (Target_Byte_Sex == BIG_ENDIAN) {
 	/* want to right-justify the object */
 	ploc.start_offset += (MTYPE_RegisterSize(SIM_INFO.int_type) -
 			      ploc.size);
       }
       else {
-	/* Pad to doubleword; leave address alone   */
+	/* Pad to word; leave address alone */
           rpad = (MTYPE_RegisterSize(SIM_INFO.int_type) - ploc.size);
       }
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
@@ -858,41 +791,34 @@ Get_Parameter_Location (
       break;
 
     case MTYPE_A4:
+
       if (Target_Byte_Sex == BIG_ENDIAN) {
 	/* want to right-justify the object */
 	ploc.start_offset += (MTYPE_RegisterSize(SIM_INFO.ptr_type) -
 			      ploc.size);
       }
       else {
-	/* Pad to doubleword; leave address alone   */
+	/* Pad to word; leave address alone ? */
           rpad = (MTYPE_RegisterSize(SIM_INFO.ptr_type) - ploc.size);
       }
-      ploc.reg = Get_Current_Ptr_Preg_Num (SIM_INFO.ptr_args);
-      Current_Ptr_Param_Num++;
+      ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+      Current_Int_Param_Num++;
       break;
 
     case MTYPE_I8:
     case MTYPE_U8:
-	ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+
+      FmtAssert(FALSE,("Get_Parameter_Location: passing I8/U8"));
+
+      ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+      Current_Int_Param_Num++;
+      if (MTYPE_size_reg(SIM_INFO.int_type) < MTYPE_size_reg(pmtype)) {
 	Current_Int_Param_Num++;
-	if (MTYPE_size_reg(SIM_INFO.int_type) < MTYPE_size_reg(pmtype)) {
-	    Current_Int_Param_Num++;
-	    /* adjust Last_Fixed_Param in varargs case */
-	    if (Last_Fixed_Param < INT_MAX)
-	  	++Last_Fixed_Param;
-	}
-	break;
-	
-    case MTYPE_A8:
-	ploc.reg = Get_Current_Ptr_Preg_Num (SIM_INFO.ptr_args);
-	Current_Ptr_Param_Num++;
-	if (MTYPE_size_reg(SIM_INFO.ptr_type) < MTYPE_size_reg(pmtype)) {
-	    Current_Ptr_Param_Num++;
-	    /* adjust Last_Fixed_Param in varargs case */
-	    if (Last_Fixed_Param < INT_MAX)
-	  	++Last_Fixed_Param;
-	}
-	break;
+	/* adjust Last_Fixed_Param in varargs case */
+	if (Last_Fixed_Param < INT_MAX)
+	  ++Last_Fixed_Param;
+      }
+      break;
 	
     case MTYPE_F4:
     case MTYPE_F8:
@@ -974,14 +900,13 @@ Get_Parameter_Location (
 
   Current_Offset = ploc.start_offset + ploc.size + rpad;
 
-  //  Last_Param_Offset = ploc.start_offset + ploc.size + rpad;
-
-  /*  What is this ??
+#if 0
+  // Arthur: What is this ??
   if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
     PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
   else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))
     PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
-  */
+#endif
 
   return ploc;
 } 
