@@ -1208,1038 +1208,6 @@ EBO_Fold_Special_Opcode (
 
 #if 0
 
-/* =====================================================================
- *    EBO_Fold_Constant_Expression
- *
- *    Look at an exression that has all constant operands and attempt to
- *    evaluate the expression.
- *
- *    Supported operations are:
- *      add, sub, mult, and, or, xor, nor, sll, srl, slt
- * =====================================================================
- */
-BOOL
-EBO_Fold_Constant_Expression (
-  OP *op,
-  TN **opnd_tn,
-  EBO_TN_INFO **opnd_tninfo
-)
-{
-  TOP opcode = OP_code(op);
-
-  TN *tnr = OP_result(op,0);
-  TN *tn0 = NULL;
-  TN *tn1 = NULL;
-  UINT64 tn0_uval = 0;
-  INT64 tn0_val = 0;
-  UINT64 tn1_uval = 0;
-  INT64 tn1_val = 0;
-  INT64 result_val;
-  ST *result_sym = NULL;
-  INT32 result_relocs;
-
-  if (EBO_Trace_Execution) {
-    INT i;
-    INT opndnum = OP_opnds(op);
-    fprintf(TFile, "%sin BB:%d Constant OP :- %s ",
-            EBO_trace_pfx, BB_id(OP_bb(op)),TOP_Name(opcode));
-    for (i = 0; i < opndnum; i++) {
-      fprintf(TFile," ");
-      Print_TN(opnd_tn[i],TRUE);
-    }
-    fprintf(TFile,"\n");
-  }
-
-  if (OP_has_predicate(op) &&
-                      (opnd_tn[OP_PREDICATE_OPND] == Zero_TN)) {
-
-    if (OP_Is_Unconditional_Compare(op)) {
-      /* 
-       * Unconditional compares define results even if the predicate 
-       * is "FALSE". 
-       */
-      OPS ops = OPS_EMPTY;
-
-#ifdef TARG_ST
-      FmtAssert(FALSE,("TODO: not implemented"));
-#else
-      if (OP_result(op,0) != True_TN) {
-	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,0), True_TN, Zero_TN, Zero_TN, &ops);
-      }
-      if (OP_result(op,1) != True_TN) {
-	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,1), True_TN, Zero_TN, Zero_TN, &ops);
-      }
-#endif
-
-      if (OP_glue(op)) {
-	OP *next_op = OPS_first(&ops);
-	while (next_op != NULL) {
-	  Set_OP_glue(next_op);
-	  next_op = OP_next(next_op);
-	}
-      }
-
-      if (EBO_Trace_Optimization) {
-	INT i;
-	fprintf(TFile, "%sin BB:%d Result of compare is FALSE for all: ", EBO_trace_pfx,BB_id(OP_bb(op)));
-	for (i = 0; i < OP_results(op); i++) {
-	  Print_TN(OP_result(op,i),FALSE); fprintf(TFile,", ");
-	}
-      }
-
-      if (OPS_length(&ops) != 0) {
-	OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-	BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-      }
-      return TRUE;
-    }
-
-    /* The OP can be deleted. */
-    return (!OP_glue(op));
-  }
-
-  //
-  // First of all, check if this is a target-specific opcode
-  //
-  if (EBO_Fold_Special_Opcode(op, &result_val)) {
-    goto Constant_Created;
-  }
-
-  if ((OP_has_predicate(op) && OP_opnds(op) <= 2) ||
-      (!OP_has_predicate(op) && OP_opnds(op) <= 1))
-  {
-    return FALSE;
-  } 
-
-  tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
-  tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
-
-  if (TN_is_symbol(tn0)) {
-    if (TN_is_symbol(tn1)) {
-     /* In theory, we could handle this but we won't. */
-      return FALSE;
-    }
-    tn0_uval = TN_offset(tn0);
-    tn0_val = TN_offset(tn0);
-    result_sym = TN_var(tn0);
-    result_relocs = TN_relocs(tn0);
-  } else if (TN_is_symbol(tn1)) {
-    if (OP_isub(op)) {
-     /* In theory, we might be able to handle this but we won't. */
-      return FALSE;
-    }
-    tn1_uval = TN_offset(tn1);
-    tn1_val = TN_offset(tn1);
-    result_sym = TN_var(tn1);
-    result_relocs = TN_relocs(tn1);
-  } else {
-    tn0_uval = TN_Value (tn0);
-    tn0_val = TN_Value (tn0);
-    tn1_uval = TN_Value (tn1);
-    tn1_val = TN_Value (tn1);
-  }
-
-  if (OP_iadd(op)) {
-    result_val = tn0_uval + tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (OP_isub(op)) {
-    result_val = tn0_uval - tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) {
-   /* Can only do simple add or subtract with relocation. */
-    return FALSE;
-  }
-
-  if (OP_iand(op)) {
-    result_val = tn0_uval & tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (OP_ior(op)) {
-    result_val = tn0_uval | tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (OP_ixor(op)) {
-    result_val = tn0_uval ^ tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (OP_select(op)) {
-    return Constant_Operand0 (op, opnd_tn, opnd_tninfo);
-  }
-
-  if (OP_icmp(op)) {
-    /* Integer comparison operation. */
-    if (OP_has_predicate(op) && (OP_opnd(op, OP_PREDICATE_OPND) != True_TN))
-      return FALSE;
-
-    OPS ops = OPS_EMPTY;
-    if (EBO_Fold_Constant_Compare (op, &ops)) {
-
-      if (EBO_in_loop) 
-	EBO_OPS_omega (&ops, (OP_has_predicate(op) ? opnd_tninfo[OP_PREDICATE_OPND] : NULL));
-      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-
-Constant_Created:
-
-  OPS ops = OPS_EMPTY;
-  TN *tnc;
-
-  if (result_sym != NULL) {
-    tnc = Gen_Symbol_TN(result_sym, result_val, result_relocs);
-  } else {
-    tnc = Gen_Literal_TN(result_val, TN_size(tnr));
-  }
-
-  Expand_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
-  if (OP_next(OPS_first(&ops)) != NULL) {
-   /* What's the point in replacing one instruction with several? */
-    return FALSE;
-  }
-  if (OP_has_predicate(op)) {
-    EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
-  }
-  if (EBO_in_loop) EBO_OPS_omega (&ops, opnd_tninfo[OP_PREDICATE_OPND]);
-  OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-  if (opcode == OP_code(OPS_first(&ops))) {
-    BOOL all_operands_are_the_same = TRUE;
-    INT i;
-    for (i = 0; i < OP_opnds(op); i++) {
-      if (!TNs_Are_Equivalent(OP_opnd(op, i), OP_opnd(OPS_first(&ops), i))) {
-        all_operands_are_the_same = FALSE;
-        break;
-      }
-    }
-    if (all_operands_are_the_same) {
-     /* Avoid infinite loops caused by regenerating the same instruction. */
-      return FALSE;
-    }
-  }
-  BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-
-  if (EBO_Trace_Optimization) {
-    #pragma mips_frequency_hint NEVER
-    fprintf(TFile, "%sin BB:%d Redefine ",
-            EBO_trace_pfx, BB_id(OP_bb(op)));
-    Print_TN(tnr,TRUE);
-    fprintf(TFile," with load of ");
-    Print_TN(tnc,FALSE);
-    fprintf(TFile, "\n");
-  }
-
-  return TRUE;
-}
-#endif
-
-#if 0
-/*
- * Function: fadd_fmult
- *
- * Look for the pattern:
- *       FADD(float1,FMULT(float2,float3))
- * and turn it into:
- *       FMADD(float1,float2,float3)
- *
- * To find the pattern, we need to look at 3 levels of operands:
- *    1) floating add;
- *    2) an operand and a floating multiply;
- *    3) the input TN's to the multiply.
- *
- */
-static
-BOOL
-fadd_fmult (OP *op, EBO_TN_INFO **opnd_tninfo)
-{
- /* Level 1 data: */
-  BB *bb = OP_bb(op);
-  OP *l1_op0 = op;
-  TN *l1_tn0;
-
- /* Level 2 data: */
-  OP *l2_op0;
-  TN *l2_tn0;
-  EBO_TN_INFO *l2_tninfo0;
-  OP *l2_op1;
-  TN *l2_tn1;
-  EBO_TN_INFO *l2_tninfo1;
-  EBO_OP_INFO *l2_opinfo1;
-
- /* Level 3 data: */
-  TN *l3_tn1;
-  EBO_TN_INFO *l3_tninfo1;
-  TN *l3_tn2;
-  EBO_TN_INFO *l3_tninfo2;
-
-  TOP new_opcode = TOP_UNDEFINED;
-  OP *new_fmadd;
-
-  if (!Madd_Allowed) return FALSE;
-  if (!CG_create_madds) return FALSE;
-
-  if (OP_fadd(l1_op0) || OP_fsub(l1_op0)) {
-    TOP l1_opcode = OP_code(l1_op0);
-    INT l2_opnd1_idx = TOP_Find_Operand_Use(l1_opcode,OU_opnd1);
-    INT l2_opnd2_idx = TOP_Find_Operand_Use(l1_opcode,OU_opnd2);
-
-    l1_tn0 = OP_result(l1_op0,0);
-    l2_tn0 = OP_opnd(op,l2_opnd1_idx);
-    l2_tn1 = OP_opnd(op,l2_opnd2_idx);
-
-    l2_tninfo0 = opnd_tninfo[l2_opnd1_idx];
-    l2_tninfo1 = opnd_tninfo[l2_opnd2_idx];
-    if ((l2_tninfo0 == NULL) ||
-        (l2_tninfo1 == NULL)) {
-      return FALSE;
-    }
-
-   /* One of the input operands must be a fmult. */
-    l2_op0 = l2_tninfo0->in_op;
-    l2_op1 = l2_tninfo1->in_op;
-
-   /* Is the second operand a multiply? */
-   /* Set up the logic so that:
-        l2_op1 points to the multiply that we are going to use, and
-        l2_tn1 is the result TN of that multiply */
-
-    if ((l2_op1 == NULL) || !OP_fmul(l2_op1)) {
-     /* Is the first operand a multiply? */
-      if ((l2_op0 == NULL) || !OP_fmul(l2_op0)) {
-        return FALSE;
-      }
-
-     /* Reverse the way we look at the operands. */
-      l2_tn0 = l2_tn1;
-      l2_tn1 = OP_opnd(op,l2_opnd1_idx);
-      l2_tninfo0 = l2_tninfo1;
-      l2_tninfo1 = opnd_tninfo[l2_opnd1_idx];
-      l2_op0 = l2_op1;
-      l2_op1 = l2_tninfo1->in_op;
-    }
-
-   /* Determine the inputs to the fmult instructions. */
-    l2_opinfo1 = locate_opinfo_entry (l2_tninfo1);
-    if ((l2_opinfo1 == NULL) ||
-        (l2_opinfo1->in_op == NULL)) {
-      return FALSE;
-    }
-
-    TOP l2_opcode = OP_code(l2_op1);
-    INT l3_opnd1_idx = TOP_Find_Operand_Use(l2_opcode,OU_opnd1);
-    INT l3_opnd2_idx = TOP_Find_Operand_Use(l2_opcode,OU_opnd2);
-
-    l3_tn1 = OP_opnd(l2_op1, l3_opnd1_idx);
-    l3_tn2 = OP_opnd(l2_op1, l3_opnd2_idx);
-    l3_tninfo1 = l2_opinfo1->actual_opnd[l3_opnd1_idx];
-    l3_tninfo2 = l2_opinfo1->actual_opnd[l3_opnd2_idx];
-    if ((l3_tn1 == NULL) || TN_Is_Constant(l3_tn1) ||
-        (l3_tn2 == NULL) || TN_Is_Constant(l3_tn2) ||
-        (l3_tninfo1 == NULL) || (l3_tninfo2 == NULL)) {
-      return FALSE;
-    }
-
-   /* Would the inputs to the fmult be available for use? */
-    if (!EBO_tn_available (bb, l3_tninfo1) ||
-        !EBO_tn_available (bb, l3_tninfo2)) {
-      return FALSE;
-    }
-
-   /* Do the result sizes match? */
-    if (OP_result_size(op,0) != OP_result_size(l2_op1,0)) {
-      return FALSE;
-    }
-
-   /* We have matched the pattern:
-         l1_tn0 = FADD(l2_tn0,FMULT(l3_tn1,l3_tn2))
-      turn it into:
-         l1_tn0 = FMADD(l2_tn0,l3_tn1,l3_tn2) */
-
-    if (OP_fadd(l1_op0)) {
-     /* We actually started with: l1_tn0 = FADD(l2_tn0,FMULT(l3_tn1,l3_tn2)) */
-     /*                  or with: l1_tn0 = FADD(FMULT(l3_tn1,l3_tn2),l2_tn0) */
-     /* It really doesn't matter.                                            */
-
-      switch (l2_opcode) {
-      case TOP_fpmpy: new_opcode = TOP_fpma; break;
-      case TOP_fmpy: new_opcode = TOP_fma; break;
-      case TOP_fmpy_s: new_opcode = TOP_fma_s; break;
-      case TOP_fmpy_d: new_opcode = TOP_fma_d; break;
-      case TOP_fpnmpy: new_opcode = TOP_fpnma; break;
-      case TOP_fnmpy: new_opcode = TOP_fnma; break;
-      case TOP_fnmpy_s: new_opcode =  TOP_fnma_s; break;
-      case TOP_fnmpy_d: new_opcode =  TOP_fnma_d; break;
-      default: return FALSE;
-      }
-
-    } else if (OP_fsub(l1_op0) && (l2_tn1 == OP_opnd(op,l2_opnd1_idx))) {
-     /* We actually started with: l1_tn0 = FSUB(FMULT(l3_tn1,l3_tn2),l2_tn0) */
-     /* A multiple subtract is what we want.  There is no negative-multiple  */
-     /* subtract instruction available.                                      */
-
-      switch (l2_opcode) {
-      case TOP_fpmpy: new_opcode = TOP_fpms; break;
-      case TOP_fmpy: new_opcode = TOP_fms; break;
-      case TOP_fmpy_s: new_opcode = TOP_fms_s; break;
-      case TOP_fmpy_d: new_opcode = TOP_fms_d; break;
-      default: return FALSE;
-      }
-
-    } else {
-     /* We actually started with: l1_tn0 = FSUB(l2_tn0,FMULT(l3_tn1,l3_tn2)) */
-     /* The actual op_code for the mutiply determines what we need to do.    */
-
-      switch (l2_opcode) {
-      case TOP_fpmpy: new_opcode = TOP_fpnma; break;
-      case TOP_fmpy: new_opcode = TOP_fnma; break;
-      case TOP_fmpy_s: new_opcode = TOP_fnma_s; break;
-      case TOP_fmpy_d: new_opcode = TOP_fnma_d; break;
-      case TOP_fpnmpy: new_opcode = TOP_fpma; break;
-      case TOP_fnmpy: new_opcode = TOP_fma; break;
-      case TOP_fnmpy_s: new_opcode =  TOP_fma_s; break;
-      case TOP_fnmpy_d: new_opcode =  TOP_fma_d; break;
-      default: return FALSE;
-      }
-
-    }
-
-    new_fmadd = Mk_OP (new_opcode, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                       Gen_Enum_TN(ECV_sf_s0), l3_tn1, l3_tn2, l2_tn0);
-    OP_srcpos(new_fmadd) = OP_srcpos(l1_op0);
-    if (EBO_in_loop) EBO_Set_OP_omega ( new_fmadd, opnd_tninfo[OP_PREDICATE_OPND],
-                                        NULL, l3_tninfo1, l3_tninfo2, l2_tninfo0);
-    BB_Insert_Op_After(bb, op, new_fmadd);
-
-if (EBO_Trace_Optimization) fprintf(TFile,"%s(%s) was converted to a madd: %s.\n",
-TOP_Name(OP_code(op)),TOP_Name(OP_code(l2_op1)),TOP_Name(OP_code(new_fmadd)));
-    return TRUE;
-  }
-
-  return FALSE;
-}
- 
-
-
-
-/*
- * Function: fneg_sequence
- *
- * Look for these patterns:    and convert to:
- *       FNEG(FCMPLT(f1,fzero),f1) FMERGE.S(fzero,f1)
- *       FNEG(FMADD(f1,f2,f3))     FNMADD(f1,f2,f3)
- *       FNEG(FNMADD(f1,f2,f3))    FMADD(f1,f2,f3)
- *       FNEG(FMSUB(f1,f2,f3))     FNMSUB(f1,f2,f3)
- *       FNEG(FNMSUB(f1,f2,f3))    FMSUB(f1,f2,f3)
- *       FNEG(FNEG(f1))            f1
- *       FNEG(FSUB(f1,f2))         FSUB(f2,f1)
- *
- * To find the pattern, we need to look at 3 levels of operands:
- *    1) floating negation;
- *    2) a complementary operation;
- *    3) the input TN's to the operation.
- *
- */
-static
-BOOL
-fneg_sequence (OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
-{
- /* Level 1 data: */
-  TOP opcode = OP_code(op);
-  BB *bb = OP_bb(op);
-  OP *l1_op0 = op;
-  TN *l1_tn0;
-  INT op1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1);
-
- /* Level 2 data: */
-  TOP l2_opcode;
-  OP *l2_op0;
-  EBO_TN_INFO *l2_tninfo0;
-  EBO_OP_INFO *l2_opinfo0;
-
- /* Level 3 data: */
-  TN *l3_tn0;
-  EBO_TN_INFO *l3_tninfo0;
-  TN *l3_tn1;
-  EBO_TN_INFO *l3_tninfo1;
-  TN *l3_tn2;
-  EBO_TN_INFO *l3_tninfo2;
-
-  TOP new_opcode = TOP_UNDEFINED;
-  OP *new_op;
-
-  if ((opcode != TOP_fneg) &&
-      (opcode != TOP_fpneg)) {
-    return FALSE;
-  }
-
- /* Look for special case merge that is really and ABS function. */
- /* The pattern that we are looking for is:
-     TN715 TN716 :- fcmp.lt.unc TN257(p0) (enum:.s0) TN713 TN129(f0) ;
-     GTN717 :- mov_f TN715 TN713 ; copy cond_def
-     GTN717 :- fneg TN716 TN713 ; cond_def
- */
-  TN *predicate_tn = opnd_tn[OP_PREDICATE_OPND];
-  EBO_TN_INFO *predicate_tninfo = opnd_tninfo[OP_PREDICATE_OPND];
-  if ((opcode == TOP_fneg) &&
-      (predicate_tninfo != NULL) &&
-      (predicate_tninfo->in_op != NULL) &&
-      (!TN_Is_Constant(predicate_tn))) {
-   /* The current result is conditionally defined.  Can we find a previous definition? */
-    TN *tnr = OP_result(op,0);
-    EBO_TN_INFO *previous_tninfo = get_tn_info(tnr);
-    EBO_OP_INFO *previous_opinfo = NULL;
-    EBO_TN_INFO *previous_op0_tninfo = NULL;
-    if ((previous_tninfo != NULL)  &&
-        (previous_tninfo->reference_count == 0) &&
-        (previous_tninfo->predicate_tninfo != NULL)) {
-      previous_opinfo = locate_opinfo_entry (previous_tninfo);
-      if (previous_opinfo != NULL) {
-        previous_op0_tninfo = previous_opinfo->optimal_opnd[op1_idx];
-      }
-    }
-    if ((previous_op0_tninfo != NULL) &&
-        (opnd_tn[op1_idx] == previous_op0_tninfo->local_tn) &&
-        EBO_predicate_complements (predicate_tn, predicate_tninfo,
-                                   previous_tninfo->predicate_tninfo->local_tn, previous_tninfo->predicate_tninfo)) {
-      OP *predicate_op = predicate_tninfo->in_op;
-      TOP predicate_opcode = OP_code(predicate_op);
-      EBO_OP_INFO *predicate_opinfo = locate_opinfo_entry (predicate_tninfo);
-      if ((predicate_opinfo != NULL) &&
-          (predicate_opinfo->in_op != NULL) &&
-          (((predicate_opcode == TOP_fcmp_gt_unc) || (predicate_opcode == TOP_fcmp_ge_unc)) &&
-           (predicate_opinfo->actual_rslt[1] == predicate_tninfo) &&
-           (OP_opnd(predicate_op, TOP_Find_Operand_Use(predicate_opcode,OU_opnd2)) == FZero_TN) &&
-           (predicate_opinfo->actual_opnd[TOP_Find_Operand_Use(predicate_opcode,OU_opnd1)] == opnd_tninfo[op1_idx]))) {
-if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fcmp()) operation.\n");
-        new_opcode = TOP_fmerge_s;
-        new_op = Mk_OP (new_opcode, tnr,
-                        OP_opnd(predicate_op,OP_PREDICATE_OPND), FZero_TN, OP_opnd(op,1));
-        OP_srcpos(new_op) = OP_srcpos(op);
-        if (EBO_in_loop) EBO_Set_OP_omega ( new_op,
-                                            predicate_opinfo->actual_opnd[OP_PREDICATE_OPND],
-                                            opnd_tninfo[op1_idx]);
-        BB_Insert_Op_After(bb, op, new_op);
-
-       /* Now get rid of the previous conditional move. */
-        remove_op (previous_opinfo);
-        OP_Change_To_Noop(previous_opinfo->in_op);
-        previous_opinfo->in_op = NULL;
-        previous_opinfo->in_bb = NULL;
-        return TRUE;
-      }
-    }
-  }
-
-  l1_tn0 = OP_result(l1_op0,0);
-  l2_tninfo0 = opnd_tninfo[op1_idx];
-  if ((l2_tninfo0 == NULL) ||
-      (l2_tninfo0->in_op == NULL)) {
-    return FALSE;
-  }
-  l2_op0 = l2_tninfo0->in_op;
-
- /* Determine the inputs to the second instructions. */
-  l2_opinfo0 = locate_opinfo_entry (l2_tninfo0);
-  if ((l2_opinfo0 == NULL) ||
-      (l2_opinfo0->in_op == NULL)) {
-    return FALSE;
-  }
-
-  l2_opcode = OP_code(l2_op0);
-
-  INT l2_opnd1_idx = TOP_Find_Operand_Use(l2_opcode,OU_opnd1);
-  INT l2_opnd2_idx = TOP_Find_Operand_Use(l2_opcode,OU_opnd2);
-  INT l2_opnd3_idx = TOP_Find_Operand_Use(l2_opcode,OU_maddend);
-  if (l2_opnd1_idx >= 0) {
-    l3_tn0 = OP_opnd(l2_op0, l2_opnd1_idx);
-    l3_tninfo0 = l2_opinfo0->actual_opnd[l2_opnd1_idx];
-    if ((l3_tn0 == NULL) || TN_Is_Constant(l3_tn0) ||
-        !EBO_tn_available (bb, l3_tninfo0)) return FALSE;
-
-    if (l2_opnd2_idx >= 0) {
-      l3_tn1 = OP_opnd(l2_op0, l2_opnd2_idx);
-      l3_tninfo1 = l2_opinfo0->actual_opnd[l2_opnd2_idx];
-      if ((l3_tn1 == NULL) || TN_Is_Constant(l3_tn1) ||
-          !EBO_tn_available (bb, l3_tninfo1)) return FALSE;
-
-      if (l2_opnd3_idx >= 0) {
-        l3_tn2 = OP_opnd(l2_op0, l2_opnd3_idx);
-        l3_tninfo2 = l2_opinfo0->actual_opnd[l2_opnd3_idx];
-        if ((l3_tn2 == NULL) || TN_Is_Constant(l3_tn2) ||
-            !EBO_tn_available (bb, l3_tninfo2)) return FALSE;
-      }
-    }
-  }
-
- /* We have matched a pattern that depends on the second opcode. */
-
-  if (l2_opnd3_idx <= 0) {
-   /* negate a negation, an add, a subtract, or a multiply */
-
-    switch (l2_opcode) {
-    case TOP_fneg:
-    case TOP_fpneg: {
-      OPS ops = OPS_EMPTY;
-if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fneg()) operation.\n");
-      Exp_COPY(l1_tn0, l3_tn0, &ops);
-      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-      if (EBO_in_loop) EBO_Set_OP_omega ( OPS_last(&ops), opnd_tninfo[OP_PREDICATE_OPND], l3_tninfo0);
-      BB_Insert_Ops(bb, op, &ops, FALSE);
-      return TRUE;
-    }
-    case TOP_fsub:
-    case TOP_fsub_s:
-    case TOP_fsub_d: {
-if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fsub()) operation.\n");
-      new_op = Mk_OP (l2_opcode, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                      Gen_Enum_TN(ECV_sf_s0), l3_tn1, l3_tn0);
-      OP_srcpos(new_op) = OP_srcpos(op);
-      if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                          NULL, l3_tninfo1, l3_tninfo0);
-      BB_Insert_Op_After(bb, op, new_op);
-      return TRUE;
-    }
-    case TOP_fpmpy: new_opcode = TOP_fpnmpy; break;
-    case TOP_fmpy: new_opcode = TOP_fnmpy; break;
-    case TOP_fmpy_s: new_opcode = TOP_fnmpy_s; break;
-    case TOP_fmpy_d: new_opcode = TOP_fnmpy_d; break;
-    case TOP_fpnmpy: new_opcode = TOP_fpmpy; break;
-    case TOP_fnmpy: new_opcode = TOP_fmpy; break;
-    case TOP_fnmpy_s: new_opcode =  TOP_fmpy_s; break;
-    case TOP_fnmpy_d: new_opcode =  TOP_fmpy_d; break;
-    default: return FALSE;
-    }
-
-if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fmpy()) operation.\n");
-    new_op = Mk_OP (new_opcode, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                    Gen_Enum_TN(ECV_sf_s0), l3_tn0, l3_tn1);
-    OP_srcpos(new_op) = OP_srcpos(op);
-    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                        NULL, l3_tninfo0, l3_tninfo1);
-    BB_Insert_Op_After(bb, op, new_op);
-    return TRUE;
-  } else {
-   /* negate a madd */
-
-   /* Sorry, there is no negative-multiply-subtract instruction. */
-    return FALSE;
-  }
-
-  return FALSE;
-}
- 
- 
-
-
- 
-
-
-/*
- * Function: copy_rf_sequence
- *
- * Look for copies form/to integer registers to/from floating
- * point registers.  If the input if a copy in the other direction,
- * both copies are unnecessary.
- *
- */
-static
-BOOL
-copy_rf_sequence (OP *op,
-                  TN **opnd_tn,
-                  EBO_TN_INFO **opnd_tninfo)
-{
- /* Level 1 data: */
-  BB *bb = OP_bb(op);
-  OP *l1_op0 = op;
-  TN *l1_tn0 = OP_result(l1_op0,0);
-
- /* Level 2 data: */
-  TOP l2_opcode;
-  OP *l2_op0;
-  TN *l2_tn0 = OP_opnd(op,1);
-  EBO_TN_INFO *l2_tninfo0 = opnd_tninfo[1];
-  EBO_OP_INFO *l2_opinfo0;
-
- /* Level 3 data: */
-  TN *l3_tn0;
-  EBO_TN_INFO *l3_tninfo0;
-
-  if ((l2_tninfo0 == NULL) ||
-      (l2_tninfo0->in_op == NULL)) {
-    return FALSE;
-  }
-
- /* Locate the EBO information about the input entry. */
-  l2_opinfo0 = locate_opinfo_entry(l2_tninfo0);
-  if ((l2_opinfo0 == NULL) ||
-      (l2_opinfo0->in_op == NULL)) return FALSE;
-  l2_op0 = l2_opinfo0->in_op;
-  l2_opcode = OP_code(l2_op0);
-
- /* If the input to a setf.sig is a load, try to 
-    perform the load directly into a floating register. */
-  if ((OP_code(op) == TOP_setf_sig) &&
-      ((l2_opcode == TOP_ld8)   ||
-       (l2_opcode == TOP_ld8_i))) {
-    OP *new_op;
-    TOP new_opcode;
-    INT i;
-
-   /* Be sure there is no store between here and the original load. */
-    if (l2_opinfo0->op_must_not_be_moved) return FALSE;
-
-   /* Be sure all the operands are available. */
-    for (i = OP_opnds(l2_op0); i >= 0; i--) {
-      if ((l2_opinfo0->actual_opnd[i] != NULL) &&
-         !EBO_tn_available (bb, l2_opinfo0->actual_opnd[i])) {
-        return FALSE;
-      }
-    }  
-
-   /* Determine the fp load opcode. */
-    new_opcode = (l2_opcode == TOP_ld8) ? TOP_ldf8 : TOP_ldf8_i;
-
-   /* Generate the new load OP - with or without an increment. */
-    if (OP_opnds(l2_op0) == 4) {
-      new_op = Mk_OP (new_opcode, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                      Gen_Enum_TN(ECV_fldtype), Gen_Enum_TN(ECV_ldhint), OP_opnd(l2_op0,3));
-      if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                          l2_opinfo0->actual_opnd[1], l2_opinfo0->actual_opnd[2],
-                                          l2_opinfo0->actual_opnd[3]);
-    } else if (OP_opnds(l2_op0) == 5) {
-      new_op = Mk_OP (new_opcode, l1_tn0, OP_opnd(op,OP_PREDICATE_OPND),
-                      Gen_Enum_TN(ECV_fldtype), Gen_Enum_TN(ECV_ldhint), OP_opnd(l2_op0,3), OP_opnd(l2_op0,4));
-      if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                          l2_opinfo0->actual_opnd[1], l2_opinfo0->actual_opnd[2],
-                                          l2_opinfo0->actual_opnd[3], l2_opinfo0->actual_opnd[4]);
-    } else return FALSE;
-    Copy_WN_For_Memory_OP (new_op, l2_op0);
-    OP_srcpos(new_op) = OP_srcpos(op);
-
-    BB_Insert_Op_After(bb, op, new_op);
-if (EBO_Trace_Optimization) fprintf(TFile,"load directly to fp reg.\n");
-    return TRUE;
-  }
-
- /* The input to the setf/getf must be a getf/setf. */
-  if ((l2_opcode != TOP_setf_sig) &&
-      (l2_opcode != TOP_getf_sig)) return FALSE;
-
- /* Determine the inputs to the second instructions. */
-  l2_op0 = l2_opinfo0->in_op;
-  l3_tn0 = OP_opnd(l2_op0, 1);
-  l3_tninfo0 = l2_opinfo0->actual_opnd[1];
-  if ((l3_tn0 == NULL) || TN_Is_Constant(l3_tn0) ||
-      !EBO_tn_available (bb, l3_tninfo0)) return FALSE;
-
-  if (l2_opcode == TOP_getf_sig) {
-    if ((l3_tninfo0 == NULL) ||
-        (l3_tninfo0->in_op == NULL) ||
-        ((OP_code(l3_tninfo0->in_op) != TOP_fcvt_fx) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_fcvt_fx_trunc) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_fcvt_fxu) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_fcvt_fxu_trunc) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xma_l) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xma_h) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xma_lu) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xma_hu) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xmpy_l) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xmpy_h) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xmpy_lu) &&
-         (OP_code(l3_tninfo0->in_op) != TOP_xmpy_hu))) {
-     /* The getf_sig/setf_sig sequence sets the sign bit to positive.
-        The movf instruction does not have this property.
-        It is therefore necessary to be sure that the input to the
-        sequence is an instruction that has already set the sign
-        bit to positive, in order to safely use the movf instruction. */
-      return FALSE;
-    }
-  }
-
-  if ((TN_register_class(l1_tn0) == TN_register_class(l3_tn0)) &&
-      ((TN_register_class(l1_tn0) == ISA_REGISTER_CLASS_integer) &&
-       (TN_register_class(l2_tn0) == ISA_REGISTER_CLASS_float)) ||
-      ((TN_register_class(l1_tn0) == ISA_REGISTER_CLASS_float) &&
-       (TN_register_class(l2_tn0) == ISA_REGISTER_CLASS_integer))) {
-
-   /* The current instruction is not needed. */
-    OPS ops = OPS_EMPTY;
-    EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND),
-                 OP_result(op,0), l3_tn0, &ops);
-    if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
-                                       opnd_tninfo[OP_PREDICATE_OPND],
-                                       l3_tninfo0);
-    OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-    BB_Insert_Ops(bb, op, &ops, FALSE);
-if (EBO_Trace_Optimization) fprintf(TFile,"copies between INT and FLOAT not needed.\n");
-    return TRUE;
-  }
-  return FALSE;
-}
- 
-
-
- 
-
-
-/*
- * Function: store_sequence
- *
- * Look for stores of values that are moved between register types
- * and try to perform the store from the original register type.
- *
- */
-static
-BOOL
-store_sequence (OP *op,
-                TN **opnd_tn,
-                EBO_TN_INFO **opnd_tninfo)
-{
- /* Level 1 data: */
-  TOP opcode = OP_code(op);
-  BB *bb = OP_bb(op);
-  TN *l1_tn0;
-  INT storeval_idx = TOP_Find_Operand_Use(opcode,OU_storeval);
-  TN *store_value;
-  EBO_TN_INFO *store_value_info;
-  INT storebase_idx = TOP_Find_Operand_Use(opcode,OU_base);
-  TN *storebase;
-  EBO_TN_INFO *store_base_info;
-  INT store_incr_idx = TOP_Find_Operand_Use(opcode, OU_postincr);
-  TN *store_incr;
-  EBO_TN_INFO *store_incr_info;
-
- /* Level 2 data: */
-  TOP l2_opcode;
-  OP *l2_op0;
-  TN *l2_tn0 = OP_opnd(op,1);
-  EBO_TN_INFO *l2_tninfo0 = opnd_tninfo[1];
-  EBO_OP_INFO *l2_opinfo0;
-
-  TOP new_opcode = TOP_UNDEFINED;
-  OP *new_op;
-
-  if (!OP_store(op) ||
-      (storeval_idx < 0) ||
-      (storebase_idx < 0)) return FALSE;
-
- /* Locate the EBO information about the input entry. */
-  storebase = OP_opnd(op,storebase_idx);
-  store_value = OP_opnd(op,storeval_idx);
-  store_value_info = opnd_tninfo[storeval_idx];
-  store_base_info = opnd_tninfo[storebase_idx];
-  store_incr_idx = TOP_Find_Operand_Use(opcode, OU_postincr);
-  if (store_incr_idx >= 0) {
-    store_incr = OP_opnd(op,store_incr_idx);
-    store_incr_info = opnd_tninfo[store_incr_idx];
-  }
-
- /* There are special requirements for "spill" temps
-    that prevents their replacement. */
-  if (!TN_Is_Constant(OP_opnd(op,storeval_idx)) &&
-      TN_has_spill(OP_opnd(op,storeval_idx))) {
-    return FALSE;
-  }
-
-  l2_opinfo0 = locate_opinfo_entry(store_value_info);
-  if ((l2_opinfo0 == NULL) ||
-      (l2_opinfo0->in_op == NULL)) return FALSE;
-  l2_op0 = l2_opinfo0->in_op;
-  l2_opcode = OP_code(l2_op0);
-
- /* If the input is a getf.sig, try to perform
-    the store directly from the floating register. */
-  if ((l2_opcode == TOP_getf_sig) &&
-      ((opcode == TOP_st8)   ||
-       (opcode == TOP_st8_i))) {
-    OP *new_op;
-    TOP new_opcode;
-
-   /* Be sure there is no store between here and the original load. */
-    if (l2_opinfo0->op_must_not_be_moved) return FALSE;
-
-   /* Be sure the converted operand is available. */
-    store_value = OP_opnd(l2_op0,1);
-    store_value_info = l2_opinfo0->actual_opnd[1];
-    if ((store_value_info != NULL) &&
-        !EBO_tn_available (bb, store_value_info)) return FALSE;
-
-   /* Determine the fp store opcode. */
-    new_opcode = (opcode == TOP_st8) ? TOP_stf8 : TOP_stf8_i;
-
-   /* Generate the new store OP - with or without an increment. */
-    if (new_opcode == TOP_stf8_i) {
-      new_op = Mk_OP (new_opcode, OP_result(op,0), OP_opnd(op,OP_PREDICATE_OPND),
-                      Gen_Enum_TN(ECV_sthint), storebase, store_value, store_incr);
-      if (EBO_in_loop) {
-        EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                           opnd_tninfo[1], store_base_info, store_value_info, store_incr_info);
-      }
-    } else {
-      new_op = Mk_OP (new_opcode, OP_opnd(op,OP_PREDICATE_OPND),
-                      Gen_Enum_TN(ECV_sthint), storebase, store_value);
-      if (EBO_in_loop) {
-        EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                           opnd_tninfo[1], store_base_info, store_value_info);
-      }
-    }
-    Copy_WN_For_Memory_OP (new_op, op);
-    OP_srcpos(new_op) = OP_srcpos(op);
-
-    BB_Insert_Op_After(bb, op, new_op);
-if (EBO_Trace_Optimization) fprintf(TFile,"Store directly from fp reg\n");
-    return TRUE;
-  }
-
-  if (OP_store(op) &&
-      (storeval_idx >= 0) &&
-      (storebase_idx >= 0) &&
-      (OP_opnd(op,storeval_idx) != opnd_tn[storeval_idx])) {
-    storebase = OP_opnd(op,storebase_idx);
-    l1_tn0 = OP_opnd(op,storeval_idx);
-    l2_tn0 = opnd_tn[storeval_idx];
-    l2_tninfo0 = opnd_tninfo[storeval_idx];
-    if ((l2_tn0 == NULL) ||
-        TN_Is_Constant(l2_tn0) ||
-        (l2_tninfo0 == NULL) ||
-        (l2_tninfo0->in_op == NULL) ||
-        (TN_size(l1_tn0) > TN_size(l2_tn0)) ||
-        (CGTARG_Mem_Ref_Bytes(op) > TN_size(l2_tn0)) ||
-        !EBO_tn_available (bb, l2_tninfo0)) {
-      return FALSE;
-    }
-
-    switch (opcode) {
-    case TOP_st4: 
-      if (l2_opcode == TOP_getf_s) {
-        new_opcode = TOP_stfs; 
-      } else return FALSE;
-      break;
-    case TOP_st4_i: 
-      if (l2_opcode == TOP_getf_s) {
-        new_opcode = TOP_stfs_i; 
-      } else return FALSE;
-      break;
-    case TOP_st8: 
-      if (l2_opcode == TOP_getf_sig) {
-        new_opcode = TOP_stf8;
-      } else if (l2_opcode == TOP_getf_d) {
-        new_opcode = TOP_stfd;
-      } else return FALSE;
-      break;
-    case TOP_st8_i: 
-      if (l2_opcode == TOP_getf_sig) {
-        new_opcode = TOP_stf8_i;
-      } else if (l2_opcode == TOP_getf_d) {
-        new_opcode = TOP_stfd_i; 
-      } else return FALSE;
-      break;
-    case TOP_stf8: new_opcode = TOP_st8; break;
-    case TOP_stf8_i: new_opcode = TOP_st8_i; break;
-    case TOP_stfs: /* Different format! */
-    case TOP_stfd: /* Different format! */
-    default: return FALSE;
-    }
-
-    if ((TN_register_class(l1_tn0) == ISA_REGISTER_CLASS_integer) &&
-        (TN_register_class(l2_tn0) == ISA_REGISTER_CLASS_float)) {
-      TN *st_hint = OP_opnd(op,2);
-      if ((new_opcode == TOP_stf8_i) ||
-          (new_opcode == TOP_stfd_i) ||
-          (new_opcode == TOP_stfs_i)) {
-        new_op = Mk_OP (new_opcode, OP_result(op,0), OP_opnd(op,OP_PREDICATE_OPND),
-                        st_hint, storebase, l2_tn0,
-                        OP_opnd(op, TOP_Find_Operand_Use(opcode, OU_postincr)));
-        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                            NULL, opnd_tninfo[storebase_idx], opnd_tninfo[storeval_idx], NULL);
-      } else {
-        new_op = Mk_OP (new_opcode, OP_opnd(op,OP_PREDICATE_OPND),
-                        st_hint, storebase, l2_tn0);
-        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], 
-                                            NULL, opnd_tninfo[storebase_idx], opnd_tninfo[storeval_idx]);
-      }
-
-      Copy_WN_For_Memory_OP (new_op, op);
-      OP_srcpos(new_op) = OP_srcpos(op);
-      BB_Insert_Op_After( bb, op, new_op);
-if (EBO_Trace_Optimization) fprintf(TFile,"Replace INT store with FP store\n");
-      return TRUE;
-    }
-
-    if ((TN_register_class(l1_tn0) == ISA_REGISTER_CLASS_float) &&
-        (TN_register_class(l2_tn0) == ISA_REGISTER_CLASS_integer)) {
-      TN *st_hint = OP_opnd(op,1);
-      if (new_opcode == TOP_st8_i) {
-        new_op = Mk_OP (new_opcode, OP_result(op,0), OP_opnd(op,OP_PREDICATE_OPND),
-                        Gen_Enum_TN(ECV_sttype), st_hint, storebase, l2_tn0,
-                        OP_opnd(op, TOP_Find_Operand_Use(opcode, OU_postincr)));
-        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND],
-                                            NULL, NULL, opnd_tninfo[storebase_idx], opnd_tninfo[storeval_idx], NULL);
-      } else {
-        new_op = Mk_OP (new_opcode, OP_opnd(op,OP_PREDICATE_OPND),
-                        Gen_Enum_TN(ECV_sttype), st_hint, storebase, l2_tn0);
-        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], 
-                                            NULL, NULL, opnd_tninfo[storebase_idx], opnd_tninfo[storeval_idx]);
-      }
-
-      Copy_WN_For_Memory_OP (new_op, op);
-      OP_srcpos(new_op) = OP_srcpos(op);
-      BB_Insert_Op_After( bb, op, new_op);
-if (EBO_Trace_Optimization) fprintf(TFile,"Replace FP store with INT store\n");
-      return TRUE;
-    }
-
-  }
-
-  return FALSE;
-}
-
- 
-/* 
- * Generate an extract operation. The result will be a single
- * instruction that performs the extract. It may not be an extr or extr.u.
- */
-static 
-OP *
-Generate_Extract(TOP extr_opc,
-		 TN *dest,
-		 TN *pred,
-		 TN *src,
-		 INT pos,
-		 INT len)
-{
-  if (pos == 0) {
-    BOOL is_signed = (extr_opc == TOP_extr);
-
-    if (len == 8 || len == 16 || len == 32) {
-      TOP new_opc;
-      switch (len >> 3) {
-      case 1: new_opc = is_signed ? TOP_sxt1 : TOP_zxt1; break;
-      case 2: new_opc = is_signed ? TOP_sxt2 : TOP_zxt2; break;
-      case 4: new_opc = is_signed ? TOP_sxt4 : TOP_zxt4; break;
-      }
-      return Mk_OP(new_opc, dest, pred, src);
-    } else if (!is_signed) {
-      UINT64 mask = -1ULL >> (64 - len);
-      if (ISA_LC_Value_In_Class(mask, LC_i8)) {
-	return Mk_OP(TOP_and_i, dest, pred, Gen_Literal_TN(mask, 4), src);
-      }
-    }
-  } 
-
-  return Mk_OP(extr_opc, dest, pred, src, 
-	       Gen_Literal_TN(pos, 4), Gen_Literal_TN(len, 4));
-}
-
-
 /*
  * Function: sxt_sequence
  *
@@ -2684,7 +1652,6 @@ sxt_sequence (OP *op,
 
   return FALSE;
 }
-
 #endif
 
 /* =====================================================================
@@ -3658,15 +2625,189 @@ if(EBO_Trace_Optimization)fprintf(TFile,"TOP_mov_f_pr pr%d\n",i);
  
 #endif
 
+
 /* =====================================================================
- * Function: shl_add_sequence
+ *                          Helper functions
+ * =====================================================================
+ */
+#define IS_SHL_16(o)   (OP_code(o) == TOP_shl_i && \
+                        TN_is_constant(OP_opnd(o,1)) && \
+                        TN_value(OP_opnd(o,1)) == 16)
+
+#define IS_SHR_16(o)   ((OP_code(o) == TOP_shr_i || OP_code(o) == TOP_shru_i) && \
+                        TN_is_constant(OP_opnd(o,1)) && \
+                        TN_value(OP_opnd(o,1)) == 16)
+
+#define IS_MULL(o)      (OP_code(o) == TOP_mull_i ||   \
+                         OP_code(o) == TOP_mull_ii ||  \
+                         OP_code(o) == TOP_mull_r ||   \
+			 OP_code(o) == TOP_mullu_i ||  \
+                         OP_code(o) == TOP_mullu_ii || \
+                         OP_code(o) == TOP_mullu_r)
+
+#define IS_MULH(o)      (OP_code(o) == TOP_mulh_i ||   \
+                         OP_code(o) == TOP_mulh_ii ||  \
+                         OP_code(o) == TOP_mulh_r ||   \
+			 OP_code(o) == TOP_mulhu_i ||  \
+                         OP_code(o) == TOP_mulhu_ii || \
+                         OP_code(o) == TOP_mulhu_r)
+
+#define IS_MULLH(o)     (OP_code(o) == TOP_mullh_i ||   \
+                         OP_code(o) == TOP_mullh_ii ||  \
+                         OP_code(o) == TOP_mullh_r ||   \
+			 OP_code(o) == TOP_mullhu_i ||  \
+                         OP_code(o) == TOP_mullhu_ii || \
+                         OP_code(o) == TOP_mullhu_r)
+
+#define IS_MULLL(o)     (OP_code(o) == TOP_mulll_i ||   \
+                         OP_code(o) == TOP_mulll_ii ||  \
+                         OP_code(o) == TOP_mulll_r ||   \
+			 OP_code(o) == TOP_mulllu_i ||  \
+                         OP_code(o) == TOP_mulllu_ii || \
+                         OP_code(o) == TOP_mulllu_r)
+
+/* =====================================================================
+ *            Multiplication Tables
+ * =====================================================================
+ */
+
+enum SIGNDNESS {ZERO_EXT = 0, SIGN_EXT = 1, SIGN_UNKNOWN = 2};
+enum BITS_POS {TN_LO_16 = 0, TN_HI_16 = 1, TN_32_BITS = 2};
+
+static const TOP unsigned_mul_opcode[3][3] = {
+  // By:  lo 16 bit      hi 16 bit       32 bit
+  {      TOP_mulllu_r,  TOP_mullhu_r, TOP_UNDEFINED  },   // lo 16 bits
+  {     TOP_UNDEFINED,  TOP_mulhhu_r, TOP_UNDEFINED  },   // hi 16 bits
+  {      TOP_mullu_r,   TOP_mulhu_r,  TOP_UNDEFINED  }    // 32 bits
+};
+
+static const TOP signed_mul_opcode[3][3] = {
+  // By:  lo 16 bit      hi 16 bit       32 bit
+  {      TOP_mulll_r,  TOP_mullh_r, TOP_UNDEFINED  },   // lo 16 bits
+  {     TOP_UNDEFINED, TOP_mulhh_r, TOP_UNDEFINED  },   // hi 16 bits
+  {      TOP_mull_r,   TOP_mulh_r,  TOP_UNDEFINED  }    // 32 bits
+};
+
+/* =====================================================================
+ *   get_immediate_mul_opcode
+ *
+ *   Given a register TOP code, return an immediate form or TOP_UNDEFINED
+ * =====================================================================
+ */
+static TOP
+get_immediate_mul_opcode (
+  TOP opcode, 
+  INT64 val
+)
+{
+  if (ISA_LC_Value_In_Class (val, LC_s9)) {
+    switch (opcode) {
+    case TOP_mulllu_r: return TOP_mulllu_i;
+    case TOP_mullu_r:  return TOP_mullu_i;
+    case TOP_mullhu_r: return TOP_mullhu_i;
+    case TOP_mulhhu_r: return TOP_mulhhu_i;
+    case TOP_mulhu_r:  return TOP_mulhu_i;
+    }
+  }
+  else {
+    switch (opcode) {
+    case TOP_mulllu_r: return TOP_mulllu_ii;
+    case TOP_mullu_r:  return TOP_mullu_ii;
+    case TOP_mullhu_r: return TOP_mullhu_ii;
+    case TOP_mulhhu_r: return TOP_mulhhu_ii;
+    case TOP_mulhu_r:  return TOP_mulhu_ii;
+    }
+  }
+
+  return TOP_UNDEFINED;
+}
+
+/* =====================================================================
+ *   Is_16_Bits
+ * =====================================================================
+ */
+static BOOL 
+Is_16_Bits (
+  EBO_TN_INFO *opnd_tninfo,
+  BB *bb,
+  TN **ret,
+  EBO_TN_INFO **ret_tninfo,
+  BITS_POS *hilo,                 // lower or upper 16 bits of a TN
+  SIGNDNESS *sign_ext             // sign extended ?
+) 
+{
+  EBO_OP_INFO *opinfo = locate_opinfo_entry(opnd_tninfo);;
+  if ((opinfo == NULL) || (opinfo->in_op == NULL)) 
+    return FALSE;
+
+  OP *op = opinfo->in_op;
+
+  if (IS_SHR_16(op)) {
+    *ret = OP_opnd(op,0);
+    *ret_tninfo = opinfo->actual_opnd[0];
+    *sign_ext = TOP_is_unsign(OP_code(op)) ? ZERO_EXT : SIGN_EXT;
+    *hilo = TN_HI_16;
+    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+  }
+
+  if (OP_code(op) == TOP_sxth_r) {
+    *ret = OP_opnd(op,0);
+    *ret_tninfo = opinfo->actual_opnd[0];
+    *sign_ext = SIGN_EXT;
+    *hilo = TN_LO_16;
+    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+  }
+
+  if (OP_code(op) == TOP_zxth_r) {
+    *ret = OP_opnd(op,0);
+    *ret_tninfo = opinfo->actual_opnd[0];
+    *sign_ext = ZERO_EXT;
+    *hilo = TN_LO_16;
+    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+  }
+
+  if (OP_code(op) == TOP_add_ii && TN_value(OP_opnd(op,1)) == 65535) {
+    *ret = OP_opnd(op,0);
+    *ret_tninfo = opinfo->actual_opnd[0];
+    *sign_ext = ZERO_EXT;
+    *hilo = TN_LO_16;
+    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+  }
+
+  if (OP_code(op) == TOP_add_r) {
+    // TODO: this is not good, why the constant is not propagated ?
+#if 0
+    if (opnd_tninfo->replacement_tn != NULL &&
+	               TN_value(opnd_tninfo->replacement_tn) == 65535) {
+      *ret = OP_opnd(op,0);
+      *ret_tninfo = opinfo->actual_opnd[0];
+      *sign_ext = ZERO_EXT;
+      *hilo = TN_LO_16;
+      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+    }
+#endif
+  }
+
+  if (IS_SHL_16(op)) {
+    *ret = OP_opnd(op,0);
+    *ret_tninfo = opinfo->actual_opnd[0];
+    *sign_ext = SIGN_UNKNOWN;
+    *hilo = TN_LO_16;
+    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+  }
+
+  return FALSE;
+}
+
+/* =====================================================================
+ * Function: add_shl_sequence
  *
  * Look for add(shl) sequence and replace with a single shladd
  * instruction. 
  * =====================================================================
  */
 static BOOL
-shl_add_sequence (
+add_shl_sequence (
   OP *op,
   TN **opnd_tn,
   EBO_TN_INFO **opnd_tninfo
@@ -3767,6 +2908,239 @@ shl_add_sequence (
 }
 
 /* =====================================================================
+ *   Function: add_mul_sequence
+ *
+ *   Look for the following sequence and replace with a single mul??
+ *   instruction:
+ *
+ *                        add
+ *                        / \
+ *                   mulhs   mullu
+ *                    / \     / \
+ *
+ *   The above is _mulw/_muluw. Depending on inputs, may be strength
+ *   reduced to 16x16, 16x32, etc.
+ *
+ * =====================================================================
+ */
+static BOOL
+add_mul_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  // Only add register form can be transformed
+  if (opcode != TOP_add_r) return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  OP *l1_op = op;
+  TN *l1_res = OP_result(l1_op, 0);
+
+  EBO_TN_INFO *l1_tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *l1_tninfo1 = opnd_tninfo[1];
+
+  // The input to the add must be a mulhs_r and a mullu_r:
+  if ((l1_tninfo0 == NULL) || (l1_tninfo0->in_op == NULL) ||
+      (l1_tninfo1 == NULL) || (l1_tninfo1->in_op == NULL))
+    return FALSE;
+
+  // Determine the inputs to the 1st level instruction:
+  EBO_OP_INFO *l2_opinfo0;
+  EBO_OP_INFO *l2_opinfo1;
+
+  l2_opinfo0 = locate_opinfo_entry(l1_tninfo0);
+  if ((l2_opinfo0 == NULL) ||
+      (l2_opinfo0->in_op == NULL)) return FALSE;
+
+  l2_opinfo1 = locate_opinfo_entry(l1_tninfo1);
+  if ((l2_opinfo1 == NULL) ||
+      (l2_opinfo1->in_op == NULL)) return FALSE;
+
+  // Level 2 data:
+  OP *l2_op0 = l2_opinfo0->in_op;   // OP producing add operand 0
+  OP *l2_op1 = l2_opinfo1->in_op;   // OP producing add operand 1
+
+  if ((OP_code(l2_op0) != TOP_mullu_r &&
+       OP_code(l2_op0) != TOP_mulhs_r) ||
+      (OP_code(l2_op1) != TOP_mullu_r &&
+       OP_code(l2_op1) != TOP_mulhs_r) ||
+      (OP_code(l2_op0) == TOP_mulhs_r &&
+       OP_code(l2_op1) != TOP_mullu_r) ||
+      (OP_code(l2_op0) == TOP_mullu_r &&
+       OP_code(l2_op1) != TOP_mulhs_r)
+      )
+    return FALSE;
+
+  // We've just found a 32x32 MPY. Try to strength-reduce its
+  // operands, eg. 32x16, etc.
+  TN *l2_tn0;
+  TN *l2_tn1;
+  EBO_TN_INFO *l2_tninfo0;
+  EBO_TN_INFO *l2_tninfo1;
+  BITS_POS l2_hilo0;
+  BITS_POS l2_hilo1;
+  SIGNDNESS l2_signed0;
+  SIGNDNESS l2_signed1;
+
+  BOOL reduce_tn0 = FALSE;
+  BOOL reduce_tn1 = FALSE;
+
+  TN *tn0;
+  TN *tn1;
+  EBO_TN_INFO *tninfo0;
+  EBO_TN_INFO *tninfo1;
+  BITS_POS hilo0;
+  BITS_POS hilo1;
+  SIGNDNESS signed0;
+  SIGNDNESS signed1;
+
+  //
+  // Process operand 0:
+  //
+  tn0 = OP_opnd(l2_op0,0);
+  tn1 = OP_opnd(l2_op1,0);
+  tninfo0 = l2_opinfo0->actual_opnd[0];
+  tninfo1 = l2_opinfo1->actual_opnd[0];
+
+  if (Is_16_Bits(tninfo0, bb, &tn0, &tninfo0, &hilo0, &signed0)) {
+    //
+    // See if the l2_op1 corresponds:
+    //
+    if (Is_16_Bits(tninfo1, bb, &tn1, &tninfo1, &hilo1, &signed1)) {
+      if (tn0 == tn1 && hilo0 == hilo1 && signed0 == signed1) {
+	reduce_tn0 = TRUE;
+	l2_tn0 = tn0;
+	l2_tninfo0 = tninfo0;
+	l2_hilo0 = hilo0;
+	l2_signed0 = signed0;
+      }
+    }
+  }
+
+  // If tn0 can not be strength reduced, make sure it is the same
+  // operand for both, l2_op0 and l2_op1
+  if (!reduce_tn0) {
+    if (tn0 != tn1)
+      return FALSE;
+
+    l2_tn0 = OP_opnd(l2_op0,0);
+    l2_tninfo0 = l2_opinfo0->actual_opnd[0];
+    l2_hilo0 = TN_32_BITS;
+    l2_signed0 = SIGN_UNKNOWN;
+  }
+
+  //
+  // Process operand 1:
+  //
+  tn0 = OP_opnd(l2_op0,1);
+  tn1 = OP_opnd(l2_op1,1);
+  tninfo0 = l2_opinfo0->actual_opnd[1];
+  tninfo1 = l2_opinfo1->actual_opnd[1];
+
+  if (Is_16_Bits(tninfo0, bb, &tn0, &tninfo0, &hilo0, &signed0)) {
+    //
+    // See if the l2_op1 corresponds:
+    //
+    if (Is_16_Bits(tninfo1, bb, &tn1, &tninfo1, &hilo1, &signed1)) {
+      if (tn0 == tn1 && hilo0 == hilo1 && signed0 == signed1) {
+	
+	fprintf(TFile, "  !!! can reduce tn1\n");
+
+	reduce_tn1 = TRUE;
+	l2_tn1 = tn0;
+	l2_tninfo1 = tninfo0;
+	l2_hilo1 = hilo0;
+	l2_signed1 = signed0;
+      }
+    }
+  }
+
+  // If tn1 can not be strength reduced, make sure it is the same
+  // operand for both, l2_op0 and l2_op1
+  if (!reduce_tn1) {
+    if (tn0 != tn1) return FALSE;
+
+    l2_tn1 = OP_opnd(l2_op0,1);
+    l2_tninfo1 = l2_opinfo0->actual_opnd[1];
+    l2_hilo1 = TN_32_BITS;
+    l2_signed1 = SIGN_UNKNOWN;
+  }
+
+  // Continue if any of the operands is being strength reduced
+  if (!reduce_tn0 && !reduce_tn1)
+    return FALSE;
+
+  // Before looking for a possible strength reduction, check if
+  // the l2_tn1 is a 32 bit quantity. Since there are no TOP
+  // codes with 32 bit operand in the second position, try to
+  // swap the operands.
+  // Also for hi x lo combination
+  if (((l2_hilo0 != TN_32_BITS && l2_hilo1 == TN_32_BITS) ||
+      (l2_hilo0 == TN_HI_16 && l2_hilo1 == TN_LO_16)) && 
+      !TN_is_constant(l2_tn1)) {
+      //
+      // Swap the operands -- mul is associative
+      //
+      TN *tmp_tn = l2_tn0;
+      EBO_TN_INFO *tmp_tninfo = l2_tninfo0;
+      BITS_POS tmp_hilo = l2_hilo0;
+      SIGNDNESS tmp_signed = l2_signed0;
+      l2_tn0 = l2_tn1;
+      l2_tninfo0 = l2_tninfo1;
+      l2_hilo0 = l2_hilo1;
+      l2_signed0 = l2_signed1;
+      l2_tn1 = tmp_tn;
+      l2_tninfo1 = tmp_tninfo;
+      l2_hilo1 = tmp_hilo;
+      l2_signed1 = tmp_signed;
+  }
+
+  // Now we can choose an appropriate opcode
+  TOP new_opcode = TOP_UNDEFINED;
+
+  // If any of the operands is sign-extended, require a signed
+  // TOP code
+  if (l2_signed0 == SIGN_EXT || l2_signed1 == SIGN_EXT)
+    new_opcode = signed_mul_opcode[l2_hilo0][l2_hilo1];
+  else
+    new_opcode = unsigned_mul_opcode[l2_hilo0][l2_hilo1];
+
+  if (new_opcode == TOP_UNDEFINED)
+    return FALSE;
+
+  // Convert to an immediate form if l2_tn1 is an immediate
+  if (TN_is_constant(l2_tn1))
+    new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(l2_tn1));
+
+  if (new_opcode == TOP_UNDEFINED)
+    return FALSE;
+
+  //
+  // Now, we have :
+  //
+  //    new_opcode
+  //    l1_res
+  //    l2_tn0
+  //    l3_tn1
+  //
+  // Make a l1_res = mulh l3_tn0, l3_tn1, and replace the
+  // current instruction:
+  //
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, l1_res, l2_tn0, l2_tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, l2_tninfo0, l2_tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert add-mul sequence\n");
+  return TRUE;
+}
+
+/* =====================================================================
  * Function: iadd_special_case
  *
  * Look for integer add instructions where the first operand is
@@ -3815,6 +3189,433 @@ iadd_special_case (
 }
 
 /* =====================================================================
+ *   Function: mulhh_sequence
+ *
+ *   Look for mulh(shr16) sequence and replace with a single mulhh
+ *   instruction. 
+ * =====================================================================
+ */
+static BOOL
+mulhh_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  if (opcode != TOP_mulh_i && 
+      opcode != TOP_mulh_ii &&
+      opcode != TOP_mulh_r &&
+      opcode != TOP_mulhu_i && 
+      opcode != TOP_mulhu_ii &&
+      opcode != TOP_mulhu_r) 
+    return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  OP *l1_op = op;
+  TN *l1_tn1 = OP_opnd(l1_op, 1);
+  TN *l1_res = OP_result(l1_op, 0);
+  EBO_TN_INFO *l1_tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *l1_tninfo1 = opnd_tninfo[1];
+
+  // Input to the mulh must be a shr 16
+  if (l1_tninfo0 == NULL || l1_tninfo0->in_op == NULL) {
+    return FALSE;
+  }
+
+  // Determine the inputs to the mulh instruction:
+  EBO_OP_INFO *l2_opinfo = locate_opinfo_entry(l1_tninfo0);
+  if ((l2_opinfo == NULL) ||
+      (l2_opinfo->in_op == NULL)) return FALSE;
+
+  OP *l2_op = l2_opinfo->in_op;
+
+  if (OP_code(l2_op) != TOP_shr_i &&
+      OP_code(l2_op) != TOP_shru_i) return FALSE;
+
+  TN *l2_tn0 = OP_opnd(l2_op, 0);
+  TN *l2_tn1 = OP_opnd(l2_op, 1);
+  if (!TN_Is_Constant(l2_tn1) || TN_value(l2_tn1) != 16)
+    return FALSE;
+
+  EBO_TN_INFO *l2_tninfo0 = l2_opinfo->actual_opnd[0];
+  if (!EBO_tn_available (bb, l2_tninfo0)) return FALSE;
+
+  // Determine new opcode:
+  TOP new_opcode = TOP_UNDEFINED;
+  switch (opcode) {
+  case TOP_mulh_i: 
+    new_opcode = (OP_code(l2_op) == TOP_shr_i) ? TOP_mulhh_i : TOP_mulhhu_i;
+    break;
+  case TOP_mulh_ii: 
+    new_opcode = (OP_code(l2_op) == TOP_shr_i) ? TOP_mulhh_ii : TOP_mulhhu_ii;
+    break;
+  case TOP_mulh_r: 
+    new_opcode = (OP_code(l2_op) == TOP_shr_i) ? TOP_mulhh_r : TOP_mulhhu_r;
+    break;
+  case TOP_mulhu_i: 
+    new_opcode = (OP_code(l2_op) == TOP_shru_i) ? TOP_mulhhu_i : TOP_UNDEFINED;
+    break;
+  case TOP_mulhu_ii: 
+    new_opcode = (OP_code(l2_op) == TOP_shru_i) ? TOP_mulhhu_ii : TOP_UNDEFINED;
+    break;
+  case TOP_mulhu_r: 
+    new_opcode = (OP_code(l2_op) == TOP_shru_i) ? TOP_mulhhu_r : TOP_UNDEFINED;
+    break;
+  }
+
+  if (new_opcode == TOP_UNDEFINED)
+    return FALSE;
+
+  // Replace the current instruction:
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, l1_res, l2_tn0, l1_tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, l1_tninfo1, l2_tninfo0);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert mulh(shr) to mulhh\n");
+  return TRUE;
+}
+
+/* =====================================================================
+ *   Function: mul_32_16_sequence
+ *
+ *   Try to strength reduce the 32 x half-word multiplies.
+ * =====================================================================
+ */
+static BOOL
+mul_32_16_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  if (!IS_MULL(op) && !IS_MULH(op))
+    return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  TN *tn0;
+  TN *tn1 = OP_opnd(op, 1);
+  TN *res = OP_result(op, 0);
+
+  EBO_TN_INFO *tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *tninfo1 = opnd_tninfo[1];
+  BITS_POS hilo0;
+  BITS_POS hilo1 = IS_MULL(op) ? TN_LO_16 : TN_HI_16;
+  SIGNDNESS signed0;
+  SIGNDNESS signed1 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
+  
+  if (tninfo0 == NULL || tninfo0->in_op == NULL) {
+    return FALSE;
+  }
+
+  if (!Is_16_Bits(opnd_tninfo[0],
+		  bb, 
+		  &tn0, 
+		  &tninfo0, 
+		  &hilo0, 
+		  &signed0))
+    return FALSE;
+
+  // 
+  // If we got mul hi 16 x lo 16 we should swap operands since we
+  // do not have this on the machine.
+  //
+  if (hilo0 == TN_HI_16 && hilo1 == TN_LO_16 && !TN_is_constant(tn1)) {
+      //
+      // Swap the operands -- mul is associative
+      //
+      TN *tmp_tn = tn0;
+      EBO_TN_INFO *tmp_tninfo = tninfo0;
+      BITS_POS tmp_hilo = hilo0;
+      SIGNDNESS tmp_signed = signed0;
+      tn0 = tn1;
+      tninfo0 = tninfo1;
+      hilo0 = hilo1;
+      signed0 = signed1;
+      tn1 = tmp_tn;
+      tninfo1 = tmp_tninfo;
+      hilo1 = tmp_hilo;
+      signed1 = tmp_signed;
+  }
+
+  // Determine new opcode:
+  TOP new_opcode = TOP_UNDEFINED;
+
+  if (TOP_is_unsign(opcode))
+    new_opcode = unsigned_mul_opcode[hilo0][hilo1];
+  else if (signed0 == SIGN_EXT)
+    new_opcode = signed_mul_opcode[hilo0][hilo1];
+
+  if (new_opcode == TOP_UNDEFINED)
+    return FALSE;
+
+  // Replace the current instruction:
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, res, tn0, tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, tninfo0, tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert %s to %s\n", TOP_Name(opcode), TOP_Name(new_opcode));
+  return TRUE;
+}
+
+/* =====================================================================
+ *   Function: mulhs_sequence
+ *
+ *   Look for shl16(mulh) sequence and replace with a single mulhs
+ *   instruction. 
+ * =====================================================================
+ */
+static BOOL
+shl_mulhs_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  if (opcode != TOP_shl_i)
+    return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  OP *l1_op = op;
+  TN *l1_tn1 = OP_opnd(l1_op, 1);
+  TN *l1_res = OP_result(l1_op, 0);
+
+  // shl must be by 16 bits
+  if (!TN_is_constant(l1_tn1) || TN_value(l1_tn1) != 16)
+    return FALSE;
+
+  EBO_TN_INFO *l1_tninfo0 = opnd_tninfo[0];
+
+  // Input to the shl must be a mulh
+  if (l1_tninfo0 == NULL || l1_tninfo0->in_op == NULL) {
+    return FALSE;
+  }
+
+  // Determine the inputs to the shl instruction:
+  EBO_OP_INFO *l2_opinfo = locate_opinfo_entry(l1_tninfo0);
+  if ((l2_opinfo == NULL) ||
+      (l2_opinfo->in_op == NULL)) return FALSE;
+
+  OP *l2_op = l2_opinfo->in_op;
+
+  if (OP_code(l2_op) != TOP_mulh_i &&
+      OP_code(l2_op) != TOP_mulh_ii &&
+      OP_code(l2_op) != TOP_mulh_r &&
+      OP_code(l2_op) != TOP_mulhu_i &&
+      OP_code(l2_op) != TOP_mulhu_ii &&
+      OP_code(l2_op) != TOP_mulhu_r) return FALSE;
+
+  EBO_TN_INFO *l2_tninfo0 = l2_opinfo->actual_opnd[0];
+  EBO_TN_INFO *l2_tninfo1 = l2_opinfo->actual_opnd[1];
+  if (!EBO_tn_available (bb, l2_tninfo0) ||
+      !EBO_tn_available (bb, l2_tninfo1)) return FALSE;
+
+  TN *l2_tn0 = OP_opnd(l2_op,0);
+  TN *l2_tn1 = OP_opnd(l2_op,1);
+
+  // Determine new opcode:
+  TOP new_opcode;
+  switch (OP_code(l2_op)) {
+  case TOP_mulh_i: 
+  case TOP_mulhu_i: 
+    new_opcode = TOP_mulhs_i; break;
+  case TOP_mulh_ii: 
+  case TOP_mulhu_ii: 
+    new_opcode = TOP_mulhs_ii; break;
+  case TOP_mulh_r: 
+  case TOP_mulhu_r: 
+    new_opcode = TOP_mulhs_r; break;
+  default:
+    FmtAssert(FALSE, (" wrong opcode %s\n", TOP_Name(OP_code(l2_op))));
+  }
+
+  // Replace the current instruction:
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, l1_res, l2_tn0, l2_tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, l2_tninfo0, l2_tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert shl16(mulh) to mulhs\n");
+  return TRUE;
+}
+
+/* =====================================================================
+ *   Function: shr_shl_sequence
+ *
+ *   Look for shr16(shl16) sequence and replace with a single sxth/zxth
+ *   instruction. 
+ * =====================================================================
+ */
+static BOOL
+shr_shl_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  if (!IS_SHR_16(op))
+    return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  OP *l1_op = op;
+  TN *l1_res = OP_result(l1_op, 0);
+
+  EBO_TN_INFO *l1_tninfo0 = opnd_tninfo[0];
+
+  if (l1_tninfo0 == NULL || l1_tninfo0->in_op == NULL) {
+    return FALSE;
+  }
+
+  // Determine the inputs to the shr instruction:
+  EBO_OP_INFO *l2_opinfo = locate_opinfo_entry(l1_tninfo0);
+  if ((l2_opinfo == NULL) ||
+      (l2_opinfo->in_op == NULL)) return FALSE;
+
+  OP *l2_op = l2_opinfo->in_op;
+
+  if (!IS_SHL_16(l2_op))
+    return FALSE;
+
+  EBO_TN_INFO *l2_tninfo0 = l2_opinfo->actual_opnd[0];
+  if (!EBO_tn_available (bb, l2_tninfo0))
+    return FALSE;
+
+  TN *l2_tn0 = OP_opnd(l2_op,0);
+
+  // Determine new opcode:
+  TOP new_opcode;
+  new_opcode = TOP_is_unsign(opcode) ? TOP_zxth_r : TOP_sxth_r;
+
+  // Replace the current instruction:
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, l1_res, l2_tn0);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, l2_tninfo0);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert shr16(shl16) to sxth/zxth\n");
+  return TRUE;
+}
+
+/* =====================================================================
+ *    mul_fix_operands
+ *
+ *    Remove necessary OPs from 16 bit mul operand computation.
+ * =====================================================================
+ */
+static BOOL
+mul_fix_operands (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  TN *tn0 = OP_opnd(op,0);
+  TN *tn1 = OP_opnd(op,1);
+  TN *res = OP_result(op, 0);
+
+  EBO_TN_INFO *tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *tninfo1 = opnd_tninfo[1];
+
+  BITS_POS hilo0;
+  BITS_POS hilo1;
+  SIGNDNESS signed0;
+  SIGNDNESS signed1;
+
+  TOP new_opcode = TOP_UNDEFINED;
+
+  if (IS_MULL(op) || IS_MULH(op)) {
+    hilo0 = TN_32_BITS;
+    // second operand is a 16 bit lo or hi
+    if (Is_16_Bits(opnd_tninfo[1], bb, &tn1, &tninfo1, &hilo1, &signed1)) {
+      if (TOP_is_unsign(opcode)) {
+	new_opcode = unsigned_mul_opcode[hilo0][hilo1];
+      }
+      else {
+	new_opcode = signed_mul_opcode[hilo0][hilo1];
+      }
+    }
+  }
+
+  if (IS_MULLH(op) || IS_MULLL(op)) {
+    hilo0 = TN_LO_16;
+    hilo1 = IS_MULLH(op) ? TN_HI_16 : TN_LO_16;
+    // both operands are 16 bits
+    if (Is_16_Bits(opnd_tninfo[0], bb, &tn0, &tninfo0, &hilo0, &signed0) ||
+	Is_16_Bits(opnd_tninfo[1], bb, &tn1, &tninfo1, &hilo1, &signed1)) {
+      if (TOP_is_unsign(opcode)) {
+	new_opcode = unsigned_mul_opcode[hilo0][hilo1];
+      }
+      else {
+	new_opcode = signed_mul_opcode[hilo0][hilo1];
+      }
+    }
+  }
+
+  if (new_opcode == TOP_UNDEFINED)
+    return FALSE;
+
+  // Replace the current instruction:
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, res, tn0, tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, tninfo0, tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert %s to %s\n", TOP_Name(opcode), TOP_Name(new_opcode));
+  return TRUE;
+}
+
+/* =====================================================================
+ *    Strength_Reduce_Mul
+ * =====================================================================
+ */
+static BOOL
+Strength_Reduce_Mul (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  if (OP_code(op) == TOP_add_r) {
+    return (add_mul_sequence (op, opnd_tn, opnd_tninfo));
+  }
+
+  if (OP_imul(op)) {
+    if (!EBO_in_pre) {
+      // Do not do it before the 32x32 multiplies have been
+      // reduced. However, for now we only have pre_process vs
+      // process choice. Perhaps, eventually have several 
+      // pre_process passes ?
+      return (mul_32_16_sequence (op, opnd_tn, opnd_tninfo) ||
+	      mulhh_sequence (op, opnd_tn, opnd_tninfo));
+    }
+  }
+
+  return FALSE;
+}
+
+/* =====================================================================
  *    EBO_Special_Sequence
  *
  *    Look at an expression and it's inputs to identify special sequences
@@ -3828,11 +3629,37 @@ EBO_Special_Sequence (
   EBO_TN_INFO **opnd_tninfo
 )
 {
+  BOOL ret;
   TOP opcode = OP_code(op);
 
+  // First try to strength reduce the 32 bit multiplies:
+  if (Strength_Reduce_Mul (op, opnd_tn, opnd_tninfo)) {
+    return TRUE;
+  }
+
+  if (OP_imul(op)) {
+    if (!EBO_in_pre) {
+      // Do not do it before the 32x32 multiplies have been
+      // reduced. However, for now we only have pre_process vs
+      // process choice. Perhaps, eventually have several 
+      // pre_process passes ?
+      return (mul_fix_operands (op, opnd_tn, opnd_tninfo));
+    }
+  }
+
+  // TODO: add shl/shr/ext to semantics
+  if (IS_SHR_16(op)) {
+    return (shr_shl_sequence (op, opnd_tn, opnd_tninfo));
+  }
+
+  if (IS_SHL_16(op)) {
+    return (shl_mulhs_sequence (op, opnd_tn, opnd_tninfo));
+  }
+
   if (OP_iadd(op)) {
-    return (shl_add_sequence (op, opnd_tn, opnd_tninfo) ||
-            iadd_special_case(op, opnd_tn, opnd_tninfo));
+    return (add_shl_sequence (op, opnd_tn, opnd_tninfo) ||
+	    /* add_mul_sequence (op, opnd_tn, opnd_tninfo) || */
+	    iadd_special_case (op, opnd_tn, opnd_tninfo));
   }
 
 #if 0
@@ -3841,16 +3668,7 @@ EBO_Special_Sequence (
             sxt_sequence  ( op, TOP_Find_Operand_Use(OP_code(op),OU_storeval),
                             opnd_tn, opnd_tninfo));
   }
-  if (OP_fadd(op)) {
-    return (fadd_fmult    (op, opnd_tninfo));
-  }
-  if (OP_fsub(op)) {
-    return (fadd_fmult    (op, opnd_tninfo));
-  }
-  if ((opcode == TOP_fneg) ||
-      (opcode == TOP_fpneg)) {
-    return (fneg_sequence (op, opnd_tn, opnd_tninfo));
-  }
+
   if (OP_icmp(op)) {
     return (condition_optimization (op, opnd_tn, opnd_tninfo) ||
             compare_bit (op, opnd_tn, opnd_tninfo) ||
