@@ -76,6 +76,11 @@
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 
+#ifdef TARG_ST
+UINT32 CGTARG_max_issue_width;
+BOOL CGTARG_max_issue_width_overriden = FALSE;
+#endif
+
 static TOP CGTARG_Invert_Table[TOP_count+1];
 
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];

@@ -635,7 +635,7 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
 
 inline INT
 CGTARG_Text_Alignment (void) {
-  return ISA_INST_BYTES;
+  return DEFAULT_TEXT_ALIGNMENT;
 }
 
 /* --------------------------------------------------------------------
@@ -890,6 +890,15 @@ extern INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace);
 // FdF: Code size improvement on the st220 target. Enable a sequence
 // of two NOP bundles to be replaced by a GOTO .+4 instruction
 extern BOOL CG_NOPs_to_GOTO;
+#endif
+
+#ifdef TARG_ST
+extern UINT32 CGTARG_max_issue_width;
+extern BOOL CGTARG_max_issue_width_overriden;
+inline INT32 CGTARG_Max_Issue_Width(void)
+{
+  return CGTARG_max_issue_width;
+}
 #endif
 
 /* ====================================================================

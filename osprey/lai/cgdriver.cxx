@@ -878,6 +878,11 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CGTARG_branch_taken_penalty,
     &CGTARG_branch_taken_penalty_overridden },
 
+#ifdef TARG_ST
+  { OVK_INT32,	OV_INTERNAL, TRUE,"max_issue_width", "",
+    0, 0, INT32_MAX, &CGTARG_max_issue_width, &CGTARG_max_issue_width_overriden },
+#endif
+
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_branch", "mispredict",
     0, 0, INT32_MAX, &CG_branch_mispredict_penalty, NULL },
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_factor", "",
@@ -1293,6 +1298,28 @@ Configure_CG_Options(void)
     if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 1;
     if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 3;
   }
+
+#ifdef TARG_ST
+  // [CG] Initialize default max_issue width
+  if (!CGTARG_max_issue_width_overriden) {
+    CGTARG_max_issue_width = ISA_MAX_SLOTS;
+  }
+  if (CGTARG_max_issue_width > ISA_MAX_SLOTS) {
+    FmtAssert(0, ("CG: Max issue width %d invalid, must be <= %d", 
+		  CGTARG_max_issue_width, ISA_MAX_SLOTS));
+  }
+  if (CGTARG_max_issue_width < 1) {
+    FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
+		  CGTARG_max_issue_width, 1));
+  }
+  
+#ifdef TARG_ST200
+  if (CGTARG_max_issue_width < 2) {
+    FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
+		  CGTARG_max_issue_width, 2));
+  }
+#endif
+#endif
 
   Configure_Prefetch();
 
