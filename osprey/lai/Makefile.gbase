@@ -454,7 +454,7 @@ endif
 ifdef LAO_ENABLED
 CG_CXX_SRCS +=	\
   lao_stub.cxx \
-  lao_target.cxx
+  lao_cgir.cxx
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
