@@ -341,8 +341,8 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn) {
     temporary = CGIR_TN_to_Temporary(tn);
   } break;
   case OPR_INTCONST: {
-    if (WN_rtype(home) == BASICTYPE_I4 ||
-	WN_rtype(home) == BASICTYPE_U4) {
+    if (WN_rtype(home) == MTYPE_I4 ||
+	WN_rtype(home) == MTYPE_U4) {
       TN *tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
       temporary = CGIR_TN_to_Temporary(tn);
     } else {
@@ -699,7 +699,7 @@ CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_BasicType l
     // Spill symbol.
     if (isSpill) {
       // We use the CGSPILL interface to generate a CGIR spill symbol
-      TY_IDX ty = BASICTYPE_To_TY(BasicType_to_CGIR_TYPE_ID(lai_basicType));
+      TY_IDX ty = MTYPE_To_TY(BasicType_to_CGIR_TYPE_ID(lai_basicType));
       ST *st = CGSPILL_Gen_Spill_Symbol(ty, name);
       cgir_sym = ST_st_idx(*st);
     }
