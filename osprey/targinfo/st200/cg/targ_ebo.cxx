@@ -1807,14 +1807,19 @@ EBO_delete_duplicate_op (
     /* Create copies of the result TN's. */
     for (resnum = 0; resnum < OP_results(op); resnum++) {
       TN *rslt = OP_result(op, resnum);
+      TN *src1 = OP_result(opinfo->in_op, resnum);
+
       if (TN_register_class(rslt) == ISA_REGISTER_CLASS_branch) {
-        Build_OP (TOP_cmpeq_r_b, 
-		  rslt, 
-		  OP_result(opinfo->in_op, resnum), 
-		  Zero_TN, 
-		  &ops);
+        if (TN_register_class(src1) == ISA_REGISTER_CLASS_branch) {
+          TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+          TN* one_tn = Gen_Literal_TN ((INT32) 1, 4);
+          Build_OP (TOP_slct_i, tmp, src1, Zero_TN, one_tn, &ops);
+          Build_OP (TOP_orl_r_b, rslt, tmp, Zero_TN, &ops);
+        }
+        else
+          Build_OP (TOP_cmpeq_r_b, rslt, src1, Zero_TN,  &ops);
       } else {
-        EBO_Exp_COPY(NULL, rslt, OP_result(opinfo->in_op, resnum), &ops);
+        EBO_Exp_COPY(NULL, rslt, src1, &ops);
       }
       OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     }
@@ -1908,6 +1913,7 @@ Normalize_Immediate (
 )
 {
   switch (opcode) {
+
   case TOP_cmpeq_i_r:
     /*
      * For signed compares sign-extend the constant to 64 bits.
