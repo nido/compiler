@@ -101,6 +101,7 @@
 
 #ifdef TARG_ST
 #include "betarget.h"    /* for Target_Has_Immediate_Operand */
+#include "bb_map.h"
 #endif
 
 #if defined(CGG_ENABLED)
@@ -174,9 +175,10 @@ static INT   region_stack_size;
 static BB_NUM min_bb_id;
 
 #ifdef TARG_ST
-static WN *first_loop_pragma;
-#endif
+BB_MAP loop_pragma_map;
+#else
 static WN *last_loop_pragma;
+#endif
 
 #define return_max 3
 
@@ -542,6 +544,14 @@ Start_New_Basic_Block (void)
     // will be added later to the entry/exit bb.
     bb = Gen_And_Append_BB (bb);
   }
+#ifdef TARG_ST
+  // FdF 23/04/2004: Because loop pragmas must now be associated with
+  // the pre-header of the loop, before being moved to the loop
+  // header.
+  else if (BB_MAP_Get(loop_pragma_map, bb)) {
+    bb = Gen_And_Append_BB (bb);
+  }
+#endif
 
   if (PU_has_region(Get_Current_PU()))
     BB_rid(bb) = Non_Transparent_RID(current_region);
@@ -3150,6 +3160,7 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 
   /* for debuggging */
   OP *Last_OP = OPS_last(&New_OPs);
+  BB *Last_BB = Cur_BB;
 
   Exp_Intrinsic_Op (id, numrests, numopnds, res, kids, &New_OPs);
 
@@ -4882,33 +4893,6 @@ Expand_Statement (
     if (info) {
       BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
     }
-    
-    if (last_loop_pragma) {
-      WN *pragma_next;
-      for(WN *pragma = first_loop_pragma;
-	  pragma != WN_next(last_loop_pragma);
-	  pragma = pragma_next) {
-	pragma_next = WN_next(pragma);
-	if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
-	  if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
-	      (WN_pragma(pragma) == WN_PRAGMA_LOOPMOD) ||
-	      (WN_pragma(pragma) == WN_PRAGMA_PIPELINE) ||
-	      (WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
-	      (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP)) {
-	    if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
-	      enum LOOPDEP loopdep;
-	      if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
-	      else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
-	      else loopdep = LOOPDEP_PARALLEL;
-	      pragma = WN_CreatePragma(WN_PRAGMA_LOOPDEP, (ST_IDX) NULL,
-				       loopdep, 0);
-	    }
-	    BB_Add_Annotation(bb, ANNOT_PRAGMA, pragma);
-	  }
-	}
-      }
-      last_loop_pragma = NULL;
-    }
 #else
     if (info) {
       BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
@@ -4931,10 +4915,19 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_PIPELINE) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
-	if (last_loop_pragma == NULL)
-	  first_loop_pragma = stmt;
-	last_loop_pragma = stmt;
-	// [CL] Mark prologue for debug output
+	WN *pragma = stmt;
+	if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
+	  enum LOOPDEP loopdep;
+	  if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
+	  else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
+	  else loopdep = LOOPDEP_PARALLEL;
+	  pragma = WN_CreatePragma(WN_PRAGMA_LOOPDEP, (ST_IDX) NULL,
+				   loopdep, 0);
+	}
+	ANNOTATION *loop_pragmas = (ANNOTATION *)BB_MAP_Get(loop_pragma_map, Cur_BB);
+	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)pragma, &MEM_pu_pool);
+	BB_MAP_Set(loop_pragma_map, Cur_BB, loop_pragmas);
+
       } else if (WN_pragma(stmt) == WN_PRAGMA_PREAMBLE_END) {
 	OP* op;
 	for (op=OPS_first(&New_OPs); op != NULL ; op=OP_next(op)) {
@@ -5329,6 +5322,35 @@ Convert_WHIRL_To_OPs (
   /* Build the control flow graph */
   Build_CFG();
 
+#ifdef TARG_ST
+  // FdF 23/04/2004: Now, move pragma LOOP annotation to loop head.
+  for (BB *bp = REGION_First_BB; bp; bp = BB_next(bp)) {
+    ANNOTATION *loop_pragmas;
+    if ((loop_pragmas = (ANNOTATION *)BB_MAP_Get(loop_pragma_map, bp)) != NULL) {
+      // find the loop header in the successors of this node. This may
+      // be the unique successor of the current node, or the successor
+      // of this one if it has one single predecessor (and thus is not
+      // a loop head).
+      BB *loop_head = BB_Unique_Successor(bp);
+      while (loop_head && BB_Unique_Predecessor(loop_head))
+	loop_head = BB_Unique_Successor(loop_head);
+      if (loop_head == NULL) {
+	if (CG_opt_level > 1)
+	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum((WN *)ANNOT_info(ANNOT_First(loop_pragmas, ANNOT_PRAGMA))),
+		       WN_pragmas[WN_pragma((WN *)ANNOT_info(ANNOT_First(loop_pragmas, ANNOT_PRAGMA)))].name,
+		       "not followed by a loop, ignored");
+	continue;
+      }
+      ANNOTATION *ant, *next;
+      for (ant = ANNOT_First(loop_pragmas, ANNOT_PRAGMA); ant; ant = next) {
+	next = ANNOT_Next(ant, ANNOT_PRAGMA);
+	BB_Add_Annotation(loop_head, ANNOT_PRAGMA, ANNOT_info(ant));
+	ANNOT_Unlink(loop_pragmas, ant);
+      }
+    }
+  }
+#endif
+
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
 #if defined(CGG_ENABLED) //CGG_DEV
@@ -5403,7 +5425,11 @@ Whirl2ops_Initialize (
     OP_to_WN_map = NULL;
     WN_to_OP_map = WN_MAP_UNDEFINED;
   }
+#ifdef TARG_ST
+  loop_pragma_map = BB_MAP_Create();
+#else
   last_loop_pragma = NULL;
+#endif
   OP_Asm_Map = OP_MAP_Create();
 
 #ifdef CGG_ENABLED
@@ -5436,6 +5462,7 @@ Whirl2ops_Finalize (void)
     WN_MAP_Delete(WN_to_OP_map);
     WN_to_OP_map = WN_MAP_UNDEFINED;
   }
+#ifndef TARG_ST
   if (last_loop_pragma && 
       !WN_pragma_compiler_generated(last_loop_pragma) &&
       CG_opt_level > 1) {
@@ -5443,9 +5470,11 @@ Whirl2ops_Finalize (void)
 		 WN_pragmas[WN_pragma(last_loop_pragma)].name,
 		 "not followed by a loop, ignored");
   }
+#endif
   OP_MAP_Delete(OP_Asm_Map);
 
 #ifdef TARG_ST
+  BB_MAP_Delete(loop_pragma_map);
   if (WN_To_Hilo_map != WN_MAP_UNDEFINED) {
     WN_MAP_Delete(WN_To_Hilo_map);
     WN_To_Hilo_map = WN_MAP_UNDEFINED;
