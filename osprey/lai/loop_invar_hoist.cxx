@@ -2590,10 +2590,6 @@ Perform_Loop_Invariant_Code_Motion (void) {
         LOOP_INVAR_CODE_MOTION licm (l, prolog);
 #endif
         code_motion_num = licm.Perform_Code_Motion ();
-
-	if (code_motion_num) {
-	  fprintf(stderr, "code_motion_num=%d(%s:%d,%d)\n", code_motion_num, BB_innermost(LOOP_DESCR_loophead(l)) ? "inner" : "outer", GTN_SET_Size(BB_live_in(LOOP_DESCR_loophead(l))), GTN_SET_Size(licm.Get_liveout_defs()));
-	}
     }
 
     GRA_LIVE_Init (NULL);
