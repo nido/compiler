@@ -2138,6 +2138,38 @@ static void unroll_names_init(LOOP_DESCR *loop, UINT16 ntimes, MEM_POOL *pool)
 #endif
 }
 
+#ifdef TARG_ST
+static void unroll_names_multibb_init(BB *bb, MEM_POOL *pool)
+/* -----------------------------------------------------------------------
+ * See above for interface description.
+ * -----------------------------------------------------------------------
+ */
+{
+  OP *op;
+
+  Is_True(!unroll_names_valid, ("unroll_names_finish not called."));
+
+  unroll_names = TN_MAP_Create();
+  unroll_names_valid = TRUE;
+
+  FOR_ALL_BB_OPs(bb, op) {
+    for (INT i = 0; i < OP_results(op); ++i) {
+      TN *result_tn = OP_result(op,i);
+      
+      if (!OP_cond_def(op) || 
+	  !TN_is_global_reg(result_tn)) {
+	
+	if (OP_base_update_kind(op) == NO_BASE_UPDATE || 
+	    (OP_load(op) && i == 0))  // prevent renaming of base-update incr
+
+	  if (!TN_MAP_Get(unroll_names, result_tn)) 
+	    unroll_names_init_tn(result_tn, 1, pool);
+      }
+    }
+  }
+}
+#endif
+
 
 inline TN *unroll_names_get(TN *tn, UINT16 unrolling)
 {
@@ -3384,6 +3416,28 @@ void unroll_remove_notations(BB *fully_unrolled_body)
   }
 }
 
+#ifdef TARG_ST
+static BOOL
+Get_pragma_LoopMod(LOOP_DESCR *loop, int *modulus, int *residue)
+{
+  *modulus = 1;
+  *residue = 0;
+
+  if (!CG_LOOP_ignore_pragmas) {
+    BB *head = LOOP_DESCR_loophead(loop);
+    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+    if (loopmod_ant) {
+      WN *wn = ANNOT_pragma(loopmod_ant);
+      *modulus = MAX(1, WN_pragma_arg1(wn));
+      *residue = MAX(0, WN_pragma_arg2(wn));
+    }
+  }
+  return (*modulus > 1);
+}
+#endif
+
 
 static void trace_loop_cflow(LOOP_DESCR *loop, const char *prefix)
 {
@@ -3438,8 +3492,13 @@ static BOOL sort_topologically(LOOP_DESCR *loop, BB **result)
   return TRUE;
 }
 
+#ifdef TARG_ST
+static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
+					     BB **topo_vec, UINT32 num_bbs, INT32 remainder_val)
+#else
 static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 					     BB **topo_vec, UINT32 num_bbs)
+#endif
 /* -----------------------------------------------------------------------
  * Requires: CG_LOOP_Trip_Count(loop) != NULL &&
  *
@@ -3505,6 +3564,12 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
     if (new_trip_count_val < 0)
       DevWarn("unroll_multi_make_remainder_loop: trip count is negative");
     new_trip_count = Gen_Literal_TN(new_trip_count_val, 4);
+
+#ifdef TARG_ST
+  } else if (remainder_val != -1) {
+    new_trip_count = Gen_Literal_TN(remainder_val, 4);
+#endif
+
   } else {
     /* Add zero-trip guard for remainder loop:
      *   if (trip_count % ntimes <= 0) skip remainder
@@ -3660,7 +3725,11 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
       OPS copy_ops = OPS_EMPTY;
       trip_counter = CGTARG_gen_trip_count_TN(trip_size);
       //      trip_counter = Gen_Register_TN (ISA_REGISTER_CLASS_integer, trip_size);
+#ifdef TARG_ST
+      Exp_Immediate(trip_counter, new_trip_count, TRUE, &copy_ops);
+#else
       Exp_COPY(trip_counter, new_trip_count, &copy_ops);
+#endif
       BB_Append_Ops(orig_prolog, &copy_ops);
     } else {
       trip_counter = new_trip_count;
@@ -3675,7 +3744,7 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 	     Gen_Label_TN(Gen_Label_For_BB(head), 0),
 	     trip_counter,
 	     Zero_TN,
-	     V_BR_I8NE,
+	     trip_size == 4 ? V_BR_I4NE : V_BR_I8NE,
 	     &ops);
     BB_Append_Ops(tail, &ops);
     if (dbnum > 0) {
@@ -3703,7 +3772,6 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
   return TRUE;
 }
 
-
 static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 /* -----------------------------------------------------------------------
  * Requires: ntimes > 1
@@ -3730,6 +3798,9 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
   BOOL gen_remainder_loop = trip_count_tn && is_power_of_two(ntimes) &&
     CG_LOOP_unroll_multi_make_remainder_loop;
   UINT32 removed_exits = 0;
+#ifdef TARG_ST
+    INT16 remainder_trip_count_val = -1;
+#endif
 
   MEM_POOL_Push(&MEM_local_nz_pool);
   orig_bbs = TYPE_MEM_POOL_ALLOC_N(BB *, &MEM_local_nz_pool, num_bbs);
@@ -3857,6 +3928,12 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       orig_head_freq / ntimes;
   }
 
+#ifdef TARG_ST
+  int modulus, residue;
+
+  Get_pragma_LoopMod(loop, &modulus, &residue);
+#endif
+
   /* Build the replicas.
    */
   replica = &replicas[0];
@@ -3868,6 +3945,11 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       BB *fall_thru_dest = orig_fall_thru_bbs[bbi];
       OP *op, *replica_br_op = NULL;
       BOOL fall_thru_dest_in_loop;
+
+#ifdef TARG_ST
+      /* Initialize the TN renamer */
+      unroll_names_multibb_init(orig_bb, &MEM_phase_nz_pool);
+#endif
 
       /* Initialize BB info in <replica> */
       Set_BB_loop_head_bb(replica, &replicas[0]);
@@ -3890,7 +3972,7 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
         for (resi = 0; resi < OP_results(rop); resi++) {
 	  TN *res = OP_result(rop,resi);
 	  if (!TN_is_global_reg(res)) {
-	    TN *new_res = unroll_names_get(res, unrolling);
+	    TN *new_res = unroll_names_get(res, 0);
 	    Set_OP_result(rop, resi, new_res);
 	  }
 	}
@@ -3898,7 +3980,7 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	  TN *opnd = OP_opnd(rop, opi);
 	  if (TN_is_register(opnd)) {
 	    if (!TN_is_global_reg(opnd)) {
-	      Set_OP_opnd(rop, opi, unroll_names_get(opnd, unrolling));
+	      Set_OP_opnd(rop, opi, unroll_names_get(opnd, 0));
 	    }
 	  }
 	}
@@ -3952,6 +4034,17 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	     * (or remove it if there's no <fall_thru_dest> or we know it's
 	     * always taken), and let <replica> fall through to <br_targ>.
 	     */
+#ifdef TARG_ST
+	    if ((bt_bbi == 0) &&
+		(modulus % ntimes == 0) &&
+		(residue % ntimes != ((unrolling+1)%ntimes))) {
+	      /* Remove always-taken branch to next iter head */
+	      BB_Remove_Op(replica, replica_br_op);
+	      br_prob = 0.0;
+	      removed_exits ++;
+	    }
+	    else
+#endif
 	    if (gen_remainder_loop && bt_bbi == 0) {
 	      /* Remove always-taken branch to next iter head */
 	      BB_Remove_Op(replica, replica_br_op);
@@ -3964,7 +4057,7 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 		Link_Pred_Succ_with_Prob(replica, fall_thru_dest, br_prob);
 		if (fall_thru_dest_in_loop && fall_thru_dest != &replicas[0] &&
 		    (freqs || BB_freq_fb_based(fall_thru_dest)))
-		BB_freq(fall_thru_dest) += br_prob * BB_freq(replica);
+		  BB_freq(fall_thru_dest) += br_prob * BB_freq(replica);
 	      } else {
 		#pragma mips_frequency_hint NEVER
 		DevWarn("unable to negate branch %s", TOP_Name(OP_code(replica_br_op)));
@@ -3979,12 +4072,26 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	    /*
 	     * Retarget internal branch to <br_targ>.
 	     */
+#ifdef TARG_ST
+	    if ((br_targ == &replicas[0]) &&
+		(modulus % ntimes == 0) && (residue % ntimes != 0)) {
+	      BB_Remove_Op(replica, replica_br_op);
+	      br_prob = 0.0;
+	      fall_thru_dest = br_targ;
+	      fall_thru_dest_in_loop = TRUE;
+	      removed_exits ++;
+	    }
+	    else {
+#endif
 	    Set_OP_opnd(replica_br_op, replica_targ_opnd,
 			Gen_Label_TN(Gen_Label_For_BB(br_targ), 0));
 	    Link_Pred_Succ_with_Prob(replica, br_targ, br_prob);
 	    if (br_targ != &replicas[0] &&
 		(freqs || BB_freq_fb_based(br_targ)))
 	      BB_freq(br_targ) += br_prob * BB_freq(replica);
+#ifdef TARG_ST
+	    }
+#endif
 	  } else if (br_targ) {
 	    /*
 	     * Branch to external target - no change.
@@ -4011,12 +4118,20 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	    Set_BB_loop_head_bb(new_bb, &replicas[0]);
 	    Set_BB_unrollings(new_bb, ntimes);
 	  }
+#ifdef TARG_ST
+	  else if (fall_thru_dest == CG_LOOP_epilog)
+	    CG_LOOP_epilog = new_bb;
+#endif	  
 	}
 	Link_Pred_Succ_with_Prob(replica, BB_next(replica), ft_prob);
 	if (fall_thru_dest_in_loop && fall_thru_dest != &replicas[0] &&
 	    (freqs || BB_freq_fb_based(fall_thru_dest)))
 	  BB_freq(fall_thru_dest) += ft_prob * BB_freq(replica);
       }
+
+#ifdef TARG_ST
+      unroll_names_finish();
+#endif
     }
   }
 
@@ -4031,8 +4146,39 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
    * generated, and changes <head>.  Restore original head frequency
    * so remainder frequencies can be set correctly.
    */
+#ifdef TARG_ST
+  if (trip_count_tn && TN_is_constant(trip_count_tn))
+    remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
+  else {
+    if (modulus > 1) {
+
+      if (ntimes <= modulus) {
+	/* If ntimes is a divisor of modulus. */
+	if (modulus % ntimes == 0) {
+	  remainder_trip_count_val = residue % ntimes;
+	}
+      }
+
+      else /* ntimes > modulus */ {
+	if (ntimes % modulus == 0) {
+	  /* new_residue=k*modulus+residue, new_residue<ntimes.
+	     remainder_trip_count_val is set to max value for new_residue
+	     (ntimes-modulus+residue).  This property is not
+	     implemented for the moment. */
+	}
+      }
+    }
+  }
+
+  if (remainder_trip_count_val == 0)
+    gen_remainder_loop = FALSE;
+
+  if (!gen_remainder_loop ||
+      !unroll_multi_make_remainder_loop(loop, ntimes, orig_bbs, num_bbs, remainder_trip_count_val)) {
+#else
   if (!gen_remainder_loop ||
       !unroll_multi_make_remainder_loop(loop, ntimes, orig_bbs, num_bbs)) {
+#endif
     /*
      * Remainder loop wasn't necessary.  Remove original loop BBs
      * from flow graph and BB chain.
@@ -4071,6 +4217,32 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
   LOOP_DESCR_loopinfo(loop) = unrolled_info;
   LOOP_DESCR_num_exits(loop) =
     LOOP_DESCR_num_exits(loop) * ntimes - removed_exits;
+
+#ifdef TARG_ST
+  /* Update the loopmod pragma to take into account this unrolling. */
+    if (modulus > 1) {
+      INT new_modulus = 1;
+      INT new_residue = 0;
+
+      if (ntimes <= modulus) {
+	/* If ntimes is a divisor of modulus. */
+	if (modulus % ntimes == 0) {
+	  new_modulus = modulus / ntimes;
+	  new_residue = residue / ntimes;
+	}
+      }
+
+      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(&replicas[0]), ANNOT_PRAGMA);
+      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+      if (loopmod_ant) {
+	WN *wn = ANNOT_pragma(loopmod_ant);
+	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
+	WN_pragma_arg1(wn) = new_modulus;
+	WN_pragma_arg2(wn) = new_residue;
+      }
+    }
+#endif
 
   if (gen_remainder_loop && !TN_is_constant(trip_count_tn)) {
     /*
@@ -4292,28 +4464,6 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
   extend_prolog();
   extend_epilog(loop);
 }
-
-#ifdef TARG_ST
-static BOOL
-Get_pragma_LoopMod(LOOP_DESCR *loop, int *modulus, int *residue)
-{
-  *modulus = 1;
-  *residue = 0;
-
-  if (!CG_LOOP_ignore_pragmas) {
-    BB *head = LOOP_DESCR_loophead(loop);
-    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
-    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-    if (loopmod_ant) {
-      WN *wn = ANNOT_pragma(loopmod_ant);
-      *modulus = MAX(1, WN_pragma_arg1(wn));
-      *residue = MAX(0, WN_pragma_arg2(wn));
-    }
-  }
-  return (*modulus > 1);
-}
-#endif
 
 //  Unroll a single-bb do-loop
 //
@@ -4783,7 +4933,7 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
     unroll_xfer_annotations(&replicas[0], head);
     OP *br = BB_branch_op(head);
 #ifdef TARG_ST
-    if ((modulus % ntimes == 0) & (residue % ntimes != 0)) {
+    if ((modulus % ntimes == 0) && (residue % ntimes != 0)) {
       OPS ops = OPS_EMPTY;
 
       Build_OP (TOP_goto, 
@@ -4947,11 +5097,29 @@ void CG_LOOP::Determine_Unroll_Factor()
     return;
   }
 
+#ifdef TARG_ST
+
+  /* FdF: Multi-bb unrolling is activated either with -CG:unroll_multi_bb=1
+     or with #pragma unroll. */
+
+  if ((BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1) &&
+      !(pragma_unroll || CG_LOOP_unroll_multi_bb))
+    return;
+
+  INT32 body_len = 0;
+  BB *bb;
+  FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb) {
+    body_len += BB_length(bb);
+  }
+
+#else
+  INT32 body_len = BB_length(head);
+#endif
+
   if (trip_count_tn == NULL) {
 
     UINT32 ntimes = MAX(1, unroll_times_max);
     if (!pragma_unroll) {
-      INT32 body_len = BB_length(head);
       while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
 	ntimes--;
     }
@@ -4961,7 +5129,6 @@ void CG_LOOP::Determine_Unroll_Factor()
 
     BOOL const_trip = TN_is_constant(trip_count_tn);
     INT32 const_trip_count = const_trip ? TN_value(trip_count_tn) : 0;
-    INT32 body_len = BB_length(head);
   
     if (const_trip && (CG_LOOP_unroll_fully || pragma_unroll) &&
 	/*
@@ -5279,6 +5446,14 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
       reason = "contains BB from already-scheduled region";
       break;
     }
+#ifdef TARG_ST
+    BBKIND bbkind = BB_kind(bb);
+    if (!(bbkind == BBKIND_CALL || bbkind == BBKIND_GOTO || bbkind == BBKIND_LOGIF)) {
+      reason = "contains BB with unsupported branch instruction";
+      fprintf(stderr, "<cgprep> rejecting: %s\n", reason);
+      break;
+    }
+#endif
   }
 	  
   if (!reason)
@@ -5519,7 +5694,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     SINGLE_BB_DOLOOP_UNROLL,
     SINGLE_BB_WHILELOOP_SWP,
     SINGLE_BB_WHILELOOP_UNROLL,
-    MULTI_BB_DOLOOP
+    MULTI_BB_DOLOOP,
+    MULTI_BB_WHILELOOP
   };
 
   //    if (Is_Inner_Loop(loop)) {
@@ -5581,7 +5757,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   } else if (has_trip_count) {
     action = MULTI_BB_DOLOOP;
   } else {
-    action = NO_LOOP_OPT;
+    action = MULTI_BB_WHILELOOP;
   }
 
   switch (action) {
@@ -5828,27 +6004,50 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     break;
 
   case MULTI_BB_DOLOOP:
+  case MULTI_BB_WHILELOOP:
     {
       CG_LOOP cg_loop(loop);
       ANNOTATION *pragma_unroll;
 
-      // prolog needed to load loop counter. Epilog needed for
-      // cg_loop.Recompute_Liveness
-      if (!cg_loop.Has_prolog_epilog()) return FALSE;
+      // Prolog is needed for multi_bb loop.
+      if (!cg_loop.Has_prolog()) return FALSE;
 
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_DOLOOP ***");
       }
 
+#ifdef TARG_ST
+      if (PROC_has_counted_loops())
+#endif
       Gen_Counted_Loop_Branch(cg_loop);
 
-      if ((cg_loop.Get_Unroll_Times(pragma_unroll) > 1) && pragma_unroll) {
-	BB *head = LOOP_DESCR_loophead(cg_loop.Loop());
-	/* Raise a warning. */
-	DevWarn("BB %d: pragma unroll ignored on multi-bb loop", BB_id(head));
-	
-	/* Remove pragma unroll annotation to avoid further warning. */
-	ANNOT_Unlink(BB_annotations(head), pragma_unroll);
+      cg_loop.Determine_Unroll_Factor();
+      if (cg_loop.Unroll_factor() > 1) {
+#ifdef TARG_ST
+	/* FdF: We cannot rely on prolog/epilog to create the frontier
+           for the loop since the loop may contain multiple exits. So
+           add specific code here, from Recompute_Liveness. */
+
+	BB *entry = cg_loop.Trip_count_bb() ? cg_loop.Trip_count_bb() : cg_loop.Prolog_start();
+	BB_REGION region(Malloc_Mem_Pool);
+	region.entries.push_back(entry);
+
+	BB *bb;
+	FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb) {
+	  BBLIST *succs;
+	  FOR_ALL_BB_SUCCS(bb, succs) {
+	    BB *succ = BBLIST_item(succs);
+	    if (!BB_SET_MemberP(LOOP_DESCR_bbset(loop), succ))
+	      region.exits.push_back(succ);
+	  }
+	}
+
+	unroll_multi_bb(loop, cg_loop.Unroll_factor());
+
+	BB_REGION_Recompute_Global_Live_Info(region, TRUE /* recompute local info */);
+#else
+	unroll_multi_bb(loop, cg_loop.Unroll_factor());
+#endif
       }
 
       if (trace_loop_opt) {

@@ -171,6 +171,7 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
+static BOOL CG_LOOP_unroll_multi_bb_overridden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
@@ -538,6 +539,8 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_do_unwind, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_remainder_after", "",
     TRUE, 0, 0, &CG_LOOP_unroll_remainder_after, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_multi_bb", "",
+    TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
 #endif
 
   // Cross Iteration Loop Optimization options.
@@ -1080,6 +1083,10 @@ Configure_CG_Options(void)
       OPT_unroll_size = 64;
     }
   }
+
+  if (!CG_LOOP_unroll_multi_bb_overridden)
+    CG_LOOP_unroll_multi_bb = FALSE;
+
 #else
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
