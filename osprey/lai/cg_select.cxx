@@ -1510,7 +1510,7 @@ Node(BB* bb)
   return buffer;
 }
 
-extern char *Cur_PU_Name;
+BE_EXPORTED extern char *Cur_PU_Name;
 
 void
 draw_CFG(void)
