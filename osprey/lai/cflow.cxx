@@ -2287,6 +2287,31 @@ Convert_If_To_Goto ( BB *bp )
   case V_BR_U8GE: result = (UINT64)v1 >= (UINT64)v2; break;
   case V_BR_U8LT: result = (UINT64)v1 < (UINT64)v2; break;
   case V_BR_U8LE: result = (UINT64)v1 <= (UINT64)v2; break;
+  case V_BR_I8EQ0: result = v1 == 0; break;
+  case V_BR_I8NE0:  result = v1 != 0; break;
+  case V_BR_I8GE0:  result = v1 >= 0; break;
+  case V_BR_I8GT0:  result = v1 > 0; break;
+  case V_BR_I8LE0:  result = v1 <= 0; break;
+  case V_BR_I8LT0:  result = v1 < 0; break;
+  case V_BR_U8EQ0: result = (UINT64)v1 == 0; break;
+  case V_BR_U8NE0:  result = (UINT64)v1 != 0; break;
+  case V_BR_U8GE0:  result = (UINT64)v1 >= 0; break;
+  case V_BR_U8GT0:  result = (UINT64)v1 > 0; break;
+  case V_BR_U8LE0:  result = (UINT64)v1 <= 0; break;
+  case V_BR_U8LT0:  result = (UINT64)v1 < 0; break;
+  case V_BR_I4EQ0: result = (INT32)v1 == 0; break;
+  case V_BR_I4NE0:  result = (INT32)v1 != 0; break;
+  case V_BR_I4GE0:  result = (INT32)v1 >= 0; break;
+  case V_BR_I4GT0:  result = (INT32)v1 > 0; break;
+  case V_BR_I4LE0:  result = (INT32)v1 <= 0; break;
+  case V_BR_I4LT0:  result = (INT32)v1 < 0; break;
+  case V_BR_U4EQ0: result = (UINT32)v1 == 0; break;
+  case V_BR_U4NE0:  result = (UINT32)v1 != 0; break;
+  case V_BR_U4GE0:  result = (UINT32)v1 >= 0; break;
+  case V_BR_U4GT0:  result = (UINT32)v1 > 0; break;
+  case V_BR_U4LE0:  result = (UINT32)v1 <= 0; break;
+  case V_BR_U4LT0:  result = (UINT32)v1 < 0; break;
+
   default:
     #pragma mips_frequency_hint NEVER
     DevWarn("Unhandled branch VARIANT (%lld) for BB:%d at line %d of %s",
