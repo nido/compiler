@@ -3058,7 +3058,9 @@ Assemble_OP (
 
   if (OP_prefetch(op)) Use_Prefetch = TRUE;
 
-  Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op));
+  if (generate_dwarf) {
+    Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op));
+  }
 
   if (Assembly || Lai_Code) {
     r_assemble_list ( op, bb );
@@ -3643,7 +3645,8 @@ EMT_Assemble_BB (
     /* Set an initial line number so that if the first inst in the BB
      * has no srcpos, then we'll be ok.
      */
-    if (entry_srcpos) Cg_Dwarf_Add_Line_Entry (PC, entry_srcpos);
+    if (generate_dwarf && entry_srcpos)
+      Cg_Dwarf_Add_Line_Entry (PC, entry_srcpos);
 
     if (ST_is_not_used(entry_sym)) {
       // don't emit alt-entry if marked as not-used
