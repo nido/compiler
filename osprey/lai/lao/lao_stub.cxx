@@ -490,12 +490,14 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
     if (BB_has_note(cgir_bb)) {
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_NOTE);
     }
-  }
-  // Set unrollings.
-  if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
-    Set_BB_unrollings(new_bb, BB_unrollings(cgir_bb)*unrolled);
-  else if (BB_unrollings(cgir_bb) == 0)
+    // Set unrollings.
+    if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
+      Set_BB_unrollings(new_bb, BB_unrollings(cgir_bb)*unrolled);
+    else if (BB_unrollings(cgir_bb) == 0)
+      Set_BB_unrollings(new_bb, unrolled);
+  } else if (unrolled > 0) {
     Set_BB_unrollings(new_bb, unrolled);
+  }
   //
   // Set flags.
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
