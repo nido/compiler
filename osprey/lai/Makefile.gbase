@@ -709,7 +709,7 @@ last : make_deps
 #----------------------------------------------------------------------
 #  Install target
 #----------------------------------------------------------------------
-install:: default
+install:: local
 ifneq ($(BUILD_OS), IRIX)
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
 	for h in $(TARGETS); do \
@@ -740,6 +740,19 @@ LINK_DSOS = $(BE_DSO) $(TARGET_SO)
 ## Shared library
 ##
 ifeq ($(DSO_MODE), SO)
+
+$(TARG_BE)/$(BE_DSO):
+	cd $(TARG_BE) && $(MAKE) $(BE_DSO)
+
+$(TARG_LIBDWARF)/libdwarf.a:
+	cd $(TARG_LIBDWARF) && $(MAKE) libdwarf.a
+
+$(TARG_LIBELFUTIL)/libelfutil.a:
+	cd $(TARG_LIBELFUTIL) && $(MAKE) libelfutil.a
+
+$(TARG_LIBELF)/libelf.a:
+	cd $(TARG_LIBELF) && $(MAKE) libelf.a
+
 ifneq ($(BUILD_PCH), USE_PCH)
 
 ifeq ($(BUILD_HOST), IA64)
