@@ -66,6 +66,7 @@
 #include "config_TARG.h"
 #include "config_opt.h"
 #include "config_wopt.h"   /* what WOPT does can be target dependent */
+#include "config_lno.h"
 #include "erglob.h"
 #include "tracing.h"
 #include "mtypes.h"
@@ -481,6 +482,9 @@ Preconfigure_Target ( void )
 
   // Generate floating point constants directly in the code
   CG_floating_const_in_memory = FALSE;
+
+  LNO_Fission = 0;
+
 
 #endif
 
