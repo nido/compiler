@@ -434,96 +434,6 @@ CGTARG_Analyze_Branch (
   return variant;
 }
 
-static VARIANT
-compare_variant (
-  OP *op
-)
-{
-  switch (OP_code(op)) {
-  case TOP_cmpeq_r_b:
-  case TOP_cmpeq_i_b:
-  case TOP_cmpeq_ii_b:
-  case TOP_cmpeq_r_r:
-  case TOP_cmpeq_i_r:
-  case TOP_cmpeq_ii_r:
-    return V_BR_I4EQ;
-
-  case TOP_cmpge_r_b:
-  case TOP_cmpge_i_b:
-  case TOP_cmpge_ii_b:
-  case TOP_cmpge_r_r:
-  case TOP_cmpge_i_r:
-  case TOP_cmpge_ii_r:
-    return V_BR_I4GE;
-
-  case TOP_cmpgeu_r_b:
-  case TOP_cmpgeu_i_b:
-  case TOP_cmpgeu_ii_b:
-  case TOP_cmpgeu_r_r:
-  case TOP_cmpgeu_i_r:
-  case TOP_cmpgeu_ii_r:
-    return V_BR_U4GE;
-
-  case TOP_cmpgt_r_b:
-  case TOP_cmpgt_i_b:
-  case TOP_cmpgt_ii_b:
-  case TOP_cmpgt_r_r:
-  case TOP_cmpgt_i_r:
-  case TOP_cmpgt_ii_r:
-    return V_BR_I4GT;
-
-  case TOP_cmpgtu_r_b:
-  case TOP_cmpgtu_i_b:
-  case TOP_cmpgtu_ii_b:
-  case TOP_cmpgtu_r_r:
-  case TOP_cmpgtu_i_r:
-  case TOP_cmpgtu_ii_r:
-    return V_BR_U4GT;
-
-  case TOP_cmple_r_b:
-  case TOP_cmple_i_b:
-  case TOP_cmple_ii_b:
-  case TOP_cmple_r_r:
-  case TOP_cmple_i_r:
-  case TOP_cmple_ii_r:
-    return V_BR_I4LE;
-
-  case TOP_cmpleu_r_b:
-  case TOP_cmpleu_i_b:
-  case TOP_cmpleu_ii_b:
-  case TOP_cmpleu_r_r:
-  case TOP_cmpleu_i_r:
-  case TOP_cmpleu_ii_r:
-    return V_BR_U4LE;
-
-  case TOP_cmplt_r_b:
-  case TOP_cmplt_i_b:
-  case TOP_cmplt_ii_b:
-  case TOP_cmplt_r_r:
-  case TOP_cmplt_i_r:
-  case TOP_cmplt_ii_r:
-    return V_BR_I4LT;
-
-  case TOP_cmpltu_r_b:
-  case TOP_cmpltu_i_b:
-  case TOP_cmpltu_ii_b:
-  case TOP_cmpltu_r_r:
-  case TOP_cmpltu_i_r:
-  case TOP_cmpltu_ii_r:
-    return V_BR_U4LT;
-
-  case TOP_cmpne_r_b:
-  case TOP_cmpne_i_b:
-  case TOP_cmpne_ii_b:
-  case TOP_cmpne_r_r:
-  case TOP_cmpne_i_r:
-  case TOP_cmpne_ii_r:
-    return V_BR_I4NE;
-  }
-
-  return V_BR_NONE;
-}
-
 /* ====================================================================
  *   CGTARG_Analyze_Compare
  * ====================================================================
@@ -563,18 +473,22 @@ CGTARG_Analyze_Compare (
   /* Attempt to find the defining OP for the tested value.
    */
   def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
+  
   //
-  // Sometimes, we won't find any ...
+  // Make sure we've found one
   //
-  if (def_op != NULL) {
-    FmtAssert(OP_opnds(def_op) == 2, ("confused by the compare op"));
+#if 0
+  Print_OP(br);
+  if (def_op) Print_OP(def_op);
+#endif
+  FmtAssert(def_op != NULL && OP_opnds(def_op) == 2,("confused by the compare op"));
 
-    variant = compare_variant(def_op);
-    if (false_br) Set_V_false_br(variant);
+  variant = TOP_br_variant(OP_code(def_op));
+  /* [CG] : Set false branch variant if needed. */
+  if (false_br) Set_V_false_br(variant);
 
-    cond_tn1 = OP_opnd(def_op, 0);
-    cond_tn2 = OP_opnd(def_op, 1);
-  }
+  cond_tn1 = OP_opnd(def_op, 0);
+  cond_tn2 = OP_opnd(def_op, 1);
 
   *compare_op = def_op;
 
@@ -1040,7 +954,7 @@ CGTARG_Spill_Type (
 
       // FdF: Spill type for branch register is I4 in memory
     case ISA_REGISTER_CLASS_branch:
-      return MTYPE_To_TY(MTYPE_I4);
+      return MTYPE_To_TY(MTYPE_I1);
 
     default:
       FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
@@ -1065,8 +979,8 @@ void CGTARG_Load_From_Memory (
      * an integer register and then set the predicate by checking for
      * a non-zero value.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
-    Exp_Load (MTYPE_I4, MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    TN *temp_tn = Build_TN_Of_Mtype (mtype);
+    Exp_Load (MTYPE_I4, mtype, temp_tn, mem_loc, 0, ops, V_NONE);
     Build_OP(TOP_mtb, tn, temp_tn, ops);
     DevWarn("Spill of branch register: reload\n");
   }
@@ -1093,9 +1007,9 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
      * Since we can't directly store a predicate TN, first copy to
      * an integer register and then store.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
+    TN *temp_tn = Build_TN_Of_Mtype (mtype);
     Build_OP(TOP_mfb, temp_tn, tn, ops);
-    Exp_Store (MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
+    Exp_Store (mtype, temp_tn, mem_loc, 0, ops, V_NONE);
     DevWarn("Spill of branch register: store\n");
   }
   else {
