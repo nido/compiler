@@ -72,7 +72,7 @@ Initialize_Targ_Info (void)
     proc = PROCESSOR_st220;
     break;
   case TARGET_st221:
-    proc = PROCESSOR_st220;
+    proc = PROCESSOR_st221;
     break;
   default:
     FmtAssert(FALSE, ("targinfo doesn't handle target: %s\n", Targ_Name(Target)));
