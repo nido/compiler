@@ -2834,7 +2834,7 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	 
 	// prune out regs which have implicit meaning.
 #ifdef TARG_ST
-	if ((UINT)(reg-REGISTER_MIN) <= (REGISTER_MAX - REGISTER_MIN))
+	if (TN_register(result) != REGISTER_UNDEFINED)
 #endif
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass),
@@ -2866,7 +2866,7 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 
 	// prune out regs which have implicit meaning.
 #ifdef TARG_ST
-	if ((UINT)(opnd_reg-REGISTER_MIN) <= (REGISTER_MAX - REGISTER_MIN))
+	if (TN_register(opnd_tn) != REGISTER_UNDEFINED)
 #endif
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(opnd_cl), 
 				opnd_reg) ||
