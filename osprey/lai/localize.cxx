@@ -1035,9 +1035,11 @@ BB_Predecessor_Compiled_Region( INT *exit_num, BB *start )
  *  This is for the GRA case only.
  *
  *  References to a dedicated TN in a BB that has not already been compiled
- *  should be associated with a CALL, an ENTRY, or a previously compiled REGION.
+ *  should be associated with a CALL, an ENTRY, or a previously compiled 
+ *  REGION.
  *  The references associated with a previously compiled REGION
- *  are eliminated by replacing them with references to previously allocated, but
+ *  are eliminated by replacing them with references to previously 
+ *  allocated, but
  *  non-dedicated TNs.  The references associated with CALLs and ENTRYs
  *  are localized, except we allow a reference to a return value in the block
  *  immediately following a CALL.
@@ -1140,6 +1142,10 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  }
 	}
 	else {
+#ifdef TARG_ST
+	  // Arthur: we should allow instructions that use dedicated
+	  //         registers (ISA -- implicitely or explicitely).
+#else
 	  #pragma mips_frequency_hint NEVER
 	  FmtAssert( FALSE,
 		    ("def of %s in BB:%d does not reach either CALL or "
@@ -1147,6 +1153,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 		     REGISTER_name(TN_register_class(tn), TN_register(tn)),
 		     BB_id(bb)));
 	  /*NOTREACHED*/
+#endif
 	}
       }
     } // FOR_ALL_BB_OPs (bb, op)

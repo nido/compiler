@@ -542,7 +542,7 @@ static void Init_Avail_Set (BB *bb)
     for (i = 0; i < OP_results(op); ++i) {
       TN *result_tn = OP_result(op, i);
       if (!TN_is_local_reg(result_tn)) {
-        reg = LRA_TN_register(result_tn);
+	reg = LRA_TN_register(result_tn);
         cl = TN_register_class (result_tn);
         avail_set[cl] = REGISTER_SET_Difference1 (avail_set[cl], reg);
       }
@@ -1085,6 +1085,7 @@ Is_Reg_Available (ISA_REGISTER_CLASS regclass,
       return FALSE;
     }
   }
+
   if (reg != REGISTER_UNDEFINED && 
       avail_regs[regclass].reg[reg] &&
       REGISTER_SET_MemberP(usable_regs, reg)) {

@@ -110,17 +110,16 @@ INT32 CG_branch_mispredict_factor= -1;		/* means not set */
 BOOL CG_warn_bad_freqs = FALSE;
 BOOL CG_enable_loop_optimizations = TRUE;
 BOOL CG_enable_feedback = FALSE;
+BOOL CG_tail_call = FALSE;
 
 // TODO: set the default value here and ovewrite in target-specific
 //       initialization part.
 #ifdef TARG_IA64
 BOOL CG_enable_thr = TRUE;
 BOOL CG_cond_defs_allowed = TRUE;
-BOOL CG_tail_call = FALSE;
 #else
 BOOL CG_enable_thr = FALSE;
 BOOL CG_cond_defs_allowed = FALSE;
-BOOL CG_tail_call = TRUE;
 #endif
 
 BOOL CG_enable_reverse_if_conversion = TRUE;

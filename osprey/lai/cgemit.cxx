@@ -2910,6 +2910,11 @@ Verify_Operand (
 
 	if (val == nextpc) {
 	  DevWarn("branch to next instruction at PC=0x%x", PC);
+
+	  Print_OP(op);
+	  fprintf(TFile, " PC = %d; TN_offset = %lld\n", PC, offset);
+	  fprintf(TFile, " val = %lld; nextpc = %d\n", val, nextpc);
+
 	}
       }
       if (Get_Label_Offset(lab) == 0 && offset == 0) {
@@ -3219,63 +3224,6 @@ Generate_Asm_String (
   return asm_string;
 }
 
-#if 0
-/* ====================================================================
- *   CGEMIT_Prn_Ent_In_Asm
- *
- *   Generate the entry (.proc) directive.
- *
- *   TODO: target-dependent.
- * ====================================================================
- */
-void 
-CGEMIT_Prn_Ent_In_Asm (
-  ST *pu
-)
-{
-  BB_LIST *ent_list;
-
-#if 0
-  if (Assembly) {
-    fprintf ( Asm_File, "\t%s\t", AS_ENT);
-    //    EMT_Write_Qualified_Name(Asm_File, pu);
-  }
-  if (Lai_Code) {
-    fprintf (Lai_File, "\t%s ", AS_ENT);
-  }
-#endif
-  /*
-  EMT_Write_Qualified_Name(Lai_File, pu);
-  */
-
-  fprintf (Output_File, "\t%s ", AS_ENT);
-
-  for (ent_list = Entry_BB_Head; ent_list; ent_list = BB_LIST_rest(ent_list)) {
-    BB *bb = BB_LIST_first(ent_list);
-    ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_ENTRYINFO);
-    ENTRYINFO *ent = ANNOT_entryinfo(ant);
-    ST *entry_sym = ENTRYINFO_name(ent);
-
-    if (!ST_is_not_used(entry_sym)) {
-      const char *entry_name = ST_name(entry_sym);
-      if (strcmp(Cur_PU_Name, entry_name ) != 0) {
-	if (Assembly)
-	  fprintf (Asm_File, ", %s", entry_name);
-	if (Lai_Code)
-	  fprintf (Lai_File, ", %s", entry_name);
-      }
-    }
-  }
-
-  if (Assembly)
-    fprintf (Asm_File, "\n");
-  if (Lai_Code)
-    fprintf (Lai_File, "\n");
-
-  return;
-}
-#endif
-
 /* ====================================================================
  *   Assemble_Simulated_OP
  *
@@ -3452,6 +3400,7 @@ Assemble_Bundles(BB *bb)
 
   if (Trace_Inst) {
     fprintf(TFile, "<cgemit> Assemble_Bundles BB%d:\n", BB_id(bb));
+    //Print_BB(bb);
   }
 
   for (op = BB_first_op(bb);;) {
@@ -3940,7 +3889,7 @@ Recompute_Label_Offset (
 	lab = Get_OP_Tag(op);
       	Set_Label_Offset(lab, cur_pc);
       }
-      INT num_inst_words = 1;
+      INT num_inst_words = OP_Real_Inst_Words (op);
       cur_pc = PC_Incr_N(cur_pc, num_inst_words);
     }
     cur_pcs[isect] = cur_pc;
@@ -4071,7 +4020,7 @@ R_Resolve_Branches (
     Gen_Label_For_BB ( bb );
 
     for (op = BB_first_op(bb); op; op = OP_next(op)) {
-      INT num_inst_words = 1;
+      INT num_inst_words = OP_Real_Inst_Words (op);
       curpc = PC_Incr_N(curpc, num_inst_words);
     }
     

@@ -445,9 +445,7 @@ CG_Generate_Code(
 
   EH_Prune_Range_List();
 
-#ifndef TARG_ST
   Optimize_Tail_Calls( Get_Current_PU_ST() );
-#endif
 
   Init_Callee_Saved_Regs_for_REGION( Get_Current_PU_ST(), region );
   Generate_Entry_Exit_Code ( Get_Current_PU_ST(), region );
@@ -547,7 +545,7 @@ CG_Generate_Code(
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
     //
-    if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+    if (CGTARG_Can_Predicate()) {
       // Initialize the predicate query system in the hyperblock 
       // formation phase
       HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
@@ -625,15 +623,17 @@ CG_Generate_Code(
     }
 #endif
 
+#ifdef TARG_ST
     // (cbr) SSA should be reconstructer after changing the CFG.
     // For now do that after we got out of SSA.
     // Perform hyperblock formation (if-conversion), if target can
     // predicate, and superblock formation if target supports select.
-    if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+    if (CGTARG_Can_Select()) {
       HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
       if (frequency_verify)
 	FREQ_Verify("Hyberblock Formation");
     }
+#endif
 
     // GRA_LIVE_Init only done if !CG_localize_tns
     if (CG_enable_loop_optimizations && !CG_localize_tns) {
@@ -769,7 +769,6 @@ CG_Generate_Code(
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }
 
-#ifndef TARG_ST
   if (CG_enable_peephole) {
     Set_Error_Phase("Extended Block Optimizer");
     Start_Timer(T_EBO_CU);
@@ -777,7 +776,6 @@ CG_Generate_Code(
     Stop_Timer ( T_EBO_CU );
     Check_for_Dump ( TP_EBO, NULL );
   }
-#endif
 
 #if 0
   fprintf(TFile, "%s CFG Before IGLS_Schedule_Region\n%s\n", DBar, DBar);
