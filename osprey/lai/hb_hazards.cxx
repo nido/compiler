@@ -1470,7 +1470,8 @@ Make_Bundles (
     // FdF: We are on a non-entry basic block of a super block.
     // Clock is set to the scheduling date of the first operation
     // pending_latency is inherited from the fall-thru predecessor.
-    Clock = OP_scycle(op);
+    if (OP_scycle(op) > 0)
+      Clock = OP_scycle(op);
   }
   else
 #endif
@@ -1499,6 +1500,8 @@ Make_Bundles (
   // Some super-blocks may start with first operation scheduled at a
   // date greater than 0.
 #ifdef SUPERBLOCK_SCHED
+  // Save BB_first_op
+  OP *bb_first_op = BB_first_op(bb);
   for (; Clock < OP_scycle(op); Clock++) {
     Fill_Cycle_With_Noops (bb, NULL, bundle, bundle_vector, pc);
     if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
@@ -1523,7 +1526,12 @@ Make_Bundles (
 
     if (OP_dummy(op)) continue;
 
+#ifdef SUPERBLOCK_SCHED
+    if (op != bb_first_op) {
+#else
     if (op != BB_first_op(bb)) {
+#endif
+
       // 
       // First, make sure there are no dependencies between this
       // op and anything before it in the BB. If dependence exists,
