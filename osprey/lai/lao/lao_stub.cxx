@@ -548,30 +548,6 @@ lao_init() {
     int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
   }
   if (lao_initialized++ == 0) {
-    // initialize LIR; this constructs the interface variable
-    LAO_INIT();
-    // initialize the interface call-back pointers
-    *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
-    *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
-    *Interface__CGIR_SYM_create(interface) = CGIR_SYM_create;
-    *Interface__CGIR_SYM_update(interface) = CGIR_SYM_update;
-    *Interface__CGIR_Dedicated_TN_create(interface) = CGIR_Dedicated_TN_create;
-    *Interface__CGIR_PseudoReg_TN_create(interface) = CGIR_PseudoReg_TN_create;
-    *Interface__CGIR_Modifier_TN_create(interface) = CGIR_Modifier_TN_create;
-    *Interface__CGIR_Absolute_TN_create(interface) = CGIR_Absolute_TN_create;
-    *Interface__CGIR_Symbol_TN_create(interface) = CGIR_Symbol_TN_create;
-    *Interface__CGIR_Label_TN_create(interface) = CGIR_Label_TN_create;
-    *Interface__CGIR_TN_update(interface) = CGIR_TN_update;
-    *Interface__CGIR_OP_create(interface) = CGIR_OP_create;
-    *Interface__CGIR_OP_update(interface) = CGIR_OP_update;
-    *Interface__CGIR_BB_create(interface) = CGIR_BB_create;
-    *Interface__CGIR_BB_update(interface) = CGIR_BB_update;
-    *Interface__CGIR_BB_chain(interface) = CGIR_BB_chain;
-    *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
-    *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
-    *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
-    *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
-    *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
     // initialize the PRO64/LAO interface pointers
     lao_optimize_LOOP_p = lao_optimize_LOOP;
     lao_optimize_HB_p = lao_optimize_HB;
@@ -852,12 +828,10 @@ lao_init() {
 void
 lao_fini() {
   if (--lao_initialized == 0) {
-    // release the PRO64/LAO interface pointers
+    // Release the PRO64/LAO interface pointers.
     lao_optimize_LOOP_p = NULL;
     lao_optimize_HB_p = NULL;
     lao_optimize_FUNC_p = NULL;
-    // finalize the LAO
-    LAO_FINI();
   }
 }
 
@@ -875,47 +849,42 @@ static LoopInfo
 lao_makeLoopInfo(BB_List& bb_list, bool cyclic) {
   LoopInfo loopinfo = NULL;
   BB *bb = bb_list.front();
-  CGIR_LAB cgir_lab = Gen_Label_For_BB(bb);
-  Label label = CGIR_LAB_to_Label(cgir_lab);
-  // get the BB LoopInfo
+  BasicBlock basicblock = CGIR_BB_to_BasicBlock(bb);
+  // Get the BB LoopInfo.
   ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
     CGIR_LI cgir_li = ANNOT_loopinfo(annot);
-    loopinfo = Interface_makeLoopInfo(interface, cgir_li, label);
-  } else {
-    loopinfo = Interface_makeLoopInfo(interface, NULL, label);
-  }
-  CG_DEP_Compute_Region_MEM_Arcs(bb_list,
-      cyclic,	// compute_cyclic
-      false);	// memread_arcs
-  BB_List::iterator bb_iter;
-  for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
-    OP *op = NULL;
-    FOR_ALL_BB_OPs(*bb_iter, op) {
-      ARC_LIST *arcs = NULL;
-      if (_CG_DEP_op_info(op)) {
-	Operation orig_operation = CGIR_OP_to_Operation(op);
-	for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
-	  ARC *arc = ARC_LIST_first(arcs);
-	  CG_DEP_KIND kind = ARC_kind(arc);
-	  if (ARC_is_mem(arc)) {
-	    bool definite = ARC_is_definite(arc);
-	    int latency = ARC_latency(arc), omega = ARC_omega(arc);
-	    OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
-	    Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
-	    Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-	    Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-		orig_operation, dest_operation, latency, omega, definite);
-	    //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
+    loopinfo = Interface_makeLoopInfo(interface, cgir_li, basicblock);
+    // Compute the memory dependence graph.
+    CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
+    BB_List::iterator bb_iter;
+    for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
+      OP *op = NULL;
+      FOR_ALL_BB_OPs(*bb_iter, op) {
+	ARC_LIST *arcs = NULL;
+	if (_CG_DEP_op_info(op)) {
+	  Operation orig_operation = CGIR_OP_to_Operation(op);
+	  for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
+	    ARC *arc = ARC_LIST_first(arcs);
+	    CG_DEP_KIND kind = ARC_kind(arc);
+	    if (ARC_is_mem(arc)) {
+	      bool definite = ARC_is_definite(arc);
+	      int latency = ARC_latency(arc), omega = ARC_omega(arc);
+	      OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
+	      Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
+	      Operation dest_operation = CGIR_OP_to_Operation(succ_op);
+	      Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
+		  orig_operation, dest_operation, latency, omega, definite);
+	      //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
+	    }
 	  }
-	}
-      } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+	} else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+      }
     }
+    CG_DEP_Delete_Graph(&bb_list);
   }
-  CG_DEP_Delete_Graph(&bb_list);
   return loopinfo;
 }
-
 
 /*----------------------- LAO Optimization Functions -------------------------*/
 
@@ -928,7 +897,30 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   BB_List::iterator bb_iter;
   //
   if (getenv("PRINT")) CGIR_print();
+  LAO_INIT();
   Interface_open(interface);
+  // initialize the interface call-back pointers
+  *Interface__CGIR_LAB_create(interface) = CGIR_LAB_create;
+  *Interface__CGIR_LAB_update(interface) = CGIR_LAB_update;
+  *Interface__CGIR_SYM_create(interface) = CGIR_SYM_create;
+  *Interface__CGIR_SYM_update(interface) = CGIR_SYM_update;
+  *Interface__CGIR_Dedicated_TN_create(interface) = CGIR_Dedicated_TN_create;
+  *Interface__CGIR_PseudoReg_TN_create(interface) = CGIR_PseudoReg_TN_create;
+  *Interface__CGIR_Modifier_TN_create(interface) = CGIR_Modifier_TN_create;
+  *Interface__CGIR_Absolute_TN_create(interface) = CGIR_Absolute_TN_create;
+  *Interface__CGIR_Symbol_TN_create(interface) = CGIR_Symbol_TN_create;
+  *Interface__CGIR_Label_TN_create(interface) = CGIR_Label_TN_create;
+  *Interface__CGIR_TN_update(interface) = CGIR_TN_update;
+  *Interface__CGIR_OP_create(interface) = CGIR_OP_create;
+  *Interface__CGIR_OP_update(interface) = CGIR_OP_update;
+  *Interface__CGIR_BB_create(interface) = CGIR_BB_create;
+  *Interface__CGIR_BB_update(interface) = CGIR_BB_update;
+  *Interface__CGIR_BB_chain(interface) = CGIR_BB_chain;
+  *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
+  *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
+  *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
+  *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
+  *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
   // Create the LAO BasicBlocks.
   for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
@@ -961,7 +953,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
     }
   }
   // Make the LoopInfos for the bodyBBs.
-  LoopInfo loopinfo = lao_makeLoopInfo(bodyBBs, cyclic);
+  lao_makeLoopInfo(bodyBBs, cyclic);
   //
   result = LAO_Optimize(lao_actions);
   if (result) {
@@ -970,6 +962,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   }
   //
   Interface_close(interface);
+  LAO_FINI();
   //
   return result;
 }
