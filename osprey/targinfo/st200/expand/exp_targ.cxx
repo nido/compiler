@@ -2974,6 +2974,11 @@ Expand_Const (
 
   TCON tc = ST_tcon_val(TN_var(src));
 
+  union {
+    INT32 i;
+    float f;
+  } val;
+
   //
   // This is called normally for floating-point and company
   // Since we keep them in integer registers, just make a mov
@@ -2982,7 +2987,18 @@ Expand_Const (
   switch (TCON_ty(tc)) {
 
   case MTYPE_F4:
-    Build_OP(TOP_mov_i, dest, src, ops);
+    //
+    // For now I do the bit-pattern directly, eventually we should
+    // try to make a mov from a symbol TN into an integer TN and
+    // handle it in emit const in assm phase.
+    //
+    //    Build_OP(TOP_mov_i, dest, src, ops);
+
+    val.f = tc.vals.fval;
+    Build_OP(TOP_mov_i, dest, Gen_Literal_TN(val.i, 4), ops);
+
+    fprintf(TFile, "generated fp const !!!\n");
+
     break;
 
   default:
