@@ -444,7 +444,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
     2, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
-    0, 0, 4,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
+    2, 0, 2,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_loopdep", "",
     1, 0, 3,	&CG_LAO_loopdep, &CG_LAO_loopdep_overridden },
 #endif
@@ -1584,7 +1584,7 @@ CG_Init (void)
     }
     if (!CG_LAO_relaxation_overridden) CG_LAO_relaxation = 2;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
-    if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 0;
+    if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 2;
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
     lao_init();
   }
