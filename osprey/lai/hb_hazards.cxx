@@ -1565,6 +1565,16 @@ Make_Bundles (
       		&& (last_srcpos != OP_srcpos(op))
       		&& (OP_srcpos(op) != 0)
       		)
+	   // [CL] finish previous bundle if last op was
+	   // in prologue and current op insn't
+	   || ( (Opt_Level == 0)
+		&& !OP_prologue(op) && OP_prologue(OP_prev(op))
+		)
+	   // [CL] finish previous bundle if current op is
+	   // in epilogue and prev op wasn't
+	   || ( (Opt_Level == 0)
+		&& OP_epilogue(op) && !OP_epilogue(OP_prev(op))
+		)
 	   || !bundling_reqd
       	   ) {
 #else
