@@ -2833,6 +2833,9 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	ISA_REGISTER_CLASS rclass = TN_register_class (result);
 	 
 	// prune out regs which have implicit meaning.
+#ifdef TARG_ST
+	if ((UINT)(reg-REGISTER_MIN) <= (REGISTER_MAX - REGISTER_MIN))
+#endif
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass),
 				reg) ||
@@ -2862,6 +2865,9 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	ISA_REGISTER_CLASS opnd_cl = TN_register_class (opnd_tn);
 
 	// prune out regs which have implicit meaning.
+#ifdef TARG_ST
+	if ((UINT)(opnd_reg-REGISTER_MIN) <= (REGISTER_MAX - REGISTER_MIN))
+#endif
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(opnd_cl), 
 				opnd_reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(opnd_cl),
@@ -5098,6 +5104,10 @@ LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb)
     if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_IVDEP ||
 	WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPDEP) {
       if (pragma != NULL)
+#ifdef TARG_ST
+	/* FdF: Because of unrolling, pragma may be duplicated. */
+	if (pragma != ANNOT_pragma(annot))
+#endif
 	DevWarn("Multiple LOOPDEP/IVDEP pragma at BB:%d", BB_id(bb));
       pragma = ANNOT_pragma(annot);
     }
