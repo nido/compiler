@@ -869,6 +869,7 @@ EMT_Put_Elf_Symbol (
 		      ST_name(sym), 0, TY_size(sym_type),
 		      symbind, STT_OBJECT, symother,
 		      ST_is_gp_relative(sym) ? SHN_MIPS_SUNDEFINED : SHN_UNDEF);
+#ifndef TARG_ST /* CL: It is useless to emit such things */
 	  if (Assembly)
 	    if (ST_is_weak_symbol(sym)) {
 	      fprintf ( Asm_File, "\t%s\t", AS_WEAK);
@@ -878,6 +879,7 @@ EMT_Put_Elf_Symbol (
 	    else {
 	      fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
 	    }
+#endif
 	  break;
 	case SCLASS_COMMON:
 	  if (sym != base_st && ST_sclass(base_st) == SCLASS_COMMON) {
@@ -927,6 +929,7 @@ EMT_Put_Elf_Symbol (
       if (sclass == SCLASS_EXTERN) {
         symindex = Em_Add_New_Undef_Symbol (
 			ST_name(sym), symbind, STT_FUNC, symother);
+#ifndef TARG_ST /* CL: It is useless to emit such things */
 	if (Assembly) {
 	  if (ST_is_weak_symbol(sym)) {
 	    fprintf ( Asm_File, "\t%s\t", AS_WEAK);
@@ -936,6 +939,7 @@ EMT_Put_Elf_Symbol (
 	  else
 	    fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
 	}
+#endif
       }
       else 
 	symindex = Em_Add_New_Symbol (
@@ -2576,8 +2580,8 @@ r_apply_l_const (
 	// Print out a symbolic name
 	//
 	vstr_sprintf (buf, vstr_len(*buf), "UNNAMED_CONST_%d", ST_tcon(st));
-	// call put_symbol so that we emit .type info, once per symbol
-	(void) EMT_Put_Elf_Symbol (st);
+	//	// call put_symbol so that we emit .type info, once per symbol
+	// (void) EMT_Put_Elf_Symbol (st);
       }
 #else
       *buf = vstr_concat(*buf, ST_name(st));
