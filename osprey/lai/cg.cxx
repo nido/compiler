@@ -542,7 +542,7 @@ CG_Generate_Code(
 
 #endif
 
-#if 0
+#ifndef TARG_ST
     //
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
@@ -627,6 +627,11 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
     // Perform superblock formation after select if-conversion. 
+    //
+    // TODO: do it in SSA when tail duplication works in SSA.
+    //       Depending on the CGTARG_Supports_Predication(), do
+    //       either Hyper- or Super- block formation.
+    //
     HB_Form_Superblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
     if (frequency_verify)
       FREQ_Verify("Superblock Formation");
