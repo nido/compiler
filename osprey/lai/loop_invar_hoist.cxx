@@ -2423,9 +2423,13 @@ Create_Loop_Prologue (LOOP_DESCR* l) {
                BB_id(like_prolog), BB_id(lhead)));
 
     if (!like_prolog) {
-      like_prolog = CG_LOOP_Gen_And_Prepend_To_Prolog (lhead,l);
 #ifdef TARG_ST
-      GRA_LIVE_Compute_Liveness_For_BB(like_prolog);
+      if (LOOP_DESCR_Can_Retarget_Loop_Entrances(l)) {
+#endif
+	like_prolog = CG_LOOP_Gen_And_Prepend_To_Prolog (lhead,l);
+#ifdef TARG_ST
+	GRA_LIVE_Compute_Liveness_For_BB(like_prolog);
+      }
 #endif
     }
               
