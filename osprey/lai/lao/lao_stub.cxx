@@ -80,13 +80,11 @@ static int lao_initialized = 0;
 // Initialization of the LAO, needs to be called once per running process.
 void
 lao_init(void) {
-
 #ifdef Is_True_On
   if (GETENV("LAO_PID")) {
     int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
   }
 #endif
-
   if (lao_initialized++ == 0) {
     LAI_instance = LAI_getInstance();
     FmtAssert(LAI_instance->size == sizeof(LAI_Interface_), ("LAI_Instance mistmatch"));
@@ -524,18 +522,21 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
 	uint64_t trip_factor = trip_count & -trip_count;
 	int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
-	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block, 4,
+	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
 	    Configuration_Pipelining, CG_LAO_pipelining,
 	    Configuration_MinTrip, min_trip_count,
 	    Configuration_Modulus, min_trip_factor,
-	    Configuration_Residue, 0);
+	    Configuration_Residue, 0,
+	    ConfigurationItem__);
       } else {
-	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block, 1,
-	    Configuration_Pipelining, CG_LAO_pipelining);
+	loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
+	    Configuration_Pipelining, CG_LAO_pipelining,
+	    ConfigurationItem__);
       }
     } else {
-      loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block, 1,
-	  Configuration_Pipelining, CG_LAO_pipelining);
+      loopinfo = LAI_Interface_makeLoopInfo(interface, cgir_ld, head_block,
+	  Configuration_Pipelining, CG_LAO_pipelining,
+	  ConfigurationItem__);
     }
     // Fill the LoopInfo dependence table.
     //
@@ -1036,13 +1037,14 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
   //
   // Open Interface
-  LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()), 6,
+  LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
       Configuration_RegionType, CG_LAO_regiontype,
       Configuration_SchedKind, CG_LAO_schedkind,
       Configuration_Pipelining, CG_LAO_pipelining,
       Configuration_Speculation, CG_LAO_speculation,
       Configuration_LoopDep, CG_LAO_loopdep,
-      Configuration_StackModel, stackmodel);
+      Configuration_StackModel, stackmodel,
+      ConfigurationItem__);
   //
   // Create the LAO BasicBlocks.
   BB_List::iterator bb_iter;
