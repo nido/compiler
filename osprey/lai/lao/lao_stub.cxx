@@ -496,6 +496,7 @@ CGIR_BB_update(CGIR_BB cgir_bb, BasicBlock basicblock, int labelCount, Label lab
   }
   BB_Append_Ops(cgir_bb, &ops);
   // Process the loopinfo.
+#if 0
   ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
     ANNOT_Unlink(BB_annotations(cgir_bb), annot);
@@ -504,6 +505,7 @@ CGIR_BB_update(CGIR_BB cgir_bb, BasicBlock basicblock, int labelCount, Label lab
     CGIR_LI cgir_li = LoopInfo_to_CGIR_LI(loopinfo);
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
+#endif
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -521,14 +523,29 @@ CGIR_BB_unchain(CGIR_BB cgir_bb) {
 // Link two CGIR_BBs in the CGIR with the given branch probability.
 static void
 CGIR_BB_link(CGIR_BB orig_cgir_bb, CGIR_BB dest_cgir_bb, float probability) {
-  Link_Pred_Succ_with_Prob(orig_cgir_bb, dest_cgir_bb, probability, 0);
+  Link_Pred_Succ_with_Prob(orig_cgir_bb, dest_cgir_bb, probability);
 }
 
 // Unlink all the predecessors and successors of a CGIR_BB in the CGIR.
 static void
 CGIR_BB_unlink(CGIR_BB cgir_bb) {
-  BB_Delete_Predecessors(cgir_bb);
-  BB_Delete_Successors(cgir_bb);
+  BBLIST *edge;
+
+  /* Remove successor edges.
+   */
+  FOR_ALL_BB_SUCCS(cgir_bb, edge) {
+    BB *succ = BBLIST_item(edge);
+    BBlist_Delete_BB(&BB_preds(succ), cgir_bb);
+  }
+  BBlist_Free(&BB_succs(cgir_bb));
+
+  /* Remove predecessor edges.
+   */
+  FOR_ALL_BB_PREDS(cgir_bb, edge) {
+    BB *pred = BBLIST_item(edge);
+    BBlist_Delete_BB(&BB_succs(pred), cgir_bb);
+  }
+  BBlist_Free(&BB_preds(cgir_bb));
 }
 
 // Create a CGIR_LI from a LIR LoopInfo.
@@ -610,6 +627,7 @@ lao_init() {
     TOP__Operator[TOP_bswap_r] = Operator_CODE_BSWAP_IDEST_SRC1;
     TOP__Operator[TOP_bwd_bar] = Operator_PSEUDO_PRO64;
     TOP__Operator[TOP_call] = Operator_CODE_CALL_BTARG;
+    TOP__Operator[TOP_clz] = Operator_CODE_CLZ_IDEST_SRC1;
     TOP__Operator[TOP_cmpeq_i_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRC2;
     TOP__Operator[TOP_cmpeq_ii_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRCX;
     TOP__Operator[TOP_cmpeq_i_r] = Operator_CODE_CMPEQ_IDEST_SRC1_ISRC2;
@@ -727,6 +745,9 @@ lao_init() {
     TOP__Operator[TOP_mulhh_i] = Operator_CODE_MULHH_IDESTL_SRC1_ISRC2;
     TOP__Operator[TOP_mulhh_ii] = Operator_CODE_MULHH_IDESTL_SRC1_ISRCX;
     TOP__Operator[TOP_mulhh_r] = Operator_CODE_MULHH_DESTL_SRC1_SRC2;
+    TOP__Operator[TOP_mulhhs_i] = Operator_CODE_MULHHS_IDESTL_SRC1_ISRC2;
+    TOP__Operator[TOP_mulhhs_ii] = Operator_CODE_MULHHS_IDESTL_SRC1_ISRCX;
+    TOP__Operator[TOP_mulhhs_r] = Operator_CODE_MULHHS_DESTL_SRC1_SRC2;
     TOP__Operator[TOP_mulhhu_i] = Operator_CODE_MULHHU_IDESTL_SRC1_ISRC2;
     TOP__Operator[TOP_mulhhu_ii] = Operator_CODE_MULHHU_IDESTL_SRC1_ISRCX;
     TOP__Operator[TOP_mulhhu_r] = Operator_CODE_MULHHU_DESTL_SRC1_SRC2;
@@ -745,6 +766,9 @@ lao_init() {
     TOP__Operator[TOP_mullhu_i] = Operator_CODE_MULLHU_IDESTL_SRC1_ISRC2;
     TOP__Operator[TOP_mullhu_ii] = Operator_CODE_MULLHU_IDESTL_SRC1_ISRCX;
     TOP__Operator[TOP_mullhu_r] = Operator_CODE_MULLHU_DESTL_SRC1_SRC2;
+    TOP__Operator[TOP_mullhus_i] = Operator_CODE_MULLHUS_IDESTL_SRC1_ISRC2;
+    TOP__Operator[TOP_mullhus_ii] = Operator_CODE_MULLHUS_IDESTL_SRC1_ISRCX;
+    TOP__Operator[TOP_mullhus_r] = Operator_CODE_MULLHUS_DESTL_SRC1_SRC2;
     TOP__Operator[TOP_mulll_i] = Operator_CODE_MULLL_IDESTL_SRC1_ISRC2;
     TOP__Operator[TOP_mulll_ii] = Operator_CODE_MULLL_IDESTL_SRC1_ISRCX;
     TOP__Operator[TOP_mulll_r] = Operator_CODE_MULLL_DESTL_SRC1_SRC2;
@@ -833,6 +857,7 @@ lao_init() {
     TOP__Operator[TOP_xor_i] = Operator_CODE_XOR_IDEST_SRC1_ISRC2;
     TOP__Operator[TOP_xor_ii] = Operator_CODE_XOR_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_xor_r] = Operator_CODE_XOR_DEST_SRC1_SRC2;
+    TOP__Operator[TOP_zxth_r] = Operator_CODE_ZXTH_IDEST_SRC1;
     // initialize Operator__TOP;
     for (int i = 0; i < Operator__COUNT; i++) Operator__TOP[i] = TOP_UNDEFINED;
     for (int i = 0; i < TOP_UNDEFINED; i++) Operator__TOP[TOP__Operator[i]] = (TOP)i;
