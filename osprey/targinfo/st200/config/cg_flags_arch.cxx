@@ -58,9 +58,9 @@ void Configure_CG_Target() {
   //                     in development
 #ifndef LAO_ENABLED
   // disable HB scheduling
-  IGLS_Enable_HB_Scheduling = FALSE;
+  //  IGLS_Enable_HB_Scheduling = FALSE;
 
-  IGLS_Enable_PRE_HB_Scheduling = FALSE;
+  //  IGLS_Enable_PRE_HB_Scheduling = FALSE;
 #endif
   IGLS_Enable_POST_HB_Scheduling = FALSE;
 
