@@ -79,7 +79,7 @@ UINT First_Float_Preg_Return_Offset	= 0;	/* register f0 */
 UINT Last_Float_Preg_Return_Offset	= 0;	/* register f2 */
 
 /* Parameter placement */
-UINT First_Int_Preg_Param_Offset	= 1;	/* register a0 */
+UINT First_Int_Preg_Param_Offset	= 17;	/* register a0 */
 UINT First_Ptr_Preg_Param_Offset        = 0;
 UINT First_Float_Preg_Param_Offset	= 0;	/* register fa0 */
 
@@ -112,7 +112,7 @@ SIM SIM_Info[] = {
   },
   { /* ABI_ST200 */
 	SIM_COORD_MEM_REG | SIM_REG_STRUCTS,
-	{I0+0,I0+7,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	{I0+16,I0+17,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,
 	0, 64, -64, 
