@@ -75,7 +75,7 @@ char *ISA_Name = NULL;		/* -TARG:isa=xxx */
 char *Processor_Name = NULL;	/* -TARG:processor=xxx */
 static char * Platform_Name = NULL;
 INT16 Target_FPRs = 0;		/* -TARG:fp_regs=nn */
-INT32 Target_Stack_Alignment = 32; /* -TARG:stack_alignment=nn */
+INT32 Target_Stack_Alignment = 8; /* -TARG:stack_alignment=nn */
 BOOL Pure_ABI = FALSE;		/* Avoid non-ABI constructs? */
 
 /* Fault handling: */
