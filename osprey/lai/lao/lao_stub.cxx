@@ -341,8 +341,8 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn) {
     temporary = CGIR_TN_to_Temporary(tn);
   } break;
   case OPR_INTCONST: {
-    if (WN_rtype(home) == MTYPE_I4 ||
-	WN_rtype(home) == MTYPE_U4) {
+    if (WN_rtype(home) == BASICTYPE_I4 ||
+	WN_rtype(home) == BASICTYPE_U4) {
       TN *tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
       temporary = CGIR_TN_to_Temporary(tn);
     } else {
@@ -516,12 +516,12 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
-    LAI_InstrMode instrMode = CGIR_IS_to_InstrMode((ISA_SUBSET)!Is_Target_st220());
+    LAI_ISASubset isaSubset = CGIR_IS_to_ISASubset((ISA_SUBSET)!Is_Target_st220());
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
     // Make the BasicBlock.
-    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrMode, unrolled,
+    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, isaSubset, unrolled,
 	labelCount, labels, operationCount, operations, regionId, frequency);
     // Force the fully unrolled loop bodies to start a new scheduling region,
     // else the memory dependences will not be correct: bug pro-release-1-4-0-B/1.
@@ -691,7 +691,7 @@ CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name) {
 
 // Make a CGIR_SYM.
 static CGIR_SYM
-CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_MType lai_mtype) {
+CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_BasicType lai_basicType) {
   if (cgir_sym == 0) {
     // Create cgir_sym.
     // Currently LAO is allowed to create:
@@ -699,7 +699,7 @@ CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_MType lai_m
     // Spill symbol.
     if (isSpill) {
       // We use the CGSPILL interface to generate a CGIR spill symbol
-      TY_IDX ty = MTYPE_To_TY(MType_to_CGIR_TYPE_ID(lai_mtype));
+      TY_IDX ty = BASICTYPE_To_TY(BasicType_to_CGIR_TYPE_ID(lai_basicType));
       ST *st = CGSPILL_Gen_Spill_Symbol(ty, name);
       cgir_sym = ST_st_idx(*st);
     }
