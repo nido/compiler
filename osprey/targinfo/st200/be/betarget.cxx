@@ -136,9 +136,10 @@ TAS_To_TOP (WN *tas_wn)
     case OPC_F8TAS:
 
     case OPC_F4TAS:
+        return TOP_nop;
 
     default:
-      return TOP_UNDEFINED;
+        return TOP_UNDEFINED;
   }
 }
 

@@ -53,6 +53,10 @@
 #include <alloca.h>
 #include <stdlib.h>
 #include <math.h>
+#if __GNUC__
+#include <float.h>
+#endif
+
 #include <limits.h>
 
 #include "defs.h"

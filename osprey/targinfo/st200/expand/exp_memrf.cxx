@@ -767,20 +767,36 @@ Exp_Extract_Bits (
 {
   TOP extr_op;
   TN *tmp;
+  UINT bit_ofst;
+  UINT left_shift;
+  UINT right_shift;
 
   FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	    ("can't handle"));
 
-  // for LX as LITTLE_ENDIAN:
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = bit_offset;
+  } else {
+      // for LX as BIG_ENDIAN:
+      bit_ofst = MTYPE_bit_size(desc) - bit_size - bit_offset;
+  }
 
-  // The sequence is shift left 32-bit_size; 
-  //                 shift right (bit_offset+bit_size):
-  tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_shl_i, tmp, src_tn, 
-      Gen_Literal_TN(32-bit_offset-bit_size, 4), ops);
+  // shift left -> clear the bits bit_offset+size -> 31
+  left_shift = 32 - bit_ofst - bit_size;
+  if (left_shift) {
+      tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Build_OP(TOP_shl_i, tmp, src_tn, 
+               Gen_Literal_TN(left_shift, 4), ops);
+  } else {
+      tmp = src_tn;
+  }
+
+  // move the bits to be extracted to position 0
+  right_shift = 32 - bit_size;
   extr_op = MTYPE_signed(desc) ? TOP_shr_i : TOP_shru_i;
   Build_OP(extr_op, tgt_tn, tmp, 
-                  Gen_Literal_TN(32-bit_size,4), ops);
+           Gen_Literal_TN(right_shift,4), ops);
 
   return;
 }
@@ -804,11 +820,22 @@ Exp_Deposit_Bits (
   OPS *ops
 )
 {
+    UINT bit_ofst;
+    UINT right_shift_val;
+
   FmtAssert(bit_size != 0, ("size of bit field cannot be 0"));
 
   // Registers are always 32 bits in size
   FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
+
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = bit_offset;
+  } else  {
+      // for LX as BIG_ENDIAN
+      bit_ofst = MTYPE_bit_size(desc) - bit_size - bit_offset;
+  }
 
   //
   // generate the following sequence (if there is a faster one,
@@ -822,22 +849,31 @@ Exp_Deposit_Bits (
   //    tgt_tn = tmp1 or val
 
   TN *mask = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  
+  // set mask to all 1    111....111
   Build_OP(TOP_mov_i, mask, Gen_Literal_TN(-1, 4), ops);
+  // only keep bit_size bits to 1
   Build_OP(TOP_shru_i, mask, mask, 
-                                 Gen_Literal_TN(32-bit_size,4), ops);
-  Build_OP(TOP_shl_i, mask, mask, Gen_Literal_TN(bit_offset,4), ops);
-
+           Gen_Literal_TN(32-bit_size,4), ops);
+  
+  // shift left to position the bit_size bits to the required position
+  Build_OP(TOP_shl_i, mask, mask, Gen_Literal_TN(bit_ofst,4), ops);
+  
+  // clear bits
   TN *val = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   Build_OP(TOP_shl_i, val, src2, Gen_Literal_TN(32-bit_size,4), ops);
-  Build_OP(TOP_shru_i, val, val, 
-	   Gen_Literal_TN(32-bit_size-bit_offset,4), ops);
+
+  // place value in position
+  right_shift_val = 32-bit_size-bit_ofst;
+  Build_OP(TOP_shru_i, val, val,
+           Gen_Literal_TN(right_shift_val,4), ops);
 
   TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   Build_OP(TOP_and_r, tmp1, mask, src1, ops);
   Build_OP(TOP_xor_r, tmp1, tmp1, src1, ops);
-
+      
   Build_OP(TOP_or_r, tgt_tn, tmp1, val, ops);
-
+  
   return;
 }
 

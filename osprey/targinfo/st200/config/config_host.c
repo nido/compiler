@@ -39,7 +39,7 @@ static char *rcs_id = "$Source$ $Revision$";
 
 #include "defs.h"
 #include "config.h"
-
+
 /* ====================================================================
  *
  * Preconfigure_Host

@@ -265,8 +265,12 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
       case MTYPE_F4: {
         char *p = (char *) & TCON_R4(tc);
         fprintf ( fl, "\t%s\t\"", AS_ASCII );
-        for (INT i = 0; i < sizeof(TCON_R4(tc)); i++)
-	  fprintf ( fl, "\\x%02x", *(p+i) );
+        if (Same_Byte_Sex)
+            for (INT i = 0; i < sizeof(TCON_R4(tc)); i++)
+                fprintf ( fl, "\\x%02x", *(p+i) );
+        else 
+            for (INT i = sizeof(TCON_R4(tc)) -1 ; i >= 0; i--)
+                fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s float %#g\n", ASM_CMNT, TCON_R4(tc) );
 	--rc;
 	break;
@@ -292,8 +296,12 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
       case MTYPE_F8: {
         char *p = (char *) & TCON_R8(tc);
         fprintf ( fl, "\t%s\t\"", AS_ASCII );
-        for (INT i = 0; i < sizeof(TCON_R8(tc)); i++)
-	  fprintf ( fl, "\\x%02x", *(p+i) );
+        if (Same_Byte_Sex)
+            for (INT i = 0; i < sizeof(TCON_R8(tc)); i++)
+                fprintf ( fl, "\\x%02x", *(p+i) );
+        else 
+            for (INT i = sizeof(TCON_R8(tc)) -1 ; i >= 0; i--)
+                fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s double %#g\n", ASM_CMNT, TCON_R8(tc) );
 	--rc;
 	break;

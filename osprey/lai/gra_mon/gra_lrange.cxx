@@ -57,6 +57,7 @@ static char *rcs_id = "$Source$ $Revision$";
 
 #if defined(__GNUC__)
 #include <math.h>	// FLT_MAX
+#include <float.h>
 #else
 #include <limits.h>
 #endif

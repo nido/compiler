@@ -361,20 +361,20 @@ Extract_LongLong_Hi(TCON v)
 
   switch (TCON_ty(v)) {
 
-  case MTYPE_I8:
+  case MTYPE_I8: {
     SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
 
     TCON_ty(c) = MTYPE_I4;
     TCON_I4(c) = longlongTemp.hi;
     break;
-
-  case MTYPE_U8:
+  }
+  case MTYPE_U8: {
     ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
 
     TCON_ty(c) = MTYPE_U4;
     TCON_U4(c) = ulonglongTemp.hi;
     break;
-
+  }
   default:
     break;
   }
@@ -391,20 +391,20 @@ Extract_LongLong_Lo(TCON v)
 
   switch (TCON_ty(v)) {
 
-  case MTYPE_I8:
+  case MTYPE_I8: {
     SLONGLONG longlongTemp = I8_To_RL(TCON_I8(v));
 
     TCON_ty(c) = MTYPE_I4;
     TCON_I4(c) = longlongTemp.lo;
     break;
-
-  case MTYPE_U8:
+  }
+  case MTYPE_U8: {
     ULONGLONG ulonglongTemp = U8_To_RL(TCON_U8(v));
 
     TCON_ty(c) = MTYPE_U4;
     TCON_U4(c) = ulonglongTemp.lo;
     break;
-
+  }
   default:
     break;
   }

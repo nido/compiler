@@ -186,6 +186,9 @@ HEADER_DIRS = 		\
 ifeq ($(BUILD_OS), LINUX)
 HEADER_DIRS += $(TARGDIR)/include/libelf
 endif
+ifeq ($(BUILD_OS), SUNOS5)
+HEADER_DIRS += $(TARGDIR)/include/libelf
+endif
 
 #----------------------------------------------------------------------
 # Build derived files
@@ -275,8 +278,8 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_cg.cxx		\
   targ_op.cxx		\
   targ_register.cxx	\
-  targ_tn.cxx		\
-  targ_ebo.cxx
+  targ_tn.cxx		
+#  targ_ebo.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
@@ -329,7 +332,6 @@ CG_CXX_SRCS = 		\
   cg_vector.cxx		\
   comment.cxx		\
   dominate.cxx		\
-  ebo.cxx		\
   findloops.cxx		\
   freq.cxx		\
   gcm.cxx		\
@@ -354,6 +356,8 @@ CG_CXX_SRCS = 		\
   hb_trace.cxx		\
 			\
   $(DERIVED_SRCS)
+
+#  ebo.cxx		\
 
 #add the pqs sources
 ifeq ($(BUILD_TARGET),IA64)
@@ -460,6 +464,13 @@ endif
 ifeq ($(BUILD_TARGET), IA32)
 TARGET_SO = pentium.so
 endif
+ifeq ($(BUILD_TARGET), ST100)
+TARGET_SO = st100.so
+endif
+ifeq ($(BUILD_TARGET), ST200)
+TARGET_SO = st220.so
+endif
+
 
 ifeq ($(BUILD_OS), IRIX)
 LLDLIBS += -lelf_xtnd -ldwarf_xtnd -lelfutil_xtnd -lm -lc
@@ -491,10 +502,9 @@ ifeq ($(BUILD_OS), LINUX)
 endif
 ## verify that be.so is up to date
 	cd $(TARG_BE) && $(MAKE)
-ifeq ($(BUILD_OS), LINUX)
-	if ! test -a be.so; then ln -sf $(TARG_BE)/be.so .; fi
-	if ! test -a $(TARGET_SO); then ln -sf $(TARG_TARG_INFO)/$(TARGET_SO) .; fi
-endif
+	if [ ! -h be.so ]; then ln -sf $(TARG_BE)/be.so .; fi
+	if [ ! -h $(TARGET_SO) ]; then ln -sf $(TARG_TARG_INFO)/$(TARGET_SO) .; fi
+
 ifeq ($(BUILD_PCH), USE_PCH)
 ## build pch files first so that we can use precompiled headers
 # TODO: how to build pch on irix
@@ -520,8 +530,11 @@ last : make_deps
 
 
 install:: default
-ifeq ($(BUILD_OS), LINUX)
-	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $(TARGETS) $(STD_MONGOOSE_LINUX_LOC)
+ifeq ($(INSTALL_MODE),INSTALL_SRC_DIR)
+	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
+	for h in $(TARGETS); do \
+	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
+	done
 else
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) cg.so
  ifeq ($(BUILD_TYPE), SHARED)
@@ -551,15 +564,19 @@ cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
 
 else
  ifeq ($(BUILD_OS), LINUX)
-# dso's must be in same directory
-LINK_DSOS = be.so $(TARGET_SO)
-ifeq ($(BUILD_HOST), IA64)
-ifeq ($(BUILD_COMPILER), SGI)
-STD_DSO_LOADOPTS += -Wl,-relax
-endif
-endif
+ # dso's must be in same directory
+ LINK_DSOS = be.so $(TARGET_SO)
+  ifeq ($(BUILD_HOST), IA64)
+   ifeq ($(BUILD_COMPILER), SGI)
+   STD_DSO_LOADOPTS += -Wl,-relax
+   endif
+  endif
  else
-LINK_DSOS = $(TARG_BE)/be.so
+  ifeq ($(BUILD_OS), SUNOS5)
+   LINK_DSOS = be.so $(TARGET_SO)
+  else
+   LINK_DSOS = $(TARG_BE)/be.so
+  endif
  endif
 cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(BE_CG_DIR)/Exported $(TARG_BE)/be.so \
 		$(BE_BE_DIR)/so_locations

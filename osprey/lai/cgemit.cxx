@@ -2229,11 +2229,19 @@ r_apply_l_const (
     st = TN_var(t);
     Base_Symbol_And_Offset (st, &base_st, &base_ofst);
     if (base_st == SP_Sym || base_st == FP_Sym) {
-      val = CGTARG_TN_Value (t, base_ofst);
-      vstr_sprintf (buf, 
-		    vstr_len(*buf), 
-		    ISA_PRINT_Operand_Format(OP_code(op), opidx), 
-		    val);
+        if (Pointer_Size <= 4) {
+            INT32 val32 = CGTARG_TN_Value (t, base_ofst);
+            vstr_sprintf (buf, 
+                          vstr_len(*buf), 
+                          "%d",
+                          val32);
+        } else { 
+            INT64 val64 = CGTARG_TN_Value (t, base_ofst);
+            vstr_sprintf (buf, 
+                          vstr_len(*buf), 
+                          "%lld",
+                          val64);
+        }
       return TRUE;
     }
   }
@@ -2264,7 +2272,7 @@ r_apply_l_const (
 	  float f;
 	} val;
 
-	val.f = tc.vals.fval;
+	val.f = TCON_fval(tc);
 	vstr_sprintf (buf, vstr_len(*buf), "%d", val.i);
       }
       else {
@@ -2358,7 +2366,7 @@ r_apply_l_const (
     else {
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
-		    ISA_PRINT_Operand_Format(OP_code(op), opidx), 
+		    "%lld",
 		    TN_value(t) );
     }
 #else
