@@ -2322,6 +2322,10 @@ phi_resources_interfere (
   TN_LIST *p1, *p2;
   TN *tn1, *tn2;
 
+  /* No interference between variables in a congruence class. */
+  if (cc1 == cc2)
+    return FALSE;
+
   for (p1 = PHI_CONGRUENCE_CLASS_gtns(cc1); 
        p1 != NULL;
        p1 = TN_LIST_rest(p1)) {
