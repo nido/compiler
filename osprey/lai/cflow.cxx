@@ -4403,6 +4403,23 @@ Compare_Edges(const void *p1, const void *p2)
   } else if (weight1 < weight2) {
     return sort_1_after_2;
   } else {
+#ifdef TARG_ST
+    // [CG] Make it determinist to avoid 
+    // host differences in the implementation of qsort.
+    BB_NUM pred_id1 = BB_id(e1->pred);
+    BB_NUM pred_id2 = BB_id(e2->pred);
+    BB_NUM succ_id1 = BB_id(e1->succ);
+    BB_NUM succ_id2 = BB_id(e2->succ);
+    if (pred_id1 < pred_id2)
+      return sort_1_before_2;
+    else if (pred_id1 > pred_id2)
+      return sort_1_after_2;
+    else if (succ_id1 < succ_id2)
+      return sort_1_before_2;
+    else if (succ_id1 > succ_id2)
+      return sort_1_after_2;
+    else 
+#endif
     return sort_1_same_2;
   }
 }
