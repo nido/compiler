@@ -65,10 +65,6 @@
 #ifndef cg_ssa_INCLUDED
 #define cg_ssa_INCLUDED
 
-// later this will be moved to common/util/tracing.h and have
-// its own number
-#define TP_SSA  TP_TEMP
-
 //
 // Renamable TNs
 //
