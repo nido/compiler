@@ -48,10 +48,10 @@ void Configure_CG_Target() {
   CG_enable_thr = FALSE;
  
   // Disable loop optimizations by default until debugged
-  CG_enable_loop_optimizations = TRUE;
+  // CG_enable_loop_optimizations = TRUE;
 
   // Do not unroll fully until tested
-  CG_LOOP_unroll_fully = FALSE;
+  //  CG_LOOP_unroll_fully = TRUE;
 
   // Do not force if-conversion for loops, see CG_LOOP_Optimize()
   CG_LOOP_force_ifc = 0;
@@ -112,9 +112,9 @@ void Configure_CG_Target() {
 #endif
 
   // May set this temporary OFF for development
-  CIO_enable_copy_removal = FALSE;
-  CIO_enable_read_removal = FALSE;
-  CIO_enable_write_removal = FALSE;
+  //  CIO_enable_copy_removal = TRUE;
+  //  CIO_enable_read_removal = TRUE;
+  //  CIO_enable_write_removal = TRUE;
 
   return;
 }
