@@ -664,6 +664,27 @@ PC_Incr_N (
   return pc;
 }
 
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   PC_Align_N
+ *
+ *   Align the PC to the given byte boundary
+ * ====================================================================
+ */
+inline INT32 
+PC_Align_N (
+  INT32 pc, 
+  UINT32 align
+)
+{
+  INT32 addr = PC2Addr(pc);
+  INT32 new_addr = (addr+align-1)/align*align;
+  pc = Addr2PC(new_addr);
+  return pc;
+}
+#endif
+
 /* ====================================================================
  *    r_qualified_name
  * ====================================================================
@@ -3911,6 +3932,20 @@ Assemble_Simulated_OP (
 	   (EMIT_stop_bits_for_volatile_asm && OP_volatile(op)) ) ) {
 	fprintf(Asm_File, "\t%s\n", AS_STOP_BIT);
       }
+#ifdef TARG_ST200
+      // [CG] Align end of asm to 8 bytes boundary such that 
+      // for ST200 the alignment is correctly tracked
+      // Currently the criterion is DEFAULT_FUNCTION_ALIGNMENT
+      if (DEFAULT_FUNCTION_ALIGNMENT) {
+	// [CG] Work around the align restriction in ST200 gas
+	// .align does not work use balignl instead
+	//fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, DEFAULT_FUNCTION_ALIGNMENT);
+	fprintf(Asm_File, "\t.balignl %d, 0x80000000\n", DEFAULT_FUNCTION_ALIGNMENT);
+	// Align current PC
+	PC = PC_Align_N(PC, DEFAULT_FUNCTION_ALIGNMENT);
+      }
+#endif
+
     }
     if (Lai_Code) {
       fprintf(Lai_File, "\t%s\n", Generate_Asm_String(op, bb));

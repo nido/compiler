@@ -1784,6 +1784,16 @@ Make_Bundles (
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(op, bundle);
       *pc += Number_Of_Slots_In_Bundle(bundle);
+      // [CG] Realign to DEFAULT_FUNCTION_ALIGNMENT
+      // if the opcode is an asm statement.
+      if (OP_code(op) == TOP_asm &&
+	  DEFAULT_FUNCTION_ALIGNMENT) {
+	INT word_align = DEFAULT_FUNCTION_ALIGNMENT/
+	  (ISA_INST_BYTES/ISA_MAX_SLOTS);
+	*pc = (*pc+word_align-1)/word_align*word_align;
+	if (Trace_HB) fprintf(TFile, "  realign pc to PC=%d\n", 
+			      *pc);
+      }
 #endif
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
