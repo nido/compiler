@@ -173,6 +173,9 @@ static INT   region_stack_size;
 #define region_depth   (region_stack_ptr - region_stack_base)
 static BB_NUM min_bb_id;
 
+#ifdef TARG_ST
+static WN *first_loop_pragma;
+#endif
 static WN *last_loop_pragma;
 
 #define return_max 3
@@ -4796,6 +4799,18 @@ Expand_Statement (
     if (info) {
       BB_Add_Annotation(bb, ANNOT_LOOPINFO, info);
       if (last_loop_pragma) {
+#ifdef TARG_ST
+	for(WN *pragma = first_loop_pragma;
+	    pragma != last_loop_pragma;
+	    pragma = WN_next(pragma)) {
+	  if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
+	    if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
+		(WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
+		(WN_pragma(pragma) == WN_PRAGMA_LOOPDEP))
+	      BB_Add_Annotation(bb, ANNOT_PRAGMA, pragma);
+	  }
+	}
+#endif
 	BB_Add_Annotation(bb, ANNOT_PRAGMA, last_loop_pragma);
 	last_loop_pragma = NULL;
       }
@@ -4807,6 +4822,16 @@ Expand_Statement (
     break;
   case OPC_PRAGMA:
   case OPC_XPRAGMA:
+#ifdef TARG_ST
+    if (WN_pragmas[WN_pragma(stmt)].users & PUSER_CG) {
+      if ((WN_pragma(stmt) == WN_PRAGMA_UNROLL) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
+	if (last_loop_pragma == NULL)
+	  first_loop_pragma = stmt;
+	last_loop_pragma = stmt;
+      }
+#else
     if (WN_pragmas[WN_pragma(stmt)].users == PUSER_CG) {
       if (WN_pragma(stmt) == WN_PRAGMA_UNROLL)
 	/*
@@ -4815,6 +4840,7 @@ Expand_Statement (
 	 * for tracking this.
 	 */
 	last_loop_pragma = stmt;
+#endif
       else
 	BB_Add_Annotation(Cur_BB, ANNOT_PRAGMA, stmt);
     }
