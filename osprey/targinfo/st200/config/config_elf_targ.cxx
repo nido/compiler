@@ -61,6 +61,7 @@
 // [CL] include ST200 specific values
 #include "targ_elf.h"
 #include "config_target.h"
+#include "config.h"
 #endif
 
 /* ====================================================================
@@ -85,8 +86,8 @@ Config_Target_From_ELF (
   *is_64bit = FALSE;
   *isa = (INT)Target_ISA;
 
-  switch(e_flags & ELF_LX_CORE_MASK) {
-  case ELF_LX_CORE_ST220:
+  switch(e_flags & ELF_ST200_CORE_MASK) {
+  case ELF_ST200_CORE_ST220:
     if ((Target != TARGET_st220) && (Target != TARGET_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st220));
     }
@@ -94,7 +95,7 @@ Config_Target_From_ELF (
       Target = TARGET_st220;
     }
     break;
-  case ELF_LX_CORE_ST230:
+  case ELF_ST200_CORE_ST230:
     if ((Target != TARGET_st230) && (Target != TARGET_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st230));
     }
@@ -108,8 +109,8 @@ Config_Target_From_ELF (
     break;
   }
 
-  switch(e_flags & ELF_LX_ABI_MASK) {
-  case ELF_LX_ABI_EMBED:
+  switch(e_flags & ELF_ST200_ABI_MASK) {
+  case ELF_ST200_ABI_EMBED:
     if ((Target_ABI != ABI_ST200_embedded) && (Target_ABI != ABI_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), Abi_Name(ABI_ST200_embedded));
     }
@@ -117,7 +118,7 @@ Config_Target_From_ELF (
       Target_ABI = ABI_ST200_embedded;
     }
     break;
-  case ELF_LX_ABI_PIC:
+  case ELF_ST200_ABI_PIC:
     if ((Target_ABI != ABI_ST200_PIC) && (Target_ABI != ABI_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), Abi_Name(ABI_ST200_PIC));
     }
@@ -128,6 +129,36 @@ Config_Target_From_ELF (
   default:
     ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), "undefined/unsupported");
     Target_ABI = ABI_UNDEF;
+    break;
+  }
+
+  switch (e_flags & ELF_ST200_CODEGEN_MASK) {
+  case ELF_ST200_CODEGEN_CPIC:
+    if ( (!Gen_PIC_Call_Shared && Gen_PIC_Call_Shared_Set) ||
+	 (Gen_PIC_Shared && Gen_PIC_Shared_Set) ) {
+      if (!No_Shared_Warning) {
+	ErrMsg(EC_Conf_CodeGen, "-call_shared");
+      }
+    }
+    break;
+  case ELF_ST200_CODEGEN_PIC:
+#if 0
+    // [CL] don't emit a warning in this case
+    if ( (!Gen_PIC_Shared && Gen_PIC_Shared_Set) ||
+	 (Gen_PIC_Call_Shared && Gen_PIC_Call_Shared_Set) ) {
+      if (!No_Shared_Warning) {
+	ErrMsg(EC_Conf_CodeGen, "-shared");
+      }
+    }
+#endif
+    break;
+  case ELF_ST200_CODEGEN_ABSOLUTE:
+    if ( (Gen_PIC_Shared && Gen_PIC_Shared_Set) ||
+	 (Gen_PIC_Call_Shared && Gen_PIC_Call_Shared_Set) ) {
+      if (!No_Shared_Warning) {
+	ErrMsg(EC_Conf_CodeGen, "-non_shared");
+      }
+    }
     break;
   }
 #endif
@@ -161,11 +192,11 @@ Config_ELF_From_Target (
   // Handle ABI
   switch(Target_ABI) {
   case ABI_ST200_embedded:
-    e_flags |= ELF_LX_ABI_EMBED; break;
+    e_flags |= ELF_ST200_ABI_EMBED; break;
   case ABI_ST200_PIC:
-    e_flags |= ELF_LX_ABI_PIC; break;
+    e_flags |= ELF_ST200_ABI_PIC; break;
   default:
-    e_flags |= ELF_LX_ABI_UNDEF; break;
+    e_flags |= ELF_ST200_ABI_UNDEF; break;
   }
 
   // Skip Mode (User, Kernel)
@@ -174,17 +205,27 @@ Config_ELF_From_Target (
   switch(Target) {
     // [CL} ST210 is not supported by the compiler
     //  case TARGET_st210:
-    //    e_flags |= ELF_LX_CORE_ST210; break;
+    //    e_flags |= ELF_ST200_CORE_ST210; break;
   case TARGET_st220:
-    e_flags |= ELF_LX_CORE_ST220; break;
+    e_flags |= ELF_ST200_CORE_ST220; break;
   case TARGET_st230:
-    e_flags |= ELF_LX_CORE_ST230; break;
+    e_flags |= ELF_ST200_CORE_ST230; break;
   default:
-    e_flags |= ELF_LX_CORE_UNDEF; break;
+    e_flags |= ELF_ST200_CORE_UNDEF; break;
   }
 
   // Ignore Cut
 
+  // Handle Code Generation Model
+  if (Gen_PIC_Call_Shared) {
+    e_flags |= ELF_ST200_CODEGEN_CPIC;
+  }
+  else if (Gen_PIC_Shared) {
+    e_flags |= ELF_ST200_CODEGEN_PIC;
+  }
+  else {
+    e_flags |= ELF_ST200_CODEGEN_ABSOLUTE;
+  }
 #endif
 
   return e_flags;
@@ -198,7 +239,7 @@ Elf32_Half
 Get_Elf_Target_Machine (void)
 {
   // [CL] this ID would need to be sync'ed with binutils
-  return EM_LX;
+  return EM_ST200;
 }
 
 
