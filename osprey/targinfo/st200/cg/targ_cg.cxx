@@ -872,11 +872,13 @@ CGTARG_TN_For_Asm_Operand (
   
   // The 'n' constraints only accepts constant literal values.
   if (strchr("n", *constraint)) {
-    if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG) {
+    if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG &&
+	(WN_rtype(load) == MTYPE_I4 || WN_rtype(load) == MTYPE_U4)) {
       // immediate could have been put in preg by wopt
       load = Preg_Is_Rematerializable(WN_load_offset(load), NULL);
     }
-    if (load && WN_operator(load) == OPR_INTCONST) {
+    if (load && WN_operator(load) == OPR_INTCONST &&
+	(WN_rtype(load) == MTYPE_I4 || WN_rtype(load) == MTYPE_U4)) {
       ret_tn = Gen_Literal_TN(WN_const_val(load), 
 			      MTYPE_bit_size(WN_rtype(load))/8);
     } else {
@@ -888,14 +890,17 @@ CGTARG_TN_For_Asm_Operand (
   // The 'i' constraints accepts literals and symbolic values as the
   // address of a symbol.
   else if (strchr("i", *constraint)) {
-    if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG) {
+    if (load && WN_operator(load)==OPR_LDID && WN_class(load)==CLASS_PREG &&
+	(WN_rtype(load) == MTYPE_I4 || WN_rtype(load) == MTYPE_U4)) {
       // immediate could have been put in preg by wopt
       load = Preg_Is_Rematerializable(WN_load_offset(load), NULL);
     }
-    if (load && WN_operator(load) == OPR_INTCONST) {
+    if (load && WN_operator(load) == OPR_INTCONST &&
+	(WN_rtype(load) == MTYPE_I4 || WN_rtype(load) == MTYPE_U4)) {
       ret_tn = Gen_Literal_TN(WN_const_val(load), 
                             MTYPE_bit_size(WN_rtype(load))/8);
-    } else if (load && WN_operator(load) == OPR_LDA) {
+    } else if (load && WN_operator(load) == OPR_LDA &&
+	       (WN_rtype(load) == MTYPE_I4 || WN_rtype(load) == MTYPE_U4)) {
       ST *sym = WN_st(load);
       ret_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
     } else {
