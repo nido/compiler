@@ -595,14 +595,19 @@ Expand_Add (
 	Build_OP(TOP_add_i, tmp, src1, src2, ops);
 	src1 = tmp;
 	src2 = Gen_Literal_TN(ofst, Pointer_Size);
+	new_opcode = TOP_add_i;
+      }
+      else if (ST_on_stack(TN_var(src2))) {
+	// On stack symbolic offset becomes an immediate
+	// in the final code
+	new_opcode = TOP_add_i;
       }
       else {
         // just makea and hope that 16bit offset suffices:
         Build_OP (TOP_mov_i, tmp, src2, ops);
         src2 = tmp;
+	new_opcode = TOP_add_r;
       }
-
-      new_opcode = TOP_add_r;
     }
     else {
       FmtAssert(FALSE,("unexpected constant in Expand_Add"));
