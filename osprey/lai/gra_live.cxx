@@ -2415,6 +2415,10 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
 
 	  // ONLY need to check for defreach_in and defreach_out sets. 
           defreach_tn = tn;
+#ifdef TARG_ST
+	  // [CM 20030925] Must push pool to use and match MEM_POOL_Pop
+	  MEM_POOL_Push(&gra_live_pool);
+#endif
           BB_VISITED_COUNTER counter_data(&gra_live_pool);
           BB_VISITED_COUNTER *counter = &counter_data;
           counter->Init();
