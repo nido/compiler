@@ -165,6 +165,7 @@ Is_Formal_Preg (
 	                   preg <= PR_last_reg(SIM_INFO.int_args)));
 }
 
+#if 0
 static BOOL Struct_Is_HFA (const TY_IDX, Mtype_Return_Level, TYPE_ID&);
 
 /* ====================================================================
@@ -398,6 +399,8 @@ Struct_Has_Two_Floats (
 
 } // Struct_Has_Two_Floats
 
+#endif
+
 /* ====================================================================
  *   Is_Simulated_Type
  * ====================================================================
@@ -416,6 +419,7 @@ Is_Simulated_Type (
   }
 }
 
+#if 0
 /* This routine figures out the mtypes of the return registers that are 
  * used for returning an object of the given type.
  * This returns the mtypes to use for the CALL opcode in high-level whirl.
@@ -450,82 +454,6 @@ Get_Return_Pregs (
 {
   Fail_FmtAssertion (
     ("Get_Return_Pregs should not be invoked; invoke Get_Return_Info instead"));
-}
-
-#if 0
-/* ====================================================================
- *   Get_Struct_Size
- *
- *   Return the size of a structure in bits: elements 
- *   (subintegers, bitfields) are
- *   packed into 32-bit registers. Alignment. Should not
- *   exceed 256 bits (32 bytes)
- * ====================================================================
- */
-static UINT64
-Get_Struct_Size (
-  TY_IDX struct_ty_idx
-)
-{
-  FLD_ITER fld_iter = Make_fld_iter(TY_fld(struct_ty_idx));
-  UINT64 size = 0;
-
-  do {
-    FLD_HANDLE fld(fld_iter);
-
-    TY_IDX fty = FLD_type (fld);
-    UINT8 pad;
-
-    if (FLD_is_bit_field(fld)) {
-      UINT64 ofst = FLD_ofst(fld);
-      UINT8 bofst = FLD_bofst(fld);
-      UINT8 bsize = FLD_bsize(fld);
-      
-      // ofst is the offset of the bitfield within the
-      // struct in bytes.
-      // Overall size is ofst + (bofst+bsize)
-      size = ofst + bofst + bsize;
-    }
-    else {
-      switch (TY_kind (fty)) {
-
-      case KIND_SCALAR:
-
-	TYPE_ID mtype = TY_mtype (fty);
-	switch (mtype) {
-	case MTYPE_U1:
-	case MTYPE_I1:
-	case MTYPE_U2:
-	case MTYPE_I2:
-	case MTYPE_U4:
-	case MTYPE_I4:
-        case MTYPE_I8:
-	case MTYPE_U8:
-        case MTYPE_F4:
-        case MTYPE_F8:
-	  // pad to alignment
-	  pad = size % MTYPE_bit_size(mtype);
-	  if (pad != 0) {
-	    size += pad;
-	  }
-	  size += MTYPE_bit_size(mtype);
-	  break;
-
-        default:
-	  Is_True(FALSE,("unknown scalar mtype"));
-	}
-
-      case KIND_STRUCT:
-	size += Get_Struct_Size (FLD_type(fld));
-
-      default:
-	Is_True(FALSE,("unknown structure field type"));
-      }
-    }
-
-  } while (!FLD_last_field(fld_iter++));
-
-  return size;
 }
 #endif
 
@@ -640,19 +568,15 @@ Get_Return_Info (
       // Otherwise, return in a callee buffer pointed at by r0.15.
       //
 
-      info.count = 0;
-      info.return_via_return_reg = TRUE;
-
       // make sure it's a struct
       Is_True (TY_kind (rtype) == KIND_STRUCT, ("expecting KIND_STRUCT"));
 
       {
-	// UINT64 size = Get_Structure_Size(rtype);
 	UINT64 size = TY_size(Ty_Table[rtype]);
 
 	if (SIM_INFO.max_struct_size >= size) {
 
-	  info.return_via_return_reg = FALSE;
+	  //info.return_via_return_reg = FALSE;
 
 	  INT n = (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
                     / MTYPE_RegisterSize(SIM_INFO.int_type);
@@ -663,6 +587,11 @@ Get_Return_Info (
 	    info.mtype [i] = SIM_INFO.int_type;
 	    info.preg  [i] = reg++;
 	  }
+	}
+	else {
+	  // returning via $r15
+	  info.count = 0;
+	  info.return_via_return_reg = TRUE;
 	}
       }
       break;
@@ -689,7 +618,10 @@ Get_Return_Info (
 
 static INT Current_Int_Param_Num = 0;
 static INT Current_Offset;
+
+#if 0
 static BOOL First_Param_In_Return_Reg = FALSE;
+#endif
 
 /* ====================================================================
  *   Setup_Parameter_Locations
@@ -702,11 +634,14 @@ Setup_Parameter_Locations (
 {
   static PLOC plocNULL;
 
+#if 0
   TY_IDX ret_type = (TY_kind(pu_type) == KIND_FUNCTION ? TY_ret_type(pu_type)
 			: pu_type);
   RETURN_INFO info = Get_Return_Info (ret_type, No_Simulated);
   First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) 
 			       & SIM_return_addr_via_int_return_reg);
+#endif
+
   if (TY_is_varargs (pu_type)) {
     // find last fixed parameter
     TYLIST_IDX idx = TY_tylist (pu_type);
@@ -805,15 +740,14 @@ Get_Parameter_Location (
 
   ploc.size = MTYPE_RegisterSize(pmtype);
 
+#if 0
   if (First_Param_In_Return_Reg) {
     First_Param_In_Return_Reg = FALSE;
-    ploc.reg = PR_first_reg(SIM_INFO.int_results);
-    if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
-      PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
-    else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))
-      PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
+    // We always return via $r15
+    ploc.reg = Struct_Return_Preg_Offset;
     return ploc;
   }
+#endif
 
 #if 0
   // Arthur:  I may nedd to check for alignment later ??
@@ -1006,13 +940,19 @@ Get_Parameter_Location (
 struct PSTRUCT {
     BOOL	is_struct;
     BOOL        first_call;
+#if 0
     BOOL        is_hfa;
     TYPE_ID     hfa_mtype;
+#endif
     INT64	offset;			// offset from beginning of struct
     INT64	size;
 
+#if 0
     PSTRUCT () : is_struct (FALSE), first_call (TRUE),
 		 is_hfa (FALSE), hfa_mtype (MTYPE_V),
+		 offset (0), size (0) {}
+#endif
+    PSTRUCT () : is_struct (FALSE), first_call (TRUE),
 		 offset (0), size (0) {}
 };
 
@@ -1020,8 +960,10 @@ static PSTRUCT pstruct;
 
 #define	PSTRUCT_struct		pstruct.is_struct
 #define	PSTRUCT_first_call	pstruct.first_call
+#if 0
 #define	PSTRUCT_hfa		pstruct.is_hfa
 #define	PSTRUCT_hfa_mtype	pstruct.hfa_mtype
+#endif
 #define	PSTRUCT_offset		pstruct.offset
 #define	PSTRUCT_size		pstruct.size
 
@@ -1034,7 +976,9 @@ Setup_Struct_Parameter_Locations (TY_IDX struct_ty)
 {
     PSTRUCT_struct = ! TY_is_union (struct_ty);
     PSTRUCT_first_call = TRUE;
+#if 0
     PSTRUCT_hfa = Struct_Is_HFA (struct_ty, No_Simulated, PSTRUCT_hfa_mtype);
+#endif
     PSTRUCT_offset = 0;
     PSTRUCT_size = TY_size (struct_ty);
 }
@@ -1061,12 +1005,9 @@ Get_Struct_Parameter_Location (PLOC prev)
       return next;
     }
 
+#if 0
     if (PSTRUCT_struct && PSTRUCT_hfa &&
 	!(Current_Int_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
-
-      FmtAssert(FALSE,("struct is HFA ?"));
-
-#if 0
 
       if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4) {
         PLOC_size(next) = TY_size (Be_Type_Tbl (MTYPE_F4));
@@ -1102,8 +1043,8 @@ Get_Struct_Parameter_Location (PLOC prev)
       }
 
       return next;
-#endif
     }
+#endif
 
     PLOC_size(next) = ireg_size;
     PSTRUCT_offset += ireg_size;
