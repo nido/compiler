@@ -80,6 +80,7 @@ BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 mTOP CGTARG_Inter_RegClass_Copy_Table[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_CLASS_MAX+1][2];
 
 TOP CGTARG_Invert_Table[TOP_count+1];
+TOP CGTARG_Branch_To_Reg_Table[TOP_count+1];
 
 /* ====================================================================
  *   CGTARG_Preg_Register_And_Class
@@ -2264,11 +2265,124 @@ CGTARG_Initialize ()
   /* Init all table entries to TOP_UNDEFINED.
    */
   for(i = 0; i <= TOP_count; ++i) {
-    CGTARG_Invert_Table[i] = TOP_UNDEFINED;
+    CGTARG_Invert_Table[i]        = TOP_UNDEFINED;
+    CGTARG_Branch_To_Reg_Table[i] = TOP_UNDEFINED;
   }
 
   /* Init table for CGTARG_Invert:
    */
+  CGTARG_Invert_Table[TOP_br]          = TOP_brf;
+  CGTARG_Invert_Table[TOP_brf]         = TOP_br;
+  CGTARG_Invert_Table[TOP_slct_r]      = TOP_slctf_r;
+  CGTARG_Invert_Table[TOP_slct_i]      = TOP_slctf_i;
+  CGTARG_Invert_Table[TOP_slct_ii]     = TOP_slctf_ii;
+  CGTARG_Invert_Table[TOP_slctf_r]     = TOP_slct_r;
+  CGTARG_Invert_Table[TOP_slctf_i]     = TOP_slct_i;
+  CGTARG_Invert_Table[TOP_slctf_ii]    = TOP_slct_ii;
+  CGTARG_Invert_Table[TOP_cmpeq_r_b]   = TOP_cmpne_r_b;
+  CGTARG_Invert_Table[TOP_cmpeq_i_b]   = TOP_cmpne_i_b;
+  CGTARG_Invert_Table[TOP_cmpeq_ii_b]  = TOP_cmpne_ii_b;
+  CGTARG_Invert_Table[TOP_cmpge_r_b]   = TOP_cmplt_r_b;
+  CGTARG_Invert_Table[TOP_cmpge_i_b]   = TOP_cmplt_i_b;
+  CGTARG_Invert_Table[TOP_cmpge_ii_b]  = TOP_cmplt_ii_b;
+  CGTARG_Invert_Table[TOP_cmpgeu_r_b]  = TOP_cmpltu_r_b;
+  CGTARG_Invert_Table[TOP_cmpgeu_i_b]  = TOP_cmpltu_i_b;
+  CGTARG_Invert_Table[TOP_cmpgeu_ii_b] = TOP_cmpltu_ii_b;
+  CGTARG_Invert_Table[TOP_cmpgt_r_b]   = TOP_cmple_r_b;
+  CGTARG_Invert_Table[TOP_cmpgt_i_b]   = TOP_cmple_i_b;
+  CGTARG_Invert_Table[TOP_cmpgt_ii_b]  = TOP_cmple_ii_b;
+  CGTARG_Invert_Table[TOP_cmpgtu_r_b]  = TOP_cmpleu_r_b;
+  CGTARG_Invert_Table[TOP_cmpgtu_i_b]  = TOP_cmpleu_i_b;
+  CGTARG_Invert_Table[TOP_cmpgtu_ii_b] = TOP_cmpleu_ii_b;
+  CGTARG_Invert_Table[TOP_cmple_r_b]   = TOP_cmpgt_r_b;
+  CGTARG_Invert_Table[TOP_cmple_i_b]   = TOP_cmpgt_i_b;
+  CGTARG_Invert_Table[TOP_cmple_ii_b]  = TOP_cmpgt_ii_b;
+  CGTARG_Invert_Table[TOP_cmpleu_r_b]  = TOP_cmpgtu_r_b;
+  CGTARG_Invert_Table[TOP_cmpleu_i_b]  = TOP_cmpgtu_i_b;
+  CGTARG_Invert_Table[TOP_cmpleu_ii_b] = TOP_cmpgtu_ii_b;
+  CGTARG_Invert_Table[TOP_cmplt_r_b]   = TOP_cmpge_r_b;
+  CGTARG_Invert_Table[TOP_cmplt_i_b]   = TOP_cmpge_i_b;
+  CGTARG_Invert_Table[TOP_cmplt_ii_b]  = TOP_cmpge_ii_b;
+  CGTARG_Invert_Table[TOP_cmpltu_r_b]  = TOP_cmpgeu_r_b;
+  CGTARG_Invert_Table[TOP_cmpltu_i_b]  = TOP_cmpgeu_i_b;
+  CGTARG_Invert_Table[TOP_cmpltu_ii_b] = TOP_cmpgeu_ii_b;
+  CGTARG_Invert_Table[TOP_cmpne_r_b]   = TOP_cmpeq_r_b;
+  CGTARG_Invert_Table[TOP_cmpne_i_b]   = TOP_cmpeq_i_b;
+  CGTARG_Invert_Table[TOP_cmpne_ii_b]  = TOP_cmpeq_ii_b;
+  CGTARG_Invert_Table[TOP_cmpeq_r_r]   = TOP_cmpne_r_r;
+  CGTARG_Invert_Table[TOP_cmpeq_i_r]   = TOP_cmpne_i_r;
+  CGTARG_Invert_Table[TOP_cmpeq_ii_r]  = TOP_cmpne_ii_r;
+  CGTARG_Invert_Table[TOP_cmpge_r_r]   = TOP_cmplt_r_r;
+  CGTARG_Invert_Table[TOP_cmpge_i_r]   = TOP_cmplt_i_r;
+  CGTARG_Invert_Table[TOP_cmpge_ii_r]  = TOP_cmplt_ii_r;
+  CGTARG_Invert_Table[TOP_cmpgeu_r_r]  = TOP_cmpltu_r_r;
+  CGTARG_Invert_Table[TOP_cmpgeu_i_r]  = TOP_cmpltu_i_r;
+  CGTARG_Invert_Table[TOP_cmpgeu_ii_r] = TOP_cmpltu_ii_r;
+  CGTARG_Invert_Table[TOP_cmpgt_r_r]   = TOP_cmple_r_r;
+  CGTARG_Invert_Table[TOP_cmpgt_i_r]   = TOP_cmple_i_r;
+  CGTARG_Invert_Table[TOP_cmpgt_ii_r]  = TOP_cmple_ii_r;
+  CGTARG_Invert_Table[TOP_cmpgtu_r_r]  = TOP_cmpleu_r_r;
+  CGTARG_Invert_Table[TOP_cmpgtu_i_r]  = TOP_cmpleu_i_r;
+  CGTARG_Invert_Table[TOP_cmpgtu_ii_r] = TOP_cmpleu_ii_r;
+  CGTARG_Invert_Table[TOP_cmple_r_r]   = TOP_cmpgt_r_r;
+  CGTARG_Invert_Table[TOP_cmple_i_r]   = TOP_cmpgt_i_r;
+  CGTARG_Invert_Table[TOP_cmple_ii_r]  = TOP_cmpgt_ii_r;
+  CGTARG_Invert_Table[TOP_cmpleu_r_r]  = TOP_cmpgtu_r_r;
+  CGTARG_Invert_Table[TOP_cmpleu_i_r]  = TOP_cmpgtu_i_r;
+  CGTARG_Invert_Table[TOP_cmpleu_ii_r] = TOP_cmpgtu_ii_r;
+  CGTARG_Invert_Table[TOP_cmplt_r_r]   = TOP_cmpge_r_r;
+  CGTARG_Invert_Table[TOP_cmplt_i_r]   = TOP_cmpge_i_r;
+  CGTARG_Invert_Table[TOP_cmplt_ii_r]  = TOP_cmpge_ii_r;
+  CGTARG_Invert_Table[TOP_cmpltu_r_r]  = TOP_cmpgeu_r_r;
+  CGTARG_Invert_Table[TOP_cmpltu_i_r]  = TOP_cmpgeu_i_r;
+  CGTARG_Invert_Table[TOP_cmpltu_ii_r] = TOP_cmpgeu_ii_r;
+  CGTARG_Invert_Table[TOP_cmpne_r_r]   = TOP_cmpeq_r_r;
+  CGTARG_Invert_Table[TOP_cmpne_i_r]   = TOP_cmpeq_i_r;
+  CGTARG_Invert_Table[TOP_cmpne_ii_r]  = TOP_cmpeq_ii_r;
+
+  CGTARG_Branch_To_Reg_Table[TOP_cmpeq_r_b]   = TOP_cmpeq_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpeq_i_b]   = TOP_cmpeq_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpeq_ii_b]  = TOP_cmpeq_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpge_r_b]   = TOP_cmpge_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpge_i_b]   = TOP_cmpge_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpge_ii_b]  = TOP_cmpge_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgeu_r_b]  = TOP_cmpgeu_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgeu_i_b]  = TOP_cmpgeu_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgeu_ii_b] = TOP_cmpgeu_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgt_r_b]   = TOP_cmpgt_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgt_i_b]   = TOP_cmpgt_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgt_ii_b]  = TOP_cmpgt_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgtu_r_b]  = TOP_cmpgtu_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgtu_i_b]  = TOP_cmpgtu_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpgtu_ii_b] = TOP_cmpgtu_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmple_r_b]   = TOP_cmple_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmple_i_b]   = TOP_cmple_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmple_ii_b]  = TOP_cmple_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpleu_r_b]  = TOP_cmpleu_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpleu_i_b]  = TOP_cmpleu_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpleu_ii_b] = TOP_cmpleu_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmplt_r_b]   = TOP_cmplt_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmplt_i_b]   = TOP_cmplt_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmplt_ii_b]  = TOP_cmplt_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpltu_r_b]  = TOP_cmpltu_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpltu_i_b]  = TOP_cmpltu_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpltu_ii_b] = TOP_cmpltu_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpne_r_b]   = TOP_cmpne_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpne_i_b]   = TOP_cmpne_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpne_ii_b]  = TOP_cmpne_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_cmpne_ii_b]  = TOP_cmpne_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_orl_r_b]     = TOP_orl_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_orl_i_b]     = TOP_orl_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_orl_ii_b]    = TOP_orl_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_norl_r_b]    = TOP_norl_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_norl_i_b]    = TOP_norl_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_norl_ii_b]   = TOP_norl_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_andl_r_b]    = TOP_andl_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_andl_i_b]    = TOP_andl_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_andl_ii_b]   = TOP_andl_ii_r;
+  CGTARG_Branch_To_Reg_Table[TOP_nandl_r_b]   = TOP_nandl_r_r;
+  CGTARG_Branch_To_Reg_Table[TOP_nandl_i_b]   = TOP_nandl_i_r;
+  CGTARG_Branch_To_Reg_Table[TOP_nandl_ii_b]  = TOP_nandl_ii_r;
 
   return;
 }
