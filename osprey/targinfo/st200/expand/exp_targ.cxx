@@ -2803,6 +2803,53 @@ Exp_COPY (
   return;
 }
 
+/* ======================================================================
+ *   Expand__addl
+ *
+ *   __addl expansion for 
+ *
+ *   Manual derivation of the following asm code:
+ *
+ *   #.i2model       __addl => __int64_add_int64_int64
+ *   #.param __addl, r16, r17, r18, r19 => r16, r17 
+ *
+ *
+ *   .text
+ *   .proc
+ *   __addl::
+ *        c0      mtb     $b0.0 = $r0.0                   ## unset b0
+ *        ;; 
+ *        c0      addcg   $r0.16, $b0.0 = $r0.16, $r0.18, $b0.0   ## add low
+parts 
+ *        ;; 
+ *        c0      addcg   $r0.17, $b0.0 = $r0.17, $r0.19, $b0.0   ## add high
+parts
+ *        c0      return  $r0.63
+ *        ;; 
+ *
+ * =====================================================================
+ */
+static void 
+Expand__addl (
+  TN* ol,
+  TN* oh,
+  TN* il0,
+  TN* ih0,
+  TN* il1,
+  TN* ih1,
+  OPS *ops
+)
+{
+  TN *cond1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
+  Build_OP(TOP_mtb, cond1, Zero_TN, ops) ;
+  TN *cond2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
+  Build_OP(TOP_addcg, ol, cond2, il0, il1, cond1, ops) ;
+  TN *cond3 = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
+  Build_OP(TOP_addcg, oh, cond3, ih0, ih1, cond2, ops) ;
+
+  return;
+}
+
 /* ====================================================================
  *   Exp_Intrinsic_Op
  * ====================================================================
@@ -2818,8 +2865,14 @@ Exp_Intrinsic_Op (
 )
 {
   switch (id) {
-    default:
-      FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op"));
+
+  case INTRN_ADDL:
+    // results are passed in the opnd array:
+    Expand__addl(opnd[0], opnd[1], opnd[2], opnd[3], opnd[4], opnd[5], ops);
+    break;
+
+  default:
+    FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s", INTRN_c_name(id)));
   }
 
   return;
@@ -2837,6 +2890,7 @@ Get_Intrinsic_Size_Mtype (
   FmtAssert(FALSE,("Not Implemented"));
 
   switch (id) {
+
   default:
     FmtAssert(FALSE, ("Unexpected intrinsic %d", id));
     /*NOTREACHED*/

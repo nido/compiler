@@ -57,6 +57,7 @@
 #include "topcode.h"
 #include "wn.h"
 #include "opcode.h"
+#include "intrn_info.h"
 #include "config_targ.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
