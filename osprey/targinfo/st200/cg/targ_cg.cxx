@@ -863,6 +863,52 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
 }
 
 /* ====================================================================
+ *   CGTARG_Speculative_Load
+ * ====================================================================
+ */
+TOP
+CGTARG_Speculative_Load (OP *op)
+{
+  TOP opcode = OP_code(op);
+  TOP ld = TOP_UNDEFINED;
+
+  switch (opcode) {
+  case TOP_ldw_i: 
+    ld = TOP_ldw_d_i;
+    break;
+  case TOP_ldw_ii:
+    ld = TOP_ldw_d_ii;
+    break;
+  case TOP_ldh_i:
+    ld = TOP_ldh_d_i;
+    break;
+  case TOP_ldh_ii:
+    ld = TOP_ldh_d_ii;
+    break;
+  case TOP_ldhu_i:
+    ld = TOP_ldhu_d_i;
+    break;
+  case TOP_ldhu_ii:
+    ld = TOP_ldhu_d_ii;
+    break;
+  case TOP_ldb_i:
+    ld = TOP_ldb_d_i;
+    break;
+  case TOP_ldb_ii:
+    ld = TOP_ldb_d_ii;
+    break;
+  case TOP_ldbu_i:
+    ld = TOP_ldbu_d_i;
+    break;
+  case TOP_ldbu_ii:
+    ld = TOP_ldbu_d_ii;
+    break;
+  }
+
+  return ld;
+}
+
+/* ====================================================================
  *   CGTARG_Can_Fit_Immediate_In_Add_Instruction
  * ====================================================================
  */
