@@ -344,7 +344,7 @@ Exp_Indirect_Branch (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Build_OP (TOP_goto, targ_reg, ops);
   return;
 }
 
