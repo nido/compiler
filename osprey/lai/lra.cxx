@@ -4279,18 +4279,15 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
 
   // If we are not running GRA, we need to generate the instructions to
   // save and restore callee saved registers.
-#ifdef TARG_ST
+
   //
   // Arthur: if I am generating register save mask, no need to spill
   //
   if (lra_for_pu && CG_localize_tns && !CG_gen_callee_saved_regs_mask) {
-#else
-  if (lra_for_pu && CG_localize_tns) {
-#endif
     Spill_Callee_Saved_Regs ();
   }
 
-#ifndef TARG_ST
+#if 0
   Check_for_Dump (TP_ALLOC, NULL);
 #endif
   Stop_Timer ( T_LRA_CU );

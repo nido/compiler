@@ -2551,6 +2551,7 @@ SSA_Remove_Phi_Nodes (
 
   MEM_POOL_Pop (&ssa_pool);
 
+#if 0
   //
   // SSA translation maintains liveness info (see Sreedhar's paper).
   // Normally, we shouldn't need to recompute it.
@@ -2560,11 +2561,12 @@ SSA_Remove_Phi_Nodes (
   //   live_def
   //   live_use
   // are not being updated properly by the out of SSA
-  // algorithm (I've been toolazy to look at it). So, for now
+  // algorithm (I've been too lazy to look at it). So, for now
   // just recompute the liveness.
   // TODO: fix this.
   //
   GRA_LIVE_Recalc_Liveness(region ? rid : NULL);
+#endif
 
   return;
 }

@@ -449,11 +449,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     ENTRYINFO_sp_adj(ent_info) = OPS_last(&ops);
   }
 
-#ifdef TARG_ST
   if (gra_run && !CG_gen_callee_saved_regs_mask) {
-#else
-  if (gra_run) {
-#endif
     /* Copy from the callee saves registers to register TNs */
     for (callee_num = 0; 
 	 callee_num < Callee_Saved_Regs_Count; 
@@ -559,11 +555,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     }
   }
 
-#ifdef TARG_ST
   if ( gra_run && !CG_gen_callee_saved_regs_mask) 
-#else
-  if ( gra_run ) 
-#endif
     EETARG_Save_Extra_Callee_Tns (&ops);
 
   /* Save the old GP and setup a new GP if required */
@@ -1200,11 +1192,7 @@ Generate_Exit (
     }
   }
 
-#ifdef TARG_ST
   if ( gra_run && !CG_gen_callee_saved_regs_mask)
-#else
-  if ( gra_run )
-#endif
     EETARG_Restore_Extra_Callee_Tns (&ops);
 
   if (RA_TN != NULL) {
@@ -1281,11 +1269,7 @@ Generate_Exit (
     }
   }
 
-#ifdef TARG_ST
   if (gra_run && !CG_gen_callee_saved_regs_mask) {
-#else
-  if ( gra_run ) {
-#endif
     /* Copy from register TNs to the callee saves registers */
     for ( callee_num = 0; 
 	  callee_num < Callee_Saved_Regs_Count; 
@@ -1547,6 +1531,73 @@ Adjust_GP_Setup_Code (
     GP_Setup_Code = final_code;
 
   return;
+}
+
+/* ====================================================================
+ *   Adjust_LC_Entry
+ * ====================================================================
+ */
+static void
+Adjust_LC_Entry (BB *bb)
+{
+  OP *op;
+  INT i;
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    for ( i = 0; i < OP_opnds(op); ++i ) {
+      if (OP_opnd(op,i) == LC_TN && OP_no_move_before_gra(op)) {
+	BB_Remove_Op(bb, op);
+	if (Trace_EE) {
+#pragma mips_frequency_hint NEVER
+	  fprintf(TFile, "<calls> remove save of LC in BB:%d\n", BB_id(bb));
+	}
+      }
+    }
+  }
+}
+
+/* ====================================================================
+ *   Adjust_LC_Exit
+ * ====================================================================
+ */
+static void
+Adjust_LC_Exit (BB *bb)
+{
+  OP *op;
+  INT i;
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    for ( i = 0; i < OP_results(op); ++i ) {
+      if (OP_result(op,i) == LC_TN && OP_no_move_before_gra(op)) {
+	BB_Remove_Op(bb, op);
+	if (Trace_EE) {
+#pragma mips_frequency_hint NEVER
+	  fprintf(TFile, "<calls> remove restore of LC in BB:%d\n", BB_id(bb));
+	}
+      }
+    }
+  }
+}
+
+/* ====================================================================
+ *   Adjust_LC_Setup_Code
+ *
+ *   possibly remove save/restore of LC.
+ *   Must call this after cgprep
+ * ====================================================================
+ */
+void
+Adjust_LC_Setup_Code (void)
+{
+  if (LC_TN == NULL) return;	// doesn't exist for target
+  if (LC_Used_In_PU) return;	// keep save/restore
+  if (CG_localize_tns)	return;	// never generated initial save/restore
+
+  BB_LIST *elist;
+  for (elist = Entry_BB_Head; elist; elist = BB_LIST_rest(elist)) {
+    Adjust_LC_Entry(BB_LIST_first(elist));
+  }
+  for (elist = Exit_BB_Head; elist; elist = BB_LIST_rest(elist)) {
+    Adjust_LC_Exit(BB_LIST_first(elist));
+  }
 }
 
 /* ====================================================================
