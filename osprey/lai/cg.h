@@ -57,6 +57,17 @@ extern BOOL PU_References_GP;
 
 extern BOOL CG_PU_Has_Feedback;
 
+/* ----------------------------------------------------------------------
+ * By default, when we expand multi-instruction sequences, we use a new
+ * temporary TN for each intermediate result.  This simplifies things for
+ * CGPREP.  But in some case like spill code and and -O0 code, it is more
+ * efficient to reuse the same TN for intermediate results.  We reuse the
+ * TNs when this flag, Reuse_Temp_TNs, is TRUE.
+ * ----------------------------------------------------------------------
+ */
+extern BOOL Reuse_Temp_TNs;
+#define Get_Temp_TN(tn)	(Reuse_Temp_TNs ? tn : Build_TN_Like(tn))
+
 /* WOPT alias manager */
 extern struct ALIAS_MANAGER *Alias_Manager;
 

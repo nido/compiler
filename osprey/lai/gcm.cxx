@@ -348,7 +348,11 @@ Check_If_Ignore_BB(BB *bb, LOOP_DESCR *loop)
 
   // Avoid processing large blocks which are not part of any loop. We
   // expect that HBS would have come up with a good schedule.
+#ifdef TARG_ST
+  if (LOOP_DESCR_nestlevel(loop) == 0 && BB_length(bb) >= (CG_split_BB_length - 60))
+#else
   if (LOOP_DESCR_nestlevel(loop) == 0 && BB_length(bb) >= (Split_BB_Length - 60))
+#endif
     return TRUE;
 
 #if 0
@@ -590,7 +594,11 @@ Can_Do_Safe_Predicate_Movement(OP        *cur_op,
     // as well. 
     if (OP_has_predicate(cur_op) &&
 	!TN_is_true_pred(OP_opnd(cur_op, OP_PREDICATE_OPND)) &&
+#ifdef TARG_ST
+	!OP_Can_Be_Speculative(cur_op)) return FALSE;
+#else
 	!CGTARG_Can_Be_Speculative(cur_op)) return FALSE;
+#endif
 
     OP *tgt_br_op = BB_branch_op(tgt_bb);
     if (tgt_br_op && OP_has_predicate(tgt_br_op)) {
@@ -958,7 +966,11 @@ Can_Inst_Be_Moved (OP *op, VECTOR succs_vector, INT succ_num)
   // If there is only one successor, it is safe to move the <op>.
   if (VECTOR_count(succs_vector) == 1) return TRUE;
 
+#ifdef TARG_ST
+  if (!OP_Can_Be_Speculative (op)) return FALSE;
+#else
   if (!CGTARG_Can_Be_Speculative (op)) return FALSE;
+#endif
 
   if (OP_has_hazard(op) || OP_imul(op) || OP_idiv(op)) {
     return FALSE;
@@ -1319,7 +1331,11 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
    if (motion_type & (GCM_SPEC_ABOVE | GCM_SPEC_BELOW | GCM_CIRC_ABOVE)) {
      // if cur_op is expensive, needn't speculate it.
      if (OP_Is_Expensive(cur_op)) return FALSE;
+#ifdef TARG_ST
+     if (!OP_Can_Be_Speculative (cur_op)) {
+#else
      if (!CGTARG_Can_Be_Speculative (cur_op)) {
+#endif
        // excluding loads for further pruning.
        if (!OP_load(cur_op)) return FALSE;
        else {
@@ -2976,7 +2992,11 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
         if (cand_bb_limit-- <= 0) break;
 
   	/* don't make the target basic block too large. */
+#ifdef TARG_ST
+  	if (BB_length(cand_bb) >= (CG_split_BB_length - 50)) continue;
+#else
   	if (BB_length(cand_bb) >= (Split_BB_Length - 50)) continue;
+#endif
 
 	// The target and candidate BBs must be in the same cycles.
 	// Skip this candidate if that's not true.

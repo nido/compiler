@@ -1336,7 +1336,11 @@ TN_Value_At_Op(
     } else if (TN_is_rematerializable(tn)) {
       return Rematerializable_IntConst(tn, val);
     } else if (use_op && (def_op = TN_Reaching_Value_At_Op(tn, use_op, &kind, TRUE)) && (kind == VAL_KNOWN)) {
+#ifdef TARG_ST
+      if ((OP_iadd(def_op) || OP_ior(def_op))
+#else
       if ((OP_is_iadd(def_op) || OP_is_ior(def_op))
+#endif
 	  && TN_is_zero_reg(OP_opnd(def_op,0))
 	  && TN_has_value(OP_opnd(def_op,1))
       ) {
@@ -1344,7 +1348,11 @@ TN_Value_At_Op(
 	use_op = def_op;
 	continue;
       } else if (OP_copy(def_op)) {
+#ifdef TARG_ST
+	tn = OP_opnd(def_op, OP_Copy_Operand(def_op));
+#else
 	tn = OP_opnd(def_op, OP_COPY_OPND);
+#endif
 	use_op = def_op;
 	continue;
       }

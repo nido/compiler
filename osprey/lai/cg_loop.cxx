@@ -314,7 +314,7 @@ static BOOL Negate_Branch(OP *br)
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
-      TN *pred = OP_opnd(br,OP_PREDICATE_OPND);
+      TN *pred = OP_opnd(br, OP_PREDICATE_OPND);
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (neg_tn == True_TN) {

@@ -520,7 +520,7 @@ Find_Global_TNs ( RID *rid )
         if (TN_is_dedicated(tn)) {
 #ifdef TARG_ST
 	  // Arthur: new implementation of OP_same_res
-	  if (TOP_is_same_res(OP_code(op),0) == opndnum) {
+	  if (OP_same_res(op,0) == opndnum) {
 #else
           if (OP_same_res(op) && tn == OP_result(op,0)) {
 #endif
@@ -531,16 +531,20 @@ Find_Global_TNs ( RID *rid )
             /* this use is just a self-copy, will disappear */
             continue;
 	  }
+
           Check_If_Dedicated_TN_Is_Global (tn, bb, FALSE /*def*/);
         } else {
           Check_If_TN_Is_Global (tn, tn_in_bb, bb, FALSE /*def*/);
         }
       }
+
       /* process all the result TN */
       for (resnum = 0; resnum < OP_results(op); resnum++) {
         tn = OP_result(op, resnum);
-        if (TN_is_dedicated(tn))
+
+        if (TN_is_dedicated(tn)) {
           Check_If_Dedicated_TN_Is_Global (tn, bb, TRUE /*def*/);
+	}
         else {
           if (OP_cond_def(op)) {
             // cond_def is an implicit use
@@ -700,6 +704,56 @@ Insert_Spills_Of_Globals (void)
       continue;
     if ( ! BB_has_globals(bb)) continue;	/* ignore this bb */
 
+#ifdef TARG_ST
+    //
+    // Arthur: there is a bug in this logic. When 'tn' is
+    //         result of a load, spilling it gives it a
+    //         new 'home location'. Then, in the EBO, the
+    //         two locations - the original one and the
+    //         new one, live their separate lives: one 
+    //         belongs to MEM_DEFAULT_HASH and the other
+    //         to MEM_SPILL_HASH. This causes errors in
+    //         EBO (and perhaps somewhere else). It only
+    //         worked on IA64 by chance because instead
+    //         of spilling, the IA64 can use stacked
+    //         callee-saved registers, see 
+    //         Get_Local_TN_For_Global() function.
+    //         I will rename the load result TN, make a copy 
+    //         to the original GTN, and then handle the copy 
+    //         GTN as usual.
+    //
+    //         Same for stores
+    //
+    FOR_ALL_BB_OPs_FWD (bb, op) {
+
+      for (opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
+        tn = OP_opnd(op, opndnum);
+        if (tn != NULL && TN_is_global_reg(tn)) {
+	  if (OP_store(op)) {
+	    OPS ops = OPS_EMPTY;
+	    TN *new_tn = Build_TN_Like(tn);
+	    Set_OP_opnd(op, opndnum, new_tn);
+	    Exp_COPY(new_tn, tn, &ops);
+	    BB_Insert_Ops(OP_bb(op), op, &ops, TRUE);
+	  }
+	}
+      }
+
+      for (resnum = 0; resnum < OP_results(op); resnum++) {
+        tn = OP_result(op, resnum);
+        if (TN_is_global_reg(tn)) {
+	  if (OP_load(op)) {
+	    OPS ops = OPS_EMPTY;
+	    TN *new_tn = Build_TN_Like(tn);
+	    Set_OP_result(op, resnum, new_tn);
+	    Exp_COPY(tn, new_tn, &ops);
+	    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+	  }
+	}
+      }
+    }
+#endif
+
     /* clear map and sets for each BB */
     spill_tns = TN_MAP_Create();
     first_spill_tninfo = last_spill_tninfo = NULL;
@@ -724,6 +778,7 @@ Insert_Spills_Of_Globals (void)
           }
         }
       }
+
       for (resnum = 0; resnum < OP_results(op); resnum++) {
         tn = OP_result(op, resnum);
         if (TN_is_global_reg(tn)) {
@@ -738,10 +793,9 @@ Insert_Spills_Of_Globals (void)
            * We then only spill the last local tn.
            */
 #ifdef TARG_ST
-	  // Arthur: OP_same_res again
-	  BOOL OP_same_res = (TOP_is_same_res(OP_code(op),resnum) >= 0);
+	  BOOL same_res = (OP_same_res(op,resnum) >= 0);
 	  tninfo = Get_Local_TN_For_Global (tn, spill_tns, bb, 
-                        OP_same_res || OP_cond_def(op) /*reuse*/);
+                        same_res || OP_cond_def(op) /*reuse*/);
 #else
           tninfo = Get_Local_TN_For_Global (tn, spill_tns, bb, 
                         OP_same_res(op) || OP_cond_def(op) /*reuse*/);
@@ -1042,7 +1096,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  // which have multiple defs and and use all of the same tn.
 #ifdef TARG_ST
 	  // Arthur: this is not clear to me at all.
-	  if ((TOP_is_same_res(OP_code(op),0) >= 0) &&
+	  if ((OP_same_res(op,0) >= 0) &&
 	      (tn == prev_result) &&
 	      (OP_opnd(op,OP_opnds(op)-1) == prev_result)) {
 #else
@@ -1120,7 +1174,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  continue;
 #ifdef TARG_ST
 	// Arthur: this is more generic now
-	if (TOP_is_same_res(OP_code(op),0) == opndnum)
+	if (OP_same_res(op,0) == opndnum)
 #else
 	// unaligned_loads have a copy of last def as an implicit use
 	if ( OP_same_res(op) && tn == OP_result(op,0) )

@@ -630,11 +630,16 @@ inline BOOL PROC_Has_Branch_Delay_Slot(void)
 extern BOOL CGTARG_Can_Load_Immediate_In_Single_Instruction (INT64 immed);
 extern BOOL CGTARG_Can_Fit_Immediate_In_Add_Instruction (INT64 immed);
 
+#ifdef TARG_ST
+// moved
+#else
 extern BOOL CGTARG_Is_OP_Speculative_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Advanced_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Check_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Speculative(OP *op);
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
+#endif
+
 extern BOOL CGTARG_OP_is_counted_loop(OP *op);
 extern BOOL CGTARG_Can_Change_To_Brlikely(OP *xfer_op, TOP *new_opcode);
 

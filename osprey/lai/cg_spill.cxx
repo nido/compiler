@@ -800,7 +800,7 @@ static OP* Find_First_Copy(BB *bb)
     OP *tmp_op;
     for (tmp_op = OP_prev(first_copy_op); tmp_op;
 	 tmp_op = OP_prev(tmp_op)) {
-      if (OP_copy(tmp_op) && TN_is_save_reg(OP_opnd(tmp_op, OP_COPY_OPND))) {
+      if (OP_copy(tmp_op) && TN_is_save_reg(OP_opnd(tmp_op, OP_Copy_Operand(tmp_op)))) {
 	first_copy_op = tmp_op;
       }
     }

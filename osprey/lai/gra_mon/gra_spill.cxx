@@ -563,7 +563,11 @@ Spill_Prolog_Epilog_Save_LUNIT(LRANGE* lrange, LUNIT* lunit, GRA_BB* gbb,
     // Find the copy to the dedicated TN.
     //
     for (op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+#ifdef TARG_ST
+      if (OP_copy(op) && tn == OP_Copy_Operand_TN(op)) {
+#else
       if (OP_copy(op) && tn == CGTARG_Copy_Operand_TN(op)) {
+#endif
 	break;
       }
     }
@@ -592,7 +596,11 @@ Spill_Prolog_Epilog_Save_LUNIT(LRANGE* lrange, LUNIT* lunit, GRA_BB* gbb,
 	break;
       }
     }
+#ifdef TARG_ST
+    TN* new_tn = Make_Dedicated_Save_TN(tn, OP_Copy_Operand_TN(op), st); 
+#else
     TN* new_tn = Make_Dedicated_Save_TN(tn, CGTARG_Copy_Operand_TN(op), st); 
+#endif
     Set_TN_save_creg(new_tn, TN_save_creg(tn));
     CGSPILL_Store_To_Memory(new_tn, st, OPS_Init(&ops), CGSPILL_GRA, bb);
     freq_spill_count += gbb->Freq();
@@ -605,7 +613,11 @@ Spill_Prolog_Epilog_Save_LUNIT(LRANGE* lrange, LUNIT* lunit, GRA_BB* gbb,
     // use of the save tn (this happened with the return address in
     // an epilog block).
     //
+#ifdef TARG_ST
+    gbb->Rename_TN_References(tn, OP_Copy_Operand_TN(op));
+#else
     gbb->Rename_TN_References(tn, CGTARG_Copy_Operand_TN(op));
+#endif
     gbb->Remove_Live_Out_LRANGE(lrange);
   }
 }

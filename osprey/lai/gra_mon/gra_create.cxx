@@ -789,7 +789,11 @@ Complement_Copy( OP* op, GRA_BB *gbb, list<GRA_PREF_CAND*>& pref_list )
 /////////////////////////////////////
 {
   TN* result        = OP_result(op,0);
+#ifdef TARG_ST
+  TN* opnd          = OP_Copy_Operand_TN(op);
+#else
   TN* opnd          = CGTARG_Copy_Operand_TN(op);
+#endif
   LRANGE* result_lr = NULL;
   LRANGE* opnd_lr   = NULL;
 
@@ -1606,7 +1610,7 @@ Make_Fine_Grained_Interferences( GRA_BB* gbb )
       if ( TN_Is_Allocatable(OP_result(op,i)) )
 #ifdef TARG_ST
 	// Arthur: will this work ??
-	if (TOP_is_uniq_res(OP_code(op),i)) {
+	if (OP_uniq_res(op, i)) {
 #else
 	if (OP_uniq_res(op)) {
 #endif

@@ -2384,7 +2384,7 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
 #ifdef TARG_ST
       // Arthur: we're switching to a more generic TDT interface
       if (TN_is_dedicated(tn) || OP_cond_def(op) || 
-	  (TOP_is_same_res(OP_code(op),i) >= 0)) 
+	  (OP_same_res(op,i) >= 0)) 
 	continue;
 #else
       if (TN_is_dedicated(tn) || OP_cond_def(op) || OP_same_res(op)) continue;

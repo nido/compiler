@@ -740,8 +740,13 @@ Mk_OP(TOP opr, ...)
 {
   va_list ap;
   INT i;
+#ifdef TARG_ST
+  INT results = ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr));
+  INT opnds = ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr));
+#else
   INT results = TOP_fixed_results(opr);
   INT opnds = TOP_fixed_opnds(opr);
+#endif
   OP *op = New_OP(results, opnds);
 
   FmtAssert(!TOP_is_var_opnds(opr), ("Mk_OP not allowed with variable operands"));
@@ -770,6 +775,16 @@ Mk_OP(TOP opr, ...)
 OP *
 Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
 {
+#ifdef TARG_ST
+  if (results != ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr))) {
+    FmtAssert(TOP_is_var_opnds(opr) && results > ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr)),
+	      ("%d is not enough results for %s", results, TOP_Name(opr)));
+  }
+  if (opnds != ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr))) {
+    FmtAssert(TOP_is_var_opnds(opr) && opnds > ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr)),
+	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
+  }
+#else
   if (results != TOP_fixed_results(opr)) {
     FmtAssert(TOP_is_var_opnds(opr) && results > TOP_fixed_results(opr),
 	      ("%d is not enough results for %s", results, TOP_Name(opr)));
@@ -778,6 +793,7 @@ Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
     FmtAssert(TOP_is_var_opnds(opr) && opnds > TOP_fixed_opnds(opr),
 	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
   }
+#endif
 
   INT i;
   OP *op = New_OP(results, opnds);
@@ -1162,7 +1178,7 @@ void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
 
     DEF_KIND kind;
     OP *defop = TN_Reaching_Value_At_Op(*base_tn, memop, &kind, TRUE);
-    if (defop && OP_is_iadd(defop) && kind == VAL_KNOWN) {
+    if (defop && OP_iadd(defop) && kind == VAL_KNOWN) {
       TN *defop_offset_tn = OP_opnd(defop, 1);
       TN *defop_base_tn = OP_opnd(defop, 2);
       if (defop_base_tn == *base_tn && TN_has_value(defop_base_tn)) {

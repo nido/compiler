@@ -286,7 +286,11 @@ is_xfer_depndnce_reqd(const void *op, const void *xfer_op)
   // if <xfer_op> is a branch op, check if <op> is not live-out.
   if (OP_cond((OP *) xfer_op)) {
     // Check if the <op> is not safe to speculate.
+#ifdef TARG_ST
+    if (!OP_Can_Be_Speculative((OP *) op)) return TRUE;
+#else
     if (!CGTARG_Can_Be_Speculative((OP *) op)) return TRUE;
+#endif
 
     BBLIST *succ_list;
     BOOL live_out = FALSE;
@@ -1608,7 +1612,11 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
         }
       } else if (OP_copy(defop)) {
         result_num = 0;
+#ifdef TARG_ST
+        defop_base_tn = OP_opnd(defop, OP_Copy_Operand(defop));
+#else
         defop_base_tn = OP_opnd(defop, OP_COPY_OPND);
+#endif
         *base_tn = defop_base_tn;
       } else {
         defop_base_tn = NULL;
@@ -1681,8 +1689,13 @@ static BOOL symbolic_addr_subtract(OP *pred_op, OP *succ_op, SAME_ADDR_RESULT *r
       }
 
      /* Use offsets and sizes to determine conflicts. */
+#ifdef TARG_ST
+      INT32 size1 = OP_Mem_Ref_Bytes(pred_op);
+      INT32 size2 = OP_Mem_Ref_Bytes(succ_op);
+#else
       INT32 size1 = CGTARG_Mem_Ref_Bytes(pred_op);
       INT32 size2 = CGTARG_Mem_Ref_Bytes(succ_op);
+#endif
       if (pred_offset == succ_offset) {
         *res = (size1 == size2) ? IDENTICAL : OVERLAPPING;
       } else if (pred_offset < succ_offset)  {
@@ -1766,8 +1779,13 @@ inline SAME_ADDR_RESULT analyze_overlap(OP *memop1, OP *memop2, INT64 diff)
  * -----------------------------------------------------------------------
  */
 {
+#ifdef TARG_ST
+  INT32 size1 = OP_Mem_Ref_Bytes(memop1);
+  INT32 size2 = OP_Mem_Ref_Bytes(memop2);
+#else
   INT32 size1 = CGTARG_Mem_Ref_Bytes(memop1);
   INT32 size2 = CGTARG_Mem_Ref_Bytes(memop2);
+#endif
   if (diff == 0) {
     return size1 == size2 ? IDENTICAL : OVERLAPPING;
   } else if (diff > 0 && size2 > diff || diff < 0 && size1 > -diff) {
@@ -2084,8 +2102,13 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     return FALSE;
 
   /* Advanced loads don't alias with anything. */
+#ifdef TARG_ST
+  if ((OP_load(pred_op) && OP_Is_Advanced_Load(pred_op)) ||
+      (OP_load(succ_op) && OP_Is_Advanced_Load(succ_op)))
+#else
   if ((OP_load(pred_op) && CGTARG_Is_OP_Advanced_Load(pred_op)) ||
       (OP_load(succ_op) && CGTARG_Is_OP_Advanced_Load(succ_op)))
+#endif
     return FALSE;
 
   /* Volatile ops are dependent on all other volatile OPs (but dependence
@@ -3024,17 +3047,29 @@ static void adjust_arc_for_rw_elim(ARC *arc, BOOL is_succ, ARC *shortest,
    */
   if (kind == CG_DEP_MEMIN &&
       ((TN_is_float(OP_opnd(pred, 0)) ^ TN_is_float(OP_result(succ,0 /*???*/))) ||
+#ifdef TARG_ST
+       OP_Mem_Ref_Bytes(pred) != OP_Mem_Ref_Bytes(succ))) {
+#else
        CGTARG_Mem_Ref_Bytes(pred) != CGTARG_Mem_Ref_Bytes(succ))) {
+#endif
     /* invalidate for r/w elimination */
     Set_ARC_is_definite(arc, FALSE);
   } else if (kind == CG_DEP_MEMREAD &&
 	     ((TN_is_float(OP_result(pred,0 /*???*/)) ^ TN_is_float(OP_result(succ,0 /*???*/))) ||
+#ifdef TARG_ST
+	      OP_Mem_Ref_Bytes(pred) != OP_Mem_Ref_Bytes(succ))) {
+#else
 	      CGTARG_Mem_Ref_Bytes(pred) != CGTARG_Mem_Ref_Bytes(succ))) {
+#endif
     /* non-definite MEMREAD arcs aren't useful */
     detach_arc(arc);
     delete_arc(arc);
   } else if (kind == CG_DEP_MEMOUT &&
+#ifdef TARG_ST
+	     OP_Mem_Ref_Bytes(pred) > OP_Mem_Ref_Bytes(succ)) {
+#else
 	     CGTARG_Mem_Ref_Bytes(pred) > CGTARG_Mem_Ref_Bytes(succ)) {
+#endif
     /* invalidate for w/w elimination */
     Set_ARC_is_definite(arc, FALSE);
   } else
@@ -3187,7 +3222,11 @@ void add_mem_arcs_from(UINT16 op_idx)
 	 !include_memin_arcs is SET, not already a check-load, then
 	 set the ARC as a dotted edge. */
 
+#ifdef TARG_ST
+      if (!OP_Is_Check_Load(succ) && 
+#else
       if (!CGTARG_Is_OP_Check_Load(succ) && 
+#endif
 	  kind == CG_DEP_MEMIN && !definite && !include_memin_arcs)
 	Set_ARC_is_dotted(arc, TRUE);
 
@@ -4114,7 +4153,7 @@ CG_DEP_Add_Op_Same_Res_Arcs(OP *op)
   // Arthur: All of this seems to imply a single result OP.
   //         I keep it this way for now but eventually I'll have
   //         to support multi-res OPs
-  INT16 which = TOP_is_same_res(OP_code(op),0);
+  INT16 which = OP_same_res(op,0);
 #else
   INT16 which = CGPREP_Same_Res_Opnd(op);
 #endif
@@ -4177,7 +4216,7 @@ CG_DEP_Add_Same_Res_Arcs()
   FOR_ALL_BB_OPs(_cg_dep_bb, op) {
 #ifdef TARG_ST
     // Arthur: guess what ... same_res !
-    if (TOP_is_same_res(OP_code(op),0) >= 0) {
+    if (OP_same_res(op,0) >= 0) {
 #else
     if (OP_same_res(op)) {
 #endif
@@ -4252,7 +4291,7 @@ CG_DEP_Remove_Same_Res_Arcs()
   FOR_ALL_BB_OPs(_cg_dep_bb, op) {
 #ifdef TARG_ST
     // Arthur: ...
-    if (TOP_is_same_res(OP_code(op),0) >= 0)
+    if (OP_same_res(op,0) >= 0)
 #else
     if (OP_same_res(op)) 
 #endif
@@ -4491,7 +4530,11 @@ CG_DEP_Prune_Dependence_Arcs(list<BB*>    bblist,
 	BOOL cond_use = TRUE;
 	if (OP_has_predicate(cur_op)) {
 	  if (!TN_is_true_pred(OP_opnd(cur_op, OP_PREDICATE_OPND)) &&
+#ifdef TARG_ST
+	      OP_Can_Be_Speculative(cur_op)) {
+#else
 	      CGTARG_Can_Be_Speculative(cur_op)) {
+#endif
 
 	    INT i;
 	    cond_use = FALSE;

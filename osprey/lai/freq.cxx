@@ -688,7 +688,11 @@ static BOOL Is_Pointer(TN *tn, OP *use_op)
 
 	/* The 'tn' is a copy -- analyze the source of the copy.
 	 */
+#ifdef TARG_ST
+	use_tn = OP_opnd(def_op, OP_Copy_Operand(def_op));
+#else
 	use_tn = OP_opnd(def_op, OP_COPY_OPND);
+#endif
 	use_op = def_op;
 	continue;
       }

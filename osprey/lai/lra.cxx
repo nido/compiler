@@ -755,8 +755,13 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
           TN_is_global_reg(tn) &&
           (!TN_is_dedicated(tn) ||
            (CGTARG_Is_Preference_Copy(op) &&
+#ifdef TARG_ST
+            TN_is_local_reg(OP_opnd(op, OP_Copy_Operand(op))) &&
+            TN_spill(OP_opnd(op, OP_Copy_Operand(op))))) &&
+#else
             TN_is_local_reg(OP_opnd(op,CGTARG_Copy_Operand(op))) &&
             TN_spill(OP_opnd(op,CGTARG_Copy_Operand(op))))) &&
+#endif
           (LRA_TN_register(tn) != REGISTER_UNDEFINED) &&
           !REGISTER_SET_MemberP(avail_set[TN_register_class(tn)], LRA_TN_register(tn))) {
        /* Note: This series of checks was added because
@@ -785,14 +790,22 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         LRA_TN_Allocate_Register (tn, REGISTER_UNDEFINED);
         LR_last_use(clr) = opnum;
         if (CGTARG_Is_Preference_Copy(op)) {
+#ifdef TARG_ST
+          TN *src_tn = OP_opnd(op, OP_Copy_Operand(op));
+#else
           TN *src_tn = OP_opnd(op, CGTARG_Copy_Operand(op));
+#endif
           if (!TN_is_local_reg(src_tn))
             LR_prefer_reg(clr) = LRA_TN_register(src_tn);
         }
       }
       else {
         if (CGTARG_Is_Preference_Copy(op)) {
+#ifdef TARG_ST
+          TN *src_tn = OP_opnd(op, OP_Copy_Operand(op));
+#else
           TN *src_tn = OP_opnd(op,CGTARG_Copy_Operand(op));
+#endif
           if (TN_is_local_reg(src_tn)) {
             LIVE_RANGE *src_lr = LR_For_TN (src_tn);
             LR_prefer_reg(src_lr) = LRA_TN_register(tn);
@@ -947,10 +960,10 @@ Remove_Redundant_Code (BB *bb)
 	 //         but also its register class.
 	 //
 	 LRA_TN_register(OP_result(op,0)) ==
-	 LRA_TN_register(OP_opnd(op,CGTARG_Copy_Operand(op))) &&
+	 LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op))) &&
 
 	 TN_register_class(OP_result(op,0)) ==
-	 TN_register_class(OP_opnd(op,CGTARG_Copy_Operand(op)))) ||
+	 TN_register_class(OP_opnd(op, OP_Copy_Operand(op)))) ||
 #else
 	 LRA_TN_register(OP_result(op,0)) ==
 	 LRA_TN_register(OP_opnd(op,CGTARG_Copy_Operand(op)))) ||
@@ -1097,7 +1110,7 @@ Is_Reg_Available (ISA_REGISTER_CLASS regclass,
 	lr_def > LR_exposed_use(ded_lr) ||
 	(lr_def == LR_exposed_use(ded_lr) && 
          (op = OP_VECTOR_element (Insts_Vector, LR_first_def(lr))) &&
-	 (OP_results(op) > 0 && !TOP_is_uniq_res(OP_code(op),0))))
+	 (OP_results(op) > 0 && !OP_uniq_res(op,0))))
     {
 #else
     if (ded_lr == NULL ||
@@ -1137,7 +1150,11 @@ Is_Non_Allocatable_Reg_Available (
     if (LR_def_cnt(lr) == 1) {
       OP *op = OP_VECTOR_element (Insts_Vector, LR_first_def(lr));
       if (CGTARG_Is_Preference_Copy(op) &&
+#ifdef TARG_ST
+	  LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op))) == reg)
+#else
 	  LRA_TN_register(OP_opnd(op, CGTARG_Copy_Operand(op))) == reg)
+#endif
         return TRUE;
     }
     return FALSE;
@@ -1626,7 +1643,7 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
       }
 #ifdef TARG_ST
       // Arthur: try out this logic:
-      if (TOP_is_uniq_res(OP_code(op), resnum)) uniq_result = TRUE;
+      if (OP_uniq_res(op, resnum)) uniq_result = TRUE;
 #else
       if (OP_uniq_res(op)) uniq_result = TRUE;
 #endif
@@ -1894,7 +1911,11 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
         (Is_Marked_For_Removal(op) ||
          (CGTARG_Is_Preference_Copy(op) &&
 	  LRA_TN_register(OP_result(op,0)) ==
+#ifdef TARG_ST
+	          LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op)))))) {
+#else
 	          LRA_TN_register(OP_opnd(op, CGTARG_Copy_Operand(op)))))) {
+#endif
       *redundant_code = TRUE;
     }
   }
@@ -2527,16 +2548,16 @@ Analyze_Spilling_Live_Range (
       //
 #ifdef TARG_ST
       // Arthur: as usual ...
-      BOOL OP_same_res = FALSE;
+      BOOL same_res = FALSE;
       INT res;
       for (res = 0; res < OP_results(op); res++) {
-	if (TOP_is_same_res(OP_code(op),res) >= 0) {
-	  OP_same_res = TRUE;
+	if (OP_same_res(op,res) >= 0) {
+	  same_res = TRUE;
 	  break;
 	}
       }
 
-      if (OP_same_res || OP_cond_def(op)) {
+      if (same_res || OP_cond_def(op)) {
 #else
       if (OP_same_res(op) || OP_cond_def(op)) {
 #endif
@@ -3075,16 +3096,16 @@ Spill_Live_Range (
 #ifdef TARG_ST
       // Arthur: I will be finding out the right resnum at the same
       //         time
-      BOOL OP_same_res = FALSE;
+      BOOL same_res = FALSE;
       for (resnum = 0; resnum < OP_results(op); resnum++) {
-	if (TOP_is_same_res(OP_code(op),resnum) >= 0) {
-	  OP_same_res = TRUE;
+	if (OP_same_res(op, resnum) >= 0) {
+	  same_res = TRUE;
 	  break;
 	}
       }
       
       // if didn't find reset resnum (because it was like this before
-      if (OP_same_res == FALSE) {
+      if (same_res == FALSE) {
 	resnum = 0;
       }
       else if (TN_Pair_In_OP(op, spill_tn, prev_tn)) {

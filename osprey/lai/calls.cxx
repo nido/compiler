@@ -580,7 +580,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     // don't generate prolog (that references altentry ST).
     if (ST_is_not_used(st))
 	;
-    else if (Gen_PIC_Call_Shared && EXP_gp_prolog_call_shared) {
+    else if (Gen_PIC_Call_Shared && CGEXP_gp_prolog_call_shared) {
 	/* pv 466125 */
 	/* we actually ignore the st in this case, but pass it anyways
 	 * so that tn structure is regular. 
@@ -739,7 +739,7 @@ Can_Be_Tail_Call (
 
   FOR_ALL_BB_OPs_FWD(exit_bb, op) {
     if (OP_copy(op)) {
-      TN *src = OP_opnd(op,OP_COPY_OPND);
+      TN *src = OP_opnd(op, OP_Copy_Operand(op));
       TN *dst = OP_result(op,0);
       BOOL src_is_fval = Is_Function_Value(src);
       BOOL dst_is_fval = Is_Function_Value(dst);
@@ -986,15 +986,15 @@ Target_Unique_Exit (
      */
 #ifdef TARG_ST
     // Arthur: the same_res info is part of OPERAND_INFO now:
-    BOOL OP_same_res = FALSE;
+    BOOL same_res = FALSE;
     for (i = 0; i < OP_results(op); i++) {
-      if (TOP_is_same_res(OP_code(op), i) >= 0) {
-	OP_same_res = TRUE;
+      if (OP_same_res(op, i) >= 0) {
+	same_res = TRUE;
 	break;
       }
     }
 
-    if (OP_same_res) {
+    if (same_res) {
 #else
     if ( OP_same_res(op) ) {
 #endif
