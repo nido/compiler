@@ -723,6 +723,8 @@ si_gen.a: si_gen.o topcode.h si_gen.h targ_isa_operands.h \
 			  build_isa_enums.o build_isa_lits.o 
 endif
 
+ti_si.h: topcode.h
+
 #----------------------------------------------------------------------
 # mips
 #----------------------------------------------------------------------
