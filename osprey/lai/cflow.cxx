@@ -4865,7 +4865,7 @@ Generate_Hot_Cold_Jump(
       GRA_LIVE_Compute_Liveness_For_BB(bb);
     }
 
-DevWarn("replaced branch with jump in BB:%d", BB_id(bb));
+    //DevWarn("replaced branch with jump in BB:%d to BB:%d", BB_id(bb), BB_id(suc));
     return;
   }
 
@@ -4908,7 +4908,7 @@ DevWarn("replaced branch with jump in BB:%d", BB_id(bb));
 
     Chain_BBs(jump_bb, *jumps);
     *jumps = jump_bb;
-DevWarn("created jump BB:%d", BB_id(jump_bb));
+    //DevWarn("created jump BB:%d", BB_id(jump_bb));
   }
 
   /* Re-target <bb> to the jump BB.
@@ -4922,7 +4922,7 @@ DevWarn("created jump BB:%d", BB_id(jump_bb));
   if (!CG_localize_tns && BB_bbregs(jump_bb) == NULL) {
     GRA_LIVE_Compute_Liveness_For_BB(jump_bb);
   }
-DevWarn("redirected BB:%d to jump BB:%d", BB_id(bb), BB_id(jump_bb));
+  //DevWarn("redirected BB:%d to jump BB:%d", BB_id(bb), BB_id(jump_bb));
 }
 
 
@@ -5236,9 +5236,14 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
    * has been defined, locate the appropriate chain and create
    * the cold region.
    */
+#ifdef TARG_ST
+  /* Thierry do hot/cold optims even if CFLOW_cold_threshold is not
+     set (case of the default value)*/
+  if (cold_threshold) {
+#else
   if (CFLOW_cold_threshold) {
+#endif
     BBCHAIN *ch = last_ordered;
-
     /* The cold region boundary is placed between chains to avoid
      * breaking a fall-through path. The boundary occurs at the
      * first chain which is "never" executed, or all its BBs
@@ -5262,6 +5267,8 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
 
     /* If we have some cold BBs -- create the cold region.
      */
+    /* ch is null here only if all the BBs of ordered chain are
+       cold */
     if (ch) {
 
       /* Make sure we have a valid cold region, adjusting the
