@@ -1120,11 +1120,13 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   //
   if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
-  Interface_open(interface, 4,
+  Interface_open(interface, 6,
+      Configuration_LoopOpt, 1,
       Configuration_Schedule, CG_LAO_schedule,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
-      Configuration_LoopOpt, 1);
+      Configuration_SCD_First, CG_LAO_scd_first,
+      Configuration_SCD_Last, CG_LAO_scd_last);
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.

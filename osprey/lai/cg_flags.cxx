@@ -95,6 +95,8 @@ INT32 CG_LAO_optimize = 0;
 INT32 CG_LAO_schedule = 0;
 INT32 CG_LAO_pipeline = 0;
 INT32 CG_LAO_speculate = 0;
+INT32 CG_LAO_scd_first = 0;
+INT32 CG_LAO_scd_last = -1;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;

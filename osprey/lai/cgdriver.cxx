@@ -178,6 +178,8 @@ static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedule_overridden = FALSE;
 static BOOL CG_LAO_pipeline_overridden = FALSE;
 static BOOL CG_LAO_speculate_overridden = FALSE;
+static BOOL CG_LAO_scd_first_overridden = FALSE;
+static BOOL CG_LAO_scd_last_overridden = FALSE;
 
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
@@ -409,13 +411,17 @@ static OPTION_DESC Options_CG[] = {
 
 #ifdef TARG_ST
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimize", "",
-    0, 0, 1024,	&CG_LAO_optimize, NULL },
+    0, 0, 65535,	&CG_LAO_optimize, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedule", "",
     1, 0, 3,	&CG_LAO_schedule, &CG_LAO_schedule_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipeline", "",
     1, 0, 3,	&CG_LAO_pipeline, &CG_LAO_pipeline_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculate", "",
     1, 0, 3,	&CG_LAO_speculate, &CG_LAO_speculate_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_first", "",
+    0, -1, (UINT32)-1>>1,	&CG_LAO_scd_first, &CG_LAO_scd_first_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_last", "",
+    -1, -1, (UINT32)-1>>1,	&CG_LAO_scd_last, &CG_LAO_scd_last_overridden },
 #endif
 
 #ifdef CGG_ENABLED
@@ -1502,6 +1508,8 @@ CG_Init (void)
     if (!CG_LAO_schedule_overridden) CG_LAO_schedule = 1;
     if (!CG_LAO_pipeline_overridden) CG_LAO_pipeline = 0;
     if (!CG_LAO_speculate_overridden) CG_LAO_speculate = 0;
+    if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = 0;
+    if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;
     lao_handler = load_so("lao"SO_EXT, CG_Path, Show_Progress);
     lao_init();
   }
