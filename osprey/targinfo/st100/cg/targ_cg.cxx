@@ -1150,6 +1150,47 @@ CGTARG_Is_OP_Addr_Incr (
 }
 
 /* ====================================================================
+ *   CGTARG_Max_OP_Latency
+ * ====================================================================
+ */
+INT32
+CGTARG_Max_OP_Latency (
+  OP *op
+)
+{
+  INT i;
+  INT min_opnd = 1000, max_res = 0;
+  INT latency = 0;
+
+  if (OP_store(op)) {
+    // keep it simple for now
+    return 0;
+  }
+
+  if (OP_load(op)) {
+    // number of cycles to load the operand
+    //latency = TI_LATENCY_Load_Cycle(OP_code(op));
+    // simple for now, 0
+  }
+
+  // minimum cycle in which any operand may be read
+  for (i = 0; i < OP_opnds(op); i++) {
+    min_opnd = TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) < min_opnd ?
+      TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) : min_opnd;
+  }
+
+  // maximum cycle in which any result is available
+  for (i = 0; i < OP_results(op); i++) {
+    max_res = TI_LATENCY_Result_Available_Cycle(OP_code(op), i) > max_res ?
+      TI_LATENCY_Result_Available_Cycle(OP_code(op), i) : max_res;
+  }
+
+  latency = latency < (max_res-min_opnd) ? (max_res-min_opnd) : latency;
+
+  return latency;
+}
+
+/* ====================================================================
  *   CGTARG_Adjust_Latency
  * ====================================================================
  */
