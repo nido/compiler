@@ -725,7 +725,52 @@ Sort_Stores(void)
   return count;
 }
 
-// Test if a hammock is suitable for select conversion
+static BOOL
+Check_Profitable_Logif (BB *bb1, BB *bb2)
+{
+#if 0 /* not yet. measurements are on going... */
+  float prob = 0.0;
+  BBLIST *bblist;
+  FOR_ALL_BB_SUCCS(bb1, bblist) {
+    BB *succ = BBLIST_item(bblist);
+    if (succ == bb2) {
+      prob = BBLIST_prob(bblist);
+      break;
+    }
+  }
+
+  CG_SCHED_EST *se1 = CG_SCHED_EST_Create(bb1, &MEM_Select_pool,
+                                             SCHED_EST_FOR_IF_CONV);
+  CG_SCHED_EST *se2 = CG_SCHED_EST_Create(bb2, &MEM_Select_pool,
+                                             SCHED_EST_FOR_IF_CONV);
+
+  INT cycles1 = CG_SCHED_EST_Cycles(se1);
+  INT cycles2 = CG_SCHED_EST_Cycles(se2);
+
+  cycles1 = MAX(cycles1, 0);
+  cycles2 = MAX(cycles2, 0);
+  
+  INT bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
+
+  // ponderate cost of each region taken separatly.
+  float est_cost_before = (((float)(cycles1 + bp)) +
+                        ((float)(cycles2) * prob));
+
+  OP *op = BB_branch_op(bb1);
+  DevAssert(op, ("Invalid conditional block"));
+  CG_SCHED_EST_Ignore_Op(se1, op);
+  CG_SCHED_EST_Append_Scheds(se1, se2);
+
+  float est_cost_after = CG_SCHED_EST_Cycles(se1);
+
+  CG_SCHED_EST_Delete(se1);
+  CG_SCHED_EST_Delete(se2);
+
+  return est_cost_after <= est_cost_before;
+#else
+  return TRUE;
+#endif
+}
 
 static BOOL
 Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
@@ -795,10 +840,12 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   cycles1 = MAX(cycles1, 0);
   cycles2 = MAX(cycles2, 0);
 
-  // pondarate cost of each region taken separatly.
-  float est_cost_bbs = (((float)(cycles1) * taken_prob) +
+  INT bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
+
+  // ponderate cost of each region taken separatly.
+  float est_cost_before = (((float)(cycles1) * taken_prob) +
                         ((float)(cycles2) * fallthr_prob) +
-                        (float)cyclesh + (float)branch_penalty);
+                        (float)cyclesh + (float)bp);
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "noifc region: head %d, bb1 %d, bb2 %d\n",
@@ -842,15 +889,15 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 
   // cost of if converted region. prob is one. Remove the select factor.
-  float est_cost_ifc = (float)cyclesh / select_factor;
+  float est_cost_after = (float)cyclesh / select_factor;
     
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %d / %f\n", cyclesh, select_factor);
-    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_bbs, est_cost_ifc);
+    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
   // If estimated cost of if convertion is a win, do it.
-  return est_cost_ifc <= est_cost_bbs;
+  return est_cost_after <= est_cost_before;
 }
 
 static BOOL
@@ -1699,10 +1746,10 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     BB_Update_Phis(bb);
   }
 
+  GRA_LIVE_Compute_Liveness_For_BB(bb1);
+
   // Promoted instructions might not be global anymore.
   BB_Localize_Tns (bb1);
-
-  GRA_LIVE_Compute_Liveness_For_BB(bb1);
 }
 
 /* ================================================================
@@ -1887,6 +1934,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   if (fall_thru_bb != tail && n_preds_fall_thru == 1)
     Promote_BB_Chain (head, fall_thru_bb, tail);
 
+   GRA_LIVE_Compute_Liveness_For_BB(head);
+
    // Promoted instructions might not be global anymore.
    BB_Localize_Tns (head);
 
@@ -1972,7 +2021,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (bb == NULL) continue;
       
-    if (bbb = Is_Double_Logif(bb)) {
+    if ((bbb = Is_Double_Logif(bb)) && Check_Profitable_Logif(bbb, bb)) {
       if (Trace_Select_Gen) {
         fprintf (Select_TFile, "\nStart gen logical for BB%d \n", BB_id(bb));
         Print_All_BBs();
