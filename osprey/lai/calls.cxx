@@ -1135,6 +1135,13 @@ Generate_Exit (
   EXITINFO *exit_info = ANNOT_exitinfo(ant);
   BB *bb_epi;
 
+#ifdef TARG_ST
+  // FdF 20041105: No need for an epilog in case of a "noreturn" call.
+  if (BB_call(bb) &&
+      WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO)))))
+    return;
+#endif
+
   if ( is_region && gra_run ) {
     /* get out if region and running gra.  epilog code handled with
      * PU in gra.
@@ -1898,6 +1905,17 @@ Adjust_Exit (
   BB *bb
 )
 {
+
+#ifdef TARG_ST
+  // FdF 20041105: No EXITINFO_sp_adj was generated in case of a
+  // "noreturn" call.
+  if (!BB_exit_sp_adj_op(bb)) {
+    Is_True(WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get(BB_annotations(bb), ANNOT_CALLINFO) ))),
+	    ("Missing SP adjust"));
+    return;
+  }
+#endif
+
   ANNOTATION *ant = ANNOT_Get(BB_annotations(bb), ANNOT_EXITINFO);
   EXITINFO *exit_info = ANNOT_exitinfo(ant);
   OP *sp_adj = EXITINFO_sp_adj(exit_info);

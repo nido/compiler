@@ -1309,6 +1309,19 @@ Handle_Call_Site (
    * it has finer granularity. It is also easier for LRA to make the
    * assumption that a procedure call breaks a basic block. 
    */
+
+#ifdef TARG_ST
+  // FdF 20041105: A "noreturn" call is also an exit block, so as to
+  // enable tail call optimization and optimization of the call
+  // sequence.
+  if (WN_Call_Never_Return( call )) {
+    EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
+    EXITINFO_srcpos(exit_info) = current_srcpos;
+    BB_Add_Annotation (Cur_BB, ANNOT_EXITINFO, exit_info);
+    Set_BB_exit(Cur_BB);
+  }
+#endif
+
   Start_New_Basic_Block ();
 
   // if caller-save-gp and not defined in own dso, then restore gp.

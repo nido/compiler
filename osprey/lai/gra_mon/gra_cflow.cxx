@@ -197,6 +197,15 @@ Split_Exit( BB* bb )
 //  
 /////////////////////////////////////
 {
+#ifdef TARG_ST
+  // FdF 20041105: No EXITINFO_sp_adj was generated in case of a
+  // "noreturn" call.
+  if (!BB_exit_sp_adj_op(bb)) {
+    Is_True(WN_Call_Never_Return( CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get(BB_annotations(bb), ANNOT_CALLINFO)))),
+	    ("Missing SP adjust"));
+    return;
+  }
+#endif
   OP* op;
   OP* next_op = NULL;
   BB* new_exit= Gen_And_Insert_BB_After(bb);
