@@ -923,6 +923,20 @@ EBO_simplify_operand1 (
   TOP new_opcode;
   OP *new_op;
 
+  if ((opcode == TOP_shr_r) || 
+      (opcode == TOP_shr_i) || 
+      (opcode == TOP_shr_ii) ||
+      (opcode == TOP_shru_r)  || 
+      (opcode == TOP_shru_i)  || 
+      (opcode == TOP_shru_ii) ||
+      (opcode == TOP_shl_r) || 
+      (opcode == TOP_shl_i) || 
+      (opcode == TOP_shl_ii) ||
+      (opcode == TOP_sub_r)) {
+    // Constant is ZeroExtend8(const_val)
+    //    const_val = const_val & 0xFFL;
+  }
+
   if ((const_val == 0) && 
       ((opcode == TOP_shr_r) || 
       (opcode == TOP_shr_i) || 
@@ -964,6 +978,48 @@ EBO_simplify_operand1 (
 
       return new_op;
     }
+  }
+
+  // Make immediate shr
+  if (opcode == TOP_shr_r) {
+    Is_True(ISA_LC_Value_In_Class (const_val, LC_s9), ("Immediate operand1 of shr must be SignExtend8"));
+    new_op = Mk_OP(TOP_shr_i,
+		   tnr,
+		   tn0,
+		   Gen_Literal_TN(const_val, TN_size(tn0)));
+
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Replace shr_r with shr_i\n");
+
+    return new_op;
+  }
+
+  // Make immediate shru
+  if (opcode == TOP_shru_r) {
+    Is_True(ISA_LC_Value_In_Class (const_val, LC_s9), ("Immediate operand1 of shru must be SignExtend8"));
+    new_op = Mk_OP(TOP_shru_i,
+		   tnr,
+		   tn0,
+		   Gen_Literal_TN(const_val, TN_size(tn0)));
+
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Replace shru_r with shru_i\n");
+
+    return new_op;
+  }
+
+  // Make immediate shl
+  if (opcode == TOP_shl_r) {
+    Is_True(ISA_LC_Value_In_Class (const_val, LC_s9), ("Immediate operand1 of shru must be SignExtend8"));
+    new_op = Mk_OP(TOP_shl_i,
+		   tnr,
+		   tn0,
+		   Gen_Literal_TN(const_val, TN_size(tn0)));
+
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Replace shl_r with shl_i\n");
+
+    return new_op;
   }
 
   // Make immediate select
