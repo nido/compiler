@@ -60,4 +60,18 @@ extern void draw_CFG(void);
 #define Select_Stats      16
 #define Select_daVinci    32
 
+// op list management
+typedef slist<OP*> op_list;
+
+static inline void
+BB_Remove_Ops (BB* bb, op_list ops) 
+{
+  op_list::iterator op_iter = ops.begin();
+  op_list::iterator op_end  = ops.end();
+  for (; op_iter != op_end; ++op_iter) {
+    BB_Remove_Op(bb, *op_iter);
+  }
+  ops.clear();
+}
+
 #endif /* SELECT_H_INCLUDED */

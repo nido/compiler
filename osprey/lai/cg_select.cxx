@@ -65,11 +65,6 @@
 #include "cg_select.h"
 #include "DaVinci.h"
 
-#include "hb.h"
-#include "hb_id_candidates.h"
-
-#include "hb_trace.h"
-
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
 static INT32  max_cand_id;	// Max value in hammock candidates.
@@ -86,8 +81,6 @@ static OP_MAP phi_op_map = NULL;
 // I keep these operation in a list because we don't want to touch the basic
 // blocks now. (we don't know yet if the hammock will be reduced).
 // OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
-
-typedef list<OP*> op_list;
 
 pair<op_list, op_list> store_i;
 pair<op_list, op_list> load_i;
@@ -270,17 +263,17 @@ Can_Speculate(BOOL first, OP *op)
       OP_Change_Opcode(lop, ld_top); 
       Set_OP_speculative(lop);             // set the OP_speculative flag.
 
-      load_i.first.push_back(op);
-      load_i.second.push_back(lop);
+      load_i.first.push_front(op);
+      load_i.second.push_front(lop);
       
       return TRUE;
     }
 
     else if (OP_store (op)) {
       if (first)
-        store_i.first.push_back(op);
+        store_i.first.push_front(op);
       else
-        store_i.second.push_back(op);
+        store_i.second.push_front(op);
 
       return TRUE;
     }
@@ -327,7 +320,7 @@ BB_Check_Memops(void)
       // *i1_iter didn't match. failed
       if (c++ == store_i.second.size())
         return FALSE;
-      store_i.second.push_back(old_op);
+      store_i.second.push_front(old_op);
     }
     else {
       ++count;
@@ -539,30 +532,22 @@ static void
 BB_Update_Phis(BB *bb)
 {
   OP *phi;
-  list<OP *> phi_list;
+  op_list phi_list;
   
   FOR_ALL_BB_PHI_OPs(bb,phi) {
     OP *new_phi;
 
-    if (new_phi = (OP *)OP_MAP_Get(phi_op_map, phi)) {
-      if (new_phi == phi) {
-        phi_list.push_back(phi);
-        continue;
-      }
-    }
-    else {
+    new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
+
+    if (! new_phi) {
       new_phi = Dup_PHI(phi);
-      phi_list.push_back(phi);
+      phi_list.push_front(phi);
     }
+
     SSA_Prepend_Phi_To_BB(new_phi, bb);
   }
   
-  op_list::iterator phi_iter = phi_list.begin();
-  op_list::iterator phi_end  = phi_list.end();
-  for (; phi_iter != phi_end; ++phi_iter) {
-    BB_Remove_Op(bb, *phi_iter);
-  }
-  phi_list.clear();
+  BB_Remove_Ops(bb, phi_list);
 }
 
 static BOOL
@@ -719,10 +704,11 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
     else
       DevAssert(FALSE, ("variant"));    
 
+    TN *temp_tn = Build_TN_Like (true_tn);
     TN *temp = CGTARG_gen_select_dest_TN();
 
-    Expand_Select (temp, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
-    Expand_Store (MTYPE_I4, temp, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
+    Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
+    Expand_Store (MTYPE_I4, temp_tn, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
 
     BB_Insert_Ops_After (bb, i2, &ops);
 
@@ -754,6 +740,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   // keep a list of newly created conditional move / compare
   // and phis to remove
   OPS cmov_ops = OPS_EMPTY;
+  op_list old_phis;
 
   TN *cond_tn;
   TN *tn2;
@@ -765,7 +752,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
     UINT8 i;
-    OP *new_phi;
     TN *select_tn;
     TN *true_tn = NULL;
     TN *false_tn = NULL;
@@ -773,7 +759,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     if (Trace_Select_Gen) {
       fprintf(TFile, "<select> handle phi ");
       Print_OP (phi);
-      fprintf(TFile, "\n");      
+      fprintf(TFile, "in \n");      
+      Print_BB (tail);
     }
 
     for (i = 0; i < OP_opnds(phi); i++) {
@@ -834,18 +821,17 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
       result[0] = OP_result(phi, 0);
 
-      new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+      OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+      OP_MAP_Set(phi_op_map, phi, new_phi);
     }
     else {
       // Mark phi to be deleted.
-      new_phi = phi;
+      old_phis.push_front(phi);
     }
-
-    OP_MAP_Set(phi_op_map, phi, new_phi);
   }
-
-  // now it's time to remove the useless conditional branch.
-  // BB_Remove_Branch(head);
+  
+  // It's time to remove the useless conditional branch.
+  // before the following blocks are promoted.
   BB_Remove_Op(head, br_op);
 
   br_op = NULL;
@@ -876,7 +862,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     fprintf (TFile, "\n");
   }
 
-  // Finally, insert the selects.
+  // Cleanup phis that are going to be replaced ...
+  BB_Remove_Ops(tail, old_phis);
+  // ... by the selects
   BB_Append_Ops(head, &cmov_ops);
 
   BB_Fix_Spec_Loads (head);
@@ -962,9 +950,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Initialize_Memory();
 
-  if (HB_Trace(HB_TRACE_BEFORE)) {
+  if (Trace_Select_Candidates)
     Trace_IR(TP_SELECT, "Before Select Region Formation", NULL);
-  }
 
   Identify_Hammock_Candidates();
 
