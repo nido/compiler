@@ -2650,37 +2650,36 @@ Gen_Label_For_Source_Line() {
   LABEL_IDX lab;
   LABEL *label;
 #define  EXTRA_NAME_LEN  32
-  static char* current_debug_pu_name = NULL;
+  static PU_IDX current_debug_pu = 0;
   static int debug_lab_id=0;
 
   /* Reset debug label id at each new PU */
-  if (current_debug_pu_name != Cur_PU_Name) {
-    current_debug_pu_name = Cur_PU_Name;
+  if (current_debug_pu != current_pu) {
+    current_debug_pu = current_pu;
     debug_lab_id = 0;
   }
 
   /* Name this label: */
-  buf = (char *)alloca(strlen(current_debug_pu_name) + EXTRA_NAME_LEN);
-  sprintf(buf, Source_Line_Label_Format, debug_lab_id, current_debug_pu_name);
+  buf = (char *)alloca(strlen(Cur_PU_Name) + EXTRA_NAME_LEN);
+  sprintf(buf, Source_Line_Label_Format, debug_lab_id, Cur_PU_Name);
 
   label = &New_LABEL(CURRENT_SYMTAB, lab);
   LABEL_Init(*label, Save_Str(buf), LKIND_DEFAULT);
 
   debug_lab_id ++;
-  //
   return lab;
 }
 
 // [CL] Create a new label for each new source line
 void New_Debug_Line_Set_Label(INT code_address)
 {
-  cache_last_label_info (Last_Label,
-			 Em_Create_Section_Symbol(PU_section),
-			 current_pu,
-			 PC2Addr(Offset_From_Last_Label));
+  if (Last_Label > 0) {
+    cache_last_label_info (Last_Label,
+			   Em_Create_Section_Symbol(PU_section),
+			   current_pu,
+			   PC2Addr(Offset_From_Last_Label));
 
-  pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
-  if (Offset_From_Last_Label > 0) {
+    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
     end_previous_text_region(old_PU_section, 
 			     //  Em_Get_Section_Offset(old_PU_section));
 			     Addr2PC(code_address));
@@ -2826,11 +2825,19 @@ Setup_Text_Section_For_PU (
   }
 
   // hack for supporting dwarf generation in assembly (suneel)
+#ifndef TARG_ST
+  // [CL] The label generated here is NOT to be used for
+  // debug. Last_Label has been reset in EMT_Emit_PU after
+  // emission of the previous PU
+  // Initial_Pu_Label has been reset above
   Last_Label = Gen_Label_For_BB (REGION_First_BB);
   Offset_From_Last_Label = 0;
   if (Initial_Pu_Label == LABEL_IDX_ZERO) {
     Initial_Pu_Label = Last_Label;
   }
+#else
+  Initial_Pu_Label = Gen_Label_For_BB (REGION_First_BB);
+#endif
 
   /* CL: Start a new "text region" for Dwarf at each
      function start (instead of only when changing
@@ -2848,24 +2855,15 @@ Setup_Text_Section_For_PU (
                                    Em_Get_Section_Offset(old_section));
 #endif
     }
-#ifdef TARG_ST
-    // CL: convert composite PC to actual PC address
-    if (generate_dwarf) {
-    	Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, PC2Addr(text_PC),
-			Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
-			Last_Label,
-			ST_elf_index(text_base)),
-			PC2Addr(Offset_From_Last_Label));
-#else
+#ifndef TARG_ST
+    // [CL] new regions are started in New_Debug_Line_Set_Label
     if (generate_dwarf) {
     	Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, text_PC,
 			Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 			Last_Label,
 			ST_elf_index(text_base)),
 			Offset_From_Last_Label);
-#endif
     }
-#ifndef TARG_ST
   }
 #endif
 
@@ -4635,8 +4633,12 @@ EMT_Assemble_BB (
      * has no srcpos, then we'll be ok.
      */
 #ifdef TARG_ST
+    // [CL] force generation of line information for entry_BB
+    // useful for C++ when several functions are generated
+    // in sequence for the same line number (generated constructors
+    // for instance)
     if (entry_srcpos)
-      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), entry_srcpos);
+      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), entry_srcpos, TRUE);
 #else
     if (entry_srcpos)
       Cg_Dwarf_Add_Line_Entry (PC, entry_srcpos);
@@ -5572,7 +5574,7 @@ EMT_Emit_PU (
 			   Em_Create_Section_Symbol(PU_section),
 			   ST_pu(pu),
 			   PC2Addr(Offset_From_Last_Label));
-    end_previous_text_region(PU_section, Addr2PC(PC));
+    end_previous_text_region(PU_section, PC);
   }
 #endif
 
@@ -5637,6 +5639,11 @@ EMT_Emit_PU (
 		// once libunwind provides an interface that lets
 		// us specify ranges symbolically.
 		PC2Addr(Initial_Pu_PC), PC2Addr(PC));
+
+    // [CL] reset labels after emission of a PU, so that
+    // next PU starts from a clean state
+    Last_Label = LABEL_IDX_ZERO;
+    Offset_From_Last_Label = 0;
 #else
     Cg_Dwarf_Process_PU (
 		Em_Create_Section_Symbol(PU_section),
