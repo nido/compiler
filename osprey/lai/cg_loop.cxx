@@ -5164,7 +5164,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Recompute_Liveness();
-
+#ifndef LAO_ENABLED
       if (cg_loop.Determine_Unroll_Fully()) {
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 	cg_loop.Recompute_Liveness();
@@ -5234,7 +5234,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #ifndef TARG_ST
       Gen_Implicit_Prefetches(cg_loop, trace_loop_opt);
 #endif
-
+#endif
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Ind. Var. Removal / after implicit prefetch  ***");
 

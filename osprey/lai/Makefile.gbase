@@ -610,6 +610,10 @@ else
    LINK_DSOS = $(TARG_BE)/be.so
   endif
  endif
+ifeq ($(BUILD_VARIANT), LAO_BUILD)
+LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so $(ROOT)/LAO/lib/libCSD.so $(ROOT)/LAO/lib/libLIR.so $(ROOT)/LAO/lib/libSCD.so -Wl,-rpath=$(ROOT)/LAO/lib
+endif
+
 cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(BE_CG_DIR)/Exported $(TARG_BE)/be.so \
 		$(BE_BE_DIR)/so_locations
 	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
