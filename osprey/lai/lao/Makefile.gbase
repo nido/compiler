@@ -189,6 +189,9 @@ HEADER_DIRS = 		\
   $(LAO_PREFIX)/include/ENUM	\
   $(LAO_PREFIX)/include/CSD	\
   $(LAO_PREFIX)/include/LIR	\
+  $(LAO_PREFIX)/include/PFA	\
+  $(LAO_PREFIX)/include/SSA	\
+  $(LAO_PREFIX)/include/GRA	\
   $(LAO_PREFIX)/include/SCD	\
   $(LAO_PREFIX)/include/LAO	\
   $(TARG_BE)
@@ -249,6 +252,9 @@ endif
 LAO_DSOS =
 LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSCD.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libGRA.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libSSA.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libPFA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLIR.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCSD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCCL.a
