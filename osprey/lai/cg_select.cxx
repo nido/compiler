@@ -606,7 +606,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
 // Check wether 2 memory operations are aliased memory references
 //
 static BOOL
-Are_Aliased(OP* op1, OP* op2)
+Are_Same_Location(OP* op1, OP* op2)
 {
   if (OP_memory(op1) && OP_memory(op2)) {
     WN *wn1 = Get_WN_From_Memory_OP(op1);
@@ -621,6 +621,71 @@ Are_Aliased(OP* op1, OP* op2)
   return FALSE;
 }
 
+static BOOL
+Are_Not_Aliased(OP* op1, OP* op2)
+{
+  if (OP_memory(op1) && OP_memory(op2)) {
+    WN *wn1 = Get_WN_From_Memory_OP(op1);
+    WN *wn2 = Get_WN_From_Memory_OP(op2);
+    if (wn1 != NULL && wn2 != NULL) {
+      ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
+      // OK only if we can prove that addresses are not aliases.
+      if (alias == NOT_ALIASED)
+        return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+// Unsafe to speculate loads and promote stores in the same time if they
+// share the same address.
+BOOL
+Check_ReadWrite_Dependencies(BOOL order_changed)
+{
+  op_list::iterator i1_iter = store_i.tkstrs.begin();
+  op_list::iterator i1_end  = store_i.tkstrs.end();
+
+  if (order_changed) {
+    while(i1_iter != i1_end) {
+      OP *op1 = *i1_iter++;
+      op_list::iterator i2_iter = i1_iter;
+
+      while(i2_iter != i1_end) {
+        OP *op2 = *i2_iter;
+        if (! Are_Not_Aliased (op1, op2))
+          return FALSE;
+
+        i2_iter++;
+      }
+    }
+  }
+
+  i1_iter = store_i.tkstrs.begin();
+  i1_end  = store_i.tkstrs.end();
+
+  // Since we are promting loads, be carefull that they
+  // can't alias with stores since we are changing the op order.
+  if (!load_i.empty()) {
+    while(i1_iter != i1_end) {
+      op_list::iterator i2_iter = load_i.begin();
+      op_list::iterator i2_end  = load_i.end();
+      OP *op1 = *i1_iter;
+
+      while(i2_iter != i2_end) {
+        OP *op2 = *i2_iter;
+        if (! Are_Not_Aliased (op1, op2)) {
+          return FALSE;
+        }
+        i2_iter++;
+      }
+      i1_iter++;
+    }
+  }
+
+  return TRUE;
+}
+
 // Try to sort the stores operations using alias information.
 // If the sort failed that means we cannot speculate the blocks. abort
 // if conversion by returning FALSE.
@@ -630,6 +695,7 @@ static UINT
 Sort_Stores(void)
 {
   UINT count = 0;
+  BOOL order_changed=FALSE;
 
   // We don't have the same count of store. Can't spec any.
   if (store_i.tkstrs.size() != store_i.ntkstrs.size())
@@ -642,7 +708,6 @@ Sort_Stores(void)
   op_list::iterator i2_end  = store_i.ntkstrs.end();
   UINT8 c = 0;
 
-
   while(i1_iter != i1_end) {
     OP *op1 = *i1_iter;
     OP *op2 = *i2_iter;
@@ -651,7 +716,7 @@ Sort_Stores(void)
     DevAssert(OP_find_opnd_use(op2, OU_storeval) == strval_idx, ("Stores."));
 
     // Stores don't differ, nothing to do. Select the result
-    if (CG_select_stores && Are_Aliased (op1, op2)) {
+    if (Are_Same_Location (op1, op2)) {
       store_i.ifarg_idx.push_back(strval_idx);
       ++count;
       c = 0;
@@ -670,6 +735,18 @@ Sort_Stores(void)
       }
     }
 
+    // same stores, same args differs. 
+    // Merge the stores and promote.
+    if (ci == 0 &&
+        OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2)) {
+      store_i.ifarg_idx.push_back(strval_idx);
+      c = 0;
+      ++count;
+      ++i1_iter;
+      ++i2_iter;
+      continue;
+    }
+
     // one arg differs. Select it.
     // Can promote store val anytime. That doesn't change alias information.
     if (ci == 1 &&
@@ -680,14 +757,22 @@ Sort_Stores(void)
       ++count;
       ++i1_iter;
       ++i2_iter;
+      continue;
     }
-    else {
-      i2_iter = store_i.ntkstrs.erase(i2_iter);
-      // *i1_iter didn't match. failed
-      if (count + c++ == store_i.ntkstrs.size())
-        return 0;
-      store_i.ntkstrs.insert(store_i.ntkstrs.end(), op2);
-    }
+
+    // *i1_iter didn't match. failed
+    i2_iter = store_i.ntkstrs.erase(i2_iter);
+    if (count + c++ == store_i.ntkstrs.size())
+      return 0;
+    store_i.ntkstrs.insert(store_i.ntkstrs.end(), op2);
+    order_changed=TRUE;
+  }
+
+  if (count) {
+    // if the stores were moved from their original location, and if they
+    // may alias, then it's unsafe to promote the stores.
+    if (! Check_ReadWrite_Dependencies(order_changed))
+      return 0;
   }
 
   return count;
@@ -1288,12 +1373,12 @@ BB_Fix_Spec_Loads (BB *bb)
 static void
 BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 {
-  while (!store_i.tkstrs.empty()) {
-    OPS ops = OPS_EMPTY;
+  OPS ops = OPS_EMPTY;
 
-    OP* op1 = store_i.tkstrs.front();
-    OP* op2 = store_i.ntkstrs.front();
-    UINT8 opnd_idx = store_i.ifarg_idx.front();
+  while (!store_i.tkstrs.empty()) {
+    OP* op1 = store_i.tkstrs.back();
+    OP* op2 = store_i.ntkstrs.back();
+    UINT8 opnd_idx = store_i.ifarg_idx.back();
 
     Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
 
@@ -1305,8 +1390,6 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 
    select_count++;
 
-   BB_Append_Ops (bb, &ops);
-
    // Store address didn't change. Pass WN information
   if (opnd_idx == OP_find_opnd_use(op1, OU_storeval))
     Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
@@ -1314,10 +1397,12 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    BB_Remove_Op (bb, op1);
    BB_Remove_Op (bb, op2);
 
-   store_i.tkstrs.pop_front();
-   store_i.ntkstrs.pop_front();
-   store_i.ifarg_idx.pop_front();
+   store_i.tkstrs.pop_back();
+   store_i.ntkstrs.pop_back();
+   store_i.ifarg_idx.pop_back();
   }
+
+  BB_Append_Ops (bb, &ops);
 }
 
 // Check that bb has no liveout or side effects beside the conditional jump.
