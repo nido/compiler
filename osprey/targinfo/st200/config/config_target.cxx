@@ -728,8 +728,10 @@ Configure_Source_Target ( char * /* filename */ )
   if (Gen_PIC_Call_Shared)
 	Gen_PIC_Call_Shared = FALSE;
 
-  // Revert some settings from config.cxx with -O3
-  if (Opt_Level > 2 && IEEE_Arithmetic > IEEE_ACCURATE) {
+  // [FdF] Revert some settings from config.cxx with -O3
+  // [CM] We also need to do it whatever the optimization level is
+  // since -ffast-math and other -ffast can be set and turn these on
+  if (IEEE_Arithmetic > IEEE_ACCURATE) {
     IEEE_Arithmetic = IEEE_ACCURATE;
     Recip_Allowed = FALSE;
     Rsqrt_Allowed = FALSE;
