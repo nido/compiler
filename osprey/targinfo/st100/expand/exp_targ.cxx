@@ -1808,7 +1808,7 @@ Expand_Logical_Not (
     *  if CG_EXP_normalize is true we must normalized the operands
     *  (if not already normalized)
     */
-    if (!V_normalized_op1(variant) && EXP_normalize_logical)
+    if (!V_normalized_op1(variant) && CGEXP_normalize_logical)
     {
       Expand_Normalize_Logical (src, ops);
     }
@@ -1842,11 +1842,11 @@ Expand_Logical_And_Or (
   *  if CG_EXP_normalize is true we must normalized the operands 
   *  (if not already normalized)
   */
-  if (!V_normalized_op1(variant) && EXP_normalize_logical)
+  if (!V_normalized_op1(variant) && CGEXP_normalize_logical)
   {
     Expand_Normalize_Logical (src1, ops);
   }
-  if (!V_normalized_op2(variant) && EXP_normalize_logical)
+  if (!V_normalized_op2(variant) && CGEXP_normalize_logical)
   {
     Expand_Normalize_Logical (src2, ops);
   }
@@ -3434,7 +3434,7 @@ Expand_Sqrt (
   FmtAssert(FALSE,("Not Implemented"));
 
   if (!initialized) {
-    const char * const alg = EXP_sqrt_algorithm;
+    const char * const alg = CGEXP_sqrt_algorithm;
     if (strcasecmp(alg, "st100") == 0) {
       exp_sqrt = Expand_ST100_Sqrt;
     } else {

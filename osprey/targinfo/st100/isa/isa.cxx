@@ -1757,6 +1757,8 @@ main ()
 		 "spadjust",	 // simulated
 		 "copy_br",	 // simulated
 		 "noop",	 // simulated
+		 "phi",	 // simulated
+		 "psi",	 // simulated
 		 "begin_pregtn",	 // dummy
 		 "end_pregtn",	 // dummy
 		 "bwd_bar",	 // dummy

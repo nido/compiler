@@ -886,20 +886,6 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
   return ISA_LC_Value_In_Class (immed, LC_s32);
 }
 
-#if 0
-/* ====================================================================
- *   CGTARG_OP_is_counted_loop
- * ====================================================================
- */
-BOOL 
-CGTARG_OP_is_counted_loop (
-  OP *op
-) 
-{
-  return FALSE;
-}
-#endif
-
 /* ====================================================================
  * CGTARG_Can_Change_To_Brlikely
  * ====================================================================

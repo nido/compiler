@@ -86,6 +86,7 @@ UINT First_Float_Preg_Param_Offset	= 0;	/* register fa0 */
 UINT Stack_Pointer_Preg_Offset	= 32;	/* register sp */
 UINT Frame_Pointer_Preg_Offset	= 24;	/* register fp */
 UINT Static_Link_Preg_Offset		= 29;
+UINT Struct_Return_Preg_Offset  = 16;   /* returning structs */
 
 static mDED_PREG_NUM Input_Base_Preg = 0;
 static mDED_PREG_NUM Output_Base_Preg = 0;
@@ -711,7 +712,9 @@ Setup_Parameter_Locations (
   } else
     Last_Fixed_Param = INT_MAX;
 
+#if 0
   Current_Param_Num = 0;
+#endif
 
   Current_Int_Param_Num = 0;
   Current_Ptr_Param_Num = 0;
@@ -760,6 +763,7 @@ Get_Current_Ptr_Preg_Num (
     return i;
 }
 
+#if 0
 /* ====================================================================
  *   Get_Current_Float_Preg_Num
  * ====================================================================
@@ -782,6 +786,7 @@ Get_Current_Float_Preg_Num (
     return i;
   }
 }
+#endif
 
 /* ====================================================================
  *   Get_Parameter_Location
@@ -826,23 +831,23 @@ Get_Parameter_Location (
     return ploc;
   }
 
-  /*   I may nedd to check for alignment later ??
+#if 0
+  /*   I may nedd to check for alignment later ?? */
   ++Current_Param_Num;
   if (TY_align_exp (ty) == 4 && (Current_Param_Num % 2) == 1) {
 
     FmtAssert(FALSE,("Get_Parameter_Location: type quad aligned"));
-  */
+
     /* skip a parameter slot so quad-aligned */
-  /*
     ++Current_Param_Num;
-  */
+
     /* adjust Last_Fixed_Param in varargs case */
-  /*
+
     if (Last_Fixed_Param < INT_MAX)
       ++Last_Fixed_Param;
     ploc.start_offset += MTYPE_RegisterSize(SIM_INFO.flt_type);
   }
-  */
+#endif
 
   INT rpad = 0;			/* padding to right of object */
 
@@ -907,7 +912,9 @@ Get_Parameter_Location (
 	break;
 	
     case MTYPE_F4:
-    case MTYPE_F8:
+
+      FmtAssert(FALSE, ("MTYPE_F4"));
+#if 0
 	/* want to left-justify the object */
         ++Current_Float_Param_Num;
 	rpad = MTYPE_RegisterSize(SIM_INFO.flt_type) - ploc.size;
@@ -918,8 +925,11 @@ Get_Parameter_Location (
 	    ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
 	    ploc.vararg_reg = Get_Current_Preg_Num (SIM_INFO.int_args);
 	}
+#endif
 	break;
 	
+#if 0
+    case MTYPE_F8:
     case MTYPE_FQ:
         ++Current_Float_Param_Num;
 	if (Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats) {
@@ -978,7 +988,8 @@ Get_Parameter_Location (
 	  }
 	}
 	break;
-	
+#endif
+
     default:
 	FmtAssert (FALSE, ("Get_Parameter_Location:  unknown mtype %s",
 			   MTYPE_name(pmtype)));
@@ -988,12 +999,12 @@ Get_Parameter_Location (
 
   //  Last_Param_Offset = ploc.start_offset + ploc.size + rpad;
 
-  /*  What is this ??
+#if 0
   if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
     PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
   else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))
     PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
-  */
+#endif
 
   return ploc;
 } 
@@ -1061,6 +1072,7 @@ Get_Struct_Parameter_Location (PLOC prev)
       return next;
     }
 
+#if 0
     if (PSTRUCT_struct && PSTRUCT_hfa &&
 	!(Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
       if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4) {
@@ -1098,6 +1110,7 @@ Get_Struct_Parameter_Location (PLOC prev)
 
       return next;
     }
+#endif
 
     PLOC_size(next) = ireg_size;
     PSTRUCT_offset += ireg_size;
@@ -1135,8 +1148,14 @@ Get_Vararg_Parameter_Location (
 )
 {
   PLOC next;
+
+  FmtAssert(FALSE,("Get_Vararg_Parameter_Location"));
+
+#if 0
   Current_Param_Num++;
+
   next.reg = Get_Current_Preg_Num (SIM_INFO.int_args);
+#endif
 
   if (next.reg > PR_last_reg(SIM_INFO.int_args))
   {
@@ -1172,7 +1191,7 @@ BOOL Is_Caller_Save_GP;  /* whether GP is caller-save */
 
 // Exists in the IA64 ABI.
 // Used to account for push/pop area on ST100
-INT Stack_Offset_Adjustment = STACK_OFFSET_ADJUSTMENT;
+// INT Stack_Offset_Adjustment = STACK_OFFSET_ADJUSTMENT;
 
 extern void 
 Init_Targ_Sim (void)

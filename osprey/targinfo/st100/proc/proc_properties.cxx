@@ -52,7 +52,17 @@ main()
     same_cycle_branch_shadow,   /* execute branch shadow parallel with branch */
     out_of_order, 		/* out of order execution */
     superscalar,		/* multiple insts per cycle */
+    ia64_predication,           /* supports IA64 predication model */
+    select,                     /* supports partial predication model */
+    predicate_branches,         /* can predicate branches */
+    predicate_calls,            /* can predicate calls */
+    predicate_returns,          /* can predicate returns */
     bundles,			/* executes insts as sequence of bundles */
+    prefetch,                   /* supports prefetch instructions */
+    enable_prefetch,            /* implicitely enables prefetch */
+    enable_prefetch_ahead,      /* enables prefetch to L2 cache */
+    counted_loops,              /* supports counted loop branches */
+    swp_branches,               /* supports SWP branches */
     delayed_exception,		/* has delayed exception support */
     fast_recip;			/* recip inst is fast */
 
@@ -89,6 +99,29 @@ main()
 			PROCESSOR_st120,
 			PROCESSOR_UNDEFINED);
 
+  ia64_predication = PROC_Property_Create ("is_ia64_predication");
+  Processor_Group (ia64_predication, 
+			PROCESSOR_UNDEFINED);
+
+  select = PROC_Property_Create ("is_select");
+  Processor_Group (select,
+			PROCESSOR_UNDEFINED);
+
+  predicate_branches = PROC_Property_Create ("has_predicate_branches");
+  Processor_Group (predicate_branches, 
+			PROCESSOR_st120,
+			PROCESSOR_UNDEFINED);
+
+  predicate_calls = PROC_Property_Create ("has_predicate_calls");
+  Processor_Group (predicate_calls, 
+			PROCESSOR_st120,
+			PROCESSOR_UNDEFINED);
+
+  predicate_returns = PROC_Property_Create ("has_predicate_returns");
+  Processor_Group (predicate_returns, 
+			PROCESSOR_st120,
+			PROCESSOR_UNDEFINED);
+
   /* Does the target execute insts as sequence of bundles, or require 
    * bundle alignment? The info is used to align instructions to bundles, 
    * resolve any bundle packing requirements, etc...
@@ -96,6 +129,26 @@ main()
   bundles = PROC_Property_Create ("has_bundles");
   Processor_Group (bundles,
 			PROCESSOR_st120,
+			PROCESSOR_UNDEFINED);
+
+  prefetch = PROC_Property_Create ("has_prefetch");
+  Processor_Group (prefetch,
+			PROCESSOR_UNDEFINED);
+
+  enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
+  Processor_Group (enable_prefetch,
+			PROCESSOR_UNDEFINED);
+
+  enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");
+  Processor_Group (enable_prefetch_ahead,
+			PROCESSOR_UNDEFINED);
+
+  counted_loops = PROC_Property_Create ("has_counted_loops");
+  Processor_Group (counted_loops,
+			PROCESSOR_UNDEFINED);
+
+  swp_branches = PROC_Property_Create ("has_swp_branches");
+  Processor_Group (swp_branches,
 			PROCESSOR_UNDEFINED);
 
   /* Does the target support delayed_exception mechanism, i.e ability to

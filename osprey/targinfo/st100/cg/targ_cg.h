@@ -47,8 +47,12 @@
 
 // Return format string for operand i of op.
 inline char *ISA_PRINT_PREDICATE (ISA_OPERAND_USE use) {
+
+#if 0
+  // TODO !
   if (use & OU_reversed) return "%s!";
   else return "%s?";
+#endif
 }
 
 // Given a conditional branch with a <branch_taken_probability>
