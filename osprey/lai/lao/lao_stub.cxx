@@ -606,13 +606,6 @@ static void
 CGIR_LI_update(CGIR_LI cgir_li, int unrolled) {
 }
 
-// Update of specific fields for the Open64 compiler
-static void
-Open64_finalUpdateBB(CGIR_BB cgir_bb, CGIR_BB cgir_head) {
-  Set_BB_loop_head_bb(cgir_bb, cgir_head);
-  BB_rid(cgir_bb) = BB_rid(cgir_head);
-}
-
 /*--------------------------- lao_init / lao_fini ----------------------------*/
 
 // Optimize a LOOP_DESCR through the LAO.
@@ -976,12 +969,6 @@ lao_initializeInterface() {
   *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
   *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
   *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
-  *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
-  // Initialize the interface configuration.
-  Configuration configuration = Interface_configuration(interface);
-  *Configuration__SCHEDULE(configuration) = CG_LAO_schedule;
-  *Configuration__PIPELINE(configuration) = CG_LAO_pipeline;
-  *Configuration__SPECULATE(configuration) = CG_LAO_speculate;
 }
 
 typedef list<BB*> BB_List;
@@ -1064,7 +1051,19 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
   if (annot != NULL) {
     // Make the LoopInfo for this loop.
     CGIR_LI cgir_li = ANNOT_loopinfo(annot);
-    loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block);
+    TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
+    if (trip_count_tn != NULL && TN_is_constant(trip_count_tn)) {
+      uint64_t trip_count = TN_value(trip_count_tn);
+      int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
+      uint64_t trip_factor = trip_count & -trip_count;
+      int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
+      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 3,
+	  Configuration_MinTrip, min_trip_count,
+	  Configuration_Modulus, min_trip_factor,
+	  Configuration_Residue, 0);
+    } else {
+      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 0);
+    }
     // Make a BB_List of the loop body and compute its op_count.
     BB *bb = NULL;
     BB_List bb_list;
@@ -1120,7 +1119,10 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   //
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
-  Interface_open(interface);
+  Interface_open(interface, 3,
+      Configuration_Schedule, CG_LAO_schedule,
+      Configuration_Pipeline, CG_LAO_pipeline,
+      Configuration_Speculate, CG_LAO_speculate);
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
@@ -1130,18 +1132,18 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setEntry(interface, basicblock);
     nonexitBBs.push_back(*bb_iter);
-    fprintf(TFile, "BB_entry(%d)\n", BB_id(*bb_iter));
+    //fprintf(TFile, "BB_entry(%d)\n", BB_id(*bb_iter));
   }
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setBody(interface, basicblock);
     nonexitBBs.push_back(*bb_iter);
-    fprintf(TFile, "BB_body(%d)\n", BB_id(*bb_iter));
+    //fprintf(TFile, "BB_body(%d)\n", BB_id(*bb_iter));
   }
   for (bb_iter = exitBBs.begin(); bb_iter != exitBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
     Interface_setExit(interface, basicblock);
-    fprintf(TFile, "BB_exit(%d)\n", BB_id(*bb_iter));
+    //fprintf(TFile, "BB_exit(%d)\n", BB_id(*bb_iter));
   }
   // Make the control-flow nodes and the control-flow arcs.
   for (bb_iter = nonexitBBs.begin(); bb_iter != nonexitBBs.end(); bb_iter++) {
@@ -1167,7 +1169,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   //
   result = LAO_Optimize(lao_optimizations);
   if (0 && result) {
-    Interface_updateCGIR(interface, Open64_finalUpdate);
+    Interface_updateCGIR(interface);
     if (getenv("PRINT")) CGIR_print();
   }
   //
