@@ -985,7 +985,8 @@ Expand_Shift_Multiply (
     Build_OP(opcode, result, src1, src1, ops);
     return TRUE;
   }
-  
+
+  return FALSE;
 }
 
 /* ====================================================================
@@ -1006,6 +1007,7 @@ Expand_Multiply (
   TN      *dest = result;
   TYPE_ID  mtype = rmtype;
   BOOL     has_const = FALSE;
+  BOOL is_signed = FALSE;
   TOP opcode = TOP_UNDEFINED;
 
 #if 0
@@ -1016,6 +1018,8 @@ Expand_Multiply (
   dump_tn (src1);
   dump_tn (src2);
 #endif
+
+  is_signed = MTYPE_is_signed(rmtype);
 
   //
   // Check for two constants
@@ -1058,8 +1062,6 @@ Expand_Multiply (
     has_const = TRUE;
   }
         
-  BOOL is_signed = FALSE;
-
   switch (mtype) {
   case MTYPE_U2:
   case MTYPE_I2:
@@ -1075,14 +1077,12 @@ Expand_Multiply (
     }
 
     else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
-      Build_OP(TOP_sxth_r, src1, src1, ops);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
       FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
-      Build_OP(TOP_sxth_r, src2, src2, ops);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
       Build_OP(opcode, dest, src1, src2, ops);
     }
@@ -1092,17 +1092,9 @@ Expand_Multiply (
                         rmtype, s1mtype, s2mtype));
     }
 
-    if (mtype == MTYPE_U2) {
-      TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-      Build_OP(TOP_and_i, dest, dest, const_tn, ops);
-    }
-    else if (mtype == MTYPE_I2) {
-      Build_OP(TOP_sxth_r, dest, dest, ops);
-    }
     break;
 
   case MTYPE_I4:
-    is_signed = TRUE;
   case MTYPE_U4:
     // first handle optimised special cases
 
@@ -1116,21 +1108,20 @@ Expand_Multiply (
       Build_OP(opcode, dest, src1, src2, ops);
     }
     else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
-      Build_OP(TOP_sxth_r, src1, src1, ops);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
       Build_OP(opcode, dest, src1, src2, ops);
     }
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-      Build_OP(TOP_sxth_r, src2, src2, ops);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
     // word <- word * word
-    else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4)) {
+    else if (!has_const &&
+             ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
+              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
+              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
+              (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4))) {
       TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
       TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
       opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
@@ -1167,37 +1158,6 @@ Expand_Multiply (
           tmpmtype = s2mtype;
           s2mtype = s1mtype;
           s1mtype = tmpmtype;
-        }
-      }
-      else {
-        if (s1mtype == MTYPE_I1) {
-          Build_OP(TOP_sxtb_r, src1, src1, ops);
-        }
-        else if (s1mtype == MTYPE_I2) {
-          Build_OP(TOP_sxth_r, src1, src1, ops);
-        }
-        if (s2mtype == MTYPE_I1) {
-          Build_OP(TOP_sxtb_r, src2, src2, ops);
-        }
-        else if (s2mtype == MTYPE_I2) {
-          Build_OP(TOP_sxth_r, src2, src2, ops);
-        }
-
-        if (s1mtype == MTYPE_U1) {
-          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
-          Build_OP(TOP_and_i, src1, src1, const_tn, ops);
-        }
-        else if (s1mtype == MTYPE_U2) {
-          TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-          Build_OP(TOP_and_i, src1, src1, const_tn, ops);
-        }
-        if (s2mtype == MTYPE_U1) {
-          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
-          Build_OP(TOP_and_i, src2, src2, const_tn, ops);
-        }
-        else if (s2mtype == MTYPE_U2) {
-          TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-          Build_OP(TOP_and_i, src2, src2, const_tn, ops);
         }
       }
 
