@@ -683,6 +683,43 @@ EBO_simplify_operand0 (
   TOP new_opcode;
   OP *new_op;
 
+  // Make immediate select
+  if (OP_select(op)) {
+    TN *res[1];
+    TN *opnd[3];
+
+    if (opcode == TOP_slctf_r) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+        new_opcode = TOP_slct_i;
+      }
+      else {
+        new_opcode = TOP_slct_ii;
+      }
+    }
+    else if (opcode == TOP_slct_r) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+        new_opcode = TOP_slctf_i;
+      }
+      else {
+        new_opcode = TOP_slctf_ii;
+      }
+    }
+    else
+      return NULL;
+
+    res[0] = tnr;
+    opnd[0] = OP_opnd(op, 0);
+    opnd[1] = tn1;
+    opnd[2] = Gen_Literal_TN(const_val, TN_size(tn1));
+
+    new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
+
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Replace slct_r with slct_i\n");
+
+    return new_op;
+  }
+
   if ((const_val == 0) && 
       (opcode == TOP_shru_r)  || 
       (opcode == TOP_shru_i)  || 
@@ -889,6 +926,42 @@ EBO_simplify_operand1 (
     }
   }
 
+  // Make immediate select
+  if (OP_select(op)) {
+    TN *res[1];
+    TN *opnd[3];
+
+    if (opcode == TOP_slctf_r) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+        new_opcode = TOP_slctf_i;
+      }
+      else {
+        new_opcode = TOP_slctf_ii;
+      }
+    }
+    else if (opcode == TOP_slct_r) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+        new_opcode = TOP_slct_i;
+      }
+      else {
+        new_opcode = TOP_slct_ii;
+      }
+    }
+    else
+      return NULL;
+
+    res[0] = tnr;
+    opnd[0] = OP_opnd(op, 0);
+    opnd[1] = tn0;
+    opnd[2] = Gen_Literal_TN(const_val, TN_size(tn0));
+
+    new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
+
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Replace slct_r with slct_i\n");
+
+    return new_op;
+  }
 
   return NULL;
 }
