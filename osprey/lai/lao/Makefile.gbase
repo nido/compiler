@@ -341,12 +341,6 @@ ifneq ($(DSO_MODE),STATIC)
 endif
 
 first:
-## verify that wopt.so is up to date
-	cd $(TARG_OPT_DIR) && $(MAKE)
-## verify that ipl.so is up to date
-	cd $(TARG_IPL_DIR) && $(MAKE)
-## verify that be.so is up to date
-	cd $(TARG_BE_DIR) && $(MAKE)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
