@@ -58,7 +58,9 @@
 #include "config_debug.h"
 #include "config_list.h"
 #include "vstring.h"
+#ifdef TARG_ST
 #include "file_util.h" // [CL] for New_Extension
+#endif
 #include "glob.h"
 #include "xstats.h"
 #include "targ_const.h"
@@ -704,6 +706,48 @@ EMT_Write_Qualified_Name (
   vstr_end(buf);
 }
 
+#ifdef TARG_ST
+// [CL] helper functions to generate anonymous constants
+/* ====================================================================
+ *    r_qualified_tcon_name
+ * ====================================================================
+ */
+static void
+r_qualified_tcon_name (
+  ST *st,
+  vstring *buf       /* buffer to format it into */
+)
+{
+  if (ST_level(st) == GLOBAL_SYMTAB) {
+    vstr_sprintf (buf, vstr_len(*buf), 
+                 "%s_UNNAMED_CONST_%d%s%d", Local_Label_Prefix,
+		 ST_tcon(st), Label_Name_Separator, ST_index(st));
+  } else {
+    vstr_sprintf (buf, vstr_len(*buf), 
+                 "%s_UNNAMED_CONST_%d%s%d%s%d", Local_Label_Prefix,
+		  ST_tcon(st), Label_Name_Separator,
+		  ST_pu(Get_Current_PU_ST()),
+		  Label_Name_Separator, ST_index(st));
+  }
+}
+
+/* ====================================================================
+ *    EMT_Write_Qualified_Name (FILE *f, ST *st)
+ * ====================================================================
+ */
+void
+EMT_Write_Qualified_Tcon_Name (
+  FILE *f, 
+  ST *st
+)
+{
+  vstring buf = vstr_begin(LBUF_LEN);
+  r_qualified_tcon_name (st, &buf);
+  fprintf (f, "%s", vstr_str(buf));
+  vstr_end(buf);
+}
+#endif
+
 /* ====================================================================
  *    Print_Dynsym (pfile, st)
  *
@@ -763,6 +807,17 @@ Print_Label (
     EMT_Write_Qualified_Name(pfile, st);
     fprintf(pfile, "\n");
   }
+#ifdef TARG_ST
+  // [CL] handle the case of generation of symtab.s
+  // in IPA mode. Although local, such symbols must
+  // be 'promoted' to global so that they can be
+  // accessed by the module they belong to
+  else if (ST_is_export_local(st) && Emit_Global_Data) {
+    fprintf (pfile, "\t%s\t", AS_GLOBAL);
+    EMT_Write_Qualified_Name(pfile, st);
+    fprintf(pfile, "\n");
+  }
+#endif
   if (ST_class(st) == CLASS_VAR) {
     fprintf (pfile, "\t%s\t", AS_TYPE);
     EMT_Write_Qualified_Name (pfile, st);
@@ -1895,7 +1950,21 @@ Process_Initos_And_Literals (
       // emit TCON associated symbolic name as label
       //      char *cname = Get_TCON_name (ST_tcon(st));
       //      fprintf(Output_File, "%s:\n", cname);
+#ifdef TARG_ST
+      // [CL] handle the case of generation of symtab.s
+      // in IPA mode. Although local, such symbols must
+      // be 'promoted' to global so that they can be
+      // accessed by the module they belong to
+      if (Emit_Global_Data) {
+	fprintf(Output_File, "\t%s\t", AS_GLOBAL);
+	EMT_Write_Qualified_Tcon_Name(Output_File, st);
+	fprintf(Output_File, "\n");
+      }
+      EMT_Write_Qualified_Tcon_Name(Output_File, st);
+      fprintf(Output_File, ":\n");
+#else
       fprintf(Output_File, "%s_UNNAMED_CONST_%d:\n", Local_Label_Prefix, ST_tcon(st));
+#endif
       ofst = Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
 #ifdef TARG_ST
       Set_Section_Offset(base, ofst);
@@ -2782,7 +2851,11 @@ r_apply_l_const (
 	//
 	// Print out a symbolic name
 	//
+#ifndef TARG_ST
 	vstr_sprintf (buf, vstr_len(*buf), "%s_UNNAMED_CONST_%d", Local_Label_Prefix, ST_tcon(st));
+#else
+	r_qualified_tcon_name(st, buf);
+#endif
 	//	// call put_symbol so that we emit .type info, once per symbol
 	// (void) EMT_Put_Elf_Symbol (st);
       }

@@ -103,8 +103,8 @@ Config_ELF_From_Target (
 Elf32_Half 
 Get_Elf_Target_Machine (void)
 {
-  // Dummy for now since no elf is generated
-  return EM_IA_64;
+  // [CL] this ID would need to be sync'ed with binutils
+  return 0x1064;
 }
 
 
