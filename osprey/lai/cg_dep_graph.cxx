@@ -4983,7 +4983,7 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 
 	      kind = CG_DEP_SPILLIN;
 	      latency = CG_DEP_Latency(pred, succ, kind, opnd);
-	      omega = 1;
+	      omega = succ_idx <= op_idx;
 
 	      Set_ARC_kind(arc, kind);
 	      Set_ARC_opnd(arc, opnd);

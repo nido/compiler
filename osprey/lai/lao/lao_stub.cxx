@@ -23,6 +23,7 @@
 #include "hb.h"
 
 #include "cg_dep_graph.h"
+#include "cg_spill.h"
 
 #include "erglob.h"
 #include "tracing.h"
@@ -176,8 +177,8 @@ CGIR_TN_to_TempName(CGIR_TN cgir_tn) {
       tempname = Interface_makeAbsoluteTempName(interface, cgir_tn, immediate, value);
     } else if (TN_is_symbol(cgir_tn)) {
       Symbol symbol = NULL;
-      ST *var = TN_var(cgir_tn);
-      ST_IDX st_idx = ST_st_idx(*var);
+      ST *var_st = TN_var(cgir_tn);
+      ST_IDX st_idx = ST_st_idx(*var_st);
       int64_t offset = TN_offset(cgir_tn);
       Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
       symbol = CGIR_SYM_to_Symbol(st_idx);
@@ -219,6 +220,11 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
   Operation operation = Interface_makeOperation(interface, cgir_op,
       OPERATOR, argCount, arguments, resCount, results);
   if (OP_volatile(cgir_op)) Interface_Operation_setVolatile(interface, operation);
+  ST *spill_st = CGSPILL_OP_Spill_Location(cgir_op);
+  if (spill_st != NULL && OP_spill(cgir_op)) {
+    Symbol symbol = CGIR_SYM_to_Symbol(ST_st_idx(*spill_st));
+    Interface_Operation_setSpillCode(interface, operation, symbol);
+  }
   return operation;
 }
 
@@ -1075,8 +1081,7 @@ lao_topsort(BB *entry, BB_SET *region_set, BB_List &bblist) {
   BB_MAP_Delete(visited_map);
 }
 
-#define LAO_OPS_LIMIT 4096	// Maximum number of OPs to compute memory dependences.
-#define LAO_DEPS_LIMIT 16384	// Maximum number of memory dependences.
+#define LAO_OPS_LIMIT 512	// Maximum number of OPs to compute memory dependences.
 
 // Fill a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
@@ -1092,7 +1097,10 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
   BB_List::iterator bb_iter;
   for (bb_iter = bb_topo_list.begin(); bb_iter != bb_topo_list.end(); bb_iter++) {
     if (BB_nest_level(*bb_iter) == nest_level) {
-      op_count += BB_length(*bb_iter);
+      OP *op = NULL;
+      FOR_ALL_BB_OPs(*bb_iter, op) {
+	if (OP_memory(op)) ++op_count;
+      }
       bb_list.push_back(*bb_iter);
       if (op_count >= LAO_OPS_LIMIT) {
 	DevWarn("LAO_OPS_LIMIT exceeded (%d memory operations)\n", op_count);
