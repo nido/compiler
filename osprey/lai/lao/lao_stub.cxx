@@ -1118,7 +1118,7 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
 	if (_CG_DEP_op_info(op)) {
 	  Operation orig_operation = CGIR_OP_to_Operation(op);
 	  if (OP_memory(op)) {
-	    Interface_LoopInfo_setMemoryDependenceNode(interface, loopinfo, orig_operation);
+	    Interface_LoopInfo_setDependenceNode(interface, loopinfo, orig_operation);
 	  }
 	  for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	    ARC *arc = ARC_LIST_first(arcs);
@@ -1127,9 +1127,9 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
 	      bool isDefinite = ARC_is_definite(arc);
 	      int latency = ARC_latency(arc), omega = ARC_omega(arc);
 	      OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
-	      Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
+	      Is_True(pred_op == op, ("Error in lao_setDependences"));
 	      Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-	      Interface_LoopInfo_setMemoryDependenceArc(interface, loopinfo,
+	      Interface_LoopInfo_setDependenceArc(interface, loopinfo,
 		  orig_operation, dest_operation, omega, isDefinite);
 	      //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	    }
