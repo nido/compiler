@@ -292,6 +292,18 @@ Detect_Post_Hazard (OP *op1, INT opnd, OP *op2)
     return FALSE;
 
   case OPND_RESULT:
+#ifdef TARG_ST
+    // [CG]: Seems that we should scan all defs
+    // for result hazrds
+    for (int i = 0; i < OP_results(op1); i++) {
+      tn = OP_result(op1,i);
+      if (TN_is_zero_reg (tn)) continue;
+      cl = TN_register_class(tn);
+      reg = TN_register(tn);
+      if (OP_Refs_Reg (op2, cl, reg)) return TRUE;
+    }
+    return FALSE;
+#else
     // is there an flow- or output-dep to scan_op ?
     tn = OP_result(op1,0 /*???*/);
     cl = TN_register_class(tn);
@@ -308,7 +320,7 @@ Detect_Post_Hazard (OP *op1, INT opnd, OP *op2)
     //         included in OPs
     return OP_Refs_Reg (op2, cl, reg);
 #endif
-
+#endif
   default:
     // is there an flow- or output-dep to scan_op ?
     tn = OP_opnd(op1, opnd);
@@ -1120,6 +1132,24 @@ Branch_Taken_Latency (
 }
 
 /* ====================================================================
+ *  Fall_Thru_Successor_safe
+ *  Same as Fall_Thru_Successor in bbutil.cxx, however, does not
+ *  remove useless branch. As it is now too late, in the bundler.
+ * TODO: better fix?
+ * ====================================================================
+ */
+static BB *
+BB_Fall_Thru_Successor_safe(BB *bb)
+{
+  BB *next = BB_next(bb);
+  BBLIST *node = NULL;
+
+  if (BB_kind(bb) != BBKIND_LOGIF) return NULL;
+  FmtAssert(BB_next(bb), ("No fall thru for BB:%d", BB_id(bb)));
+  return BB_next(bb);
+}
+
+/* ====================================================================
  *  Fall_Thru_Latency
  *
  *  Returns the cycle at which the fall through block can start. If no
@@ -1139,7 +1169,7 @@ Fall_Thru_Latency (
 {
   INT fallThru_latency = pending_latency;
 
-  if (!BB_Fall_Thru_Successor(bb))
+  if (!BB_Fall_Thru_Successor_safe(bb))
     fallThru_latency = Clock;
 
   else if (BB_call(bb))
@@ -1147,7 +1177,7 @@ Fall_Thru_Latency (
 
 #ifdef SUPERBLOCK_SCHED
   else if (CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
-    BB *fallThru_succ = BB_Fall_Thru_Successor(bb);
+    BB *fallThru_succ = BB_Fall_Thru_Successor_safe(bb);
     if ((BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, fallThru_succ))) {
       OP *first_op = BB_first_op(fallThru_succ);
       if ((first_op != NULL) && (OP_scycle(first_op) != -1))
@@ -1776,6 +1806,8 @@ Make_Bundles (
 #ifdef TARG_ST
   // FdF: Make sure the last operation of the basic block have a valid
   // scheduling date
+  FmtAssert (BB_last_op(bb), 
+	     ("Last op disappeared in BB:%d",BB_id(bb)));
   if (OP_scycle(BB_last_op(bb)) == -1)
     OP_scycle(BB_last_op(bb)) = Clock-1;
 #endif
