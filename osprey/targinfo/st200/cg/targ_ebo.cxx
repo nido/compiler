@@ -105,6 +105,27 @@ static const char source_file[] = __FILE__;
 /* Define a macro to sign-extend the least signficant 32 bits */
 #define SEXT_32(val) (((INT64)(val) << 32) >> 32)
 
+// [HK] added ST231 Helpers
+#define IS_MUL_SPEC(o)     (OP_code(o) == TOP_mulhs_i ||   \
+                            OP_code(o) == TOP_mulhs_ii ||  \
+                            OP_code(o) == TOP_mulhs_r || \
+                            OP_code(o) == TOP_mulhhs_i ||   \
+                            OP_code(o) == TOP_mulhhs_ii ||  \
+                            OP_code(o) == TOP_mulhhs_r || \
+                            OP_code(o) == TOP_mullhus_i ||   \
+                            OP_code(o) == TOP_mullhus_ii ||  \
+                            OP_code(o) == TOP_mullhus_r || \
+                            OP_code(o) == TOP_mul64h_i ||   \
+                            OP_code(o) == TOP_mul64h_ii ||  \
+                            OP_code(o) == TOP_mul64h_r || \
+                            OP_code(o) == TOP_mul64hu_i ||   \
+                            OP_code(o) == TOP_mul64hu_ii ||  \
+                            OP_code(o) == TOP_mul64hu_r || \
+                            OP_code(o) == TOP_mulfrac_i ||   \
+                            OP_code(o) == TOP_mulfrac_ii ||  \
+                            OP_code(o) == TOP_mulfrac_r)  
+                         
+
 /* ============================================================
  * opcode_benefit
  *
@@ -853,6 +874,12 @@ EBO_simplify_operand0 (
     fprintf(TFile,"\n");
   }
 
+  // [HK] simplify special mul by 0 to 0
+  if (IS_MUL_SPEC(op) && const_val == 0){
+      new_op = Mk_OP(TOP_mov_r, tnr, Zero_TN);
+      return new_op;
+  }
+     
 
   /* shadd -> add */
   if (TOP_is_shadd(opcode)) {
@@ -943,6 +970,12 @@ EBO_simplify_operand1 (
     fprintf(TFile,"\n");
   }
 
+  // [HK] simplify special mul by 0 to 0
+  if (IS_MUL_SPEC(op) && const_val == 0){
+      new_op = Mk_OP(TOP_mov_r, tnr, Zero_TN);
+      return new_op;
+  }
+ 
   /* Inlining of immediate operand unless Zero_TN. */
   if (TN_is_register(OP_opnd(op, opnd2_idx)) && 
       OP_opnd(op, opnd2_idx) != Zero_TN) {
@@ -2545,6 +2578,18 @@ if(EBO_Trace_Optimization)fprintf(TFile,"TOP_mov_f_pr pr%d\n",i);
 #define IS_MUL32_PART(o) (OP_code(o) == TOP_mulhs_r || \
 			  OP_code(o) == TOP_mullu_r)
 
+// [HK] add ST231 specific multiplies helpers
+#define IS_MUL32(o)     (OP_code(o) == TOP_mul32_i ||   \
+                         OP_code(o) == TOP_mul32_ii ||  \
+                         OP_code(o) == TOP_mul32_r)
+
+#define IS_MUL64(o)     (OP_code(o) == TOP_mul64h_i ||   \
+                         OP_code(o) == TOP_mul64h_ii ||  \
+                         OP_code(o) == TOP_mul64h_r ||   \
+			 OP_code(o) == TOP_mul64hu_i ||  \
+                         OP_code(o) == TOP_mul64hu_ii || \
+                         OP_code(o) == TOP_mul64hu_r)
+
 /* =====================================================================
  *            Multiplication Tables
  * =====================================================================
@@ -3544,6 +3589,146 @@ mul_32_16_sequence (
   return TRUE;
 }
 
+// [HK] ST231 specific strenght-reduction functions
+/* =====================================================================
+ *   Function: mul_32_sequence
+ *
+ *   Try to strength reduce the 32 x 32 multiplies.
+ * =====================================================================
+ */
+static BOOL
+mul32_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  if (!IS_MUL32(op))
+    return FALSE;
+
+  // Level 1 data:
+  BB *bb = OP_bb(op);
+  TN *tn0 = OP_opnd(op, 0);
+  TN *tn1 = OP_opnd(op, 1);
+  TN *res = OP_result(op, 0);
+
+  TN *new_tn0 = tn0, *new_tn1 = tn1;
+
+  BOOL reduce_tn0 = FALSE;
+  BOOL reduce_tn1 = FALSE;
+  EBO_TN_INFO *tninfo0 = opnd_tninfo[0];
+  EBO_TN_INFO *tninfo1 = opnd_tninfo[1];
+  BITS_POS hilo0;
+  BITS_POS hilo1;
+  SIGNDNESS signed0;
+  SIGNDNESS signed1;
+  
+  if (tninfo0 == NULL || tninfo0->in_op == NULL) {
+    return FALSE;
+  }
+
+  // check if operand 0 is 16 bits
+  if (Is_16_Bits(opnd_tninfo[0], bb, &new_tn0, &tninfo0, &hilo0, &signed0) )
+      reduce_tn0 = TRUE;
+
+  // check if operand 1 is 16 bits
+  if (Is_16_Bits(opnd_tninfo[1], bb, &new_tn1, &tninfo1, &hilo1, &signed1) )
+      reduce_tn1 = TRUE;
+
+  if (!reduce_tn0) {
+      new_tn0 = tn0;
+      hilo0 = TN_32_BITS;
+      signed0 = SIGN_UNKNOWN;
+  }
+  
+  if (!reduce_tn1) {
+      new_tn1 = tn1;
+      hilo1 = TN_32_BITS;
+      signed1 = SIGN_UNKNOWN;
+  }
+
+  // Continue if any of the operands is being strength reduced
+  if (!reduce_tn0 && !reduce_tn1) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile, "No stength reduction for 32x32 mul\n");
+    return FALSE;
+  }
+
+  // Before looking for a possible strength reduction, check if
+  // the new_tn1 is a 32 bit quantity. Since there are no TOP
+  // codes with 32 bit operand in the second position, try to
+  // swap the operands.
+  // Also for hi x lo combination
+  if (((hilo0 != TN_32_BITS && hilo1 == TN_32_BITS) ||
+      (hilo0 == TN_HI_16 && hilo1 == TN_LO_16)) && 
+      !TN_is_constant(tn1)) {
+      //
+      // Swap the operands -- mul is associative
+      //
+      TN *tmp_tn = new_tn0;
+      EBO_TN_INFO *tmp_tninfo = tninfo0;
+      BITS_POS tmp_hilo = hilo0;
+      SIGNDNESS tmp_signed = signed0;
+      new_tn0 = new_tn1;
+      tninfo0 = tninfo1;
+      hilo0 = hilo1;
+      signed0 = signed1;
+      new_tn1 = tmp_tn;
+      tninfo1 = tmp_tninfo;
+      hilo1 = tmp_hilo;
+      signed1 = tmp_signed;
+  }
+
+  // Now we can choose an appropriate opcode
+  TOP new_opcode = get_mul_opcode(signed0, hilo0,
+				  signed1, hilo1);
+
+  // Convert to an immediate form if new_tn1 is an immediate
+  if (TN_is_symbol(new_tn1)) return FALSE;
+  if (new_opcode != TOP_UNDEFINED && TN_has_value(new_tn1))
+    new_opcode = TOP_opnd_immediate_variant(new_opcode, 1, TN_value(new_tn1));
+
+  if (new_opcode == TOP_UNDEFINED) {
+    if (EBO_Trace_Optimization)
+      fprintf(TFile, "No opcode for stength reduction\n");
+    return FALSE;
+  }
+
+  // case of no change
+  if (new_opcode == opcode && new_tn0 == tn0 && new_tn1 == tn1)
+    return FALSE;
+
+  // [CG]: Check redefinitions
+  if (!EBO_tn_available (bb, tninfo0) ||
+      !EBO_tn_available (bb, tninfo1)) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"mul32 strength reduction stopped due to redefinition\n");
+    return FALSE;
+  }
+
+  //
+  // Now, we have :
+  //
+  //    new_opcode
+  //    res
+  //    new_tn0
+  //    new_tn1
+  //
+  // Make a res = new_opcode new_tn0, new_tn1, and replace the
+  // current instruction:
+  //
+  OP *new_op;
+  new_op = Mk_OP(new_opcode, res, new_tn0, new_tn1);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, tninfo0, tninfo1);
+  BB_Insert_Op_After(bb, op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert mul32 sequence\n");
+  return TRUE;
+}
+
 /* =====================================================================
  *   Function: mulhs_sequence
  *
@@ -3876,6 +4061,10 @@ Strength_Reduce_Mul (
 {
   if (OP_code(op) == TOP_add_r) {
     return (add_mul_sequence (op, opnd_tn, opnd_tninfo));
+  }
+
+  if (IS_MUL32(op)) {
+    return (mul32_sequence (op, opnd_tn, opnd_tninfo));
   }
 
   if (!(EBO_in_pre && IS_MUL32_PART(op))) {
