@@ -48,7 +48,7 @@
  *                               WN mem information
  *
  * The following flags to drive the heuristics.
- * -CG:select_factor="2.0"       extra gain for flattening a branch
+ * -CG:select_factor="1.0"       extra gain for flattening a branch
  *
  * ====================================================================
  * ====================================================================
@@ -133,7 +133,7 @@ op_list load_i;
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
-const char* CG_select_factor = "2.0";
+const char* CG_select_factor = "1.0";
 
 /* ================================================================
  *
@@ -1141,18 +1141,17 @@ static void
 Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
 {
   BB* new_bb = NULL;
-  OPS new_ops = OPS_EMPTY;  
-  op_list old_phis;
   BB *first_bb = bp;
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
+  OPS new_ops = OPS_EMPTY;  
 
   do {
     OPS old_ops = OPS_EMPTY;
+    op_list old_phis;
 
     if (Trace_Select_Candidates) {
       fprintf (Select_TFile, "<select> Duplicating BB%d\n", BB_id(bp));
     }
-
     //
     // Copy the ops to the new block.
     //
@@ -1209,7 +1208,10 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
     }
 
     BB_Remove_Ops(bp, old_phis);
-    BB_Prepend_Ops(bp, &old_ops);
+    old_phis.clear();
+
+    if (OPS_length(&old_ops) != 0) 
+      BB_Prepend_Ops(bp, &old_ops);
   } while ((bp = BB_Unique_Successor (bp)) != tail);
 
   Rename_PHIs(dup_tn_map, to_bb, tail, first_bb, taken);
@@ -1575,6 +1577,9 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   // Update ops
   BB_Append_Ops (bb1, &ops);
 
+  // Commit dismissible loads
+  BB_Fix_Spec_Loads (bb1);
+
   // Update branch probabilities
   if (AndNeeded)
     prob1 = 1.0 - (prob1 * prob2);
@@ -1824,6 +1829,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
    // ... by the selects
    BB_Append_Ops(head, &cmov_ops);
 
+  // Commit dismissible loads
    BB_Fix_Spec_Loads (head);
    BB_Fix_Spec_Stores (head, cond_tn, false_br);
 
