@@ -5665,6 +5665,12 @@ void EBO_Remove_Copy_Ops (BB *bb, BOOL BB_completely_processed)
 	   of the TN (or reg) to reach the end of the block. */
 	tninfo->same->redefined_before_block_end = FALSE;
       }
+
+      /* FdF 20050217: Propagate the dedicated property to the source
+	 of the copy (bug 1-6-0-B/30) */
+      if (TN_is_dedicated(tn))
+	Set_TN_is_dedicated(OP_opnd(op,opnd_idx));
+
       remove_op (opinfo);
 
       if (EBO_Trace_Optimization) {
