@@ -533,7 +533,7 @@ OP_Is_Unconditional_Compare (
   return FALSE;
 }
 
-#if !defined(GHS_SHIT_IS_WORKING)
+#if !defined(__ASM_SUPPORTS_REGMASK_OPERAND)
 /* ====================================================================
  *   RegMask_pretty
  *
