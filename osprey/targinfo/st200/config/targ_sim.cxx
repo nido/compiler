@@ -1153,14 +1153,11 @@ Get_Vararg_Parameter_Location (
 
 BOOL Is_Caller_Save_GP;  /* whether GP is caller-save */
 
-// Maximal space ever needed for saving parameters passed in
-// registers (4 longs + 3 ptrs)
-//
 //INT Formal_Save_Area_Size = DEFAULT_FORMAL_SAVE_AREA_SIZE;
 
-// Exists in the IA64 ABI.
-// Used to account for push/pop area on ST100
-INT Stack_Offset_Adjustment = STACK_OFFSET_ADJUSTMENT;
+// Used to account for push/pop area that may be written before the
+// stack pointer is set:
+// INT Stack_Offset_Adjustment;
 
 extern void 
 Init_Targ_Sim (void)

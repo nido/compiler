@@ -670,11 +670,19 @@ CG_Generate_Code(
     //         purpose. It should be set here to the size of
     //         the needed area.
     if (CG_gen_callee_saved_regs_mask) {
-      Set_Stack_Offset_Adjustment_For_PU(CGTARG_Callee_Saved_Regs_Mask_Size());
+      INT mask = CGTARG_Callee_Saved_Regs_Mask_Size();
+      Set_Stack_Offset_Adjustment_For_PU(mask);
+      INT64 frame = Finalize_Stack_Frame();
+      // The register mask OPs will increment the stack pointer themselves:
+      Set_Frame_Len (frame - mask);
     }
+    else {
+      Set_Frame_Len (Finalize_Stack_Frame());
+    }
+#else
+    Set_Frame_Len (Finalize_Stack_Frame());
 #endif
 
-    Set_Frame_Len (Finalize_Stack_Frame());
     Set_Error_Phase ( "Final SP adjustment" );
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }
