@@ -572,20 +572,6 @@ CGIR_BB_unlink(CGIR_BB cgir_bb) {
   BBlist_Free(&BB_preds(cgir_bb));
 }
 
-// Link two nodes that were linked through a fall-thru edge.
-static void
-CGIR_BB_linkFallThru(CGIR_BB cgir_bb, CGIR_BB succ_cgir_bb, float probability) {
-  CGIR_BB bb_next = BB_next(cgir_bb);
-  if (bb_next != succ_cgir_bb) {
-    CGIR_BB goto_bb = Gen_And_Insert_BB_After(cgir_bb);
-    Unlink_Pred_Succ(cgir_bb, succ_cgir_bb);
-    Link_Pred_Succ_with_Prob(cgir_bb, goto_bb, probability);
-    Add_Goto(goto_bb, succ_cgir_bb);
-    Change_Succ_Prob(goto_bb, succ_cgir_bb, probability);
-    fprintf(TFile, "Connecting to fall-through node requires a new node %d\n", BB_id(goto_bb));
-  }
-}
-
 // Identity of a CGIR_LI.
 static uint32_t
 CGIR_LI_identity(CGIR_LI cgir_li) {
@@ -911,6 +897,7 @@ lao_init() {
       if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__COUNT);
       else Operator__TOP[TOP__Operator[i]] = (TOP)i;
     }
+    Operator__TOP[Operator_PSEUDO_GOTO] = TOP_goto;
     // initialize IEC__Modifier
     for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier_;
     // initialize LC__Immediate
@@ -977,7 +964,6 @@ lao_initializeInterface() {
   *Interface__CGIR_BB_unchain(interface) = CGIR_BB_unchain;
   *Interface__CGIR_BB_link(interface) = CGIR_BB_link;
   *Interface__CGIR_BB_unlink(interface) = CGIR_BB_unlink;
-  *Interface__CGIR_BB_linkFallThru(interface) = CGIR_BB_linkFallThru;
   *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
   *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
   *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
