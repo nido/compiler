@@ -728,7 +728,6 @@ Sort_Stores(void)
 static BOOL
 Check_Profitable_Logif (BB *bb1, BB *bb2)
 {
-#if 0 /* not yet. measurements are on going... */
   float prob = 0.0;
   BBLIST *bblist;
   FOR_ALL_BB_SUCCS(bb1, bblist) {
@@ -744,17 +743,13 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   CG_SCHED_EST *se2 = CG_SCHED_EST_Create(bb2, &MEM_Select_pool,
                                              SCHED_EST_FOR_IF_CONV);
 
-  INT cycles1 = CG_SCHED_EST_Cycles(se1);
-  INT cycles2 = CG_SCHED_EST_Cycles(se2);
+  float cycles1 = CG_SCHED_EST_Cycles(se1);
+  float cycles2 = CG_SCHED_EST_Cycles(se2);
 
-  cycles1 = MAX(cycles1, 0);
-  cycles2 = MAX(cycles2, 0);
-  
-  INT bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
+  float bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
 
   // ponderate cost of each region taken separatly.
-  float est_cost_before = (((float)(cycles1 + bp)) +
-                        ((float)(cycles2) * prob));
+  float est_cost_before = cycles1 + bp + (cycles2 * prob);
 
   OP *op = BB_branch_op(bb1);
   DevAssert(op, ("Invalid conditional block"));
@@ -767,9 +762,6 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   CG_SCHED_EST_Delete(se2);
 
   return est_cost_after <= est_cost_before;
-#else
-  return TRUE;
-#endif
 }
 
 static BOOL
@@ -832,23 +824,18 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     fprintf (Select_TFile, "\n");
   }
 
-  INT cyclesh = CG_SCHED_EST_Cycles(sehead);
-  INT cycles1 = CG_SCHED_EST_Cycles(se1);
-  INT cycles2 = CG_SCHED_EST_Cycles(se2);
+  float cyclesh = CG_SCHED_EST_Cycles(sehead);
+  float cycles1 = CG_SCHED_EST_Cycles(se1);
+  float cycles2 = CG_SCHED_EST_Cycles(se2);
 
-  DevAssert(cyclesh > 0, ("Empty head block"));  
-  cycles1 = MAX(cycles1, 0);
-  cycles2 = MAX(cycles2, 0);
-
-  INT bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
+  float bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
 
   // ponderate cost of each region taken separatly.
-  float est_cost_before = (((float)(cycles1) * taken_prob) +
-                        ((float)(cycles2) * fallthr_prob) +
-                        (float)cyclesh + (float)bp);
+  float est_cost_before = (cycles1 * taken_prob) + (cycles2 * fallthr_prob) +
+    cyclesh + bp;
 
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "noifc region: head %d, bb1 %d, bb2 %d\n",
+    fprintf (Select_TFile, "noifc region: head %f, bb1 %f, bb2 %f\n",
              cyclesh, cycles1, cycles2);
   }
 
@@ -889,10 +876,10 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 
   // cost of if converted region. prob is one. Remove the select factor.
-  float est_cost_after = (float)cyclesh / select_factor;
+  float est_cost_after = cyclesh / select_factor;
     
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: BBs %d / %f\n", cyclesh, select_factor);
+    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
@@ -1569,6 +1556,12 @@ Is_Double_Logif(BB* bb)
         && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
         && sec_fall_thru == fall_thru) {
+
+      if (! Check_Profitable_Logif(bb, target)) {
+        BB_MAP_Set(if_bb_map, target, NULL);
+        return NULL;
+      }
+
       if (cmp_invert) {
         if (! Negate_Cmp_BB(BB_branch_op (target)))
           return NULL;
@@ -1585,8 +1578,14 @@ Is_Double_Logif(BB* bb)
         && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
         && sec_target == target) {
+
+      if (! Check_Profitable_Logif(bb, fall_thru)) {
+        BB_MAP_Set(if_bb_map, fall_thru, NULL);
+        return NULL;
+      }
+
       if (cmp_invert) {
-        if (! Negate_Cmp_BB(BB_branch_op (fall_thru)))
+        if (! Negate_Cmp_BB(BB_branch_op (fall_thru))) 
           return NULL;
       }
       return fall_thru;
@@ -2021,7 +2020,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (bb == NULL) continue;
       
-    if ((bbb = Is_Double_Logif(bb)) && Check_Profitable_Logif(bbb, bb)) {
+    if (bbb = Is_Double_Logif(bb)) {
       if (Trace_Select_Gen) {
         fprintf (Select_TFile, "\nStart gen logical for BB%d \n", BB_id(bb));
         Print_All_BBs();
@@ -2036,6 +2035,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
     }
+
     clear_spec_lists();
   }
 
