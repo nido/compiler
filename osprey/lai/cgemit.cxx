@@ -5904,7 +5904,11 @@ EMT_End_File( void )
       if (Assembly) {
 	Change_Section_Origin (sym, 0);
 	fprintf (Asm_File, "\t%s\t%s\n", AS_GLOBAL, newname);
+#ifdef TARG_ST
+	fprintf (Asm_File, "\t%s\t%s\n", AS_INTERNAL, newname);
+#else
 	ASM_DIR_STOINTERNAL(newname);
+#endif
 	fprintf (Asm_File, "%s:\n", newname);
       }
       if (Lai_Code) {
