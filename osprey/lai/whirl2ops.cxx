@@ -4800,6 +4800,7 @@ Expand_Statement (
 	pragma_next = WN_next(pragma);
 	if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
 	  if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
+	      (WN_pragma(pragma) == WN_PRAGMA_LOOPMOD) ||
 	      (WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
 	      (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP)) {
 	    if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
@@ -4834,6 +4835,7 @@ Expand_Statement (
 #ifdef TARG_ST
     if (WN_pragmas[WN_pragma(stmt)].users & PUSER_CG) {
       if ((WN_pragma(stmt) == WN_PRAGMA_UNROLL) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMOD) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
 	if (last_loop_pragma == NULL)
