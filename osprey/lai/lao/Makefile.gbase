@@ -370,7 +370,7 @@ local : first_local $(TARGETS)
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: make_deps
+last: local make_deps
 
 #----------------------------------------------------------------------
 #  Build 'lnopt'

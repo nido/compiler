@@ -700,13 +700,13 @@ ifeq ($(DSO_MODE),DLL)
 endif
 endif
 
-local : first_local derived_files $(TARGETS)
+local: first_local derived_files $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last : make_deps
+last: local make_deps
 
 #----------------------------------------------------------------------
 #  Install target
