@@ -41,7 +41,9 @@
 #include "cgir.h"
 #include "cgexp.h"
 #include "data_layout.h"
+#include "stblock.h"
 #include "whirl2ops.h"
+#include "tn.h"
 
 /* --------------------------------------------------------------------
  *    Return instruction that put the result in register class <dst2> 
@@ -161,21 +163,52 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
   return tn;
 }
 
+// We need a store location to allow the if conversion of conditional stores.
+// This location is actually a global common. but we could allocate it on the
+// stack frame instead. define LOCAL_SELECT_STOREDUMP to allow this address
+// to be generated from the frame.
 // Create a common symbol to speculate the address while if converting store.
+
+// #define COMMON_SELECT_STOREDUMP
+
+#define LOCAL_SELECT_STOREDUMP
 
 static ST *blackhole;
 
+#ifdef  COMMON_SELECT_STOREDUMP
 static ST *
 Gen_Common_Symbol (TY_IDX      ty,	// type of the desired symbol
 		 const char *rootname)	// root of the name to use
 {
-  if (!blackhole) {
-    blackhole = New_ST(GLOBAL_SYMTAB);
+  ST *st = blackhole;
+
+  if (!st) {
+    st = New_ST(GLOBAL_SYMTAB);
     STR_IDX str_idx = Save_Str(rootname);
-    ST_Init(blackhole, str_idx, CLASS_VAR, SCLASS_COMMON, EXPORT_INTERNAL, ty);
-    Allocate_Object (blackhole);
+    ST_Init(st, str_idx, CLASS_VAR, SCLASS_COMMON, EXPORT_INTERNAL, ty);
+    Allocate_Object (st);
   }
+  return st;
 }
+#endif
+#ifdef LOCAL_SELECT_STOREDUMP
+static ST *latest_pu;
+
+static ST *
+Gen_Local_Symbol (TY_IDX      ty,	// type of the desired symbol
+		 const char *rootname)	// root of the name to use
+{
+  ST *st = blackhole;
+
+  // Only need to reinitialize for each new PU.
+  if (latest_pu != Get_Current_PU_ST()) {
+    latest_pu = Get_Current_PU_ST();
+    st = Gen_Temp_Symbol(ty, "__store_dump_area");
+    Allocate_Temp_To_Memory(st);
+  }
+  return st;
+}
+#endif
 
 /* --------------------------------------------------------------------
  *    One of the operands is the result of a select instruction.
@@ -200,20 +233,50 @@ Expand_Cond_Store (
     op2 = NULL;
     invert = !invert;
   }
-  tns[0] = OP_opnd(op1, 0);
-  tns[1] = OP_opnd(op1, 1);
-  tns[2] = OP_opnd(op1, 2);
+  
+  UINT8 validx    = OP_find_opnd_use(op1, OU_storeval);
+  UINT8 baseidx   = OP_find_opnd_use(op1, OU_base);
+  UINT8 offsetidx = OP_find_opnd_use(op1, OU_offset);
+
+  tns[validx]    = OP_opnd(op1, validx);
+  tns[baseidx]   = OP_opnd(op1, baseidx);
+  tns[offsetidx] = OP_opnd(op1, offsetidx);
 
   if (!op2) {
-    Gen_Common_Symbol(MTYPE_To_TY(MTYPE_I4), "__strdump");
-    TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
+    TY_IDX ty = MTYPE_To_TY(Pointer_Mtype);
     false_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+
+#ifdef COMMON_SELECT_STOREDUMP
+    blackhole = Gen_Common_Symbol(ty, "__store_dump_area");
+    TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
     Build_OP(TOP_mov_ii, false_tn, tmp, ops);
+#else
+#ifdef LOCAL_SELECT_STOREDUMP
+    blackhole = Gen_Local_Symbol (ty, "__store_dump_area");
+
+#else
+#error SELECT_STOREDUMP
+#endif
+#endif
+
+    if (TN_is_constant (tns[offsetidx]) &&
+        TN_has_value (tns[offsetidx])) {
+      INT32 offset = TN_value(tns[offsetidx]);
+      Exp_Lda (Pointer_type, false_tn, blackhole, -offset, OPERATOR_UNKNOWN, ops);
+      true_tn = OP_opnd(op1, baseidx);
+      tns[offsetidx] = Gen_Literal_TN (offset, 4);
+    }
+    else {
+      true_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+      Exp_Lda (Pointer_type, false_tn, blackhole, 0, OPERATOR_UNKNOWN, ops);
+      Expand_Add (true_tn, tns[baseidx], tns[offsetidx], Pointer_Mtype, ops);
+      tns[offsetidx] = Gen_Literal_TN (0, 4);
+    }
   }
-  else
+  else {
     false_tn = OP_opnd(op2, idx);
-      
-  true_tn = OP_opnd(op1, idx);
+    true_tn = OP_opnd(op1, idx);
+  }
 
   if (invert) {
     TN *tmp = false_tn;
@@ -233,9 +296,9 @@ Expand_Cond_Store (
 
   Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops);
 
-  TN *val  = tns[OP_find_opnd_use(op1, OU_storeval)];
-  TN *base = tns[OP_find_opnd_use(op1, OU_base)];
-  TN *ofst = tns[OP_find_opnd_use(op1, OU_offset)];
+  TN *val  = tns[validx];
+  TN *base = tns[baseidx];
+  TN *ofst = tns[offsetidx];
 
   if (TN_is_register (ofst)) {
     Build_OP (TOP_add_r, base, base, ofst, ops);
