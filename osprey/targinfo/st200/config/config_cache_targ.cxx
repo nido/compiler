@@ -62,5 +62,14 @@ static const char source_file[] = __FILE__;
 
 void MHD::Initialize()
 {
+  if (Target == TARGET_st220) {
+
+    //    Non_Blocking_Loads      = FALSE;
+    //    Loop_Overhead_Base      = 6;
+    //    Loop_Overhead_Memref    = 1;
+    //    TLB_Trustworthiness     = 0;
+    //    TLB_NoBlocking_Model    = FALSE;
+  } else {
     FmtAssert(FALSE, ("Unknown target in MHD::Initialize\n"));
+  }
 }
