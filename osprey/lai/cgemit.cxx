@@ -2674,15 +2674,13 @@ Gen_Label_For_Source_Line() {
 // [CL] Create a new label for each new source line
 void New_Debug_Line_Set_Label(INT code_address)
 {
-  static int first_debug_line=1;
+  cache_last_label_info (Last_Label,
+			 Em_Create_Section_Symbol(PU_section),
+			 current_pu,
+			 PC2Addr(Offset_From_Last_Label));
 
-  if (!first_debug_line) {
-    cache_last_label_info (Last_Label,
-			   Em_Create_Section_Symbol(PU_section),
-			   current_pu,
-			   PC2Addr(Offset_From_Last_Label));
-
-    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+  pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+  if (Offset_From_Last_Label > 0) {
     end_previous_text_region(old_PU_section, 
 			     //  Em_Get_Section_Offset(old_PU_section));
 			     Addr2PC(code_address));
@@ -2702,12 +2700,10 @@ void New_Debug_Line_Set_Label(INT code_address)
   }
 
   Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
-		    Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
-					  Last_Label,
-					  ST_elf_index(text_base)),
-		    PC2Addr(Offset_From_Last_Label));
-
-  first_debug_line=0;
+					    Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+								  Last_Label,
+								  ST_elf_index(text_base)),
+					    PC2Addr(Offset_From_Last_Label));
 }
 #endif
 
@@ -5563,6 +5559,19 @@ EMT_Emit_PU (
     Setup_Text_Section_For_BB(bb);
     EMT_Assemble_BB (bb, rwn);
   }
+
+#ifdef TARG_ST
+  // [CL] record end of final BB for this PU, so that this PU and the
+  // next one can be reordered later without invalidating Dwarf
+  // information (otherwise, the final text_sequence of the current PU
+  // would be ended when starting the next PU, resulting in a size of
+  // the final text_sequence dependent upon the location of the
+  // beginning of the next PU)
+  if (generate_dwarf) {
+    end_previous_text_region(PU_section, Addr2PC(PC));
+  }
+#endif
+
 #ifdef SPLIT_BCO_ENABLED /* Thierry */
   Gen_EndSplit_Label(Asm_File);  
 #endif /* BCO_Enabled Thierry */
@@ -5641,6 +5650,7 @@ EMT_Emit_PU (
   Set_STB_size (PU_base, PC);
   text_PC = PC;
 
+#ifndef TARG_ST // [CL] replaced by end_previous_text_region(PU_section, Addr2PC(PC)) above
   if (generate_dwarf) {
     // The final label in this PU is liable to get used in computing
     // arguments to Em_Dwarf_End_Text_Region_Semi_Symbolic, so we need
@@ -5650,6 +5660,7 @@ EMT_Emit_PU (
 		ST_pu(pu),
 		PC2Addr(Offset_From_Last_Label));
   }
+#endif
 
 #if 0
   Finalize_Unwind_Info();
@@ -5855,9 +5866,11 @@ EMT_End_File( void )
   }
 #endif
 
+#ifndef TARG_ST // [CL] previous text_region was closed it the end of EMT_Emit_PU()
   if (generate_elf_symbols && PU_section != NULL) {
     end_previous_text_region(PU_section, text_PC);
   }
+#endif
 
 #if 0
   if (Object_Code) {
