@@ -493,6 +493,14 @@ Generate_Entry (BB *bb, BOOL gra_run)
     }
     else {
 #ifdef TARG_ST
+      //
+      // GRA will be spilling it if PU_Has_Calls, but we shouldn't
+      // handle it here. In the worst case make RA_TN use explicit
+      // for the ST100.
+      //
+      Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+      Set_OP_no_move_before_gra(OPS_last(&ops));
+#if 0
       if (gra_run && PU_Has_Calls) {
 	if (CG_gen_callee_saved_regs_mask) {
 	  // 
@@ -521,6 +529,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
 	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
+#endif
 #else
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
@@ -1211,6 +1220,12 @@ Generate_Exit (
     }
     else {
 #ifdef TARG_ST
+      //
+      // Do not handle spill issues here !
+      //
+      Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+      Set_OP_no_move_before_gra(OPS_last(&ops));
+#if 0
       if (gra_run && PU_Has_Calls) {
 	if (!CG_gen_callee_saved_regs_mask) {
 	  // Because the routine has calls, gra will need to spill it ...
@@ -1231,6 +1246,7 @@ Generate_Exit (
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
+#endif
 #else
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
