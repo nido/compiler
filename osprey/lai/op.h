@@ -869,6 +869,7 @@ void Print_OPS_No_SrcLines( const OPS *ops);
 
 BOOL OP_Is_Float_Mem(const OP *op);
 BOOL OP_Alloca_Barrier(OP *op);
+BOOL Is_Delay_Slot_Op (OP *xfer_op, OP *op);
 
 extern void OP_Base_Offset_TNs(OP *memop, struct tn **base_tn, struct tn **offset_tn);
 
