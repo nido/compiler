@@ -1085,7 +1085,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
   //
   // Open interface.
-  LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
+  const char *name = ST_name(Get_Current_PU_ST());
+  LAI_Interface_open(interface, name,
       ConfigurationItem_StackModel, stackmodel,
       ConfigurationItem_SchedKind, CG_LAO_schedkind,
       ConfigurationItem_AllocKind, CG_LAO_allockind,
