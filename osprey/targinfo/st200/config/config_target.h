@@ -224,6 +224,15 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 #define DEFAULT_TEXT_ALIGNMENT 8
 
 /*
+ * [CL] Alignment for function entry points.
+ * As alignment constraints of the code only
+ * handle two sections per function, we must ensure
+ * that each first contribution of a function to
+ * a section is properly aligned.
+ */
+#define DEFAULT_FUNCTION_ALIGNMENT 8
+
+/*
  * [CG] Alignment for the data segment
  * Should be the minimal alignment for ensuring correct access
  * to all data types on the target.
