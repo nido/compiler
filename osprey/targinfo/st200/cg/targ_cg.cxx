@@ -1207,7 +1207,25 @@ CGTARG_Generate_Remainder_Branch (
 {
   INT32 trip_size = TN_size(trip_count);
 
-  FmtAssert(FALSE,("CGTARG_Generate_Remainder_Branch: not implemented"));
+  if (TN_is_constant(trip_count)) {
+    TN *lit_trip_count = trip_count;
+    trip_count = CGTARG_gen_trip_count_TN(trip_size);
+    Exp_Immediate(trip_count, lit_trip_count, TRUE, prolog_ops);
+  }
+
+  Exp_OP2(trip_size == 4 ? OPC_I4ADD : OPC_I8ADD,
+	  trip_count,
+	  trip_count,
+	  Gen_Literal_TN(-1, trip_size),
+	  body_ops);
+
+  Exp_OP3v(OPC_TRUEBR,
+	   NULL,
+	   label_tn,
+	   trip_count,
+	   Zero_TN,
+	   trip_size == 4 ? V_BR_I4NE : V_BR_I8NE,
+	   body_ops);
 }
 
 /* ====================================================================
