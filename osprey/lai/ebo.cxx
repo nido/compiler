@@ -198,6 +198,10 @@ BOOL EBO_Trace_Hash_Search  = FALSE;
 #ifdef TARG_ST
 // [CG] Use alias information from cg_dep
 #define CG_DEP_ALIAS
+// [CG] Update gra live information for better dead code
+#define UPDATE_GRA_LIVE
+// [CG] Update reg live (in peep) information for better dead code
+#define UPDATE_REG_LIVE
 #endif
 
 #ifdef TARG_ST
@@ -593,20 +597,18 @@ inline BOOL TN_live_out_of(TN *tn, BB *bb)
   }
 
   if (EBO_in_peep) {
+    BOOL liveout = REG_LIVE_Outof_BB (TN_register_class(tn), TN_register(tn), bb);
     if (EBO_Trace_Data_Flow) {
       #pragma mips_frequency_hint NEVER
-      fprintf(TFile,"REG_LIVE_Outof_BB %s\n",
-         REG_LIVE_Outof_BB (TN_register_class(tn), TN_register(tn), bb)?"TRUE":"FALSE");
+      fprintf(TFile,"REG_LIVE_Outof_BB %s\n", liveout ? "TRUE":"FALSE");
     }
-    return REG_LIVE_Outof_BB (TN_register_class(tn), TN_register(tn), bb);
+    return liveout;
   }
   else {
     if (CG_localize_tns) return (TN_is_dedicated(tn) || TN_is_global_reg(tn));
     return GRA_LIVE_TN_Live_Outof_BB (tn, bb);
   }
 }
-
-
 
 inline BOOL op_is_needed_globally(OP *op)
 /* -----------------------------------------------------------------------
@@ -661,6 +663,41 @@ inline BOOL op_is_needed_globally(OP *op)
 
 /* ===================================================================== */
 
+#ifdef TARG_ST
+/* 
+ * EBO_Update_Livein(BB *bb)
+ *
+ * [CG]: Live analysis is incrementally updated to enabled better dead code.
+ * This function do the update of the live in for the current bb given the
+ * current live out set.
+ * It must be called after the bottom up pass over the bb.
+ */
+static void
+EBO_Update_Livein(BB *bb)
+{
+  if (EBO_in_peep) {
+#ifdef UPDATE_REG_LIVE
+    if (EBO_Trace_Data_Flow) {
+#pragma mips_frequency_hint NEVER
+      fprintf(TFile,"EBO_Update_Livein REG_LIVE for BB:%d\n", BB_id(bb));
+    }
+    REG_LIVE_Update_Livein_From_Liveout(bb);
+#endif
+  } else {
+#ifdef UPDATE_GRA_LIVE
+    if (!CG_localize_tns) {
+      if (EBO_Trace_Data_Flow) {
+#pragma mips_frequency_hint NEVER
+	fprintf(TFile,"EBO_Update_Livein GRA_LIVE for BB:%d\n", BB_id(bb));
+      }
+      GRA_LIVE_Compute_Liveness_For_BB(bb);
+    }
+#endif
+  }
+}
+#endif
+
+/* ===================================================================== */
 
 void
 tn_info_entry_dump (EBO_TN_INFO *tninfo)
@@ -6116,6 +6153,11 @@ EBO_Add_BB_to_EB (BB * bb)
   EBO_Remove_Noops(bb);
 #else
   EBO_Remove_Unused_Ops(bb, normal_conditions);
+#endif
+
+#ifdef TARG_ST
+  // [CG]: Update live in information
+  EBO_Update_Livein(bb);
 #endif
 
  /* Remove information about TN's and OP's in this block. */

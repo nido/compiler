@@ -560,6 +560,66 @@ Update_REGSETs_For_Rotating_Kernel (BB *bb, REGSET livein, REGSET kill)
   REGSET_OR (kill, kernel_kill);
 }
 
+#ifdef TARG_ST
+/* 
+ * REG_LIVE_Compute_Local_Livein_Kill(BB *bb, REGSET livein, REGSET kill)
+ *
+ * [CG]: This function computes local livein and kill set for the
+ * given bb.
+ * The input livein and kill sets must be cleared first.
+ * It is used by the global live analysis in REG_LIVE_Analyze_Region()
+ * to initialize livein and kill sets before the iteration.
+ * It is also used by the function REG_LIVE_Update_Livein_From_Liveout()
+ * to locally update livein information for a BB.
+ */
+static void
+REG_LIVE_Compute_Local_Livein_Kill(BB *bb, REGSET livein, REGSET kill)
+{
+  if (BB_rotating_kernel(bb)) {
+    Update_REGSETs_For_Rotating_Kernel (bb, livein, kill);
+  } else {
+    OP *op;
+    FOR_ALL_BB_OPs_FWD (bb, op) {
+      INT i;
+      for (i = 0; i < OP_opnds(op); i++) {
+	TN *opnd_tn = OP_opnd(op,i);
+	if (TN_is_register(opnd_tn)) {
+	  ISA_REGISTER_CLASS cl = TN_register_class(opnd_tn);
+	  REGISTER reg = TN_register(opnd_tn);
+	  if ((reg != REGISTER_UNDEFINED) &&
+	      (!REGISTER_SET_MemberP (kill[cl], reg))) {
+	    livein[cl] = REGISTER_SET_Union1 (livein[cl], reg);
+	  }
+	}
+      }
+      // Assume that conditional ops don't kill their definitions.
+      if (!OP_cond_def(op)) {
+	for (i = 0; i < OP_results(op); i++) {
+	  TN *result_tn = OP_result(op,i);
+	  if (TN_register(result_tn) != REGISTER_UNDEFINED) {
+	    ISA_REGISTER_CLASS cl = TN_register_class(result_tn);
+	    kill[cl] = REGISTER_SET_Union1 (kill[cl], TN_register(result_tn));
+	  }
+	}
+      }
+    }
+  }
+  
+  if (BB_tail_call(bb)) {
+    Update_REGSETs_For_Tail_Call (bb, livein, kill);
+  }
+  else if (BB_call(bb)) {
+    Update_REGSETs_For_Call (bb, livein, kill);
+  }
+  else if (BB_asm(bb)) {
+    Update_REGSETs_For_Asm (bb, livein, kill);
+  }
+  else if (BB_exit(bb)) {
+    Update_REGSETs_For_Exit (livein, kill);
+  }
+}
+#endif
+
 void REG_LIVE_Analyze_Region(void)
 {
   BB *bb;
@@ -593,6 +653,10 @@ void REG_LIVE_Analyze_Region(void)
     livein = BB_Register_Livein(bb);
     kill = BB_Register_Kill(bb);
 
+#ifdef TARG_ST
+    // [CG] Moved into function REG_LIVE_Compute_Local_Livein_Kill()
+    REG_LIVE_Compute_Local_Livein_Kill(bb, livein, kill);
+#else
     if (BB_rotating_kernel(bb)) {
       Update_REGSETs_For_Rotating_Kernel (bb, livein, kill);
     } else {
@@ -634,6 +698,7 @@ void REG_LIVE_Analyze_Region(void)
     else if (BB_exit(bb)) {
       Update_REGSETs_For_Exit (livein, kill);
     }
+#endif
     last_bb = bb;
   }
 
@@ -910,17 +975,15 @@ BOOL REG_LIVE_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb)
 BOOL REG_LIVE_Outof_BB (ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb)
 {
   BBLIST *succs;
-
   // If we have not computed register liveness information, assume the 
   // worst case and return TRUE.
   if (Register_Livein == NULL) return TRUE;
 
   FOR_ALL_BB_SUCCS(bb, succs) {
     REGSET livein = BB_Register_Livein (BBLIST_item(succs));
-    if (REGISTER_SET_MemberP (livein[cl], reg))
-        return TRUE;
+    if (REGISTER_SET_MemberP (livein[cl], reg)) 
+      return TRUE;
   }
-
   return REG_LIVE_Implicit_Use_Outof_BB (cl, reg, bb);
 }
 
@@ -943,6 +1006,50 @@ void REG_LIVE_Update(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb)
   if (reg != REGISTER_UNDEFINED)
     livein[cl] = REGISTER_SET_Union1 (livein[cl], reg);
 }
+
+#ifdef TARG_ST
+/*
+ * REG_LIVE_Update_Livein_From_Liveout(BB *bb)
+ * Recompute live in information for the bb from the current
+ * bb liveout set.
+ * The livein sets of the successors BB must be up
+ * to date. 
+ * The updated live in set is conservative (a super set)
+ * if the bb is in a cycle as no global iteration
+ * is performed.
+ * To update the live in set we compute:
+ * 1. the current live out (union of live in of successors),
+ * 2. local kill and local live in sets,
+ * 3. then we update live in from these.
+ */
+void 
+REG_LIVE_Update_Livein_From_Liveout(BB *bb)
+{
+  REGISTER_SET liveout[ISA_REGISTER_CLASS_MAX+1];
+  REGSET livein;
+  REGSET kill;
+
+  // 1. Compute current live out set
+  REGSET_CLEAR (liveout);
+  BBLIST *bl;
+  FOR_ALL_BB_SUCCS (bb, bl) {
+    BB *succ_bb = BBLIST_item(bl);
+    REGSET succ_livein = BB_Register_Livein(succ_bb);
+    REGSET_OR (liveout, succ_livein);
+  }
+  
+  // 2. Recompute local kill/livein
+  livein = BB_Register_Livein(bb);
+  kill = BB_Register_Kill(bb);
+  REGSET_CLEAR (livein);
+  REGSET_CLEAR (kill);
+  REG_LIVE_Compute_Local_Livein_Kill(bb, livein, kill);
+  
+  // 3. Update live in set from liveout, and local livein and kill
+  REGSET_UPDATE_LIVEIN (livein, liveout, kill);
+}
+#endif
+
 
 // The client is finished using the facility -- clean up.
 void REG_LIVE_Finish(void)

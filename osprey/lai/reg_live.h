@@ -103,6 +103,15 @@
  *	deallocation OP. <temps> points to an array of REGISTERs to hold the
  *      temps for each register class.
  *
+ * #ifdef TARG_ST
+ *  void REG_LIVE_Update_Livein_From_Liveout(BB *bb)
+ *
+ *	Recompute live in information for the bb from the current bb liveout set.
+ *	The livein sets of the successors BB must be up to date. 
+ *	The updated live in set is conservative (a super set) if the bb is in
+ *	a cycle as no global iteration is performed.
+ * #endif
+ *
  * =======================================================================
  * =======================================================================
  */
@@ -133,5 +142,9 @@ void REG_LIVE_Update(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
 
 void REG_LIVE_Prolog_Temps(BB *bb, OP *first, OP *last, REGISTER_SET *temps);
 void REG_LIVE_Epilog_Temps(ST *pu_st, BB *bb, OP *adj_op, REGISTER_SET *temps);
+
+#ifdef TARG_ST
+extern void REG_LIVE_Update_Livein_From_Liveout(BB *bb);
+#endif
 
 #endif /* reg_live_INCLUDED */
