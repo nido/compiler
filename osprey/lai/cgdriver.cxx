@@ -1569,7 +1569,7 @@ CG_Init (void)
       else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
       else CG_LAO_speculation = 3;
     }
-    if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
+    if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
     if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 0;
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
     if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
