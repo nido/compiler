@@ -256,7 +256,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
   if (OP_asm_barrier(cgir_op)) Interface_Operation_setBarrier(interface, operation);
   if (OP_code(cgir_op) == TOP_asm) {
     int regCount = 0;
-    Register registers[Register__];
+    int registers[Register__];
     ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, cgir_op);
     ISA_REGISTER_CLASS irc;
     FOR_ALL_ISA_REGISTER_CLASS(irc) {
@@ -265,8 +265,8 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
 	   reg != REGISTER_UNDEFINED;
 	   reg = REGISTER_SET_Choose_Next(regset, reg)) {
 	TN* cgir_tn = Build_Dedicated_TN(irc, reg, 0);
-	CLASS_REG_PAIR crp = TN_class_reg(cgir_tn);
-	registers[regCount++] = CGIR_CRP_to_Register(crp);
+	CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
+	registers[regCount++] = CGIR_CRP_to_Register(tn_crp);
       }
     }
     Interface_Operation_fillClobber(interface, operation, regCount, registers);
@@ -1459,7 +1459,7 @@ static OP_list * OP_list_new(OP_list *head)
   return head;
 }
 
-static void
+void
 CGIR_TN_print ( const TN *tn, FILE *file )
 {
   //
@@ -1532,7 +1532,7 @@ CGIR_TN_print ( const TN *tn, FILE *file )
   }
 }
 
-static void
+void
 CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
 {
   int i;
@@ -1572,7 +1572,7 @@ CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
   // TBD: Print other attributes on operations.
 }
 
-static void
+void
 CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
 {
   for (OP *op = OPS_first(ops) ; op; op = OP_next(op)) {
@@ -1583,7 +1583,7 @@ CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
   }
 }
 
-static void
+void
 CGIR_BB_print_header (BB *bp, FILE *file)
 {
   BBLIST *bl;
@@ -1740,14 +1740,14 @@ CGIR_BB_print_header (BB *bp, FILE *file)
   return;
 }
 
-static void
+void
 CGIR_BB_print (BB *bp, FILE *file)
 {
   CGIR_BB_print_header (bp, file);
   if (BB_first_op(bp))	CGIR_OPS_print (&bp->ops, BB_scheduled(bp), file);
 }
 
-static void
+void
 CGIR_Alias_print(FILE *file)
 {
   OP_list *memops = NULL, *elt1, *elt2;
@@ -1782,7 +1782,7 @@ CGIR_Alias_print(FILE *file)
   fprintf(file, "---------------- End Print Alias ----------------\n");
 }
 
-static void
+void
 CGIR_print( FILE *file)
 {
   BB *bp;
