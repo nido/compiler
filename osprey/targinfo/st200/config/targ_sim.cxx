@@ -619,7 +619,7 @@ Get_Parameter_Location (
 	  rpad = (psize * 4) - ploc.size;
 
 	  // Structures over 4 bytes are aligned on a 8-byte boundary
-	  if (Get_Preg_Alignment(ploc.reg) == 4) {
+	  if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
 	    //
 	    // skip one slot if the next still fits the register list
 	    //
