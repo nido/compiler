@@ -334,5 +334,4 @@ Expand_Cond_Store (
   }
 
   Expand_Store (desc, val, base, ofst, ops);
-  Copy_WN_For_Memory_OP(OPS_last (ops), op1);
 }

@@ -43,13 +43,13 @@
  * The following flags to drive the algorithm.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
- * -CG:select_stores=1          promote store operands with select.
+ * -CG:select_stores=2          promote store operands with select.
  *                              This option has the effect to merge 2 stores
  *                              into one.
  *                              0: don't merge stores
  *                              1: select stores based on values.
- *                              2: select stores based on base or offset.
- * -CG:select_addr_stores=TRUE   enable if conversion on stores
+ *                              2: select conditional stores using dummy addr
+ *                              3: select stores based on base or offset.
  *
  * The following flags to drive the heuristics.
  * -CG:select_factor="1.05"      factor to reduce the cost of the 
@@ -137,8 +137,7 @@ op_list load_i;
  */
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
-INT32 CG_select_stores = 1;
-BOOL CG_select_addr_stores = TRUE;
+INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */
 INT branch_penalty = 3;
@@ -607,9 +606,6 @@ Handle_Odd_Stores(op_list strs1, op_list &strs2)
   OPS ops = OPS_EMPTY;  
   UINT count = 0;
 
-  if (!CG_select_addr_stores)
-    return 0;
-
   op_list::iterator i1_iter = strs1.begin();
   op_list::iterator i1_end  = strs1.end();
 
@@ -638,11 +634,13 @@ Sort_Stores(void)
 
   // We don't have the same count of store. Can't spec any.
   if (store_i.tkstrs.size() != store_i.ntkstrs.size()) {
-    if (store_i.tkstrs.size() == 0) {
-      return Handle_Odd_Stores(store_i.ntkstrs, store_i.tkstrs);
-    }
-    if (store_i.ntkstrs.size() == 0) {
-      return Handle_Odd_Stores(store_i.tkstrs, store_i.ntkstrs);
+    if (CG_select_stores == 2) {
+      if (store_i.tkstrs.size() == 0) {
+        return Handle_Odd_Stores(store_i.ntkstrs, store_i.tkstrs);
+      }
+      if (store_i.ntkstrs.size() == 0) {
+        return Handle_Odd_Stores(store_i.tkstrs, store_i.ntkstrs);
+      }
     }
     return 0;
   }
@@ -700,7 +698,7 @@ Sort_Stores(void)
     // Can promote store val anytime. That doesn't change alias information.
     if (ci == 1 &&
         OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2) && 
-        (lidx == strval_idx || CG_select_stores == 2)) {
+        (lidx == strval_idx || CG_select_stores == 3)) {
       store_i.ifarg_idx.push_back(lidx);
       c = 0;
       ++count;
@@ -1370,7 +1368,7 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    select_count++;
 
    // Store address didn't change. Pass WN information
-   if (op1 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
+   if (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
      Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
    if (!op2) {
