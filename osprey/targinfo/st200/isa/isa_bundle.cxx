@@ -1858,6 +1858,15 @@ main()
   Slot(3, EXT2_Unit); 
   Stop(3); 
 
+  /* ===== Template 0x00 (22) ===== */ 
+  ISA_Bundle_Type_Create("temp22", ".temp22", 4); 
+  Slot(0, S0_Unit); 
+  Stop(0); 
+  Slot(1, EXT1_Unit); 
+  Slot(2, EXT1_Unit); 
+  Stop(2); 
+  Slot(3, S3_Unit); 
+  Stop(3); 
 
   ISA_Bundle_End(); 
   return 0; 
