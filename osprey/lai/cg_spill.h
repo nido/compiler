@@ -217,6 +217,18 @@
  *	    are to be used when creating new OPs after the whirl2ops
  *	    phase.
  *
+ *  For TARG_ST [CG]:
+ *	ST *CGSPILL_Gen_Spill_Symbol (
+ *		TY_IDX ty, 
+ *		const char *root)
+ *
+ *	    Return a spill symbol of type <ty> and allocate it to memory. Use 
+ *	    the <root> as the prefix of the temporary name.
+ *          This should be used for generating on demand a new spill symbol
+ *	    in a context other than GRA/LRA/LCL/SWP.
+ *	    Currenlty used by the LAO->CGIR interface to generate spill
+ *	    symbols for LAO generated spill.
+ *
  * =======================================================================
  * =======================================================================
  */
@@ -275,5 +287,10 @@ extern void CGSPILL_Attach_Lda_Remat(TN *tn, TYPE_ID typ, INT64 offset, ST *st);
 extern void CGSPILL_Attach_Intconst_Remat(TN *tn, INT64 val);
 extern void CGSPILL_Attach_Floatconst_Remat(TN *tn, TYPE_ID typ, double val);
 extern void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st);
+
+#ifdef TARG_ST
+CG_EXPORTED ST *
+CGSPILL_Gen_Spill_Symbol (TY_IDX ty, const char *root);
+#endif
 
 #endif /* cgspill_INCLUDED */

@@ -29,10 +29,38 @@ typedef enum {
   Optimization_Linearize = 0x1,
   Optimization_PostSched = 0x2,
   Optimization_RegAlloc = 0x4,
-  Optimization_PreSched = 0x8,  
+  Optimization_PreSched = 0x8,
   Optimization_LoopUnwind = 0x10,
   Optimization_LoopUnroll = 0x20,
+  Optimization_EnableSSA = 0x40,
+  Optimization_StartBlock = 0x100,
+  Optimization_StopBlock = 0x200,
+  Optimization_Localize = 0x400
 } Optimization_Phase;
+
+/*
+ * Mask of optimizations performed at each LAO pass.
+ * Currently three LAO passes are available:
+ * - PrePass : pre reg-alloc optimizations and scheduling.
+ *	Done in place of IGLS_Schedule prepass.
+ * - RegAlloc : global register allocation
+ *	Done in place of GRA/LRA reg allocation.
+ * - PostPass : post reg-alloc optimizations and scheduling
+ *	Done in place of IGLS_Schedule postpass.
+ *
+ * Each of the three masks correspond to available optimization
+ * for the corresponding pass.
+ */
+#define LAO_Optimization_Mask_PrePass (\
+    Optimization_PreSched | \
+    0)
+#define LAO_Optimization_Mask_RegAlloc (\
+    Optimization_Localize | \
+    Optimization_RegAlloc | \
+    0)
+#define LAO_Optimization_Mask_PostPass (\
+    Optimization_PostSched | \
+    0)
 
 // We don't rely on the weak mechanisms for these symbols, even if
 // supported by the platform. The reason is to provide a consistent

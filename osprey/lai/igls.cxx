@@ -388,27 +388,27 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 void
 LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
-
   if (before_regalloc) {
-    if (CG_LAO_optimizations & Optimization_PreSched) {
-      Set_Error_Phase( "LAO Prepass Scheduling" );
-      lao_optimize_PU(Optimization_PreSched);
+    Set_Error_Phase( "LAO Prepass Optimizations" );
+    if (CG_LAO_optimizations & LAO_Optimization_Mask_PrePass) {
+      lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_PrePass);
       if (frequency_verify)
-	FREQ_Verify("LAO Prepass Scheduling");
+	FREQ_Verify("LAO Prepass Optimizations");
     }
   }
   else {
     // Call the LAO for postpass scheduling.
-    if (CG_LAO_optimizations & Optimization_PostSched) {
+    Set_Error_Phase( "LAO Postpass Optimizations" );
+    if (CG_LAO_optimizations & LAO_Optimization_Mask_PostPass) {
       //
       CG_LAO_Region_Map = BB_MAP32_Create();
       //
-      Set_Error_Phase( "LAO Postpass Scheduling" );
-      lao_optimize_PU(Optimization_PostSched);
+      lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_PostPass);
       if (frequency_verify)
-	FREQ_Verify("LAO Postpass Scheduling");
+	FREQ_Verify("LAO Postpass Optimizations");
     }
     // Direct call to the bundler, and bypass the IGLS.
+    Set_Error_Phase( "LAO Linearize Optimizations" );
     if (CG_LAO_optimizations & Optimization_Linearize) {
       REG_LIVE_Analyze_Region();
       Trace_HB = Get_Trace (TP_SCHED, 1);

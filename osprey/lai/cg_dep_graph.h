@@ -375,6 +375,16 @@
  *   Checks to see if the <value2> qualifying predicate and <value1>
  *   qualfying predicate are disjoint.
  *
+ *
+ * For TARG_ST:
+ * void 
+ * CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
+ *			       BOOL         compute_cyclic, 
+ *			       BOOL         memread_arcs);
+ *
+ * This fuctions computes the memory dependences on a multi-BB region,
+ * including cross-BB dependences and loop-carried dependences. (BD3.)
+ *
  * =======================================================================
  * ======================================================================= */
 
@@ -720,5 +730,12 @@ extern BOOL OP_has_subset_predicate(const void *value1, const void *value2);
 extern BOOL OP_has_disjoint_predicate(const OP *value1, const OP *value2);
 
 extern void CG_DEP_Detach_Arc(ARC *arc);
+
+#ifdef TARG_ST
+CG_EXPORTED void 
+CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
+			       BOOL         compute_cyclic, 
+			       BOOL         memread_arcs);
+#endif
 
 #endif /* CG_DEP_GRAPH_INCLUDED */

@@ -1268,7 +1268,7 @@ put_member(DST_flag flag, DST_MEMBER *attr, Dwarf_P_Die die)
 		    DST_MEMBER_bit_size(attr), &dw_error);
   }
   put_dopetype (DST_MEMBER_dopetype(attr), flag, die);
-#ifdef TARG_ST
+#if 0 //TARG_ST
   // [CL]
   if (DST_MEMBER_accessibility(attr) != DW_ACCESS_public) {
     dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility,
@@ -1341,7 +1341,7 @@ put_inheritance(DST_flag flag, DST_INHERITANCE *attr, Dwarf_P_Die die)
 			        DST_INHERITANCE_virtuality(attr),
 				&dw_error);
   }
-#ifdef TARG_ST
+#if 0 //TARG_ST
   // [CL]
   if (DST_INHERITANCE_accessibility(attr) != DW_ACCESS_private) {
     dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility,

@@ -2172,11 +2172,18 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
        CGSPILL_Is_Spill_Op(pred_op) || CGSPILL_Is_Spill_Op(succ_op)))
     return FALSE;
       
+
+#ifndef TARG_ST200
+  // [CG]: Don't ignore spills even in cyclic world
+  // We may be called for cyclic dependence out of SWP.
+  // SWP should handle this or we should ensure that we are here for SWP.
+
   /* Spills are renamed in the cyclic world (by SWP), so don't check
    * for MEMANTI or MEMOUT dependences involving them.
    */
   if (cyclic && OP_store(succ_op) && CGSPILL_Is_Spill_Op(succ_op))
     return FALSE;
+#endif
 
   /* If a memop has no cross-iteration dependence, then its
    * unrolled instance do not alias 
@@ -4913,7 +4920,7 @@ CG_DEP_Compute_Region_Graph(list<BB*>    bb_region,
 // This fuctions computes the memory dependences on a multi-BB region,
 // including cross-BB dependences and loop-carried dependences. (BD3.)
 // -----------------------------------------------------------------------
-CG_EXPORTED void 
+void 
 CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs)

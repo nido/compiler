@@ -234,7 +234,6 @@ Gen_Spill_Symbol (TY_IDX ty, const char *root)
   return st;
 }
 
-
 /* =======================================================================
  *
  *  LOCAL_SPILLS_Get_Spill_Location
@@ -1445,3 +1444,19 @@ void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st)
     }
   }
 }
+
+#ifdef TARG_ST
+/* =======================================================================
+ *
+ *  CGSPILL_Gen_Spill_Symbol
+ *
+ *  See interface description.
+ * =======================================================================
+ */
+ST *
+CGSPILL_Gen_Spill_Symbol (TY_IDX ty, const char *root)
+{
+  return Gen_Spill_Symbol(ty, root);
+}
+#endif
+

@@ -697,6 +697,28 @@ CG_Generate_Code(
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
 
+  // Register Allocation Phase
+#ifdef TARG_ST
+  if (CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) {
+    // Live analysis and tn renaming
+    GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
+    GRA_LIVE_Rename_TNs();
+    Set_Error_Phase( "LAO RegAlloc Optimizations" );
+    lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc);
+    Check_for_Dump (TP_ALLOC, NULL);
+    // If Only localization was enabled, perform LRA
+    if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
+	Optimization_Localize) {
+      Set_Error_Phase( "LRA after LAO RegAlloc" );
+      // Force LRA to not use GRA informations.
+      bool old = CG_localize_tns;
+      CG_localize_tns = TRUE;
+      LRA_Allocate_Registers (!region);
+      CG_localize_tns = old;
+      Check_for_Dump (TP_ALLOC, NULL);
+    }
+  } else {
+#endif
   if (!CG_localize_tns) {
     // Earlier phases (esp. GCM) might have introduced local definitions
     // and uses for global TNs. Rename them to local TNs so that GRA 
@@ -746,6 +768,10 @@ CG_Generate_Code(
     /* Done with all grant information */
     GRA_Finalize_Grants();
   }
+
+#ifdef TARG_ST
+  } /* !LAO */
+#endif
 
   if (!region) {
     /* Check that we didn't introduce a new gp reference */
