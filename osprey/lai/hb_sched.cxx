@@ -87,6 +87,9 @@
 #include "targ_isa_bundle.h"
 #include "ti_bundle.h"
 #include "whirl2ops.h"
+#ifdef TARG_ST
+#include "data_layout.h"
+#endif
 
 // ======================================================================
 // Declarations (macros, variables)
@@ -99,6 +102,12 @@ static INT BBs_Processed = 0;
 // The current cycle in which we are trying to schedule OPs.
 static INT Clock;
 static INT MAX_Clock;
+#ifdef TARG_ST
+// FdF 15/12/2003: We need to know if we are in pre-pass or post-pass
+// scheduling, because optimizations with SP_Sym in Ldst_Addiu_Pair
+// are only valid in post-pass.
+static BOOL Before_LRA;
+#endif
 
 static void
 Print_OPSCH (OP *op, BB_MAP value_map)
@@ -369,6 +378,23 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     return FALSE;
   }
 
+#ifdef TARG_ST
+  // FdF 15/12/2003: Because in case of LDW .. 0(Rx); ADD Rx=Rx+..;
+  // there is a MISC dependence between the two uses of Rx in LDW and
+  // ADD. We are only interested in the REGANTI arc between the use in
+  // LDW and the def in ADD.
+  BOOL isRegInAnti = FALSE;
+  ARC_LIST *arcs;
+  for (arcs = OP_succs(op1); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
+    ARC *arc = ARC_LIST_first(arcs);
+    if (ARC_succ(arc) == op2 &&
+	(ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI))
+      isRegInAnti = TRUE;
+  }
+  if (!isRegInAnti)
+    return FALSE;
+#endif
+
   if (OPSCH_addiu(opsch1)) {
     addiu_op = op1;
     ldst_op = op2;
@@ -408,7 +434,24 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 
   INT64 addiu_const = TN_value (OP_opnd(addiu_op, 1));
   INT offset_opndnum = Memory_OP_Offset_Opndnum(ldst_op);
-  INT64 ldst_const = TN_value (OP_opnd(ldst_op, offset_opndnum));
+  INT64 ldst_const;
+#ifdef TARG_ST
+  // FdF 15/12/2003: Added support for symbolic offsets in the stack.
+  if (TN_is_symbol(OP_opnd(ldst_op, offset_opndnum))) {
+    TN *old_ofst_tn = OP_opnd(ldst_op, offset_opndnum);
+    ST *st = TN_var(old_ofst_tn);
+    ST *base_st;
+    INT64 base_ofst;
+
+    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    ldst_const = CGTARG_TN_Value (old_ofst_tn, base_ofst);
+    if ((base_st != SP_Sym) ||
+        ((ldst_const + addiu_const*multiplier) < 0))
+      return FALSE;
+  }
+  else
+#endif
+    ldst_const = TN_value (OP_opnd(ldst_op, offset_opndnum));
 
 #ifdef TARG_ST
   // [CG] Don't allow opcode size change
@@ -451,6 +494,14 @@ Fixup_Ldst_Offset (OP *ldst_op, INT64 addiu_const, INT64 multiplier,
     Print_OP_No_SrcLine (ldst_op);
   }
 
+#ifdef TARG_ST
+// FdF 15/12/2003: Added support for symbolic offsets in the stack.
+  if (TN_is_symbol(old_ofst_tn))
+    ofst_tn = Gen_Symbol_TN(TN_var(old_ofst_tn),
+                            TN_offset(old_ofst_tn) + addiu_const * multiplier,
+                            TN_relocs(old_ofst_tn));
+  else
+#endif
   ofst_tn = Gen_Literal_TN (TN_value(old_ofst_tn) + addiu_const * multiplier,
 			    TN_size(old_ofst_tn));
   Set_OP_opnd (ldst_op, index, ofst_tn);
@@ -477,7 +528,12 @@ HB_Schedule::Adjust_Ldst_Offsets (void)
       OP *succ_op = ARC_succ(arc);
       OPSCH *succ_opsch = OP_opsch (succ_op, _hb_map);
       if (OPSCH_ldst (succ_opsch) && OPSCH_visited (succ_opsch)) {
-	Fixup_Ldst_Offset (succ_op, addiu_const, +1, type());
+#ifdef TARG_ST
+	// FdF 15/12/2003: Do not call twice when there are a REGANTI
+	// and a MISC dependence for example (see Is_Ldst_addiu_Pair).
+	if (ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI)
+#endif
+	  Fixup_Ldst_Offset (succ_op, addiu_const, +1, type());
       }
     }
     for (arcs = OP_preds(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
@@ -485,6 +541,10 @@ HB_Schedule::Adjust_Ldst_Offsets (void)
       OP *pred_op = ARC_pred(arc);
       OPSCH *pred_opsch = OP_opsch (pred_op, _hb_map);
       if (OPSCH_ldst (pred_opsch) && !OPSCH_visited (pred_opsch)) {
+#ifdef TARG_ST
+	// FdF 15/12/2003: Do not call more than once
+	if (ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI)
+#endif
 	Fixup_Ldst_Offset (pred_op, addiu_const, -1, type());
       }
     }
@@ -565,8 +625,15 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
   FOR_ALL_BB_OPs_FWD (bb, op) {
     opsch = OP_opsch(op, value_map);
     // Identify LDST/ADDIU instructions with non-relocatable offsets.
+#ifdef TARG_ST
+    // FdF 15/12/2003: Support for symbolic offset in the stack, in
+    // postpass scheduling only.
+    if (CGTARG_Is_OP_Addr_Incr(op) && 
+	(!TN_is_sp_reg(OP_result(op,0 /*???*/)) || !Before_LRA)) {
+#else
     if (CGTARG_Is_OP_Addr_Incr(op) && 
 	!TN_is_sp_reg(OP_result(op,0 /*???*/))) {
+#endif
 	
       BOOL addiu_ok = TRUE;
       for (arcs = OP_succs(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
@@ -592,6 +659,12 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
       if (TN_has_value(OP_opnd(op,offset_opndnum))) {
 	Set_OPSCH_ldst (opsch);
       }
+#ifdef TARG_ST
+      // FdF 15/12/2003: Added support for symbolic offset in the stack
+      else if (TN_is_symbol(OP_opnd(op,offset_opndnum))) {
+	Set_OPSCH_ldst (opsch);
+      }
+#endif
     }
 #ifdef TARG_ST
     // Check if this is a cmpeq or cmpne with a constant value.
@@ -1111,6 +1184,24 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
 
     if (OPSCH_estart(cur_opsch) > OPSCH_estart(best_opsch)) return TRUE;
     if (OPSCH_estart(cur_opsch) < OPSCH_estart(best_opsch)) return FALSE;
+
+#ifdef TARG_ST
+    if (Is_Ldst_Addiu_Pair(cur_opsch, best_opsch, cur_op, best_op)) {
+      // FdF 15/12/2003: return the one which is the source of a REGIN
+      // dependence or the destination of a REGANTI dependence.
+      ARC_LIST *arcs;
+      for (arcs = OP_succs(cur_op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
+	ARC *arc = ARC_LIST_first(arcs);
+	if ((ARC_succ(arc) == best_op))
+	  return (ARC_kind(arc) == CG_DEP_REGIN);
+      }
+      for (arcs = OP_preds(cur_op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
+	ARC *arc = ARC_LIST_first(arcs);
+	if ((ARC_pred(arc) == best_op))
+	  return (ARC_kind(arc) == CG_DEP_REGANTI);
+      }
+    }
+#endif
   }
 
   return FALSE;
@@ -1759,6 +1850,7 @@ HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch)
   Init_RFlag_Table (blocks, FALSE);
 #endif
 
+  Before_LRA = HBS_Before_LRA();
   Compute_OPSCH (bb, _hb_map, &_hb_pool);
 
   if (HBS_Minimize_Regs()) {
@@ -1844,6 +1936,7 @@ HB_Schedule::Schedule_Blocks (list<BB*>& bblist)
   _sched_vector = VECTOR_Init (length, &_hb_pool);
 
   Init_RFlag_Table (bblist, TRUE);
+  Before_LRA = HBS_Before_LRA();
   Compute_OPSCHs (bblist, _hb_map, &_hb_pool);
 
   /* TODO: Need to model register usages for hyperblocks soon. 
