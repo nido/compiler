@@ -148,7 +148,7 @@ ifeq ($(BUILD_OS),SUNOS5)
 BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
 COMP_GNU_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
 
-INSTALL_LOC=$(GNU_LOC)
+INSTALL_LOC=$(BINUTILS_GNU_LOC)
 
 ifeq ($(HOST_OS),MINGW)
 COMPILER_LOC=/apa/gnu/SunOS5/gcc-2.95.2-mingw32-msvcrt/bin/
