@@ -415,7 +415,12 @@ Init_Section (
   Set_STB_scninfo_idx(st, last_scn);
 
   /* hack for .text section */
+#ifdef TARG_ST
+  // (cbr) exectutable sections should be text aligned
+  if (STB_exec (st)) {
+#else
   if (Is_Text_Section(st)) {
+#endif
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
     else if (OPT_Space)
