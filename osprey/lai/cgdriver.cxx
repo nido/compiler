@@ -84,7 +84,7 @@
 #include "cgprep.h"		    /* for CGPREP knobs */
 #include "cg_dep_graph.h"	    /* for CG_DEP knobs */
 #include "cg_dep_graph_update.h"    /* more CG_DEP knobs */
-/* #include "cio.h"      */              /* for rw, cicse etc ...*/
+#include "cio.h"                    /* for rw, cicse etc ...*/
 #include "cg_loop.h"                /* for unrolling */
 #include "cg_loop_recur.h"	    /* recurrence fixing */
 #include "cgtarget.h"		    /* target-dependent stuff */
@@ -466,6 +466,26 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CG_LOOP_recurrence_min_omega, NULL },
 
   // CG Unrolling options - see also OPT:unroll_times_max:unroll_size.
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_non_trip_countable", "unroll_non_trip",
+    0, 0, 0, &CG_LOOP_unroll_non_trip_countable, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_fully", "unroll_full",
+    0, 0, 0, &CG_LOOP_unroll_fully, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_remainder_fully", "unroll_remainder_full",
+    0, 0, 0, &CG_LOOP_unroll_remainder_fully, NULL },
+
+  // Cross Iteration Loop Optimization options.
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cio_copy_removal", "",
+    0, 0, 0, &CIO_enable_copy_removal, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cio_read_removal", "",
+    0, 0, 0, &CIO_enable_read_removal, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cio_write_removal", "",
+    0, 0, 0, &CIO_enable_write_removal, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cio_cse_removal", "",
+    0, 0, 0, &CIO_enable_cse_removal, NULL },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "cio_rw_max_omega", "",
+    8, 0, INT32_MAX, &CIO_rw_max_omega, NULL },
 
   // Control flow optimizations (CFLOW) options.
 
