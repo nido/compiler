@@ -141,3 +141,23 @@ CGTARG_Get_FP_Incr (
   return OP_opnd(fp_adj, 1);
 }
 
+BOOL
+OP_Can_Be_Tail_Call (
+  OP *call_op
+)
+{
+  TOP call_top = OP_code(call_op);
+  switch (call_top) {
+  case TOP_call:
+    break;
+  case TOP_icall:
+    return FALSE;
+    break;
+  default:
+    FmtAssert(FALSE, ("OP_Can_Be_Tail_Call, op not handled : %s",
+		     TOP_Name(call_top)));
+    /*NOTREACHED*/
+  }
+
+  return TRUE;
+}

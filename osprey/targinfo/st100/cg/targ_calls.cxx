@@ -141,3 +141,11 @@ CGTARG_Get_FP_Incr (
   return OP_opnd(fp_adj, 2);
 }
 
+
+BOOL
+OP_Can_Be_Tail_Call (
+  OP *call_op
+)
+{
+  return TRUE;
+}

@@ -669,6 +669,11 @@ Can_Be_Tail_Call (
   call_info = ANNOT_callinfo(ant);
   call_st = CALLINFO_call_st(call_info);
   call_wn = CALLINFO_call_wn(call_info);
+#ifdef TARG_ST
+  OP *call_op = BB_last_op(pred);
+  if (!OP_Can_Be_Tail_Call(call_op))
+    return NULL;
+#endif
 
   /* Assume a call sequence A->B->C (i.e. A calls B which calls C)
    * We would like to change the call B->C to be a tail-call.

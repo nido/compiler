@@ -125,6 +125,11 @@ extern PREG_NUM Return_Float_Preg[2];
 extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
 /* register save mask size */
 extern INT EETARG_Callee_Saved_Regs_Mask_Size (void);
+/* Check if op can be changed for tail call optimization. */
+extern BOOL OP_Can_Be_Tail_Call(op *);
+#endif
+
+#ifdef TARG_ST
 #endif
 
 /* assign a special preg to each CALLEE_tn.  also ra, and gp */
