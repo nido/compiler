@@ -941,6 +941,9 @@ Expand_Shift_Multiply (
   OPS *ops
 )
 {
+  INT val;
+  TOP opcode = TOP_UNDEFINED;
+
   FmtAssert(TN_has_value(src2),
 	    ("Expand_Shift_Multiply: second TN is not immediate"));
   FmtAssert(MTYPE_is_class_integer(mtype),
@@ -948,7 +951,7 @@ Expand_Shift_Multiply (
 
   // see if I can do a shift instead of the multiply
   if (Is_Power_Of_2(TN_value(src2), mtype)) {
-    INT val = Get_Power_Of_2(TN_value(src2), mtype);
+    val = Get_Power_Of_2(TN_value(src2), mtype);
     TN *tmp = Gen_Literal_TN (val, MTYPE_byte_size(mtype));
     Expand_Shift (result, src1, tmp, mtype, shift_left, ops);
     
@@ -960,7 +963,29 @@ Expand_Shift_Multiply (
     return TRUE;
   }
   
-  return FALSE;
+  val = TN_value (src2);
+  switch (val) {
+  case 3:
+    opcode = TOP_sh1add_r;
+    break;
+  case 5:
+    opcode = TOP_sh2add_r;
+    break;
+  case 9:
+    opcode = TOP_sh3add_r;
+    break;
+  case 17:
+    opcode = TOP_sh4add_r;
+    break;
+  default:
+    opcode = TOP_UNDEFINED;
+  }
+
+  if (opcode != TOP_UNDEFINED) {
+    Build_OP(opcode, result, src1, src1, ops);
+    return TRUE;
+  }
+  
 }
 
 /* ====================================================================
