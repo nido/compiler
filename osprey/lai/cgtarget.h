@@ -600,10 +600,18 @@ extern void CGTARG_Compute_Branch_Parameters(INT32 *mispredict,
 
 extern void CGTARG_Generate_Remainder_Branch(TN *trip_count, TN *label_tn,
 					     OPS *prolog_ops, OPS *body_ops);
+
+#ifdef TARG_ST
+extern BOOL CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count, 
+                                         TN *trip_count,
+					 INT32 ntimes, TN *label_tn, 
+                                         OPS *prolog_ops, OPS *body_ops);
+#else
 extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count, 
                                          TN *trip_count,
 					 INT32 ntimes, TN *label_tn, 
                                          OPS *prolog_ops, OPS *body_ops);
+#endif
 
 /* ====================================================================
  *    Properties:

@@ -129,6 +129,105 @@ CGTARG_Preg_Register_And_Class (
 }
 
 /* ====================================================================
+ *   TOP_br_variant
+ *
+ *   TODO: isa_properties ...
+ * ====================================================================
+ */
+VARIANT
+TOP_br_variant (
+  TOP opcode
+)
+{
+  switch (opcode) {
+  case TOP_cmpeq_r_b:
+  case TOP_cmpeq_i_b:
+  case TOP_cmpeq_ii_b:
+  case TOP_cmpeq_r_r:
+  case TOP_cmpeq_i_r:
+  case TOP_cmpeq_ii_r:
+    return V_BR_I4EQ;
+
+  case TOP_cmpge_r_b:
+  case TOP_cmpge_i_b:
+  case TOP_cmpge_ii_b:
+  case TOP_cmpge_r_r:
+  case TOP_cmpge_i_r:
+  case TOP_cmpge_ii_r:
+    return V_BR_I4GE;
+
+  case TOP_cmpgeu_r_b:
+  case TOP_cmpgeu_i_b:
+  case TOP_cmpgeu_ii_b:
+  case TOP_cmpgeu_r_r:
+  case TOP_cmpgeu_i_r:
+  case TOP_cmpgeu_ii_r:
+    return V_BR_U4GE;
+
+  case TOP_cmpgt_r_b:
+  case TOP_cmpgt_i_b:
+  case TOP_cmpgt_ii_b:
+  case TOP_cmpgt_r_r:
+  case TOP_cmpgt_i_r:
+  case TOP_cmpgt_ii_r:
+    return V_BR_I4GT;
+
+  case TOP_cmpgtu_r_b:
+  case TOP_cmpgtu_i_b:
+  case TOP_cmpgtu_ii_b:
+  case TOP_cmpgtu_r_r:
+  case TOP_cmpgtu_i_r:
+  case TOP_cmpgtu_ii_r:
+    return V_BR_U4GT;
+
+  case TOP_cmple_r_b:
+  case TOP_cmple_i_b:
+  case TOP_cmple_ii_b:
+  case TOP_cmple_r_r:
+  case TOP_cmple_i_r:
+  case TOP_cmple_ii_r:
+    return V_BR_I4LE;
+
+  case TOP_cmpleu_r_b:
+  case TOP_cmpleu_i_b:
+  case TOP_cmpleu_ii_b:
+  case TOP_cmpleu_r_r:
+  case TOP_cmpleu_i_r:
+  case TOP_cmpleu_ii_r:
+    return V_BR_U4LE;
+
+  case TOP_cmplt_r_b:
+  case TOP_cmplt_i_b:
+  case TOP_cmplt_ii_b:
+  case TOP_cmplt_r_r:
+  case TOP_cmplt_i_r:
+  case TOP_cmplt_ii_r:
+    return V_BR_I4LT;
+
+  case TOP_cmpltu_r_b:
+  case TOP_cmpltu_i_b:
+  case TOP_cmpltu_ii_b:
+  case TOP_cmpltu_r_r:
+  case TOP_cmpltu_i_r:
+  case TOP_cmpltu_ii_r:
+    return V_BR_U4LT;
+
+  case TOP_cmpne_r_b:
+  case TOP_cmpne_i_b:
+  case TOP_cmpne_ii_b:
+  case TOP_cmpne_r_r:
+  case TOP_cmpne_i_r:
+  case TOP_cmpne_ii_r:
+    return V_BR_I4NE;
+
+  default:
+    FmtAssert(FALSE, ("unknown compare opcode"));
+  }
+
+  return V_BR_NONE;
+}
+
+/* ====================================================================
  *   Make_Branch_Conditional
  *
  *   If a BB ends in an unconditional branch, turn it into a 
@@ -318,12 +417,12 @@ CGTARG_Analyze_Branch (
 
   switch (top) {
   case TOP_br:
-    variant = V_BR_P_TRUE;
+    variant = V_BR_NONE;
     Set_V_true_br(variant);
     *tn1 = OP_opnd(br, 0);
     break;
   case TOP_brf:
-    variant = V_BR_P_FALSE;
+    variant = V_BR_NONE;
     Set_V_false_br(variant);
     // Should really return 'tn2' but until CFLOW is fixed ...
     //*tn2 = OP_opnd(br, 0);
@@ -362,6 +461,12 @@ CGTARG_Analyze_Compare (
    */
   variant = CGTARG_Analyze_Branch(br, &cond_tn1, &cond_tn2);
 
+  //
+  // varaint on this target is always V_BR_NONE, get it from
+  // compare
+  //
+
+#if 0
   /*
    * Check for double precision float compare.
    */
@@ -370,13 +475,28 @@ CGTARG_Analyze_Compare (
   } else {
     is_double = FALSE;
   }
+#endif
 
   /* Attempt to find the defining OP for the tested value.
    */
   def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
   
-  cond_tn1 = OP_opnd(def_op, 2);
-  cond_tn2 = OP_opnd(def_op, 3);
+  //
+  // Make sure we've found one
+  //
+#if 0
+  Print_OP(br);
+  if (def_op) Print_OP(def_op);
+#endif
+  FmtAssert(def_op != NULL && OP_opnds(def_op) == 2,("confused by the compare op"));
+
+  //
+  // Branch on this target has no variant, get it from the compare
+  //
+  variant = TOP_br_variant(OP_code(def_op));
+
+  cond_tn1 = OP_opnd(def_op, 0);
+  cond_tn2 = OP_opnd(def_op, 1);
 
   *compare_op = def_op;
 
@@ -1027,7 +1147,7 @@ CGTARG_Generate_Remainder_Branch (
  *   CGTARG_Generate_Branch_Cloop
  * ====================================================================
  */
-void
+BOOL
 CGTARG_Generate_Branch_Cloop(OP *br_op,
 			     TN *unrolled_trip_count,
 			     TN *trip_count_tn,
@@ -1036,8 +1156,8 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
 			     OPS *prolog_ops,
 			     OPS *body_ops)
 { 
-
-  FmtAssert(FALSE,("target does not support counted loop branches"));
+  return FALSE;
+  //FmtAssert(FALSE,("target does not support counted loop branches"));
 }
 
 /* ====================================================================

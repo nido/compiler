@@ -50,6 +50,9 @@ void Configure_CG_Target() {
   // Disable loop optimizations by default until debugged
   CG_enable_loop_optimizations = FALSE;
 
+  // Do not unroll fully until tested
+  CG_LOOP_unroll_fully = FALSE;
+
   // Do not force if-conversion for loops, see CG_LOOP_Optimize()
   CG_LOOP_force_ifc = 0;
  
@@ -93,10 +96,10 @@ void Configure_CG_Target() {
 
   // HB stuff: everything's OFF by default
 #ifdef IFCONV_IN_SSA
-  // OFF until we know it's worth it
+  // OFF until we know it's worth it (activate in command line)
   //HB_formation = TRUE; 
   // Superblock formation -- not implemented right now
-  HB_superblocks = TRUE;
+  // HB_superblocks = TRUE;
   // Do simple hammock if-conversion
   HB_simple_ifc = TRUE;
   // Do not skip hammocks -- originally designed to go around a 

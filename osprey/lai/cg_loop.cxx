@@ -4188,9 +4188,13 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
       OP *br_op = BB_branch_op(head);
       TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
 
+#ifdef TARG_ST
+      if (CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn, ntimes, label_tn, &ops, &body_ops)) {
+#else
       CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn,
 				 ntimes, label_tn, &ops, &body_ops);
       if (OPS_length(&body_ops) > 0) {
+#endif
 	BB_Remove_Op(head, br_op);
 	BB_Append_Ops(head, &body_ops);
 	CGPREP_Init_Op(BB_branch_op(head));
@@ -5058,9 +5062,15 @@ Gen_Counted_Loop_Branch(
 #endif
 
   TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
+
+#ifdef TARG_ST
+  if (CGTARG_Generate_Branch_Cloop(br_op, trip_count_tn, trip_count_tn, 1,
+				   label_tn, &ops, &body_ops)) {
+#else
   CGTARG_Generate_Branch_Cloop(br_op, trip_count_tn, trip_count_tn, 1,
 			       label_tn, &ops, &body_ops);
   if (OPS_length(&body_ops) > 0) {
+#endif
     BB_Remove_Op(tail, br_op);
     BB_Append_Ops(tail, &body_ops);
     // Insert loop counter initialization to prolog
@@ -5203,10 +5213,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (!Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt))
 	return FALSE;
 
-      if (PROC_has_counted_loops())
-	// Replace regular branch with loop-count branches.
-	// There will be a call EBO to delete the loop-exit test evaluations.
-	Gen_Counted_Loop_Branch(cg_loop);
+      //      if (PROC_has_counted_loops())
+      // Replace regular branch with loop-count branches.
+      // There will be a call EBO to delete the loop-exit test evaluations.
+      Gen_Counted_Loop_Branch(cg_loop);
+
       // Generate SWP branches, eg. doing stuff to prolog/epilog, etc.
       // target-specific
       Gen_SWP_Branch(cg_loop, true /* is_doloop */);
@@ -5219,13 +5230,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Recompute_Liveness();
 
-#ifndef TARG_ST
       if (cg_loop.Determine_Unroll_Fully()) {
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 	cg_loop.Recompute_Liveness();
 	return TRUE;
       }
-#endif
 
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
@@ -5339,20 +5348,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Recompute_Liveness();
 
-#ifndef TARG_ST
       cg_loop.Determine_Unroll_Factor();
-#endif
-
-#ifdef TARG_ST
-      if (1) {
-#else
       if (cg_loop.Unroll_fully()) {
 	// No need to call RW removal because EBO
 	// should find all such CSEs after full unrolling.
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
       } else {
-#endif
 
 	Perform_Read_Write_Removal(loop);
 
@@ -5490,9 +5492,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_DOLOOP ***");
       }
 
-#ifndef TARG_ST
       Gen_Counted_Loop_Branch(cg_loop);
-#endif
 
 #if defined(TARG_ST)
       if (CG_enable_LAO) {
