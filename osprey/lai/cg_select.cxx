@@ -1256,6 +1256,71 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup, BOOL taken)
   }
 }
 
+// Create a phi for each GTNs use if there is not. GTN needs to be renamed
+static void
+Force_End_Tns (BB* bb, BB *head, BB *tail)
+{
+  OP *op;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    for (UINT8 defnum = 0; defnum < OP_results(op); defnum++) {
+      TN *res = OP_result(op, defnum);
+
+      if (TN_is_register(res) && TN_is_global_reg(res) && !TN_is_dedicated(res)) {
+        OP *phi;
+        bool founddef = false;
+
+        FOR_ALL_BB_PHI_OPs(tail, phi) {
+          for (UINT8 usenum = 0; usenum < OP_opnds(phi); usenum++) {
+            if (OP_opnd(phi, usenum) == res) {
+              founddef = true;
+              break;
+            }
+          }
+        }
+   
+        if (!founddef) {
+          UINT8 npreds = BB_preds_len(tail);
+          TN * new_tn = Dup_TN(res);
+
+          Set_TN_is_global_reg (new_tn);
+          Set_OP_result(op, defnum, new_tn);
+          
+          // Rename uses in current BB
+          OP *op2;        
+          for (op2 = OP_next(op); op2 != NULL; op2 = OP_next(op2)) {
+            for (UINT8 usenum = 0; usenum < OP_opnds(op2); usenum++) {
+              if (OP_opnd(op2, usenum) == res)
+                Set_OP_opnd(op2, usenum, new_tn);
+            }
+          }
+
+          // Make up a phi
+          TN *result[1];
+          TN *opnd[npreds];
+          result[0] = res;
+
+          BBLIST *preds;
+          UINT8 pos=0;
+
+          FOR_ALL_BB_PREDS(tail,preds) {
+            BB *pred = BBLIST_item(preds);
+            if (pred == bb) {
+              opnd[pos++] = new_tn;
+            }
+            else
+              opnd[pos++] = res;
+          }
+      
+          OP *new_phi = Mk_VarOP (TOP_phi, 1, npreds, result, opnd);
+          SSA_Prepend_Phi_To_BB(new_phi, tail);
+        }
+      }
+    }
+  }
+}
+  
+
 //  Copy <old_bb> and all of its ops into BB.
 static void
 Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
@@ -1265,12 +1330,16 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
   OPS new_ops = OPS_EMPTY;  
 
+  // First thing is to make sure that each GTN ends up in a phi in the tail basic block
+  Force_End_Tns (bp, to_bb, tail);
+
   do {
     op_list old_phis;
 
     if (Trace_Select_Candidates) {
       fprintf (Select_TFile, "<select> Duplicating BB%d\n", BB_id(bp));
     }
+    
     //
     // Copy the ops to the new block.
     //
@@ -2102,6 +2171,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       }
       
       Initialize_Hammock_Memory();
+
+      GRA_LIVE_Recalc_Liveness(rid);
+      GRA_LIVE_Rename_TNs();
 
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
 
