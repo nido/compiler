@@ -914,17 +914,25 @@ CGTARG_TN_For_Asm_Operand (
     
   else if (strchr("gmr", *constraint)) {
     TYPE_ID rtype = (load != NULL ? WN_rtype(load) : MTYPE_I4);
-    FmtAssert(MTYPE_is_integral(rtype),
-              ("ASM operand does not satisfy its constraint"));
-    ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
+    if (rtype == MTYPE_I4 || rtype == MTYPE_U4) {
+      ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
+    } else {
+      ErrMsg(EC_CG_Generic_Error, "operand type to 'asm' does not match constraint");
+      return NULL;
+    }
   }
   
   else if (strchr("b", *constraint)) {
     TYPE_ID rtype = MTYPE_B;
-    //    if (load != NULL && WN_rtype(load) != MTYPE_B) {
-    //      DevWarn("ASM operand does not satisfy MTYPE_B constraint");
-    //    }
-    ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
+    TYPE_ID load_rtype = (load != NULL ?  WN_rtype(load) : MTYPE_I4);
+    if (load_rtype == MTYPE_I4 || load_rtype == MTYPE_U4 ||
+	load_rtype == MTYPE_B) {
+      // whirl2ops.cxx is responsible of the [IU]4 -> B conversion if needed.
+      ret_tn = (pref_tn ? pref_tn : Build_TN_Of_Mtype(rtype));
+    } else {
+      ErrMsg(EC_CG_Generic_Error, "operand type to 'asm' does not match constraint");
+      return NULL;
+    }      
   }
 
   else {
