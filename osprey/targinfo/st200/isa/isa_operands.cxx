@@ -10,6 +10,15 @@
 #include "topcode.h" 
 #include "isa_operands_gen.h" 
 
+//
+// [CG] : Fix of bug 1-0-7-A/6
+// LR (r63) must not be used as dest of:
+// - all muls
+// - ldh[u][_d]/ldb[u][_d]
+// Ref: ST220 Core and Instruction Set Manual
+// Check changes with AS
+#define CG_FIX_1_0_7_A_6
+
 main() 
 { 
 
@@ -283,6 +292,10 @@ main()
 		 TOP_mulhh_r, 
 		 TOP_mulhhu_r, 
 		 TOP_mulhs_r, 
+#ifdef CG_FIX_1_0_7_A_6
+		 TOP_mulhhs_r, 
+		 TOP_mullhus_r,
+#endif 
 		 TOP_UNDEFINED); 
 
   Result (0, dest2); 
@@ -343,10 +356,12 @@ main()
 		 TOP_max_ii, 
 		 TOP_min_i, 
 		 TOP_min_ii, 
+#ifndef CG_FIX_1_0_7_A_6
 		 TOP_mulhhs_i, 
 		 TOP_mulhhs_ii, 
 		 TOP_mullhus_i, 
-		 TOP_mullhus_ii, 
+		 TOP_mullhus_ii,
+#endif
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
@@ -387,14 +402,17 @@ main()
 		 TOP_maxu_r, 
 		 TOP_min_r, 
 		 TOP_minu_r, 
+#ifndef CG_FIX_1_0_7_A_6
 		 TOP_mulhhs_r, 
 		 TOP_mullhus_r, 
+#endif
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
   Operand (0, src1, opnd1); 
   Operand (1, src2, opnd2); 
 
+#ifndef CG_FIX_1_0_7_A_6
   /* ====================================== */ 
   Instruction_Group("O_Load", 
 		 TOP_ldw_d_i, 
@@ -412,6 +430,36 @@ main()
   Result (0, dest2); 
   Operand (0, isrc2, offset); 
   Operand (1, src1, base); 
+
+#else
+
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldw_d_i, 
+		 TOP_ldw_d_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldh_d_i, 
+		 TOP_ldh_d_ii, 
+		 TOP_ldhu_d_i, 
+		 TOP_ldhu_d_ii, 
+		 TOP_ldb_d_i, 
+		 TOP_ldb_d_ii, 
+		 TOP_ldbu_d_i, 
+		 TOP_ldbu_d_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest2); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_Int3I", 
@@ -435,6 +483,7 @@ main()
   Operand (0, isrc2, opnd1); 
   Operand (1, src1, opnd2); 
 
+#ifndef CG_FIX_1_0_7_A_6
   /* ====================================== */ 
   Instruction_Group("O_Load", 
 		 TOP_ldw_i, 
@@ -452,7 +501,33 @@ main()
   Result (0, dest); 
   Operand (0, isrc2, offset); 
   Operand (1, src1, base); 
+#else
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldw_i, 
+		 TOP_ldw_ii, 
+		 TOP_UNDEFINED); 
 
+  Result (0, dest); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldh_i, 
+		 TOP_ldh_ii, 
+		 TOP_ldhu_i, 
+		 TOP_ldhu_ii, 
+		 TOP_ldb_i, 
+		 TOP_ldb_ii, 
+		 TOP_ldbu_i, 
+		 TOP_ldbu_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest2); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+#endif
   /* ====================================== */ 
   Instruction_Group("O_asm", 
 		 TOP_asm, 
@@ -532,6 +607,12 @@ main()
 		 TOP_mulhhu_ii, 
 		 TOP_mulhs_i, 
 		 TOP_mulhs_ii, 
+#ifdef CG_FIX_1_0_7_A_6
+		 TOP_mulhhs_i, 
+		 TOP_mulhhs_ii, 
+		 TOP_mullhus_i, 
+		 TOP_mullhus_ii,
+#endif
 		 TOP_UNDEFINED); 
 
   Result (0, idest2); 
