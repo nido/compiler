@@ -1375,7 +1375,7 @@ Write_INITV (
  *    Emit the initialized object to the object file 
  * ====================================================================
  */
-static void
+static Elf64_Word
 Write_INITO (
   INITO* inop,		/* Constant to emit */
   INT scn_idx,		/* Section to emit it into */
@@ -1446,10 +1446,22 @@ Write_INITO (
                                               ASM_CMNT, ST_name(sym));
   }
 
-  return;
+  return scn_ofst;
 }
 
 #ifdef TARG_ST
+/* ====================================================================
+ * Set_Section_Offset.
+ *
+ * [CG] Set the new offset for a section.
+ * ====================================================================
+ */
+static void
+Set_Section_Offset(ST *base, INT64 ofst)
+{
+  em_scn[STB_scninfo_idx(base)].scn_ofst = ofst;
+}
+
 /* ====================================================================
  * Add_To_Section_Offset.
  *
@@ -1555,7 +1567,7 @@ Change_Section_Origin (
 	}
       } else {
 	FmtAssert(0,
-		  ("object overlaps in section %s: expected offset is %d, current offset is %d", ST_name(base), ofst, current_ofst));
+		  ("object overlaps in section %s: expected offset is %lld, current offset is %lld", ST_name(base), ofst, current_ofst));
       }
       em_scn[STB_scninfo_idx(base)].scn_ofst = ofst;
     }
@@ -1778,9 +1790,9 @@ Process_Initos_And_Literals (
       //         be getting the alignment requirement for 'st'
       fprintf (Output_File, "\t%s 4\n", AS_ALIGN);
 #endif
-      Write_INITO (ino, STB_scninfo_idx(base), ofst);
+      ofst = Write_INITO (ino, STB_scninfo_idx(base), ofst);
 #ifdef TARG_ST
-      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+      Set_Section_Offset(base, ofst);
 #endif
     }
 
@@ -1808,9 +1820,9 @@ Process_Initos_And_Literals (
       //      char *cname = Get_TCON_name (ST_tcon(st));
       //      fprintf(Output_File, "%s:\n", cname);
       fprintf(Output_File, "UNNAMED_CONST_%d:\n", ST_tcon(st));
-      Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
+      ofst = Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
 #ifdef TARG_ST
-      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+      Set_Section_Offset(base, ofst);
 #endif
     }
   }
@@ -1842,9 +1854,9 @@ Process_Distr_Array ()
 #ifdef TARG_ST
       Check_Section_Alignment (base, TY_align(ST_type(st)));
 #endif
-      Write_INITO(ino, STB_scninfo_idx(base), ofst);
+      ofst = Write_INITO(ino, STB_scninfo_idx(base), ofst);
 #ifdef TARG_ST
-      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+      Set_Section_Offset(base, ofst);
 #endif
 
     }
