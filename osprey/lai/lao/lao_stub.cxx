@@ -512,42 +512,11 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     // account for isa subset. HACK.
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     int unrolled = BB_unrollings(cgir_bb);
-    // Make the BasicBlock.
-    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
-	labelCount, labels, operationCount, operations);
-    // More the BasicBlock.
-    int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
-    Temporary *liveins = (Temporary *)alloca(MAX_LIVEIN_COUNT*sizeof(Temporary));
-    for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
-	 tn != GTN_SET_CHOOSE_FAILURE;
-	 tn = GTN_SET_Choose_Next(BB_live_in(cgir_bb), tn)) {
-      Temporary temp = CGIR_TN_to_Temporary(tn);
-      // All live in are global
-      LAI_Interface_Temporary_setGlobal(interface, temp);
-      // We only take live-in that are defreach_in
-      if (GRA_LIVE_TN_Live_Into_BB(tn, cgir_bb)) {
-	Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
-	liveins[liveinCount++] = temp;
-      }
-    }
-    int liveoutCount = 0, MAX_LIVEOUT_COUNT = 16384;
-    Temporary *liveouts = (Temporary *)alloca(MAX_LIVEOUT_COUNT*sizeof(Temporary));
-    for (TN *tn = GTN_SET_Choose(BB_live_out(cgir_bb));
-	 tn != GTN_SET_CHOOSE_FAILURE;
-	 tn = GTN_SET_Choose_Next(BB_live_out(cgir_bb), tn)) {
-      Temporary temp = CGIR_TN_to_Temporary(tn);
-      // All live out are global
-      LAI_Interface_Temporary_setGlobal(interface, temp);
-      // We only take live-out that are defreach_out
-      if (GRA_LIVE_TN_Live_Outof_BB(tn, cgir_bb)) {
-	Is_True(liveoutCount < MAX_LIVEOUT_COUNT, ("BB has more than MAX_LIVEOUT_COUNT liveouts"));
-	liveouts[liveoutCount++] = temp;
-      }
-    }
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
-    LAI_Interface_moreBasicBlock(interface,
-	basicBlock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
+    // Make the BasicBlock.
+    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
+	labelCount, labels, operationCount, operations, regionId, frequency);
     // Force the fully unrolled loop bodies to start a new scheduling region,
     // else the memory dependences will not be correct: bug pro-release-1-4-0-B/1.
     if (BB_unrolled_fully(cgir_bb)) {
