@@ -180,6 +180,26 @@ BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 
 endif # BUILD_OS = SUNOS5
 
+# tb: change gcc on linux WS-3
+ifeq ($(BUILD_OS),LINUX-RH-WS-3)
+COMP_GNU_LOC?=/apa/gnu/Linux-RH-WS-3/gcc/gcc-2.95.3/bin/
+BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-WS-3/bin/
+# (cbr) 
+YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
+
+ifeq ($(HOST_OS),CYGWIN_NT)
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-pc-cygwin-
+endif
+
+COMPILER_LOC=$(COMP_GNU_LOC)
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+endif
+
+
 ifeq ($(BUILD_OS),LINUX)
 COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
