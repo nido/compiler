@@ -454,6 +454,12 @@ private:
   BOOL  Read_Candidate_Arc( ARC *arc );
   BOOL  Write_Candidate_Arc( ARC *arc );
 
+#ifdef TARG_ST
+  // FdF 30/09/2004: max_omega takes the loop trip estimate into
+  // account, in order to fix ddts MBTst17742
+  INT32 _max_omega;
+#endif
+
   // --------------------------------------------------------------------
   // Read/CICSE elimination TRANSFORMATION fields and methods
   // --------------------------------------------------------------------
@@ -527,6 +533,9 @@ public:
 				   LOOP_DESCR_loophead( loop ) ) ),
       _trace_CG_Chkpnt( Get_Trace( TP_CGLOOP, 0x400,
 				   LOOP_DESCR_loophead( loop ) ) ),
+#ifdef TARG_ST
+      _max_omega( CIO_rw_max_omega ),
+#endif
       _trip_count_tn(   CG_LOOP_Trip_Count( loop ) ),
       _ordering_count(  0 ),
       _op_ordering(     NULL ),
@@ -1857,7 +1866,11 @@ CIO_RWTRAN::Read_Candidate_Arc( ARC *arc )
 	     ARC_kind( arc ) == CG_DEP_MEMREAD )
 	   && ARC_is_definite( arc )
 	   && ARC_pred( arc ) != ARC_succ( arc )
+#ifdef TARG_ST
+	   && ARC_omega( arc ) <= _max_omega
+#else
 	   && ARC_omega( arc ) <= CIO_rw_max_omega
+#endif
 	   && ARC_omega( arc ) < MAX_OMEGA );
 }
 
@@ -1868,7 +1881,11 @@ CIO_RWTRAN::Write_Candidate_Arc( ARC *arc )
   return ( ARC_kind( arc ) == CG_DEP_MEMOUT
 	   && ARC_is_definite( arc )
 	   && ARC_pred( arc ) != ARC_succ( arc )
+#ifdef TARG_ST
+	   && ARC_omega( arc ) <= _max_omega
+#else
 	   && ARC_omega( arc ) <= CIO_rw_max_omega 
+#endif
 	   && ARC_omega( arc ) < MAX_OMEGA );
 }
 
@@ -3167,6 +3184,21 @@ CIO_RWTRAN::Read_CICSE_Write_Removal( LOOP_DESCR *loop )
     }
     CG_DEP_Trace_Graph( body );
   }
+
+#ifdef TARG_ST
+  // FdF 30/09/2004: Fix for ddts MBTst17742
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+  if ( annot ) {
+    LOOPINFO *loopinfo = ANNOT_loopinfo(annot);
+    if ( loopinfo ) {
+      WN *wn = LOOPINFO_wn(loopinfo);
+      if ( wn ) {
+ 	INT32 trip_est = WN_loop_trip_est(wn);
+ 	if ( trip_est && trip_est <= _max_omega) _max_omega = trip_est - 1;
+      }
+    }
+  }
+#endif
 
   // Preform CIO read and CICSE removal
   BOOL changed_loop_read = FALSE;

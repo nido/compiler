@@ -5372,6 +5372,27 @@ Convert_WHIRL_To_OPs (
 	BB_Add_Annotation(loop_head, ANNOT_PRAGMA, ANNOT_info(ant));
 	ANNOT_Unlink(loop_pragmas, ant);
       }
+
+      // FdF 30/09/2004: Set WN_loop_trip_est with the value of
+      // #pragma LOOPTRIP(n)
+      ant = ANNOT_Get(BB_annotations(loop_head), ANNOT_PRAGMA);
+      while (ant && WN_pragma(ANNOT_pragma(ant)) != WN_PRAGMA_LOOPTRIP)
+	ant = ANNOT_Get(ANNOT_next(ant), ANNOT_PRAGMA);
+      if (ant) {
+	ANNOTATION *annot = ANNOT_Get(BB_annotations(loop_head), ANNOT_LOOPINFO);
+	LOOPINFO *info = annot ? ANNOT_loopinfo(annot) : NULL;
+	if (info) {
+	  WN *wn = ANNOT_pragma(ant);
+	  TN *trip_count = LOOPINFO_trip_count_tn(info);
+	  if (trip_count && TN_is_constant(trip_count)) {
+	    if (TN_value(trip_count) !=  WN_pragma_arg1(wn))
+	      ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn), WN_pragmas[WN_pragma(wn)].name,
+			   "inconsistent with computed value, ignored");
+	  }
+	  else 
+	    WN_loop_trip_est(LOOPINFO_wn(info)) = WN_pragma_arg1(wn);
+	}
+      }
     }
   }
 #endif
