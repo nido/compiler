@@ -78,7 +78,7 @@
 #include "cg.h"			    /* CG_Initialize(), etc. */
 #include "cgemit.h"		    /* R_Assemble_File() */
 #include "cg_swp_options.h"         /* for SWP_Options */
-/* #include "gra.h"  */                  /* for GRA_optimize_placement... */
+#include "gra.h"                    /* for GRA_optimize_placement... */
 /* #include "ebo.h"	*/	    /* for EBO options */
 #include "cgprep.h"		    /* for CGPREP knobs */
 #include "cg_dep_graph.h"	    /* for CG_DEP knobs */
@@ -87,9 +87,9 @@
 #include "cg_loop.h"                /* for unrolling */
 /* #include "cg_loop_recur.h"	*/    /* recurrence fixing */
 #include "cgtarget.h"		    /* target-dependent stuff */
-/* #include "gcm.h"	*/	    /* for GCM options */
+#include "gcm.h"		    /* for GCM options */
 /* #include "cg_sched_est.h"	*/    /* for CG_SCHED_EST options */
-#include "targ_proc_properties.h"
+/* #include "targ_proc_properties.h" */
 /* #include "cgdriver_arch.h" */
 #include "cgdriver.h"
 #include "register.h"
@@ -159,8 +159,117 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
+/* Global register allocator options */
+static OPTION_DESC Options_GRA[] = {
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "optimize_placement", "",
+    0,0,0,      &GRA_optimize_placement, NULL,
+    "Enable/disable movement of spills and restores created during splitting [Default TRUE]."
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "local_forced_max", "",
+    4, 0, 32,	&GRA_local_forced_max, NULL,
+    "How many locals to force allocate (out of the number requested by LRA) [Default 4]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "avoid_glue_references_for_locals", "",
+    0,0,0,      &GRA_avoid_glue_references_for_locals,NULL,
+    "If possible grant the forced locals from the set of registers not referenced for glue copies in the same block.  [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "split_entry_exit_blocks", "",
+    0,0,0,	&GRA_split_entry_exit_blocks,NULL,
+    "Enable/Disable splitting of entry/exit blocks for callee saved preferencing [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "split_lranges", "",
+    0,0,0,      &GRA_split_lranges, NULL,
+    "Turn on/off splitting of live ranges [Default TRUE]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "non_split_tn", "",
+    4, 0, INT32_MAX,	&GRA_non_split_tn_id, NULL,
+    "Turn off live range splitting for a given TN specified by its tn number (n).  [Default -1]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "non_preference_tn", "",
+    4, 0, INT32_MAX,	&GRA_non_preference_tn_id, NULL,
+    "Turn off preferencing for a given TN specified by its tn number (n). [Default -1]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "use_old_conflict", "",
+    0,0,0,      &GRA_use_old_conflict, NULL,
+    "Use old conflict graph algorithm ... not functioning at present."
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "shrink_wrap", "",
+    0,0,0,      &GRA_shrink_wrap, NULL,
+    "Turn on/off shrink wrapping (currently, only for callee saved regs) [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "loop_splitting", "",
+    0,0,0,      &GRA_loop_splitting, NULL,
+    "Turn on/off loop directed live range splitting [Default TRUE]",
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "home", "",
+    0,0,0,      &GRA_home, NULL,
+    "Turn on/off gra homing [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "remove_spills", "",
+    0,0,0,      &GRA_remove_spills, NULL,
+    "Turn on/off gra removal of spill instructions in Optimize_Placment [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "ensure_spill_proximity", "",
+    0,0,0,      &GRA_ensure_spill_proximity, NULL,
+    "Turn on/off gra placing spills close to use/def in block [Default TRUE]"
+  },    
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "choose_best_split", "",
+    0,0,0,      &GRA_choose_best_split, NULL,
+    "Turn on/off gra choosing best/smallest interim split found [Default TRUE]"
+  },    
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "use_stacked_regs", "",
+    0,0,0,      &GRA_use_stacked_regs, NULL,
+    "Turn on/off gra using stacked registers [Default TRUE]"
+  },    
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "redo_liveness", "",
+    0,0,0,      &GRA_redo_liveness, NULL,
+    "Turn on/off recalculation of liveness [Default FALSE]"
+  },    
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "preference_globals", "",
+    0,0,0,      &GRA_preference_globals, NULL,
+    "Turn on/off gra preferencing of global TNs (other than glue code) [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "preference_dedicated", "",
+    0,0,0,      &GRA_preference_dedicated, NULL,
+    "Turn on/off gra preferencing with dedicated TNs  [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "preference_glue", "",
+    0,0,0,      &GRA_preference_glue, NULL,
+    "Turn on/off gra preferencing in glue code [Default TRUE]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "preference_all", "",
+    0,0,0,      &GRA_preference_all, NULL,
+    "Turn on/off all gra preferencing [Default TRUE]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "non_home_low", "",
+    4, 0, INT32_MAX,	&GRA_non_home_lo, NULL,
+    "Turn off homing for a TN range specified by its tn numbers.  [Default INT32_MAX]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "non_home_hi", "",
+    4, 0, INT32_MAX,	&GRA_non_home_hi, NULL,
+    "Turn off homing for a TN range specified by its tn numbers.  [Default -1]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "recalc_liveness", "",
+    0,0,0,      &GRA_recalc_liveness, NULL,
+    "Turn on/off recomputation of global liveness info [Default FALSE]"
+  },    
+  { OVK_NAME,   OV_INTERNAL, TRUE,"call_split_freq", "",
+    0, 0, 0,	&GRA_call_split_freq_string,
+    "Threshold frequency of block containing a call below which a caller saved register will be preferred and live ranges spanning it will be split [Default .1]"
+  },    
+  { OVK_NAME,   OV_INTERNAL, TRUE,"spill_count_factor", "",
+    0, 0, 0,	&GRA_spill_count_factor_string,
+    "Factor by which count of spills affects the priority of a split.  Only valid under OPT:space [Default 0.5]"
+  },    
+  
+  { OVK_COUNT }		/* List terminator -- must be last */
+};
+
 /* Generic CG options. */
 static OPTION_DESC Options_CG[] = {
+
+  // Generic CG options.
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_bad_freqs", "",
     0, 0, 0,	&CG_warn_bad_freqs, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "skip_before", "skip_b",
@@ -190,6 +299,12 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE, "optimization_level", "",
     0, 0, MAX_OPT_LEVEL,
                 &CG_opt_level, &cg_opt_level_overridden },
+
+  // EBO options:
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",
+    0, 0, 0,	&Enable_CG_Peephole, &Enable_CG_Peephole_overridden },
+  { OVK_BOOL, 	OV_INTERNAL, TRUE, "create_madds", "create_madd",
+    0, 0, 0,  &CG_create_madds, NULL },
 
   // CG Dependence Graph related options.
 
@@ -310,16 +425,77 @@ static OPTION_DESC Options_CG[] = {
 
   { OVK_BOOL,	OV_INTERNAL, TRUE,"rematerialize", "remat",
     0, 0, 0, &CGSPILL_Rematerialize_Constants, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"force_rematerialization", "force_remat",
+    0, 0, 0, &CGSPILL_Enable_Force_Rematerialization, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"lra_reorder", "",
+    0, 0, 0, &LRA_do_reorder, NULL },
 
   // Global Code Motion (GCM) options.
 
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm", "gcm",
+    0, 0, 0, &GCM_Enable_Scheduling, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "pre_gcm", "pre_gcm",
+    0, 0, 0, &GCM_PRE_Enable_Scheduling, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "post_gcm", "post_gcm",
+    0, 0, 0, &GCM_POST_Enable_Scheduling, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "force_post_gcm", "force_post_gcm",
+    0, 0, 0, &GCM_POST_Force_Scheduling, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "cflow_after_gcm", "cflow_after_gcm",
+    0, 0, 0, &GCM_Enable_Cflow, NULL},
   {OVK_BOOL,	OV_INTERNAL, TRUE, "cross_call_motion", "",
     0, 0, 0, &GCM_Motion_Across_Calls, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "use_sched_est", "use_sched_est",
+    0, 0, 0, &GCM_Use_Sched_Est, NULL},
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "pre_spec_loads", "",
+    0, 0, 0, &GCM_PRE_Spec_Loads, NULL},
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "post_spec_loads", "",
+    0, 0, 0, &GCM_POST_Spec_Loads, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "pointer_speculation", "",
+    0, 0, 0, &GCM_Pointer_Spec, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "speculative_ptr_deref", "",
+    0, 0, 0, &GCM_Eager_Ptr_Deref, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "speculative_loads", "",
+    0, 0, 0, &GCM_Speculative_Loads, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "predicated_loads", "",
+    0, 0, 0, &GCM_Predicated_Loads, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "forw_circ_motion", "",
+    0, 0, 0, &GCM_Forw_Circ_Motion, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm_minimize_reg_usage", "",
+    0, 0, 0, &GCM_Min_Reg_Usage, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm_test", "",
+    0, 0, 0, &GCM_Test, NULL},
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "skip_gcm", "",
+    0, 0, 0, &CG_Skip_GCM, NULL},
+  { OVK_INT32,	OV_INTERNAL, TRUE,"gcm_from_bb", "",
+    0, 0, INT32_MAX, &GCM_From_BB, NULL },
+  { OVK_INT32,	OV_INTERNAL, TRUE,"gcm_to_bb", "",
+    0, 0, INT32_MAX, &GCM_To_BB, NULL },
+  { OVK_INT32,	OV_INTERNAL, TRUE,"gcm_result_tn", "",
+    0, 0, INT32_MAX, &GCM_Result_TN, NULL },
 
   // Local Scheduling (LOCS) and HyperBlock Scheduling (HBS) options.
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"fill_delay_slots", "fill_delay",
+    0, 0, 0, &Enable_Fill_Delay_Slots, NULL },
+
   { OVK_BOOL,	OV_INTERNAL, TRUE,"local_scheduler", "local_sched",
     0, 0, 0, &LOCS_Enable_Scheduling, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"pre_local_scheduler", "pre_local_sched",
+    0, 0, 0, &LOCS_PRE_Enable_Scheduling, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"post_local_scheduler", "post_local_sched",
+    0, 0, 0, &LOCS_POST_Enable_Scheduling, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"locs_form_bundles", "locs_form_bundles",
+    0, 0, 0, &LOCS_Enable_Bundle_Formation, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "pre_hb_scheduler", "pre_hb_sched",
+    0, 0, 0, &IGLS_Enable_PRE_HB_Scheduling, NULL },
+  {OVK_BOOL,	OV_INTERNAL, TRUE, "post_hb_scheduler", "post_hb_sched",
+    0, 0, 0, &IGLS_Enable_POST_HB_Scheduling, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"hb_scheduler", "hb_sched",
+    0, 0, 0, &IGLS_Enable_HB_Scheduling, NULL },
+
+  // Turns of all scheduling (LOCS, HBS, GCM) for triaging.
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"all_scheduler", "all_sched",
+    0, 0, 0, &IGLS_Enable_All_Scheduling, NULL },
 
   // Hyperblock formation (HB) options.
 
@@ -402,23 +578,34 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE, "loop_force_ifc", "",
     0, 0, 2,    &CG_LOOP_force_ifc, NULL },
 
-  // Emit options:
-
+  // Emit options
+  { OVK_INT32,	OV_INTERNAL, TRUE,"longbranch_limit", "",
+    DEFAULT_LONG_BRANCH_LIMIT, 0, INT32_MAX, &EMIT_Long_Branch_Limit, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"pjump_all", "pjump_all",
+    0, 0, 0, &EMIT_pjump_all, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"use_cold_section", "use_cold_section",
+    0, 0, 0, &EMIT_use_cold_section, NULL },
   { OVK_BOOL,   OV_INTERNAL, TRUE,  "emit_asm_dwarf", "",
-    0,0,0,      &LAI_emit_asm_dwarf, NULL,
-    "Turn on/off emission of dwarf data into .lai file [Default OFF]"
+    0,0,0,      &CG_emit_asm_dwarf, NULL,
+    "Turn on/off emission of dwarf data into .s file [Default OFF]"
   },
   { OVK_BOOL,   OV_INTERNAL, TRUE,  "emit_unwind_directives", "",
-    0,0,0,      &LAI_emit_unwind_directives, NULL,
-    "Turn on/off emission of unwind directives into .lai file [Default OFF]"
+    0,0,0,      &CG_emit_unwind_directives, NULL,
+    "Turn on/off emission of unwind directives into .s file [Default OFF]"
   },
   { OVK_BOOL,   OV_INTERNAL, TRUE,  "emit_unwind_info", "",
-    0,0,0,      &LAI_emit_unwind_info, NULL,
-    "Turn on/off emission of unwind into .lai file [Default OFF]"
+    0,0,0,      &CG_emit_unwind_info, NULL,
+    "Turn on/off emission of unwind into .s/.o file [Default OFF]"
   },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"volatile_asm_stop", "",
+    0, 0, 0, &EMIT_stop_bits_for_volatile_asm, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_stop_bits_for_asm", "",
+    0, 0, 0, &EMIT_stop_bits_for_asm, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_explicit_bundles", "",
+    0, 0, 0, &EMIT_explicit_bundles, NULL },
+  { OVK_COUNT },
 
-  // Misc.
-
+  // Misc:
   { OVK_BOOL,	OV_INTERNAL, TRUE,  "gra_live_predicate_aware", "",
     0,0,0,      &GRA_LIVE_Predicate_Aware, NULL,
     "Allow GRA_LIVE to be predicate-aware [Default ON]"
@@ -444,23 +631,6 @@ static OPTION_DESC Options_CG[] = {
   { OVK_COUNT }
 };
 
-/* Global register allocator options */
-static OPTION_DESC Options_GRA[] = {
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE,  "redo_liveness", "",
-    0,0,0,      &GRA_redo_liveness, NULL,
-    "Turn on/off recalculation of liveness [Default FALSE]"
-  },
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE,  "recalc_liveness", "",
-    0,0,0,      &GRA_recalc_liveness, NULL,
-    "Turn on/off recomputation of global liveness info [Default FALSE]"
-  },
-
-  { OVK_COUNT }		/* List terminator -- must be last */
-};
-
-
 OPTION_GROUP CG_Option_Groups[] = {
   { "CG", ':', '=', Options_CG },
   { "GRA", ':', '=', Options_GRA },
@@ -485,6 +655,28 @@ Configure_CG_Options(void)
 
   if (!CG_localize_tns_Set)
     CG_localize_tns = (CG_opt_level <= 1);
+
+  // Check the LOCS_Enable_Bundle_Formation for consistency
+#if 0
+  if (Lai_Code && LOCS_Enable_Bundle_Formation) {
+    // DevWarn for now until I figure out how to emit a real
+    // warning. I will also need to use overriden flag because
+    // the LOCS_Enable_Bundle_Formation is ON by default, but
+    // I do not need to issue a warning if it is not explicitely
+    // requested in the command line by the user.
+    DevWarn("CG: Ignoring LOCS_Enable_Bundle_Formation set for lai.");
+    LOCS_Enable_Bundle_Formation = FALSE;
+  }
+#else
+  // For now just disable all together
+  LOCS_Enable_Bundle_Formation = FALSE;
+#endif
+
+  // Disable scheduling, etc. for some targets
+#ifdef TARG_ST100
+  IGLS_Enable_All_Scheduling = FALSE;
+  CG_enable_thr = FALSE;
+#endif
 
   return;
 }
@@ -596,12 +788,37 @@ Process_Command_Line (
         case 'f':		    /* file options */
 	  /* error case already handled by main driver */
 	  switch (*cp) {
+	    case 'a':	    /* Assembly file */
+	    case 's':
+	      Assembly = TRUE;
+	      Asm_File_Name = cp + 2;
+	      break;
+
+	    case 'o':	    /* object file */
+	      Object_Code = TRUE;
+	      Obj_File_Name = cp + 2;
+	      break;
+
 	    case 'L':	            /* Lai file */
 	      Lai_Code = TRUE;
 	      Lai_File_Name = cp + 2;
 	      break;
 	  }
 	  break;
+
+        case 's':		    /* -s: Produce assembly file: */
+        case 'S':		    /* -S: Produce assembly file: */
+	  Assembly = TRUE;
+	  break;
+
+        case 't':
+	  /* handle the -tfprev10 option to fix tfp hardware bugs. */
+	  if ( strncmp ( cp-1, "tfprev10", 8 ) == 0 ) {
+	    No_Quad_Aligned_Branch = TRUE;
+	  }
+
+	  break;
+
         default:
 	  ErrMsg (EC_Unknown_Flag, *(cp-1), argv[i]);
       }
@@ -628,15 +845,53 @@ Prepare_Source (void)
    */
   fname = Last_Pathname_Component ( Src_File_Name );
 
-  if (Lai_File_Name == NULL) {
-    /* Replace source file extension to get assembly file name: */
-    Lai_File_Name = New_Extension (fname, LAI_FILE_EXTENSION);
+  /* If we're producing information for CITE, we need an assembly
+   * file even if it wasn't explicitly requested:
+   */
+  if ( List_Cite ) {
+    Assembly = TRUE;
   }
 
-  /* Open the LAI file for compilation: */
-  if ((Lai_File = fopen (Lai_File_Name, "w")) == NULL) {
-    ErrMsg (EC_Asm_Open, Lai_File_Name, errno);
-    Terminate (1);
+#ifdef TARG_ST100
+  if (Object_Code) {
+    FmtAssert(FALSE,("SORRY: object code not generated for the ST100"));
+  }
+#else
+  if (Lai_Code) {
+    FmtAssert(FALSE,("SORRY: LAI not available for this target"));
+  }
+#endif
+
+  if (Lai_Code) {
+    if (Lai_File_Name == NULL) {
+      /* Replace source file extension to get assembly file name: */
+      Lai_File_Name = New_Extension (fname, LAI_FILE_EXTENSION);
+    }
+
+    /* Open the LAI file for compilation: */
+    if ((Lai_File = fopen (Lai_File_Name, "w")) == NULL) {
+      ErrMsg (EC_Asm_Open, Lai_File_Name, errno);
+      Terminate (1);
+    }
+  }
+
+  if ( Assembly ) {
+    if ( Asm_File_Name == NULL ) {
+      /* Replace source file extension to get assembly file name: */
+      Asm_File_Name = New_Extension (fname, ASM_FILE_EXTENSION );
+    }
+
+    /* Open	the ASM	file for compilation: */
+    if ( ( Asm_File	= fopen	( Asm_File_Name, "w" ) ) == NULL ) {
+      ErrMsg ( EC_Asm_Open, Asm_File_Name, errno );
+      Terminate (1);
+    }
+  }
+
+  /* Prepare relocatable object file name: */
+  if ( Obj_File_Name == NULL ) {
+    /* Replace source file extension to get	object file: */
+    Obj_File_Name =	New_Extension (fname, OBJ_FILE_EXTENSION);
   }
 
   return;

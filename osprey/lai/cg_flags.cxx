@@ -54,6 +54,7 @@
 
 #include "defs.h"
 #include "cg_flags.h"
+#include "cgtarget.h"
 
 INT32 CG_skip_after = INT32_MAX;
 INT32 CG_skip_before = 0;
@@ -100,12 +101,34 @@ INT32 CG_branch_mispredict_factor= -1;		/* means not set */
 BOOL CG_warn_bad_freqs = FALSE;
 BOOL CG_enable_loop_optimizations = TRUE;
 BOOL CG_enable_feedback = FALSE;
+
+// TODO: set the default value here and ovewrite in target-specific
+//       initialization part.
+#ifdef TARG_IA64
+BOOL CG_enable_thr = TRUE;
+BOOL CG_cond_defs_allowed = TRUE;
 BOOL CG_tail_call = FALSE;
+#else
+BOOL CG_enable_thr = FALSE;
+BOOL CG_cond_defs_allowed = FALSE;
+BOOL CG_tail_call = TRUE;
+#endif
+
 BOOL CG_enable_reverse_if_conversion = TRUE;
 BOOL CG_enable_reverse_if_conversion_overridden = FALSE;
 
 INT32 CG_maxinss = CG_maxinss_default;
 INT32 CG_maxblocks = 30;
+
+// ====================================================================
+//   EBO:
+// ====================================================================
+
+BOOL CG_create_madds = TRUE;
+
+// ====================================================================
+//   CFLOW:
+// ====================================================================
 
 BOOL CFLOW_Enable = FALSE;
 BOOL CFLOW_opt_before_cgprep = FALSE;
@@ -124,12 +147,102 @@ UINT32 CFLOW_clone_min_incr = 15;
 UINT32 CFLOW_clone_max_incr = 100;
 const char *CFLOW_cold_threshold;
 
-BOOL CGSPILL_Rematerialize_Constants = TRUE;
+// ====================================================================
+//   CGSPILL:
+// ====================================================================
 
+BOOL CGSPILL_Rematerialize_Constants = TRUE;
+BOOL CGSPILL_Enable_Force_Rematerialization = FALSE;
+
+// ====================================================================
+//   GCM:
+// ====================================================================
+
+// TODO: set the default value here and ovewrite in target-specific
+//       initialization part.
+#ifdef TARG_IA64
+BOOL GCM_Speculative_Loads = FALSE;
+BOOL GCM_Predicated_Loads = TRUE;
+#else
+BOOL GCM_Speculative_Loads = FALSE;
+BOOL GCM_Predicated_Loads = FALSE;
+#endif
+BOOL GCM_Motion_Across_Calls = TRUE;
+BOOL GCM_Min_Reg_Usage = TRUE;
+BOOL GCM_Pointer_Spec= TRUE;
+BOOL GCM_Eager_Ptr_Deref = TRUE;
+BOOL GCM_Test = FALSE;
+BOOL GCM_Enable_Cflow = TRUE;
+BOOL GCM_PRE_Enable_Scheduling = TRUE;
+BOOL GCM_POST_Enable_Scheduling = TRUE;
+BOOL GCM_Enable_Scheduling = TRUE;
+BOOL GCM_Enable_Fill_Delay_Slots = TRUE;
+
+// ====================================================================
+//   LOCS:
+// ====================================================================
+
+BOOL Enable_Fill_Delay_Slots = TRUE;
+
+// TODO: set the default value here and ovewrite in target-specific
+//       initialization part.
+#if defined(TARG_IA64) || defined(TARG_ST100)
+BOOL LOCS_Enable_Bundle_Formation = TRUE;
+#else
+BOOL LOCS_Enable_Bundle_Formation = FALSE;
+#endif
+BOOL LOCS_PRE_Enable_Scheduling = TRUE;
+BOOL LOCS_POST_Enable_Scheduling = TRUE;
 BOOL LOCS_Enable_Scheduling = TRUE;
 
+// ====================================================================
+//   IGLS:
+// ====================================================================
+
+BOOL IGLS_Enable_HB_Scheduling = TRUE;
+BOOL IGLS_Enable_PRE_HB_Scheduling = FALSE;
+BOOL IGLS_Enable_POST_HB_Scheduling = TRUE;
+BOOL IGLS_Enable_All_Scheduling = TRUE;
+
+// ====================================================================
+//   GRA_LIVE:
+// ====================================================================
+
+BOOL GRA_LIVE_Phase_Invoked = FALSE;
+BOOL GRA_LIVE_Predicate_Aware = FALSE;
+
+// ====================================================================
+//   LRA:
+// ====================================================================
+
+BOOL LRA_do_reorder = FALSE;
+
+// ====================================================================
+//   GRA:
+// ====================================================================
+
+BOOL GRA_use_old_conflict = FALSE;
+BOOL GRA_shrink_wrap      = TRUE;
+BOOL GRA_loop_splitting   = TRUE;
+BOOL GRA_home             = TRUE;
+BOOL GRA_remove_spills    = TRUE;
+BOOL GRA_preference_globals = TRUE;
+BOOL GRA_preference_dedicated = TRUE;
+BOOL GRA_preference_glue = TRUE;
+BOOL GRA_preference_all = TRUE;
+BOOL GRA_ensure_spill_proximity = TRUE;
+BOOL GRA_choose_best_split = TRUE;
+BOOL GRA_use_stacked_regs = TRUE;
 BOOL GRA_redo_liveness = FALSE;
 BOOL GRA_recalc_liveness = FALSE;
+INT32 GRA_non_home_hi = -1;
+INT32 GRA_non_home_lo = INT32_MAX;
+const char* GRA_call_split_freq_string = "0.1";
+const char* GRA_spill_count_factor_string = "0.5";
+
+// ====================================================================
+//   HB:
+// ====================================================================
 
 BOOL  HB_formation = TRUE;
 BOOL  HB_static_freq_heuristics = TRUE;
@@ -152,20 +265,22 @@ BOOL  HB_simple_ifc = TRUE;
 BOOL  HB_simple_ifc_set = FALSE;
 INT   HB_min_blocks = 2;
 
-BOOL GRA_LIVE_Phase_Invoked = FALSE;
-BOOL  GRA_LIVE_Predicate_Aware = FALSE;
+BOOL EMIT_pjump_all = TRUE;
+BOOL EMIT_use_cold_section = TRUE;
+BOOL EMIT_interface_section = TRUE;
+BOOL EMIT_stop_bits_for_asm = TRUE;
+BOOL EMIT_stop_bits_for_volatile_asm = FALSE;
+BOOL EMIT_explicit_bundles = TRUE;
+INT32 EMIT_Long_Branch_Limit = DEFAULT_LONG_BRANCH_LIMIT;
+
+BOOL CG_emit_asm_dwarf    = FALSE;
+BOOL CG_emit_unwind_info  = TRUE;
+BOOL CG_emit_unwind_directives = FALSE;
 
 BOOL EXP_gp_prolog_call_shared = TRUE;
 BOOL EXP_normalize_logical = TRUE;
 const char *EXP_sqrt_algorithm = "st100";
 
-BOOL GCM_Motion_Across_Calls = TRUE;
-
-BOOL LAI_emit_asm_dwarf    = FALSE;
-BOOL LAI_emit_unwind_info  = TRUE;
-BOOL LAI_emit_unwind_directives = FALSE;
-BOOL LAI_emit_use_cold_section = FALSE;
-
 // .lai does not need to have the stack layout be emitted.
 // when generating executable code, we must do it.
-BOOL LAI_emit_stack_frame = TRUE;
+//BOOL LAI_emit_stack_frame = TRUE;

@@ -81,6 +81,9 @@
 #include "const.h"
 #include "data_layout.h"
 #include "whirl2ops.h"
+#include "cg_spill.h"
+#include "reg_live.h"
+#include "lra.h"
 #include "entry_exit_targ.h"
 
 #include "targ_sim.h"
@@ -337,12 +340,14 @@ Init_Callee_Saved_Regs_for_REGION (
  *
  *   2)	Insert stores from dedicated parameter registers for all
  *	declared and possible undeclared formals for varargs routines.
+ *
+ *   3) If <gra_run>, then GRA will be run and each of the callee_saves
+ *	registers is copied to its save TN.
+ *
  * ====================================================================
  */
 static void
-Generate_Entry (
-  BB *bb
-)
+Generate_Entry (BB *bb, BOOL gra_run)
 {
   INT callee_num;
   TN *stn;
@@ -365,7 +370,9 @@ Generate_Entry (
   }
 
   if (!BB_handler(bb)) {
-
+#if 0
+    EETARG_Save_Pfs (Caller_Pfs_TN, &ops);	// alloc
+#endif
     /* Initialize the stack pointer (this is a placeholder; Adjust_Entry
      * will replace it to the actual sequence once we know the size of
      * the frame):
@@ -403,14 +410,71 @@ Generate_Entry (
     ENTRYINFO_sp_adj(ent_info) = OPS_last(&ops);
   }
 
+  if ( gra_run ) {
+    /* Copy from the callee saves registers to register TNs */
+    for ( callee_num = 0; callee_num < Callee_Saved_Regs_Count; ++callee_num ) {
+      TN *callee_tn = CALLEE_tn(callee_num);
+      if (    TN_is_save_reg(callee_tn) 
+	  && !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
+      {
+        Exp_COPY ( callee_tn, CALLEE_ded_tn(callee_num), &ops );
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
+    }
+  }
+
   /* If the return address builtin is required, save RA_TN to the 
    * memory location for __return_address. Otherwise, we copy RA_TN
    * to the save-tn for it. 
    */
   if (NULL != RA_TN) {
+#if 0
+    if ( PU_has_return_address(Get_Current_PU()) ) {
+      // This is broken for IA-32.  On IA-32, the return address is always
+      // at a constant offset from the frame pointer, specifically it is
+      // accessible as 4(%ebp), but it is never in a register.  Nor
+      // does it need to be saved.
+      ST *ra_sv_sym = Find_Special_Return_Address_Symbol();
+      TN *ra_sv_tn = Build_TN_Like(RA_TN);
+      Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
+      Set_TN_spill(ra_sv_tn, ra_sv_sym);
+      Exp_COPY (ra_sv_tn, RA_TN, &ops);
+      if (MTYPE_byte_size(Pointer_Mtype) < MTYPE_byte_size(Spill_Int_Mtype) ) {
+	/* In n32 the __return_address is 4 bytes (pointer),
+	 * but we need 8-byte save/restore to make kernel and dbx happy.
+	 * So use dummy 8-byte base that was created. */
+	ra_sv_sym = ST_base(ra_sv_sym);		/* use 8-byte block */
+	Set_TN_spill(ra_sv_tn, ra_sv_sym);	/* so dwarf uses new addr */
+      }
+      CGSPILL_Store_To_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb);
+    }
+    else {
+      if (gra_run && PU_Has_Calls 
+	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
+      {
+	// because has calls, gra will need to spill this.
+	// but if it is not already in an integer reg,
+	// then gra will spill to memory whereas for ia64
+	// it could use a stacked reg; ideally gra would handle
+	// this, but it doesn't and is easy to just copy to int reg
+	// by hand and then let gra use stacked reg.
+	if (ra_intsave_tn == NULL) {
+        	ra_intsave_tn = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+		Set_TN_save_creg (ra_intsave_tn, TN_class_reg(RA_TN));
+	}
+	Exp_COPY (ra_intsave_tn, RA_TN, &ops );
+      } else {
+        Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops );
+      }
+      Set_OP_no_move_before_gra(OPS_last(&ops));
+    }
+#endif
     Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
   }
-
+#if 0
+  if ( gra_run ) 
+    EETARG_Save_Extra_Callee_Tns (&ops);
+#endif
   /* Save the old GP and setup a new GP if required */
   if (GP_Setup_Code == need_code) {
 
@@ -944,12 +1008,17 @@ Generate_Unique_Exit (void)
  *   1) Insert an update of the stack pointer.
  *
  *   2) Restore GP if needed.
+ *
+ *   3) If <gra_run>, then GRA will be run and each of the callee_saves
+ *	registers is copied its save TN.
+ *
  * ====================================================================
  */
 static void
 Generate_Exit (
   ST *st,		/* The subprogram's symtab entry */
   BB *bb,		/* The exit BB to receive code */
+  BOOL gra_run,         /* Make the preferencing copies for GRA */
   BOOL is_region)       /* Is a nested region */
 
 {
@@ -961,11 +1030,30 @@ Generate_Exit (
   EXITINFO *exit_info = ANNOT_exitinfo(ant);
   BB *bb_epi;
 
-  if ((BB_rid(bb) != NULL) && ( RID_level(BB_rid(bb)) >= RL_CGSCHED )) {
-    /* if gra is not being run, then the epilog code has been added
-     * to the return block.
+  if ( is_region && gra_run ) {
+    /* get out if region and running gra.  epilog code handled with
+     * PU in gra.
      */
     return;
+  }
+
+  if ((BB_rid(bb) != NULL) && ( RID_level(BB_rid(bb)) >= RL_CGSCHED )) {
+    if (gra_run) {
+      /* if the exit is from a region, then we will create a new block
+       * that is part of the PU to hold the exit code for gra.
+       */
+      bb_epi = Gen_And_Insert_BB_After(bb);
+      BB_Transfer_Exitinfo(bb, bb_epi);
+      Target_Simple_Fall_Through_BB(bb,bb_epi);
+      BB_rid(bb_epi) = Current_Rid;
+      Exit_BB_Head = BB_LIST_Delete(bb, Exit_BB_Head);
+      Exit_BB_Head = BB_LIST_Push(bb_epi, Exit_BB_Head, &MEM_pu_pool);
+    } else {
+      /* if gra is not being run, then the epilog code has been added
+       * to the return block.
+       */
+      return;
+    }
   } else {
     bb_epi = bb;
   }
@@ -1000,14 +1088,13 @@ Generate_Exit (
       Exp_COPY (GP_TN, Caller_GP_TN, &ops);
     }
   }
-
+#if 0
+  if ( gra_run )
+    EETARG_Restore_Extra_Callee_Tns (&ops);
+#endif
   if (NULL != RA_TN) {
     if (PU_has_return_address(Get_Current_PU())) {
-
-      FmtAssert(FALSE, ("Generate_Exit: PU_has_return_address"));
-
-      /* TODO: 
-       * If the return address builtin is required, restore RA_TN from the 
+      /* If the return address builtin is required, restore RA_TN from the 
        * memory location for __return_address. 
        */
       ST *ra_sv_sym = Find_Special_Return_Address_Symbol();
@@ -1020,17 +1107,50 @@ Generate_Exit (
   	ra_sv_sym = ST_base(ra_sv_sym);		/* use 8-byte block */
   	Set_TN_spill(ra_sv_tn, ra_sv_sym);	/* so dwarf uses new addr */
       }
-      /*
       CGSPILL_Load_From_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb_epi);
-      */
       Exp_COPY (RA_TN, ra_sv_tn, &ops);
     }
     else {
-      /* Copy back the return address register from the save_tn. */
-      Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+#if 0
+      if (gra_run && PU_Has_Calls 
+	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
+      {
+	// because has calls, gra will need to spill this.
+	// but if it is not already in an integer reg,
+	// then gra will spill to memory whereas for ia64
+	// it could use a stacked reg; ideally gra would handle
+	// this, but it doesn't and is easy to just copy to int reg
+	// by hand and then let gra use stacked reg.
+	Exp_COPY (RA_TN, ra_intsave_tn, &ops );
+      } else {
+	/* Copy back the return address register from the save_tn. */
+	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+      }
+      Set_OP_no_move_before_gra(OPS_last(&ops));
+#else
+	/* Copy back the return address register from the save_tn. */
+	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+#endif
+    }
+  }
+#if 0
+  if ( gra_run ) {
+    /* Copy from register TNs to the callee saves registers */
+    for ( callee_num = 0; callee_num < Callee_Saved_Regs_Count; ++callee_num ) {
+      TN *callee_tn = CALLEE_tn(callee_num);
+      if (    TN_is_save_reg(callee_tn) 
+	  && !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
+      {
+        Exp_COPY ( CALLEE_ded_tn(callee_num), callee_tn, &ops );
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
     }
   }
 
+  if (PU_Has_Calls) {
+    EETARG_Restore_Pfs (Caller_Pfs_TN, &ops);
+  }
+#endif
   /* Restore the stack pointer.
    */
   if (Gen_Frame_Pointer && !PUSH_FRAME_POINTER_ON_STACK) {
@@ -1063,6 +1183,7 @@ Generate_Exit (
       }
     }
     Exp_COPY (FP_TN, Caller_FP_TN, &ops);
+    Set_OP_no_move_before_gra(OPS_last(&ops));
   }
 
   /* Generate the return instruction, unless is this a tail call
@@ -1154,24 +1275,22 @@ Init_Entry_Exit_Code (
  * ====================================================================
  */
 void
-Generate_Entry_Exit_Code ( 
-  ST *pu, BOOL 
-  is_region 
-)
+Generate_Entry_Exit_Code ( ST *pu, BOOL is_region )
 {
   BB_LIST *elist;
+  BOOL gra_run = ! CG_localize_tns;
 
   Is_True(pu != NULL,("Generate_Entry_Exit_Code, null PU ST"));
   /* assume GP_Setup_Code already set */
 
   for (elist = Entry_BB_Head; elist; elist = BB_LIST_rest(elist)) {
-    Generate_Entry (BB_LIST_first(elist));
+    Generate_Entry (BB_LIST_first(elist), gra_run );
   }
 
   Generate_Unique_Exit ();
 
   for (elist = Exit_BB_Head; elist; elist = BB_LIST_rest(elist)) {
-    Generate_Exit (pu, BB_LIST_first(elist), is_region );
+    Generate_Exit (pu, BB_LIST_first(elist), gra_run, is_region );
   }
 
   if (GP_Setup_Code == need_code && !is_region)

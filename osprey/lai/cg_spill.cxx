@@ -75,15 +75,11 @@
 #include "cgprep.h"
 #include "cg_loop.h"
 #include "data_layout.h"
-
 #include "cg.h"
-#include "whirl2ops.h"
-
-/* #include "gra.h" */
+#include "gra.h"
 #include "opt_alias_interface.h"
 #include "cgtarget.h"
 #include "targ_proc_properties.h"
-
 
 static BOOL Trace_Remat; /* Trace rematerialization */
 static BOOL Trace_GRA_spill_placement;
@@ -437,15 +433,19 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     mem_location = TN_spill(tn);
     if (mem_location == NULL) {
       const char *root;
+#ifdef TARG_ST100
       /*
        * Arthur: I need to use TN_register_class(tn) here, and it
-       *         is target-dependent:
+       *         is 
+       *            1. target-dependent
+       *            2. I need precision range analysis in order to
+       *               choose the best type. For now this will do:
        */
-      TY_IDX mem_type = CGTARG_Spill_Type(tn);
-      /*
+      TY_IDX mem_type = CGTARG_Spill_Type(tn, 0);
+#else
       TY_IDX mem_type = TN_is_float(tn) || TN_is_fcc_register(tn) ? 
 		        Spill_Float_Type : Spill_Int_Type;
-      */
+#endif
 
       if (client == CGSPILL_GRA) {
 	root = SYM_ROOT_GRA;
@@ -764,17 +764,15 @@ static OP* Find_Last_Copy(BB *bb)
 {
   OP *last_copy_op;
 
-  // Arthur: just return NULL for now ...
   if (BB_handler(bb)) {
-    //    if (!GRA_Spill_Around_Save_TN_Copies()) {
+    if (!GRA_Spill_Around_Save_TN_Copies()) {
       return NULL;
-      //    }
+    }
     last_copy_op = BB_first_op(bb);
   } else {
     last_copy_op = BB_entry_sp_adj_op(bb);
   }
-  //  if (last_copy_op && GRA_Spill_Around_Save_TN_Copies()) {
-  if (last_copy_op) {
+  if (last_copy_op && GRA_Spill_Around_Save_TN_Copies()) {
     OP *tmp_op;
     for (tmp_op = OP_next(last_copy_op); tmp_op;
 	 tmp_op = OP_next(tmp_op)) {
@@ -798,8 +796,7 @@ static OP* Find_Last_Copy(BB *bb)
 static OP* Find_First_Copy(BB *bb)
 {
   OP *first_copy_op = BB_exit_sp_adj_op(bb);
-  //  if (first_copy_op && GRA_Spill_Around_Save_TN_Copies()) {
-  if (first_copy_op) {
+  if (first_copy_op && GRA_Spill_Around_Save_TN_Copies()) {
     OP *tmp_op;
     for (tmp_op = OP_prev(first_copy_op); tmp_op;
 	 tmp_op = OP_prev(tmp_op)) {
@@ -1251,15 +1248,12 @@ CGSPILL_Force_Rematerialization_For_BB(BB *bb)
 	CGSPILL_Load_From_Memory(new_tn, (ST *)TN_home(new_tn), &ops,
 				 CGSPILL_LCL, bb);
 
-	/*
         if (Is_CG_LOOP_Op(op)) {
 	  FOR_ALL_OPS_OPs(&ops, new_op) {
 	    CGPREP_Init_Op(new_op);
 	    CG_LOOP_Init_Op(new_op);
           }
 	}
-	*/
-
 	CGSPILL_Insert_Ops_Before(bb, op, &ops);
 	// if (CG_DEP_Has_Graph(bb)) {
 	//  FOR_ALL_OPS_OPs(&ops, new_op) {

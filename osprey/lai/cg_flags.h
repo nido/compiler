@@ -180,15 +180,23 @@ extern INT CG_opt_level;
 extern BOOL CG_localize_tns;
 extern BOOL CG_localize_tns_Set;
 extern BOOL LOCALIZE_using_stacked_regs;
-extern BOOL CG_unique_exit;
 
+extern BOOL CG_tail_call;
+extern BOOL CG_unique_exit;
+extern BOOL CG_cond_defs_allowed;
+extern BOOL CG_enable_feedback;
 extern BOOL CG_enable_loop_optimizations;
+extern BOOL CG_enable_rename;
 extern BOOL CG_enable_reverse_if_conversion;
 extern BOOL CG_enable_reverse_if_conversion_overridden;
+extern BOOL CG_enable_thr;
 
 #define CG_maxinss_default 100
 extern INT32 CG_maxinss;
 extern INT32 CG_maxblocks;
+
+/* EBO: */
+extern BOOL CG_create_madds;
 
 /* CFLOW: */
 extern BOOL CFLOW_Enable;
@@ -208,17 +216,11 @@ extern UINT32 CFLOW_clone_max_incr;
 extern UINT32 CFLOW_clone_min_incr;
 extern const char *CFLOW_cold_threshold;
 
-extern BOOL CG_enable_feedback;
-
-extern BOOL CG_tail_call;
-
 /* FREQ: */
 extern BOOL FREQ_enable;
 extern BOOL FREQ_view_cfg;
 extern const char *FREQ_frequent_never_ratio;
 extern const char *FREQ_eh_freq;
-
-extern BOOL CG_enable_rename;
 
 /* Prefetch and load latency */
 
@@ -244,14 +246,56 @@ extern INT32 CG_branch_mispredict_factor;
 
 /* CGSPILL: */
 extern BOOL CGSPILL_Rematerialize_Constants;
+extern BOOL CGSPILL_Enable_Force_Rematerialization;
 
 /* GCM, LOCS and IGLS */
 
+extern BOOL GCM_Enable_Scheduling;
+extern BOOL GCM_PRE_Enable_Scheduling;
+extern BOOL GCM_POST_Enable_Scheduling;
+extern BOOL GCM_Motion_Across_Calls;
+extern BOOL GCM_Min_Reg_Usage;
+extern BOOL GCM_Pointer_Spec;
+extern BOOL GCM_Eager_Ptr_Deref;
+extern BOOL GCM_Speculative_Loads;
+extern BOOL GCM_Predicated_Loads;
+extern BOOL GCM_Test;
+extern BOOL GCM_Enable_Fill_Delay_Slots;
+extern BOOL GCM_Enable_Cflow;
+
+extern BOOL Enable_Fill_Delay_Slots;
+extern BOOL LOCS_PRE_Enable_Scheduling;
+extern BOOL LOCS_POST_Enable_Scheduling;
+extern BOOL LOCS_Enable_Bundle_Formation;
 extern BOOL LOCS_Enable_Scheduling;
 
+extern BOOL IGLS_Enable_PRE_HB_Scheduling;
+extern BOOL IGLS_Enable_POST_HB_Scheduling;
+extern BOOL IGLS_Enable_HB_Scheduling;
+extern BOOL IGLS_Enable_All_Scheduling;
+
+/* LRA: */
+extern BOOL LRA_do_reorder;
+
 /* GRA: */
+extern BOOL GRA_use_old_conflict;
+extern BOOL GRA_shrink_wrap;
+extern BOOL GRA_loop_splitting;
+extern BOOL GRA_home;
+extern BOOL GRA_remove_spills;
+extern BOOL GRA_preference_globals;
+extern BOOL GRA_preference_dedicated;
+extern BOOL GRA_preference_glue;
+extern BOOL GRA_preference_all;
+extern BOOL GRA_ensure_spill_proximity;
+extern BOOL GRA_choose_best_split;
+extern BOOL GRA_use_stacked_regs;
 extern BOOL GRA_redo_liveness;
 extern BOOL GRA_recalc_liveness;
+extern INT32 GRA_non_home_hi;
+extern INT32 GRA_non_home_lo;
+extern const char* GRA_call_split_freq_string;
+extern const char* GRA_spill_count_factor_string;
 
 /* HB: */
 extern BOOL  HB_formation;
@@ -281,6 +325,20 @@ extern BOOL  HB_skip_hammocks;
 extern BOOL GRA_LIVE_Phase_Invoked;
 extern BOOL  GRA_LIVE_Predicate_Aware;
 
+/* EMIT: */
+extern BOOL EMIT_pjump_all;
+extern BOOL EMIT_use_cold_section;
+extern BOOL EMIT_interface_section;
+
+extern INT32 EMIT_Long_Branch_Limit;    /* max distance (in bytes) for branches */
+extern BOOL EMIT_stop_bits_for_asm;
+extern BOOL EMIT_stop_bits_for_volatile_asm;
+extern BOOL EMIT_explicit_bundles;
+
+extern BOOL CG_emit_asm_dwarf;
+extern BOOL CG_emit_unwind_directives;
+extern BOOL CG_emit_unwind_info;
+
 /*
  * CGEXPand flags 
  */
@@ -288,15 +346,17 @@ extern BOOL EXP_gp_prolog_call_shared;
 extern BOOL EXP_normalize_logical;
 extern const char *EXP_sqrt_algorithm;
 
-/* GCM: */
-extern BOOL GCM_Motion_Across_Calls;
-
-extern BOOL LAI_emit_asm_dwarf;
-extern BOOL LAI_emit_unwind_directives;
-extern BOOL LAI_emit_unwind_info;
+/*
 extern BOOL LAI_emit_use_cold_section;
 
 extern BOOL LAI_emit_stack_frame;
+*/
+
+/* =======================================================================
+ *   Miscellaneous
+ * =======================================================================
+ */
+extern BOOL Use_Page_Zero;  /* set bit in object to allow use of page 0 */
 
 /* =======================================================================
  *   Tracing Flags

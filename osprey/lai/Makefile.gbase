@@ -33,7 +33,7 @@
 #
 
 #
-#  Makefile.base for lai
+#  Makefile.base for cg
 #
 
 #----------------------------------------------------------------------
@@ -134,7 +134,8 @@ TARG_TARG_INFO 		= $(TARGDIR)/targ_info
 BE_DIR 			= $(BUILD_TOT)/be
 BE_COM_DIR 		= $(BE_DIR)/com
 BE_BE_DIR		= $(BE_DIR)/be
-BE_LAI_DIR 		= $(BUILD_TOT)/lai
+BE_CG_DIR 		= $(BUILD_TOT)/lai
+BE_CG_GRA_DIR		= $(BE_CG_DIR)/gra_mon
 BE_REGION_DIR 		= $(BE_DIR)/region
 BE_PROMPF_DIR		= $(BE_DIR)/prompf_anl
 BE_OPT_DIR              = $(BE_DIR)/opt
@@ -153,7 +154,8 @@ COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 
 SRC_DIRS = 			\
   $(CURDIR)			\
-  $(BE_LAI_DIR)			\
+  $(BE_CG_DIR)			\
+  $(BE_CG_GRA_DIR)		\
   $(COMMON_COM_DIR)		\
   $(COMMON_UTIL_DIR)		\
   $(COMMON_TARG_CONFIG_DIR)	\
@@ -196,13 +198,16 @@ SETGEN  = $(COMMON_UTIL_DIR)/gen_x_set		\
 	  $(COMMON_UTIL_DIR)/x_set_func.td	\
           $(COMMON_UTIL_DIR)/x_set_interface
 
-DERIVED_SRCS = 	\
-  bb_list.cxx	\
-  op_list.cxx 	\
-  st_list.cxx 	\
-  tn_list.cxx	\
-  void_list.cxx \
-  cg_loop_scc_prop.cxx
+DERIVED_SRCS = 		\
+  bb_list.cxx		\
+  gra_bb_list.cxx 	\
+  lrange_list.cxx 	\
+  op_list.cxx 		\
+  st_list.cxx 		\
+  tn_list.cxx		\
+  void_list.cxx 	\
+  cg_loop_scc_prop.cxx 	\
+  tn_prop.cxx
 
 # remove all derived files with make clobber.
 LDIRT = $(DERIVED_INCS) $(DERIVED_INCS:.h=.c) $(DERIVED_INCS:.h=.cxx) *.pch
@@ -228,15 +233,37 @@ COMMON_TARG_ACCESS_SRCS = \
   ti_errors.c	\
   ti_asm.c
 
-LAI_C_SRCS = \
+CG_C_SRCS = \
   $(COMMON_UTIL_SRCS)	\
   $(COMMON_TARG_ACCESS_SRCS)
 
+BE_CG_GRA_CXX_SRCS =		\
+  gra.cxx			\
+  gra_bb.cxx			\
+  gra_cflow.cxx			\
+  gra_color.cxx			\
+  gra_create.cxx		\
+  gra_grant.cxx			\
+  gra_interfere.cxx		\
+  gra_loop.cxx			\
+  gra_lrange.cxx		\
+  gra_lrange_subuniverse.cxx	\
+  gra_lrange_vset.cxx           \
+  gra_lunit.cxx			\
+  gra_pref.cxx			\
+  gra_region.cxx		\
+  gra_spill.cxx			\
+  lrange_set.cxx		\
+  gra_split.cxx			\
+  gra_trace.cxx
+
+CG_GRA_PCH_CXX_SRCS= $(BE_CG_GRA_CXX_SRCS)
+
 COMMON_TARG_EXP_CXX_SRCS =	\
-  exp_targ.cxx		\
-  exp_branch.cxx	\
-  exp_pred.cxx	\
-  exp_memrf.cxx	\
+  exp_targ.cxx			\
+  exp_branch.cxx		\
+  exp_pred.cxx			\
+  exp_memrf.cxx			\
   exp_divrem.cxx
 
 COMMON_TARG_CG_CXX_SRCS =	\
@@ -248,7 +275,29 @@ COMMON_TARG_CG_CXX_SRCS =	\
 			\
   targ_hb.cxx
 
-LAI_CXX_SRCS = 		\
+ifeq ($(BUILD_TARGET), IA64)
+  BE_CG_TARG_CXX_SRCS += float_rf.cxx
+endif
+
+ifeq ($(BUILD_TARGET), IA32)
+  BE_CG_TARG_CXX_SRCS += stack_fp_regs.cxx
+  BE_CG_TARG_CXX_SRCS += exp_longlong.cxx
+endif
+
+CG_CXX_PCH_SRCS = 	\
+  cg_cflow.cxx		\
+  cg_dep_graph.cxx 	\
+  eh_region.cxx		\
+  gra_live.cxx		\
+  gtn_tn_set.cxx        \
+  gtn_universe.cxx      \
+  lra.cxx		\
+  op_map.cxx		\
+  oputil.cxx		\
+  tn_map.cxx		\
+  tnutil.cxx
+
+CG_CXX_SRCS = 		\
   $(COMMON_COM_CXX_SRCS)\
   $(COMMON_TARG_EM_CXX_SRCS)\
   $(COMMON_TARG_EXP_CXX_SRCS)\
@@ -264,9 +313,7 @@ LAI_CXX_SRCS = 		\
   cgemit.cxx		\
   cgexp.cxx		\
   cgprep.cxx		\
-  cg_cflow.cxx		\
   cg_db_op.cxx		\
-  cg_dep_graph.cxx	\
   cg_flags.cxx		\
   cg_flags_arch.cxx	\
   cg_ir.cxx       	\
@@ -275,47 +322,47 @@ LAI_CXX_SRCS = 		\
   cg_region.cxx		\
   cg_sched_est.cxx	\
   cg_spill.cxx		\
+  cg_thr.cxx		\
+  cg_vector.cxx		\
   comment.cxx		\
   dominate.cxx		\
-  eh_region.cxx		\
   findloops.cxx		\
   freq.cxx		\
-  gtn_tn_set.cxx        \
-  gtn_universe.cxx      \
-  gra_live.cxx		\
+  gcm.cxx		\
   hb.cxx		\
   hb_block_select.cxx	\
+  hb_hazards.cxx	\
   hb_id_candidates.cxx	\
   hb_if_convert.cxx	\
+  hb_sched.cxx		\
   hb_tail_duplication.cxx	\
   hb_trace.cxx		\
+  igls.cxx		\
   init.cxx		\
   label_util.cxx	\
   localize.cxx		\
   note.cxx		\
-  oputil.cxx		\
-  op_map.cxx		\
   pqs.cxx		\
   pqs_cg.cxx		\
   register.cxx		\
   reg_live.cxx		\
   tag.cxx		\
   tcon_util.cxx		\
-  tnutil.cxx		\
-  tn_map.cxx		\
   variants.cxx		\
   whirl2ops.cxx		\
   $(DERIVED_SRCS)
 
 ifeq ($(BUILD_PCH), USE_PCH)
-LAI_PCH_OBJS = $(LAI_CXX_PCH_SRCS:.cxx=.o)
+CG_PCH_OBJS = $(CG_CXX_PCH_SRCS:.cxx=.o)
+CG_GRA_PCH_OBJS = $(CG_GRA_PCH_CXX_SRCS:.cxx=.o)
 else
-LAI_CXX_SRCS += $(LAI_CXX_PCH_SRCS)
+CG_CXX_SRCS += $(CG_CXX_PCH_SRCS)
+CG_CXX_SRCS += $(CG_GRA_PCH_CXX_SRCS)
 endif
 
-LAI_C_OBJS = $(LAI_C_SRCS:.c=.o)
+CG_C_OBJS = $(CG_C_SRCS:.c=.o)
 
-LAI_CXX_OBJS = $(LAI_CXX_SRCS:.cxx=.o)
+CG_CXX_OBJS = $(CG_CXX_SRCS:.cxx=.o)
 
 VPATH    =  $(SRC_DIRS)
 
@@ -353,7 +400,7 @@ endif
 # File containing the list of symbols exported outside of cg.so
 #----------------------------------------------------------------------
 ifeq ($(BUILD_COMPILER), EDG)
-EXPORT_LIST = -exports_file $(BE_LAI_DIR)/Exported
+EXPORT_LIST = -exports_file $(BE_CG_DIR)/Exported
 else
 EXPORT_LIST = 
 endif
@@ -363,9 +410,9 @@ endif
 #----------------------------------------------------------------------
 
 ifdef LINK_DSO
-TARGETS = debug-lai
+TARGETS = debug-cg
 else
-TARGETS = lai.so
+TARGETS = cg.so
 endif
 
 #----------------------------------------------------------------------
@@ -428,9 +475,9 @@ ifeq ($(BUILD_PCH), USE_PCH)
 ## build pch files first so that we can use precompiled headers
 # TODO: how to build pch on irix
 	( $(MAKE) \
-	PCH_OPTS="-LANG:create_pch=lai_pch.pch" lai_pch.pch lai_pch.o )
+	PCH_OPTS="-LANG:create_pch=cg_pch.pch" cg_pch.pch cg_pch.o )
 	( $(MAKE) \
-	PCH_OPTS="-LANG:use_pch=lai_pch.pch" lai_pch_files )
+	PCH_OPTS="-LANG:use_pch=cg_pch.pch" cg_pch_files )
 endif
 
 #----------------------------------------------------------------------
@@ -440,9 +487,9 @@ endif
 last : make_deps
 
 #----------------------------------------------------------------------
-#  Build 'lai'
+#  Build 'cg'
 #
-#  These rules build the 'lai' executable by default, and can install
+#  These rules build the 'cg' executable by default, and can install
 #  it in the $(BUILD_INSTALL)/usr/lib directory.
 #
 #----------------------------------------------------------------------
@@ -452,10 +499,10 @@ install:: default
 ifeq ($(BUILD_OS), LINUX)
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -D $(TARGETS) $(STD_MONGOOSE_LINUX_LOC)
 else
-	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) lai.so
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) cg.so
  ifeq ($(BUILD_TYPE), SHARED)
  ifndef NOSYSGEN
-	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F /usr/cpu/sysgen/root$(STD_MONGOOSE_LOC) lai.so
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F /usr/cpu/sysgen/root$(STD_MONGOOSE_LOC) cg.so
  endif
  endif
 endif
@@ -468,13 +515,14 @@ endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
 
-lai_pch_files: $(LAI_PCH_OBJS) lai_pch.pch
+cg_pch_files: $(CG_PCH_OBJS) cg_pch.pch
+cg_gra_pch_files: $(CG_GRA_PCH_OBJS) cg_gra_pch.pch
 
-lai.so:  $(LAI_CXX_OBJS) $(LAI_C_OBJS) $(LAI_PCH_OBJS) \
-	$(BE_LAI_DIR)/Exported $(TARG_BE)/be.so \
+cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
+	$(BE_CG_DIR)/Exported $(TARG_BE)/be.so \
 	$(BE_BE_DIR)/so_locations
 	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
-	$(LAI_C_OBJS) $(LAI_CXX_OBJS) $(LAI_PCH_OBJS) \
+	$(CG_C_OBJS) $(CG_CXX_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
 	-o $@ $(TARG_BE)/be.so $(LLDLIBS)
 
 else
@@ -489,10 +537,10 @@ endif
  else
 LINK_DSOS = $(TARG_BE)/be.so
  endif
-lai.so:  $(LAI_CXX_OBJS) $(LAI_C_OBJS) $(BE_LAI_DIR)/Exported $(TARG_BE)/be.so \
+cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(BE_CG_DIR)/Exported $(TARG_BE)/be.so \
 		$(BE_BE_DIR)/so_locations
 	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
-		$(LAI_C_OBJS) $(LAI_CXX_OBJS) \
+		$(CG_C_OBJS) $(CG_CXX_OBJS) \
 		-o $@ $(LINK_DSOS) $(LLDLIBS)
 
 endif
@@ -500,7 +548,7 @@ endif
 LDIRT += be.so $(TARGET_SO) be ii_files
 
 ifdef LINK_DSO
-debug-lai: lai.so
+debug-cg: cg.so
 	(cd $(TARG_BE); $(MAKE) LINK_DSO='$(LINK_DSO)' \
 		LINK_DSO_OPTS='$(LINK_DSO_OPTS) -L.' be)
 endif
@@ -508,58 +556,78 @@ endif
 DERIVED_INCS += bb_list.h
 bb_list.cxx : bb_list.h
 bb_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh                   \
-$(BE_LAI_DIR)/gen_bb_list.csh
-	csh -f	$(BE_LAI_DIR)/gen_bb_list.csh $(COMMON_UTIL_DIR)
+$(BE_CG_DIR)/gen_bb_list.csh
+	csh -f	$(BE_CG_DIR)/gen_bb_list.csh $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += gra_bb_list.h
+gra_bb_list.cxx : gra_bb_list.h
+gra_bb_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh                   \
+$(BE_CG_GRA_DIR)/gen_gra_bb_list.csh
+	csh -f	$(BE_CG_GRA_DIR)/gen_gra_bb_list.csh $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += lrange_list.h
+lrange_list.cxx : lrange_list.h
+lrange_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh 	\
+	        $(BE_CG_GRA_DIR)/gen_lrange_list.csh
+	csh -f  $(BE_CG_GRA_DIR)/gen_lrange_list.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += op_list.h
 op_list.cxx : op_list.h
 op_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh                   \
-$(BE_LAI_DIR)/gen_op_list.csh
-	csh -f	$(BE_LAI_DIR)/gen_op_list.csh $(COMMON_UTIL_DIR)
+$(BE_CG_DIR)/gen_op_list.csh
+	csh -f	$(BE_CG_DIR)/gen_op_list.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += st_list.h
 st_list.cxx : st_list.h
 st_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh   \
-	    $(BE_LAI_DIR)/gen_st_list.csh
-	csh -f  $(BE_LAI_DIR)/gen_st_list.csh $(COMMON_UTIL_DIR)
+	    $(BE_CG_DIR)/gen_st_list.csh
+	csh -f  $(BE_CG_DIR)/gen_st_list.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += tn_list.h
 tn_list.cxx : tn_list.h
 tn_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh 	\
-	    $(BE_LAI_DIR)/gen_tn_list.csh
-	csh -f  $(BE_LAI_DIR)/gen_tn_list.csh $(COMMON_UTIL_DIR)
+	    $(BE_CG_DIR)/gen_tn_list.csh
+	csh -f  $(BE_CG_DIR)/gen_tn_list.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += void_list.h
 void_list.cxx : void_list.h
 void_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh 	\
-	    $(BE_LAI_DIR)/gen_void_list.csh
-	csh -f  $(BE_LAI_DIR)/gen_void_list.csh $(COMMON_UTIL_DIR)
+	    $(BE_CG_DIR)/gen_void_list.csh
+	csh -f  $(BE_CG_DIR)/gen_void_list.csh $(COMMON_UTIL_DIR)
 
+#SKIP DERIVED_SRCS += bb_set.cxx
 DERIVED_INCS += bb_set.h bb_set.td
+#SKIP bb_set.cxx : bb_set.h
 bb_set.h : bb_set.td
-bb_set.td : $(SETGEN) $(BE_LAI_DIR)/gen_bb_set
-	csh -f $(BE_LAI_DIR)/gen_bb_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+bb_set.td : $(SETGEN) $(BE_CG_DIR)/gen_bb_set
+	csh -f $(BE_CG_DIR)/gen_bb_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+
+DERIVED_INCS += lrange_set.h lrange_set.td
+lrange_set.h : lrange_set.td
+lrange_set.cxx : lrange_set.td
+lrange_set.td : $(SETGEN) $(BE_CG_GRA_DIR)/gen_lrange_set
+	csh -f $(BE_CG_GRA_DIR)/gen_lrange_set $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += cg_loop_scc_prop.h
 cg_loop_scc_prop.cxx : cg_loop_scc_prop.h
 cg_loop_scc_prop.h :	$(COMMON_UTIL_DIR)/gen_x_prop.csh               \
-$(BE_LAI_DIR)/gen_cg_loop_scc_prop.csh
-	csh -f	$(BE_LAI_DIR)/gen_cg_loop_scc_prop.csh $(COMMON_UTIL_DIR)
+$(BE_CG_DIR)/gen_cg_loop_scc_prop.csh
+	csh -f	$(BE_CG_DIR)/gen_cg_loop_scc_prop.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += tn_prop.h
 tn_prop.cxx : tn_prop.h
-tn_prop.h : $(COMMON_UTIL_DIR)/gen_x_prop.csh $(BE_LAI_DIR)/gen_tn_prop.csh
-	csh -f	$(BE_LAI_DIR)/gen_tn_prop.csh $(COMMON_UTIL_DIR)
+tn_prop.h : $(COMMON_UTIL_DIR)/gen_x_prop.csh $(BE_CG_DIR)/gen_tn_prop.csh
+	csh -f	$(BE_CG_DIR)/gen_tn_prop.csh $(COMMON_UTIL_DIR)
 
 DERIVED_INCS += tn_set.h tn_set.td
 tn_set.h : tn_set.td
-tn_set.td : $(SETGEN) $(BE_LAI_DIR)/gen_tn_set
-	csh -f $(BE_LAI_DIR)/gen_tn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+tn_set.td : $(SETGEN) $(BE_CG_DIR)/gen_tn_set
+	csh -f $(BE_CG_DIR)/gen_tn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
 
 DERIVED_INCS += gtn_set.h gtn_set.td
 gtn_set.h : gtn_set.td
-gtn_set.td : $(SETGEN) $(BE_LAI_DIR)/gen_gtn_set
-	csh -f $(BE_LAI_DIR)/gen_gtn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+gtn_set.td : $(SETGEN) $(BE_CG_DIR)/gen_gtn_set
+	csh -f $(BE_CG_DIR)/gen_gtn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
 
 # here's the target that gets made recursively
 derived_files : $(DERIVED_SRCS) $(DERIVED_INCS)

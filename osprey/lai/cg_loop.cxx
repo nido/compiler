@@ -141,9 +141,9 @@
 #include "whirl2ops.h"
 
 #include "cg.h"
-/* #include "register.h" */	/* needed for "gra.h" */
-/* #include "tn_set.h" */	/* needed for "gra.h" */
-/* #include "gra.h" */
+#include "register.h" 	/* needed for "gra.h" */
+#include "tn_set.h" 	/* needed for "gra.h" */
+#include "gra.h" 
 #include "gra_live.h"
 #include "bb_set.h"
 #include "gtn_universe.h"
@@ -151,34 +151,26 @@
 #include "pf_cg.h"
 #include "note.h"
 #include "cgexp.h"
-/*
-#include "cio.h"
-#include "cio_rwtran.h"
-*/
+/* #include "cio.h"
+#include "cio_rwtran.h" */
 #include "cg_cflow.h"
 #include "resource.h"
 #include "cg_db_op.h"
 #include "dominate.h"
 #include "ti_res_count.h"
 #include "cg_loop_scc.h"
-/*
-#include "cg_loop_recur.h"
-#include "cg_loop_mii.h"
-*/
+/* #include "cg_loop_recur.h"
+#include "cg_loop_mii.h" */
 #include "freq.h"
 #include "cg_region.h"
 #include "cg_sched_est.h"
 #include "cg_loop.h"
-/*
-#include "cg_swp.h"
-#include "cg_swp_options.h"
-*/
+/* #include "cg_swp.h"
+#include "cg_swp_options.h" */
 #include "findloops.h"
 #include "dominate.h"
-/*
-#include "ebo.h"
+/* #include "ebo.h" */
 #include "hb.h"
-*/
 #include "gra_live.h"
 
 /* Error tolerance for feedback-based frequency info */
