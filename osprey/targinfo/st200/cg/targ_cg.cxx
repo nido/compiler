@@ -569,7 +569,11 @@ CGTARG_Dependence_Required (
 	FmtAssert(OP_opnds(pred_op) > 0,("Arthur doesn't understand"));
 	cur_latency = TI_LATENCY_Result_Available_Cycle(OP_code(pred_op),i) -
 	  TI_LATENCY_Operand_Access_Cycle(OP_code(pred_op), 0 /* zero */);
+#if 0 // CL: the call insn already accounts for 1 more cycle
 	if (cur_latency > max_latency)
+#else
+	if (cur_latency > max_latency+1)
+#endif
 	  max_latency = cur_latency;
       }
     }
