@@ -512,7 +512,6 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     // account for isa subset. HACK.
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     int unrolled = BB_unrollings(cgir_bb);
-//if (unrolled) fprintf(stderr, "BB(%d) input unrolled %d\n", BB_id(cgir_bb), unrolled);
     // Make the BasicBlock.
     basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
 	labelCount, labels, operationCount, operations);
@@ -547,7 +546,12 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
-    LAI_Interface_moreBasicBlock(interface, basicBlock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
+    LAI_Interface_moreBasicBlock(interface,
+	basicBlock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
+    // Force the fully unrolled loop bodies to start a new scheduling region,
+    // else the memory dependences will not be correct: bug pro-release-1-4-0-B/1.
+    if (BB_loop_head_bb(cgir_bb) == cgir_bb &&
+	BB_unrolled_fully(cgir_bb)) LAI_Interface_setStart(interface, basicBlock);
   }
   return basicBlock;
 }
@@ -832,6 +836,7 @@ CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, boo
     OP_flags2(cgir_op) = OP_flags2(orig_op);
 #endif
     Copy_Asm_OP_Annot(cgir_op, orig_op);
+    Set_OP_unroll_bb(cgir_op, OP_unroll_bb(orig_op));
     // _CG_LOOP_info_map may not be defined for multi-bb loops.
     if (Is_CG_LOOP_Op(orig_op)) CG_LOOP_Init_Op(cgir_op);
     // If a duplicate, set orig_idx and copy WN.
@@ -928,21 +933,22 @@ CGIR_BB_make(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID 
 
 // More a CGIR_BB.
 static void
-CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, int ordering, int unrolled, bool isRegAlloc, bool isScheduled) {
+CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, int ordering, int unrolled, bool isAllocated, bool isScheduled) {
   // Set the CG_LAO_Region_Map.
   if (CG_LAO_Region_Map != NULL)
     BB_MAP32_Set(CG_LAO_Region_Map, cgir_bb, ordering);
   // Set BB loop_head_bb.
-  Set_BB_loop_head_bb(cgir_bb, loop_bb);
-  CGIR_OP op = NULL;
-  FOR_ALL_BB_OPs(cgir_bb, op) {
-    Set_OP_unroll_bb(op, loop_bb);
+  if (loop_bb != NULL) {
+    Set_BB_loop_head_bb(cgir_bb, loop_bb);
+    CGIR_OP op = NULL;
+    FOR_ALL_BB_OPs(cgir_bb, op) {
+      Set_OP_unroll_bb(op, loop_bb);
+    }
   }
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
-//if (unrolled) fprintf(stderr, "BB(%d) output unrolled %d\n", BB_id(cgir_bb), unrolled);
   // Set other flags.
-  if (isRegAlloc) Set_BB_reg_alloc(cgir_bb);
+  if (isAllocated) Set_BB_reg_alloc(cgir_bb);
   if (isScheduled) Set_BB_scheduled(cgir_bb);
 }
 
@@ -1170,7 +1176,6 @@ make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *p
 // Optimize the complete PU through the LAO.
 bool
 lao_optimize_pu(unsigned lao_optimizations) {
-//cerr << "lao_optimize_PU(" << lao_optimizations << ")\n";
   bool result = false;
   MEM_POOL lao_loop_pool;
   MEM_POOL_Initialize(&lao_loop_pool, "LAO loop_descriptors", TRUE);
