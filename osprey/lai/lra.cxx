@@ -1545,7 +1545,9 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
     clr = LR_For_TN (result_tn);
     result_reg = LRA_TN_register(result_tn);
     result_cl = TN_register_class(result_tn);
+#ifndef TARG_ST
     REGISTER_SET must_use = Usable_Registers(result_tn, clr);
+#endif
 
     //
     // no need to look at result if we're calculating fat points, and
@@ -1558,6 +1560,9 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
       // case it may not have a register is if it is an unused def that
       // was not deleted.
       if (result_reg == REGISTER_UNDEFINED) {
+#ifdef TARG_ST
+	REGISTER_SET must_use = Usable_Registers(result_tn, clr);
+#endif
 	REGISTER prefer_reg = LR_prefer_reg (clr);
 
         if (prefer_reg == REGISTER_UNDEFINED) {
