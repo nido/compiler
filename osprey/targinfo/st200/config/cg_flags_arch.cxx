@@ -44,8 +44,10 @@ void Configure_CG_Target() {
 
   // Scheduling options: scheduling is ON by default -- disable if
   //                     in development
+#ifndef LAO_ENABLED
   IGLS_Enable_HB_Scheduling = FALSE;
   IGLS_Enable_PRE_HB_Scheduling = FALSE;
+#endif
   IGLS_Enable_POST_HB_Scheduling = FALSE;
 
 
