@@ -145,12 +145,18 @@ EBO_hash_op (OP *op,
     TN * spill_tn = NULL;
     hash_value = EBO_DEFAULT_MEM_HASH;
     if (OP_no_alias(op)) hash_value = EBO_NO_ALIAS_MEM_HASH;
+#ifdef TARG_ST
+    // [CG] Spill op are marked by OP_spill
+    // Getting the spill_tn is unsafe for stores
+    if (OP_spill(op)) hash_value = EBO_SPILL_MEM_HASH;
+#else
     if (OP_load(op)) {
       spill_tn = OP_result(op,0);
     } else if (OP_store(op)) {
       spill_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_storeval));
     }
     if (spill_tn && TN_has_spill(spill_tn)) hash_value = EBO_SPILL_MEM_HASH;
+#endif
   } else if (OP_effectively_copy(op)) {
     hash_value = EBO_COPY_OP_HASH;
   } else {

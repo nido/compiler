@@ -886,6 +886,7 @@ void Print_OP_No_SrcLine(const OP *op)
   if (OP_tail_call(op)) fprintf (TFile, " tail_call");
   if (OP_no_move_before_gra(op)) fprintf (TFile, " no_move");
 #ifdef TARG_ST
+  if (OP_spill(op)) fprintf (TFile, " spill");
   if (OP_ssa_move(op)) fprintf (TFile, " ssa_move");
 #endif
 

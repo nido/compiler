@@ -4953,9 +4953,12 @@ Find_BB_TNs (BB *bb)
 	}
 #endif
         if (!TN_is_constant(tn_replace) &&
+#ifndef TARG_ST
+	    // [CG]: unecessary as now TN_has_spill is obsolete
             (!OP_store(op) ||
              (opndnum != TOP_Find_Operand_Use(OP_code(op),OU_storeval)) ||
              !TN_has_spill(actual_tn)) &&
+#endif
             (!TN_save_reg(tn_replace)) &&
             (!replace_result || tn_registers_identical(actual_tn, tn_replace)) &&
             (EBO_in_peep ||
