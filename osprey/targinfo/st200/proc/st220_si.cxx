@@ -319,14 +319,6 @@ main (int argc, char *argv[])
 		 TOP_mulllu_i, 
 		 TOP_mullu_r, 
 		 TOP_mullu_i, 
-		 TOP_mul32_r, 
-		 TOP_mul32_i, 
-		 TOP_mul64h_r, 
-		 TOP_mul64h_i, 
-		 TOP_mul64hu_r, 
-		 TOP_mul64hu_i, 
-		 TOP_mulfrac_r, 
-		 TOP_mulfrac_i, 
 		 TOP_UNDEFINED); 
 
   Any_Result_Available_Time(5); 
@@ -354,10 +346,6 @@ main (int argc, char *argv[])
 		 TOP_mulll_ii, 
 		 TOP_mulllu_ii, 
 		 TOP_mullu_ii, 
-		 TOP_mul32_ii, 
-		 TOP_mul64h_ii, 
-		 TOP_mul64hu_ii, 
-		 TOP_mulfrac_ii, 
 		 TOP_UNDEFINED); 
 
   Any_Result_Available_Time(5); 
@@ -445,7 +433,6 @@ main (int argc, char *argv[])
   Instruction_Group("STORE", 
 		 TOP_pft_i, 
 		 TOP_prgadd_i, 
-		 TOP_prginspg_i, 
 		 TOP_prgset_i, 
 		 TOP_stb_i, 
 		 TOP_sth_i, 
@@ -464,7 +451,6 @@ main (int argc, char *argv[])
   Instruction_Group("STORE_IMM", 
 		 TOP_pft_ii, 
 		 TOP_prgadd_ii, 
-		 TOP_prginspg_ii, 
 		 TOP_prgset_ii, 
 		 TOP_stb_ii, 
 		 TOP_sth_ii, 
@@ -573,15 +559,9 @@ main (int argc, char *argv[])
   ///////////////////////////////////////// 
 
   Instruction_Group("PSWOP", 
-		 TOP_pswset_r, 
-		 TOP_pswclr_r, 
 		 TOP_UNDEFINED); 
 
-  Any_Operand_Access_Time(2); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_XFER, 0); 
-  Resource_Requirement(res_ODD, 0); 
-  Resource_Requirement(res_MEM, 0); 
+  Any_Operand_Access_Time(-1); 
 
 
   ///////////////////////////////////////// 
@@ -644,250 +624,5 @@ main (int argc, char *argv[])
   Resource_Requirement(res_XFER, 0); 
 
   Machine_Done("st220.c"); 
-
-  /* ======================================================
-   * Resource description for the ISA_SUBSET_st200 
-   * ======================================================
-   */ 
-
-  Machine("st200", ISA_SUBSET_st200, argc, argv); 
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class ALU 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("ALU", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class ALU_IMM 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("ALU_IMM", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class MUL 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("MUL", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class MUL_IMM 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("MUL_IMM", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class LOAD 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("LOAD", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class LOAD_IMM 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("LOAD_IMM", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class LOAD2 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("LOAD2", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class LOAD2_IMM 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("LOAD2_IMM", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class STORE 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("STORE", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class STORE_IMM 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("STORE_IMM", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class EXT 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("EXT", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class BRANCH 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("BRANCH", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class CALL 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("CALL", 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(-1); 
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class JUMP 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("JUMP", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class SYNC 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("SYNC", 
-		 TOP_UNDEFINED); 
-
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class PRGINS 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("PRGINS", 
-		 TOP_UNDEFINED); 
-
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class PSWOP 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("PSWOP", 
-		 TOP_UNDEFINED); 
-
-  Any_Operand_Access_Time(-1); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class simulated 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("simulated", 
-		 TOP_spadjust, 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(3); 
-  Any_Operand_Access_Time(2); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_INT, 0); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class asm 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("asm", 
-		 TOP_asm, 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(3); 
-  Any_Operand_Access_Time(2); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_ISSUE, 0); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class ssa 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("ssa", 
-		 TOP_phi, 
-		 TOP_psi, 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(0); 
-  Any_Operand_Access_Time(0); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_INT, 0); 
-
-
-  ///////////////////////////////////////// 
-  //   Instructions for Scd Class getpc 
-  ///////////////////////////////////////// 
-
-  Instruction_Group("getpc", 
-		 TOP_getpc, 
-		 TOP_UNDEFINED); 
-
-  Any_Result_Available_Time(3); 
-  Any_Operand_Access_Time(2); 
-  Resource_Requirement(res_ISSUE, 0); 
-  Resource_Requirement(res_ODD, 0); 
-  Resource_Requirement(res_XFER, 0); 
-
-  Machine_Done("st200.c"); 
 
 }

@@ -70,9 +70,10 @@ static int isa_subset_count = 0;    // How many subsets?
 static list<ISA_SUBSET> subsets;    // All the subsets
 static size_t bit_vector_sizeof;    // How many bytes in a bit set of all
                                     //  opcodes
+#ifndef TARG_ST
 static vector<ISA_SUBSET> opcode_subset;
                                     // Which subset introduces the opcode?
-
+#endif
 
 static const char * const interface[] = {
   "/* ====================================================================",
@@ -112,9 +113,11 @@ void ISA_Subset_Begin( const char* /* name */ )
 /////////////////////////////////////
 {
   bit_vector_sizeof =   (TOP_count + 7) / 8;
+#ifndef TARG_ST
   opcode_subset = vector<ISA_SUBSET>(TOP_count,(ISA_SUBSET)0);
   for ( int code =  0; code < TOP_count; ++code )
     opcode_subset[code] = NULL;
+#endif
 }
 
 /////////////////////////////////////
@@ -153,6 +156,7 @@ void Instruction_Group( ISA_SUBSET subset, ... )
     for ( ss = subset; ss != NULL; ss = ss->superset )
       ss->members[byte_index] |= (1 << bit_index);
 
+#ifndef TARG_ST
     if ( opcode_subset[opcode] != NULL ) {
       fprintf(stderr,"### attempting to add %s to ISA subset %s but "
                      "already in %s\n",
@@ -162,6 +166,7 @@ void Instruction_Group( ISA_SUBSET subset, ... )
       exit(EXIT_FAILURE);
     }
     opcode_subset[opcode] = subset;
+#endif
   }
   va_end(ap);
 }
@@ -176,6 +181,7 @@ void ISA_Subset_End(void)
   bool err;
   int code;
 
+#ifndef TARG_ST
   for ( err = false, code = 0; code < TOP_count; ++code ) {
     if ( ! opcode_subset[code] ) {
       fprintf(stderr,"### Error: no opcode subset for %s\n",
@@ -184,6 +190,7 @@ void ISA_Subset_End(void)
     }
   }
   if (err) exit(EXIT_FAILURE);
+#endif
 
 #define FNAME	"targ_isa_subset"
   char filename[1000];
