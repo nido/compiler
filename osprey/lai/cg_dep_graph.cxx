@@ -2206,7 +2206,20 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     ST *succ_spill_st = CGSPILL_OP_Spill_Location(succ_op);
     info_src = "CG (spill info)";
 
+#ifdef TARG_ST
+    //
+    // Arthur: IA64 logic detects properly the spilling loads: if
+    //         a TN with an associated spill location is loaded,
+    //         it must be a spill (we do not reuse TNs). On the
+    //         other hand, a store of a spilling location TN is
+    //         not necessarily a spill (the TN may have been loaded
+    //         as a spill and stored anywhere). We decided to mark
+    //         OPs as OP_spill(op). 
+    //
+    if (OP_spill(pred_op) && OP_spill(succ_op)) {
+#else
     if (pred_spill_st && succ_spill_st) {
+#endif
       if (succ_spill_st == pred_spill_st) {
 	/*
 	 * They're in the same spill set, so there's a definite dependence.
@@ -2231,20 +2244,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 			  info_src);
       }
 #ifdef TARG_ST
-      //
-      // Arthur: a TN marked 'spill' may be stored at an any address;
-      //         the value can then be loaded into any TN => not 'spill'.
-      //         The following logic for IA64 does not work ??
-      //         It concludes the independence of such st/ld pair
-      //         when in fact this may happen.
-      //
-      //         We only know that mem OP is a spill if the base address
-      //         is on stack. Can we mark OPs as being spills ??
-      //         In any case, we don't know nothing unless the base TN
-      //         is the stack pointer. This can be taken care of in
-      //         the address analysis of CG_DEP_Address_Analyze().
-      //         Thus, if addresses are not shown different, assume
-      //         dependence !
+    } else if (OP_spill(pred_op) || OP_spill(succ_op)) {
 #else
     } else if (pred_spill_st || succ_spill_st) {
       /* One's a spill, and the other's not, so they're independent.  */
