@@ -36,6 +36,7 @@
 #include "defs.h"
 #include "cg_flags.h"
 #include "cg_loop.h"      /* for cg_loop flags */
+#include "cio.h"          /* for cio_rwtran flags */
 
 void Configure_CG_Target() {
 
