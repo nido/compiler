@@ -51,7 +51,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include <alloca.h>
+#include "W_alloca.h"
 #include <list.h>
 #include "topcode.h"
 #include "gen_util.h"
@@ -386,7 +386,7 @@ void ISA_Decode_End(void)
 
   fprintf(efile, "ISA_Decode_Inst\n");
 
-  fprintf(hfile, "\nextern TOP ISA_Decode_Inst(const ISA_PACK_INST *pinst, ISA_EXEC_UNIT unit);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern TOP ISA_Decode_Inst(const ISA_PACK_INST *pinst, ISA_EXEC_UNIT unit);\n");
 
   fprintf(cfile, "\nTOP ISA_Decode_Inst(const ISA_PACK_INST *pinst, ISA_EXEC_UNIT unit)\n"
 		 "{\n"
