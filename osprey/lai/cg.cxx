@@ -812,10 +812,25 @@ CG_Generate_Code(
     Check_for_Dump ( TP_EBO, NULL );
   }
 
-
 #ifdef TARG_ST
   // Call the LAO for postpass scheduling.
   if (CG_LAO_optimize & Optimization_PostSched) {
+
+#ifdef TARG_ST200
+    // Iterate over all the operations to change them to _ii when needed.
+    for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+	TOP etop;
+	if (OP_inst_words(op) == 2)
+	  OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
+	if (CGTARG_need_extended_Opcode(op, &etop)) {
+	  if (OP_inst_words(op) == 1)
+	    OP_Change_Opcode(op, etop);
+	}
+      }
+    }
+#endif
+
     Set_Error_Phase( "LAO Postpass Scheduling" );
     lao_optimize_PU(Optimization_PostSched);
     if (frequency_verify)
