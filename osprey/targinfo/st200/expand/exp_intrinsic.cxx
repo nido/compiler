@@ -179,7 +179,7 @@ Expand__gel(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpgeu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpge_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__gel */
 
@@ -207,7 +207,7 @@ Expand__geul(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpgeu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpgeu_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__geul */
 
@@ -235,7 +235,7 @@ Expand__gtl(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpgtu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpgt_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__gtl */
 
@@ -263,7 +263,7 @@ Expand__gtul(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpgtu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpgtu_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__gtul */
 
@@ -291,7 +291,7 @@ Expand__lel(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpleu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmple_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__lel */
 
@@ -319,7 +319,7 @@ Expand__leul(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpleu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpleu_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__leul */
 
@@ -347,7 +347,7 @@ Expand__ltl(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpltu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmplt_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__ltl */
 
@@ -375,7 +375,7 @@ Expand__ltul(
   TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   Build_OP (	TOP_cmpltu_r_r,	r0_16_0,	il0,	il1,	ops) ;
   Build_OP (	TOP_cmpltu_r_r,	r0_17_0,	ih0,	ih1,	ops) ;
-  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	r0_17_0,	ih1,	ops) ;
+  Build_OP (	TOP_cmpeq_r_b,	b0_0_0,	ih0,	ih1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_16_0,	r0_17_0,	ops) ;
 } /* Expand__ltul */
 
@@ -711,7 +711,7 @@ Expand__negl(
   Build_OP (	TOP_cmpgtu_i_b,	b0_0_0,	il0,	c0,	ops) ;
   Build_OP (	TOP_sub_i,	ol0,	c0,	il0,	ops) ;
   Build_OP (	TOP_sub_i,	r0_17_0,	c0,	ih0,	ops) ;
-  Build_OP (	TOP_sub_i,	r0_18_0,	c_1,	r0_17_0,	ops) ;
+  Build_OP (	TOP_sub_i,	r0_18_0,	c_1,	ih0,	ops) ;
   Build_OP (	TOP_slct_r,	oh0,	b0_0_0,	r0_18_0,	r0_17_0,	ops) ;
 } /* Expand__negl */
 
@@ -741,7 +741,7 @@ Expand__negul(
   Build_OP (	TOP_cmpgtu_i_b,	b0_0_0,	il0,	c0,	ops) ;
   Build_OP (	TOP_sub_i,	ol0,	c0,	il0,	ops) ;
   Build_OP (	TOP_sub_i,	r0_17_0,	c0,	ih0,	ops) ;
-  Build_OP (	TOP_sub_i,	r0_18_0,	c_1,	r0_17_0,	ops) ;
+  Build_OP (	TOP_sub_i,	r0_18_0,	c_1,	ih0,	ops) ;
   Build_OP (	TOP_slct_r,	oh0,	b0_0_0,	r0_18_0,	r0_17_0,	ops) ;
 } /* Expand__negul */
 
