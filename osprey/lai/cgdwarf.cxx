@@ -716,12 +716,14 @@ put_location (
 
   expr = dwarf_new_expr (dw_dbg, &dw_error);
 
+#ifndef TARG_ST // [CL] needed for anonymous unions
   if (st == base_st && ST_class(st) != CLASS_BLOCK 
 	&& ST_sclass(st) != SCLASS_COMMON && ST_sclass(st) != SCLASS_EXTERN) 
   {
 	/* symbol was not allocated, so doesn't have dwarf location */
 	return;
   }
+#endif
 
   switch (ST_sclass(st)) {
     case SCLASS_FORMAL:
