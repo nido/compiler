@@ -105,8 +105,9 @@ CGEMIT_Prn_Ent_In_Asm (
   BB_LIST *ent_list;
   /* TB: add gnu used  attibute when needed */
 #  ifdef AS_USED
-//  ST_is_used(pu) and PU_no_delete(Get_Current_PU()) are synonymous 
-  if (PU_no_delete(Get_Current_PU())) {
+//  TB: ST_is_used(pu) and PU_no_delete(Get_Current_PU()) are synonymous execpt for 
+//  if (PU_no_delete(Get_Current_PU())) {
+  if (ST_is_used(pu)) {
     fprintf (Asm_File, "\t%s\t", AS_TYPE);
     EMT_Write_Qualified_Name(Asm_File, pu);
     fprintf (Asm_File, ", %s, %s\n", AS_TYPE_FUNC, AS_USED);
