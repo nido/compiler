@@ -73,7 +73,14 @@ BOOL OP_Is_Barrier(OP *op)
   case TOP_prgset_ii:
   case TOP_sync:	/* data cache sync */
   case TOP_prgins:	/* i-cache purge */
-    /*case TOP_syncins: */	/* i-cache sync. */
+  case TOP_prginspg_i:	/* i-cache purge */
+  case TOP_prginspg_ii:
+  case TOP_syncins: 	/* i-cache sync. */
+  case TOP_break:	/* exceptions. */
+  case TOP_sbrk:
+  case TOP_syscall:
+  case TOP_pswset_r: 	/* global state change. */
+  case TOP_pswclr_r:  
     return TRUE;
   }
 
