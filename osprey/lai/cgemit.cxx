@@ -4793,11 +4793,11 @@ EMT_Emit_PU (
   // [CG]: Create_Cold_Text_Section() after setup of text section
   Setup_Text_Section_For_PU (pu);
   Create_Cold_Text_Section();
-#endif
+#else
   Create_Cold_Text_Section();
 
   Setup_Text_Section_For_PU (pu);
-#else
+#endif
 
   Initial_Pu_PC = PC;
   Set_ST_ofst(pu, PC);
