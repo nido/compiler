@@ -81,6 +81,7 @@
 #include "lra.h"
 #include "cgemit.h"
 #include "cg_loop.h"
+#include "loop_invar_hoist.h"
 #include "glob.h"
 #include "cgexp.h"
 #include "igls.h"
@@ -612,6 +613,15 @@ CG_Generate_Code(
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
       }
+    }
+#endif
+
+#ifdef TARG_ST
+  // FdF: ORC2.1
+    extern void Perform_Loop_Invariant_Code_Motion (void);
+    if (IPFEC_Enable_LICM && CG_opt_level > 1) {
+      Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
+      Perform_Loop_Invariant_Code_Motion ();
     }
 #endif
 

@@ -85,6 +85,7 @@
 #include "cg_dep_graph_update.h"    /* more CG_DEP knobs */
 #include "cio.h"                    /* for rw, cicse etc ...*/
 #include "cg_loop.h"                /* for unrolling */
+#include "loop_invar_hoist.h"	    /* For loop invariant hoisting */
 #include "cg_loop_recur.h"	    /* recurrence fixing */
 #include "cgtarget.h"		    /* target-dependent stuff */
 #include "gcm.h"		    /* for GCM options */
@@ -541,6 +542,8 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_remainder_after, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_multi_bb", "",
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "LICM", "", 
+    TRUE, 0, 0,	&IPFEC_Enable_LICM, NULL },
 #endif
 
   // Cross Iteration Loop Optimization options.
