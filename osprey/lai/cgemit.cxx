@@ -3633,9 +3633,7 @@ Assemble_Bundles(BB *bb)
     OP *sl_op; // CL: make it visible outside of the loop
 
     /* Generate debug info for the 1st op of the bundle */
-    if (generate_dwarf) {
-      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[slot]));
-    }
+    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[slot]));
 #endif
 
     do {
