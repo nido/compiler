@@ -4850,10 +4850,6 @@ Find_BB_TNs (BB *bb)
     FmtAssert(num_opnds <= max_opnds, ("dynamic array allocation was too small!"));
 
 #ifdef TARG_ST
-    // [CG]: Don't understand what that's for. Always set no_barriers_encountered to false.
-    no_barriers_encountered = FALSE;
-#else
-#ifdef TARG_ST
     if (OP_Is_Barrier(op) || OP_access_reg_bank(op)) {
 #else
     if (CGTARG_Is_OP_Barrier(op) || OP_access_reg_bank(op)) {
@@ -4876,7 +4872,6 @@ Find_BB_TNs (BB *bb)
         no_barriers_encountered = FALSE;
       }
     }
-#endif
 
 #ifdef TARG_ST200
     if (OP_code(op) == TOP_asm) {

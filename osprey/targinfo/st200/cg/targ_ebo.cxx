@@ -3553,7 +3553,8 @@ mul_fix_operands (
   TN *res = OP_result(op, 0);
 
   // Check operands
-  if (OP_opnds(op) != 2 ||
+  if (OP_results(op) != 1 ||
+      OP_opnds(op) != 2 ||
       OP_opnd(op, 0) != opnd_tn[0] ||
       OP_opnd(op, 1) != opnd_tn[1]) return FALSE;
   
@@ -3573,6 +3574,8 @@ mul_fix_operands (
     top_hilo1 = IS_MULLL(op) ? TN_LO_16 : TN_HI_16;
     top_signed1 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
   } else return FALSE;
+
+  res = OP_result(op, 0);
 
   BOOL swapped = FALSE;
 do_swapped:
