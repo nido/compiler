@@ -160,7 +160,7 @@ BOOL Has_GP_Groups = FALSE;
 /* Does target have offsets in load and store instructions?
  * Note: CG should instead test:
  * ( TOP_Find_Operand_Use( OP_code(op), OU_offset ) >= 0 ) */
-BOOL Use_Load_Store_Offset = FALSE;
+BOOL Use_Load_Store_Offset = TRUE;
 
 #if defined (FRONT_END_C) || defined (FRONT_END_CPLUSPLUS)
 
