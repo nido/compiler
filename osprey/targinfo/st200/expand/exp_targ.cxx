@@ -484,10 +484,9 @@ Expand_Add (
       Base_Symbol_And_Offset_For_Addressing (TN_var(src2),
                                        TN_offset(src2), &base, &ofst);
 
-      // If src1 (base) is gp, I am dealing with a gp-relative
-      // address production
-      // If src1 is lr, I am dealing with gp initialization code
-      if (TN_is_gp_reg(src1) || TN_is_ra_reg(src1)) {
+      // TN_is_reloc_got_disp (@gprel) and TN_is_reloc_neg_got_disp (@neggprel)
+      // can always be the operand of addi.
+      if (TN_is_reloc_got_disp(src2) || TN_is_reloc_neg_got_disp(src2)) {
 	new_opcode = TOP_add_i;
       }
       else if (ST_on_stack(TN_var(src2))) {
