@@ -3796,7 +3796,35 @@ static BB_NUM PU_BB_current_idx_for_profile = 0; /* Current index of BB being tr
 /* Add profil_info commands */
 #define PI_FUNCBEGIN 0x01 
 #define PI_FUNCEND 0x02 
-#define FREQS_SCALE 50 /* multiplication factor of bb frequencies (fregs are converted from float to int) */
+
+
+/* ====================================================================
+ *   get_char_from_float
+ *
+ * Convert a float into 4 bytes for a little endian target 
+ * Use for .profile_info whose data is little endian
+ *
+ * ====================================================================
+ */
+static void 
+get_char_from_float(float *f, char *ptr)
+{
+  union u {
+    float f;
+    char b[4];
+  } p;
+  p.f = *f;
+#if HOST_IS_LITTLE_ENDIAN
+  *((union u *)ptr) = p;
+#elif HOST_IS_BIG_ENDIAN
+  ptr[0] = p.b[3];
+  ptr[1] = p.b[2];
+  ptr[2] = p.b[1];
+  ptr[3] = p.b[0];
+#else
+#error "HOST_IS_LITTLE_ENDIAN or HOST_IS_BIG_ENDIAN need to be defined"
+#endif  
+}
 
 /* ====================================================================
  *   EMT_ProfileInfo_BB
@@ -3816,6 +3844,8 @@ EMT_ProfileInfo_BB (
   ANNOTATION *ant;
   LABEL_IDX lab;
   FILE *file = Asm_File;
+  char buf[4];
+  float f;
   const char *prefix = file == Asm_File ? ASM_CMNT_LINE : "";
 
   if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return;
@@ -3831,14 +3861,16 @@ EMT_ProfileInfo_BB (
   PU_BB_current_idx_for_profile++;
   FmtAssert( PU_BB_current_idx_for_profile <= PU_BB_Count_for_profile, ("Current BB index is over BB count!"));
     
-  fprintf(file, "\t%s\t%s %s BB name\n", AS_WORD,
-	  label_name, prefix);
+  /* Convert BB frequency into 4 bytes */
+  f = BB_freq(bb);
+  get_char_from_float(&f, buf);
+
+  /* Dump profile info */
+  fprintf(file, "\t%s\t%s, 0x%x\n", AS_WORD,
+	  label_name, PU_BB_current_idx_for_profile);
   
-  fprintf(file, "\t%s\t%d %s BB index\n", AS_WORD,
-	  PU_BB_current_idx_for_profile, prefix);
-  
-  fprintf(file, "\t%s\t%d %s BB frequency\n", AS_WORD,
-	  (int) (BB_freq(bb) * FREQS_SCALE), prefix);
+  fprintf(file, "\t%s\t0x%x, 0x%x, 0x%x, 0x%x\n", AS_BYTE,
+	  buf[0], buf[1], buf[2], buf[3]);
 }
 
 /* ====================================================================
@@ -3862,29 +3894,23 @@ EMT_ProfileInfo_PU (
   // HEADER
   /* Reset current BB index to 0 */
   PU_BB_current_idx_for_profile = 0;
-  fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ".profile_info");
-  fprintf (Asm_File, "\t%s\t0x%x %s PI_FUNCBEGIN %s\n",AS_WORD,
-	   PI_FUNCBEGIN, ASM_CMNT_LINE, ST_name(pu));
-  fprintf (Asm_File, "\t%s\t%s %s Function address\n",AS_WORD,
-	   ST_name(pu), ASM_CMNT_LINE);
   
   /* compute PU_BB_Count because PU_BB_Count is wrong here??? */
   PU_BB_Count_for_profile = 0;
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     PU_BB_Count_for_profile++;
   }
-  fprintf (Asm_File, "\t%s\t%d %s number of BBs\n",AS_WORD,
-	   PU_BB_Count_for_profile, ASM_CMNT_LINE);
-  
-    // BBS
+  fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ".profile_info");
+  fprintf (Asm_File, "\t%s\t0x%x, %s, 0x%x \n",AS_WORD,
+	   PI_FUNCBEGIN, ST_name(pu), PU_BB_Count_for_profile);
+  // BBS
   /* Emit profile_info for each basic block in the PU */
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     EMT_ProfileInfo_BB (bb, rwn);
   }
 
   // FOOTER
-  fprintf(Asm_File, "\t%s\t 0x%x %s PI_FUNCEND %s\n",AS_WORD,
-	  PI_FUNCEND, ASM_CMNT_LINE,ST_name(pu));
+  fprintf(Asm_File, "\t%s\t0x%x\n", AS_WORD, PI_FUNCEND);
 
 }
 #endif /* BCO_Enabled Thierry */
