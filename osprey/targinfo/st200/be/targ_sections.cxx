@@ -238,7 +238,7 @@ Assign_Global_Variable (
     break;
 
   default:
-    FmtAssert(FALSE,("Assign_Global_Variable: SCLASS"));
+    FmtAssert(FALSE,("Assign_Global_Variable: SCLASS %s unexpected for variable %s (base %s)", Sclass_Name(ST_sclass(base_st)), ST_name(st), ST_name(base_st)));
   }
 
   return sec;
