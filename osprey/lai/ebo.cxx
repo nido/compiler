@@ -5481,8 +5481,14 @@ void EBO_Inline_Immediates (BB *bb, BOOL BB_completely_processed)
 	  EBO_TN_INFO *next_tninfo = tninfo->same;
 	  next_tninfo->redefined_before_block_end = TRUE;
 	}
+	
+	/* If op was removed, we skip the rest of the loop. */
+	continue;
       }
-    } else  {
+    } 
+    
+    /* This part tries to inline immediate operands into operations. */
+    {
       INT idx;
       /* Not sure we can transform such operations.*/
       if (OP_glue(op) || OP_no_move_before_gra(op) ||
