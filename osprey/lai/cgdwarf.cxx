@@ -2202,7 +2202,9 @@ Cg_Dwarf_Add_Line_Entry (
 #endif /* TARG_ST200 */
 
 #ifdef TARG_ST // [CL]
-  New_Debug_Line_Set_Label(code_address);
+  if (CG_emit_asm_dwarf) {
+    New_Debug_Line_Set_Label(code_address);
+  }
 #endif
 
   USRCPOS_srcpos(usrcpos) = srcpos;
