@@ -2306,13 +2306,13 @@ Expand_Select (
   else
     tmp_dest_tn = dest_tn;
     
-  if (TN_register_class(true_tn) == ISA_REGISTER_CLASS_branch) {
+  if (TN_is_register(true_tn) && TN_register_class(true_tn) == ISA_REGISTER_CLASS_branch) {
     TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
     Build_OP(TOP_mfb, tmp, true_tn, ops);
     true_tn = tmp;
   }
 
-  if (TN_register_class(false_tn) == ISA_REGISTER_CLASS_branch) {
+  if (TN_is_register(false_tn) && TN_register_class(false_tn) == ISA_REGISTER_CLASS_branch) {
     TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
     Build_OP(TOP_mfb, tmp, false_tn, ops);
     false_tn = tmp;
