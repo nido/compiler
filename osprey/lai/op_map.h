@@ -145,12 +145,12 @@ extern void OP_MAP_Finish(void);
  */
 typedef struct op_map *OP_MAP;
 
-typedef enum { _PTR, _I32, _I64, _DELETED } _OP_MAP_KIND;
+typedef enum { OMK_PTR, OMK_I32, OMK_I64, OMK_DELETED } _OP_MAP_KIND;
 
 extern OP_MAP _OP_MAP_Create(_OP_MAP_KIND kind);
-#define OP_MAP_Create() _OP_MAP_Create(_PTR)
-#define OP_MAP32_Create() _OP_MAP_Create(_I32)
-#define OP_MAP64_Create() _OP_MAP_Create(_I64)
+#define OP_MAP_Create() _OP_MAP_Create(OMK_PTR)
+#define OP_MAP32_Create() _OP_MAP_Create(OMK_I32)
+#define OP_MAP64_Create() _OP_MAP_Create(OMK_I64)
 
 void OP_MAP_Delete(OP_MAP map);
 
@@ -183,9 +183,9 @@ extern BB_OP_MAP BB_OP_MAP_Create_Kind(BB *bb,
 				       MEM_POOL *pool, 
 				       _OP_MAP_KIND kind);
 
-#define BB_OP_MAP_Create(bb, pool)   BB_OP_MAP_Create_Kind((bb), (pool), _PTR)
-#define BB_OP_MAP32_Create(bb, pool) BB_OP_MAP_Create_Kind((bb), (pool), _I32)
-#define BB_OP_MAP64_Create(bb, pool) BB_OP_MAP_Create_Kind((bb), (pool), _I64)
+#define BB_OP_MAP_Create(bb, pool)   BB_OP_MAP_Create_Kind((bb), (pool), OMK_PTR)
+#define BB_OP_MAP32_Create(bb, pool) BB_OP_MAP_Create_Kind((bb), (pool), OMK_I32)
+#define BB_OP_MAP64_Create(bb, pool) BB_OP_MAP_Create_Kind((bb), (pool), OMK_I64)
 
 /* declare Extend_Map here so inline functions find it with correct name */
 extern void BB_OP_MAP_Extend_Map(BB_OP_MAP map, OP *op);
@@ -194,7 +194,7 @@ inline void BB_OP_MAP_Set(BB_OP_MAP map, OP *op, void *value)
 {
   INT idx = OP_map_idx(op);
 
-  Is_True(map->kind == _PTR, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_PTR, ("OP_MAP is of wrong kind"));
   if (OP_bb(op) != map->bb || idx >= map->nelem) {
     BB_OP_MAP_Extend_Map(map, op);
   }
@@ -205,7 +205,7 @@ inline void BB_OP_MAP32_Set(BB_OP_MAP map, OP *op, INT32 value)
 {
   INT idx = OP_map_idx(op);
 
-  Is_True(map->kind == _I32, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_I32, ("OP_MAP is of wrong kind"));
   if (OP_bb(op) != map->bb || idx >= map->nelem) {
     BB_OP_MAP_Extend_Map(map, op);
   }
@@ -216,7 +216,7 @@ inline void BB_OP_MAP64_Set(BB_OP_MAP map, OP *op, INT64 value)
 {
   INT idx = OP_map_idx(op);
 
-  Is_True(map->kind == _I64, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_I64, ("OP_MAP is of wrong kind"));
   if (OP_bb(op) != map->bb || idx >= map->nelem) {
     BB_OP_MAP_Extend_Map(map, op);
   }
@@ -226,7 +226,7 @@ inline void BB_OP_MAP64_Set(BB_OP_MAP map, OP *op, INT64 value)
 inline void *BB_OP_MAP_Get(BB_OP_MAP map, const OP *op)
 {
   INT idx = OP_map_idx(op);
-  Is_True(map->kind == _PTR, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_PTR, ("OP_MAP is of wrong kind"));
   return    OP_bb(op) == map->bb 
 	 && idx < map->nelem
 	 ? map->themap.ptr[idx] : (void *)NULL;
@@ -235,7 +235,7 @@ inline void *BB_OP_MAP_Get(BB_OP_MAP map, const OP *op)
 inline INT32 BB_OP_MAP32_Get(BB_OP_MAP map, const OP *op)
 {
   INT idx = OP_map_idx(op);
-  Is_True(map->kind == _I32, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_I32, ("OP_MAP is of wrong kind"));
   return    OP_bb(op) == map->bb 
 	 && idx < map->nelem
 	 ? map->themap.i32[idx] : (INT32)0;
@@ -244,7 +244,7 @@ inline INT32 BB_OP_MAP32_Get(BB_OP_MAP map, const OP *op)
 inline INT64 BB_OP_MAP64_Get(BB_OP_MAP map, const OP *op)
 {
   INT idx = OP_map_idx(op);
-  Is_True(map->kind == _I64, ("OP_MAP is of wrong kind"));
+  Is_True(map->kind == OMK_I64, ("OP_MAP is of wrong kind"));
   return    OP_bb(op) == map->bb 
 	 && idx < map->nelem
 	 ? map->themap.i64[idx] : (INT64)0;
