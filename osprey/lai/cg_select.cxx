@@ -620,7 +620,6 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   BBLIST *edge;
   BOOL found_taken = FALSE;
   BOOL found_not_taken = FALSE;
-  BOOL invert;
 
   if (Trace_Select_Candidates) {
     fprintf (TFile, "<select> is hammock BB%d ? \n", BB_id(head));
@@ -906,7 +905,6 @@ Is_Double_Logif(BB* bb)
   return NULL;
 }
 
-// XXX todo: compute and map succ infos once.
 static void 
 Simplify_Logifs(BB *bb1, BB *bb2)
 {
@@ -949,6 +947,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   BB_Remove_Branch(bb1);
   BB_Remove_Branch(bb2);
   Promote_BB(bb2, bb1);
+  Unlink_Pred_Succ (bb1, fall_thru_block);
 
   OPS ops = OPS_EMPTY;
 
@@ -968,6 +967,9 @@ Simplify_Logifs(BB *bb1, BB *bb2)
      BB_Remove_Op(bb1, cmp2);
   }
     
+  // !a op !a -> !(a !op b)
+  AndNeeded = AndNeeded ^ (variant1 == V_BR_P_FALSE);
+
   // insert new logical op.
   if (AndNeeded)
     Expand_Logical_And (branch_tn, b1tn1, b2tn1, variant1, &ops);
@@ -980,21 +982,19 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   BB_Append_Ops (bb1, &ops);
 
-  // !a AndNeeded !a -> !(a !needAnd b)
-  if (AndNeeded)
-    FmtAssert(FALSE, ("and needed. don't know yet"));
-  else {
-    if (joint_block == bb1->next) {
-      br1_op = BB_branch_op(bb1);
-      Negate_Branch_BB (br1_op);
-      Target_Logif_BB(bb1, fall_thru_block, 0.5L, joint_block);
-    }
-    else {
-      Target_Logif_BB(bb1, joint_block, 0.5L, fall_thru_block);
-    }
-
-    BB_MAP_Set(if_bb_map, bb1, NULL);
+  if (joint_block == BB_next(bb1)) {
+    br1_op = BB_branch_op(bb1);
+    Negate_Branch_BB (br1_op);
+    Target_Logif_BB(bb1, fall_thru_block, 0.5L, joint_block);
   }
+  else {
+    Target_Logif_BB(bb1, joint_block, 0.5L, fall_thru_block);
+  }
+
+  BB_MAP_Set(if_bb_map, bb1, NULL);
+  fprintf (TFile, "After target logif bb...\n");
+  Print_All_BBs();
+  BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
     
   // if needed, update phi operands and new edge from head.
 
@@ -1019,8 +1019,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
       OP_MAP_Set(phi_op_map, phi, new_phi);
     }
   }
-
-  BB_Update_Phis(phi_block);
 }
 
 /* ================================================================
@@ -1276,9 +1274,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Calculate_Dominators();
 
-#if 0
-  draw_CFG();
-
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *bbb;
@@ -1306,9 +1301,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
-#endif
-
-  draw_CFG();
 
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
@@ -1346,8 +1338,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   }
   
   Finalize_Select();
-
-  draw_CFG();
 }
 
 /* ================================================================
