@@ -86,6 +86,7 @@ static ABI_PROPERTY
 	static_link,
 	link,
 	ret_addr,
+        ret_struct,        /* this is for returning structures by value */
 	loop_count,
         true_predicate,
         stacked,
@@ -230,6 +231,7 @@ main()
   static_link = Create_Reg_Property("static_link");
   link = Create_Reg_Property("link");
   ret_addr = Create_Reg_Property("ret_addr");
+  ret_struct = Create_Reg_Property("ret_struct");
   loop_count = Create_Reg_Property("loop_count");
   true_predicate = Create_Reg_Property("true_predicate");
   stacked = Create_Reg_Property("stacked");
