@@ -1831,19 +1831,15 @@ main()
   Stop(3); 
 
   /* ===== Template 0x00 (15) ===== */ 
-#if 0 // CL 
+#if 0 // CL: incorrect bundle
   ISA_Bundle_Type_Create("temp15", ".temp15", 4); 
-#else
-  ISA_Bundle_Type_Create("temp15", ".temp15", 2); 
-#endif
   Slot(0, S0_Unit); 
   Slot(1, EXT1_Unit); 
   Stop(1); 
-#if 0 // CL
   Slot(2, EXT1_Unit); 
   Slot(3, S3_Unit); 
   Stop(3); 
-#endif
+#endif // CL
 
   /* ===== Template 0x00 (16) ===== */ 
 #if 0 // CL
@@ -1861,20 +1857,16 @@ main()
 #endif
 
   /* ===== Template 0x00 (17) ===== */ 
-#if 0 // CL
+#if 0 // CL: incorrect bundle
   ISA_Bundle_Type_Create("temp17", ".temp17", 4); 
-#else
-  ISA_Bundle_Type_Create("temp17", ".temp17", 2); 
-#endif
   Slot(0, S0_Unit); 
   Slot(1, EXT1_Unit); 
   Stop(1); 
-#if 0 // CL
   Slot(2, EXT1_Unit); 
   Stop(2); 
   Slot(3, S3_Unit); 
   Stop(3); 
-#endif
+#endif // CL
 
   /* ===== Template 0x00 (18) ===== */ 
   ISA_Bundle_Type_Create("temp18", ".temp18", 4); 
