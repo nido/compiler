@@ -421,6 +421,11 @@ Init_Section (
 #else
   if (Is_Text_Section(st)) {
 #endif
+#ifdef TARG_ST
+    /* [TB]: to be sure text_base exists when
+       Create_Cold_Text_Section is called */
+    text_base = st;
+#endif
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
     else if (OPT_Space)
@@ -2235,6 +2240,8 @@ Create_Cold_Text_Section (void)
     if (EMIT_use_cold_section && BB_Is_Cold(bb)) {
       if (cold_base == NULL) {
 	ST *st = Copy_ST(text_base);
+	FmtAssert(text_base != NULL,
+		  ("emit: text_base is null"));
 	Set_ST_blk(st, Copy_BLK(ST_blk(text_base)));
 	Set_ST_name (st, Save_Str2(ELF_TEXT, ".cold"));
 	Set_STB_size (st, 0);
