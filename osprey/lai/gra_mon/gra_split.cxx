@@ -837,7 +837,19 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
     REGISTER_SET_Difference(allowed_regs,Regs_Used(tn,lunit->Gbb(),rc));
 
   while ( GBBPRQ_Size(&gbbprq) > 0 ) {
+    // FdF: Make sure the behavior is the same on different platforms (SunOS/Linux/Cygwin)
+#ifdef TARG_ST
+    GRA_BB*         gbb       = NULL;
+    for (int i = 1; i <= GBBPRQ_Size(&gbbprq); ++i ) {
+      GRA_BB* ith = GBBPRQ_Ith(&gbbprq,i);
+      if ((gbb == NULL) || (BB_id(ith->Bb()) < BB_id(gbb->Bb())))
+	gbb = ith;
+    }
+    GBBPRQ_Remove(&gbbprq, gbb);
+#else
     GRA_BB*         gbb       = GBBPRQ_Delete_Top(&gbbprq);
+#endif
+    
     REGISTER_SET    regs_used = Regs_Used(tn,gbb,rc);
     REGISTER_SET    loop_allowed = REGISTER_SET_EMPTY_SET;
 
@@ -1599,6 +1611,8 @@ Check_Local_Interferences( LRANGE* lrange )
   }
 }
 
+static BOOL
+Compare_Priorities(float p1, float p2);
 /////////////////////////////////////
 static INT
 Choose_Best_Split(INT count)
@@ -1626,8 +1640,16 @@ Choose_Best_Split(INT count)
       GRA_BB* gbb = split_iter.Current();
       float priority = gbb->Split_Priority();
 
+      // FdF: Fix floating point difference between SunOS and Linux/Cygwin
+#ifdef TARG_ST
+      if ((priority > max_priority || Compare_Priorities(priority, max_priority)) &&
+	  count > 1 &&
+	  BB_rid(gbb->Bb()) == max_rid)
+#else
       if (priority >= max_priority && count > 1 &&
-	  BB_rid(gbb->Bb()) == max_rid) {
+	  BB_rid(gbb->Bb()) == max_rid)
+#endif
+	{
 	//
 	// don't remove lunit from live range if previous maximum is
 	// the same as the current one, i.e. don't remove references
@@ -1640,9 +1662,17 @@ Choose_Best_Split(INT count)
 	// live range, the better the chance that Optimize_Placement()
 	// can do something with it.
 	//
+	  // FdF: Fix floating point difference between SunOS and Linux/Cygwin
+#ifdef TARG_ST
+	if (Compare_Priorities(priority, max_priority) &&
+	    ((max_lunit_count > gbb->Split_Lunit_Count()) ||
+	     TN_is_save_reg(split_lrange->Tn())))
+#else
 	if (priority == max_priority &&
 	    ((max_lunit_count > gbb->Split_Lunit_Count()) ||
-	     TN_is_save_reg(split_lrange->Tn()))) {
+	     TN_is_save_reg(split_lrange->Tn())))
+#endif
+	{
 	  continue;
 	}
 
@@ -1661,8 +1691,16 @@ Choose_Best_Split(INT count)
     // we can't really tell what the ultimate spill cost will be at this
     // point (we play it conservatively with OPT_Space on, though).
     //
+
+    // FdF: Fix floating point difference between SunOS and Linux/Cygwin
+#ifdef TARG_ST
+    if ((max_priority < 0.0 && !Compare_Priorities(0.0, max_priority)) &&
+	(!TN_is_save_reg(split_lrange->Tn()) ||	OPT_Space))
+#else
     if (max_priority < 0.0 && (!TN_is_save_reg(split_lrange->Tn()) ||
-	OPT_Space)) {
+	OPT_Space))
+#endif
+    {
       return -1;
     }
 
@@ -1758,7 +1796,13 @@ Compare_Priorities(float p1, float p2)
   if (max == 0.0 || p2 > max) {
     max = p2;
   }
+
+  // FdF: Fix floating point difference between SunOS and Linux/Cygwin
+#ifdef TARG_ST
+  return (fabs(p1-p2) < 0.0001 || (fabs(p1-p2)/max) < .01);
+#else
   return ((fabs(p1-p2)/max) < .01);
+#endif
 }
 
 /////////////////////////////////////
