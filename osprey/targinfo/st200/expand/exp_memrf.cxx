@@ -545,6 +545,20 @@ Expand_Forced_Misaligned_Store (
   Expand_Store (mtype, obj_tn, new_base, new_offset, ops);
 }
 
+static BOOL is_own_func_p (
+  ST *st
+  )
+{
+  if (ST_class (st) == CLASS_FUNC) {
+    if (! ST_is_preemptible (st))
+      return TRUE;
+    else if (!Gen_PIC_Shared) {
+      return (ST_class (st) != SCLASS_EXTERN)
+	&& ! ST_is_weak_symbol (st);
+    }
+  }
+}
+
 /* ====================================================================
  *   Expand_Misaligned_Store
  * ====================================================================
@@ -640,9 +654,10 @@ Exp_Ldst (
     }
   }
   else if (Gen_GP_Relative &&
-           (ST_class(base_sym) == CLASS_BLOCK || 
-                                     ST_class(base_sym)==CLASS_VAR) &&
-	   ST_gprel(base_sym)) {
+           (((ST_class(base_sym) == CLASS_BLOCK || 
+	      ST_class(base_sym) == CLASS_VAR) &&
+	     ST_gprel(base_sym))
+	    || is_own_func_p(base_sym))) {
     // gp-relative reference
     PU_References_GP = TRUE;
     base_tn = GP_TN;
