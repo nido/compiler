@@ -186,7 +186,11 @@ BB *CG_LOOP_epilog_end;
 OP_MAP _CG_LOOP_info_map;
   
 BOOL CG_LOOP_unroll_fully = TRUE;
+#ifdef TARG_ST
+BOOL CG_LOOP_unroll_remainder_fully = FALSE;
+#else
 BOOL CG_LOOP_unroll_remainder_fully = TRUE;
+#endif
 
 #ifdef TARG_ST
 BOOL CG_LOOP_unroll_do_unwind = FALSE;

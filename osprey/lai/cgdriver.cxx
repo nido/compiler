@@ -1090,9 +1090,6 @@ Configure_CG_Options(void)
     }
   }
 
-  if (Opt_Level == 2 && Opt_ForSize)
-    CG_LOOP_unroll_remainder_fully = FALSE;
-
   if (!CG_LOOP_unroll_multi_bb_overridden)
     CG_LOOP_unroll_multi_bb = FALSE;
 
