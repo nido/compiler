@@ -743,8 +743,21 @@ OPCODE_To_INTRINSIC (
       }
       break;
 
+    case OPR_TRUNC:
+      if (rtype == MTYPE_I4) {
+	switch (desc) {
+	case MTYPE_F4: id = INTRN_STOW; break;
+	case MTYPE_F8: id = INTRN_DTOW; break;
+        default:
+	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: desc %s for F4TRUNC", 
+                           MTYPE_name(desc)));
+        }
+      }
+
+      break;
+
     default:
-      FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle OPR_%s",
+      FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle %s",
 		                                  OPERATOR_name(opr)));
   }
 
