@@ -19,6 +19,13 @@
 // Check changes with AS
 #define CG_FIX_1_0_7_A_6
 
+//
+// [CG] : Fix of bug 1-0-7-A/ddts/13517
+// minu,cmpu can have signed operands also, even
+// if interpreted as unsigned by the architecture.
+// So we don't define unsigned lit classes.
+#define CG_FIX_1_0_7_A_DDTS_13517
+
 main() 
 { 
 
@@ -92,9 +99,15 @@ main()
   /* Create the literal operand types: */ 
   btarg = ISA_Lit_Opnd_Type_Create("btarg", 23, SIGNED, LC_s23); 
   isrc2 = ISA_Lit_Opnd_Type_Create("isrc2", 32, SIGNED, LC_s32); 
+#ifndef CG_FIX_1_0_7_A_DDTS_13517
   usrc2 = ISA_Lit_Opnd_Type_Create("usrc2", 32, UNSIGNED, LC_u32); 
+#endif
   s9 = ISA_Lit_Opnd_Type_Create("s9", 9, SIGNED, LC_s9); 
+#ifdef CG_FIX_1_0_7_A_DDTS_13517
+  imm = ISA_Lit_Opnd_Type_Create("imm", 23, SIGNED, LC_s23); 
+#else
   imm = ISA_Lit_Opnd_Type_Create("imm", 23, UNSIGNED, LC_u23); 
+#endif
   pcrel = ISA_Lit_Opnd_Type_Create("pcrel", 32, PCREL, LC_s32); 
 
   /* Create the enum operand types: */ 
@@ -159,7 +172,11 @@ main()
 
   Result (0, ibdest); 
   Operand (0, src1, opnd1); 
+#ifdef CG_FIX_1_0_7_A_DDTS_13517
+  Operand (1, isrc2, opnd2); 
+#else
   Operand (1, usrc2, opnd2); 
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_jump", 
@@ -316,7 +333,11 @@ main()
 
   Result (0, idest); 
   Operand (0, src1, opnd1); 
+#ifdef CG_FIX_1_0_7_A_DDTS_13517
+  Operand (1, isrc2, opnd2); 
+#else
   Operand (1, usrc2, opnd2); 
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_noop", 
@@ -471,7 +492,11 @@ main()
 
   Result (0, idest); 
   Operand (0, src1, opnd1); 
+#ifdef CG_FIX_1_0_7_A_DDTS_13517
+  Operand (1, isrc2, opnd2); 
+#else
   Operand (1, usrc2, opnd2); 
+#endif
 
   /* ====================================== */ 
   Instruction_Group("O_Int3I", 
