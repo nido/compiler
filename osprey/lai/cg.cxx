@@ -633,7 +633,13 @@ CG_Generate_Code(
 #endif
       }
 
+#if 0
+    fprintf(TFile, "%s CFG before LRA_Allocate_Registers\n%s\n", DBar, DBar);
+    Print_All_BBs ();
+#endif
+
     LRA_Allocate_Registers (!region);
+
 #if 0
     fprintf(TFile, "%s CFG After LRA_Allocate_Registers\n%s\n", DBar, DBar);
     Print_All_BBs ();
@@ -684,14 +690,14 @@ CG_Generate_Code(
     }
 #endif
 
-#if 1
+#if 0
     fprintf(TFile, "%s CFG Before IGLS_Schedule_Region\n%s\n", DBar, DBar);
     Print_All_BBs ();
 #endif
 
     IGLS_Schedule_Region (FALSE /* after register allocation */);
 
-#if 1
+#if 0
     fprintf(TFile, "%s CFG After IGLS_Schedule_Region\n%s\n", DBar, DBar);
     Print_All_BBs ();
 #endif
