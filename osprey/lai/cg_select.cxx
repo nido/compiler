@@ -780,7 +780,7 @@ Sanity_Check()
   for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     OP *phi;
     FOR_ALL_BB_PHI_OPs(bb, phi) {
-      DevAssert(OP_opnds(phi) == BB_preds(bb), ("ssa: invalid phi")); 
+      DevAssert(OP_opnds(phi) == BB_preds_len(bb), ("ssa: invalid phi")); 
     }
   }
 }
