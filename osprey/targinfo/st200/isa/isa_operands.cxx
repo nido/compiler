@@ -260,9 +260,9 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
-  Operand (0, bcond); 
-  Operand (1, src1); 
-  Operand (2, src2); 
+  Operand (0, bcond, predicate); 
+  Operand (1, src1, opnd1); 
+  Operand (2, src2, opnd2); 
 
   /* ====================================== */ 
   Instruction_Group("O_rfi", 
@@ -621,9 +621,9 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
-  Operand (0, bcond); 
-  Operand (1, src1); 
-  Operand (2, isrc2); 
+  Operand (0, bcond, predicate); 
+  Operand (1, src1, opnd1); 
+  Operand (2, isrc2, opnd2); 
 
   /* ====================================== */ 
   Instruction_Group("O_Cmp3I_Br", 
