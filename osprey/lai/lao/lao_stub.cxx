@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <vector.h>
 
 #include "bb.h"
@@ -309,9 +310,9 @@ CGIR_SYM_to_Symbol(CGIR_SYM cgir_sym) {
       symbol = LAI_Interface_makeSymbol(interface, cgir_sym, ST_name(cgir_sym));
     }
     LAI_Interface_Symbol_setClasses(interface, symbol, 
-				CGIR_ST_CLASS_to_SClass(ST_sym_class(St_Table[cgir_sym])),
-				CGIR_ST_SCLASS_to_SStorage(ST_storage_class(St_Table[cgir_sym])),
-				CGIR_ST_EXPORT_to_SExport(ST_export(St_Table[cgir_sym])));
+	CGIR_ST_CLASS_to_SClass(ST_sym_class(St_Table[cgir_sym])),
+	CGIR_ST_SCLASS_to_SStorage(ST_storage_class(St_Table[cgir_sym])),
+	CGIR_ST_EXPORT_to_SExport(ST_export(St_Table[cgir_sym])));
   }
   return symbol;
 }
@@ -483,8 +484,8 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
 // Convert CGIR_BB to LIR BasicBlock.
 static BasicBlock
 CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
-  BasicBlock basicblock = LAI_Interface_findBasicBlock(interface, cgir_bb);
-  if (basicblock == NULL) {
+  BasicBlock basicBlock = LAI_Interface_findBasicBlock(interface, cgir_bb);
+  if (basicBlock == NULL) {
     // the BasicBlock label(s)
     int labelCount = 0, MAX_LABEL_COUNT = 256;
     Label *labels = (Label *)alloca(MAX_LABEL_COUNT*sizeof(Label));
@@ -511,7 +512,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     int unrolled = BB_unrollings(cgir_bb);
     // make the BasicBlock
-    basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
+    basicBlock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode, unrolled,
 	labelCount, labels, operationCount, operations);
     // more the BasicBlock
     int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
@@ -544,9 +545,9 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
-    LAI_Interface_moreBasicBlock(interface, basicblock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
+    LAI_Interface_moreBasicBlock(interface, basicBlock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
   }
-  return basicblock;
+  return basicBlock;
 }
 
 #define LAO_OPS_LIMIT 512	// Maximum number of OPs to compute memory dependences.
@@ -659,324 +660,288 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 
 /*-------------------- LIR -> CGIR Interface Call-Backs -------------------*/
 
-// Create a CGIR_LAB.
+// Make a CGIR_LAB.
 static CGIR_LAB
-CGIR_LAB_create(Label label, CGIR_LAB cgir_lab) {
-  const char *name = LAI_Interface_Label_name(label);
-  CGIR_LAB new_lab = 0;
-  // code borrowed from Gen_Label_For_BB
-  LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, new_lab);
-  LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
+CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name) {
+  if (cgir_lab == 0) {
+    // Create cgir_lab.
+    // code borrowed from Gen_Label_For_BB
+    LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, cgir_lab);
+    LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
+  } else {
+    // Update cgir_lab.
+  }
   //
-  return new_lab;
+  return cgir_lab;
 }
 
-// Update a CGIR_LAB.
-static void
-CGIR_LAB_update(Label label, CGIR_LAB cgir_lab) {
-  // should not be modified
-}
-
-// Create a CGIR_SYM.
+// Make a CGIR_SYM.
 static CGIR_SYM
-CGIR_SYM_create(Symbol symbol, CGIR_SYM cgir_sym) {
-  // Currently LAO is allowed to generate:
-  // - spill symbols
-  // - that's all
-  //
-  // Spill symbol.
-  if (LAI_Interface_Symbol_isSpill(symbol)) {
-    // We use the CGSPILL interface to generate a CGIR spill symbol
-    TY_IDX ty = 
-      MTYPE_To_TY(MType_to_CGIR_TYPE_ID(LAI_Interface_Symbol_mtype(symbol)));
-    ST *st = CGSPILL_Gen_Spill_Symbol(ty, (const char *)LAI_Interface_Symbol_name(symbol));
-    return ST_st_idx(*st);
+CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_MType lai_mtype) {
+  if (cgir_sym == 0) {
+    // Create cgir_sym.
+    // Currently LAO is allowed to create:
+    // - spill symbols
+    // Spill symbol.
+    if (isSpill) {
+      // We use the CGSPILL interface to generate a CGIR spill symbol
+      TY_IDX ty = MTYPE_To_TY(MType_to_CGIR_TYPE_ID(lai_mtype));
+      ST *st = CGSPILL_Gen_Spill_Symbol(ty, name);
+      cgir_sym = ST_st_idx(*st);
+    }
+  } else {
+    // Update cgir_sym.
+    // Currently LAO is allowed to update:
+    // - symbol referenced by a symbol Temporary
+    //   This case occurs for generation of homed/rematerialized spill by LAO
+    //   where the remat symbol was passed without being allocated yet.
+    //   The symbol is not modified, but should be allocated is not.
+    if (!Is_Allocated(&St_Table[cgir_sym])) {
+      Allocate_Object(&St_Table[cgir_sym]);
+    }
   }
-  return (CGIR_SYM)0;
+  return cgir_sym;
 }
 
-// Update a CGIR_SYM.
-static void
-CGIR_SYM_update(Symbol symbol, CGIR_SYM cgir_sym) {
-  // Currently LAO is allowed to update:
-  // - symbol referenced by a symbol Temporary
-  //   This case occurs for generation of homed/rematerialized spill by LAO
-  //   where the remat symbol was passed without being allocated yet.
-  //   The symbol is not modified, but should be allocated is not.
-  if (!Is_Allocated(&St_Table[cgir_sym])) {
-    Allocate_Object(&St_Table[cgir_sym]);
+// Make a CGIR_TN.
+static CGIR_TN
+CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
+  va_list va;
+  va_start(va, cgir_type);
+  if (cgir_tn == 0) {
+    // Create cgir_tn.
+    if (cgir_type == CGIR_Type_Virtual) {
+      // Create Virtual cgir_tn.
+      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
+      ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(lai_regclass);
+      INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
+      cgir_tn = Gen_Register_TN(irc, (bsize + 7)/8);
+    } else if (cgir_type == CGIR_Type_Assigned) {
+      // Create Assigned cgir_tn.
+      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
+      ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(lai_regclass);
+      CLASS_REG_PAIR crp = Register_to_CGIR_CRP(lai_register);
+      INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
+      cgir_tn = Gen_Register_TN(irc, (bsize + 7)/8);
+      Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(crp));
+    } else if (cgir_type == CGIR_Type_Dedicated) {
+      // Create Dedicated cgir_tn.
+      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
+      CLASS_REG_PAIR crp = Register_to_CGIR_CRP(lai_register);
+      cgir_tn = Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), 0);
+    } else if (cgir_type == CGIR_Type_Modifier) {
+      // Create Modifier cgir_tn.
+      FmtAssert(0, ("CGIR_TN_make: create Modifier cgir_tn not implemented"));
+    } else if (cgir_type == CGIR_Type_Absolute) {
+      // Create Absolute cgir_tn.
+      int64_t value = (int64_t)va_arg(va, int64_t);
+      int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
+      cgir_tn = Gen_Literal_TN(value, size);;
+    } else if (cgir_type == CGIR_Type_Symbol) {
+      // Create Symbol cgir_tn.
+      CGIR_SYM cgir_sym = (CGIR_SYM)va_arg(va, CGIR_SYM);
+      int64_t offset = (int64_t)va_arg(va, int64_t);
+      cgir_tn = Gen_Symbol_TN (&St_Table[cgir_sym], offset, 0);
+    } else if (cgir_type == CGIR_Type_Label) {
+      // Create Label cgir_tn.
+      CGIR_LAB cgir_lab = (CGIR_LAB)va_arg(va, CGIR_LAB);
+      cgir_tn = Gen_Label_TN(cgir_lab, 0);
+    } else {
+      Is_True (0, ("Unexpected CGIR_Type %d in CGIR_TN_make", cgir_type));
+    }
+  } else {
+    // Update cgir_tn.
+    // Currently LAO is only allowed to update:
+    // - pseudo temporaries into assigned Temporary
+    if (cgir_type == CGIR_Type_Assigned) {
+      // Update Assigned cgir_tn.
+      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
+      Is_True (TN_Is_Allocatable(cgir_tn), ("Invalid TN for register allocation"));
+      CLASS_REG_PAIR cgir_crp = Register_to_CGIR_CRP(lai_register);
+      Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
+    }
   }
+  va_end(va);
+  return cgir_tn;
 }
 
-// Create a Dedicated CGIR_TN.
-static CGIR_TN
-CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  LAI_Register registre = LAI_Interface_Temporary_assigned(temporary);
-  INT size = 0;		// not used in Build_Dedicated_TN
-  CLASS_REG_PAIR crp = Register_to_CGIR_CRP(registre);
-  return Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), size);
-}
-
-// Create a Virtual CGIR_TN.
-static CGIR_TN
-CGIR_Virtual_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
-  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
-  INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
-  INT size = (bsize + 7)/8;
-  return Gen_Register_TN(irc, size);
-}
-
-// Create an Assigned CGIR_TN.
-static CGIR_TN
-CGIR_Assigned_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
-  LAI_Register assigned = LAI_Interface_Temporary_assigned(temporary);
-  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
-  INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
-  INT size = (bsize + 7)/8;
-  TN *tn = Gen_Register_TN(irc, size);
-  CLASS_REG_PAIR crp = Register_to_CGIR_CRP(assigned);
-  Set_TN_register(tn, CLASS_REG_PAIR_reg(crp));
-  return tn;
-}
-
-// Create a Modifier CGIR_TN.
-static CGIR_TN
-CGIR_Modifier_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  LAI_Modifier modifier = LAI_Interface_Temporary_modifier(temporary);
-  FmtAssert(0, ("CGIR_Modifier_TN_create not implemented"));
-  return NULL;
-}
-
-// Create an Absolute CGIR_TN.
-static CGIR_TN
-CGIR_Absolute_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
-  LAI_Immediate immediate = LAI_Interface_Temporary_immediate(temporary);
-  int64_t value = LAI_Interface_Temporary_value(temporary);
-  INT size = (value >= (int64_t)0x80000000 && 
-	      value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
-  return Gen_Literal_TN(value, size);
-}
-
-// Create a Symbol CGIR_TN.
-static CGIR_TN
-CGIR_Symbol_TN_create(Temporary temporary, CGIR_TN cgir_tn, CGIR_SYM cgir_sym) {
-  int64_t offset = LAI_Interface_Temporary_offset(temporary);
-  return Gen_Symbol_TN (&St_Table[cgir_sym], offset, 0);
-}
-
-// Create a Label CGIR_TN.
-static CGIR_TN
-CGIR_Label_TN_create(Temporary temporary, CGIR_TN cgir_tn, CGIR_LAB cgir_lab) {
-  return Gen_Label_TN(cgir_lab, 0);
-}
-
-// Update a CGIR_TN.
-static void
-CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
-  // Currently LAO is allowed to update:
-  // - pseudo temporaries into assigned temporary
-  // - that's all
-  //
-  // Temporary that were assigned
-  if (!LAI_Interface_Temporary_isDedicated(temporary) &&
-      LAI_Interface_Temporary_isAssigned(temporary)) {
-    CLASS_REG_PAIR cgir_crp = 
-      Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
-    Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
-  }
-}
-
-// Create a CGIR_OP.
+// Make a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[]) {
-  int iteration = LAI_Interface_Operation_iteration(operation);
-  int issueDate = LAI_Interface_Operation_issueDate(operation);
-  LAI_Operator opr = LAI_Interface_Operation_operator(operation);
+CGIR_OP_make(CGIR_OP cgir_op, LAI_Operator lai_operator, CGIR_TN arguments[], CGIR_TN results[], CGIR_WN cgir_wn) {
   int argCount = 0, resCount = 0;
-  TOP top = Operator_to_CGIR_TOP(opr);
-  for (argCount = 0; arguments[argCount] != NULL; argCount++);
-  for (resCount = 0; results[resCount] != NULL; resCount++);
-  CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
-  CGPREP_Init_Op(new_op);
-  // _CG_LOOP_info_map may not be defined for multi-bb loops.
-  if (Is_CG_LOOP_Op(cgir_op)) CG_LOOP_Init_Op(new_op);
-  // If a duplicate, set orig_idx and copy WN.
-  if (cgir_op != NULL) {
-    Set_OP_orig_idx(new_op, OP_map_idx(cgir_op));
-    Copy_WN_For_Memory_OP(new_op, cgir_op);
+  TOP top = Operator_to_CGIR_TOP(lai_operator);
+  if (cgir_op == 0) {
+    // Create cgir_op.
+    for (argCount = 0; arguments[argCount] != NULL; argCount++);
+    for (resCount = 0; results[resCount] != NULL; resCount++);
+    cgir_op = Mk_VarOP(top, resCount, argCount, results, arguments);
+    CGPREP_Init_Op(cgir_op);
+#if 0
+    if (old_op != NULL) {
+      // _CG_LOOP_info_map may not be defined for multi-bb loops.
+      if (Is_CG_LOOP_Op(old_op)) CG_LOOP_Init_Op(cgir_op);
+      // If a duplicate, set orig_idx and copy WN.
+      Set_OP_orig_idx(cgir_op, OP_map_idx(old_op));
+      Copy_WN_For_Memory_OP(cgir_op, old_op);
+    }
+#endif
+  } else {
+    // Update cgir_op.
+    BB *bb = OP_bb(cgir_op);
+    if (bb != NULL) BB_Remove_Op(bb, cgir_op);
+    if (OP_code(cgir_op) != top) OP_Change_Opcode(cgir_op, top);
+    for (argCount = 0; arguments[argCount] != NULL; argCount++) {
+      CGIR_TN cgir_tn = arguments[argCount];
+      if (OP_opnd(cgir_op, argCount) != cgir_tn) Set_OP_opnd(cgir_op, argCount, cgir_tn);
+    }
+    Is_True(argCount == OP_opnds(cgir_op), ("OP_opnds mismatch in CGIR_update_OP"));
+    for (resCount = 0; results[resCount] != NULL; resCount++) {
+      CGIR_TN cgir_tn = results[resCount];
+      if (OP_result(cgir_op, resCount) != cgir_tn) Set_OP_result(cgir_op, resCount, cgir_tn);
+    }
+    Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
   }
-  // Add spill information
-  if (LAI_Interface_Operation_isSpillCode(operation)) {
+  //
+  return cgir_op;
+}
+
+// More of CGIR_OP.
+static void
+CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, bool isSpillCode, bool isVolatile, bool isHoisted) {
+  // Set unrolling.
+  Set_OP_unrolling(cgir_op, iteration);
+  // Set scycle.
+  OP_scycle(cgir_op) = issueDate;
+  // Set spill information.
+  if (isSpillCode) {
     TN *spilled_tn;
     TN *offset_tn;
     TN *base_tn;
-    if (OP_store(new_op)) {
-      int val_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_storeval);
-      int offset_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_offset);
-      int base_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_base);
-      spilled_tn = OP_opnd(new_op, val_idx);
-      offset_tn = OP_opnd(new_op, offset_idx);
-      base_tn = OP_opnd(new_op, base_idx);
-    } else if (OP_load(new_op) && OP_results(new_op) == 1) {
-      int offset_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_offset);
-      int base_idx = TOP_Find_Operand_Use(OP_code(new_op),OU_base);
-      spilled_tn = OP_result(new_op, 0);
-      offset_tn = OP_opnd(new_op, offset_idx);
-      base_tn = OP_opnd(new_op, base_idx);
+    if (OP_store(cgir_op)) {
+      int val_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_storeval);
+      int offset_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_offset);
+      int base_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_base);
+      spilled_tn = OP_opnd(cgir_op, val_idx);
+      offset_tn = OP_opnd(cgir_op, offset_idx);
+      base_tn = OP_opnd(cgir_op, base_idx);
+    } else if (OP_load(cgir_op) && OP_results(cgir_op) == 1) {
+      int offset_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_offset);
+      int base_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_base);
+      spilled_tn = OP_result(cgir_op, 0);
+      offset_tn = OP_opnd(cgir_op, offset_idx);
+      base_tn = OP_opnd(cgir_op, base_idx);
     } else {
       Is_True(0, ("Invalid LAO isSpilledOP operation"));
     }
     Is_True(base_tn == SP_TN || base_tn == FP_TN, ("Invalid base TN for LAO spill op"));
     Set_TN_spill(spilled_tn, TN_var(offset_tn));
-    Set_OP_spill(new_op);
+    Set_OP_spill(cgir_op);
   }
-  // TODO: shouldn't we add volatile  information 
-  if (LAI_Interface_Operation_isVolatile(operation)) {
-    DevWarn("Operation volatile on LAO side");
+  // Set volatile.
+  if (isVolatile) {
+    Set_OP_volatile(cgir_op);
   }
-  // Set unrolling.
-  Set_OP_unrolling(new_op, iteration);
   // Set hoisting.
-  if (LAI_Interface_Operation_isHoisted(operation)) {
-    Set_OP_hoisted(new_op);
-  }
-  // Set scycle
-  OP_scycle(new_op) = issueDate;
-  //
-  return new_op;
-}
-
-// Update a CGIR_OP.
-static void
-CGIR_OP_update(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_TN results[]) {
-  int iteration = LAI_Interface_Operation_iteration(operation);
-  int issueDate = LAI_Interface_Operation_issueDate(operation);
-  LAI_Operator opr = LAI_Interface_Operation_operator(operation);
-  BB *bb = OP_bb(cgir_op);
-  if (bb != NULL) BB_Remove_Op(bb, cgir_op);
-  int argCount = 0, resCount = 0;
-  TOP top = Operator_to_CGIR_TOP(opr);
-  if (OP_code(cgir_op) != top) {
-    OP_Change_Opcode(cgir_op, top);
-  }
-  for (argCount = 0; arguments[argCount] != NULL; argCount++) {
-    CGIR_TN cgir_tn = arguments[argCount];
-    if (OP_opnd(cgir_op, argCount) != cgir_tn) Set_OP_opnd(cgir_op, argCount, cgir_tn);
-  }
-  Is_True(argCount == OP_opnds(cgir_op), ("OP_opnds mismatch in CGIR_update_OP"));
-  for (resCount = 0; results[resCount] != NULL; resCount++) {
-    CGIR_TN cgir_tn = results[resCount];
-    if (OP_result(cgir_op, resCount) != cgir_tn) Set_OP_result(cgir_op, resCount, cgir_tn);
-  }
-  Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
-  // Set unrolling.
-  Set_OP_unrolling(cgir_op, iteration);
-  // Set hoisting.
-  if (LAI_Interface_Operation_isHoisted(operation)) {
+  if (isHoisted) {
     Set_OP_hoisted(cgir_op);
   }
-  // Set scycle.
-  OP_scycle(cgir_op) = issueDate;
 }
 
-// Create a CGIR_BB.
+// Make a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, unsigned optimizations) {
-  int unrolled = LAI_Interface_BasicBlock_unrolled(basicBlock);
-  int ordering = LAI_Interface_BasicBlock_ordering(basicBlock);
-  CGIR_BB new_bb = Gen_BB();
-  // Add the labels.
-  for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
-    CGIR_LAB cgir_lab = labels[labelCount];
-    // code borrowed from Gen_Label_For_BB
-    Set_Label_BB(cgir_lab, new_bb);
-    BB_Add_Annotation(new_bb, ANNOT_LABEL, (void *)cgir_lab);
-  }
-  // Add the operations.
-  OPS ops = OPS_EMPTY;
-  for (int opCount = 0; operations[opCount] != NULL; opCount++) {
-    OPS_Append_Op(&ops, operations[opCount]);
-    if (OP_unrolling(operations[opCount]) != 0)
-      Set_OP_unroll_bb(operations[opCount], new_bb);
-  }
-  BB_Append_Ops(new_bb, &ops);
-  // Transfer annotations and attributes.
-  if (cgir_bb != NULL) {
-    if (BB_has_pragma(cgir_bb)) {
-      BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_PRAGMA);
-    }
-    Is_True(!BB_entry(cgir_bb), ("Cannot update a CGIR BB with ENTRY property"));
-    Is_True(!BB_exit(cgir_bb), ("Cannot update a CGIR BB with EXIT property"));
-    if (BB_call(cgir_bb)) {
-      BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_CALLINFO);
-    }
-    if (BB_has_note(cgir_bb)) {
-      BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_NOTE);
-    }
-    // Set unrollings.
-    if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
-      Set_BB_unrollings(new_bb, BB_unrollings(cgir_bb)*unrolled);
-    else if (BB_unrollings(cgir_bb) == 0)
-      Set_BB_unrollings(new_bb, unrolled);
-  } else if (unrolled > 0) {
-    Set_BB_unrollings(new_bb, unrolled);
-  }
-  //
-  // Set flags.
-  if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
-  if (optimizations & Optimization_PostPass) Set_BB_scheduled(new_bb);
-  // Set the rid.
-  BB_rid(new_bb) = cgir_rid;
-  //
-  if (CG_LAO_Region_Map != NULL)
-    BB_MAP32_Set(CG_LAO_Region_Map, new_bb, ordering);
-  //
-  return new_bb;
-}
-
-// Update a CGIR_BB.
-static void
-CGIR_BB_update(BasicBlock basicBlock, CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, unsigned optimizations) {
-  int unrolled = LAI_Interface_BasicBlock_unrolled(basicBlock);
-  int ordering = LAI_Interface_BasicBlock_ordering(basicBlock);
-  // Add the labels.
-  for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
-    CGIR_LAB cgir_lab = labels[labelCount];
-    if (!Is_Label_For_BB(cgir_lab, cgir_bb)) {
+CGIR_BB_make(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid) {
+  if (cgir_bb == 0) {
+    // Create cgir_bb.
+    cgir_bb = Gen_BB();
+    // Add the labels.
+    for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
+      CGIR_LAB cgir_lab = labels[labelCount];
       // code borrowed from Gen_Label_For_BB
       Set_Label_BB(cgir_lab, cgir_bb);
       BB_Add_Annotation(cgir_bb, ANNOT_LABEL, (void *)cgir_lab);
     }
+    // Add the operations.
+    OPS ops = OPS_EMPTY;
+    for (int opCount = 0; operations[opCount] != NULL; opCount++) {
+      OPS_Append_Op(&ops, operations[opCount]);
+    }
+    BB_Append_Ops(cgir_bb, &ops);
+  } else {
+    // Update cgir_bb.
+    // Add the labels.
+    for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
+      CGIR_LAB cgir_lab = labels[labelCount];
+      if (!Is_Label_For_BB(cgir_lab, cgir_bb)) {
+	// Code borrowed from Gen_Label_For_BB.
+	Set_Label_BB(cgir_lab, cgir_bb);
+	BB_Add_Annotation(cgir_bb, ANNOT_LABEL, (void *)cgir_lab);
+      }
+    }
+    // Add the operations.
+    BB_Remove_All(cgir_bb);
+    OPS ops = OPS_EMPTY;
+    for (int opCount = 0; operations[opCount] != NULL; opCount++) {
+      OPS_Append_Op(&ops, operations[opCount]);
+    }
+    BB_Append_Ops(cgir_bb, &ops);
+    // Remove the LOOPINFO if any.
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
+    if (annot != NULL) {
+      BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
+    }
   }
-  // Add the operations.
-  BB_Remove_All(cgir_bb);
-  OPS ops = OPS_EMPTY;
-  for (int opCount = 0; operations[opCount] != NULL; opCount++) {
-    OPS_Append_Op(&ops, operations[opCount]);
-    if (OP_unrolling(operations[opCount]) != 0)
-      Set_OP_unroll_bb(operations[opCount], cgir_bb);
-  }
-  BB_Append_Ops(cgir_bb, &ops);
-  // Remove the LOOPINFO if any.
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
-  if (annot != NULL) {
-    BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
-  }
-  // Set unrollings.
-  if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
-    Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
-  else if (BB_unrollings(cgir_bb) == 0)
-    Set_BB_unrollings(cgir_bb, unrolled);
-  // Set flags.
-  if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
-  if (optimizations & Optimization_PostPass) Set_BB_scheduled(cgir_bb);
   // Set the rid.
   BB_rid(cgir_bb) = cgir_rid;
   //
+  return cgir_bb;
+}
+
+// More a CGIR_BB.
+static void
+CGIR_BB_more(CGIR_BB cgir_bb, int ordering, int unrolled, bool isRegAlloc, bool isScheduled) {
+  // Set the CG_LAO_Region_Map.
   if (CG_LAO_Region_Map != NULL)
     BB_MAP32_Set(CG_LAO_Region_Map, cgir_bb, ordering);
+  // Set BB unrollings.
+  Set_BB_unrollings(cgir_bb, unrolled);
+  // Set other flags.
+  if (isRegAlloc) Set_BB_reg_alloc(cgir_bb);
+  if (isScheduled) Set_BB_scheduled(cgir_bb);
+}
+
+// Make a CGIR_LD.
+static CGIR_LD
+CGIR_LD_make(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unrolled) {
+  if (cgir_ld == 0) {
+    // Create cgir_ld.
+    // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
+    Is_True(0, ("CGIR_LD_create should not be called"));
+  } else {
+    // Update cgir_ld.
+    Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_make"));
+    // We only update the LOOPINFOs for use by LOOP_DESCR_Detect_Loops.
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
+    if (annot != NULL) ANNOT_Unlink(BB_annotations(head_bb), annot);
+    LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
+    if (cgir_li != NULL) {
+      LOOPINFO *new_li = TYPE_P_ALLOC(LOOPINFO);
+      LOOPINFO_wn(new_li) = LOOPINFO_wn(cgir_li);
+      if (LOOPINFO_wn(cgir_li) != NULL && unrolled > 1) {
+	// Code adapted from Unroll_Dowhile_Loop.
+	WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
+	WN_loop_trip_est(wn) /= unrolled;
+	WN_loop_trip_est(wn) += 1;
+	LOOPINFO_wn(new_li) = wn;
+      }
+      LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
+      BB_Add_Annotation(head_bb, ANNOT_LOOPINFO, new_li);
+    }
+  }
+  return cgir_ld;
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -999,7 +964,7 @@ CGIR_BB_link(CGIR_BB orig_cgir_bb, CGIR_BB dest_cgir_bb, float probability) {
 
 // Unlink all the predecessors and successors of a CGIR_BB in the CGIR.
 static void
-CGIR_BB_unlink(CGIR_BB cgir_bb, int preds, int succs) {
+CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
   BBLIST *edge;
   //
   // Remove successor edges.
@@ -1021,64 +986,22 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, int preds, int succs) {
   }
 }
 
-// Create a CGIR_LD.
-static CGIR_LD
-CGIR_LD_create(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn) {
-  // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
-  Is_True(0, ("CGIR_LD_create should not be called"));
-  return cgir_ld;
-}
-
-// Update a CGIR_LD.
-static void
-CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn) {
-  int unrolled = LAI_Interface_LoopInfo_unrolled(loopInfo);
-  Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_update"));
-  // We only update the LOOPINFOs for use by LOOP_DESCR_Detect_Loops.
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
-  if (annot != NULL) ANNOT_Unlink(BB_annotations(head_bb), annot);
-  LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
-  if (cgir_li != NULL) {
-    LOOPINFO *new_li = TYPE_P_ALLOC(LOOPINFO);
-    LOOPINFO_wn(new_li) = LOOPINFO_wn(cgir_li);
-    if (LOOPINFO_wn(cgir_li) != NULL && unrolled > 1) {
-      // Code adapted from Unroll_Dowhile_Loop.
-      WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
-      WN_loop_trip_est(wn) /= unrolled;
-      WN_loop_trip_est(wn) += 1;
-      LOOPINFO_wn(new_li) = wn;
-    }
-    LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
-    BB_Add_Annotation(head_bb, ANNOT_LOOPINFO, new_li);
-  }
-}
-
 // Initialization of the LIR->CGIR callbacks object.
 static void
 LIR_CGIR_callback_init(CGIR_CallBack callback) {
   // Initialize the callback pointers.
-  *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
-  *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
-  *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
-  *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
-  *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
-  *CGIR_CallBack__Virtual_TN_create(callback) = CGIR_Virtual_TN_create;
-  *CGIR_CallBack__Assigned_TN_create(callback) = CGIR_Assigned_TN_create;
-  *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
-  *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
-  *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
-  *CGIR_CallBack__Label_TN_create(callback) = CGIR_Label_TN_create;
-  *CGIR_CallBack__TN_update(callback) = CGIR_TN_update;
-  *CGIR_CallBack__OP_create(callback) = CGIR_OP_create;
-  *CGIR_CallBack__OP_update(callback) = CGIR_OP_update;
-  *CGIR_CallBack__BB_create(callback) = CGIR_BB_create;
-  *CGIR_CallBack__BB_update(callback) = CGIR_BB_update;
+  *CGIR_CallBack__LAB_make(callback) = CGIR_LAB_make;
+  *CGIR_CallBack__SYM_make(callback) = CGIR_SYM_make;
+  *CGIR_CallBack__TN_make(callback) = CGIR_TN_make;
+  *CGIR_CallBack__OP_make(callback) = CGIR_OP_make;
+  *CGIR_CallBack__OP_more(callback) = CGIR_OP_more;
+  *CGIR_CallBack__BB_make(callback) = CGIR_BB_make;
+  *CGIR_CallBack__BB_more(callback) = CGIR_BB_more;
+  *CGIR_CallBack__LD_make(callback) = CGIR_LD_make;
   *CGIR_CallBack__BB_chain(callback) = CGIR_BB_chain;
   *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
   *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
   *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
-  *CGIR_CallBack__LD_create(callback) = CGIR_LD_create;
-  *CGIR_CallBack__LD_update(callback) = CGIR_LD_update;
 }
 
 
@@ -1112,20 +1035,20 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   BB_List::iterator bb_iter;
   // First enter the bodyBBs.
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
-    BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
-    LAI_Interface_setBody(interface, basicblock);
+    BasicBlock basicBlock = CGIR_BB_to_BasicBlock(*bb_iter);
+    LAI_Interface_setBody(interface, basicBlock);
     //fprintf(TFile, "BB_body(%d)\n", BB_id(*bb_iter));
   }
   // Then enter the entryBBs.
   for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
-    BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
-    LAI_Interface_setEntry(interface, basicblock);
+    BasicBlock basicBlock = CGIR_BB_to_BasicBlock(*bb_iter);
+    LAI_Interface_setEntry(interface, basicBlock);
     //fprintf(TFile, "BB_entry(%d)\n", BB_id(*bb_iter));
   }
   // Last enter the exitBBs.
   for (bb_iter = exitBBs.begin(); bb_iter != exitBBs.end(); bb_iter++) {
-    BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
-    LAI_Interface_setExit(interface, basicblock);
+    BasicBlock basicBlock = CGIR_BB_to_BasicBlock(*bb_iter);
+    LAI_Interface_setExit(interface, basicBlock);
     //fprintf(TFile, "BB_exit(%d)\n", BB_id(*bb_iter));
   }
   // Make the control-flow nodes and the control-flow arcs.
