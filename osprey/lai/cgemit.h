@@ -65,6 +65,10 @@ extern INT32 Check_If_Should_Align_BB (BB *bb, INT32 curpc);
 /* Write a qualified name to a file. */
 extern void EMT_Write_Qualified_Name (FILE *f, ST *st);
 
+#ifdef TARG_ST // [CL]
+void New_Debug_Line_Set_Label(INT code_address);
+#endif
+
 #endif /* cgemit_INCLUDED */
 
 

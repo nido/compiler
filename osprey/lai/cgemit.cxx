@@ -575,6 +575,15 @@ inline INT32 PC2Addr(INT32 pc)
 {
   return PC_Bundle(pc) + PC_Slot(pc)*ISA_INST_BYTES/ISA_MAX_SLOTS;
 }
+
+/* Given a physical address, return the corresponding composite PC */
+inline INT32 Addr2PC(INT32 addr)
+{
+  // Note that there is no equivalence with the previous tranformation
+  INT32 bundle = PC_Bundle(addr);
+  INT32 slot = ((addr - bundle) * ISA_MAX_SLOTS) / ISA_INST_BYTES;
+  return bundle + slot;
+}
 #endif
 
 /* ====================================================================
@@ -2344,6 +2353,18 @@ static void
 end_previous_text_region(pSCNINFO scninfo,
                          INT      end_offset)
 {
+#ifdef TARG_ST
+  // CL: convert composite PC to actual PC address
+  Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
+                                         PC2Addr(end_offset),
+                                         Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+                                                               prev_pu_last_label,
+                                                               prev_pu_base_elfsym,
+                                                               prev_pu_pu_idx,
+                                                               prev_pu_last_label_name,
+                                                               prev_pu_last_offset),
+                                         prev_pu_end_offset_from_last_label);
+#else
   Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
                                          end_offset,
                                          Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2353,7 +2374,74 @@ end_previous_text_region(pSCNINFO scninfo,
                                                                prev_pu_last_label_name,
                                                                prev_pu_last_offset),
                                          prev_pu_end_offset_from_last_label);
+#endif
 }
+
+#ifdef TARG_ST
+
+// [CL] create a new label for a new source line
+// code borrowed from Gen_Label_For_BB
+static LABEL_IDX
+Gen_Label_For_Source_Line() {
+  char *buf;
+  LABEL_IDX lab;
+  LABEL *label;
+#define  EXTRA_NAME_LEN  32
+  static char* current_debug_pu_name = NULL;
+  static int debug_lab_id=0;
+
+  /* Reset debug label id at each new PU */
+  if (current_debug_pu_name != Cur_PU_Name) {
+    current_debug_pu_name = Cur_PU_Name;
+    debug_lab_id = 0;
+  }
+
+  /* Name this label: */
+  buf = (char *)alloca(strlen(current_debug_pu_name) + EXTRA_NAME_LEN);
+  sprintf(buf, Source_Line_Label_Format, debug_lab_id, current_debug_pu_name);
+
+  label = &New_LABEL(CURRENT_SYMTAB, lab);
+  LABEL_Init(*label, Save_Str(buf), LKIND_DEFAULT);
+
+  debug_lab_id ++;
+  //
+  return lab;
+}
+
+// [CL] Create a new label for each new source line
+void New_Debug_Line_Set_Label(INT code_address)
+{
+  static int first_debug_line=1;
+
+  if (!first_debug_line) {
+    cache_last_label_info (Last_Label,
+			   Em_Create_Section_Symbol(PU_section),
+			   current_pu,
+			   PC2Addr(Offset_From_Last_Label));
+
+    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+    end_previous_text_region(old_PU_section, 
+			     //  Em_Get_Section_Offset(old_PU_section));
+			     Addr2PC(code_address));
+  }
+
+  Last_Label = Gen_Label_For_Source_Line ();
+  Offset_From_Last_Label = 0;
+
+  if (Assembly || Lai_Code) {
+    fprintf (Output_File, "%s:\t%s 0x%lx\n", 
+	     LABEL_name(Last_Label), ASM_CMNT, code_address );
+  }
+
+  Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
+		    Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+					  Last_Label,
+					  ST_elf_index(text_base)),
+		    PC2Addr(Offset_From_Last_Label));
+
+  first_debug_line=0;
+}
+#endif
 
 /* ====================================================================
  *   Setup_Text_Section_For_PU
@@ -2490,8 +2578,11 @@ Setup_Text_Section_For_PU (
     if (generate_elf_symbols && old_base != NULL) {
       pSCNINFO old_section = em_scn[STB_scninfo_idx(old_base)].scninfo;
       // Arange is symbolic; line number entries (if used) are not.
+#ifndef TARG_ST
+      // [CL] this is already performed in New_Debug_Line_Set_Label
       end_previous_text_region(old_section, 
                                    Em_Get_Section_Offset(old_section));
+#endif
     }
 #ifdef TARG_ST
     // CL: convert composite PC to actual PC address
@@ -3251,7 +3342,7 @@ static int Bundle_Count;
 /* ====================================================================
  *   Assemble_OP
  *
- *   Write outB the 'op' into the object file and/or into the assembly 
+ *   Write out the 'op' into the object file and/or into the assembly 
  *   file. see r_assemble_op() in cg/cgemit.cxx
  * ====================================================================
  */
@@ -3647,7 +3738,7 @@ Assemble_Bundles(BB *bb)
 #endif
 
     }
-    if (slot == 0 ) break;
+    if (slot == 0) break;
 
 #ifdef TARG_ST200
     // CL: recalibrate to ISA_MAX_SLOTS bundle length

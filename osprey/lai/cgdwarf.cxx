@@ -2201,6 +2201,10 @@ Cg_Dwarf_Add_Line_Entry (
   }
 #endif /* TARG_ST200 */
 
+#ifdef TARG_ST // [CL]
+  New_Debug_Line_Set_Label(code_address);
+#endif
+
   USRCPOS_srcpos(usrcpos) = srcpos;
 
   // only emit file changes when happen, so don't bloat objects
