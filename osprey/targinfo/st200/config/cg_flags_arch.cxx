@@ -40,20 +40,24 @@
 void Configure_CG_Target() {
 
   // CFLOW optimizations: ON by default
+
+  // disable CFLOW second pass after HB formation
   CFLOW_opt_after_cgprep = FALSE;
 
   // Scheduling options: scheduling is ON by default -- disable if
   //                     in development
 #ifndef LAO_ENABLED
+  // disable HB scheduling
   IGLS_Enable_HB_Scheduling = FALSE;
+
   IGLS_Enable_PRE_HB_Scheduling = FALSE;
 #endif
   IGLS_Enable_POST_HB_Scheduling = FALSE;
 
-
+  // disable local BB scheduling
   //LOCS_Enable_Scheduling = FALSE;
   //LOCS_PRE_Enable_Scheduling = FALSE;
-  LOCS_POST_Enable_Scheduling = FALSE;
+  //LOCS_POST_Enable_Scheduling = FALSE;
 
   // Bundle formation is OFF by default
   LOCS_Enable_Bundle_Formation = TRUE;
