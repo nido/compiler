@@ -138,7 +138,6 @@ CGEMIT_Prn_Scn_In_Asm (
   char scn_type_string[10];  // min of strlen("progbits") + 1
   char *p = &scn_flags_string[0];
 
-#if 0
   fprintf (asm_file, "\n\t%s %s,", AS_SECTION, scn_name);
   if (scn_flags & SHF_WRITE) *p++ = 'w';
   if (scn_flags & SHF_ALLOC) *p++ = 'a';
@@ -155,12 +154,26 @@ CGEMIT_Prn_Scn_In_Asm (
   else if (scn_type == SHT_PROGBITS) {
     strcpy(p, "progbits");
   }
+#ifdef TARG_ST
+  else if (scn_type == SHT_MIPS_DWARF) {
+    strcpy(p, "");
+  }
+#endif
   else {
     DevWarn("Intel assembler definition inadequate for "
 	    "ELF section type 0x%llx; using \"progbits\"", (UINT64)scn_type);
     strcpy(p, "progbits");
   }
+#ifndef TARG_ST
   fprintf (asm_file, " \"%s\"\n", scn_type_string);
+#else
+  /* CLYON: change syntax for use with gas */
+  if (strlen(scn_type_string)) /* Handle the case when the
+				  type string is empty
+				  (dwarf) */
+      fprintf (asm_file, " @%s", scn_type_string);
+  fprintf (asm_file, "\n");
+#endif /* TARG_ST */
 #if 0   // contrary to document, it should be align, not power of it.
   UINT32 tmp, power;
   power = 0;
@@ -170,7 +183,6 @@ CGEMIT_Prn_Scn_In_Asm (
   fprintf (asm_file, "\t%s\t%d\n", AS_ALIGN, scn_align);  
 #endif
 
-#endif
 }
 
 /* ====================================================================
@@ -201,9 +213,14 @@ CGEMIT_Prn_Line_Dir_In_Asm (
   USRCPOS usrcpos
 )
 {
+#ifndef TARG_ST200 /* CLYON: for ST200, comment .loc directives
+		     (unsupported by gas) */
   if(!CG_emit_asm_dwarf) {
+#endif
     fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
+#ifndef TARG_ST200
   }
+#endif
   fprintf (Asm_File, "\t.loc\t%d\t%d\t%d\n", 
 		USRCPOS_filenum(usrcpos)-1,
 		USRCPOS_linenum(usrcpos),
@@ -223,11 +240,16 @@ CGEMIT_Prn_File_Dir_In_Asm(
 )
 {
   if(!CG_emit_asm_dwarf) {
-    fprintf (Asm_File, "// "); //turn the rest into comment
+    fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
   }
+#ifndef TARG_ST200 /* CLYON gas supports .file "filename" only */
   fprintf (Asm_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
 		USRCPOS_filenum(usrcpos)-1,
 		pathname,filename);
+#else
+  fprintf (Asm_File, "\t%s\t\"%s/%s\"\n", AS_FILE, 
+		pathname,filename);
+#endif
 }
 
 /* ====================================================================
