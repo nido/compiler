@@ -113,7 +113,12 @@ static OP_MAP dup_bb_phi_map;
 // blocks now. (we don't know yet if the hammock will be reduced).
 // OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
 
-pair<op_list, op_list> store_i;
+typedef struct {
+  op_list tkstrs;
+  op_list ntkstrs;
+  list<int> ifarg_idx;
+} store_t;
+store_t store_i;
 op_list load_i;
 
 /* ====================================================================
@@ -246,8 +251,9 @@ static void
 clear_spec_lists()
 {
   load_i.clear();
-  store_i.first.clear();
-  store_i.second.clear();
+  store_i.tkstrs.clear();
+  store_i.ntkstrs.clear();
+  store_i.ifarg_idx.clear();
 }
 
 static void
@@ -617,7 +623,8 @@ Are_Aliased(OP* op1, OP* op2)
     WN *wn2 = Get_WN_From_Memory_OP(op2);
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
-      return alias == SAME_LOCATION;
+      if (alias == SAME_LOCATION)
+        return TRUE;
     }
   }
 
@@ -635,28 +642,60 @@ Sort_Stores(void)
   UINT count = 0;
 
   // We don't have the same count of store. Can't spec any.
-  if (store_i.first.size() != store_i.second.size())
+  if (store_i.tkstrs.size() != store_i.ntkstrs.size())
     return 0;
 
   // Each store should have an equiv.
-  op_list::iterator i1_iter = store_i.first.begin();
-  op_list::iterator i1_end  = store_i.first.end();
-  op_list::iterator i2_iter = store_i.second.begin();
-  UINT c = 0;
+  op_list::iterator i1_iter = store_i.tkstrs.begin();
+  op_list::iterator i1_end  = store_i.tkstrs.end();
+  op_list::iterator i2_iter = store_i.ntkstrs.begin();
+  op_list::iterator i2_end  = store_i.ntkstrs.end();
+  UINT8 c = 0;
 
   while(i1_iter != i1_end) {
-    if (!Are_Aliased (*i1_iter, *i2_iter)) {
-      OP * old_op = *i2_iter;     
-      i2_iter = store_i.second.erase(i2_iter);
-      // *i1_iter didn't match. failed
-      if (c++ == store_i.second.size())
-        return 0;
-      store_i.second.insert(store_i.second.end(), old_op);
-    }
-    else {
+    OP *op1 = *i1_iter;
+    OP *op2 = *i2_iter;
+
+    // Stores don't differ, nothing to do. Select the result
+    if (Are_Aliased (op1, op2)) {
+      store_i.ifarg_idx.push_back(-1);
       ++count;
+      c = 0;
       ++i1_iter;
       ++i2_iter;
+      continue;
+    }
+
+    // Try to select on one of the tns.
+    UINT8 ci = 0;
+    UINT8 lidx = 0;
+    for (UINT8 i = 0; i < OP_opnds(op1); i++) {
+      if (OP_opnd(op1, i) != OP_opnd(op2, i)) {
+        ci++;
+        lidx = i ;
+      }
+    }
+
+    // same ops ?
+    if (ci == 0) {
+      ci = 1;
+      lidx = 2;
+    }
+
+    // one arg differs. Select it.
+    if (ci <= 1) {
+      store_i.ifarg_idx.push_back(lidx);
+      ++count;
+      c = 0;
+      ++i1_iter;
+      ++i2_iter;
+    }
+    else {
+      i2_iter = store_i.ntkstrs.erase(i2_iter);
+      // *i1_iter didn't match. failed
+      if (count + c++ == store_i.ntkstrs.size())
+        return 0;
+      store_i.ntkstrs.insert(store_i.ntkstrs.end(), op2);
     }
   }
 
@@ -792,7 +831,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != target))
       return FALSE; 
 
-   if (! Can_Speculate_BB(bb, &store_i.first))
+   if (! Can_Speculate_BB(bb, &store_i.tkstrs))
      return FALSE;
 
    *t_path  = BB_SET_Union1(*t_path, bb, &MEM_Select_pool);
@@ -807,7 +846,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != fall_thru))
       return FALSE; 
 
-    if (! Can_Speculate_BB(bb, &store_i.second))
+    if (! Can_Speculate_BB(bb, &store_i.ntkstrs))
       return FALSE;
 
     *ft_path  = BB_SET_Union1(*ft_path, bb, &MEM_Select_pool);
@@ -815,7 +854,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
   }
   
   // Check if we have the same set of memory stores in both sides.
-  if (!store_i.first.empty() || !store_i.second.empty()) {
+  if (!store_i.tkstrs.empty() || !store_i.ntkstrs.empty()) {
     if (!Sort_Stores())
       return FALSE;
   }
@@ -947,23 +986,23 @@ Update_Mem_Lists (OP *op, OP *new_op)
   op_list::iterator i_iter;
   op_list::iterator i_end;
 
-  i_iter = store_i.first.begin();
-  i_end = store_i.first.end();
+  i_iter = store_i.tkstrs.begin();
+  i_end = store_i.tkstrs.end();
   while(i_iter != i_end) {
     if (*i_iter == op) {
-      store_i.first.erase(i_iter);
-      store_i.first.insert(i_end, new_op);
+      store_i.tkstrs.erase(i_iter);
+      store_i.tkstrs.insert(i_end, new_op);
       break;
     }
     i_iter++;
   }
 
-  i_iter = store_i.second.begin();
-  i_end = store_i.second.end();
+  i_iter = store_i.ntkstrs.begin();
+  i_end = store_i.ntkstrs.end();
   while(i_iter != i_end) {
     if (*i_iter == op) {
-      store_i.second.erase(i_iter);
-      store_i.second.insert(i_end, new_op);
+      store_i.ntkstrs.erase(i_iter);
+      store_i.ntkstrs.insert(i_end, new_op);
       break;
     }
     i_iter++;
@@ -1250,31 +1289,40 @@ BB_Fix_Spec_Loads (BB *bb)
 static void
 BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 {
-  while (!store_i.first.empty()) {
+  while (!store_i.tkstrs.empty()) {
     OPS ops = OPS_EMPTY;
     TN *true_tn;
     TN *false_tn;
 
-    OP* i1 = store_i.first.front();
-    OP* i2 = store_i.second.front();
-    
-    DevAssert(Are_Aliased (i1, i2), ("stores are not alias"));    
+    OP* i1 = store_i.tkstrs.front();
+    OP* i2 = store_i.ntkstrs.front();
+    int i3 = store_i.ifarg_idx.front();
+    DevAssert(Are_Aliased (i1, i2) || (i3 != -1), ("can't speculate stores"));
+
+    TN *tns[3];
+    tns[0] = OP_opnd(i1, 0);
+    tns[1] = OP_opnd(i1, 1);
+    tns[2] = OP_opnd(i1, 2);
+
+    UINT8 idx = i3 != -1 ? i3 : 2;
 
     if (false_br) {
-      true_tn = OP_opnd(i2, 2);
-      false_tn = OP_opnd(i1, 2);
+      true_tn = OP_opnd(i2, idx);
+      false_tn = OP_opnd(i1, idx);
     }
     else {
-      true_tn = OP_opnd(i1, 2);
-      false_tn = OP_opnd(i2, 2);
+      true_tn = OP_opnd(i1, idx);
+      false_tn = OP_opnd(i2, idx);
     }
 
     TN *temp_tn = Build_TN_Like (true_tn);
 
+    tns[idx] = temp_tn;
+
     Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
     select_count++;
 
-    Expand_Store (MTYPE_I4, temp_tn, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
+    Expand_Store (MTYPE_I4, tns[2], tns[1], tns[0], &ops);
 
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects stores in BB%d", BB_id(bb));
@@ -1287,8 +1335,9 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    BB_Remove_Op (bb, i1);
    BB_Remove_Op (bb, i2);
 
-   store_i.first.pop_front();
-   store_i.second.pop_front();
+   store_i.tkstrs.pop_front();
+   store_i.ntkstrs.pop_front();
+   store_i.ifarg_idx.pop_front();
   }
 }
 
