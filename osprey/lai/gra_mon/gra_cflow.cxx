@@ -320,6 +320,8 @@ GRA_Join_Entry_And_Exit_BBs(void)
   }
 }
 
+#include "tracing.h"
+
 /////////////////////////////////////
 void
 GRA_Add_Call_Spill_Block(BB* bb, BB* succ)
@@ -329,8 +331,22 @@ GRA_Add_Call_Spill_Block(BB* bb, BB* succ)
 {
   BB *new_succ = Gen_And_Insert_BB_After(bb);
 
+#ifdef TARG_ST
+  //
+  // Arthur: seems like a bug to me. Change_Succ() recomputes
+  //         'new_succ' and old "succ' frequencies wrong (perhaps
+  //         Change_Succ() shouldn't be used here at all ?), so do 
+  //         BB_freq(new_succ) frequency setting after, and 
+  //         remember BB_freq(succ).
+  //
+  float old_freq = BB_freq(succ);
+  Change_Succ(bb, succ, new_succ);
+  BB_freq(new_succ) = BB_freq(bb);
+  BB_freq(succ) = old_freq;
+#else
   BB_freq(new_succ) = BB_freq(bb);
   Change_Succ(bb, succ, new_succ);
+#endif
   Link_Pred_Succ_with_Prob(new_succ, succ, 1.0);
 
   GRA_LIVE_Compute_Local_Info(bb);
