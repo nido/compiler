@@ -1300,14 +1300,21 @@ CGTARG_Max_RES_Latency (
   
   //	Now handle special operand cases
 
-  //    Instructions writing LR register must be followed by 3 cycles
-  //    (bundles) before one of the following may be issued:
+
+  // Load instructions (resp arith instruction) writing LR register
+  //    must be followed by 3 cycles delay (resp 2 cycles delay) 
+  //    before one of the following may be issued:
   //         TOP_icall
   //         TOP_igoto
   //         TOP_return
 
-  if (OP_result(op,idx) == RA_TN) {
-    if (latency < 4) latency = 4;
+  if (TN_register_and_class(OP_result(op,idx)) == CLASS_AND_REG_ra) {
+    if (TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_i) ||
+	TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_ii)) {
+      if (latency < 4) latency = 4;
+    } else {
+      if (latency < 3) latency = 3;
+    }
   }
 
   //    Instructions writing into a branch register must be followed
@@ -1351,13 +1358,24 @@ CGTARG_Adjust_Latency (
   //    by 1 cycle (bundle) before a TOP_br can be issued.
   //	Treated by ti_si.
 
-  // 3. Instructions writing LR register must be followed by 3 cycles
-  //    (bundles) before one of the following may be issued:
+  // 3. Load instructions (resp arith instruction) writing LR register
+  //    must be followed by 3 cycles delay (resp 2 cycles delay) 
+  //    before one of the following may be issued:
   //         TOP_icall
   //         TOP_igoto
   //         TOP_return
-  //	Treated by ti_si.
-	
+  if (kind == CG_DEP_REGIN &&
+      (succ_code == TOP_icall ||
+       succ_code == TOP_igoto ||
+       succ_code == TOP_return)) {
+    if (TSI_Id(pred_code) == TSI_Id(TOP_ldw_i) ||
+	TSI_Id(pred_code) == TSI_Id(TOP_ldw_ii)) {
+      if (*latency < 4) *latency = 4;
+    } else {
+      if (*latency < 3) *latency = 3;
+    }
+  }
+
   // 4. TOP_prgins must be followed by 3 cycles (bundles) before
   //    issueing a TOP_syncins instruction
   //	TODO ?
