@@ -819,6 +819,14 @@ EMT_Put_Elf_Symbol (
     // seen this symbol and emitted any type info for it.
     if (ST_class(sym) == CLASS_FUNC) {
       if (Assembly || Lai_Code) {
+#ifdef TARG_ST
+        // (cbr)
+	  if (ST_is_weak_symbol(sym)) {
+	    fprintf ( Asm_File, "\t%s\t", AS_WEAK);
+	    EMT_Write_Qualified_Name(Asm_File, sym);
+	    fprintf ( Asm_File, "\n");
+	  }
+#endif
 	fprintf (Asm_File, "\t%s\t", AS_TYPE);
 	EMT_Write_Qualified_Name (Asm_File, sym);
 	fprintf (Asm_File, ", %s\n", AS_TYPE_FUNC);
