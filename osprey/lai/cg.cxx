@@ -542,6 +542,7 @@ CG_Generate_Code(
 
 #endif
 
+#if 0
     //
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
@@ -558,6 +559,7 @@ CG_Generate_Code(
       if (frequency_verify)
 	FREQ_Verify("Hyberblock Formation");
     }
+#endif
 
 #ifdef TARG_ST
     if (CG_enable_ssa) {
@@ -623,7 +625,6 @@ CG_Generate_Code(
     }
 #endif
 
-#if 0
     // (cbr) SSA should be reconstructer after changing the CFG.
     // For now do that after we got out of SSA.
     // Perform hyperblock formation (if-conversion), if target can
@@ -633,7 +634,6 @@ CG_Generate_Code(
       if (frequency_verify)
 	FREQ_Verify("Hyberblock Formation");
     }
-#endif
 
     // GRA_LIVE_Init only done if !CG_localize_tns
     if (CG_enable_loop_optimizations && !CG_localize_tns) {
