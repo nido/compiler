@@ -88,7 +88,7 @@ static OP_MAP phi_op_map = NULL;
 pair<op_list, op_list> store_i;
 pair<op_list, op_list> load_i;
 
-BB_SET *bbs_tail_dup;
+BB * bbs_tail_dup[2];
 
 /* ================================================================
  *
@@ -100,8 +100,9 @@ static BOOL Trace_Select_Candidates; /* -Wb,-tt61:0x001 */
 static BOOL Trace_Select_Gen;        /* -Wb,-tt61:0x002 */
 static BOOL Trace_Select_Spec;       /* -Wb,-tt61:0x004 */
 static BOOL Trace_Select_Merge;      /* -Wb,-tt61:0x008 */
-static BOOL Trace_Select_Stats;      /* -Wb,-tt61:0x010 */
-static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x020 */
+static BOOL Trace_Select_Dup;        /* -Wb,-tt61:0x010 */
+static BOOL Trace_Select_Stats;      /* -Wb,-tt61:0x020 */
+static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x040 */
 
 static void
 Trace_Select_Init() {
@@ -109,6 +110,7 @@ Trace_Select_Init() {
   Trace_Select_Gen        = Get_Trace(TP_SELECT, Select_Gen);
   Trace_Select_Spec       = Get_Trace(TP_SELECT, Select_Spec);
   Trace_Select_Merge      = Get_Trace(TP_SELECT, Select_Merge);
+  Trace_Select_Dup        = Get_Trace(TP_SELECT, Select_Dup);
   Trace_Select_Stats      = Get_Trace(TP_SELECT, Select_Stats);
   Trace_Select_daVinci    = Get_Trace(TP_SELECT, Select_daVinci);
 }
@@ -159,7 +161,6 @@ static void
 Initialize_Memory()
 {
   if_bb_map = BB_MAP_Create();
-  bbs_tail_dup = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
 }
 
 static void
@@ -195,6 +196,9 @@ clear_spec_lists()
   load_i.second.clear();
   store_i.first.clear();
   store_i.second.clear();
+
+  bbs_tail_dup[0] = NULL;
+  bbs_tail_dup[1] = NULL;
 }
 
 static void
@@ -404,6 +408,181 @@ BB_Localize_Tns (BB *bb)
         Reset_TN_is_global_reg(tn); 
     }
   }
+}
+
+/////////////////////////////////////
+static void
+Rename_Locals(OP* op, hTN_MAP dup_tn_map)
+/////////////////////////////////////
+//
+//  Local TN's must be renamed in duplicated block, otherwise
+//  they'll look like globals.  Note that we assume we're processing
+//  the ops in forward order.  If not, the way we map the new names
+//  below won't work.
+//
+/////////////////////////////////////
+{
+  INT i = 0;
+  TN* res;
+
+  for (i = 0; i < OP_results(op); i++) {
+    res = OP_result(op, i);
+    if (TN_is_register(res) &&
+	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
+      TN* new_tn = Dup_TN(res);
+      hTN_MAP_Set(dup_tn_map, res, new_tn);
+      Set_OP_result(op, i, new_tn);
+    }
+  }
+
+  i = 0;
+  for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
+    res = OP_opnd(op, opndnum);
+    if (TN_is_register(res) &&
+	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
+      res = (TN*) hTN_MAP_Get(dup_tn_map, res);
+      Set_OP_opnd(op, i, res);
+    }
+    i++;
+  }
+}
+
+/* ================================================================
+ *
+ *   Tail duplication
+ *
+ * ================================================================
+ */
+static BB *
+Copy_BB_For_Tail_Duplication(BB* old_bb)
+{
+  BB* new_bb = NULL;
+
+  new_bb = Gen_BB_Like(old_bb);
+
+  //
+  // Copy the ops to the new block.
+  //
+  OP *op;
+  MEM_POOL_Push(&MEM_local_pool);
+  hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
+
+  FOR_ALL_BB_OPs_FWD(old_bb, op) {
+    OP *new_op = Dup_OP(op);
+    Copy_WN_For_Memory_OP(new_op, op);
+    BB_Append_Op(new_bb, new_op);
+    Rename_Locals(new_op, dup_tn_map);
+  }
+  MEM_POOL_Pop(&MEM_local_pool);
+
+  //
+  // Take care of the annotations.
+  //
+  switch (BB_kind(old_bb)) {
+  case BBKIND_CALL:
+    BB_Copy_Annotations(new_bb, old_bb, ANNOT_CALLINFO);
+    break;
+
+  case BBKIND_TAIL_CALL:
+    BB_Copy_Annotations(new_bb, old_bb, ANNOT_CALLINFO);
+    //
+    // NOTE FALLTHRU
+    //
+  case BBKIND_RETURN:
+    {
+      BB_Copy_Annotations(new_bb, old_bb, ANNOT_EXITINFO);
+      OP *b_op;
+      OP *suc_op;
+      ANNOTATION *ant = ANNOT_Get(BB_annotations(new_bb), ANNOT_EXITINFO);
+      EXITINFO *exit_info = ANNOT_exitinfo(ant);
+      EXITINFO *new_info = TYPE_PU_ALLOC(EXITINFO);
+      OP *sp_adj = EXITINFO_sp_adj(exit_info);
+      *new_info = *exit_info;
+      if (sp_adj) {
+	for (suc_op = BB_last_op(old_bb), b_op = BB_last_op(new_bb);
+	     suc_op != sp_adj;
+	     suc_op = OP_prev(suc_op), b_op = OP_prev(b_op))
+	  ;
+	EXITINFO_sp_adj(new_info) = b_op;
+      }
+      ant->info = new_info;
+
+      Set_BB_exit(new_bb);
+      Exit_BB_Head = BB_LIST_Push(new_bb, Exit_BB_Head, &MEM_pu_pool);
+      break;
+    }
+  }
+
+  return new_bb;
+
+}
+
+/////////////////////////////////////
+static void
+Fixup_Arcs(BB* entry, BB* old_bb, BB* new_bb, BB* fall_thru)
+/////////////////////////////////////
+//
+//  Fix up input arcs to the new block from blocks outside the hyperblock,
+//  and add successor arcs.
+//
+/////////////////////////////////////
+{
+  BBLIST* bl;
+  float new_freq = 0.0;
+
+  //
+  // Move predecessor arcs from outside of the hyperblock to new block.
+  //
+  for (bl = BB_preds(old_bb); bl != NULL;) {
+    BB* pred = BBLIST_item(bl);
+    bl = BBLIST_next(bl);
+
+    //
+    // Calculate block frequency.
+    //
+    BBLIST* blsucc = BB_Find_Succ(pred, old_bb);
+
+    //
+    // Now, it's either a block not selected for the hyperblock, or
+    // a block that's already been duplicated, or it is an unduplicated
+    // member of the hyperblock and we need do nothing.
+    //
+    if (pred == entry) {
+      continue;
+    } else {
+      new_freq += BB_freq(pred) * BBLIST_prob(blsucc);
+      if (BB_Fall_Thru_Successor(pred) == old_bb) {
+	Change_Succ(pred, old_bb, new_bb);
+      } else {
+	BB_Retarget_Branch(pred, old_bb, new_bb);
+      }
+    }
+  }
+
+  BB_freq(new_bb) = new_freq;
+}
+
+static void
+Tail_Duplicate(BB* entry, BB* side_entrance, BB* fall_thru)
+{
+  BBLIST* bl;
+  BB* dup =  Copy_BB_For_Tail_Duplication(side_entrance);
+
+  if (Trace_Select_Dup) 
+    fprintf(TFile, "<Select> Tail duplicating BB:%d.  Duplicate BB%d\n",
+	    BB_id(side_entrance), BB_id(dup));
+  
+
+  //
+  // Update the arcs and liveness.
+  //
+  Fixup_Arcs(entry, side_entrance, dup, fall_thru);
+
+  //
+  // Add block, and any block added to compensate for a fall thru out
+  // of the hammock.
+  //
+  Insert_BB(dup, fall_thru);
 }
 
 /* ================================================================
@@ -656,7 +835,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
 
       if (BB_preds_len (bb) != 1) {
         if (BB_preds_len (bb) == 2) {
-          bbs_tail_dup = BB_SET_Union1D(bbs_tail_dup, bb, &MEM_Select_pool);
+          bbs_tail_dup[0] = bb;
         }
         else
           return FALSE; 
@@ -670,7 +849,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
 
       if (BB_preds_len (bb) != 1) {
         if (BB_preds_len (bb) == 2) {
-          bbs_tail_dup = BB_SET_Union1D(bbs_tail_dup, bb, &MEM_Select_pool);
+          bbs_tail_dup[1] = bb;
         }
         else
           return FALSE; 
@@ -736,7 +915,6 @@ Promote_BB(BB *bp, BB *to_bb)
     BBlist_Delete_BB(&BB_succs(pred), bp);
   }
   BBlist_Free(&BB_preds(bp));
-
 }
 
 static void
@@ -1289,7 +1467,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Calculate_Dominators();
 
-  draw_CFG();
+  //  draw_CFG();
 
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
@@ -1328,15 +1506,15 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
-      if (BB_SET_Size(bbs_tail_dup)) {
-        //        BB_SET_Print(bbs_tail_dup, stdout);
+      if (bbs_tail_dup[0]) {
+        DevWarn("<select> tail duplicate BB%d not implemented\n", BB_id (bbs_tail_dup[0]));
+        //        Tail_Duplicate(bb, bbs_tail_dup[0], tail);
+        continue;
+      }
 
-        //        if (BB_SET_MemberP(bbs_tail_dup, target_bb))
-        //          fprintf (stdout, "FOUND TAIL %d\n", BB_id(target_bb));
-
-        //        if (BB_SET_MemberP(bbs_tail_dup, fall_thru_bb))
-        //          fprintf (stdout, "FOUND TAIL %d\n", BB_id(fall_thru_bb));
-        //
+      if (bbs_tail_dup[1]) {
+        DevWarn("<select> tail duplicate BB%d not implemented\n", BB_id (bbs_tail_dup[1]));
+        //        Tail_Duplicate(bb, bbs_tail_dup[1], tail);
         continue;
       }
 
@@ -1346,7 +1524,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         Print_All_BBs();
         fprintf (TFile, "******************************************\n");
       }
-
+      
       Initialize_Hammock_Memory();
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
       Finalize_Hammock_Memory();
@@ -1360,7 +1538,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
-  draw_CFG();
+  //  draw_CFG();
 
   GRA_LIVE_Recalc_Liveness(rid);
 

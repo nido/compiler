@@ -57,8 +57,9 @@ extern void draw_CFG(void);
 #define Select_Gen        2 
 #define Select_Spec       4 
 #define Select_Merge      8 
-#define Select_Stats      16
-#define Select_daVinci    32
+#define Select_Dup        16 
+#define Select_Stats      32
+#define Select_daVinci    64
 
 // op list management
 typedef slist<OP*> op_list;
