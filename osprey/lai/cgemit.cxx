@@ -450,6 +450,7 @@ Init_Section (
   // Currently set it to 
   else {
     if (STB_align(st) == 0) {
+      /* (cbr) if the section is not used, no alignement has been set */
       if (STB_size(st))
         DevWarn("default alignment not set for section %s\n", ST_name(st));
       Set_STB_align(st, DEFAULT_DATA_ALIGNMENT);
@@ -505,10 +506,7 @@ Init_Section (
 #endif
 
   if (Assembly) {
-#ifdef TARG_ST200
-    if (STB_size(st))
-#endif
-      CGEMIT_Prn_Scn_In_Asm(st, scn_type, scn_flags, scn_entsize, cur_section);
+    CGEMIT_Prn_Scn_In_Asm(st, scn_type, scn_flags, scn_entsize, cur_section);
   }
 
   return;
