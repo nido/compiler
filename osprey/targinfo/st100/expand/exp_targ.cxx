@@ -65,6 +65,7 @@
 
 #include "symtab.h"
 #include "opcode.h"
+#include "intrn_info.h"
 #include "const.h"	/* needed to manipulate target/host consts */
 #include "targ_const.h"	/* needed to manipulate target/host consts */
 #include "cgir.h"
@@ -94,6 +95,94 @@ static BOOL Disable_Const_Mult_Opt = FALSE;
  * parm-reg is incoming at the call?  This probably should work,
  * but for now we can use other routine that create a real dup tn. */
 #define DUP_TN(tn)	Dup_TN_Even_If_Dedicated(tn)
+
+/* ====================================================================
+ *   WN_intrinsic_return_ty
+ *
+ *   Similar to the one in be/whirl2c/wn_attr.cxx
+ *   TODO: move to the intrn_info.cxx of something.
+ * ====================================================================
+ */
+static TY_IDX
+WN_intrinsic_return_ty (
+  INTRINSIC intr_opc
+)
+{
+   TY_IDX ret_ty;
+   
+   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
+     ("Exp_Intrinsic_Op: Intrinsic Opcode (%d) out of range", intr_opc)); 
+
+   switch (INTRN_return_kind(intr_opc))
+   {
+   case IRETURN_UNKNOWN:
+     FmtAssert(FALSE,("Exp_Intrinsic_Op: cannot have UNKNOWN IRETURN type"));
+     break;
+   case IRETURN_V:
+      ret_ty = MTYPE_To_TY(MTYPE_V);
+      break;
+   case IRETURN_I1:
+      ret_ty = MTYPE_To_TY(MTYPE_I1);
+      break;
+   case IRETURN_I2:
+      ret_ty = MTYPE_To_TY(MTYPE_I2);
+      break;
+   case IRETURN_I4:
+      ret_ty = MTYPE_To_TY(MTYPE_I4);
+      break;
+   case IRETURN_I8:
+      ret_ty = MTYPE_To_TY(MTYPE_I8);
+      break;
+   case IRETURN_U1:
+      ret_ty = MTYPE_To_TY(MTYPE_U1);
+      break;
+   case IRETURN_U2:
+      ret_ty = MTYPE_To_TY(MTYPE_U2);
+      break;
+   case IRETURN_U4:
+      ret_ty = MTYPE_To_TY(MTYPE_U4);
+      break;
+   case IRETURN_U8:
+      ret_ty = MTYPE_To_TY(MTYPE_U8);
+      break;
+   case IRETURN_F4:
+      ret_ty = MTYPE_To_TY(MTYPE_F4);
+      break;
+   case IRETURN_F8:
+      ret_ty = MTYPE_To_TY(MTYPE_F8);
+      break;
+   case IRETURN_FQ:
+      ret_ty = MTYPE_To_TY(MTYPE_FQ);
+      break;
+   case IRETURN_C4:
+      ret_ty = MTYPE_To_TY(MTYPE_C4);
+      break;
+   case IRETURN_C8:
+      ret_ty = MTYPE_To_TY(MTYPE_C8);
+      break;
+   case IRETURN_CQ:
+      ret_ty = MTYPE_To_TY(MTYPE_CQ);
+      break;
+      /*
+   case IRETURN_PV:
+      ret_ty = Stab_Pointer_To(Stab_Mtype_To_Ty(MTYPE_V));
+      break;
+   case IRETURN_PU1:
+      ret_ty = Stab_Pointer_To(Stab_Mtype_To_Ty(MTYPE_U1));
+      break;
+   case IRETURN_DA1:
+      ret_ty = WN_Tree_Type(WN_kid0(call));
+      break;
+      */
+   default:
+      Is_True(FALSE, 
+	      ("Unexpected INTRN_RETKIND in WN_intrinsic_return_ty()"));
+      ret_ty = MTYPE_To_TY(MTYPE_V);
+      break;
+   }
+   
+   return ret_ty;
+} /* WN_intrinsic_return_ty */
 
 /* ====================================================================
  *   Pick_Imm_Form_TOP (regform)
@@ -411,11 +500,12 @@ Exp_Immediate (
   }
   else if (TN_is_symbol(src)) {
 
-    FmtAssert(FALSE,("Exp_Immediate: symbol TN not handled"));
+    FmtAssert(FALSE,("Exp_Immediate: symbol TN"));
 
     ST *base;
     Base_Symbol_And_Offset_For_Addressing (TN_var(src), 
                                       TN_offset(src), &base, &val);
+    // now val is the "real" offset
   }
 
   switch (mtype) {
@@ -483,6 +573,8 @@ Exp_Immediate (
       if (ISA_LC_Value_In_Class (val, LC_s16)) {
 	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, src, ops);
       }
+#if 0
+      // MAKEBA is not U32
       else if (ISA_LC_Value_In_Class (val, LC_u32)) {
 	/*
 	 * This is all good but it's too early to expand:
@@ -495,6 +587,7 @@ Exp_Immediate (
 	*/
 	Build_OP (TOP_GP32_MAKEBA_GT_AR_U32, dest, True_TN, src, ops);
       }
+#endif
       else {
 	FmtAssert(0, ("Exp_Immediate: immediate > 32"));
       }
@@ -566,27 +659,22 @@ Pick_Constant_Add (
 
     case MTYPE_A4:
 
-      if (val % 4 == 0) {
-	if (ISA_LC_Value_In_Class((val >> 2), LC_u9)) {
-	  new_opcode = TOP_GP32_ADDWA_GT_AR_AR_U9;
-	  break;
-	}
-      }
-
-      if (val % 2 == 0) {
-	if (ISA_LC_Value_In_Class((val >> 1), LC_u9)) {
-	  new_opcode = TOP_GP32_ADDHA_GT_AR_AR_U9;
-	  break;
-	}
-      }
-
       if (ISA_LC_Value_In_Class(val, LC_u9)) {
 	new_opcode = TOP_GP32_ADDBA_GT_AR_AR_U9;
-	break;
+      }
+      else if (val % 2 == 0 && ISA_LC_Value_In_Class((val >> 1), LC_u9)) {
+	new_opcode = TOP_GP32_ADDHA_GT_AR_AR_U9;
+	*src2 = Gen_Literal_TN(val>>1, Pointer_Size);
+      }
+      else if (val % 4 == 0 && ISA_LC_Value_In_Class((val >> 2), LC_u9)) {
+	new_opcode = TOP_GP32_ADDWA_GT_AR_AR_U9;
+	*src2 = Gen_Literal_TN(val>>2, Pointer_Size);
+      }
+      else {
+	new_opcode = TOP_GP32_ADDBA_GT_AR_AR_AR;
+	*src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
       }
 
-      new_opcode = TOP_GP32_ADDBA_GT_AR_AR_AR;
-      *src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
       break;
 
     default:
@@ -618,19 +706,21 @@ Expand_Add (
   /* 
    * Make sure that the ADD operands are of correct type:
    *   because WHIRL will not generate explicit conversions for
-   *   some types of operands, eg. A4 + I4. 
+   *   some types of operands, eg. A4 + I4. Oh, yes, it should !
    */
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
     Expand_Add (result, src2, src1, mtype, ops);
     return;
   }
+#if 0
   else if (TN_is_register(src1) && 
       (Register_Class_For_Mtype(mtype) != TN_register_class(src1))) {
     tmp = Build_TN_Of_Mtype (mtype);
     Exp_COPY (tmp, src1, ops);
     src1 = tmp;
   }
+#endif
 
   if (TN_is_constant(src2)) {
 
@@ -650,6 +740,9 @@ Expand_Add (
     }
     // symbolic constant, gp-relative or sp-relative
     else if (TN_is_symbol(src2)) {
+      //
+      // src1 is the base, src2 is the ofst
+      //
       INT64 ofst;
       ST *base;
 
@@ -1239,92 +1332,244 @@ Expand_Multiply (
     }
 
     // I have some integer result mtype.
-    // I should try to strength reduce the expression:
+    // I should try to strength reduce the expression.
     TOP opcode = TOP_UNDEFINED;
     switch (mtype) {
 
-      case MTYPE_I2:
-	if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2 ||
-	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2 ||
-	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2 ||
-	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-	  opcode = TOP_IFR_MULH_GT_DR_DR_DR;
-	break;
+    case MTYPE_I2:
+      if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2 ||
+	  s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2 ||
+	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2 ||
+	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+	opcode = TOP_UNDEFINED;
+      break;
 
-      case MTYPE_U2:
-	if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-	  opcode = TOP_IFR_MULUH_GT_DR_DR_DR;
-	break;
+    case MTYPE_U2:
+      if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+	opcode = TOP_UNDEFINED;
+	//	opcode = TOP_IFR_MULUH_GT_DR_DR_DR;
+      break;
 
-      case MTYPE_I4:
-	if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ||
-	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
-	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
-	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
-	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2) 
-	  opcode = TOP_IFR_MULW_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
-	  opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2)
-	  opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
-	break;
+    case MTYPE_I4:
+      if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
+	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
+	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2) {
 
-      case MTYPE_U4:
-	if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4)
-	  opcode = TOP_IFR_MULUW_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
-	break;
+	if (Lai_Code) {
+	  INTRINSIC id = INTRN_MULW;
+	  INT num_results = 1;
+	  INT num_opnds = 4;
+	  TN *result[1];
+	  TN *opnd[4];
+	  TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+	  ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+	  result[0] = dest;
+	  opnd[0] = True_TN;
+	  opnd[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+	  opnd[2] = src1;
+	  opnd[3] = src2;
 
-      case MTYPE_I5:
-	if (s1mtype == MTYPE_I5 && s2mtype == MTYPE_I5 ||
-	    s1mtype == MTYPE_I5 && s2mtype == MTYPE_U5 ||
-	    s1mtype == MTYPE_U5 && s2mtype == MTYPE_I5 ||
-	    s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
-	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ) 
-	  opcode = TOP_IFR_MULE_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
-	  opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2)
-	  opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
-	break;
+	  // create intrcall op
+	  opcode = TOP_intrncall;
+	  OP* intrncall_op = 
+	    Mk_VarOP(opcode, num_results, num_opnds, result, opnd);
+	  OPS_Append_Op(ops, intrncall_op);
 
-      case MTYPE_U5:
-	if (s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
-	    s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 )
-	  opcode = TOP_IFR_MULUE_GT_DR_DR_DR;
-	else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
-	  opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
-	break;
+	  //	  opcode = TOP_IFR_MULW_GT_DR_DR_DR;
+	  //	  Build_OP(opcode, dest, True_TN, src1, src2, ops);
+	}
+	else {
+	  TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  // r12 = HighS(R0) * LowU(R1) 
+	  Build_OP(TOP_GP32_MPSUHL_GT_DR_DR_DR, tmp, True_TN, src1, src2, ops);
+	  // r12'= LowU(R0) * HighS(R1) + HighS(R0) * LowU(R1)
+	  TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_MAUSLH_GT_DR_DR_DR_DR, 
+                                        tmp1, True_TN, tmp, src1, src2, ops);
+	  // 
+	  TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_SHLU_GT_DR_DR_U5, 
+                            tmp2, True_TN, tmp1, Gen_Literal_TN(16, 4), ops);
+	  // Ro = R0*R1
+	  opcode = TOP_GP32_MAUULL_GT_DR_DR_DR_DR;
+	  Build_OP(opcode, dest, True_TN, tmp2, src1, src2, ops);
+	}
+      }
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
+	opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
+	opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      break;
 
-      default:
-	FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n", 
-                                                         MTYPE_name(mtype)));
+    case MTYPE_U4:
+      if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2) {
+	if (Lai_Code) {
+	  INTRINSIC id = INTRN_MULUW;
+	  INT num_results = 1;
+	  INT num_opnds = 4;
+	  TN *result[1];
+	  TN *opnd[4];
+	  TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+	  ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+	  result[0] = dest;
+	  opnd[0] = True_TN;
+	  opnd[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+	  opnd[2] = src1;
+	  opnd[3] = src2;
+
+	  // create intrcall op
+	  opcode = TOP_intrncall;
+	  OP* intrncall_op = 
+	    Mk_VarOP(opcode, num_results, num_opnds, result, opnd);
+	  OPS_Append_Op(ops, intrncall_op);
+
+	  //	  opcode = TOP_IFR_MULUW_GT_DR_DR_DR;
+	  //	  Build_OP(opcode, dest, True_TN, src1, src2, ops);
+	}
+	else {
+	  TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  // r12 = HighS(R0) * LowU(R1) 
+	  Build_OP(TOP_GP32_MPUUHL_GT_DR_DR_DR, tmp, True_TN, src1, src2, ops);
+	  // r12'= LowU(R0) * HighS(R1) + HighS(R0) * LowU(R1)
+	  TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_MAUULH_GT_DR_DR_DR_DR, 
+                                        tmp1, True_TN, tmp, src1, src2, ops);
+	  // 
+	  TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_SHLU_GT_DR_DR_U5, 
+                            tmp2, True_TN, tmp1, Gen_Literal_TN(16, 4), ops);
+	  // Ro = R0*R1
+	  opcode = TOP_GP32_MAUULL_GT_DR_DR_DR_DR;
+	  Build_OP(opcode, dest, True_TN, tmp2, src1, src2, ops);
+	}
+      }
+      else if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
+	       s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
+	       s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
+	       s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
+	       s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
+	       s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
+	       s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
+	       s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4 ||
+	       s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2) {
+	if (Lai_Code) {
+	  INTRINSIC id = INTRN_MULUW;
+	  INT num_results = 1;
+	  INT num_opnds = 4;
+	  TN *result[1];
+	  TN *opnd[4];
+	  TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+	  ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+	  result[0] = dest;
+	  opnd[0] = True_TN;
+	  opnd[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+	  opnd[2] = src1;
+	  opnd[3] = src2;
+
+	  // create intrcall op
+	  opcode = TOP_intrncall;
+	  OP* intrncall_op = 
+	    Mk_VarOP(opcode, num_results, num_opnds, result, opnd);
+	  OPS_Append_Op(ops, intrncall_op);
+
+	  //	opcode = TOP_IFR_MULW_GT_DR_DR_DR;
+	}
+	else {
+	  TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  // r12 = HighS(R0) * LowU(R1) 
+	  Build_OP(TOP_GP32_MPSUHL_GT_DR_DR_DR, tmp, True_TN, src1, src2, ops);
+	  // r12'= LowU(R0) * HighS(R1) + HighS(R0) * LowU(R1)
+	  TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_MAUSLH_GT_DR_DR_DR_DR, 
+                                        tmp1, True_TN, tmp, src1, src2, ops);
+	  // 
+	  TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_du);
+	  Build_OP(TOP_GP32_SHLU_GT_DR_DR_U5, 
+                            tmp2, True_TN, tmp1, Gen_Literal_TN(16, 4), ops);
+	  // Ro = R0*R1
+	  opcode = TOP_GP32_MAUULL_GT_DR_DR_DR_DR;
+	  Build_OP(opcode, dest, True_TN, tmp2, src1, src2, ops);
+	}
+      }
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      break;
+
+    case MTYPE_I5:
+      if (s1mtype == MTYPE_I5 && s2mtype == MTYPE_I5 ||
+	  s1mtype == MTYPE_I5 && s2mtype == MTYPE_U5 ||
+	  s1mtype == MTYPE_U5 && s2mtype == MTYPE_I5 ||
+	  s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
+	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ) 
+	opcode = TOP_UNDEFINED;
+	//	opcode = TOP_IFR_MULE_GT_DR_DR_DR;
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
+	opcode = TOP_GP32_MPSSLL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPSULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
+	opcode = TOP_GP32_MPUSLL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      break;
+
+    case MTYPE_U5:
+      if (s1mtype == MTYPE_U5 && s2mtype == MTYPE_U5 ||
+	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 )
+	opcode = TOP_UNDEFINED;
+	//	opcode = TOP_IFR_MULUE_GT_DR_DR_DR;
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+	opcode = TOP_GP32_MPUULL_GT_DR_DR_DR;
+	Build_OP (opcode, dest, True_TN, src1, src2, ops);
+      }
+      break;
+
+    default:
+      FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n", 
+                                                    MTYPE_name(mtype)));
     }
 
     if (opcode == TOP_UNDEFINED)
       FmtAssert(FALSE, ("Expand_Multiply: can't make mpy %s <- %s * %s",
 	       MTYPE_name(mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
 
-    Build_OP (opcode, dest, True_TN, src1, src2, ops);
+    //    Build_OP (opcode, dest, True_TN, src1, src2, ops);
 
   } /* if (!done) */
 
@@ -1352,34 +1597,8 @@ Expand_Madd (
   OPS *ops
 )
 {
-  TOP new_opcode;
+  TOP opcode = TOP_UNDEFINED;
   TN  *tmp;
-
-  /* 
-   * Make sure that the operands are of correct type:
-   *   because WHIRL will not generate explicit conversions for
-   *   some types of operands, eg. A4 + I4
-   */
-  /*
-  if (TN_is_register(src0) && 
-      (Register_Class_For_Mtype(rmtype) != TN_register_class(src0))) {
-    tmp = Build_TN_Of_Mtype (rmtype);
-    Exp_COPY (tmp, src0, ops);
-    src0 = tmp;
-  }
-  if (TN_is_register(src1) && 
-      (Register_Class_For_Mtype(rmtype) != TN_register_class(src1))) {
-    tmp = Build_TN_Of_Mtype (rmtype);
-    Exp_COPY (tmp, src1, ops);
-    src1 = tmp;
-  }
-  if (TN_is_register(src2) &&
-      (Register_Class_For_Mtype(rmtype) != TN_register_class(src2))) {
-    tmp = Build_TN_Of_Mtype (rmtype);
-    Exp_COPY (tmp, src2, ops);
-    src2 = tmp;
-  }
-  */
 
   /*
    * Make sure that result and src0 have integer MTYPEs.
@@ -1432,26 +1651,23 @@ Expand_Madd (
     } /* TN_has_value(src2) */
     break;
 
-    /* 
-     * TODO: make it table driven, if we keep this design
-     */
   case MTYPE_I4:
 
     FmtAssert(MTYPE_size_min(s0mtype) == 32, 
 	      ("Expand_Madd: I4 = %s + a*b", MTYPE_name(s0mtype)));
 
     if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
-      Build_OP (TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      opcode = TOP_UNDEFINED;
+      //      opcode = TOP_IFR_MASSHW_GT_DR_DR_DR_DR;
     else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) 
-      Build_OP (TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      opcode = TOP_UNDEFINED;
+      //      opcode = TOP_IFR_MASUHW_GT_DR_DR_DR_DR;
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) 
-      Build_OP (TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
-    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-      Build_OP (TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      opcode = TOP_UNDEFINED;
+      //      opcode = TOP_IFR_MAUSHW_GT_DR_DR_DR_DR;
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
+      //      opcode = TOP_IFR_MAUUHW_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else
       FmtAssert(FALSE, ("Expand_Madd: I4 = %s + %s * %s", 
 	MTYPE_name(s0mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
@@ -1463,8 +1679,8 @@ Expand_Madd (
 	      ("Expand_Madd: U4 = %s + a*b", MTYPE_name(s0mtype)));
 
     if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-      Build_OP (TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MAUHW_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else
       FmtAssert(FALSE, ("Expand_Madd: MTYPE_U4 -- operands messed"));
     break;
@@ -1475,20 +1691,20 @@ Expand_Madd (
 	      ("Expand_Madd: I5 = %s + a*b", MTYPE_name(s0mtype)));
 
     if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
-      Build_OP (TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MASSE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) 
-      Build_OP (TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MASUE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) 
-      Build_OP (TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MAUSE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-      Build_OP (TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MAUUE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) 
-      Build_OP (TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MAWE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else
       FmtAssert(FALSE, ("Expand_Madd: I5 = I5 + %s * %s", 
 			MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
@@ -1500,8 +1716,8 @@ Expand_Madd (
 	      ("Expand_Madd: U5 = %s + a*b", MTYPE_name(s0mtype)));
 
     if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) 
-      Build_OP (TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
-                      result, True_TN, src0, src1, src2, ops);
+      //      opcode = TOP_IFR_MAWUE_GT_DR_DR_DR_DR;
+      opcode = TOP_UNDEFINED;
     else
       FmtAssert(FALSE, ("Expand_Madd: MTYPE_U5 -- operands messed"));
     break;
@@ -1511,6 +1727,11 @@ Expand_Madd (
 		                                MTYPE_name(rmtype)));
 
   }
+
+  if (opcode == TOP_UNDEFINED)
+    FmtAssert(FALSE, ("Expand_Madd: failed"));
+
+  Build_OP (opcode, result, True_TN, src0, src1, src2, ops);
 
   /* make a MPY and an ADD */
   /*
@@ -1943,6 +2164,7 @@ Expand_Int_Comparison (
   OPS *ops
 )
 {
+#if 0
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
     // build comparison OP, result is in predicate register:
     Build_OP (action, dest, True_TN, src1, src2, ops);
@@ -1961,8 +2183,64 @@ Expand_Int_Comparison (
     FmtAssert(FALSE, 
 	      ("Expand_Int_Comparison: unhandled cmp target TN"));
   }
+#else
+  FmtAssert(TN_register_class(dest) == ISA_REGISTER_CLASS_du,
+	      ("Expand_Int_Comparison: cmp target TN not int"));
+
+  TN *tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
+  // build comparison OP, result is in predicate register:
+  Build_OP (action, tmp, True_TN, src1, src2, ops);
+  /*
+   * Move to int
+   */
+  Build_OP (TOP_GP32_BOOL_GT_DR_BR, dest, True_TN, tmp, ops);
+#endif
 
   return;
+}
+
+/* ====================================================================
+ *   Expand_Bool_Comparison
+ * ====================================================================
+ */
+static void
+Expand_Bool_Comparison (
+  BOOL equals, 
+  TN *dest, 
+  TN *src1, 
+  TN *src2, 
+  OPS *ops
+)
+{
+  FmtAssert(FALSE,("Not Implemented"));
+
+#if 0
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    // return result of comparison in a predicate register
+    TOP action = equals ? TOP_GP32_NEW_GT_BR_DR_DR : TOP_GP32_EQW_GT_BR_DR_DR;
+    TN *p1 = dest;
+    TN *p2 = Get_Complement_TN(dest);
+    TN *tn = Build_TN_Of_Mtype (MTYPE_I4);
+
+    // generate: tn = (src1 == src2)
+    Build_OP (TOP_GP32_MOVE_GT_DR_DR, tn, True_TN, 
+                                           Gen_Literal_TN(1, 4), ops);
+    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tn, src1, 
+                                       Gen_Literal_TN(1, 4), tn, ops);
+    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tn, src2, 
+                                       Gen_Literal_TN(1, 4), tn, ops);
+
+    Build_OP (action, p1, p2, True_TN, tn, Zero_TN, ops);
+  } else {
+    Build_OP (TOP_GP32_MOVE_GT_DR_DR, dest, True_TN, 
+                                      Gen_Literal_TN(equals, 4), ops);
+    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, src1, 
+                                     Gen_Literal_TN(1, 4), dest, ops);
+    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, src2, 
+                                     Gen_Literal_TN(1, 4), dest, ops);
+  }
+#endif
+
 }
 
 /* ====================================================================
@@ -1991,7 +2269,18 @@ Expand_Int_Less (
 		                               Mtype_Name(mtype)));
   }
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Less: unhandled cmp target TN"));
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -2020,7 +2309,18 @@ Expand_Int_Less_Equal (
                                                   Mtype_Name(mtype)));
   }
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Less_Equal: unhandled cmp target TN"));
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -2052,7 +2352,18 @@ Expand_Int_Equal (
                                                   Mtype_Name(mtype)));
   }
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (TRUE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Equal: unhandled cmp target TN"));
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -2071,9 +2382,6 @@ Expand_Int_Not_Equal (
   VARIANT variant;
   TOP   action;
   TN   *tmp1, *tmp2;
-
-  Print_TN(src1, FALSE);
-  Print_TN(src2, FALSE);
 
   FmtAssert(TN_register_class(src1) == ISA_REGISTER_CLASS_du &&
             (!TN_is_register(src2) || TN_register_class(src2) == ISA_REGISTER_CLASS_du),
@@ -2104,7 +2412,17 @@ Expand_Int_Not_Equal (
                                                    Mtype_Name(mtype)));
   }
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Not_Equal: unhandled cmp target TN"));
+  }
+
   return;
 }
 
@@ -2134,7 +2452,18 @@ Expand_Int_Greater_Equal (
                                                      Mtype_Name(mtype)));
   }
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Greater_Equal: unhandled cmp target TN"));
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -2166,7 +2495,18 @@ Expand_Int_Greater (
   }
 
   action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Int_Comparison (action, dest, src1, src2, ops);
+  //  Expand_Int_Comparison (action, dest, src1, src2, ops);
+
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Greater: unhandled cmp target TN"));
+  }
+
   return;
 }
 
@@ -2174,7 +2514,6 @@ Expand_Int_Greater (
  *   Expand_Ptr_Not_Equal
  *
  *   src1 and src2 are of MTYPE desc, one of pointer MTYPEs;
- *   result MTYPE = one of pointer MTYPEs.
  * ====================================================================
  */
 void
@@ -2186,8 +2525,50 @@ Expand_Ptr_Not_Equal (
   OPS *ops
 )
 {
-  TN *tmp1, *tmp2;
+  VARIANT variant;
+  TOP   action;
+  TN   *tmp1, *tmp2;
 
+  if (TN_is_register(src1)) {
+    FmtAssert(TN_register_class(src1) == ISA_REGISTER_CLASS_au,
+	            ("Expand_Ptr_Not_Equal: src1 has wrong RClass"));
+  }
+  else {
+    FmtAssert(TN_is_register(src2), ("Expand_Ptr_Not_Equal: src2 is screwed"));
+    src1 = Expand_Immediate_Into_Register (desc, src1, ops);
+  }
+
+  if (TN_is_register(src2)) {
+    FmtAssert(TN_register_class(src2) == ISA_REGISTER_CLASS_au,
+	            ("Expand_Ptr_Not_Equal: src2 has wrong RClass"));
+  }
+  else {
+    FmtAssert(TN_is_register(src1), ("Expand_Ptr_Not_Equal: src1 is screwed"));
+    src2 = Expand_Immediate_Into_Register (desc, src2, ops);
+  }
+
+  switch (desc) {
+  case MTYPE_A4:
+    variant = V_BR_A4NE; 
+    break;
+  default:
+    Is_True(FALSE, ("Expand_Ptr_Not_Equal: MTYPE_%s is not pointer", 
+                                                   Mtype_Name(desc)));
+  }
+
+  action = Pick_Compare_TOP (&variant, &src1, &src2, ops);
+
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
+    Expand_Bool_Comparison (FALSE, dest, src1, src2, ops);
+  } 
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_du) {
+    Expand_Int_Comparison (action, dest, src1, src2, ops);
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Ptr_Not_Equal: unhandled cmp target TN"));
+  }
+
+#if 0
   /* Compare is done in DU, move them to DU first */
   if (TN_is_register(src1) &&
       TN_register_class (src1) != ISA_REGISTER_CLASS_du) {
@@ -2216,49 +2597,9 @@ Expand_Ptr_Not_Equal (
       FmtAssert(FALSE, ("Expand_Ptr_Not_Equal: MTYPE_%s is not handled", 
                 MTYPE_name(desc)));
   }
+#endif
 
   return;
-}
-
-/* ====================================================================
- *   Expand_Bool_Comparison
- * ====================================================================
- */
-static void
-Expand_Bool_Comparison (
-  BOOL equals, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  OPS *ops
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
-
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    // return result of comparison in a predicate register
-    TOP action = equals ? TOP_GP32_NEW_GT_BR_DR_DR : TOP_GP32_EQW_GT_BR_DR_DR;
-    TN *p1 = dest;
-    TN *p2 = Get_Complement_TN(dest);
-    TN *tn = Build_TN_Of_Mtype (MTYPE_I4);
-
-    // generate: tn = (src1 == src2)
-    Build_OP (TOP_GP32_MOVE_GT_DR_DR, tn, True_TN, 
-                                           Gen_Literal_TN(1, 4), ops);
-    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tn, src1, 
-                                       Gen_Literal_TN(1, 4), tn, ops);
-    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tn, src2, 
-                                       Gen_Literal_TN(1, 4), tn, ops);
-
-    Build_OP (action, p1, p2, True_TN, tn, Zero_TN, ops);
-  } else {
-    Build_OP (TOP_GP32_MOVE_GT_DR_DR, dest, True_TN, 
-                                      Gen_Literal_TN(equals, 4), ops);
-    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, src1, 
-                                     Gen_Literal_TN(1, 4), dest, ops);
-    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, src2, 
-                                     Gen_Literal_TN(1, 4), dest, ops);
-  }
 }
 
 /* ====================================================================
@@ -2691,8 +3032,6 @@ Exp_Select_And_Condition (
 
 /* ====================================================================
  *   Expand_Min
- *
- *   t = s1 < s2; d = select t ? s1 : s2
  * ====================================================================
  */
 void
@@ -2704,62 +3043,81 @@ Expand_Min (
   OPS *ops
 )
 {
-  TOP   cmp;
-  VARIANT variant;
+  if (Lai_Code) {
+    INTRINSIC id;
+    INT num_results = 1;
+    INT num_opnds = 4;
+    TN *result[1];
+    TN *opnd[4];
 
-  // Just emit an intrinsic:
-  switch (mtype) {
-    case MTYPE_I2:
-      Build_OP (TOP_IFR_MINH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+    // Just emit an intrinsic:
+    switch (mtype) {
+      case MTYPE_I2:
+	id = INTRN_MINH;
+	break;
 
-    case MTYPE_U2:
-      Build_OP (TOP_IFR_MINUH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_U2:
+	id = INTRN_MINUH;
+	break;
 
-    case MTYPE_I4:
-      Build_OP (TOP_IFR_MINW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_I4:
+	id = INTRN_MINW;
+	break;
 
-    case MTYPE_U4:
-      Build_OP (TOP_IFR_MINUW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_U4:
+	id = INTRN_MINUW;
+	break;
 
-    case MTYPE_I5:
-      Build_OP (TOP_IFR_MINE_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_I5:
+	id = INTRN_MINE;
+	break;
 
-    case MTYPE_U5:
-      Build_OP (TOP_IFR_MINUE_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_U5:
+	id = INTRN_MINUE;
+	break;
 
-    default:
-      FmtAssert (FALSE,("Expand_Min: unhandled mtype"));
+      default:
+	FmtAssert (FALSE,("Expand_Min: unhandled mtype"));
+    }
+
+    TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+    ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+    result[0] = dest;
+    opnd[0] = True_TN;
+    opnd[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+    opnd[2] = src1;
+    opnd[3] = src2;
+
+    // create intrcall op
+    OP* intrncall_op = Mk_VarOP(TOP_intrncall, num_results, num_opnds, result, opnd);
+    OPS_Append_Op(ops, intrncall_op);
   }
+  else { 
+    //
+    // generate real code
+    // t = s1 < s2; d = select t ? s1 : s2
+    //
+    TOP   cmp;
+    VARIANT variant;
 
+    switch (mtype) {
+      case MTYPE_I8: variant = V_BR_I8LT; break;
+      case MTYPE_I4: variant = V_BR_I4LT; break;
+      case MTYPE_U8: variant = V_BR_U8LT; break;
+      case MTYPE_U4: variant = V_BR_U4LT; break;
 
-  switch (mtype) {
-  case MTYPE_I8: variant = V_BR_I8LT; break;
-  case MTYPE_I4: variant = V_BR_I4LT; break;
-  case MTYPE_U8: variant = V_BR_U8LT; break;
-  case MTYPE_U4: variant = V_BR_U4LT; break;
+      case MTYPE_F4: 
+      case MTYPE_F8: 
+      case MTYPE_F10: 
+      default:
+	FmtAssert(FALSE, ("Expand_Min: unexpected mtype"));
+    }
 
-  case MTYPE_F4: 
-  case MTYPE_F8: 
-  case MTYPE_F10: 
-  default:
-    FmtAssert(FALSE, ("Expand_Min: unexpected mtype"));
-  }
-
-  //  cmp = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Compare_And_Select (variant, 
+    cmp = Pick_Compare_TOP (&variant, &src1, &src2, ops);
+    Expand_Compare_And_Select (variant, 
                  src1, src2, dest, NULL, src1, src2, FALSE, ops);
+  }
+
   return;
 }
 
@@ -2781,59 +3139,93 @@ Expand_Max (
   TOP cmp;
   VARIANT variant;
 
-  // Just emit an intrinsic:
-  switch (mtype) {
-    case MTYPE_I2:
-      Build_OP (TOP_IFR_MAXH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+  if (Lai_Code) {
+    //
+    // Just emit an intrinsic
+    //
+    INTRINSIC id;
+    INT num_results = 1;
+    INT num_opnds = 4;
+    TN *result[1];
+    TN *opnd[4];
 
-    case MTYPE_U2:
-      Build_OP (TOP_IFR_MAXUH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+    switch (mtype) {
+      case MTYPE_I2:
+	id = INTRN_MAXH;
+	//      Build_OP (TOP_IFR_MAXH_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
 
-    case MTYPE_I4:
-      Build_OP (TOP_IFR_MAXW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_U2:
+	id = INTRN_MAXUH;
+	//      Build_OP (TOP_IFR_MAXUH_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
 
-    case MTYPE_U4:
-      Build_OP (TOP_IFR_MAXUW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_I4:
+	id = INTRN_MAXW;
+	//      Build_OP (TOP_IFR_MAXW_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
 
-    case MTYPE_I5:
-      Build_OP (TOP_IFR_MAXE_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_U4:
+	id = INTRN_MAXUW;
+	//      Build_OP (TOP_IFR_MAXUW_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
 
-    case MTYPE_U5:
-      Build_OP (TOP_IFR_MAXUE_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
+      case MTYPE_I5:
+	id = INTRN_MAXE;
+	//      Build_OP (TOP_IFR_MAXE_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
 
-    default:
-      FmtAssert (FALSE,("Expand_Max: unhandled mtype"));
+      case MTYPE_U5:
+	id = INTRN_MAXUE;
+	//      Build_OP (TOP_IFR_MAXUE_GT_DR_DR_DR, dest, True_TN,
+	//	                                         src1, src2, ops);
+	break;
+
+      default:
+	FmtAssert (FALSE,("Expand_Max: unhandled mtype"));
+    }
+
+    TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+    ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+    result[0] = dest;
+    opnd[0] = True_TN;
+    opnd[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+    opnd[2] = src1;
+    opnd[3] = src2;
+
+    // create intrcall op
+    OP* intrncall_op = Mk_VarOP(TOP_intrncall, num_results, num_opnds, result, opnd);
+    OPS_Append_Op(ops, intrncall_op);
+
   }
+  else {
+    //
+    // generate real code
+    // t = s1 > s2; d = select t ? s1 : s2
+    //
+    switch (mtype) {
+      case MTYPE_I8: variant = V_BR_I8GT; break;
+      case MTYPE_I4: variant = V_BR_I4GT; break;
+      case MTYPE_U8: variant = V_BR_U8GT; break;
+      case MTYPE_U4: variant = V_BR_U4GT; break;
 
+      case MTYPE_F4: 
+      case MTYPE_F8: 
+      case MTYPE_F10: 
+      default:
+	FmtAssert(FALSE, ("Expand_Max: unexpected mtype"));
+    }
 
-  switch (mtype) {
-  case MTYPE_I8: variant = V_BR_I8GT; break;
-  case MTYPE_I4: variant = V_BR_I4GT; break;
-  case MTYPE_U8: variant = V_BR_U8GT; break;
-  case MTYPE_U4: variant = V_BR_U4GT; break;
-
-  case MTYPE_F4: 
-  case MTYPE_F8: 
-  case MTYPE_F10: 
-  default:
-    FmtAssert(FALSE, ("Expand_Max: unexpected mtype"));
-  }
-
-  //  cmp = Pick_Compare_TOP (&variant, &src1, &src2, ops);
-  Expand_Compare_And_Select (variant, src1, 
+    cmp = Pick_Compare_TOP (&variant, &src1, &src2, ops);
+    Expand_Compare_And_Select (variant, src1, 
                           src2, dest, NULL, src1, src2, FALSE, ops);
+  }
+
   return;
 }
 
@@ -2856,42 +3248,7 @@ Expand_MinMax (
   TOP cmp;
   VARIANT variant;
 
-  // Just emit an intrinsic:
-  switch (mtype) {
-    case MTYPE_I2:
-      Build_OP (TOP_IFR_MAXH_GT_DR_DR_DR, dest2, True_TN,
-	                                         src1, src2, ops);
-      Build_OP (TOP_IFR_MINH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
-
-    case MTYPE_U2:
-      Build_OP (TOP_IFR_MAXUH_GT_DR_DR_DR, dest2, True_TN,
-	                                         src1, src2, ops);
-      Build_OP (TOP_IFR_MINUH_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
-
-    case MTYPE_I4:
-      Build_OP (TOP_IFR_MAXW_GT_DR_DR_DR, dest2, True_TN,
-	                                         src1, src2, ops);
-      Build_OP (TOP_IFR_MINW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
-
-    case MTYPE_U4:
-      Build_OP (TOP_IFR_MAXUW_GT_DR_DR_DR, dest2, True_TN,
-	                                         src1, src2, ops);
-      Build_OP (TOP_IFR_MINUW_GT_DR_DR_DR, dest, True_TN,
-	                                         src1, src2, ops);
-      return;
-
-    default:
-      FmtAssert (FALSE,("Expand_MinMax: unhandled mtype"));
-  }
-
-
-  FmtAssert(FALSE,("Not Implemented"));
+  FmtAssert(FALSE,("MINMAX shouldn't have been reached"));
 
   switch (mtype) {
   case MTYPE_I8: variant = V_BR_I8LT; break;
@@ -3125,7 +3482,7 @@ Exp_COPY (
 
   Expand_Copy (tgt_tn, True_TN, src_tn, ops);
 
-  /*
+#if 0
   TN *tmp;
 
   if (TN_is_constant(src_tn)) {
@@ -3172,7 +3529,7 @@ Exp_COPY (
          ("Exp_COPY: unsupported copy for %s to %s",
 	    ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)),
 	    ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc))));
-  */
+#endif
 
   return;
 }
@@ -3184,76 +3541,66 @@ Exp_COPY (
 void
 Exp_Intrinsic_Op (
   INTRINSIC id, 
-  TN *result, 
-  TN *op0, 
-  TN *op1, 
-  TN *op2, 
+  INT num_results,
+  INT num_opnds,
+  TN *result[], 
+  TN *opnd[],
   OPS *ops
 )
 {
   switch (id) {
 
-  case INTRN_MPSSE:
-    Build_OP (TOP_IFR_MPSSE_GT_DR_DR_DR, result, True_TN, op0, op1, ops);
-    break;
+    case INTRN_MPSSE:
+      Build_OP (TOP_GP32_MPSSLL_GT_DR_DR_DR, result[0], True_TN, 
+                                                   opnd[0], opnd[1], ops);
+      break;
 
-  case INTRN_MASSE:
-    Build_OP (TOP_IFR_MASSE_GT_DR_DR_DR_DR, result, True_TN, op0, op1, op2, ops);
-    break;
+    case INTRN_MASSE:
+      Build_OP (TOP_GP32_MASSLL_GT_DR_DR_DR_DR, result[0], True_TN, 
+                                            opnd[0], opnd[1], opnd[2], ops);
+      break;
 
-  case INTRN_I4FFS:
-    {
-      /* Return the position of the first bit set in op0.  The least 
-       * significant bit is position 1 and the most significant position 32.
-       * Return 0 if no bits are set.
-       *
-       * For non-zero values of op0, we use popcnt to compute the bit
-       * position. To do so, we adjust op0 so that it has the number of 
-       * one bits set corresponding to the least significant bit set.
-       * The subtract 1 (adds) and xor accomplish the conversion.
-       */
-      /*
-      TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_predicate);
-      TN *p2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_predicate);
-      TN *t1 = Build_TN_Of_Mtype (MTYPE_I4);
-      TN *t2 = Build_TN_Of_Mtype (MTYPE_I4);
-      Build_OP (TOP_cmp_eq, p1, p2, True_TN, op0, Zero_TN, ops);
-      Build_OP (TOP_adds, t1, True_TN, Gen_Literal_TN(-1, 4), op0, ops);
-      Build_OP (TOP_xor, t2, True_TN, t1, op0, ops);
-      Build_OP (TOP_mov, result, p1, Zero_TN, ops);
-      Build_OP (TOP_popcnt, result, p2, t2, ops);
-      */
-    }
-    break;
+    // Following only appear in Lai_Code:
+    // TODO: make this a default ?
+    case INTRN_DIVW:
+    case INTRN_DIVUW:
+      {
+	INT i;
+	TN *args[10];
 
-  default:
-    #pragma mips_frequency_hint NEVER
-    FmtAssert (FALSE, ("WHIRL_To_OPs: illegal intrinsic op"));
-    /*NOTREACHED*/
+	// Some intrinsics map to the ISA opcodes. If we're generating the
+	// Lai_Code some intrinsics map to function calls. 
+	// Exp_Intrinsic_Op () returns TOP_intrncall for such intrinsics.
+	// The first operand TN of a TOP_intrncall is a symbolic TN
+	// indicating the function name for a function to be called.
+	// We need to pass a ST representing this function.
+	// We do not have the ST for it because it's in the library
+	// So create a dummy func ST for this function.
+	TY_IDX  ty = Make_Function_Type(WN_intrinsic_return_ty(id));
+	ST     *st = Gen_Intrinsic_Function(ty, INTRN_c_name(id));
+
+	// operand 0 is the predicate
+	args[0] = True_TN;
+
+	// operand 1 is the intrinsic name
+	args[1] = Gen_Symbol_TN (st, 0, TN_RELOC_NONE);
+
+	// operands 2 .. num_opnds+2 are operands
+	for (i = 0; i < num_opnds; i++) {
+	  args[i+2] = opnd[i];
+	}
+
+	// create intrcall op
+	OP* intrncall_op = Mk_VarOP(TOP_intrncall, num_results, num_opnds+2, result, args);
+	OPS_Append_Op(ops, intrncall_op);
+      }
+      break;
+
+    default:
+      FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op"));
   }
 
   return;
-}
-
-/* ======================================================================
- *   Expand_TOP_intrncall
- * 
- *   Given a TOP_intrncall <op>, expand it into the sequence of instructions 
- *   that must be generated. If <get_sequence_length> is TRUE, return only
- *   the number of instructions in the sequence and don't actually do the 
- *   expansion.
- * ======================================================================
- */
-static INT
-Expand_TOP_intrncall (
-  const OP *op, 
-  OPS *ops, 
-  BOOL get_sequence_length,
-  INT pc_value
-)
-{
-  FmtAssert(FALSE, ("Expand_TOP_intrncall NYI"));
-  /*NOTREACHED*/
 }
 
 /* ======================================================================
@@ -3290,6 +3637,27 @@ Intrinsic_Returns_New_Value (
   default:
 	return FALSE;
   }
+}
+
+/* ======================================================================
+ *   Expand_TOP_intrncall
+ * 
+ *   Given a TOP_intrncall <op>, expand it into the sequence of instructions 
+ *   that must be generated. If <get_sequence_length> is TRUE, return only
+ *   the number of instructions in the sequence and don't actually do the 
+ *   expansion.
+ * ======================================================================
+ */
+static INT
+Expand_TOP_intrncall (
+  const OP *op, 
+  OPS *ops, 
+  BOOL get_sequence_length,
+  INT pc_value
+)
+{
+  FmtAssert(FALSE, ("Expand_TOP_intrncall NYI"));
+  /*NOTREACHED*/
 }
 
 /* ======================================================================
@@ -3339,7 +3707,7 @@ Exp_Simulated_Op (
   switch (OP_code(op)) {
 
   case TOP_intrncall:
-    FmtAssert(FALSE,("Exp_Simulated_Op: expanding intrncall ?"));
+    Expand_TOP_intrncall(op, ops, FALSE, pc_value);
     break;
 
   case TOP_spadjust:
@@ -3394,6 +3762,30 @@ Simulated_Op_Real_Ops(const OP *op)
      */
     return 0;
   }
+}
+
+/* ======================================================================
+ * Simulated_Op_Real_Inst_Words
+ *
+ * Return the number of instruction words that will ultimately be emitted
+ * for the expansion generated by Exp_Simulated_Op
+ * ======================================================================*/
+INT
+Simulated_Op_Real_Inst_Words(const OP *op)
+{
+    switch (OP_code(op)) {
+    case TOP_spadjust:
+	return 1;
+    case TOP_asm:
+	// this is a hack; will be a multiple of 3, but don't know
+	// exact number.
+	return 3;
+    default:
+    	// For IA-64, we should never emit a simulated OP, so just assert.
+	#pragma mips_frequency_hint NEVER
+    	FmtAssert(FALSE, ("shouldn't be calling Simulated_Op_Real_Inst_Words for %s", TOP_Name(OP_code(op)) ));
+    	/*NOTREACHED*/
+    }
 }
 
 /* ======================================================================

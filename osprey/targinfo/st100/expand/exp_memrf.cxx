@@ -38,6 +38,7 @@
 #include <elf.h>
 #include <vector.h>
 #include "defs.h"
+#include "glob.h"
 #include "em_elf.h"
 #include "erglob.h"
 #include "ercg.h"
@@ -151,7 +152,7 @@ Gen_Offset_TN (
       break;
 
     case _SEC_DATA:
-    case _SEC_RODATA:
+    case _SEC_RDATA:
     case _SEC_BSS: {
       TN *tmp = Build_TN_Of_Mtype (Pointer_Mtype);
       // Must make MAKE, MORE sequence for the address
@@ -167,11 +168,11 @@ Gen_Offset_TN (
 }
 
 /* ====================================================================
- *   Pick_Load_Imm_Instruction
+ *   Gen_Load_Imm_Instruction
  * ====================================================================
  */
 static void
-Pick_Load_Imm_Instruction (
+Gen_Load_Imm_Instruction (
   TYPE_ID rtype, 
   TYPE_ID desc,
   TN      *base,
@@ -213,39 +214,84 @@ Pick_Load_Imm_Instruction (
       top = (negate) ? TOP_GP32_LDW_GT_DR_AR_M_U9 :
 	                           TOP_GP32_LDW_GT_DR_AR_P_U9;
       Build_OP (top, dest, True_TN, base, offset, ops);
-      offset = Gen_Literal_TN(TN_value(offset)+4, Pointer_Size);
       top = (negate) ? TOP_GP32_LDEW_GT_DR_AR_M_U9 :
 	                           TOP_GP32_LDEW_GT_DR_AR_P_U9;
-      Build_OP (top, dest, True_TN, dest, base, offset, ops);
+      if (TN_has_value(offset)) {
+	Build_OP(top, dest, True_TN, dest, base,
+	         Gen_Literal_TN(TN_value(offset)+4, 
+				Pointer_Size),
+		 ops);
+      }
+      else if (TN_is_symbol(offset)) {
+	// I know this is ugly but it will have to do for now ...
+	INT64 base_ofst;
+	ST *base_sym;
+	Base_Symbol_And_Offset_For_Addressing (TN_var(offset), 
+                             TN_offset(offset), &base_sym, &base_ofst);
+	Build_OP(top, dest, True_TN, dest, base,
+	         Gen_Literal_TN(base_ofst+4, Pointer_Size),
+		 //		 Gen_Symbol_TN(TN_var(offset), 
+		 //			       TN_offset(offset)+4, 
+		 //			       Pointer_Size),
+		 ops);
+      }
+      else {
+	FmtAssert(FALSE,("Pick_Store_Imm_Instruction: bad offset TN"));
+      }
+
       return;
 
     case MTYPE_U5:
       top = (negate) ? TOP_GP32_LDUW_GT_DR_AR_M_U9 :
 	                           TOP_GP32_LDUW_GT_DR_AR_P_U9;
       Build_OP (top, dest, True_TN, base, offset, ops);
-      offset = Gen_Literal_TN(TN_value(offset)+4, Pointer_Size);
       top = (negate) ? TOP_GP32_LDEW_GT_DR_AR_M_U9 :
 	                           TOP_GP32_LDEW_GT_DR_AR_P_U9;
-      Build_OP (top, dest, True_TN, dest, base, offset, ops);
+      if (TN_has_value(offset)) {
+	Build_OP(top, dest, True_TN, dest, base,
+	         Gen_Literal_TN(TN_value(offset)+4, 
+				Pointer_Size),
+		 ops);
+      }
+      else if (TN_is_symbol(offset)) {
+	// I know this is ugly but it will have to do for now ...
+	INT64 base_ofst;
+	ST *base_sym;
+	Base_Symbol_And_Offset_For_Addressing (TN_var(offset), 
+                               TN_offset(offset), &base_sym, &base_ofst);
+	Build_OP(top, dest, True_TN, dest, base,
+	         Gen_Literal_TN(base_ofst+4, 
+				Pointer_Size),
+		 //		 Gen_Symbol_TN(TN_var(offset), 
+		 //			       TN_offset(offset)+4, 
+		 //			       Pointer_Size),
+		 ops);
+      }
+      else {
+	FmtAssert(FALSE,("Pick_Store_Imm_Instruction: bad offset TN"));
+      }
+
       return;
 
     case MTYPE_A4:
       top = (negate) ? TOP_GP32_LAW_GT_AR_AR_M_U9 :
                                    TOP_GP32_LAW_GT_AR_AR_P_U9;
       break;
+
     case MTYPE_V:
       if (rtype != MTYPE_V) {
 	// use rtype to pick load (e.g. if lda)
-	Pick_Load_Imm_Instruction(rtype, 
+	Gen_Load_Imm_Instruction(rtype, 
                        rtype, base, offset, dest, ops, negate);
 	return;
       }
   }
 
   if (top == TOP_UNDEFINED)
-    FmtAssert(0,("Pick_Load_Imm_Instruction: mtype"));
+    FmtAssert(0,("Gen_Load_Imm_Instruction: mtype"));
 
   Build_OP (top, dest, True_TN, base, offset, ops);
+
   return;
 }
 
@@ -311,64 +357,168 @@ Expand_Load (
   TYPE_ID  mtype = OPCODE_desc(opcode);
   TOP      top = TOP_UNDEFINED;
   INT64    val;
-  TN      *opnd;
+  TN      *tmp;
+
+  // Arthur: experiment if this is true ??
+  Is_True (TN_is_constant(ofst), ("Illegal load offset TN"));
 
   if (TN_is_constant(ofst)) { 
     if (TN_has_value(ofst)) {
-      val = (TN_value(ofst) < 0) ? -TN_value(ofst) : TN_value(ofst);
+      BOOL negate = (TN_value(ofst) < 0) ? TRUE : FALSE;
+      val = negate ? -TN_value(ofst) : TN_value(ofst);
       if (ISA_LC_Value_In_Class(scaled_val(val, mtype), LC_u9)) {
-        opnd = (TN_value(ofst) < 0) ? 
-                       Gen_Literal_TN(val, Pointer_Size) : ofst;
-        Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), 
-                    mtype, base, opnd, result, ops, (TN_value(ofst) < 0));
+        ofst = negate ? Gen_Literal_TN(val, Pointer_Size) : ofst;
+        Gen_Load_Imm_Instruction (OPCODE_rtype(opcode), 
+                 mtype, base, ofst, result, ops, negate);
 	return;
       } else {
         ofst = Expand_Immediate_Into_Register(Pointer_Mtype, ofst, ops);
+	top = Pick_Load_Instruction (OPCODE_rtype(opcode), mtype);
       }
-    } else {      
-      // TN must be a symbol: SP or GP relative. 
-      // I would like to make a better selection but ...
-      // at this point the real offsets are not known yet
-      // , I must use the symbol itself
-      TN *tmp = Build_TN_Like(base);
-      Expand_Add (tmp, base, ofst, Pointer_Mtype, ops);
-      base = tmp;
-      opnd = Gen_Literal_TN (0, Pointer_Size);
-      Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype, 
-                                      base, opnd, result, ops, FALSE);
-      return;
+    } 
+    else if (TN_is_symbol(ofst)) {    
+      //  
+      // TN must be a symbol: SP/FP or GP relative. 
+      //
+      INT64 base_ofst;
+      ST *base_sym;
+
+      // get the base_sym: GP/FP/SP and base_ofst from it.
+      Base_Symbol_And_Offset_For_Addressing (TN_var(ofst), 
+                                  TN_offset(ofst), &base_sym, &base_ofst);
+
+      // Some symbols don't have their base fixed (formals on small
+      // stack)
+      //
+      if (base == NULL) {
+	//
+	// expand load o(b) into a = makea o; load b + a;
+	//
+	// cause base is not finished, but they will be assigned to SP.
+	// So only use FP if already based on FP.
+	//
+	base = (base_sym == FP_Sym) ? FP_TN : SP_TN;
+
+	if (!ISA_LC_Value_In_Class (base_ofst, LC_s16)) {
+	  FmtAssert(FALSE, ("Exp_Load: symbol offset > 16"));
+	}
+
+	tmp = Build_TN_Of_Mtype(Pointer_Mtype);
+
+	// emit a makewa/makeha/makeba depending on mtype
+	// emit makea; shra; load while LAO does not know makeha/makewa
+	switch (mtype) {
+	case MTYPE_I4:
+	case MTYPE_U4:
+	case MTYPE_A4:
+#if 0
+	  if (Lai_Code) {
+	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
+                                      Pointer_Mtype, shift_aright, ops);
+	  }
+	  else {
+	    Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  }
+#else
+	  Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
+#endif
+	  break;
+
+	case MTYPE_I2:
+	case MTYPE_U2:
+#if 0
+	  if (Lai_Code) {
+	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
+                                      Pointer_Mtype, shift_aright, ops);
+	  }
+	  else {
+	    Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  }
+#else
+	  Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
+#endif
+	  break;
+
+	case MTYPE_I1:
+	case MTYPE_U1:
+	  Build_OP (TOP_GP32_MAKEBA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  break;
+
+	case MTYPE_I8:
+	case MTYPE_U8:
+	case MTYPE_A8:
+	default:
+	  FmtAssert(FALSE, ("Expand_Load: mtype"));
+	}
+	ofst = tmp;
+	top = Pick_Load_Instruction (OPCODE_rtype(opcode), mtype);
+      }
+      else if (TN_is_gp_reg(base)) {
+	FmtAssert(FALSE, ("Expand_Load: gp relative ??"));
+      }
+      else {
+	//
+	// I should know this symbol's offset
+	//
+	// If this symbol's offset fits the U9, make a direct load.
+	//
+	if (ISA_LC_Value_In_Class (base_ofst, LC_u9)) {
+	  Gen_Load_Imm_Instruction (OPCODE_rtype(opcode),
+                                   mtype, base, ofst, result, ops, FALSE);
+	  return;
+	} else {
+	  ofst = Expand_Immediate_Into_Register (Pointer_Mtype, ofst, ops);
+	  top = Pick_Load_Instruction (OPCODE_rtype(opcode), mtype);
+	}
+      }
+    } 
+    else {
+      FmtAssert(FALSE,("unexpected constant in Expand_Load"));
     }
   }
 
-  top = Pick_Load_Instruction (OPCODE_rtype(opcode), mtype);
+  FmtAssert(top != TOP_UNDEFINED,("Expand_Load: TOP_UNDEFINED"));
+
+#if 0
+  // Since ofst is constant -- this never happens
+  if (top == TOP_UNDEFINED) {
+    top = Pick_Load_Instruction (OPCODE_rtype(opcode), mtype);
+  }
 
   // ST100 scales the second AU operand:
   switch (mtype) {
     case MTYPE_I2:
     case MTYPE_U2:
-      opnd = Build_TN_Like(base);
-      Expand_Shift (opnd, ofst, Gen_Literal_TN (1, Pointer_Size), 
-                                         Pointer_Mtype, shift_aright, ops);
+      tmp = ofst;
+      ofst = Build_TN_Of_Mtype(Pointer_Mtype);
+      Expand_Shift (ofst, tmp, Gen_Literal_TN (1, Pointer_Size), 
+		                        Pointer_Mtype, shift_aright, ops);
       break;
     case MTYPE_I4:
     case MTYPE_U4:
     case MTYPE_A4:
-      opnd = Build_TN_Like(base);
-      Expand_Shift (opnd, ofst, Gen_Literal_TN (2, Pointer_Size), 
-                                         Pointer_Mtype, shift_aright, ops);
+      tmp = ofst;
+      ofst = Build_TN_Of_Mtype(Pointer_Mtype);
+      Expand_Shift (ofst, tmp, Gen_Literal_TN (2, Pointer_Size), 
+                                        Pointer_Mtype, shift_aright, ops);
       break;
     case MTYPE_I1:
     case MTYPE_U1:
-      opnd = ofst;
       break;
+
     case MTYPE_I8:
     case MTYPE_U8:
     case MTYPE_A8:
     default:
       FmtAssert(FALSE, ("Expand_Load: mtype"));
   }
+#endif
 
-  Build_OP (top, result, True_TN, base, opnd, ops);
+  Build_OP (top, result, True_TN, base, ofst, ops);
   return;
 }
 
@@ -410,7 +560,23 @@ Pick_Store_Imm_Instruction (
 	top = (negate) ? TOP_GP32_SDW_GT_AR_M_U9_DR :
 	                              TOP_GP32_SDW_GT_AR_P_U9_DR;
 	Build_OP (top, True_TN, base, *offset, src, ops);
-	*offset = Gen_Literal_TN(TN_value(*offset)+4, Pointer_Size);
+	if (TN_has_value(*offset)) {
+	  *offset = Gen_Literal_TN(TN_value(*offset)+4, Pointer_Size);
+	}
+	else if (TN_is_symbol(*offset)) {
+	  // I know this is ugly ...
+	  INT64 base_ofst;
+	  ST *base_sym;
+	  Base_Symbol_And_Offset_For_Addressing (TN_var(*offset), 
+                              TN_offset(*offset), &base_sym, &base_ofst);
+	  *offset = Gen_Literal_TN(base_ofst+4, Pointer_Size);
+	  //	  *offset = Gen_Symbol_TN(TN_var(*offset), 
+	  //				  TN_offset(*offset)+4, 
+	  //				  Pointer_Size);
+	}
+	else {
+	  FmtAssert(FALSE,("Pick_Store_Imm_Instruction: bad offset TN"));
+	}
 	top = (negate) ? TOP_GP32_SDEW_GT_AR_M_U9_DR :
 	                             TOP_GP32_SDEW_GT_AR_P_U9_DR;
 	break;
@@ -422,7 +588,9 @@ Pick_Store_Imm_Instruction (
   }
 
   if (top == TOP_UNDEFINED)
-    FmtAssert(FALSE, ("Pick_Store_Imm_Instruction mtype"));
+    FmtAssert(FALSE, ("Gen_Store_Imm_Instruction mtype"));
+
+  //  Build_OP (top, True_TN, base, offset, src, ops);
 
   return top;
 }
@@ -476,14 +644,18 @@ Expand_Store (
 )
 {
   TOP   top = TOP_UNDEFINED;
-  TN   *opnd;
+  TN   *tmp;
+
+  // Arthur: experiment if this is true ??
+  Is_True (TN_is_constant(ofst), ("Illegal store offset TN"));
 
   if (TN_is_constant(ofst)) {
 
     if (TN_has_value(ofst)) {
       // TN has immediate value:
       INT64 scaled_val;
-      INT64 val = (TN_value(ofst) < 0) ? -TN_value(ofst) : TN_value(ofst);
+      BOOL negate = (TN_value(ofst) < 0) ? TRUE : FALSE;
+      INT64 val = negate ? -TN_value(ofst) : TN_value(ofst);
 
       // ST100 scales the second AU operand:
       switch (mtype) {
@@ -508,58 +680,158 @@ Expand_Store (
       }
 
       if (ISA_LC_Value_In_Class(scaled_val, LC_u9)) {
-	opnd = (TN_value(ofst) < 0) ? 
-                       Gen_Literal_TN(val, Pointer_Size) : ofst;
+	ofst = negate ? Gen_Literal_TN(val, Pointer_Size) : ofst;
         top = Pick_Store_Imm_Instruction (mtype, 
-                            base, &opnd, src, ops, (TN_value(ofst) < 0));
+                            base, &ofst, src, ops, negate);
+	//	Build_OP (top, True_TN, base, ofst, src, ops);
+	//	return;
       }
       else {
-	//	top = Pick_Store_Instruction (mtype);
 	ofst = Expand_Immediate_Into_Register(Pointer_Mtype, ofst, ops);
+	top = Pick_Store_Instruction (mtype);
       }
     }
 
-    else { 
-      // TN must be a symbol: expand store o(b) into add t=o,b; store t+0
-      TN *tmp = Build_TN_Like(base);
-      Expand_Add (tmp, base, ofst, Pointer_Mtype, ops);
-      base = tmp;
-      opnd = Gen_Literal_TN (0, Pointer_Size);
-      top = Pick_Store_Imm_Instruction (mtype, base, &opnd, src, ops, FALSE);
+    else if (TN_is_symbol(ofst)) { 
+      //
+      // TN must be a symbol: SP/FP or GP relative. 
+      //
+      INT64 base_ofst;
+      ST *base_sym;
+
+      // get the base_sym: GP/FP/SP and base_ofst from it.
+      Base_Symbol_And_Offset_For_Addressing (TN_var(ofst), 
+                                 TN_offset(ofst), &base_sym, &base_ofst);
+
+      // Sometimes base is not defined (formals on small stack)
+      //
+      if (base == NULL) {
+	//
+	// expand store o(b) into a = makea o; store b + a;
+	//
+	// cause base is not finished, but they will be assigned to SP.
+	// So only use FP if already based on FP.
+	base = (base_sym == FP_Sym) ? FP_TN : SP_TN;
+
+	if (!ISA_LC_Value_In_Class (base_ofst, LC_s16)) {
+	  FmtAssert(FALSE, ("Exp_Store: symbol offset > 16"));
+	}
+	tmp = Build_TN_Of_Mtype(Pointer_Mtype);
+
+	// emit a makewa/makeha/makeba depending on mtype
+	switch (mtype) {
+	case MTYPE_I4:
+	case MTYPE_U4:
+	case MTYPE_A4:
+#if 0
+	  if (Lai_Code) {
+	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (2, Pointer_Size), 
+                                      Pointer_Mtype, shift_aright, ops);
+	  }
+	  else {
+	    Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  }
+#else
+	  Build_OP (TOP_GP32_MAKEWA_GT_AR_S16, tmp, True_TN, ofst, ops);
+#endif
+	  break;
+
+	case MTYPE_I2:
+	case MTYPE_U2:
+#if 0
+	  if (Lai_Code) {
+	    TN *tmp1 = Build_TN_Of_Mtype(Pointer_Mtype);
+	    Build_OP (TOP_GP32_MAKEA_GT_AR_S16, tmp1, True_TN, ofst, ops);
+	    Expand_Shift (tmp, tmp1, Gen_Literal_TN (1, Pointer_Size), 
+                                      Pointer_Mtype, shift_aright, ops);
+	  }
+	  else {
+	    Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  }
+#else
+	  Build_OP (TOP_GP32_MAKEHA_GT_AR_S16, tmp, True_TN, ofst, ops);
+#endif
+	  break;
+
+	case MTYPE_I1:
+	case MTYPE_U1:
+	  Build_OP (TOP_GP32_MAKEBA_GT_AR_S16, tmp, True_TN, ofst, ops);
+	  break;
+
+	case MTYPE_I8:
+	case MTYPE_U8:
+	case MTYPE_A8:
+	default:
+	  FmtAssert(FALSE, ("Expand_Store: mtype"));
+	}
+	ofst = tmp;
+	//ofst = Expand_Immediate_Into_Register(Pointer_Mtype, ofst, ops);
+	top = Pick_Store_Instruction (mtype);
+      }
+      else if (TN_is_gp_reg(base)) {
+	FmtAssert(FALSE, ("Expand_Store: gp relative ??"));
+      }
+      else {
+
+	if (ISA_LC_Value_In_Class (base_ofst, LC_u9)) {
+	  top = Pick_Store_Imm_Instruction (mtype, base, &ofst, 
+                                                         src, ops, FALSE);
+	  //	  Build_OP (top, True_TN, base, ofst, src, ops);
+	  //	  return;
+	} else {
+	  ofst = Expand_Immediate_Into_Register (Pointer_Mtype, ofst, ops);
+	  top = Pick_Store_Instruction (mtype);
+	}
+      } 
+    }
+    else {
+      FmtAssert(FALSE,("unexpected constant in Expand_Store"));
     }
   }
 
+  FmtAssert(top != TOP_UNDEFINED,("Expand_Store: TOP_UNDEFINED"));
+
+#if 0
+  // Since ofst is constant -- this never happens
   if (top == TOP_UNDEFINED) {
     top = Pick_Store_Instruction (mtype);
+  }
 
+    // Since ofst is constant -- this never happens
     // ST100 scales the second AU operand:
     switch (mtype) {
       case MTYPE_I2:
       case MTYPE_U2:
-	opnd = Build_TN_Like(base);
-	Expand_Shift (opnd, ofst, Gen_Literal_TN (1, Pointer_Size), 
+	tmp = ofst;
+	ofst = Build_TN_Of_Mtype(Pointer_Mtype);
+	Expand_Shift (ofst, tmp, Gen_Literal_TN (1, Pointer_Size), 
                                        Pointer_Mtype, shift_aright, ops);
 	break;
+
       case MTYPE_I4:
       case MTYPE_U4:
       case MTYPE_A4:
-	opnd = Build_TN_Like(base);
-	Expand_Shift (opnd, ofst, Gen_Literal_TN (2, Pointer_Size), 
+	tmp = ofst;
+	ofst = Build_TN_Of_Mtype(Pointer_Mtype);
+	Expand_Shift (ofst, tmp, Gen_Literal_TN (2, Pointer_Size), 
                                        Pointer_Mtype, shift_aright, ops);
 	  break;
+
       case MTYPE_I1:
       case MTYPE_U1:
-	opnd = ofst;
 	break;
+
       case MTYPE_I8:
       case MTYPE_U8:
       case MTYPE_A8:
       default:
 	FmtAssert(FALSE, ("Expand_Store: mtype"));
     }
-  }
+#endif
 
-  Build_OP (top, True_TN, base, opnd, src, ops);
+  Build_OP (top, True_TN, base, ofst, src, ops);
   return;
 }
 
@@ -862,8 +1134,17 @@ Exp_Ldst (
     // formals on small stack are not assigned to sp/fp yet
     // cause base is not finished, but they will be assigned to SP.
     // So only use FP if already based on FP.
-    /*  if (base_sym == SP_Sym || base_sym == FP_Sym) { */
-    base_tn = (base_sym == FP_Sym) ? FP_TN : SP_TN;
+    //base_tn = (base_sym == FP_Sym) ? FP_TN : SP_TN;
+    if (base_sym == FP_Sym) { 
+      base_tn = FP_TN;
+    }
+    else if (base_sym == SP_Sym) { 
+      base_tn = SP_TN;
+    }
+    else {
+      base_tn = NULL; // tells Expand_Load/Store() it's a formal
+    }
+
     if (sym == base_sym) {
       // can have direct reference to SP or FP,
       // e.g. if actual stored to stack.
@@ -882,18 +1163,39 @@ Exp_Ldst (
       ofst_tn = Gen_Symbol_TN (sym, ofst, TN_RELOC_NONE);
     }
   }
-  else if ((ST_class(base_sym) == CLASS_BLOCK || ST_class(base_sym)==CLASS_VAR)
-	 && ST_gprel(base_sym)) {
+  else if (Gen_GP_Relative &&
+           (ST_class(base_sym) == CLASS_BLOCK || 
+                                     ST_class(base_sym)==CLASS_VAR) &&
+	   ST_gprel(base_sym)) {
+    FmtAssert(FALSE,("Exp_Ldst: GP-relative"));
     // gp-relative reference
     PU_References_GP = TRUE;
     base_tn = GP_TN;
     // Use rtype for size of LDA
-    ofst_tn = Gen_Offset_TN (sym, ofst, is_lda ? OPCODE_rtype(opcode) : OPCODE_desc(opcode), base_sym, &newops);
+    ofst_tn = Gen_Offset_TN (sym, ofst, 
+	            is_lda ? OPCODE_rtype(opcode) : OPCODE_desc(opcode), 
+		    base_sym, 
+		    &newops);
+
+    if (Constant_GP) {
+      // GP-relative where GP never changes
+      // nada
+      ;
+    }
+    else if (Guaranteed_Small_GOT) {
+      // Generate GOT
+      // nada
+      ;
+    }
   }
-  else if (Guaranteed_Small_GOT) {
-    // integer tmps cause are address tns
+  else {
+    // Not gp-relative reference
+
+    FmtAssert(!ST_gprel(base_sym),
+                 ("Exp_Ldst: %s is set gp-relarive", ST_name(base_sym)));
+
+    // address TNs
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
-    TN *tmp2 = Build_TN_Of_Mtype (Pointer_Mtype);
 
     if (ST_class(sym) == CLASS_CONST) {
       char *cname = Get_TCON_name (ST_tcon(sym));
@@ -902,30 +1204,30 @@ Exp_Ldst (
 	fprintf(TFile,"exp_ldst: constant ST name %s\n", cname);
       }
 
-      Build_OP (TOP_GP32_MAKEBA_GT_AR_U32, tn, True_TN, 
+      Build_OP (TOP_GP32_MAKEBA_GT_AR_S16, tn, True_TN, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
       // want to stop at address (either that or add with 0)
       is_lda = FALSE;	// so nothing done
     }
     else {
+
       if (is_lda && base_ofst == 0) {
 	// want to stop at address (either that or add with 0)
 	tmp1 = tn;
 	is_lda = FALSE;	// so nothing done
       }
 
-      Build_OP (TOP_GP32_MAKEBA_GT_AR_U32, tmp1, True_TN, 
+      // because it is not GP-relative, just make the address
+      Build_OP (TOP_GP32_MAKEBA_GT_AR_S16, tmp1, True_TN, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
       // load is of address, not of result type
       base_tn = tmp1;
       // add offset to address
-      ofst_tn = Gen_Literal_TN(base_ofst, 4);
+      //ofst_tn = Gen_Literal_TN(base_ofst, 4);
+      ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
     }
-  }
-  else {
-    FmtAssert(FALSE, ("NYI: Exp_Ldst"));
   }
 
   if (is_store) {
@@ -962,6 +1264,8 @@ Exp_Ldst (
 
   /* Add the new OPs to the end of the list passed in */
   OPS_Append_Ops(ops, &newops);
+
+  return;
 }
 
 /* ====================================================================

@@ -271,6 +271,7 @@ Get_Power_Of_2 (
   /* NOTREACHED */
 }
 
+#if 0
 /* ====================================================================
  *   Expand_Intrinsic_Divide
  * ====================================================================
@@ -301,12 +302,13 @@ Expand_Intrinsic_Divide (
 
   return;
 }
+#endif
 
 /* ====================================================================
  *   Expand_Divide_By_Constant
  * ====================================================================
  */
-static TN *
+static BOOL
 Expand_Divide_By_Constant (
   TN *result, 
   TN *src1,
@@ -324,47 +326,23 @@ Expand_Divide_By_Constant (
     if (ISA_LC_Value_In_Class (pow2, LC_u5)) {
       Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
 	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
-      return result;
+      return TRUE;
     }
   }
 
-  src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
-  Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
+  return FALSE;
 
   /*
-  switch (src2_val) {
-    case 2: 
-      // a shift:
-      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
-	    src1, Gen_Literal_TN (1, MTYPE_byte_size(mtype)), ops);
-      break;
-
-    case 4:
-      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
-	    src1, Gen_Literal_TN (2, MTYPE_byte_size(mtype)), ops);
-      break;
-
-    case 8:
-      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
-	    src1, Gen_Literal_TN (3, MTYPE_byte_size(mtype)), ops);
-      break;
-
-    case 16:
-      Build_OP (TOP_GP32_SHRW_GT_DR_DR_U5, result, True_TN, 
-	    src1, Gen_Literal_TN (4, MTYPE_byte_size(mtype)), ops);
-      break;
-
-    default:
-      src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
-      Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
-  }
+  src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
+  Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
   */
-
-  return result;
 }
 
 /* ====================================================================
  *   Expand_Divide
+ *
+ *   Should be called only if Lai_Code = TRUE or 
+ *   OPT_inline_divide = TRUE.
  * ====================================================================
  */
 TN *
@@ -395,11 +373,18 @@ Expand_Divide (
   BOOL const_src2 = TN_Value_At_Op (src2, NULL, &src2_val);
 
   if (const_src2) {
-    Expand_Divide_By_Constant (result, src1, src2, src2_val, mtype, ops);
+    if (Expand_Divide_By_Constant (result, src1, src2, src2_val, mtype, ops)) {
+      return NULL;
+    }
   }
+
+  /*
   else {
     Expand_Intrinsic_Divide (result, src1, src2, mtype, ops);
   }
+  */
+
+  FmtAssert(FALSE, ("Expand_Divide: cannot expand"));
 
   return NULL;
 }
