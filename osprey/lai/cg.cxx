@@ -643,7 +643,10 @@ CG_Generate_Code(
     if (CG_enable_ssa && CG_enable_select)
       CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
 #endif
-    
+
+    // Now done just before IGLS because we want to include regions in
+    // loops.
+#if 0
 #ifdef TARG_ST
 #ifndef IFCONV_IN_SSA
     // Perform superblock formation after select if-conversion. 
@@ -655,6 +658,7 @@ CG_Generate_Code(
     HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
     if (frequency_verify)
       FREQ_Verify("Hyperblock Formation");
+#endif
 #endif
 #endif
 
@@ -709,6 +713,14 @@ CG_Generate_Code(
     // TODO:  when generate control speculation (ld.s) and st8.spill
     // of NaT bits, then need to save and restore ar.unat. 
   }
+
+#ifdef TARG_ST
+  if (CG_opt_level > 1) {
+    HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+    if (frequency_verify)
+      FREQ_Verify("Hyperblock Formation");
+  }
+#endif
 
   /* Global register allocation, Scheduling:
    *

@@ -1189,9 +1189,16 @@ Find_General_Region_Entry_Candidates(list<BB*>&  entry_candidates,
     // whose priority is so low that the hyperblock would never have
     // high enough priority.  Loops are never included in general hyperblocks.
     //
+#ifdef TARG_ST
+    if (!BB_SET_MemberP(region_bbs, bb) && BB_freq(bb) > HB_minimum_priority
+	&& Check_BB_For_HB_Suitability(bb, bb)
+	&& BB_kind(bb) == BBKIND_LOGIF)
+#else
     if (!BB_SET_MemberP(region_bbs, bb) && BB_freq(bb) > HB_minimum_priority
 	&& Check_BB_For_HB_Suitability(bb, bb) && !LOOP_DESCR_Find_Loop(bb) 
-	&& BB_kind(bb) == BBKIND_LOGIF) {
+	&& BB_kind(bb) == BBKIND_LOGIF)
+#endif
+      {
       entry_candidates.push_front(bb);
       if (HB_Trace(HB_TRACE_HAMMOCK)) {
 	fprintf(HB_TFile," %d",BB_id(bb));
@@ -1365,9 +1372,15 @@ Form_General_Region(BB*                     bb,
     //
     // Don't want to wander into any loops, either.
     //
+#ifdef TARG_ST
+    if (LOOP_DESCR_Find_Loop(bb) != LOOP_DESCR_Find_Loop(bb_entry)) {
+      break;
+    }
+#else
     if (LOOP_DESCR_Find_Loop(bb)) {
       break;
     }
+#endif
 
     //
     // Okay, we've passed the test!

@@ -118,9 +118,16 @@ Verify_HB(
       BBLIST *pbl;
       FOR_ALL_BB_PREDS(succ, pbl) {
         BB *pred = BBLIST_item(pbl);
+#ifndef TARG_ST
         if (BB_SET_MemberP(hb_bbs, pred) &&
             (!((bb == pred)) &&
-             !BB_SET_MemberP(*processed_bbs, pred))) {
+             !BB_SET_MemberP(*processed_bbs, pred)))
+#else
+        if (BB_SET_MemberP(hb_bbs, pred) &&
+            (!((bb == pred) || (LOOP_DESCR_Find_Loop(bb) == LOOP_DESCR_Find_Loop(pred))) &&
+             !BB_SET_MemberP(*processed_bbs, pred)))
+#endif
+	  {
           skip_succ = TRUE;
           break;
         }
@@ -523,6 +530,9 @@ Select_Blocks(HB* hb, list<HB_PATH*>& hb_paths, BOOL profitable_ifc)
     }
 
     BOOL tolerate_increase = TRUE;
+
+    // Now include loops in hyperblocks.
+#if 0
 #if defined(TARG_ST) && !defined(IFCONV_IN_SSA)
     // C.Bruel did not want to do this if forming superblocks ...
     if (HB_superblocks) {
@@ -532,6 +542,7 @@ Select_Blocks(HB* hb, list<HB_PATH*>& hb_paths, BOOL profitable_ifc)
       }
     }
     else 
+#endif
 #endif
     for (++path; path != hb_paths.end(); path++) {
       if (HB_Trace(HB_TRACE_SELECT)) {
