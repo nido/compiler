@@ -418,13 +418,8 @@ CG_Generate_Code(
 
   Convert_WHIRL_To_OPs ( rwn );
 
-  // Arthur: I do not need to do it, if I am just spitting the lai
-  if (!Lai_Code) {
-#ifndef TARG_ST
-    // split large bb's to minimize compile speed and register pressure
-    Split_BBs();
-#endif
-  }
+  // split large bb's to minimize compile speed and register pressure
+  Split_BBs();
 
   if ( ! CG_localize_tns ) {
     // Localize dedicated tns involved in calls that cross bb's,
