@@ -188,7 +188,7 @@ static INT current_rid = 0;	/* current rid id */
 
 typedef struct {
   pSCNINFO scninfo;
-  Elf64_Word scn_ofst;
+  Elf64_Word scn_ofst;	/* [CG] keeps track of current section offset. */
   ST *sym;
 #ifdef TARG_ST
   char *label;     // we need to label sections on some targets that
@@ -1449,6 +1449,25 @@ Write_INITO (
   return;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ * Add_To_Section_Offset.
+ *
+ * [CG] Inform that an object has been emitted into the section.
+ * Thus the current section offset must be updated.
+ * For each data emitted do:
+ * Change_Section_Origin(st_sect, ofst);
+ * ... emit object ...
+ * Add_To_Section_Offset(st_sect, object_size);
+ * ====================================================================
+ */
+static void
+Add_To_Section_Offset (ST *base, INT64 size) 
+{
+  em_scn[STB_scninfo_idx(base)].scn_ofst += size;
+}		       
+#endif
+
 /* ====================================================================
  *    Change_Section_Origin (base, ofst)
  *
@@ -1466,6 +1485,7 @@ Change_Section_Origin (
       /* switch to new section. */
       fprintf (Output_File, "\n\t%s %s\n", AS_SECTION, ST_name(base));
     }
+    
 #ifdef TARG_ST
     // IA64 generates .org so next data is placed at this offset
     // within the section
@@ -1476,6 +1496,9 @@ Change_Section_Origin (
     fprintf (Output_File, "\t%s 0x%llx\n", AS_ORIGIN, ofst);
 #endif
 
+    /* [CG]: We should not insert alignement, offsets have already alignment
+       into account. The alignment should only appear at the start of the section. */
+#if 0
     /* generate a '.align 0' to make sure we don't autoalign */
 #ifdef GHS_BUG_FIXED
     // I can't for now since GHS assembler does not recognize
@@ -1487,17 +1510,43 @@ Change_Section_Origin (
     //       alignment on this target
     fprintf (Output_File, "\t%s 4\n", AS_ALIGN);
 #endif
+#endif
 
 #ifdef TARG_ST
     // 
     // Emit this section's label before offset 0
     //
     if (ofst == 0) {
+      /* [CG] We emit initial alignment for the section. 
+         TODO: Parameterize to strongest requirement. */
+#define STRONGEST_ALIGN 8
+      fprintf (Output_File, "\t%s %d\n", AS_ALIGN, STRONGEST_ALIGN);
+
+      /* [CG] We set current section offset to 0. */
+      em_scn[STB_scninfo_idx(base)].scn_ofst = 0;
+
       fprintf(Asm_File, "%s:\n", em_scn[STB_scninfo_idx(base)].label);
       if (Trace_Init) {
 	fprintf(TFile, "<init>: Emitting label %s for section %s\n",
 		em_scn[STB_scninfo_idx(base)].label, ST_name(base));
       }
+    }
+#endif
+
+#ifdef TARG_ST
+    {
+      /* [CG] We must pad to new ofst. */
+      INT64 current_ofst = em_scn[STB_scninfo_idx(base)].scn_ofst;
+      if (current_ofst <= ofst) {
+	INT64 padding = ofst - current_ofst;
+	if (padding > 0) {
+	  fprintf(Output_File, "\t%s %lld\n", AS_SPACE, padding);
+	}
+      } else {
+	FmtAssert(0,
+		  ("object overlaps in section %s: expected offset is %d, current offset is %d", ST_name(base), ofst, current_ofst));
+      }
+      em_scn[STB_scninfo_idx(base)].scn_ofst = ofst;
     }
 #endif
 
@@ -1716,6 +1765,9 @@ Process_Initos_And_Literals (
       fprintf (Output_File, "\t%s 4\n", AS_ALIGN);
 #endif
       Write_INITO (ino, STB_scninfo_idx(base), ofst);
+#ifdef TARG_ST
+      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+#endif
     }
 
     else {
@@ -1741,6 +1793,9 @@ Process_Initos_And_Literals (
       //      fprintf(Output_File, "%s:\n", cname);
       fprintf(Output_File, "UNNAMED_CONST_%d:\n", ST_tcon(st));
       Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
+#ifdef TARG_ST
+      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+#endif
     }
   }
 
@@ -1769,6 +1824,10 @@ Process_Distr_Array ()
       Init_Section(base);
       Change_Section_Origin(base, ofst);
       Write_INITO(ino, STB_scninfo_idx(base), ofst);
+#ifdef TARG_ST
+      Add_To_Section_Offset(base, TY_size(ST_type(st)));
+#endif
+
     }
   }
 
@@ -1928,6 +1987,9 @@ Process_Bss_Data (
 	  fprintf(Lai_File, "\t%s %lld\n", AS_SPACE, size);
 	  /*      ASM_DIR_SKIP(Lai_File, size); */
       }
+#ifdef TARG_ST
+      Add_To_Section_Offset(base, size);
+#endif
     }
 
     if (generate_elf_symbols && !ST_is_export_local(sym)) {
