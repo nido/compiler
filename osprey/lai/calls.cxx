@@ -494,13 +494,10 @@ Generate_Entry (BB *bb, BOOL gra_run)
     else {
 #ifdef TARG_ST
       //
-      // GRA will be spilling it if PU_Has_Calls, but we shouldn't
-      // handle it here. In the worst case make RA_TN use explicit
-      // for the ST100.
+      // Spills are handled by the GRA. RA_TN must be allocatable.
       //
-      Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-      Set_OP_no_move_before_gra(OPS_last(&ops));
-#if 0
+      //      Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+      //      Set_OP_no_move_before_gra(OPS_last(&ops));
       if (gra_run && PU_Has_Calls) {
 	if (CG_gen_callee_saved_regs_mask) {
 	  // 
@@ -512,20 +509,29 @@ Generate_Entry (BB *bb, BOOL gra_run)
 				TN_register(RA_TN));
 	}
 	else {
-	  // Because the routine has calls, gra will need to spill it ...
-	  // but it is an implicitely used register on ST100. It's easier
-	  // to handle it here for now.
-	  // TODO: understand how to handle this properly ??
-	  //
+	  Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+	  Set_OP_no_move_before_gra(OPS_last(&ops));
+	}
+      }
+      else {
+	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
+#if 0
+	  // Because the routine has calls, GRA needs to spill it.
 	  ST *ra_sv_sym = CGSPILL_Get_TN_Spill_Location(RA_TN, CGSPILL_LCL);
 	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
 	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
 	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
 	  Exp_COPY (ra_sv_tn, RA_TN, &ops);
-	  CGSPILL_Store_To_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb);
+	  CGSPILL_Store_To_Memory (ra_sv_tn, 
+				   ra_sv_sym, 
+				   &ops, 
+				   CGSPILL_LCL, 
+				   bb);
 	}
       }
-      else {
+      else if (REGISTER_CLASS_allocatable(TN_register_class(RA_TN))) {
 	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -1201,7 +1207,7 @@ Generate_Exit (
 #endif
     EETARG_Restore_Extra_Callee_Tns (&ops);
 
-  if (NULL != RA_TN) {
+  if (RA_TN != NULL) {
     if (PU_has_return_address(Get_Current_PU())) {
       /* If the return address builtin is required, restore RA_TN from the 
        * memory location for __return_address. 
@@ -1222,32 +1228,39 @@ Generate_Exit (
     else {
 #ifdef TARG_ST
       //
-      // Do not handle spill issues here !
+      // Spills are handled by the GRA. RA_TN must be allocatable.
       //
-      Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
-      Set_OP_no_move_before_gra(OPS_last(&ops));
-#if 0
       if (gra_run && PU_Has_Calls) {
 	if (!CG_gen_callee_saved_regs_mask) {
-	  // Because the routine has calls, gra will need to spill it ...
-	  // but it is an implicitely used register on ST100. It's easier
-	  // to handle it here for now.
-	  // TODO: understand how to handle this properly ??
-	  //
-	  ST *ra_sv_sym = TN_spill(RA_TN);
-	  //CGSPILL_Get_TN_Spill_Location(RA_TN, CGSPILL_LCL);
-	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
-	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
-	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
-	  CGSPILL_Load_From_Memory (ra_sv_tn, ra_sv_sym, &ops, CGSPILL_LCL, bb_epi);
-	  Exp_COPY (RA_TN, ra_sv_tn, &ops);
+	  Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+	  Set_OP_no_move_before_gra(OPS_last(&ops));
 	}
       }
       else {
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
+#if 0
+	  // Because the routine has calls, GRA needs to spill it
+	  ST *ra_sv_sym = TN_spill(RA_TN);
+	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
+	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
+	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
+	  CGSPILL_Load_From_Memory (ra_sv_tn, 
+				    ra_sv_sym, 
+				    &ops, 
+				    CGSPILL_LCL, 
+				    bb_epi);
+	  Exp_COPY (RA_TN, ra_sv_tn, &ops);
+	  Set_OP_no_move_before_gra(OPS_last(&ops));
+	}
+      }
+      else if (REGISTER_CLASS_allocatable(TN_register_class(RA_TN))) {
+	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
 #endif
+
 #else
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)

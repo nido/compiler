@@ -3030,7 +3030,6 @@ CGEMIT_Prn_Line_Dir_In_Asm (USRCPOS usrcpos)
 		USRCPOS_linenum(usrcpos),
 		USRCPOS_column(usrcpos));
 }
-#endif
 
 /* ====================================================================
  *   print_source
@@ -3051,7 +3050,6 @@ print_source (
   return;
 }
 
-#if 0
 /* ====================================================================
  *   Cg_Dwarf_Add_Line_Entry
  *

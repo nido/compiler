@@ -2113,6 +2113,7 @@ print_source (SRCPOS srcpos)
   /* TODO: we don't handle this yet. */
   if (USRCPOS_filenum(usrcpos) == 0) return;
 
+#if 0
   cur_file = &file_table[USRCPOS_filenum(usrcpos)];
   if (USRCPOS_filenum(usrcpos) != cur_file_index) {
     if (cur_file_index != 0) {
@@ -2152,6 +2153,8 @@ print_source (SRCPOS srcpos)
     }
     cur_file->max_line_printed = USRCPOS_linenum(usrcpos);
   }
+#endif
+  return;
 }
 
 /* ====================================================================
