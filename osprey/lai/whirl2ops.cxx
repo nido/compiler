@@ -78,7 +78,7 @@
 #include "lai.h"
 #include "calls.h"
 #include "cgtarget.h"
-#include "expand.h"
+#include "cgexp.h"
 #include "stblock.h"
 #include "targ_sim.h"
 #include "irbdata.h"
@@ -90,7 +90,6 @@
 #include "variants.h"
 #include "targ_sim.h"
 #include "eh_region.h"
-/* #include "fb_bread.h" */	/* For FB_Map */
 #include "fb_whirl.h"
 #include "xstats.h"
 #include "data_layout.h"
@@ -4075,7 +4074,7 @@ Expand_Statement (
       LOOPINFO_wn(info) = loop_info;
       LOOPINFO_srcpos(info) = srcpos;
       LOOPINFO_trip_count_tn(info) = trip_tn;
-      if (!LAI_PU_Has_Feedback && WN_loop_trip_est(loop_info) == 0)
+      if (!CG_PU_Has_Feedback && WN_loop_trip_est(loop_info) == 0)
 	WN_loop_trip_est(loop_info) = 100;
     }
     if (WN_Label_Is_Handler_Begin(stmt)) {

@@ -974,8 +974,17 @@ Is_OP_Cond(OP *op)
   // same property as well.
 
   if (PROC_has_branch_delay_slot()) {
-    if (Is_Delay_Slot_Op(op, bb) && OP_likely(BB_branch_op(bb)))
-      return TRUE;
+    // Arthur: two implementations of Is_Delay_Slot_Op():
+    // 1. hb_hazards.cxx and 2. oputil.cxx -- explicitate the first:
+    //    if (Is_Delay_Slot_Op(op, bb) && OP_likely(BB_branch_op(bb)))
+	  return TRUE;
+    if (op == BB_last_op(bb)) {
+      OP *xfer_op = OP_prev(op);
+      if (xfer_op != NULL & OP_xfer(xfer_op)) {
+	if (OP_likely(BB_branch_op(bb)))
+	  return TRUE;
+      }
+    }
   }
 
   return FALSE;
@@ -1144,7 +1153,44 @@ TN_Reaching_Value_At_Op(
     }
 
     if (bb) {
+      /* used to simplify from here:
+      BB *new_bb = NULL;
+      if (GRA_LIVE_Phase_Invoked) {
+	BBLIST *edge;
+	INT val_cnt = 0;
+	BB *val_bb = NULL;
+	BB *cur_bb = NULL;
+	
+	if (reaching_def) {
+	  FOR_ALL_BB_PREDS(bb, edge) {
+	    cur_bb = BBLIST_item(edge);
+	    if (cur_bb == bb) continue;	// ignore self predecessor
+	    BOOL live_out = GRA_LIVE_TN_Live_Outof_BB(tn, cur_bb);
+	    val_cnt += (live_out) ? 1 : 0;
+	    val_bb = (live_out) ? cur_bb : val_bb;
+	  }
+	} else {
+	  FOR_ALL_BB_SUCCS(bb, edge) {
+	    cur_bb = BBLIST_item(edge);
+	    if (cur_bb == bb) continue;	// ignore self successor
+	    BOOL live_in = GRA_LIVE_TN_Live_Into_BB(tn, cur_bb);
+	    val_cnt += (live_in) ? 1 : 0;
+	    val_bb = (live_in) ? cur_bb : val_bb;
+	  }
+	}
+	new_bb = (val_cnt > 1) ? NULL : val_bb;
+      } 
+      // in case no gra_live or it is out of date (e.g. during hbf)
+      if (new_bb == NULL) {
+	if (reaching_def)
+		new_bb = BB_Unique_Predecessor(bb);
+	else
+		new_bb = BB_Unique_Successor(bb);
+      }
+      bb = new_bb;
+      /*  used to be simplified to this:
       bb = BB_Unique_Predecessor(bb);
+      */
     }
     if (bb == NULL) break;
 

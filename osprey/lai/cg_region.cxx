@@ -49,7 +49,7 @@
 #include "region_util.h"
 #include "cg_region.h"
 #include "annotations.h"
-#include "lai_flags.h"
+#include "cg_flags.h"
 #include "ir_reader.h"		// for fdump_tree()
 #include "label_util.h"
 #include "region_whirl_templates.h"	// REGION_search_block
@@ -104,7 +104,7 @@ REGION_Get_TN_In_List (RID *rid)
 	OP *op;
   	TN_LIST *tnl = NULL;
 	TN *tn;
-    	if (LAI_localize_tns) 
+    	if (CG_localize_tns) 
 	  DevWarn("REGION_Get_TN_In_List NYI when localized");
 	FOR_ALL_BB_OPs (bb, op) {
       		if (OP_code(op) != TOP_begin_pregtn) continue;
@@ -124,7 +124,7 @@ REGION_Get_TN_Out_List (RID *rid, INT exit_num)
 	OP *op;
   	TN_LIST *tnl = NULL;
 	TN *tn;
-    	if (LAI_localize_tns) 
+    	if (CG_localize_tns) 
 	  DevWarn("REGION_Get_TN_Out_List NYI when localized");
 	FOR_ALL_BB_OPs (bb, op) {
       		if (OP_code(op) != TOP_end_pregtn) continue;
@@ -225,7 +225,7 @@ void verify_pregtn_order(BB *bb, RID *rid, TOP opc)
 static inline
 void Update_preg_to_tn_array(OP *op, TOP opc)
 {
-  Is_True(!LAI_localize_tns,
+  Is_True(!CG_localize_tns,
 	  ("Update_preg_to_tn_array, don't call this routine at -O0"));
   // search down for pregtns that match opc
   while (op != NULL) {
@@ -291,7 +291,7 @@ void Gen_quad_preg(PREG_NUM pr, TN_LIST **tnl, WN *block,
 {
   Is_True(mtype == MTYPE_FQ || mtype == MTYPE_CQ,
 	  ("Gen_quad_preg, unknown mtype"));
-  if (LAI_localize_tns)
+  if (CG_localize_tns)
     Is_True(rid != NULL && am != NULL, ("Gen_quad_preg, RID or AM is NULL"));
   else
     Is_True(rid != NULL, ("Gen_quad_preg, RID is NULL"));
@@ -337,7 +337,7 @@ void Gen_quad_preg(PREG_NUM pr, TN_LIST **tnl, WN *block,
       TN *tn2 = PREG_To_TN_Array[pr+i]; // thanks to Update_preg_to_tn_array
       Is_True(tn2 != NULL, ("Gen_quad_preg, tn2 is NULL, PREG %d", pr+i));
       load = WN_Ldid(type, (WN_OFFSET)(i*8), newst, ST_type(newst));
-      if (LAI_localize_tns) {
+      if (CG_localize_tns) {
 	ST *spill_loc2 = TN_spill(tn2);
 	Is_True(strncmp(ST_name(spill_loc2),"lcl_spill_temp",14) == 0,
 		("Gen_quad_preg, not a spill loc"));
@@ -384,7 +384,7 @@ void Gen_quad_preg(PREG_NUM pr, TN_LIST **tnl, WN *block,
     for (INT i=0; i<N; i++) {
       TN *tn2 = PREG_To_TN_Array[pr+i]; // thanks to Update_preg_to_tn_array
       Is_True(tn2 != NULL, ("Gen_quad_preg, tn2 is NULL PREG %d", pr+i));
-      if (LAI_localize_tns) {
+      if (CG_localize_tns) {
 	ST *spill_loc2 = TN_spill(tn2);
 	Is_True(strncmp(ST_name(spill_loc2),"lcl_spill_temp",14) == 0,
 		("Gen_quad_preg, not a spill loc"));
@@ -458,7 +458,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
     // otherwise (GRA), the pregtn ops is up-to-date.
     // (for localize, it is easier to update the pregs list
     // and not have to find the pregtn op when changing tns).
-    if (LAI_localize_tns) {
+    if (CG_localize_tns) {
       PREG_LIST *prl;
       // used to skip the remaining pregs for quad, complex quad
       slist<PREG_NUM> skip_list;
@@ -476,7 +476,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
 	  slist<PREG_NUM>::iterator skip_search =
 	    find(skip_list.begin(), skip_list.end(), pr);
 	  if (skip_search != skip_list.end()) { // found it, skip it
-	    Is_Trace(trace, (TFile, "REGION_Entry_PREG_Whirl(LAI_localize_tns)"
+	    Is_Trace(trace, (TFile, "REGION_Entry_PREG_Whirl(CG_localize_tns)"
 			", skipping PREG %d\n\tbecause of (complex) quad\n",
 			     pr));
 	    continue;
@@ -485,7 +485,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
 
 	TN *tn = PREG_To_TN_Array[pr];
 	Is_True(tn != NULL,
-		("REGION_Entry_PREG_Whirl(LAI_localize_tns), NULL tn"));
+		("REGION_Entry_PREG_Whirl(CG_localize_tns), NULL tn"));
 	ST *spill_loc = TN_spill(tn);
 	// will have created spill location
 	if (spill_loc == NULL && TN_register(tn) != REGISTER_UNDEFINED) {
@@ -525,7 +525,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
 	  	Is_True(strncmp(ST_name(spill_loc),"lcl_spill_temp",14) == 0,
 		  ("REGION_Entry_PREG_Whirl, not a spill loc"));
 	  	REGION_add_wn_points_to(&RID_used_in(rid), st, am);
-	  	Is_Trace(trace,(TFile,"REGION_Entry_PREG_Whirl(LAI_localize_tns), "
+	  	Is_Trace(trace,(TFile,"REGION_Entry_PREG_Whirl(CG_localize_tns), "
 			  "TN %d <-> PREG %d, %s\n",
 			  TN_number(tn), pr, ST_name(spill_loc)));
 	  }
@@ -543,7 +543,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
 	  WN_INSERT_BlockLast(entry_whirl, st);
 	}
       } // for (prl = RID_pregs_in
-    } // if (LAI_localize_tns)
+    } // if (CG_localize_tns)
     else {
       BB *bb = CGRIN_entry(cgrin);
       OP *op = BB_first_op(bb);
@@ -632,7 +632,7 @@ REGION_Entry_PREG_Whirl( RID *rid, WN *entry_whirl, TN_LIST *inlist,
       	} else // not pregtn op
 	  op = OP_next(op);
       } // while (op != NULL)
-    } // else part of if (LAI_localize_tns)
+    } // else part of if (CG_localize_tns)
 
     CGRIN_tns_in(cgrin) = tnl;
     Is_Trace(trace, (TFile,"REGION_Entry_PREG_Whirl, tnl =\n"));
@@ -763,7 +763,7 @@ REGION_Exit_PREG_Whirl( RID *rid, INT exit_num, WN *exit_whirl,
   if (RID_pregs_out(rid) != NULL && RID_pregs_out_i(rid,exit_num) != NULL) {
     CGRIN *cgrin = RID_cginfo( rid );
     tnl = NULL;
-    if (LAI_localize_tns) {
+    if (CG_localize_tns) {
       PREG_LIST *prl;
       // used to skip the remaining pregs for quad, complex quad
       slist<PREG_NUM> skip_list;
@@ -781,7 +781,7 @@ REGION_Exit_PREG_Whirl( RID *rid, INT exit_num, WN *exit_whirl,
 	  slist<PREG_NUM>::iterator skip_search =
 	    find(skip_list.begin(), skip_list.end(), pr);
 	  if (skip_search != skip_list.end()) { // found it, skip it
-	    Is_Trace(trace, (TFile, "REGION_Exit_PREG_Whirl(LAI_localize_tns)"
+	    Is_Trace(trace, (TFile, "REGION_Exit_PREG_Whirl(CG_localize_tns)"
 			", skipping PREG %d\n\tbecause of (complex) quad\n",
 			     pr));
 	    continue;
@@ -792,7 +792,7 @@ REGION_Exit_PREG_Whirl( RID *rid, INT exit_num, WN *exit_whirl,
 	TYPE_ID type = PREG_To_TN_Mtype[pr];
 	TN *tn = PREG_To_TN_Array[pr];
 	Is_True(tn != NULL,
-		("REGION_Exit_PREG_Whirl(LAI_localize_tns), NULL tn"));
+		("REGION_Exit_PREG_Whirl(CG_localize_tns), NULL tn"));
 	ST *spill_loc = TN_spill( tn );
 	if (spill_loc == NULL && TN_register(tn) != REGISTER_UNDEFINED) {
 		// localize might have used dedicated stacked register 
@@ -826,7 +826,7 @@ REGION_Exit_PREG_Whirl( RID *rid, INT exit_num, WN *exit_whirl,
 	  	Is_True(strncmp(ST_name(spill_loc),"lcl_spill_temp",14) == 0,
 		  ("REGION_Exit_PREG_Whirl, not a spill loc"));
 	  	REGION_add_wn_points_to(&RID_def_in_live_out(rid), ld, am);
-	  	Is_Trace(trace,(TFile,"REGION_Exit_PREG_Whirl(LAI_localize_tns), "
+	  	Is_Trace(trace,(TFile,"REGION_Exit_PREG_Whirl(CG_localize_tns), "
 			  "TN %d <-> PREG %d, %s\n",
 			  TN_number(tn), pr, ST_name(spill_loc)));
 	  } 

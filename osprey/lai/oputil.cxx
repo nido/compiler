@@ -83,9 +83,11 @@
 
 #include "lai.h"                        /* for Alias_Manager */
 #include "cgtarget.h"
-#include "expand.h"
+#include "cgexp.h"
 #include "xstats.h"
 #include "tag.h"
+
+#include "targ_isa_hazards.h"
 
 /* Allocate OPs for the duration of the PU. */
 #define OP_Alloc(size)  ((OP *)Pu_Alloc(size))
@@ -1036,6 +1038,27 @@ BOOL
 OP_Alloca_Barrier(OP *op )
 {
   return (OP_code(op) == TOP_spadjust && Get_WN_From_Memory_OP(op));
+}
+
+// =======================================================================
+// Is_Delay_Slot_Op
+// Return TRUE if the <op> is the right type to put into a delay slot of
+// <xfer_op>.
+// =======================================================================
+BOOL 
+Is_Delay_Slot_Op (OP *xfer_op, OP *op)
+{
+  if (op == NULL || OP_xfer(op) || OP_Real_Ops(op) != 1) return FALSE;
+
+  // R10k chip bug workaround: Avoid placing integer mult/div in delay 
+  // slots of unconditional branches. (see pv516598) for more details.
+  if (xfer_op && OP_uncond(xfer_op) &&
+      (OP_imul(op) || OP_idiv(op))) return FALSE;
+  
+  // TODO: do we need the following restriction ?
+  if (OP_has_hazard(op) || OP_has_implicit_interactions(op))
+    return FALSE;
+  return TRUE;
 }
 
 // Debugging routine

@@ -179,7 +179,7 @@ BBlist_Add_BB_with_Prob (BBLIST **lst, BB *bb, float prob,
   if (p == NULL) {
     p = bblist_alloc ();
     BBLIST_item(p) = bb;
-    if (via_feedback || LAI_PU_Has_Feedback) {
+    if (via_feedback || CG_PU_Has_Feedback) {
       BBLIST_prob(p) = prob;
       Set_BBLIST_prob_fb_based(p);
     } if (set_prob || FREQ_Frequencies_Computed()) {
@@ -204,7 +204,7 @@ BBlist_Add_BB_with_Prob (BBLIST **lst, BB *bb, float prob,
   p = bblist_alloc ();
   BBLIST_item(p) = bb;
   BBLIST_next(last) = p;
-  if (via_feedback || LAI_PU_Has_Feedback) {
+  if (via_feedback || CG_PU_Has_Feedback) {
     BBLIST_prob(p) = prob;
     Set_BBLIST_prob_fb_based(p);
   } if (FREQ_Frequencies_Computed()) {

@@ -603,7 +603,7 @@ REG_LIVE_Prolog_Temps(
    * and working our way forward. Add in the registers that are live
    * out of the block.
    */
-  if (!LAI_localize_tns ) {
+  if (!CG_localize_tns ) {
     for (tn = GTN_SET_Choose(BB_live_out(bb));
 	 tn != GTN_SET_CHOOSE_FAILURE;
 	 tn = GTN_SET_Choose_Next(BB_live_out(bb), tn)

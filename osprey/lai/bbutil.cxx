@@ -78,15 +78,15 @@
 #include "gtn_universe.h"
 #include "gtn_tn_set.h"
 #include "note.h"
-#include "lai_flags.h"
+#include "cg_flags.h"
 #include "cgtarget.h"
-#include "expand.h"
+#include "cgexp.h"
 #include "irbdata.h"
 #include "whirl2ops.h"
 #include "xstats.h"
 #include "data_layout.h"
 #include "freq.h"
-
+#include "cg_loop.h"
 #include "label_util.h"
 #include "bb_set.h"       // BB_SET_* routines 
 #include "DaVinci.h"
@@ -1437,19 +1437,6 @@ void Set_BB_exit_sp_adj_op (BB *bb, OP *op)
   EXITINFO_sp_adj(ANNOT_exitinfo(ant)) = op;
 }
 
-// ======================================================================
-// Returns TRUE if <op> is in the delay slot of the terminating branch
-// in <bb>.
-// ======================================================================
-BOOL
-Is_Delay_Slot_Op (OP *op, BB *bb)
-{
-  if (op != BB_last_op(bb)) return FALSE;
-  OP *xfer_op = OP_prev(op);
-  if (xfer_op == NULL || !OP_xfer(xfer_op)) return FALSE;
-  return TRUE;
-}
-
 BOOL Is_Label_For_BB(LABEL_IDX label, BB *bb)
 /* -----------------------------------------------------------------------
  * See "bb.h" for interface specification.
@@ -1462,7 +1449,7 @@ BOOL Is_Label_For_BB(LABEL_IDX label, BB *bb)
     DevWarn("BB_has_label(BB:%d) set, but found no ANNOT_LABEL", BB_id(bb));
     Reset_BB_has_label(bb);
   } else if (ant && !BB_has_label(bb)) {
-    DevWarn("BB:%d has label(s), but BB_has_label not set");
+    DevWarn("BB:%d has label(s), but BB_has_label not set", BB_id(bb));
     Set_BB_has_label(bb);
   }
   
@@ -2272,7 +2259,7 @@ void Change_Succ(BB *pred, BB *old_succ, BB *new_succ)
   FmtAssert(adjust >= 0.0F, ("negative freq or probability found"));
 
   if (old_succ_freq < adjust) {
-    if (LAI_warn_bad_freqs && !FREQ_Match(old_succ_freq, adjust)) {
+    if (CG_warn_bad_freqs && !FREQ_Match(old_succ_freq, adjust)) {
       DevWarn("Change_Succ: freq adjustment generated bad results");
     }
     adjust = old_succ_freq;
@@ -2301,7 +2288,7 @@ void Change_Succ_Prob(BB *pred, BB *succ, float prob)
 
   factor = 1.0F + prob - old_prob;
   if (factor < 0.0F) {
-    if (LAI_warn_bad_freqs && !FREQ_Match(prob, old_prob)) {
+    if (CG_warn_bad_freqs && !FREQ_Match(prob, old_prob)) {
       DevWarn("Change_Succ_Prob: freq adjustment generated bad results");
     }
     factor = 0.0F;
@@ -2677,6 +2664,72 @@ BB_REGION::BB_REGION(BB_SET *included, MEM_POOL *pool)
       entries.push_back(bb);
     }      
   }
+}
+
+/*========================================================================
+ *
+ *  BB_REGION::Verify()
+ *
+ *    Verify the invariant properties of BB_REGION.
+ *
+ *========================================================================
+ */
+void BB_REGION::Verify() const
+{
+  // Initialize static data structure 
+  region_exits.Init();
+
+  // entries must contain at least one basic block
+  //
+  FmtAssert(entries.size() >= 1, ("BB_REGION should have at least 1 entry."));
+
+  // The temp variables used by BB_REGION routine must be left as the empty set.
+  //
+  FmtAssert(region_exits.Is_empty(), ("BB_REGION::Verify: temp variables in unknown state."));
+
+  region_exits.Set(exits);
+
+  // No basic blocks are in both entry and exit sets
+  for (INT i = 0; i < entries.size(); i++) {
+    FmtAssert(!region_exits(entries[i]),
+	      ("BB_REGION: BB%d in both entry ad exit.", BB_id(entries[i])));
+  }
+
+  // Verify that all OPs has CG_LOOP_INFO
+  if (Has_omega()) {
+    
+    vector<BB*> stack(entries.begin(), entries.end());
+    while (!stack.empty()) {
+      BB *bb = stack.back();
+      stack.pop_back();
+      region_exits.Set(bb);
+      OP *op;
+      FOR_ALL_BB_OPs(bb, op) {
+       	FmtAssert(_CG_LOOP_info(op),
+       		  ("BB_REGION: OP has no CG_LOOP_Info."));
+	FmtAssert(OP_bb(op) == bb,
+		  ("BB_REGION: OP_bb(op) != bb in BB%d\n", BB_id(bb)));
+
+	for (INT opnd = 0; opnd < OP_opnds(op); opnd++) {
+	  TN *tn = OP_opnd(op,opnd);
+	  if (!TN_is_register(tn)) {
+	    FmtAssert(OP_omega(op, opnd) == 0,
+		      ("non-register TN must have zero omega."));
+	  }
+	}
+      }
+      BBLIST *succs;
+      FOR_ALL_BB_SUCCS(bb, succs) {
+	BB *succ = BBLIST_item(succs);
+	if (!region_exits(bb))
+	  stack.push_back(succ);
+      }
+    }
+    region_exits.Clear();
+  } else 
+    region_exits.Reset(exits);
+
+  Is_True(region_exits.Is_empty(), ("BB_REGION::Verify: bb_set is not empty."));
 }
 
 void BB_REGION::Print(void) const 

@@ -76,7 +76,7 @@
 #include "ttype.h"
 #include "lai.h"
 #include "calls.h"
-#include "expand.h"
+#include "cgexp.h"
 #include "reg_live.h"
 #include "const.h"
 #include "data_layout.h"
@@ -84,7 +84,7 @@
 #include "entry_exit_targ.h"
 
 #include "targ_sim.h"
-#include "cg_targ.h"
+#include "cgtarget.h"
 
 
 INT64 Frame_Len;
@@ -700,7 +700,7 @@ Optimize_Tail_Calls (
   BOOL have_tail_call = FALSE;
 
   // Don't optimize if disabled, -O0 or cannot do tail-calls for PU.
-  if (!LAI_tail_call
+  if (!CG_tail_call
       || CG_opt_level == 0 
       || !Can_Do_Tail_Calls_For_PU ()) return;
 
@@ -1483,7 +1483,6 @@ Adjust_Entry (
       REG_LIVE_Prolog_Temps(bb, sp_adj, fp_adj, temps);
 
       if (Trace_EE) {
-	#pragma mips_frequency_hint NEVER
 	ISA_REGISTER_CLASS cl;
 
 	fprintf(TFile, "\nInteger temp register usage at prolog SP adjust:\n");
