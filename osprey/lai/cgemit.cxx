@@ -2856,15 +2856,6 @@ Verify_Operand (
   TN *tn = is_result ? OP_result(op, opnd) : OP_opnd(op, opnd);
   const char * const res_or_opnd = is_result ? "result" : "operand";
 
-  /*
-  if (Trace_Inst) {
-    Print_OP(op);
-    fprintf(TFile, "\n >> checking %s ", res_or_opnd);
-    Print_TN(tn, TRUE);
-    fprintf(TFile, "\n");
-  }
-  */
-
   if (ISA_OPERAND_VALTYP_Is_Register(vtype)) {
     REGISTER_SET class_regs;
     ISA_REGISTER_SUBCLASS sc = ISA_OPERAND_VALTYP_Register_Subclass(vtype);
