@@ -368,11 +368,8 @@ static OPTION_DESC Options_CG[] = {
   // EBO options:
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",
-#ifdef TARG_ST
     0, 0, 0,	&CG_enable_peephole, &Enable_CG_Peephole_overridden },
-#else
-    0, 0, 0,	&Enable_CG_Peephole, &Enable_CG_Peephole_overridden },
-#endif
+
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "create_madds", "create_madd",
     0, 0, 0,  &CG_create_madds, NULL },
 
@@ -1052,19 +1049,14 @@ Configure_CG_Options(void)
   if (!CG_enable_select_overridden) {
     CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Select() : FALSE;
   }
-  else {
-#endif
-    if (CG_enable_select && !CG_enable_ssa) {
-      DevWarn("CG: Ignoring select=ON, need ssa");
-      CG_enable_select = FALSE;
-    }
-#if 0
-  }
 #endif
 
-#else
-  Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;
-#endif
+  if (CG_enable_select && !CG_enable_ssa) {
+    DevWarn("CG: Ignoring select=ON, need ssa");
+    CG_enable_select = FALSE;
+  }
+
+#endif  /* TARG_ST */
 
   /* Enable_Fill_Delay_Slots controls the filling of delay slots in locs
      and gcm */

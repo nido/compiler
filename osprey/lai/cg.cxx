@@ -180,11 +180,7 @@ CG_PU_Initialize (
   Select_Init();
 #endif
 
-#ifdef TARG_ST
   if (CG_enable_peephole) EBO_Init();
-#else
-  if (Enable_CG_Peephole) EBO_Init();
-#endif
   Init_Label_Info();
 
 #ifdef EMULATE_LONGLONG
@@ -228,11 +224,8 @@ CG_PU_Finalize(void)
   GTN_UNIVERSE_Pu_End ();
   OP_MAP_Finish();
   CGSPILL_Finalize_For_PU();
-#ifdef TARG_ST
+
   if (CG_enable_peephole) EBO_Finalize();
-#else
-  if (Enable_CG_Peephole) EBO_Finalize();
-#endif
 
   //  if (PU_has_syscall_linkage(Get_Current_PU())) {
   //	Enable_SWP = Orig_Enable_SWP;
@@ -486,11 +479,8 @@ CG_Generate_Code(
   }
 
   if (!Lai_Code) {
-#ifdef TARG_ST
+
     if (CG_enable_peephole) {
-#else
-    if (Enable_CG_Peephole) {
-#endif
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
       EBO_Pre_Process_Region (region ? REGION_get_rid(rwn) : NULL);
@@ -666,29 +656,23 @@ CG_Generate_Code(
 	  FREQ_Verify("CFLOW (second pass)");
       }
 
-#ifndef TARG_ST
-#ifdef TARG_ST
       if (CG_enable_peephole) {
-#else
-      if (Enable_CG_Peephole) {
-#endif
 	Set_Error_Phase( "Extended Block Optimizer");
 	Start_Timer( T_EBO_CU );
 	EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+#ifndef TARG_ST
 	PQSCG_reinit(REGION_First_BB);
+#endif
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
       }
-#endif
     }
 
     if (!Get_Trace (TP_CGEXP, 1024))
       Reuse_Temp_TNs = TRUE;	/* for spills */
 
-#ifndef TARG_ST
     if (CGSPILL_Enable_Force_Rematerialization)
       CGSPILL_Force_Rematerialization();
-#endif
 
     if (!region) {
       /* in case cgprep introduced a gp reference */
@@ -741,8 +725,8 @@ CG_Generate_Code(
 
       GRA_Allocate_Global_Registers( region );
 #ifdef TARG_ST
-    // moved here rather than in gra.cxx
-    Check_for_Dump (TP_GRA, NULL);
+      // moved here rather than in gra.cxx
+      Check_for_Dump (TP_GRA, NULL);
 #endif
     }
 
@@ -750,6 +734,7 @@ CG_Generate_Code(
 #ifdef TARG_ST
     // moved here rather than in lra.cxx
     Check_for_Dump (TP_ALLOC, NULL);
+
     if (CG_enable_ssa) {
       //
       // Collect statistical info about the SSA:
@@ -795,12 +780,9 @@ CG_Generate_Code(
   }
 
   if (!Lai_Code) {
+
 #ifndef TARG_ST
-#ifdef TARG_ST
     if (CG_enable_peephole) {
-#else
-    if (Enable_CG_Peephole) {
-#endif
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
       EBO_Post_Process_Region (region ? REGION_get_rid(rwn) : NULL);
