@@ -2678,6 +2678,11 @@ if(EBO_Trace_Optimization)fprintf(TFile,"TOP_mov_f_pr pr%d\n",i);
 enum SIGNDNESS {ZERO_EXT = 0, SIGN_EXT = 1, SIGN_UNKNOWN = 2};
 enum BITS_POS {TN_LO_16 = 0, TN_HI_16 = 1, TN_32_BITS = 2};
 
+#define SIGNDNESS_Name(x) SIGNDESS_NAME[x]
+#define BITS_POS_Name(x) BITS_POS_NAME[x]
+const char * const SIGNDESS_NAME[] = { "ZERO_EXT", "SIGN_EXT", "SIGN_UNK" };
+const char * const BITS_POS_NAME[] = { "LO_16", "HI_16", "32_BITS", "BITS_UNK" };
+
 static const TOP unsigned_mul_opcode[3][3] = {
   // By:  lo 16 bit      hi 16 bit       32 bit
   {      TOP_mulllu_r,  TOP_mullhu_r, TOP_UNDEFINED  },   // lo 16 bits
@@ -2691,6 +2696,37 @@ static const TOP signed_mul_opcode[3][3] = {
   {     TOP_UNDEFINED, TOP_mulhh_r, TOP_UNDEFINED  },   // hi 16 bits
   {      TOP_mull_r,   TOP_mulh_r,  TOP_UNDEFINED  }    // 32 bits
 };
+
+/* =====================================================================
+ *   get_mul_opcode
+ *
+ *   given (signdness,bits_pos) pairs for two operands, 
+ *   return the corresponding
+ *   mul opcode.
+ * =====================================================================
+ */
+static TOP
+get_mul_opcode(SIGNDNESS signed0, BITS_POS bits0, SIGNDNESS signed1, BITS_POS bits1)
+{
+  TOP opcode;
+  // If both operands are sign-extended or one is 32 bits and one
+  // is sign-extended, get a signed TOP.
+  if (signed0 == SIGN_EXT && signed1 == SIGN_EXT ||
+      bits0 == TN_32_BITS && signed1 == SIGN_EXT)
+    opcode = signed_mul_opcode[bits0][bits1];
+  else if (signed0 == ZERO_EXT && signed1 == ZERO_EXT ||
+	   bits0 == TN_32_BITS && signed1 == ZERO_EXT)
+    opcode = unsigned_mul_opcode[bits0][bits1];
+  else
+    opcode = TOP_UNDEFINED;
+
+#if 0
+  if (EBO_Trace_Optimization && opcode != TOP_UNDEFINED) 
+    fprintf(TFile,"Get mul opcode for (%s, %s) x (%s, %s): %s\n", SIGNDNESS_Name(signed0), BITS_POS_Name(bits0),  SIGNDNESS_Name(signed1), BITS_POS_Name(bits1), TOP_Name(opcode));
+#endif
+
+  return opcode;
+}
 
 /* =====================================================================
  *   get_immediate_mul_opcode
@@ -2770,7 +2806,7 @@ Is_16_Bits (
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
   }
 
-  if (OP_code(op) == TOP_add_ii && TN_value(OP_opnd(op,1)) == 65535) {
+  if (OP_code(op) == TOP_and_ii && TN_value(OP_opnd(op,1)) == 65535) {
     *ret = OP_opnd(op,0);
     *ret_tninfo = opinfo->actual_opnd[0];
     *sign_ext = ZERO_EXT;
@@ -3101,20 +3137,11 @@ add_mul_sequence (
   }
 
   // Now we can choose an appropriate opcode
-  TOP new_opcode = TOP_UNDEFINED;
-
-  // If any of the operands is sign-extended, require a signed
-  // TOP code
-  if (l2_signed0 == SIGN_EXT || l2_signed1 == SIGN_EXT)
-    new_opcode = signed_mul_opcode[l2_hilo0][l2_hilo1];
-  else
-    new_opcode = unsigned_mul_opcode[l2_hilo0][l2_hilo1];
-
-  if (new_opcode == TOP_UNDEFINED)
-    return FALSE;
+  TOP new_opcode = get_mul_opcode(l2_signed0, l2_hilo0,
+				  l2_signed1, l2_hilo1);
 
   // Convert to an immediate form if l2_tn1 is an immediate
-  if (TN_is_constant(l2_tn1))
+  if (new_opcode != TOP_UNDEFINED && TN_is_constant(l2_tn1))
     new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(l2_tn1));
 
   if (new_opcode == TOP_UNDEFINED)
@@ -3347,12 +3374,8 @@ mul_32_16_sequence (
   }
 
   // Determine new opcode:
-  TOP new_opcode = TOP_UNDEFINED;
-
-  if (TOP_is_unsign(opcode))
-    new_opcode = unsigned_mul_opcode[hilo0][hilo1];
-  else if (signed0 == SIGN_EXT)
-    new_opcode = signed_mul_opcode[hilo0][hilo1];
+  TOP new_opcode = get_mul_opcode(signed0, hilo0,
+				  signed1, hilo1);
 
   // Convert to an immediate form if tn1 is an immediate
   if (new_opcode != TOP_UNDEFINED && TN_is_constant(tn1))
@@ -3542,45 +3565,101 @@ mul_fix_operands (
   EBO_TN_INFO *tninfo0 = opnd_tninfo[0];
   EBO_TN_INFO *tninfo1 = opnd_tninfo[1];
 
-  BITS_POS hilo0;
-  BITS_POS hilo1;
-  SIGNDNESS signed0;
-  SIGNDNESS signed1;
+  TN *new_tn;
+  EBO_TN_INFO *new_tninfo;
+  BITS_POS new_hilo;
+  SIGNDNESS new_signed;
+
+  BITS_POS top_hilo0;
+  BITS_POS top_hilo1;
+  SIGNDNESS top_signed0;
+  SIGNDNESS top_signed1;
 
   TOP new_opcode = TOP_UNDEFINED;
+  TOP new_opcode0 = TOP_UNDEFINED;
+  TOP new_opcode1 = TOP_UNDEFINED;
 
   if (IS_MULL(op) || IS_MULH(op)) {
-    hilo0 = TN_32_BITS;
-    // second operand is a 16 bit lo or hi
-    if (Is_16_Bits(opnd_tninfo[1], bb, &tn1, &tninfo1, &hilo1, &signed1)) {
-      if (TOP_is_unsign(opcode)) {
-	new_opcode = unsigned_mul_opcode[hilo0][hilo1];
-      }
-      else {
-	new_opcode = signed_mul_opcode[hilo0][hilo1];
-      }
+    top_hilo0 = TN_32_BITS;
+    top_signed0 = SIGN_UNKNOWN;
+    top_hilo1 = IS_MULL(op) ? TN_LO_16 : TN_HI_16;
+    top_signed1 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
+  } else if (IS_MULLL(op) || IS_MULLH(op)) {
+    top_hilo0 = TN_LO_16;
+    top_signed0 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
+    top_hilo1 = IS_MULLL(op) ? TN_LO_16 : TN_HI_16;
+    top_signed1 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
+  } else return FALSE;
+
+#if 0  
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"In mul_fix_operands  for (%s, %s) x (%s, %s): %s\n", SIGNDNESS_Name(top_signed0), BITS_POS_Name(top_hilo0),  SIGNDNESS_Name(top_signed1), BITS_POS_Name(top_hilo1), TOP_Name(opcode));
+#endif
+
+  /* Process first operand. */
+  if (top_hilo0 == TN_LO_16) {
+    if (Is_16_Bits(opnd_tninfo[0], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
+	(new_hilo == TN_LO_16 || new_hilo == TN_HI_16) &&
+	new_signed != SIGN_UNKNOWN) {
+      new_hilo = new_hilo;
+      new_signed = top_signed0;
+      // Determine new opcode
+      new_opcode0 = get_mul_opcode(new_signed, new_hilo,
+				   top_signed1, top_hilo1);
+    }
+  } else if (top_hilo0 == TN_HI_16) {
+    if (Is_16_Bits(opnd_tninfo[0], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
+	new_hilo == TN_LO_16 && new_signed == SIGN_UNKNOWN) {
+      new_hilo = TN_LO_16;
+      new_signed = top_signed0;
+      // Determine new opcode
+      new_opcode0 = get_mul_opcode(new_signed, new_hilo,
+				   top_signed1, top_hilo1);
     }
   }
-
-  if (IS_MULLH(op) || IS_MULLL(op)) {
-    hilo0 = TN_LO_16;
-    hilo1 = IS_MULLH(op) ? TN_HI_16 : TN_LO_16;
-    // both operands are 16 bits
-    if (Is_16_Bits(opnd_tninfo[0], bb, &tn0, &tninfo0, &hilo0, &signed0) ||
-	Is_16_Bits(opnd_tninfo[1], bb, &tn1, &tninfo1, &hilo1, &signed1)) {
-      if (TOP_is_unsign(opcode)) {
-	new_opcode = unsigned_mul_opcode[hilo0][hilo1];
-      }
-      else {
-	new_opcode = signed_mul_opcode[hilo0][hilo1];
-      }
+  
+  if (new_opcode0 != TOP_UNDEFINED) {
+    tn0 = new_tn;
+    tninfo0 = new_tninfo;
+    top_hilo0 = new_hilo;
+    top_signed0 = new_signed;
+    new_opcode = new_opcode0;
+  }
+  
+  /* Process second operand. */
+  if (top_hilo1 == TN_LO_16) {
+    if (Is_16_Bits(opnd_tninfo[1], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
+	(new_hilo == TN_LO_16 || new_hilo == TN_HI_16) &&
+	new_signed != SIGN_UNKNOWN) {
+      new_hilo = new_hilo;
+      new_signed = top_signed1;
+      // Determine new opcode
+      new_opcode1 = get_mul_opcode(top_signed0, top_hilo0,
+				   new_signed, new_hilo);
+    }
+  } else if (top_hilo1 == TN_HI_16) {
+    if (Is_16_Bits(opnd_tninfo[1], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
+	new_hilo == TN_LO_16 && new_signed == SIGN_UNKNOWN) {
+      new_hilo = TN_LO_16;
+      new_signed = top_signed1;
+      // Determine new opcode
+      new_opcode1 = get_mul_opcode(top_signed0, top_hilo0,
+				   new_signed, new_hilo);
     }
   }
-
+  
+  if (new_opcode1 != TOP_UNDEFINED) {
+    tn1 = new_tn;
+    tninfo1 = new_tninfo;
+    top_hilo1 = new_hilo;
+    top_signed1 = new_signed;
+    new_opcode = new_opcode1;
+  }
+  
   // Convert to an immediate form if tn1 is an immediate
   if (new_opcode != TOP_UNDEFINED && TN_is_constant(tn1))
     new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(tn1));
-
+  
   if (new_opcode == TOP_UNDEFINED)
     return FALSE;
 
