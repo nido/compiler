@@ -628,17 +628,18 @@ Set_OP_To_WN_Map(WN *wn)
 {
   OP *op;
 
-  // We don't have aliasing information at -O0 and -O1.
-  if (CG_opt_level < 2) return;
-
   op = Last_Mem_OP ? OP_next(Last_Mem_OP) : OPS_first(&New_OPs);
   for ( ; op != NULL; op = OP_next(op)) {
     if ( (!OP_memory(op) || OP_no_alias(op)) && !OP_call(op) 
 	&& !OP_Is_Barrier(op) && OP_code(op) != TOP_spadjust)
 	continue;
 
+    // Mark volatile operations
     if (OP_memory(op) && WN_Is_Volatile_Mem(wn))
       Set_OP_volatile(op);
+
+    // We don't have aliasing information at -O0 and -O1.
+    if (CG_opt_level < 2) continue;
 
     if (OP_prefetch(op)) {
 
