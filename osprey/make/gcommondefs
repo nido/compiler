@@ -391,12 +391,16 @@ LDDSOOPTS_I64= $(LDDSOOPTS)
 LDDSOOPTS_N32= $(LDDSOOPTS) $(GLDDSOOPTS_N32)
 LDDSOOPTS_632= $(LDDSOOPTS) $(GLDDSOOPTS_64)
 
-ifeq ($(BUILD_OS), LINUX)
+# Arthur: this depends on the compiler, not the OS
+ifeq ($(BUILD_COMPILER), GNU)
   GLDDSOOPTS  = -elf -shared
 endif
-ifeq ($(BUILD_OS), SUNOS5)
-  GLDDSOOPTS  = -G
-endif
+#ifeq ($(BUILD_OS), LINUX)
+#  GLDDSOOPTS  = -elf -shared
+#endif
+#ifeq ($(BUILD_OS), SUNOS5)
+#  GLDDSOOPTS  = -G
+#endif
 ifeq ($(BUILD_OS), IRIX)
   GLDDSOOPTS = -elf -shared -all
 endif
