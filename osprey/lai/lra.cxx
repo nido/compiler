@@ -990,7 +990,7 @@ Remove_Redundant_Code (BB *bb)
       // to a function with one arg being an unnamed const
       // and where we miss the dependency because the TN
       // which holds that arg is not marked as dedicated.
-    if (TN_is_dedicated(OP_result(op,OP_Copy_Result(op)))) {
+    if (CGTARG_Is_Preference_Copy(op) && TN_is_dedicated(OP_result(op,OP_Copy_Result(op)))) {
       Set_TN_is_dedicated(OP_opnd(op, OP_Copy_Operand(op)));
     }
 #endif
