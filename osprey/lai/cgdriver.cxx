@@ -183,6 +183,8 @@ static BOOL CG_LAO_loopdep_overridden = FALSE;
 static BOOL CG_LAO_scd_first_overridden = FALSE;
 static BOOL CG_LAO_scd_last_overridden = FALSE;
 
+static BOOL CG_split_BB_length_overridden = FALSE;
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -381,7 +383,7 @@ static OPTION_DESC Options_CG[] = {
                 &CG_opt_level, &cg_opt_level_overridden },
 
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
-    CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, NULL,
+    CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, &CG_split_BB_length_overridden,
     "Restrict BB length by splitting longer BBs" },
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
@@ -1190,6 +1192,17 @@ Configure_CG_Options(void)
       CG_maxinss = CG_split_BB_length;
     }
   }
+#ifdef TARG_ST200
+  // ST200 BB length default: 
+  // - default up to O1 (300)
+  // - 500 at O2
+  // - 2000 at > O2
+  // (Determined by RFI 1-1-0-B/p9)
+  if (!CG_split_BB_length_overridden) {
+    if (Opt_Level == 2) CG_split_BB_length = 500;
+    else if (Opt_Level > 2) CG_split_BB_length = 3000;
+  }
+#endif
 
   /* Set BB clone limits
    */
