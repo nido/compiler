@@ -269,12 +269,11 @@ Prepare_Target ( void )
 
   /* First check the ABI from -TARG:abi=xxx: */
   if ( ABI_Name != NULL ) {
-    if ( strcmp ( ABI_Name, "st32" ) == 0 ) {
+    if ( strcasecmp ( ABI_Name, "ST200" ) == 0 ) {
       Target_ABI = ABI_ST200;
       isa_default = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
-    }
-    else {
+    } else {
       ErrMsg ( EC_Inv_TARG, "abi", ABI_Name );
     }
   }
@@ -302,6 +301,9 @@ Prepare_Target ( void )
    * and if one is default the other:
    */
   switch ( Target_ISA ) {
+    case TARGET_ISA_ST220:
+      if (Target_ABI == ABI_UNDEF) Target_ABI = ABI_ST200;
+      break;
     case TARGET_ISA_UNDEF:
       Target_ISA = isa_default;
       break;
@@ -337,16 +339,10 @@ Prepare_Target ( void )
    */
   switch ( Target ) {
     case TARGET_st220:
-      Target_ABI = ABI_ST200;
-      Target_ISA = TARGET_ISA_ST220;
-      break;
     case TARGET_st221:
-      Target_ABI = ABI_ST200;
-      Target_ISA = TARGET_ISA_ST220;
-      break;
     case TARGET_st230:
-      Target_ABI = ABI_ST200;
-      Target_ISA = TARGET_ISA_ST220;
+      if (Target_ABI == ABI_UNDEF) Target_ABI = ABI_ST200;
+      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST220;
       break;
     case TARGET_UNDEF:
       Target = targ_default;
@@ -370,7 +366,7 @@ Prepare_Target ( void )
   }
 
   /* Set descriptive variables: */
-  Use_32_Bit_Pointers = (Target_ABI == ABI_ST200);
+  Use_32_Bit_Pointers = TRUE; /* Always true for ST200 ABIs. */
 
 #if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
   Target_Int_Model = TARGET_INT_ILP32;
@@ -620,15 +616,12 @@ Configure_Target ()
 void
 IPA_Configure_Target (void)
 {
-  if (Target_ABI == ABI_ST200) {
-    Pointer_Size = 4;
-    Pointer_Mtype  = MTYPE_U4;
-    Pointer_type   = Pointer_Mtype;
-    Pointer_Mtype2 = MTYPE_U4;
-    Pointer_type2  = MTYPE_U4;
-  } else {
-    FmtAssert (0, ("IPA_Configure_Target: unhandled ABI"));
-  }
+  // Any ST200 ABI define these.
+  Pointer_Size = 4;
+  Pointer_Mtype  = MTYPE_U4;
+  Pointer_type   = Pointer_Mtype;
+  Pointer_Mtype2 = MTYPE_U4;
+  Pointer_type2  = MTYPE_U4;
 
   Integer_type = MTYPE_I4;
   Boolean_type  = MTYPE_I4;
@@ -649,21 +642,16 @@ Set_Target_ABI (
 )
 {
   if (is_64bit) {
-    switch (Target_ABI) {
-    case ABI_UNDEF:
-      return FALSE;
-    default:
-      return FALSE;
-    }
+    /* No ST200 ABI is 64 bits. */
+    return FALSE;
   } else {	/* 32 */
     switch (Target_ABI) {
     case ABI_UNDEF:
       Target_ABI = ABI_ST200;
       break;
-    case ABI_ST200:
-      break;
     default:
-      return FALSE;
+      /* All ST200 ABIs are 32 bits. */
+      break;
     }
   }
 
