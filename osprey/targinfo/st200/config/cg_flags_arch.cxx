@@ -38,12 +38,9 @@
 #include "cg_loop.h"      /* for cg_loop flags */
 
 void Configure_CG_Target() {
-  //    locs_form_bundles=
-  //    all_scheduler=
-  //    enable_thr=
-  //    lra_reorder=
-  //    callee_reg_mask=
-  //    etc.
+
+  // CFLOW optimizations: ON by default
+  CFLOW_opt_after_cgprep = FALSE;
 
   // Scheduling options: scheduling is ON by default -- disable if
   //                     in development
