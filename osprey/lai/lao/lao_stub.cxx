@@ -1116,22 +1116,21 @@ lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_actions) {
     // Enter the body blocks in linear order.
     BB *loop_head = LOOP_DESCR_loophead(loop);
     BB *loop_tail = LOOP_DESCR_Find_Unique_Tail(loop);
+    BB *bb;
     //
     if (loop_tail == NULL) return result;
     //
-    for (BB *bb = loop_head;
-	 bb && BB_prev(bb) != loop_tail;
-	 bb = BB_next(bb)) {
-      if (BB_SET_MemberP(LOOP_DESCR_bbset(loop), bb)) {
-	bodyBBs.push_back(bb);
-	//
-	BBLIST *succs = NULL;
-	FOR_ALL_BB_SUCCS(bb, succs) {
-	  BB *succ = BBLIST_item(succs);
-	  if (!BB_SET_MemberP(LOOP_DESCR_bbset(loop), succ)) {
-	    // Ensure that a bb is not put twice in the exitBBs.
-	    if (!CGIR_in_BB_List(exitBBs, succ)) exitBBs.push_back(succ);
-	  }
+    // Put loop head first, because last entry BB may fall through to it.
+    bodyBBs.push_back(loop_head);
+    FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb) {
+      if (bb != loop_head) bodyBBs.push_back(bb);
+      //
+      BBLIST *succs = NULL;
+      FOR_ALL_BB_SUCCS(bb, succs) {
+	BB *succ = BBLIST_item(succs);
+	if (!BB_SET_MemberP(LOOP_DESCR_bbset(loop), succ)) {
+	  // Ensure that a bb is not put twice in the exitBBs.
+	  if (!CGIR_in_BB_List(exitBBs, succ)) exitBBs.push_back(succ);
 	}
       }
     }
