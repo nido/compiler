@@ -306,7 +306,7 @@ last: make_deps
 #  install target
 #----------------------------------------------------------------------
 ifneq ($(BUILD_OS), IRIX)
-install: default
+install: local
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
 	for h in $(SO_TARGETS); do \
 	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC); \
