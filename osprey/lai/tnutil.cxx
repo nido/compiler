@@ -713,8 +713,13 @@ Init_Dedicated_TNs (void)
   Link_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_link) == REGISTER_UNDEFINED ?
                  NULL : ded_tns[REGISTER_CLASS_link][REGISTER_link];
 
-  if (Gen_GP_Relative)
-    GP_TN = ded_tns[REGISTER_CLASS_gp][REGISTER_gp];
+  if (Gen_GP_Relative) {
+    /* SC: This must be distinct from the dedicated TN created
+       for REGISTER_gp, because the TN_register field of this TN
+       may be altered during compilation. */
+    ++tnum; 
+    GP_TN = Create_Dedicated_TN (REGISTER_CLASS_gp, REGISTER_gp);
+  }
   else
     GP_TN = NULL;
 
