@@ -1437,6 +1437,7 @@ CGIR_BB_print_header (BB *bp, FILE *file) {
 	    BB_freq_fb_based(bp) ? "feedback" : "heuristic");
   
   if (BB_scheduled(bp)) fprintf ( file, ", Scheduled");
+  if (BB_reg_alloc(bp)) fprintf ( file, ", Allocated");
   if (BB_unreachable(bp)) fprintf ( file, ", Unreachable");
   if (BB_entry(bp))	fprintf ( file, ", Entry" );
   if (BB_handler(bp))	fprintf ( file, ", Handler" );
