@@ -1425,8 +1425,8 @@ CG_Init (void)
   //    Configure_prefetch_ahead();
 
 #ifdef LAO_ENABLED
-    extern void LAO_INIT ();
-    LAO_INIT();
+    extern void LAO_init();
+    LAO_init();
 #endif
 
   return;
@@ -1442,8 +1442,8 @@ void
 CG_Fini (void)
 {
 #ifdef LAO_ENABLED
-    extern void LAO_FINI ();
-    LAO_FINI();
+    extern void LAO_fini();
+    LAO_fini();
 #endif
 
   /* List global symbols if desired: */

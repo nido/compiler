@@ -617,7 +617,13 @@ else
   endif
  endif
 ifeq ($(BUILD_VARIANT), LAO_BUILD)
-LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so $(ROOT)/LAO/lib/libCSD.so $(ROOT)/LAO/lib/libLIR.so $(ROOT)/LAO/lib/libSCD.so -Wl,-rpath=$(ROOT)/LAO/lib
+LINK_DSOS += $(ROOT)/LAO/lib/libCCL.so
+LINK_DSOS += $(ROOT)/LAO/lib/libCSD.so
+LINK_DSOS += $(ROOT)/LAO/lib/libSCD.so
+LINK_DSOS += $(ROOT)/LAO/lib/libLIR.so
+LINK_DSOS += $(ROOT)/LAO/lib/libSWP.so
+LINK_DSOS += $(ROOT)/LAO/lib/libLAO.so
+LINK_DSOS += -Wl,-rpath=$(ROOT)/LAO/lib
 endif
 
 cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(BE_CG_DIR)/Exported $(TARG_BE)/be.so \
