@@ -208,6 +208,10 @@ static ST *cur_section = NULL;
 
 static PU_IDX current_pu = 0;
 
+#ifdef TARG_ST
+static int Bundle_Count;
+#endif
+
 /* ====================================================================
  *    Use_Separate_PU_Section
  *
@@ -3142,8 +3146,12 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
   /* emit TN comments: */
   vstring comment = vstr_begin(LBUF_LEN);
 #ifdef TARG_ST
-  if (Trace_Sched && (OP_scycle(op) >= 0))
-    vstr_sprintf(&comment, vstr_len(comment), "(scycle %d) ", OP_scycle(op));
+  if (Trace_Sched && (OP_scycle(op) >= 0)) {
+    vstr_sprintf(&comment, vstr_len(comment), "(cycle %d) ", OP_scycle(op));
+    if (OP_scycle(op) < Bundle_Count)
+      DevWarn("BB %d, bundle %d: operation %s was scheduled at cycle %d",
+	      BB_id(bb), Bundle_Count, TOP_Name(OP_code(op)), OP_scycle(op));
+  }
 #endif
   for (i = 0; i < OP_results(op); i++) {
     TN *tn = OP_result(op, i);
@@ -3348,10 +3356,6 @@ Verify_Instruction (
     Verify_Operand(oinfo, op, i, FALSE);
   }
 }
-
-#ifdef TARG_ST
-static int Bundle_Count;
-#endif
 
 /* ====================================================================
  *   Assemble_OP
@@ -3881,7 +3885,11 @@ Emit_Loop_Note (
     if (WN_pragma_arg1(wn) > 1) {
       if (WN_pragma_arg1(wn) == unrollings)
 	unroll_pragma = TRUE;
+#ifdef TARG_ST
+      else if (BB_innermost(bb) && (bb == head))
+#else
       else if (BB_innermost(bb))
+#endif
 	DevWarn("BB:%d unrolled %d times but pragma says to unroll %d times",
 		BB_id(bb), unrollings, WN_pragma_arg1(wn));
     }
@@ -4744,7 +4752,7 @@ EMT_Begin_File (
   Trace_Elf	= Get_Trace ( TP_EMIT, 2 );
   Trace_Init	= Get_Trace ( TP_EMIT, 4 );
 #ifdef TARG_ST
-  Trace_Sched   = Get_Trace ( TP_SCHED,1 );
+  Trace_Sched   = Get_Trace ( TP_SCHED, 2 );
 #endif
 
   // Which one to write into ?
