@@ -385,7 +385,11 @@ main (int argc, char *argv[])
 #else
   Any_Result_Available_Time(5); 
 #endif
+#if 0 // CL: chess database seems wrong
   Any_Operand_Access_Time(0); 
+#else
+  Any_Operand_Access_Time(1); 
+#endif
   Resource_Requirement(res_ISSUE, 0); 
 
 
