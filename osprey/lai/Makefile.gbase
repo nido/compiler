@@ -90,7 +90,11 @@ endif
 HOSTDEFS += -LANG:packed=on
 
 ifeq ($(BUILD_TARGET), ST100)
-HOSTDEFS += -DTARG_ST100
+HOSTDEFS += -DTARG_ST100 -DSUPPORTS_PREDICATION
+endif
+
+ifeq ($(BUILD_TARGET), ST200)
+HOSTDEFS += -DTARG_ST200
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
@@ -271,9 +275,12 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_cg.cxx		\
   targ_op.cxx		\
   targ_register.cxx	\
-  targ_tn.cxx		\
-			\
-  targ_hb.cxx
+  targ_tn.cxx		
+
+#add the hyperblock sources
+ifeq ($(BUILD_TARGET), ST100)
+  BE_CG_TARG_CXX_SRCS += targ_hb.cxx
+endif
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
@@ -329,6 +336,18 @@ CG_CXX_SRCS = 		\
   findloops.cxx		\
   freq.cxx		\
   gcm.cxx		\
+  igls.cxx		\
+  init.cxx		\
+  label_util.cxx	\
+  localize.cxx		\
+  note.cxx		\
+  register.cxx		\
+  reg_live.cxx		\
+  tag.cxx		\
+  tcon_util.cxx		\
+  variants.cxx		\
+  whirl2ops.cxx		\
+                        \
   hb.cxx		\
   hb_block_select.cxx	\
   hb_hazards.cxx	\
@@ -337,20 +356,14 @@ CG_CXX_SRCS = 		\
   hb_sched.cxx		\
   hb_tail_duplication.cxx	\
   hb_trace.cxx		\
-  igls.cxx		\
-  init.cxx		\
-  label_util.cxx	\
-  localize.cxx		\
-  note.cxx		\
-  pqs.cxx		\
-  pqs_cg.cxx		\
-  register.cxx		\
-  reg_live.cxx		\
-  tag.cxx		\
-  tcon_util.cxx		\
-  variants.cxx		\
-  whirl2ops.cxx		\
+			\
   $(DERIVED_SRCS)
+
+#add the pqs sources
+ifeq ($(BUILD_TARGET),IA64)
+  CG_CXX_SRCS +=  pqs.cxx
+  CG_CXX_SRCS +=  pqs_cg.cxx
+endif
 
 ifeq ($(BUILD_PCH), USE_PCH)
 CG_PCH_OBJS = $(CG_CXX_PCH_SRCS:.cxx=.o)
