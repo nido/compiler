@@ -327,13 +327,7 @@ inline TN * CAN_USE_REG_TN (const TN *t)
 #define     TN_var(t)		(CAN_USE_TN(t)->u2.var)
 #define Set_TN_var(t,x)		(CAN_USE_TN(t)->u2.var = (x))
 #define     TN_home(t)		(CAN_USE_TN(t)->u2.u3.home)
-
-#ifdef TARG_ST
-// inline it when debug is done.
-extern void Set_TN_home(TN *t, WN *x);
-#else
 #define Set_TN_home(t,x)        (CAN_USE_TN(t)->u2.u3.home = (x))
-#endif
 
 /* Define the TN_flags access functions: */
 #define       TN_has_value(r)	(TN_flags(r) &   TN_HAS_VALUE)

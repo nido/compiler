@@ -876,7 +876,26 @@ PREG_To_TN (
 	  if (TN_number(tn) < GRA_non_home_lo ||
 	      TN_number(tn) > GRA_non_home_hi) {
 	    Set_TN_is_gra_homeable(tn);
+#ifdef TARG_ST
+	    //
+	    // Christian: 'home' is set by WOPT.
+	    //            it may happen that 'home' is a 64-bit
+	    //            thing, which we can't handle on a 32-bit
+	    //            machine.
+	    if (Only_32_Bit_Ops &&
+		(MTYPE_is_double(WN_rtype(home)) || 
+		 MTYPE_is_longlong(WN_rtype(home)))) {
+	      WN *lopart;
+	      WN *hipart;
+	      HILO_lower_wn (home, &lopart, &hipart);
+	    }
+	    //
+	    // Why is it that hipart does not matter ?
+	    //
+	    Set_TN_home (tn, lopart);
+#else
 	    Set_TN_home (tn, home);
+#endif
 	  }
 	} else {
 	  Set_TN_is_rematerializable(tn);
@@ -5070,14 +5089,19 @@ Whirl2ops_Finalize (void)
   OP_MAP_Delete(OP_Asm_Map);
 }
 
-#ifdef TARG_ST
-void Set_TN_home(TN *t, WN *x) {
+#if 0
+void Set_TN_home(TN *t, WN *wn) {
+  WN *hipart;
+  WN *lopart;
+
   if (Only_32_Bit_Ops &&
-      (MTYPE_is_double(WN_rtype(x)) || MTYPE_is_longlong(WN_rtype(x)))) {
-    extern WN *Get_WN_home_lo (WN *);
+      (MTYPE_is_double(WN_rtype(wn)) || MTYPE_is_longlong(WN_rtype(wn)))) {
+    /*    extern WN *Get_WN_home_lo (WN *);
     x = Get_WN_home_lo (x);
+    */
+    HILO_lower_wn (wn, &lopart, &hipart);
   }
 
-  CAN_USE_TN(t)->u2.u3.home = (x);
+  CAN_USE_TN(t)->u2.u3.home = (*lopart);
 }
 #endif
