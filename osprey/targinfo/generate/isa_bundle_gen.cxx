@@ -67,7 +67,7 @@ using std::vector;
 #include "gen_util.h"
 #include "isa_bundle_gen.h"
 
-#define MAX_SLOTS 4	// max # of slots the generator can handle
+#define MAX_SLOTS 8	// max # of slots the generator can handle
 #define TAG_SHIFT 12    // max # of bits required to encode all the
                         // execution property types.
 
