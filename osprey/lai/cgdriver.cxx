@@ -177,13 +177,14 @@ static BOOL IPFEC_Enable_LICM_overridden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
+static BOOL CG_LAO_allockind_overridden = FALSE;
 static BOOL CG_LAO_regiontype_overridden = FALSE;
+static BOOL CG_LAO_compensation_overridden = FALSE;
 static BOOL CG_LAO_speculation_overridden = FALSE;
+static BOOL CG_LAO_relaxation_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
 static BOOL CG_LAO_renaming_overridden = FALSE;
 static BOOL CG_LAO_loopdep_overridden = FALSE;
-static BOOL CG_LAO_scd_first_overridden = FALSE;
-static BOOL CG_LAO_scd_last_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
@@ -422,20 +423,22 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
     2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_allockind", "",
+    2, 0, 3,	&CG_LAO_allockind, &CG_LAO_allockind_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
     1, 0, 3,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_compensation", "",
+    0, 0, 3,	&CG_LAO_compensation, &CG_LAO_compensation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
-    1, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
+    3, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_relaxation", "",
+    2, 0, 3,	&CG_LAO_relaxation, &CG_LAO_relaxation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
-    1, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
+    2, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
     0, 0, 4,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_loopdep", "",
     1, 0, 3,	&CG_LAO_loopdep, &CG_LAO_loopdep_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_first", "",
-    -1, -1, (UINT32)-1>>1,	&CG_LAO_scd_first, &CG_LAO_scd_first_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_last", "",
-    -1, -1, (UINT32)-1>>1,	&CG_LAO_scd_last, &CG_LAO_scd_last_overridden },
 #endif
 
 #ifdef CGG_ENABLED
@@ -1563,17 +1566,18 @@ CG_Init (void)
 #ifdef LAO_ENABLED
   if (CG_LAO_optimizations != 0) {
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
+    if (!CG_LAO_allockind_overridden) CG_LAO_allockind = 2;
     if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
+    if (!CG_LAO_compensation_overridden) CG_LAO_compensation = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
       else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
       else CG_LAO_speculation = 3;
     }
+    if (!CG_LAO_relaxation_overridden) CG_LAO_relaxation = 2;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
     if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 0;
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
-    if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
-    if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;
     lao_init();
   }
 #endif

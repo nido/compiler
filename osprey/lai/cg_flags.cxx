@@ -93,13 +93,14 @@ BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 BOOL CG_enable_select = FALSE;
 INT32 CG_LAO_optimizations = 0;
 INT32 CG_LAO_schedkind = 0;
+INT32 CG_LAO_allockind = 0;
 INT32 CG_LAO_regiontype = 0;
+INT32 CG_LAO_compensation = 0;
 INT32 CG_LAO_speculation = 0;
+INT32 CG_LAO_relaxation = 0;
 INT32 CG_LAO_pipelining = 0;
 INT32 CG_LAO_renaming = 0;
 INT32 CG_LAO_loopdep = 1;
-INT32 CG_LAO_scd_first = -1;
-INT32 CG_LAO_scd_last = -1;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;

@@ -209,13 +209,14 @@ extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
 extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
 CG_EXPORTED extern INT32 CG_LAO_schedkind;	/* LAO scheduling algorithm */
+CG_EXPORTED extern INT32 CG_LAO_allockind;	/* LAO allocation algorithm */
 CG_EXPORTED extern INT32 CG_LAO_regiontype;	/* LAO scheduling region type */
+CG_EXPORTED extern INT32 CG_LAO_compensation;	/* LAO control compensation level */
 CG_EXPORTED extern INT32 CG_LAO_speculation;	/* LAO control speculation level */
+CG_EXPORTED extern INT32 CG_LAO_relaxation;	/* LAO control relaxation level */
 CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
 CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO software renaming level */
 CG_EXPORTED extern INT32 CG_LAO_loopdep;	/* LAO loop dependence level */
-extern INT32 CG_LAO_scd_first;	/* LAO first BasicBlock scheduled */
-extern INT32 CG_LAO_scd_last;	/* LAO last BasicBlock scheduled */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */
