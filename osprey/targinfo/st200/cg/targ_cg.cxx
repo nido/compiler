@@ -1076,10 +1076,48 @@ CGTARG_Adjust_Latency (
   INT *latency
 )
 {
+  INT i;
   const TOP pred_code = OP_code(pred_op);
   const TOP succ_code = OP_code(succ_op);
 
-  //  DevWarn("CGTARG_Adjust_Latency: not implemented");
+  // 1. Instructions writing into a branch register must be followed
+  //    by 1 cycle (bundle) before 
+  //         TOP_br 
+  //         TOP_brf 
+  //    can be issued that uses this register.
+
+  if (succ_code == TOP_br || succ_code == TOP_brf) {
+    // operand 0 is the branch register
+    TN *cond = OP_opnd(succ_op, 0);
+    for (i = 0; i < OP_results(pred_op); i++) {
+      if (OP_result(pred_op,i) == cond)
+	*latency += 1;
+    }
+  }
+
+  // 2. Instructions writing into a PC must be followed
+  //    by 1 cycle (bundle) before a TOP_br can be issued.
+
+  // 3. Instructions writing LR register must be followed by 3 cycles
+  //    (bundles) before one of the following may be issued:
+  //         TOP_icall
+  //         TOP_igoto
+  //         TOP_return
+  for (i = 0; i < OP_results(pred_op); i++) {
+    if (OP_result(pred_op,i) == RA_TN) {
+      *latency += 3;
+    }
+  }
+	
+  // 4. TOP_prgins must be followed by 3 cycles (bundles) before
+  //    issueing a TOP_syncins instruction
+
+  // 5. Instructions writing SAVED_PC must be followed by 4 cycles
+  //    (bundles) before issueing the TOP_rfi instruction.
+
+  // 6 ... more about TOP_rfi
+
+
   return;
 }
 
@@ -1156,6 +1194,9 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
       EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
       EXEC_PROPERTY_is_S2_Unit(OP_code(op)) &&
       EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0,S1,S2,S3\n");
+
     if (slot == 0)
       *prop = ISA_EXEC_PROPERTY_S0_Unit;
     if (slot == 1)
@@ -1167,21 +1208,55 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   }
   else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
 	   EXEC_PROPERTY_is_S2_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0,S2\n");
+
     if (slot == 0)
       *prop = ISA_EXEC_PROPERTY_S0_Unit;
-    if (slot == 2)
+    else if (slot == 2)
       *prop = ISA_EXEC_PROPERTY_S2_Unit;
+    else
+      return FALSE;
   }
   else if (EXEC_PROPERTY_is_S0_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S0\n");
+
     // for example branches, etc.
-    *prop = ISA_EXEC_PROPERTY_S0_Unit;
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_S0_Unit;
+    else
+      return FALSE;
   }
   else if (EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
 	   EXEC_PROPERTY_is_S3_Unit(OP_code(op))) {
+
+    //fprintf(TFile,"  S1,S3\n");
+
     if (slot == 1)
       *prop = ISA_EXEC_PROPERTY_S1_Unit;
-    if (slot == 3)
+    else if (slot == 3)
       *prop = ISA_EXEC_PROPERTY_S3_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT0_Unit(OP_code(op))) {
+    if (slot == 0)
+      *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT1_Unit(OP_code(op))) {
+    if (slot == 1)
+      *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
+    else
+      return FALSE;
+  }
+  else if (EXEC_PROPERTY_is_EXT2_Unit(OP_code(op))) {
+    if (slot == 2)
+      *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
+    else
+      return FALSE;
   }
   else {
     FmtAssert(FALSE, 
@@ -1198,9 +1273,89 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 
   // Need to check if extra slots are required and available within the
   // bundle (eg. anything that uses imml,immr)
-  BOOL extra_slot_reqd = (inst_words == 2) ?
-    (TI_BUNDLE_Slot_Available(bundle, *prop, slot + 1) ||
-     TI_BUNDLE_Slot_Available(bundle, *prop, slot - 1)) : TRUE;
+  //
+  // TODO: add to ISA_PROPERTYs ??
+  //
+  BOOL extra_slot_reqd = FALSE;
+
+  // This is here until ASM is fixed
+  BOOL extra_slot_implicit = TRUE;
+
+  // Does this OP have immediate operand ?
+
+  //fprintf(TFile,"  immediate opnd ??\n");
+  //Print_OP(op);
+  //fprintf(TFile,"\n opnd = %d\n", CGTARG_Immediate_Operand(op));
+
+  if (CGTARG_Immediate_Operand(op) >= 0) {
+    INT64 val;
+    TN *opnd = OP_opnd(op,CGTARG_Immediate_Operand(op));
+    if (TN_has_value(opnd)) {
+      val = TN_value(opnd);
+      if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	extra_slot_reqd = TRUE;
+      }
+    }
+    else if (TN_is_symbol(opnd)) {
+      ST *st, *base_st;
+      INT64 base_ofst;
+
+      st = TN_var(opnd);
+      Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+      // SP/FP relative may actually fit into 9-bits
+      if (base_st == SP_Sym || base_st == FP_Sym) {
+	val = CGTARG_TN_Value (opnd, base_ofst);
+	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	  extra_slot_reqd = TRUE;
+	}
+      }
+      else if (ST_gprel(base_st)) {
+	FmtAssert(FALSE,("GP-relative not supported"));
+      }
+      else {
+	// must be a assembly resolved symbolic address (label) ? 
+	// just reserve the following slot
+	//
+	//      else if (ST_class(st) == CLASS_CONST) {
+	// HACK:
+	// just reserve the slot immediately following this
+	// Multiflow assembler does this.
+	//
+
+	// only mov is allowed this way !!!
+	FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
+	extra_slot_reqd = TRUE;
+	extra_slot_implicit = TRUE;
+      }
+    }
+    // assume that labels fit into 23-bit, enums are not emitted ?
+  }
+
+  // Because of the Multiflow Assembler, I will only generate imml ...
+
+  //fprintf(TFile, "  slot = %d, extra slot reqd = %s\n", slot, (extra_slot_reqd) ? "true" : "false");
+
+  // All bundles have a stop at the end, reserve it
+  TI_BUNDLE_Reserve_Stop_Bit(bundle, 3);
+
+  BOOL extra_slot_avail = (extra_slot_reqd) ? FALSE : TRUE;
+  if (extra_slot_reqd) {
+    if (extra_slot_implicit) {
+      if (TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_movl), slot + 1)) {
+	extra_slot_avail = TRUE;
+      }
+    }
+    else {
+      // I will handle imml/immr myself ...
+      if ((slot != 3 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_imml), slot + 1)) ||
+	  (slot > 0 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_immr), slot - 1))) {
+
+	extra_slot_avail = TRUE;
+      }
+    }
+  }
+
+  //fprintf(TFile, "  extra slot avail = %s\n", (extra_slot_avail) ? "true" : "false");
 
 #if 1
   // Turns out that end group will be created anyway
@@ -1219,16 +1374,24 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   }
 #endif
 
-  // All bundles have a stop at the end, reserve it
-  TI_BUNDLE_Reserve_Stop_Bit(bundle, 3);
-
   //fprintf(TFile,"extra_slot_reqd = %s\n", extra_slot_reqd ? "true" : "false");
   //fprintf(TFile,"stop_bit_avail = %s\n", stop_bit_avail ? "true" : "false");
 
-  BOOL slot_avail = extra_slot_reqd && stop_bit_avail &&
+  BOOL slot_avail = extra_slot_avail && stop_bit_avail &&
     TI_BUNDLE_Slot_Available (bundle, *prop, slot);
 
   //fprintf(TFile,"slot_avail = %s\n", slot_avail ? "true" : "false");
+
+  // If extra slot required, implicit, and slot_avail, change opcode 
+  // to extended opcode ... a hack really !
+  if (extra_slot_reqd && extra_slot_implicit && slot_avail) {
+    // For now only mov can do this:
+    FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
+    OP_Change_Opcode(op, TOP_movl);
+    if (slot == 0) *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
+    else if (slot == 1) *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
+    else if (slot == 2) *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
+  }
 
 #if 0
   //  if (slot_avail) {
@@ -1243,10 +1406,42 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
       }
     }
 #endif
+
     TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
     //  }
 
   return slot_avail;
+}
+
+/* ====================================================================
+ *   CGTARG_Handle_Latency_Hazard
+ *
+ *   Fill a cycle preceeding 'op' with noops.
+ * ====================================================================
+ */
+void
+CGTARG_Handle_Latency_Hazard (
+  OP *op,
+  TI_BUNDLE *bundle
+)
+{
+  INT template_bit = TI_BUNDLE_Return_Template(bundle);
+  FmtAssert (template_bit != -1, ("Illegal template encoding"));
+
+  INT i;
+  FOR_ALL_SLOT_MEMBERS(bundle, i) {
+    if (!TI_BUNDLE_slot_filled(bundle, i)) {
+      OP *noop = Mk_OP(TOP_nop);
+      BB_Insert_Op_Before(OP_bb(op), op, noop);
+      OP_scycle(noop) = -1;
+      Set_OP_bundled (noop);
+      TI_BUNDLE_Reserve_Slot (bundle, i, 
+				   ISA_EXEC_Slot_Prop(template_bit, i));
+      break;
+    }
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -1263,11 +1458,123 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 			     INT                         slot_pos, 
 			     INT                         max_pos,
 			     BOOL                        stop_bit_reqd,
-			     ISA_EXEC_UNIT_PROPERTY      prop) 
+			     ISA_EXEC_UNIT_PROPERTY      prop,
+			     INT                         *clock) 
 {
   INT ti_err = TI_RC_OKAY;
   INT template_bit = TI_BUNDLE_Return_Template(bundle);
   FmtAssert (template_bit != -1, ("Illegal template encoding"));
+
+  // 
+  // Only reserve the extra slot if <op> is being "scheduled"
+  //
+  if (slot_avail) {
+    BOOL extra_slot_reqd = FALSE;
+
+    // Arthur: this is here until the ASM is fixed ...
+    BOOL extra_slot_implicit = TRUE;
+
+    INT64 val;
+
+    // If the op requires an immediate slot, fill it
+
+    //fprintf(TFile,"  immediate opnd ??\n");
+    //Print_OP(op);
+    //fprintf(TFile,"\n opnd = %d\n", CGTARG_Immediate_Operand(op));
+
+    if (CGTARG_Immediate_Operand(op) >= 0) {
+      TN *opnd = OP_opnd(op,CGTARG_Immediate_Operand(op));
+      if (TN_has_value(opnd)) {
+	val = TN_value(opnd);
+	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	  extra_slot_reqd = TRUE;
+	}
+      }
+      else if (TN_is_symbol(opnd)) {
+	ST *st = TN_var(opnd);
+	ST *base_st;
+	INT64 base_ofst;
+
+	Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+	val = CGTARG_TN_Value (opnd, base_ofst);
+	// SP/FP relative that do not fit into 9-bits
+	if (base_st == SP_Sym || base_st == FP_Sym) {
+	  if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	    extra_slot_reqd = TRUE;
+	  }
+	}
+	else if (ST_gprel(base_st)) {
+	  FmtAssert(FALSE,("GP-relative not supported"));
+	}
+	else {
+	  // it must be a label ? just reserve the slot immediately
+	  // following this one
+	  //
+	  //	else if (ST_class(st) == CLASS_CONST) {
+	  // HACK:
+	  // just reserve the slot immediately following this
+	  // Multiflow assembler does this.
+	  //
+	  extra_slot_implicit = TRUE;
+	  //	  max_pos++;
+	}
+      }
+    }
+
+    // Extension slot contains 23 MSBits of the immediate.
+    // the final value is calculated as: 
+    //     (ZeroExtend_23(extension) << 9) + ZeroExtend_9(i);
+    //
+    if (extra_slot_reqd && !extra_slot_implicit) {
+      OP *imm;
+      INT slot;
+      // Need to get the value of the right length
+      INT64 constant = Targ_To_Host(Host_To_Targ(MTYPE_I4, val));
+
+      //      fprintf(stderr," constant = %lld (0x%llx)\n", constant, constant);
+
+      // Get LSBits 0..9
+      TN *val_tn = Gen_Literal_TN(constant & 0x000001ff, 4);
+      // Get MSBits 10..32
+      TN *extension = Gen_Literal_TN(constant >> 9, 4);
+      // Replace opnd of this OP:
+      Set_OP_opnd(op,CGTARG_Immediate_Operand(op),val_tn);
+
+      // Try first schedulign to the left of OP
+      if (!TI_BUNDLE_slot_filled(bundle, slot_pos-1)) {
+	slot = slot_pos-1;
+	// Make imm OP and insert to the left of <op>
+	imm = Mk_OP(TOP_immr, extension);
+	BB_Insert_Op_Before(OP_bb(op), op, imm);
+	OP_scycle(imm) = -1;
+	Set_OP_bundled (imm);
+	TI_BUNDLE_Reserve_Slot (bundle, slot, 
+                              ISA_EXEC_Slot_Prop(template_bit, slot));
+      }
+      else if (!TI_BUNDLE_slot_filled(bundle, slot_pos+1)) {
+	slot = slot_pos+1;
+	// Make imm OP and insert to the right of <op>
+	imm = Mk_OP(TOP_imml, extension);
+	BB_Insert_Op_After(OP_bb(op), op, imm);
+	OP_scycle(imm) = -1;
+	Set_OP_bundled (imm);
+	TI_BUNDLE_Reserve_Slot (bundle, slot, 
+                              ISA_EXEC_Slot_Prop(template_bit, slot));
+	// 
+	// make <op> point to <imm> so we fill with noops and set
+	// end group correctly
+	//
+	op = imm;
+	slot_pos = slot; // in reality this can only be 2 !
+	prop = ISA_EXEC_PROPERTY_S2_Unit;
+      }
+      else {
+	FmtAssert(FALSE, ("extension slot not available ?"));
+      }
+
+    } /* if extra slot reqd */
+
+  }
 
   // Adjust the slot_pos for TOPs which occupy more than 1 slot position,
   // eg. ??
@@ -1276,13 +1583,19 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
     max_pos + ISA_PACK_Inst_Words(OP_code(op)) - 1 : max_pos;
 
   //
-  // If this has been no slot_avail, or and of bundle, fill with nops
+  // fill with nops
   //
   INT i;
   OP *prev_op = NULL;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     if (i > adjusted_slot_pos) break;
+
+    //fprintf(TFile, "  filling noops slot %d\n", i);
+
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
+
+      //fprintf(TFile, "  slot not filled\n");
+
       // fill with nops.
       if (i <= max_pos) {
 	OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
@@ -1322,6 +1635,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
     }
+    *clock = *clock + 1;
   }
 
   return;
