@@ -814,7 +814,7 @@ CG_EXPORTED extern void (*CGIR_print_p)(FILE *file);
 // Initialization of the LAO, needs to be called once.
 void
 lao_init() {
-  if (GETENV("PID")) {
+  if (GETENV("LAO_PID")) {
     int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
   }
   if (lao_initialized++ == 0) {
