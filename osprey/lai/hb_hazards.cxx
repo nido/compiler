@@ -981,10 +981,10 @@ static BOOL NOPs_to_GOTO (
     LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
 
     goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab, 0));
-    BB_Insert_Op(OP_bb(op), nop_second, goto_op, FALSE);
+    BB_Insert_Op(bb, nop_second, goto_op, FALSE);
   
-    BB_Remove_Op(OP_bb(op), nop_first);
-    BB_Remove_Op(OP_bb(op), nop_second);
+    BB_Remove_Op(bb, nop_first);
+    BB_Remove_Op(bb, nop_second);
 
     OP_scycle(goto_op) = -1;
     Set_OP_bundled (goto_op);
@@ -1003,6 +1003,9 @@ static BOOL NOPs_to_GOTO (
  *   Fill a clock cycle following 'op' with noops.
  * ====================================================================
  */
+// FdF 20041203
+//   bb must not be NULL
+//   op will be NULL when inserting at the beginning of a basic block
 static void
 Fill_Cycle_With_Noops (
   BB *bb,
@@ -1043,7 +1046,7 @@ Fill_Cycle_With_Noops (
       Set_OP_end_group(noop);
 
 #ifdef TARG_ST200 // [CL]
-      if (!CG_NOPs_to_GOTO || (op != NULL && !NOPs_to_GOTO(bb, op)))
+      if (!CG_NOPs_to_GOTO || !NOPs_to_GOTO(bb, op))
 	*pc += 1;
 	}
       }
@@ -1111,9 +1114,9 @@ Handle_Latency (
 
     // This adds a noop group to the bundle
 #ifdef TARG_ST200 // [CL] keep track of alignment
-    Fill_Cycle_With_Noops (NULL, op, bundle, bundle_vector, pc);
+    Fill_Cycle_With_Noops (OP_bb(op), op, bundle, bundle_vector, pc);
 #else
-    Fill_Cycle_With_Noops (NULL, op, bundle, bundle_vector);
+    Fill_Cycle_With_Noops (OP_bb(op), op, bundle, bundle_vector);
 #endif
 
     // if the <bundle> is full, reset it
@@ -1936,9 +1939,9 @@ Make_Bundles (
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
 #endif
 #ifdef TARG_ST200 // [CL] keep track of alignment
-      Fill_Cycle_With_Noops (NULL, BB_last_op(bb), bundle, bundle_vector, pc);
+      Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector, pc);
 #else
-      Fill_Cycle_With_Noops (NULL, BB_last_op(bb), bundle, bundle_vector);
+      Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector);
 #endif
 #ifndef TARG_ST200
     }
