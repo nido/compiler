@@ -872,7 +872,15 @@ Print_Label (
   if (ST_class(st) == CLASS_VAR) {
     fprintf (pfile, "\t%s\t", AS_TYPE);
     EMT_Write_Qualified_Name (pfile, st);
+#ifdef TARG_ST
+    /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
+    if (Emit_Global_Data)
+      fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+    else
+      fprintf (pfile, ", %s, moveable\n", AS_TYPE_OBJECT);
+#else
     fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+#endif    
   }
   if (size != 0) {
     /* if size is given, then emit value for asm */
@@ -934,6 +942,14 @@ Print_Common (
 		     TY_size(ST_type(st)), TY_align(ST_type(st)));
     Print_Dynsym (pfile, st);
 
+#ifdef TARG_ST
+    /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
+    if (!Emit_Global_Data) {
+      fprintf (pfile, "\t%s\t", AS_TYPE);
+      EMT_Write_Qualified_Name (pfile, st);
+      fprintf (pfile, ", %s, moveable\n", AS_TYPE_OBJECT);
+    }
+#endif
     // this is needed so that we don't emit commons more than once
     Set_ST_elf_index(st, 1);
   }
