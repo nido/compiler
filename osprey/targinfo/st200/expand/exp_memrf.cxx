@@ -553,10 +553,11 @@ static BOOL is_own_func_p (
     if (! ST_is_preemptible (st))
       return TRUE;
     else if (!Gen_PIC_Shared) {
-      return (ST_class (st) != SCLASS_EXTERN)
+      return (ST_sclass (st) != SCLASS_EXTERN)
 	&& ! ST_is_weak_symbol (st);
     }
   }
+  return FALSE;
 }
 
 /* ====================================================================
@@ -657,7 +658,7 @@ Exp_Ldst (
            (((ST_class(base_sym) == CLASS_BLOCK || 
 	      ST_class(base_sym) == CLASS_VAR) &&
 	     ST_gprel(base_sym))
-	    || is_own_func_p(base_sym))) {
+	    || (is_own_func_p(base_sym) && ! Is_Caller_Save_GP))) {
     // gp-relative reference
     PU_References_GP = TRUE;
     base_tn = GP_TN;
