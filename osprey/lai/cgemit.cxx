@@ -252,6 +252,10 @@ Get_Ism_Name (void)
   }
   s++;	/* skip : */
   p = strchr(s, ' ');
+  if (p == NULL) {
+    ism_name[0] = '\0';
+    return;
+  }
   strncpy (ism_name, s, p-s);
   ism_name[p-s] = '\0';
 
