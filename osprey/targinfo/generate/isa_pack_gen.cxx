@@ -259,7 +259,7 @@ const char* Print_Name(int print_index)
 }
 
 /////////////////////////////////////
-void ISA_Pack_Begin( const char* /* name */, int inst_bit_size )
+void ISA_Pack_Begin( const char* arcname/* name */, int inst_bit_size )
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////

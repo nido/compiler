@@ -121,6 +121,9 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "pure",	"pu",
     0, 0, 0,	&Pure_ABI,	NULL,
     "Generate pure ABI-compliant code" },
+  { OVK_INT32,	OV_INTERNAL,	FALSE, "fp_regs",	"fp_r",
+    32, 16, 32, &Target_FPRs,	NULL,
+    "Specify number of FP registers to use (16 or 32)" },
 
   /* Unimplemented options: */
   /* Obsolete options: */

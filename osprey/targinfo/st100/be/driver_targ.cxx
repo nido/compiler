@@ -61,7 +61,7 @@ Initialize_Targ_Info (void)
 
   switch (Target_ISA) {
   case TARGET_ISA_ST100:
-    isa = ISA_SUBSET_st100_gp32;
+    isa = ISA_SUBSET_gp32;
     break;
   default:
     FmtAssert(FALSE, ("targinfo doesn't handle isa: %s\n", Isa_Name(Target_ISA)));

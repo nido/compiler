@@ -162,7 +162,7 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_DOUBLE 	".double"
 #define AS_DWORD	".dword"
 #define AS_DWORD_UNALIGNED "data8.ua"
-#define AS_DYNSYM	NULL
+#define AS_DYNSYM	(char *)NULL
 #define AS_END		".leave"
 #define AS_ENT		".entry32"
 #define AS_AENT		"//.aproc"
@@ -202,8 +202,8 @@ extern char *AS_ADDRESS_UNALIGNED;
 #define AS_GPREL	"@gprel"
 #define AS_LTOFF	"@ltoff"
 #define AS_FPTR		"@fptr"
-#define AS_GP_REL	NULL
-#define AS_NEGATE	NULL
+#define AS_GP_REL	(char *)NULL
+#define AS_NEGATE	(char *)NULL
 
 /* A printf format for emitting a function of an external name, where
  * the function is typically given by one of the above kind symbols:

@@ -50,8 +50,8 @@
 #include "op.h"
 #include "targ_isa_lits.h"
 #include "targ_trap.h"
-#include "lai_flags.h"
-#include "expand.h"
+#include "cg_flags.h"
+#include "cgexp.h"
 
 
 #define RESET_COND_DEF_LAST(ops) Set_OP_cond_def_kind(OPS_last(ops),OP_ALWAYS_UNC_DEF)

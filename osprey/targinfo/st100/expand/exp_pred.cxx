@@ -42,7 +42,7 @@
 #include "topcode.h"
 #include "tn.h"
 #include "op.h"
-#include "expand.h"
+#include "cgexp.h"
 
 
 /* ====================================================================

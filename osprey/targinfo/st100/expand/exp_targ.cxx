@@ -70,9 +70,9 @@
 #include "cgir.h"
 #include "data_layout.h"
 #include "stblock.h"
-#include "lai_flags.h"
+#include "cg_flags.h"
 #include "cgtarget.h"
-#include "expand.h"
+#include "cgexp.h"
 #include "w2op.h"
 #include "label_util.h"
 #include "whirl2ops.h"
@@ -80,6 +80,8 @@
 #include "topcode.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
+
+BOOL Reuse_Temp_TNs = FALSE;
 
 /* Disable conversion of constant integer multiplies into shift/adds:*/
 static BOOL Disable_Const_Mult_Opt = FALSE;
@@ -469,8 +471,14 @@ Exp_Immediate (
       if (ISA_LC_Value_In_Class (val, LC_s16)) {
 	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, src, ops);
       }
+      else if (ISA_LC_Value_In_Class (val, LC_s32)) {
+	tmp = Gen_Literal_TN(val >> 16, TN_size(dest));
+	Build_OP (TOP_GP32_MAKEA_GT_AR_S16, dest, True_TN, tmp, ops);
+	tmp = Gen_Literal_TN((val & 0x000000000000ffff), TN_size(dest));
+	Build_OP (TOP_GP32_MOREA_GT_AR_U16, dest, True_TN, dest, tmp, ops);
+      }
       else {
-	FmtAssert(0, ("Exp_Immediate: immediate > 16"));
+	FmtAssert(0, ("Exp_Immediate: immediate > 32"));
       }
       break;
 

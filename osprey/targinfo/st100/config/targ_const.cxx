@@ -2099,7 +2099,7 @@ Targ_WhirlOp (
       break;
 
     default:
-      DevWarn ("Targ_WhirlOp can not handle %s", OPCODE_name(op));
+    //      DevWarn ("Targ_WhirlOp can not handle %s", OPCODE_name(op));
       FmtAssert ( folded, ("Targ_WhirlOp can not handle %s", OPCODE_name(op)) );
       *folded = FALSE;
       break;      

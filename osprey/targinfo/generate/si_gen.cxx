@@ -1271,6 +1271,10 @@ public:
   static void Create_Dummies( void );
   // Create schedling info for the "dummy" instructions.
 
+  static void Cleanup( void );
+  // Clean up some stuff for the use with next ISA subset
+
+
 private:
   static vector<char*> top_sched_info_ptr_map;  // The map itself.
   static vector<bool> top_sched_info_defined;   // Which elements defined
@@ -1341,6 +1345,15 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
   }
   fprintf(fd,"\n};\n");
   if (err) exit(EXIT_FAILURE);
+}
+
+void TOP_SCHED_INFO_MAP::Cleanup () 
+{
+  int i;
+
+  for (i = 0; i < TOP_count; ++i ) {
+    top_sched_info_defined[i] = false;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1452,4 +1465,7 @@ void Machine_Done( char* filename )
   //  Print_End_Boiler_Plate(fd);
 
   fclose(fd);
+
+  // Arthur: clean up some things for the next ISA subset
+  TOP_SCHED_INFO_MAP::Cleanup();
 }

@@ -44,9 +44,9 @@
 #include "topcode.h"
 #include "tn.h"
 #include "targ_isa_lits.h"
-#include "lai_flags.h"
+#include "cg_flags.h"
 #include "op.h"
-#include "expand.h"
+#include "cgexp.h"
 
 /* ====================================================================
  *   Initialize_Branch_Variants
@@ -93,21 +93,13 @@ Pick_Compare_TOP (
   // check for special cases of first or second arg being zero.
   if (*src2 != NULL && TN_is_zero(*src2)) {
     switch (*variant) {
-      case V_BR_U8LE:	
-      case V_BR_U4LE:	
-	*variant = V_BR_ALWAYS; break;
-      case V_BR_U8GT:
-      case V_BR_U4GT:
-	*variant = V_BR_NEVER; break;
-    }
-  }
-  if (*src1 != NULL && TN_is_zero_reg(*src1)) {
-    switch (*variant) {
       case V_BR_U8LT:	
+      case V_BR_U5LT:
       case V_BR_U4LT:	
 	*variant = V_BR_NEVER; break;
-      case V_BR_U8GE:
-      case V_BR_U4GE:
+      case V_BR_U8GT:
+      case V_BR_U5GT:
+      case V_BR_U4GT:
 	*variant = V_BR_ALWAYS; break;
     }
   }
@@ -339,8 +331,12 @@ Pick_Compare_TOP (
         return cmp_i;
     }
 
-    // could not use the immediate form 
-    *src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
+    // cmp of a value that does not fit in a register:
+    if (cmp != TOP_UNDEFINED) {
+      // could not use the immediate form 
+      *src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
+    }
+
   }
 
   return cmp;

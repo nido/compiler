@@ -29,8 +29,11 @@ main()
 	  predicate,	// a qualifying predicate 
 	  base,		// a base address (memory insts) 
 	  offset,	// an offset added to a base (imm) 
+	  postincr,	// a post increment applied to a base address 
 	  target,	// the target of a branch 
 	  storeval,	// value to be stored 
+	  opnd1,	// first/left operand of an alu operator 
+	  opnd2,	// second/right operand of an alu operator 
         implicit;     // implicitely used by instruction 
 
   ISA_Operands_Begin("st100"); 
@@ -161,10 +164,13 @@ main()
   /* Create the operand uses: */ 
 
   predicate  = Create_Operand_Use("predicate"); 
-  offset     = Create_Operand_Use("offset"); 
   base       = Create_Operand_Use("base"); 
+  offset     = Create_Operand_Use("offset"); 
+  postincr   = Create_Operand_Use("postincr"); 
   target     = Create_Operand_Use("target"); 
   storeval   = Create_Operand_Use("storeval"); 
+  opnd1      = Create_Operand_Use("opnd1"); 
+  opnd2      = Create_Operand_Use("opnd2"); 
   implicit   = Create_Operand_Use("implicit"); 
 
   /* ====================================== */ 
@@ -2465,7 +2471,9 @@ main()
 		 TOP_IFR_MINUH_GT_DR_DR_DR, 
 		 TOP_IFR_MINUW_GT_DR_DR_DR, 
 		 TOP_IFR_MINW_GT_DR_DR_DR, 
+		 TOP_IFR_MULE_GT_DR_DR_DR, 
 		 TOP_IFR_MULH_GT_DR_DR_DR, 
+		 TOP_IFR_MULUE_GT_DR_DR_DR, 
 		 TOP_IFR_MULUH_GT_DR_DR_DR, 
 		 TOP_IFR_MULUW_GT_DR_DR_DR, 
 		 TOP_IFR_MULW_GT_DR_DR_DR, 
