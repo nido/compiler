@@ -1363,8 +1363,12 @@ static BOOL
 Negate_Cmp_BB (OP *br)
 {
   DEF_KIND kind;
+  TN *btn = OP_opnd(br, 0);
+
+  if (TN_is_global_reg(btn))
+    return FALSE;
   
-  OP *cmp_op = TN_Reaching_Value_At_Op(OP_opnd(br, 0), br, &kind, TRUE);
+  OP *cmp_op = TN_Reaching_Value_At_Op(btn, br, &kind, TRUE);
   TOP new_cmp = CGTARG_Invert(OP_code(cmp_op));
   if (new_cmp == TOP_UNDEFINED)
     return FALSE;
@@ -1376,11 +1380,11 @@ Negate_Cmp_BB (OP *br)
 static BOOL
 Negate_Branch_BB (OP *br)
 {
-  TOP new_cmp = CGTARG_Invert(OP_code(br));
-  if (new_cmp == TOP_UNDEFINED)
+  TOP new_br = CGTARG_Invert(OP_code(br));
+  if (new_br == TOP_UNDEFINED)
     return FALSE;
 
-  OP_Change_Opcode(br, new_cmp);
+  OP_Change_Opcode(br, new_br);
   return TRUE;
 }
 
@@ -1546,8 +1550,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   OP *cmp_op1 = TN_Reaching_Value_At_Op(branch_tn1, br1_op, &kind, TRUE);
   OP *cmp_op2 = TN_Reaching_Value_At_Op(branch_tn2, br2_op, &kind, TRUE);
 
-  DevAssert(cmp_op1 && cmp_op2, ("undef op for branch"));
-
   BOOL  false_br = V_false_br(variant);
   TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
 
@@ -1563,21 +1565,21 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   OPS ops = OPS_EMPTY;
 
-  // we need a branch_tn that will be the result of the logical op
-  branch_tn1 = Build_TN_Like (OP_opnd(br1_op, 0));
-
   // Get the result of the comparaison for the logical operation.
-  TN *rtn1 = Expand_CMP_Reg (cmp_op1, &ops);
-  TN *rtn2 = Expand_CMP_Reg (cmp_op2, &ops);
+  branch_tn1 = Expand_CMP_Reg (branch_tn1, cmp_op1, &ops);
+  branch_tn2 = Expand_CMP_Reg (branch_tn2, cmp_op2, &ops);
+
+  // we need a branch_tn that will be the result of the logical op
+  TN *new_branch_tn = Build_TN_Like (OP_opnd(br1_op, 0));
 
   // !a op !a -> !(a !op b)
   AndNeeded = AndNeeded ^ false_br;
 
   // insert new logical op.
   if (AndNeeded)
-    Expand_Logical_And (branch_tn1, rtn1, rtn2, variant, &ops);
+    Expand_Logical_And (new_branch_tn, branch_tn1, branch_tn2, variant, &ops);
   else
-    Expand_Logical_Or (branch_tn1, rtn1, rtn2, variant, &ops);
+    Expand_Logical_Or (new_branch_tn, branch_tn1, branch_tn2, variant, &ops);
 
   // Stats
   logif_count++;
@@ -1589,7 +1591,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   } else {
     Set_V_true_br(variant);
   }
-  Expand_Branch (label_tn, branch_tn1, NULL, variant, &ops);
+  Expand_Branch (label_tn, new_branch_tn, NULL, variant, &ops);
 
   // Update ops
   BB_Append_Ops (bb1, &ops);
@@ -1911,6 +1913,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bbb = Is_Double_Logif(bb)) {
       if (Trace_Select_Gen) {
         fprintf (Select_TFile, "\nStart gen logical for BB%d \n", BB_id(bb));
+        Print_All_BBs();
       }
         
       Initialize_Hammock_Memory();

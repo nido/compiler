@@ -120,16 +120,22 @@ TOP TOP_Branch_To_Reg(TOP opr)
  * --------------------------------------------------------------------
  */
 TN *
-Expand_CMP_Reg (OP *cmp, OPS *ops)
+Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
 {
-  TN *tn = OP_result(cmp, 0);
-  
-  if (TN_register_class(tn) == ISA_REGISTER_CLASS_branch) {
-    TOP cmp_top = TOP_Branch_To_Reg (OP_code(cmp));
-    DevAssert(cmp_top, ("TOP_Branch_To_Reg\n"));
+  TN *tn;
+
+  if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-    Build_OP (cmp_top, tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
-    BB_Remove_Op(OP_bb(cmp), cmp);
+    if(TN_is_global_reg(btn)) {
+      Build_OP(TOP_mtb, btn, tn, ops);
+    }
+    else {
+      DevAssert(cmp, ("TOP_Branch_To_Reg\n"));
+      TOP cmp_top = TOP_Branch_To_Reg (OP_code(cmp));
+      DevAssert(cmp_top, ("TOP_Branch_To_Reg\n"));
+      Build_OP (cmp_top, tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
+      BB_Remove_Op(OP_bb(cmp), cmp);
+    }
   }
 
   return tn;
