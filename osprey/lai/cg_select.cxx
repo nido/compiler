@@ -685,42 +685,34 @@ Sort_Stores(void)
 // Test if a hammock is suitable for select conversion
 
 static BOOL
-Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
+Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
 {
-  BB *bb;
-  BBLIST *bblist;
-  BBLIST *bb1;
-  BBLIST *bb2;
+  BBLIST *bb1, *bb2;
 
-  FOR_ALL_BB_SUCCS(head, bblist) {
-    BB *bb = BBLIST_item(bblist);
-    if (bb == taken)
-      bb1 = bblist;
-    else
-      bb2 = bblist;
+  // Find block probs
+  bb1 = BBlist_Fall_Thru_Succ(head);
+  FOR_ALL_BB_SUCCS(head, bb2) {
+    if (bb1 != bb2)
+      break;
   }
-
-  INT exp_len = BB_length(head);
-
   float prob1 = BBLIST_prob(bb1);
   float prob2 = BBLIST_prob(bb2);
 
   CG_SCHED_EST *sehead = CG_SCHED_EST_Create(head, &MEM_Select_pool,
-                                             SCHED_EST_FOR_IF_CONV |
-                                             SCHED_EST_USE_DEP_GRAPH);
+                                             SCHED_EST_FOR_IF_CONV);
   CG_SCHED_EST *se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV |
-                                                SCHED_EST_USE_DEP_GRAPH);
+                                                SCHED_EST_FOR_IF_CONV);
   CG_SCHED_EST *se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV |
-                                                SCHED_EST_USE_DEP_GRAPH);
+                                                SCHED_EST_FOR_IF_CONV);
+
+  INT exp_len = BB_length(head);
+  BB *bb;
 
   FOR_ALL_BB_SET_members(region1, bb) {
     exp_len += BB_length(bb);
 
     CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
-                                                SCHED_EST_FOR_IF_CONV |
-                                                SCHED_EST_USE_DEP_GRAPH);
+                                                SCHED_EST_FOR_IF_CONV);
     CG_SCHED_EST_Append_Scheds(se1, tmp_est);
     CG_SCHED_EST_Delete(tmp_est);
   }
@@ -729,8 +721,7 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
     exp_len += BB_length(bb);
 
     CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
-                                                SCHED_EST_FOR_IF_CONV |
-                                                SCHED_EST_USE_DEP_GRAPH);
+                                                SCHED_EST_FOR_IF_CONV);
     CG_SCHED_EST_Append_Scheds(se2, tmp_est);
     CG_SCHED_EST_Delete(tmp_est);
   }
@@ -752,9 +743,9 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
     fprintf (Select_TFile, "\n");
   }
 
-  INT cyclesh = CG_SCHED_EST_Resource_Cycles(sehead);
-  INT cycles1 = CG_SCHED_EST_Resource_Cycles(se1);
-  INT cycles2 = CG_SCHED_EST_Resource_Cycles(se2);
+  INT cyclesh = CG_SCHED_EST_Cycles(sehead);
+  INT cycles1 = CG_SCHED_EST_Cycles(se1);
+  INT cycles2 = CG_SCHED_EST_Cycles(se2);
 
   // pondarate cost of each region taken separatly.
   float est_cost_bbs = (((float)(cycles1) * prob1) + ((float)(cycles2) * prob2) + (float)cyclesh);
@@ -765,21 +756,27 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   }
 
   // cost of if converted region. prob is one.
-  CG_SCHED_EST_Append_Scheds(sehead, se1);
-  CG_SCHED_EST_Append_Scheds(sehead, se2);
-
   // Resulting block will not have branches. 
+
   OP *op = BB_branch_op(head);
   DevAssert(op, ("Invalid conditional block"));
   CG_SCHED_EST_Ignore_Op(sehead, op);
+
   FOR_ALL_BB_SET_members(region1, bb)
     if (op = BB_branch_op(bb))
-      CG_SCHED_EST_Ignore_Op(sehead, op);
+      CG_SCHED_EST_Ignore_Op(se1, op);
   FOR_ALL_BB_SET_members(region2, bb)
     if (op = BB_branch_op(bb))
-      CG_SCHED_EST_Ignore_Op(sehead, op);
+      CG_SCHED_EST_Ignore_Op(se2, op);
+
+  CG_SCHED_EST_Append_Scheds(sehead, se1);
+  CG_SCHED_EST_Append_Scheds(sehead, se2);
 
   cyclesh = CG_SCHED_EST_Resource_Cycles(sehead);
+
+  CG_SCHED_EST_Delete(sehead);
+  CG_SCHED_EST_Delete(se1);
+  CG_SCHED_EST_Delete(se2);
 
   // higher select_factor means ifc more aggressive.
   INT select_factor = atoi(CG_select_factor);
@@ -891,7 +888,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
 
   if (Check_Suitable_Hammock (*tail, *target, *fall_thru, &t_set, &ft_set)) {
-    return Check_Profitable_Select(head, *target, t_set, ft_set);
+    return Check_Profitable_Select(head, t_set, ft_set);
   }
   else
     return FALSE;
