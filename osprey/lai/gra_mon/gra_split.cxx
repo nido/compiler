@@ -96,11 +96,11 @@ static char *rcs_id = "$Source$ $Revision$";
 #endif // USE_PCH
 #pragma hdrstop
 
-#include <math.h>
+#include "W_math.h"
 #if __GNUC__
 #include <float.h>
 #endif
-#include <limits.h>
+#include "W_limits.h"
 
 #include "defs.h"
 #include "errors.h"
