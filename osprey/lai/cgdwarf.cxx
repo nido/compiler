@@ -827,7 +827,6 @@ put_pc_value_symbolic (Dwarf_Unsigned pc_attr,
 			      &dw_error);
 }
 
-#if 0
 static void
 put_pc_value (Dwarf_Unsigned pc_attr, INT32 pc_value, Dwarf_P_Die die)
 {
@@ -839,7 +838,6 @@ put_pc_value (Dwarf_Unsigned pc_attr, INT32 pc_value, Dwarf_P_Die die)
       cur_text_index,
       &dw_error);
 }
-#endif
 
 static void
 put_lexical_block(DST_flag flag, DST_LEXICAL_BLOCK *attr, Dwarf_P_Die die)
@@ -916,10 +914,8 @@ put_concrete_subprogram (DST_INFO_IDX abstract_idx,
 			 INT32        high_pc,
 			 Dwarf_P_Die  die)
 {
-#if 0
    put_pc_value (DW_AT_low_pc, low_pc, die);
    put_pc_value (DW_AT_high_pc, high_pc, die);
-#endif
    put_reference( abstract_idx, DW_AT_abstract_origin, die);
 }
 
@@ -2202,7 +2198,6 @@ Cg_Dwarf_Add_Line_Entry (
 
   USRCPOS_srcpos(usrcpos) = srcpos;
 
-#if 0
   // only emit file changes when happen, so don't bloat objects
   // with unused header files.
   USRCPOS last_usrcpos;
@@ -2216,20 +2211,28 @@ Cg_Dwarf_Add_Line_Entry (
       include_idx = file_table[file_idx].incl_index;
       if ( ! incl_table[include_idx].already_processed) {
 	// new include
+#ifndef TARG_ST200
 	if (Object_Code) {
+#endif
 	  Em_Dwarf_Add_Include (include_idx, 
 				incl_table[include_idx].path_name);
+#ifndef TARG_ST200
 	}
+#endif
 	incl_table[include_idx].already_processed = TRUE;
       }
 
+#ifndef TARG_ST200
       if (Object_Code) {
+#endif
 	Em_Dwarf_Add_File (file_idx, 
 			   file_table[file_idx].filename,
 			   include_idx,
 			   file_table[file_idx].mod_time,
 			   file_table[file_idx].file_size);
+#ifndef TARG_ST200
       }
+#endif
       file_table[file_idx].already_processed = TRUE;
 #ifndef linux
       // for irix, only need .file when new file,
@@ -2254,13 +2257,14 @@ Cg_Dwarf_Add_Line_Entry (
     }
 #endif
   }
-#endif /* 0 */
 
 
   // now do line number:
-#if 0
+#ifndef TARG_ST200
   if (Object_Code) {
+#endif
     Em_Dwarf_Add_Line_Entry (code_address, srcpos);
+#ifndef TARG_ST200
   }
 #endif
 
@@ -2670,6 +2674,48 @@ Cg_Dwarf_Output_Asm_Bytes_Elf_Relocs (FILE          *asm_file,
   fflush(asm_file);
 }
 
+/* CLYON: this function is borrowed from libdwarf/dwarf_util.c
+   and copied here because it is not meant to be available
+   outside libdwarf */
+/*
+  A byte-swapping version of memcpy
+  for cross-endian use.
+  Only 2,4,8 should be lengths passed in.
+*/
+static void * Cg_Dwarf_memcpy_swap_bytes(void *s1, const void *s2,size_t len)
+{
+  void *orig_s1 = s1;
+  unsigned char *targ = (unsigned char *)s1;
+  unsigned char *src  = (unsigned char *)s2;
+
+  if(len == 4) {
+    targ[3] = src[0];
+    targ[2] = src[1];
+    targ[1] = src[2];
+    targ[0] = src[3];
+  } else if (len == 8) {
+    targ[7] = src[0];
+    targ[6] = src[1];
+    targ[5] = src[2];
+    targ[4] = src[3];
+    targ[3] = src[4];
+    targ[2] = src[5];
+    targ[1] = src[6];
+    targ[0] = src[7];
+  } else if(len == 2) {
+    targ[1] = src[0];
+    targ[0] = src[1];
+  }
+  /* should NOT get below here: is not the intended use */
+  else if(len == 1) {
+    targ[0] = src[0];
+  } else {
+    memcpy(s1,s2,len);
+  }
+
+  return orig_s1;
+}
+
 // Symbolic assembler output where the input
 // is symbolic relocations created by libdwarf
 // (as opposed to the elf binary relocations
@@ -2796,6 +2842,7 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       }
 
       Dwarf_Unsigned ofst;
+      Dwarf_Unsigned ofst_tmp;
       if (current_reloc_size == 8) {
 	// 64 bit target of relocation.
 	ofst = vsp.vsp_get_bytes(cur_byte,8);
@@ -2809,6 +2856,16 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	Fail_FmtAssertion("current_reloc_size %ld, 4 or 8 required!\n", 
 		(long)current_reloc_size);
       }
+     
+      /* Handle endianness issues */
+      if (Target_Byte_Sex != Host_Byte_Sex) {
+	ofst_tmp = 0;
+	Cg_Dwarf_memcpy_swap_bytes((char*)&ofst_tmp + sizeof(ofst) - current_reloc_size,
+				   (char*)&ofst + sizeof(ofst) - current_reloc_size,
+				   current_reloc_size);
+	ofst = ofst_tmp;
+      }
+
       if (ofst != 0) {
 	fprintf(asm_file, " + 0x%llx", (unsigned long long)ofst);
       }
