@@ -338,8 +338,7 @@ Expand_Divide_By_Constant (
 	 */
 
 	// extract the sign bit
-	Build_OP(TOP_and_i, t0, numer, Gen_Literal_TN(0x80000000, 4), ops);
-	Build_OP(TOP_shru_i, t0, t0, Gen_Literal_TN(31,4), ops);
+	Build_OP(TOP_shru_i,t0, numer, Gen_Literal_TN(31,4), ops);
 	// add sign to numer
 	Build_OP(TOP_add_r, t1, t0, numer, ops);
 	// shr by 1
@@ -360,7 +359,7 @@ Expand_Divide_By_Constant (
 
 	Build_OP(TOP_shr_i, t1, t0, Gen_Literal_TN(pow2, 4), ops);
 	Build_OP(TOP_shr_i, t3, numer, Gen_Literal_TN(pow2, 4), ops);
-	Build_OP(TOP_slct_r, p1, t2, t1, t3, ops);
+	Build_OP(TOP_slct_r, t2, p1, t1, t3, ops);
       }
       if (dvsr < 0) {
 	// must negate the result
