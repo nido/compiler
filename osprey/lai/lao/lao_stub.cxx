@@ -1166,7 +1166,10 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
     BB *bb = *bb_iter;
     if (BB_loophead(bb)) {
       LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
-      lao_makeLoopInfo(loop, pipeline);
+      if (loop == NULL)
+	FmtAssert(BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
+      else
+	lao_makeLoopInfo(loop, pipeline);
     }
   }
   //
