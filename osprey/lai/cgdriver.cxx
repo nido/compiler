@@ -95,6 +95,10 @@
 #include "register.h"
 #include "pqs_cg.h"
 
+#ifdef __CYGWIN__
+#include "W_errno.h"
+#endif
+
 extern void Set_File_In_Printsrc(char *); /* defined in printsrc.c */
 extern void Configure_CG_Target(void);    /* defined in cg_flags_arch.cxx */
 
@@ -771,10 +775,14 @@ OPTION_GROUP CG_Option_Groups[] = {
 };
 
 
-
-extern INT prefetch_ahead;
 INT _prefetch_ahead = 2;
+#ifndef _NO_WEAK_SUPPORT_
+extern INT prefetch_ahead;
 #pragma weak prefetch_ahead = _prefetch_ahead
+#else
+INT* prefetch_ahead_p = &_prefetch_ahead;
+#define prefetch_ahead (*prefetch_ahead_p)
+#endif
 
 /* =======================================================================
  *
@@ -1214,7 +1222,7 @@ Build_Option_String (INT argc, char **argv)
 		register INT len = strlen (argv[i]) + 1;
 		if (p != option_string)
 		    *p++ = ' ';
-		bcopy (argv[i], p, len);
+		BCOPY (argv[i], p, len);
 		p += len - 1;
 	    }
 	
@@ -1381,7 +1389,7 @@ CG_Process_Command_Line (
   char **be_argv
 )
 {
-  extern char *Whirl_Revision;
+  BE_EXPORTED extern char *Whirl_Revision;
 
   if (strcmp (Whirl_Revision, WHIRL_REVISION) != 0)
     FmtAssert (!DEBUG_Ir_Version_Check,
