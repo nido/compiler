@@ -2017,7 +2017,10 @@ Expand_Compare_And_Select (
   // On this target we only support integer:
   // dst = (cond1 cmp cond2) ? true_tn:false_tn
   FmtAssert(opposite_dest == NULL, ("Not Implemented"));
+
+  /* (cbr) can be
   FmtAssert(!is_float, ("Not Implemented"));
+  */
 
   TOP cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, FALSE, ops);
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
