@@ -178,8 +178,9 @@ Expand__st220pft(
  OPS* ops
 )
 {
+  TN *c0 = Gen_Literal_TN(0LL, 4) ;
   Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
-  Build_OP (	TOP_pft,	o0,	ops) ;
+  Build_OP (	TOP_pft,	c0,	o0,	ops) ;
 } /* Expand__st220pft */
 
 /*
@@ -199,8 +200,9 @@ Expand__st220prgadd(
  OPS* ops
 )
 {
+  TN *c0 = Gen_Literal_TN(0LL, 4) ;
   Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
-  Build_OP (	TOP_prgadd,	o0,	ops) ;
+  Build_OP (	TOP_prgadd,	c0, 	o0,	ops) ;
 } /* Expand__st220prgadd */
 
 /*
@@ -220,8 +222,9 @@ Expand__st220prgset(
  OPS* ops
 )
 {
+  TN *c0 = Gen_Literal_TN(0LL, 4) ;
   Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
-  Build_OP (	TOP_prgset,	o0,	ops) ;
+  Build_OP (	TOP_prgset,	c0,	o0,	ops) ;
 } /* Expand__st220prgset */
 
 /*

@@ -2801,9 +2801,34 @@ Exp_Intrinsic_Call (
   OPS *loop_ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+    TN *result = NULL ;
 
-  return NULL;
+    /*
+     * Currently treated as intrinsics calls:
+     *  - D-cache intrinsics management
+     * See WHIRL documentation for difference between ops and calls.
+     */
+
+    switch(id) {    
+    case INTRN_ST220PFT:
+    case INTRN_ST220PRGADD:
+    case INTRN_ST220PRGSET:
+	{
+	    /* For these, input is offset and base address, output is effective address used */
+	    TN *in[2] ;
+	    TN *out[1] ;
+	    in[0] = op0 ;
+	    in[1] = op1 ;
+	    result = out[0] = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	    /* We fall back to the usual intrinsic generation */
+	    Exp_Intrinsic_Op(id, 1, 2, out, in, ops) ;
+	    FmtAssert(result,("Exp_Intrinsic_Call : Invalid expansion."));
+	}
+	break;
+    default:
+	FmtAssert(FALSE,("Exp_Intrinsic_Call : Not Implemented."));
+    }
+  return result ;
 }
 
 /* ======================================================================
