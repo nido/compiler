@@ -431,7 +431,9 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_HOISTED   0x0020 /* Is there a WN map attatched to a hoisted OP */
 #define OP_MASK_END_GROUP 0x0040 /* Is OP end of an instruction group */
 
-#ifdef TARG_IA64
+#ifdef TARG_ST
+#define OP_MASK_SSA_MOVE  0x0080 /* Is OP a move result of SSA algorithm */
+#else
 /* Arthur: unused mask */
 #define OP_MASK_M_UNIT	  0x0080 /* Is OP assigned to M unit */
 #endif
@@ -466,7 +468,11 @@ enum OP_COND_DEF_KIND {
 # define Set_OP_end_group(o)	(OP_flags(o) |= OP_MASK_END_GROUP)
 # define Reset_OP_end_group(o)	(OP_flags(o) &= ~OP_MASK_END_GROUP)
 
-#ifdef TARG_IA64
+#ifdef TARG_ST
+# define OP_ssa_move(o)		(OP_flags(o) & OP_MASK_SSA_MOVE)
+# define Set_OP_ssa_move(o)	(OP_flags(o) |= OP_MASK_SSA_MOVE)
+# define Reset_OP_ssa_move(o)	(OP_flags(o) &= ~OP_MASK_SSA_MOVE)
+#else
 # define OP_m_unit(o)		(OP_flags(o) & OP_MASK_M_UNIT)
 # define Set_OP_m_unit(o)	(OP_flags(o) |= OP_MASK_M_UNIT)
 # define Reset_OP_m_unit(o)	(OP_flags(o) &= ~OP_MASK_M_UNIT)

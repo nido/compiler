@@ -628,6 +628,13 @@ SSA_Place_Phi_In_BB (
   //
   Set_PHI_Operands(phi_op);
 
+  /*
+  fprintf(TFile, "BB%d:\n", BB_id(OP_bb(phi_op)));
+  for (i = 0; i < num_opnds; i++) {
+    fprintf(TFile, "  pred[%d] = BB%d\n", i, BB_id(Get_PHI_Predecessor(phi_op,i)));
+  }
+  */
+
   return;
 }
 
@@ -1028,9 +1035,8 @@ SSA_Enter (
   ssa_init();
 
   //
-  // Corresponding Pop is done by SSA_Exit()
+  // Corresponding Pop is done by SSA_Remove_Phi_Nodes()
   //
-  //MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
   MEM_POOL_Push (&ssa_pool);
 
   //
@@ -1518,6 +1524,13 @@ merge_phiCongruenceClasses (
     }
 
     Set_phiCongruenceClass(tn,current);
+
+    fprintf(TFile, "setting class for ");
+    Print_TN(tn, FALSE);
+    fprintf(TFile, " to class: ");
+    GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
+    fprintf(TFile,"\n");
+
   }
 
   for (i = 0; i < OP_results(phi_op); i++) {
@@ -1530,6 +1543,21 @@ merge_phiCongruenceClasses (
     }
 
     Set_phiCongruenceClass(tn,current);
+
+    fprintf(TFile, "setting class for ");
+    Print_TN(tn, FALSE);
+    fprintf(TFile, " to class: ");
+    GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
+    fprintf(TFile,"\n");
+
+  }
+
+  if (Trace_SSA_Out) {
+    fprintf(TFile, "=== Merge_PhiCongruenceClasses ");
+    Print_OP(phi_op);
+    fprintf(TFile, "\n  Class: ");
+    GTN_TN_SET_Print(PHI_CONGRUENCE_CLASS_gtns(current), TFile);
+    fprintf(TFile,"\n");
   }
 
   return;
@@ -1581,7 +1609,7 @@ finalize_phiCongruenceClasses ()
  *   Return new TN.
  * ================================================================
  */
-static TN*
+static void
 insert_operand_copy (
   OP   *phi_op,
   INT8  opnd_idx,
@@ -1594,35 +1622,35 @@ insert_operand_copy (
   // replace old tn in the phi OP
   Set_OP_opnd(phi_op, opnd_idx, new_tn);
 
-  // new_tn is global (because PHI operandt and => live_out of
+  // new_tn is global (because PHI operand and => live_out of
   // some predecessor)
   GTN_UNIVERSE_Add_TN(new_tn);
 
   // update Liveness
-  GRA_LIVE_Add_Live_Out_GTN(in_bb, new_tn);
+  //GRA_LIVE_Add_Live_Out_GTN(in_bb, new_tn);
 
   // Remove tn from bb's LiveOut set if it is not LiveIn
   // or used in a PHI-node of any other bb's successor
-  BBLIST *succs;
-  FOR_ALL_BB_SUCCS(in_bb, succs) {
-    BB *succ = BBLIST_item(succs);
-
-    if (succ == OP_bb(phi_op)) continue;
-
-    if (GTN_SET_MemberP(BB_live_in(succ), tn)) goto liveout;
-
-    INT i;
-    OP *op;
-    FOR_ALL_BB_PHI_OPs(succ,op) {
-      for (i = 0; i < OP_opnds(op); i++) {
-	if (OP_opnd(op,i) == tn && Get_PHI_Predecessor(op,i) == in_bb)
-	  goto liveout;
-      }
-    }
-  }
+  //BBLIST *succs;
+  //FOR_ALL_BB_SUCCS(in_bb, succs) {
+  //  BB *succ = BBLIST_item(succs);
+  //
+  //  if (succ == OP_bb(phi_op)) continue;
+  //
+  //  if (GTN_SET_MemberP(BB_live_in(succ), tn)) goto liveout;
+  //
+  //  INT i;
+  //  OP *op;
+  //  FOR_ALL_BB_PHI_OPs(succ,op) {
+  //    for (i = 0; i < OP_opnds(op); i++) {
+  //	if (OP_opnd(op,i) == tn && Get_PHI_Predecessor(op,i) == in_bb)
+  //	  goto liveout;
+  //    }
+  //  }
+  //}
 
   // not liveout, we should update the LiveOut set
-  GRA_LIVE_Remove_Live_Out_GTN(in_bb, tn);
+  //GRA_LIVE_Remove_Live_Out_GTN(in_bb, tn);
 
   // 'tn' may no longer be global TN
 
@@ -1631,17 +1659,30 @@ insert_operand_copy (
   // Let it remain for now and just reset is_global_reg 
   // attribute.
   if (!GTN_SET_MemberP(BB_live_in(Get_PHI_Predecessor(phi_op,opnd_idx)),
-		       tn))
+  	       tn))
     Reset_TN_is_global_reg(tn);
 
- liveout:
+  // liveout:
 
   // Finally, append the copy op
   OPS ops = OPS_EMPTY;
   Exp_COPY(new_tn, tn, &ops);
-  BB_Append_Ops(in_bb, &ops);
+  Set_OP_ssa_move(OPS_last(&ops));
 
-  return new_tn;
+  // Insert before the BB's last OP
+  FmtAssert(!BB_call(in_bb),("SSA predecessor is a call BB"));
+  OP *br = BB_branch_op(in_bb);
+
+  if (br != NULL) {
+    BB_Insert_Ops_Before(in_bb, br, &ops);
+  }
+  else {
+    BB_Append_Ops(in_bb, &ops);
+  }
+
+  //BB_Append_Ops(in_bb, &ops);
+
+  return;
 }
 
 /* ================================================================
@@ -1653,7 +1694,7 @@ insert_operand_copy (
  *   Return new TN.
  * ================================================================
  */
-static TN*
+static void
 insert_result_copy (
   OP   *phi_op,
   INT8  res_idx,
@@ -1670,8 +1711,8 @@ insert_result_copy (
   GTN_UNIVERSE_Add_TN(new_tn);
 
   // update Liveness
-  GRA_LIVE_Remove_Live_In_GTN(in_bb, tn);
-  GRA_LIVE_Add_Live_In_GTN(in_bb, new_tn);
+  //GRA_LIVE_Remove_Live_In_GTN(in_bb, tn);
+  //GRA_LIVE_Add_Live_In_GTN(in_bb, new_tn);
 
   // 'tn' may no longer be global
 
@@ -1688,13 +1729,14 @@ insert_result_copy (
   // Finally, insert a copy
   OPS ops = OPS_EMPTY;
   Exp_COPY(tn, new_tn, &ops);
+  Set_OP_ssa_move(OPS_last(&ops));
 
   // find first OP after the PHI-nodes
   OP *point = NULL;
   FOR_ALL_BB_PHI_OPs(in_bb,point);
   BB_Insert_Ops_Before(in_bb, point, &ops);
 
-  return new_tn;
+  return;
 }
 
 /* ================================================================
@@ -1710,16 +1752,14 @@ insert_copies_blindly ()
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_PHI_OPs(bb, op) {
-
       // insert copies for operands
       for (i = 0; i < OP_opnds(op); i++) {
-	TN *new_tn = insert_operand_copy(op, i,
-					 Get_PHI_Predecessor(op,i));
+	insert_operand_copy(op, i, Get_PHI_Predecessor(op,i));
       }
 
       // insert copies for results
       for (i = 0; i < OP_results(op); i++) {
-	TN *new_tn = insert_result_copy(op, i, bb);
+	insert_result_copy(op, i, bb);
       }
 
       // Merge phiCongruenceClass's for all PHI-node resources
@@ -1794,16 +1834,9 @@ map_phi_resources_to_new_names()
 
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
-
-	  Print_TN(tn, FALSE);
-
 	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
 	    if (TN_new_name(tn) == NULL) {
 	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
-
-	      fprintf(TFile, " new name ");
-	      Print_TN(new_tn, FALSE);
-
 	      Set_TN_new_name(tn, new_tn);
 
 	      if (Trace_SSA_Out) {
@@ -1893,6 +1926,11 @@ SSA_Make_Consistent (
   IGRAPH_Clean(); // do I need to clean anything ??
 
   MEM_POOL_Pop(&MEM_local_pool);
+
+  // Because, the above adds new TNs, we are not entirely able to
+  // maintain the live-in out information incrementally.
+  // Just recompute it here.
+  GRA_LIVE_Recalc_Liveness(rid);
 
   return;
 }
