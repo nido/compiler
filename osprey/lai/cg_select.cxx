@@ -128,6 +128,7 @@ INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.2";
 static float select_factor;
 static int branch_penalty;
+static float cond_store_penalty = 1;
 
 /* ================================================================
  *
@@ -878,6 +879,10 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   if (se2)
     CG_SCHED_EST_Delete(se2);
 
+  // Stores will be merged together.
+  int sdiff = MIN (store_i.ntkstrs.size(), store_i.tkstrs.size());
+  cyclesh -= sdiff * cond_store_penalty;  
+
   // cost of if converted region. prob is one. 
   float est_cost_after = cyclesh / select_factor;
 
@@ -1498,7 +1503,7 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
       if ((op1 == NULL || op2 == NULL) ||
           (op1 && op2 && opnd_idx == OP_find_opnd_use(op1, OU_storeval)))
         Copy_WN_For_Memory_OP(OPS_last(&ops), op1 == NULL ? op2 : op1);
-
+      
       /* in case there is no pair of stores just insert it
          respecting the original order of instructions.
          else, possible read write dependencies have been checked. Insert the
@@ -1509,7 +1514,7 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
         BB_Insert_Ops_Before (bb, op2, &ops);
       else {
         BB_Update_OP_Order(bb);
-        
+
         if (OP_Precedes (op2, op1)) {
           OP *temp_op;
           temp_op = op1;
@@ -1852,6 +1857,15 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     BB_Recomp_Phis(bb, bb1, bb2, bb == joint_block);
     BB_Update_Phis(bb);
   }
+
+  // recompute
+  GRA_LIVE_Compute_Liveness_For_BB(bb1);
+  GRA_LIVE_Compute_Liveness_For_BB(else_block);
+  GRA_LIVE_Compute_Liveness_For_BB(joint_block);
+
+  // Promoted instructions might not be global anymore.
+  //  GRA_LIVE_Rename_TNs_For_BB(bb1);
+  BB_Localize_Tns (bb1);
 }
 
 /* ================================================================
@@ -1872,11 +1886,9 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
     Print_BB (head);
     fprintf (TFile, "\n fall_thrus are\n");
-    Print_BB (fall_thru_bb);
     BB_SET_Print (ft_set, Select_TFile);
     
     fprintf (TFile, "\n targets are\n");
-    Print_BB (target_bb);
     BB_SET_Print (t_set, Select_TFile);
 
     fprintf (TFile, "\n tail is\n");
@@ -2077,9 +2089,14 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     Promote_BB_Chain (head, fall_thru_bb, tail);
   }
 
-  // to avoid extending condition's lifetime, we keep the comp instruction
-  // at the end, just before the selects.
-  //  BB_Move_Op_To_End(head, head, cmp);
+  // GRA_LIVE_Compute_Liveness_For_BB(head);
+
+  // Promoted instructions might not be global anymore.
+  //  BB_Localize_Tns (head);
+
+   // to avoid extending condition's lifetime, we keep the comp instruction
+   // at the end, just before the selects.
+   //  BB_Move_Op_To_End(head, head, cmp);
 
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects in BB%d", BB_id(head));
@@ -2114,10 +2131,6 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
    // Maintain SSA.
    BB_Update_Phis(tail);
-
-   // Promoted instructions might not be global anymore.
-   GRA_LIVE_Compute_Liveness_For_BB(head);
-   BB_Localize_Tns (head);
 
    if (Trace_Select_Gen) {
      fprintf (TFile, "\nEnd Select_Fold from BB%d\n", BB_id(head));
@@ -2170,9 +2183,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Simplify_Logifs(bb, bbb);
 
-      GRA_LIVE_Compute_Liveness_For_BB(bb);
-      BB_Localize_Tns(bb);
-
 #ifdef Is_True_On
       Sanity_Check();
 #endif
@@ -2204,6 +2214,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Finalize_Hammock_Memory();
   
+      GRA_LIVE_Recalc_Liveness(rid);
+      //      GRA_LIVE_Rename_TNs();
+      BB_Localize_Tns (bb);
+
       // if bb is still a logif, that means that there was a merge.
       // need to update logif map
       if (BB_kind (bb) == BBKIND_LOGIF) {
@@ -2221,7 +2235,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   BB_MAP_Delete(if_bb_map);
 
-  // needed for out of ssa
   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
