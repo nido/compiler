@@ -1201,9 +1201,10 @@ CGIR_OP_print ( const OP *op )
 {
   int i;
   //
-  if (OP_has_tag(op)) {
+  //
+  {
     LABEL_IDX tag = Get_OP_Tag(op);
-    fprintf (TFile, "<tag %s>: ", LABEL_name(tag));
+    if(tag) fprintf (TFile, "<tag %s>: ", LABEL_name(tag));
   }
   //
   fprintf(TFile, "%s", TOP_Name(OP_code(op)));
