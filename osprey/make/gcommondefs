@@ -578,8 +578,9 @@ LDOPTS_64_M4 =$(VLDOPTS) $(LLDOPTS) $(LLDOPTS_64_M4) $(GLDOPTS_64_M4)
 LD_NO_UNRESOLVED=-no_unresolved
 
 # Note: To turn off -quickstart_info for specific Makefile add:
-#               LD_QUICKSTART_INFO=
-LD_QUICKSTART_INFO=-quickstart_info
+# (cbr) turn off
+LD_QUICKSTART_INFO=
+# LD_QUICKSTART_INFO=-quickstart_info
 
 ifeq ($(BUILD_OS), IRIX)
 DSONAMEOPT  = -soname $@
