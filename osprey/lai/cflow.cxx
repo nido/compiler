@@ -2670,8 +2670,8 @@ Convert_Goto_To_Return ( BB *bp )
    */
   if ( BBINFO_kind(targ) != BBKIND_RETURN || offset < 0 ) return FALSE;
 
-  Is_True((offset % INST_BYTES) == 0,
-	  ("instruction offset not a multiple of %d", INST_BYTES));
+  Is_True((offset % ISA_INST_BYTES) == 0,
+	  ("instruction offset not a multiple of %d", ISA_INST_BYTES));
 
   /* Find the target and instruction and give up if it's not the return
    * Note that an exit block in a region, might not have the exit code
@@ -2679,7 +2679,7 @@ Convert_Goto_To_Return ( BB *bp )
    */
   for (rtn_op = BB_first_op(targ);
        ;
-       rtn_op = OP_next(rtn_op), offset -= INST_BYTES)
+       rtn_op = OP_next(rtn_op), offset -= ISA_INST_BYTES)
   {
     if ( rtn_op == NULL ) return FALSE;
     if ( offset == 0 ) break;
