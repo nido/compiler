@@ -278,6 +278,11 @@ Can_Merge_BB (BB *bb_first, BB *bb_second)
       BB_Has_Outer_Block_Label(bb_second))
     return FALSE;
 
+  /* Reject if merged BB will be too large.
+   */
+  if (BB_length(bb_first) + BB_length(bb_second) >= CG_split_BB_length)
+    return FALSE;
+
   return TRUE;
 }
 
@@ -543,7 +548,6 @@ BB_Check_Memops(void)
   op_list::iterator i1_iter = store_i.first.begin();
   op_list::iterator i1_end  = store_i.first.end();
   op_list::iterator i2_iter = store_i.second.begin();
-  op_list::iterator i2_end  = store_i.second.end();
   UINT c = 0;
 
   while(i1_iter != i1_end) {
@@ -553,7 +557,7 @@ BB_Check_Memops(void)
       // *i1_iter didn't match. failed
       if (c++ == store_i.second.size())
         return FALSE;
-      store_i.second.push_front(old_op);
+      store_i.second.insert(store_i.second.end(), old_op);
     }
     else {
       ++count;
@@ -1130,8 +1134,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     select_count++;
 
     if (BB_preds_len(tail) > 2) {
-      // replace old tn in the phi OP      
-      // New tn is last in phi.
       TN *result[1];
       UINT8 j = 0;
       UINT8 nopnds = OP_opnds(phi)-1;
@@ -1168,22 +1170,22 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   
   // It's time to remove the useless conditional branch.
   // before the following blocks are promoted.
-  BB_Remove_Op(head, br_op);
-
-  br_op = NULL;
+  BB_Remove_Branch(head);
 
   // promote the instructions from the sides bblocks.
   // Promote_BB will remove the old empty bblock
   // BB containing a goto should be last.
   // keep the goto for later.
+  OP *br_op1, *br_op2;
   if (target_bb != tail) {
-    br_op = BB_Remove_Branch(target_bb);
+    br_op1 = BB_Remove_Branch(target_bb);
     Promote_BB(target_bb, head);
   }
   if (fall_thru_bb != tail) {
-    br_op = BB_Remove_Branch(fall_thru_bb);
+    br_op2 = BB_Remove_Branch(fall_thru_bb);
     Promote_BB(fall_thru_bb, head);
   }
+  br_op = br_op2 ? br_op2 : br_op1;
 
   // Promoted instructions might not be global anymore.
   BB_Localize_Tns (head);
@@ -1209,18 +1211,30 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Fix_Spec_Loads (head);
   BB_Fix_Spec_Stores (head, cond_tn, variant);
 
-  // create a new edge.
-  if (edge_needed)
-    Link_Pred_Succ_with_Prob(head, tail, 1.0);
-  else
-    Change_Succ_Prob (head, tail, 1.0);
-
-  // finally, if we had a branch, put it back.
-  if (br_op) {
-    BB *fall_thru = BB_Fall_Thru_Successor(head);
-    if (fall_thru != tail) {
-      BB_Append_Op (head, br_op);
+  // create or update the new head->tail edge.
+  if (edge_needed) {
+    if (tail == BB_next(head))
+      Target_Simple_Fall_Through_BB(head, tail);
+    else
+      Add_Goto (head, tail);
+  }
+  else {
+    if (tail == target_bb && tail != BB_Fall_Thru_Successor(head)) {
+      INT opnd;
+      INT opnd_count;
+      CGTARG_Branch_Info(br_op, &opnd, &opnd_count);
+      if (opnd_count > 0) {
+        TN *br_targ = OP_opnd(br_op, opnd);
+        Is_True(opnd_count == 1, ("Branch with multiple bbs"));
+        LABEL_IDX label = Gen_Label_For_BB(tail);
+        Set_OP_opnd(br_op, opnd, Gen_Label_TN(label,0));
+        BB_Append_Op(head, br_op);
+      }
+      else {
+        DevAssert (FALSE, (""));
+      }
     }
+    Change_Succ_Prob (head, tail, 1.0);
   }
 
   // Simplify CFG and maintain SSA information.
