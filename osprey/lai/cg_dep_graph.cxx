@@ -2072,7 +2072,11 @@ static BOOL verify_mem(BOOL              result,
   return result;
 }
 
+#ifdef TARG_ST
+static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg)
+#else
 static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
+#endif
 /* -----------------------------------------------------------------------
  * Check whether <succ_op> can access the same location as <pred_op>
  * after <pred_op> is issued.  If <omega> is NULL, ignore loop-carried
@@ -2087,7 +2091,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 {
   WN *pred_wn, *succ_wn;
   UINT8 pred_unrollings = 0, succ_unrollings = 0;
+#ifndef TARG_ST
   BOOL lex_neg = !OP_Precedes(pred_op, succ_op);
+#endif
   SAME_ADDR_RESULT cg_result = DONT_KNOW;
   char *info_src = "";
   UINT8 min_omega = 0;
@@ -3249,7 +3255,12 @@ void add_mem_arcs_from(UINT16 op_idx)
     fprintf(TFile," ... kind = %s, latency = %d\n", DEP_INFO_name(kind), latency);
 #endif
 
-    if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL)) {
+#ifdef TARG_ST
+    if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL, op_idx >= succ_idx))
+#else
+    if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL))
+#endif
+      {
 
       // For OOO machine (eg. T5), non-definite memory dependences can be 
       // relaxed to edges with zero latency. The belief is that this can 
@@ -4857,7 +4868,12 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 
 	if (kind == CG_DEP_MEMREAD && !include_memread_arcs) continue;
 
-	if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL)) {
+#ifdef TARG_ST
+	if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL, op_idx >= succ_idx))
+#else
+	if (get_mem_dep(op, succ, &definite, cyclic ? &omega : NULL))
+#endif
+	  {
 
 	  // For OOO machine (eg. T5), non-definite memory dependences can be 
 	  // relaxed to edges with zero latency. The belief is that this can 
