@@ -440,7 +440,7 @@ CGIR_BB_identity(CGIR_BB cgir_bb) {
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled) {
+CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled, unsigned optimizations) {
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
@@ -481,12 +481,17 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   else
     Set_BB_unrollings(new_bb, BB_unrollings(new_bb)*unrolled);
   //
+  // Set flags.
+  if (optimizations & Optimization_Prepass) Set_BB_scheduled(new_bb);
+  if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
+  if (optimizations & Optimization_Postpass) Set_BB_scheduled(new_bb);
+  //
   return new_bb;
 }
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled) {
+CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled, unsigned optimizations) {
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
     CGIR_LAB cgir_lab = labels[i];
@@ -520,6 +525,10 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   else
     Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
   Set_BB_unrollings(cgir_bb, unrolled);
+  // Set flags.
+  if (optimizations & Optimization_Prepass) Set_BB_scheduled(cgir_bb);
+  if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
+  if (optimizations & Optimization_Postpass) Set_BB_scheduled(cgir_bb);
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -1189,20 +1198,17 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
 //cerr << "lao_optimize_LOOP(" << BB_id(head_bb) << ", " << lao_optimizations << ")\n";
   //
   // Compute the pipeline value.
-  bool prepass = (lao_optimizations & Optimization_Prepass) != 0;
   BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
-  int pipeline = 1 + 2*(tail_bb != NULL)*prepass;
-  if (pipeline > CG_LAO_pipeline) pipeline = CG_LAO_pipeline;
+  bool prepass = (lao_optimizations & Optimization_Prepass) != 0;
+  int pipeline = (tail_bb != NULL)*prepass*CG_LAO_pipeline;
   //
-  // Adjust control-flow if required.
-  if (pipeline > 1) {
+  // Adjust the control-flow if required.
+  if (pipeline > 0) {
     // Software pipelining (implies prepass scheduling).
     //BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
     //GRA_LIVE_Compute_Liveness_For_BB(prolog_bb);
-  } else if (pipeline > 0) {
-    // Loop scheduling (prepass or postpass scheduling).
   } else {
-    // Acyclic scheduling (prepass or postpass scheduling).
+    // Non software pipelining (prepass or postpass scheduling).
   }
   //
   // List the body BBs.
@@ -1276,7 +1282,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&lao_loop_pool);
   //
   // Software pipeline the innermost loops.
-  if (lao_optimizations & Optimization_Prepass && CG_LAO_pipeline > 1) {
+  if (lao_optimizations & Optimization_Prepass && CG_LAO_pipeline > 0) {
     while (loop != NULL && BB_innermost(LOOP_DESCR_loophead(loop))) {
       result != lao_optimize_LOOP(loop, lao_optimizations);
       loop = LOOP_DESCR_next(loop);
@@ -1308,8 +1314,8 @@ lao_optimize_PU(unsigned lao_optimizations) {
     }
   }
   //
-  // Call the lower level lao_optimize function with pipeline at 0 or 1.
-  result |= lao_optimize(entryBBs, bodyBBs, exitBBs, CG_LAO_pipeline > 0, lao_optimizations);
+  // Call the lower level lao_optimize function with pipeline=0.
+  result |= lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
   //
   Free_Dominators_Memory();
   MEM_POOL_Pop(&lao_loop_pool);
