@@ -62,7 +62,7 @@ static const char source_file[] = __FILE__;
 
 void MHD::Initialize()
 {
-  if (Target == TARGET_st220) {
+  if ((Target == TARGET_st220) || (Target == TARGET_st221)) {
 
     //    Non_Blocking_Loads      = FALSE;
     //    Loop_Overhead_Base      = 6;
