@@ -182,7 +182,11 @@ Add_Scheduling_Note (BB *bb, void *bbsch)
   }
 
   // this should really be got from BBSCH data structure
+#ifdef TARG_ST
+  info->schedule_length = OP_scycle(BB_last_op(bb)) - OP_scycle(BB_first_op(bb)) + 1;
+#else
   info->schedule_length = OP_scycle(BB_last_op(bb))+1;
+#endif
   info->block_parallelism = (bbsch != NULL) ? 
 		BBSCH_block_parallelism ((BBSCH*)bbsch) : 0;
 
@@ -1423,6 +1427,26 @@ Make_Bundles (
   INT *pc;
 #endif
 
+  // If superblock mode is enabled, check if we are starting a new
+  // superblock or not.
+
+#ifdef SUPERBLOCK_SCHED
+  BOOL superblock_entry = TRUE;
+  if ((CG_LAO_Region_Map != NULL) &&
+      (BB_Fall_Thru_Predecessor(bb) != NULL) &&
+      (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0) &&
+      (BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, BB_Fall_Thru_Predecessor(bb))))
+    superblock_entry = FALSE;
+
+  // pending_latency will be inherited from previous basic block in
+  // same superblock.
+  static INT pending_latency = 0;
+
+  if (superblock_entry)
+    pending_latency = 0;
+  // else, inherit it from previous basic block.
+#endif
+
   if (BB_length(bb) == 0) return;
 
   MEM_POOL_Push(&MEM_local_pool);
@@ -1458,25 +1482,19 @@ Make_Bundles (
   //
   Clock = 0;
 
-  // This helps handling latencies that may still be pending 
-  // when all OPs are processed
-#ifdef TARG_ST200
-  static INT pending_latency = 0;
 #ifdef SUPERBLOCK_SCHED
-  if ((CG_LAO_Region_Map != NULL) &&
-      (BB_Fall_Thru_Predecessor(bb) != NULL) &&
-      (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0) &&
-      (BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, BB_Fall_Thru_Predecessor(bb)))) {
+  if (!superblock_entry) {
     // FdF: We are on a non-entry basic block of a super block.
     // Clock is set to the scheduling date of the first operation
     // pending_latency is inherited from the fall-thru predecessor.
     if (OP_scycle(op) > 0)
       Clock = OP_scycle(op);
+
   }
-  else
-#endif
-  pending_latency = 0;
+  Is_True (pending_latency < Clock + 4, ("BB: %d, incorrect pending_latency %d at clock %d\n", BB_id(bb), pending_latency, Clock));
 #else
+  // This helps handling latencies that may still be pending 
+  // when all OPs are processed
   INT pending_latency = 0;
 #endif
 
@@ -1553,7 +1571,6 @@ Make_Bundles (
 
       // FdF: Use scheduling date to fill bundles if superblock
       // scheduling is enabled and done.
-#ifdef TARG_ST200
 #ifdef SUPERBLOCK_SCHED
       if (BB_scheduled(bb) && CG_LAO_Region_Map) {
 	Is_True((estart <= OP_scycle(op)) || (OP_scycle(op) == -1),
@@ -1562,7 +1579,6 @@ Make_Bundles (
 	if (OP_scycle(op) != -1)
 	  estart = OP_scycle(op);
       }
-#endif
 #endif
 
       if (Trace_HB) {
@@ -1865,7 +1881,12 @@ Handle_All_Hazards (BB *bb)
   OP *op;
   OP *last_op = BB_last_op(bb);
 
+  // FdF: In superblock mode, we must call Make_Bundle with empty BBs,
+  // since it checks for the frontier between superblocks.
+
+#ifndef SUPERBLOCK_SCHED
   if (last_op == NULL) return;
+#endif
 
   if (Trace_HB) {
     fprintf(TFile, "<hazard> Handle All Hazards BB%d:\n", BB_id(bb));
