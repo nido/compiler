@@ -1147,8 +1147,7 @@ Expand__st200pswclr(
 )
 {
   if (Is_Target_st230() || Is_Target_st231()) { 
-      //Build_OP (	TOP_pswclr_r,	i0,	ops) ;
-      Build_OP (	TOP_break,  ops) ;
+      Build_OP (	TOP_pswclr_r,	i0,	ops) ;
   } else {
       // Unsupported on st220
       Build_OP (	TOP_break,  ops) ;
@@ -1162,8 +1161,7 @@ Expand__st200pswset(
 )
 {
   if (Is_Target_st230() || Is_Target_st231()) { 
-      //Build_OP (	TOP_pswset_r,	i0,	ops) ;
-      Build_OP (	TOP_break,  ops) ;
+      Build_OP (	TOP_pswset_r,	i0,	ops) ;
   } else {
       // Unsupported on st220
       Build_OP (	TOP_break,  ops) ;
