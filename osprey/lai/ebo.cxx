@@ -432,7 +432,7 @@ BOOL EBO_Fix_Select_Same_Args (OP *op,
   tn1 = opnd_tn[1];
   tn2 = opnd_tn[2];
 
-  if (tn_registers_identical(tn1, tn2)) {
+  if (tn_registers_identical(tn1, tn2) || (TN_is_zero(tn1) && TN_is_zero(tn2))) {
     /* We can optimize this! But return the ACTUAL operand. */
     OPS ops = OPS_EMPTY;
     Exp_COPY(res, OP_opnd(op, 1), &ops);
@@ -4938,14 +4938,6 @@ Find_BB_TNs (BB *bb)
 
       actual_tn = OP_opnd(op, opndnum);
       actual_tninfo = NULL;
-
-#ifdef TARG_ST
-      // FdF 10/05/2004: Normalize for better checks
-      // (tn_registers_identical for example).
-      if (TN_is_zero(actual_tn)) {
-	actual_tn = Zero_TN;
-      }
-#endif
 
       opnd_tn[opndnum] = actual_tn;
       opnd_tninfo[opndnum] = actual_tninfo;
