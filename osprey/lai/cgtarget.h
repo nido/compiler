@@ -806,7 +806,7 @@ extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency)
 #else
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op);
 #endif
-extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UINT8 opnd, INT *latency);
+extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UINT8 opnd, INT16 *latency);
 
 #ifdef TARG_ST
 // Arthur: this function is only used in cg_loop_mii.cxx, and

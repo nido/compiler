@@ -1241,7 +1241,7 @@ CGTARG_Adjust_Latency (
   OP *succ_op, 
   CG_DEP_KIND kind, 
   UINT8 opnd, 
-  INT *latency
+  INT16 *latency
 )
 {
   const TOP pred_code = OP_code(pred_op);
