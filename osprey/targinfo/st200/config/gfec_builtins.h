@@ -92,14 +92,18 @@
     case BUILT_IN_LZCNTW:
     case BUILT_IN_MADDS:
     case BUILT_IN_MAFCW:
+    case BUILT_IN_MAXD:
     case BUILT_IN_MAXH:
     case BUILT_IN_MAXL:
+    case BUILT_IN_MAXS:
     case BUILT_IN_MAXUH:
     case BUILT_IN_MAXUL:
     case BUILT_IN_MAXUW:
     case BUILT_IN_MAXW:
+    case BUILT_IN_MIND:
     case BUILT_IN_MINH:
     case BUILT_IN_MINL:
+    case BUILT_IN_MINS:
     case BUILT_IN_MINUH:
     case BUILT_IN_MINUL:
     case BUILT_IN_MINUW:

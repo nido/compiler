@@ -547,6 +547,12 @@ builtin_function ("__mafcw",
                      tree_cons(NULL_TREE, short_integer_type_node, endlink)))),
                    BUILT_IN_MAFCW, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__maxd",
+                   build_function_type( double_type_node, 
+                     tree_cons(NULL_TREE, double_type_node,
+                     tree_cons(NULL_TREE, double_type_node, endlink))),
+                   BUILT_IN_MAXD, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__maxh",
                    build_function_type( short_integer_type_node, 
                      tree_cons(NULL_TREE, short_integer_type_node,
@@ -558,6 +564,12 @@ builtin_function ("__maxl",
                      tree_cons(NULL_TREE, long_long_integer_type_node,
                      tree_cons(NULL_TREE, long_long_integer_type_node, endlink))),
                    BUILT_IN_MAXL, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__maxs",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node, endlink))),
+                   BUILT_IN_MAXS, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__maxuh",
                    build_function_type( short_unsigned_type_node, 
@@ -583,6 +595,12 @@ builtin_function ("__maxw",
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_MAXW, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__mind",
+                   build_function_type( double_type_node, 
+                     tree_cons(NULL_TREE, double_type_node,
+                     tree_cons(NULL_TREE, double_type_node, endlink))),
+                   BUILT_IN_MIND, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__minh",
                    build_function_type( short_integer_type_node, 
                      tree_cons(NULL_TREE, short_integer_type_node,
@@ -594,6 +612,12 @@ builtin_function ("__minl",
                      tree_cons(NULL_TREE, long_long_integer_type_node,
                      tree_cons(NULL_TREE, long_long_integer_type_node, endlink))),
                    BUILT_IN_MINL, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__mins",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node, endlink))),
+                   BUILT_IN_MINS, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__minuh",
                    build_function_type( short_unsigned_type_node, 

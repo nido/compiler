@@ -371,12 +371,20 @@
       iopc = INTRN_MAFCW ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_MAXD:
+      iopc = INTRN_MAXD ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_MAXH:
       iopc = INTRN_MAXH ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_MAXL:
       iopc = INTRN_MAXL ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_MAXS:
+      iopc = INTRN_MAXS ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_MAXUH:
@@ -395,12 +403,20 @@
       iopc = INTRN_MAXW ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_MIND:
+      iopc = INTRN_MIND ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_MINH:
       iopc = INTRN_MINH ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_MINL:
       iopc = INTRN_MINL ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_MINS:
+      iopc = INTRN_MINS ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_MINUH:
