@@ -79,6 +79,7 @@
 #include "gtn_tn_set.h"
 #include "gra_live.h"
 #include "cxx_memory.h"
+#include "cflow.h"
 #include "cg_sched_est.h"
 #include "cg_ssa.h"
 #include "cg_select.h"
@@ -352,7 +353,8 @@ Can_Merge_BB (BB *bb_first, BB *bb_second)
 
   if (BB_Has_Exc_Label(bb_second) ||
       BB_Has_Addr_Taken_Label(bb_second) ||
-      BB_Has_Outer_Block_Label(bb_second))
+      BB_Has_Outer_Block_Label(bb_second) ||
+      BB_rid(bb_second) != BB_rid(bb_first))
     return FALSE;
 
   /* Reject if merged BB will be too large.
@@ -908,14 +910,20 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     DevAssert(bb, ("Invalid BB chain in hammock"));
 
     // allow removing of side entries only on one of targets.
-    if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != target))
+    if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != target)) {
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> Having more than 1 side entry.\n");
       return FALSE; 
+    }
 
-   if (! Can_Speculate_BB(bb, &store_i.tkstrs))
-     return FALSE;
+    if (! Can_Speculate_BB(bb, &store_i.tkstrs)) {
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> Can't speculate BB%d\n", BB_id(bb));
+      return FALSE;
+    }
 
-   *t_path  = BB_SET_Union1(*t_path, bb, &MEM_Select_pool);
-   bb = BB_Unique_Successor (bb);
+    *t_path  = BB_SET_Union1(*t_path, bb, &MEM_Select_pool);
+    bb = BB_Unique_Successor (bb);
   }
   
   bb = fall_thru;
@@ -923,11 +931,17 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
   while (bb != ipdom) {
     DevAssert(bb, ("Invalid BB chain in hammock"));
 
-    if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != fall_thru))
+    if (BB_preds_len (bb) > 1 && (!CG_select_allow_dup || bb != fall_thru)) {
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> Having more than 1 side entry.\n");
       return FALSE; 
+    }
 
-    if (! Can_Speculate_BB(bb, &store_i.ntkstrs))
+    if (! Can_Speculate_BB(bb, &store_i.ntkstrs)) {
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> Can't speculate BB%d\n", BB_id(bb));
       return FALSE;
+    }
 
     *ft_path  = BB_SET_Union1(*ft_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
@@ -935,8 +949,11 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
   
   // Check if we have the same set of memory stores in both sides.
   if (!store_i.tkstrs.empty() || !store_i.ntkstrs.empty()) {
-    if (!Sort_Stores())
+    if (!Sort_Stores()) {
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> Can't promote stores");
       return FALSE;
+    }
   }
 
   return TRUE;
@@ -2029,6 +2046,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
+
+  if (select_count || logif_count)
+    CFLOW_Optimize(CFLOW_MERGE, "CFLOW (from if conversion)");
 
   BB_MAP_Delete(if_bb_map);
 
