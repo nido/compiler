@@ -969,6 +969,7 @@ Expand__builtin__modw(
 
 /*
  *Manual expansion of some experimental ST231 operators
+ *Either expanded as ST231 operators or expanded as emulated insns.
 */
 static void
 Expand__st200mul32(
@@ -978,8 +979,18 @@ Expand__st200mul32(
  OPS* ops
 )
 {
-  Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
+    if (Is_Target_st231()) {
+	Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
+    } else {
+	/* Emulated by __mulw */
+	TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	Build_OP (	TOP_mullu_r,	r0_24_2,	i0,	i1,	ops) ;
+	Build_OP (	TOP_mulhs_r,	r0_25_2,	i0,	i1,	ops) ;
+	Build_OP (	TOP_add_r,	o0,	r0_24_2,	r0_25_2,	ops) ;
+    }
 } /* Expand__st200mul32 */
+
 static void
 Expand__st200mul64h(
  TN* o0,
@@ -988,8 +999,28 @@ Expand__st200mul64h(
  OPS* ops
 )
 {
-  Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
-} /* Expand__st200mul64hr */
+    if (Is_Target_st231()) {
+	Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
+    } else {
+	/* Emulated by __mulhw */
+	TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+	TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+	TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+	TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+	Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+	Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+	Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+	Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+	Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+	Build_OP (	TOP_addcg,	o0,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;	
+    }
+} /* Expand__st200mul64h */
+
 static void
 Expand__st200mul64hu(
  TN* o0,
@@ -998,8 +1029,43 @@ Expand__st200mul64hu(
  OPS* ops
 )
 {
-  Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      /* Emulated by __mulhuw */
+      TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
+      TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
+#undef __EXTS32TOS64
+      Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_1_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+      Build_OP (	TOP_add_r,	o0,	r0_17_4,	r0_28_2,	ops) ;
+  }
 } /* Expand__st200mul64hu */
+
 static void
 Expand__st200mulfrac(
  TN* o0,
@@ -1008,7 +1074,51 @@ Expand__st200mulfrac(
  OPS* ops
 )
 {
-  Build_OP (	TOP_mulfrac_r,	o0,	i0,	i1,	ops) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mulfrac_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_16_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_16_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_16_7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_21_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_21_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_21_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+      TN *c0x7fffffff = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
+      TN *c0x80000000 = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
+      TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+      TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
+#undef __EXTS32TOS64
+      Build_OP (    TOP_mullu_r,    r0_26_2,        i0,     i1,     ops) ;
+      Build_OP (    TOP_mulhs_r,    r0_27_2,        i0,     i1,     ops) ;
+      Build_OP (    TOP_mulhhs_r,   r0_24_3,        i0,     i1,     ops) ;
+      Build_OP (    TOP_mullhus_r,  r0_25_3,        i0,     i1,     ops) ;
+      Build_OP (    TOP_cmpeq_i_r,  r0_20_2,        i0,     c0x80000000,    ops) ;
+      Build_OP (    TOP_cmpeq_r_r,  r0_21_2,        i0,     i1,     ops) ;
+      Build_OP (    TOP_mtb,        b0_2_2, Zero_TN,        ops) ;
+      Build_OP (    TOP_andl_r_b,   b0_0_3, r0_20_2,        r0_21_2,        ops) ;
+      Build_OP (    TOP_addcg,      r0_16_3,        b0_3_3, r0_26_2,        r0_27_2,        b0_2_2, ops) ;
+      Build_OP (    TOP_shl_i,      r0_17_4,        r0_16_3,        c1,     ops) ;
+      Build_OP (    TOP_addcg,      r0_21_4,        b0_3_4, r0_24_3,        r0_25_3,        b0_3_3, ops) ;
+      Build_OP (    TOP_shru_i,     r0_16_4,        r0_16_3,        c31,    ops) ;
+      Build_OP (    TOP_shl_i,      r0_21_5,        r0_21_4,        c1,     ops) ;
+      Build_OP (    TOP_shru_i,     r0_17_5,        r0_17_4,        c31,    ops) ;
+      Build_OP (    TOP_or_r,       r0_16_6,        r0_16_4,        r0_21_5,        ops) ;
+      Build_OP (    TOP_add_r,      r0_16_7,        r0_16_6,        r0_17_5,        ops) ;
+      Build_OP (    TOP_slctf_i,    o0,     b0_0_3, r0_16_7,        c0x7fffffff,    ops) ;      
+  }
 } /* Expand__st200mulfrac */
 
 /*
@@ -4065,36 +4175,40 @@ Expand__mulhuw(
  OPS* ops
 )
 {
-  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
+      TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_1_0,	i1,	c0,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	i1,	c0,	ops) ;
-  Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
-  Build_OP (	TOP_add_r,	o0,	r0_17_4,	r0_28_2,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_1_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+      Build_OP (	TOP_add_r,	o0,	r0_17_4,	r0_28_2,	ops) ;
+  }
 } /* Expand__mulhuw */
 
 /*
@@ -4114,21 +4228,25 @@ Expand__mulhw(
  OPS* ops
 )
 {
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	o0,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_addcg,	r0_16_3,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	o0,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+  }
 } /* Expand__mulhw */
 
 /*
@@ -4151,51 +4269,64 @@ Expand__mull(
  OPS* ops
 )
 {
-  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_17_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_30_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_30_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_31_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_32_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_32_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_33_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  if (Is_Target_st231()) { 
+      TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_21_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (    TOP_mul32_r,    r0_20_2,        il0,    ih1,    ops) ;
+      Build_OP (    TOP_mul64hu_r,  r0_21_2,        il0,    il1,    ops) ;
+      Build_OP (    TOP_mul32_r,    r0_17_3,        ih0,    il1,    ops) ;
+      Build_OP (    TOP_mul32_r,    ol0,    il0,    il1,    ops) ;
+      Build_OP (    TOP_add_r,      r0_20_3,        r0_20_2,        r0_21_2,        ops) ;
+      Build_OP (    TOP_add_r,      oh0,    r0_17_3,        r0_20_3,        ops) ;      
+  } else {
+      TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_30_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_30_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_31_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_32_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_32_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_33_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
+      TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_mullu_r,	r0_24_2,	il0,	il1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_25_2,	il0,	il1,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_0_0,	il0,	c0,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_1_0,	il1,	c0,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_26_3,	il0,	il1,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_27_3,	il0,	il1,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	il0,	c0,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	il1,	c0,	ops) ;
-  Build_OP (	TOP_mullu_r,	r0_30_4,	ih1,	il0,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_31_4,	ih1,	il0,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
-  Build_OP (	TOP_mullu_r,	r0_32_5,	ih0,	il1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_33_5,	ih0,	il1,	ops) ;
-  Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_24_2,	r0_25_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_26_3,	r0_27_3,	b0_3_3,	ops) ;
-  Build_OP (	TOP_add_r,	r0_30_5,	r0_30_4,	r0_31_4,	ops) ;
-  Build_OP (	TOP_add_r,	r0_17_5,	r0_17_4,	r0_28_2,	ops) ;
-  Build_OP (	TOP_add_r,	r0_32_6,	r0_32_5,	r0_33_5,	ops) ;
-  Build_OP (	TOP_add_r,	r0_17_6,	r0_17_5,	r0_30_5,	ops) ;
-  Build_OP (	TOP_add_r,	oh0,	r0_17_6,	r0_32_6,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_24_2,	il0,	il1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_25_2,	il0,	il1,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_0_0,	il0,	c0,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_1_0,	il1,	c0,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_26_3,	il0,	il1,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_27_3,	il0,	il1,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	il0,	c0,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	il1,	c0,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_30_4,	ih1,	il0,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_31_4,	ih1,	il0,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_32_5,	ih0,	il1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_33_5,	ih0,	il1,	ops) ;
+      Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_24_2,	r0_25_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_26_3,	r0_27_3,	b0_3_3,	ops) ;
+      Build_OP (	TOP_add_r,	r0_30_5,	r0_30_4,	r0_31_4,	ops) ;
+      Build_OP (	TOP_add_r,	r0_17_5,	r0_17_4,	r0_28_2,	ops) ;
+      Build_OP (	TOP_add_r,	r0_32_6,	r0_32_5,	r0_33_5,	ops) ;
+      Build_OP (	TOP_add_r,	r0_17_6,	r0_17_5,	r0_30_5,	ops) ;
+      Build_OP (	TOP_add_r,	oh0,	r0_17_6,	r0_32_6,	ops) ;
+  }
 } /* Expand__mull */
 
 /*
@@ -4240,20 +4371,25 @@ Expand__muln(
  OPS* ops
 )
 {
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	oh0,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+  if (Is_Target_st231()) {
+      Build_OP (    TOP_mul32_r,    ol0,    i0,     i1,     ops) ;
+      Build_OP (    TOP_mul64h_r,   oh0,    i0,     i1,     ops) ;
+  } else { 
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	oh0,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+  }
 } /* Expand__muln */
 
 /*
@@ -4300,51 +4436,64 @@ Expand__mulul(
  OPS* ops
 )
 {
-  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_17_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_30_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_30_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_31_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_32_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_32_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_33_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  if (Is_Target_st231()) { 
+      TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_21_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (    TOP_mul32_r,    r0_20_2,        il0,    ih1,    ops) ;
+      Build_OP (    TOP_mul64hu_r,  r0_21_2,        il0,    il1,    ops) ;
+      Build_OP (    TOP_mul32_r,    r0_17_3,        ih0,    il1,    ops) ;
+      Build_OP (    TOP_mul32_r,    ol0,    il0,    il1,    ops) ;
+      Build_OP (    TOP_add_r,      r0_20_3,        r0_20_2,        r0_21_2,        ops) ;
+      Build_OP (    TOP_add_r,      oh0,    r0_17_3,        r0_20_3,        ops) ;      
+  } else {
+      TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_17_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_30_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_30_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_31_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_32_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_32_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_33_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
+      TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_mullu_r,	r0_24_2,	il0,	il1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_25_2,	il0,	il1,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_0_0,	il0,	c0,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_1_0,	il1,	c0,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_26_3,	il0,	il1,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_27_3,	il0,	il1,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	il0,	c0,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	il1,	c0,	ops) ;
-  Build_OP (	TOP_mullu_r,	r0_30_4,	ih1,	il0,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_31_4,	ih1,	il0,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
-  Build_OP (	TOP_mullu_r,	r0_32_5,	ih0,	il1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_33_5,	ih0,	il1,	ops) ;
-  Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_24_2,	r0_25_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_26_3,	r0_27_3,	b0_3_3,	ops) ;
-  Build_OP (	TOP_add_r,	r0_30_5,	r0_30_4,	r0_31_4,	ops) ;
-  Build_OP (	TOP_add_r,	r0_17_5,	r0_17_4,	r0_28_2,	ops) ;
-  Build_OP (	TOP_add_r,	r0_32_6,	r0_32_5,	r0_33_5,	ops) ;
-  Build_OP (	TOP_add_r,	r0_17_6,	r0_17_5,	r0_30_5,	ops) ;
-  Build_OP (	TOP_add_r,	oh0,	r0_17_6,	r0_32_6,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_24_2,	il0,	il1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_25_2,	il0,	il1,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_0_0,	il0,	c0,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_1_0,	il1,	c0,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_26_3,	il0,	il1,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_27_3,	il0,	il1,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	il0,	c0,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	il1,	c0,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_30_4,	ih1,	il0,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_31_4,	ih1,	il0,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_32_5,	ih0,	il1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_33_5,	ih0,	il1,	ops) ;
+      Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_24_2,	r0_25_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_26_3,	r0_27_3,	b0_3_3,	ops) ;
+      Build_OP (	TOP_add_r,	r0_30_5,	r0_30_4,	r0_31_4,	ops) ;
+      Build_OP (	TOP_add_r,	r0_17_5,	r0_17_4,	r0_28_2,	ops) ;
+      Build_OP (	TOP_add_r,	r0_32_6,	r0_32_5,	r0_33_5,	ops) ;
+      Build_OP (	TOP_add_r,	r0_17_6,	r0_17_5,	r0_30_5,	ops) ;
+      Build_OP (	TOP_add_r,	oh0,	r0_17_6,	r0_32_6,	ops) ;
+  }
 } /* Expand__mulul */
 
 /*
@@ -4389,35 +4538,40 @@ Expand__mulun(
  OPS* ops
 )
 {
-  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  if (Is_Target_st231()) {
+      Build_OP (    TOP_mul32_r,    ol0,    i0,     i1,     ops) ;
+      Build_OP (    TOP_mul64hu_r,   oh0,    i0,     i1,     ops) ;
+  } else {
+      TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *b0_3_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+      TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_24_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_28_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_29_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
+      TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_cmplt_i_b,	b0_1_0,	i1,	c0,	ops) ;
-  Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	i1,	c0,	ops) ;
-  Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
-  Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
-  Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
-  Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
-  Build_OP (	TOP_add_r,	oh0,	r0_17_4,	r0_28_2,	ops) ;
+      Build_OP (	TOP_mullu_r,	r0_26_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_27_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_cmplt_i_b,	b0_1_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_mulhhs_r,	r0_24_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mullhus_r,	r0_25_3,	i0,	i1,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_28_1,	b0_1_0,	i0,	c0,	ops) ;
+      Build_OP (	TOP_slct_i,	r0_29_1,	b0_0_0,	i1,	c0,	ops) ;
+      Build_OP (	TOP_add_r,	r0_28_2,	r0_28_1,	r0_29_1,	ops) ;
+      Build_OP (	TOP_mtb,	b0_2_2,	Zero_TN,	ops) ;
+      Build_OP (	TOP_addcg,	ol0,	b0_3_3,	r0_26_2,	r0_27_2,	b0_2_2,	ops) ;
+      Build_OP (	TOP_addcg,	r0_17_4,	b0_3_4,	r0_24_3,	r0_25_3,	b0_3_3,	ops) ;
+      Build_OP (	TOP_add_r,	oh0,	r0_17_4,	r0_28_2,	ops) ;
+  }
 } /* Expand__mulun */
 
 /*
@@ -4441,11 +4595,15 @@ Expand__muluw(
  OPS* ops
 )
 {
-  TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  Build_OP (	TOP_mullu_r,	r0_24_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_25_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_add_r,	o0,	r0_24_2,	r0_25_2,	ops) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (	TOP_mullu_r,	r0_24_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_25_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_add_r,	o0,	r0_24_2,	r0_25_2,	ops) ;
+  }
 } /* Expand__muluw */
 
 /*
@@ -4465,11 +4623,15 @@ Expand__mulw(
  OPS* ops
 )
 {
-  TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  Build_OP (	TOP_mullu_r,	r0_24_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_mulhs_r,	r0_25_2,	i0,	i1,	ops) ;
-  Build_OP (	TOP_add_r,	o0,	r0_24_2,	r0_25_2,	ops) ;
+  if (Is_Target_st231()) { 
+      Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
+  } else {
+      TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *r0_25_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      Build_OP (	TOP_mullu_r,	r0_24_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_mulhs_r,	r0_25_2,	i0,	i1,	ops) ;
+      Build_OP (	TOP_add_r,	o0,	r0_24_2,	r0_25_2,	ops) ;
+  }
 } /* Expand__mulw */
 
 /*
@@ -6133,20 +6295,18 @@ Exp_Intrinsic_Op (
     case INTRN_BUILTIN__MODW:
       Expand__builtin__modw(result[0],opnd[0],opnd[1],ops) ;
     break ;
-//#if defined(ST231_EXPERIMENTAL)
-     case INTRN_ST200MUL32:
+    case INTRN_ST200MUL32:
        Expand__st200mul32(result[0],opnd[0],opnd[1],ops) ;
-     break ;
-     case INTRN_ST200MUL64H:
+    break ;
+    case INTRN_ST200MUL64H:
        Expand__st200mul64h(result[0],opnd[0],opnd[1],ops) ;
-     break ;
-     case INTRN_ST200MUL64HU:
+    break ;
+    case INTRN_ST200MUL64HU:
        Expand__st200mul64hu(result[0],opnd[0],opnd[1],ops) ;
-     break ;
-     case INTRN_ST200MULFRAC:
+    break ;
+    case INTRN_ST200MULFRAC:
        Expand__st200mulfrac(result[0],opnd[0],opnd[1],ops) ;
-     break ;
-//#endif
+    break ;
     case INTRN_ST220ADDCG:
     if (Target_Byte_Sex == BIG_ENDIAN) {
       Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
