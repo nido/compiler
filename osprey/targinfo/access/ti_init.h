@@ -75,7 +75,7 @@ static const char ti_init_rcs_id[] = "$Source$ $Revision$";
 extern "C" {
 #endif
 
-extern void
+extern void*
 TI_Initialize (ABI_PROPERTIES_ABI, ISA_SUBSET, PROCESSOR, char *tpath);
 
 #ifdef __cplusplus
