@@ -38,7 +38,7 @@ static const char source_file[] = __FILE__;
 static const char rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include <string.h>
 #include <ctype.h>
 
@@ -52,6 +52,12 @@ static const char rcs_id[] = "$Source$ $Revision$";
 
 #include "ti_init.h"
 
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+#define SO_EXT ".dll"
+#else
+#define SO_EXT ".so"
+#endif
+
 /* ====================================================================
  *
  *  TI_Initialize
@@ -60,23 +66,25 @@ static const char rcs_id[] = "$Source$ $Revision$";
  *
  * ====================================================================
  */
-void
+void*
 TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *tpath)
 {
   static BOOL initialized;
+  void * targ_handler = NULL;
 
   if ( !initialized ) {
     INT                i;
     const char        *targ_name     = PROCESSOR_Name(tproc);
     INT                targ_name_len = strlen(targ_name);
-    char              *targ_so_name  = alloca(targ_name_len + sizeof(".so"));
+    char              *targ_so_name  = alloca(targ_name_len + sizeof(SO_EXT));
 
     for (i = 0; i < targ_name_len; i++) {
       targ_so_name[i] = tolower(targ_name[i]);
     }
-    strcpy(targ_so_name + targ_name_len, ".so");
 
-    load_so(targ_so_name, tpath, FALSE /*verbose*/);
+    strcpy(targ_so_name + targ_name_len, SO_EXT);
+
+    targ_handler = load_so(targ_so_name, tpath, FALSE /*verbose*/);
 
     ISA_SUBSET_Value = tisa;
     PROCESSOR_Value = tproc;
@@ -87,5 +95,6 @@ TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *t
     ISA_REGISTER_Initialize();
 
     initialized = TRUE;
+    return targ_handler;
   }
 }
