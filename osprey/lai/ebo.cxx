@@ -5406,6 +5406,7 @@ void EBO_Inline_Immediates (BB *bb, BOOL BB_completely_processed)
        we can remove it, as EBO_Special_Inline_Immediate
        may have decreased its ref count. */
     if (OP_results(op) == 1 &&
+	opinfo->actual_rslt[0] != NULL &&
 	opinfo->actual_rslt[0]->replacement_tn != NULL &&	
 	TN_is_constant(opinfo->actual_rslt[0]->replacement_tn)) {
       if (EBO_Trace_Data_Flow) {
