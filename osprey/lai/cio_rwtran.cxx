@@ -3036,7 +3036,9 @@ CIO_RWTRAN::Write_Removal( BB *body )
   // if the trip count is a known constant value, or if predication is
   // available on this target.
   if ( ! TN_has_value( _trip_count_tn ) && ! CGTARG_Can_Predicate() ) {
+#ifndef TARG_ST
     DevWarn( "CIO_RWTRAN::Read_Write_Removal predication not activated" );
+#endif
     return FALSE;
   }
 
