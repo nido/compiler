@@ -743,6 +743,14 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
     OP *op = OPS_last(ops);
     while(!OP_load(op)) op = OP_prev(op);
     Set_OP_spill(op);
+
+#ifdef TARG_ST
+    // [CL] set the epilogue field if we are in an Exit_BB
+    if (bb && (BB_exit(bb))) {
+      Set_OP_epilogue(op);
+    }
+#endif
+
   }
   Max_Sdata_Elt_Size = max_sdata_save;
 }
@@ -794,6 +802,13 @@ CGSPILL_Store_To_Memory (TN *src_tn, ST *mem_loc, OPS *ops,
   OP *op = OPS_last(ops);
   while(!OP_store(op)) op = OP_prev(op);
   Set_OP_spill(op);
+
+#ifdef TARG_ST
+  // [CL] set the prologue field if we are in an Entry_BB
+  if (bb && (BB_entry(bb))) {
+    Set_OP_prologue(op);
+  }
+#endif
 
   Max_Sdata_Elt_Size = max_sdata_save;
 }
