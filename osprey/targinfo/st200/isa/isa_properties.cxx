@@ -58,9 +58,9 @@ main()
     mul,
     div,
     cmp,
-    and,
-    or,
-    xor,
+    And,
+    Or,
+    Xor,
     madd,
     mmalu,
     mmmul,
@@ -495,24 +495,24 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  and = ISA_Property_Create ("and"); 
-  Instruction_Group (and, 
+  And = ISA_Property_Create ("And"); 
+  Instruction_Group (And, 
 		 TOP_and_r, 
 		 TOP_and_i, 
 		 TOP_and_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  or = ISA_Property_Create ("or"); 
-  Instruction_Group (or, 
+  Or = ISA_Property_Create ("Or"); 
+  Instruction_Group (Or, 
 		 TOP_or_r, 
 		 TOP_or_i, 
 		 TOP_or_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
-  xor = ISA_Property_Create ("xor"); 
-  Instruction_Group (xor, 
+  Xor = ISA_Property_Create ("Xor"); 
+  Instruction_Group (Xor, 
 		 TOP_xor_r, 
 		 TOP_xor_i, 
 		 TOP_xor_ii, 
