@@ -1098,7 +1098,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 	    for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
-	      if (ARC_is_mem(arc)) {
+	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
 		bool isDefinite = ARC_is_definite(arc);
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);

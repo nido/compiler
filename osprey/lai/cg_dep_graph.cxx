@@ -4868,8 +4868,41 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 	    0 : CG_DEP_Latency(op, succ, kind, 0);
 
 	  /* Build a mem dep arc from <op> to <succ> */
-	  if (omega > 0 || succ_idx > op_idx)
-	    arc = new_arc_with_latency(kind, op, succ, latency, omega, 0, definite);
+	  if (omega > 0 || succ_idx > op_idx) {
+	    // Rename variables as in new_arc_with_latency.
+	    OP *pred = op;
+	    UINT8 opnd = 0;
+	    BOOL is_definite = definite;
+
+	    // Special-case the cyclic spill dependence arcs because they rely
+	    // on OP_restore_omega, that only works with single BB loops.
+	    if (cyclic && kind == CG_DEP_MEMIN && CGSPILL_Is_Spill_Op(pred) &&
+		CGSPILL_Is_Spill_Op(succ) && OP_store(pred) && OP_load(succ)) {
+	      // Code specialized from new_arc_with_latency().
+
+	      arc = create_arc();
+
+	      kind = CG_DEP_SPILLIN;
+	      latency = CG_DEP_Latency(pred, succ, kind, opnd);
+	      omega = 1;
+
+	      Set_ARC_kind(arc, kind);
+	      Set_ARC_opnd(arc, opnd);
+	      Set_ARC_is_definite(arc, is_definite);
+	      Set_ARC_pred(arc, pred);
+	      Set_ARC_succ(arc, succ);
+	      Set_ARC_omega(arc, omega);
+	      Set_ARC_latency(arc, latency);
+	      Set_ARC_is_dotted(arc, FALSE);
+
+	      attach_arc(arc);
+
+	    } else {
+
+	      arc = new_arc_with_latency(kind, op, succ, latency, omega, 0, definite);
+
+	    }
+	  }
 
 	  found_definite_memread_succ |= (kind == CG_DEP_MEMREAD && definite);
 	}
