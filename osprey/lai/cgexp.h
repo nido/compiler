@@ -62,13 +62,13 @@
  *
  * All the code expansion routines have the prefix "Exp_". 
  * There are internal routines with the prefix Expand_,
- * but those should not be used outside of lai_exp.
+ * but those should not be used outside of cgexp.
  * ======================================================================
  */
 
 
-#ifndef lai_exp_INCLUDED
-#define lai_exp_INCLUDED
+#ifndef cgexp_INCLUDED
+#define cgexp_INCLUDED
 
 #include "defs.h"
 #include "symtab.h"
@@ -134,6 +134,7 @@ extern void Exp_Simulated_Op (const OP *op, OPS *ops, INT pc_value);
  * instructions/instruction-words that will be generated after expansion.
  */
 extern INT Simulated_Op_Real_Ops (const OP *op);
+extern INT Simulated_Op_Real_Inst_Words (const OP *op);
 
 /* Initial expansion of intrinsic call (may not be complete lowering).
  * return result TN (if set).
@@ -144,7 +145,12 @@ extern TN * Exp_Intrinsic_Call (
   LABEL_IDX *label, OPS *loop_ops);
 
 /* expand intrinsic op */
+#ifdef TARG_ST100
+/* Arthur: this is because I may have to generate them for Lai */
+extern void Exp_Intrinsic_Op (INTRINSIC id, INT num_results, INT num_opnds, TN **result, TN **opnd, OPS *ops);
+#else
 extern void Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op2, OPS *ops);
+#endif
 
 /* Expand TN(const) into a sequence of ops (used in prolog)
  */
@@ -253,4 +259,4 @@ extern BOOL Target_Has_Immediate_Operand (WN *parent, WN *expr);
 
 #include "exp_targ.h"
 
-#endif /* lai_exp_INCLUDED */
+#endif /* cgexp_INCLUDED */

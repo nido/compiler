@@ -159,11 +159,13 @@ Expand_OP (
   case OPR_ABS:
 	Expand_Abs (result, op1, rtype, ops);
 	break;
-	/*
+#ifdef TARG_ST100
+	FmtAssert(FALSE, ("Expand_OP:  MPY shouldn't have been reached"));
+#else
     case OPR_MPY:
       Expand_Multiply (result, op1, op2, rtype, ops);
       break;
-	*/
+#endif
   case OPR_HIGHMPY:
 	Expand_High_Multiply (result, op1, op2, rtype, ops);
 	break;
@@ -177,7 +179,7 @@ Expand_OP (
 		// unsigned MOD acts like REM
 		Expand_Rem (result, op1, op2, rtype, ops);
 	break;
-    case OPR_DIV:
+  case OPR_DIV:
       Expand_Divide (result, op1, op2, rtype, ops);
       break;
   case OPR_DIVREM:
@@ -293,11 +295,14 @@ Expand_OP (
 	Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
 	break;
 
+#ifdef TARG_ST100
     case OPR_MADD:
       FmtAssert(FALSE, 
 	   ("Expand_OP:  MADD shouldn't have been reached"));
       break;
-
+#else
+    case OPR_MADD:
+#endif
     case OPR_NMADD:
     case OPR_MSUB:
     case OPR_NMSUB:
