@@ -234,6 +234,7 @@ Targ_Name ( TARGET_PROCESSOR b)
   switch ( b ) {
     case TARGET_st220: return "st220";
     case TARGET_st221: return "st221";
+    case TARGET_st230: return "st230";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -315,6 +316,9 @@ Prepare_Target ( void )
     else if ( strcasecmp ( Processor_Name, "st221" ) == 0 ) {
       targ = TARGET_st221;
     }
+    else if ( strcasecmp ( Processor_Name, "st230" ) == 0 ) {
+      targ = TARGET_st230;
+    }
     else {
       ErrMsg ( EC_Inv_TARG, "processor", Processor_Name );
       targ = TARGET_UNDEF;
@@ -337,6 +341,10 @@ Prepare_Target ( void )
       Target_ISA = TARGET_ISA_ST220;
       break;
     case TARGET_st221:
+      Target_ABI = ABI_ST200;
+      Target_ISA = TARGET_ISA_ST220;
+      break;
+    case TARGET_st230:
       Target_ABI = ABI_ST200;
       Target_ISA = TARGET_ISA_ST220;
       break;
