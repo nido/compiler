@@ -1256,6 +1256,9 @@ Has_Immediate_Operand (WN *parent, WN *expr)
  *    3. mark the current EH range as having a call.
  * ====================================================================
  */
+#ifdef TARG_ST
+static void Handle_Return (void);
+#endif
 static void
 Handle_Call_Site (
   WN *call, 
@@ -1310,6 +1313,15 @@ Handle_Call_Site (
    * assumption that a procedure call breaks a basic block. 
    */
   Start_New_Basic_Block ();
+
+#ifdef TARG_ST
+  // FdF 20041104: Simulate a RETURN after a "noreturn" call, to make
+  // tail call optimization possible.
+  if (WN_Call_Never_Return( call )) {
+    Handle_Return ();
+    Start_New_Basic_Block();
+  }
+#endif
 
   // if caller-save-gp and not defined in own dso, then restore gp.
   // if call_st == null, then indirect call, and assume external.
@@ -4163,12 +4175,15 @@ static void Build_CFG(void)
 	BB_Append_Ops(bb, &ops);
 	Link_Pred_Succ (bb, region_entry);
       } 
+#ifndef TARG_ST
+      // FdF 20041104: An exit block now follows a "noreturn" call.
       else if (BB_call(bb)
 	&& WN_Call_Never_Return( CALLINFO_call_wn(ANNOT_callinfo(
 		ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO) ))) )
       {
 	continue;	// no successor
       } 
+#endif
       else {
 	Link_Pred_Succ (bb, BB_next(bb));
       }
