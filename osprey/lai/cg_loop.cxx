@@ -3024,6 +3024,19 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	}
 	// do not generate branch for the last unrolling
 	if (unrolling < unroll_times && !const_trip) {
+#ifdef TARG_ST200
+	  /* Override the operations already in body_ops, and put a
+             more efficient sequence of code. */
+	  INT32 trip_size = TN_size(new_trip_count);
+	  OPS_Remove_All(&body_ops);
+	  Exp_OP3v(OPC_TRUEBR,
+		   NULL,
+		   Gen_Label_TN(continuation_label,0),
+		   new_trip_count,
+		   Gen_Literal_TN(unrolling, trip_size),
+		   trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
+		   &body_ops);
+#endif
 	  FOR_ALL_OPS_OPs(&body_ops, op) {
 	    OP *new_op = Dup_OP(op);
 	    Copy_WN_For_Memory_OP(new_op, op);
@@ -4619,6 +4632,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 	while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
 	  ntimes /= 2;
       if (const_trip) {
+	// At least two iterations plus some residue.
 	while (ntimes > 1 && const_trip_count < 2 * ntimes) 
 	  ntimes /= 2;
       }
