@@ -3712,18 +3712,14 @@ Assemble_Bundles(BB *bb)
     Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]));
 #endif
 
-#ifdef TARG_ST200
-    for(int i = 0; i < slot; i++)  {
-      OP *sl_op = slot_op[i];
-      //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
-      Assemble_OP(sl_op, bb, &bundle, i);
-    }
-#else
     slot = 0;
     do {
       OP *sl_op = slot_op[slot];
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
+#ifdef TARG_ST200
+    } while (!OP_end_group(sl_op));
+#else
     } while (slot < ISA_MAX_SLOTS);
 #endif
 
