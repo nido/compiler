@@ -2584,9 +2584,11 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
   FmtAssert (lc != TI_RC_ERROR, ("%s", TI_errmsg));
   vstr_end(buf);
 
+#if 0
   if (OP_end_group(op) && Assembly) {
     lc += fprintf(Asm_File, " %s", ISA_PRINT_END_GROUP);
   }
+#endif
 
   while (lc < 30) {
     if (Assembly || Lai_Code) fputc (' ', Output_File);
@@ -2930,6 +2932,11 @@ Assemble_OP (
     r_assemble_list ( op, bb );
     if (!Object_Code) words = ISA_PACK_Inst_Words(OP_code(op));
   }
+
+  if (OP_end_group(op) && Assembly) {
+    fprintf(Asm_File, "\t %s\n", ISA_PRINT_END_GROUP);
+  }
+
 
 #if 0
   if (Object_Code) {
@@ -3326,7 +3333,7 @@ Assemble_Bundles(BB *bb)
       //        }
       //      }
       FmtAssert(ibundle != ISA_MAX_BUNDLES,
-	       ("couldn't find bundle for slot mask=0x%llx, stop mask=0x%x in BB:%d\n",
+	       ("couldn't find bundle for slot mask=0x%0llx, stop mask=0x%x in BB:%d\n",
 	        slot_mask, stop_mask, BB_id(bb)));
     }
 
