@@ -93,5 +93,6 @@ typedef struct {
 // targ_select.cxx
 //
 extern TN * Expand_CMP_Reg (OP *, OPS *);
+extern void Expand_Cond_Store (TN *, BOOL, OP *, OP *, UINT8, OPS *ops);
 
 #endif /* SELECT_H_INCLUDED */

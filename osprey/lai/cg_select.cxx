@@ -683,8 +683,7 @@ Sort_Stores(void)
     }
 
     // one arg differs. Select it.
-    // opnt 0 must be a constant offset, so can't select it.
-    if (ci <= 1 && lidx) {
+    if (ci <= 1) {
       store_i.ifarg_idx.push_back(lidx);
       ++count;
       c = 0;
@@ -1295,35 +1294,17 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
     TN *true_tn;
     TN *false_tn;
 
-    OP* i1 = store_i.tkstrs.front();
-    OP* i2 = store_i.ntkstrs.front();
-    int i3 = store_i.ifarg_idx.front();
-    DevAssert(Are_Aliased (i1, i2) || (i3 != -1), ("can't speculate stores"));
+    OP* op1 = store_i.tkstrs.front();
+    OP* op2 = store_i.ntkstrs.front();
+    UINT8 opnd_idx = store_i.ifarg_idx.front();
 
-    TN *tns[3];
-    tns[0] = OP_opnd(i1, 0);
-    tns[1] = OP_opnd(i1, 1);
-    tns[2] = OP_opnd(i1, 2);
+    DevAssert(Are_Aliased (op1, op2) || (opnd_idx != -1),
+              ("can't speculate stores"));
 
-    UINT8 idx = i3 != -1 ? i3 : 2;
+    if (opnd_idx == -1)
+      opnd_idx = 2;
 
-    if (false_br) {
-      true_tn = OP_opnd(i2, idx);
-      false_tn = OP_opnd(i1, idx);
-    }
-    else {
-      true_tn = OP_opnd(i1, idx);
-      false_tn = OP_opnd(i2, idx);
-    }
-
-    TN *temp_tn = Build_TN_Like (true_tn);
-
-    tns[idx] = temp_tn;
-
-    Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
-    select_count++;
-
-    Expand_Store (MTYPE_I4, tns[2], tns[1], tns[0], &ops);
+    Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
 
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects stores in BB%d", BB_id(bb));
@@ -1331,10 +1312,12 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
      fprintf (Select_TFile, "\n");
    }
 
+   select_count++;
+
    BB_Append_Ops (bb, &ops);
 
-   BB_Remove_Op (bb, i1);
-   BB_Remove_Op (bb, i2);
+   BB_Remove_Op (bb, op1);
+   BB_Remove_Op (bb, op2);
 
    store_i.tkstrs.pop_front();
    store_i.ntkstrs.pop_front();

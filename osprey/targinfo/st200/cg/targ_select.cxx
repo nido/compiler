@@ -39,6 +39,8 @@
  */
 
 #include "cgir.h"
+#include "cgexp.h"
+#include "whirl2ops.h"
 
 /* --------------------------------------------------------------------
  *    Return instruction that put the result in register class <dst2> 
@@ -133,3 +135,55 @@ Expand_CMP_Reg (OP *cmp, OPS *ops)
   return tn;
 }
 
+/* --------------------------------------------------------------------
+ *    One of the operands is the result of a select instruction.
+ *    If it is the ofst, then must generate a correct store format.
+ * --------------------------------------------------------------------
+ */
+void
+Expand_Cond_Store (
+  TN   *cond_tn,
+  BOOL invert,
+  OP   *op1,
+  OP   *op2,
+  UINT8 idx,
+  OPS   *ops
+  )
+{
+  TN *tns[3];
+  TN *true_tn, *false_tn;
+
+  tns[0] = OP_opnd(op1, 0);
+  tns[1] = OP_opnd(op1, 1);
+  tns[2] = OP_opnd(op1, 2);
+
+  if (invert) {
+    true_tn = OP_opnd(op2, idx);
+    false_tn = OP_opnd(op1, idx);
+  }
+  else {
+    true_tn = OP_opnd(op1, idx);
+    false_tn = OP_opnd(op2, idx);
+  }
+
+  TN *temp_tn = Build_TN_Of_Mtype(MTYPE_I4);
+  tns[idx] = temp_tn;
+
+  Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops);
+
+  WN *wn1 = Get_WN_From_Memory_OP(op1);
+  WN *wn2 = Get_WN_From_Memory_OP(op2);
+
+  TYPE_ID ttype1 = WN_desc(wn1);
+  TYPE_ID ttype2 = WN_desc(wn2);
+  DevAssert(ttype1 == ttype2, ("incompatible store types"));
+
+  TN *val  = tns[OP_find_opnd_use(op1, OU_storeval)];
+  TN *base = tns[OP_find_opnd_use(op1, OU_base)];
+  TN *ofst = tns[OP_find_opnd_use(op1, OU_offset)];
+
+  if (TN_is_register (ofst))
+    Build_OP (TOP_add_r, base, base, ofst, ops);
+
+  Expand_Store (ttype1, val, base, Gen_Literal_TN (0, 4), ops);
+}

@@ -2288,7 +2288,7 @@ Expand_Select (
 {
   TN *branch_tn;
   TN *reg_tn = true_tn;
-  TOP select;
+  TOP top;
   //const BOOL is_float = MTYPE_is_float(mtype);
 
   if (true_tn == false_tn) {
@@ -2303,24 +2303,25 @@ Expand_Select (
   else
     branch_tn = cond_tn;
 
-  if (TN_has_value(true_tn)) {
-    if (TN_has_value(false_tn)) {
+  if (TN_is_constant(true_tn)) {
+    if (TN_is_constant(false_tn)) {
       reg_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-      Build_OP (TOP_mov_r, reg_tn, true_tn, ops);
+      Build_OP (TOP_mov_i, reg_tn, true_tn, ops);
+      top = TOP_slct_i;
     } else {
       reg_tn = false_tn;
       false_tn = true_tn;
-      select = TOP_slctf_i;
+      top = TOP_slctf_i;
     }
   }
-  else if (TN_has_value(false_tn)) {  
-    select = TOP_slct_i;
+  else if (TN_is_constant(false_tn)) {  
+    top = TOP_slct_i;
   }
   else {
-    select = TOP_slct_r;
+    top = TOP_slct_r;
   }
 
-  Build_OP (select, dest_tn, branch_tn, reg_tn, false_tn, ops);
+  Build_OP (top, dest_tn, branch_tn, reg_tn, false_tn, ops);
 }
 
 /* ====================================================================
