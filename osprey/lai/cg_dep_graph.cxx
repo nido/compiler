@@ -262,14 +262,15 @@ inline BOOL OP_like_barrier(OP *op)
 
 inline BOOL OP_like_store(OP *op)
 {
-  BOOL like_store = (OP_store(op) || CGTARG_Is_OP_Intrinsic(op) || 
+  BOOL like_store = (OP_store(op) || CGTARG_Is_OP_Intrinsic(op) ||
 #ifdef TARG_ST
-		     OP_Is_Barrier(op) || OP_code(op) == TOP_asm);
+		     OP_like_barrier(op));
 #else
 		     CGTARG_Is_OP_Barrier(op) || OP_code(op) == TOP_asm);
-#endif
 
   like_store |= OP_like_barrier(op);
+#endif
+
 
   return like_store;
 }
@@ -1102,6 +1103,10 @@ static void delete_gtn_use_arc(OP *op, UINT8 opnd)
 //
 inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
 {
+#ifdef TARG_ST
+  // [CG]: For variable length operands, force opnd to 0
+  if (opcode == TOP_asm) opnd = 0;
+#endif
   switch ( ckind ) {
   case CYC_LOAD:
     return TI_LATENCY_Load_Cycle(opcode);
@@ -1130,7 +1135,6 @@ inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
 INT16 
 CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
 {
- 
   // Initialize the dep_info table.
   INT i;
   for (i = 0; i < sizeof(dep_info_data) / sizeof(dep_info_data[0]); i++) {
@@ -1183,12 +1187,6 @@ CG_DEP_Latency(OP *pred, OP *succ, CG_DEP_KIND kind, UINT8 opnd)
 {
   TOP popcode = OP_code(pred);
   TOP sopcode = OP_code(succ);
-#ifdef TARG_ST200
-  // Arthur: hack for handling asms
-  if (sopcode == TOP_asm) {
-    opnd = 0;
-  }
-#endif
   INT16 latency = CG_DEP_Oper_Latency(popcode, sopcode, kind, opnd);
 
   if (OP_load(pred) && kind == CG_DEP_REGIN) {
@@ -2340,7 +2338,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 #ifdef TARG_ST
     // [CG] This enables better dependence checking when cross iteration
     // dependency is not requested
-    if (omega == NULL && !lex_neg)
+    if (omega == NULL && !lex_neg) {
     /* First try the LNO dependence graph */
     if (!CG_DEP_Ignore_LNO && Current_Dep_Graph != NULL &&
 	OP_unroll_bb(pred_op) == OP_unroll_bb(succ_op)) {
@@ -2395,7 +2393,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	}
       }
     }
-    else
+    } else
 #endif
     /* First try the LNO dependence graph */
     if (!CG_DEP_Ignore_LNO && Current_Dep_Graph != NULL &&

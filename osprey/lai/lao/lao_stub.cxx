@@ -58,7 +58,7 @@ OP_clobber_reg(OP *op) {
 
 BOOL
 OP_clobber_mem(OP *op) {
-  if (OP_asmstmt(op)) return TRUE;
+  if (OP_asmstmt(op) && OP_Is_Barrier(op)) return TRUE;
   return FALSE;
 }
 
