@@ -857,6 +857,10 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
                                          const CG_GROUPING      *grouping);
 #endif
 
+#ifdef TARG_ST
+extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
+#endif
+
 // Checks to see if <stop> bit is available at <slot> position in the
 // bundle.
 extern BOOL CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot);
