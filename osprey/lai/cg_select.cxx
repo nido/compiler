@@ -93,6 +93,8 @@ static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
 static INT32  max_cand_id;	// Max value in hammock candidates.
 static BB_MAP if_bb_map;        // Map fall_thru and targets of logif
+static BB_SET *t_set;           // Region of taken blocks to ifconvert
+static BB_SET *ft_set;          // Region of fallthru blocks to ifconvert
 
 // Mapping between old and new PHIs
 // When we change the number of predecessors of a basic block, we record
@@ -940,7 +942,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
       return FALSE;
     }
 
-    *t_path  = BB_SET_Union1(*t_path, bb, &MEM_Select_pool);
+    *t_path  = BB_SET_Union1D(*t_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
   }
   
@@ -961,7 +963,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
       return FALSE;
     }
 
-    *ft_path  = BB_SET_Union1(*ft_path, bb, &MEM_Select_pool);
+    *ft_path  = BB_SET_Union1D(*ft_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
   }
   
@@ -1002,8 +1004,8 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   if (*tail == NULL)
     return FALSE;
 
-  BB_SET *t_set  = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
-  BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
+  t_set = BB_SET_ClearD (t_set);
+  ft_set = BB_SET_ClearD (ft_set);
 
   if (Check_Suitable_Hammock (*tail, *target, *fall_thru, &t_set, &ft_set)) {
     return Check_Profitable_Select(head, t_set, ft_set, *tail);
@@ -2040,6 +2042,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   GRA_LIVE_Recalc_Liveness(rid);
 
   if_bb_map = BB_MAP_Create();
+
+  t_set  = BB_SET_Create(PU_BB_Count+2, &MEM_Select_pool);
+  ft_set = BB_SET_Create(PU_BB_Count+2, &MEM_Select_pool);
 
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
