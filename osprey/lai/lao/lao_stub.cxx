@@ -550,8 +550,19 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
 	basicBlock, regionId, frequency, liveinCount, liveins, liveoutCount, liveouts);
     // Force the fully unrolled loop bodies to start a new scheduling region,
     // else the memory dependences will not be correct: bug pro-release-1-4-0-B/1.
-    if (BB_loop_head_bb(cgir_bb) == cgir_bb &&
-	BB_unrolled_fully(cgir_bb)) LAI_Interface_setStart(interface, basicBlock);
+    if (BB_unrolled_fully(cgir_bb)) {
+      if (BB_loophead(cgir_bb))
+	LAI_Interface_setStart(interface, basicBlock);
+      else {
+	// Fix bug pro-release-1-5-0-B/1
+	ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
+	if (annot) {
+	  LOOPINFO *info = ANNOT_loopinfo(annot);
+	  if (info)
+	    LAI_Interface_setStart(interface, basicBlock);
+	}
+      }
+    }
   }
   return basicBlock;
 }
@@ -920,9 +931,12 @@ CGIR_BB_make(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID 
     }
     BB_Append_Ops(cgir_bb, &ops);
     // Remove the LOOPINFO if any.
-    ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
-    if (annot != NULL) {
-      BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
+    if (!BB_unrolled_fully(cgir_bb)) {
+      // Fix bug pro-release-1-5-0-B/1
+      ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
+      if (annot != NULL) {
+	BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
+      }
     }
   }
   // Set the rid.
