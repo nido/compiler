@@ -79,6 +79,10 @@ ifndef TARG_BE
 TARG_BE = $(TARGDIR)/be
 endif
 
+ifndef TARG_CG_DIR
+TARG_CG_DIR = $(BUILD_AREA)/lai
+endif
+
 
 #----------------------------------------------------------------------
 #  Include the usual commondefs
@@ -202,6 +206,7 @@ ifeq ($(DSO_MODE),SO)
 WOPT_DSO=wopt.so
 BE_DSO=be.so
 IPL_DSO=ipl.so
+CG_DSO=cg.so
 endif
 
 # static library
@@ -210,6 +215,7 @@ ifeq ($(DSO_MODE),STATIC)
 WOPT_DSO=
 BE_DSO=
 IPL_DSO=
+CG_DSO=
 endif
 
 # windows dll
@@ -217,6 +223,7 @@ ifeq ($(DSO_MODE),DLL)
 WOPT_DSO=wopt_dll.a
 BE_DSO=be_dll.a
 IPL_DSO=ipl_dll.a
+CG_DSO=cg_dll.a
 endif
 
 #BD3 ifeq ($(LAO_BUILD_VARIANT),SINGLE_LAO_SO)
@@ -226,7 +233,7 @@ LAO_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLIR.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCSD.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCCL.a
-LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO)
+LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO)
 #BD3 else
 #BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libLAO.so
 #BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.so
@@ -338,6 +345,7 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(BE_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(BE_DSO) .; fi
 	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(WOPT_DSO) .; fi
 	if [ ! -h $(IPL_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(IPL_DSO) .; fi
+	if [ ! -h $(CG_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(CG_DSO) .; fi
 endif
 
 first:
@@ -347,6 +355,8 @@ first:
 	cd $(TARG_IPL_DIR) && $(MAKE)
 ## verify that be.so is up to date
 	cd $(TARG_BE_DIR) && $(MAKE)
+## verify that cg.so is up to date
+	cd $(TARG_CG_DIR) && $(MAKE)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
@@ -391,6 +401,7 @@ lao.so:  (LAO_CXX_OBJS) $(LAO_PCH_OBJS) \
 	if [ ! -l wopt.so ]; then ln -sf $(TARG_OPT_DIR)/wopt.so .; fi
 	if [ ! -l ipl.so ]; then ln -sf $(TARG_IPL_DIR)/ipl.so .; fi
 	if [ ! -l be ]; then ln -sf $(TARG_BE)/be .; fi
+	if [ ! -l cg.so ]; then ln -sf $(TARG_CG_DIR)/cg.so .; fi
 	if [ ! -l lao ]; then ln -sf $(TARG_BE)/be lao; fi
 
 else
@@ -424,6 +435,9 @@ be.so:
 
 ipl.so:	
 	if [ ! -h ipl.so ]; then ln -sf $(TARG_IPL_DIR)/ipl.so .; fi
+
+cg.so:	
+	if [ ! -h cg.so ]; then ln -sf $(TARG_CG_DIR)/cg.so .; fi
 endif
 
 #
