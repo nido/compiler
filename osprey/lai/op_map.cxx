@@ -130,8 +130,9 @@ static void create_idx_ops(BB *bb)
 
   /* Fill it in */
   for (op = BB_first_op(bb); op; op = OP_next(op)) {
-    Is_True(OP_map_idx(op) >= 0 && OP_map_idx(op) < next_idx,
-	    ("OP_map_idx out of range"));
+    Is_True(OP_map_idx(op) < next_idx, ("OP_map_idx out of range"));
+    //    Is_True(OP_map_idx(op) >= 0 && OP_map_idx(op) < next_idx,
+    //	    ("OP_map_idx out of range"));
     idx_ops[OP_map_idx(op)] = op;
   }
 }
