@@ -164,17 +164,13 @@ Schedule_Prefetch_Prepass () {
        cloop != NULL;
        cloop = LOOP_DESCR_next(cloop)) {
 
-    // Do not shedule prefetch instructions when #pragma LOOPSEQ is
+    // Do not shedule prefetch instructions when #pragma LOOPSEQ read is
     // used.
+    // FdF 20050222: Imported from cg_dep_graph.cxx
+    extern UINT32 CG_Get_BB_Loopseq_Mask(BB *bb);
+#define LOOPSEQ_READ	1
     BB *loop_head = LOOP_DESCR_loophead(cloop);
-    ANNOTATION *annot = NULL;
-    for (annot = ANNOT_Get(BB_annotations(loop_head), ANNOT_PRAGMA);
-	 annot != NULL;
-	 annot = ANNOT_Get(ANNOT_next(annot), ANNOT_PRAGMA)) {
-      if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPSEQ)
-	break;
-    }
-    if (annot)
+    if (CG_Get_BB_Loopseq_Mask(loop_head) & (1<<LOOPSEQ_READ))
       continue;
 
     WN_to_OP_map = WN_MAP_Create(&MEM_local_pool);

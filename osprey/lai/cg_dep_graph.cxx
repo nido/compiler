@@ -263,7 +263,8 @@ static BB *ops_same_loop(OP *op1, OP *op2);
 static UINT32 get_op_kind(OP *op);
 static void Add_LOOPSEQ_Arc(OP *prev_op, OP *next_op, UINT8 *omega, int lex_neg);
 static void Add_LOOPSEQ_Arcs(BB* bb);
-static UINT32 CG_Get_BB_Loopseq_Mask(BB *bb);
+/* Exported into igls.cxx */
+UINT32 CG_Get_BB_Loopseq_Mask(BB *bb);
 static BOOL get_cg_loopseq(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg);
 #endif
 
@@ -1549,7 +1550,7 @@ static void make_prefetch_arcs(OP *op, BB *bb)
   BOOL pft_is_before = TRUE;
   WN *memwn = Get_WN_From_Memory_OP(op);
   PF_POINTER *pf_ptr = memwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,memwn) : NULL;
-  if ( !pf_ptr) return;
+  if (!pf_ptr || !PF_PTR_wn_pref_1L(pf_ptr)) return;
   
   OP *pref_op;
   FOR_ALL_BB_OPs(bb, pref_op) {
@@ -1568,8 +1569,8 @@ static void make_prefetch_arcs(OP *op, BB *bb)
 	// Only if pref_op is before op and pref_op had no memop of
 	// the group before it, latency is set to the prefetch
 	// latency.
-	Is_True (pft_is_before || !OP_pft_before(pref_op),
-		 ("Prefetch marked OP_pft_before must be before associated memops\n"));
+	//	Is_True (pft_is_before || !OP_pft_before(pref_op),
+	//		 ("Prefetch marked OP_pft_before must be before associated memops\n"));
 	INT pf_lat = (pft_is_before && OP_pft_before(pref_op)) ? CG_L1_pf_latency : 1;
 	if (Get_Trace(TP_SCHED, 4))
 	  if (pft_is_before)
@@ -5236,7 +5237,7 @@ CG_DEP_Compute_Region_MEM_Arcs(std::list<BB*>    bb_list,
 	  WN *memwn = Get_WN_From_Memory_OP(load_op);
 	  PF_POINTER *pf_ptr = memwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,memwn) : NULL;
 
-	  if (pf_ptr && OP_pft_scheduled(pref_op)) {
+	  if (pf_ptr && PF_PTR_wn_pref_1L(pf_ptr) && OP_pft_scheduled(pref_op)) {
 	    WN *prefwn = Get_WN_From_Memory_OP(pref_op);
 	    PF_POINTER *pf_ptr2 = prefwn ? (PF_POINTER *) WN_MAP_Get(WN_MAP_PREFETCH,prefwn) : NULL;
 	    if (pf_ptr2 && (PF_PTR_wn_pref_1L(pf_ptr) == PF_PTR_wn_pref_1L(pf_ptr2)) &&
@@ -5509,7 +5510,7 @@ BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg)
  * In this case this function returns
  * the mask (1<<LOOPSEQ_READ)|(1<<LOOPSEQ_WRITE)
  */
-static 
+
 UINT32 CG_Get_BB_Loopseq_Mask(BB *bb)
 {
   BB *head;
