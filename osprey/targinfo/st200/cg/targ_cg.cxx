@@ -1626,11 +1626,12 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 
   }
 
-  // Adjust the slot_pos for TOPs which occupy more than 1 slot position,
-  // eg. ??
   //
-  INT adjusted_slot_pos = (slot_avail && ISA_PACK_Inst_Words(OP_code(op)) > 1) ? 
-    max_pos + ISA_PACK_Inst_Words(OP_code(op)) - 1 : max_pos;
+  // Adjust the slot_pos for TOPs which occupy more than 1 slot position.
+  // NOTE: even if it gets > MAX_SLOT_POS, no problem
+  //
+  INT adjusted_slot_pos = max_pos + ISA_PACK_Inst_Words(OP_code(op)) - 1;
+
 
   //
   // fill with nops
@@ -1639,12 +1640,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
   OP *prev_op = NULL;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     if (i > adjusted_slot_pos) break;
-
-    //fprintf(TFile, "  filling noops slot %d\n", i);
-
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
-
-      //fprintf(TFile, "  slot not filled\n");
 
       // fill with nops.
       if (i <= max_pos) {
@@ -1671,9 +1667,11 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
     }
   }
 
+  BOOL bundle_full = TI_BUNDLE_Is_Full(bundle, &ti_err);
+  FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+
   // if the <bundle> is full, set the <end_group> marker appropriately.
-  if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
-    FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+  if (bundle_full) {
 
     // set <end_group> marker if the bundle is full
     if (prev_op) {

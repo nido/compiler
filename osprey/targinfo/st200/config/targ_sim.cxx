@@ -895,36 +895,42 @@ Get_Parameter_Location (
 	
     case MTYPE_M:
         {
-
-	  FmtAssert(FALSE,("MTYPE_M are passed"));
-#if 0
+	  //
+	  // When passed by value, parameters will be put in the
+	  // register slots as many as can fit and the rest copied
+	  // on stack.
+	  //
 	  ploc.size = TY_size (ty);
-	  INT psize = TY_size (ty) / MTYPE_RegisterSize(SIM_INFO.int_type);
-	  /* round up */
+
+	  // Calculate the number of parameter slots needed
+	  // A parameter slot is 4 bytes in size
+	  //
+	  INT psize = TY_size (ty) / 4;
+	  // round up
 	  if ((TY_size (ty) % MTYPE_RegisterSize(SIM_INFO.int_type)) != 0)
 	    psize++;
-	  /* structures are left-justified, so may be padding at end */
-	  rpad = (psize * MTYPE_RegisterSize(SIM_INFO.int_type)) - ploc.size;
-	  RETURN_INFO info = Get_Return_Info (ty, No_Simulated);
-          if (RETURN_INFO_count(info) &&
-              MTYPE_float (RETURN_INFO_mtype (info, 0)) &&
-	      !(Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
-            ++Current_Float_Param_Num;
-	    ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
-	    ploc.vararg_reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-            Current_Param_Num += RETURN_INFO_count (info) - 1;
-	    /* adjust Last_Fixed_Param in varargs case */
-	    if (Last_Fixed_Param < INT_MAX)
-	    	Last_Fixed_Param += RETURN_INFO_count(info) - 1;
-            Current_Float_Param_Num += RETURN_INFO_count (info) - 1;
-	  } else {
-	    ploc.reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-	    Current_Param_Num += psize - 1;
-	    /* adjust Last_Fixed_Param in varargs case */
-	    if (Last_Fixed_Param < INT_MAX)
-	    	Last_Fixed_Param += psize - 1;
+
+	  ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+
+	  // Structures are padded to a multiple of 32 bit.
+	  rpad = (psize * 4) - ploc.size;
+
+	  // Structures over 4 bytes are aligned on a 8-byte boundary
+	  if (Get_Preg_Alignment(ploc.reg) == 4) {
+	    //
+	    // skip one slot if the next still fits the register list
+	    //
+	    Current_Int_Param_Num++;
+	    ploc.start_offset += 4;
+	    ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
 	  }
-#endif
+
+	  // takes psize registers:
+	  Current_Int_Param_Num += psize;
+
+	  /* adjust Last_Fixed_Param in varargs case */
+	  if (Last_Fixed_Param < INT_MAX)
+	    Last_Fixed_Param += psize - 1;
 
 	}
 	break;

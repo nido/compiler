@@ -1476,16 +1476,25 @@ Handle_LDID (
     else {
 #ifdef EMULATE_LONGLONG
       {
-	/*
+#ifdef TARG_ST
+	// Arthur:
+	// Expand_Copy() should not be seen here !!
+	// should be able to handle everything in Exp_COPY !!
+	// But I feel something should be done about the
+	// EMULATE_LONGLONG ??
+	//
+        TYPE_ID mtype =  ST_mtype(WN_st(ldid));
+	Exp_COPY (result, ldid_result, &New_OPs);
+#else
         extern void
           Expand_Copy (TN *result, TN *src, TYPE_ID mtype, OPS *ops);
-	*/
         TYPE_ID mtype =  ST_mtype(WN_st(ldid));
         if (mtype == MTYPE_I8 || mtype == MTYPE_U8) {
-	  //          Expand_Copy (result, ldid_result, mtype, &New_OPs);
+	  Expand_Copy (result, ldid_result, mtype, &New_OPs);
         } else {
           Exp_COPY (result, ldid_result, &New_OPs);
         }
+#endif /* TARG_ST */
       }
 #else
       Exp_COPY (result, ldid_result, &New_OPs);

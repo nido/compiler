@@ -140,16 +140,16 @@ Expand_OP (
 	break;
   case OPR_ILOAD:
   case OPR_LDID:
-	if ( variant != 0 ) {
-		Expand_Misaligned_Load ( opcode, result, op1, op2, variant, ops);
+	if (V_alignment(variant) != V_NONE) {
+	  Expand_Misaligned_Load ( opcode, result, op1, op2, variant, ops);
 	}
 	else {
-		Expand_Load (opcode, result, op1, op2, ops);
+	  Expand_Load (opcode, result, op1, op2, ops);
 	}
 	break;
   case OPR_ISTORE:
   case OPR_STID:
-    if (variant != 0) {
+    if (V_alignment(variant) != V_NONE) {
       Expand_Misaligned_Store (desc, op1, op2, op3, variant, ops);
     }
     else {

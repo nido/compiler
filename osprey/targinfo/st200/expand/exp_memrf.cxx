@@ -632,55 +632,29 @@ Exp_Ldst (
     // address TNs
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
 
-#if 0
-    //
-    // These two are similar !!
-    //
-    if (ST_class(sym) == CLASS_CONST) {
-      //      char *cname = Get_TCON_name (ST_tcon(sym));
-
-      if (Trace_Exp) {
-	fprintf(TFile,"exp_ldst: constant UNNAMED_CONST_%d\n", ST_tcon(sym));
-      }
-
-      Build_OP (TOP_mov_i, tn, 
-                         Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
-
-      base_tn = tn;
-      ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
-
+    if (is_lda && base_ofst == 0) {
       // want to stop at address (either that or add with 0)
+      tmp1 = tn;
       is_lda = FALSE;	// so nothing done
     }
-    else {
-#endif
 
-      if (is_lda && base_ofst == 0) {
-	// want to stop at address (either that or add with 0)
-	tmp1 = tn;
-	is_lda = FALSE;	// so nothing done
-      }
-
-      // because it is not GP-relative, just make the address
-      Build_OP (TOP_mov_i, tmp1, 
+    // because it is not GP-relative, just make the address
+    Build_OP (TOP_mov_i, tmp1, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
-      // load is of address, not of result type
-      base_tn = tmp1;
+    // load is of address, not of result type
+    base_tn = tmp1;
 
-      // because it is not GP-relative, just use the address
-      // load is of address, not of result type
-      //      base_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
+    // because it is not GP-relative, just use the address
+    // load is of address, not of result type
+    //      base_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
 
-      // add offset to address
-      ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
-#if 0
-    }
-#endif
+    // add offset to address
+    ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
   }
 
   if (is_store) {
-    if (variant == V_NONE) {
+    if (V_alignment(variant) == V_NONE) {
       Expand_Store (OPCODE_desc(opcode), tn, base_tn, ofst_tn, &newops);
     }
     else {
@@ -689,7 +663,7 @@ Exp_Ldst (
     }
   }
   else if (is_load) {
-    if (variant == V_NONE)
+    if (V_alignment(variant) == V_NONE)
       Expand_Load (opcode, tn, base_tn, ofst_tn, &newops);
     else 
       Expand_Misaligned_Load (opcode, tn, 
@@ -737,7 +711,7 @@ void Exp_Lda (
 }
 
 /* ====================================================================
- *   Exp_Load2
+ *   Exp_Load
  * ====================================================================
  */
 void
