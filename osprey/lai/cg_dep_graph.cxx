@@ -5096,37 +5096,40 @@ BB *ops_same_loop(OP *op1, OP *op2)
   
   BB *head = NULL;
   // Check that loop head is the same.
-  // 1. First check if part of same remainder loop
-  // 2. Check if part of same loopdescr and not unrolled fully nor
+  // 1. First check that OP_unroll_bb is consistent (both null or
+  // both non null)
+  // 2. Then check if part of same remainder loop
+  // 3. Check if part of same loopdescr and not unrolled fully nor
   //    remainder
-  ANNOTATION *ant1 = ANNOT_Get(BB_annotations(bb1), ANNOT_REMAINDERINFO);
-  ANNOTATION *ant2 = ANNOT_Get(BB_annotations(bb2), ANNOT_REMAINDERINFO);
-  if (ant1 != NULL && ant2 != NULL &&
-      ant1->info == ant2->info) {
-    /* In same remainder loop. */
-    head =  REMAINDERINFO_head_bb(ANNOT_remainderinfo(ant1));
-  } else if (BB_loop_head_bb(bb1) &&
-	     (bb1 == bb2 ||
-	      (BB_loop_head_bb(bb1) == BB_loop_head_bb(bb2) &&
-	       !BB_unrolled_fully(bb1) && !BB_unrolled_fully(bb2) &&
+  if ((OP_unroll_bb(op1) == NULL && OP_unroll_bb(op2) == NULL) ||
+      (OP_unroll_bb(op1) != NULL && OP_unroll_bb(op2) != NULL)) {
+    ANNOTATION *ant1 = ANNOT_Get(BB_annotations(bb1), ANNOT_REMAINDERINFO);
+    ANNOTATION *ant2 = ANNOT_Get(BB_annotations(bb2), ANNOT_REMAINDERINFO);
+    if (ant1 != NULL && ant2 != NULL &&
+	ant1->info == ant2->info) {
+      /* In same remainder loop. */
+      head =  REMAINDERINFO_head_bb(ANNOT_remainderinfo(ant1));
+    } else if (BB_loop_head_bb(bb1) &&
+	       (bb1 == bb2 ||
+		(BB_loop_head_bb(bb1) == BB_loop_head_bb(bb2) &&
+		 !BB_unrolled_fully(bb1) && !BB_unrolled_fully(bb2) &&
 	       ant1 == NULL && ant2 == NULL))) {
-    head =  BB_loop_head_bb(bb1); /* same loop body. */
-  } 
+      head =  BB_loop_head_bb(bb1); /* same loop body. */
+    } 
+  }
 #ifdef Is_True_On
+  // Check that unrolling factor attached to OP_unroll_bb matches
   if (head != NULL) {
     INT32 unroll1_id =  OP_unroll_bb(op1) ? BB_id(OP_unroll_bb(op1)): BB_id(OP_bb(op1));
     INT32 unroll2_id =  OP_unroll_bb(op2) ? BB_id(OP_unroll_bb(op2)): BB_id(OP_bb(op2));
     INT32 unroll1 = OP_unroll_bb(op1) ? BB_unrollings(OP_unroll_bb(op1)):0; 
     INT32 unroll2 = OP_unroll_bb(op2) ? BB_unrollings(OP_unroll_bb(op2)):0; 
-    if ((unroll1 != unroll2) &&
-	(!OP_unroll_bb(op1) || !OP_unroll_bb(op2)))
-      return NULL;
-    DevAssert(unroll1 == unroll2,
-	      ("Unrolling mismatch (%d != %d) for ops (BB:%d,idx:%d) in BB:%dand (BB:%d,idx:%d) in BB:%d with same loop head BB:%d \n", 
-	       unroll1, unroll2,
-	       unroll1, OP_map_idx(op1), BB_id(OP_bb(op1)),
-	       unroll2, OP_map_idx(op2), BB_id(OP_bb(op2)),
-	       BB_id(head)));
+    if (unroll1 != unroll2)
+      DevWarn("Unrolling mismatch (%d != %d) for ops (BB:%d,idx:%d) in BB:%dand (BB:%d,idx:%d) in BB:%d with same loop head BB:%d \n", 
+	      unroll1, unroll2,
+	      unroll1, OP_map_idx(op1), BB_id(OP_bb(op1)),
+	      unroll2, OP_map_idx(op2), BB_id(OP_bb(op2)),
+	      BB_id(head));
   }
 #endif
   return head;
