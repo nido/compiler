@@ -709,7 +709,7 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
       bb2 = bblist;
   }
 
-  UINT32 exp_len = BB_length(head);
+  INT32 exp_len = BB_length(head);
 
   float prob1 = BBLIST_prob(bb1);
   float prob2 = BBLIST_prob(bb2);
@@ -744,11 +744,15 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   }
 
   // higher est_cost_branch means ifc more aggressive.
-  UINT32 est_cost_branch = atoi(CG_select_factor);
+  INT32 est_cost_branch = atoi(CG_select_factor);
 
   //If new block is bigger than CG_bblength_max, reject.
-  if ((exp_len - est_cost_branch) >= CG_split_BB_length)
+  if ((exp_len - est_cost_branch) >= CG_split_BB_length) {
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "expected new block too big. reject\n");
+    }
     return FALSE;
+  }
 
   UINT32 mem1 = 0;
   UINT32 mem2 = 0;
@@ -1624,7 +1628,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
    if (Trace_Select_Gen) {
      fprintf (TFile, "\nSelect_Fold BB%d\n", BB_id(head));
-     Print_All_BBs();
    }
    
   // keep a list of newly created conditional move / compare
