@@ -888,138 +888,6 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
 
 #if 0
 /* ====================================================================
- *   CGTARG_Is_OP_Advanced_Load
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Advanced_Load( OP *memop )
-{
-  if (!OP_load(memop)) return FALSE;
-  if (TOP_is_dismissible(OP_code(memop))) return TRUE;
-
-  return FALSE;
-}
-
-/* ====================================================================
- *
- * CGTARG_Is_OP_Speculative_Load
- *
- * See interface description
- *
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Speculative_Load ( 
-  OP *memop 
-)
-{
-  if (!OP_load(memop)) return FALSE;
-  if (TOP_is_dismissible(OP_code(memop))) return TRUE;
-
-  return FALSE;
-}
-
-/* ====================================================================
- *   CGTARG_Is_OP_Check_Load
- *
- *   no check loads on ST100.
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Check_Load ( 
-  OP *memop 
-)
-{
-  if (!OP_load(memop)) return FALSE;
-
-  return FALSE;
-}
-
-/* ====================================================================
- *   CGTARG_Is_OP_Speculative
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Speculative (
-  OP *op
-)
-{
-  if (!OP_load(op)) return FALSE;
-
-  // speculative and advanced loads are safe to speculate.
-  if (CGTARG_Is_OP_Advanced_Load(op) || CGTARG_Is_OP_Speculative_Load(op))
-    return TRUE;
-
-  return FALSE;
-}
-
-/* ====================================================================
- *   CGTARG_Can_Be_Speculative
- * ====================================================================
- */
-BOOL
-CGTARG_Can_Be_Speculative ( 
-  OP *op 
-)
-{
-  WN *wn;
-
-  /* not allowed to speculate anything. */
-  if (Eager_Level == EAGER_NONE) return FALSE;
-
-  /* don't speculate volatile memory references. */
-  if (OP_volatile(op)) return FALSE;
-
-  if (TOP_Can_Be_Speculative(OP_code(op))) return TRUE;
-
-  if (!OP_load(op)) return FALSE;
-
-  /* Try to identify simple scalar loads than can be safely speculated:
-   *  a) read only loads (literals, GOT-loads, etc.)
-   *  b) load of a fixed variable (directly referenced)
-   *  c) load of a fixed variable (base address is constant or
-   *     known to be in bounds)
-   *  d) speculative, advanced and advanced-speculative loads are safe.
-   */
-
-  /*  a) read only loads (literals, GOT-loads, etc.)
-   */
-  if (OP_no_alias(op)) goto scalar_load;
-
-  /*  b) load of a fixed variable (directly referenced); this
-   *     includes spill-restores.
-   *  b') exclude cases of direct loads of weak symbols (#622949).
-   */
-  if (TN_is_symbol(OP_opnd(op, 1)) &&
-      !ST_is_weak_symbol(TN_var(OP_opnd(op, 1)))) goto scalar_load;
-
-  /*  c) load of a fixed variable (base address is constant or
-   *     known to be in bounds), comment out the rematerizable bit check 
-   *     since it doesn;t guarantee safeness all the time.
-   */
-  if (/*   TN_is_rematerializable(OP_opnd(op, 0)) || */
-      (   (wn = Get_WN_From_Memory_OP(op))
-	  && Alias_Manager->Safe_to_speculate(wn))) goto scalar_load;
-
-  /* d) speculative, advanced, speculative-advanced loads are safe to 
-   *    speculate. 
-   */
-  if (CGTARG_Is_OP_Speculative(op)) goto scalar_load;
-
-  /* If we got to here, we couldn't convince ourself that we have
-   * a scalar load -- no speculation this time...
-   */
-  return FALSE;
-
-  /* We now know we have a scalar load of some form. Determine if they
-   * are allowed to be speculated.
-   */
-scalar_load:
-  return TRUE; 
-}
-#endif
-
-/* ====================================================================
  *   CGTARG_OP_is_counted_loop
  * ====================================================================
  */
@@ -1030,6 +898,7 @@ CGTARG_OP_is_counted_loop (
 {
   return FALSE;
 }
+#endif
 
 /* ====================================================================
  * CGTARG_Can_Change_To_Brlikely
@@ -1076,11 +945,7 @@ CGTARG_Generate_Remainder_Branch (
 }
 
 /* ====================================================================
- *
- * CGTARG_Generate_Branch_Cloop
- *
- * See interface description
- *
+ *   CGTARG_Generate_Branch_Cloop
  * ====================================================================
  */
 void
@@ -1093,7 +958,7 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
 			     OPS *body_ops)
 { 
 
-  FmtAssert(FALSE,("CGTARG_Generate_Branch_Cloop: not implemented"));
+  FmtAssert(FALSE,("target does not support counted loop branches"));
 }
 
 /* ====================================================================
@@ -1160,6 +1025,29 @@ CGTARG_Adjust_Latency (
 
   return;
 }
+
+/* ====================================================================
+ *   CGTARG_ARC_Sched_Latency
+ *
+ *    	  Wrapper function for ARC_latency to let us fix up some cases 
+ *	  where it returns a result that just doesn't make sence.  In
+ *	  particular a latency of -1 for the pre-branch latency makes no
+ *	  scheduling sense for CPUs which have same-cycle branch shadows.
+ *	  Should be 0.
+ *
+ *   TODO: see if this functionality is redundant ?
+ * ====================================================================
+ */
+INT CGTARG_ARC_Sched_Latency(
+  ARC *arc
+)
+{
+  if ( ARC_kind(arc) == CG_DEP_PREBR && PROC_has_same_cycle_branch_shadow() )
+    return 0;
+  else
+    return ARC_latency(arc);
+}
+
 
 /* ====================================================================
  *   CGTARG_Bundle_Stop_Bit_Available
@@ -1716,6 +1604,20 @@ void
 CGTARG_Insert_Stop_Bits(BB *bb)
 {
   return;
+}
+
+/* ====================================================================
+ *   CGTARG_Special_Min_II
+ *
+ *   Check for target specific (tail stepping, and other?) special
+ *	  cases that might force a higher Min II. If a case applies, the
+ *	  target specific MII is returned, otherwise 0 is returned.
+ *
+ * ====================================================================
+ */
+INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace)
+{
+  return 0;
 }
 
 /* ====================================================================
