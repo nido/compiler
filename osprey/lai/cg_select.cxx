@@ -2047,8 +2047,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
-  if (select_count || logif_count)
-    CFLOW_Optimize(CFLOW_MERGE, "CFLOW (from if conversion)");
+  // [CG] Can't be done in SSA. Moved to cg.cxx
+  //if (select_count || logif_count)
+  //CFLOW_Optimize(CFLOW_MERGE, "CFLOW (from if conversion)");
+
 
   BB_MAP_Delete(if_bb_map);
 

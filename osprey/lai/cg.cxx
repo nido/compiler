@@ -638,6 +638,13 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
+    // [CG] Run control flow opt after SSA.
+    // Currently enabled only if select_if_convert is true
+    if (CG_enable_ssa && CG_enable_select)
+      CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
+#endif
+    
+#ifdef TARG_ST
 #ifndef IFCONV_IN_SSA
     // Perform superblock formation after select if-conversion. 
     //
