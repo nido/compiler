@@ -240,25 +240,50 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 
       case MTYPE_I2:
       case MTYPE_U2:
-	Emit_Repeated_Constant ( fl,
-		((loc % 2) == 0 ? AS_HALF : AS_HALF_UNALIGNED), 
-		TCON_v0(tc) & 0xffff, rc, 8 );
+	FmtAssert((loc % 2) == 0, ("unaligned access"));
+	Emit_Repeated_Constant ( fl, AS_HALF, TCON_v0(tc) & 0xffff, rc, 8);
 	rc = 0;
 	break;
 
       case MTYPE_I4:
       case MTYPE_U4:
-	Emit_Repeated_Constant ( fl, 
-		((loc % 4) == 0 ? AS_WORD : AS_WORD_UNALIGNED), 
-		TCON_v0(tc), rc, 4 );
+	FmtAssert((loc % 4) == 0, ("unaligned access"));
+	Emit_Repeated_Constant ( fl, AS_WORD, TCON_v0(tc), rc, 4);
 	rc = 0;
 	break;
 
       case MTYPE_I8:
       case MTYPE_U8:
-	Emit_Repeated_Constant ( fl, 
-		((loc % 8) == 0 ? AS_DWORD : AS_DWORD_UNALIGNED), 
-		TCON_I8(tc), rc, 2 );
+#if 0
+	{
+	  INTSC this_rc;
+	  TCON hi = Extract_Double_Hi(tc);
+	  TCON lo = Extract_Double_Lo(tc);
+
+	  INT32 val1, val2;
+
+	  FmtAssert((loc % 4) == 0, ("unaligned access"));
+	  if (Target_Byte_Sex == BIG_ENDIAN) {
+	    val1 = TCON_I4(hi);
+	    val2 = TCON_I4(lo);
+	  }
+	  else {
+	    val1 = TCON_I4(lo);
+	    val2 = TCON_I4(hi);
+	  }
+
+	  do {
+	    INT i;
+	    fprintf(fl, "\t%s\t%d", AS_WORD, val1);
+	    fprintf(fl, ", %d", val2);
+	    fprintf(fl, "\n");
+	  } while (rc -= 1);
+	}
+#endif
+	FmtAssert((loc % 8) == 0, ("unaligned access"));
+	Emit_Repeated_Constant ( fl, AS_DWORD, TCON_I8(tc), rc, 2 );
+	//((loc % 8) == 0 ? AS_DWORD : AS_DWORD_UNALIGNED), 
+	//TCON_I8(tc), rc, 2 );
 	rc = 0;
 	break;
 

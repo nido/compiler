@@ -95,6 +95,8 @@
 #include "targ_isa_bundle.h"
 #include "targ_isa_operands.h"
 
+extern void Early_Terminate (INT status);
+
 #define PAD_SIZE_LIMIT	2048	/* max size to be padded in a section */
 
 /* c++ mangled names can be any arbitrary length,
@@ -931,6 +933,13 @@ Write_Symbol (
   pSCNINFO scn = em_scn[scn_idx].scninfo;
   INT address_size = ((Use_32_Bit_Pointers) ? 4 : 8);
 
+  if ( Trace_Init ) {
+    #pragma mips_frequency_hint NEVER
+    Trace_Init_Loc (scn_idx, scn_ofst, repeat);
+    fprintf ( TFile, "SYM " );
+    fprintf ( TFile, "%s %+lld\n", ST_name(sym), sym_ofst );
+  }
+
   /* make sure is allocated */
   if (!Has_Base_Block(sym)) {
     Allocate_Object(sym);
@@ -946,9 +955,14 @@ Write_Symbol (
   if (ST_sclass(sym) == SCLASS_TEXT && !Has_Base_Block(sym)) {
     INT32 padding;
     padding = repeat * address_size;
-    if (padding > 0) {
-      ASM_DIR_ZERO(Output_File, padding);
+    if (Assembly && padding > 0) {
+      ASM_DIR_ZERO(Asm_File, padding);
     }
+#if 0
+    if (Object_Code) {
+      Em_Add_Zeros_To_Scn (scn, padding, 1);
+    }
+#endif
     scn_ofst += padding;
     return scn_ofst;
   }
@@ -963,51 +977,78 @@ Write_Symbol (
       ST_class(sym) != CLASS_FUNC) {
     Base_Symbol_And_Offset (sym, &basesym, &base_ofst);
   }
-
+  if (Use_Separate_PU_Section (current_pu, basesym)) {
+	/* use PU text section rather than generic one */
+	basesym = PU_base;
+  }
   base_ofst += sym_ofst;
+
+#if 0
+  if (Object_Code && repeat != 0) {
+    if (Use_32_Bit_Pointers) {
+      Em_Add_New_Content (CK_SADDR_32, scn_ofst, 4*repeat, 0, scn);
+    }
+    else {
+      Em_Add_New_Content (CK_SADDR_64, scn_ofst, 8*repeat, 0, scn);
+    }
+  }
+#endif
 
   for ( i = 0; i < repeat; i++ ) {
     // do object code first so base section initialized
-
-    fprintf (Output_File, "\t%s\t", 
-		(scn_ofst % address_size) == 0 ? 
-		AS_ADDRESS : AS_ADDRESS_UNALIGNED);
-    if (ST_class(sym) == CLASS_CONST) {
-      EMT_Write_Qualified_Name (Output_File, basesym);
-      fprintf (Output_File, " %+lld\n", base_ofst);
-    }
-#ifdef TARG_ST
-    //
-    // Arthur: the way a function pointer is emitted depends on
-    //         whether or not we're generating GP-relative, GOT,
-    //         etc. Does not it ??
-    //
-    else if (ST_class(sym) == CLASS_FUNC) {
-      if (Gen_GP_Relative) {
-	FmtAssert(FALSE,("GP relative not supported"));
-      }
-      else {
-	//fprintf (Output_File, " %s(", AS_FPTR);
-	EMT_Write_Qualified_Name (Output_File, sym);
-	//fprintf (Output_File, " %+lld)\n", sym_ofst);
-	fprintf (Output_File, "%+lld\n", sym_ofst);
-      }
-    }
-#else
-    else if (ST_class(sym) == CLASS_FUNC && AS_FPTR) {
-      fprintf (Output_File, " %s(", AS_FPTR);
-      EMT_Write_Qualified_Name (Output_File, sym);
-      fprintf (Output_File, " %+lld)\n", sym_ofst);
+#if 0
+    if (Object_Code) {
+	if (ST_sclass(sym) == SCLASS_EH_REGION_SUPP) {
+      		Em_Add_Displacement_To_Scn (scn, EMT_Put_Elf_Symbol (basesym),
+			base_ofst, 1);
+	} else {
+      		Em_Add_Address_To_Scn (scn, EMT_Put_Elf_Symbol (basesym), 
+			base_ofst, 1);
+	}
     }
 #endif
-    else {
-      EMT_Write_Qualified_Name (Output_File, sym);
-      fprintf (Output_File, " %+lld\n", sym_ofst);
-    }
-    if (ST_class(sym) == CLASS_FUNC) {
-      fprintf (Output_File, "\t%s\t", AS_TYPE);
-      EMT_Write_Qualified_Name (Output_File, sym);
-      fprintf (Output_File, ", %s\n", AS_TYPE_FUNC);
+    if (Assembly) {
+      fprintf (Output_File, "\t%s\t", 
+	       (scn_ofst % address_size) == 0 ? 
+	       AS_ADDRESS : AS_ADDRESS_UNALIGNED);
+      if (ST_class(sym) == CLASS_CONST) {
+	EMT_Write_Qualified_Name (Output_File, basesym);
+	fprintf (Output_File, " %+lld\n", base_ofst);
+      }
+#ifdef TARG_ST
+      //
+      // Arthur: the way a function pointer is emitted depends on
+      //         whether or not we're generating GP-relative, GOT,
+      //         etc. Does not it ??
+      //
+      else if (ST_class(sym) == CLASS_FUNC) {
+	if (Gen_GP_Relative) {
+	  FmtAssert(FALSE,("GP relative not supported"));
+	}
+	else {
+	  //fprintf (Output_File, " %s(", AS_FPTR);
+	  EMT_Write_Qualified_Name (Output_File, sym);
+	  //fprintf (Output_File, " %+lld)\n", sym_ofst);
+	  fprintf (Output_File, "%+lld\n", sym_ofst);
+	}
+      }
+#else
+      else if (ST_class(sym) == CLASS_FUNC && AS_FPTR) {
+	fprintf (Output_File, " %s(", AS_FPTR);
+	EMT_Write_Qualified_Name (Output_File, sym);
+	fprintf (Output_File, " %+lld)\n", sym_ofst);
+      }
+#endif
+      else {
+	EMT_Write_Qualified_Name (Output_File, sym);
+	fprintf (Output_File, " %+lld\n", sym_ofst);
+      }
+
+      if (ST_class(sym) == CLASS_FUNC) {
+	fprintf (Output_File, "\t%s\t", AS_TYPE);
+	EMT_Write_Qualified_Name (Output_File, sym);
+	fprintf (Output_File, ", %s\n", AS_TYPE_FUNC);
+      }
     }
 
     scn_ofst += address_size;
@@ -1061,19 +1102,55 @@ Write_Symdiff (
 )
 {
   INT32 i;
+  ST *basesym1;
+  ST *basesym2;
+  INT64 base1_ofst = 0;
+  INT64 base2_ofst = 0;
+  pSCNINFO scn = em_scn[scn_idx].scninfo;
   ST *sym2 = &St_Table[sym2idx];
+  INT32 val;
+
+  if ( Trace_Init ) {
+    #pragma mips_frequency_hint NEVER
+    Trace_Init_Loc (scn_idx, scn_ofst, repeat);
+    fprintf ( TFile, "SYMDIFF " );
+    fprintf ( TFile, "%s - %s\n", LABEL_name(lab1), ST_name(sym2));
+  }
 
   /* symbols must have an address */
-  Is_True (lab1, ("lai_emit: Symdiff lab1 is null"));
-  Is_True (sym2, ("lai_emit: Symdiff sym2 is null"));
-  Is_True (Has_Base_Block(sym2), ("lai_emit: Symdiff sym2 not allocated"));
+  Is_True (lab1, ("cgemit: Symdiff lab1 is null"));
+  Is_True (sym2, ("cgemit: Symdiff sym2 is null"));
+  Is_True (Has_Base_Block(sym2), ("cgemit: Symdiff sym2 not allocated"));
+
+  basesym1 = BB_cold(Get_Label_BB(lab1)) ? cold_base : text_base;
+  base1_ofst = Get_Label_Offset(lab1);
+  Base_Symbol_And_Offset (sym2, &basesym2, &base2_ofst);
+  if (Use_Separate_PU_Section(current_pu,basesym2)) {
+	/* use PU text section rather than generic one */
+	basesym2 = PU_base;
+  }
+  Is_True (basesym1 == basesym2, ("cgemit: Symdiff bases not same"));
+  val = base1_ofst - base2_ofst;
+  if (val < 0) val = 0;
+  if (size == 2) {
+	if (val > INT16_MAX) {
+		DevWarn("symdiff value not 16-bits; will try recompiling with -TENV:long_eh_offsets");
+		Early_Terminate (RC_OVERFLOW_ERROR);
+	}
+	val = val << 16;	/* for Add_Bytes */
+  }
 
   for ( i = 0; i < repeat; i++ ) {
-    fprintf (Output_File, "\t%s\t", (size == 2 ? AS_HALF : AS_WORD));
-    fprintf(Output_File, "%s", LABEL_name(lab1));
-    fprintf (Output_File, "-");
-    EMT_Write_Qualified_Name (Output_File, sym2);
-    fprintf (Output_File, "\n");
+    if (Assembly) {
+      fprintf (Output_File, "\t%s\t", (size == 2 ? AS_HALF : AS_WORD));
+      fprintf(Output_File, "%s", LABEL_name(lab1));
+      fprintf (Output_File, "-");
+      EMT_Write_Qualified_Name (Output_File, sym2);
+      fprintf (Output_File, "\n");
+    }
+    if (Object_Code) {
+      Em_Add_Bytes_To_Scn (scn, (char *) &val, size, 1);
+    }
     scn_ofst += size;
   }
   return scn_ofst;
