@@ -256,6 +256,19 @@ TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Stop_Bit_Available(
   INT        slot
 );
 
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern ISA_EXEC_MASK TI_BUNDLE_Set_Slot_Mask_Property(
+  ISA_EXEC_MASK slot_mask,
+  INT slot,
+  ISA_EXEC_UNIT_PROPERTY property
+);
+
+TARGINFO_EXPORTED extern ISA_EXEC_UNIT_PROPERTY TI_BUNDLE_Get_Slot_Mask_Property(
+  ISA_EXEC_MASK slot_mask,
+  INT slot
+);
+#endif
+
 TARGINFO_EXPORTED extern void TI_BUNDLE_Reserve_Slot(
   TI_BUNDLE  *bundle,
   INT slot,
