@@ -55,7 +55,7 @@
  * ====================================================================
  */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include <stdio.h>
 #include <iterator.h>
 #include "defs.h"
