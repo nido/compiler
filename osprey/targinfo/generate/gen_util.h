@@ -70,6 +70,16 @@
 extern "C" {
 #endif
 
+#ifdef __CYGWIN__
+#define BZERO(s,n) bzero((char*)s,n)
+#else
+#ifdef __MINGW32__
+#define BZERO(s,n) memset ((void*)(s),0,(n))
+#else
+#define BZERO(s,n) bzero((void*)s,n)
+#endif
+#endif
+
 extern void Emit_Header (FILE *hfile, 
 			 const char *name, 
 			 const char * const *interface_desc);

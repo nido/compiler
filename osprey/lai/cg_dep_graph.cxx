@@ -666,7 +666,7 @@ inline BOOL has_assigned_reg(TN *tn)
 
 static TN_LIST *same_reg[REGISTER_MAX+1][ISA_REGISTER_CLASS_MAX+1];
 
-#define init_reg_assignments() bzero(same_reg, sizeof(same_reg))
+#define init_reg_assignments() BZERO(same_reg, sizeof(same_reg))
 
 // See above for interface.
 inline void add_reg_assignment(TN *tn)
@@ -1404,7 +1404,7 @@ OP_LIST *defop_by_reg[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
 inline void defop_init(void)
 {
   defop_by_tn = TN_MAP_Create();
-  bzero(defop_by_reg, sizeof(defop_by_reg));
+  BZERO(defop_by_reg, sizeof(defop_by_reg));
 }
 
 //
@@ -4509,7 +4509,7 @@ CG_DEP_Prune_Dependence_Arcs(list<BB*>    bblist,
   TN_MAP tn_usage_map = TN_MAP_Create();
   void *reg_ops[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
   OP_MAP omap = OP_MAP_Create();
-  bzero(reg_ops, sizeof(reg_ops));
+  BZERO(reg_ops, sizeof(reg_ops));
 
   // Record multiple-definitions of the same TN. Set to <TRUE> if a TN is
   // multiply-defined. Set to <FALSE> if TN is not multiply-defined.

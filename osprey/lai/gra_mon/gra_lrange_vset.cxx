@@ -73,7 +73,7 @@ LRANGE_VSET_Create( LRANGE** vec, size_t count, MEM_POOL *pool )
   //  library version), it will probably do better with long vectors than
   //  anything we can write in simple C without really understanding which
   //  compiler will be used.  *Sigh*
-  bcopy((void*) vec,
+  BCOPY((void*) vec,
         (void*) (result->vec),
         count * sizeof(LRANGE*));
   result->count = count;
