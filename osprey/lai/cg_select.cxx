@@ -971,28 +971,25 @@ Rename_Locals(OP* op, hTN_MAP dup_tn_map)
 //
 /////////////////////////////////////
 {
-  INT i = 0;
   TN *res, *new_tn;
 
-  for (i = 0; i < OP_results(op); i++) {
-    res = OP_result(op, i);
+  for (INT opndnum = 0; opndnum < OP_results(op); opndnum++) {
+    res = OP_result(op, opndnum);
     if (TN_is_register(res) &&
 	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
       new_tn = Dup_TN(res);
       hTN_MAP_Set(dup_tn_map, res, new_tn);
-      Set_OP_result(op, i, new_tn);
+      Set_OP_result(op, opndnum, new_tn);
     }
   }
 
-  i = 0;
   for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
     res = OP_opnd(op, opndnum);
     if (TN_is_register(res) &&
 	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
       new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
-      Set_OP_opnd(op, i, new_tn);
+      Set_OP_opnd(op, opndnum, new_tn);
     }
-    i++;
   }
 }
 
@@ -1047,31 +1044,28 @@ Rename_Globals(OP* op, hTN_MAP dup_tn_map)
 //
 /////////////////////////////////////
 {
-  INT i;
   TN *res, *new_tn;
 
-  for (i = 0; i < OP_results(op); i++) {
-    res = OP_result(op, i);
+  for (INT opndnum = 0; opndnum < OP_results(op); opndnum++) {
+    res = OP_result(op, opndnum);
     if (TN_is_register(res) && TN_is_global_reg(res) && 
 	!TN_is_dedicated(res)) {
       new_tn = Dup_TN(res);
       // make sure new tn is marked as global.
       Set_TN_is_global_reg (new_tn);
       hTN_MAP_Set(dup_tn_map, res, new_tn);
-      Set_OP_result(op, i, new_tn);
+      Set_OP_result(op, opndnum, new_tn);
     }
   }
 
-  i = 0;
   for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
-    res = OP_opnd(op, i);
+    res = OP_opnd(op, opndnum);
     if (TN_is_register(res) && TN_is_global_reg(res) && 
 	!TN_is_dedicated(res)) {
       new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
       if (new_tn) 
-        Set_OP_opnd(op, i, new_tn);
+        Set_OP_opnd(op, opndnum, new_tn);
     }
-    i++;
   }
 }
 
@@ -1163,7 +1157,6 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
   OPS new_ops = OPS_EMPTY;  
 
   do {
-    OPS old_ops = OPS_EMPTY;
     op_list old_phis;
 
     if (Trace_Select_Candidates) {
@@ -1177,6 +1170,7 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
 
     FOR_ALL_BB_OPs_FWD(bp, op) {
       if (OP_code (op) == TOP_phi) {
+        OPS old_ops = OPS_EMPTY;
         UINT8 nopnds = 0;
         TN *opnd[BB_preds_len(bp)-1];
       
@@ -1206,9 +1200,14 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
         }
 
         if (OPS_length(&old_ops) != 0) {
-          Rename_Locals (OPS_last(&old_ops), dup_tn_map);
-          Rename_Globals (OPS_last(&old_ops), dup_tn_map);
+          OP *lop;
+          FOR_ALL_OPS_OPs(&old_ops, lop) {
+            Rename_Locals (lop, dup_tn_map);
+            Rename_Globals (lop, dup_tn_map);
+          }
         }
+        if (OPS_length(&old_ops) != 0) 
+          BB_Prepend_Ops(bp, &old_ops);
       }
       else if (!OP_br (op)) {
         OP* new_op = Dup_OP (op);
@@ -1218,6 +1217,7 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
         // duplicated block. original tns are promoted using new_ops.
         Rename_Locals (op, dup_tn_map);
         Rename_Globals (op, dup_tn_map);
+
         if (OP_memory(op)) {
           Update_Mem_Lists (op, new_op);
         }
@@ -1227,8 +1227,6 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
     BB_Remove_Ops(bp, old_phis);
     old_phis.clear();
 
-    if (OPS_length(&old_ops) != 0) 
-      BB_Prepend_Ops(bp, &old_ops);
   } while ((bp = BB_Unique_Successor (bp)) != tail);
 
   Rename_PHIs(dup_tn_map, to_bb, tail, first_bb, taken);
