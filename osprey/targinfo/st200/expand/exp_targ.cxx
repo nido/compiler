@@ -1049,6 +1049,23 @@ Expand_Multiply (
       Build_OP(opcode, dest, src1, src2, ops);
     }
 
+    // word <- half * word
+    else if ((s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4) || 
+             (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4) ||
+             (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4) ||
+             (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4) ||
+             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2) || 
+             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2) ||
+             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2) ||
+             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2)) {
+      if (s1mtype == MTYPE_I2 || s2mtype == MTYPE_I2)
+        opcode = has_const ? TOP_mull_i : TOP_mull_r;
+      else
+        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
     // word <- word * word
     else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
              (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
