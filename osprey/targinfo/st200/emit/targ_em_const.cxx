@@ -202,7 +202,7 @@ static void Emit_Repeated_Constant(
   } while (rc -= this_rc);
 }
 
-#define MULTIFLOW_SHIT_STILL_NOT_WORKING
+#define __ALTERNATE_EMIT_CONST_IU8
 
 /* ====================================================================
  *
@@ -269,7 +269,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
            be issued by Expand_Misaligned_Stores */
 	FmtAssert((loc % 8) == 0, ("unaligned access"));
 #endif
-#ifdef MULTIFLOW_SHIT_STILL_NOT_WORKING
+#ifdef __ALTERNATE_EMIT_CONST_IU8
 	{
 	  INTSC this_rc;
 	  TCON hi = Extract_Double_Hi(tc);
