@@ -73,7 +73,7 @@ Initialize_Targ_Info (void)
     isa = ISA_SUBSET_st231;
     break;
   case TARGET_ISA_ST235:
-    isa = ISA_SUBSET_st231;
+    isa = ISA_SUBSET_st235;
     break;
   default:
     FmtAssert(FALSE, ("targinfo doesn't handle isa: %s\n", Isa_Name(Target_ISA)));
@@ -93,7 +93,7 @@ Initialize_Targ_Info (void)
     proc = PROCESSOR_st231;
     break;
   case TARGET_st235:
-    proc = PROCESSOR_st231;
+    proc = PROCESSOR_st235;
     break;
   default:
     FmtAssert(FALSE, ("targinfo doesn't handle target: %s\n", Targ_Name(Target)));
