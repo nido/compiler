@@ -483,7 +483,6 @@ CG_Generate_Code(
     }
 #endif
 
-#ifndef TARG_ST
     // Optimize control flow (first pass)
     if (CG_opt_level > 0 && CFLOW_opt_before_cgprep) {
       // Perform all the optimizations that make things more simple.
@@ -494,7 +493,6 @@ CG_Generate_Code(
       if (frequency_verify && CG_PU_Has_Feedback)
 	FREQ_Verify("CFLOW (first pass)");
     }
-#endif
 
     // Invoke global optimizations before register allocation at -O2 and above.
     if (CG_opt_level > 1) {
