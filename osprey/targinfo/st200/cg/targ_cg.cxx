@@ -473,22 +473,18 @@ CGTARG_Analyze_Compare (
   /* Attempt to find the defining OP for the tested value.
    */
   def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
-  
   //
-  // Make sure we've found one
+  // Sometimes, we won't find any ...
   //
-#if 0
-  Print_OP(br);
-  if (def_op) Print_OP(def_op);
-#endif
-  FmtAssert(def_op != NULL && OP_opnds(def_op) == 2,("confused by the compare op"));
+  if (def_op != NULL) {
+    FmtAssert(OP_opnds(def_op) == 2, ("confused by the compare op"));
 
-  variant = TOP_br_variant(OP_code(def_op));
-  /* [CG] : Set false branch variant if needed. */
-  if (false_br) Set_V_false_br(variant);
+    variant = OP_Compare_Variant(def_op);
+    if (false_br) Set_V_false_br(variant);
 
-  cond_tn1 = OP_opnd(def_op, 0);
-  cond_tn2 = OP_opnd(def_op, 1);
+    cond_tn1 = OP_opnd(def_op, 0);
+    cond_tn2 = OP_opnd(def_op, 1);
+  }
 
   *compare_op = def_op;
 
@@ -954,7 +950,7 @@ CGTARG_Spill_Type (
 
       // FdF: Spill type for branch register is I4 in memory
     case ISA_REGISTER_CLASS_branch:
-      return MTYPE_To_TY(MTYPE_I1);
+      return MTYPE_To_TY(MTYPE_I4);
 
     default:
       FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
@@ -979,8 +975,8 @@ void CGTARG_Load_From_Memory (
      * an integer register and then set the predicate by checking for
      * a non-zero value.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (mtype);
-    Exp_Load (MTYPE_I4, mtype, temp_tn, mem_loc, 0, ops, V_NONE);
+    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
+    Exp_Load (MTYPE_I4, MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
     Build_OP(TOP_mtb, tn, temp_tn, ops);
     DevWarn("Spill of branch register: reload\n");
   }
@@ -1007,9 +1003,9 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
      * Since we can't directly store a predicate TN, first copy to
      * an integer register and then store.
      */
-    TN *temp_tn = Build_TN_Of_Mtype (mtype);
+    TN *temp_tn = Build_TN_Of_Mtype (MTYPE_I4);
     Build_OP(TOP_mfb, temp_tn, tn, ops);
-    Exp_Store (mtype, temp_tn, mem_loc, 0, ops, V_NONE);
+    Exp_Store (MTYPE_I4, temp_tn, mem_loc, 0, ops, V_NONE);
     DevWarn("Spill of branch register: store\n");
   }
   else {
