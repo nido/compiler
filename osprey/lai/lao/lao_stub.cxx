@@ -210,19 +210,19 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	temporary = Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
-	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
@@ -248,7 +248,6 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
     // the Operation arguments
     int argCount = OP_opnds(cgir_op);
     Temporary *arguments = (Temporary *)(argCount ? alloca(argCount*sizeof(Temporary)) : NULL);
-    for (int i = 0; i < argCount; i++) Is_True(!Is_CG_LOOP_Op(cgir_op) || (OP_omega(cgir_op, i) <= 1), ("LAO called on TN with omega > 1"));
     for (int i = 0; i < argCount; i++) arguments[i] = CGIR_TN_to_Temporary(OP_opnd(cgir_op, i));
     // the Operation results
     int resCount = OP_results(cgir_op);
@@ -339,11 +338,34 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
   return basicblock;
 }
 
-// Convert CGIR_LI to LIR LoopInfo.
+// Convert CGIR_LD to LIR LoopInfo.
 static LoopInfo
-CGIR_LI_to_LoopInfo(CGIR_LI cgir_li) {
-  LoopInfo loopinfo = Interface_findLoopInfo(interface, cgir_li);
+CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
+  LoopInfo loopinfo = Interface_findLoopInfo(interface, cgir_ld);
   if (loopinfo == NULL) {
+    BB *head_bb = LOOP_DESCR_loophead(cgir_ld);
+    BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
+    LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
+    if (cgir_li != NULL) {
+      TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
+      if (trip_count_tn != NULL && TN_is_constant(trip_count_tn)) {
+	uint64_t trip_count = TN_value(trip_count_tn);
+	int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
+	uint64_t trip_factor = trip_count & -trip_count;
+	int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
+	loopinfo = Interface_makeLoopInfo(interface, cgir_ld, head_block, 4,
+	    Configuration_Pipelining, CG_LAO_pipelining,
+	    Configuration_MinTrip, min_trip_count,
+	    Configuration_Modulus, min_trip_factor,
+	    Configuration_Residue, 0);
+      } else {
+	loopinfo = Interface_makeLoopInfo(interface, cgir_ld, head_block, 1,
+	    Configuration_Pipelining, CG_LAO_pipelining);
+      }
+    } else {
+      loopinfo = Interface_makeLoopInfo(interface, cgir_ld, head_block, 1,
+	  Configuration_Pipelining, CG_LAO_pipelining);
+    }
   }
   return loopinfo;
 }
@@ -509,7 +531,7 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
+CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
   for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
@@ -526,10 +548,6 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
       Set_OP_unroll_bb(operations[opCount], new_bb);
   }
   BB_Append_Ops(new_bb, &ops);
-  // Add the cgir_li.
-  if (cgir_li != NULL) {
-    BB_Add_Annotation(new_bb, ANNOT_LOOPINFO, cgir_li);
-  }
   // Transfer annotations and attributes.
   if (cgir_bb != NULL) {
     if (BB_has_pragma(cgir_bb)) {
@@ -566,7 +584,7 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
+CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, int unrolled, int ordering, unsigned optimizations) {
   // Add the labels.
   for (int labelCount = 0; labels[labelCount] != 0; labelCount++) {
     CGIR_LAB cgir_lab = labels[labelCount];
@@ -585,15 +603,10 @@ CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
       Is_True(OP_unroll_bb(operations[opCount]), ("Unrolled operation with NULL unroll_bb"));
   }
   BB_Append_Ops(cgir_bb, &ops);
-  // Remove the cgir_li if any.
+  // Remove the LOOPINFO if any.
   ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
     BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
-  }
-  // Add the cgir_li, unless it is a dummy created by CGIR_LI_create.
-  if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
-    BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
-    //TODO: update the LOOP_DESCR
   }
   // Set unrollings.
   if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
@@ -652,31 +665,37 @@ CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs) {
   }
 }
 
-// Create a CGIR_LI.
-static CGIR_LI
-CGIR_LI_create(CGIR_LI cgir_li, int unrolled) {
-  CGIR_LI new_li = TYPE_P_ALLOC(LOOPINFO);
-  if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
-    // Code adapted from Unroll_Dowhile_Loop.
-    WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
-    if (unrolled != 0) {
-      WN_loop_trip_est(wn) /= unrolled;
-      WN_loop_trip_est(wn) += 1;
-    }
-    LOOPINFO_wn(new_li) = wn;
-    LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
-  } else {
-    // Create a dummy CGIR_LI.
-    LOOPINFO_wn(new_li) = NULL;
-  }
-  //
-  return new_li;
+// Create a CGIR_LD.
+static CGIR_LD
+CGIR_LD_create(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
+  // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
+  Is_True(0, ("CGIR_LD_create should not be called"));
+  return cgir_ld;
 }
 
-// Update a CGIR_LI.
+// Update a CGIR_LD.
 static void
-CGIR_LI_update(CGIR_LI cgir_li, int unrolled) {
+CGIR_LD_update(CGIR_LD cgir_ld, CGIR_BB head_bb, int unrolled) {
+  Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_update"));
+  // We only update the LOOPINFOs for use by LOOP_DESCR_Detect_Loops.
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
+  if (annot != NULL) ANNOT_Unlink(BB_annotations(head_bb), annot);
+  LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
+  if (cgir_li != NULL) {
+    LOOPINFO *new_li = TYPE_P_ALLOC(LOOPINFO);
+    LOOPINFO_wn(new_li) = LOOPINFO_wn(cgir_li);
+    if (LOOPINFO_wn(cgir_li) != NULL && unrolled > 1) {
+      // Code adapted from Unroll_Dowhile_Loop.
+      WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
+      WN_loop_trip_est(wn) /= unrolled;
+      WN_loop_trip_est(wn) += 1;
+      LOOPINFO_wn(new_li) = wn;
+    }
+    LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
+    BB_Add_Annotation(head_bb, ANNOT_LOOPINFO, new_li);
+  }
 }
+
 
 /*--------------------------- lao_init / lao_fini ----------------------------*/
 
@@ -729,8 +748,8 @@ lao_init() {
     *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
     *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
     *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
-    *CGIR_CallBack__LI_create(callback) = CGIR_LI_create;
-    *CGIR_CallBack__LI_update(callback) = CGIR_LI_update;
+    *CGIR_CallBack__LD_create(callback) = CGIR_LD_create;
+    *CGIR_CallBack__LD_update(callback) = CGIR_LD_update;
     // initialize the TOP__Operator array
     for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator__;
     TOP__Operator[TOP_add_i] = Operator_CODE_ADD_IDEST_SRC1_ISRC2;
@@ -1190,40 +1209,6 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
   return loopinfo;
 }
 
-// Make a LAO LoopInfo from the LOOP_DESCR supplied.
-static LoopInfo
-lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
-  LoopInfo loopinfo = NULL;
-  BB *head_bb = LOOP_DESCR_loophead(loop);
-  ANNOTATION *loopinfo_ant = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
-  BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
-  if (loopinfo_ant != NULL) {
-    // Make the LoopInfo for this loop.
-    CGIR_LI cgir_li = ANNOT_loopinfo(loopinfo_ant);
-    TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
-    if (trip_count_tn != NULL && TN_is_constant(trip_count_tn)) {
-      uint64_t trip_count = TN_value(trip_count_tn);
-      int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
-      uint64_t trip_factor = trip_count & -trip_count;
-      int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
-      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 4,
-	  Configuration_Pipelining, pipelining,
-	  Configuration_MinTrip, min_trip_count,
-	  Configuration_Modulus, min_trip_factor,
-	  Configuration_Residue, 0);
-    } else {
-      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
-	  Configuration_Pipelining, pipelining);
-    }
-  } else {
-    // Create a dummy CGIR_LI and make the LoopInfo.
-    CGIR_LI cgir_li = CGIR_LI_create(NULL, 0);
-    loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
-	Configuration_Pipelining, pipelining);
-  }
-  return loopinfo;
-}
-
 /*----------------------- LAO Optimization Functions -------------------------*/
 
 // Low-level LAO_optimize entry point.
@@ -1278,7 +1263,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     if (BB_loophead(bb) || BB_entry(bb)) {
       LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
       if (loop != NULL && LOOP_DESCR_loophead(loop) == bb) {
-	LoopInfo loopinfo = lao_makeLoopInfo(loop, pipelining);
+	LoopInfo loopinfo = CGIR_LD_to_LoopInfo(loop);
 	lao_fillLoopInfo(loop, loopinfo);
       } else {
 	// Note, the loophead is not reset by find loops, thus
