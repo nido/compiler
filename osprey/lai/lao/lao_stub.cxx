@@ -446,7 +446,7 @@ CGIR_BB_identity(CGIR_BB cgir_bb) {
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li) {
+CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled) {
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
@@ -480,13 +480,15 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_NOTE);
     }
   }
+  // Set unrollings.
+  Set_BB_unrollings(new_bb, unrolled);
   //
   return new_bb;
 }
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li) {
+CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled) {
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
     CGIR_LAB cgir_lab = labels[i];
@@ -512,6 +514,8 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
+  // Set unrollings.
+  Set_BB_unrollings(cgir_bb, unrolled);
 }
 
 // Chain two CGIR_BBs in the CGIR.
