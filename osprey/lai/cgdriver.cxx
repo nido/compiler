@@ -95,7 +95,8 @@
 #include "register.h"
 #include "pqs_cg.h"
 
-extern void Set_File_In_Printsrc(char *);	/* defined in printsrc.c */
+extern void Set_File_In_Printsrc(char *); /* defined in printsrc.c */
+extern void Configure_CG_Target(void);    /* defined in cg_flags_arch.cxx */
 
 extern char *WHIRL_File_Name;
 
@@ -1046,14 +1047,20 @@ Configure_CG_Options(void)
   }
 #endif
 
+#if 0
+  // development: select off by default
   if (!CG_enable_select_overridden) {
-    CG_enable_select =  (CG_opt_level > 0) ? CGTARG_Can_Select() : FALSE;
+    CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Select() : FALSE;
   }
-
-  if (CG_enable_select && !CG_enable_ssa) {
-    DevWarn("CG: Ignoring select=ON, need ssa");
-    CG_enable_select = FALSE;
+  else {
+#endif
+    if (CG_enable_select && !CG_enable_ssa) {
+      DevWarn("CG: Ignoring select=ON, need ssa");
+      CG_enable_select = FALSE;
+    }
+#if 0
   }
+#endif
 
 #else
   Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;
@@ -1095,6 +1102,9 @@ Configure_CG_Options(void)
 
   Configure_Prefetch();
 
+  // target specific CG option setting
+  Configure_CG_Target();
+
   // Check the LOCS_Enable_Bundle_Formation for consistency
 #if 0
   if (Lai_Code && LOCS_Enable_Bundle_Formation) {
@@ -1106,7 +1116,6 @@ Configure_CG_Options(void)
     DevWarn("CG: Ignoring LOCS_Enable_Bundle_Formation set for lai.");
     LOCS_Enable_Bundle_Formation = FALSE;
   }
-#endif
 
   // Disable scheduling, etc. for some targets
   // Temporarily here. When the cg is complete, such options should be
@@ -1125,6 +1134,7 @@ Configure_CG_Options(void)
   CG_LOOP_force_ifc = 0;
 
   HB_skip_hammocks = FALSE;
+#endif
 #endif
 
 #ifdef TARG_ST100
