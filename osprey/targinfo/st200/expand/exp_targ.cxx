@@ -8,14 +8,14 @@
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
-  otherwise, applies only to this software file.  Patent licenses, if 
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
+  otherwise, applies only to this software file.  Patent licenses, if
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
   You should have received a copy of the GNU General Public License along
   with this program; if not, write the Free Software Foundation, Inc., 59
@@ -48,7 +48,7 @@
  * is 'Exp_OP', which takes an OP, expands it into a list of OPs which
  * are appended to the oplist passed in.
  *
- * It handles all the macro expansions, special handling during 
+ * It handles all the macro expansions, special handling during
  * expansion and all the nitty gritty stuff that goes along with it.
  *
  * ====================================================================
@@ -109,9 +109,9 @@ WN_intrinsic_return_ty (
 )
 {
    TY_IDX ret_ty;
-   
+
    Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
-     ("Exp_Intrinsic_Op: Intrinsic Opcode (%d) out of range", intr_opc)); 
+     ("Exp_Intrinsic_Op: Intrinsic Opcode (%d) out of range", intr_opc));
 
    switch (INTRN_return_kind(intr_opc))
    {
@@ -175,12 +175,12 @@ WN_intrinsic_return_ty (
       break;
       */
    default:
-      Is_True(FALSE, 
+      Is_True(FALSE,
 	      ("Unexpected INTRN_RETKIND in WN_intrinsic_return_ty()"));
       ret_ty = MTYPE_To_TY(MTYPE_V);
       break;
    }
-   
+
    return ret_ty;
 } /* WN_intrinsic_return_ty */
 
@@ -209,7 +209,7 @@ void
 Expand_Copy (
   TN *tgt_tn,
   TN *guard,
-  TN *src_tn, 
+  TN *src_tn,
   OPS *ops
 )
 {
@@ -269,9 +269,9 @@ Expand_Copy (
  * ====================================================================
  */
 void
-Expand_Convert_Length ( 
-  TN *dest, 
-  TN *src, 
+Expand_Convert_Length (
+  TN *dest,
+  TN *src,
   TN *length_tn,       // length to convert to
   TYPE_ID mtype,       // type converting from
   BOOL signed,         // obsolete for IA64
@@ -294,7 +294,7 @@ Expand_Convert_Length (
 
   to_length = TN_value (length_tn);
   from_length = MTYPE_bit_size(mtype);
-  
+
   if (from_length > to_length) {
     // truncation
     new_length = to_length;
@@ -310,7 +310,9 @@ Expand_Convert_Length (
     // fits into the LX registers
     if (new_length == 8) {
       // zero extension requires a sequence of shifts:
-      if (signed_extension) Build_OP (TOP_sxtb_r, dest, src, ops);
+      if (signed_extension) {
+          Build_OP (TOP_sxtb_r, dest, src, ops);
+      }
       else {
 	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(24,4), ops);
@@ -319,18 +321,20 @@ Expand_Convert_Length (
     }
     else if (new_length == 16) {
       // zero extension requires a sequence of shifts:
-      if (signed_extension) Build_OP (TOP_sxth_r, dest, src, ops);
+      if (signed_extension) {
+          Build_OP (TOP_sxth_r, dest, src, ops);
+      }
       else {
 	TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 	Build_OP (TOP_shl_i, tmp, src, Gen_Literal_TN(16,4), ops);
 	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(16,4), ops);
       }
     }
+    else
+        FmtAssert(FALSE, ("Expand_Convert_Length: unknown dest extension"));
   }
-
-  if (opc == TOP_UNDEFINED) {
-    FmtAssert(FALSE, ("Expand_Convert_Length: unknown extension"));
-  }
+  else
+      FmtAssert(FALSE, ("Expand_Convert_Length: unknown src extension"));
 
   return;
 }
@@ -341,10 +345,10 @@ Expand_Convert_Length (
  */
 void
 Expand_Int_To_Ptr (
-  TN *result, 
-  TYPE_ID rtype, 
-  TN *src, 
-  TYPE_ID desc, 
+  TN *result,
+  TYPE_ID rtype,
+  TN *src,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -361,10 +365,10 @@ Expand_Int_To_Ptr (
  */
 void
 Expand_Ptr_To_Int (
-  TN *result, 
-  TYPE_ID rtype, 
-  TN *src, 
-  TYPE_ID desc, 
+  TN *result,
+  TYPE_ID rtype,
+  TN *src,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -375,16 +379,16 @@ Expand_Ptr_To_Int (
 
 /* ====================================================================
  *   Expand_Convert
- *  
+ *
  *   op2 is the length to convert to.
  * ====================================================================
  */
 void
 Expand_Convert (
-  TN *result, 
-  TN *op1, 
-  TN *op2, 
-  TYPE_ID rtype, 
+  TN *result,
+  TN *op1,
+  TN *op2,
+  TYPE_ID rtype,
   TYPE_ID desc,
   OPS  *ops
 )
@@ -425,8 +429,8 @@ Expand_Convert (
 static void
 Fixup_32_Bit_Op(
   TN *result,
-  TN *src, 
-  TYPE_ID dest_type, 
+  TN *src,
+  TYPE_ID dest_type,
   OPS *ops
 )
 {
@@ -435,7 +439,7 @@ Fixup_32_Bit_Op(
   if (dest_type == MTYPE_I8 || dest_type == MTYPE_U8) {
     Expand_Copy(result, NULL, src, ops);
   } else {
-    Expand_Convert_Length (result, src, 
+    Expand_Convert_Length (result, src,
              Gen_Literal_TN(MTYPE_size_reg(dest_type), 4),
 			   dest_type, MTYPE_is_signed(dest_type),ops);
   }
@@ -447,9 +451,9 @@ Fixup_32_Bit_Op(
  */
 void
 Exp_Immediate (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -465,7 +469,7 @@ Exp_Immediate (
     FmtAssert(FALSE,("Exp_Immediate: symbol TN"));
 
     ST *base;
-    Base_Symbol_And_Offset_For_Addressing (TN_var(src), 
+    Base_Symbol_And_Offset_For_Addressing (TN_var(src),
                                       TN_offset(src), &base, &val);
     // now val is the "real" offset
   }
@@ -520,7 +524,7 @@ Expand_Immediate (TN *dest, TN *src, TYPE_ID mtype, OPS *ops)
 {
   FmtAssert((TN_is_constant(src)),
 	    ("unexpected non-constant in Expand_Immediate"));
-  FmtAssert((TN_has_value(src) || TN_is_symbol(src)), 
+  FmtAssert((TN_has_value(src) || TN_is_symbol(src)),
 	    ("expected value or const in Expand_Immediate"));
   Exp_Immediate (dest, src, mtype, ops);
 }
@@ -532,7 +536,7 @@ Expand_Immediate (TN *dest, TN *src, TYPE_ID mtype, OPS *ops)
 TN*
 Expand_Immediate_Into_Register (
   TYPE_ID  mtype,
-  TN    *src, 
+  TN    *src,
   OPS   *ops
 )
 {
@@ -548,10 +552,10 @@ Expand_Immediate_Into_Register (
  */
 void
 Expand_Add (
-  TN *result, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -592,7 +596,7 @@ Expand_Add (
       ST *base;
 
       tmp = Build_TN_Of_Mtype (Pointer_Mtype);
-      Base_Symbol_And_Offset_For_Addressing (TN_var(src2), 
+      Base_Symbol_And_Offset_For_Addressing (TN_var(src2),
                                        TN_offset(src2), &base, &ofst);
 
       // If src1 (base) is gp, I am dealing with a gp-relative
@@ -635,10 +639,10 @@ Expand_Add (
  */
 void
 Expand_Sub (
-  TN *result, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -677,9 +681,9 @@ Expand_Sub (
  */
 void
 Expand_Neg (
-  TN *result, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -691,7 +695,7 @@ Expand_Neg (
     Build_OP (TOP_noop, result, True_TN, src, ops);
     return;
   default:
-    FmtAssert(FALSE, ("Expand_Neg: not handled mtype %s\n", 
+    FmtAssert(FALSE, ("Expand_Neg: not handled mtype %s\n",
                                              MTYPE_name(mtype)));
   }
 }
@@ -702,9 +706,9 @@ Expand_Neg (
  */
 void
 Expand_Abs (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -797,11 +801,11 @@ Pick_LRight_Shift (
  */
 void
 Expand_Shift (
-  TN *result, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
-  SHIFT_DIRECTION kind, 
+  TN *result,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
+  SHIFT_DIRECTION kind,
   OPS *ops
 )
 {
@@ -839,9 +843,9 @@ Expand_Shift (
  */
 #define IS_POWER_OF_2(val)	((val != 0) && ((val & (val-1)) == 0))
 
-static BOOL 
+static BOOL
 Is_Power_Of_2 (
-  INT64 val, 
+  INT64 val,
   TYPE_ID mtype
 )
 {
@@ -858,7 +862,7 @@ Is_Power_Of_2 (
  */
 static INT
 Get_Power_Of_2 (
-  INT64 val, 
+  INT64 val,
   TYPE_ID mtype
 )
 {
@@ -926,7 +930,7 @@ Expand_Multiply (
   TYPE_ID rmtype,
   TN *src1,
   TYPE_ID s1mtype,
-  TN *src2, 
+  TN *src2,
   TYPE_ID s2mtype,
   OPS *ops
 )
@@ -938,14 +942,14 @@ Expand_Multiply (
 
   //
   // Check for two constants
-  // 
+  //
   if ((TN_has_value(src1) || TN_is_rematerializable(src1)) &&
       (TN_has_value(src2) || TN_is_rematerializable(src2))) {
-    // Two constants can sometimes occur because of DIVREM production in 
+    // Two constants can sometimes occur because of DIVREM production in
     TN *val_tn;
-    constant = TN_has_value(src1) ? 
+    constant = TN_has_value(src1) ?
                            TN_value(src1) : WN_const_val(TN_home(src1));
-    constant *= TN_has_value(src2) ? 
+    constant *= TN_has_value(src2) ?
                            TN_value(src2) : WN_const_val(TN_home(src2));
     // Need to get the constant of the right length
     constant = Targ_To_Host(Host_To_Targ(rmtype, constant));
@@ -956,7 +960,7 @@ Expand_Multiply (
 
   FmtAssert(MTYPE_is_class_integer(rmtype), ("Expand_Multiply: mtype ?"));
 
-  // 
+  //
   // One of the srcs is constant
   //
   if (TN_has_value(src1)) {
@@ -1056,7 +1060,7 @@ Expand_Multiply (
       break;
 
     default:
-      FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n", 
+      FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n",
                                                     MTYPE_name(mtype)));
     }
 
@@ -1075,13 +1079,13 @@ Expand_Multiply (
  */
 void
 Expand_Madd (
-  TN *result, 
+  TN *result,
   TYPE_ID rmtype,
   TN *src0,
   TYPE_ID s0mtype,
-  TN *src1, 
+  TN *src1,
   TYPE_ID s1mtype,
-  TN *src2, 
+  TN *src2,
   TYPE_ID s2mtype,
   OPS *ops
 )
@@ -1092,41 +1096,41 @@ Expand_Madd (
   /*
    * Make sure that result and src0 have integer MTYPEs.
    */
-  FmtAssert(MTYPE_is_class_integer(rmtype) && 
-	    MTYPE_is_class_integer(s0mtype), 
-            ("Expand_Madd: mtypes messed %s += %s + a*b", 
+  FmtAssert(MTYPE_is_class_integer(rmtype) &&
+	    MTYPE_is_class_integer(s0mtype),
+            ("Expand_Madd: mtypes messed %s += %s + a*b",
                          MTYPE_name(rmtype), MTYPE_name(s0mtype)));
 
   switch (rmtype) {
 
   case MTYPE_I4:
 
-    FmtAssert(MTYPE_size_min(s0mtype) == 32, 
+    FmtAssert(MTYPE_size_min(s0mtype) == 32,
 	      ("Expand_Madd: I4 = %s + a*b", MTYPE_name(s0mtype)));
 
-    if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
+    if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2)
       opcode = TOP_UNDEFINED;
       //      opcode = TOP_IFR_MASSHW_GT_DR_DR_DR_DR;
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) 
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2)
       opcode = TOP_UNDEFINED;
       //      opcode = TOP_IFR_MASUHW_GT_DR_DR_DR_DR;
-    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) 
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2)
       opcode = TOP_UNDEFINED;
       //      opcode = TOP_IFR_MAUSHW_GT_DR_DR_DR_DR;
     else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
       //      opcode = TOP_IFR_MAUUHW_GT_DR_DR_DR_DR;
       opcode = TOP_UNDEFINED;
     else
-      FmtAssert(FALSE, ("Expand_Madd: I4 = %s + %s * %s", 
+      FmtAssert(FALSE, ("Expand_Madd: I4 = %s + %s * %s",
 	MTYPE_name(s0mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
     break;
 
   case MTYPE_U4:
 
-    FmtAssert(s0mtype == MTYPE_U4, 
+    FmtAssert(s0mtype == MTYPE_U4,
 	      ("Expand_Madd: U4 = %s + a*b", MTYPE_name(s0mtype)));
 
-    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
+    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2)
       //      opcode = TOP_IFR_MAUHW_GT_DR_DR_DR_DR;
       opcode = TOP_UNDEFINED;
     else
@@ -1134,7 +1138,7 @@ Expand_Madd (
     break;
 
   default:
-    FmtAssert(0, ("Expand_Madd: unknown format MTYPE %s", 
+    FmtAssert(0, ("Expand_Madd: unknown format MTYPE %s",
 		                                MTYPE_name(rmtype)));
 
   }
@@ -1161,10 +1165,10 @@ Expand_Madd (
  */
 void
 Expand_High_Multiply (
-  TN *result, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1186,7 +1190,7 @@ Expand_High_Multiply (
 
 static void
 Expand_Normalize_Logical (
-  TN *src, 
+  TN *src,
   OPS *ops
 )
 {
@@ -1199,9 +1203,9 @@ Expand_Normalize_Logical (
  */
 void
 Expand_Logical_Not (
-  TN *dest, 
-  TN *src, 
-  VARIANT variant, 
+  TN *dest,
+  TN *src,
+  VARIANT variant,
   OPS *ops
 )
 {
@@ -1236,26 +1240,26 @@ Expand_Logical_Not (
  *   Expand_Logical_Not
  *
  *
- *	dest = (src1 != 0 & src2 != 0) ? 1 : 0 
+ *	dest = (src1 != 0 & src2 != 0) ? 1 : 0
  *	sltu	t1, 0, s1		(if not normalized)
  *	sltu	t2, 0, s2		(if not normalized)
- *	and/or	d, t1, t2 
+ *	and/or	d, t1, t2
  * ====================================================================
  */
 static void
 Expand_Logical_And_Or (
-  TOP action, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
+  TOP action,
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
   OPS *ops
 )
 {
   FmtAssert(FALSE,("Not Implemented"));
 
  /*
-  *  if CG_EXP_normalize is true we must normalized the operands 
+  *  if CG_EXP_normalize is true we must normalized the operands
   *  (if not already normalized)
   */
   if (!V_normalized_op1(variant) && EXP_normalize_logical)
@@ -1276,10 +1280,10 @@ Expand_Logical_And_Or (
  */
 void
 Expand_Logical_And (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
   OPS *ops
 )
 {
@@ -1292,10 +1296,10 @@ Expand_Logical_And (
  */
 void
 Expand_Logical_Or (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
   OPS *ops
 )
 {
@@ -1308,9 +1312,9 @@ Expand_Logical_Or (
  */
 void
 Expand_Binary_Complement (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID /* mtype */, 
+  TN *dest,
+  TN *src,
+  TYPE_ID /* mtype */,
   OPS *ops
 )
 {
@@ -1332,11 +1336,11 @@ Expand_Binary_Complement (
  * shorts, but I couldn't find a case to trigger it so I left it out -- Ken
  * ====================================================================
  */
-BOOL 
+BOOL
 Expand_Special_And_Immed (
-  TN *dest, 
-  TN *src1, 
-  INT64 imm, 
+  TN *dest,
+  TN *src1,
+  INT64 imm,
   OPS *ops
 )
 {
@@ -1368,7 +1372,7 @@ Expand_Special_And_Immed (
 
   /* If the zeroed bits include bit-63, then we are performing an
    * extract, so use either extr.u or zxt*. Otherwise use dep.i.
-   * Note that we could always use dep.i, but the extract is more 
+   * Note that we could always use dep.i, but the extract is more
    * readable, and zxt* might be faster in some cases.
    */
   if (start > 0 && start + len == 64) {
@@ -1399,11 +1403,11 @@ Expand_Special_And_Immed (
  */
 static void
 Expand_Binary_And_Or (
-  TOP action, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TOP action,
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1440,10 +1444,10 @@ Expand_Binary_And_Or (
  */
 void
 Expand_Binary_And (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1465,10 +1469,10 @@ Expand_Binary_And (
  */
 void
 Expand_Binary_Or (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1490,10 +1494,10 @@ Expand_Binary_Or (
  */
 void
 Expand_Binary_Xor (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1515,10 +1519,10 @@ Expand_Binary_Xor (
  */
 void
 Expand_Binary_Nor (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -1532,9 +1536,9 @@ Expand_Binary_Nor (
   // constant fits in the immed. But testing has not found a
   // case where this would occur, so leave it out. -- Ken
   TN *tmp = Build_TN_Like(dest);
-  Expand_Binary_And_Or (TOP_GP32_OR_GT_DR_DR_DR, tmp, 
+  Expand_Binary_And_Or (TOP_GP32_OR_GT_DR_DR_DR, tmp,
                                           src1, src2, mtype, ops);
-  Expand_Binary_And_Or (TOP_GP32_XOR_GT_DR_DR_DR, dest, 
+  Expand_Binary_And_Or (TOP_GP32_XOR_GT_DR_DR_DR, dest,
 			  tmp, Gen_Literal_TN(-1, 4), mtype, ops);
 #endif
 }
@@ -1545,10 +1549,10 @@ Expand_Binary_Nor (
  */
 static void
 Expand_Int_Comparison (
-  TOP action, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
+  TOP action,
+  TN *dest,
+  TN *src1,
+  TN *src2,
   OPS *ops
 )
 {
@@ -1568,10 +1572,10 @@ Expand_Int_Comparison (
  */
 static void
 Expand_Bool_Comparison (
-  BOOL equals, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
+  BOOL equals,
+  TN *dest,
+  TN *src1,
+  TN *src2,
   OPS *ops
 )
 {
@@ -1584,10 +1588,10 @@ Expand_Bool_Comparison (
  */
 void
 Expand_Int_Less (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1599,14 +1603,14 @@ Expand_Int_Less (
   case MTYPE_U8: variant = V_BR_U8LT; break;
   case MTYPE_U4: variant = V_BR_U4LT; break;
   default:
-    Is_True(FALSE, ("Expand_Int_Less: MTYPE_%s is not handled", 
+    Is_True(FALSE, ("Expand_Int_Less: MTYPE_%s is not handled",
 		                               Mtype_Name(desc)));
   }
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1624,10 +1628,10 @@ Expand_Int_Less (
  */
 void
 Expand_Int_Less_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1639,7 +1643,7 @@ Expand_Int_Less_Equal (
   case MTYPE_U8: variant = V_BR_U8LE; break;
   case MTYPE_U4: variant = V_BR_U4LE; break;
   default:
-    Is_True(FALSE, ("Expand_Int_Less_Equal: MTYPE_%s is not handled", 
+    Is_True(FALSE, ("Expand_Int_Less_Equal: MTYPE_%s is not handled",
                                                   Mtype_Name(desc)));
   }
 
@@ -1647,7 +1651,7 @@ Expand_Int_Less_Equal (
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, True_TN, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1665,10 +1669,10 @@ Expand_Int_Less_Equal (
  */
 void
 Expand_Int_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1683,14 +1687,14 @@ Expand_Int_Equal (
   case MTYPE_A4: variant = V_BR_A4EQ; break;
 
   default:
-    Is_True(FALSE, ("Expand_Int_Equal: MTYPE_%s is not handled", 
+    Is_True(FALSE, ("Expand_Int_Equal: MTYPE_%s is not handled",
                                                   Mtype_Name(desc)));
   }
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, True_TN, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1708,10 +1712,10 @@ Expand_Int_Equal (
  */
 void
 Expand_Int_Not_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1730,14 +1734,14 @@ Expand_Int_Not_Equal (
   case MTYPE_U4: variant = V_BR_U4NE; break;
   default:
     #pragma mips_frequency_hint NEVER
-    Is_True(FALSE, ("Expand_Int_Not_Equal: MTYPE_%s is not handled", 
+    Is_True(FALSE, ("Expand_Int_Not_Equal: MTYPE_%s is not handled",
                                                    Mtype_Name(desc)));
   }
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, True_TN, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1755,10 +1759,10 @@ Expand_Int_Not_Equal (
  */
 void
 Expand_Int_Greater_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1770,14 +1774,14 @@ Expand_Int_Greater_Equal (
   case MTYPE_U8: variant = V_BR_U8GE; break;
   case MTYPE_U4: variant = V_BR_U4GE; break;
   default:
-    Is_True(FALSE, ("Expand_Int_Greater_Equal: MTYPE_%s is not handled", 
+    Is_True(FALSE, ("Expand_Int_Greater_Equal: MTYPE_%s is not handled",
                                                      Mtype_Name(desc)));
   }
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, True_TN, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1795,10 +1799,10 @@ Expand_Int_Greater_Equal (
  */
 void
 Expand_Int_Greater (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1811,14 +1815,14 @@ Expand_Int_Greater (
     case MTYPE_U8: variant = V_BR_U8GT; break;
     case MTYPE_U4: variant = V_BR_U4GT; break;
     default:
-      Is_True(FALSE, ("Expand_Int_Greater: MTYPE_%s is not handled", 
+      Is_True(FALSE, ("Expand_Int_Greater: MTYPE_%s is not handled",
                                                   Mtype_Name(desc)));
   }
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
     Build_OP (action, dest, True_TN, src1, src2, ops);
-  } 
+  }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
     action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
     Expand_Int_Comparison (action, dest, src1, src2, ops);
@@ -1838,10 +1842,10 @@ Expand_Int_Greater (
  */
 void
 Expand_Ptr_Not_Equal (
-  TN *dest, 
+  TN *dest,
   TN *src1,
-  TN *src2, 
-  TYPE_ID desc, 
+  TN *src2,
+  TYPE_ID desc,
   OPS *ops
 )
 {
@@ -1859,9 +1863,9 @@ Expand_Ptr_Not_Equal (
  */
 void
 Expand_Bool_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
   OPS *ops
 )
 {
@@ -1876,9 +1880,9 @@ Expand_Bool_Equal (
  */
 void
 Expand_Bool_Not_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
   OPS *ops
 )
 {
@@ -1893,9 +1897,9 @@ Expand_Bool_Not_Equal (
  */
 void
 Expand_Bool_To_Int (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID rtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID rtype,
   OPS *ops
 )
 {
@@ -1911,11 +1915,11 @@ Expand_Bool_To_Int (
  */
 static void
 Expand_Float_To_Int (
-  ROUND_MODE rm, 
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  ROUND_MODE rm,
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -1955,10 +1959,10 @@ Expand_Float_To_Int (
  */
 void
 Expand_Float_To_Int_Cvt (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -1973,10 +1977,10 @@ Expand_Float_To_Int_Cvt (
  */
 void
 Expand_Float_To_Int_Round (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -1991,10 +1995,10 @@ Expand_Float_To_Int_Round (
  */
 void
 Expand_Float_To_Int_Trunc (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -2009,10 +2013,10 @@ Expand_Float_To_Int_Trunc (
  */
 void
 Expand_Float_To_Int_Floor (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -2027,10 +2031,10 @@ Expand_Float_To_Int_Floor (
  */
 void
 Expand_Float_To_Int_Ceil (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID imtype, 
-  TYPE_ID fmtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
   OPS *ops
 )
 {
@@ -2046,12 +2050,12 @@ Expand_Float_To_Int_Ceil (
 static BOOL
 Optimize_Select (
   VARIANT variant,
-  TN *cond1, 
-  TN *cond2, 
-  TN *dest, 
+  TN *cond1,
+  TN *cond2,
+  TN *dest,
   TN *dest2,
-  TN *src1, 
-  TN *src2, 
+  TN *src1,
+  TN *src2,
   BOOL is_float,
   OPS *ops
 )
@@ -2100,12 +2104,12 @@ Optimize_Select (
 static void
 Expand_Compare_And_Select (
   VARIANT variant,
-  TN *cond1, 
-  TN *cond2, 
-  TN *dest, 
-  TN *opposite_dest, 
-  TN *true_tn, 
-  TN *false_tn, 
+  TN *cond1,
+  TN *cond2,
+  TN *dest,
+  TN *opposite_dest,
+  TN *true_tn,
+  TN *false_tn,
   BOOL is_float,
   OPS *ops
 )
@@ -2156,11 +2160,11 @@ Expand_Compare_And_Select (
  */
 void
 Expand_Select (
-  TN *dest_tn, 
-  TN *cond_tn, 
-  TN *true_tn, 
-  TN *false_tn, 
-  TYPE_ID mtype, 
+  TN *dest_tn,
+  TN *cond_tn,
+  TN *true_tn,
+  TN *false_tn,
+  TYPE_ID mtype,
   BOOL float_cond,
   OPS *ops
 )
@@ -2176,9 +2180,9 @@ Expand_Select (
     if (is_float) {
       ;
     } else {
-      tmove = TN_has_value(true_tn) ? TOP_GP32_MAKE_GT_DR_S16 : 
+      tmove = TN_has_value(true_tn) ? TOP_GP32_MAKE_GT_DR_S16 :
                                              TOP_GP32_MOVE_GT_DR_DR;
-      fmove = TN_has_value(false_tn) ? TOP_GP32_MAKE_GT_DR_S16 : 
+      fmove = TN_has_value(false_tn) ? TOP_GP32_MAKE_GT_DR_S16 :
                                              TOP_GP32_MOVE_GT_DR_DR;
     }
     Build_OP (tmove, dest_tn, p1, true_tn, ops);
@@ -2194,7 +2198,7 @@ Expand_Select (
     else
 	cmp = TOP_GP32_NEW_GT_BR_DR_DR;
     Expand_Compare_And_Select (variant, cond_tn, Zero_TN, dest_tn, NULL,
-	true_tn, false_tn, 
+	true_tn, false_tn,
 	is_float, ops);
   }
 #endif
@@ -2222,16 +2226,16 @@ Check_Select_Expansion (
  *   Exp_Select_And_Condition
  * ====================================================================
  */
-void 
+void
 Exp_Select_And_Condition (
-  OPCODE select, 
-  TN *result, 
-  TN *true_tn, 
+  OPCODE select,
+  TN *result,
+  TN *true_tn,
   TN *false_tn,
-  OPCODE compare, 
-  TN *cmp_kid1, 
-  TN *cmp_kid2, 
-  VARIANT variant, 
+  OPCODE compare,
+  TN *cmp_kid1,
+  TN *cmp_kid2,
+  VARIANT variant,
   OPS *ops
 )
 {
@@ -2247,21 +2251,21 @@ Exp_Select_And_Condition (
   case V_BR_PEQ:
   case V_BR_PNE:
     {
-      //      Is_True(cmp == TOP_UNDEFINED, 
+      //      Is_True(cmp == TOP_UNDEFINED,
       //      ("unexpected compare op for V_BR_PEQ/V_BR_PNE"));
 
       FmtAssert(FALSE,("Not Implemented"));
 
       // tmp = (cmp_kid1 == cmp_kid2)
       TN *tmp = Build_TN_Of_Mtype (MTYPE_I8);
-      Build_OP (TOP_GP32_MAKE_GT_DR_S16, tmp, True_TN, 
+      Build_OP (TOP_GP32_MAKE_GT_DR_S16, tmp, True_TN,
                                         Gen_Literal_TN(1, 8), &newops);
-      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid1, 
+      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid1,
                                    Gen_Literal_TN(1, 8), tmp, &newops);
-      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid2, 
+      Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, tmp, cmp_kid2,
                                    Gen_Literal_TN(1, 8), tmp, &newops);
 
-      //      cmp = (variant == V_BR_PEQ) ? TOP_GP32_NEW_GT_BR_DR_DR : 
+      //      cmp = (variant == V_BR_PEQ) ? TOP_GP32_NEW_GT_BR_DR_DR :
                                               TOP_GP32_EQW_GT_BR_DR_DR;
       cmp_kid1 = tmp;
       cmp_kid2 = Zero_TN;
@@ -2272,12 +2276,12 @@ Exp_Select_And_Condition (
     FmtAssert(FALSE, ("Exp_Select_And_Condition given br_none variant"));
     /*NOTREACHED*/
   default:
-    //    FmtAssert(cmp != TOP_UNDEFINED, 
+    //    FmtAssert(cmp != TOP_UNDEFINED,
     //                ("Exp_Select_And_Condition: unexpected comparison"));
     break;
   }
 
-  Expand_Compare_And_Select (variant, cmp_kid1, cmp_kid2, 
+  Expand_Compare_And_Select (variant, cmp_kid1, cmp_kid2,
 			     result, NULL, true_tn, false_tn,
 			     MTYPE_is_float(OPCODE_rtype(select)), &newops);
 
@@ -2302,10 +2306,10 @@ Exp_Select_And_Condition (
  */
 void
 Expand_Min (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2329,9 +2333,9 @@ Expand_Min (
 	top = TN_has_value(src2) ? TOP_minu_i : TOP_minu_r;
 	break;
 
-      case MTYPE_F4: 
-      case MTYPE_F8: 
-      case MTYPE_F10: 
+      case MTYPE_F4:
+      case MTYPE_F8:
+      case MTYPE_F10:
       default:
 	FmtAssert(FALSE, ("Expand_Min: unexpected mtype"));
   }
@@ -2346,10 +2350,10 @@ Expand_Min (
  */
 void
 Expand_Max (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2373,9 +2377,9 @@ Expand_Max (
 	top = TN_has_value(src2) ? TOP_maxu_i : TOP_maxu_r;
 	break;
 
-      case MTYPE_F4: 
-      case MTYPE_F8: 
-      case MTYPE_F10: 
+      case MTYPE_F4:
+      case MTYPE_F8:
+      case MTYPE_F10:
       default:
 	FmtAssert(FALSE, ("Expand_Max: unexpected mtype"));
   }
@@ -2392,11 +2396,11 @@ Expand_Max (
  */
 void
 Expand_MinMax (
-  TN *dest, 
-  TN *dest2, 
-  TN *src1, 
-  TN *src2, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *dest2,
+  TN *src1,
+  TN *src2,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2410,9 +2414,9 @@ Expand_MinMax (
   case MTYPE_I4: variant = V_BR_I4LT; break;
   case MTYPE_U8: variant = V_BR_U8LT; break;
   case MTYPE_U4: variant = V_BR_U4LT; break;
-  case MTYPE_F4: 
-  case MTYPE_F8: 
-  case MTYPE_F10: 
+  case MTYPE_F4:
+  case MTYPE_F8:
+  case MTYPE_F10:
 
   default:
     #pragma mips_frequency_hint NEVER
@@ -2430,10 +2434,10 @@ Expand_MinMax (
  */
 static void
 Expand_Float_Compares(
-  TOP cmp_opcode, 
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
+  TOP cmp_opcode,
+  TN *dest,
+  TN *src1,
+  TN *src2,
   OPS *ops
 )
 {
@@ -2463,11 +2467,11 @@ Expand_Float_Compares(
  */
 void
 Expand_Float_Less (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2480,11 +2484,11 @@ Expand_Float_Less (
  */
 void
 Expand_Float_Greater (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2497,11 +2501,11 @@ Expand_Float_Greater (
  */
 void
 Expand_Float_Less_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2514,11 +2518,11 @@ Expand_Float_Less_Equal (
  */
 void
 Expand_Float_Greater_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2531,11 +2535,11 @@ Expand_Float_Greater_Equal (
  */
 void
 Expand_Float_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2548,11 +2552,11 @@ Expand_Float_Equal (
  */
 void
 Expand_Float_Not_Equal (
-  TN *dest, 
-  TN *src1, 
-  TN *src2, 
-  VARIANT variant, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2565,9 +2569,9 @@ Expand_Float_Not_Equal (
  */
 static void
 Expand_ST220_Sqrt (
-  TN *result, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2582,9 +2586,9 @@ Expand_ST220_Sqrt (
  */
 void
 Expand_Sqrt (
-  TN *result, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2612,9 +2616,9 @@ Expand_Sqrt (
  */
 void
 Expand_Recip_Sqrt (
-  TN *result, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *result,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2625,13 +2629,13 @@ Expand_Recip_Sqrt (
 
 /* ======================================================================
  *   Exp_COPY
- * 
- *   Generate a register transfer copy from 'src_tn' to 'tgt_tn'. 
+ *
+ *   Generate a register transfer copy from 'src_tn' to 'tgt_tn'.
  * ======================================================================*/
-void 
+void
 Exp_COPY (
-  TN *tgt_tn, 
-  TN *src_tn, 
+  TN *tgt_tn,
+  TN *src_tn,
   OPS *ops
 )
 {
@@ -2645,10 +2649,10 @@ Exp_COPY (
  */
 void
 Exp_Intrinsic_Op (
-  INTRINSIC id, 
+  INTRINSIC id,
   INT num_results,
   INT num_opnds,
-  TN *result[], 
+  TN *result[],
   TN *opnd[],
   OPS *ops
 )
@@ -2698,17 +2702,17 @@ Intrinsic_Returns_New_Value (
 
 /* ======================================================================
  *   Expand_TOP_intrncall
- * 
- *   Given a TOP_intrncall <op>, expand it into the sequence of instructions 
+ *
+ *   Given a TOP_intrncall <op>, expand it into the sequence of instructions
  *   that must be generated. If <get_sequence_length> is TRUE, return only
- *   the number of instructions in the sequence and don't actually do the 
+ *   the number of instructions in the sequence and don't actually do the
  *   expansion.
  * ======================================================================
  */
 static INT
 Expand_TOP_intrncall (
-  const OP *op, 
-  OPS *ops, 
+  const OP *op,
+  OPS *ops,
   BOOL get_sequence_length,
   INT pc_value
 )
@@ -2729,12 +2733,12 @@ Expand_TOP_intrncall (
  */
 TN *
 Exp_Intrinsic_Call (
-  INTRINSIC id, 
-  TN *op0, 
-  TN *op1, 
-  TN *op2, 
-  OPS *ops, 
-  LABEL_IDX *label, 
+  INTRINSIC id,
+  TN *op0,
+  TN *op1,
+  TN *op2,
+  OPS *ops,
+  LABEL_IDX *label,
   OPS *loop_ops
 )
 {
@@ -2750,10 +2754,10 @@ Exp_Intrinsic_Call (
  *   supported by the target.
  * ======================================================================
  */
-void 
+void
 Exp_Simulated_Op (
-  const OP *op, 
-  OPS *ops, 
+  const OP *op,
+  OPS *ops,
   INT pc_value
 )
 {
@@ -2771,11 +2775,11 @@ Exp_Simulated_Op (
     // spadjust should only show up for alloca/dealloca
     if (OP_variant(op) == V_SPADJUST_PLUS) {
       // dealloca does copy of kid to $sp (op1 is old sp value)
-      Expand_Add (OP_result(op,0), OP_opnd(op,1), 
+      Expand_Add (OP_result(op,0), OP_opnd(op,1),
 		                    OP_opnd(op,2), Pointer_Mtype, ops);
     }
     else {
-      Expand_Sub (OP_result(op,0), OP_opnd(op,1), 
+      Expand_Sub (OP_result(op,0), OP_opnd(op,1),
                                     OP_opnd(op,2), Pointer_Mtype, ops);
     }
     break;
@@ -2840,13 +2844,13 @@ Simulated_Op_Real_Inst_Words(const OP *op)
  * ======================================================================*/
 BOOL
 Exp_Is_Large_Stack_Sym (
-  ST* sym,  
+  ST* sym,
   INT64 ofst
 )
 {
   ST *base_sym;
   INT64 base_ofst;
-  
+
   if (sym == NULL) {
     return FALSE;
   }
@@ -2866,11 +2870,11 @@ Exp_Is_Large_Stack_Sym (
  *   Exp_Spadjust
  * ====================================================================
  */
-void 
+void
 Exp_Spadjust (
-  TN *dest, 
-  TN *size, 
-  VARIANT variant, 
+  TN *dest,
+  TN *size,
+  VARIANT variant,
   OPS *ops
 )
 {
@@ -2894,11 +2898,11 @@ Exp_Noop (OPS *ops)
  *   Expand_Const
  * ====================================================================
  */
-void 
+void
 Expand_Const (
-  TN *dest, 
-  TN *src, 
-  TYPE_ID mtype, 
+  TN *dest,
+  TN *src,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
@@ -2925,7 +2929,7 @@ Expand_Const (
  */
 BOOL
 Target_Has_Immediate_Operand (
-  WN *parent, 
+  WN *parent,
   WN *expr
 )
 {
@@ -2942,7 +2946,7 @@ Target_Has_Immediate_Operand (
   }
 
   if (WN_operator(parent) == OPR_SUB) {
-    if (WN_kid1(parent) == expr) 
+    if (WN_kid1(parent) == expr)
       return TRUE;
   }
 
