@@ -150,8 +150,12 @@ typedef struct operand_use_type *OPERAND_USE_TYPE;
 // Operand/Result flags for operation group:
 typedef UINT32 OPERANDS_GROUP_OPERAND_USES;
 
-/* External functions 
- */
+// Arthur: some operand uses are built-in
+extern OPERAND_USE_TYPE base;
+extern OPERAND_USE_TYPE offset;
+extern OPERAND_USE_TYPE storeval;
+
+// External functions:
 
 extern void ISA_Operands_Begin ( const char* archname );
 extern OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create ( 

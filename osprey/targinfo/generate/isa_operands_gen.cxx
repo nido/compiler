@@ -57,6 +57,7 @@ typedef struct operand_value_type *OPERAND_VALUE_TYPE;
 #include <vector.h>
 #include <algo.h>
 #include "topcode.h"
+#include "targ_isa_properties.h"
 #include "gen_util.h"
 #include "isa_operands_gen.h"
 
@@ -86,6 +87,11 @@ typedef struct operands_group {
   //  vector <OPERAND_USE_TYPE> res_use;
   vector <OPERANDS_GROUP_OPERAND_USES> opnd_use;
   vector <OPERANDS_GROUP_OPERAND_USES> res_use;
+  bool is_load;
+  bool is_store;
+  bool base;
+  bool offset;
+  bool storeval;
   int index;
 } *OPERANDS_GROUP;
 
@@ -255,6 +261,10 @@ static const char * const interface[] = {
   NULL
 };
 
+// Arthur: some operand uses are built-in
+OPERAND_USE_TYPE base;
+OPERAND_USE_TYPE offset;
+OPERAND_USE_TYPE storeval;
 
 /////////////////////////////////////
 void ISA_Operands_Begin( const char* /* name */ )
@@ -263,20 +273,42 @@ void ISA_Operands_Begin( const char* /* name */ )
 /////////////////////////////////////
 {
   op_groups = vector <OPERANDS_GROUP> (TOP_count, (OPERANDS_GROUP) false);
+
+  // Initialize built-in operand uses
+
+  // 1. base for TOP_load,TOP_store
+  base = new operand_use_type;
+  base->name = "base";
+  base->index = max_uses++;
+  all_use_types.push_back(base);
+
+  // 2. offset for TOP_load,TOP_store
+  offset = new operand_use_type;
+  offset->name = "offset";
+  offset->index = max_uses++;
+  all_use_types.push_back(offset);
+
+  // 3. storeval for TOP_store
+  storeval = new operand_use_type;
+  storeval->name = "storeval";
+  storeval->index = max_uses++;
+  all_use_types.push_back(storeval);
+
+  return;
 }
 
-
-/////////////////////////////////////
+/* ====================================================================
+ *   ISA_Reg_Opnd_Type_Create
+ * ====================================================================
+ */
 OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create ( 
   const char* name, 
   ISA_REGISTER_CLASS register_class, 
   ISA_REGISTER_SUBCLASS subclass,
   int size,
   RTYPE type,
-  FP_TYPE fp_int)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
+  FP_TYPE fp_int
+)
 {
   if (type != SIGNED && type != UNSIGNED) {
     fprintf(stderr, "### Error: RTYPE for register operand %s must be SIGNED or UNSIGNED\n",
@@ -303,16 +335,16 @@ OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create (
   return result;
 }
 
-
-/////////////////////////////////////
+/* ====================================================================
+ *   ISA_Lit_Opnd_Type_Create
+ * ====================================================================
+ */
 OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create ( 
   const char* name, 
   int size,
   RTYPE type,
-  ISA_LIT_CLASS literal_class)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
+  ISA_LIT_CLASS literal_class
+)
 {
   if (type != SIGNED && type != UNSIGNED && type != PCREL) {
     fprintf(stderr, "### Error: RTYPE for literal operand %s must be PCREL, SIGNED or UNSIGNED\n",
@@ -339,15 +371,16 @@ OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create (
   return result;
 }
 
-/////////////////////////////////////
+/* ====================================================================
+ *   ISA_Enum_Opnd_Type_Create
+ * ====================================================================
+ */
 OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create ( 
   const char* name, 
   int size,
   RTYPE type,
-  ISA_ENUM_CLASS enum_class)
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
+  ISA_ENUM_CLASS enum_class
+)
 {
   if (type != SIGNED && type != UNSIGNED) {
     fprintf(stderr, "### Error: RTYPE for enumerated operand %s must be SIGNED or UNSIGNED\n",
@@ -374,13 +407,20 @@ OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create (
   return result;
 }
 
-
-/////////////////////////////////////
+/* ====================================================================
+ *   Create_Operand_Use
+ * ====================================================================
+ */
 OPERAND_USE_TYPE Create_Operand_Use( const char *name )
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
 {
+  if (!strcmp(name, "base") ||
+      !strcmp(name, "offset") ||
+      !strcmp(name, "storeval")) {
+    fprintf(stderr, "### Error: built-in operand use %s redefined.\n",
+		    name);
+    exit(EXIT_FAILURE);
+  }
+
   OPERAND_USE_TYPE result = new operand_use_type;
 
   all_use_types.push_back(result);
@@ -391,12 +431,11 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
   return result;
 }
 
-
-/////////////////////////////////////
+/* ====================================================================
+ *   Instruction_Group
+ * ====================================================================
+ */
 void Instruction_Group( const char *name, ... )
-/////////////////////////////////////
-//  See interface description.
-/////////////////////////////////////
 {
   va_list ap;
   TOP opcode;
@@ -414,14 +453,37 @@ void Instruction_Group( const char *name, ... )
   //  oper_group->res_use = vector<OPERAND_USE_TYPE>();
   oper_group->opnd_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->res_use = vector<OPERANDS_GROUP_OPERAND_USES>();
+  oper_group->is_load = false;
+  oper_group->is_store = false;
+  oper_group->base = false;
+  oper_group->offset = false;
+  oper_group->storeval = false;
   oper_group->index = max_groups++;
 
   va_start(ap, name);
+
+  // The first OPcode determines whether it is a load/store group
+  if ((opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+    if (op_groups[(int)opcode]) {
+      fprintf(stderr, 
+	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
+	      name, op_groups[(int)opcode]->name, TOP_Name(opcode));
+    }
+    if (TOP_is_load(opcode)) oper_group->is_load = true;
+    if (TOP_is_store(opcode)) oper_group->is_store = true;
+    op_groups[(int)opcode] = oper_group;
+  }
+
   while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
     if (op_groups[(int)opcode]) {
       fprintf(stderr, 
 	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
 	      name, op_groups[(int)opcode]->name, TOP_Name(opcode));
+    }
+    if ((TOP_is_load(opcode) && oper_group->is_load == false) ||
+	(TOP_is_store(opcode) && oper_group->is_store == false)) {
+      fprintf(stderr, 
+	      "### Error: Instruction_Group %s: %s name is not a memory group opcode\n", name, TOP_Name(opcode));
     }
     op_groups[(int)opcode] = oper_group;
   }
@@ -430,15 +492,15 @@ void Instruction_Group( const char *name, ... )
   all_groups.push_back (oper_group);
 }
 
-
-/////////////////////////////////////
+/* ====================================================================
+ *   Operand
+ *
+ *   Arthur: allow several calls to this for the same operand
+ * ====================================================================
+ */
 void Operand (int operand_index, 
 	      OPERAND_VALUE_TYPE operand_type,
 	      OPERAND_USE_TYPE operand_use)
-/////////////////////////////////////
-//  See interface description.
-//  Arthur: allow several calls to this for the same operand
-/////////////////////////////////////
 {
   if (operand_index > max_operands) max_operands = operand_index;
 
@@ -468,8 +530,12 @@ void Operand (int operand_index,
   }
 
   // Add the use to the set of this operand uses
-  if (operand_use != (OPERAND_USE_TYPE)NULL)
+  if (operand_use != (OPERAND_USE_TYPE)NULL) {
     cur_oper_group->opnd_use[operand_index] |= 1 << (operand_use->index + 1);
+    if (operand_use == base) cur_oper_group->base = true;
+    if (operand_use == offset) cur_oper_group->offset = true;
+    if (operand_use == storeval) cur_oper_group->storeval = true;
+  }
 }
 
 /////////////////////////////////////
@@ -688,6 +754,19 @@ void ISA_Operands_End(void)
 	 i < max_operands;
 	 ++i
     ) {
+
+      if ((oper_group->is_load == true || oper_group->is_store == true) &&
+	  (oper_group->base == false || oper_group->offset == false)) {
+	fprintf(stderr, "### Error: base/offset missing for %s\n", 
+		                                      oper_group->name);
+	exit(EXIT_FAILURE);
+      }
+      if (oper_group->is_store == true && oper_group->storeval == false) {
+	fprintf(stderr, "### Error: storeval missing for %s\n", 
+		                                      oper_group->name);
+	exit(EXIT_FAILURE);
+      }
+
       OPERANDS_GROUP_OPERAND_USES use_type = 0;
       int use_type_index = 0;
       if (use_iter != oper_group->opnd_use.end()) {

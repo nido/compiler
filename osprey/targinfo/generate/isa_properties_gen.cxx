@@ -92,6 +92,12 @@ static const char * const interface[] = {
   NULL
 };
 
+// Required properties
+static ISA_PROPERTY prop_load;
+static ISA_PROPERTY prop_store;
+
+static vector <short> mem_bytes;
+static vector <short> mem_align;
 
 /////////////////////////////////////
 void ISA_Properties_Begin( const char* /* name */ )
@@ -99,6 +105,106 @@ void ISA_Properties_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
+  // First, initialize compiler required properties.
+  // Load
+  prop_load = new isa_property;
+  prop_load->name = "load";
+  prop_load->members = vector <bool> (TOP_count, false);
+  properties.push_back(prop_load);
+
+  prop_store = new isa_property;
+  prop_store->name = "store";
+  prop_store->members = vector <bool> (TOP_count, false);
+  properties.push_back(prop_store);
+
+  mem_bytes = vector <short> (TOP_count, 0);
+  mem_align = vector <short> (TOP_count, 0);
+
+  return;
+}
+
+/* ====================================================================
+ *   ISA_Load_Group
+ *
+ *   arguments are list of TOP_codes.
+ *   'name' is dummy.
+ * ====================================================================
+ */
+void ISA_Load_Group(char *name, ... ) {
+  va_list ap;
+  ISA_PROPERTY property = prop_load;
+  TOP opcode;
+
+  va_start(ap, name);
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+    property->members[(int)opcode] = true;
+  }
+  va_end(ap);
+}
+
+/* ====================================================================
+ *   ISA_Store_Group
+ *
+ *   arguments are list of TOP_codes.
+ *   'name' is dummy.
+ * ====================================================================
+ */
+void ISA_Store_Group(char *name, ... ) {
+  va_list ap;
+  ISA_PROPERTY property = prop_store;
+  TOP opcode;
+
+  va_start(ap, name);
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+    property->members[(int)opcode] = true;
+  }
+  va_end(ap);
+}
+
+/* ====================================================================
+ *   ISA_Memory_Access
+ * ====================================================================
+ */
+void ISA_Memory_Access (int bytes, ... ) {
+  va_list ap;
+  TOP opcode;
+
+  // do not allow memory accesses/alignments more than these
+  assert (bytes <= 16);
+
+  va_start(ap, bytes);
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+    if (!prop_load->members[(int)opcode] && 
+	!prop_store->members[(int)opcode]) {
+      fprintf(stderr, "### Error: memory access specified for not load/store opcode %s \n", TOP_Name(opcode));
+      exit(EXIT_FAILURE);
+    }
+    mem_bytes[(int)opcode] = bytes;
+  }
+  va_end(ap);
+}
+
+/* ====================================================================
+ *   ISA_Memory_Alignment
+ * ====================================================================
+ */
+void ISA_Memory_Alignment(int bytes, ... ) {
+  va_list ap;
+  TOP opcode;
+
+  // do not allow memory alignments more than these
+  assert (bytes <= 16);
+
+  va_start(ap, bytes);
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+    if (!prop_load->members[(int)opcode] && 
+	!prop_store->members[(int)opcode]) {
+      fprintf(stderr, "### Error: alignment specified for not load/store opcode %s \n", TOP_Name(opcode));
+      exit(EXIT_FAILURE);
+    }
+    mem_align[(int)opcode] = bytes;
+  }
+  va_end(ap);
 }
 
 /////////////////////////////////////
@@ -142,6 +248,7 @@ void ISA_Properties_End(void)
   list<ISA_PROPERTY>::iterator isi;
   int isa_property_count;	// How many non-constant properties?
   int code;
+  int i;
 
 #define FNAME "targ_isa_properties"
   char filename[1000];
@@ -155,6 +262,8 @@ void ISA_Properties_End(void)
   fprintf(cfile,"#include \"%s.h\"\n\n", FNAME);
 
   Emit_Header (hfile, "targ_isa_properties", interface);
+
+  fprintf(hfile,"#include \"topcode.h\"\n\n");
 
   isa_property_count = 0;  
   for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
@@ -243,6 +352,62 @@ void ISA_Properties_End(void)
 		      property->name);
     }
   }
+
+  // Emit the memory access functions:
+  fprintf (hfile, "\n\n");
+  fprintf (hfile, "extern const UINT32 TOP_Mem_Bytes (TOP opcode);");
+  fprintf (hfile, "\n");
+  fprintf (hfile, "extern const UINT32 TOP_Mem_Alignment (TOP opcode);");
+  fprintf (hfile, "\n\n");
+
+  fprintf (cfile, "\n");
+  fprintf (cfile, "/* ============================================================\n");
+  fprintf (cfile, " *  TOP_Mem_Bytes\n");
+  fprintf (cfile, " * ============================================================\n");
+  fprintf (cfile, " */\n");
+  fprintf (cfile, "const UINT32 TOP_Mem_Bytes (TOP opcode) {\n");
+  fprintf (cfile, "  switch (opcode) {\n");
+  for (i = 1; i <= 16; i++) {
+    bool opcode_exist = false;
+    for (code = 0; code < TOP_count; code++) {
+      if (mem_bytes[code] == i) {
+	opcode_exist = true;
+	fprintf (cfile, "    case TOP_%s:\n", TOP_Name((TOP)code));
+      }
+    }
+    if (opcode_exist == true) {
+      fprintf (cfile, "      return %d;\n\n", i);
+    }
+  }
+  fprintf (cfile, "    default:\n");
+  fprintf (cfile, "      return 0;\n");
+  fprintf (cfile, "  };\n");
+  fprintf (cfile, "}\n");
+  fprintf (cfile, "\n");
+
+  fprintf (cfile, "/* ============================================================\n");
+  fprintf (cfile, " *  TOP_Mem_Alignment\n");
+  fprintf (cfile, " * ============================================================\n");
+  fprintf (cfile, " */\n");
+  fprintf (cfile, "const UINT32 TOP_Mem_Alignment (TOP opcode) {\n");
+  fprintf (cfile, "  switch (opcode) {\n");
+  for (i = 1; i <= 16; i++) {
+    bool opcode_exist = false;
+    for (code = 0; code < TOP_count; code++) {
+      if (mem_align[code] == i) {
+	opcode_exist = true;
+	fprintf (cfile, "    case TOP_%s:\n", TOP_Name((TOP)code));
+      }
+    }
+    if (opcode_exist == true) {
+      fprintf (cfile, "      return %d;\n\n", i);
+    }
+  }
+  fprintf (cfile, "    default:\n");
+  fprintf (cfile, "      return 0;\n");
+  fprintf (cfile, "  };\n");
+  fprintf (cfile, "}\n");
+  fprintf (cfile, "\n");
 
   Emit_Footer (hfile);
 }

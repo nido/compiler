@@ -337,7 +337,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   list<ISA_BUNDLE_TYPE>::iterator ibi;
   int i;
 
-  const char *isa_exec_type_format = "  %3d,  /* %s: ";
+  //  const char *isa_exec_type_format = "  %3d,  /* %s: ";
   const char *info_index_type;
 
   int index = 0;
@@ -364,6 +364,9 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 
   fprintf (hfile, "\n#define ISA_MAX_SLOTS (%d)\n", max_slots);
   fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", TAG_SHIFT);
+  // Define the number of bytes in an instruction (bundle)
+  // bundle should be a multiple of 8 !
+  fprintf (hfile, "#define ISA_INST_BYTES (%d)\n", bundle_bits/8);
 
   fprintf (hfile, "\ntypedef %s ISA_EXEC_UNIT_PROPERTY;\n",
 	   info_index_type);
@@ -464,10 +467,13 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 
     for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
       ISA_EXEC_UNIT_TYPE exec_type = *iei;
-      if (exec_type->members[top]) 
+      if (exec_type->members[top]) {
 	flag_value |= (1ULL << exec_type->bit_position);
+      }
     }
-    fprintf(cfile, 	isa_exec_type_format,
+    fprintf(cfile, "  0x%0*llx,  /* %s: ", slot_mask_digits,
+	    //    fprintf(cfile, "  %3llu,  /* %s: ",
+	    //    fprintf(cfile, 	isa_exec_type_format,
 			flag_value,
 			TOP_Name((TOP)top));
     for ( iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei ) {

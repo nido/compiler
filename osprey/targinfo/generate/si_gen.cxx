@@ -1321,7 +1321,10 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
   for ( i = 0; i < TOP_count; ++i ) {
     bool isa_member = ISA_SUBSET_Member(machine_isa, (TOP)i);
     bool is_dummy = TOP_is_dummy((TOP)i);
-
+#ifdef TARG_ST100
+    // Arthur: Simulated shouldn't have any scheduling info either ?
+    bool is_simulated = TOP_is_simulated((TOP)i);
+#endif
     Maybe_Print_Comma(fd,is_first);
 
     fprintf(fd,"\n  %-10s  /* %s */",top_sched_info_ptr_map[i],
@@ -1336,7 +1339,11 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
                        TOP_Name((TOP)i));
       }
     } else {
-      if ( isa_member && ! is_dummy ) {  
+#ifdef TARG_ST100
+      if ( isa_member && ! is_dummy && ! is_simulated ) {
+#else  
+	if ( isa_member && ! is_dummy ) {
+#endif
 	fprintf(stderr,"### Error: no scheduling info for opcode %s\n",
                        TOP_Name((TOP)i));
 	err = true;
