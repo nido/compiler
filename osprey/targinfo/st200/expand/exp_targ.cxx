@@ -2291,7 +2291,6 @@ Expand_Select (
 )
 {
   TOP top;
-  TN* tmp_dest_tn;
   //const BOOL is_float = MTYPE_is_float(mtype);
 
   if (true_tn == false_tn) {
@@ -2299,13 +2298,6 @@ Expand_Select (
     return;
   }
 
-  if (TN_register_class(dest_tn) == ISA_REGISTER_CLASS_branch) {
-    tmp_dest_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    Build_OP(TOP_mfb, tmp_dest_tn, dest_tn, ops);
-  }
-  else
-    tmp_dest_tn = dest_tn;
-    
   if (TN_is_register(true_tn) && TN_register_class(true_tn) == ISA_REGISTER_CLASS_branch) {
     TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
     Build_OP(TOP_mfb, tmp, true_tn, ops);
@@ -2344,11 +2336,13 @@ Expand_Select (
     top = TOP_slct_r;
   }
 
-  Build_OP (top, dest_tn, cond_tn, reg_tn, false_tn, ops);
-
-  // need to give back result in a branch.
   if (TN_register_class(dest_tn) == ISA_REGISTER_CLASS_branch) {
-    Build_OP (TOP_mtb, dest_tn, tmp_dest_tn, ops);
+    TN *tmp_dest_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+    Build_OP (top, tmp_dest_tn, cond_tn, reg_tn, false_tn, ops);
+    Build_OP(TOP_mtb, dest_tn, tmp_dest_tn, ops);
+  }
+  else {
+    Build_OP (top, dest_tn, cond_tn, reg_tn, false_tn, ops);
   }
 }
 
