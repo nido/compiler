@@ -1111,7 +1111,16 @@ HB_Schedule::Add_OP_To_Sched_Vector (OP *op, BOOL is_fwd)
 	OP *succ_op = ARC_succ(arc);
 	OPSCH *succ_opsch = OP_opsch (succ_op, _hb_map);
 	if (!OPSCH_scheduled(succ_opsch)) {
+#ifdef TARG_ST
+	  // FdF 18/06/2004: OPSCH_ldst is set also on cmpne/cmpeq
+	  // operations, for which Memory_OP_Base_Opndnum is not
+	  // defined (returns -1).
+	  INT opndnum = CGTARG_Is_OP_Cmp_Eq_Ne(op)
+	                  ? TOP_Find_Operand_Use(OP_code(op), OU_opnd1)
+	                  : Memory_OP_Base_Opndnum (op);
+#else
 	  INT opndnum = Memory_OP_Base_Opndnum (op);
+#endif
 	  INT scycle = Clock - CG_DEP_Latency (succ_op, op, CG_DEP_REGIN, opndnum);
 	  OPSCH_scycle(succ_opsch) = MIN (scycle, OPSCH_scycle(succ_opsch));
 	}
