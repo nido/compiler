@@ -598,6 +598,27 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
                                          OPS *prolog_ops, OPS *body_ops);
 
 /* ====================================================================
+ *    Properties:
+ * ====================================================================
+ */
+
+inline INT
+CGTARG_Text_Alignment (void) {
+  return ISA_INST_BYTES;
+}
+
+/* --------------------------------------------------------------------
+ *    Return the inverse of <opr>. TOP_UNDEFINED is returned
+ *    if there is no inverse. Note that the inverse of an
+ *    instruction that takes an immediate does not also necessarily
+ *    take an immediate. 
+ * --------------------------------------------------------------------
+ */
+extern TOP CGTARG_Invert(TOP opr);
+
+
+
+/* ====================================================================
  *    Target Load/Store Properties:
  * ====================================================================
  */

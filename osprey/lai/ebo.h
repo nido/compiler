@@ -114,7 +114,6 @@
 #ifndef EBO_INCLUDED
 #define EBO_INCLUDED
 
-
 void EBO_Init(void);
 
 void EBO_Pre_Process_Region(RID *rid);

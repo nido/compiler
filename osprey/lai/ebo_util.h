@@ -86,6 +86,10 @@
  * =======================================================================
  */
 
+#ifdef TARG_ST
+extern void EBO_Set_OP_omega (OP *op, ...);
+extern void EBO_OPS_omega (OPS *ops, EBO_TN_INFO *pred_tninfo);
+#endif
 
 inline
 BOOL
