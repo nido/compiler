@@ -3712,9 +3712,10 @@ Assemble_Bundles(BB *bb)
     Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]));
 #endif
 
+    OP *sl_op;
     slot = 0;
     do {
-      OP *sl_op = slot_op[slot];
+      sl_op = slot_op[slot];
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
 #ifdef TARG_ST200
