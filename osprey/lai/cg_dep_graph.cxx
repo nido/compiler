@@ -2247,11 +2247,11 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     } else if (OP_spill(pred_op) || OP_spill(succ_op)) {
 #else
     } else if (pred_spill_st || succ_spill_st) {
+#endif
       /* One's a spill, and the other's not, so they're independent.  */
 
       return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
 			info_src);
-#endif
     } else {
 
 #if 0
