@@ -2566,6 +2566,7 @@ Handle_STID (
 	Exp_COPY (cresult, ctn, &New_OPs);
       }
     }
+    Print_OPs (OPS_first(&New_OPs));
 
     return;
   }
@@ -4905,6 +4906,11 @@ Handle_INTRINSIC_CALL (
   result = Exp_Intrinsic_Call (id, 
 	opnd_tn[0], opnd_tn[1], opnd_tn[2], &New_OPs, &label, &loop_ops);
 
+#ifdef TARG_ST
+  // [CG]:We keep the last generated op
+  OP *last_intr_op =  OPS_last(&New_OPs);
+#endif
+
   if (OPS_first(&loop_ops) != NULL && label != LABEL_IDX_ZERO) {
 	BB *bb = Start_New_Basic_Block ();
 	BB_Add_Annotation (bb, ANNOT_LABEL, (void *)label);
@@ -4930,7 +4936,13 @@ Handle_INTRINSIC_CALL (
     Expand_Statement (next_stmt);
     next_stmt = WN_next(next_stmt);
     FOR_ALL_OPS_OPs_REV (&New_OPs, op) {
+#ifdef TARG_ST
+      // [CG]:We stop at the  last generated op
+      // An intrinsic call may not be expanded into a TOP_intrcall!
+      if (op == last_intr_op) break;
+#else
       if (OP_code(op) == TOP_intrncall) break;
+#endif
       for (i = 0; i < OP_opnds(op); i++) {
 	TN *otn = OP_opnd(op,i);
 
