@@ -952,8 +952,9 @@ CGTARG_Spill_Type (
     case ISA_REGISTER_CLASS_integer:
       return MTYPE_To_TY(MTYPE_I4);
 
+      // FdF: Spill type for branch register is I4 in memory
     case ISA_REGISTER_CLASS_branch:
-      return MTYPE_To_TY(MTYPE_B);
+      return MTYPE_To_TY(MTYPE_I4);
 
     default:
       FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
