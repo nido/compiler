@@ -754,7 +754,8 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Check_Profitable_Logif BB%d BB%d\n", BB_id(bb1), BB_id(bb2));
-    Print_All_BBs();
+    Print_BB (bb1);
+    Print_BB (bb2);
   }
 
   CG_SCHED_EST *se1 = CG_SCHED_EST_Create(bb1, &MEM_Select_pool,
@@ -1258,7 +1259,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup, BOOL taken)
 
 // Create a phi for each GTNs use if there is not. GTN needs to be renamed
 static void
-Force_End_Tns (BB* bb, BB *head, BB *tail)
+Force_End_Tns (BB* bb, BB *tail)
 {
   OP *op;
 
@@ -1266,11 +1267,13 @@ Force_End_Tns (BB* bb, BB *head, BB *tail)
     for (UINT8 defnum = 0; defnum < OP_results(op); defnum++) {
       TN *res = OP_result(op, defnum);
 
-      if (TN_is_register(res) && TN_is_global_reg(res) && !TN_is_dedicated(res)) {
+      // if the GTN is alive after the hammock, need to give it a phi.
+      if (TN_is_register(res) && TN_is_global_reg(res) &&
+          !TN_is_dedicated(res) && GTN_SET_MemberP(BB_live_out(tail), res)) {
         OP *phi;
         bool founddef = false;
 
-        FOR_ALL_BB_PHI_OPs(tail, phi) {
+          FOR_ALL_BB_PHI_OPs(tail, phi) {
           for (UINT8 usenum = 0; usenum < OP_opnds(phi); usenum++) {
             if (OP_opnd(phi, usenum) == res) {
               founddef = true;
@@ -1287,7 +1290,7 @@ Force_End_Tns (BB* bb, BB *head, BB *tail)
           Set_OP_result(op, defnum, new_tn);
           
           // Rename uses in current BB
-          OP *op2;        
+          OP *op2;
           for (op2 = OP_next(op); op2 != NULL; op2 = OP_next(op2)) {
             for (UINT8 usenum = 0; usenum < OP_opnds(op2); usenum++) {
               if (OP_opnd(op2, usenum) == res)
@@ -1295,7 +1298,20 @@ Force_End_Tns (BB* bb, BB *head, BB *tail)
             }
           }
 
-          // Make up a phi
+          BBLIST *succs;
+          FOR_ALL_BB_SUCCS(bb, succs) {
+            BB *succ = BBLIST_item(succs);
+            if (succ != tail) {
+              FOR_ALL_BB_OPs(bb, op2) { 
+                for (UINT8 usenum = 0; usenum < OP_opnds(op2); usenum++) {
+                  if (OP_opnd(op2, usenum) == res)
+                    Set_OP_opnd(op2, usenum, new_tn);
+                }
+              }
+            }
+          }
+
+          // Make up a phi in the tail basic block
           TN *result[1];
           TN *opnd[npreds];
           result[0] = res;
@@ -1303,11 +1319,15 @@ Force_End_Tns (BB* bb, BB *head, BB *tail)
           BBLIST *preds;
           UINT8 pos=0;
 
+          BB *last_succ = bb;
+          BB *succ;
+          while ((succ = BB_Unique_Successor (last_succ)) && succ != tail)
+            last_succ = succ;
+          
           FOR_ALL_BB_PREDS(tail,preds) {
             BB *pred = BBLIST_item(preds);
-            if (pred == bb) {
+            if (pred == last_succ)
               opnd[pos++] = new_tn;
-            }
             else
               opnd[pos++] = res;
           }
@@ -1329,9 +1349,6 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
   BB *first_bb = bp;
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
   OPS new_ops = OPS_EMPTY;  
-
-  // First thing is to make sure that each GTN ends up in a phi in the tail basic block
-  Force_End_Tns (bp, to_bb, tail);
 
   do {
     op_list old_phis;
@@ -1713,6 +1730,12 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
   BB_Fall_Thru_and_Target_Succs(bb2, &bb2_fall_thru, &bb2_target);
 
+  if (Trace_Select_Gen) {
+    fprintf (Select_TFile, "\nStart gen logical from BB%d \n", BB_id(bb1));
+    Print_BB (bb1);
+    Print_BB (bb2);
+  }
+
   // Check optimisation type.
   if (bb1_fall_thru == bb2_fall_thru) {
     // if (a && b)
@@ -1870,7 +1893,25 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   OP *phi;
 
    if (Trace_Select_Gen) {
-     fprintf (TFile, "\nSelect_Fold BB%d\n", BB_id(head));
+     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
+     Print_BB (head);
+     if (fall_thru_bb != tail) {
+       BB *succ = fall_thru_bb;
+       while (succ != tail) {
+         Print_BB (succ);
+         succ = BB_Unique_Successor (succ);
+       }
+     }
+
+     if (target_bb != tail) {
+       BB *succ = target_bb;
+       while (succ != tail) {
+         Print_BB (succ);
+         succ = BB_Unique_Successor (succ);
+       }
+     }
+
+     Print_BB (tail);
    }
    
   // keep a list of newly created conditional move / compare
@@ -1892,6 +1933,13 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   dup_bb_phi_map = OP_MAP_Create();
 
+  // First thing is to make sure that each GTN ends up in a phi in the tail basic block
+  if (target_bb != tail)
+    Force_End_Tns (target_bb, tail);
+
+  if (fall_thru_bb != tail)
+    Force_End_Tns (fall_thru_bb, tail);
+
   if (target_bb != tail && n_preds_target > 1) {
     Copy_BB_For_Duplication(target_bb, head, tail, TRUE);
     target_bb = tail;
@@ -1902,13 +1950,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     fall_thru_bb = tail;
     did_duplicate_bb = TRUE;
   }
-
-   if (Trace_Select_Gen) {
-     if (did_duplicate_bb) {
-       fprintf (TFile, "after tail duplication\n");
-       Print_All_BBs();
-     }
-   }
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
     UINT8 npreds;
@@ -2093,6 +2134,13 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
      GRA_LIVE_Compute_Liveness_For_BB(tail);
 
    GRA_LIVE_Compute_Liveness_For_BB(head);
+
+   if (Trace_Select_Gen) {
+     fprintf (TFile, "\nEnd Select_Fold from BB%d\n", BB_id(head));
+     Print_BB (head);
+     Print_BB (tail);
+   }
+   
 }
 
 /* ================================================================
@@ -2139,11 +2187,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
       
     if (bbb = Is_Double_Logif(bb)) {
-      if (Trace_Select_Gen) {
-        fprintf (Select_TFile, "\nStart gen logical for BB%d \n", BB_id(bb));
-        Print_All_BBs();
-      }
-        
       Initialize_Hammock_Memory();
       Simplify_Logifs(bb, bbb);
 
@@ -2166,17 +2209,12 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
     
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
-      if (Trace_Select_Gen) {
-        fprintf (Select_TFile, "\nStart gen select for BB%d \n", BB_id(bb));
-      }
-      
       Initialize_Hammock_Memory();
 
       GRA_LIVE_Recalc_Liveness(rid);
       GRA_LIVE_Rename_TNs();
 
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
-
 #ifdef Is_True_On
       Sanity_Check();
 #endif
