@@ -132,7 +132,10 @@ typedef enum {
   ANNOT_LOOPINFO  = 6,
   ANNOT_SWITCH 	  = 7,
   ANNOT_ROTATING_KERNEL = 8,
-  ANNOT_ASMINFO   = 9
+  ANNOT_ASMINFO   = 9,
+#ifdef TARG_ST
+  ANNOT_REMAINDERINFO = 10,
+#endif
 } ANNOTATION_KIND;
 
 class WN;
@@ -160,7 +163,9 @@ typedef struct annotation {
 #define ANNOT_switch(a)		((ST *)ANNOT_info(a))
 #define ANNOT_rotating_kernel(a)   ((ROTATING_KERNEL_INFO*)ANNOT_info(a))
 #define ANNOT_asminfo(a)	((ASMINFO *)ANNOT_info(a))
-
+#ifdef TARG_ST
+#define ANNOT_remainderinfo(a)	((REMAINDERINFO *)ANNOT_info(a))
+#endif
 
 typedef struct loopinfo {
  WN *wn;			/* LOOP_INFO WHIRL node */
@@ -173,6 +178,14 @@ typedef struct loopinfo {
 #define LOOPINFO_line(x)		(Srcpos_To_Line(LOOPINFO_srcpos(x)))
 #define LOOPINFO_trip_count_tn(x)	((x)->trip_count_tn)
 
+#ifdef TARG_ST
+/* Annotation attached to blocks of remainder loops. */
+typedef struct remainderinfo {
+  void *head_bb;			/* Effective loop head. */
+} REMAINDERINFO;
+
+#define REMAINDERINFO_head_bb(i) ((BB *)(i)->head_bb)
+#endif
 
 typedef	struct entryinfo {
   ST *name;		/* entry point name.		     */

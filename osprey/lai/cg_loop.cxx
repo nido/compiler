@@ -192,6 +192,7 @@ BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 BOOL CG_LOOP_unroll_do_unwind = FALSE;
 BOOL CG_LOOP_unroll_remainder_after = FALSE;
 #endif
+BOOL CG_LOOP_ignore_pragmas = FALSE;
 
 #ifdef MIPS_UNROLL
 BOOL CG_LOOP_unroll_analysis = TRUE;
@@ -1544,6 +1545,19 @@ void CG_LOOP_Backpatch_Trace(BB *bb, CG_LOOP_BACKPATCH *bp)
  * These helper procedures are also invoked during loop unrolling by
  * Unroll_Make_Remainder_Loop.
  *
+ * TARG_ST: [CG]
+ * Unroll_Make_Remainder_Loop: this function creates an
+ * REMAINDERINFO annotation attached to each BB of the remainder
+ * loop. The REMAINDER_head_bb() gives the head BB of the unrolled
+ * loop. Each OP as also the OP_unrolling(), OP_orig_idx(), and
+ * OP_unrolled_bb() set.
+ * If a BB as a REMAINDERINFO it is part of a remainder loop.
+ * If BB_unrollings() > 0, the remainder block is an unrolled block.
+ * If BB_unrollings() == 0, the block is part of a multi bb remainder.
+ * If OP_unrolled_bb() is set the OP is an instance of op in an
+ * unrolled BB remainder or a multi BB reminder and its OP_unrolling()
+ * and OP_orig_idx() are set.
+ *
  * Count_Copies_Needed examines prolog and epilog backpatches and loop
  * body operands for omega values that will require additional TNs and
  * TN copies to remove.  It initializes the values of tn_def_map and
@@ -2161,7 +2175,6 @@ typedef struct {
 #define NOTE_const_trip(n)	((n)->const_trip)
 #define NOTE_reason(n)		((n)->reason)
 
-
 static void remainder_head_note_handler(NOTE_ACTION action, NOTE_INFO *info,
 					FILE *file)
 /* -----------------------------------------------------------------------
@@ -2214,8 +2227,6 @@ static void note_remainder_head(BB *head, UINT16 ntimes, UINT16 trips_if_const)
   NOTE_ntimes(note) = trips_if_const ? trips_if_const : ntimes;
   NOTE_Add_To_BB(head, remainder_head_note_handler, (NOTE_INFO *)note);
 }
-
-
 
 static void not_unrolled_note_handler(NOTE_ACTION action, NOTE_INFO *info,
 				      FILE *file)
@@ -2665,7 +2676,7 @@ Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, UINT32 nti
 #endif
 
 #ifdef TARG_ST
-void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes, BOOL remainder_after)
+void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes, BB *unrolled_head, BOOL remainder_after)
 #else
 void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 #endif
@@ -3057,6 +3068,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   BB *first_remainder_body = body;
   float body_freq = 0.0;
   
+#ifdef TARG_ST
+  REMAINDERINFO *remainder_info = TYPE_P_ALLOC(REMAINDERINFO);
+  REMAINDERINFO_head_bb(remainder_info) = unrolled_head;
+#endif
+      
   if (const_trip && TN_value(new_trip_count) < 2) {
     /*
      * Remainder isn't really a loop, so remove it from its own BB_succs/
@@ -3066,7 +3082,10 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
     Unlink_Pred_Succ(body, body);
     Set_BB_loop_head_bb(body, NULL);
     body_freq = loop_entry_freq;
-
+#ifdef TARG_ST
+    // [CG]: Add REMAINDERINFO Annotation
+    BB_Add_Annotation(body, ANNOT_REMAINDERINFO, remainder_info);
+#endif
   } else {
 
     if (ntimes == 2 || CG_LOOP_unroll_remainder_fully) {
@@ -3116,14 +3135,27 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	  if (OP_prefetch(op) && unrolling != unroll_times)
 	    continue;
 	  OP *new_op = Dup_OP(op);
+#ifdef TARG_ST
+	  // [CG] Set op unrolling even on multi bb remainder
+	  Set_OP_unrolling(new_op, unrolling-1);
+	  Set_OP_orig_idx(new_op, OP_map_idx(op));
+	  Set_OP_unroll_bb(new_op, unrolled_body);
+#else
           if (const_trip) {
-            Set_OP_unrolling(new_op, unrolling-1);
-            Set_OP_orig_idx(new_op, OP_map_idx(op));
-            Set_OP_unroll_bb(new_op, unrolled_body);
+	    Set_OP_unrolling(new_op, unrolling-1);
+	    Set_OP_orig_idx(new_op, OP_map_idx(op));
+	    Set_OP_unroll_bb(new_op, unrolled_body);
           }
+#endif
 	  Copy_WN_For_Memory_OP(new_op, op);
 	  BB_Append_Op(unrolled_body, new_op);
 	}
+#ifdef TARG_ST
+	// [CG]: Add REMAINDERINFO Annotation
+	BB_Add_Annotation(unrolled_body, ANNOT_REMAINDERINFO, remainder_info);
+#endif
+
+
 	// do not generate branch for the last unrolling
 	if (unrolling < unroll_times && !const_trip) {
 #ifdef TARG_ST200
@@ -3158,6 +3190,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
       if (freqs || BB_freq_fb_based(body))
 	body_freq = const_trip ? 
 	  BB_freq(CG_LOOP_prolog) : loop_entry_freq / (unroll_times + 1.0);
+
       body = unrolled_body;
 
     } else {
@@ -3193,6 +3226,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	if (freqs && trip_est > 0)
 	  BBLIST_prob(BB_succs(body)) = (trip_est - 1.0) / trip_est;
       }
+
+#ifdef TARG_ST
+      // [CG]: Add REMAINDERINFO Annotation
+      BB_Add_Annotation(body, ANNOT_REMAINDERINFO, remainder_info);
+#endif
 
       if (Get_Trace(TP_CGLOOP, 0x4)) {
 	#pragma mips_frequency_hint NEVER
@@ -4351,7 +4389,8 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
       if (!remainder_after)
 	DevWarn("unroll_make_remainder_loop: remainder loop could not be put after unrolled loop");
     }
-    Unroll_Make_Remainder_Loop(cl, ntimes, remainder_after);
+    // Pass new loop head and remainder_after flag.
+    Unroll_Make_Remainder_Loop(cl, ntimes, unrolled_body, remainder_after);
 #else
     Unroll_Make_Remainder_Loop(cl, ntimes);
 #endif
@@ -4592,6 +4631,18 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   }
   if (freqs)
     BB_freq(head) = replica_prob;
+  
+#ifdef TARG_ST
+  // [CG]: Update last unrolled replica (old head)
+  OP *op;
+  Set_BB_loop_head_bb(head, &replicas[0]);
+  Set_BB_unrollings(head, ntimes);
+  FOR_ALL_BB_OPs(head, op) {
+    Set_OP_unrolling(op, ntimes-1); 
+    Set_OP_orig_idx(op, OP_map_idx(op));
+    Set_OP_unroll_bb(op, head);
+  }
+#endif
 
   {
     // update loopback edge
@@ -4629,15 +4680,16 @@ INT32 CG_LOOP::Get_Unroll_Times(ANNOTATION *&pragma_unroll)
   pragma_unroll = NULL;
   unroll_times = CG_LOOP_unroll_times_max;
 
-  ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
-  while (unroll_ant && WN_pragma(ANNOT_pragma(unroll_ant)) != WN_PRAGMA_UNROLL)
-    unroll_ant = ANNOT_Get(ANNOT_next(unroll_ant), ANNOT_PRAGMA);
-  if (unroll_ant) {
-    WN *wn = ANNOT_pragma(unroll_ant);
-    unroll_times = MAX(1, WN_pragma_arg1(wn));
-    pragma_unroll = unroll_ant;
+  if (!CG_LOOP_ignore_pragmas) {
+    ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+    while (unroll_ant && WN_pragma(ANNOT_pragma(unroll_ant)) != WN_PRAGMA_UNROLL)
+      unroll_ant = ANNOT_Get(ANNOT_next(unroll_ant), ANNOT_PRAGMA);
+    if (unroll_ant) {
+      WN *wn = ANNOT_pragma(unroll_ant);
+      unroll_times = MAX(1, WN_pragma_arg1(wn));
+      pragma_unroll = unroll_ant;
+    }
   }
-
   return unroll_times;
 }
 

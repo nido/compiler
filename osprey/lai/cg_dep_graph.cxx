@@ -222,6 +222,10 @@ BOOL CG_DEP_Prune_Dependence = FALSE;           /* exported */
 BOOL CG_DEP_Adjust_OOO_Latency = TRUE;          /* exported */
 INT32 CG_DEP_Mem_Arc_Pruning = PRUNE_NONE;	/* exported */
 
+#ifdef TARG_ST
+BOOL CG_DEP_ignore_pragmas = FALSE;
+#endif
+
 BB * _cg_dep_bb; // exported to cg_dep_graph_update.h so it can 
 		 // be used in an inline function there.
 
@@ -270,7 +274,16 @@ inline BOOL OP_like_store(OP *op)
   return like_store;
 }
 
+#ifdef TARG_ST
 //
+// Loopdep informations
+//
+static LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb);
+static BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg);
+static BB *ops_same_loop(OP *op1, OP *op2);
+
+#endif
+
 // -----------------------------------------------------------------------
 // TRUE if the control dependence between <op> and <xfer_op> 
 // must be preserved for all practical purposes.
@@ -2295,6 +2308,14 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 			info_src);
     }
 
+#ifdef TARG_ST
+    if (get_cg_loopdep(pred_op, succ_op, omega, lex_neg) == FALSE)
+      return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
+			info_src);
+
+    // [CG] This enables better dependence checking when cross iteration
+    // dependency is not requested
+    if (omega == NULL && !lex_neg)
     /* First try the LNO dependence graph */
     if (!CG_DEP_Ignore_LNO && Current_Dep_Graph != NULL &&
 	OP_unroll_bb(pred_op) == OP_unroll_bb(succ_op)) {
@@ -2306,6 +2327,64 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	BOOL is_must, is_distance;
 	DIRECTION dir;
 	INT32 dist;
+	EINDEX16  inv_edge = 0;
+	INT32 pred_unroll = 0, succ_unroll = 0;
+	if (pred_unrollings > 1) {
+	  pred_unroll = OP_unrolling(pred_op);
+	  succ_unroll = OP_unrolling(succ_op);
+	}
+
+	if (edge) {
+	  DEP dep = Current_Dep_Graph->Dep(edge);
+	  is_distance = DEP_IsDistance(dep);
+	  dir = DEP_Direction(dep);
+	  is_must = Current_Dep_Graph->Is_Must(edge);
+	  dist = is_distance ? DEP_Distance(dep) : DEP_DistanceBound(dep);
+	}
+	if (edge == 0) {
+	  /* Independent */
+	  return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
+			    info_src);
+	} else {
+	  FmtAssert(dist >= 0, 
+		    ("LNO edge %d as negative dist %d", edge, dist));
+	  FmtAssert(!(dir == DIR_POS && dist == 0), 
+		    ("LNO POS(+) edge %d has dist of 0", edge));
+	  
+	  if (// check: negative unroll distance
+	      succ_unroll < pred_unroll || 
+	      // check: unroll_dist != dist 
+	      (is_distance && 
+	       succ_unroll - pred_unroll != dist) ||
+	      // check: unroll_dist < min_dist
+	      (!is_distance &&
+	       succ_unroll - pred_unroll < dist))
+	    return verify_mem(FALSE, definite, omega, pred_op, succ_op,
+			      cg_result, info_src);
+	  *definite = (cg_result == IDENTICAL && *definite ||
+		       is_must);
+	  if (*definite)
+	    *definite = under_same_cond_tn(pred_op, succ_op, 0);
+	  return verify_mem(TRUE, definite, omega, pred_op, succ_op, cg_result,
+			    info_src);
+	}
+      }
+    }
+    else
+#endif
+    /* First try the LNO dependence graph */
+    if (!CG_DEP_Ignore_LNO && Current_Dep_Graph != NULL &&
+	OP_unroll_bb(pred_op) == OP_unroll_bb(succ_op)) {
+      VINDEX16 v1 = Current_Dep_Graph->Get_Vertex(pred_wn);
+      VINDEX16 v2 = Current_Dep_Graph->Get_Vertex(succ_wn);
+      info_src = "LNO";
+      if (v1 != 0 && v2 != 0) {
+	EINDEX16 edge = Current_Dep_Graph->Get_Edge(v1, v2);
+	BOOL is_must, is_distance;
+	DIRECTION dir;
+	INT32 dist;
+	EINDEX16  inv_edge = 0;
+
 	if (edge) {
 	  DEP dep = Current_Dep_Graph->Dep(edge);
 	  is_distance = DEP_IsDistance(dep);
@@ -2322,7 +2401,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	   * and there's either no edge or only a cross-iteration edge
 	   * from v1 to v2.
 	   */
-	  EINDEX16 inv_edge = Current_Dep_Graph->Get_Edge(v2, v1);
+	  inv_edge = Current_Dep_Graph->Get_Edge(v2, v1);
 	  if (inv_edge) {
 	    DEP inv_dep = Current_Dep_Graph->Dep(inv_edge);
 	    INT32 inv_dist = DEP_IsDistance(inv_dep) ?
@@ -2367,7 +2446,8 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	  if (pred_unrollings > 1) {
 	    INT32 adjust = dist + OP_unrolling(pred_op)-OP_unrolling(succ_op);
 	    info_src = "LNO (+ CG unrolling info)";
-	    if (is_distance && adjust % (INT32)pred_unrollings != 0) {
+	    if (is_distance && adjust % (INT32)pred_unrollings != 0)
+	      {
 	      return verify_mem(FALSE, definite, omega, pred_op, succ_op,
 				cg_result, info_src);
 	    } else {
@@ -4958,6 +5038,149 @@ CG_DEP_Mem_Aliased(OP *prev_op, OP *op, BOOL *definite, UINT8 *omega)
   aliased = get_mem_dep(prev_op, op, definite, omega, 0);
   CG_DEP_Addr_Analysis = old;
   return aliased;
+}
+
+/*
+ * CG_Get_BB_Loopdep_Kind
+ *
+ * Returns loopdep information attached to the BB.
+ * Note that the bb should be a loop header
+ * to get loop dependencies.
+ */
+static 
+LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb)
+{
+  BB *head;
+  LOOPDEP kind = (LOOPDEP)0;
+  
+  // Get a tentative header of the loop containing bb
+  head = bb;
+
+  ANNOTATION *annot;
+  WN *pragma = NULL;
+  for (annot = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+       annot != NULL;
+       annot = ANNOT_Get(ANNOT_next(annot), ANNOT_PRAGMA)) {
+    if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_IVDEP ||
+	WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPDEP) {
+      if (pragma != NULL)
+	DevWarn("Multiple LOOPDEP/IVDEP pragma at BB:%d", BB_id(bb));
+      pragma = ANNOT_pragma(annot);
+    }
+  }
+  if (pragma) {
+    if (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP) {
+      kind = (LOOPDEP)WN_pragma_arg1(pragma);
+    } else if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
+      if (Liberal_Ivdep) kind = LOOPDEP_LIBERAL;
+      else if (Cray_Ivdep) kind = LOOPDEP_VECTOR;
+      else kind = LOOPDEP_PARALLEL;
+    }
+  }
+  return kind;
+}
+
+/*
+ * ops_same_loop
+ *
+ * Returns the loop head if ops are in the same loop nest.
+ * Detects also ops in the same loop residu, in this case
+ * the loop head of the effective loop is returned.
+ */
+static
+BB *ops_same_loop(OP *op1, OP *op2)
+{
+  BB *bb1 = OP_bb(op1), *bb2 = OP_bb(op2);
+  BB *head = NULL;
+  // Check that loop head is the same.
+  // Note that if one is unrolled fully, loop head may
+  // be the same while to bb are from different nesting level
+  // loop, so we avoid this case.
+  if (BB_loop_head_bb(bb1) &&
+      (bb1 == bb2 ||
+       (BB_loop_head_bb(bb1) == BB_loop_head_bb(bb2) &&
+	!BB_unrolled_fully(bb1) && !BB_unrolled_fully(bb2)))) {
+    head =  BB_loop_head_bb(bb1); /* same loop body. */
+  } else {
+    ANNOTATION *ant1 = ANNOT_Get(BB_annotations(bb1), ANNOT_REMAINDERINFO);
+    ANNOTATION *ant2 = ANNOT_Get(BB_annotations(bb2), ANNOT_REMAINDERINFO);
+    if (ant1 != NULL &&
+	ant1->info == ant2->info) {
+      /* In same remainder loop. */
+      head =  REMAINDERINFO_head_bb(ANNOT_remainderinfo(ant1));
+    }
+  }
+#ifdef Is_True_On
+  if (head != NULL) {
+    DevAssert((OP_unroll_bb(op1) == NULL) == (OP_unroll_bb(op2) == NULL),
+	      ("Unroll bb mismatch for ops (BB:%d,idx:%d) and (BB:%d,idx:%d) with same loop head BB:%d\n", 
+	       BB_id(OP_bb(op1)), OP_map_idx(op1),
+	       BB_id(OP_bb(op2)), OP_map_idx(op2),
+	       BB_id(head)));
+    INT32 unroll1 = OP_unroll_bb(op1) ? BB_unrollings(OP_unroll_bb(op1)):0; 
+    INT32 unroll2 = OP_unroll_bb(op2) ? BB_unrollings(OP_unroll_bb(op2)):0; 
+    DevAssert(unroll1 == unroll2,
+	      ("Unrolling mismatch (%d != %d) for ops (BB:%d,idx:%d) and (BB:%d,idx:%d) with same loop head BB:%d \n", 
+	       unroll1, unroll2,
+	       BB_id(OP_bb(op1)), OP_map_idx(op1),
+	       BB_id(OP_bb(op2)), OP_map_idx(op2),
+	       BB_id(head)));
+  }
+#endif
+  return head;
+    
+}
+
+/*
+ * get_cg_loopdep ()
+ *
+ * Compute dependencies between operations in the same loop
+ * based on loopdep pragmas.
+ * Conservative if no dependency information is found on the loop
+ * header.
+ */
+static 
+BOOL get_cg_loopdep(OP *pred_op, OP *succ_op, UINT8 *omega, int lex_neg)
+{
+  BB *bb = OP_bb(pred_op);
+  INT32 dist = 0;
+  LOOPDEP kind = (LOOPDEP)0;
+  BB *head;
+  INT32 idx1 = 0;
+  INT32 idx2 = 0;
+  
+  
+  if (CG_DEP_ignore_pragmas) goto dependent;
+
+  // Get common loop head
+  if (!(head = ops_same_loop(pred_op, succ_op))) goto dependent;
+
+  kind = CG_Get_BB_Loopdep_Kind(head);
+  switch (kind) {
+  case LOOPDEP_VECTOR: 
+    // Vector: distance |OPi, OPj| is [0...[ for idx(i)<idx(j)
+    idx1 = OP_unroll_bb(pred_op) ? OP_orig_idx(pred_op): OP_map_idx(pred_op);
+    idx2 = OP_unroll_bb(succ_op) ? OP_orig_idx(succ_op): OP_map_idx(succ_op);
+    if (!((OP_unrolling(pred_op) <= OP_unrolling(succ_op) || lex_neg) &&
+	  idx1 < idx2)) dist = -1;
+    break;
+  case LOOPDEP_PARALLEL: 
+    // Parallel: distance |OPi, OPj| is 0
+    if (OP_unrolling(pred_op) != OP_unrolling(succ_op) || lex_neg) dist = -1;
+    break;
+  case LOOPDEP_LIBERAL: 
+    // Liberal: distance is [-]
+    dist = -1;
+    break;
+  default:
+    break;
+  }
+ dependent:
+  if (lex_neg && dist == 0) dist = 1;
+  if (dist < 0) return FALSE;
+  if (omega == NULL && dist > 0) return FALSE;
+  if (omega != NULL) *omega = dist;
+  return TRUE;
 }
 
 #endif
