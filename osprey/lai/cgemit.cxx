@@ -1360,6 +1360,10 @@ Write_Symbol (
   INT scn_idx,		/* Section to emit it in */
   Elf64_Word scn_ofst,	/* Section offset to emit it at */
   INT32	repeat		/* Repeat count */
+#ifdef TARG_ST
+  /* (cbr) support for half address relocation */
+  ,  INT32 osize = Pointer_Size  /* Output size */
+#endif
 )
 {
   INT32 i;
@@ -1443,6 +1447,12 @@ Write_Symbol (
     }
 #endif
     if (Assembly) {
+#ifdef TARG_ST
+      /* (cbr) support for half address relocation */
+      if (osize == 2 && osize != address_size)
+        fprintf (Output_File, "\t%s\t",  AS_HALF);
+      else
+#endif
       fprintf (Output_File, "\t%s\t", 
 	       (scn_ofst % address_size) == 0 ? 
 	       AS_ADDRESS : AS_ADDRESS_UNALIGNED);
@@ -1653,6 +1663,24 @@ Write_INITV (
 	   break;
       }
       break;
+
+#ifdef TARG_ST
+      /* (cbr) support for half address relocation */
+    case INITVKIND_SYMOFF16:
+      st = &St_Table[INITV_st(inv)];
+      switch (ST_sclass(st)) {
+	case SCLASS_AUTO:
+	case SCLASS_FORMAL:
+          DevAssert(FALSE, ("wrong class symoff16"));
+	  break;
+          
+	default:
+          scn_ofst = Write_Symbol ( st, INITV_ofst(inv),
+                                    scn_idx, scn_ofst, INITV_repeat1(inv), 2);
+	   break;
+      }
+      break;
+#endif
 
     case INITVKIND_LABEL:
 	lab = INITV_lab(inv);
