@@ -755,7 +755,7 @@ void ISA_Operands_End(void)
 
   fprintf(efile, "ISA_OPERAND_operand_types\n");
 
-  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[] = {\n");
+  fprintf(cfile, "\nconst ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[] = {\n");
   for (ivti = all_operand_types.begin(); ivti != all_operand_types.end(); ++ivti) {
     unsigned int flags;
     OPERAND_VALUE_TYPE val_type = *ivti;
@@ -801,7 +801,7 @@ void ISA_Operands_End(void)
 	          max_results_name, max_results_name, max_results_name);
   fprintf(efile, "ISA_OPERAND_info\n");
 
-  fprintf(cfile, "\nTARGINFO_EXPORTED const ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
+  fprintf(cfile, "\nconst ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
   for (ogi = all_groups.begin(); ogi != all_groups.end(); ++ogi) {
     int i;
     int pos;
@@ -957,7 +957,7 @@ void ISA_Operands_End(void)
   assert(max_groups <= 0xffff);
 
   fprintf (efile, "ISA_OPERAND_info_index\n");
-  fprintf (cfile, "\nTARGINFO_EXPORTED const %s ISA_OPERAND_info_index[] = {\n", info_index_type);
+  fprintf (cfile, "\nconst %s ISA_OPERAND_info_index[] = {\n", info_index_type);
   for (code = 0; code < TOP_count; code++) {
     OPERANDS_GROUP oper_group = op_groups[code];
     fprintf (cfile, "  %3d,  /* %s: %s */\n",
@@ -980,8 +980,8 @@ void ISA_Operands_End(void)
   fprintf(hfile, "\ninline const ISA_OPERAND_INFO *"
 		   "ISA_OPERAND_Info(TOP topcode)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const %s ISA_OPERAND_info_index[];\n"
-		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
+		 "  extern const %s ISA_OPERAND_info_index[];\n"
+		 "  extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
 		 "  INT index = ISA_OPERAND_info_index[(INT)topcode];\n"
 
 		 "  return &ISA_OPERAND_info[index];\n"
@@ -998,7 +998,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT opnd)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
 		 "  INT index = oinfo->opnd[opnd];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1013,7 +1013,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT result)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
 		 "  INT index = oinfo->result[result];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1181,7 +1181,7 @@ void ISA_Operands_End(void)
 		 "  return iopnd;\n"
 		 "}\n");
 
-  fprintf(hfile, "\nTARGINFO_EXPORTED extern BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode);\n");
+  fprintf(hfile, "\nextern BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode);\n");
   fprintf(efile, "TOP_Can_Have_Immediate\n");
   fprintf(cfile, "\nBOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode)\n"
 		 "{\n"
@@ -1197,7 +1197,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Find_Operand_Use(TOP topcode, "
+  fprintf(hfile, "\nextern INT TOP_Find_Operand_Use(TOP topcode, "
 		 "ISA_OPERAND_USE use);\n");
   fprintf(efile, "TOP_Find_Operand_Use\n");
   fprintf(cfile, "\nINT TOP_Find_Operand_Use(TOP topcode, ISA_OPERAND_USE use)\n"

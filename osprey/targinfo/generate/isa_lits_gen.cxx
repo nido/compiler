@@ -134,7 +134,7 @@ void ISA_Lits_Begin (void)
   // start with undefined value
   fprintf(hfile, "\tLC_UNDEFINED,\n");
 
-  fprintf(cfile, "TARGINFO_EXPORTED const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[] = {\n");
+  fprintf(cfile, "const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[] = {\n");
   fprintf(cfile, "  { { { 0x0000000000000000LL, 0x0000000000000000LL } }, 0, 0, \"LC_UNDEFINED\" },\n");
 
   for (int i = 1; i <= 64; ++i) {
@@ -259,31 +259,31 @@ void ISA_Lits_End(void)
 
   fprintf(hfile, "\ninline const char * ISA_LC_Name (ISA_LIT_CLASS lc)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
+		 "  extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
 		 "  return ISA_LIT_CLASS_info[lc].name;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline INT64 ISA_LC_Min (ISA_LIT_CLASS lc)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
+		 "  extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
 		 "  return ISA_LIT_CLASS_info[lc].range[0].min;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline INT64 ISA_LC_Max (ISA_LIT_CLASS lc)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
+		 "  extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
 		 "  return ISA_LIT_CLASS_info[lc].range[0].max;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_LC_Is_Signed (ISA_LIT_CLASS lc)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
+		 "  extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
 		 "  return ISA_LIT_CLASS_info[lc].is_signed;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_LC_Value_In_Class (INT64 val, ISA_LIT_CLASS lc)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
+		 "  extern const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[];\n"
 		 "  const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + lc;\n"
 		 "  INT i;\n"
 		 "  for (i = 1; i <= plc->num_ranges; ++i) {\n"
