@@ -1156,7 +1156,6 @@ Fall_Thru_Latency (
       OP *first_op = BB_first_op(fallThru_succ);
       if ((first_op != NULL) && (OP_scycle(first_op) != -1))
 	fallThru_latency = OP_scycle(first_op);
-      }
     }
   }
 #endif
