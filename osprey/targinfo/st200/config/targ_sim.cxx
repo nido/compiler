@@ -211,7 +211,7 @@ Get_Return_Info (
   INT32 i; 
 
   info.return_via_first_arg = FALSE;
-  info.return_via_return_reg = FALSE;
+  //info.return_via_return_reg = FALSE;
 
   switch (mtype) {
 
@@ -301,9 +301,6 @@ Get_Return_Info (
 	UINT64 size = TY_size(Ty_Table[rtype]);
 
 	if (SIM_INFO.max_struct_size >= size) {
-
-	  //info.return_via_return_reg = FALSE;
-
 	  INT n = (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
                     / MTYPE_RegisterSize(SIM_INFO.int_type);
 	  reg = PR_first_reg(SIM_INFO.int_results);
@@ -317,7 +314,8 @@ Get_Return_Info (
 	else {
 	  // returning via $r15
 	  info.count = 0;
-	  info.return_via_return_reg = TRUE;
+	  //info.return_via_return_reg = TRUE;
+	  info.return_via_first_arg = TRUE;
 	}
       }
       break;
@@ -344,6 +342,7 @@ Get_Return_Info (
 
 static INT Current_Int_Param_Num = 0;
 static INT Current_Offset;
+static BOOL First_Param_In_Return_Reg = FALSE;
 
 /* ====================================================================
  *   Setup_Parameter_Locations
@@ -356,13 +355,15 @@ Setup_Parameter_Locations (
 {
   static PLOC plocNULL;
 
-#if 0
+  //
+  // If we're returning a structure/union via $r0.15, set the
+  // First_Param_Is_Return_Reg
+  //
   TY_IDX ret_type = (TY_kind(pu_type) == KIND_FUNCTION ? TY_ret_type(pu_type)
 			: pu_type);
   RETURN_INFO info = Get_Return_Info (ret_type, No_Simulated);
   First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) 
 			       & SIM_return_addr_via_int_return_reg);
-#endif
 
   if (TY_is_varargs (pu_type)) {
     // find last fixed parameter
@@ -446,6 +447,16 @@ Get_Parameter_Location (
   ploc.size = 0;
   ploc.vararg_reg = 0;               // to silence purify
 
+  //
+  // If we're returning a structure/union via $r0.15, just
+  // return the register number, no ploc size/offset changes
+  //
+  if (First_Param_In_Return_Reg) {
+    First_Param_In_Return_Reg = FALSE;
+    ploc.reg = Struct_Return_Preg_Offset;
+    return ploc;
+  }
+
 #if 0
   // Arthur: NEVER REACHED ??
   if (TY_kind (ty) == KIND_VOID) {
@@ -461,15 +472,6 @@ Get_Parameter_Location (
   TYPE_ID pmtype = Fix_TY_mtype (ty);	/* Target type */
 
   ploc.size = MTYPE_RegisterSize(pmtype);
-
-#if 0
-  if (First_Param_In_Return_Reg) {
-    First_Param_In_Return_Reg = FALSE;
-    // We always return via $r15
-    ploc.reg = Struct_Return_Preg_Offset;
-    return ploc;
-  }
-#endif
 
 #if 0
   // Arthur:  I may nedd to check for alignment later ??
