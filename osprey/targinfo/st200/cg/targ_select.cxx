@@ -171,13 +171,6 @@ Expand_Cond_Store (
 
   Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops);
 
-  WN *wn1 = Get_WN_From_Memory_OP(op1);
-  WN *wn2 = Get_WN_From_Memory_OP(op2);
-
-  TYPE_ID ttype1 = WN_desc(wn1);
-  TYPE_ID ttype2 = WN_desc(wn2);
-  DevAssert(ttype1 == ttype2, ("incompatible store types"));
-
   TN *val  = tns[OP_find_opnd_use(op1, OU_storeval)];
   TN *base = tns[OP_find_opnd_use(op1, OU_base)];
   TN *ofst = tns[OP_find_opnd_use(op1, OU_offset)];
@@ -185,5 +178,27 @@ Expand_Cond_Store (
   if (TN_is_register (ofst))
     Build_OP (TOP_add_r, base, base, ofst, ops);
 
-  Expand_Store (ttype1, val, base, Gen_Literal_TN (0, 4), ops);
+  TYPE_ID ttype;
+
+  switch (OP_code(op1)) {
+  case TOP_stw_i:
+  case TOP_stw_ii:
+    ttype = MTYPE_I4;
+    break;
+
+  case TOP_sth_i:
+  case TOP_sth_ii:
+    ttype = MTYPE_I2;
+    break;
+
+  case TOP_stb_i:
+  case TOP_stb_ii:
+    ttype = MTYPE_I1;
+    break;
+
+  default:
+    DevAssert(FALSE, ("stw"));    
+  }
+
+  Expand_Store (ttype, val, base, Gen_Literal_TN (0, 4), ops);
 }
