@@ -176,7 +176,7 @@ void Begin_ABI(const char *name)
   ABI result = new abi;
 
   result->name = name;
-  bzero(result->reg_names, sizeof(result->reg_names));
+  BZERO(result->reg_names, sizeof(result->reg_names));
 
   current_abi = result;
 
@@ -444,22 +444,22 @@ void ABI_Properties_End(void)
   //
   // Generate decls for accessing the ABI data and initializiation
   //
-  fprintf(hfile, "\nextern ABI_PROPERTIES_ABI ABI_PROPERTIES_ABI_Value;\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern ABI_PROPERTIES_ABI ABI_PROPERTIES_ABI_Value;\n");
   fprintf(cfile, "\nABI_PROPERTIES_ABI ABI_PROPERTIES_ABI_Value = ABI_PROPERTIES_ABI_UNDEFINED;\n");
   fprintf(efile, "ABI_PROPERTIES_ABI_Value\n");
 
-  fprintf(hfile, "\nextern const char *ABI_PROPERTIES_ABI_Name(ABI_PROPERTIES_ABI abi);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern const char *ABI_PROPERTIES_ABI_Name(ABI_PROPERTIES_ABI abi);\n");
   fprintf(cfile, "\nconst char *ABI_PROPERTIES_ABI_Name(ABI_PROPERTIES_ABI abi)\n"
 		 "{\n"
 		 "  return abi_names[(INT)abi];\n"
 		 "}\n");
   fprintf(efile, "ABI_PROPERTIES_Initialize\n");
 
-  fprintf(cfile, "\nconst ABI_PROPERTIES *ABI_PROPERTIES_target_props"
+  fprintf(cfile, "\nTARGINFO_EXPORTED const ABI_PROPERTIES *ABI_PROPERTIES_target_props"
 		 " = &abi_properties[ABI_PROPERTIES_ABI_UNDEFINED];\n");
   fprintf(efile, "ABI_PROPERTIES_target_props\n");
 
-  fprintf(hfile, "\nextern void ABI_PROPERTIES_Initialize(void);\n");
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern void ABI_PROPERTIES_Initialize(void);\n");
   fprintf(cfile, "\nvoid ABI_PROPERTIES_Initialize(void)\n"
 		 "{\n"
 		 "  ABI_PROPERTIES_target_props = &abi_properties[(INT)ABI_PROPERTIES_ABI_Value];\n"
@@ -473,7 +473,7 @@ void ABI_Properties_End(void)
 		 "  ISA_REGISTER_CLASS rc,\n"
 		 "  INT reg)\n"
 		 "{\n"
-		 "  extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
+		 "  TARGINFO_EXPORTED extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
 		 "  return ABI_PROPERTIES_target_props->reg_names[rc][reg];\n"
 		 "}\n");
 
@@ -491,7 +491,7 @@ void ABI_Properties_End(void)
 	fprintf(hfile, "  return FALSE;\n"
 		       "}\n");
       } else {
-	fprintf(hfile, "  extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
+	fprintf(hfile, "  TARGINFO_EXPORTED extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
 		       "  return (  ABI_PROPERTIES_target_props->reg_flags[rc][reg]\n"
 		       "          & ABI_PROPERTY_%s) != 0;\n"
 		       "}\n",
@@ -505,7 +505,7 @@ void ABI_Properties_End(void)
 	fprintf(hfile, "  return FALSE;\n"
 		       "}\n");
       } else {
-	fprintf(hfile, "  extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
+	fprintf(hfile, "  TARGINFO_EXPORTED extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
 		       "  return (  ABI_PROPERTIES_target_props->flags\n"
 		       "          & ABI_PROPERTY_%s) != 0;\n"
 		       "}\n",
