@@ -906,9 +906,7 @@ lao_init() {
     for (int i = 0; i < LC_MAX; i++) LC__Immediate[i] = Immediate_;
     LC__Immediate[0] = Immediate_I_signed_32_overflow_dont; // HACK ALERT
     LC__Immediate[LC_s32] = Immediate_I_signed_32_overflow_dont;
-    LC__Immediate[LC_u32] = Immediate_I_signed_32_overflow_dont;
     LC__Immediate[LC_s23] = Immediate_I_signed_23_overflow_signed;
-    LC__Immediate[LC_u23] = Immediate_I_unsigned_23_overflow_unsigned;
     LC__Immediate[LC_s9] = Immediate_I_signed_9_overflow_signed;
     // initialize IRC__RegClass
     for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegClass[i] = RegClass_;
