@@ -688,27 +688,64 @@ EBO_simplify_operand0 (
     TN *res[1];
     TN *opnd[3];
 
-    if (opcode == TOP_slctf_r) {
-      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
-        new_opcode = TOP_slct_i;
+    // Result and branch register don't change
+    res[0] = tnr;
+    opnd[0] = OP_opnd(op, 0);
+
+    // If we have a zero constant, we can use r0 instead of 0
+    // in order to save the constant slot.
+    if (const_val == 0 && !TN_is_zero_reg(OP_opnd(op, 1))) {
+      opnd[1] = Zero_TN;
+
+      if (TN_has_value(tn1)) {
+        INT64 val1 = TN_Value(tn1);
+        if (opcode == TOP_slct_r) {
+          if (ISA_LC_Value_In_Class (val1, LC_s9))
+            new_opcode = TOP_slct_i;
+          else
+            new_opcode = TOP_slct_ii;
+        }
+        else if (opcode == TOP_slctf_r) {
+          if (ISA_LC_Value_In_Class (val1, LC_s9))
+            new_opcode = TOP_slctf_i;
+          else
+            new_opcode = TOP_slctf_ii;
+        }
+        else
+          new_opcode = opcode;
+
+        opnd[2] = Gen_Literal_TN(val1, TN_size(tn1));
       }
       else {
-        new_opcode = TOP_slct_ii;
+        new_opcode = opcode;
+        opnd[2] = tn1;
       }
+
+      new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
+      return new_op;
+    }
+
+    // Can't have 2 constants in select, 
+    if (TN_has_value(tn1)) {
+      tn1 = OP_opnd(op, 2);
+    }
+    
+    // Here, slot 1 is a reg and slot 0 a constant, invert them.
+    if (opcode == TOP_slctf_r) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9))
+        new_opcode = TOP_slct_i;
+      else
+        new_opcode = TOP_slct_ii;
     }
     else if (opcode == TOP_slct_r) {
-      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9))
         new_opcode = TOP_slctf_i;
-      }
-      else {
+      else
         new_opcode = TOP_slctf_ii;
-      }
     }
     else
       return NULL;
-
-    res[0] = tnr;
-    opnd[0] = OP_opnd(op, 0);
+    
     opnd[1] = tn1;
     opnd[2] = Gen_Literal_TN(const_val, TN_size(tn1));
 
@@ -932,20 +969,16 @@ EBO_simplify_operand1 (
     TN *opnd[3];
 
     if (opcode == TOP_slctf_r) {
-      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9))
         new_opcode = TOP_slctf_i;
-      }
-      else {
+      else
         new_opcode = TOP_slctf_ii;
-      }
     }
     else if (opcode == TOP_slct_r) {
-      if (ISA_LC_Value_In_Class (const_val, LC_s9)) {
+      if (ISA_LC_Value_In_Class (const_val, LC_s9))
         new_opcode = TOP_slct_i;
-      }
-      else {
+      else
         new_opcode = TOP_slct_ii;
-      }
     }
     else
       return NULL;
