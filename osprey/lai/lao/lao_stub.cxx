@@ -1021,10 +1021,10 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
   LoopInfo loopinfo = NULL;
   BB *head_bb = LOOP_DESCR_loophead(loop);
   BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
-  if (annot != NULL) {
+  ANNOTATION *loopinfo_ant = ANNOT_Get(BB_annotations(head_bb), ANNOT_LOOPINFO);
+  if (loopinfo_ant != NULL) {
     // Make the LoopInfo for this loop.
-    CGIR_LI cgir_li = ANNOT_loopinfo(annot);
+    CGIR_LI cgir_li = ANNOT_loopinfo(loopinfo_ant);
     TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
     if (trip_count_tn != NULL && TN_is_constant(trip_count_tn)) {
       uint64_t trip_count = TN_value(trip_count_tn);
@@ -1092,7 +1092,10 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
     if (BB_nest_level(*bb_iter) == nest_level) {
       op_count += BB_length(*bb_iter);
       bb_list.push_back(*bb_iter);
-      if (op_count >= LAO_OPS_LIMIT) break;
+      if (op_count >= LAO_OPS_LIMIT) {
+	DevWarn("LAO_OPS_LIMIT exceeded (%d memory operations)\n", op_count);
+	break;
+      }
     }
   }
   //
