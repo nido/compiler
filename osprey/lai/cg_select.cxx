@@ -52,7 +52,7 @@
  *                              3: select stores based on base or offset.
  *
  * The following flags to drive the heuristics.
- * -CG:select_factor="1.05"      factor to reduce the cost of the 
+ * -CG:select_factor="1.02"      factor to reduce the cost of the 
  *                               ifconverted region
  *
  * ====================================================================
@@ -140,10 +140,10 @@ op_list load_i;
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 INT32 CG_select_stores = 2;
-const char* CG_select_factor = "1.05";
-/* is there a TARG interface for that ? */
-static INT branch_penalty = 3;
-static INT cond_store_penalty = 1;
+const char* CG_select_factor = "1.02";
+static float select_factor;
+static float branch_penalty = 0.8;
+static float cond_store_penalty = 1;
 
 /* ================================================================
  *
@@ -775,7 +775,17 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   CG_SCHED_EST_Ignore_Op(se1, op);
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
-  float est_cost_after = CG_SCHED_EST_Cycles(se1);
+  float boost = select_factor;
+
+  // If we are in a loop that have good chances to be unrolled, boost factor.
+  if (BB_loophead (bb1) && BB_in_succs (bb2, bb1)) {
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "in loop\n");
+    }
+    boost += 0.05;
+  }
+
+  float est_cost_after = CG_SCHED_EST_Cycles(se1) / boost;
 
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
@@ -869,8 +879,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   float bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
 
   // ponderate cost of each region taken separatly.
-  float est_cost_before = (cycles1 * taken_prob) + (cycles2 * fallthr_prob) +
-    cyclesh + bp;
+  float est_cost_before = ((cycles1 + branch_penalty) * taken_prob) + (cycles2 * fallthr_prob) + cyclesh + bp;
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "noifc region: head %f, bb1 %f, bb2 %f\n",
@@ -906,21 +915,18 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   if (se2)
     CG_SCHED_EST_Delete(se2);
 
-  // higher select_factor means ifc more aggressive.
-  float select_factor = atof(CG_select_factor);
-
-  if (select_factor == 0.0) return FALSE;
+  float boost = select_factor;
 
   // If we are in a loop that have good chances to be unrolled, boost factor.
   if (BB_loophead (head) && BB_in_succs (tail, head)) {
     if (Trace_Select_Candidates) {
-      fprintf (Select_TFile, "LoopHammock\n");
+      fprintf (Select_TFile, "in loop\n");
     }
-    select_factor += 0.05;
+    boost += 0.05;
   }
 
   // cost of if converted region. prob is one. Remove the select factor.
-  float est_cost_after = cyclesh / select_factor;
+  float est_cost_after = cyclesh / boost;
     
   if (BBLIST_item(bb1) == tail && store_i.ntkstrs.size())
     est_cost_after += store_i.ntkstrs.size() * cond_store_penalty;
@@ -928,7 +934,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     est_cost_after += store_i.tkstrs.size() * cond_store_penalty;
 
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
+    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, boost);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
@@ -2052,6 +2058,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Set_Error_Phase ("Select Region Formation");
 
+  // higher select_factor means ifc more aggressive.
+  select_factor = atof(CG_select_factor);
+  if (select_factor == 0.0);
+
   Trace_Select_Init();
 
   Initialize_Memory();
@@ -2111,6 +2121,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Initialize_Hammock_Memory();
 
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
+
 #ifdef Is_True_On
       Sanity_Check();
 #endif
