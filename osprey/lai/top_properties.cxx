@@ -26,9 +26,6 @@ static int opc_cond_variant(opc_t opc) { return TOP_cond_variant(opc); }
 static int opc_cmp_variant(opc_t opc) { return TOP_cmp_variant(opc); }
 
 #define opc_is(opc, prop) TOP_is_##prop(opc)
-#define TOP_is_and TOP_is_And
-#define TOP_is_or TOP_is_Or
-#define TOP_is_xor TOP_is_Xor
 
 /*
  * Utility functions.

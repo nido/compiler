@@ -573,13 +573,13 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_fcmp(o)              (TOP_is_cmp(OP_code(o)) && OP_flop(o))
 
 #define OP_iadd(o)		(TOP_is_add(OP_code(o)) && OP_intop(o))
-#define OP_iand(o)		(TOP_is_And(OP_code(o)) && OP_intop(o))
+#define OP_iand(o)		(TOP_is_and(OP_code(o)) && OP_intop(o))
 #define OP_icmp(o)		(TOP_is_cmp(OP_code(o)) && OP_intop(o))
 #define OP_idiv(o)		(TOP_is_div(OP_code(o)) && OP_intop(o))
 #define OP_imul(o)		(TOP_is_mul(OP_code(o)) && OP_intop(o))
-#define OP_ior(o)		(TOP_is_Or(OP_code(o)) && OP_intop(o))
+#define OP_ior(o)		(TOP_is_or(OP_code(o)) && OP_intop(o))
 #define OP_isub(o)		(TOP_is_sub(OP_code(o)) && OP_intop(o))
-#define OP_ixor(o)		(TOP_is_Xor(OP_code(o)) && OP_intop(o))
+#define OP_ixor(o)		(TOP_is_xor(OP_code(o)) && OP_intop(o))
 
 #ifdef TARG_ST
 //[CG]: Added semantic queries

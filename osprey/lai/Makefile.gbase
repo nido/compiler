@@ -535,15 +535,15 @@ ifeq ($(BUILD_TARGET), ST200)
 
 # shared library
 ifeq ($(DSO_MODE),SO)
-TARGET_SO = st220.so
+TARGET_SO = 
 endif
 # windows dll import library
 ifeq ($(DSO_MODE),DLL)
-TARGET_SO = st220_dll.a
+TARGET_SO = st220_dll.a 
 endif
 # static library
 ifeq ($(DSO_MODE),STATIC)
-TARGET_SO = 
+TARGET_SO = libst220.a
 endif
 
 endif #ST200
@@ -650,7 +650,6 @@ endif
 first_local :
 ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(BE_DSO) ]; then ln -sf $(TARG_BE)/$(BE_DSO) .; fi
-	if [ ! -h $(TARGET_SO) ]; then ln -sf $(TARG_TARG_INFO_DIR)/$(TARGET_SO) .; fi
 ifeq ($(DSO_MODE),DLL)
 	if [ ! -h $(WOPT_SO) ]; then ln -sf $(TARG_WOPT_DIR)/$(WOPT_SO) .; fi
 endif

@@ -137,6 +137,7 @@ main()
 
   enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
   Processor_Group (enable_prefetch,
+
 			PROCESSOR_UNDEFINED);
 
   enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");

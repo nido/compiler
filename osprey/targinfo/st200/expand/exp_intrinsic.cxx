@@ -202,7 +202,7 @@ Expand__st220prgadd(
 {
   TN *c0 = Gen_Literal_TN(0LL, 4) ;
   Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
-  Build_OP (	TOP_prgadd,	c0, 	o0,	ops) ;
+  Build_OP (	TOP_prgadd_i,	c0, 	o0,	ops) ;
 } /* Expand__st220prgadd */
 
 /*
@@ -241,7 +241,7 @@ Expand__st220prgset(
 {
   TN *c0 = Gen_Literal_TN(0LL, 4) ;
   Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
-  Build_OP (	TOP_prgset,	c0,	o0,	ops) ;
+  Build_OP (	TOP_prgset_i,	c0,	o0,	ops) ;
 } /* Expand__st220prgset */
 
 /*
@@ -2160,7 +2160,7 @@ Expand__lzcnth(
   TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
   TN *c_16 = Gen_Literal_TN(__EXTS32TOS64(-16), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_clz,	r0_16_0,	i0,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_16_0,	i0,	ops) ;
   Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_add_i,	r0_16_1,	r0_16_0,	c_16,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	Zero_TN,	r0_16_1,	ops) ;
@@ -2191,8 +2191,8 @@ Expand__lzcntl(
   TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
   TN *c32 = Gen_Literal_TN(__EXTS32TOS64(32), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_clz,	r0_20_0,	ih0,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_0,	il0,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_20_0,	ih0,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_21_0,	il0,	ops) ;
   Build_OP (	TOP_cmpeq_i_b,	b0_0_0,	ih0,	c0,	ops) ;
   Build_OP (	TOP_add_i,	r0_21_1,	r0_21_0,	c32,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	r0_21_1,	r0_20_0,	ops) ;
@@ -2218,7 +2218,7 @@ Expand__lzcntw(
  OPS* ops
 )
 {
-  Build_OP (	TOP_clz,	o0,	i0,	ops) ;
+  Build_OP (	TOP_clz_r,	o0,	i0,	ops) ;
 } /* Expand__lzcntw */
 
 /*
@@ -3886,7 +3886,7 @@ Expand__normh(
   Build_OP (	TOP_orc_i,	r0_20_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_cmpeq_i_b,	b0_0_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_max_r,	r0_20_1,	i0,	r0_20_0,	ops) ;
-  Build_OP (	TOP_clz,	r0_16_2,	r0_20_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_16_2,	r0_20_1,	ops) ;
   Build_OP (	TOP_add_i,	r0_16_3,	r0_16_2,	c_17,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	Zero_TN,	r0_16_3,	ops) ;
 } /* Expand__normh */
@@ -3934,8 +3934,8 @@ Expand__norml(
   Build_OP (	TOP_cmpeq_i_r,	r0_25_1,	ih0,	c0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_22_1,	b0_0_0,	r0_22_0,	il0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_23_1,	b0_0_0,	r0_23_0,	ih0,	ops) ;
-  Build_OP (	TOP_clz,	r0_20_2,	r0_23_1,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_2,	r0_22_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_20_2,	r0_23_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_21_2,	r0_22_1,	ops) ;
   Build_OP (	TOP_cmpeq_i_b,	b0_0_2,	r0_23_1,	c0,	ops) ;
   Build_OP (	TOP_andl_r_b,	b0_1_3,	r0_24_0,	r0_25_1,	ops) ;
   Build_OP (	TOP_add_i,	r0_21_3,	r0_21_2,	c32,	ops) ;
@@ -3976,7 +3976,7 @@ Expand__normw(
   Build_OP (	TOP_orc_i,	r0_20_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_cmpeq_i_b,	b0_0_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_max_r,	r0_20_1,	i0,	r0_20_0,	ops) ;
-  Build_OP (	TOP_clz,	r0_16_2,	r0_20_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_16_2,	r0_20_1,	ops) ;
   Build_OP (	TOP_add_i,	r0_16_3,	r0_16_2,	c_1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_0,	Zero_TN,	r0_16_3,	ops) ;
 } /* Expand__normw */
@@ -4006,7 +4006,7 @@ Expand__priorh(
 #undef __EXTS32TOS64
   Build_OP (	TOP_orc_i,	r0_20_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_max_r,	r0_20_1,	i0,	r0_20_0,	ops) ;
-  Build_OP (	TOP_clz,	r0_16_2,	r0_20_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_16_2,	r0_20_1,	ops) ;
   Build_OP (	TOP_add_i,	o0,	r0_16_2,	c_17,	ops) ;
 } /* Expand__priorh */
 
@@ -4047,8 +4047,8 @@ Expand__priorl(
   Build_OP (	TOP_cmplt_i_b,	b0_0_0,	ih0,	c0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_22_1,	b0_0_0,	r0_22_0,	il0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_23_1,	b0_0_0,	r0_23_0,	ih0,	ops) ;
-  Build_OP (	TOP_clz,	r0_20_2,	r0_23_1,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_2,	r0_22_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_20_2,	r0_23_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_21_2,	r0_22_1,	ops) ;
   Build_OP (	TOP_cmpeq_i_b,	b0_0_2,	r0_23_1,	c0,	ops) ;
   Build_OP (	TOP_add_i,	r0_21_3,	r0_21_2,	c32,	ops) ;
   Build_OP (	TOP_slct_r,	r0_16_4,	b0_0_2,	r0_21_3,	r0_20_2,	ops) ;
@@ -4084,7 +4084,7 @@ Expand__priorw(
 #undef __EXTS32TOS64
   Build_OP (	TOP_orc_i,	r0_20_0,	i0,	c0,	ops) ;
   Build_OP (	TOP_max_r,	r0_20_1,	i0,	r0_20_0,	ops) ;
-  Build_OP (	TOP_clz,	r0_16_2,	r0_20_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_16_2,	r0_20_1,	ops) ;
   Build_OP (	TOP_add_i,	o0,	r0_16_2,	c_1,	ops) ;
 } /* Expand__priorw */
 
@@ -4404,7 +4404,7 @@ Expand__shlch(
   Build_OP (	TOP_slct_r,	r0_22_1,	b0_0_0,	r0_21_0,	i0,	ops) ;
   Build_OP (	TOP_orc_i,	r0_23_1,	r0_20_0,	c0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_20_2,	b0_0_0,	r0_20_0,	r0_23_1,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_2,	r0_22_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_21_2,	r0_22_1,	ops) ;
   Build_OP (	TOP_add_i,	r0_24_2,	i1,	c16,	ops) ;
   Build_OP (	TOP_shl_r,	r0_22_3,	i0,	i1,	ops) ;
   Build_OP (	TOP_cmple_r_b,	b0_0_3,	r0_21_2,	r0_24_2,	ops) ;
@@ -4447,7 +4447,7 @@ Expand__shlcw(
   Build_OP (	TOP_slct_r,	r0_22_1,	b0_0_0,	r0_21_0,	i0,	ops) ;
   Build_OP (	TOP_orc_i,	r0_23_1,	r0_20_0,	c0,	ops) ;
   Build_OP (	TOP_slct_r,	r0_20_2,	b0_0_0,	r0_20_0,	r0_23_1,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_2,	r0_22_1,	ops) ;
+  Build_OP (	TOP_clz_r,	r0_21_2,	r0_22_1,	ops) ;
   Build_OP (	TOP_shl_r,	r0_22_3,	i0,	i1,	ops) ;
   Build_OP (	TOP_cmple_r_b,	b0_0_3,	r0_21_2,	i1,	ops) ;
   Build_OP (	TOP_slct_r,	o0,	b0_0_3,	r0_20_2,	r0_22_3,	ops) ;

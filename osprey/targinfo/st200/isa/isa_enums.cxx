@@ -44,18 +44,6 @@ main ()
 { 
   ISA_Enums_Begin(); 
 
-  ISA_Create_Enum_Class("ibus", 
-	 "c0", 	 0,
-	 "c1", 	 1,
-	 "c2", 	 2,
-	 "c3", 	 3,
-	 "c4", 	 4,
-	 "c5", 	 5,
-	 "c6", 	 6,
-	 "c7", 	 7,
-	 "c8", 	 8,
-	 NULL, 	 -1); 
-
 
   ISA_Enums_End(); 
   return 0; 

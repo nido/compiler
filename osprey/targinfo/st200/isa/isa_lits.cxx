@@ -40,13 +40,6 @@
 #include <stddef.h> 
 #include "isa_lits_gen.h" 
 
-//
-// [CG] : Fix of bug 1-0-7-A/ddts/13517
-// minu,cmpu can have signed operands also, even
-// if interpreted as unsigned by the architecture.
-// So we don't define unsigned lit classes.
-#define CG_FIX_1_0_7_A_DDTS_13517
-
 main () 
 { 
   ISA_Lits_Begin(); 
@@ -54,13 +47,7 @@ main ()
   // ISA_Create_Lit_Class(name, type, [range,...] LIT_RANGE_END) 
 
   ISA_Create_Lit_Class("s32", SIGNED, SignedBitRange(32), LIT_RANGE_END); 
-#ifndef CG_FIX_1_0_7_A_DDTS_13517
-  ISA_Create_Lit_Class("u32", UNSIGNED, UnsignedBitRange(32), LIT_RANGE_END); 
-#endif
   ISA_Create_Lit_Class("s23", SIGNED, SignedBitRange(23), LIT_RANGE_END); 
-#ifndef CG_FIX_1_0_7_A_DDTS_13517
-  ISA_Create_Lit_Class("u23", UNSIGNED, UnsignedBitRange(23), LIT_RANGE_END); 
-#endif
   ISA_Create_Lit_Class("s9", SIGNED, SignedBitRange(9), LIT_RANGE_END); 
 
   ISA_Lits_End(); 

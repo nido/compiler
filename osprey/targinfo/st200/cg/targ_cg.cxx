@@ -1560,6 +1560,8 @@ CGTARG_Adjust_Latency (
   const TOP pred_code = OP_code(pred_op);
   const TOP succ_code = OP_code(succ_op);
 
+  /* (cbr) those latencies are now emitted from Chess. */
+#if 0
   // 1. Instructions writing into a branch register must be followed
   //    by 1 cycle (bundle) before 
   //         TOP_br 
@@ -1574,6 +1576,7 @@ CGTARG_Adjust_Latency (
 	*latency += 1;
     }
   }
+#endif
 
   // 2. Instructions writing into a PC must be followed
   //    by 1 cycle (bundle) before a TOP_br can be issued.
