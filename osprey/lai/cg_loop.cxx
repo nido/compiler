@@ -2350,7 +2350,11 @@ static void unroll_guard_unrolled_body(LOOP_DESCR *loop,
 	     Gen_Label_TN(continuation_lbl,0),
 	     new_trip_count_tn,
 	     Zero_TN,
+#ifdef TARG_ST
+	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
+#else
 	     V_BR_I8EQ,
+#endif
 	     &ops);
     BB_Append_Ops(CG_LOOP_prolog, &ops);
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, continuation_bb, ztrip_prob);
@@ -2916,7 +2920,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
 	     Zero_TN,
+#ifdef TARG_ST
+	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
+#else
 	     V_BR_I8EQ,
+#endif
 	     &zero_trip_guard_ops);
 
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, remainder_tail, ztrip_prob);
@@ -2975,7 +2983,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 		 Gen_Label_TN(continuation_label,0),
 		 new_trip_count,
 		 Zero_TN,
+#ifdef TARG_ST
+		 trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
+#else
 		 V_BR_I8EQ,
+#endif
 		 &body_ops);
       }
       else {
@@ -3342,7 +3354,11 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
 	     Zero_TN,
+#ifdef TARG_ST
+	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
+#else
 	     V_BR_I8EQ,
+#endif
 	     &ops);
     BB_Append_Ops(CG_LOOP_prolog, &ops);
     Link_Pred_Succ_with_Prob(CG_LOOP_prolog, remainder_epilog, ztrip_prob);
@@ -4061,7 +4077,11 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 	   Gen_Label_TN(continuation_lbl,0),
 	   unrolled_trip_count,
 	   Zero_TN,
+#ifdef TARG_ST
+	   V_BR_I4EQ,
+#else
 	   V_BR_I8EQ,
+#endif
 	   &ops);
   BB_Append_Ops(CG_LOOP_prolog, &ops);
   Link_Pred_Succ_with_Prob(CG_LOOP_prolog, continuation_bb, ztrip_prob);
@@ -5247,8 +5267,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 
 #if defined(TARG_ST) && defined(LAO_ENABLED)
-	// Call the LAO to pipeline the loop.
       if (CG_enable_LAO)
+	// Call the LAO to pipeline the loop.
 	if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
@@ -5271,7 +5291,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
-
+#ifndef TARG_ST
       // Perform_Read_Write_Removal requires that
       //  non-definite dependence are removed
       if (!Remove_Non_Definite_Dependence(cg_loop, false, trace_loop_opt))
@@ -5282,7 +5302,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_DOLOOP_UNROLL ***");
 
-#ifndef TARG_ST
       cg_loop.Recompute_Liveness();
       cg_loop.Determine_Unroll_Factor();
 
@@ -5293,7 +5312,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       } 
       else {
+#ifndef TARG_ST
 	Perform_Read_Write_Removal(loop);
+#endif
 
 	// Break recurrences will compute dep-graph itself
 	Fix_Recurrences_Before_Unrolling(cg_loop);
@@ -5307,12 +5328,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
-#endif
+
 #if defined(TARG_ST) && defined(LAO_ENABLED)
       if (CG_enable_LAO)
-	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	if (LAO_optimize(&cg_loop, LAO_LoopSchedule /* + LAO_LoopUnroll */)) {
 	  cg_loop.Recompute_Liveness();
 	}
+#endif
 #endif
       break;
     }
