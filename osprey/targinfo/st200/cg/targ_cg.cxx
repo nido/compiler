@@ -1400,7 +1400,12 @@ CGTARG_Max_RES_Latency (
     INT first_opnd_read = INT_MAX;
 
     for (i = 0; i < OP_opnds(op); i++) {
-      INT opnd_read = TSI_Operand_Access_Time (OP_code (op), i);
+      INT opnd_read;
+      if (TN_is_constant(OP_opnd (op, i))) {
+	opnd_read = result_avail - 1;
+      } else {
+	opnd_read = TSI_Operand_Access_Time (OP_code (op), i);
+      }
       if (opnd_read < first_opnd_read) {
 	first_opnd_read = opnd_read;
       }
