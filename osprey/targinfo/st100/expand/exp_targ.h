@@ -100,7 +100,8 @@ extern void Expand_Float_To_Int_Trunc (TN *dest, TN *src, TYPE_ID imtype, TYPE_I
 extern void Expand_Float_To_Int_Ceil (TN *dest, TN *src, TYPE_ID imtype, TYPE_ID fmtype, OPS *ops);
 extern void Expand_Float_To_Int_Floor (TN *dest, TN *src, TYPE_ID imtype, TYPE_ID fmtype, OPS *ops);
 extern void Expand_Bool_To_Int (TN *dest, TN *src, TYPE_ID rtype, OPS *ops);
-extern void Expand_Int_To_Adr (TN *result, TYPE_ID rtype, TN *src, TYPE_ID desc, OPS *ops);
+extern void Expand_Int_To_Ptr (TN *result, TYPE_ID rtype, TN *src, TYPE_ID desc, OPS *ops);
+extern void Expand_Ptr_To_Int (TN *result, TYPE_ID rtype, TN *src, TYPE_ID desc, OPS *ops);
 extern void Expand_Min (TN *dest, TN *src1, TN *src2, TYPE_ID mtype, OPS *ops);
 extern void Expand_Max (TN *dest, TN *src1, TN *src2, TYPE_ID mtype, OPS *ops);
 extern void Expand_MinMax (TN *dest, TN *dest2, TN *src1, TN *src2, TYPE_ID mtype, OPS *ops);

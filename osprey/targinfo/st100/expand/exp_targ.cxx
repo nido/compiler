@@ -250,6 +250,57 @@ Expand_Convert_Length (
 }
 
 /* ====================================================================
+ *   Expand_Int_To_Ptr
+ * ====================================================================
+ */
+void
+Expand_Int_To_Ptr (
+  TN *result, 
+  TYPE_ID rtype, 
+  TN *src, 
+  TYPE_ID desc, 
+  OPS *ops
+)
+{
+  FmtAssert (rtype == MTYPE_A4,
+    ("Convert_Int_To_Adr: unsupported result type %s", MTYPE_name(rtype)));
+  FmtAssert ((desc == MTYPE_I4 || desc == MTYPE_U4),
+    ("Convert_Int_To_Adr: unsupported src type %s", MTYPE_name(rtype)));
+
+  /* make a copya */
+  Build_OP(TOP_GP32_COPYA_GT_AR_DR, result, True_TN, src, ops);
+
+  return;
+}
+
+/* ====================================================================
+ *   Expand_Ptr_To_Int
+ *
+ *   source is pointer, result is integer
+ * ====================================================================
+ */
+void
+Expand_Ptr_To_Int (
+  TN *result, 
+  TYPE_ID rtype, 
+  TN *src, 
+  TYPE_ID desc, 
+  OPS *ops
+)
+{
+  if (rtype == MTYPE_I4 || rtype == MTYPE_U4) {
+    /* make a copyd */
+    Build_OP(TOP_GP32_COPYD_GT_DR_AR, result, True_TN, src, ops);
+  }
+  else {
+    FmtAssert (FALSE,
+       ("Convert_Ptr_To_Int: unsupported result type %s", MTYPE_name(rtype)));
+  }
+
+  return;
+}
+
+/* ====================================================================
  *   Expand_Convert
  *  
  *   op2 is the length to convert to.
@@ -280,12 +331,16 @@ Expand_Convert (
       Expand_Convert_Length (result, op1, op2, desc, TRUE, ops);
       return;
     }
+    else if (MTYPE_is_class_pointer(desc)) {
+      Expand_Ptr_To_Int (result, rtype, op1, desc, ops);
+      return;
+    }
   }
 
   // conversions to pointer:
   if (MTYPE_is_class_pointer(rtype)) {
     if (MTYPE_is_class_integer(desc)) {
-      Expand_Int_To_Adr (result, rtype, op1, desc, ops);
+      Expand_Int_To_Ptr (result, rtype, op1, desc, ops);
       return;
     }
     else if (MTYPE_is_class_pointer(desc)) {
@@ -331,30 +386,6 @@ Fixup_32_Bit_Op(
              Gen_Literal_TN(MTYPE_size_reg(dest_type), 4),
 			   dest_type, MTYPE_is_signed(dest_type),ops);
   }
-}
-
-/* ====================================================================
- *   Expand_Int_To_Adr
- * ====================================================================
- */
-void
-Expand_Int_To_Adr (
-  TN *result, 
-  TYPE_ID rtype, 
-  TN *src, 
-  TYPE_ID desc, 
-  OPS *ops
-)
-{
-  FmtAssert (rtype == MTYPE_A4,
-    ("Convert_Int_To_Adr: unsupported result type %s", MTYPE_name(rtype)));
-  FmtAssert ((desc == MTYPE_I4 || desc == MTYPE_U4),
-    ("Convert_Int_To_Adr: unsupported result type %s", MTYPE_name(rtype)));
-
-  /* make a copya */
-  Build_OP(TOP_GP32_COPYA_GT_AR_DR, result, True_TN, src, ops);
-
-  return;
 }
 
 /* ====================================================================
