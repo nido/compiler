@@ -465,11 +465,9 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
       Is_True(operationCount < MAX_OPERATION_COUNT, ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
-
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
     InstrMode instrmode = TARG_CGIR_IS_to_InstrMode((ISA_SUBSET)0);
-
     // make the BasicBlock
     basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode,
 	labelCount, labels, operationCount, operations);
@@ -630,7 +628,7 @@ CGIR_SYM_create(Symbol symbol, CGIR_SYM cgir_sym) {
   // Currently LAO is allowed to generate:
   // - spill symbols
   // - that's all
-  
+  //
   // Spill symbol.
   if (LAI_Interface_Symbol_isSpill(symbol)) {
     // We use the CGSPILL interface to generate a CGIR spill symbol
@@ -725,7 +723,7 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
   // Currently LAO is allowed to update:
   // - pseudo temporaries into assigned temporary
   // - that's all
-
+  //
   // Temporary that were assigned
   if (!LAI_Interface_Temporary_isDedicated(temporary) &&
       LAI_Interface_Temporary_isAssignReg(temporary)) {
@@ -742,9 +740,7 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
   int issueDate = LAI_Interface_Operation_issueDate(operation);
   Operator opr = LAI_Interface_Operation_operator(operation);
   int argCount = 0, resCount = 0;
-  TOP top;
-
-  top = TARG_Operator_to_CGIR_TOP(opr);
+  TOP top = TARG_Operator_to_CGIR_TOP(opr);
   for (argCount = 0; arguments[argCount] != NULL; argCount++);
   for (resCount = 0; results[resCount] != NULL; resCount++);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
@@ -758,7 +754,6 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
     // Set unrolling.
     Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
-
   // Add spill information
   if (LAI_Interface_Operation_isSpillCode(operation)) {
     TN *spilled_tn;
@@ -784,12 +779,10 @@ CGIR_OP_create(Operation operation, CGIR_OP cgir_op, CGIR_TN arguments[], CGIR_T
     Set_TN_spill(spilled_tn, TN_var(offset_tn));
     Set_OP_spill(new_op);
   }
-
   // TODO: shouldn't we add volatile  information 
   if (LAI_Interface_Operation_isVolatile(operation)) {
     DevWarn("Operation volatile on LAO side");
   }
-
   // Set scycle
   OP_scycle(new_op) = issueDate;
   //
@@ -999,8 +992,7 @@ CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
 
 // Initialization of the LIR->CGIR callbacks object.
 static void
-LIR_CGIR_callback_init(CGIR_CallBack callback)
-{
+LIR_CGIR_callback_init(CGIR_CallBack callback) {
     // Initialize the callback pointers.
     *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
     *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
@@ -1315,10 +1307,8 @@ CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
     CGIR_TN_print(tn, file);
     if (OP_Defs_TN(op, tn)) fprintf(file, "<def>");
   }
-
   //if (bb_scheduled)
     fprintf(file, "\tscycle = %d", OP_scycle(op));
-
   // TBD: Print other attributes on operations.
 }
 
