@@ -37,20 +37,6 @@ extern "C" {
 #undef this
 }
 
-typedef list<BB*> BB_List;
-
-// Test if a BB belongs to a BB_List.
-static bool
-CGIR_in_BB_List(BB_List& bb_list, BB *bb) {
-  //
-  BB_List::iterator bb_iter;
-  for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
-    if (*bb_iter == bb) return true;
-  }
-  //
-  return false;
-}
-
 // Map CGIR TOP to LIR Operator.
 static Operator TOP__Operator[TOP_UNDEFINED];
 
@@ -992,6 +978,20 @@ lao_initializeCallBack() {
   *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
 }
 
+typedef list<BB*> BB_List;
+
+// Test if a BB belongs to a BB_List.
+static bool
+lao_in_bblist(BB_List& bb_list, BB *bb) {
+  //
+  BB_List::iterator bb_iter;
+  for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
+    if (*bb_iter == bb) return true;
+  }
+  //
+  return false;
+}
+
 // Find the entry BBs of a BB_SET.
 static int lao_fill_entry_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &entryBBs) {
   int entry_count = 0;
@@ -1032,7 +1032,7 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
       BB* succ_bb = BBLIST_item(succ_list);
       if (!BB_SET_MemberP(body_set, succ_bb) &&
 	  succ_bb != fall_exit_bb &&
-	  !CGIR_in_BB_List(exitBBs, succ_bb)) {
+	  !lao_in_bblist(exitBBs, succ_bb)) {
 	exitBBs.push_back(succ_bb);
 //cerr << "lao_fill_exit_bblist(" << BB_id(succ_bb) << ")\n";
 	++exit_count;
@@ -1129,7 +1129,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
     BBLIST *bblist = NULL;
     FOR_ALL_BB_SUCCS(orig_bb, bblist) {
       BB *succ_bb = BBLIST_item(bblist);
-      if (CGIR_in_BB_List(exitBBs, succ_bb) || CGIR_in_BB_List(nonexitBBs, succ_bb)) {
+      if (lao_in_bblist(exitBBs, succ_bb) || lao_in_bblist(nonexitBBs, succ_bb)) {
 	ControlNode succ_controlnode = CGIR_BB_to_ControlNode(succ_bb);
 	Interface_linkControlNodes(interface, orig_controlnode, succ_controlnode, BBLIST_prob(bblist));
       }
@@ -1202,12 +1202,17 @@ static bool
 lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
   BB *head_bb = HB_Entry(hb);
   BB_SET *body_set = HB_Blocks(hb);
+if (lao_optimizations & Optimization_Prepass); else return false;
   //
   // Call lao_optimize_LOOP if HB is an inner loop.
   LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(head_bb);
-  if (loop != NULL && LOOP_DESCR_loophead(loop) == head_bb &&
-      BB_SET_Size(body_set) == BB_SET_Size(LOOP_DESCR_bbset(loop))) {
-    return lao_optimize_LOOP(loop, lao_optimizations);
+cerr << "HB header BB(" << BB_id(head_bb) << ")\n";
+  if (loop != NULL) {
+cerr << "Loop header BB(" << BB_id(LOOP_DESCR_loophead(loop)) << ")\n";
+    if (Is_Inner_Loop(loop) && LOOP_DESCR_loophead(loop) == head_bb &&
+	BB_SET_Size(body_set) == BB_SET_Size(LOOP_DESCR_bbset(loop))) {
+      return lao_optimize_LOOP(loop, lao_optimizations);
+    }
   }
   //
   // Compute the body BBs.
