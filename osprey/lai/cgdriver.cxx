@@ -97,7 +97,7 @@
 #include "pqs_cg.h"
 
 #ifdef TARG_ST
-#include "laoinit.h"
+#include "lao_init.h"
 #endif
 
 #ifdef __CYGWIN__

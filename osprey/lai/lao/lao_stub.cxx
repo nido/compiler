@@ -18,7 +18,7 @@
 #include "erglob.h"
 #include "tracing.h"
 
-#include "laoinit.h"
+#include "lao_init.h"
 
 extern "C" {
 #define this THIS
@@ -48,6 +48,9 @@ CGIR_in_BB_List(BB_List& bb_list, BB *bb) {
 
 // Map CGIR TOP to LIR Operator.
 static Operator TOP__Operator[TOP_UNDEFINED];
+
+// Map LIR Operator to CGIR TOP.
+static TOP Operator__TOP[Operator__COUNT];
 
 // Map CGIR ISA_ENUM_CLASS to LIR Modifier.
 static Modifier IEC__Modifier[EC_MAX];
