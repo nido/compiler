@@ -529,8 +529,8 @@ last : make_deps
 
 
 install:: default
-ifeq ($(build_OS), LINUX)
-	$(STD_INSTALL) $(STD_INSTALL_READ_MASK) $(TARGETS) $(STD_MONGOOSE_OS_LOC)
+ifeq ($(BUILD_OS), LINUX)
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $(TARGETS) $(STD_MONGOOSE_OS_LOC)
 endif
 
 ifeq ($(BUILD_OS),SUNOS5)
@@ -540,7 +540,7 @@ ifeq ($(BUILD_OS),SUNOS5)
 	done
 endif
 
-ifeq ($(build_OS), IRIX)
+ifeq ($(BUILD_OS), IRIX)
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) cg.so
  ifeq ($(BUILD_TYPE), SHARED)
  ifndef NOSYSGEN
