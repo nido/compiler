@@ -294,28 +294,34 @@ Expand__st220syscall(
 )
 {
     /*
-      First, syscall expects an immediate argument. I cannot be generated another way.
+      First, syscall expects an immediate argument. It cannot be generated another way.
       I don't know if this can be checked in upper layers. Range should also be checked.
-      As the expansion is seen as an INTRINSIC_CALL, the vlaue if constant is seen
-      as rematerializable. 
+      As the expansion is seen as an INTRINSIC_CALL, the value if constant is seen
+      as rematerializable.
       Note that in hight optimization levels, some constant-propagation stuff may
       work thus enabling to write __syscall(s) where is a const int, but
       this does not work under low optimization levels (the generated WHIRL
       cannot be used to determine the constant)
       Finally, this intrinsic cannot be used when intrinsics are not inlined
-      since it does not have a register interface.
+      since it does not have a register interface and an equivalent callable function
+      (does this make sense ?)
       Mabe this (having a syscall as a function) could be solved with some self-modifying-code hack ?
+      Additional surprises include that 0 is a special case that actually happens.
+      The case value is written but does not seem to be triggered
     */
     if (TN_is_rematerializable(i0)) {
 	WN *wn = TN_home(i0) ;
 	if (WN_operator_is(wn, OPR_INTCONST)) {
-#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-	    TN *cunknown = Gen_Literal_TN(__EXTS32TOS64(WN_const_val(wn)), 4) ;
-#undef __EXTS32TOS64	
+	    TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
 	    Build_OP (	TOP_syscall,	cunknown, 	ops) ;
 	} else {
-	    DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
+	    DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: TN_is_rematerializable BUT WN_operator_is *not* OPR_INTCONST.") ;
 	}
+    } else if (TN_is_zero(i0)) { 
+	Build_OP (	TOP_syscall,	Zero_TN, 	ops) ;
+    } else if (TN_has_value(i0)) {
+	TN *cunknown = Gen_Literal_TN(TN_value(i0), 4) ;
+	Build_OP (	TOP_syscall,	cunknown, 	ops) ;
     } else {
 	DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
     }
