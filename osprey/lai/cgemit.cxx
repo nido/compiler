@@ -110,6 +110,9 @@
 #ifdef TARG_ST
 /* (cbr) demangler interface */
 #include "../gnu_common/include/demangle.h"
+
+/* [SC] For ST_has_inito */
+#include "be_symtab.h"
 #endif
 
 BE_EXPORTED extern void Early_Terminate (INT status);
@@ -881,11 +884,31 @@ Print_Label (
     fprintf (pfile, "\t%s\t", AS_TYPE);
     EMT_Write_Qualified_Name (pfile, st);
 #ifdef TARG_ST
-    /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
-    if (Emit_Global_Data)
-      fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+#  ifdef AS_MOVEABLE
+    BOOL moveable;
+
+    if (! Emit_Global_Data) {
+      /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
+      moveable = FALSE;
+    }
+    else if (ST_is_initialized (st)) {
+      /* [SC]: Not moveable if initializer is larger than symbol size */
+      INITV_IDX inito_idx = ST_has_inito (st);
+      if (inito_idx != 0 && Get_INITO_Size (inito_idx) > size)
+	moveable = FALSE;
+    }
     else
-      fprintf (pfile, ", %s, moveable\n", AS_TYPE_OBJECT);
+      moveable = TRUE;
+    
+    if (moveable) {
+      fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_MOVEABLE);
+    }
+    else {
+      fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+    }
+#  else
+    fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
+#  endif
 #else
     fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
 #endif    

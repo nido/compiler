@@ -225,6 +225,7 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_TYPE_FUNC	"@function"
 #define AS_TYPE_OBJECT	"@object"
 #define AS_WEAK		".weak"
+#define AS_MOVEABLE     "moveable"
 
 #define AS_IDENT	".ident"
 #define AS_COMMENT	".comment"
