@@ -72,6 +72,8 @@ BOOL CG_localize_tns_Set = FALSE;
 BOOL LOCALIZE_using_stacked_regs = TRUE;
 BOOL CG_unique_exit = TRUE;
 
+BOOL CG_gen_callee_saved_regs_mask = FALSE; /* generate register mask */
+
 BOOL FREQ_enable = TRUE;
 BOOL FREQ_view_cfg = FALSE;
 const char *FREQ_frequent_never_ratio = "1000.0";
@@ -281,6 +283,3 @@ BOOL EXP_gp_prolog_call_shared = TRUE;
 BOOL EXP_normalize_logical = TRUE;
 const char *EXP_sqrt_algorithm = "st100";
 
-// .lai does not need to have the stack layout be emitted.
-// when generating executable code, we must do it.
-//BOOL LAI_emit_stack_frame = TRUE;

@@ -181,6 +181,8 @@ extern BOOL CG_localize_tns;
 extern BOOL CG_localize_tns_Set;
 extern BOOL LOCALIZE_using_stacked_regs;
 
+extern BOOL CG_gen_callee_saved_regs_mask; /* generate register mask */
+
 extern BOOL CG_tail_call;
 extern BOOL CG_unique_exit;
 extern BOOL CG_cond_defs_allowed;
