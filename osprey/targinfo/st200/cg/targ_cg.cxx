@@ -2776,6 +2776,9 @@ CGTARG_Compute_PRC_INFO(
 
     if (num_insts == 0) continue;
 
+    // FdF: Because for LAO we add the annotation after the bundling.
+    if (OP_noop(op)) continue;      
+
     info->refs[PRC_INST] += num_insts;
 
     if ( OP_flop(op) ) {
