@@ -157,10 +157,7 @@ static BOOL clone_max_incr_overridden = FALSE;
 static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 
 static BOOL CG_enable_ssa_overridden = FALSE;
-
-#ifdef SUPPORTS_SELECT
 static BOOL CG_enable_select_overridden = FALSE;
-#endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
@@ -357,17 +354,15 @@ static OPTION_DESC Options_CG[] = {
     CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, NULL,
     "Restrict BB length by splitting longer BBs" },
 
-  { OVK_BOOL,	OV_INTERNAL, FALSE, "ssa", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
     0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
     1, 1, 3, &CG_ssa_algorithm, NULL,
     "Specify method for translating out of the SSA" },
 
-#ifdef SUPPORTS_SELECT
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select", "",
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden },
-#endif
 
   // EBO options:
 
@@ -1036,17 +1031,21 @@ Configure_CG_Options(void)
 
   // If user explicitely set SSA.
   // However, don't allow if opt_level < 1
+#if 0
+  // development: ssa off by default
   if (!CG_enable_ssa_overridden) {
     CG_enable_ssa = (CG_opt_level > 1) ? TRUE : FALSE;
   }
   else {
+#endif
     if (CG_enable_ssa && (CG_opt_level < 2)) {
       DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
       CG_enable_ssa = FALSE;
     }
+#if 0
   }
+#endif
 
-#ifdef SUPPORTS_SELECT
   if (!CG_enable_select_overridden) {
     // enable when full validated...
     //    CG_enable_select =  (CG_opt_level > 0) ? CGTARG_Can_Select() : FALSE;
@@ -1057,7 +1056,6 @@ Configure_CG_Options(void)
     DevWarn("CG: Ignoring select=ON, need ssa");
     CG_enable_select = FALSE;
   }
-#endif
 
 #else
   Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;

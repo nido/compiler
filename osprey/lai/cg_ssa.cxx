@@ -1071,6 +1071,12 @@ SSA_Enter (
 {
   Trace_SSA_Build = Get_Trace(TP_SSA, SSA_BUILD);
   Trace_dom_frontier = Get_Trace(TP_SSA, SSA_DOM_FRONT);
+
+  if (Trace_SSA_Build) {
+    fprintf(TFile, "%s CFG Before SSA_Enter\n%s\n", DBar, DBar);
+    Print_All_BBs ();
+  }
+
   ssa_init();
 
   //
