@@ -1453,7 +1453,22 @@ Make_Bundles (
 
   // This helps handling latencies that may still be pending 
   // when all OPs are processed
+#ifdef TARG_ST200
+  static INT pending_latency = 0;
+  /* FdF: If fallThru predecessor is in the same superblock keep the
+     computed pending latency, otherwise reset it to 0. */
+#ifdef SUPERBLOCK_SCHED
+  if ((CG_LAO_Region_Map != NULL) &&
+      (BB_Fall_Thru_Predecessor(bb) != NULL) &&
+      (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0) &&
+      (BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, BB_Fall_Thru_Predecessor(bb)))) {
+  }
+  else
+#endif
+  pending_latency = 0;
+#else
   INT pending_latency = 0;
+#endif
 
   // Now iterate through the ops.
   OP *next_op;
@@ -1739,12 +1754,17 @@ Make_Bundles (
 #ifdef TARG_ST200
   // FdF: Adjust pending_latency to take into account unconditional
   // branch, calls, and superblock scheduling.
-  pending_latency = Fall_Thru_Latency(bb, pending_latency);
+  INT fallThru_latency = Fall_Thru_Latency(bb, pending_latency);
     
 #endif
  
   // while there are pending latencies, add noop cycles
-  if (Clock < pending_latency) {
+#ifdef TARG_ST200
+  if (Clock < fallThru_latency)
+#else
+  if (Clock < pending_latency)
+#endif
+    {
 
     if (Trace_HB) fprintf(TFile,"  adding noops for pending latency ...\n");
 
@@ -1769,7 +1789,7 @@ Make_Bundles (
     // at the end of BB
 #ifdef TARG_ST200 // [CL] keep track of alignment
     Handle_Latency (BB_last_op(bb),
-		    pending_latency, 
+		    fallThru_latency, 
 		    bundle, 
 		    bundle_vector, pc);
 #else
