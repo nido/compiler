@@ -641,14 +641,14 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
       CASE_TOP_BR(cmpne);
       CASE_TOP_BR(andl);
       CASE_TOP_BR(orl);
-      CASE_TOP_BR_INV(cmpge,cmplt);
-      CASE_TOP_BR_INV(cmpgeu,cmpltu);
-      CASE_TOP_BR_INV(cmpgt,cmple);
-      CASE_TOP_BR_INV(cmpgtu,cmpleu);
-      CASE_TOP_BR_INV(cmple,cmpgt);
-      CASE_TOP_BR_INV(cmpleu,cmpgtu);
-      CASE_TOP_BR_INV(cmplt,cmpge);
-      CASE_TOP_BR_INV(cmpltu,cmpgeu);
+      CASE_TOP_BR_INV(cmpge,cmple);
+      CASE_TOP_BR_INV(cmpgeu,cmpleu);
+      CASE_TOP_BR_INV(cmpgt,cmplt);
+      CASE_TOP_BR_INV(cmpgtu,cmpltu);
+      CASE_TOP_BR_INV(cmple,cmpge);
+      CASE_TOP_BR_INV(cmpleu,cmpgeu);
+      CASE_TOP_BR_INV(cmplt,cmpgt);
+      CASE_TOP_BR_INV(cmpltu,cmpgtu);
     }
   } else if (opnd1 == 1 && opnd2 == 2) {
     switch(top) {
