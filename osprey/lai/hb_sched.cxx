@@ -385,7 +385,11 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   INT base_opndnum = Memory_OP_Base_Opndnum(ldst_op);
   if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op,base_opndnum) ||
       (OP_store(ldst_op) &&
+#ifdef TARG_ST
+       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))))
+#else
        OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,0)))
+#endif
   {
     return FALSE;
   }
