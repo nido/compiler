@@ -191,7 +191,6 @@ OP_MAP _CG_LOOP_info_map;
   
 BOOL CG_LOOP_unroll_fully = TRUE;
 BOOL CG_LOOP_unroll_remainder_fully = TRUE;
-UINT32 CG_LOOP_unroll_min_trip = 5;
 
 #ifdef MIPS_UNROLL
 BOOL CG_LOOP_unroll_analysis = TRUE;
@@ -4482,6 +4481,26 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   MEM_POOL_Pop(&MEM_local_nz_pool);
 }
 
+INT32 CG_LOOP::Get_Unroll_Times(BOOL &pragma_unroll)
+{
+  BB *head = LOOP_DESCR_loophead(loop);
+  INT32 unroll_times;
+
+  pragma_unroll = FALSE;
+  unroll_times = CG_LOOP_unroll_times_max;
+
+  ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+  while (unroll_ant && WN_pragma(ANNOT_pragma(unroll_ant)) != WN_PRAGMA_UNROLL)
+    unroll_ant = ANNOT_Get(ANNOT_next(unroll_ant), ANNOT_PRAGMA);
+  if (unroll_ant) {
+    WN *wn = ANNOT_pragma(unroll_ant);
+    unroll_times = MAX(1, WN_pragma_arg1(wn));
+    pragma_unroll = TRUE;
+  }
+
+  return unroll_times;
+}
+
 
 /*
  * Unroll constant trip count loop fully iff:
@@ -4497,11 +4516,13 @@ bool CG_LOOP::Determine_Unroll_Fully()
   LOOPINFO *info = LOOP_DESCR_loopinfo(Loop());
   TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
   BB *head = LOOP_DESCR_loophead(loop);
+  BOOL pragma_unroll;
+  INT32 unroll_times_max = Get_Unroll_Times(pragma_unroll);
 
   if (BB_Has_Exc_Label(head))
     return false;
 
-  if (CG_LOOP_unroll_times_max < 2) 
+  if (unroll_times_max < 2) 
     return false;
 
   if (trip_count_tn == NULL)  
@@ -4513,9 +4534,9 @@ bool CG_LOOP::Determine_Unroll_Fully()
   INT32 const_trip_count = TN_value(trip_count_tn);
   INT32 body_len = BB_length(head);
 
-  if (body_len * const_trip_count <= CG_LOOP_unrolled_size_max ||
-      CG_LOOP_unrolled_size_max == 0 &&
-      CG_LOOP_unroll_times_max >= const_trip_count) {
+  if ((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) ||
+      (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
+       (unroll_times_max >= const_trip_count))) {
 
     if (Get_Trace(TP_CGLOOP, 2))
       fprintf(TFile, "<unroll> unrolling fully (%d times)\n", const_trip_count);
@@ -4535,6 +4556,8 @@ void CG_LOOP::Determine_Unroll_Factor()
   TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
   BB *head = LOOP_DESCR_loophead(loop);
   BOOL trace = Get_Trace(TP_CGLOOP, 2);
+  INT32 unroll_times_max;
+  BOOL pragma_unroll;
 
   Set_unroll_factor(1);
 
@@ -4545,12 +4568,13 @@ void CG_LOOP::Determine_Unroll_Factor()
     return;
   }
 
-  if (CG_LOOP_unroll_times_max < 2) {
-    const char * const reason = "OPT:unroll_times_max=%d";
-    note_not_unrolled(head, reason, CG_LOOP_unroll_times_max);
+  unroll_times_max = Get_Unroll_Times(pragma_unroll);
+  if (unroll_times_max < 2) {
+    const char * const reason = pragma_unroll ? "#pragma unroll(%d)" : "OPT:unroll_times_max=%d";
+    note_not_unrolled(head, reason, unroll_times_max);
     if (trace) {
       fprintf(TFile, "<unroll> not unrolling; ");
-      fprintf(TFile, reason, CG_LOOP_unroll_times_max);
+      fprintf(TFile, reason, unroll_times_max);
       fprintf(TFile, "\n");
     }
     return;
@@ -4558,10 +4582,12 @@ void CG_LOOP::Determine_Unroll_Factor()
 
   if (trip_count_tn == NULL) {
 
-    UINT32 ntimes = MAX(1, OPT_unroll_times-1);
-    INT32 body_len = BB_length(head);
-    while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
-      ntimes--;
+    UINT32 ntimes = MAX(1, unroll_times_max-1);
+    if (!pragma_unroll) {
+      INT32 body_len = BB_length(head);
+      while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
+	ntimes--;
+    }
     Set_unroll_factor(ntimes);
 
   } else {
@@ -4570,17 +4596,16 @@ void CG_LOOP::Determine_Unroll_Factor()
     INT32 const_trip_count = const_trip ? TN_value(trip_count_tn) : 0;
     INT32 body_len = BB_length(head);
   
-    CG_LOOP_unroll_min_trip = MAX(CG_LOOP_unroll_min_trip, 1);
-    if (const_trip && CG_LOOP_unroll_fully &&
+    if (const_trip && (CG_LOOP_unroll_fully || pragma_unroll) &&
 	/*
 	 * Unroll constant trip count loop fully iff:
-	 *   (a) CG:unroll_fully not turned off, and either
+	 *   (a) CG:unroll_fully not turned off or pragma_unroll, and either
 	 *   (b1) unrolled size <= OPT:unroll_size, or
-	 *   (b2) OPT:unroll_size=0 and OPT:unroll_times_max >= trip count
+	 *   (b2) (OPT:unroll_size=0 || pragma_unroll) and unroll_times_max >= trip count
 	 */
-	(body_len * const_trip_count <= CG_LOOP_unrolled_size_max ||
-	 CG_LOOP_unrolled_size_max == 0 &&
-	 CG_LOOP_unroll_times_max >= const_trip_count)) {
+	((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) ||
+	 (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
+	  (unroll_times_max >= const_trip_count)))) {
 
       if (trace)
 	fprintf(TFile, "<unroll> unrolling fully (%d times)\n", const_trip_count);
@@ -4588,15 +4613,15 @@ void CG_LOOP::Determine_Unroll_Factor()
       Set_unroll_fully();
       Set_unroll_factor(const_trip_count);
     } else {
-      UINT32 ntimes = OPT_unroll_times;
-      ntimes = MIN(ntimes, CG_LOOP_unroll_times_max);
+      UINT32 ntimes = unroll_times_max;
       if (!is_power_of_two(ntimes)) {
 	ntimes = 1 << log2(ntimes); 
 	if (trace)
 	  fprintf(TFile, "<unroll> rounding down to power of two = %d times\n", ntimes);
       }
-      while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
-	ntimes /= 2;
+      if (!pragma_unroll)
+	while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
+	  ntimes /= 2;
       if (const_trip) {
 	while (ntimes > 1 && const_trip_count < 2 * ntimes) 
 	  ntimes /= 2;
@@ -4617,6 +4642,11 @@ inline bool CG_LOOP_OP_is_live(OP *op, TN_SET *live_set, bool keep_prefetch)
     return true;
   if (keep_prefetch && OP_prefetch(op))
     return true;
+#ifdef TARG_ST
+  // FDF: Keep branch instruction because we do not run Gen_SWP_Branch
+  if (OP_br(op) == 0)
+    return true;
+#endif
   for (INT i = 0; i < OP_results(op); i++) {
     TN *res = OP_result(op, i);
     if (TN_is_register(res) && !TN_is_const_reg(res))
@@ -5212,12 +5242,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (!Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt))
 	return FALSE;
 
-#ifndef TARG_ST
-      //      if (PROC_has_counted_loops())
-      // Replace regular branch with loop-count branches.
-      // There will be a call EBO to delete the loop-exit test evaluations.
-      Gen_Counted_Loop_Branch(cg_loop);
+      if (PROC_has_counted_loops())
+	// Replace regular branch with loop-count branches.
+	// There will be a call EBO to delete the loop-exit test evaluations.
+	Gen_Counted_Loop_Branch(cg_loop);
 
+#ifndef TARG_ST
       // Generate SWP branches, eg. doing stuff to prolog/epilog, etc.
       // target-specific
       Gen_SWP_Branch(cg_loop, true /* is_doloop */);
@@ -5467,14 +5497,25 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     {
       CG_LOOP cg_loop(loop);
 
+      //      if (!cg_loop.Has_prolog_epilog())
+      //	return FALSE;
+
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
-
+#if 0
+      if (Remove_Non_Definite_Dependence(cg_loop, false, trace_loop_opt)) {
+	Perform_Read_Write_Removal(loop);
+	Fix_Recurrences_Before_Unrolling(cg_loop);
+      }
+#endif
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
+
+      //      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+
       cg_loop.EBO_After_Unrolling();
 
 #if defined(TARG_ST)
