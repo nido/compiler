@@ -3126,9 +3126,9 @@ r_assemble_list (
   }
 #endif
 
-#if defined(TARG_ST100) && !defined(GHS_SHIT_IS_WORKING)
+#if defined(TARG_ST100) && !defined(__ASM_SUPPORTS_REGMASK_OPERAND)
 extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
-// Arthur: the GHS crappy assembler isn't even able to take
+// Arthur: the GHS assembler isn't able to take
 //         a register mask as operand. However, push/pop
 //         is described in the architecture as having a 
 //         mask as an operand. So, I need this hack ...
