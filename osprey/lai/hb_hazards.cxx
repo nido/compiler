@@ -1010,9 +1010,15 @@ Handle_Latency (
 {
   INT ti_err = TI_RC_OKAY;
 
+#ifdef TARG_ST
+  // [CG]: asm top are not bundled
+  BOOL bundling_reqd = (OP_code(op) != TOP_asm);
+  FmtAssert(OP_bundled(op) || !bundling_reqd, ("OP not bundled ?"));
+#else
   // 'op' should have been bundled and no unfilled slots before
   // it in the template.
   FmtAssert(OP_bundled(op), ("OP not bundled ?"));
+#endif
 
   if (Trace_HB) fprintf(TFile, "  handling latency: clock %d, estart %d\n", Clock, estart);
 
@@ -1444,12 +1450,16 @@ Make_Bundles (
 
       // If there is a dependence, first end current group
 #ifdef TARG_ST200
+      // [CG] Treat asm
+      BOOL bundling_reqd = (OP_code(op) != TOP_asm);
+
       // CL: start new bundle for new source line under -O0
       if ( (Clock < estart)
 	   || ( (Opt_Level == 0)
       		&& (last_srcpos != OP_srcpos(op))
       		&& (OP_srcpos(op) != 0)
       		)
+	   || !bundling_reqd
       	   ) {
 #else
       if (Clock < estart) {

@@ -3251,7 +3251,7 @@ static int Bundle_Count;
 /* ====================================================================
  *   Assemble_OP
  *
- *   Write out the 'op' into the object file and/or into the assembly 
+ *   Write outB the 'op' into the object file and/or into the assembly 
  *   file. see r_assemble_op() in cg/cgemit.cxx
  * ====================================================================
  */
@@ -3403,11 +3403,14 @@ Assemble_Simulated_OP (
     FmtAssert((Assembly || Lai_Code) && !Object_Code,
 	      ("can't emit object code when ASM"));
     if (Assembly) {
+#ifndef TARG_ST
+      // [CG] We don't emit stop bit before asm
       if (AS_STOP_BIT && 
 	  (EMIT_stop_bits_for_asm ||
 	   (EMIT_stop_bits_for_volatile_asm && OP_volatile(op)) ) ) {
 	fprintf(Asm_File, "\t%s\n", AS_STOP_BIT);
       }
+#endif
       fprintf(Asm_File, "\t%s\n", Generate_Asm_String(op, bb));
       if (AS_STOP_BIT && 
 	  (EMIT_stop_bits_for_asm ||
@@ -3570,7 +3573,11 @@ Assemble_Bundles(BB *bb)
     //Print_BB(bb);
   }
 
+#ifdef TARG_ST
+  for (op = BB_first_op(bb);op != NULL;) {
+#else
   for (op = BB_first_op(bb);;) {
+#endif
     ISA_BUNDLE bundle;
     UINT64 slot_mask;
     UINT stop_mask;
@@ -3580,6 +3587,16 @@ Assemble_Bundles(BB *bb)
 #ifdef TARG_ST200
     // CL: track bundle stop because we have variable length bundles
     int seen_end_group=0;
+#endif
+
+#ifdef TARG_ST200  //[CG]
+    if (OP_code(op) == TOP_asm) {
+      FmtAssert(!Object_Code, ("can't emit asm in object code")); 
+      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(op));
+      Assemble_Simulated_OP(op, bb);
+      op = OP_next(op);
+      continue;
+    }
 #endif
 
     /* Gather up the OPs for the bundle.
@@ -3601,8 +3618,8 @@ Assemble_Bundles(BB *bb)
       if (OP_dummy(op)) continue;		// these don't get emitted
 
       if (OP_simulated(op)) {
-	FmtAssert(slot == 0, ("can't bundle a simulated OP in BB:%d.",
-                                                              BB_id(bb)));
+	FmtAssert(slot == 0, ("can't bundle a simulated OP in BB:%d (op %s).",
+			      BB_id(bb), TOP_Name(OP_code(op))));
 	Assemble_Simulated_OP(op, bb);
 	continue;
       }
@@ -3616,7 +3633,7 @@ Assemble_Bundles(BB *bb)
         slot_mask = (slot_mask << ISA_TAG_SHIFT) | ISA_EXEC_Unit_Prop(OP_code(op));
         stop_mask = stop_mask << 1;
       }
-      stop_mask |= (OP_end_group(op) != 0);
+      stop_mask |= (seen_end_group != 0);
 
 #ifndef GAS_TAGS_WORKED
 // remove this when gas can handle tags inside explicit bundle
@@ -3630,7 +3647,7 @@ Assemble_Bundles(BB *bb)
 #endif
 
     }
-    if (slot == 0) break;
+    if (slot == 0 ) break;
 
 #ifdef TARG_ST200
     // CL: recalibrate to ISA_MAX_SLOTS bundle length
@@ -3661,8 +3678,8 @@ Assemble_Bundles(BB *bb)
 
     if (Trace_Inst) {
       fprintf(TFile, "<cgemit> Bundle:\n");
-      for (slot = 0; slot < ISA_MAX_SLOTS; slot++) {
-	Print_OP_No_SrcLine (slot_op[slot]);
+      for (int i = 0; i < slot; i++) {
+	Print_OP_No_SrcLine (slot_op[i]);
       }
     }
 
@@ -3690,25 +3707,23 @@ Assemble_Bundles(BB *bb)
 
     /* Assemble the bundle.
      */
-    slot = 0;
 #ifdef TARG_ST200
-    OP *sl_op; // CL: make it visible outside of the loop
-
     /* Generate debug info for the 1st op of the bundle */
-    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[slot]));
+    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]));
 #endif
 
-    do {
 #ifdef TARG_ST200
-      sl_op = slot_op[slot];
+    for(int i = 0; i < slot; i++)  {
+      OP *sl_op = slot_op[i];
+      //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
+      Assemble_OP(sl_op, bb, &bundle, i);
+    }
 #else
+    slot = 0;
+    do {
       OP *sl_op = slot_op[slot];
-#endif
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
-#ifdef TARG_ST200
-    } while (!OP_end_group(sl_op));
-#else
     } while (slot < ISA_MAX_SLOTS);
 #endif
 

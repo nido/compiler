@@ -474,6 +474,9 @@ main (int argc, char *argv[])
 
   Instruction_Group("simulated", 
 		 TOP_spadjust, 
+#ifdef TARG_ST//[CG]
+		 TOP_asm, 
+#endif
 		 TOP_UNDEFINED); 
 
   Any_Operand_Access_Time(0); 
