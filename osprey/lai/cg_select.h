@@ -47,6 +47,8 @@
 #ifndef SELECT_H_INCLUDED
 #define SELECT_H_INCLUDED
 
+extern BOOL CG_select_allow_dup;
+
 extern void Convert_Select(RID *, const BB_REGION&);
 extern void Select_Init(void);
 extern void draw_CFG(void);

@@ -252,10 +252,14 @@ extern void Exp_Pred_Complement(TN *dest, TN *cdest, TN *src, OPS *ops);
 extern void Exp_Pred_Compare(TN *dest, TN *cdest, TN *src1, TN *src2, 
 			     VARIANT variant, OPS *ops);
 
+#ifndef TARG_ST
+// Arthur: moved to be/com/betarget.h
+
 /* check if target can handle immediate operand;
  * True if target can, false if should use target-independent logic.
  */
 extern BOOL Target_Has_Immediate_Operand (WN *parent, WN *expr);
+#endif
 
 #include "exp_targ.h"
 

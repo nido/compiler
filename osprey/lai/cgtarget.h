@@ -630,8 +630,9 @@ extern TOP CGTARG_Invert(TOP opr);
 /* 
  * Returns the high-level type of the spill operation given the
  * TN to be spilled and the precision range of the data in it.
+ * Precision is in TN_size(tn).
  */
-extern TY_IDX CGTARG_Spill_Type(TN *tn, INT range);
+extern TY_IDX CGTARG_Spill_Type(TN *tn);
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
 

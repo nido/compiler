@@ -869,24 +869,19 @@ CGTARG_Postprocess_Asm_String (
  */
 TY_IDX 
 CGTARG_Spill_Type (
-  TN *tn,
-  INT range
+  TN *tn
 ) 
 {
-  // Arthur: the range analysis has not been implemented. Therefore,
-  //         reg alloc. calls this with 0 (default I4).
-  //         When callee saved reg mask size is computed, I call it
-  //         with 40 for DU so that I5 is returned.
-  // TODO: when precision range is available, it should be OK.
+  // 
+  // Arthur: the range analysis has not been implemented. 
   //
   switch (TN_register_class(tn)) {
     case ISA_REGISTER_CLASS_guard:
       return MTYPE_To_TY(MTYPE_I1);
     case ISA_REGISTER_CLASS_du:
       //      return Spill_Int_Type;
-      switch (range) {
-	//      case 0: return MTYPE_To_TY(MTYPE_I5);
-      case 40: return MTYPE_To_TY(MTYPE_I5);
+      switch (TN_size(tn)) {
+      case 5: return MTYPE_To_TY(MTYPE_I5);
       default: return MTYPE_To_TY(MTYPE_I4);
       }
 

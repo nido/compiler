@@ -74,6 +74,12 @@
 #include "cg_select.h"
 #include "DaVinci.h"
 
+// ====================================================================
+//   SELECT flags:
+// ====================================================================
+
+BOOL CG_select_allow_dup = FALSE;
+
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
 static INT32  max_cand_id;	// Max value in hammock candidates.

@@ -99,6 +99,10 @@
 #include "be_util.h"
 #include "config_asm.h"
 
+#ifdef TARG_ST
+#include "betarget.h"    /* for Target_Has_Immediate_Operand */
+#endif
+
 #ifdef EMULATE_LONGLONG
 extern void Add_TN_Pair (TN*, TN*);
 extern TN *If_Get_TN_Pair(TN*);

@@ -153,7 +153,12 @@ Dup_OP ( OP *op )
   new_op->bb = NULL;
 
   Copy_OP_Annot ( new_op, op );
+#ifdef TARG_ST
+  LABEL_IDX tag = Get_OP_Tag(op);
+  if (tag) {
+#else
   if (OP_has_tag(op)) {
+#endif
 	Set_OP_Tag (new_op, Gen_Tag());
   }
   
@@ -740,13 +745,8 @@ Mk_OP(TOP opr, ...)
 {
   va_list ap;
   INT i;
-#ifdef TARG_ST
-  INT results = ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr));
-  INT opnds = ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr));
-#else
   INT results = TOP_fixed_results(opr);
   INT opnds = TOP_fixed_opnds(opr);
-#endif
   OP *op = New_OP(results, opnds);
 
   FmtAssert(!TOP_is_var_opnds(opr), ("Mk_OP not allowed with variable operands"));
@@ -825,8 +825,13 @@ void Print_OP_No_SrcLine(const OP *op)
   WN *wn;
 
   fprintf (TFile, "[%4d] ", Srcpos_To_Line(OP_srcpos(op)));
+#ifdef TARG_ST
+  LABEL_IDX tag = Get_OP_Tag(op);
+  if (tag) {
+#else
   if (OP_has_tag(op)) {
 	LABEL_IDX tag = Get_OP_Tag(op);
+#endif
 	fprintf (TFile, "<tag %s>: ", LABEL_name(tag));
   }
   for (i = 0; i < OP_results(op); i++) {

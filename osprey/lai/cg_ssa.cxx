@@ -39,6 +39,8 @@
 #include "cgexp.h"
 #include "cg_ssa.h"
 
+INT32 CG_ssa_algorithm = 1;
+
 //
 // Memory pool for allocating things during SSA construction.
 // Memory allocated from this pool is initialized to zero.

@@ -90,12 +90,11 @@ BOOL CG_enable_pf_L2_st = FALSE;
 BOOL CG_exclusive_prefetch = FALSE;
 BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
+BOOL CG_enable_select = FALSE;
 BOOL CG_enable_LAO = FALSE;	/* Enable LAO in cg */
 
 BOOL  CG_enable_BB_splitting = TRUE;
 INT32 CG_split_BB_length = CG_bblength_default;
-
-INT32 CG_ssa_algorithm = 1;
 
 INT32 CG_L1_ld_latency = 0;
 INT32 CG_L2_ld_latency = 0;
@@ -128,16 +127,6 @@ BOOL CG_enable_reverse_if_conversion_overridden = FALSE;
 
 INT32 CG_maxinss = CG_maxinss_default;
 INT32 CG_maxblocks = 30;
-
-
-// ====================================================================
-//   SELECT:
-// ====================================================================
-
-#ifdef SUPPORTS_SELECT
-BOOL CG_enable_select = FALSE;
-BOOL CG_select_allow_dup = FALSE;
-#endif
 
 // ====================================================================
 //   EBO:

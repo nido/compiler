@@ -441,7 +441,7 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
        *            2. I need precision range analysis in order to
        *               choose the best type. For now this will do:
        */
-      TY_IDX mem_type = CGTARG_Spill_Type(tn, 0);
+      TY_IDX mem_type = CGTARG_Spill_Type(tn);
 #else
       TY_IDX mem_type = TN_is_float(tn) || TN_is_fcc_register(tn) ? 
 		        Spill_Float_Type : Spill_Int_Type;
@@ -721,6 +721,10 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
     /* Must actually load it from memory
      */
     CGTARG_Load_From_Memory(tn, mem_loc, ops);
+    //
+    // Mark the actual load as a spill
+    //
+    Set_OP_spill(OPS_last(ops));
   }
   Max_Sdata_Elt_Size = max_sdata_save;
 }
@@ -766,6 +770,11 @@ CGSPILL_Store_To_Memory (TN *src_tn, ST *mem_loc, OPS *ops,
   }
 
   CGTARG_Store_To_Memory(src_tn, mem_loc, ops);
+  //
+  // Mark the actual store as a spill
+  //
+  Set_OP_spill(OPS_last(ops));
+
   Max_Sdata_Elt_Size = max_sdata_save;
 }
 

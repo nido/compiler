@@ -803,13 +803,9 @@ CGTARG_Postprocess_Asm_String (
  */
 TY_IDX 
 CGTARG_Spill_Type (
-  TN *tn,
-  INT range
+  TN *tn
 ) 
 {
-  // Arthur: the range analysis has not been implemented. 
-  //         not necessary on this target.
-  //
   switch (TN_register_class(tn)) {
     case ISA_REGISTER_CLASS_integer:
       return MTYPE_To_TY(MTYPE_I4);

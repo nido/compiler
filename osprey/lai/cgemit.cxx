@@ -455,6 +455,7 @@ r_qualified_name (
   vstring *buf       /* buffer to format it into */
 )
 {
+#if 0
   //
   // Arthur: now there is a possibility that we try to use this
   //         function with a section st
@@ -467,6 +468,7 @@ r_qualified_name (
 		  em_scn[STB_scninfo_idx(st)].label);
     return;
   }
+#endif
 
   if (ST_name(st) && *(ST_name(st)) != '\0') {
     *buf = vstr_concat(*buf, ST_name(st));
@@ -2731,6 +2733,21 @@ r_assemble_list (
   INT lc = 0;
   BOOL add_name = FALSE;
 
+#if 0
+  Emit_Unwind_Directives_For_OP(op, Asm_File);
+#endif
+
+#ifdef GAS_TAGS_WORKED
+// un-ifdef this when gas can handle tags inside explicit bundle
+#ifdef TARG_ST
+  if (Get_OP_Tag(op)) {
+#else
+  if (OP_has_tag(op)) {
+#endif
+	fprintf(Asm_File, "%s:\n", LABEL_name(Get_OP_Tag(op)));
+  }
+#endif
+
 #if defined(TARG_ST100) && !defined(GHS_SHIT_IS_WORKING)
 extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 // Arthur: the GHS crappy assembler isn't even able to take
@@ -3323,7 +3340,11 @@ Assemble_Bundles(BB *bb)
 
 #ifndef GAS_TAGS_WORKED
 // remove this when gas can handle tags inside explicit bundle
+#ifdef TARG_ST
+      if (Get_OP_Tag(op)) {
+#else
       if (OP_has_tag(op)) {
+#endif
 	fprintf(Asm_File, "\n%s:\n", LABEL_name(Get_OP_Tag(op)));
       }
 #endif
@@ -3767,8 +3788,13 @@ Recompute_Label_Offset (
       Set_Label_Offset(lab, cur_pc);
     }
     for (op = BB_first_op(bb); op; op = OP_next(op)) {
+#ifdef TARG_ST
+      lab = Get_OP_Tag(op);
+      if (lab) {
+#else
       if (OP_has_tag(op)) {
 	lab = Get_OP_Tag(op);
+#endif
       	Set_Label_Offset(lab, cur_pc);
       }
       INT num_inst_words = OP_Real_Inst_Words (op);

@@ -443,7 +443,18 @@ enum OP_COND_DEF_KIND {
 /* OP_MAKS_COND_DEF  0x1800  -- See enum defined above  */
 #define OP_MASK_NO_CI_ALIAS  0x2000 /* no cross-iteration alias */
 #define OP_MASK_NO_MOVE_BEFORE_GRA 0x4000 /* do not move this op before GRA */
+
+#ifdef TARG_ST
+/* 
+ * Arthur: we need a flag for OP_MASK_SPILL because the way spill OPs
+ *         are detected seems wrong. Tagged OPs are OP_MAPed, so
+ *         it is easy to detect when there is a tag for an OP without
+ *         this flag (perhaps more expensive looking at a map).
+ */
+#define OP_MASK_SPILL     0x8000 /* OP is a spill OP */
+#else
 #define OP_MASK_TAG 	  0x8000 /* OP has tag */
+#endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
 # define Set_OP_glue(o)		(OP_flags(o) |= OP_MASK_GLUE)
@@ -493,9 +504,16 @@ enum OP_COND_DEF_KIND {
 # define Reset_OP_no_ci_alias(o) (OP_flags(o) &= ~OP_MASK_NO_CI_ALIAS)
 # define OP_no_move_before_gra(o) (OP_flags(o) & OP_MASK_NO_MOVE_BEFORE_GRA)
 # define Set_OP_no_move_before_gra(o)(OP_flags(o) |= OP_MASK_NO_MOVE_BEFORE_GRA)
+
+#ifdef TARG_ST
+# define OP_spill(o)		(OP_flags(o) & OP_MASK_SPILL)
+# define Set_OP_spill(o)	(OP_flags(o) |= OP_MASK_SPILL)
+# define Reset_OP_spill(o) 	(OP_flags(o) &= ~OP_MASK_SPILL)
+#else
 # define OP_has_tag(o)		(OP_flags(o) & OP_MASK_TAG)
 # define Set_OP_has_tag(o)	(OP_flags(o) |= OP_MASK_TAG)
 # define Reset_OP_has_tag(o) 	(OP_flags(o) &= ~OP_MASK_TAG)
+#endif
 
 extern BOOL OP_cond_def( const OP*);
 extern BOOL OP_has_implicit_interactions(OP*);
@@ -587,7 +605,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_operand_info(o)	(ISA_OPERAND_Info(OP_code(o)))
 #define OP_has_hazard(o)	(ISA_HAZARD_TOP_Has_Hazard(OP_code(o)))
 #define OP_immediate_opnd(o,lc)	(TOP_Immediate_Operand(OP_code(o), lc))
-#define OP_has_immediate(o)	(OP_immediate_opnd(o) >= 0)
+#define OP_has_immediate(o)	(OP_immediate_opnd(o, NULL) >= 0)
 #define OP_inst_words(o)	(ISA_PACK_Inst_Words(OP_code(o)))
 #define OP_find_opnd_use(o,u)	(TOP_Find_Operand_Use(OP_code(o),(u)))
 #define OP_has_result(o)        (OP_results(o) != 0)
@@ -596,8 +614,10 @@ extern BOOL OP_has_implicit_interactions(OP*);
  * results/operands an instruction has (OP_result/OP_opnds includes
  * any variable operands in the count).
  */
-#define OP_fixed_results(o)	(ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(OP_code(o))))
-#define OP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(OP_code(o))))
+#define TOP_fixed_results(o)	(ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(o)))
+#define TOP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(o)))
+#define OP_fixed_results(o)	(TOP_fixed_results(OP_code(o)))
+#define OP_fixed_opnds(o)	(TOP_fixed_opnds(OP_code(o)))
 
 /*
  * If 'op' performs a copy operation, return the index of

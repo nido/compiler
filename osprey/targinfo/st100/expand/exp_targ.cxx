@@ -3868,6 +3868,7 @@ Expand_Const (
   Exp_Load (mtype, mtype, dest, TN_var(src), 0, ops, V_NONE);
 }
 
+#if 0
 /* ====================================================================
  *   Target_Has_Immediate_Operand (parent, expr)
  * ====================================================================
@@ -3898,4 +3899,4 @@ Target_Has_Immediate_Operand (
   // default to false, which really means "don't know"
   return FALSE;
 }
-
+#endif

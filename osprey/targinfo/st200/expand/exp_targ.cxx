@@ -1019,7 +1019,7 @@ Expand_Multiply (
   dump_tn (src2);
 #endif
 
-  is_signed = MTYPE_is_signed(s1mtype) || MTYPE_is_signed(s2mtype);
+  is_signed = MTYPE_signed(s1mtype) || MTYPE_signed(s2mtype);
 
   //
   // Check for two constants
@@ -1036,7 +1036,7 @@ Expand_Multiply (
     // Need to get the constant of the right length
     constant = Targ_To_Host(Host_To_Targ(rmtype, constant));
     val_tn = Gen_Literal_TN(constant, 8);
-    Exp_Immediate(result, val_tn, MTYPE_is_signed(rmtype), ops);
+    Exp_Immediate(result, val_tn, MTYPE_signed(rmtype), ops);
     return;
   }
 
@@ -1161,7 +1161,8 @@ Expand_Multiply (
         }
       }
 
-      if (is_signed)
+      if (MTYPE_signed(s2mtype))
+	//if (is_signed)
         opcode = has_const ? TOP_mull_i : TOP_mull_r;
       else
         opcode = has_const ? TOP_mullu_i : TOP_mullu_r;        
@@ -3103,36 +3104,5 @@ Expand_Const (
 #endif
 
   return;
-}
-
-/* ====================================================================
- *   Target_Has_Immediate_Operand (parent, expr)
- * ====================================================================
- */
-BOOL
-Target_Has_Immediate_Operand (
-  WN *parent,
-  WN *expr
-)
-{
-  if (WN_operator(parent) == OPR_INTRINSIC_CALL
-	&& (((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I4)
-	 || ((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I8))) {
-    // can optimize for some constants
-    return TRUE;
-  }
-
-  // adds and subs can handle immediates as second operand:
-  if (WN_operator(parent) == OPR_ADD) {
-    return TRUE;
-  }
-
-  if (WN_operator(parent) == OPR_SUB) {
-    if (WN_kid1(parent) == expr)
-      return TRUE;
-  }
-
-  // default to false, which really means "don't know"
-  return FALSE;
 }
 
