@@ -1315,6 +1315,14 @@ CGTARG_Max_OP_Latency (
   return max_latency;
 }
 
+static BOOL
+is_constant_register (mUINT16 class_n_reg)
+{
+  return class_n_reg == CLASS_AND_REG_zero
+    || class_n_reg == CLASS_AND_REG_fzero
+    || class_n_reg == CLASS_AND_REG_fone;
+}
+
 /* ====================================================================
  *   CGTARG_Max_RES_Latency
  * ====================================================================
@@ -1329,54 +1337,63 @@ CGTARG_Max_RES_Latency (
   INT latency;
 
   //	asm latency always forced to 1.
-  if (OP_code(op) == TOP_asm) return 1;
+  if (OP_code(op) == TOP_asm) {
+    latency = 1;
+  }
+  else {
+    INT result_avail = TSI_Result_Available_Time (OP_code (op), idx);
+    INT first_opnd_read = INT_MAX;
 
-  //	Most instructions have 1 cycle latency
-  latency = 1;
+    for (i = 0; i < OP_opnds(op); i++) {
+      INT opnd_read = TSI_Operand_Access_Time (OP_code (op), i);
+      if (opnd_read < first_opnd_read) {
+	first_opnd_read = opnd_read;
+      }
+    }
+    
+    if (first_opnd_read == INT_MAX) {
+      // An operation with results but no operands.
+      first_opnd_read = 0;
+    }
+    latency = result_avail - first_opnd_read;
+    
+    //	Now handle special operand cases
+    
+    
+    // Load instructions (resp arith instruction) writing LR register
+    //    must be followed by 3 cycles delay (resp 2 cycles delay) 
+    //    before one of the following may be issued:
+    //         TOP_icall
+    //         TOP_igoto
+    //         TOP_return
+    
+    if (TN_register_and_class(OP_result(op,idx)) == CLASS_AND_REG_ra) {
+      INT opnd_read = TSI_Operand_Access_Time (TOP_icall, 0);
+      latency = MAX (latency, result_avail - opnd_read);
+      // The previous calculation works for loads, but alu ops
+      // writing R63 need an extra cycle, because there is no
+      // forwarding of the alu result to the SLR used by a branch op.
+      if (! OP_load (op)) {
+	latency++;
+      }
+    }
+    
+    //    Instructions writing into a branch register must be followed
+    //    by 2 cycle (bundle) before 
+    //         TOP_br 
+    //         TOP_brf 
+    //    can be issued that uses this register.
+    
+    else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch) {
+      latency = result_avail - TSI_Operand_Access_Time (TOP_br, 0);
+    }
 
-  //	Default based on scheduling group
-  //	Instructions of group "LOAD" and "LOAD_IMM" have 3 cycles latency
-  if (TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_i) ||
-      TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_ii))
-    latency = 3;
-  //	Instructions of group "MUL" and "MUL_IMM" have 3 cycles latency
-  else if (TSI_Id(OP_code(op)) == TSI_Id(TOP_mull_i) ||
-	   TSI_Id(OP_code(op)) == TSI_Id(TOP_mull_ii))
-    latency = 3;
-  
-  //	Now handle special operand cases
-
-
-  // Load instructions (resp arith instruction) writing LR register
-  //    must be followed by 3 cycles delay (resp 2 cycles delay) 
-  //    before one of the following may be issued:
-  //         TOP_icall
-  //         TOP_igoto
-  //         TOP_return
-
-  if (TN_register_and_class(OP_result(op,idx)) == CLASS_AND_REG_ra) {
-    if (TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_i) ||
-	TSI_Id(OP_code(op)) == TSI_Id(TOP_ldw_ii)) {
-      if (latency < 4) latency = 4;
-    } else {
-      if (latency < 3) latency = 3;
+    //    Instructions writing into regiser r0.0 have a 0 latency.
+    
+    else if (is_constant_register (TN_register_and_class (OP_result (op, idx)))) {
+      latency = 0;
     }
   }
-
-  //    Instructions writing into a branch register must be followed
-  //    by 2 cycle (bundle) before 
-  //         TOP_br 
-  //         TOP_brf 
-  //    can be issued that uses this register.
-
-  else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch) {
-    if (latency < 3) latency = 3;
-  }
-
-  //    Instructions writing into regiser r0.0 have a 0 latency.
-
-  else if (OP_result(op,idx) == Zero_TN)
-    latency = 0;
 
   return latency;
 }
@@ -1416,15 +1433,17 @@ CGTARG_Adjust_Latency (
   //         TOP_icall
   //         TOP_igoto
   //         TOP_return
-  if (kind == CG_DEP_REGIN &&
-      (succ_code == TOP_icall ||
-       succ_code == TOP_igoto ||
-       succ_code == TOP_return)) {
-    if (TSI_Id(pred_code) == TSI_Id(TOP_ldw_i) ||
-	TSI_Id(pred_code) == TSI_Id(TOP_ldw_ii)) {
-      if (*latency < 4) *latency = 4;
-    } else {
-      if (*latency < 3) *latency = 3;
+  //    (i.e. an indirect branch op).
+  //    Treated by ti_si for loads.  Just need to handle arith
+  //    instructions here.
+  if (kind == CG_DEP_REGIN
+      && OP_xfer (succ_op)
+      && (TN_register_and_class (OP_opnd (succ_op, opnd))
+	  == CLASS_AND_REG_ra)) {
+    if (! OP_load (pred_op)) {
+      *latency = MAX (*latency,
+		      TSI_Result_Available_Time (pred_code, 0)
+		      - TSI_Operand_Access_Time (succ_code, opnd) + 1);
     }
   }
 
@@ -1447,11 +1466,14 @@ CGTARG_Adjust_Latency (
   // 8. Any REGOUT latency must be at least 1 on this target.
   if (kind == CG_DEP_REGOUT && *latency < 1) *latency = 1;
   
-  // 9. Special latency on register R0.0, even on output dependence.
+  // 9. Special latency on constant registers, even on output dependence.
   /* FdF: MBTst15896 Fixed operand for REGOUT. */
-  if ((kind == CG_DEP_REGIN && OP_opnd(succ_op, opnd) == Zero_TN) ||
-      (kind == CG_DEP_REGANTI && OP_opnd(pred_op, opnd) == Zero_TN) ||
-      (kind == CG_DEP_REGOUT && OP_result(succ_op, opnd) == Zero_TN))
+  if ((kind == CG_DEP_REGIN &&
+       is_constant_register (TN_register_and_class (OP_opnd(succ_op, opnd))))
+      || (kind == CG_DEP_REGANTI
+	  && is_constant_register (TN_register_and_class (OP_opnd(pred_op, opnd))))
+      || (kind == CG_DEP_REGOUT
+	  && is_constant_register (TN_register_and_class (OP_result(succ_op, opnd)))))
     *latency = 0;
 
   return;
