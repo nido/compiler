@@ -182,11 +182,11 @@ LDIRT += st200_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
-SO_TARGETS = libst200.a libst220.a
+SO_TARGETS = libst200.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = st200.dll st220.dll
+SO_TARGETS = st220.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
