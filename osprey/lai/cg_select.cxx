@@ -32,8 +32,16 @@
  *
  * Description:
  *
- * If-convert if-then-else (hammocks) regions using selects.
+ * If-convert conditional if regions using selects and speculation.
  * Simplifies successive conditional jumps into logical expressions.
+ *
+ * enabled with -CG:select=yes
+ * speculation level: -TENV:X=spec_level. where spec_level is:
+ * 0   : no select generated.
+ * 1/2 : EAGER_SAFE/EAGER_ARITH: safe arithmetic ops (default)
+ * 3   : EAGER_DIVIDE division allowed
+ * 4   : EAGER_MEMORY speculate memory loads (using dismissible).
+ * SEE ALSO common/com/config.cxx
  *
  * ====================================================================
  * ====================================================================
@@ -1078,6 +1086,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   // find the instruction that set the condition.
   VARIANT variant = CGTARG_Analyze_Compare(br_op, &cond_tn, &tn2, &cmp);
 
+  BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
+
   FOR_ALL_BB_PHI_OPs(tail, phi) {
     UINT8 i;
     TN *select_tn;
@@ -1140,11 +1150,26 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       UINT8 j = 0;
       UINT8 nopnds = OP_opnds(phi)-1;
       TN *opnd[nopnds];
-      for (i = 0; i < OP_opnds(phi); i++) {
-        if (i != taken_pos && i != nottaken_pos)
-          opnd[j++] = OP_opnd(phi, i);
+
+      // new args goes last if we know that a new edge will be inserted.
+      // else, replace old phi tn with newly create select tn.
+      if (edge_needed) {
+        for (i = 0; i < OP_opnds(phi); i++) {
+          if (i != taken_pos && i != nottaken_pos)
+            opnd[j++] = OP_opnd(phi, i);
+        }
+        opnd[j] = select_tn;
       }
-      opnd[j] = select_tn;
+      else {
+        for (i = 0; i < OP_opnds(phi); i++) {
+          if (i != taken_pos && i != nottaken_pos)
+            opnd[j++] = OP_opnd(phi, i);
+          else  if (i == nottaken_pos && fall_thru_bb == tail)
+            opnd[j++] = select_tn;
+          else  if (i == taken_pos && target_bb == tail)
+            opnd[j++] = select_tn;
+        }
+      }
 
       result[0] = OP_result(phi, 0);
 
@@ -1162,9 +1187,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Remove_Op(head, br_op);
 
   br_op = NULL;
-
-  // if 2 sides are removed, we'll need a new edge.
-  BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
 
   // promote the instructions from the sides bblocks.
   // Promote_BB will remove the old empty bblock
@@ -1204,10 +1226,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Fix_Spec_Stores (head, cond_tn, variant);
 
   // create a new edge.
-  if (!edge_needed)
-    Unlink_Pred_Succ (head, tail);
-
-  Link_Pred_Succ_with_Prob(head, tail, 1.0);
+  if (edge_needed)
+    Link_Pred_Succ_with_Prob(head, tail, 1.0);
 
   //  fprintf (TFile, "simple fall through BB%d BB%d done\n", BB_id(head), BB_id(tail));
   //  Print_All_BBs();
@@ -1224,27 +1244,27 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       br_op = NULL;
   }
 
-  // If the 2 blocks can be merged, only for those that would be interesting
-  // candidates for eventual nested hammocks.
+  // Simplify CFG and maintain SSA information.
   if (Can_Merge_BB (head, tail, br_op)) {
     BB_Merge(head, tail);
     BBLIST *succ;
     
-    FOR_ALL_BB_SUCCS(head, succ) {
-      BB *bb = BBLIST_item(succ);
-      OP *op;
-      
-      FOR_ALL_BB_PHI_OPs(bb,op) {
-        // make phi here instead of that...
-        Change_PHI_Predecessor (op, tail, head);
-      }
+    BB_Update_Phis(head);
+
+    FOR_ALL_BB_PHI_OPs(head, phi) {
+      Change_PHI_Predecessor (phi, tail, head);
     }
 
-    tail = head;
+    FOR_ALL_BB_SUCCS(head, succ) {
+      BB *bb = BBLIST_item(succ);
+      
+      FOR_ALL_BB_PHI_OPs(bb ,phi) {
+        Change_PHI_Predecessor (phi, tail, head);
+      }
+    }
   }
-  
-  // Insert new phis and update ssa information.
-  BB_Update_Phis(tail);
+  else
+    BB_Update_Phis(tail);
 }
 
 /* ================================================================
@@ -1342,7 +1362,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Initialize_Hammock_Memory();
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
       Finalize_Hammock_Memory();
-
+      
       if (Trace_Select_Gen) {
         fprintf (TFile, "---------- AFTER SELECT FOLD -------------\n");
         Print_All_BBs();
@@ -1352,6 +1372,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
+  // temporary. we could update liveness on the fly
   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
