@@ -1122,6 +1122,9 @@ Configure_CG_Options(void)
   }
 #endif
 
+#ifdef TARG_ST
+  if (!Kernel_Code && !CG_tail_call_overridden && CG_opt_level >= 2) CG_tail_call = TRUE;
+#endif
   if (Kernel_Code && !CG_tail_call_overridden) CG_tail_call = FALSE;
 
   if (Kernel_Code && !GCM_Speculative_Ptr_Deref_Set)
