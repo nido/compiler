@@ -907,6 +907,18 @@ SSA_Rename_BB (
   }
 #endif
 
+  // We also need to rename LOOPINFO_trip_count_tn
+  {
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
+    if (annot) {
+      LOOPINFO *info = ANNOT_loopinfo(annot);
+      TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+      if ((trip_count_tn != NULL) && TN_is_register(trip_count_tn)) {
+	LOOPINFO_trip_count_tn(info) = tn_stack_top(trip_count_tn);
+      }
+    }
+  }
+
   FOR_ALL_BB_OPs_FWD(bb, op) {
 
     //
@@ -2512,6 +2524,19 @@ SSA_Remove_Phi_Nodes (
     if (Trace_phi_removal) {
       fprintf(TFile, "============ remove_phi_nodes BB%d ===========\n",
 	      BB_id(bb));
+    }
+
+    // We also need to update LOOPINFO_trip_count_tn
+    {
+      ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
+      if (annot) {
+	LOOPINFO *info = ANNOT_loopinfo(annot);
+	TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+	if ((trip_count_tn != NULL) && TN_is_register(trip_count_tn)) {
+	  if (TN_new_name(trip_count_tn) != NULL)
+	    LOOPINFO_trip_count_tn(info) = TN_new_name(trip_count_tn);
+	}
+      }
     }
 
     // We can't use the macro because we're deleting OPs
