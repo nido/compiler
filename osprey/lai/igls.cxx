@@ -207,7 +207,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
 #if defined(TARG_ST) && defined(LAO_ENABLED)
 	// Call the LAO for all the hyperblocks.
-	LAO_optimize(*hbi, LAO_TraceSchedule);
+	lao_optimize(*hbi, LAO_TraceSchedule);
 #else
 	if (!Sched) {
 	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
@@ -308,7 +308,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
 #if defined(TARG_ST) && defined(LAO_ENABLED)
 	// Call the LAO for all the hyperblocks.
-	LAO_optimize(*hbi, LAO_TraceSchedule + LAO_PostPass);
+	lao_optimize(*hbi, LAO_TraceSchedule + LAO_PostPass);
 #else
 	if (!Sched) {
 	  Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);

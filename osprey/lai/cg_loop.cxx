@@ -5291,7 +5291,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll ***");
-	if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
+	if (lao_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5354,7 +5354,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnroll ***");
-	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5416,7 +5416,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind ***");
-	if (LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
+	if (lao_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5444,7 +5444,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnwind ***");
-	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
+	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5471,7 +5471,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (CG_enable_LAO) {
 	if (trace_loop_opt) 
 	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnroll ***");
-	if (LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
+	if (lao_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll)) {
 	  cg_loop.Recompute_Liveness();
 	}
       }
@@ -5489,7 +5489,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       CG_LOOP cg_loop(loop);
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
-      if (LAO_optimize(&cg_loop, LAO_LoopSchedule)) {
+      if (lao_optimize(&cg_loop, LAO_LoopSchedule)) {
 	cg_loop.Recompute_Liveness();
       }
       break;
