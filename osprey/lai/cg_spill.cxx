@@ -1271,6 +1271,13 @@ CGSPILL_Insert_Ops_After (BB *bb, OP *point, OPS *ops)
 #if Is_True_On
   /* Assert that if BB_exit(bb), then point is not after SP adjust. */
   if (BB_exit(bb)) {
+#ifdef TARG_ST
+    // FdF 20041206: Basic blocks marked EXIT&CALL (tail call or
+    // noreturn call) may not have an spadjust.
+    if (BB_exit_sp_adj_op(bb) == NULL)
+      FmtAssert (BB_call(bb), ("Exit BB with no sp_adj_op"));
+    else
+#endif
     FmtAssert (OP_Follows(BB_exit_sp_adj_op(bb), point),
 	       ("cannot insert spill ops after SP adjust"));
   }
