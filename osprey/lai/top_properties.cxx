@@ -15,7 +15,7 @@ typedef UINT64 uintm_t;
  * Definition of the open64 interface.
  */
 typedef TOP opc_t;
-typedef TN *opnd_t;
+typedef const TN *opnd_t;
 
 #define TN_Value(tn) ((tn == Zero_TN) ? 0 : TN_value(tn))
 static intm_t opnd_value(opnd_t opnd) { return TN_Value(opnd); }
@@ -51,7 +51,7 @@ static intm_t sext(intm_t value, int bits) {
 }
 
 /* Operand fetch. */
-static intm_t fetch(opc_t opc, opnd_t *opnds, int opnd) {
+static intm_t fetch(opc_t opc, const opnd_t *opnds, int opnd) {
   intm_t value = opnd_value(opnds[opnd]);
   if (opc_opnd_signed(opc, opnd))
     value = sext(value, opc_opnd_bits(opc, opnd));
@@ -63,12 +63,12 @@ static intm_t fetch(opc_t opc, opnd_t *opnds, int opnd) {
 /*
  * Fetching an operand.
  */
-intm_t TOP_fetch_opnd(TOP opc, TN **opnds, int opnd) { return fetch(opc, opnds, opnd); }
+intm_t TOP_fetch_opnd(TOP opc, const TN * const opnds[], int opnd) { return fetch(opc, opnds, opnd); }
 
 /*
  * Constant folding of opcode properties.
  */
-intm_t TOP_fold_iadd(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_iadd(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -78,7 +78,7 @@ intm_t TOP_fold_iadd(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_isub(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_isub(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -88,7 +88,7 @@ intm_t TOP_fold_isub(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_imul(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_imul(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -98,7 +98,7 @@ intm_t TOP_fold_imul(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_not(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_not(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   intm_t op1 = fetch(opc, opnds, opnd1);
@@ -106,7 +106,7 @@ intm_t TOP_fold_not(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_and(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_and(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -116,7 +116,7 @@ intm_t TOP_fold_and(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_or(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_or(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -126,7 +126,7 @@ intm_t TOP_fold_or(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_xor(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_xor(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -136,7 +136,7 @@ intm_t TOP_fold_xor(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_shl(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_shl(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -149,7 +149,7 @@ intm_t TOP_fold_shl(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_shr(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_shr(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -162,7 +162,7 @@ intm_t TOP_fold_shr(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_shru(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_shru(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -175,7 +175,7 @@ intm_t TOP_fold_shru(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_move(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_move(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   result = fetch(opc, opnds, opnd1);
@@ -183,21 +183,21 @@ intm_t TOP_fold_move(opc_t opc, opnd_t *opnds) {
 }
 
 
-intm_t TOP_fold_zext(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_zext(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   result = fetch(opc, opnds, opnd1);
   return result;
 }
 
-intm_t TOP_fold_sext(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_sext(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   result = fetch(opc, opnds, opnd1);
   return result;
 }
 
-intm_t TOP_fold_select(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_select(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int condition = opc_ou_opnd_idx(opc, OU_condition);
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
@@ -214,7 +214,7 @@ intm_t TOP_fold_select(opc_t opc, opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_icmp(opc_t opc, opnd_t *opnds) {
+intm_t TOP_fold_icmp(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
@@ -345,6 +345,8 @@ static int check_st200_opcodes(void)
 /*
  * Constraints on properties.
  */
+#define fail FmtAssert(0, ("TOP %s as inconsistent properties", TOP_Name((TOP)opc)))
+
 int TOP_check_properties(opc_t opc)
 {
   int ok = 1;
@@ -352,9 +354,9 @@ int TOP_check_properties(opc_t opc)
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
 
   /* Check that host sign extends. */
-  if ((intm_t)-1 >> 1 != -1) return 0;
+  if ((intm_t)-1 >> 1 != -1) fail;
   /* Check that host is 2 complement. */
-  if ((intm_t)-1 != ~(uintm_t)1 + 1) return 0;
+  if ((intm_t)-1 != ~(uintm_t)1 + 1) fail;
 
   if (opc_is(opc, add) ||
       opc_is(opc, sub) ||
@@ -363,55 +365,55 @@ int TOP_check_properties(opc_t opc)
       opc_is(opc, xor) ||
       opc_is(opc, select) ||
       opc_is(opc, cmp)) {
-    if (opnd1 < 0 || opnd2 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) != opc_opnd_bits(opc,opnd2)) return 0;
-    if (opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) return 0;
-    if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
+    if (opnd1 < 0 || opnd2 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) != opc_opnd_bits(opc,opnd2)) fail;
+    if (opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) fail;
+    if (opc_opnd_bits(opc,opnd1) <= 0) fail;
   }
   if (opc_is(opc, mul)) {
-    if (opnd1 < 0 || opnd2 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
-    if (opc_opnd_bits(opc,opnd2) <= 0) return 0;
+    if (opnd1 < 0 || opnd2 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) <= 0) fail;
+    if (opc_opnd_bits(opc,opnd2) <= 0) fail;
   }
   //if (opc_is(opc, not)) {
-  //if (opnd1 < 0) return 0;
-  //if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
+  //if (opnd1 < 0) fail;
+  //if (opc_opnd_bits(opc,opnd1) <= 0) fail;
   //}
   if (opc_is(opc, move)) {
-    if (opnd1 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
+    if (opnd1 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) <= 0) fail;
   }
   if (opc_is(opc, sext)) {
-    if (opnd1 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
-    if (!opc_opnd_signed(opc,opnd1)) return 0;
+    if (opnd1 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) <= 0) fail;
+    if (!opc_opnd_signed(opc,opnd1)) fail;
   }
   if (opc_is(opc, zext)) {
-    if (opnd1 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) <= 0) return 0;
-    if (opc_opnd_signed(opc,opnd1)) return 0;
+    if (opnd1 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) <= 0) fail;
+    if (opc_opnd_signed(opc,opnd1)) fail;
   }
   if (opc_is(opc, select)) {
     int condition = opc_ou_opnd_idx(opc, OU_condition);
-    if (condition < 0) return 0;
-    if (opnd1 < 0 || opnd2 < 0) return 0;
-    if (opc_opnd_bits(opc,opnd1) != opc_opnd_bits(opc,opnd2)) return 0;
-    if (opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) return 0;
+    if (condition < 0) fail;
+    if (opnd1 < 0 || opnd2 < 0) fail;
+    if (opc_opnd_bits(opc,opnd1) != opc_opnd_bits(opc,opnd2)) fail;
+    if (opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) fail;
   }
   if (opc_is(opc, load)) {
     int base = opc_ou_opnd_idx(opc, OU_base);
     int offset = opc_ou_opnd_idx(opc, OU_offset);
-    if (base < 0 || offset < 0) return 0;
-    if (opc_opnd_bits(opc,base) != opc_opnd_bits(opc,offset)) return 0;
-    if (opc_opnd_signed(opc,base) != opc_opnd_signed(opc,offset)) return 0;
+    if (base < 0 || offset < 0) fail;
+    if (opc_opnd_bits(opc,base) != opc_opnd_bits(opc,offset)) fail;
+    if (opc_opnd_signed(opc,base) != opc_opnd_signed(opc,offset)) fail;
   }
   if (opc_is(opc, store)) {
     int base = opc_ou_opnd_idx(opc, OU_base);
     int offset = opc_ou_opnd_idx(opc, OU_offset);
     int storeval = opc_ou_opnd_idx(opc, OU_storeval);
-    if (base < 0 || offset < 0 || storeval < 0) return 0;
-    if (opc_opnd_bits(opc,base) != opc_opnd_bits(opc,offset)) return 0;
-    if (opc_opnd_signed(opc,base) != opc_opnd_signed(opc,offset)) return 0;
+    if (base < 0 || offset < 0 || storeval < 0) fail;
+    if (opc_opnd_bits(opc,base) != opc_opnd_bits(opc,offset)) fail;
+    if (opc_opnd_signed(opc,base) != opc_opnd_signed(opc,offset)) fail;
   }
 
 #ifdef TARG_ST200
