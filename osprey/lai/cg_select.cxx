@@ -958,7 +958,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   FOR_ALL_BBLIST_ITEMS(succs,item){
     bb = BBLIST_item(item);
-    BB_SET_Union1D(succ_set, bb, &MEM_Select_pool);
+    succ_set = BB_SET_Union1(succ_set, bb, &MEM_Select_pool);
   }
 
   BB_Remove_Branch(bb1);
