@@ -2510,6 +2510,22 @@ EBO_Constant_Operand0 (
     }
   }
 
+
+  // [HK] replace integer mul by 0 with 0
+  if (TN_is_zero(tn0) && OP_imul(op)) {
+      TN *tnc = Gen_Literal_TN(0, TN_size(tnr));
+      Expand_Immediate (tnr, tnc, 0, &ops);
+      goto OPS_Created;
+  }
+
+  
+  // [HK] replace integer mul by 1 with tn1
+  if ((const_val == 1) && OP_imul(op)) 
+      if (TN_is_register(tn1)) {
+	  Exp_COPY(tnr, tn1, &ops);
+	  goto OPS_Created;
+      }
+
 #endif
 
 
@@ -3347,6 +3363,22 @@ EBO_Constant_Operand1 (
     Expand_Immediate (tnr, tnc, 0, &ops);
     goto OPS_Created;
   }
+
+  // [HK] replace integer mul by 0 with 0
+  if (TN_is_zero(tn1) && OP_imul(op)) {
+      TN *tnc = Gen_Literal_TN(0, TN_size(tnr));
+      Expand_Immediate (tnr, tnc, 0, &ops);
+      goto OPS_Created;
+  }
+
+  
+  // [HK] replace integer mul by 1 with tn0
+  if ((const_val == 1) && OP_imul(op)) 
+      if (TN_is_register(tn0)) {
+	  Exp_COPY(tnr, tn0, &ops);
+	  goto OPS_Created;
+      }
+      
 #endif
 
 #if 0
