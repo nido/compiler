@@ -210,7 +210,8 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_TYPE_OBJECT	"@object"
 #define AS_WEAK		".weak"
 
-#define AS_IDENT	"## ident" /* Make this ASM_CMNT_START if no ident */
+#define AS_IDENT	".ident"
+#define AS_COMMENT	".comment"
 
 /* The directive for emitting an address depends on the target pointer
  * size.  The following is defined and initialized in config_targ.c:
