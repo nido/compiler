@@ -282,12 +282,6 @@ BOOL  HB_skip_hammocks = TRUE;	// until bugs fixed
 BOOL  HB_simple_ifc = TRUE;
 BOOL  HB_simple_ifc_set = FALSE;
 INT   HB_min_blocks = 2;
-#ifdef TARG_ST200
-// During HB formation, a hazard prevents the whole region to be selected
-// (and predicated). for us, a hazard will just prevent a path to be
-// selected, but the region should stay valid.
-BOOL  HB_force_hyperblocks;
-#endif
 
 BOOL EMIT_pjump_all = TRUE;
 BOOL EMIT_use_cold_section = TRUE;

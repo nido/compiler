@@ -36,5 +36,8 @@
 #include "defs.h"
 #include "cg_flags.h"
 
+BOOL HB_force_hyperblocks = TRUE;
 BOOL HB_loops_with_exits = FALSE;
 BOOL HB_complex_non_loop = TRUE;
+
+

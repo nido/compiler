@@ -1126,9 +1126,7 @@ Configure_CG_Options(void)
   // Do not force if-conversion for loops, see CG_LOOP_Optimize()
   CG_LOOP_force_ifc = 0;
 
- HB_force_hyperblocks = TRUE;
- HB_skip_hammocks = FALSE;
- HB_complex_non_loop = TRUE;
+  HB_skip_hammocks = FALSE;
 #endif
 
 #ifdef TARG_ST100
