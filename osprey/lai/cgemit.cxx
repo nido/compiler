@@ -2157,14 +2157,14 @@ Process_Initos_And_Literals (
 #ifdef AS_INTERNAL
 	if (ST_export(st) == EXPORT_LOCAL_INTERNAL) {
 	  fprintf (Output_File, "\t%s\t", AS_INTERNAL);
-	  EMT_Write_Qualified_Name(Output_File, st);
+	  EMT_Write_Qualified_Tcon_Name(Output_File, st);
 	  fprintf(Output_File, "\n");
 	} else
 #endif
 #ifdef AS_HIDDEN
 	  {
 	    fprintf (Output_File, "\t%s\t", AS_HIDDEN);
-	    EMT_Write_Qualified_Name(Output_File, st);
+	    EMT_Write_Qualified_Tcon_Name(Output_File, st);
 	    fprintf(Output_File, "\n");
 	  }
 #endif
