@@ -782,21 +782,19 @@ Exp_Extract_Bits (
   TOP extr_op;
   TN *tmp;
 
+  FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
+	    ("can't handle"));
+
   // for LX as LITTLE_ENDIAN:
-  if (MTYPE_is_class_integer(rtype)) {
-    // The sequence is shift left 32-bit_size; 
-    //                 shift right (bit_offset+bit_size):
-    tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-    Build_OP(TOP_shl_i, tmp, src_tn, 
-      Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset-bit_size, 4), ops);
-    extr_op = MTYPE_signed(rtype) ? TOP_shr_i : TOP_shru_i;
-    Build_OP(extr_op, tgt_tn, tmp, 
-                  Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size,4), ops);
-  }
-  else {
-    FmtAssert(FALSE, 
-           ("Exp_Extract_Bits: unhandled rtype %s", Mtype_Name(rtype)));
-  }
+
+  // The sequence is shift left 32-bit_size; 
+  //                 shift right (bit_offset+bit_size):
+  tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+  Build_OP(TOP_shl_i, tmp, src_tn, 
+      Gen_Literal_TN(32-bit_offset-bit_size, 4), ops);
+  extr_op = MTYPE_signed(desc) ? TOP_shr_i : TOP_shru_i;
+  Build_OP(extr_op, tgt_tn, tmp, 
+                  Gen_Literal_TN(32-bit_size,4), ops);
 
   return;
 }
@@ -840,7 +838,7 @@ Exp_Deposit_Bits (
   TN *mask = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   Build_OP(TOP_mov_i, mask, Gen_Literal_TN(-1, 4), ops);
   Build_OP(TOP_shru_i, mask, mask, 
-                  Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size,4), ops);
+                                 Gen_Literal_TN(32-bit_size,4), ops);
   Build_OP(TOP_shl_i, mask, mask, Gen_Literal_TN(bit_offset,4), ops);
 
   TN *val = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
@@ -853,45 +851,6 @@ Exp_Deposit_Bits (
   Build_OP(TOP_xor_r, tmp1, tmp1, src1, ops);
 
   Build_OP(TOP_or_r, tgt_tn, tmp1, val, ops);
-
-
-
-#if 0
-  //    tmp2 = 0..0src10..0     
-  //    tmp5 = 0..0src2[bit_pos..bit_pos+bit_size]0..0
-  //    tmp7 = src1[bit_pos+bit_size..32]0..0
-  //    tmp8 = tmp2 | tmp5
-  //    tgt_tn = tmp7 | tmp8
-
-
-
-  TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  TN *tmp2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_shl_i, tmp1, src1, 
-	         Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset, 4), ops);
-  Build_OP(TOP_shru_i, tmp2, tmp1, 
-                  Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset,4), ops);
-
-  TN *tmp3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  TN *tmp4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  TN *tmp5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_shru_i, tmp3, src2, Gen_Literal_TN(bit_offset,4), ops);
-  Build_OP(TOP_shl_i, tmp4, tmp3, 
-	       Gen_Literal_TN(MTYPE_bit_size(desc)-bit_size, 4), ops);
-  Build_OP(TOP_shru_i, tmp5, tmp4, 
-     Gen_Literal_TN(MTYPE_bit_size(desc)-bit_offset-bit_size,4), ops);
-
-  TN *tmp6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  TN *tmp7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_shru_i, tmp6, src1, 
-                          Gen_Literal_TN(bit_offset+bit_size,4), ops);
-  Build_OP(TOP_shl_i, tmp7, tmp6, 
-                          Gen_Literal_TN(bit_offset+bit_size,4), ops);
-
-  TN *tmp8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_or_r, tmp8, tmp2, tmp5, ops);
-  Build_OP(TOP_or_r, tgt_tn, tmp7, tmp8, ops);
-#endif
 
   return;
 }
