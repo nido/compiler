@@ -2822,9 +2822,27 @@ Exp_Intrinsic_Call (
 	    result = out[0] = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 	    /* We fall back to the usual intrinsic generation */
 	    Exp_Intrinsic_Op(id, 1, 2, out, in, ops) ;
-	    FmtAssert(result,("Exp_Intrinsic_Call : Invalid expansion."));
+	    FmtAssert(result,("Exp_Intrinsic_Call (INTRN_ST220PFT|INTRN_ST220PRGADD|ST220PRGSET): Invalid expansion."));
 	}
 	break;
+    case INTRN_ST220PRGINS:
+    case INTRN_ST220SYNC:
+    case INTRN_ST220SYNCINS:
+	{
+	    /* For these, no input nor output*/
+	    /* We fall back to the usual intrinsic generation */
+	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops) ;
+	}
+	break ;
+    case INTRN_ST220SYSCALL:
+	{
+	    /* This one has one input, hopefully constant and no output*/
+	    TN *in[1] ;
+	    in[0] = op0 ;
+	    /* We fall back to the usual intrinsic generation */
+	    Exp_Intrinsic_Op(id, 0, 1, NULL, in, ops) ;
+	}
+	break ;
     default:
 	FmtAssert(FALSE,("Exp_Intrinsic_Call : Not Implemented."));
     }
