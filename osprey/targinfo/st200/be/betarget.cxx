@@ -72,6 +72,25 @@ BOOL Targ_Lower_Float_To_Unsigned = FALSE;
 BOOL Targ_Lower_Unsigned_To_Float = FALSE;
 
 /* ============================================================
+ *
+ * BOOL mem_offset_must_be_split(WN_OFFSET offset)
+ * WN_OFFSET mem_offset_hi(WN_OFFSET offset)
+ * WN_OFFSET mem_offset_lo(WN_OFFSET offset)
+ *
+ * Returns TRUE iff <offset> must be split for a target-machine memory
+ * reference.  If so, mem_offset_hi(offset) returns the high part of
+ * the split offset, and mem_offset_lo(offset) returns the low part of
+ * the split offset.
+ * 
+ * ============================================================
+ */
+BOOL 
+mem_offset_must_be_split (INT64 offset)
+{
+  return FALSE;
+}
+
+/* ============================================================
  *    OPCODE_To_TOP (opcode)
  *
  *    only return machine_ops, TOP_UNDEFINED if not an exact 
@@ -498,8 +517,46 @@ BOOL Can_Be_Immediate(OPERATOR opr,
     // means in preparation for a call, or return value, so just 
     // let us generate the stid/load-immediate in place if it fits
     return ST_class(stid_st) == CLASS_PREG;
+
+ case OPR_LDA:
+   // 
+   // Arthur: risking that this will perturb WOPT
+   //
+   if (INT32_MIN <= val && val <= INT32_MAX) return TRUE;
+
+  } /* switch */
+
+  return FALSE;
+}
+
+/* ====================================================================
+ *   Target_Has_Immediate_Operand (parent, expr)
+ * ====================================================================
+ */
+BOOL
+Target_Has_Immediate_Operand (
+  WN *parent,
+  WN *expr
+)
+{
+  if (WN_operator(parent) == OPR_INTRINSIC_CALL
+	&& (((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I4)
+	 || ((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I8))) {
+    // can optimize for some constants
+    return TRUE;
   }
 
+  // adds and subs can handle immediates as second operand:
+  if (WN_operator(parent) == OPR_ADD) {
+    return TRUE;
+  }
+
+  if (WN_operator(parent) == OPR_SUB) {
+    if (WN_kid1(parent) == expr)
+      return TRUE;
+  }
+
+  // default to false, which really means "don't know"
   return FALSE;
 }
 

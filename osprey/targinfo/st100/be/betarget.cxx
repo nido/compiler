@@ -501,6 +501,37 @@ BOOL Can_Be_Immediate(OPERATOR opr,
   return FALSE;
 }
 
+/* ====================================================================
+ *   Target_Has_Immediate_Operand (parent, expr)
+ * ====================================================================
+ */
+BOOL
+Target_Has_Immediate_Operand (
+  WN *parent, 
+  WN *expr
+)
+{
+  if (WN_operator(parent) == OPR_INTRINSIC_CALL
+	&& (((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I4)
+	 || ((INTRINSIC) WN_intrinsic (parent) == INTRN_FETCH_AND_ADD_I8))) {
+    // can optimize for some constants
+    return TRUE;
+  }
+
+  // adds and subs can handle immediates as second operand:
+  if (WN_operator(parent) == OPR_ADD) {
+    return TRUE;
+  }
+
+  if (WN_operator(parent) == OPR_SUB) {
+    if (WN_kid1(parent) == expr) 
+      return TRUE;
+  }
+
+  // default to false, which really means "don't know"
+  return FALSE;
+}
+
 #if 0
 /* ===============================================================
  *   TOP_Can_Be_Speculative (opcode)
