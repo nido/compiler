@@ -229,6 +229,8 @@ Isa_Name ( TARGET_ISA b)
 
   switch ( b ) {
     case TARGET_ISA_ST220: return "ST220";
+    case TARGET_ISA_ST230: return "ST230";
+    case TARGET_ISA_ST231: return "ST231";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -304,6 +306,14 @@ Prepare_Target ( void )
       isa = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
     }
+    if ( strcasecmp ( ISA_Name, "ST230" ) == 0 ) {
+      isa = TARGET_ISA_ST230;
+      targ_default = TARGET_st230;
+    }
+    if ( strcasecmp ( ISA_Name, "ST231" ) == 0 ) {
+      isa = TARGET_ISA_ST231;
+      targ_default = TARGET_st231;
+    }
     else {
       ErrMsg ( EC_Inv_TARG, "isa", ISA_Name );
     }
@@ -359,9 +369,13 @@ Prepare_Target ( void )
   switch ( Target ) {
     case TARGET_st220:
     case TARGET_st221:
-    case TARGET_st230:
-    case TARGET_st231:
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST220;
+      break;
+    case TARGET_st230:
+      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST230;
+      break;
+    case TARGET_st231:
+      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST231;
       break;
     case TARGET_UNDEF:
       Target = targ_default;

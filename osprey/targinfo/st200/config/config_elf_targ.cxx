@@ -193,7 +193,9 @@ Config_ELF_From_Target (
 #else
   // [CL] setup ELF flags according to user options
 
-  if (isa != (INT)TARGET_ISA_ST220) {
+  if (isa != (INT)TARGET_ISA_ST220
+      && isa != (INT)TARGET_ISA_ST230
+      && isa != (INT)TARGET_ISA_ST231) {
       ErrMsg ( EC_Inv_TARG, "isa", Isa_Name((enum TARGET_ISA)isa) );
   }
 

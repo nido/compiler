@@ -44,6 +44,8 @@ main ()
 {
   PROC_Create ( "st200",
 	"st220",
+	"st230",
+	"st231",
 	NULL
   );
 }

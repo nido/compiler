@@ -97,6 +97,8 @@ main()
   superscalar = PROC_Property_Create ("is_superscalar");
   Processor_Group (superscalar,
 			PROCESSOR_st220,
+		        PROCESSOR_st230,
+		        PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   ia64_predication = PROC_Property_Create ("is_ia64_predication");
@@ -106,6 +108,8 @@ main()
   select = PROC_Property_Create ("is_select");
   Processor_Group (select,
 			PROCESSOR_st220,
+			PROCESSOR_st230,
+			PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   predicate_branches = PROC_Property_Create ("has_predicate_branches");
@@ -128,16 +132,22 @@ main()
   bundles = PROC_Property_Create ("has_bundles");
   Processor_Group (bundles,
 			PROCESSOR_st220,
+			PROCESSOR_st230,
+			PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   prefetch = PROC_Property_Create ("has_prefetch");
   Processor_Group (prefetch,
 			PROCESSOR_st220,
+			PROCESSOR_st230,
+			PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
   Processor_Group (enable_prefetch,
 		        PROCESSOR_st220,
+		        PROCESSOR_st230,
+		        PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");
@@ -159,6 +169,8 @@ main()
   delayed_exception = PROC_Property_Create ("has_delayed_exception");
   Processor_Group (delayed_exception,
 			PROCESSOR_st220,
+			PROCESSOR_st230,
+			PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   /* Does the target have a fast recip instruction? 
