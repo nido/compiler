@@ -164,7 +164,7 @@ static OPTION_DESC Options_CG_SWP[] = {
 
   /* General software pipelining options */
 
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "on", NULL,
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "", NULL,
     0, 0, 0,	&Enable_SWP, &Enable_SWP_overridden },
 
   { OVK_INT32,	OV_INTERNAL,	TRUE, "sched_direction", "sched_dir",
@@ -919,16 +919,23 @@ Configure_CG_Options(void)
   if (!CG_localize_tns_Set)
     CG_localize_tns = (CG_opt_level <= 1);
 
+#ifdef TARG_ST
+  if (!Enable_SWP_overridden)
+  {
+    Enable_SWP = FALSE;
+  }
+  else {
+    Enable_SWP = CG_opt_level >= 2;
+  }
+#else
   if (!Enable_SWP_overridden)
   {
     Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
 #ifdef TARG_IA64
     Enable_SWP = CG_opt_level >= 2;
-#else
-    // Arthur: at -O2, SWP may be enabled under an explicit option
-    Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
 #endif
   }
+#endif
 
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
