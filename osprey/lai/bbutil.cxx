@@ -117,6 +117,9 @@ static BB_MAP bb_st_map;	/* map BBs to their STs */
 static INT32 bb_st_count = 0;	/* number of BB STs created
 				 * (per compilation, not just PU)
 				 */
+#ifdef SPLIT_BCO_ENABLED
+static BB_NUM Cur_PU_split_index = 0;
+#endif
 
 /* ====================================================================
  *
@@ -135,6 +138,9 @@ BB_PU_Initialize(void)
   Entry_BB_Head = NULL;
   Exit_BB_Head = NULL;
   bb_st_map = 0;
+#ifdef SPLIT_BCO_ENABLED
+  Cur_PU_split_index = 0;
+#endif
 }
 
 /* ====================================================================
@@ -1512,6 +1518,68 @@ Gen_Label_For_BB(BB *bb)
 
 #undef EXTRA_NAME_LEN
 }
+
+
+#ifdef SPLIT_BCO_ENABLED
+/* ====================================================================
+ *
+ * Gen_Split_Label_For_BB
+ *
+ * Create a split label entry in the symbol table for the given BB,
+ * attach it to the BB, and return it. Increment Cur_PU_split_index
+ *
+ * ====================================================================
+ */
+
+LABEL_IDX
+Gen_Split_Label_For_BB(BB *bb)
+{
+  char *buf;
+  LABEL_IDX lab;
+  LABEL *label;
+#define  EXTRA_NAME_LEN  32
+
+  FmtAssert (BB_id(bb) != 0, ("Gen_Split_Label_For_BB: BB_id not set for BB"));
+
+  Cur_PU_split_index++;
+  /* Name this label: */
+  buf = (char *)alloca(strlen(Cur_PU_Name) + EXTRA_NAME_LEN);
+  sprintf(buf, BB_Split_Label_Format, Cur_PU_Name, Cur_PU_split_index);
+
+  label = &New_LABEL(CURRENT_SYMTAB, lab);
+  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+
+  Set_Label_BB (lab, bb);
+  BB_Add_Annotation (bb, ANNOT_LABEL, (void *)lab);
+  return lab;
+
+#undef EXTRA_NAME_LEN
+}
+
+/* ====================================================================
+ *
+ * Gen_Split_Label_For_BB
+ *
+ * Create a split label entry in the symbol table for the given BB,
+ * attach it to the BB, and return it. Increment Cur_PU_split_index
+ *
+ * ====================================================================
+ */
+
+void
+Gen_EndSplit_Label(FILE *file)
+{
+  if (Cur_PU_split_index != 0) {
+    fprintf(file, BB_EndSplit_Label_Format, Cur_PU_Name, Cur_PU_split_index);
+    fprintf(file, ":\n");
+  }
+}
+
+
+
+#endif
+
+
 
 
 /* =======================================================================

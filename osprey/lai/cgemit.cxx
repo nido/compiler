@@ -5143,6 +5143,10 @@ EMT_Emit_PU (
     Setup_Text_Section_For_BB(bb);
     EMT_Assemble_BB (bb, rwn);
   }
+#ifdef SPLIT_BCO_ENABLED /* Thierry */
+  Gen_EndSplit_Label(Asm_File);  
+#endif /* BCO_Enabled Thierry */
+
 
   /* Revert back to the text section to end the PU. */
   Setup_Text_Section_For_BB(REGION_First_BB);

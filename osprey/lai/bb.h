@@ -939,6 +939,10 @@ extern void Negate_Logif_BB(BB *bb);
 extern void Add_Goto(BB *bb, BB *target_bb);
 extern BB* Create_Dummy_BB( BB *dest_bb );
 extern LABEL_IDX Gen_Label_For_BB (BB *bb);
+#ifdef SPLIT_BCO_ENABLED
+extern LABEL_IDX Gen_Split_Label_For_BB (BB *bb);
+extern void Gen_EndSplit_Label(FILE *file);
+#endif
 CG_EXPORTED extern BOOL Is_Label_For_BB(LABEL_IDX label, BB *bb);
 extern BOOL Change_Switchtable_Entries(ST *tbl, BB *old_tgt, BB *new_tgt);
 extern void Change_Succ(BB *pred, BB *old_succ, BB *new_succ);

@@ -5332,6 +5332,11 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
       if (ch) {
 	RID *cold_rid;
 	BB *cold_bb = ch->head;
+#ifdef SPLIT_BCO_ENABLED /* Thierry */
+	/* Emit a specific label for start of cold section (to
+	   significate a split point) */
+	Gen_Split_Label_For_BB(cold_bb);
+#endif /* Thierry */
 	NOTE_Add_To_BB(cold_bb, Emit_Cold_Threshold_Note, (NOTE_INFO *)NULL);
 	cold_rid = Create_Cold_Region(ch);
 	Patch_Hot_Cold_Jumps(ordered, chain_map, ch, cold_rid);

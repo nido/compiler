@@ -87,6 +87,19 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
  */
 #define BB_Label_Format		Local_Label_Prefix "_BB%d_%s"
 
+#ifdef SPLIT_BCO_ENABLED
+/* The following sprintf format is used to create a split label
+ * from the split point id and the PU name:
+ */
+#define BB_Split_Label_Format		"%s$%d$split"
+
+/* The following sprintf format is used to create a label to
+ * significate end if a splitable region from the split point id and
+ * the PU name:
+ */
+#define BB_EndSplit_Label_Format		"%s$%d$endsplit"
+#endif
+
 /* The following sprintf format is used to create a label
  * for a source line, used to emit debug info
  */
