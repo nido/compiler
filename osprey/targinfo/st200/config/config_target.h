@@ -185,10 +185,12 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 
 /* On ST200, the short rodata section is .srdata, the normal rodata section is
    .rodata.
-   .srdata can be accessed GP-relative but cannot be shared, whereas
+   In PIC ABI, .srdata can be accessed GP-relative but cannot be shared,
    .rodata cannot be accessed GP-relative but can be shared.
-   To take advantage of the faster access for .srdata, but the space-saving of
-   .rodata, only place small objects in .srdata.
+   So in PIC ABI, to take advantage of the faster access for .srdata, but the
+   space-saving of .rodata, we should only place small objects in .srdata.
+   For embedded ABI, there is no problem: we can put everything in .rodata
+   and access it GP-relative.
  */
 #define DEF_SRDATA_ELT_SIZE     ((INT32)8)
 
