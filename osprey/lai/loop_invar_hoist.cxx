@@ -2181,6 +2181,7 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 	    }
 
 	    if (!memory->Sunk()) {
+		Set_OP_opnd(mem_op, OP_find_opnd_use(mem_op, OU_storeval), memory->Get_Scalar());
 		Perform_Code_Motion(mem_op);
 		memory->Set_Sunk();
 	    }
