@@ -497,57 +497,6 @@ BOOL Can_Be_Immediate(OPERATOR opr,
   return FALSE;
 }
 
-#if 0
-/* ===============================================================
- *   TOP_Can_Be_Speculative (opcode)
- *
- *   determines if the TOP can be speculatively executed taking 
- *   into account eagerness level
- * ===============================================================
- */
-BOOL TOP_Can_Be_Speculative (TOP opcode)
-{
-  switch (Eager_Level) {
-  case EAGER_NONE:
-
-    /* not allowed to speculate anything
-     */
-    break;
-
-  case EAGER_SAFE:
-
-    /* Only exception-safe speculative ops are allowed
-     */
-    /*FALLTHROUGH*/
-
-  case EAGER_ARITH:
-
-    /* Arithmetic exceptions allowed
-     */
-    /*FALLTHROUGH*/
-
-  case EAGER_DIVIDE:
-
-    /* Divide by zero exceptions allowed 
-     */
-    /*FALLTHROUGH*/
-
-  case EAGER_MEMORY:
-
-    /* Memory exceptions allowed / All speculative ops allowed
-     */
-    if (TOP_is_unsafe(opcode)) break;
-    return TRUE;
-
-  default:
-    DevWarn("unhandled eagerness level: %d", Eager_Level);
-    break;
-  }
-
-   return FALSE;
-}
-#endif 
-
 /* ===============================================================
  *   OPCODE_To_INTRINSIC
  *
@@ -563,30 +512,224 @@ OPCODE_To_INTRINSIC (
   OPERATOR opr   = OPCODE_operator (opcode);
   TYPE_ID  rtype = OPCODE_rtype (opcode);
   TYPE_ID  desc  = OPCODE_desc  (opcode);
-  INTRINSIC id;
+  INTRINSIC id = INTRINSIC_INVALID;
 
-  if (opr == OPR_DIV) {
+  switch (opr) {
 
-    switch (rtype) {
-#if 0
-      case MTYPE_I4:
-      case MTYPE_I8:
-      case MTYPE_I5:
-	id = INTRN_DIVW;
-	break;
-
-      case MTYPE_U4:
-      case MTYPE_U8:
-      case MTYPE_U5:
-	id = INTRN_DIVUW;
-	break;
-#endif
+    case OPR_ADD:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_ADDL; break;
+      case MTYPE_U8: id = INTRN_ADDUL; break;
+      case MTYPE_F4: id = INTRN_ADDS; break;
+      case MTYPE_F8: id = INTRN_ADDD; break;
       default:
-	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown DIV opcode"));
-    }
-  }
-  else if (opr = OPR_REM) {
-    switch (rtype) {
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for ADD", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_SUB:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_SUBL; break;
+      case MTYPE_U8: id = INTRN_SUBUL; break;
+      case MTYPE_F4: id = INTRN_SUBS; break;
+      case MTYPE_F8: id = INTRN_SUBD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for SUB", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_NEG:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_NEGL; break;
+      case MTYPE_U8: id = INTRN_NEGUL; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for NEG", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_SHL:
+      switch (rtype) {
+      case MTYPE_I8: 
+      case MTYPE_U8: id = INTRN_SHLL; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for SHL", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_LSHR:
+      switch (rtype) {
+      case MTYPE_I8: 
+      case MTYPE_U8: id = INTRN_SHRUL; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for LSHR", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_ASHR:
+      switch (rtype) {
+      case MTYPE_I8: 
+      case MTYPE_U8: id = INTRN_SHRL; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for ASHR", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_DIV:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_DIVL; break;
+      case MTYPE_U8: id = INTRN_DIVUL; break;
+      case MTYPE_F4: id = INTRN_DIVS; break;
+      case MTYPE_F8: id = INTRN_DIVD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for DIV", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_MPY:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_MULL; break;
+      case MTYPE_U8: id = INTRN_MULUL; break;
+      case MTYPE_F4: id = INTRN_MULS; break;
+      case MTYPE_F8: id = INTRN_MULD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MPY", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_EQ:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_EQL; break;
+      case MTYPE_U8: id = INTRN_EQUL; break;
+      case MTYPE_F4: id = INTRN_EQS; break;
+      case MTYPE_F8: id = INTRN_EQD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for EQ", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_NE:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_NEL; break;
+      case MTYPE_U8: id = INTRN_NEUL; break;
+      case MTYPE_F4: id = INTRN_NES; break;
+      case MTYPE_F8: id = INTRN_NED; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for NE", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_LT:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_LTL; break;
+      case MTYPE_U8: id = INTRN_LTUL; break;
+      case MTYPE_F4: id = INTRN_LTS; break;
+      case MTYPE_F8: id = INTRN_LTD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for LT", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_LE:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_LEL; break;
+      case MTYPE_U8: id = INTRN_LEUL; break;
+      case MTYPE_F4: id = INTRN_LES; break;
+      case MTYPE_F8: id = INTRN_LED; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for LE", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_GT:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_GTL; break;
+      case MTYPE_U8: id = INTRN_GTUL; break;
+      case MTYPE_F4: id = INTRN_GTS; break;
+      case MTYPE_F8: id = INTRN_GTD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for GT", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_GE:
+      switch (desc) {
+      case MTYPE_I8: id = INTRN_GEL; break;
+      case MTYPE_U8: id = INTRN_GEUL; break;
+      case MTYPE_F4: id = INTRN_GES; break;
+      case MTYPE_F8: id = INTRN_GED; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for GE", 
+			 MTYPE_name(desc)));
+      }
+      break;
+
+    case OPR_CVT:
+      // to/from float:
+      if (rtype == MTYPE_F4) {
+	switch (desc) {
+	case MTYPE_I4: id = INTRN_WTOS; break;
+	case MTYPE_U4: id = INTRN_UWTOS; break;
+	case MTYPE_I8: id = INTRN_LTOS; break;
+	case MTYPE_U8: id = INTRN_ULTOS; break;
+	case MTYPE_F8: id = INTRN_DTOS; break;
+	default:
+	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: desc %s for F4CVT", 
+			 MTYPE_name(desc)));
+	}
+      }
+      else if (desc == MTYPE_F4) {
+	switch (rtype) {
+	case MTYPE_I4: id = INTRN_STOW; break;
+	case MTYPE_U4: id = INTRN_STOUW; break;
+	case MTYPE_I8: id = INTRN_STOL; break;
+	case MTYPE_U8: id = INTRN_STOUL; break;
+	case MTYPE_F8: id = INTRN_STOD; break;
+	default:
+	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: rtype %s for CVTF4", 
+			 MTYPE_name(desc)));
+	}
+      }
+      else if (rtype == MTYPE_F8) {
+	switch (desc) {
+	case MTYPE_I4: id = INTRN_WTOD; break;
+	case MTYPE_U4: id = INTRN_UWTOD; break;
+	case MTYPE_I8: id = INTRN_LTOD; break;
+	case MTYPE_U8: id = INTRN_ULTOD; break;
+	default:
+	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: desc %s for F8CVT", 
+			 MTYPE_name(desc)));
+	}
+      }
+      else if (desc == MTYPE_F8) {
+	switch (rtype) {
+	case MTYPE_I4: id = INTRN_DTOW; break;
+	case MTYPE_U4: id = INTRN_DTOUW; break;
+	case MTYPE_I8: id = INTRN_DTOL; break;
+	case MTYPE_U8: id = INTRN_DTOUL; break;
+	default:
+	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: rtype %s for CVTF8", 
+			 MTYPE_name(desc)));
+	}
+      }
+
+
+      break;
+
+    case OPR_REM:
+      switch (rtype) {
 #if 0
       case MTYPE_I4: id = INTRN_MODW; break;
       case MTYPE_I8: id = INTRN_MODL; break;
@@ -598,10 +741,11 @@ OPCODE_To_INTRINSIC (
 #endif
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown REM opcode"));
-    }
-  }
-  else {
-    FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle %s operator",
+      }
+      break;
+
+    default:
+      FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle OPR_%s",
 		                                  OPERATOR_name(opr)));
   }
 
