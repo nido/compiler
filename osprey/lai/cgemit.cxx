@@ -887,7 +887,7 @@ Print_Label (
 #  ifdef AS_MOVEABLE
     BOOL moveable;
 
-    if (! Emit_Global_Data) {
+    if (Emit_Global_Data) {
       /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
       moveable = FALSE;
     }
@@ -896,9 +896,12 @@ Print_Label (
       INITV_IDX inito_idx = ST_has_inito (st);
       if (inito_idx != 0 && Get_INITO_Size (inito_idx) > size)
 	moveable = FALSE;
+      else
+	moveable = TRUE;
     }
-    else
+    else {
       moveable = TRUE;
+    }
     
     if (moveable) {
       fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_MOVEABLE);
@@ -974,12 +977,14 @@ Print_Common (
     Print_Dynsym (pfile, st);
 
 #ifdef TARG_ST
+#  ifdef AS_MOVEABLE
     /* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
     if (!Emit_Global_Data) {
       fprintf (pfile, "\t%s\t", AS_TYPE);
       EMT_Write_Qualified_Name (pfile, st);
-      fprintf (pfile, ", %s, moveable\n", AS_TYPE_OBJECT);
+      fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_MOVEABLE);
     }
+#endif
 #endif
     // this is needed so that we don't emit commons more than once
     Set_ST_elf_index(st, 1);
