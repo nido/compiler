@@ -577,8 +577,6 @@ CG_Generate_Code(
       Stop_Timer(T_Select);
       if (frequency_verify)
 	FREQ_Verify("Select Conversion");
-      draw_CFG();
-
       Check_for_Dump(TP_SELECT, NULL);
     }
 #endif
