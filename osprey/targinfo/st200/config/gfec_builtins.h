@@ -229,11 +229,12 @@
     case BUILT_IN_XSHLW:
     case BUILT_IN_XSHRH:
     case BUILT_IN_XSHRW:
-//#if defined(ST231_EXPERIMENTAL)
     case BUILT_IN_ST200MUL32:
     case BUILT_IN_ST200MUL64H:
     case BUILT_IN_ST200MUL64HU:
     case BUILT_IN_ST200MULFRAC:
-//#endif /* defined(ST231_EXPERIMENTAL) */ 
+    case BUILT_IN_ST200PRGINSPG:
+    case BUILT_IN_ST200PSWCLR:
+    case BUILT_IN_ST200PSWSET:
   break;
 #endif /* defined(TARG_ST200) */

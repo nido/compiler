@@ -1121,6 +1121,56 @@ Expand__st200mulfrac(
   }
 } /* Expand__st200mulfrac */
 
+
+static void
+Expand__st200prginspg(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  if (Is_Target_st230() || Is_Target_st231()) { 
+      TN *c0 = Gen_Literal_TN(0LL, 4) ;
+      Build_OP (	TOP_add_r,	o0,	i0,	i1,	ops) ;
+      Build_OP (	TOP_prginspg_i,	c0, 	o0,	ops) ;
+  } else {
+      // Unsupported on st220
+      Build_OP (	TOP_break,  ops) ;
+  }
+} /* Expand__st200prginspg */
+
+static void
+Expand__st200pswclr(
+ TN* i0,
+ OPS* ops
+)
+{
+  if (Is_Target_st230() || Is_Target_st231()) { 
+      //Build_OP (	TOP_pswclr_r,	i0,	ops) ;
+      Build_OP (	TOP_break,  ops) ;
+  } else {
+      // Unsupported on st220
+      Build_OP (	TOP_break,  ops) ;
+  }
+} /* Expand__st200pswclr */
+
+static void
+Expand__st200pswset(
+ TN* i0,
+ OPS* ops
+)
+{
+  if (Is_Target_st230() || Is_Target_st231()) { 
+      //Build_OP (	TOP_pswset_r,	i0,	ops) ;
+      Build_OP (	TOP_break,  ops) ;
+  } else {
+      // Unsupported on st220
+      Build_OP (	TOP_break,  ops) ;
+  }
+} /* Expand__st200pswclr */
+
+
 /*
  * Expansion of st220addcg based on validated and scheduled basic assembly source.
 */
@@ -6306,6 +6356,15 @@ Exp_Intrinsic_Op (
     break ;
     case INTRN_ST200MULFRAC:
        Expand__st200mulfrac(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST200PRGINSPG:
+	Expand__st200prginspg(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST200PSWCLR:
+	Expand__st200pswclr(opnd[0],ops) ;
+    break ;
+    case INTRN_ST200PSWSET:
+	Expand__st200pswset(opnd[0],ops) ;
     break ;
     case INTRN_ST220ADDCG:
     if (Target_Byte_Sex == BIG_ENDIAN) {

@@ -2568,6 +2568,7 @@ Exp_Intrinsic_Call (
     case INTRN_ST220PFT:
     case INTRN_ST220PRGADD:
     case INTRN_ST220PRGSET:
+    case INTRN_ST200PRGINSPG:
 	{
 	    /* For these, input is offset and base address, output is effective address used */
 	    TN *in[2] ;
@@ -2590,6 +2591,8 @@ Exp_Intrinsic_Call (
 	}
 	break ;
     case INTRN_ST220SYSCALL:
+    case INTRN_ST200PSWCLR:
+    case INTRN_ST200PSWSET:
 	{
 	    /* This one has one input, hopefully constant and no output*/
 	    TN *in[1] ;

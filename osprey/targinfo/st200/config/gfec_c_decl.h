@@ -1333,7 +1333,6 @@ builtin_function ("__xshrw",
                      tree_cons(NULL_TREE, short_unsigned_type_node, endlink)))),
                    BUILT_IN_XSHRW, BUILT_IN_NORMAL, NULL_PTR);
 
-//#if defined(ST231_EXPERIMENTAL)
 builtin_function ("__st200mul32",
                    build_function_type( integer_type_node, 
                      tree_cons(NULL_TREE, integer_type_node,
@@ -1354,6 +1353,21 @@ builtin_function ("__st200mulfrac",
                      tree_cons(NULL_TREE, integer_type_node,
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ST200MULFRAC, BUILT_IN_NORMAL, NULL_PTR);
-//#endif /* defined(ST231_EXPERIMENTAL) */
+
+builtin_function ("__st200prginspg",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST200PRGINSPG, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st200pswclr",
+                   build_function_type( void_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node, endlink)),
+                   BUILT_IN_ST200PSWCLR, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st200pswset",
+                   build_function_type( void_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node, endlink)),
+                   BUILT_IN_ST200PSWSET, BUILT_IN_NORMAL, NULL_PTR);
 
 #endif /* defined(TARG_ST200) */

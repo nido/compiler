@@ -688,7 +688,6 @@
 { /* __xshrw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U4, "__xshrw", NULL, "__xshrw"}, 
-//#if defined(ST231_EXPERIMENTAL)
 { /* __st220mul32 */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st200mul32", NULL, "__st200mul32"}, 
@@ -701,5 +700,12 @@
 { /* __st220mulfrac */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st200mulfrac", NULL, "__st200mulfrac"}, 
-//#endif /* defined(ST231_EXPERIMENTAL) */
-
+{ /* __st200prginspg */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__st200prginspg", NULL, "__st200prginspg"}, 
+{ /* __st200pswclr */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200pswclr", NULL, "__st200pswclr"}, 
+{ /* __st200pswset */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200pswset", NULL, "__st200pswset"}, 
