@@ -194,6 +194,7 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_SECTION	".section"
 #define AS_SIZE         ".size"
 #define AS_SPACE	".space"
+#define AS_ASCII	".ascii"
 #define AS_STRING	".string"
 #define AS_TEXT 	".text"
 #define AS_TYPE         ".type"

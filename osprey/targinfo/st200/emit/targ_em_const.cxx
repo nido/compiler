@@ -264,7 +264,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 
       case MTYPE_F4: {
         char *p = (char *) & TCON_R4(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (INT i = 0; i < sizeof(TCON_R4(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s float %#g\n", ASM_CMNT, TCON_R4(tc) );
@@ -275,13 +275,13 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
       case MTYPE_C4: {
 	INT i;
         char *p = (char *) & TCON_R4(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (i = 0; i < sizeof(TCON_R4(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s complex float real part %#g\n", ASM_CMNT, TCON_R4(tc) );
 
         p = (char *) & TCON_IR4(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (i = 0; i < sizeof(TCON_IR4(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s complex float imag part %#g\n", ASM_CMNT, TCON_IR4(tc) );
@@ -291,7 +291,7 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 
       case MTYPE_F8: {
         char *p = (char *) & TCON_R8(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (INT i = 0; i < sizeof(TCON_R8(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s double %#g\n", ASM_CMNT, TCON_R8(tc) );
@@ -302,13 +302,13 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
       case MTYPE_C8: {
 	INT i;
         char *p = (char *) & TCON_R8(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (i = 0; i < sizeof(TCON_R8(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s complex double real part %#g\n", ASM_CMNT, TCON_R8(tc) );
 
         p = (char *) & TCON_IR8(tc);
-        fprintf ( fl, "\t%s\t\"", AS_STRING );
+        fprintf ( fl, "\t%s\t\"", AS_ASCII );
         for (i = 0; i < sizeof(TCON_IR8(tc)); i++)
 	  fprintf ( fl, "\\x%02x", *(p+i) );
 	fprintf(fl, "\"\t%s complex double imag part %#g\n", ASM_CMNT, TCON_IR8(tc) );
