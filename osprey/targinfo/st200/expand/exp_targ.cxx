@@ -912,30 +912,25 @@ Expand_Shift_Multiply (
   TN *result,
   TYPE_ID mtype,
   TN *src1,
-  TN **src2,
+  TN *src2,
   OPS *ops
 )
 {
-  TN *tmp;
-
-  FmtAssert(TN_has_value(*src2),
+  FmtAssert(TN_has_value(src2),
 	    ("Expand_Shift_Multiply: second TN is not immediate"));
   FmtAssert(MTYPE_is_class_integer(mtype),
 	    ("Expand_Shift_Multiply: branch mtype not supported"));
 
   // see if I can do a shift instead of the multiply
-  if (Is_Power_Of_2(TN_value(*src2), mtype)) {
-    INT val = Get_Power_Of_2(TN_value(*src2), mtype);
-    tmp = Gen_Literal_TN (val, MTYPE_byte_size(mtype));
+  if (Is_Power_Of_2(TN_value(src2), mtype)) {
+    INT val = Get_Power_Of_2(TN_value(src2), mtype);
+    TN *tmp = Gen_Literal_TN (val, MTYPE_byte_size(mtype));
     Expand_Shift (result, src1, tmp, mtype, shift_left, ops);
-  }
-  else {
-    // stop madness here !!
-    *src2 = Expand_Immediate_Into_Register (MTYPE_I4, *src2, ops);
-    return FALSE;
-  }
 
-  return TRUE;
+    return TRUE;
+  }
+  
+  return FALSE;
 }
 
 /* ====================================================================
@@ -955,8 +950,8 @@ Expand_Multiply (
 {
   TN      *dest = result;
   TYPE_ID  mtype = rmtype;
-  INT64    constant;
-  BOOL     done = FALSE;
+  BOOL     has_const = FALSE;
+  TOP opcode = TOP_UNDEFINED;
 
   //
   // Check for two constants
@@ -965,6 +960,7 @@ Expand_Multiply (
       (TN_has_value(src2) || TN_is_rematerializable(src2))) {
     // Two constants can sometimes occur because of DIVREM production in
     TN *val_tn;
+    INT64    constant;
     constant = TN_has_value(src1) ?
                            TN_value(src1) : WN_const_val(TN_home(src1));
     constant *= TN_has_value(src2) ?
@@ -978,115 +974,114 @@ Expand_Multiply (
 
   FmtAssert(MTYPE_is_class_integer(rmtype), ("Expand_Multiply: mtype ?"));
 
-  //
-  // One of the srcs is constant
-  //
+  // If one of the operands is a constant, it must be the second one.
   if (TN_has_value(src1)) {
-    done = Expand_Shift_Multiply (dest, mtype, src2, &src1, ops);
+    TN *tmp = src2;
+    src2 = src1;
+    src1 = tmp;
+    has_const = TRUE;
   }
 
   if (TN_has_value(src2)) {
-    done = Expand_Shift_Multiply (dest, mtype, src1, &src2, ops);
+    if (Expand_Shift_Multiply (dest, mtype, src1, src2, ops))
+      return;
+    has_const = TRUE;
   }
-
-  // If I did not generate the optimized sequence, emit intrinsics
-  if (!done) {
-    // I have some integer result mtype.
-    // I should try to strength reduce the expression.
-    TOP opcode = TOP_UNDEFINED;
-    switch (mtype) {
-
-    case MTYPE_I2:
-      if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2 ||
-	  s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2 ||
-	  s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-	opcode = TOP_mulll_r;
-	Build_OP(opcode, dest, src1, src2, ops);
-      }
-      break;
-
-    case MTYPE_U2:
-      if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
-	opcode = TOP_mulllu_r;
-	Build_OP(opcode, dest, src1, src2, ops);
-      }
-      break;
-
-    case MTYPE_I4:
-      if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
-	  s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
-	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4 ||
-	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) {
-        TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	Build_OP(TOP_mullu_r, tmp1, src1, src2, ops);
-        Build_OP(TOP_mulhs_r, tmp2, src1, src2, ops);
-	opcode = TOP_add_r;
-	Build_OP(opcode, dest, tmp1, tmp2, ops);
-      }
-      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
-	       s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
-	       s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4) {
-	opcode = TOP_mull_r;
-	Build_OP(opcode, dest, src2, src1, ops);
-      }
-      else if(s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
-	      s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
-	      s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2) {
-	opcode = TOP_mull_r;
-	Build_OP(opcode, dest, src1, src2, ops);
-      }
-      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2 ||
-	       s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2 ||
-	       s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-	opcode = TOP_mulll_r;
-	Build_OP (opcode, dest, src1, src2, ops);
-      }
-      break;
-
-    case MTYPE_U4:
-      if (s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4 ||
-	  s1mtype == MTYPE_U4 && s2mtype == MTYPE_U2) {
-	opcode = TOP_mullu_r;
-	Build_OP(opcode, dest, src1, src2, ops);
-      }
-      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U4) {
-	opcode = TOP_mullu_r;
-	Build_OP(opcode, dest, src2, src1, ops);
-      }
-      else if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4 ||
-	       s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4 ||
-	       s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4) {
-	opcode = TOP_UNDEFINED;
-      }
-      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I4 ||
-	       s1mtype == MTYPE_I2 && s2mtype == MTYPE_U4 ||
-	       s1mtype == MTYPE_U2 && s2mtype == MTYPE_I4) {
-	opcode = TOP_mullu_r;
-	Build_OP(opcode, dest, src2, src1, ops);
-      }
-      else if (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I2 ||
-	       s1mtype == MTYPE_I4 && s2mtype == MTYPE_U2 ||
-	       s1mtype == MTYPE_U4 && s2mtype == MTYPE_I2) {
-	opcode = TOP_mullu_r;
-	Build_OP(opcode, dest, src1, src2, ops);
-      }
-      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
-	opcode = TOP_mulllu_r;
-	Build_OP (opcode, dest, src1, src2, ops);
-      }
-      break;
-
-    default:
-      FmtAssert(FALSE, ("Expand_Multiply: unknown return mtype %s\n",
-                                                    MTYPE_name(mtype)));
+        
+  switch (mtype) {
+  case MTYPE_U2:
+  case MTYPE_I2:
+    /* short <- short * short */
+    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+      opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
     }
 
-    if (opcode == TOP_UNDEFINED)
-      FmtAssert(FALSE, ("Expand_Multiply: can't make mpy %s <- %s * %s",
-	       MTYPE_name(mtype), MTYPE_name(s1mtype), MTYPE_name(s2mtype)));
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
+      opcode = has_const ? TOP_mulll_i : TOP_mulll_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
 
-  } /* if (!done) */
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+      Build_OP(TOP_sxth_r, src1, src1, ops);
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
+      FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
+      Build_OP(TOP_sxth_r, src2, src2, ops);
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+    else {
+      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_U2 "));
+    }
+
+    if (mtype == MTYPE_U2) {
+      TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
+      Build_OP(TOP_and_i, dest, const_tn, ops);
+
+    }
+    else if (mtype == MTYPE_I2) {
+      Build_OP(TOP_sxth_r, dest, dest, ops);
+    }
+    break;
+
+  case MTYPE_U4:
+  case MTYPE_I4:
+    /*
+     * int <- short * short
+     */
+    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+      opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
+      opcode = has_const ? TOP_mulll_i : TOP_mulll_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+      Build_OP(TOP_sxth_r, src1, src1, ops);
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
+      FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
+      Build_OP(TOP_sxth_r, src2, src2, ops);
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, dest, src1, src2, ops);
+    }
+
+      /*
+       * int <- int * int
+       */
+    else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
+             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
+             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
+             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4)) {
+      TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+      TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+      Build_OP(opcode, tmp1, src1, src2, ops);
+      opcode = has_const ? TOP_mulhs_i : TOP_mulhs_r;
+      Build_OP(opcode, tmp2, src1, src2, ops);
+      Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
+    }
+
+    else {
+      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI4 "));
+    }
+
+    break;
+
+  default:
+    FmtAssert(FALSE, ("Expand_Multiply: --"));
+  }
 
   return;
 }
