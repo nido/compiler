@@ -3423,8 +3423,11 @@ Assemble_Bundles(BB *bb)
                                         ISA_INST_BYTES, ISA_INST_BYTES);
     }
 #endif
-    if (Assembly && EMIT_explicit_bundles) {
-      fprintf(Asm_File, "%s\n", ISA_PRINT_END_BUNDLE);
+    if (Assembly) {
+      if (EMIT_explicit_bundles) {
+	fprintf(Asm_File, "%s", ISA_PRINT_END_BUNDLE);
+      }
+      fprintf(Asm_File, "\n");
     }
   }
   if (Assembly) {

@@ -272,7 +272,7 @@ BOOL EMIT_use_cold_section = TRUE;
 BOOL EMIT_interface_section = TRUE;
 BOOL EMIT_stop_bits_for_asm = TRUE;
 BOOL EMIT_stop_bits_for_volatile_asm = FALSE;
-BOOL EMIT_explicit_bundles = TRUE;
+BOOL EMIT_explicit_bundles = FALSE;
 INT32 EMIT_Long_Branch_Limit = DEFAULT_LONG_BRANCH_LIMIT;
 
 BOOL CG_emit_asm_dwarf    = FALSE;
