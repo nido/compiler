@@ -659,14 +659,12 @@ CG_Generate_Code(
 	  FREQ_Verify("CGLOOP");
       }
 
-#ifndef TARG_ST
       /* Optimize control flow (second pass) */
       if (CFLOW_opt_after_cgprep) {
 	CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (second pass)");
 	if (frequency_verify)
 	  FREQ_Verify("CFLOW (second pass)");
       }
-#endif
 
 #ifndef TARG_ST
 #ifdef TARG_ST
