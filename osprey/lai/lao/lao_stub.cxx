@@ -18,7 +18,7 @@
 #include "erglob.h"
 #include "tracing.h"
 
-#include "laoinitw.h"
+#include "laoinit.h"
 
 extern "C" {
 #define this THIS
