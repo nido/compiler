@@ -2515,7 +2515,12 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
   /* Setup new <unrolled_body> LOOPINFO.
    */
   WN_set_loop_trip(wn, WN_CreateExp2(opc_div, WN_loop_trip(wn), ntimes_wn));
+#ifdef TARG_ST
+  // TB WN_loop_trip_est(wn) cannot be NULL
+  WN_loop_trip_est(wn) = MAX(WN_loop_trip_est(wn) / ntimes, 1);
+#else
   WN_loop_trip_est(wn) = WN_loop_trip_est(wn) / ntimes;
+#endif
   LOOPINFO_wn(unrolled_info) = wn;
   LOOPINFO_srcpos(unrolled_info) = LOOPINFO_srcpos(info);
   if (TN_is_constant(trip_count))
