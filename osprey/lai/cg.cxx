@@ -735,6 +735,10 @@ CG_Generate_Code(
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
+    // [SC]: Calculate local register requirements.
+    for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      LRA_Compute_Register_Request (bb, &MEM_local_region_pool);
+    }
   } else
     IGLS_Schedule_Region (TRUE /* before register allocation */);
 #else
