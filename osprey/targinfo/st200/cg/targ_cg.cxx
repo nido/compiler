@@ -1677,6 +1677,9 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
   INT i;
 
   BOOL extra_slot_reqd = FALSE;
+  
+  // [CG] 2004/11/15. Filter out simulated opcodes such as asm
+  if (OP_simulated(op)) return FALSE;
 
   for (i = 0; i < OP_opnds(op); i++) {
     TN *opnd = OP_opnd(op, i);
