@@ -708,23 +708,35 @@ Expand_Abs (
   OPS *ops
 )
 {
-  if (MTYPE_is_class_integer(mtype)) {
+  switch (mtype) {
 
-    //
-    // For dest = abs (src) generate:
-    //  
-    //            sub   negx = $r0.0, src
-    //            cmpge cond = src, $r0.0
-    //            slct  dest = cond, src, negx
-    //
-    TN *negx = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-    TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-    Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
-    Build_OP (TOP_cmpge_r_b, cond, src, Zero_TN, ops);
-    Build_OP (TOP_slct_r, dest, cond, src, negx, ops);
+  case MTYPE_I1:
+  case MTYPE_I2:
+  case MTYPE_I4:
+    {
+      //
+      // For dest = abs (src) generate:
+      //  
+      //            sub   negx = $r0.0, src
+      //            cmpge cond = src, $r0.0
+      //            slct  dest = cond, src, negx
+      //
+      TN *negx = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+      Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
+      Build_OP (TOP_cmpge_r_b, cond, src, Zero_TN, ops);
+      Build_OP (TOP_slct_r, dest, cond, src, negx, ops);
+    }
+    break;
 
-  }
-  else {
+  case MTYPE_F4:
+    {
+      TN *mask = Gen_Literal_TN(0x7fffffff, 4);
+      Build_OP (TOP_and_i, dest, src, mask, ops);
+    }
+    break;
+
+  default:
     Is_True(FALSE,("abs doesn't handle MTYPE_%s\n", MTYPE_name(mtype)));
   }
 }

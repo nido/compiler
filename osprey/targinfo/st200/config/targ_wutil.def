@@ -77,4 +77,9 @@
   INTRN_DTOL,			"DTOL",
   INTRN_DTOUL,			"DTOUL",
 
+  INTRN_MINL,                   "MINL",
+  INTRN_MINUL,                  "MINUL",
+  INTRN_MAXL,                   "MAXL",
+  INTRN_MAXUL,                  "MAXUL",
 
+  INTRN_ABSL,                   "ABSL",

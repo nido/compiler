@@ -586,15 +586,8 @@ OPCODE_To_INTRINSIC (
       case MTYPE_U8: id = INTRN_DIVUL; break;
       case MTYPE_F4: id = INTRN_DIVS; break;
       case MTYPE_F8: id = INTRN_DIVD; break;
-
-#if 0
-      case MTYPE_U4: id = INTRN_UDIVSI3; break;
-      case MTYPE_I4: id = INTRN_DIVSI3; break;
-#else
       case MTYPE_U4: id = INTRN_DIVUW; break;
       case MTYPE_I4: id = INTRN_DIVW; break;
-#endif
-
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for DIV", 
 			 MTYPE_name(rtype)));
@@ -609,6 +602,39 @@ OPCODE_To_INTRINSIC (
       case MTYPE_F8: id = INTRN_MULD; break;
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MPY", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_MIN:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_MINL; break;
+      case MTYPE_U8: id = INTRN_MINUL; break;
+	//      case MTYPE_F4: id = INTRN_MULS; break;
+	//      case MTYPE_F8: id = INTRN_MULD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MIN", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_MAX:
+      switch (rtype) {
+      case MTYPE_I8: id = INTRN_MAXL; break;
+      case MTYPE_U8: id = INTRN_MAXUL; break;
+	//      case MTYPE_F4: id = INTRN_MULS; break;
+	//      case MTYPE_F8: id = INTRN_MULD; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MAX", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+  case OPR_ABS:
+    switch (rtype) {
+    case MTYPE_I8: id = INTRN_ABSL; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for ABS", 
 			 MTYPE_name(rtype)));
       }
       break;
@@ -738,18 +764,10 @@ OPCODE_To_INTRINSIC (
 
     case OPR_REM:
       switch (rtype) {
-#if 0
-      case MTYPE_U4: id = INTRN_UMODSI3; break;
-      case MTYPE_I4: id = INTRN_MODSI3; break;
-      case MTYPE_U8: id = INTRN_UMODDI3; break;
-      case MTYPE_I8: id = INTRN_MODDI3; break;
-#else
       case MTYPE_U4: id = INTRN_MODUW; break;
       case MTYPE_I4: id = INTRN_MODW; break;
       case MTYPE_U8: id = INTRN_MODUL; break;
       case MTYPE_I8: id = INTRN_MODL; break;
-#endif
-
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown REM opcode"));
       }
