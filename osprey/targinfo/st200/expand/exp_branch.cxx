@@ -445,10 +445,7 @@ Exp_Call (
 
   switch (opr) {
     case OPR_CALL:
-      Build_OP (TOP_call, 
-		RA_TN,
-		target, 
-		ops);
+      Build_OP (TOP_call, RA_TN, target, ops);
       break;
 
     case OPR_ICALL:
