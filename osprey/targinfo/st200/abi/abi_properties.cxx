@@ -154,8 +154,10 @@ static void st200_abi(void)
   Reg_Property(global_ptr, ISA_REGISTER_CLASS_integer, 
 		14,
 	       -1);
+
+  // [CG]: frame_ptr must be calle saved. Use 7 instead of 61.
   Reg_Property(frame_ptr, ISA_REGISTER_CLASS_integer, 
-		61,
+	       7, // 61,
 	       -1);
 
   Reg_Property(static_link, ISA_REGISTER_CLASS_integer, 
