@@ -4792,17 +4792,27 @@ Expand_Statement (
     }
     
     if (last_loop_pragma) {
+      WN *pragma_next;
       for(WN *pragma = first_loop_pragma;
-	  pragma != last_loop_pragma;
-	  pragma = WN_next(pragma)) {
+	  pragma != WN_next(last_loop_pragma);
+	  pragma = pragma_next) {
+	pragma_next = WN_next(pragma);
 	if (WN_pragmas[WN_pragma(pragma)].users & PUSER_CG) {
 	  if ((WN_pragma(pragma) == WN_PRAGMA_UNROLL) ||
 	      (WN_pragma(pragma) == WN_PRAGMA_IVDEP) ||
-	      (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP))
+	      (WN_pragma(pragma) == WN_PRAGMA_LOOPDEP)) {
+	    if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
+	      enum LOOPDEP loopdep;
+	      if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
+	      else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
+	      else loopdep = LOOPDEP_PARALLEL;
+	      pragma = WN_CreatePragma(WN_PRAGMA_LOOPDEP, (ST_IDX) NULL,
+				       loopdep, 0);
+	    }
 	    BB_Add_Annotation(bb, ANNOT_PRAGMA, pragma);
+	  }
 	}
       }
-      BB_Add_Annotation(bb, ANNOT_PRAGMA, last_loop_pragma);
       last_loop_pragma = NULL;
     }
 #else
