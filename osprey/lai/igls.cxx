@@ -154,6 +154,8 @@ Schedule_Prefetch_Prepass () {
   WN_MAP WN_to_OP_map;
   BOOL Trace_PFT = Get_Trace(TP_SCHED, 4);
 
+  if (!(Prefetch_Optimize&0x2)) return;
+
   Calculate_Dominators ();
   L_Save ();
   LOOP_DESCR *loop_list = LOOP_DESCR_Detect_Loops (&MEM_local_pool);
@@ -337,6 +339,8 @@ void
 Schedule_Prefetch_Postpass () {
   WN_MAP WN_to_OP_map;
   BOOL Trace_PFT = Get_Trace(TP_SCHED, 4);
+
+  if (!(Prefetch_Optimize&0x2)) return;
 
   Calculate_Dominators ();
   L_Save ();
