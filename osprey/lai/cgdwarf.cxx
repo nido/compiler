@@ -946,6 +946,10 @@ put_variable(DST_flag flag, DST_VARIABLE *attr, Dwarf_P_Die die)
     put_reference (DST_VARIABLE_decl_type(attr), DW_AT_type, die);
     put_flag (DW_AT_declaration, die);
     if (DST_IS_external(flag)) put_flag (DW_AT_external, die);
+#ifdef TARG_ST // [CL] support for linkage_name
+    put_string (DST_VARIABLE_decl_linkage_name(attr),
+		DW_AT_MIPS_linkage_name, die);
+#endif
   }
   else if (DST_IS_comm(flag)) { /* definition of a common block variable. */
     put_decl(DST_VARIABLE_comm_decl(attr), die);
@@ -987,6 +991,10 @@ put_variable(DST_flag flag, DST_VARIABLE *attr, Dwarf_P_Die die)
 		DW_AT_abstract_origin,
 		die);
     }
+#ifdef TARG_ST // [CL] support for linkage_name
+    put_string (DST_VARIABLE_def_linkage_name(attr),
+		DW_AT_MIPS_linkage_name, die);
+#endif
     /* else if is cross-file inlined, will use name for matching */
   }
 }
