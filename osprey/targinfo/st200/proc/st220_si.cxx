@@ -380,7 +380,11 @@ main (int argc, char *argv[])
 		 TOP_icall, 
 		 TOP_UNDEFINED); 
 
+#if 0 // CL: chess database seems wrong
   Any_Result_Available_Time(1); 
+#else
+  Any_Result_Available_Time(5); 
+#endif
   Any_Operand_Access_Time(0); 
   Resource_Requirement(res_ISSUE, 0); 
 
