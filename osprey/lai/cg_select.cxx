@@ -142,7 +142,7 @@ BOOL CG_select_allow_dup = TRUE;
 INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.02";
 static float select_factor;
-static float branch_penalty = 0.8;
+static int branch_penalty;
 static float cond_store_penalty = 1;
 
 /* ================================================================
@@ -775,17 +775,7 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   CG_SCHED_EST_Ignore_Op(se1, op);
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
-  float boost = select_factor;
-
-  // If we are in a loop that have good chances to be unrolled, boost factor.
-  if (BB_loophead (bb1) && BB_in_succs (bb2, bb1)) {
-    if (Trace_Select_Candidates) {
-      fprintf (Select_TFile, "in loop\n");
-    }
-    boost += 0.05;
-  }
-
-  float est_cost_after = CG_SCHED_EST_Cycles(se1) / boost;
+  float est_cost_after = CG_SCHED_EST_Cycles(se1) / select_factor;
 
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
@@ -915,26 +905,17 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   if (se2)
     CG_SCHED_EST_Delete(se2);
 
-  float boost = select_factor;
-
-  // If we are in a loop that have good chances to be unrolled, boost factor.
-  if (BB_loophead (head) && BB_in_succs (tail, head)) {
-    if (Trace_Select_Candidates) {
-      fprintf (Select_TFile, "in loop\n");
-    }
-    boost += 0.05;
-  }
-
-  // cost of if converted region. prob is one. Remove the select factor.
-  float est_cost_after = cyclesh / boost;
+  // cost of if converted region. prob is one. 
+  float est_cost_after = cyclesh / select_factor;
     
+  // don't know how to take into account black holes in the sched estimate
   if (BBLIST_item(bb1) == tail && store_i.ntkstrs.size())
     est_cost_after += store_i.ntkstrs.size() * cond_store_penalty;
   if (BBLIST_item(bb2) == tail && store_i.tkstrs.size())
     est_cost_after += store_i.tkstrs.size() * cond_store_penalty;
 
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, boost);
+    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
@@ -2061,6 +2042,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   // higher select_factor means ifc more aggressive.
   select_factor = atof(CG_select_factor);
   if (select_factor == 0.0) return;
+
+  branch_penalty = CGTARG_Branch_Taken_Penalty();
 
   Trace_Select_Init();
 
