@@ -520,26 +520,6 @@ Configure_Target ()
   /* Set up the target processor and ISA: */
   Prepare_Target ();
   
-  // ST220 unrolling settings:
-  // - default up to O1 (4,40)
-  // - 4,64 at O2
-  // - 8,64 at O3
-  // (Derived from RFI 1-1-0-B/p7)
-  if (OPT_unroll_times > 0 && !OPT_unroll_times_overridden) {
-    if (Opt_Level == 2) {
-      OPT_unroll_times = 4;
-    } else if (Opt_Level > 2) {
-      OPT_unroll_times = 8;
-    }
-  }
-  if (OPT_unroll_size > 0 && !OPT_unroll_times_overridden) {
-    if (Opt_Level == 2) {
-      OPT_unroll_size = Opt_ForSize ? 20 : 64;
-    } else if (Opt_Level > 2) {
-      OPT_unroll_size = 64;
-    }
-  }
-
   /* Set up the target register set: */
 
   // Ugly hack !!!

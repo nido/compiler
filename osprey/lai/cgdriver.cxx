@@ -1069,9 +1069,31 @@ Configure_CG_Options(void)
     CG_enable_loop_optimizations = (CG_opt_level >= 2 ? TRUE: FALSE);
   }
 
+#ifdef TARG_ST200
+  // ST220 unrolling settings:
+  // - default up to O1 (4,40)
+  // - 4,64 at O2
+  // - 8,64 at O3
+  // (Derived from RFI 1-1-0-B/p7)
+  if (OPT_unroll_times > 0 && !OPT_unroll_times_overridden) {
+    if (Opt_Level == 2) {
+      OPT_unroll_times = 4;
+    } else if (Opt_Level > 2) {
+      OPT_unroll_times = 8;
+    }
+  }
+  if (OPT_unroll_size > 0 && !OPT_unroll_times_overridden) {
+    if (Opt_Level == 2) {
+      OPT_unroll_size = Opt_ForSize ? 20 : 64;
+    } else if (Opt_Level > 2) {
+      OPT_unroll_size = 64;
+    }
+  }
+#else
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
-  
+#endif
+
   if ( OPT_Unroll_Analysis_Set )
   {
     CG_LOOP_unroll_analysis = OPT_Unroll_Analysis;
@@ -1208,7 +1230,7 @@ Configure_CG_Options(void)
   // ST200 BB length default: 
   // - default up to O1 (300)
   // - 500 at O2
-  // - 2000 at > O2
+  // - 3000 at > O2
   // (Determined by RFI 1-1-0-B/p9)
   if (!CG_split_BB_length_overridden) {
     if (Opt_Level == 2) CG_split_BB_length = 500;
