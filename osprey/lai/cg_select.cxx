@@ -2060,7 +2060,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   // higher select_factor means ifc more aggressive.
   select_factor = atof(CG_select_factor);
-  if (select_factor == 0.0);
+  if (select_factor == 0.0) return;
 
   Trace_Select_Init();
 
