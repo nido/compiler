@@ -561,10 +561,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(ldb_d);
       CASE_TOP_I(ldhu_d);
       CASE_TOP_I(ldbu_d);
-      CASE_TOP_I(ST220_pft);
-      CASE_TOP_I(ST230_pft);
-      CASE_TOP_I(ST231_pft);
-      CASE_TOP_I(ST235_pft);
+      CASE_TOP_I(pft);
     }
   } else if (opnd == 1) {
     switch(regform) {
@@ -799,10 +796,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP_I(ldb_d):
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
-      CASE_TOP_I(ST220_pft):
-      CASE_TOP_I(ST230_pft):
-      CASE_TOP_I(ST231_pft):
-      CASE_TOP_I(ST235_pft):
+      CASE_TOP_I(pft):
       CASE_TOP(mul32):
       CASE_TOP(mul64h):
       CASE_TOP(mul64hu):
@@ -827,7 +821,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
   case TOP_mfb:
     return 1;
   case TOP_addcg:
-  case TOP_divs_b_b_r:
+  case TOP_divs:
     return opnd == 2 ? 1: 32;
     
     CASE_TOP(shl):
@@ -926,10 +920,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_I(ldb_d):
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
-      CASE_TOP_I(ST220_pft):
-      CASE_TOP_I(ST230_pft):
-      CASE_TOP_I(ST231_pft):
-      CASE_TOP_I(ST235_pft):
+      CASE_TOP_I(pft):
       CASE_TOP(mul32):
       CASE_TOP(mul64h):
       CASE_TOP(mulfrac):
@@ -963,7 +954,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
   case TOP_mfb:
     return FALSE;
   case TOP_addcg:
-  case TOP_divs_b_b_r:
+  case TOP_divs:
     return opnd == 2 ? FALSE: TRUE;
     
     CASE_TOP(shl):
