@@ -52,7 +52,12 @@
 
 #include "W_math.h"
 #include "W_alloca.h"
+// [HK]
+#if __GNUC__ >= 3
+#include <map>
+#else
 #include <map.h>
+#endif //  __GNUC__ >= 3
 
 #include "defs.h"
 #include "config.h"

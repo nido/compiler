@@ -541,6 +541,7 @@ CG_Generate_Code(
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+      GRA_LIVE_Rename_TNs();  // rename TNs -- required by select
       Check_for_Dump(TP_SSA, NULL);
     }
 #endif

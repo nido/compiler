@@ -52,8 +52,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+#include <vector>
+using std::list;
+using std::vector;
+#else
 #include <list.h>
 #include <vector.h>
+#endif // __GNUC__ >=3
 #include "gen_util.h"
 #include "targ_proc.h"
 #include "proc_properties_gen.h"

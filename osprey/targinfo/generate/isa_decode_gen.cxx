@@ -52,7 +52,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include "W_alloca.h"
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >=3
 #include "topcode.h"
 #include "gen_util.h"
 #include "isa_decode_gen.h"

@@ -60,7 +60,12 @@
  * ====================================================================
  */
 
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+#else
 #include <list.h>
+#endif // __GNUC__ >=3
 #include "defs.h"
 #include "config.h"
 #include "config_TARG.h"
@@ -113,8 +118,8 @@ static OP_MAP phi_op_map = NULL;
 typedef struct {
   op_list tkstrs;
   op_list ntkstrs;
-  list<int> ifarg_idx;
-  list<bool> need_bh;
+  std::list<int> ifarg_idx;
+  std::list<bool> need_bh;
 } store_t;
 store_t store_i;
 op_list load_i;
@@ -541,7 +546,7 @@ Are_Not_Aliased(OP* op1, OP* op2)
 // Unsafe to speculate loads and promote stores in the same time if they
 // share the same address.
 static BOOL
-Check_ReadWrite_Dependencies(op_list strs, list<bool> &bh_list)
+Check_ReadWrite_Dependencies(op_list strs, std::list<bool> &bh_list)
 {
   // Since we are also promoting loads, be carefull that they
   // can't alias with stores since we are changing the op order.

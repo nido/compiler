@@ -55,7 +55,12 @@
 #define HB_TRACE_H_INCLUDED
 
 #include <stdio.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <list>
+#else
 #include <list.h>
+#endif // __GNUC__ >= 3
 
 #include "tracing.h"
 #include "hb_path.h"
@@ -93,7 +98,7 @@ extern void HB_Trace_Init(void);
 extern void HB_Trace_If_Convert_Blocks(HB* hb);
 extern void HB_Trace_HB_List();
 extern void HB_Trace_Candidates(char* tstring,
-				list<HB_CAND_TREE*>& cands);
+				std::list<HB_CAND_TREE*>& cands);
 extern void HB_Trace_Print_Cand_Tree(HB_CAND_TREE* cand,INT indent=0);
 
 extern FILE *HB_TFile;

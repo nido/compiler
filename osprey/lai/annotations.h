@@ -184,8 +184,11 @@ typedef struct remainderinfo {
   void *head_bb;			/* Effective loop head. */
 } REMAINDERINFO;
 
-#define REMAINDERINFO_head_bb(i) ((BB *)(i)->head_bb)
+// [HK] ISO C++ forbids cast to non-reference type used as lvalue
+//  #define REMAINDERINFO_head_bb(i) ((BB *)(i)->head_bb)
+#define REMAINDERINFO_head_bb(i) (*((BB **)&(i)->head_bb))
 #endif
+
 
 typedef	struct entryinfo {
   ST *name;		/* entry point name.		     */

@@ -52,8 +52,16 @@
 
 #include <stdio.h>
 #include "defs.h"
+// [HK]
+#if __GNUC__ >= 3
+#include <vector>
+#include <map>
+// using std::vector;
+// using std::map;
+#else
 #include <vector.h>
 #include <map.h>
+#endif // __GNUC__ >= 3
 #include "mempool.h"
 #include "tn.h"
 #include "tn_set.h"
@@ -161,8 +169,8 @@ class SWP_OP_vector; // Defined below.
 
 
 struct SWP_REG_ASSIGNMENT {
-  typedef map<CLASS_REG_PAIR, TN*> REG2TN_MAP;
-  typedef map<TN*, CLASS_REG_PAIR> TN2REG_MAP;
+  typedef std::map<CLASS_REG_PAIR, TN*> REG2TN_MAP;
+  typedef std::map<TN*, CLASS_REG_PAIR> TN2REG_MAP;
 
  // 1st rotating registers (
   INT rotating_reg_base[ISA_REGISTER_CLASS_MAX+1];
@@ -297,7 +305,7 @@ struct SWP_OP {
 class SWP_OP_vector {
 
 #if SWP_USE_STL
-  vector<SWP_OP>  v;
+  std::vector<SWP_OP>  v;
 #else
   INT v_size;
   SWP_OP v[SWP_OPS_LIMIT * 4];
@@ -355,7 +363,7 @@ public:
 class MinDist {
   static const INT NEG_INF = -999;
 #if SWP_USE_STL
-  vector< vector<INT> >  mindist;
+  std::vector< std::vector<INT> >  mindist;
   INT size() const { mindist.size(); }
 #else
   INT mindist[SWP_OPS_LIMIT][SWP_OPS_LIMIT];

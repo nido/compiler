@@ -2344,7 +2344,9 @@ EBO_Memory_Sequence (
   
   if (new_opcode != TOP_UNDEFINED) {
     new_op = Dup_OP(op);
-    OP_code(new_op) = new_opcode;
+// [HK] ISO C++ forbids cast to non reference type on lvalues
+//        OP_code(new_op) = new_opcode;
+    Set_OP_opr(new_op, new_opcode);
     OP_srcpos(new_op) = OP_srcpos(op);
     Set_OP_opnd (new_op, l0_base_idx, ptn0);
     Set_OP_opnd (new_op, l0_offset_idx, new_offset_tn);

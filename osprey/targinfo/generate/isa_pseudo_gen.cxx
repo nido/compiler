@@ -52,8 +52,16 @@
 #include <assert.h>
 #include <strings.h>
 #include "W_alloca.h"
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+#include <vector>
+using std::list;
+using std::vector;
+#else
 #include <list.h>
 #include <vector.h>
+#endif // __GNUC__ >=3
 #include "topcode.h"
 #include "gen_util.h"
 #include "targ_isa_operands.h"

@@ -395,7 +395,9 @@ typedef const struct {
   mUINT8 bit_index;
 } SI_RESOURCE;
 
-extern const INT SI_resource_count;
+// [HK]
+// extern const INT SI_resource_count;
+extern INT SI_resource_count;
 #ifndef TARG_ST
 #pragma weak SI_resource_count
 #endif
@@ -643,7 +645,6 @@ inline SI_RRW SI_RR_Cycle_RRW( SI_RR req, UINT cycle )
   return req[cycle+1];
 }
 #endif
-
 /****************************************************************************
  ****************************************************************************/
 typedef UINT SI_ID;

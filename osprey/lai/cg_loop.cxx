@@ -118,7 +118,12 @@
 
 #include "W_math.h"
 #include <stdarg.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <set>
+#else
 #include <set.h>
+#endif // __GNUC__ >= 3
 
 #include "defs.h"
 #include "config.h"
@@ -5712,8 +5717,8 @@ Gen_Counted_Loop_Branch(
 //
 void Fix_Backpatches(CG_LOOP& cl, bool trace)
 {
-  vector<pair<BB*, CG_LOOP_BACKPATCH *> > dead_bp;
-  set<TN*> epilog_tns;
+  std::vector<std::pair<BB*, CG_LOOP_BACKPATCH *> > dead_bp;
+  std::set<TN*> epilog_tns;
   BB *body = cl.Loop_header();
   BB *prolog = CG_LOOP_prolog;
   BB *epilog = CG_LOOP_epilog;
@@ -5721,7 +5726,7 @@ void Fix_Backpatches(CG_LOOP& cl, bool trace)
   for (bp = CG_LOOP_Backpatch_First(epilog, NULL); bp; bp = CG_LOOP_Backpatch_Next(bp)) {
     TN *body_tn = CG_LOOP_BACKPATCH_body_tn(bp);
     if (!GTN_SET_MemberP(BB_defreach_out(body), body_tn))
-      dead_bp.push_back(make_pair(epilog,bp));
+      dead_bp.push_back(std::make_pair(epilog,bp));
     else
       epilog_tns.insert(body_tn);
   }
@@ -5730,7 +5735,7 @@ void Fix_Backpatches(CG_LOOP& cl, bool trace)
     if (!GTN_SET_MemberP(BB_live_in(body), body_tn) &&
 	!(GTN_SET_MemberP(BB_defreach_out(body), body_tn) &&
 	  epilog_tns.find(body_tn) != epilog_tns.end()))
-      dead_bp.push_back(make_pair(prolog,bp));
+      dead_bp.push_back(std::make_pair(prolog,bp));
   }
   while (!dead_bp.empty()) {
     BB *bb = (*(dead_bp.end()-1)).first;
@@ -5891,7 +5896,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_Before_Unrolling();  
 
       if (SWP_Options.Predicate_Promotion) {
-	list<BB*> bbl;
+	std::list<BB*> bbl;
 	bbl.push_front(cg_loop.Loop_header());
 	CG_DEP_Prune_Dependence_Arcs(bbl, TRUE, trace_loop_opt);
 	if (trace_loop_opt) 
@@ -6027,7 +6032,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	Convert_While_Loop_to_Fully_Predicated_Form(cg_loop);
 
 	if (SWP_Options.Predicate_Promotion) {
-	  list<BB*> bbl;
+	  std::list<BB*> bbl;
 	  bbl.push_front(cg_loop.Loop_header());
 	  CG_DEP_Prune_Dependence_Arcs(bbl, TRUE, trace_loop_opt);
 	}

@@ -36,7 +36,13 @@
 /* EXP routines for loads and stores */
 
 #include <elf.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <vector>
+using std::vector;
+#else
 #include <vector.h>
+#endif // __GNUC__ >= 3
 #include "defs.h"
 #include "glob.h"
 #include "em_elf.h"

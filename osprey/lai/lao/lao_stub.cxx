@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdarg.h>
+// [HK]
+#if __GNUC__ >=3
+#include <vector>
+#else
 #include <vector.h>
+#endif // __GNUC__ >=3
 
 #include "bb.h"
 #include "wn.h"
@@ -191,7 +196,7 @@ OP_barrier(OP *op) {
 
 /*-------------------------- LAO Utility Functions-------------------------*/
 
-typedef list<BB*> BB_List;
+typedef std::list<BB*> BB_List;
 
 // Test if a BB belongs to a BB_List.
 static bool

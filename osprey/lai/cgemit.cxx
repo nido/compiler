@@ -47,11 +47,22 @@
 #include <cmplrs/rcodes.h>
 #include <stamp.h>
 #include <vector>
+// [HK]
+#if __GNUC__ >= 3
+#include <assert.h>
+#endif //  __GNUC__ >= 3
 
 #define	USE_STANDARD_TYPES 1
 #include "defs.h"
 #include "tracing.h"
+// [HK]
+#if __GNUC__ >= 3
+#include <ext/hash_map>
+#else
 #include "hash_map.h"
+#endif // __GNUC__ >= 3
+#include "namespace_trans.h"
+
 #include "config.h"
 #include "config_asm.h"
 #include "config_TARG.h"
@@ -1965,16 +1976,16 @@ Process_Initos_And_Literals (
   SYMTAB_IDX stab
 )
 {
-  static vector<bool> st_processed;
+  static std::vector<bool> st_processed;
   if (st_processed.size() != ST_Table_Size(GLOBAL_SYMTAB)) {
     st_processed.resize(ST_Table_Size(GLOBAL_SYMTAB), false);
   }
 
-  vector<ST*> st_list;
-  vector<ST*>::iterator st_iter;
+  std::vector<ST*> st_list;
+  std::vector<ST*>::iterator st_iter;
 
   typedef 
-  hash_map < ST_IDX, INITO*, hash<ST_IDX>, equal_to<ST_IDX> > ST_INITO_MAP;
+  __GNUEXT::hash_map < ST_IDX, INITO*, __GNUEXT::hash<ST_IDX>, __GNUEXT::equal_to<ST_IDX> > ST_INITO_MAP;
   ST_INITO_MAP st_inito_map;
 
   UINT i;
@@ -2169,11 +2180,11 @@ Process_Bss_Data (
 )
 {
   /* 
-   * To guarantee in increasing order, create vector of st*, 
+   * To guarantee in increasing order, create std::vector of st*, 
    * then stable_sort on section, then stable_sort on offset. 
    */
-  vector< ST* > bss_list;
-  vector< ST* >::iterator bssp;
+  std::vector< ST* > bss_list;
+  std::vector< ST* >::iterator bssp;
 
   // This routine can be called multiple times for the global symtab;
   // we do this so that objects are emitted in order.
@@ -2235,7 +2246,7 @@ Process_Bss_Data (
   // accumulate the labels while they refer to the equivalenced
   // symbols and looking for the strongest alignment.
   //
-  list<ST*> equivalenced_symbols;
+  std::list<ST*> equivalenced_symbols;
   INT32 align = 0;
 #endif
 
@@ -2305,7 +2316,7 @@ Process_Bss_Data (
 	// Time to print out the alignment and the labels
 	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, align);
 #endif
-	list<ST*>::iterator esyms;
+	std::list<ST*>::iterator esyms;
 	// Print the previously eqivalenced symbols
 	for (esyms = equivalenced_symbols.begin();
 	     esyms != equivalenced_symbols.end();

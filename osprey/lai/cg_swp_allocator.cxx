@@ -84,7 +84,12 @@
 #include <stdarg.h>
 #include <vector>
 #include <algorithm>
+// [HK]
+#if __GNUC__ >= 3
+#include <utility>
+#else
 #include <pair.h>
+#endif // __GNUC__ >= 3
 #include "defs.h"
 #include "glob.h"    // for Cur_PU_Name
 #include "timing.h"
@@ -1057,7 +1062,7 @@ SWP_Update_Lifetime(TN2INT32_MAP &tn2lt_map,
   
   // Access the map entry for this TN.
   //
-  pair<TN2INT32_MAP::iterator, bool> insert_status = 
+  std::pair<TN2INT32_MAP::iterator, bool> insert_status = 
     tn2lt_map.insert(TN2INT32_MAP::value_type(tn, -1));
 
   if (insert_status.second)  // A new map-entry was inserted for the tn

@@ -1,5 +1,11 @@
 
+// [HK]
+#if __GNUC__ >= 3
+#include <list>
+// using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >= 3
 
 #include "defs.h"
 #include "tracing.h"
@@ -768,8 +774,8 @@ SSA_Place_Phi_Functions (
 )
 {
   BB *bb;
-  list<BB*> work_lst;
-  list<BB*>::iterator bbi;
+  std::list<BB*> work_lst;
+  std::list<BB*>::iterator bbi;
 
   // push the pool so that work and has already is not
   // accumulated in memory for all TNs

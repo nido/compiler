@@ -71,24 +71,25 @@ void MHD::Initialize()
     Loop_Overhead_Memref    = 1;
     TLB_Trustworthiness     = 0;
     TLB_NoBlocking_Model    = FALSE;
-
-    L[0] = MHD_LEVEL(MHD_TYPE_CACHE,   // Type
-		     32*1024,          // Size
-		     32,               // Line Size
-		     120,              // Clean Miss Penalty ??
-		     126,              // Dirty Miss Penalty ??
-		     4,                // Associativity
-		     -1,               // TLB Entries
-		     -1,               // Page Size
-		     -1,               // TLB Clean Miss Penalty
-		     -1,               // TLB Dirty Miss Penalty
-		     1.0,              // Typical Outstanding Loads
-		                       // (1.0 means no overlap)
-		     0.0,              // Load_OP_Overlap_1
-		                       // (0.0 means blocking cache)
-		     0.0,              // Load_OP_Overlap_2
-		                       // (0.0 means blocking cache)
-		     0);               // Pct_Excess_Writes_Nonhidable ??
+    // [HK] trick to force the use of = operator (instead of the copy constructor)
+    MHD_LEVEL tmp(MHD_TYPE_CACHE,   // Type
+		  32*1024,          // Size
+		  32,               // Line Size
+		  120,              // Clean Miss Penalty ??
+		  126,              // Dirty Miss Penalty ??
+		  4,                // Associativity
+		  -1,               // TLB Entries
+		  -1,               // Page Size
+		  -1,               // TLB Clean Miss Penalty
+		  -1,               // TLB Dirty Miss Penalty
+		  1.0,              // Typical Outstanding Loads
+		  // (1.0 means no overlap)
+		  0.0,              // Load_OP_Overlap_1
+		  // (0.0 means blocking cache)
+		  0.0,              // Load_OP_Overlap_2
+		  // (0.0 means blocking cache)
+		  0);               // Pct_Excess_Writes_Nonhidable ??
+  L[0] = tmp;
 #ifdef Is_True_On
     if (LNO_Verbose)
       printf ("Target Processor: TARGET_st200. %lld (%d)\n", 

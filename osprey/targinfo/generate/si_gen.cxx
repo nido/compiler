@@ -55,9 +55,20 @@
 #include <unistd.h>
 #include "W_limits.h"
 #include <stdarg.h>
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+#include <map>
+#include <vector>
+using std::list;
+using std::map;
+using std::vector;
+using std::less;
+#else
 #include <list.h>
 #include <map.h>
 #include <vector.h>
+#endif // __GNUC__ >=3
 
 #include "topcode.h"
 #include "targ_isa_properties.h"
@@ -396,7 +407,9 @@ void RES::Output_All( FILE* fd )
   for ( i = 0; i < total; ++i )
     resources[i]->Output(fd);
 
-  fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
+  // [HK]
+//    fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
+  fprintf(fd,"TARGINFO_EXPORTED int SI_resource_count = %d;\n",total);
   fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * const SI_resources[] = {");
 
   bool is_first = true;

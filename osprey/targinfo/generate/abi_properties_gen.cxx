@@ -53,7 +53,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >=3
 #include "gen_util.h"
 #include "targ_isa_registers.h"
 #include "abi_properties_gen.h"

@@ -42,8 +42,16 @@
 #endif // USE_PCH
 #pragma hdrstop
 
+// [HK]
+#if __GNUC__ >=3
+#include <algorithm>
+#include <vector>
+// using std::forward_iterator_tag;
+// using std::find_if;
+#else
 #include <algo.h>
 #include <vector.h>
+#endif // __GNUC__ >=3
 #include "defs.h"
 #include "errors.h"
 #include "tracing.h"
@@ -151,7 +159,7 @@ private:
   RID * start;
   RID * own;
 public:
-  typedef forward_iterator_tag iterator_category;
+  typedef std::forward_iterator_tag iterator_category;
   typedef RID * 	       value_type;
   typedef ptrdiff_t            difference_type;
   typedef value_type *         pointer;
@@ -161,6 +169,8 @@ public:
   RID_POST_ITER& operator++();
   RID_POST_ITER  operator++(int);
   friend bool operator==(const RID_POST_ITER&, const RID_POST_ITER&);
+    // [HK] add missing operator
+  friend bool operator!=(const RID_POST_ITER&, const RID_POST_ITER&);
 };
 
 RID_POST_ITER::RID_POST_ITER(RID * p): start(p), own(p) {
@@ -199,11 +209,17 @@ inline bool operator==(const RID_POST_ITER& x, const RID_POST_ITER & y)
   return x.own == y.own;
 }
 
+    // [HK] add missing operator
+inline bool operator!=(const RID_POST_ITER& x, const RID_POST_ITER & y)
+{
+  return x.own != y.own;
+}
+
 class RID_PARENT_ITER {
 private:
   RID * p;
 public:
-  typedef forward_iterator_tag iterator_category;
+  typedef std::forward_iterator_tag iterator_category;
   typedef RID * 	       value_type;
   typedef ptrdiff_t	       difference_type;
   typedef value_type *         pointer;
@@ -217,11 +233,18 @@ public:
     return tmp;
   }
   friend bool operator==(const RID_PARENT_ITER&, const RID_PARENT_ITER &);
+    // [HK] add missing operator
+  friend bool operator!=(const RID_PARENT_ITER&, const RID_PARENT_ITER &);
 
 };
 
 bool operator==(const RID_PARENT_ITER& x, const RID_PARENT_ITER& y) {
   return x.p == y.p;
+}
+
+    // [HK] add missing operator
+bool operator!=(const RID_PARENT_ITER& x, const RID_PARENT_ITER& y) {
+  return x.p != y.p;
 }
 
 struct IS_EH_RID
@@ -324,7 +347,7 @@ class EH_RANGE_LIST_PARENT_ITER {
 private:
   EH_RANGE_LIST::iterator iter;
 public:
-  typedef forward_iterator_tag iterator_category;
+  typedef std::forward_iterator_tag iterator_category;
   typedef EH_RANGE             value_type;
   typedef ptrdiff_t            difference_type;
   typedef value_type *         pointer;
@@ -333,19 +356,35 @@ public:
   EH_RANGE_LIST_PARENT_ITER(EH_RANGE_LIST::iterator x): iter(x) {}
   EH_RANGE& operator*() {return *iter;}
   EH_RANGE_LIST_PARENT_ITER& operator++() {
-    iter = iter->parent; return *this;}
-  EH_RANGE_LIST_PARENT_ITER operator++(int) {
+// [HK] bypass this code for the moment...
+#if __GNUC__ >= 3
+#if 0
+      iter = iter->parent;
+#endif
+#endif // __GNUC__ >= 3
+      return *this;}
+    EH_RANGE_LIST_PARENT_ITER operator++(int) {
     EH_RANGE_LIST_PARENT_ITER tmp = *this;
     ++*this;
     return tmp;
   }
   friend bool operator==(const EH_RANGE_LIST_PARENT_ITER&,
 			 const EH_RANGE_LIST_PARENT_ITER&);
+
+    // [HK] added missing operator
+  friend bool operator!=(const EH_RANGE_LIST_PARENT_ITER&,
+			 const EH_RANGE_LIST_PARENT_ITER&);
 };
 
 inline bool operator==(const EH_RANGE_LIST_PARENT_ITER & x,
 		       const EH_RANGE_LIST_PARENT_ITER &y) {
   return x.iter == y.iter;
+}
+
+    // [HK] added missing operator
+inline bool operator!=(const EH_RANGE_LIST_PARENT_ITER & x,
+		       const EH_RANGE_LIST_PARENT_ITER &y) {
+  return x.iter != y.iter;
 }
 
 /* There is always just one EH_RANGE_LIST which belongs to
@@ -376,7 +415,7 @@ struct SET_PARENT {
   void operator()(EH_RANGE& r) {
     RID_PARENT_ITER first(r.rid);
     RID_PARENT_ITER last(NULL);
-    first = find_if(++first, last, IS_EH_RID());
+    first = std::find_if(++first, last, IS_EH_RID());
     if (first == last)
       r.parent = NULL;
     else
@@ -398,15 +437,21 @@ EH_Generate_Range_List(WN * pu)
   RID_POST_ITER rid_first(rid);
   RID_POST_ITER rid_last(NULL);
 
-  for_each(rid_first, rid_last, ADD_EH_RANGE());
+  std::for_each(rid_first, rid_last, ADD_EH_RANGE());
 
+// [HK] bypass this code for the moment...
+#if __GNUC__ >= 3
+#if 0
   EH_RANGE_LIST::iterator list_first(range_list.begin());
   EH_RANGE_LIST::iterator list_last (range_list.end());
 
   for (EH_RANGE_LIST::iterator p = list_first; p!=list_last; p++)
-    RID_eh_range_ptr(p->rid) = p;
+      RID_eh_range_ptr(p->rid) = p;
 
-  for_each(list_first, list_last, SET_PARENT());
+  // [HK] for_each is std
+  std::for_each(list_first, list_last, SET_PARENT());
+#endif // 0
+#endif // __GNUC__ >= 3
 }
 
 
@@ -449,10 +494,13 @@ EH_Set_Start_Label(EH_RANGE* p)
 {
   LABEL_IDX label;
   if (p->kind == ehk_guard) {
+// [HK] bypass this code for the moment...
+#if __GNUC__ >= 3
+#if 0
     EH_RANGE_LIST::reverse_iterator rfirst(p);
     EH_RANGE_LIST::reverse_iterator rlast  = range_list.rend();
     EH_RANGE_LIST::reverse_iterator riter =
-      find_if(rfirst, rlast, IS_SIB_RANGE(p));
+      std::find_if(rfirst, rlast, IS_SIB_RANGE(p));
     if (riter == rlast) {
       if (p->parent != NULL) {
 	label = Duplicate_LABEL(p->parent->start_label);
@@ -467,6 +515,8 @@ EH_Set_Start_Label(EH_RANGE* p)
       Set_LABEL_begin_eh_range(label);
     }
     Add_Label(label);
+#endif // 0
+#endif // __GNUC__ >= 3
   }
 
   else {
@@ -503,12 +553,17 @@ void EH_Set_Has_Call(EH_RANGE* p)
   p->has_call = TRUE;
   if (p->kind == ehk_mask) {
     // set has_call for associated guard region also
+// [HK] bypass this code for the moment...
+#if __GNUC__ >= 3
+#if 0
     EH_RANGE_LIST::reverse_iterator rfirst(p);
     EH_RANGE_LIST::reverse_iterator rlast  = range_list.rend();
-    rfirst = find_if(rfirst, rlast, IS_SIB_RANGE(p));
+    rfirst = std::find_if(rfirst, rlast, IS_SIB_RANGE(p));
     Is_True(rfirst != rlast && rfirst->kind == ehk_guard,
 		      ("mask region must have guard"));
     rfirst->has_call = TRUE;
+#endif // 0
+#endif //  __GNUC__ >= 3
   }    
 }
 
@@ -589,14 +644,15 @@ EH_Prune_Range_List(void)
     return;
   }
 
-  for_each  (first, last, SET_ADJUSTMENT());
-  for_each  (first, last, CLEAR_USED());
-  for_each  (first, last, SET_ADJUSTMENT_TO_PARENT_ADJUSTMENT());
+    // [HK] for_each is std
+  std::for_each  (first, last, SET_ADJUSTMENT());
+  std::for_each  (first, last, CLEAR_USED());
+  std::for_each  (first, last, SET_ADJUSTMENT_TO_PARENT_ADJUSTMENT());
   range_list.erase(
     remove_if (first, last, 
                HAS_NO_CALL_OR_HAS_NULL_OR_UNREACHABLE_LABEL()), 
     last);
-  for_each  (range_list.begin(), range_list.end(), ADJUST_PARENT());
+  std::for_each  (range_list.begin(), range_list.end(), ADJUST_PARENT());
 } 
 
 struct COMPARE_RANGES {
@@ -648,11 +704,16 @@ struct IS_CLEANUP_RANGE {
 struct FIX_MASK_PARENT {
   void operator()(EH_RANGE& r) {
     if (r.kind == ehk_mask) {
-      EH_RANGE_LIST_PARENT_ITER first(r.parent);
-      EH_RANGE_LIST_PARENT_ITER last (NULL);
-      first = find_if(first, last, IS_CLEANUP_RANGE());
+// [HK] bypass this code for the moment...
+#if __GNUC__ >= 3
+#if 0
+        EH_RANGE_LIST_PARENT_ITER first(r.parent);
+	EH_RANGE_LIST_PARENT_ITER last (NULL);
+       first = std::find_if(first, last, IS_CLEANUP_RANGE());
       Is_True(first != last, ("mask region must have cleanup ancestor"));
       r.parent = (*first).parent;
+#endif // 0
+#endif // __GNUC__ >= 3
     }
   }
 };
@@ -679,8 +740,8 @@ fix_mask_ranges(void)
   EH_RANGE_LIST::reverse_iterator rfirst(range_list.rbegin());
   EH_RANGE_LIST::reverse_iterator rlast (range_list.rend());
 
-  for_each(rfirst, rlast, FIX_MASK_PARENT());
-  for_each(range_list.begin(), range_list.end(),
+  std::for_each(rfirst, rlast, FIX_MASK_PARENT());
+  std::for_each(range_list.begin(), range_list.end(),
 	   CHANGE_MASK_OR_GUARD_TO_CLEANUP());
 }
 

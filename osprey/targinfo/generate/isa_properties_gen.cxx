@@ -52,8 +52,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+#include <vector>
+using std::list;
+using std::vector;
+#else
 #include <list.h>
 #include <vector.h>
+#endif // __GNUC__ >=3
 #include "topcode.h"
 #include "gen_util.h"
 #include "isa_properties_gen.h"

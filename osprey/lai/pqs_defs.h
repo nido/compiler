@@ -37,9 +37,18 @@
 #define PQS_DEFS_included
 
 #include <stdio.h>
-#include <vector.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <set>
+#include <algorithm>
+#include <vector>
+// using std::less;
+// using std::set;
+#else
 #include <set.h>
 #include <algo.h>
+#include <vector.h>
+#endif //  __GNUC__ >= 3
 
 // Forward references
 class PQS_MANAGER;
@@ -125,16 +134,26 @@ struct PQS_TN_MAP_TYPE {
 // Set class template. Based on the STL set with some additional syntactic to make it 
 // A little easier to use. 
 //
-template <class T, class C = less<T> >
+template <class T, class C = std::less<T> >
 class PQS_SET {
 public:
 #ifdef PQS_USE_MEMPOOLS
    typedef mempool_allocator<T> set_allocator_type;
 #else
+    // [HK]
+#if __GNUC__ >=3
+    typedef std::allocator<T> set_allocator_type;
+#else
    typedef alloc set_allocator_type;
+#endif // __GNUC__ >=3
 #endif
-   typedef set<T,C,set_allocator_type> set_type;
+   typedef std::set<T,C,set_allocator_type> set_type;
+    // [HK]
+#if __GNUC__ >= 3
+   typedef typename set_type::iterator set_iterator_type;
+#else
    typedef set_type::iterator set_iterator_type;
+#endif // __GNUC__ >= 3
    set_type _set;
 
    PQS_SET<T,C>() 

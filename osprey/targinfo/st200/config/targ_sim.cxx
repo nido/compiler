@@ -63,7 +63,12 @@ static mDED_PREG_NUM Output_Base_Preg = 0;
 #define P0 Ptr_Preg_Min_Offset
 #define F0 Float_Preg_Min_Offset
 
+// [HK]
+#if __GNUC__ >= 3
+extern
+#else
 static
+#endif
 SIM SIM_Info[] = {
 	/* flags */
 	/* int args, flt args, dbl args */

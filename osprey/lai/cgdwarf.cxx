@@ -59,7 +59,12 @@
 #include <elf.h>
 #include <elfaccess.h>
 #include <libelf.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <vector>
+#else
 #include <vector.h>
+#endif // __GNUC__ >= 3
 
 #define	USE_STANDARD_TYPES 1
 #include "defs.h"

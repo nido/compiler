@@ -32,7 +32,13 @@
 #include <stdlib.h>
 #include <libelf.h>
 #include <sys/unwindP.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <list>
+using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >= 3
 
 #include "defs.h"
 #include "erglob.h"

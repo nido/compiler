@@ -57,7 +57,12 @@
 
 #include "W_alloca.h"
 #include <stdio.h>
+// [HK]
+#if __GNUC__ >= 3
+#include <iterator>
+#else
 #include <iterator.h>
+#endif // __GNUC__ >= 3
 #include "defs.h"
 #include "symtab.h"
 #include "config.h"

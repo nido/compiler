@@ -50,7 +50,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+// [HK]
+#if __GNUC__ >=3
+#include <vector>
+using std::vector;
+#else
 #include <vector.h>
+#endif // __GNUC__ >=3
 #include "gen_util.h"
 #include "isa_enums_gen.h"
 

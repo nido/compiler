@@ -423,7 +423,13 @@
 #ifndef	bb_INCLUDED
 #define	bb_INCLUDED
 
+// [HK]
+#if __GNUC__ >= 3
+#include <vector>             /* to get STL vector */
+#else
 #include <vector.h>             /* to get STL vector */
+#endif // __GNUC__ >= 3
+
 #include "mempool_allocator.h"  /* to get mempool allocator */
 
 #include "region_util.h" 	/* to get the definition of RID. */

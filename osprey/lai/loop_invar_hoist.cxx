@@ -94,8 +94,16 @@
   * =========================================================================
   * =========================================================================
   */
+// [HK]
+#if __GNUC__ >= 3
+#include <vector>  /* for STL vector and list */
+#include <list>
+// using std::vector;
+// using std::list;
+#else
 #include <vector.h>  /* for STL vector and list */
 #include <list.h>
+#endif // __GNUC__ >= 3
 
 #include "tracing.h"
 
@@ -131,12 +139,12 @@ INT32 IPFEC_Enable_LICM = 0;
 
     /* STL OP vector */
 typedef mempool_allocator<OP*> OP_ALLOC;
-typedef vector<OP*,OP_ALLOC>   OP_Vector;
+typedef std::vector<OP*,OP_ALLOC>   OP_Vector;
 typedef OP_Vector::iterator    OP_Vector_Iter;
 
     /* STL BB list */
 typedef mempool_allocator<BB*> BB_ALLOC;
-typedef list<BB*,OP_ALLOC>     BB_Lst;
+typedef std::list<BB*,OP_ALLOC>     BB_Lst;
 typedef BB_Lst::iterator       BB_Lst_Iter;
 
      /* class LI_TN_INFO :
@@ -798,7 +806,8 @@ LOOP_INVAR_CODE_MOTION :: Collect_Ld_St_Call (void) {
         OP* op;
         FOR_ALL_BB_OPs (bb,op) {
 
-            extern BOOL OP_like_store(OP *op);
+	    // [HK] useless ??
+ //            extern BOOL OP_like_store(OP *op);
 
             if (OP_load (op)) { _ld_ops.push_back (op) ; continue; }
             if (OP_like_store (op)) { _store_ops.push_back(op); continue; }

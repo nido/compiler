@@ -388,6 +388,9 @@ typedef struct op {
 	((o)->res_opnd[(result) + OP_result_offset(o)] = (tn))
 #define Set_OP_opnd(o,opnd,tn) \
 	((o)->res_opnd[(opnd) + OP_opnd_offset(o)] = (tn))
+// [HK] added opr setting macro to avoid casts to non reference type on lvalue
+#define Set_OP_opr(op,c) ((op)->opr = (mTOP)(c))
+
 
 /*
  * Define the OP cond def mask.

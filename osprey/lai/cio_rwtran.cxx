@@ -165,8 +165,14 @@ static const char rcs_id[] = "";
 #include "gra_live.h"
 #include "data_layout.h"
 
+// [HK]
+#if __GNUC__ >=3
+#include <vector>
+#include <map>
+#else
 #include "vector.h"
 #include "map.h"
+#endif // __GNUC__ >=3
 #include "cxx_memory.h"
 
 
@@ -305,7 +311,7 @@ INT32 CIO_rw_max_omega         = 8;
 // ======================================================================
 
 
-typedef pair< OP *, UINT8 > OP_OMEGA;
+typedef std::pair< OP *, UINT8 > OP_OMEGA;
 
 struct OP_OMEGA_less_prolog  // omega increasing
 {
@@ -372,10 +378,10 @@ private:
   // end (...,2,1,0).  The range OP* is the corresponding OPs that will
   // be inserted into the prolog or epilog.
 
-  typedef pair< OP_OMEGA, OP * >                      op_copy_pair;
-  typedef map< OP_OMEGA, OP *, OP_OMEGA_less_prolog,
+  typedef std::pair< OP_OMEGA, OP * >                      op_copy_pair;
+  typedef std::map< OP_OMEGA, OP *, OP_OMEGA_less_prolog,
 	       mempool_allocator< op_copy_pair > >    op_copy_map_prolog;
-  typedef map< OP_OMEGA, OP *, OP_OMEGA_less_epilog,
+  typedef std::map< OP_OMEGA, OP *, OP_OMEGA_less_epilog,
 	       mempool_allocator< op_copy_pair > >    op_copy_map_epilog;
 
   op_copy_map_prolog                                  _op_prolog_map;
@@ -1212,9 +1218,9 @@ CIO_RWTRAN::Copy_Ops_To_Prolog()
     fprintf( TFile, "<cio> Copy_Ops_To_Prolog copying:\n" );
   }
 
-  typedef pair< TN *, UINT8 >                      TN_OMEGA;
-  typedef pair< TN_OMEGA, TN * >                   tn_copy_pair;
-  typedef map< TN_OMEGA, TN *, less< TN_OMEGA >,
+  typedef std::pair< TN *, UINT8 >                      TN_OMEGA;
+  typedef std::pair< TN_OMEGA, TN * >                   tn_copy_pair;
+  typedef std::map< TN_OMEGA, TN *, less< TN_OMEGA >,
     mempool_allocator< tn_copy_pair > >            tn_copy_map;
 
   tn_copy_map tn_prolog_map;

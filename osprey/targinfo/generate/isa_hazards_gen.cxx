@@ -54,7 +54,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <assert.h>
+// [HK]
+#if __GNUC__ >=3
+#include <list>
+using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >=3
 #include "topcode.h"
 #include "gen_util.h"
 #include "targ_isa_subset.h"

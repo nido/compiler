@@ -30,7 +30,13 @@
 */
 
 #define USE_STANDARD_TYPES
+// [HK]
+#if __GNUC__ >= 3
+#include <map>
+using std::map;
+#else
 #include <map.h>
+#endif // __GNUC__ >= 3
 #include "defs.h"
 #include "mempool.h"
 #include "tn.h"

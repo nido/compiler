@@ -395,7 +395,13 @@
 static char *cg_dep_graph_rcs_id = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
+// [HK]
+#if __GNUC__ >= 3
+#include <list>
+// using std::list;
+#else
 #include <list.h>
+#endif // __GNUC__ >= 3
 #include "op.h"
 #include "op_map.h"
 #include "op_list.h"
@@ -689,19 +695,19 @@ void CG_DEP_Compute_Graph(struct bb      *bb,
 			  BOOL           control_arcs,
 			  TN_SET         *need_anti_out_dep);
 
-void CG_DEP_Compute_Region_Graph(list<BB*>   bb_region,
+void CG_DEP_Compute_Region_Graph(std::list<BB*>   bb_region,
 				 BOOL        assigned_regs,
 				 BOOL        memread_arcs,
 				 BOOL        control_arcs);
 
-void CG_DEP_Prune_Dependence_Arcs(list<BB*>   bblist,
+void CG_DEP_Prune_Dependence_Arcs(std::list<BB*>   bblist,
 				  BOOL prune_predicate_arcs,
 				  BOOL trace);
 
 void CG_DEP_Trace_Graph(BB *bb);
 #pragma mips_frequency_hint NEVER CG_DEP_Trace_Graph
 
-void CG_DEP_Trace_HB_Graph(list<BB*> bblist);
+void CG_DEP_Trace_HB_Graph(std::list<BB*> bblist);
 #pragma mips_frequency_hint NEVER CG_DEP_Trace_HB_Graph
 
 void CG_DEP_Trace_Arc(ARC *arc, BOOL is_succ, BOOL verbose);
@@ -770,7 +776,7 @@ extern void CG_DEP_Detach_Arc(ARC *arc);
 
 #ifdef TARG_ST
 CG_EXPORTED void 
-CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
+CG_DEP_Compute_Region_MEM_Arcs(std::list<BB*>    bb_list, 
 			       BOOL         compute_cyclic, 
 			       BOOL         memread_arcs);
 #endif
