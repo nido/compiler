@@ -552,6 +552,11 @@ Target_Has_Immediate_Operand (
       return TRUE;
   }
 
+  if ((WN_operator(parent) == OPR_MIN) ||
+      (WN_operator(parent) == OPR_MAX)) {
+    return TRUE;
+  }
+
   // default to false, which really means "don't know"
   return FALSE;
 }
