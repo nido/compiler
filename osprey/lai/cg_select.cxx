@@ -994,8 +994,8 @@ extern char *Cur_PU_Name;
 void
 draw_CFG(void)
 {
-  if (! DaVinci::enabled (TRUE)) return;
   if (! Trace_Select_daVinci) return;
+  if (! DaVinci::enabled (TRUE)) return;
 
   MEM_POOL dv_pool;
   dv_pool.magic_num = 0;		// force it to be unintialized
