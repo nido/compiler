@@ -3829,7 +3829,7 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       if (TN_is_constant(trip_count_tn))
 	new_trip_count_val = TN_value(trip_count_tn) / ntimes;
       unrolling_fully = CG_LOOP_unroll_fully &&
-	TN_is_constant(trip_count_tn) && TN_value(trip_count_tn) == ntimes;
+	TN_is_constant(trip_count_tn) && TN_value(trip_count_tn) <= ntimes;
       WN_set_loop_trip(wn, WN_CreateExp2(opc_div, WN_loop_trip(wn),
 					 ntimes_wn));
       if (TN_is_constant(trip_count_tn))
@@ -3927,12 +3927,6 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       BB_freq(CG_LOOP_prolog) * WN_loop_trip_est(LOOPINFO_wn(unrolled_info)) :
       orig_head_freq / ntimes;
   }
-
-#ifdef TARG_ST
-  int modulus, residue;
-
-  Get_pragma_LoopMod(loop, &modulus, &residue);
-#endif
 
   /* Build the replicas.
    */
@@ -4034,17 +4028,6 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	     * (or remove it if there's no <fall_thru_dest> or we know it's
 	     * always taken), and let <replica> fall through to <br_targ>.
 	     */
-#ifdef TARG_ST
-	    if ((bt_bbi == 0) &&
-		(modulus % ntimes == 0) &&
-		(residue % ntimes != ((unrolling+1)%ntimes))) {
-	      /* Remove always-taken branch to next iter head */
-	      BB_Remove_Op(replica, replica_br_op);
-	      br_prob = 0.0;
-	      removed_exits ++;
-	    }
-	    else
-#endif
 	    if (gen_remainder_loop && bt_bbi == 0) {
 	      /* Remove always-taken branch to next iter head */
 	      BB_Remove_Op(replica, replica_br_op);
@@ -4072,26 +4055,12 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	    /*
 	     * Retarget internal branch to <br_targ>.
 	     */
-#ifdef TARG_ST
-	    if ((br_targ == &replicas[0]) &&
-		(modulus % ntimes == 0) && (residue % ntimes != 0)) {
-	      BB_Remove_Op(replica, replica_br_op);
-	      br_prob = 0.0;
-	      fall_thru_dest = br_targ;
-	      fall_thru_dest_in_loop = TRUE;
-	      removed_exits ++;
-	    }
-	    else {
-#endif
 	    Set_OP_opnd(replica_br_op, replica_targ_opnd,
 			Gen_Label_TN(Gen_Label_For_BB(br_targ), 0));
 	    Link_Pred_Succ_with_Prob(replica, br_targ, br_prob);
 	    if (br_targ != &replicas[0] &&
 		(freqs || BB_freq_fb_based(br_targ)))
 	      BB_freq(br_targ) += br_prob * BB_freq(replica);
-#ifdef TARG_ST
-	    }
-#endif
 	  } else if (br_targ) {
 	    /*
 	     * Branch to external target - no change.
@@ -4147,6 +4116,10 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
    * so remainder frequencies can be set correctly.
    */
 #ifdef TARG_ST
+  int modulus, residue;
+
+  Get_pragma_LoopMod(loop, &modulus, &residue);
+
   if (trip_count_tn && TN_is_constant(trip_count_tn))
     remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
   else {
@@ -5106,8 +5079,7 @@ void CG_LOOP::Determine_Unroll_Factor()
      or with #pragma unroll. */
 
   if ((BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1) &&
-      //      !(pragma_unroll || CG_LOOP_unroll_multi_bb))
-      !CG_LOOP_unroll_multi_bb)
+      !(pragma_unroll || CG_LOOP_unroll_multi_bb))
     return;
 
   INT32 body_len = 0;
