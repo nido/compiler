@@ -1038,12 +1038,12 @@ Write_Label (
   INT address_size = ((Use_32_Bit_Pointers) ? 4 : 8);
 
   for (i = 0; i < repeat; i++) {
-    fprintf (Lai_File, "\t%s\t", (scn_ofst % address_size) == 0 ? 
+    fprintf (Output_File, "\t%s\t", (scn_ofst % address_size) == 0 ? 
 		                  AS_ADDRESS : AS_ADDRESS_UNALIGNED);
-    fprintf (Lai_File, "%s", LABEL_name(lab));
+    fprintf (Output_File, "%s", LABEL_name(lab));
     if (lab_ofst != 0)
-      fprintf (Lai_File, " %+lld", lab_ofst);
-    fprintf (Lai_File, "\n");
+      fprintf (Output_File, " %+lld", lab_ofst);
+    fprintf (Output_File, "\n");
     scn_ofst += address_size;
   }
   return scn_ofst;
