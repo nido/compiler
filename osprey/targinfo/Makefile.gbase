@@ -125,7 +125,7 @@ endif
 
 ifeq ($(DSO_MODE),DLL)
 HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLEXPORT)
-HOSTDEFS += -DBE_EXPORTED=
+HOSTDEFS += -DBE_EXPORTED=$(DLLEXPORT)
 HOSTDEFS += -DIPL_EXPORTED=
 HOSTDEFS += -DLNO_EXPORTED=
 endif
@@ -186,7 +186,7 @@ SO_TARGETS = libst200.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = st220.dll
+SO_TARGETS = st220.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
@@ -955,6 +955,12 @@ endif # ST200
 #libtarginfo.a: libtarginfo.a($(LIBTARGINFO_OBJS))
 libtarginfo.a : $(LIBTARGINFO_OBJS)
 	$(AR) $(ARFLAGS) $@ $^
+
+ifeq ($(DSO_MODE),DLL)
+libtarginfo.dll libtarginfo_dll.a : $(LIBTARGINFO_OBJS)
+	$(CC) --shared -o libtarginfo.dll -Wl,--out-implib,libtarginfo_dll.a \
+	$^ $(LDDSOOPTS) -Wl,--image-base=0x13000000
+endif
 
 ifeq ($(BUILD_COMPILER), EDG)
 $(EXPORT_FILE): $(TARG_INFO_EXPORTED)
