@@ -232,7 +232,9 @@ ifeq ($(DSO_MODE),DLL)
 BE_DSO=be_dll.a
 CG_DSO=cg_dll.a
 ifeq ($(BUILD_TARGET), ST200)
-TARGET_DSO=st220_dll.a
+# (cbr) use ti_init dlsyms
+# TARGET_DSO=st220_dll.a
+TARGET_DSO=
 endif
 HOSTDEFS += -DCG_EXPORTED=$(DLLIMPORT)
 HOSTDEFS += -DBE_EXPORTED=$(DLLIMPORT)
