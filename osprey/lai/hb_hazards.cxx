@@ -1264,8 +1264,11 @@ Handle_Bundle_Hazards(
     // Check for availability at slot <i> position in <bundle>.
 #ifdef TARG_ST200 // [CL] keep track of pc,
     // and handle case were slots are not allocated in sequence
-    if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
-					stop_bit_reqd, NULL, TRUE, *pc, &slot_pos)) {
+    // [SC]: Do not call CGTARG_Bundle_Slot_Available if the
+    // resources are not available.
+    if (TI_RES_RES_Resources_Available(rr_tab,OP_code(op),Clock)
+	&& CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
+					 stop_bit_reqd, NULL, TRUE, *pc, &slot_pos)) {
 #else
     if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					stop_bit_reqd, NULL)) {
