@@ -494,49 +494,33 @@ Generate_Entry (BB *bb, BOOL gra_run)
     else {
 #ifdef TARG_ST
       //
-      // Spills are handled by the GRA. RA_TN must be allocatable.
+      // Arthur: RA_TN is part of callee saves. Always add to the
+      //         push/pop sequence if such is being generated.
+      //
+      if (CG_gen_callee_saved_regs_mask &&
+	  (PU_Has_Calls || CG_localize_tns)) {
+	ISA_REGISTER_CLASS cl = TN_register_class(RA_TN);
+	Callee_Saved_Regs_Mask[cl] = 
+	  REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], TN_register(RA_TN));
+      }
+#if 0
+      //
+      // Spills are handled by the GRA. RA_TN may be allocatable.
       //
       //      Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
       //      Set_OP_no_move_before_gra(OPS_last(&ops));
-      if (gra_run && PU_Has_Calls) {
-	if (CG_gen_callee_saved_regs_mask) {
-	  // 
-	  // Add RA_TN to the callee saved registers mask
-	  //
-	  ISA_REGISTER_CLASS cl = TN_register_class(RA_TN);
-	  Callee_Saved_Regs_Mask[cl] = 
-	    REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], 
-				TN_register(RA_TN));
-	}
-	else {
-	  Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-	  Set_OP_no_move_before_gra(OPS_last(&ops));
-	}
-      }
-      else {
-	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-	Set_OP_no_move_before_gra(OPS_last(&ops));
-      }
-#if 0
-	  // Because the routine has calls, GRA needs to spill it.
-	  ST *ra_sv_sym = CGSPILL_Get_TN_Spill_Location(RA_TN, CGSPILL_LCL);
-	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
-	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
-	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
-	  Exp_COPY (ra_sv_tn, RA_TN, &ops);
-	  CGSPILL_Store_To_Memory (ra_sv_tn, 
-				   ra_sv_sym, 
-				   &ops, 
-				   CGSPILL_LCL, 
-				   bb);
-	}
-      }
-      else if (REGISTER_CLASS_allocatable(TN_register_class(RA_TN))) {
+      else if (PU_Has_Calls && gra_run) {
 	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
 #endif
-#else
+      else {
+	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+	Set_OP_no_move_before_gra(OPS_last(&ops));
+      }
+
+#else /* !TARG_ST */
+
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
       {
@@ -555,7 +539,8 @@ Generate_Entry (BB *bb, BOOL gra_run)
         Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops );
       }
       Set_OP_no_move_before_gra(OPS_last(&ops));
-#endif
+
+#endif /* TARG_ST */
     }
   }
 
@@ -1220,7 +1205,15 @@ Generate_Exit (
     else {
 #ifdef TARG_ST
       //
-      // Spills are handled by the GRA. RA_TN must be allocatable.
+      // If we're generating the push/pop mask and need to save
+      // the RA_TN, do not make a move
+      //
+      if (CG_gen_callee_saved_regs_mask && 
+	  (PU_Has_Calls || CG_localize_tns)) {
+      }
+#if 0
+      //
+      // Spills are handled by the GRA. RA_TN may be allocatable.
       //
       if (gra_run && PU_Has_Calls) {
 	if (!CG_gen_callee_saved_regs_mask) {
@@ -1228,32 +1221,14 @@ Generate_Exit (
 	  Set_OP_no_move_before_gra(OPS_last(&ops));
 	}
       }
+#endif
       else {
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
-#if 0
-	  // Because the routine has calls, GRA needs to spill it
-	  ST *ra_sv_sym = TN_spill(RA_TN);
-	  TN *ra_sv_tn = Build_TN_Like(RA_TN);
-	  Set_TN_save_creg (ra_sv_tn, TN_class_reg(RA_TN));
-	  Set_TN_spill(ra_sv_tn, ra_sv_sym);
-	  CGSPILL_Load_From_Memory (ra_sv_tn, 
-				    ra_sv_sym, 
-				    &ops, 
-				    CGSPILL_LCL, 
-				    bb_epi);
-	  Exp_COPY (RA_TN, ra_sv_tn, &ops);
-	  Set_OP_no_move_before_gra(OPS_last(&ops));
-	}
-      }
-      else if (REGISTER_CLASS_allocatable(TN_register_class(RA_TN))) {
-	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
-	Set_OP_no_move_before_gra(OPS_last(&ops));
-      }
-#endif
 
-#else
+#else /* !TARG_ST */
+
       if (gra_run && PU_Has_Calls 
 	&& TN_register_class(RA_TN) != ISA_REGISTER_CLASS_integer)
       {
@@ -1269,7 +1244,8 @@ Generate_Exit (
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
       }
       Set_OP_no_move_before_gra(OPS_last(&ops));
-#endif
+
+#endif /* TARG_ST */
     }
   }
 
@@ -1743,49 +1719,27 @@ Adjust_Entry (
    *   SP-adjust: TOP_spadjust $sp, $sp, -Frame_Len_TN
    *   FP-adjust: TOP_spadjust $fp, $sp, Frame_Len_TN
    */
-#ifdef SUPPORTS_PREDICATION
-  // Arthur: the assumptions are different when there is no predication
   FmtAssert(   OP_code(sp_adj) == TOP_spadjust
 	    && OP_results(sp_adj) == 1
 	    && TN_is_sp_reg(OP_result(sp_adj,0))
-	    && TN_is_sp_reg(OP_opnd(sp_adj, 1))
+	    && TN_is_sp_reg(OP_opnd(sp_adj, OP_has_predicate(sp_adj) ? 1:0))
 	    && sp_incr == Neg_Frame_Len_TN
 	    && (!OP_has_predicate(sp_adj) 
 		|| OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
 	    ("Unexpected form of entry SP-adjust OP"));
-#else
-  FmtAssert(   OP_code(sp_adj) == TOP_spadjust
-	    && OP_results(sp_adj) == 1
-	    && TN_is_sp_reg(OP_result(sp_adj,0))
-	    && TN_is_sp_reg(OP_opnd(sp_adj, 0))
-	    && sp_incr == Neg_Frame_Len_TN,
-	    ("Unexpected form of entry SP-adjust OP"));
-#endif
+
   if (fp_adj != sp_adj) {
-#ifdef SUPPORTS_PREDICATION
-  // Arthur: the assumptions are different when there is no predication
     FmtAssert(   OP_code(fp_adj) == TOP_spadjust 
 	      && OP_results(fp_adj) == 1
 	      /* && OP_result(fp_adj,0) == FP_TN */
 	      && TN_is_dedicated_class_and_reg (OP_result(fp_adj,0), 
 					TN_register_and_class(FP_TN))
-	      && TN_is_sp_reg(OP_opnd(fp_adj, 1))
+	      && TN_is_sp_reg(OP_opnd(fp_adj, OP_has_predicate(fp_adj) ? 1:0))
 	      && fp_incr != NULL 
 	      && fp_incr == Frame_Len_TN 
 	      && ( ! OP_has_predicate(fp_adj) 
 		  || OP_opnd(fp_adj, OP_PREDICATE_OPND) == True_TN), 
 	      ("Unexpected form of entry FP-adjust OP"));
-#else
-    FmtAssert(   OP_code(fp_adj) == TOP_spadjust 
-	      && OP_results(fp_adj) == 1
-	      /* && OP_result(fp_adj,0) == FP_TN */
-	      && TN_is_dedicated_class_and_reg (OP_result(fp_adj,0), 
-					TN_register_and_class(FP_TN))
-	      && TN_is_sp_reg(OP_opnd(fp_adj, 0))
-	      && fp_incr != NULL 
-	      && fp_incr == Frame_Len_TN,
-	      ("Unexpected form of entry FP-adjust OP"));
-#endif
   }
 
   /* Perform any adjustments. We will either remove, change, or
@@ -1954,14 +1908,6 @@ Adjust_Exit (
 	      && ( ! OP_has_predicate(sp_adj) 
 		  || OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
 	      ("Unexpected form of exit SP-adjust OP"));
-#if 0
-    FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
-	      && OP_results(sp_adj) == 1
-	      && TN_is_sp_reg(OP_result(sp_adj,0))
-	      && TN_is_sp_reg(OP_opnd(sp_adj, 0))
-	      && sp_incr == Frame_Len_TN,
-	      ("Unexpected form of exit SP-adjust OP"));
-#endif
   }
 
   /* Perform any adjustments. We will either remove the adjustment
