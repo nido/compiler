@@ -661,18 +661,9 @@ Get_Parameter_Location (
 struct PSTRUCT {
     BOOL	is_struct;
     BOOL        first_call;
-#if 0
-    BOOL        is_hfa;
-    TYPE_ID     hfa_mtype;
-#endif
     INT64	offset;			// offset from beginning of struct
     INT64	size;
 
-#if 0
-    PSTRUCT () : is_struct (FALSE), first_call (TRUE),
-		 is_hfa (FALSE), hfa_mtype (MTYPE_V),
-		 offset (0), size (0) {}
-#endif
     PSTRUCT () : is_struct (FALSE), first_call (TRUE),
 		 offset (0), size (0) {}
 };
@@ -681,10 +672,6 @@ static PSTRUCT pstruct;
 
 #define	PSTRUCT_struct		pstruct.is_struct
 #define	PSTRUCT_first_call	pstruct.first_call
-#if 0
-#define	PSTRUCT_hfa		pstruct.is_hfa
-#define	PSTRUCT_hfa_mtype	pstruct.hfa_mtype
-#endif
 #define	PSTRUCT_offset		pstruct.offset
 #define	PSTRUCT_size		pstruct.size
 
