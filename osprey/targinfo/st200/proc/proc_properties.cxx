@@ -52,6 +52,11 @@ main()
     same_cycle_branch_shadow,   /* execute branch shadow parallel with branch */
     out_of_order, 		/* out of order execution */
     superscalar,		/* multiple insts per cycle */
+    ia64_predication,           /* supports IA64 predication model */
+    select,                     /* supports partial predication model */
+    predicate_branches,         /* can predicate branches */
+    predicate_calls,            /* can predicate calls */
+    predicate_returns,          /* can predicate returns */
     bundles,			/* executes insts as sequence of bundles */
     prefetch,                   /* supports prefetch instructions */
     enable_prefetch,            /* implicitely enables prefetch */
@@ -93,6 +98,28 @@ main()
   Processor_Group (superscalar,
 			PROCESSOR_st220,
 			PROCESSOR_UNDEFINED);
+
+  ia64_predication = PROC_Property_Create ("is_ia64_predication");
+  Processor_Group (ia64_predication, 
+			PROCESSOR_UNDEFINED);
+
+  select = PROC_Property_Create ("is_select");
+  Processor_Group (select,
+			PROCESSOR_st220,
+			PROCESSOR_UNDEFINED);
+
+  predicate_branches = PROC_Property_Create ("has_predicate_branches");
+  Processor_Group (predicate_branches, 
+			PROCESSOR_UNDEFINED);
+
+  predicate_calls = PROC_Property_Create ("has_predicate_calls");
+  Processor_Group (predicate_calls, 
+			PROCESSOR_UNDEFINED);
+
+  predicate_returns = PROC_Property_Create ("has_predicate_returns");
+  Processor_Group (predicate_returns, 
+			PROCESSOR_UNDEFINED);
+
 
   /* Does the target execute insts as sequence of bundles, or require 
    * bundle alignment? The info is used to align instructions to bundles, 
