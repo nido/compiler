@@ -887,9 +887,7 @@ Node(BB* bb)
     int i;
  
    for (i = 0; i < OP_results(op); i++) {
-      p = sPrint_TN(OP_result(op, i), FALSE, p);
-      p += strlen (p);
-      p += sprintf(p, " ");
+      p += sprintf(p, "%d ", TN_number(OP_result(op, i)));
     }
 
    if (OP_results(op))
@@ -898,9 +896,7 @@ Node(BB* bb)
    p += sprintf(p, " %s ", TOP_Name(OP_code(op)));
 
     for (i = 0; i < OP_opnds(op); i++) {
-      p = sPrint_TN(OP_opnd(op, i), FALSE, p);
-      p += strlen (p);
-      p += sprintf(p, " ");
+      p += sprintf(p, "%d ", TN_number(OP_result(op, i)));
     }
 
     p += sprintf(p, "\\n");

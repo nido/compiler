@@ -106,6 +106,9 @@
 #ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
 #endif
+#ifdef SUPPORTS_SELECT
+#include "cg_select.h"
+#endif
 #include "tag.h"
 
 #ifdef TARG_ST
@@ -173,6 +176,10 @@ CG_PU_Initialize (
   CFLOW_Initialize();
   CG_LOOP_Init();
   HB_Init();
+#ifdef SUPPORTS_SELECT
+  Select_Init();
+#endif
+
 #ifdef TARG_ST
   if (CG_enable_peephole) EBO_Init();
 #else
@@ -548,6 +555,16 @@ CG_Generate_Code(
 	if (frequency_verify)
 	  FREQ_Verify("Hyberblock Formation");
       }
+#endif
+
+#ifdef SUPPORTS_SELECT
+      // Perform select generation (partial predication if-conversion). 
+      if (CG_enable_select) {
+	Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
+	if (frequency_verify)
+	  FREQ_Verify("Select Formation");
+      }
+      draw_CFG();        
 #endif
 
 #ifdef TARG_ST
