@@ -2897,6 +2897,36 @@ OP_is_extension(OP *op, INT32 opnd_idx, INT32 *ext_bits, INT32 *ext_signed)
 }
 
 /* =====================================================================
+ * Get_Constant_Value
+ * Returns a constant TN if the tninfo corresponds to a constsant value 
+ * tn.
+ * Return NULL otherwise.
+ * =====================================================================
+ */
+static TN *
+Get_Constant_Value(EBO_TN_INFO *tninfo)
+{
+  TN *const_tn = NULL;
+  TN *tn;
+  
+  if (tninfo->replacement_tn != NULL)
+    tn = tninfo->replacement_tn;
+  else 
+    tn = tninfo->local_tn;
+  
+  if (TN_Has_Value(tn))
+    const_tn = tn;
+  else if (TN_is_rematerializable(tn)) {
+    WN *home = TN_home(tn);
+    if (WN_opcode (home) == OPC_I4INTCONST ||
+	WN_opcode (home) == OPC_U4INTCONST) {
+      const_tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
+    }
+  }
+  return const_tn;
+}
+  
+/* =====================================================================
  *   Is_16_Bits
  * =====================================================================
  */
@@ -2911,10 +2941,33 @@ Is_16_Bits (
 ) 
 {
   EBO_OP_INFO *opinfo = locate_opinfo_entry(opnd_tninfo);;
-  if ((opinfo == NULL) || (opinfo->in_op == NULL)) 
-    return FALSE;
+  OP *op = opinfo != NULL ? opinfo->in_op : NULL;
+  TN *const_tn;
 
-  OP *op = opinfo->in_op;
+  if ((opnd_tninfo != NULL &&
+       (const_tn = Get_Constant_Value(opnd_tninfo)) != NULL) ||
+      (op != NULL && 
+       (OP_code(op) == TOP_mov_i || OP_code(op) == TOP_mov_ii) &&
+       (const_tn = OP_opnd(op,0)) != NULL &&
+       TN_Has_Value(const_tn))) {
+    INT64 value = TN_Value(const_tn);
+    if (value >= -32768 && value <= 32767) {
+      *ret = opnd_tninfo->local_tn;
+      *ret_tninfo = opnd_tninfo;
+      *sign_ext = SIGN_EXT;
+      *hilo = TN_LO_16;
+      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+    } else if (value >= 0 && value <= 65535) {
+      *ret = opnd_tninfo->local_tn;
+      *ret_tninfo = opnd_tninfo;
+      *sign_ext = ZERO_EXT;
+      *hilo = TN_LO_16;
+      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
+    }
+  }
+  
+  if (opinfo == NULL || op == NULL) 
+    return FALSE;
 
   if (IS_SHR_16(op)) {
     *ret = OP_opnd(op,0);
@@ -2947,24 +3000,6 @@ Is_16_Bits (
     *sign_ext = SIGN_UNKNOWN;
     *hilo = TN_LO_16;
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-  }
-
-  if ((OP_code(op) == TOP_mov_i || OP_code(op) == TOP_mov_ii) &&
-      TN_Has_Value(OP_opnd(op,0))) {
-    INT64 value = TN_Value(OP_opnd(op,0));
-    if (value >= -32768 && value <= 32767) {
-      *ret = OP_result(op,0);
-      *ret_tninfo = opnd_tninfo;
-      *sign_ext = SIGN_EXT;
-      *hilo = TN_LO_16;
-      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-    } else if (value >= 0 && value <= 65535) {
-      *ret = OP_result(op,0);
-      *ret_tninfo = opnd_tninfo;
-      *sign_ext = ZERO_EXT;
-      *hilo = TN_LO_16;
-      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-    }
   }
 
   // Check bit width of definition
