@@ -5136,29 +5136,27 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #if defined(LAO_ENABLED) && defined(LAO_EXPERIMENT)
   {
     BOOL status = FALSE;
-    CG_LOOP cg_loop(loop);
     LAO_INIT();
     switch (action) {
     case NO_LOOP_OPT:
       break;
     case SINGLE_BB_DOLOOP_SWP:
-      status = LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll);
+      status = LAO_optimize(loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll);
       break;
     case SINGLE_BB_DOLOOP_UNROLL:
-      status = LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnroll);
+      status = LAO_optimize(loop, LAO_LoopSchedule + LAO_LoopUnroll);
       break;
     case SINGLE_BB_WHILELOOP_SWP:
-      status = LAO_optimize(&cg_loop, LAO_LoopPipeline + LAO_LoopUnwind);
+      status = LAO_optimize(loop, LAO_LoopPipeline + LAO_LoopUnwind);
       break;
     case SINGLE_BB_WHILELOOP_UNROLL:
-      status = LAO_optimize(&cg_loop, LAO_LoopSchedule + LAO_LoopUnwind);
+      status = LAO_optimize(loop, LAO_LoopSchedule + LAO_LoopUnwind);
       break;
     case MULTI_BB_DOLOOP:
       break;
     }
     LAO_FINI();
-    //if (status) return TRUE;
-    return status;
+    if (status) return TRUE;
   }
 #endif
 
