@@ -45,7 +45,11 @@ extern void Cg_Dwarf_Begin (BOOL is_64bit);
 
 extern void Cg_Dwarf_Finish (pSCNINFO text_scninfo);
 
+#ifdef TARG_ST // [CL] added force_emission parameter
+extern void Cg_Dwarf_Add_Line_Entry (INT code_address, SRCPOS srcpos, BOOL force_emission=FALSE);
+#else
 extern void Cg_Dwarf_Add_Line_Entry (INT code_address, SRCPOS srcpos);
+#endif
 
 extern void Cg_Dwarf_Process_PU (Elf64_Word  scn_index,
 				 LABEL_IDX   begin_label,
