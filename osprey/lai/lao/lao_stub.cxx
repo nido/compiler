@@ -39,6 +39,29 @@ extern "C" {
 #undef this
 }
 
+#define OP_asmstmt(op)	(OP_code(op) == TOP_asm)
+
+extern OP_MAP OP_Asm_Map;
+
+BOOL
+OP_clobber_reg(OP *op) {
+  if (OP_asmstmt(op)) {
+    ASM_OP_ANNOT *asm_info = (ASM_OP_ANNOT*)OP_MAP_Get(OP_Asm_Map, op);
+    ISA_REGISTER_CLASS rc;
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      REGISTER_SET regset = ASM_OP_clobber_set(asm_info)[rc];
+      if (!REGISTER_SET_EmptyP(regset)) return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+BOOL
+OP_clobber_mem(OP *op) {
+  if (OP_asmstmt(op)) return TRUE;
+  return FALSE;
+}
+
 // Declare CG_DEP_Compute_Region_MEM_Arcs().
 CG_EXPORTED void 
 CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
@@ -218,6 +241,8 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
   Operation operation = Interface_makeOperation(interface, cgir_op,
       OPERATOR, argCount, arguments, resCount, results);
   if (OP_volatile(cgir_op)) Interface_Operation_setVolatile(interface, operation);
+  if (OP_clobber_mem(cgir_op)) Interface_Operation_setClobberMemory(interface, operation);
+  if (OP_clobber_reg(cgir_op)) Interface_Operation_setClobberRegisters(interface, operation);
   ST *spill_st = CGSPILL_OP_Spill_Location(cgir_op);
   if (spill_st != NULL && OP_spill(cgir_op)) {
     Symbol symbol = CGIR_SYM_to_Symbol(ST_st_idx(*spill_st));
@@ -675,7 +700,7 @@ lao_init() {
     TOP__Operator[TOP_andl_ii_r] = Operator_CODE_ANDL_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_andl_r_b] = Operator_CODE_ANDL_BDEST_SRC1_SRC2;
     TOP__Operator[TOP_andl_r_r] = Operator_CODE_ANDL_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_asm] = Operator_MACRO_ASMCALL;
+    TOP__Operator[TOP_asm] = Operator_MACRO_ASMSTMT;
 //  TOP__Operator[TOP_begin_pregtn] = Operator_PSEUDO_;
     TOP__Operator[TOP_br] = Operator_CODE_BR_BCOND_BTARG;
     TOP__Operator[TOP_break] = Operator_CODE_BREAK;
@@ -1099,7 +1124,7 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
     if (BB_nest_level(*bb_iter) == nest_level) {
       OP *op = NULL;
       FOR_ALL_BB_OPs(*bb_iter, op) {
-	if (OP_memory(op)) ++op_count;
+	if (OP_memory(op) || OP_clobber_mem(op)) ++op_count;
       }
       bb_list.push_back(*bb_iter);
       if (op_count >= LAO_OPS_LIMIT) {
@@ -1119,7 +1144,7 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
       FOR_ALL_BB_OPs(*bb_iter, op) {
 	if (_CG_DEP_op_info(op)) {
 	  Operation orig_operation = CGIR_OP_to_Operation(op);
-	  if (OP_memory(op)) {
+	  if (OP_memory(op) || OP_clobber_mem(op)) {
 	    Interface_LoopInfo_setDependenceNode(interface, loopinfo, orig_operation);
 	  }
 	  for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
