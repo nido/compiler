@@ -43,6 +43,7 @@
  * The following flags to drive the algorithm.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
+ * -CG:select_stores=TRUE        promote store operands with select.
  *
  * The following flags to drive the heuristics.
  * -CG:select_factor="16.0"       gain for replacing a branch by a select
@@ -97,6 +98,8 @@ static OP_MAP phi_op_map = NULL;
 // corresponding edges because they would be removed by select latter.
 typedef struct {
   UINT8 npreds;
+  INT8 tn_tpos;
+  INT8 tn_fpos;
   TN    *res;
   BB    **preds;
   TN    **tns;
@@ -462,23 +465,6 @@ BB_Localize_Tns (BB *bb)
  *
  * ================================================================
  */
-
-static UINT8 
-Get_TN_Pos_in_PHI_INFO (phi_info *phi, BB *bb)
-{
-  UINT8 nopnds = phi->npreds;
-  BB **preds    = phi->preds;
-
-  do {
-    for (UINT8 i = 0; i < nopnds; i++) {
-      if (preds[i] == bb)
-        return i;
-    }
-  } while (bb = BB_Unique_Successor (bb));
-
-  FmtAssert(FALSE, ("didn't find pos for BB%d in phi\n", BB_id(bb)));
-}
-
 static UINT8 
 Get_TN_Pos_in_PHI (OP *phi, BB *bb)
 {
@@ -493,7 +479,6 @@ Get_TN_Pos_in_PHI (OP *phi, BB *bb)
 
   FmtAssert(FALSE, ("didn't find pos for BB%d in phi\n", BB_id(bb)));
 }
-
 
 // After changing the CFG, SSA information must be maintained
 static void
@@ -1061,7 +1046,7 @@ Rename_Globals(OP* op, hTN_MAP dup_tn_map)
 }
 
 static void
-Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
+Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup, BOOL taken)
 {
   OP *phi;
 
@@ -1084,7 +1069,6 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
       preds = (BB**)MEM_POOL_Realloc(&MEM_Select_pool,
                                      phi_i->preds, nopnds * sizeof(BB*),
                                      (nopnds+1) * sizeof(BB*));
-
       new_phi = phi_i;
     }
     else {
@@ -1097,6 +1081,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
                                    (nopnds+1) * sizeof(BB*));
 
       new_phi = (phi_info *)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_info));
+      new_phi->tn_tpos = new_phi->tn_fpos = -1;
       OP_MAP_Set(dup_bb_phi_map, phi, new_phi);
     }
 
@@ -1126,6 +1111,10 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
 
     opnd[i] = old_tn;
     preds[i] = head;
+    if (taken)
+      new_phi->tn_tpos = i;
+    else
+      new_phi->tn_fpos = i;
 
     new_phi->npreds = nopnds+1;
     new_phi->res    = OP_result(phi, 0);
@@ -1136,7 +1125,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
 
 //  Copy <old_bb> and all of its ops into BB.
 static void
-Copy_BB_For_Duplication(BB* bp, BB* to_bb)
+Copy_BB_For_Duplication(BB* bp, BB* to_bb, BOOL taken)
 {
   BB* new_bb = NULL;
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
@@ -1208,7 +1197,7 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb)
   }
 
   BB_Remove_Ops(bp, old_phis);
-  Rename_PHIs(dup_tn_map, to_bb, succ, bp);
+  Rename_PHIs(dup_tn_map, to_bb, succ, bp, taken);
 
   Unlink_Pred_Succ (to_bb,bp);
 
@@ -1659,12 +1648,12 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   dup_bb_phi_map = OP_MAP_Create();
 
   if (target_bb != tail && n_preds_target > 1) {
-    Copy_BB_For_Duplication(target_bb, head);
+    Copy_BB_For_Duplication(target_bb, head, TRUE);
     target_bb = tail;
     did_duplicate_bb = TRUE;
   }
   if (fall_thru_bb != tail && n_preds_fall_thru > 1) {
-    Copy_BB_For_Duplication(fall_thru_bb, head);
+    Copy_BB_For_Duplication(fall_thru_bb, head, FALSE);
     fall_thru_bb = tail;
     did_duplicate_bb = TRUE;
   }
@@ -1684,10 +1673,18 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     phi_info *phi_i = (phi_info*)OP_MAP_Get(dup_bb_phi_map, phi);
 
     if (phi_i) {
-      taken_pos    = Get_TN_Pos_in_PHI_INFO (phi_i, target_bb == tail ?
-                                             head : target_bb);
-      nottaken_pos = Get_TN_Pos_in_PHI_INFO (phi_i, fall_thru_bb == tail ?
-                                             head : fall_thru_bb);
+      if (phi_i->tn_tpos >= 0)
+        taken_pos = phi_i->tn_tpos;
+      else
+        taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ?
+                                          head : target_bb);
+
+      if (phi_i->tn_fpos >= 0)
+        nottaken_pos = phi_i->tn_fpos;
+      else
+        nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ?
+                                          head : fall_thru_bb);
+
       true_tn  = phi_i->tns[taken_pos];
       false_tn = phi_i->tns[nottaken_pos];
       npreds   = phi_i->npreds;
@@ -1926,6 +1923,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       
       Initialize_Hammock_Memory();
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
+
 #ifdef Is_True_On
       Sanity_Check();
 #endif
