@@ -952,6 +952,9 @@ CGTARG_Spill_Type (
     case ISA_REGISTER_CLASS_integer:
       return MTYPE_To_TY(MTYPE_I4);
 
+    case ISA_REGISTER_CLASS_branch:
+      return MTYPE_To_TY(MTYPE_B);
+
     default:
       FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
   }
