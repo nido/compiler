@@ -97,6 +97,11 @@
 #include "pqs_cg.h"
 
 #ifdef TARG_ST
+#include "cg_ssa.h"                 /* for SSA flags */
+#include "cg_select.h"              /* for SELECT flags */
+#endif
+
+#ifdef TARG_ST
 #include "lao_init.h"
 #endif
 

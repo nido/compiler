@@ -1311,6 +1311,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 {
   INT i;
 
+  if (!CG_enable_select) return;
+
   Set_Error_Phase ("Select Region Formation");
 
   Trace_Select_Init();

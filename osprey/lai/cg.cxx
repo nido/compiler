@@ -530,13 +530,11 @@ CG_Generate_Code(
 
 #ifdef SUPPORTS_SELECT
     // Perform select generation (partial predication if-conversion). 
-    if (CG_enable_select) {
-      Start_Timer(T_Select);
-      Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
-      Stop_Timer(T_Select);
-      if (frequency_verify)
-	FREQ_Verify("Select Conversion");
-    }
+    Start_Timer(T_Select);
+    Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
+    Stop_Timer(T_Select);
+    if (frequency_verify)
+      FREQ_Verify("Select Conversion");
     draw_CFG();
 #endif
 
