@@ -45,15 +45,10 @@ static const char rcs_id[] = "$Source$ $Revision$";
 #include "topcode.h"
 #include "targ_isa_operands.h"
 #include "targ_isa_print.h"
-
-/* While the ST100 description is not complete */
-#ifndef TARG_ST100
 #include "targ_isa_pack.h"
 #include "targ_isa_bundle.h"
 #include "targ_isa_decode.h"
 #include "targ_isa_pseudo.h"
-#endif
-
 #include "targ_isa_enums.h"
 #include "targ_isa_operands.h"
 #include "targ_abi_properties.h"
@@ -223,6 +218,8 @@ INT TI_ASM_Print_Inst(
   else return st;
 }
 
+#ifndef TARG_ST100
+
 /* ====================================================================
  *
  *  Format_Operand
@@ -241,7 +238,7 @@ static INT Format_Operand(
 {
   if (ISA_OPERAND_VALTYP_Is_Register(vtype)) {
     const char *rname;
-    const char *fmt = (use == OU_predicate) ? ISA_PRINT_PREDICATE : "%s";
+    const char *fmt = (use & OU_predicate) ? ISA_PRINT_PREDICATE : "%s";
     ISA_REGISTER_CLASS rc = ISA_OPERAND_VALTYP_Register_Class(vtype);
     if (   !(flags & TI_ASM_DISASM_TRUE_PRED)
 	&& (use == OU_predicate)
@@ -265,11 +262,7 @@ static INT Format_Operand(
 
   if (ISA_OPERAND_VALTYP_Is_PCRel(vtype)) {
     val += pc;
-#ifdef TARG_ST100
-    if (PROC_has_branch_delay_slot()) val += 1;
-#else
     if (PROC_has_branch_delay_slot()) val += sizeof(ISA_BUNDLE);
-#endif
     return sprintf(buf, "0x%llx", val) + 1;
   } else if (ISA_OPERAND_VALTYP_Is_Signed(vtype)) {
     return sprintf(buf, "%lld", val) + 1;
@@ -352,8 +345,6 @@ INT TI_ASM_DisAsm_Inst(
 		 arg[8]);
 }
 
-/* While the ST100 description is not complete */
-#ifndef TARG_ST100
 /* ====================================================================
  *
  *  TI_ASM_Set_Bundle_Comp
@@ -406,7 +397,7 @@ UINT64 TI_ASM_Get_Bundle_Comp(
   }
   return val;
 }
-
+
 /* ====================================================================
  *
  *  TI_ASM_Set_Bundle_Reloc_Value
@@ -487,7 +478,6 @@ void TI_ASM_Set_Bundle_Reloc_Value(
     }
   }
 }
-
 
 /* ====================================================================
  *
@@ -577,7 +567,7 @@ UINT64 TI_ASM_Get_Bundle_Reloc_Value(
 
   return val;
 }
-
+
 /* ====================================================================
  *
  *  TI_ASM_Unpack_Inst

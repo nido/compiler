@@ -219,10 +219,10 @@ BOOL TI_BUNDLE_Slot_Available(
       slot_prop = (j == slot) ? property : TI_BUNDLE_exec_property(bundle, j);
       if ((j == slot) || TI_BUNDLE_slot_filled(bundle, j) ||
 	  TI_BUNDLE_stop_bit(bundle, j)) {
-	  if (!SLOTS_COMPATIBLE(slot_prop, i, j) ||
+	if (!SLOTS_COMPATIBLE(slot_prop, i, j) ||
 		  (TI_BUNDLE_stop_bit(bundle, j) != ISA_EXEC_Stop(i, j))) {
-	    match = FALSE;
-	    break;
+	  match = FALSE;
+	  break;
 	}
       }
     }

@@ -245,8 +245,6 @@ typedef unsigned char mBOOL;
 #define TI_ASM_DISASM_ABI_REGS	(0x01)
 #define TI_ASM_DISASM_TRUE_PRED	(0x02)
 
-#define ISA_PRINT_PREDICATE       ("%s?")
-
 /* While the ST100 target description is not complete */
 #ifndef TARG_ST100
 extern INT TI_ASM_Pack_Inst(
@@ -264,6 +262,8 @@ extern INT TI_ASM_Print_Inst(
   FILE *f
 );
 
+/* While the ST100 target description is not complete */
+#ifndef TARG_ST100
 extern INT TI_ASM_DisAsm_Inst(
   TOP topcode,
   INT64 *result,
@@ -273,8 +273,6 @@ extern INT TI_ASM_DisAsm_Inst(
   char *bufptr
 );
 
-/* While the ST100 target description is not complete */
-#ifndef TARG_ST100
 extern void TI_ASM_Set_Bundle_Comp(
   ISA_BUNDLE           *bundle,
   ISA_BUNDLE_PACK_COMP  comp,

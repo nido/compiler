@@ -63,6 +63,7 @@
 #include "erbe.h"
 #include "erglob.h"
 #include "tracing.h"
+#include "glob.h"
 #include "config.h"
 #include "config_TARG.h"
 #include "topcode.h"
@@ -600,8 +601,8 @@ Set_OP_To_WN_Map(WN *wn)
 
   op = Last_Mem_OP ? OP_next(Last_Mem_OP) : OPS_first(&New_OPs);
   for ( ; op != NULL; op = OP_next(op)) {
-    if (CGTARG_OP_is_barrier(op))
-	continue;
+    if ( (!OP_memory(op) || OP_no_alias(op)) && !OP_call(op) 
+	&& !OP_Is_Barrier(op) && OP_code(op) != TOP_spadjust)
     if (OP_memory(op) && WN_Is_Volatile_Mem(wn)) Set_OP_volatile(op);
     if (OP_prefetch(op)) {
 
@@ -1093,8 +1094,6 @@ Handle_Call_Site (
   CALLINFO    *call_info;
 
   /* 
-   * We can reach here if we are in the code generation, the .lai
-   * generation does not reach here. In the earlier case, the
    * wn_lower_call has already expanded the parameters, so don't need
    * to do anything more for parameters at this point.
    */
@@ -1159,6 +1158,64 @@ Handle_Call_Site (
   return;
 }
 
+#if 0
+
+/* ====================================================================
+ *   WN_intrinsic_name
+ *
+ *   This is the same as in be/whirl2c/wn_attr.cxx
+ *
+ *   TODO: This will be moved to the intrinsic part when it works.
+ * ====================================================================
+ */
+
+/* INTRN_c_name() is only implemented when defined(BUILD_WHIRL2C), while
+ * we must use INTRN_specific_name() when defined(BUILD_WHIRL2F).  To 
+ * abstract away from this, we define the macro INTRN_high_level_name.
+ * NOT TRUE anymore, but keep this cause I'm not sure which they really want.
+ */
+#ifdef BUILD_WHIRL2C
+#define INTRN_high_level_name INTRN_c_name
+#else /*BUILD_WHIRL2F*/
+#define INTRN_high_level_name INTRN_specific_name
+#endif
+
+static const char *
+WN_intrinsic_name(INTRINSIC intr_opc)
+{
+   const char *name;
+   
+   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
+	   ("Intrinsic Opcode (%d) out of range", intr_opc)); 
+
+   if (INTRN_high_level_name(intr_opc) != NULL)
+      name = INTRN_high_level_name(intr_opc);
+#ifdef BUILD_WHIRL2F
+   else
+   {
+      ASSERT_WARN(FALSE, 
+		  (DIAG_A_STRING,
+		   Concat2_Strings("Missing intrinsic name ", 
+				   get_intrinsic_name(intr_opc))));
+      name = get_intrinsic_name(intr_opc);
+   }
+#else /*BUILD_WHIRL2C*/
+   else if (INTRN_rt_name(intr_opc) != NULL)
+      name = INTRN_rt_name(intr_opc);
+   else
+   {
+      Is_True(FALSE, 
+	      ("Expected \"high_level\" or \"rt\" name in WN_intrinsic_name()"));
+      name =
+	 Concat3_Strings("<INTR: ", Number_as_String(intr_opc, "%lld"), ">");
+   }
+#endif /*BUILD_WHIRL2F*/
+
+   return name;
+} /* WN_intrinsic_name */
+
+#endif
+
 /* ====================================================================
  *   Memop_Variant
  *
@@ -1171,7 +1228,11 @@ Memop_Variant (
 )
 {
   VARIANT variant = V_NONE;
+#ifdef TARG_ST100
+  INT     required_alignment = MTYPE_alignment(WN_desc(memop));
+#else
   INT     required_alignment = MTYPE_RegisterSize(WN_desc(memop));
+#endif
 
   /* If volatile, set the flag.
    */
@@ -1904,6 +1965,8 @@ Expand_Expr_Mult (
   return kid_tn;
 }
 
+#ifdef TARG_ST100
+
 /* ====================================================================
  *   Handle_MPY
  * ====================================================================
@@ -1924,11 +1987,6 @@ Handle_MPY (
   }
 
   /* call make MULT with mtypes of arguments: */
-  /*
-  kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
-  kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
-  */
-
   kid0_tn = Expand_Expr_Mult (WN_kid0(expr), &mtype0, expr);
   kid1_tn = Expand_Expr_Mult (WN_kid1(expr), &mtype1, expr);
 
@@ -1945,14 +2003,6 @@ Handle_MPY (
 
   /* for debuggging */
   Last_OP = OPS_last(&New_OPs);
-
-  /*
-  Expand_Multiply (result, WN_rtype(expr), 
-		   kid0_tn, Get_mtype_for_mult(WN_kid0(expr), expr), 
-		   kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr), 
-		   &New_OPs);
-  */
-
   Expand_Multiply (result, WN_rtype(expr), 
 		   kid0_tn, mtype0, 
 		   kid1_tn, mtype1, 
@@ -2026,6 +2076,8 @@ Handle_MADD (
 
   return result;
 }
+
+#endif /* TARG_ST100 */
 
 /* ====================================================================
  *   Handle_DIVREM
@@ -2875,19 +2927,54 @@ Handle_DEALLOCA (WN *tree)
 static TN*
 Handle_INTRINSIC_OP (WN *expr, TN *result)
 {
+  INT i;
   INTRINSIC id = (INTRINSIC) WN_intrinsic (expr);
   INTRN_RETKIND rkind = INTRN_return_kind(id);
   INT numkids = WN_kid_count(expr);
-  TN *kid0 = Expand_Expr(WN_kid0(expr), expr, NULL);
-  TN *kid1 = (numkids > 1) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
-  TN *kid2 = (numkids > 2) ? Expand_Expr(WN_kid2(expr), expr, NULL) : NULL;
+  TN  *kids[10];
+
+  // It can only be a cg_intrinsic and there always is a corresponding
+  // OPs sequence for it or else we're generating Lai_Code !
+  FmtAssert(Lai_Code || INTRN_cg_intrinsic(id), 
+                          ("Handle_INTRINSIC_OP: not a cg INTRINSIC_OP"));
+
+  kids[0] = Expand_Expr(WN_kid0(expr), expr, NULL);
+  kids[1] = (numkids > 1) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
+  kids[2] = (numkids > 2) ? Expand_Expr(WN_kid2(expr), expr, NULL) : NULL;
   FmtAssert(numkids <= 3, ("unexpected number of kids in intrinsic_op"));
 
   if (rkind != IRETURN_UNKNOWN && result == NULL) {
     result = Allocate_Result_TN(expr, NULL);
   }
 
-  Exp_Intrinsic_Op (id, result, kid0, kid1, kid2, &New_OPs);
+  if (Trace_Exp) {
+    fprintf(TFile, "exp_intrinsic_op %s: ", INTRN_c_name(id));
+    Print_TN(result, FALSE);
+    fprintf(TFile, " :- ");
+    for (i = 0; i < numkids-1; i++) {
+      Print_TN(kids[i], FALSE);
+      fprintf(TFile, ", ");
+    }
+    Print_TN(kids[numkids-1], FALSE);
+    fprintf(TFile, "\n");
+  }
+
+  /* for debuggging */
+  OP *Last_OP = OPS_last(&New_OPs);
+
+  Exp_Intrinsic_Op (id, 1, numkids, &result, kids, &New_OPs);
+
+  if (Trace_Exp) {
+    OP *op;
+    if (Last_OP) op = OP_next(Last_OP);
+    else op = OPS_first(&New_OPs);
+
+    while (op != NULL) {
+      fprintf(TFile, " into "); Print_OP (op);
+      op = OP_next(op);
+    }
+  }
+
   return result;
 }
 
@@ -3257,11 +3344,13 @@ Expand_Expr (
     }
     return NULL;
 
+#ifdef TARG_ST100
   case OPR_MPY:
     return Handle_MPY (expr, result, opcode);
 
   case OPR_MADD:
     return Handle_MADD (expr, result, opcode);
+#endif
 
   case OPR_DIVREM:
       return Handle_DIVREM(expr, parent, result, opcode);
@@ -3910,14 +3999,21 @@ Convert_Branch (
                ("Convert_Branch: unexpected opcode %s", OPCODE_name(opcode)));
     /*NOTREACHED*/
   }
+
   BB_branch_wn(Cur_BB) = branch;
   /* Terminate the basic block. */
   Start_New_Basic_Block ();
 }
 
-
-/* For each procedure entrypoint, add the bb to the list of entry points. */
-static void Handle_Entry (WN *entry) 
+/* ====================================================================
+ *   Handle_Entry
+ *
+ *   For each procedure entrypoint, add the bb to the list of entry 
+ *   points.
+ * ====================================================================
+ */
+static void 
+Handle_Entry (WN *entry) 
 {
   ST *entry_st;
   BB *entry_bb;
