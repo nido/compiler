@@ -1683,7 +1683,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   TOP etop;
 
   extra_slot_reqd = (OP_inst_words(op) == 2);
-  FmtAssert(extra_slot_reqd == CGTARG_need_extended_Opcode(op, &etop),
+  FmtAssert(extra_slot_reqd || !CGTARG_need_extended_Opcode(op, &etop),
 	    ("CGTARG_Bundle_Slot_Available: Internal Error"));
 
 #if 1 // [CL] First check alignment constraints
