@@ -842,6 +842,21 @@ Copy_TN (
   //
   TN *new_tn = Dup_TN(tn);
 
+  // FdF: If tn was gra_homeable, new_tn must not be. Otherwise they
+  // would share the same home location, and when code motion make the
+  // two interfere, spilling one would break the other. (bug dec_amr
+  // with LAO).
+  //
+  // TODO: Fixing it in SSA_Make_Consistent would be better. Global
+  // registers marked gra_homeable to the same home location should
+  // be renamed into the same global TN, or if there is an
+  // interference, the gra_homeable property must be removed.
+
+  if (TN_is_gra_homeable(tn)) {
+    Reset_TN_is_gra_homeable(new_tn);
+    Set_TN_spill(new_tn, NULL);
+  }
+
   return new_tn;
 }
 
