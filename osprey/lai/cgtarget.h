@@ -716,7 +716,11 @@ inline INT32 CGTARG_Branch_Taken_Penalty(void)
     CGTARG_branch_taken_penalty : 1;
 }
 
+#ifdef TARG_ST200
+extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency);
+#else
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op);
+#endif
 extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UINT8 opnd, INT *latency);
 
 

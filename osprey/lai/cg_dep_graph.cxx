@@ -2775,6 +2775,14 @@ Add_BRANCH_Arcs(BB* bb, list<BB*> bb_list, BOOL include_latency)
 	}
 
 	// Build any cross-bb MISC dependences here. 
+#ifdef TARG_ST200
+	// Arthur: this routine will also get the dependence for us
+	INT16 latency;
+	if (CGTARG_Dependence_Required(op, cur_xfer_op, &latency)) {
+	  new_arc_with_latency(CG_DEP_MISC, op, cur_xfer_op, latency, 0, 0, FALSE);
+	  break;
+	} 
+#else
 	if (CGTARG_Dependence_Required(op, cur_xfer_op)) {
 	  if (include_latency) {
 	    new_arc_with_latency(CG_DEP_MISC, op, cur_xfer_op, 0, 0, 0, FALSE);
@@ -2783,6 +2791,7 @@ Add_BRANCH_Arcs(BB* bb, list<BB*> bb_list, BOOL include_latency)
 	  }
 	  break;
 	}
+#endif
       }
     } // PREBR dependences
 
@@ -2801,6 +2810,13 @@ Add_BRANCH_Arcs(BB* bb, list<BB*> bb_list, BOOL include_latency)
 	}
 
 	// Build any cross-bb MISC dependences here.
+#ifdef TARG_ST200
+	INT16 latency;
+	if (CGTARG_Dependence_Required(cur_xfer_op, op, &latency)) {
+	  new_arc_with_latency(CG_DEP_MISC, cur_xfer_op, op, latency, 0, 0,FALSE);
+	  break;
+	}
+#else
 	if (CGTARG_Dependence_Required(cur_xfer_op, op)) {
 	  if (include_latency) {
 	    new_arc_with_latency(CG_DEP_MISC, cur_xfer_op, op, 0, 0, 0,FALSE);
@@ -2809,6 +2825,7 @@ Add_BRANCH_Arcs(BB* bb, list<BB*> bb_list, BOOL include_latency)
 	  }
 	  break;
 	}
+#endif
       }
     } // POSTBR dependences
 
@@ -2839,18 +2856,33 @@ Add_MISC_Arcs(BB* bb)
 	// not real register dependences, set the omega value conservative
 	// to 1.
 
+#ifdef TARG_ST200
+	INT16 latency;
+	if (CGTARG_Dependence_Required(prev_op, op,&latency)) {
+	  new_arc_with_latency(CG_DEP_MISC, prev_op, op, latency, 1, 0, FALSE);
+	}
+#else
 	if (CGTARG_Dependence_Required(prev_op, op)) {
 	  new_arc_with_latency(CG_DEP_MISC, prev_op, op, 0, 1, 0, FALSE);
 	}
+#endif
       }
     }
 
     // Build the acyclic dependence edge here.
 
     for (next_op = OP_next(op); next_op; next_op = OP_next(next_op)) {
+#ifdef TARG_ST200
+      // Arthur: latency not necessarily 0 !
+      INT latency;
+      if (CGTARG_Dependence_Required(op, next_op, &latency)) {
+	new_arc_with_latency(CG_DEP_MISC, op, next_op, latency, 0, 0, FALSE);
+      }
+#else
       if (CGTARG_Dependence_Required(op, next_op)) {
 	new_arc_with_latency(CG_DEP_MISC, op, next_op, 0, 0, 0, FALSE);
       }
+#endif
     }
   } // FOR_ALL_BB_OPs loop
 }
