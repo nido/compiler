@@ -5429,7 +5429,6 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
     BBKIND bbkind = BB_kind(bb);
     if (!(bbkind == BBKIND_CALL || bbkind == BBKIND_GOTO || bbkind == BBKIND_LOGIF)) {
       reason = "contains BB with unsupported branch instruction";
-      fprintf(stderr, "<cgprep> rejecting: %s\n", reason);
       break;
     }
 #endif
