@@ -3045,8 +3045,22 @@ r_apply_l_const (
 	  float f;
 	} val;
 
+#if __GNUC__ < 3
+	// [CL] copying floats on x86 with gcc-2.95 implies conversions
+	// which may change the copied value (especially in our case where
+	// the lo/hi parts of a double are not generally "plain" floats
+	// They are likely to be NaNs and as such candidate to conversions
+	// which should apply. It would be much cleaner to split a double
+	// into 2 parts which are *not* float and have special types for
+	/// the compiler
+	// In addition, the union above implies that
+	// sizeof(INT32) == sizeof(float)
+	memcpy(&val.f, &tc.vals.f.fval, sizeof(val.f));
+#else
 	val.f = TCON_fval(tc);
-	vstr_sprintf (buf, vstr_len(*buf), "%d", val.i);
+#endif
+	vstr_sprintf (buf, vstr_len(*buf), "%#x", val.i);
+
       }
       else {
 	//
