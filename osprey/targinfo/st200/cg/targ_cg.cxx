@@ -1445,6 +1445,24 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 	else if (ST_gprel(base_st)) {
 	  FmtAssert(FALSE,("GP-relative not supported"));
 	}
+	else if (ST_class(st) == CLASS_CONST) {
+	  // Handle floating-point constants
+	  if (MTYPE_is_float(TCON_ty(ST_tcon_val(st)))) {
+	    switch(TCON_ty(ST_tcon_val(st))) {
+	    case MTYPE_F4:  // Take the value as a 32bit bit pattern
+	      val = TCON_v0(ST_tcon_val(st));
+	      break;
+	    default:
+	      FmtAssert(FALSE,("only 32 bits floating point values are supported"));
+	      break;
+	    }
+	    if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	      extra_slot_reqd = TRUE;
+	    }
+	  } else {
+	    extra_slot_reqd = TRUE;
+	  }
+	}
 	else {
 	  //
 	  // must be a assembly resolved symbolic address (label) ? 
@@ -1613,6 +1631,26 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 	  }
 	  else if (ST_gprel(base_st)) {
 	    FmtAssert(FALSE,("GP-relative not supported"));
+	  }
+	  else if (ST_class(st) == CLASS_CONST) {
+	    // Handle floating-point constants
+	    if (MTYPE_is_float(TCON_ty(ST_tcon_val(st)))) {
+	      switch(TCON_ty(ST_tcon_val(st))) {
+	      case MTYPE_F4:  // Take the value as a 32bit bit pattern
+		val = TCON_v0(ST_tcon_val(st));
+		break;
+	      default:
+		FmtAssert(FALSE,("only 32 bits floating point values are supported"));
+		break;
+	      }
+	      if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+		extra_slot_reqd = TRUE;
+		immediate_opnd_idx = i;
+	      }
+	    } else {
+	      extra_slot_reqd = TRUE;
+	      immediate_opnd_idx = i;
+	    }
 	  }
 	  else {
 	    // it must be a label ? just reserve the slot immediately
