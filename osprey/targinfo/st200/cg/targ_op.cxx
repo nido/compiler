@@ -50,6 +50,182 @@
 #include "cgir.h"
 
 /* ====================================================================
+ *   OP_Is_Advanced_Load
+ * ====================================================================
+ */
+BOOL
+OP_Is_Advanced_Load( OP *memop )
+{
+  if (!OP_load(memop)) return FALSE;
+  if (TOP_is_dismissible(OP_code(memop))) return TRUE;
+
+  return FALSE;
+}
+
+/* ====================================================================
+ *   OP_Is_Speculative_Load
+ * ====================================================================
+ */
+BOOL
+OP_Is_Speculative_Load ( 
+  OP *memop 
+)
+{
+  if (!OP_load(memop)) return FALSE;
+  if (TOP_is_dismissible(OP_code(memop))) return TRUE;
+
+  return FALSE;
+}
+
+/* ====================================================================
+ *   OP_Is_Check_Load
+ * ====================================================================
+ */
+BOOL
+OP_Is_Check_Load ( 
+  OP *memop 
+)
+{
+  if (!OP_load(memop)) return FALSE;
+
+  return FALSE;
+}
+
+
+/* ====================================================================
+ *   OP_Is_Speculative
+ * ====================================================================
+ */
+BOOL
+OP_Is_Speculative (
+  OP *op
+)
+{
+  if (!OP_load(op)) return FALSE;
+
+  // speculative and advanced loads are safe to speculate.
+  if (OP_Is_Advanced_Load(op) || OP_Is_Speculative_Load(op))
+    return TRUE;
+
+  return FALSE;
+}
+
+/* ====================================================================
+ *   OP_Can_Be_Speculative
+ *
+ *   determines if the TOP can be speculatively executed taking 
+ *   into account eagerness level
+ * ====================================================================
+ */
+BOOL OP_Can_Be_Speculative (
+  OP *op
+)
+{
+  TOP opcode = OP_code(op);
+
+  /* not allowed to speculate anything. */
+  if (Eager_Level == EAGER_NONE) return FALSE;
+
+  /* don't speculate volatile memory references. */
+  if (OP_volatile(op)) return FALSE;
+
+  switch (Eager_Level) {
+    //  case EAGER_NONE:
+
+    /* not allowed to speculate anything
+     */
+    //    break;
+
+  case EAGER_SAFE:
+
+    /* Only exception-safe speculative ops are allowed
+     */
+#if 0
+    /* Arthur: when we add these to semantics - enable */
+    if (TOP_is_ftrap(opcode) || TOP_is_itrap(opcode)) return FALSE;
+#endif
+    /*FALLTHROUGH*/
+
+  case EAGER_ARITH:
+
+    /* Arithmetic exceptions allowed
+     */
+    if (TOP_is_fdiv(opcode)) return FALSE;
+    /*FALLTHROUGH*/
+
+  case EAGER_DIVIDE:
+
+    /* Divide by zero exceptions allowed 
+     */
+#if 0
+    /* Arthur: when we add these to semantics - enable */
+    if (TOP_is_memtrap(opcode)) return FALSE;
+#endif
+    /*FALLTHROUGH*/
+
+  case EAGER_MEMORY:
+
+    /* Memory exceptions allowed / All speculative ops allowed
+     */
+    if (TOP_is_unsafe(opcode)) return FALSE;
+    break;
+
+  default:
+    DevWarn("unhandled eagerness level: %d", Eager_Level);
+    return FALSE;
+  }
+
+  if (!OP_load(op)) return FALSE;
+
+  /* Try to identify simple scalar loads than can be safely speculated:
+   *  a) read only loads (literals, GOT-loads, etc.)
+   *  b) load of a fixed variable (directly referenced)
+   *  c) load of a fixed variable (base address is constant or
+   *     known to be in bounds)
+   *  d) speculative, advanced and advanced-speculative loads are safe.
+   */
+
+  /*  a) read only loads (literals, GOT-loads, etc.)
+   */
+  if (OP_no_alias(op)) goto scalar_load;
+
+  /*  b) load of a fixed variable (directly referenced); this
+   *     includes spill-restores.
+   *  b') exclude cases of direct loads of weak symbols (#622949).
+   */
+  if (TN_is_symbol(OP_opnd(op, 1)) &&
+      !ST_is_weak_symbol(TN_var(OP_opnd(op, 1)))) goto scalar_load;
+
+  /*  c) load of a fixed variable (base address is constant or
+   *     known to be in bounds), comment out the rematerizable bit check 
+   *     since it doesn;t guarantee safeness all the time.
+   */
+#if 0
+  /* Arthur: this should be checked at the call site !! */
+  if (/*   TN_is_rematerializable(OP_opnd(op, 0)) || */
+      (   (wn = Get_WN_From_Memory_OP(op))
+	  && Alias_Manager->Safe_to_speculate(wn))) goto scalar_load;
+#endif
+
+  /* d) speculative, advanced, speculative-advanced loads are safe to 
+   *    speculate. 
+   */
+  if (OP_Is_Speculative(op)) goto scalar_load;
+
+  /* If we got to here, we couldn't convince ourself that we have
+   * a scalar load -- no speculation this time...
+   */
+  return FALSE;
+
+  /* We now know we have a scalar load of some form. Determine if they
+   * are allowed to be speculated.
+   */
+scalar_load:
+  return TRUE; 
+
+}
+
+/* ====================================================================
  *   CGTARG_Predicate_OP
  * ====================================================================
  */
@@ -64,39 +240,51 @@ CGTARG_Predicate_OP (
 }
 
 /* ====================================================================
- *   CGTARG_Copy_Operand
+ *   OP_Copy_Operand
  *
  *   TODO: generate automatically ?? at leats some obvious ones
  *         coherently with the isa property ?
  * ====================================================================
  */
 INT 
-CGTARG_Copy_Operand (
+OP_Copy_Operand (
   OP *op
 )
 {
-  TOP opr = OP_code(op);
+  TOP opcode = OP_code(op);
 
-  switch (opr) {
-#if 0
-  case TOP_GP32_ADD_GT_DR_DR_U8:
-    //case TOP_or:
-    //case TOP_xor:
-    //case TOP_sub:
-    //case TOP_shl_i:
-    //case TOP_shr_i:
-    if (TN_has_value(OP_opnd(op,2)) && TN_value(OP_opnd(op,2)) == 0) {
+  if (OP_iadd(op) || OP_ior(op) || OP_ixor(op)) {
+
+    if (opcode == TOP_spadjust) {
+      return -1;
+    }
+
+    if ((TN_is_register(OP_opnd(op,0)) &&
+         TN_register_and_class(OP_opnd(op,0)) == CLASS_AND_REG_zero) ||
+        ((TN_has_value(OP_opnd(op,0)) && TN_value(OP_opnd(op,0)) == 0))) {
       return 1;
     }
-    break;
 
-  case TOP_GP32_COPYA_GT_AR_DR:
-  case TOP_GP32_COPYC_GT_CRL_DR:
-  case TOP_GP32_COPYD_GT_DR_AR:
-#endif
+    if ((TN_is_register(OP_opnd(op,1)) &&
+         TN_register_and_class(OP_opnd(op,1)) == CLASS_AND_REG_zero) ||
+        ((TN_has_value(OP_opnd(op,1)) && TN_value(OP_opnd(op,1)) == 0))) {
+      return 0;
+    }
+  }
 
+  if (OP_iand(op)) {
+    if ((TN_has_value(OP_opnd(op,0)) && TN_value(OP_opnd(op,0)) == ~0)) {
+      return 1;
+    }
+    if ((TN_has_value(OP_opnd(op,1)) && TN_value(OP_opnd(op,1)) == ~0)) {
+      return 0;
+    }
+  }
+
+  switch (opcode) {
   case TOP_mov_r:
   case TOP_mov_i:
+  case TOP_mov_ii:
     return 0;
 
   }
@@ -104,6 +292,21 @@ CGTARG_Copy_Operand (
   return -1;
 }
 
+/* ====================================================================
+ *   CGTARG_Noop_Top
+ * ====================================================================
+ */
+TOP 
+CGTARG_Noop_Top (ISA_EXEC_UNIT_PROPERTY unit) { return TOP_nop; } 
+
+/* ====================================================================
+ *   OP_save_predicates/OP_restore_predicates
+ * ====================================================================
+ */
+BOOL OP_save_predicates(OP *op) { return FALSE; }
+BOOL OP_restore_predicates(OP *op) { return FALSE; }
+
+#if 0
 /* ====================================================================
  *   CGTARG_Immediate_Operand
  *
@@ -210,6 +413,7 @@ CGTARG_Immediate_Operand (
 
   return -1;
 }
+#endif
 
 /* ====================================================================
  *   CGTARG_Init_OP_cond_def_kind

@@ -30,8 +30,14 @@ main()
    * ------------------------------------------------------
    */
   OPERAND_USE_TYPE 
+        base, 
+        offset, 
+        storeval, 
         target, 
-        postincr; 
+        postincr, 
+        predicate, 
+        uniq_res, 
+        implicit; 
 
   ISA_Operands_Begin("st200"); 
   /* Create the register operand types: */ 
@@ -86,8 +92,14 @@ main()
 
   /* Create the operand uses: */ 
 
+  base = Create_Operand_Use("base"); 
+  offset = Create_Operand_Use("offset"); 
+  storeval = Create_Operand_Use("storeval"); 
   target = Create_Operand_Use("target"); 
   postincr = Create_Operand_Use("postincr"); 
+  predicate = Create_Operand_Use("predicate"); 
+  uniq_res = Create_Operand_Use("uniq_res"); 
+  implicit = Create_Operand_Use("implicit"); 
 
   /* ====================================== */ 
   Instruction_Group("O_nop", 
