@@ -420,6 +420,13 @@ Preconfigure_Target ( void )
   // REAL/IMAG parts of a cis()
   CIS_Allowed = FALSE;
 
+  // arithmetic ops can be safely speculated.
+  Eager_Level = EAGER_ARITH;
+
+  // We have dismissible loads
+  // do not set by default (maybe -O3 ?). potentially dangerous
+  // Force_Memory_Dismiss = TRUE;
+
   // These are only necessary in the BACK_END
   // Can they be used elsewhere, eg. IPA ??
   //
