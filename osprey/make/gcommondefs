@@ -122,8 +122,11 @@ DLLTOOLNAME = dlltool
 DLLWRAPNAME = dllwrap
 NMNAME = nm
 INSTALLNAME = install
-LEXNAME	= lex
-YACCNAME= yacc
+# (cbr) use gnu tools
+# LEXNAME	= lex
+# YACCNAME= yacc
+LEXNAME	= flex
+YACCNAME= bison --output-file=y.tab.c
 AWKNAME	= awk
 
 # host platform definitions
