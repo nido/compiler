@@ -973,6 +973,11 @@ EBO_Fold_Constant_Compare (
 
   tn0 = opnd_tn[0];
   tn1 = opnd_tn[1];
+
+  /* [CG] We could handle constant symbols (sush as floating point constant),
+     but we don't. */
+  if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) return FALSE;
+  
   tn0_val = TN_Value (tn0);
   tn1_val = TN_Value (tn1);
   tn0_uval = TN_Value (tn0);
@@ -1096,13 +1101,16 @@ EBO_Fold_Special_Opcode (
   INT64 tn0_val, tn1_val;
   UINT64 tn0_uval, tn1_uval;
 
+  /* [CG] We could handle constant symbols (sush as floating point constant),
+     but we don't. */
+  if (!((OP_opnds(op) == 1 && !TN_is_symbol(opnd_tn[0])) ||
+	(OP_opnds(op) == 2 && !TN_is_symbol(opnd_tn[0]) && !TN_is_symbol(opnd_tn[1]))))
+    return FALSE;
+  /* [CG] After this point we have literal constants. */
+
   if ((opcode == TOP_sxtb_r) || (opcode == TOP_sxth_r)) {
     INT length = EBO_bit_length(op);
     tn0 = opnd_tn[0];
-    if (TN_is_symbol(tn0)) {
-     /* What can we do? */
-      return FALSE;
-    }
     tn0_val = TN_Value (tn0);
     *result_val = (tn0_val << (64-length)) >> (64-length);
     goto Folded;
@@ -1111,10 +1119,6 @@ EBO_Fold_Special_Opcode (
   if ((opcode == TOP_zxth_r)) {
     INT length = EBO_bit_length(op);
     tn0 = opnd_tn[0];
-    if (TN_is_symbol(tn0)) {
-     /* What can we do? */
-      return FALSE;
-    }
     tn0_uval = TN_Value (tn0);
     *result_val = (tn0_uval << (64-length)) >> (64-length);
     goto Folded;
@@ -1201,7 +1205,7 @@ EBO_Fold_Special_Opcode (
  Folded:
 
   if (EBO_Trace_Optimization) {
-    fprintf(TFile, "%sfolded: %llx\n", EBO_trace_pfx, *result_val);
+    fprintf(TFile, "%sfolded???: %llx\n", EBO_trace_pfx, *result_val);
   }
   return TRUE;
 }
