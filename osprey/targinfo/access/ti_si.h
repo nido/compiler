@@ -395,7 +395,7 @@ typedef const struct {
   mUINT8 bit_index;
 } SI_RESOURCE;
 
-TARGINFO_EXPORTED extern const INT SI_resource_count;
+extern const INT SI_resource_count;
 #ifndef TARG_ST
 #pragma weak SI_resource_count
 #endif
@@ -627,6 +627,9 @@ inline INT SI_RESOURCE_TOTAL_Total_Used( SI_RESOURCE_TOTAL* pair )
 typedef const SI_RRW* SI_RR;
 
 #ifdef TARG_ST
+#if defined(BE)
+BE_EXPORTED
+#endif
 extern UINT SI_RR_Length(SI_RR);
 extern SI_RRW SI_RR_Cycle_RRW( SI_RR, UINT);
 #else
@@ -674,13 +677,13 @@ TARGINFO_EXPORTED extern SI* const SI_top_si[];
 
 #ifdef TARG_ST
 extern const char* TSI_Name( TOP top );
-extern SI_ID TSI_Id( TOP top );
-extern INT TSI_Operand_Access_Time( TOP top, INT operand_index );
-extern INT TSI_Result_Available_Time( TOP top, INT result_index );
-extern INT TSI_Load_Access_Time( TOP top );
-extern INT TSI_Last_Issue_Cycle( TOP top );
-extern INT TSI_Store_Available_Time( TOP top );
-extern SI_RR TSI_Resource_Requirement( TOP top );
+BE_EXPORTED extern SI_ID TSI_Id( TOP top );
+BE_EXPORTED extern INT TSI_Operand_Access_Time( TOP top, INT operand_index );
+BE_EXPORTED extern INT TSI_Result_Available_Time( TOP top, INT result_index );
+BE_EXPORTED extern INT TSI_Load_Access_Time( TOP top );
+BE_EXPORTED extern INT TSI_Last_Issue_Cycle( TOP top );
+BE_EXPORTED extern INT TSI_Store_Available_Time( TOP top );
+BE_EXPORTED extern SI_RR TSI_Resource_Requirement( TOP top );
 extern SI_BAD_II_SET TSI_Bad_IIs( TOP top );
 extern SI_RR TSI_II_Resource_Requirement( TOP top, INT ii );
 extern const SI_RESOURCE_ID_SET* TSI_II_Cycle_Resource_Ids_Used( TOP opcode, INT ii );
