@@ -57,6 +57,7 @@ main()
     enable_prefetch,            /* implicitely enables prefetch */
     enable_prefetch_ahead,      /* enables prefetch to L2 cache */
     counted_loops,              /* supports counted loop branches */
+    swp_branches,               /* supports SWP branches */
     delayed_exception,		/* has delayed exception support */
     fast_recip;			/* recip inst is fast */
 
@@ -116,6 +117,10 @@ main()
 
   counted_loops = PROC_Property_Create ("has_counted_loops");
   Processor_Group (counted_loops,
+			PROCESSOR_UNDEFINED);
+
+  swp_branches = PROC_Property_Create ("has_swp_branches");
+  Processor_Group (swp_branches,
 			PROCESSOR_UNDEFINED);
 
   /* Does the target support delayed_exception mechanism, i.e ability to
