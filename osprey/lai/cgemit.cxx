@@ -5417,8 +5417,10 @@ EMT_Emit_PU (
       if (ST_class(sym) == CLASS_VAR && ST_sclass(sym) == SCLASS_AUTO) {
 	if (Has_Base_Block(sym)) {
 	  Base_Symbol_And_Offset(sym, &base, &ofst);
-	  fprintf ( Asm_File, "\t%s %s = %lld\n",
-		    ASM_CMNT, ST_name(sym), ofst);
+	  if (List_Notes) {
+	    fprintf ( Asm_File, "\t%s %s = %lld\n",
+		      ASM_CMNT, ST_name(sym), ofst);
+	  }
 	}
       }
     }
