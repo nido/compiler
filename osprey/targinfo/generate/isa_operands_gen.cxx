@@ -983,6 +983,7 @@ void ISA_Operands_End(void)
 		 "  TARGINFO_EXPORTED extern const %s ISA_OPERAND_info_index[];\n"
 		 "  TARGINFO_EXPORTED extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
 		 "  INT index = ISA_OPERAND_info_index[(INT)topcode];\n"
+
 		 "  return &ISA_OPERAND_info[index];\n"
 		 "}\n",
 		 info_index_type);
