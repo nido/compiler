@@ -5210,12 +5210,43 @@ void CG_LOOP::Determine_Unroll_Factor()
   }
 
   unroll_times_max = Get_Unroll_Times(pragma_unroll);
+
+#ifdef TARG_ST
+  INT32 trip_estimate = -1;
+
+  /* FdF 20050302: The very low frequency execution of a loop do not
+     justify unrolling it. The threshold is the same as for hot/cold
+     regions. */
+  if (trip_estimate == -1 && BB_freq_fb_based(head) && BB_freq(head) <= 0.01)
+    trip_estimate = unroll_times_max = 0;
+
+  /* FdF 20050302: Otherwise, make sure unrolling factor is less than
+     half the estimated trip count. */
+  else if (info && (!trip_count_tn || !TN_is_constant(trip_count_tn))) {
+    WN *wn = LOOPINFO_wn(info);
+    if ( wn ) {
+      INT32 trip_est = WN_loop_trip_est(wn);
+      if (trip_est && (trip_est/2) < unroll_times_max) {
+	trip_estimate = trip_est;
+	unroll_times_max = trip_est/2;
+      }
+    }
+  }
+#endif
+
   if (unroll_times_max < 2) {
-    const char * const reason = pragma_unroll ? "#pragma unroll(%d)" : "OPT:unroll_times_max=%d";
-    note_not_unrolled(head, reason, unroll_times_max);
+    const char * reason = pragma_unroll ? "#pragma unroll(%d)" : "OPT:unroll_times_max=%d";
+    INT32 reason_value = unroll_times_max;
+#ifdef TARG_ST
+    if (trip_estimate != -1) {
+      reason = "Loop trip estimate=%d";
+      reason_value = trip_estimate;
+    }
+#endif
+    note_not_unrolled(head, reason, reason_value);
     if (trace) {
       fprintf(TFile, "<unroll> not unrolling; ");
-      fprintf(TFile, reason, unroll_times_max);
+      fprintf(TFile, reason, reason_value);
       fprintf(TFile, "\n");
     }
     return;
