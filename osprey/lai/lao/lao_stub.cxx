@@ -482,9 +482,9 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     Set_BB_unrollings(new_bb, BB_unrollings(new_bb)*unrolled);
   //
   // Set flags.
-  if (optimizations & Optimization_Prepass) Set_BB_scheduled(new_bb);
+  if (optimizations & Optimization_PreSched) Set_BB_scheduled(new_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
-  if (optimizations & Optimization_Postpass) Set_BB_scheduled(new_bb);
+  if (optimizations & Optimization_PostSched) Set_BB_scheduled(new_bb);
   //
   return new_bb;
 }
@@ -526,9 +526,9 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
   Set_BB_unrollings(cgir_bb, unrolled);
   // Set flags.
-  if (optimizations & Optimization_Prepass) Set_BB_scheduled(cgir_bb);
+  if (optimizations & Optimization_PreSched) Set_BB_scheduled(cgir_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
-  if (optimizations & Optimization_Postpass) Set_BB_scheduled(cgir_bb);
+  if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -664,12 +664,12 @@ lao_init() {
     TOP__Operator[TOP_andl_r_b] = Operator_CODE_ANDL_BDEST_SRC1_SRC2;
     TOP__Operator[TOP_andl_r_r] = Operator_CODE_ANDL_DEST_SRC1_SRC2;
     TOP__Operator[TOP_asm] = Operator_CODE_ASM15_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_begin_pregtn] = Operator_PSEUDO_PRO64;
+//  TOP__Operator[TOP_begin_pregtn] = Operator_PSEUDO_;
     TOP__Operator[TOP_br] = Operator_CODE_BR_BCOND_BTARG;
     TOP__Operator[TOP_break] = Operator_CODE_BREAK;
     TOP__Operator[TOP_brf] = Operator_CODE_BRF_BCOND_BTARG;
     TOP__Operator[TOP_bswap_r] = Operator_CODE_BSWAP_IDEST_SRC1;
-    TOP__Operator[TOP_bwd_bar] = Operator_PSEUDO_PRO64;
+//  TOP__Operator[TOP_bwd_bar] = Operator_PSEUDO_;
     TOP__Operator[TOP_call] = Operator_CODE_CALL_BTARG;
     TOP__Operator[TOP_clz] = Operator_CODE_CLZ_IDEST_SRC1;
     TOP__Operator[TOP_cmpeq_i_b] = Operator_CODE_CMPEQ_IBDEST_SRC1_ISRC2;
@@ -732,19 +732,19 @@ lao_init() {
     TOP__Operator[TOP_cmpne_ii_r] = Operator_CODE_CMPNE_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_cmpne_r_b] = Operator_CODE_CMPNE_BDEST_SRC1_SRC2;
     TOP__Operator[TOP_cmpne_r_r] = Operator_CODE_CMPNE_DEST_SRC1_SRC2;
-    TOP__Operator[TOP_copy_br] = Operator_PSEUDO_PRO64;
-    TOP__Operator[TOP_dfixup] = Operator_PSEUDO_PRO64;
+//  TOP__Operator[TOP_copy_br] = Operator_PSEUDO_;
+//  TOP__Operator[TOP_dfixup] = Operator_PSEUDO_;
     TOP__Operator[TOP_divs] = Operator_CODE_DIVS_DEST_BDEST_SRC1_SRC2_SCOND;
-    TOP__Operator[TOP_end_pregtn] = Operator_PSEUDO_PRO64;
-    TOP__Operator[TOP_ffixup] = Operator_PSEUDO_PRO64;
-    TOP__Operator[TOP_fwd_bar] = Operator_PSEUDO_PRO64;
+//  TOP__Operator[TOP_end_pregtn] = Operator_PSEUDO_;
+//  TOP__Operator[TOP_ffixup] = Operator_PSEUDO_;
+//  TOP__Operator[TOP_fwd_bar] = Operator_PSEUDO_;
     TOP__Operator[TOP_goto] = Operator_CODE_GOTO_BTARG;
     TOP__Operator[TOP_icall] = Operator_CODE_ICALL;
-    TOP__Operator[TOP_ifixup] = Operator_PSEUDO_PRO64;
+//  TOP__Operator[TOP_ifixup] = Operator_PSEUDO_;
     TOP__Operator[TOP_igoto] = Operator_CODE_IGOTO;
     TOP__Operator[TOP_imml] = Operator_CODE_IMML_IMM;
     TOP__Operator[TOP_immr] = Operator_CODE_IMMR_IMM;
-    TOP__Operator[TOP_intrncall] = Operator_PSEUDO_PRO64;
+    TOP__Operator[TOP_intrncall] = Operator_PSEUDO_IFRCALL;
     TOP__Operator[TOP_label] = Operator_PSEUDO_LABEL;
     TOP__Operator[TOP_ldb_d_i] = Operator_CODE_LDBD_IDESTL_ISRC2_SRC1;
     TOP__Operator[TOP_ldb_d_ii] = Operator_CODE_LDBD_IDESTL_ISRCX_SRC1;
@@ -884,7 +884,7 @@ lao_init() {
     TOP__Operator[TOP_slctf_i] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRC2;
     TOP__Operator[TOP_slctf_ii] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRCX;
     TOP__Operator[TOP_slctf_r] = Operator_CODE_SLCTF_DEST_SCOND_SRC1_SRC2;
-    TOP__Operator[TOP_spadjust] = Operator_PSEUDO_PRO64;
+    TOP__Operator[TOP_spadjust] = Operator_PSEUDO_ADJUST;
     TOP__Operator[TOP_stb_i] = Operator_CODE_STB_ISRC2_SRC1_SRC2;
     TOP__Operator[TOP_stb_ii] = Operator_CODE_STB_ISRCX_SRC1_SRC2;
     TOP__Operator[TOP_sth_i] = Operator_CODE_STH_ISRC2_SRC1_SRC2;
@@ -1124,14 +1124,14 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 // Low-level LAO_optimize entry point.
 static bool
 lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
-  bool result = false;
   //
   if (getenv("PRINT")) CGIR_print();
   LAO_INIT();
-  Interface_open(interface, 3,
+  Interface_open(interface, 4,
       Configuration_Schedule, CG_LAO_schedule,
       Configuration_Pipeline, CG_LAO_pipeline,
-      Configuration_Speculate, CG_LAO_speculate);
+      Configuration_Speculate, CG_LAO_speculate,
+      Configuration_LoopOpt, pipeline > 0);
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
@@ -1176,8 +1176,8 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
     }
   }
   //
-  result = LAO_Optimize(lao_optimizations);
-  if (0 && result) {
+  unsigned optimizations = LAO_Optimize(lao_optimizations);
+  if (0 && optimizations) {
     Interface_updateCGIR(interface);
     if (getenv("PRINT")) CGIR_print();
   }
@@ -1185,7 +1185,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   Interface_close(interface);
   LAO_FINI();
   //
-  return result;
+  return optimizations != 0;
 }
 
 // Optimize a LOOP_DESCR inner loop through the LAO.
@@ -1199,7 +1199,7 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   //
   // Compute the pipeline value.
   BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
-  bool prepass = (lao_optimizations & Optimization_Prepass) != 0;
+  bool prepass = (lao_optimizations & Optimization_PreSched) != 0;
   int pipeline = (tail_bb != NULL)*prepass*CG_LAO_pipeline;
   //
   // Adjust the control-flow if required.
@@ -1282,7 +1282,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&lao_loop_pool);
   //
   // Software pipeline the innermost loops.
-  if (lao_optimizations & Optimization_Prepass && CG_LAO_pipeline > 0) {
+  if (lao_optimizations & Optimization_PreSched && CG_LAO_pipeline > 0) {
     while (loop != NULL && BB_innermost(LOOP_DESCR_loophead(loop))) {
       result != lao_optimize_LOOP(loop, lao_optimizations);
       loop = LOOP_DESCR_next(loop);
