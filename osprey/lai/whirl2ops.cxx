@@ -801,7 +801,7 @@ Get_hilo_home(WN *home, WN *wn)
   if (! hilo) {
     hilo = (struct wn_home_hilo *)malloc (sizeof (struct wn_home_hilo));
 
-    HILO_lower_wn (home, &hilo->lo, &hilo->hi);
+    HILO_lower_wn (home, &hilo->hi, &hilo->lo);
     WN_MAP_Set(WN_To_Hilo_map, home, (void*)hilo);
   }
 
