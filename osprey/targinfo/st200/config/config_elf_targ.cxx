@@ -57,6 +57,12 @@
 #include "tracing.h"
 #include "config_elf_targ.h"
 
+#ifdef TARG_ST
+// [CL] include ST200 specific values
+#include "targ_elf.h"
+#include "config_target.h"
+#endif
+
 /* ====================================================================
  *   Config_Target_From_ELF
  *
@@ -71,8 +77,60 @@ Config_Target_From_ELF (
   INT *isa
 )
 {
+#ifndef TARG_ST
   *is_64bit = (e_flags & EF_IRIX_ABI64);
   *isa = 1;
+#else
+  // [CL] check coherency between user options and file flags
+  *is_64bit = FALSE;
+  *isa = (INT)Target_ISA;
+
+  switch(e_flags & ELF_LX_CORE_MASK) {
+  case ELF_LX_CORE_ST220:
+    if ((Target != TARGET_st220) && (Target != TARGET_UNDEF)) {
+      ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st220));
+    }
+    if (Target_ABI == TARGET_UNDEF) {
+      Target = TARGET_st220;
+    }
+    break;
+  case ELF_LX_CORE_ST230:
+    if ((Target != TARGET_st230) && (Target != TARGET_UNDEF)) {
+      ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st230));
+    }
+    if (Target_ABI == TARGET_UNDEF) {
+      Target = TARGET_st230;
+    }
+    break;
+  default:
+    ErrMsg(EC_Conf_Targ, "processor", Abi_Name(Target_ABI), "undefined/unsupported");
+    Target = TARGET_UNDEF;
+    break;
+  }
+
+  switch(e_flags & ELF_LX_ABI_MASK) {
+  case ELF_LX_ABI_EMBED:
+    if ((Target_ABI != ABI_ST200_embedded) && (Target_ABI != ABI_UNDEF)) {
+      ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), Abi_Name(ABI_ST200_embedded));
+    }
+    if (Target_ABI == ABI_UNDEF) { 
+      Target_ABI = ABI_ST200_embedded;
+    }
+    break;
+  case ELF_LX_ABI_PIC:
+    if ((Target_ABI != ABI_ST200_PIC) && (Target_ABI != ABI_UNDEF)) {
+      ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), Abi_Name(ABI_ST200_PIC));
+    }
+    if (Target_ABI == ABI_UNDEF) { 
+      Target_ABI = ABI_ST200_PIC;
+    }
+    break;
+  default:
+    ErrMsg(EC_Conf_Targ, "abi", Abi_Name(Target_ABI), "undefined/unsupported");
+    Target_ABI = ABI_UNDEF;
+    break;
+  }
+#endif
 }
 
 /* ====================================================================
@@ -91,7 +149,43 @@ Config_ELF_From_Target (
 {
   Elf32_Word e_flags = 0;
 
+#ifndef TARG_ST
   if (is_64bit) e_flags |= EF_IRIX_ABI64;
+#else
+  // [CL] setup ELF flags according to user options
+
+  if (isa != (INT)TARGET_ISA_ST220) {
+      ErrMsg ( EC_Inv_TARG, "isa", Isa_Name((enum TARGET_ISA)isa) );
+  }
+
+  // Handle ABI
+  switch(Target_ABI) {
+  case ABI_ST200_embedded:
+    e_flags |= ELF_LX_ABI_EMBED; break;
+  case ABI_ST200_PIC:
+    e_flags |= ELF_LX_ABI_PIC; break;
+  default:
+    e_flags |= ELF_LX_ABI_UNDEF; break;
+  }
+
+  // Skip Mode (User, Kernel)
+
+  // Handle Core
+  switch(Target) {
+    // [CL} ST210 is not supported by the compiler
+    //  case TARGET_st210:
+    //    e_flags |= ELF_LX_CORE_ST210; break;
+  case TARGET_st220:
+    e_flags |= ELF_LX_CORE_ST220; break;
+  case TARGET_st230:
+    e_flags |= ELF_LX_CORE_ST230; break;
+  default:
+    e_flags |= ELF_LX_CORE_UNDEF; break;
+  }
+
+  // Ignore Cut
+
+#endif
 
   return e_flags;
 }
@@ -104,7 +198,7 @@ Elf32_Half
 Get_Elf_Target_Machine (void)
 {
   // [CL] this ID would need to be sync'ed with binutils
-  return 0x1064;
+  return EM_LX;
 }
 
 

@@ -627,6 +627,8 @@ Configure_Target ()
 void
 IPA_Configure_Target (void)
 {
+  Use_32_Bit_Pointers = TRUE; /* Always true for ST200 ABIs. */
+
   // Any ST200 ABI define these.
   Pointer_Size = 4;
   Pointer_Mtype  = MTYPE_U4;
