@@ -672,7 +672,14 @@ inline INT TOP_base_update_tn(TOP top)
   return -1;
 }
 
-#define OP_base_update_tn(o)	(OP_opnd(o,TOP_base_update_tn(OP_code(o))))
+inline TN *OP_base_update_tn(OP *op)
+{
+  INT opnd = TOP_base_update_tn(OP_code(op));
+  if (opnd >= 0)
+    return OP_opnd(op,opnd);
+  return NULL;
+}
+
 #endif
 
 /* Result must not be same as operand */ 
