@@ -641,6 +641,9 @@ Sort_Stores(void)
     return 0;
   }
 
+  if (!CG_select_stores)
+    return 0;
+
   // Each store should have an equiv.
   op_list::iterator i1_iter = store_i.tkstrs.begin();
   op_list::iterator i1_end  = store_i.tkstrs.end();
@@ -691,7 +694,7 @@ Sort_Stores(void)
     // Can promote store val anytime. That doesn't change alias information.
     if (ci == 1 &&
         OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2) && 
-        (lidx == strval_idx || CG_select_stores)) {
+        lidx == strval_idx) {
       store_i.ifarg_idx.push_back(lidx);
       c = 0;
       ++count;
@@ -1342,12 +1345,13 @@ BB_Fix_Spec_Loads (BB *bb)
 static void
 BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
 {
-  OPS ops = OPS_EMPTY;
+  op_list old_ops;
 
   while (!store_i.tkstrs.empty()) {
-    OP* op1 = store_i.tkstrs.back();
-    OP* op2 = store_i.ntkstrs.back();
-    UINT8 opnd_idx = store_i.ifarg_idx.back();
+    OP* op1 = store_i.tkstrs.front();
+    OP* op2 = store_i.ntkstrs.front();
+    UINT8 opnd_idx = store_i.ifarg_idx.front();
+    OPS ops = OPS_EMPTY;
 
     Expand_Cond_Store (cond_tn, false_br, op1, op2, opnd_idx, &ops);
 
@@ -1363,17 +1367,22 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
    if (op1 && opnd_idx == OP_find_opnd_use(op1, OU_storeval))
      Copy_WN_For_Memory_OP(OPS_last(&ops), op1);
 
-  if (op1)
-   BB_Remove_Op (bb, op1);
-  if (op2)
-   BB_Remove_Op (bb, op2);
+   if (op1) 
+     BB_Insert_Ops_Before (bb, op1, &ops);
+   else
+     BB_Insert_Ops_Before (bb, op2, &ops);
+     
+   if (op1)
+     old_ops.push_front(op1);
+   if (op2)
+     old_ops.push_front(op2);
 
-   store_i.tkstrs.pop_back();
-   store_i.ntkstrs.pop_back();
-   store_i.ifarg_idx.pop_back();
+   store_i.tkstrs.pop_front();
+   store_i.ntkstrs.pop_front();
+   store_i.ifarg_idx.pop_front();
   }
 
-  BB_Append_Ops (bb, &ops);
+   BB_Remove_Ops(bb, old_ops);
 }
 
 // Check that bb has no liveout or side effects beside the conditional jump.
