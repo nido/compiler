@@ -67,62 +67,7 @@ BOOL Targ_Lower_Float_To_Unsigned = FALSE;
 BOOL Targ_Lower_Unsigned_To_Float = FALSE;
 
 // largest signed offset possible in small-frame stack model
-INT Max_Small_Frame_Offset = 0x1fff;    // 13 bits
-
-/* ====================================================================
- *   Promoted_Mtype.
- *
- *   Used to promote integers less than 4 bytes into their
- *   INT counterparts in order to get the right type for 
- *   OPCODE_make_op
- * ====================================================================
- */
-/*
-TYPE_ID 
-Promoted_Mtype (
-  TYPE_ID mtype
-)
-{
-  switch (mtype) {
-    case MTYPE_I1: 
-    case MTYPE_I2: 
-    case MTYPE_I4: 
-#ifdef TARG_ST100
-      return MTYPE_I5;
-#else
-      return MTYPE_I4;
-#endif
-
-    case MTYPE_U1:
-    case MTYPE_U2:
-    case MTYPE_U4:
-#ifdef TARG_ST100
-      return MTYPE_U5;
-#else
-      return MTYPE_U4;
-#endif
-
-    case MTYPE_I8: 
-    case MTYPE_U8: 
-    case MTYPE_I5:
-    case MTYPE_U5:
-    case MTYPE_A4:
-    case MTYPE_A8:
-    case MTYPE_F4:
-    case MTYPE_F8:
-    case MTYPE_FQ:
-    case MTYPE_M:
-    case MTYPE_C4:
-    case MTYPE_C8:
-    case MTYPE_CQ:
-    case MTYPE_V:
-      return mtype;
-
-    default:
-      return MTYPE_UNKNOWN;
-  }
-}
-*/
+//INT Max_Small_Frame_Offset = 0x1fff;    // 13 bits
 
 /* ============================================================
  *    OPCODE_To_TOP (opcode)
@@ -252,7 +197,6 @@ Can_Do_Fast_Remainder (TYPE_ID mtype, INT64 dividend)
 	}
 	return FALSE;
 }
-
 
 /* ====================================================================
  *
@@ -604,4 +548,48 @@ BOOL TOP_Can_Be_Speculative (TOP opcode)
   }
 
    return FALSE;
+}
+
+/* ===============================================================
+ *   OPCODE_To_INTRINSIC
+ *
+ *   TODO: generate gcc intrinsics for some operators, eg. DIV,
+ *         depending on the flag OPT_generate_gcc_intrinsics.
+ * ===============================================================
+ */
+INTRINSIC
+OPCODE_To_INTRINSIC (
+  OPCODE opcode
+)
+{
+  OPERATOR opr   = OPCODE_operator (opcode);
+  TYPE_ID  rtype = OPCODE_rtype (opcode);
+  TYPE_ID  desc  = OPCODE_desc  (opcode);
+  INTRINSIC id;
+
+  if (opr == OPR_DIV) {
+
+    switch (rtype) {
+      case MTYPE_I4:
+      case MTYPE_I8:
+      case MTYPE_I5:
+	id = INTRN_DIVW;
+	break;
+
+      case MTYPE_U4:
+      case MTYPE_U8:
+      case MTYPE_U5:
+	id = INTRN_DIVUW;
+	break;
+
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown DIV opcode"));
+    }
+  }
+  else {
+    FmtAssert(FALSE,("OPERATOR_To_Intrinsic: can't handle %s operator",
+		                                  OPERATOR_name(opr)));
+  }
+
+  return id;
 }

@@ -40,32 +40,45 @@
 #ifndef targ_sections_INCLUDED 
 #define targ_sections_INCLUDED
 
-/*
- * data layout keeps a table of predefined sections,
- * with info about the sections.
- */
+#include <elf.h>
 
-enum _sec_kind {
-  _SEC_UNKNOWN                 = 0,
-  _SEC_TEXT                    = 1,
-  _SEC_XSPACE                  = 2,
-  _SEC_YSPACE                  = 3,
-  _SEC_TDATA1                  = 4,
-  _SEC_TDATA2                  = 5,
-  _SEC_TDATA4                  = 6,
-  _SEC_SDATA1                  = 7,
-  _SEC_SDATA2                  = 8,
-  _SEC_SDATA4                  = 9,
-  _SEC_DATA                    = 10,
-  _SEC_RODATA                  = 11,
-  _SEC_BSS                     = 12,
-  _SEC_GOT                     = 13,
-  _SEC_CPLINIT                 = 14,
-  _SEC_EH_REGION               = 15,
-  _SEC_EH_REGION_SUPP          = 16,
-  _SEC_DISTR_ARRAY             = 17,
-  _SEC_THREAD_PRIVATE_FUNCS    = 18,
-  _SEC_INDEX_MAX               = 19
-  };
+/* ELF section definitions */
+
+#define TEXT_SIZE    INT32_MAX
+#define DATA_SIZE    INT32_MAX
+#define SDATA_SIZE   INT32_MAX
+#define LDATA_SIZE   INT32_MAX
+#define RDATA_SIZE   INT32_MAX
+#define SRDATA_SIZE  INT32_MAX 
+#define LIT4_SIZE    INT32_MAX 
+#define LIT8_SIZE    INT32_MAX 
+#define LIT16_SIZE   INT32_MAX 
+#define BSS_SIZE     INT32_MAX 
+#define SBSS_SIZE    INT32_MAX 
+#define GOT_SIZE     INT32_MAX 
+#define CPLINIT_SIZE INT32_MAX 
+
+/* special sections names */
+#define SDATA_NAME   MIPS_SDATA     /* from elf header */
+#define SRDATA_NAME  MIPS_SRDATA    /* from elf header */
+#define LIT4_NAME    MIPS_LIT4      /* from elf header */
+#define LIT8_NAME    MIPS_LIT8      /* from elf header */
+#define LIT16_NAME   MIPS_LIT16     /* from elf header */
+#define SBSS_NAME    MIPS_SBSS      /* from elf header */
+#define CPLINIT_NAME "__cplinit"    /* is it elf ?? */
+
+/* for now I keep MIPS and IA_64 stuff. */
+#define SHF_IA_64_SHORT	SHF_MIPS_GPREL
+
+/* ST100 processor-specific definitions */
+
+#define SHF_ST100_SHORT	SHF_MIPS_GPREL  /* from elf header */
+
+#define TDATA1_SIZE  256
+#define TDATA2_SIZE  512
+#define TDATA4_SIZE  1024
+#define SDATA1_SIZE  INT32_MAX
+#define SDATA2_SIZE  INT32_MAX
+#define SDATA4_SIZE  INT32_MAX
 
 #endif /* targ_sections_INCLUDED */
