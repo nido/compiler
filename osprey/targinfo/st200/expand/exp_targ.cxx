@@ -1293,31 +1293,18 @@ Expand_Logical_Not (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+{
+  TOP action;
 
-#if 0
-  /* dest = (src == 0) ? 1 : 0 */
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_guard) {
-    TN *p1 = dest;
-    TN *p2 = Get_Complement_TN(dest);
-    if (TN_register_class(src) == ISA_REGISTER_CLASS_guard) {
-      Build_OP (TOP_GP32_EQW_GT_BR_DR_DR, p1, p2, True_TN, Zero_TN, Zero_TN, ops);
-      Build_OP (TOP_GP32_NEW_GT_BR_DR_DR, p1, p2, src, Zero_TN, Zero_TN, ops);
-    } else {
-      Build_OP (TOP_GP32_NEW_GT_BR_DR_DR, p1, p2, True_TN, src, Zero_TN, ops);
-    }
-  } else {
-   /*
-    *  if CG_EXP_normalize is true we must normalized the operands
-    *  (if not already normalized)
-    */
-    if (!V_normalized_op1(variant) && EXP_normalize_logical)
-    {
-      Expand_Normalize_Logical (src, ops);
-    }
-    Build_OP (TOP_GP32_XOR_GT_DR_DR_U8, dest, True_TN, Gen_Literal_TN(1, 4), src, ops);
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch ||
+      TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+    Build_OP (TOP_cmpeq, dest, Zero_TN, src, ops);
   }
-#endif
+  else {
+    FmtAssert(FALSE, ("Expand_Logical_Not: unhandled cmp target TN"));
+  }
+
+  return;
 }
 
 /* ====================================================================
