@@ -2522,10 +2522,8 @@ get_mul_opcode(SIGNDNESS signed0, BITS_POS bits0, SIGNDNESS signed1, BITS_POS bi
   else
     opcode = TOP_UNDEFINED;
 
-#if 0
   if (EBO_Trace_Optimization && opcode != TOP_UNDEFINED) 
     fprintf(TFile,"Get mul opcode for (%s, %s) x (%s, %s): %s\n", SIGNDNESS_Name(signed0), BITS_POS_Name(bits0),  SIGNDNESS_Name(signed1), BITS_POS_Name(bits1), TOP_Name(opcode));
-#endif
 
   return opcode;
 }
@@ -2768,26 +2766,12 @@ Is_16_Bits (
   }
 
   if (OP_code(op) == TOP_zxth_r ||
-      (OP_code(op) == TOP_and_ii && TN_value(OP_opnd(op,1)) == 65535)) {
+      (OP_iand(op) && TN_Has_Value(OP_opnd(op,1)) && TN_Value(OP_opnd(op,1)) == 65535)) {
     *ret = OP_opnd(op,0);
     *ret_tninfo = opinfo->actual_opnd[0];
     *sign_ext = ZERO_EXT;
     *hilo = TN_LO_16;
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-  }
-
-  if (OP_code(op) == TOP_add_r) {
-    // TODO: this is not good, why the constant is not propagated ?
-#if 0
-    if (opnd_tninfo->replacement_tn != NULL &&
-	               TN_value(opnd_tninfo->replacement_tn) == 65535) {
-      *ret = OP_opnd(op,0);
-      *ret_tninfo = opinfo->actual_opnd[0];
-      *sign_ext = ZERO_EXT;
-      *hilo = TN_LO_16;
-      if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-    }
-#endif
   }
 
   if (IS_SHL_16(op)) {
