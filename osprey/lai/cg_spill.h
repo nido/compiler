@@ -200,9 +200,28 @@
  *	    Return a boolean that indicates if the specified OP is
  *	    a spill or restore operation.
  *
+ *	TARG_ST [CG]: Note that this function returns true for any
+ *	op marked OP_spill(op). The old way was to check for the
+ *	stored/loaded TN. 
+ *	The old way dis not work because of two cases:
+ *	1. The TN may be marked as spill while the store is to another
+ *	   location (i.e. the store is not a spill to the spill location
+ *	   but a store of the spilled TN at another location).
+ *	   Thus the function returned a non spill store as spill.
+ *	2. After peephole optimizations (EBO in peep) copy propagation
+ *	   may have replace the spilled TN by another one not marked
+ *	   spilled.
+ *	   Thus the function returned a spill store as non spill.
+ *	
+ *
  *	ST *CGSPILL_OP_Spill_Location (OP *op)
  *	    If <op> is a spill or restore, return the symbol for
  *	    the associated spill location.
+ *
+ *	TARG_ST [CG]: This may return a null location even for a spill
+ *	operation (CGSPILL_Is_Spill_Op() true). This happens in case 2
+ *	above (in description of CGSPILL_Is_Spill_Op).
+ *      
  *
  *	void CGSPILL_Attach_Lda_Remat(
  *	    TN *tn, 
@@ -263,7 +282,8 @@ CG_EXPORTED extern ST * CGSPILL_OP_Spill_Location (OP *op);
 inline BOOL CGSPILL_Is_Spill_Op (OP *op)
 {
 #ifdef TARG_ST
-  return OP_spill(op) && CGSPILL_OP_Spill_Location(op) != (ST *)0;
+  // [CG]: See interface description.
+  return OP_spill(op);
 #else
   return CGSPILL_OP_Spill_Location(op) != (ST *)0;
 #endif

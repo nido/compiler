@@ -111,6 +111,7 @@
 #include "cg_dep_graph.h"
 #include "cg_dep_graph_util.h"
 #include "data_layout.h"
+#include "glob.h"
 
 /* Without this, C++ inlines even with -g */
 #ifdef DONT_INLINE
@@ -2081,6 +2082,9 @@ static BOOL verify_mem(BOOL              result,
   return result;
 }
 
+#ifdef Is_True_On
+extern "C" int getpid(void);
+#endif
 #ifdef TARG_ST
 static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg)
 #else
@@ -2107,28 +2111,55 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   char *info_src = "";
   UINT8 min_omega = 0;
   BOOL memread = OP_load(pred_op) && OP_load(succ_op);
+  int return_value;
 
   *definite = FALSE;
+
+#ifdef Is_True_On
+  // CG: Debugging functions.
+  int bb_id, pred_id, succ_id;
+  const char *pu_name = NULL;
+  int dbg_found = 0;
+  if (getenv("CGD_PU")) pu_name = getenv("CGD_PU");
+  if (getenv("CGD_BB_ID")) bb_id = atoi(getenv("CGD_BB_ID"));
+  if (getenv("CGD_PREV_ID")) pred_id = atoi(getenv("CGD_PREV_ID"));
+  if (getenv("CGD_SUCC_ID")) succ_id = atoi(getenv("CGD_SUCC_ID"));
+  if (pu_name != NULL &&
+      strcmp(pu_name, Cur_PU_Name) == 0 &&
+      bb_id == BB_id(OP_bb(pred_op)) &&
+      bb_id == BB_id(OP_bb(succ_op)) &&
+      pred_id == OP_map_idx(pred_op) &&
+      succ_id == OP_map_idx(succ_op)) {
+    dbg_found = 1;
+    if (getenv("CGD_DBG")) {
+      fprintf(stderr, "PID: %d\n", getpid());
+      scanf("\n");
+    }
+  }
+#endif
 
   /* Don't bother checking for lexicographically negative deps
    * when we're not looking for loop-carried deps.
    */
-  if (omega == NULL && lex_neg) 
-    return FALSE;
+  if (omega == NULL && lex_neg) {
+    return_value =  FALSE; goto return_point;
+  }
 
   /* Handle same op in the non cyclic case. */
   if (omega == NULL && pred_op == succ_op) {
     *definite = TRUE;
-    return TRUE;
+    return_value =  TRUE; goto return_point;
   }
 
   /* Prefetches don't alias anything (but see make_prefetch_arcs) */
-  if (OP_prefetch(pred_op) || OP_prefetch(succ_op)) 
-    return FALSE;
+  if (OP_prefetch(pred_op) || OP_prefetch(succ_op)) {
+    return_value =  FALSE; goto return_point;
+  }
 
   /* no_alias ops don't alias anything by definition */
-  if (OP_no_alias(pred_op) || OP_no_alias(succ_op)) 
-    return FALSE;
+  if (OP_no_alias(pred_op) || OP_no_alias(succ_op)) {
+    return_value =  FALSE; goto return_point;
+  }
 
   /* Advanced loads don't alias with anything. */
 #ifdef TARG_ST
@@ -2138,7 +2169,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if ((OP_load(pred_op) && CGTARG_Is_OP_Advanced_Load(pred_op)) ||
       (OP_load(succ_op) && CGTARG_Is_OP_Advanced_Load(succ_op)))
 #endif
-    return FALSE;
+    { return_value =  FALSE; goto return_point; }
 
   /* Volatile ops are dependent on all other volatile OPs (but dependence
    * is marked as not definite to prevent removal by r/w elimination).
@@ -2146,7 +2177,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (OP_volatile(pred_op) && OP_volatile(succ_op)) {
     *definite = FALSE;
     if (omega) *omega = lex_neg;
-    return TRUE;
+    { return_value =  TRUE; goto return_point; }
   }
 
   /* Don't check for MEMREAD (load-load) dependence when:
@@ -2156,7 +2187,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (memread &&
       (!include_memread_arcs ||
        CGSPILL_Is_Spill_Op(pred_op) || CGSPILL_Is_Spill_Op(succ_op)))
-    return FALSE;
+    { return_value =  FALSE; goto return_point; }
       
 
 #ifndef TARG_ST200
@@ -2168,7 +2199,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
    * for MEMANTI or MEMOUT dependences involving them.
    */
   if (cyclic && OP_store(succ_op) && CGSPILL_Is_Spill_Op(succ_op))
-    return FALSE;
+    { return_value =  FALSE; goto return_point; }
 #endif
 
   /* If a memop has no cross-iteration dependence, then its
@@ -2177,7 +2208,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (OP_no_ci_alias(pred_op) && OP_no_ci_alias(succ_op)) {
     if (OP_orig_idx(pred_op) == OP_orig_idx(succ_op) &&
 	OP_unrolling(pred_op) != OP_unrolling(succ_op))
-      return FALSE;
+      { return_value =  FALSE; goto return_point; }
   }
 
   /* Try to analyze the address TNs ourselves unless disabled.
@@ -2200,19 +2231,19 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
       if (omega) *omega = lex_neg;
       *definite = under_same_cond_tn(pred_op, succ_op, omega ? *omega : 0);
       /* Don't include non-definite MEMREAD arcs */
-      if (!*definite && memread) return FALSE;
-      if (!CG_DEP_Verify_Mem_Deps) return TRUE;
+      if (!*definite && memread) { return_value =  FALSE; goto return_point; }
+      if (!CG_DEP_Verify_Mem_Deps) { return_value =  TRUE; goto return_point; }
       break;
     case OVERLAPPING:
       *definite = FALSE;
       /* Don't include non-definite MEMREAD arcs */
-      if (memread) return FALSE;
+      if (memread) { return_value =  FALSE; goto return_point; }
       if (omega) *omega = lex_neg;
-      if (!CG_DEP_Verify_Mem_Deps) return TRUE;
+      if (!CG_DEP_Verify_Mem_Deps) { return_value =  TRUE; goto return_point; }
       break;
     case DISTINCT:
       if (omega == NULL) {
-	if (!CG_DEP_Verify_Mem_Deps) return FALSE;
+	if (!CG_DEP_Verify_Mem_Deps) { return_value =  FALSE; goto return_point; }
       } else {
 	/*
 	 * same_addr doesn't detect loop-carried dependences, so
@@ -2232,8 +2263,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (!OP_spill(pred_op) && !OP_spill(succ_op)) {
     if (!get_cg_loopdep(pred_op, succ_op, omega, lex_neg)) {
       info_src = "CG (loop dep info)";
-      return verify_mem(FALSE, definite, omega, pred_op, succ_op, 
-			cg_result, info_src);
+      return_value = verify_mem(FALSE, definite, omega, pred_op, succ_op, 
+				cg_result, info_src);
+      goto return_point;
     }
   }
 #endif
@@ -2264,11 +2296,22 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     //         not necessarily a spill (the TN may have been loaded
     //         as a spill and stored anywhere). We decided to mark
     //         OPs as OP_spill(op). 
-    //
-    if (CGSPILL_Is_Spill_Op(pred_op) && CGSPILL_Is_Spill_Op(succ_op) &&
-	pred_spill_st && succ_spill_st) {
+    if (CGSPILL_Is_Spill_Op(pred_op) && CGSPILL_Is_Spill_Op(succ_op))
 #else
-    if (pred_spill_st && succ_spill_st) {
+    if (pred_spill_st && succ_spill_st)
+#endif
+    {
+#ifdef TARG_ST
+      // CG: For spill operations, the spill location may be undefined.
+      // in this case treat conservativelly.
+      if (pred_spill_st == NULL || succ_spill_st == NULL) {
+	/*
+	 * Spill sets can't be determined, so there's a dependence.
+	 */
+	return_value = verify_mem(TRUE, definite, omega, 
+				  pred_op, succ_op, cg_result, info_src);
+	goto return_point;
+      } else 
 #endif
       if (succ_spill_st == pred_spill_st) {
 	/*
@@ -2282,16 +2325,18 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
          /* A value is loaded from one location and stored to a spill location.
             This is not a memory dependency, but should show up as a REGIN dependency
             later on. */
-          return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-                            info_src);
+          return_value = verify_mem(FALSE, definite, omega, 
+				    pred_op, succ_op, cg_result, info_src);
+	  goto return_point;
         }
 	*definite = TRUE;
       } else {
 	/*
 	 * They're in different spill sets, so there's no dependence.
 	 */
-	return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-			  info_src);
+	return_value = verify_mem(FALSE, definite, omega, 
+				  pred_op, succ_op, cg_result, info_src);
+	goto return_point;
       }
 #ifdef TARG_ST
     } else if (CGSPILL_Is_Spill_Op(pred_op) || CGSPILL_Is_Spill_Op(succ_op)) {
@@ -2300,8 +2345,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 #endif
       /* One's a spill, and the other's not, so they're independent.  */
 
-      return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-			info_src);
+      return_value = verify_mem(FALSE, definite, omega, 
+				pred_op, succ_op, cg_result, info_src);
+      goto return_point;
     } else {
 
 #if 0
@@ -2333,8 +2379,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
        */
       *definite = FALSE;
       if (omega) *omega = MAX(lex_neg, min_omega);
-      return verify_mem(TRUE, definite, omega, pred_op, succ_op, cg_result,
-			info_src);
+      return_value = verify_mem(TRUE, definite, omega, 
+				pred_op, succ_op, cg_result, info_src);
+      goto return_point;
     }
 
 #ifdef TARG_ST
@@ -2368,8 +2415,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	}
 	if (edge == 0) {
 	  /* Independent */
-	  return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-			    info_src);
+	  return_value = verify_mem(FALSE, definite, omega,
+				    pred_op, succ_op, cg_result, info_src);
+	  goto return_point;
 	} else {
 	  FmtAssert(dist >= 0, 
 		    ("LNO edge %d as negative dist %d", edge, dist));
@@ -2383,15 +2431,18 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	       succ_unroll - pred_unroll != dist) ||
 	      // check: unroll_dist < min_dist
 	      (!is_distance &&
-	       succ_unroll - pred_unroll < dist))
-	    return verify_mem(FALSE, definite, omega, pred_op, succ_op,
-			      cg_result, info_src);
+	       succ_unroll - pred_unroll < dist)) {
+	    return_value = verify_mem(FALSE, definite, omega,
+				      pred_op, succ_op, cg_result, info_src);
+	    goto return_point;
+	  }
 	  *definite = (cg_result == IDENTICAL && *definite ||
 		       is_must);
 	  if (*definite)
 	    *definite = under_same_cond_tn(pred_op, succ_op, 0);
-	  return verify_mem(TRUE, definite, omega, pred_op, succ_op, cg_result,
-			    info_src);
+	  return_value = verify_mem(TRUE, definite, omega,
+				    pred_op, succ_op, cg_result, info_src);
+	  goto return_point;
 	}
       }
     }
@@ -2456,13 +2507,15 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	}
 	if (edge == 0) {
 	  /* Independent */
-	  return verify_mem(FALSE, definite, omega, pred_op, succ_op, cg_result,
-			    info_src);
+	  return_value = verify_mem(FALSE, definite, omega,
+				    pred_op, succ_op, cg_result, info_src);
+	  goto return_point;
 	} else {
 	  if (dist < 0) {
 	    DevWarn("LNO edge %d has dist of %d; ignoring", edge, dist);
-	    return verify_mem(FALSE, definite, omega, pred_op, succ_op,
-			      cg_result, info_src);
+	    return_value = verify_mem(FALSE, definite, omega,
+				      pred_op, succ_op, cg_result, info_src);
+	    goto return_point;
 	  }
 	  if (dir == DIR_POS && dist == 0) {
 	    DevWarn("LNO POS(+) edge %d has dist of 0; assuming 1", edge);
@@ -2471,10 +2524,10 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	  if (pred_unrollings > 1) {
 	    INT32 adjust = dist + OP_unrolling(pred_op)-OP_unrolling(succ_op);
 	    info_src = "LNO (+ CG unrolling info)";
-	    if (is_distance && adjust % (INT32)pred_unrollings != 0)
-	      {
-	      return verify_mem(FALSE, definite, omega, pred_op, succ_op,
-				cg_result, info_src);
+	    if (is_distance && adjust % (INT32)pred_unrollings != 0) {
+	      return_value = verify_mem(FALSE, definite, omega, pred_op,
+					succ_op, cg_result, info_src);
+	      goto return_point;
 	    } else {
 	      dist = adjust / (INT32)pred_unrollings;
 	    }
@@ -2483,21 +2536,26 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	    is_must && dist < MAX_OMEGA;
 	  if (lex_neg && dist == 0) {
 	    /* LNO can't exclude the zero-omega arcs, so we do. */
-	    if (is_distance)
-	      return verify_mem(FALSE, definite, omega, pred_op, succ_op,
-				cg_result, info_src);
+	    if (is_distance) {
+	      return_value = verify_mem(FALSE, definite, omega,
+					pred_op, succ_op, cg_result, info_src);
+	      goto return_point;
+	    }
 	    dist = 1;
 	  }
-	  if (omega == NULL && dist > 0)
-	    return verify_mem(FALSE, definite, omega, pred_op, succ_op,
-			      cg_result, info_src);
+	  if (omega == NULL && dist > 0) {
+	    return_value = verify_mem(FALSE, definite, omega,
+				      pred_op, succ_op, cg_result, info_src);
+	    goto return_point;
+	  }
 	  if (omega)
 	    *omega = MIN(MAX(dist, min_omega), MAX_OMEGA);
 	  if (*definite)
 	    *definite = under_same_cond_tn(pred_op, succ_op,
 					   omega ? *omega : 0);
-	  return verify_mem(TRUE, definite, omega, pred_op, succ_op, cg_result,
-			    info_src);
+	  return_value = verify_mem(TRUE, definite, omega,
+				    pred_op, succ_op, cg_result, info_src);
+	  goto return_point;
 	}
       }
     }
@@ -2547,8 +2605,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	    *definite = cg_result == IDENTICAL;
 	    break;
 	  case NOT_ALIASED:
-	    return verify_mem(FALSE, definite, omega, pred_op, succ_op, 
-			      cg_result, info_src);
+	    return_value = verify_mem(FALSE, definite, omega,
+				      pred_op, succ_op, cg_result, info_src);
+	    goto return_point;
 	  default:
 	    Is_True(FALSE, ("bad return value from Aliased"));
 	  }
@@ -2594,8 +2653,20 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
   if (*definite)
     *definite = under_same_cond_tn(pred_op, succ_op, omega ? *omega : 0);
 
-  return verify_mem(TRUE, definite, omega, pred_op, succ_op, cg_result,
-		    info_src);
+  return_value = verify_mem(TRUE, definite, omega,
+			    pred_op, succ_op, cg_result, info_src);
+  goto return_point;
+
+return_point:
+#ifdef Is_True_On
+  if (dbg_found) {
+    Print_OP_No_SrcLine (pred_op);
+    Print_OP_No_SrcLine (succ_op);
+    fprintf(TFile, "Dep BB:%d, pred:%d, succ:%d : dep:%d, def:%d, om:%d\n",
+	    bb_id, pred_id, succ_id, return_value, *definite, omega ? *omega: 0);
+  }
+#endif
+  return return_value;
 }
 
 BOOL 
