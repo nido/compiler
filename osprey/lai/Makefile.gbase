@@ -94,8 +94,11 @@ HOSTDEFS += -DTARG_ST100 -DSUPPORTS_PREDICATION
 endif
 
 ifeq ($(BUILD_TARGET), ST200)
-HOSTDEFS += -DTARG_ST200 
-endif
+HOSTDEFS += -DTARG_ST200  -DSUPPORTS_SELECT
+
+ ifdef LAOBUILD
+  HOSTDEFS += -DST_LAO
+ endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
 HOSTDEFS += -DIs_True_On
@@ -394,6 +397,7 @@ ifeq ($(BUILD_TARGET),ST100)
 endif
 
 ifeq ($(BUILD_TARGET),ST200)
+  CG_CXX_SRCS +=  cg_select.cxx
   CG_CXX_SRCS +=  targ_hb.cxx
 
   # SSA stuff:
