@@ -2898,6 +2898,13 @@ put_TN_comment (
 		   Targ_Print (NULL, ST_tcon_val(TN_var(t))) );
     }
     else {
+#ifdef TARG_ST
+      /* (cbr) demangle name */
+      char *cp_name = cplus_demangle(ST_name(TN_var(t)), DMGL_NO_OPTS);
+      if (cp_name)
+        *comment = vstr_concat(*comment, cp_name);
+      else
+#endif
       *comment = vstr_concat (*comment, ST_name(TN_var(t)));
     }
     if (TN_offset(t) != 0) {
