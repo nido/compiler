@@ -761,6 +761,9 @@ Get_Vararg_Parameter_Location (
   next.start_offset = Current_Offset;
   Current_Offset = next.start_offset + next.size;
 
+  next.lpad = 0;
+  next.rpad = 0;
+
   return next;
 }
 
