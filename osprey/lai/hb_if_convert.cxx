@@ -57,6 +57,10 @@
 #include "findloops.h"
 #include "pqs_cg.h"
 
+#ifdef TARG_ST
+#include "cg_ssa.h"
+#endif
+
 #include "hb.h"
 #include "hb_trace.h"
 #include "hb_id_candidates.h" // For use in Force_If_Convert
@@ -423,6 +427,17 @@ Merge_Blocks(HB*                  hb,
     succ = BBLIST_item(bl);
     Unlink_Pred_Succ(bb_second, succ);
     Link_Pred_Succ_with_Prob(bb_first, succ, old_prob);
+#ifdef TARG_ST
+    // We must update the SSA:
+    FOR_ALL_BB_PHI_OPs(succ,op) {
+      INT i;
+      for (i=0; i < OP_opnds(op); i++) {
+	if (Get_PHI_Predecessor(op,i) == bb_second) {
+	  Set_PHI_Predecessor(op,i,bb_first);
+	}
+      }
+    }
+#endif
   } else {
     while (bl = BB_succs(bb_second)) {
       succ = BBLIST_item(bl);
@@ -432,6 +447,17 @@ Merge_Blocks(HB*                  hb,
 	prob = 1.0 - Get_Branch_Prob(bb_second,succ,freq_map);
       }	
       Link_Pred_Succ_with_Prob(bb_first, succ, prob);
+#ifdef TARG_ST
+      // We must update the SSA:
+      FOR_ALL_BB_PHI_OPs(succ,op) {
+	INT i;
+	for (i=0; i < OP_opnds(op); i++) {
+	  if (Get_PHI_Predecessor(op,i) == bb_second) {
+	    Set_PHI_Predecessor(op,i,bb_first);
+	  }
+	}
+      }
+#endif
     }
   }
   //
@@ -621,9 +647,175 @@ AND_Predicate_To_OP (OP *op, TN *ptn1, TN *ptn2,
 	}
 }
 
+#endif /* SUPPORTS_PREDICATION */
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   Structure that replaces predicate_tns when generating selects
+ * ====================================================================
+ */
+struct predicate_data {
+  BB_SET* control_dependences; /* on which BBs given BBs execution depends */
+  TN* pred_tn;                 /* TN assigned to the excution of this BB */
+  BOOL br_dir;                 /* BBs execution corresponds to pred_tn
+				* TRUE/FALSE ? */
+};
+
+/* ====================================================================
+ *   replace_phi_with_cmov
+ *
+ *   We need to inspect all of this PHIs operands and create CMOVs.
+ * ====================================================================
+ */
+static void
+replace_phi_with_cmov (
+  OP *op, 
+  BB_MAP predicate_info
+)
+{
+  TN *pred_tn = NULL;
+  BB *bb = OP_bb(op);
+
+  // FOR NOW ONLY 2 OPNDs PHIs !!!!
+  FmtAssert(OP_opnds(op) == 2,("Can't handle more than 2 opnds"));
+
+  BOOL swap_opnds = FALSE;
+
+  if (HB_Trace(HB_TRACE_CONVERT)) {
+    Print_OP(op);
+  }
+
+#if 0
+  predicate_data *bb_pdt = (predicate_data*)BB_MAP_Get(predicate_info,bb);
+  BB_SET *cds = bb_pdt->control_dependences;
+  //
+  // We need to find the BB common to control dependence sets of all
+  // incoming edges.
+  //
+  BB *pred;
+  BBLIST *preds = BB_preds(bb);
+  BB_SET *cds_intersection;
+  predicate_data *pred_pdt;
+  BB_SET *pred_cds;
+  if (!BB_SET_EmptyP(cds)) {
+    cds_intersection = BB_SET_Copy(cds, &MEM_local_pool);
+  }
+  else {
+    // initialize with the first predecessor
+    preds = BB_preds(bb);
+    pred = BBLIST_item(preds);
+    pred_pdt = (predicate_data*)BB_MAP_Get(predicate_info,pred);
+    pred_cds = pdt->control_dependences;
+    cds_intersection = BB_SET_Copy(pred_cds, &MEM_local_pool);
+    preds = BBLIST_next(preds);
+  }
+
+  while (preds != NULL) {
+    pred = BBLIST_item(preds);
+    pred_pdt = (predicate_data*)BB_MAP_Get(predicate_info,pred);
+    pred_cds = pdt->control_dependences;
+    cds_intersection = BB_SET_IntersectionD(cds_intersection, pred_cds);
+  }
+
+  //
+  // We should have a single BB in the intersection. Check this fact.
+  //
+  FmtAssert(BB_SET_Size(cds_intersection) == 1, ("can't find control predecessor"));
+
+  
+
+#endif
+
+  // 
+  // We will generate a select with the opnd[0] corresponding
+  // to branch taken and opnd[1] to branch not taken.
+  //
+  TN *true_tn = OP_opnd(op,0);
+  TN *false_tn = OP_opnd(op,1);
+  BB *true_pred = Get_PHI_Predecessor (op, 0);
+  BB *false_pred = Get_PHI_Predecessor (op, 1);
+
+  // First make sure that both predecessors depend on the same TN
+  FOR_ALL_BB_PREDS(bb,preds) {
+    BB *pred = BBLIST_item(preds);
+    predicate_data *pdt = (predicate_data*)BB_MAP_Get(predicate_info,pred);
+    TN *ptn = pdt->pred_tn;
+    if (pred_tn == NULL)
+      pred_tn = ptn;
+
+    //
+    // predicate TN for current predecessor can be NULL if this
+    // predecessor is not really control dependent on anything.
+    // However, there is still need for a SELECT (we have a PHI).
+    // But we shouldn't look for a swap condition in this case.
+    //
+    if (ptn != NULL) {
+      FmtAssert(pred_tn == ptn, ("PHI preds do not correspond"));
+
+      if ((pdt->br_dir == FALSE && pred == true_pred) ||
+	  (pdt->br_dir == TRUE && pred == false_pred)) {
+	// swap operands
+	true_tn = OP_opnd(op,1);
+	false_tn = OP_opnd(op,0);
+	swap_opnds = TRUE;
+      }
+    }
+  }
+
+  // It can't be NULL after all
+  FmtAssert(pred_tn != NULL, ("Arthur does not understand something"));
+
+  fprintf(TFile, "<HB> Making a SELECT on ");
+  Print_TN(pred_tn, FALSE);
+  fprintf(TFile, " (%s)\n", swap_opnds ? "swap" : "");
+
+  OPS ops = OPS_EMPTY;
+  Expand_Select(OP_result(op,0), pred_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
+  fprintf(TFile, "  OP: ");
+  Print_OP(OPS_last(&ops));
+  fprintf(TFile, "\n");
+
+  // Insert these just after the PHI and remove the PHI
+  BB_Insert_Ops_After(bb, op, &ops);
+  BB_Remove_Op(bb, op);
+
+  return;
+}
+
+/* ====================================================================
+ *   Replace_PHI_Functions 
+ * ====================================================================
+ */
+static void
+Replace_PHI_Functions (
+  BB *bb,
+  BB_MAP predicate_info
+)
+{
+  if (HB_Trace(HB_TRACE_CONVERT)) {
+    fprintf(HB_TFile, "<HB> Replacing PHIs in BB%d (%d preds)\n", 
+	    BB_id(bb), BB_preds_len(bb));
+  }
+
+  OP* op = BB_first_op(bb);
+  while (op != NULL && OP_code(op) == TOP_phi) {
+    OP *next_op = OP_next(op);
+    replace_phi_with_cmov(op, predicate_info);
+    op = next_op;
+  }
+  return;
+}
+
+#endif
+
+#ifdef SUPPORTS_PREDICATION
 /////////////////////////////////////
 static void
+#ifdef TARG_ST
+Predicate_Block(BB* bb, BB_MAP predicate_info, BB_SET *hb_blocks)
+#else
 Predicate_Block(BB* bb, TN *pred_tn, BB_SET *hb_blocks)
+#endif
 /////////////////////////////////////
 //
 //  Predicate <bb> with the predicate associated with bb_src
@@ -637,6 +829,11 @@ Predicate_Block(BB* bb, TN *pred_tn, BB_SET *hb_blocks)
   INT i;
   TN *result_tn;
   
+#ifdef TARG_ST
+  predicate_data *bb_pred_data = (predicate_data*)BB_MAP_Get(predicate_info, bb);
+  TN *pred_tn = bb_pred_data->pred_tn;
+#endif
+
   if (pred_tn && pred_tn != True_TN) {
     for (OP* op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
       if ( ! OP_has_predicate(op)) continue;
@@ -710,8 +907,8 @@ DevWarn("bb %d: need to predicate existing predicate %d with %d", BB_id(bb), TN_
       }
     } // for
   } // if
-}
 
+}
 #endif /* SUPPORTS_PREDICATION */
 
 /////////////////////////////////////
@@ -740,7 +937,11 @@ Make_Fall_Thru_Goto(BB*                  bb,
 
   Add_Goto(fall_thru_goto, fall_thru_exit);
   if (pred_tn && pred_tn != True_TN) {
+#ifdef TARG_ST
+    Make_Branch_Conditional(fall_thru_goto, pred_tn, TRUE);
+#else
     Make_Branch_Conditional(fall_thru_goto);
+#endif
 #ifdef SUPPORTS_PREDICATION
     Predicate_Block(fall_thru_goto,pred_tn, hb_blocks);
 #endif
@@ -1008,7 +1209,11 @@ Compute_Block_Frequencies(vector<BB *> &block_order, BB_MAP freq_map)
 /////////////////////////////////////
 static BB *
 Remove_Branches(HB*                  hb, 
+#ifdef TARG_ST
+		BB_MAP               predicate_info, 
+#else
 		BB_MAP               predicate_tns, 
+#endif
 		vector<BB *>         &block_order,
 		vector<INT>          &block_class,
 		list<HB_CAND_TREE*>& candidate_regions)
@@ -1070,6 +1275,16 @@ Remove_Branches(HB*                  hb,
    prev_bb = NULL;
    block_freq = BB_freq(block_order[0]);
 
+#ifdef TARG_ST
+   // Replace PHI-functions in all BBs before any merging
+   // Except of course the HB entry BB.
+   for (idx=1; idx < block_order.size(); idx++) {
+     bb = block_order[idx];
+
+     Replace_PHI_Functions (bb, predicate_info);
+   }
+#endif
+
    for (idx=0; idx < block_order.size(); idx++) {
      bb = block_order[idx];
      INT bclass = block_class[idx];
@@ -1082,6 +1297,16 @@ Remove_Branches(HB*                  hb,
      fall_thru = bb_freq_data->fall_thru;
      branch_bb = bb_freq_data->branch_bb;
      
+#ifdef TARG_ST
+     predicate_data *bb_pred_data = (predicate_data*)BB_MAP_Get(predicate_info,bb);
+     TN *pred_tn = bb_pred_data->pred_tn;
+     BOOL br_dir = bb_pred_data->br_dir;
+#endif
+
+     if (HB_Trace(HB_TRACE_CONVERT)) {
+       fprintf(HB_TFile, "<HB> Merging BB%d [%d]\n", BB_id(bb), Get_Case(bclass));
+     }
+
      switch (Get_Case(bclass)) {
 	 
      case CASE_ALL_IN_HB:
@@ -1108,7 +1333,11 @@ Remove_Branches(HB*                  hb,
        if (fall_thru) {
 	 if (!last_block) {
 	   fall_thru_goto = Make_Fall_Thru_Goto(bb,fall_thru,
+#ifdef TARG_ST
+						pred_tn,
+#else
 						(TN*) BB_MAP_Get(predicate_tns,bb),
+#endif
 						block_freq,
 						1.0,
 						Get_Block_Prob(bb,freq_map),
@@ -1131,7 +1360,11 @@ Remove_Branches(HB*                  hb,
      case CASE_UNCOND_BR:
        if (!last_block) {
 	 // Just make the branch conditional
+#ifdef TARG_ST
+	 Make_Branch_Conditional(bb, pred_tn, br_dir);
+#else
 	 Make_Branch_Conditional(bb);
+#endif
 	 // Reset the probablility on the link
 	 Unlink_Pred_Succ(bb,branch_bb);
 	 Link_Pred_Succ_with_Prob(bb,branch_bb,Get_Block_Prob(bb,freq_map));
@@ -1147,7 +1380,11 @@ Remove_Branches(HB*                  hb,
        // Add a branch to the block
        if (!last_block) {
 	 Add_Goto(bb, fall_thru);
+#ifdef TARG_ST
+	 Make_Branch_Conditional(bb, pred_tn, br_dir);
+#else
 	 Make_Branch_Conditional(bb);
+#endif
 	 Unlink_Pred_Succ(bb,fall_thru);
 	 Link_Pred_Succ_with_Prob(bb,fall_thru,Get_Block_Prob(bb,freq_map));
 	 // Unlink to reset the branch frequencies
@@ -1164,7 +1401,12 @@ Remove_Branches(HB*                  hb,
        TN *inverse_pred,*current_pred;
        // This will either grab what's already there, or else create a new
        // false predicate if it isn't there
+#ifdef TARG_ST
+       VARIANT br_variant;
+       Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred, &br_variant);
+#else
        Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred);
+#endif
        // Remove the current branch
        BB_Remove_Branch(bb);
        Unlink_Pred_Succ(bb,branch_bb);
@@ -1209,7 +1451,12 @@ Remove_Branches(HB*                  hb,
 	   
 	 // This will either grab what's already there, or else create a new
 	 // false predicate if it isn't there
+#ifdef TARG_ST
+	 VARIANT br_variant;
+	 Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred, &br_variant);
+#else
 	 Exp_True_False_Preds_For_Block(bb, current_pred, inverse_pred);
+#endif
 	 fall_thru_goto = Make_Fall_Thru_Goto(bb,fall_thru,inverse_pred,
 					      block_freq * ft_goto_prob,
 					      ft_goto_prob,
@@ -1233,9 +1480,14 @@ Remove_Branches(HB*                  hb,
        FmtAssert(0,("Unknown block classification"));
      }
       
+
      // We always predicate the current block
 #ifdef SUPPORTS_PREDICATION
+#ifdef TARG_ST
+     Predicate_Block(bb, predicate_info, HB_Blocks(hb));
+#else
      Predicate_Block(bb,(TN*) BB_MAP_Get(predicate_tns, bb), HB_Blocks(hb));
+#endif
 #endif
 
      // Update the frequency of the block
@@ -1289,6 +1541,17 @@ Remove_Branches(HB*                  hb,
    // We are done. The old blocks have been removed from the hyperblock
    BB_MAP_Delete(freq_map);
 
+#ifdef TARG_ST
+  if (HB_Trace(HB_TRACE_CONVERT)) {
+    BB *bbi;
+    fprintf(TFile, "%s HB After Remove_Branches\n%s\n", DBar, DBar);
+    FOR_ALL_BB_SET_members(HB_Blocks(hb), bbi) {
+      Print_BB(bbi);
+    }
+    fprintf(TFile, "\n\n");
+  }
+#endif
+
 #ifdef CHECK_FREQENCIES
    Check_Block_Frequencies(HB_Blocks(hb),"After");
 #endif
@@ -1312,11 +1575,18 @@ struct equiv_classes {
    BB_SET* control_dependences;
    BB_SET* true_edges;
    TN* pred_tn;
+#ifdef TARG_ST
+  BOOL br_dir;
+#endif
 };
 
 struct control_dep_data {
   TN* true_tn;
   TN* false_tn;
+#ifdef TARG_ST
+  VARIANT br_variant;
+#endif
+
   vector <TN*> true_or_tns;
   vector <TN*> false_or_tns;
 
@@ -1344,6 +1614,12 @@ Insert_ORs_For_BB(BB *bb, control_dep_data *bb_cdep_data)
   TN *r2;
   TN *q;
   
+#if 1
+  fprintf(TFile, "    Insert_ORs_For_BB: %d\n", BB_id(bb));
+  fprintf(TFile, "      TRUE num_to_set: %d\n", bb_cdep_data->true_or_tns.size());
+  fprintf(TFile, "      FALSE num_to_set: %d\n", bb_cdep_data->false_or_tns.size());
+#endif
+
   // Get the TRUE pairs
   num_to_set = bb_cdep_data->true_or_tns.size();
   q = bb_cdep_data->true_tn;
@@ -1354,6 +1630,18 @@ Insert_ORs_For_BB(BB *bb, control_dep_data *bb_cdep_data)
     } else {
       r2 = True_TN;
     }
+
+#if 1
+    fprintf(TFile, "    ");
+    Print_TN(r1,FALSE);
+    fprintf(TFile, ", ");
+    if (True_TN) Print_TN(True_TN, FALSE);
+    else fprintf(TFile, "True_TN");
+    fprintf(TFile, " = TRUE if ");
+    Print_TN(q,FALSE);
+    fprintf(TFile, " is TRUE\n");
+#endif
+
     Exp_Generic_Pred_Calc(r1,r2, COMPARE_TYPE_or, q, &ops);
   }
   
@@ -1370,6 +1658,13 @@ Insert_ORs_For_BB(BB *bb, control_dep_data *bb_cdep_data)
     Exp_Generic_Pred_Calc(r1,r2, COMPARE_TYPE_or, q, &ops);
   }
   
+#if 1
+  OP *op;
+  FOR_ALL_OPS_OPs (&ops, op) {
+    fprintf(TFile, "      into "); Print_OP (op);
+  }
+#endif
+
   // Insert these just before the ending branch
   OP* br_op = BB_branch_op(bb);
   BB_Insert_Ops(bb, br_op, &ops, TRUE);
@@ -1397,14 +1692,25 @@ Insert_ORs_For_BB(BB *bb, control_dep_data *bb_cdep_data)
 static void
 Setup_True_False_Predicates(BB *bb, control_dep_data *bb_cdep_data)
 {
+#ifdef TARG_ST
+  Exp_True_False_Preds_For_Block(bb, bb_cdep_data->true_tn, bb_cdep_data->false_tn, &bb_cdep_data->br_variant);
+#else
   Exp_True_False_Preds_For_Block(bb, bb_cdep_data->true_tn, bb_cdep_data->false_tn);
+#endif
 }
-
 
 /////////////////////////////////////
 void
-Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
-		  BB_MAP predicate_tns)
+Insert_Predicates(
+  HB* hb, 
+  BB_MAP control_dependences, 
+  BB_MAP true_edges,
+#ifdef TARG_ST
+  BB_MAP predicate_info
+#else
+  BB_MAP predicate_tns
+#endif
+)
 /////////////////////////////////////
 //
 //  Form equivalence classes of blocks that share precisely the same
@@ -1426,7 +1732,6 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
 
   BB_MAP equiv_classes_map = BB_MAP_Create();
   BB_MAP control_dep_info = BB_MAP_Create();
-  
 
   // First, compute the equivalence classes
 
@@ -1485,15 +1790,63 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
       Setup_True_False_Predicates(bb_cd, bb_cdep_data);
       // Set the predicate for the equivalance class
       if (BB_SET_MemberP(trues, bb_cd)) {
+#ifdef TARG_ST
+	//
+	// Arthur: both TNs may not be available.
+	//         We prefer the true_tn if in 'trues' and the false tn
+	//         otherwise.
+	//
+	if (bb_cdep_data->true_tn != NULL) {
+	  ec->pred_tn = bb_cdep_data->true_tn;
+	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
+	  // BB corresponds to pred_tn TRUE/FALSE
+	  //ec->br_dir = TRUE;
+	}
+	else {
+	  ec->pred_tn = bb_cdep_data->false_tn;
+	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
+	  //ec->br_dir = FALSE;
+	}
+	ec->br_dir = TRUE;
+#else
 	ec->pred_tn = bb_cdep_data->true_tn;
+#endif
       } else {
+#ifdef TARG_ST
+	if (bb_cdep_data->false_tn != NULL) {
+	  ec->pred_tn = bb_cdep_data->false_tn;
+	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
+	  //ec->br_dir = TRUE;
+	}
+	else {
+	  ec->pred_tn = bb_cdep_data->true_tn;
+	  //ec->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
+	  //ec->br_dir = FALSE;
+	}
+	ec->br_dir = FALSE;
+#else
 	ec->pred_tn = bb_cdep_data->false_tn;
+#endif
       }	
+#if 0
+      fprintf(TFile, "  setting pred_tn for BB to ");
+      if (ec->pred_tn) Print_TN(ec->pred_tn, FALSE);
+      fprintf(TFile, " (%s)\n", bb_cdep_data->true_tn ? "true tn" : "false tn");
+#endif
+
     } else {
       // Multiple dependencies. Insert an initialization in the entry block. 
       OPS ops = OPS_EMPTY;
       ec->pred_tn = Gen_Predicate_TN();
       Exp_Pred_Set(ec->pred_tn, True_TN, 0, &ops);
+
+#if 1
+      fprintf(TFile, "  Multiple Control Dependencies for EC:\n");
+      fprintf(TFile, "    pred_tn ");
+      if (ec->pred_tn) Print_TN(ec->pred_tn, FALSE);
+      fprintf(TFile, "\n");
+#endif
+
       OP *xfer_op;
       
       // Insert the predicate initialization code just before the branch
@@ -1511,6 +1864,24 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
       FOR_ALL_BB_SET_members(ec->control_dependences, bb_cd) {
 	bb_cdep_data = (control_dep_data*) BB_MAP_Get(control_dep_info,bb_cd);
 	Setup_True_False_Predicates(bb_cd,bb_cdep_data);
+
+#if 1
+	fprintf(TFile, "    CD BB%d cond TN ", BB_id(bb_cd));
+	if (bb_cdep_data->true_tn) {
+	  Print_TN(bb_cdep_data->true_tn, FALSE);
+	  fprintf(TFile, " true_tn; ");
+	}
+	else {
+	  Print_TN(bb_cdep_data->false_tn, FALSE);
+	  fprintf(TFile, " false_tn; ");
+	}
+	if (BB_SET_MemberP(trues, bb_cd)) {
+	  fprintf(TFile, "executes on branch TRUE\n");
+	} else {
+	  fprintf(TFile, "executes on branch FALSE\n");
+	}
+#endif
+
 	// Add the pred_tn to the list of things to be or'ed in each block
 	if (BB_SET_MemberP(trues, bb_cd)) {
 	  bb_cdep_data->true_or_tns.push_back(ec->pred_tn);
@@ -1534,7 +1905,20 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
   FOR_ALL_BB_SET_members(HB_Blocks(hb), bb) {
     // Set the predicate TN for the BB
     ec = (equiv_classes *) BB_MAP_Get(equiv_classes_map,bb);
+#ifdef TARG_ST
+    //
+    // Arthur: all this info may be necessary in order to handle PHI
+    //         node conversion
+    //
+    predicate_data *bb_pred_data = CXX_NEW(predicate_data, &MEM_local_pool);
+    bb_pred_data->control_dependences = 
+                     BB_SET_Copy(ec->control_dependences, &MEM_local_pool);
+    bb_pred_data->pred_tn = ec->pred_tn;
+    bb_pred_data->br_dir = ec->br_dir;
+    BB_MAP_Set(predicate_info, bb, bb_pred_data);
+#else
     BB_MAP_Set(predicate_tns, bb, ec->pred_tn);
+#endif
     
     //
     // Insert the ORs for a BB
@@ -1542,21 +1926,29 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
     bb_cdep_data = (control_dep_data*) BB_MAP_Get(control_dep_info,bb);
     Insert_ORs_For_BB(bb, bb_cdep_data);
 
-
-
     //========= Tracing information =========================================
 
     if (HB_Trace(HB_TRACE_CONVERT)) {
-      if (ec->pred_tn) {
+      if (bb_pred_data->pred_tn) {
+#ifdef TARG_ST
+	fprintf(HB_TFile, "<HB> BB%d predicated with TN%d\n", BB_id(bb),
+		TN_number(bb_pred_data->pred_tn));
+#else
 	fprintf(HB_TFile, "<HB> BB%d predicated with TN%d\n", BB_id(bb),
 		TN_number(ec->pred_tn));
+#endif
       } else {
 	fprintf(HB_TFile, "<HB> BB%d has no predicate\n", BB_id(bb));
       }
       fprintf(HB_TFile, "<HB> Control dependences data:");
+#ifdef TARG_ST
+      BB_SET_Print(bb_pred_data->control_dependences, HB_TFile);
+      fprintf(HB_TFile, " %s, ", bb_pred_data->br_dir == TRUE ? "BR_TRUE" : "BR_FALSE");
+#endif
       INT ttn = bb_cdep_data->true_tn ? TN_number(bb_cdep_data->true_tn) : 0;
       INT ftn = bb_cdep_data->false_tn ? TN_number(bb_cdep_data->false_tn) : 0;
       fprintf(HB_TFile, "  True TN = TN%d     False TN = TN%d\n",ttn,ftn);
+#ifdef SUPPORTS_PREDICATION
       INT i;
       if (bb_cdep_data->true_or_tns.size() > 0) {
 	fprintf(HB_TFile, "<HB>   True  ORs:");
@@ -1572,17 +1964,210 @@ Insert_Predicates(HB* hb, BB_MAP control_dependences, BB_MAP true_edges,
 	}
 	fprintf(HB_TFile, "\n");
       }
+#endif
       fprintf(HB_TFile,"\n");
     }
     
     CXX_DELETE(bb_cdep_data,&MEM_local_pool);
   }
   
-  // Clean up
+#if 0
+
+  //
+  // Map BBs to predicate_tns and br_variant
+  //
+  FOR_ALL_BB_SET_members(HB_Blocks(hb), bb) {
+    INT num_deps;
+
+    predication_data *bb_pred_data = CXX_NEW(predication_data, 
+					     &MEM_local_pool);
+
+    ec = (equiv_classes *) BB_MAP_Get(equiv_classes_map,bb);
+    cds = ec->control_dependences;
+    trues = ec->true_edges;
+
+    if (HB_Trace(HB_TRACE_CONVERT)) {
+      fprintf(HB_TFile, "<HB> Control dependences data for BB%d \n:", BB_id(bb));
+    }
+
+    switch (BB_preds_len(bb)) {
+
+      case 1:
+	bb_cd = BB_SET_Choose(cds);
+	bb_cdep_data = (control_dep_data*) BB_MAP_Get(control_dep_info, bb_cd);
+
+	fprintf(TFile, "  cds: ");
+	BB_SET_Print(cds, TFile);
+	fprintf(TFile, "\n");
+
+	// returns the TNs that are set TRUE/FALSE when branch is taken,
+	// and branch variant
+	Setup_True_False_Predicates(bb_cd, bb_cdep_data);
+
+	// If TRUE TN is available, use it
+	if (bb_cdep_data->true_tn != NULL) {
+	  bb_pred_data->pred_tn = bb_cdep_data->true_tn;
+	  bb_pred_data->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
+	}
+	else {
+	  bb_pred_data->pred_tn = bb_cdep_data->false_tn;
+	  bb_pred_data->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
+	}
+
+	if (BB_SET_MemberP(trues, bb_cd)) {
+	  bb_pred_data->pred_br_taken.push_back(TRUE);
+	}
+	else {
+	  bb_pred_data->pred_br_taken.push_back(FALSE);
+	}
+
+	FmtAssert(bb_pred_data->pred_br_taken.size() == 1,("preds ?"));
+	break;
+
+      case 2: {
+	BBLIST *preds;
+	equiv_classes *pred_ec;
+	BB_SET* pred_cds;
+	BB_SET* pred_trues;
+
+	// PHIs in this BB can be directly replaced by CMOVs
+
+	fprintf(TFile, "  cds: ");
+	BB_SET_Print(cds, TFile);
+	fprintf(TFile, "\n");
+
+	// if 'cds' is empty must look for a BB on which all of its 
+	// predecessors depend.
+	if (BB_SET_EmptyP(cds)) {
+	  FOR_ALL_BB_PREDS(bb, preds) {
+	    BB *pred = BBLIST_item(preds);
+	    pred_ec = (equiv_classes *) BB_MAP_Get(equiv_classes_map,pred);
+	    pred_cds = pred_ec->control_dependences;
+
+	    fprintf(TFile, "    pred_cds for BB%d: ", BB_id(pred));
+	    BB_SET_Print(pred_cds, TFile);
+	    fprintf(TFile, "\n");
+
+	    // NOTE: predecessor may not have an empty cds !
+	    FmtAssert(!BB_SET_EmptyP(pred_cds), ("empty pred cds for BB%d", BB_id(pred)));
+
+	    if (!BB_SET_EmptyP(cds)) {
+	      cds = BB_SET_IntersectionD(cds, pred_cds);
+	    }
+	    else {
+	      cds = pred_cds;
+	    }
+	  } /* FOR_ALL_BB_PREDS */
+	}
+
+	if (HB_Trace(HB_TRACE_CONVERT)) {
+	  fprintf(TFile, "<HB> PHIs in BB depend on control: ");
+	  BB_SET_Print(cds, TFile);
+	  fprintf(TFile, "\n");
+	}
+
+	// At the end, we must have a single BB in the set
+	FmtAssert(BB_SET_Size(cds) == 1, ("did not find control dependence"));
+
+	bb_cd = BB_SET_Choose(cds);
+	bb_cdep_data = (control_dep_data*) BB_MAP_Get(control_dep_info, bb_cd);
+
+	// returns the TNs that are set TRUE/FALSE when branch is taken,
+	// and branch variant
+	Setup_True_False_Predicates(bb_cd, bb_cdep_data);
+
+	// If TRUE TN is available, use it
+	if (bb_cdep_data->true_tn != NULL) {
+	  bb_pred_data->pred_tn = bb_cdep_data->true_tn;
+	  bb_pred_data->br_dir = V_false_br(bb_cdep_data->br_variant) ? FALSE : TRUE;
+	}
+	else {
+	  bb_pred_data->pred_tn = bb_cdep_data->false_tn;
+	  bb_pred_data->br_dir = V_false_br(bb_cdep_data->br_variant) ? TRUE : FALSE;
+	}
+
+	//
+	// Now, we have a OP:
+	//
+	//     TN2 = PHI TN0, TN1;
+	//
+	// We also have:
+	//
+	//     'bb' depends on 'bb_cd' which has TN<true> or TN<false>
+	//     set (depending on 'br_variant'), or both.
+	//
+
+	//bb_pred_data->pred_br_taken.push_back(FALSE);
+	//bb_pred_data->pred_br_taken.push_back(FALSE);
+
+	// Look for predecessor that is either 'bb_cd' itself or
+	// 'bb_cd' is in 'trues' of its equivalence class
+	//INT i = 0;
+	FOR_ALL_BB_PREDS(bb, preds) {
+	  BB *pred = BBLIST_item(preds);
+	  if (pred == bb_cd) {
+	    pred_ec = (equiv_classes *) BB_MAP_Get(equiv_classes_map,bb);
+	    pred_trues = pred_ec->true_edges;
+	  }
+	  else {
+	    pred_ec = (equiv_classes *) BB_MAP_Get(equiv_classes_map,pred);
+	    pred_trues = pred_ec->true_edges;
+	  }
+
+	  if (BB_SET_MemberP(pred_trues, bb_cd)) {
+	    bb_pred_data->pred_br_taken.push_back(TRUE);
+	  }
+	  else {
+	    bb_pred_data->pred_br_taken.push_back(FALSE);
+	  }
+	  //i++;
+	} /* FOR_ALL_BB_PREDS */
+
+	FmtAssert((bb_pred_data->pred_br_taken.size() == 2) &&
+		  (bb_pred_data->pred_br_taken[0] == TRUE || 
+		   bb_pred_data->pred_br_taken[1] == TRUE) &&
+		  !(bb_pred_data->pred_br_taken[0] == TRUE && 
+		    bb_pred_data->pred_br_taken[1] == TRUE),
+		  ("something is wrong with the branch"));
+
+        }
+        break;
+
+      default:
+	FmtAssert(FALSE, ("Can't handle multiple CD predecessors"));
+      
+    } /* switch preds */
+
+    if (HB_Trace(HB_TRACE_CONVERT)) {
+      fprintf(HB_TFile, "<HB> Control dependences data:");
+      fprintf(HB_TFile, " %s, ", bb_pred_data->br_dir == TRUE ? "BR_TRUE" : "BR_FALSE");
+      INT ttn = bb_cdep_data->true_tn ? TN_number(bb_cdep_data->true_tn) : 0;
+      INT ftn = bb_cdep_data->false_tn ? TN_number(bb_cdep_data->false_tn) : 0;
+      fprintf(HB_TFile, "  True TN = TN%d     False TN = TN%d\n",ttn,ftn);
+
+      INT i=0;
+      for (i = 0; i < BB_preds_len(bb); i++) {
+	fprintf(HB_TFile, "  [%d] pred branch ", i);
+	fprintf(HB_TFile, "%s\n", bb_pred_data->pred_br_taken[i] == TRUE ? "taken" : "not taken");
+      }
+      fprintf(HB_TFile,"\n");
+      fflush(HB_TFile);
+    }
+
+    BB_MAP_Set(predication_info, bb, bb_pred_data);
+
+    CXX_DELETE(bb_cdep_data,&MEM_local_pool);
+    //CXX_DELETE(bb_pred_data,&MEM_local_pool);
+  }
   
+#endif /* SUPPORTS_PREDICATION */
+
+  // Clean up
+
   BB_MAP_Delete(control_dep_info);
   BB_MAP_Delete(equiv_classes_map);
 }
+
 ///////////////////////////////////////////////////////////////////////////////////
 //
 //      BOOL HB_Safe_For_If_Conversion(HB *hb)
@@ -1628,14 +2213,15 @@ HB_If_Convert(HB* hb, list<HB_CAND_TREE*>& candidate_regions)
   vector<BB *>         block_order;
   vector<INT>          block_class;
 
-#ifndef SUPPORTS_PREDICATION
-  return;
-#endif
-
   MEM_POOL_Push(&MEM_local_pool);
   BB_MAP true_edges = BB_MAP_Create();
   BB_MAP control_dependences = BB_MAP_Create();
+
   BB_MAP predicate_tns = BB_MAP_Create();  // The TN used to predicate a BB
+#ifdef TARG_ST
+  // Arthur: we need more than just TNs
+  BB_MAP predicate_info = BB_MAP_Create();
+#endif
 
   if (HB_Trace(HB_TRACE_CONVERT)) {
     HB_Trace_If_Convert_Blocks(hb);
@@ -1643,8 +2229,17 @@ HB_If_Convert(HB* hb, list<HB_CAND_TREE*>& candidate_regions)
   
   Order_And_Classify_Blocks(hb,block_order,block_class);
   Calculate_Control_Dependences(hb, control_dependences, true_edges);
+#ifdef TARG_ST
+  Insert_Predicates(hb, control_dependences, true_edges, predicate_info);
+  Remove_Branches(hb, predicate_info, block_order, block_class, candidate_regions);
+#else
   Insert_Predicates(hb, control_dependences, true_edges, predicate_tns);
   Remove_Branches(hb, predicate_tns, block_order, block_class, candidate_regions);
+#endif
+
+#ifdef TARG_ST
+  BB_MAP_Delete(predicate_info);
+#endif
 
   BB_MAP_Delete(true_edges);
   BB_MAP_Delete(control_dependences);

@@ -581,6 +581,17 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
     return;
   }
 
+#if defined(TARG_ST) && defined(IFCONV_IN_SSA)
+  //
+  // Arthur: If we only have partial predication support, must
+  //         have CG_enable_ssa in order to continue
+  //
+  if (!CG_enable_ssa) {
+    DevWarn("CG: SSA is not enabled, can't form Hyperblocks; use -CG:ssa_opt=ON");
+    return;
+  }
+#endif
+
   //
   // If we run complex-non-loop, let's not run simple_ifc unless we are forced to
   // by the user

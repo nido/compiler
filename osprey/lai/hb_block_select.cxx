@@ -523,8 +523,10 @@ Select_Blocks(HB* hb, list<HB_PATH*>& hb_paths, BOOL profitable_ifc)
     }
 
     BOOL tolerate_increase = TRUE;
-
+#if defined(TARG_ST) && !defined(IFCONV_IN_SSA)
+    // C.Bruel did not want to do this if forming superblocks ...
     if (! HB_superblocks)
+#endif
     for (++path; path != hb_paths.end(); path++) {
       if (HB_Trace(HB_TRACE_SELECT)) {
 	HB_PATH_Trace(*path);

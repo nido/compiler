@@ -291,8 +291,13 @@ Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry)
 //
 /////////////////////////////////////
 {
+#if defined(TARG_ST)
+#if !defined(IFCONV_IN_SSA)
+  // C.Bruel wanted to if-convert everything ...
   if (HB_superblocks)
     return TRUE;
+#endif
+#endif
 
   //
   // Want simple branches to deal with.
