@@ -137,20 +137,14 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define DFLT_FTN_MAIN		"MAIN"
 #define DFLT_FTN_LOWMAIN	"main"
 
-  /*
-#define BLANK_COM_NAME		"_BLNK__"
-#define RDATA_RAW_NAME		".rdata"
-#define SDATA_RAW_NAME		".sdata"
-#define DATA_RAW_NAME		".data"
-#define GOT_RAW_NAME		".got"
-#define BSS_RAW_NAME		".bss"
-#define LIT4_RAW_NAME		".lit4"
-#define LIT8_RAW_NAME		".lit8"
-#define LIT16_RAW_NAME		".lit16"
-  */
+/*
+ * Predicate format -- no predication on this target
+ */
+#define True_Predicate_Format   "error"
+#define False_Predicate_Format  "error"
 
-#define ASM_CMNT_LINE		"##"	/* use for whole line comments */
-#define ASM_CMNT		"##"	/* other than whole line comments */
+#define ASM_CMNT_LINE		"##"  /* use for whole line comments */
+#define ASM_CMNT		"##"  /* other than whole line comments */
 
 #define AS_STOP_BIT		";;"
 

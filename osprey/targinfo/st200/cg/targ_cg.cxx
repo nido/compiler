@@ -1012,6 +1012,7 @@ CGTARG_Adjust_Latency (
   return;
 }
 
+#if 0
 /* ====================================================================
  *   CGTARG_ARC_Sched_Latency
  *
@@ -1033,7 +1034,7 @@ INT CGTARG_ARC_Sched_Latency(
   else
     return ARC_latency(arc);
 }
-
+#endif
 
 /* ====================================================================
  *   CGTARG_Bundle_Stop_Bit_Available
@@ -1592,6 +1593,7 @@ CGTARG_Insert_Stop_Bits(BB *bb)
   return;
 }
 
+#if 0
 /* ====================================================================
  *   CGTARG_Special_Min_II
  *
@@ -1605,6 +1607,7 @@ INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace)
 {
   return 0;
 }
+#endif
 
 /* ====================================================================
  *   CGTARG_Perform_THR_Code_Generation (OP load_op, THR_TYPE type)

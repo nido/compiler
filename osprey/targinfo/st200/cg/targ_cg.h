@@ -45,11 +45,13 @@
 #define DEFAULT_BRP_BRANCH_LIMIT    (256 * ISA_INST_BYTES)
 #define DEFAULT_LONG_BRANCH_LIMIT   (2000000 * ISA_INST_BYTES)
 
+#if 0
 // Return format string for operand i of op.
 inline char *ISA_PRINT_PREDICATE (ISA_OPERAND_USE use) {
   FmtAssert(FALSE,("predication not supported"));
   return NULL;
 }
+#endif
 
 // Given a conditional branch with a <branch_taken_probability>
 // return TRUE if it would be beneficial to convert it to a brlikely.

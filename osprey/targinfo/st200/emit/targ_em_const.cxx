@@ -202,6 +202,8 @@ static void Emit_Repeated_Constant(
   } while (rc -= this_rc);
 }
 
+#define MULTIFLOW_SHIT_STILL_NOT_WORKING
+
 /* ====================================================================
  *
  * Targ_Emit_Const
@@ -254,7 +256,8 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 
       case MTYPE_I8:
       case MTYPE_U8:
-#if 0
+	FmtAssert((loc % 8) == 0, ("unaligned access"));
+#ifdef MULTIFLOW_SHIT_STILL_NOT_WORKING
 	{
 	  INTSC this_rc;
 	  TCON hi = Extract_Double_Hi(tc);
@@ -279,11 +282,9 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 	    fprintf(fl, "\n");
 	  } while (rc -= 1);
 	}
-#endif
-	FmtAssert((loc % 8) == 0, ("unaligned access"));
+#else
 	Emit_Repeated_Constant ( fl, AS_DWORD, TCON_I8(tc), rc, 2 );
-	//((loc % 8) == 0 ? AS_DWORD : AS_DWORD_UNALIGNED), 
-	//TCON_I8(tc), rc, 2 );
+#endif
 	rc = 0;
 	break;
 
