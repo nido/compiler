@@ -619,10 +619,10 @@ Expand_Add (
 	new_opcode = TOP_add_i;
       }
       else if (ST_on_stack(TN_var(src2))) {
-#if 0
+#if 1
         // (cbr) if the offset is 0 and the symbol is on the stack
         // then just do a copy.
-        if (TN_is_sp_reg (src1) && ofst == 0) {
+        if (base == SP_Sym && ofst == 0) {
           Expand_Copy (result, NULL, src1, ops);
           return;
         }
