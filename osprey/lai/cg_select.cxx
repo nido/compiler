@@ -769,6 +769,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
                          BB *tail)
 {
   BBLIST *bb1, *bb2;
+  BB *bb;
 
   // Find block probs
   bb2 = BBlist_Fall_Thru_Succ(head);
@@ -781,30 +782,61 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 
   CG_SCHED_EST *sehead = CG_SCHED_EST_Create(head, &MEM_Select_pool,
                                              SCHED_EST_FOR_IF_CONV);
-  CG_SCHED_EST *se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV);
-  CG_SCHED_EST *se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV);
+  float cyclesh = CG_SCHED_EST_Cycles(sehead);
 
-  INT exp_len = BB_length(head);
-  BB *bb;
-
-  FOR_ALL_BB_SET_members(taken_reg, bb) {
-    exp_len += BB_length(bb);
-
-    CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
-                                                SCHED_EST_FOR_IF_CONV);
-    CG_SCHED_EST_Append_Scheds(se1, tmp_est);
-    CG_SCHED_EST_Delete(tmp_est);
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "sehead (%f cycles) = \n", cyclesh);
+    CG_SCHED_EST_Print(Select_TFile, sehead);
   }
 
-  FOR_ALL_BB_SET_members(fallthru_reg, bb) {
-    exp_len += BB_length(bb);
+  CG_SCHED_EST *se1 = NULL;
+  CG_SCHED_EST *se2 = NULL;
 
-    CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
+  float cycles1 = 0.0;
+  float cycles2 = 0.0;
+
+  INT exp_len = BB_length(head);
+
+  // Compute schedule estimate of taken region
+  if (! BB_SET_EmptyP(taken_reg)) {
+    se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool, SCHED_EST_FOR_IF_CONV);
+
+    FOR_ALL_BB_SET_members(taken_reg, bb) {
+      exp_len += BB_length(bb);
+
+      CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
                                                 SCHED_EST_FOR_IF_CONV);
-    CG_SCHED_EST_Append_Scheds(se2, tmp_est);
-    CG_SCHED_EST_Delete(tmp_est);
+      CG_SCHED_EST_Append_Scheds(se1, tmp_est);
+      CG_SCHED_EST_Delete(tmp_est);
+    }
+
+    cycles1 = CG_SCHED_EST_Cycles(se1);
+
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "taken (%f cycles) = \n", cycles1);
+      CG_SCHED_EST_Print(Select_TFile, se1);
+    }
+  }
+
+  // Compute schedule estimate of fallthru region
+  if (! BB_SET_EmptyP(fallthru_reg)) {
+    se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool, SCHED_EST_FOR_IF_CONV);
+
+    FOR_ALL_BB_SET_members(fallthru_reg, bb) {
+      exp_len += BB_length(bb);
+
+      CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
+                                                  SCHED_EST_FOR_IF_CONV);
+      CG_SCHED_EST_Append_Scheds(se2, tmp_est);
+      CG_SCHED_EST_Delete(tmp_est);
+    }
+
+    cycles2 = CG_SCHED_EST_Cycles(se2);
+
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "fallthru (%f cycles) = \n", cycles2);
+      CG_SCHED_EST_Print(Select_TFile, se2);
+    }
   }
 
   //If new block is bigger than CG_bblength_max, reject.
@@ -814,19 +846,6 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     }
     return FALSE;
   }
-
-  if (Trace_Select_Candidates) {
-    CG_SCHED_EST_Print(Select_TFile, sehead);
-    fprintf (Select_TFile, "\n");
-    CG_SCHED_EST_Print(Select_TFile, se1);
-    fprintf (Select_TFile, "\n");
-    CG_SCHED_EST_Print(Select_TFile, se2);
-    fprintf (Select_TFile, "\n");
-  }
-
-  float cyclesh = CG_SCHED_EST_Cycles(sehead);
-  float cycles1 = CG_SCHED_EST_Cycles(se1);
-  float cycles2 = CG_SCHED_EST_Cycles(se2);
 
   float bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
 
@@ -846,21 +865,27 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   DevAssert(op, ("Invalid conditional block"));
   CG_SCHED_EST_Ignore_Op(sehead, op);
 
-  FOR_ALL_BB_SET_members(taken_reg, bb)
-    if (op = BB_branch_op(bb))
-      CG_SCHED_EST_Ignore_Op(se1, op);
-  FOR_ALL_BB_SET_members(fallthru_reg, bb)
-    if (op = BB_branch_op(bb))
-      CG_SCHED_EST_Ignore_Op(se2, op);
+  if (se1) {
+    FOR_ALL_BB_SET_members(taken_reg, bb)
+      if (op = BB_branch_op(bb))
+        CG_SCHED_EST_Ignore_Op(se1, op);
+    CG_SCHED_EST_Append_Scheds(sehead, se1);
+  }
 
-  CG_SCHED_EST_Append_Scheds(sehead, se1);
-  CG_SCHED_EST_Append_Scheds(sehead, se2);
+  if (se2) {
+    FOR_ALL_BB_SET_members(fallthru_reg, bb)
+      if (op = BB_branch_op(bb))
+        CG_SCHED_EST_Ignore_Op(se2, op);
+    CG_SCHED_EST_Append_Scheds(sehead, se2);
+  }
 
   cyclesh = CG_SCHED_EST_Cycles(sehead);
-
   CG_SCHED_EST_Delete(sehead);
-  CG_SCHED_EST_Delete(se1);
-  CG_SCHED_EST_Delete(se2);
+
+  if (se1)
+    CG_SCHED_EST_Delete(se1);
+  if (se2)
+    CG_SCHED_EST_Delete(se2);
 
   // higher select_factor means ifc more aggressive.
   float select_factor = atof(CG_select_factor);
