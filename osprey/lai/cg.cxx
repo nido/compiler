@@ -586,22 +586,6 @@ CG_Generate_Code(
 	// exit from the Loop_Optimizations.
 	//
 	SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
-#if 0
-	//
-	// SSA translation maintains liveness info (see Sreedhar's paper).
-	// Normally, we shouldn't need to recompute it.
-	// However, at the moment
-	//   defreach_in
-	//   defreach_out
-	//   live_def
-	//   live_use
-	// are not being updated properly by the out of SSA
-	// algorithm (I've been toolazy to look at it). So, for now
-	// just recompute the liveness.
-	// TODO: fix this.
-	//
-	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-#endif
 	//
 	// rename TNs -- required by LRA
 	// Since Out-of-SSA translation has introduced some
@@ -728,6 +712,12 @@ CG_Generate_Code(
 #ifdef TARG_ST
     // moved here rather than in lra.cxx
     Check_for_Dump (TP_ALLOC, NULL);
+    if (CG_enable_ssa) {
+      //
+      // Collect statistical info about the SSA:
+      //
+      SSA_Collect_Info(region ? REGION_get_rid( rwn ) : NULL, region, TP_ALLOC);
+    }
 #endif
 
     if (!CG_localize_tns ) {

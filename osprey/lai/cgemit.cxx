@@ -2821,6 +2821,12 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
     }
   }
 
+#ifdef TARG_ST
+  if (OP_ssa_move(op) && vstr_len(comment) == 0) {
+    comment = vstr_concat(comment, "ssa_move");
+  }
+#endif
+
   if (Assembly || Lai_Code) 
     fprintf (Output_File, "  %s\n", vstr_str(comment));
 

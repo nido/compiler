@@ -82,14 +82,17 @@ extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Make_Consistent (RID *rid, BOOL region);
 extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
 
+extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
+
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
 
 // Tracing flags
-#define SSA_BUILD      0x00000001
-#define SSA_MAKE_CONST 0x00000002
-#define SSA_IGRAPH     0x00000004
-#define SSA_REMOVE_PHI 0x00000008
-#define SSA_DOM_FRONT  0x00000010
+#define SSA_BUILD        0x00000001  /* trace SSA build */
+#define SSA_MAKE_CONST   0x00000002  /* trace make consistent */
+#define SSA_IGRAPH       0x00000004  /* trace interference graph */
+#define SSA_REMOVE_PHI   0x00000008  /* trace PHI-removal */
+#define SSA_DOM_FRONT    0x00000010  /* trace dominance frontier */
+#define SSA_COLLECT_INFO 0x00000020  /* collect statistics for SSA */
 
 #endif /* cg_ssa_INCLUDED */

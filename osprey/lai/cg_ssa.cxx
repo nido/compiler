@@ -1374,18 +1374,6 @@ IGRAPH_Clean ()
  */
 
 //
-// There are 3 out-of-SSA translation methods described in
-// VC's paper
-//
-typedef enum {
-  METHOD_1 = 1,
-  METHOD_2 = 2,
-  METHOD_3 = 3
-} METHOD;
-
-static METHOD SSA_TranslateMethod;
-
-//
 // Congruence Class:
 //
 typedef struct _phiCongruenceClass {
@@ -1433,13 +1421,7 @@ PHI_CONGRUENCE_CLASS_make(
 					         &MEM_local_pool);
   PHI_CONGRUENCE_CLASS_name(new_cc) = NULL;
   PHI_CONGRUENCE_CLASS_rc(new_cc) = rclass;
-#if 0
-  PHI_CONGRUENCE_CLASS_gtns(new_cc) = 
-                       GTN_SET_Create(phiCongruenceClass_map_size,
-				                 &MEM_local_pool);
-#else
   PHI_CONGRUENCE_CLASS_gtns(new_cc) = NULL;
-#endif
 
   return new_cc;
 }
@@ -1454,17 +1436,10 @@ PHI_CONGRUENCE_CLASS_Add_GTN (
   TN *tn
 )
 {
-#if 0
-  PHI_CONGRUENCE_CLASS_gtns(cc) = 
-    GTN_SET_Union1(PHI_CONGRUENCE_CLASS_gtns(cc),
-		   tn,
-		   &MEM_local_pool);
-#else
   PHI_CONGRUENCE_CLASS_gtns(cc) = 
     TN_LIST_Push(tn,
 		 PHI_CONGRUENCE_CLASS_gtns(cc),
 		 &MEM_local_pool);
-#endif
   return;
 }
 
@@ -1496,12 +1471,6 @@ PHI_CONGRUENCE_CLASS_Merge (
   PHI_CONGRUENCE_CLASS *cc2
 )
 {
-#if 0
-  PHI_CONGRUENCE_CLASS_gtns(cc1) = 
-    GTN_SET_Union(PHI_CONGRUENCE_CLASS_gtns(cc1),
-		  PHI_CONGRUENCE_CLASS_gtns(cc2),
-		  &MEM_local_pool);
-#else
   TN_LIST *p;
   for (p = PHI_CONGRUENCE_CLASS_gtns(cc2); p != NULL; p = TN_LIST_rest(p)) {
     TN *tn = TN_LIST_first(p);
@@ -1509,7 +1478,7 @@ PHI_CONGRUENCE_CLASS_Merge (
       PHI_CONGRUENCE_CLASS_Add_GTN (cc1, tn);
     }
   }
-#endif
+
   return;
 }
 
@@ -1655,17 +1624,8 @@ initialize_phiCongruenceClasses ()
   OP *op;
   BB *bb;
 
-#if 0
-  phiCongruenceClass_map_size = 2*GTN_UNIVERSE_size;
-
-  // memory is zeroed
-  phiCongruenceClass_map = 
-    TYPE_MEM_POOL_ALLOC_N(PHI_CONGRUENCE_CLASS *,
-			  &MEM_local_pool,
-			  phiCongruenceClass_map_size);
-#else
   phiCongruenceClass_map = hTN_MAP_Create(&MEM_local_pool);
-#endif
+
   return;
 }
 
@@ -1970,12 +1930,6 @@ SSA_Make_Consistent (
   Trace_SSA_Out = Get_Trace(TP_SSA, SSA_MAKE_CONST);
   Trace_Igraph = Get_Trace(TP_SSA, SSA_IGRAPH);
 
-  switch (CG_ssa_algorithm) {
-  case 1: SSA_TranslateMethod = METHOD_1;
-  case 2: SSA_TranslateMethod = METHOD_2;
-  case 3: SSA_TranslateMethod = METHOD_3;
-  }
-
   //
   // Delete the tn_to_new_name map that may have been left
   // from a previous invocation of the routine. And initialize
@@ -2023,11 +1977,16 @@ SSA_Make_Consistent (
 
   initialize_phiCongruenceClasses();
 
-  if (SSA_TranslateMethod == METHOD_1) {
+  switch (CG_ssa_algorithm) {
+  case 1: 
     insert_copies_blindly ();
-  }
-  else {
+    break;
+  case 2:
+  case 3:
     Eliminate_Phi_Resource_Interference();
+    break;
+  default:
+    Is_True(FALSE,("specify CG_ssa_algorithm"));
   }
 
   if (Trace_SSA_Out) {
@@ -2184,3 +2143,44 @@ SSA_Remove_Phi_Nodes (
   return;
 }
 
+/* ================================================================
+ *   SSA_Collect_Info
+ *
+ *   Collect some statistics related to the SSA:
+ *
+ *   1. number of SSA moves that remain in the code after
+ *      the register allocation;
+ *
+ * ================================================================
+ */
+void
+SSA_Collect_Info (
+  RID *rid, 
+  BOOL region,
+  INT phase
+)
+{
+  BB *bb;
+  OP *op;
+
+  INT ssa_move_count = 0;
+
+  if (!Get_Trace(TP_SSA, SSA_COLLECT_INFO)) return;
+
+  // statistics are dumped to TFile
+  fprintf(TFile, "%s SSA Statistics for function \"%s\" (Out-of-SSA method: Shreedhar %d)\n%s\n", DBar, Cur_PU_Name, CG_ssa_algorithm, DBar);
+
+  if (phase == TP_ALLOC) {
+    for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+      FOR_ALL_BB_OPs_FWD (bb, op) {
+	if (OP_ssa_move(op)) ssa_move_count++;
+      }
+    }
+
+    fprintf(TFile, "  SSA moves after LRA: %d\n", ssa_move_count);
+  }
+
+  fprintf(TFile, "%s\t End SSA Statistics \n%s\n", DBar, DBar);
+  
+  return;
+}
