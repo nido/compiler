@@ -3197,10 +3197,16 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 static STR_IDX
 Get_Non_Local_Label_Name (SYMTAB_IDX level, LABEL_IDX index)
 {
+#ifdef TARG_ST
+  // [CG] We have BB_Label_Name_Scope_Index in config_asm.h for ST targets
+  char name[128];
+  sprintf(name, BB_Label_Name_Scope_Index, "nonlocal", level, index);
+#else
 	// create special label name .Lnonlocal.<level>.<index>
   	char *name = (char *) alloca (11 + 1 + 8 + 1 + 8 + 1);
 	sprintf(name, ".Lnonlocal%s%d%s%d", Label_Name_Separator, 
 		level, Label_Name_Separator, index);
+#endif
 	return Save_Str(name);
 }
 
@@ -3224,18 +3230,34 @@ Get_WN_Label (WN *wn)
   FmtAssert (label > 0 && label <= LABEL_Table_Size(CURRENT_SYMTAB),
 	("Get_WN_Label: label %d greater than last label %d", 
 		label, LABEL_Table_Size(CURRENT_SYMTAB)));
+#ifdef TARG_ST
+  // [CG] Simplified label generation. 
+  if (LABEL_name_idx(label) == 0) {
+    STR_IDX label_name_idx;
+    if (LABEL_target_of_goto_outer_block(label)) {
+      label_name_idx = Get_Non_Local_Label_Name (CURRENT_SYMTAB, label);
+    } else {
+      char buffer[128];
+      // Same name as  Gen_Temp_Label() in label_util.cxx
+      sprintf(buffer, BB_Label_Name_Scope_Index, "", 
+	      Current_PU_Count(), label);
+      label_name_idx = Save_Str(buffer);
+    }
+    Set_LABEL_name_idx (Label_Table[label], label_name_idx);
+  }
+#else
   if (LABEL_name_idx(label) == 0) {
 	if (LABEL_target_of_goto_outer_block(label)) {
 		Set_LABEL_name_idx (Label_Table[label], 
 			Get_Non_Local_Label_Name (CURRENT_SYMTAB, label) );
 	}
 	else {
-		label_prefix = ".Lt";
+	  label_prefix = ".Lt";
 	}
   }
   else if (isdigit(LABEL_name(label)[0])) {
 	// prefix with .L so .s file will be legal,
-	label_prefix = ".L";
+	  label_prefix = ".L";
   }
   if (label_prefix != NULL) {
 	// create label name:  prefix<name>.<pu-number>.<label-index>
@@ -3248,6 +3270,7 @@ Get_WN_Label (WN *wn)
 		Label_Name_Separator, label);
 	Set_LABEL_name_idx (Label_Table[label], Save_Str(name));
   }
+#endif
   return label;
 }
 

@@ -216,6 +216,13 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
  */
 #define DEFAULT_STACK_ALIGNMENT 32
 
+/*
+ * [CG] Alignment for the code segments.
+ * This should be the more effective alignment for the code sections
+ * given the bundling constraints of the code.
+ */
+#define DEFAULT_TEXT_ALIGNMENT 8
+
 /* ====================================================================
  *
  * Miscellaneous options

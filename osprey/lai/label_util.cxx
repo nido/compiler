@@ -41,6 +41,7 @@
 #include "label_util.h"
 #include "be_util.h"
 #include "bb.h"
+#include "config_asm.h"
 
 // Map LABEL number to offset and defining BB.
 typedef struct {
@@ -145,11 +146,18 @@ Set_Label_BB (LABEL_IDX i, BB *bb)
 
 LABEL_IDX Gen_Temp_Label(void)
 {
+#ifdef TARG_ST
+  // [CG] We have BB_Label_Name_Scope_Index in config_asm.h for ST targets
+  char name[128];
+  LABEL_IDX labx;
+  LABEL &label = New_LABEL(CURRENT_SYMTAB, labx);
+  sprintf(name, BB_Label_Name_Scope_Index, "", Current_PU_Count(), labx);
+  LABEL_Init (label, Save_Str(name), LKIND_DEFAULT);
+#else
   enum { maxint_digits = 10 };
   char *name;
   LABEL_IDX labx;
   LABEL &label = New_LABEL(CURRENT_SYMTAB, labx);
-
   name = (char *)alloca(  strlen(".L__")
                         + maxint_digits
                         + maxint_digits
@@ -157,6 +165,7 @@ LABEL_IDX Gen_Temp_Label(void)
   // use underscores cause intel's asm doesn't like dots in name
   sprintf(name, ".L_%d_%d", Current_PU_Count(), labx);
   LABEL_Init (label, Save_Str(name), LKIND_DEFAULT);
+#endif
 
   return labx;
 }

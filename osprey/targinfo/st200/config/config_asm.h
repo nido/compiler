@@ -73,21 +73,30 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 /* to distinguish from register names: */
 #define Symbol_Name_Suffix "\0"
 
+/* [CG] Prefix definition for all compiler generated local labels. 
+   They should be discarded for example by a strip -X or the debugger. */
+#define Local_Label_Prefix "L?"
+
+/* [CG] The following sprintf format is used to create a label
+ * from a (name, scope level, label index) tuple. Used by the code selector.
+ */
+#define BB_Label_Name_Scope_Index Local_Label_Prefix "_%s_%d_%d"
+
 /* The following sprintf format is used to create a basic block label
  * from the BB id and the PU name:
  */
-#define BB_Label_Format	".BB%d_%s"
+#define BB_Label_Format		Local_Label_Prefix "_BB%d_%s"
 
 /* The following sprintf format is used to create a basic block label
  * from a user label name and the PU name:
  */
-#define User_Label_Format	".L_%s_%s"
-#define User_Label_Number_Format	".L_%d_%d_%s"
+#define User_Label_Format	Local_Label_Prefix "_%s_%s"
+#define User_Label_Number_Format Local_Label_Prefix "_%d_%d_%s"
 
 /* The following sprintf format is used to create the magic label for
  * the common return point (if Only_1_Exit_Point is TRUE).
  */
-#define Ret_Block_Label_Format	".RET_%s"
+#define Ret_Block_Label_Format	Local_Label_Prefix "_RET_%s"
 
 /* The following sprintf format to ensure correct alignment of
  * entry points:

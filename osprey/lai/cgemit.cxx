@@ -421,7 +421,12 @@ Init_Section (
     else if (OPT_Space)
       Set_STB_align(st, ISA_INST_BYTES);
     else
+#ifdef TARG_ST
+      /* [CG] Global alignment of text segment. */
+      Set_STB_align(st, DEFAULT_TEXT_ALIGNMENT);
+#else
       Set_STB_align(st, CGTARG_Text_Alignment());
+#endif
   }
 
   /* save symbol for later reference */
