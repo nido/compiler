@@ -1124,6 +1124,9 @@ BOOL BB_Has_Outer_Block_Label(BB *bb);
 
 struct bb_map *BB_Depth_First_Map(struct bs *region, BB *entry);
 struct bb_map *BB_Topological_Map(struct bs *region, BB *entry);
+#ifdef TARG_ST
+struct bb_map *BB_Postorder_Map(struct bs *region, BB *entry);
+#endif
 
 BOOL BB_Is_Cold(BB *bb);
 

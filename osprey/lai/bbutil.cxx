@@ -1905,6 +1905,64 @@ BB_MAP BB_Depth_First_Map(BB_SET *region, BB *entry)
   return dfo_map;
 }
 
+#ifdef TARG_ST
+static BB_MAP visited_map;
+
+static INT32 map_postorder(BB_MAP map, BB_SET *region, BB *bb, INT32 max_id)
+/* -----------------------------------------------------------------------
+ * Workhorse for BB_Postorder_Map.
+ * -----------------------------------------------------------------------
+ */
+{
+  BBLIST *succs;
+
+  Is_True(BB_MAP32_Get(map, bb) == 0, ("BB_Depth_First_Map visited BB:%d twice", BB_id(bb)));
+
+  BB_MAP32_Set(visited_map, bb, TRUE);
+
+  /* Recursively visit (once) all the successors of this bb in the region.
+   */
+  FOR_ALL_BB_SUCCS(bb, succs) {
+    BB *succ = BBLIST_item(succs);
+    if ((region == NULL || BB_SET_MemberP(region, succ)) &&
+	BB_MAP32_Get(visited_map, succ) == FALSE)
+      max_id = map_postorder(map, region, succ, max_id);
+  }
+
+  BB_MAP32_Set(map, bb, ++max_id);
+
+  return max_id;
+}
+
+BB_MAP BB_Postorder_Map(BB_SET *region, BB *entry)
+/* -----------------------------------------------------------------------
+ * See "bb.h" for interface specification.
+ * -----------------------------------------------------------------------
+ */
+{
+  BB_MAP por_map = BB_MAP32_Create();
+
+  visited_map = BB_MAP32_Create();
+
+  Is_True(region == NULL || entry, ("<entry> not specified"));
+  Is_True(region == NULL || BB_SET_MemberP(region, entry),
+	    ("<entry> not in <region>"));
+
+  if (region) {
+    map_postorder(por_map, region, entry, 0);
+  } else if (Compiling_Proper_REGION) {
+    map_postorder(por_map, region,
+                  CGRIN_entry(RID_Find_Cginfo(REGION_First_BB)), 0);
+  } else {
+    BB_LIST *entries;
+    INT32 max_id = 0;
+    for (entries = Entry_BB_Head; entries; entries = BB_LIST_rest(entries))
+      max_id = map_postorder(por_map, region, BB_LIST_first(entries),
+                             max_id);
+  }
+  return por_map;
+}
+#endif
 
 static BOOL all_bbs_mapped(BBLIST *bbs, BB_MAP map)
 /* -----------------------------------------------------------------------
