@@ -215,7 +215,7 @@ typedef struct {
   pSCNINFO scninfo;
   Elf64_Word scn_ofst;	/* [CG] keeps track of current section offset. */
   ST *sym;
-#ifdef TARG_ST
+#ifdef TARG_ST100
   char *label;     // we need to label sections on some targets that
                    // do not have section relative relocations
 #endif
@@ -491,7 +491,9 @@ Init_Section (
   /* save symbol for later reference */
   em_scn[last_scn].sym = st;
 
-#ifdef TARG_ST
+#ifdef TARG_ST100
+  /* (cbr) section relative offset using labels only on st100 */
+
   // Make a label:
   sprintf(sname, "%s_SECTION_%d", Local_Label_Prefix, last_scn);
   em_scn[last_scn].label = strdup(sname);
@@ -1933,11 +1935,14 @@ Change_Section_Origin (
       /* [CG] We set current section offset to 0. */
       em_scn[STB_scninfo_idx(base)].scn_ofst = 0;
 
+#ifdef TARG_ST100
+  /* (cbr) section relative offset using labels only on st100 */
       fprintf(Asm_File, "%s:\n", em_scn[STB_scninfo_idx(base)].label);
       if (Trace_Init) {
 	fprintf(TFile, "<init>: Emitting label %s for section %s\n",
 		em_scn[STB_scninfo_idx(base)].label, ST_name(base));
       }
+#endif
     }
 #endif
 
