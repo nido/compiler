@@ -1627,6 +1627,11 @@ HB_If_Convert(HB* hb, list<HB_CAND_TREE*>& candidate_regions)
 {
   vector<BB *>         block_order;
   vector<INT>          block_class;
+
+#ifndef SUPPORTS_PREDICATION
+  return;
+#endif
+
   MEM_POOL_Push(&MEM_local_pool);
   BB_MAP true_edges = BB_MAP_Create();
   BB_MAP control_dependences = BB_MAP_Create();
