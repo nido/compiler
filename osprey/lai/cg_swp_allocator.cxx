@@ -1399,6 +1399,7 @@ SWP_Allocate_Rotating_Regs(bool                trace,
     }
   } // if (is_alloced)
 
+#ifdef TARG_IA64
   if (reg_class == ISA_REGISTER_CLASS_integer) {
     // "used_regs" is used to determine how many stacked rotating regs
     // to use.  But in some cases (pv 793591) it is wrong because it
@@ -1420,6 +1421,7 @@ SWP_Allocate_Rotating_Regs(bool                trace,
       used_regs = max_alloced_reg;
     }
   }
+#endif
 
   if ( Get_Trace(TP_SRA,TP_SRA_ALLOCATION)
     && allocator.begin() != allocator.end() )

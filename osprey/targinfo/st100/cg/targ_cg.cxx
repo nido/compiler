@@ -983,20 +983,6 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
 	return ISA_LC_Value_In_Class (immed, LC_s16);
 }
 
-#if 0
-/* ====================================================================
- *   CGTARG_OP_is_counted_loop
- * ====================================================================
- */
-BOOL 
-CGTARG_OP_is_counted_loop (
-  OP *op
-) 
-{
-  return FALSE;
-}
-#endif
-
 /* ====================================================================
  * CGTARG_Can_Change_To_Brlikely
  * ====================================================================
@@ -1090,7 +1076,7 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
 
   LC_Used_In_PU = TRUE;
 
-  if (!CGTARG_OP_is_counted_loop(br_op)) {
+  if (!OP_Is_Counted_Loop(br_op)) {
     /*
     Build_OP (TOP_br_cloop, 
 	      LC_TN,

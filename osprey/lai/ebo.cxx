@@ -117,6 +117,7 @@ static const char source_file[] = __FILE__;
 #endif /* _KEEP_RCS_ID */
 
 #include <alloca.h>
+#include <stdarg.h>
 
 #include "defs.h"
 #include "errors.h"
@@ -191,6 +192,153 @@ BOOL EBO_Trace_Block_Flow   = FALSE;
 BOOL EBO_Trace_Data_Flow    = FALSE;
 BOOL EBO_Trace_Hash_Search  = FALSE;
 
+#ifdef TARG_ST
+/* ==============================================================
+ *   Arthur: Some utility functions that I moved here from the
+ *           target-specific part. These seem pretty generic.
+ * ==============================================================
+ */
+
+/* =====================================================================
+ *   Get_Right_Mask_Length
+ *
+ *   Determine the number of consecutive right justified bits that are 
+ *   in the mask. Return -1, if the constant is not a properly 
+ *   constructed mask.
+ * =====================================================================
+ */
+INT
+Get_Right_Mask_Length (
+  UINT64 mask
+)
+{
+  INT64 i;
+
+  if (mask == 0) return -1;
+  if ((mask & 1) == 0) return -1;
+
+  for ( i = 1; i < 64; i++)
+  {
+    if (((mask >> i) & 1) == 0) return ((mask >> i) == 0) ? i : -1;
+  }
+
+  return -1;
+}
+
+/* =====================================================================
+ *   Get_Mask_Shift_Count
+ *
+ *   Determine the number of trailing zeros after a mask of all "1" 
+ *   bits.  Return -1, if the constant is not a properly constructed 
+ *   mask.
+ * =====================================================================
+ */
+INT
+Get_Mask_Shift_Count (
+UINT64 mask
+)
+{
+  INT64 i;
+
+  if (mask == 0) return -1;
+
+  for ( i = 0; i < 63; i++)
+  {
+    if ((mask & (1 << i)) != 0) return i;
+  }
+
+  return -1;
+}
+
+/* =====================================================================
+ *   EBO_Set_OP_omega
+ * =====================================================================
+ */
+void
+EBO_Set_OP_omega (
+  OP *op, 
+  ...
+)
+{
+  INT opnds = OP_opnds(op);
+  INT i;
+  va_list tninfos;
+
+  va_start(tninfos, op);
+  CG_LOOP_Init_Op(op);
+  for (i = 0; i < opnds; i++) {
+    EBO_TN_INFO *tninfo = va_arg(tninfos, EBO_TN_INFO *);
+    Set_OP_omega (op, i, ((tninfo != NULL) ? tninfo->omega : 0));
+  }
+
+  va_end(tninfos);
+  return;
+}
+
+/* =====================================================================
+ *   EBO_Copy_OP_omega
+ * =====================================================================
+ */
+void
+EBO_Copy_OP_omega (
+  OP *new_op, 
+  OP *old_op
+)
+{
+  INT opnds = OP_opnds(new_op);
+  INT i;
+
+  CG_LOOP_Init_Op(new_op);
+  for (i = 0; i < opnds; i++) {
+    Set_OP_omega (new_op, i, OP_omega(old_op,i));
+  }
+
+  return;
+}
+
+/* =====================================================================
+ *   EBO_Set_Predicate_omega
+ * =====================================================================
+ */
+void
+EBO_Set_Predicate_omega (
+  OP *new_op, 
+  EBO_TN_INFO *pred_tninfo
+)
+{
+  if (pred_tninfo != NULL) {
+    Set_OP_omega (new_op, OP_PREDICATE_OPND, pred_tninfo->omega);
+  }
+  return;
+}
+
+/* =====================================================================
+ *   EBO_OPS_omega
+ * =====================================================================
+ */
+void
+EBO_OPS_omega (
+  OPS *ops, 
+  EBO_TN_INFO *pred_tninfo
+)
+{
+  OP *next_op = OPS_first(ops);
+  while (next_op != NULL) {
+    INT opnds = OP_opnds(next_op);
+    INT i;
+
+    CG_LOOP_Init_Op(next_op);
+    for (i = 0; i < opnds; i++) {
+      Set_OP_omega (next_op, i, 0);
+    }
+
+    next_op = OP_next(next_op);
+  }
+
+  return;
+}
+
+#endif
 
 /* ===================================================================== */
 /* Local Data:								 */
@@ -912,15 +1060,2215 @@ merge_memory_offsets (
 
 }
 
+#ifdef TARG_ST
+
+/* =====================================================================
+ *   EBO_delete_subset_mem_op
+ * =====================================================================
+ */
+BOOL
+EBO_delete_subset_mem_op(
+  OP *op,
+  EBO_TN_INFO **opnd_tninfo,
+  EBO_OP_INFO *opinfo,
+  INT64 offset_pred,
+  INT64 offset_succ
+)
+{
+  OP *pred_op = opinfo->in_op;
+  BB *bb = OP_bb(op);
+  INT opcount = OP_opnds(op);
+  TN *pred_result = OP_store(pred_op) 
+                      ? OP_opnd(pred_op, TOP_Find_Operand_Use(OP_code(pred_op),OU_storeval))
+                      : OP_result(pred_op,0);
+  TN *succ_result = OP_store(op)
+                      ? OP_opnd(op, TOP_Find_Operand_Use(OP_code(op),OU_storeval))
+                      : OP_result(op,0);
+  INT size_pred;
+  INT size_succ;
+  BOOL succ_is_subset = FALSE;
+  INT byte_offset;
+  OPS ops = OPS_EMPTY;
+
+  if (EBO_Trace_Data_Flow) {
+    fprintf(TFile,"%ssubset    OP in BB:%d    ",EBO_trace_pfx,BB_id(bb));
+    Print_OP_No_SrcLine(op);
+    fprintf(TFile,"      Matches   OP in BB:%d    ",BB_id(opinfo->in_bb));
+    Print_OP_No_SrcLine(pred_op);
+  }
+  
+  if ((Opt_Level < 2) && (bb != opinfo->in_bb)) {
+   /* Global TN's aren't supported at low levels of optimization. */
+    return FALSE;
+  }
+
+  if (!EBO_in_peep &&
+      (bb != opinfo->in_bb) &&
+      !TN_Is_Constant(pred_result) &&
+      has_assigned_reg(pred_result)) {
+    if (EBO_Trace_Data_Flow) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
+              EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  size_pred = OP_Mem_Ref_Bytes(pred_op);
+  size_succ = OP_Mem_Ref_Bytes(op);
+  if (size_pred < size_succ) return FALSE;
+
+  if ((offset_pred <= offset_succ) &&
+      ((offset_pred + size_pred) >= (offset_succ + size_succ))) {
+    succ_is_subset = TRUE;
+  }
+
+  if (!succ_is_subset) {
+    return FALSE;
+  }
+
+  byte_offset = offset_succ - offset_pred;
+
+  if (OP_load(op) && OP_load(pred_op) &&
+      (OP_results(op) == 1) && (OP_results(pred_op) == 2) &&
+      (2*size_succ == size_pred)) {
+   /* Just use one of the 2 results for the predecessor. */
+    pred_result = (byte_offset >= size_succ) ? OP_result(pred_op,1) : OP_result(pred_op,0);
+
+    if (EBO_Trace_Optimization) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"%sRemove LoadPair - Load combination\n",EBO_trace_pfx);
+    }
+
+    EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                 succ_result, pred_result, &ops);
+
+    if (EBO_in_loop) 
+      EBO_OPS_omega (&ops, (OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL));
+    OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    return TRUE;
+  }
+
+  if (!OP_store(pred_op) || !OP_load(op)) {
+   /* Can only optimize Store - Load pattern. */
+    return FALSE;
+  }
+
+  if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
+   /* The increment must be preserved. */
+    return FALSE;
+  }
+
+  return EBO_replace_subset_load_with_extract (op,
+					       pred_result,
+					       succ_result,
+					       offset_pred,
+					       offset_succ,
+					       size_pred,
+					       size_succ);
+}
+
+/* =====================================================================
+ *   hoist_predicate_of_duplicate_complement
+ * =====================================================================
+ */
+static BOOL
+hoist_predicate_of_duplicate_complement (
+  OP *op,
+  EBO_TN_INFO **opnd_tninfo,
+  EBO_OP_INFO *opinfo
+)
+{
+  OP *pred_op = opinfo->in_op;
+  TN *predicate1_tn = OP_opnd(pred_op,OP_PREDICATE_OPND);
+  TN *predicate2_tn = OP_opnd(op,OP_PREDICATE_OPND);
+  EBO_TN_INFO *predicate1_info = opinfo->actual_opnd[OP_PREDICATE_OPND];
+  EBO_TN_INFO *predicate2_info = opnd_tninfo[OP_PREDICATE_OPND];
+  BB *bb = OP_bb(op);
+  INT i;
+  INT val_idx;
+
+  if (!OP_has_predicate(op) || !OP_has_predicate(pred_op))
+    return FALSE;
+
+  if (EBO_Trace_Data_Flow) {
+    fprintf(TFile,"Enter hoist_predicate_of_duplicate_complement\n");
+    Print_OP_No_SrcLine(pred_op);
+    Print_OP_No_SrcLine(op);
+    Print_TN(predicate1_tn,false);fprintf(TFile,"  ");
+    Print_TN(predicate2_tn,false);fprintf(TFile,"\n");
+    if (predicate1_info != NULL) tn_info_entry_dump(predicate1_info);
+    if (predicate2_info != NULL) tn_info_entry_dump(predicate2_info);
+  }
+
+  if (OP_code(op) != OP_code(pred_op)) return FALSE;
+
+ /* Pick up the new predicate that dominates both of those in the common expressions. */
+  EBO_OP_INFO *new_predicate_opinfo = locate_opinfo_entry(predicate1_info);
+  if (new_predicate_opinfo == NULL) return FALSE;
+
+  EBO_TN_INFO *new_predicate_tninfo = new_predicate_opinfo->actual_opnd[OP_PREDICATE_OPND];
+  TN *new_predicate_tn = OP_opnd(predicate1_info->in_op,OP_PREDICATE_OPND);
+
+  if (!(TN_Is_Constant(new_predicate_tn) ||
+        EBO_tn_available (bb, new_predicate_tninfo))) return FALSE;
+
+  if (OP_store(op)) {
+   /* For stores, we will replace both stores with a new one. */
+   /* Note that the location of the store will be moved!      */
+    if (OP_bb(op) != OP_bb(pred_op)) return FALSE;
+    if (opinfo->op_must_not_be_removed) return FALSE;
+
+    val_idx = TOP_Find_Operand_Use(OP_code(op),OU_storeval);
+    EBO_TN_INFO *value_tninfo = opinfo->actual_opnd[val_idx];
+   /* We will need to copy the value that is to be stored. */
+
+   /* First, be sure that it will be available this point. */
+    if ((value_tninfo == NULL) ||
+        !EBO_tn_available (bb, value_tninfo)) return FALSE;
+   /* Second, be sure that the target of the copy will be a valid result. */
+    if (TN_is_const_reg(OP_opnd(op, val_idx))) return FALSE;
+   /* Third, be sure that any results have not been used prior to the current OP. */
+    if (OP_results(pred_op) != 0) {
+      for (i = 0; i < OP_results(pred_op); i++) {
+        EBO_TN_INFO *result_tninfo = opinfo->actual_rslt[i];
+        if ((result_tninfo == NULL) ||
+            (result_tninfo->reference_count != 0)) return FALSE;
+      }
+    }
+   /* Fourth, the index that we need to use must also be generated
+      with a predicate that dominates the new store. */
+    INT base_idx = TOP_Find_Operand_Use(OP_code(op),OU_base);
+    EBO_TN_INFO *input_info = opinfo->actual_opnd[base_idx];
+    if ((input_info == NULL) ||
+        (input_info->in_op == NULL) ||
+        (input_info->local_tn == NULL) ||
+        (input_info->predicate_tninfo != new_predicate_tninfo) ||
+        OP_Defs_TN(pred_op, input_info->local_tn)) {
+     /* The inputs to the hoisted expression must use the same predicate
+        as the new (or modified) expression will. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"predicates not hoisted because address not hoisted\n");
+      }
+      return FALSE;
+    }
+  } else if (OP_effectively_copy(op)) {
+#if 0
+    INT val_indx = EBO_Copy_Operand(op);
+#else
+    INT val_indx = OP_Copy_Operand(op);
+#endif
+    if ((val_indx <= 0) ||
+        !TNs_Are_Equivalent(OP_opnd(op,val_indx), OP_opnd(pred_op,val_indx))) {
+     /* The operands are different. We don't handle this and it may not be worthwhile. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"copy operands are different\n");
+      }
+      return FALSE;
+    }
+  } else {
+   /* For non-stores, we will use the results of the predecessor OP. */
+    for (i = 0; i < OP_results(pred_op); i++) {
+      if (opinfo->actual_rslt[i] == NULL) return FALSE;
+      if (!EBO_tn_available (bb, opinfo->actual_rslt[i])) {
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"previous result is not available\n");
+        }
+        return FALSE;
+      }
+    }
+   /* If we are to leave the first OP in place but hoist it's predicate,
+      the inputs to the OP must not be conditionally generated. */
+    for (i = OP_PREDICATE_OPND+1; i < OP_opnds(pred_op); i++) {
+      EBO_TN_INFO *input_info = opinfo->actual_opnd[i];
+      if ((input_info == NULL) ||
+          (input_info->in_op == NULL) ||
+          (input_info->local_tn == NULL) ||
+          (input_info->predicate_tninfo != new_predicate_tninfo) ||
+          OP_Defs_TN(pred_op, input_info->local_tn)) {
+       /* The inputs to the hoisted expression must use the same predicate
+          as the new (or modified) expression will. */
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"predicates not hoisted because inputs not hoisted\n");
+        }
+        return FALSE;
+      }
+    }
+  }
+
+  OPS ops = OPS_EMPTY;
+  if (OP_store(op)) {
+   /* Create copies of the different values that are to be stored. */
+    TN *value_tn = OP_opnd(op, val_idx);
+    if (!TNs_Are_Equivalent(OP_opnd(op, val_idx),OP_opnd(pred_op, val_idx))) {
+     /* Need to merge the two values that are to be stored. */
+
+     /* Note: it is probably not worthwhile making this transformation because
+        it will only increase the tree height of the expressions. */
+      if (has_assigned_reg(value_tn) || EBO_in_loop) {
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"predicates not hoisted because inputs can not be merged\n");
+        }
+        return FALSE;
+      }
+
+      OPS ops1 = OPS_EMPTY;
+      value_tn = Dup_TN(value_tn);
+
+      EBO_Exp_COPY (predicate1_tn,
+                    value_tn,
+                    OP_opnd(pred_op, val_idx),
+                    &ops1);
+      OP_srcpos(OPS_last(&ops1)) = OP_srcpos(pred_op);
+      if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate1_info, opinfo->actual_opnd[val_idx]);
+      OPS_Append_Ops( &ops, &ops1);
+
+      OPS_Init(&ops1);
+      EBO_Exp_COPY (predicate2_tn,
+                    value_tn,
+                    OP_opnd(op, val_idx),
+                    &ops1);
+      OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
+      if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate2_info, opnd_tninfo[val_idx]);
+      OPS_Append_Ops( &ops, &ops1);
+    }
+
+   /* Create and insert a new store OP. */
+    OP *new_op = Dup_OP(op);
+    Set_OP_opnd (new_op, OP_PREDICATE_OPND, new_predicate_tn);
+    Set_OP_opnd (new_op, val_idx, value_tn);
+    if (OP_memory(op)) {
+      Copy_WN_For_Memory_OP (new_op, op);
+    }
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) {
+      EBO_Copy_OP_omega( new_op, op);
+      EBO_Set_Predicate_omega ( new_op, new_predicate_tninfo);
+    }
+    OPS_Append_Op( &ops, new_op);
+
+    if (OP_results(op) != 0) {
+      OPS ops1 = OPS_EMPTY;
+      for (i = 0; i < OP_results(pred_op); i++) {
+        EBO_Exp_COPY (predicate1_tn,
+                      OP_result(pred_op, i),
+                      OP_result(op, i),
+                      &ops1);
+        OP_srcpos(OPS_last(&ops1)) = OP_srcpos(pred_op);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate1_info, NULL);
+      }
+      OPS_Append_Ops( &ops, &ops1);
+    }
+
+   /* Remove the first OP. */
+    remove_op (opinfo);
+    OP_Change_To_Noop(opinfo->in_op);
+    opinfo->in_op = NULL;
+    opinfo->in_bb = NULL;
+  } else {
+   /* Replace the predicate of the previous op. */
+    Set_OP_opnd (pred_op, OP_PREDICATE_OPND, new_predicate_tn);
+    opinfo->actual_opnd[OP_PREDICATE_OPND] = new_predicate_tninfo;
+    for (i = 0; i < OP_results(pred_op); i++) {
+      if (opinfo->actual_rslt[i] != NULL) {
+        if (opinfo->actual_rslt[i]->predicate_tninfo != NULL) {
+          dec_ref_count(opinfo->actual_rslt[i]->predicate_tninfo);
+        }
+        opinfo->actual_rslt[i]->predicate_tninfo = new_predicate_tninfo;
+        if (new_predicate_tninfo != NULL) {
+          inc_ref_count(new_predicate_tninfo);
+        }
+      }
+    }
+
+    if (OP_effectively_copy(op)) {
+     /* Leave the second OP the way it was. */
+if (EBO_Trace_Optimization) fprintf(TFile,"hoist predicate for complementary copy\n");
+      return FALSE;
+    }
+
+   /* Create copies to the different outputs. */
+    OPS ops1 = OPS_EMPTY;
+    for (i = 0; i < OP_results(op); i++) {
+      if (!TNs_Are_Equivalent(OP_result(op, i),OP_result(pred_op, i))) {
+        EBO_Exp_COPY (predicate2_tn,
+                      OP_result(op, i),
+                      OP_result(pred_op, i),
+                      &ops1);
+        OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate2_info, NULL);
+      }
+    }
+    OPS_Append_Ops( &ops, &ops1);
+  }
+
+  BB_Insert_Ops(bb, op, &ops, FALSE);
+if (EBO_Trace_Optimization) fprintf(TFile,"hoist predicate for complementary operations\n");
+
+  return TRUE;
+}
+
+/* =====================================================================
+ *   EBO_delete_reload_across_dependency
+ *
+ *   For a given load or store and one it matches, attempt to replace 
+ *   one of them.
+ *   Return TRUE if this op is no longer needed.
+ * =====================================================================
+ */
+BOOL
+EBO_delete_reload_across_dependency (
+  OP *op,
+  EBO_TN_INFO **opnd_tninfo,
+  EBO_OP_INFO *opinfo,
+  EBO_OP_INFO *intervening_opinfo
+)
+{
+  BB *bb = OP_bb(op);
+  OP *pred_op = opinfo->in_op;
+  OP *intervening_op = intervening_opinfo->in_op;
+  TOP opcode = OP_code(op);
+  TOP pred_opcode = OP_code(pred_op);
+  TOP intervening_opcode = OP_code(intervening_op);
+
+  INT size_pred;
+  INT size_succ;
+  INT size_intervening;
+
+  TN *pred_result;
+  TN *intervening_result;
+
+  /* 
+   * We can't assign registers, so don't optimize if it's 
+   * already been done. 
+   */
+  if (EBO_in_loop) return FALSE;
+  if (EBO_in_peep) return FALSE;
+
+  if (EBO_Trace_Execution) {
+    fprintf(TFile,"%sEnter delete_reload_across_dependency.\n",EBO_trace_pfx);
+    Print_OP_No_SrcLine(pred_op);
+    Print_OP_No_SrcLine(intervening_op);
+    Print_OP_No_SrcLine(op);
+  }
+
+ /* Be sure we have a "Store .. Store .. Load" pattern. */
+  if ((pred_op == NULL) ||
+      (intervening_op == NULL) ||
+      !OP_load(op) ||
+      !(OP_load(pred_op) || OP_store(pred_op)) ||
+      !OP_store(intervening_op)) return FALSE;
+
+  pred_op = opinfo->in_op;
+  intervening_op = intervening_opinfo->in_op;
+
+  if (OP_prefetch(op) ||
+      OP_prefetch(pred_op) ||
+      OP_prefetch(intervening_op)) return FALSE;
+
+  if (OP_unalign_mem(op) ||
+      OP_unalign_mem(pred_op) ||
+      OP_unalign_mem(intervening_op)) return FALSE;
 
 
+  INT pred_base_idx = OP_find_opnd_use(pred_op, OU_base);
+  INT intervening_base_idx =  OP_find_opnd_use(intervening_op, OU_base);
+  INT pred_offset_idx = OP_find_opnd_use(pred_op, OU_offset);
+  INT intervening_offset_idx = OP_find_opnd_use(intervening_op, OU_offset);
+  INT pred_inc_idx = OP_find_opnd_use(pred_op, OU_postincr);
+  INT intervening_inc_idx = OP_find_opnd_use(intervening_op, OU_postincr);
 
-/* 
- * find_duplicate_mem_op
+  TN *pred_base = OP_opnd(pred_op, pred_base_idx);
+  TN *intervening_base = OP_opnd(intervening_op, intervening_base_idx);
+  TN *pred_offset = OP_opnd(pred_op, pred_offset_idx);
+  TN *intervening_offset = OP_opnd(intervening_op, intervening_offset_idx);
+
+  size_succ = OP_Mem_Ref_Bytes(op);
+  size_pred = OP_Mem_Ref_Bytes(pred_op);
+  size_intervening = OP_Mem_Ref_Bytes(intervening_op);
+
+  if ((size_succ != size_pred) ||
+      (size_succ != size_intervening)) return FALSE;
+
+  if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
+   /* The increment must be preserved. */
+    if (EBO_Trace_Data_Flow) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"%sIncremented Load for intervening store combination\n",
+              EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  /* Paired loads are not supported. */
+  // This is a IA64 stuff -- leave for now ...
+  if (OP_results(op) == 2) return FALSE;
+  if ((OP_store(pred_op) &&
+      ((OP_results(pred_op) > 1) ||
+       ((OP_results(pred_op) > 0) &&
+        (pred_inc_idx < 0)))) ||
+      (OP_store(intervening_op) &&
+      ((OP_results(intervening_op) > 1) ||
+       ((OP_results(intervening_op) > 0) &&
+        (intervening_inc_idx < 0))))) return FALSE;
+  if ((OP_load(pred_op) &&
+      ((OP_results(pred_op) > 2) ||
+       ((OP_results(pred_op) > 1) &&
+        (pred_inc_idx < 0)))) ||
+      (OP_load(intervening_op) &&
+      ((OP_results(intervening_op) > 2) ||
+       ((OP_results(intervening_op) > 1) &&
+        (intervening_inc_idx < 0))))) return FALSE;
+
+  /* Capture the values in the preceeding memory OPs. */
+  pred_result = OP_store(pred_op) ? 
+    OP_opnd(pred_op, TOP_Find_Operand_Use(pred_opcode, OU_storeval)) :
+    OP_result(pred_op,0);
+  intervening_result = OP_opnd(intervening_op,
+    TOP_Find_Operand_Use(intervening_opcode, OU_storeval));
+
+  if ((TN_register_class(intervening_result) != TN_register_class(pred_result)) ||
+      (TN_register_class(intervening_result) != TN_register_class(OP_result(op,0)))) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sInter-register copies are not supported\n",
+              EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  if (TNs_Are_Equivalent(pred_result, intervening_result)) {
+    /* 
+     * It doesn't matter if the addresses are the same or different
+     * because the value will always be the same! Just Copy the value. 
+     */
+    if (EBO_copy_value(op, pred_result, intervening_result, size_succ)) {
+
+      if (EBO_Trace_Optimization) {
+	fprintf(TFile,"%sReload across intervening store is not needed.\n",EBO_trace_pfx);
+	Print_OP_No_SrcLine(pred_op);
+	Print_OP_No_SrcLine(intervening_op);
+	Print_OP_No_SrcLine(op);
+      }
+
+      return TRUE;
+    }
+  }
+
+  /* 
+   * We need to compare the addresses BEFORE they were incremented.
+   * If both OPs are incremented by the same value, we can compare
+   * the addresses AFTER the increment.
+   */
+  if ((pred_inc_idx >= 0) || (intervening_inc_idx >= 0)) {
+    if ((pred_inc_idx < 0) || (intervening_inc_idx < 0)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sBase address not available for compare because of increment\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    TN *pred_inc_tn = OP_opnd(pred_op,pred_inc_idx);
+    TN *intervening_inc_tn = OP_opnd(intervening_op,intervening_inc_idx);
+
+    if ((TN_Is_Constant(pred_inc_tn) ||
+         TN_Is_Constant(intervening_inc_tn)) &&
+        (pred_inc_tn != intervening_inc_tn)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sBase address not available for compare because of different constant increment\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (opinfo->actual_opnd[pred_inc_idx] != intervening_opinfo->actual_opnd[intervening_inc_idx]) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sBase address not available for compare because of different increment\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+  }
+
+  /* Are the bases available from each store? */
+  if (!EBO_tn_available (bb, opinfo->actual_opnd[pred_base_idx]) ||
+      !EBO_tn_available (bb, intervening_opinfo->actual_opnd[intervening_base_idx])) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sBase address not available for compare\n",
+              EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  return EBO_select_value(op, 
+			  pred_result, 
+			  pred_base,
+			  pred_offset,
+			  intervening_result, 
+			  intervening_base,
+			  intervening_offset,
+			  size_succ);
+
+  return TRUE;
+}
+
+/* =====================================================================
+ *   delete_memory_op
+ *
+ *   For a given load or store and one it matches, attempt to replace 
+ *   one of them. Return TRUE if this op is no longer needed.
+ * =====================================================================
+ */
+static BOOL
+delete_memory_op (
+  OP *op,
+  EBO_TN_INFO **opnd_tninfo,
+  EBO_OP_INFO *opinfo
+)
+{
+  INT i;
+  OPS ops = OPS_EMPTY;
+  TOP opcode = OP_code(op);
+
+  INT size_pred;
+  INT size_succ;
+  TN *predicate_tn = OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL;
+
+  if (OP_prefetch(op)) {
+    /* 
+     * Remove the second OP for:
+     *    Prefetch - Prefetch,
+     *    Load - Prefetch,
+     *    Store - Prefetch
+     */
+    if (EBO_Trace_Optimization) {
+      fprintf(TFile,"%sRemove following Prefetch combination\n",EBO_trace_pfx);
+    }
+    return TRUE;
+  }
+
+  if (OP_prefetch(opinfo->in_op)) {
+   /* 
+    * Don't optimize:
+    *     Prefetch - Load,
+    *     Prefetch - Store,
+    */
+    return FALSE;
+  }
+
+  if (OP_unalign_mem(op) || OP_unalign_mem(opinfo->in_op)) return FALSE;
+
+  size_pred = OP_Mem_Ref_Bytes(opinfo->in_op);
+  size_succ = OP_Mem_Ref_Bytes(op);
+
+  if (OP_load(op) && OP_load(opinfo->in_op)) {
+   /* 
+    * Replace the result tn of the second OP for:
+    *     Load - Load,
+    */
+    if (TOP_Find_Operand_Use(opcode, OU_postincr) >= 0) {
+      /* The increment must be preserved. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sIncremented Load for Load - Load combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if ((TN_register_class(OP_result(op,0)) !=
+                 TN_register_class(OP_result(opinfo->in_op, 0))) ||
+        (TN_is_fpu_int(OP_result(op,0)) !=
+                 TN_is_fpu_int(OP_result(opinfo->in_op, 0)))) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sType mismatch for Load - Load combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if ((size_pred != size_succ) ||
+        (OP_results(op) != OP_results(opinfo->in_op)) ||
+        (TN_size(OP_result(opinfo->in_op, 0)) != TN_size(OP_result(op, 0)))) {
+      /* Size of the data item loaded by the two loads is different,
+	 but the starting memory address is the same.  There is a chance
+	 that the predecessor load is a load-pair and that the new load
+	 matches one of the words that is loaded. */
+
+      if (EBO_Trace_Data_Flow) {
+        #pragma mips_frequency_hint NEVER
+        fprintf(TFile,"%sSize mismatch for Load - Load combination: %d:%d %d:%d \n",
+                EBO_trace_pfx,size_pred,size_succ,
+                TN_size(OP_result(opinfo->in_op, 0)),TN_size(OP_result(op, 0)));
+      }
+
+      return EBO_delete_subset_mem_op (op, opnd_tninfo, opinfo, 0, 0);
+    }
+
+    if (!EBO_in_peep &&
+        (OP_bb(op) != OP_bb(opinfo->in_op)) &&
+        !TN_Is_Constant(OP_result(opinfo->in_op, 0)) &&
+        has_assigned_reg(OP_result(opinfo->in_op, 0))) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (EBO_Trace_Optimization) {
+      fprintf(TFile,"%sRemove Load - Load combination\n",EBO_trace_pfx);
+    }
+
+    for (i = 0; i < OP_results(op); i++) {
+      EBO_Exp_COPY(predicate_tn, OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
+    }
+
+    if (EBO_in_loop) 
+      EBO_OPS_omega (&ops, (OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL));
+
+    OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    return TRUE;
+  } 
+
+  else if (OP_load(op) && OP_store(opinfo->in_op)) {
+   /* 
+    * Replace the result tn of the second OP for:
+    *     Store - Load
+    */
+    INT storeval_idx = 
+           TOP_Find_Operand_Use(OP_code(opinfo->in_op),OU_storeval);
+    TN *storeval_tn = OP_opnd(opinfo->in_op, storeval_idx);
+
+    if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
+      /* The increment must be preserved. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sIncremented Load for Load - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if ((TN_register_class(OP_result(op,0)) !=
+                 TN_register_class(storeval_tn)) ||
+        (TN_is_fpu_int(OP_result(op,0)) !=
+                 TN_is_fpu_int(storeval_tn))) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sType mismatch for Store - Load combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (!EBO_in_peep &&
+        (OP_bb(op) != OP_bb(opinfo->in_op)) &&
+        !TN_Is_Constant(storeval_tn) &&
+        has_assigned_reg(storeval_tn)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (size_pred == size_succ) {
+      /* Size of source and target are the same. */
+      if (TN_size(storeval_tn) > size_succ) {
+       /* 
+	* Although the size of the data moved to and from memory is
+	* the same, the size of the generated value is larger than
+	* the size of the value we want to load.  Call another
+	* routine to mask off the upper portion of the stored value. 
+	*/
+
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"%sSize mismatch for Store - Load combination: %d %d %d\n",
+                  EBO_trace_pfx,size_pred,TN_size(storeval_tn),size_succ);
+        }
+        return EBO_delete_subset_mem_op (op, opnd_tninfo, opinfo, 0, 0);
+      }
+
+      if (EBO_Trace_Optimization) {
+        fprintf(TFile,"%sRemove Store - Load combination\n",EBO_trace_pfx);
+      }
+
+      EBO_Exp_COPY(predicate_tn, OP_result(op, 0), storeval_tn, &ops);
+
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  (OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL),
+			  opinfo->actual_opnd[storeval_idx]);
+
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    } 
+    else {
+     /* 
+      * Size of source and target are different, but the starting 
+      * memory address is the same. Call another routine to do the 
+      * work. 
+      */
+      return EBO_delete_subset_mem_op (op, opnd_tninfo, opinfo, 0, 0);
+    }
+  } 
+
+  else if (OP_store(op) && 
+	   OP_store(opinfo->in_op) &&
+	   (OP_bb(op) == OP_bb(opinfo->in_op))) {
+   /* 
+    * Remove the first OP for:
+    *     Store - Store
+    */
+    if (size_pred != size_succ) return FALSE;
+    if (opinfo->op_must_not_be_removed) return FALSE;
+    if (TOP_Find_Operand_Use(OP_code(opinfo->in_op), OU_postincr) >= 0) {
+      /* The increment must be preserved. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sIncremented Store for Store - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (EBO_Trace_Optimization) {
+      fprintf(TFile,"%sRemove Store - Store combination\n",EBO_trace_pfx);
+    }
+
+    remove_op (opinfo);
+    OP_Change_To_Noop(opinfo->in_op);
+    opinfo->in_op = NULL;
+    opinfo->in_bb = NULL;
+    return FALSE;
+  } 
+
+  else if (OP_load(opinfo->in_op) && OP_store(op)) {
+   /* 
+    * The store may not be needed if the same value is put back for:
+    *     Load - Store
+    */
+    INT storeval_idx = TOP_Find_Operand_Use(OP_code(op),OU_storeval);
+    TN *storeval_tn = OP_opnd(op, storeval_idx);
+
+    if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
+      /* The increment must be preserved. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sIncremented Store for Load - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if ((TN_register_class(OP_result(opinfo->in_op,0)) !=
+                 TN_register_class(storeval_tn)) ||
+        (TN_is_fpu_int(OP_result(opinfo->in_op,0)) !=
+                 TN_is_fpu_int(storeval_tn))) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sType mismatch for Load - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if (!EBO_in_peep &&
+        (OP_bb(op) != OP_bb(opinfo->in_op)) &&
+        !TN_Is_Constant(storeval_tn) &&
+        has_assigned_reg(storeval_tn)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+
+    if ((size_pred != size_succ) || (TN_size(storeval_tn) != size_succ)) {
+
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sSize mismatch for Load - Store combination: %d %d %d\n",
+                EBO_trace_pfx,size_pred,TN_size(storeval_tn),size_succ);
+      }
+
+      return FALSE;
+    }
+
+    if ((opnd_tninfo[storeval_idx] != NULL) &&
+        (opnd_tninfo[storeval_idx]->in_op != NULL) &&
+        (opinfo->in_op != NULL) &&
+        (opnd_tninfo[storeval_idx]->in_op == opinfo->in_op)) {
+     /* The Store is not needed! */
+
+      if (EBO_Trace_Optimization) {
+        fprintf(TFile,"%sRemove Load - Store combination\n",EBO_trace_pfx);
+      }
+
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/* =====================================================================
+ *   EBO_delete_duplicate_op
+ *
+ *   For a given op and one it matches, attempt to replace one of them.
+ *   Return TRUE if this op is no longer needed.
+ * =====================================================================
+ */
+BOOL
+EBO_delete_duplicate_op (
+  OP *op,
+  EBO_TN_INFO **opnd_tninfo,
+  EBO_OP_INFO *opinfo
+)
+{
+  INT resnum;
+  TOP opcode = OP_code(op);
+  OPS ops = OPS_EMPTY;
+
+  if (EBO_Trace_Data_Flow) {
+    fprintf(TFile,"%sDuplicate OP in BB:%d    ",EBO_trace_pfx,BB_id(OP_bb(op)));
+    Print_OP_No_SrcLine(op);
+    fprintf(TFile,"      Matches   OP in BB:%d    ",BB_id(opinfo->in_bb));
+    Print_OP_No_SrcLine(opinfo->in_op);
+  }
+
+  if ((Opt_Level < 2) && (OP_bb(op) != opinfo->in_bb)) {
+    /* Global TN's aren't supported at low levels of optimization. */
+    return FALSE;
+  }
+
+  if (OP_has_predicate(op) &&
+      (OP_opnd(op,OP_PREDICATE_OPND) != OP_opnd(opinfo->in_op,OP_PREDICATE_OPND))) {
+    OP *pred_op = opinfo->in_op;
+    TN *predicate1_tn = OP_opnd(pred_op,OP_PREDICATE_OPND);
+    TN *predicate2_tn = OP_opnd(op,OP_PREDICATE_OPND);
+    EBO_TN_INFO *predicate1_info = opinfo->actual_opnd[OP_PREDICATE_OPND];
+    EBO_TN_INFO *predicate2_info = opnd_tninfo[OP_PREDICATE_OPND];
+
+    if ((OP_code(op) == OP_code(pred_op)) &&
+        EBO_predicate_complements(predicate1_tn, predicate1_info,
+                                  predicate2_tn, predicate2_info)) {
+      return hoist_predicate_of_duplicate_complement (op, opnd_tninfo, opinfo);
+    }
+    if (OP_store(pred_op) && OP_store(op)) {
+      if (!EBO_predicate_dominates(predicate2_tn, predicate2_info,
+                                   predicate1_tn, predicate1_info)) {
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"%sStores can not be combined because predicates do not match\n",EBO_trace_pfx);
+        }
+        return FALSE;
+      }
+    } else {
+      if (!EBO_predicate_dominates(predicate1_tn, predicate1_info,
+                                   predicate2_tn, predicate2_info)) {
+        if (EBO_Trace_Data_Flow) {
+          fprintf(TFile,"%sExpressions can not be combined because predicates do not match\n",EBO_trace_pfx);
+        }
+        return FALSE;
+      }
+    }
+  }
+
+  if (OP_memory(op)) {
+   /* 
+    * Separate load/store processing, but logically it's just a 
+    * special case. 
+    */
+    return delete_memory_op (op, opnd_tninfo, opinfo);
+  } 
+
+  else if (OP_icmp(op) || OP_fcmp(op)) {
+   /* Integer and float comparison operations. */
+    OPS ops = OPS_EMPTY;
+    if (EBO_condition_redundant (op, opnd_tninfo, opinfo, &ops)) {
+      if (OPS_length(&ops) != 0) {
+	if (EBO_in_loop) EBO_OPS_omega (&ops, NULL);
+        OP *next_op = OPS_first(&ops);
+        while (next_op != NULL) {
+          OP_srcpos(next_op) = OP_srcpos(op);
+          next_op = OP_next(next_op);
+        }
+	BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      }
+      return TRUE;
+    }
+    else {
+      if (EBO_Trace_Optimization) {
+#pragma mips_frequency_hint NEVER
+	fprintf(TFile,"%sCan not remove compare operation.\n",EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+  } /* compare OP */
+
+#if 0
+  // what does it do ??
+  else {
+
+    if (OP_has_predicate(op) &&
+        (OP_opnd(op,OP_PREDICATE_OPND) != True_TN)) {
+      /* 
+       * Check for required copies of predicates that can not 
+       * be supported. 
+       */
+      for (resnum = 0; resnum < OP_results(op); resnum++) {
+        if (TN_register_class(OP_result(op, resnum)) == ISA_REGISTER_CLASS_predicate) {
+          if (EBO_Trace_Data_Flow) {
+            fprintf(TFile,"%sStores can not be combined because predicate copies can not be predicated\n",
+                   EBO_trace_pfx);
+          }
+          return FALSE;
+        }
+      }
+    }
+
+
+    /* Create copies of the result TN's. */
+    for (resnum = 0; resnum < OP_results(op); resnum++) {
+      TN *rslt = OP_result(op, resnum);
+      TN *src1 = OP_result(opinfo->in_op, resnum);
+
+      if (TN_register_class(rslt) == ISA_REGISTER_CLASS_branch) {
+        if (TN_register_class(src1) == ISA_REGISTER_CLASS_branch) {
+          TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+          TN* one_tn = Gen_Literal_TN ((INT32) 1, 4);
+          Build_OP (TOP_slct_i, tmp, src1, Zero_TN, one_tn, &ops);
+          Build_OP (TOP_orl_r_b, rslt, tmp, Zero_TN, &ops);
+        }
+        else
+          Build_OP (TOP_cmpeq_r_b, rslt, src1, Zero_TN,  &ops);
+      } else {
+        EBO_Exp_COPY(NULL, rslt, src1, &ops);
+      }
+      OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    }
+
+    if (EBO_in_loop) 
+      EBO_OPS_omega (&ops, NULL);
+
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    return TRUE;
+  }
+#endif
+
+  return FALSE;
+}
+
+/* =====================================================================
+ *    EBO_Constant_Operand0
+ *
+ *    Look at an exression that has a constant first operand and attempt
+ *    to simplify the computations.
+ * =====================================================================
+ */
+BOOL
+EBO_Constant_Operand0 (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  BB *bb = OP_bb(op);
+  INT opndnum = OP_opnds(op);
+  EBO_TN_INFO *tninfo;
+
+  TOP opcode = OP_code(op);
+  TN *tnr = OP_result(op,0);
+  INT l0_opnd1_idx;
+  INT l0_opnd2_idx;
+  TN *tn0;
+  TN *tn1;
+  INT64 const_val;
+
+  OP *pred_op;
+  TOP pred_opcode;
+  EBO_OP_INFO *pred_opinfo;
+
+  if (EBO_Trace_Execution) {
+    INT i;
+    fprintf(TFile, "%sin BB:%d special0 OP :- %s",
+            EBO_trace_pfx, BB_id(OP_bb(op)),TOP_Name(OP_code(op)));
+    for (i = 0; i < opndnum; i++) {
+      fprintf(TFile," ");
+      Print_TN(opnd_tn[i],FALSE);
+    }
+    fprintf(TFile,"\n");
+  }
+
+  // Arthur: spadjust shouldn't be subject to this
+  if (OP_code(op) == TOP_spadjust) return FALSE;
+
+  if (OP_opnds(op) < (OP_has_predicate(op) ? 2 : 1)) return FALSE;
+
+  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  tn0 = opnd_tn[l0_opnd1_idx];
+  tn1 = (l0_opnd2_idx >= 0) ? opnd_tn[l0_opnd2_idx] : NULL;
+
+  // Floating -point simplification:
+  if (tn0 == FZero_TN) {
+    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
+      OPS ops = OPS_EMPTY;
+
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fmpy of 0.0 with 0.0\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, FZero_TN, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  NULL);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+
+    if (OP_fadd(op)) {
+      OPS ops = OPS_EMPTY;
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fadd of 0.0 with tn1\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, tn1, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  opnd_tninfo[l0_opnd2_idx]);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+  }
+
+  if (tn0 == FOne_TN) {
+    if (OP_fmul(op)) {
+      OPS ops = OPS_EMPTY;
+
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fmpy of 1.0 with tn1\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, tn1, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  opnd_tninfo[l0_opnd2_idx]);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+  }
+
+  // Integer arithmetic simplification
+
+  if (TN_is_symbol(tn0)) {
+   /* Re-located constants not supported. */
+    return FALSE;
+  }
+
+  if (TN_Is_Constant(tn1)) {
+   /* Why are we here? */
+    return FALSE;
+  }
+
+  if (((TN_register_class(tnr) != TN_register_class(tn1)) ||
+      (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn1)))) {
+   /* Type changes indicate that something tricky is going on. */
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  const_val = TN_Value(tn0);
+
+  OP *new_op = EBO_simplify_operand0(op, tnr, const_val, tn1);
+
+  if (new_op != NULL) {
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) 
+      EBO_Set_OP_omega (new_op, 
+			opnd_tninfo[OP_PREDICATE_OPND], 
+			NULL, 
+			opnd_tninfo[l0_opnd2_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+    return TRUE;
+  }
+
+  /* Sequence optimizations. */
+
+  // 
+  // 1. make postincrement memory OPs where possible
+  //
+#if 0
+  if ((opcode == TOP_adds) &&
+      ISA_LC_Value_In_Class (const_val, LC_i9)) {
+    TN *tnr = OP_result(op,0);
+    OP *test_op = OP_prev(op);
+    OP *memory_op = NULL;
+    EBO_OP_INFO *memory_opinfo = NULL;
+    TOP memory_opcode; // = TOP_add;
+    EBO_TN_INFO *memory_index = NULL;
+    EBO_TN_INFO *memory_r1 = NULL;
+    EBO_TN_INFO *memory_r2 = NULL;
+    EBO_TN_INFO *memory_sv = NULL;
+
+    while (test_op) {
+      if (OP_load(test_op) || OP_store(test_op)) {
+        memory_op = test_op;
+        test_op = NULL;
+        break;
+      }
+      test_op = OP_prev(test_op);
+    }
+
+    if (memory_op != NULL) {
+      memory_opinfo = find_opinfo_entry (memory_op);
+      memory_opcode = OP_code(memory_op);
+      if (memory_opinfo != NULL) {
+        memory_index = memory_opinfo->actual_opnd[TOP_Find_Operand_Use(memory_opcode, OU_base)];
+        if (OP_load(memory_op)) {
+          memory_r1 = memory_opinfo->actual_rslt[0];
+          if (OP_results(memory_op) > 1) {
+	    memory_r2 = memory_opinfo->actual_rslt[1];
+	  }
+        } else if (OP_store(memory_op)) {
+          memory_sv = memory_opinfo->actual_opnd[TOP_Find_Operand_Use(memory_opcode, OU_storeval)];
+        }
+      }
+    }
+
+   /* 
+    * Make sure that this is load has a predicate that is compatible 
+    * with the increment. 
+    */
+    if (memory_opinfo != NULL) {
+      if ((!OP_has_predicate(op) && !OP_has_predicate(memory_op)) ||
+	  ((OP_has_predicate(op) && OP_has_predicate(memory_op)) &&
+	   ((TN_Is_Constant(OP_opnd(op,OP_PREDICATE_OPND)) &&
+	     TN_Is_Constant(OP_opnd(memory_op,OP_PREDICATE_OPND)) &&
+	     (TN_Value(OP_opnd(op,OP_PREDICATE_OPND)) == TN_Value(OP_opnd(memory_op,OP_PREDICATE_OPND)))) ||
+	    (!TN_Is_Constant(OP_opnd(op,OP_PREDICATE_OPND)) &&
+	     !TN_Is_Constant(OP_opnd(memory_op,OP_PREDICATE_OPND)) &&
+	     EBO_tn_available(bb, memory_opinfo->actual_opnd[OP_PREDICATE_OPND]) &&
+	     tn_registers_identical(OP_opnd(op,OP_PREDICATE_OPND), OP_opnd(memory_op,OP_PREDICATE_OPND)))) &&
+	   (OP_memory(memory_op)) &&
+	   ((memory_index != NULL) &&
+	    EBO_tn_available(bb, memory_index) &&
+	    tn_registers_identical(memory_index->local_tn, tn1)) &&
+	   ((memory_r1 == NULL) || (memory_r1->reference_count == 0)) &&
+	   ((memory_r2 == NULL) || (memory_r2->reference_count == 0)) &&
+	   ((memory_sv == NULL) || EBO_tn_available(bb, memory_sv)) &&
+	   ((memory_sv == NULL) || !tn_registers_identical(tnr, memory_sv->local_tn)))) {
+
+	EBO_
+
+      TOP new_opcode;
+      BOOL use_increment = TRUE;
+
+      switch (memory_opcode) {
+      case TOP_ld1: new_opcode = TOP_ld1_i; break;
+      case TOP_ld2: new_opcode = TOP_ld2_i; break;
+      case TOP_ld4: new_opcode = TOP_ld4_i; break;
+      case TOP_ld8: new_opcode = TOP_ld8_i; break;
+      case TOP_ld8_fill: new_opcode = TOP_ld8_i_fill; break;
+      case TOP_ldfs: new_opcode = TOP_ldfs_i; break;
+      case TOP_ldfd: new_opcode = TOP_ldfd_i; break;
+      case TOP_ldfe: new_opcode = TOP_ldfe_i; break;
+      case TOP_ldf8: new_opcode = TOP_ldf8_i; break;
+      case TOP_ldf_fill: new_opcode = TOP_ldf_i_fill; break;
+      case TOP_ldfps:
+        new_opcode = TOP_ldfps_i;
+        if (CGTARG_Mem_Ref_Bytes(memory_op) != const_val) use_increment = FALSE;
+        break;
+      case TOP_ldfpd:
+        new_opcode = TOP_ldfpd_i;
+        if (CGTARG_Mem_Ref_Bytes(memory_op) != const_val) use_increment = FALSE;
+        break;
+      case TOP_ldfp8:
+        new_opcode = TOP_ldfp8_i;
+        if (CGTARG_Mem_Ref_Bytes(memory_op) != const_val) use_increment = FALSE;
+        break;
+      case TOP_lfetch: new_opcode = TOP_lfetch_i; break;
+      case TOP_lfetch_excl: new_opcode = TOP_lfetch_i_excl; break;
+      case TOP_lfetch_fault: new_opcode = TOP_lfetch_i_fault; break;
+      case TOP_lfetch_fault_excl: new_opcode = TOP_lfetch_i_fault_excl; break;
+      case TOP_st1: new_opcode = TOP_st1_i; break;
+      case TOP_st2: new_opcode = TOP_st2_i; break;
+      case TOP_st4: new_opcode = TOP_st4_i; break;
+      case TOP_st8: new_opcode = TOP_st8_i; break;
+      case TOP_st8_spill: new_opcode = TOP_st8_i_spill; break;
+      case TOP_stfs: new_opcode = TOP_stfs_i; break;
+      case TOP_stfd: new_opcode = TOP_stfd_i; break;
+      case TOP_stfe: new_opcode = TOP_stfe_i; break;
+      case TOP_stf8: new_opcode = TOP_stf8_i; break;
+      case TOP_stf_spill: new_opcode = TOP_stf_i_spill; break;
+      case TOP_ldfps_i:
+      case TOP_ldfpd_i:
+      case TOP_ldfp8_i:
+        use_increment = FALSE; break;
+      default: 
+        if (TOP_Find_Operand_Use(memory_opcode, OU_postincr) >= 0) {
+          new_opcode = memory_opcode;
+          const_val += TN_Value(OP_opnd(memory_op,TOP_Find_Operand_Use(memory_opcode, OU_postincr)));
+          break;
+        }
+        use_increment = FALSE; break;
+      }
+
+     /* CGPREP doesn't like to see these instructions. */
+      if (EBO_in_pre || EBO_in_loop) use_increment = FALSE;
+
+     /* Scheduling may be better if we don't introduce dependencies. */
+      if (!EBO_in_peep) use_increment = FALSE;
+
+      if (use_increment &&
+          (TOP_Find_Operand_Use(new_opcode, OU_postincr) >= 0)) {
+        OP *new_op;
+        OPS ops = OPS_EMPTY;
+
+        if (!tn_registers_identical(tnr, tn1)) {
+          EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND), tnr, tn1, &ops);
+          if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
+                                             opnd_tninfo[OP_PREDICATE_OPND],
+                                             opnd_tninfo[l0_opnd2_idx]);
+        }
+
+        TN *save_opnds[OP_MAX_FIXED_OPNDS];
+        INT i;
+
+ 	Is_True(OP_opnds(memory_op) <= OP_MAX_FIXED_OPNDS,
+		("save_opnds is too small for %s", TOP_Name(OP_code(memory_op))));
+        for (i=0; i<OP_opnds(memory_op); i++) save_opnds[i] = OP_opnd(memory_op, i);
+
+        if (OP_load(memory_op)) {
+          if (OP_results(memory_op) == 1) {
+            new_op = Mk_OP (new_opcode, OP_result(memory_op, 0), tnr,
+                            save_opnds[0], save_opnds[1], save_opnds[2], NULL, NULL);
+          } else {
+            new_op = Mk_OP (new_opcode, OP_result(memory_op, 0), OP_result(memory_op, 1), tnr,
+                            save_opnds[0], save_opnds[1], save_opnds[2], NULL, NULL);
+          }
+        } else {
+          if (OP_opnds(memory_op) == 4) {
+            new_op = Mk_OP(new_opcode, tnr, save_opnds[0], save_opnds[1], save_opnds[2], NULL, NULL);
+          } else {
+            new_op = Mk_OP(new_opcode, tnr, save_opnds[0], save_opnds[1], save_opnds[2], NULL, NULL, NULL);
+          }
+
+          Set_OP_opnd(new_op, TOP_Find_Operand_Use(new_opcode, OU_storeval),
+                      save_opnds[TOP_Find_Operand_Use(memory_opcode, OU_storeval)]);
+        }
+
+        Set_OP_opnd(new_op, TOP_Find_Operand_Use(new_opcode, OU_base), tnr);
+        Set_OP_opnd(new_op, TOP_Find_Operand_Use(new_opcode, OU_postincr), Gen_Literal_TN(const_val, 4));
+        Copy_WN_For_Memory_OP (new_op, memory_op);
+        OP_srcpos(new_op) = OP_srcpos(memory_op);
+        OPS_Append_Op( &ops, new_op);
+
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+
+        remove_op (memory_opinfo);
+        OP_Change_To_Noop(memory_op);
+        memory_opinfo->in_op = NULL;
+        memory_opinfo->in_bb = NULL;
+
+if (EBO_Trace_Optimization) fprintf(TFile,"memory op merged with increment to produce %s (inc=%lld).\n",
+TOP_Name(new_opcode),const_val);
+        return TRUE;
+      }
+    }
+  }
+#endif
+
+#if 0
+  tninfo = opnd_tninfo[l0_opnd2_idx];
+  if (tninfo == NULL) return FALSE;
+  pred_op = tninfo->in_op;
+  if (pred_op == NULL) return FALSE;
+  pred_opcode = OP_code(pred_op);
+  if (pred_opcode == TOP_spadjust) return FALSE;
+  pred_opinfo = locate_opinfo_entry (tninfo);
+  if (pred_opinfo == NULL) return FALSE;
+
+ /* First, look for some special cases involving loads. */
+  if (OP_load(pred_op)) {
+    if (OP_iand(op)) {
+      if (((pred_opcode == TOP_ld1) &&
+           (const_val == (~((~0) << 8)))) ||
+          ((pred_opcode == TOP_ld2) &&
+           (const_val ==  (~((~0) << 16))))) {
+       /* No need to mask - it was done with the load. */
+        OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
+        EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                     tnr, tn1, &ops);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
+                                           OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+                                           opnd_tninfo[l0_opnd2_idx]);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  if ((opcode == TOP_dep) ||
+      (opcode == TOP_dep_i)) {
+
+   /* Is the input to this dep instruction another dep instruction? */
+    if ((pred_opcode == TOP_dep) ||
+        (pred_opcode == TOP_dep_i)) {
+      TN *pred_insert = OP_opnd(pred_op,1);
+      EBO_TN_INFO *pred_insert_tninfo = pred_opinfo->actual_opnd[1];
+      TN *pred_tn = OP_opnd(pred_op,2);
+      INT pred_start = TN_Value(OP_opnd(pred_op,3));
+      INT pred_length = TN_Value(OP_opnd(pred_op,4));
+      INT op_start = TN_Value(OP_opnd(op,3));
+      INT op_length = TN_Value(OP_opnd(op,4));
+
+     /* Pick up the best value we can for the predicessor's field value. */
+      if (pred_opinfo->optimal_opnd[1] != NULL) {
+        pred_insert_tninfo = pred_opinfo->optimal_opnd[1];
+        pred_insert = pred_insert_tninfo->local_tn;
+      }
+      if ((pred_insert_tninfo != NULL) &&
+          (pred_insert_tninfo->replacement_tn != NULL)) {
+        pred_insert = pred_insert_tninfo->replacement_tn;
+        pred_insert_tninfo = pred_insert_tninfo->replacement_tninfo;
+      }
+
+     /* The transformations that we want to make will require that
+        we utilize a new register.  This is not problem if registers
+        have not been assigned, and is not a problem if we can reuse
+        the result register of the dep instruction - which we can not
+        do if it is going to be an input to the new dep instruction.
+     */
+      if (has_assigned_reg(tnr) &&
+          TNs_Are_Equivalent(tnr,pred_tn)) return FALSE;
+
+      if (TN_Is_Constant(pred_insert) &&
+          ((pred_start+pred_length) == op_start) &&
+          ((op_length+pred_length) < 16)) {
+       /* The new field is to the left of the previous field. */
+        OPS ops = OPS_EMPTY;
+        OP *new_op;
+        TN *predicate_tn = OP_opnd(op,OP_PREDICATE_OPND);
+        TN *new_const_tn = has_assigned_reg(tnr) ? tnr : Dup_TN_Even_If_Dedicated(tnr);
+        UINT64 mask;
+
+        mask = (~0);
+        mask = mask << op_length;
+        const_val = (const_val & ~mask) << pred_length;
+
+        mask = (~0);
+        mask = mask << pred_length;
+        const_val |= (TN_Value(pred_insert) & ~mask);
+if (EBO_Trace_Optimization) fprintf(TFile,"combine dep to the left of previous dep\n");
+        EBO_Exp_COPY(predicate_tn, new_const_tn, Gen_Literal_TN(const_val, TN_size(tnr)), &ops);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
+                                           opnd_tninfo[OP_PREDICATE_OPND],
+                                           pred_opinfo->actual_opnd[2]);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+
+        Build_OP(TOP_dep, tnr, predicate_tn, new_const_tn, OP_opnd(pred_op,2),
+                 OP_opnd(pred_op,3), Gen_Literal_TN(op_length+pred_length, 4), &ops);
+        if (predicate_tn != True_TN) Set_OP_cond_def_kind(OPS_last(&ops), OP_PREDICATED_DEF);
+        OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops),
+                                           opnd_tninfo[OP_PREDICATE_OPND], NULL,
+                                           pred_opinfo->actual_opnd[2]);
+
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+
+      if (TN_Is_Constant(pred_insert) &&
+          ((op_start+op_length) == pred_start) &&
+          ((op_length+pred_length) < 16)) {
+       /* The new field is to the right of the previous field. */
+        OPS ops = OPS_EMPTY;
+        OP *new_op;
+        TN *predicate_tn = OP_opnd(op,OP_PREDICATE_OPND);
+        TN *new_const_tn = has_assigned_reg(tnr) ? tnr : Dup_TN_Even_If_Dedicated(tnr);
+        UINT64 mask;
+
+        mask = (~0);
+        mask = mask << op_length;
+        const_val = (const_val & ~mask);
+
+        mask = (~0);
+        mask = mask << pred_length;
+        const_val |= (TN_Value(pred_insert) & ~mask) << op_length;
+if (EBO_Trace_Optimization) fprintf(TFile,"combine dep to the right of previous dep\n");
+        EBO_Exp_COPY(predicate_tn, new_const_tn, Gen_Literal_TN(const_val, TN_size(tnr)), &ops);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
+                                           opnd_tninfo[OP_PREDICATE_OPND],
+                                           pred_opinfo->actual_opnd[2]);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+
+        Build_OP(TOP_dep, tnr, predicate_tn, new_const_tn, OP_opnd(pred_op,2),
+                 OP_opnd(op,3), Gen_Literal_TN(op_length+pred_length, 4), &ops);
+        if (predicate_tn != True_TN) Set_OP_cond_def_kind(OPS_last(&ops), OP_PREDICATED_DEF);
+        OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops),
+                                           opnd_tninfo[OP_PREDICATE_OPND], NULL,
+                                           pred_opinfo->actual_opnd[2]);
+
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+    }
+  }
+#endif
+
+#if 0
+ /* Now, look into optimizations that depend on specific
+    values for the actual operands of the predecessor op. */
+  if (TOP_Find_Operand_Use(pred_opcode,OU_opnd2) >= 0) {
+    INT ptn0_idx = TOP_Find_Operand_Use(pred_opcode,OU_opnd1);
+    INT ptn1_idx = TOP_Find_Operand_Use(pred_opcode,OU_opnd2);
+    TN *ptn0 = OP_opnd(pred_op, ptn0_idx);
+    TN *ptn1 = OP_opnd(pred_op, ptn1_idx);
+    EBO_TN_INFO *ptn0_tninfo;
+    EBO_TN_INFO *ptn1_tninfo;
+    INT64 pred_val = 0;
+
+    OP *new_op;
+    TOP new_opcode;
+    INT64 new_const_val;
+
+    ptn0_tninfo = pred_opinfo->actual_opnd[ptn0_idx];
+    ptn1_tninfo = pred_opinfo->actual_opnd[ptn1_idx];
+
+   /* Are the operands available for use? */
+    if (!(TN_Is_Constant(ptn0) || EBO_tn_available (bb, ptn0_tninfo)) ||
+        !(TN_Is_Constant(ptn1) || EBO_tn_available (bb, ptn1_tninfo))) return FALSE;
+
+    if (opcode == TOP_adds) {
+      if (((pred_opcode == TOP_add) && (const_val == 1)) ||
+          ((pred_opcode == TOP_sub) && (const_val == -1))) {
+       /* Use the special add+1 instruction. */
+          new_opcode = (pred_opcode == TOP_add) ? TOP_add_1 : TOP_sub_1;
+          new_op = Mk_OP (new_opcode, tnr, OP_opnd(op,OP_PREDICATE_OPND), ptn0, ptn1);
+          OP_srcpos(new_op) = OP_srcpos(op);
+          if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], ptn0_tninfo, ptn1_tninfo );
+          BB_Insert_Op_After(bb, op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"combine add and add1\n");
+          return TRUE;
+      }
+    }
+
+    if (TN_Is_Constant(ptn1)) {
+    } else if (TN_Is_Constant(ptn0) &&
+               (OP_iadd(pred_op) || OP_ior(pred_op)  || OP_iand(pred_op))) {
+     /* Treat ptn1 as if it were the constant operand. */
+      TN *s = ptn0;
+      ptn0 = ptn1;
+      ptn0_tninfo = ptn1_tninfo;
+      ptn1 = s;
+    } else {
+      return FALSE;
+    }
+
+    pred_val = TN_is_symbol(ptn1) ? TN_offset(ptn1) : TN_Value(ptn1);
+
+   /* Look for compare operations where the constants can be combined. */
+    if (OP_icmp(op) && OP_iadd(pred_op) && !TN_is_symbol(ptn1)) {
+      INT cmp_size;
+
+      if ((pred_val != 0) &&
+          ((opcode == TOP_cmp4_ltu)       ||
+           (opcode == TOP_cmp4_ltu_unc)   ||
+           (opcode == TOP_cmp4_leu)       ||
+           (opcode == TOP_cmp4_leu_unc)   ||
+           (opcode == TOP_cmp4_gtu)       ||
+           (opcode == TOP_cmp4_gtu_unc)   ||
+           (opcode == TOP_cmp4_geu)       ||
+           (opcode == TOP_cmp4_geu_unc)   ||
+           (opcode == TOP_cmp_ltu)        ||
+           (opcode == TOP_cmp_ltu_unc)    ||
+           (opcode == TOP_cmp_leu)        ||
+           (opcode == TOP_cmp_leu_unc)    ||
+           (opcode == TOP_cmp_gtu)        ||
+           (opcode == TOP_cmp_gtu_unc)    ||
+           (opcode == TOP_cmp_geu)        ||
+           (opcode == TOP_cmp_geu_unc)    ||
+           (opcode == TOP_cmp4_i_ltu)     ||
+           (opcode == TOP_cmp4_i_ltu_unc) ||
+           (opcode == TOP_cmp4_i_leu)     ||
+           (opcode == TOP_cmp4_i_leu_unc) ||
+           (opcode == TOP_cmp4_i_gtu)     ||
+           (opcode == TOP_cmp4_i_gtu_unc) ||
+           (opcode == TOP_cmp4_i_geu)     ||
+           (opcode == TOP_cmp4_i_geu_unc) ||
+           (opcode == TOP_cmp_i_ltu)      ||
+           (opcode == TOP_cmp_i_ltu_unc)  ||
+           (opcode == TOP_cmp_i_leu)      ||
+           (opcode == TOP_cmp_i_leu_unc)  ||
+           (opcode == TOP_cmp_i_gtu)      ||
+           (opcode == TOP_cmp_i_gtu_unc)  ||
+           (opcode == TOP_cmp_i_geu)      ||
+           (opcode == TOP_cmp_i_geu_unc))) {
+       /* There may be sign-bit games going on with unsigned compares. */
+        return FALSE;
+      }
+      new_const_val = const_val - pred_val; 
+
+      switch (opcode) {
+      case TOP_cmp4_i_geu_unc:
+        new_const_val = Normalize_Immediate(opcode, new_const_val);
+      case TOP_cmp_i_eq:
+      case TOP_cmp_i_eq_unc:
+      case TOP_cmp_i_eq_and:
+      case TOP_cmp_i_eq_or:
+      case TOP_cmp_i_eq_or_andcm:
+      case TOP_cmp_i_ne_and:
+      case TOP_cmp_i_ne_or:
+      case TOP_cmp_i_ne_or_andcm:
+      case TOP_cmp_i_lt:
+      case TOP_cmp_i_lt_unc:
+      case TOP_cmp_i_ltu:
+      case TOP_cmp_i_ltu_unc:
+      case TOP_cmp_i_eq_orcm:
+      case TOP_cmp_i_eq_andcm:
+      case TOP_cmp_i_eq_and_orcm:
+      case TOP_cmp_i_ne:
+      case TOP_cmp_i_ne_unc:
+      case TOP_cmp_i_ne_orcm:
+      case TOP_cmp_i_ne_andcm:
+      case TOP_cmp_i_ne_and_orcm:
+      case TOP_cmp_i_le:
+      case TOP_cmp_i_le_unc:
+      case TOP_cmp_i_gt:
+      case TOP_cmp_i_gt_unc:
+      case TOP_cmp_i_ge:
+      case TOP_cmp_i_ge_unc:
+      case TOP_cmp_i_leu:
+      case TOP_cmp_i_leu_unc:
+      case TOP_cmp_i_gtu:
+      case TOP_cmp_i_gtu_unc:
+      case TOP_cmp_i_geu:
+      case TOP_cmp_i_geu_unc:
+        if (TOP_Can_Have_Immediate(new_const_val, opcode)) {
+          OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"merge cmp_i with add: (%lld)\n",new_const_val);
+          Build_OP (opcode, OP_result(op,0), OP_result(op,1), OP_opnd(op,OP_PREDICATE_OPND),
+                    Gen_Literal_TN(new_const_val, TN_size(tn1)), ptn0, &ops);
+          if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops), opnd_tninfo[OP_PREDICATE_OPND],
+                                             NULL, ptn0_tninfo );
+          OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+          BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+          return TRUE;
+        }
+        break;
+      case TOP_cmp4_lt:
+      case TOP_cmp4_lt_unc:
+      case TOP_cmp4_le:
+      case TOP_cmp4_le_unc:
+      case TOP_cmp4_gt:
+      case TOP_cmp4_gt_unc:
+      case TOP_cmp4_ge:
+      case TOP_cmp4_ge_unc:
+      case TOP_cmp_lt:
+      case TOP_cmp_lt_unc:
+      case TOP_cmp_le:
+      case TOP_cmp_le_unc:
+      case TOP_cmp_gt:
+      case TOP_cmp_gt_unc:
+      case TOP_cmp_ge:
+      case TOP_cmp_ge_unc:
+        cmp_size = EBO_bit_length (op);
+        if ((cmp_size > 1) &&
+            (((const_val >> (cmp_size-1)) &1) != ((new_const_val >> (cmp_size-1)) &1))) {
+         /* The sign bit on the constant changed.  This may be a problem! */
+          break;
+        }
+      default:
+        if (!has_assigned_reg(tn1)) {
+          OPS ops = OPS_EMPTY;
+          TN *tnr = Dup_TN_Even_If_Dedicated (OP_opnd(op,1));
+          TN *tnc = Gen_Literal_TN(new_const_val, TN_size(tn1));
+if (EBO_Trace_Optimization) fprintf(TFile,"merge cmp with add (0x%llx)\n",new_const_val);
+          Expand_Immediate (tnr, tnc, (new_const_val < 0) ? TRUE : FALSE, &ops);
+          if (OP_has_predicate(op)) {
+            EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
+          }
+          if (EBO_in_loop) EBO_OPS_omega (&ops, OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL);
+          Build_OP (opcode, OP_result(op,0), OP_result(op,1), OP_opnd(op,OP_PREDICATE_OPND),
+                    tnr, ptn0, &ops);
+          if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops), opnd_tninfo[OP_PREDICATE_OPND],
+                                             NULL, ptn0_tninfo );
+          OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+          BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+          return TRUE;
+        }
+        break;
+      }
+
+    }
+
+   /* Look for identical operations where the constants can be combined. */
+    if (OP_iadd(op) && OP_iadd(pred_op)) {
+      new_const_val = pred_val + const_val;
+
+      if (ISA_LC_Value_In_Class (new_const_val, LC_i22)) {
+        TN *new_tn;
+        new_opcode = (ISA_LC_Value_In_Class (new_const_val, LC_i14)) ? TOP_adds : TOP_addl;
+        if (new_opcode == TOP_addl) return FALSE; /* Skip transformations to addl. */
+
+        if (TN_is_symbol(ptn1)) {
+          ST *st = TN_var(ptn1);
+          ST *base_st;
+          INT64 base_ofst;
+          INT32 rel = TN_relocs(ptn1);
+
+          Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+          if (ST_on_stack(st) &&
+              ((ST_sclass(st) == SCLASS_AUTO) ||
+               (EBO_in_peep && (ST_sclass(st) == SCLASS_FORMAL))) &&
+              ISA_LC_Value_In_Class (new_const_val+base_ofst, LC_i14)) {
+            new_tn = Gen_Symbol_TN(st, new_const_val, rel);
+          } else return FALSE;
+        } else {
+          new_tn = Gen_Literal_TN(new_const_val, TN_size(tn1));
+        }
+
+        new_op = Mk_OP (new_opcode, tnr, OP_opnd(op,OP_PREDICATE_OPND), new_tn, ptn0);
+        OP_srcpos(new_op) = OP_srcpos(op);
+        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, ptn0_tninfo );
+        BB_Insert_Op_After(bb, op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"combine immediate adds\n");
+        return TRUE;
+      }
+
+      return FALSE;
+    }
+
+    if (TN_is_symbol(ptn1)) return FALSE;
+
+    if (pred_val == const_val) {
+
+     /* Look for identical operations that are redundant. */
+      if ((OP_iand(op) && OP_iand(pred_op) && (const_val != ~0)) ||
+          (OP_ior(op) && OP_ior(pred_op) && (const_val != 0))) {
+        OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace redundant and/or\n");
+        EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                     tnr, OP_result(pred_op, 0), &ops);
+        if (EBO_in_loop) EBO_OPS_omega (&ops, OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+    
+    } /* end : if (pred_val == const_val) */
+
+  } else if (((const_val >> EBO_bit_length(pred_op)) == 0) &&
+             ((pred_opcode == TOP_sxt1) || (pred_opcode == TOP_sxt2) || (pred_opcode == TOP_sxt4) || 
+              (pred_opcode == TOP_zxt1) || (pred_opcode == TOP_zxt2) || (pred_opcode == TOP_zxt4)) &&
+             ((opcode == TOP_cmp_eq)    || (opcode == TOP_cmp_eq_unc) ||
+              (opcode == TOP_cmp_i_eq)  || (opcode == TOP_cmp_i_eq_unc) ||
+              (opcode == TOP_cmp_ne)    || (opcode == TOP_cmp_ne_unc) ||
+              (opcode == TOP_cmp_i_ne)  || (opcode == TOP_cmp_i_ne_unc) ||
+              (opcode == TOP_cmp4_eq)   || (opcode == TOP_cmp4_eq_unc) ||
+              (opcode == TOP_cmp4_i_eq) || (opcode == TOP_cmp4_i_eq_unc) ||
+              (opcode == TOP_cmp4_ne)   || (opcode == TOP_cmp4_ne_unc) ||
+              (opcode == TOP_cmp4_i_ne) || (opcode == TOP_cmp4_i_ne_unc))) {
+   /* Compares of 0 against a sign extended value may not need the sign-extension. */
+    INT ptn0_idx = 1;  /* TOP_Find_Operand_Use(pred_opcode,OU_opnd1) does not work. */
+    TN *ptn0 = OP_opnd(pred_op, ptn0_idx);
+    EBO_TN_INFO *ptn0_tninfo;
+
+    OP *new_op;
+    TOP new_opcode;
+    INT64 new_const_val;
+
+    ptn0_tninfo = pred_opinfo->actual_opnd[ptn0_idx];
+
+   /* Are the operands available for use? */
+    if ((ptn0_tninfo == NULL) || 
+        (ptn0_tninfo->in_op == NULL) ||
+        !EBO_tn_available (bb, ptn0_tninfo)) return FALSE;
+
+   /* Find the OP associated with the input to pred_op. */
+    OP *pred_pred_op = ptn0_tninfo->in_op;
+
+   /* Is the input to the pred_op a load? */
+    if (!OP_load(pred_pred_op)) return FALSE;
+
+   /* Are the lengths the same? */
+    if (EBO_bit_length(pred_op) != EBO_bit_length(pred_pred_op)) return FALSE;
+
+   /* Skip the sign extension instruction and just use the load. */
+    new_op = Dup_OP (op);
+    Set_OP_opnd (new_op, l0_opnd2_idx, ptn0);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, ptn0_tninfo );
+    BB_Insert_Op_After(bb, op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"sign-extension in load-extend-cmp sequence is not needed\n");
+    return TRUE;
+  } /* end: Sequence optimizations. */
+
+#endif
+
+  return FALSE;
+}
+
+/* =====================================================================
+ *    EBO_Constant_Operand1
+ *
+ *    Look at an exression that has a constant second operand and 
+ *    attempt to simplify the computations.
+ * =====================================================================
+ */
+BOOL
+EBO_Constant_Operand1 (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  BB *bb = OP_bb(op);
+  INT opndnum = OP_opnds(op);
+  EBO_TN_INFO *tninfo;
+
+  TOP opcode = OP_code(op);
+  TN *tnr = OP_result(op,0);
+  INT l0_opnd1_idx;
+  INT l0_opnd2_idx;
+  TN *tn0;
+  TN *tn1;
+  INT64 const_val;
+
+  OP *pred_op;
+  TOP pred_opcode;
+  EBO_OP_INFO *pred_opinfo;
+
+  if (EBO_Trace_Execution) {
+    INT i;
+    fprintf(TFile, "%sin BB:%d special1 OP :- %s ",
+            EBO_trace_pfx, BB_id(bb),TOP_Name(OP_code(op)));
+    for (i = 0; i < opndnum; i++) {
+      fprintf(TFile," ");
+      Print_TN(opnd_tn[i],FALSE);
+    }
+    fprintf(TFile,"\n");
+  }
+
+  // Arthur: spadjust shouldn't be subject to this
+  if (OP_code(op) == TOP_spadjust) return FALSE;
+
+  if (OP_opnds(op) < (OP_has_predicate(op) ? 3 : 2)) return FALSE;
+
+  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+  tn0 = opnd_tn[l0_opnd1_idx];
+  tn1 = opnd_tn[l0_opnd2_idx];
+
+  // Floating-point simplification
+  if (tn1 == FZero_TN) {
+    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
+      OPS ops = OPS_EMPTY;
+
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fmpy of 0.0 with 0.0\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, FZero_TN, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  NULL);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+
+    if (OP_fadd(op) || OP_fsub(op)) {
+      OPS ops = OPS_EMPTY;
+
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fadd of 0.0 with tn0\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, tn0, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  opnd_tninfo[l0_opnd1_idx]);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+  }
+
+  if (tn1 == FOne_TN) {
+    if (OP_fmul(op)) {
+      OPS ops = OPS_EMPTY;
+
+      if (EBO_Trace_Optimization) 
+	fprintf(TFile,"replace fmpy of 1.0 with tn0\n");
+
+      EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+		   tnr, tn0, &ops);
+      if (EBO_in_loop) 
+	EBO_Set_OP_omega (OPS_first(&ops),
+			  OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+			  opnd_tninfo[l0_opnd1_idx]);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+  }
+
+  // Integer arithmetic simplification
+
+  const_val = TN_Value(tn1);
+
+  if (TN_is_symbol(tn1)) {
+   /* Re-located constants not supported. */
+    return FALSE;
+  }
+
+  if (TN_Is_Constant(tn0)) {
+   /* Shouldn't be in this routine because there are no
+      optimizations that are different from actually
+      evaluating the expression. */
+    return FALSE;
+  }
+
+  if ((TN_register_class(tn0) != TN_register_class(tnr)) ||
+      (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn0))) {
+   /* Type changes indicate that something tricky is going on. */
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  OP *new_op = EBO_simplify_operand1 (op, tnr, tn0, const_val);
+  if (new_op != NULL) {
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) 
+      EBO_Set_OP_omega (new_op, 
+			opnd_tninfo[OP_PREDICATE_OPND], 
+			NULL, 
+			opnd_tninfo[l0_opnd1_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+    return TRUE;
+  }
+
+#if 0
+  if ((opcode == TOP_add) &&
+      (ISA_LC_Value_In_Class ( const_val, LC_i22))) {
+    OP *new_op;
+    TOP new_opcode = (ISA_LC_Value_In_Class (const_val, LC_i14)) ? TOP_adds : TOP_addl;
+    if (new_opcode == TOP_addl) return FALSE; /* Skip transformations to addl. */
+
+    new_op = Mk_OP(new_opcode, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                   Gen_Literal_TN(const_val, TN_size(tn0)), tn0);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"Reverse and replace add with adds\n");
+    return TRUE;
+  }
+
+  if ((opcode == TOP_sub) &&
+      (ISA_LC_Value_In_Class (-const_val, LC_i22))) {
+    OP *new_op;
+    TOP new_opcode = (ISA_LC_Value_In_Class ( -const_val, LC_i14)) ? TOP_adds : TOP_addl;
+    if (new_opcode == TOP_addl) return FALSE; /* Skip transformations to addl. */
+
+    new_op = Mk_OP(new_opcode, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                   Gen_Literal_TN(-const_val, TN_size(tn0)), tn0);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"replace sub with add_i\n");
+    return TRUE;
+  }
+
+  if (opcode == TOP_and) {
+    if (ISA_LC_Value_In_Class (const_val, LC_i8)) {
+      OP *new_op;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace and with and_i\n");
+      new_op = Mk_OP(TOP_and_i, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                     Gen_Literal_TN(const_val, TN_size(tn0)), tn0);
+      OP_srcpos(new_op) = OP_srcpos(op);
+      if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+      BB_Insert_Op_After(OP_bb(op), op, new_op);
+      return TRUE;
+    } else {
+   /* Look for a mask in the constant and replace the and(load-immediate,tn) with an extr. */
+      OPS ops = OPS_EMPTY;
+      if (Expand_Special_And_Immed (tnr, tn0, const_val, &ops)) {
+if (EBO_Trace_Optimization) fprintf(TFile,"replace and with bit move\n");
+        Set_OP_opnd(OPS_first(&ops), OP_PREDICATE_OPND, OP_opnd(op,OP_PREDICATE_OPND));
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops), opnd_tninfo[OP_PREDICATE_OPND],
+                                           NULL, opnd_tninfo[l0_opnd1_idx]);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+        return TRUE;
+      }
+    }
+  }
+
+  if (opcode == TOP_andcm) {
+    if (ISA_LC_Value_In_Class (~const_val, LC_i8)) {
+      OP *new_op;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace and with complement and_i\n");
+      new_op = Mk_OP(TOP_and_i, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                     Gen_Literal_TN(~const_val, TN_size(tn0)), tn0);
+      OP_srcpos(new_op) = OP_srcpos(op);
+      if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+      BB_Insert_Op_After(OP_bb(op), op, new_op);
+      return TRUE;
+    } else if (!EBO_in_loop) {
+     /* Look for a mask in the constant and replace the andcm(tn,load-immediate) with an extr. */
+     /* Note: We don't know exactly what will be generated by Expand_Special_And_Immed, so we  */
+     /* don't know how big to make the new omega entry.                                        */
+      OPS ops = OPS_EMPTY;
+      if (Expand_Special_And_Immed (tnr, tn0, ~const_val, &ops)) {
+if (EBO_Trace_Optimization) fprintf(TFile,"replace andcm with bit move\n");
+        Set_OP_opnd(OPS_first(&ops), OP_PREDICATE_OPND, OP_opnd(op,OP_PREDICATE_OPND));
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+        return TRUE;
+      }
+    }
+  }
+
+  if ((opcode == TOP_or) &&
+      (ISA_LC_Value_In_Class (const_val, LC_i8))) {
+    OP *new_op;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace or with or_i\n");
+    new_op = Mk_OP(TOP_or_i, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                   Gen_Literal_TN(const_val, TN_size(tn0)), tn0);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+    return TRUE;
+  }
+
+  if ((opcode == TOP_xor) &&
+      (ISA_LC_Value_In_Class (const_val, LC_i8))) {
+    OP *new_op;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace xor with xor_i\n");
+    new_op = Mk_OP(TOP_xor_i, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                   Gen_Literal_TN(const_val, TN_size(tn0)), tn0);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], NULL, opnd_tninfo[l0_opnd1_idx]);
+    BB_Insert_Op_After(OP_bb(op), op, new_op);
+    return TRUE;
+  }
+
+  if ((TOP_shl == opcode) && (const_val <= 63)) {
+if (EBO_Trace_Optimization) fprintf(TFile,"Convert shl to shl_i\n");
+    OP *new_op;
+    new_op = Mk_OP(TOP_shl_i, tnr, OP_opnd(op,OP_PREDICATE_OPND), tn0,
+                   Gen_Literal_TN(const_val, TN_size(tn0)));
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], opnd_tninfo[l0_opnd1_idx], NULL);
+    BB_Insert_Op_After(bb, op, new_op);
+    return TRUE;
+  }
+
+  if ((TOP_shr == opcode) && (const_val <= 63)) {
+if (EBO_Trace_Optimization) fprintf(TFile,"Convert shr to shr_i\n");
+    OP *new_op;
+    new_op = Mk_OP(TOP_shr_i, tnr, OP_opnd(op,OP_PREDICATE_OPND), tn0,
+                   Gen_Literal_TN(const_val, TN_size(tn0)));
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], opnd_tninfo[l0_opnd1_idx], NULL);
+    BB_Insert_Op_After(bb, op, new_op);
+    return TRUE;
+  }
+
+  if ((TOP_shr_u == opcode) && (const_val <= 63)) {
+if (EBO_Trace_Optimization) fprintf(TFile,"Convert shr_u to shr_i_u\n");
+    OP *new_op;
+    new_op = Mk_OP(TOP_shr_i_u, tnr, OP_opnd(op,OP_PREDICATE_OPND), tn0,
+                   Gen_Literal_TN(const_val, TN_size(tn0)));
+    OP_srcpos(new_op) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], opnd_tninfo[l0_opnd1_idx], NULL);
+    BB_Insert_Op_After(bb, op, new_op);
+    return TRUE;
+  }
+
+  if (OP_icmp(op)) {
+    INT64 new_const_val = const_val;
+    TOP new_opcode = Immediate_Compare(Reverse_Compare(opcode));
+    if (new_opcode == TOP_UNDEFINED) return FALSE;
+    if (TOP_Can_Have_Immediate(new_const_val, new_opcode)) {
+     /* Transform the compare to use the immediate form. */
+      OPS ops = OPS_EMPTY;
+      TN *r1 = OP_result(op,0);
+      TN *r2 = OP_result(op,1);
+      Build_OP (new_opcode, r1, r2, OP_opnd(op,OP_PREDICATE_OPND),
+                Gen_Literal_TN(new_const_val, TN_size(tn0)), tn0, &ops);
+      if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops), opnd_tninfo[OP_PREDICATE_OPND],
+                                         NULL, opnd_tninfo[l0_opnd1_idx]);
+      OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+if (EBO_Trace_Optimization) fprintf(TFile,"reverse operands and replace cmp with cmp_i\n");
+      return TRUE;
+    }
+  }
+
+ /* Sequence optimizations. */
+
+  tninfo = opnd_tninfo[l0_opnd1_idx];
+  if (tninfo == NULL) return FALSE;
+  pred_op = tninfo->in_op;
+  if (pred_op == NULL) return FALSE;
+  pred_opcode = OP_code(pred_op);
+  pred_opinfo = locate_opinfo_entry (tninfo);
+  if (pred_opinfo == NULL) return FALSE;
+
+ /* First, look for some special cases involving loads. */
+  if (OP_load(pred_op)) {
+    if (OP_iand(op)) {
+      if (((pred_opcode == TOP_ld1) &&
+           (const_val == (~((~0) << 8)))) ||
+          ((pred_opcode == TOP_ld2) &&
+           (const_val ==  (~((~0) << 16))))) {
+       /* No need to mask - it was done with the load. */
+        OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
+        EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                     tnr, tn0, &ops);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
+                                           OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL,
+                                           opnd_tninfo[l0_opnd1_idx]);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+ /* Now, look into optimizations that depend on specific
+    values for the actual operands of the predecessor op. */
+  if (TOP_Find_Operand_Use(OP_code(pred_op),OU_opnd2) >= 0) {
+    TOP pred_opcode = OP_code(pred_op);
+    INT ptn0_idx = TOP_Find_Operand_Use(pred_opcode,OU_opnd1);
+    INT ptn1_idx = TOP_Find_Operand_Use(pred_opcode,OU_opnd2);
+    TN *ptn0 = OP_opnd(pred_op, ptn0_idx);
+    TN *ptn1 = OP_opnd(pred_op, ptn1_idx);
+    EBO_TN_INFO *ptn0_tninfo;
+    EBO_TN_INFO *ptn1_tninfo;
+    INT64 pred_val = 0;
+
+    OP *new_op;
+    TOP new_opcode;
+    UINT64 new_const_val;
+
+    ptn0_tninfo = pred_opinfo->actual_opnd[ptn0_idx];
+    ptn1_tninfo = pred_opinfo->actual_opnd[ptn1_idx];
+
+   /* Are the operands available for use? */
+    if (!(TN_Is_Constant(ptn0) || EBO_tn_available (bb, ptn0_tninfo)) ||
+        !(TN_Is_Constant(ptn1) || EBO_tn_available (bb, ptn1_tninfo))) return FALSE;
+    if (pred_opcode == TOP_spadjust) return FALSE;
+
+    if (TN_Is_Constant(ptn1) && !TN_is_symbol(ptn1)) {
+    } else if (TN_Is_Constant(ptn0) && !TN_is_symbol(ptn0) &&
+               (OP_iadd(pred_op) || OP_ior(pred_op)  || OP_iand(pred_op))) {
+      TN *s = ptn0;
+      ptn0 = ptn1;
+      ptn0_tninfo = ptn1_tninfo;
+      ptn1 = s;
+    } else return FALSE;
+
+   /* Is the non-constant operand available for use? */
+    if (!EBO_tn_available (bb, ptn0_tninfo)) {
+      return FALSE;
+    }
+
+    pred_val = TN_Value(ptn1);
+
+   /* Look for identical operations where the constants can be combined. */
+    if ((opcode == pred_opcode) &&
+        ((opcode == TOP_shl)    ||
+         (opcode == TOP_shl_i)  ||
+         (opcode == TOP_shr_u)  ||
+         (opcode == TOP_shr_i_u))) {
+      new_const_val = pred_val + const_val;
+
+      if (new_const_val <= 63) {
+
+        switch (opcode) {
+        case TOP_shl:
+        case TOP_shl_i: new_opcode = TOP_shl_i; break;
+        case TOP_shr_u:
+        case TOP_shr_i_u: new_opcode = TOP_shr_i_u; break;
+        default: return FALSE;
+        }
+
+        new_op = Mk_OP (new_opcode, tnr, OP_opnd(op,OP_PREDICATE_OPND),
+                        ptn0, Gen_Literal_TN(new_const_val, TN_size(tn0)));
+        OP_srcpos(new_op) = OP_srcpos(op);
+        if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], ptn0_tninfo, NULL);
+        BB_Insert_Op_After(bb, op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"combine identical shifts\n");
+        return TRUE;
+      }
+    }
+
+    if (pred_val == const_val) {
+
+     /* Look for identical operations that are redundant. */
+      if ((OP_iand(op) && OP_iand(pred_op) && (const_val != ~0)) ||
+          (OP_ior(op) && OP_ior(pred_op) && (const_val != 0))) {
+        OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace redundant and/or\n");
+        EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                     tnr, OP_result(pred_op, 0), &ops);
+        if (EBO_in_loop) EBO_OPS_omega (&ops, OP_has_predicate(op)?opnd_tninfo[OP_PREDICATE_OPND]:NULL);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+
+     /* Look for complementary operations. */
+      if ((OP_iadd(op) && OP_isub(pred_op)) ||
+          (OP_isub(op) && OP_iadd(pred_op))) {
+       /* Copy the original input. */
+        OPS ops = OPS_EMPTY;
+if (EBO_Trace_Optimization) fprintf(TFile,"replace complementary operations\n");
+        EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
+                     tnr, ptn0, &ops);
+        if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops), opnd_tninfo[OP_PREDICATE_OPND], ptn0_tninfo);
+        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+        BB_Insert_Ops(bb, op, &ops, FALSE);
+        return TRUE;
+      }
+    
+    } /* end : if (pred_val == const_val) */
+
+  } /* end: Sequence optimizations. */
+  
+#endif
+
+  return FALSE;
+}
+
+#endif
+
+/* =====================================================================
+ *   find_duplicate_mem_op
  *
  * For a given memory op, look for a preceeding memory op to 
  * the same location and attempt to replace one of them.
  * Return TRUE if this memory op is no longer needed.
+ * =====================================================================
  */
 static BOOL
 find_duplicate_mem_op (BB *bb,

@@ -82,7 +82,7 @@ OP_Is_Speculative_Load (
 )
 {
   if (!OP_load(memop)) return FALSE;
-  if (TOP_is_dismissible(OP_code(memop))) return TRUE;
+  if (OP_dismissible(memop)) return TRUE;
 
   return FALSE;
 }
@@ -160,7 +160,7 @@ BOOL OP_Can_Be_Speculative (
 
     /* Arithmetic exceptions allowed
      */
-    if (TOP_is_fdiv(opcode)) return FALSE;
+    if (OP_fdiv(op)) return FALSE;
     /*FALLTHROUGH*/
 
   case EAGER_DIVIDE:
@@ -462,6 +462,18 @@ CGTARG_Init_OP_cond_def_kind (
       Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
     break;
   }
+}
+
+/* =====================================================================
+ *   OP_Is_Unconditional_Compare
+ * =====================================================================
+ */
+BOOL
+OP_Is_Unconditional_Compare (
+  OP *op
+)
+{
+  return FALSE;
 }
 
 #if !defined(GHS_SHIT_IS_WORKING)

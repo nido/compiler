@@ -402,10 +402,13 @@ static OP_MAP phi_op_map = NULL;
 //
 // Mapping between phi-resource TNs and their representative name
 // TNs
-static TN_MAP tn_to_new_name_map = NULL;
+static MEM_POOL tn_map_pool;
+//static TN_MAP tn_to_new_name_map = NULL;
 
-#define TN_new_name(t)       ((TN *)TN_MAP_Get(tn_to_new_name_map,t))
-#define Set_TN_new_name(t,n) (TN_MAP_Set(tn_to_new_name_map,t,n))
+static hTN_MAP tn_to_new_name_map = NULL;
+
+#define TN_new_name(t)       ((TN *)hTN_MAP_Get(tn_to_new_name_map,t))
+#define Set_TN_new_name(t,n) (hTN_MAP_Set(tn_to_new_name_map,t,n))
 
 /* ================================================================
  *   Set_PHI_Operands
@@ -994,6 +997,10 @@ ssa_init () {
 
   if (!initialized) {
     MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
+    MEM_POOL_Initialize (&tn_map_pool, "tn map pool", TRUE);
+    // So that SSA_Make_Consistent() can Pop it in order to
+    // clean up memory
+    MEM_POOL_Push(&tn_map_pool);
     initialized = TRUE;
   }
 
@@ -1747,10 +1754,6 @@ map_phi_resources_to_new_names()
   OP *op;
   BB *bb;
 
-  if (Trace_SSA_Out) {
-    fprintf(TFile, "============ map_phi_resources_to_new_names ===========\n");
-  }
-
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
     if (Trace_SSA_Out) {
@@ -1791,9 +1794,16 @@ map_phi_resources_to_new_names()
 
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
+
+	  Print_TN(tn, FALSE);
+
 	  if (TN_is_ssa_reg(tn) && phiCongruenceClass(tn) != NULL) {
 	    if (TN_new_name(tn) == NULL) {
 	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+
+	      fprintf(TFile, " new name ");
+	      Print_TN(new_tn, FALSE);
+
 	      Set_TN_new_name(tn, new_tn);
 
 	      if (Trace_SSA_Out) {
@@ -1833,8 +1843,21 @@ SSA_Make_Consistent (
   // from a previous invocation of the routine. And initialize
   // a new one.
   //
-  if (tn_to_new_name_map != NULL)
-    TN_MAP_Delete(tn_to_new_name_map);
+  //if (tn_to_new_name_map != NULL)
+  //  TN_MAP_Delete(tn_to_new_name_map);
+  MEM_POOL_Pop(&tn_map_pool);
+  // Push it again and create the map
+  MEM_POOL_Push(&tn_map_pool);
+  //
+  // Create a map of TNs to their representative names
+  // TNs are mapped to their phiCongruenceClass'es that will
+  // not survive this routine (they are in MEM_local_pool).
+  // This is because we want to separate removing PHI resource
+  // interference from actual removing of the PHI-nodes and 
+  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
+  // map gets replaced by the phiResourceName(tn) map.
+  //
+  tn_to_new_name_map = hTN_MAP_Create(&tn_map_pool);
 
   //
   // This one is temporary working pool (zeroes memory)
@@ -1863,16 +1886,6 @@ SSA_Make_Consistent (
     Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
   }
 
-  //
-  // Create a map of TNs to their representative names
-  // TNs are mapped to their phiCongruenceClass'es that will
-  // not survive this routine (they are in MEM_local_pool).
-  // This is because we want to separate removing PHI resource
-  // interference from actual removing of the PHI-nodes and 
-  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
-  // map gets replaced by the phiResourceName(tn) map.
-  //
-  tn_to_new_name_map = TN_MAP_Create();
   map_phi_resources_to_new_names();
 
   finalize_phiCongruenceClasses();
@@ -1991,7 +2004,8 @@ SSA_Remove_Phi_Nodes (
   // Delete maps
   //
   FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map deleted"));
-  TN_MAP_Delete(tn_to_new_name_map);
+  MEM_POOL_Pop(&tn_map_pool);
+  //TN_MAP_Delete(tn_to_new_name_map);
   OP_MAP_Delete(phi_op_map);
 
   MEM_POOL_Pop (&ssa_pool);

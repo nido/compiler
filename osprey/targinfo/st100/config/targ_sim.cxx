@@ -499,6 +499,7 @@ Get_Return_Info (
   INT32 i; 
 
   info.return_via_first_arg = FALSE;
+  info.return_via_return_reg = FALSE;
 
   switch (mtype) {
 

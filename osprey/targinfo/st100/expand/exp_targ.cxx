@@ -82,8 +82,6 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 
-BOOL Reuse_Temp_TNs = FALSE;
-
 /* Disable conversion of constant integer multiplies into shift/adds:*/
 static BOOL Disable_Const_Mult_Opt = FALSE;
 

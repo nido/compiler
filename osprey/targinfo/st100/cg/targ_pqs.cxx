@@ -31,7 +31,7 @@
 #include "pqs_cg.h"
 #include "pqs.h"
 #include "tracing.h"
-#include "targ_pqs.h"
+/* #include "targ_pqs.h" */
 
 /* ====================================================================
  *   PQSTARG_get_top_info

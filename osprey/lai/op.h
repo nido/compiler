@@ -517,22 +517,27 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_dismissible(o)	(TOP_is_dismissible(OP_code(o)))
 #define OP_dummy(o)		(TOP_is_dummy(OP_code(o)))
 
-#define OP_fadd(o)		(TOP_is_fadd(OP_code(o)))
-#define OP_fdiv(o)		(TOP_is_fdiv(OP_code(o)))
+#define OP_intop(o)             (TOP_is_intop(OP_code(o)))
+#define OP_ptrop(o)             (TOP_is_ptrop(OP_code(o)))
 #define OP_flop(o)		(TOP_is_flop(OP_code(o)))
-#define OP_fmisc(o)		(TOP_is_fmisc(OP_code(o)))
-#define OP_fmul(o)		(TOP_is_fmul(OP_code(o)))
-#define OP_fsub(o)		(TOP_is_fsub(OP_code(o)))
 
-#define OP_iadd(o)		(TOP_is_iadd(OP_code(o)))
-#define OP_iand(o)		(TOP_is_iand(OP_code(o)))
-#define OP_icmp(o)		(TOP_is_icmp(OP_code(o)))
-#define OP_idiv(o)		(TOP_is_idiv(OP_code(o)))
-#define OP_imul(o)		(TOP_is_imul(OP_code(o)))
-#define OP_ior(o)		(TOP_is_ior(OP_code(o)))
-#define OP_isub(o)		(TOP_is_isub(OP_code(o)))
-#define OP_ixor(o)		(TOP_is_ixor(OP_code(o)))
+#define OP_fadd(o)		(TOP_is_add(OP_code(o)) && OP_flop(o))
+#define OP_fdiv(o)		(TOP_is_div(OP_code(o)) && OP_flop(o))
+#define OP_fmisc(o)		(TOP_is_flop(OP_code(o)))
+#define OP_fmul(o)		(TOP_is_mul(OP_code(o)) && OP_flop(o))
+#define OP_fsub(o)		(TOP_is_sub(OP_code(o)) && OP_flop(o))
+#define OP_fcmp(o)              (TOP_is_cmp(OP_code(o)) && OP_flop(o))
 
+#define OP_iadd(o)		(TOP_is_add(OP_code(o)) && OP_intop(o))
+#define OP_iand(o)		(TOP_is_and(OP_code(o)) && OP_intop(o))
+#define OP_icmp(o)		(TOP_is_cmp(OP_code(o)) && OP_intop(o))
+#define OP_idiv(o)		(TOP_is_div(OP_code(o)) && OP_intop(o))
+#define OP_imul(o)		(TOP_is_mul(OP_code(o)) && OP_intop(o))
+#define OP_ior(o)		(TOP_is_or(OP_code(o)) && OP_intop(o))
+#define OP_isub(o)		(TOP_is_sub(OP_code(o)) && OP_intop(o))
+#define OP_ixor(o)		(TOP_is_xor(OP_code(o)) && OP_intop(o))
+
+#define TOP_is_predicated(t)    (TOP_is_guard_t(t) || TOP_is_guard_f(t))
 #define OP_has_predicate(o)	(TOP_is_predicated(OP_code(o)))
 #define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
 #define OP_jump(o)		(TOP_is_jump(OP_code(o)))
@@ -552,8 +557,9 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_simulated(o)		(TOP_is_simulated(OP_code(o)))
 #define OP_sqrt(o)		(TOP_is_sqrt(OP_code(o)))
 #define OP_store(o)		(TOP_is_store(OP_code(o)))
-#define OP_unalign_ld(o)	(TOP_is_unalign_load(OP_code(o)))
-#define OP_unalign_store(o)	(TOP_is_unalign_store(OP_code(o)))
+#define OP_unalign_ld(o)	(TOP_is_load(OP_code(o)) && TOP_is_unalign(OP_code(op)))
+#define OP_unalign_store(o)	(TOP_is_store(OP_code(o)) && TOP_is_unalign(OP_code(op)))
+#define OP_unsigned_ld(o)	(TOP_is_load(OP_code(o)) && TOP_is_unsign(OP_code(op)))
 #define OP_unsafe(o)            (TOP_is_unsafe(OP_code(o)))
 #define OP_var_opnds(o)		(TOP_is_var_opnds(OP_code(o)))
 #define OP_xfer(o)		(TOP_is_xfer(OP_code(o)))
@@ -568,10 +574,10 @@ extern BOOL OP_has_implicit_interactions(OP*);
 /*
  * Convenience access macros for properties of the OP 
  */
-#define OP_br(o)                (OP_xfer(o) && !OP_call(o))
+#define OP_br(o)                (OP_xfer(o) & !OP_call(o))
 #define OP_memory(o)		(OP_load(o) | OP_store(o) | OP_prefetch(o))
 #define OP_unalign_mem(o)	(OP_unalign_ld(o) | OP_unalign_store(o))
-#define OP_uncond(o)            (OP_xfer(o) && !OP_cond(o))
+#define OP_uncond(o)            (OP_xfer(o) & !OP_cond(o))
 
 #define OP_operand_info(o)	(ISA_OPERAND_Info(OP_code(o)))
 #define OP_has_hazard(o)	(ISA_HAZARD_TOP_Has_Hazard(OP_code(o)))
@@ -887,6 +893,7 @@ extern BOOL OP_Is_Advanced_Load(OP* memop);
 extern BOOL OP_Is_Check_Load(OP* memop);
 extern BOOL OP_Is_Speculative(OP *op);
 extern BOOL OP_Can_Be_Speculative (OP *op);
+extern BOOL OP_Is_Unconditional_Compare (OP *op);
 #else
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif

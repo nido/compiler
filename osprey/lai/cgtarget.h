@@ -743,7 +743,14 @@ extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency)
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op);
 #endif
 extern void CGTARG_Adjust_Latency(OP *pred_op, OP *succ_op, CG_DEP_KIND kind, UINT8 opnd, INT *latency);
+
+#ifdef TARG_ST
+// Arthur: this function is only used in cg_loop_mii.cxx, and
+//         it's functionality is kind of redundant, so I just
+//         get rid of it in the target description interface.
+#else
 extern INT  CGTARG_ARC_Sched_Latency(ARC *arc);
+#endif
 
 //  Returns TRUE if the dependence between the latency
 //  between pred_op and succ_op is the load_latency
@@ -813,7 +820,13 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 // bundle.
 extern BOOL CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot);
 
+#ifdef TARG_ST
+// Arthur: this function is only used in cg_loop_mii.cxx
+//         It's functionality is not entirely clear to me, is it
+//         necessary ?
+#else
 extern INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace);
+#endif
 
 /* ====================================================================
  *   Target specific tree height reduction:

@@ -1486,7 +1486,11 @@ Handle_All_Hazards (BB *bb)
   }
 
   // Check for any extra hazards.
+#ifdef TARG_ST
+  CGTARG_Insert_Stop_Bits(bb);
+#else
   Insert_Stop_Bits(bb);
+#endif
 #endif
 
 }

@@ -156,6 +156,8 @@ static BOOL clone_min_incr_overridden = FALSE;
 static BOOL clone_max_incr_overridden = FALSE;
 static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 
+static BOOL CG_enable_ssa_overridden = FALSE;
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -351,6 +353,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
     CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, NULL,
     "Restrict BB length by splitting longer BBs" },
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa", "",
+    0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
   // EBO options:
 
@@ -1013,7 +1018,21 @@ Configure_CG_Options(void)
     EBO_Opt_Level = (CG_opt_level > 0) ? EBO_Opt_Level_Default : 0;
   }
 #ifdef TARG_ST
-  CG_enable_peephole = (CG_opt_level > 0) ? TRUE : FALSE;
+  if (!Enable_CG_Peephole_overridden) {
+    CG_enable_peephole = (CG_opt_level > 0) ? TRUE : FALSE;
+  }
+
+  // If user explicitely set SSA.
+  // However, don't allow if opt_level < 1
+  if (!CG_enable_ssa_overridden) {
+    CG_enable_ssa = (CG_opt_level > 1) ? TRUE : FALSE;
+  }
+  else {
+    if (CG_opt_level < 2) {
+      DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
+      CG_enable_ssa = FALSE;
+    }
+  }
 #else
   Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;
 #endif

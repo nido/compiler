@@ -96,7 +96,7 @@ enum BASE_UPDATE {
   IMM_BASE_UPDATE = 2,  // OP has immediate base-update variant
 };
 
-#if defined(TARG_IA64) || defined(TARG_ST200)
+#if defined(TARG_IA64) || defined(TARG_ST)
 
 // The following functions defined in ia64/cg_swp_target.cxx.
 

@@ -2597,9 +2597,10 @@ r_assemble_opnd (
 #ifdef TARG_IA64
       vstr_sprintf(buf, start, ISA_PRINT_PREDICATE, rname);
 #else
-      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
-      ISA_OPERAND_USE use = ISA_OPERAND_INFO_Use(oinfo, i);
-      vstr_sprintf(buf, start, ISA_PRINT_PREDICATE(use), rname);
+      if (TOP_is_guard_t(OP_code(op)))
+	vstr_sprintf(buf, start, True_Predicate_Format, rname);
+      else if (TOP_is_guard_f(OP_code(op)))
+	vstr_sprintf(buf, start, False_Predicate_Format, rname);
 #endif
     } 
     else {

@@ -1845,7 +1845,7 @@ Adjust_Exit (
   EXITINFO *exit_info = ANNOT_exitinfo(ant);
   OP *sp_adj = EXITINFO_sp_adj(exit_info);
   UINT64 frame_len = Frame_Len;
-  TN *incr = NULL;
+  TN *sp_incr = NULL;
 
   /* Trace the sequence before we modify it.
    */
@@ -1862,12 +1862,8 @@ Adjust_Exit (
   /* Get the operand that is the frame size increment.
    */
   if (!Gen_Frame_Pointer || PUSH_FRAME_POINTER_ON_STACK) {
-#ifdef SUPPORTS_PREDICATION
     // Arthur: opnd is 1 when no predication
-    incr = OP_opnd(sp_adj, 2);
-#else
-    incr = OP_opnd(sp_adj, 1);
-#endif
+    sp_incr = OP_has_predicate(sp_adj) ? OP_opnd(sp_adj, 2) : OP_opnd(sp_adj, 1);
   }
 
   /* We make assumptions about what we generated in Generate_Exit.
@@ -1881,22 +1877,20 @@ Adjust_Exit (
 	      TN_is_sp_reg(OP_result(sp_adj,0)),
 	      ("Unexpected exit SP adjust OP"));
   } else {
-#ifdef SUPPORTS_PREDICATION
-    // Arthur: opnd idx is different without predication
     FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
 	      && OP_results(sp_adj) == 1
 	      && TN_is_sp_reg(OP_result(sp_adj,0))
-	      && TN_is_sp_reg(OP_opnd(sp_adj, 1))
-	      && incr == Frame_Len_TN
+	      && TN_is_sp_reg(OP_has_predicate(sp_adj) ? OP_opnd(sp_adj, 1) : OP_opnd(sp_adj, 0))
+	      && sp_incr == Frame_Len_TN
 	      && ( ! OP_has_predicate(sp_adj) 
 		  || OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
 	      ("Unexpected form of exit SP-adjust OP"));
-#else
+#if 0
     FmtAssert(   OP_code(sp_adj) == TOP_spadjust 
 	      && OP_results(sp_adj) == 1
 	      && TN_is_sp_reg(OP_result(sp_adj,0))
 	      && TN_is_sp_reg(OP_opnd(sp_adj, 0))
-	      && incr == Frame_Len_TN,
+	      && sp_incr == Frame_Len_TN,
 	      ("Unexpected form of exit SP-adjust OP"));
 #endif
   }
@@ -1924,9 +1918,53 @@ Adjust_Exit (
       fprintf(TFile, "\nNew stack frame de-allocation:\n"
 		     "-- removed --\n");
     }
+  }
+  else {
+    OPS ops = OPS_EMPTY;
+    TN *incr;
+    OP *op;
+
+    /* Load the increment into a register if it is too large to
+     * be used as an immediate operand.
+     */
+    if (!CGTARG_Can_Fit_Immediate_In_Add_Instruction (frame_len)) {
+      REGISTER_SET temps[ISA_REGISTER_CLASS_MAX+1];
+
+      /* Get the frame size into a register */
+      REG_LIVE_Epilog_Temps(pu_st, bb, sp_adj, temps);
+      //REG_LIVE_Prolog_Temps(bb, sp_adj, fp_adj, temps);
+
+      if (Trace_EE) {
+	ISA_REGISTER_CLASS cl;
+
+	fprintf(TFile, "\nInteger temp register usage at epilog SP adjust:\n");
+	FOR_ALL_ISA_REGISTER_CLASS(cl) {
+	  if (cl == TN_register_class(SP_TN)) {
+	    fprintf(TFile, "  avail=");
+	    REGISTER_SET_Print(temps[cl], TFile);
+	    fprintf(TFile, "\n");
+	  }
+	}
+      }
+
+      TN *src = Gen_Literal_TN(frame_len, Pointer_Size);
+      incr = Build_TN_Of_Mtype (Pointer_Mtype);
+      Exp_Immediate (incr, src, Pointer_Mtype, &ops);
+
+      // Although it is called prolog_temps, it does the job right
+      Assign_Prolog_Temps(OPS_first(&ops), OPS_last(&ops), temps);
+    } 
+    else {
+      /* Use the frame size symbol
+       */
+      incr = Frame_Len_TN;
+    }
+
+#if 0
   } else if (CGTARG_Can_Fit_Immediate_In_Add_Instruction (frame_len)) {
     OPS ops = OPS_EMPTY;
     OP *op;
+#endif
 
     /* Replace the SP adjust placeholder with the new adjustment OP
      */
@@ -1941,8 +1979,9 @@ Adjust_Exit (
       fprintf(TFile, "\nNew stack frame de-allocation:\n");
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
-  } else {
+  } 
 #if 0
+else {
     // Arthur: If immediate offset exeeds what an instruction can
     //         handle => we must have exceeded the SMALL_MODEL
     //         stack size, which should have been set to the size
@@ -1966,10 +2005,9 @@ Adjust_Exit (
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
     DevWarn("Stack de-allocation of %llu", frame_len);
-#else
-    FmtAssert(FALSE, ("Can't handle stack de-allocation of %lld", frame_len));
-#endif
+    //FmtAssert(FALSE, ("Can't handle stack de-allocation of %lld", frame_len));
   }
+#endif
 
   /* Point to the [possibly] new SP adjust OP
    */
