@@ -144,6 +144,7 @@ TARG_LIBUNWIND = $(TARGDIR)/libunwindP
 
 TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 TARG_WOPT_DIR           = $(TARGDIR)/wopt
+LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
 
 BE_DIR 			= $(BUILD_TOT)/be
 BE_COM_DIR 		= $(BE_DIR)/com
@@ -214,7 +215,8 @@ HEADER_DIRS = 		\
   $(BE_PROMPF_DIR)	\
   $(BE_OPT_DIR)		\
   $(TARG_TARG_INFO_DIR)	\
-  $(TARG_BE)
+  $(TARG_BE)            \
+  $(LIBINSTR_DIR)	
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
 
