@@ -1151,13 +1151,19 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
 	    ARC *arc = ARC_LIST_first(arcs);
 	    CG_DEP_KIND kind = ARC_kind(arc);
 	    if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
-	      bool isDefinite = ARC_is_definite(arc);
+	      unsigned type = Dependence_Other;
+	      if (kind == CG_DEP_MEMIN) type = Dependence_Flow;
+	      if (kind == CG_DEP_MEMOUT) type = Dependence_Output;
+	      if (kind == CG_DEP_MEMANTI) type = Dependence_Anti;
+	      if (kind == CG_DEP_MEMREAD) type = Dependence_Input;
+	      if (kind == CG_DEP_SPILLIN) type = Dependence_Spill;
+	      if (ARC_is_definite(arc)) type += Dependence_Definite;
 	      int latency = ARC_latency(arc), omega = ARC_omega(arc);
 	      OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
 	      Is_True(pred_op == op, ("Error in lao_setDependences"));
 	      Operation dest_operation = CGIR_OP_to_Operation(succ_op);
 	      Interface_LoopInfo_setDependenceArc(interface, loopinfo,
-		  orig_operation, dest_operation, omega, isDefinite);
+		  orig_operation, dest_operation, latency, omega, (Dependence_Type)type);
 	      //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	    }
 	  }
