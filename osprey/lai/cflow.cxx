@@ -3777,7 +3777,12 @@ Append_Succ(
   }
   if (!CG_localize_tns) {
     GRA_LIVE_Merge_Blocks(b, b, suc);
+#ifdef TARG_ST
+    // [CG]: Use new interface.
+    GRA_LIVE_Rename_TNs_For_BB(b);
+#else
     Rename_TNs_For_BB(b, NULL);
+#endif
   }
 
   /* Merge the ending of suc into b

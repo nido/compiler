@@ -2370,9 +2370,21 @@ Clear_Defreach(
 
 
 
+#ifdef TARG_ST
+/* 
+ * Rename_TNs_For_BB ()
+ *
+ * [CG]: Local function. Detects and rename TNs that should be 
+ * renamed in the <bb>. 
+ * Use GRA_LIVE_Rename_TNs_For_BB() from outside of gra_live.cxx.
+ */
+static void 
+Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
+#else
 // Detect TNs that should be renamed in the <bb>. 
 void 
 Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
+#endif
 {
   TN_MAP op_for_tn = TN_MAP_Create ();
   OP *op;
@@ -2455,3 +2467,30 @@ void GRA_LIVE_Rename_TNs (void)
 
   MEM_POOL_Pop (&MEM_local_pool);
 }
+
+#ifdef TARG_ST
+/* ======================================================================
+ * 
+ * GRA_LIVE_Rename_TNs_For_BB
+ *
+ * [CG]: New external interface for renaming local TNs into a BB.
+ * Replace old Rename_TNs_For_BB() interface.
+ * This function can be called before or after register allocation.
+ * If the BB is allocated, no renaming is performed.
+ * ======================================================================
+ */
+void
+GRA_LIVE_Rename_TNs_For_BB(BB *bb)
+{
+  /* Check is we can rename  local TNs in BB.
+     Test extracted from GRA_LIVE_Rename_TNs(). */
+  if (!BB_reg_alloc(bb) &&
+      ((BB_rid( bb ) == NULL) ||
+       (RID_level(BB_rid(bb)) < RL_CGSCHED))) 
+    {
+      Rename_TNs_For_BB(bb, NULL);
+    }
+}
+
+#endif
+

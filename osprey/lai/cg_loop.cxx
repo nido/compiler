@@ -5839,7 +5839,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #endif
 
       cg_loop.Recompute_Liveness();
+#ifdef TARG_ST
+      // [CG]: Use new interface.
+      GRA_LIVE_Rename_TNs_For_BB(cg_loop.Loop_header());
+#else
       Rename_TNs_For_BB(cg_loop.Loop_header(), NULL);
+#endif
       cg_loop.Recompute_Liveness();
 
       cg_loop.Build_CG_LOOP_Info();
