@@ -631,7 +631,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		if (kind == CG_DEP_MEMANTI) type = Dependence_Anti;
 		if (kind == CG_DEP_MEMREAD) type = Dependence_Input;
 		if (kind == CG_DEP_SPILLIN) type = Dependence_Spill;
-		if (ARC_is_definite(arc)) type += Dependence_Definite;
+		if (ARC_is_definite(arc)) type += DependenceType_Definite;
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
 		Is_True(pred_op == op, ("Error in lao_setDependences"));
