@@ -641,7 +641,9 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
-	  } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+	  } else {
+	    DevWarn("<arc>   CG_DEP INFO is NULL\n");
+	  }
 	}
       }
       CG_DEP_Delete_Graph(&bb_list);
@@ -773,21 +775,11 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
   // - that's all
   //
   // Temporary that were assigned
-  if (TN_is_register(cgir_tn)) {
-    fprintf(TFile, "Updating TN%d: ", TN_number(cgir_tn));
-    Print_TN(cgir_tn, TRUE);
-    fprintf(TFile, "\n");
-  }
   if (!LAI_Interface_Temporary_isDedicated(temporary) &&
       LAI_Interface_Temporary_isAssignReg(temporary)) {
     CLASS_REG_PAIR cgir_crp = 
       TARG_Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
     Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
-    fprintf(TFile, "from Register %d: ", LAI_Interface_Temporary_assigned(temporary));
-    fprintf(TFile, "into TN%d (reg %d): ", TN_number(cgir_tn), CLASS_REG_PAIR_reg(cgir_crp));
-    Print_TN(cgir_tn, TRUE);
-    fprintf(TFile, "\n");
-    
   }
 }
 
