@@ -378,6 +378,28 @@ Adjust_Addr_TNs (
   }
 }
 
+/* ============================================================
+ * [CG]
+ * This function add a constant to the  address TNs (base,disp).
+ * The disp must be literal.
+ * Returns modified (base,disp).
+ * ============================================================
+ */
+static void
+Add_Disp_To_Addr_TNs (
+  TN	**base_tn,	/* The base address -- may be modified */
+  TN	**disp_tn,	/* The displacement -- may be modified */
+  INT16	disp)		/* A displacement to add */
+{
+  if (TN_has_value(*disp_tn)) {
+    *disp_tn = Gen_Literal_TN(TN_value(*disp_tn) + disp, 4);
+  } else if (TN_is_symbol(*disp_tn)) {
+    *disp_tn = Gen_Symbol_TN(TN_var(*disp_tn), TN_offset(*disp_tn) + disp, 0);
+  } else {
+    FmtAssert(0, ("Unexpected non literal displacement"));
+  }
+}
+
 /* ====================================================================
  *   Expand_Composed_Load
  * ====================================================================
@@ -395,7 +417,7 @@ Expand_Composed_Load (
   TYPE_ID rtype= OPCODE_rtype(op);
   TYPE_ID desc = OPCODE_desc(op);
 
-  TOP		top;
+  // [CG] //TOP		top;
   INT32		alignment, nLoads, i;
   OPCODE	new_opcode;
   TYPE_ID	new_desc;
@@ -403,7 +425,7 @@ Expand_Composed_Load (
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
   new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
-  top = Pick_Load_Imm_Instruction (rtype, new_desc);
+  // [CG] //top = Pick_Load_Imm_Instruction (rtype, new_desc);
 
   Is_True(nLoads > 1, ("Expand_Composed_Load with nLoads == %d", nLoads));
 
@@ -416,7 +438,9 @@ Expand_Composed_Load (
     INT idx = i ^ endian_xor;
     tmpV[idx] = Build_TN_Of_Mtype(rtype);
     Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
-    if (i < nLoads-1) Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
+    // [CG]: use Add_Disp instead
+    if (i < nLoads-1) Add_Disp_To_Addr_TNs (&base, &disp, alignment);
+    //if (i < nLoads-1) Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
   }
 
   /* 
@@ -543,16 +567,18 @@ Expand_Composed_Store (
   OPS *ops
 )
 {
-  TOP		top;
+  // [CG] //TOP		top;
   INT32		alignment, nStores;
   TYPE_ID	new_desc;
 
   new_desc =	Composed_Align_Type(mtype, variant, &alignment, &nStores);
-  //  top = Pick_Store_Instruction (new_desc);
+  // [CG] //top = Pick_Store_Imm_Instruction (new_desc);
 
   if (Target_Byte_Sex == BIG_ENDIAN)
-    Adjust_Addr_TNs (top, &base, &disp, 
-                                   MTYPE_alignment(mtype)-alignment, ops);
+    // [CG] use Add_Disp instead
+    Add_Disp_To_Addr_TNs (&base, &disp, MTYPE_alignment(mtype)-alignment);
+    //    Adjust_Addr_TNs (top, &base, &disp, 
+    //                               MTYPE_alignment(mtype)-alignment, ops);
   Expand_Store (new_desc, obj, base, disp, ops); 
 
   while(--nStores >0) {
@@ -562,9 +588,13 @@ Expand_Composed_Store (
     obj = tmp;
 
     if (Target_Byte_Sex == BIG_ENDIAN)
-      Adjust_Addr_TNs (top, &base, &disp, -alignment, ops);
+      //[CG]
+      Add_Disp_To_Addr_TNs (&base, &disp, -alignment);
+    //Adjust_Addr_TNs (top, &base, &disp, -alignment, ops);
     else 
-      Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
+      //[CG]
+      Add_Disp_To_Addr_TNs (&base, &disp, alignment);
+    //Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
 
     Expand_Store (new_desc, obj, base, disp, ops); 
   }
@@ -1000,8 +1030,12 @@ Expand_Lda_Label (
   OPS *ops
 )
 {
-  TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
+  // [CG]: On the ST200 base model, address of a label
+  // is the absolute address
+  Build_OP (TOP_mov_i, dest, lab, ops);
 
+#if 0
+  // CG: commented out
   FmtAssert(FALSE,("Not Implemented"));
 
   Set_TN_is_reloc_gprel16(lab);
@@ -1011,7 +1045,7 @@ Expand_Lda_Label (
   // load is of address, not of result type
   Expand_Load (OPCODE_make_op(OPR_LDID, Pointer_Mtype, Pointer_Mtype),
 		                dest, tmp1, Gen_Literal_TN (0, 4), ops);
-
+#endif
   return;
 }
 
