@@ -4808,6 +4808,18 @@ Expand_Statement (
 	WN_set_loop_trip(loop_info, NULL);
 	trip_wn = NULL;
       }
+#ifdef TARG_ST
+      // [CG]: In the case where the machine is 32 bits we discard
+      // 64 bits trip count information as we can't handle it in CG.
+      if (Only_32_Bit_Ops && trip_wn && 
+	  MTYPE_byte_size(WN_rtype(trip_wn)) > 4) {
+	DevWarn("removing loop trip count (line %d) "
+		"(trip count byte size > 4)",
+		Srcpos_To_Line(srcpos));
+	WN_set_loop_trip(loop_info, NULL);
+	trip_wn = NULL;
+      }
+#endif
       if (trip_wn == NULL) {
 	trip_tn = NULL;
       } else {
