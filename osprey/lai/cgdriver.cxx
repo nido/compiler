@@ -1154,6 +1154,13 @@ Configure_CG_Options(void)
     CG_enable_select = FALSE;
   }
 
+  // [FdF]: Ignore LAO options if opt_level < 2
+  
+  if ((CG_LAO_optimize != 0) && (CG_opt_level < 2)) {
+    DevWarn("CG: Ignoring LAO options, need optimization level -O2 or higher");
+    CG_LAO_optimize = 0;
+  }
+
 #endif  /* TARG_ST */
 
   /* Enable_Fill_Delay_Slots controls the filling of delay slots in locs
