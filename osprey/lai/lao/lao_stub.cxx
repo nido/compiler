@@ -414,6 +414,8 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
 // Update a CGIR_OP.
 static void
 CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int unrolled, int iteration, int issueDate) {
+  BB *bb = OP_bb(cgir_op);
+  if (bb != NULL) BB_Remove_Op(bb, cgir_op);
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);

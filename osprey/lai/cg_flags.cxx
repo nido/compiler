@@ -96,7 +96,7 @@ INT32 CG_LAO_schedkind = 0;
 INT32 CG_LAO_schedtype = 0;
 INT32 CG_LAO_pipeline = 0;
 INT32 CG_LAO_speculate = 0;
-INT32 CG_LAO_scd_first = 0;
+INT32 CG_LAO_scd_first = -1;
 INT32 CG_LAO_scd_last = -1;
 
 #ifdef CGG_ENABLED

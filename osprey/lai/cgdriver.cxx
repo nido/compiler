@@ -422,7 +422,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculate", "",
     1, 0, 3,	&CG_LAO_speculate, &CG_LAO_speculate_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_first", "",
-    0, -1, (UINT32)-1>>1,	&CG_LAO_scd_first, &CG_LAO_scd_first_overridden },
+    -1, -1, (UINT32)-1>>1,	&CG_LAO_scd_first, &CG_LAO_scd_first_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_last", "",
     -1, -1, (UINT32)-1>>1,	&CG_LAO_scd_last, &CG_LAO_scd_last_overridden },
 #endif
@@ -1512,7 +1512,7 @@ CG_Init (void)
     if (!CG_LAO_schedtype_overridden) CG_LAO_schedtype = 1;
     if (!CG_LAO_pipeline_overridden) CG_LAO_pipeline = 0;
     if (!CG_LAO_speculate_overridden) CG_LAO_speculate = 0;
-    if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = 0;
+    if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
     if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;
     lao_handler = load_so("lao"SO_EXT, CG_Path, Show_Progress);
     lao_init();
