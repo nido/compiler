@@ -1996,9 +1996,11 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
      if (tail != BB_Fall_Thru_Successor(head)) {
        Add_Goto (head, tail);
      }
-    Change_Succ_Prob (head, tail, 1.0);
    }
    
+   // Update edge probability to 1.0
+   BBLIST_prob(BB_Find_Succ(head, tail)) = 1.0;
+
    // Maintain SSA.
    BB_Update_Phis(tail);
 
