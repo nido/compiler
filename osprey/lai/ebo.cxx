@@ -146,6 +146,7 @@ static const char source_file[] = __FILE__;
 #include "cg_spill.h"
 #include "targ_proc_properties.h"
 #include "top_properties.h"
+#include "data_layout.h"
 
 #include "ebo.h"
 #include "ebo_info.h"
@@ -2305,7 +2306,12 @@ EBO_Memory_Sequence (
   
   // [CG]: It seems that we can't modify symbol offsets
   // as Base_Symbol_And_Offset_For_Addressing will change
-  if (pred_sym != NULL || offset_sym != NULL) return FALSE;
+
+  // FdF 20050114: symbol offset can be changed if the symbol is on
+  // the stack.
+  //  if (pred_sym != NULL || offset_sym != NULL) return FALSE;
+  if (pred_sym == NULL || !ST_on_stack(pred_sym))
+    if (pred_sym != NULL || offset_sym != NULL) return FALSE;
 
   if (!EBO_tn_available (bb, ptn0_tninfo)) return FALSE;
 
