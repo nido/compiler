@@ -207,6 +207,13 @@ main()
   Operand (2, src2, storeval); 
 
   /* ====================================== */ 
+  Instruction_Group("O_ssa", 
+		 TOP_phi, 
+		 TOP_psi, 
+		 TOP_UNDEFINED); 
+
+
+  /* ====================================== */ 
   Instruction_Group("O_SelectI", 
 		 TOP_slct_i, 
 		 TOP_slct_ii, 
@@ -437,8 +444,6 @@ main()
   /* ====================================== */ 
   Instruction_Group("O_asm", 
 		 TOP_asm, 
-		 TOP_phi, 
-		 TOP_psi, 
 		 TOP_UNDEFINED); 
 
 
