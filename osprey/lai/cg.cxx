@@ -560,13 +560,6 @@ CG_Generate_Code(
       draw_CFG();
 #endif
 
-      // Perform hyperblock formation (if-conversion), if target can
-      // predicate, and superblock formation if target supports select.
-      if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
-	HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
-	if (frequency_verify)
-	  FREQ_Verify("Hyberblock Formation");
-      }
 #endif
 
 #ifdef IA64
@@ -632,6 +625,18 @@ CG_Generate_Code(
 	//Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
 
 	Check_for_Dump(TP_SSA, NULL);
+      }
+#endif
+
+#ifdef TARG_ST
+      // (cbr) SSA should be reconstructer after changing the CFG.
+      // For now do that after we got out of SSA.
+      // Perform hyperblock formation (if-conversion), if target can
+      // predicate, and superblock formation if target supports select.
+      if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+	HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+	if (frequency_verify)
+	  FREQ_Verify("Hyberblock Formation");
       }
 #endif
 
