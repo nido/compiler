@@ -334,10 +334,13 @@ CC	+= -D__GNU_BUG_WORKAROUND
 C++	+= -D__GNU_BUG_WORKAROUND
 endif
 
+# On RedHat 6.2 with gcc -O2, the math function definitions
+# in /usr/include/bits/mathinline.h are enabled.  These are not
+# ANSI conforming, so we disable them by defining __NO_MATH_INLINES.
 ifeq ($(BUILD_OS), LINUX)
 AS	+= -funsigned-char 
-CC	+= -Wformat -funsigned-char
-C++	+= -Wformat -funsigned-char -D_NOTHREADS
+CC	+= -Wformat -funsigned-char -D__NO_MATH_INLINES
+C++	+= -Wformat -funsigned-char -D_NOTHREADS -D__NO_MATH_INLINES
 endif
 
 ifeq ($(BUILD_OS), SUNOS5)
