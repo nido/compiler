@@ -142,7 +142,8 @@ BOOL CG_select_allow_dup = TRUE;
 INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */
-INT branch_penalty = 3;
+static INT branch_penalty = 3;
+static INT cond_store_penalty = 1;
 
 /* ================================================================
  *
@@ -746,6 +747,11 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
     }
   }
 
+  if (Trace_Select_Gen) {
+    fprintf (Select_TFile, "Check_Profitable_Logif BB%d BB%d\n", BB_id(bb1), BB_id(bb2));
+    Print_All_BBs();
+  }
+
   CG_SCHED_EST *se1 = CG_SCHED_EST_Create(bb1, &MEM_Select_pool,
                                              SCHED_EST_FOR_IF_CONV);
   CG_SCHED_EST *se2 = CG_SCHED_EST_Create(bb2, &MEM_Select_pool,
@@ -911,6 +917,11 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   // cost of if converted region. prob is one. Remove the select factor.
   float est_cost_after = cyclesh / select_factor;
     
+  if (BBLIST_item(bb1) == tail && store_i.ntkstrs.size())
+    est_cost_after += store_i.ntkstrs.size() * cond_store_penalty;
+  if (BBLIST_item(bb2) == tail && store_i.tkstrs.size())
+    est_cost_after += store_i.tkstrs.size() * cond_store_penalty;
+
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
