@@ -33,7 +33,8 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#define __STDBOOL_H__
+#define CCL_NO_STDINT
+#define CCL_NO_STDBOOL
 #include "CCL.h"
 #include "CSD.h"
 #include "LAO_CGIR.h"
