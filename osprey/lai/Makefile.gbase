@@ -476,7 +476,7 @@ ifeq ($(BUILD_TARGET), IA32)
 TARGET_SO = pentium.so
 endif
 ifeq ($(BUILD_TARGET), ST100)
-TARGET_SO = st100.so
+TARGET_SO = st120.so
 endif
 ifeq ($(BUILD_TARGET), ST200)
 TARGET_SO = st220.so
