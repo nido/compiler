@@ -186,6 +186,12 @@ BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
 # (cbr) 
 YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
 
+ifeq ($(HOST_OS),CYGWIN_NT)
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-pc-cygwin-
+endif
+
 COMPILER_LOC=$(COMP_GNU_LOC)
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
@@ -678,7 +684,7 @@ GLDDSOOPTS+= -Wl,--disable-auto-image-base
 # exported ! This is a quick workarround...
 ifeq ($(BUILD_OS), SUNOS5)
 ifeq ($(HOST_OS), CYGWIN_NT)
-GLDDSOOPTS+= -Wl,--exclude-symbols,_bss_end__ -Wl,--exclude-symbols,_bss_start__ -Wl,--exclude-symbols,_data_end__ -Wl,--exclude-symbols,_data_start__
+GLDDSOOPTS+= -Wl,--exclude-symbols,_bss_end__ -Wl,--exclude-symbols,_bss_start__ -Wl,--exclude-symbols,_data_end__ -Wl,--exclude-symbols,_data_start__ -Wl,--stack,9437184
 endif
 endif
 
