@@ -208,9 +208,10 @@ extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
 extern BOOL CG_enable_LAO;	/* Enable LAO in cg */
-extern INT32 CG_LAO_schedule;	/* Enable LAO instruction scheduling */
-extern INT32 CG_LAO_pipeline;	/* Enable LAO software pipelining */
-extern INT32 CG_LAO_speculate;	/* Enable LAO control speculation */
+extern INT32 CG_LAO_optimize;	/* LAO optimization enable */
+extern INT32 CG_LAO_schedule;	/* LAO instruction scheduling level */
+extern INT32 CG_LAO_pipeline;	/* LAO software pipelining level */
+extern INT32 CG_LAO_speculate;	/* LAO control speculation level */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */

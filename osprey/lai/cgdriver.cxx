@@ -410,6 +410,8 @@ static OPTION_DESC Options_CG[] = {
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "LAO_enable", "",
     0, 0, 0,	&CG_enable_LAO, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimize", "",
+    0, 0, 1024,	&CG_LAO_optimize, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedule", "",
     1, 0, 3,	&CG_LAO_schedule, &CG_LAO_schedule_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipeline", "",
@@ -1461,7 +1463,7 @@ static void* lao_handler = NULL;
 CG_EXPORTED bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
 CG_EXPORTED bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
 CG_EXPORTED bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-CG_EXPORTED void (*CGIR_print_p) (void);
+CG_EXPORTED void (*CGIR_print_p) (FILE *file);
 
 #endif
 
@@ -1499,18 +1501,10 @@ CG_Init (void)
 
 #ifdef TARG_ST
   if (CG_enable_LAO) {
-    if (!CG_LAO_pipeline_overridden)
-      CG_LAO_pipeline = 1;
-    if (!CG_LAO_schedule_overridden)
-      CG_LAO_schedule = 1;
-    if (!CG_LAO_speculate_overridden)
-      CG_LAO_speculate = 1;
-  }
-
-  else if ((CG_LAO_pipeline > 0) ||
-	    (CG_LAO_schedule > 0) ||
-	    (CG_LAO_speculate > 0))
-    CG_enable_LAO=TRUE;
+    if (!CG_LAO_schedule_overridden) CG_LAO_schedule = 0;
+    if (!CG_LAO_pipeline_overridden) CG_LAO_pipeline = 0;
+    if (!CG_LAO_speculate_overridden) CG_LAO_speculate = 0;
+  } else if (CG_LAO_optimize != 0) CG_enable_LAO = TRUE;
 
   if (CG_enable_LAO) {
     lao_handler = load_so ("lao"SO_EXT, CG_Path, Show_Progress);

@@ -22,6 +22,18 @@
 #include "cg_loop.h"
 #include "hb.h"
 
+/*! 
+  Optimization_Phase -- MUST BE SAME AS IN LAO_Driver.h!
+*/  
+typedef enum {
+  Optimization_Linearize = 0x1,
+  Optimization_PostSched = 0x2,
+  Optimization_RegAlloc = 0x4,
+  Optimization_PreSched = 0x8,  
+  Optimization_LoopUnwind = 0x10,
+  Optimization_LoopUnroll = 0x20,
+} Optimization_Phase;
+
 // We don't rely on the weak mechanisms for these symbols, even if
 // supported by the platform. The reason is to provide a consistent
 // implementation on all platforms.
@@ -35,7 +47,7 @@ CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations)
 CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
 #define lao_optimize_PU (*lao_optimize_PU_p)
 
-CG_EXPORTED extern void (*CGIR_print_p) (void);
+CG_EXPORTED extern void (*CGIR_print_p) (FILE *file);
 #define CGIR_print (*CGIR_print_p)
 
 #endif /* laostub_INCLUDED */

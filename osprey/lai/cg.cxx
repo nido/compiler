@@ -715,16 +715,6 @@ CG_Generate_Code(
     // of NaT bits, then need to save and restore ar.unat. 
   }
 
-#ifdef TARG_ST
-  // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_enable_LAO && (CG_LAO_schedule > 0)) {
-    Set_Error_Phase( "LAO Prepass Scheduling" );
-    lao_optimize_PU(/*Optimization_Prepass*/ 0x8);
-    if (frequency_verify)
-      FREQ_Verify("LAO Prepass Scheduling");
-  }
-#endif
-
   /* Global register allocation, Scheduling:
    *
    * The overall algorithm is as follows:
@@ -735,6 +725,16 @@ CG_Generate_Code(
    *   - Global code motion phase (GCM) 
    *   - Local scheduling after register allocation
    */
+
+#ifdef TARG_ST
+  // Call the LAO for software pipelining and prepass scheduling.
+  if (CG_enable_LAO && CG_LAO_optimize & Optimization_PreSched) {
+    Set_Error_Phase( "LAO Prepass Scheduling" );
+    lao_optimize_PU(Optimization_PreSched);
+    if (frequency_verify)
+      FREQ_Verify("LAO Prepass Scheduling");
+  } else
+#endif
   IGLS_Schedule_Region (TRUE /* before register allocation */);
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
@@ -811,6 +811,23 @@ CG_Generate_Code(
     Check_for_Dump ( TP_EBO, NULL );
   }
 
+
+#ifdef TARG_ST
+  // Call the LAO for postpass scheduling.
+  if (CG_enable_LAO && CG_LAO_optimize & Optimization_PostSched) {
+    Set_Error_Phase( "LAO Postpass Scheduling" );
+    lao_optimize_PU(Optimization_PostSched);
+    if (frequency_verify)
+      FREQ_Verify("LAO Postpass Scheduling");
+  }
+  // Direct call to the bundler, and bypass the IGLS.
+  if (CG_enable_LAO && CG_LAO_optimize & Optimization_Linearize) {
+    for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+      void Handle_All_Hazards(BB *bb);
+      Handle_All_Hazards(bb);
+    }
+  } else
+#endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);

@@ -149,6 +149,9 @@ CGIR_TN_to_TempName(CGIR_TN cgir_tn) {
     if (TN_is_dedicated(cgir_tn)) {
       CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
       tempname = Interface_makeDedicatedTempName(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
+    } else if (TN_register(cgir_tn) != REGISTER_UNDEFINED) {
+      CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
+      tempname = Interface_makeAssignRegTempName(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
     } else {
       ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
       tempname = Interface_makePseudoRegTempName(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
@@ -182,7 +185,7 @@ CGIR_TN_to_TempName(CGIR_TN cgir_tn) {
   } else {
     Is_True(FALSE, ("Unknown TN type."));
   }
-  Is_True(tempname != NULL, ("tempname should not be NULL."));
+  Is_True(tempname != NULL, ("TempName should not be NULL."));
   return tempname;
 }
 
@@ -626,12 +629,12 @@ static bool lao_optimize_HB(HB *hb, unsigned lao_optimizations);
 // Optimize a PU through the LAO.
 static bool lao_optimize_PU(unsigned lao_optimizations);
 
-static void CGIR_print(void);
+static void CGIR_print(FILE *file);
 
 CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(LOOP_DESCR *loop, unsigned lao_optimizations);
 CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_optimizations);
 CG_EXPORTED extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-CG_EXPORTED extern void (*CGIR_print_p)(void);
+CG_EXPORTED extern void (*CGIR_print_p)(FILE *file);
 
 // Initialization of the LAO, needs to be called once.
 void
@@ -1125,7 +1128,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 static bool
 lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
   //
-  if (getenv("PRINT")) CGIR_print();
+  if (getenv("PRINT")) CGIR_print(TFile);
   LAO_INIT();
   Interface_open(interface, 4,
       Configuration_Schedule, CG_LAO_schedule,
@@ -1177,9 +1180,9 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
   }
   //
   unsigned optimizations = LAO_Optimize(lao_optimizations);
-  if (0 && optimizations) {
+  if (optimizations != 0) {
     Interface_updateCGIR(interface);
-    if (getenv("PRINT")) CGIR_print();
+    if (getenv("PRINT")) CGIR_print(TFile);
   }
   //
   Interface_close(interface);
@@ -1317,6 +1320,11 @@ lao_optimize_PU(unsigned lao_optimizations) {
   // Call the lower level lao_optimize function with pipeline=0.
   result |= lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
   //
+  if (result) {
+    GRA_LIVE_Recalc_Liveness(NULL);
+    GRA_LIVE_Rename_TNs();
+  }
+  //
   Free_Dominators_Memory();
   MEM_POOL_Pop(&lao_loop_pool);
   //
@@ -1342,20 +1350,20 @@ static OP_list * OP_list_new(OP_list *head)
 }
 
 static void
-CGIR_TN_print ( const TN *tn )
+CGIR_TN_print ( const TN *tn, FILE *file )
 {
   //
   if (TN_is_constant(tn)) {
     if ( TN_has_value(tn)) {
-      fprintf ( TFile, "(0x%llx)", TN_value(tn) );
+      fprintf ( file, "(0x%llx)", TN_value(tn) );
       if (TN_size(tn) == 4 && 
 	  TN_value(tn) >> 32 != 0 &&
 	  TN_value(tn) >> 31 != -1)
-	fprintf ( TFile, "!!! TN_value=0x%llx is too big to fit in a word",
+	fprintf ( file, "!!! TN_value=0x%llx is too big to fit in a word",
 		  TN_value(tn));
     }
     else if (TN_is_enum(tn)) {
-      fprintf ( TFile, "(enum:%s)", ISA_ECV_Name(TN_enum(tn)) );
+      fprintf ( file, "(enum:%s)", ISA_ECV_Name(TN_enum(tn)) );
     }
     else if ( TN_is_label(tn) ) {
       CGIR_LAB lab = TN_label(tn);
@@ -1363,30 +1371,30 @@ CGIR_TN_print ( const TN *tn )
       INT64 offset = TN_offset(tn);
       BB *targetBB;
       if ( offset == 0 ) {
-	fprintf ( TFile, "(lab:%s)", name );
+	fprintf ( file, "(lab:%s)", name );
       }
       else {
-	fprintf ( TFile, "(lab:%s+%lld)", name, offset );
+	fprintf ( file, "(lab:%s+%lld)", name, offset );
       }
       targetBB = Get_Label_BB(lab); // XXX
       if (targetBB != NULL)
-	fprintf(TFile, " --> %d", BB_id(targetBB));
+	fprintf(file, " --> %d", BB_id(targetBB));
     } 
     else if ( TN_is_tag(tn) ) {
       CGIR_LAB lab = TN_label(tn);
       const char *name = LABEL_name(lab);
-      fprintf ( TFile, "(tag:%s)", name );
+      fprintf ( file, "(tag:%s)", name );
     }
     else if ( TN_is_symbol(tn) ) {
       ST *var = TN_var(tn);
       //
-      fprintf ( TFile, "(sym" );
-      fprintf ( TFile, TN_RELOCS_Name(TN_relocs(tn)) );
+      fprintf ( file, "(sym" );
+      fprintf ( file, TN_RELOCS_Name(TN_relocs(tn)) );
       //
       if (ST_class(var) == CLASS_CONST)
-      	fprintf ( TFile, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));
+      	fprintf ( file, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));
       else
-      	fprintf ( TFile, ":%s%+lld)", ST_name(var), TN_offset(tn) );
+      	fprintf ( file, ":%s%+lld)", ST_name(var), TN_offset(tn) );
     } 
     else {
       ErrMsg (EC_Unimplemented, "CGIR_TN_print: illegal constant TN");
@@ -1395,78 +1403,78 @@ CGIR_TN_print ( const TN *tn )
   else {  /* register TN */
     if (TN_register(tn) != REGISTER_UNDEFINED) {
       if (TN_register(tn) <= REGISTER_CLASS_last_register(TN_register_class(tn))) {
-	fprintf ( TFile, "%s", 
+	fprintf ( file, "%s", 
 		  REGISTER_name(TN_register_class(tn), TN_register(tn)));
       } else {
-	fprintf ( TFile, "(%d,%d)", TN_register_class(tn), TN_register(tn));
+	fprintf ( file, "(%d,%d)", TN_register_class(tn), TN_register(tn));
       }
     }
     else if (TN_is_global_reg(tn)) {
-      fprintf ( TFile, "G%d", TN_number(tn) );
+      fprintf ( file, "G%d", TN_number(tn) );
     }
     else {
-      fprintf ( TFile, "T%d", TN_number(tn) );
+      fprintf ( file, "T%d", TN_number(tn) );
     }
     if (TN_is_save_reg(tn)) {
-      fprintf ( TFile, "(sv:%s)", 
+      fprintf ( file, "(sv:%s)", 
 		REGISTER_name(TN_save_rclass(tn), TN_save_reg(tn)));
     }
   }
 }
 
 static void
-CGIR_OP_print ( const OP *op, bool bb_scheduled)
+CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
 {
   int i;
   //
   //
   {
     LABEL_IDX tag = Get_OP_Tag(op);
-    if(tag) fprintf (TFile, "<tag %s>: ", LABEL_name(tag));
+    if(tag) fprintf (file, "<tag %s>: ", LABEL_name(tag));
   }
   //
-  fprintf(TFile, "%s", TOP_Name(OP_code(op)));
+  fprintf(file, "%s", TOP_Name(OP_code(op)));
   //
   if ( OP_variant(op) != 0 ) {
-    fprintf ( TFile, "(%x)", OP_variant(op));
+    fprintf ( file, "(%x)", OP_variant(op));
   }
   //
   if (OP_results(op) == 0)
-    fprintf(TFile, " void");
+    fprintf(file, " void");
   //
   else for (i = 0; i < OP_results(op); i++) {
-    fprintf(TFile, "%s", (i == 0 ? " " : ", "));
-    CGIR_TN_print(OP_result(op,i));
+    fprintf(file, "%s", (i == 0 ? " " : ", "));
+    CGIR_TN_print(OP_result(op,i), file);
   }
   //
-  fprintf(TFile, " =");
+  fprintf(file, " =");
   //
   for (i=0; i<OP_opnds(op); i++) {
-    fprintf(TFile, "%s", (i == 0 ? " " : ", "));
+    fprintf(file, "%s", (i == 0 ? " " : ", "));
     TN *tn = OP_opnd(op,i);
-    CGIR_TN_print(tn);
-    if (OP_Defs_TN(op, tn)) fprintf(TFile, "<def>");
+    CGIR_TN_print(tn, file);
+    if (OP_Defs_TN(op, tn)) fprintf(file, "<def>");
   }
 
   if (bb_scheduled)
-    fprintf(TFile, "\tscycle = %d", OP_scycle(op));
+    fprintf(file, "\tscycle = %d", OP_scycle(op));
 
   // TBD: Print other attributes on operations.
 }
 
 static void
-CGIR_OP_prints ( const OP *op , bool bb_scheduled)
+CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
 {
-  for ( ; op; op = OP_next(op)) {
-    fprintf(TFile, "\t");
-    CGIR_OP_print(op, bb_scheduled);
-    fprintf(TFile, "       \t#line[%4d]", Srcpos_To_Line(OP_srcpos(op)));
-    fprintf(TFile, "\n");
+  for (OP *op = OPS_first(ops) ; op; op = OP_next(op)) {
+    fprintf(file, "\t");
+    CGIR_OP_print(op, bb_scheduled, file);
+    fprintf(file, "       \t#line[%4d]", Srcpos_To_Line(OP_srcpos(op)));
+    fprintf(file, "\n");
   }
 }
 
 static void
-CGIR_BB_print_header (BB *bp)
+CGIR_BB_print_header (BB *bp, FILE *file)
 {
   BBLIST *bl;
   INT16 i;
@@ -1479,14 +1487,14 @@ CGIR_BB_print_header (BB *bp)
     OP *sp_adj = BB_entry_sp_adj_op(bp);
     Is_True ((sp_adj == ENTRYINFO_sp_adj(ent)),("bad sp_adj"));
     //
-    fprintf ( TFile, "Entrypoint: %s\t Starting Line %d\n",
+    fprintf ( file, "Entrypoint: %s\t Starting Line %d\n",
 	      ST_name(ENTRYINFO_name(ent)),
 	      Srcpos_To_Line(ENTRYINFO_srcpos(ent)));
     //
     if (sp_adj) {
       OP *op;
       BOOL found_sp_adj = FALSE;
-      fprintf ( TFile, "SP entry adj: " );
+      fprintf ( file, "SP entry adj: " );
       Print_OP_No_SrcLine (sp_adj);
       FOR_ALL_BB_OPs_FWD(bp,op)
 	if (op == sp_adj) {
@@ -1494,7 +1502,7 @@ CGIR_BB_print_header (BB *bp)
 	  break;
 	}
       if (found_sp_adj == FALSE)
-	fprintf ( TFile, "******** ERROR ******** sp adjust not found in entry block\n");
+	fprintf ( file, "******** ERROR ******** sp adjust not found in entry block\n");
     }
   }
   //
@@ -1507,7 +1515,7 @@ CGIR_BB_print_header (BB *bp)
     if (sp_adj) {
       OP *op;
       BOOL found_sp_adj = FALSE;
-      fprintf ( TFile, "SP exit adj: " );
+      fprintf ( file, "SP exit adj: " );
       Print_OP_No_SrcLine (sp_adj);
       //
       FOR_ALL_BB_OPs_FWD(bp,op)
@@ -1516,26 +1524,27 @@ CGIR_BB_print_header (BB *bp)
 	  break;
 	}
       if (found_sp_adj == FALSE)
-	fprintf ( TFile, "******** ERROR ******** sp adjust not found in exit block\n");
+	fprintf ( file, "******** ERROR ******** sp adjust not found in exit block\n");
     }
   }
   //
-  fprintf ( TFile, "    BB %d, flags 0x%04x",
+  fprintf ( file, "    BB %d, flags 0x%04x",
 	    BB_id(bp), BB_flag(bp) );
   //
   if (freqs || BB_freq_fb_based(bp))
-    fprintf(TFile, ", freq %g (%s)", BB_freq(bp),
+    fprintf(file, ", freq %g (%s)", BB_freq(bp),
 	    BB_freq_fb_based(bp) ? "feedback" : "heuristic");
   
-  if (BB_unreachable(bp)) fprintf ( TFile, ", Unreachable");
-  if (BB_entry(bp))	fprintf ( TFile, ", Entry" );
-  if (BB_handler(bp))	fprintf ( TFile, ", Handler" );
-  if (BB_asm(bp)) 	fprintf ( TFile, ", Asm" );
+  if (BB_scheduled(bp)) fprintf ( file, ", Scheduled");
+  if (BB_unreachable(bp)) fprintf ( file, ", Unreachable");
+  if (BB_entry(bp))	fprintf ( file, ", Entry" );
+  if (BB_handler(bp))	fprintf ( file, ", Handler" );
+  if (BB_asm(bp)) 	fprintf ( file, ", Asm" );
   //
   if (BB_exit(bp)) {
-    if (BB_call(bp))	fprintf ( TFile, ", Tail-call" );
-    else		fprintf ( TFile, ", Exit" );
-  } else if (BB_call(bp)) fprintf ( TFile, ", Call" );
+    if (BB_call(bp))	fprintf ( file, ", Tail-call" );
+    else		fprintf ( file, ", Exit" );
+  } else if (BB_call(bp)) fprintf ( file, ", Call" );
   //
   if (BB_rid(bp)) {
     INT exits;
@@ -1543,18 +1552,18 @@ CGIR_BB_print_header (BB *bp)
     CGRIN *cgrin = RID_cginfo(rid);
     if (cgrin) {
       if (bp == CGRIN_entry(cgrin)) {
-	fprintf ( TFile, ", Region-entry " );
+	fprintf ( file, ", Region-entry " );
       }
       exits = RID_num_exits(rid);
       for (i = 0; i < exits; ++i) {
 	if (bp == CGRIN_exit_i(cgrin, i)) {
-	  fprintf ( TFile, ", Region-exit[%d]", i );
+	  fprintf ( file, ", Region-exit[%d]", i );
 	}
       }
     }
   }
   //
-  fprintf ( TFile, "\n");
+  fprintf ( file, "\n");
   //
   if (annot)
     Print_LOOPINFO(ANNOT_loopinfo(annot));
@@ -1562,74 +1571,74 @@ CGIR_BB_print_header (BB *bp)
   if (BB_loop_head_bb(bp)) {
     if (BB_loophead(bp)) {
       if (!annot) {
-	fprintf(TFile, "\tHead of loop body line %d\n", BB_Loop_Lineno(bp));
+	fprintf(file, "\tHead of loop body line %d\n", BB_Loop_Lineno(bp));
       }
     } else {
       BB *head = BB_loop_head_bb(bp);
-      fprintf(TFile,
+      fprintf(file,
 	      "\tPart of loop body starting at line %d with head BB:%d\n",
 	      BB_Loop_Lineno(head), BB_id(head));
     }
   }
   //
   if (BB_unrollings(bp) > 1)
-    fprintf(TFile, "\tUnrolled %d times%s\n", BB_unrollings(bp),
+    fprintf(file, "\tUnrolled %d times%s\n", BB_unrollings(bp),
 	    BB_unrolled_fully(bp) ? " (fully)" : "");
   //
   if ( BB_rid(bp) )
-    RID_Fprint( TFile, BB_rid(bp) );
+    RID_Fprint( file, BB_rid(bp) );
   //
-  fprintf ( TFile, "\tpred" );
+  fprintf ( file, "\tpred" );
   FOR_ALL_BB_PREDS (bp, bl) {
-    fprintf ( TFile, " %d", BB_id(BBLIST_item(bl)));
+    fprintf ( file, " %d", BB_id(BBLIST_item(bl)));
   }
   //
-  fprintf ( TFile, "\n\tsucc%s", freqs ? " (w/probs)" : "" );
+  fprintf ( file, "\n\tsucc%s", freqs ? " (w/probs)" : "" );
   FOR_ALL_BB_SUCCS (bp, bl) {
-    fprintf ( TFile, " %d",
+    fprintf ( file, " %d",
 	      BB_id(BBLIST_item(bl)));
-    if (freqs) fprintf(TFile, "(%g)", BBLIST_prob(bl));
+    if (freqs) fprintf(file, "(%g)", BBLIST_prob(bl));
   }
-  fprintf ( TFile, "\n" );
+  fprintf ( file, "\n" );
   //
   if (BB_has_label(bp)) {
     ANNOTATION *ant;
-    fprintf(TFile, "\tLabel");
+    fprintf(file, "\tLabel");
     for (ant = ANNOT_First(BB_annotations(bp), ANNOT_LABEL);
 	 ant != NULL;
 	 ant = ANNOT_Next(ant, ANNOT_LABEL))
       {
 	INT eh_labs = 0;
 	LABEL_IDX lab = ANNOT_label(ant);
-	fprintf (TFile," %s", LABEL_name(lab));
+	fprintf (file," %s", LABEL_name(lab));
 	FmtAssert((Get_Label_BB(lab) == bp),
 		  (" Inconsistent ST for BB:%2d label", BB_id(bp)));
 	switch (LABEL_kind(Label_Table[lab])) {
 	case LKIND_BEGIN_EH_RANGE:
-	  fprintf (TFile,"%cbegin_eh_range", eh_labs++ ? ' ' : '(');
+	  fprintf (file,"%cbegin_eh_range", eh_labs++ ? ' ' : '(');
 	  break;
 	case LKIND_END_EH_RANGE:
-	  fprintf (TFile,"%cend_eh_range", eh_labs++ ? ' ' : '(');
+	  fprintf (file,"%cend_eh_range", eh_labs++ ? ' ' : '(');
 	  break;
 	}
 	if (eh_labs)
-	  fprintf (TFile,")");
+	  fprintf (file,")");
       }
-    fprintf(TFile, "\n");
+    fprintf(file, "\n");
   }
   //
   return;
 }
 
 static void
-CGIR_BB_print (BB *bp)
+CGIR_BB_print (BB *bp, FILE *file)
 {
-  CGIR_BB_print_header (bp );
-  if (BB_first_op(bp))	CGIR_OP_prints (BB_first_op(bp), BB_scheduled(bp));
+  CGIR_BB_print_header (bp, file);
+  if (BB_first_op(bp))	CGIR_OPS_print (&bp->ops, BB_scheduled(bp), file);
 }
 
 static void
-CGIR_Alias_print()
+CGIR_Alias_print(FILE *file)
 {
   OP_list *memops = NULL, *elt1, *elt2;
   BB *bp;
@@ -1645,36 +1654,36 @@ CGIR_Alias_print()
     }
   }
   //
-  fprintf(TFile, "--------------- Begin Print Alias ---------------\n");
+  fprintf(file, "--------------- Begin Print Alias ---------------\n");
   //
   for (elt1 = memops; elt1; elt1 = elt1->next) {
-    fprintf(TFile, "<Alias>"); CGIR_OP_print(elt1->op, FALSE); fprintf(TFile, "\n");
+    fprintf(file, "<Alias>"); CGIR_OP_print(elt1->op, FALSE, file); fprintf(file, "\n");
     for (elt2 = memops; elt2 != elt1; elt2 = elt2->next) {
-      fprintf(TFile, "\t<with>"); CGIR_OP_print(elt2->op, FALSE); fprintf(TFile, "\t");
+      fprintf(file, "\t<with>"); CGIR_OP_print(elt2->op, FALSE, file); fprintf(file, "\t");
       alias = CG_DEP_Mem_Ops_Alias(elt1->op, elt2->op, &identical);
-      if (!alias)          fprintf(TFile, "NO-ALIAS");
-      else if (!identical) fprintf(TFile, "   ALIAS");
-      else                 fprintf(TFile, "IDENTICAL");
-      fprintf(TFile, "</with>\n");
+      if (!alias)          fprintf(file, "NO-ALIAS");
+      else if (!identical) fprintf(file, "   ALIAS");
+      else                 fprintf(file, "IDENTICAL");
+      fprintf(file, "</with>\n");
     }
-    fprintf(TFile, "</Alias>\n");
+    fprintf(file, "</Alias>\n");
   }
   //
-  fprintf(TFile, "---------------- End Print Alias ----------------\n");
+  fprintf(file, "---------------- End Print Alias ----------------\n");
 }
 
 static void
-CGIR_print()
+CGIR_print( FILE *file)
 {
   BB *bp;
   //
-  fprintf(TFile, "--------CFG Begin--------\n");
+  fprintf(file, "--------CFG Begin--------\n");
   for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
-    CGIR_BB_print ( bp );
-    fprintf ( TFile,"\n" );
+    CGIR_BB_print ( bp, file );
+    fprintf ( file,"\n" );
   }
   //
-  //CGIR_Alias_print();
-  fprintf(TFile, "-------- CFG End --------\n");
+  //CGIR_Alias_print(file);
+  fprintf(file, "-------- CFG End --------\n");
 }
 
