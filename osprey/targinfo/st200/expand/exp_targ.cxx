@@ -991,7 +991,7 @@ Expand_Multiply (
   switch (mtype) {
   case MTYPE_U2:
   case MTYPE_I2:
-    /* short <- short * short */
+    // short <- short * short */
     if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
       opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
       Build_OP(opcode, dest, src1, src2, ops);
@@ -1016,12 +1016,13 @@ Expand_Multiply (
     }
 
     else {
-      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_U2 "));
+      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI2 (%d = %d * %d)",
+                        rmtype, s1mtype, s2mtype));
     }
 
     if (mtype == MTYPE_U2) {
       TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-      Build_OP(TOP_and_i, dest, const_tn, ops);
+      Build_OP(TOP_and_i, dest, dest, const_tn, ops);
     }
     else if (mtype == MTYPE_I2) {
       Build_OP(TOP_sxth_r, dest, dest, ops);
@@ -1030,56 +1031,92 @@ Expand_Multiply (
 
   case MTYPE_U4:
   case MTYPE_I4:
-    /*
-     * int <- short * short
-     */
-    if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
-      opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
+    {
+      BOOL is_signed = FALSE;
 
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
-      opcode = has_const ? TOP_mulll_i : TOP_mulll_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
+      // int <- char/int * char/int
+      if (s1mtype == MTYPE_I1 || s1mtype == MTYPE_U1 ||
+          s1mtype == MTYPE_I2 || s1mtype == MTYPE_U2) {
+        if (s1mtype == MTYPE_I1) {
+          Build_OP(TOP_sxtb_r, src1, src1, ops);
+          is_signed = TRUE;
+        }
 
-    else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
-      Build_OP(TOP_sxth_r, src1, src1, ops);
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
+        if (s2mtype == MTYPE_I1) {
+          Build_OP(TOP_sxtb_r, src2, src2, ops);
+          is_signed = TRUE;
+        }
 
-    else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
-      FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
-      Build_OP(TOP_sxth_r, src2, src2, ops);
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-      Build_OP(opcode, dest, src1, src2, ops);
-    }
+        if (s1mtype == MTYPE_U1) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
+          Build_OP(TOP_and_i, src1, src1, const_tn, ops);
+        }
 
-      /*
-       * int <- int * int
-       */
-    else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
-             (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
-             (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4)) {
-      TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-      TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-      opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
-      Build_OP(opcode, tmp1, src1, src2, ops);
-      opcode = has_const ? TOP_mulhs_i : TOP_mulhs_r;
-      Build_OP(opcode, tmp2, src1, src2, ops);
-      Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
-    }
-    else {
-      FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI4 "));
-    }
+        if (s2mtype == MTYPE_U1) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
+          Build_OP(TOP_and_i, src2, src2, const_tn, ops);
+        }
 
-    break;
+        if (is_signed)
+          opcode = has_const ? TOP_mull_i : TOP_mull_r;
+        else
+          opcode = has_const ? TOP_mullu_i : TOP_mullu_r;        
+        
+        Build_OP(opcode, dest, src1, src2, ops);
+      }
+
+      // int <- short * short
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) {
+        opcode = has_const ? TOP_mulllu_i : TOP_mulllu_r;
+        Build_OP(opcode, dest, src1, src2, ops);
+      }
+
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) {
+        opcode = has_const ? TOP_mulll_i : TOP_mulll_r;
+        Build_OP(opcode, dest, src1, src2, ops);
+      }
+
+      else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_U2) {
+        Build_OP(TOP_sxth_r, src1, src1, ops);
+        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+        Build_OP(opcode, dest, src1, src2, ops);
+      }
+      
+      else if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_I2) {
+        FmtAssert (! has_const, ("Expand_Multiply: mult with const."));
+        Build_OP(TOP_sxth_r, src2, src2, ops);
+        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+        Build_OP(opcode, dest, src1, src2, ops);
+      }
+
+      // int <- int * int
+      else if ((s1mtype == MTYPE_U4 && s2mtype == MTYPE_U4) ||
+               (s1mtype == MTYPE_I4 && s2mtype == MTYPE_I4) ||
+               (s1mtype == MTYPE_I4 && s2mtype == MTYPE_U4) ||
+               (s1mtype == MTYPE_U4 && s2mtype == MTYPE_I4)) {
+        TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+        TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+        opcode = has_const ? TOP_mullu_i : TOP_mullu_r;
+        Build_OP(opcode, tmp1, src1, src2, ops);
+        opcode = has_const ? TOP_mulhs_i : TOP_mulhs_r;
+        Build_OP(opcode, tmp2, src1, src2, ops);
+        Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
+      }
+
+      else {
+        FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI4 (%d = %d * %d)",
+                          rmtype, s1mtype, s2mtype));
+      }
+
+      break;
+    }
 
   default:
     FmtAssert(FALSE, ("Expand_Multiply: --"));
   }
+
+  if (opcode == TOP_UNDEFINED)
+    FmtAssert(FALSE, ("Expand_Multiply: failed"));
 
   return;
 }
