@@ -1803,6 +1803,11 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   }
 #endif
 
+#if 0 // [CL] Removed that stuff and changed machine
+      // description so that control instruction also
+      // required an ODD resource: impossible combinations
+      // are excluded by resource exhaustion.
+
   // [CL] Handle the instructions that /require/ a particular slot,
   // ie branches
   if (EXEC_PROPERTY_is_ReqS0_Unit(OP_code(op))) {
@@ -1826,6 +1831,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
       }
     }
   }
+#endif
 
   if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
       EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
