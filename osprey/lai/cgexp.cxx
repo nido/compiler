@@ -74,6 +74,7 @@
 #include "w2op.h"
 
 BOOL Trace_Exp = FALSE;	            /* General code expansion trace */
+BOOL Trace_Exp2 = FALSE;            /* extra cgexp trace*/
 
 /* ====================================================================
  *   Expand_OP
@@ -361,7 +362,9 @@ Exp_OP (
     // trailing arguments.
     if (result) args[i++] = result;
     if (TOP_is_predicated(top)) {
-      Is_True(OP_PREDICATE_OPND == 0, ("predicate operand is not 0"));
+      Is_True(TOP_Find_Operand_Use(top, OU_predicate) == 0,
+	      ("predicate operand is not 0"));
+      //Is_True(OP_PREDICATE_OPND == 0, ("predicate operand is not 0"));
       args[i++] = True_TN;
     }
     args[i++] = op1;
@@ -396,19 +399,22 @@ Exp_OP (
 }
 
 /* ====================================================================
- *   EXP_Init ()
+ *   Init_CG_Expand ()
  *
  *   Initialize the tracing flags for the expander.
  * ====================================================================
  */
 void
-EXP_Init (void)
+Init_CG_Expand (void)
 {
   static BOOL Initialized = FALSE;
 
   // per PU:
-  Trace_Exp = Get_Trace (TP_CGEXP, LAI_EXPAND);
+  Trace_Exp = Get_Trace (TP_CGEXP, 1);
   /* whirl2ops uses -ttexp:2 */
+  Trace_Exp2 = Get_Trace (TP_CGEXP, 4);
+  //  Disable_Const_Mult_Opt = Get_Trace (TP_CGEXP, 32);
+  /* calls.c use -ttexp:64 */
 
   if (Initialized) return;
   Initialized = TRUE;

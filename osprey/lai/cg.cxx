@@ -101,7 +101,7 @@
 #include "cgdriver.h"
 #include "label_util.h"
 #include "cgtarget.h"
-/* #include "ebo.h" */  /* Too target-dependent ?? */
+#include "ebo.h"
 #include "hb.h"
 #ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
@@ -121,6 +121,8 @@ BOOL PU_Has_Calls;
 BOOL PU_References_GP;
 
 BOOL CG_PU_Has_Feedback;
+
+BOOL Reuse_Temp_TNs = FALSE;
 
 RID *Current_Rid;
 
@@ -171,7 +173,11 @@ CG_PU_Initialize (
   CFLOW_Initialize();
   CG_LOOP_Init();
   HB_Init();
-  // if (Enable_CG_Peephole) EBO_Init();
+#ifdef TARG_ST
+  if (CG_enable_peephole) EBO_Init();
+#else
+  if (Enable_CG_Peephole) EBO_Init();
+#endif
   Init_Label_Info();
 
 #ifdef EMULATE_LONGLONG
@@ -215,7 +221,11 @@ CG_PU_Finalize(void)
   GTN_UNIVERSE_Pu_End ();
   OP_MAP_Finish();
   CGSPILL_Finalize_For_PU();
-  // if (Enable_CG_Peephole) EBO_Finalize();
+#ifdef TARG_ST
+  if (CG_enable_peephole) EBO_Finalize();
+#else
+  if (Enable_CG_Peephole) EBO_Finalize();
+#endif
 
   //  if (PU_has_syscall_linkage(Get_Current_PU())) {
   //	Enable_SWP = Orig_Enable_SWP;
@@ -248,7 +258,8 @@ CG_Region_Initialize (
   MEM_POOL_Push (&MEM_local_region_pool);
   MEM_POOL_Push (&MEM_local_region_nz_pool);
 
-  EXP_Init ();
+  Init_CG_Expand ();
+  //  EXP_Init ();
   FREQ_Region_Initialize ();
   BB_REGION_Initialize ();
   LRA_Init();
@@ -450,11 +461,6 @@ CG_Generate_Code(
   Stop_Timer ( T_Expand_CU );
   Check_for_Dump ( TP_CGEXP, NULL );
 
-#if 0
-  fprintf(TFile, "%s CFG After Generate_Entry_Exit_Code\n%s\n", DBar, DBar);
-  Print_All_BBs ();
-#endif
-
   if (CG_localize_tns) {
     /* turn all global TNs into local TNs */
     Set_Error_Phase ( "Localize" );
@@ -471,21 +477,19 @@ CG_Generate_Code(
     Stop_Timer ( T_GLRA_CU );
     Check_for_Dump ( TP_FIND_GLOB, NULL );
   }
-#if 0
-  fprintf(TFile, "%s CFG After Localize_Any_Global_TNs\n%s\n", DBar, DBar);
-  Print_All_BBs ();
-#endif
 
   if (!Lai_Code) {
-#ifndef TARG_ST
+#ifdef TARG_ST
+    if (CG_enable_peephole) {
+#else
     if (Enable_CG_Peephole) {
+#endif
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
       EBO_Pre_Process_Region (region ? REGION_get_rid(rwn) : NULL);
       Stop_Timer ( T_EBO_CU );
       Check_for_Dump ( TP_EBO, NULL );
     }
-#endif
 
     // Optimize control flow (first pass)
     if (CG_opt_level > 0 && CFLOW_opt_before_cgprep) {
@@ -502,7 +506,7 @@ CG_Generate_Code(
     if (CG_opt_level > 1) {
 
 #ifdef TARG_ST
-      if (Enable_CG_SSA) {
+      if (CG_enable_ssa) {
 	//
 	// Experimental SSA framework: invoked at optimization levels
 	// above 1, when CG_localize_tns is not ON.
@@ -570,11 +574,6 @@ CG_Generate_Code(
       }
 #endif
 
-#if 0
-      fprintf(TFile, "%s CFG After Loop Opts\n %s\n", DBar, DBar);
-      Print_All_BBs ();
-#endif
-
 #ifndef TARG_ST
       /* Optimize control flow (second pass) */
       if (CFLOW_opt_after_cgprep) {
@@ -585,7 +584,11 @@ CG_Generate_Code(
 #endif
 
 #ifndef TARG_ST
+#ifdef TARG_ST
+      if (CG_enable_peephole) {
+#else
       if (Enable_CG_Peephole) {
+#endif
 	Set_Error_Phase( "Extended Block Optimizer");
 	Start_Timer( T_EBO_CU );
 	EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
@@ -594,32 +597,6 @@ CG_Generate_Code(
 	Check_for_Dump ( TP_EBO, NULL );
       }
 #endif
-
-#ifdef TARG_ST
-      if (Enable_CG_SSA) {
-	//
-	// Experimental SSA framework: later scheduling, register
-	// allocation done within it.
-	//
-	// NOTE: make sure liveness is up to date
-	//
-	Set_Error_Phase("Out of SSA Translation");
-	SSA_Exit (region ? REGION_get_rid(rwn) : NULL, region);
-	Check_for_Dump(TP_SSA, NULL);
-      }
-
-      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-      //
-      // rename TNs -- required by LRA
-      // Since Out-of-SSA translation has introduced some
-      // non-localized TNs, need to do it.
-      //
-      // TODO: when SSA is into reg alloc, no need for rename_TNs()
-      //
-      GRA_LIVE_Rename_TNs();  // rename TNs -- required by LRA
-      Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
-#endif
-
     }
 
     if (!Get_Trace (TP_CGEXP, 1024))
@@ -658,34 +635,72 @@ CG_Generate_Code(
     Print_All_BBs ();
 #endif
 
-    if (!CG_localize_tns)
-      {
-	// Earlier phases (esp. GCM) might have introduced local definitions
-	// and uses for global TNs. Rename them to local TNs so that GRA 
-	// does not have to deal with them.
+    if (!CG_localize_tns) {
 
-	if (GRA_recalc_liveness) {
-	  Start_Timer( T_GLRA_CU);
-	  GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-	  Stop_Timer ( T_GLRA_CU );
-	  Check_for_Dump (TP_FIND_GLOB, NULL);
-	} else {
-	  GRA_LIVE_Rename_TNs ();
-	}
+#ifdef TARG_ST
+      if (CG_enable_ssa) {
+	//
+	// Experimental SSA framework: later register allocation
+	// done within it.
+	//
+	// NOTE: make sure liveness is up to date
+	//       SSA translation maintains liveness info (see 
+	//       Sreedhar's paper).
+	//
+	Set_Error_Phase("Out of SSA Translation");
+	SSA_Eliminate_Phi_Resource_Interference(region ? REGION_get_rid(rwn) : NULL, region);
 
-	if (GRA_redo_liveness) {
-	  Start_Timer( T_GLRA_CU );
-	  GRA_LIVE_Init(region ? REGION_get_rid( rwn ) : NULL);
-	  Stop_Timer ( T_GLRA_CU );
-	  Check_for_Dump ( TP_FIND_GLOB, NULL );
-	}
+	//
+	// SSA_Exit() removes PHI-nodes and cleans up any storage
+	// used by the SSA.
+	//
+	SSA_Exit (region ? REGION_get_rid(rwn) : NULL, region);
+	Check_for_Dump(TP_SSA, NULL);
+	//
+	// TODO: until the reg. allocator works on the SSA directly,
+	//       we need to maintain the liveness info after the
+	//       SSA_Exit(). Unfortunately, if there is scheduling,
+	//       or something else done to the code between the
+	//       SSA_Eliminate_Phi_Resource_Interference() and the
+	//       SSA_Exit(), we can not incrementally maintain it 
+	//       during the SSA_Exit(). So, recompute for now.
+	//
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+	//
+	// TODO: same for Rename_TNs() bellow.
+	//
+      }
+#endif
 
-	GRA_Allocate_Global_Registers( region );
-#if 0
-	fprintf(TFile, "%s CFG After GRA_Allocate_Global_Registers\n%s\n", DBar, DBar);
-	Print_All_BBs ();
+      // Earlier phases (esp. GCM) might have introduced local definitions
+      // and uses for global TNs. Rename them to local TNs so that GRA 
+      // does not have to deal with them.
+
+      if (GRA_recalc_liveness) {
+	Start_Timer( T_GLRA_CU);
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+	Stop_Timer ( T_GLRA_CU );
+	Check_for_Dump (TP_FIND_GLOB, NULL);
+      } else {
+	GRA_LIVE_Rename_TNs ();
+#if 1
+	Trace_IR(TP_SSA, "GRA_LIVE_Rename_TNs", NULL);
 #endif
       }
+
+      if (GRA_redo_liveness) {
+	Start_Timer( T_GLRA_CU );
+	GRA_LIVE_Init(region ? REGION_get_rid( rwn ) : NULL);
+	Stop_Timer ( T_GLRA_CU );
+	Check_for_Dump ( TP_FIND_GLOB, NULL );
+      }
+
+      GRA_Allocate_Global_Registers( region );
+#if 0
+      fprintf(TFile, "%s CFG After GRA_Allocate_Global_Registers\n%s\n", DBar, DBar);
+      Print_All_BBs ();
+#endif
+    }
 
 #if 0
     fprintf(TFile, "%s CFG before LRA_Allocate_Registers\n%s\n", DBar, DBar);
@@ -737,7 +752,11 @@ CG_Generate_Code(
 
   if (!Lai_Code) {
 #ifndef TARG_ST
+#ifdef TARG_ST
+    if (CG_enable_peephole) {
+#else
     if (Enable_CG_Peephole) {
+#endif
       Set_Error_Phase("Extended Block Optimizer");
       Start_Timer(T_EBO_CU);
       EBO_Post_Process_Region (region ? REGION_get_rid(rwn) : NULL);

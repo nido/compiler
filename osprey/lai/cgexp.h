@@ -72,8 +72,6 @@
 
 #include "defs.h"
 #include "symtab.h"
-/* #include "tcon_util.h" */
-
 #include "variants.h"
 #include "cgtarget.h"
 
@@ -83,7 +81,7 @@ extern BOOL Trace_Exp;
  *   Intitialize things for the cgexp phase at the start of each PU.
  * ----------------------------------------------------------------------
  */
-extern void EXP_Init (void);	/* setup trace flags */
+extern void Init_CG_Expand (void);	/* setup trace flags */
 
 /* ----------------------------------------------------------------------
  *   Exp_OP0 / Exp_OP1 / Exp_OP2 / Exp_OP3
@@ -172,7 +170,8 @@ extern void Exp_Select_And_Condition (
         OPCODE select, TN *result, TN *true_tn, TN *false_tn,
         OPCODE compare, TN *cmp_kid1, TN *cmp_kid2, VARIANT variant, OPS *ops);
 
-
+#if 0
+/* Arthur: moved to cg.h */
 /* ----------------------------------------------------------------------
  * By default, when we expand multi-instruction sequences, we use a new
  * temporary TN for each intermediate result.  This simplifies things for
@@ -183,6 +182,7 @@ extern void Exp_Select_And_Condition (
  */
 extern BOOL Reuse_Temp_TNs;
 #define Get_Temp_TN(tn)	(Reuse_Temp_TNs ? tn : Build_TN_Like(tn))
+#endif
 
 /* Expand a local (to a BB) jump, choosing between a PIC (longer) sequence
  * and an absolute (shorter) sequence depending on the compilation mode.

@@ -192,6 +192,14 @@ extern BOOL CG_enable_rename;
 extern BOOL CG_enable_reverse_if_conversion;
 extern BOOL CG_enable_reverse_if_conversion_overridden;
 extern BOOL CG_enable_thr;
+extern BOOL CG_enable_peephole;
+extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
+
+extern BOOL CG_enable_BB_splitting;
+#define CG_bblength_default 300      /* default value for CG_split_BB_length */
+#define CG_bblength_min	 100	     /* don't let the value get too small */
+#define CG_bblength_max	5000	     /* don't let the value get too big */
+extern INT32 CG_split_BB_length;     /* split BBs that are > than this */
 
 #define CG_maxinss_default 100
 extern INT32 CG_maxinss;
@@ -344,15 +352,28 @@ extern BOOL CG_emit_unwind_info;
 /*
  * CGEXPand flags 
  */
-extern BOOL EXP_gp_prolog_call_shared;
-extern BOOL EXP_normalize_logical;
-extern const char *EXP_sqrt_algorithm;
+extern INT32 CGEXP_expandconstant;	/* maximum # instructions to expand constants */
+#define DEFAULT_CGEXP_CONSTANT	3
+
+extern BOOL CGEXP_use_copyfcc;
+extern BOOL CGEXP_normalize_logical;
+extern BOOL CGEXP_gp_prolog_call_shared;
+extern BOOL CGEXP_fast_imul;
+extern BOOL CGEXP_float_consts_from_ints;
+extern BOOL CGEXP_cvrt_int_div_to_mult;
+extern BOOL CGEXP_cvrt_int_div_to_fdiv;
+extern BOOL CGEXP_opt_float_div_by_const;
+
+// temporary flags for controlling algorithm selection for fdiv, sqrt, etc
+extern const char *CGEXP_fdiv_algorithm;
+extern const char *CGEXP_sqrt_algorithm;
 
 /*
-extern BOOL LAI_emit_use_cold_section;
-
-extern BOOL LAI_emit_stack_frame;
-*/
+ * CGTARG flags 
+ */
+extern const char *CGTARG_Branch_Taken_Prob;
+extern double CGTARG_Branch_Taken_Probability;
+extern BOOL CGTARG_Branch_Taken_Prob_overridden;
 
 /* =======================================================================
  *   Miscellaneous
@@ -364,7 +385,7 @@ extern BOOL Use_Page_Zero;  /* set bit in object to allow use of page 0 */
  *   Tracing Flags
  * =======================================================================
  */
-#define LAI_EXPAND    1
+
 
 #endif /* cg_flags_INCLUDED */
 

@@ -88,6 +88,11 @@ BOOL CG_enable_pf_L1_st = FALSE;
 BOOL CG_enable_pf_L2_ld = FALSE;
 BOOL CG_enable_pf_L2_st = FALSE;
 BOOL CG_exclusive_prefetch = FALSE;
+BOOL CG_enable_peephole = FALSE;
+BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
+
+BOOL  CG_enable_BB_splitting = TRUE;
+INT32 CG_split_BB_length = CG_bblength_default;
 
 INT32 CG_L1_ld_latency = 0;
 INT32 CG_L2_ld_latency = 0;
@@ -279,7 +284,28 @@ BOOL CG_emit_asm_dwarf    = FALSE;
 BOOL CG_emit_unwind_info  = TRUE;
 BOOL CG_emit_unwind_directives = FALSE;
 
-BOOL EXP_gp_prolog_call_shared = TRUE;
-BOOL EXP_normalize_logical = TRUE;
-const char *EXP_sqrt_algorithm = "st100";
+// ====================================================================
+//   CGEXP:
+// ====================================================================
 
+INT32 CGEXP_expandconstant = DEFAULT_CGEXP_CONSTANT;
+BOOL CGEXP_use_copyfcc = TRUE;
+BOOL CGEXP_normalize_logical = FALSE;
+BOOL CGEXP_gp_prolog_call_shared = TRUE;
+BOOL CGEXP_fast_imul = TRUE;
+BOOL CGEXP_float_consts_from_ints = TRUE;
+BOOL CGEXP_cvrt_int_div_to_mult = TRUE;
+BOOL CGEXP_cvrt_int_div_to_fdiv = TRUE;
+BOOL CGEXP_opt_float_div_by_const = TRUE;
+
+// temporary flags for controlling algorithm selection for fdiv, sqrt, etc
+const char *CGEXP_fdiv_algorithm = "sgi";
+const char *CGEXP_sqrt_algorithm = "sgi";
+
+// ====================================================================
+//   CGTARG:
+// ====================================================================
+
+const char *CGTARG_Branch_Taken_Prob = NULL;
+double CGTARG_Branch_Taken_Probability;
+BOOL CGTARG_Branch_Taken_Prob_overridden;

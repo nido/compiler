@@ -79,7 +79,7 @@
 #include "cgemit.h"		    /* R_Assemble_File() */
 #include "cg_swp_options.h"         /* for SWP_Options */
 #include "gra.h"                    /* for GRA_optimize_placement... */
-/* #include "ebo.h"	*/	    /* for EBO options */
+#include "ebo.h"        	    /* for EBO options */
 #include "cgprep.h"		    /* for CGPREP knobs */
 #include "cg_dep_graph.h"	    /* for CG_DEP knobs */
 #include "cg_dep_graph_update.h"    /* more CG_DEP knobs */
@@ -300,9 +300,18 @@ static OPTION_DESC Options_CG[] = {
     0, 0, MAX_OPT_LEVEL,
                 &CG_opt_level, &cg_opt_level_overridden },
 
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
+    CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, NULL,
+    "Restrict BB length by splitting longer BBs" },
+
   // EBO options:
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",
+#ifdef TARG_ST
+    0, 0, 0,	&CG_enable_peephole, &Enable_CG_Peephole_overridden },
+#else
     0, 0, 0,	&Enable_CG_Peephole, &Enable_CG_Peephole_overridden },
+#endif
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "create_madds", "create_madd",
     0, 0, 0,  &CG_create_madds, NULL },
 
@@ -411,10 +420,28 @@ static OPTION_DESC Options_CG[] = {
 
   // Whirl2ops / Expander options.
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE,"normalize_logical", "normalize",
-    0, 0, 0, &EXP_normalize_logical, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"fdiv_algorithm", "fdiv",
+    0, 0, 0, &CGEXP_fdiv_algorithm, NULL },
   { OVK_NAME,	OV_INTERNAL, TRUE,"sqrt_algorithm", "sqrt",
-    0, 0, 0, &EXP_sqrt_algorithm, NULL },
+    0, 0, 0, &CGEXP_sqrt_algorithm, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"use_copyfcc", "",
+    0, 0, 0, &CGEXP_use_copyfcc, NULL },
+  { OVK_INT32,	OV_INTERNAL, TRUE,"expconst", "",
+    DEFAULT_CGEXP_CONSTANT, 0, INT32_MAX, &CGEXP_expandconstant, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"normalize_logical", "normalize",
+    0, 0, 0, &CGEXP_normalize_logical, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"gp_prolog_call_shared", "gp_prolog",
+    0, 0, 0, &CGEXP_gp_prolog_call_shared, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"integer_divide_by_constant", "integer_divide_by_constant",
+    0, 0, 0, &CGEXP_cvrt_int_div_to_mult, &Integer_Divide_By_Constant_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"integer_divide_use_float", "integer_divide_use_float",
+    0, 0, 0, &CGEXP_cvrt_int_div_to_fdiv, &Integer_Divide_Use_Float_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"fast_imul", "",
+    0, 0, 0, &CGEXP_fast_imul, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"float_consts_from_ints", "",
+    0, 0, 0, &CGEXP_float_consts_from_ints, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"float_div_by_const", "",
+    0, 0, 0, &CGEXP_opt_float_div_by_const, NULL },
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "localize", "localize",
     0, 0, 0, &CG_localize_tns, &CG_localize_tns_Set},
@@ -484,6 +511,9 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &LOCS_PRE_Enable_Scheduling, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"post_local_scheduler", "post_local_sched",
     0, 0, 0, &LOCS_POST_Enable_Scheduling, NULL },
+  { OVK_NAME,   OV_INTERNAL, TRUE,"branch_taken_prob", "",
+    0, 0, 0,	&CGTARG_Branch_Taken_Prob,
+		&CGTARG_Branch_Taken_Prob_overridden},
   { OVK_BOOL,	OV_INTERNAL, TRUE,"locs_form_bundles", "locs_form_bundles",
     0, 0, 0, &LOCS_Enable_Bundle_Formation, NULL },
   {OVK_BOOL,	OV_INTERNAL, TRUE, "pre_hb_scheduler", "pre_hb_sched",
@@ -578,6 +608,11 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE, "loop_force_ifc", "",
     0, 0, 2,    &CG_LOOP_force_ifc, NULL },
 
+  // EBO Options
+
+  { OVK_INT32,  OV_INTERNAL, TRUE,"ebo_level", "ebo",
+    0, INT32_MIN, INT32_MAX, &EBO_Opt_Level, &EBO_Opt_Level_overridden },
+
   // Emit options
   { OVK_INT32,	OV_INTERNAL, TRUE,"longbranch_limit", "",
     DEFAULT_LONG_BRANCH_LIMIT, 0, INT32_MAX, &EMIT_Long_Branch_Limit, NULL },
@@ -643,6 +678,155 @@ OPTION_GROUP CG_Option_Groups[] = {
 };
 
 
+
+extern INT prefetch_ahead;
+INT _prefetch_ahead = 2;
+#pragma weak prefetch_ahead = _prefetch_ahead
+
+/* =======================================================================
+ *
+ *  Configure_Prefetch
+ *
+ *  Configure the prefetch flags controlled by prefetch_ahead exported
+ *  from LNO. It MUST be called after lno.so has been loaded.
+ *
+ * =======================================================================
+ */
+static void
+Configure_prefetch_ahead(void)
+{
+  static INT32 save_L1_pf_latency = -1;
+  static INT32 save_L2_pf_latency = -1;
+  if ( save_L1_pf_latency < 0 ) {
+    save_L1_pf_latency = CG_L1_pf_latency;
+    save_L2_pf_latency = CG_L2_pf_latency;
+  }
+#ifdef TARG_ST
+  if (PROC_has_enable_prefetch_ahead()) {
+#else
+  if (Enable_Prefetch_Ahead_For_Target()) {
+#endif
+    if ( ! CG_L2_pf_latency_overridden )
+      if ( prefetch_ahead ) 
+	CG_L2_pf_latency = 0;
+      else
+	CG_L2_pf_latency = save_L2_pf_latency;
+    if ( ! CG_L1_pf_latency_overridden )
+      if (prefetch_ahead)
+	CG_L1_pf_latency = 0;
+      else
+	CG_L1_pf_latency = save_L1_pf_latency;
+  }
+}
+
+/* =======================================================================
+ *
+ *  Configure_Prefetch
+ *
+ *  Configure the prefetch flags.
+ *
+ * =======================================================================
+ */
+static void
+Configure_Prefetch(void)
+{
+  if ( ! OPT_shared_memory) {
+	CG_exclusive_prefetch = TRUE;
+  }
+  /* Detect any of the various cases that cause us to disable 
+   * prefetching entirely:
+   *   isa < mips4
+   *   -CG:prefetch=off
+   *   -CG:z_conf_prefetch=off:nz_conf_prefetch=off
+   */ 
+#ifdef TARG_ST
+  if (!PROC_has_prefetch()
+#else 
+  if (   ! Target_Has_Prefetch()
+#endif
+      || (CG_enable_prefetch_overridden && ! CG_enable_prefetch)
+      || (   CG_enable_z_conf_prefetch_overridden 
+	  && ! CG_enable_z_conf_prefetch
+          && CG_enable_nz_conf_prefetch_overridden 
+	  && ! CG_enable_nz_conf_prefetch)
+  ) {
+disable_prefetch:
+    CG_enable_prefetch = FALSE;
+    CG_enable_z_conf_prefetch  = FALSE;
+    CG_enable_nz_conf_prefetch = FALSE;
+    CG_enable_pf_L1_ld = FALSE;
+    CG_enable_pf_L1_st = FALSE;
+    CG_enable_pf_L2_ld = FALSE;
+    CG_enable_pf_L2_st = FALSE;
+    return;
+  }
+
+  /* At this point, -CG:prefetch was explicitly set to true, or
+   * unspecified.
+   */
+  if ( ! CG_enable_prefetch_overridden ) {
+    CG_enable_prefetch = FALSE;
+
+    /* -CG:z_conf_prefetch or -CG:nz_conf_prefetch implicitly
+     * set to TRUE, implies we should enable prefetching.
+     */
+    if (   (   CG_enable_z_conf_prefetch_overridden 
+	    && CG_enable_z_conf_prefetch)
+        || (   CG_enable_nz_conf_prefetch_overridden 
+	    && CG_enable_nz_conf_prefetch)
+    ) {
+      CG_enable_prefetch = TRUE;
+    }
+
+    /* Some targets implicitly enable prefetching.
+     */
+#ifdef TARG_ST
+    else if (PROC_has_enable_prefetch()) {
+#else
+    else if (Enable_Prefetch_For_Target()) {
+#endif
+      CG_enable_prefetch = TRUE;
+    }
+
+    /* No implicit enable of prefetching this time...
+     */
+    else goto disable_prefetch;
+  }
+
+  /* Prefetching is enabled, implicitly or explicitly. Handle any
+   * defaults, both target independent and target specific.
+   */
+  if ( ! CG_enable_z_conf_prefetch_overridden )
+    CG_enable_z_conf_prefetch = FALSE;
+  if ( ! CG_enable_nz_conf_prefetch_overridden )
+    CG_enable_nz_conf_prefetch = TRUE;
+
+#ifdef TARG_ST
+  if (PROC_has_enable_prefetch()) {
+#else
+  if (Enable_Prefetch_For_Target()) {
+#endif
+    if ( ! CG_L1_ld_latency_overridden ) CG_L1_ld_latency = 8;
+    if ( ! CG_enable_pf_L1_ld_overridden ) CG_enable_pf_L1_ld = FALSE;
+    if ( ! CG_enable_pf_L1_st_overridden ) CG_enable_pf_L1_st = FALSE;
+    if ( ! CG_enable_pf_L2_ld_overridden ) CG_enable_pf_L2_ld = TRUE;
+    if ( ! CG_enable_pf_L2_st_overridden ) CG_enable_pf_L2_st = TRUE;
+  } else {
+    if ( ! CG_enable_pf_L1_ld_overridden ) CG_enable_pf_L1_ld = TRUE;
+    if ( ! CG_enable_pf_L1_st_overridden ) CG_enable_pf_L1_st = TRUE;
+    if ( ! CG_enable_pf_L2_ld_overridden ) CG_enable_pf_L2_ld = TRUE;
+    if ( ! CG_enable_pf_L2_st_overridden ) CG_enable_pf_L2_st = TRUE;
+  }
+
+  /* Finally, check to see if we actually will do any prefetching, and
+   * if not, disable prefetching all together.
+   */
+  if (   ! CG_enable_pf_L1_ld
+      && ! CG_enable_pf_L1_st
+      && ! CG_enable_pf_L2_ld
+      && ! CG_enable_pf_L2_st ) goto disable_prefetch;
+}
+
 /* =======================================================================
  *
  *  Configure_CG_Options
@@ -660,6 +844,122 @@ Configure_CG_Options(void)
 
   if (!CG_localize_tns_Set)
     CG_localize_tns = (CG_opt_level <= 1);
+
+#if 0
+  if ( ! Enable_SWP_overridden )
+  {
+    // Enable_SWP = (CG_opt_level > 2) && ! OPT_Space;
+#ifdef TARG_IA64
+    Enable_SWP = CG_opt_level >= 2;
+#else
+    Enable_SWP = FALSE;
+#endif
+  }
+#endif
+
+  if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
+    OPT_unroll_size = 128;
+  
+  if ( OPT_Unroll_Analysis_Set )
+  {
+    CG_LOOP_unroll_analysis = OPT_Unroll_Analysis;
+  }
+  CG_LOOP_unroll_times_max = OPT_unroll_times;
+  CG_LOOP_unrolled_size_max = OPT_unroll_size;
+
+  CG_LOOP_ooo_unroll_heuristics = PROC_is_out_of_order();
+
+  if (OPT_Space)
+  {
+    CGEXP_expandconstant = 2;
+  }
+
+#if 0
+  if (!Integer_Divide_By_Constant_overridden) {
+    CGEXP_cvrt_int_div_to_mult = (!OPT_Space) && (CG_opt_level > 0);
+  } 
+
+  if (!Integer_Divide_Use_Float_overridden) {
+    CGEXP_cvrt_int_div_to_fdiv =    !Kernel_Code
+				 && Enable_Idiv_In_FPU_For_Target()
+				 && !OPT_Space
+				 && CG_opt_level > 0;
+  }
+#endif
+
+  if (Kernel_Code && !CG_tail_call_overridden) CG_tail_call = FALSE;
+
+  if (Kernel_Code && !GCM_Speculative_Ptr_Deref_Set)
+    GCM_Eager_Ptr_Deref = FALSE;
+
+  if (!CGTARG_Branch_Taken_Prob_overridden)
+    CGTARG_Branch_Taken_Prob = "0.95";
+  CGTARG_Branch_Taken_Probability = atof(CGTARG_Branch_Taken_Prob);
+  
+#if 0
+  if ( !CG_enable_spec_idiv_overridden && Enable_Spec_Idiv_For_Target() )
+    CG_enable_spec_idiv = FALSE;
+
+  if ( ! CG_LOOP_fix_recurrences_specified
+       && (      CG_LOOP_back_substitution
+              && CG_LOOP_back_substitution_specified
+           ||    CG_LOOP_interleave_reductions
+              && CG_LOOP_interleave_reductions_specified
+           ||    CG_LOOP_interleave_posti
+	      && CG_LOOP_interleave_posti_specified
+           ||    CG_LOOP_reassociate 
+              && CG_LOOP_reassociate_specified)) {
+    CG_LOOP_fix_recurrences = TRUE;
+  }
+
+  if ( Enable_SWP && ! Enable_LOH_overridden )
+    Enable_LOH = Enable_LOH_For_Target();
+#endif
+
+  if (!EBO_Opt_Level_overridden) {
+    EBO_Opt_Level = (CG_opt_level > 0) ? EBO_Opt_Level_Default : 0;
+  }
+#ifdef TARG_ST
+  CG_enable_peephole = (CG_opt_level > 0) ? TRUE : FALSE;
+#else
+  Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;
+#endif
+
+  /* Enable_Fill_Delay_Slots controls the filling of delay slots in locs
+     and gcm */
+#ifdef TARG_ST
+  if (!PROC_has_branch_delay_slot() || !Enable_Fill_Delay_Slots) 
+#else
+  if (!Enable_Fill_Delay_Slots_For_Target() || !Enable_Fill_Delay_Slots) 
+#endif
+    GCM_Enable_Fill_Delay_Slots = FALSE;
+
+  /* Clamp body_ins_count_max to max BB length
+   */
+  if (CG_maxinss_overridden) {
+    if (CG_maxinss > CG_split_BB_length) {
+      CG_split_BB_length = CG_maxinss;
+    }
+  } else {
+    CG_maxinss = CG_maxinss_default * CG_opt_level;
+    if (CG_maxinss == 0 || CG_maxinss > CG_split_BB_length) {
+      CG_maxinss = CG_split_BB_length;
+    }
+  }
+
+  /* Set BB clone limits
+   */
+  if ( Kernel_Code && ! CFLOW_Enable_Clone_overridden ) {
+    // if kernel code then want really minimal space,
+    // so turn off cloning altogether
+    CFLOW_Enable_Clone = FALSE;
+  } else if (OPT_Space) {
+    if (!clone_incr_overridden) CFLOW_clone_incr = 1;
+    if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 1;
+    if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 3;
+  }
+
+  Configure_Prefetch();
 
   // Check the LOCS_Enable_Bundle_Formation for consistency
 #if 0

@@ -1694,13 +1694,41 @@ insert_copies_blindly ()
 }
 
 /* ================================================================
- *   Eliminate_Phi_Resource_Interference
+ *   SSA_Eliminate_Phi_Resource_Interference
  * ================================================================
  */
-static void
-Eliminate_Phi_Resource_Interference()
+void
+SSA_Eliminate_Phi_Resource_Interference(
+  RID *rid, 
+  BOOL region 
+)
 {
-  FmtAssert(FALSE,("not implemented"));
+  Trace_SSA_Out = Get_Trace(TP_SSA, 0x002);
+  Trace_Igraph = Get_Trace(TP_SSA, 0x004);
+
+  if (Trace_SSA_Out) {
+    Trace_IR(TP_SSA, "Before Translating Out of SSA", NULL);
+  }
+
+  MEM_POOL_Push(&MEM_local_pool);
+
+  initialize_phiCongruenceClasses();
+
+  if (SSA_TranslateMethod == METHOD_1) {
+    insert_copies_blindly ();
+  }
+  else {
+    //
+    // Build the interference graph
+    //
+    IGRAPH_Build();
+    FmtAssert(FALSE,("not implemented"));
+    IGRAPH_Clean(); // do I need to clean anything ??
+  }
+
+  if (Trace_SSA_Out) {
+    Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
+  }
 
   return;
 }
@@ -1744,7 +1772,6 @@ remove_phi_nodes ()
 
       // if a PHI-node, remove
       if (OP_code(op) == TOP_phi) {
-
 	if (Trace_SSA_Out) {
 	  fprintf(TFile, "  removing a phi \n\n");
 	  //	  Print_OP_No_SrcLine(op);
@@ -1810,48 +1837,11 @@ SSA_Exit (
   BOOL region 
 )
 {
-  Trace_SSA_Out = Get_Trace(TP_SSA, 0x002);
-  Trace_Igraph = Get_Trace(TP_SSA, 0x004);
-
-  //
-  // This one is temporary working pool (zeroes memory)
-  //
-  MEM_POOL_Push(&MEM_local_pool);
-
-  if (Trace_SSA_Out) {
-    Trace_IR(TP_SSA, "Before Translating Out of SSA", NULL);
-  }
-
-  //
-  // Build the interference graph
-  //
-  IGRAPH_Build();
-
-  initialize_phiCongruenceClasses();
-
-  if (SSA_TranslateMethod == METHOD_1) {
-    insert_copies_blindly ();
-  }
-  else {
-    Eliminate_Phi_Resource_Interference();
-  }
-
-  if (Trace_SSA_Out) {
-    Trace_IR(TP_SSA, "AFTER ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
-  }
-
   remove_phi_nodes();
   finalize_phiCongruenceClasses();
 
-  IGRAPH_Clean(); // do I need to clean anything ??
-
   MEM_POOL_Pop(&MEM_local_pool);
-
-  //
-  // do I need to delete it ?? Does not seem to be in any pool ??
-  //
   OP_MAP_Delete(phi_op_map);
-
   MEM_POOL_Pop (&ssa_pool);
 }
 
