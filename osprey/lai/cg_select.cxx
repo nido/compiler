@@ -1088,8 +1088,8 @@ Update_Mem_Lists (OP *op, OP *new_op)
   i_end = store_i.tkstrs.end();
   while(i_iter != i_end) {
     if (*i_iter == op) {
+      store_i.tkstrs.insert(i_iter, new_op);
       store_i.tkstrs.erase(i_iter);
-      store_i.tkstrs.insert(i_end, new_op);
       break;
     }
     i_iter++;
@@ -1099,8 +1099,8 @@ Update_Mem_Lists (OP *op, OP *new_op)
   i_end = store_i.ntkstrs.end();
   while(i_iter != i_end) {
     if (*i_iter == op) {
+      store_i.ntkstrs.insert(i_iter, new_op);
       store_i.ntkstrs.erase(i_iter);
-      store_i.ntkstrs.insert(i_end, new_op);
       break;
     }
     i_iter++;
