@@ -1181,6 +1181,12 @@ put_subrange_type(DST_flag flag, DST_SUBRANGE_TYPE *attr, Dwarf_P_Die die)
   if (DST_IS_count(flag))
     att = DW_AT_count;
     
+#ifdef TARG_ST
+  if (DST_IS_count(flag)) {
+    dwarf_add_AT_unsigned_const (dw_dbg, die, att,
+		       DST_SUBRANGE_TYPE_count_val(attr), &dw_error);
+  } else {
+#endif
   if (DST_IS_ub_cval(flag)) {
     dwarf_add_AT_signed_const (dw_dbg, die, att,
 		       DST_SUBRANGE_TYPE_upper_cval(attr), &dw_error);
@@ -1188,6 +1194,9 @@ put_subrange_type(DST_flag flag, DST_SUBRANGE_TYPE *attr, Dwarf_P_Die die)
   else {
     put_reference (DST_SUBRANGE_TYPE_upper_ref(attr), att, die);
   }
+#ifdef TARG_ST
+  }
+#endif
 
   /* stride provided if descriptor of (possibly) non-contiguous object */
 
