@@ -118,6 +118,31 @@ lao_init(void) {
 #endif
 }
 
+// Per PU initialization.
+void
+lao_init_pu(void) {
+  CG_LAO_Region_Map = NULL;
+}
+
+// Per Region initialization.
+void
+lao_init_region(void) {
+}
+
+// Per Region finalization.
+void
+lao_fini_region(void) {
+}
+
+// Per PU finalization.
+void
+lao_fini_pu(void) {
+  if (CG_LAO_Region_Map) {
+    BB_MAP_Delete(CG_LAO_Region_Map);
+    CG_LAO_Region_Map = NULL;
+  }
+}
+
 // Finalization of the LAO, needs to be called once.
 void
 lao_fini(void) {
@@ -131,31 +156,6 @@ lao_fini(void) {
     close_so(lao_handler);
     lao_handler = NULL;
   }
-}
-
-// Per PU initialization.
-void
-lao_init_pu(void) {
-  CG_LAO_Region_Map = NULL;
-}
-
-// Per PU finalization.
-void
-lao_fini_pu(void) {
-  if (CG_LAO_Region_Map) {
-    BB_MAP_Delete(CG_LAO_Region_Map);
-    CG_LAO_Region_Map = NULL;
-  }
-}
-
-// Per Region initialization.
-void
-lao_init_region(void) {
-}
-
-// Per Region finalization.
-void
-lao_fini_region(void) {
 }
 
 /*-------------------------- CGIR Utility Functions ------------------*/
@@ -241,8 +241,7 @@ CGIR_LAB_to_Label(CGIR_LAB cgir_lab) {
 
 // Convert CGIR_ST_CLASS to LIR SClass
 static inline LAI_SClass
-CGIR_ST_CLASS_to_SClass(ST_CLASS sclass)
-{
+CGIR_ST_CLASS_to_SClass(ST_CLASS sclass) {
   static LAI_SClass sclasses[CLASS_COUNT] = {
     LAI_SClass_UNDEF,	// CLASS_UNK
     LAI_SClass_VAR,	// CLASS_VAR
@@ -257,8 +256,7 @@ CGIR_ST_CLASS_to_SClass(ST_CLASS sclass)
 
 // Convert CGIR_ST_SCLASS to LIR SStorage
 static inline LAI_SStorage
-CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage)
-{
+CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage) {
   static LAI_SStorage sstorages[SCLASS_COUNT] = {
     LAI_SStorage_UNDEF,		// SCLASS_UNKNOWN
     LAI_SStorage_AUTO,		// SCLASS_AUTO
@@ -284,8 +282,7 @@ CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage)
 
 // Convert CGIR_ST_EXPORT to LIR SExport
 static inline LAI_SExport
-CGIR_ST_EXPORT_to_SExport(ST_EXPORT sexport)
-{
+CGIR_ST_EXPORT_to_SExport(ST_EXPORT sexport) {
   static LAI_SExport sexports[EXPORT_COUNT] = {
     LAI_SExport_LOCAL,			// EXPORT_LOCAL
     LAI_SExport_LOCAL_INTERNAL,		// EXPORT_LOCAL_INTERNAL
@@ -1040,29 +1037,29 @@ CGIR_LD_update(LoopInfo loopInfo, CGIR_LD cgir_ld, CGIR_BB head_bb) {
 // Initialization of the LIR->CGIR callbacks object.
 static void
 LIR_CGIR_callback_init(CGIR_CallBack callback) {
-    // Initialize the callback pointers.
-    *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
-    *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
-    *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
-    *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
-    *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
-    *CGIR_CallBack__Virtual_TN_create(callback) = CGIR_Virtual_TN_create;
-    *CGIR_CallBack__Assigned_TN_create(callback) = CGIR_Assigned_TN_create;
-    *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
-    *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
-    *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
-    *CGIR_CallBack__Label_TN_create(callback) = CGIR_Label_TN_create;
-    *CGIR_CallBack__TN_update(callback) = CGIR_TN_update;
-    *CGIR_CallBack__OP_create(callback) = CGIR_OP_create;
-    *CGIR_CallBack__OP_update(callback) = CGIR_OP_update;
-    *CGIR_CallBack__BB_create(callback) = CGIR_BB_create;
-    *CGIR_CallBack__BB_update(callback) = CGIR_BB_update;
-    *CGIR_CallBack__BB_chain(callback) = CGIR_BB_chain;
-    *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
-    *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
-    *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
-    *CGIR_CallBack__LD_create(callback) = CGIR_LD_create;
-    *CGIR_CallBack__LD_update(callback) = CGIR_LD_update;
+  // Initialize the callback pointers.
+  *CGIR_CallBack__LAB_create(callback) = CGIR_LAB_create;
+  *CGIR_CallBack__LAB_update(callback) = CGIR_LAB_update;
+  *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
+  *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
+  *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
+  *CGIR_CallBack__Virtual_TN_create(callback) = CGIR_Virtual_TN_create;
+  *CGIR_CallBack__Assigned_TN_create(callback) = CGIR_Assigned_TN_create;
+  *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
+  *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
+  *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
+  *CGIR_CallBack__Label_TN_create(callback) = CGIR_Label_TN_create;
+  *CGIR_CallBack__TN_update(callback) = CGIR_TN_update;
+  *CGIR_CallBack__OP_create(callback) = CGIR_OP_create;
+  *CGIR_CallBack__OP_update(callback) = CGIR_OP_update;
+  *CGIR_CallBack__BB_create(callback) = CGIR_BB_create;
+  *CGIR_CallBack__BB_update(callback) = CGIR_BB_update;
+  *CGIR_CallBack__BB_chain(callback) = CGIR_BB_chain;
+  *CGIR_CallBack__BB_unchain(callback) = CGIR_BB_unchain;
+  *CGIR_CallBack__BB_link(callback) = CGIR_BB_link;
+  *CGIR_CallBack__BB_unlink(callback) = CGIR_BB_unlink;
+  *CGIR_CallBack__LD_create(callback) = CGIR_LD_create;
+  *CGIR_CallBack__LD_update(callback) = CGIR_LD_update;
 }
 
 
@@ -1082,7 +1079,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     Current_PU_Stack_Model == SMODEL_LARGE   ? 1 :
     Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
   //
-  // Open Interface
+  // Open interface.
   LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
       ConfigurationItem_RegionType, CG_LAO_regiontype,
       ConfigurationItem_SchedKind, CG_LAO_schedkind,
@@ -1151,6 +1148,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
 #endif
   }
   //
+  // Close interface.
   LAI_Interface_close(interface);
   //
   return optimizations != 0;
@@ -1244,8 +1242,7 @@ typedef struct OP_list {
   struct OP_list *next;
 } OP_list;
 
-static OP_list * OP_list_new(OP_list *head)
-{
+static OP_list * OP_list_new(OP_list *head) {
   OP_list * elem;
   //
   elem = (OP_list *)malloc(sizeof(OP_list));
@@ -1255,8 +1252,7 @@ static OP_list * OP_list_new(OP_list *head)
 }
 
 static void
-CGIR_TN_print ( const TN *tn, FILE *file )
-{
+CGIR_TN_print ( const TN *tn, FILE *file ) {
   //
   if (TN_is_constant(tn)) {
     if ( TN_has_value(tn)) {
@@ -1328,8 +1324,7 @@ CGIR_TN_print ( const TN *tn, FILE *file )
 }
 
 static void
-CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
-{
+CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file) {
   int i;
   //
   //
@@ -1366,8 +1361,7 @@ CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
 }
 
 static void
-CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
-{
+CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file) {
   for (OP *op = OPS_first(ops) ; op; op = OP_next(op)) {
     fprintf(file, "\t");
     CGIR_OP_print(op, bb_scheduled, file);
@@ -1377,8 +1371,7 @@ CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
 }
 
 static void
-CGIR_BB_print_header (BB *bp, FILE *file)
-{
+CGIR_BB_print_header (BB *bp, FILE *file) {
   BBLIST *bl;
   INT16 i;
   ANNOTATION *annot = ANNOT_Get(BB_annotations(bp), ANNOT_LOOPINFO);
@@ -1534,15 +1527,13 @@ CGIR_BB_print_header (BB *bp, FILE *file)
 }
 
 static void
-CGIR_BB_print (BB *bp, FILE *file)
-{
+CGIR_BB_print(BB *bp, FILE *file) {
   CGIR_BB_print_header (bp, file);
   if (BB_first_op(bp))	CGIR_OPS_print (&bp->ops, BB_scheduled(bp), file);
 }
 
 static void
-CGIR_Alias_print(FILE *file)
-{
+CGIR_Alias_print(FILE *file) {
   OP_list *memops = NULL, *elt1, *elt2;
   BB *bp;
   OP *op;
@@ -1576,8 +1567,7 @@ CGIR_Alias_print(FILE *file)
 }
 
 static void
-CGIR_print( FILE *file)
-{
+CGIR_print(FILE *file) {
   BB *bp;
   //
   fprintf(file, "--------CFG Begin--------\n");
