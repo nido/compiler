@@ -5160,11 +5160,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     MULTI_BB_WHILELOOP
   };
 
-#ifdef TARG_ST
-  LAO_Configure lao_configure;
-  memset(lao_configure, -1, sizeof(LAO_Configure));
-#endif
-
   //    if (Is_Inner_Loop(loop)) {
   if (!BB_innermost(LOOP_DESCR_loophead(loop))) 
     return FALSE;

@@ -211,7 +211,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 #if 0	//BD3
 	  // Call the LAO for all the hyperblocks.
 	  unsigned lao_flags = 0;
-	  if (CG_LAO_superblock > 0) lao_flags |= LAO_ScheduleSuper;
+	  if (CG_LAO_schedule > 0) lao_flags |= LAO_ScheduleSuper;
 	  lao_optimize_HB(*hbi, lao_flags);
 #endif	//BD3
 	}
@@ -320,7 +320,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 #if 0	//BD3
 	  // Call the LAO for all the hyperblocks.
 	  unsigned lao_flags = LAO_PostPass;
-	  if (CG_LAO_superblock > 0) lao_flags |= LAO_ScheduleSuper;
+	  if (CG_LAO_schedule > 0) lao_flags |= LAO_ScheduleSuper;
 	  lao_optimize_HB(*hbi, lao_flags);
 #endif	//BD3
 	}

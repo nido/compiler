@@ -175,7 +175,7 @@ static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 
-static BOOL CG_LAO_superblock_overridden = FALSE;
+static BOOL CG_LAO_schedule_overridden = FALSE;
 static BOOL CG_LAO_pipeline_overridden = FALSE;
 static BOOL CG_LAO_speculate_overridden = FALSE;
 
@@ -410,12 +410,12 @@ static OPTION_DESC Options_CG[] = {
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "LAO_enable", "",
     0, 0, 0,	&CG_enable_LAO, NULL },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_superblock", "",
-    1, 0, 2,	&CG_LAO_superblock, &CG_LAO_superblock_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedule", "",
+    1, 0, 3,	&CG_LAO_schedule, &CG_LAO_schedule_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipeline", "",
-    1, 0, 2,	&CG_LAO_pipeline, &CG_LAO_pipeline_overridden },
+    1, 0, 3,	&CG_LAO_pipeline, &CG_LAO_pipeline_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculate", "",
-    1, 0, 2,	&CG_LAO_speculate, &CG_LAO_speculate_overridden },
+    1, 0, 3,	&CG_LAO_speculate, &CG_LAO_speculate_overridden },
 #endif
 
 #ifdef CGG_ENABLED
@@ -1501,14 +1501,14 @@ CG_Init (void)
   if (CG_enable_LAO) {
     if (!CG_LAO_pipeline_overridden)
       CG_LAO_pipeline = 1;
-    if (!CG_LAO_superblock_overridden)
-      CG_LAO_superblock = 1;
+    if (!CG_LAO_schedule_overridden)
+      CG_LAO_schedule = 1;
     if (!CG_LAO_speculate_overridden)
       CG_LAO_speculate = 1;
   }
 
   else if ((CG_LAO_pipeline > 0) ||
-	    (CG_LAO_superblock > 0) ||
+	    (CG_LAO_schedule > 0) ||
 	    (CG_LAO_speculate > 0))
     CG_enable_LAO=TRUE;
 
