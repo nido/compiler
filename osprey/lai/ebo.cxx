@@ -116,7 +116,7 @@
 static const char source_file[] = __FILE__;
 #endif /* _KEEP_RCS_ID */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include <stdarg.h>
 
 #include "defs.h"
@@ -655,7 +655,7 @@ void EBO_Init(void)
   EBO_first_opinfo = NULL;
   EBO_last_opinfo = NULL;
 
-  bzero(EBO_opinfo_table,sizeof(EBO_opinfo_table));
+  BZERO(EBO_opinfo_table,sizeof(EBO_opinfo_table));
 
   EBO_num_tninfo_entries = 0;
   EBO_tninfo_entries_reused = 0;

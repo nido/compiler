@@ -50,7 +50,7 @@
  * ====================================================================
  */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include <ctype.h>
 #include <vector>
 
@@ -4371,12 +4371,12 @@ Handle_ASM (const WN* asm_wn)
   INT num_opnds = 0;
 
   ISA_REGISTER_SUBCLASS opnd_sc[OP_MAX_FIXED_OPNDS];
-  bzero(opnd_sc, sizeof(opnd_sc));
+  BZERO(opnd_sc, sizeof(opnd_sc));
   
   CGTARG_Init_Asm_Constraints();
 
   ASM_OP_ANNOT* asm_info = TYPE_PU_ALLOC(ASM_OP_ANNOT);
-  bzero(asm_info, sizeof(ASM_OP_ANNOT));
+  BZERO(asm_info, sizeof(ASM_OP_ANNOT));
 
   ASM_OP_wn(asm_info) = asm_wn;
 

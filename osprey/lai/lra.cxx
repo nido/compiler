@@ -56,7 +56,7 @@
 #endif // USE_PCH
 #pragma hdrstop
 
-#include <alloca.h>
+#include "W_alloca.h"
 
 #include "defs.h"
 #include "mempool.h"
@@ -613,7 +613,7 @@ Create_LR_For_TN (TN *tn, BB *bb, BOOL in_lra, MEM_POOL *pool)
   lr = (LIVE_RANGE *) hTN_MAP_Get (live_range_map, tn);
   if (lr == NULL) {
     lr = TYPE_MEM_POOL_ALLOC (LIVE_RANGE, pool);
-    bzero (lr, sizeof(LIVE_RANGE));
+    BZERO (lr, sizeof(LIVE_RANGE));
     LR_tn(lr) = orig_tn;
     LR_next(lr) = Live_Range_List;
 
@@ -990,7 +990,7 @@ Init_Avail_Regs (void)
   REGISTER reg;
   ISA_REGISTER_CLASS cl;
 
-  bzero(avail_regs, sizeof(avail_regs));
+  BZERO(avail_regs, sizeof(avail_regs));
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
     FOR_ALL_REGISTER_SET_members (avail_set[cl], reg) {
       avail_regs[cl].reg[reg] = TRUE;
@@ -1335,7 +1335,7 @@ Init_Fat_Point_Calculation(ISA_REGISTER_CLASS cl, INT opnum, BB *bb)
   fat_point_regs_map = hTN_MAP_Create (&lra_pool);
   use_fat_point_regs = TRUE;
   fat_points = TYPE_MEM_POOL_ALLOC_N(FAT_POINTS_TYPE, &lra_pool, BB_length(bb) + 1);
-  bzero(fat_points, (BB_length(bb)+1)*sizeof(FAT_POINTS_TYPE));
+  BZERO(fat_points, (BB_length(bb)+1)*sizeof(FAT_POINTS_TYPE));
   failing_class = cl;
   reg_infinite = REGISTER_MAX;
 

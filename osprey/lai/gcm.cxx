@@ -52,7 +52,7 @@
  * =======================================================================
  */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include "defs.h"
 #include "config.h"
 #include "mempool.h"
@@ -2770,7 +2770,7 @@ Schedule_BB_For_GCM (BB *bb, HBS_TYPE hb_type, HB_Schedule **Sched)
 
   if (bbsch == NULL) {
     bbsch = TYPE_MEM_POOL_ALLOC (BBSCH, &gcm_loop_pool);
-    bzero (bbsch, sizeof (BBSCH));
+    BZERO (bbsch, sizeof (BBSCH));
     Set_BB_SCHEDULE(bbsch); // need to schedule this block
   }
 
@@ -2953,9 +2953,9 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
     BBSCH *bbsch = Schedule_BB_For_GCM (bb, from_hbs_type, &Sched);
     if (old_bbsch == NULL) {
       old_bbsch = TYPE_MEM_POOL_ALLOC(BBSCH, &MEM_local_pool);
-      bzero (old_bbsch, sizeof (BBSCH));
+      BZERO (old_bbsch, sizeof (BBSCH));
     }
-    bcopy(bbsch, old_bbsch, sizeof (BBSCH));
+    BCOPY(bbsch, old_bbsch, sizeof (BBSCH));
     Reset_BB_SCHEDULE(bbsch);
 
     // Determine the <motion_type> for this <bb> (in decreasing order of
@@ -3019,9 +3019,9 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
         BBSCH *cand_bbsch = Schedule_BB_For_GCM (cand_bb, to_hbs_type, &Sched);
         if (old_cand_bbsch == NULL) {
 	  old_cand_bbsch = TYPE_MEM_POOL_ALLOC(BBSCH, &MEM_local_pool);
-	  bzero (old_cand_bbsch, sizeof (BBSCH));
+	  BZERO (old_cand_bbsch, sizeof (BBSCH));
 	}
-        bcopy(cand_bbsch, old_cand_bbsch, sizeof (BBSCH));
+        BCOPY(cand_bbsch, old_cand_bbsch, sizeof (BBSCH));
 	Reset_BB_SCHEDULE(cand_bbsch);
 
 	L_Save();
@@ -3119,8 +3119,8 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
 
 	    Perform_Post_GCM_Steps(bb, cand_bb, cand_op, motion_type,
 				   spec_type, &pred_bbs, loop, TRUE);
-	    bcopy(new_bbsch, old_bbsch, sizeof (BBSCH));
-	    bcopy(new_cand_bbsch, old_cand_bbsch, sizeof (BBSCH));
+	    BCOPY(new_bbsch, old_bbsch, sizeof (BBSCH));
+	    BCOPY(new_cand_bbsch, old_cand_bbsch, sizeof (BBSCH));
 	    if (Trace_GCM) {
 	      #pragma mips_frequency_hint NEVER
 	      Print_Trace_File(cand_op, bb, cand_bb, TRUE);
@@ -3242,7 +3242,7 @@ void GCM_Schedule_Region (HBS_TYPE hbs_type)
     BBSCH *bbsch = (BBSCH *)BB_MAP_Get (bbsch_map, bb);
     if (bbsch == NULL) {
       bbsch = TYPE_MEM_POOL_ALLOC (BBSCH, &gcm_loop_pool);
-      bzero (bbsch, sizeof (BBSCH));
+      BZERO (bbsch, sizeof (BBSCH));
       Set_BB_SCHEDULE(bbsch); // need to change this flag
     }
 
