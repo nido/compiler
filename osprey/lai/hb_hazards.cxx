@@ -1355,6 +1355,14 @@ Make_Bundles (
 #ifdef TARG_ST200 // [CL] handle alignement within hot and cold sections
   static INT32 hot_addr=0;
   static INT32 cold_addr=0;
+  static PU_IDX bundler_current_pu=0;
+  // [CL] We track alignment on a per-PU basis, so that we only need
+  // to maintain two counters: hot & cold.  Indeed, as the user can
+  // provide his own section name for each PU, in order to compute
+  // actual PC values for each section, we would need to change the
+  // way sections are generated: currently this process occurs much
+  // later, in cgemit.cxx, and it would require to be somewhat
+  // transfered here.
   INT *pc;
 #endif
 
@@ -1402,6 +1410,12 @@ Make_Bundles (
   if (OP_dummy(op)) BB_OP_MAP32_Set(omap, op, Clock);
 
 #ifdef TARG_ST200 // [CL]
+  if (bundler_current_pu != ST_pu(Get_Current_PU_ST())) {
+    // We changed PU since last call, so reset local PC counters
+    cold_addr = 0;
+    hot_addr = 0;
+    bundler_current_pu = ST_pu(Get_Current_PU_ST());
+  }
   if (BB_Is_Cold(bb)) {
     pc = &cold_addr;
   } else {
@@ -1455,6 +1469,7 @@ Make_Bundles (
 
       // CL: start new bundle for new source line under -O0
       if ( (Clock < estart)
+	   // CL: start new bundle for new source line under -O0
 	   || ( (Opt_Level == 0)
       		&& (last_srcpos != OP_srcpos(op))
       		&& (OP_srcpos(op) != 0)
