@@ -705,7 +705,6 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, VARIANT variant)
       DevAssert(FALSE, ("variant"));    
 
     TN *temp_tn = Build_TN_Like (true_tn);
-    TN *temp = CGTARG_gen_select_dest_TN();
 
     Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, &ops);
     Expand_Store (MTYPE_I4, temp_tn, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
