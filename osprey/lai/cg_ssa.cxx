@@ -598,8 +598,12 @@ SSA_Place_Phi_In_BB (
   INT num_opnds = BBlist_Len(BB_preds(bb));
 
   TN *result[1];
-  TN *opnd[5];
 
+  // Arthur: amazingly, we can have a large number of predecessors !!
+  //TN *opnd[5];
+  TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
+  bzero(opnd, sizeof(TN*)*num_opnds);
+  // only 1 result possible
   result[0] = tn;
 
   for (i = 0; i < num_opnds; i++) {
@@ -617,7 +621,7 @@ SSA_Place_Phi_In_BB (
     Print_TN(tn, FALSE);
     fprintf(TFile, " in BB%d : ", BB_id(bb));
     Print_OP(phi_op);
-    fprintf(TFile, "\n");
+    //fprintf(TFile, "\n");
   }
 
   //
@@ -695,7 +699,7 @@ SSA_Place_Phi_Functions (
   MEM_POOL_Push(&MEM_local_pool);
 
   if (Trace_SSA_Build) {
-    fprintf(TFile, "  --> ");
+    fprintf(TFile, "\n  --> ");
     Print_TN(tn, FALSE);
     fprintf(TFile, " ");
     BB_SET_Print(TN_is_def_in(tn), TFile);
