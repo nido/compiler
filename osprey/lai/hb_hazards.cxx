@@ -1074,6 +1074,11 @@ Handle_Bundle_Hazards(
   // if black_box_op, set the end_group market and quit now.
   if (!bundling_reqd) {
     Set_OP_end_group(op);
+#ifdef TARG_ST200 // CL: bundles have variable length
+	          // and can be reset at any time
+    TI_BUNDLE_Clear (bundle);
+    VECTOR_Reset (*bundle_vector);
+#endif
     Clock++;
     return TRUE;
   }
@@ -1131,12 +1136,21 @@ Handle_Bundle_Hazards(
 				bundle_vector, 
 				slot_avail, 
 				slot_pos, 
+#ifndef TARG_ST200
 				ISA_MAX_SLOTS, 
+#else
+				0,
+#endif
 				stop_bit_reqd, 
 				prop);
 
     // Bundle is full at this time, reset bundle
     TI_BUNDLE_Clear (bundle);
+
+#ifdef TARG_ST200
+    Set_OP_end_group(OP_prev(op));
+    VECTOR_Reset (*bundle_vector);
+#endif
 
     return FALSE;
   }
@@ -1158,6 +1172,10 @@ Handle_Bundle_Hazards(
     // set <end_group> marker
     Set_OP_end_group(OP_prev(op));
     VECTOR_Reset (*bundle_vector);
+#ifdef TARG_ST200 // CL: bundles have variable length
+	          // and can be reset at any time
+    TI_BUNDLE_Clear (bundle);
+#endif
 
     return FALSE;
   }
@@ -1256,6 +1274,9 @@ Make_Bundles (
 {
   INT ti_err = TI_RC_OKAY;
   BOOL dep_graph_built = FALSE;
+#ifdef TARG_ST200 //CL: under -O0 -g, force new bundle for new source line
+  static SRCPOS last_srcpos = 0;
+#endif
 
   if (BB_length(bb) == 0) return;
 
@@ -1336,7 +1357,17 @@ Make_Bundles (
       }
 
       // If there is a dependence, first end current group
+#ifdef TARG_ST200
+      // CL: start new bundle for new source line under -O0
+      if ( (Clock < estart)
+	   || ( (Opt_Level == 0)
+      		&& (last_srcpos != OP_srcpos(op))
+      		&& (OP_srcpos(op) != 0)
+      		)
+      	   ) {
+#else
       if (Clock < estart) {
+#endif
 	// Add the <stop_bit> marker appropriately.
 	// TODO: need to be refined further.
 	//	OP *last_real_op = Last_Real_OP(op);
@@ -1366,13 +1397,22 @@ Make_Bundles (
 	//
 	// If we need to wait longer than the dependence, do it
 	//
+#ifndef TARG_ST200
 	if (pending_latency > estart) estart = pending_latency;
+#else
+	// CL: the xfer OP accounts for 1 more cycle
+	if (pending_latency > (estart+1)) estart = pending_latency;
+#endif
       }
 
       // If dependence is still pending, fill with noop cycles
       Handle_Latency (OP_prev(op), estart, bundle, bundle_vector);
 
     } /* for all OPs other than first */
+
+#ifdef TARG_ST200
+      last_srcpos = OP_srcpos(op);
+#endif
 
     //
     // Now, we're guaranteed that there are no pending dependencies
