@@ -3730,6 +3730,14 @@ Assemble_Bundles(BB *bb)
   }
 
 #ifdef TARG_ST
+  // [CL] track prologue and epilogue
+  BOOL bundle_has_prologue;
+  BOOL bundle_has_epilogue;
+  BOOL previous_bundle_has_prologue=FALSE;
+  BOOL previous_bundle_has_epilogue=FALSE;
+#endif
+
+#ifdef TARG_ST
   for (op = BB_first_op(bb);op != NULL;) {
 #else
   for (op = BB_first_op(bb);;) {
@@ -3778,6 +3786,17 @@ Assemble_Bundles(BB *bb)
 			      BB_id(bb), TOP_Name(OP_code(op))));
 	Assemble_Simulated_OP(op, bb);
 	continue;
+      }
+
+      if (OP_prologue(op)) {
+	bundle_has_prologue = TRUE;
+      } else {
+	bundle_has_prologue = FALSE;
+      }
+      if (OP_epilogue(op)) {
+	bundle_has_epilogue = TRUE;
+      } else {
+	bundle_has_epilogue = FALSE;
       }
 
       words = ISA_PACK_Inst_Words(OP_code(op));
@@ -3865,8 +3884,33 @@ Assemble_Bundles(BB *bb)
     /* Assemble the bundle.
      */
 #ifdef TARG_ST200
+    BOOL force_dwarf=FALSE;
+
+    // [CL] The bundler has already taken care of prologue/epilogue
+    // concerns when forming bundles:
+    // - we force a new bundle after prologue
+    // - we force a new bundle where epilogue begins
+
+    // [CL] If this bundle has epilogue code, and the previous one
+    // hadn't, then we consider that epilogue starts here,
+    // and thus we force output of debug info for this bundle
+    if (bundle_has_epilogue && !previous_bundle_has_epilogue) {
+      force_dwarf = TRUE;
+    }
+
+    // [CL] If the prologue ended in the previous bundle,
+    // force output of debug info for this bundle.
+    if (!bundle_has_prologue && previous_bundle_has_prologue) {
+      force_dwarf = TRUE;
+    }
+
+    // [CL] Don't output debug info within prologue
+    if (bundle_has_prologue) {
+      force_dwarf = FALSE;
+    }
+
     /* Generate debug info for the 1st op of the bundle */
-    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]));
+    Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[0]), force_dwarf);
 #endif
 
     OP *sl_op;
@@ -3899,6 +3943,12 @@ Assemble_Bundles(BB *bb)
       }
       fprintf(Asm_File, "\n");
     }
+
+#ifdef TARG_ST
+    // [CL]
+    previous_bundle_has_prologue = bundle_has_prologue;
+    previous_bundle_has_epilogue = bundle_has_epilogue;
+#endif
   }
   if (Assembly) {
     fprintf(Asm_File, "\n");
