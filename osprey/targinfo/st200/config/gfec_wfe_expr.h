@@ -699,6 +699,10 @@
       iopc = INTRN_SHLUL ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_SHLW:
+      iopc = INTRN_SHLW ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_SHRL:
       iopc = INTRN_SHRL ;
       intrinsic_op = TRUE ;
@@ -715,12 +719,44 @@
       iopc = INTRN_SHRUL ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_SHRUW:
+      iopc = INTRN_SHRUW ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_SHRW:
+      iopc = INTRN_SHRW ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_SQRTD:
       iopc = INTRN_SQRTD ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_SQRTS:
       iopc = INTRN_SQRTS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220ADDCG:
+      iopc = INTRN_ST220ADDCG ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220DIVS:
+      iopc = INTRN_ST220DIVS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220MULHHS:
+      iopc = INTRN_ST220MULHHS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220MULHS:
+      iopc = INTRN_ST220MULHS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220MULLHUS:
+      iopc = INTRN_ST220MULLHUS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST220MULLU:
+      iopc = INTRN_ST220MULLU ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_STOD:

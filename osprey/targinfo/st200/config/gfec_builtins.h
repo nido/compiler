@@ -174,12 +174,21 @@
     case BUILT_IN_SHLCW:
     case BUILT_IN_SHLL:
     case BUILT_IN_SHLUL:
+    case BUILT_IN_SHLW:
     case BUILT_IN_SHRL:
     case BUILT_IN_SHRRH:
     case BUILT_IN_SHRRW:
     case BUILT_IN_SHRUL:
+    case BUILT_IN_SHRUW:
+    case BUILT_IN_SHRW:
     case BUILT_IN_SQRTD:
     case BUILT_IN_SQRTS:
+    case BUILT_IN_ST220ADDCG:
+    case BUILT_IN_ST220DIVS:
+    case BUILT_IN_ST220MULHHS:
+    case BUILT_IN_ST220MULHS:
+    case BUILT_IN_ST220MULLHUS:
+    case BUILT_IN_ST220MULLU:
     case BUILT_IN_STOD:
     case BUILT_IN_STOL:
     case BUILT_IN_STOUL:

@@ -18,6 +18,156 @@
 #include "targ_isa_properties.h"
 
 /*
+ * Expansion of st220addcg based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220addcg(
+ TN* ol0,
+ TN* oh0,
+ TN* i0,
+ TN* i1,
+ TN* i2,
+ OPS* ops
+)
+{
+  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *r0_17_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (	TOP_mtb,	b0_0_0,	i2,	ops) ;
+  Build_OP (	TOP_addcg,	ol0,	b0_0_1,	i0,	i1,	b0_0_0,	ops) ;
+  Build_OP (	TOP_mov_i,	r0_17_1,	c1,	ops) ;
+  Build_OP (	TOP_slct_r,	oh0,	b0_0_1,	r0_17_1,	Zero_TN,	ops) ;
+} /* Expand__st220addcg */
+
+/*
+@@@  case INTRN_ST220ADDCG:
+@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
+@@@    Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
+@@@  } else { 
+@@@    Expand__st220addcg(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
+@@@  }  
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220divs based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220divs(
+ TN* ol0,
+ TN* oh0,
+ TN* i0,
+ TN* i1,
+ TN* i2,
+ OPS* ops
+)
+{
+  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *r0_17_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (	TOP_mtb,	b0_0_0,	i2,	ops) ;
+  Build_OP (	TOP_divs,	ol0,	b0_0_1,	i0,	i1,	b0_0_0,	ops) ;
+  Build_OP (	TOP_mov_i,	r0_17_1,	c1,	ops) ;
+  Build_OP (	TOP_slct_r,	oh0,	b0_0_1,	r0_17_1,	Zero_TN,	ops) ;
+} /* Expand__st220divs */
+
+/*
+@@@  case INTRN_ST220DIVS:
+@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
+@@@    Expand__st220divs(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
+@@@  } else { 
+@@@    Expand__st220divs(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
+@@@  }  
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220mulhhs based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220mulhhs(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mulhhs_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st220mulhhs */
+
+/*
+@@@  case INTRN_ST220MULHHS:
+@@@    Expand__st220mulhhs(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220mulhs based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220mulhs(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mulhs_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st220mulhs */
+
+/*
+@@@  case INTRN_ST220MULHS:
+@@@    Expand__st220mulhs(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220mullhus based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220mullhus(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mullhus_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st220mullhus */
+
+/*
+@@@  case INTRN_ST220MULLHUS:
+@@@    Expand__st220mullhus(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220mullu based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220mullu(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mullu_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st220mullu */
+
+/*
+@@@  case INTRN_ST220MULLU:
+@@@    Expand__st220mullu(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of absch based on validated and scheduled basic assembly source.
 */
 static void
@@ -4190,6 +4340,26 @@ Expand__shll(
 */
 
 /*
+ * Expansion of shlw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__shlw(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_shl_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__shlw */
+
+/*
+@@@  case INTRN_SHLW:
+@@@    Expand__shlw(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of shrl based on validated and scheduled basic assembly source.
 */
 static void
@@ -4345,6 +4515,46 @@ Expand__shrul(
 @@@  } else { 
 @@@    Expand__shrul(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
 @@@  }  
+@@@  break ;
+*/
+
+/*
+ * Expansion of shruw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__shruw(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_shru_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__shruw */
+
+/*
+@@@  case INTRN_SHRUW:
+@@@    Expand__shruw(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of shrw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__shrw(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_shr_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__shrw */
+
+/*
+@@@  case INTRN_SHRW:
+@@@    Expand__shrw(result[0],opnd[0],opnd[1],ops) ;
 @@@  break ;
 */
 
@@ -4751,6 +4961,32 @@ Exp_Intrinsic_Op (
 )
 {
   switch (id) {
+    case INTRN_ST220ADDCG:
+    if (Target_Byte_Sex == BIG_ENDIAN) {
+      Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
+    } else { 
+      Expand__st220addcg(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
+    }  
+    break ;
+    case INTRN_ST220DIVS:
+    if (Target_Byte_Sex == BIG_ENDIAN) {
+      Expand__st220divs(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
+    } else { 
+      Expand__st220divs(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
+    }  
+    break ;
+    case INTRN_ST220MULHHS:
+      Expand__st220mulhhs(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220MULHS:
+      Expand__st220mulhs(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220MULLHUS:
+      Expand__st220mullhus(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220MULLU:
+      Expand__st220mullu(result[0],opnd[0],opnd[1],ops) ;
+    break ;
     case INTRN_ABSCH:
       Expand__absch(result[0],opnd[0],ops) ;
     break ;
@@ -5306,6 +5542,9 @@ Exp_Intrinsic_Op (
       Expand__shll(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
     }  
     break ;
+    case INTRN_SHLW:
+      Expand__shlw(result[0],opnd[0],opnd[1],ops) ;
+    break ;
     case INTRN_SHRL:
     if (Target_Byte_Sex == BIG_ENDIAN) {
       Expand__shrl(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
@@ -5325,6 +5564,12 @@ Exp_Intrinsic_Op (
     } else { 
       Expand__shrul(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
     }  
+    break ;
+    case INTRN_SHRUW:
+      Expand__shruw(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_SHRW:
+      Expand__shrw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SUBCH:
       Expand__subch(result[0],opnd[0],opnd[1],ops) ;

@@ -1017,6 +1017,12 @@ builtin_function ("__shlul",
                      tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
                    BUILT_IN_SHLUL, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__shlw",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
+                   BUILT_IN_SHLW, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__shrl",
                    build_function_type( long_long_integer_type_node, 
                      tree_cons(NULL_TREE, long_long_integer_type_node,
@@ -1041,6 +1047,18 @@ builtin_function ("__shrul",
                      tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
                    BUILT_IN_SHRUL, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__shruw",
+                   build_function_type( unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
+                   BUILT_IN_SHRUW, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__shrw",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
+                   BUILT_IN_SHRW, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__sqrtd",
                    build_function_type( double_type_node, 
                      tree_cons(NULL_TREE, double_type_node, endlink)),
@@ -1050,6 +1068,44 @@ builtin_function ("__sqrts",
                    build_function_type( float_type_node, 
                      tree_cons(NULL_TREE, float_type_node, endlink)),
                    BUILT_IN_SQRTS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220addcg",
+                   build_function_type( long_long_unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node, endlink)))),
+                   BUILT_IN_ST220ADDCG, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220divs",
+                   build_function_type( long_long_unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node, endlink)))),
+                   BUILT_IN_ST220DIVS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220mulhhs",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220MULHHS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220mulhs",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220MULHS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220mullhus",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST220MULLHUS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__st220mullu",
+                   build_function_type( unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node, endlink))),
+                   BUILT_IN_ST220MULLU, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__stod",
                    build_function_type( double_type_node, 

@@ -523,6 +523,9 @@
 { /* __shlul */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U8, "__shlul", NULL, "__shlul"}, 
+{ /* __shlw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__shlw", NULL, "__shlw"}, 
 { /* __shrl */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I8, "__shrl", NULL, "__shrl"}, 
@@ -535,12 +538,36 @@
 { /* __shrul */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U8, "__shrul", NULL, "__shrul"}, 
+{ /* __shruw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U4, "__shruw", NULL, "__shruw"}, 
+{ /* __shrw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__shrw", NULL, "__shrw"}, 
 { /* __sqrtd */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F8, "__sqrtd", NULL, "__sqrtd"}, 
 { /* __sqrts */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F4, "__sqrts", NULL, "__sqrts"}, 
+{ /* __st220addcg */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U8, "__st220addcg", NULL, "__st220addcg"}, 
+{ /* __st220divs */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U8, "__st220divs", NULL, "__st220divs"}, 
+{ /* __st220mulhhs */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__st220mulhhs", NULL, "__st220mulhhs"}, 
+{ /* __st220mulhs */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__st220mulhs", NULL, "__st220mulhs"}, 
+{ /* __st220mullhus */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__st220mullhus", NULL, "__st220mullhus"}, 
+{ /* __st220mullu */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U4, "__st220mullu", NULL, "__st220mullu"}, 
 { /* __stod */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F8, "__stod", NULL, "__stod"}, 
