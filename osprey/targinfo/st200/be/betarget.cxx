@@ -674,8 +674,8 @@ OPCODE_To_INTRINSIC (
       switch (rtype) {
       case MTYPE_I8: id = INTRN_MINL; break;
       case MTYPE_U8: id = INTRN_MINUL; break;
-	//      case MTYPE_F4: id = INTRN_MULS; break;
-	//      case MTYPE_F8: id = INTRN_MULD; break;
+      case MTYPE_F4: id = INTRN_MINS; break;
+      case MTYPE_F8: id = INTRN_MIND; break;
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MIN", 
 			 MTYPE_name(rtype)));
@@ -686,8 +686,8 @@ OPCODE_To_INTRINSIC (
       switch (rtype) {
       case MTYPE_I8: id = INTRN_MAXL; break;
       case MTYPE_U8: id = INTRN_MAXUL; break;
-	//      case MTYPE_F4: id = INTRN_MULS; break;
-	//      case MTYPE_F8: id = INTRN_MULD; break;
+      case MTYPE_F4: id = INTRN_MAXS; break;
+      case MTYPE_F8: id = INTRN_MAXD; break;
       default:
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MAX", 
 			 MTYPE_name(rtype)));
