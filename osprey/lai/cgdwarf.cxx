@@ -556,7 +556,7 @@ put_subprogram(DST_flag flag,
 				  expr, &dw_error);
     }
     put_string (DST_SUBPROGRAM_decl_linkage_name(attr),
-	    DW_AT_MIPS_linkage_name, die);
+		DW_AT_MIPS_linkage_name, die);
 
     switch (DST_SUBPROGRAM_decl_inline(attr)) {
     case DW_INL_inlined:
@@ -602,7 +602,7 @@ put_subprogram(DST_flag flag,
     }
        
     put_string (DST_SUBPROGRAM_def_linkage_name(attr),
-		      DW_AT_MIPS_linkage_name, die);
+		DW_AT_MIPS_linkage_name, die);
     if (!DST_IS_NULL(DST_SUBPROGRAM_def_clone_origin(attr))) {
 	put_reference (DST_SUBPROGRAM_def_clone_origin(attr),
 			DW_AT_MIPS_clone_origin, die);
@@ -1268,6 +1268,14 @@ put_member(DST_flag flag, DST_MEMBER *attr, Dwarf_P_Die die)
 		    DST_MEMBER_bit_size(attr), &dw_error);
   }
   put_dopetype (DST_MEMBER_dopetype(attr), flag, die);
+#ifdef TARG_ST
+  // [CL]
+  if (DST_MEMBER_accessibility(attr) != DW_ACCESS_public) {
+    dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility,
+				DST_MEMBER_accessibility(attr),
+				&dw_error);
+  }
+#endif
   if (DST_IS_declaration(flag)) {
 	put_flag (DW_AT_declaration, die);
   }
@@ -1333,6 +1341,14 @@ put_inheritance(DST_flag flag, DST_INHERITANCE *attr, Dwarf_P_Die die)
 			        DST_INHERITANCE_virtuality(attr),
 				&dw_error);
   }
+#ifdef TARG_ST
+  // [CL]
+  if (DST_INHERITANCE_accessibility(attr) != DW_ACCESS_private) {
+    dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility,
+				DST_INHERITANCE_accessibility(attr),
+				&dw_error);
+  }
+#endif
 }
 
 static void
