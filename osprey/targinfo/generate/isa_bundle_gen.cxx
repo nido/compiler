@@ -67,9 +67,14 @@ using std::vector;
 #include "gen_util.h"
 #include "isa_bundle_gen.h"
 
-#define MAX_SLOTS 8	// max # of slots the generator can handle
+#ifdef TARG_ST
+#define MAX_SLOTS 32	  // max # of slots the generator can handle
+#define MAX_EXEC_UNITS 64 // max # of exec units the generator can handle
+#else
+#define MAX_SLOTS 4	// max # of slots the generator can handle
 #define TAG_SHIFT 12    // max # of bits required to encode all the
                         // execution property types.
+#endif
 
 struct isa_exec_unit_type {
   const char *name; 	// Name given for documentation and debugging
@@ -86,6 +91,12 @@ struct isa_bundle_type {
   bool stop_bit[MAX_SLOTS];
   unsigned int pack_code;
 };
+
+#ifdef TARG_ST
+struct slot_mask_type {
+  long long val[MAX_SLOTS * MAX_EXEC_UNITS];
+};
+#endif
 
 static int isa_exec_property_count = 0; 
 
@@ -148,7 +159,11 @@ static const char * const interface[] = {
   " *       Return exec_unit_property for the slot position <slot_index>",
   " *       in <bundle>.",
   " *",
+#ifdef TARG_ST
+  " *   ISA_EXEC_MASK ISA_EXEC_Slot_Mask(INT bundle)",
+#else
   " *   UINT64 ISA_EXEC_Slot_Mask(INT bundle)",
+#endif
   " *       Return slot_mask for <bundle>.",
   " *",
   " *   BOOL ISA_EXEC_Stop(INT bundle, INT slot_index)",
@@ -335,6 +350,20 @@ void Stop (int slot_index)
   current_bundle_desc->stop_bit[slot_index] = true;
 }
 
+#ifdef TARG_ST
+static slot_mask_type slot_mask_shift_or (slot_mask_type slot_mask,
+					  unsigned long long value, int shift)
+{
+  int word = shift / 64;
+  int w_shift = shift - (word * 64);
+  slot_mask.val[word] |= value << w_shift;
+  if (w_shift > 0) {
+    slot_mask.val[word+1] |= value >> (64 - w_shift);
+  }
+  return slot_mask;
+}
+#endif
+ 
 /////////////////////////////////////
 static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 /////////////////////////////////////
@@ -347,6 +376,10 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 
   //  const char *isa_exec_type_format = "  %3d,  /* %s: ";
   const char *info_index_type;
+#ifdef TARG_ST
+  const int tag_shift = isa_exec_property_count;
+  const int slot_mask_words = ((tag_shift * max_slots) + 63) / 64;
+#endif
 
   int index = 0;
   for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++index,
@@ -371,7 +404,12 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   }
 
   fprintf (hfile, "\n#define ISA_MAX_SLOTS (%d)\n", max_slots);
+#ifdef TARG_ST
+  fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", tag_shift);
+  fprintf (hfile, "#define ISA_SLOT_MASK_WORDS (%d)\n", slot_mask_words);
+#else
   fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", TAG_SHIFT);
+#endif
   // Define the number of bytes in an instruction (bundle)
   // bundle should be a multiple of 8 !
   fprintf (hfile, "#define ISA_INST_BYTES (%d)\n", bundle_bits/8);
@@ -398,6 +436,13 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 		  "} ISA_EXEC_UNIT;\n",
 		  "MAX", isa_exec_property_count - 1);
 
+#ifdef TARG_ST
+  fprintf (hfile, "\ntypedef struct {\n"
+	          "  mUINT64 v[%d];\n"
+	          "} ISA_EXEC_MASK;\n",
+	          slot_mask_words);
+#endif
+
   fprintf (hfile, "\ntypedef struct {\n"
 		  "  const char *name;\n"
 		  "  const char *asm_name;\n"
@@ -407,7 +452,11 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 		  "  mUINT8 unit[%d];\n"
 		  "  mUINT8 pack_code;\n"
 		  "  mUINT8 stop_mask;\n"
+#ifdef TARG_ST
+		  "  ISA_EXEC_MASK slot_mask;\n"
+#else
 		  "  mUINT64 slot_mask;\n"
+#endif
 		  "} ISA_BUNDLE_INFO;\n",
 		  max_slots ? max_slots : 1,
 		  max_slots ? max_slots : 1,
@@ -416,7 +465,9 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf(efile, "ISA_BUNDLE_info\n");
   fprintf(cfile, "\nBE_EXPORTED const ISA_BUNDLE_INFO ISA_BUNDLE_info[] = {\n");
 
+#ifndef TARG_ST
   int slot_mask_digits = ((TAG_SHIFT * max_slots) + 3) / 4;
+#endif
   for (ibi = all_bundles.begin(); ibi != all_bundles.end(); ++ibi) {
     ISA_BUNDLE_TYPE curr_exec_type = *ibi;
     fprintf (cfile, " {\n    \"%s\",%*s \"%s\",%*s %d,", 
@@ -426,13 +477,21 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 		    8 - strlen(curr_exec_type->asm_name), "",
 		    curr_exec_type->slot_count);
 
+#ifdef TARG_ST
+    slot_mask_type slot_mask = { 0 };
+#else
     unsigned long long slot_mask = 0;
+#endif
     unsigned int stop_mask = 0;
     fprintf (cfile, "\n    {");
     for (i = 0; i < curr_exec_type->slot_count; i++) {
       unsigned int flag_value = 1 << curr_exec_type->slot[i]->bit_position;
       int shift_count = max_slots - i - 1;
+#ifdef TARG_ST
+      slot_mask = slot_mask_shift_or(slot_mask, flag_value, tag_shift * shift_count);
+#else
       slot_mask |= ((unsigned long long)flag_value << (TAG_SHIFT * shift_count));
+#endif
       stop_mask |= (curr_exec_type->stop_bit[i] << shift_count);
       fprintf (cfile, " %2d /* %7s */,", 
 		      flag_value,
@@ -456,13 +515,27 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 
     fprintf(cfile, "\n    %2d,", curr_exec_type->pack_code);
     fprintf(cfile, " 0x%1x,", stop_mask);
+#ifdef TARG_ST
+    fprintf(cfile, "\n    { 0x%08llx", slot_mask.val[0]);
+    for (i = 1; i < slot_mask_words; i++) {
+      fprintf(cfile, ", 0x%08llx", slot_mask.val[i]);
+    }
+    fprintf(cfile, " }\n  },\n");
+#else
     fprintf(cfile, " 0x%0*llx\n  },\n", slot_mask_digits, slot_mask);
+#endif
   }
   fprintf (cfile, "  {\n    \"template_MAX\", \"\", -1,\n    { -1 /* ??????? */");
   for (i = 1; i < max_slots; ++i) fprintf (cfile, ", -1 /* ??????? */");
   fprintf (cfile, ",},\n    { FALSE");
   for (i = 1; i < max_slots; ++i) fprintf (cfile, ", FALSE");
+#ifdef TARG_ST
+  fprintf (cfile, "},\n     { -1 /* ??????? */");
+  for (i = 1; i < max_slots; ++i) fprintf (cfile, ", -1 /* ??????? */");
+  fprintf (cfile, "},\n     -1, 0x0, { 0x00000000 }\n  }\n};\n");
+#else
   fprintf (cfile, ",},\n    -1, 0x0, 0x%0*x\n  }\n};\n", slot_mask_digits, 0);
+#endif
 
   fprintf(hfile,"\n#define ISA_MAX_BUNDLES %d\n",num_bundles);
 
@@ -479,7 +552,11 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 	flag_value |= (1ULL << exec_type->bit_position);
       }
     }
+#ifdef TARG_ST
+    fprintf(cfile, "  0x%08llx,  /* %s: ",
+#else
     fprintf(cfile, "  0x%0*llx,  /* %s: ", slot_mask_digits,
+#endif
 	    //    fprintf(cfile, "  %3llu,  /* %s: ",
 	    //    fprintf(cfile, 	isa_exec_type_format,
 			flag_value,
@@ -523,7 +600,11 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                  "  return info->slot[slot_index];\n"
                  "}\n");
 
+#ifdef TARG_ST
+  fprintf (hfile, "\ninline ISA_EXEC_MASK "
+#else
   fprintf (hfile, "\ninline UINT64 "
+#endif
                    "ISA_EXEC_Slot_Mask(INT bundle)\n"
                  "{\n"
 		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
@@ -588,6 +669,13 @@ typedef enum {
 
 #define MAX_PACK_COMPS (FSLOT+MAX_SLOTS)
 
+#ifdef TARG_ST
+static const char * pack_comp_type_name[MAX_PACK_COMPS] = {
+  "END",
+  "STOP",
+  "TEMPLATE"
+};
+#else
 static const char * const pack_comp_type_name[] = {
   "END",
   "STOP",
@@ -597,7 +685,15 @@ static const char * const pack_comp_type_name[] = {
   "SLOT2",
   "SLOT3"
 };
+#endif
 
+#ifdef TARG_ST
+static const char * pack_comp_name[MAX_PACK_COMPS] = {
+  "ISA_BUNDLE_PACK_COMP_end",
+  "ISA_BUNDLE_PACK_COMP_stop",
+  "ISA_BUNDLE_PACK_COMP_template"
+};
+#else
 static const char * const pack_comp_name[] = {
   "ISA_BUNDLE_PACK_COMP_end",
   "ISA_BUNDLE_PACK_COMP_stop",
@@ -611,6 +707,7 @@ static const char * const pack_comp_name[] = {
   "ISA_BUNDLE_PACK_COMP_slot+6",
   "ISA_BUNDLE_PACK_COMP_slot+7",
 };
+#endif
 
 typedef struct {
   int comp_pos;
@@ -812,7 +909,21 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
     exit(EXIT_FAILURE);
   }
 
+#ifdef TARG_ST
+  for (i = 0; i < MAX_PACK_COMPS; ++i) {
+    first_comps[i] = -1;
+    if (i >= FSLOT) {
+      char *buf = (char *)malloc(strlen("SLOT000") + 1);
+      sprintf (buf, "SLOT%3d", i - FSLOT);
+      pack_comp_type_name[i] = buf;
+      char *buf2 = (char *)malloc(strlen("ISA_BUNDLE_PACK_COMP_slot+000") + 1);
+      sprintf (buf2, "ISA_BUNDLE_PACK_COMP_slot+%3d", i - FSLOT);
+      pack_comp_name[i] = buf2;
+    }
+  }
+#else
   for (i = 0; i < MAX_PACK_COMPS; ++i) first_comps[i] = -1;
+#endif
 
   fprintf(hfile, "\ntypedef struct {\n"
 		 "  mUINT%d word[%d];\n"
@@ -907,9 +1018,15 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
 
   fprintf(efile, "ISA_BUNDLE_pack_info_index\n");
 
+#ifdef TARG_ST
+  fprintf(cfile, "\nconst mUINT8 ISA_BUNDLE_pack_info_index[%d] = {\n",
+		 max_pack_comps);
+  for (i = 0; i < max_pack_comps; ++i) {
+#else
   fprintf(cfile, "\nconst mUINT8 ISA_BUNDLE_pack_info_index[%d] = {\n",
 		 MAX_PACK_COMPS);
   for (i = 0; i < MAX_PACK_COMPS; ++i) {
+#endif
     int index = first_comps[i];
     if (index < 0) index = first_comps[END];
     fprintf(cfile, "  %2d, /* %s */\n", index, pack_comp_name[i]);
@@ -921,7 +1038,11 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
 		 "  TARGINFO_EXPORTED extern const mUINT8 ISA_BUNDLE_pack_info_index[%d];\n"
 		 "  return ISA_BUNDLE_pack_info_index[(INT)comp];\n"
 		 "}\n",
+#ifdef TARG_ST
+		 max_pack_comps);
+#else
 		 MAX_PACK_COMPS);
+#endif
 }
 
 /* ====================================================================
