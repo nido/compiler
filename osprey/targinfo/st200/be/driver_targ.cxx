@@ -60,7 +60,7 @@ Initialize_Targ_Info (void)
   }
 
   switch (Target_ISA) {
-  case TARGET_ISA_ST200:
+  case TARGET_ISA_ST220:
     isa = ISA_SUBSET_st220;
     break;
   default:
@@ -69,6 +69,9 @@ Initialize_Targ_Info (void)
 
   switch (Target) {
   case TARGET_st220:
+    proc = PROCESSOR_st220;
+    break;
+  case TARGET_st221:
     proc = PROCESSOR_st220;
     break;
   default:

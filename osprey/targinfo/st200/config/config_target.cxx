@@ -221,7 +221,7 @@ Isa_Name ( TARGET_ISA b)
   char *r;
 
   switch ( b ) {
-    case TARGET_ISA_ST200: return "ST200";
+    case TARGET_ISA_ST220: return "ST220";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -237,6 +237,7 @@ Targ_Name ( TARGET_PROCESSOR b)
 
   switch ( b ) {
     case TARGET_st220: return "st220";
+    case TARGET_st221: return "st221";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -273,7 +274,7 @@ Prepare_Target ( void )
   if ( ABI_Name != NULL ) {
     if ( strcmp ( ABI_Name, "st32" ) == 0 ) {
       Target_ABI = ABI_ST200;
-      isa_default = TARGET_ISA_ST200;
+      isa_default = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
     }
     else {
@@ -284,12 +285,11 @@ Prepare_Target ( void )
   /* Next check the ISA from -TARG:isa=xxx: */
   if ( ISA_Name != NULL ) {
     TARGET_ISA isa;
-
-    if ( strcasecmp ( ISA_Name, "ST200" ) == 0 ) {
-      isa = TARGET_ISA_ST200;
+    if ( strcasecmp ( ISA_Name, "ST220" ) == 0 ) {
+      isa = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
-    } else
-    {
+    }
+    else {
       ErrMsg ( EC_Inv_TARG, "isa", ISA_Name );
     }
 
@@ -313,10 +313,13 @@ Prepare_Target ( void )
   /* Now check the target processor from -TARG:processor=xxx: */
   if ( Processor_Name != NULL ) {
     TARGET_PROCESSOR targ;
-
     if ( strcasecmp ( Processor_Name, "st220" ) == 0 ) {
       targ = TARGET_st220;
-    } else {
+    }
+    else if ( strcasecmp ( Processor_Name, "st221" ) == 0 ) {
+      targ = TARGET_st221;
+    }
+    else {
       ErrMsg ( EC_Inv_TARG, "processor", Processor_Name );
       targ = TARGET_UNDEF;
     }
@@ -334,16 +337,19 @@ Prepare_Target ( void )
    */
   switch ( Target ) {
     case TARGET_st220:
-	Target_ABI = ABI_ST200;
-	Target_ISA = TARGET_ISA_ST200;
-	Target = TARGET_st220;
-	break;
+      Target_ABI = ABI_ST200;
+      Target_ISA = TARGET_ISA_ST220;
+      break;
+    case TARGET_st221:
+      Target_ABI = ABI_ST200;
+      Target_ISA = TARGET_ISA_ST220;
+      break;
     case TARGET_UNDEF:
       Target = targ_default;
       if ( Target == TARGET_UNDEF ) {
-	/* Default everything: */
-	Target_ABI = ABI_ST200;
-	Target_ISA = TARGET_ISA_ST200;
+        /* Default everything: */
+        Target_ABI = ABI_ST200;
+	Target_ISA = TARGET_ISA_ST220;
 	Target = TARGET_st220;
       }
       break;
@@ -665,7 +671,7 @@ Set_Target_ABI (
   }
 
   if (Target_ISA == TARGET_ISA_UNDEF) {
-    Target_ISA = TARGET_ISA_ST200;
+    Target_ISA = TARGET_ISA_ST220;
   }
 
   return TRUE;

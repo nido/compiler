@@ -112,7 +112,8 @@ BE_EXPORTED extern TARGET_ABI Target_ABI;
  */
 typedef enum {
   TARGET_UNDEF,		/* Undefined */
-  TARGET_st220	        /* st220 */
+  TARGET_st220,	        /* st220 */
+  TARGET_st221,	        /* st221 */
 } TARGET_PROCESSOR;
 
 BE_EXPORTED extern TARGET_PROCESSOR Target;		/* -Tc */
@@ -121,7 +122,7 @@ BE_EXPORTED extern TARGET_PROCESSOR Target;		/* -Tc */
 BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 
 #define Is_Target_st220()	(Target==TARGET_st220)
-
+#define Is_Target_st221()	(Target==TARGET_st221)
 
 /* ========== */
 /* Target ISA */
@@ -129,7 +130,7 @@ BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 
 typedef enum {
   TARGET_ISA_UNDEF,	/* Undefined */
-  TARGET_ISA_ST200
+  TARGET_ISA_ST220,
 } TARGET_ISA;
 
 BE_EXPORTED extern TARGET_ISA Target_ISA;	/* -Tc.Rc */
@@ -137,7 +138,7 @@ BE_EXPORTED extern TARGET_ISA Target_ISA;	/* -Tc.Rc */
 /* return the ISA name corresponding to <target_isa> */
 BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 
-#define Is_Target_ISA_ST200()	(Target_ISA==TARGET_ISA_ST200)
+#define Is_Target_ISA_ST220()	(Target_ISA==TARGET_ISA_ST220)
 
 /* What is the floating point format? */
 #define IEEE_FP_FORMAT	TRUE
