@@ -58,8 +58,8 @@ CGEMIT_Weak_Alias (
   ST *strongsym
 ) 
 {
-  fprintf (Asm_File, "\t%s\t%s#\n", AS_WEAK, ST_name(sym));
-  fprintf (Asm_File, "\t.set %s#, %s#\n", ST_name(sym), ST_name(strongsym));
+  fprintf (Asm_File, "\t%s\t%s\n", AS_WEAK, ST_name(sym));
+  fprintf (Asm_File, "\t.set %s, %s\n", ST_name(sym), ST_name(strongsym));
 }
 
 /* ====================================================================
@@ -70,7 +70,7 @@ CGEMIT_Weak_Alias (
 void
 CGEMIT_Alias (ST *sym, ST *strongsym) 
 {
-  fprintf (Asm_File, "\t.set %s#, %s#\n", ST_name(sym), ST_name(strongsym));
+  fprintf (Asm_File, "\t.set %s, %s\n", ST_name(sym), ST_name(strongsym));
 }
 
 /* ====================================================================
