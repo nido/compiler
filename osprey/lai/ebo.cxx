@@ -4054,12 +4054,19 @@ Find_BB_TNs (BB *bb)
     EBO_TN_INFO *op_predicate_tninfo = NULL;
     BOOL check_omegas = (EBO_in_loop && _CG_LOOP_info(op))?TRUE:FALSE;
 
-   /* The assumption is that this can never occur, but make sure it doesn't! */
+    /* 
+     * The assumption is that this can never occur, but make sure it 
+     * doesn't! 
+     */
     FmtAssert(num_opnds <= max_opnds, ("dynamic array allocation was too small!"));
 
+#ifdef TARG_ST
+    if (OP_Is_Barrier(op) || OP_access_reg_bank(op)) {
+#else
     if (CGTARG_Is_OP_Barrier(op) || OP_access_reg_bank(op)) {
+#endif
       if (EBO_Special_Sequence(op, NULL, NULL)) {
-       /* We were able to restrict propagation of the specific registers. */
+	/* We were able to restrict propagation of the specific registers. */
         if (EBO_Trace_Execution) {
           #pragma mips_frequency_hint NEVER
           fprintf(TFile,"%sWe were able to restrict propagation of the specific registers in BB:%d\t",
@@ -4083,7 +4090,7 @@ Find_BB_TNs (BB *bb)
       fprintf(TFile,"%sProcess OP\n\t",EBO_trace_pfx); Print_OP_No_SrcLine(op);
     }
 
-   /* Process all the operand TNs. */
+    /* Process all the operand TNs. */
     for (opndnum = 0; opndnum < num_opnds; opndnum++) {
       opnd_tn[opndnum] = NULL;
       opnd_tninfo[opndnum] = NULL;
@@ -4117,8 +4124,17 @@ Find_BB_TNs (BB *bb)
       /*         This logic assumes that only one result matches 
        *         an operand. 
        */
-      rslt_num = OP_same_res(op, opndnum);
-      if (rslt_num >= 0) replace_result = TRUE;
+      for (INT i = 0; i < OP_results(op); i++) {
+	if (OP_same_res(op, i) == opndnum) {
+	  rslt_num = i;
+	  replace_result = TRUE;
+
+	  if (EBO_Trace_Data_Flow) {
+	    fprintf(TFile, "%sresult %d is the same as opnd %d\n", 
+		                    EBO_trace_pfx, rslt_num, opndnum);
+	  }
+	}
+      }
 #else
       if (OP_same_res(op)) {
         INT i;
@@ -4374,23 +4390,26 @@ Find_BB_TNs (BB *bb)
     }
 
     if (op_replaced) {
+
       if (EBO_Trace_Optimization) {
-        fprintf(TFile,"%sin BB:%d remove simplified op - ",EBO_trace_pfx,BB_id(bb));
+        fprintf(TFile,"%sin BB:%d remove simplified op - ",
+		                                EBO_trace_pfx,BB_id(bb));
         Print_OP_No_SrcLine(op);
       }
       remove_uses (num_opnds, orig_tninfo);
       OP_Change_To_Noop(op);
     } else {
-     /* Add this OP to the hash table and define all the result TN's. */
+      /* Add this OP to the hash table and define all the result TN's. */
       add_to_hash_table (in_delay_slot, op, orig_tninfo, opnd_tninfo);
 
       FmtAssert(((EBO_last_opinfo != NULL) && (EBO_last_opinfo->in_op == op)),
                   ("OP wasn't added to hash table"));
 
-     /* Special processing for the result TNs */
+      /* Special processing for the result TNs */
       resnum = OP_results(op);
-      if (OP_effectively_copy(op) || (resnum && OP_glue(op) && !OP_memory(op))) {
-       /* Propagate copy assignements. */
+      if (OP_effectively_copy(op) || 
+	  (resnum && OP_glue(op) && !OP_memory(op))) {
+	/* Propagate copy assignements. */
         INT cix = copy_operand(op);
         TN *tnr = OP_result(op, 0);
 
@@ -4411,6 +4430,7 @@ Find_BB_TNs (BB *bb)
           }
         }
 
+#ifdef TARG_IA64
         if ((resnum == 2) && ((tnr=OP_result(op,1)) != NULL) && (tnr != True_TN)  && (tnr != Zero_TN)) {
          /* This logic must be in sync with what ebo_special calls a "copy".       
             This instruction must actually be placing a "FALSE" condition in a predicate. */
@@ -4424,16 +4444,19 @@ Find_BB_TNs (BB *bb)
             Print_TN(tnr,FALSE); fprintf(TFile,"\n");
           }
         }
+#endif /* TARG_IA64 */
 
       } else if (rslt_tn != NULL) {
-       /* A result tn needs to be replaced. */
+	/* A result tn needs to be replaced. */
         TN *tnr = OP_result(op, rslt_num);
         tninfo = EBO_last_opinfo->actual_rslt[rslt_num];
 
-       /* This is subtle - yes we do want the replacement_tninfo
-          entry to point to the tninfo entry we just created. Yes,
-          it does create a circular link in the chain. Code that
-          searches the chain will need to be aware of this. */
+	/* 
+	 * This is subtle - yes we do want the replacement_tninfo
+         * entry to point to the tninfo entry we just created. Yes,
+         * it does create a circular link in the chain. Code that
+         * searches the chain will need to be aware of this. 
+	 */
         tninfo->replacement_tn = rslt_tn;
         tninfo->replacement_tninfo = tninfo;
         Set_OP_result (op, rslt_num, rslt_tn);

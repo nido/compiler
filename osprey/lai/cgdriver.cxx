@@ -357,7 +357,7 @@ static OPTION_DESC Options_CG[] = {
     CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, NULL,
     "Restrict BB length by splitting longer BBs" },
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa", "",
+  { OVK_BOOL,	OV_INTERNAL, FALSE, "ssa", "",
     0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
