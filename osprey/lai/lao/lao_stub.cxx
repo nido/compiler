@@ -35,7 +35,7 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#include "LAI.h"
+#include "LAI.e"
 #undef operator
 #undef this
 }
