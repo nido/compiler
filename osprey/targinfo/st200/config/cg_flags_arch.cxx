@@ -48,7 +48,7 @@ void Configure_CG_Target() {
   CG_enable_thr = FALSE;
  
   // Disable loop optimizations by default until debugged
-  CG_enable_loop_optimizations = FALSE;
+  CG_enable_loop_optimizations = TRUE;
 
   // Do not unroll fully until tested
   CG_LOOP_unroll_fully = FALSE;
