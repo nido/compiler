@@ -1421,11 +1421,15 @@ Expand_Logical_And (
     return;
   }
 
+  BOOL br = (TN_register_class(dest) == ISA_REGISTER_CLASS_branch);
+
   if (TN_is_constant(src2)) {
-    Expand_Logical_And_Or (TOP_and_i, dest, src1, src2, variant, ops);
+    Expand_Logical_And_Or (br ? TOP_andl_i_b : TOP_andl_i_r,
+                           dest, src1, src2, variant, ops);
   }
   else {
-    Expand_Logical_And_Or (TOP_and_r, dest, src1, src2, variant, ops);
+    Expand_Logical_And_Or (br ? TOP_andl_r_b : TOP_andl_r_r,
+                           dest, src1, src2, variant, ops);
   }
 
   return;
@@ -1450,11 +1454,15 @@ Expand_Logical_Or (
     return;
   }
 
+  BOOL br = (TN_register_class(dest) == ISA_REGISTER_CLASS_branch);
+
   if (TN_is_constant(src2)) {
-    Expand_Logical_And_Or (TOP_or_i, dest, src1, src2, variant, ops);
+    Expand_Logical_And_Or (br ? TOP_orl_i_b : TOP_orl_i_r,
+                           dest, src1, src2, variant, ops);
   }
   else {
-    Expand_Logical_And_Or (TOP_or_r, dest, src1, src2, variant, ops);
+    Expand_Logical_And_Or (br ? TOP_orl_r_b : TOP_orl_r_r,
+                           dest, src1, src2, variant, ops);
   }
 
   return;
