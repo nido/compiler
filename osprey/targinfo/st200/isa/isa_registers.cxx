@@ -40,6 +40,9 @@
 #include "isa_registers_gen.h" 
 #include "targ_isa_subset.h"
 
+// [CG]: fix for bug 1-0-7-A/ddts/13524
+// we must pur r0 into the register classes, as allocation to r0 is possible when it is a dead definition.
+#define CG_FIX_1_0_7_A_DDTS_13524
 
 static int ISA_Mask(ISA_SUBSET isa) 
 { 
@@ -87,7 +90,12 @@ static const char *integer_reg_names[] = {
 
 static const int integer_r0[] = {0}; 
 static const int integer_lr[] = {63}; 
+#ifdef CG_FIX_1_0_7_A_DDTS_13524
+// [CG]: we must pur r0 into the class, as allocation to r0 is possible when it is a dead definition.
+static const int integer_no_lr[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62}; 
+#else
 static const int integer_no_lr[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62}; 
+#endif
 
 static const char *branch_reg_names[] = {
 	"$b0.0",	NULL,	NULL,	NULL,	NULL,

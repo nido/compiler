@@ -141,20 +141,15 @@ CGTARG_Regname_Register_Class (
   char *regname
 ) 
 {
-  ISA_REGISTER_CLASS rclass;
+  ISA_REGISTER_CLASS rclass = ISA_REGISTER_CLASS_UNDEFINED;
 
   switch (regname[0]) {
-	case 'r':
-		rclass = ISA_REGISTER_CLASS_integer;
-		break;
-	case 'f':
-		rclass = ISA_REGISTER_CLASS_UNDEFINED;
-		break;
-	case 'p':
-		rclass = ISA_REGISTER_CLASS_branch;
-		break;
-	default:
-		FmtAssert(FALSE, ("unexpected reg letter %c", regname[0]));
+  case 'r':
+    rclass = ISA_REGISTER_CLASS_integer;
+    break;
+  case 'b':
+    rclass = ISA_REGISTER_CLASS_branch;
+    break;
   }
 
   return rclass;
