@@ -3565,7 +3565,7 @@ Exp_Simulated_Op (
 {
   OP *newop;
 
-  DevWarn("Exp_Simulated_Op should not be reached");
+  FmtAssert(0, ("Exp_Simulated_Op should not be reached"));
 
   switch (OP_code(op)) {
 
@@ -3588,9 +3588,11 @@ Exp_Simulated_Op (
                                     OP_opnd(op,2), Pointer_Mtype, ops);
     }
 
-    // copy predicate to new copy/sub ops
-
     FOR_ALL_OPS_OPs(ops, newop) {
+      OP_srcpos(newop) = OP_srcpos(op);
+      Is_True(OP_has_predicate(newop) == OP_has_predicate(op),
+	      ("spadjust can't copy predicates"));
+      // copy predicate to new copy/sub ops
       if (OP_has_predicate(newop))
 	  Set_OP_opnd (newop, OP_PREDICATE_OPND, 
 				      OP_opnd(op, OP_PREDICATE_OPND));

@@ -2056,6 +2056,30 @@ Adjust_Alloca_Code (void)
 	continue;
       }
       OPS_Init(&ops);
+#ifdef TARG_ST
+      // [CG]: Fix predicated/not predicated spadjust 
+      // TOP_spadjust (plus) is like so:
+      //  $sp = TOP_spadjust pred, $sp, $old_sp	(predicated)
+      // or:
+      //  $sp = TOP_spadjust $sp, $old_sp		(not predicated)
+      // dealloca does copy of $old_sp  to $sp
+
+      if (OP_variant(op) == V_SPADJUST_PLUS) {
+	Exp_COPY (OP_result(op,0),
+		  OP_opnd(op, OP_has_predicate(op) ? 2: 1),
+		  &ops);
+      }
+      else if (OP_variant(op) == V_SPADJUST_MINUS) {
+	// TOP_spadjust (minus) is like so:
+	//  $sp = TOP_spadjust pred, $sp, ofst	(predicated)
+	// or:
+	//  $sp = TOP_spadjust $sp, ofst		(not predicated)
+	Exp_SUB (Pointer_Mtype, OP_result(op,0),
+		 OP_opnd(op, OP_has_predicate(op) ? 1: 0), 
+		 OP_opnd(op, OP_has_predicate(op) ? 2: 1),
+		 &ops);
+      }
+#else
       if (OP_variant(op) == V_SPADJUST_PLUS) {
 	// dealloca does copy of kid to $sp (op1 is old sp value)
 
@@ -2066,6 +2090,7 @@ Adjust_Alloca_Code (void)
 	Exp_SUB (Pointer_Mtype, OP_result(op,0),
 		              OP_opnd(op, 1), OP_opnd(op, 2), &ops);
       }
+#endif
       else {
 	FmtAssert(FALSE, ("non-alloca spadjust"));
       }
@@ -2079,6 +2104,7 @@ Adjust_Alloca_Code (void)
 	  Set_OP_opnd (new_op, OP_PREDICATE_OPND,
 				   OP_opnd(op, OP_PREDICATE_OPND) );
       }
+
       BB_Insert_Ops_Before(bb, op, &ops);
       BB_Remove_Op(bb, op);
       op = OPS_last(&ops);

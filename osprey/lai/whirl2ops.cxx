@@ -3087,9 +3087,6 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   FmtAssert(Inline_Intrinsics_Allowed,("inlining intrinsics not allowed"));
 
   FmtAssert(numkids < 10, ("unexpected number of kids in intrinsic_op"));
-  for (i = 0; i < WN_kid_count(expr); i++) {
-    kids[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
-  }
 
   if (Only_32_Bit_Ops && 
       (MTYPE_is_longlong(WN_rtype(expr)) || MTYPE_is_double(WN_rtype(expr)))) {

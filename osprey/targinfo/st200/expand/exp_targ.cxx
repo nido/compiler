@@ -2821,7 +2821,7 @@ Exp_Simulated_Op (
 {
   OP *newop;
 
-  DevWarn("Exp_Simulated_Op should not be reached");
+  FmtAssert(0, ("Exp_Simulated_Op for top TOP_intrncall should not be reached"));
 
   switch (OP_code(op)) {
 
@@ -2832,13 +2832,16 @@ Exp_Simulated_Op (
   case TOP_spadjust:
     // spadjust should only show up for alloca/dealloca
     if (OP_variant(op) == V_SPADJUST_PLUS) {
-      // dealloca does copy of kid to $sp (op1 is old sp value)
-      Expand_Add (OP_result(op,0), OP_opnd(op,1),
-		                    OP_opnd(op,2), Pointer_Mtype, ops);
+      Expand_Add (OP_result(op,0), OP_opnd(op,0),
+                                    OP_opnd(op,1), Pointer_Mtype, ops);
     }
     else {
-      Expand_Sub (OP_result(op,0), OP_opnd(op,1),
-                                    OP_opnd(op,2), Pointer_Mtype, ops);
+      Expand_Sub (OP_result(op,0), OP_opnd(op,0),
+                                    OP_opnd(op,1), Pointer_Mtype, ops);
+    }
+
+    FOR_ALL_OPS_OPs(ops, newop) {
+      OP_srcpos(newop) = OP_srcpos(op);
     }
     break;
 

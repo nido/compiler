@@ -686,6 +686,12 @@ Get_Struct_Parameter_Location (PLOC prev)
     INT ireg_size = MTYPE_RegisterSize(SIM_INFO.int_type);
     BOOL	onStack = (prev.reg == 0);
 
+    // [CG]{
+    next.vararg_reg = 0;               // to silence purify
+    next.lpad = 0;
+    next.rpad = 0;
+    //}
+
     if (PSTRUCT_first_call) {
       PLOC_offset(next) = PLOC_offset(prev);
     }
