@@ -5512,11 +5512,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
 #ifdef TARG_ST
   case MULTI_BB_WHILELOOP:
-    //
-    // Benoit wants to optimize these.
-    //
     if (CG_enable_LAO) {
       CG_LOOP cg_loop(loop);
+      // Prolog and Epilog are needed for cg_loop.Recompute_Liveness()
+      if (!cg_loop.Has_prolog_epilog()) return FALSE;
+
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
       if (lao_optimize_LOOP(&cg_loop, LAO_LoopSchedule)) {
