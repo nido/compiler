@@ -135,6 +135,30 @@ builtin_function ("__bitvalw",
                      tree_cons(NULL_TREE, short_unsigned_type_node, endlink))),
                    BUILT_IN_BITVALW, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__builtin__divuw",
+                   build_function_type( unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node, endlink))),
+                   BUILT_IN_BUILTIN__DIVUW, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__builtin__divw",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_BUILTIN__DIVW, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__builtin__moduw",
+                   build_function_type( unsigned_type_node, 
+                     tree_cons(NULL_TREE, unsigned_type_node,
+                     tree_cons(NULL_TREE, unsigned_type_node, endlink))),
+                   BUILT_IN_BUILTIN__MODUW, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__builtin__modw",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_BUILTIN__MODW, BUILT_IN_NORMAL, NULL_PTR);
+
 builtin_function ("__clamplw",
                    build_function_type( integer_type_node, 
                      tree_cons(NULL_TREE, long_long_integer_type_node, endlink)),

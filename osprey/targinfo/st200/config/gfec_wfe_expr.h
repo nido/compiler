@@ -95,6 +95,22 @@
       iopc = INTRN_BITVALW ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_BUILTIN__DIVUW:
+      iopc = INTRN_BUILTIN__DIVUW ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_BUILTIN__DIVW:
+      iopc = INTRN_BUILTIN__DIVW ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_BUILTIN__MODUW:
+      iopc = INTRN_BUILTIN__MODUW ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_BUILTIN__MODW:
+      iopc = INTRN_BUILTIN__MODW ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_CLAMPLW:
       iopc = INTRN_CLAMPLW ;
       intrinsic_op = TRUE ;

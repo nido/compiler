@@ -70,6 +70,18 @@
 { /* __bitvalw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U2, "__bitvalw", NULL, "__bitvalw"}, 
+{ /* __builtin__divuw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U4, "__builtin__divuw", NULL, "__builtin__divuw"}, 
+{ /* __builtin__divw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__builtin__divw", NULL, "__builtin__divw"}, 
+{ /* __builtin__moduw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U4, "__builtin__moduw", NULL, "__builtin__moduw"}, 
+{ /* __builtin__modw */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I4, "__builtin__modw", NULL, "__builtin__modw"},
 { /* __clamplw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__clamplw", NULL, "__clamplw"}, 
