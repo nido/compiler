@@ -549,6 +549,14 @@ inline INT32 PC_Slot(INT32 pc)
   return pc & (ISA_INST_BYTES - 1);
 }
 
+#ifdef TARG_ST
+/* Given a composite PC, return the corresponding physical address */
+inline INT32 PC2Addr(INT32 pc)
+{
+  return PC_Bundle(pc) + PC_Slot(pc)*ISA_INST_BYTES/ISA_MAX_SLOTS;
+}
+#endif
+
 /* ====================================================================
  *   PC_Incr
  *
@@ -2440,12 +2448,22 @@ Setup_Text_Section_For_PU (
       end_previous_text_region(old_section, 
                                    Em_Get_Section_Offset(old_section));
     }
+#ifdef TARG_ST
+    // CL: convert composite PC to actual PC address
+    if (generate_dwarf) {
+    	Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, PC2Addr(text_PC),
+			Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+			Last_Label,
+			ST_elf_index(text_base)),
+			PC2Addr(Offset_From_Last_Label));
+#else
     if (generate_dwarf) {
     	Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, text_PC,
 			Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 			Last_Label,
 			ST_elf_index(text_base)),
 			Offset_From_Last_Label);
+#endif
     }
 #ifndef TARG_ST
   }
@@ -3204,7 +3222,13 @@ Assemble_OP (
 
   if (OP_prefetch(op)) Use_Prefetch = TRUE;
 
+#ifdef TARG_ST200 // CL: with variable-length bundles
+                  //     we call Cg_Dwarf_Add_Line_Entry
+                  //     only at bundle starts in
+                  //     Assemble_Bundles
+#else
   Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op));
+#endif
 
   if (Assembly || Lai_Code) {
     r_assemble_list ( op, bb );
@@ -3486,14 +3510,26 @@ Assemble_Bundles(BB *bb)
     INT slot;
     OP *slot_op[ISA_MAX_SLOTS];
     INT ibundle;
+#ifdef TARG_ST200
+    // CL: track bundle stop because we have variable length bundles
+    int seen_end_group=0;
+#endif
 
     /* Gather up the OPs for the bundle.
      */
     stop_mask = 0;
     slot_mask = 0;
+#ifdef TARG_ST200
+    for (slot = 0; op && !seen_end_group; op = OP_next(op)) {
+#else
     for (slot = 0; op && slot < ISA_MAX_SLOTS; op = OP_next(op)) {
+#endif
       INT words;
       INT w;
+
+#ifdef TARG_ST200
+      seen_end_group = OP_end_group(op);
+#endif
 
       if (OP_dummy(op)) continue;		// these don't get emitted
 
@@ -3529,11 +3565,23 @@ Assemble_Bundles(BB *bb)
     }
     if (slot == 0) break;
 
+#ifdef TARG_ST200
+    // CL: recalibrate to ISA_MAX_SLOTS bundle length
+    for(int w=slot; w<ISA_MAX_SLOTS; w++) {
+      slot_mask <<= ISA_TAG_SHIFT;
+      stop_mask <<= 1;
+    }
+#endif
+
+#ifndef TARG_ST200
+    // CL: now, bundles have variable length
+
     // Emit the warning only when bundle formation phase is enabled (ON by
     // default).
     if (LOCS_Enable_Bundle_Formation) {
       FmtAssert(slot == ISA_MAX_SLOTS, ("not enough OPs for bundle in BB:%d\n",BB_id(bb)));
     }
+#endif
 
     /* Determine template.
      */
@@ -3576,11 +3624,28 @@ Assemble_Bundles(BB *bb)
     /* Assemble the bundle.
      */
     slot = 0;
+#ifdef TARG_ST200
+    OP *sl_op; // CL: make it visible outside of the loop
+
+    /* Generate debug info for the 1st op of the bundle */
+    if (generate_dwarf) {
+      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(slot_op[slot]));
+    }
+#endif
+
     do {
+#ifdef TARG_ST200
+      sl_op = slot_op[slot];
+#else
       OP *sl_op = slot_op[slot];
+#endif
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
+#ifdef TARG_ST200
+    } while (!OP_end_group(sl_op));
+#else
     } while (slot < ISA_MAX_SLOTS);
+#endif
 
     /* Bundle suffix
      */
@@ -3889,8 +3954,13 @@ EMT_Assemble_BB (
     /* Set an initial line number so that if the first inst in the BB
      * has no srcpos, then we'll be ok.
      */
+#ifdef TARG_ST
+    if (entry_srcpos)
+      Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), entry_srcpos);
+#else
     if (entry_srcpos)
       Cg_Dwarf_Add_Line_Entry (PC, entry_srcpos);
+#endif
 
     if (ST_is_not_used(entry_sym)) {
       // don't emit alt-entry if marked as not-used
@@ -4788,6 +4858,17 @@ EMT_Emit_PU (
       }
     }
     // Cg_Dwarf_Process_PU (PU_section, Initial_Pu_PC, PC, pu, pu_dst, symindex, eh_offset);
+#ifdef TARG_ST
+    Cg_Dwarf_Process_PU (
+		Em_Create_Section_Symbol(PU_section),
+		Initial_Pu_Label,
+		Last_Label, PC2Addr(Offset_From_Last_Label),
+		pu, pu_dst, symindex, eh_offset,
+		// The following two arguments need to go away
+		// once libunwind provides an interface that lets
+		// us specify ranges symbolically.
+		PC2Addr(Initial_Pu_PC), PC2Addr(PC));
+#else
     Cg_Dwarf_Process_PU (
 		Em_Create_Section_Symbol(PU_section),
 		Initial_Pu_Label,
@@ -4797,6 +4878,7 @@ EMT_Emit_PU (
 		// once libunwind provides an interface that lets
 		// us specify ranges symbolically.
 		Initial_Pu_PC, PC);
+#endif
   }
 
   PU_Size = PC - Initial_Pu_PC;
@@ -4810,7 +4892,7 @@ EMT_Emit_PU (
     cache_last_label_info (Last_Label,
 		Em_Create_Section_Symbol(PU_section),
 		ST_pu(pu),
-		Offset_From_Last_Label);
+		PC2Addr(Offset_From_Last_Label));
   }
 
 #if 0
