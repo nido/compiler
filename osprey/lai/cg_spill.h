@@ -247,7 +247,7 @@ extern void CGSPILL_Reset_Local_Spills (void);
 extern BOOL CGSPILL_TN_Can_Be_Spilled ( const TN* tn );
 extern ST * CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client);
 extern BOOL CGSPILL_Is_Spill_Location (ST *mem_loc);
-extern ST * CGSPILL_OP_Spill_Location (OP *op);
+CG_EXPORTED extern ST * CGSPILL_OP_Spill_Location (OP *op);
 inline BOOL CGSPILL_Is_Spill_Op (OP *op)
 {
 #ifdef TARG_ST
