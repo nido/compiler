@@ -291,6 +291,13 @@ BE_EXPORTED extern INT32 Target_Stack_Alignment; /* -TARG:stack_alignment=nn */
  */
 #define DEFAULT_DATA_ALIGNMENT 0
 
+/*
+ * [CG] Alignment for optimized instructions block alignment.
+ * This should be the size of the instruction cache line. Or the minimal
+ * size of instruction cache line for multiple cache conficurations.
+ */
+#define OPTIMIZED_INSTRUCTIONS_ALIGNMENT 64
+
 /* ====================================================================
  *
  * Miscellaneous options

@@ -3248,7 +3248,12 @@ void GCM_Schedule_Region (HBS_TYPE hbs_type)
 
     // check to see if <bb> should be aligned. Entry <bb> of a procedure
     // are automatically aligned.
+#ifdef TARG_ST
+    // [CG] Check_If_Should_Align_BB() is not used anymore.
+    num_of_nops = 0;
+#else
     num_of_nops = Check_If_Should_Align_BB(bb, ISA_INST_BYTES * cur_pc);
+#endif
     if (num_of_nops || BB_entry(bb)) {
       Set_BB_num_align_nops(bbsch, num_of_nops);
       cur_pc = 0;

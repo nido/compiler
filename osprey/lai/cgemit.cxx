@@ -453,26 +453,31 @@ Init_Section (
   /* hack for .text section */
 #ifdef TARG_ST
   // (cbr) exectutable sections should be text aligned
+  // [CG] Minimal alignment of text segment is DEFAULT_TEXT_ALIGNMENT.
   if (STB_exec (st)) {
+    int text_align;
+    if (Align_Instructions) 
+      text_align = Align_Instructions;
+    else if (OPT_Space)
+      text_align = DEFAULT_TEXT_ALIGNMENT;
+    else 
+      text_align = CGTARG_Text_Alignment();
+    if (text_align < DEFAULT_TEXT_ALIGNMENT) text_align = DEFAULT_TEXT_ALIGNMENT;
+    Set_STB_align(st, text_align);
+  }
 #else
   if (Is_Text_Section(st)) {
-#endif
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
-#ifdef TARG_ST
-    else
-      /* [CG] Minimal alignment of text segment. */
-      Set_STB_align(st, DEFAULT_TEXT_ALIGNMENT);
-#else
     else if (OPT_Space)
       Set_STB_align(st, ISA_INST_BYTES);
     else
       Set_STB_align(st, CGTARG_Text_Alignment());
-#endif
   }
+#endif
 #ifdef TARG_ST
   // [CG]: For data sections we may have an alignment
-  // Currently set it to 
+  // Currently set it to DEFAULT_DATA_ALIGNMENT
   else {
     if (STB_align(st) == 0) {
       /* (cbr) if the section is not used, no alignement has been set */
@@ -2470,6 +2475,66 @@ Branch_Skips_First_Op (
   return FALSE;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   Check_If_Should_Align_BB
+ *
+ *   Check if bb should be aligned, 
+ *   and return number of bytes the bb should be aligned with.
+ *   Or 0 if no alignment is requested.
+ * ====================================================================
+ */
+// [CG] This function interface has changed and returns the alignment
+// in bytes. 
+// The options that may define a bb alignment are in priority
+// order:
+// -OPT:align_loops
+// -OPT:align_jumps
+// -OPT:align_labels
+// -OPT:align_instructions
+//
+INT32
+Check_If_Should_Align_BB (
+  BB *bb
+)
+{
+  BOOL bb_is_loop = FALSE;
+  BOOL bb_has_jump_to = FALSE;
+
+  if (OPT_Space) return 0;
+
+  /* Detect bbs that are loop head. */
+  if (BB_loop_head_bb(bb) == bb &&
+      !BB_unrolled_fully(bb)) bb_is_loop = TRUE;
+  if (bb_is_loop && Align_Loops) return Align_Loops;
+
+  /* Treat targets of jumps.*/
+  if ((BB_preds_len(bb) >= 2) ||
+      (BB_preds_len(bb) == 1 &&
+       BB_prev(bb) != BB_First_Pred(bb))) bb_has_jump_to = TRUE;
+  if (bb_has_jump_to && Align_Jumps) return Align_Jumps;
+
+  /* If Align_Labels is specified all BB are aligned. */
+  if (Align_Labels) return Align_Labels;
+  
+  /* Is Align instructions is specified, check BB that should be aligned. */
+  if (Align_Instructions) {
+    /* No predecessor, don't align */
+    if (BB_prev(bb) == NULL)
+      return 0;	
+    /* Not frequent enough, so don't align */
+    if (BB_freq(bb) <= 1.0)
+      return 0;	
+#define FREQUENT_BB_DIFF 5.0
+    /* Not frequent enough compared to predecessor. */
+    if (BB_freq(bb) / BB_freq(BB_prev(bb)) < FREQUENT_BB_DIFF)
+      return 0;
+    return Align_Instructions;
+  }
+  return 0;
+}
+#else
+
 /* ====================================================================
  *   Check_If_Should_Align_BB
  *
@@ -2491,11 +2556,6 @@ Check_If_Should_Align_BB (
   INT num_of_ops = 0; 		/* zero to begin with */
 #define FREQUENT_BB_DIFF 5.0
 
-#ifdef TARG_ST
-  // [CG]: Never align blocks for performance. Would require a flag.
-  // In addition this code is buggy for variable length bundles.
-  return 0;
-#endif
   /*
    * Align loops for best processor efficiency.
    * Originally checked if bb_loophead, but now just
@@ -2575,7 +2635,39 @@ Check_If_Should_Align_BB (
 
   return num_of_ops;
 }
+#endif
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   Check_If_Should_Align_PU
+ * ====================================================================
+ */
+// [CG]: Changed this function interface.
+// This function now returns the requested alignment for the PU if
+// any.
+// This is an optional feature activated in priority order by:
+// -OPT:align_functions,
+// -OPT:align_instructions.
+// If no specific option is given, 0 must be returned and the function
+// will be aligned by the DEFAULT_FUNCTION_ALIGNMENT value.
+static INT
+Check_If_Should_Align_PU (
+  ST *pu
+)
+{
+  INT align;
+
+  if (OPT_Space) return 0;
+
+  if (Align_Functions)
+    align = Align_Functions;
+  else if (Align_Instructions)
+    align = Align_Instructions;
+  else 
+    align = 0;
+  return align;
+}
+#else
 /* ====================================================================
  *   Check_If_Should_Align_PU
  * ====================================================================
@@ -2587,11 +2679,6 @@ Check_If_Should_Align_PU (
 {
   INT q;
 
-#ifdef TARG_ST
-  // [CG]: Never align PU for performance. Would require a flag.
-  // In addition this code is buggy for variable length bundles.
-  return 0;
-#endif
   if (Align_Instructions) {
     q = Align_Instructions;
   }
@@ -2604,6 +2691,7 @@ Check_If_Should_Align_PU (
   q /= ISA_INST_BYTES;	                   /* so word-sized */
   return (q - ((curpc/ISA_INST_BYTES) % q)) % q;
 }
+#endif
 
 /* ====================================================================
  *   Create_Cold_Text_Section
@@ -2916,6 +3004,9 @@ Setup_Text_Section_For_PU (
   }
 #endif
 
+#ifdef TARG_ST
+  // [CG] Check_If_Should_Align_PU() is now used from EMT_Emit_PU()
+#else
   i = Check_If_Should_Align_PU (text_PC);
   if (i != 0) {
     if (Assembly || Lai_Code) {
@@ -2937,6 +3028,7 @@ Setup_Text_Section_For_PU (
     // increment text_PC by 'num' bundles
     text_PC = text_PC + (i * ISA_INST_BYTES);
   }
+#endif
 
   // hack for supporting dwarf generation in assembly (suneel)
 #ifndef TARG_ST
@@ -4801,6 +4893,15 @@ EMT_Assemble_BB (
     }
   }
 
+#ifdef TARG_ST
+  INT align_bb = Check_If_Should_Align_BB(bb);
+  if (align_bb != 0) {
+    fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, align_bb);
+    // Align current PC
+    PC = PC_Align_N(PC, align_bb);
+  }
+#endif
+
   if (BB_entry(bb)) {
     char *entry_name;
     ST *entry_sym; 
@@ -5145,6 +5246,8 @@ R_Resolve_Branches (
     INT32 curpc = curpcs[isect];
     BB *prev_nonempty_bb = prev_nonempty_bbs[isect];
 
+#ifndef TARG_ST
+    // [CG] Removed this code. Alignment of BB is handled in EMT_Emit_BB.
     /* need prev bb to align */
     if (prev_nonempty_bb != NULL) {
       INT32 num = Check_If_Should_Align_BB (bb, curpc);
@@ -5158,6 +5261,7 @@ R_Resolve_Branches (
 	Pad_BB_With_Noops(prev_nonempty_bb, num);
       }
     }
+#endif
 
     bb_start_pc = curpc;
 
@@ -5649,8 +5753,11 @@ EMT_Emit_PU (
     // [CL] force alignment when starting a new function
     // (as alignment constraints in hb_hazards.cxx:Make_Bundles()
     // are reset for each new PU, we must reset alignment here)
-    if (DEFAULT_FUNCTION_ALIGNMENT) {
-      fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, DEFAULT_FUNCTION_ALIGNMENT);
+    // [CG] Added call to Check_If_Should_Align_PU()
+    INT pu_align = Check_If_Should_Align_PU(pu);
+    if (pu_align < DEFAULT_FUNCTION_ALIGNMENT) pu_align = DEFAULT_FUNCTION_ALIGNMENT;
+    if (pu_align) {
+      fprintf(Asm_File, "\t%s %d\n", AS_ALIGN, pu_align);
     }
 #endif
     if (AS_ENT) CGEMIT_Prn_Ent_In_Asm (pu);

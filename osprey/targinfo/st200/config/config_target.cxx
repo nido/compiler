@@ -113,7 +113,14 @@ BOOL Char_Type_Is_Signed = FALSE;
 INT16 FP_Exception_Enable_Max = FPX_DEF;     /* Max FP trap enables */
 INT16 FP_Exception_Enable_Min = 0;	     /* Min FP trap enables */
 
-INT32 Align_Instructions = 0;	             /* 0 means hasn't been set */
+INT32 Align_Instructions = 0;	             /* 0 means hasn't been set, 1 cache line size, other is a power of 2. */
+#ifdef TARG_ST
+INT32 Align_Functions = 0;	             /* same as above. */
+INT32 Align_Loops = 0;	             /* same as above. */
+INT32 Align_Jumps = 0;	             /* same as above. */
+INT32 Align_Labels = 0;	             /* same as above. */
+#endif
+
 BOOL Avoid_TFP_blikely_bug = FALSE;
 BOOL Avoid_TFP_blikely_bug_overridden = FALSE;
 
@@ -646,6 +653,23 @@ Configure_Target ()
 #define IS_POW2(n)              (((n) & ((n)-1))==0)
   FmtAssert (IS_POW2(Align_Instructions), 
 	("-OPT:align_instructions=<n> must equal power of two"));
+  if (Align_Instructions == 1) Align_Instructions = OPTIMIZED_INSTRUCTIONS_ALIGNMENT;
+
+  FmtAssert (IS_POW2(Align_Functions), 
+	("-OPT:align_instructions=<n> must equal power of two"));
+  if (Align_Functions == 1) Align_Functions = OPTIMIZED_INSTRUCTIONS_ALIGNMENT;
+
+  FmtAssert (IS_POW2(Align_Loops), 
+	("-OPT:align_loops=<n> must equal power of two"));
+  if (Align_Loops == 1) Align_Loops = OPTIMIZED_INSTRUCTIONS_ALIGNMENT;
+
+  FmtAssert (IS_POW2(Align_Labels), 
+	("-OPT:align_labels=<n> must equal power of two"));
+  if (Align_Labels == 1) Align_Labels = OPTIMIZED_INSTRUCTIONS_ALIGNMENT;
+
+  FmtAssert (IS_POW2(Align_Jumps), 
+	("-OPT:align_jumps=<n> must equal power of two"));
+  if (Align_Jumps == 1) Align_Jumps = OPTIMIZED_INSTRUCTIONS_ALIGNMENT;
 
   return;
 }
