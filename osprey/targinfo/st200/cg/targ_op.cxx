@@ -816,6 +816,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
   case TOP_zxth:
     return 16;
   case TOP_sxtb:
+  case TOP_zxtb:
     return 8;
     
   case TOP_mfb:
@@ -949,6 +950,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
     return TRUE;
 
   case TOP_zxth:
+  case TOP_zxtb:
     return FALSE;
 
   case TOP_mfb:
