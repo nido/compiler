@@ -912,12 +912,12 @@ Negate_Branch(OP *br)
     OP *cmp = BBINFO_compare_op(br_bb);
     if (cmp != NULL && OP_results(cmp) == 2) {
       if (   OP_has_predicate(cmp) 
-	  && !TN_is_true_pred(OP_opnd(cmp,OP_PREDICATE_OPND))) return FALSE;
+	  && !TN_is_true_pred(OP_opnd(cmp, OP_PREDICATE_OPND))) return FALSE;
 
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
-      TN *pred = OP_opnd(br,OP_PREDICATE_OPND);
+      TN *pred = OP_opnd(br, OP_PREDICATE_OPND);
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (TN_is_true_pred(neg_tn)) {
@@ -1628,7 +1628,7 @@ Initialize_BB_Info(void)
 	   */
 	  if (   cmp != NULL 
 	      && OP_has_predicate(cmp) 
-	      && !TN_is_true_pred(OP_opnd(cmp,OP_PREDICATE_OPND)))
+	      && !TN_is_true_pred(OP_opnd(cmp, OP_PREDICATE_OPND)))
 	  {
 	    cmp = NULL;
 	  }
@@ -3521,7 +3521,11 @@ Can_Append_Succ(
 
   /* Reject if merged BB will be too large.
    */
+#ifdef TARG_ST
+  if (BB_length(b) + BB_length(suc) >= CG_split_BB_length) {
+#else
   if (BB_length(b) + BB_length(suc) >= Split_BB_Length) {
+#endif
     if (trace) {
       #pragma mips_frequency_hint NEVER
       fprintf(TFile, "rejecting %s of BB:%d into BB:%d"
@@ -5942,7 +5946,7 @@ Estimate_BB_Length(BB *bb)
 
       if (!OP_copy(op)) continue;
       if (   !TN_is_save_reg(tn = OP_result(op,0)) 
-	  && !TN_is_save_reg(tn = OP_opnd(op,OP_COPY_OPND))) continue;
+	  && !TN_is_save_reg(tn = OP_opnd(op, OP_Copy_Operand(op)))) continue;
 
       rc = TN_register_class(tn);
       if (callees_needed[rc]) {
@@ -5983,7 +5987,7 @@ Create_Sched_Est(BB *bb, MEM_POOL *pool)
 
       if (!OP_copy(op)) continue;
       if (   !TN_is_save_reg(tn = OP_result(op,0)) 
-	  && !TN_is_save_reg(tn = OP_opnd(op,OP_COPY_OPND))) continue;
+	  && !TN_is_save_reg(tn = OP_opnd(op, OP_Copy_Operand(op)))) continue;
 
       rc = TN_register_class(tn);
       if (callees_needed[rc]) {
