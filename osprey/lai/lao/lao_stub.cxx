@@ -311,6 +311,7 @@ CGIR_LAB_create(CGIR_LAB cgir_lab, const char *name) {
   // code borrowed from Gen_Label_For_BB
   LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, new_lab);
   LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
+  //
   return new_lab;
 }
 
@@ -399,16 +400,24 @@ CGIR_OP_identity(CGIR_OP cgir_op) {
 
 // Create a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int issueDate) {
+CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int iteration, int issueDate) {
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
-  // TODO: issueDate
+  // If a duplicate, set orig_idx and copy WN.
+  if (cgir_op != NULL) {
+    Set_OP_orig_idx(new_op, OP_map_idx(cgir_op));
+    Copy_WN_For_Memory_OP(new_op, cgir_op);
+  }
+  // Set unrolling and scycle.
+  Set_OP_unrolling(new_op, iteration);
+  OP_scycle(new_op) = issueDate;
+  //
   return new_op;
 }
 
 // Update a CGIR_OP.
 static void
-CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int issueDate) {
+CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int iteration, int issueDate) {
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
@@ -423,7 +432,9 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
     CGIR_TN cgir_tn = results[i];
     if (OP_result(cgir_op, i) != cgir_tn) Set_OP_result(cgir_op, i, cgir_tn);
   }
-  // TODO: issueDate
+  // Set unrolling and scycle.
+  Set_OP_unrolling(cgir_op, iteration);
+  OP_scycle(cgir_op) = issueDate;
 }
 
 // Identity of a CGIR_BB.
@@ -469,6 +480,7 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_NOTE);
     }
   }
+  //
   return new_bb;
 }
 
@@ -491,16 +503,15 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     OPS_Append_Op(&ops, operations[i]);
   }
   BB_Append_Ops(cgir_bb, &ops);
-  // Add the cgir_li.
-#if 0
+  // Remove the cgir_li if any.
   ANNOTATION *annot = ANNOT_Get(BB_annotations(cgir_bb), ANNOT_LOOPINFO);
   if (annot != NULL) {
     BB_annotations(cgir_bb) = ANNOT_Unlink(BB_annotations(cgir_bb), annot);
   }
-  if (cgir_li != NULL) {
+  // Add the cgir_li, unless it is a dummy created by CGIR_LI_create.
+  if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
-#endif
 }
 
 // Chain two CGIR_BBs in the CGIR.
@@ -550,12 +561,21 @@ CGIR_LI_identity(CGIR_LI cgir_li) {
 // Create a CGIR_LI.
 static CGIR_LI
 CGIR_LI_create(CGIR_LI cgir_li, int unrolling) {
-  WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
-  WN_loop_trip_est(wn) /= unrolling;
-  WN_loop_trip_est(wn) += 1;
   CGIR_LI new_li = TYPE_P_ALLOC(LOOPINFO);
-  LOOPINFO_wn(new_li) = wn;
-  LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
+  if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
+    // Code adapted from Unroll_Dowhile_Loop.
+    WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
+    if (unrolling != 0) {
+      WN_loop_trip_est(wn) /= unrolling;
+      WN_loop_trip_est(wn) += 1;
+    }
+    LOOPINFO_wn(new_li) = wn;
+    LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
+  } else {
+    // Create a dummy CGIR_LI.
+    LOOPINFO_wn(new_li) = NULL;
+  }
+  //
   return new_li;
 }
 
