@@ -177,8 +177,9 @@ static BOOL CG_LOOP_unroll_multi_bb_overridden = FALSE;
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
 static BOOL CG_LAO_regiontype_overridden = FALSE;
-static BOOL CG_LAO_pipelining_overridden = FALSE;
 static BOOL CG_LAO_speculation_overridden = FALSE;
+static BOOL CG_LAO_pipelining_overridden = FALSE;
+static BOOL CG_LAO_renaming_overridden = FALSE;
 static BOOL CG_LAO_loopdep_overridden = FALSE;
 static BOOL CG_LAO_scd_first_overridden = FALSE;
 static BOOL CG_LAO_scd_last_overridden = FALSE;
@@ -420,10 +421,12 @@ static OPTION_DESC Options_CG[] = {
     2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
     1, 0, 3,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
-    1, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
     1, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
+    1, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
+    0, 0, 4,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_loopdep", "",
     1, 0, 3,	&CG_LAO_loopdep, &CG_LAO_loopdep_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scd_first", "",
@@ -1522,9 +1525,18 @@ CG_Process_Command_Line (
  *   read 
  * ====================================================================
  */
+extern "C" {
+#include <unistd.h>
+}
 void
 CG_Init (void)
 {
+#ifdef Is_True_On
+  if (getenv("CGPID")) {
+    fprintf(stderr, "CGPID=%d\n", getpid());
+    int dummy; scanf("%d", &dummy);
+  }
+#endif
   Set_Error_Phase ( "CG Initialization" );
 
   MEM_POOL_Initialize (&MEM_local_region_pool, "local_region_pool", TRUE);
@@ -1545,12 +1557,13 @@ CG_Init (void)
   if (CG_LAO_optimizations != 0) {
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
     if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
-    if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
       else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
       else CG_LAO_speculation = 3;
     }
+    if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 0;
+    if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 0;
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
     if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
     if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;

@@ -560,9 +560,22 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
   LoopInfo loopinfo = LAI_Interface_findLoopInfo(interface, cgir_ld);
   if (loopinfo == NULL) {
     BB *head_bb = LOOP_DESCR_loophead(cgir_ld);
+    int pipelining = CG_LAO_pipelining, renaming = CG_LAO_renaming;
+    ANNOTATION *remainder_annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
+    if (remainder_annot == NULL) {
+      // Try to access the #pragma pipeline arguments if any.
+      ANNOTATION *pipeline_annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_PRAGMA);
+      while (pipeline_annot != NULL) {
+	if (WN_pragma(ANNOT_pragma(pipeline_annot)) == WN_PRAGMA_PIPELINE) break;
+	pipeline_annot = ANNOT_Get(ANNOT_next(pipeline_annot), ANNOT_PRAGMA);
+      }
+      if (pipeline_annot != NULL) {
+	WN *wn = ANNOT_pragma(pipeline_annot);
+	pipelining = MAX(1, WN_pragma_arg1(wn));
+	renaming = MAX(0, WN_pragma_arg2(wn));
+      }
+    } else pipelining = renaming = 0;
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
-    ANNOTATION *annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
-    int pipelining = annot == NULL ? CG_LAO_pipelining : 0;
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
     if (cgir_li != NULL) {
       TN *trip_count_tn = LOOPINFO_trip_count_tn(cgir_li);
@@ -576,6 +589,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	loopinfo = LAI_Interface_makeLoopInfo(interface,
 	    cgir_ld, head_block, tripcount,
 	    ConfigurationItem_Pipelining, pipelining,
+	    ConfigurationItem_Renaming, renaming,
 	    ConfigurationItem_MinTrip, min_trip_count,
 	    ConfigurationItem_Modulus, min_trip_factor,
 	    ConfigurationItem_Residue, 0,
@@ -584,12 +598,14 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	loopinfo = LAI_Interface_makeLoopInfo(interface,
 	    cgir_ld, head_block, tripcount,
 	    ConfigurationItem_Pipelining, pipelining,
+	    ConfigurationItem_Renaming, renaming,
 	    ConfigurationItem__);
       }
     } else {
       loopinfo = LAI_Interface_makeLoopInfo(interface,
 	  cgir_ld, head_block, NULL,
 	  ConfigurationItem_Pipelining, pipelining,
+	  ConfigurationItem_Renaming, renaming,
 	  ConfigurationItem__);
     }
     // Fill the LoopInfo dependence table.
@@ -807,6 +823,15 @@ static void
 CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, bool isSpillCode, bool isVolatile, bool isHoisted) {
   // Copy information from orig_op if any.
   if (orig_op != NULL) {
+    // Copy Annot, flags, srcpos, etc. See Dup_OP().
+    OP_srcpos(cgir_op) = OP_srcpos(orig_op);
+    OP_variant(cgir_op) = OP_variant(orig_op);
+    OP_scycle(cgir_op) = OP_scycle(orig_op);
+    OP_flags(cgir_op) = OP_flags(orig_op);
+#ifdef TARG_ST
+    OP_flags2(cgir_op) = OP_flags2(orig_op);
+#endif
+    Copy_Asm_OP_Annot(cgir_op, orig_op);
     // _CG_LOOP_info_map may not be defined for multi-bb loops.
     if (Is_CG_LOOP_Op(orig_op)) CG_LOOP_Init_Op(cgir_op);
     // If a duplicate, set orig_idx and copy WN.
@@ -1033,8 +1058,9 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
       ConfigurationItem_RegionType, CG_LAO_regiontype,
       ConfigurationItem_SchedKind, CG_LAO_schedkind,
-      ConfigurationItem_Pipelining, CG_LAO_pipelining,
       ConfigurationItem_Speculation, CG_LAO_speculation,
+      ConfigurationItem_Pipelining, CG_LAO_pipelining,
+      ConfigurationItem_Renaming, CG_LAO_renaming,
       ConfigurationItem_LoopDep, CG_LAO_loopdep,
       ConfigurationItem_StackModel, stackmodel,
       ConfigurationItem__);

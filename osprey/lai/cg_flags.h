@@ -210,8 +210,9 @@ extern BOOL CG_enable_select;
 extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
 CG_EXPORTED extern INT32 CG_LAO_schedkind;	/* LAO scheduling algorithm */
 CG_EXPORTED extern INT32 CG_LAO_regiontype;	/* LAO scheduling region type */
-CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
 CG_EXPORTED extern INT32 CG_LAO_speculation;	/* LAO control speculation level */
+CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
+CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO software renaming level */
 CG_EXPORTED extern INT32 CG_LAO_loopdep;	/* LAO loop dependence level */
 extern INT32 CG_LAO_scd_first;	/* LAO first BasicBlock scheduled */
 extern INT32 CG_LAO_scd_last;	/* LAO last BasicBlock scheduled */
