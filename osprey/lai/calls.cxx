@@ -617,6 +617,13 @@ Generate_Entry (BB *bb, BOOL gra_run)
   FOR_ALL_OPS_OPs(&ops, op)
     OP_srcpos(op) = ENTRYINFO_srcpos(ent_info);
 
+#ifdef TARG_ST
+  /* [CL] set the prologue field for all the entry OPs */
+  FOR_ALL_OPS_OPs(&ops, op) {
+    Set_OP_prologue(op);
+  }
+#endif
+
   /* If we're tracing, print the new stuff before merging it: */
   if ( Trace_EE ) {
     #pragma mips_frequency_hint NEVER
@@ -1314,6 +1321,13 @@ Generate_Exit (
   FOR_ALL_OPS_OPs(&ops, op)
     OP_srcpos(op) = EXITINFO_srcpos(exit_info);
 
+#ifdef TARG_ST
+  /* [CL] set the epilogue field for all the exit OPs */
+  FOR_ALL_OPS_OPs(&ops, op) {
+    Set_OP_epilogue(op);
+  }
+#endif
+
   /* If we're tracing, print the new stuff before merging it: */
   if ( Trace_EE ) {
     #pragma mips_frequency_hint NEVER
@@ -1820,11 +1834,18 @@ Adjust_Entry (
     ent_adj = OPS_last(&ops);
     BB_Insert_Ops_Before(bb, sp_adj, &ops);
     BB_Remove_Op(bb, sp_adj);
+#ifdef TARG_ST
+    /* [CL] set the prologue field for all the entry OPs */
+    FOR_ALL_OPS_OPs_FWD(&ops, op) {
+      Set_OP_prologue(op);
+    }
+#endif
     if (Trace_EE) {
       #pragma mips_frequency_hint NEVER
       fprintf(TFile, "\nNew stack frame allocation:\n");
       FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
     }
+
 
     if (fp_adj != sp_adj) {
 
@@ -1835,6 +1856,12 @@ Adjust_Entry (
       OP_srcpos(ent_adj) = OP_srcpos(fp_adj);
       BB_Insert_Ops_Before(bb, fp_adj, &ops);
       BB_Remove_Op(bb, fp_adj);
+#ifdef TARG_ST
+      /* [CL] set the prologue field for all the entry OPs */
+      FOR_ALL_OPS_OPs_FWD(&ops, op) {
+	Set_OP_prologue(op);
+      }
+#endif
       if (Trace_EE) {
 	#pragma mips_frequency_hint NEVER
       	FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
@@ -1987,6 +2014,13 @@ Adjust_Exit (
     BB_Remove_Op(bb, sp_adj);
     FOR_ALL_OPS_OPs_FWD(&ops, op) OP_srcpos(op) = OP_srcpos(sp_adj);
     sp_adj = OPS_last(&ops);
+
+#ifdef TARG_ST
+    /* [CL] set the epilogue field for all the exit OPs */
+    FOR_ALL_OPS_OPs_FWD(&ops, op) {
+      Set_OP_epilogue(op);
+    }
+#endif
 
     if ( Trace_EE ) {
       #pragma mips_frequency_hint NEVER
