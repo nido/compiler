@@ -107,6 +107,15 @@ BE_EXPORTED extern TARGET_ABI Target_ABI;
 /* return the target name for ABI */
 BE_EXPORTED extern char *Abi_Name (TARGET_ABI abi);
 
+/* [SC] TRUE if a protected symbol may be preempted at link or
+ * load time.  For example the .dynbss hack causes a protected
+ * data symbol to be preempted by a data symbol in the main
+ * program.  Similarly, the address of a protected function may
+ * be changed to be the address of a PLT entry in the main program.
+ * Both these can happen on ST200 in the callee-sets-gp ABI.
+ */
+BE_EXPORTED extern BOOL Target_ABI_Preempts_Protected_Symbols();
+
 /* ================ */
 /* Target processor */
 /* ================ */

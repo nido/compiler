@@ -216,6 +216,12 @@ Abi_Name ( TARGET_ABI b)
 }
 #endif /* !defined MONGOOSE_BE || defined TARG_ST */
 
+BOOL
+Target_ABI_Preempts_Protected_Symbols ()
+{
+  return ! Is_Caller_Save_GP;
+}
+
 char *
 Isa_Name ( TARGET_ISA b)
 {
