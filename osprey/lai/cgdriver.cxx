@@ -1082,7 +1082,7 @@ Configure_CG_Options(void)
       OPT_unroll_times = 8;
     }
   }
-  if (OPT_unroll_size > 0 && !OPT_unroll_times_overridden) {
+  if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden) {
     if (Opt_Level == 2) {
       OPT_unroll_size = Opt_ForSize ? 20 : 64;
     } else if (Opt_Level > 2) {
