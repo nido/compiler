@@ -801,47 +801,6 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       return;
     }
 
-#if 0
-    // This code has been factorized, will it work ??
-
-    // If op is last in BB, I will have to fill noops until end 
-    // of bundle.
-    INT max_pos = (BB_last_real_op((OP_bb(op))) == op) ? 
-	                                  ISA_MAX_SLOTS : slot_pos;
-
-    // Fill with noops:
-    Handle_Bundle_Hazard (op, 
-			  bundle, 
-			  bundle_vector, 
-			  TRUE,
-			  slot_pos, 
-			  max_pos, 
-			  stop_bit_reqd, 
-			  prop,
-			  &Clock);
-
-    // If <op> is the last op in bb, or bundle is full do extra stuff:
-    bundle_full = TI_BUNDLE_Is_Full(bundle, &ti_err);
-    FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
-
-    if ((BB_last_real_op(OP_bb(op)) == op) || bundle_full) {
-
-      if (Trace_HB) {
-	if (bundle_full)
-	  fprintf(TFile, "  bundle full \n");
-	else
-	  fprintf(TFile, "  last OP in BB\n");
-      }
-
-      // Reset the bundle
-      TI_BUNDLE_Clear (bundle);
-
-    } /* bundle_full */
-
-    // slot and resources OK, return
-    return;
-#endif
-
   } /* slot avail */
 
   else {
