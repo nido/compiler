@@ -2922,6 +2922,10 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   CG_LOOP_DEF tn_def(body);
 
   OP *op;
+#ifdef TARG_ST
+  // FdF: Prevent unrolling from creating uninitialized uses
+  OPS uninit_ops = OPS_EMPTY;
+#endif
   FOR_ALL_BB_OPs(body, op) {
 
     // For live-out defs, create an epilog backpatch.
@@ -2932,6 +2936,15 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	  && GTN_SET_MemberP(BB_live_in(CG_LOOP_epilog), tn)) {
 	CG_LOOP_Backpatch_Add(CG_LOOP_epilog, tn, tn, 0);
 	CG_LOOP_Backpatch_Add(CG_LOOP_prolog, tn, tn, 1);
+#ifdef TARG_ST
+	// FdF: Prevent unrolling from creating uninitialized uses. If
+	// the loop has a non-zero trip count and tn was not live-in
+	// of the loop, initialize the TN to zero.
+	if (WN_Loop_Nz_Trip(LOOPINFO_wn(info)) &&
+	    !GTN_SET_MemberP(BB_live_in(CG_LOOP_prolog), tn)) {
+	  Exp_COPY(tn, Zero_TN, &uninit_ops);
+	}
+#endif
       }
     }
 
@@ -2951,6 +2964,10 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
     }
   }
 
+#ifdef TARG_ST
+    // FdF: Prevent unrolling from creating uninitialized uses
+    BB_Prepend_Ops(CG_LOOP_prolog, &uninit_ops);
+#endif
   // Add backpatches for higher omega TN copies
 
   if (need_copies) {
@@ -4391,6 +4408,7 @@ void trace_loop(LOOP_DESCR *loop)
 #ifdef TARG_ST
 static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 				 LOOPINFO *unrolled_info,
+				 BB *old_prolog,
 				 TN *unrolled_trip_count,
 				 TN *trip_count,
 				 UINT32 ntimes)
@@ -4422,6 +4440,21 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 	   Gen_Literal_TN(ntimes, trip_size),
 	   trip_size == 4 ? V_BR_I4LT : V_BR_I8LT,
 	   &ops);
+
+  // FdF: Put the computation of the remainder loop trip count out of
+  // the critical path
+  OP *xfer_op = OPS_last(&ops);
+  Is_True(OP_xfer(xfer_op), ("CG_LOOP: Expected a branch operation"));
+  OPS_Remove_Op(&ops, xfer_op);
+
+  OP *point = BB_last_op(old_prolog);
+  BOOL before = TRUE;
+  if (point != NULL && !OP_xfer(point))
+    before = FALSE;
+  BB_Insert_Ops(old_prolog, point, &ops, before);
+  /* Must do this here because old_prolog and CG_LOOP_prolog may be
+     the same. */
+  BB_Append_Op(CG_LOOP_prolog, xfer_op);
 #else
   Exp_OP3v(OPC_FALSEBR,
 	   NULL,
@@ -4430,8 +4463,8 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 	   Zero_TN,
 	   V_BR_I8EQ,
 	   &ops);
-#endif
   BB_Append_Ops(CG_LOOP_prolog, &ops);
+#endif
   Link_Pred_Succ_with_Prob(CG_LOOP_prolog, continuation_bb, ztrip_prob);
   Change_Succ_Prob(CG_LOOP_prolog, BB_next(CG_LOOP_prolog), 1.0 - ztrip_prob);
   BB_freq(BB_next(CG_LOOP_prolog)) = orig_post_prolog_freq;
@@ -4596,6 +4629,9 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
    * new set of prolog backpatches for the unrolled body to be
    * generated, and changes <head>.
    */
+#ifdef TARG_ST
+  BB *old_prolog = CG_LOOP_prolog;
+#endif
   if (gen_remainder_loop) {
     // CG_DEP_Delete_Graph(head);
 
@@ -4630,7 +4666,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
    */
   if (gen_unrolled_loop_guard)
 #ifdef TARG_ST
-    Unroll_Do_Loop_guard(loop, unrolled_info, unrolled_trip_count, trip_count_tn, ntimes);
+    Unroll_Do_Loop_guard(loop, unrolled_info, old_prolog, unrolled_trip_count, trip_count_tn, ntimes);
 #else
     Unroll_Do_Loop_guard(loop, unrolled_info, unrolled_trip_count);
 #endif
