@@ -762,7 +762,7 @@ Exp_Ldst (
     // address TNs
     TN *tmp1;
 
-    if (is_lda && base_ofst == 0) {
+    if (is_lda && ofst == 0) {
       // want to stop at address (either that or add with 0)
       tmp1 = tn;
       is_lda = FALSE;	// so nothing done
