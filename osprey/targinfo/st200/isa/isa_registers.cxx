@@ -44,12 +44,12 @@ static const char *branch_reg_names[] = {
 "$b0", "$b1", "$b2", "$b3", "$b4", "$b5", "$b6", "$b7"
 };
 
-static const char *double_reg_names[] = {
-"$p0", "$p2", "$p4", "$p6", "$p8", "$p10", "$p12", "$p14", "$p16", "$p18", "$p20", "$p22", "$p24", "$p26", "$p28", "$p30", "$p32", "$p34", "$p36", "$p38", "$p40", "$p42", "$p44", "$p46", "$p48", "$p50", "$p52", "$p54", "$p56", "$p58", "$p60"
-};
-
 static const char *integer_reg_names[] = {
 "$r0", "$r1", "$r2", "$r3", "$r4", "$r5", "$r6", "$r7", "$r8", "$r9", "$r10", "$r11", "$r12", "$r13", "$r14", "$r15", "$r16", "$r17", "$r18", "$r19", "$r20", "$r21", "$r22", "$r23", "$r24", "$r25", "$r26", "$r27", "$r28", "$r29", "$r30", "$r31", "$r32", "$r33", "$r34", "$r35", "$r36", "$r37", "$r38", "$r39", "$r40", "$r41", "$r42", "$r43", "$r44", "$r45", "$r46", "$r47", "$r48", "$r49", "$r50", "$r51", "$r52", "$r53", "$r54", "$r55", "$r56", "$r57", "$r58", "$r59", "$r60", "$r61", "$r62", "$r63"
+};
+
+static const char *paired_reg_names[] = {
+"$p0", "$p2", "$p4", "$p6", "$p8", "$p10", "$p12", "$p14", "$p16", "$p18", "$p20", "$p22", "$p24", "$p26", "$p28", "$p30", "$p32", "$p34", "$p36", "$p38", "$p40", "$p42", "$p44", "$p46", "$p48", "$p50", "$p52", "$p54", "$p56", "$p58", "$p60"
 };
 
 static const int integer_link[] = {63};
@@ -62,8 +62,8 @@ main()
 { 
   ISA_REGISTER_CLASS 
 	 rc_branch, 
-	 rc_double, 
-	 rc_integer; 
+	 rc_integer, 
+	 rc_paired; 
 
   ISA_Registers_Begin("st200"); 
 
@@ -71,12 +71,12 @@ main()
   ISA_Register_Set(rc_branch, 0, 7, NULL, branch_reg_names,
     (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st230) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
 
-  rc_double = ISA_Register_Class_Create("double", 64, false, true, false);
-  ISA_Register_Set(rc_double, 0, 30, NULL, double_reg_names,
-    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st230) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
-
   rc_integer = ISA_Register_Class_Create("integer", 32, true, true, false);
   ISA_Register_Set(rc_integer, 0, 63, NULL, integer_reg_names,
+    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st230) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
+
+  rc_paired = ISA_Register_Class_Create("paired", 64, false, true, false);
+  ISA_Register_Set(rc_paired, 0, 30, NULL, paired_reg_names,
     (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st230) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
 
   ISA_Register_Subclass_Create("link", rc_integer, 1, integer_link, NULL);

@@ -492,7 +492,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST220_unit_6,
-	0, Final(TOP_divs),
+	0, Final(TOP_divs_b_b_r),
 	END_TRANSITIONS);
 
   Transitions(ST220_unit_7,
@@ -582,7 +582,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST220_unit_11_1_1_1,
-	0, Final(TOP_sync),
+	0, Final(TOP_ST220_sync),
 	END_TRANSITIONS);
 
   Transitions(ST220_unit_12,
@@ -1118,7 +1118,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST230_unit_6,
-	0, Final(TOP_divs),
+	0, Final(TOP_divs_b_b_r),
 	END_TRANSITIONS);
 
   Transitions(ST230_unit_7,
@@ -1211,7 +1211,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST230_unit_11_1_1_1,
-	0, Final(TOP_sync),
+	0, Final(TOP_ST230_sync),
 	END_TRANSITIONS);
 
   Transitions(ST230_unit_11_2,
@@ -1803,7 +1803,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST231_unit_6,
-	0, Final(TOP_divs),
+	0, Final(TOP_divs_b_b_r),
 	END_TRANSITIONS);
 
   Transitions(ST231_unit_7,
@@ -1896,7 +1896,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST231_unit_11_1_1_1,
-	0, Final(TOP_sync),
+	0, Final(TOP_ST231_sync),
 	END_TRANSITIONS);
 
   Transitions(ST231_unit_11_2,
@@ -2150,45 +2150,45 @@ main()
 
   Transitions(ST235_unit_1,
 	0, Final(TOP_add_r),
-	1, Final(TOP_fadds),
-	2, Final(TOP_fcmpgts),
+	1, Final(TOP_adds),
+	2, Final(TOP_cmpgts),
 	8, Final(TOP_sub_r),
-	9, Final(TOP_fsubs),
-	10, Final(TOP_fcmpges),
+	9, Final(TOP_subs),
+	10, Final(TOP_cmpges),
 	16, Final(TOP_shl_r),
-	17, Final(TOP_fmuls),
-	18, Final(TOP_fcmpeqs),
+	17, Final(TOP_muls),
+	18, Final(TOP_cmpeqs),
 	24, Final(TOP_shr_r),
 	32, Final(TOP_shru_r),
-	33, Final(TOP_fdivs),
+	33, Final(TOP_divs_r),
 	40, Final(TOP_sh1add_r),
 	41, ST235_unit_1_14,
 	48, Final(TOP_sh2add_r),
 	56, Final(TOP_sh3add_r),
 	64, Final(TOP_sh4add_r),
-	65, Final(TOP_faddd),
-	66, Final(TOP_fcmpgtd),
+	65, Final(TOP_addd),
+	66, Final(TOP_cmpgtd),
 	72, Final(TOP_and_r),
-	73, Final(TOP_fsubd),
-	74, Final(TOP_fcmpged),
+	73, Final(TOP_subd),
+	74, Final(TOP_cmpged),
 	80, Final(TOP_andc_r),
-	81, Final(TOP_fmuld),
-	82, Final(TOP_fcmpeqd),
+	81, Final(TOP_muld),
+	82, Final(TOP_cmpeqd),
 	88, Final(TOP_or_r),
 	96, Final(TOP_orc_r),
-	97, Final(TOP_fdivd),
+	97, Final(TOP_divd),
 	104, Final(TOP_xor_r),
 	105, ST235_unit_1_30,
 	120, Final(TOP_mullhus_r),
 	128, Final(TOP_max_r),
 	129, ST235_unit_1_33,
-	130, Final(TOP_fadds_n),
+	130, Final(TOP_adds_n),
 	136, Final(TOP_maxu_r),
 	137, ST235_unit_1_36,
-	138, Final(TOP_fsubs_n),
+	138, Final(TOP_subs_n),
 	144, Final(TOP_min_r),
 	145, ST235_unit_1_39,
-	146, Final(TOP_fmuls_n),
+	146, Final(TOP_muls_n),
 	152, Final(TOP_minu_r),
 	154, ST235_unit_1_42,
 	160, Final(TOP_mulhhs_r),
@@ -2218,59 +2218,59 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_14,
-	0, Final(TOP_fsqrts),
+	0, Final(TOP_sqrts),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_30,
-	0, Final(TOP_fsqrtd),
+	0, Final(TOP_sqrtd),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_33,
-	0, Final(TOP_fconvis),
+	0, Final(TOP_cvtis),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_36,
-	0, Final(TOP_fconvsi),
+	0, Final(TOP_cvtsi),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_39,
-	0, Final(TOP_fconvid),
+	0, Final(TOP_cvtid),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_42,
-	0, Final(TOP_fconvis_n),
+	0, Final(TOP_cvtis_n),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_44,
-	0, Final(TOP_fconvus),
+	0, Final(TOP_cvtus),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_45,
-	0, Final(TOP_fconvsi_n),
+	0, Final(TOP_cvtsi_n),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_47,
-	0, Final(TOP_fconvsu),
+	0, Final(TOP_cvtsu),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_49,
-	0, Final(TOP_fconvud),
+	0, Final(TOP_cvtud),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_51,
-	0, Final(TOP_fconvsd),
+	0, Final(TOP_cvtsd),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_53,
-	0, Final(TOP_fconvds),
+	0, Final(TOP_cvtds),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_60,
-	0, Final(TOP_fconvdi),
+	0, Final(TOP_cvtdi),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_1_66,
-	0, Final(TOP_fconvdu),
+	0, Final(TOP_cvtdu),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_2,
@@ -2717,14 +2717,14 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_8_1_2,
-	0, Final(TOP_ldd_i),
-	1, Final(TOP_lddc_i),
-	2, Final(TOP_lddc_i),
-	3, Final(TOP_lddc_i),
-	4, Final(TOP_lddc_i),
-	5, Final(TOP_lddc_i),
-	6, Final(TOP_lddc_i),
-	7, Final(TOP_lddc_i),
+	0, Final(TOP_ldp_i),
+	1, Final(TOP_ldpc_i),
+	2, Final(TOP_ldpc_i),
+	3, Final(TOP_ldpc_i),
+	4, Final(TOP_ldpc_i),
+	5, Final(TOP_ldpc_i),
+	6, Final(TOP_ldpc_i),
+	7, Final(TOP_ldpc_i),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_8_2,
@@ -2819,14 +2819,14 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_10_1,
-	0, Final(TOP_std_i),
-	1, Final(TOP_stdc_i),
-	2, Final(TOP_stdc_i),
-	3, Final(TOP_stdc_i),
-	4, Final(TOP_stdc_i),
-	5, Final(TOP_stdc_i),
-	6, Final(TOP_stdc_i),
-	7, Final(TOP_stdc_i),
+	0, Final(TOP_stp_i),
+	1, Final(TOP_stpc_i),
+	2, Final(TOP_stpc_i),
+	3, Final(TOP_stpc_i),
+	4, Final(TOP_stpc_i),
+	5, Final(TOP_stpc_i),
+	6, Final(TOP_stpc_i),
+	7, Final(TOP_stpc_i),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_10_2,
@@ -2936,7 +2936,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_11_3_4_1_3_1,
-	0, Final(TOP_sync),
+	0, Final(TOP_ST235_sync),
 	END_TRANSITIONS);
 
   Transitions(ST235_unit_11_3_4_1_4,

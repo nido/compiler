@@ -68,8 +68,14 @@ main()
 	TOP_prgins, 0x1f800000UL, 
 	TOP_return, 0x31800000UL, 
 	TOP_rfi, 0x32000000UL, 
-	TOP_sync, 0x28000000UL, 
-	TOP_syncins, 0x31000001UL, 
+	TOP_ST220_sync, 0x28000000UL, 
+	TOP_ST230_sync, 0x28000000UL, 
+	TOP_ST231_sync, 0x28000000UL, 
+	TOP_ST235_sync, 0x2fe02000UL, 
+	TOP_ST220_syncins, 0x31000001UL, 
+	TOP_ST230_syncins, 0x29000000UL, 
+	TOP_ST231_syncins, 0x29000000UL, 
+	TOP_ST235_syncins, 0x2fe00000UL, 
 	TOP_wmb, 0x2fe03000UL, 
 	TOP_UNDEFINED);
 
@@ -127,8 +133,8 @@ main()
   Operand(3, 0, 6, 6);
   Instruction_Pack_Group(p6,
 	TOP_stbc_i, 0x2c000000UL, 
-	TOP_stdc_i, 0x28000000UL, 
 	TOP_sthc_i, 0x2a000000UL, 
+	TOP_stpc_i, 0x28000000UL, 
 	TOP_stwc_i, 0x29000000UL, 
 	TOP_UNDEFINED);
 
@@ -142,8 +148,8 @@ main()
   Operand(0, 9, 0, 23);
   Instruction_Pack_Group(p7,
 	TOP_stbc_ii, 0x2c000000UL, 0UL, 
-	TOP_stdc_ii, 0x28000000UL, 0UL, 
 	TOP_sthc_ii, 0x2a000000UL, 0UL, 
+	TOP_stpc_ii, 0x28000000UL, 0UL, 
 	TOP_stwc_ii, 0x29000000UL, 0UL, 
 	TOP_UNDEFINED);
 
@@ -154,8 +160,8 @@ main()
   Operand(2, 0, 6, 6);
   Instruction_Pack_Group(p8,
 	TOP_stb_i, 0x26000000UL, 
-	TOP_std_i, 0x28000000UL, 
 	TOP_sth_i, 0x25800000UL, 
+	TOP_stp_i, 0x28000000UL, 
 	TOP_stw_i, 0x25000000UL, 
 	TOP_UNDEFINED);
 
@@ -168,8 +174,8 @@ main()
   Operand(0, 9, 0, 23);
   Instruction_Pack_Group(p9,
 	TOP_stb_ii, 0x26000000UL, 0UL, 
-	TOP_std_ii, 0x28000000UL, 0UL, 
 	TOP_sth_ii, 0x25800000UL, 0UL, 
+	TOP_stp_ii, 0x28000000UL, 0UL, 
 	TOP_stw_ii, 0x25000000UL, 0UL, 
 	TOP_UNDEFINED);
 
@@ -228,20 +234,20 @@ main()
   Result(0, 12, 6);
   Operand(0, 0, 0, 6);
   Instruction_Pack_Group(p15,
-	TOP_fconvdi, 0x03640000UL, 
-	TOP_fconvds, 0x03040000UL, 
-	TOP_fconvdu, 0x03e40000UL, 
-	TOP_fconvid, 0x02440000UL, 
-	TOP_fconvis, 0x02040000UL, 
-	TOP_fconvis_n, 0x02680000UL, 
-	TOP_fconvsd, 0x02e40000UL, 
-	TOP_fconvsi, 0x02240000UL, 
-	TOP_fconvsi_n, 0x02880000UL, 
-	TOP_fconvsu, 0x02a40000UL, 
-	TOP_fconvud, 0x02c40000UL, 
-	TOP_fconvus, 0x02840000UL, 
-	TOP_fsqrtd, 0x01a40000UL, 
-	TOP_fsqrts, 0x00a40000UL, 
+	TOP_cvtdi, 0x03640000UL, 
+	TOP_cvtds, 0x03040000UL, 
+	TOP_cvtdu, 0x03e40000UL, 
+	TOP_cvtid, 0x02440000UL, 
+	TOP_cvtis, 0x02040000UL, 
+	TOP_cvtis_n, 0x02680000UL, 
+	TOP_cvtsd, 0x02e40000UL, 
+	TOP_cvtsi, 0x02240000UL, 
+	TOP_cvtsi_n, 0x02880000UL, 
+	TOP_cvtsu, 0x02a40000UL, 
+	TOP_cvtud, 0x02c40000UL, 
+	TOP_cvtus, 0x02840000UL, 
+	TOP_sqrtd, 0x01a40000UL, 
+	TOP_sqrts, 0x00a40000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p16: ===== */
@@ -250,6 +256,9 @@ main()
   Operand(0, 0, 0, 6);
   Operand(1, 0, 6, 6);
   Instruction_Pack_Group(p16,
+	TOP_addd, 0x01040000UL, 
+	TOP_adds, 0x00040000UL, 
+	TOP_adds_n, 0x02080000UL, 
 	TOP_add_r, 0x00000000UL, 
 	TOP_andc_r, 0x01400000UL, 
 	TOP_andl_r_r, 0x05400000UL, 
@@ -270,9 +279,15 @@ main()
 	TOP_asm_7, 0x2ce00000UL, 
 	TOP_asm_8, 0x2d000000UL, 
 	TOP_asm_9, 0x2d200000UL, 
+	TOP_cmpeqd, 0x01480000UL, 
+	TOP_cmpeqs, 0x00480000UL, 
 	TOP_cmpeq_r_r, 0x04000000UL, 
+	TOP_cmpged, 0x01280000UL, 
+	TOP_cmpges, 0x00280000UL, 
 	TOP_cmpgeu_r_r, 0x04600000UL, 
 	TOP_cmpge_r_r, 0x04400000UL, 
+	TOP_cmpgtd, 0x01080000UL, 
+	TOP_cmpgts, 0x00080000UL, 
 	TOP_cmpgtu_r_r, 0x04a00000UL, 
 	TOP_cmpgt_r_r, 0x04800000UL, 
 	TOP_cmpleu_r_r, 0x04e00000UL, 
@@ -280,25 +295,10 @@ main()
 	TOP_cmpltu_r_r, 0x05200000UL, 
 	TOP_cmplt_r_r, 0x05000000UL, 
 	TOP_cmpne_r_r, 0x04200000UL, 
+	TOP_divd, 0x01840000UL, 
+	TOP_divs_r, 0x00840000UL, 
 	TOP_divu, 0x03480000UL, 
 	TOP_div, 0x03080000UL, 
-	TOP_faddd, 0x01040000UL, 
-	TOP_fadds, 0x00040000UL, 
-	TOP_fadds_n, 0x02080000UL, 
-	TOP_fcmpeqd, 0x01480000UL, 
-	TOP_fcmpeqs, 0x00480000UL, 
-	TOP_fcmpged, 0x01280000UL, 
-	TOP_fcmpges, 0x00280000UL, 
-	TOP_fcmpgtd, 0x01080000UL, 
-	TOP_fcmpgts, 0x00080000UL, 
-	TOP_fdivd, 0x01840000UL, 
-	TOP_fdivs, 0x00840000UL, 
-	TOP_fmuld, 0x01440000UL, 
-	TOP_fmuls, 0x00440000UL, 
-	TOP_fmuls_n, 0x02480000UL, 
-	TOP_fsubd, 0x01240000UL, 
-	TOP_fsubs, 0x00240000UL, 
-	TOP_fsubs_n, 0x02280000UL, 
 	TOP_maxu_r, 0x02200000UL, 
 	TOP_max_r, 0x02000000UL, 
 	TOP_minu_r, 0x02600000UL, 
@@ -306,6 +306,7 @@ main()
 	TOP_mul32_r, 0x05c00000UL, 
 	TOP_mul64hu_r, 0x07c00000UL, 
 	TOP_mul64h_r, 0x05e00000UL, 
+	TOP_muld, 0x01440000UL, 
 	TOP_mulfrac_r, 0x07e00000UL, 
 	TOP_mulhhs_r, 0x02800000UL, 
 	TOP_mulhhu_r, 0x03c00000UL, 
@@ -320,6 +321,8 @@ main()
 	TOP_mulll_r, 0x03200000UL, 
 	TOP_mullu_r, 0x02c00000UL, 
 	TOP_mull_r, 0x02a00000UL, 
+	TOP_muls, 0x00440000UL, 
+	TOP_muls_n, 0x02480000UL, 
 	TOP_nandl_r_r, 0x05600000UL, 
 	TOP_norl_r_r, 0x05a00000UL, 
 	TOP_orc_r, 0x01800000UL, 
@@ -334,6 +337,9 @@ main()
 	TOP_shl_r, 0x00400000UL, 
 	TOP_shru_r, 0x00800000UL, 
 	TOP_shr_r, 0x00600000UL, 
+	TOP_subd, 0x01240000UL, 
+	TOP_subs, 0x00240000UL, 
+	TOP_subs_n, 0x02280000UL, 
 	TOP_xor_r, 0x01a00000UL, 
 	TOP_UNDEFINED);
 
@@ -362,10 +368,10 @@ main()
   Operand(0, 0, 6, 6);
   Operand(1, 0, 0, 6);
   Instruction_Pack_Group(p19,
-	TOP_fcmpled, 0x01280000UL, 
-	TOP_fcmples, 0x00280000UL, 
-	TOP_fcmpltd, 0x01080000UL, 
-	TOP_fcmplts, 0x00080000UL, 
+	TOP_cmpled, 0x01280000UL, 
+	TOP_cmples, 0x00280000UL, 
+	TOP_cmpltd, 0x01080000UL, 
+	TOP_cmplts, 0x00080000UL, 
 	TOP_sub_r, 0x00200000UL, 
 	TOP_UNDEFINED);
 
@@ -378,7 +384,7 @@ main()
   Operand(2, 0, 21, 3);
   Instruction_Pack_Group(p20,
 	TOP_addcg, 0x12000000UL, 
-	TOP_divs, 0x14000000UL, 
+	TOP_divs_b_b_r, 0x14000000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p21: ===== */
@@ -645,11 +651,11 @@ main()
 	TOP_ldbu_i, 0x24000000UL, 
 	TOP_ldb_d_i, 0x23800000UL, 
 	TOP_ldb_i, 0x23000000UL, 
-	TOP_ldd_i, 0x20000000UL, 
 	TOP_ldhu_d_i, 0x22800000UL, 
 	TOP_ldhu_i, 0x22000000UL, 
 	TOP_ldh_d_i, 0x21800000UL, 
 	TOP_ldh_i, 0x21000000UL, 
+	TOP_ldp_i, 0x20000000UL, 
 	TOP_ldw_d_i, 0x20800000UL, 
 	TOP_ldw_i, 0x20000000UL, 
 	TOP_sub_i, 0x08200000UL, 
@@ -667,11 +673,11 @@ main()
 	TOP_ldbu_ii, 0x24000000UL, 0UL, 
 	TOP_ldb_d_ii, 0x23800000UL, 0UL, 
 	TOP_ldb_ii, 0x23000000UL, 0UL, 
-	TOP_ldd_ii, 0x20000000UL, 0UL, 
 	TOP_ldhu_d_ii, 0x22800000UL, 0UL, 
 	TOP_ldhu_ii, 0x22000000UL, 0UL, 
 	TOP_ldh_d_ii, 0x21800000UL, 0UL, 
 	TOP_ldh_ii, 0x21000000UL, 0UL, 
+	TOP_ldp_ii, 0x20000000UL, 0UL, 
 	TOP_ldw_d_ii, 0x20800000UL, 0UL, 
 	TOP_ldw_ii, 0x20000000UL, 0UL, 
 	TOP_sub_ii, 0x08200000UL, 0UL, 
@@ -718,9 +724,9 @@ main()
   Instruction_Pack_Group(p35,
 	TOP_ldbc_i, 0x24000000UL, 
 	TOP_ldbuc_i, 0x25000000UL, 
-	TOP_lddc_i, 0x20000000UL, 
 	TOP_ldhc_i, 0x22000000UL, 
 	TOP_ldhuc_i, 0x23000000UL, 
+	TOP_ldpc_i, 0x20000000UL, 
 	TOP_ldwc_i, 0x21000000UL, 
 	TOP_UNDEFINED);
 
@@ -735,9 +741,9 @@ main()
   Instruction_Pack_Group(p36,
 	TOP_ldbc_ii, 0x24000000UL, 0UL, 
 	TOP_ldbuc_ii, 0x25000000UL, 0UL, 
-	TOP_lddc_ii, 0x20000000UL, 0UL, 
 	TOP_ldhc_ii, 0x22000000UL, 0UL, 
 	TOP_ldhuc_ii, 0x23000000UL, 0UL, 
+	TOP_ldpc_ii, 0x20000000UL, 0UL, 
 	TOP_ldwc_ii, 0x21000000UL, 0UL, 
 	TOP_UNDEFINED);
 

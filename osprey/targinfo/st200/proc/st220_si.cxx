@@ -177,7 +177,7 @@ main (int argc, char *argv[])
 		TOP_cmpne_r_r,
 		TOP_cmpne_i_b,
 		TOP_cmpne_i_r,
-		TOP_divs,
+		TOP_divs_b_b_r,
 		TOP_maxu_r,
 		TOP_maxu_i,
 		TOP_max_r,
@@ -470,7 +470,7 @@ main (int argc, char *argv[])
   Instruction_Group("group15",
 		TOP_goto,
 		TOP_rfi,
-		TOP_syncins,
+		TOP_ST220_syncins,
 		TOP_UNDEFINED);
 
   Resource_Requirement(Resource_ST220_ISSUE, 0);
@@ -481,7 +481,7 @@ main (int argc, char *argv[])
   Instruction_Group("group16",
 		TOP_asm,
 		TOP_prgins,
-		TOP_sync,
+		TOP_ST220_sync,
 		TOP_syscall,
 		TOP_UNDEFINED);
 
