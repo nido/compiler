@@ -66,6 +66,9 @@ CGEMIT_Weak_Alias (
   ST *strongsym
 ) 
 {
+  fprintf (Asm_File, "\t%s\t", AS_WEAK);
+  EMT_Write_Qualified_Name(Asm_File, sym);
+  fprintf (Asm_File, "\n");
   fprintf (Asm_File, "\t.set ");
   EMT_Write_Qualified_Name(Asm_File, sym);
   fprintf (Asm_File, ", ");
