@@ -1216,6 +1216,20 @@ Delay_Scheduling_OP (
 }
 
 /* ====================================================================
+ *   Get_Extended_Opcode
+ * ====================================================================
+ */
+static TOP
+Get_Extended_Opcode (
+  TOP opcode
+)
+{
+  // Arthur: a hack -- I use the fact that all _ii opcodes follow
+  //         immediately corresponding _i opcodes ...
+  return (TOP) (opcode+1);
+}
+
+/* ====================================================================
  *   CGTARG_Bundle_Slot_Available
  * ====================================================================
  */
@@ -1373,84 +1387,81 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
     // assume that labels fit into 23-bit, enums are not emitted ?
   }
 
-  // Because of the Multiflow Assembler, I will only generate imml ...
-
   //fprintf(TFile, "  slot = %d, extra slot reqd = %s\n", slot, (extra_slot_reqd) ? "true" : "false");
 
-  // All bundles have a stop at the end, reserve it
+  //
+  // All bundles have a stop at the end, reserve it (the routine
+  // TI_BUNDLE_Slot_Available() needs it to match the stop bits in 
+  // the template).
+  //
   TI_BUNDLE_Reserve_Stop_Bit(bundle, 3);
 
-  BOOL extra_slot_avail = (extra_slot_reqd) ? FALSE : TRUE;
+  BOOL slot_avail = TRUE;
   if (extra_slot_reqd) {
+    slot_avail = FALSE;
     if (extra_slot_implicit) {
-      if (TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_movl), slot + 1)) {
-	extra_slot_avail = TRUE;
+      // check whether slot and slot+1 are available for an extended OP
+      if (slot == 0 &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT0_Unit, 
+				   slot) &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT0_Unit, 
+				   slot+1)) {
+	slot_avail = TRUE;
+      }
+      else if (slot == 1 &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT1_Unit, 
+				   slot) &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT1_Unit, 
+				   slot+1)) {
+	slot_avail = TRUE;
+      }
+      else if (slot == 2 &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT2_Unit, 
+				   slot) &&
+	  TI_BUNDLE_Slot_Available(bundle, 
+				   ISA_EXEC_PROPERTY_EXT2_Unit, 
+				   slot+1)) {
+	slot_avail = TRUE;
       }
     }
+
+    //
+    // Handle imml/immr myself ...
+    //
     else {
-      // I will handle imml/immr myself ...
       if ((slot != 3 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_imml), slot + 1)) ||
 	  (slot > 0 && TI_BUNDLE_Slot_Available(bundle, ISA_EXEC_Unit_Prop(TOP_immr), slot - 1))) {
 
-	extra_slot_avail = TRUE;
+	slot_avail = TRUE;
       }
     }
   }
-
-  //fprintf(TFile, "  extra slot avail = %s\n", (extra_slot_avail) ? "true" : "false");
-
-#if 1
-  // Turns out that end group will be created anyway
-  BOOL stop_bit_avail = TRUE;
-#else
-  // if <stop_bit_reqd>, check for the availability of STOP bit being
-  // available at position <slot - 1>.
-  BOOL stop_bit_avail = (stop_bit_reqd) ? 
-    CGTARG_Bundle_Stop_Bit_Available(bundle, slot - 1) : TRUE;
-  
-  // If stop bit required, reserve it
-  if (slot > 0) {
-    if (stop_bit_reqd && stop_bit_avail) {
-      TI_BUNDLE_Reserve_Stop_Bit(bundle, slot - 1);
-    }
+  else {
+    slot_avail = TI_BUNDLE_Slot_Available (bundle, *prop, slot);
   }
-#endif
 
   //fprintf(TFile,"extra_slot_reqd = %s\n", extra_slot_reqd ? "true" : "false");
-  //fprintf(TFile,"stop_bit_avail = %s\n", stop_bit_avail ? "true" : "false");
-
-  BOOL slot_avail = extra_slot_avail && stop_bit_avail &&
-    TI_BUNDLE_Slot_Available (bundle, *prop, slot);
-
+  //fprintf(TFile, "  extra slot avail = %s\n", (extra_slot_avail) ? "true" : "false");
   //fprintf(TFile,"slot_avail = %s\n", slot_avail ? "true" : "false");
 
+  //
   // If extra slot required, implicit, and slot_avail, change opcode 
-  // to extended opcode ... a hack really !
+  // to extended opcode:
+  //
   if (extra_slot_reqd && extra_slot_implicit && slot_avail) {
-    // For now only mov can do this:
-    FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
-    OP_Change_Opcode(op, TOP_movl);
+    TOP etop = Get_Extended_Opcode(OP_code(op));
+    OP_Change_Opcode(op, etop);
     if (slot == 0) *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
     else if (slot == 1) *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
     else if (slot == 2) *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
   }
 
-#if 0
-  //  if (slot_avail) {
-    // Arthur: I prefer to reserve stuff here rather than in hb_hazards.cxx
-  //    TI_BUNDLE_Reserve_Slot (bundle, slot, *prop);
-  //  }
-  //  else {
-    // Need to unreserve the stop bits that I have reserved:
-    if (slot > 0) {
-      if (stop_bit_reqd && stop_bit_avail) {
-	TI_BUNDLE_Unreserve_Stop_Bit(bundle, slot - 1);
-      }
-    }
-#endif
-
-    TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
-    //  }
+  TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
 
   return slot_avail;
 }

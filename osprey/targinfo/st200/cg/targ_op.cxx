@@ -116,83 +116,83 @@ CGTARG_Immediate_Operand (
 )
 {
   switch (OP_code(op)) {
-  case TOP_add_i:
-  case TOP_shl_i:
-  case TOP_shr_i:
-  case TOP_shru_i:
-  case TOP_sh1add_i:
-  case TOP_sh2add_i:
-  case TOP_sh3add_i:
-  case TOP_sh4add_i:
-  case TOP_and_i:
-  case TOP_andc_i:
-  case TOP_or_i:
-  case TOP_orc_i:
-  case TOP_xor_i:
-  case TOP_max_i:
-  case TOP_maxu_i:
-  case TOP_min_i:
-  case TOP_minu_i:
-  case TOP_mull_i:
-  case TOP_mullu_i:
-  case TOP_mulh_i:
-  case TOP_mulhu_i:
-  case TOP_mulll_i:
-  case TOP_mulllu_i:
-  case TOP_mullh_i:
-  case TOP_mullhu_i:
-  case TOP_mulhh_i:
-  case TOP_mulhhu_i:
-  case TOP_mulhs_i:
-  case TOP_cmpeq_i_r:
-  case TOP_cmpne_i_r:
-  case TOP_cmpge_i_r:
-  case TOP_cmpgeu_i_r:
-  case TOP_cmpgt_i_r:
-  case TOP_cmpgtu_i_r:
-  case TOP_cmple_i_r:
-  case TOP_cmpleu_i_r:
-  case TOP_cmplt_i_r:
-  case TOP_cmpltu_i_r:
-  case TOP_andl_i_r:
-  case TOP_nandl_i_r:
-  case TOP_orl_i_r:
-  case TOP_norl_i_r:
-  case TOP_cmpeq_i_b:
-  case TOP_cmpne_i_b:
-  case TOP_cmpge_i_b:
-  case TOP_cmpgeu_i_b:
-  case TOP_cmpgt_i_b:
-  case TOP_cmpgtu_i_b:
-  case TOP_cmple_i_b:
-  case TOP_cmpleu_i_b:
-  case TOP_cmplt_i_b:
-  case TOP_cmpltu_i_b:
-  case TOP_andl_i_b:
-  case TOP_nandl_i_b:
-  case TOP_orl_i_b:
-  case TOP_norl_i_b:
+  case TOP_add_i:   case TOP_add_ii:
+  case TOP_shl_i:   case TOP_shl_ii:
+  case TOP_shr_i:   case TOP_shr_ii:
+  case TOP_shru_i:   case TOP_shru_ii:
+  case TOP_sh1add_i:   case TOP_sh1add_ii:
+  case TOP_sh2add_i:   case TOP_sh2add_ii:
+  case TOP_sh3add_i:   case TOP_sh3add_ii:
+  case TOP_sh4add_i:   case TOP_sh4add_ii:
+  case TOP_and_i:   case TOP_and_ii:
+  case TOP_andc_i:   case TOP_andc_ii:
+  case TOP_or_i:   case TOP_or_ii:
+  case TOP_orc_i:   case TOP_orc_ii:
+  case TOP_xor_i:   case TOP_xor_ii:
+  case TOP_max_i:   case TOP_max_ii:
+  case TOP_maxu_i:   case TOP_maxu_ii:
+  case TOP_min_i:   case TOP_min_ii:
+  case TOP_minu_i:   case TOP_minu_ii:
+  case TOP_mull_i:   case TOP_mull_ii:
+  case TOP_mullu_i:   case TOP_mullu_ii:
+  case TOP_mulh_i:   case TOP_mulh_ii:
+  case TOP_mulhu_i:   case TOP_mulhu_ii:
+  case TOP_mulll_i:   case TOP_mulll_ii:
+  case TOP_mulllu_i:   case TOP_mulllu_ii:
+  case TOP_mullh_i:   case TOP_mullh_ii:
+  case TOP_mullhu_i:   case TOP_mullhu_ii:
+  case TOP_mulhh_i:   case TOP_mulhh_ii:
+  case TOP_mulhhu_i:   case TOP_mulhhu_ii:
+  case TOP_mulhs_i:   case TOP_mulhs_ii:
+  case TOP_cmpeq_i_r:   case TOP_cmpeq_ii_r:
+  case TOP_cmpne_i_r:   case TOP_cmpne_ii_r:
+  case TOP_cmpge_i_r:   case TOP_cmpge_ii_r:
+  case TOP_cmpgeu_i_r:   case TOP_cmpgeu_ii_r:
+  case TOP_cmpgt_i_r:   case TOP_cmpgt_ii_r:
+  case TOP_cmpgtu_i_r:   case TOP_cmpgtu_ii_r:
+  case TOP_cmple_i_r:   case TOP_cmple_ii_r:
+  case TOP_cmpleu_i_r:   case TOP_cmpleu_ii_r:
+  case TOP_cmplt_i_r:   case TOP_cmplt_ii_r:
+  case TOP_cmpltu_i_r:   case TOP_cmpltu_ii_r:
+  case TOP_andl_i_r:   case TOP_andl_ii_r:
+  case TOP_nandl_i_r:   case TOP_nandl_ii_r:
+  case TOP_orl_i_r:   case TOP_orl_ii_r:
+  case TOP_norl_i_r:   case TOP_norl_ii_r:
+  case TOP_cmpeq_i_b:   case TOP_cmpeq_ii_b:
+  case TOP_cmpne_i_b:   case TOP_cmpne_ii_b:
+  case TOP_cmpge_i_b:   case TOP_cmpge_ii_b:
+  case TOP_cmpgeu_i_b:   case TOP_cmpgeu_ii_b:
+  case TOP_cmpgt_i_b:   case TOP_cmpgt_ii_b:
+  case TOP_cmpgtu_i_b:   case TOP_cmpgtu_ii_b:
+  case TOP_cmple_i_b:   case TOP_cmple_ii_b:
+  case TOP_cmpleu_i_b:   case TOP_cmpleu_ii_b:
+  case TOP_cmplt_i_b:   case TOP_cmplt_ii_b:
+  case TOP_cmpltu_i_b:   case TOP_cmpltu_ii_b:
+  case TOP_andl_i_b:   case TOP_andl_ii_b:
+  case TOP_nandl_i_b:   case TOP_nandl_ii_b:
+  case TOP_orl_i_b:   case TOP_orl_ii_b:
+  case TOP_norl_i_b:   case TOP_norl_ii_b:
     return 1;
 
-  case TOP_slct_i:
-  case TOP_slctf_i:
+  case TOP_slct_i:   case TOP_slct_ii:
+  case TOP_slctf_i:   case TOP_slctf_ii:
     return 2;
 
-  case TOP_ldw:
-  case TOP_ldw_d:
-  case TOP_ldh:
-  case TOP_ldh_d:
-  case TOP_ldhu:
-  case TOP_ldhu_d:
-  case TOP_ldb:
-  case TOP_ldb_d:
-  case TOP_ldbu:
-  case TOP_ldbu_d:
+  case TOP_ldw_i:   case TOP_ldw_ii:
+  case TOP_ldw_d_i:   case TOP_ldw_d_ii:
+  case TOP_ldh_i:   case TOP_ldh_ii:
+  case TOP_ldh_d_i:   case TOP_ldh_d_ii:
+  case TOP_ldhu_i:   case TOP_ldhu_ii:
+  case TOP_ldhu_d_i:   case TOP_ldhu_d_ii:
+  case TOP_ldb_i:   case TOP_ldb_ii:
+  case TOP_ldb_d_i:   case TOP_ldb_d_ii:
+  case TOP_ldbu_i:   case TOP_ldbu_ii:
+  case TOP_ldbu_d_i:   case TOP_ldbu_d_ii:
     return 0;
 
-  case TOP_stw:
-  case TOP_sth:
-  case TOP_stb:
+  case TOP_stw_i:
+  case TOP_sth_i:
+  case TOP_stb_i:
     return 0;
 
   case TOP_goto:
@@ -202,8 +202,8 @@ CGTARG_Immediate_Operand (
   case TOP_brf:
     return 1;
 
-  case TOP_sub_i:
-  case TOP_mov_i:
+  case TOP_sub_i:   case TOP_sub_ii:
+  case TOP_mov_i:   case TOP_mov_ii:
     return 0;
 
   }

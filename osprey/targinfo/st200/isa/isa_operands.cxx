@@ -113,21 +113,64 @@ main()
   Operand (1, isrc2); 
 
   /* ====================================== */ 
+  Instruction_Group("O_Cmp3R_Reg", 
+		 TOP_cmpeq_r_r, 
+		 TOP_cmpne_r_r, 
+		 TOP_cmpge_r_r, 
+		 TOP_cmpgeu_r_r, 
+		 TOP_cmpgt_r_r, 
+		 TOP_cmpgtu_r_r, 
+		 TOP_cmple_r_r, 
+		 TOP_cmpleu_r_r, 
+		 TOP_cmplt_r_r, 
+		 TOP_cmpltu_r_r, 
+		 TOP_andl_r_r, 
+		 TOP_nandl_r_r, 
+		 TOP_orl_r_r, 
+		 TOP_norl_r_r, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest); 
+  Operand (0, src1); 
+  Operand (1, src2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_jump", 
+		 TOP_goto, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, btarg, target); 
+
+  /* ====================================== */ 
   Instruction_Group("O_Cmp3I_Br", 
 		 TOP_cmpeq_i_b, 
+		 TOP_cmpeq_ii_b, 
 		 TOP_cmpne_i_b, 
+		 TOP_cmpne_ii_b, 
 		 TOP_cmpge_i_b, 
+		 TOP_cmpge_ii_b, 
 		 TOP_cmpgeu_i_b, 
+		 TOP_cmpgeu_ii_b, 
 		 TOP_cmpgt_i_b, 
+		 TOP_cmpgt_ii_b, 
 		 TOP_cmpgtu_i_b, 
+		 TOP_cmpgtu_ii_b, 
 		 TOP_cmple_i_b, 
+		 TOP_cmple_ii_b, 
 		 TOP_cmpleu_i_b, 
+		 TOP_cmpleu_ii_b, 
 		 TOP_cmplt_i_b, 
+		 TOP_cmplt_ii_b, 
 		 TOP_cmpltu_i_b, 
+		 TOP_cmpltu_ii_b, 
 		 TOP_andl_i_b, 
+		 TOP_andl_ii_b, 
 		 TOP_nandl_i_b, 
+		 TOP_nandl_ii_b, 
 		 TOP_orl_i_b, 
+		 TOP_orl_ii_b, 
 		 TOP_norl_i_b, 
+		 TOP_norl_ii_b, 
 		 TOP_UNDEFINED); 
 
   Result (0, ibdest); 
@@ -137,6 +180,7 @@ main()
   /* ====================================== */ 
   Instruction_Group("O_move", 
 		 TOP_mov_i, 
+		 TOP_mov_ii, 
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
@@ -161,6 +205,15 @@ main()
   Operand (0, pcrel); 
 
   /* ====================================== */ 
+  Instruction_Group("O_Branch", 
+		 TOP_br, 
+		 TOP_brf, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, bcond); 
+  Operand (1, btarg, target); 
+
+  /* ====================================== */ 
   Instruction_Group("O_copy_br", 
 		 TOP_copy_br, 
 		 TOP_UNDEFINED); 
@@ -169,26 +222,86 @@ main()
   Operand (0, scond); 
 
   /* ====================================== */ 
+  Instruction_Group("O_pregtn", 
+		 TOP_begin_pregtn, 
+		 TOP_end_pregtn, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, src1); 
+  Operand (1, isrc2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldw_i, 
+		 TOP_ldw_ii, 
+		 TOP_ldw_d_i, 
+		 TOP_ldw_d_ii, 
+		 TOP_ldh_i, 
+		 TOP_ldh_ii, 
+		 TOP_ldh_d_i, 
+		 TOP_ldh_d_ii, 
+		 TOP_ldhu_i, 
+		 TOP_ldhu_ii, 
+		 TOP_ldhu_d_i, 
+		 TOP_ldhu_d_ii, 
+		 TOP_ldb_i, 
+		 TOP_ldb_ii, 
+		 TOP_ldb_d_i, 
+		 TOP_ldb_d_ii, 
+		 TOP_ldbu_i, 
+		 TOP_ldbu_ii, 
+		 TOP_ldbu_d_i, 
+		 TOP_ldbu_d_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+
+  /* ====================================== */ 
   Instruction_Group("O_Cmp3I_Reg", 
 		 TOP_cmpeq_i_r, 
+		 TOP_cmpeq_ii_r, 
 		 TOP_cmpne_i_r, 
+		 TOP_cmpne_ii_r, 
 		 TOP_cmpge_i_r, 
+		 TOP_cmpge_ii_r, 
 		 TOP_cmpgeu_i_r, 
+		 TOP_cmpgeu_ii_r, 
 		 TOP_cmpgt_i_r, 
+		 TOP_cmpgt_ii_r, 
 		 TOP_cmpgtu_i_r, 
+		 TOP_cmpgtu_ii_r, 
 		 TOP_cmple_i_r, 
+		 TOP_cmple_ii_r, 
 		 TOP_cmpleu_i_r, 
+		 TOP_cmpleu_ii_r, 
 		 TOP_cmplt_i_r, 
+		 TOP_cmplt_ii_r, 
 		 TOP_cmpltu_i_r, 
+		 TOP_cmpltu_ii_r, 
 		 TOP_andl_i_r, 
+		 TOP_andl_ii_r, 
 		 TOP_nandl_i_r, 
+		 TOP_nandl_ii_r, 
 		 TOP_orl_i_r, 
+		 TOP_orl_ii_r, 
 		 TOP_norl_i_r, 
+		 TOP_norl_ii_r, 
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
   Operand (0, src1); 
   Operand (1, isrc2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_fixup", 
+		 TOP_dfixup, 
+		 TOP_ffixup, 
+		 TOP_ifixup, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest); 
 
   /* ====================================== */ 
   Instruction_Group("O_noop", 
@@ -209,8 +322,40 @@ main()
   Operand (2, bcond); 
 
   /* ====================================== */ 
+  Instruction_Group("O_SelectI", 
+		 TOP_slct_i, 
+		 TOP_slct_ii, 
+		 TOP_slctf_i, 
+		 TOP_slctf_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, idest); 
+  Operand (0, bcond); 
+  Operand (1, src1); 
+  Operand (2, isrc2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_cache", 
+		 TOP_pft, 
+		 TOP_prgadd, 
+		 TOP_prgset, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, isrc2); 
+  Operand (1, src1); 
+
+  /* ====================================== */ 
   Instruction_Group("O_Sync", 
 		 TOP_sync, 
+		 TOP_UNDEFINED); 
+
+
+  /* ====================================== */ 
+  Instruction_Group("O_SysOp", 
+		 TOP_prgins, 
+		 TOP_sbrk, 
+		 TOP_syscall, 
+		 TOP_break, 
 		 TOP_UNDEFINED); 
 
 
@@ -252,10 +397,43 @@ main()
   Operand (1, src2); 
 
   /* ====================================== */ 
+  Instruction_Group("O_asm", 
+		 TOP_asm, 
+		 TOP_UNDEFINED); 
+
+
+  /* ====================================== */ 
   Instruction_Group("O_rfi", 
 		 TOP_rfi, 
 		 TOP_UNDEFINED); 
 
+
+  /* ====================================== */ 
+  Instruction_Group("O_icall", 
+		 TOP_icall, 
+		 TOP_UNDEFINED); 
+
+  Result (0, lr); 
+  Operand (0, lr); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_move", 
+		 TOP_bswap_r, 
+		 TOP_sxtb_r, 
+		 TOP_sxth_r, 
+		 TOP_mov_r, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest); 
+  Operand (0, src2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_ijump", 
+		 TOP_igoto, 
+		 TOP_return, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, lr); 
 
   /* ====================================== */ 
   Instruction_Group("O_mfb", 
@@ -274,179 +452,6 @@ main()
   Operand (0, imm); 
 
   /* ====================================== */ 
-  Instruction_Group("O_Int3I", 
-		 TOP_sub_i, 
-		 TOP_UNDEFINED); 
-
-  Result (0, idest); 
-  Operand (0, isrc2); 
-  Operand (1, src1); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_call", 
-		 TOP_call, 
-		 TOP_UNDEFINED); 
-
-  Result (0, lr); 
-  Operand (0, btarg); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_Store", 
-		 TOP_stw, 
-		 TOP_sth, 
-		 TOP_stb, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, isrc2, offset); 
-  Operand (1, src1, base); 
-  Operand (2, src2, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_Cmp3R_Reg", 
-		 TOP_cmpeq_r_r, 
-		 TOP_cmpne_r_r, 
-		 TOP_cmpge_r_r, 
-		 TOP_cmpgeu_r_r, 
-		 TOP_cmpgt_r_r, 
-		 TOP_cmpgtu_r_r, 
-		 TOP_cmple_r_r, 
-		 TOP_cmpleu_r_r, 
-		 TOP_cmplt_r_r, 
-		 TOP_cmpltu_r_r, 
-		 TOP_andl_r_r, 
-		 TOP_nandl_r_r, 
-		 TOP_orl_r_r, 
-		 TOP_norl_r_r, 
-		 TOP_UNDEFINED); 
-
-  Result (0, dest); 
-  Operand (0, src1); 
-  Operand (1, src2); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_jump", 
-		 TOP_goto, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, btarg, target); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_Branch", 
-		 TOP_br, 
-		 TOP_brf, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, bcond); 
-  Operand (1, btarg, target); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_pregtn", 
-		 TOP_begin_pregtn, 
-		 TOP_end_pregtn, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, src1); 
-  Operand (1, isrc2); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_Load", 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
-		 TOP_ldh, 
-		 TOP_ldh_d, 
-		 TOP_ldhu, 
-		 TOP_ldhu_d, 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
-		 TOP_ldbu_d, 
-		 TOP_UNDEFINED); 
-
-  Result (0, dest); 
-  Operand (0, isrc2, offset); 
-  Operand (1, src1, base); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_fixup", 
-		 TOP_dfixup, 
-		 TOP_ffixup, 
-		 TOP_ifixup, 
-		 TOP_UNDEFINED); 
-
-  Result (0, dest); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_cache", 
-		 TOP_pft, 
-		 TOP_prgadd, 
-		 TOP_prgset, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, isrc2); 
-  Operand (1, src1); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_SelectI", 
-		 TOP_slct_i, 
-		 TOP_slctf_i, 
-		 TOP_UNDEFINED); 
-
-  Result (0, idest); 
-  Operand (0, bcond); 
-  Operand (1, src1); 
-  Operand (2, isrc2); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_SysOp", 
-		 TOP_prgins, 
-		 TOP_sbrk, 
-		 TOP_syscall, 
-		 TOP_break, 
-		 TOP_UNDEFINED); 
-
-
-  /* ====================================== */ 
-  Instruction_Group("O_movel", 
-		 TOP_movl, 
-		 TOP_UNDEFINED); 
-
-  Result (0, idest); 
-  Operand (0, isrc2); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_move", 
-		 TOP_bswap_r, 
-		 TOP_sxtb_r, 
-		 TOP_sxth_r, 
-		 TOP_mov_r, 
-		 TOP_UNDEFINED); 
-
-  Result (0, dest); 
-  Operand (0, src2); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_icall", 
-		 TOP_icall, 
-		 TOP_UNDEFINED); 
-
-  Result (0, lr); 
-  Operand (0, lr); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_asm", 
-		 TOP_asm, 
-		 TOP_UNDEFINED); 
-
-
-  /* ====================================== */ 
-  Instruction_Group("O_ijump", 
-		 TOP_igoto, 
-		 TOP_return, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, lr); 
-
-  /* ====================================== */ 
   Instruction_Group("O_barrier", 
 		 TOP_bwd_bar, 
 		 TOP_fwd_bar, 
@@ -461,34 +466,72 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_Int3I", 
+		 TOP_sub_i, 
+		 TOP_sub_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, idest); 
+  Operand (0, isrc2); 
+  Operand (1, src1); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Int3I", 
 		 TOP_add_i, 
+		 TOP_add_ii, 
 		 TOP_shl_i, 
+		 TOP_shl_ii, 
 		 TOP_shr_i, 
+		 TOP_shr_ii, 
 		 TOP_shru_i, 
+		 TOP_shru_ii, 
 		 TOP_sh1add_i, 
+		 TOP_sh1add_ii, 
 		 TOP_sh2add_i, 
+		 TOP_sh2add_ii, 
 		 TOP_sh3add_i, 
+		 TOP_sh3add_ii, 
 		 TOP_sh4add_i, 
+		 TOP_sh4add_ii, 
 		 TOP_and_i, 
+		 TOP_and_ii, 
 		 TOP_andc_i, 
+		 TOP_andc_ii, 
 		 TOP_or_i, 
+		 TOP_or_ii, 
 		 TOP_orc_i, 
+		 TOP_orc_ii, 
 		 TOP_xor_i, 
+		 TOP_xor_ii, 
 		 TOP_max_i, 
+		 TOP_max_ii, 
 		 TOP_maxu_i, 
+		 TOP_maxu_ii, 
 		 TOP_min_i, 
+		 TOP_min_ii, 
 		 TOP_minu_i, 
+		 TOP_minu_ii, 
 		 TOP_mull_i, 
+		 TOP_mull_ii, 
 		 TOP_mullu_i, 
+		 TOP_mullu_ii, 
 		 TOP_mulh_i, 
+		 TOP_mulh_ii, 
 		 TOP_mulhu_i, 
+		 TOP_mulhu_ii, 
 		 TOP_mulll_i, 
+		 TOP_mulll_ii, 
 		 TOP_mulllu_i, 
+		 TOP_mulllu_ii, 
 		 TOP_mullh_i, 
+		 TOP_mullh_ii, 
 		 TOP_mullhu_i, 
+		 TOP_mullhu_ii, 
 		 TOP_mulhh_i, 
+		 TOP_mulhh_ii, 
 		 TOP_mulhhu_i, 
+		 TOP_mulhhu_ii, 
 		 TOP_mulhs_i, 
+		 TOP_mulhs_ii, 
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
@@ -516,6 +559,28 @@ main()
   Result (0, bdest); 
   Operand (0, src1); 
   Operand (1, src2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_call", 
+		 TOP_call, 
+		 TOP_UNDEFINED); 
+
+  Result (0, lr); 
+  Operand (0, btarg); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Store", 
+		 TOP_stw_i, 
+		 TOP_stw_ii, 
+		 TOP_sth_i, 
+		 TOP_sth_ii, 
+		 TOP_stb_i, 
+		 TOP_stb_ii, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
+  Operand (2, src2, storeval); 
 
 
 

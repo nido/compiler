@@ -66,16 +66,16 @@ main()
   /* ====================================== */ 
   load = ISA_Property_Create ("load"); 
   Instruction_Group (load, 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
-		 TOP_ldh, 
-		 TOP_ldh_d, 
-		 TOP_ldhu, 
-		 TOP_ldhu_d, 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
-		 TOP_ldbu_d, 
+		 TOP_ldw_i, 
+		 TOP_ldw_d_i, 
+		 TOP_ldh_i, 
+		 TOP_ldh_d_i, 
+		 TOP_ldhu_i, 
+		 TOP_ldhu_d_i, 
+		 TOP_ldb_i, 
+		 TOP_ldb_d_i, 
+		 TOP_ldbu_i, 
+		 TOP_ldbu_d_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -121,11 +121,11 @@ main()
   /* ====================================== */ 
   dismissible = ISA_Property_Create ("dismissible"); 
   Instruction_Group (dismissible, 
-		 TOP_ldw_d, 
-		 TOP_ldh_d, 
-		 TOP_ldhu_d, 
-		 TOP_ldb_d, 
-		 TOP_ldbu_d, 
+		 TOP_ldw_d_i, 
+		 TOP_ldh_d_i, 
+		 TOP_ldhu_d_i, 
+		 TOP_ldb_d_i, 
+		 TOP_ldbu_d_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -172,9 +172,9 @@ main()
   /* ====================================== */ 
   store = ISA_Property_Create ("store"); 
   Instruction_Group (store, 
-		 TOP_stw, 
-		 TOP_sth, 
-		 TOP_stb, 
+		 TOP_stw_i, 
+		 TOP_sth_i, 
+		 TOP_stb_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -188,62 +188,62 @@ main()
   /*         Memory Access Size 1          */ 
   /* ====================================== */ 
   ISA_Memory_Access (1, 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
-		 TOP_ldbu_d, 
-		 TOP_stb, 
+		 TOP_ldb_i, 
+		 TOP_ldb_d_i, 
+		 TOP_ldbu_i, 
+		 TOP_ldbu_d_i, 
+		 TOP_stb_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   /*         Memory Access Size 2          */ 
   /* ====================================== */ 
   ISA_Memory_Access (2, 
-		 TOP_ldh, 
-		 TOP_ldh_d, 
-		 TOP_ldhu, 
-		 TOP_ldhu_d, 
-		 TOP_sth, 
+		 TOP_ldh_i, 
+		 TOP_ldh_d_i, 
+		 TOP_ldhu_i, 
+		 TOP_ldhu_d_i, 
+		 TOP_sth_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   /*         Memory Access Size 4          */ 
   /* ====================================== */ 
   ISA_Memory_Access (4, 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
-		 TOP_stw, 
+		 TOP_ldw_i, 
+		 TOP_ldw_d_i, 
+		 TOP_stw_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   /*          Memory Alignment 1           */ 
   /* ====================================== */ 
   ISA_Memory_Alignment (1, 
-		 TOP_ldb, 
-		 TOP_ldb_d, 
-		 TOP_ldbu, 
-		 TOP_ldbu_d, 
-		 TOP_stb, 
+		 TOP_ldb_i, 
+		 TOP_ldb_d_i, 
+		 TOP_ldbu_i, 
+		 TOP_ldbu_d_i, 
+		 TOP_stb_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   /*          Memory Alignment 2           */ 
   /* ====================================== */ 
   ISA_Memory_Alignment (2, 
-		 TOP_ldh, 
-		 TOP_ldh_d, 
-		 TOP_ldhu, 
-		 TOP_ldhu_d, 
-		 TOP_sth, 
+		 TOP_ldh_i, 
+		 TOP_ldh_d_i, 
+		 TOP_ldhu_i, 
+		 TOP_ldhu_d_i, 
+		 TOP_sth_i, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   /*          Memory Alignment 4           */ 
   /* ====================================== */ 
   ISA_Memory_Alignment (4, 
-		 TOP_ldw, 
-		 TOP_ldw_d, 
-		 TOP_stw, 
+		 TOP_ldw_i, 
+		 TOP_ldw_d_i, 
+		 TOP_stw_i, 
 		 TOP_UNDEFINED); 
 
   ISA_Properties_End();

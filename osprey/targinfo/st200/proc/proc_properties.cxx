@@ -67,7 +67,6 @@ main()
    */
   branch_delay_slot = PROC_Property_Create ("has_branch_delay_slot");
   Processor_Group (branch_delay_slot, 
-		   PROCESSOR_st220,
 			PROCESSOR_UNDEFINED);
 
   /* Can the branch shadow be executed in the same cycle as the branch on

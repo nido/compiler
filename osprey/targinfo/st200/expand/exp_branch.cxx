@@ -256,6 +256,13 @@ Expand_Branch (
   TOP   cmp;
   TN   *tmp;
 
+  // If the branch is conditional FALSEBR, we must invert the condition 
+  // because ST200 branches are active on TRUE.
+  //  if (V_br_condition(variant) != V_BR_ALWAYS &&
+  //      V_br_condition(variant) != V_BR_NEVER &&
+  //      V_false_br(variant) ) 
+  //    variant = Negate_BR_Variant(variant);
+
   BOOL  false_br = V_false_br(variant);
   VARIANT cond = V_br_condition(variant);
 
@@ -318,7 +325,10 @@ Expand_Branch (
       /*
        * For now I just trust it that it fits into 23 bits
        */
-      Build_OP (TOP_br, tmp, targ, ops);
+      if (false_br)
+	Build_OP (TOP_brf, tmp, targ, ops);
+      else
+	Build_OP (TOP_br, tmp, targ, ops);
     }
     break;
   }

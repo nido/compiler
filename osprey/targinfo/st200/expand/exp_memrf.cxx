@@ -108,13 +108,13 @@ Pick_Load_Imm_Instruction (
   TOP top = TOP_UNDEFINED;
 
   switch (desc) {
-  case MTYPE_I1: top = TOP_ldb; break;
-  case MTYPE_U1: top = TOP_ldbu; break;
-  case MTYPE_I2: top = TOP_ldh; break;
-  case MTYPE_U2: top = TOP_ldhu; break;
+  case MTYPE_I1: top = TOP_ldb_i; break;
+  case MTYPE_U1: top = TOP_ldbu_i; break;
+  case MTYPE_I2: top = TOP_ldh_i; break;
+  case MTYPE_U2: top = TOP_ldhu_i; break;
   case MTYPE_I4:
   case MTYPE_U4: 
-  case MTYPE_A4: top = TOP_ldw; break;
+  case MTYPE_A4: top = TOP_ldw_i; break;
   case MTYPE_V:
     if (rtype != MTYPE_V) {
       // use rtype to pick load (e.g. if lda)
@@ -205,12 +205,12 @@ Pick_Store_Imm_Instruction (
 
   switch (mtype) {
   case MTYPE_I1:
-  case MTYPE_U1: top = TOP_stb; break;
+  case MTYPE_U1: top = TOP_stb_i; break;
   case MTYPE_I2:
-  case MTYPE_U2: top = TOP_sth; break;
+  case MTYPE_U2: top = TOP_sth_i; break;
   case MTYPE_I4:
   case MTYPE_U4:
-  case MTYPE_A4: top = TOP_stw; break;
+  case MTYPE_A4: top = TOP_stw_i; break;
 
   default:
     FmtAssert(FALSE, ("Gen_Store_Imm_Instruction mtype"));
