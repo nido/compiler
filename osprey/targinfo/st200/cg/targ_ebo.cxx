@@ -2892,6 +2892,51 @@ add_shl_sequence (
   return TRUE;
 }
 
+
+/* =====================================================================
+ *   Function: addcg_sequence
+ *
+ *   Replace addcg with add/mtb
+ * =====================================================================
+ */
+static BOOL
+addcg_sequence (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  if (getenv ("NO_ADDCG")) return FALSE;
+  if (OP_code(op) != TOP_addcg) return FALSE;
+
+  int op_idx;
+  TN *tn0 = opnd_tn[0];
+  TN *tn1 = opnd_tn[1];
+  TN *tn2 = opnd_tn[2];
+  if (TN_Is_Constant(tn0) && TN_Value(tn0) == 0) {
+    op_idx = 1;
+  } else if (TN_Is_Constant(tn1) && TN_Value(tn1) == 0) {
+    op_idx = 0;
+  } else return FALSE;
+  if (TN_Is_Constant(tn2) && TN_Value(tn2) == 0 &&
+      !OP_copy(op) /* Avoid optimizing the special copy br<-br */) {
+    OPS ops = OPS_EMPTY;
+    if (OP_result(op, 0) != Zero_TN) {
+      EBO_Exp_COPY(NULL, OP_result(op, 0), OP_opnd(op, op_idx), &ops);
+      if (EBO_in_loop) 
+	EBO_OPS_omega (&ops, OP_opnd(op,op_idx), opnd_tninfo[op_idx]);
+    }
+    TN *tnc = Gen_Literal_TN (0, 4);
+    Expand_Immediate (OP_result(op, 1), tnc, 0, &ops);
+    OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Convert addcg into mov\n");
+    return TRUE;
+  }
+  return FALSE;
+}
+
 /* =====================================================================
  *   Function: add_mul_sequence
  *
@@ -4902,6 +4947,8 @@ EBO_Special_Sequence (
   if (ext_move_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
   if (and_or_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+
+  if (addcg_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
   if (operand_special_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
