@@ -542,18 +542,22 @@ Target_Has_Immediate_Operand (
     return TRUE;
   }
 
-  // adds and subs can handle immediates as second operand:
-  if (WN_operator(parent) == OPR_ADD) {
-    return TRUE;
-  }
-
-  if (WN_operator(parent) == OPR_SUB) {
-    if (WN_kid1(parent) == expr)
-      return TRUE;
-  }
-
-  if ((WN_operator(parent) == OPR_MIN) ||
-      (WN_operator(parent) == OPR_MAX)) {
+  // Operators that can have immediate as first or second operands
+  // handled in exp_targ.cxx
+  if (WN_operator(parent) == OPR_ADD ||
+      WN_operator(parent) == OPR_SUB ||
+      WN_operator(parent) == OPR_MPY ||
+      WN_operator(parent) == OPR_MIN ||
+      WN_operator(parent) == OPR_MAX ||
+      WN_operator(parent) == OPR_BAND ||
+      WN_operator(parent) == OPR_BIOR ||
+      WN_operator(parent) == OPR_BXOR ||
+      WN_operator(parent) == OPR_EQ ||
+      WN_operator(parent) == OPR_NE ||
+      WN_operator(parent) == OPR_LE ||
+      WN_operator(parent) == OPR_LT ||
+      WN_operator(parent) == OPR_GE ||
+      WN_operator(parent) == OPR_GT) {
     return TRUE;
   }
 

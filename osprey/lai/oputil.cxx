@@ -845,6 +845,9 @@ void Print_OP_No_SrcLine(const OP *op)
   INT16 i;
   WN *wn;
 
+#ifdef Is_True_On
+  fprintf (TFile, "<%d> ", OP_map_idx(op));
+#endif
   fprintf (TFile, "[%4d] ", Srcpos_To_Line(OP_srcpos(op)));
 #ifdef TARG_ST
   LABEL_IDX tag = Get_OP_Tag(op);

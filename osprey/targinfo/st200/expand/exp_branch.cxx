@@ -59,6 +59,9 @@ Initialize_Branch_Variants(void)
 	// nothing to do
 }
 
+/* Import from exp_targ.cxx */
+extern TN *Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops);
+
 /* ====================================================================
  *   Pick_Compare_TOP
  *
@@ -92,6 +95,14 @@ Pick_Compare_TOP (
     *variant = Invert_BR_Variant(*variant);
   }
 
+  if (*src1 != NULL && TN_is_constant(*src1)) {
+    *src1 = Expand_Or_Inline_Immediate(*src1, MTYPE_I4, ops);
+  }
+  if (*src2 != NULL && TN_is_constant(*src2)) {
+    *src2 = Expand_Or_Inline_Immediate(*src2, MTYPE_I4, ops);
+  }
+
+
 #if 0
 
   // This can only be applied to branches
@@ -113,79 +124,67 @@ Pick_Compare_TOP (
   switch (*variant) {
 
     case V_BR_I4GE:
-      cmp_i = is_integer ? TOP_cmpge_i_r : TOP_cmpge_i_b;
       cmp = is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4GT:
-      cmp_i = is_integer ? TOP_cmpgt_i_r : TOP_cmpgt_i_b;
       cmp = is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4LE:
-      cmp_i = is_integer ? TOP_cmple_i_r : TOP_cmple_i_b;
       cmp = is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4LT:
-      cmp_i = is_integer ? TOP_cmplt_i_r : TOP_cmplt_i_b;
       cmp = is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4EQ:
-      cmp_i = is_integer ? TOP_cmpeq_i_r : TOP_cmpeq_i_b;
       cmp = is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4NE:
-      cmp_i = is_integer ? TOP_cmpne_i_r : TOP_cmpne_i_b;
       cmp = is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_U4GE:	
     case V_BR_A4GE:
-      cmp_i = is_integer ? TOP_cmpgeu_i_r : TOP_cmpgeu_i_b;
       cmp = is_integer ? TOP_cmpgeu_r_r : TOP_cmpgeu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LE:
     case V_BR_A4LE:
-      cmp_i = is_integer ? TOP_cmpleu_i_r : TOP_cmpleu_i_b;
       cmp = is_integer ? TOP_cmpleu_r_r : TOP_cmpleu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LT:
     case V_BR_A4LT:
-      cmp_i = is_integer ? TOP_cmpltu_i_r : TOP_cmpltu_i_b;
       cmp = is_integer ? TOP_cmpltu_r_r : TOP_cmpltu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4EQ:
     case V_BR_A4EQ:
-      cmp_i = is_integer ? TOP_cmpeq_i_r : TOP_cmpeq_i_b;
       cmp = is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4NE:
     case V_BR_A4NE:
-      cmp_i = is_integer ? TOP_cmpne_i_r : TOP_cmpne_i_b;
       cmp = is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4GT:
     case V_BR_A4GT:
-      cmp_i = is_integer ? TOP_cmpgtu_i_r : TOP_cmpgtu_i_b;
       cmp = is_integer ? TOP_cmpgtu_r_r : TOP_cmpgtu_r_b;
       mtype = MTYPE_U4;
       break;
@@ -223,24 +222,19 @@ Pick_Compare_TOP (
       mtype = MTYPE_UNKNOWN;
       break;
   }
-
-  // if src2 is immed and fits, use immed form of top
-  if (*src2 != NULL && TN_has_value(*src2)) {
-
-    if (cmp_i != TOP_UNDEFINED) {
-      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(cmp_i);
-      const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, 1);
-      ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(otype);
-      if (ISA_LC_Value_In_Class(TN_value(*src2), lc))
+  
+  if (cmp != TOP_UNDEFINED) {
+    // if src2 is immediate, get the immediate form
+    if (*src2 != NULL && TN_has_value(*src2)) {
+      TOP cmp_i;
+      cmp_i = TOP_opnd_immediate_variant(cmp, 1, TN_value(*src2));
+      if (cmp_i != TOP_UNDEFINED) {
         return cmp_i;
+      } else {
+	*src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
+	return cmp;
+      }
     }
-
-    // cmp of a value that does not fit in a register:
-    if (cmp != TOP_UNDEFINED) {
-      // could not use the immediate form 
-      *src2 = Expand_Immediate_Into_Register(mtype, *src2, ops);
-    }
-
   }
 
   return cmp;
@@ -333,26 +327,6 @@ Expand_Branch (
       FmtAssert(cmp != TOP_UNDEFINED, 
                                   ("Expand_Branch: unexpected comparison"));
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-      //
-      // The src2 may be an immediate TN. Clean up the sign-extension
-      // bits if necessary. This has happened when we end up with a 1 in
-      // an upper bit of a U4. WHIRL sign-extends the value to 64-bits
-      // but then 0xffffffff80000000 is out of unsigned range. This won't
-      // matter but if the TOP code needs an unsigned operand !
-      //
-      if (TN_has_value(src2) && TN_size(src2) < 8) {
-	//
-	// If TOP code needs an unsigned value, mask the sign-extension
-	//
-	const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(cmp);
-	const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo, 1);
-	if (!ISA_OPERAND_VALTYP_Is_Signed(vtype)) {
-	  //ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
-	  //if (ISA_LC_Is_Signed(lc)) {
-	  INT64 imm = TN_value(src2);
-	  src2 = Gen_Literal_TN((imm & 0x00000000ffffffff), TN_size(src2));
-	}
-      }
       Build_OP (cmp, tmp, src1, src2, ops);
       FmtAssert(TN_is_label(targ), ("Expand_Branch: expected a label"));
       /*

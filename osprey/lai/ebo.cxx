@@ -174,6 +174,8 @@ BOOL EBO_in_pre  = FALSE;
 BOOL EBO_in_before_unrolling = FALSE;
 BOOL EBO_in_after_unrolling = FALSE;
 BOOL EBO_in_peep = FALSE;
+#define EBO_in_main (!EBO_in_pre && !EBO_in_peep && \
+		     !EBO_in_before_unrolling && !EBO_in_after_unrolling)
 
 /* Are OMEGA entries present? */
 BOOL EBO_in_loop = FALSE;
@@ -3583,7 +3585,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
 #ifdef TARG_ST
     // We combine currently identical add/sub only for unrolled ops to avoid enlarging live ranges.
     if ((opcode == pred_opcode) &&
-	OP_unrolling(op) &&
+	/*OP_unrolling(op) &&*/
 	(OP_iadd(op) || OP_isub(op))) {
 
       new_const_val = sext(pred_val + const_val,  TN_size(tnr)*8);
@@ -4709,10 +4711,10 @@ find_previous_constant (OP *op,
        /* The asigned register needs to be available at this point. */
       TN *pred_tn = check_tninfo->local_tn;
       OP *pred_op = check_tninfo->in_op;
-
       if (TN_register_class(OP_result(op, 0)) != TN_register_class(pred_tn)) {
         continue;
       }
+
       if ((pred_op != NULL) && OP_has_predicate(op) && OP_has_predicate(pred_op)) {
        /* Check predicates for safety. */
         EBO_OP_INFO *opinfo = locate_opinfo_entry(check_tninfo);
@@ -4734,8 +4736,10 @@ find_previous_constant (OP *op,
           continue;
         }
       }
+
       if (EBO_tn_available(OP_bb(op),check_tninfo) &&
-          (TN_is_rematerializable(pred_tn))) {
+          (TN_is_rematerializable(pred_tn)))
+	{
           OPS ops = OPS_EMPTY;
 
           EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
@@ -4768,7 +4772,7 @@ find_previous_constant (OP *op,
             fprintf(TFile,"\n");
           }
         return TRUE;
-      }
+	}
       return FALSE;
     }
   }
@@ -5356,14 +5360,305 @@ Find_BB_TNs (BB *bb)
 }
   
 
-
-
+#ifdef TARG_ST
+extern BOOL EBO_Special_Inline_Immediates(OP *op, EBO_OP_INFO *opinfo, int idx);
 
 static
-void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
+void EBO_Inline_Immediates (BB *bb, BOOL BB_completely_processed)
+{
+  EBO_OP_INFO *opinfo;
+  
+  /* 
+     Only do it at main phase.
+     if-conversion and unrolling phases augment
+     the use count of immediates.
+     As we inline if the use count is low, we have to
+     wait for these phases to complete.
+  */
+  if (!EBO_in_main && !EBO_in_peep) return;
+  if (!BB_completely_processed) return;
+
+  if (EBO_first_opinfo == NULL) return;
+  
+  if (EBO_Trace_Execution) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile,"%sEnter EBO_Inline_Immediate in BB:%d\n",EBO_trace_pfx,BB_id(bb));
+    tn_info_table_dump();
+  }
+
+  /* Walk bottom up over the opinfo entires for this bb. */
+  for (opinfo = EBO_last_opinfo; opinfo != NULL; opinfo = opinfo->prior) {
+    OP *op = opinfo->in_op;
+    
+    if (op == NULL) continue;
+
+    if (OP_bb(op) != bb) {
+      if (EBO_Trace_Block_Flow) {
+	#pragma mips_frequency_hint NEVER
+        fprintf(TFile,"Stop looking for ops, prior op is in BB:%d\n",
+                OP_bb(op) ? BB_id(OP_bb(op)) : -1);
+        Print_OP_No_SrcLine(op);
+      }
+      break;  /* get out of loop over opinfo entries. */
+    }
+
+    /* If op result is a replacement tn, we check if
+       we can remove it, as EBO_Special_Inline_Immediate
+       may have decreased its ref count. */
+    if (OP_results(op) == 1 &&
+	opinfo->actual_rslt[0]->replacement_tn != NULL &&	
+	TN_is_constant(opinfo->actual_rslt[0]->replacement_tn)) {
+      if (EBO_Trace_Data_Flow) {
+        #pragma mips_frequency_hint NEVER
+	fprintf(TFile,"%sConsider removing immediate definition OP:\n\t",
+		EBO_trace_pfx);
+	Print_OP_No_SrcLine(op);
+      }
+      EBO_TN_INFO *tninfo = opinfo->actual_rslt[0];
+      TN *tn = tninfo->local_tn;
+      if (tninfo->in_bb == bb &&
+	  tninfo->in_op == op &&
+	  tninfo->reference_count == 0 &&
+	  !op_is_needed_globally(op) &&
+	  BB_completely_processed &&
+	  !(!tninfo->redefined_before_block_end &&
+	    TN_live_out_of(tn, tninfo->in_bb))) {
+
+	if (EBO_Trace_Data_Flow) {
+	  #pragma mips_frequency_hint NEVER
+	  fprintf(TFile,"%sRemoved unused OP:\n\t",
+		  EBO_trace_pfx);
+	  Print_OP_No_SrcLine(op);
+	}
+	
+	remove_op (opinfo);
+	
+	if (opinfo->in_delay_slot) {
+	  OP_Change_To_Noop(op);
+	} else {
+	  BB_Remove_Op(bb, op);
+	}
+	opinfo->in_op = NULL;
+	opinfo->in_bb = NULL;
+
+	/* Propagate "reaches block end" information. */
+	if (tninfo->redefined_before_block_end &&
+	    (tninfo->same != NULL) &&
+	    (tninfo->same->in_bb == bb)) {
+	  EBO_TN_INFO *next_tninfo = tninfo->same;
+	  next_tninfo->redefined_before_block_end = TRUE;
+	}
+      }
+    } else  {
+      INT idx;
+      /* Not sure we can transform such operations.*/
+      if (OP_glue(op) || OP_no_move_before_gra(op) ||
+	  OP_code(op) == TOP_spadjust) {
+	continue;
+      }
+      
+      /* Try to inline immediate for each operand of the operation. */
+      for (idx = 0; idx < OP_opnds(op); idx++) {
+	EBO_TN_INFO *tninfo;
+	TOP new_opcode;
+	TN *replacement_tn;
+	
+	tninfo = opinfo->actual_opnd[idx];
+	if (tninfo == NULL || tninfo->replacement_tn == NULL) continue;
+	replacement_tn = tninfo->replacement_tn;
+	if (!TN_is_constant(replacement_tn)) continue;
+	if (EBO_Trace_Data_Flow) {
+          #pragma mips_frequency_hint NEVER
+	  fprintf(TFile,"%sConsider inlining immediate into op:opnd %d:%d\n",
+		  EBO_trace_pfx, OP_map_idx(op), idx);
+	  fprintf(TFile," tninfo op %d:",
+		  OP_map_idx(tninfo->in_op));
+	  tn_info_entry_dump (tninfo);
+	}
+	if (op_is_needed_globally(tninfo->in_op)) {
+	  if (EBO_Trace_Data_Flow) {
+	    #pragma mips_frequency_hint NEVER
+	    fprintf(TFile," not inlined: needed globally\n");
+	  }
+	  continue;
+	}
+	
+	if (EBO_Special_Inline_Immediates(op, opinfo, idx)) {
+	  dec_ref_count(tninfo);
+	  break;
+	} else {
+	  if (EBO_Trace_Data_Flow) {
+	    #pragma mips_frequency_hint NEVER
+	    fprintf(TFile," not inlined: special inline failed\n");
+	  }
+	}
+      }
+    }
+  }
+}
+
 /* -----------------------------------------------------------------------
+ * Backward pass to removed useless copy operations
+ * Must be called last in the processing as tninfo of
+ * uses are not updated. More preciselly, if a copy tn1<-tn2 
+ * the uses of tn1 are not updated, so the corresponding tninfo point
+ * to the removed op instead of the defining op of tn2.
+ * Note that this pass was done in the EBO_Remove_Unused_Ops functions,
+ * as now the EBO_Inline_Immediate pass is done after EBO_REmove_Unused_Ops
+ * and relies on coherent tninfos, this pass as been separeted.
  * -----------------------------------------------------------------------
  */
+static
+void EBO_Remove_Copy_Ops (BB *bb, BOOL BB_completely_processed)
+{
+  EBO_OP_INFO *opinfo;
+  EBO_TN_INFO *tninfo;
+  TN *tn;
+
+  if (EBO_first_opinfo == NULL) return;
+
+  /* Only done after reg alloc. */
+  if (!EBO_in_peep) return;
+
+  if (EBO_Trace_Execution) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile,"%sEnter EBO_Remove_Copy_Ops in BB:%d\n",EBO_trace_pfx,BB_id(bb));
+    tn_info_table_dump();
+  }
+
+  for (opinfo = EBO_last_opinfo; opinfo != NULL; opinfo = opinfo->prior) {
+    INT rslt_count = 0;
+    INT idx, opnd_idx;
+    OP *op = opinfo->in_op;
+
+    if (op == NULL) continue;
+
+    if (OP_bb(op) != bb) {
+      if (EBO_Trace_Block_Flow) {
+        #pragma mips_frequency_hint NEVER
+        fprintf(TFile,"Stop looking for copy ops, next op is in BB:%d\n",
+                OP_bb(op) ? BB_id(OP_bb(op)) : -1);
+        Print_OP_No_SrcLine(op);
+      }
+      break;  /* get out of  loop over opinfo entries. */
+    }
+    
+    rslt_count = OP_results(op);
+    if (rslt_count == 0) continue;
+    if (op_is_needed_globally(op)) continue;
+
+    /* Copies to and from the same register are not needed. */
+    if (OP_effectively_copy(op) &&
+	(idx = OP_Copy_Result(op)) >= 0 &&
+	(tninfo = opinfo->actual_rslt[idx]) != NULL &&
+	tninfo->in_bb == bb &&
+	tninfo->in_op != NULL &&	
+	(tn = tninfo->local_tn) != NULL &&
+	has_assigned_reg(tn) &&
+	(opnd_idx = copy_operand(op)) >= 0 &&
+	has_assigned_reg(OP_opnd(op,opnd_idx)) &&
+	tn_registers_identical(tn, OP_opnd(op,opnd_idx))) {
+      
+      if (EBO_Trace_Data_Flow) {
+	#pragma mips_frequency_hint NEVER
+        fprintf(TFile,"%sTry to remove definition of copy entry[%d] ",
+                EBO_trace_pfx,tninfo->sequence_num);
+        Print_TN(tn,FALSE);
+        fprintf(TFile,"\n");
+      }
+      /* We may be able to get rid of the copy, but be
+	 sure that the TN is marked live into this block. */
+      if ((opinfo->actual_opnd[opnd_idx] != NULL) &&
+	  (bb != opinfo->actual_opnd[opnd_idx]->in_bb)) {
+	mark_tn_live_into_BB (tn, bb, opinfo->actual_opnd[opnd_idx]->in_bb);
+      }
+      
+      /* Propagate use count for this TN to it's input TN. */
+      if (tninfo->same != NULL) {
+	tninfo->same->reference_count += tninfo->reference_count;
+      }
+
+      if (!tninfo->redefined_before_block_end &&
+	  (tninfo->same != NULL) &&
+	  (tninfo->same->in_bb == bb)) {
+	/* Removing the copy causes the previous definition
+	   of the TN (or reg) to reach the end of the block. */
+	tninfo->same->redefined_before_block_end = FALSE;
+      }
+      remove_op (opinfo);
+
+      if (EBO_Trace_Optimization) {
+	#pragma mips_frequency_hint NEVER
+	fprintf(TFile, "%sin BB:%d removing copy    ",
+              EBO_trace_pfx, BB_id(bb));
+	Print_OP_No_SrcLine(op);
+      }
+
+      if (opinfo->in_delay_slot) {
+	OP_Change_To_Noop(op);
+      } else {
+	BB_Remove_Op(bb, op);
+      }
+      opinfo->in_op = NULL;
+      opinfo->in_bb = NULL;
+      
+    } /* end: removable copy */
+    
+  } /* end: for each opinfo entry */
+  
+}
+
+/*
+ * Make a quick scan of the OPS in a BB and remove noops. 
+ * Note that it was done in EBO_Remove_Unused_Ops, it is now separated.
+ */
+static void 
+EBO_Remove_Noops(BB *bb)
+{
+  OP *op;
+  OP * next_op = NULL;
+  in_delay_slot = FALSE;
+#ifdef TARG_ST
+  // Arthur: return the simulated OP anyway
+  TOP noop_top = TOP_noop;
+#else
+  TOP noop_top = CGTARG_Noop_Top();
+#endif
+  
+  for (op = BB_first_op(bb); op != NULL; op = next_op) {
+    next_op = OP_next(op);
+    if (   (OP_code(op) == noop_top || OP_code(op) == TOP_noop) 
+	   && !in_delay_slot)
+      {
+        if (EBO_Trace_Optimization) {
+	  #pragma mips_frequency_hint NEVER
+          fprintf(TFile, "%sin BB:%d removing noop    ",
+                  EBO_trace_pfx, BB_id(bb));
+          Print_OP_No_SrcLine(op);
+        }
+	
+        BB_Remove_Op(bb, op);
+      } else if (PROC_has_branch_delay_slot()) {
+	if (in_delay_slot && OP_code(op) == TOP_noop) {
+	  // ugly hack for mips
+	  OP_Change_Opcode(op, noop_top);
+	}
+        in_delay_slot = OP_xfer(op);
+      }
+  }
+}
+#endif
+
+/* -----------------------------------------------------------------------
+ * Remove dead operations.
+ * Based on the reference count of the results of an operation.
+ * TARG_ST: Note that useless copy are no more discarded here as
+ * removing them makes tninfo->opinfo links unsafe, it is now done in
+ * EBO_Remove_Copy_ops().
+ * -----------------------------------------------------------------------
+ */
+static
+void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
 {
   EBO_OP_INFO *opinfo;
   EBO_TN_INFO *tninfo;
@@ -5434,6 +5729,8 @@ void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
       if (tn == Zero_TN) continue;
       if (tn == True_TN) continue;
 
+#ifndef TARG_ST
+      /* [CG]: Now done in EBO_Remove_Copy_Ops() */
      /* Copies to and from the same register are not needed. */
       if (EBO_in_peep &&
           OP_effectively_copy(op) &&
@@ -5465,6 +5762,7 @@ void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
         }
         goto can_be_removed;
       }
+#endif
 
      /* There must be no direct references to the TN. */
       if (!BB_completely_processed) goto op_is_needed;
@@ -5667,6 +5965,8 @@ op_is_needed:
 
   } /* end: for each opinfo entry */
 
+#ifndef TARG_ST
+  /* [CG]: Now done in EBO_Remove_Noops. */
  /* Make a quick scan of the OPS in a BB and remove noops. */
   {
     OP *op;
@@ -5702,6 +6002,7 @@ op_is_needed:
     }
 
   }
+#endif
 
   return;
 }
@@ -5763,7 +6064,20 @@ EBO_Add_BB_to_EB (BB * bb)
     fprintf(TFile,"%sEBO optimization at BB:%d\n",EBO_trace_pfx,BB_id(bb));
   }
 
+#ifdef TARG_ST
+  /* [CG]: Now done in four passes:
+   * 1. remove dead code preserving tninfo->opinfo (use->def) links
+   * 2. try to inline long immediate definitions.
+   * 3. remove useless copies
+   * 4. remove inserted or existing noops.
+   */
   EBO_Remove_Unused_Ops(bb, normal_conditions);
+  EBO_Inline_Immediates(bb, normal_conditions);
+  EBO_Remove_Copy_Ops (bb, normal_conditions);
+  EBO_Remove_Noops(bb);
+#else
+  EBO_Remove_Unused_Ops(bb, normal_conditions);
+#endif
 
  /* Remove information about TN's and OP's in this block. */
   backup_tninfo_list(save_last_tninfo);

@@ -73,6 +73,10 @@
  */
 #define GEN_MISALIGNED_ACCESS
 
+
+/* Import from exp_targ.cxx */
+extern TN *Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops);
+
 /* ====================================================================
  *   Expand_Lda
  * ====================================================================
@@ -138,6 +142,21 @@ Expand_Load (
 
   Is_True (TN_is_constant(ofst), ("Illegal load offset TN"));
 
+#if 0
+  // [CG]: never generate and add, even if an extended immediate is needed
+  if (TN_has_value(ofst)) {
+    ofst = Expand_Or_Inline_Immediate(ofst, MTYPE_I4, ops);
+  }
+
+  if (TN_is_register(ofst)) {
+    if (ofst != Zero_TN) {
+      TN *tmp = Build_TN_Of_Mtype (Pointer_Mtype);
+      Expand_Add (tmp, base, ofst, Pointer_Mtype, ops);
+      base = tmp;
+    }
+    ofst = Gen_Literal_TN(0, 4);
+  }
+#endif
   if (TN_has_value(ofst)) {
     top = Pick_Load_Imm_Instruction (OPCODE_rtype(opcode), mtype);
   } 
@@ -166,6 +185,8 @@ Expand_Load (
 
   FmtAssert(top != TOP_UNDEFINED,("Expand_Load: TOP_UNDEFINED"));
 
+  if (TN_has_value(ofst)) 
+    top = TOP_opnd_immediate_variant(top, 0, TN_value(ofst));
 
   Build_OP (top, result, ofst, base, ops);
   return;
@@ -217,6 +238,22 @@ Expand_Store (
 
   Is_True (TN_is_constant(ofst), ("Illegal store offset TN"));
 
+#if 0
+  // [CG]: never generate and add, even if an extended immediate is needed
+  if (TN_has_value(ofst)) {
+    ofst = Expand_Or_Inline_Immediate(ofst, MTYPE_I4, ops);
+  }
+
+  if (TN_is_register(ofst)) {
+    if (ofst != Zero_TN) {
+      TN *tmp = Build_TN_Of_Mtype (Pointer_Mtype);
+      Expand_Add (tmp, base, ofst, Pointer_Mtype, ops);
+      base = tmp;
+    }
+    ofst = Gen_Literal_TN(0, 4);
+  }
+#endif
+
   if (TN_has_value(ofst)) {
     top = Pick_Store_Imm_Instruction (mtype);
   }
@@ -238,6 +275,9 @@ Expand_Store (
   }
 
   FmtAssert(top != TOP_UNDEFINED,("Expand_Store: TOP_UNDEFINED"));
+
+  if (TN_has_value(ofst)) 
+    top = TOP_opnd_immediate_variant(top, 0, TN_value(ofst));
 
   Build_OP (top, ofst, base, src, ops);
   return;
@@ -330,7 +370,7 @@ Adjust_Addr_TNs (
       *disp_tn = Gen_Literal_TN ( TN_value(*disp_tn) + disp, 4 );
     } else {
       *disp_tn = Gen_Symbol_TN ( TN_var(*disp_tn),
-				 TN_offset(*disp_tn) + disp, 0);
+				 TN_offset(*disp_tn) + disp, TN_relocs(*disp_tn));
     }
   } else {
 
@@ -359,7 +399,7 @@ Add_Disp_To_Addr_TNs (
   if (TN_has_value(*disp_tn)) {
     *disp_tn = Gen_Literal_TN(TN_value(*disp_tn) + disp, 4);
   } else if (TN_is_symbol(*disp_tn)) {
-    *disp_tn = Gen_Symbol_TN(TN_var(*disp_tn), TN_offset(*disp_tn) + disp, 0);
+    *disp_tn = Gen_Symbol_TN(TN_var(*disp_tn), TN_offset(*disp_tn) + disp, TN_relocs(*disp_tn));
   } else {
     FmtAssert(0, ("Unexpected non literal displacement"));
   }

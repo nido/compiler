@@ -616,7 +616,12 @@ CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc,
    * TODO: target/type dependent cost estimates
    * TODO: count memory references for the restores in rematerializable TNs
    */
-  if (Can_Rematerialize_TN(tn, client))
+#ifdef Is_True_On
+  if (Can_Rematerialize_TN(tn, client) && TN_home(tn) == NULL) {
+    DevWarn("Home for TN spill is NULL, TN:%d\n", TN_number(tn));
+  }
+#endif
+  if (Can_Rematerialize_TN(tn, client) && TN_home(tn) != NULL)
   {
     WN *home = TN_home(tn);
     OPS	OPs  = OPS_EMPTY;
@@ -1457,10 +1462,19 @@ void CGSPILL_Attach_Lda_Remat(TN *tn, TYPE_ID typ, INT64 offset, ST *st)
  * See interface description
  *
  * ======================================================================*/
+#ifdef TARG_ST
+void CGSPILL_Attach_Intconst_Remat(TN *tn, TYPE_ID rtype, INT64 val)
+#else
 void CGSPILL_Attach_Intconst_Remat(TN *tn, INT64 val)
+#endif
 {
   if (CGSPILL_Rematerialize_Constants) {
+#ifdef TARG_ST
+    OPCODE opc = OPCODE_make_op(OPR_INTCONST, rtype, MTYPE_V);
+    WN *wn = WN_CreateIntconst(opc, val);
+#else
     WN *wn = WN_CreateIntconst(OPC_I8INTCONST, val);
+#endif
     if (wn) {
       Set_TN_is_rematerializable(tn);
       Set_TN_home(tn, wn);

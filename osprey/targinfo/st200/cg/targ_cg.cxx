@@ -421,15 +421,23 @@ Make_Branch_Conditional (
   OP *new_br;
   TOP new_top;
   OP* br_op = BB_branch_op(bb);
-
+  OPS ops = OPS_EMPTY;
+  
   if (!br_op) return;
+
+  if (TN_register_class(pred_tn) != ISA_REGISTER_CLASS_branch) {
+    TN *br_tn = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+    Exp_COPY(br_tn, pred_tn, &ops);
+    pred_tn = br_tn;
+  }
 
   switch (OP_code(br_op)) {
   case TOP_goto:
     new_top = cond ? TOP_br : TOP_brf;
     break;
   case TOP_igoto:
-    new_top = cond ? TOP_br : TOP_brf;
+    FmtAssert(FALSE,("Can't handle igoto -> contitional"));
+    new_top = TOP_UNDEFINED;
     break;
   default:
     FmtAssert(FALSE,("Can't handle %s", TOP_Name(OP_code(br_op))));
@@ -439,7 +447,8 @@ Make_Branch_Conditional (
   // Make a tmp cond register so we can replace it later
   new_br = Mk_OP(new_top, pred_tn, OP_opnd(br_op,0));
   OP_srcpos(new_br) = OP_srcpos(br_op);
-  BB_Insert_Op_After(bb, br_op, new_br);
+  OPS_Append_Op(&ops, new_br);
+  BB_Insert_Ops_After(bb, br_op, &ops);
   BB_Remove_Op(bb, br_op);
 }
 
@@ -509,14 +518,11 @@ CGTARG_Compute_Branch_Parameters (
   *brtaken = 0;
   *factor = 0.0;
 
-  if (Is_Target_st220() || Is_Target_st221() || Is_Target_st230())
-  {
-    *mispredict= 8; *fixed= 1; *brtaken= 1; *factor = 1.0;
-  }
-  else
-  {
-    FmtAssert(FALSE, ("CGTARG_Compute_Branch_Parameters: invalid target"));
-  }
+  // For ST220/ST221/ST230 targets we have:
+  // - no hardware prediction
+  // - fixed branch cost is null
+  // - taken branch cost is 1
+  *mispredict= 0; *fixed= 0; *brtaken= 1; *factor = 1.0;
 
  /*
   * override for command line options
@@ -1151,7 +1157,12 @@ CGTARG_Can_Fit_Immediate_In_Add_Instruction (
   INT64 immed
 )
 {
-  return ISA_LC_Value_In_Class (immed, LC_s32);
+  /* [CG]: Here we don't make assumption on how
+     the code selector will treat extended immediate.
+     So we assume that add does not have extended immediate
+     form.
+  */
+  return ISA_LC_Value_In_Class (immed, LC_s9);
 }
 
 /* ====================================================================

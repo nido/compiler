@@ -423,15 +423,8 @@ Expand_Divide (
     }
   }
 
-#if 0
-  // Make a divs
-  TN *bd = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-  TN *bs = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-  Build_OP(TOP_divs, result, bd, src1, src2, bs, ops);
-#else
   // What the hell was this ? Just assert ...
   Is_True(FALSE,("shouldn't be here"));
-#endif
 
   return NULL;
 }

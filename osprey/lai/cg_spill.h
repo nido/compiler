@@ -229,6 +229,7 @@
  *	    INT64 offset, 
  *	    ST *st)
  *	void CGSPILL_Attach_Intconst_Remat(TN *tn, INT64 val)
+ *	ifdef TARG_ST: void CGSPILL_Attach_Intconst_Remat(TN *tn, TYPE_ID, INT64 val)
  *	void CGSPILL_Attach_Floatconst_Remat(TN *tn, TYPE_ID typ, double val)
  *	void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st)
  *	    Make <tn> rematerializable and attatch the appropriate
@@ -304,7 +305,11 @@ extern void CGSPILL_Force_Rematerialization (void);
 extern void CGSPILL_Force_Rematerialization_For_BB (BB *bb);
 
 extern void CGSPILL_Attach_Lda_Remat(TN *tn, TYPE_ID typ, INT64 offset, ST *st);
+#ifdef TARG_ST
+extern void CGSPILL_Attach_Intconst_Remat(TN *tn, TYPE_ID rtype, INT64 val);
+#else
 extern void CGSPILL_Attach_Intconst_Remat(TN *tn, INT64 val);
+#endif
 extern void CGSPILL_Attach_Floatconst_Remat(TN *tn, TYPE_ID typ, double val);
 extern void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st);
 

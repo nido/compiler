@@ -1684,6 +1684,7 @@ Adjust_Entry (
 
   if (BB_handler(bb)) return;
 
+  FmtAssert(ent_adj != NULL, ("Adjust Entry OP missing in BB::%d\n", BB_id(bb)));
   if (Trace_EE) {
     #pragma mips_frequency_hint NEVER
     fprintf(TFile,
