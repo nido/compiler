@@ -213,8 +213,6 @@ Expand_Copy (
   OPS *ops
 )
 {
-  TN *tmp;
-
   if (TN_is_constant(src_tn)) {
     FmtAssert (TN_has_value(src_tn), ("Expand_Copy: illegal source tn"));
   }
@@ -240,7 +238,11 @@ Expand_Copy (
     case ISA_REGISTER_CLASS_branch:
 
       if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	FmtAssert(FALSE,("Expand_Copy: b -> b ??"));
+	//FmtAssert(FALSE,("Expand_Copy: b -> b ??"));
+	// Move through an integer
+	TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+	Build_OP(TOP_mfb, tmp, src_tn, ops);
+	Build_OP(TOP_mtb, tgt_tn, tmp, ops);
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_integer) {
 	Build_OP(TOP_mfb, tgt_tn, src_tn, ops);
@@ -248,7 +250,7 @@ Expand_Copy (
       else {
 	FmtAssert(FALSE,("Expand_Copy: not supported"));
       }
-      break;
+      return;
 
     default:
 
