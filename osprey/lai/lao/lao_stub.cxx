@@ -59,8 +59,8 @@ OP_clobber_reg(OP *op) {
 }
 
 BOOL
-OP_asm_barrier(OP *op) {
-  if (OP_gnu_asm(op) && OP_Is_Barrier(op)) return TRUE;
+OP_barrier(OP *op) {
+  if (OP_Is_Barrier(op)) return TRUE;
   return FALSE;
 }
 
@@ -323,7 +323,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
 	OPERATOR, argCount, arguments, resCount, results, regCount, registers);
     if (OP_volatile(cgir_op)) Interface_Operation_setVolatile(interface, operation);
     if (OP_prefetch(cgir_op)) Interface_Operation_setPrefetch(interface, operation);
-    if (OP_asm_barrier(cgir_op)) Interface_Operation_setBarrier(interface, operation);
+    if (OP_barrier(cgir_op)) Interface_Operation_setBarrier(interface, operation);
     ST *spill_st = CGSPILL_OP_Spill_Location(cgir_op);
     if (spill_st != NULL && OP_spill(cgir_op)) {
       Symbol symbol = CGIR_SYM_to_Symbol(ST_st_idx(*spill_st));
@@ -422,7 +422,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
       if (BB_nest_level(*bb_iter) == nest_level) {
 	OP *op = NULL;
 	FOR_ALL_BB_OPs(*bb_iter, op) {
-	  if (OP_memory(op) || OP_asm_barrier(op)) ++op_count;
+	  if (OP_memory(op) || OP_barrier(op)) ++op_count;
 	}
 	bb_list.push_back(*bb_iter);
 	if (op_count >= LAO_OPS_LIMIT) {
@@ -442,7 +442,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	FOR_ALL_BB_OPs(*bb_iter, op) {
 	  if (_CG_DEP_op_info(op)) {
 	    Operation orig_operation = CGIR_OP_to_Operation(op);
-	    if (OP_memory(op) || OP_asm_barrier(op)) {
+	    if (OP_memory(op) || OP_barrier(op)) {
 	      Interface_LoopInfo_setDependenceNode(interface, loopinfo, orig_operation);
 	    }
 	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
