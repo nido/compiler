@@ -40,7 +40,7 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#include "LAO_Interface.h"
+#include "lao_interface.h"
 #undef operator
 #undef this
 }
@@ -96,8 +96,7 @@ static void* lao_handler = NULL;
 
 // Initialization of the LAO, needs to be called once per running process.
 void
-lao_init(void) 
-{
+lao_init(void) {
   if (lao_initialized++ == 0) {
     LAI_Interface (*LAI_getInstance_p)(void);
     lao_handler = load_so("lao"SO_EXT, CG_Path, 0);
@@ -110,7 +109,7 @@ lao_init(void)
     // Initialize the LIR->CGIR callback object
     LIR_CGIR_callback_init(callback);
     // Initialize the target dependent LIR<->CGIR interface
-    TARG_CGIR_LAI_Init();
+    CGIR_LAI_Init();
   }
 #ifdef Is_True_On
   if (GETENV("LAO_PID")) {
@@ -124,7 +123,7 @@ void
 lao_fini(void) {
   if (--lao_initialized == 0) {
     // Finalize target dependent interface
-    TARG_CGIR_LAI_Fini();
+    CGIR_LAI_Fini();
     // Finalize LAI Interface
     LAI_Interface_Finalize();
     interface = NULL;
@@ -323,13 +322,12 @@ static inline Temporary CGIR_TN_to_Temporary(CGIR_TN cgir_tn);
 
 // Returns a TN for the rematerializable value
 static Temporary
-CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
-{
+CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn) {
   WN *home = TN_home(cgir_tn);
   Temporary temporary = NULL;
   switch (WN_operator(home)) {
   case OPR_LDA: {
-    LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+    LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
     ST *var_st = WN_st(home);
     ST_IDX st_idx = ST_st_idx(*var_st);
     int64_t offset = WN_lda_offset(home);
@@ -354,8 +352,7 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
 
 // Returns a TN for the homeable value
 static Temporary
-CGIR_TN_HOME_to_Temporary(CGIR_TN cgir_tn)
-{
+CGIR_TN_HOME_to_Temporary(CGIR_TN cgir_tn) {
   DevWarn("Should pass TN_is_gra_homeable to LAO for TN%d\n", TN_number(cgir_tn));
   return NULL;
 }
@@ -375,17 +372,17 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
 	// only if the cgir_tn is in the initial dedicated set. Otherwise we create an
 	// assigned temporary and set the dedicated flag.
 	if (Build_Dedicated_TN(CLASS_REG_PAIR_rclass(tn_crp), CLASS_REG_PAIR_reg(tn_crp), 0) == cgir_tn)
-	  temporary = LAI_Interface_makeDedicatedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	  temporary = LAI_Interface_makeDedicatedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
 	else {
-	  temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	  temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
 	  LAI_Interface_Temporary_setDedicated(interface, temporary);
 	}
       } else if (TN_register(cgir_tn) != REGISTER_UNDEFINED) {
 	CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
       } else {
 	ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
-	temporary = LAI_Interface_makeVirtualTemporary(interface, cgir_tn, TARG_CGIR_IRC_to_RegClass(tn_irc));
+	temporary = LAI_Interface_makeVirtualTemporary(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
       }
       // Pass special tn flags
       if (TN_is_rematerializable(cgir_tn)) {
@@ -402,25 +399,25 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
-	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	temporary = LAI_Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
-	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = LAI_Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
-	LAI_Immediate immediate = TARG_CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = LAI_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
       } else if (TN_is_enum(cgir_tn)) {
 	ISA_ENUM_CLASS_VALUE value = TN_enum(cgir_tn);
-	LAI_Modifier modifier = TARG_CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
+	LAI_Modifier modifier = CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
 	temporary = LAI_Interface_makeModifierTemporary(interface, cgir_tn, modifier, value);
       } else {
 	Is_True(FALSE, ("Unknown constant TN type."));
@@ -463,13 +460,13 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
 	     reg = REGISTER_SET_Choose_Next(regset, reg)) {
 	  TN* cgir_tn = Build_Dedicated_TN(irc, reg, 0);
 	  CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	  clobbers[clobberCount++] = TARG_CGIR_CRP_to_Register(tn_crp);
+	  clobbers[clobberCount++] = CGIR_CRP_to_Register(tn_crp);
 	}
       }
       Is_True(clobberCount > 0, ("Empty register clobber list"));
     }
     // make the Operation
-    LAI_Operator OPERATOR = TARG_CGIR_TOP_to_Operator(OP_code(cgir_op));
+    LAI_Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
     operation = LAI_Interface_makeOperation(interface, cgir_op,
 	OPERATOR, argCount, arguments, resCount, results, clobberCount, clobbers);
     if (OP_volatile(cgir_op)) LAI_Interface_Operation_setVolatile(interface, operation);
@@ -512,7 +509,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     }
     // For instruction mode currently the targ interface does not
     // account for isa subset. HACK.
-    LAI_InstrMode instrmode = TARG_CGIR_IS_to_InstrMode((ISA_SUBSET)0);
+    LAI_InstrMode instrmode = CGIR_IS_to_InstrMode((ISA_SUBSET)0);
     // make the BasicBlock
     basicblock = LAI_Interface_makeBasicBlock(interface, cgir_bb, instrmode,
 	labelCount, labels, operationCount, operations);
