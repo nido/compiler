@@ -1678,6 +1678,8 @@ Adjust_Entry (
 	      DBar, ST_name(ENTRYINFO_name(ent_info)), BB_id(bb));
     fprintf(TFile, "\nFinal frame size: %llu (0x%llx)\n", 
                                             frame_len, frame_len);
+    fprintf(TFile, "Adjust OP: ");
+    Print_OP_No_SrcLine(ent_adj);
   }
 
   /* The ENTRYINFO annotation identifies the last instruction of the
@@ -1693,7 +1695,16 @@ Adjust_Entry (
       //
       // Spills can be introduced now by GRA.  Skip 'em.
       //
-    } while (!OP_result(sp_adj, 0) || !TN_is_sp_reg(OP_result(sp_adj,0)));
+    }
+#ifdef TARG_ST
+    // [CG]: Fix bug in result access
+    while (sp_adj != NULL &&
+	   !(OP_results(sp_adj) > 0 && TN_is_sp_reg(OP_result(sp_adj,0))));
+    FmtAssert(sp_adj != NULL && OP_code(sp_adj) == TOP_spadjust, 
+	      ("Did not find sp adjust OP in BB:%d\n", BB_id(bb)));
+#else
+    while (!OP_result(sp_adj, 0) || !TN_is_sp_reg(OP_result(sp_adj,0)));
+#endif
   }
 
   /* Get the operands that are the frame size increment.
