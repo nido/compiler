@@ -588,7 +588,7 @@ OPCODE_To_INTRINSIC (
 	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: unknown DIV opcode"));
     }
   }
-  else if (opr = OPR_REM) {
+  else if (opr == OPR_REM) {
     switch (rtype) {
       case MTYPE_I4: id = INTRN_MODW; break;
       case MTYPE_I8: id = INTRN_MODL; break;

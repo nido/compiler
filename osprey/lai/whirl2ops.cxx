@@ -3995,6 +3995,8 @@ Handle_CONDBR (
   target_tn = Gen_Label_TN (Get_WN_Label (branch), 0);
   Exp_OP3v (WN_opcode(branch), NULL, target_tn, operand0, operand1, 
 	variant, &New_OPs);
+
+  return;
 }
 
 /* ====================================================================
