@@ -53,7 +53,6 @@
 /* ====================================================================
  *   OP_Is_Barrier
  *
- *   TODO: Perhaps it can be done by associating a TOP property ?
  * ====================================================================
  */
 BOOL OP_Is_Barrier(OP *op) 
@@ -66,21 +65,7 @@ BOOL OP_Is_Barrier(OP *op)
       return TRUE;
   }
 
-  switch (top) {
-  case TOP_prgadd_i:	/* data cache purge */
-  case TOP_prgadd_ii:
-  case TOP_prgset_i:	/* data cache purge */
-  case TOP_prgset_ii:
-  case TOP_sync:	/* data cache sync */
-  case TOP_prgins:	/* i-cache purge */
-  case TOP_prginspg_i:	/* i-cache purge */
-  case TOP_prginspg_ii:
-  case TOP_syncins: 	/* i-cache sync. */
-  case TOP_break:	/* exceptions. */
-  case TOP_sbrk:
-  case TOP_syscall:
-  case TOP_pswset_r: 	/* global state change. */
-  case TOP_pswclr_r:  
+  if (TOP_is_barrier(top)) {
     return TRUE;
   }
 
