@@ -39,11 +39,6 @@
 
 void Configure_CG_Target() {
 
-  // CFLOW optimizations: ON by default
-
-  // disable CFLOW second pass after HB formation
-  CFLOW_opt_after_cgprep = FALSE;
-
   // Scheduling options: scheduling is ON by default -- disable if
   //                     in development
 #ifndef LAO_ENABLED
