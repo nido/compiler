@@ -603,6 +603,10 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP(mulhh);
       CASE_TOP(mulhhu);
       CASE_TOP(mulhs);
+      CASE_TOP(mul32);
+      CASE_TOP(mul64h);
+      CASE_TOP(mul64hu);
+      CASE_TOP(mulfrac);
       CASE_TOP_BR(cmpeq);
       CASE_TOP_BR(cmpne);
       CASE_TOP_BR(cmpge);
@@ -671,6 +675,10 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
       CASE_TOP(mulllu);
       CASE_TOP(mulhh);
       CASE_TOP(mulhhu);
+      CASE_TOP(mul32);
+      CASE_TOP(mul64h);
+      CASE_TOP(mul64hu);
+      CASE_TOP(mulfrac);
       CASE_TOP_BR(cmpeq);
       CASE_TOP_BR(cmpne);
       CASE_TOP_BR(andl);
@@ -797,6 +805,10 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
       CASE_TOP_I(pft):
+      CASE_TOP(mul32):
+      CASE_TOP(mul64h):
+      CASE_TOP(mul64hu):
+      CASE_TOP(mulfrac):
       return 32;
     
     CASE_TOP(slct):
@@ -917,6 +929,9 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_I(ldhu_d):
       CASE_TOP_I(ldbu_d):
       CASE_TOP_I(pft):
+      CASE_TOP(mul32):
+      CASE_TOP(mul64h):
+      CASE_TOP(mulfrac):
       return TRUE;
 
       CASE_TOP(minu):
@@ -925,6 +940,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_BR(cmpgtu):
       CASE_TOP_BR(cmpleu):
       CASE_TOP_BR(cmpltu):
+      CASE_TOP(mul64hu):
 	return FALSE;
 
     CASE_TOP(slct):
