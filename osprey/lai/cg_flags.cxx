@@ -249,7 +249,7 @@ const char* GRA_spill_count_factor_string = "0.5";
 //   HB:
 // ====================================================================
 
-BOOL  HB_formation = TRUE;
+BOOL  HB_formation = FALSE;    // not good for all targets yet
 BOOL  HB_static_freq_heuristics = TRUE;
 const char* HB_max_sched_growth = "4.1";
 const char* HB_min_path_priority_ratio = "0.05";
@@ -273,6 +273,12 @@ BOOL  HB_superblocks = FALSE;
 
 INT   HB_max_blocks = 20;
 INT   HB_min_blocks = 2;
+
+// ====================================================================
+//   CG_SELECT flags:
+// ====================================================================
+
+BOOL CG_SELECT_allow_dup = FALSE;
 
 BOOL EMIT_pjump_all = TRUE;
 BOOL EMIT_use_cold_section = TRUE;

@@ -529,23 +529,27 @@ CG_Generate_Code(
     //         then find superblocks.
 
 #ifdef SUPPORTS_SELECT
-    // Perform select generation (partial predication if-conversion). 
-    Start_Timer(T_Select);
-    Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
-    Stop_Timer(T_Select);
-    if (frequency_verify)
-      FREQ_Verify("Select Conversion");
-    draw_CFG();
+    if (CG_enable_select) {
+      // Perform select generation (partial predication if-conversion). 
+      Start_Timer(T_Select);
+      Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
+      Stop_Timer(T_Select);
+      if (frequency_verify)
+	FREQ_Verify("Select Conversion");
+      draw_CFG();
+    }
 #endif
 
 #endif
 
-#ifndef TARG_ST
+#if defined(TARG_IA64) || defined(IFCONV_IN_SSA)
     //
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
     //
-    if (CGTARG_Can_Predicate()) {
+    // TODO: tail duplication does not work in SSA !!!
+    //
+    if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
       // Initialize the predicate query system in the hyperblock 
       // formation phase
       HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
@@ -624,6 +628,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
+#ifndef IFCONV_IN_SSA
     // Perform superblock formation after select if-conversion. 
     //
     // TODO: do it in SSA when tail duplication works in SSA.
@@ -633,6 +638,7 @@ CG_Generate_Code(
     HB_Form_Superblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
     if (frequency_verify)
       FREQ_Verify("Superblock Formation");
+#endif
 #endif
 
     // GRA_LIVE_Init only done if !CG_localize_tns
@@ -672,6 +678,7 @@ CG_Generate_Code(
   if (!Get_Trace (TP_CGEXP, 1024))
     Reuse_Temp_TNs = TRUE;	/* for spills */
 
+  // This is usefull for debugging, OFF by default
   if (CGSPILL_Enable_Force_Rematerialization)
     CGSPILL_Force_Rematerialization();
 
@@ -754,17 +761,7 @@ CG_Generate_Code(
      * Then we can go through all the entry/exit blocks and fix the SP 
      * adjustment OP or delete it if the frame length is zero.
      */
-    if (CG_gen_callee_saved_regs_mask) {
-      //
-      // The register mask OPs will increment the stack pointer 
-      // themselves:
-      //
-      Set_Frame_Len (Finalize_Stack_Frame() - CGTARG_Callee_Saved_Regs_Mask_Size());
-    }
-    else {
-      Set_Frame_Len (Finalize_Stack_Frame());
-    }
-
+    Set_Frame_Len (Finalize_Stack_Frame());
     Set_Error_Phase ( "Final SP adjustment" );
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }

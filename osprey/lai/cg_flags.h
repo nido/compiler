@@ -335,6 +335,9 @@ extern BOOL  HB_superblocks;
 extern INT   HB_max_blocks;
 extern INT   HB_min_blocks;
 
+/* GG_SELECT: */
+extern BOOL CG_SELECT_allow_dup;
+
 /* GRA_LIVE: */
 extern BOOL GRA_LIVE_Phase_Invoked;
 extern BOOL  GRA_LIVE_Predicate_Aware;
