@@ -2566,7 +2566,6 @@ Handle_STID (
 	Exp_COPY (cresult, ctn, &New_OPs);
       }
     }
-    Print_OPs (OPS_first(&New_OPs));
 
     return;
   }
