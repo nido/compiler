@@ -1417,6 +1417,11 @@ CG_Init (void)
    * prefetch_ahead fromn LNO */
   //    Configure_prefetch_ahead();
 
+#ifdef LAO_ENABLED
+    extern void LAO_INIT ();
+    LAO_INIT();
+#endif
+
   return;
 }
 
@@ -1429,6 +1434,11 @@ CG_Init (void)
 void
 CG_Fini (void)
 {
+#ifdef LAO_ENABLED
+    extern void LAO_FINI ();
+    LAO_FINI();
+#endif
+
   /* List global symbols if desired: */
   if (List_Symbols) {
     Print_global_symtab (Lst_File);
