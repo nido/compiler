@@ -5062,9 +5062,6 @@ void Fix_Backpatches(CG_LOOP& cl, bool trace)
   }
 }
 
-extern "C" {
-#include "unistd.h"
-}
 // Perform loop optimizations for one loop
 //
 BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
@@ -5077,8 +5074,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     SINGLE_BB_WHILELOOP_UNROLL,
     MULTI_BB_DOLOOP
   };
-
-  int scan; fprintf(stderr, "PID = %lld\n", (int64_t)getpid()); scanf("%d", &scan);
 
   //    if (Is_Inner_Loop(loop)) {
   if (!BB_innermost(LOOP_DESCR_loophead(loop))) 
