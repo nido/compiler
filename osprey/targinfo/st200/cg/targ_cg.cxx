@@ -754,10 +754,9 @@ CGTARG_Dependence_Required (
 	
 	need_dependence = TRUE;
 	cur_latency = CGTARG_Max_RES_Latency(pred_op, i);
-	// FdF 20041117: If not st220, set latency to 0 on registers
-	// other than R63, to allow bundling with the call
-	// instruction (ddts 19668).
-	if (!FORCE_NOOPS && TN_register_and_class(result) != CLASS_AND_REG_ra)
+	// FdF 20041117: If not st220, set latency to 0 to allow
+	// bundling with the call instruction (ddts 19668).
+	if (!FORCE_NOOPS)
 	  cur_latency = 0;
 	if (cur_latency > max_latency) max_latency = cur_latency;
       }
