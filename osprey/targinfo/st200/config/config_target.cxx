@@ -390,7 +390,7 @@ Preconfigure_Target ( void )
   /*
    * Whether we will generate the MTYPE_B (default FALSE)
    */
-  WHIRL_Mtype_B_On = TRUE;
+  //WHIRL_Mtype_B_On = TRUE;
 
   /* pv #297274 describes why we cannot put initialized data in .bss */
   /* (cbr) don't change a tentative definition for a definition.
