@@ -4546,7 +4546,6 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	WN *wn = ANNOT_pragma(loopmod_ant);
 	WN_pragma_arg1(wn) = new_modulus;
 	WN_pragma_arg2(wn) = new_residue;
-	fprintf(stderr, "new_modulus %d, new_residue %d\n", new_modulus, new_residue);
       }
     }
 #endif
