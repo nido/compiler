@@ -48,6 +48,13 @@
 #include "cg_flags.h"
 #include "glob.h"
 
+/* 
+ * [CG]: Always use write qualified name instead of ST_name() when emitting
+ * assembly. The symbol may be renamed, e.g. static symbols under IPA or
+ * symbols that are function statics.
+ */
+     
+
 /* ====================================================================
  *    CGEMIT_Weak_Alias (sym, stringsym)
  *
@@ -59,8 +66,11 @@ CGEMIT_Weak_Alias (
   ST *strongsym
 ) 
 {
-  fprintf (Asm_File, "\t%s\t%s\n", AS_WEAK, ST_name(sym));
-  fprintf (Asm_File, "\t.set %s, %s\n", ST_name(sym), ST_name(strongsym));
+  fprintf (Asm_File, "\t.set ");
+  EMT_Write_Qualified_Name(Asm_File, sym);
+  fprintf (Asm_File, ", ");
+  EMT_Write_Qualified_Name(Asm_File, strongsym);
+  fprintf (Asm_File, "\n");
 }
 
 /* ====================================================================
@@ -71,7 +81,11 @@ CGEMIT_Weak_Alias (
 void
 CGEMIT_Alias (ST *sym, ST *strongsym) 
 {
-  fprintf (Asm_File, "\t.set %s, %s\n", ST_name(sym), ST_name(strongsym));
+  fprintf (Asm_File, "\t.set ");
+  EMT_Write_Qualified_Name(Asm_File, sym);
+  fprintf (Asm_File, ", ");
+  EMT_Write_Qualified_Name(Asm_File, strongsym);
+  fprintf (Asm_File, "\n");
 }
 
 /* ====================================================================

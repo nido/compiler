@@ -1126,7 +1126,9 @@ EMT_Put_Elf_Symbol (
 	      fprintf ( Asm_File, "\n");
 	    }
 	    else {
-	      fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
+	      fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	      EMT_Write_Qualified_Name(Asm_File, sym);
+	      fprintf ( Asm_File, "\n");
 #ifdef TARG_ST
 	      EMT_Visibility ( Asm_File, ST_export(sym), sym);
 #endif
@@ -1188,7 +1190,9 @@ EMT_Put_Elf_Symbol (
 	    fprintf ( Asm_File, "\n");
 	  }
 	  else {
-	    fprintf(Asm_File, "\t%s\t%s\n", AS_GLOBAL, ST_name(sym));
+	    fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	    EMT_Write_Qualified_Name(Asm_File, sym);
+	    fprintf ( Asm_File, "\n");
 #ifdef TARG_ST
 	    EMT_Visibility (Asm_File, ST_export(sym), sym);
 #endif
@@ -5515,11 +5519,15 @@ EMT_Emit_PU (
 	! ST_is_export_local(sym)) {
 #ifdef TARG_ST
       if (Assembly) {
-	fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	EMT_Write_Qualified_Name(Asm_File, sym);
+	fprintf ( Asm_File, "\n");
 	EMT_Visibility (Asm_File, ST_export(sym), sym);
       }
       if (Lai_Code) {
-	fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	fprintf(Lai_File, "\t%s\t", AS_GLOBAL);
+	EMT_Write_Qualified_Name(Lai_File, sym);
+	fprintf(Lai_File, "\n");
 	EMT_Visibility (Lai_File, ST_export(sym), sym);
       }
 #else
@@ -5833,7 +5841,9 @@ EMT_End_File( void )
       // alias
       if (Assembly) {
 	if ( ! ST_is_export_local(sym)) {
-	  fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	  fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	  EMT_Write_Qualified_Name(Asm_File, sym);
+	  fprintf ( Asm_File, "\n");
 #ifdef TARG_ST
 	  EMT_Visibility (Asm_File, ST_export(sym), sym);
 #endif
@@ -5843,7 +5853,10 @@ EMT_End_File( void )
 #if 0
       if (Lai_Code) {
 	if (!ST_is_export_local(sym)) {
-	  fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	  fprintf(Lai_File, "\t%s\t", AS_GLOBAL);
+	  EMT_Write_Qualified_Name(Lai_File, sym);
+	  fprintf ( Lai_File, "\n");
+
 	}
       }
 #endif
@@ -5856,13 +5869,17 @@ EMT_End_File( void )
       // some unreferenced fortran externs need to be emitted
       (void)EMT_Put_Elf_Symbol(sym);
       if (Assembly) {
-	fprintf (Asm_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	EMT_Write_Qualified_Name(Asm_File, sym);
+	fprintf(Asm_File, "\n");
 #ifdef TARG_ST
 	EMT_Visibility(Asm_File, ST_export(sym), sym);
 #endif
       }
       if (Lai_Code) {
-	fprintf (Lai_File, "\t%s\t %s\n", AS_GLOBAL, ST_name(sym));
+	fprintf(Lai_File, "\t%s\t", AS_GLOBAL);
+	EMT_Write_Qualified_Name(Lai_File, sym);
+	fprintf(Lai_File, "\n");
 #ifdef TARG_ST
 	EMT_Visibility(Lai_File, ST_export(sym), sym);
 #endif
