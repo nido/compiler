@@ -919,4 +919,22 @@
       iopc = INTRN_XSHRW ;
       intrinsic_op = TRUE ;
     break;
+//#if defined(ST231_EXPERIMENTAL)
+    case BUILT_IN_ST200MUL32:
+      iopc = INTRN_ST200MUL32 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200MUL64H:
+      iopc = INTRN_ST200MUL64H ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200MUL64HU:
+      iopc = INTRN_ST200MUL64HU ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200MULFRAC:
+      iopc = INTRN_ST200MULFRAC ;
+      intrinsic_op = TRUE ;
+    break;
+//#endif
 #endif /* defined(TARG_ST200) */

@@ -17,6 +17,7 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 
+#if defined(ST231_EXPERIMENTAL)
 /*
  * Expansion of builtin__divuw based on validated and scheduled basic assembly source.
 */
@@ -966,6 +967,51 @@ Expand__builtin__modw(
 @@@    Expand__builtin__modw(result[0],opnd[0],opnd[1],ops) ;
 @@@  break ;
 */
+
+/*
+ *Manual exapnsion of some experimental ST231 operators
+*/
+static void
+Expand__st200mul32(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mul32_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st200mul32 */
+static void
+Expand__st200mul64h(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mul64h_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st200mul64hr */
+static void
+Expand__st200mul64hu(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mul64hu_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st200mul64hu */
+static void
+Expand__st200mulfrac(
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+  Build_OP (	TOP_mulfrac_r,	o0,	i0,	i1,	ops) ;
+} /* Expand__st200mulfrac */
+#endif /*ST231_EXPERIMENTAL*/
 
 /*
  * Expansion of st220addcg based on validated and scheduled basic assembly source.
@@ -6089,6 +6135,20 @@ Exp_Intrinsic_Op (
     case INTRN_BUILTIN__MODW:
       Expand__builtin__modw(result[0],opnd[0],opnd[1],ops) ;
     break ;
+//#if defined(ST231_EXPERIMENTAL)
+     case INTRN_ST200MUL32:
+       Expand__st200mul32(result[0],opnd[0],opnd[1],ops) ;
+     break ;
+     case INTRN_ST200MUL64H:
+       Expand__st200mul64h(result[0],opnd[0],opnd[1],ops) ;
+     break ;
+     case INTRN_ST200MUL64HU:
+       Expand__st200mul64hu(result[0],opnd[0],opnd[1],ops) ;
+     break ;
+     case INTRN_ST200MULFRAC:
+       Expand__st200mulfrac(result[0],opnd[0],opnd[1],ops) ;
+     break ;
+//#endif
     case INTRN_ST220ADDCG:
     if (Target_Byte_Sex == BIG_ENDIAN) {
       Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
