@@ -518,30 +518,92 @@
  * ====================================================================
  */
 
-#ifndef lai_targ_INCLUDED
-#define lai_targ_INCLUDED
+#ifndef CGTARGET_INCLUDED
+#define CGTARGET_INCLUDED
 
 #include "defs.h"
 #include "cgir.h"
 #include "variants.h"
 #include "cg_flags.h"
 #include "cg_dep_graph.h"
-/* #include "cg_vector.h" */
+#include "cg_vector.h"
 #include "config_targ.h"
+#include "cg_thr.h"
+
+#include "targ_proc_properties.h"
+#include "targ_abi_properties.h"
+#include "targ_isa_lits.h"
+#include "targ_isa_registers.h"
+#include "targ_isa_enums.h"
+#include "targ_isa_pack.h"
 #include "targ_isa_bundle.h"
+#include "targ_isa_print.h"
+#include "targ_grouping.h"
+
+#include "ti_errors.h"
 #include "ti_bundle.h"
-/* #include "cg_thr.h" */
+#include "ti_latency.h"
 
-#include "cg_targ.h"
-
-extern UINT32 CGTARG_branch_taken_penalty;
-extern BOOL CGTARG_branch_taken_penalty_overridden;
+/* placeholder for all hardware workarounds */
+extern void Hardware_Workarounds (void);
 
 /* --------------------------------------------------------------------
  *   Perform one-time initialization.
  * --------------------------------------------------------------------
  */
 extern void CGTARG_Initialize(void);
+
+/* ====================================================================
+ *    Branch related interface:
+ * ====================================================================
+ */
+
+// These are evntually target dependent generated:
+#define MIN_BRANCH_DISP _MIN_BRANCH_DISP
+#define DEFAULT_BRP_BRANCH_LIMIT _DEFAULT_BRP_BRANCH_LIMIT
+#define DEFAULT_LONG_BRANCH_LIMIT _DEFAULT_LONG_BRANCH_LIMIT
+
+#define ISA_PRINT_PREDICATE _ISA_PRINT_PREDICATE
+
+// These eventually are target dependent:
+#if 0
+#define ISA_PRINT_END_GROUP _ISA_PRINT_END_GROUP        // end-of-group marker
+#define ISA_PRINT_BEGIN_BUNDLE _ISA_PRINT_BEGIN_BUNDLE  // bundle introducer
+#define ISA_PRINT_END_BUNDLE _ISA_PRINT_END_BUNDLE      // bundle terminator
+#endif
+
+extern UINT32 CGTARG_branch_taken_penalty;
+extern BOOL CGTARG_branch_taken_penalty_overridden;
+
+// Given a conditional branch with a <branch_taken_probability>
+// return TRUE if it would be beneficial to convert it to a brlikely.
+#define CGTARG_Use_Brlikely _CGTARG_Use_Brlikely
+
+// If a BB ends in an unconditional branch, turn it into a 
+// conditional branch with TRUE predicate.
+extern void Make_Branch_Conditional(BB *bb);
+
+// Given a branch OP, which operand is the first branch target and how
+// many branch targets are there?
+extern void CGTARG_Branch_Info ( const OP* op, INT* tfirst, INT* tcount );
+
+// Analyze a branch to determine the condition of the branch and
+// the operand TNs.
+extern INT CGTARG_Analyze_Branch(OP *br,
+				 TN **tn1, 
+				 TN **tn2);
+// Analyze a branch to determine the condition of the branch and
+// TNs being compared.
+extern INT CGTARG_Analyze_Compare(OP *br,
+				  TN **tn1,
+				  TN **tn2,
+	 			  OP **compare_op);
+
+// Various machine dependent values use for non loop if conversion.
+extern void CGTARG_Compute_Branch_Parameters(INT32 *mispredict,
+						    INT32 *fixed,
+						    INT32 *brtaken,
+						    double *factor);
 
 extern void CGTARG_Generate_Remainder_Branch(TN *trip_count, TN *label_tn,
 					     OPS *prolog_ops, OPS *body_ops);
@@ -550,13 +612,36 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
 					 INT32 ntimes, TN *label_tn, 
                                          OPS *prolog_ops, OPS *body_ops);
 
-extern UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop);
+/* ====================================================================
+ *    Target Load/Store Properties:
+ * ====================================================================
+ */
 
-extern TY_IDX CGTARG_Spill_Type(TN *tn);
+/* Returns the high-level type of the spill operation given the
+ * TN to be spilled and the precision range of the data in it.
+ */
+extern TY_IDX CGTARG_Spill_Type(TN *tn, INT range);
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
 
+/* ====================================================================
+ *    PROC:
+ * ====================================================================
+ */
+inline BOOL PROC_Is_Out_Of_Order(void) 
+{
+  return PROC_is_out_of_order();
+}
 
+inline BOOL PROC_Has_Branch_Delay_Slot(void)
+{
+  return PROC_has_branch_delay_slot();
+}
+
+/* ====================================================================
+ *    OP: TODO -- move over to op.h, rename into OP_...
+ * ====================================================================
+ */
 extern BOOL CGTARG_Can_Load_Immediate_In_Single_Instruction (INT64 immed);
 extern BOOL CGTARG_Can_Fit_Immediate_In_Add_Instruction (INT64 immed);
 
@@ -566,19 +651,47 @@ extern BOOL CGTARG_Is_OP_Check_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Speculative(OP *op);
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 extern BOOL CGTARG_OP_is_counted_loop(OP *op);
+extern BOOL CGTARG_Can_Change_To_Brlikely(OP *xfer_op, TOP *new_opcode);
 
-extern INT CGTARG_Copy_Operand(OP *op);
-inline BOOL CGTARG_Is_Copy(OP *op)
-{
-  return CGTARG_Copy_Operand(op) >= 0;
-}
+// Get the target register number and class associated with the
+// preg, if there is one that is.
+extern BOOL CGTARG_Preg_Register_And_Class(WN_OFFSET preg,
+					   ISA_REGISTER_CLASS *rclass,
+					   REGISTER *reg);
 
 /* ====================================================================
- *                      OP target interface
+ *    Pick Rate Class (PRC):
  * ====================================================================
  */
+typedef enum {
+  PRC_INST,
+  PRC_MEMREF,
+  PRC_FLOP,
+  PRC_FLOP_S,
+  PRC_MADD,
+  PRC_MADD_S,
+  PRC_FADD,
+  PRC_FADD_S,
+  PRC_FMUL,
+  PRC_FMUL_S,
+  PRC_IOP,
+  PRC_LAST
+} PEAK_RATE_CLASS;
 
-extern void CGTARG_Predicate_OP(BB* bb, OP* op, TN* pred_tn);
+typedef struct {
+  mINT16 refs[PRC_LAST];
+} PRC_INFO;
+
+// What is the peak rate (in ops per cycle) for the given
+// class of instruction(s).
+extern void CGTARG_Peak_Rate(PEAK_RATE_CLASS prc, PRC_INFO *info, INT ratio[2]);
+
+// Print statistics for the PRC_INFO to a 'file'.
+extern void CGTARG_Print_PRC_INFO (FILE *file, PRC_INFO *info, INT ii, 
+				   const char *prefix, const char *suffix);
+
+// Compute some basic information about the given 'bb'.
+extern void CGTARG_Compute_PRC_INFO (BB *bb, PRC_INFO *info);
 
 /* ====================================================================
  *                 Predication target interface
@@ -596,11 +709,17 @@ typedef enum {
   COMPARE_TYPE_normal
 } COMPARE_TYPE;
 
+#define CGTARG_Can_Predicate_Calls _CGTARG_Can_Predicate_Calls
+#define CGTARG_Can_Predicate_Returns _CGTARG_Can_Predicate_Returns
+#define CGTARG_Can_Predicate_Branches _CGTARG_Can_Predicate_Branches
+#define CGTARG_Can_Predicate _CGTARG_Can_Predicate
+
 extern TOP CGTARG_Parallel_Compare(OP* cmp_op, COMPARE_TYPE ctype);
 extern BOOL CGTARG_Unconditional_Compare(OP* op, TOP* uncond_ver);
+extern BOOL CGTARG_Branches_On_True(OP* br_op, OP* cmp_op);
 
 /* ====================================================================
- *              Scheduling and Dependence Graph Interface
+ *   Target specific scheduling and dependence graph:
  * ====================================================================
  */
 
@@ -626,7 +745,80 @@ inline BOOL CGTARG_Use_Load_Latency(OP *pred_op, TN *tn)
 #endif
 }
 
-/* Returns TRUE if OP is a suitable candidate for HBF. */
+// Returns TRUE if OP is a suitable candidate for HBF.
 extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 
-#endif /* lai_targ_INCLUDED */
+// Handle all the Errata hazards. These are typically workarounds
+// for bugs in particular versions of various target processors.
+extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum, 
+					 INT ops_to_check);
+
+// Handle all bundle hazards.
+extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
+					TI_BUNDLE              *bundle, 
+					VECTOR                 *bundle_vector, 
+					BOOL                   can_fill, 
+					INT                    slot_pos, 
+					INT                    max_pos,
+					BOOL                   stop_bit_reqd,
+					ISA_EXEC_UNIT_PROPERTY prop);
+
+// Check for any extra hazards not handled in above, particular 
+// hardware implementation specific ?. Shouldn't this be coordinated
+// with PROC_version and ISA_subset stuff ??
+#ifdef TARG_IA64
+extern void Insert_Stop_Bits(BB *bb);
+#else
+extern void CGTARG_Insert_Stop_Bits(BB *bb);
+#endif
+
+// Checks to see if <slot> position is available for <op> using the
+// property type <prop> in the <bundle>.
+extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle, 
+					 OP                     *op, 
+					 INT                    slot,
+					 ISA_EXEC_UNIT_PROPERTY *prop,
+					 BOOL                   stop_bit_reqd,
+                                         const CG_GROUPING      *grouping);
+
+// Checks to see if <stop> bit is available at <slot> position in the
+// bundle.
+extern BOOL CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot);
+
+/* ====================================================================
+ *   Target specific tree height reduction:
+ * ====================================================================
+ */
+#ifdef TARG_IA64
+extern void CGTARG_Perform_THR_Code_Generation(OP *load_op, OP *check_load,
+					       THR_TYPE type);
+#else
+extern void CGTARG_Perform_THR_Code_Generation(OP *load_op, THR_TYPE type);
+#endif
+
+/* ====================================================================
+ *   Target specific interference for GRA:
+ * ====================================================================
+ */
+
+// Prepare to make the target specific interferences.
+extern void CGTARG_Interference_Initialize( INT32 cycle_count,
+                                            BOOL is_loop,
+                                            void (*inter_fn)(void*,void*) );
+// All done presenting this set of OPs.
+extern void CGTARG_Interference_Finalize(void);
+
+// Does the current target require target specific live range
+// interference at all?
+extern BOOL CGTARG_Interference_Required(void);
+
+// Present the <lrange> written by <op>.
+extern void CGTARG_Result_Live_Range( void* lrange, OP* op, INT32 offset );
+
+// Present the <lrange> used by <op> and it's <opnd> operand.
+extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
+                                       INT32  offset );
+
+#include "cg_targ.h"
+
+#endif /* CGTARGET_INCLUDED */
