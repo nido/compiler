@@ -990,18 +990,22 @@ Expand_Multiply (
     opcode = TOP_mull_r; swapped = TRUE; 
   } else {
     // 32x32 multiply
-    TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    opcode = TOP_mullu_r;
-    if (TN_has_value(src2))
-      opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
-    Build_OP(opcode, tmp1, src1, src2, ops);
-    opcode = TOP_mulhs_r;
-    if (TN_has_value(src2))
-      opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
-    Build_OP(opcode, tmp2, src1, src2, ops);
-    Build_OP(TOP_add_r, result, tmp1, tmp2, ops);
-    return;
+    if (Is_Target_st231()) {
+	opcode = TOP_mul32_r ;
+    } else {
+	TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+	TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+	opcode = TOP_mullu_r;
+	if (TN_has_value(src2))
+	    opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
+	Build_OP(opcode, tmp1, src1, src2, ops);
+	opcode = TOP_mulhs_r;
+	if (TN_has_value(src2))
+	    opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
+	Build_OP(opcode, tmp2, src1, src2, ops);
+	Build_OP(TOP_add_r, result, tmp1, tmp2, ops);
+	return;
+    }
   }
 
   if (opcode == TOP_UNDEFINED)
