@@ -93,6 +93,10 @@
  *   INT CFLOW_CLONE
  *	Enables a particular optimization.
  *
+ *   TARG_ST:
+ *   INT CFLOW_MERGE_EMPTY
+ *      Merge empty blocks only.
+ *
  *   INT CFLOW_ALL_OPTS
  *	Perform all optimizations (an OR of the above constants).
  *
@@ -146,6 +150,9 @@ extern BOOL CFLOW_Trace_Dom;
 #define CFLOW_ALL_OPTS \
 	(CFLOW_UNREACHABLE|CFLOW_BRANCH|CFLOW_MERGE|CFLOW_REORDER\
 	|CFLOW_FREQ_ORDER|CFLOW_CLONE)
+#ifdef TARG_ST
+#define CFLOW_MERGE_EMPTY		(0x00000200)
+#endif
 
 extern void CFLOW_Optimize(INT32 flags, const char *phase_name);
 extern void CFLOW_Initialize(void);

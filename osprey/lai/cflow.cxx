@@ -101,7 +101,6 @@
 
 #include "cflow.h"
 
-
 #define DEBUG_CFLOW Is_True_On
 
 #if Is_True_On && defined(TARG_MIPS)
@@ -4043,6 +4042,79 @@ Merge_Blocks ( BOOL in_cgprep )
   return merged;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Merge_Empty_Blocks
+ *
+ * Attempt to merge empty BBs -- eliminate unconditional GOTOs by merging the
+ * target into its predecessor if the target is empty.
+ *
+ * The return value indicates if we made any changes.
+ *
+ * ====================================================================
+ */
+static BOOL
+Merge_Empty_Blocks ( BOOL in_cgprep )
+{
+  BB *next_b;
+  BB *b;
+  BB *suc;
+  BOOL merged = FALSE;
+
+  /* Now merge BBs...
+   */
+  for (b = REGION_First_BB; b; b = next_b) {
+    next_b = BB_next(b);
+
+    /* Loop as long as we can merge successors of <b> into <b>.
+     */
+    for (;;) {
+      BB *pred;
+
+      /* If <b> doesn't GOTO the start of a known block, can't merge.
+       */
+      if (   BBINFO_kind(b) != BBKIND_GOTO 
+	  || BBINFO_nsuccs(b) == 0
+	  || BBINFO_succ_offset(b, 0) != 0) break;
+
+      /* If the successor is <b> then can't merge it
+       */
+      suc = BBINFO_succ_bb(b, 0);
+      if (suc == b) break;
+
+      pred = BB_Unique_Predecessor(b);
+
+      /* If <suc> has a unique predecessor (it would have to be <b>),
+       * we might be able to merge with it.
+       */
+      if (BB_Unique_Predecessor(suc) && Is_Empty_BB(suc)) {
+
+	/* We have a candidate to merge with its successor.
+	 * Merge them if we can and know how.
+	 */
+	if (Merge_With_Succ(b, suc, pred, in_cgprep)) {
+	  merged = TRUE;
+	  next_b = BB_next(b);
+	  continue;
+	}
+      }
+
+      /* We failed to merge <b> with it successor. If it's an
+       * empty BB, we might be able to merge it with its predecessor.
+       */
+      if (pred && Is_Empty_BB(b)) {
+	if (Merge_With_Pred(b, pred)) merged = TRUE;
+      }
+
+      break;
+    }
+  }
+
+  return merged;
+}
+
+#endif
 /* ====================================================================
  * ====================================================================
  *
@@ -6503,6 +6575,10 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
 	    (current_flags & CFLOW_BRANCH) ? "enabled" : "disabled");
     fprintf(TFile, "  block merging:\t\t%s\n",
 	    (current_flags & CFLOW_MERGE) ? "enabled" : "disabled");
+#ifdef TARG_ST
+    fprintf(TFile, "  empty block merging:\t\t%s\n",
+	    (current_flags & CFLOW_MERGE_EMPTY) ? "enabled" : "disabled");
+#endif
     fprintf(TFile, "  block reordering:\t\t%s\n",
 	    (current_flags & CFLOW_REORDER) ? "enabled" : "disabled");
     fprintf(TFile, "  freq-based block reordering:\t%s\n",
@@ -6650,6 +6726,26 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
     flow_change |= change;
   }
 
+#ifdef TARG_ST
+  if (current_flags & CFLOW_MERGE_EMPTY) {
+    if (CFLOW_Trace_Merge) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "\n%s CFLOW_Optimize: merge empty blocks\n%s",
+		     DBar, DBar);
+    }
+    change = Merge_Empty_Blocks(current_flags & CFLOW_IN_CGPREP);
+    if (CFLOW_Trace_Merge) {
+      #pragma mips_frequency_hint NEVER
+      if (change) {
+	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after merging empty blocks");
+      } else {
+	fprintf(TFile, "No changes.\n");
+      }
+    }
+    flow_change |= change;
+  }
+#endif
+
   if (freqs_computed && (current_flags & CFLOW_CLONE)) {
     if (CFLOW_Trace_Clone) {
       #pragma mips_frequency_hint NEVER
@@ -6774,6 +6870,9 @@ CFLOW_Initialize(void)
   if (!CFLOW_Enable_Unreachable) flags |= CFLOW_UNREACHABLE;
   if (!CFLOW_Enable_Branch) flags |= CFLOW_BRANCH;
   if (!CFLOW_Enable_Merge) flags |= CFLOW_MERGE;
+#ifdef TARG_ST
+  if (!CFLOW_Enable_Merge) flags |= CFLOW_MERGE_EMPTY;
+#endif
   if (!CFLOW_Enable_Reorder) flags |= CFLOW_REORDER;
   if (!CFLOW_Enable_Clone) flags |= CFLOW_CLONE;
   if (!CFLOW_Enable_Freq_Order) flags |= CFLOW_FREQ_ORDER;

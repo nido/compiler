@@ -1140,7 +1140,9 @@ Branch_Taken_Latency (
 
 #ifdef SUPERBLOCK_ENABLED
   // Scheduled by LAO in superblock mode.
-  if ((OP_scycle(op_branch) != -1) && CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
+  if ((OP_scycle(op_branch) != -1) && 
+      BB_scheduled(bb) &&
+      CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
     branch_latency = estart;
   }
 #endif
@@ -1180,9 +1182,11 @@ Fall_Thru_Latency (
   // If fallThru block is inside the current superblock, use the
   // scheuling date computed by LAO on the first operation of the
   // fallThru block
-  else if (CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
+  else if (BB_scheduled(bb) &&
+	   CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
     BB *fallThru_succ = BB_Fall_Thru_Successor(bb);
-    if ((BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, fallThru_succ))) {
+    if (BB_scheduled(fallThru_succ) &&
+	(BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, fallThru_succ))) {
       OP *first_op = BB_first_op(fallThru_succ);
       if ((first_op != NULL) && (OP_scycle(first_op) != -1))
 	fallThru_latency = OP_scycle(first_op);
@@ -1451,7 +1455,8 @@ Make_Bundles (
 
 #ifdef SUPERBLOCK_ENABLED
   BOOL superblock_entry = TRUE;
-  if ((CG_LAO_Region_Map != NULL) &&
+  if (BB_scheduled(bb) &&
+      (CG_LAO_Region_Map != NULL) &&
       (BB_Fall_Thru_Predecessor(bb) != NULL) &&
       (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0) &&
       (BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, BB_Fall_Thru_Predecessor(bb))))
@@ -1515,7 +1520,7 @@ Make_Bundles (
       Clock = pending_latency;
     }
   }
-  Is_True (pending_latency < Clock + 4, ("BB: %d, incorrect pending_latency %d at clock %d\n", BB_id(bb), pending_latency, Clock));
+  Is_True (pending_latency < Clock + 4, ("BB: %d, incorrect pending_latency %d at clock %d, top %s\n", BB_id(bb), pending_latency, Clock, TOP_Name(OP_code(op))));
 #else
   // This helps handling latencies that may still be pending 
   // when all OPs are processed

@@ -1058,7 +1058,10 @@ static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
 #ifdef Is_True_On
-  if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
+  if (GETENV("CGIR_PRINT")) {
+    fprintf(TFile, "*** CGIR Before LAO optimize ***\n");
+    CGIR_print(TFile);
+  }
 #endif
   //
   // Get stack model
@@ -1137,7 +1140,10 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   if (optimizations != 0) {
     LAI_Interface_updateCGIR(interface, callback);
 #ifdef Is_True_On
-    if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
+    if (GETENV("CGIR_PRINT")) {
+      fprintf(TFile, "*** CGIR After LAO optimize ***\n");
+      CGIR_print(TFile);
+    }
 #endif
   }
   //
@@ -1211,13 +1217,19 @@ lao_optimize_pu(unsigned lao_optimizations) {
     CG_LAO_Region_Map = BB_MAP32_Create();
   }
   //
+#ifdef Is_True_On
+    if (GETENV("CGIR_PRINT")) {
+      fprintf(TFile, "*** CGIR Before LAO optimize ***\n");
+      CGIR_print(TFile);
+    }
+#endif
   // Call the lower level lao_optimize function with pipelining=0.
   result |= lao_optimize(bodyBBs, entryBBs, exitBBs, 0, lao_optimizations);
   //
   if (result) {
-    CFLOW_Optimize(CFLOW_UNREACHABLE, "CFLOW after LAO");
     GRA_LIVE_Recalc_Liveness(NULL);
     GRA_LIVE_Rename_TNs();
+    CFLOW_Optimize(CFLOW_MERGE_EMPTY, "CFLOW after LAO");
   }
   //
   Free_Dominators_Memory();
