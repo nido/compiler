@@ -58,11 +58,23 @@
  */
 BOOL OP_Is_Barrier(OP *op) 
 {
-  if (OP_code(op) == TOP_asm) {
+  TOP top = OP_code(op);
+
+  if (top == TOP_asm) {
     ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, op);
     if (WN_Asm_Clobbers_Mem(ASM_OP_wn(asm_info)))
       return TRUE;
   }
+
+  switch (top) {
+  case TOP_prgadd:	/* data cache purge */
+  case TOP_prgset:	/* data cache purge */
+  case TOP_sync:	/* data cache sync */
+  case TOP_prgins:	/* i-cache purge */
+    /*case TOP_syncins: */	/* i-cache sync. */
+    return TRUE;
+  }
+
   return FALSE;
 }
 

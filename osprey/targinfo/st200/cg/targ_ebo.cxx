@@ -4846,6 +4846,8 @@ EBO_Special_Sequence (
   BOOL ret;
   TOP opcode = OP_code(op);
 
+  if (opnd_tn == NULL || opnd_tninfo == NULL) return FALSE;
+
   if (EBO_Trace_Optimization) 
     fprintf(TFile,"%sEnter EBO_Special_Sequence for op %s\n", EBO_trace_pfx, TOP_Name(opcode));
 
