@@ -587,7 +587,7 @@ EBO_select_value (
     else {
       Build_OP(TOP_mov_r, OP_result(op, 0), pred_result, &ops1);
     }
-
+    Set_OP_copy(OPS_last(&ops1));
     OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
     OPS_Append_Ops(&ops, &ops1);
   }
@@ -3791,7 +3791,7 @@ op_match_binary(OP *op,
  * min_max_sequence
  *
  * Detect the min(x)/max(x) sequences of the form:
- * (select (cmplt x y) x y)
+ * (select (cmpgt x y) x y)
  * and generates:
  * (max x y)
  */
@@ -3828,17 +3828,21 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   EBO_TN_INFO *new_tninfo0 = NULL, *new_tninfo1 = NULL;
   
   VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
+
   switch (variant) {
+    // Special case of move
   case V_CMP_EQ:
     new_top = TOP_mov_r;
-    new_tn0 = inverted ? true_tn: false_tn;
-    new_tninfo0 = inverted ? true_tninfo: false_tninfo;
+    new_tn0 = false_tn;
+    new_tninfo0 = false_tninfo;
     break;
   case V_CMP_NE:
     new_top = TOP_mov_r;
-    new_tn0 = inverted ? false_tn : true_tn;
-    new_tninfo0 = inverted ? false_tninfo: true_tninfo;
+    new_tn0 = true_tn;
+    new_tninfo0 = true_tninfo;
     break;
+    
+    // Min/max
   case V_CMP_GT:
   case V_CMP_GE:
     new_top = inverted ? TOP_min_r: TOP_max_r;
@@ -3899,6 +3903,7 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   
   OP *new_op;
   new_op = Mk_OP(new_top, OP_result(op,0), new_tn0, new_tn1);
+  if (new_top == TOP_mov_r) Set_OP_copy(new_op);
   OP_srcpos(new_op) = OP_srcpos(op);
   if (EBO_in_loop) EBO_Set_OP_omega (new_op, new_tninfo0, new_tninfo1);
   BB_Insert_Op_After(bb, op, new_op);
@@ -4029,6 +4034,7 @@ select_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       new_opcode = TOP_opnd_immediate_variant(new_opcode, 0, TN_value(opnd_tn[idx]));
     if (new_opcode == TOP_UNDEFINED) return FALSE;
     OP *new_op = Mk_OP(new_opcode, OP_result(op, 0), opnd_tn[idx]);
+    if (new_opcode == TOP_mov_r) Set_OP_copy(new_op);
     OP_srcpos(new_op) = OP_srcpos(op);
     if (EBO_in_loop) EBO_Set_OP_omega (new_op, opnd_tninfo[idx]);
     BB_Insert_Op_After(OP_bb(op), op, new_op);
