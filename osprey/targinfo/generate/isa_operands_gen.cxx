@@ -264,12 +264,16 @@ static const char * const interface[] = {
   NULL
 };
 
+
 // Arthur: some operand uses are built-in
 OPERAND_USE_TYPE base;
 OPERAND_USE_TYPE offset;
 OPERAND_USE_TYPE storeval;
+
+#if 0
 OPERAND_USE_TYPE implicit;
 OPERAND_USE_TYPE uniq_res;
+#endif
 
 /////////////////////////////////////
 void ISA_Operands_Begin( const char* /* name */ )
@@ -279,6 +283,7 @@ void ISA_Operands_Begin( const char* /* name */ )
 {
   op_groups = vector <OPERANDS_GROUP> (TOP_count, (OPERANDS_GROUP) false);
 
+#if 0
   // Initialize built-in operand uses
 
   // 1. base for TOP_load,TOP_store
@@ -310,6 +315,7 @@ void ISA_Operands_Begin( const char* /* name */ )
   uniq_res->name = "uniq_res";
   uniq_res->index = max_uses++;
   all_use_types.push_back(uniq_res);
+#endif
 
   return;
 }
@@ -430,6 +436,7 @@ OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create (
  */
 OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 {
+#if 0
   if (!strcmp(name, "base") ||
       !strcmp(name, "offset") ||
       !strcmp(name, "storeval") ||
@@ -439,6 +446,7 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 		    name);
     exit(EXIT_FAILURE);
   }
+#endif
 
   OPERAND_USE_TYPE result = new operand_use_type;
 
@@ -446,6 +454,11 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 
   result->name = name;
   result->index = max_uses++;
+
+  // remember "usefull" use types:
+  if (!strcmp(name, "base")) base = result;
+  if (!strcmp(name, "offset")) offset = result;
+  if (!strcmp(name, "storeval")) storeval = result;
 
   return result;
 }
@@ -1114,6 +1127,13 @@ void ISA_Operands_End(void)
 		 use_mask);
 
   assert(first_literal <= last_literal); // incorrect if arch has no literals!
+
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Immediate_Operand
+  //
+  // --------------------------------------------------------------------
+
   fprintf(hfile, "\nextern INT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Immediate_Operand\n");
   fprintf(cfile, "\nINT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
@@ -1142,6 +1162,12 @@ void ISA_Operands_End(void)
 		 "  return -1;\n"
 		 "}\n");
 
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Relocatable_Operand
+  //
+  // --------------------------------------------------------------------
+
   fprintf(hfile, "\nextern INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Relocatable_Operand\n");
   fprintf(cfile, "\nINT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
@@ -1166,6 +1192,12 @@ void ISA_Operands_End(void)
 		 "}\n",
 		 false);
 
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Find_Operand_Use
+  //
+  // --------------------------------------------------------------------
+
   fprintf(hfile, "\nextern INT TOP_Find_Operand_Use(TOP topcode, "
 		 "ISA_OPERAND_USE use);\n");
   fprintf(efile, "TOP_Find_Operand_Use\n");
@@ -1182,6 +1214,12 @@ void ISA_Operands_End(void)
 		 "  return -1;\n"
 		 "}\n");
 
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Operand_Uses
+  //
+  // --------------------------------------------------------------------
+
 /*  Is not used anywhere ??
   fprintf(hfile, "\nextern void TOP_Operand_Uses(TOP topcode, "
 		 "ISA_OPERAND_USE *uses);\n");
@@ -1197,6 +1235,12 @@ void ISA_Operands_End(void)
 		 "  }\n"
 		 "}\n");
 */
+
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Same_Res_Operand
+  //
+  // --------------------------------------------------------------------
 
   fprintf(hfile, "\nextern mINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx);\n");
   fprintf(efile, "TOP_Same_Res_Operand\n");
@@ -1215,7 +1259,6 @@ void ISA_Operands_End(void)
 		 "  if (this_def & OU_uniq_res) return TRUE;\n"
 		 "  return FALSE;\n"
 		 "}\n");
-
 
   Emit_Footer (hfile);
 }

@@ -120,11 +120,6 @@ void ISA_Memory_Access (int bytes, ... ) {
 
   va_start(ap, bytes);
   while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-    //    if (!prop_load->members[(int)opcode] && 
-    //	!prop_store->members[(int)opcode]) {
-    //      fprintf(stderr, "### Error: memory access specified for not load/store opcode %s \n", TOP_Name(opcode));
-    //      exit(EXIT_FAILURE);
-  //    }
     mem_bytes[(int)opcode] = bytes;
   }
   va_end(ap);
@@ -143,11 +138,6 @@ void ISA_Memory_Alignment(int bytes, ... ) {
 
   va_start(ap, bytes);
   while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
-//    if (!prop_load->members[(int)opcode] && 
-//	!prop_store->members[(int)opcode]) {
-//      fprintf(stderr, "### Error: alignment specified for not load/store opcode %s \n", TOP_Name(opcode));
-//      exit(EXIT_FAILURE);
-//    }
     mem_align[(int)opcode] = bytes;
   }
   va_end(ap);
@@ -190,20 +180,6 @@ void Instruction_Group( ISA_PROPERTY property, ... )
 static FILE* hfile;
 static FILE* cfile;
 static FILE* efile;
-
-/* ====================================================================
- *   emit_top_define
- * ====================================================================
- */
-void emit_top_define (
-  const char *prop
-)
-{
-  fprintf (hfile, "#ifndef %s \n", prop);
-  fprintf (hfile, "#define %s(t) \t (FALSE) \n", prop);
-  fprintf (hfile, "#endif \n");
-  fprintf (hfile, "\n");
-}
 
 /* ====================================================================
  *   ISA_Properties_End
@@ -291,6 +267,10 @@ void ISA_Properties_End(void)
     }
     fprintf (cfile, " */\n");
   }
+  // don't forget the one for TOP_UNDEFINED !
+  fprintf (cfile, "  0x%0*llx%s  /* TOP_UNDEFINED */ \n", int_size / 4,
+					    0ULL, 
+					    int_suffix);
   fprintf (cfile, "};\n");
 
   for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
@@ -302,6 +282,9 @@ void ISA_Properties_End(void)
 		      (1ULL << bit_position),
 		      int_suffix);
     }
+    //    else {
+    //      fprintf (hfile, "#define PROP_%-16s (FALSE)\n", property->name);
+    //    }
   }
 
   fprintf (hfile, "\n\n");
@@ -319,70 +302,26 @@ void ISA_Properties_End(void)
     }
   }
 
-  // Emit the rest of properties that are required by the compiler
-  // but have not been specified:
-  //    fprintf (hfile, "/* pseudo NOP */ \n");
-  //    fprintf (hfile, "#define TOP_is_noop(t) \t (t == TOP_noop) \n");
-  //    fprintf (hfile, "\n");
-
-    emit_top_define ("TOP_is_noop");
-    emit_top_define ("TOP_is_predicated");
-    emit_top_define ("TOP_is_likely");
-    emit_top_define ("TOP_is_branch_predict");
-    emit_top_define ("TOP_is_side_effects");
-
-    emit_top_define ("TOP_is_defs_fcr");
-    emit_top_define ("TOP_is_defs_fcc");
-    emit_top_define ("TOP_is_refs_fcr");
-
-    fprintf (hfile, "/* Memory instructions which are fill/spill type */\n");
-    emit_top_define ("TOP_is_mem_fill_type");
-    emit_top_define ("TOP_is_load");
-    emit_top_define ("TOP_is_store");
-    emit_top_define ("TOP_is_unalign_ld");
-    emit_top_define ("TOP_is_unalign_store");
-
-    emit_top_define ("TOP_is_jump");
-    emit_top_define ("TOP_is_ijump");
-    emit_top_define ("TOP_is_branch");
-    emit_top_define ("TOP_is_call");
-    emit_top_define ("TOP_is_select");
-
-    emit_top_define ("TOP_is_isub");
-    emit_top_define ("TOP_is_ior");
-    emit_top_define ("TOP_is_flop");
-    emit_top_define ("TOP_is_fadd");
-    emit_top_define ("TOP_is_fsub");
-    emit_top_define ("TOP_is_fmul");
-    emit_top_define ("TOP_is_fdiv");
-    emit_top_define ("TOP_is_imul");
-    emit_top_define ("TOP_is_idiv");
-    emit_top_define ("TOP_is_icmp");
-    emit_top_define ("TOP_is_madd");
-    emit_top_define ("TOP_is_itrap");
-    emit_top_define ("TOP_is_ftrap");
-    emit_top_define ("TOP_is_memtrap");
-
-    fprintf (hfile, "/* Instruction must be first in an instruction group */ \n");    
-    emit_top_define ("TOP_is_f_group");
-
-    fprintf (hfile, "/* Instruction must be last in an instruction group */ \n");
-    emit_top_define ("TOP_is_l_group");
-
-    fprintf (hfile, "/* Instruction accesses rotating register bank */ \n");
-    emit_top_define ("TOP_is_access_reg_bank");
-    emit_top_define ("TOP_is_unsafe");
-    emit_top_define ("TOP_save_predicates");
-    emit_top_define ("TOP_restore_predicates");
-
-  // Emit the memory access functions:
+  // Emit the memory access properties:
   fprintf (hfile, "\n\n");
   fprintf (hfile, "extern const UINT32 TOP_Mem_Bytes (TOP opcode);");
   fprintf (hfile, "\n");
   fprintf (hfile, "extern const UINT32 TOP_Mem_Alignment (TOP opcode);");
   fprintf (hfile, "\n\n");
 
+  fprintf (hfile, "extern TOP TOP_Immediate_Compare (TOP opcode, INT64 const_val);");
+  fprintf (hfile, "\n");
+  fprintf (hfile, "extern TOP TOP_Reverse_Compare (TOP opcode);");
+  fprintf (hfile, "\n\n");
+
   fprintf (cfile, "\n");
+
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Mem_Bytes
+  //
+  // --------------------------------------------------------------------
+
   fprintf (cfile, "/* ============================================================\n");
   fprintf (cfile, " *  TOP_Mem_Bytes\n");
   fprintf (cfile, " * ============================================================\n");
@@ -410,6 +349,12 @@ void ISA_Properties_End(void)
   fprintf (cfile, "}\n");
   fprintf (cfile, "\n");
 
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Mem_Alignment
+  //
+  // --------------------------------------------------------------------
+
   fprintf (cfile, "/* ============================================================\n");
   fprintf (cfile, " *  TOP_Mem_Alignment\n");
   fprintf (cfile, " * ============================================================\n");
@@ -433,6 +378,41 @@ void ISA_Properties_End(void)
   fprintf (cfile, "  };\n");
   fprintf (cfile, "}\n");
   fprintf (cfile, "\n");
+
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Immediate_Compare
+  //
+  // --------------------------------------------------------------------
+
+  fprintf (cfile, "/* ============================================================\n");
+  fprintf (cfile, " *  TOP_Immediate_Compare\n");
+  fprintf (cfile, " * ============================================================\n");
+  fprintf (cfile, " */\n");
+  fprintf (cfile, "TOP TOP_Immediate_Compare (TOP opcode, INT64 const_val) {\n");
+
+  fprintf (cfile, "  return TOP_UNDEFINED;\n");
+
+  fprintf (cfile, "}\n");
+  fprintf (cfile, "\n");
+
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Reverse_Compare
+  //
+  // --------------------------------------------------------------------
+
+  fprintf (cfile, "/* ============================================================\n");
+  fprintf (cfile, " *  TOP_Reverse_Compare\n");
+  fprintf (cfile, " * ============================================================\n");
+  fprintf (cfile, " */\n");
+  fprintf (cfile, "TOP TOP_Reverse_Compare (TOP opcode) {\n");
+
+  fprintf (cfile, "  return TOP_UNDEFINED;\n");
+
+  fprintf (cfile, "}\n");
+  fprintf (cfile, "\n");
+
 
   Emit_Footer (hfile);
 
