@@ -100,10 +100,10 @@ CGIR_LC_to_Immediate(ISA_LIT_CLASS ilc) {
 // Convert CGIR ISA_REGISTER_CLASS to LIR RegClass.
 static inline RegClass
 CGIR_IRC_to_RegClass(ISA_REGISTER_CLASS irc) {
-  RegClass lao_regclass = IRC__RegClass[irc];
+  RegClass lao_regClass = IRC__RegClass[irc];
   Is_True(irc >= 0 && irc <= ISA_REGISTER_CLASS_MAX, ("ISA_REGISTER_CLASS out of range"));
-  Is_True(lao_regclass != RegClass_, ("Cannot map ISA_REGISTER_CLASS to RegClass"));
-  return lao_regclass;
+  Is_True(lao_regClass != RegClass_, ("Cannot map ISA_REGISTER_CLASS to RegClass"));
+  return lao_regClass;
 }
 
 // Convert CGIR CLASS_REG_PAIR to LIR Register.
@@ -111,9 +111,9 @@ static inline Register
 CGIR_CRP_to_Register(CLASS_REG_PAIR crp) {
   mREGISTER reg = CLASS_REG_PAIR_reg(crp);
   ISA_REGISTER_CLASS irc = CLASS_REG_PAIR_rclass(crp);
-  RegClass regclass = CGIR_IRC_to_RegClass(irc);
-  Register lowreg = RegClass_lowreg(regclass);
-  return (Register)(lowreg + (reg - 1));
+  RegClass regClass = CGIR_IRC_to_RegClass(irc);
+  Register lowReg = RegClass_lowReg(regClass);
+  return (Register)(lowReg + (reg - 1));
 }
 
 // Convert CGIR TOP to LIR Operator.
@@ -268,9 +268,9 @@ CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
 
 // Convert LIR RegClass to CGIR ISA_REGISTER_CLASS.
 static inline ISA_REGISTER_CLASS
-RegClass_to_CGIR_IRC(RegClass regclass) {
-  Is_True(regclass > RegClass_ && regclass < RegClass__COUNT, ("RegClass out of range"));
-  ISA_REGISTER_CLASS irc = RegClass__IRC[regclass];
+RegClass_to_CGIR_IRC(RegClass regClass) {
+  Is_True(regClass > RegClass_ && regClass < RegClass__COUNT, ("RegClass out of range"));
+  ISA_REGISTER_CLASS irc = RegClass__IRC[regClass];
   Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
   return irc;
 }
@@ -278,10 +278,10 @@ RegClass_to_CGIR_IRC(RegClass regclass) {
 // Convert LIR Register to CGIR CLASS_REG_PAIR.
 static inline CLASS_REG_PAIR
 Register_to_CGIR_CRP(Register registre) {
-  RegClass regclass = Register_regclass(registre);
-  Register lowreg = RegClass_lowreg(regclass);
-  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regclass);
-  REGISTER reg = (registre - lowreg) + 1;
+  RegClass regClass = Register_regClass(registre);
+  Register lowReg = RegClass_lowReg(regClass);
+  ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regClass);
+  REGISTER reg = (registre - lowReg) + 1;
   CLASS_REG_PAIR crp;
   Set_CLASS_REG_PAIR(crp, irc, reg);
   return crp;
@@ -353,9 +353,9 @@ CGIR_Dedicated_TN_create(CGIR_TN cgir_tn, Register registre) {
 
 // Create a PseudoReg CGIR_TN.
 static CGIR_TN
-CGIR_PseudoReg_TN_create(CGIR_TN cgir_tn, RegClass regclass) {
-  int size = (RegClass_bitwidth(regclass) + 7)/8;
-  return Gen_Register_TN(RegClass_to_CGIR_IRC(regclass), size);
+CGIR_PseudoReg_TN_create(CGIR_TN cgir_tn, RegClass regClass) {
+  int size = (RegClass_bitWidth(regClass) + 7)/8;
+  return Gen_Register_TN(RegClass_to_CGIR_IRC(regClass), size);
 }
 
 // Create a Modifier CGIR_TN.
@@ -450,7 +450,7 @@ CGIR_BB_identity(CGIR_BB cgir_bb) {
 
 // Create a CGIR_BB.
 static CGIR_BB
-CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled, unsigned optimizations) {
+CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, unsigned optimizations) {
   CGIR_BB new_bb = Gen_BB();
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
@@ -473,7 +473,6 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   }
   // Transfer annotations and attributes.
   if (cgir_bb != NULL) {
-    BB_rid(new_bb) = BB_rid(cgir_bb);
     if (BB_has_pragma(cgir_bb)) {
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_PRAGMA);
     }
@@ -496,13 +495,15 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   if (optimizations & Optimization_PreSched) Set_BB_scheduled(new_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(new_bb);
+  // Set the rid.
+  BB_rid(new_bb) = cgir_rid;
   //
   return new_bb;
 }
 
 // Update a CGIR_BB.
 static void
-CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, int unrolled, unsigned optimizations) {
+CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, CGIR_OP operations[], CGIR_LI cgir_li, CGIR_RID cgir_rid, int unrolled, unsigned optimizations) {
   // Add the labels.
   for (int i = 0; i < labelCount; i++) {
     CGIR_LAB cgir_lab = labels[i];
@@ -540,6 +541,8 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   if (optimizations & Optimization_PreSched) Set_BB_scheduled(cgir_bb);
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
+  // Set the rid.
+  BB_rid(cgir_bb) = cgir_rid;
 }
 
 // Chain two CGIR_BBs in the CGIR.
