@@ -175,6 +175,7 @@ static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 
+static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_schedkind_overridden = FALSE;
 static BOOL CG_LAO_schedtype_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
@@ -415,7 +416,7 @@ static OPTION_DESC Options_CG[] = {
 
 #ifdef TARG_ST
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimizations", "",
-    0, 0, 65535,	&CG_LAO_optimizations, NULL },
+    0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
     2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedtype", "",
@@ -1160,6 +1161,17 @@ Configure_CG_Options(void)
   if (CG_enable_select && !CG_enable_ssa) {
     DevWarn("CG: Ignoring select=ON, need ssa");
     CG_enable_select = FALSE;
+  }
+
+  /* If not overidden, set LAO_optimization and LAO_speculation
+     according to Opt_Level. */
+
+  if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
+    CG_LAO_optimizations = 11;
+
+  if (!CG_LAO_speculation_overridden && (Opt_Level > 2)) {
+    CG_LAO_speculation_overridden = TRUE;
+    CG_LAO_speculation = 3;
   }
 
   // [FdF]: Ignore LAO options if opt_level < 2
