@@ -62,6 +62,9 @@ static Immediate LC__Immediate[LC_MAX];
 // WARNING! ISA_REGISTER_CLASS reaches ISA_REGISTER_CLASS_MAX
 static RegClass IRC__RegClass[ISA_REGISTER_CLASS_MAX+1];
 
+// Map LIR RegClass to CGIR ISA_REGISTER_CLASS.
+static ISA_REGISTER_CLASS RegClass__IRC[RegClass__COUNT];
+
 // Variable used to skip multiple lao_init / lao_fini calls.
 static int lao_initialized = 0;
 
@@ -263,9 +266,11 @@ CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
 // Convert LIR RegClass to CGIR ISA_REGISTER_CLASS.
 static inline ISA_REGISTER_CLASS
 RegClass_to_CGIR_IRC(RegClass regclass) {
-  for (int i = ISA_REGISTER_CLASS_MIN; i <= ISA_REGISTER_CLASS_MAX; i++)
-    if (IRC__RegClass[i] == regclass) return (ISA_REGISTER_CLASS)i;
-  return ISA_REGISTER_CLASS_UNDEFINED;
+  Is_True(regclass > RegClass_ && regclass < RegClass__COUNT, ("RegClass out of range"));
+  ISA_REGISTER_CLASS irc = RegClass__IRC[regclass];
+  Is_True(IRC__RegClass[irc] == regclass, ("Unexpected error in RegClass_to_CGIR_IRC"));
+  Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
+  return irc;
 }
 
 // Convert LIR Register to CGIR CLASS_REG_PAIR.
@@ -283,13 +288,10 @@ Register_to_CGIR_CRP(Register registre) {
 // Convert LIR Operator to TOP.
 static inline TOP
 Operator_to_CGIR_TOP(Operator lir_operator) {
-  TOP top = TOP_UNDEFINED;
-  for (int i = 0; i < TOP_UNDEFINED; i++) {
-    if (TOP__Operator[i] == lir_operator) {
-      top = (TOP)i;
-      break;
-    }
-  }
+  Is_True(lir_operator > Operator_ && lir_operator < Operator__COUNT, ("Operator out of range"));
+  TOP top = Operator__TOP[lir_operator];
+  Is_True(TOP__Operator[top] == lir_operator, ("Unexpected error in Operator_to_CGIR_TOP"));
+  Is_True(top != TOP_UNDEFINED, ("Cannot map Operator to TOP"));
   return top;
 }
 
@@ -365,7 +367,7 @@ CGIR_Dedicated_TN_create(Register registre) {
 // Create a CGIR_TN from a LIR PseudoReg TempName.
 static CGIR_TN
 CGIR_PseudoReg_TN_create(RegClass regclass) {
-  int size = 0;		// FIXME
+  int size = (RegClass_getBitWidth(regclass) + 7)/8;
   return Gen_Register_TN(RegClass_to_CGIR_IRC(regclass), size);
 }
 
@@ -528,9 +530,9 @@ static bool lao_optimize_HB(HB *hb, unsigned lao_actions);
 // Optimize a Function through the LAO.
 static bool lao_optimize_FUNC(unsigned lao_actions);
 
-CG_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
-CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
-CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p)(CG_LOOP *cg_loop, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_HB_p)(HB *hb, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_FUNC_p)(unsigned lao_actions);
 
 #ifdef __cplusplus
 extern "C" {
@@ -823,6 +825,9 @@ lao_init() {
     TOP__Operator[TOP_xor_i] = Operator_CODE_XOR_IDEST_SRC1_ISRC2;
     TOP__Operator[TOP_xor_ii] = Operator_CODE_XOR_IDEST_SRC1_ISRCX;
     TOP__Operator[TOP_xor_r] = Operator_CODE_XOR_DEST_SRC1_SRC2;
+    // initialize Operator__TOP;
+    for (int i = 0; i < Operator__COUNT; i++) Operator__TOP[i] = TOP_UNDEFINED;
+    for (int i = 0; i < TOP_UNDEFINED; i++) Operator__TOP[TOP__Operator[i]] = (TOP)i;
     // initialize IEC__Modifier
     for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier_;
     // initialize LC__Immediate
@@ -837,6 +842,9 @@ lao_init() {
     for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegClass[i] = RegClass_;
     IRC__RegClass[ISA_REGISTER_CLASS_integer] = RegClass_GRC;
     IRC__RegClass[ISA_REGISTER_CLASS_branch] = RegClass_BRC;
+    // initialize RegClass__IRC
+    for (int i = 0; i < RegClass__COUNT; i++) RegClass__IRC[i] = ISA_REGISTER_CLASS_UNDEFINED;
+    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
   }
 }
 
@@ -855,32 +863,6 @@ lao_fini() {
 
 
 /*-------------------------- LAO Utility Functions----------------------------*/
-
-// Enter the BB Memory dependences into the LAO.
-static void
-lao_setMemoryDependences(BB* bb, LoopInfo loopinfo) {
-  OP *op = NULL;
-  FOR_ALL_BB_OPs(bb, op) {
-    ARC_LIST *arcs = NULL;
-    if (_CG_DEP_op_info(op)) {
-      Operation orig_operation = CGIR_OP_to_Operation(op);
-      for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
-	ARC *arc = ARC_LIST_first(arcs);
-	CG_DEP_KIND kind = ARC_kind(arc);
-	if (ARC_is_mem(arc)) {
-	  bool definite = ARC_is_definite(arc);
-	  int latency = ARC_latency(arc), omega = ARC_omega(arc);
-	  OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
-	  Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
-	  Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-	  Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-	      orig_operation, dest_operation, latency, omega, definite);
-	  //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
-	}
-      }
-    } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
-  }
-}
 
 // Declare CG_DEP_Compute_Region_MEM_Arcs().
 void 
@@ -908,7 +890,27 @@ lao_makeLoopInfo(BB_List& bb_list, bool cyclic) {
       false);	// memread_arcs
   BB_List::iterator bb_iter;
   for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
-    lao_setMemoryDependences(*bb_iter, loopinfo);
+    OP *op = NULL;
+    FOR_ALL_BB_OPs(*bb_iter, op) {
+      ARC_LIST *arcs = NULL;
+      if (_CG_DEP_op_info(op)) {
+	Operation orig_operation = CGIR_OP_to_Operation(op);
+	for (arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
+	  ARC *arc = ARC_LIST_first(arcs);
+	  CG_DEP_KIND kind = ARC_kind(arc);
+	  if (ARC_is_mem(arc)) {
+	    bool definite = ARC_is_definite(arc);
+	    int latency = ARC_latency(arc), omega = ARC_omega(arc);
+	    OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
+	    Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
+	    Operation dest_operation = CGIR_OP_to_Operation(succ_op);
+	    Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
+		orig_operation, dest_operation, latency, omega, definite);
+	    //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
+	  }
+	}
+      } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
+    }
   }
   CG_DEP_Delete_Graph(&bb_list);
   return loopinfo;

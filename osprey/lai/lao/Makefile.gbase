@@ -183,8 +183,9 @@ HEADER_DIRS = 		\
 #----------------------------------------------------------------------
 
 BE_LAO_CXX_SRCS = \
+  lao_init.cxx \
   lao_stub.cxx \
-  lao_init.cxx
+
 
 ifeq ($(BUILD_PCH), USE_PCH)
 LAO_PCH_OBJS = $(BE_LAO_CXX_SRCS:.cxx=.o)
