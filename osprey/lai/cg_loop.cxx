@@ -5333,8 +5333,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	// should find all such CSEs after full unrolling.
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
-      } 
-      else {
+      } else {
 	Perform_Read_Write_Removal(loop);
 
 	// Break recurrences will compute dep-graph itself
