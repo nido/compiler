@@ -1916,11 +1916,11 @@ static INT32 map_postorder(BB_MAP map, BB_SET *region, BB *bb, INT32 max_id)
 {
   BBLIST *succs;
 
-  Is_True(BB_MAP32_Get(map, bb) == 0, ("BB_Depth_First_Map visited BB:%d twice", BB_id(bb)));
+  Is_True(BB_MAP32_Get(map, bb) == 0, ("BB_Postorder_Map visited BB:%d twice", BB_id(bb)));
 
   BB_MAP32_Set(visited_map, bb, TRUE);
 
-  /* Recursively visit (once) all the successors of this bb in the region.
+  /* Visit a bb after all its successors in the region.
    */
   FOR_ALL_BB_SUCCS(bb, succs) {
     BB *succ = BBLIST_item(succs);
