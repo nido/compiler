@@ -969,6 +969,18 @@ Remove_Redundant_Code (BB *bb)
 	 LRA_TN_register(OP_opnd(op,CGTARG_Copy_Operand(op)))) ||
 #endif
 	Is_Marked_For_Removal(op)) {
+#ifdef TARG_ST
+      // CL: hope that this won't affect next passes.
+      // When allocating a dedicated register to a tn,
+      // mark that tn as dedicated too.
+      // This is to fix an issue before a call
+      // to a function with one arg being an unnamed const
+      // and where we miss the dependency because the TN
+      // which holds that arg is not marked as dedicated.
+    if (TN_is_dedicated(OP_result(op,0)) ) {
+      Set_TN_is_dedicated(OP_opnd(op, OP_Copy_Operand(op)));
+    }
+#endif
       BB_Remove_Op (bb, op);
       Reset_BB_scheduled (bb);
     }
@@ -1912,6 +1924,9 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
     if (!Calculating_Fat_Points() &&
         (Is_Marked_For_Removal(op) ||
          (CGTARG_Is_Preference_Copy(op) &&
+#ifdef TARG_ST // CL: ensure source is a register
+	  TN_is_register(OP_opnd(op, OP_Copy_Operand(op))) &&
+#endif
 	  LRA_TN_register(OP_result(op,0)) ==
 #ifdef TARG_ST
 	          LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op)))))) {
