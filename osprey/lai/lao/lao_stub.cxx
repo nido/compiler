@@ -441,6 +441,7 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, CGIR_TN arguments[], CGIR_TN 
     CGIR_TN cgir_tn = results[resCount];
     if (OP_result(cgir_op, resCount) != cgir_tn) Set_OP_result(cgir_op, resCount, cgir_tn);
   }
+  Is_True(iteration == 0, ("OP_update must not change OP_unrolling"));
   Is_True(resCount == OP_results(cgir_op), ("OP_results mismatch in CGIR_update_OP"));
   Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
   // Set scycle.
@@ -491,10 +492,10 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
     }
   }
   // Set unrollings.
-  if (BB_unrollings(new_bb) == 0)
+  if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
+    Set_BB_unrollings(new_bb, BB_unrollings(cgir_bb)*unrolled);
+  else if (BB_unrollings(cgir_bb) == 0)
     Set_BB_unrollings(new_bb, unrolled);
-  else
-    Set_BB_unrollings(new_bb, BB_unrollings(new_bb)*unrolled);
   //
   // Set flags.
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(new_bb);
@@ -539,11 +540,10 @@ CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
   // Set unrollings.
-  if (BB_unrollings(cgir_bb) == 0)
-    Set_BB_unrollings(cgir_bb, unrolled);
-  else
+  if (BB_unrollings(cgir_bb) > 0 && unrolled > 0)
     Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
-  Set_BB_unrollings(cgir_bb, unrolled);
+  else if (BB_unrollings(cgir_bb) == 0)
+    Set_BB_unrollings(cgir_bb, unrolled);
   // Set flags.
   if (optimizations & Optimization_RegAlloc) Set_BB_reg_alloc(cgir_bb);
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
