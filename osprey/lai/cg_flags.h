@@ -194,8 +194,11 @@ extern BOOL CG_enable_reverse_if_conversion_overridden;
 extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
-
 extern INT32 CG_ssa_algorithm;
+
+#ifdef SUPPORTS_SELECT
+extern BOOL CG_enable_select;
+#endif
 
 extern BOOL CG_enable_BB_splitting;
 #define CG_bblength_default 300      /* default value for CG_split_BB_length */

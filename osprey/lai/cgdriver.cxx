@@ -158,6 +158,10 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 
 static BOOL CG_enable_ssa_overridden = FALSE;
 
+#ifdef SUPPORTS_SELECT
+static BOOL CG_enable_select_overridden = FALSE;
+#endif
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -311,7 +315,6 @@ static OPTION_DESC Options_GRA[] = {
     0, 0, 0,	&GRA_spill_count_factor_string,
     "Factor by which count of spills affects the priority of a split.  Only valid under OPT:space [Default 0.5]"
   },    
-  
   { OVK_COUNT }		/* List terminator -- must be last */
 };
 
@@ -360,6 +363,11 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
     1, 1, 3, &CG_ssa_algorithm, NULL,
     "Specify method for translating out of the SSA" },
+
+#ifdef SUPPORTS_SELECT
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select", "",
+    0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden },
+#endif
 
   // EBO options:
 
@@ -1037,6 +1045,18 @@ Configure_CG_Options(void)
       CG_enable_ssa = FALSE;
     }
   }
+
+#ifdef SUPPORTS_SELECT
+  if (!CG_enable_select_overridden) {
+    CG_enable_select =  (CG_opt_level > 0) ? CGTARG_Can_Select() : FALSE;
+  }
+
+  if (CG_enable_select && !CG_enable_ssa) {
+    DevWarn("CG: Ignoring select=ON, need ssa");
+    CG_enable_select = FALSE;
+  }
+#endif
+
 #else
   Enable_CG_Peephole = (CG_opt_level > 0) ? TRUE : FALSE;
 #endif
