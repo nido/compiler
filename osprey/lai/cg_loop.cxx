@@ -2676,7 +2676,7 @@ Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, UINT32 nti
 #endif
 
 #ifdef TARG_ST
-void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes, BB *unrolled_head, BOOL remainder_after)
+void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes, INT32 remainder_val, BB *unrolled_head, BOOL remainder_after)
 #else
 void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 #endif
@@ -3002,6 +3002,12 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
     Is_True(new_trip_count_val > 0,
 	    ("unroll_make_remainder_loop: trip count is negative or zero"));
     new_trip_count = Gen_Literal_TN(new_trip_count_val, 4);
+
+#ifdef TARG_ST
+  } else if (remainder_val != -1) {
+    new_trip_count = Gen_Literal_TN(remainder_val, 4);
+    const_trip = 1;
+#endif
 
   } else {
 
@@ -4287,12 +4293,65 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
   extend_epilog(loop);
 }
 
+#ifdef TARG_ST
+static BOOL
+Get_pragma_LoopMod(LOOP_DESCR *loop, int *modulus, int *residue)
+{
+  *modulus = 1;
+  *residue = 0;
+
+  if (!CG_LOOP_ignore_pragmas) {
+    BB *head = LOOP_DESCR_loophead(loop);
+    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+    if (loopmod_ant) {
+      WN *wn = ANNOT_pragma(loopmod_ant);
+      *modulus = MAX(1, WN_pragma_arg1(wn));
+      *residue = MAX(0, WN_pragma_arg2(wn));
+    }
+  }
+  return (*modulus > 1);
+}
+#endif
 
 //  Unroll a single-bb do-loop
 //
 void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 {
   LOOP_DESCR *loop = cl.Loop();
+
+#ifdef TARG_ST
+  int modulus, residue;
+
+  Get_pragma_LoopMod(loop, &modulus, &residue);
+
+  /* Since we have the constraint that ntimes is a power of 2, we
+     cannot modify ntimes to be a multiple or divisor of modulus when
+     it is not already. */
+#if 0
+  if (Get_pragma_LoopMod(loop, &modulus, &residue)) {
+
+    if (ntimes < modulus) {
+      /* It may be less costly, in terms of code size, to unroll more
+         if this reduces the number of residue code. */
+      if ((2*ntimes-1) >= (modulus+residue))
+	ntimes = modulus;
+      else
+	/* Otherwise, reduce ntimes to be a divisor of modulus, so
+           that the loop keeps (modulus, residue) properties after
+           unrolling. */
+	while (modulus % ntimes) ntimes--;
+    }
+    else if (ntimes > modulus) {
+      /* Make ntimes be a multiple of modulus, so that residue code
+         has some properties. */
+      ntimes -= ntimes % modulus;
+    }
+  }
+#endif
+#endif
+
   if (Get_Trace(TP_CGLOOP, 2))
     CG_LOOP_Trace_Loop(loop,
 		       "Unroll_Do_Loop: Before unrolling BB:%d %d times:",
@@ -4308,6 +4367,9 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
   OPS ops = OPS_EMPTY;
   BOOL gen_remainder_loop = TRUE;
   BOOL gen_unrolled_loop_guard = TRUE;
+#ifdef TARG_ST
+    INT16 remainder_trip_count_val = -1;
+#endif
   if (TN_is_constant(trip_count_tn)) {
     // Impose the restriction that the unrolled body must execute at
     // least two times.  There is no point in handling that here
@@ -4323,6 +4385,9 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
       return;
     }
     gen_unrolled_loop_guard = FALSE;  // because unrolling is disabled for 0-trip loops
+#ifdef TARG_ST
+    remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
+#endif
     if (TN_value(trip_count_tn) % ntimes == 0)
       gen_remainder_loop = FALSE;
   } else {
@@ -4340,6 +4405,34 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	      trip_count_tn,
 	      Gen_Literal_TN(ntimes, trip_size),
 	      &ops);
+
+#ifdef TARG_ST
+    if (modulus > 1) {
+
+      if (ntimes < modulus) {
+	/* If ntimes is a divisor of modulus. */
+	if (modulus % ntimes == 0) {
+	  remainder_trip_count_val = residue % ntimes;
+	}
+      }
+
+      else if (ntimes == modulus) {
+	remainder_trip_count_val = residue;
+      }
+
+      else /* ntimes > modulus */ {
+	if (ntimes % modulus == 0) {
+	  /* new_residue=k*modulus+residue, new_residue<ntimes.
+	     remainder_trip_count_val is set to max value for new_residue
+	     (ntimes-modulus+residue).  This property is not
+	     implemented for the moment. */
+	}
+      }
+
+      if (remainder_trip_count_val == 0)
+	gen_remainder_loop = FALSE;
+    }
+#endif
   }
 
   if (PROC_has_counted_loops())
@@ -4390,7 +4483,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	DevWarn("unroll_make_remainder_loop: remainder loop could not be put after unrolled loop");
     }
     // Pass new loop head and remainder_after flag.
-    Unroll_Make_Remainder_Loop(cl, ntimes, unrolled_body, remainder_after);
+    Unroll_Make_Remainder_Loop(cl, ntimes, remainder_trip_count_val, unrolled_body, remainder_after);
 #else
     Unroll_Make_Remainder_Loop(cl, ntimes);
 #endif
@@ -4430,6 +4523,33 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 			    ntimes-1, ntimes);
 
   unroll_names_finish();
+
+
+#ifdef TARG_ST
+  /* Update the loopmod pragma to take into account this unrolling. */
+    if (modulus > 1) {
+      INT new_modulus = 1;
+      INT new_residue = 0;
+
+      if (ntimes <= modulus) {
+	/* If ntimes is a divisor of modulus. */
+	if (modulus % ntimes == 0) {
+	  new_modulus = modulus / ntimes;
+	  new_residue = residue / ntimes;
+	}
+      }
+
+      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(unrolled_body), ANNOT_PRAGMA);
+      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+      if (loopmod_ant) {
+	WN *wn = ANNOT_pragma(loopmod_ant);
+	WN_pragma_arg1(wn) = new_modulus;
+	WN_pragma_arg2(wn) = new_residue;
+	fprintf(stderr, "new_modulus %d, new_residue %d\n", new_modulus, new_residue);
+      }
+    }
+#endif
 
   if (Get_Trace(TP_CGLOOP, 2))
     CG_LOOP_Trace_Loop(loop, "Unroll_Do_Loop: After unrolling BB:%d %d times:",
