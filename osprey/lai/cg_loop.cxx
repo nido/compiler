@@ -5137,7 +5137,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     BOOL status = FALSE;
     switch (action) {
     case NO_LOOP_OPT:
-      status = LAO_optimize(loop, LAO_LoopUnroll);
+      status = LAO_optimize(loop, LAO_TraceSchedule);
       break;
     case SINGLE_BB_DOLOOP_SWP:
       status = LAO_optimize(loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll);
@@ -5152,7 +5152,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       status = LAO_optimize(loop, LAO_LoopSchedule + LAO_LoopUnwind);
       break;
     case MULTI_BB_DOLOOP:
-      status = LAO_optimize(loop, LAO_LoopUnroll);
+      status = LAO_optimize(loop, LAO_TraceSchedule + LAO_LoopUnroll);
       break;
     }
     if (status) return TRUE;
