@@ -24,151 +24,139 @@
 
 #define this THIS
 #define operator OPERATOR
-#define Configure LAO_Configure
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 /*!
-  @file CSD_Configure.h
+  @file CSD_Configuration.h
   
-  Revision: 1.5  $Date$
+  Revision: 1.1  $Date$
   
   @copy Copyright 2002 STMicroelectronics.
 */
-#ifndef _CSD_CONFIGURE_H_
+#ifndef _CSD_CONFIGURATION_H_
 
 /*!
-  Configure -- Enumerate the Configure items.
+  Configuration_Item -- Enumerate the Configuration items.
   @par
-  Each Configure_Control can have a negative value, meaning that the value should be
-  ignored. Each Configure_Control can have a zero value, meaning that the
+  Each Configuration_Item can have a negative value, meaning that the value should be
+  ignored. Each Configuration_Control can have a zero value, meaning that the
   corresponding assertion is at the safest level, or that the corresponding
   optimization is disabled.
 */
 typedef enum {
-  Configure_Optimize,	//!< Optimize phases.
-#	define Configure_OPTIMIZE(this)			(*Configure__OPTIMIZE(this) + 0)
-#	define Configure__OPTIMIZE(this)		((this) + Configure_Optimize)
+  Configuration_Optimize,	//!< Optimize phases.
     // 0x1 => instruction bundling,
-#	define Configure_Optimize_Bundling		0x1
+#	define Configuration_Optimize_Bundling		0x1
     // 0x2 => postpass scheduling,
-#	define Configure_Optimize_Postpass		0x2
+#	define Configuration_Optimize_Postpass		0x2
     // 0x4 => register allocation,
-#	define Configure_Optimize_RegAlloc		0x4
+#	define Configuration_Optimize_RegAlloc		0x4
     // 0x8 => prepass scheduling,
-#	define Configure_Optimize_Prepass		0x8
+#	define Configuration_Optimize_Prepass		0x8
     // 0x10 => loop unrolling and unwinding.
-#	define Configure_Optimize_LoopUnroll		0x10
-  Configure_Schedule,	//!< Instruction scheduling.
-#	define Configure_SCHEDULE(this)			(*Configure__SCHEDULE(this) + 0)
-#	define Configure__SCHEDULE(this)		((this) + Configure_Schedule)
+#	define Configuration_Optimize_LoopUnroll		0x10
+  Configuration_Schedule,	//!< Instruction scheduling.
     // 0 => no schedule,
     // 1 => basic block schedule,
     // 2 => super block schedule,
     // 3 => trace block schedule.
-  Configure_RegAlloc,	//!< Register allocation.
-#	define Configure_REGALLOC(this)			(*Configure__REGALLOC(this) + 0)
-#	define Configure__REGALLOC(this)		((this) + Configure_RegAlloc)
+  Configuration_RegAlloc,	//!< Register allocation.
     // 0 => no register allocation,
     // 1 => local register allocation,
     // 2 => global register allocation,
     // 3 => integrated register allocation.
-  Configure_Pipeline,	//!< Software pipelining.
-#	define Configure_PIPELINE(this)			(*Configure__PIPELINE(this) + 0)
-#	define Configure__PIPELINE(this)		((this) + Configure_Pipeline)
+  Configuration_Pipeline,	//!< Software pipelining.
     // 0 => acyclic schedule,
     // 1 => cyclic schedule,
     // 2 => software pipeline,
     // 3 => modulo expansion.
-  Configure_LogUnwind,	//!< Log2 of default unwind factor.
-#	define Configure_LOGUNWIND(this)			(*Configure__LOGUNWIND(this) + 0)
-#	define Configure__LOGUNWIND(this)		((this) + Configure_LogUnwind)
+  Configuration_LogUnwind,	//!< Log2 of default unwind factor.
     // 0 => no unwind,
     // 1 => unwind 2,
     // 2 => unwind 4,
     // etc.
-  Configure_LogUnroll,	//!< Log2 of default unroll factor.
-#	define Configure_LOGUNROLL(this)			(*Configure__LOGUNROLL(this) + 0)
-#	define Configure__LOGUNROLL(this)		((this) + Configure_LogUnroll)
+  Configuration_LogUnroll,	//!< Log2 of default unroll factor.
     // 0 => no unroll,
     // 1 => unroll 2,
     // 2 => unroll 4,
     // etc.
-  Configure_Speculate,	//!< Software speculation level.
-#	define Configure_SPECULATE(this)			(*Configure__SPECULATE(this) + 0)
-#	define Configure__SPECULATE(this)		((this) + Configure_Speculate)
+  Configuration_Speculate,	//!< Software speculation level.
     // 0 => no software speculation,
     // 1 => software speculate non-excepting instructions.
     // 2 => software speculate excepting dismissable instructions (advanced LOADs).
     // 3 => software speculate excepting non-dismissable instructions (regular LOADs).
-  Configure_Renaming,	//!< Register renaming level.
-#	define Configure_RENAMING(this)			(*Configure__RENAMING(this) + 0)
-#	define Configure__RENAMING(this)		((this) + Configure_Renaming)
+  Configuration_Renaming,	//!< Register renaming level.
     // 0 => no register renaming,
     // 1 => register renaming,
     // n => modulo renaming.
-  Configure_Parallel,	//!< Parallel execution enable.
-#	define Configure_PARALLEL(this)			(*Configure__PARALLEL(this) + 0)
-#	define Configure__PARALLEL(this)		((this) + Configure_Parallel)
+  Configuration_Parallel,	//!< Parallel execution enable.
     // 0 => scalar execution,
     // 1 => vector execution,
     // 2 => parallel execution,
     // 3 => concurrent execution.
-  Configure_Overlap,	//!< Maximum overlap of loop iterations.
-#	define Configure_OVERLAP(this)			(*Configure__OVERLAP(this) + 0)
-#	define Configure__OVERLAP(this)		((this) + Configure_Overlap)
-  Configure_MinTrip,	//!< Minimum value of loop trip count.
-#	define Configure_MINTRIP(this)			(*Configure__MINTRIP(this) + 0)
-#	define Configure__MINTRIP(this)		((this) + Configure_MinTrip)
-  Configure_Modulus,	//!< Modulus of loop trip count.
-#	define Configure_MODULUS(this)			(*Configure__MODULUS(this) + 0)
-#	define Configure__MODULUS(this)		((this) + Configure_Modulus)
-  Configure_Residue,	//!< Residue of loop trip count.
-#	define Configure_RESIDUE(this)			(*Configure__RESIDUE(this) + 0)
-#	define Configure__RESIDUE(this)		((this) + Configure_Residue)
-  Configure_Last
-} Configure_Item;
+  Configuration_Overlap,	//!< Maximum overlap of loop iterations.
+  Configuration_MinTrip,	//!< Minimum value of loop trip count.
+  Configuration_Modulus,	//!< Modulus of loop trip count.
+  Configuration_Residue,	//!< Residue of loop trip count.
+  Configuration_Last
+} Configuration_Item;
 
 /*!
-  Configure -- Array of Configure_Control settings.
+  Configuration -- Array of Configuration_Control items.
 */
-typedef int8_t Configure[Configure_Last];
+struct Configuration_ {
+  int8_t ITEMS[Configuration_Last];
+};
+
+typedef struct Configuration_ Configuration_, *Configuration;
+#define Configuration_ITEMS(this) (0, (this)->ITEMS)
+#define Configuration__ITEMS(this) (&(this)->ITEMS)
+#define Configuration_MINTRIP(this) ((*Configuration__MINTRIP(this) + 0))
+#define Configuration_RENAMING(this) ((*Configuration__RENAMING(this) + 0))
+#define Configuration_OVERLAP(this) ((*Configuration__OVERLAP(this) + 0))
+#define Configuration_PARALLEL(this) ((*Configuration__PARALLEL(this) + 0))
+#define Configuration_SCHEDULE(this) ((*Configuration__SCHEDULE(this) + 0))
+#define Configuration_LOGUNWIND(this) ((*Configuration__LOGUNWIND(this) + 0))
+#define Configuration_PIPELINE(this) ((*Configuration__PIPELINE(this) + 0))
+#define Configuration_LOGUNROLL(this) ((*Configuration__LOGUNROLL(this) + 0))
+#define Configuration_OPTIMIZE(this) ((*Configuration__OPTIMIZE(this) + 0))
+#define Configuration_REGALLOC(this) ((*Configuration__REGALLOC(this) + 0))
+#define Configuration_RESIDUE(this) ((*Configuration__RESIDUE(this) + 0))
+#define Configuration_SPECULATE(this) ((*Configuration__SPECULATE(this) + 0))
+#define Configuration_MODULUS(this) ((*Configuration__MODULUS(this) + 0))
+#define Configuration__MINTRIP(this) ((Configuration_ITEMS(this) + Configuration_MinTrip))
+#define Configuration__RENAMING(this) ((Configuration_ITEMS(this) + Configuration_Renaming))
+#define Configuration__OVERLAP(this) ((Configuration_ITEMS(this) + Configuration_Overlap))
+#define Configuration__PARALLEL(this) ((Configuration_ITEMS(this) + Configuration_Parallel))
+#define Configuration__SCHEDULE(this) ((Configuration_ITEMS(this) + Configuration_Schedule))
+#define Configuration__LOGUNWIND(this) ((Configuration_ITEMS(this) + Configuration_LogUnwind))
+#define Configuration__PIPELINE(this) ((Configuration_ITEMS(this) + Configuration_Pipeline))
+#define Configuration__LOGUNROLL(this) ((Configuration_ITEMS(this) + Configuration_LogUnroll))
+#define Configuration__OPTIMIZE(this) ((Configuration_ITEMS(this) + Configuration_Optimize))
+#define Configuration__REGALLOC(this) ((Configuration_ITEMS(this) + Configuration_RegAlloc))
+#define Configuration__RESIDUE(this) ((Configuration_ITEMS(this) + Configuration_Residue))
+#define Configuration__SPECULATE(this) ((Configuration_ITEMS(this) + Configuration_Speculate))
+#define Configuration__MODULUS(this) ((Configuration_ITEMS(this) + Configuration_Modulus))
+
+Configuration
+Configuration_CTOR(Configuration this);
+
 
 /*!
-  Configure_setDefaults -- Set default values for this Configure.
-*/
-void
-Configure_setDefaults(Configure this);
-
-/*!
-  Configure_merge -- Merge that Configuration into this Configuration.
+  Configuration_merge -- Merge that Configuration into this Configuration.
   @par
   The values of that Configuration override the values of this Configuration,
   unless for the values of that Configuration that are negative.
 */
 void
-Configure_merge(Configure this, Configure that);
+Configuration_merge(Configuration this, Configuration that);
 
-#define _CSD_CONFIGURE_H_
-#endif//_CSD_CONFIGURE_H_
-
-/*
-  lao_init -- LAO initialization function.
-*/
-void
-lao_init(void);
-
-/*
-  lao_fini -- LAO finalization function.
-*/
-void
-lao_fini(void);
-
+#define _CSD_CONFIGURATION_H_
+#endif//_CSD_CONFIGURATION_H_
 #ifdef __cplusplus
 }
 #endif
-#undef Configure
 #undef operator
 #undef this
 
@@ -176,13 +164,13 @@ lao_fini(void);
 // supported by the platform. The reason is to provide a consistent
 // implementation on all platforms.
 
-CG_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, uint8_t *lao_configure);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, Configuration lao_configuration);
 #define lao_optimize_LOOP (*lao_optimize_LOOP_p)
 
-CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, uint8_t *lao_configure);
+CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, Configuration lao_configuration);
 #define lao_optimize_HB (*lao_optimize_HB_p)
 
-CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (uint8_t *lao_configure);
+CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (Configuration lao_configuration);
 #define lao_optimize_FUNC (*lao_optimize_FUNC_p)
 
 CG_EXPORTED extern void (*CGIR_print_p) (void);
