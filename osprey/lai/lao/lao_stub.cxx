@@ -564,7 +564,8 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
   LoopInfo loopinfo = LAI_Interface_findLoopInfo(interface, cgir_ld);
   if (loopinfo == NULL) {
     BB *head_bb = LOOP_DESCR_loophead(cgir_ld);
-    int pipelining = CG_LAO_pipelining, renaming = CG_LAO_renaming;
+    int pipelining = CG_LAO_pipelining;
+    int renaming = CG_LAO_renaming;
     ANNOTATION *remainder_annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
     if (remainder_annot == NULL) {
       // Try to access the #pragma pipeline arguments if any.
@@ -1072,13 +1073,16 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   // Open interface.
   LAI_Interface_open(interface, ST_name(Get_Current_PU_ST()),
-      ConfigurationItem_RegionType, CG_LAO_regiontype,
+      ConfigurationItem_StackModel, stackmodel,
       ConfigurationItem_SchedKind, CG_LAO_schedkind,
+      ConfigurationItem_AllocKind, CG_LAO_allockind,
+      ConfigurationItem_RegionType, CG_LAO_regiontype,
+      ConfigurationItem_Compensation, CG_LAO_compensation,
       ConfigurationItem_Speculation, CG_LAO_speculation,
+      ConfigurationItem_Relaxation, CG_LAO_relaxation,
       ConfigurationItem_Pipelining, CG_LAO_pipelining,
       ConfigurationItem_Renaming, CG_LAO_renaming,
       ConfigurationItem_LoopDep, CG_LAO_loopdep,
-      ConfigurationItem_StackModel, stackmodel,
       ConfigurationItem__);
   //
   // Create the LAO BasicBlocks.
