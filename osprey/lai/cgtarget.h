@@ -816,6 +816,12 @@ extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum, 
 					 INT ops_to_check);
 
+#ifdef TARG_ST200 // [CL]
+// Fill empty slots with nops
+extern void CGTARG_Finish_Bundle(OP                     *op, 
+				 TI_BUNDLE              *bundle);
+#endif
+
 // Handle all bundle hazards.
 extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
 					TI_BUNDLE              *bundle, 
@@ -842,7 +848,14 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 					 INT                    slot,
 					 ISA_EXEC_UNIT_PROPERTY *prop,
 					 BOOL                   stop_bit_reqd,
+#ifdef TARG_ST200 // [CL]: added parameters to check alignment
+                                         const CG_GROUPING      *grouping,
+                                         BOOL check_addr=FALSE,
+                                         INT32 addr=0,
+                                         INT* reserved_slot=NULL);
+#else
                                          const CG_GROUPING      *grouping);
+#endif
 
 // Checks to see if <stop> bit is available at <slot> position in the
 // bundle.
