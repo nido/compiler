@@ -90,12 +90,14 @@ Verify_HB(
 {
   BBLIST *edge;
   BB *last_succ = NULL;
+
   FOR_ALL_BB_SUCCS(bb, edge) {
     BB *succ = BBLIST_item(edge);
     if (BB_SET_MemberP(hb_bbs, succ)) {
       last_succ = succ;
     }
   }
+
   if (last_succ == NULL) {
     *processed_bbs = BS_Union1D(*processed_bbs, BB_id(bb), &MEM_HB_pool);
     return;
@@ -123,6 +125,16 @@ Verify_HB(
           break;
         }
       }
+
+#ifdef TARG_ST200
+      // (cbr) This code crashes if the region is a loop. need to test
+      // if the block has already been processed, meaning we are in a loop.
+      // Don't recurse in that case.
+      // This is in contradition with the above commments. I don't underdand
+      // them.
+      if (BB_SET_MemberP(*processed_bbs, succ))
+        skip_succ = TRUE;
+#endif
 
       if (!skip_succ) Verify_HB(succ, processed_bbs, hb_bbs);
     }
