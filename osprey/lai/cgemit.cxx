@@ -3584,8 +3584,10 @@ Verify_Instruction (
       TN *dest = OP_opnd(op, idx);
       BB *bb = OP_bb(op);
       BB *bb_next = BB_next(bb);
-      DevAssert(TN_is_label(dest), ("expected label on branch at BB:%d", BB_id(bb)));
-      if (bb_next && BB_cold(bb) == BB_cold(bb_next) &&
+      //FdF: TN_is_label(dest) may not be true after tail_call optimization
+      // DevAssert(TN_is_label(dest), ("expected label on branch at BB:%d", BB_id(bb)));
+      if (TN_is_label(dest) &&
+	  bb_next && BB_cold(bb) == BB_cold(bb_next) &&
 	  Is_Label_For_BB(TN_label(dest), bb_next) &&
 	  TN_offset(dest) == 0) {
 	DevWarn("branch to next BB at BB:%d", BB_id(bb));
