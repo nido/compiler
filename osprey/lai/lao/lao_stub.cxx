@@ -14,6 +14,7 @@
 #include "gtn_universe.h"
 #include "gtn_tn_set.h"
 #include "cg_loop.h"
+#include "cgprep.h"
 #include "hb.h"
 
 #include "cg_dep_graph.h"
@@ -398,16 +399,19 @@ CGIR_OP_identity(CGIR_OP cgir_op) {
 
 // Create a CGIR_OP.
 static CGIR_OP
-CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int iteration, int issueDate) {
+CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int unrolled, int iteration, int issueDate) {
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   CGIR_OP new_op = Mk_VarOP(top, resCount, argCount, results, arguments);
+  CGPREP_Init_Op(new_op);
+  CG_LOOP_Init_Op(new_op);
   // If a duplicate, set orig_idx and copy WN.
   if (cgir_op != NULL) {
     Set_OP_orig_idx(new_op, OP_map_idx(cgir_op));
     Copy_WN_For_Memory_OP(new_op, cgir_op);
+    // Set unrolling.
+    Set_OP_unrolling(new_op, OP_unrolling(cgir_op) + unrolled * iteration);
   }
-  // Set unrolling and scycle.
-  Set_OP_unrolling(new_op, iteration);
+  // Set scycle
   OP_scycle(new_op) = issueDate;
   //
   return new_op;
@@ -415,7 +419,7 @@ CGIR_OP_create(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
 
 // Update a CGIR_OP.
 static void
-CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int iteration, int issueDate) {
+CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN arguments[], int resCount, CGIR_TN results[], int unrolled, int iteration, int issueDate) {
   TOP top = Operator_to_CGIR_TOP(OPERATOR);
   if (OP_code(cgir_op) != top) {
     OP_Change_Opcode(cgir_op, top);
@@ -430,8 +434,8 @@ CGIR_OP_update(CGIR_OP cgir_op, Operator OPERATOR, int argCount, CGIR_TN argumen
     CGIR_TN cgir_tn = results[i];
     if (OP_result(cgir_op, i) != cgir_tn) Set_OP_result(cgir_op, i, cgir_tn);
   }
-  // Set unrolling and scycle.
-  Set_OP_unrolling(cgir_op, iteration);
+  Is_True(iteration == 0, ("CGIR_OP_update called with iteration > 0"));
+  // Set scycle.
   OP_scycle(cgir_op) = issueDate;
 }
 
@@ -456,6 +460,8 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   OPS ops = OPS_EMPTY;
   for (int i = 0; i < opCount; i++) {
     OPS_Append_Op(&ops, operations[i]);
+    if (OP_unrolling(operations[i]) != 0)
+      Set_OP_unroll_bb(operations[i], new_bb);
   }
   BB_Append_Ops(new_bb, &ops);
   // Add the cgir_li.
@@ -478,7 +484,10 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     }
   }
   // Set unrollings.
-  Set_BB_unrollings(new_bb, unrolled);
+  if (BB_unrollings(new_bb) == 0)
+    Set_BB_unrollings(new_bb, unrolled);
+  else
+    Set_BB_unrollings(new_bb, BB_unrollings(new_bb)*unrolled);
   //
   return new_bb;
 }
@@ -500,6 +509,8 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
   OPS ops = OPS_EMPTY;
   for (int i = 0; i < opCount; i++) {
     OPS_Append_Op(&ops, operations[i]);
+    if (OP_unrolling(operations[i]) != 0)
+      Is_True(OP_unroll_bb(operations[i]), ("Unrolled operation with NULL unroll_bb"));
   }
   BB_Append_Ops(cgir_bb, &ops);
   // Remove the cgir_li if any.
@@ -512,6 +523,10 @@ CGIR_BB_update(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     BB_Add_Annotation(cgir_bb, ANNOT_LOOPINFO, cgir_li);
   }
   // Set unrollings.
+  if (BB_unrollings(cgir_bb) == 0)
+    Set_BB_unrollings(cgir_bb, unrolled);
+  else
+    Set_BB_unrollings(cgir_bb, BB_unrollings(cgir_bb)*unrolled);
   Set_BB_unrollings(cgir_bb, unrolled);
 }
 
@@ -583,6 +598,13 @@ CGIR_LI_create(CGIR_LI cgir_li, int unrolling) {
 // Update a CGIR_LI.
 static void
 CGIR_LI_update(CGIR_LI cgir_li, int unrolling) {
+}
+
+// Update of specific fields for the Open64 compiler
+static void
+Open64_finalUpdateBB(CGIR_BB cgir_bb, CGIR_BB cgir_head) {
+  Set_BB_loop_head_bb(cgir_bb, cgir_head);
+  BB_rid(cgir_bb) = BB_rid(cgir_head);
 }
 
 /*--------------------------- lao_init / lao_fini ----------------------------*/
@@ -1006,6 +1028,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   *Interface__CGIR_LI_identity(interface) = CGIR_LI_identity;
   *Interface__CGIR_LI_create(interface) = CGIR_LI_create;
   *Interface__CGIR_LI_update(interface) = CGIR_LI_update;
+  *Interface__Open64_finalUpdateBB(interface) = Open64_finalUpdateBB;
   // Create the LAO BasicBlocks.
   for (bb_iter = entryBBs.begin(); bb_iter != entryBBs.end(); bb_iter++) {
     BasicBlock basicblock = CGIR_BB_to_BasicBlock(*bb_iter);
@@ -1042,7 +1065,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, unsigned lao
   //
   result = LAO_Optimize(lao_actions);
   if (result) {
-    Interface_updateCGIR(interface);
+    Interface_updateCGIR(interface, Open64_finalUpdate);
     if (getenv("PRINT")) CGIR_print();
   }
   //
