@@ -1551,6 +1551,12 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
 
   Is_True(OP_load(op) || OP_store(op), ("not a load or store"));
 
+#ifdef TARG_ST
+  // Don't use ARCs if not available.
+  if (!CG_DEP_Addr_Analysis) return NULL;
+#endif
+
+
   INT offset_num = OP_find_opnd_use (op, OU_offset);
   INT base_num   = OP_find_opnd_use (op, OU_base);
   INT result_num = -1;
@@ -1730,18 +1736,32 @@ static BOOL addr_subtract(OP *pred_op, OP *succ_op, TN *pred_tn,
       }
     } 
     else if (pred_tn == succ_tn) {
-      INT pi = TN_Opernum_In_OP (pred_op, pred_tn);
-      INT si = TN_Opernum_In_OP (succ_op, succ_tn);
-
-      if (addr_omega(pred_op, pi) == addr_omega(succ_op, si)) {
-	ARC *parc = ARC_LIST_Find_First(OP_preds(pred_op), CG_DEP_REGIN, pi);
-	ARC *sarc = ARC_LIST_Find_First(OP_preds(succ_op), CG_DEP_REGIN, si);
-	if ((!parc && !sarc) || 
-	    (parc && sarc && ARC_pred(parc) == ARC_pred(sarc))) {
+#ifdef TARG_ST
+      // Guard against using ARC information in case of
+      // CG_DEP_Addr_Analysis == FALSE
+      if (CG_DEP_Addr_Analysis) {
+#endif
+	INT pi = TN_Opernum_In_OP (pred_op, pred_tn);
+	INT si = TN_Opernum_In_OP (succ_op, succ_tn);
+	
+	if (addr_omega(pred_op, pi) == addr_omega(succ_op, si)) {
+	  ARC *parc = ARC_LIST_Find_First(OP_preds(pred_op), CG_DEP_REGIN, pi);
+	  ARC *sarc = ARC_LIST_Find_First(OP_preds(succ_op), CG_DEP_REGIN, si);
+	  if ((!parc && !sarc) || 
+	      (parc && sarc && ARC_pred(parc) == ARC_pred(sarc))) {
+	    *diff = 0;
+	    return TRUE;
+	  }
+	}
+#ifdef TARG_ST
+      } else {
+	// Currenlty handle the zero tn case only
+	if (pred_tn == Zero_TN) {
 	  *diff = 0;
 	  return TRUE;
 	}
       }
+#endif
     }
   }
   return FALSE;
@@ -1867,7 +1887,8 @@ static SAME_ADDR_RESULT CG_DEP_Address_Analyze(OP *pred_op, OP *succ_op)
   diff0 = 0;
   if (addr_subtract(pred_op, succ_op, pred_base, succ_base, &diff0) &&
       addr_subtract(pred_op, succ_op, pred_offset, succ_offset, &diff1)) {
-    return analyze_overlap(pred_op, succ_op, diff0 + diff1);
+    res = analyze_overlap(pred_op, succ_op, diff0 + diff1);
+    return res;
   }
 
   return DONT_KNOW;
@@ -2161,11 +2182,20 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 
   /* Try to analyze the address TNs ourselves unless disabled.
    */
+#ifdef TARG_ST
+  // CG_DEP_Addr_Analysis is tested now in the CG_DEP_Address_Analyze()
+  // function
+  if (!lex_neg &&
+      (OP_load(pred_op) || OP_store(pred_op)) &&
+      (OP_load(succ_op) || OP_store(succ_op)))
+#else
   if (CG_DEP_Addr_Analysis && !lex_neg &&
       (OP_load(pred_op) || OP_store(pred_op)) &&
-      (OP_load(succ_op) || OP_store(succ_op))) {
-
-    switch (cg_result = CG_DEP_Address_Analyze(pred_op, succ_op)) {
+      (OP_load(succ_op) || OP_store(succ_op)))
+#endif
+  {
+    cg_result = CG_DEP_Address_Analyze(pred_op, succ_op);
+    switch (cg_result) {
     case IDENTICAL:
       if (omega) *omega = lex_neg;
       *definite = under_same_cond_tn(pred_op, succ_op, omega ? *omega : 0);
@@ -4907,6 +4937,12 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs)
 {
+
+  // Disable use of dep graph for address analysis
+  // as we don't create register arcs.
+  BOOL old_addr_analysis = CG_DEP_Addr_Analysis;
+  CG_DEP_Addr_Analysis = FALSE;
+
   Is_True( _cg_dep_bb == NULL && _cg_dep_bbs.empty(),
 	   ( "CG_DEP_Compute_Region_MEM_Arcs:"
 	     " another dep graph currently exists" ) );
@@ -4939,14 +4975,15 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     FOR_ALL_BB_STLLIST_ITEMS_FWD(bb_list, bb_iter) {
       BB *bb = *bb_iter;
       FOR_ALL_BB_OPs(bb, op) {
-	if (OP_load(op) || OP_like_store(op))
+	if (OP_load(op) || OP_like_store(op)) {
 	  num_mem_ops++;
+	}
       }
     }
 
     /* Return if there's nothing to do */
-    if (num_mem_ops < 1) return;
-    if (!cyclic && num_mem_ops == 1) return;
+    if (num_mem_ops < 1) goto return_point;
+    if (!cyclic && num_mem_ops == 1) goto return_point;
 
     /* Initialize data structures used by add_mem_arcs_from */
     MEM_POOL_Push(&MEM_local_pool);
@@ -5054,6 +5091,8 @@ CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list,
     mem_ops = NULL;
   }
 
+ return_point:
+  CG_DEP_Addr_Analysis = old_addr_analysis;
 }
 
 /*
