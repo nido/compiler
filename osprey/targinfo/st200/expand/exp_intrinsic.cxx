@@ -17,7 +17,6 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 
-#if defined(ST231_EXPERIMENTAL)
 /*
  * Expansion of builtin__divuw based on validated and scheduled basic assembly source.
 */
@@ -969,7 +968,7 @@ Expand__builtin__modw(
 */
 
 /*
- *Manual exapnsion of some experimental ST231 operators
+ *Manual expansion of some experimental ST231 operators
 */
 static void
 Expand__st200mul32(
@@ -1011,7 +1010,6 @@ Expand__st200mulfrac(
 {
   Build_OP (	TOP_mulfrac_r,	o0,	i0,	i1,	ops) ;
 } /* Expand__st200mulfrac */
-#endif /*ST231_EXPERIMENTAL*/
 
 /*
  * Expansion of st220addcg based on validated and scheduled basic assembly source.

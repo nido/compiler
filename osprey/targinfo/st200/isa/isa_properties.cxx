@@ -501,6 +501,9 @@ main()
 		 TOP_mullu_r, 
 		 TOP_mullu_i, 
 		 TOP_mullu_ii, 
+		 TOP_mul32_r, 
+		 TOP_mul32_i, 
+		 TOP_mul32_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -785,6 +788,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  /*         Memory Access Size 0          */ 
+  /* ====================================== */ 
+  ISA_Memory_Access (0, 
+		 TOP_pswset_i, 
+		 TOP_pswset_ii, 
+		 TOP_pswclr_i, 
+		 TOP_pswclr_ii, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   /*         Memory Access Size 1          */ 
   /* ====================================== */ 
   ISA_Memory_Access (1, 
@@ -796,10 +809,6 @@ main()
 		 TOP_ldbu_ii, 
 		 TOP_ldbu_d_i, 
 		 TOP_ldbu_d_ii, 
-		 TOP_pswset_i, 
-		 TOP_pswset_ii, 
-		 TOP_pswclr_i, 
-		 TOP_pswclr_ii, 
 		 TOP_stb_i, 
 		 TOP_stb_ii, 
 		 TOP_UNDEFINED); 
@@ -833,6 +842,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  /*          Memory Alignment 0           */ 
+  /* ====================================== */ 
+  ISA_Memory_Alignment (0, 
+		 TOP_pswset_i, 
+		 TOP_pswset_ii, 
+		 TOP_pswclr_i, 
+		 TOP_pswclr_ii, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   /*          Memory Alignment 1           */ 
   /* ====================================== */ 
   ISA_Memory_Alignment (1, 
@@ -844,10 +863,6 @@ main()
 		 TOP_ldbu_ii, 
 		 TOP_ldbu_d_i, 
 		 TOP_ldbu_d_ii, 
-		 TOP_pswset_i, 
-		 TOP_pswset_ii, 
-		 TOP_pswclr_i, 
-		 TOP_pswclr_ii, 
 		 TOP_stb_i, 
 		 TOP_stb_ii, 
 		 TOP_UNDEFINED); 
