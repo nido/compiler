@@ -40,6 +40,12 @@ extern "C" {
 #undef this
 }
 
+// Declare CG_DEP_Compute_Region_MEM_Arcs().
+void 
+CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
+			    BOOL         compute_cyclic, 
+			    BOOL         memread_arcs);
+
 // The CGIR_CallBack structure and its pointer.
 static CGIR_CallBack_ callback_, *callback = &callback_;
 
@@ -1051,36 +1057,6 @@ static int lao_fill_exit_bblist(BB_SET *body_set, BB_List &bodyBBs, BB_List &exi
   return exit_count;
 }
 
-void Sort_topological_DFS(BB *bb, BB_SET *region_set, BB_MAP visited_map, BB_List &bblist) {
-  BBLIST *succs;
-  //
-  BB_MAP32_Set(visited_map, bb, 1);
-  //
-  FOR_ALL_BB_SUCCS(bb, succs) {
-    BB *succ_bb = BBLIST_item(succs);
-    if (!BB_MAP32_Get(visited_map, succ_bb) &&
-	BB_SET_MemberP(region_set, succ_bb)) {
-      Sort_topological_DFS(succ_bb, region_set, visited_map, bblist);
-    }
-  }
-  //
-  bblist.push_front(bb);
-}
-
-void Sort_topological(BB *entry, BB_SET *region_set, BB_List &bblist) {
-  BB_MAP visited_map = BB_MAP32_Create();
-  Sort_topological_DFS(entry, region_set, visited_map, bblist);
-  BB_MAP_Delete(visited_map);
-}
-
-// Declare CG_DEP_Compute_Region_MEM_Arcs().
-void 
-CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
-			    BOOL         compute_cyclic, 
-			    BOOL         memread_arcs);
-
-#define LAO_OPS_LIMIT 4096	// Maximum number of OPs to compute memory dependences.
-
 // Make a LAO LoopInfo from the LOOP_DESCR supplied.
 static LoopInfo
 lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
@@ -1112,15 +1088,47 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
     loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
 	Configuration_Pipelining, pipelining);
   }
+  return loopinfo;
+}
+
+static void
+lao_topsort_DFS(BB *bb, BB_SET *region_set, BB_MAP visited_map, BB_List &bblist) {
+  BBLIST *succs;
   //
-  // Make a BB_List of the loop body and compute its op_count. This
-  // BB_List must be in topological order.
+  BB_MAP32_Set(visited_map, bb, 1);
+  //
+  FOR_ALL_BB_SUCCS(bb, succs) {
+    BB *succ_bb = BBLIST_item(succs);
+    if (!BB_MAP32_Get(visited_map, succ_bb) &&
+	BB_SET_MemberP(region_set, succ_bb)) {
+      lao_topsort_DFS(succ_bb, region_set, visited_map, bblist);
+    }
+  }
+  //
+  bblist.push_front(bb);
+}
+
+static void
+lao_topsort(BB *entry, BB_SET *region_set, BB_List &bblist) {
+  BB_MAP visited_map = BB_MAP32_Create();
+  lao_topsort_DFS(entry, region_set, visited_map, bblist);
+  BB_MAP_Delete(visited_map);
+}
+
+#define LAO_OPS_LIMIT 4096	// Maximum number of OPs to compute memory dependences.
+#define LAO_DEPS_LIMIT 16384	// Maximum number of memory dependences.
+
+// Fill a LAO LoopInfo from the LOOP_DESCR supplied.
+static LoopInfo
+lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
+  BB *head_bb = LOOP_DESCR_loophead(loop);
+  int nest_level = BB_nest_level(head_bb), op_count = 0;
+  //
+  // Make a BB_List of the loop body and compute its op_count.
+  // This BB_List is reordered in topological order.
   BB_List bb_topo_list, bb_list;
   BB_SET *loop_set = LOOP_DESCR_bbset(loop);
-  //
-  Sort_topological(head_bb, loop_set, bb_topo_list);
-  //
-  int nest_level = BB_nest_level(head_bb), op_count = 0;
+  lao_topsort(head_bb, loop_set, bb_topo_list);
   BB_List::iterator bb_iter;
   for (bb_iter = bb_topo_list.begin(); bb_iter != bb_topo_list.end(); bb_iter++) {
     if (BB_nest_level(*bb_iter) == nest_level) {
@@ -1217,15 +1225,14 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   // Get loop headers and function entry that may have a pseudo loop descr
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BB *bb = *bb_iter;
-    if (BB_loophead(bb)) {
+    if (BB_loophead(bb) || BB_entry(bb)) {
       LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
-      if (loop == NULL)
-	FmtAssert(BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
-      else
-	lao_makeLoopInfo(loop, pipelining);
-    } else if (BB_entry(bb)) {
-      LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(bb);
-      if (loop != NULL) lao_makeLoopInfo(loop, pipelining);
+      if (loop != NULL && LOOP_DESCR_loophead(loop) == bb) {
+	LoopInfo loopinfo = lao_makeLoopInfo(loop, pipelining);
+	lao_fillLoopInfo(loop, loopinfo);
+      } else {
+	FmtAssert(!BB_loophead(bb) || BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
+      }
     }
   }
   //
@@ -1320,6 +1327,7 @@ make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *p
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BB_SET_Union1D(loop_set, *bb_iter, NULL);
     if (!BB_MAP_Get(LOOP_DESCR_map, *bb_iter)) {
+      // Set the LOOP_DESCR_map to that LOOP_DESCR_Find_Loop will return newloop.
       BB_MAP_Set(LOOP_DESCR_map, *bb_iter, newloop);
     }
   }
@@ -1378,7 +1386,7 @@ lao_optimize_PU(unsigned lao_optimizations) {
   if (n_entry == 1) {
     BB *entry = *entryBBs.begin();
     LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(entry);
-    if (loop == NULL) loop = make_pseudo_loopdescr(entry, bodyBBs, exitBBs, &lao_loop_pool);
+    if (loop == NULL) make_pseudo_loopdescr(entry, bodyBBs, exitBBs, &lao_loop_pool);
   }
   //
   // Call the lower level lao_optimize function with pipelining=0.
