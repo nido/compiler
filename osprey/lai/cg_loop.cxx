@@ -5051,7 +5051,10 @@ bool CG_LOOP::Determine_Unroll_Fully()
   INT32 const_trip_count = TN_value(trip_count_tn);
   INT32 body_len = BB_length(head);
 
-  if (((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) && !pragma_unroll) ||
+  // FdF: Avoid overflow in body_len * const_trip_count
+  if (((const_trip_count <= CG_LOOP_unrolled_size_max) &&
+       (body_len * const_trip_count <= CG_LOOP_unrolled_size_max) &&
+       !pragma_unroll) ||
       (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
        (unroll_times_max >= const_trip_count))) {
 
@@ -5130,7 +5133,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 
     BOOL const_trip = TN_is_constant(trip_count_tn);
     INT32 const_trip_count = const_trip ? TN_value(trip_count_tn) : 0;
-  
+
     if (const_trip && (CG_LOOP_unroll_fully || pragma_unroll) &&
 	/*
 	 * Unroll constant trip count loop fully iff:
@@ -5138,7 +5141,10 @@ void CG_LOOP::Determine_Unroll_Factor()
 	 *   (b1) unrolled size <= OPT:unroll_size, or
 	 *   (b2) (OPT:unroll_size=0 || pragma_unroll) and unroll_times_max >= trip count
 	 */
-	(((body_len * const_trip_count <= CG_LOOP_unrolled_size_max) && !pragma_unroll) ||
+	// FdF: Avoid overflow in body_len * const_trip_count
+	(((const_trip_count <= CG_LOOP_unrolled_size_max) &&
+	  (body_len * const_trip_count <= CG_LOOP_unrolled_size_max) &&
+	  !pragma_unroll) ||
 	 (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
 	  (unroll_times_max >= const_trip_count)))) {
 
