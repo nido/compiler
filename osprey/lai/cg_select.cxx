@@ -76,6 +76,21 @@ static INT32  max_cand_id;	// Max value in hammock candidates.
 // Mapping between old and new PHIs
 static OP_MAP phi_op_map = NULL;
 
+// List of of memory accesses found in if-then-else region. 
+// Load and stores lists are used in a slightly different manner:
+// Stores are mapped with their equivalent. (this might be improved with a dummy
+// store location).
+// Loads are mapped with their dismissible form. They don't need to have an
+// equivalent (a load on the other side of the hammock).
+// I keep these operation in a list because we don't want to touch the basic
+// blocks now. (we don't know yet if the hammock will be reduced).
+// OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
+
+typedef list<OP*> op_list;
+
+pair<op_list, op_list> store_i;
+pair<op_list, op_list> load_i;
+
 /* ================================================================
  *
  *   Traces
@@ -131,14 +146,12 @@ Initialize_Memory()
     did_init = TRUE;
   }
   MEM_POOL_Push(&MEM_Select_pool);
-  MEM_POOL_Push(&MEM_local_pool);
 }
 
 static void
 Finalize_Memory()
 {
   Free_Dominators_Memory();
-  MEM_POOL_Pop(&MEM_local_pool);
   MEM_POOL_Pop(&MEM_Select_pool);
 }
 
@@ -147,11 +160,27 @@ Finalize_Select(void)
 {
   Finalize_Memory();
 
-  OP_MAP_Delete(phi_op_map);
   BB_MAP_Delete(postord_map);
   max_cand_id = 0;
   select_count = 0;
   spec_instrs_count = 0;
+}
+
+static void
+Initialize_Hammock_Memory()
+{
+  phi_op_map = OP_MAP_Create();
+}
+
+static void
+Finalize_Hammock_Memory()
+{
+  OP_MAP_Delete(phi_op_map);
+
+  load_i.first.clear();
+  load_i.second.clear();
+  store_i.first.clear();
+  store_i.second.clear();
 }
 
 static BB*
@@ -199,21 +228,6 @@ Identify_Hammock_Candidates(void)
 }
 
 UINT max_select_instrs = 1000;
-
-// List of of memory accesses found in if-then-else region. 
-// Load and stores lists are used in a slightly different manner:
-// Stores are mapped with their equivalent. (this might be improved with a dummy
-// store location).
-// Loads are mapped with their dismissible form. They don't need to have an
-// equivalent (a load on the other side of the hammock).
-// I keep these operation in a list because we don't want to touch the basic
-// blocks now. (we don't know yet if the hammock will be reduced).
-// OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
-
-typedef list<OP*> op_list;
-
-pair<op_list, op_list> store_i;
-pair<op_list, op_list> load_i;
 
 // temporary: I don't like the interface.
 static BOOL
@@ -483,55 +497,26 @@ Promote_BB(BB *bp, BB *to_bb)
   BBlist_Free(&BB_preds(bp));
 }
 
-static void
-Region_Change_Phis (BB *bb, OP *phi)
+// Make a copy of a phi op, using the same tn as return value in order to no
+// break uses. The implementation (there is 2 same defs during a short time)
+// make it possible without maintaining a phi's defs list.
+// The original phi should be removed.
+static OP*
+Dup_PHI (OP* phi)
 {
-  BBLIST *edge;
-  TN *old_tn = OP_result (phi, 0);
-  OP *new_phi;
-  OP *op;
-  UINT i;
-
-  FOR_ALL_BB_SUCCS(bb, edge) {
-    BB *succ = BBLIST_item(edge);
-    
-    FOR_ALL_BB_PHI_OPs(succ,op) {
-
-      fprintf (TFile, "found phi \n");
-      Print_OP (op);
-
-      for (i = 0; i < OP_opnds(op); i++) {
-        Print_TN (OP_opnd (op, i), FALSE);
-
-        if (OP_opnd (op, i) == old_tn) {
-          UINT8 nopnds = OP_opnds(op);
-          UINT j;
-          TN *result[1];
-          TN *opnd[nopnds];
-          result[0] = OP_result(op, 0);
-
-          for (j = 0; j < nopnds; j++) {
-            opnd[j] = OP_opnd(op, j);
-          }
-
-          new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-
-          fprintf (TFile, "OLD PHI WAS \n");
-          Print_OP (phi);
-
-          fprintf (TFile, "NEW PHI IS \n");
-          Print_OP (new_phi);
-
-          SSA_Prepend_Phi_To_BB (new_phi, bb);
-          BB_Remove_Op(bb, phi);
-          break;
-        }
-      }
-    }
+  TN *result[1];
+  UINT8 j = 0;
+  UINT8 nopnds = OP_opnds(phi);
+  TN *opnd[nopnds];
+  for (j = 0; j < OP_opnds(phi); j++) {
+    opnd[j] = OP_opnd(phi, j);
   }
+  result[0] = OP_result(phi, 0);
+
+  return Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
 }
 
-// Remove old phis, and if necessary replace with new one.
+// Remove old phis or replace it with a new one from phi_op_map.
 // Note that we cannot use the same list to insert selects because they
 // would be inserted in the 'head' bblock.
 static void
@@ -541,39 +526,26 @@ BB_Update_Phis(BB *bb)
   list<OP *> phi_list;
   
   FOR_ALL_BB_PHI_OPs(bb,phi) {
-    OP *new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
+    OP *new_phi;
 
-    if (new_phi != phi) {
-      if (Trace_Select_Gen) {
-        fprintf(TFile, "<select> Insert phi ");
-        Print_OP (new_phi); 
-        fprintf (TFile, "\n");
+    if (new_phi = (OP *)OP_MAP_Get(phi_op_map, phi)) {
+      if (new_phi == phi) {
+        phi_list.push_back(phi);
+        continue;
       }
-
-      SSA_Prepend_Phi_To_BB(new_phi, bb);
     }
     else {
-      Region_Change_Phis(bb, phi);
+      new_phi = Dup_PHI(phi);
+      phi_list.push_back(phi);
     }
-    
-    if (Trace_Select_Gen) {
-      fprintf(TFile, "<select> Remove phi ");
-      Print_OP (phi); 
-      fprintf (TFile, "\n");
-    }
-
-    phi_list.push_back(phi);
-
-    // cleanup phi_op_map and ssa_pool ?
-    // maintain DF ?
+    SSA_Prepend_Phi_To_BB(new_phi, bb);
   }
-
+  
   op_list::iterator phi_iter = phi_list.begin();
   op_list::iterator phi_end  = phi_list.end();
   for (; phi_iter != phi_end; ++phi_iter) {
     BB_Remove_Op(bb, *phi_iter);
   }
-
   phi_list.clear();
 }
 
@@ -699,6 +671,14 @@ BB_Fix_Spec_Loads (BB *bb)
     OP* lop = load_i.first.front();
     OP* slop = load_i.second.front();
 
+    fprintf (TFile, "Replacing op \n");
+    Print_OP (lop);
+    fprintf (TFile, "with \n");
+    Print_OP (slop);
+
+    fprintf (TFile, "in bb \n");
+    Print_BB (bb);
+    
     BB_Insert_Op_Before (bb, lop, slop);
     BB_Remove_Op (bb, lop);
 
@@ -750,7 +730,6 @@ static void
 Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 {
   OP *phi;
-  OP *new_phi;
   BOOL edge_needed = FALSE;
 
   //  fprintf (TFile, "\nin Select_Fold\n");
@@ -778,6 +757,8 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
     UINT8 i;
+    OP *new_phi;
+    TN *select_tn;
     TN *true_tn = NULL;
     TN *false_tn = NULL;
     
@@ -816,7 +797,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     // we don't need to go through (i = 0; i < OP_results(op); i++) loop.
     DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
         
-    TN *select_tn = OP_result (phi, 0);
+    select_tn = OP_result (phi, 0);
     
     if (BB_preds_len(tail) != 2) 
       select_tn =  Dup_TN(select_tn);
@@ -847,13 +828,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
       new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
     }
-    else
+    else {
+      // Mark phi to be deleted.
       new_phi = phi;
-
-    if (Trace_Select_Gen) {
-      fprintf(TFile, "<select> new phi ");
-      Print_OP (new_phi);
-      fprintf(TFile, "\n");  
     }
 
     OP_MAP_Set(phi_op_map, phi, new_phi);
@@ -906,9 +883,6 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   //  fprintf (TFile, "simple fall through BB%d BB%d done\n", BB_id(head), BB_id(tail));
   //  Print_All_BBs();
 
-  // update phis.
-  BB_Update_Phis(tail);
-
   // finally, if we had a branch, put it back.
   // goto should be the last instruction.
   if (br_op) {
@@ -923,8 +897,13 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 
   // If the 2 blocks can be merged, only for those that would be interesting
   // candidates for eventual nested hammocks.
-  if (Can_Merge_BB (head, tail, br_op))
+  if (Can_Merge_BB (head, tail, br_op)) {
     BB_Merge(head, tail);
+    tail = head;
+  }
+  
+  // Insert new phis and update ssa information.
+  BB_Update_Phis(tail);
 }
 
 void
@@ -962,8 +941,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Initialize_Memory();
 
-  phi_op_map = OP_MAP_Create();
-
   if (HB_Trace(HB_TRACE_BEFORE)) {
     Trace_IR(TP_SELECT, "Before Select Region Formation", NULL);
   }
@@ -993,15 +970,17 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         Print_All_BBs();
         fprintf (TFile, "******************************************\n");
       }
+
+      Initialize_Hammock_Memory();
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
+      Finalize_Hammock_Memory();
+
       if (Trace_Select_Gen) {
         fprintf (TFile, "---------- AFTER SELECT FOLD -------------\n");
         Print_All_BBs();
         fprintf (TFile, "------------------------------------------\n");
       }
     }
-    store_i.first.clear();
-    store_i.second.clear();
   }
 
   GRA_LIVE_Recalc_Liveness(rid);
