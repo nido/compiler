@@ -938,7 +938,7 @@ st2%.so: st2%.o ti_si.o
 # windows dll (+ import library)
 #
 st2%.dll st2%_dll.a : st2%.o  ti_si.o st2%_DllMain.o 
-	$(CC) --shared -o st2%.dll -Wl,--out-implib,st2%_dll.a \
+	$(CC) --shared -o st2$*.dll -Wl,--out-implib,st2$*_dll.a \
 	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
 
 #
