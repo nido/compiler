@@ -88,6 +88,10 @@
 #include "gtn_universe.h"
 #include "gtn_set.h"
 #include "cxx_memory.h"
+#ifdef TARG_ST
+#include "reg_live.h"
+#include "lao_stub.h"
+#endif
 /* These should be included with cgtarget.h !
 #include "targ_proc_properties.h"
 #include "targ_isa_bundle.h"
@@ -1075,6 +1079,98 @@ static INT Number_Of_Slots_In_Bundle(TI_BUNDLE *bundle)
 }
 #endif
 
+#ifdef TARG_ST200
+// FdF: Support for superblock scheduling. This means that latencies
+// at basic block boundary may be reduced, but the bundler will never
+// put an instruction earlier that scheduled, even if latency permits.
+#define SUPERBLOCK_SCHED
+
+/* ====================================================================
+ *  Branch_Taken_Latency
+ *
+ *  Returns the cycle at which op_branch can be scheduled. With no
+ *  superblock scheduling, this is equal to pending_latency, minus 1
+ *  to account for the cycle of the br, minus
+ *  CGTARG_Branch_Taken_Penalty(), to account for the latency of the
+ *  branch taken. In case of superblock scheduling, if the branch does
+ *  not leave the superblock (backedge to the top of the superblock),
+ *  then the branch latency is set to the scheduling date of the
+ *  branch operation.
+ *  ====================================================================
+ *  */
+static INT
+Branch_Taken_Latency (
+  BB *bb,
+  OP *op_branch,
+  INT estart,
+  INT pending_latency
+)
+{
+  INT branch_latency;
+  branch_latency = pending_latency - 1 - CGTARG_Branch_Taken_Penalty();
+
+#ifdef SUPERBLOCK_SCHED
+  // Scheduled by LAO in superblock mode.
+  if (CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
+    BB *branchTaken_succ;
+    if (OP_cond(op_branch)) {
+      BB *fallThru_succ = BB_Fall_Thru_Successor(bb);
+      branchTaken_succ = BB_Other_Successor(bb, fallThru_succ);
+    }
+    else
+      branchTaken_succ = BB_Unique_Successor(bb);
+    if ((branchTaken_succ != NULL) &&
+	(BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, branchTaken_succ))) {
+      branch_latency = estart < branch_latency ? estart : branch_latency;
+    }
+  }
+#endif
+
+  return branch_latency;
+}
+
+/* ====================================================================
+ *  Fall_Thru_Latency
+ *
+ *  Returns the cycle at which the fall through block can start. If no
+ *  fall thru block, do not append any empty bundle after the
+ *  unconditional branch. In case of a call, the next block can start
+ *  at the next bundle after the call. In case of a fall thru into the
+ *  same scheduling region, the fall thru latency is computed from the
+ *  scheduling dates of the last instruction of the current block and
+ *  the first instruction of the fall thru block.
+ *  ====================================================================
+ *  */
+static INT
+Fall_Thru_Latency (
+  BB *bb,
+  INT pending_latency
+)
+{
+  INT fallThru_latency = pending_latency;
+
+  if (!BB_Fall_Thru_Successor(bb))
+    fallThru_latency = Clock;
+
+  else if (BB_call(bb))
+    fallThru_latency = Clock;
+
+#ifdef SUPERBLOCK_SCHED
+  else if (CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
+    BB *fallThru_succ = BB_Fall_Thru_Successor(bb);
+    if ((BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, fallThru_succ))) {
+      OP *last_op = BB_last_op(bb);
+      OP *first_op = BB_first_op(fallThru_succ);
+      if ((last_op != NULL) && (first_op != NULL))
+	fallThru_latency = Clock + (OP_scycle(first_op) - OP_scycle(last_op)) - 1;
+    }
+  }
+#endif
+
+  return fallThru_latency;
+}
+#endif
+
 /* ====================================================================
  *   Handle_Bundle_Hazards
  *
@@ -1293,50 +1389,6 @@ Handle_Bundle_Hazards(
 }
 
 /* ====================================================================
- *   Compute_Max_OP_Latency
- *
- *   Calculate the max possible latency this 'op' can have to any
- *   successor.
- * ====================================================================
- */
-static INT
-Compute_Max_OP_Latency (
-  OP *op
-)
-{
-  INT i;
-  INT min_opnd = 1000, max_res = 0;
-  INT latency = 0;
-
-  if (OP_store(op)) {
-    // keep it simple for now
-    return 0;
-  }
-
-  if (OP_load(op)) {
-    // number of cycles to load the operand
-    //latency = TI_LATENCY_Load_Cycle(OP_code(op));
-    // simple for now, 0
-  }
-
-  // minimum cycle in which any operand may be read
-  for (i = 0; i < OP_opnds(op); i++) {
-    min_opnd = TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) < min_opnd ?
-      TI_LATENCY_Operand_Access_Cycle(OP_code(op),i) : min_opnd;
-  }
-
-  // maximum cycle in which any result is available
-  for (i = 0; i < OP_results(op); i++) {
-    max_res = TI_LATENCY_Result_Available_Cycle(OP_code(op), i) > max_res ?
-      TI_LATENCY_Result_Available_Cycle(OP_code(op), i) : max_res;
-  }
-
-  latency = latency < (max_res-min_opnd) ? (max_res-min_opnd) : latency;
-
-  return latency;
-}
-
-/* ====================================================================
  *   Make_Bundles
  * ====================================================================
  */
@@ -1405,6 +1457,12 @@ Make_Bundles (
   // Now iterate through the ops.
   OP *next_op;
   OP *op = BB_first_op(bb);
+
+  // FdF: Because the bundler now uses the scheduling dates to fill
+  // the bundles, unless latencies contraints are not met.
+#ifdef TARG_ST200
+  Clock = OP_scycle(op);
+#endif
     
   // Just to get things started
   if (OP_dummy(op)) BB_OP_MAP32_Set(omap, op, Clock);
@@ -1457,6 +1515,19 @@ Make_Bundles (
 	  estart = pclock + ARC_latency(arc);
 	}
       }
+
+      // FdF: Use scheduling date to fill bundles if superblock
+      // scheduling is enabled and done.
+#ifdef TARG_ST200
+#ifdef SUPERBLOCK_SCHED
+      if (BB_scheduled(bb) && CG_LAO_Region_Map) {
+	if (OP_scycle(op) > estart)
+	  estart = OP_scycle(op);
+	else if (estart > OP_scycle(op))
+	  DevWarn("BB %d, Clock %d: illegal bundle generated by the scheduler", BB_id(bb), Clock);
+      }
+#endif
+#endif
 
       if (Trace_HB) {
 	fprintf(TFile, "  estart = %d (current %d)\n", estart, Clock);
@@ -1519,8 +1590,8 @@ Make_Bundles (
 	// of the branch taken. If the branch is not taken, empty
 	// bundles will be added after the branch while Clock < pending_latency.
 
-	INT earliest_estart = pending_latency - 1 - CGTARG_Branch_Taken_Penalty();
-	if (earliest_estart > estart) estart = earliest_estart;
+	INT branch_latency = Branch_Taken_Latency(bb, op, estart, pending_latency);
+	if (branch_latency > estart) estart = branch_latency;
 #else
 	if (pending_latency > estart) estart = pending_latency;
 #endif
@@ -1591,7 +1662,21 @@ Make_Bundles (
     //
     // We do not need any more pending latency stuff, if it's a xfer
     if (!OP_xfer(op)) {
-      INT latency = Compute_Max_OP_Latency (op);
+      INT latency = 0;
+#ifdef TARG_ST
+      BOOL liveout = FALSE;
+      INT i;
+      for (i = 0; i < OP_results(op); i++) {
+	TN *result_tn = OP_result(op,i);
+	if (TN_is_register(result_tn)) {
+	  ISA_REGISTER_CLASS result_cl = TN_register_class (result_tn);
+	  REGISTER result_reg = TN_register (result_tn);
+	  liveout |= REG_LIVE_Outof_BB (result_cl, result_reg, bb);
+	}
+      }
+      if (liveout)
+#endif
+	latency = CGTARG_Max_OP_Latency (op);
       if (Clock+latency > pending_latency) pending_latency = Clock+latency;
 
       if (Trace_HB) fprintf(TFile, "  max latency = %d [pending %d]\n", 
@@ -1600,7 +1685,7 @@ Make_Bundles (
 
     // Set the <end_group> flag if
     // <op> has to be last inst in the instruction group. 
-    if (OP_l_group(op)) {
+    if (OP_l_group(op) || (next_op == NULL)) {
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(op, bundle);
       *pc += Number_Of_Slots_In_Bundle(bundle);
@@ -1638,14 +1723,16 @@ Make_Bundles (
     op = next_op;
 
   } /* FOR_ALL_BB_OPs_FWD */
+
+#ifdef TARG_ST200
+  // FdF: Adjust pending_latency to take into account unconditional
+  // branch, calls, and superblock scheduling.
+  pending_latency = Fall_Thru_Latency(bb, pending_latency);
+    
+#endif
  
   // while there are pending latencies, add noop cycles
-  // FdF: No need to fill the pending latency if the bb cannot be left by a fall thru.
-#ifdef TARG_ST200
-    if (Clock < pending_latency && BB_Fall_Thru_Successor(bb)) {
-#else
   if (Clock < pending_latency) {
-#endif
 
     if (Trace_HB) fprintf(TFile,"  adding noops for pending latency ...\n");
 

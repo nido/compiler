@@ -85,6 +85,10 @@
  *        Return the number of extra cycles (often 0) consumed by a
  *        branch that is taken (even if correctly predicted).
  *
+ *	INT32 CGTARG_Max_OP_Latency(OP op)
+ *	  Return the maximum latency this op can have to any
+ *	  successor.
+ *
  *	BOOL CGTARG_Use_Brlikely(float branch_taken_probability)
  *	  Given a conditional branch with a <branch_taken_probability>
  *	  return TRUE if it would be beneficial to convert it to a brlikely.
@@ -515,8 +519,7 @@
  *        latency of a load
  *
  * ====================================================================
- * ====================================================================
- */
+ * ==================================================================== */
 
 #ifndef CGTARGET_INCLUDED
 #define CGTARGET_INCLUDED
@@ -780,6 +783,10 @@ inline INT32 CGTARG_Branch_Taken_Penalty(void)
   return CGTARG_branch_taken_penalty_overridden ?
     CGTARG_branch_taken_penalty : 1;
 }
+
+#ifdef TARG_ST
+INT32 CGTARG_Max_OP_Latency(OP *op);
+#endif
 
 #ifdef TARG_ST200
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency);

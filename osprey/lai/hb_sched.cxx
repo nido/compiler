@@ -1553,19 +1553,6 @@ HB_Schedule::Invoke_Pre_HBS_Phase(BB* bb)
       BB_Move_Op_To_End (_prolog_bb, bb, op);
     }
 
-#ifdef TARG_ST200
-    // Iterate over all the operations to change them to _ii when needed
-    for (op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
-      TOP etop;
-      if (OP_inst_words(op) == 2)
-	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
-      if (CGTARG_need_extended_Opcode(op, &etop)) {
-	if (OP_inst_words(op) == 1)
-	  OP_Change_Opcode(op, etop);
-      }
-    }
-#endif
-
     // Special case handling for regions.
     if (BB_rid(bb) != NULL && RID_cginfo(BB_rid(bb)) != NULL) {
       CGRIN *cgrin = RID_cginfo(BB_rid(bb));

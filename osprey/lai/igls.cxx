@@ -85,6 +85,7 @@
 #include "cxx_memory.h"
 #include "hb_sched.h"
 #include "hb_hazards.h"
+#include "reg_live.h"
 /* #include "targ_proc_properties.h" */
 
 
@@ -325,6 +326,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 
     // Do local scheduling for BBs which are not part of HBs. 
     // (after register allocation).
+    REG_LIVE_Analyze_Region();
     for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
       if (    ( rid = BB_rid(bb) )
 	      && ( RID_level(rid) >= RL_CGSCHED ) )
@@ -353,6 +355,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       }
       Handle_All_Hazards (bb);
     } /* for (bb= REGION_First_BB).. */
+    REG_LIVE_Finish();
 
     // Do branch optimizations here.
     if (should_we_schedule && should_we_local_schedule) {

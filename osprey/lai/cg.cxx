@@ -132,6 +132,10 @@ RID *Current_Rid;
 
 TN_MAP TN_To_PREG_Map;
 
+#ifdef TARG_ST
+BB_MAP CG_LAO_Region_Map = NULL;
+#endif
+
 /* WOPT alias manager */
 struct ALIAS_MANAGER *Alias_Manager;
 
@@ -747,25 +751,27 @@ CG_Generate_Code(
     Check_for_Dump ( TP_EBO, NULL );
   }
 
+#ifdef TARG_ST200
+  // Iterate over all the operations to change them to _ii when needed.
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+      TOP etop;
+      if (OP_inst_words(op) == 2)
+	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
+      if (CGTARG_need_extended_Opcode(op, &etop)) {
+	if (OP_inst_words(op) == 1)
+	  OP_Change_Opcode(op, etop);
+      }
+    }
+  }
+#endif
+
 #ifdef TARG_ST
   // Call the LAO for postpass scheduling.
   if (CG_LAO_optimizations & Optimization_PostSched) {
-
-#ifdef TARG_ST200
-    // Iterate over all the operations to change them to _ii when needed.
-    for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
-      for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
-	TOP etop;
-	if (OP_inst_words(op) == 2)
-	  OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
-	if (CGTARG_need_extended_Opcode(op, &etop)) {
-	  if (OP_inst_words(op) == 1)
-	    OP_Change_Opcode(op, etop);
-	}
-      }
-    }
-#endif
-
+    //
+    CG_LAO_Region_Map = BB_MAP32_Create();
+    //
     Set_Error_Phase( "LAO Postpass Scheduling" );
     lao_optimize_PU(Optimization_PostSched);
     if (frequency_verify)
@@ -773,10 +779,17 @@ CG_Generate_Code(
   }
   // Direct call to the bundler, and bypass the IGLS.
   if (CG_LAO_optimizations & Optimization_Linearize) {
+    REG_LIVE_Analyze_Region();
+    Trace_HB = Get_Trace (TP_SCHED, 1);
     for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
       void Handle_All_Hazards(BB *bb);
       Handle_All_Hazards(bb);
     }
+    REG_LIVE_Finish();
+  }
+  if (CG_LAO_Region_Map) {
+    BB_MAP_Delete(CG_LAO_Region_Map);
+    CG_LAO_Region_Map = NULL;
   }
   if (CG_LAO_optimizations); else
 #endif

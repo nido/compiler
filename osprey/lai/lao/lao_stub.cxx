@@ -11,6 +11,7 @@
 #include "op.h"
 #include "tag.h"
 #include "tn_map.h"
+#include "bb_map.h"
 #include "gtn_universe.h"
 #include "gtn_tn_set.h"
 #include "gra.h"
@@ -79,6 +80,7 @@ extern "C" {
 
 typedef vector<BB*> BB_VECTOR;
 
+CG_EXPORTED extern BB_MAP CG_LAO_Region_Map;
 
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
 // These functions are the only ones to call the Interface_make functions.
@@ -505,6 +507,9 @@ CGIR_BB_create(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
   // Set the rid.
   BB_rid(new_bb) = cgir_rid;
   //
+  if (CG_LAO_Region_Map != NULL)
+    BB_MAP32_Set(CG_LAO_Region_Map, new_bb, ordering);
+  //
   return new_bb;
 }
 
@@ -549,6 +554,9 @@ CGIR_BB_update(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_LI
   if (optimizations & Optimization_PostSched) Set_BB_scheduled(cgir_bb);
   // Set the rid.
   BB_rid(cgir_bb) = cgir_rid;
+  //
+  if (CG_LAO_Region_Map != NULL)
+    BB_MAP32_Set(CG_LAO_Region_Map, cgir_bb, ordering);
 }
 
 // Chain two CGIR_BBs in the CGIR.
