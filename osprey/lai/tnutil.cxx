@@ -375,6 +375,34 @@ Gen_Register_TN (
   }
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   Get_Normalized_TN_Value
+ *
+ *   [CG]: normalizes upper non significant bits of a TN.
+ *   We normalize values by sign-extending from <size> to 8 bytes.
+ *   For instance a TN of size 4 with 0x80000000 will have
+ *   a 64 bits value of 0xffffffff80000000.
+ *   The rational is to get always identical values is 2 values differ
+ *   in the upper non significant bits.
+ *   It is also done like this in the WHIRL.
+ *   Note however that the input constant must already be correctly sign
+ *   or zero extendend.
+ * ====================================================================
+ */
+static INT64
+Get_Normalized_TN_Value(INT64 ivalue, INT size)
+{
+  FmtAssert(8*size <= 64, ("Get_Normalized_TN_Value: TN size is too large: %d\n", size));
+  FmtAssert(8*size == 64 || (ivalue >= (- 1LL << (8*size-1)) &&
+			     ivalue <= (((1LL << (8*size)) - 1LL))),
+       ("Get_Normalized_TN_Value: %d-byte literal 0x%016llx is out-of-range", size, ivalue));
+
+  return ((ivalue) << (64 - size*8)) >> (64 - size*8);
+}
+
+#endif
+
 /* ====================================================================
  *   Gen_Unique_Literal_TN
  *
@@ -388,6 +416,9 @@ Gen_Unique_Literal_TN (
 )
 {
   TN *tn = Gen_TN ();
+#ifdef TARG_ST
+  ivalue = Get_Normalized_TN_Value(ivalue, size);
+#endif
   Set_TN_size(tn, size);
   Set_TN_is_constant(tn);
   Set_TN_has_value(tn);
@@ -411,6 +442,10 @@ Gen_Literal_TN (
   INT hash_value;
   TN *tn;
 
+#ifdef TARG_ST
+  ivalue = Get_Normalized_TN_Value(ivalue, size);
+#endif
+
   Is_True(size != 4 || (ivalue >= -2147483648LL && ivalue <= 4294967295LL),
        ("Gen_Literal_TN: 4-byte literal 0x%016llx is out-of-range", ivalue));
 
@@ -424,7 +459,12 @@ Gen_Literal_TN (
     Set_TN_size(tn, size);
     Set_TN_is_constant(tn);
     Set_TN_has_value(tn);
+#ifdef TARG_ST
+    // [CG] : Why not using the write accessor?
+    Set_TN_value(tn, ivalue);
+#else
     TN_value(tn) = ivalue;
+#endif
 
     hash_value = HASH_VALUE(ivalue);
     Hash_Table[hash_value] = 

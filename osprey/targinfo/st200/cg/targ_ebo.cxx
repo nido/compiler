@@ -1051,10 +1051,10 @@ EBO_Fold_Constant_Compare (
      but we don't. */
   if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) return FALSE;
   
-  tn0_val = TN_Value (tn0);
-  tn1_val = TN_Value (tn1);
-  tn0_uval = TN_Value (tn0);
-  tn1_uval = TN_Value (tn1);
+  tn0_val = (INT64)(INT32)TN_Value (tn0);
+  tn1_val = (INT64)(INT32)TN_Value (tn1);
+  tn0_uval = (UINT64)(UINT32)TN_Value (tn0);
+  tn1_uval = (UINT64)(UINT32)TN_Value (tn1);
 
   switch (opcode) {
     case TOP_cmpeq_i_r:
@@ -3338,7 +3338,7 @@ mulhh_sequence (
 
   TN *l2_tn0 = OP_opnd(l2_op, 0);
   TN *l2_tn1 = OP_opnd(l2_op, 1);
-  if (!TN_Is_Constant(l2_tn1) || TN_value(l2_tn1) != 16)
+  if (!TN_has_value(l2_tn1) || TN_value(l2_tn1) != 16)
     return FALSE;
 
   EBO_TN_INFO *l2_tninfo0 = l2_opinfo->actual_opnd[0];
@@ -3494,7 +3494,7 @@ shl_mulhs_sequence (
   TN *l1_res = OP_result(l1_op, 0);
 
   // shl must be by 16 bits
-  if (!TN_is_constant(l1_tn1) || TN_value(l1_tn1) != 16)
+  if (!TN_has_value(l1_tn1) || TN_value(l1_tn1) != 16)
     return FALSE;
 
   EBO_TN_INFO *l1_tninfo0 = opnd_tninfo[0];

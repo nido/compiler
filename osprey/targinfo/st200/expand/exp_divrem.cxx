@@ -537,8 +537,20 @@ Expand_Rem (
   //
   INT64 src2_val;
   BOOL const_src2 = TN_Value_At_Op (src2, NULL, &src2_val);
+  BOOL is_signed = MTYPE_is_signed(mtype);
+
 
   if (const_src2) {
+
+    // Handle trivial cases
+    if (src2_val == 1 ||
+	(is_signed && src2_val == -1)) {
+      Expand_Immediate (result, Gen_Literal_TN(0, MTYPE_byte_size(mtype)),
+			mtype, ops);
+      return;
+    }
+
+
     //
     // Handle powers of 2 specially.
     //
