@@ -41,7 +41,6 @@
  * 1/2 : EAGER_SAFE/EAGER_ARITH: safe arithmetic ops (default)
  * 3   : EAGER_DIVIDE division allowed
  * 4   : EAGER_MEMORY speculate memory loads (using dismissible).
- * SEE ALSO common/com/config.cxx
  *
  * ====================================================================
  * ====================================================================
@@ -404,43 +403,6 @@ BB_Localize_Tns (BB *bb)
   }
 }
 
-/////////////////////////////////////
-static void
-Rename_Locals(OP* op, hTN_MAP dup_tn_map)
-/////////////////////////////////////
-//
-//  Local TN's must be renamed in duplicated block, otherwise
-//  they'll look like globals.  Note that we assume we're processing
-//  the ops in forward order.  If not, the way we map the new names
-//  below won't work.
-//
-/////////////////////////////////////
-{
-  INT i = 0;
-  TN* res;
-
-  for (i = 0; i < OP_results(op); i++) {
-    res = OP_result(op, i);
-    if (TN_is_register(res) &&
-	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
-      TN* new_tn = Dup_TN(res);
-      hTN_MAP_Set(dup_tn_map, res, new_tn);
-      Set_OP_result(op, i, new_tn);
-    }
-  }
-
-  i = 0;
-  for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
-    res = OP_opnd(op, opndnum);
-    if (TN_is_register(res) &&
-	!(TN_is_dedicated(res) || TN_is_global_reg(res))) {
-      res = (TN*) hTN_MAP_Get(dup_tn_map, res);
-      Set_OP_opnd(op, i, res);
-    }
-    i++;
-  }
-}
-
 /* ================================================================
  *
  *   Misc routines to manipulate the SSA's Phis.
@@ -484,14 +446,14 @@ BB_Update_Phis(BB *bb)
 
 /* ================================================================
  *
- *   Hammock Selection
+ *   If blocks Selection
  *
  * ================================================================
  */
 // Create a map of conditional blocks sorted in postorder. That makes it
 // easy to iterate through possible hammocks regions.
 static void
-Identify_Hammock_Candidates(void)
+Identify_Logifs_Candidates(void)
 {
   BB *bb;
 
@@ -501,7 +463,7 @@ Identify_Hammock_Candidates(void)
   cand_vec = TYPE_MEM_POOL_ALLOC_N(BB *, &MEM_Select_pool, PU_BB_Count);
   max_cand_id = 0;
 
-  // Make a list of hammock candidates.
+  // Make a list of logifs blocks
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     INT32 bb_id = BB_MAP32_Get(postord_map, bb);
     DevAssert(bb_id >= 0 && bb_id <= PU_BB_Count, ("bad <postord_map> value"));
@@ -948,6 +910,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 {
   BB *bb1_fall_thru, *bb1_target, *bb2_fall_thru, *bb2_target;
   BB *fall_thru_block, *joint_block;
+  BB *bb;
   BOOL invert;
   BOOL AndNeeded;
 
@@ -988,6 +951,16 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   UINT8 bb_pos = Get_In_Edge_Pos (bb2, joint_block);
 
+  // remember succ list.
+  BBLIST *succs = BB_succs(bb2);
+  BB_SET *succ_set = BB_SET_Create_Empty(BB_succs_len (bb2), &MEM_Select_pool);
+  BBLIST *item;
+
+  FOR_ALL_BBLIST_ITEMS(succs,item){
+    bb = BBLIST_item(item);
+    BB_SET_Union1D(succ_set, bb, &MEM_Select_pool);
+  }
+
   BB_Remove_Branch(bb1);
   BB_Remove_Branch(bb2);
   Promote_BB(bb2, bb1);
@@ -1016,7 +989,8 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   if (joint_block == BB_next(bb1)) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, fall_thru_block, 1.0L - BB_freq(joint_block), joint_block);
+    Target_Logif_BB(bb1, fall_thru_block, 1.0L - BB_freq(joint_block),
+                    joint_block);
   }
   else {
     Target_Logif_BB(bb1, joint_block, BB_freq(joint_block), fall_thru_block);
@@ -1024,31 +998,31 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
     
-  // if needed, update phi operands and new edge from head.
-  BB *phi_block = invert ? fall_thru_block : joint_block;
-  OP *phi;
+  FOR_ALL_BB_SET_members(succ_set, bb) {
+    OP *phi;
 
-  if (joint_block == phi_block) {
-    FOR_ALL_BB_PHI_OPs(phi_block, phi) {
-      TN *result[1];
-      UINT8 j = 0;
-      UINT8 i = 0;
-      UINT8 nopnds = OP_opnds(phi)-1;
-      TN *opnd[nopnds];
-      for (i = 0; i < OP_opnds(phi); i++) {
-        if (i != bb_pos)
-          opnd[j++] = OP_opnd(phi, i);
+    if (bb == joint_block) {
+      FOR_ALL_BB_PHI_OPs(bb, phi) {
+        TN *result[1];
+        UINT8 j = 0;
+        UINT8 i = 0;
+        UINT8 nopnds = OP_opnds(phi)-1;
+        TN *opnd[nopnds];
+        for (i = 0; i < OP_opnds(phi); i++) {
+          if (i != bb_pos)
+            opnd[j++] = OP_opnd(phi, i);
+        }
+        
+        result[0] = OP_result(phi, 0);
+        OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+        OP_MAP_Set(phi_op_map, phi, new_phi);
       }
-
-      result[0] = OP_result(phi, 0);
-      OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-      OP_MAP_Set(phi_op_map, phi, new_phi);
+      BB_Update_Phis(bb);  
     }
-    BB_Update_Phis(joint_block);  
-  }
-  else {
-    FOR_ALL_BB_PHI_OPs(fall_thru_block, phi) {
-      Change_PHI_Predecessor (phi, bb2, bb1);
+    else {
+      FOR_ALL_BB_PHI_OPs(bb, phi) {
+        Change_PHI_Predecessor (phi, bb2, bb1);
+      }
     }
   }
 }
@@ -1324,7 +1298,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   if (Trace_Select_Candidates)
     Trace_IR(TP_SELECT, "Before Select Region Formation", NULL);
 
-  Identify_Hammock_Candidates();
+  Identify_Logifs_Candidates();
 
   Calculate_Dominators();
 
