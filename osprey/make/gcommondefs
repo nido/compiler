@@ -196,6 +196,29 @@ LEX = flex
 YACC = bison
 
 endif
+ifeq ($(BUILD_COMPILER), OPEN64)
+
+ifeq ($(BUILD_OS),SUNOS5_ST200)
+ifeq ($(BUILD_CCACHE), CCACHE)
+ifndef CCACHE_DIR
+$(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
+endif
+export CCACHE_DIR
+CCACHE=ccache
+endif
+RUNNER=/apa/comp/SunOS5/st200/R3.1/bin/st200run -tsimfast --
+COMPILER_LOC=$(CCACHE) /apa/comp/SunOS5/st200/R3.1/bin/
+endif
+ifeq ($(BUILD_OS),LINUX_ST200)
+RUNNER=/apa/comp/Linux-RH-7.2/st200/R3.1/bin/st200run -tsimfast --
+COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R3.1/bin/
+endif
+BINUTILS_LOC=$(COMPILER_LOC)
+#BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+#BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+PREFIX=st200-
+CCPREFIX=st200
+endif
 
 ##
 ## GNU tools names with ccache compilation cache tool
@@ -284,7 +307,9 @@ F77 = f77
 F90 = f90
 endif
 
-
+ifndef CCPREFIX
+CCPREFIX=$(PREFIX)
+endif
 ##
 ## Tools definition
 ##
@@ -296,8 +321,8 @@ LD	= $(BINUTILS_LOC)$(PREFIX)$(LDNAME)$(SUFFIX)
 NM	= $(BINUTILS_LOC)$(PREFIX)$(NMNAME)$(SUFFIX)
 
 # compilers 
-C++	= $(COMPILER_LOC)$(PREFIX)$(C++NAME)$(SUFFIX)
-CC	= $(COMPILER_LOC)$(PREFIX)$(CCNAME)$(SUFFIX) 
+C++	= $(COMPILER_LOC)$(CCPREFIX)$(C++NAME)$(SUFFIX)
+CC	= $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX) 
 C++C	= $(C++)
 CXX	= $(C++)
 FC	= $(F77)
