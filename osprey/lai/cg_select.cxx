@@ -134,6 +134,8 @@ BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
 const char* CG_select_factor = "1.0";
+/* is there a TARG interface for that ? */
+INT branch_penalty = 3;
 
 /* ================================================================
  *
@@ -690,11 +692,12 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   BBLIST *bb1, *bb2;
 
   // Find block probs
-  bb1 = BBlist_Fall_Thru_Succ(head);
-  FOR_ALL_BB_SUCCS(head, bb2) {
+  bb2 = BBlist_Fall_Thru_Succ(head);
+  FOR_ALL_BB_SUCCS(head, bb1) {
     if (bb1 != bb2)
       break;
   }
+
   float prob1 = BBLIST_prob(bb1);
   float prob2 = BBLIST_prob(bb2);
 
@@ -747,8 +750,14 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   INT cycles1 = CG_SCHED_EST_Cycles(se1);
   INT cycles2 = CG_SCHED_EST_Cycles(se2);
 
+  DevAssert(cyclesh > 0, ("Empty head block"));  
+  cycles1 = MAX(cycles1, 0);
+  cycles2 = MAX(cycles2, 0);
+
   // pondarate cost of each region taken separatly.
-  float est_cost_bbs = (((float)(cycles1) * prob1) + ((float)(cycles2) * prob2) + (float)cyclesh);
+  float est_cost_bbs = (((float)(cycles1) * prob1) +
+                        ((float)(cycles2) * prob2) +
+                        (float)cyclesh + (float)branch_penalty);
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "noifc region: head %d, bb1 %d, bb2 %d\n",
@@ -772,20 +781,20 @@ Check_Profitable_Select (BB *head, BB_SET *region1, BB_SET *region2)
   CG_SCHED_EST_Append_Scheds(sehead, se1);
   CG_SCHED_EST_Append_Scheds(sehead, se2);
 
-  cyclesh = CG_SCHED_EST_Resource_Cycles(sehead);
+  cyclesh = CG_SCHED_EST_Cycles(sehead);
 
   CG_SCHED_EST_Delete(sehead);
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
 
   // higher select_factor means ifc more aggressive.
-  INT select_factor = atoi(CG_select_factor);
+  float select_factor = atof(CG_select_factor);
 
   // cost of if converted region. prob is one. Remove the select factor.
-  float est_cost_ifc = (float)(cyclesh - select_factor);
+  float est_cost_ifc = (float)cyclesh / select_factor;
   
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: BBs %d - %d\n", cyclesh, select_factor);
+    fprintf (Select_TFile, "ifc region: BBs %d / %f\n", cyclesh, select_factor);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_bbs, est_cost_ifc);
   }
 
