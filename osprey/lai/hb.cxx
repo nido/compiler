@@ -60,7 +60,9 @@
 #include "hb_if_convert.h"
 #include "hb_tail_duplication.h"
 
+#ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
+#endif
 
 MEM_POOL MEM_HB_pool;
 static MEM_POOL MEM_HB_loop_pool;
@@ -385,8 +387,6 @@ Clear_Visited_Bits(list<HB_CAND_TREE*>& candidate_regions)
   }
 }
 
-#ifdef SUPPORTS_PREDICATION
-
 /////////////////////////////////////
 static void
 Update_Tree(HB_CAND_TREE* cand)
@@ -566,8 +566,6 @@ Form_Hyperblocks(HB_CAND_TREE*        cand,
   }
 }
 
-#endif /* SUPPORTS_PREDICATION */
-
 /////////////////////////////////////
 void
 HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
@@ -621,7 +619,6 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   //
   Setup_HB_bb_map();
 
-#ifdef SUPPORTS_PREDICATION  
   BB_MAP hct_entry_map = BB_MAP_Create();  
 
   HB_Identify_Hammock_Candidates(candidate_regions, hct_entry_map);
@@ -716,8 +713,6 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   if (HB_Trace(HB_TRACE_DRAWFLOW3)) {
       draw_flow_graph();
   }
-
-#endif /* SUPPORTS_PREDICATION */
 
   Finalize_Memory();
   Stop_Timer (T_HBF_CU);

@@ -105,9 +105,7 @@
 #ifndef HB_IF_CONVERT_H_INCLUDED
 #define HB_IF_CONVERT_H_INCLUDED
 
-#ifdef SUPPORTS_PREDICATION
 extern void HB_If_Convert(HB* hb, list<HB_CAND_TREE*>& candidate_regions);
 extern BOOL HB_Safe_For_If_Conversion(HB* hb);
-#endif
 
 #endif

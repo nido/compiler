@@ -61,8 +61,6 @@
 #include "hb_trace.h"
 #include "hb_id_candidates.h" // For use in Force_If_Convert
 
-#ifdef SUPPORTS_PREDICATION
-
 /////////////////////////////////////
 static void 
 dump_control_dependencies(char * title, HB* hb, BB_MAP control_dependences,
@@ -446,6 +444,8 @@ Merge_Blocks(HB*                  hb,
   Replace_Block(bb_first,bb_second,candidate_regions);
 }
 
+#ifdef SUPPORTS_PREDICATION
+
 // want to AND together controlling predicate to existing qualifying predicate
 // such that op is executed iff ptn1 and ptn2 are both true.
 static void
@@ -712,6 +712,8 @@ DevWarn("bb %d: need to predicate existing predicate %d with %d", BB_id(bb), TN_
   } // if
 }
 
+#endif /* SUPPORTS_PREDICATION */
+
 /////////////////////////////////////
 //
 // Make a goto from bb to fall_thru_exit, predicated with
@@ -739,7 +741,9 @@ Make_Fall_Thru_Goto(BB*                  bb,
   Add_Goto(fall_thru_goto, fall_thru_exit);
   if (pred_tn && pred_tn != True_TN) {
     Make_Branch_Conditional(fall_thru_goto);
+#ifdef SUPPORTS_PREDICATION
     Predicate_Block(fall_thru_goto,pred_tn, hb_blocks);
+#endif
     Unlink_Pred_Succ(fall_thru_goto, fall_thru_exit);
     Link_Pred_Succ_with_Prob(fall_thru_goto,fall_thru_exit,goto_executes_prob);
   }  
@@ -750,6 +754,7 @@ Make_Fall_Thru_Goto(BB*                  bb,
 
   return fall_thru_goto;
 }
+
 
 
 static INT 
@@ -1033,10 +1038,12 @@ Remove_Branches(HB*                  hb,
    freq_map = BB_MAP_Create();
    Compute_Block_Frequencies(block_order,freq_map);
       
+#ifdef SUPPORTS_PREDICATION
    // make sure pqs is available
    if (!PQSCG_pqs_valid()) {
 	PQSCG_reinit(REGION_First_BB);
    }
+#endif
 
    // Dump the trace information
    if (HB_Trace(HB_TRACE_CONVERT)) {
@@ -1227,8 +1234,10 @@ Remove_Branches(HB*                  hb,
      }
       
      // We always predicate the current block
+#ifdef SUPPORTS_PREDICATION
      Predicate_Block(bb,(TN*) BB_MAP_Get(predicate_tns, bb), HB_Blocks(hb));
-     
+#endif
+
      // Update the frequency of the block
      BB_freq(bb) = block_freq;
 
@@ -1686,6 +1695,7 @@ Check_for_Cycles(HB* hb, BB* bb, BB_SET *visited)
   return TRUE;
 }
 
+#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 BB *

@@ -232,16 +232,15 @@ inline HB_CAND_TREE* HB_CAND_TREE_Alloc(MEM_POOL* pool)
   return hct;
 }
 
-#ifdef SUPPORTS_PREDICATION
 extern void HB_Identify_Hammock_Candidates(list<HB_CAND_TREE*>& candidates,
 					   BB_MAP hct_entry_map);
 extern void HB_Identify_General_Candidates(list<HB_CAND_TREE*>& candidates,
 					   BB_MAP hct_entry_map,
 					   INT pass);
-#endif
 extern void HB_Identify_Candidates_Init();
-#ifdef SUPPORTS_PREDICATION
 extern BOOL Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry);
+
+#ifdef SUPPORTS_PREDICATION
 extern BOOL Check_HB_For_PQS_Suitability(BB_SET *selected_hb, BB *entry);
 #endif
 

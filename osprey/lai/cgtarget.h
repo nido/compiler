@@ -757,10 +757,8 @@ inline BOOL CGTARG_Use_Load_Latency(OP *pred_op, TN *tn)
 #endif
 }
 
-#ifdef SUPPORTS_PREDICATION
 // Returns TRUE if OP is a suitable candidate for HBF.
 extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
-#endif
 
 // Handle all the Errata hazards. These are typically workarounds
 // for bugs in particular versions of various target processors.

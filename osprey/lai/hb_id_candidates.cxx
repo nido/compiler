@@ -279,6 +279,7 @@ Check_HB_For_PQS_Suitability(BB_SET* selected_hb, BB* bb_entry)
 
   return TRUE;
 }
+#endif
 
 /////////////////////////////////////
 BOOL
@@ -407,8 +408,6 @@ Check_BB_For_HB_Suitability(BB* bb, BB* bb_entry)
   return TRUE;
 }
 
-#endif
-
 /////////////////////////////////////
 void
 HB_Identify_Candidates_Init()
@@ -479,8 +478,6 @@ Make_New_Region(list<HB_CAND_TREE*>&       candidates,
   return new_cand;
 }
 
-#ifdef SUPPORTS_PREDICATION
-
 /////////////////////////////////////
 void
 Find_Interior_Blocks(list<HB_CAND_TREE*>& candidates)
@@ -501,6 +498,7 @@ Find_Interior_Blocks(list<HB_CAND_TREE*>& candidates)
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     succ = BB_Unique_Successor(bb);
+
     if (succ && !BB_SET_MemberP(BB_dom_set(succ), bb) && 
 	Check_BB_For_HB_Suitability(bb, bb)) {
       HB_CAND_TREE* cand;
@@ -678,8 +676,6 @@ Check_Region(BB**                 orig_dom,
   return retval && BS_Size(blocks) <= HB_max_blocks;
 }
 
-#endif /* SUPPORTS_PREDICATION */
-
 // See if a cand tree is a subchild of a particular parent
 
 
@@ -772,8 +768,6 @@ Insert_Parent(HB_CAND_TREE*        new_parent,
   HB_CAND_TREE_Parent_Set(child, new_parent);
   HB_CAND_TREE_Kids(new_parent).push_front(child);
 }
-
-#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 BOOL
@@ -916,8 +910,6 @@ Attempt_Merge(HB_CAND_TREE*        new_region,
   return (TRUE);
 }
 
-#endif /* SUPPORTS_PREDICATION */
-
 /////////////////////////////////////
 static void
 Add_Children(HB_CAND_TREE*            new_region, 
@@ -972,8 +964,6 @@ Check_Parent(HB_CAND_TREE*          hct_parent,
     Insert_Parent(hct_parent, hct, candidates, hct_entry_map);
   }
 }
-
-#ifdef SUPPORTS_PREDICATION
 
 /////////////////////////////////////
 void
@@ -1080,7 +1070,9 @@ HB_Identify_Hammock_Candidates(list<HB_CAND_TREE*>& candidates,
 	}      
       }
 
+#ifdef SUPPORTS_PREDICATION
       if ( ! Check_HB_For_PQS_Suitability(blocks, dom)) continue;
+#endif
 
       if ( HB_skip_hammocks ) {
 	// We have an unfortunate bug where if we form hyperblocks on
@@ -1425,7 +1417,9 @@ Add_General_Region_To_Tree(BB*                    bb_entry,
     return;
   }
 
+#ifdef SUPPORTS_PREDICATION
   if (!Check_HB_For_PQS_Suitability(blocks, bb_entry)) return;
+#endif
 
   HB_CAND_TREE* new_region = Make_New_Region(candidates, bb_entry, NULL, NULL,
 					     &hct_entry_map, blocks,
@@ -1474,4 +1468,4 @@ HB_Identify_General_Candidates(list<HB_CAND_TREE*>&  candidates,
   Clean_Up_Candidates(candidates);
 }
 
-#endif /* SUPPORTS_PREDICATION */
+
