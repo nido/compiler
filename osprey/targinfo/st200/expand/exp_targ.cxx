@@ -1019,7 +1019,7 @@ Expand_Multiply (
   dump_tn (src2);
 #endif
 
-  is_signed = MTYPE_is_signed(rmtype);
+  is_signed = MTYPE_is_signed(s1mtype) || MTYPE_is_signed(s2mtype);
 
   //
   // Check for two constants
