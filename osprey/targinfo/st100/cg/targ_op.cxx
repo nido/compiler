@@ -77,8 +77,10 @@ OP_Is_Counted_Loop(OP *op)
 BOOL
 OP_Is_Advanced_Load( OP *memop )
 {
+#if 0
   if (!OP_load(memop)) return FALSE;
   if (TOP_is_dismissible(OP_code(memop))) return TRUE;
+#endif
 
   return FALSE;
 }
