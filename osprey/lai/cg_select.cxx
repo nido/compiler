@@ -113,7 +113,7 @@ op_list load_i;
  *   flags:
  * ====================================================================
  */
-BOOL CG_select_allow_dup = TRUE;
+BOOL CG_select_allow_dup = FALSE;
 
 /* ================================================================
  *
@@ -778,10 +778,10 @@ static void
 Sanity_Check()
 {
   for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
-      OP *phi;
-      FOR_ALL_BB_PHI_OPs(bb, phi) {
-        DevAssert(OP_opnds(op) == BB_preds(bb), ("ssa: invalid phi")); 
-      }
+    OP *phi;
+    FOR_ALL_BB_PHI_OPs(bb, phi) {
+      DevAssert(OP_opnds(phi) == BB_preds(bb), ("ssa: invalid phi")); 
+    }
   }
 }
 #endif
@@ -974,9 +974,9 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb)
 {
   BB* new_bb = NULL;
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
-  op_list phi_list;
   OPS new_ops = OPS_EMPTY;  
   OPS old_ops = OPS_EMPTY;
+  op_list old_phis;
 
   BB *succ = BB_Unique_Successor (bp);
   DevAssert (succ, ("Copy_bb"));
@@ -993,17 +993,39 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb)
 
   FOR_ALL_BB_OPs_FWD(bp, op) {
     if (OP_code (op) == TOP_phi) {
+      UINT8 nopnds = 0;
+      TN *opnd[BB_preds_len(bp)-1];
+      
       for (UINT8 i = 0; i < OP_opnds(op); i++) {
         if (Get_PHI_Predecessor (op, i) == to_bb) {
           Exp_COPY (OP_result (op, 0), OP_opnd (op, i), &new_ops);
         }
         else {
-          Exp_COPY (OP_result (op, 0), OP_opnd (op, i), &old_ops);
-          Rename_Locals (OPS_last(&old_ops), dup_tn_map);
-          Rename_Globals (OPS_last(&old_ops), dup_tn_map);
+          opnd[nopnds++] = OP_opnd (op, i);
         }
       }
-      phi_list.push_front(op);
+
+      // If the old phi had 2 TNs, each one is made into a copy.
+      // It it had more than 2 TNs, must maintain SSA by creating a new phi.
+      if (nopnds == 1) {
+        Exp_COPY (OP_result (op, 0), opnd[0], &old_ops);
+        // mark phi to be deleted.
+        old_phis.push_front(op);
+      }
+      else {
+        TN *result[1];
+
+        result[0] = OP_result (op, 0);
+        OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd); 
+        Rename_Locals (new_phi, dup_tn_map);
+        Rename_Globals (new_phi, dup_tn_map);
+        OP_MAP_Set(phi_op_map, op, new_phi);
+      }
+
+      if (OPS_length(&old_ops) != 0) {
+        Rename_Locals (OPS_last(&old_ops), dup_tn_map);
+        Rename_Globals (OPS_last(&old_ops), dup_tn_map);
+      }
     }
     else if (!OP_br (op)) {
       OP* new_op = Dup_OP (op);
@@ -1019,13 +1041,15 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb)
     }
   }
 
+  BB_Remove_Ops(bp, old_phis);
   Rename_PHIs(dup_tn_map, to_bb, succ);
-            
-  BB_Remove_Ops(bp, phi_list);
-  BB_Prepend_Ops (bp,   &old_ops);
-  BB_Append_Ops (to_bb, &new_ops);
 
   Unlink_Pred_Succ (to_bb,bp);
+
+  BB_Update_Phis(bp);
+
+  BB_Prepend_Ops (bp,   &old_ops);
+  BB_Append_Ops (to_bb, &new_ops);
 
   MEM_POOL_Pop(&MEM_local_pool);
 
@@ -1467,19 +1491,19 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BOOL edge_needed = (target_bb != tail && fall_thru_bb != tail);
   UINT8 n_preds_target    =  BB_preds_len (target_bb);
   UINT8 n_preds_fall_thru =  BB_preds_len (fall_thru_bb);
-  BOOL did_tail_duplicate = FALSE;
+  BOOL did_duplicate_bb = FALSE;
 
   dup_bb_phi_map = OP_MAP_Create();
 
   if (target_bb != tail && n_preds_target > 1) {
     Copy_BB_For_Duplication(target_bb, head);
     target_bb = tail;
-    did_tail_duplicate = TRUE;
+    did_duplicate_bb = TRUE;
   }
   if (fall_thru_bb != tail && n_preds_fall_thru > 1) {
     Copy_BB_For_Duplication(fall_thru_bb, head);
     fall_thru_bb = tail;
-    did_tail_duplicate = TRUE;
+    did_duplicate_bb = TRUE;
   }
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
@@ -1644,7 +1668,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   OP_MAP_Delete(dup_bb_phi_map);
 
   // We created new GTNs, must do a global recalc liveness.
-  if (did_tail_duplicate) 
+  if (did_duplicate_bb) 
     GRA_LIVE_Compute_Liveness_For_BB(tail);
 
   GRA_LIVE_Compute_Liveness_For_BB(head);
