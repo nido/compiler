@@ -1189,7 +1189,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
              ISA_EXEC_Unit_Prop(OP_code(op))));
   }
 
-  //  fprintf(TFile," exec property 0x%x\n",*prop);
+  //fprintf(TFile," exec property 0x%x\n",*prop);
 
   // If there is a need to delay the scheduling of <op>...
   // It is done after determination of prop because apparently
@@ -1202,6 +1202,10 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
     (TI_BUNDLE_Slot_Available(bundle, *prop, slot + 1) ||
      TI_BUNDLE_Slot_Available(bundle, *prop, slot - 1)) : TRUE;
 
+#if 1
+  // Turns out that end group will be created anyway
+  BOOL stop_bit_avail = TRUE;
+#else
   // if <stop_bit_reqd>, check for the availability of STOP bit being
   // available at position <slot - 1>.
   BOOL stop_bit_avail = (stop_bit_reqd) ? 
@@ -1213,27 +1217,34 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
       TI_BUNDLE_Reserve_Stop_Bit(bundle, slot - 1);
     }
   }
-   
+#endif
+
   // All bundles have a stop at the end, reserve it
   TI_BUNDLE_Reserve_Stop_Bit(bundle, 3);
+
+  //fprintf(TFile,"extra_slot_reqd = %s\n", extra_slot_reqd ? "true" : "false");
+  //fprintf(TFile,"stop_bit_avail = %s\n", stop_bit_avail ? "true" : "false");
 
   BOOL slot_avail = extra_slot_reqd && stop_bit_avail &&
     TI_BUNDLE_Slot_Available (bundle, *prop, slot);
 
-  if (slot_avail) {
+  //fprintf(TFile,"slot_avail = %s\n", slot_avail ? "true" : "false");
+
+#if 0
+  //  if (slot_avail) {
     // Arthur: I prefer to reserve stuff here rather than in hb_hazards.cxx
-    TI_BUNDLE_Reserve_Slot (bundle, slot, *prop);
-  }
-  else {
+  //    TI_BUNDLE_Reserve_Slot (bundle, slot, *prop);
+  //  }
+  //  else {
     // Need to unreserve the stop bits that I have reserved:
     if (slot > 0) {
       if (stop_bit_reqd && stop_bit_avail) {
 	TI_BUNDLE_Unreserve_Stop_Bit(bundle, slot - 1);
       }
     }
-
+#endif
     TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
-  }
+    //  }
 
   return slot_avail;
 }
@@ -1248,7 +1259,7 @@ void
 CGTARG_Handle_Bundle_Hazard (OP                          *op, 
 			     TI_BUNDLE                   *bundle, 
 			     VECTOR                      *bundle_vector,
-			     BOOL                        can_fill, 
+			     BOOL                        slot_avail, 
 			     INT                         slot_pos, 
 			     INT                         max_pos,
 			     BOOL                        stop_bit_reqd,
@@ -1260,20 +1271,25 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 
   // Adjust the slot_pos for TOPs which occupy more than 1 slot position,
   // eg. ??
-  INT adjusted_slot_pos = (can_fill && ISA_PACK_Inst_Words(OP_code(op)) > 1) ? 
+  //
+  INT adjusted_slot_pos = (slot_avail && ISA_PACK_Inst_Words(OP_code(op)) > 1) ? 
     max_pos + ISA_PACK_Inst_Words(OP_code(op)) - 1 : max_pos;
 
+  //
+  // If this has been no slot_avail, or and of bundle, fill with nops
+  //
   INT i;
   OP *prev_op = NULL;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     if (i > adjusted_slot_pos) break;
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
+      // fill with nops.
       if (i <= max_pos) {
 	OP *noop = Mk_OP(CGTARG_Noop_Top(ISA_EXEC_Slot_Prop(template_bit, i)));
 
 	// Check for conditions if noops need to be inserted before (or
 	// after) <op>.
-	if ((can_fill && i >= slot_pos)) { 
+	if ((slot_avail && i >= slot_pos)) { 
 	  BB_Insert_Op_After(OP_bb(op), (prev_op) ? prev_op : op, noop);
  	  OP_scycle(noop) = -1;
 	  prev_op = noop;

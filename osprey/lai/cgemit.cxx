@@ -2584,6 +2584,10 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
   FmtAssert (lc != TI_RC_ERROR, ("%s", TI_errmsg));
   vstr_end(buf);
 
+  if (OP_end_group(op) && Assembly) {
+    lc += fprintf(Asm_File, " %s", ISA_PRINT_END_GROUP);
+  }
+
   while (lc < 30) {
     if (Assembly || Lai_Code) fputc (' ', Output_File);
     lc++;
@@ -3329,7 +3333,6 @@ Assemble_Bundles(BB *bb)
     /* Bundle prefix
      */
     if (Assembly && EMIT_explicit_bundles) {
-      //      fprintf(Asm_File, " ");
       fprintf(Asm_File, ISA_PRINT_BEGIN_BUNDLE, ISA_EXEC_AsmName(ibundle));
       fprintf(Asm_File, "\n");
     }
@@ -3356,7 +3359,7 @@ Assemble_Bundles(BB *bb)
     }
 #endif
     if (Assembly && EMIT_explicit_bundles) {
-      fprintf(Asm_File, "\t\t%s\n", ISA_PRINT_END_BUNDLE);
+      fprintf(Asm_File, "%s\n", ISA_PRINT_END_BUNDLE);
     }
   }
   if (Assembly) {

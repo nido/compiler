@@ -56,7 +56,7 @@ main (int argc, char *argv[])
   res_ISSUE = RESOURCE_Create("ISSUE", 4); 
   res_INT = RESOURCE_Create("INT", 4); 
   res_MUL = RESOURCE_Create("MUL", 2); 
-  res_MEM = RESOURCE_Create("MEM", 2); 
+  res_MEM = RESOURCE_Create("MEM", 1); 
   res_XFER = RESOURCE_Create("XFER", 1); 
 
   /* ======================================================
@@ -244,6 +244,7 @@ main (int argc, char *argv[])
   Any_Operand_Access_Time(0); 
   Any_Result_Available_Time(1);		// ??? not sure 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MEM, 0); 
 
 
   ///////////////////////////////////////// 
@@ -262,6 +263,7 @@ main (int argc, char *argv[])
   Any_Operand_Access_Time(0); 
   Any_Result_Available_Time(1);		// ??? not sure 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MEM, 0); 
 
 
   ///////////////////////////////////////// 

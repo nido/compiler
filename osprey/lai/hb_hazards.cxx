@@ -252,6 +252,13 @@ Add_Scheduling_Notes_For_Loops (void)
 #define OPND_RESULT -1	/* The dependence is on the result */
 #define OPND_NONE -2	/* There is no operand or result dependence */
 
+#ifdef TARG_ST
+// Arthur: Following needed for resource usage tracking
+#endif
+static BB_OP_MAP omap;
+static TI_RES_RES *rr_tab;
+static INT Clock;            // current bundle's clock cycle
+
 // ======================================================================
 // Returns TRUE if <op> is in the delay slot of the terminating branch
 // in <bb>.
@@ -589,7 +596,7 @@ Delay_Scheduling_OP(OP *op, INT slot_pos, TI_BUNDLE *bundle)
  *   Handle all bundle hazards in this routine.
  * ====================================================================
  */
-void
+static void
 Handle_Bundle_Hazard (OP                          *op, 
 		      TI_BUNDLE                   *bundle, 
 		      VECTOR                      *bundle_vector,
@@ -673,46 +680,276 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					stop_bit_reqd, NULL)) {
 
-#ifndef TARG_ST
-	// Arthur: I do it in CGTARG_Bundle_Slot_Available().
+#ifdef TARG_ST
+	// Arthur: I check for Delay_Scheduling_OP in 
+	//         CGTARG_Bundle_Slot_Available().
+	//
+#else
 	// If there is a need to delay the scheduling of <op>...
 	if (Delay_Scheduling_OP(op, i, bundle)) continue;
 #endif
 	slot_avail = TRUE;
 	slot_pos = i;
 
-	if (Trace_HB)
-	  fprintf(TFile, "  slot %i is available \n", i);
+	if (Trace_HB) {
+	  fprintf(TFile, "  slot %d is available, Clock %d \n", i, Clock);
+	}
 
 	// Assumes that stop_bit position is also available.
     	if (stop_bit_reqd) {
 	  if (i > 0) stop_pos = i - 1;
 	  else stop_pos = -1;
+
+	  if (Trace_HB) {
+	    fprintf(TFile, "  stop bit required %d \n", stop_pos);
+	  }
+
 	}
 	break;
       }
+    }
+
+  }
+
+#ifdef TARG_ST
+
+  // If slot available and resources, reserve the entry in TI_BUNDLE.
+  if (slot_avail) {
+
+    //
+    // Arthur: check whether resources are available.
+    //
+    BOOL resources_avail = 
+	       TI_RES_RES_Resources_Available(rr_tab,OP_code(op),Clock);
+
+    if (resources_avail) {
+      Set_OP_bundled (op);
+
+      TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
+
 #if 0
-      else {
-	if (Trace_HB)
-	  fprintf(TFile, "  slot %i is not available \n", i);
+      // Arthur: should be handled target-specific
+      //
+      // Inter-Bundle dependence, need to set the stop bit.
+      if (stop_pos >= 0) {
+	TI_BUNDLE_Reserve_Stop_Bit (bundle, stop_pos);
       }
+
+      // Intra-Bundle dependence, no need to set the stop bit but need to
+      // reset the bundle_vector to begin new instruction group.
 #endif
+
+      if (stop_pos >= -1) {
+	// Add the <stop_bit> marker appropriately.
+	// TODO: need to be refined further.
+	OP *last_real_op = Last_Real_OP(op);
+	Set_OP_end_group(last_real_op);
+	VECTOR_Reset (*bundle_vector);
+	Clock++;
+      }
+
+      VECTOR_Add_Element (*bundle_vector, op);
+
+      // set the OP map and register resource usage
+      BB_OP_MAP32_Set(omap, op, Clock);
+      TI_RES_RES_Reserve_Resources(rr_tab, OP_code(op), Clock);
+
+      // If <op> is the last op in bb, or bundle is full do extra stuff:
+      BOOL bundle_full = TI_BUNDLE_Is_Full(bundle, &ti_err);
+      FmtAssert(ti_err != TI_RC_ERROR, ("%s", TI_errmsg));
+
+      if ((BB_last_real_op(OP_bb(op)) == op) || bundle_full) {
+	//
+	// Fill with nops
+	//
+
+	if (Trace_HB) {
+	  if (bundle_full)
+	    fprintf(TFile, "  bundle full \n");
+	  else
+	    fprintf(TFile, "  last OP in BB\n");
+	}
+
+	Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
+	                slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
+
+	// Set the <end_group> flag either, if
+	// <op> has to be last inst in the instruction group. or,
+	// OP_prev(op) has to be first instruction in a group.
+
+	if (OP_l_group(op)) {
+	  Set_OP_end_group(op);
+	  VECTOR_Reset (*bundle_vector);
+	  Clock++;
+	}
+
+	if (OP_f_group(op) && OP_prev(op)) {
+	  OP *last_real_op = Last_Real_OP (op);
+	  Set_OP_end_group(last_real_op);
+	  VECTOR_Reset (*bundle_vector);
+	  Clock++;
+	  VECTOR_Add_Element (*bundle_vector, op);
+	}
+
+	// Check to see if the <next_op> has a dependence with the OPs in
+	// the current <bundle>. If yes, it's always better to set the stop-bit
+	// apriori and create a new instr. group.
+
+	if (bundle_full && OP_next(op)) {
+	  OP *next_op = OP_next(op);
+	  if (Is_There_Group_Dependence(next_op, bundle_vector)) {
+	    Set_OP_end_group(op);
+	    VECTOR_Reset (*bundle_vector);
+	    Clock++;
+	  }
+	}
+
+	// if black_box_op, set the end_group market and quit now.
+	if (!bundling_reqd) {
+	  Set_OP_end_group(op);
+	  return;
+	}
+      } /* bundle_full */
+
+      // slot and resources OK, return
+      return;
+
+    } /* resources_avail */
+
+    else {
+      //
+      // slot is avail but counted resources are not
+      //
+      // Just reset bundle_vector and restart the process
+      // TODO: I should normally handle the resource conflict.
+      //       For now I assume that resetting the instr group
+      //       does it. -- generalize
+      //
+
+      if (Trace_HB)
+	fprintf(TFile,"  counted resource conflict\n");
+
+      // set <end_group> marker
+      Set_OP_end_group(OP_prev(op));
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
     }
   }
+
+  // If slot not available, do extra stuff.
+  //
+  if (!slot_avail) {
+
+    if (Trace_HB)
+      if (!slot_avail)
+	fprintf(TFile, "  did not find available slot \n");
+
+    //    
+    // Fill with nops, finish bundle
+    //
+    Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
+	                slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
+
+    // Reset the bundle
+    TI_BUNDLE_Clear (bundle);
+
+    // Set the <end_group> flag either, if
+    // <op> has to be last inst in the instruction group. or,
+    // OP_prev(op) has to be first instruction in a group.
+
+    if (OP_l_group(op)) {
+      Set_OP_end_group(op);
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
+    }
+
+    if (OP_f_group(op) && OP_prev(op)) {
+      OP *last_real_op = Last_Real_OP (op);
+      Set_OP_end_group(last_real_op);
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
+      VECTOR_Add_Element (*bundle_vector, op);
+    }
+
+    // if black_box_op, set the end_group market and quit now.
+    if (!bundling_reqd) {
+      Set_OP_end_group(op);
+      return;
+    }
+  } /* !slot_avail */
+
+  // Reattempt packing the <op> after clearing the bundle.
+
+  if (Trace_HB)
+    fprintf(TFile, "  reattempting packing the OP in next bundle: \n");
+
+  FOR_ALL_SLOT_MEMBERS (bundle, i) {
+    stop_bit_reqd = (i > 0) && OP_f_group(op);
+    if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
+					  stop_bit_reqd, NULL)) {
+	  
+      if (Trace_HB)
+	fprintf(TFile, "  slot %i available \n", i);
+
+      slot_pos = i;
+      if (stop_bit_reqd) {
+	if (i > 0) stop_pos = i - 1;
+	else stop_pos = -1;
+      }
+      break;
+    }
+  }
+
+  FmtAssert(slot_pos != -1, ("Slot Position not a legal value"));
+  Set_OP_bundled (op);
+
+  // Arthur: I assume that resource conflicts have been taken
+  //         care of above (see !resources_avail).
+  //
+  // Register the resource usage and set omap
+  //
+  BB_OP_MAP32_Set(omap, op, Clock);
+  TI_RES_RES_Reserve_Resources(rr_tab, OP_code(op), Clock);
+
+  TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
+  if (stop_pos >= 0) TI_BUNDLE_Reserve_Stop_Bit (bundle, stop_pos);
+
+  VECTOR_Add_Element (*bundle_vector, op);
+
+  // Do extra stuff.
+  if ((BB_last_real_op((OP_bb(op))) == op) || (slot_pos != 0)) {
+    INT max_pos = (BB_last_real_op((OP_bb(op))) == op && 
+		       ISA_PACK_Inst_Words(OP_code(op)) == 1) ? 
+	  ISA_MAX_SLOTS : slot_pos;
+
+    Handle_Bundle_Hazard (op, bundle, bundle_vector, TRUE, 
+				slot_pos, max_pos, stop_bit_reqd, prop);
+
+    if (stop_pos >= -1) {
+      OP *last_real_op = Last_Real_OP(op);
+      Set_OP_end_group(last_real_op);
+      VECTOR_Reset (*bundle_vector);
+      Clock++;
+      VECTOR_Add_Element (*bundle_vector, op);
+    }
+
+    if (TI_BUNDLE_Is_Full(bundle, &ti_err)) {
+      TI_BUNDLE_Clear(bundle);
+    }
+  }
+
+#else
 
   // If slot available, reserve the entry in TI_BUNDLE.
   if (slot_avail) {
     Set_OP_bundled (op);
 
-#ifndef TARG_ST
-    // Arthur: These are reserved by CGTARG_Bundle_Slot_Available().
     TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
 
     // Inter-Bundle dependence, need to set the stop bit.
     if (stop_pos >= 0) {
       TI_BUNDLE_Reserve_Stop_Bit (bundle, stop_pos);
     }
-#endif
 
     // Intra-Bundle dependence, no need to set the stop bit but need to
     // reset the bundle_vector to begin new instruction group.
@@ -724,13 +961,9 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
     VECTOR_Add_Element (*bundle_vector, op);
 
     // Check for any hazards (nops) that may need to be filled.
-#ifdef TARG_ST
-    Handle_Bundle_Hazard(op, bundle, bundle_vector, slot_avail, 
-				slot_pos, slot_pos, stop_bit_reqd, prop);
-#else
     CTARG_Handle_Bundle_Hazard(op, bundle, bundle_vector, slot_avail, 
 				slot_pos, slot_pos, stop_bit_reqd, prop);
-#endif
+
     // Add the <stop_bit> marker appropriately.
     // TODO: need to be refined further.
     if (stop_pos >= -1) {
@@ -744,19 +977,9 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 
   // If slot not available or <op> is the last op in bb, do extra stuff.
   if (!slot_avail || (BB_last_real_op(OP_bb(op)) == op) || bundle_full) {
-
-    if (Trace_HB)
-      if (!slot_avail)
-	fprintf(TFile, "  did not find available slot \n");
-
     // Pack NOPs till end of the bundle.
-#ifdef TARG_ST
-    Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
-			   slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
-#else
     CGTARG_Handle_Bundle_Hazard (op, bundle, bundle_vector, slot_avail,
 				 slot_pos, ISA_MAX_SLOTS, stop_bit_reqd, prop);
-#endif
 
     // Reset the bundle
     TI_BUNDLE_Clear (bundle);
@@ -799,23 +1022,14 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
     // Reattempt packing the <op> after clearing the bundle.
     if (!slot_avail) {
 
-      if (Trace_HB)
-	fprintf(TFile, "  reattempting packing the OP in next bundle: \n");
-
       FOR_ALL_SLOT_MEMBERS (bundle, i) {
 	stop_bit_reqd = (i > 0) && OP_f_group(op);
 	if (CGTARG_Bundle_Slot_Available (bundle, op, i, &prop,
 					  stop_bit_reqd, NULL)) {
 	  
-	  if (Trace_HB)
-	    fprintf(TFile, "  slot %i available \n", i);
-
-
-#ifndef TARG_ST
-	  // Arthur: I do it in CGTARG_Bundle_Slot_Available().
 	  // If there is a need to delay the scheduling of <op>...
 	  if (Delay_Scheduling_OP(op, i, bundle)) continue;
-#endif
+
 	  slot_pos = i;
 	  if (stop_bit_reqd) {
 	    if (i > 0) stop_pos = i - 1;
@@ -828,11 +1042,8 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       FmtAssert(slot_pos != -1, ("Slot Position not a legal value"));
       Set_OP_bundled (op);
 
-#ifndef TARG_ST
-    // Arthur: These are reserved by CGTARG_Bundle_Slot_Available().
       TI_BUNDLE_Reserve_Slot (bundle, slot_pos, prop);
       if (stop_pos >= 0) TI_BUNDLE_Reserve_Stop_Bit (bundle, stop_pos);
-#endif
 
       VECTOR_Add_Element (*bundle_vector, op);
 
@@ -841,13 +1052,10 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 	INT max_pos = (BB_last_real_op((OP_bb(op))) == op && 
 		       ISA_PACK_Inst_Words(OP_code(op)) == 1) ? 
 	  ISA_MAX_SLOTS : slot_pos;
-#ifdef TARG_ST
-	Handle_Bundle_Hazard (op, bundle, bundle_vector, TRUE, 
-				     slot_pos, max_pos, stop_bit_reqd, prop);
-#else
+
 	CGTARG_Handle_Bundle_Hazard (op, bundle, bundle_vector, TRUE, 
-				     slot_pos, max_pos, stop_bit_reqd, prop);
-#endif
+				slot_pos, max_pos, stop_bit_reqd, prop);
+
 	if (stop_pos >= -1) {
 	  OP *last_real_op = Last_Real_OP(op);
 	  Set_OP_end_group(last_real_op);
@@ -861,6 +1069,8 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
       }
     }
   }
+
+#endif /* TARG_ST */
 }
 
 // ======================================================================
@@ -949,6 +1159,42 @@ Check_For_Delay_Slot_Hazards (BB *bb)
   }
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   Init_Resource_Table
+ *
+ *   Reserve a resource reservation table for the bundle.
+ *   See also Init_RFlag_Table() in hb_hazards.cxx
+ * ====================================================================
+ */
+static void
+Init_Resource_Table (
+  BB *bb
+) 
+{
+  INT rtable_size = 0;
+  INT max_resource_cycles = 0;
+  rr_tab = TI_RES_RES_Alloc(FALSE,&MEM_local_pool);
+
+  OP *op;
+  FOR_ALL_BB_OPs_FWD (bb, op) {
+    INT cur_resource_cycles = TI_RES_Cycle_Count(OP_code(op));
+    if (max_resource_cycles < cur_resource_cycles) {
+      max_resource_cycles = cur_resource_cycles;
+    }
+    rtable_size += max_resource_cycles;
+  }
+
+  // start resource tracking at this cycle
+  //
+  Clock = 0;
+
+  TI_RES_RES_Set_BB_Cycle_Count(rr_tab,rtable_size);
+
+  return;
+}
+#endif
+
 // ======================================================================
 // Eliminate hazards for 'bb' by adding noops.
 // ======================================================================
@@ -976,6 +1222,22 @@ Handle_All_Hazards (BB *bb)
   bundle->bundle_info = TYPE_MEM_POOL_ALLOC (ISA_BUNDLE_INFO, &MEM_local_pool);
   TI_BUNDLE_Clear(bundle);
   
+#ifdef TARG_ST
+  //
+  // Arthur: this does not check whether there are resource
+  //         conflicts for the IA64. In my model for bundles,
+  //         I need to check for counted resources.
+  //
+
+  // Create a mapping of this BB's OPs to sched cycles
+  //
+  omap = BB_OP_MAP32_Create(bb,&MEM_local_pool);
+
+  // Initialize resource tracking
+  //
+  Init_Resource_Table (bb);
+
+#endif
   FOR_ALL_BB_OPs_FWD (bb, op) {
 
     // Check for bundle hazards.
