@@ -2183,6 +2183,13 @@ Process_Bss_Data (
       continue;	// not a leaf symbol
     if (!Has_Base_Block(sym))
       continue;	// not a data symbol
+#ifdef TARG_ST
+    // [CG] If it is an alias, we don't emit it.
+    // The alias generation is done elsewhere
+    if (Has_Base_Block(sym) && ST_class(ST_base(sym)) != CLASS_BLOCK
+	&& ST_emit_symbol(sym))
+      continue;
+#endif
     if (ST_sclass(sym) == SCLASS_UGLOBAL ||
         ST_sclass(sym) == SCLASS_FSTATIC ||
         ST_sclass(sym) == SCLASS_PSTATIC) {
