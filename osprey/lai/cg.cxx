@@ -733,7 +733,8 @@ CG_Generate_Code(
     lao_optimize_PU(Optimization_PreSched);
     if (frequency_verify)
       FREQ_Verify("LAO Prepass Scheduling");
-  } else
+  }
+  if (CG_LAO_optimize); else
 #endif
   IGLS_Schedule_Region (TRUE /* before register allocation */);
   // Arthur: here rather than in igls.cxx
@@ -826,7 +827,8 @@ CG_Generate_Code(
       void Handle_All_Hazards(BB *bb);
       Handle_All_Hazards(bb);
     }
-  } else
+  }
+  if (CG_LAO_optimize); else
 #endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // Arthur: here rather than in igls.cxx
