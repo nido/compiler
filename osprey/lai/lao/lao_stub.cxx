@@ -478,7 +478,6 @@ CGIR_BB_create(CGIR_BB cgir_bb, int labelCount, CGIR_LAB labels[], int opCount, 
     Is_True(!BB_entry(cgir_bb), ("Cannot update a CGIR BB with ENTRY property"));
     Is_True(!BB_exit(cgir_bb), ("Cannot update a CGIR BB with EXIT property"));
     if (BB_call(cgir_bb)) {
-      Set_BB_call(new_bb);
       BB_Copy_Annotations(new_bb, cgir_bb, ANNOT_CALLINFO);
     }
     if (BB_has_note(cgir_bb)) {
@@ -1109,7 +1108,9 @@ lao_optimize_LOOP(CG_LOOP *cg_loop, unsigned lao_actions) {
   bool result = false;
   //
   LOOP_DESCR *loop = cg_loop->Loop();
-  if (BB_innermost(LOOP_DESCR_loophead(loop))) {
+  // BB_innermost is not maintained by loop unrolling.
+  // if (BB_innermost(LOOP_DESCR_loophead(loop)))
+  {
     //
     entryBBs.push_back(CG_LOOP_prolog);
     //
