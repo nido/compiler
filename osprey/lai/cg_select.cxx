@@ -98,8 +98,7 @@ static OP_MAP dup_bb_phi_map;
 
 // List of of memory accesses found in if-then-else region. 
 // Load and stores lists are used in a slightly different manner:
-// Stores are mapped with their equivalent. (this might be improved with a
-// dummy store location).
+// Stores are mapped with their equivalent.
 // Loads are just recorded. They will be replaced with their dismissible form
 // in BB_Fix_Spec_Loads.
 // I keep these operation in a list because we don't want to touch the basic
@@ -1136,12 +1135,12 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
     DevAssert(Are_Aliased (i1, i2), ("stores are not alias"));    
 
     if (false_br) {
-      true_tn = OP_opnd(i1, 2);
-      false_tn = OP_opnd(i2, 2);
-    }
-    else {
       true_tn = OP_opnd(i2, 2);
       false_tn = OP_opnd(i1, 2);
+    }
+    else {
+      true_tn = OP_opnd(i1, 2);
+      false_tn = OP_opnd(i2, 2);
     }
 
     TN *temp_tn = Build_TN_Like (true_tn);
@@ -1150,6 +1149,12 @@ BB_Fix_Spec_Stores (BB *bb, TN* cond_tn, BOOL false_br)
     select_count++;
 
     Expand_Store (MTYPE_I4, temp_tn, OP_opnd(i1, 1), OP_opnd(i1, 0), &ops);
+
+   if (Trace_Select_Gen) {
+     fprintf(Select_TFile, "<select> Insert selects stores in BB%d", BB_id(bb));
+     Print_OPS (&ops); 
+     fprintf (Select_TFile, "\n");
+   }
 
     BB_Insert_Ops_After (bb, i2, &ops);
 
@@ -1253,8 +1258,8 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
 // A well formed logical expression is a sequence of 2 blocks containing
 // a conditional jump, for which one direct successor is in common.
 // This is done regardless of the branches directions, as it is
-// possible (with respect to the available concrete instructions) to
-// transform any pattern in a pure and or or expression.
+// possible (with respect to the available ops) to transform any pattern in
+// a pure and or or expression.
 // Normalizejumps will try to retrieve such a pattern.
 static BB*
 Is_Double_Logif(BB* bb)
