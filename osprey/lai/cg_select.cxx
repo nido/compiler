@@ -45,7 +45,7 @@
  *                               might increase code size in some cases.
  *
  * The following flags to drive the heuristics.
- * -CG:select_factor="8.0"       gain for replacing a branch by a select
+ * -CG:select_factor="16.0"       gain for replacing a branch by a select
  * -CG:select_disload_cost="4.0" cost to speculate a load
  *
  * ====================================================================
@@ -121,7 +121,7 @@ op_list load_i;
  * ====================================================================
  */
 BOOL CG_select_allow_dup = TRUE;
-const char* CG_select_factor = "8.0";
+const char* CG_select_factor = "16.0";
 const char* CG_select_disload_cost = "4.0";
 
 /* ================================================================
@@ -686,17 +686,19 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   float prob1 = BBLIST_prob(bb1);
   float prob2 = BBLIST_prob(bb2);
 
-  CG_SCHED_EST* se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV);
-  CG_SCHED_EST* se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
-                                                SCHED_EST_FOR_IF_CONV);
+  UINT cycles1 = 0;
+  UINT cycles2 = 0;
 
   FOR_ALL_BB_SET_members(region1, bb) {
     exp_len += BB_length(bb);
 
     CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
                                            SCHED_EST_FOR_IF_CONV);
-    CG_SCHED_EST_Append_Scheds(se1, se);
+
+    if (Trace_Select_Candidates)
+      CG_SCHED_EST_Print(Select_TFile, se);
+
+    cycles1 += CG_SCHED_EST_Cycles(se);
     CG_SCHED_EST_Delete(se);
   }
 
@@ -705,7 +707,11 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
 
     CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
                                            SCHED_EST_FOR_IF_CONV);
-    CG_SCHED_EST_Append_Scheds(se2, se);
+
+    if (Trace_Select_Candidates)
+      CG_SCHED_EST_Print(Select_TFile, se);
+
+    cycles2 += CG_SCHED_EST_Cycles(se);
     CG_SCHED_EST_Delete(se);
   }
 
@@ -715,14 +721,6 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   // If new block is bigger that CG_bblength_max, reject.
   //  if ((exp_len - est_cost_branch) >= CG_split_BB_length)
   //    return FALSE;
-
-  if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "for BB%d freq %f ", BB_id(BBLIST_item(bb1)), prob1);
-    CG_SCHED_EST_Print(Select_TFile, se1);
-    fprintf (Select_TFile, "\nfor BB%d freq %f ", BB_id(BBLIST_item(bb2)), prob2);
-    CG_SCHED_EST_Print(Select_TFile, se2);
-    fprintf (Select_TFile, "\n");
-  }
 
   UINT32 mem1 = 0;
   UINT32 mem2 = 0;
@@ -748,22 +746,25 @@ Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
   mem1 *= disload_cost;
   mem2 *= disload_cost;
 
-  // pondarate cost of each region taken separatly.
-  float est_cost_bbs = (((float)(CG_SCHED_EST_Cycles(se1) + mem1) * prob1) + 
-                        ((float)(CG_SCHED_EST_Cycles(se2) + mem2) * prob2));
-
-  // cost of if converted region. prob is one. Remove branch.
-  float est_cost_ifc = (float)CG_SCHED_EST_Cycles(se1) + (float)CG_SCHED_EST_Cycles(se2)
-    + (float)mem1 + (float)mem2 - est_cost_branch;
-  
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "region1: cycles %d, mem %d, prob %f\n",
-             CG_SCHED_EST_Cycles(se1), mem1, prob1);    
+             cycles1, mem1, prob1);    
     fprintf (Select_TFile, "region2: cycles %d, mem %d, prob %f\n",
-             CG_SCHED_EST_Cycles(se2), mem2, prob2);
-    fprintf (Select_TFile, "ifc region: cycles %d, mem %d, saving branch %d\n",
-             CG_SCHED_EST_Cycles(se1) + CG_SCHED_EST_Cycles(se2), mem1 + mem2,
-             est_cost_branch);
+             cycles2, mem2, prob2);
+  }
+
+  cycles1 += mem1;
+  cycles2 += mem2;
+
+  // pondarate cost of each region taken separatly.
+  float est_cost_bbs = (((float)(cycles1) * prob1) + ((float)(cycles2) * prob2));
+
+  // cost of if converted region. prob is one. Remove branch.
+  float est_cost_ifc = (float)cycles1 + cycles2 - est_cost_branch;
+  
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "ifc region: cycles %d, saving branch %d\n",
+             cycles1 + cycles2, est_cost_branch);
     fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n",
              est_cost_bbs, est_cost_ifc);
   }
@@ -1020,7 +1021,7 @@ Rename_Globals(OP* op, hTN_MAP dup_tn_map)
 }
 
 static void
-Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail)
+Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail, BB *dup)
 {
   OP *phi;
 
@@ -1061,22 +1062,23 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *head, BB *tail)
 
     // Create and map the new phi.
     UINT8 i = 0;
-    TN *old_tn;
+    TN *old_tn = NULL;
     for (; i < nopnds; i++) {
       TN *res  = phi_i ? phi_i->tns[i] : OP_opnd(phi, i);
       BB *pred = phi_i ? phi_i->preds[i] : Get_PHI_Predecessor(phi, i); 
 
-      TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
-
-
-      if (new_tn) {
-        opnd[i] = new_tn;
-        preds[i] = pred;
-        old_tn = res;
+      if (pred == dup) {
+        TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
+        if (new_tn) {
+          opnd[i] = new_tn;
+          old_tn = res;
+        }
+        else {
+          old_tn = opnd[i] = res;
+        }
       }
       else {
-        new_tn = res;
-        opnd[i] = new_tn;
+        opnd[i] = res;
       }
 
       preds[i] = pred;
@@ -1166,7 +1168,7 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb)
   }
 
   BB_Remove_Ops(bp, old_phis);
-  Rename_PHIs(dup_tn_map, to_bb, succ);
+  Rename_PHIs(dup_tn_map, to_bb, succ, bp);
 
   Unlink_Pred_Succ (to_bb,bp);
 
@@ -1598,13 +1600,11 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
 {
   OP *phi;
 
-  //  fprintf (TFile, "\nin Select_Fold\n");
-  //  Print_All_BBs();
-
-  //  fprintf (TFile, "Select_Fold %d %d %d %d\n", BB_id(head), BB_id (target_bb),
-  //           BB_id (fall_thru_bb), BB_id (tail));
-
-
+   if (Trace_Select_Gen) {
+     fprintf (TFile, "\nSelect_Fold BB%d\n", BB_id(head));
+     Print_All_BBs();
+   }
+   
   // keep a list of newly created conditional move / compare
   // and phis to remove
   OPS cmov_ops = OPS_EMPTY;
@@ -1634,6 +1634,13 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     fall_thru_bb = tail;
     did_duplicate_bb = TRUE;
   }
+
+   if (Trace_Select_Gen) {
+     if (did_duplicate_bb) {
+       fprintf (TFile, "after tail duplication\n");
+       Print_All_BBs();
+     }
+   }
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
     UINT8 npreds;
@@ -1668,6 +1675,19 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       false_tn = true_tn;
       true_tn = temp_tn;
     }
+
+   if (Trace_Select_Gen) {
+     if (did_duplicate_bb) {
+       fprintf (TFile, "for phi res = ");
+       Print_TN (phi_i->res, FALSE);
+       fprintf (TFile, "\n");      
+       for (UINT8 k = 0; k < phi_i->npreds; k++) {
+         Print_TN (phi_i->tns[k], FALSE);
+         fprintf (TFile, ":BB%d, ", BB_id(phi_i->preds[k]));
+       }
+       fprintf (TFile, "\n");      
+     }
+   }
 
     DevAssert(true_tn && false_tn, ("Select: undef TN"));
 
