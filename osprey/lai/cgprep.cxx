@@ -76,10 +76,8 @@
 #include "timing.h"
 #include "cgexp.h"
 #include "cgtarget.h"
-/*
 #include "cio.h"
 #include "cio_rwtran.h"
-*/
 #include "cg_cflow.h"
 #include "resource.h"
 #include "cg_db_op.h"

@@ -151,8 +151,8 @@
 #include "pf_cg.h"
 #include "note.h"
 #include "cgexp.h"
-/* #include "cio.h"
-#include "cio_rwtran.h" */
+#include "cio.h"
+#include "cio_rwtran.h"
 #include "cg_cflow.h"
 #include "resource.h"
 #include "cg_db_op.h"
@@ -5189,10 +5189,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (!cg_loop.Has_prolog_epilog()) 
 	return FALSE;
       
-#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before loop canonicalization ***");
 
+#ifndef TARG_ST
       if (!Prepare_Loop_For_SWP_1(cg_loop, trace_loop_opt))
 	return FALSE;
 
@@ -5203,6 +5203,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       // Generate SWP branches, eg. doing stuff to prolog/epilog, etc.
       // target-specific
       Gen_SWP_Branch(cg_loop, true /* is_doloop */);
+#endif
 
       cg_loop.Recompute_Liveness();
       Rename_TNs_For_BB(cg_loop.Loop_header(), NULL);
@@ -5211,11 +5212,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Recompute_Liveness();
 
+#ifndef TARG_ST
       if (cg_loop.Determine_Unroll_Fully()) {
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 	cg_loop.Recompute_Liveness();
 	return TRUE;
       }
+#endif
 
       Perform_Read_Write_Removal(loop);
       cg_loop.Recompute_Liveness();
@@ -5223,6 +5226,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before Postincr generation / After RW removal ***");
 
+#ifndef TARG_ST
       //  Form postincr form
       if (!Prepare_Loop_For_SWP_2(cg_loop, trace_loop_opt))
 	return FALSE;
@@ -5239,8 +5243,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** before ebo 1 and unrolling / after fix recurrences ***");
+#endif
 
       cg_loop.Recompute_Liveness();
+
+#ifndef TARG_ST
       cg_loop.EBO_Before_Unrolling();  
 
       if (SWP_Options.Predicate_Promotion) {
@@ -5314,7 +5321,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (!cg_loop.Has_prolog_epilog()) 
 	return FALSE;
 
-#ifndef TARG_ST
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before LOOP CANONICALIZATION ***");
       // Perform_Read_Write_Removal requires that
@@ -5328,26 +5334,37 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_DOLOOP_UNROLL ***");
 
       cg_loop.Recompute_Liveness();
-      cg_loop.Determine_Unroll_Factor();
 
+#ifndef TARG_ST
+      cg_loop.Determine_Unroll_Factor();
+#endif
+
+#ifdef TARG_ST
+      if (1) {
+#else
       if (cg_loop.Unroll_fully()) {
 	// No need to call RW removal because EBO
 	// should find all such CSEs after full unrolling.
 	Unroll_Do_Loop_Fully(loop, cg_loop.Unroll_factor());
 
       } else {
+#endif
+
 	Perform_Read_Write_Removal(loop);
 
+#ifndef TARG_ST
 	// Break recurrences will compute dep-graph itself
 	Fix_Recurrences_Before_Unrolling(cg_loop);
 
 	if (cg_loop.Unroll_factor() > 1) {
 	  Unroll_Do_Loop(cg_loop, cg_loop.Unroll_factor());
 	}
+#endif
 	cg_loop.Recompute_Liveness();
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
       }
 
+#ifndef TARG_ST
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
 #endif

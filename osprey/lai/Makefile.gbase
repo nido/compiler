@@ -346,6 +346,7 @@ CG_CXX_SRCS = 		\
   cg_swp_sched.cxx	\
   cg_thr.cxx		\
   cg_vector.cxx		\
+  cio_rwtran.cxx	\
   comment.cxx		\
   dominate.cxx		\
   ebo.cxx		\
