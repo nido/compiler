@@ -918,7 +918,10 @@ lao_init() {
     TOP__Operator[TOP_zxth_r] = Operator_CODE_ZXTH_IDEST_SRC1;
     // initialize Operator__TOP;
     for (int i = 0; i < Operator__COUNT; i++) Operator__TOP[i] = TOP_UNDEFINED;
-    for (int i = 0; i < TOP_UNDEFINED; i++) Operator__TOP[TOP__Operator[i]] = (TOP)i;
+    for (int i = 0; i < TOP_UNDEFINED; i++) {
+      if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__COUNT);
+      else Operator__TOP[TOP__Operator[i]] = (TOP)i;
+    }
     // initialize IEC__Modifier
     for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier_;
     // initialize LC__Immediate
@@ -935,7 +938,10 @@ lao_init() {
     IRC__RegClass[ISA_REGISTER_CLASS_branch] = RegClass_BRC;
     // initialize RegClass__IRC
     for (int i = 0; i < RegClass__COUNT; i++) RegClass__IRC[i] = ISA_REGISTER_CLASS_UNDEFINED;
-    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
+    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) {
+      if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__COUNT);
+      else RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
+    }
   }
 }
 
