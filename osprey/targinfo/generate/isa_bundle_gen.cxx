@@ -606,6 +606,10 @@ static const char * const pack_comp_name[] = {
   "ISA_BUNDLE_PACK_COMP_slot+1",
   "ISA_BUNDLE_PACK_COMP_slot+2",
   "ISA_BUNDLE_PACK_COMP_slot+3",
+  "ISA_BUNDLE_PACK_COMP_slot+4",
+  "ISA_BUNDLE_PACK_COMP_slot+5",
+  "ISA_BUNDLE_PACK_COMP_slot+6",
+  "ISA_BUNDLE_PACK_COMP_slot+7",
 };
 
 typedef struct {
