@@ -2091,7 +2091,7 @@ Eliminate_Phi_Resource_Interference()
 
 	  if (phi_resources_interfere(cc1, cc2)) {
 	    TN_LIST_Push(OP_opnd(op,i), candidateResourceSet, &MEM_local_pool);
-	    TN_LIST_Push(OP_result(op,j), candidateResourceSet, &MEM_local_pool);
+	    TN_LIST_Push(OP_opnd(op,j), candidateResourceSet, &MEM_local_pool);
 	  }
 	}
       } // operands
