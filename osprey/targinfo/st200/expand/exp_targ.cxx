@@ -966,6 +966,15 @@ Expand_Multiply (
   BOOL     has_const = FALSE;
   TOP opcode = TOP_UNDEFINED;
 
+#if 0
+  extern void dump_tn(TN*);
+
+  printf ("expand mult %d %d %d\n", rmtype, s1mtype, s2mtype);
+  dump_tn (result);
+  dump_tn (src1);
+  dump_tn (src2);
+#endif
+
   //
   // Check for two constants
   //
@@ -989,9 +998,15 @@ Expand_Multiply (
 
   // If one of the operands is a constant, it must be the second one.
   if (TN_has_value(src1)) {
-    TN *tmp = src2;
+    // swap operands and types.
+    TN *tmp;
+    TYPE_ID tmpmtype;
+    tmp = src2;
     src2 = src1;
     src1 = tmp;
+    tmpmtype = s2mtype;
+    s2mtype = s1mtype;
+    s1mtype = tmpmtype;
     has_const = TRUE;
   }
 
@@ -1083,11 +1098,12 @@ Expand_Multiply (
       Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
     }
 
-    // word <- half * word
     else {
+      // word <- half * word
       // if we have a word argument. It can only be at pos1.
       // unless it is a constant with size < 65535.
-      if (s2mtype == MTYPE_I4 || s2mtype != MTYPE_U4) {
+      if (s2mtype == MTYPE_I4 || s2mtype == MTYPE_U4) {
+        BOOL needSwap = true;
         if (has_const) {
           if (TN_value(src2) > 65535) {
             TN *tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
@@ -1095,45 +1111,54 @@ Expand_Multiply (
             src2 = tmp;
             has_const = false;
           }
+          else
+            needSwap = false;
         }
-        else {
-          TN *tmp = src2;
+ 
+        if (needSwap) {
+          // swap operands and types.
+          TN *tmp;
+          TYPE_ID tmpmtype;
+          tmp = src2;
           src2 = src1;
           src1 = tmp;
+          tmpmtype = s2mtype;
+          s2mtype = s1mtype;
+          s1mtype = tmpmtype;
+        }
+      }
+      else {
+        if (s1mtype == MTYPE_I1) {
+          Build_OP(TOP_sxtb_r, src1, src1, ops);
+        }
+        else if (s1mtype == MTYPE_I2) {
+          Build_OP(TOP_sxth_r, src1, src1, ops);
+        }
+        if (s2mtype == MTYPE_I1) {
+          Build_OP(TOP_sxtb_r, src2, src2, ops);
+        }
+        else if (s2mtype == MTYPE_I2) {
+          Build_OP(TOP_sxth_r, src2, src2, ops);
+        }
+
+        if (s1mtype == MTYPE_U1) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
+          Build_OP(TOP_and_i, src1, src1, const_tn, ops);
+        }
+        else if (s1mtype == MTYPE_U2) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
+          Build_OP(TOP_and_i, src1, src1, const_tn, ops);
+        }
+        if (s2mtype == MTYPE_U1) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
+          Build_OP(TOP_and_i, src2, src2, const_tn, ops);
+        }
+        else if (s2mtype == MTYPE_U2) {
+          TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
+          Build_OP(TOP_and_i, src2, src2, const_tn, ops);
         }
       }
 
-      if (s1mtype == MTYPE_I1) {
-        Build_OP(TOP_sxtb_r, src1, src1, ops);
-      }
-      else if (s1mtype == MTYPE_I2) {
-        Build_OP(TOP_sxth_r, src1, src1, ops);
-      }
-      if (s2mtype == MTYPE_I1) {
-        Build_OP(TOP_sxtb_r, src2, src2, ops);
-      }
-      else if (s2mtype == MTYPE_I2) {
-        Build_OP(TOP_sxth_r, src2, src2, ops);
-      }
-
-
-      if (s1mtype == MTYPE_U1) {
-        TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
-        Build_OP(TOP_and_i, src1, src1, const_tn, ops);
-      }
-      else if (s1mtype == MTYPE_U2) {
-        TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-        Build_OP(TOP_and_i, src1, src1, const_tn, ops);
-      }
-      if (s2mtype == MTYPE_U1) {
-        TN* const_tn = Gen_Literal_TN ((INT32) 255, 4);
-        Build_OP(TOP_and_i, src2, src2, const_tn, ops);
-      }
-      else if (s2mtype == MTYPE_U2) {
-        TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
-        Build_OP(TOP_and_i, src2, src2, const_tn, ops);
-      }
-      
       if (is_signed)
         opcode = has_const ? TOP_mull_i : TOP_mull_r;
       else
@@ -3051,6 +3076,9 @@ Expand_Const (
     break;
 
   default:
+    extern void dump_tn (TN*);
+    dump_tn (dest);
+    dump_tn (src);
     FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
   }
 
