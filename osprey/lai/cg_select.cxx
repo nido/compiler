@@ -295,15 +295,17 @@ Find_End_Select_Region(BB* bb, BB* then_bb, BB* else_bb)
   }
 
   BB *last_succ = then_bb;
-  while ((succ = BB_Unique_Successor (last_succ)) && succ != tail_bb)
-    last_succ = succ;
+  if (last_succ != tail_bb)
+    while ((succ = BB_Unique_Successor (last_succ)) && succ != tail_bb)
+      last_succ = succ;
 
   if (last_succ != tail_bb && BB_succs_len(last_succ) != 1)
     return NULL;
 
   last_succ = else_bb;
-  while ((succ = BB_Unique_Successor (last_succ)) && succ != tail_bb)
-    last_succ = succ;
+  if (last_succ != tail_bb)
+    while ((succ = BB_Unique_Successor (last_succ)) && succ != tail_bb)
+      last_succ = succ;
 
   if (last_succ != tail_bb && BB_succs_len(last_succ) != 1)
     return NULL;
