@@ -783,14 +783,15 @@ main()
   /* ====================================== */ 
   f_group = ISA_Property_Create ("f_group"); 
   Instruction_Group (f_group, 
-		 TOP_call, 
-		 TOP_icall, 
-		 TOP_goto, 
-		 TOP_igoto, 
-		 TOP_rfi, 
-		 TOP_br, 
-		 TOP_brf, 
-		 TOP_return, 
+// CL: remove constraint on these instructions
+//		 TOP_call, 
+//		 TOP_icall, 
+//		 TOP_goto, 
+//		 TOP_igoto, 
+//		 TOP_rfi, 
+//		 TOP_br, 
+//		 TOP_brf, 
+//		 TOP_return, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
