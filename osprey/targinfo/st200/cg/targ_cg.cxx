@@ -1363,7 +1363,7 @@ CGTARG_Adjust_Latency (
   // 2. Instructions writing into a PC must be followed
   //    by 1 cycle (bundle) before a TOP_br can be issued.
   //	Treated by ti_si.
-*
+
   // 3. Load instructions (resp arith instruction) writing LR register
   //    must be followed by 3 cycles delay (resp 2 cycles delay) 
   //    before one of the following may be issued:
