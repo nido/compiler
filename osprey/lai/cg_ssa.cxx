@@ -2165,7 +2165,11 @@ insert_operand_copy (
 )
 {
   TN *tn = OP_opnd(phi_op, opnd_idx);
-  TN *new_tn = Dup_TN(tn);
+  //FdF 20041014: Fix for DDTS MBTst19376. Register must be
+  //global. Also, use Copy_TN instead of Dup_TN, to reset the
+  //gra_homeable value.
+  TN *new_tn = Copy_TN(tn);
+  Set_TN_is_global_reg(new_tn);
 
   // Make it an SSA TN
   SSA_UNIVERSE_Add_TN(new_tn);
@@ -2282,7 +2286,11 @@ insert_result_copy (
 )
 {
   TN *tn = OP_result(phi_op, 0);
-  TN *new_tn = Dup_TN(tn);
+  //FdF 20041014: Fix for DDTS MBTst19376. Register must be
+  //global. Also, use Copy_TN instead of Dup_TN, to reset the
+  //gra_homeable value.
+  TN *new_tn = Copy_TN(tn);
+  Set_TN_is_global_reg(new_tn);
 
   // Make it an SSA TN
   SSA_UNIVERSE_Add_TN(new_tn);
