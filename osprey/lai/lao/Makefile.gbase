@@ -213,7 +213,9 @@ ifeq ($(DSO_MODE),SO)
 BE_DSO=be.so
 CG_DSO=cg.so
 ifeq ($(BUILD_TARGET), ST200)
-TARGET_DSO=st220.so
+# (cbr) use ti_init dlsyms
+# TARGET_DSO=st220.so
+TARGET_DSO=
 endif
 endif
 
