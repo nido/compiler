@@ -2499,11 +2499,7 @@ Create_Loop_Epilogue (LOOP_DESCR* l) {
     BB *next = like_epilog;
     BB *ftp = BB_Fall_Thru_Predecessor(next);
     BBKIND ftp_kind = ftp ? BB_kind(ftp) : BBKIND_UNKNOWN;
-    LOOP_DESCR *enclosing = LOOP_DESCR_Next_Enclosing_Loop(l);
-    like_epilog = Gen_And_Insert_BB_Before(next);
-    BB_rid(like_epilog) = BB_rid(LOOP_DESCR_loophead(l));
-    Set_BB_gra_spill(like_epilog);
-    if (BB_freq_fb_based(LOOP_DESCR_loophead(l))) Set_BB_freq_fb_based(like_epilog);
+
     if (ftp && !BB_SET_MemberP(LOOP_DESCR_bbset(l), ftp)) {
 	/*
 	 * Since <ftp> isn't in loop, we don't want it to fall through
@@ -2515,14 +2511,20 @@ Create_Loop_Epilogue (LOOP_DESCR* l) {
 	    Add_Goto(ftp, next);
 	    BBLIST_prob(bbl) = 1.0F;	/* otherwise is incremented to 2.0 */
 	} else {
-	    BB *new_bb = Gen_And_Insert_BB_After(ftp);
-	    BB_rid(new_bb) = BB_rid(LOOP_DESCR_loophead(l));
-	    if (BB_freq_fb_based(like_epilog)) Set_BB_freq_fb_based(new_bb);
-	    Change_Succ(ftp, next, new_bb);
-	    Add_Goto(new_bb, next);
-	    GRA_LIVE_Compute_Liveness_For_BB(new_bb);
+	  // FdF: Code from cg_loop.cxx inserts an empty node as the
+	  // fall through from ftp and inserts a goto to
+	  // next. However, here we need to maintain the dominance
+	  // information (see Maintain_Dominator_Info), which is just
+	  // too complicated here.
+	    return NULL; 
 	}
     }
+
+    LOOP_DESCR *enclosing = LOOP_DESCR_Next_Enclosing_Loop(l);
+    like_epilog = Gen_And_Insert_BB_Before(next);
+    BB_rid(like_epilog) = BB_rid(LOOP_DESCR_loophead(l));
+    Set_BB_gra_spill(like_epilog);
+    if (BB_freq_fb_based(LOOP_DESCR_loophead(l))) Set_BB_freq_fb_based(like_epilog);
     retarget_loop_exits(l, next, like_epilog);
     Link_Pred_Succ_with_Prob(like_epilog, next, 1.0);
     if (freqs || BB_freq_fb_based(next))
