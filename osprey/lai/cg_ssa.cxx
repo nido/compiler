@@ -480,6 +480,29 @@ Get_PHI_Predecessor (
 }
 
 /* ================================================================
+ *   Change_PHI_Predecessor
+ * ================================================================
+ */
+void
+Change_PHI_Predecessor (
+  BB *bb,                        
+  BB *old_pred,
+  BB *new_pred,
+  OP *phi
+)
+{
+  INT32 npreds = BB_preds_len (bb);
+  INT32 i;
+
+  PHI_MAP_ENTRY *entry = (PHI_MAP_ENTRY *)OP_MAP_Get(phi_op_map, phi);
+  Is_True(entry != NULL,("unmapped op ?"));
+
+  for (i = 0; i < npreds; i++)
+    if (entry->opnd_src[i] == old_pred)
+      entry->opnd_src[i] = new_pred;
+}
+
+/* ================================================================
  *   SSA_Prepend_Phi_To_BB
  * ================================================================
  */

@@ -93,6 +93,8 @@ extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
+extern void Change_PHI_Predecessor (BB *bb, BB *old_pred, BB *new_pred, OP *phi);
+
 //
 // Prepend the 'phi_op' to the 'bb' and do bookkeeping
 //
