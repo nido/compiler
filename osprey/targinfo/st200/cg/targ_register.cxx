@@ -184,3 +184,18 @@ REGISTER_Get_Requested_Rotating_Registers (
 {
   return REGISTER_SET_EMPTY_SET;
 }
+
+/* ====================================================================
+ *   REGISTER_Get_forbidden_GRA_Registers 
+ * ====================================================================
+ */
+REGISTER_SET 
+REGISTER_Get_forbidden_GRA_Registers (
+)
+{
+  REGISTER sv_reg = TN_register(RA_TN);
+  REGISTER_SET singleton = REGISTER_SET_Union1(REGISTER_SET_EMPTY_SET,sv_reg);
+  return REGISTER_SET_EMPTY_SET;
+}
+
+

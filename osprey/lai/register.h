@@ -1277,4 +1277,9 @@ extern BOOL REGISTER_Is_Rotating(ISA_REGISTER_CLASS rclass, REGISTER reg);
 // Returns the set of allocated rotating registers
 extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLASS rclass);
 
+#ifdef TARG_ST200
+// Returns the set of forbidden registers for GRA.
+extern REGISTER_SET REGISTER_Get_forbidden_GRA_Registers();
+#endif
+
 #endif /* REGISTER_INCLUDED */
