@@ -1008,6 +1008,9 @@ put_formal_parameter(DST_flag flag, DST_FORMAL_PARAMETER *attr, Dwarf_P_Die die)
   if (DST_IS_declaration(flag)) {
    put_decl(DST_FORMAL_PARAMETER_decl(attr), die);
    put_name (DST_FORMAL_PARAMETER_name(attr), die, pb_none);
+#ifdef TARG_ST // [CL] don't forget parameter type
+   put_reference (DST_FORMAL_PARAMETER_type(attr), DW_AT_type, die);
+#endif
    put_reference (DST_FORMAL_PARAMETER_default_val(attr),
 		  DW_AT_default_value, 
 	          die);
@@ -2175,6 +2178,11 @@ void
 Cg_Dwarf_Add_Line_Entry (
   INT code_address, 
   SRCPOS srcpos
+#ifdef TARG_ST // [CL] if true, emit debug info even if we are on
+  // the source line than the previous emission. Useful in the
+  // prologue/epilogue areas
+  ,BOOL force_emission
+#endif
 )
 {
   static SRCPOS last_srcpos = 0;
@@ -2182,7 +2190,15 @@ Cg_Dwarf_Add_Line_Entry (
 
   if (srcpos == 0 && last_srcpos == 0)
 	DevWarn("no valid srcpos at PC %d\n", code_address);
+
+#ifdef TARG_ST // [CL]
+  if (srcpos == 0 || ((srcpos == last_srcpos) && !force_emission ))
+      {
+	return;
+      }
+#else
   if (srcpos == 0 || srcpos == last_srcpos) return;
+#endif
 
   // TODO:  figure out what to do about line changes in middle of bundle ???
   // For assembly, can put .loc in middle of bundle.
