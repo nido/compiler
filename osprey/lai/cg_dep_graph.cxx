@@ -3508,6 +3508,9 @@ static STACKREF_KIND Memory_OP_References_Stack(OP *op)
      * load/store and an indirect load/store with an LDA for an address.
      * For the above cases, get the symbol for the variable being accessed.
      */
+#ifdef TARG_ST
+    /* SC: Also allow prefetch. */
+#endif
     ST *st = NULL;
     if (WN_has_sym(wn)) {
       st = WN_st(wn);
@@ -3517,6 +3520,9 @@ static STACKREF_KIND Memory_OP_References_Stack(OP *op)
       switch (WN_operator(wn)) {
       case OPR_ILOAD:
       case OPR_ILDBITS:
+#ifdef TARG_ST
+      case OPR_PREFETCH:
+#endif
 	lda = WN_kid0(wn);
 	break;
       case OPR_ISTORE:
@@ -3524,7 +3530,11 @@ static STACKREF_KIND Memory_OP_References_Stack(OP *op)
 	lda = WN_kid1(wn);
 	break;
       }
+#ifdef TARG_ST
+      if (lda && WN_operator_is(lda, OPR_LDA)) st = WN_st(lda);
+#else
       if (WN_operator_is(lda, OPR_LDA)) st = WN_st(lda);
+#endif
     }
 
     /* If we found a symbol, then give a definitive answer based on
