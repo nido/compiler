@@ -2189,6 +2189,8 @@ Cg_Dwarf_Add_Line_Entry (
   // But can't generate object code with that,
   // because libdwarf expects addresses to be aligned with instructions,
   // so ignore such cases.
+#ifndef TARG_ST200 // CL: For ST200, this function is only called
+                   //     at bundle starts
   if ((code_address % ISA_INST_BYTES) != 0) {
 #if 0
   	if (Object_Code) return;
@@ -2197,6 +2199,7 @@ Cg_Dwarf_Add_Line_Entry (
 	return;
 #endif
   }
+#endif /* TARG_ST200 */
 
   USRCPOS_srcpos(usrcpos) = srcpos;
 
