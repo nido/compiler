@@ -175,6 +175,10 @@ static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 
+static BOOL CG_LAO_superblock_overridden = FALSE;
+static BOOL CG_LAO_pipeline_overridden = FALSE;
+static BOOL CG_LAO_speculate_overridden = FALSE;
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -410,8 +414,14 @@ static OPTION_DESC Options_CG[] = {
   },
 
 #ifdef TARG_ST
-  { OVK_BOOL,	OV_INTERNAL,	FALSE, "LAO", "",
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "LAO_enable", "",
     0, 0, 0,	&CG_enable_LAO, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_superblock", "",
+    1, 0, 2,	&CG_LAO_superblock, &CG_LAO_superblock_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipeline", "",
+    1, 0, 2,	&CG_LAO_pipeline, &CG_LAO_pipeline_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculate", "",
+    1, 0, 2,	&CG_LAO_speculate, &CG_LAO_speculate_overridden },
 #endif
 
 #ifdef CGG_ENABLED
@@ -537,6 +547,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &CFLOW_opt_before_cgprep, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_after_cgprep", "cflow_after_cgprep",
     0, 0, 0, &CFLOW_opt_after_cgprep, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_before_igls", "cflow_before_igls",
+    0, 0, 0, &CFLOW_opt_before_igls, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow", NULL,
     0, 0, 0, &CFLOW_Enable, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_unreachable", "",
@@ -1493,10 +1505,26 @@ CG_Init (void)
 
 #ifdef TARG_ST
   if (CG_enable_LAO) {
+    if (!CG_LAO_pipeline_overridden)
+      CG_LAO_pipeline = 1;
+    if (!CG_LAO_superblock_overridden)
+      CG_LAO_superblock = 1;
+    if (!CG_LAO_speculate_overridden)
+      CG_LAO_speculate = 1;
+  }
+
+  else if ((CG_LAO_pipeline > 0) ||
+	    (CG_LAO_superblock > 0) ||
+	    (CG_LAO_speculate > 0))
+    CG_enable_LAO=TRUE;
+
+  if (CG_enable_LAO) {
     lao_handler = load_so ("lao"SO_EXT, CG_Path, Show_Progress);
     lao_init();
   }
 #endif
+
+  fprintf(stderr, "LAO %d, pipeline %d(%d), speculate %d(%d)\n", CG_enable_LAO, CG_LAO_pipeline, CG_LAO_pipeline_overridden, CG_LAO_speculate, CG_LAO_speculate_overridden);
 
   return;
 }

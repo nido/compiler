@@ -92,6 +92,9 @@ BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 BOOL CG_enable_select = FALSE;
 BOOL CG_enable_LAO = FALSE;	/* Enable LAO in cg */
+INT32 CG_LAO_pipeline = 0;
+INT32 CG_LAO_superblock = 0;
+INT32 CG_LAO_speculate = 0;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;
@@ -149,6 +152,7 @@ BOOL CG_create_madds = TRUE;
 BOOL CFLOW_Enable = TRUE;
 BOOL CFLOW_opt_before_cgprep = TRUE;
 BOOL CFLOW_opt_after_cgprep = TRUE;
+BOOL CFLOW_opt_before_igls = FALSE;
 BOOL CFLOW_Enable_Unreachable = TRUE;
 BOOL CFLOW_Enable_Branch = TRUE;
 BOOL CFLOW_Enable_Merge = TRUE;

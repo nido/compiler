@@ -208,6 +208,9 @@ extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
 extern BOOL CG_enable_LAO;	/* Enable LAO in cg */
+extern INT32 CG_LAO_superblock;	/* Enable LAO superblock scheduling */
+extern INT32 CG_LAO_pipeline;	/* Enable LAO loop pipelining */
+extern INT32 CG_LAO_speculate;	/* Enable LAO speculation */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */
@@ -231,6 +234,7 @@ extern BOOL CG_create_madds;
 extern BOOL CFLOW_Enable;
 extern BOOL CFLOW_opt_before_cgprep;
 extern BOOL CFLOW_opt_after_cgprep;
+extern BOOL CFLOW_opt_before_igls;
 extern BOOL CFLOW_Enable_Unreachable;
 extern BOOL CFLOW_Enable_Branch;
 extern BOOL CFLOW_Enable_Merge;
