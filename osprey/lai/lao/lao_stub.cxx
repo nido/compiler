@@ -576,8 +576,8 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
       }
       if (pipeline_annot != NULL) {
 	WN *wn = ANNOT_pragma(pipeline_annot);
-	pipelining = MAX(1, WN_pragma_arg1(wn));
-	renaming = MAX(0, WN_pragma_arg2(wn));
+	pipelining = WN_pragma_arg1(wn);
+	renaming = WN_pragma_arg2(wn);
       }
     } else pipelining = renaming = 0;
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
