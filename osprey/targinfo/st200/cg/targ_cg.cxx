@@ -1323,8 +1323,14 @@ CGTARG_Max_RES_Latency (
   //         TOP_brf 
   //    can be issued that uses this register.
 
-  else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch)
+  else if (TN_register_class(OP_result(op,idx)) == ISA_REGISTER_CLASS_branch) {
     if (latency < 3) latency = 3;
+  }
+
+  //    Instructions writing into regiser r0.0 have a 0 latency.
+
+  else if (OP_result(op,idx) == Zero_TN)
+    latency = 0;
 
   return latency;
 }
@@ -1395,6 +1401,9 @@ CGTARG_Adjust_Latency (
   // 8. Any REGOUT latency must be at least 1 on this target.
   if (kind == CG_DEP_REGOUT && *latency < 1) *latency = 1;
   
+  // 9. Special latency on register R0.0, even on output dependence.
+  if (OP_opnd(succ_op, opnd) == Zero_TN)
+    *latency = 0;
 
   return;
 }
