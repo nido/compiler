@@ -721,9 +721,11 @@ CG_Generate_Code(
   }
 
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations)
+  if (CG_LAO_optimizations) {
+    GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+    GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
-  else
+  } else
     IGLS_Schedule_Region (TRUE /* before register allocation */);
 #else
   IGLS_Schedule_Region (TRUE /* before register allocation */);
