@@ -587,6 +587,7 @@ public:
 
   void Recompute_Liveness();
   bool Determine_Unroll_Fully();
+  INT32 Get_Unroll_Times(BOOL &);
   void Determine_Unroll_Factor();
   void Determine_SWP_Unroll_Factor();
   void Build_CG_LOOP_Info();
