@@ -733,6 +733,7 @@ extern VARIANT TOP_cmp_variant(TOP top);
 /* Result must not be same as operand */ 
 inline BOOL OP_uniq_res(OP *op, INT i) { 
   const ISA_OPERAND_INFO *oinfo = OP_operand_info(op);
+  if (i >= ISA_OPERAND_INFO_Results(oinfo)) return FALSE;
   ISA_OPERAND_USE this_def = ISA_OPERAND_INFO_Def(oinfo, i); 
   if (this_def & OU_uniq_res)  
     return TRUE; 
