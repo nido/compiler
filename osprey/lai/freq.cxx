@@ -759,6 +759,13 @@ Pointer_Heuristic(
    * br OP is also an EQ or NE test.
    */
   variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp);
+#ifdef TARG_ST
+  /* [CG]: We handle filter V_BR_FALSE case. */
+  /* [CG]: Should we invert in this case ? */
+  /*BOOL false_br = V_false_br(variant);
+    if (false_br) invert = !invert;*/
+  variant = V_br_condition(variant);
+#endif
   switch (variant) {
   case V_BR_I4EQ:
   case V_BR_U4EQ:
@@ -825,6 +832,13 @@ Opcode_Heuristic(
   /* Determine what type of branch we have.
    */
   variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp);
+#ifdef TARG_ST
+  /* [CG]: We handle filter V_BR_FALSE case. */
+  /* [CG]: Should we invert in this case ? */
+  /*BOOL false_br = V_false_br(variant);
+    if (false_br) invert = !invert;*/
+  variant = V_br_condition(variant);
+#endif
 
   /* Determine if any of the operands are constant. Also check the
    * operands to make sure they are not pointers.
