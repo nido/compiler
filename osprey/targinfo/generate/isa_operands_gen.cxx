@@ -481,8 +481,6 @@ void Instruction_Group( const char *name, ... )
   oper_group->relocatable_opnd = -1;
   oper_group->result_count = 0;
   oper_group->results = vector<OPERAND_VALUE_TYPE>();
-  //  oper_group->opnd_use = vector<OPERAND_USE_TYPE>();
-  //  oper_group->res_use = vector<OPERAND_USE_TYPE>();
   oper_group->opnd_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->res_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->same_res = vector<mUINT8>();
