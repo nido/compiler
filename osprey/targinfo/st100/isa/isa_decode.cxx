@@ -46,7 +46,7 @@ main()
 
   STATE ex_unit = Create_Unit_State("ex_unit", 0, 2); 
 
-  STATE alu = Create_Inst_State("alu", 0, 0, 11); 
+  STATE alu = Create_Inst_State("alu", 0, 0, 15); 
 
   Transitions(ex_unit, 
         ISA_EXEC_I0_Unit, alu, 
@@ -1981,28 +1981,6 @@ main()
 	   1924,	 Final(TOP_GP32_XSHLW_GT_DR_DR_DR_U5),
 	   1925,	 Final(TOP_GP32_XSHRW_GT_DR_DR_DR_DR),
 	   1926,	 Final(TOP_GP32_XSHRW_GT_DR_DR_DR_U5),
-	   1927,	 Final(TOP_IFR_DIVE_GT_DR_DR_DR),
-	   1928,	 Final(TOP_IFR_DIVUE_GT_DR_DR_DR),
-	   1929,	 Final(TOP_IFR_DIVUW_GT_DR_DR_DR),
-	   1930,	 Final(TOP_IFR_DIVW_GT_DR_DR_DR),
-	   1931,	 Final(TOP_IFR_MAXE_GT_DR_DR_DR),
-	   1932,	 Final(TOP_IFR_MAXH_GT_DR_DR_DR),
-	   1933,	 Final(TOP_IFR_MAXUE_GT_DR_DR_DR),
-	   1934,	 Final(TOP_IFR_MAXUH_GT_DR_DR_DR),
-	   1935,	 Final(TOP_IFR_MAXUW_GT_DR_DR_DR),
-	   1936,	 Final(TOP_IFR_MAXW_GT_DR_DR_DR),
-	   1937,	 Final(TOP_IFR_MINE_GT_DR_DR_DR),
-	   1938,	 Final(TOP_IFR_MINH_GT_DR_DR_DR),
-	   1939,	 Final(TOP_IFR_MINUE_GT_DR_DR_DR),
-	   1940,	 Final(TOP_IFR_MINUH_GT_DR_DR_DR),
-	   1941,	 Final(TOP_IFR_MINUW_GT_DR_DR_DR),
-	   1942,	 Final(TOP_IFR_MINW_GT_DR_DR_DR),
-	   1943,	 Final(TOP_IFR_MULE_GT_DR_DR_DR),
-	   1944,	 Final(TOP_IFR_MULH_GT_DR_DR_DR),
-	   1945,	 Final(TOP_IFR_MULUE_GT_DR_DR_DR),
-	   1946,	 Final(TOP_IFR_MULUH_GT_DR_DR_DR),
-	   1947,	 Final(TOP_IFR_MULUW_GT_DR_DR_DR),
-	   1948,	 Final(TOP_IFR_MULW_GT_DR_DR_DR),
 	      END_TRANSITIONS); 
 
   Initial_State(ex_unit); 

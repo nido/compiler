@@ -1104,14 +1104,10 @@ main()
   ijump = ISA_Property_Create ("ijump"); 
   Instruction_Group (ijump, 
 		 TOP_GP16_BRANCH, 
-		 TOP_GP16_BRANCH_G0F, 
 		 TOP_GP16_JUMP, 
 		 TOP_GP32_BRANCH, 
-		 TOP_GP32_BRANCH_GF, 
-		 TOP_GP32_GOTOPR_GF_U16, 
 		 TOP_GP32_GOTOPR_U16, 
 		 TOP_GP32_JUMP, 
-		 TOP_GP32_JUMP_GF, 
 		 TOP_UNDEFINED); 
 
 /* ====================================== */ 
@@ -1926,18 +1922,11 @@ main()
 /* ====================================== */ 
   branch = ISA_Property_Create ("branch"); 
   Instruction_Group (branch, 
-		 TOP_GP16_BRANCH, 
 		 TOP_GP16_BRANCH_G0F, 
 		 TOP_GP16_GOTO_G0F_S9, 
-		 TOP_GP16_GOTO_S11, 
-		 TOP_GP16_JUMP, 
-		 TOP_GP32_BRANCH, 
 		 TOP_GP32_BRANCH_GF, 
 		 TOP_GP32_GOTOPR_GF_U16, 
-		 TOP_GP32_GOTOPR_U16, 
 		 TOP_GP32_GOTO_GF_S21, 
-		 TOP_GP32_GOTO_S25, 
-		 TOP_GP32_JUMP, 
 		 TOP_GP32_JUMP_GF, 
 		 TOP_UNDEFINED); 
 
@@ -2001,6 +1990,21 @@ main()
 		 TOP_IFR_MULUH_GT_DR_DR_DR, 
 		 TOP_IFR_MULUW_GT_DR_DR_DR, 
 		 TOP_IFR_MULW_GT_DR_DR_DR, 
+		 TOP_IFR_MPSSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPSUE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUUE_GT_DR_DR_DR, 
+		 TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
 /* ====================================== */ 
@@ -3933,6 +3937,21 @@ main()
 		 TOP_IFR_MULUH_GT_DR_DR_DR, 
 		 TOP_IFR_MULUW_GT_DR_DR_DR, 
 		 TOP_IFR_MULW_GT_DR_DR_DR, 
+		 TOP_IFR_MPSSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPSUE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUUE_GT_DR_DR_DR, 
+		 TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
 /* ====================================== */ 
@@ -4002,6 +4021,17 @@ main()
 		 TOP_GP32_MSUUHL_GT_DR_DR_DR_DR, 
 		 TOP_GP32_MSUULH_GT_DR_DR_DR_DR, 
 		 TOP_GP32_MSUULL_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
 /* ====================================== */ 
@@ -6234,9 +6264,7 @@ main()
 /* ====================================== */ 
   jump = ISA_Property_Create ("jump"); 
   Instruction_Group (jump, 
-		 TOP_GP16_GOTO_G0F_S9, 
 		 TOP_GP16_GOTO_S11, 
-		 TOP_GP32_GOTO_GF_S21, 
 		 TOP_GP32_GOTO_S25, 
 		 TOP_UNDEFINED); 
 

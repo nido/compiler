@@ -25,7 +25,27 @@ static const char *asmname(TOP topcode)
   char lower_buf[100]; 
 
   /* 
-   * By convention we have GP32 or GP16 followed by _<name>_ 
+   * First handle simulated and dummy instructions: 
+   */ 
+  switch (topcode) { 
+  case TOP_asm: return "asm"; 
+  case TOP_intrncall: return "intrncall"; 
+  case TOP_spadjust: return "spadjust"; 
+  case TOP_copy_br: return "copy_br"; 
+  case TOP_begin_pregtn: return "begin_pregtn"; 
+  case TOP_end_pregtn: return "end_pregtn"; 
+  case TOP_bwd_bar: return "bwd_bar"; 
+  case TOP_fwd_bar: return "fwd_bar"; 
+  case TOP_dfixup: return "dfixup"; 
+  case TOP_ffixup: return "ffixup"; 
+  case TOP_ifixup: return "ifixup"; 
+  case TOP_label: return "label"; 
+  case TOP_noop: return "nop"; 
+  default: break; 
+  } 
+
+  /* 
+   * By convention we have GP32, GP16, or IFR followed by _<name>_ 
    */ 
   for (i = 0; ; i++) { 
     c = name[i]; 
@@ -937,6 +957,17 @@ main()
 		 TOP_GP32_NEWINS_GT_BR_DR_DR_DR, 
 		 TOP_GP32_XSHLW_GT_DR_DR_DR_DR, 
 		 TOP_GP32_XSHRW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
@@ -2070,6 +2101,10 @@ main()
 		 TOP_GP32_XORPG_GT_BR_BR_BR, 
 		 TOP_GP32_XORP_GT_DR_DR_DR, 
 		 TOP_GP32_XOR_GT_DR_DR_DR, 
+		 TOP_IFR_MPSSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPSUE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUUE_GT_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 

@@ -33,7 +33,7 @@ main()
 	  target,	// the target of a branch 
 	  storeval,	// value to be stored 
 	  opnd1,	// first/left operand of an alu operator 
-	  opnd2,	// second/right operand of an alu operator 
+        opnd2,	// second/right operand of an alu operator 
         implicit;     // implicitely used by instruction 
 
   ISA_Operands_Begin("st100"); 
@@ -2477,6 +2477,10 @@ main()
 		 TOP_IFR_MULUH_GT_DR_DR_DR, 
 		 TOP_IFR_MULUW_GT_DR_DR_DR, 
 		 TOP_IFR_MULW_GT_DR_DR_DR, 
+		 TOP_IFR_MPSSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPSUE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUSE_GT_DR_DR_DR, 
+		 TOP_IFR_MPUUE_GT_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
   Result (0, int40); 
@@ -3324,6 +3328,17 @@ main()
 		 TOP_GP32_MSUULL_GT_DR_DR_DR_DR, 
 		 TOP_GP32_XSHLW_GT_DR_DR_DR_DR, 
 		 TOP_GP32_XSHRW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUHW_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MASUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUSE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAUUE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWE_GT_DR_DR_DR_DR, 
+		 TOP_IFR_MAWUE_GT_DR_DR_DR_DR, 
 		 TOP_UNDEFINED); 
 
   Result (0, int40); 
