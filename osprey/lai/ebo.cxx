@@ -2110,17 +2110,11 @@ EBO_Constant_Operand0 (
   // Arthur: spadjust shouldn't be subject to this
   if (OP_code(op) == TOP_spadjust) return FALSE;
 
-  if (OP_opnds(op) < (OP_has_predicate(op) ? 2 : 1)) return FALSE;
+  if (OP_opnds(op) < (OP_has_predicate(op) || OP_select(op) ? 2 : 1))
+    return FALSE;
 
-  if (OP_select(op)) {
-    l0_opnd1_idx = 1;
-    l0_opnd2_idx = 2;
-  }
-  else {
-    l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
-    l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
-  }
-
+  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
 
   tn0 = opnd_tn[l0_opnd1_idx];
   tn1 = (l0_opnd2_idx >= 0) ? opnd_tn[l0_opnd2_idx] : NULL;
@@ -2883,16 +2877,11 @@ EBO_Constant_Operand1 (
   // Arthur: spadjust shouldn't be subject to this
   if (OP_code(op) == TOP_spadjust) return FALSE;
 
-  if (OP_opnds(op) < (OP_has_predicate(op) ? 3 : 2)) return FALSE;
+  if (OP_opnds(op) < (OP_has_predicate(op) || OP_select(op) ? 3 : 2))
+    return FALSE;
 
-  if (OP_select(op)) {
-    l0_opnd1_idx = 1;
-    l0_opnd2_idx = 2;
-  }
-  else {
-    l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
-    l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
-  }
+  l0_opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+  l0_opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
 
   tn0 = opnd_tn[l0_opnd1_idx];
   tn1 = opnd_tn[l0_opnd2_idx];
@@ -3409,11 +3398,11 @@ EBO_Fold_Constant_Expression (
   } 
 
 #ifdef TARG_ST
-  tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
-  tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
-#else
   tn0 = OP_has_predicate(op) || OP_select(op) ? opnd_tn[1] : opnd_tn[0];
   tn1 = OP_has_predicate(op) || OP_select(op) ? opnd_tn[2] : opnd_tn[1];
+#else
+  tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
+  tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
 #endif
 
   if (TN_is_symbol(tn0)) {
@@ -4633,16 +4622,8 @@ Find_BB_TNs (BB *bb)
 	    /* Consider special case optimizations. */
 #ifdef TARG_ST
 	    // The ST target description takes care of this
-            INT o1_idx;
-            INT o2_idx;
-            if (OP_select(op)) {
-              o1_idx = 1;
-              o2_idx = 2;
-            }
-            else {
-              o1_idx = OP_find_opnd_use(op, OU_opnd1);
-              o2_idx = OP_find_opnd_use(op, OU_opnd2);
-            }
+            INT o1_idx = OP_find_opnd_use(op, OU_opnd1);
+            INT o2_idx = OP_find_opnd_use(op, OU_opnd2);
 #else
             INT o2_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd2) won't work for all the cases we care about */
             INT o1_idx; /* TOP_Find_Operand_Use(OP_code(op),OU_opnd1) won't work for all the cases we care about */

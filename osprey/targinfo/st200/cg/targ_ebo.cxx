@@ -687,15 +687,18 @@ EBO_simplify_operand0 (
   if (OP_select(op)) {
     TN *res[1];
     TN *opnd[3];
+    INT opnd0_idx = OP_find_opnd_use(op, OU_predicate);
+    INT opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    INT opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
 
     // Result and branch register don't change
     res[0] = tnr;
-    opnd[0] = OP_opnd(op, 0);
+    opnd[opnd0_idx] = OP_opnd(op, opnd0_idx);
 
     // If we have a zero constant, we can use r0 instead of 0
     // in order to save the constant slot.
     if (const_val == 0 && !TN_is_zero_reg(OP_opnd(op, 1))) {
-      opnd[1] = Zero_TN;
+      opnd[opnd1_idx] = Zero_TN;
 
       if (TN_has_value(tn1)) {
         INT64 val1 = TN_Value(tn1);
@@ -714,11 +717,11 @@ EBO_simplify_operand0 (
         else
           new_opcode = opcode;
 
-        opnd[2] = Gen_Literal_TN(val1, TN_size(tn1));
+        opnd[opnd2_idx] = Gen_Literal_TN(val1, TN_size(tn1));
       }
       else {
         new_opcode = opcode;
-        opnd[2] = tn1;
+        opnd[opnd2_idx] = tn1;
       }
 
       new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
@@ -727,7 +730,7 @@ EBO_simplify_operand0 (
 
     // Can't have 2 constants in select, 
     if (TN_has_value(tn1)) {
-      tn1 = OP_opnd(op, 2);
+      tn1 = OP_opnd(op, opnd2_idx);
     }
     
     // Here, slot 1 is a reg and slot 0 a constant, invert them.
@@ -746,8 +749,8 @@ EBO_simplify_operand0 (
     else
       return NULL;
     
-    opnd[1] = tn1;
-    opnd[2] = Gen_Literal_TN(const_val, TN_size(tn1));
+    opnd[opnd1_idx] = tn1;
+    opnd[opnd2_idx] = Gen_Literal_TN(const_val, TN_size(tn1));
 
     new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
 
@@ -983,10 +986,14 @@ EBO_simplify_operand1 (
     else
       return NULL;
 
+    INT opnd0_idx = OP_find_opnd_use(op, OU_predicate);
+    INT opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    INT opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+
     res[0] = tnr;
-    opnd[0] = OP_opnd(op, 0);
-    opnd[1] = tn0;
-    opnd[2] = Gen_Literal_TN(const_val, TN_size(tn0));
+    opnd[opnd0_idx] = OP_opnd(op, 0);
+    opnd[opnd1_idx] = tn0;
+    opnd[opnd2_idx] = Gen_Literal_TN(const_val, TN_size(tn0));
 
     new_op = Mk_VarOP(new_opcode, 1, 3, res, opnd);
 
