@@ -4444,6 +4444,11 @@ Find_Asm_Out_Parameter_Load (const WN* stmt, PREG_NUM preg_num, ST** ded_st)
 {
   WN* ret_load = NULL;
   for(; stmt != NULL; stmt = WN_next(stmt)) {
+#ifdef TARG_ST
+    // [CG]: If we encounter another ASM statement we stop the search.
+    // Otherwise we will attach the load to the wrong asm statement.
+    if (WN_opcode(stmt) == OPC_ASM_STMT) break;
+#endif
     if (OPERATOR_is_store(WN_operator(stmt))) {
       WN* load = WN_kid0(stmt);
       OPERATOR opr = WN_operator(load);
