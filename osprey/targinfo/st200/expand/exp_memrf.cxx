@@ -281,8 +281,6 @@ get_variant_alignment (
   INT32 n= V_alignment(variant);
   INT32 m= MTYPE_alignment(rtype);
 
-  FmtAssert(FALSE,("Not Implemented"));
-
   while(r = m % n)
   {
     m=  n;
@@ -303,11 +301,12 @@ Composed_Align_Type (
   INT32 *partials
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  INT32 new_align = get_variant_alignment(mtype, variant);
 
-  *alignment =	get_variant_alignment(mtype, variant);
-  *partials =	MTYPE_alignment(mtype) / *alignment;
-  return Mtype_AlignmentClass( *alignment, MTYPE_CLASS_UNSIGNED_INTEGER);
+  *alignment =	new_align;
+  *partials =	MTYPE_alignment(mtype) / new_align;
+  //  return Mtype_AlignmentClass(new_align, (MTYPE_type_class(mtype));
+  return Mtype_AlignmentClass(new_align, MTYPE_CLASS_UNSIGNED_INTEGER );
 }
 
 /* ====================================================================
@@ -348,8 +347,6 @@ Adjust_Addr_TNs (
   INT16	disp,		/* A displacement to add */
   OPS *ops)
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
   if (Potential_Immediate_TN_Expr (opcode, *disp_tn, disp)) {
     if ( TN_has_value(*disp_tn) ) {
       *disp_tn = Gen_Literal_TN ( TN_value(*disp_tn) + disp, 4 );
@@ -358,6 +355,9 @@ Adjust_Addr_TNs (
 				 TN_offset(*disp_tn) + disp, 0);
     }
   } else {
+
+    FmtAssert(FALSE,("immediate offset exceeded 32-bits"));
+
     TN *tmp = Build_TN_Of_Mtype (Pointer_Mtype);
     // because disp may be symbolic reloc on base,
     // want to still add it with base and create new base and disp.
@@ -390,11 +390,11 @@ Expand_Composed_Load (
   TYPE_ID	new_desc;
   TN		*tmpV[8];
 
-  FmtAssert(FALSE,("Not Implemented"));
+  DevWarn("misaligned load encountered");
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
   new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
-  //  top = Pick_Load_Instruction (rtype, new_desc);
+  top = Pick_Load_Imm_Instruction (rtype, new_desc);
 
   Is_True(nLoads > 1, ("Expand_Composed_Load with nLoads == %d", nLoads));
 
@@ -406,11 +406,43 @@ Expand_Composed_Load (
   for (i=0; i < nLoads; i++) {
     INT idx = i ^ endian_xor;
     tmpV[idx] = Build_TN_Of_Mtype(rtype);
-    Expand_Load ( new_opcode, tmpV[idx], base, disp, ops);
+    Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
     if (i < nLoads-1) Adjust_Addr_TNs (top, &base, &disp, alignment, ops);
   }
 
-  /* Now combine the components into the desired value. The only
+  /* 
+   * Now combine the components into the desired value.
+   */
+  INT nLoadBits = alignment * 8;
+  TN *tmp0 = tmpV[0]; 
+  for (i=1; i < (nLoads-1); i++) {
+    TN *tmp= Build_TN_Of_Mtype(rtype);
+    Exp_Deposit_Bits(rtype, 
+		     new_desc, 
+		     i*nLoadBits, 
+		     nLoadBits, 
+		     tmp, 
+		     tmp0,
+		     tmpV[i], 
+		     ops);
+    //    Build_OP(TOP_dep, tmp, True_TN, tmpV[i], tmp0,
+    //	       Gen_Literal_TN(i*nLoadBits, 4), Gen_Literal_TN(nLoadBits, 4), ops);
+    tmp0 = tmp;
+  }
+  Exp_Deposit_Bits(rtype, 
+		   new_desc, 
+		   i*nLoadBits, 
+		   nLoadBits, 
+		   result, 
+		   tmp0,
+		   tmpV[i], 
+		   ops);
+
+    //  Build_OP(TOP_dep, result, True_TN, tmpV[i], tmp0,
+    //	     Gen_Literal_TN(i*nLoadBits, 4), Gen_Literal_TN(nLoadBits, 4), ops);
+
+#if 0
+ The only
    * complication is that the form of the 'dep' instruction that we
    * need, supports a maximum length of 16 bits. Fortunately that
    * leaves just creating a 64-bit integer from two 32-bit pieces --
@@ -434,6 +466,9 @@ Expand_Composed_Load (
 	      ("Expand_Composed_Load: unexpected composition"));
     Build_OP(TOP_noop, result, True_TN, tmpV[1], tmpV[0], ops);
   }
+#endif
+
+  return;
 }
 
 /* ====================================================================

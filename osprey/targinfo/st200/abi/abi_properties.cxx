@@ -139,7 +139,7 @@ static void st200_abi(void)
 	      16,  17,  18,  19,  20,  21,  22,  23,
 	       -1);
   Reg_Property(func_val, ISA_REGISTER_CLASS_integer,
-	                                    16,  17,
+	      16,  17,  18,  19,  20,  21,  22,  23,
 	       -1);
   Reg_Property(zero, ISA_REGISTER_CLASS_integer, 
 		0,

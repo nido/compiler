@@ -103,9 +103,9 @@ typedef struct isa_print_type *ISA_PRINT_TYPE;
 extern void ISA_Print_Begin ( const char* archname );
 extern ISA_PRINT_TYPE ISA_Print_Type_Create ( const char* name, 
 					      const char *format_string );
-extern void Name (char *fmt);
-extern void Operand (int operand_index, char *fmt);
-extern void Result (int result_index, char *fmt);
+extern void Name (void);
+extern void Operand (int operand_index);
+extern void Result (int result_index);
 extern void Instruction_Print_Group ( ISA_PRINT_TYPE print_type, TOP top, ... );
 extern void ISA_Print_End(void);
 extern void Set_AsmName_Func(const char *(*asmname_func)(TOP topcode));

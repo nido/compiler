@@ -157,7 +157,7 @@ TAS_To_TOP (WN *tas_wn)
 
 static BOOL Is_Power_Of_2(INT64 val, TYPE_ID mtype)
 {
-  if (MTYPE_is_signed(mtype) && val < 0)
+  if (MTYPE_signed_type(mtype) && val < 0)
     val=        -val;
 
   if (mtype == MTYPE_U4)

@@ -82,7 +82,7 @@ struct list_info {
   isa_print_type *type;
   unsigned char	 args;  // Number of sprintf arguments
   unsigned char	 arg[MAX_LISTING_OPERANDS]; 
-  char *fmt[MAX_LISTING_OPERANDS]; // this operand format in listing
+  //char *fmt[MAX_LISTING_OPERANDS]; 
   int index;		
   bool have_name;
 };
@@ -249,7 +249,7 @@ void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
 }
 
 /////////////////////////////////////
-void Name (char *fmt)
+void Name ()
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -260,13 +260,13 @@ void Name (char *fmt)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = NAME;
-  current_print_desc->fmt[current_print_desc->args] = fmt;
+  //current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
   current_print_desc->have_name = true;
 }
 
 /////////////////////////////////////
-void Operand (int operand_index, char *fmt)
+void Operand (int operand_index)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -282,12 +282,12 @@ void Operand (int operand_index, char *fmt)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = OPND+operand_index;
-  current_print_desc->fmt[current_print_desc->args] = fmt;
+  //current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
 }
 
 /////////////////////////////////////
-void Result (int result_index, char *fmt)
+void Result (int result_index)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -303,7 +303,7 @@ void Result (int result_index, char *fmt)
     exit(EXIT_FAILURE);
   }
   current_print_desc->arg[current_print_desc->args] = RESULT+result_index;
-  current_print_desc->fmt[current_print_desc->args] = fmt;
+  //current_print_desc->fmt[current_print_desc->args] = fmt;
   current_print_desc->args++;
 }
 
@@ -387,8 +387,9 @@ void ISA_Print_End(void)
   fprintf(hfile, "\ntypedef struct {\n"
 		"  const char *format;\n"
   		"  mUINT8 comp[%d];\n" 
-  		"  const char *fmt[%d];\n" 
-		"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS,MAX_LISTING_OPERANDS);
+	  //  		"  const char *fmt[%d];\n" 
+	  //"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS,MAX_LISTING_OPERANDS);
+	        "} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS);
 
   fprintf(hfile, "\nextern const ISA_PRINT_INFO ISA_PRINT_info[%d];\n",
 						list_index + 1);
@@ -409,23 +410,24 @@ void ISA_Print_End(void)
 	fprintf (cfile, isa_print_format_format, buf);
 
 	// printout component types
-	fprintf (cfile, "\n%17s {", "");
+	//fprintf (cfile, "\n%17s {", "");
+	fprintf (cfile, "\n%2s ", "");
 	for (int i = 0; i < curr_type->args; i++) {
 	    fprintf (cfile, isa_print_args_format,
 			Print_Name(curr_type->arg[i]),
 			comma);
 	    fprintf (cfile, isa_print_type_format, curr_type->type->name, i);
-	    fprintf (cfile, "\n%19s", "");
+	    fprintf (cfile, "\n%3s", "");
 	}
 	fprintf (cfile, isa_print_args_format, Print_Name(END), space);
-	fprintf (cfile, "},");
-	/*
+	fprintf (cfile, "\n  },");
+
 	fprintf (cfile, isa_print_type_format, 
 			curr_type->type->name,
 			curr_type->args);
-	*/
-	fprintf (cfile, "\n");
 
+	fprintf (cfile, "\n");
+#if 0
 	// printout component formats:
 	fprintf (cfile, "%17s {", "");
 	for (int i = 0; i < curr_type->args-1; i++) {
@@ -439,7 +441,7 @@ void ISA_Print_End(void)
 			curr_type->type->name,
 			curr_type->args-1);
 	fprintf (cfile, "\n  },\n");
-
+#endif
   }
   fprintf (cfile, "};\n");
 
@@ -478,11 +480,12 @@ void ISA_Print_End(void)
 		 "{\n"
 		 "  return info->comp[index];\n"
 		 "}\n");
-
+#if 0
   fprintf(hfile, "\ninline const char* ISA_PRINT_INFO_Fmt(const ISA_PRINT_INFO *info, INT index)\n"
 		 "{\n"
 		 "  return info->fmt[index];\n"
 		 "}\n");
+#endif
 
   if (asmname) {
     fprintf(cfile, "\nconst char * const ISA_PRINT_asmname[] = {\n");
@@ -543,6 +546,7 @@ void ISA_Print_End(void)
   		"  return 0;\n"
 		"}\n");
 
+#if 0
   //
   // Emit function ISA_PRINT_Operand_Format:
   //
@@ -568,6 +572,7 @@ void ISA_Print_End(void)
 	  "    }\n"
 	  "  } while (++i, comp != ISA_PRINT_COMP_end);\n"
 	  "}\n");
+#endif
 
   Emit_Footer (hfile);
 }

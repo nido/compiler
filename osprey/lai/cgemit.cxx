@@ -2403,17 +2403,17 @@ r_apply_l_const (
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else if ( TN_has_value(t) ) {
-#ifdef TARG_ST
+#if 0
     if ( TN_size(t) <= 4 ) {
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
-		    ISA_PRINT_Operand_Format(OP_code(op), opidx),
+		    hexfmt ? "0x%x" : "%d",
 		    (mINT32)TN_value(t) );
     }
     else {
       vstr_sprintf (buf, 
 		    vstr_len(*buf), 
-		    "%lld",
+		    hexfmt ? "0x%llx" : "%lld",
 		    TN_value(t) );
     }
 #else

@@ -320,6 +320,26 @@ Expand_Branch (
       FmtAssert(cmp != TOP_UNDEFINED, 
                                   ("Expand_Branch: unexpected comparison"));
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+      //
+      // The src2 may be an immediate TN. Clean up the sign-extension
+      // bits if necessary. This has happened when we end up with a 1 in
+      // an upper bit of a U4. WHIRL sign-extends the value to 64-bits
+      // but then 0xffffffff80000000 is out of unsigned range. This won't
+      // matter but if the TOP code needs an unsigned operand !
+      //
+      if (TN_has_value(src2) && TN_size(src2) < 8) {
+	//
+	// If TOP code needs an unsigned value, mask the sign-extension
+	//
+	const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(cmp);
+	const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo, 1);
+	if (!ISA_OPERAND_VALTYP_Is_Signed(vtype)) {
+	  //ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
+	  //if (ISA_LC_Is_Signed(lc)) {
+	  INT64 imm = TN_value(src2);
+	  src2 = Gen_Literal_TN((imm & 0x00000000ffffffff), TN_size(src2));
+	}
+      }
       Build_OP (cmp, tmp, src1, src2, ops);
       FmtAssert(TN_is_label(targ), ("Expand_Branch: expected a label"));
       /*

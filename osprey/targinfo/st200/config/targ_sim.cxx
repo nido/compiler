@@ -72,7 +72,7 @@ UINT Last_Dedicated_Preg_Offset    =  Branch_Preg_Max_Offset;
 
 /* The offsets for return registers are fixed: */
 UINT First_Int_Preg_Return_Offset	= 17;	/* register v0 */
-UINT Last_Int_Preg_Return_Offset	= 18;	/* register v1 */
+UINT Last_Int_Preg_Return_Offset	= 24;	/* register v1 */
 UINT First_Ptr_Preg_Return_Offset       = 0;
 UINT Last_Ptr_Preg_Return_Offset        = 0;
 UINT First_Float_Preg_Return_Offset	= 0;	/* register f0 */
@@ -114,10 +114,10 @@ SIM SIM_Info[] = {
   { /* ABI_ST200 */
 	SIM_COORD_MEM_REG | SIM_REG_STRUCTS | SIM_RET_ADDR_VIA_INT_RET,
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
-	{I0+16,I0+17,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,
 	0, 64, -64, 
-	-1, 32, I0+62, I0+25
+	32, 32, I0+62, I0+25
   }
 };
 
@@ -139,7 +139,7 @@ Is_Return_Preg (
 /* ====================================================================
  *   Is_Int_Output_Preg
  *
- *   return whether preg is an output preg 
+ *   return whether preg is an output preg (rotating regs)
  * ====================================================================
  */
 BOOL 
@@ -147,11 +147,6 @@ Is_Int_Output_Preg (
   PREG_NUM preg
 )
 {
-  // Seems like rotating register stuff ...
-#if 0
-  return (preg <= Output_Base_Preg 
-      && preg > (Output_Base_Preg - MAX_NUMBER_OF_REGISTER_PARAMETERS));
-#endif
   return FALSE;
 }
 
@@ -457,6 +452,83 @@ Get_Return_Pregs (
     ("Get_Return_Pregs should not be invoked; invoke Get_Return_Info instead"));
 }
 
+#if 0
+/* ====================================================================
+ *   Get_Struct_Size
+ *
+ *   Return the size of a structure in bits: elements 
+ *   (subintegers, bitfields) are
+ *   packed into 32-bit registers. Alignment. Should not
+ *   exceed 256 bits (32 bytes)
+ * ====================================================================
+ */
+static UINT64
+Get_Struct_Size (
+  TY_IDX struct_ty_idx
+)
+{
+  FLD_ITER fld_iter = Make_fld_iter(TY_fld(struct_ty_idx));
+  UINT64 size = 0;
+
+  do {
+    FLD_HANDLE fld(fld_iter);
+
+    TY_IDX fty = FLD_type (fld);
+    UINT8 pad;
+
+    if (FLD_is_bit_field(fld)) {
+      UINT64 ofst = FLD_ofst(fld);
+      UINT8 bofst = FLD_bofst(fld);
+      UINT8 bsize = FLD_bsize(fld);
+      
+      // ofst is the offset of the bitfield within the
+      // struct in bytes.
+      // Overall size is ofst + (bofst+bsize)
+      size = ofst + bofst + bsize;
+    }
+    else {
+      switch (TY_kind (fty)) {
+
+      case KIND_SCALAR:
+
+	TYPE_ID mtype = TY_mtype (fty);
+	switch (mtype) {
+	case MTYPE_U1:
+	case MTYPE_I1:
+	case MTYPE_U2:
+	case MTYPE_I2:
+	case MTYPE_U4:
+	case MTYPE_I4:
+        case MTYPE_I8:
+	case MTYPE_U8:
+        case MTYPE_F4:
+        case MTYPE_F8:
+	  // pad to alignment
+	  pad = size % MTYPE_bit_size(mtype);
+	  if (pad != 0) {
+	    size += pad;
+	  }
+	  size += MTYPE_bit_size(mtype);
+	  break;
+
+        default:
+	  Is_True(FALSE,("unknown scalar mtype"));
+	}
+
+      case KIND_STRUCT:
+	size += Get_Struct_Size (FLD_type(fld));
+
+      default:
+	Is_True(FALSE,("unknown structure field type"));
+      }
+    }
+
+  } while (!FLD_last_field(fld_iter++));
+
+  return size;
+}
+#endif
+
 /* ====================================================================
  *   Get_Return_Info
  *
@@ -571,101 +643,28 @@ Get_Return_Info (
       info.count = 0;
       info.return_via_return_reg = TRUE;
 
-#if 0
-      if (SIM_INFO.max_struct_result != 0) {
+      // make sure it's a struct
+      Is_True (TY_kind (rtype) == KIND_STRUCT, ("expecting KIND_STRUCT"));
 
-        UINT64 size = TY_size(Ty_Table[rtype]);
+      {
+	// UINT64 size = Get_Structure_Size(rtype);
+	UINT64 size = TY_size(Ty_Table[rtype]);
 
-        if (size > 0 && 8 * size <= 2 * SIM_INFO.max_struct_result) {
+	if (SIM_INFO.max_struct_size >= size) {
 
-          TYPE_ID hfa_mtype = MTYPE_V;
+	  info.return_via_return_reg = FALSE;
 
-          if (Struct_Is_HFA (rtype, level, hfa_mtype) &&
-              hfa_mtype != MTYPE_V &&
-              ((hfa_mtype != MTYPE_F4 && hfa_mtype != MTYPE_C4) ||
-               ((hfa_mtype == MTYPE_F4 || hfa_mtype == MTYPE_C4) &&
-                8 * size <= SIM_INFO.max_struct_result))) {
-
-            PREG_NUM reg = PR_first_reg(SIM_INFO.flt_results);
-            INT32 n;
-            INT32 i;
-            INT32 step;
-
-            info.return_via_first_arg = FALSE;
-
-            switch (hfa_mtype) {
-
-              case MTYPE_F4:
-              case MTYPE_F8:
-              case MTYPE_F10:
-
-                break;
-
-              case MTYPE_C4:
-              case MTYPE_C8:
-              case MTYPE_C10:
-
-                if (level != Use_Simulated)
-                  hfa_mtype = Mtype_complex_to_real(hfa_mtype);
-                break;
-            }
-                  
-            switch (hfa_mtype) {
-
-              case MTYPE_F4:
-              case MTYPE_C4:
-
-                n = TY_size (rtype) / TY_size (Be_Type_Tbl (MTYPE_F4));
-                info.count = n;
-
-                for (i = 0; i < n; i++) {
-
-                  info.mtype [i] = hfa_mtype; 
-                  info.preg  [i] = reg; 
-                  reg += PR_skip_value(SIM_INFO.flt_results);
-                }
-                break;
-
-              case MTYPE_F8:
-              case MTYPE_F10:
-              case MTYPE_C8:
-              case MTYPE_C10:
-
-                n = TY_size (rtype) / TY_size (Be_Type_Tbl (hfa_mtype));
-                step = TY_size (Be_Type_Tbl (hfa_mtype)) /
-                       TY_size (Be_Type_Tbl (MTYPE_F8));
-                info.count = n;
-
-                for (i = 0; i < n; i++) {
-
-                  info.mtype [i] = hfa_mtype; 
-                  info.preg  [i] = reg; 
-                  reg += step * PR_skip_value(SIM_INFO.flt_results);
-                }
-                break;
-            }
-          }
-
-          else
-          if (8 * size <= SIM_INFO.max_struct_result) {
-
-            int n =   (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
+	  INT n = (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
                     / MTYPE_RegisterSize(SIM_INFO.int_type);
-            reg = PR_first_reg(SIM_INFO.int_results);
+	  reg = PR_first_reg(SIM_INFO.int_results);
 
-            info.return_via_first_arg = FALSE;
-            info.count = n;
-            for (int i = 0; i < n; i++) {
-
-              info.mtype [i] = SIM_INFO.int_type;
-              info.preg  [i] = reg++;
-            }
-
-            break;
-          }
-        }
+	  info.count = n;
+	  for (int i = 0; i < n; i++) {
+	    info.mtype [i] = SIM_INFO.int_type;
+	    info.preg  [i] = reg++;
+	  }
+	}
       }
-#endif
       break;
 
     case MTYPE_FQ:
@@ -689,11 +688,6 @@ Get_Return_Info (
 } /* Get_Return_Info */
 
 static INT Current_Int_Param_Num = 0;
-
-#if 0
-static INT Current_Float_Param_Num = -1;
-#endif
-
 static INT Current_Offset;
 static BOOL First_Param_In_Return_Reg = FALSE;
 
@@ -719,14 +713,20 @@ Setup_Parameter_Locations (
     Last_Fixed_Param = -1;
     for (++idx; Tylist_Table[idx] != 0; ++idx)
       ++Last_Fixed_Param;
+
     // old style varargs is counting va_alist and should not
-    if ( ! TY_has_prototype(pu_type))
+    if ( ! TY_has_prototype(pu_type)) {
       --Last_Fixed_Param;
+    }
+
     // account for functions returning to first parameter
-    if (TY_return_to_param (pu_type))
+    if (TY_return_to_param (pu_type)) {
       ++Last_Fixed_Param;
-  } else
+    }
+  }
+  else {
     Last_Fixed_Param = INT_MAX;
+  }
 
   Current_Int_Param_Num = 0;
   Current_Offset = 0;
