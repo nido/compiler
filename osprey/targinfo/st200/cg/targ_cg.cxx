@@ -1402,8 +1402,10 @@ CGTARG_Adjust_Latency (
   if (kind == CG_DEP_REGOUT && *latency < 1) *latency = 1;
   
   // 9. Special latency on register R0.0, even on output dependence.
+  /* FdF: MBTst15896 Fixed operand for REGOUT. */
   if ((kind == CG_DEP_REGIN && OP_opnd(succ_op, opnd) == Zero_TN) ||
-      ((kind == CG_DEP_REGOUT || kind == CG_DEP_REGANTI) && OP_opnd(pred_op, opnd) == Zero_TN))
+      (kind == CG_DEP_REGANTI && OP_opnd(pred_op, opnd) == Zero_TN) ||
+      (kind == CG_DEP_REGOUT && OP_result(succ_op, opnd) == Zero_TN))
     *latency = 0;
 
   return;

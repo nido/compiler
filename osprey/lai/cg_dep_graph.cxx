@@ -3801,7 +3801,8 @@ Add_Forw_REG_Arcs(BB *bb)
 
 	  if (include_assigned_registers ||
 	      !OP_has_disjoint_predicate(prev_defop,op)) {
-	    new_arc(CG_DEP_REGOUT, prev_defop, op, 0, 0, FALSE);
+	    /* FdF: MBTst15896 Fixed opnd to i, the def argument of op */
+	    new_arc(CG_DEP_REGOUT, prev_defop, op, 0, i, FALSE);
 	  }
 	}
 
