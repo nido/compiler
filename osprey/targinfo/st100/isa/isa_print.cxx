@@ -28,19 +28,6 @@ static const char *asmname(TOP topcode)
    * First handle simulated and dummy instructions: 
    */ 
   switch (topcode) { 
-  case TOP_asm: return "asm"; 
-  case TOP_intrncall: return "intrncall"; 
-  case TOP_spadjust: return "spadjust"; 
-  case TOP_copy_br: return "copy_br"; 
-  case TOP_begin_pregtn: return "begin_pregtn"; 
-  case TOP_end_pregtn: return "end_pregtn"; 
-  case TOP_bwd_bar: return "bwd_bar"; 
-  case TOP_fwd_bar: return "fwd_bar"; 
-  case TOP_dfixup: return "dfixup"; 
-  case TOP_ffixup: return "ffixup"; 
-  case TOP_ifixup: return "ifixup"; 
-  case TOP_label: return "label"; 
-  case TOP_noop: return "nop"; 
   default: break; 
   } 
 
@@ -90,11 +77,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_0; 
   print_0 = ISA_Print_Type_Create("print_0", "%s 	%s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_0, 
 		 TOP_GP32_LCW_GT_CRH_AR_BM_U5, 
@@ -106,12 +93,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_1; 
   print_1 = ISA_Print_Type_Create("print_1", "%s 	%s %s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_1, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_QM_U5, 
@@ -136,11 +123,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_2; 
   print_2 = ISA_Print_Type_Create("print_2", "%s 	%s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
   Instruction_Print_Group(print_2, 
 		 TOP_GP32_LAH_GT_AR_AR_P_U9, 
@@ -182,11 +169,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_3; 
   print_3 = ISA_Print_Type_Create("print_3", "%s 	%s %s , @( %s -? %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
   Instruction_Print_Group(print_3, 
 		 TOP_GP32_LAH_GT_AR_AR_MQ_U5, 
@@ -211,11 +198,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_4; 
   print_4 = ISA_Print_Type_Create("print_4", "%s 	%s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
   Instruction_Print_Group(print_4, 
 		 TOP_GP32_LAH_GT_AR_AR_M_U9, 
@@ -240,10 +227,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_5; 
   print_5 = ISA_Print_Type_Create("print_5", "%s 	%s %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%d"); 
 
   Instruction_Print_Group(print_5, 
 		 TOP_GP32_MAKEA_GT_AR_S16, 
@@ -263,12 +250,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_6; 
   print_6 = ISA_Print_Type_Create("print_6", "%s 	%s %s @( %s !+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_6, 
 		 TOP_GP32_SAH_GT_MD_AR_BP_AR_AR, 
@@ -289,11 +276,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_7; 
   print_7 = ISA_Print_Type_Create("print_7", "%s 	%s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_7, 
 		 TOP_GP32_LCW_GT_CRH_AR_P_AR, 
@@ -305,12 +292,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_8; 
   print_8 = ISA_Print_Type_Create("print_8", "%s 	%s %s @( %s - %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_8, 
 		 TOP_GP32_SAH_GT_MD_AR_M_AR_AR, 
@@ -331,11 +318,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_9; 
   print_9 = ISA_Print_Type_Create("print_9", "%s 	%s @( %s !+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_9, 
 		 TOP_GP32_SAH_GT_AR_BP_AR_AR, 
@@ -356,11 +343,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_10; 
   print_10 = ISA_Print_Type_Create("print_10", "%s 	%s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_10, 
 		 TOP_GP32_LCW_GT_CRH_AR_M_AR, 
@@ -372,12 +359,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_11; 
   print_11 = ISA_Print_Type_Create("print_11", "%s 	%s %s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_11, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_P_AR, 
@@ -402,12 +389,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_12; 
   print_12 = ISA_Print_Type_Create("print_12", "%s 	%s %s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_12, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_M_AR, 
@@ -432,12 +419,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_13; 
   print_13 = ISA_Print_Type_Create("print_13", "%s 	%s %s , %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Result(1); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Result(1, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_13, 
 		 TOP_GP32_EQESUB_GT_BR_DR_DR_DR, 
@@ -553,11 +540,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_14; 
   print_14 = ISA_Print_Type_Create("print_14", "%s 	%s %s @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_14, 
 		 TOP_GP32_LFR_GT_MD_AR_BP_U5, 
@@ -569,8 +556,8 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_15; 
   print_15 = ISA_Print_Type_Create("print_15", "	%s %s"); 
-  Name(); 
-  Operand(0); 
+  Name("%s"); 
+  Operand(0, "%d"); 
 
   Instruction_Print_Group(print_15, 
 		 TOP_GP32_CALL_S25, 
@@ -578,8 +565,6 @@ main()
 		 TOP_GP32_GOTO_S25, 
 		 TOP_GP32_POPRTE_U20, 
 		 TOP_GP32_POPRTS_U20, 
-		 TOP_GP32_POP_U20, 
-		 TOP_GP32_PUSH_U20, 
 		 TOP_GP32_SETILE0_S16, 
 		 TOP_GP32_SETILE1_S16, 
 		 TOP_GP32_SETILE2_S16, 
@@ -598,10 +583,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_16; 
   print_16 = ISA_Print_Type_Create("print_16", "%s 	%s @( %s -? %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
   Instruction_Print_Group(print_16, 
 		 TOP_GP32_LFR_GT_AR_MQ_U5, 
@@ -613,11 +598,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_17; 
   print_17 = ISA_Print_Type_Create("print_17", "%s 	%s %s @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_17, 
 		 TOP_GP32_LFR_GT_MD_AR_BM_U5, 
@@ -629,12 +614,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_18; 
   print_18 = ISA_Print_Type_Create("print_18", "%s 	%s %s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_18, 
 		 TOP_GP32_ADDBA_GT_MD_AR_AR_U5, 
@@ -648,9 +633,9 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_19; 
   print_19 = ISA_Print_Type_Create("print_19", "%s 	%s %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%d"); 
 
   Instruction_Print_Group(print_19, 
 		 TOP_GP32_GOTOPR_GF_U16, 
@@ -660,11 +645,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_20; 
   print_20 = ISA_Print_Type_Create("print_20", "%s 	%s %s @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_20, 
 		 TOP_GP32_LFR_GT_MD_AR_P_AR, 
@@ -676,10 +661,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_21; 
   print_21 = ISA_Print_Type_Create("print_21", "%s 	%s @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_21, 
 		 TOP_GP32_LFR_GT_AR_P_AR, 
@@ -691,11 +676,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_22; 
   print_22 = ISA_Print_Type_Create("print_22", "%s 	%s %s @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_22, 
 		 TOP_GP32_LFR_GT_MD_AR_M_AR, 
@@ -707,10 +692,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_23; 
   print_23 = ISA_Print_Type_Create("print_23", "%s 	%s @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_23, 
 		 TOP_GP32_LFR_GT_AR_BP_AR, 
@@ -722,10 +707,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_24; 
   print_24 = ISA_Print_Type_Create("print_24", "%s 	%s @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_24, 
 		 TOP_GP32_LFR_GT_AR_M_AR, 
@@ -737,9 +722,9 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_25; 
   print_25 = ISA_Print_Type_Create("print_25", "%s 	%s %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
 
   Instruction_Print_Group(print_25, 
 		 TOP_GP32_NOTG_GT_BR, 
@@ -749,10 +734,10 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_26; 
   print_26 = ISA_Print_Type_Create("print_26", "%s 	%s @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_26, 
 		 TOP_GP32_LFR_GT_AR_BM_AR, 
@@ -764,12 +749,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_27; 
   print_27 = ISA_Print_Type_Create("print_27", "%s 	%s %s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
   Instruction_Print_Group(print_27, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_U5, 
@@ -781,11 +766,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_28; 
   print_28 = ISA_Print_Type_Create("print_28", "%s 	%s @( %s ?+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_28, 
 		 TOP_GP32_SAH_GT_AR_QP_U5_AR, 
@@ -806,12 +791,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_29; 
   print_29 = ISA_Print_Type_Create("print_29", "%s 	%s %s @( %s ?- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_29, 
 		 TOP_GP32_SAH_GT_MD_AR_QM_U5_AR, 
@@ -832,11 +817,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_30; 
   print_30 = ISA_Print_Type_Create("print_30", "%s 	%s @( %s + %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_30, 
 		 TOP_GP32_SAH_GT_AR_P_U9_AR, 
@@ -870,12 +855,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_31; 
   print_31 = ISA_Print_Type_Create("print_31", "%s 	%s %s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
   Instruction_Print_Group(print_31, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_U5, 
@@ -887,11 +872,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_32; 
   print_32 = ISA_Print_Type_Create("print_32", "%s 	%s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_32, 
 		 TOP_GP32_LCW_GT_CRH_AR_P_U9, 
@@ -907,11 +892,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_33; 
   print_33 = ISA_Print_Type_Create("print_33", "%s 	%s @( %s -? %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_33, 
 		 TOP_GP32_SAH_GT_AR_MQ_U5_AR, 
@@ -932,11 +917,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_34; 
   print_34 = ISA_Print_Type_Create("print_34", "%s 	%s %s , @( %s -? %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_34, 
 		 TOP_GP32_LCW_GT_CRH_AR_MQ_U5, 
@@ -948,11 +933,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_35; 
   print_35 = ISA_Print_Type_Create("print_35", "%s 	%s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Result(1); 
-  Operand(1); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Result(1, "%s"); 
+  Operand(1, "%s"); 
 
   Instruction_Print_Group(print_35, 
 		 TOP_GP32_FMOVEA_GT_BR_AR_AR, 
@@ -962,11 +947,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_36; 
   print_36 = ISA_Print_Type_Create("print_36", "%s 	%s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_36, 
 		 TOP_GP32_LCW_GT_CRH_AR_M_U9, 
@@ -978,12 +963,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_37; 
   print_37 = ISA_Print_Type_Create("print_37", "%s 	%s %s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_37, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_BP_U5, 
@@ -1008,12 +993,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_38; 
   print_38 = ISA_Print_Type_Create("print_38", "%s 	%s %s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
   Instruction_Print_Group(print_38, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_BM_U5, 
@@ -1038,12 +1023,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_39; 
   print_39 = ISA_Print_Type_Create("print_39", "%s 	%s %s @( %s ?+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_39, 
 		 TOP_GP32_SAH_GT_MD_AR_QP_AR_AR, 
@@ -1064,12 +1049,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_40; 
   print_40 = ISA_Print_Type_Create("print_40", "%s 	%s %s , %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Result(1); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Result(1, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
   Instruction_Print_Group(print_40, 
 		 TOP_GP32_FBCLRP_GT_BR_DR_DR_U4, 
@@ -1089,11 +1074,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_41; 
   print_41 = ISA_Print_Type_Create("print_41", "%s 	%s @( %s ?+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_41, 
 		 TOP_GP32_SAH_GT_AR_QP_AR_AR, 
@@ -1114,12 +1099,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_42; 
   print_42 = ISA_Print_Type_Create("print_42", "%s 	%s %s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_42, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_P_AR, 
@@ -1131,11 +1116,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_43; 
   print_43 = ISA_Print_Type_Create("print_43", "%s 	%s @( %s + %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_43, 
 		 TOP_GP32_SAH_GT_AR_P_AR_AR, 
@@ -1156,12 +1141,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_44; 
   print_44 = ISA_Print_Type_Create("print_44", "%s 	%s %s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
   Instruction_Print_Group(print_44, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_M_AR, 
@@ -1173,12 +1158,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_45; 
   print_45 = ISA_Print_Type_Create("print_45", "%s 	%s %s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_45, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_QP_AR, 
@@ -1203,11 +1188,11 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_46; 
   print_46 = ISA_Print_Type_Create("print_46", "%s 	%s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
   Instruction_Print_Group(print_46, 
 		 TOP_GP32_LAH_GT_AR_AR_QP_AR, 
@@ -1232,12 +1217,12 @@ main()
   /* ================================= */ 
   ISA_PRINT_TYPE print_47; 
   print_47 = ISA_Print_Type_Create("print_47", "%s 	%s %s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
   Instruction_Print_Group(print_47, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_QM_AR, 
@@ -1261,15 +1246,26 @@ main()
 
   /* ================================= */ 
   ISA_PRINT_TYPE print_48; 
-  print_48 = ISA_Print_Type_Create("print_48", "%s 	%s %s , %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  print_48 = ISA_Print_Type_Create("print_48", "	%s %s"); 
+  Name("%s"); 
+  Operand(0, "0x%05x"); 
 
   Instruction_Print_Group(print_48, 
+		 TOP_GP32_POP_U20, 
+		 TOP_GP32_PUSH_U20, 
+		 TOP_UNDEFINED); 
+
+  /* ================================= */ 
+  ISA_PRINT_TYPE print_49; 
+  print_49 = ISA_Print_Type_Create("print_49", "%s 	%s %s , %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+
+  Instruction_Print_Group(print_49, 
 		 TOP_GP32_EQEINS_GT_BR_DR_DR_DR, 
 		 TOP_GP32_EQPINS_GT_BR_DR_DR_DR, 
 		 TOP_GP32_EQUEINS_GT_BR_DR_DR_DR, 
@@ -1376,15 +1372,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_49; 
-  print_49 = ISA_Print_Type_Create("print_49", "%s 	%s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_50; 
+  print_50 = ISA_Print_Type_Create("print_50", "%s 	%s %s , @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_49, 
+  Instruction_Print_Group(print_50, 
 		 TOP_GP32_LAH_GT_AR_AR_QM_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_QM_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_QM_AR, 
@@ -1405,15 +1401,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_50; 
-  print_50 = ISA_Print_Type_Create("print_50", "%s 	%s %s @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_51; 
+  print_51 = ISA_Print_Type_Create("print_51", "%s 	%s %s @( %s + %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_50, 
+  Instruction_Print_Group(print_51, 
 		 TOP_GP32_LFR_GT_MD_AR_P_U5, 
 		 TOP_GP32_LGR_GT_MD_AR_P_U5, 
 		 TOP_GP32_SFR_GT_MD_AR_P_U5, 
@@ -1421,15 +1417,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_51; 
-  print_51 = ISA_Print_Type_Create("print_51", "%s 	%s %s @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_52; 
+  print_52 = ISA_Print_Type_Create("print_52", "%s 	%s %s @( %s - %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_51, 
+  Instruction_Print_Group(print_52, 
 		 TOP_GP32_LFR_GT_MD_AR_M_U5, 
 		 TOP_GP32_LGR_GT_MD_AR_M_U5, 
 		 TOP_GP32_SFR_GT_MD_AR_M_U5, 
@@ -1437,15 +1433,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_52; 
-  print_52 = ISA_Print_Type_Create("print_52", "%s 	%s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_53; 
+  print_53 = ISA_Print_Type_Create("print_53", "%s 	%s %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%d"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_52, 
+  Instruction_Print_Group(print_53, 
 		 TOP_GP32_ANDNP_GT_DR_U8_DR, 
 		 TOP_GP32_ANDN_GT_DR_U8_DR, 
 		 TOP_GP32_FEANDN_GT_BR_U8_DR, 
@@ -1465,40 +1461,40 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_53; 
-  print_53 = ISA_Print_Type_Create("print_53", "%s 	%s"); 
-  Operand(0); 
-  Name(); 
+  ISA_PRINT_TYPE print_54; 
+  print_54 = ISA_Print_Type_Create("print_54", "%s 	%s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
 
-  Instruction_Print_Group(print_53, 
+  Instruction_Print_Group(print_54, 
 		 TOP_GP32_BKP_GF, 
 		 TOP_GP32_BRANCH_GF, 
 		 TOP_GP32_JUMP_GF, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_54; 
-  print_54 = ISA_Print_Type_Create("print_54", "	%s %s"); 
-  Name(); 
-  Result(0); 
+  ISA_PRINT_TYPE print_55; 
+  print_55 = ISA_Print_Type_Create("print_55", "	%s %s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
 
-  Instruction_Print_Group(print_54, 
+  Instruction_Print_Group(print_55, 
 		 TOP_GP32_POPRTE_RSET, 
 		 TOP_GP32_POPRTS_RSET, 
 		 TOP_GP32_POP_RSET, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_55; 
-  print_55 = ISA_Print_Type_Create("print_55", "%s 	%s %s @( %s !+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_56; 
+  print_56 = ISA_Print_Type_Create("print_56", "%s 	%s %s @( %s !+ %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_55, 
+  Instruction_Print_Group(print_56, 
 		 TOP_GP32_SAH_GT_MD_AR_BP_U5_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_BP_U5_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_BP_U5_CRH, 
@@ -1515,16 +1511,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_56; 
-  print_56 = ISA_Print_Type_Create("print_56", "%s 	%s %s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_57; 
+  print_57 = ISA_Print_Type_Create("print_57", "%s 	%s %s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
-  Instruction_Print_Group(print_56, 
+  Instruction_Print_Group(print_57, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_U5, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BP_U5, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_BP_U5, 
@@ -1532,16 +1528,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_57; 
-  print_57 = ISA_Print_Type_Create("print_57", "%s 	%s %s @( %s - %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_58; 
+  print_58 = ISA_Print_Type_Create("print_58", "%s 	%s %s @( %s - %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_57, 
+  Instruction_Print_Group(print_58, 
 		 TOP_GP32_SAH_GT_MD_AR_M_U5_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_M_U5_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_M_U5_CRH, 
@@ -1558,16 +1554,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_58; 
-  print_58 = ISA_Print_Type_Create("print_58", "%s 	%s %s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_59; 
+  print_59 = ISA_Print_Type_Create("print_59", "%s 	%s %s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
-  Instruction_Print_Group(print_58, 
+  Instruction_Print_Group(print_59, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_U5, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BM_U5, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_BM_U5, 
@@ -1575,15 +1571,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_59; 
-  print_59 = ISA_Print_Type_Create("print_59", "%s 	%s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_60; 
+  print_60 = ISA_Print_Type_Create("print_60", "%s 	%s %s , @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_59, 
+  Instruction_Print_Group(print_60, 
 		 TOP_GP32_LAH_GT_AR_AR_QP_U5, 
 		 TOP_GP32_LAW_GT_AR_AR_QP_U5, 
 		 TOP_GP32_LCG_GT_BR_AR_QP_U5, 
@@ -1604,15 +1600,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_60; 
-  print_60 = ISA_Print_Type_Create("print_60", "%s 	%s @( %s !- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_61; 
+  print_61 = ISA_Print_Type_Create("print_61", "%s 	%s @( %s !- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_60, 
+  Instruction_Print_Group(print_61, 
 		 TOP_GP32_SAH_GT_AR_BM_U5_AR, 
 		 TOP_GP32_SAW_GT_AR_BM_U5_AR, 
 		 TOP_GP32_SCW_GT_AR_BM_U5_CRH, 
@@ -1629,30 +1625,30 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_61; 
-  print_61 = ISA_Print_Type_Create("print_61", "%s 	%s %s , %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_62; 
+  print_62 = ISA_Print_Type_Create("print_62", "%s 	%s %s , %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_61, 
+  Instruction_Print_Group(print_62, 
 		 TOP_GP32_XSHLW_GT_DR_DR_DR_U5, 
 		 TOP_GP32_XSHRW_GT_DR_DR_DR_U5, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_62; 
-  print_62 = ISA_Print_Type_Create("print_62", "%s 	%s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_63; 
+  print_63 = ISA_Print_Type_Create("print_63", "%s 	%s %s , @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_62, 
+  Instruction_Print_Group(print_63, 
 		 TOP_GP32_LAH_GT_AR_AR_QM_U5, 
 		 TOP_GP32_LAW_GT_AR_AR_QM_U5, 
 		 TOP_GP32_LCG_GT_BR_AR_QM_U5, 
@@ -1673,16 +1669,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_63; 
-  print_63 = ISA_Print_Type_Create("print_63", "%s 	%s %s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_64; 
+  print_64 = ISA_Print_Type_Create("print_64", "%s 	%s %s %s , @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_63, 
+  Instruction_Print_Group(print_64, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_QP_AR, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_QP_AR, 
@@ -1690,16 +1686,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_64; 
-  print_64 = ISA_Print_Type_Create("print_64", "%s 	%s %s @( %s + %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_65; 
+  print_65 = ISA_Print_Type_Create("print_65", "%s 	%s %s @( %s + %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_64, 
+  Instruction_Print_Group(print_65, 
 		 TOP_GP32_SAH_GT_MD_AR_P_AR_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_P_AR_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_P_AR_CRH, 
@@ -1716,15 +1712,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_65; 
-  print_65 = ISA_Print_Type_Create("print_65", "%s 	%s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_66; 
+  print_66 = ISA_Print_Type_Create("print_66", "%s 	%s %s , @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_65, 
+  Instruction_Print_Group(print_66, 
 		 TOP_GP32_LCW_GT_CRH_AR_QP_AR, 
 		 TOP_GP32_LDEW_GT_DR_AR_QP_AR, 
 		 TOP_GP32_LDHH_GT_DR_AR_QP_AR, 
@@ -1732,16 +1728,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_66; 
-  print_66 = ISA_Print_Type_Create("print_66", "%s 	%s %s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_67; 
+  print_67 = ISA_Print_Type_Create("print_67", "%s 	%s %s %s , @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_66, 
+  Instruction_Print_Group(print_67, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_QM_AR, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_QM_AR, 
@@ -1749,15 +1745,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_67; 
-  print_67 = ISA_Print_Type_Create("print_67", "%s 	%s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_68; 
+  print_68 = ISA_Print_Type_Create("print_68", "%s 	%s %s , @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_67, 
+  Instruction_Print_Group(print_68, 
 		 TOP_GP32_LCW_GT_CRH_AR_QM_AR, 
 		 TOP_GP32_LDEW_GT_DR_AR_QM_AR, 
 		 TOP_GP32_LDHH_GT_DR_AR_QM_AR, 
@@ -1765,16 +1761,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_68; 
-  print_68 = ISA_Print_Type_Create("print_68", "%s 	%s %s @( %s !- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_69; 
+  print_69 = ISA_Print_Type_Create("print_69", "%s 	%s %s @( %s !- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_68, 
+  Instruction_Print_Group(print_69, 
 		 TOP_GP32_SAH_GT_MD_AR_BM_AR_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_BM_AR_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_BM_AR_CRH, 
@@ -1791,15 +1787,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_69; 
-  print_69 = ISA_Print_Type_Create("print_69", "%s 	%s @( %s !- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_70; 
+  print_70 = ISA_Print_Type_Create("print_70", "%s 	%s @( %s !- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_69, 
+  Instruction_Print_Group(print_70, 
 		 TOP_GP32_SAH_GT_AR_BM_AR_AR, 
 		 TOP_GP32_SAW_GT_AR_BM_AR_AR, 
 		 TOP_GP32_SCW_GT_AR_BM_AR_CRH, 
@@ -1816,14 +1812,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_70; 
-  print_70 = ISA_Print_Type_Create("print_70", "%s 	%s %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_71; 
+  print_71 = ISA_Print_Type_Create("print_71", "%s 	%s %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_70, 
+  Instruction_Print_Group(print_71, 
 		 TOP_GP32_MOVEHH_GT_DR_DR, 
 		 TOP_GP32_MOVEHL_GT_DR_DR, 
 		 TOP_GP32_MOVELH_GT_DR_DR, 
@@ -1831,16 +1827,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_71; 
-  print_71 = ISA_Print_Type_Create("print_71", "%s 	%s %s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_72; 
+  print_72 = ISA_Print_Type_Create("print_72", "%s 	%s %s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_71, 
+  Instruction_Print_Group(print_72, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_BP_AR, 
 		 TOP_GP32_LAW_GT_MD_AR_AR_BP_AR, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_BP_AR, 
@@ -1861,15 +1857,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_72; 
-  print_72 = ISA_Print_Type_Create("print_72", "%s 	%s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_73; 
+  print_73 = ISA_Print_Type_Create("print_73", "%s 	%s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_72, 
+  Instruction_Print_Group(print_73, 
 		 TOP_GP32_LAH_GT_AR_AR_BP_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_BP_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_BP_AR, 
@@ -1890,16 +1886,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_73; 
-  print_73 = ISA_Print_Type_Create("print_73", "%s 	%s %s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_74; 
+  print_74 = ISA_Print_Type_Create("print_74", "%s 	%s %s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_73, 
+  Instruction_Print_Group(print_74, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_BM_AR, 
 		 TOP_GP32_LAW_GT_MD_AR_AR_BM_AR, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_BM_AR, 
@@ -1920,15 +1916,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_74; 
-  print_74 = ISA_Print_Type_Create("print_74", "%s 	%s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_75; 
+  print_75 = ISA_Print_Type_Create("print_75", "%s 	%s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_74, 
+  Instruction_Print_Group(print_75, 
 		 TOP_GP32_LAH_GT_AR_AR_BM_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_BM_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_BM_AR, 
@@ -1949,14 +1945,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_75; 
-  print_75 = ISA_Print_Type_Create("print_75", "%s 	%s @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_76; 
+  print_76 = ISA_Print_Type_Create("print_76", "%s 	%s @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_75, 
+  Instruction_Print_Group(print_76, 
 		 TOP_GP32_LFR_GT_AR_QP_U5, 
 		 TOP_GP32_LGR_GT_AR_QP_U5, 
 		 TOP_GP32_SFR_GT_AR_QP_U5, 
@@ -1964,14 +1960,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_76; 
-  print_76 = ISA_Print_Type_Create("print_76", "%s 	%s @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_77; 
+  print_77 = ISA_Print_Type_Create("print_77", "%s 	%s @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_76, 
+  Instruction_Print_Group(print_77, 
 		 TOP_GP32_LFR_GT_AR_QM_U5, 
 		 TOP_GP32_LGR_GT_AR_QM_U5, 
 		 TOP_GP32_SFR_GT_AR_QM_U5, 
@@ -1979,11 +1975,11 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_77; 
-  print_77 = ISA_Print_Type_Create("print_77", "	%s"); 
-  Name(); 
+  ISA_PRINT_TYPE print_78; 
+  print_78 = ISA_Print_Type_Create("print_78", "	%s"); 
+  Name("%s"); 
 
-  Instruction_Print_Group(print_77, 
+  Instruction_Print_Group(print_78, 
 		 TOP_GP32_BARRIER, 
 		 TOP_GP32_BRANCH, 
 		 TOP_GP32_GP32MD, 
@@ -1997,15 +1993,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_78; 
-  print_78 = ISA_Print_Type_Create("print_78", "%s 	%s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_79; 
+  print_79 = ISA_Print_Type_Create("print_79", "%s 	%s %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_78, 
+  Instruction_Print_Group(print_79, 
 		 TOP_GP32_ADDBA_GT_AR_AR_U9, 
 		 TOP_GP32_ADDBA_GT_AR_P13_U15, 
 		 TOP_GP32_ADDCP_GT_DR_DR_U8, 
@@ -2132,15 +2128,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_79; 
-  print_79 = ISA_Print_Type_Create("print_79", "%s 	%s %s @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_80; 
+  print_80 = ISA_Print_Type_Create("print_80", "%s 	%s %s @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_79, 
+  Instruction_Print_Group(print_80, 
 		 TOP_GP32_LFR_GT_MD_AR_QP_AR, 
 		 TOP_GP32_LGR_GT_MD_AR_QP_AR, 
 		 TOP_GP32_SFR_GT_MD_AR_QP_AR, 
@@ -2148,12 +2144,12 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_80; 
-  print_80 = ISA_Print_Type_Create("print_80", "%s 	%s"); 
-  Operand(0); 
-  Name(); 
+  ISA_PRINT_TYPE print_81; 
+  print_81 = ISA_Print_Type_Create("print_81", "%s 	%s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
 
-  Instruction_Print_Group(print_80, 
+  Instruction_Print_Group(print_81, 
 		 TOP_GP32_BKP_GT, 
 		 TOP_GP32_CLRFR_GT, 
 		 TOP_GP32_CLRSCL_GT, 
@@ -2168,15 +2164,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_81; 
-  print_81 = ISA_Print_Type_Create("print_81", "%s 	%s %s @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_82; 
+  print_82 = ISA_Print_Type_Create("print_82", "%s 	%s %s @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_81, 
+  Instruction_Print_Group(print_82, 
 		 TOP_GP32_LFR_GT_MD_AR_QM_AR, 
 		 TOP_GP32_LGR_GT_MD_AR_QM_AR, 
 		 TOP_GP32_SFR_GT_MD_AR_QM_AR, 
@@ -2184,40 +2180,40 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_82; 
-  print_82 = ISA_Print_Type_Create("print_82", "%s 	%s %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_83; 
+  print_83 = ISA_Print_Type_Create("print_83", "%s 	%s %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%d"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_82, 
+  Instruction_Print_Group(print_83, 
 		 TOP_GP32_BFPSR0_GT_U8_U8, 
 		 TOP_GP32_BFPSR1_GT_U8_U8, 
 		 TOP_GP32_BFPSR2_GT_U8_U8, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_83; 
-  print_83 = ISA_Print_Type_Create("print_83", "	%s %s"); 
-  Name(); 
-  Operand(0); 
+  ISA_PRINT_TYPE print_84; 
+  print_84 = ISA_Print_Type_Create("print_84", "	%s %s"); 
+  Name("%s"); 
+  Operand(0, "%s"); 
 
-  Instruction_Print_Group(print_83, 
+  Instruction_Print_Group(print_84, 
 		 TOP_GP32_PUSH_RSET, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_84; 
-  print_84 = ISA_Print_Type_Create("print_84", "%s 	%s %s @( %s ?+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_85; 
+  print_85 = ISA_Print_Type_Create("print_85", "%s 	%s %s @( %s ?+ %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_84, 
+  Instruction_Print_Group(print_85, 
 		 TOP_GP32_SAH_GT_MD_AR_QP_U5_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_QP_U5_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_QP_U5_CRH, 
@@ -2234,15 +2230,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_85; 
-  print_85 = ISA_Print_Type_Create("print_85", "%s 	%s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_86; 
+  print_86 = ISA_Print_Type_Create("print_86", "%s 	%s %s , @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_85, 
+  Instruction_Print_Group(print_86, 
 		 TOP_GP32_LCW_GT_CRH_AR_QP_U5, 
 		 TOP_GP32_LDEW_GT_DR_AR_QP_U5, 
 		 TOP_GP32_LDHH_GT_DR_AR_QP_U5, 
@@ -2250,15 +2246,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_86; 
-  print_86 = ISA_Print_Type_Create("print_86", "%s 	%s @( %s ?- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_87; 
+  print_87 = ISA_Print_Type_Create("print_87", "%s 	%s @( %s ?- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_86, 
+  Instruction_Print_Group(print_87, 
 		 TOP_GP32_SAH_GT_AR_QM_U5_AR, 
 		 TOP_GP32_SAW_GT_AR_QM_U5_AR, 
 		 TOP_GP32_SCW_GT_AR_QM_U5_CRH, 
@@ -2275,15 +2271,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_87; 
-  print_87 = ISA_Print_Type_Create("print_87", "%s 	%s %s , @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_88; 
+  print_88 = ISA_Print_Type_Create("print_88", "%s 	%s %s , @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_87, 
+  Instruction_Print_Group(print_88, 
 		 TOP_GP32_LCW_GT_CRH_AR_QM_U5, 
 		 TOP_GP32_LDEW_GT_DR_AR_QM_U5, 
 		 TOP_GP32_LDHH_GT_DR_AR_QM_U5, 
@@ -2291,15 +2287,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_88; 
-  print_88 = ISA_Print_Type_Create("print_88", "%s 	%s @( %s - %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_89; 
+  print_89 = ISA_Print_Type_Create("print_89", "%s 	%s @( %s - %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_88, 
+  Instruction_Print_Group(print_89, 
 		 TOP_GP32_SAH_GT_AR_M_U9_AR, 
 		 TOP_GP32_SAW_GT_AR_M_U9_AR, 
 		 TOP_GP32_SCW_GT_AR_M_U9_CRH, 
@@ -2316,16 +2312,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_89; 
-  print_89 = ISA_Print_Type_Create("print_89", "%s 	%s %s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_90; 
+  print_90 = ISA_Print_Type_Create("print_90", "%s 	%s %s %s , @( %s + %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_89, 
+  Instruction_Print_Group(print_90, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_P_U5, 
 		 TOP_GP32_LAW_GT_MD_AR_AR_P_U5, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_P_U5, 
@@ -2346,29 +2342,29 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_90; 
-  print_90 = ISA_Print_Type_Create("print_90", "%s 	%s %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_91; 
+  print_91 = ISA_Print_Type_Create("print_91", "%s 	%s %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_90, 
+  Instruction_Print_Group(print_91, 
 		 TOP_GP32_MOREA_GT_AR_U16, 
 		 TOP_GP32_MORE_GT_DR_U16, 
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_91; 
-  print_91 = ISA_Print_Type_Create("print_91", "%s 	%s %s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_92; 
+  print_92 = ISA_Print_Type_Create("print_92", "%s 	%s %s %s , @( %s - %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_91, 
+  Instruction_Print_Group(print_92, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_M_U5, 
 		 TOP_GP32_LAW_GT_MD_AR_AR_M_U5, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_M_U5, 
@@ -2389,15 +2385,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_92; 
-  print_92 = ISA_Print_Type_Create("print_92", "%s 	%s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_93; 
+  print_93 = ISA_Print_Type_Create("print_93", "%s 	%s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_92, 
+  Instruction_Print_Group(print_93, 
 		 TOP_GP32_LAH_GT_AR_AR_BP_U5, 
 		 TOP_GP32_LAW_GT_AR_AR_BP_U5, 
 		 TOP_GP32_LCG_GT_BR_AR_BP_U5, 
@@ -2418,15 +2414,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_93; 
-  print_93 = ISA_Print_Type_Create("print_93", "%s 	%s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_94; 
+  print_94 = ISA_Print_Type_Create("print_94", "%s 	%s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_93, 
+  Instruction_Print_Group(print_94, 
 		 TOP_GP32_LAH_GT_AR_AR_BM_U5, 
 		 TOP_GP32_LAW_GT_AR_AR_BM_U5, 
 		 TOP_GP32_LCG_GT_BR_AR_BM_U5, 
@@ -2447,16 +2443,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_94; 
-  print_94 = ISA_Print_Type_Create("print_94", "%s 	%s %s @( %s ?- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_95; 
+  print_95 = ISA_Print_Type_Create("print_95", "%s 	%s %s @( %s ?- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_94, 
+  Instruction_Print_Group(print_95, 
 		 TOP_GP32_SAH_GT_MD_AR_QM_AR_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_QM_AR_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_QM_AR_CRH, 
@@ -2473,16 +2469,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_95; 
-  print_95 = ISA_Print_Type_Create("print_95", "%s 	%s %s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_96; 
+  print_96 = ISA_Print_Type_Create("print_96", "%s 	%s %s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_95, 
+  Instruction_Print_Group(print_96, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BP_AR, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_BP_AR, 
@@ -2490,15 +2486,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_96; 
-  print_96 = ISA_Print_Type_Create("print_96", "%s 	%s @( %s ?- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_97; 
+  print_97 = ISA_Print_Type_Create("print_97", "%s 	%s @( %s ?- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_96, 
+  Instruction_Print_Group(print_97, 
 		 TOP_GP32_SAH_GT_AR_QM_AR_AR, 
 		 TOP_GP32_SAW_GT_AR_QM_AR_AR, 
 		 TOP_GP32_SCW_GT_AR_QM_AR_CRH, 
@@ -2515,15 +2511,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_97; 
-  print_97 = ISA_Print_Type_Create("print_97", "%s 	%s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_98; 
+  print_98 = ISA_Print_Type_Create("print_98", "%s 	%s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_97, 
+  Instruction_Print_Group(print_98, 
 		 TOP_GP32_LCW_GT_CRH_AR_BP_AR, 
 		 TOP_GP32_LDEW_GT_DR_AR_BP_AR, 
 		 TOP_GP32_LDHH_GT_DR_AR_BP_AR, 
@@ -2531,15 +2527,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_98; 
-  print_98 = ISA_Print_Type_Create("print_98", "%s 	%s @( %s - %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_99; 
+  print_99 = ISA_Print_Type_Create("print_99", "%s 	%s @( %s - %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_98, 
+  Instruction_Print_Group(print_99, 
 		 TOP_GP32_SAH_GT_AR_M_AR_AR, 
 		 TOP_GP32_SAW_GT_AR_M_AR_AR, 
 		 TOP_GP32_SCW_GT_AR_M_AR_CRH, 
@@ -2556,16 +2552,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_99; 
-  print_99 = ISA_Print_Type_Create("print_99", "%s 	%s %s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_100; 
+  print_100 = ISA_Print_Type_Create("print_100", "%s 	%s %s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_99, 
+  Instruction_Print_Group(print_100, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BM_AR, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_BM_AR, 
@@ -2573,15 +2569,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_100; 
-  print_100 = ISA_Print_Type_Create("print_100", "%s 	%s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_101; 
+  print_101 = ISA_Print_Type_Create("print_101", "%s 	%s %s , @( %s + %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_100, 
+  Instruction_Print_Group(print_101, 
 		 TOP_GP32_LAH_GT_AR_AR_P_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_P_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_P_AR, 
@@ -2602,15 +2598,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_101; 
-  print_101 = ISA_Print_Type_Create("print_101", "%s 	%s %s , @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_102; 
+  print_102 = ISA_Print_Type_Create("print_102", "%s 	%s %s , @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_101, 
+  Instruction_Print_Group(print_102, 
 		 TOP_GP32_LCW_GT_CRH_AR_BM_AR, 
 		 TOP_GP32_LDEW_GT_DR_AR_BM_AR, 
 		 TOP_GP32_LDHH_GT_DR_AR_BM_AR, 
@@ -2618,15 +2614,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_102; 
-  print_102 = ISA_Print_Type_Create("print_102", "%s 	%s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_103; 
+  print_103 = ISA_Print_Type_Create("print_103", "%s 	%s %s , @( %s - %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_102, 
+  Instruction_Print_Group(print_103, 
 		 TOP_GP32_LAH_GT_AR_AR_M_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_M_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_M_AR, 
@@ -2647,15 +2643,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_103; 
-  print_103 = ISA_Print_Type_Create("print_103", "%s 	%s %s @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_104; 
+  print_104 = ISA_Print_Type_Create("print_104", "%s 	%s %s @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_103, 
+  Instruction_Print_Group(print_104, 
 		 TOP_GP32_LFR_GT_MD_AR_QP_U5, 
 		 TOP_GP32_LGR_GT_MD_AR_QP_U5, 
 		 TOP_GP32_SFR_GT_MD_AR_QP_U5, 
@@ -2663,14 +2659,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_104; 
-  print_104 = ISA_Print_Type_Create("print_104", "%s 	%s %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
+  ISA_PRINT_TYPE print_105; 
+  print_105 = ISA_Print_Type_Create("print_105", "%s 	%s %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
 
-  Instruction_Print_Group(print_104, 
+  Instruction_Print_Group(print_105, 
 		 TOP_GP32_BITRA_GT_AR_AR, 
 		 TOP_GP32_BOOLP_GT_DR_BR, 
 		 TOP_GP32_BOOL_GT_DR_BR, 
@@ -2719,15 +2715,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_105; 
-  print_105 = ISA_Print_Type_Create("print_105", "%s 	%s %s @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_106; 
+  print_106 = ISA_Print_Type_Create("print_106", "%s 	%s %s @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_105, 
+  Instruction_Print_Group(print_106, 
 		 TOP_GP32_LFR_GT_MD_AR_QM_U5, 
 		 TOP_GP32_LGR_GT_MD_AR_QM_U5, 
 		 TOP_GP32_SFR_GT_MD_AR_QM_U5, 
@@ -2735,14 +2731,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_106; 
-  print_106 = ISA_Print_Type_Create("print_106", "%s 	%s @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_107; 
+  print_107 = ISA_Print_Type_Create("print_107", "%s 	%s @( %s + %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_106, 
+  Instruction_Print_Group(print_107, 
 		 TOP_GP32_LFR_GT_AR_P_U9, 
 		 TOP_GP32_LFR_GT_P13_P_U15, 
 		 TOP_GP32_LGR_GT_AR_P_U9, 
@@ -2754,14 +2750,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_107; 
-  print_107 = ISA_Print_Type_Create("print_107", "%s 	%s @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_108; 
+  print_108 = ISA_Print_Type_Create("print_108", "%s 	%s @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_107, 
+  Instruction_Print_Group(print_108, 
 		 TOP_GP32_LFR_GT_AR_BP_U5, 
 		 TOP_GP32_LGR_GT_AR_BP_U5, 
 		 TOP_GP32_SFR_GT_AR_BP_U5, 
@@ -2769,14 +2765,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_108; 
-  print_108 = ISA_Print_Type_Create("print_108", "%s 	%s @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_109; 
+  print_109 = ISA_Print_Type_Create("print_109", "%s 	%s @( %s - %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_108, 
+  Instruction_Print_Group(print_109, 
 		 TOP_GP32_LFR_GT_AR_M_U9, 
 		 TOP_GP32_LGR_GT_AR_M_U9, 
 		 TOP_GP32_SFR_GT_AR_M_U9, 
@@ -2784,14 +2780,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_109; 
-  print_109 = ISA_Print_Type_Create("print_109", "%s 	%s @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_110; 
+  print_110 = ISA_Print_Type_Create("print_110", "%s 	%s @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
 
-  Instruction_Print_Group(print_109, 
+  Instruction_Print_Group(print_110, 
 		 TOP_GP32_LFR_GT_AR_BM_U5, 
 		 TOP_GP32_LGR_GT_AR_BM_U5, 
 		 TOP_GP32_SFR_GT_AR_BM_U5, 
@@ -2799,13 +2795,13 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_110; 
-  print_110 = ISA_Print_Type_Create("print_110", "%s 	%s %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
+  ISA_PRINT_TYPE print_111; 
+  print_111 = ISA_Print_Type_Create("print_111", "%s 	%s %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%d"); 
 
-  Instruction_Print_Group(print_110, 
+  Instruction_Print_Group(print_111, 
 		 TOP_GP32_CALLPR_GT_U16, 
 		 TOP_GP32_CALL_GT_S21, 
 		 TOP_GP32_MAKEPR_GT_S21, 
@@ -2813,14 +2809,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_111; 
-  print_111 = ISA_Print_Type_Create("print_111", "%s 	%s @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_112; 
+  print_112 = ISA_Print_Type_Create("print_112", "%s 	%s @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_111, 
+  Instruction_Print_Group(print_112, 
 		 TOP_GP32_LFR_GT_AR_QP_AR, 
 		 TOP_GP32_LGR_GT_AR_QP_AR, 
 		 TOP_GP32_SFR_GT_AR_QP_AR, 
@@ -2828,15 +2824,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_112; 
-  print_112 = ISA_Print_Type_Create("print_112", "%s 	%s %s @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_113; 
+  print_113 = ISA_Print_Type_Create("print_113", "%s 	%s %s @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_112, 
+  Instruction_Print_Group(print_113, 
 		 TOP_GP32_LFR_GT_MD_AR_BP_AR, 
 		 TOP_GP32_LGR_GT_MD_AR_BP_AR, 
 		 TOP_GP32_SFR_GT_MD_AR_BP_AR, 
@@ -2844,14 +2840,14 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_113; 
-  print_113 = ISA_Print_Type_Create("print_113", "%s 	%s @( %s ?- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_114; 
+  print_114 = ISA_Print_Type_Create("print_114", "%s 	%s @( %s ?- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_113, 
+  Instruction_Print_Group(print_114, 
 		 TOP_GP32_LFR_GT_AR_QM_AR, 
 		 TOP_GP32_LGR_GT_AR_QM_AR, 
 		 TOP_GP32_SFR_GT_AR_QM_AR, 
@@ -2859,15 +2855,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_114; 
-  print_114 = ISA_Print_Type_Create("print_114", "%s 	%s %s @( %s !- %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_115; 
+  print_115 = ISA_Print_Type_Create("print_115", "%s 	%s %s @( %s !- %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_114, 
+  Instruction_Print_Group(print_115, 
 		 TOP_GP32_LFR_GT_MD_AR_BM_AR, 
 		 TOP_GP32_LGR_GT_MD_AR_BM_AR, 
 		 TOP_GP32_SFR_GT_MD_AR_BM_AR, 
@@ -2875,16 +2871,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_115; 
-  print_115 = ISA_Print_Type_Create("print_115", "%s 	%s %s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_116; 
+  print_116 = ISA_Print_Type_Create("print_116", "%s 	%s %s %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_115, 
+  Instruction_Print_Group(print_116, 
 		 TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 
 		 TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 
 		 TOP_GP32_ADDWA_GT_MD_AR_AR_AR, 
@@ -2894,15 +2890,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_116; 
-  print_116 = ISA_Print_Type_Create("print_116", "%s 	%s %s , %s , %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
-  Operand(1); 
-  Operand(2); 
+  ISA_PRINT_TYPE print_117; 
+  print_117 = ISA_Print_Type_Create("print_117", "%s 	%s %s , %s , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
 
-  Instruction_Print_Group(print_116, 
+  Instruction_Print_Group(print_117, 
 		 TOP_GP32_ADDBA_GT_AR_AR_AR, 
 		 TOP_GP32_ADDCP_GT_DR_DR_DR, 
 		 TOP_GP32_ADDCW_GT_DR_DR_DR, 
@@ -3100,16 +3096,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_117; 
-  print_117 = ISA_Print_Type_Create("print_117", "%s 	%s %s @( %s + %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_118; 
+  print_118 = ISA_Print_Type_Create("print_118", "%s 	%s %s @( %s + %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_117, 
+  Instruction_Print_Group(print_118, 
 		 TOP_GP32_SAH_GT_MD_AR_P_U5_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_P_U5_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_P_U5_CRH, 
@@ -3126,16 +3122,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_118; 
-  print_118 = ISA_Print_Type_Create("print_118", "%s 	%s %s %s , @( %s + %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_119; 
+  print_119 = ISA_Print_Type_Create("print_119", "%s 	%s %s %s , @( %s + %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
-  Instruction_Print_Group(print_118, 
+  Instruction_Print_Group(print_119, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_P_U5, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_P_U5, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_P_U5, 
@@ -3143,13 +3139,13 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_119; 
-  print_119 = ISA_Print_Type_Create("print_119", "%s 	%s %s"); 
-  Operand(0); 
-  Name(); 
-  Result(0); 
+  ISA_PRINT_TYPE print_120; 
+  print_120 = ISA_Print_Type_Create("print_120", "%s 	%s %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Result(0, "%s"); 
 
-  Instruction_Print_Group(print_119, 
+  Instruction_Print_Group(print_120, 
 		 TOP_GP32_CLRG_GT_BR, 
 		 TOP_GP32_CLRPG_GT_BR, 
 		 TOP_GP32_FCLFSCL_GT_BR, 
@@ -3200,15 +3196,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_120; 
-  print_120 = ISA_Print_Type_Create("print_120", "%s 	%s @( %s !+ %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_121; 
+  print_121 = ISA_Print_Type_Create("print_121", "%s 	%s @( %s !+ %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%d"); 
+  Operand(3, "%s"); 
 
-  Instruction_Print_Group(print_120, 
+  Instruction_Print_Group(print_121, 
 		 TOP_GP32_SAH_GT_AR_BP_U5_AR, 
 		 TOP_GP32_SAW_GT_AR_BP_U5_AR, 
 		 TOP_GP32_SCW_GT_AR_BP_U5_CRH, 
@@ -3225,16 +3221,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_121; 
-  print_121 = ISA_Print_Type_Create("print_121", "%s 	%s %s %s , @( %s ?+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Result(0); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_122; 
+  print_122 = ISA_Print_Type_Create("print_122", "%s 	%s %s %s , @( %s ?+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Result(0, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_121, 
+  Instruction_Print_Group(print_122, 
 		 TOP_GP32_LAH_GT_MD_AR_AR_QP_U5, 
 		 TOP_GP32_LAW_GT_MD_AR_AR_QP_U5, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_QP_U5, 
@@ -3255,15 +3251,15 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_122; 
-  print_122 = ISA_Print_Type_Create("print_122", "%s 	%s %s , @( %s !+ %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
+  ISA_PRINT_TYPE print_123; 
+  print_123 = ISA_Print_Type_Create("print_123", "%s 	%s %s , @( %s !+ %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
 
-  Instruction_Print_Group(print_122, 
+  Instruction_Print_Group(print_123, 
 		 TOP_GP32_LCW_GT_CRH_AR_BP_U5, 
 		 TOP_GP32_LDEW_GT_DR_AR_BP_U5, 
 		 TOP_GP32_LDHH_GT_DR_AR_BP_U5, 
@@ -3271,16 +3267,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_123; 
-  print_123 = ISA_Print_Type_Create("print_123", "%s 	%s %s %s , @( %s - %s )"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_124; 
+  print_124 = ISA_Print_Type_Create("print_124", "%s 	%s %s %s , @( %s - %s )"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%s"); 
+  Operand(4, "%d"); 
 
-  Instruction_Print_Group(print_123, 
+  Instruction_Print_Group(print_124, 
 		 TOP_GP32_LCW_GT_MD_CRH_AR_M_U5, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_M_U5, 
 		 TOP_GP32_LDHH_GT_MD_DR_AR_M_U5, 
@@ -3288,16 +3284,16 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ================================= */ 
-  ISA_PRINT_TYPE print_124; 
-  print_124 = ISA_Print_Type_Create("print_124", "%s 	%s %s @( %s !- %s ) , %s"); 
-  Operand(0); 
-  Name(); 
-  Operand(1); 
-  Operand(2); 
-  Operand(3); 
-  Operand(4); 
+  ISA_PRINT_TYPE print_125; 
+  print_125 = ISA_Print_Type_Create("print_125", "%s 	%s %s @( %s !- %s ) , %s"); 
+  Operand(0, "%s"); 
+  Name("%s"); 
+  Operand(1, "%s"); 
+  Operand(2, "%s"); 
+  Operand(3, "%d"); 
+  Operand(4, "%s"); 
 
-  Instruction_Print_Group(print_124, 
+  Instruction_Print_Group(print_125, 
 		 TOP_GP32_SAH_GT_MD_AR_BM_U5_AR, 
 		 TOP_GP32_SAW_GT_MD_AR_BM_U5_AR, 
 		 TOP_GP32_SCW_GT_MD_AR_BM_U5_CRH, 

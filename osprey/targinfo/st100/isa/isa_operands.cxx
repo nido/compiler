@@ -26,10 +26,13 @@ main()
   OPERAND_VALUE_TYPE absadr, pcrel; 
 
   /* ------------------------------------------------------
-   *   Following are built-in and must be specified: 
+   *   Following built-in use types must be specified: 
    *     1. base operand use for TOP_load, TOP_store; 
    *     2. offset operand use for TOP_load, TOP_store; 
    *     3. storeval operand use for TOP_store; 
+   * 
+   *   Following built-in use types may be specified: 
+   *     4. implicit operand use for TOPs when the operand is implicitely used; 
    * 
    *   Here you can specify any additional operand uses. 
    * ------------------------------------------------------
@@ -40,8 +43,7 @@ main()
 	  postincr,	// a post increment applied to a base address 
 	  target,	// the target of a branch 
 	  opnd1,	// first/left operand of an alu operator 
-        opnd2,	// second/right operand of an alu operator 
-        implicit;     // implicitely used by instruction 
+        opnd2;	// second/right operand of an alu operator 
 
   ISA_Operands_Begin("st100"); 
   /* Create the register operand types: */ 
@@ -176,53 +178,9 @@ main()
   target     = Create_Operand_Use("target"); 
   opnd1      = Create_Operand_Use("opnd1"); 
   opnd2      = Create_Operand_Use("opnd2"); 
-  implicit   = Create_Operand_Use("implicit"); 
 
   /* ====================================== */ 
   Instruction_Group("O_0", 
-		 TOP_GP32_SCW_GT_AR_BM_U5_CRH, 
-		 TOP_GP32_SCW_GT_AR_BP_U5_CRH, 
-		 TOP_GP32_SCW_GT_AR_MQ_U5_CRH, 
-		 TOP_GP32_SCW_GT_AR_QM_U5_CRH, 
-		 TOP_GP32_SCW_GT_AR_QP_U5_CRH, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (3, ctrlh, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_1", 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_M_AR, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_P_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ctrlh); 
-  Operand (3, ptr32, base); 
-  Operand (4, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_2", 
-		 TOP_GP32_LGR_GT_AR_BM_U5, 
-		 TOP_GP32_LGR_GT_AR_BP_U5, 
-		 TOP_GP32_LGR_GT_AR_MQ_U5, 
-		 TOP_GP32_LGR_GT_AR_QM_U5, 
-		 TOP_GP32_LGR_GT_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr9); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_3", 
 		 TOP_GP32_CALLPR_GT_U16, 
 		 TOP_UNDEFINED); 
 
@@ -233,36 +191,7 @@ main()
   Operand (2, p3); 
 
   /* ====================================== */ 
-  Instruction_Group("O_4", 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_BM_AR, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_BP_AR, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_QM_AR, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrll); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_5", 
-		 TOP_GP32_LDH_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDH_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDH_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDH_GT_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u6, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_6", 
+  Instruction_Group("O_1", 
 		 TOP_GP32_MAKEF_GT_DR_S16, 
 		 TOP_GP32_MAKEP_GT_DR_S16, 
 		 TOP_GP32_MAKE_GT_DR_S16, 
@@ -273,7 +202,7 @@ main()
   Operand (1, s16); 
 
   /* ====================================== */ 
-  Instruction_Group("O_7", 
+  Instruction_Group("O_2", 
 		 TOP_GP32_SFR_GT_AR_M_AR, 
 		 TOP_GP32_SFR_GT_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -285,7 +214,7 @@ main()
   Operand (3, cr8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_8", 
+  Instruction_Group("O_3", 
 		 TOP_GP32_LDBP_GT_DR_P13_P_U15, 
 		 TOP_GP32_LDBSW_GT_DR_P13_P_U15, 
 		 TOP_GP32_LDB_GT_DR_P13_P_U15, 
@@ -307,7 +236,7 @@ main()
   Operand (2, u15, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_9", 
+  Instruction_Group("O_4", 
 		 TOP_GP32_SGR_GT_AR_M_AR, 
 		 TOP_GP32_SGR_GT_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -319,7 +248,7 @@ main()
   Operand (3, cr9); 
 
   /* ====================================== */ 
-  Instruction_Group("O_10", 
+  Instruction_Group("O_5", 
 		 TOP_GP32_LDBP_GT_MD_DR_AR_M_AR, 
 		 TOP_GP32_LDBP_GT_MD_DR_AR_P_AR, 
 		 TOP_GP32_LDBSW_GT_MD_DR_AR_M_AR, 
@@ -355,7 +284,23 @@ main()
   Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_11", 
+  Instruction_Group("O_6", 
+		 TOP_GP32_LCG_GT_MD_BR_AR_BM_U5, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_BP_U5, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_QM_U5, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_7", 
 		 TOP_GP32_LGR_GT_AR_M_AR, 
 		 TOP_GP32_LGR_GT_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -366,7 +311,7 @@ main()
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_12", 
+  Instruction_Group("O_8", 
 		 TOP_GP32_ADDBA_GT_AR_AR_U9, 
 		 TOP_GP32_SUBBA_GT_AR_AR_U9, 
 		 TOP_GP32_SUBHA_GT_AR_AR_U9, 
@@ -379,107 +324,54 @@ main()
   Operand (2, u9); 
 
   /* ====================================== */ 
-  Instruction_Group("O_13", 
-		 TOP_GP32_LDEW_GT_DR_AR_BM_AR, 
-		 TOP_GP32_LDEW_GT_DR_AR_BP_AR, 
-		 TOP_GP32_LDEW_GT_DR_AR_QM_AR, 
-		 TOP_GP32_LDEW_GT_DR_AR_QP_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_BM_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_BP_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_QM_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_QP_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_BM_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_BP_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_QM_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_QP_AR, 
+  Instruction_Group("O_9", 
+		 TOP_GP32_LCW_GT_CRH_AR_M_U9, 
+		 TOP_GP32_LCW_GT_CRH_AR_P_U9, 
 		 TOP_UNDEFINED); 
 
-  Result (0, int40); 
-  Result (1, ptr32); 
+  Result (0, ctrlh); 
+  Same_Res (1); 
   Operand (0, pr, predicate); 
-  Operand (1, int40); 
+  Operand (1, ctrlh); 
   Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
+  Operand (3, u9, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_14", 
+  Instruction_Group("O_10", 
+		 TOP_GP32_MOREA_GT_AR_U16, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32); 
+  Operand (2, u16); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_11", 
 		 TOP_GP32_BKP_GT, 
-		 TOP_GP32_RTS_GT, 
 		 TOP_UNDEFINED); 
 
   Operand (0, pr, predicate); 
 
   /* ====================================== */ 
-  Instruction_Group("O_15", 
-		 TOP_GP32_SDBP_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDBP_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDBP_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDBP_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDBP_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDBSW_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDBSW_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDBSW_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDBSW_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDBSW_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDB_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDB_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDB_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDB_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDB_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDEW_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDEW_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDEW_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDEW_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDEW_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDF_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDF_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDF_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDF_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDF_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDHSW_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDHSW_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDHSW_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDHSW_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDHSW_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDH_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDH_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDH_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDH_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDH_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDP_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDP_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDP_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDP_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDP_GT_AR_QP_U5_DR, 
-		 TOP_GP32_SDW_GT_AR_BM_U5_DR, 
-		 TOP_GP32_SDW_GT_AR_BP_U5_DR, 
-		 TOP_GP32_SDW_GT_AR_MQ_U5_DR, 
-		 TOP_GP32_SDW_GT_AR_QM_U5_DR, 
-		 TOP_GP32_SDW_GT_AR_QP_U5_DR, 
+  Instruction_Group("O_12", 
+		 TOP_GP32_SCW_GT_MD_AR_BM_U5_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_BP_U5_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_QM_U5_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_QP_U5_CRH, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (3, int40, storeval); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (4, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_16", 
-		 TOP_GP32_SCW_GT_AR_BM_AR_CRL, 
-		 TOP_GP32_SCW_GT_AR_BP_AR_CRL, 
-		 TOP_GP32_SCW_GT_AR_QM_AR_CRL, 
-		 TOP_GP32_SCW_GT_AR_QP_AR_CRL, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, ctrll, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_17", 
+  Instruction_Group("O_13", 
 		 TOP_GP32_ADDCP_GT_DR_DR_DR, 
 		 TOP_GP32_ADDCW_GT_DR_DR_DR, 
 		 TOP_GP32_ADDP_GT_DR_DR_DR, 
@@ -498,10 +390,6 @@ main()
 		 TOP_GP32_BSET_GT_DR_DR_DR, 
 		 TOP_GP32_EDGESP_GT_DR_DR_DR, 
 		 TOP_GP32_EDGES_GT_DR_DR_DR, 
-		 TOP_GP32_MOVEHH_GT_DR_DR, 
-		 TOP_GP32_MOVEHL_GT_DR_DR, 
-		 TOP_GP32_MOVELH_GT_DR_DR, 
-		 TOP_GP32_MOVELL_GT_DR_DR, 
 		 TOP_GP32_MPFCHH_GT_DR_DR_DR, 
 		 TOP_GP32_MPFCHL_GT_DR_DR_DR, 
 		 TOP_GP32_MPFCLH_GT_DR_DR_DR, 
@@ -570,6 +458,22 @@ main()
   Operand (2, int40); 
 
   /* ====================================== */ 
+  Instruction_Group("O_14", 
+		 TOP_GP32_LFR_GT_AR_BM_U5, 
+		 TOP_GP32_LFR_GT_AR_BP_U5, 
+		 TOP_GP32_LFR_GT_AR_MQ_U5, 
+		 TOP_GP32_LFR_GT_AR_QM_U5, 
+		 TOP_GP32_LFR_GT_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Result (1, cr8); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_GP32_LINK_GT", 
 		 TOP_GP32_LINK_GT, 
 		 TOP_UNDEFINED); 
@@ -579,7 +483,21 @@ main()
   Operand (1, p3, target); 
 
   /* ====================================== */ 
-  Instruction_Group("O_18", 
+  Instruction_Group("O_15", 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_M_AR, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_P_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrlh); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ctrlh); 
+  Operand (3, ptr32, base); 
+  Operand (4, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_16", 
 		 TOP_GP32_LCG_GT_BR_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -589,7 +507,7 @@ main()
   Operand (2, u15, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_19", 
+  Instruction_Group("O_17", 
 		 TOP_GP32_ADDBA_GT_AR_AR_AR, 
 		 TOP_GP32_ADDHA_GT_AR_AR_AR, 
 		 TOP_GP32_ADDWA_GT_AR_AR_AR, 
@@ -604,33 +522,7 @@ main()
   Operand (2, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_20", 
-		 TOP_GP32_LDEW_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDEW_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDEW_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDEW_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDEW_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDHH_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDHH_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDHH_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDHH_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDHH_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDLH_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDLH_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDLH_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDLH_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDLH_GT_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_21", 
+  Instruction_Group("O_18", 
 		 TOP_GP32_BRANCH_GF, 
 		 TOP_GP32_JUMP_GF, 
 		 TOP_UNDEFINED); 
@@ -640,7 +532,7 @@ main()
   Operand (1, p3); 
 
   /* ====================================== */ 
-  Instruction_Group("O_22", 
+  Instruction_Group("O_19", 
 		 TOP_GP32_SWNMI, 
 		 TOP_UNDEFINED); 
 
@@ -648,68 +540,7 @@ main()
   Operand (1, p15); 
 
   /* ====================================== */ 
-  Instruction_Group("O_23", 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_BP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_24", 
+  Instruction_Group("O_20", 
 		 TOP_GP32_LDBP_GT_DR_AR_M_U9, 
 		 TOP_GP32_LDBP_GT_DR_AR_P_U9, 
 		 TOP_GP32_LDBSW_GT_DR_AR_M_U9, 
@@ -740,7 +571,7 @@ main()
   Operand (2, u9, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_25", 
+  Instruction_Group("O_21", 
 		 TOP_GP32_FBPOSP_GT_BR_DR_U4, 
 		 TOP_GP32_TBPOSP_GT_BR_DR_U4, 
 		 TOP_UNDEFINED); 
@@ -751,73 +582,7 @@ main()
   Operand (2, u4); 
 
   /* ====================================== */ 
-  Instruction_Group("O_26", 
-		 TOP_GP32_LDBP_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDBP_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDBP_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDBP_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDBP_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDBSW_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDBSW_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDBSW_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDBSW_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDBSW_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDB_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDB_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDB_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDB_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDB_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDF_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDF_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDF_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDF_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDF_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDHSW_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDHSW_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDHSW_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDHSW_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDHSW_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDH_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDP_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDP_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDP_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDP_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDP_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDSETUB_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDSETUB_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDSETUB_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDSETUB_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDSETUB_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDUBP_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDUBP_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDUBP_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDUBP_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDUBP_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDUB_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDUB_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDUB_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDUB_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDUB_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDUH_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDUH_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDUH_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDUH_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDUH_GT_DR_AR_QP_U5, 
-		 TOP_GP32_LDUW_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDUW_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDUW_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDUW_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDUW_GT_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_27", 
+  Instruction_Group("O_22", 
 		 TOP_GP32_FBPOS_GT_BR_DR_U5, 
 		 TOP_GP32_TBPOS_GT_BR_DR_U5, 
 		 TOP_UNDEFINED); 
@@ -828,7 +593,71 @@ main()
   Operand (2, u5); 
 
   /* ====================================== */ 
-  Instruction_Group("O_28", 
+  Instruction_Group("O_23", 
+		 TOP_GP32_SCW_GT_MD_AR_BM_AR_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_BP_AR_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_QM_AR_CRH, 
+		 TOP_GP32_SCW_GT_MD_AR_QP_AR_CRH, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+  Operand (4, ctrlh, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_24", 
+		 TOP_GP32_SDBP_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_QP_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_BM_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_BP_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_QM_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_QP_U5_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (4, int40, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_25", 
 		 TOP_GP32_EQE_GT_BR_DR_U8, 
 		 TOP_GP32_EQP_GT_BR_DR_U8, 
 		 TOP_GP32_EQUE_GT_BR_DR_U8, 
@@ -909,7 +738,7 @@ main()
   Operand (2, u8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_29", 
+  Instruction_Group("O_26", 
 		 TOP_GP32_COPYD_GT_DR_AR, 
 		 TOP_UNDEFINED); 
 
@@ -918,7 +747,7 @@ main()
   Operand (1, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_30", 
+  Instruction_Group("O_27", 
 		 TOP_GP32_EQE_GT_BR_DR_DR, 
 		 TOP_GP32_EQP_GT_BR_DR_DR, 
 		 TOP_GP32_EQUE_GT_BR_DR_DR, 
@@ -1015,7 +844,48 @@ main()
   Operand (2, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_31", 
+  Instruction_Group("O_28", 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (2); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, int40); 
+  Operand (3, ptr32, base); 
+  Operand (4, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_29", 
+		 TOP_GP32_SCW_GT_AR_BM_AR_CRL, 
+		 TOP_GP32_SCW_GT_AR_BP_AR_CRL, 
+		 TOP_GP32_SCW_GT_AR_QM_AR_CRL, 
+		 TOP_GP32_SCW_GT_AR_QP_AR_CRL, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, ctrll, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_30", 
 		 TOP_GP32_LFR_GT_AR_M_AR, 
 		 TOP_GP32_LFR_GT_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -1026,7 +896,7 @@ main()
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_32", 
+  Instruction_Group("O_31", 
 		 TOP_GP32_GOTOPR_GF_U16, 
 		 TOP_UNDEFINED); 
 
@@ -1036,7 +906,7 @@ main()
   Operand (2, p3); 
 
   /* ====================================== */ 
-  Instruction_Group("O_33", 
+  Instruction_Group("O_32", 
 		 TOP_GP32_BCLRP_GT_DR_DR_U4, 
 		 TOP_GP32_BNOTP_GT_DR_DR_U4, 
 		 TOP_GP32_BSETP_GT_DR_DR_U4, 
@@ -1048,7 +918,7 @@ main()
   Operand (2, u4); 
 
   /* ====================================== */ 
-  Instruction_Group("O_34", 
+  Instruction_Group("O_33", 
 		 TOP_GP32_BCLR_GT_DR_DR_U5, 
 		 TOP_GP32_BNOT_GT_DR_DR_U5, 
 		 TOP_GP32_BSET_GT_DR_DR_U5, 
@@ -1067,22 +937,16 @@ main()
   Operand (2, u5); 
 
   /* ====================================== */ 
-  Instruction_Group("O_35", 
-		 TOP_GP32_SCW_GT_MD_AR_BM_AR_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_BP_AR_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_QM_AR_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_QP_AR_CRL, 
+  Instruction_Group("O_GP32_RTS_GT", 
+		 TOP_GP32_RTS_GT, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
   Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (4, ctrll, storeval); 
+  Operand (1, p11, implicit); 
+  Operand (1, p11, target); 
 
   /* ====================================== */ 
-  Instruction_Group("O_36", 
+  Instruction_Group("O_34", 
 		 TOP_GP32_SCW_GT_MD_AR_M_AR_CRH, 
 		 TOP_GP32_SCW_GT_MD_AR_P_AR_CRH, 
 		 TOP_UNDEFINED); 
@@ -1094,7 +958,7 @@ main()
   Operand (4, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_37", 
+  Instruction_Group("O_35", 
 		 TOP_GP32_ADDCP_GT_DR_DR_U8, 
 		 TOP_GP32_ADDCW_GT_DR_DR_U8, 
 		 TOP_GP32_ADDP_GT_DR_DR_U8, 
@@ -1127,7 +991,7 @@ main()
   Operand (2, u8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_38", 
+  Instruction_Group("O_36", 
 		 TOP_GP32_SHLUM_GT_DR_U5, 
 		 TOP_GP32_SHRUWM_GT_DR_U5, 
 		 TOP_UNDEFINED); 
@@ -1137,153 +1001,24 @@ main()
   Operand (1, u5); 
 
   /* ====================================== */ 
-  Instruction_Group("O_39", 
-		 TOP_GP32_SCW_GT_AR_M_AR_CRH, 
-		 TOP_GP32_SCW_GT_AR_P_AR_CRH, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, ctrlh, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_40", 
-		 TOP_GP32_LAH_GT_MD_AR_AR_M_AR, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_P_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_M_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_P_AR, 
+  Instruction_Group("O_37", 
+		 TOP_GP32_SFR_GT_MD_AR_BM_AR, 
+		 TOP_GP32_SFR_GT_MD_AR_BP_AR, 
+		 TOP_GP32_SFR_GT_MD_AR_QM_AR, 
+		 TOP_GP32_SFR_GT_MD_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, ptr32, base); 
   Operand (3, ptr32, offset); 
+  Operand (3, ptr32, storeval); 
+  Operand (4, cr8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_41", 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_U5, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_U5, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_U5, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ctrlh); 
-  Operand (3, ptr32, base); 
-  Operand (4, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_42", 
-		 TOP_GP32_LGR_GT_MD_AR_M_U5, 
-		 TOP_GP32_LGR_GT_MD_AR_P_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, cr9); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_pregtn", 
-		 TOP_begin_pregtn, 
-		 TOP_end_pregtn, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, int40); 
-  Operand (1, s16); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_spadjust", 
-		 TOP_spadjust, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32); 
-  Operand (2, s32); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_43", 
-		 TOP_GP32_LCW_GT_CRH_AR_BM_U5, 
-		 TOP_GP32_LCW_GT_CRH_AR_BP_U5, 
-		 TOP_GP32_LCW_GT_CRH_AR_MQ_U5, 
-		 TOP_GP32_LCW_GT_CRH_AR_QM_U5, 
-		 TOP_GP32_LCW_GT_CRH_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ctrlh); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_44", 
-		 TOP_GP32_SCW_GT_MD_AR_BM_U5_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_BP_U5_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_QM_U5_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_QP_U5_CRH, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, ctrlh, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_45", 
-		 TOP_GP32_FBCLRP_GT_BR_DR_DR_U4, 
-		 TOP_GP32_FBNOTP_GT_BR_DR_DR_U4, 
-		 TOP_GP32_FBSETP_GT_BR_DR_DR_U4, 
-		 TOP_GP32_TBCLRP_GT_BR_DR_DR_U4, 
-		 TOP_GP32_TBNOTP_GT_BR_DR_DR_U4, 
-		 TOP_GP32_TBSETP_GT_BR_DR_DR_U4, 
-		 TOP_UNDEFINED); 
-
-  Result (0, pr); 
-  Result (1, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, u4); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_46", 
-		 TOP_GP32_LFR_GT_AR_M_U9, 
-		 TOP_GP32_LFR_GT_AR_P_U9, 
-		 TOP_UNDEFINED); 
-
-  Result (0, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u9, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_47", 
-		 TOP_GP32_FBCLR_GT_BR_DR_DR_U5, 
-		 TOP_GP32_FBNOT_GT_BR_DR_DR_U5, 
-		 TOP_GP32_FBSET_GT_BR_DR_DR_U5, 
-		 TOP_GP32_TBCLR_GT_BR_DR_DR_U5, 
-		 TOP_GP32_TBNOT_GT_BR_DR_DR_U5, 
-		 TOP_GP32_TBSET_GT_BR_DR_DR_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, pr); 
-  Result (1, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, u5); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_48", 
+  Instruction_Group("O_38", 
 		 TOP_GP32_EQEINS_GT_BR_DR_DR_DR, 
 		 TOP_GP32_EQPINS_GT_BR_DR_DR_DR, 
 		 TOP_GP32_EQUEINS_GT_BR_DR_DR_DR, 
@@ -1324,13 +1059,272 @@ main()
 
   Result (0, pr); 
   Result (1, int40); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, int40); 
   Operand (2, int40); 
   Operand (3, int40); 
 
   /* ====================================== */ 
+  Instruction_Group("O_39", 
+		 TOP_GP32_SGR_GT_MD_AR_BM_AR, 
+		 TOP_GP32_SGR_GT_MD_AR_BP_AR, 
+		 TOP_GP32_SGR_GT_MD_AR_QM_AR, 
+		 TOP_GP32_SGR_GT_MD_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+  Operand (3, ptr32, storeval); 
+  Operand (4, cr9); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_40", 
+		 TOP_GP32_SCW_GT_AR_M_AR_CRH, 
+		 TOP_GP32_SCW_GT_AR_P_AR_CRH, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, ctrlh, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_41", 
+		 TOP_GP32_LAH_GT_MD_AR_AR_M_AR, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_P_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_M_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_P_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_42", 
+		 TOP_GP32_SFR_GT_AR_BM_AR, 
+		 TOP_GP32_SFR_GT_AR_BP_AR, 
+		 TOP_GP32_SFR_GT_AR_QM_AR, 
+		 TOP_GP32_SFR_GT_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (2, ptr32, storeval); 
+  Operand (3, cr8); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_43", 
+		 TOP_GP32_SDBP_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_QP_AR_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_BM_AR_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_BP_AR_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_QM_AR_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_QP_AR_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+  Operand (4, int40, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_44", 
+		 TOP_GP32_SGR_GT_AR_BM_AR, 
+		 TOP_GP32_SGR_GT_AR_BP_AR, 
+		 TOP_GP32_SGR_GT_AR_QM_AR, 
+		 TOP_GP32_SGR_GT_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (2, ptr32, storeval); 
+  Operand (3, cr9); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_45", 
+		 TOP_GP32_MORE_GT_DR_U16, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, u16); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_46", 
+		 TOP_GP32_LGR_GT_MD_AR_M_U5, 
+		 TOP_GP32_LGR_GT_MD_AR_P_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, cr9); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_47", 
+		 TOP_GP32_LCW_GT_CRH_AR_BM_AR, 
+		 TOP_GP32_LCW_GT_CRH_AR_BP_AR, 
+		 TOP_GP32_LCW_GT_CRH_AR_QM_AR, 
+		 TOP_GP32_LCW_GT_CRH_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrlh); 
+  Same_Res (1); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ctrlh); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_pregtn", 
+		 TOP_begin_pregtn, 
+		 TOP_end_pregtn, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, int40); 
+  Operand (1, s16); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_spadjust", 
+		 TOP_spadjust, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32); 
+  Operand (2, s32); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_48", 
+		 TOP_GP32_LDW_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDW_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDW_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDW_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDW_GT_DR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u7, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_49", 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_M_AR, 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_P_AR, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_M_AR, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_P_AR, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_M_AR, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_P_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, int40); 
+  Operand (3, ptr32, base); 
+  Operand (4, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_50", 
+		 TOP_GP32_FBCLRP_GT_BR_DR_DR_U4, 
+		 TOP_GP32_FBNOTP_GT_BR_DR_DR_U4, 
+		 TOP_GP32_FBSETP_GT_BR_DR_DR_U4, 
+		 TOP_GP32_TBCLRP_GT_BR_DR_DR_U4, 
+		 TOP_GP32_TBNOTP_GT_BR_DR_DR_U4, 
+		 TOP_GP32_TBSETP_GT_BR_DR_DR_U4, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Result (1, int40); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, u4); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_51", 
+		 TOP_GP32_LFR_GT_AR_M_U9, 
+		 TOP_GP32_LFR_GT_AR_P_U9, 
+		 TOP_UNDEFINED); 
+
+  Result (0, cr8); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u9, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_52", 
+		 TOP_GP32_FBCLR_GT_BR_DR_DR_U5, 
+		 TOP_GP32_FBNOT_GT_BR_DR_DR_U5, 
+		 TOP_GP32_FBSET_GT_BR_DR_DR_U5, 
+		 TOP_GP32_TBCLR_GT_BR_DR_DR_U5, 
+		 TOP_GP32_TBNOT_GT_BR_DR_DR_U5, 
+		 TOP_GP32_TBSET_GT_BR_DR_DR_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Result (1, int40); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, u5); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_53", 
 		 TOP_GP32_MAKEB_GT_DR_S32, 
 		 TOP_UNDEFINED); 
 
@@ -1339,7 +1333,7 @@ main()
   Operand (1, s32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_50", 
+  Instruction_Group("O_54", 
 		 TOP_GP32_SDBP_GT_MD_AR_M_AR_DR, 
 		 TOP_GP32_SDBP_GT_MD_AR_P_AR_DR, 
 		 TOP_GP32_SDBSW_GT_MD_AR_M_AR_DR, 
@@ -1367,7 +1361,7 @@ main()
   Operand (4, int40, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_51", 
+  Instruction_Group("O_55", 
 		 TOP_GP32_SDBP_GT_AR_M_AR_DR, 
 		 TOP_GP32_SDBP_GT_AR_P_AR_DR, 
 		 TOP_GP32_SDBSW_GT_AR_M_AR_DR, 
@@ -1394,6 +1388,21 @@ main()
   Operand (3, int40, storeval); 
 
   /* ====================================== */ 
+  Instruction_Group("O_56", 
+		 TOP_GP32_LGR_GT_AR_BM_AR, 
+		 TOP_GP32_LGR_GT_AR_BP_AR, 
+		 TOP_GP32_LGR_GT_AR_QM_AR, 
+		 TOP_GP32_LGR_GT_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Result (1, cr9); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_label", 
 		 TOP_label, 
 		 TOP_UNDEFINED); 
@@ -1401,7 +1410,7 @@ main()
   Operand (0, pcrel); 
 
   /* ====================================== */ 
-  Instruction_Group("O_52", 
+  Instruction_Group("O_57", 
 		 TOP_GP32_LAH_GT_AR_AR_M_U9, 
 		 TOP_GP32_LAH_GT_AR_AR_P_U9, 
 		 TOP_GP32_LAW_GT_AR_AR_M_U9, 
@@ -1414,23 +1423,7 @@ main()
   Operand (2, u9, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_53", 
-		 TOP_GP32_SFR_GT_MD_AR_BM_U5, 
-		 TOP_GP32_SFR_GT_MD_AR_BP_U5, 
-		 TOP_GP32_SFR_GT_MD_AR_QM_U5, 
-		 TOP_GP32_SFR_GT_MD_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (3, u5, storeval); 
-  Operand (4, cr8); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_54", 
+  Instruction_Group("O_58", 
 		 TOP_GP32_SETILE1_S16, 
 		 TOP_GP32_SETLE1_S16, 
 		 TOP_GP32_SETLS1_S16, 
@@ -1441,7 +1434,7 @@ main()
   Operand (0, s16, target); 
 
   /* ====================================== */ 
-  Instruction_Group("O_55", 
+  Instruction_Group("O_59", 
 		 TOP_GP32_SCW_GT_AR_M_U9_CRL, 
 		 TOP_GP32_SCW_GT_AR_P_U9_CRL, 
 		 TOP_UNDEFINED); 
@@ -1452,153 +1445,7 @@ main()
   Operand (3, ctrll, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_56", 
-		 TOP_GP32_SGR_GT_MD_AR_BM_U5, 
-		 TOP_GP32_SGR_GT_MD_AR_BP_U5, 
-		 TOP_GP32_SGR_GT_MD_AR_QM_U5, 
-		 TOP_GP32_SGR_GT_MD_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (3, u5, storeval); 
-  Operand (4, cr9); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_57", 
-		 TOP_GP32_SDBP_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_QP_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_BM_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_BP_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_QM_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_QP_U5_DR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, int40, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_58", 
-		 TOP_GP32_SAH_GT_AR_BM_AR_AR, 
-		 TOP_GP32_SAH_GT_AR_BP_AR_AR, 
-		 TOP_GP32_SAH_GT_AR_QM_AR_AR, 
-		 TOP_GP32_SAH_GT_AR_QP_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_BM_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_BP_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_QM_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_QP_AR_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, ptr32, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_59", 
-		 TOP_GP32_LAH_GT_AR_AR_BM_U5, 
-		 TOP_GP32_LAH_GT_AR_AR_BP_U5, 
-		 TOP_GP32_LAH_GT_AR_AR_MQ_U5, 
-		 TOP_GP32_LAH_GT_AR_AR_QM_U5, 
-		 TOP_GP32_LAH_GT_AR_AR_QP_U5, 
-		 TOP_GP32_LAW_GT_AR_AR_BM_U5, 
-		 TOP_GP32_LAW_GT_AR_AR_BP_U5, 
-		 TOP_GP32_LAW_GT_AR_AR_MQ_U5, 
-		 TOP_GP32_LAW_GT_AR_AR_QM_U5, 
-		 TOP_GP32_LAW_GT_AR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-
-  /* ====================================== */ 
   Instruction_Group("O_60", 
-		 TOP_GP32_SFR_GT_AR_BM_U5, 
-		 TOP_GP32_SFR_GT_AR_BP_U5, 
-		 TOP_GP32_SFR_GT_AR_MQ_U5, 
-		 TOP_GP32_SFR_GT_AR_QM_U5, 
-		 TOP_GP32_SFR_GT_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (2, u5, storeval); 
-  Operand (3, cr8); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_61", 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_M_U5, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_P_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ctrlh); 
-  Operand (3, ptr32, base); 
-  Operand (4, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_62", 
-		 TOP_GP32_SGR_GT_AR_BM_U5, 
-		 TOP_GP32_SGR_GT_AR_BP_U5, 
-		 TOP_GP32_SGR_GT_AR_MQ_U5, 
-		 TOP_GP32_SGR_GT_AR_QM_U5, 
-		 TOP_GP32_SGR_GT_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (2, u5, storeval); 
-  Operand (3, cr9); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_63", 
 		 TOP_GP32_LCW_GT_CRL_AR_M_U9, 
 		 TOP_GP32_LCW_GT_CRL_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -1609,7 +1456,7 @@ main()
   Operand (2, u9, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_64", 
+  Instruction_Group("O_61", 
 		 TOP_GP32_ADDBA_GT_AR_P13_U15, 
 		 TOP_GP32_ADDHA_GT_AR_P13_U15, 
 		 TOP_GP32_ADDWA_GT_AR_P13_U15, 
@@ -1621,7 +1468,7 @@ main()
   Operand (2, u15); 
 
   /* ====================================== */ 
-  Instruction_Group("O_65", 
+  Instruction_Group("O_62", 
 		 TOP_GP32_SCW_GT_P13_P_U15_CRL, 
 		 TOP_UNDEFINED); 
 
@@ -1631,7 +1478,19 @@ main()
   Operand (3, ctrll, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_66", 
+  Instruction_Group("O_63", 
+		 TOP_GP32_LCW_GT_CRH_P13_P_U15, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrlh); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ctrlh); 
+  Operand (2, p13, base); 
+  Operand (3, u15, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_64", 
 		 TOP_GP32_MAKEPR_GT_S21, 
 		 TOP_UNDEFINED); 
 
@@ -1640,7 +1499,7 @@ main()
   Operand (1, s21); 
 
   /* ====================================== */ 
-  Instruction_Group("O_67", 
+  Instruction_Group("O_65", 
 		 TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 
 		 TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 
 		 TOP_GP32_ADDWA_GT_MD_AR_AR_AR, 
@@ -1656,7 +1515,7 @@ main()
   Operand (3, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_68", 
+  Instruction_Group("O_66", 
 		 TOP_GP32_LFR_GT_MD_AR_M_U5, 
 		 TOP_GP32_LFR_GT_MD_AR_P_U5, 
 		 TOP_UNDEFINED); 
@@ -1668,6 +1527,22 @@ main()
   Operand (3, u5, offset); 
 
   /* ====================================== */ 
+  Instruction_Group("O_67", 
+		 TOP_GP32_SCW_GT_AR_BM_U5_CRL, 
+		 TOP_GP32_SCW_GT_AR_BP_U5_CRL, 
+		 TOP_GP32_SCW_GT_AR_MQ_U5_CRL, 
+		 TOP_GP32_SCW_GT_AR_QM_U5_CRL, 
+		 TOP_GP32_SCW_GT_AR_QP_U5_CRL, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+  Operand (3, ctrll, storeval); 
+
+  /* ====================================== */ 
   Instruction_Group("O_fixup", 
 		 TOP_ffixup, 
 		 TOP_UNDEFINED); 
@@ -1675,7 +1550,38 @@ main()
   Result (0, ptr32); 
 
   /* ====================================== */ 
+  Instruction_Group("O_68", 
+		 TOP_GP32_LDH_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDH_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDH_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDH_GT_DR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u6, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_69", 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_BM_AR, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_BP_AR, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_QM_AR, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrll); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_70", 
 		 TOP_GP32_BARRIER, 
 		 TOP_GP32_GP32MD, 
 		 TOP_GP32_LOOPDIS, 
@@ -1687,7 +1593,7 @@ main()
 
 
   /* ====================================== */ 
-  Instruction_Group("O_70", 
+  Instruction_Group("O_71", 
 		 TOP_GP32_SFR_GT_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -1698,7 +1604,7 @@ main()
   Operand (3, cr8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_71", 
+  Instruction_Group("O_72", 
 		 TOP_GP32_SGR_GT_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -1709,7 +1615,7 @@ main()
   Operand (3, cr9); 
 
   /* ====================================== */ 
-  Instruction_Group("O_72", 
+  Instruction_Group("O_73", 
 		 TOP_GP32_LCG_GT_BR_AR_M_AR, 
 		 TOP_GP32_LCG_GT_BR_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -1718,19 +1624,6 @@ main()
   Operand (0, pr, predicate); 
   Operand (1, ptr32, base); 
   Operand (2, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_73", 
-		 TOP_GP32_LDEW_GT_DR_P13_P_U15, 
-		 TOP_GP32_LDHH_GT_DR_P13_P_U15, 
-		 TOP_GP32_LDLH_GT_DR_P13_P_U15, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, p13, base); 
-  Operand (3, u15, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_74", 
@@ -1872,6 +1765,23 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_77", 
+		 TOP_GP32_SFR_GT_MD_AR_BM_U5, 
+		 TOP_GP32_SFR_GT_MD_AR_BP_U5, 
+		 TOP_GP32_SFR_GT_MD_AR_QM_U5, 
+		 TOP_GP32_SFR_GT_MD_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (3, u5, storeval); 
+  Operand (4, cr8); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_78", 
 		 TOP_GP32_LFR_GT_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -1881,7 +1791,43 @@ main()
   Operand (2, u15, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_78", 
+  Instruction_Group("O_79", 
+		 TOP_GP32_SGR_GT_MD_AR_BM_U5, 
+		 TOP_GP32_SGR_GT_MD_AR_BP_U5, 
+		 TOP_GP32_SGR_GT_MD_AR_QM_U5, 
+		 TOP_GP32_SGR_GT_MD_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (3, u5, storeval); 
+  Operand (4, cr9); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_80", 
+		 TOP_GP32_SAH_GT_AR_BM_AR_AR, 
+		 TOP_GP32_SAH_GT_AR_BP_AR_AR, 
+		 TOP_GP32_SAH_GT_AR_QM_AR_AR, 
+		 TOP_GP32_SAH_GT_AR_QP_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_BM_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_BP_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_QM_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_QP_AR_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, ptr32, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_81", 
 		 TOP_GP32_ADDBA_GT_MD_AR_AR_U5, 
 		 TOP_GP32_ADDHA_GT_MD_AR_AR_U5, 
 		 TOP_GP32_ADDWA_GT_MD_AR_AR_U5, 
@@ -1897,7 +1843,7 @@ main()
   Operand (3, u5); 
 
   /* ====================================== */ 
-  Instruction_Group("O_79", 
+  Instruction_Group("O_82", 
 		 TOP_GP32_SCW_GT_MD_AR_M_U5_CRL, 
 		 TOP_GP32_SCW_GT_MD_AR_P_U5_CRL, 
 		 TOP_UNDEFINED); 
@@ -1909,21 +1855,22 @@ main()
   Operand (4, ctrll, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_80", 
-		 TOP_GP32_LCW_GT_CRL_AR_BM_AR, 
-		 TOP_GP32_LCW_GT_CRL_AR_BP_AR, 
-		 TOP_GP32_LCW_GT_CRL_AR_QM_AR, 
-		 TOP_GP32_LCW_GT_CRL_AR_QP_AR, 
+  Instruction_Group("O_83", 
+		 TOP_GP32_LFR_GT_AR_BM_AR, 
+		 TOP_GP32_LFR_GT_AR_BP_AR, 
+		 TOP_GP32_LFR_GT_AR_QM_AR, 
+		 TOP_GP32_LFR_GT_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ctrll); 
-  Result (1, ptr32); 
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Result (1, cr8); 
   Operand (0, pr, predicate); 
   Operand (1, ptr32, base); 
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_81", 
+  Instruction_Group("O_84", 
 		 TOP_GP32_LDW_GT_DR_AR_M_U9, 
 		 TOP_GP32_LDW_GT_DR_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -1934,7 +1881,7 @@ main()
   Operand (2, u11, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_82", 
+  Instruction_Group("O_85", 
 		 TOP_GP32_XSHLW_GT_DR_DR_DR_U5, 
 		 TOP_GP32_XSHRW_GT_DR_DR_DR_U5, 
 		 TOP_UNDEFINED); 
@@ -1946,26 +1893,25 @@ main()
   Operand (3, u5); 
 
   /* ====================================== */ 
-  Instruction_Group("O_83", 
-		 TOP_GP32_SAH_GT_MD_AR_BM_AR_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_BP_AR_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_QM_AR_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_QP_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_BM_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_BP_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_QM_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_QP_AR_AR, 
+  Instruction_Group("O_86", 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_M_U5, 
+		 TOP_GP32_LDEW_GT_MD_DR_AR_P_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_M_U5, 
+		 TOP_GP32_LDHH_GT_MD_DR_AR_P_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_M_U5, 
+		 TOP_GP32_LDLH_GT_MD_DR_AR_P_U5, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
+  Result (0, int40); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (4, ptr32, storeval); 
+  Operand (2, int40); 
+  Operand (3, ptr32, base); 
+  Operand (4, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_84", 
+  Instruction_Group("O_87", 
 		 TOP_GP32_COPYC_GT_CRL_DR, 
 		 TOP_UNDEFINED); 
 
@@ -1974,7 +1920,7 @@ main()
   Operand (1, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_85", 
+  Instruction_Group("O_88", 
 		 TOP_GP32_CALL_GT_S21, 
 		 TOP_UNDEFINED); 
 
@@ -1984,7 +1930,23 @@ main()
   Operand (1, s21, target); 
 
   /* ====================================== */ 
-  Instruction_Group("O_86", 
+  Instruction_Group("O_89", 
+		 TOP_GP32_LCG_GT_BR_AR_BM_U5, 
+		 TOP_GP32_LCG_GT_BR_AR_BP_U5, 
+		 TOP_GP32_LCG_GT_BR_AR_MQ_U5, 
+		 TOP_GP32_LCG_GT_BR_AR_QM_U5, 
+		 TOP_GP32_LCG_GT_BR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_90", 
 		 TOP_GP32_MAFCHH_GT_DR_DR_DR_DR, 
 		 TOP_GP32_MAFCHL_GT_DR_DR_DR_DR, 
 		 TOP_GP32_MAFCLH_GT_DR_DR_DR_DR, 
@@ -2061,56 +2023,31 @@ main()
   Operand (3, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_87", 
-		 TOP_GP32_LGR_GT_AR_BM_AR, 
-		 TOP_GP32_LGR_GT_AR_BP_AR, 
-		 TOP_GP32_LGR_GT_AR_QM_AR, 
-		 TOP_GP32_LGR_GT_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr9); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_88", 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_M_U5, 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_P_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_M_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_P_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_M_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_P_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, int40); 
-  Operand (3, ptr32, base); 
-  Operand (4, u5, offset); 
-
-  /* ====================================== */ 
   Instruction_Group("O_asm", 
 		 TOP_asm, 
 		 TOP_UNDEFINED); 
 
 
   /* ====================================== */ 
-  Instruction_Group("O_89", 
-		 TOP_GP32_LCW_GT_CRH_AR_M_U9, 
-		 TOP_GP32_LCW_GT_CRH_AR_P_U9, 
+  Instruction_Group("O_91", 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_AR, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_AR, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_AR, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
   Result (0, ctrlh); 
+  Same_Res (2); 
+  Result (1, ptr32); 
+  Same_Res (3); 
   Operand (0, pr, predicate); 
-  Operand (1, ctrlh); 
-  Operand (2, ptr32, base); 
-  Operand (3, u9, offset); 
+  Operand (1, md); 
+  Operand (2, ctrlh); 
+  Operand (3, ptr32, base); 
+  Operand (4, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_90", 
+  Instruction_Group("O_92", 
 		 TOP_GP32_MAKEC_GT_CRL_U16, 
 		 TOP_UNDEFINED); 
 
@@ -2119,7 +2056,7 @@ main()
   Operand (1, u16); 
 
   /* ====================================== */ 
-  Instruction_Group("O_91", 
+  Instruction_Group("O_93", 
 		 TOP_GP32_LAH_GT_AR_AR_M_AR, 
 		 TOP_GP32_LAH_GT_AR_AR_P_AR, 
 		 TOP_GP32_LAW_GT_AR_AR_M_AR, 
@@ -2132,18 +2069,74 @@ main()
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_92", 
-		 TOP_GP32_LCW_GT_CRH_P13_P_U15, 
+  Instruction_Group("O_94", 
+		 TOP_GP32_LDBP_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDBP_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDBP_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDBP_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDBP_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDBSW_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDBSW_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDBSW_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDBSW_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDBSW_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDB_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDB_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDB_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDB_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDB_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDF_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDF_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDF_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDF_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDF_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDHSW_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDHSW_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDHSW_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDHSW_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDHSW_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDH_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDP_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDP_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDP_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDP_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDP_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDSETUB_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDSETUB_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDSETUB_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDSETUB_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDSETUB_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDUBP_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDUBP_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDUBP_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDUBP_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDUBP_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDUB_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDUB_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDUB_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDUB_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDUB_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDUH_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDUH_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDUH_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDUH_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDUH_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDUW_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDUW_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDUW_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDUW_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDUW_GT_DR_AR_QP_U5, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ctrlh); 
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
-  Operand (1, ctrlh); 
-  Operand (2, p13, base); 
-  Operand (3, u15, offset); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_93", 
+  Instruction_Group("O_95", 
 		 TOP_GP32_CLRFR_GT, 
 		 TOP_UNDEFINED); 
 
@@ -2151,41 +2144,8 @@ main()
   Operand (0, pr, predicate); 
 
   /* ====================================== */ 
-  Instruction_Group("O_94", 
-		 TOP_GP32_SFR_GT_MD_AR_BM_AR, 
-		 TOP_GP32_SFR_GT_MD_AR_BP_AR, 
-		 TOP_GP32_SFR_GT_MD_AR_QM_AR, 
-		 TOP_GP32_SFR_GT_MD_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (3, ptr32, storeval); 
-  Operand (4, cr8); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_95", 
-		 TOP_GP32_SGR_GT_MD_AR_BM_AR, 
-		 TOP_GP32_SGR_GT_MD_AR_BP_AR, 
-		 TOP_GP32_SGR_GT_MD_AR_QM_AR, 
-		 TOP_GP32_SGR_GT_MD_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (3, ptr32, storeval); 
-  Operand (4, cr9); 
-
-  /* ====================================== */ 
   Instruction_Group("O_96", 
 		 TOP_GP32_MOVEG_GT_BR_BR, 
-		 TOP_GP32_NOTG_GT_BR, 
 		 TOP_GP32_NOTG_GT_BR_BR, 
 		 TOP_GP32_NOTPG_GT_BR_BR, 
 		 TOP_UNDEFINED); 
@@ -2218,21 +2178,6 @@ main()
   Operand (0, p3); 
 
   /* ====================================== */ 
-  Instruction_Group("O_99", 
-		 TOP_GP32_LFR_GT_AR_BM_U5, 
-		 TOP_GP32_LFR_GT_AR_BP_U5, 
-		 TOP_GP32_LFR_GT_AR_MQ_U5, 
-		 TOP_GP32_LFR_GT_AR_QM_U5, 
-		 TOP_GP32_LFR_GT_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-
-  /* ====================================== */ 
   Instruction_Group("O_noop", 
 		 TOP_noop, 
 		 TOP_UNDEFINED); 
@@ -2240,7 +2185,7 @@ main()
   Operand (0, pr, predicate); 
 
   /* ====================================== */ 
-  Instruction_Group("O_100", 
+  Instruction_Group("O_99", 
 		 TOP_GP32_SWI_U12, 
 		 TOP_UNDEFINED); 
 
@@ -2249,22 +2194,7 @@ main()
   Operand (2, p15); 
 
   /* ====================================== */ 
-  Instruction_Group("O_101", 
-		 TOP_GP32_SCW_GT_AR_BM_U5_CRL, 
-		 TOP_GP32_SCW_GT_AR_BP_U5_CRL, 
-		 TOP_GP32_SCW_GT_AR_MQ_U5_CRL, 
-		 TOP_GP32_SCW_GT_AR_QM_U5_CRL, 
-		 TOP_GP32_SCW_GT_AR_QP_U5_CRL, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (3, ctrll, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_102", 
+  Instruction_Group("O_100", 
 		 TOP_GP32_FCLFSCL_GT_BR, 
 		 TOP_GP32_FCLFSNR_GT_BR, 
 		 TOP_GP32_FCLFSVE_GT_BR, 
@@ -2315,6 +2245,40 @@ main()
   Operand (1, cr8); 
 
   /* ====================================== */ 
+  Instruction_Group("O_101", 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_U5, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_U5, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_U5, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrlh); 
+  Same_Res (2); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ctrlh); 
+  Operand (3, ptr32, base); 
+  Operand (4, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_102", 
+		 TOP_GP32_LFR_GT_MD_AR_BM_AR, 
+		 TOP_GP32_LFR_GT_MD_AR_BP_AR, 
+		 TOP_GP32_LFR_GT_MD_AR_QM_AR, 
+		 TOP_GP32_LFR_GT_MD_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Result (1, cr8); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_103", 
 		 TOP_GP32_SAH_GT_AR_M_U9_AR, 
 		 TOP_GP32_SAH_GT_AR_P_U9_AR, 
@@ -2329,22 +2293,6 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_104", 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_BM_AR, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_BP_AR, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_QM_AR, 
-		 TOP_GP32_LCW_GT_MD_CRH_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ctrlh); 
-  Operand (3, ptr32, base); 
-  Operand (4, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_105", 
 		 TOP_GP32_LDH_GT_DR_AR_M_U9, 
 		 TOP_GP32_LDH_GT_DR_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -2355,7 +2303,7 @@ main()
   Operand (2, u10, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_106", 
+  Instruction_Group("O_105", 
 		 TOP_GP32_LCG_GT_MD_BR_AR_M_U5, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_P_U5, 
 		 TOP_UNDEFINED); 
@@ -2367,7 +2315,7 @@ main()
   Operand (3, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_107", 
+  Instruction_Group("O_106", 
 		 TOP_GP32_SETP15U_GT_AR, 
 		 TOP_UNDEFINED); 
 
@@ -2376,7 +2324,7 @@ main()
   Operand (1, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_108", 
+  Instruction_Group("O_107", 
 		 TOP_GP32_SAH_GT_P13_P_U15_AR, 
 		 TOP_GP32_SAW_GT_P13_P_U15_AR, 
 		 TOP_UNDEFINED); 
@@ -2387,7 +2335,7 @@ main()
   Operand (3, ptr32, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_109", 
+  Instruction_Group("O_108", 
 		 TOP_GP32_PUSH_RSET, 
 		 TOP_UNDEFINED); 
 
@@ -2396,7 +2344,7 @@ main()
   Operand (1, p15); 
 
   /* ====================================== */ 
-  Instruction_Group("O_110", 
+  Instruction_Group("O_109", 
 		 TOP_GP32_ANDG_GT_BR_BR_BR, 
 		 TOP_GP32_ANDNG_GT_BR_BR_BR, 
 		 TOP_GP32_ANDNPG_GT_BR_BR_BR, 
@@ -2421,50 +2369,7 @@ main()
   Operand (2, pr); 
 
   /* ====================================== */ 
-  Instruction_Group("O_111", 
-		 TOP_GP32_SCW_GT_AR_BM_AR_CRH, 
-		 TOP_GP32_SCW_GT_AR_BP_AR_CRH, 
-		 TOP_GP32_SCW_GT_AR_QM_AR_CRH, 
-		 TOP_GP32_SCW_GT_AR_QP_AR_CRH, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, ctrlh, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_112", 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_BM_U5, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_BP_U5, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_QM_U5, 
-		 TOP_GP32_LCW_GT_MD_CRL_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrll); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_113", 
-		 TOP_GP32_LFR_GT_AR_BM_AR, 
-		 TOP_GP32_LFR_GT_AR_BP_AR, 
-		 TOP_GP32_LFR_GT_AR_QM_AR, 
-		 TOP_GP32_LFR_GT_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_114", 
+  Instruction_Group("O_110", 
 		 TOP_GP32_LCG_GT_BR_AR_M_U9, 
 		 TOP_GP32_LCG_GT_BR_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -2475,47 +2380,28 @@ main()
   Operand (2, u9, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_115", 
-		 TOP_GP32_LGR_GT_MD_AR_BM_U5, 
-		 TOP_GP32_LGR_GT_MD_AR_BP_U5, 
-		 TOP_GP32_LGR_GT_MD_AR_QM_U5, 
-		 TOP_GP32_LGR_GT_MD_AR_QP_U5, 
+  Instruction_Group("O_111", 
+		 TOP_GP32_SAH_GT_AR_BM_U5_AR, 
+		 TOP_GP32_SAH_GT_AR_BP_U5_AR, 
+		 TOP_GP32_SAH_GT_AR_MQ_U5_AR, 
+		 TOP_GP32_SAH_GT_AR_QM_U5_AR, 
+		 TOP_GP32_SAH_GT_AR_QP_U5_AR, 
+		 TOP_GP32_SAW_GT_AR_BM_U5_AR, 
+		 TOP_GP32_SAW_GT_AR_BP_U5_AR, 
+		 TOP_GP32_SAW_GT_AR_MQ_U5_AR, 
+		 TOP_GP32_SAW_GT_AR_QM_U5_AR, 
+		 TOP_GP32_SAW_GT_AR_QP_U5_AR, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
-  Result (1, cr9); 
+  Same_Res (1); 
   Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+  Operand (3, ptr32, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_116", 
-		 TOP_GP32_SAH_GT_MD_AR_M_U5_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_P_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_M_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_P_U5_AR, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, ptr32, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_117", 
-		 TOP_GP32_FMOVEA_GT_BR_AR_AR, 
-		 TOP_GP32_TMOVEA_GT_BR_AR_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, pr); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_118", 
+  Instruction_Group("O_112", 
 		 TOP_GP32_LAH_GT_AR_AR_BM_AR, 
 		 TOP_GP32_LAH_GT_AR_AR_BP_AR, 
 		 TOP_GP32_LAH_GT_AR_AR_QM_AR, 
@@ -2528,192 +2414,58 @@ main()
 
   Result (0, ptr32); 
   Result (1, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, ptr32, base); 
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_119", 
-		 TOP_GP32_SFR_GT_AR_BM_AR, 
-		 TOP_GP32_SFR_GT_AR_BP_AR, 
-		 TOP_GP32_SFR_GT_AR_QM_AR, 
-		 TOP_GP32_SFR_GT_AR_QP_AR, 
+  Instruction_Group("O_113", 
+		 TOP_GP32_SCW_GT_MD_AR_BM_U5_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_BP_U5_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_QM_U5_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_QP_U5_CRL, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (2, ptr32, storeval); 
-  Operand (3, cr8); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_120", 
-		 TOP_GP32_SGR_GT_AR_BM_AR, 
-		 TOP_GP32_SGR_GT_AR_BP_AR, 
-		 TOP_GP32_SGR_GT_AR_QM_AR, 
-		 TOP_GP32_SGR_GT_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (2, ptr32, storeval); 
-  Operand (3, cr9); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_121", 
-		 TOP_GP32_SDBP_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDBP_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDBP_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDBP_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDBSW_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDBSW_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDBSW_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDBSW_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDB_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDB_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDB_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDB_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDEW_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDEW_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDEW_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDEW_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDF_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDF_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDF_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDF_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDHSW_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDHSW_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDHSW_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDHSW_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDH_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDH_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDH_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDH_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDP_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDP_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDP_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDP_GT_AR_QP_AR_DR, 
-		 TOP_GP32_SDW_GT_AR_BM_AR_DR, 
-		 TOP_GP32_SDW_GT_AR_BP_AR_DR, 
-		 TOP_GP32_SDW_GT_AR_QM_AR_DR, 
-		 TOP_GP32_SDW_GT_AR_QP_AR_DR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, int40, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_122", 
-		 TOP_GP32_LAH_GT_MD_AR_AR_M_U5, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_P_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_M_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_P_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, ptr32, base); 
   Operand (3, u5, offset); 
+  Operand (4, ctrll, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_123", 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_M_AR, 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_P_AR, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_M_AR, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_P_AR, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_M_AR, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_P_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, int40); 
-  Operand (3, ptr32, base); 
-  Operand (4, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_124", 
-		 TOP_GP32_COPYA_GT_AR_DR, 
-		 TOP_GP32_COPYSA_GT_AR_DR, 
+  Instruction_Group("O_114", 
+		 TOP_GP32_LGR_GT_AR_BM_U5, 
+		 TOP_GP32_LGR_GT_AR_BP_U5, 
+		 TOP_GP32_LGR_GT_AR_MQ_U5, 
+		 TOP_GP32_LGR_GT_AR_QM_U5, 
+		 TOP_GP32_LGR_GT_AR_QP_U5, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
+  Same_Res (1); 
+  Result (1, cr9); 
   Operand (0, pr, predicate); 
-  Operand (1, int40); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_125", 
-		 TOP_GP32_TRAP_GT_U4, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, u4); 
-  Operand (2, p15); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_126", 
-		 TOP_GP32_LDEW_GT_DR_AR_M_AR, 
-		 TOP_GP32_LDEW_GT_DR_AR_P_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_M_AR, 
-		 TOP_GP32_LDHH_GT_DR_AR_P_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_M_AR, 
-		 TOP_GP32_LDLH_GT_DR_AR_P_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_127", 
-		 TOP_GP32_LFR_GT_MD_AR_M_AR, 
-		 TOP_GP32_LFR_GT_MD_AR_P_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_128", 
-		 TOP_GP32_LCW_GT_CRH_AR_BM_AR, 
-		 TOP_GP32_LCW_GT_CRH_AR_BP_AR, 
-		 TOP_GP32_LCW_GT_CRH_AR_QM_AR, 
-		 TOP_GP32_LCW_GT_CRH_AR_QP_AR, 
+  Instruction_Group("O_115", 
+		 TOP_GP32_LCW_GT_CRH_AR_M_AR, 
+		 TOP_GP32_LCW_GT_CRH_AR_P_AR, 
 		 TOP_UNDEFINED); 
 
   Result (0, ctrlh); 
-  Result (1, ptr32); 
+  Same_Res (1); 
   Operand (0, pr, predicate); 
   Operand (1, ctrlh); 
   Operand (2, ptr32, base); 
   Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_129", 
-		 TOP_GP32_SETILE0_S16, 
-		 TOP_GP32_SETLE0_S16, 
-		 TOP_GP32_SETLS0_S16, 
-		 TOP_GP32_SETULS0_S16, 
-		 TOP_UNDEFINED); 
-
-  Result (0, lr0); 
-  Operand (0, s16, target); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_130", 
+  Instruction_Group("O_116", 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BM_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_BP_AR, 
 		 TOP_GP32_LDEW_GT_MD_DR_AR_QM_AR, 
@@ -2729,7 +2481,9 @@ main()
 		 TOP_UNDEFINED); 
 
   Result (0, int40); 
+  Same_Res (2); 
   Result (1, ptr32); 
+  Same_Res (3); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, int40); 
@@ -2737,19 +2491,296 @@ main()
   Operand (4, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_131", 
-		 TOP_GP32_SCW_GT_MD_AR_BM_AR_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_BP_AR_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_QM_AR_CRH, 
-		 TOP_GP32_SCW_GT_MD_AR_QP_AR_CRH, 
+  Instruction_Group("O_117", 
+		 TOP_GP32_LDEW_GT_DR_AR_BM_AR, 
+		 TOP_GP32_LDEW_GT_DR_AR_BP_AR, 
+		 TOP_GP32_LDEW_GT_DR_AR_QM_AR, 
+		 TOP_GP32_LDEW_GT_DR_AR_QP_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_BM_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_BP_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_QM_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_QP_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_BM_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_BP_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_QM_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (1); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_118", 
+		 TOP_GP32_SAH_GT_MD_AR_M_U5_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_P_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_M_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_P_U5_AR, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (4, ptr32, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_119", 
+		 TOP_GP32_FMOVEA_GT_BR_AR_AR, 
+		 TOP_GP32_TMOVEA_GT_BR_AR_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Result (1, ptr32); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_120", 
+		 TOP_GP32_LAH_GT_MD_AR_AR_BM_U5, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_BP_U5, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_QM_U5, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_QP_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_BM_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_BP_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_QM_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_121", 
+		 TOP_GP32_LAH_GT_MD_AR_AR_M_U5, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_P_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_M_U5, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_P_U5, 
 		 TOP_UNDEFINED); 
 
   Result (0, ptr32); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_122", 
+		 TOP_GP32_SFR_GT_AR_BM_U5, 
+		 TOP_GP32_SFR_GT_AR_BP_U5, 
+		 TOP_GP32_SFR_GT_AR_MQ_U5, 
+		 TOP_GP32_SFR_GT_AR_QM_U5, 
+		 TOP_GP32_SFR_GT_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+  Operand (2, u5, storeval); 
+  Operand (3, cr8); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_123", 
+		 TOP_GP32_COPYA_GT_AR_DR, 
+		 TOP_GP32_COPYSA_GT_AR_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_124", 
+		 TOP_GP32_LAH_GT_AR_AR_BM_U5, 
+		 TOP_GP32_LAH_GT_AR_AR_BP_U5, 
+		 TOP_GP32_LAH_GT_AR_AR_MQ_U5, 
+		 TOP_GP32_LAH_GT_AR_AR_QM_U5, 
+		 TOP_GP32_LAH_GT_AR_AR_QP_U5, 
+		 TOP_GP32_LAW_GT_AR_AR_BM_U5, 
+		 TOP_GP32_LAW_GT_AR_AR_BP_U5, 
+		 TOP_GP32_LAW_GT_AR_AR_MQ_U5, 
+		 TOP_GP32_LAW_GT_AR_AR_QM_U5, 
+		 TOP_GP32_LAW_GT_AR_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_125", 
+		 TOP_GP32_TRAP_GT_U4, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, u4); 
+  Operand (2, p15); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_126", 
+		 TOP_GP32_SGR_GT_AR_BM_U5, 
+		 TOP_GP32_SGR_GT_AR_BP_U5, 
+		 TOP_GP32_SGR_GT_AR_MQ_U5, 
+		 TOP_GP32_SGR_GT_AR_QM_U5, 
+		 TOP_GP32_SGR_GT_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+  Operand (2, u5, storeval); 
+  Operand (3, cr9); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_127", 
+		 TOP_GP32_SCW_GT_AR_BM_AR_CRH, 
+		 TOP_GP32_SCW_GT_AR_BP_AR_CRH, 
+		 TOP_GP32_SCW_GT_AR_QM_AR_CRH, 
+		 TOP_GP32_SCW_GT_AR_QP_AR_CRH, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, ctrlh, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_128", 
+		 TOP_GP32_LFR_GT_MD_AR_M_AR, 
+		 TOP_GP32_LFR_GT_MD_AR_P_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, cr8); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
   Operand (3, ptr32, offset); 
-  Operand (4, ctrlh, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_129", 
+		 TOP_GP32_SCW_GT_MD_AR_BM_AR_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_BP_AR_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_QM_AR_CRL, 
+		 TOP_GP32_SCW_GT_MD_AR_QP_AR_CRL, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+  Operand (4, ctrll, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_130", 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_QP_AR, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_BM_AR, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_BP_AR, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_QM_AR, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_131", 
+		 TOP_GP32_SETILE0_S16, 
+		 TOP_GP32_SETLE0_S16, 
+		 TOP_GP32_SETLS0_S16, 
+		 TOP_GP32_SETULS0_S16, 
+		 TOP_UNDEFINED); 
+
+  Result (0, lr0); 
+  Operand (0, s16, target); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_132", 
+		 TOP_GP32_LCW_GT_CRL_AR_BM_U5, 
+		 TOP_GP32_LCW_GT_CRL_AR_BP_U5, 
+		 TOP_GP32_LCW_GT_CRL_AR_MQ_U5, 
+		 TOP_GP32_LCW_GT_CRL_AR_QM_U5, 
+		 TOP_GP32_LCW_GT_CRL_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrll); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_fixup", 
@@ -2760,7 +2791,7 @@ main()
   Result (0, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_132", 
+  Instruction_Group("O_133", 
 		 TOP_GP32_BKP_GF, 
 		 TOP_UNDEFINED); 
 
@@ -2768,27 +2799,12 @@ main()
   Operand (0, pr, reversed); 
 
   /* ====================================== */ 
-  Instruction_Group("O_133", 
+  Instruction_Group("O_134", 
 		 TOP_GP32_GOTOPR_U16, 
 		 TOP_UNDEFINED); 
 
   Operand (0, u16, target); 
   Operand (1, p3); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_134", 
-		 TOP_GP32_LFR_GT_MD_AR_BM_AR, 
-		 TOP_GP32_LFR_GT_MD_AR_BP_AR, 
-		 TOP_GP32_LFR_GT_MD_AR_QM_AR, 
-		 TOP_GP32_LFR_GT_MD_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_135", 
@@ -2899,6 +2915,67 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_144", 
+		 TOP_GP32_LDEW_GT_DR_P13_P_U15, 
+		 TOP_GP32_LDHH_GT_DR_P13_P_U15, 
+		 TOP_GP32_LDLH_GT_DR_P13_P_U15, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, p13, base); 
+  Operand (3, u15, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_145", 
+		 TOP_GP32_SDBP_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDBP_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDBP_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDBP_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDBSW_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDBSW_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDBSW_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDBSW_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDB_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDB_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDB_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDB_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDEW_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDEW_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDEW_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDEW_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDF_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDF_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDF_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDF_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDHSW_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDHSW_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDHSW_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDHSW_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDH_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDH_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDH_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDH_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDP_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDP_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDP_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDP_GT_AR_QP_AR_DR, 
+		 TOP_GP32_SDW_GT_AR_BM_AR_DR, 
+		 TOP_GP32_SDW_GT_AR_BP_AR_DR, 
+		 TOP_GP32_SDW_GT_AR_QM_AR_DR, 
+		 TOP_GP32_SDW_GT_AR_QP_AR_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, int40, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_146", 
 		 TOP_GP32_SCW_GT_AR_M_AR_CRL, 
 		 TOP_GP32_SCW_GT_AR_P_AR_CRL, 
 		 TOP_UNDEFINED); 
@@ -2909,17 +2986,21 @@ main()
   Operand (3, ctrll, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_145", 
-		 TOP_GP32_MOREA_GT_AR_U16, 
+  Instruction_Group("O_147", 
+		 TOP_GP32_LDW_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_QP_U5, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (3); 
   Operand (0, pr, predicate); 
-  Operand (1, ptr32); 
-  Operand (2, u16); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u7, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_146", 
+  Instruction_Group("O_148", 
 		 TOP_GP32_LDW_GT_MD_DR_AR_M_U5, 
 		 TOP_GP32_LDW_GT_MD_DR_AR_P_U5, 
 		 TOP_UNDEFINED); 
@@ -2931,7 +3012,7 @@ main()
   Operand (3, u7, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_147", 
+  Instruction_Group("O_149", 
 		 TOP_GP32_LCW_GT_MD_CRL_AR_M_AR, 
 		 TOP_GP32_LCW_GT_MD_CRL_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -2943,7 +3024,7 @@ main()
   Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_148", 
+  Instruction_Group("O_150", 
 		 TOP_GP32_LCG_GT_MD_BR_AR_M_AR, 
 		 TOP_GP32_LCG_GT_MD_BR_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -2955,46 +3036,11 @@ main()
   Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_149", 
-		 TOP_GP32_SAH_GT_AR_BM_U5_AR, 
-		 TOP_GP32_SAH_GT_AR_BP_U5_AR, 
-		 TOP_GP32_SAH_GT_AR_MQ_U5_AR, 
-		 TOP_GP32_SAH_GT_AR_QM_U5_AR, 
-		 TOP_GP32_SAH_GT_AR_QP_U5_AR, 
-		 TOP_GP32_SAW_GT_AR_BM_U5_AR, 
-		 TOP_GP32_SAW_GT_AR_BP_U5_AR, 
-		 TOP_GP32_SAW_GT_AR_MQ_U5_AR, 
-		 TOP_GP32_SAW_GT_AR_QM_U5_AR, 
-		 TOP_GP32_SAW_GT_AR_QP_U5_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
-  Operand (3, ptr32, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_150", 
+  Instruction_Group("O_151", 
 		 TOP_GP32_GOTO_S25, 
 		 TOP_UNDEFINED); 
 
   Operand (0, s25, target); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_151", 
-		 TOP_GP32_LFR_GT_MD_AR_BM_U5, 
-		 TOP_GP32_LFR_GT_MD_AR_BP_U5, 
-		 TOP_GP32_LFR_GT_MD_AR_QM_U5, 
-		 TOP_GP32_LFR_GT_MD_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr8); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_152", 
@@ -3020,68 +3066,6 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_154", 
-		 TOP_GP32_SDBP_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_QP_AR_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_BM_AR_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_BP_AR_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_QM_AR_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_QP_AR_DR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (4, int40, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_155", 
-		 TOP_GP32_SCW_GT_MD_AR_BM_U5_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_BP_U5_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_QM_U5_CRL, 
-		 TOP_GP32_SCW_GT_MD_AR_QP_U5_CRL, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, ctrll, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_156", 
 		 TOP_GP32_MAKEC_GT_CRL_P3_U16, 
 		 TOP_UNDEFINED); 
 
@@ -3091,7 +3075,7 @@ main()
   Operand (2, u16); 
 
   /* ====================================== */ 
-  Instruction_Group("O_157", 
+  Instruction_Group("O_155", 
 		 TOP_GP32_SFR_GT_MD_AR_M_AR, 
 		 TOP_GP32_SFR_GT_MD_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -3104,7 +3088,7 @@ main()
   Operand (4, cr8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_158", 
+  Instruction_Group("O_156", 
 		 TOP_GP32_SGR_GT_MD_AR_M_AR, 
 		 TOP_GP32_SGR_GT_MD_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -3117,34 +3101,7 @@ main()
   Operand (4, cr9); 
 
   /* ====================================== */ 
-  Instruction_Group("O_159", 
-		 TOP_GP32_LCG_GT_MD_BR_AR_BM_AR, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_BP_AR, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_QM_AR, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, pr); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_160", 
-		 TOP_GP32_LCW_GT_CRH_AR_M_AR, 
-		 TOP_GP32_LCW_GT_CRH_AR_P_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ctrlh); 
-  Operand (0, pr, predicate); 
-  Operand (1, ctrlh); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_161", 
+  Instruction_Group("O_157", 
 		 TOP_GP32_LGR_GT_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -3154,7 +3111,7 @@ main()
   Operand (2, u15, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_162", 
+  Instruction_Group("O_158", 
 		 TOP_GP32_FEANDN_GT_BR_U8_DR, 
 		 TOP_GP32_FEORN_GT_BR_U8_DR, 
 		 TOP_GP32_FPANDN_GT_BR_U8_DR, 
@@ -3175,21 +3132,37 @@ main()
   Operand (2, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_163", 
-		 TOP_GP32_LCG_GT_BR_AR_BM_AR, 
-		 TOP_GP32_LCG_GT_BR_AR_BP_AR, 
-		 TOP_GP32_LCG_GT_BR_AR_QM_AR, 
-		 TOP_GP32_LCG_GT_BR_AR_QP_AR, 
+  Instruction_Group("O_159", 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_M_U5, 
+		 TOP_GP32_LCW_GT_MD_CRH_AR_P_U5, 
 		 TOP_UNDEFINED); 
 
-  Result (0, pr); 
-  Result (1, ptr32); 
+  Result (0, ctrlh); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
+  Operand (1, md); 
+  Operand (2, ctrlh); 
+  Operand (3, ptr32, base); 
+  Operand (4, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_164", 
+  Instruction_Group("O_160", 
+		 TOP_GP32_LGR_GT_MD_AR_BM_AR, 
+		 TOP_GP32_LGR_GT_MD_AR_BP_AR, 
+		 TOP_GP32_LGR_GT_MD_AR_QM_AR, 
+		 TOP_GP32_LGR_GT_MD_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Result (1, cr9); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_161", 
 		 TOP_GP32_SCW_GT_AR_M_U9_CRH, 
 		 TOP_GP32_SCW_GT_AR_P_U9_CRH, 
 		 TOP_UNDEFINED); 
@@ -3200,26 +3173,35 @@ main()
   Operand (3, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_165", 
-		 TOP_GP32_LAH_GT_MD_AR_AR_BM_U5, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_BP_U5, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_QM_U5, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_QP_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_BM_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_BP_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_QM_U5, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_QP_U5, 
+  Instruction_Group("O_162", 
+		 TOP_GP32_LDEW_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDEW_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDEW_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDEW_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDEW_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDHH_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDHH_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDHH_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDHH_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDHH_GT_DR_AR_QP_U5, 
+		 TOP_GP32_LDLH_GT_DR_AR_BM_U5, 
+		 TOP_GP32_LDLH_GT_DR_AR_BP_U5, 
+		 TOP_GP32_LDLH_GT_DR_AR_MQ_U5, 
+		 TOP_GP32_LDLH_GT_DR_AR_QM_U5, 
+		 TOP_GP32_LDLH_GT_DR_AR_QP_U5, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
+  Result (0, int40); 
+  Same_Res (1); 
   Result (1, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
-  Operand (1, md); 
+  Operand (1, int40); 
   Operand (2, ptr32, base); 
   Operand (3, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_166", 
+  Instruction_Group("O_163", 
 		 TOP_GP32_POPRTE_RSET, 
 		 TOP_GP32_POPRTS_RSET, 
 		 TOP_GP32_POP_RSET, 
@@ -3230,7 +3212,7 @@ main()
   Operand (0, p15); 
 
   /* ====================================== */ 
-  Instruction_Group("O_167", 
+  Instruction_Group("O_164", 
 		 TOP_GP32_BOOLP_GT_DR_BR, 
 		 TOP_GP32_BOOL_GT_DR_BR, 
 		 TOP_UNDEFINED); 
@@ -3240,7 +3222,7 @@ main()
   Operand (1, pr); 
 
   /* ====================================== */ 
-  Instruction_Group("O_168", 
+  Instruction_Group("O_165", 
 		 TOP_GP32_LDBP_GT_DR_AR_M_AR, 
 		 TOP_GP32_LDBP_GT_DR_AR_P_AR, 
 		 TOP_GP32_LDBSW_GT_DR_AR_M_AR, 
@@ -3275,7 +3257,7 @@ main()
   Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_169", 
+  Instruction_Group("O_166", 
 		 TOP_GP32_SCW_GT_P13_P_U15_CRH, 
 		 TOP_UNDEFINED); 
 
@@ -3285,70 +3267,27 @@ main()
   Operand (3, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_170", 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDBP_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDBSW_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDB_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDF_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDHSW_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDH_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDP_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDUBP_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDUB_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDUH_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDUW_GT_MD_DR_AR_QP_AR, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_BM_AR, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_BP_AR, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_QM_AR, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_QP_AR, 
+  Instruction_Group("O_167", 
+		 TOP_GP32_SAH_GT_MD_AR_BM_U5_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_BP_U5_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_QM_U5_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_QP_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_BM_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_BP_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_QM_U5_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_QP_U5_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, int40); 
-  Result (1, ptr32); 
+  Result (0, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
+  Operand (3, u5, offset); 
+  Operand (4, ptr32, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_171", 
+  Instruction_Group("O_168", 
 		 TOP_GP32_BITRA_GT_AR_AR, 
 		 TOP_GP32_MOVEA_GT_AR_AR, 
 		 TOP_GP32_SHRA1_GT_AR_AR, 
@@ -3360,7 +3299,7 @@ main()
   Operand (1, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_172", 
+  Instruction_Group("O_169", 
 		 TOP_GP32_ANDNP_GT_DR_U8_DR, 
 		 TOP_GP32_ANDN_GT_DR_U8_DR, 
 		 TOP_GP32_ORNP_GT_DR_U8_DR, 
@@ -3373,19 +3312,24 @@ main()
   Operand (2, int40); 
 
   /* ====================================== */ 
-  Instruction_Group("O_173", 
-		 TOP_GP32_LCW_GT_CRL_AR_BM_U5, 
-		 TOP_GP32_LCW_GT_CRL_AR_BP_U5, 
-		 TOP_GP32_LCW_GT_CRL_AR_MQ_U5, 
-		 TOP_GP32_LCW_GT_CRL_AR_QM_U5, 
-		 TOP_GP32_LCW_GT_CRL_AR_QP_U5, 
+  Instruction_Group("O_170", 
+		 TOP_GP32_LAH_GT_MD_AR_AR_BM_AR, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_BP_AR, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_QM_AR, 
+		 TOP_GP32_LAH_GT_MD_AR_AR_QP_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_BM_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_BP_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_QM_AR, 
+		 TOP_GP32_LAW_GT_MD_AR_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ctrll); 
+  Result (0, ptr32); 
   Result (1, ptr32); 
+  Same_Res (3); 
   Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u5, offset); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_copy_br", 
@@ -3397,22 +3341,49 @@ main()
   Operand (1, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_174", 
-		 TOP_GP32_LCG_GT_BR_AR_BM_U5, 
-		 TOP_GP32_LCG_GT_BR_AR_BP_U5, 
-		 TOP_GP32_LCG_GT_BR_AR_MQ_U5, 
-		 TOP_GP32_LCG_GT_BR_AR_QM_U5, 
-		 TOP_GP32_LCG_GT_BR_AR_QP_U5, 
+  Instruction_Group("O_171", 
+		 TOP_GP32_SCW_GT_AR_BM_U5_CRH, 
+		 TOP_GP32_SCW_GT_AR_BP_U5_CRH, 
+		 TOP_GP32_SCW_GT_AR_MQ_U5_CRH, 
+		 TOP_GP32_SCW_GT_AR_QM_U5_CRH, 
+		 TOP_GP32_SCW_GT_AR_QP_U5_CRH, 
 		 TOP_UNDEFINED); 
 
-  Result (0, pr); 
-  Result (1, ptr32); 
+  Result (0, ptr32); 
+  Same_Res (1); 
   Operand (0, pr, predicate); 
   Operand (1, ptr32, base); 
   Operand (2, u5, offset); 
+  Operand (3, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_175", 
+  Instruction_Group("O_172", 
+		 TOP_GP32_NOTG_GT_BR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, pr); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, pr); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_173", 
+		 TOP_GP32_LGR_GT_MD_AR_BM_U5, 
+		 TOP_GP32_LGR_GT_MD_AR_BP_U5, 
+		 TOP_GP32_LGR_GT_MD_AR_QM_U5, 
+		 TOP_GP32_LGR_GT_MD_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Result (1, cr9); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_174", 
 		 TOP_GP32_GOTO_GF_S21, 
 		 TOP_UNDEFINED); 
 
@@ -3421,7 +3392,7 @@ main()
   Operand (1, s21, target); 
 
   /* ====================================== */ 
-  Instruction_Group("O_176", 
+  Instruction_Group("O_175", 
 		 TOP_GP32_SFR_GT_AR_M_U9, 
 		 TOP_GP32_SFR_GT_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -3433,7 +3404,7 @@ main()
   Operand (3, cr8); 
 
   /* ====================================== */ 
-  Instruction_Group("O_177", 
+  Instruction_Group("O_176", 
 		 TOP_GP32_SGR_GT_AR_M_U9, 
 		 TOP_GP32_SGR_GT_AR_P_U9, 
 		 TOP_UNDEFINED); 
@@ -3445,7 +3416,7 @@ main()
   Operand (3, cr9); 
 
   /* ====================================== */ 
-  Instruction_Group("O_178", 
+  Instruction_Group("O_177", 
 		 TOP_GP32_MAKEC_GT_CRL_P3, 
 		 TOP_UNDEFINED); 
 
@@ -3454,7 +3425,7 @@ main()
   Operand (1, p3, implicit); 
 
   /* ====================================== */ 
-  Instruction_Group("O_179", 
+  Instruction_Group("O_178", 
 		 TOP_GP32_SDBP_GT_AR_M_U9_DR, 
 		 TOP_GP32_SDBP_GT_AR_P_U9_DR, 
 		 TOP_GP32_SDBSW_GT_AR_M_U9_DR, 
@@ -3481,44 +3452,35 @@ main()
   Operand (3, int40, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_180", 
-		 TOP_GP32_LDEW_GT_DR_AR_M_U9, 
-		 TOP_GP32_LDEW_GT_DR_AR_P_U9, 
-		 TOP_GP32_LDHH_GT_DR_AR_M_U9, 
-		 TOP_GP32_LDHH_GT_DR_AR_P_U9, 
-		 TOP_GP32_LDLH_GT_DR_AR_M_U9, 
-		 TOP_GP32_LDLH_GT_DR_AR_P_U9, 
+  Instruction_Group("O_179", 
+		 TOP_GP32_LCG_GT_MD_BR_AR_BM_AR, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_BP_AR, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_QM_AR, 
+		 TOP_GP32_LCG_GT_MD_BR_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, ptr32, base); 
-  Operand (3, u9, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_181", 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDEW_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDHH_GT_MD_DR_AR_QP_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_BM_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_BP_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDLH_GT_MD_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
+  Result (0, pr); 
   Result (1, ptr32); 
+  Same_Res (3); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
-  Operand (2, int40); 
-  Operand (3, ptr32, base); 
-  Operand (4, u5, offset); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_180", 
+		 TOP_GP32_LCW_GT_CRL_AR_BM_AR, 
+		 TOP_GP32_LCW_GT_CRL_AR_BP_AR, 
+		 TOP_GP32_LCW_GT_CRL_AR_QM_AR, 
+		 TOP_GP32_LCW_GT_CRL_AR_QP_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrll); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
   Instruction_Group("O_GP32_CALL_S25", 
@@ -3528,7 +3490,7 @@ main()
   Operand (0, s25); 
 
   /* ====================================== */ 
-  Instruction_Group("O_182", 
+  Instruction_Group("O_181", 
 		 TOP_GP32_SDBP_GT_P13_P_U15_DR, 
 		 TOP_GP32_SDBSW_GT_P13_P_U15_DR, 
 		 TOP_GP32_SDB_GT_P13_P_U15_DR, 
@@ -3546,7 +3508,7 @@ main()
   Operand (3, int40, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_183", 
+  Instruction_Group("O_182", 
 		 TOP_GP32_SCW_GT_MD_AR_M_U5_CRH, 
 		 TOP_GP32_SCW_GT_MD_AR_P_U5_CRH, 
 		 TOP_UNDEFINED); 
@@ -3558,45 +3520,101 @@ main()
   Operand (4, ctrlh, storeval); 
 
   /* ====================================== */ 
-  Instruction_Group("O_184", 
-		 TOP_GP32_MORE_GT_DR_U16, 
+  Instruction_Group("O_183", 
+		 TOP_GP32_SAH_GT_MD_AR_BM_AR_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_BP_AR_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_QM_AR_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_QP_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_BM_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_BP_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_QM_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_QP_AR_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, int40); 
-  Operand (0, pr, predicate); 
-  Operand (1, int40); 
-  Operand (2, u16); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_185", 
-		 TOP_GP32_LDW_GT_MD_DR_AR_QM_U5, 
-		 TOP_GP32_LDW_GT_MD_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
+  Result (0, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, md); 
   Operand (2, ptr32, base); 
-  Operand (3, u7, offset); 
+  Operand (3, ptr32, offset); 
+  Operand (4, ptr32, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_184", 
+		 TOP_GP32_LCW_GT_CRH_AR_BM_U5, 
+		 TOP_GP32_LCW_GT_CRH_AR_BP_U5, 
+		 TOP_GP32_LCW_GT_CRH_AR_MQ_U5, 
+		 TOP_GP32_LCW_GT_CRH_AR_QM_U5, 
+		 TOP_GP32_LCW_GT_CRH_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrlh); 
+  Same_Res (1); 
+  Result (1, ptr32); 
+  Same_Res (2); 
+  Operand (0, pr, predicate); 
+  Operand (1, ctrlh); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_185", 
+		 TOP_GP32_SDBP_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDBP_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDBP_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDBP_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDBP_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDBSW_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDBSW_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDBSW_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDBSW_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDBSW_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDB_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDB_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDB_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDB_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDB_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDEW_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDEW_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDEW_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDEW_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDEW_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDF_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDF_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDF_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDF_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDF_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDHSW_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDHSW_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDHSW_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDHSW_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDHSW_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDH_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDH_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDH_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDH_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDH_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDP_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDP_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDP_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDP_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDP_GT_AR_QP_U5_DR, 
+		 TOP_GP32_SDW_GT_AR_BM_U5_DR, 
+		 TOP_GP32_SDW_GT_AR_BP_U5_DR, 
+		 TOP_GP32_SDW_GT_AR_MQ_U5_DR, 
+		 TOP_GP32_SDW_GT_AR_QM_U5_DR, 
+		 TOP_GP32_SDW_GT_AR_QP_U5_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, u5, offset); 
+  Operand (3, int40, storeval); 
 
   /* ====================================== */ 
   Instruction_Group("O_186", 
-		 TOP_GP32_LDW_GT_DR_AR_BM_U5, 
-		 TOP_GP32_LDW_GT_DR_AR_BP_U5, 
-		 TOP_GP32_LDW_GT_DR_AR_MQ_U5, 
-		 TOP_GP32_LDW_GT_DR_AR_QM_U5, 
-		 TOP_GP32_LDW_GT_DR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, int40); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, u7, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_187", 
 		 TOP_GP32_LGR_GT_MD_AR_M_AR, 
 		 TOP_GP32_LGR_GT_MD_AR_P_AR, 
 		 TOP_UNDEFINED); 
@@ -3608,7 +3626,37 @@ main()
   Operand (3, ptr32, offset); 
 
   /* ====================================== */ 
+  Instruction_Group("O_187", 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_BM_U5, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_BP_U5, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_QM_U5, 
+		 TOP_GP32_LCW_GT_MD_CRL_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ctrll); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
   Instruction_Group("O_188", 
+		 TOP_GP32_MOVEHH_GT_DR_DR, 
+		 TOP_GP32_MOVEHL_GT_DR_DR, 
+		 TOP_GP32_MOVELH_GT_DR_DR, 
+		 TOP_GP32_MOVELL_GT_DR_DR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, int40); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_189", 
 		 TOP_GP32_LCW_GT_MD_CRL_AR_M_U5, 
 		 TOP_GP32_LCW_GT_MD_CRL_AR_P_U5, 
 		 TOP_UNDEFINED); 
@@ -3620,112 +3668,7 @@ main()
   Operand (3, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_189", 
-		 TOP_GP32_GETP15U_GT_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, p15); 
-
-  /* ====================================== */ 
   Instruction_Group("O_190", 
-		 TOP_GP32_SETILE2_S16, 
-		 TOP_GP32_SETLE2_S16, 
-		 TOP_GP32_SETLS2_S16, 
-		 TOP_GP32_SETULS2_S16, 
-		 TOP_UNDEFINED); 
-
-  Result (0, lr2); 
-  Operand (0, s16, target); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_191", 
-		 TOP_GP32_LGR_GT_MD_AR_BM_AR, 
-		 TOP_GP32_LGR_GT_MD_AR_BP_AR, 
-		 TOP_GP32_LGR_GT_MD_AR_QM_AR, 
-		 TOP_GP32_LGR_GT_MD_AR_QP_AR, 
-		 TOP_UNDEFINED); 
-
-  Result (0, ptr32); 
-  Result (1, cr9); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_192", 
-		 TOP_GP32_SAH_GT_MD_AR_M_AR_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_P_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_M_AR_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_P_AR_AR, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, ptr32, offset); 
-  Operand (4, ptr32, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_193", 
-		 TOP_GP32_LCG_GT_MD_BR_AR_BM_U5, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_BP_U5, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_QM_U5, 
-		 TOP_GP32_LCG_GT_MD_BR_AR_QP_U5, 
-		 TOP_UNDEFINED); 
-
-  Result (0, pr); 
-  Result (1, ptr32); 
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_194", 
-		 TOP_GP32_SDBP_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDBP_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDBSW_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDB_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDEW_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDF_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDHSW_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDH_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDP_GT_MD_AR_P_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_M_U5_DR, 
-		 TOP_GP32_SDW_GT_MD_AR_P_U5_DR, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, int40, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_195", 
-		 TOP_GP32_SAH_GT_AR_M_AR_AR, 
-		 TOP_GP32_SAH_GT_AR_P_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_M_AR_AR, 
-		 TOP_GP32_SAW_GT_AR_P_AR_AR, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, pr, predicate); 
-  Operand (1, ptr32, base); 
-  Operand (2, ptr32, offset); 
-  Operand (3, ptr32, storeval); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_196", 
 		 TOP_GP32_LDBP_GT_DR_AR_BM_AR, 
 		 TOP_GP32_LDBP_GT_DR_AR_BP_AR, 
 		 TOP_GP32_LDBP_GT_DR_AR_QM_AR, 
@@ -3782,9 +3725,102 @@ main()
 
   Result (0, int40); 
   Result (1, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
   Operand (1, ptr32, base); 
   Operand (2, ptr32, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_191", 
+		 TOP_GP32_GETP15U_GT_AR, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Operand (0, pr, predicate); 
+  Operand (1, p15); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_192", 
+		 TOP_GP32_SETILE2_S16, 
+		 TOP_GP32_SETLE2_S16, 
+		 TOP_GP32_SETLS2_S16, 
+		 TOP_GP32_SETULS2_S16, 
+		 TOP_UNDEFINED); 
+
+  Result (0, lr2); 
+  Operand (0, s16, target); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_193", 
+		 TOP_GP32_SAH_GT_MD_AR_M_AR_AR, 
+		 TOP_GP32_SAH_GT_MD_AR_P_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_M_AR_AR, 
+		 TOP_GP32_SAW_GT_MD_AR_P_AR_AR, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, ptr32, offset); 
+  Operand (4, ptr32, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_194", 
+		 TOP_GP32_LDEW_GT_DR_AR_M_U9, 
+		 TOP_GP32_LDEW_GT_DR_AR_P_U9, 
+		 TOP_GP32_LDHH_GT_DR_AR_M_U9, 
+		 TOP_GP32_LDHH_GT_DR_AR_P_U9, 
+		 TOP_GP32_LDLH_GT_DR_AR_M_U9, 
+		 TOP_GP32_LDLH_GT_DR_AR_P_U9, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Same_Res (1); 
+  Operand (0, pr, predicate); 
+  Operand (1, int40); 
+  Operand (2, ptr32, base); 
+  Operand (3, u9, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_195", 
+		 TOP_GP32_SDBP_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDBP_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDBSW_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDB_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDEW_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDF_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDHSW_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDH_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDP_GT_MD_AR_P_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_M_U5_DR, 
+		 TOP_GP32_SDW_GT_MD_AR_P_U5_DR, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+  Operand (4, int40, storeval); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_196", 
+		 TOP_GP32_SAH_GT_AR_M_AR_AR, 
+		 TOP_GP32_SAH_GT_AR_P_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_M_AR_AR, 
+		 TOP_GP32_SAW_GT_AR_P_AR_AR, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, pr, predicate); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
+  Operand (3, ptr32, storeval); 
 
   /* ====================================== */ 
   Instruction_Group("O_197", 
@@ -3798,6 +3834,22 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_198", 
+		 TOP_GP32_LFR_GT_MD_AR_BM_U5, 
+		 TOP_GP32_LFR_GT_MD_AR_BP_U5, 
+		 TOP_GP32_LFR_GT_MD_AR_QM_U5, 
+		 TOP_GP32_LFR_GT_MD_AR_QP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, ptr32); 
+  Same_Res (2); 
+  Result (1, cr8); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_199", 
 		 TOP_GP32_LCW_GT_CRL_P13_P_U15, 
 		 TOP_UNDEFINED); 
 
@@ -3807,7 +3859,69 @@ main()
   Operand (2, u15, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_199", 
+  Instruction_Group("O_200", 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDBP_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDBSW_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDB_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDF_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDHSW_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDH_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDP_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDSETUB_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDUBP_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDUB_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDUH_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_BP_U5, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_QM_U5, 
+		 TOP_GP32_LDUW_GT_MD_DR_AR_QP_U5, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_BM_U5, 
+		 TOP_GP32_LDW_GT_MD_DR_AR_BP_U5, 
+		 TOP_UNDEFINED); 
+
+  Result (0, int40); 
+  Result (1, ptr32); 
+  Same_Res (3); 
+  Operand (0, pr, predicate); 
+  Operand (1, md); 
+  Operand (2, ptr32, base); 
+  Operand (3, u5, offset); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_201", 
 		 TOP_GP32_FA_GT_BR_AR, 
 		 TOP_GP32_TA_GT_BR_AR, 
 		 TOP_UNDEFINED); 
@@ -3817,7 +3931,7 @@ main()
   Operand (1, ptr32); 
 
   /* ====================================== */ 
-  Instruction_Group("O_200", 
+  Instruction_Group("O_202", 
 		 TOP_GP32_LDBP_GT_MD_DR_AR_M_U5, 
 		 TOP_GP32_LDBP_GT_MD_DR_AR_P_U5, 
 		 TOP_GP32_LDBSW_GT_MD_DR_AR_M_U5, 
@@ -3851,7 +3965,7 @@ main()
   Operand (3, u5, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_201", 
+  Instruction_Group("O_203", 
 		 TOP_GP32_CLAMPW_GT_DR_DR, 
 		 TOP_GP32_EXTB_GT_DR_DR, 
 		 TOP_GP32_EXTH_GT_DR_DR, 
@@ -3901,40 +4015,34 @@ main()
 
 
   /* ====================================== */ 
-  Instruction_Group("O_202", 
-		 TOP_GP32_SAH_GT_MD_AR_BM_U5_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_BP_U5_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_QM_U5_AR, 
-		 TOP_GP32_SAH_GT_MD_AR_QP_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_BM_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_BP_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_QM_U5_AR, 
-		 TOP_GP32_SAW_GT_MD_AR_QP_U5_AR, 
+  Instruction_Group("O_204", 
+		 TOP_GP32_LCG_GT_BR_AR_BM_AR, 
+		 TOP_GP32_LCG_GT_BR_AR_BP_AR, 
+		 TOP_GP32_LCG_GT_BR_AR_QM_AR, 
+		 TOP_GP32_LCG_GT_BR_AR_QP_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
+  Result (0, pr); 
+  Result (1, ptr32); 
+  Same_Res (2); 
   Operand (0, pr, predicate); 
-  Operand (1, md); 
-  Operand (2, ptr32, base); 
-  Operand (3, u5, offset); 
-  Operand (4, ptr32, storeval); 
+  Operand (1, ptr32, base); 
+  Operand (2, ptr32, offset); 
 
   /* ====================================== */ 
-  Instruction_Group("O_203", 
-		 TOP_GP32_LAH_GT_MD_AR_AR_BM_AR, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_BP_AR, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_QM_AR, 
-		 TOP_GP32_LAH_GT_MD_AR_AR_QP_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_BM_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_BP_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_QM_AR, 
-		 TOP_GP32_LAW_GT_MD_AR_AR_QP_AR, 
+  Instruction_Group("O_205", 
+		 TOP_GP32_LDEW_GT_DR_AR_M_AR, 
+		 TOP_GP32_LDEW_GT_DR_AR_P_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_M_AR, 
+		 TOP_GP32_LDHH_GT_DR_AR_P_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_M_AR, 
+		 TOP_GP32_LDLH_GT_DR_AR_P_AR, 
 		 TOP_UNDEFINED); 
 
-  Result (0, ptr32); 
-  Result (1, ptr32); 
+  Result (0, int40); 
+  Same_Res (1); 
   Operand (0, pr, predicate); 
-  Operand (1, md); 
+  Operand (1, int40); 
   Operand (2, ptr32, base); 
   Operand (3, ptr32, offset); 
 

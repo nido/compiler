@@ -93,16 +93,16 @@ main()
 		p34, 	// *
 		p35, 	// *
 		p36, 	// *
-		p37, 	// *
+		p37, 	// GP32_RTS_GT
 		p38, 	// *
 		p39, 	// *
 		p40, 	// *
 		p41, 	// *
 		p42, 	// *
 		p43, 	// *
-		p44, 	// pregtn
-		p45, 	// spadjust
-		p46, 	// *
+		p44, 	// *
+		p45, 	// pregtn
+		p46, 	// spadjust
 		p47, 	// *
 		p48, 	// *
 		p49, 	// *
@@ -111,8 +111,8 @@ main()
 		p52, 	// *
 		p53, 	// *
 		p54, 	// *
-		p55, 	// label
-		p56, 	// *
+		p55, 	// *
+		p56, 	// label
 		p57, 	// *
 		p58, 	// *
 		p59, 	// *
@@ -129,8 +129,8 @@ main()
 		p70, 	// *
 		p71, 	// *
 		p72, 	// *
-		p73, 	// fixup
-		p74, 	// *
+		p73, 	// *
+		p74, 	// fixup
 		p75, 	// *
 		p76, 	// *
 		p77, 	// *
@@ -150,8 +150,8 @@ main()
 		p91, 	// *
 		p92, 	// *
 		p93, 	// *
-		p94, 	// asm
-		p95, 	// *
+		p94, 	// *
+		p95, 	// asm
 		p96, 	// *
 		p97, 	// *
 		p98, 	// *
@@ -162,8 +162,8 @@ main()
 		p103, 	// *
 		p104, 	// *
 		p105, 	// *
-		p106, 	// noop
-		p107, 	// *
+		p106, 	// *
+		p107, 	// noop
 		p108, 	// *
 		p109, 	// *
 		p110, 	// *
@@ -195,8 +195,8 @@ main()
 		p136, 	// *
 		p137, 	// *
 		p138, 	// *
-		p139, 	// fixup
-		p140, 	// *
+		p139, 	// *
+		p140, 	// fixup
 		p141, 	// *
 		p142, 	// *
 		p143, 	// *
@@ -238,8 +238,8 @@ main()
 		p179, 	// *
 		p180, 	// *
 		p181, 	// *
-		p182, 	// copy_br
-		p183, 	// *
+		p182, 	// *
+		p183, 	// copy_br
 		p184, 	// *
 		p185, 	// *
 		p186, 	// *
@@ -247,8 +247,8 @@ main()
 		p188, 	// *
 		p189, 	// *
 		p190, 	// *
-		p191, 	// GP32_CALL_S25
-		p192, 	// *
+		p191, 	// *
+		p192, 	// GP32_CALL_S25
 		p193, 	// *
 		p194, 	// *
 		p195, 	// *
@@ -268,11 +268,12 @@ main()
 		p209, 	// *
 		p210, 	// *
 		p211, 	// *
-		p212, 	// barrier
-		p213, 	// intrncall
-		p214, 	// *
+		p212, 	// *
+		p213, 	// barrier
+		p214, 	// intrncall
 		p215, 	// *
-		p216; 	// *
+		p216, 	// *
+		p217; 	// *
 
   OPND_ADJ_TYPE	no_adj; 
 
@@ -514,7 +515,6 @@ main()
   Operand (0, 0, 0, 1); 
   Instruction_Pack_Group(p14, 
 	TOP_GP32_BKP_GT, 	 0x10000000UL, 
-	TOP_GP32_RTS_GT, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p15: ===== */ 
@@ -1193,21 +1193,30 @@ main()
   p37 = ISA_Pack_Type_Create("p37"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
-  Operand (2, 0, 1, 5); 
-  Operand (3, 0, 6, 5); 
-  Operand (4, 0, 11, 5); 
+  Operand (1, 0, 6, 5); 
   Instruction_Pack_Group(p37, 
-	TOP_GP32_SCW_GT_MD_AR_M_AR_CRH, 	 0x10000000UL, 
-	TOP_GP32_SCW_GT_MD_AR_P_AR_CRH, 	 0x10000000UL, 
+	TOP_GP32_RTS_GT, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p38: ===== */ 
   p38 = ISA_Pack_Type_Create("p38"); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 1, 5); 
+  Operand (3, 0, 6, 5); 
+  Operand (4, 0, 11, 5); 
+  Instruction_Pack_Group(p38, 
+	TOP_GP32_SCW_GT_MD_AR_M_AR_CRH, 	 0x10000000UL, 
+	TOP_GP32_SCW_GT_MD_AR_P_AR_CRH, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p39: ===== */ 
+  p39 = ISA_Pack_Type_Create("p39"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p38, 
+  Instruction_Pack_Group(p39, 
 	TOP_GP32_ADDCP_GT_DR_DR_U8, 	 0x10000000UL, 
 	TOP_GP32_ADDCW_GT_DR_DR_U8, 	 0x10000000UL, 
 	TOP_GP32_ADDP_GT_DR_DR_U8, 	 0x10000000UL, 
@@ -1234,43 +1243,43 @@ main()
 	TOP_GP32_XOR_GT_DR_DR_U8, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p39: ===== */ 
-  p39 = ISA_Pack_Type_Create("p39"); 
+/* =====  p40: ===== */ 
+  p40 = ISA_Pack_Type_Create("p40"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p39, 
+  Instruction_Pack_Group(p40, 
 	TOP_GP32_SHLUM_GT_DR_U5, 	 0x10000000UL, 
 	TOP_GP32_SHRUWM_GT_DR_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p40: ===== */ 
-  p40 = ISA_Pack_Type_Create("p40"); 
+/* =====  p41: ===== */ 
+  p41 = ISA_Pack_Type_Create("p41"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p40, 
+  Instruction_Pack_Group(p41, 
 	TOP_GP32_SCW_GT_AR_M_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_P_AR_CRH, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p41: ===== */ 
-  p41 = ISA_Pack_Type_Create("p41"); 
+/* =====  p42: ===== */ 
+  p42 = ISA_Pack_Type_Create("p42"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p41, 
+  Instruction_Pack_Group(p42, 
 	TOP_GP32_LAH_GT_MD_AR_AR_M_AR, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_MD_AR_AR_P_AR, 	 0x10000000UL, 
 	TOP_GP32_LAW_GT_MD_AR_AR_M_AR, 	 0x10000000UL, 
 	TOP_GP32_LAW_GT_MD_AR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p42: ===== */ 
-  p42 = ISA_Pack_Type_Create("p42"); 
+/* =====  p43: ===== */ 
+  p43 = ISA_Pack_Type_Create("p43"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
@@ -1278,50 +1287,50 @@ main()
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p42, 
+  Instruction_Pack_Group(p43, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_QM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p43: ===== */ 
-  p43 = ISA_Pack_Type_Create("p43"); 
+/* =====  p44: ===== */ 
+  p44 = ISA_Pack_Type_Create("p44"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p43, 
+  Instruction_Pack_Group(p44, 
 	TOP_GP32_LGR_GT_MD_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p44: ===== */ 
-  p44 = ISA_Pack_Type_Create("p44"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 0, 5); 
-  Instruction_Pack_Group(p44, 
-	TOP_UNDEFINED); 
-
 /* =====  p45: ===== */ 
   p45 = ISA_Pack_Type_Create("p45"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
+  Operand (0, 0, 0, 5); 
+  Operand (1, 0, 0, 5); 
   Instruction_Pack_Group(p45, 
 	TOP_UNDEFINED); 
 
 /* =====  p46: ===== */ 
   p46 = ISA_Pack_Type_Create("p46"); 
   Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Instruction_Pack_Group(p46, 
+	TOP_UNDEFINED); 
+
+/* =====  p47: ===== */ 
+  p47 = ISA_Pack_Type_Create("p47"); 
+  Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p46, 
+  Instruction_Pack_Group(p47, 
 	TOP_GP32_LCW_GT_CRH_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRH_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRH_AR_MQ_U5, 	 0x10000000UL, 
@@ -1329,29 +1338,29 @@ main()
 	TOP_GP32_LCW_GT_CRH_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p47: ===== */ 
-  p47 = ISA_Pack_Type_Create("p47"); 
+/* =====  p48: ===== */ 
+  p48 = ISA_Pack_Type_Create("p48"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p47, 
+  Instruction_Pack_Group(p48, 
 	TOP_GP32_SCW_GT_MD_AR_BM_U5_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_BP_U5_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QM_U5_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QP_U5_CRH, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p48: ===== */ 
-  p48 = ISA_Pack_Type_Create("p48"); 
+/* =====  p49: ===== */ 
+  p49 = ISA_Pack_Type_Create("p49"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p48, 
+  Instruction_Pack_Group(p49, 
 	TOP_GP32_FBCLRP_GT_BR_DR_DR_U4, 	 0x10000000UL, 
 	TOP_GP32_FBNOTP_GT_BR_DR_DR_U4, 	 0x10000000UL, 
 	TOP_GP32_FBSETP_GT_BR_DR_DR_U4, 	 0x10000000UL, 
@@ -1360,31 +1369,15 @@ main()
 	TOP_GP32_TBSETP_GT_BR_DR_DR_U4, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p49: ===== */ 
-  p49 = ISA_Pack_Type_Create("p49"); 
+/* =====  p50: ===== */ 
+  p50 = ISA_Pack_Type_Create("p50"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p49, 
+  Instruction_Pack_Group(p50, 
 	TOP_GP32_LFR_GT_AR_M_U9, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_P_U9, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p50: ===== */ 
-  p50 = ISA_Pack_Type_Create("p50"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
-  Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p50, 
-	TOP_GP32_FBCLR_GT_BR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_FBNOT_GT_BR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_FBSET_GT_BR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_TBCLR_GT_BR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_TBNOT_GT_BR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_TBSET_GT_BR_DR_DR_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p51: ===== */ 
@@ -1394,8 +1387,24 @@ main()
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
-  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p51, 
+	TOP_GP32_FBCLR_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_FBNOT_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_FBSET_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_TBCLR_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_TBNOT_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_TBSET_GT_BR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p52: ===== */ 
+  p52 = ISA_Pack_Type_Create("p52"); 
+  Result(0, 0, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Operand (2, 0, 12, 5); 
+  Operand (3, 0, 12, 5); 
+  Instruction_Pack_Group(p52, 
 	TOP_GP32_EQEINS_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EQPINS_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EQUEINS_GT_BR_DR_DR_DR, 	 0x10000000UL, 
@@ -1434,23 +1443,23 @@ main()
 	TOP_GP32_NEWINS_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p52: ===== */ 
-  p52 = ISA_Pack_Type_Create("p52"); 
+/* =====  p53: ===== */ 
+  p53 = ISA_Pack_Type_Create("p53"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p52, 
+  Instruction_Pack_Group(p53, 
 	TOP_GP32_MAKEB_GT_DR_S32, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p53: ===== */ 
-  p53 = ISA_Pack_Type_Create("p53"); 
+/* =====  p54: ===== */ 
+  p54 = ISA_Pack_Type_Create("p54"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p53, 
+  Instruction_Pack_Group(p54, 
 	TOP_GP32_SDBP_GT_MD_AR_M_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_P_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBSW_GT_MD_AR_M_AR_DR, 	 0x10000000UL, 
@@ -1471,13 +1480,13 @@ main()
 	TOP_GP32_SDW_GT_MD_AR_P_AR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p54: ===== */ 
-  p54 = ISA_Pack_Type_Create("p54"); 
+/* =====  p55: ===== */ 
+  p55 = ISA_Pack_Type_Create("p55"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p54, 
+  Instruction_Pack_Group(p55, 
 	TOP_GP32_SDBP_GT_AR_M_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_AR_P_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBSW_GT_AR_M_AR_DR, 	 0x10000000UL, 
@@ -1498,23 +1507,10 @@ main()
 	TOP_GP32_SDW_GT_AR_P_AR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p55: ===== */ 
-  p55 = ISA_Pack_Type_Create("p55"); 
-  Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p55, 
-	TOP_UNDEFINED); 
-
 /* =====  p56: ===== */ 
   p56 = ISA_Pack_Type_Create("p56"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
+  Operand (0, 0, 0, 5); 
   Instruction_Pack_Group(p56, 
-	TOP_GP32_LAH_GT_AR_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LAH_GT_AR_AR_P_U9, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_AR_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_AR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p57: ===== */ 
@@ -1522,41 +1518,16 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
-  Operand (3, 0, 17, 5); 
-  Operand (4, 0, 22, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p57, 
-	TOP_GP32_SFR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
+	TOP_GP32_LAH_GT_AR_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LAH_GT_AR_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_AR_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_AR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p58: ===== */ 
   p58 = ISA_Pack_Type_Create("p58"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p58, 
-	TOP_GP32_SETILE1_S16, 	 0x10000000UL, 
-	TOP_GP32_SETLE1_S16, 	 0x10000000UL, 
-	TOP_GP32_SETLS1_S16, 	 0x10000000UL, 
-	TOP_GP32_SETULS1_S16, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p59: ===== */ 
-  p59 = ISA_Pack_Type_Create("p59"); 
-  Operand (0, 0, 0, 1); 
-  Operand (1, 0, 1, 5); 
-  Operand (2, 0, 6, 5); 
-  Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p59, 
-	TOP_GP32_SCW_GT_AR_M_U9_CRL, 	 0x10000000UL, 
-	TOP_GP32_SCW_GT_AR_P_U9_CRL, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p60: ===== */ 
-  p60 = ISA_Pack_Type_Create("p60"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
@@ -1564,11 +1535,33 @@ main()
   Operand (3, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
   Operand (4, 0, 22, 5); 
+  Instruction_Pack_Group(p58, 
+	TOP_GP32_SFR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p59: ===== */ 
+  p59 = ISA_Pack_Type_Create("p59"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 5); 
+  Instruction_Pack_Group(p59, 
+	TOP_GP32_SETILE1_S16, 	 0x10000000UL, 
+	TOP_GP32_SETLE1_S16, 	 0x10000000UL, 
+	TOP_GP32_SETLS1_S16, 	 0x10000000UL, 
+	TOP_GP32_SETULS1_S16, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p60: ===== */ 
+  p60 = ISA_Pack_Type_Create("p60"); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 6, 5); 
+  Operand (3, 0, 11, 5); 
   Instruction_Pack_Group(p60, 
-	TOP_GP32_SGR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
+	TOP_GP32_SCW_GT_AR_M_U9_CRL, 	 0x10000000UL, 
+	TOP_GP32_SCW_GT_AR_P_U9_CRL, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p61: ===== */ 
@@ -1578,8 +1571,24 @@ main()
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
-  Operand (4, 0, 17, 5); 
+  Operand (3, 0, 17, 5); 
+  Operand (4, 0, 22, 5); 
   Instruction_Pack_Group(p61, 
+	TOP_GP32_SGR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p62: ===== */ 
+  p62 = ISA_Pack_Type_Create("p62"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
+  Operand (4, 0, 17, 5); 
+  Instruction_Pack_Group(p62, 
 	TOP_GP32_SDBP_GT_MD_AR_BM_U5_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_BP_U5_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_QM_U5_DR, 	 0x10000000UL, 
@@ -1618,14 +1627,14 @@ main()
 	TOP_GP32_SDW_GT_MD_AR_QP_U5_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p62: ===== */ 
-  p62 = ISA_Pack_Type_Create("p62"); 
+/* =====  p63: ===== */ 
+  p63 = ISA_Pack_Type_Create("p63"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p62, 
+  Instruction_Pack_Group(p63, 
 	TOP_GP32_SAH_GT_AR_BM_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_BP_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_QM_AR_AR, 	 0x10000000UL, 
@@ -1636,14 +1645,14 @@ main()
 	TOP_GP32_SAW_GT_AR_QP_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p63: ===== */ 
-  p63 = ISA_Pack_Type_Create("p63"); 
+/* =====  p64: ===== */ 
+  p64 = ISA_Pack_Type_Create("p64"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p63, 
+  Instruction_Pack_Group(p64, 
 	TOP_GP32_LAH_GT_AR_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_AR_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_AR_AR_MQ_U5, 	 0x10000000UL, 
@@ -1656,15 +1665,15 @@ main()
 	TOP_GP32_LAW_GT_AR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p64: ===== */ 
-  p64 = ISA_Pack_Type_Create("p64"); 
+/* =====  p65: ===== */ 
+  p65 = ISA_Pack_Type_Create("p65"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
   Operand (3, 0, 22, 5); 
-  Instruction_Pack_Group(p64, 
+  Instruction_Pack_Group(p65, 
 	TOP_GP32_SFR_GT_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_SFR_GT_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_SFR_GT_AR_MQ_U5, 	 0x10000000UL, 
@@ -1672,33 +1681,17 @@ main()
 	TOP_GP32_SFR_GT_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p65: ===== */ 
-  p65 = ISA_Pack_Type_Create("p65"); 
+/* =====  p66: ===== */ 
+  p66 = ISA_Pack_Type_Create("p66"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 7, 5); 
   Operand (4, 0, 12, 5); 
-  Instruction_Pack_Group(p65, 
+  Instruction_Pack_Group(p66, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_P_U5, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p66: ===== */ 
-  p66 = ISA_Pack_Type_Create("p66"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
-  Operand (3, 0, 22, 5); 
-  Instruction_Pack_Group(p66, 
-	TOP_GP32_SGR_GT_AR_BM_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_BP_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_MQ_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p67: ===== */ 
@@ -1707,9 +1700,14 @@ main()
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
+  Operand (2, 0, 17, 5); 
+  Operand (3, 0, 22, 5); 
   Instruction_Pack_Group(p67, 
-	TOP_GP32_LCW_GT_CRL_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRL_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_BM_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_BP_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_MQ_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p68: ===== */ 
@@ -1717,30 +1715,32 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p68, 
+	TOP_GP32_LCW_GT_CRL_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_P_U9, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p69: ===== */ 
+  p69 = ISA_Pack_Type_Create("p69"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Instruction_Pack_Group(p69, 
 	TOP_GP32_ADDBA_GT_AR_P13_U15, 	 0x10000000UL, 
 	TOP_GP32_ADDHA_GT_AR_P13_U15, 	 0x10000000UL, 
 	TOP_GP32_ADDWA_GT_AR_P13_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p69: ===== */ 
-  p69 = ISA_Pack_Type_Create("p69"); 
+/* =====  p70: ===== */ 
+  p70 = ISA_Pack_Type_Create("p70"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p69, 
-	TOP_GP32_SCW_GT_P13_P_U15_CRL, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p70: ===== */ 
-  p70 = ISA_Pack_Type_Create("p70"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
   Instruction_Pack_Group(p70, 
-	TOP_GP32_MAKEPR_GT_S21, 	 0x10000000UL, 
+	TOP_GP32_SCW_GT_P13_P_U15_CRL, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p71: ===== */ 
@@ -1748,15 +1748,8 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 7, 5); 
   Instruction_Pack_Group(p71, 
-	TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_ADDWA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_SUBBA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_SUBHA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_SUBWA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_MAKEPR_GT_S21, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p72: ===== */ 
@@ -1765,21 +1758,37 @@ main()
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
+  Operand (3, 0, 7, 5); 
   Instruction_Pack_Group(p72, 
-	TOP_GP32_LFR_GT_MD_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LFR_GT_MD_AR_P_U5, 	 0x10000000UL, 
+	TOP_GP32_ADDBA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_ADDHA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_ADDWA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_SUBBA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_SUBHA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_SUBWA_GT_MD_AR_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p73: ===== */ 
   p73 = ISA_Pack_Type_Create("p73"); 
   Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p73, 
+	TOP_GP32_LFR_GT_MD_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LFR_GT_MD_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p74: ===== */ 
   p74 = ISA_Pack_Type_Create("p74"); 
+  Result(0, 0, 5); 
   Instruction_Pack_Group(p74, 
+	TOP_UNDEFINED); 
+
+/* =====  p75: ===== */ 
+  p75 = ISA_Pack_Type_Create("p75"); 
+  Instruction_Pack_Group(p75, 
 	TOP_GP32_BARRIER, 	 0x10000000UL, 
 	TOP_GP32_GP32MD, 	 0x10000000UL, 
 	TOP_GP32_LOOPDIS, 	 0x10000000UL, 
@@ -1787,17 +1796,6 @@ main()
 	TOP_GP32_NOP, 	 0x10000000UL, 
 	TOP_GP32_RTE, 	 0x10000000UL, 
 	TOP_GP32_SLIWMD, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p75: ===== */ 
-  p75 = ISA_Pack_Type_Create("p75"); 
-  Operand (0, 0, 0, 1); 
-  Operand (1, 0, 1, 5); 
-  Operand (2, 0, 6, 5); 
-  Operand (2, 0, 11, 5); 
-  Operand (3, 0, 16, 5); 
-  Instruction_Pack_Group(p75, 
-	TOP_GP32_SFR_GT_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p76: ===== */ 
@@ -1808,18 +1806,18 @@ main()
   Operand (2, 0, 11, 5); 
   Operand (3, 0, 16, 5); 
   Instruction_Pack_Group(p76, 
-	TOP_GP32_SGR_GT_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p77: ===== */ 
   p77 = ISA_Pack_Type_Create("p77"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 6, 5); 
+  Operand (2, 0, 11, 5); 
+  Operand (3, 0, 16, 5); 
   Instruction_Pack_Group(p77, 
-	TOP_GP32_LCG_GT_BR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LCG_GT_BR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p78: ===== */ 
@@ -1827,12 +1825,10 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p78, 
-	TOP_GP32_LDEW_GT_DR_P13_P_U15, 	 0x10000000UL, 
-	TOP_GP32_LDHH_GT_DR_P13_P_U15, 	 0x10000000UL, 
-	TOP_GP32_LDLH_GT_DR_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LCG_GT_BR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LCG_GT_BR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p79: ===== */ 
@@ -1840,29 +1836,42 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p79, 
-	TOP_GP32_MAKEK_GT_DR_S40, 	 0x10000000UL, 
+	TOP_GP32_LDEW_GT_DR_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LDHH_GT_DR_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LDLH_GT_DR_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p80: ===== */ 
   p80 = ISA_Pack_Type_Create("p80"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Instruction_Pack_Group(p80, 
+	TOP_GP32_MAKEK_GT_DR_S40, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p81: ===== */ 
+  p81 = ISA_Pack_Type_Create("p81"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
-  Instruction_Pack_Group(p80, 
+  Instruction_Pack_Group(p81, 
 	TOP_GP32_BFPSR0_GT_U8_U8, 	 0x10000000UL, 
 	TOP_GP32_BFPSR1_GT_U8_U8, 	 0x10000000UL, 
 	TOP_GP32_BFPSR2_GT_U8_U8, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p81: ===== */ 
-  p81 = ISA_Pack_Type_Create("p81"); 
+/* =====  p82: ===== */ 
+  p82 = ISA_Pack_Type_Create("p82"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p81, 
+  Instruction_Pack_Group(p82, 
 	TOP_GP32_EQESUB_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EQPSUBC_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EQPSUB_GT_BR_DR_DR_DR, 	 0x10000000UL, 
@@ -1973,24 +1982,24 @@ main()
 	TOP_GP32_TWMXOR_GT_BR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p82: ===== */ 
-  p82 = ISA_Pack_Type_Create("p82"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p82, 
-	TOP_GP32_LFR_GT_P13_P_U15, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
 /* =====  p83: ===== */ 
   p83 = ISA_Pack_Type_Create("p83"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
+  Instruction_Pack_Group(p83, 
+	TOP_GP32_LFR_GT_P13_P_U15, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p84: ===== */ 
+  p84 = ISA_Pack_Type_Create("p84"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 7, 5); 
-  Instruction_Pack_Group(p83, 
+  Instruction_Pack_Group(p84, 
 	TOP_GP32_ADDBA_GT_MD_AR_AR_U5, 	 0x10000000UL, 
 	TOP_GP32_ADDHA_GT_MD_AR_AR_U5, 	 0x10000000UL, 
 	TOP_GP32_ADDWA_GT_MD_AR_AR_U5, 	 0x10000000UL, 
@@ -1999,41 +2008,30 @@ main()
 	TOP_GP32_SUBWA_GT_MD_AR_AR_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p84: ===== */ 
-  p84 = ISA_Pack_Type_Create("p84"); 
+/* =====  p85: ===== */ 
+  p85 = ISA_Pack_Type_Create("p85"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p84, 
+  Instruction_Pack_Group(p85, 
 	TOP_GP32_SCW_GT_MD_AR_M_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_P_U5_CRL, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p85: ===== */ 
-  p85 = ISA_Pack_Type_Create("p85"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p85, 
-	TOP_GP32_LCW_GT_CRL_AR_BM_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRL_AR_BP_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRL_AR_QM_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRL_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p86: ===== */ 
   p86 = ISA_Pack_Type_Create("p86"); 
   Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Operand (2, 0, 17, 5); 
   Instruction_Pack_Group(p86, 
-	TOP_GP32_LDW_GT_DR_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_DR_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_BM_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_BP_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_QM_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p87: ===== */ 
@@ -2041,11 +2039,10 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p87, 
-	TOP_GP32_XSHLW_GT_DR_DR_DR_U5, 	 0x10000000UL, 
-	TOP_GP32_XSHRW_GT_DR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p88: ===== */ 
@@ -2054,9 +2051,21 @@ main()
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
+  Operand (3, 0, 7, 5); 
+  Instruction_Pack_Group(p88, 
+	TOP_GP32_XSHLW_GT_DR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_GP32_XSHRW_GT_DR_DR_DR_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p89: ===== */ 
+  p89 = ISA_Pack_Type_Create("p89"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p88, 
+  Instruction_Pack_Group(p89, 
 	TOP_GP32_SAH_GT_MD_AR_BM_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_BP_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_QM_AR_AR, 	 0x10000000UL, 
@@ -2067,33 +2076,33 @@ main()
 	TOP_GP32_SAW_GT_MD_AR_QP_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p89: ===== */ 
-  p89 = ISA_Pack_Type_Create("p89"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p89, 
-	TOP_GP32_COPYC_GT_CRL_DR, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
 /* =====  p90: ===== */ 
   p90 = ISA_Pack_Type_Create("p90"); 
   Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Instruction_Pack_Group(p90, 
-	TOP_GP32_CALL_GT_S21, 	 0x10000000UL, 
+	TOP_GP32_COPYC_GT_CRL_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p91: ===== */ 
   p91 = ISA_Pack_Type_Create("p91"); 
   Result(0, 0, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Instruction_Pack_Group(p91, 
+	TOP_GP32_CALL_GT_S21, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p92: ===== */ 
+  p92 = ISA_Pack_Type_Create("p92"); 
+  Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 7, 5); 
-  Instruction_Pack_Group(p91, 
+  Instruction_Pack_Group(p92, 
 	TOP_GP32_MAFCHH_GT_DR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_MAFCHL_GT_DR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_MAFCLH_GT_DR_DR_DR_DR, 	 0x10000000UL, 
@@ -2163,29 +2172,29 @@ main()
 	TOP_GP32_XSHRW_GT_DR_DR_DR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p92: ===== */ 
-  p92 = ISA_Pack_Type_Create("p92"); 
+/* =====  p93: ===== */ 
+  p93 = ISA_Pack_Type_Create("p93"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p92, 
+  Instruction_Pack_Group(p93, 
 	TOP_GP32_LGR_GT_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p93: ===== */ 
-  p93 = ISA_Pack_Type_Create("p93"); 
+/* =====  p94: ===== */ 
+  p94 = ISA_Pack_Type_Create("p94"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 7, 5); 
   Operand (4, 0, 12, 5); 
-  Instruction_Pack_Group(p93, 
+  Instruction_Pack_Group(p94, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
 	TOP_GP32_LDHH_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
@@ -2194,21 +2203,9 @@ main()
 	TOP_GP32_LDLH_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p94: ===== */ 
-  p94 = ISA_Pack_Type_Create("p94"); 
-  Instruction_Pack_Group(p94, 
-	TOP_UNDEFINED); 
-
 /* =====  p95: ===== */ 
   p95 = ISA_Pack_Type_Create("p95"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p95, 
-	TOP_GP32_LCW_GT_CRH_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRH_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p96: ===== */ 
@@ -2216,8 +2213,11 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p96, 
-	TOP_GP32_MAKEC_GT_CRL_U16, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRH_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRH_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p97: ===== */ 
@@ -2225,12 +2225,8 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p97, 
-	TOP_GP32_LAH_GT_AR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LAH_GT_AR_AR_P_AR, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_AR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_AR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_MAKEC_GT_CRL_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p98: ===== */ 
@@ -2238,34 +2234,31 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p98, 
-	TOP_GP32_LCW_GT_CRH_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LAH_GT_AR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LAH_GT_AR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_AR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_AR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p99: ===== */ 
   p99 = ISA_Pack_Type_Create("p99"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p99, 
-	TOP_GP32_CLRFR_GT, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRH_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p100: ===== */ 
   p100 = ISA_Pack_Type_Create("p100"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
-  Operand (3, 0, 17, 5); 
-  Operand (4, 0, 22, 5); 
   Instruction_Pack_Group(p100, 
-	TOP_GP32_SFR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
+	TOP_GP32_CLRFR_GT, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p101: ===== */ 
@@ -2278,10 +2271,10 @@ main()
   Operand (3, 0, 17, 5); 
   Operand (4, 0, 22, 5); 
   Instruction_Pack_Group(p101, 
-	TOP_GP32_SGR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p102: ===== */ 
@@ -2289,11 +2282,15 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
+  Operand (3, 0, 17, 5); 
+  Operand (4, 0, 22, 5); 
   Instruction_Pack_Group(p102, 
-	TOP_GP32_MOVEG_GT_BR_BR, 	 0x10000000UL, 
-	TOP_GP32_NOTG_GT_BR, 	 0x10000000UL, 
-	TOP_GP32_NOTG_GT_BR_BR, 	 0x10000000UL, 
-	TOP_GP32_NOTPG_GT_BR_BR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p103: ===== */ 
@@ -2301,8 +2298,20 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
   Instruction_Pack_Group(p103, 
+	TOP_GP32_MOVEG_GT_BR_BR, 	 0x10000000UL, 
+	TOP_GP32_NOTG_GT_BR, 	 0x10000000UL, 
+	TOP_GP32_NOTG_GT_BR_BR, 	 0x10000000UL, 
+	TOP_GP32_NOTPG_GT_BR_BR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p104: ===== */ 
+  p104 = ISA_Pack_Type_Create("p104"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Instruction_Pack_Group(p104, 
 	TOP_GP32_EQA_GT_BR_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_GEA_GT_BR_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_GTA_GT_BR_AR_AR, 	 0x10000000UL, 
@@ -2311,22 +2320,22 @@ main()
 	TOP_GP32_NEA_GT_BR_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p104: ===== */ 
-  p104 = ISA_Pack_Type_Create("p104"); 
+/* =====  p105: ===== */ 
+  p105 = ISA_Pack_Type_Create("p105"); 
   Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p104, 
+  Instruction_Pack_Group(p105, 
 	TOP_GP32_BRANCH, 	 0x10000000UL, 
 	TOP_GP32_JUMP, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p105: ===== */ 
-  p105 = ISA_Pack_Type_Create("p105"); 
+/* =====  p106: ===== */ 
+  p106 = ISA_Pack_Type_Create("p106"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p105, 
+  Instruction_Pack_Group(p106, 
 	TOP_GP32_LFR_GT_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_MQ_U5, 	 0x10000000UL, 
@@ -2334,29 +2343,29 @@ main()
 	TOP_GP32_LFR_GT_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p106: ===== */ 
-  p106 = ISA_Pack_Type_Create("p106"); 
-  Operand (0, 0, 0, 1); 
-  Instruction_Pack_Group(p106, 
-	TOP_UNDEFINED); 
-
 /* =====  p107: ===== */ 
   p107 = ISA_Pack_Type_Create("p107"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 0, 5); 
-  Operand (2, 0, 0, 5); 
+  Operand (0, 0, 0, 1); 
   Instruction_Pack_Group(p107, 
-	TOP_GP32_SWI_U12, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p108: ===== */ 
   p108 = ISA_Pack_Type_Create("p108"); 
+  Operand (0, 0, 0, 5); 
+  Operand (1, 0, 0, 5); 
+  Operand (2, 0, 0, 5); 
+  Instruction_Pack_Group(p108, 
+	TOP_GP32_SWI_U12, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p109: ===== */ 
+  p109 = ISA_Pack_Type_Create("p109"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p108, 
+  Instruction_Pack_Group(p109, 
 	TOP_GP32_SCW_GT_AR_BM_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_BP_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_MQ_U5_CRL, 	 0x10000000UL, 
@@ -2364,13 +2373,13 @@ main()
 	TOP_GP32_SCW_GT_AR_QP_U5_CRL, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p109: ===== */ 
-  p109 = ISA_Pack_Type_Create("p109"); 
+/* =====  p110: ===== */ 
+  p110 = ISA_Pack_Type_Create("p110"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
-  Instruction_Pack_Group(p109, 
+  Instruction_Pack_Group(p110, 
 	TOP_GP32_FCLFSCL_GT_BR, 	 0x10000000UL, 
 	TOP_GP32_FCLFSNR_GT_BR, 	 0x10000000UL, 
 	TOP_GP32_FCLFSVE_GT_BR, 	 0x10000000UL, 
@@ -2415,21 +2424,21 @@ main()
 	TOP_GP32_TSVW_GT_BR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p110: ===== */ 
-  p110 = ISA_Pack_Type_Create("p110"); 
+/* =====  p111: ===== */ 
+  p111 = ISA_Pack_Type_Create("p111"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p110, 
+  Instruction_Pack_Group(p111, 
 	TOP_GP32_SAH_GT_AR_M_U9_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_P_U9_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_AR_M_U9_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_AR_P_U9_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p111: ===== */ 
-  p111 = ISA_Pack_Type_Create("p111"); 
+/* =====  p112: ===== */ 
+  p112 = ISA_Pack_Type_Create("p112"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
@@ -2437,22 +2446,11 @@ main()
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p111, 
+  Instruction_Pack_Group(p112, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_MD_CRH_AR_QP_AR, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p112: ===== */ 
-  p112 = ISA_Pack_Type_Create("p112"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p112, 
-	TOP_GP32_LDH_GT_DR_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LDH_GT_DR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p113: ===== */ 
@@ -2460,11 +2458,10 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p113, 
-	TOP_GP32_LCG_GT_MD_BR_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LCG_GT_MD_BR_AR_P_U5, 	 0x10000000UL, 
+	TOP_GP32_LDH_GT_DR_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LDH_GT_DR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p114: ===== */ 
@@ -2472,37 +2469,49 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p114, 
-	TOP_GP32_SETP15U_GT_AR, 	 0x10000000UL, 
+	TOP_GP32_LCG_GT_MD_BR_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LCG_GT_MD_BR_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p115: ===== */ 
   p115 = ISA_Pack_Type_Create("p115"); 
-  Operand (0, 0, 0, 1); 
-  Operand (1, 0, 1, 5); 
-  Operand (2, 0, 6, 5); 
-  Operand (3, 0, 11, 5); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Instruction_Pack_Group(p115, 
-	TOP_GP32_SAH_GT_P13_P_U15_AR, 	 0x10000000UL, 
-	TOP_GP32_SAW_GT_P13_P_U15_AR, 	 0x10000000UL, 
+	TOP_GP32_SETP15U_GT_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p116: ===== */ 
   p116 = ISA_Pack_Type_Create("p116"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
-  Operand (1, 0, 6, 5); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 6, 5); 
+  Operand (3, 0, 11, 5); 
   Instruction_Pack_Group(p116, 
-	TOP_GP32_PUSH_RSET, 	 0x10000000UL, 
+	TOP_GP32_SAH_GT_P13_P_U15_AR, 	 0x10000000UL, 
+	TOP_GP32_SAW_GT_P13_P_U15_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p117: ===== */ 
   p117 = ISA_Pack_Type_Create("p117"); 
   Result(0, 0, 5); 
+  Operand (0, 0, 6, 5); 
+  Operand (1, 0, 6, 5); 
+  Instruction_Pack_Group(p117, 
+	TOP_GP32_PUSH_RSET, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p118: ===== */ 
+  p118 = ISA_Pack_Type_Create("p118"); 
+  Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p117, 
+  Instruction_Pack_Group(p118, 
 	TOP_GP32_ANDG_GT_BR_BR_BR, 	 0x10000000UL, 
 	TOP_GP32_ANDNG_GT_BR_BR_BR, 	 0x10000000UL, 
 	TOP_GP32_ANDNPG_GT_BR_BR_BR, 	 0x10000000UL, 
@@ -2521,33 +2530,18 @@ main()
 	TOP_GP32_XORPG_GT_BR_BR_BR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p118: ===== */ 
-  p118 = ISA_Pack_Type_Create("p118"); 
+/* =====  p119: ===== */ 
+  p119 = ISA_Pack_Type_Create("p119"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p118, 
+  Instruction_Pack_Group(p119, 
 	TOP_GP32_SCW_GT_AR_BM_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_BP_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_QM_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_QP_AR_CRH, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p119: ===== */ 
-  p119 = ISA_Pack_Type_Create("p119"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
-  Operand (2, 0, 12, 5); 
-  Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p119, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_BM_U5, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_BP_U5, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p120: ===== */ 
@@ -2556,63 +2550,67 @@ main()
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
+  Operand (2, 0, 12, 5); 
+  Operand (3, 0, 17, 5); 
   Instruction_Pack_Group(p120, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_BM_U5, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_BP_U5, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_QP_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p121: ===== */ 
+  p121 = ISA_Pack_Type_Create("p121"); 
+  Result(0, 0, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Operand (2, 0, 17, 5); 
+  Instruction_Pack_Group(p121, 
 	TOP_GP32_LFR_GT_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p121: ===== */ 
-  p121 = ISA_Pack_Type_Create("p121"); 
+/* =====  p122: ===== */ 
+  p122 = ISA_Pack_Type_Create("p122"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p121, 
+  Instruction_Pack_Group(p122, 
 	TOP_GP32_LCG_GT_BR_AR_M_U9, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p122: ===== */ 
-  p122 = ISA_Pack_Type_Create("p122"); 
+/* =====  p123: ===== */ 
+  p123 = ISA_Pack_Type_Create("p123"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p122, 
+  Instruction_Pack_Group(p123, 
 	TOP_GP32_LGR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p123: ===== */ 
-  p123 = ISA_Pack_Type_Create("p123"); 
+/* =====  p124: ===== */ 
+  p124 = ISA_Pack_Type_Create("p124"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p123, 
+  Instruction_Pack_Group(p124, 
 	TOP_GP32_SAH_GT_MD_AR_M_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_P_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_MD_AR_M_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_MD_AR_P_U5_AR, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p124: ===== */ 
-  p124 = ISA_Pack_Type_Create("p124"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
-  Instruction_Pack_Group(p124, 
-	TOP_GP32_FMOVEA_GT_BR_AR_AR, 	 0x10000000UL, 
-	TOP_GP32_TMOVEA_GT_BR_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p125: ===== */ 
@@ -2621,8 +2619,19 @@ main()
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
   Instruction_Pack_Group(p125, 
+	TOP_GP32_FMOVEA_GT_BR_AR_AR, 	 0x10000000UL, 
+	TOP_GP32_TMOVEA_GT_BR_AR_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p126: ===== */ 
+  p126 = ISA_Pack_Type_Create("p126"); 
+  Result(0, 0, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Operand (2, 0, 17, 5); 
+  Instruction_Pack_Group(p126, 
 	TOP_GP32_LAH_GT_AR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_AR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_AR_AR_QM_AR, 	 0x10000000UL, 
@@ -2631,21 +2640,6 @@ main()
 	TOP_GP32_LAW_GT_AR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LAW_GT_AR_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LAW_GT_AR_AR_QP_AR, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p126: ===== */ 
-  p126 = ISA_Pack_Type_Create("p126"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
-  Operand (3, 0, 22, 5); 
-  Instruction_Pack_Group(p126, 
-	TOP_GP32_SFR_GT_AR_BM_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_AR_BP_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_AR_QM_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p127: ===== */ 
@@ -2657,10 +2651,10 @@ main()
   Operand (2, 0, 17, 5); 
   Operand (3, 0, 22, 5); 
   Instruction_Pack_Group(p127, 
-	TOP_GP32_SGR_GT_AR_BM_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_BP_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_QM_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_QP_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_BM_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_BP_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_QM_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p128: ===== */ 
@@ -2669,8 +2663,23 @@ main()
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
-  Operand (3, 0, 17, 5); 
+  Operand (2, 0, 17, 5); 
+  Operand (3, 0, 22, 5); 
   Instruction_Pack_Group(p128, 
+	TOP_GP32_SGR_GT_AR_BM_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_BP_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_QM_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_QP_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p129: ===== */ 
+  p129 = ISA_Pack_Type_Create("p129"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
+  Operand (3, 0, 17, 5); 
+  Instruction_Pack_Group(p129, 
 	TOP_GP32_SDBP_GT_AR_BM_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_AR_BP_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_AR_QM_AR_DR, 	 0x10000000UL, 
@@ -2709,29 +2718,29 @@ main()
 	TOP_GP32_SDW_GT_AR_QP_AR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p129: ===== */ 
-  p129 = ISA_Pack_Type_Create("p129"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p129, 
-	TOP_GP32_LAH_GT_MD_AR_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LAH_GT_MD_AR_AR_P_U5, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_MD_AR_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_MD_AR_AR_P_U5, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
 /* =====  p130: ===== */ 
   p130 = ISA_Pack_Type_Create("p130"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
+  Instruction_Pack_Group(p130, 
+	TOP_GP32_LAH_GT_MD_AR_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LAH_GT_MD_AR_AR_P_U5, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_MD_AR_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_MD_AR_AR_P_U5, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p131: ===== */ 
+  p131 = ISA_Pack_Type_Create("p131"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
   Operand (3, 0, 7, 5); 
   Operand (4, 0, 12, 5); 
-  Instruction_Pack_Group(p130, 
+  Instruction_Pack_Group(p131, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_M_AR, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_P_AR, 	 0x10000000UL, 
 	TOP_GP32_LDHH_GT_MD_DR_AR_M_AR, 	 0x10000000UL, 
@@ -2740,39 +2749,23 @@ main()
 	TOP_GP32_LDLH_GT_MD_DR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p131: ===== */ 
-  p131 = ISA_Pack_Type_Create("p131"); 
+/* =====  p132: ===== */ 
+  p132 = ISA_Pack_Type_Create("p132"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p131, 
+  Instruction_Pack_Group(p132, 
 	TOP_GP32_COPYA_GT_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_COPYSA_GT_AR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p132: ===== */ 
-  p132 = ISA_Pack_Type_Create("p132"); 
+/* =====  p133: ===== */ 
+  p133 = ISA_Pack_Type_Create("p133"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
-  Instruction_Pack_Group(p132, 
-	TOP_GP32_TRAP_GT_U4, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p133: ===== */ 
-  p133 = ISA_Pack_Type_Create("p133"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p133, 
-	TOP_GP32_LDEW_GT_DR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LDEW_GT_DR_AR_P_AR, 	 0x10000000UL, 
-	TOP_GP32_LDHH_GT_DR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LDHH_GT_DR_AR_P_AR, 	 0x10000000UL, 
-	TOP_GP32_LDLH_GT_DR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LDLH_GT_DR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_TRAP_GT_U4, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p134: ===== */ 
@@ -2783,38 +2776,54 @@ main()
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p134, 
-	TOP_GP32_LFR_GT_MD_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LFR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LDEW_GT_DR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LDEW_GT_DR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LDHH_GT_DR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LDHH_GT_DR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LDLH_GT_DR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LDLH_GT_DR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p135: ===== */ 
   p135 = ISA_Pack_Type_Create("p135"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
+  Instruction_Pack_Group(p135, 
+	TOP_GP32_LFR_GT_MD_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LFR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p136: ===== */ 
+  p136 = ISA_Pack_Type_Create("p136"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p135, 
+  Instruction_Pack_Group(p136, 
 	TOP_GP32_LCW_GT_CRH_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRH_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRH_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRH_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p136: ===== */ 
-  p136 = ISA_Pack_Type_Create("p136"); 
+/* =====  p137: ===== */ 
+  p137 = ISA_Pack_Type_Create("p137"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p136, 
+  Instruction_Pack_Group(p137, 
 	TOP_GP32_SETILE0_S16, 	 0x10000000UL, 
 	TOP_GP32_SETLE0_S16, 	 0x10000000UL, 
 	TOP_GP32_SETLS0_S16, 	 0x10000000UL, 
 	TOP_GP32_SETULS0_S16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p137: ===== */ 
-  p137 = ISA_Pack_Type_Create("p137"); 
+/* =====  p138: ===== */ 
+  p138 = ISA_Pack_Type_Create("p138"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
@@ -2822,7 +2831,7 @@ main()
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p137, 
+  Instruction_Pack_Group(p138, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_QM_AR, 	 0x10000000UL, 
@@ -2837,126 +2846,116 @@ main()
 	TOP_GP32_LDLH_GT_MD_DR_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p138: ===== */ 
-  p138 = ISA_Pack_Type_Create("p138"); 
+/* =====  p139: ===== */ 
+  p139 = ISA_Pack_Type_Create("p139"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p138, 
+  Instruction_Pack_Group(p139, 
 	TOP_GP32_SCW_GT_MD_AR_BM_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_BP_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QM_AR_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QP_AR_CRH, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p139: ===== */ 
-  p139 = ISA_Pack_Type_Create("p139"); 
-  Result(0, 0, 5); 
-  Instruction_Pack_Group(p139, 
-	TOP_UNDEFINED); 
-
 /* =====  p140: ===== */ 
   p140 = ISA_Pack_Type_Create("p140"); 
-  Operand (0, 0, 0, 1); 
-  Operand (0, 0, 1, 5); 
+  Result(0, 0, 5); 
   Instruction_Pack_Group(p140, 
-	TOP_GP32_BKP_GF, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p141: ===== */ 
   p141 = ISA_Pack_Type_Create("p141"); 
-  Operand (0, 0, 0, 5); 
-  Operand (1, 0, 5, 5); 
+  Operand (0, 0, 0, 1); 
+  Operand (0, 0, 1, 5); 
   Instruction_Pack_Group(p141, 
-	TOP_GP32_GOTOPR_U16, 	 0x10000000UL, 
+	TOP_GP32_BKP_GF, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p142: ===== */ 
   p142 = ISA_Pack_Type_Create("p142"); 
+  Operand (0, 0, 0, 5); 
+  Operand (1, 0, 5, 5); 
+  Instruction_Pack_Group(p142, 
+	TOP_GP32_GOTOPR_U16, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p143: ===== */ 
+  p143 = ISA_Pack_Type_Create("p143"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p142, 
+  Instruction_Pack_Group(p143, 
 	TOP_GP32_LFR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p143: ===== */ 
-  p143 = ISA_Pack_Type_Create("p143"); 
+/* =====  p144: ===== */ 
+  p144 = ISA_Pack_Type_Create("p144"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p143, 
+  Instruction_Pack_Group(p144, 
 	TOP_GP32_MAKEA_GT_AR_S16, 	 0x10000000UL, 
 	TOP_GP32_MAKEBA_GT_AR_S16, 	 0x10000000UL, 
 	TOP_GP32_MAKEHA_GT_AR_S16, 	 0x10000000UL, 
 	TOP_GP32_MAKEWA_GT_AR_S16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p144: ===== */ 
-  p144 = ISA_Pack_Type_Create("p144"); 
+/* =====  p145: ===== */ 
+  p145 = ISA_Pack_Type_Create("p145"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
   Operand (4, 0, 16, 5); 
-  Instruction_Pack_Group(p144, 
+  Instruction_Pack_Group(p145, 
 	TOP_GP32_SFR_GT_MD_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_SFR_GT_MD_AR_P_U5, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p145: ===== */ 
-  p145 = ISA_Pack_Type_Create("p145"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Instruction_Pack_Group(p145, 
-	TOP_GP32_CLRG_GT_BR, 	 0x10000000UL, 
-	TOP_GP32_CLRPG_GT_BR, 	 0x10000000UL, 
-	TOP_GP32_SETG_GT_BR, 	 0x10000000UL, 
-	TOP_GP32_SETPG_GT_BR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p146: ===== */ 
   p146 = ISA_Pack_Type_Create("p146"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p146, 
-	TOP_GP32_LAH_GT_AR_P13_P_U15, 	 0x10000000UL, 
-	TOP_GP32_LAW_GT_AR_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_CLRG_GT_BR, 	 0x10000000UL, 
+	TOP_GP32_CLRPG_GT_BR, 	 0x10000000UL, 
+	TOP_GP32_SETG_GT_BR, 	 0x10000000UL, 
+	TOP_GP32_SETPG_GT_BR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p147: ===== */ 
   p147 = ISA_Pack_Type_Create("p147"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
+  Instruction_Pack_Group(p147, 
+	TOP_GP32_LAH_GT_AR_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LAW_GT_AR_P13_P_U15, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p148: ===== */ 
+  p148 = ISA_Pack_Type_Create("p148"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
   Operand (4, 0, 16, 5); 
-  Instruction_Pack_Group(p147, 
+  Instruction_Pack_Group(p148, 
 	TOP_GP32_SGR_GT_MD_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_SGR_GT_MD_AR_P_U5, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p148: ===== */ 
-  p148 = ISA_Pack_Type_Create("p148"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p148, 
-	TOP_GP32_ADDHA_GT_AR_AR_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p149: ===== */ 
@@ -2966,7 +2965,7 @@ main()
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Instruction_Pack_Group(p149, 
-	TOP_GP32_ADDWA_GT_AR_AR_U9, 	 0x10000000UL, 
+	TOP_GP32_ADDHA_GT_AR_AR_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p150: ===== */ 
@@ -2974,7 +2973,17 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
   Instruction_Pack_Group(p150, 
+	TOP_GP32_ADDWA_GT_AR_AR_U9, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p151: ===== */ 
+  p151 = ISA_Pack_Type_Create("p151"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Instruction_Pack_Group(p151, 
 	TOP_GP32_CLRSCL_GT, 	 0x10000000UL, 
 	TOP_GP32_CLRSNR_GT, 	 0x10000000UL, 
 	TOP_GP32_CLRSVE_GT, 	 0x10000000UL, 
@@ -2984,37 +2993,27 @@ main()
 	TOP_GP32_CLRSVW_GT, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p151: ===== */ 
-  p151 = ISA_Pack_Type_Create("p151"); 
+/* =====  p152: ===== */ 
+  p152 = ISA_Pack_Type_Create("p152"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p151, 
+  Instruction_Pack_Group(p152, 
 	TOP_GP32_SCW_GT_MD_AR_M_AR_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_P_AR_CRL, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p152: ===== */ 
-  p152 = ISA_Pack_Type_Create("p152"); 
+/* =====  p153: ===== */ 
+  p153 = ISA_Pack_Type_Create("p153"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p152, 
+  Instruction_Pack_Group(p153, 
 	TOP_GP32_SCW_GT_AR_M_AR_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_P_AR_CRL, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p153: ===== */ 
-  p153 = ISA_Pack_Type_Create("p153"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p153, 
-	TOP_GP32_MOREA_GT_AR_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p154: ===== */ 
@@ -3023,10 +3022,8 @@ main()
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p154, 
-	TOP_GP32_LDW_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
+	TOP_GP32_MOREA_GT_AR_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p155: ===== */ 
@@ -3037,8 +3034,8 @@ main()
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p155, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p156: ===== */ 
@@ -3049,8 +3046,8 @@ main()
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p156, 
-	TOP_GP32_LCG_GT_MD_BR_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LCG_GT_MD_BR_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p157: ===== */ 
@@ -3058,9 +3055,21 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
+  Instruction_Pack_Group(p157, 
+	TOP_GP32_LCG_GT_MD_BR_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LCG_GT_MD_BR_AR_P_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p158: ===== */ 
+  p158 = ISA_Pack_Type_Create("p158"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p157, 
+  Instruction_Pack_Group(p158, 
 	TOP_GP32_SAH_GT_AR_BM_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_BP_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_MQ_U5_AR, 	 0x10000000UL, 
@@ -3073,37 +3082,26 @@ main()
 	TOP_GP32_SAW_GT_AR_QP_U5_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p158: ===== */ 
-  p158 = ISA_Pack_Type_Create("p158"); 
+/* =====  p159: ===== */ 
+  p159 = ISA_Pack_Type_Create("p159"); 
   Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p158, 
+  Instruction_Pack_Group(p159, 
 	TOP_GP32_GOTO_S25, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p159: ===== */ 
-  p159 = ISA_Pack_Type_Create("p159"); 
+/* =====  p160: ===== */ 
+  p160 = ISA_Pack_Type_Create("p160"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p159, 
+  Instruction_Pack_Group(p160, 
 	TOP_GP32_LFR_GT_MD_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_QM_U5, 	 0x10000000UL, 
 	TOP_GP32_LFR_GT_MD_AR_QP_U5, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p160: ===== */ 
-  p160 = ISA_Pack_Type_Create("p160"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p160, 
-	TOP_GP32_LCW_GT_CRL_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRL_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p161: ===== */ 
@@ -3113,8 +3111,8 @@ main()
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p161, 
-	TOP_GP32_LGR_GT_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_LGR_GT_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p162: ===== */ 
@@ -3122,10 +3120,21 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
+  Instruction_Pack_Group(p162, 
+	TOP_GP32_LGR_GT_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_LGR_GT_AR_P_U9, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p163: ===== */ 
+  p163 = ISA_Pack_Type_Create("p163"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p162, 
+  Instruction_Pack_Group(p163, 
 	TOP_GP32_SDBP_GT_MD_AR_BM_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_BP_AR_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_QM_AR_DR, 	 0x10000000UL, 
@@ -3164,42 +3173,29 @@ main()
 	TOP_GP32_SDW_GT_MD_AR_QP_AR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p163: ===== */ 
-  p163 = ISA_Pack_Type_Create("p163"); 
+/* =====  p164: ===== */ 
+  p164 = ISA_Pack_Type_Create("p164"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p163, 
+  Instruction_Pack_Group(p164, 
 	TOP_GP32_SCW_GT_MD_AR_BM_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_BP_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QM_U5_CRL, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_QP_U5_CRL, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p164: ===== */ 
-  p164 = ISA_Pack_Type_Create("p164"); 
+/* =====  p165: ===== */ 
+  p165 = ISA_Pack_Type_Create("p165"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p164, 
-	TOP_GP32_MAKEC_GT_CRL_P3_U16, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p165: ===== */ 
-  p165 = ISA_Pack_Type_Create("p165"); 
-  Operand (0, 0, 0, 1); 
-  Operand (1, 0, 1, 5); 
-  Operand (2, 0, 1, 5); 
-  Operand (3, 0, 6, 5); 
-  Operand (3, 0, 11, 5); 
-  Operand (4, 0, 16, 5); 
   Instruction_Pack_Group(p165, 
-	TOP_GP32_SFR_GT_MD_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_MAKEC_GT_CRL_P3_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p166: ===== */ 
@@ -3211,35 +3207,36 @@ main()
   Operand (3, 0, 11, 5); 
   Operand (4, 0, 16, 5); 
   Instruction_Pack_Group(p166, 
-	TOP_GP32_SGR_GT_MD_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_MD_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p167: ===== */ 
   p167 = ISA_Pack_Type_Create("p167"); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 1, 5); 
+  Operand (3, 0, 6, 5); 
+  Operand (3, 0, 11, 5); 
+  Operand (4, 0, 16, 5); 
+  Instruction_Pack_Group(p167, 
+	TOP_GP32_SGR_GT_MD_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p168: ===== */ 
+  p168 = ISA_Pack_Type_Create("p168"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p167, 
+  Instruction_Pack_Group(p168, 
 	TOP_GP32_LCG_GT_MD_BR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_QP_AR, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p168: ===== */ 
-  p168 = ISA_Pack_Type_Create("p168"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p168, 
-	TOP_GP32_LCW_GT_CRH_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_CRH_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p169: ===== */ 
@@ -3247,9 +3244,11 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p169, 
-	TOP_GP32_LGR_GT_P13_P_U15, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRH_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRH_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p170: ===== */ 
@@ -3257,8 +3256,18 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p170, 
+	TOP_GP32_LGR_GT_P13_P_U15, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p171: ===== */ 
+  p171 = ISA_Pack_Type_Create("p171"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Instruction_Pack_Group(p171, 
 	TOP_GP32_FEANDN_GT_BR_U8_DR, 	 0x10000000UL, 
 	TOP_GP32_FEORN_GT_BR_U8_DR, 	 0x10000000UL, 
 	TOP_GP32_FPANDN_GT_BR_U8_DR, 	 0x10000000UL, 
@@ -3273,40 +3282,40 @@ main()
 	TOP_GP32_TWORN_GT_BR_U8_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p171: ===== */ 
-  p171 = ISA_Pack_Type_Create("p171"); 
+/* =====  p172: ===== */ 
+  p172 = ISA_Pack_Type_Create("p172"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p171, 
+  Instruction_Pack_Group(p172, 
 	TOP_GP32_LCG_GT_BR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p172: ===== */ 
-  p172 = ISA_Pack_Type_Create("p172"); 
+/* =====  p173: ===== */ 
+  p173 = ISA_Pack_Type_Create("p173"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p172, 
+  Instruction_Pack_Group(p173, 
 	TOP_GP32_SCW_GT_AR_M_U9_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_AR_P_U9_CRH, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p173: ===== */ 
-  p173 = ISA_Pack_Type_Create("p173"); 
+/* =====  p174: ===== */ 
+  p174 = ISA_Pack_Type_Create("p174"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p173, 
+  Instruction_Pack_Group(p174, 
 	TOP_GP32_LAH_GT_MD_AR_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_MD_AR_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_MD_AR_AR_QM_U5, 	 0x10000000UL, 
@@ -3317,25 +3326,15 @@ main()
 	TOP_GP32_LAW_GT_MD_AR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p174: ===== */ 
-  p174 = ISA_Pack_Type_Create("p174"); 
-  Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 5); 
-  Instruction_Pack_Group(p174, 
-	TOP_GP32_POPRTE_RSET, 	 0x10000000UL, 
-	TOP_GP32_POPRTS_RSET, 	 0x10000000UL, 
-	TOP_GP32_POP_RSET, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
 /* =====  p175: ===== */ 
   p175 = ISA_Pack_Type_Create("p175"); 
   Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 5); 
   Instruction_Pack_Group(p175, 
-	TOP_GP32_BOOLP_GT_DR_BR, 	 0x10000000UL, 
-	TOP_GP32_BOOL_GT_DR_BR, 	 0x10000000UL, 
+	TOP_GP32_POPRTE_RSET, 	 0x10000000UL, 
+	TOP_GP32_POPRTS_RSET, 	 0x10000000UL, 
+	TOP_GP32_POP_RSET, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p176: ===== */ 
@@ -3343,8 +3342,18 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p176, 
+	TOP_GP32_BOOLP_GT_DR_BR, 	 0x10000000UL, 
+	TOP_GP32_BOOL_GT_DR_BR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p177: ===== */ 
+  p177 = ISA_Pack_Type_Create("p177"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
+  Instruction_Pack_Group(p177, 
 	TOP_GP32_LDBP_GT_DR_AR_M_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_DR_AR_P_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBSW_GT_DR_AR_M_AR, 	 0x10000000UL, 
@@ -3373,25 +3382,25 @@ main()
 	TOP_GP32_LDW_GT_DR_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p177: ===== */ 
-  p177 = ISA_Pack_Type_Create("p177"); 
+/* =====  p178: ===== */ 
+  p178 = ISA_Pack_Type_Create("p178"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p177, 
+  Instruction_Pack_Group(p178, 
 	TOP_GP32_SCW_GT_P13_P_U15_CRH, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p178: ===== */ 
-  p178 = ISA_Pack_Type_Create("p178"); 
+/* =====  p179: ===== */ 
+  p179 = ISA_Pack_Type_Create("p179"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p178, 
+  Instruction_Pack_Group(p179, 
 	TOP_GP32_LDBP_GT_MD_DR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_MD_DR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_MD_DR_AR_QM_AR, 	 0x10000000UL, 
@@ -3446,39 +3455,39 @@ main()
 	TOP_GP32_LDW_GT_MD_DR_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p179: ===== */ 
-  p179 = ISA_Pack_Type_Create("p179"); 
+/* =====  p180: ===== */ 
+  p180 = ISA_Pack_Type_Create("p180"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p179, 
+  Instruction_Pack_Group(p180, 
 	TOP_GP32_BITRA_GT_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_MOVEA_GT_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SHRA1_GT_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SHRA2_GT_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p180: ===== */ 
-  p180 = ISA_Pack_Type_Create("p180"); 
+/* =====  p181: ===== */ 
+  p181 = ISA_Pack_Type_Create("p181"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p180, 
+  Instruction_Pack_Group(p181, 
 	TOP_GP32_ANDNP_GT_DR_U8_DR, 	 0x10000000UL, 
 	TOP_GP32_ANDN_GT_DR_U8_DR, 	 0x10000000UL, 
 	TOP_GP32_ORNP_GT_DR_U8_DR, 	 0x10000000UL, 
 	TOP_GP32_ORN_GT_DR_U8_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p181: ===== */ 
-  p181 = ISA_Pack_Type_Create("p181"); 
+/* =====  p182: ===== */ 
+  p182 = ISA_Pack_Type_Create("p182"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p181, 
+  Instruction_Pack_Group(p182, 
 	TOP_GP32_LCW_GT_CRL_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRL_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LCW_GT_CRL_AR_MQ_U5, 	 0x10000000UL, 
@@ -3486,22 +3495,22 @@ main()
 	TOP_GP32_LCW_GT_CRL_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p182: ===== */ 
-  p182 = ISA_Pack_Type_Create("p182"); 
+/* =====  p183: ===== */ 
+  p183 = ISA_Pack_Type_Create("p183"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p182, 
+  Instruction_Pack_Group(p183, 
 	TOP_UNDEFINED); 
 
-/* =====  p183: ===== */ 
-  p183 = ISA_Pack_Type_Create("p183"); 
+/* =====  p184: ===== */ 
+  p184 = ISA_Pack_Type_Create("p184"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p183, 
+  Instruction_Pack_Group(p184, 
 	TOP_GP32_LCG_GT_BR_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_BR_AR_MQ_U5, 	 0x10000000UL, 
@@ -3509,25 +3518,13 @@ main()
 	TOP_GP32_LCG_GT_BR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p184: ===== */ 
-  p184 = ISA_Pack_Type_Create("p184"); 
-  Operand (0, 0, 0, 1); 
-  Operand (0, 0, 1, 5); 
-  Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p184, 
-	TOP_GP32_GOTO_GF_S21, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
 /* =====  p185: ===== */ 
   p185 = ISA_Pack_Type_Create("p185"); 
   Operand (0, 0, 0, 1); 
-  Operand (1, 0, 1, 5); 
-  Operand (2, 0, 6, 5); 
-  Operand (2, 0, 11, 5); 
-  Operand (3, 0, 16, 5); 
+  Operand (0, 0, 1, 5); 
+  Operand (1, 0, 6, 5); 
   Instruction_Pack_Group(p185, 
-	TOP_GP32_SFR_GT_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_SFR_GT_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_GOTO_GF_S21, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p186: ===== */ 
@@ -3538,26 +3535,38 @@ main()
   Operand (2, 0, 11, 5); 
   Operand (3, 0, 16, 5); 
   Instruction_Pack_Group(p186, 
-	TOP_GP32_SGR_GT_AR_M_U9, 	 0x10000000UL, 
-	TOP_GP32_SGR_GT_AR_P_U9, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_SFR_GT_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p187: ===== */ 
   p187 = ISA_Pack_Type_Create("p187"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
+  Operand (0, 0, 0, 1); 
+  Operand (1, 0, 1, 5); 
+  Operand (2, 0, 6, 5); 
+  Operand (2, 0, 11, 5); 
+  Operand (3, 0, 16, 5); 
   Instruction_Pack_Group(p187, 
-	TOP_GP32_MAKEC_GT_CRL_P3, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_M_U9, 	 0x10000000UL, 
+	TOP_GP32_SGR_GT_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p188: ===== */ 
   p188 = ISA_Pack_Type_Create("p188"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Instruction_Pack_Group(p188, 
+	TOP_GP32_MAKEC_GT_CRL_P3, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p189: ===== */ 
+  p189 = ISA_Pack_Type_Create("p189"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p188, 
+  Instruction_Pack_Group(p189, 
 	TOP_GP32_SDBP_GT_AR_M_U9_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_AR_P_U9_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBSW_GT_AR_M_U9_DR, 	 0x10000000UL, 
@@ -3578,14 +3587,14 @@ main()
 	TOP_GP32_SDW_GT_AR_P_U9_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p189: ===== */ 
-  p189 = ISA_Pack_Type_Create("p189"); 
+/* =====  p190: ===== */ 
+  p190 = ISA_Pack_Type_Create("p190"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p189, 
+  Instruction_Pack_Group(p190, 
 	TOP_GP32_LDEW_GT_DR_AR_M_U9, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_DR_AR_P_U9, 	 0x10000000UL, 
 	TOP_GP32_LDHH_GT_DR_AR_M_U9, 	 0x10000000UL, 
@@ -3594,8 +3603,8 @@ main()
 	TOP_GP32_LDLH_GT_DR_AR_P_U9, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p190: ===== */ 
-  p190 = ISA_Pack_Type_Create("p190"); 
+/* =====  p191: ===== */ 
+  p191 = ISA_Pack_Type_Create("p191"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
@@ -3603,7 +3612,7 @@ main()
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p190, 
+  Instruction_Pack_Group(p191, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LDEW_GT_MD_DR_AR_QM_U5, 	 0x10000000UL, 
@@ -3618,20 +3627,20 @@ main()
 	TOP_GP32_LDLH_GT_MD_DR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p191: ===== */ 
-  p191 = ISA_Pack_Type_Create("p191"); 
+/* =====  p192: ===== */ 
+  p192 = ISA_Pack_Type_Create("p192"); 
   Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p191, 
+  Instruction_Pack_Group(p192, 
 	TOP_GP32_CALL_S25, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p192: ===== */ 
-  p192 = ISA_Pack_Type_Create("p192"); 
+/* =====  p193: ===== */ 
+  p193 = ISA_Pack_Type_Create("p193"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p192, 
+  Instruction_Pack_Group(p193, 
 	TOP_GP32_SDBP_GT_P13_P_U15_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBSW_GT_P13_P_U15_DR, 	 0x10000000UL, 
 	TOP_GP32_SDB_GT_P13_P_U15_DR, 	 0x10000000UL, 
@@ -3643,39 +3652,26 @@ main()
 	TOP_GP32_SDW_GT_P13_P_U15_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p193: ===== */ 
-  p193 = ISA_Pack_Type_Create("p193"); 
+/* =====  p194: ===== */ 
+  p194 = ISA_Pack_Type_Create("p194"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p193, 
+  Instruction_Pack_Group(p194, 
 	TOP_GP32_SCW_GT_MD_AR_M_U5_CRH, 	 0x10000000UL, 
 	TOP_GP32_SCW_GT_MD_AR_P_U5_CRH, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p194: ===== */ 
-  p194 = ISA_Pack_Type_Create("p194"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Instruction_Pack_Group(p194, 
-	TOP_GP32_MORE_GT_DR_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p195: ===== */ 
   p195 = ISA_Pack_Type_Create("p195"); 
   Result(0, 0, 5); 
-  Result(1, 6, 5); 
-  Operand (0, 0, 11, 1); 
-  Operand (1, 0, 12, 5); 
-  Operand (2, 0, 12, 5); 
-  Operand (3, 0, 17, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
   Instruction_Pack_Group(p195, 
-	TOP_GP32_LDW_GT_MD_DR_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_MD_DR_AR_QP_U5, 	 0x10000000UL, 
+	TOP_GP32_MORE_GT_DR_U16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p196: ===== */ 
@@ -3684,25 +3680,26 @@ main()
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
-  Operand (2, 0, 17, 5); 
+  Operand (2, 0, 12, 5); 
+  Operand (3, 0, 17, 5); 
   Instruction_Pack_Group(p196, 
-	TOP_GP32_LDW_GT_DR_AR_BM_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_DR_AR_BP_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_DR_AR_MQ_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_DR_AR_QM_U5, 	 0x10000000UL, 
-	TOP_GP32_LDW_GT_DR_AR_QP_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_MD_DR_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_MD_DR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p197: ===== */ 
   p197 = ISA_Pack_Type_Create("p197"); 
   Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 7, 5); 
-  Operand (3, 0, 12, 5); 
+  Result(1, 6, 5); 
+  Operand (0, 0, 11, 1); 
+  Operand (1, 0, 12, 5); 
+  Operand (2, 0, 17, 5); 
   Instruction_Pack_Group(p197, 
-	TOP_GP32_LGR_GT_MD_AR_M_AR, 	 0x10000000UL, 
-	TOP_GP32_LGR_GT_MD_AR_P_AR, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_BM_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_BP_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_MQ_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_QM_U5, 	 0x10000000UL, 
+	TOP_GP32_LDW_GT_DR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p198: ===== */ 
@@ -3713,8 +3710,8 @@ main()
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p198, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_M_U5, 	 0x10000000UL, 
-	TOP_GP32_LCW_GT_MD_CRL_AR_P_U5, 	 0x10000000UL, 
+	TOP_GP32_LGR_GT_MD_AR_M_AR, 	 0x10000000UL, 
+	TOP_GP32_LGR_GT_MD_AR_P_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p199: ===== */ 
@@ -3722,73 +3719,85 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 7, 5); 
+  Operand (3, 0, 12, 5); 
   Instruction_Pack_Group(p199, 
-	TOP_GP32_GETP15U_GT_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_M_U5, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_MD_CRL_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p200: ===== */ 
   p200 = ISA_Pack_Type_Create("p200"); 
   Result(0, 0, 5); 
-  Operand (0, 0, 6, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Instruction_Pack_Group(p200, 
+	TOP_GP32_GETP15U_GT_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p201: ===== */ 
+  p201 = ISA_Pack_Type_Create("p201"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 5); 
+  Instruction_Pack_Group(p201, 
 	TOP_GP32_SETILE2_S16, 	 0x10000000UL, 
 	TOP_GP32_SETLE2_S16, 	 0x10000000UL, 
 	TOP_GP32_SETLS2_S16, 	 0x10000000UL, 
 	TOP_GP32_SETULS2_S16, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p201: ===== */ 
-  p201 = ISA_Pack_Type_Create("p201"); 
+/* =====  p202: ===== */ 
+  p202 = ISA_Pack_Type_Create("p202"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p201, 
+  Instruction_Pack_Group(p202, 
 	TOP_GP32_LGR_GT_MD_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_QM_AR, 	 0x10000000UL, 
 	TOP_GP32_LGR_GT_MD_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p202: ===== */ 
-  p202 = ISA_Pack_Type_Create("p202"); 
+/* =====  p203: ===== */ 
+  p203 = ISA_Pack_Type_Create("p203"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p202, 
+  Instruction_Pack_Group(p203, 
 	TOP_GP32_SAH_GT_MD_AR_M_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_P_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_MD_AR_M_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_MD_AR_P_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p203: ===== */ 
-  p203 = ISA_Pack_Type_Create("p203"); 
+/* =====  p204: ===== */ 
+  p204 = ISA_Pack_Type_Create("p204"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p203, 
+  Instruction_Pack_Group(p204, 
 	TOP_GP32_LCG_GT_MD_BR_AR_BM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_BP_U5, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_QM_U5, 	 0x10000000UL, 
 	TOP_GP32_LCG_GT_MD_BR_AR_QP_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p204: ===== */ 
-  p204 = ISA_Pack_Type_Create("p204"); 
+/* =====  p205: ===== */ 
+  p205 = ISA_Pack_Type_Create("p205"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 1, 5); 
   Operand (3, 0, 6, 5); 
   Operand (4, 0, 11, 5); 
-  Instruction_Pack_Group(p204, 
+  Instruction_Pack_Group(p205, 
 	TOP_GP32_SDBP_GT_MD_AR_M_U5_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBP_GT_MD_AR_P_U5_DR, 	 0x10000000UL, 
 	TOP_GP32_SDBSW_GT_MD_AR_M_U5_DR, 	 0x10000000UL, 
@@ -3809,27 +3818,27 @@ main()
 	TOP_GP32_SDW_GT_MD_AR_P_U5_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p205: ===== */ 
-  p205 = ISA_Pack_Type_Create("p205"); 
+/* =====  p206: ===== */ 
+  p206 = ISA_Pack_Type_Create("p206"); 
   Operand (0, 0, 0, 1); 
   Operand (1, 0, 1, 5); 
   Operand (2, 0, 6, 5); 
   Operand (3, 0, 11, 5); 
-  Instruction_Pack_Group(p205, 
+  Instruction_Pack_Group(p206, 
 	TOP_GP32_SAH_GT_AR_M_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_AR_P_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_AR_M_AR_AR, 	 0x10000000UL, 
 	TOP_GP32_SAW_GT_AR_P_AR_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p206: ===== */ 
-  p206 = ISA_Pack_Type_Create("p206"); 
+/* =====  p207: ===== */ 
+  p207 = ISA_Pack_Type_Create("p207"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 17, 5); 
-  Instruction_Pack_Group(p206, 
+  Instruction_Pack_Group(p207, 
 	TOP_GP32_LDBP_GT_DR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_DR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_DR_AR_QM_AR, 	 0x10000000UL, 
@@ -3884,24 +3893,14 @@ main()
 	TOP_GP32_LDW_GT_DR_AR_QP_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p207: ===== */ 
-  p207 = ISA_Pack_Type_Create("p207"); 
+/* =====  p208: ===== */ 
+  p208 = ISA_Pack_Type_Create("p208"); 
   Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p207, 
+  Instruction_Pack_Group(p208, 
 	TOP_GP32_POPRTE_U20, 	 0x10000000UL, 
 	TOP_GP32_POPRTS_U20, 	 0x10000000UL, 
 	TOP_GP32_POP_U20, 	 0x10000000UL, 
 	TOP_GP32_PUSH_U20, 	 0x10000000UL, 
-	TOP_UNDEFINED); 
-
-/* =====  p208: ===== */ 
-  p208 = ISA_Pack_Type_Create("p208"); 
-  Result(0, 0, 5); 
-  Operand (0, 0, 6, 1); 
-  Operand (1, 0, 7, 5); 
-  Operand (2, 0, 12, 5); 
-  Instruction_Pack_Group(p208, 
-	TOP_GP32_LCW_GT_CRL_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p209: ===== */ 
@@ -3909,9 +3908,9 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Operand (2, 0, 12, 5); 
   Instruction_Pack_Group(p209, 
-	TOP_GP32_FA_GT_BR_AR, 	 0x10000000UL, 
-	TOP_GP32_TA_GT_BR_AR, 	 0x10000000UL, 
+	TOP_GP32_LCW_GT_CRL_P13_P_U15, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
 /* =====  p210: ===== */ 
@@ -3919,9 +3918,19 @@ main()
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
+  Instruction_Pack_Group(p210, 
+	TOP_GP32_FA_GT_BR_AR, 	 0x10000000UL, 
+	TOP_GP32_TA_GT_BR_AR, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p211: ===== */ 
+  p211 = ISA_Pack_Type_Create("p211"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 1); 
+  Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
-  Instruction_Pack_Group(p210, 
+  Instruction_Pack_Group(p211, 
 	TOP_GP32_LDBP_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
 	TOP_GP32_LDBP_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
 	TOP_GP32_LDBSW_GT_MD_DR_AR_M_U5, 	 0x10000000UL, 
@@ -3948,12 +3957,12 @@ main()
 	TOP_GP32_LDUW_GT_MD_DR_AR_P_U5, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p211: ===== */ 
-  p211 = ISA_Pack_Type_Create("p211"); 
+/* =====  p212: ===== */ 
+  p212 = ISA_Pack_Type_Create("p212"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
-  Instruction_Pack_Group(p211, 
+  Instruction_Pack_Group(p212, 
 	TOP_GP32_CLAMPW_GT_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EXTB_GT_DR_DR, 	 0x10000000UL, 
 	TOP_GP32_EXTH_GT_DR_DR, 	 0x10000000UL, 
@@ -3985,11 +3994,6 @@ main()
 	TOP_GP32_SHRUWM_GT_DR_DR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p212: ===== */ 
-  p212 = ISA_Pack_Type_Create("p212"); 
-  Instruction_Pack_Group(p212, 
-	TOP_UNDEFINED); 
-
 /* =====  p213: ===== */ 
   p213 = ISA_Pack_Type_Create("p213"); 
   Instruction_Pack_Group(p213, 
@@ -3997,13 +4001,18 @@ main()
 
 /* =====  p214: ===== */ 
   p214 = ISA_Pack_Type_Create("p214"); 
+  Instruction_Pack_Group(p214, 
+	TOP_UNDEFINED); 
+
+/* =====  p215: ===== */ 
+  p215 = ISA_Pack_Type_Create("p215"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 1); 
   Operand (1, 0, 7, 5); 
   Operand (2, 0, 7, 5); 
   Operand (3, 0, 12, 5); 
   Operand (4, 0, 17, 5); 
-  Instruction_Pack_Group(p214, 
+  Instruction_Pack_Group(p215, 
 	TOP_GP32_SAH_GT_MD_AR_BM_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_BP_U5_AR, 	 0x10000000UL, 
 	TOP_GP32_SAH_GT_MD_AR_QM_U5_AR, 	 0x10000000UL, 
@@ -4014,15 +4023,15 @@ main()
 	TOP_GP32_SAW_GT_MD_AR_QP_U5_AR, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p215: ===== */ 
-  p215 = ISA_Pack_Type_Create("p215"); 
+/* =====  p216: ===== */ 
+  p216 = ISA_Pack_Type_Create("p216"); 
   Result(0, 0, 5); 
   Result(1, 6, 5); 
   Operand (0, 0, 11, 1); 
   Operand (1, 0, 12, 5); 
   Operand (2, 0, 12, 5); 
   Operand (3, 0, 17, 5); 
-  Instruction_Pack_Group(p215, 
+  Instruction_Pack_Group(p216, 
 	TOP_GP32_LAH_GT_MD_AR_AR_BM_AR, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_MD_AR_AR_BP_AR, 	 0x10000000UL, 
 	TOP_GP32_LAH_GT_MD_AR_AR_QM_AR, 	 0x10000000UL, 

@@ -123,11 +123,11 @@ main()
 
   ISA_Registers_Begin("st100");
 
-  rc_du = ISA_Register_Class_Create("du", 40, true, false);
-  rc_au = ISA_Register_Class_Create("au", 32, true, false);
-  rc_guard = ISA_Register_Class_Create("guard", 1, true, true);
-  rc_control = ISA_Register_Class_Create("control", 1, false, false);
-  rc_loop = ISA_Register_Class_Create("loop", 1, false, false);
+  rc_du = ISA_Register_Class_Create("du", 40, false, true, false);
+  rc_au = ISA_Register_Class_Create("au", 32, true, true, false);
+  rc_guard = ISA_Register_Class_Create("guard", 1, false, true, true);
+  rc_control = ISA_Register_Class_Create("control", 1, false, false, false);
+  rc_loop = ISA_Register_Class_Create("loop", 1, false, false, false);
 
   // DU and AU registers are named in the ABI
   ISA_Register_Set(rc_du, 0, 15, "r%d", NULL, All_ISA_Mask());
