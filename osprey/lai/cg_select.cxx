@@ -132,7 +132,7 @@ op_list load_i;
  * ====================================================================
  */
 BOOL CG_select_spec_loads = TRUE;
-BOOL CG_select_allow_dup = TRUE;
+BOOL CG_select_allow_dup = FALSE;
 BOOL CG_select_stores = FALSE;
 const char* CG_select_factor = "16.0";
 const char* CG_select_disload_cost = "4.0";
