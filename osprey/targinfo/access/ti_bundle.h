@@ -227,47 +227,47 @@ TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Has_Property(
   INT *error
 );
 
-extern BOOL TI_BUNDLE_Is_Full(
+TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Is_Full(
   TI_BUNDLE *bundle,
   INT *error
 );
 
-extern BOOL TI_BUNDLE_Is_Empty(
+TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Is_Empty(
   TI_BUNDLE *bundle,
   INT *error
 );
 
-extern INT TI_BUNDLE_Return_Template(
+TARGINFO_EXPORTED extern INT TI_BUNDLE_Return_Template(
   TI_BUNDLE *bundle
 );
 
-extern void TI_BUNDLE_Clear(
+TARGINFO_EXPORTED extern void TI_BUNDLE_Clear(
   TI_BUNDLE *bundle
 );
 
-extern BOOL TI_BUNDLE_Slot_Available(
+TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Slot_Available(
   TI_BUNDLE  *bundle,
   ISA_EXEC_UNIT_PROPERTY  property,
   INT        slot
 );
 
-extern BOOL TI_BUNDLE_Stop_Bit_Available(
+TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Stop_Bit_Available(
   TI_BUNDLE  *bundle,
   INT        slot
 );
 
-extern void TI_BUNDLE_Reserve_Slot(
+TARGINFO_EXPORTED extern void TI_BUNDLE_Reserve_Slot(
   TI_BUNDLE  *bundle,
   INT slot,
   ISA_EXEC_UNIT_PROPERTY property
 );
 
-extern void TI_BUNDLE_Reserve_Stop_Bit(
+TARGINFO_EXPORTED extern void TI_BUNDLE_Reserve_Stop_Bit(
   TI_BUNDLE  *bundle,
   INT slot
 );
 
-extern void TI_BUNDLE_Unreserve_Stop_Bit(
+TARGINFO_EXPORTED extern void TI_BUNDLE_Unreserve_Stop_Bit(
   TI_BUNDLE  *bundle,
   INT slot
 );

@@ -298,7 +298,7 @@ void ISA_Hazards_End(void)
 
   fprintf(efile, "ISA_HAZARD_hazard_info\n");
 
-  fprintf(cfile, "\nISA_HAZARD_INFO ISA_HAZARD_hazard_info[%d] = {\n", 
+  fprintf(cfile, "\nBE_EXPORTED ISA_HAZARD_INFO ISA_HAZARD_hazard_info[%d] = {\n", 
 	  haz_index + 1);
   fprintf(cfile, isa_hazard_info_format,
 	  "UNDEFINED", 0, 0, 0, 0, 0, 0);
@@ -333,7 +333,7 @@ void ISA_Hazards_End(void)
 
   fprintf(efile, "ISA_HAZARD_hazard_index\n");
 
-  fprintf(cfile, "\nmUINT8 ISA_HAZARD_hazard_index[%d] = {\n", TOP_count);
+  fprintf(cfile, "\nBE_EXPORTED mUINT8 ISA_HAZARD_hazard_index[%d] = {\n", TOP_count);
   for ( top = 0; top < TOP_count; ++top ) {
     op_haz *op_hazard = op_hazards[top];
     fprintf(cfile, "  %3d, ", op_hazard ? op_hazard->index : 0);
@@ -343,14 +343,14 @@ void ISA_Hazards_End(void)
 
   fprintf(hfile, "\ninline BOOL ISA_HAZARD_TOP_Has_Hazard(TOP topcode)\n"
 		 "{\n"
-		 "  extern mUINT8 ISA_HAZARD_hazard_index[%d];\n"
+		 "  BE_EXPORTED extern mUINT8 ISA_HAZARD_hazard_index[%d];\n"
 		 "  return ISA_HAZARD_hazard_index[(INT)topcode] != 0;\n"
 		 "}\n",
 		 TOP_count);
 
   fprintf(hfile, "\ninline ISA_HAZARD_INFO *ISA_HAZARD_First(TOP topcode)\n"
 		 "{\n"
-		 "  extern mUINT8 ISA_HAZARD_hazard_index[%d];\n"
+		 "  BE_EXPORTED extern mUINT8 ISA_HAZARD_hazard_index[%d];\n"
 		 "  extern ISA_HAZARD_INFO ISA_HAZARD_hazard_info[%d];\n"
 		 "  INT index = ISA_HAZARD_hazard_index[(INT)topcode];\n"
 		 "  return index ? ISA_HAZARD_hazard_info + index : (ISA_HAZARD_INFO *)0;\n"
@@ -360,7 +360,7 @@ void ISA_Hazards_End(void)
 
   fprintf(hfile, "\ninline ISA_HAZARD_INFO *ISA_HAZARD_Next(ISA_HAZARD_INFO *info)\n"
 		 "{\n"
-		 "  extern ISA_HAZARD_INFO ISA_HAZARD_hazard_info[%d];\n"
+		 "  BE_EXPORTED extern ISA_HAZARD_INFO ISA_HAZARD_hazard_info[%d];\n"
 		 "  INT index = info->next;\n"
 		 "  return index ? ISA_HAZARD_hazard_info + index : (ISA_HAZARD_INFO *)0;\n"
 		 "}\n",
@@ -386,7 +386,7 @@ void ISA_Hazards_End(void)
 		 "  return info->post_ops;\n"
 		 "}\n");
 
-  fprintf(hfile, "\nextern void ISA_HAZARD_Initialize(void);\n");
+  fprintf(hfile, "\nBE_EXPORTED extern void ISA_HAZARD_Initialize(void);\n");
 
   fprintf(efile, "ISA_HAZARD_Initialize\n");
 

@@ -194,10 +194,10 @@ inline INT TI_LATENCY_Last_Issue_Cycle(TOP opcode)
   return TSI_Last_Issue_Cycle(opcode);
 }
 
-extern INT TI_LATENCY_Commit_Cycle(TOP opcode);
-extern INT TI_LATENCY_Operand_Hazard(TOP opcode, INT *opnd, INT *error);
-extern INT TI_LATENCY_Result_Hazard(TOP opcode, INT *result, INT *error);
-extern INT TI_LATENCY_Errata_Hazard(TOP opcode, INT *number, INT *error);
+TARGINFO_EXPORTED extern INT TI_LATENCY_Commit_Cycle(TOP opcode);
+TARGINFO_EXPORTED extern INT TI_LATENCY_Operand_Hazard(TOP opcode, INT *opnd, INT *error);
+TARGINFO_EXPORTED extern INT TI_LATENCY_Result_Hazard(TOP opcode, INT *result, INT *error);
+TARGINFO_EXPORTED extern INT TI_LATENCY_Errata_Hazard(TOP opcode, INT *number, INT *error);
 
 #ifdef __cplusplus
 }

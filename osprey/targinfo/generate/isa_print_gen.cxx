@@ -391,7 +391,7 @@ void ISA_Print_End(void)
 	  //"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS,MAX_LISTING_OPERANDS);
 	        "} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS);
 
-  fprintf(hfile, "\nextern const ISA_PRINT_INFO ISA_PRINT_info[%d];\n",
+  fprintf(hfile, "\nBE_EXPORTED extern const ISA_PRINT_INFO ISA_PRINT_info[%d];\n",
 						list_index + 1);
 
   fprintf(efile, "ISA_PRINT_info\n");
@@ -445,7 +445,7 @@ void ISA_Print_End(void)
   }
   fprintf (cfile, "};\n");
 
-  fprintf(hfile, "\nextern const unsigned char ISA_PRINT_info_index[%d];\n", TOP_count);
+  fprintf(hfile, "\nBE_EXPORTED extern const unsigned char ISA_PRINT_info_index[%d];\n", TOP_count);
 
   fprintf(efile, "ISA_PRINT_info_index\n");
 
@@ -488,7 +488,7 @@ void ISA_Print_End(void)
 #endif
 
   if (asmname) {
-    fprintf(cfile, "\nconst char * const ISA_PRINT_asmname[] = {\n");
+    fprintf(cfile, "\nBE_EXPORTED const char * const ISA_PRINT_asmname[] = {\n");
     for (top = 0; top < TOP_count; ++top) {
       fprintf(cfile, "  \"%s\",\n", asmname((TOP)top));
     }
@@ -497,7 +497,7 @@ void ISA_Print_End(void)
 
     fprintf(hfile, "\ninline const char *ISA_PRINT_AsmName(TOP topcode)\n"
 		   "{\n"
-		   "  extern const char * const ISA_PRINT_asmname[];\n"
+		   "  BE_EXPORTED extern const char * const ISA_PRINT_asmname[];\n"
 		   "  return ISA_PRINT_asmname[(INT)topcode];\n"
 		   "}\n");
 
@@ -512,7 +512,7 @@ void ISA_Print_End(void)
   //
   // Emit function ISA_PRINT_Operand_Is_Part_Of_Name:
   //
-  fprintf(hfile, "\nextern BOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex);\n");
+  fprintf(hfile, "\nBE_EXPORTED extern BOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex);\n");
   fprintf(efile, "ISA_PRINT_Operand_Is_Part_Of_Name\n");
   fprintf(cfile, "\nBOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex)\n"
 		"{\n"

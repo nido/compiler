@@ -406,7 +406,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 		  max_slots ? max_slots : 1);
 
   fprintf(efile, "ISA_BUNDLE_info\n");
-  fprintf(cfile, "\nconst ISA_BUNDLE_INFO ISA_BUNDLE_info[] = {\n");
+  fprintf(cfile, "\nBE_EXPORTED const ISA_BUNDLE_INFO ISA_BUNDLE_info[] = {\n");
 
   int slot_mask_digits = ((TAG_SHIFT * max_slots) + 3) / 4;
   for (ibi = all_bundles.begin(); ibi != all_bundles.end(); ++ibi) {
@@ -485,7 +485,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   }
   fprintf(cfile, "};\n");
 
-  fprintf(hfile, "\nextern const ISA_EXEC_UNIT_PROPERTY ISA_EXEC_unit_prop[];\n");
+  fprintf(hfile, "\nBE_EXPORTED extern const ISA_EXEC_UNIT_PROPERTY ISA_EXEC_unit_prop[];\n");
   fprintf(hfile, "\n");
   for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
     ISA_EXEC_UNIT_TYPE exec_type = *iei;
@@ -503,14 +503,14 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline ISA_BUNDLE_INFO "
                    "ISA_EXEC_Bundle_Info(INT index)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
                  "  return ISA_BUNDLE_info[index];\n"
                  "}\n");
 		   
   fprintf (hfile, "\ninline ISA_EXEC_UNIT_PROPERTY "
                    "ISA_EXEC_Slot_Prop(INT bundle, INT slot_index)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->slot[slot_index];\n"
                  "}\n");
@@ -518,7 +518,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline UINT64 "
                    "ISA_EXEC_Slot_Mask(INT bundle)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->slot_mask;\n"
                  "}\n");
@@ -526,7 +526,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline BOOL "
                    "ISA_EXEC_Stop(INT bundle, INT slot_index)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->stop[slot_index];\n"
                  "}\n");
@@ -534,7 +534,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline ISA_EXEC_UNIT "
                    "ISA_EXEC_Unit(INT bundle, INT slot_index)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return (ISA_EXEC_UNIT)info->unit[slot_index];\n"
                  "}\n");
@@ -542,7 +542,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline UINT32 "
                    "ISA_EXEC_Stop_Mask(INT bundle)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->stop_mask;\n"
                  "}\n");
@@ -550,7 +550,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline const char * "
                    "ISA_EXEC_Name(INT bundle)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->name;\n"
                  "}\n");
@@ -558,7 +558,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   fprintf (hfile, "\ninline const char * "
                    "ISA_EXEC_AsmName(INT bundle)\n"
                  "{\n"
-		 "  extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
                  "  return info->asm_name;\n"
                  "}\n");

@@ -653,7 +653,7 @@ void ISA_Pack_End(void)
   if (inst_words > 1) {
     fprintf(efile, "ISA_PACK_inst_words\n");
 
-    fprintf(cfile, "\nconst mUINT8 ISA_PACK_inst_words[%d] = {\n", TOP_count);
+    fprintf(cfile, "\nBE_EXPORTED const mUINT8 ISA_PACK_inst_words[%d] = {\n", TOP_count);
     for (top = 0; top < TOP_count; ++top ) {
       op_assembly *op_pack = op_packs[top];
       int words = op_pack ? op_pack->desc->max_word + 1 
@@ -679,7 +679,7 @@ void ISA_Pack_End(void)
   if (inst_words == 1) {
     fprintf(hfile, "  return TOP_is_dummy(topcode) ? 0 : 1;\n");
   } else {
-    fprintf(hfile, "  extern const mUINT8 ISA_PACK_inst_words[%d];\n"
+    fprintf(hfile, "  BE_EXPORTED extern const mUINT8 ISA_PACK_inst_words[%d];\n"
 		   "  return ISA_PACK_inst_words[(INT)topcode];\n",
 		   TOP_count);
   }

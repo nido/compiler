@@ -396,7 +396,7 @@ void RES::Output_All( FILE* fd )
   for ( i = 0; i < total; ++i )
     resources[i]->Output(fd);
 
-  fprintf(fd,"const int SI_resource_count = %d;\n",total);
+  fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
   fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * const SI_resources[] = {");
 
   bool is_first = true;

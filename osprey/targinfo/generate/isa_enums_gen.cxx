@@ -231,7 +231,7 @@ void ISA_Enums_End(void)
 		"  ISA_ENUM_CLASS_VALUE first;\n"
 		"  ISA_ENUM_CLASS_VALUE last;\n"
 		"} ISA_ENUM_CLASS_INFO;\n");
-  fprintf(hfile, "extern const ISA_ENUM_CLASS_INFO ISA_ENUM_CLASS_info[];\n");
+  fprintf(hfile, "BE_EXPORTED extern const ISA_ENUM_CLASS_INFO ISA_ENUM_CLASS_info[];\n");
   fprintf(efile, "ISA_ENUM_CLASS_info\n");
   fprintf(cfile, "const ISA_ENUM_CLASS_INFO ISA_ENUM_CLASS_info[] = {\n");
   for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
@@ -251,7 +251,7 @@ void ISA_Enums_End(void)
 		"  char *name;\n"
 		"  INT intval;\n"
 		"} ISA_ENUM_CLASS_VALUE_INFO;\n");
-  fprintf(hfile, "extern const ISA_ENUM_CLASS_VALUE_INFO ISA_ENUM_CLASS_VALUE_info[];\n\n");
+  fprintf(hfile, "BE_EXPORTED extern const ISA_ENUM_CLASS_VALUE_INFO ISA_ENUM_CLASS_VALUE_info[];\n\n");
   fprintf(efile, "ISA_ENUM_CLASS_VALUE_info\n");
   fprintf(cfile, "const ISA_ENUM_CLASS_VALUE_INFO ISA_ENUM_CLASS_VALUE_info[] = {\n");
   for ( iecv = all_ecv.begin(); iecv != all_ecv.end(); ++iecv) {
