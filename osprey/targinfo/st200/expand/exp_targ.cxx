@@ -2008,7 +2008,7 @@ Expand_Bool_To_Int (
   OPS *ops
 )
 {
-  Build_OP (TOP_mtb, dest, src, ops);
+  Build_OP (TOP_mfb, dest, src, ops);
   return;
 }
 
