@@ -488,7 +488,13 @@ Preconfigure_Target ( void )
   CG_floating_const_in_memory = FALSE;
 
   LNO_Fission = 0;
+
+  // FdF: Disable vector intrinsics until they are implemented.
   LNO_Run_Vintr = FALSE;
+
+  // FdF: Disable padding, since it seems buggy (bug
+  // pro-release-1-0-8-A/7)
+  LNO_Local_Pad_Size = 0;
 
 
 #endif
