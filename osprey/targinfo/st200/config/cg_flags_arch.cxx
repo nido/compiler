@@ -83,7 +83,8 @@ void Configure_CG_Target() {
 
 
   // HB stuff: everything's OFF by default
-  HB_force_hyperblocks = TRUE;
+  HB_simple_ifc = TRUE;
+  HB_superblocks = TRUE;
   //HB_loops_with_exits = FALSE;
   HB_complex_non_loop = TRUE;
   //HB_skip_hammocks = FALSE;

@@ -13,7 +13,7 @@
 main() 
 { 
 
-  OPERAND_VALUE_TYPE bcond, scond, bdest, ibdest, dest, idest, src1, src2, lr; 
+  OPERAND_VALUE_TYPE bcond, scond, bdest, ibdest, dest, idest, idest2, src1, src2, dest2, lr; 
   OPERAND_VALUE_TYPE btarg, isrc2, usrc2, s9, imm, pcrel; 
   OPERAND_VALUE_TYPE icbus; 
 
@@ -59,6 +59,10 @@ main()
                 ISA_REGISTER_CLASS_integer, 
                 ISA_REGISTER_SUBCLASS_UNDEFINED, 
                 32, SIGNED, INVALID); 
+  idest2 = ISA_Reg_Opnd_Type_Create("idest2", 
+                ISA_REGISTER_CLASS_integer, 
+                ISA_REGISTER_SUBCLASS_no_lr, 
+                32, SIGNED, INVALID); 
   src1 = ISA_Reg_Opnd_Type_Create("src1", 
                 ISA_REGISTER_CLASS_integer, 
                 ISA_REGISTER_SUBCLASS_UNDEFINED, 
@@ -66,6 +70,10 @@ main()
   src2 = ISA_Reg_Opnd_Type_Create("src2", 
                 ISA_REGISTER_CLASS_integer, 
                 ISA_REGISTER_SUBCLASS_UNDEFINED, 
+                32, SIGNED, INVALID); 
+  dest2 = ISA_Reg_Opnd_Type_Create("dest2", 
+                ISA_REGISTER_CLASS_integer, 
+                ISA_REGISTER_SUBCLASS_no_lr, 
                 32, SIGNED, INVALID); 
   lr = ISA_Reg_Opnd_Type_Create("lr", 
                 ISA_REGISTER_CLASS_integer, 
@@ -263,6 +271,25 @@ main()
 
 
   /* ====================================== */ 
+  Instruction_Group("O_Int3R", 
+		 TOP_mull_r, 
+		 TOP_mullu_r, 
+		 TOP_mulh_r, 
+		 TOP_mulhu_r, 
+		 TOP_mulll_r, 
+		 TOP_mulllu_r, 
+		 TOP_mullh_r, 
+		 TOP_mullhu_r, 
+		 TOP_mulhh_r, 
+		 TOP_mulhhu_r, 
+		 TOP_mulhs_r, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest2); 
+  Operand (0, src1, opnd1); 
+  Operand (1, src2, opnd2); 
+
+  /* ====================================== */ 
   Instruction_Group("O_Cmp3I_Reg", 
 		 TOP_cmpgeu_i_r, 
 		 TOP_cmpgeu_ii_r, 
@@ -316,28 +343,6 @@ main()
 		 TOP_max_ii, 
 		 TOP_min_i, 
 		 TOP_min_ii, 
-		 TOP_mull_i, 
-		 TOP_mull_ii, 
-		 TOP_mullu_i, 
-		 TOP_mullu_ii, 
-		 TOP_mulh_i, 
-		 TOP_mulh_ii, 
-		 TOP_mulhu_i, 
-		 TOP_mulhu_ii, 
-		 TOP_mulll_i, 
-		 TOP_mulll_ii, 
-		 TOP_mulllu_i, 
-		 TOP_mulllu_ii, 
-		 TOP_mullh_i, 
-		 TOP_mullh_ii, 
-		 TOP_mullhu_i, 
-		 TOP_mullhu_ii, 
-		 TOP_mulhh_i, 
-		 TOP_mulhh_ii, 
-		 TOP_mulhhu_i, 
-		 TOP_mulhhu_ii, 
-		 TOP_mulhs_i, 
-		 TOP_mulhs_ii, 
 		 TOP_mulhhs_i, 
 		 TOP_mulhhs_ii, 
 		 TOP_mullhus_i, 
@@ -382,17 +387,6 @@ main()
 		 TOP_maxu_r, 
 		 TOP_min_r, 
 		 TOP_minu_r, 
-		 TOP_mull_r, 
-		 TOP_mullu_r, 
-		 TOP_mulh_r, 
-		 TOP_mulhu_r, 
-		 TOP_mulll_r, 
-		 TOP_mulllu_r, 
-		 TOP_mullh_r, 
-		 TOP_mullhu_r, 
-		 TOP_mulhh_r, 
-		 TOP_mulhhu_r, 
-		 TOP_mulhs_r, 
 		 TOP_mulhhs_r, 
 		 TOP_mullhus_r, 
 		 TOP_UNDEFINED); 
@@ -400,6 +394,24 @@ main()
   Result (0, dest); 
   Operand (0, src1, opnd1); 
   Operand (1, src2, opnd2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Load", 
+		 TOP_ldw_d_i, 
+		 TOP_ldw_d_ii, 
+		 TOP_ldh_d_i, 
+		 TOP_ldh_d_ii, 
+		 TOP_ldhu_d_i, 
+		 TOP_ldhu_d_ii, 
+		 TOP_ldb_d_i, 
+		 TOP_ldb_d_ii, 
+		 TOP_ldbu_d_i, 
+		 TOP_ldbu_d_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, dest2); 
+  Operand (0, isrc2, offset); 
+  Operand (1, src1, base); 
 
   /* ====================================== */ 
   Instruction_Group("O_Int3I", 
@@ -427,29 +439,27 @@ main()
   Instruction_Group("O_Load", 
 		 TOP_ldw_i, 
 		 TOP_ldw_ii, 
-		 TOP_ldw_d_i, 
-		 TOP_ldw_d_ii, 
 		 TOP_ldh_i, 
 		 TOP_ldh_ii, 
-		 TOP_ldh_d_i, 
-		 TOP_ldh_d_ii, 
 		 TOP_ldhu_i, 
 		 TOP_ldhu_ii, 
-		 TOP_ldhu_d_i, 
-		 TOP_ldhu_d_ii, 
 		 TOP_ldb_i, 
 		 TOP_ldb_ii, 
-		 TOP_ldb_d_i, 
-		 TOP_ldb_d_ii, 
 		 TOP_ldbu_i, 
 		 TOP_ldbu_ii, 
-		 TOP_ldbu_d_i, 
-		 TOP_ldbu_d_ii, 
 		 TOP_UNDEFINED); 
 
   Result (0, dest); 
   Operand (0, isrc2, offset); 
   Operand (1, src1, base); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_asm", 
+		 TOP_asm, 
+		 TOP_phi, 
+		 TOP_psi, 
+		 TOP_UNDEFINED); 
+
 
   /* ====================================== */ 
   Instruction_Group("O_cgen", 
@@ -462,14 +472,6 @@ main()
   Operand (0, src1); 
   Operand (1, src2); 
   Operand (2, bcond); 
-
-  /* ====================================== */ 
-  Instruction_Group("O_asm", 
-		 TOP_asm, 
-		 TOP_phi, 
-		 TOP_psi, 
-		 TOP_UNDEFINED); 
-
 
   /* ====================================== */ 
   Instruction_Group("O_copy_br", 
@@ -505,6 +507,36 @@ main()
 
   Operand (0, src1); 
   Operand (1, isrc2); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Int3I", 
+		 TOP_mull_i, 
+		 TOP_mull_ii, 
+		 TOP_mullu_i, 
+		 TOP_mullu_ii, 
+		 TOP_mulh_i, 
+		 TOP_mulh_ii, 
+		 TOP_mulhu_i, 
+		 TOP_mulhu_ii, 
+		 TOP_mulll_i, 
+		 TOP_mulll_ii, 
+		 TOP_mulllu_i, 
+		 TOP_mulllu_ii, 
+		 TOP_mullh_i, 
+		 TOP_mullh_ii, 
+		 TOP_mullhu_i, 
+		 TOP_mullhu_ii, 
+		 TOP_mulhh_i, 
+		 TOP_mulhh_ii, 
+		 TOP_mulhhu_i, 
+		 TOP_mulhhu_ii, 
+		 TOP_mulhs_i, 
+		 TOP_mulhs_ii, 
+		 TOP_UNDEFINED); 
+
+  Result (0, idest2); 
+  Operand (0, src1, opnd1); 
+  Operand (1, isrc2, opnd2); 
 
   /* ====================================== */ 
   Instruction_Group("O_Cmp3R_Br", 
@@ -565,20 +597,20 @@ main()
   Operand (0, pcrel); 
 
   /* ====================================== */ 
-  Instruction_Group("O_Imm", 
-		 TOP_imml, 
-		 TOP_immr, 
-		 TOP_UNDEFINED); 
-
-  Operand (0, imm); 
-
-  /* ====================================== */ 
   Instruction_Group("O_clz", 
 		 TOP_clz, 
 		 TOP_UNDEFINED); 
 
   Result (0, idest); 
   Operand (0, src1); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Imm", 
+		 TOP_imml, 
+		 TOP_immr, 
+		 TOP_UNDEFINED); 
+
+  Operand (0, imm); 
 
   /* ====================================== */ 
   Instruction_Group("O_SelectI", 
