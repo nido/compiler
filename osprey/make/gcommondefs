@@ -169,6 +169,8 @@ endif
 ifeq ($(HOST_OS),SUNOS5)
 COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+# (cbr) 
+YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
 endif
 
 BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
@@ -179,6 +181,8 @@ endif # BUILD_OS = SUNOS5
 ifeq ($(BUILD_OS),LINUX)
 COMP_GNU_LOC=/apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
+# (cbr) 
+YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
 
 COMPILER_LOC=$(COMP_GNU_LOC)
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)
