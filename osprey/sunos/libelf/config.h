@@ -26,7 +26,7 @@
 /* #undef HAVE_CATGETS */
 
 /* Define if you have the gettext function. */
-#define HAVE_GETTEXT 1
+/*#define HAVE_GETTEXT 1*/
 
 /* Define if you have the memset function.  */
 #define HAVE_MEMSET 1
