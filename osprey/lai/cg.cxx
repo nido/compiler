@@ -125,10 +125,6 @@
 #include "top_properties.h"
 #endif
 
-#ifdef TARG_ST
-#include "entry_exit_targ.h"
-#endif
-
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
@@ -827,12 +823,6 @@ CG_Generate_Code(
   if (!region) {
     /* Check that we didn't introduce a new gp reference */
     Adjust_GP_Setup_Code( Get_Current_PU_ST(), TRUE /* allocate registers */ );
-
-#ifdef TARG_ST
-    // [SC] Allow the target to reserve space in the stack frame for
-    // preserved registers.
-    EETARG_Reserve_Preserved_Register_Space ();
-#endif
 
     /* The stack frame is final at this point, no more spilling after this.
      * We can set the Frame_Len now.
