@@ -5259,7 +5259,7 @@ EMT_Begin_File (
     // [CL] when generating .s file, do not
     // overwrite/remove existing .o file
     if ( ! Object_Code) {
-      Obj_File_Name = New_Extension (Obj_File_Name, ".tpo");
+      Obj_File_Name = tempnam(NULL, "cctpo");
     }
 #endif
  
