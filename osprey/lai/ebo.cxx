@@ -4939,6 +4939,14 @@ Find_BB_TNs (BB *bb)
       actual_tn = OP_opnd(op, opndnum);
       actual_tninfo = NULL;
 
+#ifdef TARG_ST
+      // FdF 10/05/2004: Normalize for better checks
+      // (tn_registers_identical for example).
+      if (TN_is_zero(actual_tn)) {
+	actual_tn = Zero_TN;
+      }
+#endif
+
       opnd_tn[opndnum] = actual_tn;
       opnd_tninfo[opndnum] = actual_tninfo;
       orig_tninfo[opndnum] = actual_tninfo;
@@ -6043,7 +6051,7 @@ op_is_needed:
   
 /* ===================================================================== */
 
-  
+
 /* 
  */
 static
