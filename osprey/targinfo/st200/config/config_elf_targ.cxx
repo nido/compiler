@@ -103,6 +103,14 @@ Config_Target_From_ELF (
       Target = TARGET_st230;
     }
     break;
+  case ELF_ST200_CORE_ST231:
+    if ((Target != TARGET_st231) && (Target != TARGET_UNDEF)) {
+      ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st231));
+    }
+    if (Target_ABI == ABI_UNDEF) {
+      Target = TARGET_st231;
+    }
+    break;
   default:
     ErrMsg(EC_Conf_Targ, "processor", Abi_Name(Target_ABI), "undefined/unsupported");
     Target = TARGET_UNDEF;
@@ -210,6 +218,8 @@ Config_ELF_From_Target (
     e_flags |= ELF_ST200_CORE_ST220; break;
   case TARGET_st230:
     e_flags |= ELF_ST200_CORE_ST230; break;
+  case TARGET_st231:
+    e_flags |= ELF_ST200_CORE_ST231; break;
   default:
     e_flags |= ELF_ST200_CORE_UNDEF; break;
   }

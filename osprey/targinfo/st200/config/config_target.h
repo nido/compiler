@@ -128,6 +128,7 @@ typedef enum {
   TARGET_st220,	        /* st220 */
   TARGET_st221,	        /* st221 */
   TARGET_st230,	        /* st230 */
+  TARGET_st231,	        /* st231 */
 } TARGET_PROCESSOR;
 
 BE_EXPORTED extern TARGET_PROCESSOR Target;		/* -Tc */
@@ -138,6 +139,7 @@ BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 #define Is_Target_st220()	(Target==TARGET_st220)
 #define Is_Target_st221()	(Target==TARGET_st221)
 #define Is_Target_st230()	(Target==TARGET_st230)
+#define Is_Target_st231()	(Target==TARGET_st231)
 
 /* ========== */
 /* Target ISA */
