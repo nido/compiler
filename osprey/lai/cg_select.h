@@ -53,13 +53,14 @@ extern void draw_CFG(void);
 
 // Traces
 // -Wb,-tt61:flags
-#define Select_Candidates 1 
-#define Select_Gen        2 
-#define Select_Spec       4 
-#define Select_Merge      8 
-#define Select_Dup        16 
-#define Select_Stats      32
-#define Select_daVinci    64
+#define Select_Trace_Candidates 1 
+#define Select_Trace_Gen        2 
+#define Select_Trace_Spec       4 
+#define Select_Trace_Merge      8 
+#define Select_Trace_Dup        16 
+#define Select_Trace_Stats      32
+#define Select_Trace_daVinci    64
+#define Select_Trace_stdout  	0x80000000
 
 // op list management
 typedef slist<OP*> op_list;

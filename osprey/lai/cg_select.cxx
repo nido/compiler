@@ -108,37 +108,52 @@ static BOOL Trace_Select_Merge;      /* -Wb,-tt61:0x008 */
 static BOOL Trace_Select_Dup;        /* -Wb,-tt61:0x010 */
 static BOOL Trace_Select_Stats;      /* -Wb,-tt61:0x020 */
 static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x040 */
+FILE *Select_TFile;
 
 static void
 Trace_Select_Init() {
-  Trace_Select_Candidates = Get_Trace(TP_SELECT, Select_Candidates);
-  Trace_Select_Gen        = Get_Trace(TP_SELECT, Select_Gen);
-  Trace_Select_Spec       = Get_Trace(TP_SELECT, Select_Spec);
-  Trace_Select_Merge      = Get_Trace(TP_SELECT, Select_Merge);
-  Trace_Select_Dup        = Get_Trace(TP_SELECT, Select_Dup);
-  Trace_Select_Stats      = Get_Trace(TP_SELECT, Select_Stats);
-  Trace_Select_daVinci    = Get_Trace(TP_SELECT, Select_daVinci);
+  Trace_Select_Candidates = Get_Trace(TP_SELECT, Select_Trace_Candidates);
+  Trace_Select_Gen        = Get_Trace(TP_SELECT, Select_Trace_Gen);
+  Trace_Select_Spec       = Get_Trace(TP_SELECT, Select_Trace_Spec);
+  Trace_Select_Merge      = Get_Trace(TP_SELECT, Select_Trace_Merge);
+  Trace_Select_Dup        = Get_Trace(TP_SELECT, Select_Trace_Dup);
+  Trace_Select_Stats      = Get_Trace(TP_SELECT, Select_Trace_Stats);
+  Trace_Select_daVinci    = Get_Trace(TP_SELECT, Select_Trace_daVinci);
+
+  if (Get_Trace(TP_SELECT, Select_Trace_stdout))
+    Select_TFile = stdout;
+  else
+    Select_TFile = TFile;
 }
 
 MEM_POOL MEM_Select_pool;
 UINT select_count;
 UINT logif_count;
 UINT spec_instrs_count;
+UINT disloads_count;
 
 static void
 CG_SELECT_Statistics()
 {
   if (select_count || logif_count)
-    fprintf (TFile, "========= %s ======= \n", ST_name(Get_Current_PU_ST()));
+    fprintf (Select_TFile, "========= %s ======= \n",
+             ST_name(Get_Current_PU_ST()));
 
   if (select_count) 
-    fprintf (TFile, "<cg_select> converted %d moves \n", select_count);
+    fprintf (Select_TFile, "<cg_select> converted %d moves\n",
+             select_count);
 
   if (logif_count) 
-    fprintf (TFile, "<cg_select> reduced %d logical expressions \n", logif_count);
+    fprintf (Select_TFile, "<cg_select> reduced %d logical expressions \n",
+             logif_count);
 
   if (spec_instrs_count) 
-    fprintf (TFile, "<cg_select> speculated %d instrs \n", spec_instrs_count);
+    fprintf (Select_TFile, "<cg_select> speculated %d instrs \n",
+             spec_instrs_count);
+
+  if (disloads_count) 
+    fprintf (Select_TFile, "<cg_select> speculated %d loads \n",
+             disloads_count);
 }
 
 /* ================================================================
@@ -185,6 +200,7 @@ Finalize_Select(void)
   select_count = 0;
   logif_count = 0;
   spec_instrs_count = 0;
+  disloads_count = 0;
 }
 
 static void
@@ -294,7 +310,7 @@ BB_Merge (BB *bb_first, BB *bb_second)
   OP *br;
 
   if (Trace_Select_Merge) {
-    fprintf (TFile, "BB_Merge %d %d\n", BB_id (bb_first), BB_id (bb_second));
+    fprintf (Select_TFile, "BB_Merge %d %d\n", BB_id (bb_first), BB_id (bb_second));
     Print_BB (bb_first);
     Print_BB (bb_second);
   }
@@ -532,6 +548,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
           lop = Dup_OP (op);
           OP_Change_Opcode(lop, ld_top); 
           Set_OP_speculative(lop);  
+          disloads_count++;
 
           load_i.first.push_front(op);
           load_i.second.push_front(lop);
@@ -610,8 +627,8 @@ static BOOL
 Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
 {
   if (Trace_Select_Candidates) {
-    fprintf(TFile, "<select> Found Hammock : ");
-    fprintf(TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
+    fprintf(Select_TFile, "<select> Found Hammock : ");
+    fprintf(Select_TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
             BB_id(target), BB_id(fall_thru), BB_id(ipdom));
   }
     
@@ -649,7 +666,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   BOOL found_not_taken = FALSE;
 
   if (Trace_Select_Candidates) {
-    fprintf (TFile, "<select> is hammock BB%d ? \n", BB_id(head));
+    fprintf (Select_TFile, "<select> is hammock BB%d ? \n", BB_id(head));
     Print_BB_Header (head, FALSE, TRUE);
   }
 
@@ -657,7 +674,7 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   BB_Fall_Thru_and_Target_Succs(head, fall_thru, target);
 
   if (Trace_Select_Candidates) {
-    fprintf (TFile, "<select> target BB%d ? fall_thru BB%d\n",
+    fprintf (Select_TFile, "<select> target BB%d ? fall_thru BB%d\n",
              BB_id(*target), BB_id(*fall_thru));
   }
 
@@ -978,7 +995,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   }
 
   if (Trace_Select_Gen) {
-    fprintf (TFile, "Convert if BB%d BB%d BB%d BB%d BB%d BB%d\n",
+    fprintf (Select_TFile, "Convert if BB%d BB%d BB%d BB%d BB%d BB%d\n",
              BB_id(bb1), BB_id(bb1_fall_thru), BB_id(bb1_target),
              BB_id(bb2), BB_id(bb2_fall_thru), BB_id(bb2_target));
   }
@@ -1136,9 +1153,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
     DevAssert (OP_results(phi) == 1, ("unsupported multiple results select"));
 
     if (Trace_Select_Gen) {
-      fprintf(TFile, "<select> handle phi ");
+      fprintf(Select_TFile, "<select> handle phi ");
       Print_OP (phi);
-      fprintf(TFile, "in \n");      
+      fprintf(Select_TFile, "in \n");      
       Print_BB (tail);
     }
 
@@ -1213,9 +1230,9 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   //  BB_Move_Op_To_End(head, head, cmp);
  
   if (Trace_Select_Gen) {
-    fprintf(TFile, "<select> Insert selects ");
+    fprintf(Select_TFile, "<select> Insert selects ");
     Print_OPS (&cmov_ops); 
-    fprintf (TFile, "\n");
+    fprintf (Select_TFile, "\n");
   }
 
   // Cleanup phis that are going to be replaced ...
@@ -1295,25 +1312,25 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Trace_Select_Init();
 
   if (Trace_Select_Spec) {
-    fprintf (TFile, "<select> speculative model is eager ");
+    fprintf (Select_TFile, "<select> speculative model is eager ");
     switch (Eager_Level) {
     case EAGER_NONE:
-      fprintf (TFile, "none\n");      
+      fprintf (Select_TFile, "none\n");      
       break;
     case EAGER_SAFE:
-      fprintf (TFile, "safe\n");      
+      fprintf (Select_TFile, "safe\n");      
       break;
     case EAGER_ARITH:
-      fprintf (TFile, "arith\n");      
+      fprintf (Select_TFile, "arith\n");      
       break;
     case EAGER_DIVIDE:
-      fprintf (TFile, "divide\n");      
+      fprintf (Select_TFile, "divide\n");      
       break;
     case EAGER_MEMORY:
-      fprintf (TFile, "memory\n");      
+      fprintf (Select_TFile, "memory\n");      
       break;
     default:
-      fprintf (TFile, "%d\n", Eager_Level);      
+      fprintf (Select_TFile, "%d\n", Eager_Level);      
       break;
     }
   }
@@ -1335,10 +1352,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (bbb = Is_Double_Logif(bb)) {
       if (Trace_Select_Gen) {
-        fprintf (TFile, "\n********** BEFORE LOGICAL OPTS BB%d ***********\n",
+        fprintf (Select_TFile, "\n********** BEFORE LOGICAL OPTS BB%d ***********\n",
                  BB_id(bb));
         Print_All_BBs();
-        fprintf (TFile, "******************************************\n");
+        fprintf (Select_TFile, "******************************************\n");
       }
         
       Initialize_Hammock_Memory();
@@ -1347,9 +1364,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
       
       if (Trace_Select_Gen) {
-        fprintf (TFile, "---------- AFTER LOGICAL OPTS -------------\n");
+        fprintf (Select_TFile, "---------- AFTER LOGICAL OPTS -------------\n");
         Print_All_BBs();
-        fprintf (TFile, "------------------------------------------\n");
+        fprintf (Select_TFile, "------------------------------------------\n");
       }
     }
     clear_spec_lists();
@@ -1365,10 +1382,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
       if (Trace_Select_Gen) {
-        fprintf (TFile, "\n********** BEFORE SELECT FOLD BB%d ************\n",
+        fprintf (Select_TFile, "\n********** BEFORE SELECT FOLD BB%d ************\n",
                  BB_id(bb));
         Print_All_BBs();
-        fprintf (TFile, "******************************************\n");
+        fprintf (Select_TFile, "******************************************\n");
       }
       
       Initialize_Hammock_Memory();
@@ -1376,9 +1393,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Finalize_Hammock_Memory();
       
       if (Trace_Select_Gen) {
-        fprintf (TFile, "---------- AFTER SELECT FOLD -------------\n");
+        fprintf (Select_TFile, "---------- AFTER SELECT FOLD -------------\n");
         Print_All_BBs();
-        fprintf (TFile, "------------------------------------------\n");
+        fprintf (Select_TFile, "------------------------------------------\n");
       }
     }
     clear_spec_lists();
