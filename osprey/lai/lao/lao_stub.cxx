@@ -627,7 +627,7 @@ CG_EXPORTED extern void (*CGIR_print_p)(FILE *file);
 // Initialization of the LAO, needs to be called once.
 void
 lao_init() {
-  if (getenv("PID")) {
+  if (GETENV("PID")) {
     int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
   }
   if (lao_initialized++ == 0) {
@@ -1150,7 +1150,7 @@ lao_fillLoopInfo(LOOP_DESCR *loop, LoopInfo loopinfo) {
 static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelining, unsigned lao_optimizations) {
   //
-  if (getenv("CGIR_PRINT")) CGIR_print(TFile);
+  if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
   LAO_INIT();
   Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
       Configuration_SchedKind, CG_LAO_schedkind,
@@ -1213,7 +1213,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   unsigned optimizations = LAO_Optimize(lao_optimizations);
   if (optimizations != 0) {
     Interface_updateCGIR(interface, callback);
-    if (getenv("CGIR_PRINT")) CGIR_print(TFile);
+    if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
   }
   //
   Interface_close(interface);
