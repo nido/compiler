@@ -1043,7 +1043,7 @@ Fill_Cycle_With_Noops (
       Set_OP_end_group(noop);
 
 #ifdef TARG_ST200 // [CL]
-      if (!CG_NOPs_to_GOTO || !NOPs_to_GOTO(bb, op))
+      if (!CG_NOPs_to_GOTO || (op != NULL && !NOPs_to_GOTO(bb, op)))
 	*pc += 1;
 	}
       }
