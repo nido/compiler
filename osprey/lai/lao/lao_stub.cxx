@@ -1069,12 +1069,14 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
       int8_t min_trip_count = trip_count <= 127 ? trip_count : 127;
       uint64_t trip_factor = trip_count & -trip_count;
       int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
-      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 3,
+      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 4,
+	  Configuration_Pipeline, pipeline,
 	  Configuration_MinTrip, min_trip_count,
 	  Configuration_Modulus, min_trip_factor,
 	  Configuration_Residue, 0);
     } else {
-      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 0);
+      loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
+	  Configuration_Pipeline, pipeline);
     }
     // Make a BB_List of the loop body and compute its op_count.
     BB *bb = NULL;
@@ -1090,7 +1092,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
     }
     // Compute the memory dependence graph.
     if (op_count < LAO_OPS_LIMIT) {
-      bool cyclic = BB_innermost(head_bb) && pipeline > 0;
+      bool cyclic = BB_innermost(head_bb) != 0;
       CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
       BB_List::iterator bb_iter;
       for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
@@ -1103,13 +1105,13 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
 	      if (ARC_is_mem(arc)) {
-		bool definite = ARC_is_definite(arc);
+		bool isDefinite = ARC_is_definite(arc);
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
 		Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
 		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
 		Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-		    orig_operation, dest_operation, latency, omega, definite);
+		    orig_operation, dest_operation, latency, omega, isDefinite);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
@@ -1134,7 +1136,7 @@ lao_optimize(BB_List &entryBBs, BB_List &bodyBBs, BB_List &exitBBs, int pipeline
       Configuration_Schedule, CG_LAO_schedule,
       Configuration_Pipeline, CG_LAO_pipeline,
       Configuration_Speculate, CG_LAO_speculate,
-      Configuration_LoopOpt, pipeline > 0);
+      Configuration_LoopOpt, 1);
   lao_initializeInterface();
   //
   // Create the LAO BasicBlocks.
@@ -1202,11 +1204,11 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   //
   // Compute the pipeline value.
   BB *tail_bb = LOOP_DESCR_Find_Unique_Tail(loop);
+  int pipeline = (tail_bb != NULL)*CG_LAO_pipeline;
   bool prepass = (lao_optimizations & Optimization_PreSched) != 0;
-  int pipeline = (tail_bb != NULL)*prepass*CG_LAO_pipeline;
   //
   // Adjust the control-flow if required.
-  if (pipeline > 0) {
+  if (pipeline > 0 && prepass) {
     // Software pipelining (implies prepass scheduling).
     //BB *prolog_bb = CG_LOOP_Gen_And_Prepend_To_Prolog(head_bb, loop);
     //GRA_LIVE_Compute_Liveness_For_BB(prolog_bb);
@@ -1236,40 +1238,6 @@ lao_optimize_LOOP(LOOP_DESCR *loop, unsigned lao_optimizations) {
   //
   // Call the lower level lao_optimize function.
   return lao_optimize(entryBBs, bodyBBs, exitBBs, pipeline, lao_optimizations);
-}
-
-// Optimize a HB through the LAO.
-static bool
-lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
-  BB *head_bb = HB_Entry(hb);
-  BB_SET *body_set = HB_Blocks(hb);
-  //
-  // Call lao_optimize_LOOP if HB is an inner loop.
-  LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(head_bb);
-  if (loop != NULL) {
-    if (Is_Inner_Loop(loop) && LOOP_DESCR_loophead(loop) == head_bb &&
-	BB_SET_Size(body_set) == BB_SET_Size(LOOP_DESCR_bbset(loop))) {
-      return lao_optimize_LOOP(loop, lao_optimizations);
-    }
-  }
-  //
-  // List the body BBs.
-  BB_List &bodyBBs = *HB_Blocks_List(hb);
-  Is_True(bodyBBs.front() == head_bb, ("lao_optimize_HB computed incorrect body"));
-  //
-  // List the entry BBs.
-  BB_List entryBBs;
-  int entry_count = lao_fill_entry_bblist(body_set, bodyBBs, entryBBs);
-  //
-  // List the exit BBs.
-  BB_List exitBBs;
-  int exit_count = lao_fill_exit_bblist(body_set, bodyBBs, exitBBs);
-  //Is_True(exitBBs.front() == HB_Fall_Thru_Exit(hb),
-      //("lao_optimize_HB computed incorrect exits: BB(%d) != BB(%d)",
-	  //BB_id(exitBBs.front()), BB_id(HB_Fall_Thru_Exit(hb))));
-  //
-  // Call the lower level lao_optimize function with pipeline=0.
-  return lao_optimize(entryBBs, bodyBBs, exitBBs, 0, lao_optimizations);
 }
 
 // Optimize the complete PU through the LAO.
@@ -1330,6 +1298,12 @@ lao_optimize_PU(unsigned lao_optimizations) {
   //
   MEM_POOL_Delete(&lao_loop_pool);
   return result;
+}
+
+// Optimize a HB through the LAO.
+static bool
+lao_optimize_HB(HB *hb, unsigned lao_optimizations) {
+  return false;
 }
 
 /*-------------------------- CGIR Print Functions ----------------------------*/
