@@ -2477,16 +2477,6 @@ EBO_Constant_Operand0 (
     return FALSE;
   }
 
-  if (!TN_Is_Constant(tn1) &&
-      ((TN_register_class(tnr) != TN_register_class(tn1)) ||
-       (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn1)))) {
-    /* Type changes indicate that something tricky is going on. */
-    if (EBO_Trace_Data_Flow) {
-      fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
-    }
-    return FALSE;
-  }
-  
   const_val = TN_Value(tn0);
 
 #ifdef TARG_ST
@@ -3293,16 +3283,6 @@ EBO_Constant_Operand1 (
 
   if (TN_is_symbol(tn1)) {
    /* Re-located constants not supported. */
-    return FALSE;
-  }
-
-  if (!TN_Is_Constant(tn0) &&
-      (TN_register_class(tn0) != TN_register_class(tnr)) ||
-      (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn0))) {
-   /* Type changes indicate that something tricky is going on. */
-    if (EBO_Trace_Data_Flow) {
-      fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
-    }
     return FALSE;
   }
 
