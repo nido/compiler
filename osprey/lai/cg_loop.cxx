@@ -3274,6 +3274,14 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	WN_loop_trip_est(wn) = trip_est;
 	WN_Set_Loop_Unimportant_Misc(wn);
 	LOOPINFO_trip_count_tn(info) = new_trip_count;
+#ifdef TARG_ST
+	// FdF: remove the PRAGMA UNROLL annotation from the remainder loop
+	ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(body), ANNOT_PRAGMA);
+	while (unroll_ant && WN_pragma(ANNOT_pragma(unroll_ant)) != WN_PRAGMA_UNROLL)
+	  unroll_ant = ANNOT_Get(ANNOT_next(unroll_ant), ANNOT_PRAGMA);
+	if (unroll_ant)
+	  BB_annotations(body) = ANNOT_Unlink(BB_annotations(body), unroll_ant);
+#endif
       }
 
       OPS body_ops = OPS_EMPTY;
@@ -5163,7 +5171,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 	  (body_len * const_trip_count <= CG_LOOP_unrolled_size_max) &&
 	  !pragma_unroll) ||
 	 (((CG_LOOP_unrolled_size_max == 0) || pragma_unroll) &&
-	  (unroll_times_max >= const_trip_count)))) {
+	  (unroll_times_max*2 > const_trip_count)))) {
 
       if (trace)
 	fprintf(TFile, "<unroll> unrolling fully (%d times)\n", const_trip_count);
