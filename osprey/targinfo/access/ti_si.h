@@ -396,11 +396,22 @@ typedef const struct {
 } SI_RESOURCE;
 
 TARGINFO_EXPORTED extern const INT SI_resource_count;
+#ifndef TARG_ST
 #pragma weak SI_resource_count
+#endif
 
-TARGINFO_EXPORTED extern SI_RESOURCE* const SI_resources[];
+TARGINFO_EXPORTED extern SI_RESOURCE * const SI_resources[];
 #pragma weak SI_resources
 
+#ifdef TARG_ST
+extern const char* SI_RESOURCE_Name( SI_RESOURCE*);
+extern UINT SI_RESOURCE_Id( SI_RESOURCE*);
+extern UINT SI_RESOURCE_Avail_Per_Cycle( SI_RESOURCE*);
+extern UINT SI_RESOURCE_Word_Index( SI_RESOURCE*);
+extern UINT SI_RESOURCE_Bit_Index( SI_RESOURCE*);
+extern const char* SI_RESOURCE_ID_Name( SI_RESOURCE_ID);
+extern UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID);
+#else
 inline const char* SI_RESOURCE_Name( SI_RESOURCE* res )
 {
   return res->name;
@@ -435,17 +446,22 @@ inline UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID id )
 {
   return SI_RESOURCE_Avail_Per_Cycle(SI_resources[id]);
 }
+#endif
 
 /****************************************************************************
  ****************************************************************************/
 
 typedef mUINT64 SI_RESOURCE_ID_SET;
 
+#ifdef TARG_ST
+extern SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void);
+#else
 inline SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void)
 {
   return    (SI_RESOURCE_ID_SET)-1
 	 >> (sizeof(SI_RESOURCE_ID_SET) * 8 - SI_resource_count);
 }
+#endif
 
 inline SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Empty(void)
 {
@@ -493,25 +509,30 @@ TARGINFO_EXPORTED extern const SI_RRW SI_RRW_initializer;
 TARGINFO_EXPORTED extern const SI_RRW SI_RRW_overuse_mask;
 #pragma weak SI_RRW_overuse_mask
 
-inline SI_RRW SI_RRW_Initial(void)
-{
-  return SI_RRW_initializer;
-}
-
 inline SI_RRW SI_RRW_Reserve( SI_RRW table, SI_RRW requirement )
 {
   return table + requirement;
-}
-
-inline SI_RRW SI_RRW_Has_Overuse( SI_RRW word_with_reservations )
-{
-  return (word_with_reservations & SI_RRW_overuse_mask) != 0;
 }
 
 inline SI_RRW SI_RRW_Unreserve( SI_RRW table, SI_RRW requirement )
 {
   return table - requirement;
 }
+
+#ifdef TARG_ST
+extern SI_RRW SI_RRW_Initial(void);
+extern SI_RRW SI_RRW_Has_Overuse(SI_RRW);
+#else
+inline SI_RRW SI_RRW_Initial(void)
+{
+  return SI_RRW_initializer;
+}
+
+inline SI_RRW SI_RRW_Has_Overuse( SI_RRW word_with_reservations )
+{
+  return (word_with_reservations & SI_RRW_overuse_mask) != 0;
+}
+#endif
 
 /****************************************************************************
  ****************************************************************************/
@@ -522,6 +543,11 @@ typedef const struct {
   mINT32 avail_per_cycle;
 } SI_ISSUE_SLOT;
 
+#ifdef TARG_ST
+extern const char* SI_ISSUE_SLOT_Name( SI_ISSUE_SLOT*);
+extern INT SI_ISSUE_SLOT_Skew( SI_ISSUE_SLOT*);
+extern INT SI_ISSUE_SLOT_Avail_Per_Cycle( SI_ISSUE_SLOT*);
+#else
 inline const char* SI_ISSUE_SLOT_Name( SI_ISSUE_SLOT* slot )
 {
   return slot->name;
@@ -536,6 +562,7 @@ inline INT SI_ISSUE_SLOT_Avail_Per_Cycle( SI_ISSUE_SLOT* slot )
 {
   return slot->avail_per_cycle;
 }
+#endif
 
 TARGINFO_EXPORTED extern const INT SI_issue_slot_count;
 #pragma weak SI_issue_slot_count
@@ -543,6 +570,10 @@ TARGINFO_EXPORTED extern const INT SI_issue_slot_count;
 TARGINFO_EXPORTED extern SI_ISSUE_SLOT* const SI_issue_slots[];
 #pragma weak SI_issue_slots
 
+#ifdef TARG_ST
+extern INT SI_ISSUE_SLOT_Count(void);
+extern SI_ISSUE_SLOT* SI_Ith_Issue_Slot(UINT);
+#else
 inline INT SI_ISSUE_SLOT_Count(void)
 {
   return SI_issue_slot_count;
@@ -552,6 +583,7 @@ inline SI_ISSUE_SLOT* SI_Ith_Issue_Slot( UINT i )
 {
   return SI_issue_slots[i];
 }
+#endif
 
 /****************************************************************************
  ****************************************************************************/
@@ -561,6 +593,12 @@ typedef const struct {
   mINT32 total_used;
 } SI_RESOURCE_TOTAL;
 
+#ifdef TARG_ST
+extern SI_RESOURCE* SI_RESOURCE_TOTAL_Resource( SI_RESOURCE_TOTAL*);
+extern SI_RESOURCE_ID SI_RESOURCE_TOTAL_Resource_Id( SI_RESOURCE_TOTAL*);
+extern UINT SI_RESOURCE_TOTAL_Avail_Per_Cycle(SI_RESOURCE_TOTAL*);
+extern INT SI_RESOURCE_TOTAL_Total_Used( SI_RESOURCE_TOTAL*);
+#else
 inline SI_RESOURCE*
 SI_RESOURCE_TOTAL_Resource( SI_RESOURCE_TOTAL* pair )
 {
@@ -581,12 +619,17 @@ inline INT SI_RESOURCE_TOTAL_Total_Used( SI_RESOURCE_TOTAL* pair )
 {
   return pair->total_used;
 }
+#endif
 
 /****************************************************************************
  ****************************************************************************/
 
 typedef const SI_RRW* SI_RR;
 
+#ifdef TARG_ST
+extern UINT SI_RR_Length(SI_RR);
+extern SI_RRW SI_RR_Cycle_RRW( SI_RR, UINT);
+#else
 inline UINT SI_RR_Length( SI_RR req )
 {
   return (INT) req[0];
@@ -599,6 +642,7 @@ inline SI_RRW SI_RR_Cycle_RRW( SI_RR req, UINT cycle )
   */
   return req[cycle+1];
 }
+#endif
 
 /****************************************************************************
  ****************************************************************************/
@@ -628,6 +672,24 @@ typedef const struct {
 TARGINFO_EXPORTED extern SI* const SI_top_si[];
 #pragma weak SI_top_si
 
+#ifdef TARG_ST
+extern const char* TSI_Name( TOP top );
+extern SI_ID TSI_Id( TOP top );
+extern INT TSI_Operand_Access_Time( TOP top, INT operand_index );
+extern INT TSI_Result_Available_Time( TOP top, INT result_index );
+extern INT TSI_Load_Access_Time( TOP top );
+extern INT TSI_Last_Issue_Cycle( TOP top );
+extern INT TSI_Store_Available_Time( TOP top );
+extern SI_RR TSI_Resource_Requirement( TOP top );
+extern SI_BAD_II_SET TSI_Bad_IIs( TOP top );
+extern SI_RR TSI_II_Resource_Requirement( TOP top, INT ii );
+extern const SI_RESOURCE_ID_SET* TSI_II_Cycle_Resource_Ids_Used( TOP opcode, INT ii );
+extern UINT TSI_Valid_Issue_Slot_Count( TOP top );
+extern SI_ISSUE_SLOT* TSI_Valid_Issue_Slots( TOP top, UINT i );
+extern UINT TSI_Resource_Total_Vector_Size( TOP top );
+extern SI_RESOURCE_TOTAL* TSI_Resource_Total_Vector( TOP top );
+extern INT TSI_Write_Write_Interlock( TOP top );
+#else
 inline const char* TSI_Name( TOP top )
 {
   return SI_top_si[(INT) top]->name;
@@ -720,6 +782,7 @@ inline INT TSI_Write_Write_Interlock( TOP top )
 {
   return SI_top_si[(INT) top]->write_write_interlock;
 }
+#endif
 
 /****************************************************************************
  ****************************************************************************/
@@ -727,14 +790,21 @@ inline INT TSI_Write_Write_Interlock( TOP top )
 TARGINFO_EXPORTED extern const INT SI_ID_count;
 #pragma weak SI_ID_count
 
+#ifdef TARG_ST
+extern INT SI_ID_Count(void);
+#else
 inline INT SI_ID_Count(void)
 {
   return SI_ID_count;
 }
+#endif
 
 TARGINFO_EXPORTED extern SI* const SI_ID_si[];
 #pragma weak SI_ID_si
 
+#ifdef TARG_ST
+extern const SI_RESOURCE_ID_SET* SI_ID_II_Cycle_Resource_Ids_Used(SI_ID, INT);
+#else
 inline const SI_RESOURCE_ID_SET*
 SI_ID_II_Cycle_Resource_Ids_Used( SI_ID id, INT ii )
 {
@@ -743,7 +813,8 @@ SI_ID_II_Cycle_Resource_Ids_Used( SI_ID id, INT ii )
 
   return info->ii_resources_used[ii - 1];
 }
-  
+
+#endif
 
 #ifdef __cplusplus
 }
