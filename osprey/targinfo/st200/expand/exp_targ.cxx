@@ -1022,7 +1022,6 @@ Expand_Multiply (
     if (mtype == MTYPE_U2) {
       TN* const_tn = Gen_Literal_TN ((INT32) 65535, 4);
       Build_OP(TOP_and_i, dest, const_tn, ops);
-
     }
     else if (mtype == MTYPE_I2) {
       Build_OP(TOP_sxth_r, dest, dest, ops);
@@ -1072,7 +1071,6 @@ Expand_Multiply (
       Build_OP(opcode, tmp2, src1, src2, ops);
       Build_OP(TOP_add_r, dest, tmp1, tmp2, ops);
     }
-
     else {
       FmtAssert(FALSE, ("Expand_Multiply: MTYPE_UI4 "));
     }
@@ -1372,13 +1370,13 @@ void
 Expand_Binary_Complement (
   TN *dest,
   TN *src,
-  TYPE_ID /* mtype */,
+  TYPE_ID mtype,
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Is_True(MTYPE_is_class_integer(mtype),("not integer for complement"));
 
-  /* complement == nor src $0 */
+  /* complement == xor src 0xffffffff */
   Build_OP (TOP_xor_i, dest, Gen_Literal_TN(-1, 4), src, ops);
 }
 
