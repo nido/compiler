@@ -753,6 +753,10 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 	Start_Timer (T_Sched_CU);
     }
 
+#ifdef TARG_ST
+    CGTARG_Resize_Instructions ();
+#endif
+
     // Do local scheduling for BBs which are not part of HBs. 
     // (after register allocation).
     REG_LIVE_Analyze_Region();
@@ -834,6 +838,9 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
       if (frequency_verify)
 	FREQ_Verify("LAO Postpass Optimizations");
     }
+#ifdef TARG_ST
+    CGTARG_Resize_Instructions ();
+#endif
     // Direct call to the bundler, and bypass the IGLS.
     Set_Error_Phase( "LAO Linearize Optimizations" );
     if (CG_LAO_optimizations & Optimization_Linearize) {

@@ -842,6 +842,11 @@ extern void CGTARG_Finish_Bundle(OP                     *op,
 extern void CGTARG_Make_Bundles_Postpass(BB *bb);
 #endif
 
+#ifdef TARG_ST
+// Perform target-specific instruction size adjustments.
+extern void CGTARG_Resize_Instructions ();
+#endif
+
 // Handle all bundle hazards.
 extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
 					TI_BUNDLE              *bundle, 

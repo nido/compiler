@@ -2231,6 +2231,26 @@ void CGTARG_Make_Bundles_Postpass(BB *bb)
 }  
 
 /* ====================================================================
+ *   CGTARG_Resize_Instructions
+ * ====================================================================
+ */
+void CGTARG_Resize_Instructions ()
+{
+  // Iterate over all the operations to change them to _ii when needed.
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
+      TOP etop;
+      if (OP_inst_words(op) == 2)
+	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
+      if (CGTARG_need_extended_Opcode(op, &etop)) {
+	if (OP_inst_words(op) == 1)
+	  OP_Change_Opcode(op, etop);
+      }
+    }
+  }
+}
+
+/* ====================================================================
  *   CGTARG_Handle_Errata_Hazard
  * ====================================================================
  */
