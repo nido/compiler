@@ -509,7 +509,7 @@ CGTARG_Compute_Branch_Parameters (
   *brtaken = 0;
   *factor = 0.0;
 
-  if (Is_Target_st220() || Is_Target_st221())
+  if (Is_Target_st220() || Is_Target_st221() || Is_Target_st230())
   {
     *mispredict= 8; *fixed= 1; *brtaken= 1; *factor = 1.0;
   }
