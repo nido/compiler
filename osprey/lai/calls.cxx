@@ -61,7 +61,11 @@
 #include "erbe.h"
 #include "glob.h"
 #include "tracing.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "config.h"
 
 #include "symtab.h"
@@ -1071,7 +1075,7 @@ Generate_Unique_Exit (void)
 
   /* Generate the unique exits.
    */
-  bzero(rtn_tns, sizeof(rtn_tns));
+  BZERO(rtn_tns, sizeof(rtn_tns));
   unique_exit_bb = NULL;
   for ( elist = Exit_BB_Head; elist; elist = BB_LIST_rest(elist) ) {
     BB *bb = BB_LIST_first(elist);

@@ -8,7 +8,11 @@
 #include "cxx_memory.h"
 #include "glob.h"
 #include "bitset.h"
+#ifndef __CYGWIN__
 #include "config_targ.h"
+#else
+#include "config_target.h"
+#endif
 #include "config.h"
 
 #include "symtab.h"
@@ -607,7 +611,7 @@ SSA_Compute_Dominance_Frontier ()
 					PU_BB_Count+2 );
 
   visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+2));
-  bzero(visited, sizeof(BOOL)*(PU_BB_Count+2));
+  BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
 
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
     compute_dominance_frontier (bb, visited);
@@ -654,7 +658,7 @@ SSA_Place_Phi_In_BB (
 
   // Arthur: amazingly, we can have a large number of predecessors !!
   TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
-  bzero(opnd, sizeof(TN*)*num_opnds);
+  BZERO(opnd, sizeof(TN*)*num_opnds);
   // only 1 result possible
   result[0] = tn;
 
@@ -1053,7 +1057,7 @@ SSA_Rename ()
   initialize_tn_stack();
 
   BOOL *visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+2));
-  bzero(visited, sizeof(BOOL)*(PU_BB_Count+2));
+  BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
 
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
     SSA_Rename_BB (bb, visited);
@@ -1312,7 +1316,7 @@ IGRAPH_Initialize ()
 					&MEM_local_pool, 
 					2*SSA_UNIVERSE_size+1);
   // initialize interference to NULL
-  bzero(tn_imap, sizeof(BS*)*2*SSA_UNIVERSE_size+1);
+  BZERO(tn_imap, sizeof(BS*)*2*SSA_UNIVERSE_size+1);
 
   Igraph_Used = TRUE;
 
@@ -1538,7 +1542,7 @@ IGRAPH_Build ()
                   // to FALSE, so we know that only those BBs with
                   // visited set to TRUE are left.
   visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+2));
-  bzero(visited, sizeof(BOOL)*(PU_BB_Count+2));
+  BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
 
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
     if (visited[BB_id(bb)] == FALSE)
