@@ -1414,6 +1414,8 @@ Handle_Bundle_Hazards(
   return TRUE;
 }
 
+extern BOOL CG_NOPs_to_GOTO;
+
 /* ====================================================================
  *   Make_Bundles
  * ====================================================================
@@ -1898,6 +1900,8 @@ Make_Bundles (
 
 #endif
 
+static void NOPs_to_GOTO(BB *bb);
+
 // ======================================================================
 // Eliminate hazards for 'bb' by adding noops.
 // ======================================================================
@@ -1936,6 +1940,9 @@ Handle_All_Hazards (BB *bb)
   //
   Make_Bundles(bb, bundle, &bundle_vector);
 
+  if (FORCE_NOOPS && CG_NOPs_to_GOTO)
+    NOPs_to_GOTO(bb);
+
 #else
 
   FOR_ALL_BB_OPs_FWD (bb, op) {
@@ -1966,4 +1973,76 @@ Handle_All_Hazards (BB *bb)
 #endif
 #endif
 
+}
+
+// ======================================================================
+//  Post-pass to replace a sequence of ;; nop ;; nop ;; by ;; goto .+4 ;;
+//  This is activated under option -CG:nop2goto=1
+// ======================================================================
+
+// Create a label '.'
+static LABEL_IDX
+Gen_Label_PC() {
+  LABEL_IDX lab;
+  LABEL *label;
+
+  label = &New_LABEL(CURRENT_SYMTAB, lab);
+  LABEL_Init (*label, Save_Str("."), LKIND_DEFAULT);
+
+  return lab;
+}
+
+// Replace the sequence ;; NOP ;; NOP ;; by ;; GOTO .+4 ;;
+static OP*
+NOPs2Goto (
+  OP *op,
+  LABEL_IDX lab_PC
+)
+{
+  OP *goto_op;
+
+  goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 4));
+  BB_Insert_Op(OP_bb(op), op, goto_op, FALSE);
+  
+  OP_scycle(goto_op) = OP_scycle(OP_prev(op));
+  Set_OP_bundled (goto_op);
+  Set_OP_end_group(goto_op);
+
+  BB_Remove_Op(OP_bb(op), OP_prev(op));
+  BB_Remove_Op(OP_bb(op), op);
+
+  return goto_op;
+}
+
+#define Bundle_is_NOP(op, start) (start && OP_end_group(op) && OP_noop(op))
+
+static void NOPs_to_GOTO (
+  BB *bb
+)
+{
+  OP *op = BB_first_op(bb);
+  bool bundle_NOP; // Did we find a NOP bundle
+  bool bundle_start; // Is the current OP the first one in a bundle
+  LABEL_IDX label_PC;
+
+  // Create a new label for each basic block. It would be possible to
+  // create only one by PU, but the bundler works currently at the
+  // basic block level.
+  label_PC = Gen_Label_PC();
+
+  // Initial state
+  bundle_NOP = FALSE;
+  bundle_start = TRUE;
+  
+  while (op != NULL) {
+
+    // Previous bundle is a NOP, and the current one also
+    if (bundle_NOP && Bundle_is_NOP(op, bundle_start))
+      op = NOPs2Goto(op, label_PC);
+
+    // Set the state for the next operation.
+    bundle_NOP = (Bundle_is_NOP(op, bundle_start));
+    bundle_start = OP_end_group(op);
+    op = OP_next(op);
+  }
 }

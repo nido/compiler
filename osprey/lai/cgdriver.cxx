@@ -186,6 +186,8 @@ static BOOL CG_LAO_scd_last_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
+BOOL CG_NOPs_to_GOTO = FALSE;
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -547,6 +549,8 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
+    TRUE, 0, 0, &CG_NOPs_to_GOTO, NULL },
 #endif
 
   // Cross Iteration Loop Optimization options.
