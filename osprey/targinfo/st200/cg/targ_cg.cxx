@@ -1393,6 +1393,98 @@ static void Move_Slot(
 
 
 /* ====================================================================
+ *   CGTARG_need_extended_Opcode
+ *   Does this OP have extended immediate operand ?
+ * ====================================================================
+ */
+BOOL
+CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
+  INT i;
+
+  BOOL extra_slot_reqd = FALSE;
+
+  // This is here until ASM is fixed
+  BOOL extra_slot_implicit = TRUE;
+
+  for (i = 0; i < OP_opnds(op); i++) {
+    TN *opnd = OP_opnd(op, i);
+    INT64 val;
+
+    if (TN_is_constant(opnd)) {
+
+      if (TN_has_value(opnd)) {
+	val = TN_value(opnd);
+	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	  extra_slot_reqd = TRUE;
+	}
+      }
+      else if (TN_is_symbol(opnd)) {
+	ST *st, *base_st;
+	INT64 base_ofst;
+
+	st = TN_var(opnd);
+	Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+	// SP/FP relative may actually fit into 9-bits
+	if (base_st == SP_Sym || base_st == FP_Sym) {
+	  val = CGTARG_TN_Value (opnd, base_ofst);
+	  if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	    extra_slot_reqd = TRUE;
+	  }
+	}
+	else if (ST_gprel(base_st)) {
+	  FmtAssert(FALSE,("GP-relative not supported"));
+	}
+	else if (ST_class(st) == CLASS_CONST) {
+	  // Handle floating-point constants
+	  if (MTYPE_is_float(TCON_ty(ST_tcon_val(st)))) {
+	    switch(TCON_ty(ST_tcon_val(st))) {
+	    case MTYPE_F4:  // Take the value as a 32bit bit pattern
+	      val = TCON_v0(ST_tcon_val(st));
+	      break;
+	    default:
+	      FmtAssert(FALSE,("only 32 bits floating point values are supported"));
+	      break;
+	    }
+	    if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	      extra_slot_reqd = TRUE;
+	    }
+	  } else {
+	    extra_slot_reqd = TRUE;
+	  }
+	}
+	else {
+	  //
+	  // must be a assembly resolved symbolic address (label) ? 
+	  //
+	  // If it is a PC-relative call, br, etc. we assume that 
+	  // 23-bits allocated for it in the opcode is enough.
+	  // TODO: investigate -- shouldn't we have generated a
+	  // label TN ??
+	  // Not xfer -- reserve the following slot
+	  //
+	  if (!OP_xfer(op)) {
+	    // only mov is allowed this way !!!
+	    FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
+	    extra_slot_reqd = TRUE;
+	    extra_slot_implicit = TRUE;
+	  }
+	}
+      }
+
+      // assume that labels fit into 23-bit, enums are not emitted ?
+
+      break;
+    }
+  }
+
+  *etop = TOP_UNDEFINED;
+  if (extra_slot_reqd)
+    *etop = Get_Extended_Opcode(OP_code(op));
+  
+  return extra_slot_reqd;
+}
+
+/* ====================================================================
  *   CGTARG_Bundle_Slot_Available
  * ====================================================================
  */
@@ -1486,7 +1578,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 	  //
 	  if (!OP_xfer(op)) {
 	    // only mov is allowed this way !!!
-	    FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
+	    FmtAssert((OP_code(op) == TOP_mov_i) || (OP_code(op) == TOP_mov_ii),("extended not mov"));
 	    extra_slot_reqd = TRUE;
 	    extra_slot_implicit = TRUE;
 	  }
@@ -1606,20 +1698,14 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
     else
       return FALSE;
   }
-  else if (EXEC_PROPERTY_is_EXT0_Unit(OP_code(op))) {
+  else if (EXEC_PROPERTY_is_EXT0_Unit(OP_code(op)) &&
+	   EXEC_PROPERTY_is_EXT1_Unit(OP_code(op)) &&
+	   EXEC_PROPERTY_is_EXT2_Unit(OP_code(op))) {
     if (slot == 0)
       *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_EXT1_Unit(OP_code(op))) {
-    if (slot == 1)
+    else if (slot == 1)
       *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
-    else
-      return FALSE;
-  }
-  else if (EXEC_PROPERTY_is_EXT2_Unit(OP_code(op))) {
-    if (slot == 2)
+    else if (slot == 2)
       *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
     else
       return FALSE;
