@@ -712,6 +712,35 @@ Can_Be_Tail_Call (
    * so use whirl call node in that case.
    */
   func_type = call_st ? ST_pu_type(call_st) : WN_ty(call_wn);
+#ifdef TARG_ST
+  // [CG] We must use the First_Output_PLOC_Reg/Next_Output_PLOC_REG interface
+  // to take into account strutures that overlaps the stack
+  ploc = Setup_Output_Parameter_Locations(func_type);
+  if (call_wn == NULL) {
+    TYLIST_IDX tl;
+    for (tl = TY_parms(func_type); tl != (TYLIST_IDX) NULL; tl = TYLIST_next(tl)) {
+      TY_IDX ty = TYLIST_item(tl);
+      ploc = Get_Output_Parameter_Location(ty);
+      ploc = First_Output_PLOC_Reg (ploc, ty);
+      while(PLOC_is_nonempty(ploc)) {
+	if (PLOC_on_stack(ploc)) return NULL;
+	ploc = Next_Output_PLOC_Reg (ploc);
+      }
+    }
+  } else {
+    INT i;
+    INT num_parms = WN_num_actuals(call_wn);
+    for (i = 0; i < num_parms; i++) {
+      TY_IDX ty = TY_Of_Parameter(WN_actual(call_wn,i));
+      ploc = Get_Output_Parameter_Location (ty);
+      ploc = First_Output_PLOC_Reg (ploc, ty);
+      while(PLOC_is_nonempty(ploc)) {
+	if (PLOC_on_stack(ploc)) return NULL;
+	ploc = Next_Output_PLOC_Reg (ploc);
+      }
+    }
+  }
+#else
   ploc = Setup_Output_Parameter_Locations(func_type);
   if (call_wn == NULL) {
     TYLIST_IDX tl;
@@ -727,7 +756,7 @@ Can_Be_Tail_Call (
       if (PLOC_on_stack(ploc)) return NULL;
     }
   }
-
+#endif
   /* We need to make sure that the function values for the current
    * PU are the same or a subset of the function values for the
    * called PU. We accomplish this by examining uses and defs
