@@ -540,8 +540,8 @@ CG_Generate_Code(
     if (CG_enable_ssa) {
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
-      Check_for_Dump(TP_SSA, NULL);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+      Check_for_Dump(TP_SSA, NULL);
     }
 #endif
   } //CG_opt_level > 1
