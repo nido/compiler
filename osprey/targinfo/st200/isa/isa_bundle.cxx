@@ -212,7 +212,6 @@ main()
 		 TOP_ldhu_d_i, 
 		 TOP_ldw_i, 
 		 TOP_ldw_d_i, 
-		 TOP_sync, 
 		 TOP_pft_i, 
 		 TOP_prgadd_i, 
 		 TOP_prgset_i, 
@@ -228,8 +227,9 @@ main()
 		 TOP_return, 
 		 TOP_call, 
 		 TOP_icall, 
-		 TOP_prgins, 
 		 TOP_rfi, 
+		 TOP_prgins, 
+		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
   /* ===== Specification for S1_Unit Type ===== */ 
@@ -382,7 +382,6 @@ main()
 		 TOP_ldhu_d_i, 
 		 TOP_ldw_i, 
 		 TOP_ldw_d_i, 
-		 TOP_sync, 
 		 TOP_pft_i, 
 		 TOP_prgadd_i, 
 		 TOP_prgset_i, 
@@ -398,8 +397,9 @@ main()
 		 TOP_return, 
 		 TOP_call, 
 		 TOP_icall, 
-		 TOP_prgins, 
 		 TOP_rfi, 
+		 TOP_prgins, 
+		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
   /* ===== Specification for S2_Unit Type ===== */ 
@@ -552,7 +552,6 @@ main()
 		 TOP_ldhu_d_i, 
 		 TOP_ldw_i, 
 		 TOP_ldw_d_i, 
-		 TOP_sync, 
 		 TOP_pft_i, 
 		 TOP_prgadd_i, 
 		 TOP_prgset_i, 
@@ -568,8 +567,9 @@ main()
 		 TOP_return, 
 		 TOP_call, 
 		 TOP_icall, 
-		 TOP_prgins, 
 		 TOP_rfi, 
+		 TOP_prgins, 
+		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
   /* ===== Specification for S3_Unit Type ===== */ 
@@ -722,7 +722,6 @@ main()
 		 TOP_ldhu_d_i, 
 		 TOP_ldw_i, 
 		 TOP_ldw_d_i, 
-		 TOP_sync, 
 		 TOP_pft_i, 
 		 TOP_prgadd_i, 
 		 TOP_prgset_i, 
@@ -738,8 +737,9 @@ main()
 		 TOP_return, 
 		 TOP_call, 
 		 TOP_icall, 
-		 TOP_prgins, 
 		 TOP_rfi, 
+		 TOP_prgins, 
+		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
   /* ===== Specification for EXT0_Unit Type ===== */ 
@@ -1039,7 +1039,6 @@ main()
 		 TOP_return, 
 		 TOP_call, 
 		 TOP_icall, 
-		 TOP_prgins, 
 		 TOP_rfi, 
 		 TOP_UNDEFINED); 
 
