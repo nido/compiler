@@ -444,7 +444,10 @@ Init_Section (
   // [CG]: For data sections we may have an alignment
   // Currently set it to 
   else {
-    Set_STB_align(st, DEFAULT_DATA_ALIGNMENT);
+    if (STB_align(st) == 0) {
+        DevWarn("default alignment not set for section %s\n", ST_name(st));
+        Set_STB_align(st, DEFAULT_DATA_ALIGNMENT);
+    }
   }
 #endif
 
