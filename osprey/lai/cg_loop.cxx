@@ -3970,6 +3970,14 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       BB_freq(CG_LOOP_prolog) * WN_loop_trip_est(LOOPINFO_wn(unrolled_info)) :
       orig_head_freq / ntimes;
   }
+#ifdef TARG_ST
+  BB *tail = BB_Other_Predecessor(head, CG_LOOP_prolog);
+  if (tail != orig_bbs[num_bbs-1]) {
+    if (Get_Trace(TP_CGLOOP, 2))
+      fprintf(TFile, "unroll_multi_bb: Could not find a correct tail for the loop.\n");
+    tail = NULL;
+  }
+#endif
 
   /* Build the replicas.
    */
@@ -3998,6 +4006,41 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
       /* Replicate OPs from <orig_bb> into <replica>, renaming TNs as we go
        */
       FOR_ALL_BB_OPs(orig_bb, op) {
+#ifdef TARG_ST
+	// Perform Prefetch pruning at unroll time
+	if (OP_prefetch(op)) {
+
+	  if (!tail || !BB_SET_MemberP(BB_dom_set(tail), orig_bb)) {
+	    if (Get_Trace(TP_CGLOOP, 2))
+	      fprintf(TFile, "unroll_multi_bb: PREFETCH is not executed in all iterations of the loop.\n");
+	    continue;
+	  }
+
+	  WN *mem_wn = Get_WN_From_Memory_OP(op);
+	  Is_True(!mem_wn || WN_operator(mem_wn) == OPR_PREFETCH,
+		  ("wrong prefetch WHIRL node."));
+
+	  if (Get_Trace(TP_CGLOOP, 2) && unrolling == 0)  // trace once per loop
+	    if (mem_wn)
+	      fprintf(TFile, "<cgpref> - 1L cache stride = %d, 2L cache stride = %d,"
+		      " confidence = %d\n",
+		      WN_pf_stride_1L(mem_wn),
+		      WN_pf_stride_2L(mem_wn),
+		      WN_pf_confidence(mem_wn));
+	    else
+	      fprintf(TFile, "<cgpref> pref wn not found.\n");
+
+	  if (mem_wn && Prefetch_Kind_Enabled(mem_wn)) {
+	    int stride = WN_pf_stride_2L( mem_wn ) ?  WN_pf_stride_2L( mem_wn ) :  WN_pf_stride_1L(mem_wn);
+	    if (stride != 0 && (unrolling % stride) != 0) {
+	      if (Get_Trace(TP_CGLOOP, 2))
+		fprintf(TFile, "<cgpref> pref pruned at unrolling %d.\n", unrolling);
+	      fprintf(stderr, "unroll_multi_bb: <cgpref> pref pruned at unrolling %d.\n", unrolling);
+	      continue;
+	    }
+	  }
+	}
+#endif
 	OP *rop;
 	UINT8 opi;
 	UINT8 resi;
@@ -4902,6 +4945,34 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
      */
     OP *op;
     FOR_ALL_BB_OPs(head, op) {
+#ifdef TARG_ST
+      // Perform Prefetch pruning at unroll time
+      if (OP_prefetch(op)) {
+
+	WN *mem_wn = Get_WN_From_Memory_OP(op);
+	Is_True(!mem_wn || WN_operator(mem_wn) == OPR_PREFETCH,
+		("wrong prefetch WHIRL node."));
+
+	if (Get_Trace(TP_CGLOOP, 2) && unrolling == 0)  // trace once per loop
+	  if (mem_wn)
+	    fprintf(TFile, "<cgpref> - 1L cache stride = %d, 2L cache stride = %d,"
+		    " confidence = %d\n",
+		    WN_pf_stride_1L(mem_wn),
+		    WN_pf_stride_2L(mem_wn),
+		    WN_pf_confidence(mem_wn));
+	  else
+	    fprintf(TFile, "<cgpref> pref wn not found.\n");
+
+	if (mem_wn && Prefetch_Kind_Enabled(mem_wn)) {
+	  int stride = WN_pf_stride_2L( mem_wn ) ?  WN_pf_stride_2L( mem_wn ) :  WN_pf_stride_1L(mem_wn);
+	  if (stride != 0 && (unrolling % stride) != 0) {
+	    if (Get_Trace(TP_CGLOOP, 2))
+	      fprintf(TFile, "<cgpref> pref pruned at unrolling %d.\n", unrolling);
+	    continue;
+	  }
+	}
+      }
+#endif
       OP *rop = Dup_OP(op);
       Set_OP_unrolling(rop, unrolling);
       Set_OP_orig_idx(rop, OP_map_idx(op));
@@ -4953,10 +5024,30 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   
 #ifdef TARG_ST
   // [CG]: Update last unrolled replica (old head)
-  OP *op;
+  OP *op, *next_op;
   Set_BB_loop_head_bb(head, &replicas[0]);
   Set_BB_unrollings(head, ntimes);
-  FOR_ALL_BB_OPs(head, op) {
+
+  for (op = BB_first_op(head); op != NULL; op = next_op) {
+    next_op = OP_next(op);
+
+    // Perform Prefetch pruning at unroll time
+    if (OP_prefetch(op)) {
+      WN *mem_wn = Get_WN_From_Memory_OP(op);
+      Is_True(!mem_wn || WN_operator(mem_wn) == OPR_PREFETCH,
+	      ("wrong prefetch WHIRL node."));
+      
+      if (mem_wn && Prefetch_Kind_Enabled(mem_wn)) {
+	int stride = WN_pf_stride_2L( mem_wn ) ?  WN_pf_stride_2L( mem_wn ) :  WN_pf_stride_1L(mem_wn);
+	if (stride != 0 && ((ntimes-1) % stride) != 0) {
+	  if (Get_Trace(TP_CGLOOP, 2))
+	    fprintf(TFile, "<cgpref> pref pruned at unrolling %d.\n", ntimes-1);
+	  BB_Remove_Op(head, op);
+	  continue;
+	}
+      }
+    }
+
     Set_OP_unrolling(op, ntimes-1); 
     Set_OP_orig_idx(op, OP_map_idx(op));
     Set_OP_unroll_bb(op, head);

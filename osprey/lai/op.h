@@ -469,6 +469,11 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_PROLOGUE   0x0001 /* OP belongs to prologue */
 #define OP_MASK_EPILOGUE   0x0002 /* OP belongs to epilogue */
 #define OP_MASK_BLACK_HOLE 0x0004 /* Store OP may store into a black hole */
+// FdF 20041221
+#define OP_MASK_PFT_SCHEDULED 0x0008 /* PFT OP was scheduled in pre-pass. */
+#define OP_MASK_PFT_BEFORE 0x0010 /* PFT OP is placed before a memop
+				     for prefetch in the current
+				     iteration. */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -541,6 +546,13 @@ enum OP_COND_DEF_KIND {
 # define OP_black_hole(o)	(OP_flags2(o) & OP_MASK_BLACK_HOLE)
 # define Set_OP_black_hole(o)	(OP_flags2(o) |= OP_MASK_BLACK_HOLE)
 # define Reset_OP_black_hole(o)	(OP_flags2(o) &= ~OP_MASK_BLACK_HOLE)
+// FdF
+# define OP_pft_scheduled(o)	(OP_flags2(o) & OP_MASK_PFT_SCHEDULED)
+# define Set_OP_pft_scheduled(o)	(OP_flags2(o) |= OP_MASK_PFT_SCHEDULED)
+# define Reset_OP_pft_scheduled(o)	(OP_flags2(o) &= ~OP_MASK_PFT_SCHEDULED)
+# define OP_pft_before(o)	(OP_flags2(o) & OP_MASK_PFT_BEFORE)
+# define Set_OP_pft_before(o)	(OP_flags2(o) |= OP_MASK_PFT_BEFORE)
+# define Reset_OP_pft_before(o)	(OP_flags2(o) &= ~OP_MASK_PFT_BEFORE)
 #endif
 
 extern BOOL OP_cond_def( const OP*);

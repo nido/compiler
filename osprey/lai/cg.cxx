@@ -745,6 +745,12 @@ CG_Generate_Code(
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
 
+#ifdef TARG_ST
+  extern void Schedule_Prefetch_Prepass(void);
+  if (CG_opt_level >= 3)
+    Schedule_Prefetch_Prepass();
+#endif
+
   // Register Allocation Phase
 #ifdef LAO_ENABLED
   if (CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) {
@@ -869,6 +875,12 @@ CG_Generate_Code(
 #endif
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
+
+#ifdef TARG_ST
+  extern void Schedule_Prefetch_Postpass(void);
+  if (CG_opt_level >= 3)
+    Schedule_Prefetch_Postpass ();
+#endif
 
   Reuse_Temp_TNs = orig_reuse_temp_tns;		/* restore */
 

@@ -71,6 +71,7 @@ void MHD::Initialize()
     Loop_Overhead_Base      = 6;
     Loop_Overhead_Memref    = 1;
     TLB_Trustworthiness     = 0;
+    DCache_Prefetch_Buffers = 8;
     TLB_NoBlocking_Model    = FALSE;
     // [HK] trick to force the use of = operator (instead of the copy constructor)
     MHD_LEVEL tmp(MHD_TYPE_CACHE,   // Type

@@ -1158,9 +1158,13 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
   }
 
   BOOL manual_pref = FALSE;
-  if (OP_prefetch(cur_op)) {
-    WN *pref_wn = Get_WN_From_Memory_OP(cur_op);
-    if (pref_wn && WN_pf_manual(pref_wn)) manual_pref = TRUE;
+
+  // FdF 10/06/2004: I don't see any reason for a special case on
+  // manual prefetch for the ST targets
+  if (OP_prefetch(cur_op) && BB_reg_alloc(OP_bb(cur_op))) {
+    //    WN *pref_wn = Get_WN_From_Memory_OP(cur_op);
+    //    if (pref_wn && WN_pf_manual(pref_wn)) manual_pref = TRUE;
+    manual_pref = TRUE;
   }
 
   if (cur_scycle > best_scycle)  {
@@ -1212,6 +1216,11 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
     }
 #endif
   }
+
+  // FdF: Try to schedule in OP_unrolling order. This may be better
+  // with scheduled prefetch instructions.
+  if (OP_unrolling(cur_op) > OP_unrolling(best_op))
+    return TRUE;
 
   return FALSE;
 }
