@@ -5180,10 +5180,18 @@ void CG_LOOP::Determine_Unroll_Factor()
       Set_unroll_factor(const_trip_count);
     } else {
       UINT32 ntimes = unroll_times_max;
-      if (!is_power_of_two(ntimes)) {
-	ntimes = 1 << log2(ntimes); 
-	if (trace)
-	  fprintf(TFile, "<unroll> rounding down to power of two = %d times\n", ntimes);
+      if (const_trip) {
+	// round down until const_trip_count % ntimes == 0, or ntimes
+	// is 2^n
+	while ((const_trip_count % ntimes) && !is_power_of_two(ntimes))
+	  ntimes --;
+      }
+      else {
+	if (!is_power_of_two(ntimes)) {
+	  ntimes = 1 << log2(ntimes); 
+	  if (trace)
+	    fprintf(TFile, "<unroll> rounding down to power of two = %d times\n", ntimes);
+	}
       }
       if (!pragma_unroll)
 	while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
