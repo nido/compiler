@@ -292,7 +292,8 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_swp.cxx			\
   targ_swp_bundle.cxx		\
   targ_tn.cxx			\
-  targ_ebo.cxx
+  targ_ebo.cxx			\
+  targ_select.cxx
 
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
