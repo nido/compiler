@@ -1922,7 +1922,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       Force_End_Tns (pred, tail);
 
       if (BB_preds_len (pred) > 1) {
-        other_pred = Gen_And_Insert_BB_Before (pred);
+        other_pred = Gen_And_Insert_BB_After (phi_pred);
         if (!BB_Retarget_Branch(phi_pred, pred, other_pred))
           Change_Succ(phi_pred, pred, other_pred);
         Add_Goto (other_pred, tail);
@@ -1955,7 +1955,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       Force_End_Tns (pred, tail);
 
       if (BB_preds_len (pred) > 1) {
-        other_pred = Gen_And_Insert_BB_Before (pred);
+        other_pred = Gen_And_Insert_BB_After (phi_pred);
         if (!BB_Retarget_Branch(phi_pred, pred, other_pred))
           Change_Succ(phi_pred, pred, other_pred);
         Add_Goto (other_pred, tail);
