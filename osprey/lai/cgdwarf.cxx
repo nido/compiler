@@ -1785,7 +1785,7 @@ Traverse_Global_DST (void)
      */
     parent = CGD_enclosing_proc[GLOBAL_LEVEL];
 #ifdef TARG_ST
-    if (postorder_visit (idx)) {
+    if (postorder_visit (idx) || DST_INFO_tag(info) == DW_TAG_variable) {
 #endif
     (void) preorder_visit (idx, parent, NULL, LOCAL_LEVEL, TRUE /* visit children */);
     DST_SET_info_mark(DST_INFO_flag(info));	/* mark has been traversed */
