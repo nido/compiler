@@ -445,12 +445,12 @@ Expand_Composed_Load (
   for (i=0; i < nLoads; i++) {
     INT idx = i ^ endian_xor;
     tmpV[idx] = Build_TN_Of_Mtype(rtype);
-    if (i < nLoads-1) {
+    if (idx < nLoads-1) {
       Expand_Load (unsigned_opcode, tmpV[idx], base, disp, ops);
-      Add_Disp_To_Addr_TNs (&base, &disp, alignment);
     } else {
       Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
     }
+    Add_Disp_To_Addr_TNs (&base, &disp, alignment);
   }
 
   /* 
