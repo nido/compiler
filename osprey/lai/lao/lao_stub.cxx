@@ -1192,7 +1192,10 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
 	LoopInfo loopinfo = lao_makeLoopInfo(loop, pipelining);
 	lao_fillLoopInfo(loop, loopinfo);
       } else {
-	FmtAssert(!BB_loophead(bb) || BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
+	// Note, the loophead is not reset by find loops, thus
+	// we may have a block having it set while it's no more a loophead.
+	if (BB_loophead(bb) && !BB_unrolled_fully(bb)) DevWarn("Inconsistent loop information for BB %d", BB_id(bb));
+	//FmtAssert(!BB_loophead(bb) || BB_unrolled_fully(bb), ("Inconsistent loop information for BB %d", BB_id(bb)));
       }
     }
   }
