@@ -173,8 +173,10 @@
 #include "hb.h"
 #include "gra_live.h"
 
+#ifdef TARG_ST
 #ifdef LAO_ENABLED
 #include "lao_stub.h"
+#endif
 #endif
 
 /* Error tolerance for feedback-based frequency info */
@@ -5132,12 +5134,13 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     action = NO_LOOP_OPT;
   }
 
+#ifdef TARG_ST
 #if defined(LAO_ENABLED) && defined(LAO_EXPERIMENT)
   {
     BOOL status = FALSE;
     switch (action) {
     case NO_LOOP_OPT:
-      status = LAO_optimize(loop, LAO_TraceSchedule);
+      status = LAO_optimize(loop, LAO_LoopSchedule);
       break;
     case SINGLE_BB_DOLOOP_SWP:
       status = LAO_optimize(loop, LAO_LoopPipeline + LAO_LoopUnwind + LAO_LoopUnroll);
@@ -5152,11 +5155,12 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       status = LAO_optimize(loop, LAO_LoopSchedule + LAO_LoopUnwind);
       break;
     case MULTI_BB_DOLOOP:
-      status = LAO_optimize(loop, LAO_TraceSchedule + LAO_LoopUnroll);
+      status = LAO_optimize(loop, LAO_LoopSchedule + LAO_LoopUnroll);
       break;
     }
     if (status) return TRUE;
   }
+#endif
 #endif
 
   switch (action) {

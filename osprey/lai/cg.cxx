@@ -113,6 +113,9 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#ifdef LAO_ENABLED
+#include "lao_stub.h"
+#endif
 #endif
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
@@ -664,7 +667,15 @@ CG_Generate_Code(
 #ifdef TARG_ST200
       if (HB_force_hyperblocks) {
         HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
+#if defined(LAO_ENABLED) && defined(LAO_EXPERIMENT)
+	// Call the LAO for all the hyperblocks.
+	HB_Remove_Deleted_Blocks();
+	list<HB*>::iterator hbi;
+	for (hbi = HB_list.begin(); hbi != HB_list.end(); hbi++) {
+	  LAO_optimize(*hbi, LAO_TraceSchedule);
+	}
       }
+#endif
 #endif
 
     if (!Get_Trace (TP_CGEXP, 1024))
