@@ -2349,6 +2349,11 @@ Expand_Select (
   TOP select;
   //const BOOL is_float = MTYPE_is_float(mtype);
 
+  if (true_tn == false_tn) {
+    Exp_COPY (dest_tn, true_tn, ops);
+    return;
+  }
+
   if (TN_register_class(cond_tn) != ISA_REGISTER_CLASS_branch) {
     branch_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
     Build_OP (TOP_mtb, branch_tn, cond_tn, ops);
