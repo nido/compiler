@@ -117,7 +117,7 @@ static void st100_abi(void)
                4, 5, 6, 7, 8,   9,  10,  11,
 	       -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_du,
-		                  12,  13,  14,  15, 
+	       0, 1, 2, 3, 12,  13,  14,  15, 
 	       -1);
   Reg_Property(func_arg, ISA_REGISTER_CLASS_du,
 		0, 1, 2, 3,
@@ -132,7 +132,7 @@ static void st100_abi(void)
 
   Reg_Property(allocatable, ISA_REGISTER_CLASS_au,
 		 0,   1,   2,   3,   4,   5,   6,   7,
-		 8,   9,  10,  11,  12,  13,  14,  15,
+		 8,   9,  10,  11,  12,  13,  14,
 	       -1);
 
   Reg_Property(global_ptr, ISA_REGISTER_CLASS_au, 
@@ -155,10 +155,10 @@ static void st100_abi(void)
 	       -1);
 
   Reg_Property(callee, ISA_REGISTER_CLASS_au,
-		 4, 5, 6, 7, 8,   9,  10,  11,
+	       4, 5, 6, 7, 8,   9,  10,  11, 13,
 	       -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_au,
-		 3,   14,
+		 0, 1, 2, 3, 12,  14,
 	       -1);
   Reg_Property(func_arg, ISA_REGISTER_CLASS_au,
 		 0, 1, 2,
