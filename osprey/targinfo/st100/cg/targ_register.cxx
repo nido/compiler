@@ -210,3 +210,14 @@ REGISTER_Get_Requested_Rotating_Registers (
 {
   return REGISTER_SET_EMPTY_SET;
 }
+
+/* ====================================================================
+ *   CGTARG_Forbidden_GRA_Registers 
+ * ====================================================================
+ */
+REGISTER_SET 
+CGTARG_Forbidden_GRA_Registers (
+)
+{
+  return REGISTER_SET_EMPTY_SET;
+}
