@@ -124,7 +124,7 @@ CGIR_CRP_to_Register(CLASS_REG_PAIR crp) {
   mREGISTER reg = CLASS_REG_PAIR_reg(crp);
   ISA_REGISTER_CLASS irc = CLASS_REG_PAIR_rclass(crp);
   RegClass regclass = CGIR_IRC_to_RegClass(irc);
-  Register lowreg = RegClass_getLowReg(regclass);
+  Register lowreg = RegClass_lowreg(regclass);
   return (Register)(lowreg + (reg - 1));
 }
 
@@ -278,8 +278,8 @@ RegClass_to_CGIR_IRC(RegClass regclass) {
 // Convert LIR Register to CGIR CLASS_REG_PAIR.
 static inline CLASS_REG_PAIR
 Register_to_CGIR_CRP(Register registre) {
-  RegClass regclass = Register_getRegClass(registre);
-  Register lowreg = RegClass_getLowReg(regclass);
+  RegClass regclass = Register_regclass(registre);
+  Register lowreg = RegClass_lowreg(regclass);
   ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(regclass);
   REGISTER reg = (registre - lowreg) + 1;
   CLASS_REG_PAIR crp;
@@ -355,7 +355,7 @@ CGIR_Dedicated_TN_create(CGIR_TN cgir_tn, Register registre) {
 // Create a PseudoReg CGIR_TN.
 static CGIR_TN
 CGIR_PseudoReg_TN_create(CGIR_TN cgir_tn, RegClass regclass) {
-  int size = (RegClass_getBitWidth(regclass) + 7)/8;
+  int size = (RegClass_bitwidth(regclass) + 7)/8;
   return Gen_Register_TN(RegClass_to_CGIR_IRC(regclass), size);
 }
 
