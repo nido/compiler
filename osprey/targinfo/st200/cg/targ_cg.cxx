@@ -452,15 +452,12 @@ CGTARG_Analyze_Compare (
   BOOL is_double;
   OP *def_op;
   DEF_KIND kind;
-
-  /* Classify the condition based on the branch instruction.
-   */
+  BOOL false_br;
+  
+  /* Classify the condition based on the branch instruction. */
+  /* [CG]: on ST200 branch variant may have V_BR_FALSE set. */
   variant = CGTARG_Analyze_Branch(br, &cond_tn1, &cond_tn2);
-
-  //
-  // varaint on this target is always V_BR_NONE, get it from
-  // compare
-  //
+  false_br = V_false_br(variant);
 
 #if 0
   /*
@@ -486,10 +483,9 @@ CGTARG_Analyze_Compare (
 #endif
   FmtAssert(def_op != NULL && OP_opnds(def_op) == 2,("confused by the compare op"));
 
-  //
-  // Branch on this target has no variant, get it from the compare
-  //
   variant = TOP_br_variant(OP_code(def_op));
+  /* [CG] : Set false branch variant if needed. */
+  if (false_br) Set_V_false_br(variant);
 
   cond_tn1 = OP_opnd(def_op, 0);
   cond_tn2 = OP_opnd(def_op, 1);
