@@ -219,9 +219,6 @@ TOP_br_variant (
   case TOP_cmpne_i_r:
   case TOP_cmpne_ii_r:
     return V_BR_I4NE;
-
-  default:
-    FmtAssert(FALSE, ("unknown compare opcode"));
   }
 
   return V_BR_NONE;
