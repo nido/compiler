@@ -148,9 +148,9 @@ BOOL CG_create_madds = TRUE;
 //   CFLOW:
 // ====================================================================
 
-BOOL CFLOW_Enable = FALSE;
+BOOL CFLOW_Enable = TRUE;
 BOOL CFLOW_opt_before_cgprep = TRUE;
-BOOL CFLOW_opt_after_cgprep = FALSE;
+BOOL CFLOW_opt_after_cgprep = TRUE;
 BOOL CFLOW_Enable_Unreachable = TRUE;
 BOOL CFLOW_Enable_Branch = TRUE;
 BOOL CFLOW_Enable_Merge = TRUE;
