@@ -893,6 +893,12 @@ extern BOOL CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot);
 extern INT32 CGTARG_Special_Min_II(BB* loop_body, BOOL trace);
 #endif
 
+#ifdef TARG_ST200
+// FdF: Code size improvement on the st220 target. Enable a sequence
+// of two NOP bundles to be replaced by a GOTO .+4 instruction
+extern BOOL CG_NOPs_to_GOTO;
+#endif
+
 /* ====================================================================
  *   Target specific tree height reduction:
  * ====================================================================

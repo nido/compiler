@@ -1418,8 +1418,6 @@ Handle_Bundle_Hazards(
   return TRUE;
 }
 
-extern BOOL CG_NOPs_to_GOTO;
-
 /* ====================================================================
  *   Make_Bundles
  * ====================================================================
@@ -1905,7 +1903,9 @@ Make_Bundles (
 
 #endif
 
+#ifdef TARG_ST200
 static void NOPs_to_GOTO(BB *bb);
+#endif
 
 // ======================================================================
 // Eliminate hazards for 'bb' by adding noops.
@@ -1979,6 +1979,8 @@ Handle_All_Hazards (BB *bb)
 #endif
 
 }
+
+#ifdef TARG_ST200
 
 // ======================================================================
 //  Post-pass to replace a sequence of ;; nop ;; nop ;; by ;; goto .+4 ;;
@@ -2054,3 +2056,5 @@ static void NOPs_to_GOTO (
     op = OP_next(op);
   }
 }
+
+#endif

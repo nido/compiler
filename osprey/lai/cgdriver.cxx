@@ -188,7 +188,10 @@ static BOOL CG_LAO_loopdep_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
+#ifdef TARG_ST200
 BOOL CG_NOPs_to_GOTO = FALSE;
+static BOOL CG_NOPs_to_GOTO_overridden = FALSE;
+#endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
@@ -561,8 +564,10 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
+#endif
+#ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
-    TRUE, 0, 0, &CG_NOPs_to_GOTO, NULL },
+    TRUE, 0, 0, &CG_NOPs_to_GOTO, &CG_NOPs_to_GOTO_overridden },
 #endif
 
   // Cross Iteration Loop Optimization options.
@@ -1257,6 +1262,14 @@ Configure_CG_Options(void)
   if (!CG_split_BB_length_overridden) {
     if (Opt_Level == 2) CG_split_BB_length = 500;
     else if (Opt_Level > 2) CG_split_BB_length = 3000;
+  }
+#endif
+
+#ifdef TARG_ST200
+  // Force the replacement of ;; NOP ;; NOP ;; bundles by ;; GOTO .+4
+  // ;; on the st220 target.
+  if (Is_Target_st220() && !CG_NOPs_to_GOTO_overridden) {
+    CG_NOPs_to_GOTO = TRUE;
   }
 #endif
 
