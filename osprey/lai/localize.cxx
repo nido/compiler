@@ -1206,14 +1206,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 	  Set_OP_opnd( op, opndnum, new_tn );
 	  Exp_COPY( new_tn, tn, OPS_Init(&ops) );
 	  BB_Prepend_Ops(non_region_def_bb, &ops);
-	} else {
-	  // tn should be defined by a previously compiled REGION
-	  FmtAssert( ( srid != NULL ),
-		    ("use of %s (TN%d) in BB:%d at line %d not reached by "
-		     "CALL/allocated REGION",
-		     REGISTER_name(TN_register_class(tn), TN_register(tn)), 
-		     TN_number(tn), BB_id(bb),
-		     SRCPOS_linenum(OP_srcpos(op)) ));
+	} else if (srid != NULL) {
 	  tns_out = CGRIN_tns_out_i( RID_cginfo( srid ), exit_num );
 	  allocated_tn = Find_TN_with_Matching_Register( tn, tns_out );
 	  FmtAssert(allocated_tn != NULL,
@@ -1229,6 +1222,21 @@ Localize_or_Replace_Dedicated_TNs(void)
 	    Print_TN( allocated_tn, FALSE );
 	    fprintf( TFile, " in BB %d\n", BB_id(bb) );
 	  }
+	} else {
+#ifdef TARG_ST
+	  // [CG] Allow use of dedicated tns.
+	  // In fact it appears that we can get here if the use is locally
+	  // defined in the BB. This could be handled by finding the local
+	  // def and inserting the copy, currently we just ignore this case.
+#else
+	  // tn should be defined by a previously compiled REGION
+	  FmtAssert( ( srid != NULL ),
+		    ("use of %s (TN%d) in BB:%d at line %d not reached by "
+		     "CALL/allocated REGION",
+		     REGISTER_name(TN_register_class(tn), TN_register(tn)), 
+		     TN_number(tn), BB_id(bb),
+		     SRCPOS_linenum(OP_srcpos(op)) ));
+#endif
 	}
 
       } // for ( opndnum = 0; opndnum < OP_opnds( op ); opndnum++ )
