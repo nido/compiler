@@ -88,6 +88,7 @@
 #include "freq.h"
 #include "cg_loop.h"
 #include "label_util.h"
+#include "lra.h"
 #include "bb_set.h"       // BB_SET_* routines 
 #include "DaVinci.h"
 
@@ -2461,20 +2462,169 @@ ST *BB_st(BB *bb)
   return NULL;
 }
 
+
 /* =======================================================================
  *
- *  Split_BBs
+ *  Split_BB
  *
- *  See interface description.
+ *  Split large blocks at points of minimal register pressure to reduce
+ *  the creation of unnecessary globals.
  *
+ * =======================================================================
+ */
+static void Split_BB(BB *bb)
+{
+  OP* op;
+  INT i;
+  const INT len = BB_length(bb);
+  const INT high  = (INT)(CG_split_BB_length * 1.25);
+  const INT low = (len <= high) ? (CG_split_BB_length / 2) : (INT)(CG_split_BB_length * .75);
+  mINT8 fatpoint[ISA_REGISTER_CLASS_MAX+1];
+  INT* regs_in_use = (INT *)alloca(sizeof(INT) * (len+1));
+  INT* splits = (INT *)alloca(sizeof(INT) * ((len / low)+1));
+  OP** op_vec = (OP **)alloca(sizeof(OP*) * (len+1));
+					       
+  MEM_POOL_Push(&MEM_local_pool);
+  LRA_Estimate_Fat_Points(bb, fatpoint, regs_in_use, &MEM_local_pool);
+  MEM_POOL_Pop(&MEM_local_pool);
+
+  //
+  // Put op's in a vector to speed up the splitting loop.
+  // Skip 0th element.
+  //
+  op_vec[0] = NULL;
+  i = 1;
+  FOR_ALL_BB_OPs_FWD(bb, op) op_vec[i++] = op;
+
+  //
+  // Find all of the splits in the block.
+  //
+  INT min_remainder = ((high - CG_split_BB_length)/2); /* The last block must be longer than this. */
+  INT min_in_use = INT_MAX;
+  INT high_idx = high > len ? len : high;
+  INT split_idx = 0;
+  INT min_idx = 0;
+  for (i = low;;) {
+    if (i == high_idx) {
+      if (i == len) {
+       // We've reached the end of the block that we want to split
+       // without finding a smaller minimum.  If there is just a
+       // small amount left after the point where we would split
+       // the block, combine it with the previous block.
+        if ((len - min_idx) < min_remainder ) {
+          if (split_idx == 0) {
+           // There is no advantage to splitting the block.
+            return;
+          }
+          break;
+        }
+      }
+      splits[split_idx++] = min_idx;
+      if (len - min_idx <= CG_split_BB_length) break;
+      i = min_idx + low;
+      min_in_use = INT_MAX;
+      high_idx = min_idx + high;
+      if (high_idx > len) high_idx = len;
+    } else {
+      i++;
+    }
+    if (regs_in_use[i] < min_in_use) {
+      min_in_use = regs_in_use[i];
+      min_idx = i;
+      if (regs_in_use[i] < 0) {
+        DevWarn("Negative registers-in-use count for OP.");
+      }
+    }
+  }
+  FmtAssert(split_idx > 0, ("failed to split BB:%d", BB_id(bb)));
+
+  //
+  // Set last "split" to one past end of the block.  Simplifies
+  // op movement loop.
+  //
+  splits[split_idx] = len + 1;
+      
+  //
+  // Move branches to last split.
+  //
+  BB* last_bb = Gen_And_Insert_BB_After(bb);
+  if (BB_exit(bb)) {
+    BB_Transfer_Exitinfo(bb, last_bb);
+    Exit_BB_Head = BB_LIST_Delete(bb, Exit_BB_Head);
+    Exit_BB_Head = BB_LIST_Push(last_bb, Exit_BB_Head, &MEM_pu_pool);
+  }
+  if (BB_call(bb)) {
+    BB_Transfer_Callinfo(bb, last_bb);
+  }
+  if (BB_asm(bb)) {
+    BB_Transfer_Asminfo (bb, last_bb);
+  }
+	
+  BBLIST* nxt;
+  BBLIST* succ;
+  for (succ = BB_succs(bb); succ; succ = nxt) {
+    BB* bb_succ = BBLIST_item(succ);
+    nxt = BBLIST_next(succ);
+    Unlink_Pred_Succ(bb, bb_succ);
+    Link_Pred_Succ(last_bb, bb_succ);
+  }
+
+  //
+  // Do the splits
+  //
+  INT split_id_max = split_idx - 1;
+  BB* bb_prev = last_bb;
+  for (i = split_id_max; i >= 0; i--) {
+    BB* new_bb;
+
+    if (i == split_id_max) {
+      new_bb = last_bb;
+    } else {
+      new_bb = Gen_And_Insert_BB_Before(bb_prev);
+      bb_prev = new_bb;
+    }
+	
+    INT op_idx;
+    for (op_idx = splits[i]; op_idx < splits[i+1]; op_idx++) {
+      op = op_vec[op_idx];
+      BB_Move_Op_To_End(new_bb, bb, op);
+    }
+  }
+
+  //
+  // Now, make all the splits fall through to one another.
+  //
+  bb_prev = bb;
+  for (BB* bb_tmp = BB_next(bb);
+       bb_tmp != BB_next(last_bb);
+       bb_tmp = BB_next(bb_tmp))
+  {
+    Target_Simple_Fall_Through_BB(bb_prev, bb_tmp);
+    bb_prev = bb_tmp;
+  }
+
+}
+
+/* =======================================================================
+ *   Split_BBs
  * =======================================================================
  */
 void
 Split_BBs(void)
 {
-  return;
-}
+  BB* bb;
 
+  if (!CG_enable_BB_splitting) return;
+
+  for ( bb = REGION_First_BB; bb; bb = BB_next(bb) )	{
+    if (BB_rid(bb) && (RID_level(BB_rid(bb)) >= RL_CGSCHED))
+	// don't change bb's which have already been through CG
+	continue;
+
+    if (BB_length(bb) > CG_split_BB_length) 
+	Split_BB(bb);
+  }
+}
 
 // A temp BB_SET variable reserved for the BB_REGION routines because
 // creating and destroying BB_SET is an expensive operation.
