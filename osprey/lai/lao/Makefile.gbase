@@ -50,7 +50,7 @@
 #     (Perhaps, If I could force the temp files out to a temp directory,
 #     this could be changed?)
 #
-#  *  Because lao.so depends on wopt.so and be.so, it normally builds
+#  *  Because lao.so depends on be.so and cg.so, it normally builds
 #     them first.  But it does so only if the make target is "default"
 #     or "install", so a "quick" build can be done by specifying the
 #     target as lao.so or a .o file.  (It can't currently be installed
@@ -67,13 +67,6 @@
 #----------------------------------------------------------------------
 TARGDIR = $(BUILD_AREA)
 CURDIR  = .
-ifndef TARG_OPT_DIR
-TARG_OPT_DIR = $(BUILD_AREA)/wopt
-endif
-
-ifndef TARG_IPL_DIR
-TARG_IPL_DIR = $(BUILD_AREA)/ipl
-endif
 
 ifndef TARG_BE
 TARG_BE = $(TARGDIR)/be
@@ -217,9 +210,7 @@ LAO_CXX_OBJS = $(LAO_CXX_SRCS:.cxx=.o)
 
 # shared library
 ifeq ($(DSO_MODE),SO)
-WOPT_DSO=wopt.so
 BE_DSO=be.so
-IPL_DSO=ipl.so
 CG_DSO=cg.so
 ifeq ($(BUILD_TARGET), ST200)
 TARGET_DSO=st220.so
@@ -229,17 +220,14 @@ endif
 # static library
 ifeq ($(DSO_MODE),STATIC)
 # nothing to import at this point
-WOPT_DSO=
 BE_DSO=
-IPL_DSO=
 CG_DSO=
+TARGET_DSO=
 endif
 
 # windows dll
 ifeq ($(DSO_MODE),DLL)
-WOPT_DSO=wopt_dll.a
 BE_DSO=be_dll.a
-IPL_DSO=ipl_dll.a
 CG_DSO=cg_dll.a
 ifeq ($(BUILD_TARGET), ST200)
 TARGET_DSO=st220_dll.a
@@ -261,7 +249,7 @@ LAO_DSOS += $(LAO_PREFIX)/lib/libLIR.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCSD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCCL.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
-LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO) $(TARGET_DSO)
+LAO_DSOS += $(BE_DSO)  $(CG_DSO)
 STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 
 ifeq ($(BUILD_HOST), IA64)
@@ -356,25 +344,18 @@ default: first local last
 
 #----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is
-#  built.  If we are making default or install, we first make wopt.so,
-#  which makes be.so; otherwise, we just make the specifically
+#  built.  If we are making default or install, we first make be.so and cg.so
+#   otherwise, we just make the specifically
 #  requested target.
 #----------------------------------------------------------------------
 
 first_local:
 ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(BE_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(BE_DSO) .; fi
-	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(WOPT_DSO) .; fi
-	if [ ! -h $(IPL_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(IPL_DSO) .; fi
-	if [ ! -h $(CG_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(CG_DSO) .; fi
-	if [ ! -h $(TARGET_DSO) ]; then ln -sf $(TARG_INFO_DIR)/$(TARGET_DSO) .; fi
+	if [ ! -h $(CG_DSO) ]; then ln -sf $(TARG_CG_DIR)/$(CG_DSO) .; fi
 endif
 
 first:
-## verify that wopt.so is up to date
-	cd $(TARG_OPT_DIR) && $(MAKE)
-## verify that ipl.so is up to date
-	cd $(TARG_IPL_DIR) && $(MAKE)
 ## verify that be.so is up to date
 	cd $(TARG_BE_DIR) && $(MAKE)
 ## verify that cg.so is up to date
@@ -422,11 +403,7 @@ lao.so:  (LAO_CXX_OBJS) $(LAO_PCH_OBJS) \
          $(LAO_CXX_OBJS) $(LAO_PCH_OBJS) \
          $(LAO_DSOS) $(LINK_DSOS) $(LLDLIBS) -show
 	if [ ! -l be.so ]; then ln -sf $(TARG_BE)/be.so .; fi
-	if [ ! -l wopt.so ]; then ln -sf $(TARG_OPT_DIR)/wopt.so .; fi
-	if [ ! -l ipl.so ]; then ln -sf $(TARG_IPL_DIR)/ipl.so .; fi
-	if [ ! -l be ]; then ln -sf $(TARG_BE)/be .; fi
 	if [ ! -l cg.so ]; then ln -sf $(TARG_CG_DIR)/cg.so .; fi
-	if [ ! -l lao ]; then ln -sf $(TARG_BE)/be lao; fi
 
 else
 
@@ -446,19 +423,12 @@ lao.so:	$(LAO_CXX_OBJS) \
 else
 lao.so:	$(LAO_CXX_OBJS) \
 	$(LAO_DSOS) $(BE_BE_DIR)/so_locations
-# wopt depends on be.so,wopt.so, ipl.so availability
 	$(C++F) -o lao.so $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
 	$(LAO_CXX_OBJS) $(LAO_DSOS) $(LINK_DSOS) $(LLDLIBS)
 endif
 
-wopt.so:	
-	if [ ! -h wopt.so ]; then ln -sf $(TARG_OPT_DIR)/wopt.so .; fi
-
 be.so:	
 	if [ ! -h be.so ]; then ln -sf $(TARG_BE)/be.so .; fi
-
-ipl.so:	
-	if [ ! -h ipl.so ]; then ln -sf $(TARG_IPL_DIR)/ipl.so .; fi
 
 cg.so:	
 	if [ ! -h cg.so ]; then ln -sf $(TARG_CG_DIR)/cg.so .; fi
@@ -490,7 +460,7 @@ endif
 
 endif
 
-LDIRT += be.so wopt.so ipl.so be bedriver lao
+LDIRT += be.so cg.so
 
 
 ifdef LINK_DSO
