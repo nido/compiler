@@ -43,9 +43,12 @@
  * The following flags to drive the algorithm.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
- * -CG:select_stores=TRUE        promote store operands with select.
- *                               Experimental: check the impact of losing
- *                               WN mem information
+ * -CG:select_stores=1          promote store operands with select.
+ *                              This option has the effect to merge 2 stores
+ *                              into one.
+ *                              0: don't merge stores
+ *                              1: select stores based on values.
+ *                              2: select stores based on base or offset.
  * -CG:select_addr_stores=TRUE   enable if conversion on stores
  *
  * The following flags to drive the heuristics.
@@ -134,7 +137,7 @@ op_list load_i;
  */
 BOOL CG_select_spec_loads = TRUE;
 BOOL CG_select_allow_dup = TRUE;
-BOOL CG_select_stores = FALSE;
+BOOL CG_select_stores = 1;
 BOOL CG_select_addr_stores = TRUE;
 const char* CG_select_factor = "1.05";
 /* is there a TARG interface for that ? */
@@ -644,7 +647,7 @@ Sort_Stores(void)
     return 0;
   }
 
-  if (!CG_select_stores)
+  if (CG_select_stores == 0)
     return 0;
 
   // Each store should have an equiv.
@@ -697,7 +700,7 @@ Sort_Stores(void)
     // Can promote store val anytime. That doesn't change alias information.
     if (ci == 1 &&
         OP_Mem_Ref_Bytes(op1) == OP_Mem_Ref_Bytes(op2) && 
-        lidx == strval_idx) {
+        (lidx == strval_idx || CG_select_stores == 2)) {
       store_i.ifarg_idx.push_back(lidx);
       c = 0;
       ++count;
