@@ -241,6 +241,14 @@ typedef enum _align {
  */
 #define DEFAULT_TEXT_ALIGNMENT 16
 
+/*
+ * [CG] Alignment for the data segment
+ * Should be the minimal alignment for ensuring correct access
+ * to all data types on the target.
+ */
+#define DEFAULT_DATA_ALIGNMENT TARG_WORD_ALIGN
+
+
 /* ====================================================================
  *
  * Miscellaneous options

@@ -223,6 +223,17 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
  */
 #define DEFAULT_TEXT_ALIGNMENT 8
 
+/*
+ * [CG] Alignment for the data segment
+ * Should be the minimal alignment for ensuring correct access
+ * to all data types on the target.
+ * On ST200 the abi specify that for cache efficiency
+ * the alignment should be 32. More than this it is
+ * stated that we must ensure provision for double word accesses
+ * and interleaved memory. Thus the alignement is 32.
+ */
+#define DEFAULT_DATA_ALIGNMENT 32
+
 /* ====================================================================
  *
  * Miscellaneous options
