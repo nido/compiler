@@ -1225,6 +1225,10 @@ put_structure_type(DST_flag flag, DST_STRUCTURE_TYPE *attr, Dwarf_P_Die die)
    DST_put_idx_attribute(" abstract_origin",
 			 DST_STRUCTURE_TYPE_abstract_origin(attr), FALSE);
 */
+#ifdef TARG_ST // [CL] add containing_type if any
+  put_reference (DST_STRUCTURE_TYPE_containing_type(attr),
+		 DW_AT_containing_type, die);
+#endif
 }
 
 
@@ -1256,6 +1260,10 @@ put_union_type(DST_flag flag, DST_UNION_TYPE *attr, Dwarf_P_Die die)
    DST_put_idx_attribute(" abstract_origin",
 			 DST_UNION_TYPE_abstract_origin(attr), FALSE);
 */
+#ifdef TARG_ST // [CL] add containing_type if any
+  put_reference (DST_STRUCTURE_TYPE_containing_type(attr),
+		 DW_AT_containing_type, die);
+#endif
 }
 
 
@@ -1332,6 +1340,45 @@ put_template_value_param(DST_flag flag, DST_TEMPLATE_VALUE_PARAMETER *attr,
 }
 
 
+#ifdef TARG_ST // [CL] code fragment taken from gcc's dwarf2out.c
+/* Return a location descriptor that designates a constant.  */
+
+static int
+int_loc_descriptor (INT i)
+{
+  int op;
+
+  /* Pick the smallest representation of a constant, rather than just
+     defaulting to the LEB encoding.  */
+  if (i >= 0)
+    {
+      if (i <= 31)
+	op = DW_OP_lit0 + i;
+      else if (i <= 0xff)
+	op = DW_OP_const1u;
+      else if (i <= 0xffff)
+	op = DW_OP_const2u;
+      else if (i <= 0xffffffff)
+	op = DW_OP_const4u;
+      else
+	op = DW_OP_constu;
+    }
+  else
+    {
+      if (i >= -0x80)
+	op = DW_OP_const1s;
+      else if (i >= -0x8000)
+	op = DW_OP_const2s;
+      else if ( i >= -0x80000000)
+	op = DW_OP_const4s;
+      else
+	op = DW_OP_consts;
+    }
+
+  return op;
+}
+#endif
+
 static void
 put_inheritance(DST_flag flag, DST_INHERITANCE *attr, Dwarf_P_Die die)
 {
@@ -1339,6 +1386,19 @@ put_inheritance(DST_flag flag, DST_INHERITANCE *attr, Dwarf_P_Die die)
 
   put_reference (DST_INHERITANCE_type(attr), DW_AT_type, die);
   expr = dwarf_new_expr (dw_dbg, &dw_error);
+#ifdef TARG_ST // [CL]
+  if (DST_INHERITANCE_virtual_offset(attr)) {
+    dwarf_add_expr_gen (expr, DW_OP_dup, 0, 0, &dw_error);
+    dwarf_add_expr_gen (expr, DW_OP_deref, 0, 0, &dw_error);
+    dwarf_add_expr_gen (expr,
+			int_loc_descriptor(DST_INHERITANCE_virtual_offset(attr)),
+			DST_INHERITANCE_virtual_offset(attr), 0, &dw_error);
+    dwarf_add_expr_gen (expr, DW_OP_minus, 0, 0, &dw_error);
+    dwarf_add_expr_gen (expr, DW_OP_deref, 0, 0, &dw_error);
+    dwarf_add_expr_gen (expr, DW_OP_plus, 0, 0, &dw_error);
+  }
+  else
+#endif
   dwarf_add_expr_gen (expr, DW_OP_consts, DST_INHERITANCE_memb_loc(attr), 0, 
 	&dw_error);
   if (expr != NULL) {
