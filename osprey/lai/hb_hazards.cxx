@@ -1487,9 +1487,14 @@ Make_Bundles (
     // FdF: We are on a non-entry basic block of a super block.
     // Clock is set to the scheduling date of the first operation
     // pending_latency is inherited from the fall-thru predecessor.
-    if (OP_scycle(op) > 0)
+    if (OP_scycle(op) >= 0)
       Clock = OP_scycle(op);
-
+    else {
+      // Handle the specific case where a super block ends with an
+      // unconditional goto with scheduling date -1.
+      Is_True(OP_uncond(op), ("BB: %d, invalid scheduling date on first operation", BB_id(bb)));
+      pending_latency = 0;
+    }
   }
   Is_True (pending_latency < Clock + 4, ("BB: %d, incorrect pending_latency %d at clock %d\n", BB_id(bb), pending_latency, Clock));
 #else
