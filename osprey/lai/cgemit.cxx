@@ -379,6 +379,145 @@ ST_is_gp_relative (
 	  ST_gprel(base_st));
 }
 
+/* ====================================================================
+ *    Init_Section (st)
+ *
+ *    Initialize a section.
+ * ====================================================================
+ */
+#define Is_Text_Section(st) (STB_exec(st) && strncmp(ST_name(st), ELF_TEXT,5)==0)
+
+static void
+Init_Section (
+  ST *st
+)
+{
+  Elf64_Word scn_type;
+  Elf64_Word scn_flags;
+  Elf64_Xword scn_entsize;
+  char sname[32];
+
+  if (ST_elf_index(st) != 0) {
+    /* already created */
+    return;
+  }
+
+  if (last_scn >= (max_scn-1)) {
+    /* allocate new block of sections */
+    max_scn += 30;
+    if (em_scn == NULL)
+      em_scn = (AUX_SCN *)Src_Alloc(sizeof(AUX_SCN)*max_scn);
+    else
+      em_scn = TYPE_MEM_POOL_REALLOC_N (AUX_SCN, 
+		         &MEM_src_pool, em_scn, (max_scn-30), max_scn);
+  }
+  last_scn++;
+  Set_STB_scninfo_idx(st, last_scn);
+
+  /* hack for .text section */
+  if (Is_Text_Section(st)) {
+    if (Align_Instructions) 
+      Set_STB_align(st, Align_Instructions);
+    else if (OPT_Space)
+      Set_STB_align(st, ISA_INST_BYTES);
+    else
+      Set_STB_align(st, CGTARG_Text_Alignment());
+  }
+
+  /* save symbol for later reference */
+  em_scn[last_scn].sym = st;
+
+#ifdef TARG_ST
+  // Make a label:
+  sprintf(sname, "L_SECTION_%d", last_scn);
+  em_scn[last_scn].label = strdup(sname);
+
+  if (Trace_Init) {
+    fprintf(TFile, "<init>: Section %s: labeling %s\n", 
+	    ST_name(em_scn[last_scn].sym), em_scn[last_scn].label);
+  }
+#endif
+
+  /* assume st is CLASS_BLOCK */
+  scn_type = Get_Section_Elf_Type(STB_section_idx(st));
+  scn_flags = Get_Section_Elf_Flags(STB_section_idx(st));
+  if (Is_Text_Section(st) && 
+      current_pu != (PU_IDX) NULL && PU_in_elf_section(current_pu)) {
+    scn_flags |= SHF_MIPS_NODUPE;
+  }
+	
+  scn_entsize = Get_Section_Elf_Entsize(STB_section_idx(st));
+
+  if (generate_elf_symbols) {
+    em_scn[last_scn].scninfo = Em_New_Section (ST_name(st), 
+		  scn_type, scn_flags, scn_entsize, STB_align(st));
+
+    /* initialize elf data buffer. */
+    if (!STB_nobits(st)) {
+      Em_New_Data_Buffer (em_scn[last_scn].scninfo, 
+			  STB_size(st) + 100, 1);
+    }
+    Set_ST_elf_index(st,
+	      Em_Create_Section_Symbol (em_scn[last_scn].scninfo));
+  }
+  else {
+    /* set dummy value just so don't redo this */
+    Set_ST_elf_index(st, 1);
+  }
+
+#if 0
+  if (Lai_Code) {
+    LAI_print_section(st, scn_type, scn_flags, scn_entsize, cur_section);
+  }
+#endif
+
+  if (Assembly) {
+    CGEMIT_Prn_Scn_In_Asm(st, scn_type, scn_flags, scn_entsize, cur_section);
+  }
+
+  return;
+}
+
+static unsigned char
+st_other_for_sym (ST *sym)
+{
+  unsigned char symother;
+
+  switch (ST_export(sym)) {
+    case EXPORT_HIDDEN:
+      symother = STO_HIDDEN;
+      break;
+    case EXPORT_PROTECTED:
+      symother = STO_PROTECTED;
+      break;
+    case EXPORT_INTERNAL:
+      symother = STO_INTERNAL;
+      break;
+    case EXPORT_OPTIONAL:
+      symother = STO_OPTIONAL;
+      break;
+    default:
+      symother = STO_DEFAULT;
+      break;
+  }
+  return symother;
+}
+
+static INT64
+Get_Offset_From_Full (ST *sym)
+{
+	/* full-split symbols have names of form "full_.offset"
+	 * we need to extract the offset and pass that in value field.
+	 * An alternative would be to search type structure for
+	 * matching fields, but this is probably faster.
+	 */
+	char *offset_string;
+        offset_string = strrchr (ST_name(sym), '.');
+        FmtAssert(offset_string != NULL, ("Get_Offset_From_Full unexpected name format (%s)", ST_name(sym)));
+        offset_string++;       /* skip the period */
+	return atoll(offset_string);
+}
+
 /***********************************************************************
  *
  * Instruction-PC utilities.
@@ -675,12 +814,11 @@ EMT_Put_Elf_Symbol (
       if (Assembly || Lai_Code) {
 	Print_Common (Asm_File, sym);
       }
-      Set_ST_elf_index(sym, 1);
-      return 0;
     }
+    Set_ST_elf_index(sym, 1);
+    return 0;
   }
 
-#if 0
   Is_True (!ST_is_not_used(sym) || ST_emit_symbol(sym), 
 	      ("Reference to not_used symbol (%s)", ST_name(sym)));
 
@@ -696,7 +834,6 @@ EMT_Put_Elf_Symbol (
   }
 
   symother = st_other_for_sym (sym);
-
   Base_Symbol_And_Offset (sym, &base_st, &base_ofst);
   // check if base is new section symbol that is not initialized yet
   if (ST_class(base_st) == CLASS_BLOCK && STB_section(base_st)
@@ -822,7 +959,6 @@ EMT_Put_Elf_Symbol (
       break;
   }
   Set_ST_elf_index(sym, symindex);
-#endif
 
   return symindex;
 }
@@ -1463,105 +1599,6 @@ LAI_print_section (
   return;
 }
 #endif
-
-/* ====================================================================
- *    Init_Section (st)
- *
- *    Initialize a section.
- * ====================================================================
- */
-#define Is_Text_Section(st) (STB_exec(st) && strncmp(ST_name(st), ELF_TEXT,5)==0)
-
-static void
-Init_Section (
-  ST *st
-)
-{
-  Elf64_Word scn_type;
-  Elf64_Word scn_flags;
-  Elf64_Xword scn_entsize;
-  char sname[32];
-
-  if (ST_elf_index(st) != 0) {
-    /* already created */
-    return;
-  }
-
-  if (last_scn >= (max_scn-1)) {
-    /* allocate new block of sections */
-    max_scn += 30;
-    if (em_scn == NULL)
-      em_scn = (AUX_SCN *)Src_Alloc(sizeof(AUX_SCN)*max_scn);
-    else
-      em_scn = TYPE_MEM_POOL_REALLOC_N (AUX_SCN, 
-		         &MEM_src_pool, em_scn, (max_scn-30), max_scn);
-  }
-  last_scn++;
-  Set_STB_scninfo_idx(st, last_scn);
-
-  /* hack for .text section */
-  if (Is_Text_Section(st)) {
-    if (Align_Instructions) 
-      Set_STB_align(st, Align_Instructions);
-    else if (OPT_Space)
-      Set_STB_align(st, ISA_INST_BYTES);
-    else
-      Set_STB_align(st, CGTARG_Text_Alignment());
-  }
-
-  /* save symbol for later reference */
-  em_scn[last_scn].sym = st;
-
-#ifdef TARG_ST
-  // Make a label:
-  sprintf(sname, "L_SECTION_%d", last_scn);
-  em_scn[last_scn].label = strdup(sname);
-
-  if (Trace_Init) {
-    fprintf(TFile, "<init>: Section %s: labeling %s\n", 
-	    ST_name(em_scn[last_scn].sym), em_scn[last_scn].label);
-  }
-#endif
-
-  /* assume st is CLASS_BLOCK */
-  scn_type = Get_Section_Elf_Type(STB_section_idx(st));
-  scn_flags = Get_Section_Elf_Flags(STB_section_idx(st));
-  if (Is_Text_Section(st) && 
-      current_pu != (PU_IDX) NULL && PU_in_elf_section(current_pu)) {
-    scn_flags |= SHF_MIPS_NODUPE;
-  }
-	
-  scn_entsize = Get_Section_Elf_Entsize(STB_section_idx(st));
-
-  if (generate_elf_symbols) {
-    em_scn[last_scn].scninfo = Em_New_Section (ST_name(st), 
-		  scn_type, scn_flags, scn_entsize, STB_align(st));
-
-    /* initialize elf data buffer. */
-    if (!STB_nobits(st)) {
-      Em_New_Data_Buffer (em_scn[last_scn].scninfo, 
-			  STB_size(st) + 100, 1);
-    }
-    Set_ST_elf_index(st,
-	      Em_Create_Section_Symbol (em_scn[last_scn].scninfo));
-  }
-  else {
-    /* set dummy value just so don't redo this */
-    Set_ST_elf_index(st, 1);
-  }
-
-#if 0
-  if (Lai_Code) {
-    LAI_print_section(st, scn_type, scn_flags, scn_entsize, cur_section);
-  }
-#endif
-
-  if (Assembly) {
-    CGEMIT_Prn_Scn_In_Asm(st, scn_type, scn_flags, scn_entsize, cur_section);
-  }
-
-  return;
-}
 
 /* ====================================================================
  *    Process_Initos_And_Literals (stab)
