@@ -366,7 +366,7 @@ static OPTION_DESC Options_CG[] = {
     1, 1, 3, &CG_ssa_algorithm, NULL,
     "Specify method for translating out of the SSA" },
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_if_convert", "",
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden },
 
 #ifdef TARG_ST
