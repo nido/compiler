@@ -43,6 +43,41 @@
 #include "targ_isa_bundle.h" // for ISA_INST_BYTES
 
 /* ====================================================================
+ *    SEC_is_gprel
+ * ====================================================================
+ */
+BOOL SEC_is_gprel (SECTION_IDX sec)
+{
+  if (!Gen_GP_Relative)
+    return FALSE;
+
+  switch (sec)
+    {
+    default:
+      return FALSE;
+    case _SEC_SDATA:
+    case _SEC_SRDATA:
+    case _SEC_SBSS:
+    case _SEC_GOT:
+      return TRUE;
+    case _SEC_DATA:
+    case _SEC_BSS:
+      /* Long immediates on ST200 mean that it is possible
+	 to access all of data relative to GP. */
+      return TRUE;
+    case _SEC_TEXT:
+    case _SEC_RDATA:
+      if (!Is_Caller_Save_GP)
+	/* Callee-save GP model can reference the text
+	   relative to GP.
+	*/
+	return TRUE;
+      else
+	return FALSE;
+    }
+}
+
+/* ====================================================================
  *    Corresponding_Short_Section
  * ====================================================================
  */
@@ -53,23 +88,23 @@ Corresponding_Short_Section (
 )
 {
   /* clarkes:
-   * For ST200, assume all data can be placed in short sections.
-   * Note 1: elsewhere the compiler assumes that it is not possible to
-   * use gp-relative accesses for data that is not in a short section.
-   * Note 2: Corresponding_Short_Section is only ever called for
-   * symbols that can not be preempted, so for ST200 set gprel
-   * attribute for every symbol that reaches here.
+   * No need to shorten the data sections on ST200, because
+   * we can access the normal data sections GP-relative.
+   * However, _SEC_RDATA is placed in the text segment, which
+   * is not accessible GP-relative in the caller-sets-GP scheme,
+   * so in that case, we do move data from _SEC_RDATA
+   * to _SEC_SRDATA.
    */
+   
   SECTION_IDX newsec;
 
-  switch (sec) {
-  case _SEC_DATA:  newsec = _SEC_SDATA;  break;
-  case _SEC_RDATA: newsec = _SEC_SRDATA; break;
-  case _SEC_BSS:   newsec = _SEC_SBSS;   break;
-  default:         newsec = sec;         break;
-  }
-
-  Set_ST_gprel(st);
+  if (Is_Caller_Save_GP && sec == _SEC_RDATA)
+    newsec = _SEC_SRDATA;
+  else
+    newsec = sec;
+    
+  if (SEC_is_gprel(newsec))
+    Set_ST_gprel(st);
   return newsec;
 }
 
