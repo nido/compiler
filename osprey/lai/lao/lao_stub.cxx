@@ -748,7 +748,7 @@ lao_init() {
     TOP__Operator[TOP_igoto] = Operator_CODE_IGOTO;
     TOP__Operator[TOP_imml] = Operator_CODE_IMML_IMM;
     TOP__Operator[TOP_immr] = Operator_CODE_IMMR_IMM;
-    TOP__Operator[TOP_intrncall] = Operator_PSEUDO_IFRCALL;
+    TOP__Operator[TOP_intrncall] = Operator_MACRO_IFRCALL;
     TOP__Operator[TOP_label] = Operator_PSEUDO_LABEL;
     TOP__Operator[TOP_ldb_d_i] = Operator_CODE_LDBD_IDESTL_ISRC2_SRC1;
     TOP__Operator[TOP_ldb_d_ii] = Operator_CODE_LDBD_IDESTL_ISRCX_SRC1;
@@ -888,7 +888,7 @@ lao_init() {
     TOP__Operator[TOP_slctf_i] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRC2;
     TOP__Operator[TOP_slctf_ii] = Operator_CODE_SLCTF_IDEST_SCOND_SRC1_ISRCX;
     TOP__Operator[TOP_slctf_r] = Operator_CODE_SLCTF_DEST_SCOND_SRC1_SRC2;
-    TOP__Operator[TOP_spadjust] = Operator_PSEUDO_ADJUST;
+    TOP__Operator[TOP_spadjust] = Operator_MACRO_ADJUST;
     TOP__Operator[TOP_stb_i] = Operator_CODE_STB_ISRC2_SRC1_SRC2;
     TOP__Operator[TOP_stb_ii] = Operator_CODE_STB_ISRCX_SRC1_SRC2;
     TOP__Operator[TOP_sth_i] = Operator_CODE_STH_ISRC2_SRC1_SRC2;
@@ -912,7 +912,7 @@ lao_init() {
       if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__);
       else Operator__TOP[TOP__Operator[i]] = (TOP)i;
     }
-    Operator__TOP[Operator_PSEUDO_GOTO] = TOP_goto;
+    Operator__TOP[Operator_MACRO_GOTO] = TOP_goto;
     // initialize IEC__Modifier
     for (int i = 0; i < EC_MAX; i++) IEC__Modifier[i] = Modifier_;
     // initialize LC__Immediate
