@@ -185,26 +185,26 @@ CGIR_SYM_to_Symbol(CGIR_SYM cgir_sym) {
   return symbol;
 }
 
-// Convert CGIR_TN to LIR TempName.
-static inline TempName
-CGIR_TN_to_TempName(CGIR_TN cgir_tn) {
-  TempName tempname = NULL;
+// Convert CGIR_TN to LIR Temporary.
+static inline Temporary
+CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
+  Temporary temporary = NULL;
   if (TN_is_register(cgir_tn)) {
     if (TN_is_dedicated(cgir_tn)) {
       CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-      tempname = Interface_makeDedicatedTempName(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
+      temporary = Interface_makeDedicatedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
     } else if (TN_register(cgir_tn) != REGISTER_UNDEFINED) {
       CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-      tempname = Interface_makeAssignRegTempName(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
+      temporary = Interface_makeAssignRegTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
     } else {
       ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
-      tempname = Interface_makePseudoRegTempName(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
+      temporary = Interface_makePseudoRegTemporary(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
     }
   } else if (TN_is_constant(cgir_tn)) {
     if (TN_has_value(cgir_tn)) {
       int64_t value = TN_value(cgir_tn);
       Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
-      tempname = Interface_makeAbsoluteTempName(interface, cgir_tn, immediate, value);
+      temporary = Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
     } else if (TN_is_symbol(cgir_tn)) {
       Symbol symbol = NULL;
       ST *var_st = TN_var(cgir_tn);
@@ -212,25 +212,25 @@ CGIR_TN_to_TempName(CGIR_TN cgir_tn) {
       int64_t offset = TN_offset(cgir_tn);
       Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
       symbol = CGIR_SYM_to_Symbol(st_idx);
-      tempname = Interface_makeSymbolTempName(interface, cgir_tn, immediate, symbol, offset);
+      temporary = Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
     } else if (TN_is_label(cgir_tn)) {
       CGIR_LAB cgir_lab = TN_label(cgir_tn);
       Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0); // HACK ALERT
       Label label = CGIR_LAB_to_Label(cgir_lab);
-      tempname = Interface_makeLabelTempName(interface, cgir_tn, immediate, label);
+      temporary = Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
       Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
     } else if (TN_is_enum(cgir_tn)) {
       ISA_ENUM_CLASS_VALUE value = TN_enum(cgir_tn);
       Modifier modifier = CGIR_IEC_to_Modifier((ISA_ENUM_CLASS)0);	// HACK ALERT
-      tempname = Interface_makeModifierTempName(interface, cgir_tn, modifier, value);
+      temporary = Interface_makeModifierTemporary(interface, cgir_tn, modifier, value);
     } else {
       Is_True(FALSE, ("Unknown constant TN type."));
     }
   } else {
     Is_True(FALSE, ("Unknown TN type."));
   }
-  Is_True(tempname != NULL, ("TempName should not be NULL."));
-  return tempname;
+  Is_True(temporary != NULL, ("Temporary should not be NULL."));
+  return temporary;
 }
 
 // Convert CGIR_OP to LIR Operation.
@@ -238,13 +238,13 @@ static Operation
 CGIR_OP_to_Operation(CGIR_OP cgir_op) {
   // the Operation arguments
   int argCount = OP_opnds(cgir_op);
-  TempName *arguments = (TempName *)(argCount ? alloca(argCount*sizeof(TempName)) : NULL);
+  Temporary *arguments = (Temporary *)(argCount ? alloca(argCount*sizeof(Temporary)) : NULL);
   for (int i = 0; i < argCount; i++) Is_True(!Is_CG_LOOP_Op(cgir_op) || (OP_omega(cgir_op, i) <= 1), ("LAO called on TN with omega > 1"));
-  for (int i = 0; i < argCount; i++) arguments[i] = CGIR_TN_to_TempName(OP_opnd(cgir_op, i));
+  for (int i = 0; i < argCount; i++) arguments[i] = CGIR_TN_to_Temporary(OP_opnd(cgir_op, i));
   // the Operation results
   int resCount = OP_results(cgir_op);
-  TempName *results = (TempName *)(resCount ? alloca(resCount*sizeof(TempName)) : NULL);
-  for (int i = 0; i < resCount; i++) results[i] = CGIR_TN_to_TempName(OP_result(cgir_op, i));
+  Temporary *results = (Temporary *)(resCount ? alloca(resCount*sizeof(Temporary)) : NULL);
+  for (int i = 0; i < resCount; i++) results[i] = CGIR_TN_to_Temporary(OP_result(cgir_op, i));
   // make the Operation
   Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
   Operation operation = Interface_makeOperation(interface, cgir_op,
@@ -296,12 +296,12 @@ static ControlNode
 CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
   BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb, InstrMode__, 0, NULL, 0, NULL);
   int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
-  TempName *liveins = (TempName *)alloca(MAX_LIVEIN_COUNT*sizeof(TempName));
+  Temporary *liveins = (Temporary *)alloca(MAX_LIVEIN_COUNT*sizeof(Temporary));
   for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
        tn != GTN_SET_CHOOSE_FAILURE;
        tn = GTN_SET_Choose_Next(BB_live_in(cgir_bb), tn)) {
     Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
-    liveins[liveinCount++] = CGIR_TN_to_TempName(tn);
+    liveins[liveinCount++] = CGIR_TN_to_Temporary(tn);
   }
   intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
   float frequency = BB_freq(cgir_bb);
@@ -1193,8 +1193,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   if (GETENV("CGIR_PRINT")) CGIR_print(TFile);
   Interface_open(interface, ST_name(Get_Current_PU_ST()), 5,
+      Configuration_RegionType, CG_LAO_schedtype,
       Configuration_SchedKind, CG_LAO_schedkind,
-      Configuration_SchedType, CG_LAO_schedtype,
       Configuration_Pipelining, CG_LAO_pipelining,
       Configuration_Speculation, CG_LAO_speculation,
       Configuration_LoopDep, CG_LAO_loopdep);

@@ -186,9 +186,9 @@ HEADER_DIRS = 		\
   $(TARG_TARG_INFO_DIR)	\
   $(TARG_LAI_DIR)	\
   $(LAO_PREFIX)/include/CCL	\
+  $(LAO_PREFIX)/include/LAO	\
   $(LAO_PREFIX)/include/CSD	\
   $(LAO_PREFIX)/include/CSD/st200	\
-  $(LAO_PREFIX)/include/LAO	\
   $(LAO_PREFIX)/include/LIR	\
   $(LAO_PREFIX)/include/PFA	\
   $(LAO_PREFIX)/include/SSA	\
@@ -251,15 +251,16 @@ HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 endif
 
 LAO_DSOS =
+LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLAI.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSCD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libGRA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libSSA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libPFA.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libLIR.a
-LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCSD.a
 LAO_DSOS += $(LAO_PREFIX)/lib/libCCL.a
+LAO_DSOS += $(LAO_PREFIX)/lib/libLAO.a
 LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO) $(TARGET_DSO)
 STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 
