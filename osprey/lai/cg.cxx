@@ -502,9 +502,6 @@ CG_Generate_Code(
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
       Check_for_Dump(TP_SSA, NULL);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-      //      Trace_IR(TP_SSA, "GRA_LIVE_Recalc_Liveness", NULL);
-      //extern void GRA_LIVE_fdump_liveness(FILE *f);
-      //GRA_LIVE_fdump_liveness(TFile);
     }
 #endif
 
@@ -533,12 +530,6 @@ CG_Generate_Code(
 #endif /* BCO_Enabled Thierry */
 #ifdef TARG_ST
 
-    // Arthur: there is a possibility that (like if-conversion)
-    //         select generation is more related to the superblock
-    //         formation than we think it is. We may do both at
-    //         the same time eventually. For now, first do select
-    //         then find superblocks.
-
 #ifdef SUPPORTS_SELECT
     if (CG_enable_select) {
       // Perform select generation (partial predication if-conversion). 
@@ -548,17 +539,17 @@ CG_Generate_Code(
       if (frequency_verify)
 	FREQ_Verify("Select Conversion");
       draw_CFG();
+
+      Check_for_Dump(TP_SELECT, NULL);
     }
 #endif
 
 #endif
 
-#if defined(TARG_IA64) || defined(IFCONV_IN_SSA)
+#if defined(TARG_IA64)
     //
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
-    //
-    // TODO: tail duplication does not work in SSA !!!
     //
     if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
       // Initialize the predicate query system in the hyperblock 
@@ -576,63 +567,9 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
     if (CG_enable_ssa) {
-      //
-      //  Experimental SSA framework: 
-      //
-      //   Right after if-conversion, the SSA is consistent.
-      //
-      //   We do not know how to maintain the valid SSA during
-      //   loop unrolling and SWP, and other
-      //   optimizations that may change the control flow.
-      //   For now our phylosophy is: global scheduling is done
-      //   within hyperblocks and is thus local to them; the
-      //   loop unrolling, SWP are done to inner loops and
-      //   we will use the algorithm for updating the SSA for
-      //   just the inner loops (we know how). 
-      //
-      //   JUST AN IDEA: becuse the SSA is consistent entering
-      //   scheduling, SWP, etc., we may be able to simply
-      //   remove the PHI nodes from the inner loops before
-      //   such transformations, and restore the SSA when we are 
-      //   done ?? 
-      //
       Set_Error_Phase("Out of SSA Translation");
-
-      //
-      // Need SSA_make_consistent() to prepare SSA_Remove_Phi_Nodes()
-      // NOTE: make sure liveness is up to date
-      //
       SSA_Make_Consistent (region ? REGION_get_rid(rwn) : NULL, region);
-
-      //
-      // For now (temporary solution), we remove PHI-nodes here.
-      // Later, this will be done in Unroll, SWP, ... (after the DDG
-      // is constructed, etc.). And the SSA will be restored upon
-      // exit from the Loop_Optimizations.
-      //
       SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
-
-      //
-      // Arthur: we might eventually be able to maintain liveness 
-      //         info throughout the PHI removal (see Sreedhar's paper).
-      //
-      // Normally, we shouldn't need to recompute it.
-      // In addition, we may only need it for such transformations
-      // (eg. Loop_Optimize()) where we remove the PHI-nodes 
-      // temporarily, and later restore the SSA. When we leave the
-      // the SSA definitely (like right now), when it is done after
-      // the reg. alloc., we may not need liveness update at all.
-      //
-      // However ... at the moment
-      //   defreach_in
-      //   defreach_out
-      //   live_def
-      //   live_use
-      // are not being updated properly by the out of SSA
-      // algorithm (I've been too lazy to look at it). So, for now
-      // just recompute the liveness.
-      // TODO: fix this.
-      //
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
     }
@@ -649,7 +586,6 @@ CG_Generate_Code(
     // loops.
 #if 0
 #ifdef TARG_ST
-#ifndef IFCONV_IN_SSA
     // Perform superblock formation after select if-conversion. 
     //
     // TODO: do it in SSA when tail duplication works in SSA.
@@ -659,7 +595,6 @@ CG_Generate_Code(
     HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
     if (frequency_verify)
       FREQ_Verify("Hyperblock Formation");
-#endif
 #endif
 #endif
 

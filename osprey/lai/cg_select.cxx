@@ -927,7 +927,6 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "<select> is hammock BB%d ? \n", BB_id(head));
-    Print_All_BBs();
     Print_BB_Header (head, FALSE, TRUE);
   }
 
@@ -1266,7 +1265,6 @@ Copy_BB_For_Duplication(BB* bp, BB* to_bb, BB *tail, BOOL taken)
 
     BB_Remove_Ops(bp, old_phis);
     old_phis.clear();
-
   } while ((bp = BB_Unique_Successor (bp)) != tail);
 
   Rename_PHIs(dup_tn_map, to_bb, tail, first_bb, taken);
@@ -1658,7 +1656,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   }
   Expand_Branch (label_tn, new_branch_tn, NULL, variant, &ops);
 
-  // Update ops
   BB_Append_Ops (bb1, &ops);
 
   // Commit dismissible loads
@@ -1985,10 +1982,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
         
       Initialize_Hammock_Memory();
       Simplify_Logifs(bb, bbb);
+
 #ifdef Is_True_On
       Sanity_Check();
 #endif
-
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
     }
@@ -2011,7 +2008,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Initialize_Hammock_Memory();
 
       Select_Fold (bb, target_bb, fall_thru_bb, tail);
-
 #ifdef Is_True_On
       Sanity_Check();
 #endif
