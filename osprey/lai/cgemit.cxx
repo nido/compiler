@@ -421,11 +421,6 @@ Init_Section (
 #else
   if (Is_Text_Section(st)) {
 #endif
-#ifdef TARG_ST
-    /* [TB]: to be sure text_base exists when
-       Create_Cold_Text_Section is called */
-    text_base = st;
-#endif
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
     else if (OPT_Space)
@@ -438,6 +433,13 @@ Init_Section (
       Set_STB_align(st, CGTARG_Text_Alignment());
 #endif
   }
+#ifdef TARG_ST
+  // [CG]: For data sections we may have an alignment
+  // Currently set it to 
+  else {
+    Set_STB_align(st, DEFAULT_DATA_ALIGNMENT);
+  }
+#endif
 
   /* save symbol for later reference */
   em_scn[last_scn].sym = st;
@@ -1577,11 +1579,6 @@ Change_Section_Origin (
     // Emit this section's label before offset 0
     //
     if (ofst == 0) {
-      /* [CG] We emit initial alignment for the section. 
-         TODO: Parameterize to strongest requirement. */
-#define STRONGEST_ALIGN 8
-      fprintf (Output_File, "\t%s %d\n", AS_ALIGN, STRONGEST_ALIGN);
-
       /* [CG] We set current section offset to 0. */
       em_scn[STB_scninfo_idx(base)].scn_ofst = 0;
 
@@ -1987,6 +1984,11 @@ Process_Bss_Data (
     if (!STB_nobits(base))
       continue;	/* not a bss symbol */
 
+#ifdef TARG_ST
+    // [CG]: Ensure section is initialized
+    Init_Section(base); 
+#endif
+
     Change_Section_Origin (base, ofst);
     if (Assembly || Lai_Code) {
       size = TY_size(ST_type(sym));
@@ -2027,8 +2029,13 @@ Process_Bss_Data (
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
       if (size > 0) {
+#ifdef TARG_ST
+	// [CG]: Don't emit alignement, the padding was already inserted
+	// by the Change_Section_Origin()
+#else
 	// Time to print out the alignment and the labels
 	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, align);
+#endif
 	list<ST*>::iterator esyms;
 	// Print the previously eqivalenced symbols
 	for (esyms = equivalenced_symbols.begin();
@@ -4754,9 +4761,15 @@ EMT_Emit_PU (
     }
   }
 
+#ifdef TARG_ST
+  // [CG]: Create_Cold_Text_Section() after setup of text section
+  Setup_Text_Section_For_PU (pu);
+  Create_Cold_Text_Section();
+#endif
   Create_Cold_Text_Section();
 
   Setup_Text_Section_For_PU (pu);
+#else
 
   Initial_Pu_PC = PC;
   Set_ST_ofst(pu, PC);
@@ -4996,6 +5009,10 @@ EMT_End_File( void )
 		 STB_GLOBAL, STT_OBJECT, STO_INTERNAL,
 		 Em_Get_Section_Index (em_scn[STB_scninfo_idx(sym)].scninfo));
       }
+#endif
+#ifdef TARG_ST
+      // [CG]: Ensure section is initialized
+      Init_Section(sym); 
 #endif
       if (Assembly) {
 	Change_Section_Origin (sym, 0);

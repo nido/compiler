@@ -714,8 +714,18 @@ Delete_BB_Contents(BB *bp)
      */
     if (refcount != NULL && --(*refcount) == 0) {
       ST *listvar = BBINFO_vargoto_listvar(bp);
-      // [CG]: commented out as work around for undefined symbol
-      //Set_ST_is_not_used(listvar);
+#ifdef TARG_ST
+      // [CG]: Don't discard the symbol but empty the jump table
+      INITO_IDX ino = Find_INITO_For_Symbol (listvar);
+      INITV_IDX inv;
+      inv = New_INITV();
+      INITV_Init_Pad (inv, 0);
+      Set_INITO_val(ino, inv);
+      TY_IDX type = Make_Array_Type(Pointer_type, 1, 0);
+      Set_ST_type(listvar, type);
+#else
+      Set_ST_is_not_used(listvar);
+#endif
     }
     Remove_Annotations(bp, ANNOT_SWITCH);
   }
@@ -795,8 +805,18 @@ Delete_BB(BB *bp, BOOL trace)
     INT *refcount = BBINFO_vargoto_refcount(bp);
     if (refcount != NULL && --(*refcount) == 0) {
       ST *listvar = BBINFO_vargoto_listvar(bp);
-      // [CG]: commented out as work around for undefined symbol
-      //Set_ST_is_not_used(listvar);
+#ifdef TARG_ST
+      // [CG]: Don't discard the symbol but empty the jump table
+      INITO_IDX ino = Find_INITO_For_Symbol (listvar);
+      INITV_IDX inv;
+      inv = New_INITV();
+      INITV_Init_Pad (inv, 0);
+      Set_INITO_val(ino, inv);
+      TY_IDX type = Make_Array_Type(Pointer_type, 1, 0);
+      Set_ST_type(listvar, type);
+#else
+      Set_ST_is_not_used(listvar);
+#endif
     }
   }
 
@@ -2065,6 +2085,7 @@ Convert_Indirect_Goto_To_Direct ( BB *bp )
   BOOL vargoto = (BBINFO_kind(bp) == BBKIND_VARGOTO);
   INT nsuccs = BBINFO_nsuccs(bp);
 
+
   /* I'm not sure what this would mean, but we certainly can't handle it.
    */
   if (nsuccs == 0) return FALSE;
@@ -2087,8 +2108,21 @@ Convert_Indirect_Goto_To_Direct ( BB *bp )
       return FALSE;
     }
     if (--(*BBINFO_vargoto_refcount(bp)) == 0) {
-      // [CG]: commented out as work around for undefined symbol
-      //Set_ST_is_not_used(listvar);
+#ifdef TARG_ST
+      // [CG]: Don't discard the symbol but empty the jump table.
+      // Indeed, we are not sure that the code will be clean-up,
+      // it may appear that the label for the jump table is still
+      // referenced, so we don't discard it.
+      INITO_IDX ino = Find_INITO_For_Symbol (listvar);
+      INITV_IDX inv;
+      inv = New_INITV();
+      INITV_Init_Pad (inv, 0);
+      Set_INITO_val(ino, inv);
+      TY_IDX type = Make_Array_Type(Pointer_type, 1, 0);
+      Set_ST_type(listvar, type);
+#else
+      Set_ST_is_not_used(listvar);
+#endif
     }
   }
 
