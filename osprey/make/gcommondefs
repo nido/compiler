@@ -196,6 +196,68 @@ YACC = bison
 endif
 
 ##
+## GNU tools names with ccache compilation cache tool
+##
+ifeq ($(BUILD_COMPILER), GNU)
+ifeq ($(BUILD_CCACHE), CCACHE)
+
+# when using cross-compilation, tools usually have a prefix.
+ifeq ($(BUILD_OS),SUNOS5)
+
+ifndef CCACHE_DIR
+$(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
+endif
+export CCACHE_DIR
+
+BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
+COMP_GNU_LOC=/apa/comp/SunOS5.7/ccache/bin/
+COMPILER_LOC=/apa/comp/SunOS5.7/ccache/bin/
+
+INSTALL_LOC=$(BINUTILS_GNU_LOC)
+
+ifeq ($(HOST_OS),MINGW)
+CCACHE_PATH=/apa/gnu/SunOS5/gcc-2.95.2-mingw32-msvcrt/i386-pc-mingw32msvc/bin/
+export CCACHE_PATH
+BINUTILS_LOC=$(COMPILER_LOC)
+endif
+
+ifeq ($(HOST_OS),CYGWIN_NT)
+CCACHE_PATH=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/i686-pc-cygwin32/bin/
+export CCACHE_PATH
+BINUTILS_LOC=$(COMPILER_LOC)
+endif
+
+ifeq ($(HOST_OS),SUNOS5)
+CCACHE_PATH=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin
+export CCACHE_PATH
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+endif
+
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+endif # BUILD_OS = SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
+error "GNU_CCACHE compiler not supported under LINUX build os"
+endif
+
+ifeq ($(BUILD_OS),MINGW)
+error "GNU_CCACHE compiler not supported under MINGW build os"
+endif
+
+ASNAME = gcc
+CCNAME = gcc
+C++NAME = g++
+F77 = g77
+F90 = g90
+LEX = flex
+YACC = bison
+
+endif
+endif
+
+##
 ## SGI tools names
 ## 
 ifeq ($(BUILD_COMPILER), SGI)
