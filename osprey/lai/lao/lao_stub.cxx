@@ -108,6 +108,15 @@ typedef vector<BB*> BB_VECTOR;
 /*-------------------- CGIR -> LIR Conversion Fonctions ----------------------*/
 // These functions are the only ones to call the Interface_make functions.
 
+// Convert ISA_SUBSET to LIR InstrMode. DOES NOT WORK YET!
+static inline InstrMode
+CGIR_IS_to_InstrMode(ISA_SUBSET is) {
+  InstrMode lao_instrmode = IS__InstrMode[is];
+  Is_True(is >= 0 && is <= ISA_SUBSET_MAX, ("ISA_SUBSET out of range"));
+  Is_True(lao_instrmode != InstrMode__, ("Cannot map ISA_SUBSET to InstrMode"));
+  return lao_instrmode;
+}
+
 // Convert CGIR ISA_ENUM_CLASS to LIR Modifier.
 static inline Modifier
 CGIR_IEC_to_Modifier(ISA_ENUM_CLASS iec) {
@@ -276,7 +285,8 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
   }
   // make the BasicBlock
-  BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb,
+  InstrMode instrmode = Is_Target_st221() ? InstrMode_ST221 : InstrMode_ST220;
+  BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb, instrmode,
       labelCount, labels, operationCount, operations);
   return basicblock;
 }
@@ -284,7 +294,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
 // Convert CGIR_BB to LIR ControlNode.
 static ControlNode
 CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
-  BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb, 0, NULL, 0, NULL);
+  BasicBlock basicblock = Interface_makeBasicBlock(interface, cgir_bb, InstrMode__, 0, NULL, 0, NULL);
   int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
   TempName *liveins = (TempName *)alloca(MAX_LIVEIN_COUNT*sizeof(TempName));
   for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
