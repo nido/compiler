@@ -32,7 +32,8 @@
  *
  * Description:
  *
- * If-convert simple regions into selects.
+ * Simplifies successive conditional jumps into logical expressions.
+ * If-convert if-then-else (hammocks) regions using selects.
  *
  * ====================================================================
  * ====================================================================
@@ -78,8 +79,8 @@ static OP_MAP phi_op_map = NULL;
 
 // List of of memory accesses found in if-then-else region. 
 // Load and stores lists are used in a slightly different manner:
-// Stores are mapped with their equivalent. (this might be improved with a dummy
-// store location).
+// Stores are mapped with their equivalent. (this might be improved with a
+// dummy store location).
 // Loads are mapped with their dismissible form. They don't need to have an
 // equivalent (a load on the other side of the hammock).
 // I keep these operation in a list because we don't want to touch the basic
@@ -130,6 +131,12 @@ CG_SELECT_Statistics()
   }
 }
 
+/* ================================================================
+ *
+ *   Initialize/Finalize
+ *
+ * ================================================================
+ */
 void 
 Select_Init()
 {
@@ -183,24 +190,34 @@ Finalize_Hammock_Memory()
   store_i.second.clear();
 }
 
+/* ================================================================
+ *
+ *   Hammock Selection
+ *
+ * ================================================================
+ */
+// Return the immediate postdominator of bb that can eventually be a
+// 'then' or an 'else' side of a 'if-then-else' region.
 static BB*
-Find_Immediate_Postdominator(BB* bb, BB* succ1, BB* succ2)
+Find_Immediate_Postdominator(BB* bb, BB* then_bb, BB* else_bb)
 {
   BB *ipdom;
 
-  if (BB_SET_MemberP(BB_pdom_set(bb), succ1))
-    return succ1;
+  if (BB_SET_MemberP(BB_pdom_set(bb), then_bb))
+    return then_bb;
 
-  if (BB_SET_MemberP(BB_pdom_set(bb), succ2))
-    return succ2;
+  if (BB_SET_MemberP(BB_pdom_set(bb), else_bb))
+    return else_bb;
 
-  if ((ipdom = BB_Unique_Successor(succ1)) == BB_Unique_Successor(succ2))
+  if ((ipdom = BB_Unique_Successor(then_bb)) == BB_Unique_Successor(else_bb))
     if (ipdom && ! BB_SET_MemberP(BB_pdom_set(bb), ipdom)) 
       return NULL;
 
   return ipdom;
 }
 
+// Create a map of conditional blocks sorted in postorder. That makes it
+// easy to iterate through possible hammocks regions.
 static void
 Identify_Hammock_Candidates(void)
 {
@@ -227,6 +244,7 @@ Identify_Hammock_Candidates(void)
   }
 }
 
+// temporary: Until we have a good heuristic.
 UINT max_select_instrs = 1000;
 
 // temporary: I don't like the interface.
@@ -449,27 +467,25 @@ Get_In_Edge_Pos (BB* in_bb, BB* bb)
   FmtAssert(FALSE, ("no edge for bb %d in bb %d\n", BB_id(bb), BB_id(in_bb)));
 }
 
-/* ====================================================================
+/* ================================================================
  *
- * Promote_BB
+ *   Hammock Conversion
  *
- * Delete a BB, i.e. moving all its OPs to its predecessor
- * and remove it from the list of BBs for the region/PU.
- *
- * ====================================================================
+ * ================================================================
  */
+
+// Delete a BB, i.e. moving all its OPs to its predecessor
+// and remove it from the list of BBs for the region/PU.
 static void
 Promote_BB(BB *bp, BB *to_bb)
 {
   BBLIST *edge;
   
-  /* Sanity checks.
-     We can only have one predecessor, where cond is set.
-   */
+  // Sanity checks. We can only have one predecessor, where cond is set.
   BB *pred = BB_Unique_Predecessor(bp);
   DevAssert(to_bb == pred, ("Promote_BB"));
 
-  // Sanity checks.Thoses cases cannot happen inside a hammock
+  // Sanity checks. Thoses cases cannot happen inside a hammock
   if (BB_loophead(bp) || BB_entry(bp) || BB_exit(bp)) {
     DevAssert(FALSE, ("Promote_BB"));
   }
@@ -671,14 +687,6 @@ BB_Fix_Spec_Loads (BB *bb)
     OP* lop = load_i.first.front();
     OP* slop = load_i.second.front();
 
-    fprintf (TFile, "Replacing op \n");
-    Print_OP (lop);
-    fprintf (TFile, "with \n");
-    Print_OP (slop);
-
-    fprintf (TFile, "in bb \n");
-    Print_BB (bb);
-    
     BB_Insert_Op_Before (bb, lop, slop);
     BB_Remove_Op (bb, lop);
 
@@ -906,6 +914,19 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   BB_Update_Phis(tail);
 }
 
+/* ================================================================
+ *
+ *   Logical optimisations
+ *
+ * ================================================================
+ */
+
+/* ================================================================
+ *
+ *   Entry
+ *
+ * ================================================================
+ */
 void
 Convert_Select(RID *rid, const BB_REGION& bb_region)
 {
