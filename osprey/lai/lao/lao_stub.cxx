@@ -1099,7 +1099,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 		Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
 		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
 		Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-		    orig_operation, dest_operation, latency, omega, isDefinite);
+		    orig_operation, dest_operation, omega, isDefinite);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
