@@ -91,6 +91,10 @@ Pick_Compare_TOP (
     *variant = Invert_BR_Variant(*variant);
   }
 
+#if 0
+
+  // This can only be applied to branches
+
   // check for special cases of first or second arg being zero.
   if (*src2 != NULL && TN_is_zero(*src2)) {
     switch (*variant) {
@@ -102,6 +106,7 @@ Pick_Compare_TOP (
 	*variant = V_BR_ALWAYS; break;
     }
   }
+#endif
 
   // pick tops
   switch (*variant) {
@@ -280,6 +285,18 @@ Expand_Branch (
 
   FmtAssert( cond <= V_BR_LAST, ("unexpected variant in Expand_Branch"));
   FmtAssert( cond != V_BR_NONE, ("BR_NONE variant in Expand_Branch"));
+
+  // check for special case of second arg being zero.
+  if (src2 != NULL && TN_is_zero(src2)) {
+    switch (cond) {
+      case V_BR_U8LT:	
+      case V_BR_U4LT:	
+	cond = V_BR_NEVER; break;
+      case V_BR_U8GT:
+      case V_BR_U4GT:
+	cond = V_BR_ALWAYS; break;
+    }
+  }
 
   // compare should calculate a branch reg result
   cmp = Pick_Compare_TOP (&cond, &src1, &src2, FALSE, ops);

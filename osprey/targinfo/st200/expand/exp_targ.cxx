@@ -452,14 +452,14 @@ Fixup_32_Bit_Op(
 }
 
 /* ====================================================================
- *   Exp_Immediate (dest, src, mtype, ops)
+ *   Exp_Immediate (dest, src, is_signed, ops)
  * ====================================================================
  */
 void
 Exp_Immediate (
   TN *dest,
   TN *src,
-  TYPE_ID mtype,
+  BOOL is_signed,
   OPS *ops
 )
 {
@@ -480,12 +480,14 @@ Exp_Immediate (
     // now val is the "real" offset
   }
 
-  switch (mtype) {
+  switch (TN_register_class(dest)) {
 
-    case MTYPE_B:
+    case ISA_REGISTER_CLASS_branch:
       FmtAssert(FALSE,("Exp_Immediate: MTYPE_B not implemented"));
       break;
 
+    case ISA_REGISTER_CLASS_integer:
+#if 0
     case MTYPE_I1:
     case MTYPE_I2:
     case MTYPE_I4:
@@ -493,16 +495,17 @@ Exp_Immediate (
     case MTYPE_U2:
     case MTYPE_U4:
     case MTYPE_A4:
+#endif
       if (ISA_LC_Value_In_Class (val, LC_s32)) {
 	Build_OP (TOP_mov_i, dest, src, ops);
       }
       else {
-	FmtAssert(0, ("Exp_Immediate: large immediate value"));
+	FmtAssert(0, ("Exp_Immediate: large immediate value 0x%llx", val));
       }
       break;
 
     default:
-      FmtAssert(0, ("Exp_Immediate: unknown MTYPE %s", MTYPE_name(mtype)));
+      FmtAssert(0, ("Exp_Immediate: unknown ISA_REGISTER_CLASS"));
   }
 
   return;
@@ -513,13 +516,19 @@ Exp_Immediate (
  * ====================================================================
  */
 void
-Expand_Immediate (TN *dest, TN *src, TYPE_ID mtype, OPS *ops)
+Expand_Immediate (
+  TN *dest, 
+  TN *src, 
+  TYPE_ID mtype, 
+  OPS *ops
+)
 {
   FmtAssert((TN_is_constant(src)),
 	    ("unexpected non-constant in Expand_Immediate"));
   FmtAssert((TN_has_value(src) || TN_is_symbol(src)),
 	    ("expected value or const in Expand_Immediate"));
-  Exp_Immediate (dest, src, mtype, ops);
+  //Exp_Immediate (dest, src, mtype, ops);
+  Exp_Immediate (dest, src, MTYPE_signed(mtype) ? TRUE : FALSE, ops);
 }
 
 /* ====================================================================

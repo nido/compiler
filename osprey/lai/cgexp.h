@@ -152,7 +152,7 @@ extern void Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op
 
 /* Expand TN(const) into a sequence of ops (used in prolog)
  */
-extern void Exp_Immediate (TN *dest, TN *src, TYPE_ID mtype, OPS *);
+extern void Exp_Immediate (TN *dest, TN *src, BOOL is_signed, OPS *);
 
 /* create add/sub/mpy op of given mtype */
 #define Exp_ADD(mtype,dest,src1,src2,ops)	\

@@ -596,15 +596,16 @@ Generate_Entry (BB *bb, BOOL gra_run)
 	 */
 	TN *gp_value_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPIDENT);
 	Set_TN_size(gp_value_tn, Pointer_Size);
-	Exp_Immediate (GP_TN, gp_value_tn, Pointer_Mtype, &ops);
+	//Exp_Immediate (GP_TN, gp_value_tn, Pointer_Mtype, &ops);
 	/*	Exp_OP1 (OPC_I4INTCONST, GP_TN, gp_value_tn, &ops); */
+	Exp_Immediate (GP_TN, gp_value_tn, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
     }
     else if (Ep_TN != NULL) {
       /* Create a symbolic expression for ep-gp */
       TN *cur_pu_got_disp_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPSUB);
       TN *got_disp_tn = CGTARG_Gen_Got_Disp_TN ();
       Set_TN_size(cur_pu_got_disp_tn, Pointer_Size);  
-      Exp_Immediate (got_disp_tn, cur_pu_got_disp_tn, Pointer_Mtype, &ops);
+      Exp_Immediate (got_disp_tn, cur_pu_got_disp_tn, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
 
       /* Add it to ep to get the new GP: */
       Exp_ADD (Pointer_Mtype, GP_TN, Ep_TN, got_disp_tn, &ops);
@@ -1778,7 +1779,7 @@ Adjust_Entry (
 
       TN *src = Gen_Literal_TN(frame_len, Pointer_Size);
       incr = Build_TN_Of_Mtype (Pointer_Mtype);
-      Exp_Immediate (incr, src, Pointer_Mtype, &ops);
+      Exp_Immediate (incr, src, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
       /*
       incr = Gen_Prolog_LDIMM64(frame_len, &ops);
       */
@@ -1932,7 +1933,6 @@ Adjust_Exit (
 
       /* Get the frame size into a register */
       REG_LIVE_Epilog_Temps(pu_st, bb, sp_adj, temps);
-      //REG_LIVE_Prolog_Temps(bb, sp_adj, fp_adj, temps);
 
       if (Trace_EE) {
 	ISA_REGISTER_CLASS cl;
@@ -1949,7 +1949,7 @@ Adjust_Exit (
 
       TN *src = Gen_Literal_TN(frame_len, Pointer_Size);
       incr = Build_TN_Of_Mtype (Pointer_Mtype);
-      Exp_Immediate (incr, src, Pointer_Mtype, &ops);
+      Exp_Immediate (incr, src, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
 
       // Although it is called prolog_temps, it does the job right
       Assign_Prolog_Temps(OPS_first(&ops), OPS_last(&ops), temps);

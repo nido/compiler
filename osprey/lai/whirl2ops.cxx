@@ -3047,6 +3047,9 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
                           ("Handle_INTRINSIC_OP: not a cg INTRINSIC_OP"));
 
 #ifdef TARG_ST
+
+  FmtAssert(Inline_Intrinsics_Allowed,("inlining intrinsics not allowed"));
+
   FmtAssert(numkids < 10, ("unexpected number of kids in intrinsic_op"));
   for (i = 0; i < WN_kid_count(expr); i++) {
     kids[i] = Expand_Expr(WN_kid(expr,i), expr, NULL);
@@ -3462,6 +3465,9 @@ Expand_Expr (
     if (Has_Immediate_Operand (parent, expr)) {
       if (Trace_Exp) {
 	fprintf(TFile, "has_immed: %s\n", OPCODE_name(WN_opcode(parent)));
+	fprintf(TFile, "const_tn: "); 
+	Print_TN(const_tn,FALSE);
+	fprintf(TFile, "\n");
       }
       return const_tn;
     }
