@@ -5462,6 +5462,7 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
   char	*reason = NULL;
   BB	*bb;
   BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
+  bool has_exit = FALSE;
 
   FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb)
   {
@@ -5475,6 +5476,19 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
     if (!(bbkind == BBKIND_CALL || bbkind == BBKIND_GOTO || bbkind == BBKIND_LOGIF)) {
       reason = "contains BB with unsupported branch instruction";
       break;
+    }
+
+    /* Duplication of ASM instructions may not be possible. */
+    if (BB_asm(bb)) {
+      reason = "contains BB with ASM instruction";
+      break;
+    }
+
+    BBLIST *succs;
+    FOR_ALL_BB_SUCCS(bb, succs) {
+      BB *succ = BBLIST_item(succs);
+      if (!BB_SET_MemberP(LOOP_DESCR_bbset(loop), succ))
+	has_exit = TRUE;
     }
 #endif
   }
@@ -5535,6 +5549,14 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
     {
       reason = "loop never exits";
     }
+#ifdef TARG_ST
+    /* Because the test to detect loops with no exit is not sufficient
+       for multi bb loop. */
+    else if (!has_exit)
+    {
+      reason = "loop never exits";
+    }
+#endif
   }
 	
   if (reason)
