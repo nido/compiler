@@ -807,8 +807,10 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
-  if (CG_LAO_optimizations)
+  if (CG_LAO_optimizations) {
+    GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
+  }
   else
 #endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
