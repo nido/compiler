@@ -5069,3 +5069,15 @@ Whirl2ops_Finalize (void)
   }
   OP_MAP_Delete(OP_Asm_Map);
 }
+
+#ifdef TARG_ST
+void Set_TN_home(TN *t, WN *x) {
+  if (Only_32_Bit_Ops &&
+      (MTYPE_is_double(WN_rtype(x)) || MTYPE_is_longlong(WN_rtype(x)))) {
+    extern WN *Get_WN_home_lo (WN *);
+    x = Get_WN_home_lo (x);
+  }
+
+  CAN_USE_TN(t)->u2.u3.home = (x);
+}
+#endif
