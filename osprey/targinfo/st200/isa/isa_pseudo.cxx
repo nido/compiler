@@ -42,46 +42,46 @@ main()
 {
   Machine_To_Pseudo(TOP_cmpled, TOP_cmpged);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
   Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_cmpged, TOP_cmpled);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
   Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_cmplef, TOP_cmpgef);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
   Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_cmpgef, TOP_cmplef);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
   Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_cmpltd, TOP_cmpgtd);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
   Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_cmpgtd, TOP_cmpltd);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
   Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_cmpltf, TOP_cmpgtf);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
   Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_cmpgtf, TOP_cmpltf);
   Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
   Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_idle, TOP_goto);
@@ -107,34 +107,34 @@ main()
   Machine_To_Pseudo(TOP_mov_r, TOP_add_r);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Require("OPND(0) == 0");
-  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_add_r, TOP_mov_r);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Map_Arg("OPND(0)", "0");
-  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_mov_i, TOP_add_i);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Require("OPND(0) == 0");
-  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_add_i, TOP_mov_i);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Map_Arg("OPND(0)", "0");
-  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_mov_ii, TOP_add_ii);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Require("OPND(0) == 0");
-  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
 
   Pseudo_To_Machine(TOP_add_ii, TOP_mov_ii);
   Map_Arg("RESULT(0)", "RESULT(0)");
   Map_Arg("OPND(0)", "0");
-  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_mtb, TOP_orl_r_b);
@@ -160,10 +160,8 @@ main()
 
 
   Machine_To_Pseudo(TOP_return, TOP_igoto);
-  Map_Arg("OPND(0)", "OPND(0)");
 
   Pseudo_To_Machine(TOP_igoto, TOP_return);
-  Map_Arg("OPND(0)", "OPND(0)");
 
 
   Machine_To_Pseudo(TOP_syncins, TOP_goto);

@@ -786,9 +786,9 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_48", 
-		 TOP_multi_cvtid,
-		 TOP_multi_cvtsd,
-		 TOP_multi_cvtud,
+		 TOP_multi_convfd,
+		 TOP_multi_convid,
+		 TOP_multi_convud,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_integer);
@@ -888,12 +888,12 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_58", 
-		 TOP_cvtis,
-		 TOP_cvtis_n,
-		 TOP_cvtsi,
-		 TOP_cvtsi_n,
-		 TOP_cvtsu,
-		 TOP_cvtus,
+		 TOP_convfi,
+		 TOP_convfi_n,
+		 TOP_convfu,
+		 TOP_convif,
+		 TOP_convif_n,
+		 TOP_convuf,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
@@ -901,9 +901,9 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_59", 
-		 TOP_multi_cvtdi,
-		 TOP_multi_cvtds,
-		 TOP_multi_cvtdu,
+		 TOP_multi_convdf,
+		 TOP_multi_convdi,
+		 TOP_multi_convdu,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
@@ -1042,9 +1042,9 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_66", 
-		 TOP_cvtdi,
-		 TOP_cvtds,
-		 TOP_cvtdu,
+		 TOP_convdf,
+		 TOP_convdi,
+		 TOP_convdu,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
@@ -1107,9 +1107,9 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_71", 
-		 TOP_cvtid,
-		 TOP_cvtsd,
-		 TOP_cvtud,
+		 TOP_convfd,
+		 TOP_convid,
+		 TOP_convud,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
