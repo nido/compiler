@@ -5365,9 +5365,12 @@ EMT_End_File( void )
       ST *strongsym = ST_strong(sym);
       unsigned char symtype;
 
+#ifndef TARG_ST
+      /* (cbr) emit alias information evenif strongsym is extern */
       if (!Has_Base_Block(strongsym))
 	continue;	/* strong not allocated, so ignore weak */
-
+#endif
+      
       if (ST_class(sym) == CLASS_FUNC) {
 	symtype = STT_FUNC;
       }
