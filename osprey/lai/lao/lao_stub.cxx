@@ -323,26 +323,20 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     InstrMode instrmode = Is_Target_st221() ? InstrMode_ST221 : InstrMode_ST220;
     basicblock = Interface_makeBasicBlock(interface, cgir_bb, instrmode,
 	labelCount, labels, operationCount, operations);
+    // more the BasicBlock
+    int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
+    Temporary *liveins = (Temporary *)alloca(MAX_LIVEIN_COUNT*sizeof(Temporary));
+    for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn = GTN_SET_Choose_Next(BB_live_in(cgir_bb), tn)) {
+      Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
+      liveins[liveinCount++] = CGIR_TN_to_Temporary(tn);
+    }
+    intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
+    float frequency = BB_freq(cgir_bb);
+    Interface_moreBasicBlock(interface, basicblock, regionId, frequency, liveinCount, liveins);
   }
   return basicblock;
-}
-
-// Convert CGIR_BB to LIR ControlNode.
-static ControlNode
-CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
-  BasicBlock basicblock = Interface_findBasicBlock(interface, cgir_bb);
-  int liveinCount = 0, MAX_LIVEIN_COUNT = 16384;
-  Temporary *liveins = (Temporary *)alloca(MAX_LIVEIN_COUNT*sizeof(Temporary));
-  for (TN *tn = GTN_SET_Choose(BB_live_in(cgir_bb));
-       tn != GTN_SET_CHOOSE_FAILURE;
-       tn = GTN_SET_Choose_Next(BB_live_in(cgir_bb), tn)) {
-    Is_True(liveinCount < MAX_LIVEIN_COUNT, ("BB has more than MAX_LIVEIN_COUNT liveins"));
-    liveins[liveinCount++] = CGIR_TN_to_Temporary(tn);
-  }
-  intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
-  float frequency = BB_freq(cgir_bb);
-  ControlNode controlnode = Interface_makeControlNode(interface, basicblock, regionId, frequency, liveinCount, liveins);
-  return controlnode;
 }
 
 // Convert CGIR_LI to LIR LoopInfo.
@@ -1267,13 +1261,13 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   // Make the control-flow nodes and the control-flow arcs.
   for (bb_iter = bodyBBs.begin(); bb_iter != bodyBBs.end(); bb_iter++) {
     BB *orig_bb = *bb_iter;
-    ControlNode orig_controlnode = CGIR_BB_to_ControlNode(orig_bb);
+    BasicBlock tail_block = CGIR_BB_to_BasicBlock(orig_bb);
     if (lao_in_bblist(exitBBs, orig_bb)) continue;
     BBLIST *bblist = NULL;
     FOR_ALL_BB_SUCCS(orig_bb, bblist) {
       BB *succ_bb = BBLIST_item(bblist);
-      ControlNode succ_controlnode = CGIR_BB_to_ControlNode(succ_bb);
-      Interface_linkControlNodes(interface, orig_controlnode, succ_controlnode, BBLIST_prob(bblist));
+      BasicBlock head_block = CGIR_BB_to_BasicBlock(succ_bb);
+      Interface_linkBasicBlocks(interface, tail_block, head_block, BBLIST_prob(bblist));
     }
   }
   //
