@@ -32,13 +32,21 @@
  *
  * Description:
  *
- * If-convert conditional if regions using selects and speculation.
  * Simplifies successive conditional jumps into logical expressions.
+ * If-converts conditional if regions using selects and speculation.
+ * This optimisation works and maintains the SSA representation.
  *
- * Flags are:
+ * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  * -TARG:dismiss_mem_faults=TRUE allow dismissible loads
+ *
+ * The following flags to drive the algorithm.
+ * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
+ *                               might increase code size in some cases.
+ *
+ * The following flags to drive the heuristics.
+ * -CG:select_factor="8.0"       gain for replacing a branch by a select
+ * -CG:select_disload_cost="4.0" cost to speculate a load
  *
  * ====================================================================
  * ====================================================================
@@ -68,10 +76,10 @@
 #include "gtn_tn_set.h"
 #include "gra_live.h"
 #include "cxx_memory.h"
+#include "cg_sched_est.h"
 #include "cg_ssa.h"
 #include "cg_select.h"
 #include "DaVinci.h"
-
 
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
@@ -112,7 +120,9 @@ op_list load_i;
  *   flags:
  * ====================================================================
  */
-BOOL CG_select_allow_dup = FALSE;
+BOOL CG_select_allow_dup = TRUE;
+const char* CG_select_factor = "8.0";
+const char* CG_select_disload_cost = "4.0";
 
 /* ================================================================
  *
@@ -190,8 +200,6 @@ CG_SELECT_Statistics()
 void 
 Select_Init()
 {
-  Trace_Select_Init();
-
   static BOOL did_init = FALSE;
 
   if ( ! did_init ) {
@@ -204,13 +212,11 @@ Select_Init()
 static void
 Initialize_Memory()
 {
-  if_bb_map = BB_MAP_Create();
 }
 
 static void
 Finalize_Memory()
 {
-  BB_MAP_Delete(if_bb_map);
   Free_Dominators_Memory();
   MEM_POOL_Pop(&MEM_Select_pool);
 }
@@ -262,8 +268,10 @@ static BB*
 Find_End_Select_Region(BB* bb, BB* then_bb, BB* else_bb)
 {
   BB_SET *pdom_set = BB_pdom_set(bb);
-  pdom_set = BB_SET_Intersection(pdom_set, BB_pdom_set(then_bb), &MEM_Select_pool);
-  pdom_set = BB_SET_Intersection(pdom_set, BB_pdom_set(else_bb), &MEM_Select_pool);
+  pdom_set = BB_SET_Intersection(pdom_set,
+                                 BB_pdom_set(then_bb), &MEM_Select_pool);
+  pdom_set = BB_SET_Intersection(pdom_set,
+                                 BB_pdom_set(else_bb), &MEM_Select_pool);
 
   BB *succ;
   BB *tail_bb = NULL;
@@ -656,16 +664,118 @@ Sort_Stores(void)
 }
 
 // Test if a hammock is suitable for select conversion
-// For now, the heuristic is simply the # of instructions to speculate.
-//  later: compute dependence heigh, use freq information.
-
-UINT max_select_instrs = 1000;
 
 static BOOL
-Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
+Check_Profitable_Select (BB *head, BB *taken, BB_SET *region1, BB_SET *region2)
 {
-  UINT spec_length = 0;
+  BB *bb;
+  BBLIST *bblist;
+  BBLIST *bb1;
+  BBLIST *bb2;
 
+  FOR_ALL_BB_SUCCS(head, bblist) {
+    BB *bb = BBLIST_item(bblist);
+    if (bb == taken)
+      bb1 = bblist;
+    else
+      bb2 = bblist;
+  }
+
+  UINT32 exp_len = BB_length(head);
+
+  float prob1 = BBLIST_prob(bb1);
+  float prob2 = BBLIST_prob(bb2);
+
+  CG_SCHED_EST* se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
+                                                SCHED_EST_FOR_IF_CONV);
+  CG_SCHED_EST* se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool,
+                                                SCHED_EST_FOR_IF_CONV);
+
+  FOR_ALL_BB_SET_members(region1, bb) {
+    exp_len += BB_length(bb);
+
+    CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
+                                           SCHED_EST_FOR_IF_CONV);
+    CG_SCHED_EST_Append_Scheds(se1, se);
+    CG_SCHED_EST_Delete(se);
+  }
+
+  FOR_ALL_BB_SET_members(region2, bb) {
+    exp_len += BB_length(bb);
+
+    CG_SCHED_EST *se = CG_SCHED_EST_Create(bb, &MEM_Select_pool, 
+                                           SCHED_EST_FOR_IF_CONV);
+    CG_SCHED_EST_Append_Scheds(se2, se);
+    CG_SCHED_EST_Delete(se);
+  }
+
+  // higher est_cost_branch means ifc more aggressive.
+  UINT32 est_cost_branch = atoi(CG_select_factor);
+
+  // If new block is bigger that CG_bblength_max, reject.
+  //  if ((exp_len - est_cost_branch) >= CG_split_BB_length)
+  //    return FALSE;
+
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "for BB%d freq %f ", BB_id(BBLIST_item(bb1)), prob1);
+    CG_SCHED_EST_Print(Select_TFile, se1);
+    fprintf (Select_TFile, "\nfor BB%d freq %f ", BB_id(BBLIST_item(bb2)), prob2);
+    CG_SCHED_EST_Print(Select_TFile, se2);
+    fprintf (Select_TFile, "\n");
+  }
+
+  UINT32 mem1 = 0;
+  UINT32 mem2 = 0;
+
+  // check speculative memory loads costs.
+  op_list::iterator i_iter;
+  op_list::iterator i_end;
+  i_iter = load_i.begin();
+  i_end = load_i.end();
+  while(i_iter != i_end) {
+    if (BB_SET_MemberP(region1, OP_bb(*i_iter)))
+      mem1++;
+    else if (BB_SET_MemberP(region2, OP_bb(*i_iter)))
+      mem2++;
+    else
+      DevAssert(FALSE, ("invalid spec load."));
+
+    i_iter++;
+  }
+
+  // cost to speculate a load.
+  UINT32 disload_cost =  atoi(CG_select_disload_cost);
+  mem1 *= disload_cost;
+  mem2 *= disload_cost;
+
+  // pondarate cost of each region taken separatly.
+  float est_cost_bbs = (((float)(CG_SCHED_EST_Cycles(se1) + mem1) * prob1) + 
+                        ((float)(CG_SCHED_EST_Cycles(se2) + mem2) * prob2));
+
+  // cost of if converted region. prob is one. Remove branch.
+  float est_cost_ifc = (float)CG_SCHED_EST_Cycles(se1) + (float)CG_SCHED_EST_Cycles(se2)
+    + (float)mem1 + (float)mem2 - est_cost_branch;
+  
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "region1: cycles %d, mem %d, prob %f\n",
+             CG_SCHED_EST_Cycles(se1), mem1, prob1);    
+    fprintf (Select_TFile, "region2: cycles %d, mem %d, prob %f\n",
+             CG_SCHED_EST_Cycles(se2), mem2, prob2);
+    fprintf (Select_TFile, "ifc region: cycles %d, mem %d, saving branch %d\n",
+             CG_SCHED_EST_Cycles(se1) + CG_SCHED_EST_Cycles(se2), mem1 + mem2,
+             est_cost_branch);
+    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n",
+             est_cost_bbs, est_cost_ifc);
+  }
+
+  // If estimated cost of if convertion is a win, do it.
+  return est_cost_ifc <= est_cost_bbs;
+}
+
+static BOOL
+Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
+                        BB_SET** t_path, BB_SET** ft_path)
+{
   if (Trace_Select_Candidates) {
     fprintf(Select_TFile, "<select> Found Hammock : ");
     fprintf(Select_TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
@@ -684,16 +794,10 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
    if (! Can_Speculate_BB(bb, &store_i.first))
      return FALSE;
 
-   spec_length += BB_length(bb);
+   *t_path  = BB_SET_Union1(*t_path, bb, &MEM_Select_pool);
    bb = BB_Unique_Successor (bb);
   }
   
-  // very simple heuristic... change that later when the engine is finalized.
-  if (spec_length > max_select_instrs)
-    return FALSE;
-
-  spec_length = 0;
-
   bb = fall_thru;
 
   while (bb != ipdom) {
@@ -705,13 +809,10 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru)
     if (! Can_Speculate_BB(bb, &store_i.second))
       return FALSE;
 
-    spec_length += BB_length(bb);
+    *ft_path  = BB_SET_Union1(*ft_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
   }
   
-  if (spec_length > max_select_instrs)
-    return FALSE;
-
   // Check if we have the same set of memory stores in both sides.
   if (!store_i.first.empty() || !store_i.second.empty()) {
     if (!Sort_Stores())
@@ -747,8 +848,14 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   if (*tail == NULL)
     return FALSE;
 
+  BB_SET *t_set  = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
+  BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count, &MEM_Select_pool);
 
-  return Check_Suitable_Hammock (*tail, *target, *fall_thru);
+  if (Check_Suitable_Hammock (*tail, *target, *fall_thru, &t_set, &ft_set)) {
+    return Check_Profitable_Select(head, *target, t_set, ft_set);
+  }
+  else
+    return FALSE;
 }
 
 /* ================================================================
@@ -1716,30 +1823,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Trace_Select_Init();
 
-  if (Trace_Select_Spec) {
-    fprintf (Select_TFile, "<select> speculative model is eager ");
-    switch (Eager_Level) {
-    case EAGER_NONE:
-      fprintf (Select_TFile, "none\n");      
-      break;
-    case EAGER_SAFE:
-      fprintf (Select_TFile, "safe\n");      
-      break;
-    case EAGER_ARITH:
-      fprintf (Select_TFile, "arith\n");      
-      break;
-    case EAGER_DIVIDE:
-      fprintf (Select_TFile, "divide\n");      
-      break;
-    case EAGER_MEMORY:
-      fprintf (Select_TFile, "memory\n");      
-      break;
-    default:
-      fprintf (Select_TFile, "%d\n", Eager_Level);      
-      break;
-    }
-  }
-
   Initialize_Memory();
 
   if (Trace_Select_Candidates)
@@ -1748,6 +1831,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Identify_Logifs_Candidates();
 
   Calculate_Dominators();
+
+  if_bb_map = BB_MAP_Create();
 
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
@@ -1803,6 +1888,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     }
     clear_spec_lists();
   }
+
+  BB_MAP_Delete(if_bb_map);
 
   // TODO: track liveness
   GRA_LIVE_Recalc_Liveness(rid);
