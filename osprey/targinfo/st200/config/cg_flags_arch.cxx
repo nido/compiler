@@ -35,9 +35,59 @@
 
 #include "defs.h"
 #include "cg_flags.h"
+#include "cg_loop.h"      /* for cg_loop flags */
 
-BOOL HB_force_hyperblocks = TRUE;
-BOOL HB_loops_with_exits = FALSE;
-BOOL HB_complex_non_loop = TRUE;
+void Configure_CG_Target() {
+  //    locs_form_bundles=
+  //    all_scheduler=
+  //    enable_thr=
+  //    lra_reorder=
+  //    callee_reg_mask=
+  //    etc.
+
+  // Scheduling options: scheduling is ON by default -- disable if
+  //                     in development
+  IGLS_Enable_HB_Scheduling = FALSE;
+  IGLS_Enable_PRE_HB_Scheduling = FALSE;
+  IGLS_Enable_POST_HB_Scheduling = FALSE;
 
 
+  //LOCS_Enable_Scheduling = FALSE;
+  //LOCS_PRE_Enable_Scheduling = FALSE;
+  LOCS_POST_Enable_Scheduling = FALSE;
+
+  // Bundle formation is OFF by default
+  LOCS_Enable_Bundle_Formation = TRUE;
+
+  // GCM settings: ON by default
+  GCM_Enable_Scheduling = FALSE;
+  GCM_Speculative_Loads = FALSE;
+  GCM_Predicated_Loads = FALSE;
+  GCM_Motion_Across_Calls = FALSE;
+  GCM_Min_Reg_Usage = TRUE;
+  GCM_Pointer_Spec = FALSE;
+  GCM_Eager_Ptr_Deref = FALSE;
+  GCM_Test = FALSE;
+  GCM_Enable_Cflow = FALSE;
+  GCM_PRE_Enable_Scheduling = FALSE;
+  GCM_POST_Enable_Scheduling = FALSE;
+  GCM_Enable_Fill_Delay_Slots = FALSE;
+
+  // Reorder while LRA
+  LRA_do_reorder = FALSE;
+
+  // ??
+  CG_enable_thr = FALSE;
+
+  // Do not force if-conversion for loops, see CG_LOOP_Optimize()
+  CG_LOOP_force_ifc = 0;
+
+
+  // HB stuff: everything's OFF by default
+  HB_force_hyperblocks = TRUE;
+  //HB_loops_with_exits = FALSE;
+  HB_complex_non_loop = TRUE;
+  //HB_skip_hammocks = FALSE;
+
+  return;
+}
