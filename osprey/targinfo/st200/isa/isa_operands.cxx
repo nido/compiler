@@ -407,8 +407,16 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_Int3I", 
-		 TOP_add_i, 
 		 TOP_sub_i, 
+		 TOP_UNDEFINED); 
+
+  Result (0, idest); 
+  Operand (0, isrc2); 
+  Operand (1, src1); 
+
+  /* ====================================== */ 
+  Instruction_Group("O_Int3I", 
+		 TOP_add_i, 
 		 TOP_shl_i, 
 		 TOP_shr_i, 
 		 TOP_shru_i, 

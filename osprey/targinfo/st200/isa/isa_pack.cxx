@@ -73,11 +73,12 @@ main()
 		p27, 	// barrier
 		p28, 	// intrncall
 		p29, 	// Int3I
-		p30, 	// Cmp3R_Br
-		p31, 	// SysOp
-		p32, 	// Store
-		p33, 	// call
-		p34; 	// call
+		p30, 	// Int3I
+		p31, 	// Cmp3R_Br
+		p32, 	// SysOp
+		p33, 	// Store
+		p34, 	// call
+		p35; 	// call
 
   OPND_ADJ_TYPE	no_adj; 
 
@@ -400,8 +401,16 @@ main()
   Operand (0, 0, 6, 5); 
   Operand (1, 0, 6, 5); 
   Instruction_Pack_Group(p29, 
-	TOP_add_i, 	 0x10000000UL, 
 	TOP_sub_i, 	 0x10000000UL, 
+	TOP_UNDEFINED); 
+
+/* =====  p30: ===== */ 
+  p30 = ISA_Pack_Type_Create("p30"); 
+  Result(0, 0, 5); 
+  Operand (0, 0, 6, 5); 
+  Operand (1, 0, 6, 5); 
+  Instruction_Pack_Group(p30, 
+	TOP_add_i, 	 0x10000000UL, 
 	TOP_shl_i, 	 0x10000000UL, 
 	TOP_shr_i, 	 0x10000000UL, 
 	TOP_shru_i, 	 0x10000000UL, 
@@ -433,12 +442,12 @@ main()
 	TOP_recv_i, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p30: ===== */ 
-  p30 = ISA_Pack_Type_Create("p30"); 
+/* =====  p31: ===== */ 
+  p31 = ISA_Pack_Type_Create("p31"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 5); 
   Operand (1, 0, 6, 5); 
-  Instruction_Pack_Group(p30, 
+  Instruction_Pack_Group(p31, 
 	TOP_cmpeq_r_b, 	 0x10000000UL, 
 	TOP_cmpne_r_b, 	 0x10000000UL, 
 	TOP_cmpge_r_b, 	 0x10000000UL, 
@@ -455,22 +464,22 @@ main()
 	TOP_norl_r_b, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p31: ===== */ 
-  p31 = ISA_Pack_Type_Create("p31"); 
+/* =====  p32: ===== */ 
+  p32 = ISA_Pack_Type_Create("p32"); 
   Operand (0, 0, 0, 5); 
-  Instruction_Pack_Group(p31, 
+  Instruction_Pack_Group(p32, 
 	TOP_prgins, 	 0x10000000UL, 
 	TOP_sbrk, 	 0x10000000UL, 
 	TOP_syscall, 	 0x10000000UL, 
 	TOP_break, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p32: ===== */ 
-  p32 = ISA_Pack_Type_Create("p32"); 
+/* =====  p33: ===== */ 
+  p33 = ISA_Pack_Type_Create("p33"); 
   Operand (0, 0, 0, 5); 
   Operand (1, 0, 5, 5); 
   Operand (2, 0, 10, 5); 
-  Instruction_Pack_Group(p32, 
+  Instruction_Pack_Group(p33, 
 	TOP_stw, 	 0x10000000UL, 
 	TOP_sth, 	 0x10000000UL, 
 	TOP_stb, 	 0x10000000UL, 
@@ -480,11 +489,11 @@ main()
 	TOP_sync, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
-/* =====  p33: ===== */ 
-  p33 = ISA_Pack_Type_Create("p33"); 
+/* =====  p34: ===== */ 
+  p34 = ISA_Pack_Type_Create("p34"); 
   Result(0, 0, 5); 
   Operand (0, 0, 6, 5); 
-  Instruction_Pack_Group(p33, 
+  Instruction_Pack_Group(p34, 
 	TOP_call, 	 0x10000000UL, 
 	TOP_UNDEFINED); 
 
