@@ -196,9 +196,21 @@ BOOL EBO_combine_adjacent_loads(OP *op,
 				INT64 pred_offset,
 				INT64 succ_offset);
 
-BOOL EBO_Fold_Constant_Expression (OP *op,
-				   TN **opnd_tn,
-				   EBO_TN_INFO **opnd_tninfo);
+//
+// Given a compare 'op' with compared operands constant, fold it.
+// Return TRUE, if successfull
+//
+extern BOOL EBO_Fold_Constant_Compare (OP *op, TN **opnd_tn, OPS *ops);
+
+//
+// Given an 'op', see if a target-specific folding can be applied.
+// If yes, 'result_val' has the folded value, and return TRUE.
+//
+extern BOOL EBO_Fold_Special_Opcode (OP *op, TN **opnd_tn, INT64 *result_val);
+
+//BOOL EBO_Fold_Constant_Expression (OP *op,
+//				   TN **opnd_tn,
+//				   EBO_TN_INFO **opnd_tninfo);
 
 BOOL EBO_Special_Sequence (OP *op,
 			   TN **opnd_tn,

@@ -3260,6 +3260,244 @@ if (EBO_Trace_Optimization) fprintf(TFile,"replace complementary operations\n");
   return FALSE;
 }
 
+/* =====================================================================
+ *    EBO_Fold_Constant_Expression
+ *
+ *    Look at an exression that has all constant operands and attempt to
+ *    evaluate the expression.
+ *
+ *    Supported operations are:
+ *      add, sub, mult, and, or, xor, nor, sll, srl, slt
+ * =====================================================================
+ */
+BOOL
+EBO_Fold_Constant_Expression (
+  OP *op,
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+
+  TN *tnr = OP_result(op,0);
+  TN *tn0 = NULL;
+  TN *tn1 = NULL;
+  UINT64 tn0_uval = 0;
+  INT64 tn0_val = 0;
+  UINT64 tn1_uval = 0;
+  INT64 tn1_val = 0;
+  INT64 result_val;
+  ST *result_sym = NULL;
+  INT32 result_relocs;
+
+  if (EBO_Trace_Execution) {
+    INT i;
+    INT opndnum = OP_opnds(op);
+    fprintf(TFile, "%sin BB:%d Constant OP :- %s ",
+            EBO_trace_pfx, BB_id(OP_bb(op)),TOP_Name(opcode));
+    for (i = 0; i < opndnum; i++) {
+      fprintf(TFile," ");
+      Print_TN(opnd_tn[i],TRUE);
+    }
+    fprintf(TFile,"\n");
+  }
+
+  if (OP_has_predicate(op) && (opnd_tn[OP_PREDICATE_OPND] == Zero_TN)) {
+
+    if (OP_Is_Unconditional_Compare(op)) {
+      /* 
+       * Unconditional compares define results even if the predicate 
+       * is "FALSE". 
+       */
+      OPS ops = OPS_EMPTY;
+
+#ifdef TARG_ST
+      FmtAssert(FALSE,("TODO: not implemented"));
+#else
+      if (OP_result(op,0) != True_TN) {
+	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,0), True_TN, Zero_TN, Zero_TN, &ops);
+      }
+      if (OP_result(op,1) != True_TN) {
+	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,1), True_TN, Zero_TN, Zero_TN, &ops);
+      }
+#endif
+
+      if (OP_glue(op)) {
+	OP *next_op = OPS_first(&ops);
+	while (next_op != NULL) {
+	  Set_OP_glue(next_op);
+	  next_op = OP_next(next_op);
+	}
+      }
+
+      if (EBO_Trace_Optimization) {
+	INT i;
+	fprintf(TFile, "%sin BB:%d Result of compare is FALSE for all: ", EBO_trace_pfx,BB_id(OP_bb(op)));
+	for (i = 0; i < OP_results(op); i++) {
+	  Print_TN(OP_result(op,i),FALSE); fprintf(TFile,", ");
+	}
+      }
+
+      if (OPS_length(&ops) != 0) {
+	OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+	BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      }
+      return TRUE;
+    }
+
+    /* The OP can be deleted. */
+    return (!OP_glue(op));
+  }
+
+  //
+  // First of all, check if this is a target-specific opcode
+  //
+  if (EBO_Fold_Special_Opcode(op, opnd_tn, &result_val)) {
+    goto Constant_Created;
+  }
+
+  if ((OP_has_predicate(op) && OP_opnds(op) <= 2) ||
+      (!OP_has_predicate(op) && OP_opnds(op) <= 1))
+  {
+    return FALSE;
+  } 
+
+  tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
+  tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
+
+  if (TN_is_symbol(tn0)) {
+    if (TN_is_symbol(tn1)) {
+     /* In theory, we could handle this but we won't. */
+      return FALSE;
+    }
+    tn0_uval = TN_offset(tn0);
+    tn0_val = TN_offset(tn0);
+    result_sym = TN_var(tn0);
+    result_relocs = TN_relocs(tn0);
+  } else if (TN_is_symbol(tn1)) {
+    if (OP_isub(op)) {
+     /* In theory, we might be able to handle this but we won't. */
+      return FALSE;
+    }
+    tn1_uval = TN_offset(tn1);
+    tn1_val = TN_offset(tn1);
+    result_sym = TN_var(tn1);
+    result_relocs = TN_relocs(tn1);
+  } else {
+    tn0_uval = TN_Value (tn0);
+    tn0_val = TN_Value (tn0);
+    tn1_uval = TN_Value (tn1);
+    tn1_val = TN_Value (tn1);
+  }
+
+  // If you can do things with symbolic TNs, do it above in
+  // Fold_Special_Opcode().
+  if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) {
+   /* Can only do simple add or subtract with relocation. */
+    return FALSE;
+  }
+
+  if (OP_iadd(op)) {
+    result_val = tn0_uval + tn1_uval;
+    goto Constant_Created;
+  }
+
+  if (OP_isub(op)) {
+    result_val = tn0_uval - tn1_uval;
+    goto Constant_Created;
+  }
+
+  //if (TN_is_symbol(tn0) || TN_is_symbol(tn1)) {
+  // Can only do simple add or subtract with relocation.
+  //  return FALSE;
+  //}
+
+  if (OP_iand(op)) {
+    result_val = tn0_uval & tn1_uval;
+    goto Constant_Created;
+  }
+
+  if (OP_ior(op)) {
+    result_val = tn0_uval | tn1_uval;
+    goto Constant_Created;
+  }
+
+  if (OP_ixor(op)) {
+    result_val = tn0_uval ^ tn1_uval;
+    goto Constant_Created;
+  }
+
+  if (OP_select(op)) {
+    return EBO_Constant_Operand0 (op, opnd_tn, opnd_tninfo);
+  }
+
+  if (OP_icmp(op)) {
+    /* Integer comparison operation. */
+    if (OP_has_predicate(op) && (OP_opnd(op, OP_PREDICATE_OPND) != True_TN))
+      return FALSE;
+
+    OPS ops = OPS_EMPTY;
+    if (EBO_Fold_Constant_Compare (op, opnd_tn, &ops)) {
+
+      if (EBO_in_loop) 
+	EBO_OPS_omega (&ops, (OP_has_predicate(op) ? opnd_tninfo[OP_PREDICATE_OPND] : NULL));
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+
+Constant_Created:
+
+  OPS ops = OPS_EMPTY;
+  TN *tnc;
+
+  if (result_sym != NULL) {
+    tnc = Gen_Symbol_TN(result_sym, result_val, result_relocs);
+  } else {
+    tnc = Gen_Literal_TN(result_val, TN_size(tnr));
+  }
+
+  Expand_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
+  if (OP_next(OPS_first(&ops)) != NULL) {
+   /* What's the point in replacing one instruction with several? */
+    return FALSE;
+  }
+  if (OP_has_predicate(op)) {
+    EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
+  }
+  if (EBO_in_loop) EBO_OPS_omega (&ops, (OP_has_predicate(op) ? opnd_tninfo[OP_PREDICATE_OPND] : NULL));
+  OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+  if (opcode == OP_code(OPS_first(&ops))) {
+    BOOL all_operands_are_the_same = TRUE;
+    INT i;
+    for (i = 0; i < OP_opnds(op); i++) {
+      if (!TNs_Are_Equivalent(OP_opnd(op, i), OP_opnd(OPS_first(&ops), i))) {
+        all_operands_are_the_same = FALSE;
+        break;
+      }
+    }
+    if (all_operands_are_the_same) {
+     /* Avoid infinite loops caused by regenerating the same instruction. */
+      return FALSE;
+    }
+  }
+  BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+
+  if (EBO_Trace_Optimization) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile, "%sin BB:%d Redefine ",
+            EBO_trace_pfx, BB_id(OP_bb(op)));
+    Print_TN(tnr,TRUE);
+    fprintf(TFile," with load of ");
+    Print_TN(tnc,FALSE);
+    fprintf(TFile, "\n");
+  }
+
+  return TRUE;
+}
+
 #endif
 
 /* =====================================================================
@@ -4250,11 +4488,15 @@ Find_BB_TNs (BB *bb)
           (!op_is_predicated || (opndnum != OP_PREDICATE_OPND))) {
         opnds_constant = FALSE;
       }
+
       if (op_is_predicated && (opndnum == OP_PREDICATE_OPND)) {
         if ((tn == Zero_TN) && !OP_xfer(op)) {
-         /* The instruction will not be executed - it can be deleted!
-            However, Branch instructions should go through
-            Resolve_Conditional_Branch so that links between blocks can be updated. */
+         /* 
+	  * The instruction will not be executed - it can be deleted!
+	  * However, Branch instructions should go through
+	  * Resolve_Conditional_Branch so that links between blocks 
+	  * can be updated. 
+	  */
 	  op_replaced = EBO_Fold_Constant_Expression (op, opnd_tn, opnd_tninfo);
           num_opnds = opndnum + 1;
 

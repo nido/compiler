@@ -847,12 +847,16 @@ EBO_simplify_operand1 (
   OP *new_op;
 
   if ((const_val == 0) && 
-      ((opcode == TOP_shru_r)  || 
-       (opcode == TOP_shru_i)  || 
-       (opcode == TOP_shru_ii) ||
-       (opcode == TOP_shl_i) || 
-       (opcode == TOP_shl_ii) ||
-       (opcode == TOP_sub_r))) {
+      ((opcode == TOP_shr_r) || 
+      (opcode == TOP_shr_i) || 
+      (opcode == TOP_shr_ii) ||
+      (opcode == TOP_shru_r)  || 
+      (opcode == TOP_shru_i)  || 
+      (opcode == TOP_shru_ii) ||
+      (opcode == TOP_shl_r) || 
+      (opcode == TOP_shl_i) || 
+      (opcode == TOP_shl_ii) ||
+      (opcode == TOP_sub_r))) {
 
     new_op = Mk_OP(TOP_mov_i, 
 		   tnr,
@@ -872,9 +876,10 @@ EBO_simplify_operand1 (
         (opcode == TOP_shru_i)  ||
         (opcode == TOP_shru_ii)) {
 
-      new_op = Mk_OP(TOP_mov_r,
+      TN *tn = Gen_Literal_TN(0,4);
+      new_op = Mk_OP(TOP_mov_i,
 		     tnr, 
-		     Zero_TN);
+		     tn);
 
       if (EBO_Trace_Optimization) 
 	fprintf(TFile,"replace shift with zero\n");
@@ -949,6 +954,260 @@ EBO_Resolve_Conditional_Branch (
 }
 
 /* =====================================================================
+ *    EBO_Fold_Constant_Compare
+ * =====================================================================
+ */
+BOOL
+EBO_Fold_Constant_Compare (
+  OP *op, 
+  TN **opnd_tn,
+  OPS *ops
+)
+{
+  TOP opcode = OP_code(op);
+  TN *tn0, *tn1;
+  INT64 tn0_val, tn1_val;
+  UINT64 tn0_uval, tn1_uval;
+  INT64 result_val;
+
+  tn0 = opnd_tn[0];
+  tn1 = opnd_tn[1];
+  tn0_val = TN_Value (tn0);
+  tn1_val = TN_Value (tn1);
+  tn0_uval = TN_Value (tn0);
+  tn1_uval = TN_Value (tn1);
+
+  switch (opcode) {
+    case TOP_cmpeq_i_r:
+    case TOP_cmpeq_ii_r:
+    case TOP_cmpeq_i_b:
+    case TOP_cmpeq_ii_b:
+      result_val = (tn0_val == tn1_val);
+      break;
+
+    case TOP_cmpne_i_r:
+    case TOP_cmpne_ii_r:
+    case TOP_cmpne_i_b:
+    case TOP_cmpne_ii_b:
+      result_val = (tn0_val != tn1_val);
+      break;
+
+    case TOP_cmplt_i_r:
+    case TOP_cmplt_ii_r:
+    case TOP_cmplt_i_b:
+    case TOP_cmplt_ii_b:
+      result_val = (tn0_val < tn1_val);
+      break;
+
+    case TOP_cmpgt_i_r:
+    case TOP_cmpgt_ii_r:
+    case TOP_cmpgt_i_b:
+    case TOP_cmpgt_ii_b:
+      result_val = (tn0_val > tn1_val);
+      break;
+
+    case TOP_cmple_i_r:
+    case TOP_cmple_ii_r:
+    case TOP_cmple_i_b:
+    case TOP_cmple_ii_b:
+      result_val = (tn0_val <= tn1_val);
+      break;
+
+    case TOP_cmpge_i_r:
+    case TOP_cmpge_ii_r:
+    case TOP_cmpge_i_b:
+    case TOP_cmpge_ii_b:
+      result_val = (tn0_val >= tn1_val);
+      break;
+
+    case TOP_cmpltu_i_r:
+    case TOP_cmpltu_ii_r:
+    case TOP_cmpltu_i_b:
+    case TOP_cmpltu_ii_b:
+      result_val = (tn0_uval < tn1_uval);
+      break;
+
+    case TOP_cmpgtu_i_r:
+    case TOP_cmpgtu_ii_r:
+    case TOP_cmpgtu_i_b:
+    case TOP_cmpgtu_ii_b:
+      result_val = (tn0_uval > tn1_uval);
+      break;
+
+    case TOP_cmpleu_i_r:
+    case TOP_cmpleu_ii_r:
+    case TOP_cmpleu_i_b:
+    case TOP_cmpleu_ii_b:
+      result_val = (tn0_uval <= tn1_uval);
+      break;
+
+    case TOP_cmpgeu_i_r:
+    case TOP_cmpgeu_ii_r:
+    case TOP_cmpgeu_i_b:
+    case TOP_cmpgeu_ii_b:
+      result_val = (tn0_uval >= tn1_uval);
+      break;
+
+    default:
+      return FALSE;
+      break;
+  }
+
+  TN *result = OP_result(op,0);
+
+  if (TN_register_class(result) == ISA_REGISTER_CLASS_integer) {
+    Build_OP((result_val == 0) ? TOP_cmpne_r_r : TOP_cmpeq_r_r, result, Zero_TN, Zero_TN, ops);
+  }
+  else {
+    Build_OP((result_val == 0) ? TOP_cmpne_r_b : TOP_cmpeq_r_b, result, Zero_TN, Zero_TN, ops);
+  }
+
+  OP_srcpos(OPS_last(ops)) = OP_srcpos(op);
+
+  if (EBO_Trace_Optimization) {
+    fprintf(TFile, "%sin BB:%d Result of compare is %s for ",
+	    EBO_trace_pfx, BB_id(OP_bb(op)),(result_val == 0) ? "FALSE" : "TRUE");
+    Print_TN(OP_result(op,0),FALSE); 
+    fprintf(TFile, "\n");
+  }
+
+  return TRUE;
+}
+
+/* =====================================================================
+ *    EBO_Fold_Special_Opcode
+ * 
+ *    Target-specific folding.
+ *
+ *    TODO: extend OP semantics, so SHIFTs and SIGN-EXTs become 
+ *          target-independent.
+ * =====================================================================
+ */
+BOOL 
+EBO_Fold_Special_Opcode (
+  OP *op,
+  TN **opnd_tn,
+  INT64 *result_val
+)
+{
+  TOP opcode = OP_code(op);
+  TN *tn0, *tn1;
+  INT64 tn0_val, tn1_val;
+  UINT64 tn0_uval, tn1_uval;
+
+  if ((opcode == TOP_sxtb_r) || (opcode == TOP_sxth_r)) {
+    INT length = EBO_bit_length(op);
+    tn0 = opnd_tn[0];
+    if (TN_is_symbol(tn0)) {
+     /* What can we do? */
+      return FALSE;
+    }
+    tn0_val = TN_Value (tn0);
+    *result_val = (tn0_val << (64-length)) >> (64-length);
+    goto Folded;
+  }
+
+  if ((opcode == TOP_zxth_r)) {
+    INT length = EBO_bit_length(op);
+    tn0 = opnd_tn[0];
+    if (TN_is_symbol(tn0)) {
+     /* What can we do? */
+      return FALSE;
+    }
+    tn0_uval = TN_Value (tn0);
+    *result_val = (tn0_uval << (64-length)) >> (64-length);
+    goto Folded;
+  }
+
+  if ((opcode == TOP_shl_i) || (TOP_shl_ii == opcode)) {
+    tn0 = opnd_tn[0];
+    tn1 = opnd_tn[1];
+    tn0_val = TN_Value (tn0);
+    tn1_val = TN_Value (tn1);
+
+    if (TN_size(tn0) == 4) {
+      if ((tn1_val < 0) || (tn1_val > 31)) {
+	*result_val = 0;
+      } else {
+	// do arithmetic in 32 bits and then sign extend to 64
+	INT32 tn0_sval = (INT32)tn0_val;
+	INT32 res_sval = tn0_sval << tn1_val;
+	*result_val = (INT64)res_sval;
+      }
+    }
+    else {
+      // entire arithmetic in 64 bits
+      if ((tn1_val < 0) || (tn1_val > 63)) {
+	*result_val = 0;
+      } else {
+	*result_val = tn0_val << tn1_val;
+      }
+    }
+    goto Folded;
+  }
+
+  if ((opcode == TOP_shru_i) || (opcode == TOP_shru_ii)) {
+    tn0 = opnd_tn[0];
+    tn1 = opnd_tn[1];
+    tn0_uval = TN_Value (tn0);
+    tn1_val = TN_Value (tn1);
+
+    if (TN_size(tn0) == 4) {
+      if ((tn1_val < 0) || (tn1_val > 31)) {
+	*result_val = 0;
+      } else {
+	// 32 bit arithmetic, then sign-extend to 64 bits
+	UINT32 tn0_sval = (UINT32)tn0_uval;
+	INT32 res_sval = tn0_sval >> tn1_val;
+	*result_val = (INT64)res_sval;
+      }
+    }
+    else { // 64 bit
+      if ((tn1_val < 0) || (tn1_val > 63)) {
+	*result_val = 0;
+      } else {
+	*result_val = tn0_uval >> tn1_val;
+      }
+    }
+    goto Folded;
+  }
+
+  if ((TOP_shr_i == opcode) || (opcode == TOP_shr_ii)) {
+    tn0 = opnd_tn[0];
+    tn1 = opnd_tn[1];
+    tn0_val = TN_Value (tn0);
+    tn1_val = TN_Value (tn1);
+
+    if (TN_size(tn0) == 4) {
+      // 32-bit arithmetic, then sign-extend to 64 bits
+      if ((tn1_val < 0) || (tn1_val > 31)) 
+	tn1_val = 31;
+      INT32 tn0_sval = (INT32)tn0_val;
+      INT32 res_sval = tn0_sval >> tn1_val;
+      *result_val = (INT64)res_sval;
+    }
+    else {  // 64 bits
+      if ((tn1_val < 0) || (tn1_val > 63)) 
+	tn1_val = 63;
+      *result_val = tn0_val >> tn1_val;
+    }
+
+    goto Folded;
+  }
+
+  return FALSE;
+
+ Folded:
+
+  if (EBO_Trace_Optimization) {
+    fprintf(TFile, "%sfolded: %llx\n", EBO_trace_pfx, *result_val);
+  }
+  return TRUE;
+}
+
+#if 0
+
+/* =====================================================================
  *    EBO_Fold_Constant_Expression
  *
  *    Look at an exression that has all constant operands and attempt to
@@ -990,90 +1249,69 @@ EBO_Fold_Constant_Expression (
     fprintf(TFile,"\n");
   }
 
-#if 1
-  return FALSE;
-#else
-
   if (OP_has_predicate(op) &&
-      (opnd_tn[OP_PREDICATE_OPND] == Zero_TN)) {
+                      (opnd_tn[OP_PREDICATE_OPND] == Zero_TN)) {
 
-    if (TOP_Is_Unconditional_Compare(opcode)) {
-     /* Unconditional compares define results even if the predicate is "FALSE". */
+    if (OP_Is_Unconditional_Compare(op)) {
+      /* 
+       * Unconditional compares define results even if the predicate 
+       * is "FALSE". 
+       */
       OPS ops = OPS_EMPTY;
+
+#ifdef TARG_ST
+      FmtAssert(FALSE,("TODO: not implemented"));
+#else
       if (OP_result(op,0) != True_TN) {
-        Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,0), True_TN, Zero_TN, Zero_TN, &ops);
+	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,0), True_TN, Zero_TN, Zero_TN, &ops);
       }
       if (OP_result(op,1) != True_TN) {
-        Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,1), True_TN, Zero_TN, Zero_TN, &ops);
+	Build_OP (TOP_cmp_eq_unc, True_TN, OP_result(op,1), True_TN, Zero_TN, Zero_TN, &ops);
       }
+#endif
 
       if (OP_glue(op)) {
-        OP *next_op = OPS_first(&ops);
-        while (next_op != NULL) {
-          Set_OP_glue(next_op);
-          next_op = OP_next(next_op);
-        }
+	OP *next_op = OPS_first(&ops);
+	while (next_op != NULL) {
+	  Set_OP_glue(next_op);
+	  next_op = OP_next(next_op);
+	}
       }
 
       if (EBO_Trace_Optimization) {
-        #pragma mips_frequency_hint NEVER
-        fprintf(TFile, "%sin BB:%d Result of compare is FALSE for both ", EBO_trace_pfx,BB_id(OP_bb(op)));
-        Print_TN(OP_result(op,0),FALSE); fprintf(TFile," and ");
-        Print_TN(OP_result(op,1),FALSE); fprintf(TFile, "\n");
+	INT i;
+	fprintf(TFile, "%sin BB:%d Result of compare is FALSE for all: ", EBO_trace_pfx,BB_id(OP_bb(op)));
+	for (i = 0; i < OP_results(op); i++) {
+	  Print_TN(OP_result(op,i),FALSE); fprintf(TFile,", ");
+	}
       }
 
       if (OPS_length(&ops) != 0) {
-        OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
-        BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+	OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+	BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
       }
       return TRUE;
     }
 
-   /* The OP can be deleted. */
+    /* The OP can be deleted. */
     return (!OP_glue(op));
   }
 
-
-  if ((TN_register_class(tnr) != ISA_REGISTER_CLASS_integer) &&
-      (TN_register_class(tnr) != ISA_REGISTER_CLASS_predicate)) {
-   /* Can only do arithmatic on integers. */
-    return FALSE;
-  }
-
-  if ((opcode == TOP_sxt4) ||
-      (opcode == TOP_sxt2) ||
-      (opcode == TOP_sxt1)) {
-    INT length = EBO_bit_length(op);
-    tn0 = opnd_tn[1];
-    if (TN_is_symbol(tn0)) {
-     /* What can we do? */
-      return FALSE;
-    }
-    tn0_val = TN_Value (tn0);
-    result_val = (tn0_val << (64-length)) >> (64-length);
+  //
+  // First of all, check if this is a target-specific opcode
+  //
+  if (EBO_Fold_Special_Opcode(op, &result_val)) {
     goto Constant_Created;
   }
 
-  if ((opcode == TOP_zxt4) ||
-      (opcode == TOP_zxt2) ||
-      (opcode == TOP_zxt1)) {
-    INT length = EBO_bit_length(op);
-    tn0 = opnd_tn[1];
-    if (TN_is_symbol(tn0)) {
-     /* What can we do? */
-      return FALSE;
-    }
-    tn0_uval = TN_Value (tn0);
-    result_val = (tn0_uval << (64-length)) >> (64-length);
-    goto Constant_Created;
-  }
-
-  if (OP_opnds(op) <= 2) {
+  if ((OP_has_predicate(op) && OP_opnds(op) <= 2) ||
+      (!OP_has_predicate(op) && OP_opnds(op) <= 1))
+  {
     return FALSE;
   } 
 
-  tn0 = opnd_tn[1];
-  tn1 = opnd_tn[2];
+  tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
+  tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
 
   if (TN_is_symbol(tn0)) {
     if (TN_is_symbol(tn1)) {
@@ -1100,25 +1338,13 @@ EBO_Fold_Constant_Expression (
     tn1_val = TN_Value (tn1);
   }
 
-  if ((TOP_add == opcode)   || (TOP_adds == opcode)  ||
-      (TOP_addl == opcode)  || (TOP_addp4 == opcode) ||
-      (TOP_addp4_i == opcode)) {
+  if (OP_iadd(op)) {
     result_val = tn0_uval + tn1_uval;
     goto Constant_Created;
   }
 
-  if (TOP_add_1 == opcode) {
-    result_val = tn0_uval + tn1_uval + 1;
-    goto Constant_Created;
-  }
-
-  if ((TOP_sub == opcode) || (TOP_sub_i == opcode)) {
+  if (OP_isub(op)) {
     result_val = tn0_uval - tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (TOP_sub_1 == opcode) {
-    result_val = tn0_uval - tn1_uval - 1;
     goto Constant_Created;
   }
 
@@ -1127,90 +1353,18 @@ EBO_Fold_Constant_Expression (
     return FALSE;
   }
 
-  if ((TOP_and == opcode) || (TOP_and_i == opcode)) {
+  if (OP_iand(op)) {
     result_val = tn0_uval & tn1_uval;
     goto Constant_Created;
   }
 
-  if ((TOP_andcm == opcode) || (TOP_andcm_i == opcode)) {
-    result_val = tn0_uval & (~tn1_uval);
-    goto Constant_Created;
-  }
-
-  if ((TOP_or == opcode) || (TOP_or_i == opcode)) {
+  if (OP_ior(op)) {
     result_val = tn0_uval | tn1_uval;
     goto Constant_Created;
   }
 
-  if ((TOP_xor == opcode) || (TOP_xor_i == opcode)) {
+  if (OP_ixor(op)) {
     result_val = tn0_uval ^ tn1_uval;
-    goto Constant_Created;
-  }
-
-  if (TOP_shl == opcode) {
-    if ((tn1_val < 0) || (tn1_val > 63)) {
-      result_val = 0;
-    } else {
-      result_val = tn0_val << tn1_val;
-    }
-    goto Constant_Created;
-  }
-
-  if (TOP_shladd == opcode) {
-    if ((tn1_val < 0) || (tn1_val > 63)) {
-      result_val = TN_Value(opnd_tn[3]);
-    } else {
-      result_val = (tn0_val << tn1_val) + TN_Value(opnd_tn[3]);
-    }
-    goto Constant_Created;
-  }
-
-  if (TOP_shr_u == opcode) {
-    if ((tn1_val < 0) || (tn1_val > 63)) {
-      result_val = 0;
-    } else {
-      result_val = tn0_uval >> tn1_val;
-    }
-    goto Constant_Created;
-  }
-
-  if (TOP_shr == opcode) {
-    if ((tn1_val < 0) || (tn1_val > 63)) tn1_val = 63;
-    result_val = tn0_val >> tn1_val;
-    goto Constant_Created;
-  }
-
-  if (opcode == TOP_extr) {
-    INT start = tn1_val;
-    INT length = TN_Value(opnd_tn[3]);
-    if ((length+start) > 64) return FALSE;
-    result_val = (tn0_val << (64-(length+start))) >> (64-length);
-    goto Constant_Created;
-  }
-
-  if (opcode == TOP_extr_u) {
-    INT start = tn1_val;
-    INT length = TN_Value(opnd_tn[3]);
-    if ((length+start) > 64) return FALSE;
-    result_val = (tn0_uval << (64-(length+start))) >> (64-length);
-    goto Constant_Created;
-  }
-
-  if ((opcode == TOP_dep) || (opcode == TOP_dep_i)) {
-    INT start = TN_Value(opnd_tn[3]);
-    INT length = TN_Value(opnd_tn[4]);
-    UINT64 mask = (~0);
-    mask = mask << length;
-    result_val = (tn1_uval & ~(~mask << start)) | ((tn0_uval & ~mask) << start);
-    goto Constant_Created;
-  }
-
-  if ((opcode == TOP_dep_z) || (opcode == TOP_dep_i_z)) {
-    INT start = tn1_val;
-    INT length = TN_Value(opnd_tn[3]);
-    UINT64 mask = (~0);
-    mask = mask << length;
-    result_val = ((tn0_uval & ~mask) << start);
     goto Constant_Created;
   }
 
@@ -1219,285 +1373,18 @@ EBO_Fold_Constant_Expression (
   }
 
   if (OP_icmp(op)) {
-   /* Integer comparison operation. */
-    if (OP_opnd(op, OP_PREDICATE_OPND) != True_TN) return FALSE;
-
-    switch (opcode) {
-    case TOP_cmp_eq:
-    case TOP_cmp_i_eq:
-    case TOP_cmp_eq_unc:
-    case TOP_cmp_i_eq_unc:
-      result_val = (tn0_val == tn1_val);
-      break;
-    case TOP_cmp4_eq:
-    case TOP_cmp4_i_eq:
-    case TOP_cmp4_eq_unc:
-    case TOP_cmp4_i_eq_unc:
-      result_val = (TRUNC_32(tn0_val) == TRUNC_32(tn1_val));
-      break;
-    case TOP_cmp_ne:
-    case TOP_cmp_i_ne:
-    case TOP_cmp_ne_unc:
-    case TOP_cmp_i_ne_unc:
-      result_val = (tn0_val != tn1_val);
-      break;
-    case TOP_cmp4_ne:
-    case TOP_cmp4_i_ne:
-    case TOP_cmp4_ne_unc:
-    case TOP_cmp4_i_ne_unc:
-      result_val = (TRUNC_32(tn0_val) != TRUNC_32(tn1_val));
-      break;
-    case TOP_cmp_lt:
-    case TOP_cmp_i_lt:
-    case TOP_cmp_lt_unc:
-    case TOP_cmp_i_lt_unc:
-      result_val = (tn0_val < tn1_val);
-      break;
-    case TOP_cmp4_lt:
-    case TOP_cmp4_i_lt:
-    case TOP_cmp4_lt_unc:
-    case TOP_cmp4_i_lt_unc:
-      result_val = (SEXT_32(tn0_val) < SEXT_32(tn1_val));
-      break;
-    case TOP_cmp_gt:
-    case TOP_cmp_i_gt:
-    case TOP_cmp_gt_unc:
-    case TOP_cmp_i_gt_unc:
-      result_val = (tn0_val > tn1_val);
-      break;
-    case TOP_cmp4_gt:
-    case TOP_cmp4_i_gt:
-    case TOP_cmp4_gt_unc:
-    case TOP_cmp4_i_gt_unc:
-      result_val = (SEXT_32(tn0_val) > SEXT_32(tn1_val));
-      break;
-    case TOP_cmp_le:
-    case TOP_cmp_i_le:
-    case TOP_cmp_le_unc:
-    case TOP_cmp_i_le_unc:
-      result_val = (tn0_val <= tn1_val);
-      break;
-    case TOP_cmp4_le:
-    case TOP_cmp4_i_le:
-    case TOP_cmp4_le_unc:
-    case TOP_cmp4_i_le_unc:
-      result_val = (SEXT_32(tn0_val) <= SEXT_32(tn1_val));
-      break;
-    case TOP_cmp_ge:
-    case TOP_cmp_i_ge:
-    case TOP_cmp_ge_unc:
-    case TOP_cmp_i_ge_unc:
-      result_val = (tn0_val >= tn1_val);
-      break;
-    case TOP_cmp4_ge:
-    case TOP_cmp4_i_ge:
-    case TOP_cmp4_ge_unc:
-    case TOP_cmp4_i_ge_unc:
-      result_val = (SEXT_32(tn0_val) >= SEXT_32(tn1_val));
-      break;
-    case TOP_cmp_ltu:
-    case TOP_cmp_i_ltu:
-    case TOP_cmp_ltu_unc:
-    case TOP_cmp_i_ltu_unc:
-      result_val = (tn0_uval < tn1_uval);
-      break;
-    case TOP_cmp4_ltu:
-    case TOP_cmp4_i_ltu:
-    case TOP_cmp4_ltu_unc:
-    case TOP_cmp4_i_ltu_unc:
-      result_val = (TRUNC_32(tn0_uval) < TRUNC_32(tn1_uval));
-      break;
-    case TOP_cmp_gtu:
-    case TOP_cmp_i_gtu:
-    case TOP_cmp_gtu_unc:
-    case TOP_cmp_i_gtu_unc:
-      result_val = (tn0_uval > tn1_uval);
-      break;
-    case TOP_cmp4_gtu:
-    case TOP_cmp4_i_gtu:
-    case TOP_cmp4_gtu_unc:
-    case TOP_cmp4_i_gtu_unc:
-      result_val = (TRUNC_32(tn0_uval) > TRUNC_32(tn1_uval));
-      break;
-    case TOP_cmp_leu:
-    case TOP_cmp_i_leu:
-    case TOP_cmp_leu_unc:
-    case TOP_cmp_i_leu_unc:
-      result_val = (tn0_uval <= tn1_uval);
-      break;
-    case TOP_cmp4_leu:
-    case TOP_cmp4_i_leu:
-    case TOP_cmp4_leu_unc:
-    case TOP_cmp4_i_leu_unc:
-      result_val = (TRUNC_32(tn0_uval) <= TRUNC_32(tn1_uval));
-      break;
-    case TOP_cmp_geu:
-    case TOP_cmp_i_geu:
-    case TOP_cmp_geu_unc:
-    case TOP_cmp_i_geu_unc:
-      result_val = (tn0_uval >= tn1_uval);
-      break;
-    case TOP_cmp4_geu:
-    case TOP_cmp4_i_geu:
-    case TOP_cmp4_geu_unc:
-    case TOP_cmp4_i_geu_unc:
-      result_val = (TRUNC_32(tn0_uval) >= TRUNC_32(tn1_uval));
-      break;
-
-   /* The following opcodes are more difficult to do since both results may be set to identical values. */
-    case TOP_cmp4_eq_and:
-    case TOP_cmp4_eq_or:
-    case TOP_cmp4_eq_or_andcm:
-    case TOP_cmp4_ne_and:
-    case TOP_cmp4_ne_or:
-    case TOP_cmp4_ne_or_andcm:
-    case TOP_cmp4_z1_lt_and:
-    case TOP_cmp4_z1_lt_or:
-    case TOP_cmp4_z1_lt_or_andcm:
-    case TOP_cmp4_z1_le_and:
-    case TOP_cmp4_z1_le_or:
-    case TOP_cmp4_z1_le_or_andcm:
-    case TOP_cmp4_z1_gt_and:
-    case TOP_cmp4_z1_gt_or:
-    case TOP_cmp4_z1_gt_or_andcm:
-    case TOP_cmp4_z1_ge_and:
-    case TOP_cmp4_z1_ge_or:
-    case TOP_cmp4_z1_ge_or_andcm:
-    case TOP_cmp4_i_eq_and:
-    case TOP_cmp4_i_eq_or:
-    case TOP_cmp4_i_eq_or_andcm:
-    case TOP_cmp4_i_ne_and:
-    case TOP_cmp4_i_ne_or:
-    case TOP_cmp4_i_ne_or_andcm:
-    case TOP_cmp4_eq_orcm:
-    case TOP_cmp4_eq_andcm:
-    case TOP_cmp4_eq_and_orcm:
-    case TOP_cmp4_ne_orcm:
-    case TOP_cmp4_ne_andcm:
-    case TOP_cmp4_ne_and_orcm:
-    case TOP_cmp4_z1_lt_orcm:
-    case TOP_cmp4_z1_lt_andcm:
-    case TOP_cmp4_z1_lt_and_orcm:
-    case TOP_cmp4_z1_le_orcm:
-    case TOP_cmp4_z1_le_andcm:
-    case TOP_cmp4_z1_le_and_orcm:
-    case TOP_cmp4_z1_gt_orcm:
-    case TOP_cmp4_z1_gt_andcm:
-    case TOP_cmp4_z1_gt_and_orcm:
-    case TOP_cmp4_z1_ge_orcm:
-    case TOP_cmp4_z1_ge_andcm:
-    case TOP_cmp4_z1_ge_and_orcm:
-    case TOP_cmp4_z2_lt_orcm:
-    case TOP_cmp4_z2_lt_andcm:
-    case TOP_cmp4_z2_lt_and_orcm:
-    case TOP_cmp4_z2_le_orcm:
-    case TOP_cmp4_z2_le_andcm:
-    case TOP_cmp4_z2_le_and_orcm:
-    case TOP_cmp4_z2_gt_orcm:
-    case TOP_cmp4_z2_gt_andcm:
-    case TOP_cmp4_z2_gt_and_orcm:
-    case TOP_cmp4_z2_ge_orcm:
-    case TOP_cmp4_z2_ge_andcm:
-    case TOP_cmp4_z2_ge_and_orcm:
-    case TOP_cmp4_z2_lt_and:
-    case TOP_cmp4_z2_lt_or:
-    case TOP_cmp4_z2_lt_or_andcm:
-    case TOP_cmp4_z2_le_and:
-    case TOP_cmp4_z2_le_or:
-    case TOP_cmp4_z2_le_or_andcm:
-    case TOP_cmp4_z2_gt_and:
-    case TOP_cmp4_z2_gt_or:
-    case TOP_cmp4_z2_gt_or_andcm:
-    case TOP_cmp4_z2_ge_and:
-    case TOP_cmp4_z2_ge_or:
-    case TOP_cmp4_z2_ge_or_andcm:
-    case TOP_cmp4_i_eq_orcm:
-    case TOP_cmp4_i_eq_andcm:
-    case TOP_cmp4_i_eq_and_orcm:
-    case TOP_cmp4_i_ne_orcm:
-    case TOP_cmp4_i_ne_andcm:
-    case TOP_cmp4_i_ne_and_orcm:
-    case TOP_cmp4_lt_and:
-    case TOP_cmp4_lt_or:
-    case TOP_cmp4_lt_or_andcm:
-    case TOP_cmp4_le_and:
-    case TOP_cmp4_le_or:
-    case TOP_cmp4_le_or_andcm:
-    case TOP_cmp4_gt_and:
-    case TOP_cmp4_gt_or:
-    case TOP_cmp4_gt_or_andcm:
-    case TOP_cmp4_ge_and:
-    case TOP_cmp4_ge_or:
-    case TOP_cmp4_ge_or_andcm:
-    case TOP_cmp4_lt_orcm:
-    case TOP_cmp4_lt_andcm:
-    case TOP_cmp4_lt_and_orcm:
-    case TOP_cmp4_le_orcm:
-    case TOP_cmp4_le_andcm:
-    case TOP_cmp4_le_and_orcm:
-    case TOP_cmp4_gt_orcm:
-    case TOP_cmp4_gt_andcm:
-    case TOP_cmp4_gt_and_orcm:
-    case TOP_cmp4_ge_orcm:
-    case TOP_cmp4_ge_andcm:
-    case TOP_cmp4_ge_and_orcm:
-     /* Don't implement these opcodes until we actually see them generated. */
-
-    default:
+    /* Integer comparison operation. */
+    if (OP_has_predicate(op) && (OP_opnd(op, OP_PREDICATE_OPND) != True_TN))
       return FALSE;
-      break;
-    }
 
     OPS ops = OPS_EMPTY;
-    TN *result1 = (result_val == 0) ? OP_result(op,1) : OP_result(op,0);
-    TN *result2 = (result_val == 0) ? OP_result(op,0) : OP_result(op,1);
-    Build_OP (TOP_Is_Unconditional_Compare(opcode) ? TOP_cmp_eq_unc : TOP_cmp_eq,
-              result1, True_TN, OP_opnd(op, OP_PREDICATE_OPND), Zero_TN, Zero_TN, &ops);
-    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
-    Build_OP (TOP_Is_Unconditional_Compare(opcode) ? TOP_cmp_eq_unc : TOP_cmp_eq,
-              True_TN, result2, OP_opnd(op, OP_PREDICATE_OPND), Zero_TN, Zero_TN, &ops);
-    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    if (EBO_Fold_Constant_Compare (op, &ops)) {
 
-    if (EBO_Trace_Optimization) {
-      #pragma mips_frequency_hint NEVER
-      fprintf(TFile, "%sin BB:%d Result of compare is %s for ",
-              EBO_trace_pfx, BB_id(OP_bb(op)),(result_val == 0) ? "FALSE" : "TRUE");
-      Print_TN(OP_result(op,0),FALSE); fprintf(TFile," complement ");
-      Print_TN(OP_result(op,1),FALSE); fprintf(TFile, "\n");
+      if (EBO_in_loop) 
+	EBO_OPS_omega (&ops, (OP_has_predicate(op) ? opnd_tninfo[OP_PREDICATE_OPND] : NULL));
+      BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+      return TRUE;
     }
-
-    if (EBO_in_loop) EBO_OPS_omega (&ops, opnd_tninfo[OP_PREDICATE_OPND]);
-    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-    return TRUE;
-  }
-
-  if ((opcode == TOP_tbit_z) ||
-      (opcode == TOP_tbit_nz) ||
-      (opcode == TOP_tbit_z_unc) ||
-      (opcode == TOP_tbit_nz_unc)) {
-    result_val = (tn0_uval >> tn1_val) & 1;
-    result_val = ((opcode == TOP_tbit_z) || (opcode == TOP_tbit_z_unc)) ? !result_val : result_val;
-    OPS ops = OPS_EMPTY;
-    TN *result1 = (result_val == 0) ? OP_result(op,1) : OP_result(op,0);
-    TN *result2 = (result_val == 0) ? OP_result(op,0) : OP_result(op,1);
-    Build_OP (TOP_Is_Unconditional_Compare(opcode) ? TOP_cmp_eq_unc : TOP_cmp_eq,
-              result1, True_TN, OP_opnd(op, OP_PREDICATE_OPND), Zero_TN, Zero_TN, &ops);
-    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
-    Build_OP (TOP_Is_Unconditional_Compare(opcode) ? TOP_cmp_eq_unc : TOP_cmp_eq,
-              True_TN, result2, OP_opnd(op, OP_PREDICATE_OPND), Zero_TN, Zero_TN, &ops);
-    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
-
-    if (EBO_Trace_Optimization) {
-      #pragma mips_frequency_hint NEVER
-      fprintf(TFile, "%sin BB:%d Result of tbit is %s for ",
-              EBO_trace_pfx, BB_id(OP_bb(op)),(result_val == 0) ? "FALSE" : "TRUE");
-      Print_TN(OP_result(op,0),FALSE); fprintf(TFile," complement ");
-      Print_TN(OP_result(op,1),FALSE); fprintf(TFile, "\n");
-    }
-
-    if (EBO_in_loop) EBO_OPS_omega (&ops, opnd_tninfo[OP_PREDICATE_OPND]);
-    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
-    return TRUE;
   }
 
   return FALSE;
@@ -1512,6 +1399,7 @@ Constant_Created:
   } else {
     tnc = Gen_Literal_TN(result_val, TN_size(tnr));
   }
+
   Expand_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
   if (OP_next(OPS_first(&ops)) != NULL) {
    /* What's the point in replacing one instruction with several? */
@@ -1549,9 +1437,8 @@ Constant_Created:
   }
 
   return TRUE;
-
-#endif
 }
+#endif
 
 #if 0
 /*
