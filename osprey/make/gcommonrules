@@ -99,6 +99,9 @@ MAKELIB: .USE .PRECIOUS
 %.o : %.cxx
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
+%.i : %.cxx
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -E > $@
+
 make_deps:
 ifneq ($(BUILD_COMPILER), EDG)
 	-@cat *.d > $(MKDEPFILE)
