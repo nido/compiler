@@ -1077,50 +1077,55 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
       loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
 	  Configuration_Pipeline, pipeline);
     }
-    // Make a BB_List of the loop body and compute its op_count.
-    BB *bb = NULL;
-    BB_List bb_list;
-    int nest_level = BB_nest_level(head_bb), op_count = 0;
-    BB_SET *loop_set = LOOP_DESCR_bbset(loop);
-    FOR_ALL_BB_SET_members(loop_set, bb) {
-      if (BB_nest_level(bb) == nest_level) {
-	op_count += BB_length(bb);
-	bb_list.push_back(bb);
-      }
-      if (op_count >= LAO_OPS_LIMIT) break;
+  } else {
+    // Create a dummy CGIR_LI and make the LoopInfo.
+    CGIR_LI cgir_li = CGIR_LI_create(NULL, 0);
+    loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
+	Configuration_Pipeline, pipeline);
+  }
+  // Make a BB_List of the loop body and compute its op_count.
+  BB *bb = NULL;
+  BB_List bb_list;
+  int nest_level = BB_nest_level(head_bb), op_count = 0;
+  BB_SET *loop_set = LOOP_DESCR_bbset(loop);
+  FOR_ALL_BB_SET_members(loop_set, bb) {
+    if (BB_nest_level(bb) == nest_level) {
+      op_count += BB_length(bb);
+      bb_list.push_back(bb);
     }
-    // Compute the memory dependence graph.
-    if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
-      bool cyclic = BB_innermost(head_bb) != 0;
-      CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
-      BB_List::iterator bb_iter;
-      for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
-	OP *op = NULL;
-	FOR_ALL_BB_OPs(*bb_iter, op) {
-	  if (_CG_DEP_op_info(op)) {
-	    Operation orig_operation = CGIR_OP_to_Operation(op);
-	    if (OP_memory(op)) {
-	      Interface_Operation_setMemDepInfo(interface, orig_operation);
+    if (op_count >= LAO_OPS_LIMIT) break;
+  }
+  // Compute the memory dependence graph.
+  if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
+    bool cyclic = BB_innermost(head_bb) != 0;
+    CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
+    BB_List::iterator bb_iter;
+    for (bb_iter = bb_list.begin(); bb_iter != bb_list.end(); bb_iter++) {
+      OP *op = NULL;
+      FOR_ALL_BB_OPs(*bb_iter, op) {
+	if (_CG_DEP_op_info(op)) {
+	  Operation orig_operation = CGIR_OP_to_Operation(op);
+	  if (OP_memory(op)) {
+	    Interface_Operation_setMemDepInfo(interface, orig_operation);
+	  }
+	  for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
+	    ARC *arc = ARC_LIST_first(arcs);
+	    CG_DEP_KIND kind = ARC_kind(arc);
+	    if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
+	      bool isDefinite = ARC_is_definite(arc);
+	      int latency = ARC_latency(arc), omega = ARC_omega(arc);
+	      OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
+	      Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
+	      Operation dest_operation = CGIR_OP_to_Operation(succ_op);
+	      Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
+		  orig_operation, dest_operation, omega, isDefinite);
+	      //CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	    }
-	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
-	      ARC *arc = ARC_LIST_first(arcs);
-	      CG_DEP_KIND kind = ARC_kind(arc);
-	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
-		bool isDefinite = ARC_is_definite(arc);
-		int latency = ARC_latency(arc), omega = ARC_omega(arc);
-		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
-		Is_True(pred_op == op, ("Error in lao_setMemoryDependences"));
-		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
-		Interface_LoopInfo_setMemoryDependence(interface, loopinfo,
-		    orig_operation, dest_operation, omega, isDefinite);
-		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
-	      }
-	    }
-	  } else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
-	}
+	  }
+	} else fprintf(TFile, "<arc>   CG_DEP INFO is NULL\n");
       }
-      CG_DEP_Delete_Graph(&bb_list);
     }
+    CG_DEP_Delete_Graph(&bb_list);
   }
   return loopinfo;
 }
@@ -1131,7 +1136,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipeline) {
 static bool
 lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline, unsigned lao_optimizations) {
   //
-  if (getenv("PRINT")) CGIR_print(TFile);
+  if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   LAO_INIT();
   Interface_open(interface, 5,
       Configuration_SchedKind, CG_LAO_schedkind,
@@ -1188,7 +1193,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipeline
   unsigned optimizations = LAO_Optimize(lao_optimizations);
   if (optimizations != 0) {
     Interface_updateCGIR(interface);
-    if (getenv("PRINT")) CGIR_print(TFile);
+    if (getenv("CGIR_PRINT")) CGIR_print(TFile);
   }
   //
   Interface_close(interface);
