@@ -2187,18 +2187,20 @@ EBO_Constant_Operand0 (
     return FALSE;
   }
 
-  if (TN_Is_Constant(tn1)) {
-   /* Why are we here? */
-    return FALSE;
-  }
-
-  if (((TN_register_class(tnr) != TN_register_class(tn1)) ||
-      (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn1)))) {
-   /* Type changes indicate that something tricky is going on. */
-    if (EBO_Trace_Data_Flow) {
-      fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
+  if (!OP_select(op)) {
+    if (TN_Is_Constant(tn1)) {
+      /* Why are we here? */
+      return FALSE;
     }
-    return FALSE;
+
+    if (((TN_register_class(tnr) != TN_register_class(tn1)) ||
+         (TN_is_fpu_int(tnr) != TN_is_fpu_int(tn1)))) {
+      /* Type changes indicate that something tricky is going on. */
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sType mismatch between result and operand\n",EBO_trace_pfx);
+      }
+      return FALSE;
+    }
   }
 
   const_val = TN_Value(tn0);
@@ -3406,8 +3408,13 @@ EBO_Fold_Constant_Expression (
     return FALSE;
   } 
 
+#ifdef TARG_ST
   tn0 = OP_has_predicate(op) ? opnd_tn[1] : opnd_tn[0];
   tn1 = OP_has_predicate(op) ? opnd_tn[2] : opnd_tn[1];
+#else
+  tn0 = OP_has_predicate(op) || OP_select(op) ? opnd_tn[1] : opnd_tn[0];
+  tn1 = OP_has_predicate(op) || OP_select(op) ? opnd_tn[2] : opnd_tn[1];
+#endif
 
   if (TN_is_symbol(tn0)) {
     if (TN_is_symbol(tn1)) {
@@ -4528,10 +4535,18 @@ Find_BB_TNs (BB *bb)
 
       opnd_tn[opndnum] = tn;
       opnd_tninfo[opndnum] = tninfo;
+
+#ifdef TARG_ST
+      if (!TN_Is_Constant(tn) &&
+          (!OP_select(op) || (opndnum != 0))) {
+        opnds_constant = FALSE;
+      }
+#else
       if (!TN_Is_Constant(tn) &&
           (!op_is_predicated || (opndnum != OP_PREDICATE_OPND))) {
         opnds_constant = FALSE;
       }
+#endif
 
       if (op_is_predicated && (opndnum == OP_PREDICATE_OPND)) {
         if ((tn == Zero_TN) && !OP_xfer(op)) {
@@ -4620,7 +4635,6 @@ Find_BB_TNs (BB *bb)
 	    // The ST target description takes care of this
             INT o1_idx;
             INT o2_idx;
-
             if (OP_select(op)) {
               o1_idx = 1;
               o2_idx = 2;
