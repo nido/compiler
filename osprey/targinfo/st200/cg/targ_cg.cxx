@@ -2405,22 +2405,24 @@ void CGTARG_Peak_Rate (
   
   switch (prc) {
   case PRC_INST:
-    ratio[0] = 6;
+    ratio[0] = 4;
     break;
   case PRC_MADD:
-  case PRC_MEMREF:
     ratio[0] = 2;
+    break;
+  case PRC_MEMREF:
+    ratio[0] = 1;
     break;
   case PRC_FLOP:
   case PRC_FADD:
   case PRC_FMUL:
-    ratio[0] = 2;
+    ratio[0] = 4;
     break;
   case PRC_IOP:
     ratio[0] = 4;
     break;
   default:
-    ratio[0] = 2;
+    ratio[0] = 4;
     break;
   }
 }
