@@ -3145,6 +3145,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"reverse operands and replace cmp with
       return TRUE;
     }
   }
+#endif
 
  /* Sequence optimizations. */
 
@@ -3155,7 +3156,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"reverse operands and replace cmp with
   pred_opcode = OP_code(pred_op);
   pred_opinfo = locate_opinfo_entry (tninfo);
   if (pred_opinfo == NULL) return FALSE;
-
+#if 0
  /* First, look for some special cases involving loads. */
   if (OP_load(pred_op)) {
     if (OP_iand(op)) {
@@ -3178,7 +3179,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
     }
     return FALSE;
   }
-
+#endif
  /* Now, look into optimizations that depend on specific
     values for the actual operands of the predecessor op. */
   if (TOP_Find_Operand_Use(OP_code(pred_op),OU_opnd2) >= 0) {
@@ -3220,6 +3221,25 @@ if (EBO_Trace_Optimization) fprintf(TFile,"no need to mask after load\n");
     pred_val = TN_Value(ptn1);
 
    /* Look for identical operations where the constants can be combined. */
+#ifdef TARG_ST
+    if ((opcode == pred_opcode) &&
+	OP_unrolling(op) &&
+	((opcode == TOP_add_i)  ||
+	 (opcode == TOP_sub_i))) {
+
+      new_const_val = pred_val + const_val;
+      new_opcode = opcode;
+      
+      if (TOP_Can_Have_Immediate(new_const_val, new_opcode)) {
+	new_op = Mk_OP (new_opcode, tnr, ptn0, Gen_Literal_TN(new_const_val, TN_size(tn0)));
+	OP_srcpos(new_op) = OP_srcpos(op);
+	if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_PREDICATE_OPND], ptn0_tninfo, NULL);
+	BB_Insert_Op_After(bb, op, new_op);
+if (EBO_Trace_Optimization) fprintf(TFile,"combine identical shifts\n");
+	return TRUE;
+      }
+    }
+#else
     if ((opcode == pred_opcode) &&
         ((opcode == TOP_shl)    ||
          (opcode == TOP_shl_i)  ||
@@ -3246,6 +3266,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"combine identical shifts\n");
         return TRUE;
       }
     }
+#endif
 
     if (pred_val == const_val) {
 
@@ -3280,8 +3301,6 @@ if (EBO_Trace_Optimization) fprintf(TFile,"replace complementary operations\n");
 
   } /* end: Sequence optimizations. */
   
-#endif
-
   return FALSE;
 }
 
