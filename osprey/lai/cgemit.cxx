@@ -3234,19 +3234,38 @@ Verify_Operand (
     ISA_REGISTER_CLASS rc = ISA_OPERAND_VALTYP_Register_Class(vtype);
     REGISTER reg = TN_register(tn);
 
-    FmtAssert(TN_is_register(tn),
-	      ("%s %d is not a register", res_or_opnd, opnd));
-
-    FmtAssert(TN_register_class(tn) == rc,
-	      ("incorrect register class for %s %d", res_or_opnd, opnd));
-
+    if (!TN_is_register(tn)) goto incorrect_register;
+    if (TN_register_class(tn) != rc) goto incorrect_register;
     if (reg != REGISTER_UNDEFINED) {
       class_regs =   (sc == ISA_REGISTER_SUBCLASS_UNDEFINED)
 		 ? REGISTER_CLASS_universe(rc)
 		 : REGISTER_SUBCLASS_members(sc);
-      FmtAssert(REGISTER_SET_MemberP(class_regs, reg),
-	      ("incorrect register for %s %d", res_or_opnd, opnd));
+      if (!REGISTER_SET_MemberP(class_regs, reg)) goto incorrect_register;
     }
+    return;
+  incorrect_register:
+#if 0
+     {
+      int i;
+      int opndnum = OP_opnds(op);
+      int resnum = OP_results(op);
+      fprintf(TFile, "BB:%d  %s ",
+	      BB_id(OP_bb(op)),TOP_Name(OP_code(op)));
+      for (i = 0; i < resnum; i++) {
+	fprintf(TFile," ");
+	Print_TN(OP_result(op, i),TRUE);
+      }
+      fprintf(TFile,"=");
+      for (i = 0; i < opndnum; i++) {
+	fprintf(TFile," ");
+	Print_TN(OP_opnd(op, i),TRUE);
+      }
+      fprintf(TFile,"\n");
+    }
+#endif
+    FmtAssert(0,
+	      ("incorrect register for %s %d in opcode %s", 
+	       res_or_opnd, opnd, TOP_Name(OP_code(op))));
   } else if (ISA_OPERAND_VALTYP_Is_Literal(vtype)) {
     FmtAssert(TN_is_constant(tn),
 	     ("%s %d is not a constant", res_or_opnd, opnd));
@@ -3262,6 +3281,8 @@ Verify_Operand (
 	        ("literal for %s %d is not in range", res_or_opnd, opnd));
     } else if (TN_is_label(tn)) {
 
+#ifndef TARG_ST
+      // [CG]: This check is wrong, does not handle variable bundles
 #if Is_True_On
       LABEL_IDX lab = TN_label(tn);
       INT64 offset = TN_offset(tn);
@@ -3291,6 +3312,7 @@ Verify_Operand (
 		   PC, LABEL_name(lab));
 	}
       }
+#endif
 #endif
     }
   } else if (ISA_OPERAND_VALTYP_Is_Enum(vtype)) {
@@ -3358,6 +3380,24 @@ Verify_Instruction (
   for (i = 0; i < opnds; ++i) {
     Verify_Operand(oinfo, op, i, FALSE);
   }
+
+#if Is_True_On
+  // [CG]: Test cond/jump to next bb
+  //if (CG_opt_level > 0 && CFLOW_Enable && !OP_likely(op)) {
+    if (OP_jump(op) || OP_cond(op)) {
+      int idx = TOP_Find_Operand_Use(OP_code(op), OU_target);
+      TN *dest = OP_opnd(op, idx);
+      BB *bb = OP_bb(op);
+      BB *bb_next = BB_next(bb);
+      DevAssert(TN_is_label(dest), ("expected label on branch at BB:%d", BB_id(bb)));
+      if (bb_next && BB_cold(bb) == BB_cold(bb_next) &&
+	  Is_Label_For_BB(TN_label(dest), bb_next) &&
+	  TN_offset(dest) == 0) {
+	DevWarn("branch to next BB at BB:%d", BB_id(bb));
+      }
+    }
+    //}
+#endif
 }
 
 /* ====================================================================
