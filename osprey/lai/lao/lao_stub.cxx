@@ -241,57 +241,57 @@ CGIR_LAB_to_Label(CGIR_LAB cgir_lab) {
 }
 
 // Convert CGIR_ST_CLASS to LIR SClass
-static inline LAI_SClass
+static inline LAI_SymbolClass
 CGIR_ST_CLASS_to_SClass(ST_CLASS sclass) {
-  static LAI_SClass sclasses[CLASS_COUNT] = {
-    LAI_SClass_UNDEF,	// CLASS_UNK
-    LAI_SClass_VAR,	// CLASS_VAR
-    LAI_SClass_FUNC,	// CLASS_FUNC
-    LAI_SClass_CONST,	// CLASS_CONST
-    LAI_SClass_PREG,	// CLASS_PREG
-    LAI_SClass_BLOCK,	// CLASS_BLOCK
-    LAI_SClass_UNDEF	// CLASS_NAME has no LAI mapping
+  static LAI_SymbolClass sclasses[CLASS_COUNT] = {
+    LAI_SymbolClass_UNDEF,	// CLASS_UNK
+    LAI_SymbolClass_VAR,	// CLASS_VAR
+    LAI_SymbolClass_FUNC,	// CLASS_FUNC
+    LAI_SymbolClass_CONST,	// CLASS_CONST
+    LAI_SymbolClass_PREG,	// CLASS_PREG
+    LAI_SymbolClass_BLOCK,	// CLASS_BLOCK
+    LAI_SymbolClass_UNDEF	// CLASS_NAME has no LAI mapping
   };
   return sclasses[sclass];
 }
 
 // Convert CGIR_ST_SCLASS to LIR SStorage
-static inline LAI_SStorage
+static inline LAI_SymbolStorage
 CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage) {
-  static LAI_SStorage sstorages[SCLASS_COUNT] = {
-    LAI_SStorage_UNDEF,		// SCLASS_UNKNOWN
-    LAI_SStorage_AUTO,		// SCLASS_AUTO
-    LAI_SStorage_FORMAL,	// SCLASS_FORMAL
-    LAI_SStorage_FORMAL_REF,	// SCLASS_FORMAL_REF
-    LAI_SStorage_PSTATIC,	// SCLASS_PSTATIC
-    LAI_SStorage_FSTATIC,	// SCLASS_FSTATIC
-    LAI_SStorage_COMMON,	// SCLASS_COMMON
-    LAI_SStorage_EXTERN,	// SCLASS_EXTERN
-    LAI_SStorage_UGLOBAL,	// SCLASS_UGLOBAL
-    LAI_SStorage_DGLOBAL,	// SCLASS_DGLOBAL
-    LAI_SStorage_TEXT,		// SCLASS_TEXT
-    LAI_SStorage_REG,		// SCLASS_REG
-    LAI_SStorage_UNDEF,		// SCLASS_CPLINIT not mapped
-    LAI_SStorage_UNDEF,		// SCLASS_EH_REGION not mapped
-    LAI_SStorage_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
-    LAI_SStorage_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
-    LAI_SStorage_UNDEF,		// SCLASS_COMMENT not mapped 
-    LAI_SStorage_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
+  static LAI_SymbolStorage sstorages[SCLASS_COUNT] = {
+    LAI_SymbolStorage_UNDEF,		// SCLASS_UNKNOWN
+    LAI_SymbolStorage_AUTO,		// SCLASS_AUTO
+    LAI_SymbolStorage_FORMAL,		// SCLASS_FORMAL
+    LAI_SymbolStorage_FORMAL_REF,	// SCLASS_FORMAL_REF
+    LAI_SymbolStorage_PSTATIC,		// SCLASS_PSTATIC
+    LAI_SymbolStorage_FSTATIC,		// SCLASS_FSTATIC
+    LAI_SymbolStorage_COMMON,		// SCLASS_COMMON
+    LAI_SymbolStorage_EXTERN,		// SCLASS_EXTERN
+    LAI_SymbolStorage_UGLOBAL,		// SCLASS_UGLOBAL
+    LAI_SymbolStorage_DGLOBAL,		// SCLASS_DGLOBAL
+    LAI_SymbolStorage_TEXT,		// SCLASS_TEXT
+    LAI_SymbolStorage_REG,		// SCLASS_REG
+    LAI_SymbolStorage_UNDEF,		// SCLASS_CPLINIT not mapped
+    LAI_SymbolStorage_UNDEF,		// SCLASS_EH_REGION not mapped
+    LAI_SymbolStorage_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
+    LAI_SymbolStorage_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
+    LAI_SymbolStorage_UNDEF,		// SCLASS_COMMENT not mapped 
+    LAI_SymbolStorage_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
   };
   return sstorages[sstorage];
 }
 
 // Convert CGIR_ST_EXPORT to LIR SExport
-static inline LAI_SExport
+static inline LAI_SymbolExport
 CGIR_ST_EXPORT_to_SExport(ST_EXPORT sexport) {
-  static LAI_SExport sexports[EXPORT_COUNT] = {
-    LAI_SExport_LOCAL,			// EXPORT_LOCAL
-    LAI_SExport_LOCAL_INTERNAL,		// EXPORT_LOCAL_INTERNAL
-    LAI_SExport_GLOBAL_INTERNAL,	// EXPORT_INTERNAL
-    LAI_SExport_GLOBAL_HIDDEN,		// EXPORT_HIDDEN
-    LAI_SExport_GLOBAL_PROTECTED,	// EXPORT_PROTECTED
-    LAI_SExport_GLOBAL_PREEMPTIBLE,	// EXPORT_PREEMPTIBLE
-    LAI_SExport_UNDEF			// EXPORT_OPTIONAL not mapped
+  static LAI_SymbolExport sexports[EXPORT_COUNT] = {
+    LAI_SymbolExport_LOCAL,		// EXPORT_LOCAL
+    LAI_SymbolExport_LOCAL_INTERNAL,	// EXPORT_LOCAL_INTERNAL
+    LAI_SymbolExport_GLOBAL_INTERNAL,	// EXPORT_INTERNAL
+    LAI_SymbolExport_GLOBAL_HIDDEN,	// EXPORT_HIDDEN
+    LAI_SymbolExport_GLOBAL_PROTECTED,	// EXPORT_PROTECTED
+    LAI_SymbolExport_GLOBAL_PREEMPTIBLE,// EXPORT_PREEMPTIBLE
+    LAI_SymbolExport_UNDEF		// EXPORT_OPTIONAL not mapped
   };
   return sexports[sexport];
 }
