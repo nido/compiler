@@ -187,6 +187,10 @@ typedef struct {
   pSCNINFO scninfo;
   Elf64_Word scn_ofst;
   ST *sym;
+#ifdef TARG_ST
+  char *label;     // we need to label sections on some targets that
+                   // do not have section relative relocations
+#endif
 } AUX_SCN;
 
 static AUX_SCN *em_scn;
@@ -441,37 +445,6 @@ PC_Incr_N (
   return pc;
 }
 
-#if 0
-/* ====================================================================
- *    CGEMIT_Weak_Alias (sym, stringsym, file)
- *
- *    TODO: Target dependent !
- * ====================================================================
- */
-static void
-CGEMIT_Weak_Alias (
-  ST *sym, 
-  ST *strongsym,
-  FILE *file
-) 
-{
-  fprintf (file, "\t%s\t%s#\n", AS_WEAK, ST_name(sym));
-  fprintf (file, "\t.set %s#, %s#\n", ST_name(sym), ST_name(strongsym));
-}
-
-/* ====================================================================
- *    CGEMIT_Alias (sym, stringsym)
- *
- *    TODO: Target dependent !
- * ====================================================================
- */
-static void
-CGEMIT_Alias (ST *sym, ST *strongsym, FILE *file) 
-{
-  fprintf (file, "\t.set %s#, %s#\n", ST_name(sym), ST_name(strongsym));
-}
-#endif
-
 /* ====================================================================
  *    r_qualified_name
  * ====================================================================
@@ -482,6 +455,19 @@ r_qualified_name (
   vstring *buf       /* buffer to format it into */
 )
 {
+  //
+  // Arthur: now there is a possibility that we try to use this
+  //         function with a section st
+  //
+  if (ST_class(st) == CLASS_BLOCK && STB_section(st)) {
+    //
+    // emit this section's label
+    //
+    vstr_sprintf (buf, vstr_len(*buf), "%s", 
+		  em_scn[STB_scninfo_idx(st)].label);
+    return;
+  }
+
   if (ST_name(st) && *(ST_name(st)) != '\0') {
     *buf = vstr_concat(*buf, ST_name(st));
     if (ST_is_export_local(st) && ST_class(st) == CLASS_VAR) {
@@ -522,32 +508,10 @@ EMT_Write_Qualified_Name (
   vstr_end(buf);
 }
 
-#if 0
-/* ====================================================================
- *    CGEMIT_Exit_In_Asm ()
- *
- *    TODO: Target dependent !
- * ====================================================================
- */
-static void
-CGEMIT_Exit_In_Asm (FILE *file, ST *pu) 
-{
-#ifdef TARG_ST100
-  fprintf (file, "\t%s\t", AS_END);
-  EMT_Write_Qualified_Name(file, pu);
-  fprintf (file, "\n");
-#endif
-#ifdef TARG_ST200
-  fprintf (file, "\t%s\n", AS_END);
-#endif
-}
-#endif
-
 /* ====================================================================
  *    Print_Dynsym (pfile, st)
  *
  *    print the internal, hidden or protected attributes if present 
- *    TODO: same code as in ../cg/cgemit.cxx -- factorixe
  * ====================================================================
  */
 static void 
@@ -581,8 +545,6 @@ Print_Dynsym (
 
 /* ====================================================================
  *    Print_Label (pfile, st, size)
- *
- *    TODO: same code as in ../cg/cgemit.cxx -- factorixe
  * ====================================================================
  */
 static void 
@@ -624,8 +586,6 @@ Print_Label (
 
 /* ====================================================================
  *    Print_Common
- *
- *    TODO: same code as in ../cg/cgemit.cxx -- factorize
  * ====================================================================
  */
 static void
@@ -699,12 +659,7 @@ EMT_Put_Elf_Symbol (
     // if only .s file, then just do dummy mark that we have
     // seen this symbol and emitted any type info for it.
     if (ST_class(sym) == CLASS_FUNC) {
-      if (Lai_Code) {
-	fprintf (Lai_File, "\t%s\t", AS_TYPE);
-	EMT_Write_Qualified_Name (Lai_File, sym);
-	fprintf (Lai_File, ", %s\n", AS_TYPE_FUNC);
-      }
-      if (Assembly) {
+      if (Assembly || Lai_Code) {
 	fprintf (Asm_File, "\t%s\t", AS_TYPE);
 	EMT_Write_Qualified_Name (Asm_File, sym);
 	fprintf (Asm_File, ", %s\n", AS_TYPE_FUNC);
@@ -712,10 +667,7 @@ EMT_Put_Elf_Symbol (
     }
     else if (ST_class(sym) == CLASS_VAR && 
 	     ST_sclass(sym) == SCLASS_COMMON) {
-      if (Lai_Code) {
-	Print_Common (Lai_File, sym);
-      }
-      if (Assembly) {
+      if (Assembly || Lai_Code) {
 	Print_Common (Asm_File, sym);
       }
       Set_ST_elf_index(sym, 1);
@@ -880,8 +832,10 @@ Trace_Init_Loc ( INT scn_idx, Elf64_Xword scn_ofst, INT32 repeat)
   /* Emit the section/offset/repeat as a line prefix -- the caller will
    * add context-specific information:
    */
-  fprintf ( TFile, "<init>: Section %s (offset %4lld x%d): ",
+  fprintf(TFile, "<init>: Section %s (offset %4lld x%d): ",
 	    ST_name(em_scn[scn_idx].sym), scn_ofst, repeat );
+
+  return;
 }
 
 /* ====================================================================
@@ -1375,7 +1329,7 @@ Change_Section_Origin (
     // IA64 generates .org so next data is placed at this offset
     // within the section
     // GHS assembler interprets .org as an absolute address
-    // We must use use .align instead in order to pad the data.
+    // We must use use .align instead that follows.
 #else
     // generate .org so next data is placed at this offset
     fprintf (Output_File, "\t%s 0x%llx\n", AS_ORIGIN, ofst);
@@ -1386,7 +1340,26 @@ Change_Section_Origin (
     // I can't for now since GHS assembler does not recognize
     // .align 0
     fprintf (Output_File, "\t%s\t0\n", AS_ALIGN);
+#else
+    // Arthur: we are aligning at 4 bytes for now.
+    // TODO: parametrize, so aligns at the strongest required
+    //       alignment on this target
+    fprintf (Output_File, "\t%s 4\n", AS_ALIGN);
 #endif
+
+#ifdef TARG_ST
+    // 
+    // Emit this section's label before offset 0
+    //
+    if (ofst == 0) {
+      fprintf(Asm_File, "%s:\n", em_scn[STB_scninfo_idx(base)].label);
+      if (Trace_Init) {
+	fprintf(TFile, "<init>: Emitting label %s for section %s\n",
+		em_scn[STB_scninfo_idx(base)].label, ST_name(base));
+      }
+    }
+#endif
+
     cur_section = base;
   }
 
@@ -1430,6 +1403,7 @@ inline bool size_lt (ST *s1, ST* s2)
   return TY_size(ST_type(s1)) < TY_size(ST_type(s2)); 
 }
 
+#if 0
 /* ====================================================================
  *    LAI_print_section
  * ====================================================================
@@ -1483,6 +1457,7 @@ LAI_print_section (
 
   return;
 }
+#endif
 
 /* ====================================================================
  *    Init_Section (st)
@@ -1532,11 +1507,16 @@ Init_Section (
   /* save symbol for later reference */
   em_scn[last_scn].sym = st;
 
+#ifdef TARG_ST
   // Make a label:
-  /*
   sprintf(sname, "L_SECTION_%d", last_scn);
   em_scn[last_scn].label = strdup(sname);
-  */
+
+  if (Trace_Init) {
+    fprintf(TFile, "<init>: Section %s: labeling %s\n", 
+	    ST_name(em_scn[last_scn].sym), em_scn[last_scn].label);
+  }
+#endif
 
   /* assume st is CLASS_BLOCK */
   scn_type = Get_Section_Elf_Type(STB_section_idx(st));
@@ -1567,14 +1547,14 @@ Init_Section (
     Set_ST_elf_index(st, 1);
   }
 
+#if 0
   if (Lai_Code) {
     LAI_print_section(st, scn_type, scn_flags, scn_entsize, cur_section);
   }
+#endif
 
   if (Assembly) {
-#if 0
     CGEMIT_Prn_Scn_In_Asm(st, scn_type, scn_flags, scn_entsize, cur_section);
-#endif
   }
 
   return;
@@ -1688,7 +1668,7 @@ Process_Initos_And_Literals (
       // may need padding between objects in same section,
       // so always change origin
       Change_Section_Origin (base, ofst);
-#ifdef TARG_ST
+#if 0
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
       //         aligning it at 4 bytes here. I should really get
@@ -1707,7 +1687,7 @@ Process_Initos_And_Literals (
       // expand the whirl nodes.  So always reset the origin.
       Change_Section_Origin (base, ofst);
 
-#ifdef TARG_ST
+#if 0
       // Arthur: It's a hack but I can not align things in the above
       //         (see comment in Change_Section_Origin(). I am 
       //         aligning it at 4 bytes here. I should really get
@@ -2355,11 +2335,13 @@ r_apply_l_const (
   BOOL add_name = FALSE;
   ST *st;
   INT64 val;
-  /*
+
+#if 0
   fprintf(TFile,"  const TN ");
   Print_TN(t, TRUE);
   fprintf(TFile, "\n");
-  */
+#endif
+
   /* special case for stack symbols */
   if (TN_is_symbol(t)) {
     ST *base_st;
@@ -2419,8 +2401,6 @@ r_apply_l_const (
 	// Print out a symbolic name
 	//
 	vstr_sprintf (buf, vstr_len(*buf), "UNNAMED_CONST_%d", ST_tcon(st));
-	//      char *cname = Get_TCON_name (ST_tcon(st));
-	//      *buf = vstr_concat(*buf, cname);
 	// call put_symbol so that we emit .type info, once per symbol
 	(void) EMT_Put_Elf_Symbol (st);
       }
@@ -3002,109 +2982,6 @@ Verify_Instruction (
     Verify_Operand(oinfo, op, i, FALSE);
   }
 }
-
-#if 0
-/* ====================================================================
- *   CGEMIT_Prn_File_Dir_In_Asm
- *
- *   TODO: target-dependent
- * ====================================================================
- */
-void
-CGEMIT_Prn_File_Dir_In_Asm(USRCPOS usrcpos,
-                        const char *pathname,
-                        const char *filename)
-{
-  if(!CG_emit_asm_dwarf) {
-    fprintf (Output_File, "// "); //turn the rest into comment
-  }
-  fprintf (Output_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
-		USRCPOS_filenum(usrcpos)-1,
-		pathname,filename);
-}
-
-/* ====================================================================
- *   CGEMIT_Prn_Line_Dir_In_Asm
- *
- *   TODO: target-dependent
- * ====================================================================
- */
-void
-CGEMIT_Prn_Line_Dir_In_Asm (USRCPOS usrcpos)
-{
-  if(!CG_emit_asm_dwarf) {
-    fprintf (Output_File, ASM_CMNT_LINE); //turn the rest into comment
-  }
-  fprintf (Output_File, "\t.loc\t%d\t%d\t%d\n", 
-		USRCPOS_filenum(usrcpos)-1,
-		USRCPOS_linenum(usrcpos),
-		USRCPOS_column(usrcpos));
-}
-
-/* ====================================================================
- *   print_source
- * ====================================================================
- */
-static void
-print_source (
-  SRCPOS srcpos
-)
-{
-  USRCPOS usrcpos;
-
-  USRCPOS_srcpos(usrcpos) = srcpos;
-
-  /* TODO: we don't handle this yet. */
-  if (USRCPOS_filenum(usrcpos) == 0) return;
-
-  return;
-}
-
-/* ====================================================================
- *   Cg_Dwarf_Add_Line_Entry
- *
- *   This adds line info and, as a side effect,
- *   builds tables in dwarf2 for the file numbers
- *
- *   TODO: implement the real dwarf generation, see cgdwarf.[h,cxx]
- * =====================================================================
- */
-void
-Cg_Dwarf_Add_Line_Entry (
-  INT code_address, 
-  SRCPOS srcpos
-)
-{
-  static SRCPOS last_srcpos = 0;
-  USRCPOS usrcpos;
-
-  if (srcpos == 0 && last_srcpos == 0)
-	DevWarn("no valid srcpos at PC %d\n", code_address);
-  if (srcpos == 0 || srcpos == last_srcpos) return;
-
-  // TODO:  figure out what to do about line changes in middle of bundle ???
-  // for now, avoid that situation by a hack;
-  // otherwise it dies in libdwarf because libdwarf expects addresses
-  // to be aligned with instructions.
-  if ((code_address % ISA_INST_BYTES) != 0) return;
-
-  USRCPOS_srcpos(usrcpos) = srcpos;
-
-  // now do line number:
-#if 0
-  if (Object_Code) {
-    Em_Dwarf_Add_Line_Entry (code_address, srcpos);
-  }
-#endif
-  if (Assembly || Lai_Code) {
-    CGEMIT_Prn_Line_Dir_In_Asm(usrcpos);
-    if (List_Source)
-      print_source (srcpos);
-  }
-
-  last_srcpos = srcpos;
-}
-#endif
 
 /* ====================================================================
  *   Assemble_OP
