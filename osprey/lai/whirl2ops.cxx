@@ -32,7 +32,6 @@
 
 */
 
-
 /* ====================================================================
  * ====================================================================
  *
@@ -161,7 +160,6 @@ static OP_MAP predicate_map = NULL;
 static WN_MAP WN_to_OP_map;
 
 OP_MAP OP_Asm_Map;
-
 
 TN *
 Get_Complement_TN(TN *tn)
@@ -782,6 +780,40 @@ Set_TN_For_PREG (
   return tn;
 }
 
+#ifdef TARG_ST
+struct wn_home_hilo {
+  WN *hi;
+  WN *lo;
+};
+
+static WN_MAP WN_To_Hilo_map = WN_MAP_UNDEFINED;
+
+static WN *
+Get_hilo_home(WN *home, WN *wn)
+{
+  struct wn_home_hilo *hilo;
+
+  PARITY par = WN_parity(wn);
+  if (WN_To_Hilo_map == WN_MAP_UNDEFINED)
+    WN_To_Hilo_map = WN_MAP_Create(&MEM_phase_pool);
+
+  hilo = (struct wn_home_hilo *)WN_MAP_Get(WN_To_Hilo_map, home);
+  if (! hilo) {
+    hilo = (struct wn_home_hilo *)malloc (sizeof (struct wn_home_hilo));
+
+    HILO_lower_wn (home, &hilo->lo, &hilo->hi);
+    WN_MAP_Set(WN_To_Hilo_map, home, (void*)hilo);
+  }
+
+  if (par == PARITY_DOUBLE_HI || par == PARITY_LONGLONG_HI)
+    return hilo->hi;
+  if (par == PARITY_DOUBLE_LO || par == PARITY_LONGLONG_LO)
+    return hilo->lo;
+
+  FmtAssert (FALSE, ("Get_hilo_home: unknown or no parity"));
+}
+#endif
+
 /* ====================================================================
  *   PREG_To_TN 
  *
@@ -792,6 +824,9 @@ TN *
 PREG_To_TN (
   ST *preg_st, 
   PREG_NUM preg_num
+#ifdef TARG_ST
+  , WN *wn
+#endif
 )
 {
   TN *tn;
@@ -872,33 +907,24 @@ PREG_To_TN (
       WN *home= Preg_Is_Rematerializable(preg_num, &gra_homeable);
 
       if (home) {
+#ifdef TARG_ST
+        //
+        // Christian: 'home' is set by WOPT.
+        //            it may happen that 'home' is a 64-bit
+        //            thing, which we can't handle on a 32-bit
+        //            machine.
+        if (Only_32_Bit_Ops &&
+            (MTYPE_is_double(WN_rtype(home)) || 
+             MTYPE_is_longlong(WN_rtype(home)))) {
+          home = Get_hilo_home (home, wn);
+        }
+#endif
+
 	if (gra_homeable) {
 	  if (TN_number(tn) < GRA_non_home_lo ||
 	      TN_number(tn) > GRA_non_home_hi) {
 	    Set_TN_is_gra_homeable(tn);
-#ifdef TARG_ST
-	    //
-	    // Christian: 'home' is set by WOPT.
-	    //            it may happen that 'home' is a 64-bit
-	    //            thing, which we can't handle on a 32-bit
-	    //            machine.
-	    if (Only_32_Bit_Ops &&
-		(MTYPE_is_double(WN_rtype(home)) || 
-		 MTYPE_is_longlong(WN_rtype(home)))) {
-	      WN *lopart;
-	      WN *hipart;
-	      HILO_lower_wn (home, &lopart, &hipart);
-	      //
-	      // Why is it that hipart does not matter ?
-	      //
-	      Set_TN_home (tn, lopart);
-	    }
-	    else {
-	      Set_TN_home (tn, home);
-	    }
-#else
 	    Set_TN_home (tn, home);
-#endif
 	  }
 	} else {
 	  Set_TN_is_rematerializable(tn);
@@ -1490,7 +1516,11 @@ Handle_LDID (
    * to the PREG. If there is a result TN, generate a copy.
    */
   if (WN_class(ldid) == CLASS_PREG) {
+#ifdef TARG_ST
+    TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid), ldid);
+#else
     TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid));
+#endif
 
     if (result == NULL) {
       result = ldid_result;
@@ -1577,7 +1607,11 @@ Handle_LDBITS (
 
   if (WN_class(ldbits) == CLASS_PREG)
   { /* LDBITS of a PREG */
+#ifdef TARG_ST
+    src_tn = PREG_To_TN (WN_st(ldbits), WN_load_offset(ldbits), ldbits);
+#else
     src_tn = PREG_To_TN (WN_st(ldbits), WN_load_offset(ldbits));
+#endif
   } 
   else
   {
@@ -2184,8 +2218,14 @@ Handle_DIVREM (
 
   Is_True ((parent && WN_class(parent) == CLASS_PREG), 
 	   ("DIVREM: expected store of preg"));
+#ifdef TARG_ST
+  Is_True ((result == PREG_To_TN(WN_st(parent), WN_store_offset(parent),
+                                 parent)), 
+	   ("DIVREM: bad result tn"));
+#else
   Is_True ((result == PREG_To_TN(WN_st(parent), WN_store_offset(parent))), 
 	   ("DIVREM: bad result tn"));
+#endif
 
   kid0_tn =	Expand_Expr (WN_kid0(expr), expr, NULL);
   kid1_tn =	Expand_Expr (WN_kid1(expr), expr, NULL);
@@ -2215,7 +2255,11 @@ Handle_DIVPART(WN *expr, WN *parent, TN *result)
 
   Is_True ((WN_class(kid) == CLASS_PREG), ("DIVPART: expected preg"));
 
+#ifdef TARG_ST
+  pregTN =  PREG_To_TN(WN_st(kid), WN_store_offset(kid), kid);
+#else
   pregTN =  PREG_To_TN(WN_st(kid), WN_store_offset(kid));
+#endif
 
   if (result==NULL)
   {
@@ -2238,7 +2282,11 @@ Handle_REMPART(WN *expr, WN *parent, TN *result)
 
   Is_True ((WN_class(kid) == CLASS_PREG), ("REMPART: expected preg"));
 
+#ifdef TARG_ST
+  pregTN =	PREG_To_TN(WN_st(kid), WN_store_offset(kid), kid);
+#else
   pregTN =	PREG_To_TN(WN_st(kid), WN_store_offset(kid));
+#endif
   pregTN =	TN_CORRESPOND_Get(pregTN, expr);
 
   Is_True ((pregTN),("expected tn correspondence"));
@@ -2263,8 +2311,14 @@ Handle_MINMAX(WN *expr, WN *parent, TN *result, OPCODE opcode)
 
   Is_True ((parent && WN_class(parent) == CLASS_PREG), 
 	   ("MINMAX: expected store of preg"));
+#ifdef TARG_ST
+  Is_True ((result == PREG_To_TN(WN_st(parent), WN_store_offset(parent),
+                                 parent)), 
+	   ("MINMAX: bad result tn"));
+#else
   Is_True ((result == PREG_To_TN(WN_st(parent), WN_store_offset(parent))), 
 	   ("MINMAX: bad result tn"));
+#endif
 
   kid0_tn =	Expand_Expr (WN_kid0(expr), expr, NULL);
   kid1_tn =	Expand_Expr (WN_kid1(expr), expr, NULL);
@@ -2294,7 +2348,11 @@ Handle_MINPART(WN *expr, WN *parent, TN *result)
 
   Is_True ((WN_class(kid) == CLASS_PREG), ("MINPART: expected preg"));
 
+#ifdef TARG_ST
+  pregTN =  PREG_To_TN(WN_st(kid), WN_store_offset(kid), kid);
+#else
   pregTN =  PREG_To_TN(WN_st(kid), WN_store_offset(kid));
+#endif
 
   if (result==NULL)
   {
@@ -2317,7 +2375,11 @@ Handle_MAXPART(WN *expr, WN *parent, TN *result)
 
   Is_True ((WN_class(kid) == CLASS_PREG), ("MAXPART: expected preg"));
 
+#ifdef TARG_ST
+  pregTN =	PREG_To_TN(WN_st(kid), WN_store_offset(kid), kid);
+#else
   pregTN =	PREG_To_TN(WN_st(kid), WN_store_offset(kid));
+#endif
   pregTN =	TN_CORRESPOND_Get(pregTN, expr);
 
   Is_True ((pregTN),("expected tn correspondende"));
@@ -2484,7 +2546,11 @@ Handle_STID (
   if (WN_class(stid) == CLASS_PREG) {
     WN *kid = WN_kid0(stid);
 
+#ifdef TARG_ST
+    result = PREG_To_TN (WN_st(stid), WN_store_offset(stid), stid);
+#else
     result = PREG_To_TN (WN_st(stid), WN_store_offset(stid));
+#endif
     Expand_Expr (kid, stid, result);
 
     if (In_Glue_Region) {
@@ -2500,7 +2566,11 @@ Handle_STID (
      * We need to create a correspondence for the STID, and do an assignment
      */
     if (WN_operator_is(kid, OPR_LDID) && WN_class(kid) == CLASS_PREG) {
+#ifdef TARG_ST
+      TN *ldidTN = PREG_To_TN (WN_st(kid), WN_load_offset(kid), kid);
+#else
       TN *ldidTN = PREG_To_TN (WN_st(kid), WN_load_offset(kid));
+#endif
 
       TN *ldidTN2 = TN_CORRESPOND_Lookup(ldidTN);
       if (ldidTN2 != NULL) {
@@ -2558,7 +2628,11 @@ Handle_STBITS (
   /* Check if we have an STBITS of a PREG. Get the TN corresponding to
    * the PREG */
   if (WN_class(stbits) == CLASS_PREG) {
+#ifdef TARG_ST
+    field_tn = PREG_To_TN (WN_st(stbits), WN_store_offset(stbits), stbits);
+#else
     field_tn = PREG_To_TN (WN_st(stbits), WN_store_offset(stbits));
+#endif
     result = field_tn;
   } else {
     variant = Memop_Variant(stbits);
@@ -4316,7 +4390,11 @@ Handle_ASM (const WN* asm_wn)
       WN* idname = WN_kid0(clobber_pragma);
       Is_True(WN_operator(idname) == OPR_IDNAME,
               ("Wrong kid operator for ASM clobber PREG"));
+#ifdef TARG_ST
+      TN* tn = PREG_To_TN(WN_st(idname), WN_offset(idname), idname);
+#else
       TN* tn = PREG_To_TN(WN_st(idname), WN_offset(idname));
+#endif
       FmtAssert(tn && TN_is_register(tn) && TN_is_dedicated(tn),
                 ("Wrong TN for PREG from ASM clobber list"));
       ISA_REGISTER_CLASS rc = TN_register_class(tn);
@@ -4348,8 +4426,13 @@ Handle_ASM (const WN* asm_wn)
     WN* load = Find_Asm_Out_Parameter_Load(WN_next(asm_wn), preg, &pref_st);
     TN* pref_tn = NULL;
     if (pref_st) {
+#ifdef TARG_ST
+      pref_tn = PREG_To_TN(MTYPE_To_PREG(ST_mtype(pref_st)),
+                           Find_PREG_For_Symbol(pref_st), load);
+#else
       pref_tn = PREG_To_TN(MTYPE_To_PREG(ST_mtype(pref_st)),
                            Find_PREG_For_Symbol(pref_st));
+#endif
     }
     ISA_REGISTER_SUBCLASS subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
 
@@ -4401,8 +4484,13 @@ Handle_ASM (const WN* asm_wn)
     if (OPERATOR_has_sym(WN_operator(load))) {
       ST* pref_st = WN_st(load);
       if (ST_assigned_to_dedicated_preg(pref_st)) {
+#ifdef TARG_ST
+        pref_tn = PREG_To_TN(MTYPE_To_PREG(ST_mtype(pref_st)),
+                             Find_PREG_For_Symbol(pref_st), load);
+#else
         pref_tn = PREG_To_TN(MTYPE_To_PREG(ST_mtype(pref_st)),
                              Find_PREG_For_Symbol(pref_st));
+#endif
       }
     }
     ISA_REGISTER_SUBCLASS subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
@@ -5090,21 +5178,12 @@ Whirl2ops_Finalize (void)
 		 "not followed by a loop, ignored");
   }
   OP_MAP_Delete(OP_Asm_Map);
-}
 
-#if 0
-void Set_TN_home(TN *t, WN *wn) {
-  WN *hipart;
-  WN *lopart;
-
-  if (Only_32_Bit_Ops &&
-      (MTYPE_is_double(WN_rtype(wn)) || MTYPE_is_longlong(WN_rtype(wn)))) {
-    /*    extern WN *Get_WN_home_lo (WN *);
-    x = Get_WN_home_lo (x);
-    */
-    HILO_lower_wn (wn, &lopart, &hipart);
+#ifdef TARG_ST
+  if (WN_To_Hilo_map != WN_MAP_UNDEFINED) {
+    WN_MAP_Delete(WN_To_Hilo_map);
+    WN_To_Hilo_map = WN_MAP_UNDEFINED;
   }
-
-  CAN_USE_TN(t)->u2.u3.home = (*lopart);
-}
 #endif
+}
+
