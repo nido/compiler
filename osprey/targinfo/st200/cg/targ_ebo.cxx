@@ -3047,9 +3047,6 @@ add_mul_sequence (
     //
     if (Is_16_Bits(tninfo1, bb, &tn1, &tninfo1, &hilo1, &signed1)) {
       if (tn0 == tn1 && hilo0 == hilo1 && signed0 == signed1) {
-	
-	fprintf(TFile, "  !!! can reduce tn1\n");
-
 	reduce_tn1 = TRUE;
 	l2_tn1 = tn0;
 	l2_tninfo1 = tninfo0;
