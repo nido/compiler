@@ -549,9 +549,15 @@ CGSPILL_OP_Spill_Location (OP *op)
   FmtAssert(mem_loc != NULL, ("Invalid offset for a spill operation  BB:%d, OP:%d\n", BB_id(OP_bb(op)), OP_map_idx(op)));
 
   if (spill_tn && TN_spill_is_valid(spill_tn) && TN_spill(spill_tn) != NULL) {
-    FmtAssert(TN_spill(spill_tn) == mem_loc,
-	      ("CGSPILL_OP_Spill_Location: TN_spill inconsistent with offset in BB:%d, OP:%d (OP spill: %s, TN spill: %s)\n", BB_id(OP_bb(op)), OP_map_idx(op), ST_name(mem_loc), ST_name(TN_spill(spill_tn))));
-    mem_loc = NULL;
+    if (TN_spill(spill_tn) != mem_loc) {
+#ifdef Is_True_On
+      // [CG]: TN_spill may be inconsistent after copy propagation
+      // We always trust the symbol offset instead of TN_spill().
+      DevWarn("CGSPILL_OP_Spill_Location: TN_spill inconsistent with offset in BB:%d, OP:%d (OP spill: %s, TN spill: %s)\n", BB_id(OP_bb(op)), OP_map_idx(op), ST_name(mem_loc), ST_name(TN_spill(spill_tn)));
+      Print_OP_No_SrcLine(op);
+      Set_TN_spill(spill_tn, NULL); // avoid multiple warnings
+#endif
+    }
   }
   
   if (mem_loc && !CGSPILL_Is_Spill_Location(mem_loc))
