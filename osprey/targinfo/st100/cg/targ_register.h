@@ -146,5 +146,11 @@ inline REGISTER_SET _REGISTER_Get_Requested_Rotating_Registers (
   return REGISTER_SET_EMPTY_SET;
 }
 
+// Declare target-specific register-class, register pairs:
+extern CLASS_REG_PAIR		CLASS_REG_PAIR_gr;
+#define REGISTER_gr		CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gr)
+#define REGISTER_CLASS_gr	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gr)
+#define CLASS_AND_REG_gr	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_gr)
+
 
 #endif /* register_targ_INCLUDED */

@@ -873,7 +873,12 @@ CGTARG_Spill_Type (
   INT range
 ) 
 {
-  // For now range is always '0'; return I4 by default:
+  // Arthur: the range analysis has not been implemented. Therefore,
+  //         reg alloc. calls this with 0 (default I4).
+  //         When callee saved reg mask size is computed, I call it
+  //         with 40 for DU so that I5 is returned.
+  // TODO: when precision range is available, it should be OK.
+  //
   switch (TN_register_class(tn)) {
     case ISA_REGISTER_CLASS_guard:
       return MTYPE_To_TY(MTYPE_I1);
@@ -881,6 +886,7 @@ CGTARG_Spill_Type (
       //      return Spill_Int_Type;
       switch (range) {
 	//      case 0: return MTYPE_To_TY(MTYPE_I5);
+      case 40: return MTYPE_To_TY(MTYPE_I5);
       default: return MTYPE_To_TY(MTYPE_I4);
       }
 

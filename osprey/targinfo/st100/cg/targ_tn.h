@@ -86,6 +86,9 @@
 
 #include "vstring.h"
 
+/* Target-specific special registers: */
+extern TN *GR_TN;          // guard register
+
 /* Macros to check if a TN is a particular dedicated register. */
 #define TN_is_zero_reg(r)  (FALSE)
 #define TN_is_sp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_sp)
@@ -227,8 +230,6 @@ inline BOOL TN_is_fcc_register (const TN *tn)
   return FALSE;
 }
 
-extern void TN_format_sp_relative (TN *t, INT64 base_ofst, vstring *buf);
-extern void TN_format_reloc (TN *t, vstring *buf);
 extern BOOL TN_Use_Base_ST_For_Reloc (INT reloc, ST *st);
 extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
 

@@ -100,17 +100,15 @@ const TN_RELOCS_INFO TN_RELOCS_info[] = {
 };
 
 /* ====================================================================
- *   TN_format_sp_relative
+ *   CGTARG_TN_Value
  * ====================================================================
  */
-void
-TN_format_sp_relative (
+INT64
+CGTARG_TN_Value (
   TN      *t,
-  INT64   base_ofst,
-  vstring *buf		/* A buffer to format it into */
+  INT64   base_ofst
 )
 {
-  BOOL  hexfmt = FALSE;
   INT64 val = base_ofst + TN_offset(t);
 
   if (TN_is_reloc_neg(t)) {
@@ -118,36 +116,15 @@ TN_format_sp_relative (
   }
   if ( TN_is_reloc_low16(t) ) {
     val = val & 0xffff;
-    hexfmt = TRUE;
   } else if ( TN_is_reloc_high16(t) ) {
     val = ( ( val - (short)val ) >> 16) & 0xffff;
-    hexfmt = TRUE;
   } else if ( TN_is_reloc_higher(t) ) {
     val = ( ( val + 0x80008000LL ) >> 32 ) & 0xffff;
-    hexfmt = TRUE;
   } else if ( TN_is_reloc_highest(t) ) {
     val = ( ( val + 0x800080008000LL ) >> 48 ) & 0xffff;
-    hexfmt = TRUE;
   }
 
-  vstr_sprintf (buf, vstr_len(*buf), (hexfmt ? "0x%llx" : "%lld"), val );
-  return;
-}
-
-/* ====================================================================
- *   TN_format_reloc
- * ====================================================================
- */
-void
-TN_format_reloc (
-  TN *t,
-  vstring *buf
-)
-{
-  if (TN_is_reloc_neg(t)) {
-    *buf = vstr_concat (*buf, "-");
-  }
-  return;
+  return val;
 }
 
 /* ====================================================================
@@ -222,4 +199,52 @@ TN_Relocs_In_Asm (
   *buf = vstr_concat (*buf, Symbol_Name_Suffix);
   */
   return paren;
+}
+
+//
+// Various target-dependent dedicated:
+// 
+// These are not used for now, just an example of how it could be
+// done
+//
+
+TN *GR_TN;          // guard register
+
+/* ====================================================================
+ *   CGTARG_Init_Dedicated_TNs
+ *
+ *   Initialize target-dependent REG_CLASS,REG pairs.
+ * ====================================================================
+ */
+void
+CGTARG_Init_Dedicated_TNs ()
+{
+  /* Initialize the dedicated integer register TNs: */
+  //  Zero_TN = Ded_TNs[REGISTER_CLASS_zero][REGISTER_zero];
+  Zero_TN = NULL;
+  //  Ep_TN = Ded_TNs[REGISTER_CLASS_ep][REGISTER_ep];
+  Ep_TN = NULL;
+  SP_TN = Ded_TNs[REGISTER_CLASS_sp][REGISTER_sp];
+  FP_TN = Ded_TNs[REGISTER_CLASS_fp][REGISTER_fp];
+  RA_TN = Ded_TNs[REGISTER_CLASS_ra][REGISTER_ra];
+  //  Pfs_TN = Ded_TNs[REGISTER_CLASS_pfs][REGISTER_pfs];
+  Pfs_TN = NULL;
+  True_TN = Ded_TNs[REGISTER_CLASS_true][REGISTER_true];
+  //  FZero_TN = Ded_TNs[REGISTER_CLASS_fzero][REGISTER_fzero];
+  FZero_TN = NULL;
+  //  FOne_TN = Ded_TNs[REGISTER_CLASS_fone][REGISTER_fone];
+  FOne_TN = NULL;
+  LC_TN = Ded_TNs[REGISTER_CLASS_lc][REGISTER_lc];
+  Link_TN = Ded_TNs[REGISTER_CLASS_link][REGISTER_link];
+
+  if (Gen_GP_Relative)
+    GP_TN = Ded_TNs[REGISTER_CLASS_gp][REGISTER_gp];
+  else
+    GP_TN = NULL;
+
+  // Add target specific ded TNs here:
+  // Initialize target-specific special registers:
+  GR_TN = Ded_TNs[REGISTER_CLASS_gr][REGISTER_gr];
+
+  return;
 }
