@@ -45,6 +45,9 @@ main()
 		    Odd_Unit, 
 		    Even_Unit, 
 #endif
+#ifdef TARG_ST // [CL] Handle instructions that require a particular slot
+                    ReqS0_Unit,
+#endif
 		    S0_Unit, 
 		    S1_Unit, 
 		    S2_Unit, 
@@ -102,6 +105,21 @@ main()
 		 TOP_immr, 
 		 TOP_UNDEFINED); 
 #endif
+
+#ifdef TARG_ST // [CL]
+  /* ===== Specification for ReqS0_Unit Type ===== */ 
+  ReqS0_Unit = ISA_Exec_Unit_Type_Create("ReqS0_Unit", NULL); 
+  Instruction_Exec_Unit_Group(ReqS0_Unit, 
+		 TOP_call, 
+		 TOP_icall, 
+		 TOP_goto, 
+		 TOP_igoto, 
+		 TOP_rfi, 
+		 TOP_br, 
+		 TOP_brf, 
+		 TOP_return, 
+		 TOP_UNDEFINED);
+#endif 
 
   /* ===== Specification for S0_Unit Type ===== */ 
   S0_Unit = ISA_Exec_Unit_Type_Create("S0_Unit", NULL); 

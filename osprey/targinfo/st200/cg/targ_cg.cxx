@@ -1503,9 +1503,28 @@ static BOOL Twin_Slot(
   return FALSE;
 }
 
+// [CL]
+/* ====================================================================
+ *   Is_Slot_Required: returns true if slot is used by an insn
+ * that requires this particular slot number
+ * ====================================================================
+ */
+static BOOL Is_This_Slot_Required(
+	       TI_BUNDLE *bundle,
+	       INT slot)
+{
+  switch(slot) {
+  case 0:
+    if (TI_BUNDLE_exec_property(bundle, slot) & ISA_EXEC_PROPERTY_ReqS0_Unit)
+      return TRUE;
+    break;
+  }
+  return FALSE;
+}
+
 
 /* ====================================================================
- *   Twin_Slot: move property from 'from' slot to 'to' slot
+ *   Move_Slot: move property from 'from' slot to 'to' slot
  * ====================================================================
  */
 static void Move_Slot(
@@ -1679,7 +1698,7 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   if (!extra_slot_reqd) {
     if (EXEC_PROPERTY_is_Odd_Unit(OP_code(op))) {
       odd_even_prop = ISA_EXEC_PROPERTY_Odd_Unit;
-      if ((addr != -1) && (((addr+slot) & 1) == 0)) {
+      if (check_addr  && (((addr+slot) & 1) == 0)) {
 	// Trying to insert at an even word address.  If slot is > 0,
 	// (ie if slot==2), we can insert here if there is a previous
 	// slot where word address is odd, and that slot is not
@@ -1687,6 +1706,10 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 	// address, and that slot is not used by an insn that uses 2
 	// slots (swap would not be possible)
 	for (int myslot=0; myslot<slot; myslot++) {
+	  // If myslot is already required, skip it
+	  if (Is_This_Slot_Required(bundle, myslot)) {
+	    continue;
+	  }
 	  // If myslot is candidate, and not occupied by another 'Odd'
 	  // or 'twin' op, asm will be able to swap
 	  if ( (((addr+myslot) & 1) == 1)
@@ -1704,9 +1727,13 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
       }
     } else if (EXEC_PROPERTY_is_Even_Unit(OP_code(op))) {
       odd_even_prop = ISA_EXEC_PROPERTY_Even_Unit;
-      if ((addr != -1) && (((addr+slot) & 1) == 1)) {
+      if (check_addr && (((addr+slot) & 1) == 1)) {
 	// Same as above, with even
 	for (int myslot=0; myslot<slot; myslot++) {
+	  // If myslot is already required, skip it
+	  if (Is_This_Slot_Required(bundle, myslot)) {
+	    continue;
+	  }
 	  if ( (((addr+myslot) & 1) == 0)
 	       && !(TI_BUNDLE_exec_property(bundle, myslot)
 		    & ISA_EXEC_PROPERTY_Even_Unit)
@@ -1723,6 +1750,30 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
     }
   }
 #endif
+
+  // [CL] Handle the instructions that /require/ a particular slot,
+  // ie branches
+  if (EXEC_PROPERTY_is_ReqS0_Unit(OP_code(op))) {
+    odd_even_prop = ISA_EXEC_PROPERTY_ReqS0_Unit;
+    if (slot != 0) {
+      // Trying to insert at a slot > 0
+      // If a previous slot is used by an insn with
+      // alignment constraints, or if a previous slot
+      // is used by a 'twin' insn, give up for now
+      for (int myslot=0; myslot<slot; myslot++) {
+	if ( (TI_BUNDLE_exec_property(bundle, myslot)
+		    & ISA_EXEC_PROPERTY_Even_Unit)
+	     ||
+	     (TI_BUNDLE_exec_property(bundle, myslot)
+		    & ISA_EXEC_PROPERTY_Odd_Unit)
+	     )
+	  {
+	    /* Consider impossible to fit */
+	    return FALSE;
+	  }
+      }
+    }
+  }
 
   if (EXEC_PROPERTY_is_S0_Unit(OP_code(op)) &&
       EXEC_PROPERTY_is_S1_Unit(OP_code(op)) &&
