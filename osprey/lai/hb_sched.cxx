@@ -398,7 +398,12 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   INT offset_opndnum = Memory_OP_Offset_Opndnum(ldst_op);
   INT64 ldst_const = TN_value (OP_opnd(ldst_op, offset_opndnum));
 
+#ifdef TARG_ST
+  // [CG] Don't allow opcode size change
+  return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), offset_opndnum, ldst_const + addiu_const*multiplier);
+#else
   return TOP_Can_Have_Immediate (ldst_const + addiu_const*multiplier, OP_code(ldst_op));
+#endif
 }
 
 // ======================================================================
