@@ -1020,8 +1020,9 @@ TN_To_Assigned_PREG (
   if (TN_is_float(tn)) {
     i += Float_Preg_Min_Offset;
   }
-#ifdef TARG_IA32
+#if defined(TARG_IA32) || defined(TARG_ST200)
   // There's no ZERO register: eax has machine_id 0, but preg_id 1
+  // TARG_ST200: have zero reg
   else {
     i += Int_Preg_Min_Offset;
   }
