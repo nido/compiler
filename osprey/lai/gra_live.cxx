@@ -80,15 +80,11 @@
 #include "cg_flags.h"
 #include "tn_map.h" 
 #include "cg.h"
-/*
-#include "cg_internal.h"
-*/
+/*#include "cg_internal.h"*/
 #include "whirl2ops.h"
 #include "reg_live.h"
-
 #include "cg_loop.h"
 #include "pqs_cg.h"
-
 
 static BB_LIST *region_entry_list;
 static BB_SET  *region_exit_set;
@@ -1927,7 +1923,6 @@ GRA_LIVE_Finish_REGION(void)
  *
  * =======================================================================
  */
-
 static BB *prolog_bb;
 static BB *body_bb;
 static BB *epilog_bb;
@@ -1942,6 +1937,7 @@ void GRA_LIVE_Init_Loop(BB *pbb, BB *bbb, BB *ebb, CG_LOOP_BACKPATCH *pbp, CG_LO
   epilog_bb = ebb;
   epilog_bp = ebp;
 }
+
 
 /* =======================================================================
  *
@@ -1959,6 +1955,7 @@ void GRA_LIVE_Fini_Loop()
   prolog_bp = (CG_LOOP_BACKPATCH*)NULL;
   epilog_bp = (CG_LOOP_BACKPATCH*)NULL;
 }
+
 
 // Utility to get (and allocate if necessary) the TN maps for def sets and use sets
 
@@ -2300,6 +2297,7 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
       else if (TN_is_global_reg(tn) &&
 	       !TN_is_const_reg(tn) &&
 	       !GTN_SET_MemberP(BB_live_out(bb), tn)) {
+
         // rename GTN to new local TN between op and end of bb.
 	Rename_TN_In_Range (tn, op, NULL);
 
@@ -2353,4 +2351,3 @@ void GRA_LIVE_Rename_TNs (void)
 
   MEM_POOL_Pop (&MEM_local_pool);
 }
-

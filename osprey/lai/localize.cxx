@@ -67,9 +67,7 @@
 #include "calls.h"
 #include "cgexp.h"
 #include "cg_region.h"
-/*
-#include "cg_internal.h"
-*/
+/* #include "cg_internal.h" */
 #include "targ_sim.h"
 #include "whirl2ops.h"
 
