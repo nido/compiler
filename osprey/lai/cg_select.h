@@ -47,6 +47,12 @@
 #ifndef SELECT_H_INCLUDED
 #define SELECT_H_INCLUDED
 
+/* ====================================================================
+ *   flags:
+ * ====================================================================
+ */
+extern BOOL CG_select_allow_dup;
+
 extern void Convert_Select(RID *, const BB_REGION&);
 extern void Select_Init(void);
 extern void draw_CFG(void);
@@ -84,6 +90,6 @@ typedef struct {
 //
 // targ_select.cxx
 //
-extern TN * Expand_CMP_Reg (OP *, TN *, OPS *);
+extern TN * Expand_CMP_Reg (OP *, OPS *);
 
 #endif /* SELECT_H_INCLUDED */

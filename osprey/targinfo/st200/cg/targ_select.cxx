@@ -118,17 +118,16 @@ TOP TOP_Branch_To_Reg(TOP opr)
  * --------------------------------------------------------------------
  */
 TN *
-Expand_CMP_Reg (OP *cmp, TN *tn, OPS *ops)
+Expand_CMP_Reg (OP *cmp, OPS *ops)
 {
-  TN *new_tn;
+  TN *tn = OP_result(cmp, 0);
   
   if (TN_register_class(tn) == ISA_REGISTER_CLASS_branch) {
     TOP cmp_top = TOP_Branch_To_Reg (OP_code(cmp));
     DevAssert(cmp_top, ("TOP_Branch_To_Reg\n"));
-    new_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-    Build_OP (cmp_top, new_tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
+    tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+    Build_OP (cmp_top, tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
     BB_Remove_Op(OP_bb(cmp), cmp);
-    return new_tn;
   }
 
   return tn;

@@ -381,7 +381,7 @@ static OPTION_DESC Options_CG[] = {
     "Enable if conversion using select op"},
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
-    0, 0, 0,	&CG_SELECT_allow_dup, NULL,
+    0, 0, 0,	&CG_select_allow_dup, NULL,
     "Allow basic blocks duplication for select if conversion"},
 
 #ifdef TARG_ST

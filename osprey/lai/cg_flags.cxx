@@ -274,12 +274,6 @@ BOOL  HB_superblocks = FALSE;
 INT   HB_max_blocks = 20;
 INT   HB_min_blocks = 2;
 
-// ====================================================================
-//   CG_SELECT flags:
-// ====================================================================
-
-BOOL CG_SELECT_allow_dup = FALSE;
-
 BOOL EMIT_pjump_all = TRUE;
 BOOL EMIT_use_cold_section = TRUE;
 BOOL EMIT_interface_section = TRUE;
