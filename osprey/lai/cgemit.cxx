@@ -515,7 +515,8 @@ Get_Offset_From_Full (ST *sym)
         offset_string = strrchr (ST_name(sym), '.');
         FmtAssert(offset_string != NULL, ("Get_Offset_From_Full unexpected name format (%s)", ST_name(sym)));
         offset_string++;       /* skip the period */
-	return atoll(offset_string);
+	/* Remove atoll to favor cross-compilability: Except for behavior on  error, atoll() is equivalent to strtoll(str, (char **)NULL, 10) */
+	return strtoll(offset_string, (char **)NULL, 10) ;
 }
 
 /***********************************************************************
