@@ -2103,9 +2103,7 @@ Expand_Float_To_Int_Trunc (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
-  Expand_Float_To_Int (ROUND_CHOP, dest, src, imtype, fmtype, ops);
+  Is_True(FALSE,("Should have generated a run-time for OPR_TRUNC"));
 }
 
 /* ====================================================================
@@ -3010,12 +3008,12 @@ Expand_Const (
   FmtAssert(TN_is_symbol(src), ("Expand_Const: src not a symbol TN"));
 
   TCON tc = ST_tcon_val(TN_var(src));
-
+#if 0
   union {
     INT32 i;
     float f;
   } val;
-
+#endif
   //
   // This is called normally for floating-point and company
   // Since we keep them in integer registers, just make a mov
@@ -3029,13 +3027,13 @@ Expand_Const (
     // try to make a mov from a symbol TN into an integer TN and
     // handle it in emit const in assm phase.
     //
-    //    Build_OP(TOP_mov_i, dest, src, ops);
-
+    Build_OP(TOP_mov_i, dest, src, ops);
+#if 0
     val.f = tc.vals.fval;
     Build_OP(TOP_mov_i, dest, Gen_Literal_TN(val.i, 4), ops);
 
     fprintf(TFile, "generated fp const !!!\n");
-
+#endif
     break;
 
   default:

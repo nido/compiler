@@ -979,11 +979,30 @@ Write_Symbol (
       EMT_Write_Qualified_Name (Output_File, basesym);
       fprintf (Output_File, " %+lld\n", base_ofst);
     }
+#ifdef TARG_ST
+    //
+    // Arthur: the way a function pointer is emitted depends on
+    //         whether or not we're generating GP-relative, GOT,
+    //         etc. Does not it ??
+    //
+    else if (ST_class(sym) == CLASS_FUNC) {
+      if (Gen_GP_Relative) {
+	FmtAssert(FALSE,("GP relative not supported"));
+      }
+      else {
+	//fprintf (Output_File, " %s(", AS_FPTR);
+	EMT_Write_Qualified_Name (Output_File, sym);
+	//fprintf (Output_File, " %+lld)\n", sym_ofst);
+	fprintf (Output_File, "%+lld\n", sym_ofst);
+      }
+    }
+#else
     else if (ST_class(sym) == CLASS_FUNC && AS_FPTR) {
       fprintf (Output_File, " %s(", AS_FPTR);
       EMT_Write_Qualified_Name (Output_File, sym);
       fprintf (Output_File, " %+lld)\n", sym_ofst);
     }
+#endif
     else {
       EMT_Write_Qualified_Name (Output_File, sym);
       fprintf (Output_File, " %+lld\n", sym_ofst);
@@ -1609,8 +1628,9 @@ Process_Initos_And_Literals (
 #endif
 
       // emit TCON associated symbolic name as label
-      char *cname = Get_TCON_name (ST_tcon(st));
-      fprintf(Output_File, "%s:\n", cname);
+      //      char *cname = Get_TCON_name (ST_tcon(st));
+      //      fprintf(Output_File, "%s:\n", cname);
+      fprintf(Output_File, "UNNAMED_CONST_%d:\n", ST_tcon(st));
       Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
     }
   }
@@ -2230,10 +2250,41 @@ r_apply_l_const (
     st = TN_var(t);
 
     if (ST_class(st) == CLASS_CONST) {
-      char *cname = Get_TCON_name (ST_tcon(st));
-      *buf = vstr_concat(*buf, cname);
-      // call put_symbol so that we emit .type info, once per symbol
-      (void) EMT_Put_Elf_Symbol (st);
+#ifdef TARG_ST
+      //
+      // Arthur: you can not always address a constant as an offset
+      //         from the section
+      //
+
+      TCON tc = ST_tcon_val(st);
+      //
+      // For floats make a bit pattern, others - symbolic name
+      //
+      if (MTYPE_is_float(TCON_ty(tc)) && !CG_floating_const_in_memory) {
+
+	union {
+	  INT32 i;
+	  float f;
+	} val;
+
+	val.f = tc.vals.fval;
+	vstr_sprintf (buf, vstr_len(*buf), "%d", val.i);
+      }
+      else {
+	//
+	// Print out a symbolic name
+	//
+	vstr_sprintf (buf, vstr_len(*buf), "UNNAMED_CONST_%d", ST_tcon(st));
+	//      char *cname = Get_TCON_name (ST_tcon(st));
+	//      *buf = vstr_concat(*buf, cname);
+	// call put_symbol so that we emit .type info, once per symbol
+	(void) EMT_Put_Elf_Symbol (st);
+      }
+#else
+      *buf = vstr_concat(*buf, ST_name(st));
+      if (*Symbol_Name_Suffix != '\0')
+	*buf = vstr_concat(*buf, Symbol_Name_Suffix);
+#endif
     }
     else {
       if (ST_sclass(st) != SCLASS_COMMON) {
@@ -4230,7 +4281,7 @@ EMT_Begin_File (
     List_Compile_Options (Lai_File, "\t"ASM_CMNT, FALSE, TRUE, TRUE);
   }
 
-  Init_Tcon_Info ();
+  //  Init_Tcon_Info ();
 
   return;
 }
@@ -4802,7 +4853,7 @@ EMT_End_File( void )
   }
 
   // Finish off the TCON to symbolic names table:
-  Fini_Tcon_Info ();
+  //  Fini_Tcon_Info ();
 
   return;
 }

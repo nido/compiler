@@ -744,16 +744,25 @@ OPCODE_To_INTRINSIC (
       break;
 
     case OPR_TRUNC:
-      if (rtype == MTYPE_I4) {
-	switch (desc) {
-	case MTYPE_F4: id = INTRN_STOW; break;
-	case MTYPE_F8: id = INTRN_DTOW; break;
-        default:
-	  FmtAssert(FALSE,("OPERATOR_To_Intrinsic: desc %s for F4TRUNC", 
-                           MTYPE_name(desc)));
-        }
+      Is_True(desc == MTYPE_F4 || desc == MTYPE_F8,
+	      ("OPR_TRUNC: unknown desc type"));
+      switch (rtype) {
+      case MTYPE_I4: 
+	id = (desc == MTYPE_F4) ? INTRN_STOW : INTRN_DTOW;
+	break;
+      case MTYPE_U4: 
+	id = (desc == MTYPE_F4) ? INTRN_STOUW : INTRN_DTOUW;
+	break;
+      case MTYPE_I8:
+	id = (desc == MTYPE_F4) ? INTRN_STOL : INTRN_DTOL;
+	break;
+      case MTYPE_U8: 
+	id = (desc == MTYPE_F4) ? INTRN_STOUL : INTRN_DTOUL;
+	break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: %s ??", 
+                                            OPCODE_name(opcode)));
       }
-
       break;
 
     default:

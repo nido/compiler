@@ -633,10 +633,10 @@ Exp_Ldst (
     TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
 
     if (ST_class(sym) == CLASS_CONST) {
-      char *cname = Get_TCON_name (ST_tcon(sym));
+      //      char *cname = Get_TCON_name (ST_tcon(sym));
 
       if (Trace_Exp) {
-	fprintf(TFile,"exp_ldst: constant ST name %s\n", cname);
+	fprintf(TFile,"exp_ldst: constant UNNAMED_CONST_%d\n", ST_tcon(sym));
       }
 
       Build_OP (TOP_mov_i, tn, 

@@ -3175,10 +3175,41 @@ Expand_Expr (
   FmtAssert(num_opnds <= OP_MAX_FIXED_OPNDS, 
                            ("too many operands (%d)", num_opnds));
 
+#ifdef TARG_ST
+  //
+  // Arthur: for floating-point constants, it is not always
+  //         necessary to keep them in memory. On ST targets,
+  //         for example, a floating-point constant can be
+  //         loaded into a integer register in the same way
+  //         as an integer constant.
+  //
+  //         In WHIRL, however, only INTCONST opcode allows not
+  //         to have an associated symbol. There are two 
+  //         possibilities:
+  //
+  //          1. generate CONST for floating-point constants
+  //             as usual but not allocate memory here and
+  //             handle expand into a proper sequence of bits;
+  //          2. make front-end generate F4TAS(I4INTCONST)
+  //             something like this
+  //
+  //         Here we try the first possibility, we don't want
+  //         to loose that high-level information on the
+  //         constant too early. Is this good ?
+  //
+
+  if (OPCODE_has_sym(opcode) && WN_st(expr) != NULL) {
+    if (opr == OPR_CONST && 
+	(!MTYPE_is_float(WN_rtype(expr)) || CG_floating_const_in_memory))
+      /* make sure st is allocated */
+      Allocate_Object (WN_st(expr));
+  }
+#else
   if (OPCODE_has_sym(opcode) && WN_st(expr) != NULL) {
     /* make sure st is allocated */
     Allocate_Object (WN_st(expr));
   }
+#endif
 
   /* Setup the operands */
   switch (opr) {
