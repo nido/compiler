@@ -1524,8 +1524,6 @@ CG_Init (void)
   }
 #endif
 
-  fprintf(stderr, "LAO %d, pipeline %d(%d), speculate %d(%d)\n", CG_enable_LAO, CG_LAO_pipeline, CG_LAO_pipeline_overridden, CG_LAO_speculate, CG_LAO_speculate_overridden);
-
   return;
 }
 
