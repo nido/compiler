@@ -164,7 +164,7 @@ static char *config_asm_rcs_id = "$Source$ $Revision$";
 #define AS_HALF		".hword"
 #define AS_HALF_UNALIGNED "## .hword.unaligned"
 #define AS_WORD		".word"
-#define AS_WORD_UNALIGNED "## .data4.ua" 
+#define AS_WORD_UNALIGNED ".word" 
 #define AS_DWORD	".quad"
 #define AS_DWORD_UNALIGNED "## .data8.ua"
 #define AS_FLOAT 	".real4"
