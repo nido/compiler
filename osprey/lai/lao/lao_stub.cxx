@@ -934,10 +934,16 @@ CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, int ordering, int unrolled, bool 
   // Set BB loop_head_bb.
   if (loop_bb != NULL) {
     Set_BB_loop_head_bb(cgir_bb, loop_bb);
+#if 0
+    // [CG 2005/03/08]
+    // Do not update OP_unroll_bb(), it must be leaved unchanged as it
+    // is the block containing the op just after unrolling.
+    // Fix from bug 1-6-0-B/36
     CGIR_OP op = NULL;
     FOR_ALL_BB_OPs(cgir_bb, op) {
       Set_OP_unroll_bb(op, loop_bb);
     }
+#endif
   }
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
