@@ -333,6 +333,7 @@ CGIR_LAB_create(Label label) {
   // code borrowed from Gen_Label_For_BB
   LABEL *plabel = &New_LABEL(CURRENT_SYMTAB, cgir_lab);
   LABEL_Init(*plabel, Save_Str(name), LKIND_DEFAULT);
+  return cgir_lab;
 }
 
 // Update a CGIR_LAB from a LIR Label.
