@@ -98,8 +98,6 @@ extern BB* Get_PHI_Predecessor (OP *phi, INT8 opnd_idx);
 //
 extern void SSA_Prepend_Phi_To_BB (OP *phi_op, BB *bb);
 
-//void Set_PHI_Operands(OP *phi);
-
 // Tracing flags
 #define SSA_BUILD        0x00000001  /* trace SSA build */
 #define SSA_MAKE_CONST   0x00000002  /* trace make consistent */

@@ -1178,25 +1178,74 @@ SSA_Enter (
  */
 
 //
-// Interference graph.
+// IGRAPH -- Interference Graph.
+//
 // Only edge information is necessary unlike the real interference
 // graph with node degrees, costs, etc.
 // 
 // We only keep interferences for global TNs.
-// Localized TN interference is found by scanning the BBs.
+// Localized TN interference can be found by scanning the BBs.
+// (is it even necessary for our purposes ?)
 // It seems a reasonable tradeoff given that we are looking
-// for PHI-functions interference information.
+// for PHI-function resource interference information.
 //
 
+// We set a 'tn_imap' entry for each PHI-function resource.
+// There may be at most twice the number of PHI-functions
+// (operands+results) PHI resources. This includes 1 potential
+// copy TN for each PHI-function present at the beginnig of
+// the SSA_Make_Consistent() process.
+
 //
-// Global TNs interference map, IGRAPH
-// For each global TN gives a set of other global TNs which
-// interfere with it.
+// PHI resources interference map, IGRAPH
 //
-static GTN_SET **tn_imap;
+static BS **tn_imap;    // implemented as a bitset
+static INT32 tn_map_size;
+
+static TN **idx_tn_table;
+static hTN_MAP32 tn_idx_map;
+
+#define IGRAPH_tn_idx(t)        (hTN_MAP32_Get(tn_idx_map,t))
+#define IGRAPH_idx_tn(i)        (idx_tn_table[i])
+
+static INT last_tn_idx;
+
+inline void IGRAPH_init_tn (TN *tn) {
+  last_tn_idx++;
+  FmtAssert(last_tn_idx <= tn_map_size,("tn_map overflowed ?"));
+  tn_imap[last_tn_idx] = BS_Create_Empty(tn_map_size+1, &MEM_local_pool);
+  hTN_MAP32_Set(tn_idx_map,tn,last_tn_idx);
+  idx_tn_table[last_tn_idx]=tn;
+  return;
+}
 
 // Interference Graph Tracing
 static BOOL Trace_Igraph;
+
+/* ================================================================
+ *   IGRAPH_print_tn
+ * ================================================================
+ */
+static void
+IGRAPH_print_tn (
+  TN *tn,
+  FILE *file
+)
+{
+  INT i = IGRAPH_tn_idx(tn);
+
+  fprintf(file, "  TN%d: {", TN_number(tn));
+  BS_ELT idx;
+  for (idx = BS_Choose(tn_imap[i]);
+       idx != BS_CHOOSE_FAILURE;
+       idx = BS_Choose_Next(tn_imap[i], idx)) {
+
+    fprintf(file, " TN%d", TN_number(IGRAPH_idx_tn(idx)));
+  }
+  fprintf(file, " }\n");
+
+  return;
+}
 
 /* ================================================================
  *   IGRAPH_Print
@@ -1210,17 +1259,9 @@ IGRAPH_Print (
   INT i;
 
   fprintf (file, "  --- Interference Graph --- \n");
-  for (i = 1; i < GTN_UNIVERSE_size; i++) {
-    TN *tn = GTN_UNIVERSE_INT_tn(i);
-
-    //
-    // Do not include dedicated or save TNs:
-    //
-    if (!TN_is_ssa_reg(tn)) continue;
-
-    fprintf(file, "  TN%d: ", TN_number(tn));
-    GTN_TN_SET_Print(tn_imap[i], file);
-    fprintf(file, "\n");
+  for (i = 1; i <= last_tn_idx; i++) {
+    TN *tn = IGRAPH_idx_tn(i);
+    IGRAPH_print_tn(tn, file);
   }
 
   return;
@@ -1234,22 +1275,49 @@ static void
 IGRAPH_Initialize ()
 {
   INT i;
+  OP *op;
   BB *bb;
 
   //
-  // GTN universe is much smaller than all TNs
+  // Traverse the CFG and count the number of PHI-nodes 
+  // operands+results. Twice this+1 is the size of BS to allocate
+  // for each IGRAPH entry; and also how many entries there will
+  // be.
   //
-  INT32    size = GTN_UNIVERSE_size;
-
-  // 
-  // Initialize interference map
-  //
-  tn_imap = (GTN_SET **)TYPE_MEM_POOL_ALLOC_N(GTN_SET *, 
-					      &ssa_pool, 
-					      size+1);
-  for (i = 1; i <= size; i++) {
-    tn_imap[i] = GTN_SET_Create(size,&ssa_pool);
+  tn_map_size = 0;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_PHI_OPs (bb, op) {
+      tn_map_size += OP_opnds(op) + OP_results(op);
+    }
   }
+
+  tn_imap = (BS **)TYPE_MEM_POOL_ALLOC_N(BS *, 
+					&MEM_local_pool, 
+					tn_map_size+1);
+
+  idx_tn_table = (TN **)TYPE_MEM_POOL_ALLOC_N(TN *, 
+					&MEM_local_pool, 
+					tn_map_size+1);
+
+  tn_idx_map = hTN_MAP32_Create(&MEM_local_pool);
+
+  //
+  // initialize last_tn_idx
+  // 
+  last_tn_idx = 0;
+
+  return;
+}
+
+/* ================================================================
+ *   IGRAPH_Clean
+ * ================================================================
+ */
+static void
+IGRAPH_Clean ()
+{
+
+  // normally everything will go away with the MEM_local_pool.
 
   return;
 }
@@ -1265,19 +1333,18 @@ IGRAPH_Add_Interference (
 ) 
 {
   //
-  // Only add interference if both are GTNs
+  // If any of the two TNs is seen for the first time, init
+  // what necessary
   //
-  UINT32 idx1 = GTN_UNIVERSE_TN_int(tn1);
-  UINT32 idx2 = GTN_UNIVERSE_TN_int(tn2);
+  INT32 idx1 = IGRAPH_tn_idx(tn1);
+  INT32 idx2 = IGRAPH_tn_idx(tn2);
 
-  if (idx1 == 0 || idx2 == 0) return;
+  if (idx1 == 0) IGRAPH_init_tn(tn1);
+  if (idx2 == 0) IGRAPH_init_tn(tn2);
 
-  tn_imap[idx1] = GTN_SET_Union1D (tn_imap[idx1], 
-				   tn2,
-				   &ssa_pool);
-  tn_imap[idx2] = GTN_SET_Union1D (tn_imap[idx2], 
-				   tn1,
-				   &ssa_pool);
+  tn_imap[idx1] = BS_Union1D (tn_imap[idx1], idx2, &MEM_local_pool);
+  tn_imap[idx2] = BS_Union1D (tn_imap[idx2], idx1, &MEM_local_pool);
+
   return;
 }
 
@@ -1311,9 +1378,6 @@ Propagate_Interference (
   if (Trace_Igraph) {
     fprintf(TFile, "====== BB%d: \n", BB_id(bb));
     GRA_LIVE_Print_Liveness(bb);
-    //    fprintf(TFile, "====== BB%d -- live_out: ", BB_id(bb));
-    //    GTN_TN_SET_Print(BB_live_out(bb), TFile);
-    //    fprintf(TFile, "\n");
   }
 
   GTN_SET *current = GTN_SET_Copy(BB_live_out(bb), &MEM_local_pool);
@@ -1447,17 +1511,6 @@ IGRAPH_Build ()
   if (Trace_SSA_Out) {
     IGRAPH_Print(TFile);
   }
-
-  return;
-}
-
-/* ================================================================
- *   IGRAPH_Clean
- * ================================================================
- */
-static void
-IGRAPH_Clean ()
-{
 
   return;
 }
@@ -2179,12 +2232,7 @@ SSA_Make_Consistent (
   //
   // Build the interference graph
   //
-  // NOTE: interference graph takes into account only GTNs that
-  //       exist at this point. If the GTN is no longer a GTN, 
-  //       and for any newly created GTN after this point, there
-  //       is no interference info.
-  //
-  IGRAPH_Build();
+  //IGRAPH_Build();
 
   initialize_phiCongruenceClasses();
 
@@ -2194,7 +2242,12 @@ SSA_Make_Consistent (
     break;
   case 2:
   case 3:
+    //
+    // Build the interference graph
+    //
+    IGRAPH_Build();
     Eliminate_Phi_Resource_Interference();
+    IGRAPH_Clean(); // do I need to clean anything ??
     break;
   default:
     Is_True(FALSE,("specify CG_ssa_algorithm"));
@@ -2208,7 +2261,7 @@ SSA_Make_Consistent (
 
   finalize_phiCongruenceClasses();
 
-  IGRAPH_Clean(); // do I need to clean anything ??
+  //IGRAPH_Clean();
 
   MEM_POOL_Pop(&MEM_local_pool);
 
