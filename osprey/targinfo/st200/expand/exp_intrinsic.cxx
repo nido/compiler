@@ -212,6 +212,23 @@ Expand__st220prgadd(
 */
 
 /*
+ * Expansion of st220prgins based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220prgins(
+ OPS* ops
+)
+{
+  Build_OP (	TOP_prgins,	ops) ;
+} /* Expand__st220prgins */
+
+/*
+@@@  case INTRN_ST220PRGINS:
+@@@    Expand__st220prgins(ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of st220prgset based on validated and scheduled basic assembly source.
 */
 static void
@@ -230,6 +247,70 @@ Expand__st220prgset(
 /*
 @@@  case INTRN_ST220PRGSET:
 @@@    Expand__st220prgset(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220sync based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220sync(
+ OPS* ops
+)
+{
+  Build_OP (	TOP_sync,	ops) ;
+} /* Expand__st220sync */
+
+/*
+@@@  case INTRN_ST220SYNC:
+@@@    Expand__st220sync(ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220syncins based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220syncins(
+ OPS* ops
+)
+{
+    /* NA in isa_operands.cxx Build_OP (	TOP_syncins,	ops) ; */
+} /* Expand__st220syncins */
+
+/*
+@@@  case INTRN_ST220SYNCINS:
+@@@    Expand__st220syncins(ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of st220syscall based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__st220syscall(
+ TN* i0,
+ OPS* ops
+)
+{
+    /*
+      syscall expect an immediate argument. 
+      I don't know if this can be checked in upper layers.
+      Range should also be checked.
+    */
+    if (TN_has_value(i0)) {
+#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
+	TN *cunknown = Gen_Literal_TN(__EXTS32TOS64(TN_value(i0)), 4) ;
+#undef __EXTS32TOS64
+	Build_OP (	TOP_syscall,	cunknown, 	ops) ;
+    } else {
+	DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
+    }
+} /* Expand__st220syscall */
+
+/*
+@@@  case INTRN_ST220SYSCALL:
+@@@    Expand__st220syscall(opnd[0],ops) ;
 @@@  break ;
 */
 
@@ -5059,8 +5140,20 @@ Exp_Intrinsic_Op (
     case INTRN_ST220PRGADD:
       Expand__st220prgadd(result[0],opnd[0],opnd[1],ops) ;
     break ;
+    case INTRN_ST220PRGINS:
+      Expand__st220prgins(ops) ;
+    break ;
     case INTRN_ST220PRGSET:
       Expand__st220prgset(result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ST220SYNC:
+      Expand__st220sync(ops) ;
+    break ;
+    case INTRN_ST220SYNCINS:
+      Expand__st220syncins(ops) ;
+    break ;
+    case INTRN_ST220SYSCALL:
+      Expand__st220syscall(opnd[0],ops) ;
     break ;
     case INTRN_ABSCH:
       Expand__absch(result[0],opnd[0],ops) ;

@@ -586,9 +586,21 @@
 { /* __st220prgadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st220prgadd", NULL, "__st220prgadd"}, 
+{ /* __st220prgins */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st220prgins", NULL, "__st220prgins"}, 
 { /* __st220prgset */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st220prgset", NULL, "__st220prgset"}, 
+{ /* __st220sync */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st220sync", NULL, "__st220sync"}, 
+{ /* __st220syncins */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st220syncins", NULL, "__st220syncins"}, 
+{ /* __st220syscall */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st220syscall", NULL, "__st220syscall"}, 
 { /* __stod */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F8, "__stod", NULL, "__stod"}, 

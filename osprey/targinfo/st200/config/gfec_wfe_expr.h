@@ -777,15 +777,31 @@
     break;
     case BUILT_IN_ST220PFT:
       iopc = INTRN_ST220PFT ;
-      /* This one must be handled as and INTRINSIC_CALL */
+      intrinsic_op = FALSE ;
     break;
     case BUILT_IN_ST220PRGADD:
       iopc = INTRN_ST220PRGADD ;
-      /* This one must be handled as and INTRINSIC_CALL */
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST220PRGINS:
+      iopc = INTRN_ST220PRGINS ;
+      intrinsic_op = FALSE ;
     break;
     case BUILT_IN_ST220PRGSET:
       iopc = INTRN_ST220PRGSET ;
-      /* This one must be handled as and INTRINSIC_CALL */
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST220SYNC:
+      iopc = INTRN_ST220SYNC ;
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST220SYNCINS:
+      iopc = INTRN_ST220SYNCINS ;
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST220SYSCALL:
+      iopc = INTRN_ST220SYSCALL ;
+      intrinsic_op = FALSE ;
     break;
     case BUILT_IN_STOD:
       iopc = INTRN_STOD ;
