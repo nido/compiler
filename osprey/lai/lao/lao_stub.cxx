@@ -576,13 +576,13 @@ CGIR_LI_identity(CGIR_LI cgir_li) {
 
 // Create a CGIR_LI.
 static CGIR_LI
-CGIR_LI_create(CGIR_LI cgir_li, int unrolling) {
+CGIR_LI_create(CGIR_LI cgir_li, int unrolled) {
   CGIR_LI new_li = TYPE_P_ALLOC(LOOPINFO);
   if (cgir_li != NULL && LOOPINFO_wn(cgir_li) != NULL) {
     // Code adapted from Unroll_Dowhile_Loop.
     WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
-    if (unrolling != 0) {
-      WN_loop_trip_est(wn) /= unrolling;
+    if (unrolled != 0) {
+      WN_loop_trip_est(wn) /= unrolled;
       WN_loop_trip_est(wn) += 1;
     }
     LOOPINFO_wn(new_li) = wn;
@@ -597,7 +597,7 @@ CGIR_LI_create(CGIR_LI cgir_li, int unrolling) {
 
 // Update a CGIR_LI.
 static void
-CGIR_LI_update(CGIR_LI cgir_li, int unrolling) {
+CGIR_LI_update(CGIR_LI cgir_li, int unrolled) {
 }
 
 // Update of specific fields for the Open64 compiler
