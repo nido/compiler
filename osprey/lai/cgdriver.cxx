@@ -389,6 +389,15 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_enable_LAO, NULL },
 #endif
 
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cgg_opt", "",
+    0, 0, 0,	&CG_enable_cgg, NULL },
+
+  { OVK_INT32,  OV_INTERNAL, TRUE, "cgg_level", "",
+    0, 0, 2, &CG_cgg_level, NULL,
+    "Specify optimization level for the code selector" },
+#endif
+
   // EBO options:
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",

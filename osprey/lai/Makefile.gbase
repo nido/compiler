@@ -115,6 +115,14 @@ HOSTDEFS += -DOPT_EXPORTED=$(DLLIMPORT)
 HOSTDEFS += -DCG_EXPORTED=$(DLLEXPORT)
 endif
 
+#CGG_DEV{
+ifeq ($(BUILD_TARGET),ST200)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  HOSTDEFS += -DCGG_ENABLED -DHAS_INTTYPES_H
+endif
+endif
+#}CGG_DEV
+
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
 
@@ -153,6 +161,10 @@ COMMON_TARG_EMIT_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/emit
 COMMON_TARG_EXP_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/expand
 COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 
+#CGG_DEV{
+COMMON_TARG_CGG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cgg
+#}CGG_DEV
+
 # These are the directories in which to look for source files.
 
 SRC_DIRS = 			\
@@ -167,6 +179,14 @@ SRC_DIRS = 			\
   $(COMMON_TARG_EMIT_DIR)	\
   $(COMMON_TARG_EXP_DIR)	\
   $(COMMON_TARG_ACCESS_DIR)
+
+#CGG_DEV{
+ifeq ($(BUILD_TARGET),ST200)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  SRC_DIRS += $(COMMON_TARG_CGG_DIR)
+endif
+endif
+#}CGG_DEV
 
 ifndef TARG_BE
 TARG_BE = $(TARGDIR)/be
@@ -184,6 +204,14 @@ HEADER_DIRS = 		\
   $(BE_LAO_DIR)
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
+
+#CGG_DEV{
+ifeq ($(BUILD_TARGET),ST200)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  HEADER_DIRS += $(COMMON_TARG_CGG_DIR)
+endif
+endif
+#}CGG_DEV
 
 #----------------------------------------------------------------------
 # Build derived files
@@ -392,6 +420,13 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += cg_select.cxx
   CG_CXX_SRCS += targ_select.cxx
   CG_CXX_SRCS += targ_hb.cxx
+
+#CGG_DEV{
+  ifeq ($(BUILD_VARIANT), CGG_BUILD)
+   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
+   CG_C_SRCS += NBG_State.c NBG_Link.c
+  endif
+#}CGG_DEV
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)

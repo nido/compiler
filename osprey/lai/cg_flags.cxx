@@ -92,6 +92,8 @@ BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 BOOL CG_enable_select = FALSE;
 BOOL CG_enable_LAO = FALSE;	/* Enable LAO in cg */
+BOOL CG_enable_cgg;
+INT32 CG_cgg_level;
 
 BOOL  CG_enable_BB_splitting = TRUE;
 INT32 CG_split_BB_length = CG_bblength_default;

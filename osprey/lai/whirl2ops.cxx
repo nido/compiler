@@ -103,6 +103,20 @@
 #include "betarget.h"    /* for Target_Has_Immediate_Operand */
 #endif
 
+//CGG_DEV{
+#if defined(TARG_ST) && defined(CGG_ENABLED)
+#include "targ_cgg_exp.h"
+static TN * Expand_Expr_local (WN *expr, WN *parent, TN *result);
+static void Expand_Statement_local (WN *stmt);
+static TN * Expand_Expr (WN *expr, WN *parent, TN *result);
+static void Expand_Statement (WN *stmt);
+#define CGG_STATIC 
+#else
+#define CGG_STATIC static
+#endif
+//}CGG_DEV
+
+
 #ifdef EMULATE_LONGLONG
 extern void Add_TN_Pair (TN*, TN*);
 extern TN *If_Get_TN_Pair(TN*);
@@ -117,7 +131,7 @@ static BOOL Trace_WhirlToOp = FALSE;
 /* reference to a dedicated TN in Cur_BB */
 static BOOL dedicated_seen;
 
-static BOOL In_Glue_Region = FALSE;	/* in glue-code region */
+CGG_STATIC BOOL In_Glue_Region = FALSE;	/* in glue-code region */
 
 /* Forward declarations. */
 static TN * Expand_Expr (WN *expr, WN *parent, TN *result);
@@ -136,11 +150,11 @@ static INT16 WHIRL_Compare_To_OP_variant (OPCODE opcode, BOOL invert);
 static OPS New_OPs;
 
 static OP *Last_Processed_OP;
-static SRCPOS current_srcpos;
+CGG_STATIC SRCPOS current_srcpos;
 static INT total_bb_insts;
 
 /* The current basic block being generated. */
-static BB *Cur_BB;
+CGG_STATIC BB *Cur_BB;
 
 static RID **region_stack_base;
 static RID **region_stack_ptr;
@@ -158,7 +172,7 @@ static WN *last_loop_pragma;
  * op processed for the memory op to wn mapping.
  */
 
-static OP *Last_Mem_OP;
+CGG_STATIC OP *Last_Mem_OP;
 OP_MAP OP_to_WN_map;
 static OP_MAP predicate_map = NULL;
 static WN_MAP WN_to_OP_map;
@@ -593,7 +607,7 @@ Allocate_Result_TN (
 
 /* set the op2wn mappings for memory ops
  */
-static void
+CGG_STATIC void
 Set_OP_To_WN_Map(WN *wn)
 {
   OP *op;
@@ -3179,7 +3193,7 @@ Get_Non_Local_Label_Name (SYMTAB_IDX level, LABEL_IDX index)
 // It is much simpler since now we don't need to create STs for
 // label numbers.  The only thing we might need to do is create a
 // LABEL_name.
-static LABEL_IDX
+CGG_STATIC LABEL_IDX
 Get_WN_Label (WN *wn)
 {
   LABEL_IDX label = WN_label_number(wn);
@@ -3237,8 +3251,16 @@ Get_WN_Label (WN *wn)
  * level nodes).
  * ====================================================================
  */
+//CGG_DEV{
+#if defined(TARG_ST) && defined(CGG_ENABLED)
+static TN *
+Expand_Expr_local (
+#else
 static TN *
 Expand_Expr (
+#endif
+//}CGG_DEV
+
   WN *expr, 
   WN *parent, 
   TN *result
@@ -4598,8 +4620,16 @@ static SRCPOS get_loop_srcpos(WN *body_label)
  *   them to the current basic block.
  * ====================================================================
  */
-static void 
+//CGG_DEV{
+#if defined(TARG_ST) && defined(CGG_ENABLED)
+void
+Expand_Statement_local (
+#else
+void
 Expand_Statement (
+#endif
+//}CGG_DEV
+
   WN *stmt
 ) 
 {
@@ -5000,6 +5030,12 @@ Convert_WHIRL_To_OPs (
 
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
+#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+    if (CG_enable_cgg) {
+      CGG_Start_function(tree);
+      CGG_Start_bb(tree);
+    }
+#endif
     Compiling_Proper_REGION = FALSE;
     if (RID_cginfo(rid) == NULL) {
       RID_cginfo(rid) = CGRIN_Create(RID_num_exits(rid));
@@ -5008,6 +5044,12 @@ Convert_WHIRL_To_OPs (
     stmt = WN_entry_first( tree );
     break;
   case OPC_REGION:
+#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+    if (CG_enable_cgg) {
+      CGG_Start_region(tree);
+      CGG_Start_bb(tree);
+    }
+#endif
     Compiling_Proper_REGION = TRUE;
     if ( RID_level( rid ) < RL_CG ) {      /* it is WHIRL */
       num_exits = RID_num_exits( rid );
@@ -5093,6 +5135,9 @@ Convert_WHIRL_To_OPs (
 
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
+#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+    if (CG_enable_cgg) CGG_End_function(tree);
+#endif
     break;
   case OPC_REGION:
     region_stack_pop();
@@ -5127,7 +5172,10 @@ Convert_WHIRL_To_OPs (
 		FALSE);
 	
     }
-    break;
+#if defined(TARG_ST) && defined(CGG_ENABLED) //CGG_DEV
+    if (CG_enable_cgg) CGG_End_region(tree);
+#endif 
+   break;
   default:
     #pragma mips_frequency_hint NEVER
     FmtAssert( FALSE, ("unexpected opcode in Convert_WHIRL_To_OPs") );
@@ -5161,6 +5209,18 @@ Whirl2ops_Initialize (
   }
   last_loop_pragma = NULL;
   OP_Asm_Map = OP_MAP_Create();
+
+//CGG_DEV{
+#ifdef TARG_ST
+#ifdef CGG_ENABLED
+  if (CG_enable_cgg) {
+    CGG_Set_Level(CG_cgg_level);
+    if (Get_Trace (TP_CGEXP, 2)) CGG_Set_Trace(1);
+    CGG_Initialize();
+  }
+#endif
+#endif
+//}CGGDEV
 }
 
 /* ====================================================================
@@ -5197,6 +5257,200 @@ Whirl2ops_Finalize (void)
     WN_MAP_Delete(WN_To_Hilo_map);
     WN_To_Hilo_map = WN_MAP_UNDEFINED;
   }
+//CGG_DEV{
+#ifdef CGG_ENABLED
+  if (CG_enable_cgg) CGG_Finalize();
+#endif
+//}CGGDEV
 #endif
 }
 
+//CGG_DEV{
+#ifdef TARG_ST
+#ifdef CGG_ENABLED
+
+/*
+ * Do we have a BB frontier.
+ * 0: no, 
+ * 1: start bb before,
+ * 2: start bb after,
+ * 3: start bb before and after,
+ */
+static int 
+cgg_test_start_bb (WN *stmt) 
+{
+  OPCODE opc = WN_opcode(stmt);
+  int do_bb = 0;
+  
+  switch(opc) {
+  case OPC_REGION:
+  case OPC_FUNC_ENTRY:
+  case OPC_ALTENTRY:
+  case OPC_LABEL:
+    do_bb = 1;
+    break;
+  case OPC_RETURN:
+  case OPC_TRUEBR:
+  case OPC_FALSEBR:
+  case OPC_GOTO:
+  case OPC_AGOTO:
+  case OPC_COMPGOTO:
+  case OPC_XGOTO:
+  case OPC_REGION_EXIT:
+  case OPC_GOTO_OUTER_BLOCK:
+    do_bb = 2;
+    break;
+  case OPC_ASM_STMT:
+    do_bb = 3;
+    break;
+  case OPC_TRAP:
+  case OPC_EVAL:
+  case OPC_COMMENT:
+  case OPC_PRAGMA:
+  case OPC_XPRAGMA:
+  case OPC_EXC_SCOPE_END:
+  case OPC_EXC_SCOPE_BEGIN:
+  default:
+    break;
+  }
+  return do_bb;
+}
+
+static void
+cgg_may_start_bb(WN *stmt)
+{
+  static WN *last_stmt;
+  static int after_last;
+  if (stmt != last_stmt) {
+    int do_bb = cgg_test_start_bb(stmt);
+    
+    if (after_last || (do_bb & 1)) {
+      CGG_Start_bb(stmt);
+      after_last = 0;
+    }
+    if (do_bb & 2) after_last = 1;
+    last_stmt = stmt;
+  }
+}
+
+/* From Handle_XGOTO. */
+static void
+cgg_handle_xgoto(WN *stmt)
+{
+  TN *target_tn;
+  WN *wn;
+  INT i;
+  ST *st;
+  INITO_IDX ino;
+  INITV_IDX inv, prev_inv;
+
+
+  /* build jump table in init-data list */
+  /* get table address */
+  st = WN_st(stmt);
+  BB_Add_Annotation (Cur_BB, ANNOT_SWITCH, st);
+  /* make sure st is allocated */
+  Allocate_Object(st);
+  ino = New_INITO(st);
+  prev_inv = INITV_IDX_ZERO;
+
+  wn = WN_first(WN_kid1(stmt));	/* first goto */
+  for (i = 0; i < WN_num_entries(stmt); i++) {
+    FmtAssert ((wn && WN_opcode(wn) == OPC_GOTO),
+	       ("XGOTO block doesn't have goto's? (%d)", WN_opcode(wn)));
+    LABEL_IDX lab = WN_label_number(wn);
+    inv = New_INITV();
+    INITV_Init_Label (inv, lab);
+    prev_inv = Append_INITV (inv, ino, prev_inv);
+    wn = WN_next(wn);
+  }
+}
+
+/* From Convert_Branch. */
+static void
+cgg_convert_branch(WN *stmt)
+{
+  BB_branch_wn(Cur_BB) = stmt;
+  /* Terminate the basic block. */
+  Start_New_Basic_Block ();
+}
+
+static void
+Expand_Statement(WN *stmt)
+{
+  int do_cgg = 0;
+  int do_convert_branch = 0;
+  int do_handle_xgoto = 0;
+  if (CG_enable_cgg) {  
+    if (Trace_WhirlToOp) fprintf(TFile, "-- Expand_Statement\n");
+    cgg_may_start_bb(stmt);
+    CGG_Start_stmt(stmt);
+
+    switch(WN_opcode(stmt)) {
+    case OPC_TRUEBR:
+    case OPC_FALSEBR:
+    case OPC_REGION_EXIT:
+    case OPC_GOTO:
+    case OPC_AGOTO:
+      do_convert_branch = 1;
+      do_cgg = 1;
+      break;
+    case OPC_XGOTO:
+      do_handle_xgoto = 1;
+      do_convert_branch = 1;
+      do_cgg = 1;
+      break;
+    case OPC_COMPGOTO: /* not implemented. */
+    default:
+      do_cgg = 0;
+      if (Trace_WhirlToOp) fprintf (TFile, "-! Skipped CGG_Expand_Statement\n");
+    }
+  }
+
+  if (do_cgg) {
+    if (Trace_WhirlToOp) fprintf(TFile, "-> CGG_Expand_Statement\n");
+    CGG_Expand_Expr(stmt, NULL, NULL, &New_OPs);
+    if (do_handle_xgoto) cgg_handle_xgoto(stmt);
+    if (do_convert_branch) cgg_convert_branch(stmt);
+  } else {
+    Expand_Statement_local(stmt);
+  }
+}
+
+static TN *
+Expand_Expr(WN *expr, WN *parent, TN *result)
+{
+  int do_cgg = 0;
+
+  if (CG_enable_cgg) {  
+    if (Trace_WhirlToOp) fprintf(TFile, "-- Expand_Expr\n");
+    switch(WN_operator(expr)) {
+    case OPR_GOTO_OUTER_BLOCK:
+    case OPR_LDA_LABEL:
+    case OPR_CALL:
+    case OPR_ICALL:
+    case OPR_PICCALL:
+    case OPR_PREFETCH:
+    case OPR_PREFETCHX:
+    case OPR_ALLOCA:
+    case OPR_DEALLOCA:
+    case OPR_INTRINSIC_OP:
+    case OPR_INTRINSIC_CALL:
+      do_cgg = 0;
+      if (Trace_WhirlToOp) fprintf (TFile, "!- Skipped CGG_Expand_Expr\n");
+      break;
+    default:
+      do_cgg = 1;
+    }
+  }
+  if (do_cgg) {
+    if (Trace_WhirlToOp) fprintf(TFile, "-> CGG_Expand_Expr\n");
+    result = CGG_Expand_Expr(expr, parent, result, &New_OPs);
+  } else {
+    result = Expand_Expr_local(expr, parent, result);
+  }
+  return result;
+}
+#endif
+#endif
+//}CGG_DEV
