@@ -287,6 +287,8 @@ main()
 		 TOP_spadjust, 
 		 TOP_copy_br, 
 		 TOP_noop, 
+		 TOP_phi, 
+		 TOP_psi, 
 		 TOP_begin_pregtn, 
 		 TOP_end_pregtn, 
 		 TOP_bwd_bar, 

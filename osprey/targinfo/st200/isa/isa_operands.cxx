@@ -500,6 +500,8 @@ main()
   /* ====================================== */ 
   Instruction_Group("O_asm", 
 		 TOP_asm, 
+		 TOP_phi, 
+		 TOP_psi, 
 		 TOP_UNDEFINED); 
 
 
