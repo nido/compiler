@@ -3205,3 +3205,4 @@ Cg_Dwarf_Write_Assembly_From_Symbolic_Relocs (FILE *asm_file,
   free(scn_buffers);
   scn_buffers = 0;
 }
+
