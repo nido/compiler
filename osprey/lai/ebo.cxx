@@ -3562,6 +3562,11 @@ Constant_Created:
 
 #endif
 
+#ifdef TARG_ST
+// [CG]: import dep query from cg
+extern BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg);
+#endif
+
 /* =====================================================================
  *   find_duplicate_mem_op
  *
@@ -3836,12 +3841,21 @@ find_duplicate_mem_op (BB *bb,
         Print_OP_No_SrcLine(pred_op);
       }
 
+#ifdef TARG_ST
+      {
+	{
+	  int definite;
+	  int aliased = get_mem_dep(pred_op, op, &definite, NULL, 0);
+          result = aliased ? POSSIBLY_ALIASED: NOT_ALIASED;
+          result = definite ? SAME_LOCATION: result;
+#else
       result = POSSIBLY_ALIASED;
       if (Alias_Manager != NULL) {
         pred_wn = OP_hoisted(pred_op) ? NULL : Get_WN_From_Memory_OP(pred_op);
         succ_wn = OP_hoisted(op) ? NULL : Get_WN_From_Memory_OP(op);
         if ((pred_wn != NULL) && (succ_wn != NULL)) {
           result = Aliased(Alias_Manager, pred_wn, succ_wn);
+#endif
           if ((!hash_op_matches) && (result == SAME_LOCATION)) {
            /* This also implies that the size of the items is the same. */
             hash_op_matches = TRUE;
@@ -3854,13 +3868,21 @@ find_duplicate_mem_op (BB *bb,
               but we know that they may not be.  This is because if-conversion
               may create something called a "black hole".  It is hard to believe
               that the optimizations we do will be OK in this situation. */
+#ifndef TARG_ST
+	    // [CG]: We never generate unsafe alias information. If we create
+	    // black hole we ensure that we don't have SAME_LOCATION
             if (OP_store(op)) opinfo->op_must_not_be_moved = TRUE;
+#endif
             break;
           }
         }
       }
 
       if ((result == POSSIBLY_ALIASED) && (!hash_op_matches)) {
+	if (EBO_Trace_Hash_Search) {
+	  fprintf(TFile,"%sAlias_Manager identifies POSSIBLY ALIAS\n",
+		  EBO_trace_pfx);    
+	}
  
         if ((intervening_opinfo == NULL) && OP_store(pred_op) && OP_load(op)) {
           intervening_opinfo = opinfo;
