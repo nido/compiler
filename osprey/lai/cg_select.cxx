@@ -499,6 +499,13 @@ Can_Speculate_BB(BB *bb, op_list *stores)
   if (Eager_Level == EAGER_NONE) return FALSE;
 
   FOR_ALL_BB_OPs_FWD(bb, op) {
+    // can't speculate hardware registers.
+    for (INT opndnum = 0; opndnum < OP_results(op); opndnum++) {
+      TN *res = OP_result(op, opndnum);
+      if (TN_is_register(res) && TN_is_global_reg(res) && TN_is_dedicated(res))
+        return FALSE;
+    }
+
     if (! OP_Can_Be_Speculative(op)) {
       if (OP_memory (op) && !OP_volatile(op)) {
 
