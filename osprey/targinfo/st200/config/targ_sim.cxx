@@ -353,6 +353,13 @@ Setup_Parameter_Locations (
   First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) 
 			       & SIM_return_addr_via_int_return_reg);
 
+#ifdef TARG_ST
+  // (cbr) already allocated by fe, but need to be returned in r15.
+  if (TY_mtype(ret_type) == MTYPE_M && TY_return_to_param (ret_type)) {
+    First_Param_In_Return_Reg = TRUE;
+  }
+#endif
+
   if (TY_is_varargs (pu_type)) {
     // find last fixed parameter
     TYLIST_IDX idx = TY_tylist (pu_type);
