@@ -342,6 +342,7 @@ Get_Return_Info (
 
 static INT Current_Int_Param_Num = 0;
 static INT Current_Offset;
+//static INT Current_Formal_Save_Area_Size = 0;
 static BOOL First_Param_In_Return_Reg = FALSE;
 
 /* ====================================================================
@@ -388,6 +389,7 @@ Setup_Parameter_Locations (
 
   Current_Int_Param_Num = 0;
   Current_Offset = 0;
+  //Current_Formal_Save_Area_Size = 0;
 
   return plocNULL;
 } 
@@ -408,26 +410,6 @@ Get_Current_Int_Preg_Num (
     return 0;
   else
     return i;
-}
-
-/* ====================================================================
- *   Get_Preg_Alignment
- *
- *   Pregs list begins on a double word alignment.
- *   Depending on preg it is either 4 or 8 bytes aligned.
- *   If preg is 0 (parm on stack), return alignment 0.
- * ====================================================================
- */
-static inline INT
-Get_Preg_Alignment (
-  PREG_NUM preg
-)
-{
-  if (preg == 0) return 0;
-  
-  if ((preg % 2) == 0) return 4;
-
-  else return 8;
 }
 
 /* ====================================================================
@@ -492,6 +474,7 @@ Get_Parameter_Location (
   }
 #endif
 
+  INT lpad = 0;                 /* padding to left of object */
   INT rpad = 0;			/* padding to right of object */
 
   switch (pmtype) {
@@ -505,8 +488,8 @@ Get_Parameter_Location (
 
       if (Target_Byte_Sex == BIG_ENDIAN) {
 	/* want to right-justify the object */
-	ploc.start_offset += (MTYPE_RegisterSize(SIM_INFO.int_type) -
-			      ploc.size);
+	lpad = MTYPE_RegisterSize(SIM_INFO.int_type) - ploc.size;
+	ploc.start_offset += lpad;
       }
       else {
 	/* Pad to word; leave address alone */
@@ -536,12 +519,15 @@ Get_Parameter_Location (
       // 8-byte boundary, so may skip a slot
       //
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
-      if (Get_Preg_Alignment(ploc.reg) == 4) {
+
+      //if (Get_Preg_Alignment(ploc.reg) == 4) {
+      if ((ploc.start_offset % 8 == 4)) {
 	//
 	// skip one slot if the next still fits the register list
 	//
 	Current_Int_Param_Num++;
-	ploc.start_offset += MTYPE_RegisterSize(SIM_INFO.int_type);
+	lpad = MTYPE_RegisterSize(SIM_INFO.int_type);
+	ploc.start_offset += lpad;
 	ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
       }
 
@@ -619,16 +605,19 @@ Get_Parameter_Location (
 	  rpad = (psize * 4) - ploc.size;
 
 	  // Structures over 4 bytes are aligned on a 8-byte boundary
-	  if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
+	  //if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
+
+	  if (psize > 1 && (ploc.start_offset % 8 == 4)) {
 	    //
 	    // skip one slot if the next still fits the register list
 	    //
 	    Current_Int_Param_Num++;
-	    ploc.start_offset += 4;
+	    lpad = 4;
+	    ploc.start_offset += lpad;
 	    ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
 	  }
 
-	  // takes psize registers:
+	  // takes psize parameter slots:
 	  Current_Int_Param_Num += psize;
 
 	  /* adjust Last_Fixed_Param in varargs case */
@@ -643,16 +632,9 @@ Get_Parameter_Location (
 			   MTYPE_name(pmtype)));
   }
 
+  ploc.lpad = lpad;
+  ploc.rpad = rpad;
   Current_Offset = ploc.start_offset + ploc.size + rpad;
-
-#if 0
-  // Arthur: What is this ?? must be rotating registers ...
-  if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
-    PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
-  else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))
-    PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
-#endif
-
   return ploc;
 } 
 
@@ -686,9 +668,6 @@ Setup_Struct_Parameter_Locations (TY_IDX struct_ty)
 {
     PSTRUCT_struct = ! TY_is_union (struct_ty);
     PSTRUCT_first_call = TRUE;
-#if 0
-    PSTRUCT_hfa = Struct_Is_HFA (struct_ty, No_Simulated, PSTRUCT_hfa_mtype);
-#endif
     PSTRUCT_offset = 0;
     PSTRUCT_size = TY_size (struct_ty);
 }
@@ -705,56 +684,17 @@ Get_Struct_Parameter_Location (PLOC prev)
     INT ireg_size = MTYPE_RegisterSize(SIM_INFO.int_type);
     BOOL	onStack = (prev.reg == 0);
 
-    if (PSTRUCT_first_call)
-	PLOC_offset(next) = PLOC_offset(prev);
-    else
+    if (PSTRUCT_first_call) {
+      PLOC_offset(next) = PLOC_offset(prev);
+    }
+    else {
 	PLOC_offset(next) = PLOC_offset(prev) + PLOC_size(prev);
+    }
 
     if (PSTRUCT_offset >= PSTRUCT_size) {
       PLOC_size(next) = 0;
       return next;
     }
-
-#if 0
-    if (PSTRUCT_struct && PSTRUCT_hfa &&
-	!(Current_Int_Param_Num > Last_Fixed_Param && !SIM_varargs_floats)) {
-
-      if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4) {
-        PLOC_size(next) = TY_size (Be_Type_Tbl (MTYPE_F4));
-        PSTRUCT_offset += TY_size (Be_Type_Tbl (MTYPE_F4));
-      } else {
-        PLOC_size(next) = TY_size (Be_Type_Tbl (MTYPE_F8));
-        PSTRUCT_offset += TY_size (Be_Type_Tbl (MTYPE_F8));
-      }
-      if (onStack) {
-        PLOC_reg(next) = 0;
-        PSTRUCT_first_call = FALSE;
-      } else if (PSTRUCT_first_call) {
-        PSTRUCT_first_call = FALSE;
-        PLOC_reg(next) = PLOC_reg(prev);
-        if (!IS_FLT_PREG(PLOC_reg(next)))
-          PLOC_reg(next) = 0;
-      } else if (IS_FLT_PREG(PLOC_reg(prev))) {
-        PLOC_reg(next) =  PLOC_reg(prev) + PR_skip_value(SIM_INFO.flt_args);
-        if (PLOC_reg(next) > PR_last_reg(SIM_INFO.flt_args)) {
-          if (PSTRUCT_hfa_mtype == MTYPE_F4 || PSTRUCT_hfa_mtype == MTYPE_C4)
-            PLOC_reg(next) = Get_Current_Preg_Num (SIM_INFO.int_args);
-          else
-            PLOC_reg(next) = 0;
-        }
-      } else if (Is_Int_Output_Preg(PLOC_reg(prev))) {
-        PLOC_reg(next) =  PLOC_reg(prev) - PR_skip_value(SIM_INFO.int_args);
-        if (!Is_Int_Output_Preg(PLOC_reg(next)))
-          PLOC_reg(next) = 0;
-      } else if (IS_INT_PREG(PLOC_reg(prev))) {
-        PLOC_reg(next) =  PLOC_reg(prev) + PR_skip_value(SIM_INFO.int_args);
-        if (!IS_INT_PREG(PLOC_reg(next)))
-          PLOC_reg(next) = 0;
-      }
-
-      return next;
-    }
-#endif
 
     PLOC_size(next) = ireg_size;
     PSTRUCT_offset += ireg_size;
