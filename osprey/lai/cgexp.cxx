@@ -67,7 +67,7 @@
 #include "tn.h"
 #include "symtab.h"
 #include "opcode.h"
-#include "lai.h"
+#include "cg.h"
 #include "op.h"
 #include "cgtarget.h"
 #include "cgexp.h"
@@ -294,11 +294,17 @@ Expand_OP (
 	break;
 
     case OPR_MADD:
+      FmtAssert(FALSE, 
+	   ("Expand_OP:  MADD shouldn't have been reached"));
+      break;
+
     case OPR_NMADD:
     case OPR_MSUB:
     case OPR_NMSUB:
     case OPR_RECIP:
     case OPR_RSQRT:
+      FmtAssert(FALSE, 
+	   ("Expand_OP:  unimplemented opcode %s", OPCODE_name(opcode)));
       break;
 
     default:

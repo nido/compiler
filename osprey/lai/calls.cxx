@@ -74,7 +74,7 @@
 #include "tn_map.h"
 
 #include "ttype.h"
-#include "lai.h"
+#include "cg.h"
 #include "calls.h"
 #include "cgexp.h"
 #include "reg_live.h"
@@ -884,7 +884,7 @@ Generate_Unique_Exit (void)
 
   /* Should we generate a unique exit?
    */
-  if (!LAI_unique_exit
+  if (!CG_unique_exit
       || PU_has_region(Get_Current_PU())) /* until we're sure it works with
 					  * regions.
 					  */

@@ -63,7 +63,7 @@
 #include "localize.h"
 #include "register.h"
 #include "bb_set.h"
-#include "lai.h"
+#include "cg.h"
 #include "calls.h"
 #include "cgexp.h"
 #include "cg_region.h"
@@ -1091,7 +1091,7 @@ Localize_or_Replace_Dedicated_TNs(void)
 
       for ( opndnum = 0; opndnum < OP_opnds( op ); opndnum++ ) {
 	tn = OP_opnd( op, opndnum );
-	if ( TN_is_constant(tn) || TN_is_zero_reg(tn) )
+	if ( TN_is_constant(tn) || TN_is_zero_reg(tn))
 	  continue;
 	if ( ! TN_is_dedicated(tn) )
 	  continue;

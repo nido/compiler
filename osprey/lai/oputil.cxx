@@ -77,12 +77,16 @@
 #include "import.h"
 #include "opt_alias_interface.h"        /* for Print_alias_info */
 
-#include "cgir.h"
+#include "cgir.h"                       
+#include "cg.h"                         /* for Alias_Manager */
+#include "register.h"
+#include "cg_dep_graph.h"
+#include "cgprep.h"
+#include "cg_loop.h"
+#include "cgtarget.h"
+
 #include "wn.h"
 #include "whirl2ops.h"
-
-#include "lai.h"                        /* for Alias_Manager */
-#include "cgtarget.h"
 #include "cgexp.h"
 #include "xstats.h"
 #include "tag.h"

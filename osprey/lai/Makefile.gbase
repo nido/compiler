@@ -244,7 +244,9 @@ COMMON_TARG_CG_CXX_SRCS =	\
   register_targ.cxx	\
   tn_targ.cxx		\
   op_targ.cxx		\
-  calls_targ.cxx
+  calls_targ.cxx	\
+			\
+  targ_hb.cxx
 
 LAI_CXX_SRCS = 		\
   $(COMMON_COM_CXX_SRCS)\
@@ -257,13 +259,16 @@ LAI_CXX_SRCS = 		\
   bb_map.cxx		\
   calls.cxx		\
   cflow.cxx		\
+  cg.cxx		\
   cgdriver.cxx		\
+  cgemit.cxx		\
   cgexp.cxx		\
   cgprep.cxx		\
   cg_cflow.cxx		\
   cg_db_op.cxx		\
   cg_dep_graph.cxx	\
   cg_flags.cxx		\
+  cg_flags_arch.cxx	\
   cg_ir.cxx       	\
   cg_loop.cxx		\
   cg_loop_scc.cxx	\
@@ -273,14 +278,18 @@ LAI_CXX_SRCS = 		\
   comment.cxx		\
   dominate.cxx		\
   eh_region.cxx		\
-  emit.cxx		\
   findloops.cxx		\
   freq.cxx		\
   gtn_tn_set.cxx        \
   gtn_universe.cxx      \
   gra_live.cxx		\
+  hb.cxx		\
+  hb_block_select.cxx	\
+  hb_id_candidates.cxx	\
+  hb_if_convert.cxx	\
+  hb_tail_duplication.cxx	\
+  hb_trace.cxx		\
   init.cxx		\
-  lai.cxx		\
   label_util.cxx	\
   localize.cxx		\
   note.cxx		\

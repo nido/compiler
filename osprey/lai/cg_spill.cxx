@@ -71,14 +71,12 @@
 #include "stblock.h"
 #include "st_list.h"
 #include "cgexp.h"
-#include "cg_spill.h"
-/* 
+#include "cg_spill.h" 
 #include "cgprep.h"
 #include "cg_loop.h"
-*/
 #include "data_layout.h"
 
-#include "lai.h"
+#include "cg.h"
 #include "whirl2ops.h"
 
 /* #include "gra.h" */
@@ -422,7 +420,7 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     Set_TN_home(tn, NULL);
   }
 
-  if (   Can_Rematerialize_TN(tn, client) && client != CGSPILL_SWP) {
+  if (Can_Rematerialize_TN(tn, client) && client != CGSPILL_SWP) {
     if (Trace_Remat) {
       #pragma mips_frequency_hint NEVER
       Check_Phase_And_PU();
@@ -439,8 +437,16 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     mem_location = TN_spill(tn);
     if (mem_location == NULL) {
       const char *root;
+      /*
+       * Arthur: I need to use TN_register_class(tn) here, and it
+       *         is target-dependent:
+       */
+      TY_IDX mem_type = CGTARG_Spill_Type(tn);
+      /*
       TY_IDX mem_type = TN_is_float(tn) || TN_is_fcc_register(tn) ? 
 		        Spill_Float_Type : Spill_Int_Type;
+      */
+
       if (client == CGSPILL_GRA) {
 	root = SYM_ROOT_GRA;
       } else if (client == CGSPILL_LGRA) {

@@ -72,8 +72,7 @@
 #include "cg_flags.h"
 #include "cflow.h"	/* for tracing flags */
 #include "annotations.h"
-/*#include "cg.h"	*/	/* for CG_PU_Has_Feedback */
-#include "lai.h"
+#include "cg.h" 	/* for CG_PU_Has_Feedback */
 #include "whirl2ops.h"
 #include "note.h"
 #include "findloops.h"

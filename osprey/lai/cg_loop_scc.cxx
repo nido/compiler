@@ -41,8 +41,7 @@
 #include "stdio.h"
 #include "erglob.h"
 #include "tracing.h"
-/* #include "cg.h" */
-#include "lai.h"
+#include "cg.h"
 #include "cgir.h"
 #include "op_list.h"
 #include "cg_loop_scc_prop.h"

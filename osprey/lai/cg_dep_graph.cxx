@@ -73,8 +73,7 @@
 #include "opt_alias_interface.h"		/* for WOPT alias mgr */
 #include "opt_points_to.h"
 
-/* #include "cg.h" */
-#include "lai.h"
+#include "cg.h"
 #include "cgir.h"
 #include "tn_set.h"
 #include "tn_map.h"

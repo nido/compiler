@@ -71,18 +71,33 @@
 #include "mempool.h"
 
 #include "wn.h"			    /* for WN */
+#include "opt_alias_interface.h"    /* for ALIAS_MANAGER stuff */
 #include "dwarf_DST_mem.h"
 
-#include "lai.h"
-#include "cgtarget.h"
+#include "bb.h"			    /* for cgemit.h */
+#include "cg.h"			    /* CG_Initialize(), etc. */
+#include "cgemit.h"		    /* R_Assemble_File() */
+#include "cg_swp_options.h"         /* for SWP_Options */
+/* #include "gra.h"  */                  /* for GRA_optimize_placement... */
+/* #include "ebo.h"	*/	    /* for EBO options */
+#include "cgprep.h"		    /* for CGPREP knobs */
+#include "cg_dep_graph.h"	    /* for CG_DEP knobs */
+#include "cg_dep_graph_update.h"    /* more CG_DEP knobs */
+/* #include "cio.h"      */              /* for rw, cicse etc ...*/
+#include "cg_loop.h"                /* for unrolling */
+/* #include "cg_loop_recur.h"	*/    /* recurrence fixing */
+#include "cgtarget.h"		    /* target-dependent stuff */
+/* #include "gcm.h"	*/	    /* for GCM options */
+/* #include "cg_sched_est.h"	*/    /* for CG_SCHED_EST options */
+#include "targ_proc_properties.h"
+/* #include "cgdriver_arch.h" */
+#include "cgdriver.h"
 #include "register.h"
-#include "cgexp.h"
-#include "emit.h"               /* LAI emmiter */
+#include "pqs_cg.h"
 
-/*
-MEM_POOL MEM_local_region_pool;	
-MEM_POOL MEM_local_region_nz_pool;
-*/
+extern void Set_File_In_Printsrc(char *);	/* defined in printsrc.c */
+
+extern char *WHIRL_File_Name;
 
 /* ====================================================================
  *
@@ -90,6 +105,14 @@ MEM_POOL MEM_local_region_nz_pool;
  *
  * ====================================================================
  */
+
+/* Output requested: */
+BOOL Assembly =	FALSE;		/* Assembly code */
+BOOL Lai_Code = FALSE;          /* Lai code */
+BOOL Object_Code = FALSE;	/* Object code */
+
+/* Have	the OP_REGCOPY operations been translated? */
+BOOL Regcopies_Translated = FALSE;
 
 
 /* ====================================================================
@@ -136,8 +159,8 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
-/* Generic LAI options. */
-static OPTION_DESC Options_LAI[] = {
+/* Generic CG options. */
+static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_bad_freqs", "",
     0, 0, 0,	&CG_warn_bad_freqs, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "skip_before", "skip_b",
@@ -152,9 +175,18 @@ static OPTION_DESC Options_LAI[] = {
     0, 0, INT32_MAX, &CG_local_skip_after, NULL }, 
   { OVK_INT32,	OV_INTERNAL, TRUE, "local_skip_equal", "local_skip_e",
     0, 0, INT32_MAX, &CG_local_skip_equal, NULL }, 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_hbf", "",
+    0, 0, 0,	&CG_skip_local_hbf, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_loop", "",
     0, 0, 0,	&CG_skip_local_loop, NULL },
-
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_swp", "",
+    0, 0, 0,	&CG_skip_local_swp, NULL },
+  /*
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_ebo", "",
+    0, 0, 0,	&CG_skip_local_ebo, NULL },
+  */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_sched", "",
+    0, 0, 0,	&CG_skip_local_sched, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "optimization_level", "",
     0, 0, MAX_OPT_LEVEL,
                 &CG_opt_level, &cg_opt_level_overridden },
@@ -164,7 +196,7 @@ static OPTION_DESC Options_LAI[] = {
   // CGPREP options.
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "enable_feedback", "",
-    0, 0, 0,	&LAI_enable_feedback, NULL },
+    0, 0, 0,	&CG_enable_feedback, NULL },
 
   // Cross Iteration Loop Optimization options.
 
@@ -247,7 +279,7 @@ static OPTION_DESC Options_LAI[] = {
 
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "unique_exit", "",
-    0, 0, 0,	&LAI_unique_exit, NULL },
+    0, 0, 0,	&CG_unique_exit, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "tail_call", "",
     0, 0, 0,	&CG_tail_call, &CG_tail_call_overridden },
 
@@ -269,6 +301,11 @@ static OPTION_DESC Options_LAI[] = {
   { OVK_NAME,	OV_INTERNAL, TRUE,"sqrt_algorithm", "sqrt",
     0, 0, 0, &EXP_sqrt_algorithm, NULL },
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "localize", "localize",
+    0, 0, 0, &CG_localize_tns, &CG_localize_tns_Set},
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "localize_using_stacked_regs", "localize_using_stack",
+    0, 0, 0, &LOCALIZE_using_stacked_regs, NULL },
+
   // Local Register Allocation (LRA) options.
 
   { OVK_BOOL,	OV_INTERNAL, TRUE,"rematerialize", "remat",
@@ -283,6 +320,87 @@ static OPTION_DESC Options_LAI[] = {
 
   { OVK_BOOL,	OV_INTERNAL, TRUE,"local_scheduler", "local_sched",
     0, 0, 0, &LOCS_Enable_Scheduling, NULL },
+
+  // Hyperblock formation (HB) options.
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_formation", "",
+    0,0,0,      &HB_formation, NULL,
+    "Turn on/off hyperblock formation [Default ON]"
+  },    
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_static_freq_heuristics", "",
+    0,0,0,      &HB_static_freq_heuristics, NULL,
+    "Turn on/off hyperblock formation's use of different heuristics in the presence of static frequency analysis [Default ON]"
+  },    
+  { OVK_INT32,	OV_INTERNAL, TRUE, "hb_max_blocks", "",
+    4, 0, 100,	&HB_max_blocks, NULL,
+    "How many blocks allowed in a hyperblock [Default architecturally dependent]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "hb_min_blocks", "",
+    4, 0, 32,	&HB_min_blocks, NULL,
+    "Minimum blocks allowed in a hyperblock [Default 2]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_tail_duplication", "",
+    0,0,0,      &HB_allow_tail_duplication, NULL, 
+    "Flag to control tail-duplication when forming hyperblocks"
+  },   
+  { OVK_NAME,	OV_INTERNAL, TRUE, "hb_max_sched_growth", "",
+    0, 0, 0,	&HB_max_sched_growth, NULL,
+    "Multiplier for max increase in HB sched height [Default:3.0]"
+  },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"hb_min_path_priority_ratio", "",
+    0, 0, 0,	&HB_min_path_priority_ratio, NULL,
+    "Ratio to control relative size of paths included in hyperblock [Default: .1]"
+  },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"hb_min_priority", "",
+    0, 0, 0,	&HB_min_priority, NULL,
+    "Minimum priority allowed for a hyperblock [Default: .1]"
+  },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"hb_call_hazard_multiplier", "",
+    0, 0, 0,	&HB_call_hazard_multiplier, NULL,
+    "Factor by which to reduce path priority in presence of calls [Default: .25]"
+  },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"hb_memory_hazard_multiplier", "",
+    0, 0, 0,	&HB_memory_hazard_multiplier, NULL,
+    "Factor by which to reduce path priority in presence of unresolvable memory stores [Default: 1.0]"
+  },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"hb_base_probability_contribution", "",
+    0, 0, 0,	&HB_base_probability_contribution, NULL,
+    "Factor to ensure base contribution of path probability to priority [Default: 0.1]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_require_alias", "",
+    0,0,0,      &HB_require_alias, NULL,
+    "Turn on/off requirement that alias information be present for complex hyperblock formation [Default ON]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_complex_non_loop", "",
+    0,0,0,      &HB_complex_non_loop, NULL,
+    "Turn on/off complex hyperblock formation for non-loop regions [Default ON]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_simple_ifc", "",
+    0,0,0,      &HB_simple_ifc, &HB_simple_ifc_set,
+    "Turn on/off simple, always profitable hyperblock formation for non-loop regions [Default ON]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_general_use_pq", "",
+    0,0,0,      &HB_general_use_pq, NULL,
+    "Turn on/off using priority queue when following side paths in general region id for hyperblocks [Default OFF]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_general_from_top", "",
+    0,0,0,      &HB_general_from_top, NULL,
+    "Turn on/off following side paths from top of main path in general region id for hyperblocks [Default OFF]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_exclude_calls", "",
+    0,0,0,      &HB_exclude_calls, NULL,
+    "Disallow blocks with calls during hyperblock formation, temporary workaround before full support for predicate callee-register spilling is included [Default ON]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_exclude_pgtns", "",
+    0,0,0,      &HB_exclude_pgtns, NULL,
+    "Disallow forming hyperblocks if it consists of any global predicate TNs (PGTNS) [Default ON]"
+  },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "hb_skip_hammocks", "",
+    0,0,0,      &HB_skip_hammocks, NULL,
+    "Skip forming hyperblocks on hammocks, cause later pass will do them [Default ON]"
+  },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "loop_force_ifc", "",
+    0, 0, 2,    &CG_LOOP_force_ifc, NULL },
 
   // Emit options:
 
@@ -343,8 +461,8 @@ static OPTION_DESC Options_GRA[] = {
 };
 
 
-OPTION_GROUP LAI_Option_Groups[] = {
-  { "LAI", ':', '=', Options_LAI },
+OPTION_GROUP CG_Option_Groups[] = {
+  { "CG", ':', '=', Options_CG },
   { "GRA", ':', '=', Options_GRA },
   { NULL }		/* List terminator -- must be last */
 };
@@ -352,30 +470,33 @@ OPTION_GROUP LAI_Option_Groups[] = {
 
 /* =======================================================================
  *
- *  Configure_LAI_Options
+ *  Configure_CG_Options
  *
- *  After the comand line has been processed and LAI_opt_level set, configure
- *  the various LAI flags that depend on these two things.
+ *  After the comand line has been processed and CG_opt_level set, configure
+ *  the various CG flags that depend on these two things.
  *  This is also called per PU if the PU opt level changes.
  *
  * =======================================================================
  */
 static void
-Configure_LAI_Options(void)
+Configure_CG_Options(void)
 {
-  CG_localize_tns = (CG_opt_level <= 1);
+  /* Set code generation options -- see	cg.h: */
+
+  if (!CG_localize_tns_Set)
+    CG_localize_tns = (CG_opt_level <= 1);
 
   return;
 }
 
 /* =======================================================================
- *  LAI_Configure_Opt_Level
+ *  CG_Configure_Opt_Level
  *
  *  See interface description.
  * =======================================================================
  */
 void
-LAI_Configure_Opt_Level ( 
+CG_Configure_Opt_Level ( 
   INT opt_level 
 )
 {
@@ -395,7 +516,7 @@ LAI_Configure_Opt_Level (
   if ( ! cg_opt_level_overridden )
     CG_opt_level = opt_level;
 
-  Configure_LAI_Options();
+  Configure_CG_Options();
 }
 
 /* ====================================================================
@@ -449,7 +570,7 @@ Build_Option_String (INT argc, char **argv)
 /* ====================================================================
  *   Process_Command_Line
  *
- *   Process the command line arguments specific to LAI.
+ *   Process the command line arguments specific to CG.
  * ====================================================================
  */
 
@@ -468,7 +589,7 @@ Process_Command_Line (
       cp = argv[i]+1;	    /* Pointer to next flag character */
 
       /* First try to process as command-line option group */
-      if (Process_Command_Line_Group(cp, LAI_Option_Groups))
+      if (Process_Command_Line_Group(cp, CG_Option_Groups))
 	continue;
 
       switch ( *cp++ ) {
@@ -476,6 +597,7 @@ Process_Command_Line (
 	  /* error case already handled by main driver */
 	  switch (*cp) {
 	    case 'L':	            /* Lai file */
+	      Lai_Code = TRUE;
 	      Lai_File_Name = cp + 2;
 	      break;
 	  }
@@ -521,16 +643,16 @@ Prepare_Source (void)
 }
 
 /* ====================================================================
- *   LAI_Process_Command_Line (lai_argc, lai_argv, be_argc, be_argv)
+ *   CG_Process_Command_Line (cg_argc, cg_argv, be_argc, be_argv)
  *
  *   Main entry point and driver for the Code Generator.
  * ====================================================================
  */
 void
-LAI_Process_Command_Line (
-  INT lai_argc, 
-  char **lai_argv, 
-  INT be_argc, 
+CG_Process_Command_Line (
+  INT    cg_argc, 
+  char **cg_argv, 
+  INT    be_argc, 
   char **be_argv
 )
 {
@@ -543,25 +665,25 @@ LAI_Process_Command_Line (
 
   /* Perform preliminary command line processing: */
   Build_Option_String (be_argc, be_argv);
-  Process_Command_Line (lai_argc, lai_argv);
+  Process_Command_Line (cg_argc, cg_argv);
 
-  LAI_Configure_Opt_Level(Opt_Level);
+  CG_Configure_Opt_Level(Opt_Level);
 
   Prepare_Source ();
   return;
-} /* LAI_Process_Command_Line */
+} /* CG_Process_Command_Line */
 
 /* ====================================================================
- *   LAI_Init ()
+ *   CG_Init ()
  *
  *   Initialization that needs to be done after the global symtab is 
  *   read 
  * ====================================================================
  */
 void
-LAI_Init (void)
+CG_Init (void)
 {
-  Set_Error_Phase ( "LAI Emission Initialization" );
+  Set_Error_Phase ( "CG Initialization" );
 
   MEM_POOL_Initialize (&MEM_local_region_pool, "local_region_pool", TRUE);
   MEM_POOL_Initialize (&MEM_local_region_nz_pool, "local_region_nz_pool", FALSE);
@@ -569,39 +691,37 @@ LAI_Init (void)
   REGISTER_Begin();	/* initialize the register package */
   Init_Dedicated_TNs ();
   Mark_Specified_Registers_As_Not_Allocatable ();
-  LAI_Begin_File (Argv0, option_string);
 
-  // Initialize TCON symbolic names table:
-  Init_Tcon_Info ();
+  // These are for the .lai processing:
+  EMT_Begin_File (Argv0, option_string);
+
+  /* this has to be done after LNO has been loaded to grep
+   * prefetch_ahead fromn LNO */
+  //    Configure_prefetch_ahead();
 
   return;
 }
 
 /* ====================================================================
- *   LAI_Fini ()
+ *   CG_Fini ()
  *
  *   Terimination routines for cg 
  * ====================================================================
  */
 void
-LAI_Fini (void)
+CG_Fini (void)
 {
   /* List global symbols if desired: */
   if (List_Symbols) {
     Print_global_symtab (Lst_File);
   }
 
-  Set_Error_Phase ( "LAI Emit" );
-
+  Set_Error_Phase ( "Codegen Emit" );
   /* Finish off the relocatable object file: */
-  LAI_End_File();
-
-  // Finish off the TCON to symbolic names table:
-  Fini_Tcon_Info ();
+  EMT_End_File();
 
   MEM_POOL_Delete (&MEM_local_region_pool);
   MEM_POOL_Delete (&MEM_local_region_nz_pool);
 
   return;
 } 
-

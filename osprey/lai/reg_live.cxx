@@ -60,14 +60,16 @@
 #include "timing.h"
 #include "cgir.h"
 #include "pu_info.h"
+#include "cg.h"
+#include "cg_flags.h"
 #include "ttype.h"
 #include "targ_sim.h"
 #include "bb_set.h"
 #include "freq.h"
-#include "lai.h"
 #include "cgtarget.h"
 #include "whirl2ops.h"
-/* #include "dominate.h" */
+#include "dominate.h"
+#include "findloops.h"
 /* #include "cg_vector.h" */
 #include "gtn_universe.h"
 #include "gtn_set.h"

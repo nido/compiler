@@ -78,13 +78,11 @@
 #include "region_util.h"
 #include "cg_region.h"
 #include "cg_flags.h"
-#include "tn_map.h"
-/* 
+#include "tn_map.h" 
 #include "cg.h"
+/*
 #include "cg_internal.h"
 */
-#include "lai.h"
-
 #include "whirl2ops.h"
 #include "reg_live.h"
 
@@ -2302,7 +2300,6 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
       else if (TN_is_global_reg(tn) &&
 	       !TN_is_const_reg(tn) &&
 	       !GTN_SET_MemberP(BB_live_out(bb), tn)) {
-
         // rename GTN to new local TN between op and end of bb.
 	Rename_TN_In_Range (tn, op, NULL);
 
@@ -2356,3 +2353,4 @@ void GRA_LIVE_Rename_TNs (void)
 
   MEM_POOL_Pop (&MEM_local_pool);
 }
+

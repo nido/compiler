@@ -38,9 +38,9 @@
 #include "erglob.h"
 #include "mempool.h"
 #include "bb.h"
-#include "freq.h"
-#include "lai.h"
 #include "cgtarget.h"
+#include "freq.h"
+#include "cg.h"
 
 /* Since sizeof(BBLIST) is 12, 670*12 = 8040, which is just under 8K. */ 
 #define BBLISTS_PER_BLOCK 670

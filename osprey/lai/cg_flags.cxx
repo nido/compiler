@@ -61,8 +61,15 @@ INT32 CG_skip_equal = -1;
 INT32 CG_local_skip_after = INT32_MAX;
 INT32 CG_local_skip_before = 0;
 INT32 CG_local_skip_equal = -1;
+BOOL CG_skip_local_hbf = FALSE;
 BOOL CG_skip_local_loop = FALSE;
-INT   CG_opt_level;
+BOOL CG_skip_local_sched = FALSE;
+BOOL CG_skip_local_swp = FALSE;
+INT  CG_opt_level;
+BOOL CG_localize_tns;
+BOOL CG_localize_tns_Set = FALSE;
+BOOL LOCALIZE_using_stacked_regs = TRUE;
+BOOL CG_unique_exit = TRUE;
 
 BOOL FREQ_enable = TRUE;
 BOOL FREQ_view_cfg = FALSE;
@@ -91,11 +98,9 @@ INT32 CG_branch_mispredict_penalty= -1;		/* means not set */
 INT32 CG_branch_mispredict_factor= -1;		/* means not set */
 
 BOOL CG_warn_bad_freqs = FALSE;
-BOOL CG_localize_tns;
-BOOL CG_enable_loop_optimizations = FALSE;
-BOOL LAI_enable_feedback = FALSE;
+BOOL CG_enable_loop_optimizations = TRUE;
+BOOL CG_enable_feedback = FALSE;
 BOOL CG_tail_call = FALSE;
-BOOL LAI_unique_exit = TRUE;
 BOOL CG_enable_reverse_if_conversion = TRUE;
 BOOL CG_enable_reverse_if_conversion_overridden = FALSE;
 
@@ -125,6 +130,27 @@ BOOL LOCS_Enable_Scheduling = TRUE;
 
 BOOL GRA_redo_liveness = FALSE;
 BOOL GRA_recalc_liveness = FALSE;
+
+BOOL  HB_formation = TRUE;
+BOOL  HB_static_freq_heuristics = TRUE;
+INT   HB_max_blocks = 20;
+const char* HB_max_sched_growth = "4.1";
+const char* HB_min_path_priority_ratio = "0.05";
+const char* HB_min_priority = "0.002";
+const char* HB_call_hazard_multiplier = "0.25";
+const char* HB_memory_hazard_multiplier = "1.0";
+const char* HB_base_probability_contribution = "0.1";
+BOOL  HB_require_alias = TRUE;
+BOOL  HB_loops = FALSE;
+BOOL  HB_general_use_pq = FALSE;
+BOOL  HB_general_from_top = FALSE;
+BOOL  HB_allow_tail_duplication = FALSE;
+BOOL  HB_exclude_calls = FALSE;
+BOOL  HB_exclude_pgtns = TRUE;	// until bugs fixed
+BOOL  HB_skip_hammocks = TRUE;	// until bugs fixed
+BOOL  HB_simple_ifc = TRUE;
+BOOL  HB_simple_ifc_set = FALSE;
+INT   HB_min_blocks = 2;
 
 BOOL GRA_LIVE_Phase_Invoked = FALSE;
 BOOL  GRA_LIVE_Predicate_Aware = FALSE;

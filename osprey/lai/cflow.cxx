@@ -68,11 +68,10 @@
 #include "strtab.h"
 #include "config_asm.h"
 #include "cgir.h"
-/*
 #include "cg.h"
+/*
 #include "cg_internal.h"
 */
-#include "lai.h"
 #include "cgtarget.h"
 #include "bb_map.h"
 #include "gra_live.h"

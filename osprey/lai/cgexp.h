@@ -74,6 +74,9 @@
 #include "symtab.h"
 #include "tcon_util.h"
 
+#include "variants.h"
+#include "cgtarget.h"
+
 extern BOOL Trace_Exp;
 
 /* ----------------------------------------------------------------------
@@ -141,7 +144,7 @@ extern TN * Exp_Intrinsic_Call (
   LABEL_IDX *label, OPS *loop_ops);
 
 /* expand intrinsic op */
-extern void Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, OPS *ops);
+extern void Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op2, OPS *ops);
 
 /* Expand TN(const) into a sequence of ops (used in prolog)
  */
@@ -214,6 +217,14 @@ extern void Exp_Noop (OPS *ops);
 
 /* build spadjust op */
 extern void Exp_Spadjust (TN *dest, TN *size, VARIANT variant, OPS *ops);
+
+/* 
+ *  Generate a generic 2-result predicate operation.
+ *  COMPARE_type_or sets result1 and result2 true if qual_pred is true
+ *  COMPARE_type_and sets result1 and result2 false if qual_pred is true
+ */
+extern void Exp_Generic_Pred_Calc(TN* result1, TN *result2, COMPARE_TYPE ctype,
+				  TN *qual_pred, OPS *ops);
 
 /*
  * Used by if conversion. See expand.cxx for details.

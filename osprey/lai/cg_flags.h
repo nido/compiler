@@ -160,12 +160,11 @@
  * =======================================================================
  */
 
-#ifndef lai_flags_INCLUDED
-#define lai_flags_INCLUDED
+#ifndef cg_flags_INCLUDED
+#define cg_flags_INCLUDED
 
 
 extern BOOL CG_warn_bad_freqs;
-extern BOOL CG_localize_tns;
 
 extern INT32 CG_skip_after;
 extern INT32 CG_skip_before;
@@ -173,8 +172,15 @@ extern INT32 CG_skip_equal;
 extern INT32 CG_local_skip_after;
 extern INT32 CG_local_skip_before;
 extern INT32 CG_local_skip_equal;
+extern BOOL CG_skip_local_hbf;
 extern BOOL CG_skip_local_loop;
+extern BOOL CG_skip_local_sched;
+extern BOOL CG_skip_local_swp;
 extern INT CG_opt_level;
+extern BOOL CG_localize_tns;
+extern BOOL CG_localize_tns_Set;
+extern BOOL LOCALIZE_using_stacked_regs;
+extern BOOL CG_unique_exit;
 
 extern BOOL CG_enable_loop_optimizations;
 extern BOOL CG_enable_reverse_if_conversion;
@@ -202,10 +208,9 @@ extern UINT32 CFLOW_clone_max_incr;
 extern UINT32 CFLOW_clone_min_incr;
 extern const char *CFLOW_cold_threshold;
 
-extern BOOL LAI_enable_feedback;
+extern BOOL CG_enable_feedback;
 
 extern BOOL CG_tail_call;
-extern BOOL LAI_unique_exit;
 
 /* FREQ: */
 extern BOOL FREQ_enable;
@@ -248,6 +253,30 @@ extern BOOL LOCS_Enable_Scheduling;
 extern BOOL GRA_redo_liveness;
 extern BOOL GRA_recalc_liveness;
 
+/* HB: */
+extern BOOL  HB_formation;
+extern BOOL  HB_static_freq_heuristics;
+extern const char* HB_call_hazard_multiplier;
+extern const char* HB_memory_hazard_multiplier;
+extern const char* HB_min_path_priority_ratio;
+extern const char* HB_base_probability_contribution;
+extern INT   HB_max_blocks;
+extern const char* HB_min_priority;
+extern const char* HB_max_sched_growth;
+extern BOOL  HB_require_alias;
+extern BOOL  HB_loops;
+extern BOOL  HB_loops_with_exits;
+extern BOOL  HB_complex_non_loop;
+extern BOOL  HB_simple_ifc;
+extern BOOL  HB_simple_ifc_set;
+extern BOOL  HB_general_use_pq;
+extern BOOL  HB_general_from_top;
+extern INT   HB_min_blocks;
+extern BOOL  HB_allow_tail_duplication;
+extern BOOL  HB_exclude_calls;
+extern BOOL  HB_exclude_pgtns;
+extern BOOL  HB_skip_hammocks;
+
 /* GRA_LIVE: */
 extern BOOL GRA_LIVE_Phase_Invoked;
 extern BOOL  GRA_LIVE_Predicate_Aware;
@@ -275,7 +304,7 @@ extern BOOL LAI_emit_stack_frame;
  */
 #define LAI_EXPAND    1
 
-#endif /* lai_flags_INCLUDED */
+#endif /* cg_flags_INCLUDED */
 
 
 

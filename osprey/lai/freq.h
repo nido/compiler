@@ -141,4 +141,6 @@ extern void FREQ_Incorporate_Feedback(const WN* entry);
 
 extern void FREQ_View_CFG(const char *status);
 
+extern BOOL FREQ_Verify(const char *caller);
+
 #endif /* FREQ_INCLUDED */
