@@ -638,6 +638,8 @@ main()
   /* ====================================== */ 
   prefetch = ISA_Property_Create ("prefetch"); 
   Instruction_Group (prefetch, 
+		 TOP_pft_i, 
+		 TOP_pft_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
