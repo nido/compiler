@@ -36,7 +36,11 @@
 #include "defs.h"
 #include "errors.h"
 #include "config.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "ti_init.h"
 
 /* ====================================================================
@@ -44,7 +48,7 @@
  * ====================================================================
  */
 
-void 
+BE_EXPORTED void*
 Initialize_Targ_Info (void)
 {
   ABI_PROPERTIES_ABI abi;
@@ -75,8 +79,6 @@ Initialize_Targ_Info (void)
     FmtAssert(FALSE, ("targinfo doesn't handle target: %s\n", Targ_Name(Target)));
   }
 
-  TI_Initialize(abi, isa, proc, Targ_Path);
-
-  return;
+  return TI_Initialize(abi, isa, proc, Targ_Path);
 }
 
