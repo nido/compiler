@@ -208,12 +208,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       FOR_ALL_BB_STLLIST_ITEMS_FWD(HB_list, hbi) {
 #if defined(TARG_ST)
 	if (CG_enable_LAO) {
-#if 0	//BD3
-	  // Call the LAO for all the hyperblocks.
-	  unsigned lao_flags = 0;
-	  if (CG_LAO_schedule > 0) lao_flags |= LAO_ScheduleSuper;
-	  lao_optimize_HB(*hbi, lao_flags);
-#endif	//BD3
+	  lao_optimize_HB(*hbi, /*Optimization_Prepass*/ 0x8);
 	}
 	else
 #endif

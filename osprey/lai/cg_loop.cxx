@@ -141,9 +141,9 @@
 #include "whirl2ops.h"
 
 #include "cg.h"
-#include "register.h" 	/* needed for "gra.h" */
-#include "tn_set.h" 	/* needed for "gra.h" */
-#include "gra.h" 
+#include "register.h"	/* needed for "gra.h" */
+#include "tn_set.h"	/* needed for "gra.h" */
+#include "gra.h"
 #include "gra_live.h"
 #include "bb_set.h"
 #include "gtn_universe.h"
@@ -160,7 +160,7 @@
 #include "ti_res_count.h"
 #include "cg_loop_scc.h"
 #include "cg_loop_recur.h"
-#include "cg_loop_mii.h" 
+#include "cg_loop_mii.h"
 #include "freq.h"
 #include "cg_region.h"
 #include "cg_sched_est.h"
@@ -172,10 +172,6 @@
 #include "ebo.h"
 #include "hb.h"
 #include "gra_live.h"
-
-#if defined(TARG_ST)
-#include "lao_stub.h"
-#endif
 
 /* Error tolerance for feedback-based frequency info */
 #define FB_TOL 0.05
@@ -317,7 +313,7 @@ static BOOL Negate_Branch(OP *br)
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
-      TN *pred = OP_opnd(br, OP_PREDICATE_OPND);
+      TN *pred = OP_opnd(br,OP_PREDICATE_OPND);
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (neg_tn == True_TN) {
@@ -5103,14 +5099,9 @@ Gen_Counted_Loop_Branch(
   }
 }
 
-/* ====================================================================
- *   Fix_Backpatches
- *
- *   Fix backpatches.  Some backpatches are obsoleted because
- *   EBO and other optimizations has deleted the def and uses
- *
- * ====================================================================
- */
+//  Fix backpatches.  Some backpatches are obsoleted because
+//  EBO and other optimizations has deleted the def and uses
+//
 void Fix_Backpatches(CG_LOOP& cl, bool trace)
 {
   vector<pair<BB*, CG_LOOP_BACKPATCH *> > dead_bp;
@@ -5156,8 +5147,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     SINGLE_BB_DOLOOP_UNROLL,
     SINGLE_BB_WHILELOOP_SWP,
     SINGLE_BB_WHILELOOP_UNROLL,
-    MULTI_BB_DOLOOP,
-    MULTI_BB_WHILELOOP
+    MULTI_BB_DOLOOP
   };
 
   //    if (Is_Inner_Loop(loop)) {
@@ -5213,15 +5203,9 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
   } else if (has_trip_count) {
     action = MULTI_BB_DOLOOP;
-#ifdef TARG_ST
-  } else {
-    action = MULTI_BB_WHILELOOP;
-  }
-#else
   } else {
     action = NO_LOOP_OPT;
   }
-#endif
 
   switch (action) {
 
@@ -5285,7 +5269,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	CG_LOOP_Trace_Loop(loop, "*** before ebo 1 and unrolling / after fix recurrences ***");
 
       cg_loop.Recompute_Liveness();
-      cg_loop.EBO_Before_Unrolling();
+      cg_loop.EBO_Before_Unrolling();  
 
       if (SWP_Options.Predicate_Promotion) {
 	list<BB*> bbl;
@@ -5334,19 +5318,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 
-#if defined(TARG_ST)
-      if (CG_enable_LAO) {
-#if 0	//BD3
-	if (trace_loop_opt) 
-	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind ***");
-	if (CG_LAO_pipeline > 0) lao_flags |= LAO_LoopPipeline;
-	if (CG_LAO_pipeline > 1) lao_flags |= LAO_LoopUnwind;
-	if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	  cg_loop.Recompute_Liveness();
-	}
-#endif	//BD3
-      }
-#else
+#ifndef TARG_ST
       if (!Perform_SWP(cg_loop, fixup, true /*doloop*/)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
 	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
@@ -5402,18 +5374,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.EBO_After_Unrolling();
 
-#if defined(TARG_ST)
-      if (CG_enable_LAO) {
-#if 0	//BD3
-	if (trace_loop_opt) 
-	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
-	unsigned lao_flags = LAO_LoopSchedule;
-	if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	  cg_loop.Recompute_Liveness();
-	}
-#endif	//BD3
-      }
-#endif
       break;
     }
 
@@ -5468,22 +5428,8 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	  cg_loop.Recompute_Liveness();
 	}
-      }
-#else
-      }
-      if (CG_enable_LAO) {
-#if 0	//BD3
-	if (trace_loop_opt) 
-	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopPipeline + LAO_LoopUnwind ***");
-	unsigned lao_flags = LAO_LoopSchedule;
-	if (CG_LAO_pipeline > 0) lao_flags |= LAO_LoopPipeline;
-	if (CG_LAO_pipeline > 1) lao_flags |= LAO_LoopUnwind;
-	if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	  cg_loop.Recompute_Liveness();
-	}
-#endif	//BD3
-      }
 #endif
+      }
     }
     break;
 
@@ -5492,39 +5438,14 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     {
       CG_LOOP cg_loop(loop);
 
-      //      if (!cg_loop.Has_prolog_epilog())
-      //	return FALSE;
-
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
-#if 0
-      if (Remove_Non_Definite_Dependence(cg_loop, false, trace_loop_opt)) {
-	Perform_Read_Write_Removal(loop);
-	Fix_Recurrences_Before_Unrolling(cg_loop);
-      }
-#endif
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
-
-      //      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
-
       cg_loop.EBO_After_Unrolling();
-
-#if defined(TARG_ST)
-      if (CG_enable_LAO) {
-#if 0	//BD3
-	if (trace_loop_opt) 
-	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
-	unsigned lao_flags = LAO_LoopSchedule;
-	if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	  cg_loop.Recompute_Liveness();
-	}
-#endif	//BD3
-      }
-#endif
 
     }
     break;
@@ -5543,54 +5464,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       Gen_Counted_Loop_Branch(cg_loop);
 
-#if defined(TARG_ST)
-      if (CG_enable_LAO) {
-#if 0	//BD3
-	if (trace_loop_opt) 
-	  CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule + LAO_LoopUnwind ***");
-	unsigned lao_flags = LAO_LoopSchedule;
-	if (CG_LAO_pipeline > 1) lao_flags |= LAO_LoopUnwind;
-	if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	  cg_loop.Recompute_Liveness();
-	}
-#endif	//BD3
-      }
-#endif
-
       if (trace_loop_opt) {
 	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_DOLOOP ***");
       }
     }
     break;
-
-#ifdef TARG_ST
-  case MULTI_BB_WHILELOOP:
-    if (CG_enable_LAO) {
-#if 0	//BD3
-      CG_LOOP cg_loop(loop);
-      // Prolog and Epilog are needed for cg_loop.Recompute_Liveness()
-      if (!cg_loop.Has_prolog_epilog()) return FALSE;
-
-      if (trace_loop_opt) {
-	CG_LOOP_Trace_Loop(loop, "*** Before MULTI_BB_WHILELOOP ***");
-      }
-
-      if (trace_loop_opt) 
-	CG_LOOP_Trace_Loop(loop, "*** Before LAO_LoopSchedule ***");
-      unsigned lao_flags = LAO_LoopSchedule;
-      if (lao_optimize_LOOP(&cg_loop, lao_flags)) {
-	cg_loop.Recompute_Liveness();
-      }
-
-      if (trace_loop_opt) {
-	CG_LOOP_Trace_Loop(loop, "*** After MULTI_BB_WHILELOOP ***");
-      }
-
-      break;
-#endif	//BD3
-    }
-    // FALLTHROUGH ...
-#endif
 
   case NO_LOOP_OPT:
     return FALSE;
