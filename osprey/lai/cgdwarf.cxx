@@ -2213,18 +2213,20 @@ Cg_Dwarf_Add_Line_Entry (
       include_idx = file_table[file_idx].incl_index;
       if ( ! incl_table[include_idx].already_processed) {
 	// new include
-#ifndef TARG_ST200
+#ifdef TARG_ST200
+	if (CG_emit_asm_dwarf) {
+#else
 	if (Object_Code) {
 #endif
 	  Em_Dwarf_Add_Include (include_idx, 
 				incl_table[include_idx].path_name);
-#ifndef TARG_ST200
 	}
-#endif
 	incl_table[include_idx].already_processed = TRUE;
       }
 
-#ifndef TARG_ST200
+#ifdef TARG_ST200
+	if (CG_emit_asm_dwarf) {
+#else
       if (Object_Code) {
 #endif
 	Em_Dwarf_Add_File (file_idx, 
@@ -2232,9 +2234,7 @@ Cg_Dwarf_Add_Line_Entry (
 			   include_idx,
 			   file_table[file_idx].mod_time,
 			   file_table[file_idx].file_size);
-#ifndef TARG_ST200
       }
-#endif
       file_table[file_idx].already_processed = TRUE;
 #ifndef linux
       // for irix, only need .file when new file,
@@ -2262,13 +2262,13 @@ Cg_Dwarf_Add_Line_Entry (
 
 
   // now do line number:
-#ifndef TARG_ST200
+#ifdef TARG_ST200
+  if (CG_emit_asm_dwarf) {
+#else
   if (Object_Code) {
 #endif
     Em_Dwarf_Add_Line_Entry (code_address, srcpos);
-#ifndef TARG_ST200
   }
-#endif
 
   if (Assembly) {
     CGEMIT_Prn_Line_Dir_In_Asm(usrcpos);
