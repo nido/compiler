@@ -539,7 +539,7 @@ TARGET_SO =
 endif
 # windows dll import library
 ifeq ($(DSO_MODE),DLL)
-TARGET_SO = st220_dll.a 
+TARGET_SO =
 endif
 # static library
 ifeq ($(DSO_MODE),STATIC)
@@ -596,10 +596,8 @@ CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
 LLDLIBS += $(CGDEPLIBS)
 endif
 
-ifneq ($(DSO_MODE),DLL)
-LLDLIBS += $(TARG_TARG_INFO_DIR)/libtarginfo.a
-endif
 
+LLDLIBS += $(TARG_TARG_INFO_DIR)/libtarginfo.a
 
 ifneq ($(HOST_OS),CYGWIN_NT)
 # all we need is provided by libcygwin
@@ -692,9 +690,6 @@ endif
 
 
 LINK_DSOS = $(BE_DSO) $(TARGET_SO)
-ifeq ($(DSO_MODE),DLL)
-LINK_DSOS += $(WOPT_SO)
-endif
 
 ##
 ## Shared library

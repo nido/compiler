@@ -935,7 +935,7 @@ st220.so: st220.o ti_si.o
 #
 # windows dll (+ import library)
 #
-st220.dll st220_dll.a : st220.o st220_DllMain.o $(LIBTARGINFO_OBJS)
+st220.dll st220_dll.a : st220.o  ti_si.o st220_DllMain.o 
 	$(CC) --shared -o st220.dll -Wl,--out-implib,st220_dll.a \
 	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
 
