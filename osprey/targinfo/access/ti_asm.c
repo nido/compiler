@@ -40,7 +40,10 @@ static const char rcs_id[] = "$Source$ $Revision$";
 
 #include <stdio.h>
 #include <assert.h>
+
+#ifndef __MINGW32__
 #include <strings.h>
+#endif
 
 #include "topcode.h"
 #include "targ_isa_operands.h"
