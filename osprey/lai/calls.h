@@ -124,7 +124,7 @@ extern PREG_NUM Return_Float_Preg[2];
 /* regs that need to be saved at prolog and restored at epilog. */
 extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
 /* register save mask size */
-extern INT CGTARG_Callee_Saved_Regs_Mask_Size (void);
+extern INT EETARG_Callee_Saved_Regs_Mask_Size (void);
 #endif
 
 /* assign a special preg to each CALLEE_tn.  also ra, and gp */
