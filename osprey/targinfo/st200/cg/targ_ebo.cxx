@@ -2967,15 +2967,8 @@ Is_16_Bits (
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
   }
 
-  if (OP_code(op) == TOP_zxth_r) {
-    *ret = OP_opnd(op,0);
-    *ret_tninfo = opinfo->actual_opnd[0];
-    *sign_ext = ZERO_EXT;
-    *hilo = TN_LO_16;
-    if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
-  }
-
-  if (OP_code(op) == TOP_and_ii && TN_value(OP_opnd(op,1)) == 65535) {
+  if (OP_code(op) == TOP_zxth_r ||
+      (OP_code(op) == TOP_and_ii && TN_value(OP_opnd(op,1)) == 65535)) {
     *ret = OP_opnd(op,0);
     *ret_tninfo = opinfo->actual_opnd[0];
     *sign_ext = ZERO_EXT;
@@ -3184,6 +3177,11 @@ add_mul_sequence (
       )
     return FALSE;
 
+#if 0
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile, "Possible 32x32 mul\n");
+#endif
+
   // We've just found a 32x32 MPY. Try to strength-reduce its
   // operands, eg. 32x16, etc.
   TN *l2_tn0;
@@ -3202,10 +3200,15 @@ add_mul_sequence (
   TN *tn1;
   EBO_TN_INFO *tninfo0;
   EBO_TN_INFO *tninfo1;
-  BITS_POS hilo0;
-  BITS_POS hilo1;
-  SIGNDNESS signed0;
-  SIGNDNESS signed1;
+
+  TN *tmp_tn0;
+  TN *tmp_tn1;
+  EBO_TN_INFO *tmp_tninfo0;
+  EBO_TN_INFO *tmp_tninfo1;
+  BITS_POS tmp_hilo0;
+  BITS_POS tmp_hilo1;
+  SIGNDNESS tmp_signed0;
+  SIGNDNESS tmp_signed1;
 
   //
   // Process operand 0:
@@ -3215,17 +3218,17 @@ add_mul_sequence (
   tninfo0 = l2_opinfo0->actual_opnd[0];
   tninfo1 = l2_opinfo1->actual_opnd[0];
 
-  if (Is_16_Bits(tninfo0, bb, &tn0, &tninfo0, &hilo0, &signed0)) {
+  if (Is_16_Bits(tninfo0, bb, &tmp_tn0, &tmp_tninfo0, &tmp_hilo0, &tmp_signed0)) {
     //
     // See if the l2_op1 corresponds:
     //
-    if (Is_16_Bits(tninfo1, bb, &tn1, &tninfo1, &hilo1, &signed1)) {
-      if (tn0 == tn1 && hilo0 == hilo1 && signed0 == signed1) {
+    if (Is_16_Bits(tninfo1, bb, &tmp_tn1, &tmp_tninfo1, &tmp_hilo1, &tmp_signed1)) {
+      if (tmp_tn0 == tmp_tn1 && tmp_hilo0 == tmp_hilo1 && tmp_signed0 == tmp_signed1) {
 	reduce_tn0 = TRUE;
-	l2_tn0 = tn0;
-	l2_tninfo0 = tninfo0;
-	l2_hilo0 = hilo0;
-	l2_signed0 = signed0;
+	l2_tn0 = tmp_tn0;
+	l2_tninfo0 = tmp_tninfo0;
+	l2_hilo0 = tmp_hilo0;
+	l2_signed0 = tmp_signed0;
       }
     }
   }
@@ -3233,11 +3236,10 @@ add_mul_sequence (
   // If tn0 can not be strength reduced, make sure it is the same
   // operand for both, l2_op0 and l2_op1
   if (!reduce_tn0) {
-    if (tn0 != tn1)
-      return FALSE;
+    if (tn0 != tn1) return FALSE;
 
-    l2_tn0 = OP_opnd(l2_op0,0);
-    l2_tninfo0 = l2_opinfo0->actual_opnd[0];
+    l2_tn0 = tn0;
+    l2_tninfo0 = tninfo0;
     l2_hilo0 = TN_32_BITS;
     l2_signed0 = SIGN_UNKNOWN;
   }
@@ -3250,17 +3252,17 @@ add_mul_sequence (
   tninfo0 = l2_opinfo0->actual_opnd[1];
   tninfo1 = l2_opinfo1->actual_opnd[1];
 
-  if (Is_16_Bits(tninfo0, bb, &tn0, &tninfo0, &hilo0, &signed0)) {
+  if (Is_16_Bits(tninfo0, bb, &tmp_tn0, &tmp_tninfo0, &tmp_hilo0, &tmp_signed0)) {
     //
     // See if the l2_op1 corresponds:
     //
-    if (Is_16_Bits(tninfo1, bb, &tn1, &tninfo1, &hilo1, &signed1)) {
-      if (tn0 == tn1 && hilo0 == hilo1 && signed0 == signed1) {
+    if (Is_16_Bits(tninfo1, bb, &tmp_tn1, &tmp_tninfo1, &tmp_hilo1, &tmp_signed1)) {
+      if (tmp_tn0 == tmp_tn1 && tmp_hilo0 == tmp_hilo1 && tmp_signed0 == tmp_signed1) {
 	reduce_tn1 = TRUE;
-	l2_tn1 = tn0;
-	l2_tninfo1 = tninfo0;
-	l2_hilo1 = hilo0;
-	l2_signed1 = signed0;
+	l2_tn1 = tmp_tn0;
+	l2_tninfo1 = tmp_tninfo0;
+	l2_hilo1 = tmp_hilo0;
+	l2_signed1 = tmp_signed0;
       }
     }
   }
@@ -3270,15 +3272,18 @@ add_mul_sequence (
   if (!reduce_tn1) {
     if (tn0 != tn1) return FALSE;
 
-    l2_tn1 = OP_opnd(l2_op0,1);
-    l2_tninfo1 = l2_opinfo0->actual_opnd[1];
+    l2_tn1 = tn0;
+    l2_tninfo1 = tninfo0;
     l2_hilo1 = TN_32_BITS;
     l2_signed1 = SIGN_UNKNOWN;
   }
 
   // Continue if any of the operands is being strength reduced
-  if (!reduce_tn0 && !reduce_tn1)
+  if (!reduce_tn0 && !reduce_tn1) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile, "No stength reduction for 32x32 mul\n");
     return FALSE;
+  }
 
   // Before looking for a possible strength reduction, check if
   // the l2_tn1 is a 32 bit quantity. Since there are no TOP
@@ -3313,8 +3318,19 @@ add_mul_sequence (
   if (new_opcode != TOP_UNDEFINED && TN_is_constant(l2_tn1))
     new_opcode = get_immediate_mul_opcode(new_opcode, TN_value(l2_tn1));
 
-  if (new_opcode == TOP_UNDEFINED)
+  if (new_opcode == TOP_UNDEFINED) {
+    if (EBO_Trace_Optimization)
+      fprintf(TFile, "No opcode for stength reduction\n");
     return FALSE;
+  }
+
+  // [CG]: Check redefinitions
+  if (!EBO_tn_available (bb, l2_tninfo0) ||
+      !EBO_tn_available (bb, l2_tninfo1)) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Convert add-mul sequence stopped due to redefinition\n");
+    return FALSE;
+  }
 
   //
   // Now, we have :
@@ -3553,6 +3569,14 @@ mul_32_16_sequence (
   if (new_opcode == TOP_UNDEFINED)
     return FALSE;
 
+  // [CG]: Check redefinitions
+  if (!EBO_tn_available (bb, tninfo0) ||
+      !EBO_tn_available (bb, tninfo1)) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Convert 32x16 sequence stopped due to redefinition\n");
+    return FALSE;
+  }
+
   // Replace the current instruction:
   OP *new_op;
   new_op = Mk_OP(new_opcode, res, tn0, tn1);
@@ -3744,6 +3768,11 @@ mul_fix_operands (
   SIGNDNESS top_signed0;
   SIGNDNESS top_signed1;
 
+  TN *tmp_tn;
+  EBO_TN_INFO *tmp_tninfo;
+  BITS_POS tmp_hilo;
+  SIGNDNESS tmp_signed;
+
   TOP new_opcode = TOP_UNDEFINED;
   TOP new_opcode0 = TOP_UNDEFINED;
   TOP new_opcode1 = TOP_UNDEFINED;
@@ -3767,18 +3796,22 @@ mul_fix_operands (
 
   /* Process first operand. */
   if (top_hilo0 == TN_LO_16) {
-    if (Is_16_Bits(opnd_tninfo[0], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
-	(new_hilo == TN_LO_16 || new_hilo == TN_HI_16) &&
-	new_signed != SIGN_UNKNOWN) {
-      new_hilo = new_hilo;
+    if (Is_16_Bits(opnd_tninfo[0], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+	(tmp_hilo == TN_LO_16 || tmp_hilo == TN_HI_16) &&
+	tmp_signed != SIGN_UNKNOWN) {
+      new_tn = tmp_tn;
+      new_tninfo = tmp_tninfo;
+      new_hilo = tmp_hilo;
       new_signed = top_signed0;
       // Determine new opcode
       new_opcode0 = get_mul_opcode(new_signed, new_hilo,
 				   top_signed1, top_hilo1);
     }
   } else if (top_hilo0 == TN_HI_16) {
-    if (Is_16_Bits(opnd_tninfo[0], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
+    if (Is_16_Bits(opnd_tninfo[0], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
 	new_hilo == TN_LO_16 && new_signed == SIGN_UNKNOWN) {
+      new_tn = tmp_tn;
+      new_tninfo = tmp_tninfo;
       new_hilo = TN_LO_16;
       new_signed = top_signed0;
       // Determine new opcode
@@ -3797,18 +3830,22 @@ mul_fix_operands (
   
   /* Process second operand. */
   if (top_hilo1 == TN_LO_16) {
-    if (Is_16_Bits(opnd_tninfo[1], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
-	(new_hilo == TN_LO_16 || new_hilo == TN_HI_16) &&
-	new_signed != SIGN_UNKNOWN) {
-      new_hilo = new_hilo;
+    if (Is_16_Bits(opnd_tninfo[1], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+	(tmp_hilo == TN_LO_16 || tmp_hilo == TN_HI_16) &&
+	tmp_signed != SIGN_UNKNOWN) {
+      new_tn = tmp_tn;
+      new_tninfo = tmp_tninfo;
+      new_hilo = tmp_hilo;
       new_signed = top_signed1;
       // Determine new opcode
       new_opcode1 = get_mul_opcode(top_signed0, top_hilo0,
 				   new_signed, new_hilo);
     }
   } else if (top_hilo1 == TN_HI_16) {
-    if (Is_16_Bits(opnd_tninfo[1], bb, &new_tn, &new_tninfo, &new_hilo, &new_signed) &&
-	new_hilo == TN_LO_16 && new_signed == SIGN_UNKNOWN) {
+    if (Is_16_Bits(opnd_tninfo[1], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+	tmp_hilo == TN_LO_16 && tmp_signed == SIGN_UNKNOWN) {
+      new_tn = tmp_tn;
+      new_tninfo = tmp_tninfo;
       new_hilo = TN_LO_16;
       new_signed = top_signed1;
       // Determine new opcode
@@ -3831,6 +3868,14 @@ mul_fix_operands (
   
   if (new_opcode == TOP_UNDEFINED)
     return FALSE;
+
+  // [CG]: Check redefinitions
+  if (!EBO_tn_available (bb, tninfo0) ||
+      !EBO_tn_available (bb, tninfo1)) {
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Convert mul_fix_operand sequence stopped due to redefinition\n");
+    return FALSE;
+  }
 
   // Replace the current instruction:
   OP *new_op;
