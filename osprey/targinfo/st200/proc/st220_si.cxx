@@ -48,7 +48,8 @@ static RESOURCE  res_ISSUE,
 	        res_INT,
 	        res_MUL,
 	        res_MEM,
-	        res_XFER; 
+		res_ODD,
+		res_XFER;
 
 int 
 main (int argc, char *argv[]) 
@@ -57,6 +58,7 @@ main (int argc, char *argv[])
   res_INT = RESOURCE_Create("INT", 4); 
   res_MUL = RESOURCE_Create("MUL", 2); 
   res_MEM = RESOURCE_Create("MEM", 1); 
+  res_ODD = RESOURCE_Create("ODD", 2); 
   res_XFER = RESOURCE_Create("XFER", 1); 
 
   /* ======================================================
@@ -119,105 +121,57 @@ main (int argc, char *argv[])
 		 TOP_orl_r_b, 
 		 TOP_norl_r_b, 
 		 TOP_add_i, 
-		 TOP_add_ii, 
 		 TOP_sub_i, 
-		 TOP_sub_ii, 
 		 TOP_shl_i, 
-		 TOP_shl_ii, 
 		 TOP_shr_i, 
-		 TOP_shr_ii, 
 		 TOP_shru_i, 
-		 TOP_shru_ii, 
 		 TOP_sh1add_i, 
-		 TOP_sh1add_ii, 
 		 TOP_sh2add_i, 
-		 TOP_sh2add_ii, 
 		 TOP_sh3add_i, 
-		 TOP_sh3add_ii, 
 		 TOP_sh4add_i, 
-		 TOP_sh4add_ii, 
 		 TOP_and_i, 
-		 TOP_and_ii, 
 		 TOP_andc_i, 
-		 TOP_andc_ii, 
 		 TOP_or_i, 
-		 TOP_or_ii, 
 		 TOP_orc_i, 
-		 TOP_orc_ii, 
 		 TOP_xor_i, 
-		 TOP_xor_ii, 
 		 TOP_max_i, 
-		 TOP_max_ii, 
 		 TOP_maxu_i, 
-		 TOP_maxu_ii, 
 		 TOP_min_i, 
-		 TOP_min_ii, 
 		 TOP_minu_i, 
-		 TOP_minu_ii, 
 		 TOP_cmpeq_i_r, 
-		 TOP_cmpeq_ii_r, 
 		 TOP_cmpne_i_r, 
-		 TOP_cmpne_ii_r, 
 		 TOP_cmpge_i_r, 
-		 TOP_cmpge_ii_r, 
 		 TOP_cmpgeu_i_r, 
-		 TOP_cmpgeu_ii_r, 
 		 TOP_cmpgt_i_r, 
-		 TOP_cmpgt_ii_r, 
 		 TOP_cmpgtu_i_r, 
-		 TOP_cmpgtu_ii_r, 
 		 TOP_cmple_i_r, 
-		 TOP_cmple_ii_r, 
 		 TOP_cmpleu_i_r, 
-		 TOP_cmpleu_ii_r, 
 		 TOP_cmplt_i_r, 
-		 TOP_cmplt_ii_r, 
 		 TOP_cmpltu_i_r, 
-		 TOP_cmpltu_ii_r, 
 		 TOP_andl_i_r, 
-		 TOP_andl_ii_r, 
 		 TOP_nandl_i_r, 
-		 TOP_nandl_ii_r, 
 		 TOP_orl_i_r, 
-		 TOP_orl_ii_r, 
 		 TOP_norl_i_r, 
-		 TOP_norl_ii_r, 
 		 TOP_cmpeq_i_b, 
-		 TOP_cmpeq_ii_b, 
 		 TOP_cmpne_i_b, 
-		 TOP_cmpne_ii_b, 
 		 TOP_cmpge_i_b, 
-		 TOP_cmpge_ii_b, 
 		 TOP_cmpgeu_i_b, 
-		 TOP_cmpgeu_ii_b, 
 		 TOP_cmpgt_i_b, 
-		 TOP_cmpgt_ii_b, 
 		 TOP_cmpgtu_i_b, 
-		 TOP_cmpgtu_ii_b, 
 		 TOP_cmple_i_b, 
-		 TOP_cmple_ii_b, 
 		 TOP_cmpleu_i_b, 
-		 TOP_cmpleu_ii_b, 
 		 TOP_cmplt_i_b, 
-		 TOP_cmplt_ii_b, 
 		 TOP_cmpltu_i_b, 
-		 TOP_cmpltu_ii_b, 
 		 TOP_andl_i_b, 
-		 TOP_andl_ii_b, 
 		 TOP_nandl_i_b, 
-		 TOP_nandl_ii_b, 
 		 TOP_orl_i_b, 
-		 TOP_orl_ii_b, 
 		 TOP_norl_i_b, 
-		 TOP_norl_ii_b, 
 		 TOP_slct_r, 
 		 TOP_slctf_r, 
 		 TOP_addcg, 
 		 TOP_divs, 
 		 TOP_slct_i, 
-		 TOP_slct_ii, 
 		 TOP_slctf_i, 
-		 TOP_slctf_ii, 
 		 TOP_sbrk, 
 		 TOP_syscall, 
 		 TOP_break, 
@@ -227,7 +181,6 @@ main (int argc, char *argv[])
 		 TOP_nop, 
 		 TOP_mov_r, 
 		 TOP_mov_i, 
-		 TOP_mov_ii, 
 		 TOP_mtb, 
 		 TOP_mfb, 
 		 TOP_clz, 
@@ -236,6 +189,67 @@ main (int argc, char *argv[])
   Any_Result_Available_Time(3); 
   Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_INT, 0); 
+
+
+  Instruction_Group("ALU_IMM", 
+		 TOP_add_ii, 
+		 TOP_sub_ii, 
+		 TOP_shl_ii, 
+		 TOP_shr_ii, 
+		 TOP_shru_ii, 
+		 TOP_sh1add_ii, 
+		 TOP_sh2add_ii, 
+		 TOP_sh3add_ii, 
+		 TOP_sh4add_ii, 
+		 TOP_and_ii, 
+		 TOP_andc_ii, 
+		 TOP_or_ii, 
+		 TOP_orc_ii, 
+		 TOP_xor_ii, 
+		 TOP_max_ii, 
+		 TOP_maxu_ii, 
+		 TOP_min_ii, 
+		 TOP_minu_ii, 
+		 TOP_cmpeq_ii_r, 
+		 TOP_cmpne_ii_r, 
+		 TOP_cmpge_ii_r, 
+		 TOP_cmpgeu_ii_r, 
+		 TOP_cmpgt_ii_r, 
+		 TOP_cmpgtu_ii_r, 
+		 TOP_cmple_ii_r, 
+		 TOP_cmpleu_ii_r, 
+		 TOP_cmplt_ii_r, 
+		 TOP_cmpltu_ii_r, 
+		 TOP_andl_ii_r, 
+		 TOP_nandl_ii_r, 
+		 TOP_orl_ii_r, 
+		 TOP_norl_ii_r, 
+		 TOP_cmpeq_ii_b, 
+		 TOP_cmpne_ii_b, 
+		 TOP_cmpge_ii_b, 
+		 TOP_cmpgeu_ii_b, 
+		 TOP_cmpgt_ii_b, 
+		 TOP_cmpgtu_ii_b, 
+		 TOP_cmple_ii_b, 
+		 TOP_cmpleu_ii_b, 
+		 TOP_cmplt_ii_b, 
+		 TOP_cmpltu_ii_b, 
+		 TOP_andl_ii_b, 
+		 TOP_nandl_ii_b, 
+		 TOP_orl_ii_b, 
+		 TOP_norl_ii_b, 
+		 TOP_slct_ii, 
+		 TOP_slctf_ii, 
+		 TOP_mov_ii, 
+		 TOP_UNDEFINED); 
+
+  Any_Result_Available_Time(3); 
+  Any_Operand_Access_Time(2); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_INT, 0); 
+  Resource_Requirement(res_ODD, 0); 
 
 
   ///////////////////////////////////////// 
@@ -255,38 +269,51 @@ main (int argc, char *argv[])
 		 TOP_mulhhu_r, 
 		 TOP_mulhs_r, 
 		 TOP_mull_i, 
-		 TOP_mull_ii, 
 		 TOP_mullu_i, 
-		 TOP_mullu_ii, 
 		 TOP_mulh_i, 
-		 TOP_mulh_ii, 
 		 TOP_mulhu_i, 
-		 TOP_mulhu_ii, 
 		 TOP_mulll_i, 
-		 TOP_mulll_ii, 
 		 TOP_mulllu_i, 
-		 TOP_mulllu_ii, 
 		 TOP_mullh_i, 
-		 TOP_mullh_ii, 
 		 TOP_mullhu_i, 
-		 TOP_mullhu_ii, 
 		 TOP_mulhh_i, 
-		 TOP_mulhh_ii, 
 		 TOP_mulhhu_i, 
-		 TOP_mulhhu_ii, 
 		 TOP_mulhs_i, 
-		 TOP_mulhs_ii, 
 		 TOP_mulhhs_r, 
 		 TOP_mulhhs_i, 
-		 TOP_mulhhs_ii, 
 		 TOP_mullhus_r, 
 		 TOP_mullhus_i, 
+		 TOP_UNDEFINED); 
+
+  Any_Result_Available_Time(5); 
+  Any_Operand_Access_Time(2); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MUL, 0); 
+  Resource_Requirement(res_ODD, 0); 
+
+
+  Instruction_Group("MUL_IMM", 
+		 TOP_mull_ii, 
+		 TOP_mullu_ii, 
+		 TOP_mulh_ii, 
+		 TOP_mulhu_ii, 
+		 TOP_mulll_ii, 
+		 TOP_mulllu_ii, 
+		 TOP_mullh_ii, 
+		 TOP_mullhu_ii, 
+		 TOP_mulhh_ii, 
+		 TOP_mulhhu_ii, 
+		 TOP_mulhs_ii, 
+		 TOP_mulhhs_ii, 
 		 TOP_mullhus_ii, 
 		 TOP_UNDEFINED); 
 
   Any_Result_Available_Time(5); 
   Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MUL, 0); 
+  Resource_Requirement(res_ODD, 0); 
 
 
   ///////////////////////////////////////// 
@@ -295,25 +322,15 @@ main (int argc, char *argv[])
 
   Instruction_Group("LOAD", 
 		 TOP_ldw_i, 
-		 TOP_ldw_ii, 
 		 TOP_ldw_d_i, 
-		 TOP_ldw_d_ii, 
 		 TOP_ldh_i, 
-		 TOP_ldh_ii, 
 		 TOP_ldh_d_i, 
-		 TOP_ldh_d_ii, 
 		 TOP_ldhu_i, 
-		 TOP_ldhu_ii, 
 		 TOP_ldhu_d_i, 
-		 TOP_ldhu_d_ii, 
 		 TOP_ldb_i, 
-		 TOP_ldb_ii, 
 		 TOP_ldb_d_i, 
-		 TOP_ldb_d_ii, 
 		 TOP_ldbu_i, 
-		 TOP_ldbu_ii, 
 		 TOP_ldbu_d_i, 
-		 TOP_ldbu_d_ii, 
 		 TOP_sync, 
 		 TOP_UNDEFINED); 
 
@@ -323,17 +340,35 @@ main (int argc, char *argv[])
   Resource_Requirement(res_MEM, 0); 
 
 
+  Instruction_Group("LOAD_IMM", 
+		 TOP_ldw_ii, 
+		 TOP_ldw_d_ii, 
+		 TOP_ldh_ii, 
+		 TOP_ldh_d_ii, 
+		 TOP_ldhu_ii, 
+		 TOP_ldhu_d_ii, 
+		 TOP_ldb_ii, 
+		 TOP_ldb_d_ii, 
+		 TOP_ldbu_ii, 
+		 TOP_ldbu_d_ii, 
+		 TOP_UNDEFINED); 
+
+  Any_Result_Available_Time(5); 
+  Any_Operand_Access_Time(2); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MEM, 0); 
+  Resource_Requirement(res_ODD, 0); 
+
+
   ///////////////////////////////////////// 
   //   Instructions for Scd Class STORE 
   ///////////////////////////////////////// 
 
   Instruction_Group("STORE", 
 		 TOP_stw_i, 
-		 TOP_stw_ii, 
 		 TOP_sth_i, 
-		 TOP_sth_ii, 
 		 TOP_stb_i, 
-		 TOP_stb_ii, 
 		 TOP_pft, 
 		 TOP_prgadd, 
 		 TOP_prgset, 
@@ -342,6 +377,19 @@ main (int argc, char *argv[])
   Any_Operand_Access_Time(2); 
   Resource_Requirement(res_ISSUE, 0); 
   Resource_Requirement(res_MEM, 0); 
+
+
+  Instruction_Group("STORE_IMM", 
+		 TOP_stw_ii, 
+		 TOP_sth_ii, 
+		 TOP_stb_ii, 
+		 TOP_UNDEFINED); 
+
+  Any_Operand_Access_Time(2); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_MEM, 0); 
+  Resource_Requirement(res_ODD, 0); 
 
 
   ///////////////////////////////////////// 
@@ -355,6 +403,7 @@ main (int argc, char *argv[])
 
   Any_Operand_Access_Time(0); 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_ODD, 0); 
 
 
   ///////////////////////////////////////// 
@@ -368,6 +417,7 @@ main (int argc, char *argv[])
 
   Any_Operand_Access_Time(1); 
   Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_XFER, 0); 
 
 
   ///////////////////////////////////////// 
