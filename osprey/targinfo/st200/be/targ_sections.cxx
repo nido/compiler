@@ -35,7 +35,11 @@
 #include "defs.h"
 #include "stab.h"
 #include "stblock.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "data_layout.h"
 #include "sections.h"
 #include "targ_sections.h"
