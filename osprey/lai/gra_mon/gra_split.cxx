@@ -1764,6 +1764,17 @@ LRANGE_Do_Split( LRANGE* lrange, LRANGE_CLIST_ITER* iter,
     return FALSE;
   }
 
+#ifdef TARG_ST200
+  // Forbid registers from GRA. For example RA_TN on the st220 is also used in goto, 
+  // It cannot be spilled localy (no restore at the end of the basic block), so
+  // we should force a gra spill instead of splitting live range and having a lra spill.
+  DevAssert (! (lrange->Has_Wired_Register() && lrange->Reg() == TN_register(RA_TN)),
+             ("split_lrange for wired ra_tn"));
+  if (lrange->Tn_Is_Save_Reg() &&
+      TN_save_reg(lrange->Tn()) == TN_register(RA_TN))
+    return FALSE;
+#endif
+
   if (lrange->Cannot_Split())
     return FALSE;
 
