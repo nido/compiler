@@ -1430,6 +1430,11 @@ Prepare_Source (void)
       Lai_File_Name = New_Extension (fname, LAI_FILE_EXTENSION);
     }
 
+#ifdef TARG_ST
+    // [CG]: Allow stdout ouput fo lai
+    if (strcmp(Lai_File_Name, "-") == 0) Lai_File = stdout;
+    else
+#endif
     /* Open the LAI file for compilation: */
     if ((Lai_File = fopen (Lai_File_Name, "w")) == NULL) {
       ErrMsg (EC_Asm_Open, Lai_File_Name, errno);
@@ -1444,6 +1449,11 @@ Prepare_Source (void)
       Asm_File_Name = New_Extension (fname, ASM_FILE_EXTENSION );
     }
 
+#ifdef TARG_ST
+    // [CG]: Allow stdout ouput for asm
+    if (strcmp(Asm_File_Name, "-") == 0) Asm_File = stdout;
+    else
+#endif
     /* Open	the ASM	file for compilation: */
     if ( ( Asm_File	= fopen	( Asm_File_Name, "w" ) ) == NULL ) {
       ErrMsg ( EC_Asm_Open, Asm_File_Name, errno );
