@@ -45,13 +45,13 @@ extern "C" {
 static InstrMode IS__InstrMode[ISA_SUBSET_MAX+1];
 
 // Map LIR InstrMode to CGIR ISA_SUBSET.
-static ISA_SUBSET InstrMode__IS[InstrMode__COUNT];
+static ISA_SUBSET InstrMode__IS[InstrMode__];
 
 // Map CGIR TOP to LIR Operator.
 static Operator TOP__Operator[TOP_UNDEFINED];
 
 // Map LIR Operator to CGIR TOP.
-static TOP Operator__TOP[Operator__COUNT];
+static TOP Operator__TOP[Operator__];
 
 // Map CGIR ISA_ENUM_CLASS to LIR Modifier.
 static Modifier IEC__Modifier[EC_MAX];
@@ -64,7 +64,7 @@ static Immediate LC__Immediate[LC_MAX];
 static RegClass IRC__RegClass[ISA_REGISTER_CLASS_MAX+1];
 
 // Map LIR RegClass to CGIR ISA_REGISTER_CLASS.
-static ISA_REGISTER_CLASS RegClass__IRC[RegClass__COUNT];
+static ISA_REGISTER_CLASS RegClass__IRC[RegClass__];
 
 // Variable used to skip multiple lao_init / lao_fini calls.
 static int lao_initialized = 0;
@@ -269,7 +269,7 @@ CGIR_BB_to_ControlNode(CGIR_BB cgir_bb) {
 // Convert LIR RegClass to CGIR ISA_REGISTER_CLASS.
 static inline ISA_REGISTER_CLASS
 RegClass_to_CGIR_IRC(RegClass regClass) {
-  Is_True(regClass > RegClass_ && regClass < RegClass__COUNT, ("RegClass out of range"));
+  Is_True(regClass > RegClass_ && regClass < RegClass__, ("RegClass out of range"));
   ISA_REGISTER_CLASS irc = RegClass__IRC[regClass];
   Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED, ("Cannot map RegClass to ISA_REGISTER_CLASS"));
   return irc;
@@ -290,7 +290,7 @@ Register_to_CGIR_CRP(Register registre) {
 // Convert LIR Operator to TOP.
 static inline TOP
 Operator_to_CGIR_TOP(Operator lir_operator) {
-  Is_True(lir_operator > Operator_ && lir_operator < Operator__COUNT, ("Operator out of range"));
+  Is_True(lir_operator > Operator_ && lir_operator < Operator__, ("Operator out of range"));
   TOP top = Operator__TOP[lir_operator];
   Is_True(top != TOP_UNDEFINED, ("Cannot map Operator to TOP"));
   return top;
@@ -907,9 +907,9 @@ lao_init() {
     TOP__Operator[TOP_xor_r] = Operator_CODE_XOR_DEST_SRC1_SRC2;
     TOP__Operator[TOP_zxth_r] = Operator_CODE_ZXTH_IDEST_SRC1;
     // initialize Operator__TOP;
-    for (int i = 0; i < Operator__COUNT; i++) Operator__TOP[i] = TOP_UNDEFINED;
+    for (int i = 0; i < Operator__; i++) Operator__TOP[i] = TOP_UNDEFINED;
     for (int i = 0; i < TOP_UNDEFINED; i++) {
-      if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__COUNT);
+      if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__);
       else Operator__TOP[TOP__Operator[i]] = (TOP)i;
     }
     Operator__TOP[Operator_PSEUDO_GOTO] = TOP_goto;
@@ -926,9 +926,9 @@ lao_init() {
     IRC__RegClass[ISA_REGISTER_CLASS_integer] = RegClass_GRC;
     IRC__RegClass[ISA_REGISTER_CLASS_branch] = RegClass_BRC;
     // initialize RegClass__IRC
-    for (int i = 0; i < RegClass__COUNT; i++) RegClass__IRC[i] = ISA_REGISTER_CLASS_UNDEFINED;
+    for (int i = 0; i < RegClass__; i++) RegClass__IRC[i] = ISA_REGISTER_CLASS_UNDEFINED;
     for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) {
-      if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__COUNT);
+      if (IRC__RegClass[i] < 0 || IRC__RegClass[i] >= RegClass__);
       else RegClass__IRC[IRC__RegClass[i]] = (ISA_REGISTER_CLASS)i;
     }
   }
