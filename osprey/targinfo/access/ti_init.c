@@ -421,30 +421,59 @@ UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID id )
 
 /****************************************************************************
  ****************************************************************************/
-
-typedef INT tsi_operand_access_time_t(TOP, INT);
-typedef INT tsi_result_available_time_t(TOP, INT);
-
-INT
-TSI_Operand_Access_Time( TOP top, INT operand_index )
+INT TSI_Operand_Access_Time( TOP top, INT operand_index ) 
 {
-  static tsi_operand_access_time_t * so_call = 0;
-  if (! so_call && !(so_call = (tsi_operand_access_time_t *)
-		     dlsym(targ_handler, "TSI_Operand_Access_Time")))
-    return 0;
-
-  return so_call (top, operand_index);
+    typedef INT tsi_operand_access_time_t (TOP, INT)  ;
+    static  tsi_operand_access_time_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_operand_access_time_t*)
+		      dlsym(targ_handler, "TSI_Operand_Access_Time")))
+	return 0;
+    
+    return so_call(top, operand_index);
 }
 
-INT
-TSI_Result_Available_Time( TOP top, INT result_index )
+INT TSI_Result_Available_Time( TOP top, INT result_index )
 {
-  static tsi_result_available_time_t * so_call = 0;
-  if (! so_call && !(so_call = (tsi_result_available_time_t *)
-		     dlsym(targ_handler, "TSI_Result_Available_Time")))
-    return 0;
+    typedef INT tsi_result_available_time_t ( TOP , INT ) ;
+    static tsi_result_available_time_t*  so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_result_available_time_t*)
+		      dlsym(targ_handler, "TSI_Result_Available_Time")))
+	return 0;
+    
+    return so_call(top, result_index);
+}
 
-  return so_call (top, result_index);
+INT TSI_Load_Access_Time( TOP top )
+{
+    typedef INT tsi_load_access_time_t  (TOP ) ;
+    static  tsi_load_access_time_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_load_access_time_t*)
+		      dlsym(targ_handler, "TSI_Load_Access_Time")))
+	return 0;
+    
+    return so_call(top);
+}
+
+INT TSI_Last_Issue_Cycle( TOP top ) 
+{
+    typedef INT tsi_last_issue_cycle_t (TOP ) ;
+    static tsi_last_issue_cycle_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_last_issue_cycle_t *)
+		      dlsym(targ_handler, "TSI_Last_Issue_Cycle")))
+	return 0;
+    
+    return so_call(top);
+}
+
+INT TSI_Store_Available_Time( TOP top )
+{
+    typedef INT tsi_store_available_time_t (TOP ) ;
+    static tsi_store_available_time_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_store_available_time_t *)
+		      dlsym(targ_handler, "TSI_Store_Available_Time")))
+	return 0;
+    
+    return so_call(top);
 }
 
 /****************************************************************************
