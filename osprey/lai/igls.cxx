@@ -162,6 +162,19 @@ Schedule_Prefetch_Prepass () {
        cloop != NULL;
        cloop = LOOP_DESCR_next(cloop)) {
 
+    // Do not shedule prefetch instructions when #pragma LOOPSEQ is
+    // used.
+    BB *loop_head = LOOP_DESCR_loophead(cloop);
+    ANNOTATION *annot = NULL;
+    for (annot = ANNOT_Get(BB_annotations(loop_head), ANNOT_PRAGMA);
+	 annot != NULL;
+	 annot = ANNOT_Get(ANNOT_next(annot), ANNOT_PRAGMA)) {
+      if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPSEQ)
+	break;
+    }
+    if (annot)
+      continue;
+
     WN_to_OP_map = WN_MAP_Create(&MEM_local_pool);
 
     BB *bb;
@@ -191,7 +204,8 @@ Schedule_Prefetch_Prepass () {
 	if (OP_prefetch(op)) {
 	  nb_prefetch++;
 	  if (!Get_WN_From_Memory_OP(op)) {
-	    printf("No WN associated with a PREFETCH op\n");
+	    if (Trace_PFT)
+	      fprintf(TFile, "No WN associated with a PREFETCH op\n");
 	    continue;
 	  }
 	  Is_True(Get_WN_From_Memory_OP(op), ("No WN associated with a PREFETCH op"));
@@ -465,12 +479,14 @@ Schedule_Prefetch_Postpass () {
 	    if (WN_pf_stride_1L(pref_wn)/* || ANNOT_Get(BB_annotations(OP_bb(op_pref)), ANNOT_REMAINDERINFO)*/) {
 	      int offset = TN_value(OP_opnd(op_pref, 0));
 	      int fixedOffset = TN_value(OP_opnd(op_pref, 0)) + distAhead - PF_PTR_distance_1L(pref_info);
-	      printf("Prefetch offset is %d\n", fixedOffset);
-	      if (WN_pf_manual(pref_wn))
-		if (fixedOffset != offset)
-		  printf("Manual prefetch: Offset was %d\n", offset);
-		else
-		  printf("Manual prefetch: Offset unchanged\n");
+	      if (Trace_PFT) {
+		fprintf(TFile, "Prefetch offset is %d\n", fixedOffset);
+		if (WN_pf_manual(pref_wn) )
+		  if (fixedOffset != offset)
+		    fprintf(TFile, "Manual prefetch: Offset was %d\n", offset);
+		  else
+		    fprintf(TFile, "Manual prefetch: Offset unchanged\n");
+	      }
 	      Set_OP_opnd(op_pref, 0, Gen_Literal_TN(fixedOffset, 4));
 	      TOP etop;
 	      if (CGTARG_need_extended_Opcode(op_pref, &etop)) {
