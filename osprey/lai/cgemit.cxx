@@ -874,6 +874,19 @@ EMT_Put_Elf_Symbol (
 	Print_Common (Asm_File, sym);
       }
     }
+#ifdef TARG_ST
+    // (cbr) need to emit .weak for extern symbols as well
+    else if (ST_class(sym) == CLASS_VAR &&
+	     ST_sclass(sym) == SCLASS_EXTERN) {
+      if (Assembly || Lai_Code) {
+        if (ST_is_weak_symbol(sym)) {
+          fprintf ( Asm_File, "\t%s\t", AS_WEAK);
+          EMT_Write_Qualified_Name(Asm_File, sym);
+          fprintf ( Asm_File, "\n");
+        }
+      }
+    }
+#endif
     Set_ST_elf_index(sym, 1);
     return 0;
   }
