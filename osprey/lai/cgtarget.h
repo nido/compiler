@@ -582,15 +582,15 @@ extern void CGTARG_Branch_Info ( const OP* op, INT* tfirst, INT* tcount );
 
 // Analyze a branch to determine the condition of the branch and
 // the operand TNs.
-extern INT CGTARG_Analyze_Branch(OP *br,
-				 TN **tn1, 
-				 TN **tn2);
+extern VARIANT CGTARG_Analyze_Branch(OP *br,
+				     TN **tn1, 
+				     TN **tn2);
 // Analyze a branch to determine the condition of the branch and
 // TNs being compared.
-extern INT CGTARG_Analyze_Compare(OP *br,
-				  TN **tn1,
-				  TN **tn2,
-	 			  OP **compare_op);
+extern VARIANT CGTARG_Analyze_Compare(OP *br,
+				      TN **tn1,
+				      TN **tn2,
+				      OP **compare_op);
 
 // Various machine dependent values use for non loop if conversion.
 extern void CGTARG_Compute_Branch_Parameters(INT32 *mispredict,
