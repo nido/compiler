@@ -1387,7 +1387,7 @@ Memop_Variant (
       if (V_volatile(variant)) {
 	ErrMsgLine(EC_Ill_Align,
 		   SRCPOS_linenum(current_srcpos),
-		   ty_align,
+		   align,
 		   "reference to unaligned volatile:  volatile atomicity is ignored");
       }
     }
