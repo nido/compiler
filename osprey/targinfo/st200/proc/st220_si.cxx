@@ -409,6 +409,33 @@ main (int argc, char *argv[])
 
   Resource_Requirement(res_ISSUE, 0); 
 
+
+  ///////////////////////////////////////// 
+  //   Instructions for Scd Class Simulated 
+  ///////////////////////////////////////// 
+
+  Instruction_Group("simulated", 
+		 TOP_spadjust, 
+		 TOP_UNDEFINED); 
+
+  Any_Operand_Access_Time(0); 
+  Any_Result_Available_Time(1);		// ??? not sure 
+  Resource_Requirement(res_ISSUE, 0); 
+  Resource_Requirement(res_INT, 0); 
+
+
+  ///////////////////////////////////////// 
+  //   Instructions for Scd Class SSA 
+  ///////////////////////////////////////// 
+
+  Instruction_Group("ssa", 
+		 TOP_phi, 
+		 TOP_psi, 
+		 TOP_UNDEFINED); 
+
+  Any_Operand_Access_Time(0); 
+  Any_Result_Available_Time(0);		// ??? not sure 
+
   Machine_Done("st220.c"); 
 
 }
