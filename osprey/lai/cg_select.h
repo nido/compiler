@@ -80,4 +80,9 @@ typedef struct {
   BOOL inverted;
 } logif_info;
 
+//
+// targ_select.cxx
+//
+extern TN * Expand_CMP_Reg (OP *, TN *, OPS *);
+
 #endif /* SELECT_H_INCLUDED */

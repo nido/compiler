@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2001, STMicroelectronics, All Rights Reserved.
+  Copyright (C) 2002, STMicroelectronics, All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2 of the GNU General Public License as
@@ -88,6 +88,8 @@ static OP_MAP phi_op_map = NULL;
 pair<op_list, op_list> store_i;
 pair<op_list, op_list> load_i;
 
+BB_SET *bbs_tail_dup;
+
 /* ================================================================
  *
  *   Traces
@@ -143,11 +145,7 @@ void
 Select_Init()
 {
   Trace_Select_Init();
-}
 
-static void
-Initialize_Memory()
-{
   static BOOL did_init = FALSE;
 
   if ( ! did_init ) {
@@ -155,7 +153,13 @@ Initialize_Memory()
     did_init = TRUE;
   }
   MEM_POOL_Push(&MEM_Select_pool);
+}
+
+static void
+Initialize_Memory()
+{
   if_bb_map = BB_MAP_Create();
+  bbs_tail_dup = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
 }
 
 static void
@@ -647,14 +651,30 @@ Is_Hammock (BB *head, BB **target, BB **fall_thru, BB **tail)
   FOR_ALL_BB_PREDS (*tail, edge) { 
     BB *bb = BBLIST_item(edge);
     if (bb == *target) {
-      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
+      if (BB_succs_len (bb) != 1)
         return FALSE; 
+
+      if (BB_preds_len (bb) != 1) {
+        if (BB_preds_len (bb) == 2) {
+          bbs_tail_dup = BB_SET_Union1D(bbs_tail_dup, bb, &MEM_Select_pool);
+        }
+        else
+          return FALSE; 
+      }
 
       found_taken = TRUE;
     }
     else if (bb == *fall_thru) {
-      if (BB_succs_len (bb) != 1 || BB_preds_len (bb) != 1)
+      if (BB_succs_len (bb) != 1)
         return FALSE; 
+
+      if (BB_preds_len (bb) != 1) {
+        if (BB_preds_len (bb) == 2) {
+          bbs_tail_dup = BB_SET_Union1D(bbs_tail_dup, bb, &MEM_Select_pool);
+        }
+        else
+          return FALSE; 
+      }
 
       found_not_taken = TRUE;
     }
@@ -959,22 +979,9 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   OPS ops = OPS_EMPTY;
 
-  if (TN_register_class(b1tn1) == ISA_REGISTER_CLASS_branch) {
-     TOP cmp_top = CGTARG_Branch_To_Reg (OP_code(cmp1));
-     DevAssert(cmp_top, ("CGTARG_Branch_To_Reg\n"));
-     b1tn1 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-     Build_OP (cmp_top, b1tn1, OP_opnd(cmp1, 0), OP_opnd(cmp1, 1), &ops);
-     BB_Remove_Op(bb1, cmp1);
-  }
+  b1tn1 = Expand_CMP_Reg (cmp1, b1tn1, &ops);
+  b2tn1 = Expand_CMP_Reg (cmp2, b2tn1, &ops);
 
-  if (TN_register_class(b2tn1) == ISA_REGISTER_CLASS_branch) {
-     TOP cmp_top = CGTARG_Branch_To_Reg (OP_code(cmp2));
-     DevAssert(cmp_top, ("CGTARG_Branch_To_Reg\n"));
-     b2tn1 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-     Build_OP (cmp_top, b2tn1, OP_opnd(cmp2, 0), OP_opnd(cmp2, 1), &ops);
-     BB_Remove_Op(bb1, cmp2);
-  }
-    
   // !a op !a -> !(a !op b)
   AndNeeded = AndNeeded ^ (variant1 == V_BR_P_FALSE);
 
@@ -993,7 +1000,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   if (joint_block == BB_next(bb1)) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, fall_thru_block, BB_freq(fall_thru_block), joint_block);
+    Target_Logif_BB(bb1, fall_thru_block, 1.0L - BB_freq(joint_block), joint_block);
   }
   else {
     Target_Logif_BB(bb1, joint_block, BB_freq(joint_block), fall_thru_block);
@@ -1222,6 +1229,7 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
       OP *op;
       
       FOR_ALL_BB_PHI_OPs(bb,op) {
+        // make phi here instead of that...
         Change_PHI_Predecessor (bb, tail, head, op);
       }
     }
@@ -1320,6 +1328,18 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
 
     if (Is_Hammock (bb, &target_bb, &fall_thru_bb, &tail)) {
+      if (BB_SET_Size(bbs_tail_dup)) {
+        //        BB_SET_Print(bbs_tail_dup, stdout);
+
+        //        if (BB_SET_MemberP(bbs_tail_dup, target_bb))
+        //          fprintf (stdout, "FOUND TAIL %d\n", BB_id(target_bb));
+
+        //        if (BB_SET_MemberP(bbs_tail_dup, fall_thru_bb))
+        //          fprintf (stdout, "FOUND TAIL %d\n", BB_id(fall_thru_bb));
+        //
+        continue;
+      }
+
       if (Trace_Select_Gen) {
         fprintf (TFile, "\n********** BEFORE SELECT FOLD BB%d ************\n",
                  BB_id(bb));
