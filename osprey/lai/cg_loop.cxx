@@ -5103,7 +5103,8 @@ void CG_LOOP::Determine_Unroll_Factor()
      or with #pragma unroll. */
 
   if ((BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1) &&
-      !(pragma_unroll || CG_LOOP_unroll_multi_bb))
+      //      !(pragma_unroll || CG_LOOP_unroll_multi_bb))
+      !CG_LOOP_unroll_multi_bb)
     return;
 
   INT32 body_len = 0;
