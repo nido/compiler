@@ -1518,7 +1518,7 @@ GRA_LIVE_Region_Compute_Global_Live_Info(void)
   BB *bb;
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_PHI_OPs(bb, op) {
-      // add operands to predecessor live_in
+      // add operands to predecessor live out
       for (i = 0; i < OP_opnds(op); i++) {
 	GTN_UNIVERSE_Add_TN(OP_opnd(op,i));
 	GRA_LIVE_Add_Live_Out_GTN(Get_PHI_Predecessor(op,i), 
@@ -2406,6 +2406,13 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
         // rename tn to new_tn between last_def and op.
         Rename_TN_In_Range (tn, last_def, op);
       }
+#ifdef TARG_ST
+      // [CG] Skip renaming of a PHI result to be consistent with above.
+      // A PHI result MUST be a global TN which is in the live-in set of the BB
+      else if (OP_code(op) == TOP_phi) {
+	// Do not rename result of a PHI operand
+      }
+#endif
       else if (TN_is_global_reg(tn) &&
 	       !TN_is_const_reg(tn) &&
 	       !GTN_SET_MemberP(BB_live_out(bb), tn)) {

@@ -1276,6 +1276,14 @@ SSA_UNIVERSE_Add_TN (
   // If already added, return it's index
   if (TN_is_ssa_reg(tn)) return SSA_UNIVERSE_tn_idx(tn);
 
+  if (Trace_SSA_Build) {
+    fprintf(TFile, "  add to universe: ");
+    Print_TN(tn, FALSE);
+    fprintf(TFile, "\n");
+  }
+
+  FmtAssert(TN_is_global_reg(tn),("SSA_UNIVERSE: adding a  non global operand"));
+
   last_tn_idx++;
   FmtAssert(last_tn_idx <= SSA_UNIVERSE_size,("SSA_UNIVERSE overflowed"));
   hTN_MAP32_Set(tn_idx_map,tn,last_tn_idx);
@@ -1503,6 +1511,14 @@ Propagate_Interference (
   FOR_ALL_BB_OPs_REV(bb,op) {
     TN *res;
 
+    if (Trace_Igraph) {
+      fprintf(TFile, "  ");
+      Print_OP_No_SrcLine(op);
+      fprintf(TFile, "  current before op: ");
+      GTN_TN_SET_Print(current, TFile);
+      fprintf(TFile, "\n");
+    }
+
     if (OP_code(op) == TOP_phi) {
       res = OP_result(op,0);
 
@@ -1518,13 +1534,18 @@ Propagate_Interference (
       //
       // A PHI adds its result to the 'current', not operands
       //
+      if (Trace_Igraph) {
+	fprintf(TFile, "  add res to current: ");
+	Print_TN(res, FALSE);
+	fprintf(TFile, "\n");
+      }
       current = GTN_SET_Union1(current, res, &MEM_local_pool);
+      if (Trace_Igraph) {
+	fprintf(TFile, "  current after op: ");
+	GTN_TN_SET_Print(current, TFile);
+	fprintf(TFile, "\n");
+      }
       continue;
-    }
-
-    if (Trace_Igraph) {
-      fprintf(TFile, "  ");
-      Print_OP_No_SrcLine(op);
     }
 
     // results
@@ -1543,11 +1564,12 @@ Propagate_Interference (
 	IGRAPH_Add_Interference(res, tn);
       }
 
+      // remove res from 'current'
       if (Trace_Igraph) {
+	fprintf(TFile, "  remove res from current: ");
+	Print_TN(res, FALSE);
 	fprintf(TFile, "\n");
       }
-
-      // remove res from 'current'
       current = GTN_SET_Difference1(current,
 				    res,
 				    &MEM_local_pool);
@@ -1562,6 +1584,11 @@ Propagate_Interference (
       // add to live_out set if it's a global, non dedicated
       // register TN
       if (TN_is_ssa_reg(opnd)) {
+	if (Trace_Igraph) {
+	  fprintf(TFile, "  add opnd to current: ");
+	  Print_TN(opnd, FALSE);
+	  fprintf(TFile, "\n");
+	}
 	current = GTN_SET_Union1(current, 
 				 opnd, 
 				 &MEM_local_pool);
@@ -1569,7 +1596,7 @@ Propagate_Interference (
     }
 
     if (Trace_Igraph) {
-      fprintf(TFile, "  current: ");
+      fprintf(TFile, "  current after op: ");
       GTN_TN_SET_Print(current, TFile);
       fprintf(TFile, "\n");
     }
