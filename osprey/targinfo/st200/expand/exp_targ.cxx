@@ -648,37 +648,20 @@ Expand_Sub (
   INT64  ofst, val;
 
   if (TN_is_constant(src1)) {
-    src1 = Expand_Immediate_Into_Register (mtype, src1, ops);
+    new_opcode = TOP_sub_i;
   }
-  else {
-    FmtAssert(TN_is_register(src1), ("Expand_Sub: unknown 1st opnd"));
-    FmtAssert(Register_Class_For_Mtype(mtype) == TN_register_class(src1),
-	      ("Expand_Sub: mtypes mixed"));
-  }
-
-  if (TN_is_constant(src2)) {
+  else if (TN_is_constant(src2)) {
     if (TN_has_value(src2)) {
-      val = TN_value(src2);
-      if (val == 0) {
-	Expand_Copy (result, NULL, src1, ops);
-	return;
-      }
-      new_opcode = TOP_sub_i;
-    }
-    else if (TN_is_symbol(src2)) {
-      /* symbolic constant, gp-relative or sp-relative */
-      Base_Symbol_And_Offset_For_Addressing (TN_var(src2), 
-                                       TN_offset(src2), &base, &ofst);
-      new_opcode = TOP_sub_i;
+      src2 = Gen_Literal_TN(-TN_value(src2), 4);
+      new_opcode = TOP_add_i;
     }
     else {
-      FmtAssert(FALSE,("unexpected constant in Expand_Sub"));
+      src2 = Expand_Immediate_Into_Register (mtype, src2, ops);
+      new_opcode = TOP_sub_r;
     }
   }
   else {
-    // both registers:
-    FmtAssert (TN_is_register(src2),
-	                    ("Expand_Sub: unknown 2nd operand type"));
+    // default both registers
     new_opcode = TOP_sub_r;
   }
 

@@ -648,9 +648,16 @@ Exp_Ldst (
 	is_lda = FALSE;	// so nothing done
       }
 
+      // because it is not GP-relative, just make the address
+      Build_OP (TOP_mov_i, tmp1, 
+                         Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
+
+      // load is of address, not of result type
+      base_tn = tmp1;
+
       // because it is not GP-relative, just use the address
       // load is of address, not of result type
-      base_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
+      //      base_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_NONE);
 
       // add offset to address
       ofst_tn = Gen_Literal_TN(ofst, Pointer_Size);
