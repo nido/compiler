@@ -694,7 +694,7 @@ typedef	struct bblist {
 #define BB_First_Pred(bb) \
     ((BB_preds(bb) != NULL) ? BBLIST_item(BB_preds(bb)) : NULL)
 
-extern void BBlist_Free (BBLIST **lst);
+CG_EXPORTED extern void BBlist_Free (BBLIST **lst);
 extern INT  BBlist_Len (BBLIST *lst);
 extern BBLIST *BBlist_Find_BB(BBLIST *lst, BB *bb);
 extern BBLIST* BBlist_Fall_Thru_Succ(BB *bb);
@@ -754,12 +754,12 @@ inline BOOL BB_Has_One_Pred(BB *bb)
 
 /* The following global	variables describe BBs for the current PU: */
 
-extern BB *REGION_First_BB;	/* First BB in current REGION (or PU) */
+CG_EXPORTED extern BB *REGION_First_BB;	/* First BB in current REGION (or PU) */
 				/* Note that each region has own list of BB's,
 				 * and these lists are merged when a nested
 				 * region is processed; so may not see all
 				 * BB's until come to PU level. */
-extern BB_NUM PU_BB_Count;	     /*	Number of BBs in the current
+CG_EXPORTED extern BB_NUM PU_BB_Count;	     /*	Number of BBs in the current
 				      *	PU, indexed 1..PU_BB_Count in
 				      *	BB_idx.
 				      */
@@ -924,7 +924,7 @@ public:
 /* =====  Creation and Initialization  ====== */
 
 /* Described in comment at top */
-extern BB *Gen_BB(void);
+CG_EXPORTED extern BB *Gen_BB(void);
 extern BB *Gen_BB_N(INT n);
 extern BB *Gen_BB_Like (BB *model);
 extern BB *Gen_And_Append_BB(BB *prev_bb);
@@ -939,14 +939,14 @@ extern void Negate_Logif_BB(BB *bb);
 extern void Add_Goto(BB *bb, BB *target_bb);
 extern BB* Create_Dummy_BB( BB *dest_bb );
 extern LABEL_IDX Gen_Label_For_BB (BB *bb);
-extern BOOL Is_Label_For_BB(LABEL_IDX label, BB *bb);
+CG_EXPORTED extern BOOL Is_Label_For_BB(LABEL_IDX label, BB *bb);
 extern BOOL Change_Switchtable_Entries(ST *tbl, BB *old_tgt, BB *new_tgt);
 extern void Change_Succ(BB *pred, BB *old_succ, BB *new_succ);
 extern void Change_Succ_Prob(BB *pred, BB *succ, float prob);
 
 /* Add/copy an annotation to a BB */
-extern void BB_Add_Annotation(BB *bb, ANNOTATION_KIND kind, void *info);
-extern INT BB_Copy_Annotations(BB *to_bb, BB *from_bb, ANNOTATION_KIND kind);
+CG_EXPORTED extern void BB_Add_Annotation(BB *bb, ANNOTATION_KIND kind, void *info);
+CG_EXPORTED extern INT BB_Copy_Annotations(BB *to_bb, BB *from_bb, ANNOTATION_KIND kind);
 
 /* Free the memory associated with the live BBs and clear pointers: */
 extern	void  Free_BB_Memory ( void );
@@ -955,11 +955,11 @@ extern	void  Free_BB_Memory ( void );
 
 /* Link up the pred and succ basic blocks. */
 extern void Link_Pred_Succ (BB *pred, BB *succ);
-extern void Link_Pred_Succ_with_Prob(BB *pred, BB *succ, float prob, 
+CG_EXPORTED extern void Link_Pred_Succ_with_Prob(BB *pred, BB *succ, float prob, 
 				     BOOL via_feedback = FALSE,
 				     BOOL set_prob = FALSE);
 extern BBLIST *BBlist_Add_BB(BBLIST **lst, BB *bb);
-extern void BBlist_Delete_BB(BBLIST **lst, BB *bb);
+CG_EXPORTED extern void BBlist_Delete_BB(BBLIST **lst, BB *bb);
 extern BBLIST *BBlist_Add_BB_with_Prob(BBLIST **lst, BB *bb, float prob,
 				       BOOL via_feedback = FALSE,
 				       BOOL set_prob     = FALSE);
@@ -979,8 +979,8 @@ extern BB *BB_Unique_Successor_Not_In_Set( BB *bb, BB_MAP map );
 extern BB *BB_Unique_Successor( BB *bb );
 extern BB *BB_Unique_Predecessor( BB *bb );
 extern BB *BB_Unique_Source( BB *bb );
-extern BB *BB_Fall_Thru_Successor( BB *bb );
-extern BB *BB_Fall_Thru_Predecessor( BB *bb );
+CG_EXPORTED extern BB *BB_Fall_Thru_Successor( BB *bb );
+CG_EXPORTED extern BB *BB_Fall_Thru_Predecessor( BB *bb );
 extern BOOL BB_Retarget_Branch(BB *bb, BB *from, BB *to);
 extern BOOL BB_Can_Retarget_Branch(BB *bb, BB *from);
 
@@ -1018,18 +1018,18 @@ extern struct op* BB_xfer_op( BB *bb );
 extern struct op* BB_copy_xfer_op( BB *bb );
 
 /* Return the op that that does the entry/exit SP adjustment in BB */
-extern struct op *BB_entry_sp_adj_op (BB *bb);
-extern struct op *BB_exit_sp_adj_op (BB *bb);
+CG_EXPORTED extern struct op *BB_entry_sp_adj_op (BB *bb);
+CG_EXPORTED extern struct op *BB_exit_sp_adj_op (BB *bb);
 
 /* Set the op that does the entry/exit SP adjustment in BB */
 extern void Set_BB_entry_sp_adj_op (BB *bb, struct op *);
 extern void Set_BB_exit_sp_adj_op (BB *bb, struct op *);
 
 /* Remove a BB from the list: */
-extern void  Remove_BB (BB *);
+CG_EXPORTED extern void  Remove_BB (BB *);
 
 /* Insert a BB into the list after a given BB (NULL for beginning): */
-extern void  Insert_BB ( BB *bb, BB *after );
+CG_EXPORTED extern void  Insert_BB ( BB *bb, BB *after );
 
 /* Move a BB from its current position to be after a given BB
  * (NULL for beginning):
@@ -1069,7 +1069,7 @@ extern void Print_Entry_Chain ( char *banner );
 #pragma mips_frequency_hint NEVER Print_Entry_Chain
 extern void Print_Flow_Graph  ( char *banner, BOOL verbose );
 #pragma mips_frequency_hint NEVER Print_Flow_Graph
-extern void Print_LOOPINFO( LOOPINFO *info );
+CG_EXPORTED extern void Print_LOOPINFO( LOOPINFO *info );
 #pragma mips_frequency_hint NEVER Print_LOOPINFO
 
 #define BB_length(bb) OPS_length(&(bb)->ops)
@@ -1079,11 +1079,11 @@ UINT16 BB_New_Op_Map_Idx(BB *bb);
 
 void BB_Insert_Op_Before(BB *bb, OP *point, OP *op);
 void BB_Insert_Op_After(BB *bb, OP *point, OP *op);
-void BB_Append_Op(BB *bb, OP *op);
+CG_EXPORTED void BB_Append_Op(BB *bb, OP *op);
 void BB_Prepend_Op(BB *bb, OP *op);
 void BB_Insert_Ops_Before(BB *bb, OP *point, OPS *ops);
 void BB_Insert_Ops_After(BB *bb, OP *point, OPS *ops);
-void BB_Append_Ops(BB *bb, OPS *ops);
+CG_EXPORTED void BB_Append_Ops(BB *bb, OPS *ops);
 void BB_Prepend_Ops(BB *bb, OPS *ops);
 void BB_Insert_Op(BB *bb, OP *point, OP *op, BOOL before);
 void BB_Insert_Ops(BB *bb, OP *point, OPS *ops, BOOL before);
@@ -1107,10 +1107,10 @@ void BB_Prepend_All(BB *to_bb, BB *from_bb);
 
 OP *BB_Remove_Branch(BB *bb);
 void BB_Remove_Ops(BB *bb, OPS *ops);
-void BB_Remove_Op(BB *bb, OP *op);
-void BB_Remove_All(BB *bb);
+CG_EXPORTED void BB_Remove_Op(BB *bb, OP *op);
+CG_EXPORTED void BB_Remove_All(BB *bb);
 
-extern SRCPOS BB_Loop_Srcpos(BB *bb);
+CG_EXPORTED extern SRCPOS BB_Loop_Srcpos(BB *bb);
 inline INT32 BB_Loop_Lineno(BB *bb)
 {
   return Srcpos_To_Line(BB_Loop_Srcpos(bb));

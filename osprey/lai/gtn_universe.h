@@ -134,11 +134,11 @@
 #define GTN_CONST const
 #endif
 
-extern GTN_CONST INT32  GTN_UNIVERSE_size;
+CG_EXPORTED extern GTN_CONST INT32  GTN_UNIVERSE_size;
 extern INT32  First_REGION_GTN;
-extern GTN_CONST INT32 *GTN_CONST GTN_UNIVERSE_tn_int_map;
-extern TN   *GTN_CONST *GTN_CONST GTN_UNIVERSE_int_tn_map;
-extern INT32  tn_int_map_allocated_size;
+CG_EXPORTED extern GTN_CONST INT32 *GTN_CONST GTN_UNIVERSE_tn_int_map;
+CG_EXPORTED extern TN   *GTN_CONST *GTN_CONST GTN_UNIVERSE_int_tn_map;
+CG_EXPORTED extern INT32  tn_int_map_allocated_size;
 extern INT32  int_tn_map_allocated_size;
 
 

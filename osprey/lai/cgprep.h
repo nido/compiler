@@ -98,7 +98,7 @@ void CGPREP_Copy_TN_Into_BB(TN *dest, TN *src, BB *bb, OP *point, UINT8 omega, B
 INT16 CGPREP_Same_Res_Opnd(OP *op);
 #endif
 
-void CGPREP_Init_Op(OP *op);
+CG_EXPORTED void CGPREP_Init_Op(OP *op);
 
 TN * CGPREP_Dup_TN(TN *old_tn);
 

@@ -267,11 +267,11 @@ extern ANNOTATION *ANNOT_Add (
   void *info,
   MEM_POOL *pool);
 
-extern ANNOTATION *ANNOT_Unlink (
+CG_EXPORTED extern ANNOTATION *ANNOT_Unlink (
   ANNOTATION *annot_list, 
   ANNOTATION *this1);
 
-extern ANNOTATION *ANNOT_Get (ANNOTATION *annot_list, ANNOTATION_KIND kind);
+CG_EXPORTED extern ANNOTATION *ANNOT_Get (ANNOTATION *annot_list, ANNOTATION_KIND kind);
 
 #define ANNOT_First(list,kind)	(ANNOT_Get (list, kind))
 #define ANNOT_Next(list,kind)	(ANNOT_Get (ANNOT_next(list), kind))

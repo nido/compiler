@@ -4866,7 +4866,7 @@ CG_DEP_Compute_Region_Graph(list<BB*>    bb_region,
 // This fuctions computes the memory dependences on a multi-BB region,
 // including cross-BB dependences and loop-carried dependences. (BD3.)
 // -----------------------------------------------------------------------
-void 
+CG_EXPORTED void 
 CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs)

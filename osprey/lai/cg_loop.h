@@ -340,7 +340,7 @@ inline UINT _CG_LOOP_info_sizeof(OP *op)
 
 /* Internal OP_MAP to hold loop info.
  */
-extern OP_MAP _CG_LOOP_info_map;
+CG_EXPORTED extern OP_MAP _CG_LOOP_info_map;
 
 #define _CG_LOOP_info(op) ((_CG_LOOP_INFO *)OP_MAP_Get(_CG_LOOP_info_map, op))
 
@@ -501,7 +501,7 @@ OP_LIST *CG_LOOP_Identify_Loop_Overhead(LOOP_DESCR *loop,
 
 void CG_LOOP_Clear_SCCs(LOOP_DESCR *loop);
 
-void CG_LOOP_Init_Op(OP *op);
+CG_EXPORTED void CG_LOOP_Init_Op(OP *op);
 void CG_LOOP_Init_OPS(OPS *ops);
 
 void CG_LOOP_Recompute_Liveness(LOOP_DESCR *loop);

@@ -185,20 +185,20 @@ struct LOOP_DESCR {
 			(LOOP_DESCR_flags(loop) &= ~LOOP_DESCR_Call_Loop)
 
 extern void LOOP_DESCR_Init_For_PU(void);
-extern LOOP_DESCR * LOOP_DESCR_Detect_Loops (MEM_POOL *pool);
+CG_EXPORTED extern LOOP_DESCR * LOOP_DESCR_Detect_Loops (MEM_POOL *pool);
 extern void LOOP_DESCR_Print_List(void);
 #pragma mips_frequency_hint NEVER LOOP_DESCR_Print_List
 extern LOOP_DESCR *LOOP_DESCR_Is_Exit_Edge(BB *bb, BB *succ);
 extern void LOOP_DESCR_Add_BB(LOOP_DESCR *loop, BB *bb);
 extern void LOOP_DESCR_Delete_BB(LOOP_DESCR *loop, BB *bb);
-extern BB* LOOP_DESCR_Find_Unique_Tail(LOOP_DESCR *loop);
+CG_EXPORTED extern BB* LOOP_DESCR_Find_Unique_Tail(LOOP_DESCR *loop);
 extern LOOP_DESCR *LOOP_DESCR_Next_Enclosing_Loop(LOOP_DESCR *loop);
 extern void LOOP_DESCR_Retarget_Loop_Entrances(LOOP_DESCR *loop, BB *to);
 extern BOOL LOOP_DESCR_Can_Retarget_Loop_Entrances(LOOP_DESCR *loop);
 extern float LOOP_DESCR_Estimate_Cycles(LOOP_DESCR *loop);
 extern BOOL LOOP_DESCR_Has_Side_Entrance(LOOP_DESCR *loop);
 
-extern BB_MAP LOOP_DESCR_map;
+CG_EXPORTED extern BB_MAP LOOP_DESCR_map;
 #define LOOP_DESCR_Find_Loop(bb) \
 	((LOOP_DESCR *)BB_MAP_Get(LOOP_DESCR_map, bb))
 

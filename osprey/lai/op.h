@@ -1098,7 +1098,7 @@ inline void OPS_Remove_Ops(OPS *ops, OPS *remove_ops)
 
 void OPS_Insert_Op_Before(OPS *ops, OP *point, OP *op);
 void OPS_Insert_Op_After(OPS *ops, OP *point, OP *op);
-void OPS_Append_Op(OPS *ops, OP *op);
+CG_EXPORTED void OPS_Append_Op(OPS *ops, OP *op);
 void OPS_Prepend_Op(OPS *ops, OP *op);
 void OPS_Insert_Ops_Before(OPS *ops, OP *point, OPS *insert_ops);
 void OPS_Insert_Ops_After(OPS *ops, OP *point, OPS *insert_ops);
@@ -1125,7 +1125,7 @@ extern OP *Mk_OP (
   ...			/* the results and operands */
 );
 
-extern OP *Mk_VarOP (
+CG_EXPORTED extern OP *Mk_VarOP (
   TOP opr,		/* operator */
   INT results,		/* number of results */
   INT opnds,		/* number of operands */
@@ -1199,7 +1199,7 @@ inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3,
 extern void CGTARG_Predicate_OP(struct bb *bb, OP *op, struct tn *pred_tn);
 
 /* Determine if the op defines/references the given TN result/operand. */
-extern BOOL OP_Defs_TN(const OP *op, const struct tn *res);
+CG_EXPORTED extern BOOL OP_Defs_TN(const OP *op, const struct tn *res);
 extern BOOL OP_Refs_TN(const OP *op, const struct tn *opnd);
 
 /* Determine if the op defines/references the given register. */
@@ -1292,7 +1292,7 @@ void Print_OPs( const OP *op );
 #pragma mips_frequency_hint NEVER Print_OPs
 void Print_OPS( const OPS *ops);
 #pragma mips_frequency_hint NEVER Print_OPS
-void Print_OP_No_SrcLine( const OP *op);
+CG_EXPORTED void Print_OP_No_SrcLine( const OP *op);
 #pragma mips_frequency_hint NEVER Print_OP_No_SrcLine
 void Print_OPs_No_SrcLines( const OP *op );
 #pragma mips_frequency_hint NEVER Print_OPs_No_SrcLines

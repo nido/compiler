@@ -47,7 +47,7 @@ extern UINT64 Get_Label_Offset (LABEL_IDX i);
 extern void Set_Label_Offset (LABEL_IDX i, UINT64 offset);
 
 // Get the defining BB for a given label number
-extern BB* Get_Label_BB (LABEL_IDX i);
-extern void Set_Label_BB (LABEL_IDX i, BB *bb);
+CG_EXPORTED extern BB* Get_Label_BB (LABEL_IDX i);
+CG_EXPORTED extern void Set_Label_BB (LABEL_IDX i, BB *bb);
 
 extern LABEL_IDX Gen_Temp_Label(void);

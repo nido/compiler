@@ -427,9 +427,9 @@ extern	void Init_TNs_For_REGION (void);
 
 /* The following set of routines can be used only for register TNs */
 
-extern TN* Gen_Register_TN (ISA_REGISTER_CLASS rclass, INT size);
+CG_EXPORTED extern TN* Gen_Register_TN (ISA_REGISTER_CLASS rclass, INT size);
 
-extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER reg, INT size);
+CG_EXPORTED extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER reg, INT size);
 
 /* Macros to check if a TN is a particular dedicated register. */
 #define TN_is_sp_reg(r)	   (TN_register_and_class(r) == CLASS_AND_REG_sp)
@@ -537,14 +537,14 @@ inline BOOL TN_is_dedicated_class_and_reg( TN *tn, UINT16 class_n_reg )
 
 /* Only the following routines should be used to build constant TNs. */
 
-extern	TN *Gen_Literal_TN ( INT64 val, INT size );
+CG_EXPORTED extern	TN *Gen_Literal_TN ( INT64 val, INT size );
 // normally literals are hashed and reused; this creates unique TN
 extern TN *Gen_Unique_Literal_TN (INT64 ivalue, INT size);
 
 extern TN *Gen_Enum_TN (ISA_ENUM_CLASS_VALUE ecv);
 
 extern  TN *Gen_Symbol_TN ( ST *s, INT64 offset, INT32 relocs);
-extern  TN *Gen_Label_TN ( LABEL_IDX lab, INT64 offset );
+CG_EXPORTED extern  TN *Gen_Label_TN ( LABEL_IDX lab, INT64 offset );
 extern  TN *Gen_Tag_TN ( LABEL_IDX tag);
 extern	TN *Gen_Adjusted_TN( TN *tn, INT64 adjust );
 
@@ -594,7 +594,7 @@ extern INT64 CGTARG_TN_Value (TN *t, INT64 base_ofst);
 typedef struct {
   char *name;
 } TN_RELOCS_INFO;
-extern const TN_RELOCS_INFO TN_RELOCS_info[];
+CG_EXPORTED extern const TN_RELOCS_INFO TN_RELOCS_info[];
 
 
 inline const char * TN_RELOCS_Name (mUINT8 rc)

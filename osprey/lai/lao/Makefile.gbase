@@ -207,6 +207,9 @@ WOPT_DSO=wopt.so
 BE_DSO=be.so
 IPL_DSO=ipl.so
 CG_DSO=cg.so
+ifeq ($(BUILD_TARGET), ST200)
+TARGET_DSO=st220.so
+endif
 endif
 
 # static library
@@ -224,6 +227,13 @@ WOPT_DSO=wopt_dll.a
 BE_DSO=be_dll.a
 IPL_DSO=ipl_dll.a
 CG_DSO=cg_dll.a
+ifeq ($(BUILD_TARGET), ST200)
+TARGET_DSO=st220_dll.a
+endif
+HOSTDEFS += -DCG_EXPORTED=$(DLLIMPORT)
+HOSTDEFS += -DBE_EXPORTED=$(DLLIMPORT)
+HOSTDEFS += -DOPT_EXPORTED=$(DLLIMPORT)
+HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 endif
 
 LAO_DSOS =
@@ -232,7 +242,7 @@ LAO_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLIR.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCSD.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCCL.a
-LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO)
+LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO) $(TARGET_DSO)
 STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 
 ifeq ($(BUILD_HOST), IA64)
@@ -323,7 +333,7 @@ ifeq ($(BUILD_COMPILER), EDG)
 LLDLIBS += -none -lm
 endif
 
-default: first $(TARGETS) last
+default: first local last
 
 #----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is
@@ -338,6 +348,7 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(WOPT_DSO) .; fi
 	if [ ! -h $(IPL_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(IPL_DSO) .; fi
 	if [ ! -h $(CG_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(CG_DSO) .; fi
+	if [ ! -h $(TARGET_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(TARGET_DSO) .; fi
 endif
 
 first:
@@ -349,6 +360,8 @@ first:
 	cd $(TARG_BE_DIR) && $(MAKE)
 ## verify that cg.so is up to date
 	cd $(TARG_CG_DIR) && $(MAKE)
+
+local : first_local $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
@@ -436,6 +449,8 @@ endif
 # windows DLL
 #
 ifeq ($(DSO_MODE),DLL)
+
+LINK_DSOS = $(LAO_DSOS)
 
 LDDSOOPTS= $(LINK_DSOS) $(LLDLIBS)
 

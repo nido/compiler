@@ -374,14 +374,14 @@ extern void GRA_LIVE_Merge_Blocks( BB *dst, BB *a, BB *b );
 extern void GRA_LIVE_Compute_Liveness_For_BB(BB *bb);
 
 extern void GRA_LIVE_Init( RID *rid );
-extern void GRA_LIVE_Recalc_Liveness( RID *rid);
+CG_EXPORTED extern void GRA_LIVE_Recalc_Liveness( RID *rid);
 extern void GRA_LIVE_Finish_PU(void);
 extern void GRA_LIVE_Finish_REGION(void);
 
 extern void GRA_LIVE_Print_Liveness( BB* bb );
 
 extern void Rename_TNs_For_BB (BB *bb, TN_SET *multiple_defined_set);
-extern void GRA_LIVE_Rename_TNs (void);
+CG_EXPORTED extern void GRA_LIVE_Rename_TNs (void);
 extern void BB_REGION_Recompute_Global_Live_Info(const BB_REGION& region, BOOL recompute_local_info);
 
 extern void GRA_LIVE_Detect_GTNs_In_Set (BB_SET *bb_set);

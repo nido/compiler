@@ -158,8 +158,8 @@ void OP_MAP_Set(OP_MAP map, OP *op, void *value);
 void OP_MAP32_Set(OP_MAP map, OP *op, INT32 value);
 void OP_MAP64_Set(OP_MAP map, OP *op, INT64 value);
 
-void *OP_MAP_Get(OP_MAP map, const OP *OP);
-INT32 OP_MAP32_Get(OP_MAP map, const OP *OP);
+CG_EXPORTED void *OP_MAP_Get(OP_MAP map, const OP *OP);
+CG_EXPORTED INT32 OP_MAP32_Get(OP_MAP map, const OP *OP);
 INT64 OP_MAP64_Get(OP_MAP map, const OP *OP);
 
 /* Local maps:

@@ -39,7 +39,7 @@
 #include "symtab.h"
 #include "op_map.h"
 
-extern OP_MAP OP_Tag_Map;
+CG_EXPORTED extern OP_MAP OP_Tag_Map;
 
 extern LABEL_IDX Gen_Tag (void);
 

@@ -154,7 +154,7 @@ extern TN_LIST * REGION_Get_TN_In_List (RID *rid);
 extern TN_LIST * REGION_Get_TN_Out_List (RID *rid, INT exit_num);
 
 #ifdef TARG_ST
-extern BB_MAP CG_LAO_Region_Map;
+CG_EXPORTED extern BB_MAP CG_LAO_Region_Map;
 #endif
 
 #endif /* cg_region_INCLUDED */

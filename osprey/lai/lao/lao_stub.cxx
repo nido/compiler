@@ -41,7 +41,7 @@ extern "C" {
 }
 
 // Declare CG_DEP_Compute_Region_MEM_Arcs().
-void 
+CG_EXPORTED void 
 CG_DEP_Compute_Region_MEM_Arcs(list<BB*>    bb_list, 
 			    BOOL         compute_cyclic, 
 			    BOOL         memread_arcs);

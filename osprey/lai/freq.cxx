@@ -91,7 +91,7 @@
  * ====================================================================
  */
 
-       BOOL    FREQ_freqs_computed; // True if freqs computed for region
+CG_EXPORTED BOOL    FREQ_freqs_computed; // True if freqs computed for region
 static BB_SET *Never_BBs;	// Set of BBs having "never" freq pragmas
 static BB_SET *Frequent_BBs;	// Set of BBs having "frequent" freq pragmas
 static float   Frequent_Never_Ratio;

@@ -581,7 +581,7 @@ inline BOOL ARC_is_anti(ARC *arc)
  * if this is no longer true.
  */
  
-extern BB_MAP _cg_dep_op_info;
+CG_EXPORTED extern BB_MAP _cg_dep_op_info;
 
 typedef struct {
   ARC_LIST *preds;
@@ -666,7 +666,7 @@ void CG_DEP_Trace_Op_Arcs(OP *op);
 void CG_DEP_Trace_Op_SCC_Arcs(OP *op);
 #pragma mips_frequency_hint NEVER CG_DEP_Trace_Op_SCC_Arcs
 
-void CG_DEP_Delete_Graph(void *item);
+CG_EXPORTED void CG_DEP_Delete_Graph(void *item);
 
 INT16 CG_DEP_Latency(OP *pred, OP *succ, CG_DEP_KIND kind, UINT8 opnd);
 INT16 CG_DEP_Oper_Latency(TOP              pred_oper, 
@@ -707,7 +707,7 @@ BOOL CG_DEP_Graph_Is_Cyclic(BB *bb);
 
 ARC_LIST *CG_DEP_GTN_Use_Arcs(TN *tn);
 
-BOOL CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical);
+CG_EXPORTED BOOL CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical);
 
 BOOL CG_DEP_Mem_Ops_Offsets_Overlap(OP *memop1, OP *memop2, BOOL *identical);
 

@@ -116,11 +116,11 @@ typedef struct bb_map {
 
 void BB_MAP_Init(void);
 
-BB_MAP BB_MAP_create_kind(_BB_MAP_KIND kind);
+CG_EXPORTED BB_MAP BB_MAP_create_kind(_BB_MAP_KIND kind);
 
-void BB_MAP_Delete(BB_MAP map);
+CG_EXPORTED void BB_MAP_Delete(BB_MAP map);
 
-void BB_MAP_grow(BB_MAP map, BB *bb);
+CG_EXPORTED void BB_MAP_grow(BB_MAP map, BB *bb);
 
 
 inline void BB_MAP_Set(BB_MAP map, BB *bb, void *value)

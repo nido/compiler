@@ -119,7 +119,7 @@ extern void Get_Memory_OP_Predicate_Info(OP *memop, TN **pred_tn,
  * Get_WN_From_Memory_OP(dest) == Get_WN_From_Memory_OP(src).
  * Also copies predicate information (see above).
  */
-extern void Copy_WN_For_Memory_OP(OP *dest, OP *src);
+CG_EXPORTED extern void Copy_WN_For_Memory_OP(OP *dest, OP *src);
 
 /* Return the OP corresponding to a given prefetch WN. 
  * If WN is not a prefetch WN returns NULL. 

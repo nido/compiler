@@ -641,7 +641,7 @@ union class_reg_pair {
 #define     CLASS_REG_PAIR_reg(x)		((x).class_reg.reg+0)
 
 // Do not inline this function to avoid a g++ optimizer bug!
-extern void Set_CLASS_REG_PAIR(CLASS_REG_PAIR& rp, ISA_REGISTER_CLASS rclass, REGISTER reg);
+CG_EXPORTED extern void Set_CLASS_REG_PAIR(CLASS_REG_PAIR& rp, ISA_REGISTER_CLASS rclass, REGISTER reg);
 
 /* Create a CLASS_REG_PAIR from rclass/reg pair */
 #define CREATE_CLASS_N_REG(rclass,reg)	((mUINT16)(((reg)<<8)|(rclass)))
@@ -764,7 +764,7 @@ REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX + 1];
 /* Cached information about each ISA_REGISTER_CLASS:
  */
 extern REGISTER_CLIENT_CONST REGISTER_CLASS_INFO
-REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
+CG_EXPORTED REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
 
 /* Accessing cached information about a ISA_REGISTER_CLASS
  */
@@ -934,7 +934,7 @@ extern CLASS_REG_PAIR		CLASS_REG_PAIR_rs;
 #define REGISTER_CLASS_rs	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_rs)
 #define CLASS_AND_REG_rs	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_rs)
 
-extern const CLASS_REG_PAIR		CLASS_REG_PAIR_undef;
+CG_EXPORTED extern const CLASS_REG_PAIR		CLASS_REG_PAIR_undef;
 
 /* Exported functions
  * ==================
