@@ -53,6 +53,9 @@ main()
     out_of_order, 		/* out of order execution */
     superscalar,		/* multiple insts per cycle */
     bundles,			/* executes insts as sequence of bundles */
+    prefetch,                   /* supports prefetch instructions */
+    enable_prefetch,            /* implicitely enables prefetch */
+    enable_prefetch_ahead,      /* enables prefetch to L2 cache */
     delayed_exception,		/* has delayed exception support */
     fast_recip;			/* recip inst is fast */
 
@@ -96,6 +99,18 @@ main()
   bundles = PROC_Property_Create ("has_bundles");
   Processor_Group (bundles,
 			PROCESSOR_st220,
+			PROCESSOR_UNDEFINED);
+
+  prefetch = PROC_Property_Create ("has_prefetch");
+  Processor_Group (prefetch,
+			PROCESSOR_UNDEFINED);
+
+  enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
+  Processor_Group (enable_prefetch,
+			PROCESSOR_UNDEFINED);
+
+  enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");
+  Processor_Group (enable_prefetch_ahead,
 			PROCESSOR_UNDEFINED);
 
   /* Does the target support delayed_exception mechanism, i.e ability to

@@ -82,7 +82,7 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 
-BOOL Reuse_Temp_TNs = FALSE;
+//BOOL Reuse_Temp_TNs = FALSE;
 
 /* Disable conversion of constant integer multiplies into shift/adds:*/
 static BOOL Disable_Const_Mult_Opt = FALSE;
@@ -1378,11 +1378,11 @@ Expand_Logical_And_Or (
   *  if CG_EXP_normalize is true we must normalized the operands
   *  (if not already normalized)
   */
-  if (!V_normalized_op1(variant) && EXP_normalize_logical)
+  if (!V_normalized_op1(variant) && CGEXP_normalize_logical)
   {
     Expand_Normalize_Logical (src1, ops);
   }
-  if (!V_normalized_op2(variant) && EXP_normalize_logical)
+  if (!V_normalized_op2(variant) && CGEXP_normalize_logical)
   {
     Expand_Normalize_Logical (src2, ops);
   }
@@ -2745,7 +2745,7 @@ Expand_Sqrt (
   FmtAssert(FALSE,("Not Implemented"));
 
   if (!initialized) {
-    const char * const alg = EXP_sqrt_algorithm;
+    const char * const alg = CGEXP_sqrt_algorithm;
     if (strcasecmp(alg, "st220") == 0) {
       exp_sqrt = Expand_ST220_Sqrt;
     } else {
