@@ -1507,17 +1507,16 @@ Make_Bundles (
 	// before we bundle the transfer out of BB, handle the
 	// latencies that may still be pending
 
+#ifdef TARG_ST200
+	// CL: the xfer OP accounts for 1 more cycle
+	pending_latency--;
+#endif
 	if (Trace_HB) fprintf(TFile, "  OP_xfer: pending latency = %d\n", pending_latency);
 
 	//
 	// If we need to wait longer than the dependence, do it
 	//
-#ifndef TARG_ST200
 	if (pending_latency > estart) estart = pending_latency;
-#else
-	// CL: the xfer OP accounts for 1 more cycle
-	if (pending_latency > (estart+1)) estart = pending_latency;
-#endif
       }
 
       // If dependence is still pending, fill with noop cycles
