@@ -188,6 +188,10 @@ OP_MAP _CG_LOOP_info_map;
 BOOL CG_LOOP_unroll_fully = TRUE;
 BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 
+#ifdef TARG_ST
+BOOL CG_LOOP_unwind = FALSE;
+#endif
+
 #ifdef MIPS_UNROLL
 BOOL CG_LOOP_unroll_analysis = TRUE;
 #else
@@ -5204,7 +5208,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
   }
 
   if (single_bb) {
-    if (has_trip_count) {
+    if (has_trip_count && !CG_LOOP_unwind) {
       if (Enable_SWP)
 	action =  SINGLE_BB_DOLOOP_SWP;
       else 

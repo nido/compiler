@@ -461,6 +461,9 @@ extern BOOL CG_LOOP_optimize_non_innermost;
 extern BOOL CG_LOOP_optimize_multi_targ;
 extern BOOL CG_LOOP_optimize_non_trip_countable;
 
+#ifdef TARG_ST
+extern BOOL CG_LOOP_unwind;
+#endif
 /* Exported functions.
  */
 extern void CG_LOOP_Init();
