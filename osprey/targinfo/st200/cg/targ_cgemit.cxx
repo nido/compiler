@@ -138,14 +138,14 @@ CGEMIT_Prn_Scn_In_Asm (
   char scn_type_string[10];  // min of strlen("progbits") + 1
   char *p = &scn_flags_string[0];
 
-  fprintf (asm_file, "\n\t%s %s,", AS_SECTION, scn_name);
+  fprintf (asm_file, "\n\t%s %s", AS_SECTION, scn_name);
   if (scn_flags & SHF_WRITE) *p++ = 'w';
   if (scn_flags & SHF_ALLOC) *p++ = 'a';
   if (scn_flags & SHF_EXECINSTR) *p++ = 'x';
   // short sections are only recognized by name, not by "s" qualifier
   // if (scn_flags & SHF_IRIX_GPREL) *p++ = 's';
   *p = '\0'; // null terminate the string.
-  fprintf (asm_file, " \"%s\",", scn_flags_string);
+  fprintf (asm_file, ", \"%s\"", scn_flags_string);
 
   p = &scn_type_string[0];
   if (scn_type == SHT_NOBITS) {
@@ -165,13 +165,13 @@ CGEMIT_Prn_Scn_In_Asm (
     strcpy(p, "progbits");
   }
 #ifndef TARG_ST
-  fprintf (asm_file, " \"%s\"\n", scn_type_string);
+  fprintf (asm_file, ", \"%s\"\n", scn_type_string);
 #else
   /* CLYON: change syntax for use with gas */
-  if (strlen(scn_type_string)) /* Handle the case when the
+  if (*scn_type_string) /* Handle the case when the
 				  type string is empty
 				  (dwarf) */
-      fprintf (asm_file, " @%s", scn_type_string);
+    fprintf (asm_file, ", @%s", scn_type_string);
   fprintf (asm_file, "\n");
 #endif /* TARG_ST */
 #if 0   // contrary to document, it should be align, not power of it.
