@@ -232,8 +232,14 @@ typedef enum {
   CGSPILL_LGRA
 } CGSPILL_CLIENT;
 
+#ifdef TARG_ST
+//
+// Arthur: moved to targinfo/<targ>/cg/targ_cg.h
+//
+#else
 #define CGSPILL_DEFAULT_STORE_COST 1.25F
 #define CGSPILL_DEFAULT_RESTORE_COST 1.25F
+#endif
 
 extern void CGSPILL_Initialize_For_PU (void);
 extern void CGSPILL_Finalize_For_PU (void);
