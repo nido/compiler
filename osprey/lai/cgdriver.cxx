@@ -745,6 +745,7 @@ static OPTION_DESC Options_CG[] = {
 };
 
 OPTION_GROUP CG_Option_Groups[] = {
+  { "SWP", ':', '=', Options_CG_SWP },
   { "CG", ':', '=', Options_CG },
   { "GRA", ':', '=', Options_GRA },
   { NULL }		/* List terminator -- must be last */
