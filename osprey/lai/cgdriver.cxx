@@ -191,6 +191,7 @@ static BOOL CG_split_BB_length_overridden = FALSE;
 #ifdef TARG_ST200
 BOOL CG_NOPs_to_GOTO = FALSE;
 static BOOL CG_NOPs_to_GOTO_overridden = FALSE;
+BOOL CG_nop_insertion_directives = FALSE;
 #endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
@@ -572,6 +573,9 @@ static OPTION_DESC Options_CG[] = {
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
     TRUE, 0, 0, &CG_NOPs_to_GOTO, &CG_NOPs_to_GOTO_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "nop_insertion_directives", "",
+    TRUE, 0, 0, &CG_nop_insertion_directives, NULL,
+    "control emission of assembler nop insertion directives" },
 #endif
 
   // Cross Iteration Loop Optimization options.
