@@ -133,25 +133,23 @@ BOOL OP_Can_Be_Speculative (
 {
   TOP opcode = OP_code(op);
 
-  /* not allowed to speculate anything. */
-  if (Eager_Level == EAGER_NONE) return FALSE;
-
-  /* don't speculate volatile memory references. */
-  if (OP_volatile(op)) return FALSE;
+  // can never speculate a call.
+  if (OP_call (op))
+    return FALSE;
 
   switch (Eager_Level) {
-    //  case EAGER_NONE:
+   case EAGER_NONE:
 
-    /* not allowed to speculate anything
+     /* not allowed to speculate anything
      */
-    //    break;
+     return FALSE;
+     break;
 
   case EAGER_SAFE:
 
     /* Only exception-safe speculative ops are allowed
      */
 #if 0
-    /* Arthur: when we add these to semantics - enable */
     if (TOP_is_ftrap(opcode) || TOP_is_itrap(opcode)) return FALSE;
 #endif
     /*FALLTHROUGH*/
@@ -168,7 +166,6 @@ BOOL OP_Can_Be_Speculative (
     /* Divide by zero exceptions allowed 
      */
 #if 0
-    /* Arthur: when we add these to semantics - enable */
     if (TOP_is_memtrap(opcode)) return FALSE;
 #endif
     /*FALLTHROUGH*/
@@ -185,43 +182,19 @@ BOOL OP_Can_Be_Speculative (
     return FALSE;
   }
 
+  if (!OP_memory (op)) return TRUE;
+
+  /* This is a memory reference */
+
+  /* don't speculate volatile memory references. */
+  if (OP_volatile(op)) return FALSE;
+
   if (!OP_load(op)) return FALSE;
 
-  /* Try to identify simple scalar loads than can be safely speculated:
-   *  a) read only loads (literals, GOT-loads, etc.)
-   *  b) load of a fixed variable (directly referenced)
-   *  c) load of a fixed variable (base address is constant or
-   *     known to be in bounds)
-   *  d) speculative, advanced and advanced-speculative loads are safe.
-   */
-
-  /*  a) read only loads (literals, GOT-loads, etc.)
-   */
-  if (OP_no_alias(op)) goto scalar_load;
-
-  /*  b) load of a fixed variable (directly referenced); this
-   *     includes spill-restores.
-   *  b') exclude cases of direct loads of weak symbols (#622949).
-   */
-  if (TN_is_symbol(OP_opnd(op, 1)) &&
-      !ST_is_weak_symbol(TN_var(OP_opnd(op, 1)))) goto scalar_load;
-
-  /*  c) load of a fixed variable (base address is constant or
-   *     known to be in bounds), comment out the rematerizable bit check 
-   *     since it doesn;t guarantee safeness all the time.
-   */
-#if 0
-  /* Arthur: this should be checked at the call site !! */
-  if (/*   TN_is_rematerializable(OP_opnd(op, 0)) || */
-      (   (wn = Get_WN_From_Memory_OP(op))
-	  && Alias_Manager->Safe_to_speculate(wn))) goto scalar_load;
-#endif
-
-  /* d) speculative, advanced, speculative-advanced loads are safe to 
-   *    speculate. 
-   */
+  /* we can't speculate a load unless it is marked as dismissable */
+  /* it is the client's responsability to do that. */
   if (OP_Is_Speculative(op)) goto scalar_load;
-
+  
   /* If we got to here, we couldn't convince ourself that we have
    * a scalar load -- no speculation this time...
    */
@@ -452,5 +425,47 @@ OP_Is_Unconditional_Compare (
 )
 {
   return (OP_icmp(op));
+}
+
+TOP
+OP_Get_Speculative_Load (OP *op)
+{
+  TOP opcode = OP_code(op);
+  TOP ld = TOP_UNDEFINED;
+
+  switch (opcode) {
+  case TOP_ldw_i: 
+    ld = TOP_ldw_d_i;
+    break;
+  case TOP_ldw_ii:
+    ld = TOP_ldw_d_ii;
+    break;
+  case TOP_ldh_i:
+    ld = TOP_ldh_d_i;
+    break;
+  case TOP_ldh_ii:
+    ld = TOP_ldh_d_ii;
+    break;
+  case TOP_ldhu_i:
+    ld = TOP_ldhu_d_i;
+    break;
+  case TOP_ldhu_ii:
+    ld = TOP_ldhu_d_ii;
+    break;
+  case TOP_ldb_i:
+    ld = TOP_ldb_d_i;
+    break;
+  case TOP_ldb_ii:
+    ld = TOP_ldb_d_ii;
+    break;
+  case TOP_ldbu_i:
+    ld = TOP_ldbu_d_i;
+    break;
+  case TOP_ldbu_ii:
+    ld = TOP_ldbu_d_ii;
+    break;
+  }
+
+  return ld;
 }
 

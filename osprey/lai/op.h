@@ -900,6 +900,7 @@ extern BOOL OP_Is_Check_Load(OP* memop);
 extern BOOL OP_Is_Speculative(OP *op);
 extern BOOL OP_Can_Be_Speculative (OP *op);
 extern BOOL OP_Is_Unconditional_Compare (OP *op);
+extern TOP  OP_Get_Speculative_Load (OP *op);
 #else
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif
