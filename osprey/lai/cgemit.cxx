@@ -721,13 +721,13 @@ r_qualified_tcon_name (
 {
   if (ST_level(st) == GLOBAL_SYMTAB) {
     vstr_sprintf (buf, vstr_len(*buf), 
-                 "%s_UNNAMED_CONST_%d_%d%s%d", Local_Label_Prefix,
-		  Ipa_Ident_Number,
+                 "%s_UNNAMED_CONST_%s_%d%s%d", Local_Label_Prefix,
+		  Ipa_Label_Suffix,
 		 ST_tcon(st), Label_Name_Separator, ST_index(st));
   } else {
     vstr_sprintf (buf, vstr_len(*buf), 
-                 "%s_UNNAMED_CONST_%d_%d%s%d%s%d", Local_Label_Prefix,
-		  Ipa_Ident_Number,
+                 "%s_UNNAMED_CONST_%s_%d%s%d%s%d", Local_Label_Prefix,
+		  Ipa_Label_Suffix,
 		  ST_tcon(st), Label_Name_Separator,
 		  ST_pu(Get_Current_PU_ST()),
 		  Label_Name_Separator, ST_index(st));
@@ -5601,7 +5601,11 @@ EMT_End_File( void )
       if (SEC_is_merge(STB_section_idx(sym))) continue;
 #ifdef TARG_ST
       // [CL] generate unique names
-      newname = Index_To_Str(Save_Str2i(ST_name(sym), "_symbol_", Ipa_Ident_Number));
+      UINT len = strlen ("_symbol_") + strlen(Ipa_Label_Suffix) + 1;
+      char *new_str = (char *) alloca (len);
+      strcpy (new_str, "_symbol_");
+      strcat (new_str, Ipa_Label_Suffix);
+      newname = Index_To_Str(Save_Str2(ST_name(sym), new_str));
 #else
       newname = Index_To_Str(Save_Str2(ST_name(sym), "_symbol"));
 #endif
@@ -5884,8 +5888,12 @@ EMT_End_File( void )
 	Reset_STB_root_base(sym);
 	Set_STB_section_idx(sym,0);
 #ifdef TARG_ST
-	// [CL]
-	Set_ST_name(sym, Save_Str2i(ST_name(sym), "_symbol_", Ipa_Ident_Number));
+	// [CL] generate unique names
+	UINT len = strlen ("_symbol_") + strlen(Ipa_Label_Suffix) + 1;
+	char *new_str = (char *) alloca (len);
+	strcpy (new_str, "_symbol_");
+	strcat (new_str, Ipa_Label_Suffix);
+	Set_ST_name(sym, Save_Str2(ST_name(sym), new_str));
 #else
 	Set_ST_name(sym, Save_Str2(ST_name(sym), "_symbol"));
 #endif
