@@ -579,6 +579,9 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
 	 ( ! OP_has_predicate( op ) ||
 	   TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) ) &&
 #ifdef TARG_ST
+	 // FdF: Fix bug on R06253.cxx: cannot perform copy
+	 // propagation on x = x;
+	 OP_opnd(op, OP_Copy_Operand(op)) != OP_result(op, OP_Copy_Result(op)) &&
 	 OP_omega(op, OP_Copy_Operand(op)) > 0) {
 #else
 	 OP_omega( op, OP_COPY_OPND ) > 0 ) {
