@@ -5083,6 +5083,11 @@ EMT_Begin_File (
 
   //  Init_Tcon_Info ();
 
+#ifdef TARG_ST
+  // Target dependent begin file.
+  if (Assembly) CGEMIT_Begin_File_In_Asm ();
+#endif
+
   return;
 }
 
@@ -5684,6 +5689,11 @@ EMT_End_File( void )
 
   // Finish off the TCON to symbolic names table:
   //  Fini_Tcon_Info ();
+
+#ifdef TARG_ST
+  // Target dependent end file.
+  if (Assembly) CGEMIT_End_File_In_Asm ();
+#endif
 
   return;
 }

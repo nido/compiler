@@ -87,4 +87,9 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 #ifdef TARG_ST
 // generate procedure end directive
 extern void CGEMIT_Exit_In_Asm (ST *pu);
+
+// Called at begining of file.
+extern void CGEMIT_Begin_File_In_Asm (void);
+// Called at end of file.
+extern void CGEMIT_End_File_In_Asm (void);
 #endif
