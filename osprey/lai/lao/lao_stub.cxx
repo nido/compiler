@@ -461,7 +461,7 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 		Is_True(pred_op == op, ("Error in lao_setDependences"));
 		Operation dest_operation = CGIR_OP_to_Operation(succ_op);
 		Interface_LoopInfo_setDependenceArc(interface, loopinfo,
-		    orig_operation, dest_operation, latency, omega, (Dependence_Type)type);
+		    orig_operation, dest_operation, latency, omega, (DependenceType)type);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
