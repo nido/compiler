@@ -527,6 +527,8 @@ CG_Generate_Code(
   // Invoke global optimizations before register allocation at -O2 and above.
   if (CG_opt_level > 1) {
 #ifdef TARG_ST
+    if (CG_enable_ssa)
+      CG_enable_ssa = SSA_Check(region ? REGION_get_rid(rwn) : NULL, region);
     if (CG_enable_ssa) {
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
@@ -560,7 +562,7 @@ CG_Generate_Code(
   if (CG_opt_level > 1) {
 #ifdef TARG_ST
 #ifdef SUPPORTS_SELECT
-    if (CG_enable_select) {
+    if (CG_enable_ssa && CG_enable_select) {
       // Perform select generation (partial predication if-conversion). 
       Start_Timer(T_Select);
       Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);

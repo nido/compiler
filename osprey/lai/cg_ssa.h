@@ -87,6 +87,7 @@ inline void Set_TN_ssa_def(TN *t, OP *o) {
 #define FOR_ALL_BB_PHI_OPs(bb,op)    \
   for (op = BB_first_op(bb); op != NULL && OP_code(op) == TOP_phi; op = OP_next(op))
 
+extern BOOL SSA_Check (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Make_Consistent (RID *rid, BOOL region);
 extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);

@@ -1215,6 +1215,29 @@ SSA_Enter (
 }
 
 /* ================================================================
+ *   SSA_Check
+ *
+ *   Checks if the current function can be put in SSA form. Currently,
+ *   the only limitation is that no basic block have more that 255
+ *   predecessors. The reason is that the number of opnds in an OP is
+ *   encoded on an uINT8, and a PHI operation has as many operands as
+ *   the number of predecessors of the basic block it is in.
+ * ================================================================ */
+BOOL
+SSA_Check (
+  RID *rid, 
+  BOOL region 
+)
+{
+  BB *bb;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    if (BBlist_Len(BB_preds(bb)) > 255)
+      return FALSE;
+  }
+  return TRUE;
+}
+
+/* ================================================================
  *                Mapping TN -> SSA Universe
  *
  *    This is used to identify relevant SSA TNs during the 
