@@ -4029,7 +4029,7 @@ find_duplicate_mem_op (BB *bb,
     fprintf(TFile,"%sEnter find_duplicate_mem_op\n",EBO_trace_pfx);
   }
   
-  if (!(OP_load(op) || OP_store(op))) return FALSE;
+  if (!(OP_load(op) || OP_store(op) || OP_prefetch(op))) return FALSE;
 
  /* Determine the indexes of the address components of this memory op. */
   INT succ_base_idx = TOP_Find_Operand_Use(OP_code(op),OU_base);
@@ -4040,6 +4040,8 @@ find_duplicate_mem_op (BB *bb,
    /* Look for merge-able expressions. */
     merge_memory_offsets (op, succ_base_idx, opnd_tn, actual_tninfo, opnd_tninfo);
   }
+
+  if (!(OP_load(op) || OP_store(op))) return FALSE;
 
  /* Determine the address components of this memory op. */
   TN *succ_base_tn = (succ_base_idx >= 0) ? opnd_tn[succ_base_idx] : NULL;

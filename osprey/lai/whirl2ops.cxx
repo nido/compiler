@@ -3842,7 +3842,7 @@ BOOL label_is_external ( INT *num, WN *wn, BB *bb )
 
 /* =======================================================================
  *
- *  Prefectch_Kind_Enabled
+ *  Prefetch_Kind_Enabled
  *
  *  Test the kind of the prefetch  { {L1,L2}, {load,store} } against
  *  the four CG_enable_pf flags.  wn must be a prefetch whirl node.
@@ -3851,7 +3851,38 @@ BOOL label_is_external ( INT *num, WN *wn, BB *bb )
  */
 BOOL Prefetch_Kind_Enabled( WN *wn )
 {
-  return CG_enable_prefetch;
+  BOOL is_read, is_write;
+  BOOL is_L1, is_L2;
+  BOOL z_conf;
+  BOOL confidence_match;
+  INT32 nz_conf;
+
+  is_read  = WN_pf_read( wn );
+  is_write = WN_pf_write( wn );
+  is_L1 = ( WN_pf_stride_1L( wn ) != 0 );
+  is_L2 = ( WN_pf_stride_2L( wn ) != 0 );
+
+  z_conf  = ( WN_pf_confidence( wn ) == 0 );
+  nz_conf =  WN_pf_confidence( wn );
+  confidence_match = (    ( z_conf  && CG_enable_z_conf_prefetch )
+		       || ( (nz_conf > 1) && CG_enable_nz_conf_prefetch ) );
+
+  if ( confidence_match ) {
+    
+    if ( is_read && is_L1 )
+      return CG_enable_pf_L1_ld;
+    
+    if ( is_write && is_L1 )
+      return CG_enable_pf_L1_st;
+    
+    if ( is_read && is_L2 )
+      return CG_enable_pf_L2_ld;
+    
+    if ( is_write && is_L2 )
+      return CG_enable_pf_L2_st;
+  }
+
+  return FALSE;
 }
 
 /* =======================================================================

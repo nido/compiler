@@ -998,22 +998,16 @@ disable_prefetch:
   if ( ! CG_enable_nz_conf_prefetch_overridden )
     CG_enable_nz_conf_prefetch = TRUE;
 
-#ifdef TARG_ST
-  if (PROC_has_enable_prefetch()) {
-#else
-  if (Enable_Prefetch_For_Target()) {
-#endif
-    if ( ! CG_L1_ld_latency_overridden ) CG_L1_ld_latency = 8;
-    if ( ! CG_enable_pf_L1_ld_overridden ) CG_enable_pf_L1_ld = FALSE;
-    if ( ! CG_enable_pf_L1_st_overridden ) CG_enable_pf_L1_st = FALSE;
-    if ( ! CG_enable_pf_L2_ld_overridden ) CG_enable_pf_L2_ld = TRUE;
-    if ( ! CG_enable_pf_L2_st_overridden ) CG_enable_pf_L2_st = TRUE;
-  } else {
-    if ( ! CG_enable_pf_L1_ld_overridden ) CG_enable_pf_L1_ld = TRUE;
-    if ( ! CG_enable_pf_L1_st_overridden ) CG_enable_pf_L1_st = TRUE;
-    if ( ! CG_enable_pf_L2_ld_overridden ) CG_enable_pf_L2_ld = TRUE;
-    if ( ! CG_enable_pf_L2_st_overridden ) CG_enable_pf_L2_st = TRUE;
-  }
+  if ( ! CG_L1_ld_latency_overridden )
+    CG_L1_ld_latency = CGTARG_L1_ld_latency (CG_L1_ld_latency);
+  if ( ! CG_enable_pf_L1_ld_overridden )
+    CG_enable_pf_L1_ld = CGTARG_enable_pf_L1_ld (CG_enable_pf_L1_ld);
+  if ( ! CG_enable_pf_L1_st_overridden )
+    CG_enable_pf_L1_st = CGTARG_enable_pf_L1_st (CG_enable_pf_L1_st);
+  if ( ! CG_enable_pf_L2_ld_overridden )
+    CG_enable_pf_L2_ld = CGTARG_enable_pf_L2_ld (CG_enable_pf_L2_ld);
+  if ( ! CG_enable_pf_L2_st_overridden )
+    CG_enable_pf_L2_st = CGTARG_enable_pf_L2_st (CG_enable_pf_L2_st);
 
   /* Finally, check to see if we actually will do any prefetching, and
    * if not, disable prefetching all together.

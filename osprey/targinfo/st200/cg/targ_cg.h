@@ -124,4 +124,39 @@ CGTARG_Have_Indexed_Mem_Insts(void)
   return FALSE;
 }
 
+/* ====================================================================
+ *   Prefetching:
+ * ====================================================================
+ */
+inline INT32
+CGTARG_L1_ld_latency (INT32 current_value)
+{
+  return current_value;
+}
+
+inline BOOL
+CGTARG_enable_pf_L1_ld (BOOL current_value)
+{
+  return PROC_has_prefetch ();
+}
+
+inline BOOL
+CGTARG_enable_pf_L1_st (BOOL current_value)
+{
+  return FALSE;
+}
+
+inline BOOL
+CGTARG_enable_pf_L2_ld (BOOL current_value)
+{
+  return FALSE;
+}
+
+inline BOOL
+CGTARG_enable_pf_L2_st (BOOL current_value)
+{
+  return FALSE;
+}
+
+
 #endif /* targ_cg_INCLUDED */

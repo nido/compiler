@@ -2505,7 +2505,7 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
       if (OP_prefetch(op)) {
 
 	WN *mem_wn = Get_WN_From_Memory_OP(op);
-	Is_True(WN_operator(mem_wn) == OPR_PREFETCH,
+	Is_True(!mem_wn || WN_operator(mem_wn) == OPR_PREFETCH,
 		("wrong prefetch WHIRL node."));
 
 	if (trace_pref && unrolling == 0)  // trace once per loop
@@ -2518,7 +2518,7 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
 	  else
 	    fprintf(TFile, "<cgpref> pref wn not found.\n");
 
-	if (Prefetch_Kind_Enabled(mem_wn)) {
+	if (mem_wn && Prefetch_Kind_Enabled(mem_wn)) {
 	  int stride = WN_pf_stride_2L( mem_wn ) ?  WN_pf_stride_2L( mem_wn ) :  WN_pf_stride_1L(mem_wn);
 	  if (stride != 0 && (unrolling % stride) != 0) {
 	    if (trace_pref)

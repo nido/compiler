@@ -64,11 +64,34 @@ void MHD::Initialize()
 {
   if ((Target == TARGET_st220) || (Target == TARGET_st221)) {
 
-    //    Non_Blocking_Loads      = FALSE;
-    //    Loop_Overhead_Base      = 6;
-    //    Loop_Overhead_Memref    = 1;
-    //    TLB_Trustworthiness     = 0;
-    //    TLB_NoBlocking_Model    = FALSE;
+    Non_Blocking_Loads      = FALSE;
+    Loop_Overhead_Base      = 6;
+    Loop_Overhead_Memref    = 1;
+    TLB_Trustworthiness     = 0;
+    TLB_NoBlocking_Model    = FALSE;
+
+    L[0] = MHD_LEVEL(MHD_TYPE_CACHE,   // Type
+		     32*1024,          // Size
+		     32,               // Line Size
+		     120,              // Clean Miss Penalty ??
+		     126,              // Dirty Miss Penalty ??
+		     4,                // Associativity
+		     -1,               // TLB Entries
+		     -1,               // Page Size
+		     -1,               // TLB Clean Miss Penalty
+		     -1,               // TLB Dirty Miss Penalty
+		     1.0,              // Typical Outstanding Loads
+		                       // (1.0 means no overlap)
+		     0.0,              // Load_OP_Overlap_1
+		                       // (0.0 means blocking cache)
+		     0.0,              // Load_OP_Overlap_2
+		                       // (0.0 means blocking cache)
+		     0);               // Pct_Excess_Writes_Nonhidable ??
+#ifdef Is_True_On
+    if (LNO_Verbose)
+      printf ("Target Processor: TARGET_st200. %lld (%d)\n", 
+              L[0].Effective_Size, L[0].Line_Size);
+#endif
   } else {
     FmtAssert(FALSE, ("Unknown target in MHD::Initialize\n"));
   }
