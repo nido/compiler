@@ -428,6 +428,8 @@ Get_Parameter_Location (
   ploc.start_offset = Current_Offset;
   ploc.size = 0;
   ploc.vararg_reg = 0;               // to silence purify
+  ploc.lpad = 0;
+  ploc.rpad = 0;
 
   //
   // If we're returning a structure/union via $r0.15, just
