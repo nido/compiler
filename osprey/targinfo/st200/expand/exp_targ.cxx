@@ -681,23 +681,31 @@ Expand_Sub (
  */
 void
 Expand_Neg (
-  TN *result,
+  TN *dest,
   TN *src,
   TYPE_ID mtype,
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
   switch (mtype) {
+  case MTYPE_I1:
+  case MTYPE_U1:
+  case MTYPE_I2:
+  case MTYPE_U2:
   case MTYPE_I4:
   case MTYPE_U4:
-    Build_OP (TOP_noop, result, True_TN, src, ops);
-    return;
+    //
+    // generate : sub dest = $r0.0, src
+    //
+    Build_OP (TOP_sub_r, dest, Zero_TN, src, ops);
+    break;
+
   default:
     FmtAssert(FALSE, ("Expand_Neg: not handled mtype %s\n",
                                              MTYPE_name(mtype)));
   }
+
+  return;
 }
 
 /* ====================================================================
@@ -712,15 +720,25 @@ Expand_Abs (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-#if 0
-  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
-  TN *p2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_guard);
+  if (MTYPE_is_class_integer(mtype)) {
 
-  Expand_Copy (dest, True_TN, src, ops);
-  Build_OP (TOP_GP32_LTW_GT_BR_DR_DR, p1, p2, True_TN, src, Zero_TN, ops);
-  Build_OP (TOP_GP32_SUB_GT_DR_DR_DR, dest, p1, Zero_TN, src, ops);
-#endif
+    //
+    // For dest = abs (src) generate:
+    //  
+    //            sub   negx = $r0.0, src
+    //            cmpge cond = src, $r0.0
+    //            slct  dest = cond, src, negx
+    //
+    TN *negx = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+    TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+    Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
+    Build_OP (TOP_cmpge_r_b, cond, src, Zero_TN, ops);
+    Build_OP (TOP_slct_r, dest, cond, src, negx, ops);
+
+  }
+  else {
+    Is_True(FALSE,("abs doesn't handle MTYPE_%s\n", MTYPE_name(mtype)));
+  }
 }
 
 /* ====================================================================
@@ -1194,7 +1212,28 @@ Expand_Normalize_Logical (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  //
+  // If src is not 0, make it 1
+  //
+  if (TN_is_constant(src)) {
+    //
+    // can only be immediate
+    //
+    FmtAssert(TN_has_value(src),("symbol/label in logical expression"));
+    if (TN_value(src) != 0) {
+      Build_OP(TOP_mov_i, src, Gen_Literal_TN(1, 4), ops);
+    }
+  }
+  else {
+    //
+    // must be a register
+    //
+    TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+    Build_OP (TOP_cmpeq_r_b, cond, src, Zero_TN, ops);
+    Build_OP (TOP_slct_r, src, cond, Zero_TN, Gen_Literal_TN(1, 4), ops);
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -1240,7 +1279,7 @@ Expand_Logical_Not (
  *   Expand_Logical_Not
  *
  *
- *	dest = (src1 != 0 & src2 != 0) ? 1 : 0
+ *	dest = (src1 != 0 & src2 != 0) ? 1 : 0  (normalization)
  *	sltu	t1, 0, s1		(if not normalized)
  *	sltu	t2, 0, s2		(if not normalized)
  *	and/or	d, t1, t2
@@ -1256,8 +1295,6 @@ Expand_Logical_And_Or (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
-
  /*
   *  if CG_EXP_normalize is true we must normalized the operands
   *  (if not already normalized)
@@ -1271,7 +1308,7 @@ Expand_Logical_And_Or (
     Expand_Normalize_Logical (src2, ops);
   }
 
-  Build_OP (action, dest, True_TN, src1, src2, ops);
+  Build_OP (action, dest, src1, src2, ops);
 }
 
 /* ====================================================================
@@ -1287,7 +1324,20 @@ Expand_Logical_And (
   OPS *ops
 )
 {
-  Expand_Logical_And_Or (TOP_and_r, dest, src1, src2, variant, ops);
+  if (TN_is_constant(src1)) {
+    // switch order of src so immediate is second
+    Expand_Logical_And (dest, src2, src1, variant, ops);
+    return;
+  }
+
+  if (TN_is_constant(src2)) {
+    Expand_Logical_And_Or (TOP_and_i, dest, src1, src2, variant, ops);
+  }
+  else {
+    Expand_Logical_And_Or (TOP_and_r, dest, src1, src2, variant, ops);
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -1303,7 +1353,20 @@ Expand_Logical_Or (
   OPS *ops
 )
 {
-  Expand_Logical_And_Or (TOP_or_r, dest, src1, src2, variant, ops);
+  if (TN_is_constant(src1)) {
+    // switch order of src so immediate is second
+    Expand_Logical_Or (dest, src2, src1, variant, ops);
+    return;
+  }
+
+  if (TN_is_constant(src2)) {
+    Expand_Logical_And_Or (TOP_or_i, dest, src1, src2, variant, ops);
+  }
+  else {
+    Expand_Logical_And_Or (TOP_or_r, dest, src1, src2, variant, ops);
+  }
+
+  return;
 }
 
 /* ====================================================================
@@ -1411,20 +1474,13 @@ Expand_Binary_And_Or (
   OPS *ops
 )
 {
-  if (TN_is_constant(src1)) {
-    // swap operands:
-    TN *swap_tn = src1;
-    src1 = src2;
-    src2 = swap_tn;
-  }
+  FmtAssert(MTYPE_is_class_integer(mtype),("can't handle non integer mtype"));
+  FmtAssert(Register_Class_For_Mtype(mtype) == TN_register_class(dest),
+	                       ("wrong register class of the dest register"));
 
-  FmtAssert (TN_is_register(src1),
-	     ("Expand_Binary_And_Or: 1st operand must be register"));
+  Build_OP (action, dest, src1, src2, ops);
 
-  if (TN_has_value(src2)) {
-    action = Pick_Imm_Form_TOP (action);
-  }
-
+#if 0
   // mtype indicates what type of intermediate result is used:
   if (Register_Class_For_Mtype(mtype) != TN_register_class(dest)) {
     TN *tmp = Build_RCLASS_TN (Register_Class_For_Mtype(mtype));
@@ -1434,6 +1490,7 @@ Expand_Binary_And_Or (
   else {
     Build_OP (action, dest, src1, src2, ops);
   }
+#endif
 
   return;
 }
@@ -1451,13 +1508,20 @@ Expand_Binary_And (
   OPS *ops
 )
 {
-  switch (mtype) {
-  case MTYPE_I4:
-  case MTYPE_U4:
+  //
+  // If src1 is constant, reverse the operands
+  //
+  if (TN_is_constant(src1)) {
+    FmtAssert(TN_is_register(src2),("both operands to a BOR constant"));
+    Expand_Binary_And (dest, src2, src1, mtype, ops);
+    return;
+  }
+
+  if (TN_is_constant(src2)) {
+    Expand_Binary_And_Or (TOP_and_i, dest, src1, src2, mtype, ops);
+  }
+  else {
     Expand_Binary_And_Or (TOP_and_r, dest, src1, src2, mtype, ops);
-    break;
-  default:
-    FmtAssert(FALSE, ("Expand_Binary_Xor: mtype not handled"));
   }
 
   return;
@@ -1476,13 +1540,20 @@ Expand_Binary_Or (
   OPS *ops
 )
 {
-  switch (mtype) {
-  case MTYPE_I4:
-  case MTYPE_U4:
+  //
+  // If src1 is constant, reverse the operands
+  //
+  if (TN_is_constant(src1)) {
+    FmtAssert(TN_is_register(src2),("both operands to a BOR constant"));
+    Expand_Binary_Or (dest, src2, src1, mtype, ops);
+    return;
+  }
+
+  if (TN_is_constant(src2)) {
+    Expand_Binary_And_Or (TOP_or_i, dest, src1, src2, mtype, ops);
+  }
+  else {
     Expand_Binary_And_Or (TOP_or_r, dest, src1, src2, mtype, ops);
-    break;
-  default:
-    FmtAssert(FALSE, ("Expand_Binary_Xor: mtype not handled"));
   }
 
   return;
