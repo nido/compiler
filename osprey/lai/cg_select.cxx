@@ -61,6 +61,7 @@
 #include "cxx_memory.h"
 #include "cg_ssa.h"
 #include "exp_targ.h"
+#include "cg_select.h"
 #include "DaVinci.h"
 
 #include "hb.h"
@@ -482,10 +483,57 @@ Promote_BB(BB *bp, BB *to_bb)
   BBlist_Free(&BB_preds(bp));
 }
 
+static void
+Region_Change_Phis (BB *bb, OP *phi)
+{
+  BBLIST *edge;
+  TN *old_tn = OP_result (phi, 0);
+  OP *new_phi;
+  OP *op;
+  UINT i;
+
+  FOR_ALL_BB_SUCCS(bb, edge) {
+    BB *succ = BBLIST_item(edge);
+    
+    FOR_ALL_BB_PHI_OPs(succ,op) {
+
+      fprintf (TFile, "found phi \n");
+      Print_OP (op);
+
+      for (i = 0; i < OP_opnds(op); i++) {
+        Print_TN (OP_opnd (op, i), FALSE);
+
+        if (OP_opnd (op, i) == old_tn) {
+          UINT8 nopnds = OP_opnds(op);
+          UINT j;
+          TN *result[1];
+          TN *opnd[nopnds];
+          result[0] = OP_result(op, 0);
+
+          for (j = 0; j < nopnds; j++) {
+            opnd[j] = OP_opnd(op, j);
+          }
+
+          new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+
+          fprintf (TFile, "OLD PHI WAS \n");
+          Print_OP (phi);
+
+          fprintf (TFile, "NEW PHI IS \n");
+          Print_OP (new_phi);
+
+          SSA_Prepend_Phi_To_BB (new_phi, bb);
+          BB_Remove_Op(bb, phi);
+          break;
+        }
+      }
+    }
+  }
+}
+
 // Remove old phis, and if necessary replace with new one.
 // Note that we cannot use the same list to insert selects because they
 // would be inserted in the 'head' bblock.
-
 static void
 BB_Update_Phis(BB *bb)
 {
@@ -504,7 +552,10 @@ BB_Update_Phis(BB *bb)
 
       SSA_Prepend_Phi_To_BB(new_phi, bb);
     }
-
+    else {
+      Region_Change_Phis(bb, phi);
+    }
+    
     if (Trace_Select_Gen) {
       fprintf(TFile, "<select> Remove phi ");
       Print_OP (phi); 
@@ -537,11 +588,11 @@ Can_Merge_BB (BB *bb_first, BB *bb_second, OP *br_op)
   if (BB_succs_len (bb_first) != 1 || BB_preds_len (bb_second) != 1)
     return FALSE;
 
-  FOR_ALL_BB_SUCCS(bb_second, edge) {
-    BB *pred = BBLIST_item(edge);
-    if (pred == bb_first)
-      return FALSE;
-  }
+  //  FOR_ALL_BB_SUCCS(bb_second, edge) {
+  //    BB *pred = BBLIST_item(edge);
+  //    if (pred == bb_first)
+  //      return FALSE;
+  //  }
 
   return TRUE;
 }
