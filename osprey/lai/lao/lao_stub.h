@@ -58,19 +58,31 @@ typedef enum {
     Optimization_Force_PostPass | \
     0)
 
-// We don't rely on the weak mechanisms for these symbols, even if
-// supported by the platform. The reason is to provide a consistent
-// implementation on all platforms.
-// We use dlsym to find the functions in lao.so and to initialize
-// these
-
-extern void (*lao_init_p)(void);
-#define lao_init (*lao_init_p)
-
-extern void (*lao_fini_p) (FILE *file);
-#define lao_fini (*lao_fini_p)
-
-extern bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-#define lao_optimize_PU (*lao_optimize_PU_p)
+/*
+ * Entry points to the lao code generator.
+ *
+ * void lao_init(void)
+ *	Called once per process before any other for initialization.
+ *
+ * void lao_fini(void)
+ *	Called once per process after any other for finalization.
+ *
+ * void lao_init_pu(void)
+ *	Called once per PU before any call to lao_optimize.
+ *
+ * void lao_fini_pu(void)
+ *	Called once per PU before any call to lao_optimize.
+ *
+ * void lao_optimize_pu(void)
+ *	Optimize an entire PU. May be called several times
+ *	on the PU.
+ */
+extern void lao_init(void);
+extern void lao_fini(void);
+extern void lao_init_pu(void);
+extern void lao_fini_pu(void);
+extern void lao_init_region(void);
+extern void lao_fini_region(void);
+extern bool lao_optimize_pu(unsigned lao_optimizations);
 
 #endif /* laostub_INCLUDED */

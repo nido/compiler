@@ -123,6 +123,10 @@ endif
 endif
 #}CGG_DEV
 
+ifdef LAO_ENABLED
+  HOSTDEFS += -DLAO_ENABLED
+endif
+
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
 
@@ -145,7 +149,6 @@ BE_DIR 			= $(BUILD_TOT)/be
 BE_COM_DIR 		= $(BE_DIR)/com
 BE_BE_DIR		= $(BE_DIR)/be
 BE_CG_DIR 		= $(BUILD_TOT)/lai
-BE_LAO_DIR 		= $(BE_CG_DIR)/lao
 BE_CG_GRA_DIR		= $(BE_CG_DIR)/gra_mon
 BE_REGION_DIR 		= $(BE_DIR)/region
 BE_PROMPF_DIR		= $(BE_DIR)/prompf_anl
@@ -164,6 +167,11 @@ COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 #CGG_DEV{
 COMMON_TARG_CGG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cgg
 #}CGG_DEV
+
+ifdef LAO_ENABLED
+BE_LAO_DIR 		= $(BE_CG_DIR)/lao
+BE_LAO_TARG_DIR		= $(BE_CG_DIR)/lao/$(BUILD_TARGET_DIR)
+endif
 
 # These are the directories in which to look for source files.
 
@@ -188,6 +196,12 @@ endif
 endif
 #}CGG_DEV
 
+ifdef LAO_ENABLED
+SRC_DIRS +=	\
+  $(BE_LAO_DIR) \
+  $(BE_LAO_TARG_DIR)
+endif
+
 ifndef TARG_BE
 TARG_BE = $(TARGDIR)/be
 endif
@@ -200,8 +214,7 @@ HEADER_DIRS = 		\
   $(BE_PROMPF_DIR)	\
   $(BE_OPT_DIR)		\
   $(TARG_TARG_INFO_DIR)	\
-  $(TARG_BE)		\
-  $(BE_LAO_DIR)
+  $(TARG_BE)
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
 
@@ -212,6 +225,12 @@ ifeq ($(BUILD_VARIANT), CGG_BUILD)
 endif
 endif
 #}CGG_DEV
+
+ifdef LAO_ENABLED
+HEADER_DIRS +=	\
+  $(BE_LAO_DIR) \
+  $(BE_LAO_TARG_DIR)
+endif
 
 #----------------------------------------------------------------------
 # Build derived files
@@ -429,6 +448,12 @@ ifeq ($(BUILD_TARGET),ST200)
    CG_C_SRCS += NBG_State.c NBG_Link.c
   endif
 #}CGG_DEV
+endif
+
+ifdef LAO_ENABLED
+CG_CXX_SRCS +=	\
+  targ_cgir_lao.cxx \
+  lao_stub.cxx
 endif
 
 ifeq ($(BUILD_PCH), USE_PCH)

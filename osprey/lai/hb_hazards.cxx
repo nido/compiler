@@ -91,6 +91,7 @@
 #ifdef TARG_ST
 #include "reg_live.h"
 #endif
+
 /* These should be included with cgtarget.h !
 #include "targ_proc_properties.h"
 #include "targ_isa_bundle.h"
@@ -1102,12 +1103,16 @@ static INT Number_Of_Slots_In_Bundle(TI_BUNDLE *bundle)
 }
 #endif
 
+#ifdef LAO_ENABLED
+#define SUPERBLOCK_ENABLED
+extern BB_MAP CG_LAO_Region_Map;
+#endif
+
 #ifdef TARG_ST200
 // FdF: Support for superblock scheduling. This means that latencies
 // at basic block boundary may be reduced by the scheduler. In this
 // mode, the bundler will never put an instruction earlier than
 // scheduled, even if latency permits.
-#define SUPERBLOCK_ENABLED
 
 /* ====================================================================
  *  Branch_Taken_Latency

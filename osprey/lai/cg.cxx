@@ -113,6 +113,9 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#endif
+
+#ifdef LAO_ENABLED
 #include "lao_stub.h"
 #endif
 
@@ -135,10 +138,6 @@ BOOL Reuse_Temp_TNs = FALSE;
 RID *Current_Rid;
 
 TN_MAP TN_To_PREG_Map;
-
-#ifdef TARG_ST
-BB_MAP CG_LAO_Region_Map;
-#endif
 
 /* WOPT alias manager */
 struct ALIAS_MANAGER *Alias_Manager;
@@ -228,6 +227,10 @@ CG_PU_Initialize (
 #endif
 #endif
 
+#ifdef LAO_ENABLED
+  if (CG_LAO_optimizations != 0) lao_init_pu();
+#endif
+
   return;
 }
 
@@ -238,6 +241,11 @@ CG_PU_Initialize (
 void
 CG_PU_Finalize(void)
 {
+
+#ifdef LAO_ENABLED
+  if (CG_LAO_optimizations != 0) lao_fini_pu();
+#endif
+
   TAG_Finish();
   GTN_UNIVERSE_Pu_End ();
   OP_MAP_Finish();
@@ -307,7 +315,9 @@ CG_Region_Initialize (
 
   Current_Rid = REGION_get_rid( rwn );
 
-  CG_LAO_Region_Map = NULL;
+#ifdef LAO_ENABLED
+  if (CG_LAO_optimizations != 0) lao_init_region();
+#endif
 
   return;
 }
@@ -338,10 +348,9 @@ CG_Region_Finalize (WN *result_before, WN *result_after,
 
   REGION_set_level(rid, RL_CGSCHED);
 
-  if (CG_LAO_Region_Map) {
-    BB_MAP_Delete(CG_LAO_Region_Map);
-    CG_LAO_Region_Map = NULL;
-  }
+#ifdef LAO_ENABLED
+  if (CG_LAO_optimizations != 0) lao_fini_region();
+#endif
 
   if (generate_glue_code) {
     /* region entry glue code */
@@ -672,7 +681,6 @@ CG_Generate_Code(
    *   - Local scheduling after register allocation
    */
 
-#ifdef TARG_ST
 #ifdef TARG_ST200
   // Iterate over all the operations to change them to _ii when needed.
   for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
@@ -688,23 +696,26 @@ CG_Generate_Code(
   }
 #endif
 
+#ifdef LAO_ENABLED
   // Call the LAO for software pipelining and prepass scheduling.
   if (CG_LAO_optimizations)
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
   else
-#endif
+    IGLS_Schedule_Region (TRUE /* before register allocation */);
+#else
   IGLS_Schedule_Region (TRUE /* before register allocation */);
+#endif
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
 
   // Register Allocation Phase
-#ifdef TARG_ST
+#ifdef LAO_ENABLED
   if (CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) {
     // Live analysis and tn renaming
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc);
+    lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc);
     Check_for_Dump (TP_ALLOC, NULL);
   }
   if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
@@ -735,11 +746,6 @@ CG_Generate_Code(
       Check_for_Dump (TP_FIND_GLOB, NULL);
     } else {
       GRA_LIVE_Rename_TNs ();
-#if 0
-      fprintf(TFile, "%s CFG After GRA_LIVE_Rename_TNs\n%s\n", DBar, DBar);
-      Print_All_BBs ();
-#endif
-
     }
 
     if (GRA_redo_liveness) {
@@ -773,8 +779,8 @@ CG_Generate_Code(
     GRA_Finalize_Grants();
   }
 
-#ifdef TARG_ST
-  } /* !LAO */
+#ifdef LAO_ENABLED
+  } /* !CG_LAO_optimizations */
 #endif
 
   if (!region) {
@@ -814,14 +820,16 @@ CG_Generate_Code(
   }
 #endif
 
-#ifdef TARG_ST
+#ifdef LAO_ENABLED
   if (CG_LAO_optimizations) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
+  } else {
+    IGLS_Schedule_Region (FALSE /* after register allocation */);
   }
-  else
-#endif
+#else
   IGLS_Schedule_Region (FALSE /* after register allocation */);
+#endif
   // Arthur: here rather than in igls.cxx
   Check_for_Dump (TP_SCHED, NULL);
 

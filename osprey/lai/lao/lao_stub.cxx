@@ -34,10 +34,13 @@
 
 #include "cg_flags.h"
 
+#include <dlfcn.h>		    /* for dlsym() */
+#include "dso.h"		    /* for load_so() */
+
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#include "LAI.h"
+#include "LAO_Interface.h"
 #undef operator
 #undef this
 }
@@ -46,11 +49,17 @@ static LAI_Interface LAI_instance;
 static Interface interface;
 
 /*-------------------------- This stub interface -------*/
-extern "C" {
-  extern void lao_init(void);
-  extern void lao_fini(void);
-  extern bool lao_optimize_PU(unsigned lao_optimizations);
-}
+extern void lao_init(void);
+extern void lao_fini(void);
+extern void lao_init_pu(void);
+extern void lao_fini_pu(void);
+extern void lao_init_region(void);
+extern void lao_fini_region(void);
+extern bool lao_optimize_pu(unsigned lao_optimizations);
+
+/*------------------------- LAO Region Map -------------*/
+BB_MAP CG_LAO_Region_Map;
+
 
 /*-------------------------- Interface for target dependencies -------*/
 #include "targ_cgir_lao.h"
@@ -77,17 +86,24 @@ static void LIR_CGIR_callback_init(CGIR_CallBack callback);
 // Variable used to skip multiple lao_init / lao_fini calls.
 static int lao_initialized = 0;
 
+// LAO so handler
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+#define SO_EXT ".dll"
+#else
+#define SO_EXT ".so"
+#endif
+static void* lao_handler = NULL;
+
 // Initialization of the LAO, needs to be called once per running process.
 void
-lao_init(void) {
-#ifdef Is_True_On
-  if (GETENV("LAO_PID")) {
-    int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
-  }
-#endif
+lao_init(void) 
+{
   if (lao_initialized++ == 0) {
-    LAI_instance = LAI_getInstance();
-    FmtAssert(LAI_instance->size == sizeof(LAI_Interface_), ("LAI_Instance mistmatch"));
+    LAI_Interface (*LAI_getInstance_p)(void);
+    lao_handler = load_so("lao"SO_EXT, CG_Path, 0);
+    LAI_getInstance_p = (LAI_Interface (*)(void))dlsym(lao_handler, "LAI_getInstance");
+    LAI_instance = (*LAI_getInstance_p)();
+    FmtAssert(LAI_Interface_size(LAI_instance) == sizeof(LAI_Interface_), ("LAI_Instance mistmatch"));
     // Initialize LAI Interface
     LAI_Interface_Initialize();
     interface = LAI_Interface_getInstance();
@@ -96,6 +112,11 @@ lao_init(void) {
     // Initialize the target dependent LIR<->CGIR interface
     TARG_CGIR_LAI_Init();
   }
+#ifdef Is_True_On
+  if (GETENV("LAO_PID")) {
+    int dummy; fprintf(stderr, "PID=%lld\n", (int64_t)getpid()); scanf("%d", &dummy);
+  }
+#endif
 }
 
 // Finalization of the LAO, needs to be called once.
@@ -108,9 +129,35 @@ lao_fini(void) {
     LAI_Interface_Finalize();
     interface = NULL;
     LAI_instance = NULL;
+    close_so(lao_handler);
+    lao_handler = NULL;
   }
 }
 
+// Per PU initialization.
+void
+lao_init_pu(void) {
+  CG_LAO_Region_Map = NULL;
+}
+
+// Per PU finalization.
+void
+lao_fini_pu(void) {
+  if (CG_LAO_Region_Map) {
+    BB_MAP_Delete(CG_LAO_Region_Map);
+    CG_LAO_Region_Map = NULL;
+  }
+}
+
+// Per Region initialization.
+void
+lao_init_region(void) {
+}
+
+// Per Region finalization.
+void
+lao_fini_region(void) {
+}
 
 /*-------------------------- CGIR Utility Functions ------------------*/
 
@@ -1145,7 +1192,7 @@ make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *p
 
 // Optimize the complete PU through the LAO.
 bool
-lao_optimize_PU(unsigned lao_optimizations) {
+lao_optimize_pu(unsigned lao_optimizations) {
 //cerr << "lao_optimize_PU(" << lao_optimizations << ")\n";
   bool result = false;
   MEM_POOL lao_loop_pool;
@@ -1168,6 +1215,11 @@ lao_optimize_PU(unsigned lao_optimizations) {
     BB *entry = *entryBBs.begin();
     LOOP_DESCR *loop = LOOP_DESCR_Find_Loop(entry);
     if (loop == NULL) make_pseudo_loopdescr(entry, bodyBBs, exitBBs, &lao_loop_pool);
+  }
+  //
+  // Create region map for postpass optimizations
+  if (lao_optimizations & Optimization_PostSched) {
+    CG_LAO_Region_Map = BB_MAP32_Create();
   }
   //
   // Call the lower level lao_optimize function with pipelining=0.

@@ -53,7 +53,6 @@
 #include <sys/elf_whirl.h>	    /* for WHIRL_REVISION */
 #include <ctype.h>
 #include "defs.h"
-#include "dso.h"		    /* for load_so() */
 #include "config.h"
 #include "config_debug.h"
 #include "config_list.h"
@@ -99,6 +98,10 @@
 #ifdef TARG_ST
 #include "cg_ssa.h"                 /* for SSA flags */
 #include "cg_select.h"              /* for SELECT flags */
+#endif
+
+#ifdef LAO_ENABLED
+#include "lao_stub.h"               /* for lao_init()/lao_fini() */
 #endif
 
 #include "W_errno.h"
@@ -1495,47 +1498,6 @@ CG_Process_Command_Line (
   return;
 } /* CG_Process_Command_Line */
 
-// **************** symbols defined in lao.so ****************
-
-#ifdef TARG_ST
-#if 0
-#if defined(__linux__) || defined(_NO_WEAK_SUPPORT_)
-
-CG_EXPORTED void (*lao_init_p) (void);
-CG_EXPORTED void (*lao_fini_p) (void);
-
-CG_EXPORTED extern void (*lao_init_p) (void);
-#define lao_init (*lao_init_p)
-
-CG_EXPORTED extern void (*lao_fini_p) ();
-#define lao_fini (*lao_fini_p)
-
-#else 
-
-#pragma weak lao_init
-#pragma weak lao_fini
-
-#endif // __linux__ || _NO_WEAK_SUPPORT_
-#endif
-
-#include <dlfcn.h>		    /* for dlsym() */
-
-static void* lao_handler = NULL;
-
-// Define here function pointers to entry points in the
-// LAO library.
-
-void (*lao_fini_p)(void);
-void (*lao_init_p) (void);
-bool (*lao_optimize_PU_p)(unsigned lao_optimizations);
-
-#endif
-
-#if defined(__MINGW32__) || defined(__CYGWIN__)
-#define SO_EXT ".dll"
-#else
-#define SO_EXT ".so"
-#endif
 
 /* ====================================================================
  *   CG_Init ()
@@ -1563,7 +1525,7 @@ CG_Init (void)
    * prefetch_ahead fromn LNO */
   //    Configure_prefetch_ahead();
 
-#ifdef TARG_ST
+#ifdef LAO_ENABLED
   if (CG_LAO_optimizations != 0) {
     if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
     if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
@@ -1576,11 +1538,7 @@ CG_Init (void)
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
     if (!CG_LAO_scd_first_overridden) CG_LAO_scd_first = -1;
     if (!CG_LAO_scd_last_overridden) CG_LAO_scd_last = -1;
-    lao_handler = load_so("lao"SO_EXT, CG_Path, Show_Progress);
-    lao_init_p = (void (*)(void))dlsym(lao_handler, "lao_init");
-    lao_fini_p = (void (*)(void))dlsym(lao_handler, "lao_fini");
-    lao_optimize_PU_p = (bool (*)(unsigned))dlsym(lao_handler, "lao_optimize_PU");
-    (*lao_init_p)();
+    lao_init();
   }
 #endif
 
@@ -1597,14 +1555,10 @@ void
 CG_Fini (void)
 {
 
-#ifdef TARG_ST
-
+#ifdef LAO_ENABLED
   if (CG_LAO_optimizations != 0) {
-    (*lao_fini_p)();
-    close_so(lao_handler);
-    lao_handler = NULL;
+    lao_fini();
   }
-
 #endif
 
   /* List global symbols if desired: */

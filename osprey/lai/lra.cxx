@@ -96,9 +96,6 @@
 #include "hb_sched.h"
 /* #include "ebo.h" */
 
-#ifdef TARG_ST200
-#include "lao_stub.h"
-#endif
 
 #define TN_is_local_reg(r)   (!(TN_is_dedicated(r) | TN_is_global_reg(r)))
 
@@ -409,7 +406,7 @@ Check_Allow_Reorder() {
 static BOOL
 Check_Allow_Reschedule()
 {
-#ifdef TARG_ST200
+#ifdef LAO_ENABLED
   if (Check_Allow_Reorder() &&
       Trip_Count == 1 &&
       !Get_Trace (TP_ALLOC, 0x0200) &&

@@ -88,8 +88,11 @@
 #include "reg_live.h"
 #ifdef TARG_ST
 #include "freq.h"
+#endif
+#ifdef LAO_ENABLED
 #include "lao_stub.h"
 #endif
+
 /* #include "targ_proc_properties.h" */
 
 
@@ -384,14 +387,14 @@ IGLS_Schedule_Region (BOOL before_regalloc)
   Stop_Timer (T_Sched_CU);
 }
 
-#ifdef TARG_ST
+#ifdef LAO_ENABLED
 void
 LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
   if (before_regalloc) {
     Set_Error_Phase( "LAO Prepass Optimizations" );
     if (CG_LAO_optimizations & LAO_Optimization_Mask_PrePass) {
-      lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_PrePass);
+      lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_PrePass);
       if (frequency_verify)
 	FREQ_Verify("LAO Prepass Optimizations");
     }
@@ -400,10 +403,7 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
     // Call the LAO for postpass scheduling.
     Set_Error_Phase( "LAO Postpass Optimizations" );
     if (CG_LAO_optimizations & LAO_Optimization_Mask_PostPass) {
-      //
-      CG_LAO_Region_Map = BB_MAP32_Create();
-      //
-      lao_optimize_PU(CG_LAO_optimizations & LAO_Optimization_Mask_PostPass);
+      lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_PostPass);
       if (frequency_verify)
 	FREQ_Verify("LAO Postpass Optimizations");
     }
