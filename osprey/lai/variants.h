@@ -185,19 +185,18 @@ typedef UINT64 VARIANT;
 #define V_BR_F_TRUE	92	/* Floating point (fcc) true */
 
 #define V_BR_P_TRUE	93	/* Predicate true */
-#define V_BR_P_FALSE    94      /* Predicate false */
-#define V_BR_PEQ	95	/* Predicate A = B */
-#define V_BR_PNE	96	/* Predicate A != B */
+#define V_BR_PEQ	94	/* Predicate A = B */
+#define V_BR_PNE	95	/* Predicate A != B */
 
-#define V_BR_CLOOP	97	/* Counted loop */
-#define V_BR_CTOP	98	/* Mod-sched counted loop (top) */
-#define V_BR_CEXIT	99	/* Mod-sched counted loop (exit) */
-#define V_BR_WTOP	100	/* Mod-sched while loop (top) */
-#define V_BR_WEXIT	101	/* Mod-sched while loop (exit) */
+#define V_BR_CLOOP	96	/* Counted loop */
+#define V_BR_CTOP	97	/* Mod-sched counted loop (top) */
+#define V_BR_CEXIT	98	/* Mod-sched counted loop (exit) */
+#define V_BR_WTOP	99	/* Mod-sched while loop (top) */
+#define V_BR_WEXIT	100	/* Mod-sched while loop (exit) */
 
-#define V_BR_ALWAYS	102	/* Unconditional branch */
-#define V_BR_NEVER	103	/* Never branch */
-#define V_BR_LAST	104	/* Last one defined */
+#define V_BR_ALWAYS	101	/* Unconditional branch */
+#define V_BR_NEVER	102	/* Never branch */
+#define V_BR_LAST	103	/* Last one defined */
 
 /* V_BR_MASK *must* be 2^n - 1, and be at least as large as  */
 /* V_BR_LAST */

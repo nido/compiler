@@ -181,7 +181,6 @@ Negate_BR_Variant(VARIANT variant)
     break;
 
   case V_BR_P_TRUE:
-  case V_BR_P_FALSE:
   case V_BR_CLOOP:
   case V_BR_CTOP:
   case V_BR_CEXIT:

@@ -321,18 +321,9 @@ Expand_Branch (
     }
     break;
 
-  case V_BR_P_FALSE:
-    Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
-    // false branch on a predicate, directly supported:
-    // use src1
-    Build_OP (TOP_brf, src1, targ, ops);
-    break;
-
   case V_BR_P_TRUE:
     Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
-    // TRUEBR directly supported:
-    //
-    Build_OP (TOP_br, src1, targ, ops);
+    Build_OP (false_br ? TOP_brf : TOP_br, src1, targ, ops);
     break;
 
   default:

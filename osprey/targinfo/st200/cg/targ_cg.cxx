@@ -399,17 +399,16 @@ CGTARG_Branch_Info (
  *   'tn2' is TN that is set to TRUE is the branch falls through.
  *   TODO: but CFLOW crushes, so for now always return the cond. TN
  *         in 'tn1'.
- *   TODO 2: shouldn't they all be V_BR_P_TRUE ?
  * ====================================================================
  */
-INT 
+VARIANT
 CGTARG_Analyze_Branch (
   OP *br,
   TN **tn1,
   TN **tn2
 )
 {
-  INT variant;
+  VARIANT variant;
   TOP top = OP_code(br);
 
   *tn1 = NULL;
@@ -417,12 +416,12 @@ CGTARG_Analyze_Branch (
 
   switch (top) {
   case TOP_br:
-    variant = V_BR_NONE;
+    variant = V_BR_P_TRUE;
     Set_V_true_br(variant);
     *tn1 = OP_opnd(br, 0);
     break;
   case TOP_brf:
-    variant = V_BR_NONE;
+    variant = V_BR_P_TRUE;
     Set_V_false_br(variant);
     // Should really return 'tn2' but until CFLOW is fixed ...
     //*tn2 = OP_opnd(br, 0);
@@ -442,7 +441,7 @@ CGTARG_Analyze_Branch (
  *   CGTARG_Analyze_Compare
  * ====================================================================
  */
-INT 
+VARIANT
 CGTARG_Analyze_Compare (
   OP *br,
   TN **tn1,
@@ -450,7 +449,7 @@ CGTARG_Analyze_Compare (
   OP **compare_op
 )
 {
-  INT variant;
+  VARIANT variant;
   TN *cond_tn1;
   TN *cond_tn2;
   BOOL is_double;

@@ -437,29 +437,29 @@ Expand_Branch (
     break;
 #endif
 
-  case V_BR_P_FALSE:
-    Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
-    // false branch on a predicate, directly supported on the ST100
-    // use src1
-    Build_OP (TOP_GP32_GOTO_GF_S21, src1, targ, ops);
-    break;
-
   case V_BR_P_TRUE:
     Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
-    // TRUEBR is not directly supported, use src2 as a compliment
-    // because truebr must have been reversed
-    //
-    tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
-    Exp_Pred_Complement(tmp, True_TN, src1, ops);
-    src1 = tmp;
-#if 0
-    if (!false_br) {
-      DevWarn("inverted V_BR_P_TRUE");
+
+    if (! false_br) {
+      // TRUEBR is not directly supported, use src2 as a compliment
+      // because truebr must have been reversed
+      //
       tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
       Exp_Pred_Complement(tmp, True_TN, src1, ops);
       src1 = tmp;
-    }
+#if 0
+      if (!false_br) {
+        DevWarn("inverted V_BR_P_TRUE");
+        tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_guard);
+        Exp_Pred_Complement(tmp, True_TN, src1, ops);
+        src1 = tmp;
+      }
 #endif
+    }
+
+    // else false_br, fall through...
+    // false branch on a predicate, directly supported on the ST100
+    // use src1
     Build_OP (TOP_GP32_GOTO_GF_S21, src1, targ, ops);
     break;
 

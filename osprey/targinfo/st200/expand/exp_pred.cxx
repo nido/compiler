@@ -265,7 +265,7 @@ Exp_True_False_Preds_For_Block (
    reusing_tns = FALSE;
    
    br_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
-   //Is_True(br_variant == V_BR_P_TRUE || br_variant == V_BR_P_FALSE,
+   //Is_True(br_variant == V_BR_P_TRUE,
    //	   ("Can't get predicates for block %d",BB_id(bb)));
 
    /* Try to find the compare op */

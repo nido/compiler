@@ -4117,16 +4117,10 @@ Handle_CONDBR (
 	      && WN_class(condition) == CLASS_PREG,
 	      ("MTYPE_B TRUEBR/FALSEBR condition must be preg or relop"));
 
-#ifdef TARG_ST
-      // Arthur: invert or not is target dependent
-      //
-      variant = (WN_opcode(branch) == OPC_FALSEBR) ? 
-                                               V_BR_P_FALSE : V_BR_P_TRUE;
-      operand1 = NULL;
-#else
       operand1 = NULL;
       variant = V_BR_P_TRUE;
 
+#ifndef TARG_ST
       if (invert) {
 	PREG_NUM preg2_num = WN_load_offset(condition) + 1;
 	operand0 = PREG_To_TN_Array[preg2_num];
