@@ -4591,7 +4591,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 
   if (trip_count_tn == NULL) {
 
-    UINT32 ntimes = MAX(1, unroll_times_max-1);
+    UINT32 ntimes = MAX(1, unroll_times_max);
     if (!pragma_unroll) {
       INT32 body_len = BB_length(head);
       while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
