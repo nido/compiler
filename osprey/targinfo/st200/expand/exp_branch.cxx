@@ -223,7 +223,7 @@ Pick_Compare_TOP (
 
     if (cmp_i != TOP_UNDEFINED) {
       const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(cmp_i);
-      const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, 2);
+      const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, 1);
       ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(otype);
       if (ISA_LC_Value_In_Class(TN_value(*src2), lc))
         return cmp_i;
