@@ -120,6 +120,12 @@
 #include <stdarg.h>
 #include <set.h>
 
+// Do not redefine these types
+
+#define _INT8_T
+#define _INTPTR_T
+#define _UINTPTR_T
+
 #include "defs.h"
 #include "config.h"
 #include "errors.h"
@@ -172,6 +178,10 @@
 #include "ebo.h"
 #include "hb.h"
 #include "gra_live.h"
+
+#ifdef ST_LAO
+#include "lao_stub.h"
+#endif
 
 /* Error tolerance for feedback-based frequency info */
 #define FB_TOL 0.05
@@ -5246,12 +5256,14 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before swp / after Ind. Var. Removal  ***");
 
-#ifdef TARG_ST
+#ifdef ST_LAO
       // Arthur: place for LAO plug-in
       //         test that things bellow build
-      Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
-      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
-      cg_loop.Recompute_Liveness();
+      if (!Perform_SWP(loop, (LAO_SWP_ACTION)action)) {
+	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
+	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+	cg_loop.Recompute_Liveness();
+      }
 #else
       if (!Perform_SWP(cg_loop, fixup, true /*doloop*/)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
