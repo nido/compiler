@@ -461,7 +461,7 @@ Init_Section (
 
 #ifdef TARG_ST
   // Make a label:
-  sprintf(sname, "L_SECTION_%d", last_scn);
+  sprintf(sname, "%s_SECTION_%d", Local_Label_Prefix, last_scn);
   em_scn[last_scn].label = strdup(sname);
 
   if (Trace_Init) {
@@ -1893,7 +1893,7 @@ Process_Initos_And_Literals (
       // emit TCON associated symbolic name as label
       //      char *cname = Get_TCON_name (ST_tcon(st));
       //      fprintf(Output_File, "%s:\n", cname);
-      fprintf(Output_File, "UNNAMED_CONST_%d:\n", ST_tcon(st));
+      fprintf(Output_File, "%s_UNNAMED_CONST_%d:\n", Local_Label_Prefix, ST_tcon(st));
       ofst = Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
 #ifdef TARG_ST
       Set_Section_Offset(base, ofst);
@@ -2780,7 +2780,7 @@ r_apply_l_const (
 	//
 	// Print out a symbolic name
 	//
-	vstr_sprintf (buf, vstr_len(*buf), "UNNAMED_CONST_%d", ST_tcon(st));
+	vstr_sprintf (buf, vstr_len(*buf), "%s_UNNAMED_CONST_%d", Local_Label_Prefix, ST_tcon(st));
 	//	// call put_symbol so that we emit .type info, once per symbol
 	// (void) EMT_Put_Elf_Symbol (st);
       }
