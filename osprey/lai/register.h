@@ -32,10 +32,6 @@
 
 */
 
-
-#ifndef lai_register_INCLUDED
-#define lai_register_INCLUDED
-
 /* ====================================================================
  * ====================================================================
  *
@@ -516,14 +512,18 @@
  * ====================================================================
  */
 
+#ifndef REGISTER_INCLUDED
+#define REGISTER_INCLUDED
 
 #ifdef _KEEP_RCS_ID
 static const char register_rcs_id[] = "$Source$ $Revision$";
 #endif /* _KEEP_RCS_ID */
 
 #include "mtypes.h"
-#include "targ_isa_registers.h"
 
+#include "targ_abi_properties.h"
+
+struct st;
 struct op;
 struct tn;
 
@@ -1090,13 +1090,13 @@ REGISTER_SET_Print(
 
 extern REGISTER_SET 
 Compute_Call_Arguments (
-  ST *call_st, 
+  struct st *call_st, 
   ISA_REGISTER_CLASS rc
 );
 
 extern REGISTER_SET 
 Compute_Caller_Saves (
-  ST *call_st, 
+  struct st *call_st, 
   ISA_REGISTER_CLASS rc
 );
 
@@ -1158,6 +1158,42 @@ extern void Init_Mtype_RegClass_Map(void);
 
 extern void Mark_Specified_Registers_As_Not_Allocatable (void);
 
+/* ====================================================================
+ *   These are defined in the target dependent part of compiler
+ * ==================================================================== 
+ */
+
+extern void Initialize_Register_Class(ISA_REGISTER_CLASS);
+
+/* whether REGISTER_CLASS re-initialization required */
+extern BOOL REGISTER_Check_Alloc_Status (ISA_REGISTER_CLASS);
+
+// user wants this not to be allocatable.
+extern BOOL REGISTER_set_allocatable (ISA_REGISTER_CLASS, REGISTER);
+extern BOOL REGISTER_set_not_allocatable (ISA_REGISTER_CLASS, REGISTER);
+extern void Set_Register_Never_Allocatable (char *);
+extern void Set_Register_Never_Allocatable (PREG_NUM);
+extern void Set_Register_Not_Allocatable (void);
+
+// Assembly name for this register class.
+#define ISA_REGISTER_CLASS_ASM_Name _ISA_REGISTER_CLASS_ASM_Name 
+
+// Returns TRUE if the rclass is the predicate register class.
+#define Is_Predicate_REGISTER_CLASS _Is_Predicate_REGISTER_CLASS
+
+// Returns TRUE if stacked register set exists for <rclass>.
+#define REGISTER_Has_Stacked_Registers _REGISTER_Has_Stacked_Registers
+
+// Returns TRUE if rotating register set exists for <rclass>.
+#define REGISTER_Has_Rotating_Registers _REGISTER_Has_Rotating_Registers
+
+// Return true if the supplied register is a rotating register
+// in the register stack for the given register class.
+#define REGISTER_Is_Rotating _REGISTER_Is_Rotating
+
+// Returns the set of allocated rotating registers.
+#define REGISTER_Get_Requested_Rotating_Registers _REGISTER_Get_Requested_Rotating_Registers
+
 #include "register_targ.h"
 
-#endif /* lai_register_INCLUDED */
+#endif /* REGISTER_INCLUDED */
