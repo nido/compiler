@@ -335,7 +335,7 @@ HB_Init(void)
   HB_Trace_Init();
   // Turn off hyperblock formation if we can't predicate unless we force it.
   // In that case, the hyperblock will not be if-converted.
-  if (!CGTARG_Can_Predicate()) {
+  if (!(CGTARG_Can_Predicate() || CGTARG_Can_Select())) {
     HB_formation = 0;
   }
 }
@@ -577,11 +577,7 @@ HB_Form_Hyperblocks(RID *rid, const BB_REGION& bb_region)
   list<HB_CAND_TREE*> candidate_regions; // List of all the candidates
   BB_SET *orig_blocks; // Working bitset temp
 
-#ifdef TARG_ST
   if (!HB_formation || !(HB_simple_ifc || HB_complex_non_loop || HB_superblocks)) {
-#else
-  if (!HB_formation || !(HB_simple_ifc || HB_complex_non_loop)) {
-#endif
     return;
   }
 
