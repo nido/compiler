@@ -578,6 +578,21 @@ Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
 //
 /////////////////////////////////////
 {
+#ifdef TARG_ST
+  if (lrange0->Priority() == lrange1->Priority()) {
+    // [SC] When priorities are equal, the priority queue implementation
+    // treats element ordering arbitrarily.  To keep some
+    // predictability in the coloring of global lranges, order them by
+    // TN number.
+    // Note that ordering by TN number has the side-effect of spilling
+    // the callee-save registers in the same order every time, which may
+    // be a useful behaviour.
+    if (lrange0->Type() != LRANGE_TYPE_LOCAL
+	&& lrange1->Type() != LRANGE_TYPE_LOCAL) {
+      return TN_number(lrange0->Tn()) < TN_number(lrange1->Tn());
+    }
+  }
+#endif
   return lrange0->Priority() < lrange1->Priority();
 }
 
