@@ -133,7 +133,7 @@ static BOOL livethrough_computed;
 
 /* If a result of an undeletable OP is not needed, */
 /* it may be replaced with one of these TNs.         */
-static TN *unused_tn_def[ISA_REGISTER_CLASS_MAX];
+static TN *unused_tn_def[ISA_REGISTER_CLASS_MAX+1];
 
 
 static BOOL do_global_locking = FALSE;
@@ -1579,6 +1579,7 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 
             continue;
           }
+
         }
 
 	if (prefer_reg != REGISTER_UNDEFINED &&
@@ -4289,7 +4290,9 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
     Spill_Callee_Saved_Regs ();
   }
 
+#ifndef TARG_ST
   Check_for_Dump (TP_ALLOC, NULL);
+#endif
   Stop_Timer ( T_LRA_CU );
 }
 
