@@ -1471,6 +1471,7 @@ static void* lao_handler = NULL;
 CG_EXPORTED bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
 CG_EXPORTED bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
 CG_EXPORTED bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED void (*CGIR_print_p) (void);
 
 #endif
 
