@@ -36,7 +36,7 @@
 static const char source_file[] = __FILE__;
 static const char rcs_id[] = "$Source$ $Revision$";
 
-#include <alloca.h>
+#include "W_alloca.h"
 
 #include "defs.h"
 #include "targ_proc.h"

@@ -35,7 +35,7 @@
 
 // Label Utilities
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include "defs.h"
 #include "mempool.h"
 #include "label_util.h"

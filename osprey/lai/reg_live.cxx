@@ -52,7 +52,7 @@
  * =======================================================================
  */
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include "defs.h"
 #include "config.h"
 #include "mempool.h"

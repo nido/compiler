@@ -35,7 +35,7 @@
 
 // Tag Utilities
 
-#include <alloca.h>
+#include "W_alloca.h"
 #include "tag.h"
 #include "symtab.h"
 #include "be_util.h"
