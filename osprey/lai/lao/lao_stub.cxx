@@ -377,21 +377,21 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
 	if (Build_Dedicated_TN(CLASS_REG_PAIR_rclass(tn_crp), CLASS_REG_PAIR_reg(tn_crp), 0) == cgir_tn)
 	  temporary = LAI_Interface_makeDedicatedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
 	else {
-	  temporary = LAI_Interface_makeAssignRegTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	  temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
 	  LAI_Interface_Temporary_setDedicated(interface, temporary);
 	}
       } else if (TN_register(cgir_tn) != REGISTER_UNDEFINED) {
 	CLASS_REG_PAIR tn_crp = TN_class_reg(cgir_tn);
-	temporary = LAI_Interface_makeAssignRegTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
+	temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, TARG_CGIR_CRP_to_Register(tn_crp));
       } else {
 	ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
-	temporary = LAI_Interface_makePseudoRegTemporary(interface, cgir_tn, TARG_CGIR_IRC_to_RegClass(tn_irc));
+	temporary = LAI_Interface_makeVirtualTemporary(interface, cgir_tn, TARG_CGIR_IRC_to_RegClass(tn_irc));
       }
       // Pass special tn flags
       if (TN_is_rematerializable(cgir_tn)) {
 	Temporary remat = CGIR_TN_REMAT_to_Temporary(cgir_tn);
 	if (remat != NULL) {
-	  LAI_Interface_Temporary_setRematerializable(interface, temporary, remat);
+	  LAI_Interface_Temporary_setRemater(interface, temporary, remat);
 	}
       } else if (TN_is_gra_homeable(cgir_tn)) {
 	Temporary home = CGIR_TN_HOME_to_Temporary(cgir_tn);
@@ -625,19 +625,19 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
 	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL) {
-		unsigned type = Dependence_Other;
-		if (kind == CG_DEP_MEMIN) type = Dependence_Flow;
-		if (kind == CG_DEP_MEMOUT) type = Dependence_Output;
-		if (kind == CG_DEP_MEMANTI) type = Dependence_Anti;
-		if (kind == CG_DEP_MEMREAD) type = Dependence_Input;
-		if (kind == CG_DEP_SPILLIN) type = Dependence_Spill;
-		if (ARC_is_definite(arc)) type += DependenceType_Definite;
+		unsigned type = DependenceKind_Other;
+		if (kind == CG_DEP_MEMIN) type = DependenceKind_Flow;
+		if (kind == CG_DEP_MEMOUT) type = DependenceKind_Output;
+		if (kind == CG_DEP_MEMANTI) type = DependenceKind_Anti;
+		if (kind == CG_DEP_MEMREAD) type = DependenceKind_Input;
+		if (kind == CG_DEP_SPILLIN) type = DependenceKind_Spill;
+		if (ARC_is_definite(arc)) type += DependenceKind_Definite;
 		int latency = ARC_latency(arc), omega = ARC_omega(arc);
 		OP *pred_op = ARC_pred(arc), *succ_op = ARC_succ(arc);
 		Is_True(pred_op == op, ("Error in lao_setDependences"));
 		Operation dest_operation = CGIR_OP_to_Operation(succ_op);		
 		LAI_Interface_LoopInfo_setDependenceArc(interface, loopinfo,
-		    orig_operation, dest_operation, latency, omega, (LAI_DependenceType)type);
+		    orig_operation, dest_operation, latency, omega, (LAI_DependenceKind)type);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
@@ -712,9 +712,9 @@ CGIR_Dedicated_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   return Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), size);
 }
 
-// Create a PseudoReg CGIR_TN.
+// Create a Virtual CGIR_TN.
 static CGIR_TN
-CGIR_PseudoReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+CGIR_Virtual_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
   ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
   INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
@@ -722,9 +722,9 @@ CGIR_PseudoReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   return Gen_Register_TN(irc, size);
 }
 
-// Create an AssignReg CGIR_TN.
+// Create an Assigned CGIR_TN.
 static CGIR_TN
-CGIR_AssignReg_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
+CGIR_Assigned_TN_create(Temporary temporary, CGIR_TN cgir_tn) {
   LAI_RegClass regClass = LAI_Interface_Temporary_regClass(temporary);
   LAI_Register assigned = LAI_Interface_Temporary_assigned(temporary);
   ISA_REGISTER_CLASS irc = TARG_RegClass_to_CGIR_IRC(regClass);
@@ -776,7 +776,7 @@ CGIR_TN_update(Temporary temporary, CGIR_TN cgir_tn) {
   //
   // Temporary that were assigned
   if (!LAI_Interface_Temporary_isDedicated(temporary) &&
-      LAI_Interface_Temporary_isAssignReg(temporary)) {
+      LAI_Interface_Temporary_isAssigned(temporary)) {
     CLASS_REG_PAIR cgir_crp = 
       TARG_Register_to_CGIR_CRP(LAI_Interface_Temporary_assigned(temporary));
     Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
@@ -1049,8 +1049,8 @@ LIR_CGIR_callback_init(CGIR_CallBack callback) {
     *CGIR_CallBack__SYM_create(callback) = CGIR_SYM_create;
     *CGIR_CallBack__SYM_update(callback) = CGIR_SYM_update;
     *CGIR_CallBack__Dedicated_TN_create(callback) = CGIR_Dedicated_TN_create;
-    *CGIR_CallBack__PseudoReg_TN_create(callback) = CGIR_PseudoReg_TN_create;
-    *CGIR_CallBack__AssignReg_TN_create(callback) = CGIR_AssignReg_TN_create;
+    *CGIR_CallBack__Virtual_TN_create(callback) = CGIR_Virtual_TN_create;
+    *CGIR_CallBack__Assigned_TN_create(callback) = CGIR_Assigned_TN_create;
     *CGIR_CallBack__Modifier_TN_create(callback) = CGIR_Modifier_TN_create;
     *CGIR_CallBack__Absolute_TN_create(callback) = CGIR_Absolute_TN_create;
     *CGIR_CallBack__Symbol_TN_create(callback) = CGIR_Symbol_TN_create;
