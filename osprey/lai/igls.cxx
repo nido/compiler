@@ -370,7 +370,9 @@ IGLS_Schedule_Region (BOOL before_regalloc)
   }
   L_Free();
 
+#ifndef TARG_ST
   Check_for_Dump (TP_SCHED, NULL);
+#endif
   Stop_Timer (T_Sched_CU);
 }
 

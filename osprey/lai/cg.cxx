@@ -694,9 +694,9 @@ CG_Generate_Code(
      *   - Local scheduling after register allocation
      */
     IGLS_Schedule_Region (TRUE /* before register allocation */);
-#if 0
-    fprintf(TFile, "%s CFG After IGLS_Schedule_Region\n %s\n", DBar, DBar);
-    Print_All_BBs ();
+#ifdef TARG_ST
+    // here rather than in igls.cxx
+    Check_for_Dump (TP_SCHED, NULL);
 #endif
 
     if (!CG_localize_tns) {
@@ -727,16 +727,10 @@ CG_Generate_Code(
 #endif
     }
 
-#if 0
-    fprintf(TFile, "%s CFG before LRA_Allocate_Registers\n%s\n", DBar, DBar);
-    Print_All_BBs ();
-#endif
-
     LRA_Allocate_Registers (!region);
-
-#if 0
-    fprintf(TFile, "%s CFG After LRA_Allocate_Registers\n%s\n", DBar, DBar);
-    Print_All_BBs ();
+#ifdef TARG_ST
+    // moved here rather than in lra.cxx
+    Check_for_Dump (TP_ALLOC, NULL);
 #endif
 
     if (!CG_localize_tns ) {
