@@ -710,5 +710,16 @@ Configure_Source_Target ( char * /* filename */ )
   if (Gen_PIC_Call_Shared)
 	Gen_PIC_Call_Shared = FALSE;
 
+  // Revert some settings from config.cxx with -O3
+  if (Opt_Level > 2 && IEEE_Arithmetic > IEEE_ACCURATE) {
+    IEEE_Arithmetic = IEEE_ACCURATE;
+    Recip_Allowed = FALSE;
+    Rsqrt_Allowed = FALSE;
+    Div_Split_Allowed = FALSE;
+  }
+  if (Opt_Level > 2 && Roundoff_Level > ROUNDOFF_NONE) {
+    CIS_Allowed = FALSE;
+  }
+
   return;
 }
