@@ -1293,20 +1293,21 @@ Expand_Logical_Not (
   OPS *ops
 )
 {
-  TOP cmpeq;
-  TN *src2 = Zero_TN;
+  /* dest = (src == 0) ? 1 : 0 */
+
+  TOP cmpeq = TOP_UNDEFINED;
+  int is_constant = TN_is_constant(src);
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    cmpeq = Pick_Compare_TOP (&variant, &src2, &src, FALSE, ops);
+    cmpeq = is_constant ? TOP_cmpeq_i_b : TOP_cmpeq_r_b;
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    cmpeq = Pick_Compare_TOP (&variant, &src2, &src, TRUE, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Logical_Not: unhandled cmp target TN"));
+    cmpeq = is_constant ? TOP_cmpeq_i_r : TOP_cmpeq_r_r;
   }
 
-  Build_OP (cmpeq, dest, src2, src, ops);
+  FmtAssert(cmpeq != TOP_UNDEFINED, ("Expand_Logical_Not"));
+
+  Build_OP (cmpeq, dest, Zero_TN, src, ops);
 
   return;
 }
