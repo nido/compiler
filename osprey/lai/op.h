@@ -724,6 +724,12 @@ extern void CGTARG_Init_OP_cond_def_kind(OP *);
 // the source operand; otherwise return -1.
 extern INT CGTARG_Copy_Operand(OP *op);
 
+#ifdef TARG_ST200
+// If 'op' has an immediate or symbol operand, return the index of
+// the operand; otherwise return -1.
+extern INT CGTARG_Immediate_Operand(OP *op);
+#endif
+
 // Return a boolean indicating if 'op' performs a copy operation.
 inline BOOL CGTARG_Is_Copy(OP *op)
 {

@@ -742,6 +742,21 @@ extern BOOL CGTARG_Check_OP_For_HB_Suitability(OP *op);
 extern void CGTARG_Handle_Errata_Hazard (OP *op, INT erratnum, 
 					 INT ops_to_check);
 
+#ifdef TARG_ST200
+// Handle Latency Hazards.
+extern void CGTARG_Handle_Latency_Hazard (OP *op, TI_BUNDLE *bundle);
+
+// Handle all bundle hazards.
+extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
+					TI_BUNDLE              *bundle, 
+					VECTOR                 *bundle_vector, 
+					BOOL                   can_fill, 
+					INT                    slot_pos, 
+					INT                    max_pos,
+					BOOL                   stop_bit_reqd,
+					ISA_EXEC_UNIT_PROPERTY prop,
+					INT                    *clock);
+#else
 // Handle all bundle hazards.
 extern void CGTARG_Handle_Bundle_Hazard(OP                     *op, 
 					TI_BUNDLE              *bundle, 
@@ -751,6 +766,7 @@ extern void CGTARG_Handle_Bundle_Hazard(OP                     *op,
 					INT                    max_pos,
 					BOOL                   stop_bit_reqd,
 					ISA_EXEC_UNIT_PROPERTY prop);
+#endif
 
 // Check for any extra hazards not handled in above, particular 
 // hardware implementation specific ?. Shouldn't this be coordinated

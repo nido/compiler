@@ -2705,7 +2705,7 @@ Verify_Operand (
 	        ("literal for %s %d is not in range", res_or_opnd, opnd));
     } else if (TN_is_label(tn)) {
 
-#if 0
+#if Is_True_On
       LABEL_IDX lab = TN_label(tn);
       INT64 offset = TN_offset(tn);
       INT64 val = Get_Label_Offset(lab) + offset;
@@ -3297,6 +3297,7 @@ Assemble_Bundles(BB *bb)
 	fprintf(Asm_File, "\n%s:\n", LABEL_name(Get_OP_Tag(op)));
       }
 #endif
+
     }
     if (slot == 0) break;
 
@@ -3515,21 +3516,11 @@ EMT_Assemble_BB (
       }
       else if (current_rid > 0) {
 	/* changing regions */
-	if (Assembly)
-	  fprintf (Asm_File, "%s END REGION %d\n",
+	fprintf (Output_File, "%s END REGION %d\n",
 				    ASM_CMNT_LINE, current_rid);
-	if (Lai_Code)
-	  fprintf (Lai_File, "%s END REGION %d\n",
-				    ASM_CMNT_LINE, current_rid);
-
 	if (RID_id(rid) > 0 && !RID_is_glue_code(rid)) {
-	  if (Assembly)
-	    fprintf (Asm_File, "%s BEGIN REGION %d\n",
+	  fprintf (Output_File, "%s BEGIN REGION %d\n",
 				    ASM_CMNT_LINE, RID_id(rid));
-	  if (Lai_Code)
-	    fprintf (Lai_File, "%s BEGIN REGION %d\n",
-				    ASM_CMNT_LINE, RID_id(rid));
-
 	  current_rid = RID_id(rid);
 	}
 	else if (RID_is_glue_code(rid)) {
@@ -3541,21 +3532,14 @@ EMT_Assemble_BB (
       }
       else if (RID_id(rid) > 0 && !RID_is_glue_code(rid)) {
 	/* beginning a region */
-	if (Assembly)
-	  fprintf (Asm_File, "%s BEGIN REGION %d\n", 
-				   ASM_CMNT_LINE, RID_id(rid));
-	if (Lai_Code)
-	  fprintf (Lai_File, "%s BEGIN REGION %d\n", 
+	fprintf (Output_File, "%s BEGIN REGION %d\n", 
 				   ASM_CMNT_LINE, RID_id(rid));
 	current_rid = RID_id(rid);
       }
     }
     else if (current_rid > 0) {
       /* ending a region */
-      if (Assembly)
-	fprintf (Asm_File, "%s END REGION %d\n", ASM_CMNT_LINE, current_rid);
-      if (Lai_Code)
-	fprintf (Lai_File, "%s END REGION %d\n", ASM_CMNT_LINE, current_rid);
+      fprintf (Output_File, "%s END REGION %d\n", ASM_CMNT_LINE, current_rid);
       current_rid = 0;	/* no rid */
     }
   }
@@ -3617,10 +3601,14 @@ EMT_Assemble_BB (
 		   LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
     }
 #ifndef TARG_IA64
+
+    // Arthur: this is probably just the MIPS thing ??
+#ifdef TARG_MIPS
     if (Get_Label_Offset(lab) != PC) {
 	DevWarn ("label %s offset %lld doesn't match PC %d", 
 		LABEL_name(lab), Get_Label_Offset(lab), PC);
     }
+#endif
 #endif
   }
 
