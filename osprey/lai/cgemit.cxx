@@ -437,13 +437,14 @@ Init_Section (
 #endif
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
+#ifdef TARG_ST
+    else
+      /* [CG] Minimal alignment of text segment. */
+      Set_STB_align(st, DEFAULT_TEXT_ALIGNMENT);
+#else
     else if (OPT_Space)
       Set_STB_align(st, ISA_INST_BYTES);
     else
-#ifdef TARG_ST
-      /* [CG] Global alignment of text segment. */
-      Set_STB_align(st, DEFAULT_TEXT_ALIGNMENT);
-#else
       Set_STB_align(st, CGTARG_Text_Alignment());
 #endif
   }
@@ -2242,6 +2243,11 @@ Check_If_Should_Align_BB (
   INT num_of_ops = 0; 		/* zero to begin with */
 #define FREQUENT_BB_DIFF 5.0
 
+#ifdef TARG_ST
+  // [CG]: Never align blocks for performance. Would require a flag.
+  // In addition this code is buggy for variable length bundles.
+  return 0;
+#endif
   /*
    * Align loops for best processor efficiency.
    * Originally checked if bb_loophead, but now just
@@ -2333,6 +2339,11 @@ Check_If_Should_Align_PU (
 {
   INT q;
 
+#ifdef TARG_ST
+  // [CG]: Never align PU for performance. Would require a flag.
+  // In addition this code is buggy for variable length bundles.
+  return 0;
+#endif
   if (Align_Instructions) {
     q = Align_Instructions;
   }
