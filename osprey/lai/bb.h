@@ -1122,6 +1122,7 @@ BOOL BB_Has_Exc_Label(BB *bb);
 BOOL BB_Has_Addr_Taken_Label(BB *bb);
 BOOL BB_Has_Outer_Block_Label(BB *bb);
 
+// This really computes the preorder traversal.
 struct bb_map *BB_Depth_First_Map(struct bs *region, BB *entry);
 struct bb_map *BB_Topological_Map(struct bs *region, BB *entry);
 #ifdef TARG_ST
