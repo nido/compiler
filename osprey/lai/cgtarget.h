@@ -527,7 +527,11 @@
 #include "cg_flags.h"
 #include "cg_dep_graph.h"
 #include "cg_vector.h"
+#ifdef __CYGWIN__
+#include "config_target.h"
+#else
 #include "config_targ.h"
+#endif
 #include "cg_thr.h"
 
 #include "targ_proc_properties.h"
