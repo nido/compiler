@@ -1176,25 +1176,25 @@ inline void OP_Change_Opcode(OP *op, TOP opc)
 
 inline BOOL OP_Precedes(OP *op1, OP *op2)
 {
-  Is_True(OP_bb(op1) == OP_bb(op2), ("OP_Precedes precondition failed."));
+  Is_True(op1->bb == op2->bb, ("OP_Precedes precondition failed."));
   return op1->order < op2->order;
 }
 
 inline BOOL OP_Follows(OP *op1, OP *op2)
 {
-  Is_True(OP_bb(op1) == OP_bb(op2), ("OP_Follows precondition failed."));
+  Is_True(op1->bb == op2->bb, ("OP_Follows precondition failed."));
   return op1->order > op2->order;
 }
 
 inline INT64 OP_Ordering(OP *op1, OP *op2)
 {
-  Is_True(OP_bb(op1) == OP_bb(op2), ("OP_Ordering precondition failed."));
+  Is_True(op1->bb == op2->bb, ("OP_Ordering precondition failed."));
   return (INT64)op1->order - (INT64)op2->order;
 }
 
 inline INT32 OP_Order(OP *op1, OP *op2)
 {
-  Is_True(OP_bb(op1) == OP_bb(op2), ("OP_Order precondition failed."));
+  Is_True(op1->bb == op2->bb, ("OP_Order precondition failed."));
   return -(op1->order < op2->order) | (op2->order < op1->order);
 }
 
