@@ -904,7 +904,7 @@ static void
 Simplify_Logifs(BB *bb1, BB *bb2)
 {
   BB *bb1_fall_thru, *bb1_target, *bb2_fall_thru, *bb2_target;
-  BB *fall_thru_block, *joint_block;
+  BB *else_block, *joint_block;
   BOOL AndNeeded;
 
   BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
@@ -913,13 +913,13 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   if (bb1_fall_thru == bb2_fall_thru) {
     // if (a && b)
     AndNeeded = TRUE;
-    fall_thru_block = bb2_target;
+    else_block = bb2_target;
     joint_block = bb2_fall_thru;
   }
   else if (bb1_target == bb2_target) {
     // if (a || b)
     AndNeeded = FALSE;
-    fall_thru_block = bb2_fall_thru;
+    else_block = bb2_fall_thru;
     joint_block = bb2_target;
   }
 
@@ -970,10 +970,10 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   }
 
   // make joint_block a fall_thru of bb1.
-  BOOL invert = FALSE;
+  BOOL invert_branch = FALSE;
   if (BB_Fall_Thru_Successor (bb1) == bb2 &&
       BB_Fall_Thru_Successor (bb2) == joint_block)
-    invert = TRUE;
+    invert_branch = TRUE;
 
   BB_Remove_Branch(bb1);
   BB_Remove_Branch(bb2);
@@ -1006,15 +1006,27 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
 
   Unlink_Pred_Succ (bb1, joint_block);
-  Unlink_Pred_Succ (bb1, fall_thru_block);
+  Unlink_Pred_Succ (bb1, else_block);
 
-  if (invert) {
+  BB *taken_bb;
+  BB *not_taken_bb;
+
+  if (joint_block == bb1_fall_thru) {
+    taken_bb = else_block;
+    not_taken_bb = joint_block;
+  }
+  else {
+    taken_bb = joint_block;
+    not_taken_bb = else_block;
+  }
+
+  if (invert_branch) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, fall_thru_block, 1.0 - prob1, joint_block);
+    Target_Logif_BB(bb1, not_taken_bb, 1.0 - prob1, taken_bb);
   }
   else
-    Target_Logif_BB(bb1, joint_block, prob1, fall_thru_block);
+    Target_Logif_BB(bb1, taken_bb, prob1, not_taken_bb);
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
   BB_MAP_Set(if_bb_map, bb2, NULL);
@@ -1048,6 +1060,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
       }
     }
   }
+  GRA_LIVE_Compute_Liveness_For_BB(bb1);
 }
 
 /* ================================================================
@@ -1231,24 +1244,10 @@ Select_Fold (BB *head, BB *target_bb, BB *fall_thru_bb, BB *tail)
   }
   else {
     BB_Update_Phis(tail);
-
-#if 0
-    if (! edge_needed) {
-      if (target_bb != tail) {
-        FOR_ALL_BB_PHI_OPs(tail, phi) {
-          Change_PHI_Predecessor (phi, target_bb, head);
-        }
-      }
-
-      if (fall_thru_bb != tail) {
-        FOR_ALL_BB_PHI_OPs(tail, phi) {
-          Change_PHI_Predecessor (phi, fall_thru_bb, head);
-        }
-      }
-    }
-#endif
-
+    GRA_LIVE_Compute_Liveness_For_BB(tail);
   }
+
+  GRA_LIVE_Compute_Liveness_For_BB(head);
 }
 
 /* ================================================================
@@ -1356,13 +1355,12 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     clear_spec_lists();
   }
 
-  // temporary. we could update liveness on the fly
-  GRA_LIVE_Recalc_Liveness(rid);
+  //  GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_Select_Stats) {
     CG_SELECT_Statistics();
   }
-  
+
   Finalize_Select();
 }
 
