@@ -202,9 +202,15 @@
 /* Define the type before any includes so they can use it. */
 typedef struct tn TN;
 
-#include "tn_list.h"
+struct TN_LIST;
+
+/* #include "tn_list.h" */
+#include  "defs.h"
+#include  "errors.h"
+#include  "mempool.h"
 #include "register.h"
 #include "symtab.h"
+
 #include "targ_isa_enums.h"
 
 class WN;
@@ -515,7 +521,7 @@ extern	void  fPrint_TN ( FILE *f, char *fmt, TN *tn);
 extern	void   Print_TN ( TN *tn, BOOL verbose );
 #pragma mips_frequency_hint NEVER Print_TN
 /* Print a tn list to a file */
-extern	void   Print_TN_List ( FILE *, TN_LIST * );
+extern	void   Print_TN_List ( FILE *, struct TN_LIST * );
 #pragma mips_frequency_hint NEVER Print_TN_List
 /* Print all TNs */
 extern	void   Print_TNs ( void );
@@ -523,7 +529,7 @@ extern	void   Print_TNs ( void );
 
 /* Return the first tn in list which matches the register_class and register of tn0 */
 /* If none is found, return NULL. */
-extern TN *Find_TN_with_Matching_Register( TN *tn0, TN_LIST *list );
+extern TN *Find_TN_with_Matching_Register( TN *tn0, struct TN_LIST *list );
 
 typedef enum {VAL_KNOWN, VAL_UNKNOWN, VAL_COND_DEF, VAL_COND_USE} DEF_KIND;
 

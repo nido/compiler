@@ -71,6 +71,7 @@
 #include "targ_const.h"
 #include "targ_sim.h"
 
+#include "tn_list.h"
 #include "op_list.h"
 
 #include "targ_isa_registers.h"
