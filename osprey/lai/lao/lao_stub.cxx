@@ -18,7 +18,7 @@
 #include "erglob.h"
 #include "tracing.h"
 
-#include "laoinit.h"
+#include "laoinitw.h"
 
 extern "C" {
 #define this THIS
@@ -524,9 +524,9 @@ static bool lao_optimize_HB(HB *hb, unsigned lao_actions);
 // Optimize a Function through the LAO.
 static bool lao_optimize_FUNC(unsigned lao_actions);
 
-BE_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
-BE_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
-BE_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
 
 #ifdef __cplusplus
 extern "C" {

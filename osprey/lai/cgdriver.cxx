@@ -1417,13 +1417,13 @@ CG_Process_Command_Line (
 
 #if defined(__linux__) || defined(_NO_WEAK_SUPPORT_)
 
-BE_EXPORTED void (*lao_init_p) (void);
-BE_EXPORTED void (*lao_fini_p) (void);
+CG_EXPORTED void (*lao_init_p) (void);
+CG_EXPORTED void (*lao_fini_p) (void);
 
-BE_EXPORTED extern void (*lao_init_p) (void);
+CG_EXPORTED extern void (*lao_init_p) (void);
 #define lao_init (*lao_init_p)
 
-BE_EXPORTED extern void (*lao_fini_p) ();
+CG_EXPORTED extern void (*lao_fini_p) ();
 #define lao_fini (*lao_fini_p)
 
 #else 
@@ -1438,9 +1438,9 @@ static void* lao_handler = NULL;
 // Also, define here function pointers to other entry points in the
 // LAO library.
 
-BE_EXPORTED bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
-BE_EXPORTED bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
-BE_EXPORTED bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
+CG_EXPORTED bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
+CG_EXPORTED bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
 
 #endif
 

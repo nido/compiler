@@ -82,13 +82,13 @@ lao_fini(void);
 // supported by the platform. The reason is to provide a consistent
 // implementation on all platforms.
 
-BE_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_LOOP_p) (CG_LOOP *cg_loop, unsigned lao_actions);
 #define lao_optimize_LOOP (*lao_optimize_LOOP_p)
 
-BE_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_HB_p) (HB *hb, unsigned lao_actions);
 #define lao_optimize_HB (*lao_optimize_HB_p)
 
-BE_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
+CG_EXPORTED extern bool (*lao_optimize_FUNC_p) (unsigned lao_actions);
 #define lao_optimize_FUNC (*lao_optimize_FUNC_p)
 
 #endif /* laostub_INCLUDED */
