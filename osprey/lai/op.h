@@ -956,6 +956,15 @@ inline BOOL CGTARG_Is_OP_Addr_Incr(OP *op)
 #endif
 
 #ifdef TARG_ST
+extern BOOL CGTARG_Is_OP_Cmp_Eq_Ne(OP *op);
+#else
+inline BOOL CGTARG_Is_OP_Cmp_Eq_Ne(OP *op)
+{
+  return FALSE;
+}
+#endif
+
+#ifdef TARG_ST
 #define OP_Mem_Ref_Bytes(o)  TOP_Mem_Bytes(OP_code(o))
 #else
 extern UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop);

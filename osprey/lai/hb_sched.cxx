@@ -355,6 +355,7 @@ HB_Schedule::Update_Regs_For_OP (OP *op)
 // Return TRUE if <op1> and <op2> are addiu and load/store instructions
 // such that the addiu and the load/store can be interchanged.
 // ======================================================================
+// FdF 20/10/2003 : Added support for sequences (cmpeq,cmpne; add)
 BOOL
 Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 {
@@ -378,6 +379,17 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     ldst_op = op1;
     multiplier = -1;
   }
+
+#ifdef TARG_ST
+// FdF 20/10/2003 : Support for sequences (cmpeq,cmpne; add)
+  if (CGTARG_Is_OP_Cmp_Eq_Ne(ldst_op)) {
+    if (OP_result(addiu_op,0) != OP_opnd(ldst_op, 0))
+      return FALSE;
+    INT64 addiu_const = TN_value (OP_opnd(addiu_op, 1));
+    INT64 ldst_const = TN_value (OP_opnd(ldst_op, 1));
+    return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), 1, ldst_const - addiu_const*multiplier);
+  }
+#endif
 
   // Check that the result of the addiu is the same as the base of the ldst.
   // Also check that if the memory OP is a store, the source is not the same
@@ -411,12 +423,21 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 // an addiu OP that defines the base register for the <ldst_op>. The 
 // <multiplier> can be either +1 or -1 to indicate direction of movement.
 // ======================================================================
+// FdF 20/10/2003 : Added support for sequences (cmpeq,cmpne; add)
 void
 Fixup_Ldst_Offset (OP *ldst_op, INT64 addiu_const, INT64 multiplier, 
 		   HBS_TYPE type)
 {
   TN *old_ofst_tn, *ofst_tn;
   INT index;
+
+#ifdef TARG_ST
+  if (CGTARG_Is_OP_Cmp_Eq_Ne(ldst_op)) {
+    index = 1;
+    multiplier = -multiplier;
+  }
+  else
+#endif
 
   index = Memory_OP_Offset_Opndnum (ldst_op);
 
@@ -524,6 +545,7 @@ static INT cur_dfsnum;
 // Initialize the OPSCH data structure for each OP in <bb>. Identify
 // OPs with the OPSCH_addiu, OPSCH_ldst, OPSCH_def_xfer_opnd attributes.
 // ======================================================================
+// FdF 20/10/2003 : Added support for sequences (cmpeq,cmpne; add)
 static void
 Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 {
@@ -571,6 +593,12 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 	Set_OPSCH_ldst (opsch);
       }
     }
+#ifdef TARG_ST
+    // Check if this is a cmpeq or cmpne with a constant value.
+    else if (CGTARG_Is_OP_Cmp_Eq_Ne(op)) {
+      Set_OPSCH_ldst (opsch);
+    }
+#endif
 
 #ifdef TARG_MIPS
     if (Is_Target_T5() && OP_xfer(op) && Get_Trace (TP_SCHED, 0x1000)) {
