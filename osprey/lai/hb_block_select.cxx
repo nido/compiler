@@ -118,16 +118,9 @@ Verify_HB(
       BBLIST *pbl;
       FOR_ALL_BB_PREDS(succ, pbl) {
         BB *pred = BBLIST_item(pbl);
-#ifndef TARG_ST
         if (BB_SET_MemberP(hb_bbs, pred) &&
             (!((bb == pred)) &&
-             !BB_SET_MemberP(*processed_bbs, pred)))
-#else
-        if (BB_SET_MemberP(hb_bbs, pred) &&
-            (!((bb == pred) || (LOOP_DESCR_Find_Loop(bb) == LOOP_DESCR_Find_Loop(pred))) &&
-             !BB_SET_MemberP(*processed_bbs, pred)))
-#endif
-	  {
+             !BB_SET_MemberP(*processed_bbs, pred))) {
           skip_succ = TRUE;
           break;
         }
@@ -137,7 +130,7 @@ Verify_HB(
       // (cbr) This code crashes if the region is a loop. need to test
       // if the block has already been processed, meaning we are in a loop.
       // Don't recurse in that case.
-      if (BB_SET_MemberP(*processed_bbs, succ))
+      if (BB_SET_MemberP(*processed_bbs, succ) || (bb == succ))
         skip_succ = TRUE;
 #endif
 
