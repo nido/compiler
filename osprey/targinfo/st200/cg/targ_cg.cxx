@@ -289,17 +289,24 @@ CGTARG_Analyze_Branch (
 )
 {
   INT variant;
+  TOP top = OP_code(br);
 
-  *tn1 = NULL;
-  *tn2 = NULL;
-
-  /* TO DO. investigate */
-  switch (OP_code(br)) {
+  switch (top) {
+  case TOP_br:
+    variant = V_BR_P_TRUE;
+    break;
+  case TOP_brf:
+    variant = V_BR_P_FALSE;
+    break;
 
   default:
+    FmtAssert(FALSE, ("not sure what to do"));
     variant = V_BR_NONE;
     break;
   }
+
+  *tn1 = OP_opnd(br, 0);
+  *tn2 = NULL;
 
   return variant;
 }
@@ -320,6 +327,7 @@ CGTARG_Analyze_Compare (
   TN *cond_tn1;
   TN *cond_tn2;
   BOOL is_double;
+  OP *def_op;
   DEF_KIND kind;
 
   /* Classify the condition based on the branch instruction.
@@ -335,10 +343,14 @@ CGTARG_Analyze_Compare (
     is_double = FALSE;
   }
 
-    /* No cmp: 
-     */
-  no_cmp:
-    *compare_op = NULL;
+  /* Attempt to find the defining OP for the tested value.
+   */
+  def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
+  
+  cond_tn1 = OP_opnd(def_op, 2);
+  cond_tn2 = OP_opnd(def_op, 3);
+
+  *compare_op = def_op;
 
   *tn1 = cond_tn1;
   *tn2 = cond_tn2;
