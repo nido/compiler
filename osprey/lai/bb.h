@@ -1021,9 +1021,6 @@ extern struct op* BB_copy_xfer_op( BB *bb );
 extern struct op *BB_entry_sp_adj_op (BB *bb);
 extern struct op *BB_exit_sp_adj_op (BB *bb);
 
-/* Is OP in the branch delay slot ? */
-extern BOOL Is_Delay_Slot_Op (OP *op, BB *bb);
-
 /* Set the op that does the entry/exit SP adjustment in BB */
 extern void Set_BB_entry_sp_adj_op (BB *bb, struct op *);
 extern void Set_BB_exit_sp_adj_op (BB *bb, struct op *);
