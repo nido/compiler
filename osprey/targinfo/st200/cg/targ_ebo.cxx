@@ -95,12 +95,34 @@ static const char source_file[] = __FILE__;
 #include "ebo_special.h"
 #include "ebo_util.h"
 
+#ifdef TARG_ST
+#include "top_properties.h"
+#endif
+
 /* Define a macro to strip off any bits outside of the left most 4 bytes. */
 #define TRUNC_32(val) (val & 0x00000000ffffffffll)
 
 /* Define a macro to sign-extend the least signficant 32 bits */
 #define SEXT_32(val) (((INT64)(val) << 32) >> 32)
 
+/* ============================================================
+ * opcode_benefit
+ *
+ * Returns true if it is beneficial to change opcode to new_opcode
+ * Returns false otherwise
+ *
+ * Currently return true if:
+ * 1. dont_allow_extension is off (always replace)
+ * 2. resources for new_opcode is not greater than for opcode
+ * ============================================================
+ */
+static BOOL dont_allow_extension;
+static BOOL
+opcode_benefit(TOP new_opcode, TOP opcode)
+{
+  return !dont_allow_extension || 
+    ISA_PACK_Inst_Words(new_opcode) <= ISA_PACK_Inst_Words(opcode);
+}
 
 /* =====================================================================
  *   EBO_Can_Merge_Into_Offset
@@ -740,14 +762,14 @@ EBO_simplify_operand0 (
     int n = TOP_shadd_amount(opcode);
     INT64 new_val = const_val << n;
     
-    if (!TN_is_register(OP_opnd(op,opnd2_idx))) return FALSE;
+    if (!TN_is_register(OP_opnd(op,opnd2_idx))) return NULL;
     new_opcode = TOP_add_r;
     new_tn0 = OP_opnd(op,opnd2_idx);
     if (new_val == 0) new_tn1 = Zero_TN;
     else new_tn1 = Gen_Literal_TN(new_val, 4);
     if (TN_has_value(new_tn1))
       new_opcode = TOP_opnd_immediate_variant(new_opcode, opnd2_idx, const_val);
-    if (new_opcode == TOP_UNDEFINED) return FALSE;
+    if (new_opcode == TOP_UNDEFINED) return NULL;
     new_op = Mk_OP(new_opcode, tnr, new_tn0, new_tn1);
     if (EBO_Trace_Optimization) fprintf(TFile,"shiftadd -> add\n");
     return new_op;
@@ -759,6 +781,7 @@ EBO_simplify_operand0 (
     new_opcode = TOP_opnd_immediate_variant(opcode, opnd1_idx, const_val);
     if (new_opcode != TOP_UNDEFINED && 
 	new_opcode != opcode) {
+      if (!opcode_benefit(new_opcode,opcode)) return NULL;
       new_op = Dup_OP(op);
       OP_Change_Opcode(new_op, new_opcode);
       Set_OP_opnd(new_op,opnd1_idx, Gen_Literal_TN(const_val, 4));
@@ -828,6 +851,7 @@ EBO_simplify_operand1 (
     new_opcode = TOP_opnd_immediate_variant(opcode, opnd2_idx, const_val);
     if (new_opcode != TOP_UNDEFINED && 
 	new_opcode != opcode) {
+      if (!opcode_benefit(new_opcode,opcode)) return NULL;
       new_op = Dup_OP(op);
       OP_Change_Opcode(new_op, new_opcode);
       Set_OP_opnd(new_op,opnd2_idx,Gen_Literal_TN(const_val, 4));
@@ -2405,6 +2429,9 @@ if(EBO_Trace_Optimization)fprintf(TFile,"TOP_mov_f_pr pr%d\n",i);
                          OP_code(o) == TOP_mulllu_ii || \
                          OP_code(o) == TOP_mulllu_r)
 
+#define IS_MUL32_PART(o) (OP_code(o) == TOP_mulhs_r || \
+			  OP_code(o) == TOP_mullu_r)
+
 /* =====================================================================
  *            Multiplication Tables
  * =====================================================================
@@ -2461,6 +2488,198 @@ get_mul_opcode(SIGNDNESS signed0, BITS_POS bits0, SIGNDNESS signed1, BITS_POS bi
 #endif
 
   return opcode;
+}
+
+/*
+ * l0c()
+ *
+ * Returns leading zero count of 64 bits value
+ */
+static int
+l0c(INT64 val)
+{
+  int n = 64;
+  while(val > 0) {
+    n--;
+    val >>= 1;
+  }
+  if (val == 0) return n;
+  return 0;
+}
+
+/*
+ * l1c()
+ *
+ * Returns leading one count of 64 bits value
+ */
+static int
+l1c(INT64 val)
+{
+  int n = 64;
+  while(val < -1) {
+    n--;
+    val >>= 1;
+  }
+  if (val == -1) return n;
+  return 0;
+}
+
+/*
+ * t1c()
+ * 
+ * Return the number of trailing 1 bits followed by only 0 bits.
+ * Return -1 if not.
+ */
+static int
+t1c(INT64 val)
+{
+  int n = 0;
+  while (val & 1) {
+    n++;
+    val = (UINT64)val >> 1;
+  }
+  if (val == 0) return n;
+  return -1;
+}
+
+
+/*
+ * def_bit_width
+ *
+ * Returns true if the defined bits of the def can
+ * be guessed and returns bit width and sign extension.
+ *
+ */
+static BOOL
+def_bit_width(OP *op, INT32 def_idx, INT32 *def_bits, INT32 *def_signed)
+{
+  INT32 opnd1_idx, opnd2_idx;
+  INT64 val;
+  TOP opcode = OP_code(op);
+
+  if (def_idx != 0) return FALSE;
+
+  if (OP_load(op)) {
+    *def_bits = OP_Mem_Ref_Bytes(op)*8;
+    *def_signed = TOP_is_unsign(opcode) ? 0 : 1;
+    return TRUE;
+  }
+  if ((OP_ishr(op) || OP_ishru(op)) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
+      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+    INT32 use_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+    *def_bits = MAX(0, use_bits - val);
+    *def_signed = TOP_opnd_use_signed(opcode, opnd1_idx);
+    return TRUE;
+  }
+
+  if ((OP_sext(op) || OP_zext(op)) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0) {
+    *def_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+    *def_signed = TOP_opnd_use_signed(opcode, opnd1_idx);
+    return TRUE;
+  }
+
+  if (OP_iand(op) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
+      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+    INT32 use_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+    INT32 bits = 64 - l0c(val);
+    if (bits < use_bits) {
+      *def_bits = bits;
+      *def_signed = 0;
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/*
+ * use_bit_width
+ *
+ * Returns true if the effective used bit of the operand def can
+ * be guessed and returns bit width.
+ * Some special cases are:
+ * - shift left: use bits - shift amount
+ * - and : use bits - leading zeros
+ * - or : use bits - leading one
+ *
+ */
+static BOOL
+use_bit_width(OP *op, INT32 opnd_idx, INT32 *use_bits)
+{
+  INT32 opnd1_idx, opnd2_idx;
+  INT64 val;
+  TOP opcode = OP_code(op);
+  INT32 bits = TOP_opnd_use_bits(opcode, opnd_idx);
+
+  if (bits < 0) return FALSE;
+  *use_bits = bits;
+
+  if (OP_ishl(op) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
+      opnd_idx == opnd1_idx &&
+      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+    *use_bits = MAX(0, bits - val);
+  }
+  if ((OP_iand(op) || OP_ior(op)) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
+      opnd_idx == opnd1_idx &&
+      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+    INT32 eff_bits = OP_iand(op) ? 64 - l0c(val) : 64 - l1c(val);
+    if (eff_bits < bits) {
+      *use_bits = eff_bits;
+    }
+  }
+  return TRUE;
+}
+
+/*
+ * OP_is_extension()
+ *
+ * Returns true if the operation acts as an extension
+ * Set signed to true if sign extension
+ */
+static BOOL
+OP_is_extension(OP *op, INT32 opnd_idx, INT32 *ext_bits, INT32 *ext_signed)
+{
+  INT32 opnd1_idx, opnd2_idx;
+  INT64 val;
+  TOP opcode = OP_code(op);
+  
+  if (OP_results(op) != 1) return FALSE;
+  
+  if ((OP_sext(op) || OP_zext(op)) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      opnd1_idx == opnd_idx) {
+    *ext_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+    *ext_signed = TOP_opnd_use_signed(opcode, opnd1_idx);
+    return TRUE;
+  }
+
+  if (OP_iand(op) &&
+      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
+      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
+      opnd1_idx == opnd_idx &&
+      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+    INT32 use_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+    INT32 bits = t1c(val);
+    if (bits < use_bits) {
+      *ext_bits = bits;
+      *ext_signed = 0;
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /* =====================================================================
@@ -2720,10 +2939,8 @@ add_mul_sequence (
       )
     return FALSE;
 
-#if 0
   if (EBO_Trace_Optimization) 
     fprintf(TFile, "Possible 32x32 mul\n");
-#endif
 
   // We've just found a 32x32 MPY. Try to strength-reduce its
   // operands, eg. 32x16, etc.
@@ -3308,36 +3525,19 @@ mul_fix_operands (
 )
 {
   TOP opcode = OP_code(op);
-
-  // Level 1 data:
   BB *bb = OP_bb(op);
-  TN *tn0 = OP_opnd(op,0);
-  TN *tn1 = OP_opnd(op,1);
   TN *res = OP_result(op, 0);
 
-  EBO_TN_INFO *tninfo0 = opnd_tninfo[0];
-  EBO_TN_INFO *tninfo1 = opnd_tninfo[1];
-
-  TN *new_tn;
-  TN *new_tn0 = tn0, *new_tn1 = tn1;
-  EBO_TN_INFO *new_tninfo;
-  BITS_POS new_hilo;
-  SIGNDNESS new_signed;
-
+  // Check operands
+  if (OP_opnds(op) != 2 ||
+      OP_opnd(op, 0) != opnd_tn[0] ||
+      OP_opnd(op, 1) != opnd_tn[1]) return FALSE;
+  
   BITS_POS top_hilo0;
   BITS_POS top_hilo1;
   SIGNDNESS top_signed0;
   SIGNDNESS top_signed1;
-
-  TN *tmp_tn;
-  EBO_TN_INFO *tmp_tninfo;
-  BITS_POS tmp_hilo;
-  SIGNDNESS tmp_signed;
-
-  TOP new_opcode = TOP_UNDEFINED;
-  TOP new_opcode0 = TOP_UNDEFINED;
-  TOP new_opcode1 = TOP_UNDEFINED;
-
+  // Check opcode
   if (IS_MULL(op) || IS_MULH(op)) {
     top_hilo0 = TN_32_BITS;
     top_signed0 = SIGN_UNKNOWN;
@@ -3350,14 +3550,35 @@ mul_fix_operands (
     top_signed1 = TOP_is_unsign(opcode) ? ZERO_EXT : SIGN_EXT;
   } else return FALSE;
 
-#if 0  
+  BOOL swapped = FALSE;
+do_swapped:
+  // Level 1 data:
+  TN *tn0 = swapped ? opnd_tn[1]: opnd_tn[0];
+  TN *tn1 = swapped ? opnd_tn[0]: opnd_tn[1];
+  EBO_TN_INFO *tninfo0 = swapped ? opnd_tninfo[1] : opnd_tninfo[0];
+  EBO_TN_INFO *tninfo1 = swapped ? opnd_tninfo[0] : opnd_tninfo[1];
+
   if (EBO_Trace_Optimization) 
     fprintf(TFile,"In mul_fix_operands  for (%s, %s) x (%s, %s): %s\n", SIGNDNESS_Name(top_signed0), BITS_POS_Name(top_hilo0),  SIGNDNESS_Name(top_signed1), BITS_POS_Name(top_hilo1), TOP_Name(opcode));
-#endif
+  
+  
+  TN *tmp_tn;
+  EBO_TN_INFO *tmp_tninfo;
+  BITS_POS tmp_hilo;
+  SIGNDNESS tmp_signed;
+
+  TN *new_tn;
+  TN *new_tn0 = tn0, *new_tn1 = tn1;
+  EBO_TN_INFO *new_tninfo;
+  BITS_POS new_hilo;
+  SIGNDNESS new_signed;
+  TOP new_opcode = TOP_UNDEFINED;
+  TOP new_opcode0 = TOP_UNDEFINED;
+  TOP new_opcode1 = TOP_UNDEFINED;
 
   /* Process first operand. */
   if (top_hilo0 == TN_LO_16) {
-    if (Is_16_Bits(opnd_tninfo[0], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+    if (Is_16_Bits(tninfo0, bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
 	(tmp_hilo == TN_LO_16 || tmp_hilo == TN_HI_16) &&
 	tmp_signed != SIGN_UNKNOWN) {
       new_tn = tmp_tn;
@@ -3369,7 +3590,7 @@ mul_fix_operands (
 				   top_signed1, top_hilo1);
     }
   } else if (top_hilo0 == TN_HI_16) {
-    if (Is_16_Bits(opnd_tninfo[0], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+    if (Is_16_Bits(tninfo0, bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
 	new_hilo == TN_LO_16 && new_signed == SIGN_UNKNOWN) {
       new_tn = tmp_tn;
       new_tninfo = tmp_tninfo;
@@ -3391,7 +3612,7 @@ mul_fix_operands (
   
   /* Process second operand. */
   if (top_hilo1 == TN_LO_16) {
-    if (Is_16_Bits(opnd_tninfo[1], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+    if (Is_16_Bits(tninfo1, bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
 	(tmp_hilo == TN_LO_16 || tmp_hilo == TN_HI_16) &&
 	tmp_signed != SIGN_UNKNOWN) {
       new_tn = tmp_tn;
@@ -3403,7 +3624,7 @@ mul_fix_operands (
 				   new_signed, new_hilo);
     }
   } else if (top_hilo1 == TN_HI_16) {
-    if (Is_16_Bits(opnd_tninfo[1], bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
+    if (Is_16_Bits(tninfo1, bb, &tmp_tn, &tmp_tninfo, &tmp_hilo, &tmp_signed) &&
 	tmp_hilo == TN_LO_16 && tmp_signed == SIGN_UNKNOWN) {
       new_tn = tmp_tn;
       new_tninfo = tmp_tninfo;
@@ -3423,14 +3644,20 @@ mul_fix_operands (
     new_opcode = new_opcode1;
   }
   
+  if (new_opcode == TOP_UNDEFINED) {
+    if (swapped) return FALSE;
+    // Try to swap operands if possible
+    TOP swapped_opcode = TOP_opnd_swapped_variant(opcode, 0, 1);
+    if (swapped_opcode != opcode) return FALSE;
+    swapped = TRUE;
+    goto do_swapped;
+  }
+
   // Convert to an immediate form if tn1 is an immediate
   if (TN_is_symbol(new_tn1)) return FALSE;
   if (new_opcode != TOP_UNDEFINED && TN_has_value(new_tn1))
     new_opcode = TOP_opnd_immediate_variant(new_opcode, 1, TN_value(new_tn1));
   
-  if (new_opcode == TOP_UNDEFINED)
-    return FALSE;
-
   // case of no change
   if (new_opcode == opcode && new_tn0 == tn0 && new_tn1 == tn1) 
     return FALSE;
@@ -3469,15 +3696,13 @@ Strength_Reduce_Mul (
     return (add_mul_sequence (op, opnd_tn, opnd_tninfo));
   }
 
-  if (OP_imul(op)) {
-    if (!EBO_in_pre) {
-      // Do not do it before the 32x32 multiplies have been
-      // reduced. However, for now we only have pre_process vs
-      // process choice. Perhaps, eventually have several 
-      // pre_process passes ?
-      return (mul_32_16_sequence (op, opnd_tn, opnd_tninfo) ||
-	      mulhh_sequence (op, opnd_tn, opnd_tninfo));
-    }
+  if (!(EBO_in_pre && IS_MUL32_PART(op))) {
+    // Do not do it before the 32x32 multiplies have been
+    // reduced. However, for now we only have pre_process vs
+    // process choice. Perhaps, eventually have several 
+    // pre_process passes ?
+    return (mul_32_16_sequence (op, opnd_tn, opnd_tninfo) ||
+	    mulhh_sequence (op, opnd_tn, opnd_tninfo));
   }
 
   return FALSE;
@@ -3635,6 +3860,7 @@ find_equivalent_tn(OP *op, EBO_TN_INFO *input_tninfo, int use_bits, TN **equiv_t
   return TRUE;
 }
 
+
 /*
  * operand_special_sequence.
  *
@@ -3651,14 +3877,16 @@ operand_special_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
   if (num_opnds > OP_MAX_FIXED_OPNDS) return FALSE;
 
+  // Don't propagate into mul until mul32x32 are reduced.
+  if (EBO_in_pre && IS_MUL32_PART(op)) return FALSE;
+
   for (i = 0; i < num_opnds; i++) {
     EBO_TN_INFO *tninfo, *new_tninfo;
     TN *new_tn;
     int use_bits;
     tninfo = opnd_tninfo[i];
-    use_bits = TOP_opnd_use_bits(OP_code(op), i);
     if (tninfo == NULL ||
-	use_bits == -1 ||
+	!use_bit_width(op, i, &use_bits) ||
 	!find_equivalent_tn(op, tninfo, use_bits, &new_tn, &new_tninfo) ||
 	!TN_is_register(new_tn) ||
 	TN_register_class(new_tn) != TN_register_class(OP_opnd(op, i))) {
@@ -4208,6 +4436,49 @@ cmp_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 }
 
 /*
+ * ext_move_sequence
+ *
+ * replace useless extensions by move.
+ */
+static BOOL
+ext_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  TOP opcode = OP_code(op);
+  int opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1);
+  int opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2);
+  INT32 use_bits, use_signed;
+  INT32 def_bits, def_signed;
+  int opnd_idx;
+
+  if (!OP_is_extension(op, opnd1_idx, &use_bits, &use_signed)) return FALSE;
+  
+  OP *def_op;
+  EBO_OP_INFO *def_opinfo;
+  if (!find_def_opinfo(opnd_tninfo[opnd1_idx], &def_opinfo)) return FALSE;
+  def_op = def_opinfo->in_op;
+
+  if (OP_results(def_op) == 1 &&
+      def_bit_width(def_op, 0, &def_bits, &def_signed)) {
+    opnd_idx = opnd1_idx;
+    if (def_signed == use_signed &&
+	def_bits <= use_bits) goto matched;
+    if (!def_signed && use_signed &&
+	def_bits < use_bits) goto matched;
+  }
+  return FALSE;
+ matched:
+  if (OP_opnd(op,opnd_idx) != opnd_tn[opnd_idx]) return FALSE;
+  OP *new_op = Mk_OP(TOP_mov_r, OP_result(op, 0), opnd_tn[opnd_idx]);
+  Set_OP_copy(new_op);
+  OP_srcpos(new_op) = OP_srcpos(op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, opnd_tninfo[opnd_idx]);
+  BB_Insert_Op_After(OP_bb(op), op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert ext to move\n");
+  return TRUE;
+}  
+
+/*
  * mtb_op_sequence
  *
  * Convert (mtb (op)) into an op defining a branch register
@@ -4331,8 +4602,6 @@ base_offset_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   INT64 offset_val, base_val;
   OP *new_op;
 
-  if (getenv("NO_MEM_OPT")  || getenv("NO_BASE_OPT")) return FALSE;
-
   base_idx = OP_find_opnd_use(op, OU_base);
   offset_idx = OP_find_opnd_use(op, OU_offset);
   if (base_idx < 0 && offset_idx < 0) return FALSE;
@@ -4401,6 +4670,42 @@ EBO_literal_replacement_tn(OP *op)
   return NULL;
 }
 
+#if 0 // Was a tentative
+static BOOL
+operand_special_immediate(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  TOP opcode = OP_code(op);
+  TOP new_opcode;
+  INT32 use_count;
+  INT64 val;
+  int i;
+  for (i = 0; i < OP_opnds(op); i++) {
+    if (!TN_Has_Value(OP_opnd(op,i)) && 
+      opnd_tninfo[i] != NULL &&
+      opnd_tninfo[i]->replacement_tn != NULL &&
+      TN_has_value(opnd_tninfo[i]->replacement_tn)) {
+      use_count = opnd_tninfo[i]->reference_count;
+      val = TN_value(opnd_tninfo[i]->replacement_tn);
+      new_opcode = TOP_opnd_immediate_variant(opcode, i, val);
+      fprintf(stderr, "use count: %d, new opc: %s\n", use_count, TOP_Name(new_opcode));
+      if (new_opcode != TOP_UNDEFINED &&
+       ISA_PACK_Inst_Words(new_opcode) > ISA_PACK_Inst_Words(opcode) &&
+        use_count <= 2) goto replace;
+    }
+  }
+  return FALSE;
+  
+ replace:
+  OP *new_op = Dup_OP(op);
+  OP_Change_Opcode(new_op, new_opcode);
+  Set_OP_opnd(new_op, i, opnd_tninfo[i]->replacement_tn);
+  if (OP_memory(op)) Copy_WN_For_Memory_OP (new_op, op);
+  if (EBO_Trace_Optimization) fprintf(TFile,"replace op %s with extended immediate form %s, use count %d\n", TOP_Name(opcode), TOP_Name(new_opcode), use_count);
+  BB_Insert_Op_After(OP_bb(op), op, new_op);
+  return TRUE;
+}
+#endif
+
 /* =====================================================================
  *    EBO_Special_Sequence
  *
@@ -4421,18 +4726,22 @@ EBO_Special_Sequence (
   if (EBO_Trace_Optimization) 
     fprintf(TFile,"%sEnter EBO_Special_Sequence for op %s\n", EBO_trace_pfx, TOP_Name(opcode));
 
+#if 0
+  /* Tentative: to set dont_allow_extension flag. */
+  dont_allow_extension =  Get_Trace(TP_EBO, 0x10000);
+#endif
+
   // First try to strength reduce the 32 bit multiplies:
   if (Strength_Reduce_Mul (op, opnd_tn, opnd_tninfo)) {
     return TRUE;
   }
   
-  if (OP_imul(op)) {
-    if (!EBO_in_pre &&
-	// Do not do it before the 32x32 multiplies have been
-	// reduced. However, for now we only have pre_process vs
-	// process choice. Perhaps, eventually have several 
-	// pre_process passes ?
-	mul_fix_operands (op, opnd_tn, opnd_tninfo)) return TRUE;
+  if (!(EBO_in_pre && IS_MUL32_PART(op))) {
+    // Do not do it before the 32x32 multiplies have been
+    // reduced. However, for now we only have pre_process vs
+    // process choice. Perhaps, eventually have several 
+    // pre_process passes ?
+    if (mul_fix_operands (op, opnd_tn, opnd_tninfo)) return TRUE;
   }
   
   // TODO: add shl/shr/ext to semantics
@@ -4465,7 +4774,15 @@ EBO_Special_Sequence (
   
   if (OP_memory(op) && base_offset_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
+  if (ext_move_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+
   if (operand_special_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+
+  
+#if 0 //Was a tentative
+  if (!EBO_in_pre && dont_allow_extension &&
+      operand_special_immediate(op, opnd_tn, opnd_tninfo)) return TRUE;
+#endif
 
 #if 0
   if (OP_store(op)) {

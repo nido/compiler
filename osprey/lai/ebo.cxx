@@ -2189,7 +2189,6 @@ EBO_Memory_Sequence (
   EBO_OP_INFO *pred_opinfo;
 
   if (!OP_load(op) && !OP_store(op)) return FALSE;
-  if (getenv("NO_MEM_OPT") || getenv("NO_MEM_SEQ")) return FALSE;
 
   if (EBO_Trace_Execution) {
     INT i;
