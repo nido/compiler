@@ -1132,24 +1132,6 @@ Branch_Taken_Latency (
 }
 
 /* ====================================================================
- *  Fall_Thru_Successor_safe
- *  Same as Fall_Thru_Successor in bbutil.cxx, however, does not
- *  remove useless branch. As it is now too late, in the bundler.
- * TODO: better fix?
- * ====================================================================
- */
-static BB *
-BB_Fall_Thru_Successor_safe(BB *bb)
-{
-  BB *next = BB_next(bb);
-  BBLIST *node = NULL;
-
-  if (BB_kind(bb) != BBKIND_LOGIF) return NULL;
-  FmtAssert(BB_next(bb), ("No fall thru for BB:%d", BB_id(bb)));
-  return BB_next(bb);
-}
-
-/* ====================================================================
  *  Fall_Thru_Latency
  *
  *  Returns the cycle at which the fall through block can start. If no
@@ -1169,7 +1151,7 @@ Fall_Thru_Latency (
 {
   INT fallThru_latency = pending_latency;
 
-  if (!BB_Fall_Thru_Successor_safe(bb))
+  if (!BB_Fall_Thru_Successor(bb))
     fallThru_latency = Clock;
 
   else if (BB_call(bb))
@@ -1177,7 +1159,7 @@ Fall_Thru_Latency (
 
 #ifdef SUPERBLOCK_SCHED
   else if (CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
-    BB *fallThru_succ = BB_Fall_Thru_Successor_safe(bb);
+    BB *fallThru_succ = BB_Fall_Thru_Successor(bb);
     if ((BB_MAP32_Get(CG_LAO_Region_Map, bb) == BB_MAP32_Get(CG_LAO_Region_Map, fallThru_succ))) {
       OP *first_op = BB_first_op(fallThru_succ);
       if ((first_op != NULL) && (OP_scycle(first_op) != -1))
