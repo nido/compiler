@@ -347,7 +347,6 @@ put_reference (DST_INFO_IDX ref_idx, Dwarf_Half ref_attr, Dwarf_P_Die die)
     
   if (DST_IS_NULL(ref_idx)) return;
 
-
   FmtAssert ( ! DST_IS_FOREIGN_OBJ(ref_idx), 
 	("Dwarf reference to foreign object"));
   ref_die = get_ref_die (ref_idx);
@@ -1702,6 +1701,42 @@ preorder_visit (
   return die;
 }
 
+#ifdef TARG_ST
+// [CL]
+/* Traverse the DST node 'idx' and all its children, in order to check
+ * whether any children was referenced. If it is the case, then 'idx'
+ * debug info needs to be generated
+ */
+static BOOL
+postorder_visit (DST_INFO_IDX idx)
+{
+  DST_INFO *info;
+  DST_INFO_IDX child_idx;
+  Dwarf_P_Die die;
+  DST_DW_tag tag;
+  DST_flag flag;
+
+  info = DST_INFO_IDX_TO_PTR (idx);
+  tag = DST_INFO_tag (info);
+  flag = DST_INFO_flag (info);
+  die = (Dwarf_P_Die) DST_INFO_dieptr (info);
+
+  BOOL is_referenced = (die != NULL);
+  for (child_idx = DST_first_child (idx);
+       !DST_IS_NULL(child_idx); 
+       child_idx = DST_INFO_sibling(DST_INFO_IDX_TO_PTR(child_idx)))
+  {
+    info = DST_INFO_IDX_TO_PTR (child_idx);
+    if (DST_INFO_tag(info) != DW_TAG_subprogram
+	|| DST_IS_declaration(DST_INFO_flag(info)) )
+    {
+      is_referenced |= postorder_visit (child_idx);
+    }
+  }
+  return is_referenced;
+}
+#endif
+
 /* traverse all DSTs and handle the non-pu info */
 static void
 Traverse_Global_DST (void)
@@ -1735,45 +1770,30 @@ Traverse_Global_DST (void)
 #ifdef TARG_ST
     // [CL] Skip this DST if it has already been
     // handled in a previous pass
-    if (DST_IS_info_mark(DST_INFO_flag(info)))
+    if (DST_IS_info_mark(DST_INFO_flag(info))) {
       continue;	/* already traversed */
+      }
 #endif
 
     /* only traverse non-subp's */
     if (DST_INFO_tag(info) == DW_TAG_subprogram
       || DST_INFO_tag(info) == DW_TAG_entry_point)
-	continue;	/* will traverse later */
+      continue;	/* will traverse later */
 
     /* All DST entries other than subprograms are attached as children
      * of the compile_unit die.
      */
-#ifdef TARG_ST
-    // [CL] Only generate type info if there is a
-    // reference to it
-    switch (DST_INFO_tag(info)) {
-    case DW_TAG_const_type:
-    case DW_TAG_volatile_type:
-    case DW_TAG_pointer_type:
-    case DW_TAG_reference_type:
-    case DW_TAG_typedef:
-    case DW_TAG_ptr_to_member_type:
-    case DW_TAG_array_type:
-    case DW_TAG_subrange_type:
-    case DW_TAG_structure_type:
-    case DW_TAG_class_type:
-    case DW_TAG_union_type:
-      if (!DST_INFO_dieptr (info))
-	continue;
-    }
-#endif
-
     parent = CGD_enclosing_proc[GLOBAL_LEVEL];
+#ifdef TARG_ST
+    if (postorder_visit (idx)) {
+#endif
     (void) preorder_visit (idx, parent, NULL, LOCAL_LEVEL, TRUE /* visit children */);
     DST_SET_info_mark(DST_INFO_flag(info));	/* mark has been traversed */
 
 #ifdef TARG_ST
     // [CL] keep on looping
-    found_new_ref = TRUE;
+      found_new_ref = TRUE;
+    }
   }
 #endif
   }
