@@ -330,8 +330,16 @@ Expand_Convert_Length (
 	Build_OP (TOP_shru_i, dest, tmp, Gen_Literal_TN(16,4), ops);
       }
     }
-    else
-        FmtAssert(FALSE, ("Expand_Convert_Length: unknown dest extension"));
+    else if (new_length < 16) {
+      INT64 mask = 1;
+      INT32 i;
+
+      for ( i = 0; i < new_length-1; ++i ) {
+        mask |= mask << 1;
+      }
+
+      Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(mask, 4), ops);
+    }
   }
   else
       FmtAssert(FALSE, ("Expand_Convert_Length: unknown src extension"));
