@@ -1666,33 +1666,52 @@ main()
   Stop(3); 
 
   /* ===== Template 0x00 (1) ===== */ 
+#if 0 // CL: make variable length bundles
   ISA_Bundle_Type_Create("temp1", ".temp1", 4); 
+#else
+  ISA_Bundle_Type_Create("temp1", ".temp1", 1); 
+#endif
   Slot(0, S0_Unit); 
   Stop(0); 
+#if 0 // CL
   Slot(1, S1_Unit); 
   Slot(2, S2_Unit); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (2) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp2", ".temp2", 4); 
+#else
+  ISA_Bundle_Type_Create("temp2", ".temp2", 2); 
+#endif
   Slot(0, S0_Unit); 
   Slot(1, S1_Unit); 
   Stop(1); 
+#if 0 // CL
   Slot(2, S2_Unit); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (3) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp3", ".temp3", 4); 
+#else
+  ISA_Bundle_Type_Create("temp3", ".temp3", 3); 
+#endif
   Slot(0, S0_Unit); 
   Slot(1, S1_Unit); 
   Slot(2, S2_Unit); 
   Stop(2); 
+#if 0 // CL
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (4) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp4", ".temp4", 4); 
   Slot(0, S0_Unit); 
   Stop(0); 
@@ -1732,6 +1751,7 @@ main()
   Stop(2); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (8) ===== */ 
   ISA_Bundle_Type_Create("temp8", ".temp8", 4); 
@@ -1742,23 +1762,36 @@ main()
   Stop(3); 
 
   /* ===== Template 0x00 (9) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp9", ".temp9", 4); 
+#else
+  ISA_Bundle_Type_Create("temp9", ".temp9", 2); 
+#endif
   Slot(0, EXT0_Unit); 
   Slot(1, EXT0_Unit); 
   Stop(1); 
+#if 0 // CL
   Slot(2, S2_Unit); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (10) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp10", ".temp10", 4); 
+#else
+  ISA_Bundle_Type_Create("temp10", ".temp10", 3); 
+#endif
   Slot(0, EXT0_Unit); 
   Slot(1, EXT0_Unit); 
   Slot(2, S2_Unit); 
   Stop(2); 
+#if 0 // CL
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
+#if 0 // CL
   /* ===== Template 0x00 (11) ===== */ 
   ISA_Bundle_Type_Create("temp11", ".temp11", 4); 
   Slot(0, EXT0_Unit); 
@@ -1768,6 +1801,7 @@ main()
   Stop(2); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (12) ===== */ 
   ISA_Bundle_Type_Create("temp12", ".temp12", 4); 
@@ -1777,6 +1811,7 @@ main()
   Slot(3, EXT2_Unit); 
   Stop(3); 
 
+#if 0 // CL
   /* ===== Template 0x00 (13) ===== */ 
   ISA_Bundle_Type_Create("temp13", ".temp13", 4); 
   Slot(0, EXT0_Unit); 
@@ -1785,6 +1820,7 @@ main()
   Slot(2, EXT2_Unit); 
   Slot(3, EXT2_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (14) ===== */ 
   ISA_Bundle_Type_Create("temp14", ".temp14", 4); 
@@ -1795,32 +1831,50 @@ main()
   Stop(3); 
 
   /* ===== Template 0x00 (15) ===== */ 
+#if 0 // CL 
   ISA_Bundle_Type_Create("temp15", ".temp15", 4); 
+#else
+  ISA_Bundle_Type_Create("temp15", ".temp15", 2); 
+#endif
   Slot(0, S0_Unit); 
   Slot(1, EXT1_Unit); 
   Stop(1); 
+#if 0 // CL
   Slot(2, EXT1_Unit); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (16) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp16", ".temp16", 4); 
+#else
+  ISA_Bundle_Type_Create("temp16", ".temp16", 3); 
+#endif
   Slot(0, S0_Unit); 
   Slot(1, EXT1_Unit); 
   Slot(2, EXT1_Unit); 
   Stop(2); 
+#if 0 // CL
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (17) ===== */ 
+#if 0 // CL
   ISA_Bundle_Type_Create("temp17", ".temp17", 4); 
+#else
+  ISA_Bundle_Type_Create("temp17", ".temp17", 2); 
+#endif
   Slot(0, S0_Unit); 
   Slot(1, EXT1_Unit); 
   Stop(1); 
+#if 0 // CL
   Slot(2, EXT1_Unit); 
   Stop(2); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   /* ===== Template 0x00 (18) ===== */ 
   ISA_Bundle_Type_Create("temp18", ".temp18", 4); 
@@ -1830,6 +1884,7 @@ main()
   Slot(3, EXT2_Unit); 
   Stop(3); 
 
+#if 0 // CL
   /* ===== Template 0x00 (19) ===== */ 
   ISA_Bundle_Type_Create("temp19", ".temp19", 4); 
   Slot(0, S0_Unit); 
@@ -1867,6 +1922,7 @@ main()
   Stop(2); 
   Slot(3, S3_Unit); 
   Stop(3); 
+#endif
 
   ISA_Bundle_End(); 
   return 0; 
