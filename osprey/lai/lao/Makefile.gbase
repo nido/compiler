@@ -226,7 +226,6 @@ IPL_DSO=ipl_dll.a
 CG_DSO=cg_dll.a
 endif
 
-#BD3 ifeq ($(LAO_BUILD_VARIANT),SINGLE_LAO_SO)
 LAO_DSOS =
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLAO.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.a
@@ -234,14 +233,7 @@ LAO_DSOS += $(LAO_ROOT)/LAO/lib/libLIR.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCSD.a
 LAO_DSOS += $(LAO_ROOT)/LAO/lib/libCCL.a
 LAO_DSOS += $(WOPT_DSO) $(BE_DSO) $(IPL_DSO) $(CG_DSO)
-#BD3 else
-#BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libLAO.so
-#BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libSCD.so
-#BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libLIR.so
-#BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libCSD.so
-#BD3 LINK_DSOS += $(LAO_ROOT)/LAO/lib/libCCL.so
-#BD3 endif
-STD_DSO_LOADOPTS += -Wl,-rpath=$(LAO_ROOT)/LAO/lib:.
+STD_DSO_LOADOPTS += -Wl,-Bsymbolic
 
 ifeq ($(BUILD_HOST), IA64)
 ifeq ($(BUILD_COMPILER), SGI)

@@ -35,8 +35,6 @@ extern "C" {
 #define operator OPERATOR
 #define CCL_NO_STDINT
 #define CCL_NO_STDBOOL
-#include "CCL.h"
-#include "CSD.h"
 #include "LAO.h"
 #undef operator
 #undef this
@@ -1111,14 +1109,14 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
     loopinfo = Interface_makeLoopInfo(interface, cgir_li, head_block, 1,
 	Configuration_Pipelining, pipelining);
   }
-
+  //
   // Make a BB_List of the loop body and compute its op_count. This
   // BB_List must be in topological order.
   BB_List bb_topo_list, bb_list;
   BB_SET *loop_set = LOOP_DESCR_bbset(loop);
-
+  //
   Sort_topological(head_bb, loop_set, bb_topo_list);
-
+  //
   int nest_level = BB_nest_level(head_bb), op_count = 0;
   BB_List::iterator bb_iter;
   for (bb_iter = bb_topo_list.begin(); bb_iter != bb_topo_list.end(); bb_iter++) {
@@ -1128,7 +1126,7 @@ lao_makeLoopInfo(LOOP_DESCR *loop, int pipelining) {
       if (op_count >= LAO_OPS_LIMIT) break;
     }
   }
-
+  //
   // Compute the memory dependence graph.
   if (op_count < LAO_OPS_LIMIT && CG_LAO_loopdep > 0) {
     bool cyclic = BB_innermost(head_bb) != 0;
