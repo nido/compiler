@@ -144,6 +144,9 @@ typedef struct local_spills {
 /* One for each kind of spill location: */
 static LOCAL_SPILLS lra_float_spills, lra_int_spills;
 static LOCAL_SPILLS swp_float_spills, swp_int_spills;
+#ifdef TARG_ST
+static LOCAL_SPILLS lra_bool_spills;
+#endif
 
 /*
  * only rematerialize LDID's homeable by gra if spilling in service
@@ -299,6 +302,9 @@ CGSPILL_Reset_Local_Spills (void)
 {
   LOCAL_SPILLS_Reset(&lra_float_spills);
   LOCAL_SPILLS_Reset(&lra_int_spills);
+#ifdef TARG_ST
+  LOCAL_SPILLS_Reset(&lra_bool_spills);
+#endif
   LOCAL_SPILLS_Reset(&swp_float_spills);
   LOCAL_SPILLS_Reset(&swp_int_spills);
 }
@@ -320,6 +326,12 @@ CGSPILL_Initialize_For_PU(void)
   LOCAL_SPILLS_mem_type(slc) = Spill_Int_Type;
   LOCAL_SPILLS_free(slc) = NULL;
   LOCAL_SPILLS_used(slc) = NULL;
+#ifdef TARG_ST
+  slc = &lra_bool_spills;
+  LOCAL_SPILLS_mem_type(slc) = MTYPE_To_TY (MTYPE_I1);
+  LOCAL_SPILLS_free(slc) = NULL;
+  LOCAL_SPILLS_used(slc) = NULL;
+#endif
   slc = &lra_float_spills;
   LOCAL_SPILLS_mem_type(slc) = Spill_Float_Type;
   LOCAL_SPILLS_free(slc) = NULL;
@@ -462,7 +474,12 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     mem_location = TN_spill (tn);
     if (mem_location == NULL) {
       slc = TN_is_float(tn) || TN_is_fcc_register(tn) ?
-	      &lra_float_spills : &lra_int_spills;
+	&lra_float_spills :
+#ifdef TARG_ST
+	(CGTARG_Spill_Type(tn) == MTYPE_To_TY(MTYPE_I1)) ?
+	&lra_bool_spills :
+#endif
+	&lra_int_spills;
       mem_location = LOCAL_SPILLS_Get_Spill_Location (slc, SYM_ROOT_LRA);
       Set_TN_spill(tn, mem_location);
     }
