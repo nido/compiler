@@ -1090,8 +1090,15 @@ Localize_or_Replace_Dedicated_TNs(void)
       for (INT i = 0; i < OP_results(op); i++) {
 	tn = OP_result(op,i);
 	if ( ! TN_is_dedicated( tn ) ) continue;
+#ifdef TARG_ST
+	/* Use of non-allocatable registers ($sp, $gp) is OK */
+	/* [SC]: GP may be allocatable */
+	if (!REGISTER_allocatable(TN_register_class(tn), TN_register(tn))
+	    || tn == GP_TN)
+#else
 	/* Use of non-allocatable registers ($sp, $gp) is OK */
 	if (!REGISTER_allocatable(TN_register_class(tn), TN_register(tn)))
+#endif
 	  continue;
 	if ( non_region_use_bb == bb )
 	  continue; // the use is already local
@@ -1188,6 +1195,10 @@ Localize_or_Replace_Dedicated_TNs(void)
 	if (TN_is_ep_reg(tn) && OP_call(op)) 
 	  continue;
 #ifdef TARG_ST
+	// [SC]: use of GP_TN is OK. Note: GP may be allocatable.
+	if (tn == GP_TN)
+	  continue;
+
 	// use of RA_TN in a call is OK. Localize the def ?
 	if (tn == RA_TN && OP_call(op))
 	  continue;
