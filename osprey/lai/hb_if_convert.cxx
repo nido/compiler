@@ -726,6 +726,8 @@ replace_phi_with_cmov (
 
 #endif
 
+  BBLIST *preds;
+
   // 
   // We will generate a select with the opnd[0] corresponding
   // to branch taken and opnd[1] to branch not taken.
