@@ -72,7 +72,7 @@
 
 #include "defs.h"
 #include "symtab.h"
-#include "tcon_util.h"
+/* #include "tcon_util.h" */
 
 #include "variants.h"
 #include "cgtarget.h"
