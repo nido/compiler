@@ -388,6 +388,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 }
 
 #ifdef LAO_ENABLED
+extern BB_MAP CG_LAO_Region_Map;
 void
 LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
@@ -416,10 +417,12 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 	Handle_All_Hazards(bb);
 	// Handle_All_Hazards will have fixed branch operations with
 	// scheduling date -1
-	if (Assembly && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
+	// Only add notes if the postpass scheduler effectively ran
+	if (Assembly && CG_LAO_Region_Map && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
       }
       REG_LIVE_Finish();
-      if (Assembly) Add_Scheduling_Notes_For_Loops ();
+      // Only add notes if the postpass scheduler effectively ran
+      if (Assembly && CG_LAO_Region_Map) Add_Scheduling_Notes_For_Loops ();
     }
   }
 }
