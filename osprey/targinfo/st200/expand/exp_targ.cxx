@@ -746,14 +746,11 @@ Expand_Abs (
       // For dest = abs (src) generate:
       //  
       //            sub   negx = $r0.0, src
-      //            cmpge cond = src, $r0.0
-      //            slct  dest = cond, src, negx
+      //            max   dest = negx, src
       //
       TN *negx = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-      TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
       Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
-      Build_OP (TOP_cmpge_r_b, cond, src, Zero_TN, ops);
-      Build_OP (TOP_slct_r, dest, cond, src, negx, ops);
+      Build_OP (TOP_max_r, dest, negx, src, ops);
     }
     break;
 
