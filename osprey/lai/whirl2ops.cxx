@@ -4828,6 +4828,12 @@ Expand_Statement (
 	if (last_loop_pragma == NULL)
 	  first_loop_pragma = stmt;
 	last_loop_pragma = stmt;
+	// [CL] Mark prologue for debug output
+      } else if (WN_pragma(stmt) == WN_PRAGMA_PREAMBLE_END) {
+	OP* op;
+	for (op=OPS_first(&New_OPs); op != NULL ; op=OP_next(op)) {
+	  Set_OP_prologue(op);
+	}
       }
 #else
     if (WN_pragmas[WN_pragma(stmt)].users == PUSER_CG) {
