@@ -11024,7 +11024,7 @@ static void emit_rule_action_reg_CVTL_reg_ (NBG_Link LINK, void *STATE)
 /*RULE: reg:CVTLI4(reg) */
 static void emit_rule_action_CVTLI4_8 (NBG_Link LINK, void *STATE)
 {
-  MAKE_EXPR_1(TOP_sxtb_r);
+  MAKE_EXPR_1(TOP_sxtb);
 }
 
 static void emit_rule_action_CVTLU4_8 (NBG_Link LINK, void *STATE)
@@ -11037,12 +11037,12 @@ static void emit_rule_action_CVTLU4_8 (NBG_Link LINK, void *STATE)
 
 static void emit_rule_action_CVTLI4_16 (NBG_Link LINK, void *STATE)
 {
-  MAKE_EXPR_1(TOP_sxth_r);
+  MAKE_EXPR_1(TOP_sxth);
 }
 
 static void emit_rule_action_CVTLU4_16 (NBG_Link LINK, void *STATE)
 {
-  MAKE_EXPR_1(TOP_zxth_r);
+  MAKE_EXPR_1(TOP_zxth);
 }
 
 

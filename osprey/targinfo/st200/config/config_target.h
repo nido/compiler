@@ -165,6 +165,30 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 #define IEEE_FP_FORMAT	TRUE
 #define IBM_FP_FORMAT	FALSE
 
+/* [SC] Abstract the target prefetch instruction */
+#define TOP_pft_i \
+  (Is_Target_ISA_ST220() ? TOP_ST220_pft_i : \
+   Is_Target_ISA_ST230() ? TOP_ST230_pft_i : \
+   Is_Target_ISA_ST231() ? TOP_ST231_pft_i : \
+   Is_Target_ISA_ST235() ? TOP_ST235_pft_i : \
+   TOP_UNDEFINED)
+#define TOP_pft_ii \
+  (Is_Target_ISA_ST220() ? TOP_ST220_pft_ii : \
+   Is_Target_ISA_ST230() ? TOP_ST230_pft_ii : \
+   Is_Target_ISA_ST231() ? TOP_ST231_pft_ii : \
+   Is_Target_ISA_ST235() ? TOP_ST235_pft_ii : \
+   TOP_UNDEFINED)
+#define TOP_pswclr \
+  (Is_Target_ISA_ST230() ? TOP_ST230_pswclr : \
+   Is_Target_ISA_ST231() ? TOP_ST231_pswclr : \
+   Is_Target_ISA_ST235() ? TOP_ST235_pswclr : \
+   TOP_UNDEFINED)
+#define TOP_pswset \
+  (Is_Target_ISA_ST230() ? TOP_ST230_pswset : \
+   Is_Target_ISA_ST231() ? TOP_ST231_pswset : \
+   Is_Target_ISA_ST235() ? TOP_ST235_pswset : \
+   TOP_UNDEFINED)
+
 /* Do we need to implement quad float? */
 /* #define TARG_NEEDS_QUAD_OPS */
 

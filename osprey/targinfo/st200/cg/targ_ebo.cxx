@@ -602,7 +602,7 @@ EBO_replace_subset_load_with_extract (
       TN *tn1;
       TN *tn2;
       if (size_succ == 2) {
-	new_opcode = TOP_is_unsign(OP_code(op)) ? TOP_zxth_r : TOP_sxth_r;
+	new_opcode = TOP_is_unsign(OP_code(op)) ? TOP_zxth : TOP_sxth;
 	tn1 = pred_result;
 	tn2 = NULL;
       } else if (size_succ == 1) {
@@ -611,7 +611,7 @@ EBO_replace_subset_load_with_extract (
 	  tn1 = pred_result;
 	  tn2 = Gen_Literal_TN(0xff, 4);
 	} else {
-	  new_opcode = TOP_sxtb_r;
+	  new_opcode = TOP_sxtb;
 	  tn1 = pred_result;
 	  tn2 = NULL;
 	}
@@ -2875,7 +2875,7 @@ Is_16_Bits (
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
   }
 
-  if (OP_code(op) == TOP_sxth_r) {
+  if (OP_code(op) == TOP_sxth) {
     *ret = OP_opnd(op,0);
     *ret_tninfo = opinfo->actual_opnd[0];
     *sign_ext = SIGN_EXT;
@@ -2883,7 +2883,7 @@ Is_16_Bits (
     if (EBO_tn_available (bb, *ret_tninfo)) return TRUE;
   }
 
-  if (OP_code(op) == TOP_zxth_r ||
+  if (OP_code(op) == TOP_zxth ||
       (OP_iand(op) && TN_Has_Value(OP_opnd(op,1)) && TN_Value(OP_opnd(op,1)) == 65535)) {
     *ret = OP_opnd(op,0);
     *ret_tninfo = opinfo->actual_opnd[0];
@@ -3858,7 +3858,7 @@ shr_shl_sequence (
 
   // Determine new opcode:
   TOP new_opcode;
-  new_opcode = TOP_is_unsign(opcode) ? TOP_zxth_r : TOP_sxth_r;
+  new_opcode = TOP_is_unsign(opcode) ? TOP_zxth : TOP_sxth;
 
   // Replace the current instruction:
   OP *new_op;

@@ -1217,7 +1217,7 @@ CGTARG_Can_Fit_Immediate_In_Add_Instruction (
      So we assume that add does not have extended immediate
      form.
   */
-  return ISA_LC_Value_In_Class (immed, LC_s9);
+  return ISA_LC_Value_In_Class (immed, LC_isrc2);
 }
 
 /* ====================================================================
@@ -1229,7 +1229,7 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
   INT64 immed
 )
 {
-  return ISA_LC_Value_In_Class (immed, LC_s32);
+  return ISA_LC_Value_In_Class (immed, LC_xsrc2);
 }
 
 /* ====================================================================
@@ -1607,7 +1607,7 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 
       if (TN_has_value(opnd)) {
 	val = TN_value(opnd);
-	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	if (!ISA_LC_Value_In_Class(val, LC_isrc2)) {
 	  extra_slot_reqd = TRUE;
 	}
       }
@@ -1620,7 +1620,7 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	// SP/FP relative may actually fit into 9-bits
 	if (base_st == SP_Sym || base_st == FP_Sym) {
 	  val = CGTARG_TN_Value (opnd, base_ofst);
-	  if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	  if (!ISA_LC_Value_In_Class(val, LC_isrc2)) {
 	    extra_slot_reqd = TRUE;
 	  }
 	}
@@ -1638,7 +1638,7 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	      FmtAssert(FALSE,("only 32 bits floating point values are supported"));
 	      break;
 	    }
-	    if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	    if (!ISA_LC_Value_In_Class(val, LC_isrc2)) {
 	      extra_slot_reqd = TRUE;
 	    }
 	  } else {

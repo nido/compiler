@@ -130,7 +130,7 @@ Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops)
       if (TN_value(src) == 0) 
 	result = Zero_TN;
       else if (Inline_Extended_Immediate || 
-	       ISA_LC_Value_In_Class (TN_value(src), LC_s9)) 
+	       ISA_LC_Value_In_Class (TN_value(src), LC_isrc2)) 
 	result = src;
       else 
 	result = Expand_Immediate_Into_Register (mtype, src, ops);
@@ -269,7 +269,7 @@ Expand_Convert_Length (
     if (new_length == 8) {
       // zero extension requires a sequence of shifts:
       if (signed_extension) {
-          Build_OP (TOP_sxtb_r, dest, src, ops);
+          Build_OP (TOP_sxtb, dest, src, ops);
       }
       else {
 	Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(0xff,4), ops);
@@ -278,10 +278,10 @@ Expand_Convert_Length (
     else if (new_length == 16) {
       // zero extension requires a sequence of shifts:
       if (signed_extension) {
-          Build_OP (TOP_sxth_r, dest, src, ops);
+          Build_OP (TOP_sxth, dest, src, ops);
       }
       else {
-	Build_OP (TOP_zxth_r, dest, src, ops);
+	Build_OP (TOP_zxth, dest, src, ops);
       }
     }
     else if (new_length < 16) {
@@ -439,7 +439,7 @@ Exp_Immediate (
     break;
     
   case ISA_REGISTER_CLASS_integer:
-    if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_s9)) {
+    if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_isrc2)) {
       if (val == 0) Build_OP (TOP_mov_r, dest, Zero_TN, ops);
       else Build_OP (TOP_mov_i, dest, src, ops);
     } else {
@@ -1347,7 +1347,7 @@ Expand_Special_And_Immed (
     Expand_Copy(dest, NULL, src1, ops);
     return TRUE;
   } else if (imm == 0xFFFF) {
-    Build_OP(TOP_zxth_r, dest, src1, ops);
+    Build_OP(TOP_zxth, dest, src1, ops);
     return TRUE;
   }
   return FALSE;
@@ -2736,7 +2736,7 @@ Exp_Is_Large_Stack_Sym (
   Base_Symbol_And_Offset_For_Addressing (sym, ofst, &base_sym, &base_ofst);
 
   if ((base_sym == SP_Sym || base_sym == FP_Sym) &&
-      !ISA_LC_Value_In_Class(base_ofst, LC_s9)) {
+      !ISA_LC_Value_In_Class(base_ofst, LC_isrc2)) {
     return TRUE;
   }
   return FALSE;

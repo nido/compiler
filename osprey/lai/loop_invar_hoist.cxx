@@ -1989,7 +1989,7 @@ Scalarize_OP(OP *memop, TN *scalar) {
 	    TN *arg2 = NULL;
 	    OP *scalar_op;
 	    if (size == 2) {
-		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_zxth_r : TOP_sxth_r;
+		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_zxth : TOP_sxth;
 	    }
 	    else if (size == 1) {
 		if (TOP_is_unsign(OP_code(memop))) {
@@ -1997,7 +1997,7 @@ Scalarize_OP(OP *memop, TN *scalar) {
 		    arg2 = Gen_Literal_TN(0xff, 4);
 		}
 		else {
-		    opcode = TOP_sxtb_r;
+		    opcode = TOP_sxtb;
 		}
 	    }
 	    scalar_op = Mk_OP(opcode, OP_result(memop, 0), scalar, arg2);
