@@ -886,6 +886,7 @@ CGTARG_Can_Load_Immediate_In_Single_Instruction (
   return ISA_LC_Value_In_Class (immed, LC_s32);
 }
 
+#if 0
 /* ====================================================================
  *   CGTARG_Is_OP_Advanced_Load
  * ====================================================================
@@ -1016,6 +1017,7 @@ CGTARG_Can_Be_Speculative (
 scalar_load:
   return TRUE; 
 }
+#endif
 
 /* ====================================================================
  *   CGTARG_OP_is_counted_loop
@@ -1334,56 +1336,59 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   BOOL extra_slot_implicit = TRUE;
 
   // Does this OP have immediate operand ?
-
-  //fprintf(TFile,"  immediate opnd ??\n");
-  //Print_OP(op);
-  //fprintf(TFile,"\n opnd = %d\n", CGTARG_Immediate_Operand(op));
-
-  if (CGTARG_Immediate_Operand(op) >= 0) {
+  INT i;
+  for (i = 0; i < OP_opnds(op); i++) {
+    TN *opnd = OP_opnd(op, i);
     INT64 val;
-    TN *opnd = OP_opnd(op,CGTARG_Immediate_Operand(op));
-    if (TN_has_value(opnd)) {
-      val = TN_value(opnd);
-      if (!ISA_LC_Value_In_Class(val, LC_s9)) {
-	extra_slot_reqd = TRUE;
-      }
-    }
-    else if (TN_is_symbol(opnd)) {
-      ST *st, *base_st;
-      INT64 base_ofst;
 
-      st = TN_var(opnd);
-      Base_Symbol_And_Offset (st, &base_st, &base_ofst);
-      // SP/FP relative may actually fit into 9-bits
-      if (base_st == SP_Sym || base_st == FP_Sym) {
-	val = CGTARG_TN_Value (opnd, base_ofst);
+    if (TN_is_constant(opnd)) {
+
+      if (TN_has_value(opnd)) {
+	val = TN_value(opnd);
 	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
 	  extra_slot_reqd = TRUE;
 	}
       }
-      else if (ST_gprel(base_st)) {
-	FmtAssert(FALSE,("GP-relative not supported"));
-      }
-      else {
-	// must be a assembly resolved symbolic address (label) ? 
-	// just reserve the following slot
-	//
-	//      else if (ST_class(st) == CLASS_CONST) {
-	// HACK:
-	// just reserve the slot immediately following this
-	// Multiflow assembler does this.
-	//
+      else if (TN_is_symbol(opnd)) {
+	ST *st, *base_st;
+	INT64 base_ofst;
 
-	// only mov is allowed this way !!!
-	FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
-	extra_slot_reqd = TRUE;
-	extra_slot_implicit = TRUE;
+	st = TN_var(opnd);
+	Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+	// SP/FP relative may actually fit into 9-bits
+	if (base_st == SP_Sym || base_st == FP_Sym) {
+	  val = CGTARG_TN_Value (opnd, base_ofst);
+	  if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	    extra_slot_reqd = TRUE;
+	  }
+	}
+	else if (ST_gprel(base_st)) {
+	  FmtAssert(FALSE,("GP-relative not supported"));
+	}
+	else {
+	  //
+	  // must be a assembly resolved symbolic address (label) ? 
+	  //
+	  // If it is a PC-relative call, br, etc. we assume that 
+	  // 23-bits allocated for it in the opcode is enough.
+	  // TODO: investigate -- shouldn't we have generated a
+	  // label TN ??
+	  // Not xfer -- reserve the following slot
+	  //
+	  if (!OP_xfer(op)) {
+	    // only mov is allowed this way !!!
+	    FmtAssert(OP_code(op) == TOP_mov_i,("extended not mov"));
+	    extra_slot_reqd = TRUE;
+	    extra_slot_implicit = TRUE;
+	  }
+	}
       }
+
+      // assume that labels fit into 23-bit, enums are not emitted ?
+
+      break;
     }
-    // assume that labels fit into 23-bit, enums are not emitted ?
   }
-
-  //fprintf(TFile, "  slot = %d, extra slot reqd = %s\n", slot, (extra_slot_reqd) ? "true" : "false");
 
   //
   // All bundles have a stop at the end, reserve it (the routine
@@ -1450,11 +1455,16 @@ CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
   // to extended opcode:
   //
   if (extra_slot_reqd && extra_slot_implicit && slot_avail) {
-    TOP etop = Get_Extended_Opcode(OP_code(op));
-    OP_Change_Opcode(op, etop);
-    if (slot == 0) *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
-    else if (slot == 1) *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
-    else if (slot == 2) *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
+    //
+    // If we did not change it to extended opcode yet, do it here
+    //
+    if (OP_inst_words(op) == 1) {
+      TOP etop = Get_Extended_Opcode(OP_code(op));
+      OP_Change_Opcode(op, etop);
+      if (slot == 0) *prop = ISA_EXEC_PROPERTY_EXT0_Unit;
+      else if (slot == 1) *prop = ISA_EXEC_PROPERTY_EXT1_Unit;
+      else if (slot == 2) *prop = ISA_EXEC_PROPERTY_EXT2_Unit;
+    }
   }
 
   TI_BUNDLE_Unreserve_Stop_Bit(bundle, 3);
@@ -1510,6 +1520,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
 			     ISA_EXEC_UNIT_PROPERTY      prop,
 			     INT                         *clock) 
 {
+  INT i;
   INT ti_err = TI_RC_OKAY;
   INT template_bit = TI_BUNDLE_Return_Template(bundle);
   FmtAssert (template_bit != -1, ("Illegal template encoding"));
@@ -1519,6 +1530,7 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
   //
   if (slot_avail) {
     BOOL extra_slot_reqd = FALSE;
+    INT  immediate_opnd_idx;
 
     // Arthur: this is here until the ASM is fixed ...
     BOOL extra_slot_implicit = TRUE;
@@ -1526,47 +1538,50 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
     INT64 val;
 
     // If the op requires an immediate slot, fill it
+    for (i = 0; i < OP_opnds(op); i++) {
+      TN *opnd = OP_opnd(op, i);
 
-    //fprintf(TFile,"  immediate opnd ??\n");
-    //Print_OP(op);
-    //fprintf(TFile,"\n opnd = %d\n", CGTARG_Immediate_Operand(op));
+      if (TN_is_constant(opnd)) {
 
-    if (CGTARG_Immediate_Operand(op) >= 0) {
-      TN *opnd = OP_opnd(op,CGTARG_Immediate_Operand(op));
-      if (TN_has_value(opnd)) {
-	val = TN_value(opnd);
-	if (!ISA_LC_Value_In_Class(val, LC_s9)) {
-	  extra_slot_reqd = TRUE;
-	}
-      }
-      else if (TN_is_symbol(opnd)) {
-	ST *st = TN_var(opnd);
-	ST *base_st;
-	INT64 base_ofst;
-
-	Base_Symbol_And_Offset (st, &base_st, &base_ofst);
-	val = CGTARG_TN_Value (opnd, base_ofst);
-	// SP/FP relative that do not fit into 9-bits
-	if (base_st == SP_Sym || base_st == FP_Sym) {
+	if (TN_has_value(opnd)) {
+	  val = TN_value(opnd);
 	  if (!ISA_LC_Value_In_Class(val, LC_s9)) {
 	    extra_slot_reqd = TRUE;
+	    immediate_opnd_idx = i;
 	  }
 	}
-	else if (ST_gprel(base_st)) {
-	  FmtAssert(FALSE,("GP-relative not supported"));
+	else if (TN_is_symbol(opnd)) {
+	  ST *st = TN_var(opnd);
+	  ST *base_st;
+	  INT64 base_ofst;
+
+	  Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+	  val = CGTARG_TN_Value (opnd, base_ofst);
+	  // SP/FP relative that do not fit into 9-bits
+	  if (base_st == SP_Sym || base_st == FP_Sym) {
+	    if (!ISA_LC_Value_In_Class(val, LC_s9)) {
+	      extra_slot_reqd = TRUE;
+	    }
+	  }
+	  else if (ST_gprel(base_st)) {
+	    FmtAssert(FALSE,("GP-relative not supported"));
+	  }
+	  else {
+	    // it must be a label ? just reserve the slot immediately
+	    // following this one
+	    //
+	    //	else if (ST_class(st) == CLASS_CONST) {
+	    // HACK:
+	    // just reserve the slot immediately following this
+	    // Multiflow assembler does this.
+	    //
+	    extra_slot_implicit = TRUE;
+	    immediate_opnd_idx = i;
+	  }
 	}
-	else {
-	  // it must be a label ? just reserve the slot immediately
-	  // following this one
-	  //
-	  //	else if (ST_class(st) == CLASS_CONST) {
-	  // HACK:
-	  // just reserve the slot immediately following this
-	  // Multiflow assembler does this.
-	  //
-	  extra_slot_implicit = TRUE;
-	  //	  max_pos++;
-	}
+
+	// only one constant TN allowed
+	break;
       }
     }
 
@@ -1579,15 +1594,12 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
       INT slot;
       // Need to get the value of the right length
       INT64 constant = Targ_To_Host(Host_To_Targ(MTYPE_I4, val));
-
-      //      fprintf(stderr," constant = %lld (0x%llx)\n", constant, constant);
-
       // Get LSBits 0..9
       TN *val_tn = Gen_Literal_TN(constant & 0x000001ff, 4);
       // Get MSBits 10..32
       TN *extension = Gen_Literal_TN(constant >> 9, 4);
       // Replace opnd of this OP:
-      Set_OP_opnd(op,CGTARG_Immediate_Operand(op),val_tn);
+      Set_OP_opnd(op, immediate_opnd_idx, val_tn);
 
       // Try first schedulign to the left of OP
       if (!TI_BUNDLE_slot_filled(bundle, slot_pos-1)) {
@@ -1635,7 +1647,6 @@ CGTARG_Handle_Bundle_Hazard (OP                          *op,
   //
   // fill with nops
   //
-  INT i;
   OP *prev_op = NULL;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     if (i > adjusted_slot_pos) break;
