@@ -291,17 +291,81 @@ Expand_Divide_By_Constant (
   OPS *ops
 )
 {
+  BOOL is_signed = MTYPE_is_signed(mtype);
+
   FmtAssert(mtype == MTYPE_I4 || mtype == MTYPE_U4,
 	         ("Expand_Divide_By_Constant: mtype not handled"));
 
-  if (Is_Power_Of_2 (src2_val, mtype)) {
-    INT pow2 = Get_Power_Of_2 (src2_val, mtype);
-    Build_OP (TOP_shr_i, result,
-	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
+  /* Handle the trivial ones:
+   */
+  if (src2_val == 1) {
+    Exp_COPY(result, src1, ops);
+    return TRUE;
+  } else if (is_signed && src2_val == -1) {
+    Expand_Neg(result, src1, mtype, ops);
+    return TRUE;
+  }
 
-    if (src2_val < 0) {
-      // must negate the result
-      Build_OP (TOP_sub_r, result, Zero_TN, result, ops);
+  /* Look for simple shift optimizations:
+   */
+  if (Is_Power_Of_2 (src2_val, mtype)) {
+    TN *numer = src1;
+    INT64 dvsr = src2_val;
+    INT pow2 = Get_Power_Of_2 (src2_val, mtype);
+
+    if (MTYPE_is_unsigned(mtype)) {
+      Build_OP (TOP_shru_i, result,
+	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
+      //
+      //if (src2_val < 0) {
+	// must negate the result
+      //Build_OP (TOP_sub_r, result, Zero_TN, result, ops);
+      //}
+    } else {
+      // signed is more complicated
+      TN *t0 = Build_TN_Of_Mtype(mtype);
+      TN *t1 = Build_TN_Of_Mtype(mtype);
+      TN *t2 = dvsr < 0 ? Build_TN_Of_Mtype(mtype) : result;
+      INT64 absdvsr = dvsr < 0 ? -dvsr : dvsr;
+
+      if (absdvsr == 2) {
+
+	/* Optimize for abs(divisor) == 2:
+	 *      extr.u tmp0=numer,signbit,1  -- dvsr-1 if numer negative else 0
+	 *      add tmp1=tmp0,numer
+	 *      shr result=tmp1,1
+	 * if (dvsr<0) sub result=0,result
+	 */
+
+	// extract the sign bit
+	Build_OP(TOP_and_i, t0, numer, Gen_Literal_TN(0x80000000, 4), ops);
+	Build_OP(TOP_shru_i, t0, t0, Gen_Literal_TN(31,4), ops);
+	// add sign to numer
+	Build_OP(TOP_add_r, t1, t0, numer, ops);
+	// shr by 1
+	Build_OP(TOP_shr_i, t2, t1, Gen_Literal_TN(1, 4), ops);
+      } else {
+	/* General case:
+	 *      cmp.lt p1,p2=numer,zero         -- numerator negative?
+	 *      add tmp1=abs(dvsr)-1,numer      -- speculatively add dvsr-1 to numer
+	 * (p1) shr result=tmp1,pow2(abs(dvsr))
+	 * (p2) shr result=numer,pow2(abs(dvsr))
+	 * if (dvsr<0) sub result=0,result
+	 */
+	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+	TN *t3 = Build_TN_Of_Mtype(mtype);
+
+	Build_OP(TOP_cmplt_r_b, p1, numer, Zero_TN, ops);
+	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
+
+	Build_OP(TOP_shr_i, t1, t0, Gen_Literal_TN(pow2, 4), ops);
+	Build_OP(TOP_shr_i, t3, numer, Gen_Literal_TN(pow2, 4), ops);
+	Build_OP(TOP_slct_r, p1, t2, t1, t3, ops);
+      }
+      if (dvsr < 0) {
+	// must negate the result
+	Build_OP (TOP_sub_r, result, Zero_TN, t2, ops);
+      }
     }
 
     return TRUE;
