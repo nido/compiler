@@ -360,6 +360,10 @@ Can_Merge_BB (BB *bb_first, BB *bb_second)
   if (BB_length(bb_first) + BB_length(bb_second) >= CG_split_BB_length)
     return FALSE;
 
+  if (BB_kind (bb_second) == BBKIND_LOGIF &&
+      BBLIST_item(BBlist_Fall_Thru_Succ(bb_second)) != BB_next(bb_first)) 
+    return FALSE;
+
   return TRUE;
 }
 
@@ -374,6 +378,7 @@ BB_Merge (BB *bb_first, BB *bb_second)
              BB_id (bb_first), BB_id (bb_second));
     Print_BB (bb_first);
     Print_BB (bb_second);
+    Print_All_BBs();
   }
 
   // Branch should end up into bb_second
@@ -442,6 +447,14 @@ BB_Merge (BB *bb_first, BB *bb_second)
       Unlink_Pred_Succ(bb_second, succ);
       Link_Pred_Succ(bb_first, succ);
     }
+  }
+
+  if (Trace_Select_Merge) {
+    fprintf (Select_TFile, "AFTER BB_Merge %d %d\n",
+             BB_id (bb_first), BB_id (bb_second));
+    Print_BB (bb_first);
+    Print_BB (bb_second);
+    Print_All_BBs();
   }
 }
 
