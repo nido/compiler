@@ -1391,7 +1391,11 @@ CGTARG_Adjust_Latency (
   //    For input treated by the standard READ/WRITE latencies
   //	For output, force to 1.
   if (pred_code == TOP_asm) *latency = 1;
+
+  // 8. Any REGOUT latency must be at least 1 on this target.
+  if (kind == CG_DEP_REGOUT && *latency < 1) *latency = 1;
   
+
   return;
 }
 
