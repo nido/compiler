@@ -268,7 +268,7 @@ VPATH    =  $(SRC_DIRS)
 
 LCOPTS = $(STD_COMPILE_OPTS)
 ifneq ($(BUILD_COMPILER), EDG)
-LCOPTS += -fwritable-strings
+# (cbr) LCOPTS += -fwritable-strings
 endif
 LCDEFS = $(HOSTDEFS) $(TARGDEFS)
 LCINCS = $(addprefix -I, $(HEADER_DIRS))

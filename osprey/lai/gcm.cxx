@@ -254,6 +254,10 @@ Is_BB_Empty (BB *bb)
 static void
 Print_Trace_File(OP *cand_op, BB *src_bb, BB *cand_bb, BOOL success)
 {
+#ifdef TARG_ST
+  /* (cbr) shut up -fwritable-strings */
+  const 
+#endif
   char *str = (success) ? "SUCCESS" : "FAIL";
   fprintf (TFile, "%s_GCM(%s): MOVE ",Ignore_TN_Dep ? "POST":"PRE",str);
   Print_OP_No_SrcLine (cand_op);

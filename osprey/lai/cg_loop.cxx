@@ -808,6 +808,10 @@ void CG_LOOP::Attach_Prolog_And_Epilog(LOOP_DESCR *loop)
 {
   BB *loop_head = LOOP_DESCR_loophead(loop);
   BB *loop_tail = LOOP_DESCR_Find_Unique_Tail(loop), *bb;
+#ifdef TARG_ST
+  /* (cbr) shut up -fwritable-strings */
+  const 
+#endif
   char *trace_pfx = Get_Trace(TP_CGLOOP, 1) ? "<cgprep> " : NULL;
   BBLIST *preds;
   BOOL freqs = FREQ_Frequencies_Computed();

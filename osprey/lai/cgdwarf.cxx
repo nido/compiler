@@ -2984,6 +2984,10 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       //
       // If pointer-length reloc, use data8.ua, else dwarf offset
       // size to be relocated, use data4.ua
+#ifdef TARG_ST
+      /* (cbr) shut up -fwritable-strings */
+      const
+#endif
       char *reloc_name = (reloc_buffer[k].drd_length == 8)?
 			AS_ADDRESS_UNALIGNED: AS_WORD_UNALIGNED;
 
