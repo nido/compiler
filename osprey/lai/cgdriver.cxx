@@ -173,6 +173,7 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 
 static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
+static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
@@ -390,6 +391,10 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_select_allow_dup, NULL,
     "Allow basic blocks duplication for select if conversion"},
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_loads", "",
+    0, 0, 0,	&CG_select_spec_loads, NULL,
+    "Allow load speculation for select if conversion"},
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_stores", "",
     0, 0, 0,	&CG_select_stores, NULL,
     "Allow the promotion of stores for select if conversion"},
@@ -473,7 +478,7 @@ static OPTION_DESC Options_CG[] = {
   // CGLOOP options.
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "loop_opt", "loop_opt",
-    0, 0, 0,	&CG_enable_loop_optimizations, NULL },
+    0, 0, 0,	&CG_enable_loop_optimizations, &CG_enable_loop_optimizations_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_non_trip_countable", "opt_non_trip",
     0, 0, 0,	&CG_LOOP_optimize_non_trip_countable, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "opt_lno_winddown_cache", NULL,
@@ -1032,6 +1037,11 @@ Configure_CG_Options(void)
   }
 #endif
 
+  // [CG] Enabled loop opt at >=O2 level
+  if (!CG_enable_loop_optimizations_overridden ) {
+    CG_enable_loop_optimizations = (CG_opt_level >= 2 ? TRUE: FALSE);
+  }
+
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
   
@@ -1104,29 +1114,22 @@ Configure_CG_Options(void)
     CG_enable_peephole = (CG_opt_level > 0) ? TRUE : FALSE;
   }
 
+  // [CG]: turned on ssa
   // If user explicitely set SSA.
   // However, don't allow if opt_level < 1
-#if 0
-  // development: ssa off by default
   if (!CG_enable_ssa_overridden) {
     CG_enable_ssa = (CG_opt_level > 1) ? TRUE : FALSE;
   }
-  else {
-#endif
-    if (CG_enable_ssa && (CG_opt_level < 2)) {
-      DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
-      CG_enable_ssa = FALSE;
-    }
-#if 0
+  
+  if (CG_enable_ssa && (CG_opt_level < 2)) {
+    DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
+    CG_enable_ssa = FALSE;
   }
-#endif
 
-#if 0
-  // development: select off by default
+  // [CG] turned on select
   if (!CG_enable_select_overridden) {
     CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Select() : FALSE;
   }
-#endif
 
   if (CG_enable_select && !CG_enable_ssa) {
     DevWarn("CG: Ignoring select=ON, need ssa");

@@ -38,7 +38,7 @@
  *
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -TARG:dismiss_mem_faults=TRUE allow dismissible loads
+ * -CG:select_spec_load=TRUE     enable speculative loads
  *
  * The following flags to drive the algorithm.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
@@ -131,7 +131,8 @@ op_list load_i;
  *   flags:
  * ====================================================================
  */
-BOOL CG_select_allow_dup = FALSE;
+BOOL CG_select_spec_loads = TRUE;
+BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_stores = FALSE;
 const char* CG_select_factor = "16.0";
 const char* CG_select_disload_cost = "4.0";
@@ -585,7 +586,7 @@ Can_Speculate_BB(BB *bb, op_list *stores)
       if (OP_memory (op) && !OP_volatile(op)) {
 
         if (OP_load (op)) {
-          if (! Force_Memory_Dismiss)
+          if (! CG_select_spec_loads)
             return FALSE;
           load_i.push_front(op);
         }
@@ -2050,7 +2051,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   // [CG] Can't be done in SSA. Moved to cg.cxx
   //if (select_count || logif_count)
   //CFLOW_Optimize(CFLOW_MERGE, "CFLOW (from if conversion)");
-
 
   BB_MAP_Delete(if_bb_map);
 
