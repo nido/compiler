@@ -48,6 +48,7 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
+#define CHECK(condition)
 #include "lao_interface.h"
 #undef operator
 #undef this
@@ -263,30 +264,30 @@ CGIR_ST_CLASS_to_SClass(ST_CLASS sclass) {
   return sclasses[sclass];
 }
 
-// Convert CGIR_ST_SCLASS to LIR SStorage
-static inline LAI_SymbolStorage
-CGIR_ST_SCLASS_to_SStorage(ST_SCLASS sstorage) {
-  static LAI_SymbolStorage sstorages[SCLASS_COUNT] = {
-    LAI_SymbolStorage_UNDEF,		// SCLASS_UNKNOWN
-    LAI_SymbolStorage_AUTO,		// SCLASS_AUTO
-    LAI_SymbolStorage_FORMAL,		// SCLASS_FORMAL
-    LAI_SymbolStorage_FORMAL_REF,	// SCLASS_FORMAL_REF
-    LAI_SymbolStorage_PSTATIC,		// SCLASS_PSTATIC
-    LAI_SymbolStorage_FSTATIC,		// SCLASS_FSTATIC
-    LAI_SymbolStorage_COMMON,		// SCLASS_COMMON
-    LAI_SymbolStorage_EXTERN,		// SCLASS_EXTERN
-    LAI_SymbolStorage_UGLOBAL,		// SCLASS_UGLOBAL
-    LAI_SymbolStorage_DGLOBAL,		// SCLASS_DGLOBAL
-    LAI_SymbolStorage_TEXT,		// SCLASS_TEXT
-    LAI_SymbolStorage_REG,		// SCLASS_REG
-    LAI_SymbolStorage_UNDEF,		// SCLASS_CPLINIT not mapped
-    LAI_SymbolStorage_UNDEF,		// SCLASS_EH_REGION not mapped
-    LAI_SymbolStorage_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
-    LAI_SymbolStorage_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
-    LAI_SymbolStorage_UNDEF,		// SCLASS_COMMENT not mapped 
-    LAI_SymbolStorage_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
+// Convert CGIR_ST_SCLASS to LIR SStore
+static inline LAI_SymbolStore
+CGIR_ST_SCLASS_to_SStore(ST_SCLASS sstore) {
+  static LAI_SymbolStore sstores[SCLASS_COUNT] = {
+    LAI_SymbolStore_UNDEF,		// SCLASS_UNKNOWN
+    LAI_SymbolStore_AUTO,		// SCLASS_AUTO
+    LAI_SymbolStore_FORMAL,		// SCLASS_FORMAL
+    LAI_SymbolStore_FORMAL_REF,	// SCLASS_FORMAL_REF
+    LAI_SymbolStore_PSTATIC,		// SCLASS_PSTATIC
+    LAI_SymbolStore_FSTATIC,		// SCLASS_FSTATIC
+    LAI_SymbolStore_COMMON,		// SCLASS_COMMON
+    LAI_SymbolStore_EXTERN,		// SCLASS_EXTERN
+    LAI_SymbolStore_UGLOBAL,		// SCLASS_UGLOBAL
+    LAI_SymbolStore_DGLOBAL,		// SCLASS_DGLOBAL
+    LAI_SymbolStore_TEXT,		// SCLASS_TEXT
+    LAI_SymbolStore_REG,		// SCLASS_REG
+    LAI_SymbolStore_UNDEF,		// SCLASS_CPLINIT not mapped
+    LAI_SymbolStore_UNDEF,		// SCLASS_EH_REGION not mapped
+    LAI_SymbolStore_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
+    LAI_SymbolStore_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
+    LAI_SymbolStore_UNDEF,		// SCLASS_COMMENT not mapped 
+    LAI_SymbolStore_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
   };
-  return sstorages[sstorage];
+  return sstores[sstore];
 }
 
 // Convert CGIR_ST_EXPORT to LIR SExport
@@ -318,7 +319,7 @@ CGIR_SYM_to_Symbol(CGIR_SYM cgir_sym) {
     }
     LAI_Interface_Symbol_setClasses(interface, symbol, 
 	CGIR_ST_CLASS_to_SClass(ST_sym_class(St_Table[cgir_sym])),
-	CGIR_ST_SCLASS_to_SStorage(ST_storage_class(St_Table[cgir_sym])),
+	CGIR_ST_SCLASS_to_SStore(ST_storage_class(St_Table[cgir_sym])),
 	CGIR_ST_EXPORT_to_SExport(ST_export(St_Table[cgir_sym])));
   }
   return symbol;
@@ -333,7 +334,7 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn) {
   Temporary temporary = NULL;
   switch (WN_operator(home)) {
   case OPR_LDA: {
-    LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+    LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
     ST *var_st = WN_st(home);
     ST_IDX st_idx = ST_st_idx(*var_st);
     int64_t offset = WN_lda_offset(home);
@@ -388,7 +389,7 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
 	temporary = LAI_Interface_makeAssignedTemporary(interface, cgir_tn, CGIR_CRP_to_Register(tn_crp));
       } else {
 	ISA_REGISTER_CLASS tn_irc = TN_register_class(cgir_tn);
-	temporary = LAI_Interface_makeVirtualTemporary(interface, cgir_tn, CGIR_IRC_to_RegClass(tn_irc));
+	temporary = LAI_Interface_makeVirtualTemporary(interface, cgir_tn, CGIR_IRC_to_RegFile(tn_irc));
       }
       // Pass special tn flags
       if (TN_is_rematerializable(cgir_tn)) {
@@ -405,19 +406,19 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
-	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 	temporary = LAI_Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
-	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = LAI_Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
-	LAI_Immediate immediate = CGIR_LC_to_Immediate((ISA_LIT_CLASS)0);	// HACK ALERT
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = LAI_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
@@ -726,23 +727,23 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
     // Create cgir_tn.
     if (cgir_type == CGIR_Type_Virtual) {
       // Create Virtual cgir_tn.
-      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_RegFile lai_refFile = (LAI_RegFile)va_arg(va, LAI_RegFile);
       LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
-      ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(lai_regclass);
+      ISA_REGISTER_CLASS irc = RegFile_to_CGIR_IRC(lai_refFile);
       INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
       cgir_tn = Gen_Register_TN(irc, (bsize + 7)/8);
     } else if (cgir_type == CGIR_Type_Assigned) {
       // Create Assigned cgir_tn.
-      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_RegFile lai_refFile = (LAI_RegFile)va_arg(va, LAI_RegFile);
       LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
-      ISA_REGISTER_CLASS irc = RegClass_to_CGIR_IRC(lai_regclass);
+      ISA_REGISTER_CLASS irc = RegFile_to_CGIR_IRC(lai_refFile);
       CLASS_REG_PAIR crp = Register_to_CGIR_CRP(lai_register);
       INT bsize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
       cgir_tn = Gen_Register_TN(irc, (bsize + 7)/8);
       Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(crp));
     } else if (cgir_type == CGIR_Type_Dedicated) {
       // Create Dedicated cgir_tn.
-      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_RegFile lai_refFile = (LAI_RegFile)va_arg(va, LAI_RegFile);
       LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
       CLASS_REG_PAIR crp = Register_to_CGIR_CRP(lai_register);
       cgir_tn = Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), 0);
@@ -772,7 +773,7 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
     // - pseudo temporaries into assigned Temporary
     if (cgir_type == CGIR_Type_Assigned) {
       // Update Assigned cgir_tn.
-      LAI_RegClass lai_regclass = (LAI_RegClass)va_arg(va, LAI_RegClass);
+      LAI_RegFile lai_refFile = (LAI_RegFile)va_arg(va, LAI_RegFile);
       LAI_Register lai_register = (LAI_Register)va_arg(va, LAI_Register);
       Is_True (TN_Is_Allocatable(cgir_tn), ("Invalid TN for register allocation"));
       CLASS_REG_PAIR cgir_crp = Register_to_CGIR_CRP(lai_register);
