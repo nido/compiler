@@ -5311,6 +5311,35 @@ void CG_LOOP::Determine_Unroll_Factor()
 	// is 2^n
 	while ((const_trip_count % ntimes) && !is_power_of_two(ntimes))
 	  ntimes --;
+#ifdef TARG_ST
+	/* See if we can eliminate the residue by choosing ntimes-1 or
+	   ntimes+1. */
+	char *trace = NULL;
+	if (const_trip_count % ntimes != 0) {
+	  if ((ntimes > 2) && (const_trip_count % (ntimes-1) == 0)) {
+	    trace = "<unroll> const_trip_count %d, ntimes-1=%d, residue=0\n";
+	    ntimes --;
+	  }
+	  else if (const_trip_count % (ntimes+1) == 0) {
+	    trace = "<unroll> const_trip_count %d, ntimes+1=%d, residue=0\n";
+	    ntimes ++;
+	  }
+	}
+	/* Otherwise, see if we can have a residue of 1, since this
+	   does not make a loop. */
+	if (const_trip_count % ntimes > 1 ) {
+	  if (const_trip_count % (ntimes-1) == 1) {
+	    trace = "<unroll> const_trip_count %d, ntimes-1=%d, residue=1\n";
+	    ntimes --;
+	  }
+	  else if (const_trip_count % (ntimes+1) == 1) {
+	    trace = "<unroll> const_trip_count %d, ntimes+1=%d, residue=1\n";
+	    ntimes ++;
+	  }
+	}
+	if (trace && Get_Trace(TP_CGLOOP, 1))
+	  fprintf(TFile, trace, const_trip_count, ntimes);
+#endif
       }
       else {
 	if (!is_power_of_two(ntimes)) {
