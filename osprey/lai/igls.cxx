@@ -297,7 +297,6 @@ Schedule_Prefetch_Prepass () {
 	      BB_Remove_Op(bb, op_pref);
 	      BB_Insert_Op_Before(bb, op_ref, op_pref);
 	      Reset_BB_scheduled (bb);
-	      OP_scycle(BB_last_op(bb)) = -1;
 	    }
 	    Set_OP_pft_before(op_pref);
 	  }
@@ -308,9 +307,7 @@ Schedule_Prefetch_Prepass () {
 	      BB_Remove_Op(OP_bb(op_pref), op_pref);
 	      BB_Insert_Op_After(bb, op_ref, op_pref);
 	      Reset_BB_scheduled (bb);
-	      OP_scycle(BB_last_op(bb)) = -1;
 	      Reset_BB_scheduled (OP_bb(op_pref));
-	      OP_scycle(BB_last_op(OP_bb(op_pref))) = -1;
 	    }
 
 	    //	    if (Trace_PFT)
@@ -773,15 +770,23 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       if (should_we_do_thr && !skip_bb) Remove_Unnecessary_Check_Instrs(bb);
 #endif
       BOOL resched = !skip_bb && Reschedule_BB(bb); /* FALSE; */
+
+#ifdef TARG_ST
+      // FdF 20050502: BB_scheduled_hbs(bb) is always TRUE on
+      // post-pass scheduling, so ignore it.
+      skip_bb = BB_scheduled(bb);
+
+      // FdF 20050502: resched means that post-pass scheduling is not
+      // necessary. If performed, it can be ignored if it is not
+      // better than the current scheduling.
+      resched = skip_bb && Reschedule_BB(bb); /* FALSE; */
+#endif
+
       if (should_we_schedule && should_we_local_schedule &&
 	  (!skip_bb || resched)) {
 
 	// TODO: try locs_type = LOCS_DEPTH_FIRST also.
 	INT32 max_sched = (resched) ?  OP_scycle(BB_last_op(bb))+1 : INT32_MAX;
-#ifdef TARG_ST
-	// Schedule_prefetch may have set OP_scycle(BB_last_op(bb)) to -1
-	if (max_sched == 0) max_sched = INT32_MAX;
-#endif
 	if (LOCS_Enable_Scheduling) {
 	  if (!Sched) {
 	    Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);

@@ -2240,12 +2240,16 @@ void CGTARG_Resize_Instructions ()
   for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     for (OP *op = BB_first_op(bb); op != NULL; op = OP_next(op)) {
       TOP etop;
-      if (OP_inst_words(op) == 2)
+      INT old_size = OP_inst_words(op), new_size = 1;
+      if (old_size == 2)
 	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
       if (CGTARG_need_extended_Opcode(op, &etop)) {
-	if (OP_inst_words(op) == 1)
-	  OP_Change_Opcode(op, etop);
+	Is_True(OP_inst_words(op) == 1, ("CGTARG_Resize_Instructions: Internal Error"));
+	OP_Change_Opcode(op, etop);
+	new_size = 2;
       }
+      if (new_size > old_size)
+	Reset_BB_scheduled(OP_bb(op));
     }
   }
 }

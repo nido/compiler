@@ -1790,12 +1790,12 @@ HB_Schedule::Invoke_Post_HBS_Phase(BB* bb)
 
   // If we had moved aside any instructions in the prolog or epilog of 
   // the bb, put them back in.
-  if (_prolog_bb != NULL) {
+  if (_prolog_bb != NULL && BB_length(_prolog_bb)) {
     BB_Prepend_All (bb, _prolog_bb);
     if (HBS_Before_LRA()) Reset_BB_scheduled (bb);
   }
 
-  if (_epilog_bb != NULL) {
+  if (_epilog_bb != NULL && BB_length(_epilog_bb)) {
     BB_Append_All(bb, _epilog_bb);
     if (HBS_Before_LRA()) Reset_BB_scheduled (bb);
   }
