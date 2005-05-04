@@ -1119,7 +1119,7 @@ Configure_CG_Options(void)
   }
   if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden) {
     if (Opt_Level == 2) {
-      OPT_unroll_size = Opt_ForSize ? 20 : 64;
+      OPT_unroll_size = OPT_Space ? 20 : 64;
     } else if (Opt_Level > 2) {
       OPT_unroll_size = 64;
     }
@@ -1601,7 +1601,7 @@ CG_Init (void)
 #ifdef Is_True_On
   if (getenv("CGPID")) {
     fprintf(stderr, "CGPID=%d\n", getpid());
-    int dummy; scanf("%d", &dummy);
+    scanf("\n");
   }
 #endif
   Set_Error_Phase ( "CG Initialization" );
