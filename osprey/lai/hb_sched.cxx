@@ -1303,6 +1303,9 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
     cur_cycle = ((is_fwd) ? OPSCH_scycle(opsch) : OPSCH_scycle(opsch) - Clock) + 1;
   }
 
+  if (Trace_HB)
+    fprintf(TFile, "BB:%d, hbs_type:0x%04x: cycles=%d\n", BB_id(bb), type(), cur_cycle);
+
   // FdF: update OP_scycle only if the new scheduled is better
   if (cur_cycle < _max_sched) {
 #endif
