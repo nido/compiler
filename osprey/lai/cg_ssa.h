@@ -89,7 +89,7 @@ inline void Set_TN_ssa_def(TN *t, OP *o) {
 
 extern BOOL SSA_Check (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
-extern void SSA_Make_Consistent (RID *rid, BOOL region);
+extern void SSA_Make_Conventional (RID *rid, BOOL region);
 extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
 
 extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
@@ -98,6 +98,14 @@ extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 extern BB*  Get_PHI_Predecessor (OP *phi, UINT8 opnd_idx);
 extern void Set_PHI_Predecessor (OP *phi, UINT8 pos, BB *pred);
 
+// which opnd_idx corresponds to PHI-node predecessor BB  ?
+extern UINT8 Get_PHI_Predecessor_Idx (OP *phi, BB *);
+
+// which guard TN is associated to PSI-node operand 'opnd_idx' ?
+extern TN*  Get_PSI_Guard (OP *psi, UINT8 opnd_idx, BOOL *neg);
+extern void Set_PSI_Guard (OP *psi, UINT8 pos, TN *guard, BOOL neg);
+
+
 //
 // Prepend the 'phi_op' to the 'bb' and do bookkeeping
 //
@@ -105,7 +113,7 @@ extern void SSA_Prepend_Phi_To_BB (OP *phi_op, BB *bb);
 
 // Tracing flags
 #define SSA_BUILD        0x00000001  /* trace SSA build */
-#define SSA_MAKE_CONST   0x00000002  /* trace make consistent */
+#define SSA_MAKE_CONST   0x00000002  /* trace make conventional */
 #define SSA_IGRAPH       0x00000004  /* trace interference graph */
 #define SSA_REMOVE_PHI   0x00000008  /* trace PHI-removal */
 #define SSA_DOM_FRONT    0x00000010  /* trace dominance frontier */

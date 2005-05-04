@@ -602,7 +602,7 @@ CG_Generate_Code(
 #ifdef TARG_ST
     if (CG_enable_ssa) {
       Set_Error_Phase("Out of SSA Translation");
-      SSA_Make_Consistent (region ? REGION_get_rid(rwn) : NULL, region);
+      SSA_Make_Conventional (region ? REGION_get_rid(rwn) : NULL, region);
       SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
