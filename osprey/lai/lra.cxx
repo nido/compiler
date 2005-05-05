@@ -4056,6 +4056,17 @@ Spill_Callee_Saved_Regs (void)
   }
 
   for ( elist = Exit_BB_Head; elist; elist = BB_LIST_rest(elist) ) {
+#ifdef TARG_ST
+    BB *bb = BB_LIST_first (elist);
+    ANNOTATION *annot = ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO);
+    if (annot) {
+      CALLINFO *callinfo = ANNOT_callinfo (annot);
+      if (callinfo
+	  && WN_Call_Never_Return (CALLINFO_call_wn (callinfo))) {
+	continue;
+      }
+    }
+#endif
     Epilog_restore_code (BB_LIST_first(elist));
   }
 
