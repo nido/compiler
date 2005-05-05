@@ -596,6 +596,25 @@ CGSPILL_OP_Spill_Location (OP *op)
 #endif
 }
 
+#ifdef TARG_ST
+static float
+OPS_spill_estimate (const OPS *ops)
+{
+  float result = 0.0f;
+  OP *op;
+  FOR_ALL_OPS_OPs (ops, op) {
+	if (OP_load(op)) {
+		result += CGSPILL_DEFAULT_RESTORE_COST;
+	} else if (OP_store(op)) {
+		result += CGSPILL_DEFAULT_STORE_COST;
+	} else {
+		result += 1.0f;
+	}	
+  }
+  return result;
+}
+#endif
+
 /* ======================================================================
  *
  * CGSPILL_Cost_Estimate
@@ -632,7 +651,11 @@ CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc,
 	OPCODE opcode = WN_opcode(home);
 	Exp_Load (OPCODE_rtype(opcode), OPCODE_desc(opcode), tn, WN_st(home),
 		  WN_offset(home), &OPs, V_NONE);
+#ifdef TARG_ST
+	*restore_cost = OPS_spill_estimate (&OPs);
+#else
 	*restore_cost = OPS_length(&OPs);
+#endif
 	*store_cost = *restore_cost;
       }
       break;
