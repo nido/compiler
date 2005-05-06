@@ -354,8 +354,13 @@ BB_Fall_Thru_and_Target_Succs(BB *bb, BB **fall_thru, BB **target)
 static UINT8 
 Get_TN_Pos_in_PHI (OP *phi, BB *bb)
 {
-  UINT8 nopnds = OP_opnds(phi);
+  BB *tb;
 
+  while ((tb = BB_Unique_Successor (bb)) && tb != OP_bb (phi))
+    bb = tb;
+
+  return Get_PHI_Predecessor_Idx (phi, bb);
+#if 0
   do {
     for (UINT8 i = 0; i < nopnds; i++) {
       if (Get_PHI_Predecessor (phi, i) == bb)
@@ -364,6 +369,7 @@ Get_TN_Pos_in_PHI (OP *phi, BB *bb)
   } while (bb = BB_Unique_Successor (bb));
 
   FmtAssert(FALSE, ("didn't find pos for BB%d in phi\n", BB_id(bb)));
+#endif
 }
 
 // After changing the CFG, SSA information must be maintained
@@ -381,7 +387,7 @@ BB_Recomp_Phis (BB *bb, BB *new_pred, BB *old_pred, BOOL replace)
     FOR_ALL_BB_PREDS (bb, edge) { 
       BB *pred = BBLIST_item(edge);
       if (! (replace && pred == old_pred)) {
-        UINT8 pos = Get_TN_Pos_in_PHI (phi, pred == new_pred ? old_pred : pred);
+        UINT8 pos = Get_PHI_Predecessor_Idx (phi, pred == new_pred ? old_pred : pred);
         opnd[edge_pos++] = OP_opnd(phi, pos);
       }
     }
@@ -1015,6 +1021,7 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail)
  *
  * ================================================================
  */
+#if 0
 #ifdef Is_True_On
 static void
 Sanity_Check()
@@ -1053,6 +1060,7 @@ Sanity_Check()
     }
   }
 }
+#endif
 #endif
 
 /////////////////////////////////////
@@ -1157,13 +1165,13 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
       BB *pred = BBLIST_item(preds);
 
       if (pred == new_bb) {
-        UINT8 pos = Get_TN_Pos_in_PHI (phi, dup);
+        UINT8 pos = Get_PHI_Predecessor_Idx  (phi, dup);
         res = OP_opnd(phi, pos);
         TN *res1 = (TN*) hTN_MAP_Get(dup_tn_map, res);
         if (res1) res = res1;
       }
       else {
-        UINT8 pos = Get_TN_Pos_in_PHI (phi, pred);
+        UINT8 pos = Get_PHI_Predecessor_Idx (phi, pred);
         res = OP_opnd(phi, pos);
       }
 
@@ -1867,6 +1875,9 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
   if (Trace_Select_Gen) {
     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
+
+    Print_All_BBs();
+
     Print_BB (head);
     fprintf (TFile, "\n fall_thrus are\n");
     BB_SET_Print (ft_set, Select_TFile);
@@ -1982,7 +1993,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     TN *true_tn, *false_tn;
 
     taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ?
-                                              head : target_bb);
+                                             head : target_bb);
     nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ?
                                       head : fall_thru_bb);
     true_tn   = OP_opnd(phi, taken_pos);
@@ -2167,7 +2178,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Simplify_Logifs(bb, bbb);
 
 #ifdef Is_True_On
-      Sanity_Check();
+      SSA_Verify();
 #endif
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
