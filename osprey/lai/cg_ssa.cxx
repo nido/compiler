@@ -677,7 +677,7 @@ Sort_PHI_opnds (
     // We need this loop because the dominance relation is a partial order.
     for (j = 0; !BB_SET_MemberP(BB_dom_set(entry->opnd_src[j]), BB_i); j++);
     if (i != j) {
-      fprintf(stderr, "Reordering PHI operands (%d/%d)\n", j, OP_opnds(phi));
+      //      fprintf(stderr, "Reordering PHI operands (%d/%d)\n", j, OP_opnds(phi));
       for (int k = i; k > j; k--) {
 	Set_OP_opnd(phi, k, OP_opnd(phi, k-1));
 	entry->opnd_src[k] = entry->opnd_src[k-1];
