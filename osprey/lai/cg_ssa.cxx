@@ -1609,6 +1609,62 @@ SSA_Check (
 }
 
 /* ================================================================
+ *   SSA_Verify
+ *
+ *   Verify the invariant properties of the SSA representation
+ *
+ * ================================================================ */
+
+void
+SSA_Verify (
+  RID *rid, 
+  BOOL region 
+)
+{
+  BB *bb;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    OP *phi;
+
+    FOR_ALL_BB_PHI_OPs(bb, phi) {
+
+      if (OP_opnds(phi) != BB_preds_len(bb)) {
+        fprintf (TFile, "for bb BB%d\n", BB_id(bb));
+        Print_All_BBs();
+        DevAssert(FALSE, ("ssa: invalid phi\n"));
+      }
+
+      /* Check that each basic block predecessor is correctly
+	 associated with a PHI operand. */
+
+      BBLIST *edge;
+      int opnd_idx;
+      FOR_ALL_BB_PREDS(bb, edge) {
+        BB *bp = BBLIST_item(edge);
+	opnd_idx = Get_PHI_Predecessor_Idx(phi, bp);
+	Is_True(Get_PHI_Predecessor(phi, opnd_idx) == bp,
+		("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx));
+
+	/* Check that the definition of a PHI operand dominates its
+	   associated predecessor. */
+	TN *opnd_tn = OP_opnd(phi, opnd_idx);
+	OP *def_op = TN_ssa_def(opnd_tn);
+	Is_True (BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op)),
+		 ("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx));
+      }
+
+      /* Check that each PHI operand is correctly associated with a
+	 basic block predecessor. */
+
+      for (int opnd_idx = 0; opnd_idx < OP_opnds(phi); opnd_idx++) {
+	BB *bp = Get_PHI_Predecessor(phi, opnd_idx);
+	Is_True(Get_PHI_Predecessor_Idx(phi, bp) == opnd_idx,
+		("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx));
+      }
+    }
+  }
+}
+
+/* ================================================================
  *                Mapping TN -> SSA Universe
  *
  *    This is used to identify relevant SSA TNs during the 
@@ -2902,6 +2958,32 @@ Eliminate_Phi_Resource_Interference()
 }
 
 /* ================================================================
+ *   Eliminate_Phi_Resource_Interference
+ * ================================================================
+ */
+static void
+Eliminate_Psi_Resource_Interference()
+{
+  INT i,j;
+  BB *bb;
+  OP *op;
+
+  if (Trace_SSA_Out) {
+    fprintf(TFile, "-----------------------------------------------\n");
+    fprintf(TFile, "        Eliminate_Psi_Resource_Interference    \n");
+    fprintf(TFile, "-----------------------------------------------\n");
+  }
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_PHI_OPs(bb, op) {
+      PHI_CONGRUENCE_CLASS *cc1, *cc2;
+
+      
+    }
+  }
+}
+
+/* ================================================================
  *   SSA_Make_PSI_Conventional
  * ================================================================
  */
@@ -2910,6 +2992,8 @@ SSA_Make_PSI_Conventional ()
 {
   BB *bb;
   OP *op;
+
+  /* Eliminate_Psi_Resource_Interference() */
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
