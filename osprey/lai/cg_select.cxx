@@ -360,16 +360,6 @@ Get_TN_Pos_in_PHI (OP *phi, BB *bb)
     bb = tb;
 
   return Get_PHI_Predecessor_Idx (phi, bb);
-#if 0
-  do {
-    for (UINT8 i = 0; i < nopnds; i++) {
-      if (Get_PHI_Predecessor (phi, i) == bb)
-        return i;
-    }
-  } while (bb = BB_Unique_Successor (bb));
-
-  FmtAssert(FALSE, ("didn't find pos for BB%d in phi\n", BB_id(bb)));
-#endif
 }
 
 // After changing the CFG, SSA information must be maintained
@@ -387,7 +377,7 @@ BB_Recomp_Phis (BB *bb, BB *new_pred, BB *old_pred, BOOL replace)
     FOR_ALL_BB_PREDS (bb, edge) { 
       BB *pred = BBLIST_item(edge);
       if (! (replace && pred == old_pred)) {
-        UINT8 pos = Get_PHI_Predecessor_Idx (phi, pred == new_pred ? old_pred : pred);
+        UINT8 pos = Get_TN_Pos_in_PHI (phi, pred == new_pred ? old_pred : pred);
         opnd[edge_pos++] = OP_opnd(phi, pos);
       }
     }
@@ -1165,13 +1155,13 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
       BB *pred = BBLIST_item(preds);
 
       if (pred == new_bb) {
-        UINT8 pos = Get_PHI_Predecessor_Idx  (phi, dup);
+        UINT8 pos = Get_TN_Pos_in_PHI (phi, dup);
         res = OP_opnd(phi, pos);
         TN *res1 = (TN*) hTN_MAP_Get(dup_tn_map, res);
         if (res1) res = res1;
       }
       else {
-        UINT8 pos = Get_PHI_Predecessor_Idx (phi, pred);
+        UINT8 pos = Get_TN_Pos_in_PHI (phi, pred);
         res = OP_opnd(phi, pos);
       }
 
