@@ -2168,7 +2168,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Simplify_Logifs(bb, bbb);
 
 #ifdef Is_True_On
-      SSA_Verify();
+      SSA_Verify(rid, 0);
 #endif
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
@@ -2193,7 +2193,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Select_Fold (bb, t_set, ft_set, tail);
 #ifdef Is_True_On
-      Sanity_Check(rid, 0);
+      SSA_Verify(rid, 0);
 #endif
 
       Finalize_Hammock_Memory();
