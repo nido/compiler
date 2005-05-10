@@ -2193,7 +2193,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Select_Fold (bb, t_set, ft_set, tail);
 #ifdef Is_True_On
-      Sanity_Check();
+      Sanity_Check(rid, 0);
 #endif
 
       Finalize_Hammock_Memory();
