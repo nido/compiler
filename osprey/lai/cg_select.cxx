@@ -1011,7 +1011,6 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail)
  *
  * ================================================================
  */
-#if 0
 #ifdef Is_True_On
 static void
 Sanity_Check()
@@ -1050,7 +1049,6 @@ Sanity_Check()
     }
   }
 }
-#endif
 #endif
 
 /////////////////////////////////////
@@ -2168,8 +2166,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Simplify_Logifs(bb, bbb);
 
 #ifdef Is_True_On
-      SSA_Verify(rid, 0);
+      Sanity_Check();
 #endif
+
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
     }
@@ -2193,7 +2192,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Select_Fold (bb, t_set, ft_set, tail);
 #ifdef Is_True_On
-      SSA_Verify(rid, 0);
+      Sanity_Check();
 #endif
 
       Finalize_Hammock_Memory();
@@ -2224,6 +2223,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   if (Trace_Select_Stats) {
     CG_SELECT_Statistics();
   }
+
+#ifdef Is_True_On
+  SSA_Verify(rid, 0);
+#endif
 
   Finalize_Select();
 }
