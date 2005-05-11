@@ -730,8 +730,6 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Check_Profitable_Logif BB%d BB%d\n", BB_id(bb1), BB_id(bb2));
-    Print_BB (bb1);
-    Print_BB (bb2);
   }
 
   CG_SCHED_EST *se1 = CG_SCHED_EST_Create(bb1, &MEM_Select_pool,
@@ -896,7 +894,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 
 static BOOL
 Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
-                        BB_SET* t_path, BB_SET* ft_path)
+                        BB_SET* t_path, BB_SET* ft_path, bool allow_dup)
 {
   if (Trace_Select_Candidates) {
     fprintf(Select_TFile, "<select> Found Hammock : ");
@@ -912,7 +910,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     BB_Update_OP_Order(bb);
 
     // allow removing of side entries only on one of targets.
-    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup && !OPT_Space) {
+    if (BB_preds_len (bb) > 1 && (!allow_dup || OPT_Space)) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -935,7 +933,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
 
     BB_Update_OP_Order(bb);
 
-    if (BB_preds_len (bb) > 1 && !CG_select_allow_dup && !OPT_Space) {
+    if (BB_preds_len (bb) > 1 && (!allow_dup || OPT_Space)) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -964,7 +962,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
 }
 
 static BOOL
-Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail) 
+Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
 {
   BBLIST *edge;
   BOOL found_taken = FALSE;
@@ -975,7 +973,6 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail)
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "<select> is hammock BB%d ? \n", BB_id(head));
-    Print_BB_Header (head, TRUE, TRUE);
   }
 
   // Find fall_thru and taken BBs.
@@ -995,7 +992,7 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail)
     return FALSE;
   }
 
-  if (Check_Suitable_Hammock (*tail, target, fall_thru, t_set, ft_set)) {
+  if (Check_Suitable_Hammock (*tail, target, fall_thru, t_set, ft_set, allow_dup)) {
     if (Trace_Select_Candidates) {
       fprintf (Select_TFile, "<select> hammock BB%d is suitable \n",  BB_id(head));
     }
@@ -1590,6 +1587,9 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
 
   if (target1 == *target2 || fall_thru1 == *fall_thru2) {
     *cmp_invert = needInvert;
+    if (Trace_Select_Gen) {
+      fprintf (Select_TFile, "\nNormalize Jumps OK\n");
+    }
     return TRUE;
   }
 
@@ -1606,12 +1606,23 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
       logif->target = *target2;
       logif->fall_thru = *fall_thru2;
 
+      if (Trace_Select_Gen) {
+        fprintf (Select_TFile, "\nNormalize Jumps OK (noinvert)\n");
+      }
       *cmp_invert = FALSE;
       return TRUE;
     }
 
+    if (Trace_Select_Gen) {
+      fprintf (Select_TFile, "\nNormalize Jumps OK (invert)\n");
+    }
+
     *cmp_invert = TRUE;
     return TRUE;
+  }
+
+  if (Trace_Select_Gen) {
+    fprintf (Select_TFile, "\nNormalize Jumps failed\n");
   }
 
   return FALSE;
@@ -1632,6 +1643,10 @@ Is_Double_Logif(BB* bb)
 {
   BB *fall_thru, *target, *sec_fall_thru, *sec_target;
   BOOL cmp_invert;
+
+  if (Trace_Select_Gen) {
+    fprintf (Select_TFile, "\nIs_Double_Logif %d \n", BB_id(bb));
+  }
 
   // Find fall_thru and taken BBs.
   BB_Fall_Thru_and_Target_Succs(bb, &fall_thru, &target);
@@ -1864,9 +1879,6 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   if (Trace_Select_Gen) {
     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
 
-    Print_All_BBs();
-
-    Print_BB (head);
     fprintf (TFile, "\n fall_thrus are\n");
     BB_SET_Print (ft_set, Select_TFile);
     
@@ -1874,7 +1886,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     BB_SET_Print (t_set, Select_TFile);
 
     fprintf (TFile, "\n tail is\n");
-    Print_BB (tail);
+    Print_BB_Header (tail, TRUE, TRUE);
   }
    
   // keep a list of newly created conditional move / compare
@@ -2116,9 +2128,6 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
    if (Trace_Select_Gen) {
      fprintf (TFile, "\nEnd Select_Fold from BB%d\n", BB_id(head));
-     Print_All_BBs();
-     Print_BB (head);
-     Print_BB (tail);
    }
 }
 
@@ -2150,6 +2159,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Identify_Logifs_Candidates();
 
+  Calculate_Dominators();
+
   GRA_LIVE_Recalc_Liveness(rid);
 
   if_bb_map = BB_MAP_Create();
@@ -2157,9 +2168,15 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *bbb;
-
+    
     if (bb == NULL) continue;
       
+    BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+    BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+
+    if (Trace_Select_Candidates)
+      Print_All_BBs();
+
     if (bbb = Is_Double_Logif(bb)) {
       Initialize_Hammock_Memory();
 
@@ -2172,12 +2189,40 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Finalize_Hammock_Memory();
       cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
     }
+    else if (Is_Hammock (bb, t_set, ft_set, &bbb, FALSE)) {
+      Initialize_Hammock_Memory();
+
+      Select_Fold (bb, t_set, ft_set, bbb);
+#ifdef Is_True_On
+      Sanity_Check();
+#endif
+
+      Finalize_Hammock_Memory();
+  
+      GRA_LIVE_Recalc_Liveness(rid);
+      GRA_LIVE_Rename_TNs();
+
+      // if bb is still a logif, that means that there was a merge.
+      // need to update logif map
+      if (BB_kind (bb) == BBKIND_LOGIF) {
+        cand_vec[BB_MAP32_Get(postord_map, bb)-1] = bb;
+        cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
+      }
+      else
+        cand_vec[BB_MAP32_Get(postord_map, bb)-1] = NULL;
+
+      t_set = BB_SET_ClearD (t_set);
+      ft_set = BB_SET_ClearD (ft_set);
+    }
 
     clear_spec_lists();
+
+    Free_Dominators_Memory();
+    Calculate_Dominators();
   }
 
-  Calculate_Dominators();
-
+  // retry if some region that weren't converted with and/or/or select
+  // could be with block duplication.
   for (i = 0; i < max_cand_id; i++) {
     BB *bb = cand_vec[i];
     BB *tail;
@@ -2187,7 +2232,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
     BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
 
-    if (Is_Hammock (bb, t_set, ft_set, &tail)) {
+    if (Is_Hammock (bb, t_set, ft_set, &tail, CG_select_allow_dup)) {
       Initialize_Hammock_Memory();
 
       Select_Fold (bb, t_set, ft_set, tail);
@@ -2225,7 +2270,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   }
 
 #ifdef Is_True_On
-  SSA_Verify(rid, 0);
+  //  SSA_Verify(rid, 0);
 #endif
 
   Finalize_Select();
