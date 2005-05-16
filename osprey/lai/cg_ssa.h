@@ -106,6 +106,17 @@ extern UINT8 Get_PHI_Predecessor_Idx (OP *phi, BB *);
 extern TN*  Get_PSI_Guard (OP *psi, UINT8 opnd_idx, BOOL *neg);
 extern void Set_PSI_Guard (OP *psi, UINT8 pos, TN *guard, BOOL neg);
 
+// Sort PHI operands according to the dominance relation of the
+// argument's definition
+extern void Sort_PHI_opnds (OP *phi);
+
+// Create a PSI operation from a PHI
+extern OP * Convert_PHI_to_PSI (OP *phi);
+
+// Conditional move operations
+extern OP *OP_Make_movec (TN *guard, TN *dst, TN *src);
+extern OP *OP_Make_movecf (TN *guard, TN *dst, TN *src);
+
 
 //
 // Prepend the 'phi_op' to the 'bb' and do bookkeeping
