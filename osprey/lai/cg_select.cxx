@@ -2168,78 +2168,87 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   if_bb_map = BB_MAP_Create();
 
   bool allow_dup = false;
-  bool region_changed;
 
-  Free_Dominators_Memory();
-  Calculate_Dominators();
+ restart:
 
-  do {
-    region_changed = false;
+  bool region_changed = false;
 
-    for (i = 0; i < max_cand_id; i++) {
-      BB *bb = cand_vec[i];
-      BB *bbb;
+  for (i = 0; i < max_cand_id; i++) {
+    BB *bb = cand_vec[i];
+    BB *bbb;
     
-      if (bb == NULL) continue;
+    if (bb == NULL) continue;
       
-    restart:
-      if (Trace_Select_Candidates)
-        Print_All_BBs();
+    if (Trace_Select_Candidates)
+      Print_All_BBs();
 
-      if (bbb = Is_Double_Logif(bb)) {
-        Initialize_Hammock_Memory();
+    // tests for logical expression 
+    if (bbb = Is_Double_Logif(bb)) {
+      Initialize_Hammock_Memory();
 
-        Simplify_Logifs(bb, bbb);
+      Simplify_Logifs(bb, bbb);
 
 #ifdef Is_True_On
-        Sanity_Check();
+      Sanity_Check();
 #endif
+      region_changed = true;
 
-        Finalize_Hammock_Memory();
-        cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
-        region_changed=true;
-      }
-
-      BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
-      BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
-
-      if (Is_Hammock (bb, t_set, ft_set, &bbb, allow_dup)) {
-        Initialize_Hammock_Memory();
-
-        Select_Fold (bb, t_set, ft_set, bbb);
-#ifdef Is_True_On
-        Sanity_Check();
-#endif
-
-        Finalize_Hammock_Memory();
-        
-        GRA_LIVE_Recalc_Liveness(rid);
-        GRA_LIVE_Rename_TNs();
-
-        // if bb is still a logif, that means that there was a merge.
-        // need to update logif map
-        if (BB_kind (bb) == BBKIND_LOGIF) {
-          cand_vec[BB_MAP32_Get(postord_map, bb)-1] = bb;
-          cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
-          goto restart;
-        }
-        else {
-          cand_vec[BB_MAP32_Get(postord_map, bb)-1] = NULL;
-        }
-
-        allow_dup = false;
-        region_changed = true;
-
-        t_set = BB_SET_ClearD (t_set);
-        ft_set = BB_SET_ClearD (ft_set);
-      }
-      
-      clear_spec_lists();
+      Finalize_Hammock_Memory();
+      cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
     }
 
-    // new path allowing block duplication.
-    allow_dup = true;
-  } while (region_changed) ; 
+    clear_spec_lists();
+
+  }
+
+  for (i = 0; i < max_cand_id; i++) {
+    BB *bb = cand_vec[i];
+    BB *bbb;
+
+    if (bb == NULL) continue;
+    
+    BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+    BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+
+    // test of conditional expression
+    if (Is_Hammock (bb, t_set, ft_set, &bbb, allow_dup)) {
+      Initialize_Hammock_Memory();
+      
+      Select_Fold (bb, t_set, ft_set, bbb);
+#ifdef Is_True_On
+      Sanity_Check();
+#endif
+      region_changed = true;
+
+      Finalize_Hammock_Memory();
+      
+      // if bb is still a logif, that means that there was a merge.
+      // need to update logif map
+      if (BB_kind (bb) == BBKIND_LOGIF) {
+        cand_vec[BB_MAP32_Get(postord_map, bb)-1] = bb;
+        cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
+      }
+      else {
+        cand_vec[BB_MAP32_Get(postord_map, bb)-1] = NULL;
+      }
+
+      GRA_LIVE_Recalc_Liveness(rid);
+      GRA_LIVE_Rename_TNs();
+    }
+
+      clear_spec_lists();
+  }
+
+  if (region_changed) {
+    allow_dup = false;
+    goto restart;
+  }
+  else {
+    if (!allow_dup && CG_select_allow_dup) {
+      allow_dup = true;
+      goto restart;
+    }
+  }
 
   BB_MAP_Delete(if_bb_map);
 
