@@ -96,15 +96,18 @@ extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
 extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
-extern BB*  Get_PHI_Predecessor (OP *phi, UINT8 opnd_idx);
-extern void Set_PHI_Predecessor (OP *phi, UINT8 pos, BB *pred);
+extern BB*  Get_PHI_Predecessor (const OP *phi, UINT8 opnd_idx);
+extern void Set_PHI_Predecessor (const OP *phi, UINT8 pos, BB *pred);
 
 // which opnd_idx corresponds to PHI-node predecessor BB  ?
-extern UINT8 Get_PHI_Predecessor_Idx (OP *phi, BB *);
+extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
 
 // which guard TN is associated to PSI-node operand 'opnd_idx' ?
-extern TN*  Get_PSI_Guard (OP *psi, UINT8 opnd_idx, BOOL *neg);
-extern void Set_PSI_Guard (OP *psi, UINT8 pos, TN *guard, BOOL neg);
+#define PSI_opnds(psi)    (OP_opnds(psi)>>1)
+#define PSI_opnd(psi, i)  (OP_opnd(psi, (i)<<1+1))
+extern TN *PSI_guard(const OP *, UINT8, BOOL *);
+extern void Set_PSI_opnd(OP *, UINT8, TN *);
+extern void Set_PSI_guard(OP *, UINT8, TN *, BOOL);
 
 // Sort PHI operands according to the dominance relation of the
 // argument's definition
@@ -116,7 +119,6 @@ extern OP * Convert_PHI_to_PSI (OP *phi);
 // Conditional move operations
 extern OP *OP_Make_movec (TN *guard, TN *dst, TN *src);
 extern OP *OP_Make_movecf (TN *guard, TN *dst, TN *src);
-
 
 //
 // Prepend the 'phi_op' to the 'bb' and do bookkeeping

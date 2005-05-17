@@ -863,8 +863,30 @@ void Print_OP_No_SrcLine(const OP *op)
   if ( OP_variant(op) != 0 ) {
     fprintf ( TFile, "(%x) ", OP_variant(op));
   }
+#ifdef TARG_ST
+  if (OP_code(op) == TOP_psi) {
+    for (i=0; i<PSI_opnds(op); i++) {
+      BOOL true_guard;
+      TN *guard = PSI_guard(op, i, &true_guard);
+      if (guard)
+	Print_TN(guard,FALSE);
+      fprintf(TFile, !guard || true_guard ? "?" : ":");
+      TN *tn = PSI_opnd(op,i);
+      Print_TN(tn,FALSE);
+      if (OP_Defs_TN(op, tn)) fprintf(TFile, "<defopnd>");
+      fprintf(TFile, " ");
+    }
+  }
+else
+#endif
   for (i=0; i<OP_opnds(op); i++) {
     TN *tn = OP_opnd(op,i);
+#ifdef TARG_ST
+    if (OP_code(op) == TOP_phi) {
+      BB *pred_bb = Get_PHI_Predecessor(op, i);
+      fprintf(TFile, "BB%d?", BB_id(pred_bb));
+    }
+#endif
     Print_TN(tn,FALSE);
     if (OP_Defs_TN(op, tn)) fprintf(TFile, "<defopnd>");
     fprintf(TFile, " ");

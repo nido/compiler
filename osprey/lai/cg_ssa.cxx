@@ -162,8 +162,11 @@ tn_stack_top (
   TN *base
 )
 {
-  if (TN_STACK_empty(base))
+  if (TN_STACK_empty(base)) {
+    if (!TN_is_dedicated(base) && !TN_is_save_reg(base))
+      DevWarn("Uninitialized PHI arg");
     return base;
+  }
   else
     return TN_STACK_tn(base);
 }
@@ -481,7 +484,7 @@ Set_PHI_Operands(
  */
 BB*
 Get_PHI_Predecessor (
-  OP *phi,
+  const OP *phi,
   UINT8 i
 )
 {
@@ -498,7 +501,7 @@ Get_PHI_Predecessor (
  */
 UINT8
 Get_PHI_Predecessor_Idx (
-  OP *phi,
+  const OP *phi,
   BB *bb
 )
 {
@@ -517,7 +520,7 @@ Get_PHI_Predecessor_Idx (
  * ================================================================
  */
 void Set_PHI_Predecessor (
- OP *phi,
+ const OP *phi,
  UINT8 pos,
  BB *pred
 )
@@ -570,13 +573,12 @@ OP_guard(OP *op) {
 }
 
 //
-//  We need some mapping between PSI-function opnds and guards. We
-//  also add a flag to say whether the psi-operand is valid on the
-//  TRUE of FALSE guard.
+//  An information is missing in the PSI operation, that is whether
+//  the guard associated with an operand is active on the TRUE or
+//  FALSE value. The mapping is done here.
 //
 typedef struct psi_map_entry {
-  TN **opnd_guard;    /* table of pred BBs for each operand */
-  BOOL *neg_guard;
+  BOOL *true_guards;
 } PSI_MAP_ENTRY;
 
 static OP_MAP psi_op_map = NULL;
@@ -594,13 +596,9 @@ Allocate_PSI_Guards (
   PSI_MAP_ENTRY *entry = TYPE_MEM_POOL_ALLOC(PSI_MAP_ENTRY, 
 					     &ssa_pool);
 
-  entry->opnd_guard = TYPE_MEM_POOL_ALLOC_N(TN *, 
-					  &ssa_pool, 
-					  OP_opnds(psi));
-
-  entry->neg_guard = TYPE_MEM_POOL_ALLOC_N(BOOL, 
-					  &ssa_pool, 
-					  OP_opnds(psi));
+  entry->true_guards = TYPE_MEM_POOL_ALLOC_N(BOOL, 
+					     &ssa_pool, 
+					     PSI_opnds(psi));
 
   OP_MAP_Set(psi_op_map, psi, entry);
   
@@ -608,40 +606,53 @@ Allocate_PSI_Guards (
 }
 
 /* ================================================================
- *   Get_PSI_Guard
+ *   PSI_guard
  * ================================================================
  */
 TN*
-Get_PSI_Guard (
-  OP *psi,
+PSI_guard (
+  const OP *psi,
   UINT8 pos,
-  BOOL *neg
+  BOOL *true_guard
 )
 {
   Is_True(OP_code(psi) == TOP_psi,("not a PSI function"));
   PSI_MAP_ENTRY *entry = (PSI_MAP_ENTRY *)OP_MAP_Get(psi_op_map, psi);
   Is_True(entry != NULL,("unmapped PSI op ?"));
 
-  *neg = entry->neg_guard[pos];
-  return entry->opnd_guard[pos];
+  *true_guard = entry->true_guards[pos];
+  return OP_opnd(psi, pos<<1);
 }
 
 /* ================================================================
- *   Set_PSI_Guard
+ *   Set_PSI_guard
  * ================================================================
  */
-void Set_PSI_Guard (
+void Set_PSI_guard (
  OP *psi,
  UINT8 pos,
  TN *guard,
- BOOL neg
+ BOOL true_guard
 )
 {
   PSI_MAP_ENTRY *entry = (PSI_MAP_ENTRY *)OP_MAP_Get(psi_op_map, psi);
   Is_True(entry != NULL,("unmapped PSI op ?"));
 
-  entry->opnd_guard[pos] = guard;
-  entry->neg_guard[pos] = neg;
+  Set_OP_opnd(psi, pos<<1, guard);
+  entry->true_guards[pos] = true_guard;
+}
+
+/* ================================================================
+ *   Set_PSI_opnd
+ * ================================================================
+ */
+void Set_PSI_opnd (
+ OP *psi,
+ UINT8 pos,
+ TN *opnd
+)
+{
+  Set_OP_opnd(psi, pos<<1+1, opnd);
 }
 
 /* ================================================================
@@ -698,50 +709,67 @@ PSI_inline (
 )
 {
   int extra_opnds = 0;
-  INT opnds;
+  int opndx;
 
   // Look if some arguments are defined by PSI operations
-  for (int opnds = 0; opnds < OP_opnds(psi_op); opnds++) {
-    TN *opnd_tn = OP_opnd(psi_op, opnds);
+  for (opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+    TN *opnd_tn = PSI_opnd(psi_op, opndx);
     OP *def_op = TN_ssa_def(opnd_tn);
     if (def_op && OP_code(def_op) == TOP_psi)
       // Count the additional arguments after inlining
-      extra_opnds += OP_opnds(def_op) - 1;
+      extra_opnds += PSI_opnds(def_op) - 1;
   }
 
   // Inline all PSI operations that are arguments of this PSI
   // operation
   if (extra_opnds) {
     INT num_results = 1;
-    INT num_opnds = OP_opnds(psi_op) + extra_opnds;
-    int inlined_opnds;
+    INT num_opnds = PSI_opnds(psi_op) + extra_opnds;
+    int inlined_opndx;
 
     TN *result[1];
 
-    TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
-    BZERO(opnd, sizeof(TN*)*num_opnds);
+    TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds*2);
+    BOOL *true_guards = (BOOL *)alloca(sizeof(BOOL)*num_opnds);
 
     result[0] = OP_result(psi_op, 0);
 
     // Inline arguments of PSI operations
-    for (opnds = 0, inlined_opnds = 0; opnds < OP_opnds(psi_op); opnds++) {
-      TN *opnd_tn = OP_opnd(psi_op, opnds);
+    for (opndx = 0, inlined_opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+      TN *opnd_tn = PSI_opnd(psi_op, opndx);
       OP *def_op = TN_ssa_def(opnd_tn);
+      BOOL true_guard;
       if (def_op && OP_code(def_op) == TOP_psi) {
-	for (int psi_opnds = 0; psi_opnds < OP_opnds(def_op); psi_opnds++)
-	  opnd[inlined_opnds++] = OP_opnd(def_op, psi_opnds);
+	for (int psi_opndx = 0; psi_opndx < PSI_opnds(def_op); psi_opndx++) {
+	  opnd[inlined_opndx*2+1] = PSI_opnd(def_op, psi_opndx);
+	  opnd[inlined_opndx*2] = PSI_guard(def_op, psi_opndx, &true_guard);
+	  true_guards[inlined_opndx] = true_guard;
+	  inlined_opndx ++;
+	}
       }
-      else
-	opnd[inlined_opnds++] = opnd_tn;
+      else {
+	opnd[inlined_opndx*2+1] = opnd_tn;
+	opnd[inlined_opndx*2] = PSI_guard(psi_op, opndx, &true_guard);
+	true_guards[inlined_opndx] = true_guard;
+	inlined_opndx ++;
+      }
     }
 
-    Is_True(inlined_opnds == num_opnds, ("PSI_inline: internal error"));
+    Is_True(inlined_opndx == num_opnds, ("PSI_inline: internal error"));
     
     psi_op = Mk_VarOP (TOP_psi,
 		       num_results,
-		       num_opnds,
+		       num_opnds*2,
 		       result,
 		       opnd);
+
+    Allocate_PSI_Guards(psi_op);
+
+    PSI_MAP_ENTRY *entry = (PSI_MAP_ENTRY *)OP_MAP_Get(psi_op_map, psi_op);
+    for (opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+      entry->true_guards[opndx] = true_guards[opndx];
+    }
+
   }
 
   return psi_op;
@@ -760,56 +788,66 @@ PSI_reduce (
   // Discard all arguments on the left of an unconditional definition
 
   int removed_opnds = 0;
-  int opnds;
+  int opndx;
 
-  for (opnds = OP_opnds(psi_op)-1; opnds >= 0; opnds--) {
-    TN *opnd_tn = OP_opnd(psi_op, opnds);
+  for (opndx = PSI_opnds(psi_op)-1; opndx >= 0; opndx--) {
+    TN *opnd_tn = PSI_opnd(psi_op, opndx);
 
     // Discard all arguments on the left of an unconditional
     // definition
     OP *def_op = TN_ssa_def(opnd_tn);
     if (!def_op || OP_guard(def_op) == NULL) {
-      for (int i = 0; i < opnds; i++)
-	Set_OP_opnd(psi_op, i, NULL);
-      removed_opnds += opnds;
+      for (int i = 0; i < opndx; i++)
+	Set_PSI_opnd(psi_op, i, NULL);
+      removed_opnds += opndx;
       break;
     }
 
     // Otherwise, look for duplicate of an argument on the right
-    for (int i = opnds+1; i < OP_opnds(psi_op); i++)
-      if (OP_opnd(psi_op, i) == opnd_tn) {
+    for (int i = opndx+1; i < PSI_opnds(psi_op); i++)
+      if (PSI_opnd(psi_op, i) == opnd_tn) {
 	removed_opnds ++;
-	Set_OP_opnd(psi_op, i, NULL);
+	Set_PSI_opnd(psi_op, i, NULL);
 	break;
       }
   }
 
   if (removed_opnds) {
     INT num_results = 1;
-    INT num_opnds = OP_opnds(psi_op) - removed_opnds;
-    int new_opnds;
+    INT num_opnds = PSI_opnds(psi_op) - removed_opnds;
+    int new_opndx;
 
     TN *result[1];
 
-    TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
-    BZERO(opnd, sizeof(TN*)*num_opnds);
+    TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds*2);
+    BOOL *true_guards = (BOOL *)alloca(sizeof(BOOL)*num_opnds);
 
     result[0] = OP_result(psi_op, 0);
 
     // Remove arguments of PSI operations
-    for (opnds = 0, new_opnds = 0; opnds < OP_opnds(psi_op); opnds++) {
-      TN *opnd_tn = OP_opnd(psi_op, opnds);
+    for (opndx = 0, new_opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+      TN *opnd_tn = PSI_opnd(psi_op, opndx);
+      BOOL true_guard;
       if (opnd_tn == NULL) continue;
-      opnd[new_opnds++] = opnd_tn;
+      opnd[new_opndx*2] = PSI_guard(psi_op, opndx, &true_guard);
+      true_guards[new_opndx] = true_guard;
+      opnd[new_opndx*2+1] = opnd_tn;
+      new_opndx++;
     }
 
-    Is_True(new_opnds == num_opnds, ("PSI_reduce: internal error"));
+    Is_True(new_opndx == num_opnds, ("PSI_reduce: internal error"));
     
     psi_op = Mk_VarOP (TOP_psi,
 		       num_results,
-		       num_opnds,
+		       num_opnds*2,
 		       result,
 		       opnd);
+
+    Allocate_PSI_Guards(psi_op);
+    PSI_MAP_ENTRY *entry = (PSI_MAP_ENTRY *)OP_MAP_Get(psi_op_map, psi_op);
+    for (opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+      entry->true_guards[opndx] = true_guards[opndx];
+    }
   }
 
   return psi_op;
@@ -838,9 +876,28 @@ Convert_PHI_to_PSI (
   }
 #endif
 
-  OP *psi_op = Dup_OP(phi);
-  Set_OP_opr(psi_op, TOP_psi);
+  TN **opnd = (TN**)alloca(sizeof(TN*)*OP_opnds(phi)*2);
+
+  for (int i = 0; i < OP_opnds(phi); i++) {
+    opnd[2*i] = NULL;
+    opnd[2*i+1] = OP_opnd(phi, i);
+  }
+
+  INT num_results = 1;
+  TN *result[1];
+  result[0] = OP_result(phi, 0);
+
+  OP *psi_op = Mk_VarOP (TOP_psi,
+			 num_results,
+			 OP_opnds(phi)*2,
+			 result,
+			 opnd);
+
   Set_TN_ssa_def(OP_result(psi_op, 0), psi_op);
+
+  // Allocate an array to associate a guard with each operand of the
+  // PSI
+  Allocate_PSI_Guards(psi_op);
 
   // Arguments that are defined on a PSI are replaced by the arguments
   // of this PSI
@@ -849,39 +906,35 @@ Convert_PHI_to_PSI (
   // Remove duplicated arguments or unreachable definitions.
   psi_op = PSI_reduce(psi_op);
 
-  // Allocate an array to associate a guard with each operand of the
-  // PSI
-  Allocate_PSI_Guards(psi_op);
-
   return psi_op;
 }
 
 OP *
 OP_Make_movec (
- TN *guard,
- TN *dst,
- TN *src)
+	       TN *guard,
+	       TN *dst,
+	       TN *src)
 {
   OPS cmov_ops = OPS_EMPTY;
   Expand_Select (dst, guard, src, dst, MTYPE_I4,
-                   FALSE, &cmov_ops);
+		 FALSE, &cmov_ops);
   Is_True(OPS_length(&cmov_ops) == 1, ("Make_movec: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 }
-
+ 
 OP *
 OP_Make_movecf (
- TN *guard,
- TN *dst,
- TN *src)
+		TN *guard,
+		TN *dst,
+		TN *src)
 {
   OPS cmov_ops = OPS_EMPTY;
   Expand_Select (dst, guard, dst, src, MTYPE_I4,
-		 FALSE, &cmov_ops);
+ 		 FALSE, &cmov_ops);
   Is_True(OPS_length(&cmov_ops) == 1, ("Make_movecf: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 }
-
+ 
 //
 // dominance frontier blocks for each BB in the region
 //
@@ -2281,6 +2334,72 @@ PHI_CONGRUENCE_CLASS_Print (
 }
 
 /* ================================================================
+ *   merge_psiCongruenceClasses
+ *
+ *   merge the psiCongruenceClass[] corresponding to all
+ *   resources of a PSI-node.
+ * ================================================================
+ */
+static void
+merge_psiCongruenceClasses (
+  OP *psi_op
+)
+{
+  INT i;
+  TN *tn;
+
+  ISA_REGISTER_CLASS rclass = TN_register_class(OP_result(psi_op,0));
+  PHI_CONGRUENCE_CLASS *current = PHI_CONGRUENCE_CLASS_make(rclass);
+
+  if (Trace_SSA_Out) {
+    fprintf(TFile, "=== Merge_PsiCongruenceClasses (BB%d)", BB_id(OP_bb(psi_op)));
+    Print_OP_No_SrcLine(psi_op);
+  }
+
+  for (i = 0; i < PSI_opnds(psi_op); i++) {
+    tn = PSI_opnd(psi_op,i);
+    Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
+    current = PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
+  }
+
+  tn = OP_result(psi_op,0); 
+  Is_True(phiCongruenceClass(tn) != NULL,("empty congruence class"));
+  current = PHI_CONGRUENCE_CLASS_Merge(current, phiCongruenceClass(tn));
+
+  if (Trace_SSA_Out) {
+    TN_LIST *p;
+    fprintf(TFile, "  Class: ");
+    PHI_CONGRUENCE_CLASS_Print(current);
+    fprintf(TFile,"\n");
+  }
+
+  return;
+}
+
+/* ================================================================
+ *   SSA_Make_PSI_Conventional
+ * ================================================================
+ */
+static void
+SSA_Make_PSI_Conventional ()
+{
+  BB *bb;
+  OP *op;
+
+  /* Eliminate_Psi_Resource_Interference() */
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_OPs(bb, op) {
+      if (OP_code(op) != TOP_psi)
+	continue;
+
+      merge_psiCongruenceClasses(op);
+    }
+  }
+}
+
+
+/* ================================================================
  *   merge_phiCongruenceClasses
  *
  *   merge the phiCongruenceClass[] corresponding to all
@@ -2982,29 +3101,6 @@ Eliminate_Psi_Resource_Interference()
     }
   }
 }
-
-/* ================================================================
- *   SSA_Make_PSI_Conventional
- * ================================================================
- */
-static void
-SSA_Make_PSI_Conventional ()
-{
-  BB *bb;
-  OP *op;
-
-  /* Eliminate_Psi_Resource_Interference() */
-
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) != TOP_psi)
-	continue;
-
-      merge_phiCongruenceClasses(op);
-    }
-  }
-}
-
 
 /* ================================================================
  *   SSA_Make_Conventional
