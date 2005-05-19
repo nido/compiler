@@ -564,6 +564,10 @@ Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
 TYPE_PRQ(LRANGE,LRPRQ)  // Generate a priority queue type for live ranges.
 
 
+#ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
+  extern BOOL Compare_Priorities(float p1, float p2);
+#endif
+
 /////////////////////////////////////
 static BOOL
 Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
@@ -574,7 +578,7 @@ Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
 /////////////////////////////////////
 {
 #ifdef TARG_ST
-  if (lrange0->Priority() == lrange1->Priority()) {
+  if (Compare_Priorities(lrange0->Priority(), lrange1->Priority())) {
     // [SC] When priorities are equal, the priority queue implementation
     // treats element ordering arbitrarily.  To keep some
     // predictability in the coloring of global lranges, order them by
@@ -946,7 +950,12 @@ GRA_Color_Complement( GRA_REGION* region )
       // hosed.  we'll definitely get bad code if we've got these kind
       // of bogus frequencies, but its better than incorrect code.
       //
+#ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
+      if ( (lr->Priority() < 0.0F) && (!Compare_Priorities(lr->Priority(), 0.0F))
+	    && !lr->Has_Wired_Register() && !Must_Split(lr)
+#else
       if (lr->Priority() < 0.0F && !lr->Has_Wired_Register() && !Must_Split(lr)
+#endif
 	  || lr->No_Appearance()) {
         GRA_Note_Spill(lr);
       } else if (lr->Spans_Infreq_Call() &&
@@ -960,6 +969,9 @@ GRA_Color_Complement( GRA_REGION* region )
       } else if (!Choose_Register(lr, region)) {
         if (!LRANGE_Split(lr,&iter,&split_alloc_lr) ||
 	    (split_alloc_lr->Priority() < 0.0F &&
+#ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
+	    !Compare_Priorities(split_alloc_lr->Priority(), 0.0F) &&
+#endif
 	     !Must_Split(split_alloc_lr))) {
           GRA_Note_Spill(split_alloc_lr);
         } else {
