@@ -306,6 +306,13 @@ Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
 }
 
 /////////////////////////////////////
+#ifdef TARG_ST // [CL] this function is now used in gra_color.cxx...
+BOOL
+#else
+static BOOL
+#endif
+Compare_Priorities(float p1, float p2);
+/////////////////////////////////////
 static BOOL
 Max_Colorable_LUNIT( LUNIT** result )
 /////////////////////////////////////
@@ -352,7 +359,11 @@ Max_Colorable_LUNIT( LUNIT** result )
     //      be a compile time disaster.
     if ( lunit->Has_Exposed_Use() || lunit->Has_Def() ) {
       if ( !REGISTER_SET_EmptyP(REGISTER_SET_Difference(all_regs,regs_used)) ) {
-        if ( ! found || lunit->Priority() > maxlunit->Priority() ) {
+        if ( ! found || lunit->Priority() > maxlunit->Priority() 
+#ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
+	     && !Compare_Priorities(lunit->Priority(), maxlunit->Priority())
+#endif
+	     ) {
           found = TRUE;
           maxlunit = lunit;
         }
@@ -1401,7 +1412,11 @@ Fix_Interference(void)
       neighbor->Neighbors_Left_Increment();
 
       if (neighbor->Neighbors_Left() + 1 >= neighbor->Candidate_Reg_Count()
-           && neighbor->Priority() > deferred_lrange->Priority()
+           && (neighbor->Priority() > deferred_lrange->Priority()
+#ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
+	       &&  !Compare_Priorities(neighbor->Priority(), deferred_lrange->Priority())
+#endif
+	       )
       ) {
         lrange_mgr.One_Set_Union1(neighbor);
         ++lranges_to_pass_count;
@@ -1606,8 +1621,6 @@ Check_Local_Interferences( LRANGE* lrange )
   }
 }
 
-static BOOL
-Compare_Priorities(float p1, float p2);
 /////////////////////////////////////
 static INT
 Choose_Best_Split(INT count)
@@ -1775,7 +1788,11 @@ Split_Consistency_Check()
 }
 
 /////////////////////////////////////
+#ifdef TARG_ST // [CL] this function is now used in gra_color.cxx...
+BOOL
+#else
 static BOOL
+#endif
 Compare_Priorities(float p1, float p2)
 /////////////////////////////////////
 //
