@@ -703,7 +703,7 @@ Sort_PHI_opnds (
  *   PSI_inline
  * ================================================================
  */
-static OP *
+OP *
 PSI_inline (
  OP *psi_op
 )
@@ -779,7 +779,7 @@ PSI_inline (
  *   PSI_reduce
  * ================================================================
  */
-static OP *
+OP *
 PSI_reduce (
  OP *psi_op
 )
@@ -893,48 +893,78 @@ Convert_PHI_to_PSI (
 			 result,
 			 opnd);
 
-  Set_TN_ssa_def(OP_result(psi_op, 0), psi_op);
-
   // Allocate an array to associate a guard with each operand of the
   // PSI
   Allocate_PSI_Guards(psi_op);
 
   // Arguments that are defined on a PSI are replaced by the arguments
   // of this PSI
-  psi_op = PSI_inline(psi_op);
+  // FdF 20050518: Will be called explicitely if needed
+  //  psi_op = PSI_inline(psi_op);
 
   // Remove duplicated arguments or unreachable definitions.
-  psi_op = PSI_reduce(psi_op);
+  // FdF 20050518: Will be called explicitely if needed
+  //  psi_op = PSI_reduce(psi_op);
 
   return psi_op;
 }
 
 OP *
-OP_Make_movec (
-	       TN *guard,
-	       TN *dst,
-	       TN *src)
+OP_Make_movc (
+  TN *guard,
+  TN *dst,
+  TN *src
+)
 {
   OPS cmov_ops = OPS_EMPTY;
   Expand_Select (dst, guard, src, dst, MTYPE_I4,
 		 FALSE, &cmov_ops);
-  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movec: Expand_Select produced more than a single operation"));
+  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 }
- 
+
 OP *
-OP_Make_movecf (
-		TN *guard,
-		TN *dst,
-		TN *src)
+OP_Make_movcf (
+  TN *guard,
+  TN *dst,
+  TN *src
+)
 {
   OPS cmov_ops = OPS_EMPTY;
   Expand_Select (dst, guard, dst, src, MTYPE_I4,
  		 FALSE, &cmov_ops);
-  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movecf: Expand_Select produced more than a single operation"));
+  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movcf: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 }
- 
+#if 0
+OP *
+SSA_Expand_Movc (
+  OP *op
+)
+{
+  TN *dst = OP_result(op, 0);
+  TN *guard = OP_opnd(op, 0);
+  TN *src = OP_opnd(op, 1);
+
+  OP *expand_op;
+
+  OPS cmov_ops = OPS_EMPTY;
+
+  if (OP_code(op) == TOP_movc)
+    Expand_Select (dst, guard, src, dst, MTYPE_I4, FALSE, &cmov_ops);
+  else
+    Expand_Select (dst, guard, dst, src, MTYPE_I4, FALSE, &cmov_ops);
+
+  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movcf: Expand_Select produced more than a single operation"));
+
+  expand_op == OPS_first(&cmov_ops);
+
+  BB_Insert_Ops_Before(OP_bb(op), op, &cmov_ops);
+  BB_Remove_Op(OP_bb(op), op);
+
+  return expand_op;
+}
+#endif
 //
 // dominance frontier blocks for each BB in the region
 //
@@ -1448,6 +1478,7 @@ SSA_Rename_BB (
 	new_tn = tn_stack_pop(tn);
 	Set_OP_result(op,i,new_tn);
 	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
+	Set_TN_ssa_def(tn, NULL);
 #if 0
 	fprintf(TFile, "  setting TN_ssa_def for ");
 	Print_TN(new_tn, FALSE);
@@ -1585,7 +1616,7 @@ SSA_Enter (
   ssa_init();
 
   //
-  // Corresponding Pop is done by SSA_Remove_Phi_Nodes()
+  // Corresponding Pop is done by SSA_Remove_Pseudo_OPs()
   //
   MEM_POOL_Push (&ssa_pool);
 
@@ -1596,12 +1627,12 @@ SSA_Enter (
   MEM_POOL_Push(&tn_map_pool);
 
   //
-  // initialize phi_op_map, deleted by the SSA_Remove_Phi_Nodes()
+  // initialize phi_op_map, deleted by the SSA_Remove_Pseudo_OPs()
   //
   phi_op_map = OP_MAP_Create();
 
   //
-  // initialize tn_ssa_map, deleted by the SSA_Remove_Phi_Nodes()
+  // initialize tn_ssa_map, deleted by the SSA_Remove_Pseudo_OPs()
   //
   tn_ssa_map = TN_MAP_Create();
 
@@ -1701,7 +1732,7 @@ SSA_Verify (
 	   associated predecessor. */
 	TN *opnd_tn = OP_opnd(phi, opnd_idx);
 	OP *def_op = TN_ssa_def(opnd_tn);
-	Is_True (BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op)),
+	Is_True (!def_op || BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op)),
 		 ("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx));
       }
 
@@ -2392,6 +2423,36 @@ SSA_Make_PSI_Conventional ()
     FOR_ALL_BB_OPs(bb, op) {
       if (OP_code(op) != TOP_psi)
 	continue;
+
+      /* In e first pass, just support speculated operands that must
+	 be predicated. */
+
+      for (int opndx = 1; opndx < PSI_opnds(op); opndx++) {
+	TN *opnd_tn = PSI_opnd(op, opndx);
+	BOOL true_guard;
+	TN *psi_guard = PSI_guard(op, opndx, &true_guard);
+	OP *def_op = TN_ssa_def(opnd_tn);
+
+	if (!def_op || OP_code(def_op) == TOP_psi)
+	  continue;
+
+	if (OP_guard(def_op)) {
+	  /* Currently, we do not support "partial" speculation, which
+	     means speculation that do not break the semantics of the
+	     PSI operation. */
+	  TN *op_guard = OP_guard(def_op);
+
+	  Is_True(psi_guard == op_guard && true_guard, ("Inconsistent predicate on psi argument and its definition."));
+	  continue;
+	}
+
+	/* The definition cannot be guarded or has been
+	   speculated. Introduce a predicated move instruction. */
+	TN *mov_tn = Dup_TN(opnd_tn);
+	OP *mov_op = true_guard ? OP_Make_movc(psi_guard, mov_tn, opnd_tn) : OP_Make_movcf(psi_guard, mov_tn, opnd_tn);
+	BB_Insert_Op_Before(OP_bb(op), op, mov_op);
+	Set_PSI_opnd(op, opndx, mov_tn);
+      }
 
       merge_psiCongruenceClasses(op);
     }
@@ -3173,7 +3234,7 @@ SSA_Make_Conventional (
 }
 
 /* ================================================================
- *   SSA_Remove_Phi_Nodes
+ *   SSA_Remove_Pseudo_OPs
  *
  *   Remove PHI-nodes renaming their resources into a representative
  *   name.
@@ -3183,7 +3244,7 @@ SSA_Make_Conventional (
  * ================================================================
  */
 void
-SSA_Remove_Phi_Nodes (
+SSA_Remove_Pseudo_OPs (
   RID *rid, 
   BOOL region 
 )
@@ -3198,7 +3259,7 @@ SSA_Remove_Phi_Nodes (
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
     if (Trace_phi_removal) {
-      fprintf(TFile, "============ remove_phi_nodes BB%d ===========\n",
+      fprintf(TFile, "============ remove_pseudo_ops BB%d ===========\n",
 	      BB_id(bb));
     }
 
@@ -3258,6 +3319,12 @@ SSA_Remove_Phi_Nodes (
       }
 
       else {
+
+#if 0
+	// First, replace PSEUDO ops by a real operation
+	if (OP_code(op) == TOP_movc || OP_code(op) == TOP_movcf)
+	  op = SSA_Expand_Movc(op);
+#endif
 	// Not a PHI-node, rename resources into representative name
 	for (i = 0; i < OP_opnds(op); i++) {
 	  tn = OP_opnd(op,i);

@@ -536,6 +536,7 @@ CG_Generate_Code(
     if (CG_enable_ssa) {
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
+      SSA_Verify (region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
     }
@@ -603,7 +604,7 @@ CG_Generate_Code(
     if (CG_enable_ssa) {
       Set_Error_Phase("Out of SSA Translation");
       SSA_Make_Conventional (region ? REGION_get_rid(rwn) : NULL, region);
-      SSA_Remove_Phi_Nodes(region ? REGION_get_rid(rwn) : NULL, region);
+      SSA_Remove_Pseudo_OPs(region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
     }

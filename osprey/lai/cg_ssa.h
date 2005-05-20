@@ -91,7 +91,7 @@ extern BOOL SSA_Check (RID *rid, BOOL region);
 extern void SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Make_Conventional (RID *rid, BOOL region);
-extern void SSA_Remove_Phi_Nodes (RID *rid, BOOL region);
+extern void SSA_Remove_Pseudo_OPs (RID *rid, BOOL region);
 
 extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
@@ -116,9 +116,13 @@ extern void Sort_PHI_opnds (OP *phi);
 // Create a PSI operation from a PHI
 extern OP * Convert_PHI_to_PSI (OP *phi);
 
+// Simplify a PSI operation
+extern OP * PSI_inline (OP *psi);
+extern OP * PSI_reduce (OP *psi);
+
 // Conditional move operations
-extern OP *OP_Make_movec (TN *guard, TN *dst, TN *src);
-extern OP *OP_Make_movecf (TN *guard, TN *dst, TN *src);
+extern OP *OP_Make_movc (TN *guard, TN *dst, TN *src);
+extern OP *OP_Make_movcf (TN *guard, TN *dst, TN *src);
 
 //
 // Prepend the 'phi_op' to the 'bb' and do bookkeeping
