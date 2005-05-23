@@ -50,6 +50,9 @@
 #include "cgir.h"
 #include "whirl2ops.h"
 
+#include "cg.h"
+#include "opt_alias_mgr.h"
+
 /* ====================================================================
  *   OP_Is_Barrier
  *
@@ -222,8 +225,11 @@ BOOL OP_Can_Be_Speculative (
 
   /* we can't speculate a load unless it is marked as dismissable */
   /* it is the client's responsability to do that. */
-  if (OP_Is_Speculative(op)) goto scalar_load;
+  if (OP_Is_Speculative(op)) return TRUE;
   
+  if (Alias_Manager->Safe_to_speculate(Get_WN_From_Memory_OP(op)))
+    return TRUE;
+
   /* If we got to here, we couldn't convince ourself that we have
    * a scalar load -- no speculation this time...
    */
