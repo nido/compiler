@@ -587,7 +587,7 @@ static OP_MAP psi_op_map = NULL;
  *   Allocate_PSI_Guards
  * ================================================================
  */
-static void
+void
 Allocate_PSI_Guards (
   OP   *psi
 )
@@ -652,7 +652,7 @@ void Set_PSI_opnd (
  TN *opnd
 )
 {
-  Set_OP_opnd(psi, pos<<1+1, opnd);
+  Set_OP_opnd(psi, (pos<<1)+1, opnd);
 }
 
 /* ================================================================
@@ -1798,7 +1798,7 @@ SSA_UNIVERSE_Add_TN (
     fprintf(TFile, "\n");
   }
 
-  FmtAssert(TN_is_global_reg(tn),("SSA_UNIVERSE: adding a  non global operand"));
+  // FmtAssert(TN_is_global_reg(tn),("SSA_UNIVERSE: adding a  non global operand"));
 
   last_tn_idx++;
   FmtAssert(last_tn_idx <= SSA_UNIVERSE_size,("SSA_UNIVERSE overflowed"));
@@ -2453,7 +2453,17 @@ SSA_Make_PSI_Conventional ()
 
 	/* The definition cannot be guarded or has been
 	   speculated. Introduce a predicated move instruction. */
-	TN *mov_tn = Dup_TN(opnd_tn);
+	TN *mov_tn = Copy_TN(opnd_tn);
+	Set_TN_is_global_reg(mov_tn);
+	SSA_UNIVERSE_Add_TN(mov_tn);
+
+	// Create a congruence class for new_tn
+	PHI_CONGRUENCE_CLASS *cc = 
+	  PHI_CONGRUENCE_CLASS_make(TN_register_class(mov_tn));
+	//Set_phiCongruenceClass(new_tn,cc);
+	PHI_CONGRUENCE_CLASS_Add_TN(cc,mov_tn);
+
+
 	OP *mov_op = true_guard ? OP_Make_movc(psi_guard, mov_tn, opnd_tn) : OP_Make_movcf(psi_guard, mov_tn, opnd_tn);
 	BB_Insert_Op_Before(OP_bb(op), op, mov_op);
 	Set_PSI_opnd(op, opndx, mov_tn);
@@ -2569,8 +2579,10 @@ SSA_UNIVERSE_Initialize ()
   // Calculate the SSA_UNIVERSE_size
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) == TOP_phi || OP_code(op) == TOP_psi)
+      if (OP_code(op) == TOP_phi)
 	SSA_UNIVERSE_size += OP_opnds(op) + OP_results(op);
+      else if (OP_code(op) == TOP_psi)
+	SSA_UNIVERSE_size += PSI_opnds(op) + OP_results(op);
     }
   }
   SSA_UNIVERSE_size *= 2;
@@ -2611,14 +2623,29 @@ SSA_UNIVERSE_Initialize ()
 	PHI_CONGRUENCE_CLASS_Add_TN(cc, OP_result(op,0));
       }
 
-      for (i = 0; i < OP_opnds(op); i++) {
-	TN *tn = OP_opnd(op,i);
-	// first, add this TN to the SSA universe
-	SSA_UNIVERSE_Add_TN(tn);
-	if (phiCongruenceClass(tn) == NULL) {
-	  PHI_CONGRUENCE_CLASS *cc = 
-	       PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
-	  PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+      if (OP_code(op) == TOP_phi) {
+
+	for (i = 0; i < OP_opnds(op); i++) {
+	  TN *tn = OP_opnd(op,i);
+	  // first, add this TN to the SSA universe
+	  SSA_UNIVERSE_Add_TN(tn);
+	  if (phiCongruenceClass(tn) == NULL) {
+	    PHI_CONGRUENCE_CLASS *cc = 
+	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
+	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+	  }
+	}
+      }
+      else {
+	for (i = 0; i < PSI_opnds(op); i++) {
+	  TN *tn = PSI_opnd(op,i);
+	  // first, add this TN to the SSA universe
+	  SSA_UNIVERSE_Add_TN(tn);
+	  if (phiCongruenceClass(tn) == NULL) {
+	    PHI_CONGRUENCE_CLASS *cc = 
+	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
+	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+	  }
 	}
       }
     }
