@@ -44,6 +44,7 @@
 #include "gra_live.h"
 #include "cgexp.h"
 #include "cg_ssa.h"
+#include "cg_ssaopt.h"
 
 INT32 CG_ssa_algorithm = 2;
 
@@ -171,40 +172,13 @@ tn_stack_top (
     return TN_STACK_tn(base);
 }
 
-
-
-/* ================================================================
- *
- *   Dominator routines
- *
- *   In addition to BB_dom_set(), BB_pdom_set() provided by the
- *   dominate.h interface, we need things such as BB_children(),
- *   BB_idom(), and the bottom-up traversal of dominator tree.
- *
- *   TODO: we should really generalize this and merge into
- *         the dominate.[h,cxx] interface.
- * ================================================================
- */
-
-typedef struct _Dom_Tree_node {
-  BB *_M_data;
-  BB *_M_parent;
-  BB_LIST *_M_kids;
-} DOM_TREE;
-
-#define DOM_TREE_node(t)   (t->_M_data)
-#define DOM_TREE_kids(t)   (t->_M_kids)
-#define DOM_TREE_parent(t) (t->_M_parent)
-
 //
 // This table is indexed with BB_id(bb). Each entry contains
 // the DOM_TREE info for this bb
 //
-static DOM_TREE *dom_map;
+DOM_TREE *dom_map = NULL;
 
-#define BB_dominator(bb)         (dom_map[BB_id(bb)]._M_parent)
 #define Set_BB_dominator(bb,dom) (dom_map[BB_id(bb)]._M_parent = dom); 
-#define BB_children(bb)          (dom_map[BB_id(bb)]._M_kids)
 
 inline void Add_BB_child(BB *bb, BB *child) {
   dom_map[BB_id(bb)]._M_kids = BB_LIST_Push(child, dom_map[BB_id(bb)]._M_kids, &ssa_pool);
@@ -1653,7 +1627,11 @@ SSA_Enter (
 
   //initialize_tn_stack();
   DOM_TREE_Initialize();
+
   SSA_Rename();
+
+  SSA_Optimize();
+
   DOM_TREE_Finalize();
 
   if (Get_Trace(TP_TEMP, 0x8)) {

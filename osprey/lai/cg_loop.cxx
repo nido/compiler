@@ -5232,6 +5232,7 @@ void CG_LOOP::Determine_Unroll_Factor()
       }
     }
   }
+
 #endif
 
   if (unroll_times_max < 2) {

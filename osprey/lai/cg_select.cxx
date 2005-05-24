@@ -37,9 +37,10 @@
  * -CG:select_spec_loads=TRUE    enable speculative loads
  * -CG:select_spec_stores=TRUE   enable speculative stores using blackholes
  *
- * The following flags to drive the algorithm.
+ * The following flags to drive the algorithm and heuristics.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
+ *
  * -CG:select_stores=2          promote store operands with select.
  *                              This option has the effect to merge 2 stores
  *                              into one.
@@ -48,9 +49,10 @@
  *                              2: select conditional stores using dummy addr
  *                              3: select stores based on base or offset.
  *
- * The following flags to drive the heuristics.
  * -CG:select_factor="1.2"      factor to reduce the cost of the 
- *                               ifconverted region
+ *                              ifconverted region
+ *
+ * -CG:select_freq=TRUE         heuristic based on execution frequency (optimize  *                              speed) or size of block (optimize space).
  *
  * ====================================================================
  * ====================================================================
@@ -125,8 +127,13 @@ op_list load_i;
  * ====================================================================
  */
 BOOL CG_select_spec_loads = TRUE;
+BOOL CG_select_spec_loads_overridden = FALSE;
 BOOL CG_select_spec_stores = TRUE;
+BOOL CG_select_spec_stores_overidden = FALSE;
 BOOL CG_select_allow_dup = TRUE;
+BOOL CG_select_allow_dup_overridden = FALSE;
+BOOL CG_select_freq = TRUE;
+BOOL CG_select_cycles = TRUE;
 INT32 CG_select_stores = 2;
 const char* CG_select_factor = "1.2";
 static float select_factor;
@@ -215,6 +222,7 @@ Select_Init()
     did_init = TRUE;
   }
   MEM_POOL_Push(&MEM_Select_pool);
+
 }
 
 static void
@@ -719,23 +727,42 @@ static BOOL
 Check_Profitable_Logif (BB *bb1, BB *bb2)
 {
   float prob = 0.0;
-  BBLIST *bblist;
-  FOR_ALL_BB_SUCCS(bb1, bblist) {
-    BB *succ = BBLIST_item(bblist);
-    if (succ == bb2) {
-      prob = BBLIST_prob(bblist);
-      break;
+
+#if 0
+  if (BB_length(bb1) + BB_length(bb2) >= CG_split_BB_length) {
+    if (Trace_Select_Candidates) {
+      fprintf (Select_TFile, "expected new block too big. reject\n");
     }
+    return FALSE;
+  }
+#endif
+
+  if (!CG_select_cycles) {
+    return TRUE;
   }
 
+  if (CG_select_freq) {
+    BBLIST *bblist;
+    FOR_ALL_BB_SUCCS(bb1, bblist) {
+      BB *succ = BBLIST_item(bblist);
+      if (succ == bb2) {
+        prob = BBLIST_prob(bblist);
+        break;
+      }
+    }
+  }
+  else {
+    prob = 1;
+  }
+  
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Check_Profitable_Logif BB%d BB%d\n", BB_id(bb1), BB_id(bb2));
   }
 
   CG_SCHED_EST *se1 = CG_SCHED_EST_Create(bb1, &MEM_Select_pool,
-                                             SCHED_EST_FOR_IF_CONV);
+                                          SCHED_EST_FOR_IF_CONV);
   CG_SCHED_EST *se2 = CG_SCHED_EST_Create(bb2, &MEM_Select_pool,
-                                             SCHED_EST_FOR_IF_CONV);
+                                          SCHED_EST_FOR_IF_CONV);
 
   float cycles1 = CG_SCHED_EST_Cycles(se1);
   float cycles2 = CG_SCHED_EST_Cycles(se2);
@@ -764,15 +791,22 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 {
   BBLIST *bb1, *bb2;
   BB *bb;
-
   // Find block probs
   bb2 = BBlist_Fall_Thru_Succ(head);
   FOR_ALL_BB_SUCCS(head, bb1) {
     if (bb1 != bb2)
       break;
   }
-  float taken_prob = BBLIST_prob(bb1);
-  float fallthr_prob = BBLIST_prob(bb2);
+
+  float taken_prob, fallthr_prob;
+  if (CG_select_freq) {
+    taken_prob = BBLIST_prob(bb1);
+    fallthr_prob = BBLIST_prob(bb2);
+  }
+  else {
+    taken_prob = 0.5;
+    fallthr_prob = 0.5;
+  }
 
   CG_SCHED_EST *sehead = CG_SCHED_EST_Create(head, &MEM_Select_pool,
                                              SCHED_EST_FOR_IF_CONV);
@@ -833,6 +867,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     }
   }
 
+#if 0
   //If new block is bigger than CG_bblength_max, reject.
   if (exp_len >= CG_split_BB_length) {
     if (Trace_Select_Candidates) {
@@ -840,6 +875,10 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     }
     return FALSE;
   }
+#endif
+
+  if (!CG_select_cycles)
+    return TRUE;
 
   float bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
 
@@ -2146,11 +2185,19 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Set_Error_Phase ("Select Region Formation");
 
+  if (OPT_Space) {
+      CG_select_allow_dup = FALSE;
+      CG_select_freq = FALSE;
+      CG_select_cycles = FALSE;
+      CG_select_stores = 1;
+      CG_select_spec_stores = FALSE;
+  }
+
   // higher select_factor means ifc more aggressive.
   select_factor = atof(CG_select_factor);
-  if (select_factor == 0.0) return;
-
   branch_penalty = CGTARG_Branch_Taken_Penalty();
+
+  if (select_factor == 0.0) return;
 
   Trace_Select_Init();
 

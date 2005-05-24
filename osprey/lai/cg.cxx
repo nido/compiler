@@ -826,6 +826,9 @@ CG_Generate_Code(
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }
 
+  if (OPT_Space)
+    CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY, "CFLOW (merge ops)");
+
   if (CG_enable_peephole) {
     Set_Error_Phase("Extended Block Optimizer");
     Start_Timer(T_EBO_CU);

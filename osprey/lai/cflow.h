@@ -148,6 +148,7 @@ extern BOOL CFLOW_Trace_Dom;
 	|CFLOW_FREQ_ORDER|CFLOW_CLONE)
 #ifdef TARG_ST
 #define CFLOW_MERGE_EMPTY		(0x00000200)
+#define CFLOW_MERGE_OPS			(0x00000400)
 #endif
 
 extern void CFLOW_Optimize(INT32 flags, const char *phase_name);

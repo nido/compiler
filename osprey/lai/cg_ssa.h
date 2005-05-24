@@ -137,4 +137,38 @@ extern void SSA_Prepend_Phi_To_BB (OP *phi_op, BB *bb);
 #define SSA_DOM_FRONT    0x00000010  /* trace dominance frontier */
 #define SSA_COLLECT_INFO 0x00000020  /* collect statistics for SSA */
 
+/* FdF 20050309: Externalized for use in SSA_Optimize(). */
+
+/* ================================================================
+ *
+ *   Dominator routines
+ *
+ *   In addition to BB_dom_set(), BB_pdom_set() provided by the
+ *   dominate.h interface, we need things such as BB_children(),
+ *   BB_idom(), and the bottom-up traversal of dominator tree.
+ *
+ *   TODO: we should really generalize this and merge into
+ *         the dominate.[h,cxx] interface.
+ * ================================================================
+ */
+
+typedef struct _Dom_Tree_node {
+  BB *_M_data;
+  BB *_M_parent;
+  BB_LIST *_M_kids;
+} DOM_TREE;
+
+#define DOM_TREE_node(t)   (t->_M_data)
+#define DOM_TREE_kids(t)   (t->_M_kids)
+#define DOM_TREE_parent(t) (t->_M_parent)
+
+//
+// This table is indexed with BB_id(bb). Each entry contains
+// the DOM_TREE info for this bb
+//
+extern DOM_TREE *dom_map;
+
+#define BB_dominator(bb)         (dom_map[BB_id(bb)]._M_parent)
+#define BB_children(bb)          (dom_map[BB_id(bb)]._M_kids)
+
 #endif /* cg_ssa_INCLUDED */

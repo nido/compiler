@@ -2343,6 +2343,8 @@ EBO_Memory_Sequence (
     new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, new_offset_val);
   }
 
+  if (ISA_PACK_Inst_Words(new_opcode) > ISA_PACK_Inst_Words(opcode))
+    return FALSE;
   
   if (new_opcode != TOP_UNDEFINED) {
     new_op = Dup_OP(op);

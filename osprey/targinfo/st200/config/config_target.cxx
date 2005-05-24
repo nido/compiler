@@ -646,6 +646,30 @@ Configure_Target ()
     }
   }
 
+  if (OPT_unroll_times > 0 && !OPT_unroll_times_overridden) {
+    /* Disable loop unrolling at -Os, unless -funroll-loops is
+       specified. */
+    /* Otherwise, disable loop unrolling under option
+       -fno-unroll-loops. */
+    if ((OPT_Space && !(UnrollLoops_Set && UnrollLoops)) ||
+	(UnrollLoops_Set && !UnrollLoops)) {
+      OPT_unroll_times = 0;
+    }
+    else if (Opt_Level == 2) {
+      OPT_unroll_times = 4;
+    } else if (Opt_Level > 2) {
+      OPT_unroll_times = 8;
+    }
+  }
+
+  if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden) {
+    if (Opt_Level == 2) {
+      OPT_unroll_size = OPT_Space ? 20 : 64;
+    } else if (Opt_Level > 2) {
+      OPT_unroll_size = 64;
+    }
+  }
+
 #if defined(BACK_END)
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 #endif

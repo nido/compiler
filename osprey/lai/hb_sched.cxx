@@ -1003,7 +1003,7 @@ HB_Schedule::Compute_BBSCH (BB *bb, BBSCH *bbsch)
   // the idea is that this would give a rough feel of the amount of 
   // parallelism present in this bb when compared to CGTARG_Peak_Rate
   BBSCH_block_parallelism (bbsch) =  (VECTOR_count(_sched_vector) != 0) ?
-	ceil(VECTOR_count(_sched_vector) / (critical_length + 1.)) : -1;
+	(int)ceil(VECTOR_count(_sched_vector) / (critical_length + 1.)) : -1;
 
  if (Cur_Gcm_Type & GCM_MINIMIZE_REGS) {
 

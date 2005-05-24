@@ -139,7 +139,9 @@ static BOOL eh_label_removed;
 #define TRACE_CLONE     0x0080
 #define TRACE_FREQ	0x0100	/* used in freq.c */
 #define TRACE_DOM	0x0200	/* used in dominate.c */
-
+#ifdef TARG_ST
+#define TRACE_MERGE_OPS	0x0400
+#endif
 
 BOOL CFLOW_Trace;
 BOOL CFLOW_Trace_Detail;
@@ -151,6 +153,9 @@ BOOL CFLOW_Trace_Freq_Order;
 BOOL CFLOW_Trace_Clone;
 BOOL CFLOW_Trace_Freq;
 BOOL CFLOW_Trace_Dom;
+#ifdef TARG_ST
+static BOOL CFLOW_Trace_Merge_Ops;
+#endif
 
 /* We need to keep some auxilary information for each BB for the various
  * optimizations we perform. The following BB_MAP provides the mechanism
@@ -3427,15 +3432,19 @@ Can_Append_Succ(
      * block or modify the BBINFO for calls to allow an arbitrary successor
      * for the fall through like LOGIF does.
      */
-    if (nsuccs && suc != BB_next(b)) {
-      if (trace) {
- 	#pragma mips_frequency_hint NEVER
-	fprintf(TFile, "rejecting %s of BB:%d into BB:%d"
-		       " (BBKIND_CALL pred must be fall through)\n",
-		       oper_name, BB_id(suc), BB_id(b));
+      if (OPT_Space) {
+	/* TB: Authorized CALL BB to be merged, for codesize.*/
+      } else {
+	if (nsuccs && suc != BB_next(b)) {
+	  if (trace) {
+#pragma mips_frequency_hint NEVER
+	    fprintf(TFile, "rejecting %s of BB:%d into BB:%d"
+		    " (BBKIND_CALL pred must be fall through)\n",
+		    oper_name, BB_id(suc), BB_id(b));
+	  }
+	  return FALSE;
+	}
       }
-      return FALSE;
-    }
     /*FALLTHROUGH*/
   case BBKIND_GOTO:
   case BBKIND_LOGIF:
@@ -4046,6 +4055,185 @@ Merge_Blocks ( BOOL in_cgprep )
 #ifdef TARG_ST
 /* ====================================================================
  *
+ * Utility functions for Merge_Common_Ops
+ *
+ * ====================================================================
+ */
+
+static BOOL
+TN_equiv(TN *tn1, TN *tn2) {
+
+  if (tn1 == tn2)
+    return TRUE;
+
+  if (TN_is_register(tn1) &&
+      TN_is_register(tn2) &&
+      TNs_Are_Equivalent(tn1, tn2))
+    return TRUE;
+
+  if (TN_is_zero(tn1) && TN_is_zero(tn2))
+    return TRUE;
+
+  return FALSE;
+}
+
+static BOOL
+OP_equiv(OP *op1, OP *op2) {
+
+  INT i;
+
+  if (!op1 || !op2)
+    return FALSE;
+
+  if ((OP_code(op1) != OP_code(op2)) ||
+      (OP_opnds(op1) != OP_opnds(op2)) ||
+      (OP_results(op1) != OP_results(op2)))
+    return FALSE;
+
+  for (i = 0; i < OP_opnds(op1); i ++) {
+    if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)))
+      return FALSE;
+  }
+  for (i = 0; i < OP_results(op1); i ++) {
+    if (!TN_equiv(OP_result(op1, i), OP_result(op2, i)))
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
+static BOOL
+Merge_Ops_in_Preds(BB *b) {
+#define MAX_PRED_BBS 10
+  OP *cur_op[MAX_PRED_BBS];
+  BOOL merged = FALSE;
+
+  if (BBlist_Len(BB_preds(b)) > MAX_PRED_BBS)
+    return FALSE;
+
+  INT pred_count = BBlist_Len(BB_preds(b));
+  OP *common_op = NULL;
+  BBLIST *bblst;
+  INT i = 0;
+
+  /* Initialize cur_op with the last op of each predecessor of b, not
+     counting the branch operation. */
+
+  FOR_ALL_BB_PREDS (b, bblst) {
+    BB *pbb = BBLIST_item(bblst);
+    cur_op[i] = BB_last_op(pbb);
+    if (cur_op[i] && OP_br(cur_op[i]))
+      cur_op[i] = OP_prev(cur_op[i]);
+    i ++;
+  }
+
+  Is_True(i == pred_count, ("Internal error in Merge_Ops_in_Preds\n"));
+
+  /* While operations are the same in all predecessors, move them to b
+     and remove them from predecessors. */
+
+  do {
+
+    /* Check if cur_op is the same in all predecessors. */
+
+    common_op = cur_op[0];
+    for (i = 1; i < pred_count; i ++) {
+      if (!OP_equiv(common_op, cur_op[i])) {
+	common_op = NULL;
+	break;
+      }
+    }
+
+    if (common_op) {
+
+      /* Move to b, remove from all predecessors. */
+      if (CFLOW_Trace_Merge_Ops) {
+	#pragma mips_frequency_hint NEVER
+	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+      }
+      OP *new_common = Dup_OP(common_op);
+      if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
+
+      BB_Insert_Op(b, NULL, new_common, TRUE);
+      for (i = 0; i < pred_count; i ++) {
+	OP* op = cur_op[i];
+	if (CFLOW_Trace_Merge_Ops) {
+	  #pragma mips_frequency_hint NEVER
+	  fprintf(TFile, " %d", BB_id(OP_bb(op)));
+	}
+	cur_op[i] = OP_prev(cur_op[i]);
+	BB_Remove_Op(OP_bb(op), op);
+      }
+
+      if (CFLOW_Trace_Merge_Ops) {
+	#pragma mips_frequency_hint NEVER
+	fprintf(TFile, ", moved into BB %d\n", BB_id(b));
+      }
+      merged = TRUE;
+    }
+
+  } while (common_op);
+
+  if (merged && !CG_localize_tns) {
+    GRA_LIVE_Compute_Liveness_For_BB(b);
+    FOR_ALL_BB_PREDS (b, bblst) {
+      BB *pbb = BBLIST_item(bblst);
+      GRA_LIVE_Compute_Liveness_For_BB(pbb);
+    }
+  }
+
+  return merged;
+}
+
+/* ====================================================================
+ *
+ * Merge_Common_Ops
+ *
+ * Attempt to merge common operations -- Move identical operations in
+ * blocks with a unique common successor to this common successor.
+ *
+ * The return value indicates if we made any changes.
+ *
+ * ====================================================================
+ */
+static BOOL
+Merge_Common_Ops ()
+{
+  BB *next_b;
+  BB *b;
+  BOOL merged = FALSE;
+
+  for (b = REGION_First_BB; b; b = next_b) {
+    next_b = BB_next(b);
+    if (BBlist_Len(BB_preds(b)) > 1) {
+      BBLIST *bblst;
+      BBKIND kind = BBINFO_kind(BBLIST_item(BB_preds(b)));
+
+      /* Check if all predecessors have this block as their unique
+	 direct successor. */
+      FOR_ALL_BB_PREDS (b, bblst) {
+	BB *pbb = BBLIST_item(bblst);
+      
+	if (    BBINFO_kind(pbb) != BBKIND_GOTO
+	     || BBINFO_kind(pbb) != kind
+	     || BBINFO_nsuccs(pbb) != 1
+	     || BBINFO_succ_offset(pbb, 0) != 0) {
+	  kind = BBKIND_UNKNOWN;
+	  break;
+	}
+      }
+
+      if (kind != BBKIND_UNKNOWN)
+	if (Merge_Ops_in_Preds(b))
+	  merged = TRUE;
+    }
+  }
+
+  return merged;
+}
+
+/* ====================================================================
+ *
  * Merge_Empty_Blocks
  *
  * Attempt to merge empty BBs -- eliminate unconditional GOTOs by merging the
@@ -4394,6 +4582,18 @@ Compare_Edges(const void *p1, const void *p2)
   double weight1 = e1->weight;
   double weight2 = e2->weight;
 
+#ifdef TARG_ST
+  if (OPT_Space) {
+    /* TB: in order to avoid adding goto blocks, we put first edges
+       with only one successor. We want these edges to be treated
+       first and belong to the chain */
+    if (BBINFO_nsuccs(e1->pred) == 1 && BBINFO_nsuccs(e2->pred) != 1)
+      return sort_1_before_2;
+    else 
+      if (BBINFO_nsuccs(e1->pred) != 1 && BBINFO_nsuccs(e2->pred) == 1) 
+	return sort_1_after_2;
+  }
+#endif
   if (weight1 > weight2) {
     return sort_1_before_2;
   } else if (weight1 < weight2) {
@@ -6562,6 +6762,9 @@ void
 CFLOW_Optimize(INT32 flags, const char *phase_name)
 {
   BOOL change;
+#ifdef TARG_ST
+  BOOL merge_change = FALSE;
+#endif
   const char *prev_phase;
   BOOL flow_change = FALSE;
 
@@ -6732,11 +6935,42 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: merge blocks\n%s",
 		     DBar, DBar);
     }
+#ifdef TARG_ST
+    merge_change = Merge_Blocks(current_flags & CFLOW_IN_CGPREP);
+#else
     change = Merge_Blocks(current_flags & CFLOW_IN_CGPREP);
+#endif
     if (CFLOW_Trace_Merge) {
       #pragma mips_frequency_hint NEVER
+#ifdef TARG_ST
+      if (merge_change) {
+#else
       if (change) {
+#endif
 	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after merging blocks");
+      } else {
+	fprintf(TFile, "No changes.\n");
+      }
+    }
+#ifdef TARG_ST
+    flow_change |= merge_change;
+#else
+    flow_change |= change;
+#endif
+  }
+
+#ifdef TARG_ST
+  if (current_flags & CFLOW_MERGE_OPS) {
+    if (CFLOW_Trace_Merge_Ops) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "\n%s CFLOW_Optimize: merge common operations\n%s",
+		     DBar, DBar);
+    }
+    change = Merge_Common_Ops();
+    if (CFLOW_Trace_Merge_Ops) {
+      #pragma mips_frequency_hint NEVER
+      if (change) {
+	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after merging common operations");
       } else {
 	fprintf(TFile, "No changes.\n");
       }
@@ -6744,7 +6978,6 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
     flow_change |= change;
   }
 
-#ifdef TARG_ST
   if (current_flags & CFLOW_MERGE_EMPTY) {
     if (CFLOW_Trace_Merge) {
       #pragma mips_frequency_hint NEVER
@@ -6790,7 +7023,6 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   /* If we made any flow changes, re-create the preds and succs lists.
    */
   if (flow_change) Finalize_All_BBs();
-
   if (CFLOW_Trace) {
     #pragma mips_frequency_hint NEVER
     fprintf(TFile, "\n%s"
@@ -6806,13 +7038,24 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   }
 
 done:
-  BB_MAP_Delete(bb_info_map);
+  if (!bb_info_map->deleted)
+    BB_MAP_Delete(bb_info_map);
   MEM_POOL_Pop(&MEM_local_nz_pool);
 
 nothing:
   Check_for_Dump(TP_FLOWOPT, NULL);
   Stop_Timer(T_CFLOW_CU);
   Set_Error_Phase(prev_phase);
+
+#ifdef TARG_ST
+  if (OPT_Space && merge_change && (current_flags & CFLOW_MERGE)) {
+    // TB: For code size, make a several passes CFLOW_MERGE
+    // Optim We hope to catch more opportunities to remove unuseful
+    // GOTO BB Need to be done after Finalize_All_BBs, because some
+    // new opportunities might have been created by BB finalization
+     CFLOW_Optimize(CFLOW_MERGE, "CFLOW more CFLOW_MERGE passes to find code size opportunity");
+  }
+#endif
 }
 
 
@@ -6848,7 +7091,9 @@ CFLOW_Initialize(void)
     CFLOW_Trace_Freq_Order = Get_Trace(TP_FLOWOPT, TRACE_FREQ_ORDER);
     CFLOW_Trace_Freq = Get_Trace(TP_FLOWOPT, TRACE_FREQ);
     CFLOW_Trace_Dom = Get_Trace(TP_FLOWOPT, TRACE_DOM);
-
+#ifdef TARG_ST
+    CFLOW_Trace_Merge_Ops = Get_Trace(TP_FLOWOPT, TRACE_MERGE_OPS);
+#endif
     CFLOW_Trace_Branch |= CFLOW_Trace_Detail;
     CFLOW_Trace_Unreach |= CFLOW_Trace_Detail;
     CFLOW_Trace_Merge |= CFLOW_Trace_Detail;

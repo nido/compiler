@@ -1105,26 +1105,6 @@ Configure_CG_Options(void)
   }
 
 #ifdef TARG_ST200
-  // ST220 unrolling settings:
-  // - default up to O1 (4,40)
-  // - 4,64 at O2
-  // - 8,64 at O3
-  // (Derived from RFI 1-1-0-B/p7)
-  if (OPT_unroll_times > 0 && !OPT_unroll_times_overridden) {
-    if (Opt_Level == 2) {
-      OPT_unroll_times = 4;
-    } else if (Opt_Level > 2) {
-      OPT_unroll_times = 8;
-    }
-  }
-  if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden) {
-    if (Opt_Level == 2) {
-      OPT_unroll_size = OPT_Space ? 20 : 64;
-    } else if (Opt_Level > 2) {
-      OPT_unroll_size = 64;
-    }
-  }
-
   if ((Opt_Level >= 2) && !CG_LOOP_unroll_multi_bb_overridden) {
     CG_LOOP_unroll_multi_bb = TRUE;
   }
@@ -1592,18 +1572,9 @@ CG_Process_Command_Line (
  *   read 
  * ====================================================================
  */
-extern "C" {
-#include <unistd.h>
-}
 void
 CG_Init (void)
 {
-#ifdef Is_True_On
-  if (getenv("CGPID")) {
-    fprintf(stderr, "CGPID=%d\n", getpid());
-    scanf("\n");
-  }
-#endif
   Set_Error_Phase ( "CG Initialization" );
 
   MEM_POOL_Initialize (&MEM_local_region_pool, "local_region_pool", TRUE);

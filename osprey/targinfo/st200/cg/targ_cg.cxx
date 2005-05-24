@@ -1745,6 +1745,38 @@ Get_Extended_Opcode (
 }
 
 /* ====================================================================
+ *   CGTARG_offset_is_extended
+ *   Does this offset TN is an extended immediate operand ?
+ * ====================================================================
+ */
+BOOL
+CGTARG_offset_is_extended(TN *offset, INT64 *val) {
+
+  if (TN_has_value(offset)) {
+    *val = TN_value(offset);
+    if (!ISA_LC_Value_In_Class(*val, LC_isrc2)) {
+      return TRUE;
+    }
+  }
+  else if (TN_is_symbol(offset)) {
+    ST *st, *base_st;
+    INT64 base_ofst;
+
+    st = TN_var(offset);
+    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    // SP/FP relative may actually fit into 9-bits
+    if (base_st == SP_Sym || base_st == FP_Sym) {
+      *val = CGTARG_TN_Value (offset, base_ofst);
+      if (!ISA_LC_Value_In_Class(*val, LC_isrc2)) {
+	return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+  
+/* ====================================================================
  *   CGTARG_need_extended_Opcode
  *   Does this OP have extended immediate operand ?
  * ====================================================================

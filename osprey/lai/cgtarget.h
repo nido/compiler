@@ -876,6 +876,7 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
                                          const CG_GROUPING      *grouping);
 
 #ifdef TARG_ST
+extern BOOL CGTARG_offset_is_extended(TN *offset, INT64 *val);
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
 #endif
 
