@@ -1632,6 +1632,11 @@ SSA_Enter (
   phi_op_map = OP_MAP_Create();
 
   //
+  // initialize psi_op_map, deleted by the SSA_Remove_Pseudo_OPs()
+  //
+  psi_op_map = OP_MAP_Create();
+
+  //
   // initialize tn_ssa_map, deleted by the SSA_Remove_Pseudo_OPs()
   //
   tn_ssa_map = TN_MAP_Create();
@@ -3376,6 +3381,7 @@ SSA_Remove_Pseudo_OPs (
   TN_MAP_Delete(tn_ssa_map);
   tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
   OP_MAP_Delete(phi_op_map);
+  OP_MAP_Delete(psi_op_map);
 
   MEM_POOL_Pop (&ssa_pool);
 
