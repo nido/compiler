@@ -104,7 +104,7 @@ extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
 
 // which guard TN is associated to PSI-node operand 'opnd_idx' ?
 #define PSI_opnds(psi)    (OP_opnds(psi)>>1)
-#define PSI_opnd(psi, i)  (OP_opnd(psi, (i)<<1+1))
+#define PSI_opnd(psi, i)  (OP_opnd(psi, ((i)<<1)+1))
 extern TN *PSI_guard(const OP *, UINT8, BOOL *);
 extern void Set_PSI_opnd(OP *, UINT8, TN *);
 extern void Set_PSI_guard(OP *, UINT8, TN *, BOOL);
