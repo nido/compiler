@@ -520,6 +520,37 @@ Are_Same_Location(OP* op1, OP* op2)
 #endif
       if (alias == SAME_LOCATION)
         return TRUE;
+      
+      // alias analyser doesn't seem to be able to detect obvious cases like
+      // if (a) pt = tab1 else pt = tab2;
+      // remove this code when Aliased code is fixed
+      if (alias == POSSIBLY_ALIASED) {
+        TN *offsetTN1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_offset));
+        TN *baseTN1   = OP_opnd(op1, OP_find_opnd_use(op1, OU_base));
+        TN *offsetTN2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_offset));
+        TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
+
+        if (offsetTN1 == offsetTN2) {
+          if (TN_is_register (baseTN1) && TN_is_register (baseTN2)) {
+            OP *op3 = TN_ssa_def(baseTN1);
+            OP *op4 = TN_ssa_def(baseTN2);
+
+            if (op3 && op4 && (OP_opnds (op3) == OP_opnds (op4))) {
+              {
+                for (int i = 0; i < OP_opnds(op3); i++) {
+                  TN *r1 = OP_opnd(op3, i);
+                  TN *r2 = OP_opnd(op4, i);
+
+                  if (OP_opnd (op3, i) != OP_opnd (op4, i))
+                    return FALSE;
+                }
+
+                return TRUE;
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1587,8 +1618,10 @@ Negate_Cmp_BB (OP *br)
   DEF_KIND kind;
   TN *btn = OP_opnd(br, 0);
 
-  if (TN_is_global_reg(btn))
+  if (TN_is_global_reg(btn)) {
+    abort();
     return FALSE;
+  }
   
   OP *cmp_op = TN_Reaching_Value_At_Op(btn, br, &kind, TRUE);
   TOP new_cmp = CGTARG_Invert(OP_code(cmp_op));
