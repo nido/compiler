@@ -109,6 +109,8 @@ extern TN *PSI_guard(const OP *, UINT8, BOOL *);
 extern void Set_PSI_opnd(OP *, UINT8, TN *);
 extern void Set_PSI_guard(OP *, UINT8, TN *, BOOL);
 
+void Allocate_PSI_Guards (OP   *psi);
+
 // Sort PHI operands according to the dominance relation of the
 // argument's definition
 extern void Sort_PHI_opnds (OP *phi);
