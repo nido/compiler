@@ -512,14 +512,30 @@ Are_Same_Location(OP* op1, OP* op2)
   if (OP_memory(op1) && OP_memory(op2)) {
     WN *wn1 = Get_WN_From_Memory_OP(op1);
     WN *wn2 = Get_WN_From_Memory_OP(op2);
+
+    if (Trace_Select_Candidates) {
+      extern void fdump_wn(FILE *, WN*);
+      fprintf(Select_TFile, "<select> are_same_location ? \n");
+      fdump_wn (Select_TFile, wn1);
+      fdump_wn (Select_TFile, wn2);
+    }
+
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
+      if (Trace_Select_Candidates) 
+        fprintf(Select_TFile, "<select> alias = %d\n", alias);
 #ifdef TARG_ST
       // [CG] Check that ops are not black_hole
       if (!OP_black_hole(op1) && !OP_black_hole(op2))
 #endif
       if (alias == SAME_LOCATION)
         return TRUE;
+
+      extern BOOL CG_DEP_Mem_Ops_Alias2(OP *memop1, OP *memop2, BOOL *definite);
+      BOOL  definite=FALSE;
+      CG_DEP_Mem_Ops_Alias2(op1, op2, &definite);
+      fprintf(Select_TFile, "<select> alias = %d\n", definite);
+      return definite;
     }
   }
 
@@ -628,6 +644,10 @@ Sort_Stores(void)
         return Handle_Odd_Stores(store_i.tkstrs, store_i.ntkstrs);
       }
     }
+
+    if (Trace_Select_Candidates) 
+      fprintf(Select_TFile, "<select> stores unpaired\n");
+
     return 0;
   }
 
@@ -649,12 +669,20 @@ Sort_Stores(void)
     DevAssert(OP_find_opnd_use(op2, OU_storeval) == strval_idx, ("Stores."));
 
     // Stores don't differ, nothing to do. Select the result
+    
+    if (Trace_Select_Candidates) {
+      fprintf(Select_TFile, "<select> examine\n");
+      Print_OP (op1);      
+      Print_OP (op2);      
+    }
+
     if (Are_Same_Location (op1, op2)) {
       store_i.ifarg_idx.push_back(strval_idx);
       ++count;
       c = 0;
       ++i1_iter;
       ++i2_iter;
+
       continue;
     }
 
@@ -941,6 +969,8 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
             BB_id(target), BB_id(fall_thru), BB_id(ipdom));
   }
     
+  std::list<BB*> bblist;
+
   BB *bb = target;
 
   while (bb != ipdom) {
@@ -961,6 +991,8 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
         fprintf(Select_TFile, "<select> Can't speculate BB%d\n", BB_id(bb));
       return FALSE;
     }
+
+    bblist.push_back(bb);
 
     t_path  = BB_SET_Union1D(t_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
@@ -986,19 +1018,25 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
       return FALSE;
     }
 
+    bblist.push_back(bb);
+
     ft_path  = BB_SET_Union1D(ft_path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
   }
   
   // Check if we have the same set of memory stores in both sides.
   if (!store_i.tkstrs.empty() || !store_i.ntkstrs.empty()) {
+    CG_DEP_Compute_Region_Graph(bblist, TRUE, FALSE, FALSE);
+
     if (!Sort_Stores()) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Can't promote stores\n");
+      CG_DEP_Delete_Graph (&bblist);
       return FALSE;
     }
   }
 
+  CG_DEP_Delete_Graph (&bblist);
   return TRUE;
 }
 
@@ -2186,7 +2224,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Set_Error_Phase ("Select Region Formation");
 
   if (OPT_Space) {
-      CG_select_allow_dup = FALSE;
       CG_select_freq = FALSE;
       CG_select_cycles = FALSE;
       CG_select_stores = 1;

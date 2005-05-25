@@ -2863,6 +2863,14 @@ CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *definite)
   return aliased;
 }
 
+BOOL 
+CG_DEP_Mem_Ops_Alias2(OP *memop1, OP *memop2, BOOL *definite)
+{
+  BOOL aliased;
+  aliased = get_mem_dep(memop1, memop2, definite, NULL, 0);
+  return aliased;
+}
+
 #else
 BOOL 
 CG_DEP_Mem_Ops_Alias(OP *memop1, OP *memop2, BOOL *identical)
