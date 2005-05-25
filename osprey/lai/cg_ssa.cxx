@@ -2432,7 +2432,6 @@ SSA_Make_PSI_Conventional ()
 	/* The definition cannot be guarded or has been
 	   speculated. Introduce a predicated move instruction. */
 	TN *mov_tn = Copy_TN(opnd_tn);
-	Set_TN_is_global_reg(mov_tn);
 	SSA_UNIVERSE_Add_TN(mov_tn);
 
 	// Create a congruence class for new_tn
@@ -2532,7 +2531,7 @@ merge_phiCongruenceClasses (
  * ================================================================
  */
 static void
-SSA_UNIVERSE_Initialize () 
+SSA_UNIVERSE_Initialize (TOP TOP_ssa) 
 {
   INT i;
   OP *op;
@@ -2557,10 +2556,8 @@ SSA_UNIVERSE_Initialize ()
   // Calculate the SSA_UNIVERSE_size
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) == TOP_phi)
+      if (OP_code(op) == TOP_ssa)
 	SSA_UNIVERSE_size += OP_opnds(op) + OP_results(op);
-      else if (OP_code(op) == TOP_psi)
-	SSA_UNIVERSE_size += PSI_opnds(op) + OP_results(op);
     }
   }
   SSA_UNIVERSE_size *= 2;
@@ -2586,7 +2583,7 @@ SSA_UNIVERSE_Initialize ()
   // Do the second traversal:
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) != TOP_phi && OP_code(op) != TOP_psi)
+      if (OP_code(op) != TOP_ssa)
 	continue;
       //
       // Initialize PhiCongruenceClasses for PHI resources;
@@ -2601,52 +2598,18 @@ SSA_UNIVERSE_Initialize ()
 	PHI_CONGRUENCE_CLASS_Add_TN(cc, OP_result(op,0));
       }
 
-      if (OP_code(op) == TOP_phi) {
-
-	for (i = 0; i < OP_opnds(op); i++) {
-	  TN *tn = OP_opnd(op,i);
-	  // first, add this TN to the SSA universe
-	  SSA_UNIVERSE_Add_TN(tn);
-	  if (phiCongruenceClass(tn) == NULL) {
-	    PHI_CONGRUENCE_CLASS *cc = 
-	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
-	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
-	  }
-	}
-      }
-      else {
-	for (i = 0; i < PSI_opnds(op); i++) {
-	  TN *tn = PSI_opnd(op,i);
-	  // first, add this TN to the SSA universe
-	  SSA_UNIVERSE_Add_TN(tn);
-	  if (phiCongruenceClass(tn) == NULL) {
-	    PHI_CONGRUENCE_CLASS *cc = 
-	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
-	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
-	  }
+      for (i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op,i);
+	// first, add this TN to the SSA universe
+	SSA_UNIVERSE_Add_TN(tn);
+	if (phiCongruenceClass(tn) == NULL) {
+	  PHI_CONGRUENCE_CLASS *cc = 
+	    PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
+	  PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
 	}
       }
     }
   }
-
-  //
-  // Delete the tn_to_new_name map that may have been left
-  // from a previous invocation of the routine. And initialize
-  // a new one.
-  //
-  MEM_POOL_Pop(&tn_map_pool);
-  // Push it again and create the map
-  MEM_POOL_Push(&tn_map_pool);
-  //
-  // Create a map of TNs to their representative names
-  // TNs are mapped to their phiCongruenceClass'es that will
-  // not survive this routine (they are in MEM_local_pool).
-  // This is because we want to separate removing PHI resource
-  // interference from actual removing of the PHI-nodes and 
-  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
-  // map gets replaced by the phiResourceName(tn) map.
-  //
-  tn_to_new_name_map = hTN_MAP_Create(&tn_map_pool);
 
   return;
 }
@@ -3201,11 +3164,34 @@ SSA_Make_Conventional (
   repair_machine_ssa();
 
   //
+  // Delete the tn_to_new_name map that may have been left
+  // from a previous invocation of the routine. And initialize
+  // a new one.
+  //
+  MEM_POOL_Pop(&tn_map_pool);
+  // Push it again and create the map
+  MEM_POOL_Push(&tn_map_pool);
+
+  //
+  // Create a map of TNs to their representative names
+  // TNs are mapped to their phiCongruenceClass'es that will
+  // not survive this routine (they are in MEM_local_pool).
+  // This is because we want to separate removing PHI resource
+  // interference from actual removing of the PHI-nodes and 
+  // renaming the PHI resources. Thus, phiCongruenceClass(tn)
+  // map gets replaced by the phiResourceName(tn) map.
+  //
+  tn_to_new_name_map = hTN_MAP_Create(&tn_map_pool);
+
+  //
   // Initialize PHI congruence classes, etc.
   //
-  SSA_UNIVERSE_Initialize ();
+  SSA_UNIVERSE_Initialize (TOP_psi);
 
   SSA_Make_PSI_Conventional();
+
+  SSA_UNIVERSE_Finalize();
+  SSA_UNIVERSE_Initialize (TOP_phi);
 
   switch (CG_ssa_algorithm) {
   case 1: 
