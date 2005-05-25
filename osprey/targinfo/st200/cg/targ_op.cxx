@@ -227,7 +227,8 @@ BOOL OP_Can_Be_Speculative (
   /* it is the client's responsability to do that. */
   if (OP_Is_Speculative(op)) return TRUE;
   
-  if (Alias_Manager->Safe_to_speculate(Get_WN_From_Memory_OP(op)))
+  WN *wn = Get_WN_From_Memory_OP(op);
+  if (wn && Alias_Manager->Safe_to_speculate(wn))
     return TRUE;
 
   /* If we got to here, we couldn't convince ourself that we have
