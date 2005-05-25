@@ -2186,7 +2186,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   Set_Error_Phase ("Select Region Formation");
 
   if (OPT_Space) {
-      CG_select_allow_dup = FALSE;
       CG_select_freq = FALSE;
       CG_select_cycles = FALSE;
       CG_select_stores = 1;
