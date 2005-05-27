@@ -723,13 +723,30 @@ r_qualified_name (
       // so add suffix to help .s file distinguish names.
       // assume that statics in mult. pu's will 
       // get moved to global symtab, so don't need pu-num
-      if (ST_level(st) == GLOBAL_SYMTAB)
+      if (ST_level(st) == GLOBAL_SYMTAB) {
+#ifdef TARG_ST
+	// [CG] If not under -ipa mode we do not need to rename static
+	// in the global symtab.
+	// [CG] Force use of  '.' to ensure no name clashing
+	if (Emit_Global_Data || Read_Global_Data)
+	  vstr_sprintf (buf, vstr_len(*buf), 
+			"%s%d", ".", ST_index(st));
+#else
 	vstr_sprintf (buf, vstr_len(*buf), 
                     "%s%d", Label_Name_Separator, ST_index(st));
-      else
+#endif
+      } else {
+#ifdef TARG_ST
+	// [CG] Force use of  '.' to ensure no name clashing
 	vstr_sprintf (buf, vstr_len(*buf), 
-           "%s%d%s%d", Label_Name_Separator, ST_pu(Get_Current_PU_ST()),
+		      "%s%d%s%d", ".", ST_pu(Get_Current_PU_ST()),
+		           ".", ST_index(st) );
+#else
+	vstr_sprintf (buf, vstr_len(*buf), 
+		      "%s%d%s%d", Label_Name_Separator, ST_pu(Get_Current_PU_ST()),
 		           Label_Name_Separator, ST_index(st) );
+#endif
+      }
     }
     else if (*Symbol_Name_Suffix != '\0') {
       *buf = vstr_concat(*buf, Symbol_Name_Suffix);
