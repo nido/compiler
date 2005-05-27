@@ -539,7 +539,7 @@ OP_guard(OP *op) {
   if (!OP_has_predicate(op))
     return NULL;
 
-  TN *guard_tn = OP_opnd(op, OP_PREDICATE_OPND);
+  TN *guard_tn = OP_opnd(op, TOP_Find_Operand_Use(OP_code(op), OU_predicate));
   if (TN_is_true_pred(guard_tn))
     return NULL;
 
