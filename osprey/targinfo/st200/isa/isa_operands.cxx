@@ -83,24 +83,29 @@ main()
                                32, SIGNED, INVALID); 
   OPERAND_VALUE_TYPE Opd_paired = 
       ISA_Reg_Opnd_Type_Create("Opd_paired", 
-                               ISA_REGISTER_CLASS_paired, 
-                               ISA_REGISTER_SUBCLASS_UNDEFINED, 
+                               ISA_REGISTER_CLASS_integer, 
+                               ISA_REGISTER_SUBCLASS_paired, 
                                64, SIGNED, INVALID); 
   OPERAND_VALUE_TYPE Opd_predicate = 
       ISA_Reg_Opnd_Type_Create("Opd_predicate", 
                                ISA_REGISTER_CLASS_branch, 
                                ISA_REGISTER_SUBCLASS_predicate, 
                                1, UNSIGNED, INVALID); 
-  OPERAND_VALUE_TYPE Opd_simm = 
-      ISA_Lit_Opnd_Type_Create("Opd_simm", 
+  OPERAND_VALUE_TYPE Opd_sbrknum = 
+      ISA_Lit_Opnd_Type_Create("Opd_sbrknum", 
                                21, 
                                UNSIGNED, 
-                               LC_simm); 
+                               LC_sbrknum); 
   OPERAND_VALUE_TYPE Opd_xsrc2 = 
       ISA_Lit_Opnd_Type_Create("Opd_xsrc2", 
                                32, 
                                SIGNED, 
                                LC_xsrc2); 
+  OPERAND_VALUE_TYPE Opd_pairedfirst = 
+      ISA_Reg_Opnd_Type_Create("Opd_pairedfirst", 
+                               ISA_REGISTER_CLASS_integer, 
+                               ISA_REGISTER_SUBCLASS_pairedfirst, 
+                               32, SIGNED, INVALID); 
 
   /* Create the operand uses: */ 
 
@@ -194,10 +199,8 @@ main()
 		 TOP_prgins,
 		 TOP_psi,
 		 TOP_rfi,
-		 TOP_sbrk,
 		 TOP_sync,
 		 TOP_syncins,
-		 TOP_syscall,
 		 TOP_wmb,
 		 TOP_UNDEFINED);
 
@@ -266,22 +269,22 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_8", 
-		 TOP_multi_stp_i,
-		 TOP_UNDEFINED);
-
-  Operand (0, Opd_isrc2, offset);
-  Operand (1, Opd_integer, base);
-  Operand (2, Opd_integer, storeval);
-  Operand (3, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_9", 
 		 TOP_stp_i,
 		 TOP_UNDEFINED);
 
   Operand (0, Opd_isrc2, offset);
   Operand (1, Opd_integer, base);
   Operand (2, Opd_paired, storeval);
+
+  /* ====================================== */ 
+  Instruction_Group("O_9", 
+		 TOP_multi_stp_i,
+		 TOP_UNDEFINED);
+
+  Operand (0, Opd_isrc2, offset);
+  Operand (1, Opd_integer, base);
+  Operand (2, Opd_pairedfirst, storeval);
+  Operand (3, Opd_integer, multi);
 
   /* ====================================== */ 
   Instruction_Group("O_10", 
@@ -297,17 +300,6 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_11", 
-		 TOP_multi_stpc_i,
-		 TOP_UNDEFINED);
-
-  Operand (0, Opd_isrc2, offset);
-  Operand (1, Opd_integer, base);
-  Operand (2, Opd_predicate, predicate);
-  Operand (3, Opd_integer, storeval);
-  Operand (4, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_12", 
 		 TOP_stpc_i,
 		 TOP_UNDEFINED);
 
@@ -317,8 +309,20 @@ main()
   Operand (3, Opd_paired, storeval);
 
   /* ====================================== */ 
+  Instruction_Group("O_12", 
+		 TOP_multi_stpc_i,
+		 TOP_UNDEFINED);
+
+  Operand (0, Opd_isrc2, offset);
+  Operand (1, Opd_integer, base);
+  Operand (2, Opd_predicate, predicate);
+  Operand (3, Opd_pairedfirst, storeval);
+  Operand (4, Opd_integer, multi);
+
+  /* ====================================== */ 
   Instruction_Group("O_13", 
 		 TOP_igoto,
+		 TOP_prginsadd,
 		 TOP_return,
 		 TOP_UNDEFINED);
 
@@ -344,6 +348,14 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_16", 
+		 TOP_sbrk,
+		 TOP_syscall,
+		 TOP_UNDEFINED);
+
+  Operand (0, Opd_sbrknum);
+
+  /* ====================================== */ 
+  Instruction_Group("O_17", 
 		 TOP_pft_ii,
 		 TOP_prgadd_ii,
 		 TOP_prginspg_ii,
@@ -354,7 +366,7 @@ main()
   Operand (1, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_17", 
+  Instruction_Group("O_18", 
 		 TOP_stb_ii,
 		 TOP_sth_ii,
 		 TOP_stw_ii,
@@ -363,16 +375,6 @@ main()
   Operand (0, Opd_xsrc2, offset);
   Operand (1, Opd_integer, base);
   Operand (2, Opd_integer, storeval);
-
-  /* ====================================== */ 
-  Instruction_Group("O_18", 
-		 TOP_multi_stp_ii,
-		 TOP_UNDEFINED);
-
-  Operand (0, Opd_xsrc2, offset);
-  Operand (1, Opd_integer, base);
-  Operand (2, Opd_integer, storeval);
-  Operand (3, Opd_integer, multi);
 
   /* ====================================== */ 
   Instruction_Group("O_19", 
@@ -385,6 +387,16 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_20", 
+		 TOP_multi_stp_ii,
+		 TOP_UNDEFINED);
+
+  Operand (0, Opd_xsrc2, offset);
+  Operand (1, Opd_integer, base);
+  Operand (2, Opd_pairedfirst, storeval);
+  Operand (3, Opd_integer, multi);
+
+  /* ====================================== */ 
+  Instruction_Group("O_21", 
 		 TOP_stbc_ii,
 		 TOP_sthc_ii,
 		 TOP_stwc_ii,
@@ -394,17 +406,6 @@ main()
   Operand (1, Opd_integer, base);
   Operand (2, Opd_predicate, predicate);
   Operand (3, Opd_integer, storeval);
-
-  /* ====================================== */ 
-  Instruction_Group("O_21", 
-		 TOP_multi_stpc_ii,
-		 TOP_UNDEFINED);
-
-  Operand (0, Opd_xsrc2, offset);
-  Operand (1, Opd_integer, base);
-  Operand (2, Opd_predicate, predicate);
-  Operand (3, Opd_integer, storeval);
-  Operand (4, Opd_integer, multi);
 
   /* ====================================== */ 
   Instruction_Group("O_22", 
@@ -418,6 +419,17 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_23", 
+		 TOP_multi_stpc_ii,
+		 TOP_UNDEFINED);
+
+  Operand (0, Opd_xsrc2, offset);
+  Operand (1, Opd_integer, base);
+  Operand (2, Opd_predicate, predicate);
+  Operand (3, Opd_pairedfirst, storeval);
+  Operand (4, Opd_integer, multi);
+
+  /* ====================================== */ 
+  Instruction_Group("O_24", 
 		 TOP_mtb,
 		 TOP_UNDEFINED);
 
@@ -425,16 +437,16 @@ main()
   Operand (0, Opd_integer);
 
   /* ====================================== */ 
-  Instruction_Group("O_24", 
+  Instruction_Group("O_25", 
 		 TOP_stwl,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_branch);
   Operand (0, Opd_integer);
-  Operand (1, Opd_integer);
+  Operand (1, Opd_integer, storeval);
 
   /* ====================================== */ 
-  Instruction_Group("O_25", 
+  Instruction_Group("O_26", 
 		 TOP_andl_r_b,
 		 TOP_cmpeq_r_b,
 		 TOP_cmpgeu_r_b,
@@ -456,7 +468,7 @@ main()
   Operand (1, Opd_integer, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_26", 
+  Instruction_Group("O_27", 
 		 TOP_andl_i_b,
 		 TOP_cmpeq_i_b,
 		 TOP_cmpgeu_i_b,
@@ -478,7 +490,7 @@ main()
   Operand (1, Opd_isrc2, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_27", 
+  Instruction_Group("O_28", 
 		 TOP_andl_ii_b,
 		 TOP_cmpeq_ii_b,
 		 TOP_cmpgeu_ii_b,
@@ -500,7 +512,7 @@ main()
   Operand (1, Opd_xsrc2, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_28", 
+  Instruction_Group("O_29", 
 		 TOP_dfixup,
 		 TOP_ffixup,
 		 TOP_ifixup,
@@ -509,7 +521,7 @@ main()
   Result (0, Opd_integer);
 
   /* ====================================== */ 
-  Instruction_Group("O_29", 
+  Instruction_Group("O_30", 
 		 TOP_mfb,
 		 TOP_UNDEFINED);
 
@@ -517,7 +529,7 @@ main()
   Operand (0, Opd_branch);
 
   /* ====================================== */ 
-  Instruction_Group("O_30", 
+  Instruction_Group("O_31", 
 		 TOP_slctf_r,
 		 TOP_slct_r,
 		 TOP_UNDEFINED);
@@ -528,7 +540,7 @@ main()
   Operand (2, Opd_integer, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_31", 
+  Instruction_Group("O_32", 
 		 TOP_slctf_i,
 		 TOP_slct_i,
 		 TOP_UNDEFINED);
@@ -539,7 +551,7 @@ main()
   Operand (2, Opd_isrc2, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_32", 
+  Instruction_Group("O_33", 
 		 TOP_slctf_ii,
 		 TOP_slct_ii,
 		 TOP_UNDEFINED);
@@ -548,14 +560,6 @@ main()
   Operand (0, Opd_branch, condition);
   Operand (1, Opd_integer, opnd1);
   Operand (2, Opd_xsrc2, opnd2);
-
-  /* ====================================== */ 
-  Instruction_Group("O_33", 
-		 TOP_ldwl,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Operand (0, Opd_integer);
 
   /* ====================================== */ 
   Instruction_Group("O_34", 
@@ -568,6 +572,7 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_35", 
+		 TOP_addpc_r,
 		 TOP_bswap,
 		 TOP_clz,
 		 TOP_mov_r,
@@ -710,6 +715,7 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_40", 
+		 TOP_addpc_i,
 		 TOP_mov_i,
 		 TOP_UNDEFINED);
 
@@ -727,26 +733,16 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_42", 
-		 TOP_ldwc_i,
+		 TOP_movc,
+		 TOP_movcf,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_integer);
   Operand (0, Opd_predicate, predicate);
-  Operand (1, Opd_isrc2, offset);
-  Operand (2, Opd_integer, base);
+  Operand (1, Opd_integer);
 
   /* ====================================== */ 
   Instruction_Group("O_43", 
-		 TOP_ldwc_ii,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Operand (0, Opd_predicate, predicate);
-  Operand (1, Opd_xsrc2, offset);
-  Operand (2, Opd_integer, base);
-
-  /* ====================================== */ 
-  Instruction_Group("O_44", 
 		 TOP_ldw_d_ii,
 		 TOP_ldw_ii,
 		 TOP_UNDEFINED);
@@ -756,7 +752,8 @@ main()
   Operand (1, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_45", 
+  Instruction_Group("O_44", 
+		 TOP_addpc_ii,
 		 TOP_mov_ii,
 		 TOP_UNDEFINED);
 
@@ -764,7 +761,7 @@ main()
   Operand (0, Opd_xsrc2, opnd1);
 
   /* ====================================== */ 
-  Instruction_Group("O_46", 
+  Instruction_Group("O_45", 
 		 TOP_sub_ii,
 		 TOP_UNDEFINED);
 
@@ -773,7 +770,7 @@ main()
   Operand (1, Opd_integer, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_47", 
+  Instruction_Group("O_46", 
 		 TOP_addcg,
 		 TOP_divs,
 		 TOP_UNDEFINED);
@@ -785,85 +782,26 @@ main()
   Operand (2, Opd_branch);
 
   /* ====================================== */ 
-  Instruction_Group("O_48", 
-		 TOP_multi_convfd,
-		 TOP_multi_convid,
-		 TOP_multi_convud,
+  Instruction_Group("O_47", 
+		 TOP_extractp,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_integer);
+  Result (1, Opd_integer);
+  Operand (0, Opd_paired);
+
+  /* ====================================== */ 
+  Instruction_Group("O_48", 
+		 TOP_multi_extractp,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_integer);
+  Result (1, Opd_integer);
+  Operand (0, Opd_pairedfirst);
+  Operand (1, Opd_integer, multi);
 
   /* ====================================== */ 
   Instruction_Group("O_49", 
-		 TOP_multi_sqrtd,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_integer);
-  Operand (1, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_50", 
-		 TOP_multi_addd,
-		 TOP_multi_divd,
-		 TOP_multi_muld,
-		 TOP_multi_subd,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_integer);
-  Operand (1, Opd_integer, multi);
-  Operand (2, Opd_integer);
-  Operand (3, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_51", 
-		 TOP_multi_ldp_i,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_isrc2, offset);
-  Operand (1, Opd_integer, base);
-
-  /* ====================================== */ 
-  Instruction_Group("O_52", 
-		 TOP_multi_ldpc_i,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_predicate);
-  Operand (1, Opd_isrc2, offset);
-  Operand (2, Opd_integer, base);
-
-  /* ====================================== */ 
-  Instruction_Group("O_53", 
-		 TOP_multi_ldpc_ii,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_predicate);
-  Operand (1, Opd_xsrc2, offset);
-  Operand (2, Opd_integer, base);
-
-  /* ====================================== */ 
-  Instruction_Group("O_54", 
-		 TOP_multi_ldp_ii,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_integer);
-  Result (1, Opd_integer, multi);
-  Operand (0, Opd_xsrc2, offset);
-  Operand (1, Opd_integer, base);
-
-  /* ====================================== */ 
-  Instruction_Group("O_55", 
 		 TOP_getpc,
 		 TOP_UNDEFINED);
 
@@ -871,7 +809,7 @@ main()
   Operand (0, Opd_btarg);
 
   /* ====================================== */ 
-  Instruction_Group("O_56", 
+  Instruction_Group("O_50", 
 		 TOP_call,
 		 TOP_UNDEFINED);
 
@@ -879,7 +817,7 @@ main()
   Operand (0, Opd_btarg, target);
 
   /* ====================================== */ 
-  Instruction_Group("O_57", 
+  Instruction_Group("O_51", 
 		 TOP_icall,
 		 TOP_UNDEFINED);
 
@@ -887,69 +825,24 @@ main()
   Operand (0, Opd_link);
 
   /* ====================================== */ 
-  Instruction_Group("O_58", 
-		 TOP_convfi,
+  Instruction_Group("O_52", 
 		 TOP_convfi_n,
-		 TOP_convfu,
-		 TOP_convif,
 		 TOP_convif_n,
-		 TOP_convuf,
+		 TOP_ldwl,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
   Operand (0, Opd_integer);
 
   /* ====================================== */ 
-  Instruction_Group("O_59", 
-		 TOP_multi_convdf,
-		 TOP_multi_convdi,
-		 TOP_multi_convdu,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_nolink);
-  Operand (0, Opd_integer);
-  Operand (1, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_60", 
-		 TOP_multi_cmpeqd,
-		 TOP_multi_cmpged,
-		 TOP_multi_cmpgtd,
-		 TOP_multi_cmpled,
-		 TOP_multi_cmpltd,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_nolink);
-  Operand (0, Opd_integer);
-  Operand (1, Opd_integer, multi);
-  Operand (2, Opd_integer);
-  Operand (3, Opd_integer, multi);
-
-  /* ====================================== */ 
-  Instruction_Group("O_61", 
-		 TOP_sqrtf,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_nolink);
-  Operand (0, Opd_integer, opnd1);
-
-  /* ====================================== */ 
-  Instruction_Group("O_62", 
-		 TOP_addf,
+  Instruction_Group("O_53", 
 		 TOP_addf_n,
-		 TOP_cmpeqf,
-		 TOP_cmpgef,
-		 TOP_cmpgtf,
-		 TOP_cmplef,
-		 TOP_cmpltf,
-		 TOP_divf,
 		 TOP_divu,
 		 TOP_div,
 		 TOP_mul32_r,
 		 TOP_mul64hu_r,
 		 TOP_mul64h_r,
 		 TOP_mulfrac_r,
-		 TOP_mulf,
 		 TOP_mulf_n,
 		 TOP_mulhhs_r,
 		 TOP_mulhhu_r,
@@ -966,7 +859,6 @@ main()
 		 TOP_mull_r,
 		 TOP_remu,
 		 TOP_rem,
-		 TOP_subf,
 		 TOP_subf_n,
 		 TOP_UNDEFINED);
 
@@ -975,7 +867,7 @@ main()
   Operand (1, Opd_integer, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_63", 
+  Instruction_Group("O_54", 
 		 TOP_mul32_i,
 		 TOP_mul64hu_i,
 		 TOP_mul64h_i,
@@ -1000,7 +892,7 @@ main()
   Operand (1, Opd_isrc2, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_64", 
+  Instruction_Group("O_55", 
 		 TOP_mul32_ii,
 		 TOP_mul64hu_ii,
 		 TOP_mul64h_ii,
@@ -1025,7 +917,7 @@ main()
   Operand (1, Opd_xsrc2, opnd2);
 
   /* ====================================== */ 
-  Instruction_Group("O_65", 
+  Instruction_Group("O_56", 
 		 TOP_ldbu_d_i,
 		 TOP_ldbu_i,
 		 TOP_ldb_d_i,
@@ -1041,34 +933,22 @@ main()
   Operand (1, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_66", 
-		 TOP_convdf,
-		 TOP_convdi,
-		 TOP_convdu,
+  Instruction_Group("O_57", 
+		 TOP_returnadd,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
-  Operand (0, Opd_paired);
+  Operand (0, Opd_link);
+  Operand (1, Opd_integer);
+  Operand (2, Opd_isrc2);
 
   /* ====================================== */ 
-  Instruction_Group("O_67", 
-		 TOP_cmpeqd,
-		 TOP_cmpged,
-		 TOP_cmpgtd,
-		 TOP_cmpled,
-		 TOP_cmpltd,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_nolink);
-  Operand (0, Opd_paired, opnd1);
-  Operand (1, Opd_paired, opnd2);
-
-  /* ====================================== */ 
-  Instruction_Group("O_68", 
+  Instruction_Group("O_58", 
 		 TOP_ldbc_i,
 		 TOP_ldbuc_i,
 		 TOP_ldhc_i,
 		 TOP_ldhuc_i,
+		 TOP_ldwc_i,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
@@ -1077,11 +957,12 @@ main()
   Operand (2, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_69", 
+  Instruction_Group("O_59", 
 		 TOP_ldbc_ii,
 		 TOP_ldbuc_ii,
 		 TOP_ldhc_ii,
 		 TOP_ldhuc_ii,
+		 TOP_ldwc_ii,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_nolink);
@@ -1090,7 +971,7 @@ main()
   Operand (2, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_70", 
+  Instruction_Group("O_60", 
 		 TOP_ldbu_d_ii,
 		 TOP_ldbu_ii,
 		 TOP_ldb_d_ii,
@@ -1106,17 +987,16 @@ main()
   Operand (1, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_71", 
-		 TOP_convfd,
-		 TOP_convid,
-		 TOP_convud,
+  Instruction_Group("O_61", 
+		 TOP_composep,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
   Operand (0, Opd_integer);
+  Operand (1, Opd_integer);
 
   /* ====================================== */ 
-  Instruction_Group("O_72", 
+  Instruction_Group("O_62", 
 		 TOP_ldp_i,
 		 TOP_UNDEFINED);
 
@@ -1125,51 +1005,101 @@ main()
   Operand (1, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_73", 
-		 TOP_sqrtd,
+  Instruction_Group("O_63", 
+		 TOP_movp,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
   Operand (0, Opd_paired, opnd1);
 
   /* ====================================== */ 
-  Instruction_Group("O_74", 
-		 TOP_addd,
-		 TOP_divd,
-		 TOP_muld,
-		 TOP_subd,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_paired);
-  Operand (0, Opd_paired, opnd1);
-  Operand (1, Opd_paired, opnd2);
-
-  /* ====================================== */ 
-  Instruction_Group("O_75", 
+  Instruction_Group("O_64", 
 		 TOP_ldpc_i,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
-  Operand (0, Opd_predicate);
+  Operand (0, Opd_predicate, predicate);
   Operand (1, Opd_isrc2, offset);
   Operand (2, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_76", 
+  Instruction_Group("O_65", 
 		 TOP_ldpc_ii,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
-  Operand (0, Opd_predicate);
+  Operand (0, Opd_predicate, predicate);
   Operand (1, Opd_xsrc2, offset);
   Operand (2, Opd_integer, base);
 
   /* ====================================== */ 
-  Instruction_Group("O_77", 
+  Instruction_Group("O_66", 
 		 TOP_ldp_ii,
 		 TOP_UNDEFINED);
 
   Result (0, Opd_paired);
+  Operand (0, Opd_xsrc2, offset);
+  Operand (1, Opd_integer, base);
+
+  /* ====================================== */ 
+  Instruction_Group("O_67", 
+		 TOP_multi_composep,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
+  Operand (0, Opd_integer);
+  Operand (1, Opd_integer);
+
+  /* ====================================== */ 
+  Instruction_Group("O_68", 
+		 TOP_multi_ldp_i,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
+  Operand (0, Opd_isrc2, offset);
+  Operand (1, Opd_integer, base);
+
+  /* ====================================== */ 
+  Instruction_Group("O_69", 
+		 TOP_multi_movp,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
+  Operand (0, Opd_pairedfirst);
+  Operand (1, Opd_integer, multi);
+
+  /* ====================================== */ 
+  Instruction_Group("O_70", 
+		 TOP_multi_ldpc_i,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
+  Operand (0, Opd_predicate, predicate);
+  Operand (1, Opd_isrc2, offset);
+  Operand (2, Opd_integer, base);
+
+  /* ====================================== */ 
+  Instruction_Group("O_71", 
+		 TOP_multi_ldpc_ii,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
+  Operand (0, Opd_predicate, predicate);
+  Operand (1, Opd_xsrc2, offset);
+  Operand (2, Opd_integer, base);
+
+  /* ====================================== */ 
+  Instruction_Group("O_72", 
+		 TOP_multi_ldp_ii,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_pairedfirst);
+  Result (1, Opd_integer, multi);
   Operand (0, Opd_xsrc2, offset);
   Operand (1, Opd_integer, base);
 

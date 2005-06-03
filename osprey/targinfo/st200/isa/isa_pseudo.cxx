@@ -40,50 +40,6 @@
  
 main()
 {
-  Machine_To_Pseudo(TOP_cmpled, TOP_cmpged);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-
-  Pseudo_To_Machine(TOP_cmpged, TOP_cmpled);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-  Map_Arg("OPND(1)", "OPND(0)");
-
-
-  Machine_To_Pseudo(TOP_cmplef, TOP_cmpgef);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-
-  Pseudo_To_Machine(TOP_cmpgef, TOP_cmplef);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-  Map_Arg("OPND(1)", "OPND(0)");
-
-
-  Machine_To_Pseudo(TOP_cmpltd, TOP_cmpgtd);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-
-  Pseudo_To_Machine(TOP_cmpgtd, TOP_cmpltd);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-  Map_Arg("OPND(1)", "OPND(0)");
-
-
-  Machine_To_Pseudo(TOP_cmpltf, TOP_cmpgtf);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(1)", "OPND(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-
-  Pseudo_To_Machine(TOP_cmpgtf, TOP_cmpltf);
-  Map_Arg("RESULT(0)", "RESULT(0)");
-  Map_Arg("OPND(0)", "OPND(1)");
-  Map_Arg("OPND(1)", "OPND(0)");
-
-
   Machine_To_Pseudo(TOP_idle, TOP_goto);
   Require("OPND(0) == 0");
 

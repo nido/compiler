@@ -48,10 +48,11 @@
 int 
 main (int argc, char *argv[]) 
 { 
-  RESOURCE Resource_ST220_ISSUE = RESOURCE_Create("Resource_ST220_ISSUE", 4);
-  RESOURCE Resource_ST220_CTL = RESOURCE_Create("Resource_ST220_CTL", 1);
-  RESOURCE Resource_ST220_MEM = RESOURCE_Create("Resource_ST220_MEM", 1);
-  RESOURCE Resource_ST220_ODD = RESOURCE_Create("Resource_ST220_ODD", 2);
+  RESOURCE Resource_st220_ISSUE = RESOURCE_Create("Resource_st220_ISSUE", 4);
+  RESOURCE Resource_st220_MEM = RESOURCE_Create("Resource_st220_MEM", 1);
+  RESOURCE Resource_st220_CTL = RESOURCE_Create("Resource_st220_CTL", 1);
+  RESOURCE Resource_st220_ODD = RESOURCE_Create("Resource_st220_ODD", 2);
+  RESOURCE Resource_st220_EVEN = RESOURCE_Create("Resource_st220_EVEN", 2);
 
   /* ======================================================
    * Resource description for the ISA_SUBSET_st220
@@ -66,9 +67,9 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Operand_Access_Time(0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_CTL, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group1",
@@ -77,9 +78,9 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Operand_Access_Time(1);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_CTL, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group2",
@@ -92,10 +93,10 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_MEM, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_MEM, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group3",
@@ -108,8 +109,8 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_MEM, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_MEM, 0);
 
 
   Instruction_Group("group4",
@@ -118,9 +119,9 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(3);
   Any_Operand_Access_Time(1);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_CTL, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group5",
@@ -236,7 +237,7 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(3);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
   Instruction_Group("group6",
@@ -292,9 +293,9 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(3);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group7",
@@ -302,7 +303,7 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
   Instruction_Group("group8",
@@ -311,9 +312,9 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_CTL, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group9",
@@ -321,9 +322,9 @@ main (int argc, char *argv[])
 		TOP_UNDEFINED);
 
   Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group10",
@@ -341,10 +342,10 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(5);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_MEM, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_MEM, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group11",
@@ -365,9 +366,9 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(5);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group12",
@@ -385,8 +386,8 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(5);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_MEM, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_MEM, 0);
 
 
   Instruction_Group("group13",
@@ -420,8 +421,8 @@ main (int argc, char *argv[])
 
   Any_Result_Available_Time(5);
   Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group14",
@@ -464,7 +465,7 @@ main (int argc, char *argv[])
 		TOP_sbrk,
 		TOP_UNDEFINED);
 
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
   Instruction_Group("group15",
@@ -473,9 +474,9 @@ main (int argc, char *argv[])
 		TOP_syncins,
 		TOP_UNDEFINED);
 
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_CTL, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Instruction_Group("group16",
@@ -485,10 +486,10 @@ main (int argc, char *argv[])
 		TOP_syscall,
 		TOP_UNDEFINED);
 
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
   Instruction_Group("group17",
@@ -510,9 +511,9 @@ main (int argc, char *argv[])
 		TOP_asm_31_ii,
 		TOP_UNDEFINED);
 
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ISSUE, 0);
-  Resource_Requirement(Resource_ST220_ODD, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
 
 
   Machine_Done("st220.c");

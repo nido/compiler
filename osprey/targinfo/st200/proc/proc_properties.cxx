@@ -96,7 +96,9 @@ main()
    has_fast_recip,
    has_predicate_branches,
    has_predicate_calls,
+   has_predicate_loads,
    has_predicate_returns,
+   has_predicate_stores,
    has_prefetch,
    has_same_cycle_branch_shadow,
    has_swp_branches,
@@ -163,8 +165,18 @@ main()
   Processor_Group (has_predicate_calls,
 			PROCESSOR_UNDEFINED);
 
+  has_predicate_loads = PROC_Property_Create ("has_predicate_loads");
+  Processor_Group (has_predicate_loads,
+			PROCESSOR_st235,
+			PROCESSOR_UNDEFINED);
+
   has_predicate_returns = PROC_Property_Create ("has_predicate_returns");
   Processor_Group (has_predicate_returns,
+			PROCESSOR_UNDEFINED);
+
+  has_predicate_stores = PROC_Property_Create ("has_predicate_stores");
+  Processor_Group (has_predicate_stores,
+			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
 
   has_prefetch = PROC_Property_Create ("has_prefetch");

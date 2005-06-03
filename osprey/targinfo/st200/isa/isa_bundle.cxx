@@ -61,6 +61,7 @@ main()
  /* ===== Specification for ALUX_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE ALUX_Unit = ISA_Exec_Unit_Type_Create("ALUX_Unit", NULL); 
   Instruction_Exec_Unit_Group(ALUX_Unit, 
+		 TOP_addpc_ii, 
 		 TOP_add_ii, 
 		 TOP_andc_ii, 
 		 TOP_andl_ii_b, 
@@ -183,8 +184,8 @@ main()
   ISA_EXEC_UNIT_TYPE ALU_Unit = ISA_Exec_Unit_Type_Create("ALU_Unit", NULL); 
   Instruction_Exec_Unit_Group(ALU_Unit, 
 		 TOP_addcg, 
-		 TOP_addd, 
-		 TOP_addf, 
+		 TOP_addpc_r, 
+		 TOP_addpc_i, 
 		 TOP_add_r, 
 		 TOP_add_i, 
 		 TOP_andc_r, 
@@ -233,14 +234,10 @@ main()
 		 TOP_bswap, 
 		 TOP_bwd_bar, 
 		 TOP_clz, 
-		 TOP_cmpeqd, 
-		 TOP_cmpeqf, 
 		 TOP_cmpeq_r_b, 
 		 TOP_cmpeq_r_r, 
 		 TOP_cmpeq_i_b, 
 		 TOP_cmpeq_i_r, 
-		 TOP_cmpged, 
-		 TOP_cmpgef, 
 		 TOP_cmpgeu_r_b, 
 		 TOP_cmpgeu_r_r, 
 		 TOP_cmpgeu_i_b, 
@@ -249,8 +246,6 @@ main()
 		 TOP_cmpge_r_r, 
 		 TOP_cmpge_i_b, 
 		 TOP_cmpge_i_r, 
-		 TOP_cmpgtd, 
-		 TOP_cmpgtf, 
 		 TOP_cmpgtu_r_b, 
 		 TOP_cmpgtu_r_r, 
 		 TOP_cmpgtu_i_b, 
@@ -259,8 +254,6 @@ main()
 		 TOP_cmpgt_r_r, 
 		 TOP_cmpgt_i_b, 
 		 TOP_cmpgt_i_r, 
-		 TOP_cmpled, 
-		 TOP_cmplef, 
 		 TOP_cmpleu_r_b, 
 		 TOP_cmpleu_r_r, 
 		 TOP_cmpleu_i_b, 
@@ -269,8 +262,6 @@ main()
 		 TOP_cmple_r_r, 
 		 TOP_cmple_i_b, 
 		 TOP_cmple_i_r, 
-		 TOP_cmpltd, 
-		 TOP_cmpltf, 
 		 TOP_cmpltu_r_b, 
 		 TOP_cmpltu_r_r, 
 		 TOP_cmpltu_i_b, 
@@ -283,23 +274,13 @@ main()
 		 TOP_cmpne_r_r, 
 		 TOP_cmpne_i_b, 
 		 TOP_cmpne_i_r, 
-		 TOP_convdf, 
-		 TOP_convdi, 
-		 TOP_convdu, 
-		 TOP_convfd, 
-		 TOP_convfi, 
-		 TOP_convfu, 
-		 TOP_convid, 
-		 TOP_convif, 
-		 TOP_convud, 
-		 TOP_convuf, 
+		 TOP_composep, 
 		 TOP_dfixup, 
-		 TOP_divd, 
-		 TOP_divf, 
 		 TOP_divs, 
 		 TOP_divu, 
 		 TOP_div, 
 		 TOP_end_pregtn, 
+		 TOP_extractp, 
 		 TOP_ffixup, 
 		 TOP_fwd_bar, 
 		 TOP_ifixup, 
@@ -332,31 +313,19 @@ main()
 		 TOP_minu_i, 
 		 TOP_min_r, 
 		 TOP_min_i, 
+		 TOP_movc, 
+		 TOP_movcf, 
+		 TOP_movp, 
 		 TOP_mov_r, 
 		 TOP_mov_i, 
 		 TOP_mtb, 
-		 TOP_muld, 
-		 TOP_mulf, 
-		 TOP_multi_addd, 
-		 TOP_multi_cmpeqd, 
-		 TOP_multi_cmpged, 
-		 TOP_multi_cmpgtd, 
-		 TOP_multi_cmpled, 
-		 TOP_multi_cmpltd, 
-		 TOP_multi_convdf, 
-		 TOP_multi_convdi, 
-		 TOP_multi_convdu, 
-		 TOP_multi_convfd, 
-		 TOP_multi_convid, 
-		 TOP_multi_convud, 
-		 TOP_multi_divd, 
+		 TOP_multi_composep, 
+		 TOP_multi_extractp, 
 		 TOP_multi_ldpc_i, 
 		 TOP_multi_ldp_i, 
-		 TOP_multi_muld, 
-		 TOP_multi_sqrtd, 
+		 TOP_multi_movp, 
 		 TOP_multi_stpc_i, 
 		 TOP_multi_stp_i, 
-		 TOP_multi_subd, 
 		 TOP_nandl_r_b, 
 		 TOP_nandl_r_r, 
 		 TOP_nandl_i_b, 
@@ -404,8 +373,6 @@ main()
 		 TOP_slct_r, 
 		 TOP_slct_i, 
 		 TOP_spadjust, 
-		 TOP_sqrtd, 
-		 TOP_sqrtf, 
 		 TOP_stbc_i, 
 		 TOP_stb_i, 
 		 TOP_sthc_i, 
@@ -415,8 +382,6 @@ main()
 		 TOP_stwc_i, 
 		 TOP_stwl, 
 		 TOP_stw_i, 
-		 TOP_subd, 
-		 TOP_subf, 
 		 TOP_sub_r, 
 		 TOP_sub_i, 
 		 TOP_sxtb, 
@@ -439,9 +404,11 @@ main()
 		 TOP_icall, 
 		 TOP_idle, 
 		 TOP_igoto, 
+		 TOP_prginsadd, 
 		 TOP_pswclr, 
 		 TOP_pswset, 
 		 TOP_return, 
+		 TOP_returnadd, 
 		 TOP_rfi, 
 		 TOP_syncins, 
 		 TOP_UNDEFINED); 
@@ -455,9 +422,9 @@ main()
 		 TOP_subf_n, 
 		 TOP_UNDEFINED); 
 
- /* ===== Specification for MUL_Unit Type ===== */ 
-  ISA_EXEC_UNIT_TYPE MUL_Unit = ISA_Exec_Unit_Type_Create("MUL_Unit", NULL); 
-  Instruction_Exec_Unit_Group(MUL_Unit, 
+ /* ===== Specification for ODD_Unit Type ===== */ 
+  ISA_EXEC_UNIT_TYPE ODD_Unit = ISA_Exec_Unit_Type_Create("ODD_Unit", NULL); 
+  Instruction_Exec_Unit_Group(ODD_Unit, 
 		 TOP_mul32_r, 
 		 TOP_mul32_i, 
 		 TOP_mul64hu_r, 
@@ -514,7 +481,7 @@ main()
 
   ISA_Bundle_Type_Create("Template_4", ".Template_4", 1);
   Alignment(32, 64);
-  Slot(0, MUL_Unit);
+  Slot(0, ODD_Unit);
   Stop(0);
 
   ISA_Bundle_Type_Create("Template_5", ".Template_5", 2);
@@ -534,7 +501,7 @@ main()
 
   ISA_Bundle_Type_Create("Template_8", ".Template_8", 2);
   Slot(0, ALU_Unit);
-  Slot(1, MUL_Unit);
+  Slot(1, ODD_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_9", ".Template_9", 2);
@@ -551,12 +518,12 @@ main()
   ISA_Bundle_Type_Create("Template_11", ".Template_11", 2);
   Alignment(0, 64);
   Slot(0, CTL_Unit);
-  Slot(1, MUL_Unit);
+  Slot(1, ODD_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_12", ".Template_12", 2);
   Slot(0, EVEN_Unit);
-  Slot(1, MUL_Unit);
+  Slot(1, ODD_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_13", ".Template_13", 3);
@@ -580,7 +547,7 @@ main()
   ISA_Bundle_Type_Create("Template_16", ".Template_16", 3);
   Slot(0, ALU_Unit);
   Slot(1, ALU_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_17", ".Template_17", 3);
@@ -598,7 +565,7 @@ main()
   ISA_Bundle_Type_Create("Template_19", ".Template_19", 3);
   Slot(0, ALU_Unit);
   Slot(1, CTL_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_20", ".Template_20", 3);
@@ -611,14 +578,14 @@ main()
   ISA_Bundle_Type_Create("Template_21", ".Template_21", 3);
   Slot(0, ALU_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_22", ".Template_22", 3);
   Alignment(32, 64);
   Slot(0, ALU_Unit);
-  Slot(1, MUL_Unit);
-  Slot(2, MUL_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_23", ".Template_23", 3);
@@ -638,27 +605,27 @@ main()
   Alignment(32, 64);
   Slot(0, ALUX_Unit);
   Slot(1, ALUX_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_26", ".Template_26", 3);
   Slot(0, CTL_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_27", ".Template_27", 3);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_28", ".Template_28", 3);
   Alignment(32, 64);
   Slot(0, EVEN_Unit);
-  Slot(1, MUL_Unit);
-  Slot(2, MUL_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ODD_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_29", ".Template_29", 4);
@@ -686,7 +653,7 @@ main()
   Slot(0, ALU_Unit);
   Slot(1, ALU_Unit);
   Slot(2, ALU_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_33", ".Template_33", 4);
@@ -707,7 +674,7 @@ main()
   Slot(0, ALU_Unit);
   Slot(1, ALU_Unit);
   Slot(2, CTL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_36", ".Template_36", 4);
@@ -721,14 +688,14 @@ main()
   Slot(0, ALU_Unit);
   Slot(1, ALU_Unit);
   Slot(2, EVEN_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_38", ".Template_38", 4);
   Slot(0, ALU_Unit);
   Slot(1, ALU_Unit);
-  Slot(2, MUL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_39", ".Template_39", 4);
@@ -749,7 +716,7 @@ main()
   Slot(0, ALU_Unit);
   Slot(1, ALUX_Unit);
   Slot(2, ALUX_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_42", ".Template_42", 4);
@@ -764,29 +731,29 @@ main()
   Slot(0, ALU_Unit);
   Slot(1, CTL_Unit);
   Slot(2, EVEN_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_44", ".Template_44", 4);
   Alignment(0, 64);
   Slot(0, ALU_Unit);
   Slot(1, CTL_Unit);
-  Slot(2, MUL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_45", ".Template_45", 4);
   Slot(0, ALU_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, EVEN_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_46", ".Template_46", 4);
   Slot(0, ALU_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_47", ".Template_47", 4);
@@ -809,14 +776,14 @@ main()
   Slot(0, ALUX_Unit);
   Slot(1, ALUX_Unit);
   Slot(2, CTL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_50", ".Template_50", 4);
   Slot(0, ALUX_Unit);
   Slot(1, ALUX_Unit);
   Slot(2, EVEN_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_51", ".Template_51", 4);
@@ -824,22 +791,22 @@ main()
   Slot(0, CTL_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, EVEN_Unit);
-  Slot(3, MUL_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_52", ".Template_52", 4);
   Alignment(0, 64);
   Slot(0, CTL_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
   ISA_Bundle_Type_Create("Template_53", ".Template_53", 4);
   Slot(0, EVEN_Unit);
   Slot(1, EVEN_Unit);
-  Slot(2, MUL_Unit);
-  Slot(3, MUL_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ODD_Unit);
   Stop(3);
 
 

@@ -52,12 +52,14 @@ main()
     cache, 
     call, 
     cmp, 
+    compose, 
     cond, 
     defs_fcc, 
     defs_fcr, 
     dismissible, 
     div, 
     dummy, 
+    extract, 
     f_group, 
     fadd, 
     flop, 
@@ -93,6 +95,7 @@ main()
     unsafe, 
     unsign, 
     var_opnds, 
+    widemove, 
     xfer, 
     zext; 
 
@@ -289,6 +292,12 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  compose = ISA_Property_Create ("compose"); 
+  Instruction_Group (compose, 
+		 TOP_composep, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   cond = ISA_Property_Create ("cond"); 
   Instruction_Group (cond, 
 		 TOP_brf, 
@@ -338,6 +347,14 @@ main()
 		 TOP_fwd_bar, 
 		 TOP_ifixup, 
 		 TOP_label, 
+		 TOP_movc, 
+		 TOP_movcf, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  extract = ISA_Property_Create ("extract"); 
+  Instruction_Group (extract, 
+		 TOP_extractp, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -348,65 +365,26 @@ main()
   /* ====================================== */ 
   fadd = ISA_Property_Create ("fadd"); 
   Instruction_Group (fadd, 
-		 TOP_addd, 
-		 TOP_addf, 
 		 TOP_addf_n, 
-		 TOP_multi_addd, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   flop = ISA_Property_Create ("flop"); 
   Instruction_Group (flop, 
-		 TOP_addd, 
-		 TOP_addf, 
 		 TOP_addf_n, 
-		 TOP_cmpeqd, 
-		 TOP_cmpeqf, 
-		 TOP_cmpged, 
-		 TOP_cmpgef, 
-		 TOP_cmpgtd, 
-		 TOP_cmpgtf, 
-		 TOP_cmpled, 
-		 TOP_cmplef, 
-		 TOP_cmpltd, 
-		 TOP_cmpltf, 
-		 TOP_divd, 
-		 TOP_divf, 
-		 TOP_muld, 
-		 TOP_mulf, 
 		 TOP_mulf_n, 
-		 TOP_multi_addd, 
-		 TOP_multi_cmpeqd, 
-		 TOP_multi_cmpged, 
-		 TOP_multi_cmpgtd, 
-		 TOP_multi_cmpled, 
-		 TOP_multi_cmpltd, 
-		 TOP_multi_divd, 
-		 TOP_multi_muld, 
-		 TOP_multi_sqrtd, 
-		 TOP_multi_subd, 
-		 TOP_sqrtd, 
-		 TOP_sqrtf, 
-		 TOP_subd, 
-		 TOP_subf, 
 		 TOP_subf_n, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   fmul = ISA_Property_Create ("fmul"); 
   Instruction_Group (fmul, 
-		 TOP_muld, 
-		 TOP_mulf, 
 		 TOP_mulf_n, 
-		 TOP_multi_muld, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
   fsub = ISA_Property_Create ("fsub"); 
   Instruction_Group (fsub, 
-		 TOP_multi_subd, 
-		 TOP_subd, 
-		 TOP_subf, 
 		 TOP_subf_n, 
 		 TOP_UNDEFINED); 
 
@@ -418,6 +396,34 @@ main()
   /* ====================================== */ 
   guard_t = ISA_Property_Create ("guard_t"); 
   Instruction_Group (guard_t, 
+		 TOP_ldbc_i, 
+		 TOP_ldbc_ii, 
+		 TOP_ldbuc_i, 
+		 TOP_ldbuc_ii, 
+		 TOP_ldhc_i, 
+		 TOP_ldhc_ii, 
+		 TOP_ldhuc_i, 
+		 TOP_ldhuc_ii, 
+		 TOP_ldpc_i, 
+		 TOP_ldpc_ii, 
+		 TOP_ldwc_i, 
+		 TOP_ldwc_ii, 
+		 TOP_movc, 
+		 TOP_movcf, 
+		 TOP_multi_ldpc_i, 
+		 TOP_multi_ldpc_ii, 
+		 TOP_multi_stpc_i, 
+		 TOP_multi_stpc_ii, 
+		 TOP_pftc_i, 
+		 TOP_pftc_ii, 
+		 TOP_stbc_i, 
+		 TOP_stbc_ii, 
+		 TOP_sthc_i, 
+		 TOP_sthc_ii, 
+		 TOP_stpc_i, 
+		 TOP_stpc_ii, 
+		 TOP_stwc_i, 
+		 TOP_stwc_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -430,6 +436,9 @@ main()
   /* ====================================== */ 
   intop = ISA_Property_Create ("intop"); 
   Instruction_Group (intop, 
+		 TOP_addpc_r, 
+		 TOP_addpc_i, 
+		 TOP_addpc_ii, 
 		 TOP_add_r, 
 		 TOP_add_i, 
 		 TOP_add_ii, 
@@ -712,6 +721,7 @@ main()
   /* ====================================== */ 
   move = ISA_Property_Create ("move"); 
   Instruction_Group (move, 
+		 TOP_movp, 
 		 TOP_mov_r, 
 		 TOP_mov_i, 
 		 TOP_mov_ii, 
@@ -740,30 +750,17 @@ main()
   /* ====================================== */ 
   multi = ISA_Property_Create ("multi"); 
   Instruction_Group (multi, 
-		 TOP_multi_addd, 
-		 TOP_multi_cmpeqd, 
-		 TOP_multi_cmpged, 
-		 TOP_multi_cmpgtd, 
-		 TOP_multi_cmpled, 
-		 TOP_multi_cmpltd, 
-		 TOP_multi_convdf, 
-		 TOP_multi_convdi, 
-		 TOP_multi_convdu, 
-		 TOP_multi_convfd, 
-		 TOP_multi_convid, 
-		 TOP_multi_convud, 
-		 TOP_multi_divd, 
+		 TOP_multi_composep, 
+		 TOP_multi_extractp, 
 		 TOP_multi_ldpc_i, 
 		 TOP_multi_ldpc_ii, 
 		 TOP_multi_ldp_i, 
 		 TOP_multi_ldp_ii, 
-		 TOP_multi_muld, 
-		 TOP_multi_sqrtd, 
+		 TOP_multi_movp, 
 		 TOP_multi_stpc_i, 
 		 TOP_multi_stpc_ii, 
 		 TOP_multi_stp_i, 
 		 TOP_multi_stp_ii, 
-		 TOP_multi_subd, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -838,8 +835,14 @@ main()
   simulated = ISA_Property_Create ("simulated"); 
   Instruction_Group (simulated, 
 		 TOP_asm, 
+		 TOP_composep, 
+		 TOP_extractp, 
 		 TOP_getpc, 
 		 TOP_intrncall, 
+		 TOP_movp, 
+		 TOP_multi_composep, 
+		 TOP_multi_extractp, 
+		 TOP_multi_movp, 
 		 TOP_noop, 
 		 TOP_phi, 
 		 TOP_psi, 
@@ -923,8 +926,6 @@ main()
 		 TOP_cmpltu_ii_b, 
 		 TOP_cmpltu_i_r, 
 		 TOP_cmpltu_ii_r, 
-		 TOP_convdu, 
-		 TOP_convfu, 
 		 TOP_divu, 
 		 TOP_ldbuc_i, 
 		 TOP_ldbuc_ii, 
@@ -962,7 +963,6 @@ main()
 		 TOP_mullu_r, 
 		 TOP_mullu_i, 
 		 TOP_mullu_ii, 
-		 TOP_multi_convdu, 
 		 TOP_remu, 
 		 TOP_shru_r, 
 		 TOP_shru_i, 
@@ -976,6 +976,12 @@ main()
 		 TOP_intrncall, 
 		 TOP_phi, 
 		 TOP_psi, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  widemove = ISA_Property_Create ("widemove"); 
+  Instruction_Group (widemove, 
+		 TOP_movp, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
