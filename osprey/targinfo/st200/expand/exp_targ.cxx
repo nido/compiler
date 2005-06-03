@@ -881,7 +881,11 @@ Expand_Shift_Multiply (
     opcode = TOP_sh3add_r;
     break;
   case 17:
-    opcode = TOP_sh4add_r;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r)) {
+      opcode = TOP_sh4add_r;
+    } else {
+      opcode = TOP_UNDEFINED;
+    }
     break;
   default:
     opcode = TOP_UNDEFINED;

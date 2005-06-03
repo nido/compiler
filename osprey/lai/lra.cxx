@@ -534,6 +534,11 @@ static void Init_Avail_Set (BB *bb)
       avail_set[cl] = 
 	REGISTER_SET_Difference (REGISTER_CLASS_allocatable(cl),
 				 REGISTER_CLASS_callee_saves(cl));
+#ifdef TARG_ST
+      avail_set[cl] =
+      REGISTER_SET_Difference (avail_set[cl],
+                               CGTARG_Forbidden_LRA_Registers(cl));
+#endif
 #ifdef HAS_STACKED_REGISTERS
       REGISTER_SET avail_stacked =
 	REGISTER_Get_Stacked_Avail_Set(ABI_PROPERTY_stacked, cl);

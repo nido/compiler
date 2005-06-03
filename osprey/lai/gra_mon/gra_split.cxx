@@ -337,7 +337,7 @@ Max_Colorable_LUNIT( LUNIT** result )
   // Forbid some registers from GRA.
   if (!TN_is_save_reg(split_lrange->Tn())) {
     FmtAssert(!split_lrange->Has_Wired_Register(), ("encountered wired reg"));
-    REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+    REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers(rc);
     all_regs = REGISTER_SET_Difference(all_regs, forbidden);
   }
 #endif
@@ -828,7 +828,7 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
 #ifdef TARG_ST
   // Forbid some registers from GRA.
   FmtAssert(!split_lrange->Has_Wired_Register(), ("encountered wired reg"));
-  REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+  REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers(rc);
   allowed_regs = REGISTER_SET_Difference(allowed_regs, forbidden);
 #endif
 
@@ -1842,7 +1842,7 @@ LRANGE_Do_Split( LRANGE* lrange, LRANGE_CLIST_ITER* iter,
   // we should force a gra spill instead of splitting live range and having a lra spill.
   DevAssert (! (lrange->Has_Wired_Register() && lrange->Reg() == TN_register(RA_TN)), ("split_lrange for wired ra_tn"));
 
-  REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
+  REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers(lrange->Rc());
   if (lrange->Tn_Is_Save_Reg() && REGISTER_SET_MemberP(forbidden,TN_save_reg(lrange->Tn())))
     return FALSE;
 #endif

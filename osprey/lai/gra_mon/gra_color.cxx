@@ -447,9 +447,13 @@ Choose_Register( LRANGE* lrange, GRA_REGION* region )
   REGISTER_SET allowed = lrange->Allowed_Registers(GRA_current_region);
 
   if ( lrange->Has_Wired_Register() ) {
-    DevAssert( REGISTER_SET_MemberP(allowed, lrange->Reg()),
-               ("LRANGE not allowed its wired register"));
-    Update_Register_Info(lrange, lrange->Reg());
+    // [SC] This assertion fails when we disallow r63 to LRA.
+    // So assume that wired lranges are always allowed their
+    // wired register.
+    //    DevAssert( REGISTER_SET_MembersP(allowed, lrange->Reg(),
+    //                             lrange->NHardRegs()),
+    //         ("LRANGE not allowed its wired register"));
+   Update_Register_Info(lrange, lrange->Reg());
     return TRUE;
   }
   if (REGISTER_SET_EmptyP(allowed) ) {

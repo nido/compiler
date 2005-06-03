@@ -569,6 +569,10 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
   switch (Type()) {
 
   case LRANGE_TYPE_LOCAL:
+#ifdef TARG_ST
+    allowed = REGISTER_SET_Difference (allowed,
+                                     CGTARG_Forbidden_LRA_Registers (rc));
+#endif
     return
       REGISTER_SET_Difference(allowed, Gbb()->Registers_Used(rc));
 
@@ -619,8 +623,8 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
     // Forbid some registers from GRA.
     if (! TN_is_save_reg(Tn())) {
       FmtAssert(!Has_Wired_Register(), ("encountered wired reg"));
-      REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers();
-      allowed = REGISTER_SET_Difference(allowed, forbidden);
+      allowed = REGISTER_SET_Difference(allowed,
+					CGTARG_Forbidden_GRA_Registers (rc));
     }
 #endif
 

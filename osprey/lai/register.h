@@ -1280,7 +1280,9 @@ extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLAS
 // to a global live-range (unless dedicated to); or otherwise LRA
 // may not be able to spill a local liverange (like the one used
 // for an igoto) because of "spill beyond the end of BB, etc.
-extern REGISTER_SET CGTARG_Forbidden_GRA_Registers();
+extern REGISTER_SET CGTARG_Forbidden_GRA_Registers(ISA_REGISTER_CLASS rclass);
+// [SC] The set of forbidden registers for LRA.
+extern REGISTER_SET CGTARG_Forbidden_LRA_Registers(ISA_REGISTER_CLASS rclass);
 #endif
 
 #endif /* REGISTER_INCLUDED */

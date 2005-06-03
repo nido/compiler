@@ -3107,7 +3107,9 @@ add_shl_sequence (
   if (l3_val1 == 1) new_topcode = TOP_sh1add_r;
   else if (l3_val1 == 2) new_topcode = TOP_sh2add_r;
   else if (l3_val1 == 3) new_topcode = TOP_sh3add_r;
-  else if (l3_val1 == 4) new_topcode = TOP_sh4add_r;
+  else if (l3_val1 == 4 && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r)) {
+    new_topcode = TOP_sh4add_r;
+  }
   else return FALSE;
 
   if (TN_is_symbol(l2_tn1)) return FALSE;
