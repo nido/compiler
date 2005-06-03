@@ -1108,14 +1108,22 @@ EMT_Put_Elf_Symbol (
       if (Assembly || Lai_Code) {
 #ifdef TARG_ST
         // (cbr)
-	  if (ST_is_weak_symbol(sym)) {
-	    fprintf ( Asm_File, "\t%s\t", AS_WEAK);
-	    EMT_Write_Qualified_Name(Asm_File, sym);
-	    fprintf ( Asm_File, "\n");
+	  if (ST_sclass(sym) == SCLASS_EXTERN) 
+	  {
+	      if (ST_is_weak_symbol(sym)) {
+		  fprintf ( Asm_File, "\t%s\t", AS_WEAK);
+		  EMT_Write_Qualified_Name(Asm_File, sym);
+		  fprintf ( Asm_File, "\n");
+	      }
+		  // clarkes 090307
+	      else 
+	      {
+		  fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+		  EMT_Write_Qualified_Name(Asm_File, sym);
+		  fprintf ( Asm_File, "\n");
+		  EMT_Visibility (Asm_File, ST_export(sym), sym);
+	      }
 	  }
-	  // clarkes 090307
-	  else
-	    EMT_Visibility (Asm_File, ST_export(sym), sym);
 #endif
 	fprintf (Asm_File, "\t%s\t", AS_TYPE);
 	EMT_Write_Qualified_Name (Asm_File, sym);
@@ -1140,6 +1148,9 @@ EMT_Put_Elf_Symbol (
         }
 	// clarkes 090307
 	else {
+	  fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
+	  EMT_Write_Qualified_Name(Asm_File, sym);
+	  fprintf ( Asm_File, "\n");
 	  EMT_Visibility ( Asm_File, ST_export(sym), sym);
 	}
       }
@@ -1189,32 +1200,27 @@ EMT_Put_Elf_Symbol (
 	case SCLASS_UGLOBAL:
 #ifdef TARG_ST
       case SCLASS_PSTATIC:
-	  // [CL] looks like r_qualified_name()
-	  // When generating debug information, keep in mind that
-	  // static variables have been renamed
-	  if (ST_is_export_local(sym)) {
-	    // local var, but being written out.
-	    // so add suffix to help .s file distinguish names.
-	    // assume that statics in mult. pu's will 
-	    // get moved to global symtab, so don't need pu-num
+	      // [CL] take into account the right renaming of static variables.
+              // Symbols with no base are not emitted: as they have not been
+              // allocated, it means they are not used.
+	  if (Has_Base_Block(sym)) {
+	      FmtAssert(ST_name(sym) && *(ST_name(sym)) != '\0', ("%s: unexpected symbol with no name", __FUNCTION__));
+	      vstring buf = vstr_begin(LBUF_LEN);
+	      r_qualified_name (sym, &buf);
 
-	    char local_name[strlen(ST_name(sym))+strlen(Label_Name_Separator)+20];
-	    if (ST_level(sym) == GLOBAL_SYMTAB)
-	      sprintf (local_name, "%s%s%d", ST_name(sym), Label_Name_Separator, ST_index(sym));
-	    else
-	      sprintf (local_name, "%s%s%d%s%d", ST_name(sym), Label_Name_Separator, ST_pu(Get_Current_PU_ST()), Label_Name_Separator, ST_index(sym) );
+	      symindex = Em_Add_New_Symbol (
+		  vstr_str(buf), base_ofst, TY_size(sym_type), 
+		  symbind, STT_OBJECT, symother,
+		  Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
 
-	    symindex = Em_Add_New_Symbol (
-					  local_name, base_ofst, TY_size(sym_type), 
-					  symbind, STT_OBJECT, symother,
-					  Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
-	  }
-	  else
-#endif
+	      vstr_end(buf);
+	  }	
+#else
 	  symindex = Em_Add_New_Symbol (
 			ST_name(sym), base_ofst, TY_size(sym_type), 
 			symbind, STT_OBJECT, symother,
 			Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
+#endif
 	  break;
 	case SCLASS_EXTERN:
 	  symindex = Em_Add_New_Symbol (
@@ -1299,13 +1305,6 @@ EMT_Put_Elf_Symbol (
 	    EMT_Visibility (Asm_File, ST_export(sym), sym);
 #endif
 	  }
-#ifdef TARG_ST
-	  // [CL] be consistent with the case when we
-	  // don't generate elf symbols above
-	  fprintf (Asm_File, "\t%s\t", AS_TYPE);
-	  EMT_Write_Qualified_Name (Asm_File, sym);
-	  fprintf (Asm_File, ", %s\n", AS_TYPE_FUNC);
-#endif
 	}
       }
       else 
@@ -1313,6 +1312,16 @@ EMT_Put_Elf_Symbol (
 			ST_name(sym), base_ofst, 0,
 			symbind, STT_FUNC, symother,
 			Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
+#ifdef TARG_ST
+      if (Assembly) {
+	      // [CL] be consistent with the case when we
+	      // don't generate elf symbols above
+	  fprintf (Asm_File, "\t%s\t", AS_TYPE);
+	  EMT_Write_Qualified_Name (Asm_File, sym);
+	  fprintf (Asm_File, ", %s\n", AS_TYPE_FUNC);
+      }
+	
+#endif
       break;
 
     case CLASS_BLOCK:
