@@ -1467,19 +1467,25 @@ Expand__st220syscall(
       Additional surprises include that 0 is a special case that actually happens.
       The case value is written but does not seem to be triggered
     */
+    TOP top = TOP_UNDEFINED;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
+      top = TOP_syscall_i;
+    } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_ib)) {
+      top = TOP_syscall_ib;
+    }
     if (TN_is_rematerializable(i0)) {
 	WN *wn = TN_home(i0) ;
 	if (WN_operator_is(wn, OPR_INTCONST)) {
 	    TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
-	    Build_OP (	TOP_syscall,	cunknown, 	ops) ;
+	    Build_OP (	top,	cunknown, 	ops) ;
 	} else {
 	    DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: TN_is_rematerializable BUT WN_operator_is *not* OPR_INTCONST.") ;
 	}
     } else if (TN_is_zero(i0)) { 
-	Build_OP (	TOP_syscall,	Zero_TN, 	ops) ;
+	Build_OP (	top,	Zero_TN, 	ops) ;
     } else if (TN_has_value(i0)) {
 	TN *cunknown = Gen_Literal_TN(TN_value(i0), 4) ;
-	Build_OP (	TOP_syscall,	cunknown, 	ops) ;
+	Build_OP (	top,	cunknown, 	ops) ;
     } else {
 	DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: expect an immediate argument.") ;
     }

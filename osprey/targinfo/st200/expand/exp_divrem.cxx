@@ -156,7 +156,13 @@ Check_Divide (
   if (const_divisor) {
     if (divisor_val == 0) {
       if (div_zero_check) {
-	Build_OP (TOP_syscall, Gen_Literal_TN(FPE_INTDIV_trap, 1), ops);
+	TOP top = TOP_UNDEFINED;
+	if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
+	  top = TOP_syscall_i;
+	} else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_ib)) {
+	  top = TOP_syscall_ib;
+	}
+	Build_OP (top, Gen_Literal_TN(FPE_INTDIV_trap, 1), ops);
       }
       return DIVCHK_BYZERO;
     }
@@ -185,7 +191,13 @@ Check_Divide (
     if (const_divisor && const_numer) {
       if (numer_val == minint_val && divisor_val == -1) {
 	if (DEBUG_Div_Oflow_Check) {
-	  Build_OP (TOP_syscall, Gen_Literal_TN(FPE_INTOVF_trap, 1), ops);
+	  TOP top = TOP_UNDEFINED;
+	  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
+	    top = TOP_syscall_i;
+	  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_ib)) {
+	    top = TOP_syscall_ib;
+	  }
+	  Build_OP (top, Gen_Literal_TN(FPE_INTOVF_trap, 1), ops);
 	}
 	return DIVCHK_OVERFLOW;
       }

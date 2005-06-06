@@ -462,7 +462,7 @@ main (int argc, char *argv[])
 		TOP_nop,
 		TOP_phi,
 		TOP_psi,
-		TOP_sbrk,
+		TOP_sbrk_i,
 		TOP_UNDEFINED);
 
   Resource_Requirement(Resource_st220_ISSUE, 0);
@@ -483,7 +483,7 @@ main (int argc, char *argv[])
 		TOP_asm,
 		TOP_prgins,
 		TOP_sync,
-		TOP_syscall,
+		TOP_syscall_i,
 		TOP_UNDEFINED);
 
   Resource_Requirement(Resource_st220_ISSUE, 0);

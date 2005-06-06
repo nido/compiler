@@ -46,6 +46,7 @@ main ()
 
   // ISA_Create_Lit_Class(name, type, [range,...] LIT_RANGE_END) 
 
+  ISA_Create_Lit_Class("brknum", UNSIGNED, UnsignedBitRange(12), LIT_RANGE_END);
   ISA_Create_Lit_Class("btarg", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("imm", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("isrc2", SIGNED, SignedBitRange(9), LIT_RANGE_END);
