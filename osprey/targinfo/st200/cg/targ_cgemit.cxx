@@ -370,3 +370,57 @@ CGEMIT_End_File_In_Asm (void)
 {
   
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   CGEMIT_Qualified_Name
+ *
+ * Returns into buf the qualified name for a symbol to be used in
+ * the asm output. 
+ * Moved from r_qualified_name in cgemit.cxx
+ * ====================================================================
+ */
+void 
+CGEMIT_Qualified_Name(ST *st, vstring *buf)
+{
+  if (ST_name(st) && *(ST_name(st)) != '\0') {
+    *buf = vstr_concat(*buf, ST_name(st));
+    if (ST_is_export_local(st) && ST_class(st) == CLASS_VAR) {
+      // local var, but being written out.
+      // so add suffix to help .s file distinguish names.
+      // assume that statics in mult. pu's will 
+      // get moved to global symtab, so don't need pu-num
+      if (ST_level(st) == GLOBAL_SYMTAB) {
+#ifdef TARG_ST
+	// [CG] If not under -ipa mode we do not need to rename static
+	// in the global symtab.
+	// [CG] Force use of  '.' to ensure no name clashing
+	if (Emit_Global_Data || Read_Global_Data)
+	  vstr_sprintf (buf, vstr_len(*buf), 
+			"%s%d", ".", ST_index(st));
+#else
+	vstr_sprintf (buf, vstr_len(*buf), 
+		      "%s%d", Label_Name_Separator, ST_index(st));
+#endif
+      } else {
+#ifdef TARG_ST
+	// [CG] Force use of  '.' to ensure no name clashing
+	vstr_sprintf (buf, vstr_len(*buf), 
+		      "%s%d%s%d", ".", ST_pu(Get_Current_PU_ST()),
+		      ".", ST_index(st) );
+#else
+	vstr_sprintf (buf, vstr_len(*buf), 
+		      "%s%d%s%d", Label_Name_Separator, ST_pu(Get_Current_PU_ST()),
+		      Label_Name_Separator, ST_index(st) );
+#endif
+      }
+    }
+    else if (*Symbol_Name_Suffix != '\0') {
+      *buf = vstr_concat(*buf, Symbol_Name_Suffix);
+    }
+  } else {
+    vstr_sprintf (buf, vstr_len(*buf), 
+		  "%s %+lld", ST_name(ST_base(st)), ST_ofst(st));
+  }
+}
+#endif

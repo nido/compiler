@@ -101,4 +101,9 @@ extern void CGEMIT_Asm_String_Suffix (OP *op, INT32 *PC);
 extern void CGEMIT_Begin_File_In_Asm (void);
 // Called at end of file.
 extern void CGEMIT_End_File_In_Asm (void);
+
+// Returns into buf the qualified name for a symbol to be used in
+// the asm output. Moved from r_qualified_name in cgemit.cxx.
+// The returned string 
+extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
 #endif

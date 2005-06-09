@@ -73,6 +73,11 @@
 #include "config_asm.h"
 #include "hb_sched.h"
 
+
+/* Import from targ_cgemit.cxx. */
+extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
+
+
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 
@@ -1023,6 +1028,14 @@ CGTARG_Modify_Asm_String (
 	       TN_offset(tn) == 0 && 
 	       TN_relocs(tn) == TN_RELOC_NONE) {
       ST *st = TN_var(tn);
+#ifdef TARG_ST
+      // +128 is enough for all separators and suffixes added to the name
+      vstring buf = vstr_begin(strlen(ST_name(st))+128+1);
+      CGEMIT_Qualified_Name(st, &buf);
+      name = (char*) alloca(strlen(vstr_str(buf))+1);
+      strcpy(name, vstr_str(buf));
+      vstr_end(buf);
+#else
       const char *st_name = ST_name(st);
       // +128 is enough for all separators and suffixes added to the name
       char* buf = (char*) alloca(strlen(st_name)+128+1);
@@ -1039,6 +1052,7 @@ CGTARG_Modify_Asm_String (
 	sprintf (buf, "%s%s", st_name, Symbol_Name_Suffix);
       }
       name = buf;
+#endif
     } else {
       FmtAssert(!memory && (TN_is_symbol(tn) || TN_has_value(tn)),
 		("ASM operand is not a valid symbolic constant"));
