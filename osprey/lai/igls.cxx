@@ -829,8 +829,8 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
   if (before_regalloc) {
     Set_Error_Phase( "LAO Prepass Optimizations" );
-    if (CG_LAO_optimizations & LAO_Optimization_Mask_PrePass) {
-      lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_PrePass);
+    if (CG_LAO_optimizations & OptimizerPhase_MustPrePass) {
+      lao_optimize_pu(CG_LAO_optimizations & OptimizerPhase_MustPrePass);
       if (frequency_verify)
 	FREQ_Verify("LAO Prepass Optimizations");
     }
@@ -838,8 +838,8 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
   else {
     // Call the LAO for postpass scheduling.
     Set_Error_Phase( "LAO Postpass Optimizations" );
-    if (CG_LAO_optimizations & LAO_Optimization_Mask_PostPass) {
-      lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_PostPass);
+    if (CG_LAO_optimizations & OptimizerPhase_MustPostPass) {
+      lao_optimize_pu(CG_LAO_optimizations & OptimizerPhase_MustPostPass);
       if (frequency_verify)
 	FREQ_Verify("LAO Postpass Optimizations");
     }
@@ -847,21 +847,18 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
     CGTARG_Resize_Instructions ();
 #endif
     // Direct call to the bundler, and bypass the IGLS.
-    Set_Error_Phase( "LAO Linearize Optimizations" );
-    if (CG_LAO_optimizations & Optimization_Linearize) {
-      REG_LIVE_Analyze_Region();
-      Trace_HB = Get_Trace (TP_SCHED, 1);
-      for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-	Handle_All_Hazards(bb);
-	// Handle_All_Hazards will have fixed branch operations with
-	// scheduling date -1
-	// Only add notes if the postpass scheduler effectively ran
-	if (Assembly && CG_LAO_Region_Map && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
-      }
-      REG_LIVE_Finish();
+    Set_Error_Phase( "LAO Bundling Optimizations" );
+    REG_LIVE_Analyze_Region();
+    Trace_HB = Get_Trace (TP_SCHED, 1);
+    for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+      Handle_All_Hazards(bb);
+      // Handle_All_Hazards will have fixed branch operations with scheduling date -1
       // Only add notes if the postpass scheduler effectively ran
-      if (Assembly && CG_LAO_Region_Map) Add_Scheduling_Notes_For_Loops ();
+      if (Assembly && CG_LAO_Region_Map && BB_length(bb)) Add_Scheduling_Note (bb, NULL);
     }
+    REG_LIVE_Finish();
+    // Only add notes if the postpass scheduler effectively ran
+    if (Assembly && CG_LAO_Region_Map) Add_Scheduling_Notes_For_Loops ();
   }
 }
 #endif

@@ -49,6 +49,7 @@ extern "C" {
 #define this THIS
 #define operator OPERATOR
 #define CHECK(condition)
+#include "lao_stub.h"
 #include "lao_interface.h"
 #undef operator
 #undef this
@@ -56,15 +57,6 @@ extern "C" {
 /*-------------------------- LAI Interface instance -------*/
 static LAI_Interface LAI_instance;
 static Interface interface;
-
-/*-------------------------- This stub interface -------*/
-extern void lao_init(void);
-extern void lao_fini(void);
-extern void lao_init_pu(void);
-extern void lao_fini_pu(void);
-extern void lao_init_region(void);
-extern void lao_fini_region(void);
-extern bool lao_optimize_pu(unsigned lao_optimizations);
 
 /*------------------------- LAO Region Map -------------*/
 BB_MAP CG_LAO_Region_Map;
@@ -126,22 +118,6 @@ lao_init(void) {
     // Initialize the target dependent LIR<->CGIR interface
     CGIR_LAI_Init();
   }
-}
-
-// Per PU initialization.
-void
-lao_init_pu(void) {
-  CG_LAO_Region_Map = NULL;
-}
-
-// Per Region initialization.
-void
-lao_init_region(void) {
-}
-
-// Per Region finalization.
-void
-lao_fini_region(void) {
 }
 
 // Per PU finalization.
@@ -580,25 +556,25 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
 	int8_t min_trip_factor = trip_factor <= 64 ? trip_factor : 64;
 	loopinfo = LAI_Interface_makeLoopInfo(interface,
 	    cgir_ld, head_block, tripcount,
-	    ConfigurationItem_Pipelining, pipelining,
-	    ConfigurationItem_Renaming, renaming,
-	    ConfigurationItem_MinTrip, min_trip_count,
-	    ConfigurationItem_Modulus, min_trip_factor,
-	    ConfigurationItem_Residue, 0,
-	    ConfigurationItem__);
+	    ConfigureItem_Pipelining, pipelining,
+	    ConfigureItem_Renaming, renaming,
+	    ConfigureItem_MinTrip, min_trip_count,
+	    ConfigureItem_Modulus, min_trip_factor,
+	    ConfigureItem_Residue, 0,
+	    ConfigureItem__);
       } else {
 	loopinfo = LAI_Interface_makeLoopInfo(interface,
 	    cgir_ld, head_block, tripcount,
-	    ConfigurationItem_Pipelining, pipelining,
-	    ConfigurationItem_Renaming, renaming,
-	    ConfigurationItem__);
+	    ConfigureItem_Pipelining, pipelining,
+	    ConfigureItem_Renaming, renaming,
+	    ConfigureItem__);
       }
     } else {
       loopinfo = LAI_Interface_makeLoopInfo(interface,
 	  cgir_ld, head_block, NULL,
-	  ConfigurationItem_Pipelining, pipelining,
-	  ConfigurationItem_Renaming, renaming,
-	  ConfigurationItem__);
+	  ConfigureItem_Pipelining, pipelining,
+	  ConfigureItem_Renaming, renaming,
+	  ConfigureItem__);
     }
     // Fill the LoopInfo dependence table.
     //
@@ -1076,17 +1052,17 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
   LAI_Interface_open(interface, name,
-      ConfigurationItem_StackModel, stackModel,
-      ConfigurationItem_SchedKind, CG_LAO_schedkind,
-      ConfigurationItem_AllocKind, CG_LAO_allockind,
-      ConfigurationItem_RegionType, CG_LAO_regiontype,
-      ConfigurationItem_Compensation, CG_LAO_compensation,
-      ConfigurationItem_Speculation, CG_LAO_speculation,
-      ConfigurationItem_Relaxation, CG_LAO_relaxation,
-      ConfigurationItem_Pipelining, CG_LAO_pipelining,
-      ConfigurationItem_Renaming, CG_LAO_renaming,
-      ConfigurationItem_LoopDep, CG_LAO_loopdep,
-      ConfigurationItem__);
+      ConfigureItem_StackModel, stackModel,
+      ConfigureItem_SchedKind, CG_LAO_schedkind,
+      ConfigureItem_AllocKind, CG_LAO_allockind,
+      ConfigureItem_RegionType, CG_LAO_regiontype,
+      ConfigureItem_Compensation, CG_LAO_compensation,
+      ConfigureItem_Speculation, CG_LAO_speculation,
+      ConfigureItem_Relaxation, CG_LAO_relaxation,
+      ConfigureItem_Pipelining, CG_LAO_pipelining,
+      ConfigureItem_Renaming, CG_LAO_renaming,
+      ConfigureItem_LoopDep, CG_LAO_loopdep,
+      ConfigureItem__);
   //
   // Create the LAO BasicBlocks.
   BB_List::iterator bb_iter;
@@ -1144,15 +1120,15 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   }
   Stop_Timer( T_LAO_Interface_CU );
   //
-  if (lao_optimizations & Optimization_PrePass_Mask) Start_Timer( T_LAO_PRE_CU );
-  if (lao_optimizations & Optimization_RegAlloc_Mask) Start_Timer( T_LAO_REG_CU );
-  if (lao_optimizations & Optimization_PostPass_Mask) Start_Timer( T_LAO_POST_CU );
+  if (lao_optimizations & OptimizerPhase_MustPrePass) Start_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & OptimizerPhase_MustRegAlloc) Start_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & OptimizerPhase_MustPostPass) Start_Timer( T_LAO_POST_CU );
   //
   unsigned optimizations = LAI_Interface_optimize(interface, lao_optimizations);
   //
-  if (lao_optimizations & Optimization_PrePass_Mask) Stop_Timer( T_LAO_PRE_CU );
-  if (lao_optimizations & Optimization_RegAlloc_Mask) Stop_Timer( T_LAO_REG_CU );
-  if (lao_optimizations & Optimization_PostPass_Mask) Stop_Timer( T_LAO_POST_CU );
+  if (lao_optimizations & OptimizerPhase_MustPrePass) Stop_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & OptimizerPhase_MustRegAlloc) Stop_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & OptimizerPhase_MustPostPass) Stop_Timer( T_LAO_POST_CU );
   //
   if (optimizations != 0) {
     Start_Timer( T_LAO_Interface_CU );
@@ -1232,7 +1208,7 @@ lao_optimize_pu(unsigned lao_optimizations) {
   }
   //
   // Create region map for postpass optimizations
-  if (lao_optimizations & Optimization_PostPass) {
+  if (lao_optimizations & OptimizerPhase_PostSched) {
     CG_LAO_Region_Map = BB_MAP32_Create();
   }
   //

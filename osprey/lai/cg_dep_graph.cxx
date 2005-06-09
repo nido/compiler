@@ -1062,9 +1062,9 @@ static void delete_gtn_use_arc(OP *op, UINT8 opnd)
   }
 }
 
-#undef ARC_LIST_prev ARC_rest_succs
-#undef Set_ARC_LIST_prev Set_ARC_rest_succs
-#undef Set_ARC_LIST_rest Set_ARC_rest_preds
+#undef ARC_LIST_prev
+#undef Set_ARC_LIST_prev
+#undef Set_ARC_LIST_rest
 
 
 

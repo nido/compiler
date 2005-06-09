@@ -319,10 +319,6 @@ CG_Region_Initialize (
 
   Current_Rid = REGION_get_rid( rwn );
 
-#ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) lao_init_region();
-#endif
-
   return;
 }
 
@@ -351,10 +347,6 @@ CG_Region_Finalize (WN *result_before, WN *result_after,
 	    ("CG_Region_Finalize, inconsistent region"));
 
   REGION_set_level(rid, RL_CGSCHED);
-
-#ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) lao_fini_region();
-#endif
 
   if (generate_glue_code) {
     /* region entry glue code */
@@ -708,14 +700,8 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & Optimization_EnableSSA) {
-    lao_optimize_pu(Optimization_EnableSSA);
-    // Insert Live-analysis here
-    GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-  }
-
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations) {
+  if (CG_LAO_optimizations & OptimizerPhase_MustPrePass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
@@ -739,27 +725,27 @@ CG_Generate_Code(
 
   // Register Allocation Phase
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) {
+  if (CG_LAO_optimizations & OptimizerPhase_MustRegAlloc) {
     // Live analysis and tn renaming
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_pu(CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc);
+    lao_optimize_pu(CG_LAO_optimizations & OptimizerPhase_MustRegAlloc);
     Check_for_Dump (TP_ALLOC, NULL);
   }
-  if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
-      Optimization_RegAlloc) {
+  if (CG_LAO_optimizations & OptimizerPhase_Allocate) {
+    if (CG_LAO_schedkind != ConfigureAllocKind_Localize) {
     // Full register allocation performed by LAO.
-  } else if ((CG_LAO_optimizations & LAO_Optimization_Mask_RegAlloc) == 
-	     Optimization_Localize) {
-    // Localization performed by LAO, run LRA
-    Set_Error_Phase( "LRA after LAO RegAlloc" );
-    // Force LRA to not use GRA informations.
-    bool old = CG_localize_tns;
-    CG_localize_tns = TRUE;
-    LRA_Allocate_Registers (!region);
-    CG_localize_tns = old;
-    Check_for_Dump (TP_ALLOC, NULL);
+    } else  {
+      // Localization performed by LAO, run LRA
+      Set_Error_Phase( "LRA after LAO RegAlloc" );
+      // Force LRA to not use GRA informations.
+      bool old = CG_localize_tns;
+      CG_localize_tns = TRUE;
+      LRA_Allocate_Registers (!region);
+      CG_localize_tns = old;
+      Check_for_Dump (TP_ALLOC, NULL);
+    }
   } else {
   // No allocation  performed by LAO, run full GRA/LRA
 #endif
@@ -842,7 +828,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations) {
+  if (CG_LAO_optimizations & OptimizerPhase_MustPostPass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
   } else {

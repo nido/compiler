@@ -1215,7 +1215,7 @@ Configure_CG_Options(void)
   /* If not overidden, set LAO_optimization according to Opt_Level. */
 
   if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
-    CG_LAO_optimizations = 11;
+    CG_LAO_optimizations = OptimizerPhase_PreSched+OptimizerPhase_PostSched;
 
   // [FdF]: Ignore LAO options if opt_level < 2
   
