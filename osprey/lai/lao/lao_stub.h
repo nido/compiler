@@ -1,75 +1,3 @@
-#define __GXX_ABI_VERSION 102
-#define __SIZE_TYPE__ unsigned int
-#define __PTRDIFF_TYPE__ int
-#define __WCHAR_TYPE__ long int
-#define __WINT_TYPE__ unsigned int
-#define __SCHAR_MAX__ 127
-#define __SHRT_MAX__ 32767
-#define __INT_MAX__ 2147483647
-#define __LONG_MAX__ 2147483647L
-#define __LONG_LONG_MAX__ 9223372036854775807LL
-#define __WCHAR_MAX__ 2147483647
-#define __CHAR_BIT__ 8
-#define __FLT_EVAL_METHOD__ 2
-#define __FLT_RADIX__ 2
-#define __FLT_MANT_DIG__ 24
-#define __FLT_DIG__ 6
-#define __FLT_MIN_EXP__ (-125)
-#define __FLT_MIN_10_EXP__ (-37)
-#define __FLT_MAX_EXP__ 128
-#define __FLT_MAX_10_EXP__ 38
-#define __FLT_MAX__ 3.40282347e+38F
-#define __FLT_MIN__ 1.17549435e-38F
-#define __FLT_EPSILON__ 1.19209290e-7F
-#define __FLT_DENORM_MIN__ 1.40129846e-45F
-#define __DBL_MANT_DIG__ 53
-#define __DBL_DIG__ 15
-#define __DBL_MIN_EXP__ (-1021)
-#define __DBL_MIN_10_EXP__ (-307)
-#define __DBL_MAX_EXP__ 1024
-#define __DBL_MAX_10_EXP__ 308
-#define __DBL_MAX__ 1.7976931348623157e+308
-#define __DBL_MIN__ 2.2250738585072014e-308
-#define __DBL_EPSILON__ 2.2204460492503131e-16
-#define __DBL_DENORM_MIN__ 4.9406564584124654e-324
-#define __LDBL_MANT_DIG__ 64
-#define __LDBL_DIG__ 18
-#define __LDBL_MIN_EXP__ (-16381)
-#define __LDBL_MIN_10_EXP__ (-4931)
-#define __LDBL_MAX_EXP__ 16384
-#define __LDBL_MAX_10_EXP__ 4932
-#define __DECIMAL_DIG__ 21
-#define __LDBL_MAX__ 1.18973149535723176502e+4932L
-#define __LDBL_MIN__ 3.36210314311209350626e-4932L
-#define __LDBL_EPSILON__ 1.08420217248550443401e-19L
-#define __LDBL_DENORM_MIN__ 3.64519953188247460253e-4951L
-#define __REGISTER_PREFIX__ 
-#define __USER_LABEL_PREFIX__ 
-#define __VERSION__ "3.3.5 (Debian 1:3.3.5-12)"
-#define __STDC_HOSTED__ 1
-#define __NO_INLINE__ 1
-#define __FINITE_MATH_ONLY__ 0
-
-
-#define __i386 1
-#define __i386__ 1
-#define i386 1
-#define __tune_i686__ 1
-#define __tune_pentiumpro__ 1
-#define __i486 1
-#define __i486__ 1
-#define __linux 1
-#define __linux__ 1
-#define linux 1
-#define __unix 1
-#define __unix__ 1
-#define unix 1
-#define __ELF__ 1
-#define __gnu_linux__ 1
-
-#define __GNUC__ 3
-#define __GNUC_MINOR__ 3
-#define __GNUC_PATCHLEVEL__ 5
 /*
   ConfigureRegionType -- enumerates the ConfigureRegionType types.
 */
@@ -165,44 +93,44 @@ ConfigureLoopDep_NAME_[];
   ignored.
 */
 typedef enum {
-  ConfigureItem_LogMaxBBOC, // Log2 of maximum operation count in BasicBlock.
-  ConfigureItem_RegionType, // See ConfigureRegionType.
-  ConfigureItem_SchedKind, // See ConfigureSchedKind.
-  ConfigureItem_AllocKind, // See ConfigureAllocKind.
-  ConfigureItem_LogUnwind, // Log2 of default unwind factor.
+  ConfigureItem_LogMaxBBOC,		// Log2 of maximum operation count in BasicBlock.
+  ConfigureItem_RegionType,		// See ConfigureRegionType.
+  ConfigureItem_SchedKind,		// See ConfigureSchedKind.
+  ConfigureItem_AllocKind,		// See ConfigureAllocKind.
+  ConfigureItem_LogUnwind,		// Log2 of default unwind factor.
     // 0 => no unwind,
     // 1 => unwind 2,
     // n => unwind 1<<n.
-  ConfigureItem_LogUnroll, // Log2 of default unroll factor.
+  ConfigureItem_LogUnroll,		// Log2 of default unroll factor.
     // 0 => no unroll,
     // 1 => unroll 2,
     // n => unroll 1<<n.
-  ConfigureItem_Compensation, // Code compensation level.
-  ConfigureItem_Speculation, // Control speculation level.
+  ConfigureItem_Compensation,		// Code compensation level.
+  ConfigureItem_Speculation,		// Control speculation level.
     // 0 => no software speculation,
     // 1 => software speculation of non-excepting instructions.
     // 2 => software speculation of dismissable instructions (advanced LOADs).
     // 3 => software speculation of non-dismissable instructions (regular LOADs).
-  ConfigureItem_Relaxation, // Dependence relaxation level.
+  ConfigureItem_Relaxation,		// Dependence relaxation level.
     // 0 => no dependence relaxation,
     // 1 => inductive relaxation without compensation,
     // 2 => inductive relaxation with and without compensation.
-  ConfigureItem_Pipelining, // Software pipelining level.
+  ConfigureItem_Pipelining,		// Software pipelining level.
     // 0 => cyclic instruction schedule,
     // 1 => software pipelining with overlap 1,
     // n => software pipelining with overlap (1<<n)-1.
-  ConfigureItem_Renaming, // See ConfigureRenaming.
-  ConfigureItem_LoopOpt, // Targets of loop optimizations.
+  ConfigureItem_Renaming,		// See ConfigureRenaming.
+  ConfigureItem_LoopOpt,		// Targets of loop optimizations.
     // 0 => no loop optimizations,
     // 1 => innermost loops only,
     // n => n innermost loops.
-  ConfigureItem_LoopDep, // See ConfigureLoopDep.
-  ConfigureItem_MinTrip, // Minimum value of loop trip count.
-  ConfigureItem_Modulus, // Modulus of loop trip count.
-  ConfigureItem_Residue, // Residue of loop trip count.
-  ConfigureItem_StackModel, // See ConfigureStackModel.
-  ConfigureItem_MaxIssue, // Override the maximum issue width.
-  ConfigureItem_MinTaken, // Minimum branch taken penalty.
+  ConfigureItem_LoopDep,		// See ConfigureLoopDep.
+  ConfigureItem_MinTrip,		// Minimum value of loop trip count.
+  ConfigureItem_Modulus,		// Modulus of loop trip count.
+  ConfigureItem_Residue,		// Residue of loop trip count.
+  ConfigureItem_StackModel,		// See ConfigureStackModel.
+  ConfigureItem_MaxIssue,		// Override the maximum issue width.
+  ConfigureItem_MinTaken,		// Minimum branch taken penalty.
   ConfigureItem__
 } ConfigureItem;
 extern const char *
@@ -213,20 +141,20 @@ ConfigureItem_NAME_[];
   DependenceKind -- Enumerates the Dependence kinds.
 */
 typedef enum {
-  DependenceKind_Flow, // Flow memory dependence arc.
-  DependenceKind_Anti, // Anti memory dependence arc.
-  DependenceKind_Input, // Input memory dependence arc.
-  DependenceKind_Output, // Output memory dependence arc.
-  DependenceKind_Spill, // Spill memory dependence arc.
-  DependenceKind_Other, // Other memory dependence arc.
-  DependenceKind_Seq, // Sequentialize the volatile operations.
-  DependenceKind_RAW, // Register Read After Write dependence arc.
-  DependenceKind_WAR, // Register Write After Read dependence arc.
-  DependenceKind_WAW, // Register Write After Write dependence arc.
-  DependenceKind_Life, // Register consumer node to its lifetime node.
-  DependenceKind_Link, // Register producer node to its lifetime node.
-  DependenceKind_None, // Inserted by DepGraph_complete.
-  DependenceKind_Root, // Inserted by DepGraph_complete.
+  DependenceKind_Flow,	// Flow memory dependence arc.
+  DependenceKind_Anti,	// Anti memory dependence arc.
+  DependenceKind_Input,	// Input memory dependence arc.
+  DependenceKind_Output,	// Output memory dependence arc.
+  DependenceKind_Spill,	// Spill memory dependence arc.
+  DependenceKind_Other,	// Other memory dependence arc.
+  DependenceKind_Seq,	// Sequentialize the volatile operations.
+  DependenceKind_RAW,	// Register Read After Write dependence arc.
+  DependenceKind_WAR,	// Register Write After Read dependence arc.
+  DependenceKind_WAW,	// Register Write After Write dependence arc.
+  DependenceKind_Life,	// Register consumer node to its lifetime node.
+  DependenceKind_Link,	// Register producer node to its lifetime node.
+  DependenceKind_None,	// Inserted by DepGraph_complete.
+  DependenceKind_Root,	// Inserted by DepGraph_complete.
   DependenceKind__,
   DependenceKind_Definite = 16,
 } DependenceKind;
@@ -236,10 +164,10 @@ DependenceKind_NAME_[];
 #define DependenceKind_NAME_(type) DependenceKind_NAME_[(type)]
 #define DependenceKind_mayAdjust(type) ((type) <= DependenceKind_WAW)
 #define DependenceKind_mayRefine(type) ((type) <= DependenceKind_Spill)
-#define DependenceKind_isActive(type) ( (type) >= DependenceKind_RAW && (type) <= DependenceKind_Link )
-
-
-
+#define DependenceKind_isActive(type) ( \
+  (type) >= DependenceKind_RAW && \
+  (type) <= DependenceKind_Link \
+)
 
 /*
   OptimizerPhase -- Enumerate the LAO optimizer phases.
@@ -259,16 +187,24 @@ typedef enum {
   OptimizerPhase_ForcePrePass = 0x4000
 } OptimizerPhase;
 extern struct ETable_ *OptimizerPhaseTable;
-#define OptimizerPhase_MustPostPass ( OptimizerPhase_NativeCode | OptimizerPhase_PostSched | OptimizerPhase_ForcePostPass | 0)
+#define OptimizerPhase_MustPostPass ( \
+  OptimizerPhase_NativeCode	| \
+  OptimizerPhase_PostSched	| \
+  OptimizerPhase_ForcePostPass	| \
+  0)
+#define OptimizerPhase_MustRegAlloc ( \
+  OptimizerPhase_Allocate	| \
+  OptimizerPhase_ForceRegAlloc	| \
+  0)
+#define OptimizerPhase_MustPrePass ( \
+  OptimizerPhase_PreSched	| \
+  OptimizerPhase_Transform	| \
+  OptimizerPhase_EnableSSA	| \
+  OptimizerPhase_Predicate	| \
+  OptimizerPhase_EnableSSI	| \
+  OptimizerPhase_ForcePrePass	| \
+  0)
 
-
-
-
-#define OptimizerPhase_MustRegAlloc ( OptimizerPhase_Allocate | OptimizerPhase_ForceRegAlloc | 0)
-
-
-
-#define OptimizerPhase_MustPrePass ( OptimizerPhase_PreSched | OptimizerPhase_Transform | OptimizerPhase_EnableSSA | OptimizerPhase_Predicate | OptimizerPhase_EnableSSI | OptimizerPhase_ForcePrePass | 0)
 extern void lao_init(void);
 extern void lao_fini(void);
 extern void lao_init_pu(void);
