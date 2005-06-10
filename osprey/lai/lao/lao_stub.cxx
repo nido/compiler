@@ -45,11 +45,11 @@
 #include <dlfcn.h>		    /* for dlsym() */
 #include "dso.h"		    /* for load_so() */
 
+#include "lao_stub.h"
 extern "C" {
 #define this THIS
 #define operator OPERATOR
 #define CHECK(condition)
-#include "lao_stub.h"
 #include "lao_interface.h"
 #undef operator
 #undef this
