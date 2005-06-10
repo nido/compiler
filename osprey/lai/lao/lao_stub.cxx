@@ -120,6 +120,12 @@ lao_init(void) {
   }
 }
 
+// Per PU initialization.
+void
+lao_init_pu(void) {
+  CG_LAO_Region_Map = NULL;
+}
+
 // Per PU finalization.
 void
 lao_fini_pu(void) {
