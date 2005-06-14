@@ -1478,6 +1478,10 @@ Usable_Registers (TN* tn, LIVE_RANGE* lr)
   ISA_REGISTER_CLASS cl = TN_register_class(tn);
   REGISTER_SET usable_regs = REGISTER_CLASS_universe(cl);
 
+#ifdef TARG_ST
+  usable_regs = REGISTER_SET_Difference(usable_regs,
+					CGTARG_Forbidden_LRA_Registers(cl));
+#endif
   INT first_op = MAX(LR_first_def(lr), 1);
   INT last_op = MIN(LR_last_use(lr)+1, VECTOR_size(Insts_Vector));
 
