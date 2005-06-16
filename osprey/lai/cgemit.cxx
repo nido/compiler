@@ -1037,6 +1037,14 @@ Print_Common (
       fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_MOVEABLE);
     }
 #endif
+#  ifdef AS_USED
+    /* TB: add gnu used  attibute when needed */
+    if (ST_is_used(st)) {
+      fprintf (pfile, "\t%s\t", AS_TYPE);
+      EMT_Write_Qualified_Name (pfile, st);
+      fprintf (pfile, ", %s, %s\n", AS_TYPE_OBJECT, AS_USED);
+    }
+#endif
 #endif
     // this is needed so that we don't emit commons more than once
     Set_ST_elf_index(st, 1);
