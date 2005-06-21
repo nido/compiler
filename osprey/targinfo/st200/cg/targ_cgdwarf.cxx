@@ -243,34 +243,6 @@ Find_Def_Of_TN (TN *tn, OP *last_op)
 	return op;
 }
 
-#if 0
-static TN*
-Find_Spill_TN (OP *last_op, TN *reg_tn)
-{
-	// search backwards to find spill symbol stored in reg.
-	OP *op = Find_Def_Of_TN (reg_tn, last_op);
-	if (op == NULL) return NULL;
-	if (OP_code(op) == TOP_adds) {
-		if (TN_is_symbol(OP_opnd(op,1)))
-			return OP_opnd(op,1);
-	}
-	else if (OP_code(op) == TOP_add
-		&& (OP_opnd(op,2) == FP_TN || OP_opnd(op,2) == SP_TN))
-	{
-		op = Find_Def_Of_TN (OP_opnd(op,1), op);
-		if (op && OP_code(op) == TOP_movl) {
-			if (TN_is_symbol(OP_opnd(op,1)))
-				return OP_opnd(op,1);
-		}
-		else if (op && OP_code(op) == TOP_mov_i) {
-			if (TN_is_symbol(OP_opnd(op,1)))
-				return OP_opnd(op,1);
-		}
-	}
-	return NULL;
-}
-#endif
-
 // search for save-tn that "tn" is copied from.
 static TN*
 Get_Copied_Save_TN (TN *tn, OP *cur_op)
@@ -322,37 +294,6 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     else 
 	return NULL;
 }
-
-#if 0
-// find tn that we are restoring from
-// (go past temporary tn that holds address)
-static TN*
-Get_Source_Of_Restore (TN *tn, OP *cur_op)
-{
-	// if callee-save or stacked, just return
-	if (REGISTER_SET_MemberP(
-		REGISTER_CLASS_callee_saves(TN_register_class(tn)),
-		TN_register(tn)))
-	{
-		return tn;
-	}
-	if (REGISTER_Is_Stacked(TN_register_class(tn), TN_register(tn))) {
-		return tn;
-	}
-	// else search for address
-	OP *op = Find_Def_Of_TN (tn, cur_op);
-	if (!op) return tn;
-	if (OP_load(op)) {
-		// find spill-tn by looking backwards
-		TN *spill_tn = Find_Spill_TN (op, 
-	    		OP_opnd(op, TOP_Find_Operand_Use(OP_code(op), OU_base) ));
-		if ( spill_tn) {
-			return spill_tn;
-		}
-	}
-	return tn;
-}
-#endif
 
 static void
 Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
@@ -1220,6 +1161,10 @@ static LABEL_IDX Label_adjust_sp = LABEL_IDX_ZERO;
 static LABEL_IDX Label_restore_sp = LABEL_IDX_ZERO;
 static LABEL_IDX Label_save_csr = LABEL_IDX_ZERO;
 static LABEL_IDX Label_restore_csr = LABEL_IDX_ZERO;
+static INT Idx_save_ra = 0;
+static INT Idx_restore_ra = 0;
+static INT Idx_adjust_sp = 0;
+static INT Idx_restore_sp = 0;
 static INT Idx_save_csr = 0;
 static INT Idx_restore_csr = 0;
 
@@ -1356,27 +1301,35 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
     case UE_CREATE_FRAME:
       buf = (char *)alloca(strlen(Cur_PU_Name) + 
 			   /* EXTRA_NAME_LEN */ 32);
-      sprintf(buf, ".LEH_%sadjust_sp_%s",
-	      after_op ? "post_" : "", Cur_PU_Name);
+      sprintf(buf, ".LEH_%sadjust_sp_%s_%d",
+	      after_op ? "post_" : "", Cur_PU_Name, Idx_adjust_sp);
       label = &New_LABEL(CURRENT_SYMTAB, Label_adjust_sp);
       LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
       fprintf( Asm_File, "%s:\n", LABEL_name(Label_adjust_sp));
 
       // remember the label we have generated after 'op':
       // this is the one we need to update the debug_frame info
+
+      // once we have emitted the pre-op and post-op labels,
+      // we can update the counter
       if (after_op) {
+	Idx_adjust_sp++;
 	ue_iter->label_idx = Label_adjust_sp;
       }
       break;
     case UE_DESTROY_FRAME:
       buf = (char *)alloca(strlen(Cur_PU_Name) + 
 			   /* EXTRA_NAME_LEN */ 32);
-      sprintf(buf, ".LEH_%srestore_sp_%s",
-	      after_op ? "post_" : "", Cur_PU_Name);
+      sprintf(buf, ".LEH_%srestore_sp_%s_%d",
+	      after_op ? "post_" : "", Cur_PU_Name, Idx_restore_sp);
       label = &New_LABEL(CURRENT_SYMTAB, Label_restore_sp);
       LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
       fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_sp));
+
+      // once we have emitted the pre-op and post-op labels,
+      // we can update the counter
       if (after_op) {
+	Idx_restore_sp++;
 	ue_iter->label_idx = Label_restore_sp;
       }
       break;
@@ -1384,12 +1337,16 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
 	buf = (char *)alloca(strlen(Cur_PU_Name) + 
 			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%ssave_ra_%s",
-		after_op ? "post_" : "", Cur_PU_Name);
+	sprintf(buf, ".LEH_%ssave_ra_%s_%d",
+		after_op ? "post_" : "", Cur_PU_Name, Idx_save_ra);
 	label = &New_LABEL(CURRENT_SYMTAB, Label_save_ra);
 	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
 	fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_ra));
+
+	// once we have emitted the pre-op and post-op labels,
+	// we can update the counter
 	if (after_op) {
+	  Idx_save_ra++;
 	  ue_iter->label_idx = Label_save_ra;
 	}
       } else {
@@ -1413,12 +1370,16 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
 	buf = (char *)alloca(strlen(Cur_PU_Name) + 
 			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%srestore_ra_%s",
-		after_op ? "post_" : "", Cur_PU_Name);
+	sprintf(buf, ".LEH_%srestore_ra_%s_%d",
+		after_op ? "post_" : "", Cur_PU_Name, Idx_restore_ra);
 	label = &New_LABEL(CURRENT_SYMTAB, Label_restore_ra);
 	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
 	fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_ra));
+
+	// once we have emitted the pre-op and post-op labels,
+	// we can update the counter
 	if (after_op) {
+	  Idx_restore_ra++;
 	  ue_iter->label_idx = Label_restore_ra;
 	}
       } else {
@@ -1847,11 +1808,6 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 #if 0
 		    LABEL_IDX begin_label,
 		    LABEL_IDX end_label,
-#endif
-#if 0
-		    Dwarf_Unsigned savera_label,
-		    Dwarf_Unsigned adjustsp_label,
-		    Dwarf_Unsigned callee_saved_reg,
 #endif
 		    INT32     end_offset,
 		    // The following two arguments need to go away
