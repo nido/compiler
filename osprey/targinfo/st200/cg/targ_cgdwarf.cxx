@@ -1414,10 +1414,10 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
       fprintf(f, "%s\t.copy_state %d\n", prefix, ue_iter->label);
       break;
     case UE_RESTORE_GR:
+#if 0
       // can ignore restores in epilog, as all is restored
       if (proc_region == EPILOGUE_BODY_UREGION)
 	break;
-#if 0
       if (ue_iter->qp != 0) {
       	fprintf(f, "%s\t.restorereg.p p%d, %s\n", prefix, 
 		ue_iter->qp,
@@ -1507,6 +1507,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
     case UE_EPILOG:
     case UE_LABEL:
     case UE_COPY:
+    case UE_RESTORE_GR:
+    case UE_SAVE_GR:
       continue;
 
     case UE_CREATE_FRAME:
@@ -1603,9 +1605,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
       break;
     default:
-#ifdef DEBUG_UNWIND
-      fprintf(stderr, "DEFAULT CASE (NOT HANDLED) %d\n", ue_iter->kind);
-#endif
+      FmtAssert(FALSE, ("%s: Unhandled UNWIND_ELEM kind (%d)\n", __FUNCTION__, ue_iter->kind));
       break;
     }
     //    last_label_idx = ue_iter->label_idx;
