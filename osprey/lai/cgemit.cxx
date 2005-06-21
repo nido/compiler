@@ -1181,7 +1181,8 @@ EMT_Put_Elf_Symbol (
 	case SCLASS_DGLOBAL:
 	case SCLASS_UGLOBAL:
 #ifdef TARG_ST
-      case SCLASS_PSTATIC:
+        case SCLASS_EH_REGION:
+        case SCLASS_PSTATIC:
 	      // [CL] take into account the right renaming of static variables.
               // Symbols with no base are not emitted: as they have not been
               // allocated, it means they are not used.
@@ -4573,8 +4574,8 @@ Assemble_Bundles(BB *bb)
 
     line = OP_srcpos(slot_op[0]);
 
+    OP *sl_op;
     if ( (!force_dwarf || (line == 0)) && (Opt_Level > 0) ) {
-      OP *sl_op;
       slot = 0;
       do {
 	sl_op = slot_op[slot];
@@ -4591,7 +4592,18 @@ Assemble_Bundles(BB *bb)
     Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), line, force_dwarf);
 #endif
 
-    OP *sl_op;
+#ifdef TARG_ST200
+    // [CL] support for debug_frame information
+    // loop over the bundle to check if we need to emit special labels
+  slot = 0;
+  do {
+      sl_op = slot_op[slot];
+
+      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, FALSE);
+      slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+  } while (!OP_end_group(sl_op));
+#endif
+
     slot = 0;
     do {
       sl_op = slot_op[slot];
@@ -4626,6 +4638,18 @@ Assemble_Bundles(BB *bb)
       fprintf(Asm_File, "\n");
 #endif
     }
+
+#ifdef TARG_ST200
+    // [CL] loop over the bundle to check if we need
+    // to emit special labels after the bundle
+    slot = 0;
+    do {
+      sl_op = slot_op[slot];
+      
+      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, TRUE);
+      slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+    } while (!OP_end_group(sl_op));
+#endif
 
 #ifdef TARG_ST
     // [CL]
@@ -5711,16 +5735,16 @@ EMT_Emit_PU (
   INT i;
 
   Trace_Inst	= Get_Trace ( TP_EMIT,1 );
-  // BOOL trace_unwind = Get_Trace (TP_EMIT, 64);
+  BOOL trace_unwind = Get_Trace (TP_EMIT, 64);
 
   if (Trace_Inst) {
     fprintf(TFile, "%s CFG before cgemit \n%s", DBar, DBar);
     Print_All_BBs ();
   }
 
-#if 0
   Init_Unwind_Info (trace_unwind);
 
+#if 0
   /* In the IA-32 case, we need to convert fp register references
    * so that they reference entries in the fp register stack with the
    * proper offset.
@@ -6023,9 +6047,7 @@ EMT_Emit_PU (
   }
 #endif
 
-#if 0
   Finalize_Unwind_Info();
-#endif
 
   return;
 }
