@@ -1530,7 +1530,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       ue_iter->label_idx,
 					       scn_index),
 			 &dw_error);
-      frame_size = 0;
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, frame_size,
 			 0, &dw_error);
 #ifdef DEBUG_UNWIND
