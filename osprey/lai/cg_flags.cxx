@@ -297,7 +297,11 @@ BOOL EMIT_explicit_bundles = FALSE;
 INT32 EMIT_Long_Branch_Limit = DEFAULT_LONG_BRANCH_LIMIT;
 
 BOOL CG_emit_asm_dwarf    = FALSE;
+#ifdef TARG_ST // [CL] until bugs fixed
+BOOL CG_emit_unwind_info  = FALSE;
+#else
 BOOL CG_emit_unwind_info  = TRUE;
+#endif
 BOOL CG_emit_unwind_directives = FALSE;
 
 // ====================================================================
