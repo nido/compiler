@@ -2105,7 +2105,12 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 			    begin_entry,
 			    end_entry,
 			    end_offset,
+#ifdef TARG_ST
+    // [CL] need scn_index to connect debug_frame label to Dwarf symtab
+			    low_pc, high_pc, scn_index);
+#else
 			    low_pc, high_pc);
+#endif
 
   Dwarf_Unsigned eh_handle;
 
@@ -2297,7 +2302,6 @@ print_source (SRCPOS srcpos)
   /* TODO: we don't handle this yet. */
   if (USRCPOS_filenum(usrcpos) == 0) return;
 
-#if 0
   cur_file = &file_table[USRCPOS_filenum(usrcpos)];
   if (USRCPOS_filenum(usrcpos) != cur_file_index) {
     if (cur_file_index != 0) {
@@ -2337,7 +2341,6 @@ print_source (SRCPOS srcpos)
     }
     cur_file->max_line_printed = USRCPOS_linenum(usrcpos);
   }
-#endif
   return;
 }
 
