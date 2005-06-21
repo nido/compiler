@@ -34,7 +34,18 @@
 
 #define DWARF_TARGET_FLAG	DW_DLC_ISA_IA64
 
-#define TARG_INIT_BYTES	{ 0 }
+// Define all instruction bytes that go into a CIE.
+// DW_CFA_def_cfa
+//      - opcode is 0x0c
+//      - register number 12
+//      - offset 0
+#define TARG_INIT_BYTES { 0x0c,  0xc, 0x0 }
+
+// Return Address is in r63
+#ifdef DW_FRAME_RA_COL
+#undef DW_FRAME_RA_COL
+#endif
+#define DW_FRAME_RA_COL 63
 
 typedef void (*Cg_Dwarf_Sym_To_Elfsym_Ofst)(Dwarf_Unsigned,
 					    Dwarf_Unsigned *,
