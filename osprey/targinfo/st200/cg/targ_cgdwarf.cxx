@@ -79,6 +79,8 @@ static BOOL Trace_Unwind = FALSE;
 
 static INT Data_Alignment_Factor = 4;
 
+//#define DEBUG_UNWIND
+
 // rp == ra
 // psp == fp
  
@@ -318,11 +320,12 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     ue.rc_reg = CLASS_REG_PAIR_sp;
     if (BB_entry(bb) && op == BB_entry_sp_adj_op (bb)) {
 	ue.kind = UE_CREATE_FRAME;
+	ue.u.region.size = -TN_value (OP_opnd(op,1));
     }
     else if (BB_exit(bb) && op == BB_exit_sp_adj_op (bb)) {
 	ue.kind = UE_DESTROY_FRAME;
+	ue.u.region.size = TN_value (OP_opnd(op,1));
     }
-    ue.u.region.size = TN_offset (OP_opnd(op,1));
 #ifdef DEBUG_UNWIND
     fprintf(stderr, "** %s modif SP size %d\n", __FUNCTION__, ue.u.region.size);
 #endif
@@ -1276,9 +1279,6 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
   else
 	strcpy(prefix, ASM_CMNT_LINE);	// emit as comments
 
-#ifdef DEBUG_UNWIND
-  fprintf(stderr, "*** in %s %p\n", __FUNCTION__, op);
-#endif
 #if 0 // [CL]
   if (ue_iter == ue_list.end()) {	// none left
 	if (proc_region == UNDEFINED_UREGION) {
@@ -1526,20 +1526,21 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       scn_index),
 			 &dw_error);
       frame_size = ue_iter->u.region.size;
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, -frame_size,
+      Is_True(frame_size > 0, ("unwind: frame size should be > 0 at creation point"));
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, frame_size,
 			 0, &dw_error);
 #ifdef DEBUG_UNWIND
       fprintf(stderr, "%s label %s to %s advance loc + create frame %d\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), frame_size);
 #endif
       break;
     case UE_DESTROY_FRAME:
-      Is_True(frame_size == - ue_iter->u.region.size, ("unwind: bad frame size at destroy point"));
+      Is_True(frame_size == ue_iter->u.region.size, ("unwind: bad frame size at destroy point"));
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 					       ue_iter->label_idx,
 					       scn_index),
 			 &dw_error);
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, frame_size,
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, 0,
 			 0, &dw_error);
 #ifdef DEBUG_UNWIND
       fprintf(stderr, "%s label %s to %s advance loc + destroy frame\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx));
@@ -1566,10 +1567,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       scn_index),
 			 &dw_error);
       dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_machine_id(rc,reg),
-		 (frame_size + ue_iter->u.offset) / Data_Alignment_Factor,
+		 (frame_size - ue_iter->u.offset + STACK_SCRATCH_AREA_SIZE) / Data_Alignment_Factor,
 			 &dw_error);
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "%s label %s to %s advance loc + save reg %d at %lld\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), REGISTER_machine_id(rc,reg), frame_size + ue_iter->u.offset);
+      fprintf(stderr, "%s label %s to %s advance loc + save reg %d at offset %lld\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), REGISTER_machine_id(rc,reg), frame_size - ue_iter->u.offset  + STACK_SCRATCH_AREA_SIZE);
 #endif
 
 #if 0

@@ -34,12 +34,14 @@
 
 #define DWARF_TARGET_FLAG	DW_DLC_ISA_IA64
 
+#define STACK_SCRATCH_AREA_SIZE 16 /* [CL] size in bytes */
+
 // Define all instruction bytes that go into a CIE.
 // DW_CFA_def_cfa
 //      - opcode is 0x0c
 //      - register number 12
-//      - offset 0
-#define TARG_INIT_BYTES { 0x0c,  0xc, 0x0 }
+//      - offset STACK_SCRATCH_AREA_SIZE (in LEB128) form
+#define TARG_INIT_BYTES { 0x0c,  0xc, STACK_SCRATCH_AREA_SIZE }
 
 // Return Address is in r63
 #ifdef DW_FRAME_RA_COL
