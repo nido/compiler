@@ -719,6 +719,13 @@ Init_Dedicated_TNs (void)
   else
     GP_TN = NULL;
 
+  if (!True_TN) {
+    // (cbr) we need a true_tn for predicated instructions that are sunk
+    // into a psi instruction.
+    ++tnum; 
+    True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_branch, 4);    
+  }
+
 #else
   /* Initialize the dedicated integer register TNs: */
   Zero_TN = ded_tns[REGISTER_CLASS_zero][REGISTER_zero];
@@ -1133,9 +1140,16 @@ TN_Reaching_Value_At_Op(
 	  if (OP_Defs_Reg(value_op, rc, reg)) {
 	    if (Is_OP_Cond(value_op)) {
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
+#ifdef TARG_ST
+                /* (cbr) predicate operand # is not necessary constant */
+		TN *p1 = OP_opnd((OP*) value_op,
+                                 OP_find_opnd_use(value_op, OU_predicate));
+		TN *p2 = OP_opnd((OP*) op,
+                                 OP_find_opnd_use(op, OU_predicate));
+#else
 		TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 		TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
-		
+#endif	
 		if (p1 == p2) {
 		  *kind =  VAL_COND_DEF;
 		  return value_op;
@@ -1153,8 +1167,16 @@ TN_Reaching_Value_At_Op(
 	  if (OP_Refs_Reg(value_op, rc, reg)) {
 	    if (Is_OP_Cond(value_op)) {
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
+#ifdef TARG_ST
+                /* (cbr) predicate operand # is not necessary constant */
+		TN *p1 = OP_opnd((OP*) value_op,
+                                 OP_find_opnd_use(value_op, OU_predicate));
+		TN *p2 = OP_opnd((OP*) op,
+                                 OP_find_opnd_use(op, OU_predicate));
+#else
 		TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 		TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
+#endif
 		
 		if (p1 == p2) {
 		  *kind =  VAL_COND_USE;
@@ -1219,8 +1241,16 @@ TN_Reaching_Value_At_Op(
 	if (OP_Defs_TN(value_op, tn)) {
 	  if (Is_OP_Cond(value_op)) {
 	    if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
+#ifdef TARG_ST
+                /* (cbr) predicate operand # is not necessary constant */
+		TN *p1 = OP_opnd((OP*) value_op,
+                                 OP_find_opnd_use(value_op, OU_predicate));
+		TN *p2 = OP_opnd((OP*) op,
+                                 OP_find_opnd_use(op, OU_predicate));
+#else
 	      TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 	      TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
+#endif
 	      
 	      if (p1 == p2) {
 		*kind =  VAL_COND_DEF;
@@ -1239,8 +1269,16 @@ TN_Reaching_Value_At_Op(
 	if (OP_Refs_TN(value_op, tn)) {
 	  if (Is_OP_Cond(value_op)) {
 	    if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
+#ifdef TARG_ST
+                /* (cbr) predicate operand # is not necessary constant */
+		TN *p1 = OP_opnd((OP*) value_op,
+                                 OP_find_opnd_use(value_op, OU_predicate));
+		TN *p2 = OP_opnd((OP*) op,
+                                 OP_find_opnd_use(op, OU_predicate));
+#else
 	      TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 	      TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
+#endif
 	      
 	      if (p1 == p2) {
 		*kind =  VAL_COND_USE;

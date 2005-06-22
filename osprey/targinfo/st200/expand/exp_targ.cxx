@@ -175,16 +175,24 @@ Expand_Copy (
     case ISA_REGISTER_CLASS_integer:
 
       if (tgt_rc == ISA_REGISTER_CLASS_integer) {
-	Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
-	Set_OP_copy (OPS_last(ops));
+	// FdF 20050608: Add support for predicated MOV operations
+	if (guard == NULL) {
+	  Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
+	  Set_OP_copy (OPS_last(ops));
+	}
+	else
+	  Expand_Select(tgt_tn, guard, src_tn, tgt_tn, MTYPE_I4, FALSE, ops);
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_branch) {
+	if (guard) goto unsupported;
 	Build_OP(TOP_mtb, tgt_tn, src_tn, ops);
       }
       else goto unsupported;
       break;
 
     case ISA_REGISTER_CLASS_branch:
+
+      if (guard) goto unsupported;
 
       if (tgt_rc == ISA_REGISTER_CLASS_branch) {
 	// [CG] Generating a branch copy need 2 instructions

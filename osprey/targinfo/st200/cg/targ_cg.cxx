@@ -726,6 +726,12 @@ CGTARG_Invert(TOP opr)
   return CGTARG_Invert_Table[(INT)opr];
 }
 
+BOOL
+CGTARG_Is_OP_Inter_RegClass_Copy(OP *op) {
+
+  return (OP_code(op) == TOP_mtb || OP_code(op) == TOP_mfb);
+}
+
 /* ====================================================================
  *   CGTARG_Dependence_Required
  * ====================================================================
@@ -1222,6 +1228,86 @@ CGTARG_Speculative_Load (OP *op)
     break;
   case TOP_ldbu_ii:
     ld = TOP_ldbu_d_ii;
+    break;
+  }
+
+  return ld;
+}
+
+/* ====================================================================
+ *   CGTARG_Predicated_Store
+ * ====================================================================
+ */
+TOP
+CGTARG_Predicated_Store (OP *op)
+{
+  TOP opcode = OP_code(op);
+  TOP stw = TOP_UNDEFINED;
+
+  switch (opcode) {
+  case TOP_stw_i: 
+    stw = TOP_stwc_i;
+    break;
+  case TOP_stw_ii:
+    stw = TOP_stwc_ii;
+    break;
+  case TOP_sth_i:
+    stw = TOP_sthc_i;
+    break;
+  case TOP_sth_ii:
+    stw = TOP_sthc_ii;
+    break;
+  case TOP_stb_i:
+    stw = TOP_stbc_i;
+    break;
+  case TOP_stb_ii:
+    stw = TOP_stbc_ii;
+    break;
+  }
+
+  return stw;
+}
+
+/* ====================================================================
+ *   CGTARG_Predicated_Load
+ * ====================================================================
+ */
+TOP
+CGTARG_Predicated_Load (OP *op)
+{
+  TOP opcode = OP_code(op);
+  TOP ld = TOP_UNDEFINED;
+
+  switch (opcode) {
+  case TOP_ldw_i: 
+    ld = TOP_ldwc_i;
+    break;
+  case TOP_ldw_ii:
+    ld = TOP_ldwc_ii;
+    break;
+  case TOP_ldh_i:
+    ld = TOP_ldhc_i;
+    break;
+  case TOP_ldh_ii:
+    ld = TOP_ldhc_ii;
+    break;
+  case TOP_ldhu_i:
+    ld = TOP_ldhuc_i;
+    break;
+  case TOP_ldhu_ii:
+    ld = TOP_ldhuc_ii;
+    break;
+  case TOP_ldb_i:
+    ld = TOP_ldbc_i;
+    break;
+  case TOP_ldb_ii:
+    ld = TOP_ldbc_ii;
+    break;
+  case TOP_ldbu_i:
+    ld = TOP_ldbuc_i;
+    break;
+  case TOP_ldbu_ii:
+    ld = TOP_ldbuc_ii;
     break;
   }
 

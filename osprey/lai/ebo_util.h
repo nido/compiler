@@ -305,6 +305,12 @@ inline
 void
 EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
 {
+#ifdef TARG_ST
+  if (predicate_tn != NULL) {
+    Expand_Copy(tgt_tn, predicate_tn, src_tn, ops);
+    return;
+  }
+#endif
   Exp_COPY(tgt_tn, src_tn, ops);
   if (predicate_tn != NULL) {
     EBO_OPS_predicate (predicate_tn, ops);

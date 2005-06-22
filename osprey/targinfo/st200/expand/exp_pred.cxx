@@ -43,7 +43,10 @@
 #include "tn.h"
 #include "op.h"
 #include "cgexp.h"
-
+#ifdef TARG_ST
+/* (cbr) might need ssa_def if available */  
+#include "cg_ssa.h"
+#endif
 
 /* ====================================================================
  *   Alloc_Result_TNs
@@ -115,13 +118,15 @@ Exp_Pred_Copy (
     Exp_Pred_Set(dest, cdest, 1, ops);
     return;
   }
+  FmtAssert(cdest == NULL, 
+	    ("Exp_Pred_Complement, can't have 2 predicates define"));
 
   Exp_COPY (dest, src, ops);
   return;
 }
 
 /* ====================================================================
- *   Exp_Pred_Compliment
+ *   Exp_Pred_Complement
  *
  *   dest, cdest, and src must all be of rclass guard.
  * ====================================================================
@@ -138,12 +143,23 @@ Exp_Pred_Complement (
     Exp_Pred_Set(dest, cdest, !1, ops);
     return;
   }
+  FmtAssert(TN_register_class(src) == ISA_REGISTER_CLASS_branch, 
+	    ("Exp_Pred_Complement, src of wrong class"));
+  FmtAssert(TN_register_class(dest) == ISA_REGISTER_CLASS_branch, 
+	    ("Exp_Pred_Complement, dst of wrong class"));
+  FmtAssert(cdest == NULL, 
+	    ("Exp_Pred_Complement, can't have 2 predicates define"));
 
-  FmtAssert(FALSE,("Exp_Pred_Complement: not implemented"));
-
-#if 0
-  Build_OP(TOP_GP32_NOTG_GT_BR_BR, dest, True_TN, src, ops);
-#endif
+  OP *opb = TN_ssa_def (src);
+  if (opb && OP_code(opb) == TOP_mtb) {
+    TN *ptn = OP_opnd(opb, 0);
+    Build_OP(TOP_cmpeq_r_b, Dup_TN(src), ptn, Zero_TN, ops);
+  }
+  else {
+    TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+    Exp_COPY(tmp, src, ops);
+    Build_OP(TOP_cmpeq_r_b, dest, tmp, Zero_TN, ops);
+  }
 }
 
 /* ====================================================================
@@ -176,7 +192,10 @@ Exp_Pred_Compare (
  *
  *   Generate a generic 2-result predicate operation.
  *   COMPARE_type_or sets result1 and result2 true if qual_pred is true
+ *   COMPARE_type_orcm sets result1 and result2 true if qual_pred is false
  *   COMPARE_type_and sets result1 and result2 false if qual_pred is true
+ *   Note that the ST200 implementation always generate unconditional
+ *   setting.
  * ====================================================================
  */
 void 
@@ -188,31 +207,119 @@ Exp_Generic_Pred_Calc (
   OPS* ops
 )
 {
-  Is_True(TN_register_class(result1) == ISA_REGISTER_CLASS_integer,
-	  ("wrong register class"));
-  if (result2 != NULL)
-    Is_True(TN_register_class(result2) == ISA_REGISTER_CLASS_integer,
-	    ("wrong register class"));
+  TN *input1, *input2;
 
+  // Treat constant cond tn
+  if (TN_has_value(qual_pred)) {
+    INT64 val = TN_value(qual_pred);
+    if (ctype == COMPARE_TYPE_orcm) {
+      ctype = COMPARE_TYPE_or;
+      val = !val;
+    }
+    if (ctype == COMPARE_TYPE_andcm) {
+      ctype = COMPARE_TYPE_and;
+      val = !val;
+    }
+    if (val == 0) {
+      switch (ctype) {
+      case COMPARE_TYPE_or:
+	// unmodified
+	break;
+      case COMPARE_TYPE_and:
+	Expand_Immediate (result1, Gen_Literal_TN(0,4), MTYPE_I4, ops);
+	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(0,4), MTYPE_I4, ops);
+	break;
+      }
+    } else {
+      switch (ctype) {
+      case COMPARE_TYPE_or:
+	Expand_Immediate (result1, Gen_Literal_TN(1,4), MTYPE_I4, ops);
+	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(1,4), MTYPE_I4, ops);
+	break;
+      case COMPARE_TYPE_and:
+	// unmodified
+	break;
+      }
+    }
+    return;
+  }
+
+  if (TN_register_class(qual_pred) == ISA_REGISTER_CLASS_branch) {
+    TN *tmp  = Build_TN_Of_Mtype (MTYPE_I4);
+    Exp_COPY(tmp, qual_pred, ops);
+    qual_pred = tmp;
+  }
+  if (TN_register_class(result1) == ISA_REGISTER_CLASS_branch) {
+    input1  = Build_TN_Of_Mtype (MTYPE_I4);
+    Exp_COPY(input1, result1, ops);
+  } else input1 = result1;
+  if (result2 != NULL &&
+      TN_register_class(result2) == ISA_REGISTER_CLASS_branch) {
+    input2  = Build_TN_Of_Mtype (MTYPE_I4);
+    Exp_COPY(input2, result2, ops);
+  } else input2 = result2;
+
+  
+  TN *result = result1;
+  TN *input = input1;
   switch (ctype) {
   case COMPARE_TYPE_or:
     //
     // sets result1 and result2 true if qual_pred is true
     //
-    Build_OP(TOP_slctf_i, result1, qual_pred, result1, 
-	                                  Gen_Literal_TN(1,4), ops);
-    if (result2 != NULL)
-      Build_OP(TOP_slctf_i, result2, qual_pred, result2, 
-	                                  Gen_Literal_TN(1,4), ops);
+    do {
+      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
+	Build_OP(TOP_orl_r_b, result, qual_pred, input, ops);
+      else
+	Build_OP(TOP_orl_r_r, result, qual_pred, input, ops);
+      if (result == result2) break;
+      result = result2;
+      input = input2;
+    } while (result != NULL);
+    break;
+
+  case COMPARE_TYPE_orcm:
+    //
+    // sets result1 and result2 true if qual_pred is false
+    //
+    do {
+      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
+	Build_OP(TOP_norl_r_b, result, qual_pred, input, ops);
+      else
+	Build_OP(TOP_norl_r_r, result, qual_pred, input, ops);
+      if (result == result2) break;
+      result = result2;
+      input = input2;
+    } while (result != NULL);
     break;
 
   case COMPARE_TYPE_and:
     //
+    // sets result1 and result2 false if qual_pred is false
+    //
+    do {
+      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
+	Build_OP(TOP_andl_r_b, result, qual_pred, input, ops);
+      else
+	Build_OP(TOP_andl_r_r, result, qual_pred, input, ops);
+      if (result == result2) break;
+      result = result2;
+      input = input2;
+    } while (result != NULL);
+    break;
+  case COMPARE_TYPE_andcm:
+    //
     // sets result1 and result2 false if qual_pred is true
     //
-    Build_OP(TOP_slct_i, result1, qual_pred, Zero_TN, result1, ops);
-    if (result2 != NULL)
-      Build_OP(TOP_slct_i, result2, qual_pred, Zero_TN, result2, ops);
+    do {
+      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
+	Build_OP(TOP_nandl_r_b, result, qual_pred, input, ops);
+      else
+	Build_OP(TOP_nandl_r_r, result, qual_pred, input, ops);
+      if (result == result2) break;
+      result = result2;
+      input = input2;
+    } while (result != NULL);
     break;
   }
 
@@ -242,6 +349,11 @@ Exp_Generic_Pred_Calc (
  * is executed.  We can accomplish this by initializing Pf to 1 under the
  * block predicate, and setting it to 0 if Pb is TRUE.
  *
+ * TARG_ST:
+ * - For the ST200 port we don't take the latter remark into account.
+ *   We consider that the predicate is always available.
+ * - We return only one of true_tn of false_tn depending on the branch
+ *   variant. The other is set to NULL.
  * ====================================================================
  */ 
 void
@@ -265,43 +377,27 @@ Exp_True_False_Preds_For_Block (
    reusing_tns = FALSE;
    
    br_variant = CGTARG_Analyze_Branch(br_op, &tn1, &tn2);
-   //Is_True(br_variant == V_BR_P_TRUE,
-   //	   ("Can't get predicates for block %d",BB_id(bb)));
+   Is_True(V_br_condition(br_variant) == V_BR_P_TRUE,
+   	   ("Can't get predicates for branch in block %d",BB_id(bb)));
 
-   /* Try to find the compare op */
-   compare_op = TN_Reaching_Value_At_Op(tn1, br_op, &kind, TRUE);
-
-   /* 
-    * if compare_op is in a different BB, be conservative, can't 
-    * always reuse the predicate, due to other non-satisfying 
-    * predicate conditions, 804702
-    */
-   if (compare_op && kind == VAL_KNOWN && OP_bb(compare_op) == OP_bb(br_op)) {
-
-     reusing_tns = TRUE;
-
-     // Return the same TN in both: true/false containers.
-     // Normally, we should distinguish, but Analyze_Branch() does 
-     // not work properly
-     if (V_false_br(br_variant)) {
-       // should really look for 'tn2' but until CFLOW is fixed ...
-       //false_tn = tn2;
-       false_tn = tn1;
-     }
-     else {
-       true_tn = tn1;
-     }
-   }
-
-   FmtAssert(reusing_tns, ("not reusing tns in BB %d",BB_id(bb)));
+   // Set the true or false tn depending on variant
+   if (V_false_br(br_variant)) false_tn = tn1;
+   else true_tn = tn1;
 
 #if 0
-     false_tn = Gen_Predicate_TN();
-     Exp_Pred_Set(false_tn, True_TN, 1, &ops);
-     Exp_Generic_Pred_Calc(false_tn,True_TN,COMPARE_TYPE_and, true_tn, &ops);
-     BB_Insert_Ops(bb,br_op,&ops,TRUE);
-     DevWarn("inserting inverse predicate in BB %d",BB_id(bb));
+   // Obsolete
+   FmtAssert(reusing_tns, ("not reusing tns in BB %d",BB_id(bb)));
+
+   OPS ops = OPS_EMPTY;
+   if (false_tn == NULL) {
+     false_tn = Build_TN_Like(true_tn);
+     Exp_Pred_Complement(false_tn, NULL, true_tn, &ops);
+   } else {
+     true_tn = Build_TN_Like(false_tn);
+     Exp_Pred_Complement(true_tn, NULL, false_tn, &ops);
+   }
+   BB_Insert_Ops_Before(bb,br_op,&ops);
+   DevWarn("inserting inverse predicate in BB %d",BB_id(bb));
 #endif
-   
    return;
 }

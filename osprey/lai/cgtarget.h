@@ -667,6 +667,8 @@ extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
  * Get speculative load opcode given 'op'
  */
 extern TOP CGTARG_Speculative_Load (OP *op);
+extern TOP CGTARG_Predicated_Store (OP *op);
+extern TOP CGTARG_Predicated_Load (OP *op);
 
 /* ====================================================================
  *    PROC:
@@ -697,6 +699,10 @@ extern BOOL CGTARG_Is_OP_Advanced_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Check_Load(OP* memop);
 extern BOOL CGTARG_Is_OP_Speculative(OP *op);
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
+#endif
+
+#ifdef TARG_ST200
+extern BOOL CGTARG_Is_OP_Inter_RegClass_Copy(OP *op);
 #endif
 
 extern BOOL CGTARG_OP_is_counted_loop(OP *op);
