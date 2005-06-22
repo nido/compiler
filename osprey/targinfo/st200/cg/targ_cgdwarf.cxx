@@ -714,6 +714,8 @@ PR_To_CR (PR_TYPE p)
 	Set_CLASS_REG_PAIR_rclass(crp, ISA_REGISTER_CLASS_integer);
 	Set_CLASS_REG_PAIR_reg(crp, REGISTER_MIN+14);
 	break;
+  case PR_RA:
+    crp = CLASS_REG_PAIR_ra; break;
   default:
     FmtAssert(FALSE, ("unexpected pr (%d) in PR_To_CR", p));
   }
@@ -1172,6 +1174,8 @@ static INT Idx_restore_csr = 0;
 void 
 Init_Unwind_Info (BOOL trace)
 {
+  if (!CG_emit_unwind_info) return;
+
   Trace_Unwind = trace;
   has_asm = FALSE;
   has_create = FALSE;
@@ -1220,6 +1224,8 @@ Init_Unwind_Info (BOOL trace)
 void 
 Finalize_Unwind_Info(void)
 {
+  if (!CG_emit_unwind_info) return;
+
   ue_list.clear();
 }
 
@@ -1250,6 +1256,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
   static UINT saved_next_when;
   static list < UNWIND_ELEM >::iterator saved_ue_iter;
 
+  if (!CG_emit_unwind_info) return;
 
   if (!saved_state && after_op) {
     // we start post-processing this bundle, so rewind next_when
