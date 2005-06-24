@@ -367,7 +367,7 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   OP *addiu_op;
   OP *ldst_op;
   INT64 multiplier;
-
+  
   if (((OPSCH_flags(opsch1) | OPSCH_flags(opsch2)) & OPSCH_ADDIU_LDST_PAIR) !=
       OPSCH_ADDIU_LDST_PAIR) 
   {
@@ -420,10 +420,11 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op,base_opndnum) ||
       (OP_store(ldst_op) &&
 #ifdef TARG_ST
-       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))))
+       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))
 #else
-       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,0)))
+       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,0)
 #endif
+       ))
   {
     return FALSE;
   }
@@ -444,6 +445,13 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     if ((base_st != SP_Sym) ||
         ((ldst_const + addiu_const*multiplier) < 0))
       return FALSE;
+  } else if (OP_opnd(ldst_op, base_opndnum) == SP_TN) {
+    // [CG]: We may have SP based accesses with no symbol associated
+    // in the case of accesses to the parameter passing area.
+    // Thus we must also ensure that any SP_TN based access will
+    // not be negative
+    ldst_const = TN_value (OP_opnd(ldst_op, offset_opndnum));
+    if (ldst_const + addiu_const*multiplier < 0) return FALSE;
   }
   else
 #endif
@@ -451,7 +459,11 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 
 #ifdef TARG_ST
   // [CG] Don't allow opcode size change
-  return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), offset_opndnum, ldst_const + addiu_const*multiplier);
+  if (OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), offset_opndnum, ldst_const + addiu_const*multiplier)) {
+    return TRUE;
+  } else {
+    return FALSE;
+  }
 #else
   return TOP_Can_Have_Immediate (ldst_const + addiu_const*multiplier, OP_code(ldst_op));
 #endif
