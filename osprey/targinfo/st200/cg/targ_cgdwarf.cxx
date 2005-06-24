@@ -116,13 +116,7 @@ typedef struct unwind_elem {
   CLASS_REG_PAIR rc_reg;	// reg whose state is changing
   CLASS_REG_PAIR save_rc_reg;	// reg being saved into
   LABEL_IDX label_idx;          // idx of label generated in asm file
-  union {
-  	mINT64 offset;			// stack offset
-	struct {
-		mUINT32 size;		// region size
-		mUINT32 start;		// when at start of region
-	} region;
-  } u;
+  mINT64 offset;		// stack offset or frame size
 } UNWIND_ELEM;
 
 // use list not slist cause append to end
@@ -138,10 +132,7 @@ static TN_MAP tn_def_op;
 static const char *
 UE_Register_Name (ISA_REGISTER_CLASS rc, REGISTER r)
 {
-	if (rc == ISA_REGISTER_CLASS_branch && r == REGISTER_MIN+0)
-		return "rp";	// b0 is called rp in unwind directives
-	else
-		return REGISTER_name(rc,r);
+  return REGISTER_name(rc,r);
 }
 
 static void
@@ -150,23 +141,22 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 	fprintf(TFile, "<%s> at bb %d when %d: ", msg, ue.bb->id, ue.when);
 	switch (ue.kind) {
 	case UE_CREATE_FRAME:
-		fprintf(TFile, " create_frame, size %d, start %d", 
-			ue.u.region.size, ue.u.region.start); 
+		fprintf(TFile, " create_frame, size %lld", 
+			ue.offset); 
 		break;
 	case UE_DESTROY_FRAME:
 		fprintf(TFile, " destroy_frame");
 		break;
 	case UE_EPILOG:
-		fprintf(TFile, " body epilog, size %d, start %d",
-			ue.u.region.size, ue.u.region.start); 
+		fprintf(TFile, " body epilog"); 
 		break;
 	case UE_LABEL:  
-		fprintf(TFile, " label state %d, size %d, start %d",
-			ue.label, ue.u.region.size, ue.u.region.start);
+		fprintf(TFile, " label state %d",
+			ue.label);
 		break;
 	case UE_COPY:  
-		fprintf(TFile, " copy label state %d, size %d, start %d",
-			ue.label, ue.u.region.size, ue.u.region.start);
+		fprintf(TFile, " copy label state %d",
+			ue.label);
 		break;
 	case UE_SAVE_GR:  
 		fprintf(TFile, " save %s in gr %s",
@@ -182,7 +172,7 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 				CLASS_REG_PAIR_rclass(ue.rc_reg),
         			CLASS_REG_PAIR_reg(ue.rc_reg) ));
 		fprintf(TFile, " to mem %lld(%s)",
-			ue.u.offset,
+			ue.offset,
 			(ue.kind == UE_SAVE_MEM ? "sp" : "psp") );
 		break;
 	case UE_RESTORE_GR:  
@@ -253,8 +243,9 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     if (TN_is_save_reg(tn)) 
     {
 #ifdef DEBUG_UNWIND
-	fprintf(stderr, "%s is a save reg\n", __FUNCTION__);
-	fprintf(stderr, "%s reg %d\n", __FUNCTION__, CLASS_REG_PAIR_reg(TN_save_creg(tn)));
+      fprintf(TFile, "** %s is a save reg %d\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(tn)),
+				  CLASS_REG_PAIR_reg(TN_save_creg(tn))));
 #endif
 	return tn;
     }
@@ -262,8 +253,9 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     if (TN_is_dedicated(tn)) 
     {
 #ifdef DEBUG_UNWIND
-	fprintf(stderr, "%s is dedicated\n", __FUNCTION__);
-	fprintf(stderr, "%s reg %d\n", __FUNCTION__, TN_register(tn));
+      fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
+				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
 #endif
 	return NULL;
     }
@@ -272,14 +264,14 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     OP *op = Find_Def_Of_TN (tn, cur_op);
 
 #ifdef DEBUG_UNWIND
-    fprintf(stderr, "%s def of TN %p\n", __FUNCTION__, op);
+    fprintf(TFile, "** %s def of TN %p\n", __FUNCTION__, op);
 #endif
 
     if (!op) return NULL;
     TN *otn = OP_Copy_Operand_TN(op);
 
 #ifdef DEBUG_UNWIND
-    fprintf(stderr, "%s copy operand TN %p\n", __FUNCTION__, otn);
+    fprintf(TFile, "** %s copy operand TN %p\n", __FUNCTION__, otn);
 #endif
 
     if (!otn) {
@@ -289,7 +281,9 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     if (otn && TN_is_register(otn) && TN_is_save_reg(otn)) 
     {
 #ifdef DEBUG_UNWIND
-	fprintf(stderr, "%s TN is save reg\n", __FUNCTION__);
+      fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(otn)),
+				  CLASS_REG_PAIR_reg(TN_save_creg(otn))));
 #endif
 	return otn;
     }
@@ -320,27 +314,17 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     ue.rc_reg = CLASS_REG_PAIR_sp;
     if (BB_entry(bb) && op == BB_entry_sp_adj_op (bb)) {
 	ue.kind = UE_CREATE_FRAME;
-	ue.u.region.size = -TN_value (OP_opnd(op,1));
+	ue.offset = -TN_value (OP_opnd(op,1));
     }
     else if (BB_exit(bb) && op == BB_exit_sp_adj_op (bb)) {
 	ue.kind = UE_DESTROY_FRAME;
-	ue.u.region.size = TN_value (OP_opnd(op,1));
+	ue.offset = TN_value (OP_opnd(op,1));
     }
 #ifdef DEBUG_UNWIND
-    fprintf(stderr, "** %s modif SP size %d\n", __FUNCTION__, ue.u.region.size);
+    fprintf(TFile, "** %s modif SP size %lld\n", __FUNCTION__, ue.offset);
 #endif
   } 
-#if 0 // [CL] useless on ST200
-  else if (OP_has_result(op) && OP_result(op,0) == FP_TN) {
-    // even though is adjusting fp, want to pretend it is sp adjustment
-    ue.rc_reg = CLASS_REG_PAIR_sp;
-    if (BB_entry(bb) && op == BB_entry_sp_adj_op (bb)) {
-	ue.kind = UE_CREATE_FRAME;
-    }
-    else if (BB_exit(bb) && op == BB_exit_sp_adj_op (bb)) {
-	ue.kind = UE_DESTROY_FRAME;
-    }
-  } 
+
   if (ue.kind == UE_CREATE_FRAME) {
 	if (has_create) {
 		// Assume create frame will only appear once.
@@ -351,7 +335,6 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	}
 	else has_create = TRUE;
   }
-#endif
 
   if (ue.kind != UE_UNDEFINED) 
 	;	// already found
@@ -380,37 +363,31 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	    FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
 		      ("not saving to the stack!"));
 
-	    ue.u.offset = CGTARG_TN_Value (offset_tn, base_ofst);
-#ifdef DEBUG_UNWIND
-	    fprintf(stderr, "** register offset = %lld\n", ue.u.offset);
-#endif
+	    ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
 
-	    if (TN_save_reg(OP_opnd(op,OP_find_opnd_use(op, OU_storeval))) == REGISTER_ra)
-	    {
 #ifdef DEBUG_UNWIND
-		fprintf(stderr, "** saved RA\n");
+	    fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
+		    REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
+					CLASS_REG_PAIR_reg(ue.rc_reg)),
+		    ue.offset);
 #endif
-	    }
-	}
-	else {
-	    FmtAssert(0, ("%s did not store in SP\n", __FUNCTION__));
 	}
     } else {
 #ifdef DEBUG_UNWIND
-	fprintf(stderr, "** no save tn\n");
+      fprintf(TFile, "** %s no save tn\n", __FUNCTION__);
 #endif
     }
   } else if (OP_load(op)) {
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "** %s load\n", __FUNCTION__);
+      fprintf(TFile, "** %s load\n", __FUNCTION__);
 #endif
       // check if we are loading a callee saved
       // from the stack
       if (TN_Is_Unwind_Reg(OP_result(op,0))) {
 	INT opndnum = OP_find_opnd_use(op, OU_base);
 	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
-	TN *store_tn = OP_opnd(op,opndnum);
-	if (store_tn == SP_TN) {
+	TN *load_tn = OP_opnd(op,opndnum);
+	if (load_tn == SP_TN) {
 	  ue.kind = UE_RESTORE_MEM;
 	  ue.rc_reg = TN_class_reg(OP_result(op,0));
 
@@ -423,17 +400,24 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
 		    ("not restoring from the stack!"));
 
-	  ue.u.offset = CGTARG_TN_Value (offset_tn, base_ofst);
+	  ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
+
 #ifdef DEBUG_UNWIND
-	  fprintf(stderr, "  restore mem offset %lld\n", ue.u.offset);
+	  fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
+		  __FUNCTION__,
+		  REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
+				      CLASS_REG_PAIR_reg(ue.rc_reg)),
+		  ue.offset);
 #endif
 	}
       }
   }
-#if 0 // [CL] seems useless
+  //#if 0 // [CL] seems useless
   else if ((opnd_idx = OP_Copy_Operand(op)) != -1) 
   {
-      fprintf(stderr, "** %s copy\n", __FUNCTION__);
+#ifdef DEBUG_UNWIND
+      fprintf(TFile, "** %s copy\n", __FUNCTION__);
+#endif
       TN* copy_tn = OP_opnd(op, opnd_idx);
       TN* result_tn = OP_result(op, OP_Copy_Result(op));
       
@@ -445,7 +429,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       {
 	  ue.kind = UE_SAVE_GR;
 	  ue.rc_reg = TN_class_reg(copy_tn);
-	  fprintf(stderr, "   save save reg save tn %d %d\n", TN_is_save_reg(copy_tn), TN_is_save_reg(result_tn));
+	  fprintf(TFile, "** %s save save reg to gr save tn %d %d\n", __FUNCTION__, TN_is_save_reg(copy_tn), TN_is_save_reg(result_tn));
       // or check that we are restoring a callee-saved,
       // not from a dedicated
       } else if (TN_is_register(result_tn) && TN_Is_Unwind_Reg(result_tn)
@@ -454,119 +438,10 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       {
 	  ue.kind = UE_RESTORE_GR;
 	  ue.rc_reg = TN_class_reg(result_tn);
-	  fprintf(stderr, "   restore save reg\n");
+	  fprintf(TFile, "** %s restore save reg from gr\n", __FUNCTION__);
       }
   }
-#endif
-#if 0
-  else if (opc == TOP_alloc) {
-    ue.kind = UE_SAVE_GR;
-    ue.rc_reg = CLASS_REG_PAIR_pfs;
-    ue.save_rc_reg = TN_class_reg(OP_result(op, 0));
-  } 
-  else if ((opc == TOP_mov_t_ar_r_i 
-	 || opc == TOP_mov_t_ar_r_m)
-	     && TN_register(OP_result(op,0)) == REGISTER_pfs)
-  {
-    ue.rc_reg = CLASS_REG_PAIR_pfs;
-    ue.kind = UE_RESTORE_GR;
-  }
-  // can have either rx = mov_f_br (b0 sv:b0)
-  // or (rx sv:b0) = mov_f_br b0
-  else if (opc == TOP_mov_f_br 
-	     && TN_is_save_reg(OP_opnd(op,1))
-	     && TN_save_reg(OP_opnd(op,1)) == REGISTER_ra)
-  {
-    ue.kind = UE_SAVE_GR;
-    ue.rc_reg = CLASS_REG_PAIR_ra;
-    ue.save_rc_reg = TN_class_reg(OP_result(op, 0));
-  } 
-  else if (opc == TOP_mov_f_br 
-	     && TN_is_save_reg(OP_result(op,0))
-	     && TN_save_reg(OP_result(op,0)) == REGISTER_ra)
-  {
-    ue.kind = UE_SAVE_GR;
-    ue.rc_reg = CLASS_REG_PAIR_ra;
-    ue.save_rc_reg = TN_class_reg(OP_result(op, 0));
-  } 
-  else if (opc == TOP_mov_t_br 
-	     && TN_is_save_reg(OP_result(op,0))
-	     && TN_save_reg(OP_result(op,0)) == REGISTER_ra)
-  {
-    ue.rc_reg = CLASS_REG_PAIR_ra;
-    ue.kind = UE_RESTORE_GR;
-  } 
-  else if (opc == TOP_mov_t_br 
-	     && TN_is_save_reg(OP_opnd(op,1))
-	     && TN_save_reg(OP_opnd(op,1)) == REGISTER_ra)
-  {
-    ue.rc_reg = CLASS_REG_PAIR_ra;
-    ue.kind = UE_RESTORE_GR;
-  } 
-  else if ((opc == TOP_mov_f_ar_i || opc == TOP_mov_f_ar_m)
-	     && TN_is_save_reg(OP_result(op,0)))
-  {
-    ue.kind = UE_SAVE_GR;
-    ue.rc_reg = TN_save_creg(OP_result(op,0));
-    ue.save_rc_reg = TN_class_reg(OP_result(op, 0));
-  }
-  else if ((opc == TOP_mov_t_ar_r_i || opc == TOP_mov_t_ar_r_m)
-	     && TN_is_save_reg(OP_opnd(op,1)))
-  {
-    ue.kind = UE_RESTORE_GR;
-    ue.rc_reg = TN_save_creg(OP_opnd(op,1));
-  }
-  else if (opc == TOP_mov
-	     && TN_is_save_reg(OP_result(op,0)) )
-  {
-    ue.kind = UE_SAVE_GR;
-    ue.rc_reg = TN_save_creg(OP_result(op,0));
-    ue.save_rc_reg = TN_class_reg(OP_result(op, 0));
-  } 
-  else if (opc == TOP_mov
-	     && TN_is_save_reg(OP_opnd(op,1)) )
-  {
-    ue.kind = UE_RESTORE_GR;
-    ue.rc_reg = TN_save_creg(OP_opnd(op,1));
-  } 
-  else if (OP_store(op)) {
-    // find def of storeval and see if it is copy of save reg.
-    // also check if base comes from spill symbol.
-    TN *save_tn;
-    INT opndnum = TOP_Find_Operand_Use(opc, OU_storeval);
-    FmtAssert(opndnum >= 0, ("no OU_storeval for %s", TOP_Name(opc)));
-    save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op);
-    if (save_tn) {
-	opndnum = TOP_Find_Operand_Use(opc, OU_base);
-	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
-	ue.rc_reg = TN_save_creg(save_tn);
-	TN *store_tn = OP_opnd(op,opndnum);
-	if (store_tn == SP_TN) {
-		ue.kind = UE_SAVE_MEM;
-		ue.u.offset = 0;
-	}
-	else {
-		TN *spill_tn = Find_Spill_TN (op, store_tn);
-		if ( ! spill_tn) {
-			DevWarn("unwind: save but no spill-tn for TN %d",
-				TN_number(store_tn));
-			return;
-		}
-		ST *base; INT64 offset;
-		Base_Symbol_And_Offset (TN_var(spill_tn), &base, &offset);
-		ue.u.offset = offset;
-// [CL] FIXME (PSP)
-//		ue.kind = (base == SP_Sym ? UE_SAVE_SP : UE_SAVE_PSP);
-	}
-    }
-  }
-  else if (OP_load(op)) {
-    if (TN_is_save_reg(OP_result(op,0)) && TN_Is_Unwind_Reg(OP_result(op,0))) {
-    	ue.kind = UE_RESTORE_MEM;
-    	ue.rc_reg = TN_class_reg(OP_result(op,0));
-    }
-  }
-#endif
+  //#endif
 
   if (ue.kind != UE_UNDEFINED) {
 	ue.qp = 0;
@@ -672,9 +547,11 @@ CR_To_PR (CLASS_REG_PAIR crp)
 {
     ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(crp);
     INT reg = CLASS_REG_PAIR_reg(crp) - REGISTER_MIN;
+
 #ifdef DEBUG_UNWIND
-    fprintf(stderr, "** %s reg %d\n", __FUNCTION__, reg);
+    fprintf(TFile, "** %s reg %d\n", __FUNCTION__, reg);
 #endif
+
     if (CLASS_REG_PAIR_EqualP(crp, CLASS_REG_PAIR_ra)) {
       return PR_RA;
     }
@@ -821,6 +698,8 @@ Propagate_Save_Restore_State (PR_BITSET *entry_state,
 			changed = TRUE;
 			exit_state[bbid] = new_exit_state;
 		}
+		if (Trace_Unwind) 
+		  fprintf (TFile, " exit_state: %llx\n", exit_state[bbid]);
 	}
   }
   if (Trace_Unwind) {
@@ -909,8 +788,13 @@ Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
   ue.when = when;
   ue.bb = bb;
   ue_list.insert(ue_iter, ue);
-  if (Trace_Unwind) 
-	fprintf(TFile, "state change for %d at entry to bb %d\n", p, BB_id(bb));
+  if (Trace_Unwind) {
+    CLASS_REG_PAIR rc_reg = PR_To_CR(p);
+	fprintf(TFile, "state change for %s at entry to bb %d\n",
+		UE_Register_Name(CLASS_REG_PAIR_rclass(rc_reg),
+				 CLASS_REG_PAIR_reg(rc_reg) ),
+		 BB_id(bb));
+  }
 }
 
 static void
@@ -924,7 +808,10 @@ Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb)
   ue.bb = bb;
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
-	fprintf(TFile, "state change for %d at entry to bb %d\n", p, BB_id(bb));
+	fprintf(TFile, "state change for %s at entry to bb %d\n",
+		UE_Register_Name(CLASS_REG_PAIR_rclass(ue.rc_reg),
+				 CLASS_REG_PAIR_reg(ue.rc_reg) ),
+		BB_id(bb));
 }
 
 static void
@@ -950,21 +837,10 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
   // entry, local-save, local-restore, and exit state.
   // first fill in the local state info with changes that happen in that bb.
 
-#if 0 //def linux
-  PR_BITSET *entry_state         =
-	(PR_BITSET *) alloca((PU_BB_Count+1) * sizeof(PR_BITSET));
-  PR_BITSET *local_save_state    =
-	(PR_BITSET *) alloca((PU_BB_Count+1) * sizeof(PR_BITSET));
-  PR_BITSET *local_restore_state =
-	(PR_BITSET *) alloca((PU_BB_Count+1) * sizeof(PR_BITSET));
-  PR_BITSET *exit_state          =
-	(PR_BITSET *) alloca((PU_BB_Count+1) * sizeof(PR_BITSET));
-#else
   PR_BITSET entry_state[PU_BB_Count+1];
   PR_BITSET local_save_state[PU_BB_Count+1];
   PR_BITSET local_restore_state[PU_BB_Count+1];
   PR_BITSET exit_state[PU_BB_Count+1];
-#endif /* linux */
 
   // mark all saves/restores in local state
   Mark_Local_Saves_Restores (local_save_state, local_restore_state);
@@ -1039,6 +915,10 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		}
 	}
 
+	if (Trace_Unwind) 
+	  fprintf (TFile, "current_state for bb %d: %llx\n", bbid,
+		   current_state);
+
 	// add implicit changes upon entry
 	if (current_state != entry_state[bbid]) {
   		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
@@ -1065,7 +945,10 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 	while (ue_iter != ue_list.end() && ue_iter->bb == bb) {
 		p = CR_To_PR (ue_iter->rc_reg);
 		if (Trace_Unwind) fprintf(TFile, 
-			"state change for %d in bb %d\n", p, bbid);
+			"state change for %s in bb %d\n",
+					  UE_Register_Name(CLASS_REG_PAIR_rclass(ue_iter->rc_reg),
+							   CLASS_REG_PAIR_reg(ue_iter->rc_reg) ),
+					  bbid);
 		if (ue_iter->kind == UE_RESTORE_GR
 		 || ue_iter->kind == UE_RESTORE_MEM)
 		{
@@ -1077,6 +960,11 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		++ue_iter;
 	}
 	lwhen += Get_BB_When_Length(bb);
+
+	if (Trace_Unwind) 
+	  fprintf (TFile, "final current_state for bb %d: %llx\n", bbid,
+		   current_state);
+
   }
 }
 
@@ -1127,38 +1015,7 @@ Insert_Epilogs (void)
   }
 }
 
-// compute sizes of each prolog and body region
-static void
-Compute_Region_Sizes (void)
-{
-  // [CL] FIXME what is all that for?
-  list < UNWIND_ELEM >::iterator current_ue = ue_list.end();
-  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
-    switch (ue_iter->kind) {
-#if 0
-    case UE_CREATE_FRAME:
-	// assume create frame will be first, and only appear once
-	Is_True (current_ue == ue_list.end(), ("multiple unwind create frames?"));
-	current_ue = ue_iter;
-	current_ue->u.region.start = 0; // [CL] FIXME create frame not always at the start!
-	break;
-#endif
-    case UE_EPILOG:
-    case UE_LABEL:
-    case UE_COPY:
-	// set size of previous region
-	current_ue->u.region.size = ue_iter->when - current_ue->u.region.start;
-	current_ue = ue_iter;
-	current_ue->u.region.start = ue_iter->when;
-	break;
-    }
-  }
-  if (current_ue != ue_list.end())
-  	current_ue->u.region.size = last_when - current_ue->u.region.start + 1;
-}
-
 static UINT next_when;
-static UREGION_TYPE proc_region;
 
 static LABEL_IDX Label_save_ra = LABEL_IDX_ZERO;
 static LABEL_IDX Label_restore_ra = LABEL_IDX_ZERO;
@@ -1188,7 +1045,6 @@ Init_Unwind_Info (BOOL trace)
 
   last_label = 0;
   next_when = 0;
-  proc_region = UNDEFINED_UREGION;
 
   if ( ! simple_unwind) {
 	if (Trace_Unwind) fprintf (TFile, "need to propagate unwind info\n");
@@ -1198,7 +1054,6 @@ Init_Unwind_Info (BOOL trace)
 	if ( ! has_asm) simple_unwind = TRUE;
   }
   Insert_Epilogs();
-  Compute_Region_Sizes();
 
   if (Trace_Unwind) {
 	fprintf (TFile, "%s unwind\n", (simple_unwind ? "simple" : "complicated"));
@@ -1206,7 +1061,7 @@ Init_Unwind_Info (BOOL trace)
   }
 
 #ifdef DEBUG_UNWIND
-  Print_All_Unwind_Elem("unwind ");
+  Print_All_Unwind_Elem("** unwind");
 #endif
 
   // for use in emit_unwind
@@ -1219,6 +1074,10 @@ Init_Unwind_Info (BOOL trace)
   Label_restore_sp  = LABEL_IDX_ZERO;
   Label_save_csr    = LABEL_IDX_ZERO;
   Label_restore_csr = LABEL_IDX_ZERO;
+  Idx_save_ra = 0;
+  Idx_restore_ra = 0;
+  Idx_adjust_sp = 0;
+  Idx_restore_sp = 0;
   Idx_save_csr = 0;
   Idx_restore_csr = 0;
 #endif
@@ -1279,26 +1138,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
   else
 	strcpy(prefix, ASM_CMNT_LINE);	// emit as comments
 
-#if 0 // [CL]
-  if (ue_iter == ue_list.end()) {	// none left
-	if (proc_region == UNDEFINED_UREGION) {
-		// no unwind entries at all,
-		// but do want function info.
-		fprintf(f, "%s\t.unwentry\n", prefix);
-		proc_region = PROLOGUE_UREGION;
-	}
-	return;	// none left
-  }
-#endif
-
   if (OP_dummy(op)) return;
-
-#if 0 // [CL]
-  if (proc_region == UNDEFINED_UREGION) {
-    fprintf(f, "%s\t.prologue\n", prefix);
-    proc_region = PROLOGUE_UREGION;
-  }
-#endif
 
   while (ue_iter != ue_list.end() && ue_iter->when == next_when) {
     ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
@@ -1408,23 +1248,18 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
       break;
     case UE_EPILOG:
       fprintf(f, "%s\t.body\n", prefix);
-      proc_region = EPILOGUE_BODY_UREGION;
       break;
     case UE_LABEL:
       fprintf(f, "%s\t.body\n", prefix);
-      proc_region = LABEL_BODY_UREGION;
       fprintf(f, "%s\t.label_state %d\n", prefix, ue_iter->label);
       break;
     case UE_COPY:
       fprintf(f, "%s\t.body\n", prefix);
-      proc_region = COPY_BODY_UREGION;
       fprintf(f, "%s\t.copy_state %d\n", prefix, ue_iter->label);
       break;
     case UE_RESTORE_GR:
-#if 0
+      //#if 0
       // can ignore restores in epilog, as all is restored
-      if (proc_region == EPILOGUE_BODY_UREGION)
-	break;
       if (ue_iter->qp != 0) {
       	fprintf(f, "%s\t.restorereg.p p%d, %s\n", prefix, 
 		ue_iter->qp,
@@ -1434,10 +1269,10 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
       	fprintf(f, "%s\t.restorereg %s\n", prefix, 
 		UE_Register_Name(rc, reg) );
       }
-#endif
+      //#endif
       break;
     case UE_SAVE_GR:
-#if 0
+      //#if 0
       if (ue_iter->qp != 0) {
       	fprintf(f, "%s\t%s p%d, %s, %s\n", prefix, ".spillreg.p",
 		ue_iter->qp,
@@ -1452,7 +1287,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
 		UE_Register_Name( CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg),
 				CLASS_REG_PAIR_reg(ue_iter->save_rc_reg) ) );
       }
-#endif
+      //#endif
       break;
     default:
       FmtAssert(FALSE, ("Unhandled UNWIND_ELEM kind (%d)\n", ue_iter->kind));
@@ -1502,8 +1337,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
   // record the reference label for advance_loc insns
   Dwarf_Unsigned last_label_idx = begin_label;
+
 #ifdef DEBUG_UNWIND
-  fprintf(stderr, "init label %s\n", Cg_Dwarf_Name_From_Handle(begin_label));
+  fprintf(TFile, "** %s init label %s\n", __FUNCTION__,
+	  Cg_Dwarf_Name_From_Handle(begin_label));
 #endif
 
   //  if (!simple_unwind) return;	// TODO
@@ -1525,16 +1362,20 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       ue_iter->label_idx,
 					       scn_index),
 			 &dw_error);
-      frame_size = ue_iter->u.region.size;
+      frame_size = ue_iter->offset;
       Is_True(frame_size > 0, ("unwind: frame size should be > 0 at creation point"));
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, frame_size,
 			 0, &dw_error);
+      if (Trace_Unwind) fprintf(TFile, "create stack frame of size %d at when %d\n", frame_size, ue_iter->when);
+
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "%s label %s to %s advance loc + create frame %d\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), frame_size);
+      fprintf(TFile, "** %s label %s to %s advance loc + create frame %d\n",
+	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
+	      Cg_Dwarf_Name_From_Handle(last_label_idx), frame_size);
 #endif
       break;
     case UE_DESTROY_FRAME:
-      Is_True(frame_size == ue_iter->u.region.size, ("unwind: bad frame size at destroy point"));
+      Is_True(frame_size == ue_iter->offset, ("unwind: bad frame size at destroy point"));
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 					       ue_iter->label_idx,
@@ -1542,8 +1383,13 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			 &dw_error);
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, 0,
 			 0, &dw_error);
+
+      if (Trace_Unwind) fprintf(TFile, "destroy stack frame of size %d at when %d\n", frame_size, ue_iter->when);
+
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "%s label %s to %s advance loc + destroy frame\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx));
+      fprintf(TFile, "** %s label %s to %s advance loc + destroy frame\n",
+	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
+	      Cg_Dwarf_Name_From_Handle(last_label_idx));
 #endif
 #if 0
       {
@@ -1567,10 +1413,14 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       scn_index),
 			 &dw_error);
       dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_machine_id(rc,reg),
-		 (frame_size - ue_iter->u.offset + STACK_SCRATCH_AREA_SIZE) / Data_Alignment_Factor,
+		 (frame_size - ue_iter->offset + STACK_OFFSET_ADJUSTMENT) / Data_Alignment_Factor,
 			 &dw_error);
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "%s label %s to %s advance loc + save reg %d at offset %lld\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), REGISTER_machine_id(rc,reg), frame_size - ue_iter->u.offset  + STACK_SCRATCH_AREA_SIZE);
+      fprintf(TFile, "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
+	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
+	      Cg_Dwarf_Name_From_Handle(last_label_idx),
+	      REGISTER_machine_id(rc,reg),
+	      frame_size - ue_iter->offset + STACK_OFFSET_ADJUSTMENT);
 #endif
 
 #if 0
@@ -1608,7 +1458,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
 			 0, &dw_error);
 #ifdef DEBUG_UNWIND
-      fprintf(stderr, "%s label %s to %s advance loc + restore reg %d\n", __FUNCTION__, LABEL_name(ue_iter->label_idx), Cg_Dwarf_Name_From_Handle(last_label_idx), REGISTER_machine_id(rc,reg));
+      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %d\n",
+	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
+	      Cg_Dwarf_Name_From_Handle(last_label_idx),
+	      REGISTER_machine_id(rc,reg));
 #endif
 
       break;
@@ -1616,12 +1469,11 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       FmtAssert(FALSE, ("%s: Unhandled UNWIND_ELEM kind (%d)\n", __FUNCTION__, ue_iter->kind));
       break;
     }
-    //    last_label_idx = ue_iter->label_idx;
-
     last_label_idx = Cg_Dwarf_Symtab_Entry(CGD_LABIDX, ue_iter->label_idx,
 					   scn_index);
 #ifdef DEBUG_UNWIND
-    fprintf(stderr, "upgraded last label to %s\n", Cg_Dwarf_Name_From_Handle(last_label_idx));
+    fprintf(TFile, "** %s upgraded last label to %s\n", __FUNCTION__,
+	    Cg_Dwarf_Name_From_Handle(last_label_idx));
 #endif
   }
 
@@ -1772,41 +1624,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 #endif
 }
 
-#if 0
-// dump unwind table and info to .s file
-__unw_error_t 
-unwind_dump2asm (char *unwind_table_ptr,
-		__uint64_t unwind_table_size,
-		char *unwind_info_ptr,
-		__uint64_t unwind_info_size,
-		void *arg) // last_pc-first_pc
-{
-	static __uint64_t last_info_size = 0;
-	static __uint64_t last_table_size = 0;
-        __uint64_t i;
-        __uint64_t unwind_table_size_in_entries =
-                        unwind_table_size/sizeof(__unw_table_entry_t);
-	fprintf(Asm_File, "// emit unwind info\n");
-	// gas knows what attributes to give unwind sections
-	fprintf(Asm_File, "\t%s %s\n", AS_SECTION, IA64_UNWIND_INFO);
-	// dump section in 8-byte chunks
-	fprintf(Asm_File, ".Lunwind_info_%d:\n", Current_PU_Count());
-	for (i = last_info_size; i < unwind_info_size; i+=8) {
-		fprintf(Asm_File, "\t%s %#llx\n", AS_DWORD, *(__uint64_t *)(unwind_info_ptr+i));
-	}
-	fprintf(Asm_File, "\t%s %s\n", AS_SECTION, IA64_UNWIND);
-	// should always be 3 double-words
-	i = last_table_size;
-	fprintf(Asm_File, "\t%s @segrel(%s#)\n", AS_DWORD, Cur_PU_Name);
-	i+=8;
-	fprintf(Asm_File, "\t%s @segrel(%s#+%#llx)\n", AS_DWORD, Cur_PU_Name, 
-		(__uint64_t)(arg));
-	fprintf(Asm_File, "\t%s @segrel(.Lunwind_info_%d)\n", AS_DWORD, Current_PU_Count());
-	last_info_size = unwind_info_size;
-	last_table_size = unwind_table_size;
-}
-#endif
-
 /* construct the fde for the current procedure. */
 extern Dwarf_P_Fde
 Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
@@ -1841,36 +1658,6 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 	DevWarn("no unwind info cause PU is too complicated");
 
   return fde;
-
-#if 0
-  __unw_info_t *uinfo = NULL;
-  __unw_error_t st;
-  Dwarf_Error dw_error;
-  Dwarf_P_Fde fde;
-
-  if ( ! CG_emit_unwind_info) return NULL;
-  if ( CG_emit_unwind_directives) return NULL;
-  // else emit unwind info directly as data
-
-  st = unwind_info_initialize(&uinfo, low_pc, high_pc);
-  Is_True(st == __UNW_OK, ("unwind_info initialize error (%d)", st));
-
-  // process info we've collected and create the unwind descriptors
-  Create_Unwind_Descriptors (uinfo);
-
-  st = unwind_info_finalize(uinfo);
-  FmtAssert(st == __UNW_OK, ("unwind_info finalize error (%d)", st));
-
-  if (has_asm)
-	DevWarn("no unwind info cause PU has asm");
-  else if ( ! simple_unwind)
-	DevWarn("no unwind info cause PU is too complicated");
-  if (simple_unwind) {
-	unwind_process (unwind_dump2asm, (void*)(high_pc-low_pc));
-  }
-
-  return NULL;
-#endif
 }
 
 #include <elf.h>
@@ -1911,12 +1698,6 @@ Check_Dwarf_Rela(const Elf32_Rela &current_reloc)
 static char *drop_these[] = {
       // Assembler generates .debug_line from directives itself, so we
       // don't output it.
-  //  ".debug_line",
-  //  ".debug_info",
-  //  ".debug_abbrev",
-  //  ".debug_aranges",
-  //  ".debug_pubnames",
-  ".debug_varnames",
 #ifndef TARG_ST200 /* CLYON: ST200 gas does not understand .loc directives */
 	".debug_line",
 #endif
