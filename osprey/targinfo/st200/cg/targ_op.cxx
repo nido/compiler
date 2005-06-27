@@ -558,6 +558,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(stw);
       CASE_TOP_I(sth);
       CASE_TOP_I(stb);
+      CASE_TOP_I(stp);
       CASE_TOP_I(ldw);
       CASE_TOP_I(ldh);
       CASE_TOP_I(ldb);
@@ -568,6 +569,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(ldb_d);
       CASE_TOP_I(ldhu_d);
       CASE_TOP_I(ldbu_d);
+      CASE_TOP_I(ldp);
       CASE_TOP_I(pft);
     }
   } else if (opnd == 1) {
@@ -793,6 +795,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP_BR(nandl):
       CASE_TOP_BR(orl):
       CASE_TOP_BR(norl):
+      CASE_TOP_I(ldp):
       CASE_TOP_I(ldw):
       CASE_TOP_I(ldh):
       CASE_TOP_I(ldb):
@@ -818,6 +821,9 @@ TOP_opnd_use_bits(TOP top, int opnd)
   case TOP_bswap:
   case TOP_mtb:
       return 32;
+
+  case TOP_movp:
+    return 64;
     
   case TOP_sxth:
   case TOP_zxth:
@@ -866,6 +872,8 @@ TOP_opnd_use_bits(TOP top, int opnd)
       return opnd == 2 ? 16: 32;
     CASE_TOP_I(stb):
       return opnd == 2 ? 8: 32;
+    CASE_TOP_I(stp):
+      return opnd == 2 ? 64: 32;
   }
   
   return -1;
@@ -918,6 +926,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_BR(nandl):
       CASE_TOP_BR(orl):
       CASE_TOP_BR(norl):
+      CASE_TOP_I(ldp):
       CASE_TOP_I(ldw):
       CASE_TOP_I(ldh):
       CASE_TOP_I(ldb):
@@ -998,6 +1007,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
     CASE_TOP_I(stw):
     CASE_TOP_I(sth):
     CASE_TOP_I(stb):
+    CASE_TOP_I(stp):
       return TRUE;
   }
   
