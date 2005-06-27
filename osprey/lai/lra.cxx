@@ -4383,7 +4383,10 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
 
 /* Initialize the unused TN definitions. */
   FOR_ALL_ISA_REGISTER_CLASS(cl) unused_tn_def[cl] = NULL;
+#if 0
+  // [CG] Temporary Work around for TRUE tn bug.
   if (True_TN) unused_tn_def[TN_register_class(True_TN)] = True_TN;
+#endif
   if (Zero_TN) unused_tn_def[TN_register_class(Zero_TN)] = Zero_TN;
   if (FZero_TN) unused_tn_def[TN_register_class(FZero_TN)] = FZero_TN;
 
