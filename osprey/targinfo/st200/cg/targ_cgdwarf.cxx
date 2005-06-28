@@ -117,6 +117,7 @@ typedef struct unwind_elem {
   CLASS_REG_PAIR save_rc_reg;	// reg being saved into
   LABEL_IDX label_idx;          // idx of label generated in asm file
   mINT64 offset;		// stack offset or frame size
+  BOOL frame_changed;           // frame size changes in the same bundle
 } UNWIND_ELEM;
 
 // use list not slist cause append to end
@@ -141,7 +142,7 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 	fprintf(TFile, "<%s> at bb %d when %d: ", msg, ue.bb->id, ue.when);
 	switch (ue.kind) {
 	case UE_CREATE_FRAME:
-		fprintf(TFile, " create_frame, size %lld", 
+		fprintf(TFile, " create_frame, size %lld",
 			ue.offset); 
 		break;
 	case UE_DESTROY_FRAME:
@@ -168,12 +169,10 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
         		CLASS_REG_PAIR_reg(ue.save_rc_reg) ));
 		break;
 	case UE_SAVE_MEM:
-		fprintf(TFile, "save %s", UE_Register_Name(
+		fprintf(TFile, " save %s", UE_Register_Name(
 				CLASS_REG_PAIR_rclass(ue.rc_reg),
         			CLASS_REG_PAIR_reg(ue.rc_reg) ));
-		fprintf(TFile, " to mem %lld(%s)",
-			ue.offset,
-			(ue.kind == UE_SAVE_MEM ? "sp" : "psp") );
+		fprintf(TFile, " to mem %lld(sp)", ue.offset);
 		break;
 	case UE_RESTORE_GR:  
 		fprintf(TFile, " restore %s", UE_Register_Name(
@@ -264,14 +263,19 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
     OP *op = Find_Def_Of_TN (tn, cur_op);
 
 #ifdef DEBUG_UNWIND
-    fprintf(TFile, "** %s def of TN %p\n", __FUNCTION__, op);
+    fprintf(TFile, "** %s def of TN %p:\n", __FUNCTION__, op);
+    if (op) Print_OP_No_SrcLine(op);
 #endif
 
     if (!op) return NULL;
     TN *otn = OP_Copy_Operand_TN(op);
 
 #ifdef DEBUG_UNWIND
-    fprintf(TFile, "** %s copy operand TN %p\n", __FUNCTION__, otn);
+    fprintf(TFile, "** %s copy operand TN %p:\n", __FUNCTION__, otn);
+    if (otn) {
+      Print_TN(otn, FALSE);
+      fprintf(TFile, "\n");
+    }
 #endif
 
     if (!otn) {
@@ -307,8 +311,11 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
   }
 
 #ifdef DEBUG_UNWIND
-  Print_OP(op);
+  fprintf(TFile, "WHEN %d BB %d\n", when, BB_id(bb));
+  Print_OP_No_SrcLine(op);
 #endif
+
+  ue.frame_changed = FALSE;
 
   if (OP_has_result(op) && OP_result(op,0) == SP_TN) {
     ue.rc_reg = CLASS_REG_PAIR_sp;
@@ -321,7 +328,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	ue.offset = TN_value (OP_opnd(op,1));
     }
 #ifdef DEBUG_UNWIND
-    fprintf(TFile, "** %s modif SP size %lld\n", __FUNCTION__, ue.offset);
+    fprintf(TFile, "** %s change SP size %lld\n", __FUNCTION__, ue.offset);
 #endif
   } 
 
@@ -383,13 +390,14 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 #endif
       // check if we are loading a callee saved
       // from the stack
-      if (TN_Is_Unwind_Reg(OP_result(op,0))) {
+      TN* result_tn = OP_result(op,0);
+      if (TN_is_save_reg(result_tn)) {
 	INT opndnum = OP_find_opnd_use(op, OU_base);
 	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
 	TN *load_tn = OP_opnd(op,opndnum);
 	if (load_tn == SP_TN) {
 	  ue.kind = UE_RESTORE_MEM;
-	  ue.rc_reg = TN_class_reg(OP_result(op,0));
+	  ue.rc_reg = TN_class_reg(result_tn);
 
 	  TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
 	  ST* st = TN_var(offset_tn);
@@ -423,7 +431,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       
       // check that we are copying a callee saved,
       // and that the destination is not a dedicated
-      if (TN_is_register(copy_tn) && TN_Is_Unwind_Reg(copy_tn)
+      if (TN_is_register(copy_tn) && TN_is_save_reg(copy_tn)
 	  && TN_is_register(result_tn)
 	  && !TN_is_dedicated(result_tn))
       {
@@ -432,7 +440,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  fprintf(TFile, "** %s save save reg to gr save tn %d %d\n", __FUNCTION__, TN_is_save_reg(copy_tn), TN_is_save_reg(result_tn));
       // or check that we are restoring a callee-saved,
       // not from a dedicated
-      } else if (TN_is_register(result_tn) && TN_Is_Unwind_Reg(result_tn)
+      } else if (TN_is_register(result_tn) && TN_is_save_reg(result_tn)
 		 && TN_is_register(copy_tn)
 		 && !TN_is_dedicated(copy_tn))
       {
@@ -1017,12 +1025,6 @@ Insert_Epilogs (void)
 
 static UINT next_when;
 
-static LABEL_IDX Label_save_ra = LABEL_IDX_ZERO;
-static LABEL_IDX Label_restore_ra = LABEL_IDX_ZERO;
-static LABEL_IDX Label_adjust_sp = LABEL_IDX_ZERO;
-static LABEL_IDX Label_restore_sp = LABEL_IDX_ZERO;
-static LABEL_IDX Label_save_csr = LABEL_IDX_ZERO;
-static LABEL_IDX Label_restore_csr = LABEL_IDX_ZERO;
 static INT Idx_save_ra = 0;
 static INT Idx_restore_ra = 0;
 static INT Idx_adjust_sp = 0;
@@ -1068,12 +1070,6 @@ Init_Unwind_Info (BOOL trace)
   ue_iter = ue_list.begin();
 
 #ifdef TARG_ST // [CL]
-  Label_save_ra     = LABEL_IDX_ZERO;
-  Label_restore_ra  = LABEL_IDX_ZERO;
-  Label_adjust_sp   = LABEL_IDX_ZERO;
-  Label_restore_sp  = LABEL_IDX_ZERO;
-  Label_save_csr    = LABEL_IDX_ZERO;
-  Label_restore_csr = LABEL_IDX_ZERO;
   Idx_save_ra = 0;
   Idx_restore_ra = 0;
   Idx_adjust_sp = 0;
@@ -1107,7 +1103,7 @@ Use_Spill_Record (CLASS_REG_PAIR crp)
 }
 
 void 
-Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
+Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 {
   char prefix[3];
   char* buf;
@@ -1118,20 +1114,42 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
   static UINT saved_next_when;
   static list < UNWIND_ELEM >::iterator saved_ue_iter;
 
+  // Remember if we create/destroy the frame inside this bundle. This
+  // is necessary to handle the case where the frame is created and
+  // and a callee-saved is saved to the stack in the same bundle
+  static BOOL bundle_has_frame_change = FALSE;
+  INT64 frame_size = 0;
+
+  static LABEL_IDX Label_save_ra;
+  static LABEL_IDX Label_restore_ra;
+  static LABEL_IDX Label_adjust_sp;
+  static LABEL_IDX Label_restore_sp;
+  static LABEL_IDX Label_save_csr;
+  static LABEL_IDX Label_restore_csr;
+
+  Label_save_ra     = LABEL_IDX_ZERO;
+  Label_restore_ra  = LABEL_IDX_ZERO;
+  Label_adjust_sp   = LABEL_IDX_ZERO;
+  Label_restore_sp  = LABEL_IDX_ZERO;
+  Label_save_csr    = LABEL_IDX_ZERO;
+  Label_restore_csr = LABEL_IDX_ZERO;
+
   if (!CG_emit_unwind_info) return;
 
-  if (!saved_state && after_op) {
+  if (!saved_state && post_process) {
     // we start post-processing this bundle, so rewind next_when
     next_when = saved_next_when;
     ue_iter = saved_ue_iter;
   }
-  else if (saved_state && !after_op) {
+  else if (saved_state && !post_process) {
     // we start pre-processing a new bundle, so update saved_next_when
     saved_next_when = next_when;
     saved_ue_iter = ue_iter;
+    // clear the create_frame
+    bundle_has_frame_change = FALSE;
   }
 
-  saved_state = after_op;
+  saved_state = post_process;
 
   if ( CG_emit_unwind_directives)
 	strcpy(prefix, "");
@@ -1146,104 +1164,160 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op)
 
     switch (ue_iter->kind) {
     case UE_CREATE_FRAME:
-      buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			   /* EXTRA_NAME_LEN */ 32);
-      sprintf(buf, ".LEH_%sadjust_sp_%s_%d",
-	      after_op ? "post_" : "", Cur_PU_Name, Idx_adjust_sp);
-      label = &New_LABEL(CURRENT_SYMTAB, Label_adjust_sp);
-      LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-      fprintf( Asm_File, "%s:\n", LABEL_name(Label_adjust_sp));
+      bundle_has_frame_change = TRUE;
+      frame_size = ue_iter->offset;
+      if (Label_adjust_sp == LABEL_IDX_ZERO) {
+	buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			     /* EXTRA_NAME_LEN */ 32);
+	sprintf(buf, ".LEH_%sadjust_sp_%s_%d",
+		post_process ? "post_" : "", Cur_PU_Name, Idx_adjust_sp);
+	label = &New_LABEL(CURRENT_SYMTAB, Label_adjust_sp);
+	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	fprintf( Asm_File, "%s:\n", LABEL_name(Label_adjust_sp));
 
-      // remember the label we have generated after 'op':
-      // this is the one we need to update the debug_frame info
+	// remember the label we have generated after 'op':
+	// this is the one we need to update the debug_frame info
 
-      // once we have emitted the pre-op and post-op labels,
-      // we can update the counter
-      if (after_op) {
-	Idx_adjust_sp++;
+	// once we have emitted the pre-op and post-op labels,
+	// we can update the counter
+	if (post_process) {
+	  Idx_adjust_sp++;
+	}
+      }
+      if (post_process) {
 	ue_iter->label_idx = Label_adjust_sp;
       }
       break;
     case UE_DESTROY_FRAME:
-      buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			   /* EXTRA_NAME_LEN */ 32);
-      sprintf(buf, ".LEH_%srestore_sp_%s_%d",
-	      after_op ? "post_" : "", Cur_PU_Name, Idx_restore_sp);
-      label = &New_LABEL(CURRENT_SYMTAB, Label_restore_sp);
-      LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-      fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_sp));
+      bundle_has_frame_change = TRUE;
+      frame_size = ue_iter->offset;
+      if (Label_restore_sp == LABEL_IDX_ZERO) {
+	buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			     /* EXTRA_NAME_LEN */ 32);
+	sprintf(buf, ".LEH_%srestore_sp_%s_%d",
+		post_process ? "post_" : "", Cur_PU_Name, Idx_restore_sp);
+	label = &New_LABEL(CURRENT_SYMTAB, Label_restore_sp);
+	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_sp));
 
-      // once we have emitted the pre-op and post-op labels,
-      // we can update the counter
-      if (after_op) {
-	Idx_restore_sp++;
+	// once we have emitted the pre-op and post-op labels,
+	// we can update the counter
+	if (post_process) {
+	  Idx_restore_sp++;
+	}
+      }
+      if (post_process) {
 	ue_iter->label_idx = Label_restore_sp;
       }
       break;
     case UE_SAVE_MEM:
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%ssave_ra_%s_%d",
-		after_op ? "post_" : "", Cur_PU_Name, Idx_save_ra);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_save_ra);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_ra));
+	if (Label_save_ra == LABEL_IDX_ZERO) {
+	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			       /* EXTRA_NAME_LEN */ 32);
+	  sprintf(buf, ".LEH_%ssave_ra_%s_%d",
+		  post_process ? "post_" : "", Cur_PU_Name, Idx_save_ra);
+	  label = &New_LABEL(CURRENT_SYMTAB, Label_save_ra);
+	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_ra));
 
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (after_op) {
-	  Idx_save_ra++;
-	  ue_iter->label_idx = Label_save_ra;
+	  // once we have emitted the pre-op and post-op labels,
+	  // we can update the counter
+	  if (post_process) {
+	    Idx_save_ra++;
+	  }
+	}
+	if (post_process) {
+	    ue_iter->label_idx = Label_save_ra;
+	}
+	// adjust offset if SP is adjusted in the same bundle
+	if (post_process && bundle_has_frame_change) {
+	  ue_iter->offset += frame_size;
 	}
       } else {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%ssave_csr_%s_%d",
-		after_op ? "post_" : "", Cur_PU_Name, Idx_save_csr);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_save_csr);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_csr));
+	if (Label_save_csr == LABEL_IDX_ZERO) {
+	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			       /* EXTRA_NAME_LEN */ 32);
+	  sprintf(buf, ".LEH_%ssave_csr_%s_%d_bb_%d_when_%d",
+		  post_process ? "post_" : "", Cur_PU_Name, Idx_save_csr,
+		  BB_id(ue_iter->bb), ue_iter->when);
+	  label = &New_LABEL(CURRENT_SYMTAB, Label_save_csr);
+	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_csr));
 
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (after_op) {
-	  Idx_save_csr++;
-	  ue_iter->label_idx = Label_save_csr;
+	  // once we have emitted the pre-op and post-op labels,
+	  // we can update the counter
+	  if (post_process) {
+	    Idx_save_csr++;
+	  }
 	}
+	if (post_process) {
+	    ue_iter->label_idx = Label_save_csr;
+	}
+	// adjust offset if SP is adjusted in the same bundle
+	if (bundle_has_frame_change) {
+	  ue_iter->offset += frame_size;
+	}
+      }
+
+      /* flag this ue in order to adjust the offset later */
+      if (bundle_has_frame_change) {
+	ue_iter->frame_changed = TRUE;
       }
       break;
     case UE_RESTORE_MEM:
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%srestore_ra_%s_%d",
-		after_op ? "post_" : "", Cur_PU_Name, Idx_restore_ra);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_restore_ra);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_ra));
+	if (Label_restore_ra == LABEL_IDX_ZERO) {
+	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			       /* EXTRA_NAME_LEN */ 32);
+	  sprintf(buf, ".LEH_%srestore_ra_%s_%d",
+		  post_process ? "post_" : "", Cur_PU_Name, Idx_restore_ra);
+	  label = &New_LABEL(CURRENT_SYMTAB, Label_restore_ra);
+	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_ra));
 
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (after_op) {
-	  Idx_restore_ra++;
-	  ue_iter->label_idx = Label_restore_ra;
+	  // once we have emitted the pre-op and post-op labels,
+	  // we can update the counter
+	  if (post_process) {
+	    Idx_restore_ra++;
+	  }
+	}
+	if (post_process) {
+	    ue_iter->label_idx = Label_restore_ra;
+	}
+	// adjust offset if SP is adjusted in the same bundle
+	if (post_process && bundle_has_frame_change) {
+	  ue_iter->offset -= frame_size;
 	}
       } else {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%srestore_csr_%s_%d",
-		after_op ? "post_" : "", Cur_PU_Name, Idx_restore_csr);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_restore_csr);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_csr));
+	if (Label_restore_csr == LABEL_IDX_ZERO) {
+	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			       /* EXTRA_NAME_LEN */ 32);
+	  sprintf(buf, ".LEH_%srestore_csr_%s_%d_bb_%d_when_%d",
+		  post_process ? "post_" : "", Cur_PU_Name, Idx_restore_csr,
+		  BB_id(ue_iter->bb), ue_iter->when);
+	  label = &New_LABEL(CURRENT_SYMTAB, Label_restore_csr);
+	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
+	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_csr));
 
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (after_op) {
-	  Idx_restore_csr++;
+	  // once we have emitted the pre-op and post-op labels,
+	  // we can update the counter
+	  if (post_process) {
+	    Idx_restore_csr++;
+	  }
+	}
+	if (post_process) {
 	  ue_iter->label_idx = Label_restore_csr;
 	}
+	// adjust offset if SP is adjusted in the same bundle
+	if (post_process && bundle_has_frame_change) {
+	  ue_iter->offset -= frame_size;
+	}
+      }
+
+      /* flag this ue in order to adjust the offset later */
+      if (bundle_has_frame_change) {
+	ue_iter->frame_changed = TRUE;
       }
       break;
     case UE_EPILOG:
@@ -1333,7 +1407,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
   UREGION_TYPE uregion = UNDEFINED_UREGION;
 
   Dwarf_Error dw_error;
-  INT frame_size = 0;
+  INT64 frame_size = 0;
+  INT64 frame_offset = 0;
 
   // record the reference label for advance_loc insns
   Dwarf_Unsigned last_label_idx = begin_label;
@@ -1347,6 +1422,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
   uregion = PROLOGUE_UREGION;
 
   for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
+
     switch (ue_iter->kind) {
     case UE_EPILOG:
     case UE_LABEL:
@@ -1364,12 +1440,13 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			 &dw_error);
       frame_size = ue_iter->offset;
       Is_True(frame_size > 0, ("unwind: frame size should be > 0 at creation point"));
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, frame_size,
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset,
+			 frame_size + STACK_OFFSET_ADJUSTMENT,
 			 0, &dw_error);
-      if (Trace_Unwind) fprintf(TFile, "create stack frame of size %d at when %d\n", frame_size, ue_iter->when);
+      if (Trace_Unwind) fprintf(TFile, "create stack frame of size %lld at when %d\n", frame_size, ue_iter->when);
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s label %s to %s advance loc + create frame %d\n",
+      fprintf(TFile, "** %s label %s to %s advance loc + create frame %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx), frame_size);
 #endif
@@ -1381,10 +1458,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       ue_iter->label_idx,
 					       scn_index),
 			 &dw_error);
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, 0,
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, STACK_OFFSET_ADJUSTMENT,
 			 0, &dw_error);
 
-      if (Trace_Unwind) fprintf(TFile, "destroy stack frame of size %d at when %d\n", frame_size, ue_iter->when);
+      if (Trace_Unwind) fprintf(TFile, "destroy stack frame of size %lld at when %d\n", frame_size, ue_iter->when);
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s label %s to %s advance loc + destroy frame\n",
@@ -1405,7 +1482,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
     case UE_SAVE_MEM:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-      if (Trace_Unwind) fprintf(TFile, "save reg to sp mem at when %d\n", ue_iter->when);
+      frame_offset = frame_size - ue_iter->offset + STACK_OFFSET_ADJUSTMENT;
 
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -1413,14 +1490,21 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 					       scn_index),
 			 &dw_error);
       dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_machine_id(rc,reg),
-		 (frame_size - ue_iter->offset + STACK_OFFSET_ADJUSTMENT) / Data_Alignment_Factor,
+		 frame_offset / Data_Alignment_Factor,
 			 &dw_error);
+
+      if (Trace_Unwind) {
+	fprintf(TFile, "save reg to sp mem offset %lld at when %d\n", frame_offset, ue_iter->when);
+	if (ue_iter->frame_changed)
+	  fprintf(TFile, "  frame changed in the same bundle\n");
+      }
+
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
 	      REGISTER_machine_id(rc,reg),
-	      frame_size - ue_iter->offset + STACK_OFFSET_ADJUSTMENT);
+	      frame_offset);
 #endif
 
 #if 0
@@ -1448,7 +1532,11 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
     case UE_RESTORE_MEM:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-      if (Trace_Unwind) fprintf(TFile, "restore reg from sp mem at when %d\n", ue_iter->when);
+      if (Trace_Unwind) {
+	fprintf(TFile, "restore reg from sp mem at when %d\n", ue_iter->when);
+	if (ue_iter->frame_changed)
+	  fprintf(TFile, "  frame changed in the same bundle\n");
+      }
 
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
