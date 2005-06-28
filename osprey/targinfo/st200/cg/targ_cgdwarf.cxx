@@ -420,7 +420,6 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	}
       }
   }
-  //#if 0 // [CL] seems useless
   else if ((opnd_idx = OP_Copy_Operand(op)) != -1) 
   {
 #ifdef DEBUG_UNWIND
@@ -449,7 +448,6 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  fprintf(TFile, "** %s restore save reg from gr\n", __FUNCTION__);
       }
   }
-  //#endif
 
   if (ue.kind != UE_UNDEFINED) {
 	ue.qp = 0;
@@ -1069,14 +1067,12 @@ Init_Unwind_Info (BOOL trace)
   // for use in emit_unwind
   ue_iter = ue_list.begin();
 
-#ifdef TARG_ST // [CL]
   Idx_save_ra = 0;
   Idx_restore_ra = 0;
   Idx_adjust_sp = 0;
   Idx_restore_sp = 0;
   Idx_save_csr = 0;
   Idx_restore_csr = 0;
-#endif
 }
 
 void 
@@ -1102,12 +1098,38 @@ Use_Spill_Record (CLASS_REG_PAIR crp)
 	return TRUE;
 }
 
+static void Generate_Label_For_Unwinding(LABEL_IDX* label, INT* idx, char* txt,
+				      UNWIND_ELEM& ue_iter, BOOL post_process)
+{
+  LABEL* tmp_lab;
+  char* buf;
+  if (*label == LABEL_IDX_ZERO) {
+    buf = (char *)alloca(strlen(Cur_PU_Name) + 
+			 /* EXTRA_NAME_LEN */ 32);
+    sprintf(buf, ".LEH_%s%s_%s_%d",
+	    post_process ? "post_" : "", txt, Cur_PU_Name, *idx);
+    tmp_lab = &New_LABEL(CURRENT_SYMTAB, *label);
+    LABEL_Init (*tmp_lab, Save_Str(buf), LKIND_DEFAULT);
+    fprintf( Asm_File, "%s:\n", LABEL_name(*label));
+
+    // once we have emitted the pre-op and post-op labels,
+    // we can update the counter
+    if (post_process) {
+      (*idx)++;
+    }
+  }
+  // remember the label we have generated after 'op':
+  // this is the one we need to update the debug_frame info
+
+  if (post_process) {
+    ue_iter.label_idx = *label;
+  }
+}
+
 void 
 Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 {
   char prefix[3];
-  char* buf;
-  LABEL *label;
   // remember when we finish exploring a bundle
   // so that we can rewind 'next_when' before the post-pass
   static BOOL saved_state = TRUE;
@@ -1166,98 +1188,31 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
     case UE_CREATE_FRAME:
       bundle_has_frame_change = TRUE;
       frame_size = ue_iter->offset;
-      if (Label_adjust_sp == LABEL_IDX_ZERO) {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%sadjust_sp_%s_%d",
-		post_process ? "post_" : "", Cur_PU_Name, Idx_adjust_sp);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_adjust_sp);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_adjust_sp));
 
-	// remember the label we have generated after 'op':
-	// this is the one we need to update the debug_frame info
-
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (post_process) {
-	  Idx_adjust_sp++;
-	}
-      }
-      if (post_process) {
-	ue_iter->label_idx = Label_adjust_sp;
-      }
+      Generate_Label_For_Unwinding(&Label_adjust_sp, &Idx_adjust_sp,
+				   "adjust_sp", *ue_iter, post_process);
       break;
+
     case UE_DESTROY_FRAME:
       bundle_has_frame_change = TRUE;
       frame_size = ue_iter->offset;
-      if (Label_restore_sp == LABEL_IDX_ZERO) {
-	buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			     /* EXTRA_NAME_LEN */ 32);
-	sprintf(buf, ".LEH_%srestore_sp_%s_%d",
-		post_process ? "post_" : "", Cur_PU_Name, Idx_restore_sp);
-	label = &New_LABEL(CURRENT_SYMTAB, Label_restore_sp);
-	LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_sp));
 
-	// once we have emitted the pre-op and post-op labels,
-	// we can update the counter
-	if (post_process) {
-	  Idx_restore_sp++;
-	}
-      }
-      if (post_process) {
-	ue_iter->label_idx = Label_restore_sp;
-      }
+      Generate_Label_For_Unwinding(&Label_restore_sp, &Idx_restore_sp,
+				   "restore_sp", *ue_iter, post_process);
       break;
+
     case UE_SAVE_MEM:
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
-	if (Label_save_ra == LABEL_IDX_ZERO) {
-	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			       /* EXTRA_NAME_LEN */ 32);
-	  sprintf(buf, ".LEH_%ssave_ra_%s_%d",
-		  post_process ? "post_" : "", Cur_PU_Name, Idx_save_ra);
-	  label = &New_LABEL(CURRENT_SYMTAB, Label_save_ra);
-	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_ra));
-
-	  // once we have emitted the pre-op and post-op labels,
-	  // we can update the counter
-	  if (post_process) {
-	    Idx_save_ra++;
-	  }
-	}
-	if (post_process) {
-	    ue_iter->label_idx = Label_save_ra;
-	}
-	// adjust offset if SP is adjusted in the same bundle
-	if (post_process && bundle_has_frame_change) {
-	  ue_iter->offset += frame_size;
-	}
+	Generate_Label_For_Unwinding(&Label_save_ra, &Idx_save_ra,
+				   "save_ra", *ue_iter, post_process);
       } else {
-	if (Label_save_csr == LABEL_IDX_ZERO) {
-	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			       /* EXTRA_NAME_LEN */ 32);
-	  sprintf(buf, ".LEH_%ssave_csr_%s_%d_bb_%d_when_%d",
-		  post_process ? "post_" : "", Cur_PU_Name, Idx_save_csr,
-		  BB_id(ue_iter->bb), ue_iter->when);
-	  label = &New_LABEL(CURRENT_SYMTAB, Label_save_csr);
-	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_save_csr));
+	Generate_Label_For_Unwinding(&Label_save_csr, &Idx_save_csr,
+				   "save_csr", *ue_iter, post_process);
+      }
 
-	  // once we have emitted the pre-op and post-op labels,
-	  // we can update the counter
-	  if (post_process) {
-	    Idx_save_csr++;
-	  }
-	}
-	if (post_process) {
-	    ue_iter->label_idx = Label_save_csr;
-	}
-	// adjust offset if SP is adjusted in the same bundle
-	if (bundle_has_frame_change) {
-	  ue_iter->offset += frame_size;
-	}
+      // adjust offset if SP is adjusted in the same bundle
+      if (post_process && bundle_has_frame_change) {
+	ue_iter->offset += frame_size;
       }
 
       /* flag this ue in order to adjust the offset later */
@@ -1265,54 +1220,19 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 	ue_iter->frame_changed = TRUE;
       }
       break;
+
     case UE_RESTORE_MEM:
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
-	if (Label_restore_ra == LABEL_IDX_ZERO) {
-	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			       /* EXTRA_NAME_LEN */ 32);
-	  sprintf(buf, ".LEH_%srestore_ra_%s_%d",
-		  post_process ? "post_" : "", Cur_PU_Name, Idx_restore_ra);
-	  label = &New_LABEL(CURRENT_SYMTAB, Label_restore_ra);
-	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_ra));
-
-	  // once we have emitted the pre-op and post-op labels,
-	  // we can update the counter
-	  if (post_process) {
-	    Idx_restore_ra++;
-	  }
-	}
-	if (post_process) {
-	    ue_iter->label_idx = Label_restore_ra;
-	}
-	// adjust offset if SP is adjusted in the same bundle
-	if (post_process && bundle_has_frame_change) {
-	  ue_iter->offset -= frame_size;
-	}
+	Generate_Label_For_Unwinding(&Label_restore_ra, &Idx_restore_ra,
+				   "restore_ra", *ue_iter, post_process);
       } else {
-	if (Label_restore_csr == LABEL_IDX_ZERO) {
-	  buf = (char *)alloca(strlen(Cur_PU_Name) + 
-			       /* EXTRA_NAME_LEN */ 32);
-	  sprintf(buf, ".LEH_%srestore_csr_%s_%d_bb_%d_when_%d",
-		  post_process ? "post_" : "", Cur_PU_Name, Idx_restore_csr,
-		  BB_id(ue_iter->bb), ue_iter->when);
-	  label = &New_LABEL(CURRENT_SYMTAB, Label_restore_csr);
-	  LABEL_Init (*label, Save_Str(buf), LKIND_DEFAULT);
-	  fprintf( Asm_File, "%s:\n", LABEL_name(Label_restore_csr));
+	Generate_Label_For_Unwinding(&Label_restore_csr, &Idx_restore_csr,
+				   "restore_csr", *ue_iter, post_process);
+      }
 
-	  // once we have emitted the pre-op and post-op labels,
-	  // we can update the counter
-	  if (post_process) {
-	    Idx_restore_csr++;
-	  }
-	}
-	if (post_process) {
-	  ue_iter->label_idx = Label_restore_csr;
-	}
-	// adjust offset if SP is adjusted in the same bundle
-	if (post_process && bundle_has_frame_change) {
-	  ue_iter->offset -= frame_size;
-	}
+      // adjust offset if SP is adjusted in the same bundle
+      if (post_process && bundle_has_frame_change) {
+	ue_iter->offset -= frame_size;
       }
 
       /* flag this ue in order to adjust the offset later */
@@ -1320,17 +1240,21 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 	ue_iter->frame_changed = TRUE;
       }
       break;
+
     case UE_EPILOG:
       fprintf(f, "%s\t.body\n", prefix);
       break;
+
     case UE_LABEL:
       fprintf(f, "%s\t.body\n", prefix);
       fprintf(f, "%s\t.label_state %d\n", prefix, ue_iter->label);
       break;
+
     case UE_COPY:
       fprintf(f, "%s\t.body\n", prefix);
       fprintf(f, "%s\t.copy_state %d\n", prefix, ue_iter->label);
       break;
+
     case UE_RESTORE_GR:
       //#if 0
       // can ignore restores in epilog, as all is restored
@@ -1375,26 +1299,6 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 }
 
 
-
-#if 0
-static void
-Add_Prologue_Header (__unw_info_t *uinfo, UINT64 size)
-{
-  	__unw_error_t st = 0;
-  	if (Trace_Unwind) fprintf(TFile, "prolog header size %llu\n", size);
-  	st |= unwind_info_add_prologue_header(uinfo, size);
-  	Is_True(st == __UNW_OK, ("unwind_info prolog error (%d)", st));
-}
-static void
-Add_Body_Header (__unw_info_t *uinfo, UINT64 size)
-{
-  	__unw_error_t st = 0;
-  	if (Trace_Unwind) fprintf(TFile, "body header size %llu\n", size);
-  	st = unwind_info_add_body_header(uinfo, size);
-  	Is_True(st == __UNW_OK, ("unwind_info body error (%d)", st));
-}
-#endif
-
 extern char *Cg_Dwarf_Name_From_Handle(Dwarf_Unsigned idx);
 
 // process info we've collected and create the unwind descriptors
@@ -1432,18 +1336,22 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       continue;
 
     case UE_CREATE_FRAME:
-      // emit advance loc only if really advance
+      frame_size = ue_iter->offset;
+      Is_True(frame_size > 0,
+	      ("unwind: frame size should be > 0 at creation point"));
+
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 					       ue_iter->label_idx,
 					       scn_index),
 			 &dw_error);
-      frame_size = ue_iter->offset;
-      Is_True(frame_size > 0, ("unwind: frame size should be > 0 at creation point"));
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset,
 			 frame_size + STACK_OFFSET_ADJUSTMENT,
 			 0, &dw_error);
-      if (Trace_Unwind) fprintf(TFile, "create stack frame of size %lld at when %d\n", frame_size, ue_iter->when);
+      if (Trace_Unwind) {
+	fprintf(TFile, "create stack frame of size %lld at when %d\n",
+		frame_size, ue_iter->when);
+      }
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s label %s to %s advance loc + create frame %lld\n",
@@ -1451,8 +1359,11 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      Cg_Dwarf_Name_From_Handle(last_label_idx), frame_size);
 #endif
       break;
+
     case UE_DESTROY_FRAME:
-      Is_True(frame_size == ue_iter->offset, ("unwind: bad frame size at destroy point"));
+      Is_True(frame_size == ue_iter->offset,
+	      ("unwind: bad frame size at destroy point"));
+
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 					       ue_iter->label_idx,
@@ -1461,21 +1372,15 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, STACK_OFFSET_ADJUSTMENT,
 			 0, &dw_error);
 
-      if (Trace_Unwind) fprintf(TFile, "destroy stack frame of size %lld at when %d\n", frame_size, ue_iter->when);
+      if (Trace_Unwind) {
+	fprintf(TFile, "destroy stack frame of size %lld at when %d\n",
+		frame_size, ue_iter->when);
+      }
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s label %s to %s advance loc + destroy frame\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx));
-#endif
-#if 0
-      {
-	INT when_from_end = end_when - ue_iter->when - 1;
-	Is_True(end_when != 0, ("unwind: no epilog before destroy_frame?"));
-	if (Trace_Unwind) fprintf(TFile, "body epilogue at when %d\n", when_from_end);
-	//      st |= unwind_info_add_body_epilogue_info(uinfo, when_from_end, 0);
-	//	Is_True(st == __UNW_OK, ("unwind_info frame restore error (%d)",st));
-      }
 #endif
       break;
 
@@ -1494,49 +1399,26 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			 &dw_error);
 
       if (Trace_Unwind) {
-	fprintf(TFile, "save reg to sp mem offset %lld at when %d\n", frame_offset, ue_iter->when);
+	fprintf(TFile, "save reg to sp mem offset %lld at when %d\n",
+		frame_offset, ue_iter->when);
 	if (ue_iter->frame_changed)
 	  fprintf(TFile, "  frame changed in the same bundle\n");
       }
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
+      fprintf(TFile,
+	      "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
 	      REGISTER_machine_id(rc,reg),
 	      frame_offset);
 #endif
 
-#if 0
-      if (uregion == PROLOGUE_UREGION) {
-	st |= unwind_info_add_prologue_info_sp_offset(
-						      uinfo,
-						      rc,
-						      REGISTER_machine_id(rc, reg),
-						      ue_iter->when - start_when,
-						      ue_iter->u.offset);
-      }
-      else {
-	st |= unwind_info_add_body_info_sp_offset(
-						  uinfo,
-						  rc,
-						  REGISTER_machine_id(rc, reg),
-						  ue_iter->when - start_when,
-						  ue_iter->u.offset);
-      }
-#endif
-      //      Is_True(st == __UNW_OK, ("unwind_info prolog error (%d) on reg %s", 
-      //			       st, UE_Register_Name(rc, reg) ));
       break;
 
     case UE_RESTORE_MEM:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-      if (Trace_Unwind) {
-	fprintf(TFile, "restore reg from sp mem at when %d\n", ue_iter->when);
-	if (ue_iter->frame_changed)
-	  fprintf(TFile, "  frame changed in the same bundle\n");
-      }
 
       dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -1545,6 +1427,13 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			 &dw_error);
       dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
 			 0, &dw_error);
+
+      if (Trace_Unwind) {
+	fprintf(TFile, "restore reg from sp mem at when %d\n", ue_iter->when);
+	if (ue_iter->frame_changed)
+	  fprintf(TFile, "  frame changed in the same bundle\n");
+      }
+
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s label %s to %s adv loc + restore reg %d\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
@@ -1553,6 +1442,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 #endif
 
       break;
+
     default:
       FmtAssert(FALSE, ("%s: Unhandled UNWIND_ELEM kind (%d)\n", __FUNCTION__, ue_iter->kind));
       break;
@@ -1564,152 +1454,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	    Cg_Dwarf_Name_From_Handle(last_label_idx));
 #endif
   }
-
-#if 0
-  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
-    if (ue_iter->kind == UE_CREATE_FRAME)
-	break;
-  }
-  if (ue_iter == ue_list.end()) {
-    // no frame
-#if 0
-    Add_Prologue_Header (uinfo, last_when);
-#endif
-  }
-  else {
-#if 0
-    Add_Prologue_Header (uinfo, ue_iter->u.region.size);
-#endif
-
-    if (Current_PU_Stack_Model == SMODEL_SMALL) {
-      if (Trace_Unwind) fprintf(TFile, "fixed stack frame of size %lld, set at when %d\n", 
-		Frame_Len, ue_iter->when);
-      st |= unwind_info_add_prologue_mem_stack_f_info(uinfo, 
-			ue_iter->when, Frame_Len / INST_BYTES);
-    }
-    else {
-      if (Trace_Unwind) fprintf(TFile, "large or variable-size stack frame, when = %d\n", ue_iter->when); 
-      st |= unwind_info_add_prologue_mem_stack_v_info (uinfo, ue_iter->when);
-      st |= unwind_info_add_prologue_psp_gr_info (uinfo,
-		REGISTER_machine_id (
-			TN_register_class(FP_TN), TN_register(FP_TN) ) );
-    }
-    Is_True(st == __UNW_OK, ("unwind_info mem_stack error (%d)", st));
-  }
-  uregion = PROLOGUE_UREGION;
-
-  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
-    switch (ue_iter->kind) {
-    case UE_EPILOG:
-	Add_Body_Header (uinfo, ue_iter->u.region.size);
-	uregion = EPILOGUE_BODY_UREGION;
-	start_when = ue_iter->u.region.start;
-	end_when = start_when + ue_iter->u.region.size;
-	break;
-    case UE_DESTROY_FRAME:
-	{
-	  INT when_from_end = end_when - ue_iter->when - 1;
-	  Is_True(end_when != 0, ("unwind: no epilog before destroy_frame?"));
-	  if (Trace_Unwind) fprintf(TFile, "body epilogue at when %d\n", when_from_end);
-	  st |= unwind_info_add_body_epilogue_info(uinfo, when_from_end, 0);
-	  Is_True(st == __UNW_OK, ("unwind_info frame restore error (%d)",st));
-	}
-	break;
-    case UE_LABEL:
-	Add_Body_Header (uinfo, ue_iter->u.region.size);
-	uregion = LABEL_BODY_UREGION;
-
-	if (Trace_Unwind) fprintf(TFile, "body label at when %d\n", ue_iter->when);
-	st |= unwind_info_add_body_label_state_info(uinfo, ue_iter->label);
-	Is_True(st == __UNW_OK, ("unwind_info label error (%d)",st));
-	start_when = ue_iter->u.region.start;
-	break;
-    case UE_COPY:
-	Add_Body_Header (uinfo, ue_iter->u.region.size);
-	uregion = COPY_BODY_UREGION;
-
-	if (Trace_Unwind) fprintf(TFile, "body copy at when %d\n", ue_iter->when);
-	st |= unwind_info_add_body_copy_state_info(uinfo, ue_iter->label);
-	Is_True(st == __UNW_OK, ("unwind_info copy error (%d)",st));
-	start_when = ue_iter->u.region.start;
-	break;
-
-    case UE_SAVE_GR:
-      {
-	rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-	reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-	ISA_REGISTER_CLASS save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
-	REGISTER save_reg = CLASS_REG_PAIR_reg(ue_iter->save_rc_reg);
-	if (Trace_Unwind) fprintf(TFile, "save reg to reg at when %d\n", ue_iter->when);
-
-	if (uregion == PROLOGUE_UREGION) {
-		st |= unwind_info_add_prologue_info_reg (
-			  uinfo, 
-			  rc,
-			  REGISTER_machine_id(rc, reg),
-			  ue_iter->when - start_when,
-			  save_rc,
-			  REGISTER_machine_id(save_rc, save_reg));
-	}
-	else {
-		// need to handle saves and restores in copy and label bodies
-		st |= unwind_info_add_body_info_reg (
-			  uinfo, 
-			  rc,
-			  REGISTER_machine_id(rc, reg),
-			  ue_iter->when - start_when,
-			  save_rc,
-			  REGISTER_machine_id(save_rc, save_reg));
-	}
-      }
-      Is_True(st == __UNW_OK, ("unwind_info save error (%d) on reg %s", 
-			       st, UE_Register_Name(rc, reg) ));
-      break;
-
-    case UE_SAVE_MEM:
-	rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-	reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-	if (Trace_Unwind) fprintf(TFile, "save reg to sp mem at when %d\n", ue_iter->when);
-	if (uregion == PROLOGUE_UREGION) {
-		st |= unwind_info_add_prologue_info_sp_offset(
-				uinfo,
-				rc,
-				REGISTER_machine_id(rc, reg),
-				ue_iter->when - start_when,
-				ue_iter->u.offset);
-	}
-	else {
-		st |= unwind_info_add_body_info_sp_offset(
-				uinfo,
-				rc,
-				REGISTER_machine_id(rc, reg),
-				ue_iter->when - start_when,
-				ue_iter->u.offset);
-	}
-        Is_True(st == __UNW_OK, ("unwind_info prolog error (%d) on reg %s", 
-			       st, UE_Register_Name(rc, reg) ));
-      	break;
-
-    case UE_RESTORE_MEM:
-	// can ignore restores in memory, as memory survives
-	break;
-    case UE_RESTORE_GR:
-	// can ignore restores in epilog (all are restored)
-	if (uregion == EPILOGUE_BODY_UREGION)
-		break;
-	rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-	reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-	if (Trace_Unwind) fprintf(TFile, "restore reg at when %d\n", ue_iter->when);
-	st |= unwind_info_add_body_info_restore (uinfo, 
-		rc, 
-		REGISTER_machine_id(rc, reg),
-		ue_iter->when - start_when);
-	Is_True(st == __UNW_OK, ("unwind_info restore error (%d) on reg %s", 
-		st, UE_Register_Name(rc, reg) ));
-	break;
-    }
-  }
-#endif
 }
 
 /* construct the fde for the current procedure. */
@@ -1717,10 +1461,6 @@ extern Dwarf_P_Fde
 Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 		    Dwarf_Unsigned begin_label,
 		    Dwarf_Unsigned end_label,
-#if 0
-		    LABEL_IDX begin_label,
-		    LABEL_IDX end_label,
-#endif
 		    INT32     end_offset,
 		    // The following two arguments need to go away
 		    // once libunwind gives us an interface that
@@ -1743,7 +1483,7 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   if (has_asm)
 	DevWarn("no unwind info cause PU has asm");
   else if ( ! simple_unwind)
-	DevWarn("no unwind info cause PU is too complicated");
+	DevWarn("unwind info may be incorrect because PU is too complicated");
 
   return fde;
 }
