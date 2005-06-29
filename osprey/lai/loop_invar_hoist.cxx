@@ -2358,6 +2358,14 @@ Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, MEM_POOL* mp) {
         dom_pro = BS_Union1D (dom_pro, (BS_ELT)BB_id(prolog),mp);
         dom_pro = BS_Difference1D (dom_pro, (BS_ELT)BB_id(head));
         Set_BB_dom_set (prolog, dom_pro);
+#ifdef TARG_ST
+	// FdF 20050629. Also, update pdom_set. This is needed in case
+	// this prolog will be the unique successor of another loop
+	// epilog (ddts 22256).
+        BS* pdom_pro = BS_Copy (BB_pdom_set(head), mp);
+        pdom_pro = BS_Union1D (pdom_pro, (BS_ELT)BB_id(prolog), mp);
+        Set_BB_pdom_set (prolog, pdom_pro);
+#endif
     }
      
     if (epilog) {
