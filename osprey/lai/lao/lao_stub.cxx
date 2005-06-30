@@ -494,12 +494,11 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb) {
     Operation *operations = (Operation *)alloca(MAX_OPERATION_COUNT*sizeof(Operation));
     CGIR_OP cgir_op = NULL;
     FOR_ALL_BB_OPs(cgir_bb, cgir_op) {
-      Is_True(operationCount < MAX_OPERATION_COUNT, ("BB has more than MAX_OPERATION_COUNT operations"));
+      Is_True(operationCount < MAX_OPERATION_COUNT,
+              ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
-    // For instruction mode currently the targ interface does not
-    // account for isa subset. HACK.
-    LAI_Processor processor = CGIR_IS_to_Processor((ISA_SUBSET)!Is_Target_st220());
+    LAI_Processor processor = CGIR_IS_to_Processor(ISA_SUBSET_Value);
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
