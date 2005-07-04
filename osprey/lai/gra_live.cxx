@@ -2330,6 +2330,10 @@ Rename_TN_In_Range (TN *tn, OP *op1, OP *op2)
     for (i = 0; i < OP_results(op); i++) {
       if (OP_result(op, i) == tn) {
         Set_OP_result (op, i, new_tn);
+#ifdef TARG_ST
+	Set_TN_ssa_def (new_tn, op);
+#endif
+
       }
     }
     op = OP_next(op);

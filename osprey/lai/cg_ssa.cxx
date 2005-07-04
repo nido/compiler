@@ -1542,6 +1542,11 @@ SSA_Rename ()
   BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
 
   //
+  // initialize tn_ssa_map, deleted by the SSA_Remove_Pseudo_OPs()
+  //
+  tn_ssa_map = TN_MAP_Create();
+
+  //
   // visit nodes in the dominator tree order renaming TNs
   //
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
@@ -1623,11 +1628,6 @@ SSA_Enter (
   //
   phi_op_map = OP_MAP_Create();
 
-  //
-  // initialize tn_ssa_map, deleted by the SSA_Remove_Pseudo_OPs()
-  //
-  tn_ssa_map = TN_MAP_Create();
-
   /* Why + 2?  Nobody seems to know.
    */
   region_exit_set  = BB_SET_Create_Empty(PU_BB_Count + 2,&ssa_pool);
@@ -1693,55 +1693,162 @@ SSA_Check (
  *
  *   Verify the invariant properties of the SSA representation
  *
+ *   Should be run in debug mode after each transformation that is
+ *   supposed to maintain SSA form. Only done in debug mode.
+ *
+ *   Current implementation verifies:
+ *     1. (opnd|result)->tn->ssa_def link.
+ *     2. ssa_def->bb link
+ *     3. ssa_def defines tn and only once.
+ *     4. op->results->tn->ssa_def returns the op itself (unicity)
  * ================================================================ */
 
-void
+static BOOL
+SSA_Verify_TN(BB *bb, OP *op, TN *tn)
+{
+  OP *def_op;
+  BB *def_bb;
+
+  BOOL ok = TRUE;
+  
+  def_op = TN_ssa_def(tn);
+  if (def_op == NULL) {
+    DevWarn("Missing SSA def for TN. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
+	    Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+    return FALSE;
+  }
+  
+  def_bb = OP_bb(def_op);
+  if (def_bb == NULL) {
+    DevWarn("Missing SSA def BB for OP:%d. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
+	    OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+    return FALSE;
+  }
+  
+  int i, found = FALSE;
+  for (i = 0; i < OP_results(def_op); i++) {
+    if (OP_result(def_op, i) == tn) {
+      if (found) {
+	DevWarn("Multiple def for TN in OP:%d. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
+		OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+	ok = FALSE;
+      }
+      found = TRUE;
+    }
+  }
+  if (!found) {
+    DevWarn("TN not defined by OP:%d. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
+	    OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+    ok = FALSE;
+  }
+  return ok;
+}
+
+BOOL
 SSA_Verify (
   RID *rid, 
   BOOL region 
 )
 {
   BB *bb;
+  OP *op;
+  BOOL ok = TRUE;
+
+#ifdef Is_True_On  
+  // First, calculate the dominator/postdominator information:
+  Calculate_Dominators();
+
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    OP *phi;
 
-    FOR_ALL_BB_PHI_OPs(bb, phi) {
+    FOR_ALL_BB_OPs(bb, op) {
 
-      if (OP_opnds(phi) != BB_preds_len(bb)) {
-        fprintf (TFile, "for bb BB%d\n", BB_id(bb));
-        Print_All_BBs();
-        DevAssert(FALSE, ("ssa: invalid phi\n"));
+      if (OP_code(op) == TOP_phi) {
+	/* Get phi map entry. */
+	if (OP_opnds(op) != BB_preds_len(bb)) {
+	  DevWarn("Invalid phi for bb BB%d\n\n", BB_id(bb));
+	  ok = FALSE;
+	}
+	else {
+	  PHI_MAP_ENTRY *entry = (PHI_MAP_ENTRY *)OP_MAP_Get(phi_op_map, op);
+	  if (entry == NULL) {
+	    DevWarn("PHI not mapped. PU:%s BB:%d OP:%d", 
+		    Cur_PU_Name, BB_id(bb), OP_map_idx(op));
+	    ok = FALSE;
+	  }
+
+	  else {
+
+	    /* Check that each basic block predecessor is correctly
+	       associated with a PHI operand. */
+
+	    BBLIST *edge;
+	    int opnd_idx;
+	    FOR_ALL_BB_PREDS(bb, edge) {
+	      BB *bp = BBLIST_item(edge);
+	      opnd_idx = Get_PHI_Predecessor_Idx(op, bp);
+	      if (Get_PHI_Predecessor(op, opnd_idx) != bp) {
+		DevWarn("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx);
+		ok = FALSE;
+	      }
+	      else {
+
+		/* Check that the definition of a PHI operand dominates its
+		   associated predecessor. */
+		TN *opnd_tn = OP_opnd(op, opnd_idx);
+		OP *def_op = TN_ssa_def(opnd_tn);
+		if (def_op && !BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op))) {
+		  DevWarn("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx);
+		  ok = FALSE;
+		}
+	      }
+	    }
+
+	    /* Check that each PHI operand is correctly associated with a
+	       basic block predecessor. */
+
+	    for (int opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
+	      BB *bp = Get_PHI_Predecessor(op, opnd_idx);
+	      if (Get_PHI_Predecessor_Idx(op, bp) != opnd_idx) {
+		DevWarn("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx);
+		ok = FALSE;
+	      }
+	    }
+	  }
+	}
       }
 
-      /* Check that each basic block predecessor is correctly
-	 associated with a PHI operand. */
-
-      BBLIST *edge;
-      int opnd_idx;
-      FOR_ALL_BB_PREDS(bb, edge) {
-        BB *bp = BBLIST_item(edge);
-	opnd_idx = Get_PHI_Predecessor_Idx(phi, bp);
-	Is_True(Get_PHI_Predecessor(phi, opnd_idx) == bp,
-		("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx));
-
-	/* Check that the definition of a PHI operand dominates its
-	   associated predecessor. */
-	TN *opnd_tn = OP_opnd(phi, opnd_idx);
-	OP *def_op = TN_ssa_def(opnd_tn);
-	Is_True (!def_op || BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op)),
-		 ("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx));
+      /* For all operations, including PHIs. */
+      int i;
+      for (i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op, i);
+	if (TN_is_register(tn) && TN_can_be_renamed(tn)) {
+	  /* Verify tn links. */
+	  ok &= SSA_Verify_TN(bb, op, tn);
+	}
       }
-
-      /* Check that each PHI operand is correctly associated with a
-	 basic block predecessor. */
-
-      for (int opnd_idx = 0; opnd_idx < OP_opnds(phi); opnd_idx++) {
-	BB *bp = Get_PHI_Predecessor(phi, opnd_idx);
-	Is_True(Get_PHI_Predecessor_Idx(phi, bp) == opnd_idx,
-		("SSA_Verify: BB %d opnd %d in PHI, inconsistency in PHI map.", BB_id(bb), opnd_idx));
+      for (i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op, i);
+	if (TN_is_register(tn) && TN_can_be_renamed(tn)) {
+	  /* Verify tn links. */
+	  ok &= SSA_Verify_TN(bb, op, tn);
+	  /* Verify unicity of def. */
+	  OP *def_op = TN_ssa_def(tn);
+	  if (def_op != NULL && def_op != op) {
+	    DevWarn("OP don't match the TN ssa OP:%d. TN result: PU:%s BB:%d OP:%d TN:%d",
+		    OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+	    ok = FALSE;
+	  }
+	}
       }
     }
   }
+
+  // Clean up the dominator/posdominator information:
+  Free_Dominators_Memory();
+
+  if (!ok) DevWarn("*** SSA_Verify FAILED");
+#endif
+  return ok;
 }
 
 /* ================================================================
@@ -2510,7 +2617,8 @@ Normalize_Psi_Operations()
 	for (opndj = opndi-1; opndj >= 0; opndj --) {
 	  TN *tn_opndj = PSI_opnd(op, opndj);
 	  OP *op_defj = TN_ssa_def(tn_opndj);
-	  Is_True(op_defj && OP_code(op_defj) != TOP_psi, ("Illegal PSI argument %d", opndj));
+	  Is_True(op_defj && (opndj == 0 || OP_code(op_defj) != TOP_psi), ("Illegal PSI argument %d", opndj));
+	  Is_True(OP_code(op_defj) != TOP_psi || PSI_guard(op, opndj) == True_TN, ("Illegal Guard on PSI argument"));
 
 	  if (OP_dominate(op_defj, op_defi)) break;
 	  if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
@@ -2575,8 +2683,17 @@ Normalize_Psi_Operations()
 	}
 
 	TN *tn_movi = Copy_TN(tn_opndi);
-	OP *op_movi = OP_Make_movc(tn_guardi, tn_movi, tn_opndi);
-	BB_Insert_Op_Before(OP_bb(op), op, op_movi);
+
+        if (TN_is_true_pred (tn_guardi)) {
+          OPS mov_ops = OPS_EMPTY;  
+          Exp_COPY (tn_movi, tn_opndi, &mov_ops);          
+          BB_Insert_Ops_Before(OP_bb(op), op, &mov_ops);
+        }
+        else {
+          OP *op_movi = OP_Make_movc(tn_guardi, tn_movi, tn_opndi);
+          BB_Insert_Op_Before(OP_bb(op), op, op_movi);
+        }
+
 	Set_PSI_opnd(op, opndi, tn_movi);
       }
       //      Set_OP_cond_def_kind(TN_ssa_def(PSI_opnd(op, 0)), OP_ALWAYS_UNC_DEF);
@@ -3401,6 +3518,8 @@ SSA_Make_Conventional (
   Trace_SSA_Out = Get_Trace(TP_SSA, SSA_MAKE_CONST);
   Trace_Igraph = Get_Trace(TP_SSA, SSA_IGRAPH);
 
+  Calculate_Dominators();
+
   //
   // This one is temporary working pool (zeroes memory)
   //
@@ -3487,6 +3606,8 @@ SSA_Make_Conventional (
   if (Trace_SSA_Out) {
     Trace_IR(TP_SSA, "ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
   }
+
+  Free_Dominators_Memory();
 
   return;
 }

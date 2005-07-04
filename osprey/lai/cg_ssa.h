@@ -77,8 +77,31 @@ extern INT32 CG_ssa_algorithm;
  */
 extern TN_MAP tn_ssa_map;
 #define TN_ssa_def(t)        ((OP *)TN_MAP_Get(tn_ssa_map, t))
+/* The following function creates the SSA use-def link. It is
+   automatically called when an operation is inserted in a
+   block. However, this function MUST BE EXPLICITELY CALLED when the
+   result of an operation is changed, in case of renaming for
+   example. */
 inline void Set_TN_ssa_def(TN *t, OP *o) {
-  if (tn_ssa_map != NULL) TN_MAP_Set(tn_ssa_map, t, o);
+  if (tn_ssa_map != NULL) {
+    Is_True(!o || !TN_ssa_def(t), ("Set_TN_ssa_def cannot be called on a TN with an SSA def."));
+    TN_MAP_Set(tn_ssa_map, t, o);
+  }
+}
+
+/* The two following functions update the SSA use-def link when an
+   operation is inserted into or removed from a basicblock. */
+
+inline void SSA_setup(OP *o) {
+  if (tn_ssa_map)
+    for (int i = 0; i < OP_results(o); i++)
+      Set_TN_ssa_def(OP_result(o, i), o);
+}
+
+inline void SSA_unset(OP *o) {
+  if (tn_ssa_map)
+    for (int i = 0; i < OP_results(o); i++)
+      Set_TN_ssa_def(OP_result(o, i), NULL);
 }
 
 //
@@ -88,7 +111,7 @@ inline void Set_TN_ssa_def(TN *t, OP *o) {
   for (op = BB_first_op(bb); op != NULL && OP_code(op) == TOP_phi; op = OP_next(op))
 
 extern BOOL SSA_Check (RID *rid, BOOL region);
-extern void SSA_Verify (RID *rid, BOOL region);
+extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Make_Conventional (RID *rid, BOOL region);
 extern void SSA_Remove_Pseudo_OPs (RID *rid, BOOL region);

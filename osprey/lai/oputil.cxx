@@ -343,6 +343,9 @@ static void setup_ops(BB *bb, OP *first, OP *last, UINT32 len)
     order += incr;
     op->order = order;
     REGISTER_CLASS_OP_Update_Mapping (op);
+#ifdef TARG_ST
+    SSA_setup(op);
+#endif
     op = OP_next(op);
   } while (op != OP_next(last));
 
@@ -711,6 +714,9 @@ void BB_Remove_Op(BB *bb, OP *op)
 {
   OPS_Remove_Op(&bb->ops, op);
   op->bb = NULL;
+#ifdef TARG_ST
+  SSA_unset(op);
+#endif
 }
 
 
@@ -723,6 +729,11 @@ void BB_Remove_Ops(BB *bb, OPS *ops)
   OPS_Remove_Ops(&bb->ops, ops);
 
   FOR_ALL_OPS_OPs(ops, op) op->bb = NULL;
+#ifdef TARG_ST
+  FOR_ALL_OPS_OPs(ops, op) {
+    SSA_unset(op);
+  }
+#endif
 }
 
 
@@ -764,10 +775,6 @@ Mk_OP(TOP opr, ...)
   for (i = 0; i < results; ++i) {
     TN *result = va_arg(ap, TN *);
     Set_OP_result(op, i, result);
-#ifdef TARG_ST
-    // Some SSA-related bookkeeping
-    Set_TN_ssa_def(result,op);
-#endif
   }
 
   for (i = 0; i < opnds; ++i) {
@@ -810,14 +817,7 @@ Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
 
   Set_OP_code(op, opr);
 
-#ifdef TARG_ST
-  for (i = 0; i < results; ++i) {
-    Set_OP_result(op, i, res_tn[i]);
-    Set_TN_ssa_def(res_tn[i],op);
-  }
-#else
   for (i = 0; i < results; ++i) Set_OP_result(op, i, res_tn[i]);
-#endif
   for (i = 0; i < opnds; ++i) Set_OP_opnd(op, i, opnd_tn[i]);
 
   CGTARG_Init_OP_cond_def_kind(op);
