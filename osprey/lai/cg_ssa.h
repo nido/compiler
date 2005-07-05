@@ -83,7 +83,7 @@ extern TN_MAP tn_ssa_map;
    result of an operation is changed, in case of renaming for
    example. */
 inline void Set_TN_ssa_def(TN *t, OP *o) {
-  if (tn_ssa_map != NULL) {
+  if (tn_ssa_map != NULL && !TN_is_dedicated(t) && !TN_is_save_reg(t)) {
     Is_True(!o || !TN_ssa_def(t), ("Set_TN_ssa_def cannot be called on a TN with an SSA def."));
     TN_MAP_Set(tn_ssa_map, t, o);
   }
