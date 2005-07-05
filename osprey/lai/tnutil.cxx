@@ -723,7 +723,7 @@ Init_Dedicated_TNs (void)
     // (cbr) we need a true_tn for predicated instructions that are sunk
     // into a psi instruction.
     ++tnum; 
-    True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_branch, 4);    
+    True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_branch, -1); 
   }
 
 #else
