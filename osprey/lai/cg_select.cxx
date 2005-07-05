@@ -1704,6 +1704,10 @@ Optimize_Spec_Stores(BB *bb)
         if (OP_load(op1) || OP_load(op2))
           return;
 
+        // don't reorder store that might alias
+        if (tn1 == tn2 && !Are_Not_Aliased(op1, op2))
+          return;
+
         if (Are_Same_Location (op1, op2) && tn1 != tn2 &&
             !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
           OPS ops = OPS_EMPTY;  
