@@ -3253,6 +3253,10 @@ insert_result_copy (
   // replace old tn in the phi OP
   Set_OP_result(phi_op, 0, new_tn);
 
+  // Update the SSA use-def link.
+  Set_TN_ssa_def(tn , NULL);
+  Set_TN_ssa_def(new_tn, phi_op);
+
 #if 0
   // new_tn is global (because PHI result and => live_in)
   GTN_UNIVERSE_Add_TN(new_tn);
