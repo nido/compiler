@@ -312,7 +312,6 @@ Expand_CondStoreOP (
 void
 Expand_Cond_Store (
   TN   *cond_tn,
-  BOOL invert,
   OP   *op1,
   OP   *op2,
   UINT8 idx,
@@ -322,11 +321,12 @@ Expand_Cond_Store (
   TN *tns[3];
   TN *true_tn, *false_tn;
   BOOL is_black_hole = FALSE;
+  BOOL invert = false;
 
   if (!op1) {
     op1 = op2;
     op2 = NULL;
-    invert = !invert;
+    invert = true;
   }
   
   UINT8 validx    = OP_find_opnd_use(op1, OU_storeval);
