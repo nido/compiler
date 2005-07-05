@@ -1469,8 +1469,8 @@ SSA_Rename_BB (
       if (TN_can_be_renamed(tn)) {
 	new_tn = tn_stack_pop(tn);
 	Set_OP_result(op,i,new_tn);
-	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
 	Set_TN_ssa_def(tn, NULL);
+	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
 #if 0
 	fprintf(TFile, "  setting TN_ssa_def for ");
 	Print_TN(new_tn, FALSE);
@@ -2658,7 +2658,6 @@ Normalize_Psi_Operations()
 	  }
 	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
 	  BB_Insert_Op_After(OP_bb(op), op_prev, op_repair);
-	  Set_TN_ssa_def(tn_repair, op_repair);  // this should also include PHIs
 	  Set_PSI_opnd(op, opndi, tn_repair);
 	}
 
