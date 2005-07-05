@@ -726,13 +726,16 @@ void BB_Remove_Ops(BB *bb, OPS *ops)
 
   if (OPS_first(ops) == NULL) return;
 
-  OPS_Remove_Ops(&bb->ops, ops);
-
-  FOR_ALL_OPS_OPs(ops, op) op->bb = NULL;
 #ifdef TARG_ST
   FOR_ALL_OPS_OPs(ops, op) {
     SSA_unset(op);
   }
+#endif
+
+  OPS_Remove_Ops(&bb->ops, ops);
+
+#ifndef TARG_ST
+  FOR_ALL_OPS_OPs(ops, op) op->bb = NULL;
 #endif
 }
 
