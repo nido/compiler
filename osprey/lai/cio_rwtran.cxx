@@ -1444,11 +1444,11 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   }
 
 #ifdef TARG_ST
-  extern void Expand_Cond_Store (TN *, BOOL, OP *, OP *, UINT8, OPS *ops);
+  extern void Expand_Cond_Store (TN *, OP *, OP *, UINT8, OPS *ops);
   // [CG]: Use target dependent cond store generation
   UINT8 opnd_base   = OP_find_opnd_use( op, OU_base   );
   OPS ops_cond_store = OPS_EMPTY;
-  Expand_Cond_Store (tn_predicate, FALSE, op, NULL, opnd_base, &ops_cond_store);
+  Expand_Cond_Store (tn_predicate, op, NULL, opnd_base, &ops_cond_store);
 
   Copy_WN_For_Memory_OP(OPS_last(&ops_cond_store), op);
 

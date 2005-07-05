@@ -92,7 +92,7 @@ typedef struct {
 // targ_select.cxx
 //
 extern TN * Expand_CMP_Reg (TN*, OP *, OPS *);
-extern void Expand_Cond_Store (TN *, BOOL, OP *, OP *, UINT8, OPS *ops);
+extern void Expand_Cond_Store (TN *, OP *, OP *, UINT8, OPS *ops);
 extern void Expand_BlackHole (OP *, TN *, OPS *);
 extern void Expand_CondStoreAddr (OP *, TN *, OPS *);
 extern void Expand_CondStoreOP (OP *, TN *, OPS *);
