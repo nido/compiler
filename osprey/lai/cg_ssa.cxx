@@ -420,11 +420,11 @@ static hTN_MAP tn_to_new_name_map = NULL;
 #define Set_TN_new_name(t,n) (hTN_MAP_Set(tn_to_new_name_map,t,n))
 
 /* ================================================================
- *   Set_PHI_Operands
+ *   Initialize_PHI_map
  * ================================================================
  */
-static void
-Set_PHI_Operands(
+void
+Initialize_PHI_map(
   OP   *phi
 )
 {
@@ -440,12 +440,6 @@ Set_PHI_Operands(
   entry->opnd_src = TYPE_MEM_POOL_ALLOC_N(BB *, 
 					  &ssa_pool, 
 					  OP_opnds(phi));
-
-  FOR_ALL_BB_PREDS(bb,preds) {
-    BB *pred = BBLIST_item(preds);
-    entry->opnd_src[i] = pred;
-    i++;
-  }
 
   OP_MAP_Set(phi_op_map, phi, entry);
   
@@ -512,7 +506,7 @@ void Set_PHI_Predecessor (
  *   SSA_Prepend_Phi_To_BB
  * ================================================================
  */
-void SSA_Prepend_Phi_To_BB (
+static void SSA_Prepend_Phi_To_BB (
   OP *phi_op, 
   BB *bb
 ) 
@@ -525,7 +519,13 @@ void SSA_Prepend_Phi_To_BB (
   //
   // Some additional bookkeeping that is not done by Mk_OP
   //
-  Set_PHI_Operands(phi_op);
+  Initialize_PHI_map(phi_op);
+
+  FOR_ALL_BB_PREDS(bb,preds) {
+    BB *pred = BBLIST_item(preds);
+    entry->opnd_src[i] = pred;
+    i++;
+  }
 }
 
 /* ================================================================

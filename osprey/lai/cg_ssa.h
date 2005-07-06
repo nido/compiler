@@ -84,7 +84,10 @@ extern TN_MAP tn_ssa_map;
    example. */
 inline void Set_TN_ssa_def(TN *t, OP *o) {
   if (tn_ssa_map != NULL && !TN_is_dedicated(t) && !TN_is_save_reg(t)) {
-    Is_True(!o || !TN_ssa_def(t), ("Set_TN_ssa_def cannot be called on a TN with an SSA def."));
+#ifdef Is_True_On
+    if (o && TN_ssa_def(t))
+      Is_True(!o || !TN_ssa_def(t), ("Set_TN_ssa_def cannot be called on a TN with an SSA def."));
+#endif
     TN_MAP_Set(tn_ssa_map, t, o);
   }
 }
@@ -148,9 +151,9 @@ extern OP *OP_Make_movc (TN *guard, TN *dst, TN *src);
 extern OP *OP_Make_movcf (TN *guard, TN *dst, TN *src);
 
 //
-// Prepend the 'phi_op' to the 'bb' and do bookkeeping
+// Initialise the 'phi_op' mapping
 //
-extern void SSA_Prepend_Phi_To_BB (OP *phi_op, BB *bb);
+extern void Initialize_PHI_map(OP   *phi);
 
 // Tracing flags
 #define SSA_BUILD        0x00000001  /* trace SSA build */
