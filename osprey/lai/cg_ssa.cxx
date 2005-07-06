@@ -428,9 +428,6 @@ Initialize_PHI_map(
   OP   *phi
 )
 {
-  INT i = 0;
-  BBLIST *preds;
-
   Is_True(OP_code(phi) == TOP_phi,("not a PHI function"));
   PHI_MAP_ENTRY *entry = TYPE_MEM_POOL_ALLOC(PHI_MAP_ENTRY, 
 					     &ssa_pool);
@@ -511,6 +508,9 @@ static void SSA_Prepend_Phi_To_BB (
   BB *bb
 ) 
 {
+  INT i = 0;
+  BBLIST *preds;
+
   //
   // add 'phi_op' to 'bb' before all other insts
   //
@@ -520,6 +520,9 @@ static void SSA_Prepend_Phi_To_BB (
   // Some additional bookkeeping that is not done by Mk_OP
   //
   Initialize_PHI_map(phi_op);
+
+  PHI_MAP_ENTRY *entry = (PHI_MAP_ENTRY *)OP_MAP_Get(phi_op_map, phi_op);
+  Is_True(entry != NULL,("unmapped op ?"));
 
   FOR_ALL_BB_PREDS(bb,preds) {
     BB *pred = BBLIST_item(preds);
