@@ -41,7 +41,7 @@
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_factor="1.2"      factor to reduce the cost of the 
+ * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
  *
  * -CG:select_freq=TRUE         heuristic based on execution frequency (optimize  *                              speed) or size of block (optimize space).
@@ -132,7 +132,7 @@ BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_allow_dup_overridden = FALSE;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
-const char* CG_select_factor = "1.2";
+const char* CG_select_factor = "1.1";
 static float select_factor;
 static int branch_penalty;
 
@@ -491,6 +491,18 @@ Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops
   OPS_Append_Op(cmov_ops, psi_op);
 }
 
+static void
+BB_Create_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
+               std::list<BB*> *bbs, OP *phi) 
+{
+  phi_t *phi_infos;
+  phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+  phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+  phi_infos->bbs = bbs;
+
+  OP_MAP_Set(phi_op_map, phi, phi_infos);
+}
+     
 // Remove old phis or replace it with a new one from phi_op_map.
 // Note that we cannot use the same list to insert selects because they
 // would be inserted in the 'head' bblock.
@@ -597,12 +609,7 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
 
       result[0] = OP_result(phi, 0);
 
-      phi_t *phi_infos;
-      phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-      phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-      phi_infos->bbs = bbs;
-      
-      OP_MAP_Set(phi_op_map, phi, phi_infos);
+      BB_Create_Phi (nopnds, result, opnd, bbs, phi);
     }
     else
       old_phis.push_front(phi);      
@@ -679,16 +686,6 @@ Can_Speculate_BB(BB *bb)
       memi.predtn = cond_tn;
       pred_i.push_front(memi);
     }
-
-#if 0
-    else if (TOP_is_select (OP_code (op))) {
-      TN *cond_tn = OP_opnd(op, OP_find_opnd_use(op, OU_condition));
-      pred_t memi;
-      memi.memop = op;
-      memi.predtn = cond_tn;
-      pred_i.push_front(memi);
-    }
-#endif
 
     else if (!OP_Can_Be_Speculative(op)) {
       if (OP_memory (op)) {
@@ -1246,12 +1243,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
     bbs->push_front(new_bb);
     opnd[nopnds-1] = res1;
         
-    phi_t *phi_infos;
-    phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-    phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-    phi_infos->bbs = bbs;
-
-    OP_MAP_Set(phi_op_map, phi, phi_infos);
+    BB_Create_Phi (nopnds, result, opnd, bbs, phi);
   }
 
   BB_Update_Phis(tail);
@@ -1326,6 +1318,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
           // phi has only one def.
           TN *result[1];
           result[0] = Dup_TN(OP_result (op, 0));
+#if 0
           OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd); 
 
           // Must rename new results before BB_Append_Op because
@@ -1341,14 +1334,9 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
           phi_infos->bbs = bbs;
 
           OP_MAP_Set(phi_op_map, op, phi_infos);
-
-          if (Trace_Select_Gen) {
-            fprintf(Select_TFile, "Copy_BB_For_Duplication create phi\n");
-            Print_OP (new_phi);
-            fprintf(Select_TFile, "in replacement of\n");        
-            Print_OP (op);
-            fprintf(Select_TFile, "\n");  
-          }
+#else
+          BB_Create_Phi (nopnds, result, opnd, bbs, op);
+#endif
         }
       }
 
@@ -2126,18 +2114,19 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     TN *opnd[nopnds];
     UINT8 j=0;
     std::list<BB*> *bbs = new std::list<BB*>;
+
     for (UINT8 i = 0; i < nopnds; i++) {
       BB *pred = Get_PHI_Predecessor (phi, i);
       opnd[j++] = OP_opnd(phi, i);
       bbs->push_front(pred == bb2 ? bb1 : pred);
     }
+
     result[0] = OP_result(phi, 0);
-    phi_t *phi_infos;
-    phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-    phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-    phi_infos->bbs = bbs;
-    OP_MAP_Set(phi_op_map, phi, phi_infos);
+
+    BB_Create_Phi (nopnds, result, opnd, bbs, phi);
+
   }
+
   BB_Update_Phis(else_block);
 
   if (Trace_Select_Gen) {
@@ -2333,13 +2322,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       
       result[0] = OP_result(phi, 0);
 
-      phi_t *phi_infos;
-      phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-      phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-      phi_infos->bbs = bbs;
-
-      OP_MAP_Set(phi_op_map, phi, phi_infos);
-
+      BB_Create_Phi (nopnds, result, opnd, bbs, phi);
     }
     else {
       // Mark phi to be deleted.
@@ -2362,15 +2345,6 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   if (target_bb != tail) {
     Promote_BB_Chain (head, target_bb, tail);
   }
-
-  // GRA_LIVE_Compute_Liveness_For_BB(head);
-
-  // Promoted instructions might not be global anymore.
-  //  BB_Localize_Tns (head);
-
-   // to avoid extending condition's lifetime, we keep the comp instruction
-   // at the end, just before the selects.
-   //  BB_Move_Op_To_End(head, head, cmp);
 
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects in BB%d", BB_id(head));
@@ -2403,10 +2377,8 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
    // Update edge probability to 1.0
    BBLIST_prob(BB_Find_Succ(head, tail)) = 1.0;
 
-   // Maintain SSA.
+   // Update SSA with new phis.
    BB_Update_Phis(tail);
-
-   //   GRA_LIVE_Compute_Liveness_For_BB(head);
 
    if (Trace_Select_Gen) {
      fprintf (TFile, "\nEnd Select_Fold from BB%d\n", BB_id(head));
