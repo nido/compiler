@@ -94,7 +94,13 @@ static BB_MAP if_bb_map;        // Map fall_thru and targets of logif
 // When we change the number of predecessors of a basic block, we record
 // the new phis in this map. Old phis are then replaced all in once with 
 // BB_Update_Phis.
-static OP_MAP phi_op_map = NULL;
+
+typedef struct {
+  OP *phi;
+  std::list<BB*> *bbs;
+} phi_t;
+
+static OP_MAP phi_op_map;
 
 // List of of memory accesses found in if-then-else region. 
 // Load and stores lists are used in a slightly different manner:
@@ -246,15 +252,16 @@ Finalize_Select(void)
 static void
 Initialize_Hammock_Memory()
 {
-  phi_op_map = OP_MAP_Create();
   btn_map = TN_MAP_Create();
+  phi_op_map = OP_MAP_Create();
 }
 
 static void
 Finalize_Hammock_Memory()
 {
-  TN_MAP_Delete(btn_map);
+
   OP_MAP_Delete(phi_op_map);
+  TN_MAP_Delete(btn_map);
 }
 
 static void
@@ -359,20 +366,15 @@ Get_TN_Pos_in_PHI (OP *phi, BB *bb)
   return Get_PHI_Predecessor_Idx (phi, bb);
 }
 
-static void
-BB_Update_Phi_Predecessors(BB *bb1, BB* bb2)
+static BB*
+Get_BB_Pos_in_PHI (OP *phi, BB *bb)
 {
-  OP *phi;
-  BBLIST *bblist;
-  FOR_ALL_BB_SUCCS(bb1, bblist) {
-    BB *succ = BBLIST_item(bblist);
-    FOR_ALL_BB_PHI_OPs(succ, phi) {
-      for (int i = 0; i < OP_opnds(phi); i++) {
-        if (Get_PHI_Predecessor (phi, i) == bb2)
-          Set_PHI_Predecessor (phi, i, bb1);
-      }
-    }
-  }
+  BB *tb;
+
+  while ((tb = BB_Unique_Successor (bb)) && tb != OP_bb (phi))
+    bb = tb;
+
+  return bb;
 }
 
 static bool
@@ -481,17 +483,6 @@ Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops
 			 opnd);
 
 
-#if 0
-  if (!cond_tn) {
-    Set_PSI_guard(psi_op, 0, cond_tn);
-    Set_PSI_guard(psi_op, 1, fcond_tn);
-  }
-  else {
-    Set_PSI_guard(psi_op, 0, fcond_tn);
-    Set_PSI_guard(psi_op, 1, cond_tn);
-  }
-#endif
-
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Create_PSI\n");
     Print_OP (psi_op);
@@ -500,7 +491,45 @@ Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops
   OPS_Append_Op(cmov_ops, psi_op);
 }
 
-// After changing the CFG, SSA information must be maintained
+// Remove old phis or replace it with a new one from phi_op_map.
+// Note that we cannot use the same list to insert selects because they
+// would be inserted in the 'head' bblock.
+static void
+BB_Update_Phis(BB *bb)
+{
+  OP *phi;
+
+  for (phi = BB_first_op(bb); phi && OP_code(phi) == TOP_phi; ) {
+    phi_t *phi_infos;
+
+    phi_infos = (phi_t *)OP_MAP_Get(phi_op_map, phi);
+
+    OP *next = OP_next(phi);
+    BB_Remove_Op(bb, phi);
+
+    if (phi_infos) {
+      OP *new_phi = phi_infos->phi;
+
+      BB_Prepend_Op(bb, new_phi);
+      Initialize_PHI_map(new_phi);
+
+      int i=0;
+      while(!phi_infos->bbs->empty())
+        {
+          BB *pred = phi_infos->bbs->back();
+          Set_PHI_Predecessor (new_phi, i++, pred);
+          phi_infos->bbs->pop_back();
+        }
+
+      delete phi_infos->bbs;
+
+      OP_MAP_Set(phi_op_map, phi, NULL);
+    }
+
+    phi = next;
+  }
+}
+
 static void
 BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
                 BOOL true_br)
@@ -543,72 +572,46 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
       Expand_Select (select_tn, cond_tn1, OP_opnd(phi, tpos), OP_opnd(phi, fpos),
                      MTYPE_I4, FALSE, &cmov_ops);
 
+    std::list<BB*> *bbs = new std::list<BB*>;
+
     if (npreds > 2) {
       BBLIST* edge;
-      UINT8 edge_pos = 0;
+      UINT8 j = 0;
       TN *result[1];
-      TN *opnd[npreds-1];
-      BB *pred[npreds-1];
+      UINT8 nopnds = npreds - 1;
+      TN *opnd[nopnds];
 
       Set_TN_is_global_reg (select_tn);
-
-      FOR_ALL_BB_PREDS (bb, edge) { 
-        BB *bpred = BBLIST_item(edge);
-        if (bpred != bb2) {
-          if (bpred == bb1) {
-            opnd[edge_pos] = select_tn;
-            pred[edge_pos++] = bb1;
-          }
-          else if (bpred == bb2)
-            ; 
-          else {
-            UINT8 pos = Get_TN_Pos_in_PHI (phi, bpred);
-            opnd[edge_pos] = OP_opnd(phi, pos);
-            pred[edge_pos++] = bpred;
-          }
+      
+      for (UINT8 i = 0; i < npreds; i++) {
+        BB *pred = Get_PHI_Predecessor (phi, i);
+        if (pred == bb1) {
+          bbs->push_front(bb1);
+          opnd[j++] = select_tn;
+        }
+        else  if (pred != bb2) {
+          bbs->push_front(pred);
+          opnd[j++] = OP_opnd(phi, i);
         }
       }
 
       result[0] = OP_result(phi, 0);
-      OP *new_phi = Mk_VarOP (TOP_phi, 1, edge_pos, result, opnd);
 
-      for (int i = 0; i < edge_pos; i++) 
-        Set_PHI_Predecessor (phi, i, pred[i]);
-
-      OP_MAP_Set(phi_op_map, phi, new_phi);
+      phi_t *phi_infos;
+      phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+      phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+      phi_infos->bbs = bbs;
+      
+      OP_MAP_Set(phi_op_map, phi, phi_infos);
     }
     else
       old_phis.push_front(phi);      
   }
 
-   BB_Remove_Ops(bb, old_phis);
-   BB_Insert_Ops_Before(bb1, br1_op, &cmov_ops);
+  BB_Remove_Ops(bb, old_phis);
+  BB_Insert_Ops_Before(bb1, br1_op, &cmov_ops);
 
-  BB_Update_Phi_Predecessors(bb1, bb2);
-}
-
-
-// Remove old phis or replace it with a new one from phi_op_map.
-// Note that we cannot use the same list to insert selects because they
-// would be inserted in the 'head' bblock.
-static void
-BB_Update_Phis(BB *bb)
-{
-  OP *phi;
-
-  for (phi = BB_first_op(bb); phi && OP_code(phi) == TOP_phi; ) {
-      OP *new_phi;
-
-      new_phi = (OP *)OP_MAP_Get(phi_op_map, phi);
-
-      OP *next = OP_next(phi);
-      BB_Remove_Op(bb, phi);
-
-      if (new_phi) 
-        SSA_Prepend_Phi_To_BB(new_phi, bb);
-
-      phi = next;
-    }
+  BB_Update_Phis(bb);
 }
 
 /* ================================================================
@@ -1218,47 +1221,37 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
 
   FOR_ALL_BB_PHI_OPs(tail, phi) { 
     UINT8 nopnds = OP_opnds(phi)+1;
-    UINT8 nresults = OP_results(phi);
-
-    TN *result[nresults];
+    TN *result[1];
     TN *opnd[nopnds];
 
-    for (UINT8 i = 0; i < nresults; i++) {
-      result[i] = OP_result(phi, i);
-    }
+    result[0] = OP_result(phi, 0);
 
-    UINT8 i = 0;
-    
-    BBLIST *preds;
-    FOR_ALL_BB_PREDS(tail,preds) {
-      TN *res;
-      BB *pred = BBLIST_item(preds);
+    std::list<BB*> *bbs = new std::list<BB*>;
+    TN *res1 = NULL;
+    BB* tpred = Get_BB_Pos_in_PHI (phi, dup);
 
-      if (pred == new_bb) {
-        UINT8 pos = Get_TN_Pos_in_PHI (phi, dup);
-        res = OP_opnd(phi, pos);
-        TN *res1 = (TN*) hTN_MAP_Get(dup_tn_map, res);
-        if (res1) res = res1;
-      }
-      else {
-        UINT8 pos = Get_TN_Pos_in_PHI (phi, pred);
-        res = OP_opnd(phi, pos);
+    for (UINT8 i = 0; i < OP_opnds(phi); i++) {
+      BB *pred = Get_PHI_Predecessor (phi, i);
+      TN *res = OP_opnd(phi, i);
+
+      if (pred == tpred) {
+        res1 = (TN*) hTN_MAP_Get(dup_tn_map, res);
+        if (!res1) res1 = res;
       }
 
-      opnd[i++] = res;
+      bbs->push_front(pred);
+      opnd[i] = res;
     }
 
-    OP *new_phi = Mk_VarOP (TOP_phi, nresults, nopnds, result, opnd);
+    bbs->push_front(new_bb);
+    opnd[nopnds-1] = res1;
+        
+    phi_t *phi_infos;
+    phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+    phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+    phi_infos->bbs = bbs;
 
-    if (Trace_Select_Gen) {
-      fprintf(Select_TFile, "Rename_Phis create phi\n");
-      Print_OP (new_phi);
-      fprintf(Select_TFile, "in replacement of\n");        
-      Print_OP (phi);
-      fprintf(Select_TFile, "\n");  
-    }
-
-    OP_MAP_Set(phi_op_map, phi, new_phi);
+    OP_MAP_Set(phi_op_map, phi, phi_infos);
   }
 
   BB_Update_Phis(tail);
@@ -1303,14 +1296,11 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
         UINT8 nopnds = 0;
         TN *opnd[BB_preds_len(bp)];
       
-        if (Trace_Select_Dup) {
-          fprintf (Select_TFile, "<select> Transforms phi ");
-          Print_OP (op);
-          fprintf (Select_TFile, "\n");
-        }
-    
+        std::list<BB*> *bbs = new std::list<BB*>;
+
         for (UINT8 i = 0; i < OP_opnds(op); i++) {
-          if (Get_PHI_Predecessor (op, i) == pred) {
+          BB *ppred = Get_PHI_Predecessor (op, i);
+          if (ppred == pred) {
             OPS new_ops = OPS_EMPTY;  
             TN *res = OP_result (op, 0);
             TN *new_tn = Dup_TN(res);
@@ -1320,6 +1310,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
             BB_Append_Ops (to_bb, &new_ops);
           }
           else {
+            bbs->push_front(ppred);
             opnd[nopnds++] = OP_opnd (op, i);
           }
         }
@@ -1344,6 +1335,13 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
             hTN_MAP_Set(dup_tn_map, result[0], new_phi);
           }
 
+          phi_t *phi_infos;
+          phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+          phi_infos->phi = new_phi;
+          phi_infos->bbs = bbs;
+
+          OP_MAP_Set(phi_op_map, op, phi_infos);
+
           if (Trace_Select_Gen) {
             fprintf(Select_TFile, "Copy_BB_For_Duplication create phi\n");
             Print_OP (new_phi);
@@ -1351,8 +1349,6 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
             Print_OP (op);
             fprintf(Select_TFile, "\n");  
           }
-
-          OP_MAP_Set(phi_op_map, op, new_phi);
         }
       }
 
@@ -2123,8 +2119,26 @@ Simplify_Logifs(BB *bb1, BB *bb2)
                  (!false_br && bb2 == bb1_fall_thru) ||
                  (false_br && bb2 == bb1_target));
 
-  // commit new phis
-  BB_Update_Phis(joint_block);
+  OP *phi;
+  FOR_ALL_BB_PHI_OPs(else_block, phi) {
+    TN *result[1];
+    UINT8 nopnds = OP_opnds(phi);
+    TN *opnd[nopnds];
+    UINT8 j=0;
+    std::list<BB*> *bbs = new std::list<BB*>;
+    for (UINT8 i = 0; i < nopnds; i++) {
+      BB *pred = Get_PHI_Predecessor (phi, i);
+      opnd[j++] = OP_opnd(phi, i);
+      bbs->push_front(pred == bb2 ? bb1 : pred);
+    }
+    result[0] = OP_result(phi, 0);
+    phi_t *phi_infos;
+    phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+    phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+    phi_infos->bbs = bbs;
+    OP_MAP_Set(phi_op_map, phi, phi_infos);
+  }
+  BB_Update_Phis(else_block);
 
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "\nEnd gen logical from BB%d \n", BB_id(bb1));
@@ -2263,34 +2277,18 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   BB_Remove_Op(head, br_op);
 
   FOR_ALL_BB_PHI_OPs(tail, phi) {
-    UINT8 npreds;
-    UINT8 taken_pos, nottaken_pos;
-    TN *true_tn, *false_tn;
+    UINT8 npreds = OP_opnds(phi);
 
-    taken_pos    = Get_TN_Pos_in_PHI (phi, target_bb == tail ?
-                                             head : target_bb);
-    nottaken_pos = Get_TN_Pos_in_PHI (phi, fall_thru_bb == tail ?
-                                      head : fall_thru_bb);
-    true_tn   = OP_opnd(phi, taken_pos);
-    false_tn  = OP_opnd(phi, nottaken_pos); 
-    npreds    = BB_preds_len(tail);
-
-    TN *select_tn = OP_result (phi, 0);
+    BB *true_bb = target_bb == tail ? head : target_bb;
+    BB *false_bb = fall_thru_bb == tail ? head : fall_thru_bb;
 
     if (false_br) {
-      TN *temp_tn = false_tn;
-      false_tn = true_tn;
-      true_tn = temp_tn;
+      BB *temp_bb = false_bb;
+      false_bb = true_bb;
+      true_bb = temp_bb;
     }
 
-    DevAssert(true_tn && false_tn, ("Select: undef TN"));
-
-    if (Trace_Select_Gen) {
-      fprintf (Select_TFile, "<select> converts phi %d preds ", npreds);
-      fprintf (Select_TFile, " taken_pos = %d, nottaken_pos = %d\n",
-               taken_pos, nottaken_pos);
-      Print_OP (phi);
-    }
+    TN *select_tn = OP_result (phi, 0);
 
     if (npreds > 2) {
       TN *result[1];
@@ -2298,45 +2296,59 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       UINT8 nopnds = npreds - 1;
       TN *opnd[nopnds];
 
+      std::list<BB*> *bbs = new std::list<BB*>;
+
       select_tn = Dup_TN(select_tn);
       Set_TN_is_global_reg (select_tn);
       
+      BB* tpred = Get_BB_Pos_in_PHI (phi, true_bb);
+      BB* fpred = Get_BB_Pos_in_PHI (phi, false_bb);
+
       // new args goes last if we know that a new edge will be inserted.
       // else, replace old phi tn with newly create select tn.
       if (edge_needed) {
         for (UINT8 i = 0; i < npreds; i++) {
-          if (i != taken_pos && i != nottaken_pos) 
+          BB *pred = Get_PHI_Predecessor (phi, i);
+          if (pred != tpred && pred != fpred) {
+            bbs->push_front(pred);
             opnd[j++] = OP_opnd(phi, i);
+          }
         }
+        bbs->push_front(head);
         opnd[j] = select_tn;
       }
       else {
         for (UINT8 i = 0; i < npreds; i++) {
-          if (i != taken_pos && i != nottaken_pos) 
+          BB *pred = Get_PHI_Predecessor (phi, i);
+          if (pred != fpred && pred != tpred) {
+            bbs->push_front(pred);
             opnd[j++] = OP_opnd(phi, i);
-          else if ((i == nottaken_pos || i == taken_pos) &&
-                   Get_PHI_Predecessor (phi, i) == head)
+          }
+          else if (pred == tpred) {
+            bbs->push_front(head); 
             opnd[j++] = select_tn;
+          }
         }
       }
       
       result[0] = OP_result(phi, 0);
 
-      OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-      OP_MAP_Set(phi_op_map, phi, new_phi);
+      phi_t *phi_infos;
+      phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+      phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+      phi_infos->bbs = bbs;
 
-      if (Trace_Select_Gen) {
-        fprintf(Select_TFile, "<select> handle phi =  ");
-        Print_OP (new_phi);
-      }
+      OP_MAP_Set(phi_op_map, phi, phi_infos);
+
     }
     else {
       // Mark phi to be deleted.
       old_phis.push_front(phi);
     }
 
-    OP *op1 = TN_ssa_def (true_tn);
-    OP *op2 = TN_ssa_def (false_tn);
+    TN *true_tn   = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, true_bb));
+    TN *false_tn  = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, false_bb));
+    DevAssert(true_tn && false_tn, ("Select: undef TN"));
 
     Create_PSI (select_tn, cond_tn, true_tn, false_tn, &cmov_ops);
   
@@ -2489,7 +2501,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       Initialize_Hammock_Memory();
 
       Select_Fold (bb, t_set, ft_set, bbb);
-
 
 #ifdef Is_True_On
       //      Sanity_Check();
