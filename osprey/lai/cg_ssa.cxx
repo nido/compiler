@@ -432,8 +432,6 @@ Initialize_PHI_map(
   PHI_MAP_ENTRY *entry = TYPE_MEM_POOL_ALLOC(PHI_MAP_ENTRY, 
 					     &ssa_pool);
 
-  BB *bb = OP_bb(phi);
-
   entry->opnd_src = TYPE_MEM_POOL_ALLOC_N(BB *, 
 					  &ssa_pool, 
 					  OP_opnds(phi));
@@ -1715,6 +1713,13 @@ SSA_Verify_TN(BB *bb, OP *op, TN *tn)
   BOOL ok = TRUE;
   
   def_op = TN_ssa_def(tn);
+
+#if 1
+  // temporary workaround to catch valid case where tn is not defined.
+  if (def_op == NULL && BB_exit(bb)) 
+    return ok;
+#endif
+
   if (def_op == NULL) {
     DevWarn("Missing SSA def for TN. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
 	    Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
