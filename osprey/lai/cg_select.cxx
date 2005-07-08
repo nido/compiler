@@ -1649,6 +1649,7 @@ BB_Fix_Spec_Loads (BB *bb)
                   OP_opnd(op, OP_find_opnd_use(op, OU_base)),
                   &ops);
 
+        Copy_WN_For_Memory_OP(OPS_last(&ops), op);
         BB_Replace_Op (op, &ops);
       }
 
