@@ -588,13 +588,16 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
     // of OP_copy and OP_COPY_OPND ?
     if ( OP_copy( op ) &&
 	 ( ! OP_has_predicate( op ) ||
-	   TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) ) &&
 #ifdef TARG_ST
+           /* (cbr) predicate operand # is not necessary constant */
+	   TN_is_true_pred( OP_opnd( op, OP_find_opnd_use(op, OU_predicate)))) &&
+
 	 // FdF: Fix bug on R06253.cxx: cannot perform copy
 	 // propagation on x = x;
 	 OP_opnd(op, OP_Copy_Operand(op)) != OP_result(op, OP_Copy_Result(op)) &&
 	 OP_omega(op, OP_Copy_Operand(op)) > 0) {
 #else
+	   TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) ) &&
 	 OP_omega( op, OP_COPY_OPND ) > 0 ) {
 #endif
       Set_OP_flag1( op );
@@ -633,7 +636,12 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
   // unpredicated OP into each result TN.
   FOR_ALL_BB_OPs_FWD( body, op ) {
     if ( OP_has_predicate( op ) &&
-	 ! TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) )
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+      ! TN_is_true_pred(OP_opnd(op, OP_find_opnd_use(op, OU_predicate))))
+#else
+      ! TN_is_true_pred(OP_opnd(op, OP_PREDICATE_OPND)))
+#endif
       predicated_OPs = TRUE;
     else {
       for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
@@ -664,7 +672,12 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
     FOR_ALL_BB_OPs_FWD( body, op ) {
       BOOL predicated
 	= ( OP_has_predicate( op ) &&
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+            ! TN_is_true_pred(OP_opnd(op, OP_find_opnd_use(op, OU_predicate))));
+#else
 	    ! TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) );
+#endif
       for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
 	TN *tn = OP_result( op, res );
 	for ( INT index = cio_copy_table_size - 1; index >= 0; --index )
@@ -754,7 +767,12 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
 
     // Update cio_copy_table
     if (! OP_has_predicate( op ) ||
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+       TN_is_true_pred(OP_opnd(op, OP_find_opnd_use(op, OU_predicate))))
+#else
 	TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) )
+#endif
       for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
 	TN *tn = OP_result( op, res );
 	for ( INT index = cio_copy_table_size - 1; index >= 0; --index )
@@ -1435,11 +1453,25 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
 
   // Use predication, if available
   if ( OP_has_predicate( op ) ) {
+#ifdef TARG_ST
+    // (cbr) not yet
+    abort();
+#endif
     TN *tn_pred = tn_predicate;
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    if ( ! TN_is_true_pred(OP_opnd(op, OP_find_opnd_use(op, OU_predicate)))) {
+#else
     if ( ! TN_is_true_pred( OP_opnd( op, OP_PREDICATE_OPND ) ) ) {
+#endif
       ; // CHANGE tn_pred !!!
     }
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    Set_OP_opnd( op,  OP_find_opnd_use(op, OU_predicate), tn_pred );
+#else
     Set_OP_opnd( op, OP_PREDICATE_OPND, tn_pred );
+#endif
     return;
   }
 
@@ -2634,9 +2666,16 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 
       // For now, don't handle predicated write source
 
+#ifdef TARG_ST
+      /* (cbr) predicate operand # is not necessary constant */
       Is_True( ! OP_has_predicate( change.source )
-	       || OP_opnd( change.source, OP_PREDICATE_OPND ) == True_TN,
+	       || OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate)) == True_TN,
 	       ( "Can't handle predicated write source" ) );
+#else
+       Is_True( ! OP_has_predicate( change.source )
+               || OP_opnd( change.source, OP_PREDICATE_OPND ) == True_TN,
+	       ( "Can't handle predicated write source" ) );
+#endif
 
       // If source TN occurs later as a result, then new TN is required
       // NOT ALWAYS NECESSARY!  IMPROVE THIS!
@@ -2652,7 +2691,12 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 
       // If source is predicated, new TNs and TN copies are required
       if ( OP_has_predicate( change.source )
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	   && OP_opnd( change.source, OP_find_opnd_use(op, OU_predicate)) != True_TN )
+#else
 	   && OP_opnd( change.source, OP_PREDICATE_OPND ) != True_TN )
+#endif
 	for ( INT res = OP_results( change.source ) - 1; res >= 0; --res )
 	  change.new_tns[res] = Build_TN_Like( change.new_tns[res] );
 
@@ -2669,7 +2713,12 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     // Determine whether removing op will require inserting TN copies
     // IMPROVE THIS LATER!
     if ( ! OP_has_predicate( change.op )
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	 || OP_opnd( change.op, OP_find_opnd_use(op, OU_predicate)) == True_TN ) {
+#else
 	 || OP_opnd( change.op, OP_PREDICATE_OPND ) == True_TN ) {
+#endif
       for ( INT res = OP_results( change.op ) - 1; res >= 0; --res ) {
 	TN *tn_result = OP_result( change.op, res );
 	change.need_copy[res] =
@@ -2774,9 +2823,17 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
       // source predication
       // ALTERNATIVELY: REPEAT SOURCE OP?
       if ( OP_has_predicate( change.source )
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	   && OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate) ) != True_TN ) {
+	TN *tn_pred = OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate) );
+	Set_OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate), True_TN );
+#else
 	   && OP_opnd( change.source, OP_PREDICATE_OPND ) != True_TN ) {
 	TN *tn_pred = OP_opnd( change.source, OP_PREDICATE_OPND );
 	Set_OP_opnd( change.source, OP_PREDICATE_OPND, True_TN );
+#endif
+
 	for ( INT res = OP_results( change.source ) - 1; res >= 0; --res ) {
 	  TN *tn_old = OP_result( change.source, res );
 	  TN *tn_new = change.new_tns[res];
@@ -2784,7 +2841,12 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 
 	  // Insert (tn_pred) tn_old <-- tn_new after source
 	  OP *op_copy = Append_TN_Copy( tn_old, tn_new, change.source, 0 );
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	  Set_OP_opnd( op_copy, OP_find_opnd_use(op_copy, OU_predicate), tn_pred );
+#else
 	  Set_OP_opnd( op_copy, OP_PREDICATE_OPND, tn_pred );
+#endif
 	  if ( _trace_CG_RTran ) {
 	    #pragma mips_frequency_hint NEVER
 	    fprintf( TFile, "CIO_RWTRAN::Transform_Arcs inserts:\n\t" );
@@ -2825,8 +2887,14 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 
     // read/common subexpression elimination; insert TN copies if necessary
     if ( OP_has_predicate( change.op )
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	 && OP_opnd( change.op, OP_find_opnd_use(change.op, OU_predicate)) != True_TN ) {
+      TN *tn_pred = OP_opnd( change.op, OP_find_opnd_use(change.op, OU_predicate));
+#else
 	 && OP_opnd( change.op, OP_PREDICATE_OPND ) != True_TN ) {
       TN *tn_pred = OP_opnd( change.op, OP_PREDICATE_OPND );
+#endif
       for ( INT res = OP_results( change.op ) - 1; res >= 0; --res ) {
 	TN *tn_old = OP_result( change.op, res );
 	TN *tn_new = change.new_tns[res];
@@ -2834,7 +2902,12 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	// Insert a new copy  (tn_pred) tn_old <-- tn_new[omega]
 	OP *op_copy = Append_TN_Copy( tn_old, tn_new,
 				      change.op, change.omega );
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	Set_OP_opnd( op_copy, OP_find_opnd_use(op_copy, OU_predicate), tn_pred );
+#else
 	Set_OP_opnd( op_copy, OP_PREDICATE_OPND, tn_pred );
+#endif
 	if ( _trace_CG_RTran ) {
 	  #pragma mips_frequency_hint NEVER
 	  fprintf( TFile, "\t" );
