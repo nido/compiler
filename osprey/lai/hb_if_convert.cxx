@@ -959,7 +959,10 @@ Make_Fall_Thru_Goto(BB*                  bb,
     Make_Branch_Conditional(fall_thru_goto);
 #endif
 #ifdef SUPPORTS_PREDICATION
+#ifndef TARG_ST
+    // not yet.
     Predicate_Block(fall_thru_goto,pred_tn, hb_blocks);
+#endif
 #endif
     Unlink_Pred_Succ(fall_thru_goto, fall_thru_exit);
     Link_Pred_Succ_with_Prob(fall_thru_goto,fall_thru_exit,goto_executes_prob);
