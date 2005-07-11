@@ -4599,6 +4599,12 @@ find_duplicate_mem_op (BB *bb,
         break;
       }
 
+#ifdef TARG_ST
+      // (cbr) pred_op not always defined.
+      if (OP_has_predicate(pred_op) && (OP_opnd(pred_op, OP_find_opnd_use(pred_op, OU_predicate)) != True_TN))
+        break;
+#endif
+
       if (EBO_Trace_Hash_Search) {
         #pragma mips_frequency_hint NEVER
         fprintf(TFile,"%sMatch after searching %d items on hash chain %d\n",
