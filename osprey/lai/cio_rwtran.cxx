@@ -2230,6 +2230,11 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   INT op_count = 0;
   FOR_ALL_BB_OPs_FWD( body, op ) {
     ++op_count;
+#ifdef TARG_ST
+    /* (cbr) predicated ops not supported yet */
+    if (OP_has_predicate(op))
+      return FALSE;
+#endif
   }
 
   // Allocate a table of CICSE_entry, with one entry for each loop OP.
