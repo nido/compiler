@@ -4327,12 +4327,14 @@ find_duplicate_mem_op (BB *bb,
 #ifdef TARG_ST
         /* (cbr) predicate operand # is not necessary constant */
         int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        if (!EBO_predicate_dominates(OP_opnd(op,pidx),
-                                     actual_tninfo[pidx],
+        int pidx2 = OP_find_opnd_use(op, OU_predicate);
+
+        if (!EBO_predicate_dominates(OP_opnd(op,pidx2),
+                                     actual_tninfo[pidx2],
                                      OP_opnd(pred_op,pidx),
                                      opinfo->optimal_opnd[pidx]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx),
-                                       actual_tninfo[pidx],
+            !EBO_predicate_complements(OP_opnd(op,pidx2),
+                                       actual_tninfo[pidx2],
                                        OP_opnd(pred_op,pidx),
                                        opinfo->optimal_opnd[pidx])) {
 #else
@@ -4360,13 +4362,14 @@ find_duplicate_mem_op (BB *bb,
 #ifdef TARG_ST
         /* (cbr) predicate operand # is not necessary constant */
         int pidx = OP_find_opnd_use(pred_op, OU_predicate);
+        int pidx2 = OP_find_opnd_use(op, OU_predicate);
 #endif
         if ((intervening_opinfo != NULL) &&
 #ifdef TARG_ST
             !EBO_predicate_dominates(OP_opnd(pred_op,pidx),
                                      opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx),
-                                     actual_tninfo[pidx])) {
+                                     OP_opnd(op,pidx2),
+                                     actual_tninfo[pidx2])) {
 #else
             !EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
@@ -4387,10 +4390,10 @@ find_duplicate_mem_op (BB *bb,
 #ifdef TARG_ST
         if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
                                      opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx),
-                                     actual_tninfo[pidx]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx),
-                                       actual_tninfo[pidx],
+                                     OP_opnd(op,pidx2),
+                                     actual_tninfo[pidx2]) &&
+            !EBO_predicate_complements(OP_opnd(op,pidx2),
+                                       actual_tninfo[pidx2],
                                        OP_opnd(pred_op,pidx),
                                        opinfo->optimal_opnd[pidx])) {
 #else
@@ -4418,12 +4421,13 @@ find_duplicate_mem_op (BB *bb,
 #ifdef TARG_ST
         /* (cbr) predicate operand # is not necessary constant */
         int pidx = OP_find_opnd_use(pred_op, OU_predicate);
+        int pidx2 = OP_find_opnd_use(op, OU_predicate);
         if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
                                      opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx),
-                                     actual_tninfo[pidx]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx),
-                                       actual_tninfo[pidx],
+                                     OP_opnd(op,pidx2),
+                                     actual_tninfo[pidx2]) &&
+            !EBO_predicate_complements(OP_opnd(op,pidx2),
+                                       actual_tninfo[pidx2],
                                        OP_opnd(pred_op,pidx),
                                        opinfo->optimal_opnd[pidx])) {
 #else
@@ -4796,6 +4800,22 @@ find_duplicate_op (BB *bb,
     if (hash_op_matches && OP_has_predicate(op)) {
      /* Check predicates for safety. */
 
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
+        int pidx2 = OP_find_opnd_use(op, OU_predicate);
+#endif
+
+#ifdef TARG_ST
+        if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
+                                     opinfo->optimal_opnd[pidx],
+                                     OP_opnd(op,pidx2),
+                                     actual_tninfo[pidx2]) &&
+            !EBO_predicate_complements(OP_opnd(pred_op,pidx),
+                                       opinfo->optimal_opnd[pidx],
+                                       OP_opnd(op,pidx2),
+                                       actual_tninfo[pidx2])) {
+#else
         if (!EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
                                      OP_opnd(op,OP_PREDICATE_OPND),
@@ -4804,6 +4824,8 @@ find_duplicate_op (BB *bb,
                                        opinfo->optimal_opnd[OP_PREDICATE_OPND],
                                        OP_opnd(op,OP_PREDICATE_OPND),
                                        actual_tninfo[OP_PREDICATE_OPND])) {
+#endif
+
           hash_op_matches = FALSE;
 
           if (EBO_Trace_Hash_Search) {
@@ -4887,6 +4909,25 @@ find_previous_constant (OP *op,
       if ((pred_op != NULL) && OP_has_predicate(op) && OP_has_predicate(pred_op)) {
        /* Check predicates for safety. */
         EBO_OP_INFO *opinfo = locate_opinfo_entry(check_tninfo);
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
+        int pidx2 = OP_find_opnd_use(op, OU_predicate);
+#endif
+
+#ifdef TARG_ST
+        if ((opinfo == NULL) ||
+            !EBO_predicate_dominates(OP_opnd(pred_op,pidx),
+                                     opinfo->optimal_opnd[pidx],
+                                     OP_opnd(op,pidx2),
+                                     predicate_tninfo)) {
+          if ((OP_code(op) == OP_code(pred_op)) &&
+              EBO_predicate_complements(OP_opnd(pred_op,pidx),
+                                     opinfo->optimal_opnd[pidx],
+                                     OP_opnd(op,pidx2),
+                                     predicate_tninfo) &&
+              EBO_delete_duplicate_op (op, actual_tninfo, opinfo)) {
+#else
         if ((opinfo == NULL) ||
             !EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
@@ -4898,6 +4939,7 @@ find_previous_constant (OP *op,
                                      OP_opnd(op,OP_PREDICATE_OPND),
                                      predicate_tninfo) &&
               EBO_delete_duplicate_op (op, actual_tninfo, opinfo)) {
+#endif
             return TRUE;
           }
 
