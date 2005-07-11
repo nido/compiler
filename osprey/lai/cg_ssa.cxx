@@ -1,3 +1,4 @@
+#include <alloca.h>
 
 // [HK]
 #if __GNUC__ >= 3

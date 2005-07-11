@@ -31,7 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
-
+#if __GNUC__ >= 3
+#include <cmath>
+#endif
 
 #include "W_math.h"
 
@@ -383,7 +385,11 @@ Calculate_Path_Priorities(std::list<HB_PATH*>& hb_paths, INT max_sched_height,
       if (HB_PATH_Schedule_Height(path) != max_priority_sched_height) {
 	float sched_ratio = (float) HB_PATH_Schedule_Height(path) /
 	  (float) max_priority_sched_height;
+#if __GNUC__ >= 3
+	float priority_multiplier = 1.0 - std::fabs(1.0 - sched_ratio);
+#else
 	float priority_multiplier = 1.0 - fabsf(1.0 - sched_ratio);
+#endif
       
 	float new_priority = HB_PATH_Priority(path) * priority_multiplier;
 	HB_PATH_Priority_Set(path, new_priority);

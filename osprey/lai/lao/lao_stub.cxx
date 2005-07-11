@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <alloca.h>
 #include <stdarg.h>
 // [HK]
 #if __GNUC__ >=3
