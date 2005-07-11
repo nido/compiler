@@ -1855,7 +1855,11 @@ CIO_RWTRAN::Read_CICSE_Candidate_Op( OP *op )
        OP_unalign_ld( op )    ||
 
        // Skip predicated writes
+#ifdef TARG_ST
+       ( OP_store( op ) && OP_has_predicate( op ) && OP_opnd( op, OP_find_opnd_use(op, OU_predicate)) != True_TN) ||
+#else
        ( OP_store( op ) && OP_cond_def( op ) ) ||
+#endif
 
        // If we optimize small loads/stores then we need to
        // introduce a truncation or sign-extension operation.
@@ -2230,11 +2234,6 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   INT op_count = 0;
   FOR_ALL_BB_OPs_FWD( body, op ) {
     ++op_count;
-#ifdef TARG_ST
-    /* (cbr) predicated ops not supported yet */
-    if (OP_has_predicate(op))
-      return FALSE;
-#endif
   }
 
   // Allocate a table of CICSE_entry, with one entry for each loop OP.
@@ -2720,7 +2719,7 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     if ( ! OP_has_predicate( change.op )
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
-	 || OP_opnd( change.op, OP_find_opnd_use(op, OU_predicate)) == True_TN ) {
+	 || OP_opnd( change.op, OP_find_opnd_use(change.op, OU_predicate)) == True_TN ) {
 #else
 	 || OP_opnd( change.op, OP_PREDICATE_OPND ) == True_TN ) {
 #endif
