@@ -3461,7 +3461,13 @@ r_assemble_opnd (
       rname = vname;
     }
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    if (OP_has_predicate(op) && i == OP_find_opnd_use(op, OU_predicate)) {
+#else
     if (OP_has_predicate(op) && i == OP_PREDICATE_OPND) {
+#endif
+
 #ifdef TARG_IA64
       vstr_sprintf(buf, start, ISA_PRINT_PREDICATE, rname);
 #else
