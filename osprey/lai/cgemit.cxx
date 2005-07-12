@@ -3461,9 +3461,9 @@ r_assemble_opnd (
       rname = vname;
     }
 
-#ifdef TARG_ST
-  /* (cbr) predicate operand # is not necessary constant */
-    if (OP_has_predicate(op) && i == OP_find_opnd_use(op, OU_predicate)) {
+#ifdef TARG_ST200
+  /* (cbr) predicate is a regular operand format on st235 */
+    if (0) {
 #else
     if (OP_has_predicate(op) && i == OP_PREDICATE_OPND) {
 #endif
@@ -3476,7 +3476,7 @@ r_assemble_opnd (
       else if (TOP_is_guard_f(OP_code(op)))
 	vstr_sprintf(buf, start, False_Predicate_Format, rname);
 #endif
-    } 
+    }
     else {
       *buf = vstr_concat(*buf, rname);
     }
