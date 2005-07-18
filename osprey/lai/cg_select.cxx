@@ -396,7 +396,7 @@ Have_Predicate_Op (OP *op)
   i_iter = pred_i.begin();
   i_end = pred_i.end();
   while(i_iter != i_end) {
-    if ((*i_iter).memop == op && OP_has_predicate(op)) return TRUE;
+    if ((*i_iter).memop == op) return TRUE;
     i_iter++;
   }
   return FALSE;
@@ -1317,26 +1317,8 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
         else {
           // phi has only one def.
           TN *result[1];
-          result[0] = Dup_TN(OP_result (op, 0));
-#if 0
-          OP *new_phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd); 
-
-          // Must rename new results before BB_Append_Op because
-          // we don't want to break the ssa def mapping.
-          // uses will be updated in Rename_TNs. 
-          if (TN_is_register(result[0]) && !TN_is_dedicated(result[0])) {
-            hTN_MAP_Set(dup_tn_map, result[0], new_phi);
-          }
-
-          phi_t *phi_infos;
-          phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-          phi_infos->phi = new_phi;
-          phi_infos->bbs = bbs;
-
-          OP_MAP_Set(phi_op_map, op, phi_infos);
-#else
+          result[0] = OP_result (op, 0);
           BB_Create_Phi (nopnds, result, opnd, bbs, op);
-#endif
         }
       }
 
@@ -2431,6 +2413,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   bool allow_dup = false;
 
+  if (Trace_Select_daVinci) {
+    printf ("start ifc for%s\n",  ST_name(Get_Current_PU_ST()));
+  }
+
  restart:
 
   bool region_changed = false;
@@ -2443,8 +2429,14 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       
     // tests for logical expression 
     if (bbb = Is_Double_Logif(bb)) {
-
       Initialize_Hammock_Memory();
+
+      if (Trace_Select_daVinci) {
+        printf ("Simplify Logif for BB%d\n", BB_id(bb));
+        //        draw_flow_graph();
+        draw_CFG();
+      }
+
       Simplify_Logifs(bb, bbb);
 
 #ifdef Is_True_On
@@ -2472,6 +2464,12 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     // test of conditional expression
     if (Is_Hammock (bb, t_set, ft_set, &bbb, allow_dup)) {
       Initialize_Hammock_Memory();
+
+      if (Trace_Select_daVinci) {
+        printf ("Select_Fold for BB%d\n", BB_id(bb));
+        //        draw_flow_graph();
+        draw_CFG();
+      }
 
       Select_Fold (bb, t_set, ft_set, bbb);
 
@@ -2516,6 +2514,13 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 #ifdef Is_True_On
   //  SSA_Verify(rid, 0);
 #endif
+
+  if (Trace_Select_daVinci) {
+    printf ("done\n");
+        draw_CFG();
+        //    draw_flow_graph();
+
+  }
 
   Finalize_Select();
 }
