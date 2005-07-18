@@ -558,10 +558,15 @@ extern BOOL OP_has_implicit_interactions(OP*);
  * If target supports predication, predicate operand is always 0.
  * Otherwise, -1.
  */
+#ifdef TARG_ST
+/* (cbr) poison. should not use */
+#define OP_PREDICATE_OPND (abort(), 0)
+#else
 #ifdef SUPPORTS_PREDICATION
 #define OP_PREDICATE_OPND 0
 #else
 #define OP_PREDICATE_OPND -1
+#endif
 #endif
 
 /*
