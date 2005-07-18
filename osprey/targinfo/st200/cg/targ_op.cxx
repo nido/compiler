@@ -505,7 +505,11 @@ CGTARG_Init_OP_cond_def_kind (
   switch (top) {
 
   default:
-    Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+    if (OP_has_predicate(op))
+      Set_OP_cond_def_kind(op, OP_PREDICATED_DEF);
+    else
+      Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+    break;
   }
 }
 
