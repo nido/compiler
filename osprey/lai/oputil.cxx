@@ -1180,7 +1180,12 @@ BOOL OP_cond_def(const OP *op)
 {
   return OP_cond_def_kind(op) == OP_ALWAYS_COND_DEF ||
     (OP_cond_def_kind(op) == OP_PREDICATED_DEF && 
-     !TN_is_true_pred(OP_opnd(op, OP_PREDICATE_OPND)));
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+     !TN_is_true_pred(OP_opnd(op, OP_find_opnd_use(op, OU_predicate))));
+#else
+    !TN_is_true_pred(OP_opnd(op, OP_PREDICATE_OPND)));
+#endif
 }
 
 /* ====================================================================
