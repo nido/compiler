@@ -148,7 +148,7 @@ static BOOL Trace_Select_Spec;       /* -Wb,-tt61:0x004 */
 static BOOL Trace_Select_Merge;      /* -Wb,-tt61:0x008 */
 static BOOL Trace_Select_Dup;        /* -Wb,-tt61:0x010 */
 static BOOL Trace_Select_Stats;      /* -Wb,-tt61:0x020 */
-static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x040 */
+static BOOL Trace_Select_daVinci;    /* -Wb,-tt61:0x4000 */
 FILE *Select_TFile;
 
 static void
@@ -380,30 +380,34 @@ Get_BB_Pos_in_PHI (OP *phi, BB *bb)
 static bool
 Can_Predicate_Op (OP *op)
 {
-  if (op && OP_memory (op) && !OP_Can_Be_Speculative(op)) {
-    if (OP_load (op)) return PROC_has_predicate_loads();
-    if (OP_store (op)) return PROC_has_predicate_stores();
-  }
+  if (OP_load (op)) return PROC_has_predicate_loads();
+  if (OP_store (op)) return PROC_has_predicate_stores();
+
   return FALSE;
 }
 
 static bool
-Have_Predicate_Op (OP *op)
+Need_Predicate_Op (OP *op)
 {
-  std::slist<pred_t>::const_iterator i_iter;
-  std::slist<pred_t>::const_iterator i_end;
+  if (OP_Can_Be_Speculative(op))
+    return FALSE;
 
-  i_iter = pred_i.begin();
-  i_end = pred_i.end();
-  while(i_iter != i_end) {
-    if ((*i_iter).memop == op) return TRUE;
-    i_iter++;
+  if (Can_Predicate_Op (op)) {
+    std::slist<pred_t>::const_iterator i_iter;
+    std::slist<pred_t>::const_iterator i_end;
+
+    i_iter = pred_i.begin();
+    i_end = pred_i.end();
+    while(i_iter != i_end) {
+      if ((*i_iter).memop == op) return !OP_has_predicate(op);
+      i_iter++;
+    }
   }
   return FALSE;
 }
 
 static void
-Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops)
+Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops)
 {
   TN* cond_tn=True_TN;
   TN* fcond_tn=True_TN;
@@ -417,14 +421,14 @@ Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops
   OP *opt = TN_ssa_def(true_tn);
   OP *opf = TN_ssa_def(false_tn);
 
-  if (!Have_Predicate_Op (opt) && !Have_Predicate_Op (opf)) {
+  if (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf)) {
     Expand_Select (target_tn, test_tn, true_tn, false_tn, MTYPE_I4,
                    FALSE, cmov_ops);
     return;
   }
 
   if (Trace_Select_Gen) {
-    fprintf (Select_TFile, "Create_PSI :\n");
+    fprintf (Select_TFile, "Create_PSI_or_Select :\n");
     fprintf (Select_TFile, "true_tn:\n");
     Print_TN (true_tn, FALSE);
     if (opt) Print_OP (opt);
@@ -484,7 +488,7 @@ Create_PSI (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops
 
 
   if (Trace_Select_Gen) {
-    fprintf (Select_TFile, "Create_PSI\n");
+    fprintf (Select_TFile, "Create_PSI_or_Select\n");
     Print_OP (psi_op);
   }
 
@@ -576,13 +580,7 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
     if (OP_code(TN_ssa_def (cond_tn1)) == TOP_mfb)
       cond_tn1 = OP_opnd(TN_ssa_def (cond_tn1), 0);
 
-    if (Can_Predicate_Op (TN_ssa_def (true_tn)) ||
-        Can_Predicate_Op (TN_ssa_def (false_tn))) {
-      Create_PSI (select_tn, cond_tn1, true_tn, false_tn, &cmov_ops);
-    }
-    else
-      Expand_Select (select_tn, cond_tn1, OP_opnd(phi, tpos), OP_opnd(phi, fpos),
-                     MTYPE_I4, FALSE, &cmov_ops);
+    Create_PSI_or_Select (select_tn, cond_tn1, true_tn, false_tn, &cmov_ops);
 
     std::list<BB*> *bbs = new std::list<BB*>;
 
@@ -2316,7 +2314,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     TN *false_tn  = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, false_bb));
     DevAssert(true_tn && false_tn, ("Select: undef TN"));
 
-    Create_PSI (select_tn, cond_tn, true_tn, false_tn, &cmov_ops);
+    Create_PSI_or_Select (select_tn, cond_tn, true_tn, false_tn, &cmov_ops);
   
     select_count++;
   }
