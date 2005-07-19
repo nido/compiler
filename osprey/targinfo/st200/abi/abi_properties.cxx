@@ -91,6 +91,7 @@ main()
   ABI_PROPERTY stack_ptr = Create_Reg_Property("stack_ptr");
   ABI_PROPERTY stacked = Create_Reg_Property("stacked");
   ABI_PROPERTY static_link = Create_Reg_Property("static_link");
+  ABI_PROPERTY thread_ptr = Create_Reg_Property("thread_ptr");
   ABI_PROPERTY true_predicate = Create_Reg_Property("true_predicate");
   ABI_PROPERTY zero = Create_Reg_Property("zero");
 
@@ -98,13 +99,13 @@ main()
   Begin_ABI("st200_embedded");
 
   static const char *st200_embedded_integer_names[] = {
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$sp", NULL, "$gp", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$lr" };
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$sp", "$tp", "$gp", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$lr" };
   Reg_Names(ISA_REGISTER_CLASS_integer, 0, 63, st200_embedded_integer_names);
 
   Reg_Property(allocatable, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
-  Reg_Property(allocatable, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
+  Reg_Property(allocatable, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
 
-  Reg_Property(callee, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, 13, 14, -1);
+  Reg_Property(callee, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, 14, -1);
 
   Reg_Property(caller, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_integer, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
@@ -127,13 +128,15 @@ main()
 
   Reg_Property(static_link, ISA_REGISTER_CLASS_integer, 8, -1);
 
+  Reg_Property(thread_ptr, ISA_REGISTER_CLASS_integer, 13, -1);
+
   Reg_Property(zero, ISA_REGISTER_CLASS_integer, 0, -1);
 
   ///////////////////////////////////////
   Begin_ABI("st200_PIC");
 
   static const char *st200_PIC_integer_names[] = {
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$sp", NULL, "$gp", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$lr" };
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$sp", "$tp", "$gp", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "$lr" };
   Reg_Names(ISA_REGISTER_CLASS_integer, 0, 63, st200_PIC_integer_names);
 
   Reg_Property(allocatable, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
@@ -161,6 +164,8 @@ main()
   Reg_Property(stack_ptr, ISA_REGISTER_CLASS_integer, 12, -1);
 
   Reg_Property(static_link, ISA_REGISTER_CLASS_integer, 8, -1);
+
+  Reg_Property(thread_ptr, ISA_REGISTER_CLASS_integer, 13, -1);
 
   Reg_Property(zero, ISA_REGISTER_CLASS_integer, 0, -1);
 

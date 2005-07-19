@@ -128,6 +128,7 @@ main (int argc, char *argv[])
 		TOP_addcg,
 		TOP_add_r,
 		TOP_add_i,
+		TOP_spadjust,
 		TOP_andc_r,
 		TOP_andc_i,
 		TOP_andl_r_b,
@@ -224,7 +225,6 @@ main (int argc, char *argv[])
 		TOP_slctf_i,
 		TOP_slct_r,
 		TOP_slct_i,
-		TOP_spadjust,
 		TOP_sub_r,
 		TOP_sub_i,
 		TOP_sxtb,
@@ -241,6 +241,17 @@ main (int argc, char *argv[])
 
 
   Instruction_Group("group6",
+		TOP_pushregs,
+		TOP_UNDEFINED);
+
+  Any_Result_Available_Time(3);
+  Any_Operand_Access_Time(2);
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_CTL, 0);
+  Resource_Requirement(Resource_st220_ODD, 0);
+
+
+  Instruction_Group("group7",
 		TOP_add_ii,
 		TOP_andc_ii,
 		TOP_andl_ii_b,
@@ -298,7 +309,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group7",
+  Instruction_Group("group8",
 		TOP_mov_i,
 		TOP_UNDEFINED);
 
@@ -306,7 +317,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
-  Instruction_Group("group8",
+  Instruction_Group("group9",
 		TOP_call,
 		TOP_getpc,
 		TOP_UNDEFINED);
@@ -317,7 +328,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group9",
+  Instruction_Group("group10",
 		TOP_mov_ii,
 		TOP_UNDEFINED);
 
@@ -327,7 +338,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group10",
+  Instruction_Group("group11",
 		TOP_ldbu_d_ii,
 		TOP_ldbu_ii,
 		TOP_ldb_d_ii,
@@ -348,7 +359,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group11",
+  Instruction_Group("group12",
 		TOP_mulhhs_ii,
 		TOP_mulhhu_ii,
 		TOP_mulhh_ii,
@@ -371,7 +382,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group12",
+  Instruction_Group("group13",
 		TOP_ldbu_d_i,
 		TOP_ldbu_i,
 		TOP_ldb_d_i,
@@ -390,7 +401,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_MEM, 0);
 
 
-  Instruction_Group("group13",
+  Instruction_Group("group14",
 		TOP_mulhhs_r,
 		TOP_mulhhs_i,
 		TOP_mulhhu_r,
@@ -425,7 +436,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group14",
+  Instruction_Group("group15",
 		TOP_asm_0,
 		TOP_asm_10,
 		TOP_asm_11,
@@ -460,15 +471,13 @@ main (int argc, char *argv[])
 		TOP_asm_9,
 		TOP_break,
 		TOP_nop,
-		TOP_phi,
-		TOP_psi,
 		TOP_sbrk_i,
 		TOP_UNDEFINED);
 
   Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
-  Instruction_Group("group15",
+  Instruction_Group("group16",
 		TOP_goto,
 		TOP_rfi,
 		TOP_syncins,
@@ -479,10 +488,9 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ODD, 0);
 
 
-  Instruction_Group("group16",
+  Instruction_Group("group17",
 		TOP_asm,
 		TOP_prgins,
-		TOP_sync,
 		TOP_syscall_i,
 		TOP_UNDEFINED);
 
@@ -492,7 +500,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ISSUE, 0);
 
 
-  Instruction_Group("group17",
+  Instruction_Group("group18",
 		TOP_asm_16_ii,
 		TOP_asm_17_ii,
 		TOP_asm_18_ii,
@@ -514,6 +522,14 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st220_ISSUE, 0);
   Resource_Requirement(Resource_st220_ISSUE, 0);
   Resource_Requirement(Resource_st220_ODD, 0);
+
+
+  Instruction_Group("group19",
+		TOP_sync,
+		TOP_UNDEFINED);
+
+  Resource_Requirement(Resource_st220_ISSUE, 0);
+  Resource_Requirement(Resource_st220_MEM, 0);
 
 
   Machine_Done("st220.c");

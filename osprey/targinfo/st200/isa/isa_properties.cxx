@@ -167,6 +167,7 @@ main()
 		 TOP_prgset_ii, 
 		 TOP_pswclr, 
 		 TOP_pswset, 
+		 TOP_pushregs, 
 		 TOP_sbrk_ib, 
 		 TOP_sbrk_i, 
 		 TOP_stwl, 
@@ -345,14 +346,26 @@ main()
   Instruction_Group (dummy, 
 		 TOP_begin_pregtn, 
 		 TOP_bwd_bar, 
-		 TOP_dfixup, 
+		 TOP_CALL, 
+		 TOP_COPY, 
 		 TOP_end_pregtn, 
-		 TOP_ffixup, 
+		 TOP_FALL, 
 		 TOP_fwd_bar, 
+		 TOP_GOTO, 
 		 TOP_ifixup, 
+		 TOP_intrncall, 
+		 TOP_JUMP, 
+		 TOP_KILL, 
 		 TOP_label, 
+		 TOP_LINK, 
+		 TOP_LOOP, 
 		 TOP_movc, 
 		 TOP_movcf, 
+		 TOP_noop, 
+		 TOP_phi, 
+		 TOP_psi, 
+		 TOP_RETURN, 
+		 TOP_SIGMA, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -754,13 +767,10 @@ main()
   /* ====================================== */ 
   multi = ISA_Property_Create ("multi"); 
   Instruction_Group (multi, 
-		 TOP_multi_composep, 
-		 TOP_multi_extractp, 
 		 TOP_multi_ldpc_i, 
 		 TOP_multi_ldpc_ii, 
 		 TOP_multi_ldp_i, 
 		 TOP_multi_ldp_ii, 
-		 TOP_multi_movp, 
 		 TOP_multi_stpc_i, 
 		 TOP_multi_stpc_ii, 
 		 TOP_multi_stp_i, 
@@ -838,19 +848,13 @@ main()
   /* ====================================== */ 
   simulated = ISA_Property_Create ("simulated"); 
   Instruction_Group (simulated, 
-		 TOP_asm, 
+		 TOP_spadjust, 
 		 TOP_composep, 
 		 TOP_extractp, 
 		 TOP_getpc, 
-		 TOP_intrncall, 
+		 TOP_asm, 
 		 TOP_movp, 
-		 TOP_multi_composep, 
-		 TOP_multi_extractp, 
-		 TOP_multi_movp, 
-		 TOP_noop, 
-		 TOP_phi, 
-		 TOP_psi, 
-		 TOP_spadjust, 
+		 TOP_pushregs, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -980,6 +984,7 @@ main()
 		 TOP_intrncall, 
 		 TOP_phi, 
 		 TOP_psi, 
+		 TOP_pushregs, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 

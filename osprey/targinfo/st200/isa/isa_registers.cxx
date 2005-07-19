@@ -60,6 +60,14 @@ static const char *paired_reg_names[] = {
 "$p0", "$p2", "$p4", "$p6", "$p8", "$p10", "$p12", "$p14", "$p16", "$p18", "$p20", "$p22", "$p24", "$p26", "$p28", "$p30", "$p32", "$p34", "$p36", "$p38", "$p40", "$p42", "$p44", "$p46", "$p48", "$p50", "$p52", "$p54", "$p56", "$p58", "$p60"
 };
 
+static const char *pairedfirst_reg_names[] = {
+"$r0", "$r2", "$r4", "$r6", "$r8", "$r10", "$r12", "$r14", "$r16", "$r18", "$r20", "$r22", "$r24", "$r26", "$r28", "$r30", "$r32", "$r34", "$r36", "$r38", "$r40", "$r42", "$r44", "$r46", "$r48", "$r50", "$r52", "$r54", "$r56", "$r58", "$r60"
+};
+
+static const char *pairedsecond_reg_names[] = {
+"$r0", "$r3", "$r5", "$r7", "$r9", "$r11", "$r13", "$r15", "$r17", "$r19", "$r21", "$r23", "$r25", "$r27", "$r29", "$r31", "$r33", "$r35", "$r37", "$r39", "$r41", "$r43", "$r45", "$r47", "$r49", "$r51", "$r53", "$r55", "$r57", "$r59", "$r61"
+};
+
 static const char *predicate_reg_names[] = {
 "$b1", "$b2", "$b3", "$b4", "$b5", "$b6", "$b7"
 };
@@ -69,6 +77,10 @@ static const int integer_link[] = {63};
 static const int integer_nolink[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62};
 
 static const int integer_paired[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60};
+
+static const int integer_pairedfirst[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60};
+
+static const int integer_pairedsecond[] = {0, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61};
 
 static const int branch_predicate[] = {1, 2, 3, 4, 5, 6, 7};
 
@@ -91,10 +103,12 @@ main()
 
   ISA_Register_Subclass_Create("paired", rc_integer, 31, integer_paired, paired_reg_names);
 
+  ISA_Register_Subclass_Create("pairedfirst", rc_integer, 31, integer_pairedfirst, paired_reg_names);
+
+  ISA_Register_Subclass_Create("pairedsecond", rc_integer, 31, integer_pairedsecond, pairedsecond_reg_names);
+
   ISA_Register_Subclass_Create("predicate", rc_branch, 7, branch_predicate, predicate_reg_names);
 
-  ISA_Register_Subclass_Create("pairedfirst", rc_integer, 31, integer_paired,
-			       paired_reg_names);
   ISA_Registers_End(); 
   return 0; 
 } 

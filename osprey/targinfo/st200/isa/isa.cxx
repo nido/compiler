@@ -56,6 +56,7 @@ main ()
 		 "add_r",
 		 "add_i",
 		 "add_ii",
+		 "spadjust",	 // simulated
 		 "andc_r",
 		 "andc_i",
 		 "andc_ii",
@@ -68,7 +69,6 @@ main ()
 		 "and_r",
 		 "and_i",
 		 "and_ii",
-		 "asm",	 // simulated
 		 "asm_0",
 		 "asm_10",
 		 "asm_11",
@@ -123,6 +123,7 @@ main ()
 		 "br",
 		 "bswap",
 		 "bwd_bar",	 // dummy
+		 "CALL",	 // dummy
 		 "call",
 		 "clz",
 		 "cmpeq_r_b",
@@ -188,22 +189,26 @@ main ()
 		 "composep",	 // simulated
 		 "convfi_n",
 		 "convif_n",
+		 "COPY",	 // dummy
 		 "dbgsbrk",
-		 "dfixup",	 // dummy
 		 "divs",
 		 "divu",
 		 "div",
 		 "end_pregtn",	 // dummy
 		 "extractp",	 // simulated
-		 "ffixup",	 // dummy
+		 "FALL",	 // dummy
 		 "fwd_bar",	 // dummy
 		 "getpc",	 // simulated
+		 "asm",	 // simulated
+		 "GOTO",	 // dummy
 		 "goto",
 		 "icall",
 		 "idle",
 		 "ifixup",	 // dummy
 		 "igoto",
-		 "intrncall",	 // simulated
+		 "intrncall",	 // dummy
+		 "JUMP",	 // dummy
+		 "KILL",	 // dummy
 		 "label",	 // dummy
 		 "ldbc_i",
 		 "ldbc_ii",
@@ -240,6 +245,8 @@ main ()
 		 "ldw_d_ii",
 		 "ldw_i",
 		 "ldw_ii",
+		 "LINK",	 // dummy
+		 "LOOP",	 // dummy
 		 "maxu_r",
 		 "maxu_i",
 		 "maxu_ii",
@@ -312,13 +319,10 @@ main ()
 		 "mull_r",
 		 "mull_i",
 		 "mull_ii",
-		 "multi_composep",	 // simulated
-		 "multi_extractp",	 // simulated
 		 "multi_ldpc_i",
 		 "multi_ldpc_ii",
 		 "multi_ldp_i",
 		 "multi_ldp_ii",
-		 "multi_movp",	 // simulated
 		 "multi_stpc_i",
 		 "multi_stpc_ii",
 		 "multi_stp_i",
@@ -329,7 +333,7 @@ main ()
 		 "nandl_ii_b",
 		 "nandl_i_r",
 		 "nandl_ii_r",
-		 "noop",	 // simulated
+		 "noop",	 // dummy
 		 "nop",
 		 "norl_r_b",
 		 "norl_r_r",
@@ -366,8 +370,10 @@ main ()
 		 "psi",	 // ssa
 		 "pswclr",
 		 "pswset",
+		 "pushregs",	 // simulated
 		 "remu",
 		 "rem",
+		 "RETURN",	 // dummy
 		 "return",
 		 "returnadd",
 		 "rfi",
@@ -394,13 +400,13 @@ main ()
 		 "shr_r",
 		 "shr_i",
 		 "shr_ii",
+		 "SIGMA",	 // dummy
 		 "slctf_r",
 		 "slctf_i",
 		 "slctf_ii",
 		 "slct_r",
 		 "slct_i",
 		 "slct_ii",
-		 "spadjust",	 // simulated
 		 "stbc_i",
 		 "stbc_ii",
 		 "stb_i",
