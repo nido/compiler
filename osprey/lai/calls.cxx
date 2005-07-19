@@ -231,6 +231,13 @@ Setup_GP_TN_For_PU (
       GP_Setup_Code = no_code;
     }
   }
+#ifdef TARG_ST
+  else if (!Gen_GP_Relative && PU_References_GP) {
+    // [SC] TLS support
+    // Even absolute code can reference the GP for thread support.
+    GP_Setup_Code = need_code;
+  }
+#endif
   else {
     GP_Setup_Code = never_code;
   }
@@ -296,8 +303,14 @@ Init_Callee_Saved_Regs_for_REGION (
   ISA_REGISTER_CLASS cl;
   TN *stn;
 
+#ifdef TARG_ST
+  // [SC] Allow GP to be used even in absolute code (some TLS models want it)
+  if (Gen_GP_Relative || PU_References_GP)
+    Setup_GP_TN_For_PU( pu );
+#else
   if (Gen_GP_Relative)
     Setup_GP_TN_For_PU( pu );
+#endif
 
   if (NULL != RA_TN /* IA-32 doesn't have ra reg. */) {
     /* initialize the return address map: */

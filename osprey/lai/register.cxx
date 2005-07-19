@@ -117,6 +117,9 @@ CLASS_REG_PAIR      CLASS_REG_PAIR_true = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fzero = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fone = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_link = CLASS_REG_PAIR_undef;
+#ifdef TARG_ST // [SC] TLS support
+CLASS_REG_PAIR      CLASS_REG_PAIR_tp = CLASS_REG_PAIR_undef;
+#endif
 
 #if ISA_REGISTER_MAX >= 64
 const REGISTER_SET REGISTER_SET_EMPTY_SET = { 0 };
@@ -375,7 +378,7 @@ Initialize_Register_Class(
       allocatable = REGISTER_SET_Union1(allocatable, reg);
 
 #ifdef TARG_ST
-      if (Gen_GP_Relative && ABI_PROPERTY_Is_global_ptr(rclass, isa_reg)) {
+      if (ABI_PROPERTY_Is_global_ptr(rclass, isa_reg)) {
 	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp, reg);
 	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_gp, rclass);
 	if (Constant_GP) {
@@ -496,6 +499,12 @@ Initialize_Register_Class(
       Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_fone, reg);
       Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_fone, rclass);
     }
+#ifdef TARG_ST // [SC] TLS support
+    else if (ABI_PROPERTY_Is_thread_ptr(rclass, isa_reg) ) {
+      Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_tp, reg);
+      Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_tp, rclass);
+    }
+#endif
   }
 
   REGISTER_CLASS_universe(rclass)          =

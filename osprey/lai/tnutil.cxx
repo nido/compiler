@@ -107,6 +107,7 @@ TN *LC_TN;
 #ifdef TARG_ST
 TN *Link_TN;
 TN *RS_TN;
+TN *TP_TN; // [SC] TLS support
 #endif
 
 /* We currently always use the same dedicated TN for each
@@ -708,11 +709,15 @@ Init_Dedicated_TNs (void)
                  NULL : ded_tns[REGISTER_CLASS_lc][REGISTER_lc];
   Link_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_link) == REGISTER_UNDEFINED ?
                  NULL : ded_tns[REGISTER_CLASS_link][REGISTER_link];
-
-  if (Gen_GP_Relative) {
-    /* SC: This must be distinct from the dedicated TN created
-       for REGISTER_gp, because the TN_register field of this TN
-       may be altered during compilation. */
+  // [SC] TLS support
+  TP_TN = CLASS_REG_PAIR_reg(CLASS_REG_PAIR_tp) == REGISTER_UNDEFINED ?
+                 NULL : ded_tns[REGISTER_CLASS_tp][REGISTER_tp];
+  // [SC] Even in absolute code, the thread support may reference GP,
+  // so always initialize GP_TN.
+  /* SC: This must be distinct from the dedicated TN created
+     for REGISTER_gp, because the TN_register field of this TN
+     may be altered during compilation. */
+  if (CLASS_REG_PAIR_reg(CLASS_REG_PAIR_gp) != REGISTER_UNDEFINED) {
     ++tnum; 
     GP_TN = Create_Dedicated_TN (REGISTER_CLASS_gp, REGISTER_gp);
   }

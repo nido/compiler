@@ -405,6 +405,9 @@ extern  TN *FZero_TN;		// Floating zero (0.0) register TN
 extern  TN *FOne_TN;		// Floating one (1.0) register TN
 extern  TN *Link_TN;            // Link TN for indirect branching
 extern  TN *RS_TN;              // TN for returning structs by value
+#ifdef TARG_ST                  // [SC] TLS supprt 
+extern TN *TP_TN;               // Thread Pointer
+#endif
 
 /* ====================================================================
  * Prototypes of external routines.

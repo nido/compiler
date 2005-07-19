@@ -195,6 +195,10 @@ static WN_MAP WN_to_OP_map;
 
 OP_MAP OP_Asm_Map;
 
+#ifdef TARG_ST
+OP_MAP OP_to_callinfo_map;
+#endif
+
 TN *
 Get_Complement_TN(TN *tn)
 {
@@ -351,7 +355,7 @@ Process_New_OPs (void)
   Last_Processed_OP = OPS_last(&New_OPs);
 }
 
-#ifdef EMULATE_LONGLONG
+#if defined TARG_ST || defined EMULATE_LONGLONG
 /***********************************************************************
  *
  * Assume that orig_bb was split into orig_bb followed by new_bb,
@@ -364,6 +368,8 @@ static void
 Update_BB_Properties (BB *orig_bb, BB *new_bb) {
 
   BB_rid(new_bb) = BB_rid(orig_bb);
+  BB_branch_wn(new_bb) = BB_branch_wn(orig_bb);
+  BB_branch_wn(orig_bb) = NULL;
 
   ANNOTATION *ant = BB_annotations(orig_bb);
 
@@ -462,6 +468,20 @@ Split_Jumpy_BB (BB *bb) {
       }
 
       Update_BB_Properties (bb, new_bb);
+
+#ifdef TARG_ST
+      if (OP_call(BB_last_op(bb))) {
+	// [SC] if bb now ends in a call, there must have been
+	// a call in the middle of it.
+	// Callinfo for calls that are not at the end of a block
+	// should have been added to OP_to_callinfo_map.
+	// Extract that information here and add it to bb.
+	CALLINFO *call_info = (CALLINFO *) OP_MAP_Get (OP_to_callinfo_map, BB_last_op(bb));
+	BB_Add_Annotation (bb, ANNOT_CALLINFO, call_info);
+        Set_BB_call(bb);
+	region_stack_eh_set_has_call ();
+      }
+#endif
       bb = new_bb;
       op = BB_first_op(new_bb);
       continue;
@@ -503,7 +523,7 @@ Split_Jumpy_BB (BB *bb) {
   
   return bb;
 }
-#endif /* EMULATE_LONGLONG */
+#endif /* TARG_ST || EMULATE_LONGLONG */
 
 
 /* Start a new basic block. Any OPs that have not been put into a BB
@@ -527,7 +547,7 @@ Start_New_Basic_Block (void)
     Process_New_OPs ();
     BB_Append_Ops(bb, &New_OPs);
     OPS_Init(&New_OPs);
-#ifdef EMULATE_LONGLONG
+#if defined TARG_ST || defined EMULATE_LONGLONG
     bb = Split_Jumpy_BB (bb);
 #endif
     if ( dedicated_seen )
@@ -5495,6 +5515,10 @@ Whirl2ops_Initialize (
 #endif
   OP_Asm_Map = OP_MAP_Create();
 
+#ifdef TARG_ST
+  OP_to_callinfo_map = OP_MAP_Create();
+#endif
+
 #ifdef CGG_ENABLED
   if (CG_enable_cgg) {
     CGG_Set_Level(CG_cgg_level);
@@ -5502,6 +5526,7 @@ Whirl2ops_Initialize (
     CGG_Initialize();
   }
 #endif
+
   return;
 }
 
@@ -5534,6 +5559,11 @@ Whirl2ops_Finalize (void)
 		 "not followed by a loop, ignored");
   }
 #endif
+
+#ifdef TARG_ST
+  OP_MAP_Delete(OP_to_callinfo_map);
+#endif
+
   OP_MAP_Delete(OP_Asm_Map);
 
 #ifdef TARG_ST

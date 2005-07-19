@@ -1193,7 +1193,9 @@ EMT_Put_Elf_Symbol (
 
 	      symindex = Em_Add_New_Symbol (
 		  vstr_str(buf), base_ofst, TY_size(sym_type), 
-		  symbind, STT_OBJECT, symother,
+		  symbind,
+		  (ST_is_thread_private(sym) ? STT_TLS : STT_OBJECT),
+		  symother,
 		  Em_Get_Section_Index (em_scn[STB_scninfo_idx(base_st)].scninfo));
 
 	      vstr_end(buf);
@@ -1206,10 +1208,19 @@ EMT_Put_Elf_Symbol (
 #endif
 	  break;
 	case SCLASS_EXTERN:
+#ifdef TARG_ST
+	  symindex = Em_Add_New_Symbol (
+		      ST_name(sym), 0, TY_size(sym_type),
+		      symbind,
+		      ST_is_thread_private(sym) ? STT_TLS : STT_OBJECT,
+		      symother,
+		      ST_is_gp_relative(sym) ? SHN_MIPS_SUNDEFINED : SHN_UNDEF);
+#else
 	  symindex = Em_Add_New_Symbol (
 		      ST_name(sym), 0, TY_size(sym_type),
 		      symbind, STT_OBJECT, symother,
 		      ST_is_gp_relative(sym) ? SHN_MIPS_SUNDEFINED : SHN_UNDEF);
+#endif
 	  if (Assembly) {
 	    if (ST_is_weak_symbol(sym)) {
 	      fprintf ( Asm_File, "\t%s\t", AS_WEAK);

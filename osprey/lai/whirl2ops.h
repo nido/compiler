@@ -105,6 +105,10 @@ inline WN *Get_WN_From_Memory_OP( const OP *op )
 
 extern OP_MAP OP_Asm_Map;
 
+#ifdef TARG_ST
+extern OP_MAP OP_to_callinfo_map;
+#endif
+
 /* Information about the predicate under which conditional memory OPs
  * are executed.  Note that this is not currently maintained to adjust
  * for renaming, etc. - we just need to tell whether two mem OPs are
