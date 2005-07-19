@@ -67,13 +67,18 @@
  * TN relocations info:
  */
 const TN_RELOCS_INFO TN_RELOCS_info[] = {
-  { ""               },   /* TN_RELOC_NONE        */
-  { "@gprel"         },   /* TN_RELOC_GOT_DISP    */
-  { "@gotoff"        },   /* TN_RELOC_GOTOFF      */
-  { "@gotoff(@fptr"  },   /* TN_RELOC_GOTOFF_FPTR */
-  { NULL,            },   /* TN_RELOC_GPIDENT     */
-  { NULL,            },   /* TN_RELOC_GPSUB       */
-  { "@neggprel",     },   /* TN_RELOC_NEG_GOT_DISP*/
+  { ""                },   /* TN_RELOC_NONE          */
+  { "@gprel"          },   /* TN_RELOC_GOT_DISP      */
+  { "@gotoff"         },   /* TN_RELOC_GOTOFF        */
+  { "@gotoff(@fptr"   },   /* TN_RELOC_GOTOFF_FPTR   */
+  { NULL              },   /* TN_RELOC_GPIDENT       */
+  { NULL              },   /* TN_RELOC_GPSUB         */
+  { "@neggprel"       },   /* TN_RELOC_NEG_GOT_DISP  */
+  { "@tprel"          },   /* TN_RELOC_TPREL         */
+  { "@gotoff(@tprel"  },   /* TN_RELOC_GOTOFF_TPREL  */
+  { "@gotoff(@dtpldm" },   /* TN_RELOC_GOTOFF_DTPLDM */
+  { "@gotoff(@dtpndx" },   /* TN_RELOC_GOTOFF_DTPNDX */
+  { "@dtprel"         },   /* TN_RELOC_DTPREL        */
 };
 
 /* ====================================================================

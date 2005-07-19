@@ -106,6 +106,11 @@
 #define  TN_RELOC_GPIDENT         0x04
 #define  TN_RELOC_GPSUB           0x05
 #define  TN_RELOC_NEG_GOT_DISP    0x06  /* R_LX_NEG_GPREL */
+#define  TN_RELOC_TPREL           0x07
+#define  TN_RELOC_GOTOFF_TPREL    0x08
+#define  TN_RELOC_GOTOFF_DTPLDM   0x09
+#define  TN_RELOC_GOTOFF_DTPNDX   0x0a
+#define  TN_RELOC_DTPREL          0x0b
 
 /* Define the TN_relocs access functions: */
 #define TN_is_reloc_none(r)             (TN_relocs(r) == TN_RELOC_NONE)
@@ -117,6 +122,16 @@
 #define TN_is_reloc_neg_got_disp(r)     (TN_relocs(r) == TN_RELOC_NEG_GOT_DISP)
 #define Set_TN_is_reloc_neg_got_disp(r) Set_TN_relocs(r,TN_RELOC_NEG_GOT_DISP)
 #define TN_is_reloc_neg(r)              (0)
+#define TN_is_reloc_tprel(r)            (TN_relocs(r) == TN_RELOC_TPREL)
+#define Set_TN_is_reloc_tprel(r)        Set_TN_relocs(r, TN_RELOC_TPREL)
+#define TN_is_reloc_gotoff_tprel(r)     (TN_relocs(r) == TN_RELOC_GOTOFF_TPREL)
+#define Set_TN_is_reloc_gotoff_tprel(r) Set_TN_relocs(r, TN_RELOC_GOTOFF_TPREL)
+#define TN_is_reloc_gotoff_dtpldm(r)    (TN_relocs(r) == TN_RELOC_GOTOFF_DTPLDM)
+#define Set_TN_is_reloc_gotoff_dtpldm(r) Set_TN_relocs(r, TN_RELOC_GOTOFF_DTPLDM)
+#define TN_is_reloc_gotoff_dtpndx(r)    (TN_relocs(r) == TN_RELOC_GOTOFF_DTPNDX)
+#define Set_TN_is_reloc_gotoff_dtpndx(r) Set_TN_relocs(r, TN_RELOC_GOTOFF_DTPNDX)
+#define TN_is_reloc_dtprel(r)           (TN_relocs(r) == TN_RELOC_DTPREL)
+#define Set_TN_is_reloc_dtprel(r)       Set_TN_relocs(r, TN_RELOC_DTPREL)
 
 // ---------------------------------------------------------------------
 inline BOOL TN_is_fcc_register (const TN *tn)

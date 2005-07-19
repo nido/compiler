@@ -174,6 +174,7 @@ CGEMIT_Prn_Scn_In_Asm (
   if (scn_flags & SHF_WRITE) *p++ = 'w';
   if (scn_flags & SHF_ALLOC) *p++ = 'a';
   if (scn_flags & SHF_EXECINSTR) *p++ = 'x';
+  if (scn_flags & SHF_TLS) *p++ = 'T';
   // short sections are only recognized by name, not by "s" qualifier
   // if (scn_flags & SHF_IRIX_GPREL) *p++ = 's';
   *p = '\0'; // null terminate the string.
