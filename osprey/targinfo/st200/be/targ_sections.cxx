@@ -179,7 +179,11 @@ Assign_Static_Variable (ST *st)
   SECTION_IDX sec;
 
   if (ST_is_thread_private(st)) {
-    FmtAssert(FALSE,("Assign_Static_Variable: thread private ST"));
+    if ((ST_is_initialized(st) && !ST_init_value_zero (st))
+	|| ST_has_named_section(st))
+      sec = _SEC_TDATA;
+    else
+      sec = _SEC_TBSS;
   }
   else if (ST_is_initialized(st)
 	   && !ST_init_value_zero (st))
@@ -213,7 +217,10 @@ Assign_Global_Variable (
   switch ( ST_sclass(base_st) ) {
   case SCLASS_UGLOBAL:
     if (ST_is_thread_private(st)) {
-      FmtAssert(FALSE,("Assign_Global_Variable: thread private ST"));
+      if (ST_has_named_section(st))
+	sec = _SEC_TDATA;
+      else
+	sec = _SEC_TBSS;
     } 
     else {
 #ifdef TARG_ST
@@ -228,8 +235,7 @@ Assign_Global_Variable (
 
   case SCLASS_DGLOBAL:
     if (ST_is_thread_private(st)) {
-      FmtAssert(FALSE,("Assign_Global_Variable: thread private ST"));
-      //sec = _SEC_LDATA;
+      sec = _SEC_TDATA;
     }
     else if (ST_is_constant(st)
 	     && !(Gen_GP_Relative && Initializer_Contains_Address (st)))
