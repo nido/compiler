@@ -564,9 +564,13 @@ Expand_Add (
       Base_Symbol_And_Offset_For_Addressing (TN_var(src2),
                                        TN_offset(src2), &base, &ofst);
 
-      // TN_is_reloc_got_disp (@gprel) and TN_is_reloc_neg_got_disp (@neggprel)
-      // can always be the operand of addi.
-      if (TN_is_reloc_got_disp(src2) || TN_is_reloc_neg_got_disp(src2)) {
+      // We must allow GOT offset operands to always be the operand of an addi,
+      // because the ABI requires that the src1 is a register containing GP.
+      if (TN_is_reloc_got_disp (src2)
+	  || TN_is_reloc_neg_got_disp (src2)
+	  || TN_is_reloc_gotoff_tprel (src2)
+	  || TN_is_reloc_gotoff_dtpldm (src2)
+	  || TN_is_reloc_gotoff_dtpndx (src2)) {
 	new_opcode = TOP_add_i;
       }
       else if (ST_on_stack(TN_var(src2))) {

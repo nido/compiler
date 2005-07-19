@@ -65,6 +65,9 @@ using std::vector;
 #include "data_layout.h"
 #include "strtab.h"
 #include "symtab.h"
+#ifdef TARG_ST
+#include "whirl2ops.h"
+#endif
 
 /*
  * [CG] temporary flag 
@@ -725,6 +728,90 @@ Exp_Ldst (
       ofst_tn = Gen_Symbol_TN (sym, ofst, TN_RELOC_NONE);
     }
   }
+  else if (ST_is_thread_private (sym)) {
+    ST_TLS_MODEL tls_model = ST_tls_model (sym);
+    switch (tls_model) {
+    case ST_TLS_MODEL_LOCAL_EXEC:
+      {
+	TN *sym_tn = Gen_Symbol_TN (base_sym, 0, TN_RELOC_TPREL);
+	if (base_ofst == 0) {
+	  base_tn = TP_TN;
+	  ofst_tn = sym_tn;
+	} else {
+	  base_tn = Build_TN_Of_Mtype (Pointer_Mtype);
+	  Expand_Add (base_tn, TP_TN, sym_tn, Pointer_Mtype, &newops);
+	  ofst_tn = Gen_Literal_TN (base_ofst, Pointer_Size);
+	}
+      }
+      break;
+    case ST_TLS_MODEL_INITIAL_EXEC:
+      {
+	TN *tmp1 = Build_TN_Of_Mtype (Pointer_Mtype);
+	base_tn = Build_TN_Of_Mtype (Pointer_Mtype);
+	Expand_Load (OPCODE_make_signed_op(OPR_LDID,
+					   Pointer_Mtype, Pointer_Mtype, FALSE),
+		     tmp1, GP_TN, Gen_Symbol_TN (sym, 0, TN_RELOC_GOTOFF_TPREL), &newops);
+	// GOT address should not alias
+	Set_OP_no_alias (OPS_last (&newops));
+	PU_References_GP = TRUE;
+	Expand_Add (base_tn, TP_TN, tmp1, Pointer_Mtype, &newops);
+	ofst_tn = Gen_Literal_TN (ofst, Pointer_Size);
+      }
+      break;
+    case ST_TLS_MODEL_LOCAL_DYNAMIC:
+    case ST_TLS_MODEL_GLOBAL_DYNAMIC:
+      {
+	TY_IDX ptype = MTYPE_To_TY (Pointer_Mtype);
+	ST *get_addr_sym = Gen_Intrinsic_Function (Make_Function_Type (ptype),
+						   "__tls_get_addr");
+	TN *target = Gen_Symbol_TN(get_addr_sym, 0, TN_RELOC_NONE);
+	TN *p1_tn;
+	INT32 reloc = (tls_model == ST_TLS_MODEL_LOCAL_DYNAMIC)
+	  ? TN_RELOC_GOTOFF_DTPLDM : TN_RELOC_GOTOFF_DTPNDX;
+	ISA_REGISTER_CLASS p1_rclass;
+	REGISTER p1_reg;
+	CGTARG_Preg_Register_And_Class (First_Int_Preg_Param_Offset,
+					&p1_rclass, &p1_reg);
+	p1_tn = Build_Dedicated_TN (p1_rclass, p1_reg,
+				    ST_size(MTYPE_To_PREG (Pointer_Mtype)));
+	Expand_Add(p1_tn, GP_TN, Gen_Symbol_TN(sym, 0, reloc),
+		   Pointer_type, &newops);
+	PU_References_GP = TRUE;
+	Exp_Call (OPR_CALL, RA_TN, target, &newops);
+	PU_Has_Calls = TRUE;
+	WN *wn_call = WN_Call (Pointer_type, Pointer_type, 1, get_addr_sym);
+	WN_actual (wn_call, 0) = WN_Lda (Pointer_type, 0, sym);
+	WN_call_flag (wn_call) = 0;
+	WN_Set_Call_Default_Flags (wn_call);
+	CALLINFO *call_info = TYPE_PU_ALLOC (CALLINFO);
+	CALLINFO_call_st(call_info) = get_addr_sym;
+	CALLINFO_call_wn(call_info) = wn_call;
+	OP_MAP_Set(OP_to_callinfo_map, OPS_last(&newops), call_info);
+	TN *res_tn;
+	ISA_REGISTER_CLASS res_rclass;
+	REGISTER res_reg;
+	CGTARG_Preg_Register_And_Class (First_Int_Preg_Return_Offset,
+					&res_rclass, &res_reg);
+	res_tn = Build_Dedicated_TN (res_rclass, res_reg,
+				     ST_size (MTYPE_To_PREG (Pointer_Mtype)));
+	base_tn = Build_TN_Of_Mtype (Pointer_Mtype);
+	if (tls_model == ST_TLS_MODEL_LOCAL_DYNAMIC) {
+	  TN *sym_tn = Gen_Symbol_TN (sym, 0, TN_RELOC_DTPREL);
+	  if (ofst == 0) {
+	    Exp_COPY (base_tn, res_tn, &newops);
+	    ofst_tn = sym_tn;
+	  } else {
+	    Expand_Add (base_tn, res_tn, sym_tn, Pointer_type, &newops);
+	    ofst_tn = Gen_Literal_TN (ofst, Pointer_Size);
+	  }
+	} else {
+	  Exp_COPY (base_tn, res_tn, &newops);
+	  ofst_tn = Gen_Literal_TN (ofst, Pointer_Size);
+	}
+      }
+      break;
+    }
+  }
   else if (Gen_GP_Relative &&
            (((ST_class(base_sym) == CLASS_BLOCK || 
 	      ST_class(base_sym) == CLASS_VAR) &&
@@ -751,6 +838,8 @@ Exp_Ldst (
     TN *tmp;
     INT32 reloc;
 
+    FmtAssert(!ST_is_thread_private (sym), 
+	      ("Exp_Ldst: %s is set thread-private", ST_name(sym)));
     // Load address of sym from GOT
     if (ST_class(sym) == CLASS_FUNC && Is_Caller_Save_GP)
       reloc = TN_RELOC_GOTOFF_FPTR;
