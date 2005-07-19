@@ -911,54 +911,14 @@ OP_Make_movc (
 )
 {
   OPS cmov_ops = OPS_EMPTY;
-  Expand_Select (dst, guard, src, dst, MTYPE_I4,
-		 FALSE, &cmov_ops);
-  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
+  if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
+    DevWarn("Conditional MOV should use a branch register");
+  Expand_Copy(dst, guard, src, &cmov_ops);
+  if (OPS_length(&cmov_ops) != 1)
+    Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 }
 
-OP *
-OP_Make_movcf (
-  TN *guard,
-  TN *dst,
-  TN *src
-)
-{
-  OPS cmov_ops = OPS_EMPTY;
-  Expand_Select (dst, guard, dst, src, MTYPE_I4,
- 		 FALSE, &cmov_ops);
-  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movcf: Expand_Select produced more than a single operation"));
-  return OPS_first(&cmov_ops);
-}
-#if 0
-OP *
-SSA_Expand_Movc (
-  OP *op
-)
-{
-  TN *dst = OP_result(op, 0);
-  TN *guard = OP_opnd(op, 0);
-  TN *src = OP_opnd(op, 1);
-
-  OP *expand_op;
-
-  OPS cmov_ops = OPS_EMPTY;
-
-  if (OP_code(op) == TOP_movc)
-    Expand_Select (dst, guard, src, dst, MTYPE_I4, FALSE, &cmov_ops);
-  else
-    Expand_Select (dst, guard, dst, src, MTYPE_I4, FALSE, &cmov_ops);
-
-  Is_True(OPS_length(&cmov_ops) == 1, ("Make_movcf: Expand_Select produced more than a single operation"));
-
-  expand_op == OPS_first(&cmov_ops);
-
-  BB_Insert_Ops_Before(OP_bb(op), op, &cmov_ops);
-  BB_Remove_Op(OP_bb(op), op);
-
-  return expand_op;
-}
-#endif
 //
 // dominance frontier blocks for each BB in the region
 //
