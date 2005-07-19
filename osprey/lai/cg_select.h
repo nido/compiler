@@ -65,8 +65,8 @@ extern void draw_CFG(void);
 #define Select_Trace_Merge      8 
 #define Select_Trace_Dup        16 
 #define Select_Trace_Stats      32
-#define Select_Trace_daVinci    64
-#define Select_Trace_stdout  	0x80000000
+#define Select_Trace_daVinci    0x4000
+#define Select_Trace_stdout  	0x8000
 
 // op list management
 typedef std::list<OP*>  op_list;
