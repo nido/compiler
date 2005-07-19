@@ -230,6 +230,8 @@ extern "C" {
 #define AS_ALLOW_NOPS   ".nopinsertion"
 #define AS_DISALLOW_NOPS ".nonopinsertion"
 
+#define AS_DWARF_THREAD_DATA_RELOC "@dtprel"
+
 /* The directive for emitting an address depends on the target pointer
  * size.  The following is defined and initialized in config_targ.c:
  */
