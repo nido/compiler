@@ -421,7 +421,10 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
   OP *opt = TN_ssa_def(true_tn);
   OP *opf = TN_ssa_def(false_tn);
 
-  if (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf)) {
+  if (!opt || !opf || (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf))) {
+    if (!opt) true_tn = false_tn;
+    else if (!opf) false_tn = true_tn;
+
     Expand_Select (target_tn, test_tn, true_tn, false_tn, MTYPE_I4,
                    FALSE, cmov_ops);
     return;
