@@ -301,6 +301,21 @@ Cg_Dwarf_Name_From_Handle(Dwarf_Unsigned idx)
   }
 }
 
+#ifdef TARG_ST
+// [SC] TLS support
+static int
+Cg_Dwarf_Type_From_Handle(Dwarf_Unsigned idx)
+{
+  Is_True(CGD_Symtab.size() > idx,
+	  ("Cg_Dwarf_Type_From_Handle: Index %llu out of bounds (%lu)",
+	   idx, CGD_Symtab.size()));
+  if (CGD_Symtab[idx].type == CGD_ELFSYM)
+    return Em_Get_Symbol_Type(CGD_Symtab[idx].index);
+  else
+    return STT_NOTYPE;
+}
+#endif
+
 #define put_flag(flag, die) dwarf_add_AT_flag(dw_dbg, die, flag, 1, &dw_error)
 
 static ST *
@@ -771,10 +786,20 @@ put_location (
     case SCLASS_FSTATIC:
     case SCLASS_PSTATIC:
 #ifdef TARG_ST
+      if (ST_is_thread_private(st)) {
+	// [SC] For thread symbols, use st always, because base_st will not
+	// have STT_TLS type if it is a section symbol.
+	dwarf_add_expr_addr_b (expr, offs,
+			       Cg_Dwarf_Symtab_Entry(CGD_ELFSYM,
+						     EMT_Put_Elf_Symbol(st)),
+			       &dw_error);
+	dwarf_add_expr_gen (expr, DW_OP_GNU_push_tls_address, 0,0, &dw_error);
+
+      }
       // [CL] output symbol name if it exists, rather than base name:
       // in case attributes have been added, the name of the base
       // make include spurious characters
-      if ( (base_st != NULL) && ((ST_name(st)==NULL) || *(ST_name(st)) == '\0')) {
+      else if ( (base_st != NULL) && ((ST_name(st)==NULL) || *(ST_name(st)) == '\0')) {
 #else
       if (base_st != NULL) {
 #endif
@@ -3001,8 +3026,18 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       case dwarf_drt_none:
 	break;
       case dwarf_drt_data_reloc:
-	fprintf(asm_file, "\t%s\t%s", reloc_name,
-		Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
+#ifdef TARG_ST
+#ifdef AS_DWARF_THREAD_DATA_RELOC
+	if (Cg_Dwarf_Type_From_Handle(reloc_buffer[k].drd_symbol_index)
+	    == STT_TLS)
+	  fprintf(asm_file, "\t%s\t%s(%s)", reloc_name,
+		  AS_DWARF_THREAD_DATA_RELOC,
+		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
+	else
+#endif
+#endif
+	  fprintf(asm_file, "\t%s\t%s", reloc_name,
+		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
 	break;
 
       case dwarf_drt_segment_rel:
