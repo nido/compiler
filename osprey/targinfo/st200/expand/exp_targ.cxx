@@ -2067,6 +2067,12 @@ Expand_Select (
     return;
   }
 
+  if (cond_tn == True_TN) {
+    DevWarn("Expand_Select with True_TN");
+    Exp_COPY (dest_tn, true_tn, ops);
+    return;
+  }
+
   if (TN_is_register(true_tn) && TN_register_class(true_tn) == ISA_REGISTER_CLASS_branch) {
     TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
     Expand_Bool_To_Int (tmp, true_tn, mtype, ops);
