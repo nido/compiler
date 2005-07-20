@@ -248,4 +248,10 @@ void GRA_Trace_Preference_Conflict(LRANGE* lrange0,
 				   GRA_BB* gbb );
 void GRA_Trace_LRANGE_Allocate(LRANGE* lrange);
 
+#ifdef TARG_ST
+void GRA_Trace_Local_Colorability (LRANGE *lrange);
+void GRA_Trace_Local_Colorability_Benefit (LRANGE *lr, LRANGE *neighbor, float b);
+void GRA_Trace_Allowed_Registers (LRANGE *lr, REGISTER_SET subclass_allowed,
+				  REGISTER_SET allowed);
+#endif
 #endif

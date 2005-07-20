@@ -280,6 +280,11 @@ Expand_CondStoreOP (
     offset = Gen_Literal_TN (0, 4);
 
   switch (OP_code(store_op)) {
+  case TOP_stp_i:
+  case TOP_stp_ii:
+    desc = MTYPE_I8;
+    break;
+
   case TOP_stw_i:
   case TOP_stw_ii:
     desc = MTYPE_I4;
@@ -339,7 +344,11 @@ Expand_Cond_Store (
 
   if (!op2) {
     is_black_hole = TRUE;
-    TY_IDX ty = MTYPE_To_TY(Pointer_Mtype);
+    FmtAssert (TN_size (tns[validx]) <= 8,
+	       ("Expand_Cond_Store: TN too large"));
+    TY_IDX ty = ((TN_size (tns[validx]) <= 4)
+		 ? MTYPE_To_TY (MTYPE_I4)
+		 : MTYPE_To_TY (MTYPE_I8));
     false_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
 
 #ifdef COMMON_SELECT_STOREDUMP
@@ -413,6 +422,11 @@ Expand_Cond_Store (
   else {
 #endif
     switch (OP_code(op1)) {
+    case TOP_stp_i:
+    case TOP_stp_ii:
+      desc = MTYPE_I8;
+      break;
+
     case TOP_stw_i:
     case TOP_stw_ii:
       desc = MTYPE_I4;

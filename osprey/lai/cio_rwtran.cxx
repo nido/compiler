@@ -457,6 +457,11 @@ private:
   BOOL  Write_Candidate_Arc( ARC *arc );
 
 #ifdef TARG_ST
+  BOOL LoadStore_Packing_Candidate_Op( OP *op );
+  BOOL Packing_Candidate_Arc( ARC *arc );
+#endif
+
+#ifdef TARG_ST
   // FdF 30/09/2004: max_omega takes the loop trip estimate into
   // account, in order to fix ddts MBTst17742
   INT32 _max_omega;
@@ -550,6 +555,9 @@ public:
   // *loop.
 
   BOOL  Read_CICSE_Write_Removal( LOOP_DESCR *loop );
+#ifdef TARG_ST200
+  BOOL  LoadStore_Packing( BB *body );
+#endif
 };
 
 
@@ -2948,6 +2956,788 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   return TRUE;
 }
 
+#ifdef TARG_ST200
+
+// This structure is very similar to the CICSE_entry structure.
+// 
+//  - For a Load/Store operation candidate to packing:
+//
+//      IV_source will give the index of the last operation in an IV
+//      cycle from which the base of the Load/Store is defined.
+//
+//      IV_offset gives the offset from the definition of IV_source to
+//      the base of the load/store operation.
+//
+//  - For an operation that belongs to an IV cycle:
+//
+//       IV_source will give the index of the last instruction of the
+//       cycle in the loop body.
+// 
+//       IV_offset gives the value the IV has been incremented since
+//       the begining of an iteration of the loop, including this
+//       increment operation.
+//
+//  Other fields, opnd_source, opnd_result and opnd_omega, have the
+//  same meanings as in CICSE_entry
+
+struct Pack32_entry {
+  OP    *op;
+  INT    IV_source;
+  INT    IV_offset;
+  INT    opnd_source[OP_MAX_FIXED_OPNDS];
+  INT    opnd_result[OP_MAX_FIXED_OPNDS];
+  UINT8  opnd_omega[OP_MAX_FIXED_OPNDS];
+};
+
+void
+Trace_Pack32_Entries( Pack32_entry *table, INT count,
+		      const char *message )
+{
+  Is_True( TFile, ( "CIO_RWTRAN::Trace_Pack32_Entries -- TFile is NULL\n" ) );
+  fprintf( TFile, "<cio> CIO_RWTRAN::Trace_Pack32_Entries(count %d) -- %s",
+	   count, message );
+
+  // Assumes table[0] is not used
+  for ( INT index = 1; index <= count; ++index ) {
+    Pack32_entry& entry = table[index];
+    fprintf( TFile, "\n%2d: ", index );
+    Print_OP_No_SrcLine( entry.op );
+
+    fprintf( TFile, "    op 0x%p, IV_source %2d, IV_offset %d\n    opnds:",
+	     entry.op, entry.IV_source, entry.IV_offset );
+    if ( entry.IV_source == 0 )
+      fprintf( TFile, " OP_opnds(entry.op) == %d", OP_opnds( entry.op ) );
+    else if ( OP_opnds( entry.op ) > OP_MAX_FIXED_OPNDS )
+      fprintf( TFile, " OP_opnds(entry.op) %d > OP_MAX_FIXED_OPNDS %d",
+	       OP_opnds( entry.op ), OP_MAX_FIXED_OPNDS );
+    else
+      for ( INT opnd = 0; opnd < OP_opnds( entry.op ); ++opnd )
+	fprintf( TFile, "  opnd %d: src %2d, om %u;",
+		 opnd, entry.opnd_source[opnd], entry.opnd_omega[opnd] );
+  }
+  fprintf( TFile, "\n\n" );
+}
+
+inline BOOL
+CIO_RWTRAN::LoadStore_Packing_Candidate_Op( OP *op )
+{
+  if ( OP_has_implicit_interactions( op ) ||
+       OP_opnds( op ) > OP_MAX_FIXED_OPNDS )
+    return FALSE;
+
+  if ( ! OP_memory( op ) )
+    return FALSE;
+
+  if ( OP_prefetch( op )      ||
+       OP_unalign_store( op ) ||
+       OP_unalign_ld( op )    ||
+
+       // Skip predicated operations
+       OP_cond_def( op )      ||
+
+       // If we optimize small loads/stores then we need to
+       // introduce a truncation or sign-extension operation.
+       // Until we figure out how to do that, keep the problem
+       // from happening (pv647031).
+
+       OP_Mem_Ref_Bytes(op) != 4 )
+    return FALSE;
+
+  // TBD: Support store operations.
+  if (OP_store(op))
+    return FALSE;
+
+  return TRUE;
+}
+
+inline BOOL
+CIO_RWTRAN::Packing_Candidate_Arc( ARC *arc )
+{
+  return ( ARC_kind( arc ) != CG_DEP_MEMIN &&
+	   //	   ARC_kind( arc ) != CG_DEP_MEMOUT &&
+	   ARC_kind( arc ) != CG_DEP_MEMANTI &&
+	   ARC_kind( arc ) != CG_DEP_MEMVOL);
+}
+
+INT
+Pack32_Lookup_Op( Pack32_entry *pack32_table, INT count, OP *op )
+{
+  // Assumes table[0] is not used
+  INT left  = 1;
+  INT right = count;
+  while ( left <= right ) {
+    INT middle = ( left + right ) / 2;
+    OP *middle_op = pack32_table[middle].op;
+    if ( op == middle_op )
+      return middle;
+    if ( OP_Precedes( op, middle_op ) )
+      right = middle - 1;
+    else
+      left = middle + 1;
+  }
+  return 0;
+}
+
+
+/* Follow the use-def chains from def_index, until a cycle is found in
+   the Pack32 cycle. If the cycle only contains ADD and SUB operations
+   with an immediate value, return the index of the operation in the
+   Pack32 table that is last executed in the loop. Return 0
+   otherwise. */
+
+static void
+Find_IV( Pack32_entry *pack32_table, INT use_index, INT opnd_idx ) {
+
+  Pack32_entry *entry = &pack32_table[use_index];
+  INT iv_idx = opnd_idx;
+
+  INT IV_index = 0;
+  INT64 IV_step = 0;
+
+  while (1) {
+
+    Is_True(iv_idx >= 0, ("TOP_Find_Operand_Use did not find operand index."));
+
+    /* Follow the use-def chain. Check the variable is defined in the
+       loop and on the first result of the defining operation. */
+    int def_index = entry->opnd_source[iv_idx];
+    if ( def_index == 0 )
+      return;
+    if ( entry->opnd_result[iv_idx] != 0 )
+      return;
+
+    /* Check if a cycle is found. */
+    if ( entry->opnd_omega[iv_idx] > 1)
+      return;
+    else if ( entry->opnd_omega[iv_idx] == 1 )
+      if (IV_index == 0) {
+	IV_index = def_index;
+	// IV_step is the offset from the use of the variable
+	// pack32_table[use_index]->opnd_source[opnd_idx], to the
+	// value at the loop entry of the main IV on which it is base.
+	pack32_table[use_index].IV_offset = IV_step;
+	// Now reset IV_step to accumulate the step of the main
+	// induction variable.
+	IV_step = 0;
+      }
+      else {
+	Is_True(IV_index == def_index, ("Inconsistent Pack32 table."));
+	pack32_table[use_index].IV_source = IV_index;
+	break;
+      }
+
+    entry = &pack32_table[def_index];
+
+    /* Only ADD and SUB operations with an immediate operand are
+       recognized. */
+    if (!OP_iadd(entry->op) && !OP_isub(entry->op))
+      return;
+
+    TN *opnd_incr = OP_opnd(entry->op, TOP_Find_Operand_Use(OP_code(entry->op), OU_opnd2));
+    if (!TN_has_value(opnd_incr))
+      return;
+
+    IV_step += OP_iadd(entry->op) ? TN_value(opnd_incr) : -TN_value(opnd_incr);
+
+    iv_idx = TOP_Find_Operand_Use(OP_code(entry->op), OU_opnd1);
+  }
+
+  // For each operation in the cycle, entry.IV_source is initialized
+  // to IV_index. entry.IV_offset is initialized to the increment of
+  // the IV from the begining of an iteration of the loop to this
+  // instruction included.
+
+  Is_True(IV_index != 0, ("Inconsistency in Induction Variable"));
+  Is_True(IV_step != 0, ("Inconsistency in Induction Variable"));
+
+  int iv_index = IV_index;
+  int iv_step = IV_step;
+
+  do {
+    entry = &pack32_table[iv_index];
+    entry->IV_source = IV_index;
+    entry->IV_offset = iv_step;
+
+    OP *op_iv = entry->op;
+    Is_True(OP_iadd(op_iv) || OP_isub(op_iv), ("Unexpected operation"));
+    int step_idx = TOP_Find_Operand_Use(OP_code(op_iv), OU_opnd2);
+    INT64 incr = TN_value(OP_opnd(op_iv, step_idx));
+    if (OP_isub(op_iv)) incr = -incr;
+    iv_step -= incr;
+
+    iv_idx = TOP_Find_Operand_Use(OP_code(op_iv), OU_opnd1);
+    iv_index = entry->opnd_source[iv_idx];
+
+  } while (entry->opnd_omega[iv_idx] == 0);
+
+  Is_True(iv_step == 0, ("Inconsistency in Induction Variable"));
+
+  return;
+}
+
+/*
+ * Check if this load has a constant offset and a base that is defined
+ * on an operation which is an increment of that base variable.
+*/
+
+static INT
+Set_IV_info( Pack32_entry *pack32_table, INT index )
+{
+  Pack32_entry *entry = &pack32_table[index];
+  Is_True(OP_load(entry->op) || OP_store(entry->op), ("Invalid operation"));
+
+  // Check if this load/store is a possible candidate.
+  int base_idx = TOP_Find_Operand_Use(OP_code(entry->op), OU_base);
+  Find_IV(pack32_table, index, base_idx);
+
+  return entry->IV_source;
+}
+
+#define Get_IV_step(pack32_table, iv_index) pack32_table[iv_index].IV_offset
+#define Get_IV_index(pack32_table, iv_index) pack32_table[iv_index].IV_source
+#define Get_IV_offset(pack32_table, iv_index) pack32_table[iv_index].IV_offset
+
+// Initialize the base symbol, the associated relocation, and the
+// offset of this TN.
+
+static void
+Analyse_Offset_TN(TN *offset_tn, ST **st, INT *relocs, INT64 *val) {
+
+  if (TN_is_symbol(offset_tn)) {
+    ST *symbol = TN_var(offset_tn);
+    Base_Symbol_And_Offset (symbol, st, val);
+    *relocs = TN_relocs(offset_tn);
+    *val += TN_offset(offset_tn);
+    Is_True(0, ("Analyse_Offset_TN with TN_is_symbol: To be checked."));
+  }
+  else {
+    *st = NULL;
+    *relocs = 0;
+    *val = TN_value(offset_tn);
+  }
+}
+
+static TN *
+Adjust_Offset_TN(TN *offset_tn, INT64 adjust) {
+
+  TN *new_offset_tn = NULL;
+
+  if (TN_is_symbol(offset_tn)) {
+    ST *st = TN_var(offset_tn), *symbol;
+    INT64 offset_val;
+    Base_Symbol_And_Offset (st, &symbol, &offset_val);
+    INT32 relocs = TN_relocs(offset_tn);
+    offset_val += TN_offset(offset_tn);
+    offset_val += adjust;
+    new_offset_tn = Gen_Symbol_TN(symbol, offset_val, relocs);
+    Is_True(0, ("Combine_Adjacent_Loads: To Be Checked."));
+  }
+  else {
+    INT64 offset_val;
+    offset_val = TN_value(offset_tn);
+    new_offset_tn = Gen_Literal_TN(offset_val + adjust, 4);
+  }
+}
+
+// Code taken from CICSE_Transform
+
+// Candidate_Memory_t
+//
+// index is the index of this memory op in the Pack32_entry table.
+//
+// offset is the offset from this memory op to the 
+
+
+typedef struct {
+  INT index;
+  INT offset;
+} Candidate_Memory_t;
+
+static BOOL
+Compare_Offsets(const void *p1, const void *p2) {
+  const Candidate_Memory_t *cand1 = (Candidate_Memory_t *)p1;
+  const Candidate_Memory_t *cand2 = (Candidate_Memory_t *)p2;
+  return (cand1->offset < cand2->offset) ? -1 : (cand1->offset == cand2->offset) ? 0 : 1;
+}
+
+static BOOL
+Compare_Offsets_neg(const void *p1, const void *p2) {
+  const Candidate_Memory_t *cand1 = (Candidate_Memory_t *)p1;
+  const Candidate_Memory_t *cand2 = (Candidate_Memory_t *)p2;
+  return (cand1->offset > cand2->offset) ? -1 : (cand1->offset == cand2->offset) ? 0 : 1;
+}
+
+static void
+Combine_Adjacent_Loads( Pack32_entry *pack32_table, Candidate_Memory_t *Candidate_table, INT Candidate_count )
+{
+  /* In the loop prolog, generate the following instructions,
+   * depending on the alignment of base and offset:
+   *
+   *  (step > 0)
+   *  offset&4=0, base&4=0 => aligned = 1 ;;                    ;; addr = addr  ;;
+   *  offset&4=0, base&4=1 => aligned = 0 ;; t0 = ldw oft(@addr);; addr = addr+4;;
+   *  offset&4=1, base&4=0 => aligned = 0 ;; t0 = ldw oft(@addr);; addr = addr+4;;
+   *  offset&4=1, base&4=1 => aligned = 1 ;;                    ;; addr = addr  ;;
+   *
+   *  (step < 0)
+   *  offset&4=0, base&4=0 => aligned = 0 ;; t0 = ldw oft(@addr);; addr = addr-8;;
+   *  offset&4=0, base&4=1 => aligned = 1 ;;                    ;; addr = addr-4;;
+   *  offset&4=1, base&4=0 => aligned = 1 ;;                    ;; addr = addr-4;;
+   *  offset&4=1, base&4=1 => aligned = 0 ;; t0 = ldw oft(@addr);; addr = addr-8;;
+   */
+
+  //  fprintf(stderr, "Combine_Adjacent_Loads: Packing %d load operations.\n", Candidate_count);
+
+  int load_index = Candidate_table[0].index;
+  OP *load_op = pack32_table[load_index].op;
+
+  int IV_index = Get_IV_index(pack32_table, load_index);
+  OP *IV_op = pack32_table[IV_index].op;
+  TN *IV_addr_tn = OP_result(IV_op, 0);
+  // TBD: Get the initial value of IV_addr_tn, so as to determine the
+  // alignment
+
+  // Find loop prolog, check it is unique.
+  Is_True(CG_LOOP_prolog != NULL, ("Incorrect loop: Missing loop prolog"));
+  BB *body = OP_bb(load_op);
+
+  /* Generate a load operation in the loop prolog. We must change the
+     base TN to be IV_addr_tn, since the TN used on the load operation
+     may not be available in the prolog. This requires that the offset
+     of the ldw is adjusted. */
+
+  int base_idx = TOP_Find_Operand_Use(OP_code(load_op), OU_base);
+  int offset_idx = TOP_Find_Operand_Use(OP_code(load_op), OU_offset);
+
+  TN *offset_tn = OP_opnd(load_op, offset_idx);
+  int IV_offset = Get_IV_offset(pack32_table, load_index);
+  TN *ldw_offset_tn = Adjust_Offset_TN(offset_tn, IV_offset);
+
+  OP *ldw_op = Dup_OP(load_op);
+  TN *t0 = Dup_TN(OP_result(load_op, 0));
+
+  Set_OP_opnd(ldw_op, base_idx, IV_addr_tn);
+  Set_OP_opnd(ldw_op, offset_idx, ldw_offset_tn);
+  Set_OP_result(ldw_op, 0, t0);
+  Copy_WN_For_Memory_OP (ldw_op, load_op);
+  OP_srcpos(ldw_op) = OP_srcpos(load_op);
+
+  OP *point = BB_last_op(CG_LOOP_prolog);
+  BOOL before = (point != NULL && OP_xfer(point));
+  BB_Insert_Op(CG_LOOP_prolog, point, ldw_op, before);
+
+  /* Compute the aligned boolean */
+
+  // Get the offset the value of IV_addr_tn at the entry of the loop
+  // to the effective address of the first load operation.
+  INT64 offset1 = Candidate_table[0].offset;
+  Is_True((offset1 & 3) == 0, ("Misaligned ldw"));
+
+  TN *breg_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 4);
+  TN *aligned = Gen_Register_TN (ISA_REGISTER_CLASS_branch, 1);
+
+  OPS ops = OPS_EMPTY;
+  Expand_Binary_And (breg_tn, IV_addr_tn, Gen_Literal_TN(4, 4), MTYPE_I4, &ops);
+
+  INT64 step = Get_IV_step(pack32_table, IV_index);
+
+  if ((step > 0) == ((offset1 & 4) != 0))
+    Expand_Copy(aligned, NULL, breg_tn, &ops); // aligned = (breg_tn != 0)
+  else
+    Expand_Logical_Not(aligned, breg_tn, V_NONE, &ops); // aligned = (breg_tn == 0)
+
+  /* Compute the addr expression at the loop entry. ldp_offset_tn is
+     the expression of the adress at loop entry, to be defined
+     according to the aligned boolean. */
+
+  TN *ldp_addr_tn = Dup_TN(IV_addr_tn);
+  TN *ldp_offset_tn;
+
+  TN *adjust_addr_tn = Dup_TN(IV_addr_tn);
+  if (step > 0) {
+    Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(4, 4), MTYPE_I4, &ops);
+    ldp_offset_tn = ldw_offset_tn;
+  }
+  else {
+    Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(-4, 4), MTYPE_I4, &ops);
+    ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, -4);
+  }
+
+  Expand_Select(ldp_addr_tn, aligned, IV_addr_tn, adjust_addr_tn, MTYPE_I4, FALSE, &ops);
+
+  BB_Insert_Ops(CG_LOOP_prolog, ldw_op, &ops, FALSE);
+
+  // Now, update load/store operations by pairs
+  TN *prev_tn = t0;
+
+  for (int candidate_index = 0; candidate_index < Candidate_count; candidate_index += 2) {
+
+    OP *load1_op = pack32_table[Candidate_table[candidate_index].index].op;
+    OP *load2_op = pack32_table[Candidate_table[candidate_index+1].index].op;
+
+    // TBD: Also update the dep graph
+
+    // Replace the load operations in the loop.
+
+    /* Replace the first load instruction:
+     * tn1 = ldw ofst1($addr_tn)
+     * by
+     * (step > 0)
+     *   t1,t2 = ldp ofst1($addr_tn)
+     * else
+     *   t2,t1 = ldp ofst1($addr_tn)
+     * tn1 = slct aligned, t1, prev_tn
+     */
+
+    OPS ops_ldp = OPS_EMPTY;
+
+    TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
+    TN *t1 = Dup_TN(t0);
+    TN *t2 = Dup_TN(t0);
+
+    Expand_Load(OPC_I8I8LDID, t64,
+		ldp_addr_tn,
+		ldp_offset_tn,
+		&ops_ldp);
+    OP_srcpos(OPS_first(&ops_ldp)) = OP_srcpos(load1_op);
+
+    extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
+
+    if (step > 0)
+      Expand_Extract(t1, t2, t64, &ops_ldp);
+    else
+      Expand_Extract(t2, t1, t64, &ops_ldp);
+
+    /* Initialize the OP_omega for new operations. */
+    CG_LOOP_Init_OPS(&ops_ldp);
+    {
+      OP *new_op;
+      FOR_ALL_OPS_OPs_FWD(&ops_ldp, new_op) {
+	Set_OP_unroll_bb(new_op, OP_unroll_bb(load1_op));
+	Set_OP_unrolling(new_op, OP_unrolling(load1_op));
+	Set_OP_orig_idx(new_op, OP_map_idx(load1_op));
+	if (OP_load(new_op)) {
+	  Copy_WN_For_Memory_OP (new_op, load1_op);
+	  for (int i = 0; i < OP_opnds(new_op); i++) {
+	    if (OP_opnd(new_op, i) == ldp_addr_tn)
+	      Set_OP_omega(new_op, i, 1);
+	  }
+	}
+      }
+    }
+
+    // Insert ops_ldp before load1 or load2, depending on which one
+    // dominates the other.
+    if (Candidate_table[candidate_index].index < Candidate_table[candidate_index+1].index)
+      BB_Insert_Ops(body, load1_op, &ops_ldp, TRUE);
+    else
+      BB_Insert_Ops(body, load2_op, &ops_ldp, TRUE);
+
+    OPS ops_ldw1 = OPS_EMPTY;
+    Expand_Select(OP_result(load1_op, 0), aligned, t1, prev_tn, MTYPE_I4, FALSE, &ops_ldw1);
+
+    /* Initialize the OP_omega for new operations. */
+    CG_LOOP_Init_OPS(&ops_ldw1);
+    {
+      OP *new_op;
+      // Only on the first select op
+      if (candidate_index == 0)
+	FOR_ALL_OPS_OPs_FWD(&ops_ldw1, new_op) {
+	if (OP_select(new_op)) {
+	  for (int i = 0; i < OP_opnds(new_op); i++) {
+	    if (OP_opnd(new_op, i) == prev_tn)
+	      Set_OP_omega(new_op, i, 1);
+	  }
+	}
+      }
+    }
+
+    BB_Insert_Ops(body, load1_op, &ops_ldw1, TRUE);
+
+    /* Replace the second load instruction:
+     * tn2 = ldw ofst2($addr_tn)
+     * by
+     * tn2 = slct aligned, t2, t1
+     * t0 = t2
+     */
+
+    OPS ops_ldw2 = OPS_EMPTY;
+    Expand_Select(OP_result(load2_op, 0), aligned, t2, t1, MTYPE_I4, FALSE, &ops_ldw2);
+    /* Initialize the OP_omega for new operations. */
+    CG_LOOP_Init_OPS(&ops_ldw2);
+
+    BB_Insert_Ops(body, load2_op, &ops_ldw2, TRUE);
+
+    if ((candidate_index+2) < Candidate_count) {
+      prev_tn = t2;
+    }
+    else {
+      OPS ops_last = OPS_EMPTY;
+      Expand_Copy(t0, NULL, t2, &ops_last);
+      // Also, increment the ldp_base_addr
+      Expand_Add(ldp_addr_tn, ldp_addr_tn, Gen_Literal_TN(step, 4), MTYPE_I4, &ops_last);
+
+      CG_LOOP_Init_OPS(&ops_last);
+      {
+	OP *new_op;
+	FOR_ALL_OPS_OPs_FWD(&ops_last, new_op) {
+	  for (int i = 0; i < OP_opnds(new_op); i++) {
+	    if (OP_opnd(new_op, i) == ldp_addr_tn)
+	      Set_OP_omega(new_op, i, 1);
+	  }
+	}
+      }
+
+      // Insert ops_last before load1 or load2, depending on which one
+      // is dominated the other.
+      if (Candidate_table[candidate_index].index < Candidate_table[candidate_index+1].index)
+	BB_Insert_Ops(body, load2_op, &ops_last, TRUE);
+      else
+	BB_Insert_Ops(body, load1_op, &ops_last, TRUE);
+    }
+
+    ldp_offset_tn = Adjust_Offset_TN(ldp_offset_tn, (step > 0 ? 8 : -8));
+
+    BB_Remove_Op(body, load1_op);
+    BB_Remove_Op(body, load2_op);
+
+  }
+}
+
+BOOL
+CIO_RWTRAN::LoadStore_Packing( BB *body )
+{
+  BOOL packing_done = FALSE;
+
+  // Count the number of OPs in the loop body.
+  OP *op;
+  INT op_count = 0;
+  FOR_ALL_BB_OPs_FWD( body, op ) {
+    ++op_count;
+  }
+
+  // Allocate a table of Pack32_entry, with one entry for each loop OP.
+  // pack32_table[0] is not used, because 0 is used to indicate constant
+  // and global operand TNs
+  Pack32_entry *pack32_table
+    = (Pack32_entry *) CXX_NEW_ARRAY( Pack32_entry, op_count + 1,
+                                     _loc_mem_pool );
+
+  // The map tn_last_op remembers, for each TN, the index (in
+  // pack32_table) of the most recent OP defining that TN
+  hTN_MAP32 tn_last_op = hTN_MAP32_Create( _loc_mem_pool );
+
+  // Initialize the pack32_table entries and the map tn_last_op.  Also,
+  // identify (set flag1 for) all OPs that are suitable candidates for
+  // 64 bit load/store packing.
+  INT index;
+  op = BB_first_op( body );
+  for ( index = 1; index <= op_count; ++index ) {
+
+    // Initialize the table entry for this OP
+    Pack32_entry& entry = pack32_table[index];
+    entry.op = op;
+
+    entry.IV_source = 0;
+    entry.IV_offset = 0;
+
+    // Initialize the map tn_last_op
+    for ( INT res = OP_results( op ) - 1; res >= 0; --res )
+      hTN_MAP32_Set( tn_last_op, OP_result( op, res ), index );
+
+    if ( LoadStore_Packing_Candidate_Op( op ) )
+      Set_OP_flag1( op );
+    else
+      Reset_OP_flag1( op );
+
+    op = OP_next( op );
+  }
+
+  // Initialize the operands of pack32_table entries.
+  for ( index = 1; index <= op_count; ++index ) {
+    Pack32_entry& entry = pack32_table[index];
+    OP *op = entry.op;
+
+    // Initialize the pack32_table entry for the operands of this OP op
+    // to point to the operands' most recent definitions
+    for ( INT opnd = OP_opnds( op ) - 1; opnd >= 0; --opnd ) {
+      INT source = 0;
+      TN *opnd_op = OP_opnd( op, opnd );
+      if ( TN_is_register( opnd_op ) )
+	source = hTN_MAP32_Get( tn_last_op, opnd_op );
+
+      entry.opnd_source[opnd] = source;
+      entry.opnd_omega[opnd]  = OP_omega( op, opnd );
+
+      // Find the result matching the current operand
+      INT res;
+      if ( source > 0 ) {
+	OP *op_src = pack32_table[source].op;
+	for ( res = OP_results( op_src ) - 1; res >= 0; --res )
+	  if ( OP_result( op_src, res ) == opnd_op )
+	    break;
+	Is_True( res >= 0, ( "CIO_RWTRAN::LoadStore_Packing"
+			     " unable to find result TN" ) );
+      } else
+        res = 0;
+      entry.opnd_result[opnd] = res;
+    }
+
+    // Update the map tn_last_op
+    for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
+      INT32 old_index = hTN_MAP32_Get_And_Set( tn_last_op,
+					       OP_result( op, res ), index );
+    }
+  }
+
+  // Search the CG dependence graph, there must be no alias between
+  // operations candidates for load/store packing.
+  for ( index = op_count; index > 0; --index ) {
+    Pack32_entry& entry = pack32_table[index];
+    if ( OP_flag1( entry.op ) ) {
+      ARC_LIST *arcs = OP_preds( entry.op );
+      while ( arcs ) {
+	ARC *arc = ARC_LIST_first( arcs );
+	arcs = ARC_LIST_rest( arcs );
+
+	INT index_pred = Pack32_Lookup_Op( pack32_table,
+					  op_count, ARC_pred( arc ) );
+	if ( index_pred && !Packing_Candidate_Arc( arc ) ) {
+	  Reset_OP_flag1(entry.op);
+	  Reset_OP_flag1(pack32_table[index_pred].op);
+	}
+      }
+    }
+  }
+
+  // Make a pass to initialize the IV variables for each candidate
+  // load/store, and see if there are opportunities for packing.
+
+  INT Candidate_count = 0;
+  for ( index = 1; index <= op_count; ++index ) {
+    Pack32_entry& entry = pack32_table[index];
+    if ( !OP_flag1( entry.op ) )
+      continue;
+    int IV_index = Set_IV_info(pack32_table, index);
+    if (IV_index == 0) {
+      Reset_OP_flag1(entry.op);
+      continue;
+    }
+    // Get the step of the induction variable
+    INT64 step = Get_IV_step(pack32_table, IV_index);
+    if (step & 7) {
+      Reset_OP_flag1(entry.op);
+      continue;
+    }
+    Candidate_count ++;
+  }
+
+  // Now, look for a sequence of load or store operations that can be
+  // packed.
+  if (Candidate_count <= 1) return FALSE;
+
+  // Allocate an array to store all memory operations that have a same
+  // base IV and symbolic offset
+  Candidate_Memory_t *Candidate_table
+    = (Candidate_Memory_t *)alloca( Candidate_count * sizeof( Candidate_Memory_t ) );
+  INT Candidate_idx;
+
+  //  Trace_Pack32_Entries(pack32_table, op_count, "Before main loop");
+
+  for ( index = 1; index <= op_count; ++index ) {
+    Pack32_entry& entry = pack32_table[index];
+    if ( !OP_flag1( entry.op ) )  continue;
+
+    int IV_index = Get_IV_index(pack32_table, index);
+
+    ST *symbol = NULL;
+    INT32 relocs = 0;
+    INT64 offset_val;
+    
+    int offset_idx = TOP_Find_Operand_Use(OP_code(entry.op), OU_offset);
+    TN *offset_tn = OP_opnd(entry.op, offset_idx);
+
+    Analyse_Offset_TN(offset_tn, &symbol, &relocs, &offset_val);
+
+    Is_True(IV_index != 0, ("Inconsistency in Induction Variable"));
+    // Get the step of the induction variable
+    INT64 step = Get_IV_step(pack32_table, IV_index);
+    int Candidate_count = (step > 0) ? step/4 : -step/4;
+
+    Candidate_idx = 0;
+    Candidate_table[Candidate_idx].index = index;
+
+    // Offset is initialized to the offset of the base of the memory
+    // from the value the primary induction variable at loop entry and
+    // the offset on this memory operation.
+    Candidate_table[Candidate_idx].offset = Get_IV_offset(pack32_table, index) + offset_val;
+    Candidate_idx ++;
+    Reset_OP_flag1(entry.op);
+
+    // Then, look for step/4 32 bit operations, that can be packed
+    // into step/8 64 bit operations
+
+    for ( int index2 = index+1; index2 <= op_count; ++index2 ) {
+      Pack32_entry& entry2 = pack32_table[index2];
+      if ( !OP_flag1( entry2.op ) || (OP_code(entry.op) != OP_code(entry2.op)))
+	continue;
+      // Get the step of the induction variable.
+      int IV_index2 = Get_IV_index(pack32_table, index2);
+
+      // This operation must be based on the same IV as the reference one.
+      if (IV_index != IV_index2)
+	continue;
+
+      int offset2_idx = TOP_Find_Operand_Use(OP_code(entry2.op), OU_offset);
+      TN *offset2_tn = OP_opnd(entry2.op, offset_idx);
+
+      INT64 offset2_val;
+      ST *symbol2 = NULL;
+      INT32 relocs2 = 0;
+
+      Analyse_Offset_TN(offset2_tn, &symbol2, &relocs2, &offset2_val);
+
+      if (symbol != symbol2 || relocs != relocs2)
+	continue;
+
+      if (Candidate_idx < Candidate_count) {
+	Candidate_table[Candidate_idx].index = index2;
+	Candidate_table[Candidate_idx].offset = Get_IV_offset(pack32_table, index2) + offset2_val;
+      }
+      Candidate_idx++;
+      Reset_OP_flag1(entry2.op);
+    }
+
+    // Not the exact number of memory accesses
+    if (Candidate_idx != Candidate_count)
+      continue;
+
+    // Sort the operations in increasing/decreasing order of the
+    // memory accesses.
+
+    if (step > 0)
+      qsort(Candidate_table, Candidate_count, sizeof(Candidate_Memory_t), Compare_Offsets);
+    else
+      qsort(Candidate_table, Candidate_count, sizeof(Candidate_Memory_t), Compare_Offsets_neg);
+
+    // Check that they are all contiguous.
+    int incr = step > 0 ? 4 : -4;
+    int i;
+    for (i = 1; i < Candidate_count; i++) {
+      if (Candidate_table[i].offset != (Candidate_table[i-1].offset+incr))
+	break;
+    }
+    if (i != Candidate_count)
+      continue;
+
+    // Now, generate the code to pair load/store together.
+    Combine_Adjacent_Loads(pack32_table, Candidate_table, Candidate_count);
+    packing_done = TRUE;
+  }
+
+  return packing_done;
+}
+#endif
 
 // ======================================================================
 //
@@ -3397,5 +4187,53 @@ BOOL Perform_Read_Write_Removal( LOOP_DESCR *loop )
   return changed_loop;
 }
 
+
+#ifdef TARG_ST
+BOOL Perform_Load_Packing( LOOP_DESCR *loop )
+{
+#ifdef TARG_ST200
+  extern BOOL Enable_64_Bits_Ops;
+  if (!Enable_64_Bits_Ops)
+    return FALSE;
+#else
+  return FALSE;
+#endif
+
+  // Initialize memory pool for CIO_RWTRAN
+  MEM_POOL local_mem_pool;
+  MEM_POOL_Initialize( &local_mem_pool, "CIO_RWTRAN local pool", FALSE );
+  MEM_POOL_Push( &local_mem_pool );
+
+  BOOL changed_loop = FALSE;
+  {
+    // Invoke Read/CSE/Write Removal
+    CIO_RWTRAN cio_rwtran( loop, &local_mem_pool );
+    BB *body = LOOP_DESCR_loophead( loop );
+    BB *head = LOOP_DESCR_loophead( loop );
+
+    BOOL save_CG_DEP_Addr_Analysis = CG_DEP_Addr_Analysis;
+    CG_DEP_Addr_Analysis = FALSE;
+
+    // Derive dependence graph for loop body
+    CG_DEP_Compute_Graph( head, NO_ASSIGNED_REG_DEPS, CYCLIC,
+			  INCLUDE_MEMREAD_ARCS, INCLUDE_MEMIN_ARCS,
+			  NO_CONTROL_ARCS, NULL );
+
+    changed_loop = cio_rwtran.LoadStore_Packing( body );
+
+    CG_DEP_Addr_Analysis = save_CG_DEP_Addr_Analysis;
+    CG_DEP_Delete_Graph( head );
+  }
+
+  // Dispose memory pool for CIO_RWTRAN
+  MEM_POOL_Pop( &local_mem_pool );
+  MEM_POOL_Delete( &local_mem_pool );
+
+  if ( changed_loop )
+    CG_LOOP_Recompute_Liveness( loop );
+
+  return changed_loop;
+}
+#endif
 
 // ======================================================================

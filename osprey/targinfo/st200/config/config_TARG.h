@@ -105,6 +105,34 @@ BE_EXPORTED extern BOOL Slow_CVTDL;
 #ifdef TARG_ST
 /* [CG]: Enable Dismissible Loads generation.  */
 BE_EXPORTED extern BOOL Enable_Dismissible_Load;
+BE_EXPORTED extern BOOL Enable_Dismissible_Load_Set;
+
+// [CG]: Enable Non IEEE Ops
+// Note that the effective operators available are target dependent
+BE_EXPORTED extern BOOL Enable_Non_IEEE_Ops;
+BE_EXPORTED extern BOOL Enable_Non_IEEE_Ops_Set;
+
+// [CG]: Enable 64 Bits support
+// Note that the effective 64 bits operators available are target dependent
+BE_EXPORTED extern BOOL Enable_64_Bits_Ops;
+BE_EXPORTED extern BOOL Enable_64_Bits_Ops_Set;
+
+// [CG]: Generation of IEEE single enabled.
+BE_EXPORTED extern BOOL Enable_Single_Float_Ops;
+// [CG]: Generation of IEEE double enabled.
+BE_EXPORTED extern BOOL Enable_Double_Float_Ops;
+
+// [CG]: Generation of misaligned accesses:
+// FALSE: Generate composed load/store when a misaligned access is encountered
+// TRUE: Let the misaligned access be generated
+BE_EXPORTED extern BOOL Enable_Misaligned_Access;
+
+// [CG]: Error level on proved misaligned accesses:
+// 0: no warning
+// 1: warning
+// 2: error
+BE_EXPORTED extern INT32 Warn_Misaligned_Access;
+
 #endif
 
 /* ====================================================================

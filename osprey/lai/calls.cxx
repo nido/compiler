@@ -2249,3 +2249,13 @@ Adjust_Entry_Exit_Code (
     Adjust_Alloca_Code ();
   }
 }
+
+#ifdef TARG_ST
+void
+Adjust_Stack_Frame ( 
+  ST *pu 
+)
+{
+  EETARG_Fixup_Stack_Frame ();
+}
+#endif

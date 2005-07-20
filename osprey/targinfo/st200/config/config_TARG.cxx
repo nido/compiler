@@ -94,8 +94,42 @@ BOOL SYNC_Allowed = TRUE;
 BOOL Slow_CVTDL = FALSE;
 
 #ifdef TARG_ST
-//[CG]: Enable Dismissible Loads generation.
+// [CG]: Enable Dismissible Loads generation.
 BOOL Enable_Dismissible_Load = TRUE;
+BOOL Enable_Dismissible_Load_Set;
+
+// [CG]: Enable Non IEEE Ops
+// Note that the effective operators available are target dependent
+BOOL Enable_Non_IEEE_Ops = FALSE;
+BOOL Enable_Non_IEEE_Ops_Set = FALSE;
+
+// [CG]: Enable 64 Bits support
+// Note that the effective 64 bits operators available are target dependent
+BOOL Enable_64_Bits_Ops = FALSE;
+BOOL Enable_64_Bits_Ops_Set = FALSE;
+
+// [CG]: Generation of IEEE single enabled.
+BOOL Enable_Single_Float_Ops;
+
+// [CG]: Generation of IEEE double enabled.
+BOOL Enable_Double_Float_Ops;
+
+// [CG]: Generation of misaligned load/store:
+// FALSE: Generate composed load/store when a misaligned access is encountered
+// TRUE: Let the misaligned access be generated
+/* ST200 note: this should be turned on on ST200 
+ * However currently the compiler itself generate misaligned access, and
+ * we don't know how to differenciate this with user generated misaligned
+ * accesses. Thus we are obliged to force it.
+ */
+INT32 Enable_Misaligned_Access;
+
+
+// [CG]: Error level on proved misaligned accesses:
+// 0: no warning
+// 1: warning
+// 2: error
+INT32 Warn_Misaligned_Access = 0;
 #endif
 
 /* Target machine specification options.  This group defines the target
@@ -135,8 +169,24 @@ static OPTION_DESC Options_TARG[] = {
 #ifdef TARG_ST
   // [CG]
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "dismissible_load", "",
-    0, 0, 0,    &Enable_Dismissible_Load, NULL,
+    0, 0, 0,    &Enable_Dismissible_Load, &Enable_Dismissible_Load_Set,
     "Enable generation of dismissible load" },
+
+  // [CG]
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_non_ieee", "",
+    0, 0, 0,    &Enable_Non_IEEE_Ops, &Enable_Non_IEEE_Ops_Set,
+    "Enable generation of non-IEEE ops" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_64bits", "",
+    0, 0, 0,    &Enable_64_Bits_Ops, &Enable_64_Bits_Ops_Set,
+    "Enable support for 64 bits" },
+
+  // [CG]
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned", "",
+    0, 0, 0,    &Enable_Misaligned_Access, NULL,
+    "Enable generation of faulting memory accesses when proved misaligned" },
+  { OVK_INT32,   OV_VISIBLE,    FALSE, "warn_misaligned", "",
+    0, 0, 2,    &Warn_Misaligned_Access, NULL,
+    "Warning level on misaligned access (0 = no warning, 1 = warning, 2 = error" },
 #endif
 
   /* Unimplemented options: */

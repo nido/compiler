@@ -106,6 +106,12 @@ public:
 	      registers_used[rc] = REGISTER_SET_Union1(registers_used[rc], reg);
 	    }
     // Adds <reg> a register in <rc> to the set of registers used in <region>.
+#ifdef TARG_ST
+  void Make_Registers_Used(ISA_REGISTER_CLASS rc, REGISTER reg, INT nregs) {
+    registers_used[rc] = REGISTER_SET_Union(registers_used[rc],
+                                REGISTER_SET_Range(reg, reg+nregs-1));
+  }
+#endif
   REGISTER_SET Registers_Available(ISA_REGISTER_CLASS rc){return registers_available[rc];}
   void Make_Register_Unavailable(REGISTER reg, ISA_REGISTER_CLASS rc) {
       registers_available[rc] = REGISTER_SET_Difference1(registers_available[rc],reg);

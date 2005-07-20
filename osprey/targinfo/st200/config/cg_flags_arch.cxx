@@ -40,9 +40,6 @@
 
 void Configure_CG_Target() {
 
-  // By default it is OFF. There is a bug in plumhall lang.out.
-  // TODO: enable when debugged.
-  //CG_tail_call = TRUE;
  
   // ??
   CG_enable_thr = FALSE;

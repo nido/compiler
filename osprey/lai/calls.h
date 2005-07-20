@@ -136,6 +136,13 @@ extern void Init_Entry_Exit_Code ( WN *pu_wn);
 
 /* Produce subprogram entry/exit code: */
 extern void Generate_Entry_Exit_Code ( ST* pu, BOOL is_region );
+#ifdef TARG_ST
+/* Adjust stack frame allocation before calling Finalize_Stack_Frame. 
+ * This function is used to allocate lately new temporaries required
+ * for Adjust_Entry_Exit_Code().
+ */
+extern void Adjust_Stack_Frame (ST *pu);
+#endif
 extern void Adjust_Entry_Exit_Code ( ST* pu );
 extern void Adjust_GP_Setup_Code ( ST* pu, BOOL allocate_registers );
 extern void Adjust_LC_Setup_Code ( void);

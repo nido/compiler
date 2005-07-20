@@ -72,6 +72,9 @@ LUNIT_Create( LRANGE* lrange, GRA_BB* gbb )
   result->def_count = 0;
   result->last_def = -1;
   result->global_pref = NULL;
+#ifdef TARG_ST
+  result->subclass_disallowed_registers = REGISTER_SET_EMPTY_SET;
+#endif
   gbb->Add_LUNIT(result);
   lrange->Add_LUNIT(result);
   return result;
@@ -86,7 +89,13 @@ LUNIT::Preference_Copy(LRANGE *lr)
 {
   pref_priority += gbb->Freq();
   if (lr->Type() == LRANGE_TYPE_LOCAL && lr->Has_Wired_Register()) {
+#ifdef TARG_ST
+    REGISTER reg = lr->Reg();
+    for(INT i = 0; i < lr->NHardRegs(); i++)
+      allowed_preferences = REGISTER_SET_Union1(allowed_preferences,reg++);
+#else
     allowed_preferences = REGISTER_SET_Union1(allowed_preferences,lr->Reg());
+#endif
   }
 }
 

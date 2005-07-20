@@ -72,27 +72,22 @@
 BOOL Trace_Exp = FALSE;	            /* General code expansion trace */
 BOOL Trace_Exp2 = FALSE;            /* extra cgexp trace*/
 
+
 /* ====================================================================
- *   Expand_OP
  *
- *   Given an operator, expand it.  There are two possibilities:
+ * Expand_OP
  *
- *    1)  A machine operator requires no further expansion.
+ * Given an operator, expand it.  There are two possibilities:
  *
- *    2)  An OP_* operator is expanded into a sequence of 
- *        TOP_* instructions.
+ *  1)	A machine operator requires no further expansion.
+ *
+ *  2)  An OP_* operator is expanded into a sequence of TOP_* instructions.
+ *
  * ====================================================================
  */
+
 static void
-Expand_OP (
-  OPCODE opcode, 
-  TN *result, 
-  TN *op1, 
-  TN *op2, 
-  TN *op3, 
-  VARIANT variant, 
-  OPS *ops
-)
+Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant, OPS *ops)
 {
   TYPE_ID desc = OPCODE_desc(opcode);
   TYPE_ID rtype = OPCODE_rtype(opcode);
@@ -112,17 +107,27 @@ Expand_OP (
 	Expand_Lda_Label (result, op1, ops);
 	break;
   case OPR_INTCONST:
+#ifdef TARG_ST
 	Expand_Immediate (result, op1, rtype, ops);
+#else
+	Expand_Immediate (result, op1, TRUE /* is_signed */, ops);
+#endif
 	break;
   case OPR_CONST:
 	Expand_Const (result, op1, rtype, ops);
 	break;
-    case OPR_ADD:
-      Expand_Add (result, op1, op2, rtype, ops);
-      break;
-    case OPR_SUB:
-      Expand_Sub (result, op1, op2, rtype, ops);
-      break;
+  case OPR_ADD:
+	if (MTYPE_is_float(rtype))
+		Expand_Flop (opcode, result, op1, op2, op3, ops);
+	else
+		Expand_Add (result, op1, op2, rtype, ops);
+	break;
+  case OPR_SUB:
+	if (MTYPE_is_float(rtype))
+		Expand_Flop (opcode, result, op1, op2, op3, ops);
+	else
+		Expand_Sub (result, op1, op2, rtype, ops);
+	break;
   case OPR_NEG:
 	Expand_Neg (result, op1, rtype, ops);
 	break;
@@ -137,32 +142,53 @@ Expand_OP (
 	break;
   case OPR_ILOAD:
   case OPR_LDID:
+#ifdef TARG_ST
 	if (V_alignment(variant) != V_NONE) {
 	  Expand_Misaligned_Load ( opcode, result, op1, op2, variant, ops);
 	}
 	else {
 	  Expand_Load (opcode, result, op1, op2, ops);
 	}
+#else
+	if ( V_align_all(variant) != 0 ) {
+		Expand_Misaligned_Load ( opcode, result, op1, op2, variant, ops);
+	}
+	else {
+		Expand_Load (opcode, result, op1, op2, variant, ops);
+	}
+#endif
 	break;
   case OPR_ISTORE:
   case OPR_STID:
+#ifdef TARG_ST
     if (V_alignment(variant) != V_NONE) {
       Expand_Misaligned_Store (desc, op1, op2, op3, variant, ops);
     }
     else {
       Expand_Store (desc, op1, op2, op3, ops);
     }
+#else
+	if ( V_align_all(variant) != 0 ) {
+		Expand_Misaligned_Store (desc, op1, op2, op3, variant, ops);
+	}
+	else {
+		Expand_Store (desc, op1, op2, op3, variant, ops);
+	}
+#endif
     break;
   case OPR_ABS:
 	Expand_Abs (result, op1, rtype, ops);
 	break;
+  case OPR_MPY:
+	if (MTYPE_is_float(rtype))
+		Expand_Flop (opcode, result, op1, op2, op3, ops);
+	else
 #ifdef TARG_ST
-	FmtAssert(FALSE, ("Expand_OP:  MPY shouldn't have been reached"));
+		Expand_Multiply (result, rtype, op1, rtype, op2, rtype, ops);
 #else
-    case OPR_MPY:
-      Expand_Multiply (result, op1, op2, rtype, ops);
-      break;
+		Expand_Multiply (result, op1, op2, rtype, ops);
 #endif
+	break;
   case OPR_HIGHMPY:
 	Expand_High_Multiply (result, op1, op2, rtype, ops);
 	break;
@@ -177,8 +203,11 @@ Expand_OP (
 		Expand_Rem (result, op1, op2, rtype, ops);
 	break;
   case OPR_DIV:
-      Expand_Divide (result, op1, op2, rtype, ops);
-      break;
+	if (MTYPE_is_float(rtype))
+		Expand_Flop (opcode, result, op1, op2, op3, ops);
+	else
+		Expand_Divide (result, op1, op2, rtype, ops);
+	break;
   case OPR_DIVREM:
 	Expand_DivRem(result, op1, op2, op3, rtype, ops);
 	break;
@@ -230,18 +259,18 @@ Expand_OP (
 		Expand_Int_Equal (result, op1, op2, desc, ops);
 	break;
   case OPR_NE:
-
-    if (MTYPE_is_float(desc))
-      Expand_Float_Not_Equal (result, op1, op2, variant, desc, ops);
-    else if (MTYPE_is_class_pointer(desc)) {
-      Expand_Ptr_Not_Equal (result, op1, op2, desc, ops);
-    }
-    else if (desc == MTYPE_B)
-      Expand_Bool_Not_Equal (result, op1, op2, ops);
-    else
-      Expand_Int_Not_Equal (result, op1, op2, desc, ops);
-    break;
-
+#ifdef TARG_ST
+        if (MTYPE_is_class_pointer(desc)) {
+          Expand_Ptr_Not_Equal (result, op1, op2, desc, ops);
+        } else
+#endif
+	if (MTYPE_is_float(desc))
+		Expand_Float_Not_Equal (result, op1, op2, variant, desc, ops);
+	else if (desc == MTYPE_B)
+		Expand_Bool_Not_Equal (result, op1, op2, ops);
+	else
+		Expand_Int_Not_Equal (result, op1, op2, desc, ops);
+	break;
   case OPR_GE:
 	if (MTYPE_is_float(desc))
 		Expand_Float_Greater_Equal (result, op1, op2, variant, desc, ops);
@@ -256,13 +285,52 @@ Expand_OP (
 	break;
 
   case OPR_CVTL:
-    	Expand_Convert_Length (result, 
-                     op1, op2, rtype, MTYPE_is_signed(rtype), ops);
-    break;
-
+	Expand_Convert_Length ( result, op1, op2, rtype, MTYPE_is_signed(rtype), ops);
+	break;
   case OPR_CVT:
-    Is_True(rtype != MTYPE_B, ("conversion to bool unsupported"));
-    Expand_Convert (result, op1, op2, rtype, desc, ops);
+#ifdef TARG_ST
+	Is_True(rtype != MTYPE_B, ("conversion to bool unsupported"));
+	if (MTYPE_is_float(rtype) && MTYPE_is_float(desc)) {
+		Expand_Float_To_Float (result, op1, rtype, ops);
+	}
+	else if (MTYPE_is_float(rtype)) {
+		// desc is int
+		Expand_Int_To_Float (result, op1, desc, rtype, ops);
+	}
+	else if (MTYPE_is_float(desc)) {
+		// rtype is int
+		Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
+	} else {
+                Expand_Convert (result, op1, op2, rtype, desc, ops);
+        }
+#else
+	Is_True(rtype != MTYPE_B, ("conversion to bool unsupported"));
+	if (MTYPE_is_float(rtype) && MTYPE_is_float(desc)) {
+		Expand_Float_To_Float (result, op1, rtype, ops);
+	}
+	else if (MTYPE_is_float(rtype)) {
+		// desc is int
+		Expand_Int_To_Float (result, op1, desc, rtype, ops);
+	}
+	else if (MTYPE_is_float(desc)) {
+		// rtype is int
+		Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
+	}
+	else if (desc == MTYPE_B) {
+		// desc is bool
+		Expand_Bool_To_Int (result, op1, rtype, ops);
+	}
+	else {
+		// both are int
+  		// only zero-extend when enlarging an unsigned value; 
+		// else sign-extend.
+		Expand_Convert_Length ( result, op1, op2, 
+			rtype, 
+			(MTYPE_is_signed(desc)
+			|| (MTYPE_bit_size(desc) > MTYPE_bit_size(rtype) ) ),
+			ops);
+	}
+#endif
     break;
 
   case OPR_RND:
@@ -289,30 +357,22 @@ Expand_OP (
 	break;
 
   case OPR_SELECT:
-    Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
+	Expand_Select (result, op1, op2, op3, rtype, V_select_uses_fcc(variant), ops);
 	break;
 
-#ifdef TARG_ST
-    case OPR_MADD:
-      FmtAssert(FALSE, 
-	   ("Expand_OP:  MADD shouldn't have been reached"));
-      break;
-#else
-    case OPR_MADD:
-#endif
-    case OPR_NMADD:
-    case OPR_MSUB:
-    case OPR_NMSUB:
-    case OPR_RECIP:
-    case OPR_RSQRT:
-      FmtAssert(FALSE, 
-	   ("Expand_OP:  unimplemented opcode %s", OPCODE_name(opcode)));
-      break;
+  case OPR_MADD:
+  case OPR_NMADD:
+  case OPR_MSUB:
+  case OPR_NMSUB:
+  case OPR_RECIP:
+  case OPR_RSQRT:
+	Expand_Flop (opcode, result, op1, op2, op3, ops);
+	break;
 
-    default:
-      FmtAssert(FALSE, 
-	   ("Expand_OP:  unexpected opcode %s", OPCODE_name(opcode)));
-      break;
+  default:
+	FmtAssert(FALSE, 
+		("Expand_OP:  unexpected opcode %s", OPCODE_name(opcode)));
+	break;
   }
 }
 

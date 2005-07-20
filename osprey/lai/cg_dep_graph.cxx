@@ -312,8 +312,14 @@ is_xfer_depndnce_reqd(const void *op, const void *xfer_op)
 	// is live-into <succ_bb>.
 	if (TN_is_register(result_tn)) {
 	  ISA_REGISTER_CLASS result_cl = TN_register_class (result_tn);
+#ifdef TARG_ST
+	  live_out |= (NREGS_Live_Into_BB (result_cl,
+					   TN_registers (result_tn),
+					   succ_bb) > 0);
+#else
 	  REGISTER result_reg = TN_register (result_tn);
 	  live_out |= REG_LIVE_Into_BB (result_cl, result_reg, succ_bb);
+#endif
 	}
       }
     }
@@ -672,11 +678,25 @@ inline void add_reg_assignment(TN *tn)
   ISA_REGISTER_CLASS rclass = TN_register_class(tn);
   TN_LIST *tns;
   Is_True(has_assigned_reg(tn), ("no register (or ignored)"));
+#ifdef TARG_ST
+  REGISTER r;
+  FOR_ALL_REGISTER_SET_members (TN_registers(tn), r) {
+    for (tns = same_reg[r][rclass]; tns; tns = TN_LIST_rest(tns)) {
+      if (TN_LIST_first(tns) == tn)
+	break;
+    }
+    if (!tns) {
+      same_reg[r][rclass] = TN_LIST_Push(tn, same_reg[r][rclass],
+					 &dep_nz_pool);
+    }
+  }
+#else
   for (tns = same_reg[rnum][rclass]; tns; tns = TN_LIST_rest(tns))
     if (TN_LIST_first(tns) == tn)
       return;
   same_reg[rnum][rclass] = TN_LIST_Push(tn, same_reg[rnum][rclass],
 					&dep_nz_pool);
+#endif
 }
 
 
@@ -1400,11 +1420,22 @@ CG_DEP_Trace_HB_Graph(std::list<BB*> bblist)
 static TN_MAP defop_by_tn;
 OP_LIST *defop_by_reg[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
 
+#ifdef TARG_ST
+static MEM_POOL DefOp_Pool;
+static OP_MAP DefOp_Map;
+static INT32 DefOp_Map_Idx;
+#endif
+
 // See above for specification.
 inline void defop_init(void)
 {
   defop_by_tn = TN_MAP_Create();
   BZERO(defop_by_reg, sizeof(defop_by_reg));
+#ifdef TARG_ST
+  MEM_POOL_Initialize(&DefOp_Pool, "CG_Dep_Graph_DefOp_Pool", FALSE);
+  DefOp_Map = OP_MAP32_Create ();
+  DefOp_Map_Idx = 0;
+#endif
 }
 
 //
@@ -1422,13 +1453,26 @@ inline REGISTER defop_get_reg_for_tn(TN *tn)
 inline void defop_set(OP *op)
 {
   INT i;
+#ifdef TARG_ST
+  OP_MAP32_Set (DefOp_Map, op, DefOp_Map_Idx++);
+#endif
   for (i = 0; i < OP_results(op); ++i) {
     TN *result_tn = OP_result(op,i);
     REGISTER reg = defop_get_reg_for_tn(result_tn);
     if (reg != REGISTER_UNDEFINED) {
+#ifdef TARG_ST
+      ISA_REGISTER_CLASS cl = TN_register_class(result_tn);
+      REGISTER r;
+      FOR_ALL_REGISTER_SET_members (TN_registers(result_tn), r) {
+	defop_by_reg[TN_register_class(result_tn)][r] =
+	  OP_LIST_Push(op, defop_by_reg[TN_register_class(result_tn)][r],
+		       &MEM_pu_pool);
+      }
+#else
       defop_by_reg[TN_register_class(result_tn)][reg] = 
 	OP_LIST_Push(op, defop_by_reg[TN_register_class(result_tn)][reg],
 		     &MEM_pu_pool);
+#endif
     }
     CG_DEP_Add_Def(op, i, defop_by_tn, &MEM_pu_pool);
   }
@@ -1440,6 +1484,59 @@ inline OP_LIST* defop_for_tn(TN *tn)
   return TN_is_register(tn) ? (OP_LIST *)CG_DEP_Get_Defs(tn, defop_by_tn) : NULL;
 }
 
+#ifdef TARG_ST
+static OP_LIST *Op_List_Merge (OP_LIST *list1, OP_LIST *list2)
+  // Create a merged list from the elements of list1 and list2.
+  // The merged list must be ordered by largest idx first,
+  // and duplicates should be discarded.
+{
+  if (!list1) {
+    return list2;
+  } else if (!list2) {
+    return list1;
+  } else {
+    OP_LIST *l = NULL;
+    
+    while (list1 && list2) {
+      OP *op1 = OP_LIST_first (list1);
+      OP *op2 = OP_LIST_first (list2);
+      if (op1 == op2) {
+	l = OP_LIST_Push (op1, l, &DefOp_Pool);
+	list1 = OP_LIST_rest (list1);
+	list2 = OP_LIST_rest (list2);
+      } else {
+	INT32 idx1 = OP_MAP32_Get (DefOp_Map, op1);
+	INT32 idx2 = OP_MAP32_Get (DefOp_Map, op2);
+	if (idx1 == idx2) {
+	} else if (idx1 > idx2) {
+	  l = OP_LIST_Push (op1, l, &DefOp_Pool);
+	  list1 = OP_LIST_rest (list1);
+	} else {
+	  l = OP_LIST_Push (op2, l, &DefOp_Pool);
+	  list2 = OP_LIST_rest (list2);
+	}
+      }
+    }
+    if (!list1) {
+      list1 = list2;
+    }
+    while (list1) {
+      l = OP_LIST_Push (OP_LIST_first (list1), l, &DefOp_Pool);
+      list1 = OP_LIST_rest (list1);
+    }
+    // [SC] Now we have the merged list l, but it is in the
+    // reverse order that we want!
+    // So create a reversed version of it.
+    OP_LIST *result = NULL;
+    while (l) {
+      result = OP_LIST_Push (OP_LIST_first (l), result, &DefOp_Pool);
+      l = OP_LIST_rest (l);
+    }
+    return result;
+  }
+}
+#endif
+
 // See above for specification. 
 inline OP_LIST* defop_for_op(OP *op, UINT8 res, BOOL is_result)
 {
@@ -1449,9 +1546,25 @@ inline OP_LIST* defop_for_op(OP *op, UINT8 res, BOOL is_result)
       return NULL;
     } else {
       REGISTER reg = defop_get_reg_for_tn (tn);
+#ifdef TARG_ST
+      if (reg == REGISTER_UNDEFINED) {
+	return (OP_LIST *)CG_DEP_Get_Defs(tn, defop_by_tn);
+      } else {
+        // [SC] Return * ordered * list of ops that define one or more
+	// registers in TN_registers.
+	OP_LIST *op_list = NULL;
+	REGISTER r;
+	FOR_ALL_REGISTER_SET_members (TN_registers(tn), r) {
+	  OP_LIST *this_list = defop_by_reg[TN_register_class(tn)][r];
+	  op_list = Op_List_Merge (op_list, this_list);
+	}
+	return op_list;
+      }
+#else
       return (reg != REGISTER_UNDEFINED) ?
 	defop_by_reg[TN_register_class(tn)][reg] :
 	(OP_LIST *)CG_DEP_Get_Defs(tn, defop_by_tn);
+#endif
     }
   } else {
     return NULL;
@@ -1463,6 +1576,10 @@ inline void defop_finish(void)
 {
   TN_MAP_Delete(defop_by_tn);
   defop_by_tn = NULL;
+#ifdef TARG_ST
+  OP_MAP_Delete (DefOp_Map);
+  MEM_POOL_Delete (&DefOp_Pool);
+#endif
 }
 
 
@@ -3017,13 +3134,21 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	 
 	// prune out regs which have implicit meaning.
 #ifdef TARG_ST
-	if (TN_register(result) != REGISTER_UNDEFINED)
-#endif
+	REGISTER_SET regs = TN_registers (result);
+	if (REGISTER_SET_IntersectsP (regs,
+				      REGISTER_CLASS_function_value (rclass))
+	    || REGISTER_SET_IntersectsP (regs,
+					 REGISTER_CLASS_function_argument (rclass))
+	    || REGISTER_SET_IntersectsP (regs,
+					 REGISTER_CLASS_caller_saves (rclass)))
+	  return FALSE;
+#else
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass),
 				reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg))
 	  return FALSE;
+#endif
 
 	// #802534: The output register portion of the allocated frame
 	// doesn't get preserved across calls. Check for this condition.
@@ -3049,14 +3174,21 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 
 	// prune out regs which have implicit meaning.
 #ifdef TARG_ST
-	if (TN_register(opnd_tn) != REGISTER_UNDEFINED)
-#endif
+	REGISTER_SET regs = TN_registers (opnd_tn);
+	if (REGISTER_SET_IntersectsP (regs,
+				      REGISTER_CLASS_function_value(opnd_cl))
+	    || REGISTER_SET_IntersectsP (regs,
+					 REGISTER_CLASS_function_argument(opnd_cl))
+	    || REGISTER_SET_IntersectsP (regs,
+					 REGISTER_CLASS_caller_saves(opnd_cl)))
+#else
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(opnd_cl), 
 				opnd_reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(opnd_cl),
 				opnd_reg) ||
 	   REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(opnd_cl),
 				opnd_reg))
+#endif
 	  return FALSE;
       } else {
 	// TODO: start with disallowing dedicated TN's and refine it
@@ -4660,8 +4792,14 @@ void remove_unnecessary_anti_or_output_arcs(ARC_LIST *arcs)
 	OP_result(pred,0 /*???*/) : OP_opnd(pred, ARC_opnd(arc));
       if (succ_tn != pred_tn &&
 	  (!has_assigned_reg(succ_tn) || !has_assigned_reg(pred_tn) ||
+#ifdef TARG_ST
+	   TN_register_class(succ_tn) != TN_register_class(pred_tn) ||
+	   ! REGISTER_SET_IntersectsP (TN_registers (succ_tn),
+				       TN_registers (pred_tn)))) {
+#else
 	   TN_register(succ_tn) != TN_register(pred_tn) ||
 	   TN_register_class(succ_tn) != TN_register_class(pred_tn))) {
+#endif
 	detach_arc(arc);
 	delete_arc(arc);
       }
@@ -4875,6 +5013,12 @@ Update_Entry_For_TN(
   if (TN_register(vtn) != REGISTER_UNDEFINED) {
     REGISTER reg = TN_register(vtn);
     ISA_REGISTER_CLASS rc = TN_register_class(vtn);
+#ifdef TARG_ST
+    REGISTER_SET regs = TN_registers(vtn);
+    for (reg = REGISTER_SET_Choose (regs);
+	 reg != REGISTER_UNDEFINED;
+	 reg = REGISTER_SET_Choose_Next (regs, reg)) {
+#endif
     OP *get_op = (OP*) register_ops[rc][reg];
 
     if (get_op == NULL) {
@@ -4891,6 +5035,9 @@ Update_Entry_For_TN(
 	OP_MAP_Set(omap, cur_op, multiple_inst);
       }
     }
+#ifdef TARG_ST
+    }
+#endif
   }
 }
 
@@ -4984,10 +5131,20 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 	      if (TN_register(result_tn) != REGISTER_UNDEFINED) {
 		ISA_REGISTER_CLASS result_cl = TN_register_class (result_tn);
 		REGISTER result_reg = TN_register (result_tn);
+#ifdef TARG_ST
+		REGISTER_SET regs = TN_registers (result_tn);
+		REGISTER r;
+		live_out |= (NREGS_Live_Outof_BB (result_cl, regs, *bbi) > 0);
+		FOR_ALL_REGISTER_SET_members (regs, r) {
+		  if (reg_ops[result_cl][r] == multiple_inst)
+		    { cond_use = TRUE; break; }
+		}
+#else
 		live_out |= REG_LIVE_Outof_BB (result_cl, result_reg, *bbi);
 
 		if (reg_ops[result_cl][result_reg] == multiple_inst)
 		  { cond_use = TRUE; break; }
+#endif
 								  
 	      }
 	      

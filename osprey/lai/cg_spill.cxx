@@ -138,10 +138,12 @@ typedef struct local_spills {
 
 
 /* One for each kind of spill location: */
+#ifdef TARG_ST
+static LOCAL_SPILLS lra_spills[CGTARG_NUM_SPILL_TYPES];
+static LOCAL_SPILLS swp_spills[CGTARG_NUM_SPILL_TYPES];
+#else
 static LOCAL_SPILLS lra_float_spills, lra_int_spills;
 static LOCAL_SPILLS swp_float_spills, swp_int_spills;
-#ifdef TARG_ST
-static LOCAL_SPILLS lra_bool_spills;
 #endif
 
 /*
@@ -261,6 +263,44 @@ LOCAL_SPILLS_Get_Spill_Location (LOCAL_SPILLS *slc, char *root)
   return result;
 }
 
+#ifdef TARG_ST
+/* =======================================================================
+ *
+ *  Spill_Type_Index
+ *
+ *  Return an index into the CGTARG_Spill_Type[] array for the appropriate
+ *  spill location type for 'tn'.
+ *
+ * =======================================================================
+ */
+static INT
+Spill_Type_Index(TN *tn)
+{
+  INT i;
+  ISA_REGISTER_CLASS cl = TN_register_class(tn);
+  UINT16 sz = TN_size(tn);
+  UINT16 best_sz = 65535;
+  INT best = CGTARG_NUM_SPILL_TYPES;
+
+  for (i = 0; i < CGTARG_NUM_SPILL_TYPES; i++) {
+    // There is a 1-1 correspondence between entries in Spill_Mtype and
+    // Spill_Type, so we actually look for the appropriate entry in
+    // Spill_Mtype and return that.
+    CLASS_INDEX mt = CGTARG_Spill_Mtype[i];
+    if (Register_Class_For_Mtype(mt) == cl) {
+      UINT16 this_sz = MTYPE_byte_size(mt);
+      if (this_sz >= sz && this_sz < best_sz) {
+        best = i;
+        best_sz = this_sz;
+      }
+    }
+  }
+  if (best >= CGTARG_NUM_SPILL_TYPES) {
+    best = 0;
+  }
+  return best;
+}
+#endif
 
 /* =======================================================================
  *
@@ -295,13 +335,17 @@ Check_Phase_And_PU(void)
 void
 CGSPILL_Reset_Local_Spills (void)
 {
+#ifdef TARG_ST
+  for (INT i = 0; i < CGTARG_NUM_SPILL_TYPES; i++) {
+    LOCAL_SPILLS_Reset(&lra_spills[i]);
+    LOCAL_SPILLS_Reset(&swp_spills[i]);
+  }
+#else
   LOCAL_SPILLS_Reset(&lra_float_spills);
   LOCAL_SPILLS_Reset(&lra_int_spills);
-#ifdef TARG_ST
-  LOCAL_SPILLS_Reset(&lra_bool_spills);
-#endif
   LOCAL_SPILLS_Reset(&swp_float_spills);
   LOCAL_SPILLS_Reset(&swp_int_spills);
+#endif
 }
 
 
@@ -317,16 +361,24 @@ void
 CGSPILL_Initialize_For_PU(void)
 {
   LOCAL_SPILLS *slc;
+
+#ifdef TARG_ST
+  INT i;
+  for (i = 0; i < CGTARG_NUM_SPILL_TYPES; i++) {
+    slc = &lra_spills[i];
+    LOCAL_SPILLS_mem_type(slc) = CGTARG_Spill_Type[i];
+    LOCAL_SPILLS_free(slc) = NULL;
+    LOCAL_SPILLS_used(slc) = NULL;
+    slc = &swp_spills[i];
+    LOCAL_SPILLS_mem_type(slc) = CGTARG_Spill_Type[i];
+    LOCAL_SPILLS_free(slc) = NULL;
+    LOCAL_SPILLS_used(slc) = NULL;
+  }
+#else
   slc = &lra_int_spills;
   LOCAL_SPILLS_mem_type(slc) = Spill_Int_Type;
   LOCAL_SPILLS_free(slc) = NULL;
   LOCAL_SPILLS_used(slc) = NULL;
-#ifdef TARG_ST
-  slc = &lra_bool_spills;
-  LOCAL_SPILLS_mem_type(slc) = MTYPE_To_TY (MTYPE_I1);
-  LOCAL_SPILLS_free(slc) = NULL;
-  LOCAL_SPILLS_used(slc) = NULL;
-#endif
   slc = &lra_float_spills;
   LOCAL_SPILLS_mem_type(slc) = Spill_Float_Type;
   LOCAL_SPILLS_free(slc) = NULL;
@@ -339,6 +391,7 @@ CGSPILL_Initialize_For_PU(void)
   LOCAL_SPILLS_mem_type(slc) = Spill_Float_Type;
   LOCAL_SPILLS_free(slc) = NULL;
   LOCAL_SPILLS_used(slc) = NULL;
+#endif
 
   Trace_Remat = Get_Trace(TP_CG, 4);
   Trace_GRA_spill_placement = Get_Trace(TP_GRA, 0x2000);
@@ -441,14 +494,7 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     if (mem_location == NULL) {
       const char *root;
 #ifdef TARG_ST
-      /*
-       * Arthur: I need to use TN_register_class(tn) here, and it
-       *         is 
-       *            1. target-dependent
-       *            2. I need precision range analysis in order to
-       *               choose the best type. For now this will do:
-       */
-      TY_IDX mem_type = CGTARG_Spill_Type(tn);
+      TY_IDX mem_type = CGTARG_Spill_Type[Spill_Type_Index(tn)];
 #else
       TY_IDX mem_type = TN_is_float(tn) || TN_is_fcc_register(tn) ? 
 		        Spill_Float_Type : Spill_Int_Type;
@@ -463,25 +509,41 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
       }
       mem_location = Gen_Spill_Symbol (mem_type, root);
       Set_TN_spill(tn, mem_location);
+#ifdef TARG_ST
+      if (Trace_GRA_spill_placement) {
+	fprintf (TFile, "<gra> Creating %s for TN%d\n",
+		 ST_name (mem_location), TN_number (tn));
+      }
     }
+#endif
     break;
   case CGSPILL_LRA:
     mem_location = TN_spill (tn);
     if (mem_location == NULL) {
+#ifdef TARG_ST
+      slc = &lra_spills[Spill_Type_Index(tn)];
+#else
       slc = TN_is_float(tn) || TN_is_fcc_register(tn) ?
 	&lra_float_spills :
-#ifdef TARG_ST
-	(CGTARG_Spill_Type(tn) == MTYPE_To_TY(MTYPE_I1)) ?
-	&lra_bool_spills :
-#endif
 	&lra_int_spills;
+#endif
       mem_location = LOCAL_SPILLS_Get_Spill_Location (slc, SYM_ROOT_LRA);
       Set_TN_spill(tn, mem_location);
+#ifdef TARG_ST
+      if (Trace_GRA_spill_placement) {
+	fprintf (TFile, "<lra> Creating %s for TN%d\n",
+		 ST_name (mem_location), TN_number (tn));
+      }
+#endif
     }
     break;
   case CGSPILL_SWP:
     FmtAssert(!TN_is_fcc_register(tn), ("SWP attempted to spill an fcc register"));
+#ifdef TARG_ST
+    slc = &swp_spills[Spill_Type_Index(tn)];
+#else
     slc = TN_is_float(tn) ? &swp_float_spills : &swp_int_spills;
+#endif
     mem_location = LOCAL_SPILLS_Get_Spill_Location (slc, SYM_ROOT_SWP);
     break;
   }

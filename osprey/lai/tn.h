@@ -73,6 +73,19 @@
  *           The TN_register(tn) indicates the register assigned to the
  *	     register TN.
  *
+#ifdef TARG_ST
+ *         TN_nhardregs(tn)
+ *           The number of consecutive machine registers that must be
+ *           allocated to hold TN.  If TN_register is not REGISTER_UNDEFINED,
+ *           then the tn occupies registers
+ *            [ TN_register : TN_register + TN_nhardregs - 1 ]
+ *
+ *         TN_registers(tn)
+ *           If TN_register is not REGISTER_UNDEFINED,
+ *           the set of machine registers that are assigned to TN.
+ *           IF TN_register is REGISTER_UNDEFINED, returns an empty set.
+ *
+#endif
  *	   TN_register_and_class(tn)
  *	     TN_register_class and TN_register combined into a single
  *	     scalar type for efficiency in comparing registers and classes.
@@ -453,6 +466,29 @@ inline BOOL TN_is_zero (const TN *r)
 {
   return ((TN_has_value(r) && TN_value(r) == 0) || (TN_is_register(r) && TN_is_zero_reg(r)));
 }
+
+#ifdef TARG_ST
+inline INT TN_nhardregs (const TN *tn)
+{
+  REGISTER reg = TN_register(tn);
+  ISA_REGISTER_CLASS rclass = TN_register_class(tn);
+  if (reg == REGISTER_UNDEFINED) {
+    reg = REGISTER_CLASS_last_register(rclass);
+  }
+  INT sz = (REGISTER_bit_size(rclass, reg) + 7) / 8;
+  return (TN_size(tn) + sz - 1)/ sz;
+}
+
+inline REGISTER_SET TN_registers (const TN *tn)
+{
+  REGISTER reg = TN_register(tn);
+  if (reg == REGISTER_UNDEFINED) {
+    return REGISTER_SET_EMPTY_SET;
+  } else {
+    return REGISTER_SET_Range (reg, reg + TN_nhardregs (tn) - 1);
+  }
+}
+#endif
 
 // Returns TRUE if the TN represents a hardwired registers.
 inline BOOL TN_is_const_reg(const TN *r)

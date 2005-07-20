@@ -74,10 +74,10 @@
 #include "config_asm.h"
 #include "hb_sched.h"
 
+#include "targ_cg_sup.h"
 
 /* Import from targ_cgemit.cxx. */
 extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
-
 
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
@@ -87,6 +87,8 @@ UINT32 CGTARG_max_issue_width;
 BOOL CGTARG_max_issue_width_overriden = FALSE;
 #endif
 
+TY_IDX CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES];
+CLASS_INDEX CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES];
 static TOP CGTARG_Invert_Table[TOP_count+1];
 
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
@@ -1103,30 +1105,6 @@ CGTARG_Postprocess_Asm_String (
  * ====================================================================
  * ====================================================================
  */
-
-/* ====================================================================
- *   CGTARG_Spill_Type
- *
- *   Given a TN to spill and the precision range of its contents,
- *   return the high-level type for the spill operation.
- * ====================================================================
- */
-TY_IDX 
-CGTARG_Spill_Type (
-  TN *tn
-) 
-{
-  switch (TN_register_class(tn)) {
-    case ISA_REGISTER_CLASS_integer:
-      return MTYPE_To_TY(MTYPE_I4);
-
-    case ISA_REGISTER_CLASS_branch:
-      return MTYPE_To_TY(MTYPE_I1);
-
-    default:
-      FmtAssert(FALSE,("CGTARG_Spill_Type: wrong TN register class"));
-  }
-}
 
 /* ====================================================================
  *   CGTARG_Load_From_Memory
@@ -3003,6 +2981,17 @@ void
 CGTARG_Initialize ()
 {
   INT32 i;
+
+  // Spill type for integer registers
+  CGTARG_Spill_Type[0] = Spill_Int_Type;
+  CGTARG_Spill_Mtype[0] = Spill_Int_Mtype;
+  // Spill type for branch registers
+  CGTARG_Spill_Type[1] = MTYPE_To_TY (MTYPE_I1);
+  CGTARG_Spill_Mtype[1] = MTYPE_I1;
+  // Spill type for paired registers
+  CGTARG_Spill_Type[2] = MTYPE_To_TY (MTYPE_I8);
+  CGTARG_Spill_Mtype[2] = MTYPE_I8;
+  FmtAssert (CGTARG_NUM_SPILL_TYPES == 3, ("CGTARG_NUM_SPILL_TYPES mismatch"));
 
   /* TODO: tabulate in the arch data base */
 

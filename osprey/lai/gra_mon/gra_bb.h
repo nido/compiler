@@ -215,6 +215,12 @@ public:
   void Make_Glue_Register_Used(ISA_REGISTER_CLASS rc, REGISTER reg ) {
 			    glue_registers_used[rc] =
 			      REGISTER_SET_Union1(glue_registers_used[rc],reg);}
+#ifdef TARG_ST
+  void Make_Glue_Registers_Used(ISA_REGISTER_CLASS rc, REGISTER reg, INT nregs ) {
+    glue_registers_used[rc] = REGISTER_SET_Union(glue_registers_used[rc],
+                                 REGISTER_SET_Range (reg, reg+nregs-1));
+  }
+#endif
 
   void Clear_Flags(void) 	{ flags = GRA_BB_FLAGS_clear_value; }
     //Clear the flags field of a gbb, i.e. all flags unset.
@@ -253,7 +259,11 @@ public:
   // non-inlined
   INT Register_Girth( ISA_REGISTER_CLASS rc );
   void Create_Local_LRANGEs(ISA_REGISTER_CLASS  cl, INT32 coun);
+#ifdef TARG_ST
+  LRANGE* Create_Wired_LRANGE(ISA_REGISTER_CLASS  cl, REGISTER reg, INT nregs);
+#else
   LRANGE* Create_Wired_LRANGE(ISA_REGISTER_CLASS  cl, REGISTER reg);
+#endif
   void Create_Global_Interferences(void);
   void Rename_TN_References( TN*     orig_tn, TN*     new_tn);
   void Add_Live_Out_LRANGE( LRANGE* lrange );
@@ -266,6 +276,9 @@ public:
   BOOL Region_Is_Complement(void);
   void Add_LUNIT(LUNIT *lunit);
   void Make_Register_Used(ISA_REGISTER_CLASS rc, REGISTER reg);
+#ifdef TARG_ST
+  void Make_Registers_Used(ISA_REGISTER_CLASS rc, REGISTER reg, INT nregs);
+#endif
   REGISTER_SET Registers_Used(ISA_REGISTER_CLASS  rc);
   BOOL Spill_Above_Check(LRANGE *lrange);
   void Spill_Above_Set(LRANGE *lrange);

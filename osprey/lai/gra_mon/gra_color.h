@@ -45,6 +45,16 @@
 //          Choose registers for all the global LRANGEs in the current PU or
 //          region or whatever.
 //
+#ifdef TARG_ST
+//      BOOL Can_Allocate_From (INT nregs,
+//                              REGISTER_SET subclass_allowed,
+//                              REGISTER_SET allowed)
+//          
+//          Return TRUE if it is possible to find a sequence of NREGS
+//          registers from ALLOWED, whose first register is in
+//          SUBCLASS_ALLOWED.
+//
+#endif
 /////////////////////////////////////
 
 
@@ -60,5 +70,12 @@
 
 extern void
 GRA_Color(void);
+
+#ifdef TARG_ST
+extern BOOL
+Can_Allocate_From (INT nregs,
+		   REGISTER_SET subclass_allowed,
+		   REGISTER_SET allowed);
+#endif
 
 #endif

@@ -62,6 +62,29 @@
  *     BOOL REG_LIVE_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
  *     BOOL REG_LIVE_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
  *
+#ifdef TARG_ST
+ *  The following two routines tell how many registers in the range
+ *  [<cl,reg> : <cl,reg+nregs-1>]
+ *  are live at entry/exit of a basic block <bb>.  These can be
+ *  called only after register liveness has been computed
+ *  using REG_LIVE_Analyze_Region.
+ *
+ *     INT NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg,
+ *                            INT nregs, BB *bb);
+ *     INT NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER reg,
+ *                             INT nregs, BB *bb);
+ *
+ *  The following two routines tell how many registers from the set REGS
+ *  are live at entry/exit of a basic block BB.  These can be called
+ *  only after register liveness has been computed using
+ *  REG_LIVE_Analyze_Region.
+ *
+ *     INT NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs,
+ *                            BB *bb);
+ *     INT NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs,
+ *                             BB *bb);
+ *
+#endif
  *
  *  The following two routines check for implicit uses and defs
  *  of <cl,reg> at the boundaries of basic blocks. These are intended
@@ -132,6 +155,12 @@ void REG_LIVE_Analyze_Region(void);
 void REG_LIVE_Finish(void);
 BOOL REG_LIVE_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
 BOOL REG_LIVE_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
+#ifdef TARG_ST
+INT NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs, BB *bb);
+INT NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs, BB *bb);
+INT NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs, BB *bb);
+INT NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs, BB *bb);
+#endif
 BOOL REG_LIVE_Implicit_Use_Outof_BB (ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
 BOOL REG_LIVE_Implicit_Def_Into_BB (ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);
 void REG_LIVE_Update(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb);

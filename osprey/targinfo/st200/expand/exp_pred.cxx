@@ -181,10 +181,17 @@ Exp_Pred_Compare (
   FmtAssert(FALSE,("Not Implemented"));
 
   Alloc_Result_TNs(dest, cdest);
+  BOOL is_integer = FALSE;
 
-  cmp = Pick_Compare_TOP(&variant, &src1, &src2, FALSE, ops);
+  cmp = Pick_Compare_TOP(&variant, &src1, &src2, &is_integer, ops);
   FmtAssert(cmp != TOP_UNDEFINED, ("Exp_Pred_Compare: unexpected comparison"));
-  Build_OP(cmp, dest, cdest, True_TN, src1, src2, ops);
+  if (is_integer) {
+    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+    Build_OP (cmp, tmp_int, src1, src2, ops);
+    Expand_Copy(dest, NULL, tmp_int, ops);
+  } else {
+    Build_OP(cmp, dest, cdest, True_TN, src1, src2, ops);
+  }
 }
 
 /* ====================================================================

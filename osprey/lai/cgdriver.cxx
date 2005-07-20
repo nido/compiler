@@ -187,6 +187,8 @@ static BOOL CG_LAO_loopdep_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
+static BOOL CG_gen_callee_saved_regs_mask_overriden = FALSE;
+
 #ifdef TARG_ST200
 BOOL CG_NOPs_to_GOTO = FALSE;
 static BOOL CG_NOPs_to_GOTO_overridden = FALSE;
@@ -354,6 +356,12 @@ static OPTION_DESC Options_GRA[] = {
 #endif
     "Factor by which count of spills affects the priority of a split.  Only valid under OPT:space [Default 0.5]"
   },    
+#ifdef TARG_ST
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"use_rn_spill_metric", "",
+    0, 0, 0,    &GRA_use_runeson_nystrom_spill_metric, NULL,
+    "Use Runeson/Nystrom spill metric during simplify (only applicable when Runeson/Nystrom local colorability test is selected)",
+  },
+#endif
   { OVK_COUNT }		/* List terminator -- must be last */
 };
 
@@ -564,6 +572,8 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
+    TRUE, 0, 0,	&CG_LOOP_load_store_packing, NULL },
 #endif
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
@@ -678,6 +688,14 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &CGSPILL_Enable_Force_Rematerialization, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"lra_reorder", "",
     0, 0, 0, &LRA_do_reorder, NULL },
+#ifdef TARG_ST
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_minregs", "",
+    0, 0, 0, &LRA_minregs, NULL,
+    "minimize registers used in local register allocation" },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_merge_extract", "",
+    0, 0, 0, &LRA_merge_extract, NULL,
+    "allocate extract sources early in local register allocation" },
+#endif
 
   // Global Code Motion (GCM) options.
 
@@ -860,9 +878,6 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &EMIT_stop_bits_for_asm, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_explicit_bundles", "",
     0, 0, 0, &EMIT_explicit_bundles, NULL },
-#ifndef TARG_ST
-  { OVK_COUNT },
-#endif
 
   // Misc:
   { OVK_BOOL,	OV_INTERNAL, TRUE,  "gra_live_predicate_aware", "",
@@ -894,8 +909,8 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE,"body_blocks_count_max", "",
     0, 0, INT32_MAX, &CG_maxblocks, NULL },
 
-  { OVK_BOOL,	OV_INTERNAL, FALSE,"callee_reg_mask", "callee_reg_mask",
-    0, 0, 0, &CG_gen_callee_saved_regs_mask, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"callee_reg_mask", "callee_reg_mask",
+    0, 0, 0, &CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden },
 
   { OVK_COUNT }
 };
@@ -1260,6 +1275,13 @@ Configure_CG_Options(void)
   // ;; on the st220 target.
   if (Is_Target_st220() && !CG_NOPs_to_GOTO_overridden && (CG_opt_level > 1)) {
     CG_NOPs_to_GOTO = TRUE;
+  }
+#endif
+
+#ifdef TARG_ST
+  if (Enable_64_Bits_Ops && Opt_Level >= 2) {
+    if (!CG_gen_callee_saved_regs_mask_overriden)
+      CG_gen_callee_saved_regs_mask = TRUE;
   }
 #endif
 

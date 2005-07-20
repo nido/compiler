@@ -246,3 +246,28 @@ GRA_Allocate_Global_Registers( BOOL is_region )
 
   Stop_Timer ( T_GRA_CU );
 }
+
+#ifdef TARG_ST
+///////////////////////////////////////////////////////////////
+// Some utilitary functions that may be used locally to gra_mon
+// Must be explicitly declared in the module using it.
+BOOL
+Compare_Float_Nearly_Equal(float p1, float p2)
+{
+  if (p1 == p2) {
+    return TRUE;
+  }
+  float max = p1 = fabs(p1);
+  p2 = fabs(p2);
+  if (max == 0.0 || p2 > max) {
+    max = p2;
+  }
+
+  // FdF: Fix floating point difference between SunOS and Linux/Cygwin
+#ifdef TARG_ST
+  return (fabs(p1-p2) < 0.0001 || (fabs(p1-p2)/max) < .01);
+#else
+  return ((fabs(p1-p2)/max) < .01);
+#endif
+}
+#endif

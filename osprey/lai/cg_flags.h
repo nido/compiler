@@ -311,6 +311,10 @@ extern BOOL IGLS_Enable_All_Scheduling;
 
 /* LRA: */
 extern BOOL LRA_do_reorder;
+#ifdef TARG_ST
+extern BOOL LRA_minregs;
+extern BOOL LRA_merge_extract;
+#endif
 
 /* GRA: */
 extern BOOL GRA_use_old_conflict;
@@ -327,6 +331,9 @@ extern BOOL GRA_choose_best_split;
 extern BOOL GRA_use_stacked_regs;
 extern BOOL GRA_redo_liveness;
 extern BOOL GRA_recalc_liveness;
+#ifdef TARG_ST
+extern BOOL GRA_use_runeson_nystrom_spill_metric;
+#endif
 extern INT32 GRA_non_home_hi;
 extern INT32 GRA_non_home_lo;
 extern const char* GRA_call_split_freq_string;

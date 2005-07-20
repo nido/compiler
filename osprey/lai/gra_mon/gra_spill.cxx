@@ -1266,6 +1266,11 @@ Move_Restore_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
 //
 //      1. There is a predecessor block in the LRANGE, and
 //      2. All the predecessor blocks out of the LRANGE have one successor.
+#ifdef TARG_ST
+// [SC] 3. No predecessor block ends in a branch instruction with an
+//         operand with a singleton subclass, where the register in the
+//         subclass is the register needed in the restore instruction.
+#endif
 //
 //  Condition 2 could be relaxed if we are willing to insert a new block as
 //  the target of the predecessor.  Fred's feeling is that this will rarely be
@@ -1314,6 +1319,26 @@ Move_Restore_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
       }
       load_count++;
     }
+#ifdef TARG_ST
+    {
+      // [SC] Check if predecessor block ends in a branch instruction with an
+      //      operand with a singleton subclass, where the register in the
+      //      subclass is the register needed in the restore instruction.
+      //      In that case, suppress the transformation.
+      for (OP *op = BB_xfer_op (bb); op != NULL; op = OP_next(op)) {
+	for (INT i = 0; i < OP_opnds(op); ++i) {
+	  ISA_REGISTER_SUBCLASS sc = OP_opnd_reg_subclass (op, i);
+	  if (sc != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+	    REGISTER_SET sc_regs = REGISTER_SUBCLASS_members (sc);
+	    if (REGISTER_SET_Size (sc_regs) == 1
+		&& REGISTER_SET_MemberP (sc_regs, reg)) {
+	      return FALSE;
+	    }
+	  }
+	}
+      }
+    }
+#endif
   }
 
   if ( do_move == FALSE )

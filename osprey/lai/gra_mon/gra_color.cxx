@@ -88,6 +88,13 @@ static REGISTER_SET callee_saves_used[ISA_REGISTER_CLASS_MAX + 1];
   // for someone else to use them.
 static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX + 1]; // statistics only
 
+#ifdef TARG_ST
+static REGISTER_SET prefered_regs[ISA_REGISTER_CLASS_MAX + 1];
+  // Sets of registers to choose first as returned by the
+  // target dependent function CGTARG_Prefered_GRA_Registers().
+  // This set will be look up first in Choose_N_Registers().
+#endif
+
 static MEM_POOL prq_pool;
 
 static GRA_REGION *GRA_current_region;  // The current region for which we are 
@@ -149,6 +156,11 @@ Initialize(void)
     callee_saves_used[rc] = REGISTER_SET_EMPTY_SET;
 
     regs_used[rc] = REGISTER_SET_EMPTY_SET;
+
+#ifdef TARG_ST
+    // [CG] Handle target dependent register preferences.
+    prefered_regs[rc] = CGTARG_Prefered_GRA_Registers(rc);
+#endif
   }
 }
 
@@ -161,6 +173,33 @@ Update_Register_Info( LRANGE* lrange, REGISTER reg )
 //  for preferencing.
 //
 /////////////////////////////////////
+#ifdef TARG_ST
+{
+  ISA_REGISTER_CLASS rc = lrange->Rc();
+  INT nregs = lrange->NHardRegs();
+  INT i;
+
+  lrange->Allocate_Register(reg, nregs);
+
+  if ( lrange->Has_Preference() ) {
+    non_prefrenced_regs[rc] =
+        REGISTER_SET_Difference_Range(non_prefrenced_regs[rc],reg,reg+nregs-1);
+  }
+
+  if (!lrange->Has_Wired_Register() && !lrange->Tn_Is_Save_Reg()) {
+    regs_used[rc] = REGISTER_SET_Union(regs_used[rc],
+                                       REGISTER_SET_Range(reg,reg+nregs-1));
+    for (i = 0; i < nregs; i++) {
+      if ((REGISTER_SET_MemberP(REGISTER_CLASS_callee_saves(rc),reg+i)
+#ifdef HAS_STACKED_REGISTERS
+         || REGISTER_Is_Stacked_Local(rc, reg+i)
+#endif
+	  )) 
+        callee_saves_used[rc] = REGISTER_SET_Union1(callee_saves_used[rc],reg+i);
+    }
+  }
+}
+#else
 {
   ISA_REGISTER_CLASS rc = lrange->Rc();
 
@@ -181,9 +220,161 @@ Update_Register_Info( LRANGE* lrange, REGISTER reg )
       callee_saves_used[rc] = REGISTER_SET_Union1(callee_saves_used[rc],reg);
   }
 }
+#endif
+
+#ifdef TARG_ST
+/////////////////////////////////////
+static REGISTER
+Choose_N_Registers (INT nregs,
+		    REGISTER_SET subclass_allowed,
+		    REGISTER_SET allowed)
+/////////////////////////////////////
+//
+//  Find the best NREGS registers in ALLOWED.
+//  The first register found must be in SUBCLASS_ALLOWED.
+//
+/////////////////////////////////////
+{
+  REGISTER r;
+
+  for (r = REGISTER_SET_Choose (subclass_allowed);
+       r != REGISTER_UNDEFINED;
+       r = REGISTER_SET_Choose_Next (subclass_allowed, r)) {
+    if (REGISTER_SET_MembersP (allowed, r, nregs)) {
+      break;
+    }
+  }
+  return r;
+}
 
 /////////////////////////////////////
+static REGISTER
+Choose_N_Registers_Intersection (INT nregs,
+				 REGISTER_SET subclass_allowed,
+				 REGISTER_SET allowed,
+				 REGISTER_SET s)
+/////////////////////////////////////
+//
+//  Find the best NREGS registers in ALLOWED intersection S.
+//  The first register found must be in SUBCLASS_ALLOWED intersection S.
+//
+/////////////////////////////////////
+{
+  return Choose_N_Registers (nregs,
+			     REGISTER_SET_Intersection (subclass_allowed, s),
+			     REGISTER_SET_Intersection (allowed, s));
+}
+
+BOOL
+Can_Allocate_From (INT nregs,
+		   REGISTER_SET subclass_allowed,
+		   REGISTER_SET allowed)
+{
+  return Choose_N_Registers (nregs, subclass_allowed, allowed)
+    != REGISTER_UNDEFINED;
+}
+
+#endif
+/////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Choose_Best_Register(REGISTER* reg, INT nregs, ISA_REGISTER_CLASS rc,
+		     REGISTER_SET subclass_allowed,
+                     REGISTER_SET allowed , BOOL remove_global_callees,
+                     BOOL prefer_caller_stacked)
+/////////////////////////////////////
+//
+//  Find the best register in <allowed>, a register set of registers in
+//  <rc>.  If one is found (it will be if <allowd> is non-empty), return
+//  it by reference in <reg> and return TRUE.
+//
+/////////////////////////////////////
+{
+  if ( REGISTER_SET_EmptyP(allowed) )
+    return FALSE;
+
+#ifdef HAS_STACKED_REGISTERS
+  if (! REGISTER_Has_Stacked_Registers(rc)) {
+#endif
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(REGISTER_CLASS_caller_saves(rc), prefered_regs[rc]));
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, REGISTER_CLASS_caller_saves(rc));
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+      
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(callee_saves_used[rc], prefered_regs[rc]));
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, callee_saves_used[rc]);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+      
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, prefered_regs[rc]);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    *reg = Choose_N_Registers(nregs, subclass_allowed, allowed);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+    
+    return FALSE;
+#ifdef HAS_STACKED_REGISTERS
+  }
+  else {
+    // first, try to use any caller-saved regs that have already been allocated
+    REGISTER_SET callers =
+      REGISTER_SET_Union(REGISTER_CLASS_caller_saves(rc),
+                         REGISTER_Get_Stacked_Avail_Set(ABI_PROPERTY_caller,
+                                                        rc));
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed, callers);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    // If we'd prefer to use a stacked caller over anything remaining, then
+    // try to get a new one by enlarging the stack; it must not be in allowed
+    if (nregs == 1 && prefer_caller_stacked) {
+      *reg = REGISTER_Request_Stacked_Register(ABI_PROPERTY_caller, rc);
+      if ( *reg != REGISTER_UNDEFINED )
+        return TRUE;
+    }
+      
+    // next, try to use any callee-saved regs that have already been allocated
+    *reg = Choose_N_Registers_Intersection
+      (nregs, subclass_allowed, allowed,callee_saves_used[rc]);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    if (remove_global_callees) { // not using non-stacked callee-saved regs
+      allowed = REGISTER_SET_Difference(allowed,REGISTER_CLASS_callee_saves(rc));
+      subclass_allowed = REGISTER_SET_Difference(subclass_allowed,
+						 REGISTER_CLASS_callee_saves(rc));
+    }
+    // choose from previously un-used callee-saved regs
+    *reg = Choose_N_Registers(nregs, subclass_allowed, allowed);
+    if ( *reg != REGISTER_UNDEFINED )
+      return TRUE;
+
+    // try to get a new callee-saved one by enlarging the stack
+    if (nregs == 1) {
+      *reg = REGISTER_Request_Stacked_Register(ABI_PROPERTY_callee, rc);
+      if ( *reg != REGISTER_UNDEFINED )
+	return TRUE;
+    }
+  
+    return FALSE;
+  }
+#endif
+}
+#else
 Choose_Best_Register(REGISTER* reg, ISA_REGISTER_CLASS rc,
                      REGISTER_SET allowed , BOOL remove_global_callees,
                      BOOL prefer_caller_stacked)
@@ -257,10 +448,16 @@ Choose_Best_Register(REGISTER* reg, ISA_REGISTER_CLASS rc,
   }
 #endif
 }
+#endif
 
 /////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Choose_Preference( LRANGE* lrange, REGISTER_SET subclass_allowed,
+		   REGISTER_SET allowed, GRA_REGION* region )
+#else
 Choose_Preference( LRANGE* lrange, REGISTER_SET allowed, GRA_REGION* region )
+#endif
 /////////////////////////////////////
 //
 //  If one of the registers used by a member of <lrange>'s preference class is
@@ -273,7 +470,13 @@ Choose_Preference( LRANGE* lrange, REGISTER_SET allowed, GRA_REGION* region )
   for (iter.Init(lrange); ! iter.Done(); iter.Step()) {
     LRANGE* p_lrange = iter.Current();
 
+#ifdef TARG_ST
+    if ( REGISTER_SET_MemberP(subclass_allowed,p_lrange->Reg())
+	 && REGISTER_SET_MembersP (allowed, p_lrange->Reg(), lrange->NHardRegs())) {
+#else
     if ( REGISTER_SET_MemberP(allowed,p_lrange->Reg()) ) {
+#endif
+
       Update_Register_Info(lrange, p_lrange->Reg());
       GRA_Trace_Preference_Attempt(lrange, p_lrange, region, TRUE);
       return TRUE;
@@ -286,7 +489,12 @@ Choose_Preference( LRANGE* lrange, REGISTER_SET allowed, GRA_REGION* region )
 
 /////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Choose_Avoiding_Neighbor_Preferences( LRANGE* lrange, REGISTER_SET subclass_allowed,
+				      REGISTER_SET allowed)
+#else
 Choose_Avoiding_Neighbor_Preferences( LRANGE* lrange, REGISTER_SET allowed )
+#endif
 /////////////////////////////////////
 //
 //  Try to find a register for <lrange> in the <allowed> set that is preferred
@@ -317,18 +525,39 @@ Choose_Avoiding_Neighbor_Preferences( LRANGE* lrange, REGISTER_SET allowed )
 
     for (p_iter.Init(nlr); ! p_iter.Done(); p_iter.Step()) {
       LRANGE* plr = p_iter.Current();
+#ifdef TARG_ST
+      REGISTER_SET new_subclass_allowed;
+#else
       REGISTER_SET new_allowed;
+#endif
 
       if ( plr->Allocated() && plr->Rc() == lrange->Rc() )
+#ifdef TARG_ST
+        new_subclass_allowed =
+	  REGISTER_SET_Difference_Range(subclass_allowed,
+					plr->Reg(),
+					plr->Reg() + plr->NHardRegs() - 1);
+      if ( !REGISTER_SET_EmptyP(new_subclass_allowed) ) {
+	subclass_allowed = new_subclass_allowed;
+        allowed = REGISTER_SET_Difference_Range (allowed,
+						 plr->Reg(),
+						 plr->Reg() + plr->NHardRegs() - 1);
+      }
+#else
         new_allowed = REGISTER_SET_Difference1(allowed, plr->Reg());
       if ( !REGISTER_SET_EmptyP(new_allowed) ) {
         allowed = new_allowed;
       }
+#endif
 
     }
   }
 
+#ifdef TARG_ST
+  if (Choose_Best_Register(&reg, lrange->NHardRegs(), rc, subclass_allowed, allowed,
+#else
   if (Choose_Best_Register(&reg, rc, allowed,
+#endif
 			   REGISTER_Has_Stacked_Registers(rc),
 			   !(lrange->Spans_A_Call() || lrange->Spans_Infreq_Call()))) {
     Update_Register_Info(lrange,reg);
@@ -374,7 +603,12 @@ Allocate_Stacked_Register(LRANGE* lrange)
 
 /////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Choose_Noones_Preference( LRANGE* lrange, REGISTER_SET subclass_allowed,
+			  REGISTER_SET allowed )
+#else
 Choose_Noones_Preference( LRANGE* lrange, REGISTER_SET allowed )
+#endif
 /////////////////////////////////////
 //
 //  See if there is a register in 'allowed' that is not yet the preference of
@@ -386,8 +620,14 @@ Choose_Noones_Preference( LRANGE* lrange, REGISTER_SET allowed )
   REGISTER     reg;
   REGISTER_SET npr = non_prefrenced_regs[lrange->Rc()];
 
+#ifdef TARG_ST
+  subclass_allowed = REGISTER_SET_Intersection (subclass_allowed,npr);
+  allowed = REGISTER_SET_Intersection (allowed,npr);
+  if ( Choose_Best_Register(&reg,lrange->NHardRegs(),rc,subclass_allowed,allowed,
+#else
   allowed = REGISTER_SET_Intersection(allowed,npr);
   if ( Choose_Best_Register(&reg,rc,allowed,
+#endif
 			    REGISTER_Has_Stacked_Registers(rc),
 			    (lrange->Spans_A_Call() || lrange->Spans_Infreq_Call())) ) {
     Update_Register_Info(lrange,reg);
@@ -398,7 +638,11 @@ Choose_Noones_Preference( LRANGE* lrange, REGISTER_SET allowed )
 
 /////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Choose_Anything( LRANGE* lrange, REGISTER_SET subclass_allowed, REGISTER_SET allowed )
+#else
 Choose_Anything( LRANGE* lrange, REGISTER_SET allowed )
+#endif
 /////////////////////////////////////
 //
 //  Take any register from the 'allowed' set for 'lrange'.  Return TRUE if
@@ -410,7 +654,12 @@ Choose_Anything( LRANGE* lrange, REGISTER_SET allowed )
   ISA_REGISTER_CLASS rc = lrange->Rc();
   BOOL has_stacked = REGISTER_Has_Stacked_Registers(rc);
 
+#ifdef TARG_ST
+  if ( Choose_Best_Register(&reg,lrange->NHardRegs(),
+			    rc,subclass_allowed, allowed, has_stacked,
+#else
   if ( Choose_Best_Register(&reg,rc,allowed, has_stacked,
+#endif
 			    !(lrange->Spans_A_Call() || lrange->Spans_Infreq_Call())) ) {
     Update_Register_Info(lrange,reg);
     return TRUE;
@@ -427,7 +676,12 @@ Choose_Anything( LRANGE* lrange, REGISTER_SET allowed )
   // Now allow "global" callee saved registers to be freely used (they
   // could have been used to satisfy a preference).
   //
+#ifdef TARG_ST
+  if (Choose_Best_Register(&reg,lrange->NHardRegs(),
+			   rc,subclass_allowed, allowed, FALSE, FALSE)) {
+#else
   if (Choose_Best_Register(&reg,rc,allowed, FALSE, FALSE)) {
+#endif
     Update_Register_Info(lrange,reg);
     return TRUE;
   }
@@ -445,23 +699,47 @@ Choose_Register( LRANGE* lrange, GRA_REGION* region )
 /////////////////////////////////////
 {
   REGISTER_SET allowed = lrange->Allowed_Registers(GRA_current_region);
+#ifdef TARG_ST
+  REGISTER_SET subclass_allowed =
+    lrange->SubClass_Allowed_Registers(GRA_current_region);
+  GRA_Trace_Allowed_Registers (lrange, subclass_allowed, allowed);
+#endif
 
   if ( lrange->Has_Wired_Register() ) {
+#ifdef TARG_ST
     // [SC] This assertion fails when we disallow r63 to LRA.
     // So assume that wired lranges are always allowed their
     // wired register.
     //    DevAssert( REGISTER_SET_MembersP(allowed, lrange->Reg(),
     //                             lrange->NHardRegs()),
     //         ("LRANGE not allowed its wired register"));
-   Update_Register_Info(lrange, lrange->Reg());
+#else
+    DevAssert( REGISTER_SET_MemberP(allowed, lrange->Reg()),
+               ("LRANGE not allowed its wired register"));
+#endif
+    Update_Register_Info(lrange, lrange->Reg());
     return TRUE;
   }
+#ifdef TARG_ST
+  if (REGISTER_SET_EmptyP(subclass_allowed) ) {
+#else
   if (REGISTER_SET_EmptyP(allowed) ) {
+#endif
     //
     // Try to get a stacked register.
     //
     return Allocate_Stacked_Register(lrange);
   }      
+#ifdef TARG_ST
+  if ( Choose_Preference(lrange, subclass_allowed, allowed, region) )
+    return TRUE;
+  else if ( Choose_Avoiding_Neighbor_Preferences(lrange, subclass_allowed, allowed) )
+    return TRUE;
+  else if ( Choose_Noones_Preference(lrange,subclass_allowed, allowed) )
+    return TRUE;
+  else
+    return Choose_Anything(lrange,subclass_allowed, allowed);
+#else
   if ( Choose_Preference(lrange, allowed, region) )
     return TRUE;
   else if ( Choose_Avoiding_Neighbor_Preferences(lrange,allowed) )
@@ -470,6 +748,7 @@ Choose_Register( LRANGE* lrange, GRA_REGION* region )
     return TRUE;
   else
     return Choose_Anything(lrange,allowed);
+#endif
 }
 
 /////////////////////////////////////
@@ -534,20 +813,39 @@ Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
 
       if ( GRA_avoid_glue_references_for_locals ) {
 	REGISTER_SET npr_gru = REGISTER_SET_Difference(npr, gru);
+#ifdef TARG_ST
+	if ( Choose_Best_Register(&reg,1,rc,
+				  REGISTER_SET_Intersection(allowed, npr_gru),
+				  REGISTER_SET_Intersection(allowed, npr_gru),
+				  FALSE, FALSE)
+	    || Choose_Best_Register(&reg,1,rc,
+				    REGISTER_SET_Difference(allowed, gru),
+				    REGISTER_SET_Difference(allowed, gru),
+				    FALSE, FALSE)) {
+#else
 	if ( Choose_Best_Register(&reg,rc,
 				  REGISTER_SET_Intersection(allowed, npr_gru),
 				  FALSE, FALSE)
 	    || Choose_Best_Register(&reg,rc,
 				    REGISTER_SET_Difference(allowed, gru),
 				    FALSE, FALSE)) {
+#endif
 	  non_glue_found = TRUE;
 	}
       }
       if ( non_glue_found
+#ifdef TARG_ST
+	  || Choose_Best_Register(&reg,1,rc,
+				  REGISTER_SET_Intersection(allowed, npr),
+				  REGISTER_SET_Intersection(allowed, npr),
+				  FALSE, FALSE)
+          || Choose_Best_Register(&reg,1,rc,allowed,allowed,FALSE,FALSE)
+#else
 	  || Choose_Best_Register(&reg,rc,
 				  REGISTER_SET_Intersection(allowed, npr),
 				  FALSE, FALSE)
           || Choose_Best_Register(&reg,rc,allowed,FALSE,FALSE)
+#endif
       ) {
         gbb->Make_Register_Used(rc,reg);
         GRA_GRANT_Local_Register(gbb,rc,reg);
@@ -569,7 +867,7 @@ TYPE_PRQ(LRANGE,LRPRQ)  // Generate a priority queue type for live ranges.
 
 
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
-  extern BOOL Compare_Priorities(float p1, float p2);
+extern BOOL Compare_Float_Nearly_Equal(float p1, float p2);
 #endif
 
 /////////////////////////////////////
@@ -582,7 +880,7 @@ Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
 /////////////////////////////////////
 {
 #ifdef TARG_ST
-  if (Compare_Priorities(lrange0->Priority(), lrange1->Priority())) {
+  if (Compare_Float_Nearly_Equal(lrange0->Priority(), lrange1->Priority())) {
     // [SC] When priorities are equal, the priority queue implementation
     // treats element ordering arbitrarily.  To keep some
     // predictability in the coloring of global lranges, order them by
@@ -599,6 +897,48 @@ Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
   return lrange0->Priority() < lrange1->Priority();
 }
 
+#ifdef TARG_ST
+static BOOL
+Compare_Benefit_Runeson_Nystrom(LRANGE* lrange0, LRANGE* lrange1)
+{
+  float priority0 = lrange0->Priority() / lrange0->Colorability_Benefit();
+  float priority1 = lrange1->Priority() / lrange1->Colorability_Benefit();
+  if (Compare_Float_Nearly_Equal(priority0, priority1)
+      && lrange0->Type() != LRANGE_TYPE_LOCAL
+      && lrange1->Type() != LRANGE_TYPE_LOCAL) {
+    return TN_number(lrange0->Tn()) < TN_number(lrange1->Tn());
+  }
+  return priority0 < priority1 && !Compare_Float_Nearly_Equal(priority0, priority1);
+}
+
+/////////////////////////////////////
+static void
+Initialize_Priority_Queue( LRPRQ* q, GRA_REGION* region, ISA_REGISTER_CLASS cl,
+			   BOOL (*fn)(LRANGE *, LRANGE *) = Compare_Priorities)
+/////////////////////////////////////
+//
+//  Initialize the priority queue <q> so it can hold all the live ranges of
+//  the given <cl> in the given <region>.
+//  The compare function is <fn>.
+//
+/////////////////////////////////////
+{
+  LRPRQ_Initialize(q,fn,
+                     NULL,
+                     NULL,
+                     &prq_pool,
+		     region->Lrange_Count(cl),
+                     200);
+}
+
+void
+LRANGE::Print(FILE *file)
+{
+  char buff[100];
+  fprintf(file, "L%d: %s\n", Id(), Format(buff));
+  return;
+}
+#else
 
 /////////////////////////////////////
 static void
@@ -618,14 +958,6 @@ Initialize_Priority_Queue( LRPRQ* q, GRA_REGION* region, ISA_REGISTER_CLASS cl )
                      200);
 }
 
-#ifdef TARG_ST
-void
-LRANGE::Print(FILE *file)
-{
-  char buff[100];
-  fprintf(file, "L%d: %s\n", Id(), Format(buff));
-  return;
-}
 #endif
 
 void
@@ -664,12 +996,20 @@ Simplify_Initialize( GRA_REGION* region, ISA_REGISTER_CLASS rc,
   GRA_REGION_RC_LRANGE_ITER iter;
   GRA_REGION_GBB_ITER gbb_iter;
 
+#ifdef TARG_ST
+  LRPRQ not_locally_colorable;
+#endif
+
   cl->Initialize();
   pcl->Initialize();
   lrange_mgr.Clear_One_Set();
 
   Initialize_Priority_Queue(ready,region,rc);
+#ifdef TARG_ST
+  Initialize_Priority_Queue(&not_locally_colorable,region,rc);
+#else
   Initialize_Priority_Queue(not_ready,region,rc);
+#endif
 
   //
   // put unpreferenced wired locals on the preallocated live range coloring
@@ -709,16 +1049,45 @@ Simplify_Initialize( GRA_REGION* region, ISA_REGISTER_CLASS rc,
     else if ( ! lr->Region_Invariant() ) {
       FmtAssert(! lr->Allocated(),("LRANGE already allocated"));
       lr->Neighbors_Left_Initialize();
+#ifdef TARG_ST
+      lr->Initialize_Local_Colorability (region);
+#endif
       lr->Calculate_Priority();
 
+#ifdef TARG_ST
+      if (lr->Locally_Colorable ()) {
+#else
       if ( lr->Neighbors_Left() < lr->Candidate_Reg_Count() ) {
+#endif
+	GRA_Trace_Local_Colorability (lr);
         LRPRQ_Insert(ready,lr);
         lrange_mgr.One_Set_Union1(lr);
       }
       else
+#ifdef TARG_ST
+        LRPRQ_Insert(&not_locally_colorable,lr);
+#else
         LRPRQ_Insert(not_ready,lr);
+#endif
     }
   }
+
+#ifdef TARG_ST
+  // [SC] For all nodes that are not locally colorable,
+  // Initialize the colorability benefit, and initialize not_ready to be a
+  // priority queue ordered by the Runeson/Nystrom benefit.
+  Initialize_Priority_Queue (not_ready, region, rc,
+			     (GRA_use_runeson_nystrom_spill_metric
+			      ? Compare_Benefit_Runeson_Nystrom
+			      : Compare_Priorities));
+      
+  while (LRPRQ_Size (&not_locally_colorable) > 0) {
+    LRANGE *lr = LRPRQ_Delete_Top (&not_locally_colorable);
+    lr->Initialize_Colorability_Benefit (region);
+    LRPRQ_Insert (not_ready, lr);
+    GRA_Trace_Local_Colorability (lr);
+  }
+#endif
 }
 
 
@@ -767,6 +1136,24 @@ Simplify( GRA_REGION* region, ISA_REGISTER_CLASS rc, LRANGE_CLIST* cl )
 
       // We want to preserve the neighbors left field of the simplified
       // LRANGEs.  They will be used during splitting.  See gra_lrange.h.
+#ifdef TARG_ST
+
+      if (! nlr->Listed()
+	  && ! nlr->Has_Wired_Register()
+	  && ! lrange_mgr.One_Set_MemberP (nlr)) {
+	nlr->Neighbors_Left_Decrement ();
+	nlr->Locally_Colorable_Remove_Neighbor (lr);
+	if (nlr->Locally_Colorable ()) {
+	  GRA_Trace_Local_Colorability (nlr);
+	  LRPRQ_Remove (&not_ready, nlr);
+	  lrange_mgr.One_Set_Union1 (nlr);
+	  LRPRQ_Insert (&ready, nlr);
+	} else {
+	  LRPRQ_Update (&not_ready, nlr);
+	  GRA_Trace_Local_Colorability (nlr);
+	}
+      }
+#else
       if ( ! ( nlr->Listed() || nlr->Has_Wired_Register() ) &&
            nlr->Neighbors_Left_Decrement() == nlr->Candidate_Reg_Count() - 1) {
         LRPRQ_Remove(&not_ready,nlr);
@@ -778,6 +1165,7 @@ Simplify( GRA_REGION* region, ISA_REGISTER_CLASS rc, LRANGE_CLIST* cl )
         LRPRQ_Insert(&ready,nlr);
 
       }
+#endif
     }
   }
 
@@ -955,7 +1343,7 @@ GRA_Color_Complement( GRA_REGION* region )
       // of bogus frequencies, but its better than incorrect code.
       //
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
-      if ( (lr->Priority() < 0.0F) && (!Compare_Priorities(lr->Priority(), 0.0F))
+      if ( (lr->Priority() < 0.0F) && (!Compare_Float_Nearly_Equal(lr->Priority(), 0.0F))
 	    && !lr->Has_Wired_Register() && !Must_Split(lr)
 #else
       if (lr->Priority() < 0.0F && !lr->Has_Wired_Register() && !Must_Split(lr)
@@ -974,7 +1362,7 @@ GRA_Color_Complement( GRA_REGION* region )
         if (!LRANGE_Split(lr,&iter,&split_alloc_lr) ||
 	    (split_alloc_lr->Priority() < 0.0F &&
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
-	    !Compare_Priorities(split_alloc_lr->Priority(), 0.0F) &&
+	    !Compare_Float_Nearly_Equal(split_alloc_lr->Priority(), 0.0F) &&
 #endif
 	     !Must_Split(split_alloc_lr))) {
           GRA_Note_Spill(split_alloc_lr);

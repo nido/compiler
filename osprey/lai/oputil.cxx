@@ -164,6 +164,38 @@ Dup_OP ( OP *op )
   
   return new_op;
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * OP_Copy_Properties()
+ *
+ * See interface description
+ * ====================================================================
+ */
+void
+OP_Copy_Properties(OP *op, OP *src_op)
+{
+  /* Copy srcpos. */
+  op->srcpos = src_op->srcpos;
+
+  /* Copy unrolling related fields. */
+  op->unroll_bb = src_op->unroll_bb;
+  op->orig_idx = src_op->orig_idx;
+  op->unrolling = src_op->unrolling;
+
+  /* Copy all flags. */
+  op->flags = src_op->flags;
+  op->flags2 = src_op->flags2;
+
+  /* Copy scheduling info. */
+  op->scycle = src_op->scycle;
+
+  /* Copy annotations. */
+  Copy_OP_Annot(op, src_op);
+}
+#endif
+
 
 /* =====================================================================
  *			      OPS stuff
@@ -990,6 +1022,80 @@ OP_Defs_Reg(const OP *op, ISA_REGISTER_CLASS cl, REGISTER reg)
   return FALSE;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * OP_Defs_Regs
+ *
+ * See interface description.
+ *
+ * ====================================================================
+ */
+
+INT
+OP_Defs_Regs(const OP *op, ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs)
+{
+  INT low_reg = -1, high_reg = -1;
+  register INT num;
+
+  for ( num = 0; num < OP_results(op); num++ ) {
+    TN *res_tn = OP_result(op,num);
+    if (TN_is_register(res_tn)) {
+      if (TN_register_class(res_tn) == cl) {
+        REGISTER r = TN_register(res_tn);
+        if (r != REGISTER_UNDEFINED) {
+          INT nr = TN_nhardregs(res_tn);
+          if ((r <= reg && (r + nr) > reg) ||
+              (reg <= r && (reg + nregs) > r)) {
+            // We have an overlap
+            INT lo = (reg > r) ? reg : r;
+            INT hi = (reg + nregs - 1) < (r + nr - 1)
+              ? (reg + nregs - 1)
+	      : (r + nr -1);
+            if (lo < low_reg) low_reg = lo;
+            if (hi > high_reg) high_reg = hi;
+	  }
+	}
+      }
+    }
+  }
+
+  return (low_reg == -1) ? 0 : high_reg - low_reg;
+}
+
+
+/* ====================================================================
+ *
+ * OP_Refs_Regs
+ *
+ * See interface description.
+ *
+ * ====================================================================
+ */
+
+INT
+OP_Refs_Regs(const OP *op, ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs)
+{
+  REGISTER_SET regs = REGISTER_SET_Range (reg, reg + nregs - 1);
+  REGISTER_SET referenced_regs = REGISTER_SET_EMPTY_SET;
+  INT low_reg = -1, high_reg = -1;
+  register INT num;
+
+  for ( num = 0; num < OP_opnds(op); num++ ) {
+    TN *opnd_tn = OP_opnd(op,num);
+    if (TN_is_register(opnd_tn)) {
+      if (TN_register_class(opnd_tn) == cl) {
+	referenced_regs = REGISTER_SET_Union
+	  (referenced_regs,
+	   REGISTER_SET_Intersection (TN_registers (opnd_tn), regs));
+      }
+    }
+  }
+
+  return REGISTER_SET_Size (referenced_regs);
+}
+#endif
+
 /* ====================================================================
  *
  * OP_Refs_Reg
@@ -1087,6 +1193,40 @@ OP_Real_Ops( const OP *op )
   }
   return 1;
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * OP_opnd_is_multi - see interface.
+ *
+ * ====================================================================
+ */
+
+BOOL
+OP_opnd_is_multi(const OP *op, INT opnd)
+{
+  const ISA_OPERAND_INFO *info = ISA_OPERAND_Info (OP_code(op));
+  return ((ISA_OPERAND_INFO_Use (info, opnd) & OU_multi)
+	  || ((opnd+1) < ISA_OPERAND_INFO_Operands (info)
+	      && ISA_OPERAND_INFO_Use (info, opnd+1) & OU_multi));
+}
+
+/* ====================================================================
+ *
+ * OP_result_is_multi - see interface.
+ *
+ * ====================================================================
+ */
+
+BOOL
+OP_result_is_multi(const OP *op, INT result)
+{
+  const ISA_OPERAND_INFO *info = ISA_OPERAND_Info (OP_code(op));
+  return ((ISA_OPERAND_INFO_Def (info, result) & OU_multi)
+	  || ((result+1) < ISA_OPERAND_INFO_Results (info)
+	      && ISA_OPERAND_INFO_Def (info, result+1) & OU_multi));
+}
+#endif
 
 /* ====================================================================
  *

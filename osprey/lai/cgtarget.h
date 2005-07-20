@@ -654,12 +654,6 @@ extern TOP CGTARG_Invert(TOP opr);
  * ====================================================================
  */
 
-/* 
- * Returns the high-level type of the spill operation given the
- * TN to be spilled and the precision range of the data in it.
- * Precision is in TN_size(tn).
- */
-extern TY_IDX CGTARG_Spill_Type(TN *tn);
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
 
@@ -884,6 +878,8 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
 #ifdef TARG_ST
 extern BOOL CGTARG_offset_is_extended(TN *offset, INT64 *val);
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
+extern TOP CGTARG_TOP_To_Multi(TOP top);
+extern TOP CGTARG_TOP_From_Multi(TOP top);
 #endif
 
 // Checks to see if <stop> bit is available at <slot> position in the
@@ -946,5 +942,14 @@ extern void CGTARG_Result_Live_Range( void* lrange, OP* op, INT32 offset );
 // Present the <lrange> used by <op> and it's <opnd> operand.
 extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
                                        INT32  offset );
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   Target specific spill information:
+ * ====================================================================
+ */
+extern TY_IDX CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES];
+extern CLASS_INDEX CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES];
+#endif
 
 #endif /* CGTARGET_INCLUDED */

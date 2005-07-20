@@ -206,6 +206,18 @@ GRA_GRANT_Local_Register( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg )
      In the long run, it may not even be safe if changes are made to
      how Build_Dedicated_TN works. But it works for now!
   */
+#ifdef TARG_ST
+  // [CG] We changed the way Build_Dedicated_TN works, now the
+  // size is considered for the dedicated TN. Thus we set the size to 0
+  // in order to get the default size for the rclass
+  if (!REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rc), reg) ||
+      !BB_call(gbb->Bb()) &&
+      !GTN_SET_MemberP(BB_live_in (gbb->Bb()),Build_Dedicated_TN(rc, reg, 0)) ||
+      !GTN_SET_MemberP(BB_live_out(gbb->Bb()),Build_Dedicated_TN(rc, reg, 0))) {
+    GRA_Trace_Grant(gbb,rc,reg);
+    GRANT_Union1D(gr,rc,reg);
+  }
+#else
   if (!REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rc), reg) ||
       !BB_call(gbb->Bb()) &&
       !GTN_SET_MemberP(BB_live_in (gbb->Bb()),Build_Dedicated_TN(rc, reg, 8)) ||
@@ -213,8 +225,24 @@ GRA_GRANT_Local_Register( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg )
     GRA_Trace_Grant(gbb,rc,reg);
     GRANT_Union1D(gr,rc,reg);
   }
+#endif
 }
 
+#ifdef TARG_ST
+/////////////////////////////////////
+void
+GRA_GRANT_Local_Registers( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg,
+			   INT nregs )
+/////////////////////////////////////
+//  See interface description.
+/////////////////////////////////////
+{
+  for (INT i = 0; i < nregs; i++) {
+    GRA_GRANT_Local_Register (gbb, rc, reg + i);
+  }
+}
+
+#endif
 /////////////////////////////////////
 REGISTER_SET
 GRA_GRANT_Get_Local_Registers( BB* bb, ISA_REGISTER_CLASS rc )

@@ -77,6 +77,10 @@
 #include "data_layout.h"	// for FP/SP
 
 #ifdef TARG_ST
+#include "config_TARG.h"	// for Enable_64_Bits_Ops
+#endif
+
+#ifdef TARG_ST
 // Ensure > 0
 #define DEFAULT_RCLASS_SIZE(rc)	\
 	((REGISTER_bit_size(rc, REGISTER_CLASS_last_register(rc))+7)/8)
@@ -115,7 +119,9 @@ TN *TP_TN; // [SC] TLS support
  * so we can get at them later.
  */
 static TN *ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
-
+#ifdef TARG_ST200
+static TN *paired_ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#endif
 /* The register TNs are in a table named TNvec, indexed by their TN
  * numbers in the range 1..Last_TN.  The first part of the table, the
  * range 1..Last_Dedicated_TN, consists of TNs for various dedicated
@@ -610,6 +616,7 @@ Gen_Adjusted_TN ( TN *tn, INT64 adjust )
  *   Create_Dedicated_TN
  *
  *   Create and initialize a new dedicated TN and remember it for later.
+ *   The tn is created with the default size for the given rclass.
  * ====================================================================
  */
 static TN *
@@ -620,7 +627,7 @@ Create_Dedicated_TN (
 {
 #ifdef TARG_ST
   // Ensure size is always > 0 !
-  INT size = (REGISTER_bit_size(rclass, reg)+7)/8;
+  INT size = DEFAULT_RCLASS_SIZE(rclass);
 #else
   INT size = REGISTER_bit_size(rclass, reg)/8;
 #endif
@@ -660,7 +667,19 @@ Build_Dedicated_TN (
   INT size
 )
 {
-  return ded_tns[rclass][reg];
+#ifdef TARG_ST
+  // [CG] If size is the default size, use the dedicated tn
+  // array
+  if (size == 0 || size == DEFAULT_RCLASS_SIZE(rclass)) {
+    return ded_tns[rclass][reg];
+  }
+  if (size == DEFAULT_RCLASS_SIZE(rclass)*2) {
+    return paired_ded_tns[rclass][reg];
+  }
+  DevAssert(0, ("unexpected size, rclass:%d, reg:%d, size:%d", rclass, reg, size));
+#else
+    return ded_tns[rclass][reg];
+#endif
 }
 
 /* ====================================================================
@@ -754,6 +773,25 @@ Init_Dedicated_TNs (void)
   ++tnum; 
   GP_TN = Create_Dedicated_TN (REGISTER_CLASS_gp, REGISTER_gp);
 #endif
+
+#ifdef TARG_ST200
+  // [CG]: Have to initialize paired dedicated TNs used in prolog/epilog
+  // generation. This code is target dependent but there is currently
+  // no way to do otherwise.
+  if (Enable_64_Bits_Ops) {
+    ISA_REGISTER_SUBCLASS sc = ISA_REGISTER_SUBCLASS_paired;
+    REGISTER_SET regset = REGISTER_SUBCLASS_members(sc);
+    ISA_REGISTER_CLASS rclass = REGISTER_SUBCLASS_register_class(sc);
+    for (REGISTER reg = REGISTER_SET_Choose(regset);
+	 reg != REGISTER_UNDEFINED;
+	 reg = REGISTER_SET_Choose_Next(regset, reg)) {
+      ++tnum;
+      paired_ded_tns[rclass][reg] = Create_Dedicated_TN(rclass, reg);
+      Set_TN_size(paired_ded_tns[rclass][reg], DEFAULT_RCLASS_SIZE(rclass)*2);
+    }
+  }
+#endif    
+
   Last_Dedicated_TN = tnum;
 
   return;
@@ -1136,6 +1174,9 @@ TN_Reaching_Value_At_Op(
 
   if (TN_register(tn) != REGISTER_UNDEFINED) {
     REGISTER reg = TN_register(tn);
+#ifdef TARG_ST
+    INT nregs = TN_nhardregs(tn);
+#endif
     ISA_REGISTER_CLASS rc = TN_register_class(tn);
     bb = OP_bb(op);
     value_op = (reaching_def) ? OP_prev(op) : OP_next(op);
@@ -1143,8 +1184,18 @@ TN_Reaching_Value_At_Op(
     do {
       while (value_op) {
 	if (reaching_def) {
+#ifdef TARG_ST
+	  INT regs_matched = OP_Defs_Regs(value_op, rc, reg, nregs);
+	  if (regs_matched > 0) {
+	    if (regs_matched != nregs) {
+	      // Do not return def of multi-reg TN unless all the regs
+	      // are defined
+	      return NULL;
+	    } else if (Is_OP_Cond(value_op)) {
+#else
 	  if (OP_Defs_Reg(value_op, rc, reg)) {
 	    if (Is_OP_Cond(value_op)) {
+#endif
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
@@ -1170,8 +1221,18 @@ TN_Reaching_Value_At_Op(
 	    }
 	  }
 	} else {
+#ifdef TARG_ST
+	  INT regs_matched = OP_Refs_Regs(value_op, rc, reg, nregs);
+	  if (regs_matched > 0) {
+	    if (regs_matched != nregs) {
+	      // Do not return ref of multi-reg TN unless all the regs
+	      // are referenced.
+	      return NULL;
+	    } else if (Is_OP_Cond(value_op)) {
+#else
 	  if (OP_Refs_Reg(value_op, rc, reg)) {
 	    if (Is_OP_Cond(value_op)) {
+#endif
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
@@ -1211,17 +1272,37 @@ TN_Reaching_Value_At_Op(
 	  FOR_ALL_BB_PREDS(bb, edge) {
 	    cur_bb = BBLIST_item(edge);
 	    if (cur_bb == bb) continue;	// ignore self predecessor
+#ifdef TARG_ST
+            INT n_live_out = NREGS_Live_Outof_BB(rc, reg, nregs, cur_bb);
+	    val_cnt += (n_live_out == nregs)
+              ? 1
+	      : ((n_live_out > 0)
+		 ? 2  // Force break out
+                 : 0);
+	    val_bb = (n_live_out == nregs) ? cur_bb : val_bb;
+#else
 	    BOOL live_out = REG_LIVE_Outof_BB(rc, reg, cur_bb);
 	    val_cnt += (live_out) ? 1 : 0;
 	    val_bb = (live_out) ? cur_bb : val_bb;
+#endif
 	  }
 	} else {
 	  FOR_ALL_BB_SUCCS(bb, edge) {
 	    cur_bb = BBLIST_item(edge);
 	    if (cur_bb == bb) continue;	// ignore self successor
+#ifdef TARG_ST
+            INT n_live_in = NREGS_Live_Into_BB(rc, reg, nregs, cur_bb);
+	    val_cnt += (n_live_in == nregs)
+              ? 1
+              : ((n_live_in > 0)
+		 ? 2 // Force break out
+                 : 0);
+	    val_bb = (n_live_in == nregs) ? cur_bb : val_bb;
+#else
 	    BOOL live_in = REG_LIVE_Into_BB(rc, reg, cur_bb);
 	    val_cnt += (live_in) ? 1 : 0;
 	    val_bb = (live_in) ? cur_bb : val_bb;
+#endif
 	  }
 	}
 	bb = (val_cnt > 1) ? NULL : val_bb;

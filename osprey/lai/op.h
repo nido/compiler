@@ -124,6 +124,24 @@
  *	If the client can't guarantee these conditions, then a
  *	new OP should be created.
  *
+#ifdef TARG_ST
+ *   void OP_Copy_Properties(OP *op, OP *src_op)
+ *      Copy all properties from src_op to op.
+ *      This function can be used for instance when tranforming an 
+ *      operation and if OP_Change_Opcode does not apply.
+ *	The properties that are NOT copied are:
+ *	- opcode/arguments: OP_code(), OP_variant(), OP_results(), OP_opnds()
+ *	- BB related stuffs: OP_bb(), OP_map_idx(), OP_order() : 
+ *	- OPS related stuffs: OP_prev(), OP_next()
+ *      Creating an op with the same opcode and results/operands as src_op
+ *	and calling OP_Copy_Properties creates a strictly equivalent
+ *	operation with the expection of BB related properties that
+ *	are created only when the op is inserted into a BB.
+ *	Note that external mappings are not updated, for instance
+ *	Copy_WN_For_Memory_OP must be called explicitly for updating
+ *	the OP->WN map of memory operations.
+#endif
+ *
  *   void OP_Change_To_Noop(OP *op)
  *	Change the specified OP into a generic noop (TOP_noop).
  *
@@ -219,6 +237,15 @@
  *   BOOL OP_Refs_Reg(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg)
  *     Determine if the OP defines/references the given register.
  *
+#ifdef TARG_ST
+ *   INT OP_Defs_Regs(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg,
+ *                    INT nregs)
+ *   INT OP_Refs_Regs(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg,
+ *                    INT nregs)
+ *     Determine the number of registers in [ REG : REG + NREGS - 1 ] that
+ *     the OP defines/references.
+ *
+#endif
  *   void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
  *     A generic utility routine which returns the <base_tn> and the
  *     <offset_tn> for the given <memory_op>.
@@ -608,6 +635,12 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_ishru(o)		(TOP_is_shru(OP_code(o)) && OP_intop(o))
 #define OP_sext(o)		(TOP_is_sext(OP_code(o)))
 #define OP_zext(o)		(TOP_is_zext(OP_code(o)))
+
+//[SC]: Added multi-op queries
+#define OP_multi(o)             (TOP_is_multi(OP_code(o)))
+#define OP_extract(o)           (TOP_is_extract(OP_code(o)))
+#define OP_compose(o)           (TOP_is_compose(OP_code(o)))
+#define OP_widemove(o)          (TOP_is_widemove(OP_code(o)))
 #endif
 
 #define TOP_is_predicated(t)    (TOP_is_guard_t(t) || TOP_is_guard_f(t))
@@ -685,6 +718,24 @@ extern INT CGTARG_Copy_Operand(OP *op);
 #endif
 
 #ifdef TARG_ST
+/* ====================================================================
+ *
+ * OP_opnd_is_multi - return TRUE if opnd is part of a multi-register
+ * operand.
+ *
+ * ====================================================================
+ */
+extern BOOL OP_opnd_is_multi(const OP *op, INT opnd);
+
+/* ====================================================================
+ *
+ * OP_result_is_multi - return TRUE if result is part of a multi-register
+ * result.
+ *
+ * ====================================================================
+ */
+extern BOOL OP_result_is_multi(const OP *op, INT result);
+
 // OP is associative
 extern BOOL OP_is_associative(OP *op);
 
@@ -1147,6 +1198,10 @@ void OPS_Insert_Ops(OPS *ops, OP *point, OPS *insert_ops, BOOL before);
 /* Basic OP generators: */
 extern OP *Dup_OP ( OP *op );
 
+#ifdef TARG_ST
+extern void OP_Copy_Properties(OP *op, OP *src_op);
+#endif
+
 extern void Free_OP_List ( OP *op );	/* Free OP list's space */
 
 /* OP generation utilities: */
@@ -1235,6 +1290,14 @@ extern BOOL OP_Refs_TN(const OP *op, const struct tn *opnd);
 /* Determine if the op defines/references the given register. */
 extern BOOL OP_Defs_Reg(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg);
 extern BOOL OP_Refs_Reg(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg);
+
+/* Determine the number of registers in [ REG : REG + NREGS - 1 ] that
+ * the OP defines/references.
+ */
+extern INT OP_Defs_Regs(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg,
+                        INT nregs);
+extern INT OP_Refs_Regs(const OP *op, ISA_REGISTER_CLASS rclass, REGISTER reg,
+                        INT nregs);
 
 // Replace 'op's opcode with 'opc'. Make shure it is the same
 // type of OP.

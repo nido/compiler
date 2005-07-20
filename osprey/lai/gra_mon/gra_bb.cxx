@@ -102,6 +102,7 @@ GRA_BB::Add_LUNIT( LUNIT*  lunit)
   lunits[rc] = lunits[rc]->BB_List_Push(lunit);
 }
 
+#ifdef TARG_ST
 /////////////////////////////////////
 // Add <reg> to the set of registers used in the given <gbb> and <rc>.
 void
@@ -110,6 +111,18 @@ GRA_BB::Make_Register_Used( ISA_REGISTER_CLASS  rc, REGISTER reg)
   region-> Make_Register_Used(rc,reg);
   loop->Make_Register_Used(rc, reg);
   registers_used[rc] = REGISTER_SET_Union1(registers_used[rc],reg);
+}
+
+#endif
+/////////////////////////////////////
+// Add [<reg>..<reg>+<nregs>-1] to the set of registers used in the
+// given <gbb> and <rc>.
+void
+GRA_BB::Make_Registers_Used (ISA_REGISTER_CLASS rc, REGISTER reg, INT nregs)
+{
+  for (INT i = 0; i < nregs; i++) {
+    Make_Register_Used (rc, reg + i);
+  }
 }
 
 /////////////////////////////////////
@@ -318,13 +331,22 @@ GRA_BB::Create_Local_LRANGEs(ISA_REGISTER_CLASS rc, INT32 count)
 /////////////////////////////////////
 // Create and return a new local LRANGE for <gbb> that must be
 // allocated the register -- <cl> and <reg>.
+#ifdef TARG_ST
+LRANGE*
+GRA_BB::Create_Wired_LRANGE(ISA_REGISTER_CLASS  rc, REGISTER reg, INT nregs)
+#else
 LRANGE*
 GRA_BB::Create_Wired_LRANGE(ISA_REGISTER_CLASS  rc, REGISTER reg)
+#endif
 {
   LRANGE* result = lrange_mgr.Create_Local(this,rc);
 
   gbb_mgr.Incr_Wired_Local_Count();
+#ifdef TARG_ST
+  result->Wire_Register(reg, nregs);
+#else
   result->Wire_Register(reg);
+#endif
   return result;
 }
 

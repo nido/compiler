@@ -68,6 +68,9 @@ extern TN *Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops);
  *   Check that compare is of proper form, and return TOP to use for 
  *   the compare.
  *   May modify the variant and src tns.
+ *
+ *   Modify the is_integer parameter to reflect if the top result is
+ *   a branch or an int.
  * ====================================================================
  */
 TOP
@@ -75,12 +78,12 @@ Pick_Compare_TOP (
   VARIANT *variant, 
   TN **src1, 
   TN **src2, 
-  BOOL is_integer,      // should the result be generated into a int reg
+  BOOL *is_integer,      // should the result be generated into a int reg
   OPS *ops
 )
 {
-  TOP     cmp;
-  TOP     cmp_i;
+  TOP     cmp = TOP_UNDEFINED;
+  TOP     cmp_i = TOP_UNDEFINED;
   TYPE_ID mtype;
 
   /* 
@@ -90,7 +93,7 @@ Pick_Compare_TOP (
   if (*src1 != NULL && TN_has_value(*src1)) {
     // swap operands and change variant
     TN *tmp = *src1;
-    *src1 = *src2;
+   *src1 = *src2;
     *src2 = tmp;
     *variant = Invert_BR_Variant(*variant);
   }
@@ -124,84 +127,140 @@ Pick_Compare_TOP (
   switch (*variant) {
 
     case V_BR_I4GE:
-      cmp = is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
+      cmp = *is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4GT:
-      cmp = is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
+      cmp = *is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4LE:
-      cmp = is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
+      cmp = *is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4LT:
-      cmp = is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
+      cmp = *is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4EQ:
-      cmp = is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
+      cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_I4NE:
-      cmp = is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
+      cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_U4GE:	
     case V_BR_A4GE:
-      cmp = is_integer ? TOP_cmpgeu_r_r : TOP_cmpgeu_r_b;
+      cmp = *is_integer ? TOP_cmpgeu_r_r : TOP_cmpgeu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LE:
     case V_BR_A4LE:
-      cmp = is_integer ? TOP_cmpleu_r_r : TOP_cmpleu_r_b;
+      cmp = *is_integer ? TOP_cmpleu_r_r : TOP_cmpleu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LT:
     case V_BR_A4LT:
-      cmp = is_integer ? TOP_cmpltu_r_r : TOP_cmpltu_r_b;
+      cmp = *is_integer ? TOP_cmpltu_r_r : TOP_cmpltu_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4EQ:
     case V_BR_A4EQ:
-      cmp = is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
+      cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4NE:
     case V_BR_A4NE:
-      cmp = is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
+      cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4GT:
     case V_BR_A4GT:
-      cmp = is_integer ? TOP_cmpgtu_r_r : TOP_cmpgtu_r_b;
+      cmp = *is_integer ? TOP_cmpgtu_r_r : TOP_cmpgtu_r_b;
       mtype = MTYPE_U4;
       break;
 
+    case V_BR_FGE:
+    case V_BR_FGT:
+    case V_BR_FLE:
+    case V_BR_FLT:
+    case V_BR_FEQ:
+#if 0
+      if (Enable_Single_Float_Ops) {
+	mtype = MTYPE_F4;
+	*is_integer = TRUE;
+	switch(*variant) {
+	case V_BR_FGE:
+	  cmp = TOP_cmpgef;
+	  break;
+	case V_BR_FGT:
+	  cmp = TOP_cmpgtf;
+	  break;
+	case V_BR_FLE:
+	  cmp = TOP_cmplef;
+	  break;
+	case V_BR_FLT:
+	  cmp = TOP_cmpltf;
+	  break;
+	case V_BR_FEQ:
+	  cmp = TOP_cmpeqf;
+	  break;
+	default:
+	  break;
+	}
+      }
+#endif
+      break;
+    case V_BR_FNE:
+      /* Undefined on ST200. */
+      break;
 
-    case V_BR_FEQ:	
-    case V_BR_DEQ:	
-    case V_BR_FLT:	
-    case V_BR_DLT:	
-    case V_BR_FLE:	
-    case V_BR_DLE:	
-    case V_BR_FNE:	
-    case V_BR_DNE:	
-    case V_BR_FGT:	
-    case V_BR_DGT:	
-    case V_BR_FGE:	
-    case V_BR_DGE:	
+    case V_BR_DGE:
+    case V_BR_DGT:
+    case V_BR_DLE:
+    case V_BR_DLT:
+    case V_BR_DEQ:
+#if 0
+      if (Enable_Double_Float_Ops) {
+	mtype = MTYPE_F8;
+	*is_integer = TRUE;
+	switch(*variant) {
+	case V_BR_DGE:
+	  cmp = TOP_cmpged;
+	  break;
+	case V_BR_DGT:
+	  cmp = TOP_cmpgtd;
+	  break;
+	case V_BR_DLE:
+	  cmp = TOP_cmpled;
+	  break;
+	case V_BR_DLT:
+	  cmp = TOP_cmpltd;
+	  break;
+	case V_BR_DEQ:
+	  cmp = TOP_cmpeqd;
+	  break;
+	default:
+	  break;
+	}
+ }
+#endif
+      break;
+    case V_BR_DNE:
+      /* Undefined on ST200. */
+      break;
 
     case V_BR_I8GE:
     case V_BR_I8GT:	
@@ -217,9 +276,6 @@ Pick_Compare_TOP (
     case V_BR_U8NE:	
 
     default:	
-      cmp_i = TOP_UNDEFINED; 
-      cmp = TOP_UNDEFINED; 
-      mtype = MTYPE_UNKNOWN;
       break;
   }
   
@@ -298,7 +354,8 @@ Expand_Branch (
   }
 
   // compare should calculate a branch reg result
-  cmp = Pick_Compare_TOP (&cond, &src1, &src2, FALSE, ops);
+  BOOL is_integer = FALSE;
+  cmp = Pick_Compare_TOP (&cond, &src1, &src2, &is_integer, ops);
 
   if (Trace_Exp) {
     fprintf (TFile, "<cgexp> transformed branch cond = %lld\n", cond);
@@ -324,10 +381,23 @@ Expand_Branch (
   default:
     {
       // conditional branch
+      if (cmp == TOP_UNDEFINED && (cond == V_BR_FNE || cond == V_BR_DNE)) {
+	/* ST200 specific case for handling NE variants. We invert it. */
+	cond = cond == V_BR_FNE ? V_BR_FEQ : V_BR_DEQ;
+	false_br = !false_br;
+	cmp = Pick_Compare_TOP (&cond, &src1, &src2, &is_integer, ops);
+      }
+
       FmtAssert(cmp != TOP_UNDEFINED, 
                                   ("Expand_Branch: unexpected comparison"));
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-      Build_OP (cmp, tmp, src1, src2, ops);
+      if (is_integer) {
+	TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	Build_OP (cmp, tmp_int, src1, src2, ops);
+	Expand_Copy(tmp, NULL, tmp_int, ops);
+      } else {
+	Build_OP (cmp, tmp, src1, src2, ops);
+      }
       FmtAssert(TN_is_label(targ), ("Expand_Branch: expected a label"));
       /*
        * For now I just trust it that it fits into 23 bits

@@ -101,6 +101,10 @@
 #include "bb_map.h"
 #endif
 
+#ifdef TARG_ST200
+#define ENABLE_64_BITS  /* Activate 64 bits support for st200 family. */
+#endif
+
 #if defined(CGG_ENABLED)
 #include "targ_cgg_exp.h"
 static TN * Expand_Expr_local (WN *expr, WN *parent, TN *result);
@@ -958,8 +962,13 @@ PREG_To_TN (
 		}
 	}
 #endif
+#ifdef ENABLE_64_BITS
+      // [CG]: Currently we don't want to handle dedicated TNs of 
+      // different sizes, thus we don't specify the size
+      tn = Build_Dedicated_TN(rclass, reg, 0);
+#else
       tn = Build_Dedicated_TN(rclass, reg, ST_size(preg_st));
-
+#endif
 #ifdef EMULATE_LONGLONG
       // only on IA-32
       if (reg == First_Int_Preg_Return_Offset) {
@@ -1000,11 +1009,19 @@ PREG_To_TN (
         //            it may happen that 'home' is a 64-bit
         //            thing, which we can't handle on a 32-bit
         //            machine.
+#ifdef ENABLE_64_BITS
+        if (!Enable_64_Bits_Ops &&
+            (MTYPE_is_double(WN_rtype(home)) || 
+             MTYPE_is_longlong(WN_rtype(home)))) {
+          home = Get_hilo_home (home, wn);
+        }
+#else
         if (Only_32_Bit_Ops &&
             (MTYPE_is_double(WN_rtype(home)) || 
              MTYPE_is_longlong(WN_rtype(home)))) {
           home = Get_hilo_home (home, wn);
         }
+#endif
 #endif
 
 	if (gra_homeable) {
@@ -1447,10 +1464,19 @@ Memop_Variant (
        * This will at least get the users code working
        */
       if (V_volatile(variant)) {
-	ErrMsgLine(EC_Ill_Align,
-		   SRCPOS_linenum(current_srcpos),
-		   align,
-		   "reference to unaligned volatile:  volatile atomicity is ignored");
+	ErrMsgSrcpos(EC_Ill_Align,
+		     current_srcpos,
+		     align,
+		     "reference to unaligned volatile:  volatile atomicity is ignored");
+      } else if (Warn_Misaligned_Access >= 1) {
+	ErrMsgSrcpos(EC_Ill_Align,
+		     current_srcpos,
+		     align,
+		     "unaligned memory access");
+      }
+      if (Warn_Misaligned_Access >= 2) {
+	ErrMsgSrcpos(EC_CG_Generic_Fatal, current_srcpos, 
+		     "fatal error due to misaligned access");
       }
     }
   }
@@ -1539,6 +1565,13 @@ Find_PREG_For_Symbol (
     return ST_ATTR_reg_id(St_Attr_Table(ST_IDX_level (idx), d));
 } 
 
+#ifdef ENABLE_64_BITS
+#define MTYPE_bsize(type) ((MTYPE_bit_size(type)+7)/8)
+extern void Expand_Multi(TN *tgt_tn, TN *src_tn, OPS *ops);
+extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
+extern void Expand_Compose(TN *tgt_tn, TN *low_tn, TN *high_tn, OPS *ops);
+#endif
+
 /* ====================================================================
  *   Handle_LDID
  * ====================================================================
@@ -1550,6 +1583,7 @@ Handle_LDID (
   OPCODE opcode
 )
 {
+
   if (ST_assigned_to_dedicated_preg(WN_st(ldid))) {
     // replace st with dedicated preg
     WN_offset(ldid) = Find_PREG_For_Symbol(WN_st(ldid));
@@ -1564,6 +1598,15 @@ Handle_LDID (
     TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid), ldid);
 #else
     TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid));
+#endif
+
+#ifdef ENABLE_64_BITS
+    FmtAssert(result == NULL || TN_size(result) == MTYPE_bsize(OPCODE_rtype(opcode)), ("Unexpected result size for LDID"));
+
+    if (MTYPE_bsize(OPCODE_rtype(opcode)) > TN_size(ldid_result)) {
+      if (result == NULL) result = Allocate_Result_TN (ldid, NULL);
+      Expand_Multi(result, ldid_result, &New_OPs);
+    } else 
 #endif
 
     if (result == NULL) {
@@ -1849,6 +1892,10 @@ Is_CVT_Noop (
      /*
       *  if 32-bit ints are sign-extended to 64-bit, then is a nop.
       */
+#ifdef TARG_ST
+      // [CG] Not a noop in 64 bits mode
+      if (!Enable_64_Bits_Ops)
+#endif
       if (!Split_64_Bit_Int_Ops && !Only_Unsigned_64_Bit_Ops)
       {
 	return TRUE;
@@ -1883,6 +1930,10 @@ Is_CVT_Noop (
      /*
       *  if we can determine the upper bit:31 is zero, the cast is a nop
       */
+#ifdef TARG_ST
+      // [CG] Not a noop in 64 bits mode
+      if (!Enable_64_Bits_Ops)
+#endif
       if (U4ExprHasUpperBitZero(WN_kid0(cvt)))
       {
 	return TRUE;
@@ -1904,6 +1955,10 @@ Is_CVT_Noop (
       *  For truncation converts, the memory operation will
       *  perform the necessary truncation.
       */
+#ifdef TARG_ST
+      // [CG] Not a noop in 64 bits mode
+      if (!Enable_64_Bits_Ops)
+#endif
       if (parent)
       {
 	switch(WN_opcode(parent))
@@ -2058,9 +2113,6 @@ Get_mtype_for_mult (
       if (Is_CVT_Noop(expr, parent)) {
 	mtype = Get_mtype_for_mult (WN_kid0(expr), parent);
       }
-      else if (Is_CVTL_Opcode(WN_opcode(expr))) {
-	mtype = Get_mtype_for_mult (WN_kid0(expr), expr);
-      }
       else {
 	mtype = WN_rtype(expr);
       }
@@ -2115,9 +2167,6 @@ Expand_Expr_Mult (
       if (Is_CVT_Noop(expr, parent)) {
 	kid_tn = Expand_Expr_Mult (WN_kid0(expr), mtype, parent);
       }
-      else if (Is_CVTL_Opcode(WN_opcode(expr))) {
-	kid_tn = Expand_Expr_Mult (WN_kid0(expr), mtype, expr);
-      }
       else {
 	kid_tn = Expand_Expr (expr, parent, NULL);
 	*mtype = WN_rtype(expr);
@@ -2153,10 +2202,17 @@ Handle_MPY (
     result = Allocate_Result_TN (expr, NULL);
   }
 
+  if (MTYPE_is_float(OPCODE_rtype(opcode))) {
+    kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
+    kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+    Exp_OP2 (opcode, result, kid0_tn, kid1_tn, &New_OPs);
+    return result;
+  }
+
   /* call make MULT with mtypes of arguments: */
   kid0_tn = Expand_Expr_Mult (WN_kid0(expr), &mtype0, expr);
   kid1_tn = Expand_Expr_Mult (WN_kid1(expr), &mtype1, expr);
-
+    
   if (Trace_Exp) {
     #pragma mips_frequency_hint NEVER
     fprintf(TFile, "exp_mul %s: ", OPCODE_name(opcode));
@@ -2205,6 +2261,14 @@ Handle_MADD (
 
   if (result == NULL) {
     result = Allocate_Result_TN (expr, NULL);
+  }
+
+  if (MTYPE_is_float(OPCODE_rtype(opcode))) {
+    kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
+    kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+    kid2_tn = Expand_Expr (WN_kid2(expr), expr, NULL);
+    Exp_OP3 (opcode, result, kid0_tn, kid1_tn, kid2_tn, &New_OPs);
+    return result;
   }
 
   /* call make MADD with mtypes of arguments: */
@@ -2594,6 +2658,14 @@ Handle_STID (
     result = PREG_To_TN (WN_st(stid), WN_store_offset(stid), stid);
 #else
     result = PREG_To_TN (WN_st(stid), WN_store_offset(stid));
+#endif
+
+#ifdef ENABLE_64_BITS
+    if (MTYPE_bsize(OPCODE_desc(opcode)) > TN_size(result)) {
+      TN *tmp = result;
+      result = Expand_Expr (kid, stid, NULL);
+      Expand_Multi(tmp, result, &New_OPs);
+    } else 
 #endif
     Expand_Expr (kid, stid, result);
 
@@ -3154,8 +3226,38 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 
   FmtAssert(numkids < 10, ("unexpected number of kids in intrinsic_op"));
 
+#ifdef ENABLE_64_BITS
+  if (Enable_64_Bits_Ops) {
+    if (rkind != IRETURN_UNKNOWN) {
+      if (result == NULL) result = Allocate_Result_TN (expr, NULL);
+      if (TN_size(result) == 8) {
+	numrests = 2;
+	res[0] = Build_TN_Of_Mtype (MTYPE_U4);
+	res[1] = Build_TN_Of_Mtype (MTYPE_U4);
+      } else {
+	numrests = 1;
+	res[0] = result;
+      }
+      numopnds = 0;
+      for (i = 0; i < WN_kid_count(expr); i++) {
+	TN *kid = Expand_Expr(WN_kid(expr,i), expr, NULL);
+	if (TN_size(kid) == 8) {
+	  kids[numopnds] = Build_TN_Of_Mtype (MTYPE_U4);
+	  kids[numopnds+1] = Build_TN_Of_Mtype (MTYPE_U4);
+	  Expand_Extract(kids[numopnds], kids[numopnds+1], kid, &New_OPs);
+	  numopnds += 2;
+	} else {
+	  kids[numopnds] = kid;
+	  numopnds += 1;
+	}
+      }
+    }
+  } else
+#endif
   if (Only_32_Bit_Ops && 
-      (MTYPE_is_longlong(WN_rtype(expr)) || MTYPE_is_double(WN_rtype(expr)))) {
+      (MTYPE_is_longlong(WN_rtype(expr)) || MTYPE_is_double(WN_rtype(expr))))
+  {
+
     // This intrinsic op should has been preprocessed so that a pair
     // of result values that it returns are parameters.
     Is_True(result == NULL, ("result set for 64 bit intrinsic"));
@@ -3211,7 +3313,15 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 
   Exp_Intrinsic_Op (id, numrests, numopnds, res, kids, &New_OPs);
 
-#else
+#ifdef ENABLE_64_BITS
+  if (Enable_64_Bits_Ops) {
+    if (TN_size(result) == 8) {
+      Expand_Compose(result, res[0], res[1], &New_OPs);
+    }
+  }
+#endif
+
+#else // !TARG_ST
   kids[0] = Expand_Expr(WN_kid0(expr), expr, NULL);
   kids[1] = (numkids > 1) ? Expand_Expr(WN_kid1(expr), expr, NULL) : NULL;
   kids[2] = (numkids > 2) ? Expand_Expr(WN_kid2(expr), expr, NULL) : NULL;
@@ -3621,8 +3731,10 @@ Expand_Expr (
       case OPC_U5INTCONST:
       case OPC_I4INTCONST:
       case OPC_U4INTCONST:
-	/* Is integer zero available ? */
-	if (Zero_TN && TN_is_const_reg(Zero_TN) && WN_const_val(expr) == 0) 
+	/* Is integer zero available ? Ensure that it is of correct 
+	 register size for 64 bits. */
+	if (Zero_TN && TN_is_const_reg(Zero_TN) && WN_const_val(expr) == 0
+	    && TN_size(Zero_TN) == MTYPE_byte_size(OPCODE_rtype(opcode)))
 	  return Zero_TN;
       }
     }
@@ -3653,23 +3765,15 @@ Expand_Expr (
     if (Is_CVT_Noop(expr, parent)) {
       return Expand_Expr(WN_kid0(expr), parent, result);
     }
+#ifndef TARG_ST
+    // [CG] This code is not valid with 32 bits ops or
+    // paired 64 bits ops
     else if (Is_CVTL_Opcode(opcode)) {
       opnd_tn[0] = Expand_Expr (WN_kid0(expr), expr, NULL);
-
-#ifdef TARG_ST
-      // Could be Truncation or Extension:
-      // It is not entirely clear whether this is machine dependent:
-      // for IA64 and MIPS they make sign extensions to 32 bits.
-      // I must pass two operands to Expand_OP: opnd_tn[0] -- what
-      // is being cvtl'd, and the new size to convert to:
-      opnd_tn[1] = 
-           Gen_Literal_TN (MTYPE_bit_size(WN_rtype(expr)), 4);
-#else
       opnd_tn[1] = Gen_Literal_TN (32, 4);
-#endif
-
       num_opnds = 2;
     }
+#endif
     else
     {
       Is_True(WN_desc(expr) != MTYPE_B || WN_rtype(WN_kid0(expr)) == MTYPE_B,
@@ -3699,7 +3803,6 @@ Expand_Expr (
 #ifdef TARG_ST
   case OPR_MPY:
     return Handle_MPY (expr, result, opcode);
-
   case OPR_MADD:
     return Handle_MADD (expr, result, opcode);
 #endif

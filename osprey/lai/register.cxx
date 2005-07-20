@@ -712,6 +712,10 @@ REGISTER_SET_Difference_Range(
   REGISTER       high
 )
 {
+#ifdef TARG_ST
+  FmtAssert ((INT)high >= (INT)low,
+	     ("REGISTER_SET_Difference_Range: high < low"));
+#endif
   return REGISTER_SET_Difference(set, REGISTER_SET_Range(low, high));
 }
 

@@ -124,7 +124,7 @@ extern void Expand_Branch ( TN *targ, TN *src1, TN *src2, VARIANT variant, OPS *
 
 /* Check that compare is of proper form, and return TOP to use for 
  * the compare.  May modify the variant and src tns. */
-extern TOP Pick_Compare_TOP (VARIANT *variant, TN **src1, TN **src2, BOOL is_integer, OPS *ops);
+extern TOP Pick_Compare_TOP (VARIANT *variant, TN **src1, TN **src2, BOOL *is_integer, OPS *ops);
 
 /* in exp_divrem: */
 extern TN* Expand_Divide (TN *result, TN *src1, TN *src2, TYPE_ID mtype, OPS *ops);

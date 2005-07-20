@@ -298,11 +298,8 @@ OP_Copy_Operand (
     }
   }
 
-  switch (opcode) {
-  case TOP_mov_r:
-  case TOP_mov_i:
-  case TOP_mov_ii:
-    return 0;
+  if (TOP_is_move(opcode)) {
+    return TOP_Find_Operand_Use(opcode, OU_opnd1);
   }
 
   // [CG]: Some ops may be marked as copy
@@ -555,10 +552,11 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
     switch(regform) {
       CASE_TOP(mov);
       CASE_TOP(sub);
+      CASE_TOP_I(stp);
       CASE_TOP_I(stw);
       CASE_TOP_I(sth);
       CASE_TOP_I(stb);
-      CASE_TOP_I(stp);
+      CASE_TOP_I(ldp);
       CASE_TOP_I(ldw);
       CASE_TOP_I(ldh);
       CASE_TOP_I(ldb);
@@ -569,7 +567,6 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(ldb_d);
       CASE_TOP_I(ldhu_d);
       CASE_TOP_I(ldbu_d);
-      CASE_TOP_I(ldp);
       CASE_TOP_I(pft);
     }
   } else if (opnd == 1) {
@@ -866,14 +863,14 @@ TOP_opnd_use_bits(TOP top, int opnd)
     CASE_TOP(mulhu):
       return 32;
 
+    CASE_TOP_I(stp):
+      return opnd == 2 ? 64: 32;
     CASE_TOP_I(stw):
       return opnd == 2 ? 32: 32;
     CASE_TOP_I(sth):
       return opnd == 2 ? 16: 32;
     CASE_TOP_I(stb):
       return opnd == 2 ? 8: 32;
-    CASE_TOP_I(stp):
-      return opnd == 2 ? 64: 32;
   }
   
   return -1;
@@ -961,6 +958,9 @@ TOP_opnd_use_signed(TOP top, int opnd)
   case TOP_mtb:
       return TRUE;
     
+  case TOP_movp:
+      return TRUE;
+
   case TOP_sxth:
   case TOP_sxtb:
     return TRUE;
@@ -1004,10 +1004,10 @@ TOP_opnd_use_signed(TOP top, int opnd)
     CASE_TOP(mulhu):
       return TRUE;
 
+    CASE_TOP_I(stp):
     CASE_TOP_I(stw):
     CASE_TOP_I(sth):
     CASE_TOP_I(stb):
-    CASE_TOP_I(stp):
       return TRUE;
   }
   

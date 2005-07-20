@@ -461,6 +461,7 @@ extern BOOL CG_LOOP_optimize_non_trip_countable;
 extern BOOL CG_LOOP_unroll_do_unwind;
 extern BOOL CG_LOOP_unroll_remainder_after;
 extern BOOL CG_LOOP_unroll_multi_bb;
+extern BOOL CG_LOOP_load_store_packing;
 #endif
 /* Exported functions.
  */

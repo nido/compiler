@@ -88,9 +88,20 @@ GRA_Trace_Color_LRANGE( const char* str, LRANGE* lrange )
 {
   char buff[100];
 
+#ifdef TARG_ST
+  if (trace_color && 1 <= trace_detail) {
+    fprintf(TFile,"<gra> %s p %g (%g/%g) %s\n",str,
+	    lrange->Priority() / lrange->Colorability_Benefit(),
+	    lrange->Priority(),
+	    lrange->Colorability_Benefit(),
+	    lrange->Format(buff));
+    return;
+  }
+#else
   if (trace_color && 1 <= trace_detail)
     fprintf(TFile,"<gra> %s p %g %s\n",str,lrange->Priority(),
                                            lrange->Format(buff));
+#endif
 }
 
 /////////////////////////////////////
@@ -298,6 +309,51 @@ print_lr( LRANGE *lr)
   }
 }
 
+#ifdef TARG_ST
+/////////////////////////////////////
+void
+GRA_Trace_Local_Colorability (LRANGE *lrange)
+{
+  if (trace_color) {
+    fprintf (TFile, "Local Colorability: ");
+    print_lr (lrange);
+    fprintf (TFile, " ");
+    lrange->Print_Local_Colorability (TFile);
+    fprintf (TFile, "\n");
+  }
+}
+
+/////////////////////////////////////
+void
+GRA_Trace_Local_Colorability_Benefit (LRANGE *lr, LRANGE *neighbor, float b)
+{
+  if (trace_color) {
+    fprintf (TFile, "Local Colorability Benefit to ");
+    print_lr (neighbor);
+    fprintf (TFile, " of spilling ");
+    print_lr (lr);
+    fprintf (TFile, "= %g\n", (double)b);
+  }
+}
+
+/////////////////////////////////////
+void
+GRA_Trace_Allowed_Registers (LRANGE *lr, REGISTER_SET subclass_allowed,
+			     REGISTER_SET allowed)
+{
+  if (trace_color) {
+    fprintf (TFile, "<gra> Subclass allowed: ");
+    print_lr (lr);
+    fprintf (TFile, " ");
+    REGISTER_SET_Print (subclass_allowed, TFile);
+    fprintf (TFile, "\n<gra> Allowed: ");
+    print_lr (lr);
+    fprintf (TFile, " ");
+    REGISTER_SET_Print (allowed, TFile);
+    fprintf (TFile, "\n");
+  }
+}
+#endif
 /////////////////////////////////////
 void
 GRA_Trace_Preference_Attempt(LRANGE* lrange0, LRANGE* lrange1,

@@ -119,6 +119,7 @@
 
 #ifdef TARG_ST
 #include "top_properties.h"
+#include "mexpand.h"
 #endif
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
@@ -794,6 +795,12 @@ CG_Generate_Code(
     GRA_Finalize_Grants();
   }
 
+#ifdef TARG_ST
+  Set_Error_Phase ("MExpand");
+  Convert_To_Multi_Ops ();
+  Check_for_Dump (TP_ALLOC, NULL);
+#endif
+
 #ifdef LAO_ENABLED
   } /* !CG_LAO_optimizations */
 #endif
@@ -802,6 +809,10 @@ CG_Generate_Code(
     /* Check that we didn't introduce a new gp reference */
     Adjust_GP_Setup_Code( Get_Current_PU_ST(), TRUE /* allocate registers */ );
 
+#ifdef TARG_ST
+    /* Adjust stack frame temporaries before finalizing the frame layout. */
+    Adjust_Stack_Frame(Get_Current_PU_ST());
+#endif
     /* The stack frame is final at this point, no more spilling after this.
      * We can set the Frame_Len now.
      * Then we can go through all the entry/exit blocks and fix the SP 

@@ -196,6 +196,7 @@ BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 #ifdef TARG_ST
 BOOL CG_LOOP_unroll_do_unwind = FALSE;
 BOOL CG_LOOP_unroll_remainder_after = FALSE;
+BOOL CG_LOOP_load_store_packing = FALSE;
 #endif
 BOOL CG_LOOP_ignore_pragmas = FALSE;
 
@@ -6146,11 +6147,18 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       }
 
       cg_loop.Recompute_Liveness();
-
       cg_loop.EBO_After_Unrolling();
-
-      break;
     }
+
+    if (CG_LOOP_load_store_packing) { 
+      CG_LOOP cg_loop(loop);
+      if (!cg_loop.Has_prolog_epilog()) 
+	return FALSE;
+      cg_loop.Build_CG_LOOP_Info();
+      Perform_Load_Packing(loop);
+    }
+
+    break;
 
   case SINGLE_BB_WHILELOOP_SWP:
     {

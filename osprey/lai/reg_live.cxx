@@ -983,6 +983,69 @@ BOOL REG_LIVE_Outof_BB (ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb)
   return REG_LIVE_Implicit_Use_Outof_BB (cl, reg, bb);
 }
 
+#ifdef TARG_ST
+// Return the number of registers in the range
+//     [<cl,reg> : <cl,reg+nregs-1>]
+// that are live on entry to basic block <bb>.
+INT
+NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs, BB *bb)
+{
+  INT count = 0;
+  REGISTER r;
+  FOR_ALL_NREGS(reg, nregs, r) {
+    if (REG_LIVE_Into_BB(cl, r, bb)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Return the number of registers in the range
+//     [<cl,reg> : <cl,reg+nregs-1>]
+// that are live on exit from basic block <bb>.
+INT
+NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER reg, INT nregs, BB *bb)
+{
+  INT count = 0;
+  REGISTER r;
+  FOR_ALL_NREGS(reg, nregs, r) {
+    if (REG_LIVE_Outof_BB(cl, r, bb)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Return the number of registers from the set REGS
+// that are live on entry to basic block BB.
+INT
+NREGS_Live_Into_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs, BB *bb)
+{
+  INT count = 0;
+  REGISTER r;
+  FOR_ALL_REGISTER_SET_members (regs, r) {
+    if (REG_LIVE_Into_BB (cl, r, bb)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Return the number of registers from the set REGS
+// that are live on exit from basic block BB.
+INT
+NREGS_Live_Outof_BB(ISA_REGISTER_CLASS cl, REGISTER_SET regs, BB *bb)
+{
+  INT count = 0;
+  REGISTER r;
+  FOR_ALL_REGISTER_SET_members (regs, r) {
+    if (REG_LIVE_Outof_BB (cl, r, bb)) {
+      count++;
+    }
+  }
+  return count;
+}
+#endif
 
 // Adds (<cl>,<reg>) into live-in sets for <bb>.
 void REG_LIVE_Update(ISA_REGISTER_CLASS cl, REGISTER reg, BB *bb)

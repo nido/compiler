@@ -193,6 +193,10 @@ BOOL EBO_Trace_Data_Flow    = FALSE;
 BOOL EBO_Trace_Hash_Search  = FALSE;
 
 #ifdef TARG_ST
+static BOOL EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo);
+#endif
+
+#ifdef TARG_ST
 // [CG] Use alias information from cg_dep
 #define CG_DEP_ALIAS
 // [CG] Update gra live information for better dead code
@@ -1805,8 +1809,18 @@ delete_memory_op (
 
   if (OP_unalign_mem(op) || OP_unalign_mem(opinfo->in_op)) return FALSE;
 
+
   size_pred = OP_Mem_Ref_Bytes(opinfo->in_op);
   size_succ = OP_Mem_Ref_Bytes(op);
+
+#ifdef TARG_ST
+  // Handle only the case where both are non-multi ops
+  // or both are multi ops.
+  if (OP_multi(op) != OP_multi(opinfo->in_op)) return FALSE;
+
+  // For multi ops handle only the case of same size ops
+  if (OP_multi(op) && size_pred != size_succ) return FALSE;
+#endif
 
   if (OP_load(op) && OP_load(opinfo->in_op)) {
    /* 
@@ -1955,7 +1969,14 @@ delete_memory_op (
         fprintf(TFile,"%sRemove Store - Load combination\n",EBO_trace_pfx);
       }
 
+#ifdef TARG_ST
+    // Handle multi ops.
+    for (i = 0; i < OP_results(op); i++) {
+      EBO_Exp_COPY(predicate_tn, OP_result(op, i), OP_opnd(opinfo->in_op, storeval_idx+i), &ops);
+    }
+#else
       EBO_Exp_COPY(predicate_tn, OP_result(op, 0), storeval_tn, &ops);
+#endif
 
       if (EBO_in_loop) 
 	EBO_Set_OP_omega (OPS_first(&ops),
@@ -5232,6 +5253,15 @@ Find_BB_TNs (BB *bb)
              !TN_is_gra_homeable(tn_replace) ||
              (tninfo_replace->in_bb == bb)) &&
             (TN_register_class(actual_tn) == TN_register_class(tn_replace)) &&
+#ifdef TARG_ST
+	    ! (EBO_in_peep && OP_opnd_is_multi(op, opndnum)) &&
+#endif
+#ifdef TARG_ST
+	    // Don't allow propagation of non dedicated into a dedicated single register subclass operand
+	    (!(!TN_is_dedicated(tn_replace) && TN_is_dedicated(OP_opnd(op, opndnum)) &&
+	       ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)) != ISA_REGISTER_SUBCLASS_UNDEFINED &&
+	       ISA_REGISTER_SUBCLASS_INFO_Count (ISA_REGISTER_SUBCLASS_Info (ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)))) == 1)) &&
+#endif
 #ifdef TARG_ST200
 	    (!(has_assigned_reg(actual_tn) && OP_code(op) == TOP_asm)) &&
 #endif
@@ -5454,6 +5484,10 @@ Find_BB_TNs (BB *bb)
 #ifdef TARG_ST
 	if (!op_replaced && OP_select(op))
 	  op_replaced = EBO_Fix_Select_Same_Args(op, opnd_tn, opnd_tninfo);
+#endif
+#ifdef TARG_ST
+	if (!op_replaced)
+	  op_replaced = EBO_Extract_Compose_Sequence(op, opnd_tn, opnd_tninfo);
 #endif
 
       }
@@ -6262,8 +6296,74 @@ op_is_needed:
   return;
 }
   
+
+#ifdef TARG_ST
+/* ===================================================================== *
+ * Some Target independent optimizations.
+ * ===================================================================== */
+
+/*
+ * EBO_Extract_Compose_Sequence
+ *
+ * Perform some copy optimizations on across compose/extract and
+ * extract/compose sequences.
+ */
+static BOOL
+EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  TN *res = OP_result(op, 0);
+  TN *tn1;
+  TN *tn2;
+
+  if (OP_compose(op)) {
+    /* Find defining extract and verify that operands/results match. */
+    EBO_OP_INFO *def_opinfo = NULL;
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      EBO_TN_INFO *tninfo = opnd_tninfo[i];
+      EBO_OP_INFO *opinfo = locate_opinfo_entry(tninfo);
+      if (opinfo == NULL || opinfo->in_op == NULL) return FALSE;
+      if (def_opinfo == NULL) def_opinfo = opinfo;
+      if (!OP_extract(def_opinfo->in_op)) return FALSE;
+      if (def_opinfo->actual_rslt[i] != tninfo) return FALSE;
+    }
+    if (def_opinfo == NULL) return FALSE;
+    EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[0];
+    if (tninfo == NULL) return FALSE;
+    if (!EBO_tn_available(OP_bb(op), tninfo)) return FALSE;
+    OPS ops = OPS_EMPTY;
+    Exp_COPY(OP_result(op, 0), tninfo->local_tn, &ops);
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    if (EBO_Trace_Optimization) {
+#pragma mips_frequency_hint NEVER
+      fprintf(TFile,"Extract_Compose_Sequence - replaced extract/compose by widemove\n");
+    }
+    return TRUE;
+  }
+  if (OP_extract(op)) {
+    /* Find defining compose. */
+    EBO_TN_INFO *tninfo = opnd_tninfo[0];
+    EBO_OP_INFO *def_opinfo = locate_opinfo_entry(tninfo);
+    if (def_opinfo == NULL || def_opinfo->in_op == NULL) return FALSE;
+    if (!OP_compose(def_opinfo->in_op)) return FALSE;
+    OPS ops = OPS_EMPTY;
+    for (INT i = 0; i < OP_results(op); i++) {
+      EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[i];
+      if (!EBO_tn_available(OP_bb(op), tninfo)) return FALSE;
+      Exp_COPY(OP_result(op, i), tninfo->local_tn, &ops);
+    }
+    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+    if (EBO_Trace_Optimization) {
+#pragma mips_frequency_hint NEVER
+      fprintf(TFile,"Extract_Compose_Sequence - replaced compose/extract by copies\n");
+    }
+    return TRUE;
+  }
+  return FALSE;
+}
+#endif
   
 /* ===================================================================== */
+
 
 
 /* 

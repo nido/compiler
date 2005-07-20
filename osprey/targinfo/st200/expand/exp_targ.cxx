@@ -80,7 +80,7 @@
 #include "topcode.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
-
+#include "config_TARG.h"
 
 /* Do we force inlining of extended immediates. */
 static BOOL Inline_Extended_Immediate = FALSE;
@@ -127,7 +127,9 @@ Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops)
       result = Expand_Immediate_Into_Register (mtype, src, ops);
       break;
     case ISA_REGISTER_CLASS_integer:
-      if (TN_value(src) == 0) 
+      if (Enable_64_Bits_Ops && MTYPE_is_longlong(mtype)) {
+	result = Expand_Immediate_Into_Register (mtype, src, ops);
+      } else if (TN_value(src) == 0) 
 	result = Zero_TN;
       else if (Inline_Extended_Immediate || 
 	       ISA_LC_Value_In_Class (TN_value(src), LC_isrc2)) 
@@ -140,7 +142,9 @@ Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops)
 		    MTYPE_name(mtype)));
     }
   } else if (TN_is_symbol(src)) {
-    if (Inline_Extended_Immediate)
+    if (Enable_64_Bits_Ops && MTYPE_is_longlong(mtype))
+      result =  Expand_Immediate_Into_Register (mtype, src, ops);
+    else if (Inline_Extended_Immediate)
       result = src;
     else 
       result =  Expand_Immediate_Into_Register (mtype, src, ops);
@@ -148,6 +152,97 @@ Expand_Or_Inline_Immediate(TN *src, TYPE_ID mtype, OPS *ops)
     FmtAssert(0, ("unexpected constant TN"));
   }
   return result;
+}
+
+/* ====================================================================
+ *   Expand_Compose (tgt_tn, low_tn, high_tn, ops)
+ * ====================================================================
+ */
+void
+Expand_Compose (
+  TN *tgt_tn,
+  TN *low_tn,
+  TN *high_tn,
+  OPS *ops
+)
+{
+  TOP top = TOP_UNDEFINED;
+  Is_True(TN_size(tgt_tn) == 8 && TN_size(low_tn) == 4 && TN_size(high_tn) == 4, ("Expected compose invalid"));
+  
+  if (Enable_64_Bits_Ops) {
+    if (TN_has_value(low_tn))
+      low_tn = Expand_Immediate_Into_Register (MTYPE_U4, low_tn, ops);
+    if (TN_has_value(high_tn))
+      high_tn = Expand_Immediate_Into_Register (MTYPE_U4, high_tn, ops);
+    top = TOP_composep;
+  }
+  
+  FmtAssert(top != TOP_UNDEFINED, ("Unimplemented"));
+
+  Build_OP(top, tgt_tn, low_tn, high_tn, ops);
+}
+
+/* ====================================================================
+ *   Expand_Extract (low_tn, high_tn, src_tn, ops)
+ * ====================================================================
+ */
+void
+Expand_Extract (
+  TN *low_tn,
+  TN *high_tn,
+  TN *src_tn,
+  OPS *ops
+)
+{
+  TOP top = TOP_UNDEFINED;
+  Is_True(TN_size(src_tn) == 8 && TN_size(low_tn) == 4 && TN_size(high_tn) == 4, ("Expected extract invalid"));
+
+  if (Enable_64_Bits_Ops) {
+    if (TN_has_value(src_tn))
+      src_tn = Expand_Immediate_Into_Register (MTYPE_U8, src_tn, ops);
+    top = TOP_extractp;
+  }
+  
+  FmtAssert(top != TOP_UNDEFINED, ("Unimplemented"));
+
+  Build_OP(top, low_tn, high_tn, src_tn, ops);
+}
+
+/* ====================================================================
+ *   Expand_Multi (tgt_tn, low_tn, high_tn, ops)
+ * ====================================================================
+ */
+void
+Expand_Multi (
+  TN *tgt_tn,
+  TN *src_tn,
+  OPS *ops
+)
+{
+  ISA_REGISTER_CLASS tgt_rc = TN_register_class(tgt_tn);
+  ISA_REGISTER_CLASS src_rc = TN_register_class(src_tn);
+  INT tgt_size = TN_size(tgt_tn);
+  INT src_size = TN_size(src_tn);
+
+  if (tgt_size == 8 && src_size == 4 && TN_is_dedicated(src_tn)) {
+    TN *high_tn = Build_Dedicated_TN (TN_register_class(src_tn),
+				   TN_register(src_tn) + 1,
+				   TN_size(src_tn));
+    Expand_Compose(tgt_tn, src_tn, high_tn, ops);
+  } else if (tgt_size == 4 && src_size == 8 && TN_is_dedicated(tgt_tn)) {
+    TN *high_tn = Build_Dedicated_TN (TN_register_class(tgt_tn),
+				   TN_register(tgt_tn) + 1,
+				   TN_size(tgt_tn));
+    Expand_Extract(tgt_tn, high_tn, src_tn, ops);
+  } else {
+    goto unsupported;
+  }
+  return;
+ unsupported:
+  FmtAssert(FALSE,
+	    ("Expand_Multi: unsupported multi copy %s (size:%d)-> %s (size: %d)",
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)), src_size,
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc)), tgt_size));
 }
 
 /* ====================================================================
@@ -170,21 +265,39 @@ Expand_Copy (
   ISA_REGISTER_CLASS tgt_rc = TN_register_class(tgt_tn);
   ISA_REGISTER_CLASS src_rc = TN_register_class(src_tn);
 
+  INT tgt_size = TN_size(tgt_tn);
+  INT src_size = TN_size(src_tn);
+
   switch (src_rc) {
 
     case ISA_REGISTER_CLASS_integer:
 
       if (tgt_rc == ISA_REGISTER_CLASS_integer) {
-	// FdF 20050608: Add support for predicated MOV operations
 	if (guard == NULL) {
-	  Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
-	  Set_OP_copy (OPS_last(ops));
+	  if (tgt_size == 4 && src_size == 4) {
+	    Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
+	    Set_OP_copy (OPS_last(ops));
+	  } else if (Enable_64_Bits_Ops &&
+		   tgt_size == 8 && src_size == 8) {
+	    Build_OP(TOP_movp, tgt_tn, src_tn, ops);
+	    Set_OP_copy (OPS_last(ops));
+	  } else {
+	    goto unsupported;
+	  }
+	} else {
+	  if (tgt_size == 4 && src_size == 4) {
+	    Expand_Select(tgt_tn, guard, src_tn, tgt_tn, MTYPE_I4, FALSE, ops);
+	  } else if (Enable_64_Bits_Ops &&
+		     tgt_size == 8 && src_size == 8) {
+	    Expand_Select(tgt_tn, guard, src_tn, tgt_tn, MTYPE_I8, FALSE, ops);
+	  } else {
+	    goto unsupported;
+	  }
 	}
-	else
-	  Expand_Select(tgt_tn, guard, src_tn, tgt_tn, MTYPE_I4, FALSE, ops);
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	if (guard) goto unsupported;
+	if (guard != NULL) goto unsupported;
+	if (src_size != 4) goto unsupported;
 	Build_OP(TOP_mtb, tgt_tn, src_tn, ops);
       }
       else goto unsupported;
@@ -211,6 +324,7 @@ Expand_Copy (
 	Set_OP_copy (OPS_last(ops));
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_integer) {
+	if (tgt_size != 4) goto unsupported;
 	Build_OP(TOP_mfb, tgt_tn, src_tn, ops);
       }
       else goto unsupported;
@@ -222,9 +336,9 @@ Expand_Copy (
   return;
  unsupported:
   FmtAssert(FALSE,
-	    ("Expand_Copy: unsupported copy %s -> %s",
-	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)),
-	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc))));
+	    ("Expand_Copy: unsupported copy %s (size:%d)-> %s (size: %d)",
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(src_rc)), src_size,
+	     ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(tgt_rc)), tgt_size));
   return;
 }
 
@@ -363,10 +477,6 @@ Expand_Convert (
   OPS  *ops
 )
 {
-  INT16 src_length;     /* Length to convert from */
-  INT16 new_length;	/* Length to convert to */
-  TOP opc = TOP_UNDEFINED;
-
   /* conversions to int: */
   if (MTYPE_is_class_integer(rtype)) {
 
@@ -375,15 +485,30 @@ Expand_Convert (
       return;
     }
     else if (MTYPE_is_class_integer(desc)) {
-      Expand_Convert_Length (result, op1, op2, desc, TRUE, ops);
-      return;
+      if (Enable_64_Bits_Ops && MTYPE_is_longlong(desc)) {
+	if (MTYPE_byte_size(rtype) == 4) {
+	  TN *high = Build_TN_Of_Mtype (MTYPE_U4);
+	  Expand_Extract(result, high, op1, ops);
+	  return;
+	}
+      } else if (Enable_64_Bits_Ops && MTYPE_is_longlong(rtype)) {
+	if (MTYPE_byte_size(desc) == 4) {
+	  TN *high = Build_TN_Of_Mtype (MTYPE_U4);
+	  if (MTYPE_is_signed(desc)) {
+	    Expand_Shift(high, op1, Gen_Literal_TN(31,4), desc, shift_aright, ops);
+	  } else {
+	    high = Expand_Or_Inline_Immediate(Gen_Literal_TN(0,4), desc, ops);
+	  }
+	  Expand_Compose(result, op1, high, ops);
+	  return;
+	}
+      } else {
+	Expand_Convert_Length (result, op1, op2, desc, TRUE, ops);
+	return;
+      }
     }
   }
 
-  if (opc != TOP_UNDEFINED) {
-      Build_OP (opc, result, op1, ops);
-      return;
-  }
 
   FmtAssert(0,("Expand_Convert: unsupported conversion %s -> %s",
 		               MTYPE_name(desc), MTYPE_name(rtype)));
@@ -447,7 +572,14 @@ Exp_Immediate (
     break;
     
   case ISA_REGISTER_CLASS_integer:
-    if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_isrc2)) {
+    if (Enable_64_Bits_Ops && TN_size(dest) == 8) {
+      FmtAssert(TN_has_value(src),("Exp_Immediate: MTYPE_I8 <- symbol is invalid"));
+      UINT32 low = (UINT32)(TN_value(src) & 0xFFFFFFFF);
+      UINT32 high = (UINT32)((TN_value(src)>>32) & 0xFFFFFFFF);
+      TN *low_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(low, 4), ops);
+      TN *high_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(high, 4), ops);
+      Expand_Compose (dest, low_tn, high_tn, ops);
+    } else if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_isrc2)) {
       if (val == 0) Build_OP (TOP_mov_r, dest, Zero_TN, ops);
       else Build_OP (TOP_mov_i, dest, src, ops);
     } else {
@@ -522,7 +654,7 @@ Expand_Add (
 	     ("Expand_Add: both operands const ?"));
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
 
   if (TN_is_constant(src1)) {
@@ -633,9 +765,8 @@ Expand_Sub (
 	     ("Expand_Sub: both operands const ?"));
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-
 
 
   if (TN_Has_Value(src2)) {
@@ -687,9 +818,37 @@ Expand_Neg (
 {
   FmtAssert (TN_is_register(src),
 	     ("Expand_Neg: operand const ?"));
+
+  if (MTYPE_is_float(mtype)) {
+    if (mtype == MTYPE_F8) {
+      if (Enable_64_Bits_Ops) {
+	TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+	TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+	TN *value = Gen_Literal_TN(0x80000000, 4);
+	TN *lowdest = low1;
+	TN *highdest = Build_TN_Of_Mtype (MTYPE_U4);
+	Expand_Extract(low1, high1, src, ops);
+	Expand_Binary_Xor(highdest, high1, value, MTYPE_U4, ops);
+	Expand_Compose(dest, lowdest, highdest, ops);
+	return;
+      } else {
+	FmtAssert(0, ("Unexpected 8 bytes type"));
+      }
+    } else if (mtype == MTYPE_F4) {
+	if (Enable_Single_Float_Ops) {
+	    TN *value = Gen_Literal_TN(0x80000000LL, 4) ;
+	    Expand_Binary_Xor(dest, src, value, MTYPE_U4, ops);
+	    return ;
+	} else {
+	    FmtAssert(0, ("Unexpected 4 bytes type"));
+	}
+    } else {
+	FmtAssert(0, ("Unexpected floating point type"));
+    }
+  }
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
 
   Build_OP (TOP_sub_r, dest, Zero_TN, src, ops);
@@ -710,11 +869,32 @@ Expand_Abs (
 {
   FmtAssert (TN_is_register(src),
 	     ("Expand_Abs: operand const ?"));
+
+  if (MTYPE_is_float(mtype)) {
+    if (mtype == MTYPE_F8) {
+      if (Enable_64_Bits_Ops) {
+	TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+	TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+	TN *value = Gen_Literal_TN(0x7FFFFFFF, 4);
+	TN *lowdest = low1;
+	TN *highdest = Build_TN_Of_Mtype (MTYPE_U4);
+	Expand_Extract(low1, high1, src, ops);
+	Expand_Binary_And(highdest, high1, value, MTYPE_U4, ops);
+	Expand_Compose(dest, lowdest, highdest, ops);
+	return;
+      } else {
+	FmtAssert(0, ("Unexpected 8 bytes type"));
+      }
+    }
+  }
+
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
   
 
   if (MTYPE_is_integral(mtype)) {
+    FmtAssert (MTYPE_byte_size(mtype) == 4,
+	       ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
       //
       // For dest = abs (src) generate:
       //  
@@ -725,6 +905,8 @@ Expand_Abs (
     Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
     Build_OP (TOP_max_r, dest, negx, src, ops);
   } else if (MTYPE_is_float(mtype)) {
+    FmtAssert (MTYPE_byte_size(mtype) == 4,
+	       ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
     TN *mask = Gen_Literal_TN(0x7fffffff, 4);
     Expand_Binary_And(dest, src, mask, MTYPE_I4, ops);
   } else {
@@ -752,8 +934,50 @@ Expand_Shift (
 	     ("Expand_Shift: operand const ?"));
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
-	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
+
+  if (Enable_64_Bits_Ops && MTYPE_is_longlong(mtype)) {
+    if (TN_has_value(src2)) {
+      TN *reg_src2 = Expand_Immediate_Into_Register(MTYPE_U4, src2, ops);
+      Expand_Shift(result, src1, reg_src2, mtype, kind, ops);
+      return;
+    }
+    // Use intrinsics interface.
+    TN *opnds[3];
+    TN *results[2];
+    INTRINSIC intr_id;
+    TN *low_src1 = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *high_src1 = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *low_res = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *high_res = Build_TN_Of_Mtype (MTYPE_U4);
+    if (Target_Byte_Sex == BIG_ENDIAN) {
+      opnds[0] = high_src1;
+      opnds[1] = low_src1;
+      opnds[2] = src2;
+      results[0] = high_res;
+      results[1] = low_res;
+    } else {
+      opnds[0] = low_src1;
+      opnds[1] = high_src1;
+      opnds[2] = src2;
+      results[0] = low_res;
+      results[1] = high_res;
+    }
+    switch (kind) {
+    case shift_left:
+      intr_id = INTRN_SHLL;
+      break;
+    case shift_aright:
+      intr_id = INTRN_SHRL;
+      break;
+    case shift_lright:
+      intr_id = INTRN_SHRUL;
+      break;
+    }
+    Expand_Extract(low_src1, high_src1, src1, ops);
+    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops);
+    Expand_Compose(result, low_res, high_res, ops);
+    return;
+  }
 
   // On this target shift value is mod 256
   if (TN_Has_Value(src2)) {
@@ -931,9 +1155,8 @@ Expand_Multiply (
 
   FmtAssert (Register_Class_For_Mtype(rmtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(rmtype)));
-  FmtAssert (MTYPE_is_integral(rmtype),
+  FmtAssert (MTYPE_is_integral(rmtype) && MTYPE_byte_size(rmtype) <= 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(rmtype)));
-
 
   //
   // Check for two constants
@@ -1147,6 +1370,8 @@ Expand_Logical_Not (
   OPS *ops
 )
 {
+  FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
+
   /* dest = (src == 0) ? 1 : 0 */
 
   TOP opcode = TOP_UNDEFINED;
@@ -1229,6 +1454,7 @@ Expand_Logical_And (
 {
   TOP opcode = TOP_UNDEFINED;
   
+  FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Logical_And: both operands const ?"));
 
@@ -1277,6 +1503,7 @@ Expand_Logical_Or (
 {
   TOP opcode = TOP_UNDEFINED;
 
+  FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Logical_Or: both operands const ?"));
 
@@ -1324,6 +1551,22 @@ Expand_Binary_Complement (
 )
 {
   Is_True(MTYPE_is_class_integer(mtype),("not integer for complement"));
+
+  if (MTYPE_byte_size(mtype) == 8) {
+    if (Enable_64_Bits_Ops) {
+      TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *lowres = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *highres = Build_TN_Of_Mtype (MTYPE_U4);
+      Expand_Extract(low1, high1, src, ops);
+      Expand_Binary_Complement (lowres, low1, MTYPE_U4, ops);
+      Expand_Binary_Complement (highres, high1, MTYPE_U4, ops);
+      Expand_Compose(dest, lowres, highres, ops);
+      return;
+    } else {
+      FmtAssert(0, ("Unexpected 8 bytes type"));
+    }
+  }
 
   /* complement == xor src 0xffffffff */
   Build_OP (TOP_xor_i, dest, src, Gen_Literal_TN(-1, 4), ops);
@@ -1409,6 +1652,25 @@ Expand_Binary_And (
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Binary_And: both operands const ?"));
 
+  if (MTYPE_byte_size(mtype) == 8) {
+    if (Enable_64_Bits_Ops) {
+      TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *low2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *lowres = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *highres = Build_TN_Of_Mtype (MTYPE_U4);
+      Expand_Extract(low1, high1, src1, ops);
+      Expand_Extract(low2, high2, src2, ops);
+      Expand_Binary_And (lowres, low1, low2, MTYPE_U4, ops);
+      Expand_Binary_And (highres, high1, high2, MTYPE_U4, ops);
+      Expand_Compose(dest, lowres, highres, ops);
+      return;
+    } else {
+      FmtAssert(0, ("Unexpected 8 bytes type"));
+    }
+  }
+
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
     Expand_Binary_And (dest, src2, src1, mtype, ops);
@@ -1455,6 +1717,25 @@ Expand_Binary_Or (
 
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Binary_Or: both operands const ?"));
+
+  if (MTYPE_byte_size(mtype) == 8) {
+    if (Enable_64_Bits_Ops) {
+      TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *low2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *lowres = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *highres = Build_TN_Of_Mtype (MTYPE_U4);
+      Expand_Extract(low1, high1, src1, ops);
+      Expand_Extract(low2, high2, src2, ops);
+      Expand_Binary_Or (lowres, low1, low2, MTYPE_U4, ops);
+      Expand_Binary_Or (highres, high1, high2, MTYPE_U4, ops);
+      Expand_Compose(dest, lowres, highres, ops);
+      return;
+    } else {
+      FmtAssert(0, ("Unexpected 8 bytes type"));
+    }
+  }
 
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
@@ -1511,6 +1792,25 @@ Expand_Binary_Xor (
 
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Binary_Or: both operands const ?"));
+
+  if (MTYPE_byte_size(mtype) == 8) {
+    if (Enable_64_Bits_Ops) {
+      TN *low1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high1 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *low2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *high2 = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *lowres = Build_TN_Of_Mtype (MTYPE_U4);
+      TN *highres = Build_TN_Of_Mtype (MTYPE_U4);
+      Expand_Extract(low1, high1, src1, ops);
+      Expand_Extract(low2, high2, src2, ops);
+      Expand_Binary_Xor (lowres, low1, low2, MTYPE_U4, ops);
+      Expand_Binary_Xor (highres, high1, high2, MTYPE_U4, ops);
+      Expand_Compose(dest, lowres, highres, ops);
+      return;
+    } else {
+      FmtAssert(0, ("Unexpected 8 bytes type"));
+    }
+  }
 
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
@@ -1577,6 +1877,49 @@ Expand_Bool_Comparison (
 }
 
 /* ====================================================================
+ *   Expand_Int_Compares
+ * ====================================================================
+ */
+static void
+Expand_Int_Compares (
+  TN *dest,			    
+  TN *src1,
+  TN *src2,
+  VARIANT variant,
+  OPS *ops
+  ) 
+{
+  TOP action;
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
+    BOOL is_integer = FALSE;
+    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+    FmtAssert(action != TOP_UNDEFINED, ("Expand_Int_Compares: unhandled variant"));
+    if (is_integer) {
+      TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Build_OP (action, tmp_int, src1, src2, ops);
+      Expand_Copy(dest, NULL, tmp_int, ops);
+    } else {
+      Build_OP (action, dest, src1, src2, ops);
+    }
+  }
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+    BOOL is_integer = TRUE;
+    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+    FmtAssert(action != TOP_UNDEFINED, ("Expand_Int_Compares: unhandled variant"));
+    if (!is_integer) {
+      TN *tmp_br = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+      Build_OP (action, tmp_br, src1, src2, ops);
+      Expand_Copy(dest, NULL, tmp_br, ops);
+    } else {
+      Build_OP (action, dest, src1, src2, ops);
+    }
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Int_Compares: unhandled cmp target TN"));
+  }
+  return;
+}
+/* ====================================================================
  *   Expand_Int_Less
  * ====================================================================
  */
@@ -1599,19 +1942,7 @@ Expand_Int_Less (
     Is_True(FALSE, ("Expand_Int_Less: MTYPE_%s is not handled",
 		                               Mtype_Name(desc)));
   }
-  
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Less: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1638,18 +1969,7 @@ Expand_Int_Less_Equal (
                                                   Mtype_Name(desc)));
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Less_Equal: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1677,18 +1997,7 @@ Expand_Int_Equal (
                                                   Mtype_Name(desc)));
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Equal: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1722,18 +2031,7 @@ Expand_Int_Not_Equal (
                                                    Mtype_Name(desc)));
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Not_Equal: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1760,18 +2058,7 @@ Expand_Int_Greater_Equal (
                                                      Mtype_Name(desc)));
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Greater_Equal: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1799,18 +2086,7 @@ Expand_Int_Greater (
                                                   Mtype_Name(desc)));
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, FALSE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    action = Pick_Compare_TOP (&variant, &src1, &src2, TRUE, ops);
-    Build_OP (action, dest, src1, src2, ops);
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Int_Greater: unhandled cmp target TN"));
-  }
-
+  Expand_Int_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -1882,6 +2158,262 @@ Expand_Bool_To_Int (
   return;
 }
 
+
+/* ====================================================================
+ *   Expand_Float_Add
+ * ====================================================================
+ */
+static void
+Expand_Float_Add(
+  TN *result,
+  TN *src1, 
+  TN *src2, 
+  TYPE_ID fmtype,
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
+      top = TOP_addf_n;
+#if 0
+  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
+      top = TOP_addf;
+  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
+      top = TOP_addd;
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Add: unexpected MTYPE %s", MTYPE_name(fmtype)));
+
+  Build_OP (top, result, src1, src2, ops);
+}
+
+
+/* ====================================================================
+ *   Expand_Float_Sub
+ * ====================================================================
+ */
+static void
+Expand_Float_Sub(
+  TN *result,
+  TN *src1, 
+  TN *src2, 
+  TYPE_ID fmtype,
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
+      top = TOP_subf_n;
+#if 0
+  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
+      top = TOP_subf;
+  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
+      top = TOP_subd;
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Sub: unexpected MTYPE %s", MTYPE_name(fmtype)));
+
+  Build_OP (top, result, src1, src2, ops);
+}
+
+/* ====================================================================
+ *   Expand_Float_Multiply
+ * ====================================================================
+ */
+static void
+Expand_Float_Multiply(
+  TN *result,
+  TN *src1, 
+  TN *src2, 
+  TYPE_ID fmtype,
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
+      top = TOP_mulf_n;
+#if 0
+  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
+      top = TOP_mulf;
+  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
+      top = TOP_muld;
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Multiply: unexpected MTYPE %s", MTYPE_name(fmtype)));
+
+  Build_OP (top, result, src1, src2, ops);
+}
+
+
+/* ====================================================================
+ *   Expand_Float_Div
+ * ====================================================================
+ */
+static void
+Expand_Float_Div(
+  TN *result,
+  TN *src1, 
+  TN *src2, 
+  TYPE_ID fmtype,
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED;
+  
+#if 0
+  if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
+      top = TOP_divf;
+  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
+      top = TOP_divd;
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Div: unexpected MTYPE %s", MTYPE_name(fmtype))); 
+
+  Build_OP (top, result, src1, src2, ops);
+}
+
+/* ====================================================================
+ *   Expand_Float_Macc_Op
+ * ====================================================================
+ */
+static void
+Expand_Float_Macc_Op(
+		     BOOL add_not_sub,
+		     BOOL negate_result,
+		     TN *result,
+		     TN *src1, 
+		     TN *src2, 
+		     TN *src3, 
+		     TYPE_ID fmtype,
+		     OPS *ops)
+{
+  /* [-] ((src2 * src3) (+|-) src1) */
+  TN *r = Build_TN_Like (result) ;
+  TN *final_result;
+
+  if (negate_result) {
+    final_result = result;
+    result = Build_TN_Like (result);
+  }
+
+  Expand_Float_Multiply (r, src2, src3, fmtype, ops);
+  if (add_not_sub) {
+    Expand_Float_Add (result, r, src1, fmtype, ops);
+  } else {
+    Expand_Float_Sub (result, r, src1, fmtype, ops);
+  }
+  if (negate_result) {
+    Expand_Neg (final_result, result, fmtype, ops);
+  }
+}
+
+/* ====================================================================
+ *   Expand_Flop
+ * ====================================================================
+ */
+void 
+Expand_Flop (
+  OPCODE opcode, 
+  TN *result, 
+  TN *src1, 
+  TN *src2, 
+  TN *src3, 
+  OPS *ops)
+{
+  OPERATOR opr = OPCODE_operator(opcode);
+  TYPE_ID fmtype = OPCODE_rtype(opcode);
+  switch (opr) {
+  case OPR_ADD:
+    Expand_Float_Add(result, src1, src2, fmtype, ops);
+    break;
+  case OPR_SUB:
+    Expand_Float_Sub(result, src1, src2, fmtype, ops);
+    break;
+  case OPR_MPY:
+    Expand_Float_Multiply(result, src1, src2, fmtype, ops);
+    break;
+  case OPR_DIV:
+    Expand_Float_Div(result, src1, src2, fmtype, ops);
+    break;
+  case OPR_MADD:
+    /* src2 * src3 + src1 */
+    Expand_Float_Macc_Op(TRUE, FALSE, result, src1, src2, src3, fmtype, ops);
+    break;
+  case OPR_NMADD:
+    /* -((src2 * src3) + src1)  */
+    Expand_Float_Macc_Op(TRUE, TRUE, result, src1, src2, src3, fmtype, ops);
+    break;
+  case OPR_MSUB:
+    /*  src2 * src3 - src1 */
+    Expand_Float_Macc_Op(FALSE, FALSE, result, src1, src2, src3, fmtype, ops);
+    break;
+  case OPR_NMSUB:
+    /* - ((src2 * src3) - src1 */
+    Expand_Float_Macc_Op(FALSE, TRUE, result, src1, src2, src3, fmtype, ops);
+    break;
+  case OPR_RECIP:
+  case OPR_RSQRT:
+    FmtAssert(FALSE,("Not Implemented: %s", OPCODE_name(opcode)));
+    break;
+  default:
+    FmtAssert(FALSE,("Not Implemented: %s", OPCODE_name(opcode)));
+  }
+  return;
+}
+
+/* ====================================================================
+ *   Expand_Float_To_Float
+ * ====================================================================
+ */
+void 
+Expand_Float_To_Float (
+  TN *dest, 
+  TN *src, 
+  TYPE_ID mtype, 
+  OPS *ops)
+{    
+#if 0
+    if (Enable_Single_Float_Ops && Enable_Double_Float_Ops) { 
+	if (mtype == MTYPE_F4) {
+	    TOP top = TOP_convdf ;
+	    Build_OP (top, dest, src, ops);
+	    return ;
+	}
+	else if (mtype == MTYPE_F8) {
+	    TOP top = TOP_convfd ;
+	    Build_OP (top, dest, src, ops);
+	    return ; 
+	}
+	else
+	    FmtAssert(FALSE, ("NYI: Expand_Float_To_Float mtype"));      
+  }
+#endif
+  FmtAssert(FALSE,("Not Implemented"));
+}
+
+/* ====================================================================
+ *   Expand_Int_To_Float
+ * ====================================================================
+ */
+void 
+Expand_Int_To_Float (
+  TN *dest, 
+  TN *src, 
+  TYPE_ID imtype, 
+  TYPE_ID fmtype, 
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED ;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_I4)
+      top = TOP_convif_n ;
+#if 0
+  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4)
+      top = imtype == MTYPE_I4 ? TOP_convif : imtype == MTYPE_U4 ? TOP_convuf : TOP_UNDEFINED ;
+  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype)) 
+      top = imtype == MTYPE_I4 ? TOP_convid : imtype == MTYPE_U4 ? TOP_convud : TOP_UNDEFINED ;
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Int_To_Float: unexpected IMTYPE or FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
+
+  Build_OP (top, dest, src, ops);
+}
+
 /* ====================================================================
  *   Expand_Float_To_Int
  *
@@ -1898,7 +2430,59 @@ Expand_Float_To_Int (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  TOP top = TOP_UNDEFINED;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_I4) {
+      switch (rm) {
+      case ROUND_CHOP:
+	top = TOP_convfi_n ;
+	break;
+	/* All others are not supported. */
+      case ROUND_USER:
+      case ROUND_NEAREST:
+      case ROUND_NEG_INF:
+      case ROUND_PLUS_INF:
+      default:
+	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
+	break;
+      }
+    }
+#if 0
+  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4 && (imtype == MTYPE_I4 || imtype == MTYPE_U4)) {
+      BOOL is_signed = MTYPE_is_signed(imtype);
+      switch (rm) {
+      case ROUND_CHOP:
+	top = is_signed ? TOP_convfi : TOP_convfu;
+	break;
+	/* All others are not supported. */
+      case ROUND_USER:
+      case ROUND_NEAREST:
+      case ROUND_NEG_INF:
+      case ROUND_PLUS_INF:
+      default:
+	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
+	break;
+      }
+    } else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype) && (imtype == MTYPE_I4 || imtype == MTYPE_U4)) {
+      BOOL is_signed = MTYPE_is_signed(imtype);
+      switch (rm) {
+      case ROUND_CHOP:
+	top = is_signed ? TOP_convdi : TOP_convdu;
+	break;
+	/* All others are not supported. */
+      case ROUND_USER:
+      case ROUND_NEAREST:
+      case ROUND_NEG_INF:
+      case ROUND_PLUS_INF:
+      default:
+	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
+	break;
+      }
+    }
+#endif
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_To_Int: unexpected IMTYPE %s of FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
+
+  Build_OP (top, dest, src, ops);
 
   return;
 }
@@ -1916,7 +2500,7 @@ Expand_Float_To_Int_Cvt (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Expand_Float_To_Int (ROUND_USER, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -1932,7 +2516,7 @@ Expand_Float_To_Int_Round (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Expand_Float_To_Int (ROUND_NEAREST, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -1948,7 +2532,7 @@ Expand_Float_To_Int_Trunc (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Expand_Float_To_Int (ROUND_CHOP, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -1964,7 +2548,7 @@ Expand_Float_To_Int_Floor (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Expand_Float_To_Int (ROUND_NEG_INF, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -1980,7 +2564,7 @@ Expand_Float_To_Int_Ceil (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  Expand_Float_To_Int (ROUND_PLUS_INF, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -2038,12 +2622,28 @@ Expand_Compare_And_Select (
   FmtAssert(!is_float, ("Not Implemented"));
   */
 
-  TOP cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, FALSE, ops);
+  BOOL is_integer = FALSE;
+  TOP cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, &is_integer, ops);
+  // If first try failed, try to invert it.
+  if (cmp1 == TOP_UNDEFINED && (variant == V_BR_FNE || variant == V_BR_DNE)) {
+    variant = (variant == V_BR_FNE) ? V_BR_FEQ : V_BR_DEQ;
+    TN *tmp = true_tn; true_tn = false_tn; false_tn = tmp;
+    cmp1 = Pick_Compare_TOP (&variant, &cond1, &cond2, &is_integer, ops);
+  }
+  FmtAssert (cmp1 != TOP_UNDEFINED,
+	     ("Expand_Compare_And_Select: unexpected comparison"));
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+  if (is_integer) {
+    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+    Build_OP (cmp1, tmp_int, cond1, cond2, ops);
+    Expand_Copy(p1, NULL, tmp_int, ops);
+  } else {
+    Build_OP (cmp1, p1, cond1, cond2, ops);
+  }
 
-  Build_OP (cmp1, p1, cond1, cond2, ops);
-
-  Expand_Select (dest, p1, true_tn, false_tn, MTYPE_I4, is_float, ops);
+  Expand_Select (dest, p1, true_tn, false_tn,
+		 (TN_size(dest) == 8) ? MTYPE_I8 : MTYPE_I4,
+		 is_float, ops);
 
   return;
 }
@@ -2094,6 +2694,26 @@ Expand_Select (
     Build_OP (TOP_mtb, tmp, cond_tn, ops);
     cond_tn = tmp;
   }
+
+  if (Enable_64_Bits_Ops && MTYPE_byte_size(mtype) == 8) {
+    TN *true_low_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *true_high_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *false_low_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *false_high_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *dest_low_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    TN *dest_high_tn = Build_TN_Of_Mtype (MTYPE_U4);
+    Expand_Extract (true_low_tn, true_high_tn, true_tn, ops);
+    Expand_Extract (false_low_tn, false_high_tn, false_tn, ops);
+    Build_OP (TOP_slct_r, dest_low_tn, cond_tn, true_low_tn, false_low_tn,
+	      ops);
+    Build_OP (TOP_slct_r, dest_high_tn, cond_tn, true_high_tn, false_high_tn,
+	      ops);
+    Expand_Compose (dest_tn, dest_low_tn, dest_high_tn, ops);
+    return;
+  }
+
+  FmtAssert (MTYPE_byte_size(mtype) == 4,
+	     ("Unexpected mtype in Expand_Select"));
 
   // Process immediate operand
   if (TN_is_constant(true_tn)) {
@@ -2172,8 +2792,6 @@ Exp_Select_And_Condition (
 {
   OPS newops = OPS_EMPTY;
 
-  //  TOP cmp = Pick_Compare_TOP (&variant, &cmp_kid1, &cmp_kid2, &newops);
-
   switch (variant) {
   case V_BR_PEQ:
   case V_BR_PNE:
@@ -2230,7 +2848,7 @@ Expand_Min (
 	     ("Expand_Add: both operands const ?"));
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
   
   
@@ -2281,7 +2899,7 @@ Expand_Max (
 	     ("Expand_Add: both operands const ?"));
   FmtAssert (Register_Class_For_Mtype(mtype) == ISA_REGISTER_CLASS_integer,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
-  FmtAssert (MTYPE_is_integral(mtype),
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
   
   
@@ -2340,14 +2958,42 @@ Expand_MinMax (
  */
 static void
 Expand_Float_Compares(
-  TOP cmp_opcode,
   TN *dest,
   TN *src1,
   TN *src2,
+  VARIANT variant,
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  TOP action;
+  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
+    BOOL is_integer = FALSE;
+    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+    FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
+    if (is_integer) {
+      TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Build_OP (action, tmp_int, src1, src2, ops);
+      Expand_Copy(dest, NULL, tmp_int, ops);
+    } else {
+      Build_OP (action, dest, src1, src2, ops);
+    }
+  }
+  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+    BOOL is_integer = TRUE;
+    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+    FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
+    if (!is_integer) {
+      TN *tmp_br = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+      Build_OP (action, tmp_br, src1, src2, ops);
+      Expand_Copy(dest, NULL, tmp_br, ops);
+    } else {
+      Build_OP (action, dest, src1, src2, ops);
+    }
+  }
+  else {
+    FmtAssert(FALSE, ("Expand_Float_Compares: unhandled cmp target TN"));
+  }
+  return;
 }
 
 /* ====================================================================
@@ -2364,7 +3010,20 @@ Expand_Float_Less (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
+
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLT: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2381,7 +3040,20 @@ Expand_Float_Greater (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
+
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGT: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2398,7 +3070,20 @@ Expand_Float_Less_Equal (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
+
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLE: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2415,7 +3100,20 @@ Expand_Float_Greater_Equal (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
+
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGE: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2432,7 +3130,20 @@ Expand_Float_Equal (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
+
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FEQ: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2449,23 +3160,27 @@ Expand_Float_Not_Equal (
   OPS *ops
 )
 {
-  Expand_Float_Compares(TOP_noop, dest, src1, src2, ops);
-}
+  FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
-/* ====================================================================
- *   Exp_ST220_Sqrt
- * ====================================================================
- */
-static void
-Expand_ST220_Sqrt (
-  TN *result,
-  TN *src,
-  TYPE_ID mtype,
-  OPS *ops
-)
-{
-  FmtAssert(FALSE,("Not Implemented"));
+  switch (mtype) {
+  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FNE: V_NONE;
+    break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
+    break;
+  default:
+    break;
+  }
+  FmtAssert(variant != V_NONE, ("unimplemented"));
 
+  if (variant == V_BR_FNE || variant == V_BR_DNE) {
+    /* Must use V_BR_EQ instead. */
+    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Expand_Float_Equal(tmp_int, src1, src2, V_NONE, mtype, ops);
+      Expand_Logical_Not(dest, tmp_int, V_NONE, ops);
+      return;
+  }
+
+  Expand_Float_Compares(dest, src1, src2, variant, ops);
   return;
 }
 
@@ -2481,22 +3196,23 @@ Expand_Sqrt (
   OPS *ops
 )
 {
-  static BOOL initialized;
-  static void (*exp_sqrt)(TN *, TN *, TYPE_ID, OPS *) = Expand_ST220_Sqrt;
-
-  FmtAssert(FALSE,("Not Implemented"));
-
-  if (!initialized) {
-    const char * const alg = CGEXP_sqrt_algorithm;
-    if (strcasecmp(alg, "st220") == 0) {
-      exp_sqrt = Expand_ST220_Sqrt;
-    } else {
-      DevWarn("invalid fdiv algorithm: %s", alg);
-    }
-    initialized = TRUE;
+  TOP opcode = TOP_UNDEFINED;
+#if 0
+  switch (mtype) {
+  case MTYPE_F4: 
+    if (Enable_Single_Float_Ops) opcode = TOP_sqrtf;
+    break;
+  case MTYPE_F8: 
+    if (Enable_Double_Float_Ops) opcode = TOP_sqrtd;
+    break;
+  default:
+    break;
   }
+#endif
+  FmtAssert(opcode != TOP_UNDEFINED,("Not Implemented"));
 
-  exp_sqrt(result, src, mtype, ops);
+  Build_OP (opcode, result, src, ops);
+  return;
 }
 
 /* ====================================================================
@@ -2842,18 +3558,29 @@ Expand_Const (
   // Since we keep them in integer registers, just make a mov
   //
 
-  switch (TCON_ty(tc)) {
-
-  case MTYPE_F4:
-    Build_OP(TOP_mov_i, dest, src, ops);
-    break;
-
-  default:
-    extern void dump_tn (TN*);
-    dump_tn (dest);
-    dump_tn (src);
-    FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
+  if (MTYPE_is_float(mtype) &&
+      mtype == TCON_ty(tc) &&
+      (mtype == MTYPE_F4 || mtype == MTYPE_F8)) {
+    if (mtype == MTYPE_F4) {
+      Build_OP(TOP_mov_i, dest, src, ops);
+    } else if (Enable_64_Bits_Ops && mtype == MTYPE_F8) {
+      INT64 fimm = TCON_k0(tc);
+      UINT32 low = (UINT32)(fimm & 0xFFFFFFFF);
+      UINT32 high = (UINT32)((fimm>>32) & 0xFFFFFFFF);
+      TN *low_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(low, 4), ops);
+      TN *high_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(high, 4), ops);
+      Expand_Compose (dest, low_tn, high_tn, ops);
+    } else {
+      goto unsupported;
+    }
+  } else {
+    goto unsupported;
   }
   return;
+ unsupported:
+  extern void dump_tn (TN*);
+  dump_tn (dest);
+  dump_tn (src);
+  FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
 }
 

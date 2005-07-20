@@ -151,6 +151,16 @@ friend class LRANGE_LUNIT_ITER;
 private:
   INT32               id;		// for implementing LRANGE_SETs
   INT32               neighbors_left;
+#ifdef TARG_ST
+  // [SC] Data for local colorability test.
+  INT32               conflict;         // Register conflict with neighbors
+  INT32               candidates;       // The number of candidate regs available
+  float               colorability_benefit; // The sum across all neighbors of the
+                                        // benefit to the neighbors of spilling
+                                        // this live range.
+                                        // Defined only if the node is not locally
+                                        // colorable.
+#endif
   INT32               priority_queue_index; // its index in the priority queue;
 					// used by coloring to implement fast 
 					// removal from its ready/not-ready 
@@ -195,8 +205,15 @@ private:
     struct lrange_local_specific {
       GRA_BB *gbb;		// block to which it is local
       LRANGE *next_bb_local_lrange;	// internally linked BB_Local_List
+#ifdef TARG_ST
+      INT nregs; // N registers for wired registers
+#endif
     } l;
   }                     u;
+#ifdef TARG_ST
+  REGISTER_SET Allowed_Registers(GRA_REGION* region,
+				 BOOL include_subclass_requirements);
+#endif
 public:
   LRANGE(void) {}
   ~LRANGE(void) {}
@@ -208,10 +225,21 @@ public:
   TN* Tn(void) 			{ DevAssert(!(type == LRANGE_TYPE_LOCAL),
 					("No TN for local LRANGEs."));
 			  	  return u.c.tn; }
+#ifdef TARG_ST
+  INT NHardRegs(void)           { return (type == LRANGE_TYPE_LOCAL ? 
+					  (Has_Wired_Register() ? 
+					   u.l.nregs:
+					   1) :
+					  TN_nhardregs(u.c.tn)); }
+#endif
   INTERFERE Neighbors(void)	{ return u.c.neighbors; }
   INT32 Neighbors_Left(void) 	{ return neighbors_left; }
   INT32 Neighbors_Left_Increment(void) { return ++neighbors_left; }
   INT32 Neighbors_Left_Decrement(void) { return --neighbors_left; }
+#ifdef TARG_ST
+  BOOL Locally_Colorable(void)  { return candidates > conflict; }
+  float Colorability_Benefit (void) { return colorability_benefit; }
+#endif
   float Priority(void)		{ return priority; }
   void Priority_Set(float p) 	{ priority = p; }
   ISA_REGISTER_CLASS Rc(void)	{ return rc; }
@@ -269,8 +297,13 @@ public:
   BOOL No_Appearance(void)	{ return flags & LRANGE_FLAGS_no_appearance; }
   void No_Appearance_Set(void)	{ flags = (LR_FLAG)(flags|LRANGE_FLAGS_no_appearance); }
 
+#ifdef TARG_ST
+  void Wire_Register(REGISTER r, INT nregs){ flags = (LR_FLAG)(flags|LRANGE_FLAGS_has_wired_register);
+				  reg = r; u.l.nregs = nregs;}
+#else
   void Wire_Register(REGISTER r){ flags = (LR_FLAG)(flags|LRANGE_FLAGS_has_wired_register);
 				  reg = r; }
+#endif
 //              Give <lrange> a wired register <reg>.
   void Preallocated_Region_Invariant(REGISTER r) {
 				  flags = (LR_FLAG)(flags|LRANGE_FLAGS_region_invariant);
@@ -311,11 +344,18 @@ public:
   void Add_LUNIT( LUNIT* lunit );
   void Add_Lunit(  LUNIT* lunit );
   REGISTER_SET Allowed_Registers(GRA_REGION* region);
+#ifdef TARG_ST
+  REGISTER_SET SubClass_Allowed_Registers(GRA_REGION* region);
+#endif
   BOOL Interferes( LRANGE* lr1 );
   void Region_Interference( LRANGE* lrange1,
 			    GRA_REGION* region );
   void Remove_Neighbor(LRANGE* neighbor, GRA_REGION* region );
+#ifdef TARG_ST
+  void Allocate_Register( REGISTER reg, INT nregs );
+#else
   void Allocate_Register( REGISTER reg );
+#endif
   INT32 Neighbor_Count(void);
   void Calculate_Priority(void);
   BOOL Find_LUNIT_For_GBB( const GRA_BB* gbb, LUNIT** lunitp );
@@ -323,6 +363,12 @@ public:
   void Recompute_Preference(void);
   char* Format( char* buff );
 #ifdef TARG_ST
+  INT32 Conflict (LRANGE *neighbor);
+  float Local_Colorability_Benefit (LRANGE *neighbor, BOOL include_listed = FALSE);
+  void Initialize_Local_Colorability (GRA_REGION *region);
+  void Initialize_Colorability_Benefit (GRA_REGION *region);
+  BOOL Locally_Colorable_Remove_Neighbor (LRANGE *neighbor);
+  void Print_Local_Colorability (FILE *file);
   void Print(FILE *file);
 #endif
 };

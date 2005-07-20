@@ -129,6 +129,15 @@
  *
  *              float REGISTER_priority[REGISTER_MAX+1];
  *
+#ifdef TARG_ST
+ *  REGISTER iteration:
+ *
+ *      FOR_ALL_NREGS(start_reg, nregs, r)
+ *
+ *          Apply following statement to each register in the range
+ *            [ start_reg : start_reg + nregs - 1 ]
+ *
+#endif
  *  Initialization:
  *
  *      void REGISTER_Begin(void)
@@ -261,6 +270,16 @@
  *
  *          Is 'reg' a member of 'set'?
  *
+#ifdef TARG_ST
+ *      BOOL REGISTER_SET_MembersP(
+ *          REGISTER_SET set,
+ *          REGISTER     reg,
+ *          INT          nregs
+ *      )
+ *
+ *          Return TRUE if and only if
+ *          SET contains all of [REG..REG+NREGS-1].
+#endif
  *
  *      BOOL REGISTER_SET_IntersectsP(
  *          REGISTER_SET set1,
@@ -721,6 +740,12 @@ extern const REGISTER_SET REGISTER_SET_EMPTY_SET;
 #define REGISTER_MIN                ((REGISTER) 1)
 #define REGISTER_MAX                ((REGISTER) (ISA_REGISTER_MAX+REGISTER_MIN))
 
+#ifdef TARG_ST
+#  define FOR_ALL_NREGS(reg, nregs, r) \
+     FmtAssert(reg != REGISTER_UNDEFINED, ("FOR_ALL_NREGS: undefined register\n")); \
+     for (r = (reg); r < ((reg) + (nregs)); r++)
+#endif
+
 /* Exported data
  * =============
  */
@@ -961,6 +986,8 @@ REGISTER_CLASS_OP_Update_Mapping(
  * functions are defined in register.c.
  */
 
+extern REGISTER_SET REGISTER_SET_Range(UINT low, UINT high);
+
 inline BOOL
 REGISTER_SET_EqualP(
   REGISTER_SET set1,
@@ -1146,6 +1173,20 @@ REGISTER_SET_MemberP(
 	  & ((REGISTER_SET_WORD)1 << REGISTER_SET_BIT_IDX(bit))) != 0;
 }
 
+#ifdef TARG_ST
+// Return true if and only if [REG..REG+NREGS-1] are all in SET.
+inline BOOL
+REGISTER_SET_MembersP(
+		      REGISTER_SET set,
+		      REGISTER     reg,
+		      INT          nregs
+		      )
+{
+  return REGISTER_SET_ContainsP (set,
+				 REGISTER_SET_Range (reg, reg+nregs-1));
+}
+#endif
+
 extern REGISTER_SET
 REGISTER_SET_Difference_Range(
   REGISTER_SET   set,
@@ -1240,8 +1281,6 @@ extern void REGISTER_Set_Allocatable(
   BOOL               is_allocatable
 );
 
-extern REGISTER_SET REGISTER_SET_Range(UINT low, UINT high);
-
 // user wants given register to not be allocatable in file.
 extern void Set_Register_Never_Allocatable (char *regname);
 extern void Set_Register_Never_Allocatable (PREG_NUM preg);
@@ -1290,6 +1329,16 @@ extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLAS
 extern REGISTER_SET CGTARG_Forbidden_GRA_Registers(ISA_REGISTER_CLASS rclass);
 // [SC] The set of forbidden registers for LRA.
 extern REGISTER_SET CGTARG_Forbidden_LRA_Registers(ISA_REGISTER_CLASS rclass);
+
+
+// Returns the set of registers that will be selected in priority by
+// GRA (resp. LRA).
+// This may be used for instance to select some registers subjects
+// to multi load/store operations first.
+// This is NOT used for instance to select first caller or callee saved
+// register, this is handled specially in GRA or LRA.
+extern REGISTER_SET CGTARG_Prefered_GRA_Registers(ISA_REGISTER_CLASS rclass);
+extern REGISTER_SET CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass);
 #endif
 
 #endif /* REGISTER_INCLUDED */

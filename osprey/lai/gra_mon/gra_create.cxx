@@ -637,6 +637,10 @@ Create_Live_BB_Sets(void)
 // scan each block only once to both create the wired LRANGEs and do the
 // preferencing, this works.
 LRANGE** wired_lranges[ISA_REGISTER_CLASS_MAX + 1];
+#ifdef TARG_ST
+// We define an alternative array for possible paired hardwired registers
+LRANGE** wired_paired_lranges[ISA_REGISTER_CLASS_MAX + 1];
+#endif
 
 /////////////////////////////////////
 static void
@@ -654,6 +658,12 @@ Initialize_Wired_LRANGEs(void)
       TYPE_MEM_POOL_ALLOC_N(LRANGE*,&MEM_local_nz_pool, REGISTER_MAX + 1);
     BZERO(vec,(REGISTER_MAX + 1) * sizeof(LRANGE*));
     wired_lranges[rc] = vec;
+#ifdef TARG_ST
+    LRANGE** vec_paired =
+      TYPE_MEM_POOL_ALLOC_N(LRANGE*,&MEM_local_nz_pool, REGISTER_MAX + 1);
+    BZERO(vec_paired,(REGISTER_MAX + 1) * sizeof(LRANGE*));
+    wired_paired_lranges[rc] = vec_paired;
+#endif
   }
 }
 
@@ -667,9 +677,15 @@ Initialize_Wired_LRANGEs(void)
 #endif
 
 /////////////////////////////////////
+#ifdef TARG_ST
+static void
+Wired_TN_Reference( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg , INT nregs,
+		   LRANGE_LIST **wired_locals)
+#else
 static void
 Wired_TN_Reference( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg ,
 		   LRANGE_LIST **wired_locals)
+#endif
 /////////////////////////////////////
 //
 //  Possibly Generate a local LRANGE for a wired TN reference to <rc> <reg> in
@@ -679,12 +695,25 @@ Wired_TN_Reference( GRA_BB* gbb, ISA_REGISTER_CLASS rc, REGISTER reg ,
 {
   if ( REGISTER_IS_ALLOCATABLE(rc, reg) ) {
     LRANGE* lrange = wired_lranges[rc][reg];
+#ifdef TARG_ST
+    // Only handle paired wired register, not more currently.
+    if (nregs == 2) lrange = wired_paired_lranges[rc][reg];
+#endif
 
     if ( lrange == NULL || lrange->Gbb() != gbb ) {
+#ifdef TARG_ST
+      lrange = gbb->Create_Wired_LRANGE(rc,reg, nregs);
+      if (nregs == 1) wired_lranges[rc][reg] = lrange;
+      else if (nregs == 2) wired_paired_lranges[rc][reg] = lrange;
+      wired_locals[rc] = LRANGE_LIST_Push(lrange,
+					  wired_locals[rc],
+					  &MEM_local_nz_pool);
+#else
       wired_lranges[rc][reg] = gbb->Create_Wired_LRANGE(rc,reg);
       wired_locals[rc] = LRANGE_LIST_Push(wired_lranges[rc][reg],
 					  wired_locals[rc],
 					  &MEM_local_nz_pool);
+#endif
     }
   }
   // Else not allocatable
@@ -709,7 +738,15 @@ Get_Possibly_Wired_Reference( TN* tn, LRANGE** lrange )
     if ( ! REGISTER_IS_ALLOCATABLE(rc, reg))
       return FALSE;     // Not allocatable
 
+#ifdef TARG_ST
+    if (TN_nhardregs(tn) == 1) {
+      *lrange = wired_lranges[TN_register_class(tn)][TN_register(tn)];
+    } else if (TN_nhardregs(tn) == 2) {
+      *lrange = wired_paired_lranges[TN_register_class(tn)][TN_register(tn)];
+    }
+#else
     *lrange = wired_lranges[TN_register_class(tn)][TN_register(tn)];
+#endif
     return TRUE;
   }
   else if ( ! TN_Is_Allocatable(tn) )
@@ -723,7 +760,12 @@ Get_Possibly_Wired_Reference( TN* tn, LRANGE** lrange )
 /////////////////////////////////////
 static BOOL
 Complement_TN_Reference( OP* op, TN* tn, GRA_BB* gbb, LUNIT** lunitp,
+#ifdef TARG_ST
+			LRANGE_LIST **wired_locals,
+			ISA_REGISTER_SUBCLASS sc )
+#else
 			LRANGE_LIST **wired_locals )
+#endif
 /////////////////////////////////////
 //
 //  Record a reference to <tn> in <gbb> by making a LUNIT if TN has a
@@ -736,7 +778,11 @@ Complement_TN_Reference( OP* op, TN* tn, GRA_BB* gbb, LUNIT** lunitp,
 /////////////////////////////////////
 {
   if ( TN_is_dedicated(tn) ) {
+#ifdef TARG_ST
+    Wired_TN_Reference(gbb,TN_register_class(tn),TN_register(tn),TN_nhardregs(tn), wired_locals);
+#else
     Wired_TN_Reference(gbb,TN_register_class(tn),TN_register(tn),wired_locals);
+#endif
     return FALSE;
   }
   else if ( ! TN_Is_Allocatable(tn) )
@@ -770,6 +816,15 @@ Complement_TN_Reference( OP* op, TN* tn, GRA_BB* gbb, LUNIT** lunitp,
       (*lunitp)->True_Reference_Set();
       lrange_mgr.One_Set_Union1(lrange);
     }
+#ifdef TARG_ST
+    if (sc != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+      ISA_REGISTER_CLASS cl = TN_register_class (tn);
+      REGISTER_SET disallowed_regs =
+	REGISTER_SET_Difference (REGISTER_CLASS_universe (cl),
+				 REGISTER_SUBCLASS_members(sc));
+      (*lunitp)->SubClass_Disallowed_Add (disallowed_regs);
+    }
+#endif    
     return TRUE;
   }
 
@@ -788,8 +843,17 @@ Complement_Copy( OP* op, GRA_BB *gbb, std::list<GRA_PREF_CAND*>& pref_list )
 /////////////////////////////////////
 {
 #ifdef TARG_ST
-  TN* result        = OP_Copy_Result_TN(op);
-  TN* opnd          = OP_Copy_Operand_TN(op);
+  TN *result;
+  TN *opnd;
+  if (OP_compose (op) || OP_extract (op)) {
+    // [SC] For compose and extract, preference
+    // first operand to first result.
+    result = OP_result (op, 0);
+    opnd = OP_opnd (op, 0);
+  } else {
+    result = OP_Copy_Result_TN (op);
+    opnd = OP_Copy_Operand_TN (op);
+  }
 #else
   TN* result        = OP_result(op,0);
   TN* opnd          = CGTARG_Copy_Operand_TN(op);
@@ -1117,6 +1181,9 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
   for (iter.Init(gbb), op_count=1; ! iter.Done(); iter.Step(), op_count++ ) {
     OP*  xop = iter.Current();
 
+#ifdef TARG_ST
+      ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, xop);
+#endif
     for ( i = OP_opnds(xop) - 1; i >= 0; --i ) {
       TN *op_tn = OP_opnd(xop, i);
       if (! TN_is_register(op_tn))
@@ -1126,7 +1193,14 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 	gpl = gra_pref_mgr.LIVE_Create(&MEM_local_nz_pool);
 	hTN_MAP_Set(live_data, op_tn, gpl);
       }
+#ifdef TARG_ST
+      ISA_REGISTER_SUBCLASS sc = (asm_info
+				  ? ASM_OP_opnd_subclass (asm_info)[i]
+				  : OP_opnd_reg_subclass(xop, i));
+      if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals, sc)) {
+#else
       if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals)) {
+#endif
         if (!lunit->Has_Def()) {
 	  lunit->Has_Exposed_Use_Set();
 	  gpl->Exposed_Use_Set(TRUE);
@@ -1150,7 +1224,14 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       }
 
       if (OP_cond_def(xop)) { // there is a hidden use
+#ifdef TARG_ST
+	ISA_REGISTER_SUBCLASS sc = (asm_info
+				    ? ASM_OP_result_subclass (asm_info)[i]
+				    : OP_result_reg_subclass(xop, i));
+        if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals, sc)) {
+#else
         if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals)) {
+#endif
           if (!lunit->Has_Def()) {
 	    lunit->Has_Exposed_Use_Set();
 	    gpl->Exposed_Use_Set(TRUE);
@@ -1163,7 +1244,14 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       gpl->Num_Defs_Set(gpl->Num_Defs() + 1);
       gpl->Last_Def_Set(op_count);
 
+#ifdef TARG_ST
+      ISA_REGISTER_SUBCLASS sc = (asm_info
+				  ? ASM_OP_result_subclass (asm_info)[i]
+				  : OP_result_reg_subclass(xop, i));
+      if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals, sc)) {
+#else
       if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals)) {
+#endif
 	if (lunit) {
 	  //
 	  // Complement reference.  Want flag set if last def in the
@@ -1182,20 +1270,29 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 
 #ifdef TARG_ST200
     if (OP_code(xop) == TOP_asm) {
-      ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, xop);
       ISA_REGISTER_CLASS rc;
       FOR_ALL_ISA_REGISTER_CLASS(rc) {
 	REGISTER reg;
 	for (reg = REGISTER_SET_Choose(ASM_OP_clobber_set(asm_info)[rc]);
 	     reg != REGISTER_UNDEFINED;
 	     reg = REGISTER_SET_Choose_Next(ASM_OP_clobber_set(asm_info)[rc], reg)) {
+#ifdef TARG_ST
+	  Wired_TN_Reference(gbb, rc, reg, 1, wired_locals);
+#else
 	  Wired_TN_Reference(gbb, rc, reg, wired_locals);
+#endif
 	}
       }
     }
 #endif
 
+#ifdef TARG_ST
+    if ( CGTARG_Is_Preference_Copy(xop)
+	 || OP_extract(xop)
+	 || OP_compose(xop) )
+#else
     if ( CGTARG_Is_Preference_Copy(xop) )
+#endif
       Complement_Copy(xop, gbb, pref_list);
     else if ( ! OP_glue(xop) ) {
       TN* region_tn;

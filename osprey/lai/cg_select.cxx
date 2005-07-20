@@ -677,6 +677,11 @@ Can_Speculate_BB(BB *bb)
       TN *res = OP_result(op, opndnum);
       if (TN_is_register(res) && TN_is_global_reg(res) && TN_is_dedicated(res))
         return FALSE;
+      // [SC] cannot yet speculate paired registers (no support
+      // for paired-register select.
+      if (TN_nhardregs(res) > 1) {
+	return FALSE;
+      }
     }
 
     /* check if we are trying to speculate predicated ops */

@@ -122,11 +122,19 @@ Pick_Load_Imm_Instruction (
       // use rtype to pick load (e.g. if lda)
       top = Pick_Load_Imm_Instruction(rtype, rtype);
     }
+    break;
+  case MTYPE_F8: 
+    if (Enable_64_Bits_Ops) top = TOP_ldp_i; 
+    break;
+  case MTYPE_I8: 
+  case MTYPE_U8: 
+    if (Enable_64_Bits_Ops) top = TOP_ldp_i; 
+    break;
+  default:
+    break;
   }
 
-  if (top == TOP_UNDEFINED) {
-    FmtAssert(0,("Gen_Load_Imm_Instruction: mtype"));
-  }
+  FmtAssert(top != TOP_UNDEFINED,("Gen_Load_Imm_Instruction: mtype"));
 
   return top;
 }
@@ -197,6 +205,8 @@ Expand_Load (
   if (TN_has_value(ofst)) 
     top = TOP_opnd_immediate_variant(top, 0, TN_value(ofst));
 
+  FmtAssert(top != TOP_UNDEFINED,("Expand_Load: Immediate variant undefined for LOAD TOP"));
+
   Build_OP (top, result, ofst, base, ops);
   return;
 }
@@ -221,10 +231,17 @@ Pick_Store_Imm_Instruction (
   case MTYPE_U4:
   case MTYPE_F4:
   case MTYPE_A4: top = TOP_stw_i; break;
-
+  case MTYPE_F8: 
+    if (Enable_64_Bits_Ops) top = TOP_stp_i; 
+    break;
+  case MTYPE_I8: 
+  case MTYPE_U8: 
+    if (Enable_64_Bits_Ops) top = TOP_stp_i; 
+    break;
   default:
-    FmtAssert(FALSE, ("Gen_Store_Imm_Instruction mtype"));
+    break;
   }
+  FmtAssert(top != TOP_UNDEFINED, ("Gen_Store_Imm_Instruction mtype"));
 
   return top;
 }
@@ -287,6 +304,8 @@ Expand_Store (
 
   if (TN_has_value(ofst)) 
     top = TOP_opnd_immediate_variant(top, 0, TN_value(ofst));
+
+  FmtAssert(top != TOP_UNDEFINED,("Expand_Load: Immediate variant undefined for STORE TOP"));
 
   Build_OP (top, ofst, base, src, ops);
   return;
@@ -448,15 +467,23 @@ Expand_Composed_Load (
     
   INT32		alignment, nLoads, i;
   OPCODE	new_opcode, unsigned_opcode;
-  TYPE_ID	new_desc;
+  TYPE_ID	new_desc, cvt_rtype, unsigned_cvt_rtype;
   TN		*tmpV[8];
 
   new_desc = Composed_Align_Type(desc, variant, &alignment, &nLoads);
 
+  if (MTYPE_byte_size(rtype) > 4 &&
+      MTYPE_byte_size(new_desc) <= 4) {
+    cvt_rtype = Mtype_TransferSign(new_desc, MTYPE_U4);
+  } else {
+    cvt_rtype = rtype;
+  }
+  unsigned_cvt_rtype = Mtype_TransferSign(MTYPE_U4, cvt_rtype);
+
   // unsigned opcode for all but the most significant bits
-  unsigned_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, FALSE);
+  unsigned_opcode = OPCODE_make_signed_op(OPR_LDID, cvt_rtype, new_desc, FALSE);
   // opcode of the sign of desc for the most significant bits
-  new_opcode = OPCODE_make_signed_op(OPR_LDID, rtype, new_desc, MTYPE_is_signed(desc));
+  new_opcode = OPCODE_make_signed_op(OPR_LDID, cvt_rtype, new_desc, MTYPE_is_signed(desc));
   
 
   Is_True(nLoads > 1, ("Expand_Composed_Load with nLoads == %d", nLoads));
@@ -468,12 +495,25 @@ Expand_Composed_Load (
   INT endian_xor = (Target_Byte_Sex == BIG_ENDIAN) ? (nLoads-1) : 0;
   for (i=0; i < nLoads; i++) {
     INT idx = i ^ endian_xor;
-    tmpV[idx] = Build_TN_Of_Mtype(rtype);
+    OPCODE opcode;
+    TYPE_ID type;
     if (idx < nLoads-1) {
-      Expand_Load (unsigned_opcode, tmpV[idx], base, disp, ops);
+      opcode = unsigned_opcode;
+      type = unsigned_cvt_rtype;
     } else {
-      Expand_Load (new_opcode, tmpV[idx], base, disp, ops);
+      opcode = new_opcode;
+      type = cvt_rtype;
     }
+    TN *tmp = Build_TN_Of_Mtype(rtype);
+    if (rtype != cvt_rtype) {
+      TN *cvt_tmp = Build_TN_Of_Mtype(cvt_rtype);
+      Expand_Load (opcode, cvt_tmp, base, disp, ops);
+      Expand_Convert(tmp, cvt_tmp, Gen_Literal_TN(MTYPE_byte_size(rtype), 4),
+		     rtype, type, ops);
+    } else {
+      Expand_Load (opcode, tmp, base, disp, ops);
+    }
+    tmpV[idx] = tmp;
     Add_Disp_To_Addr_TNs (&base, &disp, alignment);
   }
 
@@ -482,13 +522,15 @@ Expand_Composed_Load (
    */
   INT nLoadBits = alignment * 8;
   TN *tmp0= Build_TN_Of_Mtype(rtype);
-  Build_OP(TOP_shl_i, tmp0, tmpV[nLoads-1], Gen_Literal_TN((nLoads-1)*nLoadBits, 4), ops);
+  Expand_Shift(tmp0, tmpV[nLoads-1], Gen_Literal_TN((nLoads-1)*nLoadBits, 4),
+	       rtype, shift_left, ops);
   for (i=nLoads-2; i >= 0; i--) {
     TN *tmp1= Build_TN_Of_Mtype(rtype);
     TN *tmp2= i == 0 ? result: Build_TN_Of_Mtype(rtype);
     TN *part = tmpV[i];
-    Build_OP(TOP_shl_i, tmp1, part, Gen_Literal_TN(i*nLoadBits, 4), ops);
-    Build_OP(TOP_or_r, tmp2, tmp0, tmp1, ops);
+    Expand_Shift(tmp1, part, Gen_Literal_TN(i*nLoadBits, 4),
+		 rtype, shift_left, ops);
+    Expand_Binary_Or(tmp2, tmp0, tmp1, rtype, ops);
     tmp0 = tmp2;
   }
 }
@@ -535,11 +577,10 @@ Expand_Misaligned_Load (
 {
   DevWarn("misaligned load encountered: TODO : differenciate between compiler an user generated");
 
-#ifdef GEN_MISALIGNED_ACCESS
-  Expand_Composed_Load (op, result, base, disp, variant, ops);
-#else
-  Expand_Forced_Misaligned_Load(op, result, base, disp, ops);
-#endif
+  if (Enable_Misaligned_Access)
+    Expand_Forced_Misaligned_Load(op, result, base, disp, ops);
+  else 
+    Expand_Composed_Load (op, result, base, disp, variant, ops);
 }
 
 /* ====================================================================
@@ -579,8 +620,15 @@ Expand_Composed_Store (
   if (Target_Byte_Sex == BIG_ENDIAN)
     Add_Disp_To_Addr_TNs (&base, &disp, MTYPE_alignment(mtype)-alignment);
 
-  Expand_Store (new_desc, obj, base, disp, ops); 
-  
+  if (MTYPE_byte_size(mtype) > 4 &&
+      MTYPE_byte_size(new_desc) <= 4) {
+    TN *tmp = Build_TN_Of_Mtype (MTYPE_U4);
+    Expand_Convert(tmp, obj, Gen_Literal_TN(32, 4), MTYPE_U4, mtype, ops);
+    Expand_Store (new_desc, tmp, base, disp, ops); 
+  } else {
+    Expand_Store (new_desc, obj, base, disp, ops); 
+  }
+
   while(--nStores >0) {
     TN *tmp = Build_TN_Of_Mtype(mtype);
     Expand_Shift(tmp, obj, Gen_Literal_TN(alignment*8, 4), 
@@ -590,7 +638,14 @@ Expand_Composed_Store (
       Add_Disp_To_Addr_TNs (&base, &disp, -alignment);
     else 
       Add_Disp_To_Addr_TNs (&base, &disp, alignment);
-    Expand_Store (new_desc, obj, base, disp, ops); 
+    if (MTYPE_byte_size(mtype) > 4 &&
+	MTYPE_byte_size(new_desc) <= 4) {
+      TN *tmp = Build_TN_Of_Mtype (MTYPE_U4);
+      Expand_Convert(tmp, obj, Gen_Literal_TN(32, 4), MTYPE_U4, mtype, ops);
+      Expand_Store (new_desc, tmp, base, disp, ops); 
+    } else {
+      Expand_Store (new_desc, obj, base, disp, ops); 
+    }
   }
 }
 
@@ -650,11 +705,10 @@ Expand_Misaligned_Store (
 {
   DevWarn("misaligned store encountered: TODO : differenciate between compiler an user generated");
 
-#ifdef GEN_MISALIGNED_ACCESS
-  Expand_Composed_Store (mtype, obj_tn, base_tn, disp_tn, variant, ops);
-#else
-  Expand_Forced_Misaligned_Store (mtype, obj_tn, base_tn, disp_tn, ops);
-#endif
+  if (Enable_Misaligned_Access) 
+    Expand_Forced_Misaligned_Store (mtype, obj_tn, base_tn, disp_tn, ops);
+  else
+    Expand_Composed_Store (mtype, obj_tn, base_tn, disp_tn, variant, ops);
 }
 
 /* ====================================================================
@@ -887,7 +941,7 @@ Exp_Ldst (
     }
 
     // because it is not GP-relative, just make the address
-    Build_OP (TOP_mov_i, tmp1, 
+    Build_OP (TOP_mov_ii, tmp1, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
     // load is of address, not of result type
@@ -1019,6 +1073,8 @@ void Exp_Prefetch (
     src2 = Gen_Literal_TN (0, 4);
   }
   opc = TOP_opnd_immediate_variant(opc, 0, TN_value(src2));
+  FmtAssert(opc != TOP_UNDEFINED,("Expand_Load: Immediate variant undefined for PREFETCH TOP"));
+
   Build_OP(opc, src2, src1, ops);
   return;
 }
@@ -1183,7 +1239,7 @@ Expand_Lda_Label (
   else {
     // [CG]: On the ST200 base model, address of a label
     // is the absolute address
-    Build_OP (TOP_mov_i, dest, lab, ops);
+    Build_OP (TOP_mov_ii, dest, lab, ops);
   }
 
 #if 0

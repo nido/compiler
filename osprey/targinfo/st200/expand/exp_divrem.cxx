@@ -290,6 +290,25 @@ Get_Power_Of_2 (
 }
 
 /* ====================================================================
+ * Expand the sequence for division and/or remainder by a variable.
+ * ====================================================================
+ */
+static void
+Expand_NonConst_DivRem (TN *quot, TN *rem, TN *x, TN *y, TYPE_ID mtype, OPS *ops)
+{
+    BOOL is_signed = MTYPE_is_signed(mtype);
+    if (quot) {
+      TOP divop = is_signed ? TOP_div : TOP_divu ;
+      Build_OP(divop, quot, x, y, ops) ;
+    } else if (rem) {
+      TOP remop = is_signed ? TOP_rem : TOP_remu ;
+      Build_OP(remop, rem, x, y, ops) ;
+    } else {
+	FmtAssert(FALSE, ("Expand_NonConst_DivRem unexpected expansion"));
+    }
+}
+
+/* ====================================================================
  *   Expand_Divide_By_Constant
  * ====================================================================
  */
@@ -411,8 +430,8 @@ Expand_Divide (
   OPS *ops
 )
 {
-  FmtAssert(mtype == MTYPE_I4 || mtype == MTYPE_U4,
-	                  ("Expand_Divide: mtype not handled"));
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
+	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
 
   /* Check for undefined operations we can detect at compile-time
    * and when enabled, generate run-time checks.
@@ -435,9 +454,7 @@ Expand_Divide (
     }
   }
 
-  // What the hell was this ? Just assert ...
-  Is_True(FALSE,("shouldn't be here"));
-
+  Expand_NonConst_DivRem(result, NULL, src1, src2, mtype, ops);
   return NULL;
 }
 
@@ -526,6 +543,9 @@ Expand_Rem (
   OPS *ops
 )
 {
+  FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
+	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
+
   //
   // Check for undefined operations we can detect at compile-time
   // and when enabled, generate run-time checks.
@@ -588,16 +608,7 @@ Expand_Rem (
 #endif
   }
 
-#if 0
-  //
-  // Arthur: do we need this ?
-  //
   Expand_NonConst_DivRem(NULL, result, src1, src2, mtype, ops);
-#endif
-
-  Is_True(FALSE,("not a power of 2 rem ?"));
-
-  return;
 }
 
 /* ====================================================================

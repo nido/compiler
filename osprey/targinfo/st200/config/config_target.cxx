@@ -472,8 +472,11 @@ Preconfigure_Target ( void )
   // Target provides only 32-bit instructions
   Only_32_Bit_Ops = TRUE;
 
+#ifndef TARG_ST
+  // [CG] Defined below as a core specific value
   // Target does not support floating point arithmetic
   Emulate_FloatingPoint_Ops = TRUE;
+#endif
 
   // Do not use the extract/compose whirl ops
   Enable_extract_compose = FALSE;
@@ -670,6 +673,51 @@ Configure_Target ()
     }
   }
 
+#ifdef TARG_ST
+  // [CG]: Configuration for floating point
+  Emulate_FloatingPoint_Ops = TRUE;
+  Emulate_Single_Float_Ops = TRUE;
+  Emulate_Double_Float_Ops = TRUE;
+
+  // [CG]: Configuration for non-ieee ops
+  if (Is_Target_st235()) {
+    if (!Enable_Non_IEEE_Ops_Set) 
+      Enable_Non_IEEE_Ops = TRUE;
+  } else {
+    Enable_Non_IEEE_Ops = FALSE;
+  }
+
+  // [CG]: Configuration for 64 bits
+  if (Is_Target_st235()) {
+    if (!Enable_64_Bits_Ops_Set) {
+      Enable_64_Bits_Ops = TRUE;
+    }    
+    Enable_Single_Float_Ops = TRUE;
+    Enable_Double_Float_Ops = TRUE && Enable_64_Bits_Ops;
+  } else {
+    Enable_64_Bits_Ops = FALSE;
+    Enable_Single_Float_Ops = FALSE;
+    Enable_Double_Float_Ops = FALSE;
+  }
+
+  // [CM]: Configuration for dismissible loads
+  if (Is_Target_st235()) {
+    if (!Enable_Dismissible_Load_Set) {
+      Enable_Dismissible_Load = FALSE;
+    }    
+  } 
+
+  // [CM]: Configuration for integer division and modulus operations
+  if (Is_Target_st235()) {
+    if (!Emulate_DivRem_Integer_Ops_Set) {
+      Emulate_DivRem_Integer_Ops = FALSE;
+    }    
+  } else {      
+    Emulate_DivRem_Integer_Ops = TRUE;
+  }
+#endif
+
+  
 #if defined(BACK_END)
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 #endif

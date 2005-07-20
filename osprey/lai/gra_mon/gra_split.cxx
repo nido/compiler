@@ -123,6 +123,9 @@
 #include "gra_region.h"
 #include "gra_trace.h"
 #include "gra_interfere.h"
+#ifdef TARG_ST
+#include "gra_color.h"
+#endif
 
 // Generate a priority queue type for GRA_BBs
 TYPE_PRQ(GRA_BB,GBBPRQ)
@@ -205,6 +208,11 @@ Print_Globals_N(INT n, ISA_REGISTER_CLASS rc)
 
 #endif
 
+#ifdef TARG_ST
+// [CG] Use Compare_Float_Nearly_Equal() moved to gra.cxx.
+extern BOOL Compare_Float_Nearly_Equal(float p1, float p2);
+#endif
+
 /////////////////////////////////////
 static BOOL
 Compare_Frequencies( GRA_BB* gbb0, GRA_BB* gbb1 )
@@ -253,6 +261,23 @@ Finalize_Priority_Queue(void)
   MEM_POOL_Pop(&prq_pool);
 }
 
+#ifdef TARG_ST
+static REGISTER_SET
+Subclass_Regs_Disallowed (GRA_BB *gbb)
+{
+  LUNIT *lunit = gbb_mgr.Split_LUNIT(gbb);
+
+  if (lunit != NULL) {
+    return lunit->SubClass_Disallowed();
+  } else {
+    ISA_REGISTER_CLASS rc = split_lrange->Rc();
+    return REGISTER_SET_Difference
+      (REGISTER_CLASS_allocatable(rc),
+       split_lrange->SubClass_Allowed_Registers (gbb->Region()));
+  }
+}
+
+#endif
 /////////////////////////////////////
 static REGISTER_SET
 Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
@@ -278,6 +303,9 @@ Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
     REGISTER_SET allowed_prefs = lunit->Allowed_Preferences();
 
     used = REGISTER_SET_Difference(used,allowed_prefs);
+#ifdef TARG_ST
+    used = REGISTER_SET_Union (used, lunit->SubClass_Disallowed());
+#endif
   }
 
   //
@@ -305,13 +333,12 @@ Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
   return used;
 }
 
+#ifndef TARG_ST
 /////////////////////////////////////
-#ifdef TARG_ST // [CL] this function is now used in gra_color.cxx...
-BOOL
-#else
 static BOOL
-#endif
 Compare_Priorities(float p1, float p2);
+#endif
+
 /////////////////////////////////////
 static BOOL
 Max_Colorable_LUNIT( LUNIT** result )
@@ -361,7 +388,7 @@ Max_Colorable_LUNIT( LUNIT** result )
       if ( !REGISTER_SET_EmptyP(REGISTER_SET_Difference(all_regs,regs_used)) ) {
         if ( ! found || lunit->Priority() > maxlunit->Priority() 
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
-	     && !Compare_Priorities(lunit->Priority(), maxlunit->Priority())
+	     && !Compare_Float_Nearly_Equal(lunit->Priority(), maxlunit->Priority())
 #endif
 	     ) {
           found = TRUE;
@@ -670,9 +697,19 @@ Add_To_Colorable_Neighborhood( GRA_BB* gbb )
 
 /////////////////////////////////////
 static BOOL
+#ifdef TARG_ST
+Avoid_Unit_Spill(GRA_BB* gbb,
+		 REGISTER_SET subclass_allowed_regs,
+		 REGISTER_SET allowed_regs,
+		 REGISTER_SET regs_used,
+		 REGISTER_SET *loop_subclass_allowed,
+		 REGISTER_SET *loop_allowed,
+		 ISA_REGISTER_CLASS rc, INT nregs, GRA_LOOP *maxloop)
+#else
 Avoid_Unit_Spill(GRA_BB* gbb, REGISTER_SET allowed_regs,
 		 REGISTER_SET regs_used, REGISTER_SET *loop_allowed,
 		 ISA_REGISTER_CLASS rc, GRA_LOOP *maxloop)
+#endif
 /////////////////////////////////////
 //
 // if this block is a loop prolog or epilog block, or it is at the
@@ -730,15 +767,31 @@ Avoid_Unit_Spill(GRA_BB* gbb, REGISTER_SET allowed_regs,
     if ( Live_In(gbb)) {
       is_prolog = TRUE;
       *loop_allowed = REGISTER_SET_Difference(allowed_regs, regs_used);
+#ifdef TARG_ST
+      *loop_subclass_allowed = REGISTER_SET_Difference(subclass_allowed_regs,
+						       regs_used);
+#endif
       if (region_entry) {
 	GRA_REGION *region = gbb->Region();
 	*loop_allowed = REGISTER_SET_Difference(*loop_allowed,
 						region->Registers_Used(rc));
+#ifdef TARG_ST
+	*loop_subclass_allowed = REGISTER_SET_Difference(*loop_subclass_allowed,
+							 region->Registers_Used(rc));
+#endif
       } else {
 	*loop_allowed = REGISTER_SET_Difference(*loop_allowed,
 						gloop->Registers_Used(rc));
+#ifdef TARG_ST
+	*loop_subclass_allowed = REGISTER_SET_Difference(*loop_subclass_allowed,
+							 gloop->Registers_Used(rc));
+#endif
       }
+#ifdef TARG_ST
+      if (!Can_Allocate_From(nregs, *loop_subclass_allowed, *loop_allowed)) {
+#else
       if (REGISTER_SET_EmptyP(*loop_allowed)) {
+#endif
 	return(TRUE);
       }
     }
@@ -752,6 +805,10 @@ Avoid_Unit_Spill(GRA_BB* gbb, REGISTER_SET allowed_regs,
       gbb->Region_Epilog()) {
     if (!is_prolog) {
       *loop_allowed = REGISTER_SET_Difference(allowed_regs, regs_used);
+#ifdef TARG_ST
+      *loop_subclass_allowed = REGISTER_SET_Difference(subclass_allowed_regs,
+						       regs_used);
+#endif
     }
     for (iter.Preds_Init(gbb); ! iter.Done(); iter.Step()) {
       GRA_BB* pred = iter.Current();
@@ -761,7 +818,14 @@ Avoid_Unit_Spill(GRA_BB* gbb, REGISTER_SET allowed_regs,
 	GRA_REGION *region = pred->Region();
 	*loop_allowed =
 	  REGISTER_SET_Difference(*loop_allowed, region->Registers_Used(rc));
+#ifdef TARG_ST
+	*loop_subclass_allowed =
+	  REGISTER_SET_Difference(*loop_subclass_allowed,
+				  region->Registers_Used(rc));
+	if (!Can_Allocate_From(nregs, *loop_subclass_allowed, *loop_allowed)) {
+#else
 	if (REGISTER_SET_EmptyP(*loop_allowed)) {
+#endif
 	  return(TRUE);
 	}
       } else {
@@ -770,7 +834,14 @@ Avoid_Unit_Spill(GRA_BB* gbb, REGISTER_SET allowed_regs,
 	if (gloop != NULL &&  Live_Out(pred)) {
 	  *loop_allowed = REGISTER_SET_Difference(*loop_allowed,
 						  gloop->Registers_Used(rc));
+#ifdef TARG_ST
+	  *loop_subclass_allowed = REGISTER_SET_Difference
+	    (*loop_subclass_allowed, gloop->Registers_Used(rc));
+							   
+	  if (!Can_Allocate_From(nregs, *loop_subclass_allowed, *loop_allowed)) {
+#else
 	  if (REGISTER_SET_EmptyP(*loop_allowed)) {
+#endif
 	    return(TRUE);
 	  }
 	}
@@ -794,6 +865,11 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
   INT32               count           = 1;
   ISA_REGISTER_CLASS  rc              = split_lrange->Rc();
   REGISTER_SET        allowed_regs    = REGISTER_CLASS_allocatable(rc);
+#ifdef TARG_ST
+  REGISTER_SET        subclass_allowed_regs =
+    REGISTER_CLASS_allocatable(rc);
+  INT                 nregs           = split_lrange->NHardRegs();
+#endif
   TN*                 tn              = split_lrange->Tn();
   LRANGE_LIVE_GBB_ITER iter;
 
@@ -820,9 +896,17 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
     REGISTER sv_reg = TN_save_reg(split_lrange->Tn());
     REGISTER_SET singleton = REGISTER_SET_Union1(REGISTER_SET_EMPTY_SET,sv_reg);
     allowed_regs = REGISTER_SET_Intersection(allowed_regs,singleton);
+#ifdef TARG_ST
+    subclass_allowed_regs = REGISTER_SET_Intersection(subclass_allowed_regs,
+						      singleton);
+#endif
   }
   else if ( split_lrange->Avoid_RA() ) {
     allowed_regs = REGISTER_SET_Difference1(allowed_regs,TN_register(RA_TN));
+#ifdef TARG_ST
+    subclass_allowed_regs = REGISTER_SET_Difference1(allowed_regs,
+						     TN_register(RA_TN));
+#endif
   }
 
 #ifdef TARG_ST
@@ -830,6 +914,8 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
   FmtAssert(!split_lrange->Has_Wired_Register(), ("encountered wired reg"));
   REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers(rc);
   allowed_regs = REGISTER_SET_Difference(allowed_regs, forbidden);
+  subclass_allowed_regs = REGISTER_SET_Difference(subclass_allowed_regs,
+						  forbidden);
 #endif
 
   Initialize_Priority_Queue();
@@ -841,6 +927,13 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
   Add_To_Colorable_Neighborhood(lunit->Gbb());
   allowed_regs =
     REGISTER_SET_Difference(allowed_regs,Regs_Used(tn,lunit->Gbb(),rc));
+#ifdef TARG_ST
+  subclass_allowed_regs = REGISTER_SET_Difference(subclass_allowed_regs,
+						  lunit->SubClass_Disallowed());
+  subclass_allowed_regs =
+    REGISTER_SET_Difference(subclass_allowed_regs,
+			    Regs_Used(tn,lunit->Gbb(), rc));
+#endif
 
   while ( GBBPRQ_Size(&gbbprq) > 0 ) {
     // FdF: Make sure the behavior is the same on different platforms (SunOS/Linux/Cygwin)
@@ -858,10 +951,26 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
     
     REGISTER_SET    regs_used = Regs_Used(tn,gbb,rc);
     REGISTER_SET    loop_allowed = REGISTER_SET_EMPTY_SET;
+#ifdef TARG_ST
+    REGISTER_SET    subclass_disallowed = Subclass_Regs_Disallowed (gbb);
+    REGISTER_SET    loop_subclass_allowed = REGISTER_SET_EMPTY_SET;
+#endif
 
+#ifdef TARG_ST
+    if (!Can_Allocate_From (nregs,
+			    REGISTER_SET_Difference (
+                              REGISTER_SET_Difference(subclass_allowed_regs,
+						    regs_used),
+			      subclass_disallowed),
+			    REGISTER_SET_Difference (allowed_regs, regs_used))
+	|| Avoid_Unit_Spill (gbb, subclass_allowed_regs, allowed_regs,
+			    regs_used, &loop_subclass_allowed, &loop_allowed, 
+			    rc, nregs, lunit->Gbb()->Loop())) {
+#else
     if ( REGISTER_SET_EmptyP(REGISTER_SET_Difference(allowed_regs,regs_used)) ||
 	Avoid_Unit_Spill(gbb, allowed_regs, regs_used, &loop_allowed, rc,
 			 lunit->Gbb()->Loop()) ) {
+#endif
       border_gbb_list_head = border_gbb_list_head->Split_List_Push(gbb);
       GRA_Trace_Split(1,"BB:%d in deferred border",BB_id(gbb->Bb()));
     }
@@ -872,8 +981,17 @@ Identify_Max_Colorable_Neighborhood( LUNIT* lunit )
       //
       if (!REGISTER_SET_EmptyP(loop_allowed)) {
 	allowed_regs = loop_allowed;
+#ifdef TARG_ST
+	subclass_allowed_regs = loop_subclass_allowed;
+#endif
       } else {
 	allowed_regs = REGISTER_SET_Difference(allowed_regs,regs_used);
+#ifdef TARG_ST
+	subclass_allowed_regs = REGISTER_SET_Difference
+	  (REGISTER_SET_Difference(subclass_allowed_regs,
+				   regs_used),
+	   subclass_disallowed);
+#endif
       }
       Add_To_Colorable_Neighborhood(gbb);
       ++count;
@@ -1414,7 +1532,7 @@ Fix_Interference(void)
       if (neighbor->Neighbors_Left() + 1 >= neighbor->Candidate_Reg_Count()
            && (neighbor->Priority() > deferred_lrange->Priority()
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
-	       &&  !Compare_Priorities(neighbor->Priority(), deferred_lrange->Priority())
+	       &&  !Compare_Float_Nearly_Equal(neighbor->Priority(), deferred_lrange->Priority())
 #endif
 	       )
       ) {
@@ -1650,7 +1768,7 @@ Choose_Best_Split(INT count)
 
       // FdF: Fix floating point difference between SunOS and Linux/Cygwin
 #ifdef TARG_ST
-      if ((priority > max_priority || Compare_Priorities(priority, max_priority)) &&
+      if ((priority > max_priority || Compare_Float_Nearly_Equal(priority, max_priority)) &&
 	  count > 1 &&
 	  BB_rid(gbb->Bb()) == max_rid)
 #else
@@ -1672,7 +1790,7 @@ Choose_Best_Split(INT count)
 	//
 	  // FdF: Fix floating point difference between SunOS and Linux/Cygwin
 #ifdef TARG_ST
-	if (Compare_Priorities(priority, max_priority) &&
+	if (Compare_Float_Nearly_Equal(priority, max_priority) &&
 	    ((max_lunit_count > gbb->Split_Lunit_Count()) ||
 	     TN_is_save_reg(split_lrange->Tn())))
 #else
@@ -1702,7 +1820,7 @@ Choose_Best_Split(INT count)
 
     // FdF: Fix floating point difference between SunOS and Linux/Cygwin
 #ifdef TARG_ST
-    if ((max_priority < 0.0 && !Compare_Priorities(0.0, max_priority)) &&
+    if ((max_priority < 0.0 && !Compare_Float_Nearly_Equal(0.0, max_priority)) &&
 	(!TN_is_save_reg(split_lrange->Tn()) ||	OPT_Space))
 #else
     if (max_priority < 0.0 && (!TN_is_save_reg(split_lrange->Tn()) ||
@@ -1788,11 +1906,8 @@ Split_Consistency_Check()
 }
 
 /////////////////////////////////////
-#ifdef TARG_ST // [CL] this function is now used in gra_color.cxx...
-BOOL
-#else
+#ifndef TARG_ST
 static BOOL
-#endif
 Compare_Priorities(float p1, float p2)
 /////////////////////////////////////
 //
@@ -1809,13 +1924,9 @@ Compare_Priorities(float p1, float p2)
     max = p2;
   }
 
-  // FdF: Fix floating point difference between SunOS and Linux/Cygwin
-#ifdef TARG_ST
-  return (fabs(p1-p2) < 0.0001 || (fabs(p1-p2)/max) < .01);
-#else
   return ((fabs(p1-p2)/max) < .01);
-#endif
 }
+#endif
 
 /////////////////////////////////////
 static BOOL
@@ -1902,8 +2013,14 @@ LRANGE_Do_Split( LRANGE* lrange, LRANGE_CLIST_ITER* iter,
     GRA_Trace_Split_Priority_On("LRANGE_Calculate_Priority");
     alloc_lrange->Calculate_Priority();
     GRA_Trace_Split_Priority_Off();
+#ifdef TARG_ST
+    if (!Compare_Float_Nearly_Equal(alloc_lrange->Priority(),
+				    alloc_gbb_list_head->Split_Priority()))
+#else
     if (!Compare_Priorities(alloc_lrange->Priority(),
-			    alloc_gbb_list_head->Split_Priority())) {
+			    alloc_gbb_list_head->Split_Priority()))
+#endif
+      {
       DevWarn("Mismatch in interim(%f) and final(%f) split priorities for TN%d.  Orig block count=%d, new =%d\n",
 	      alloc_gbb_list_head->Split_Priority(),
 	      alloc_lrange->Priority(),

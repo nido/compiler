@@ -235,6 +235,10 @@ BOOL GRA_LIVE_Predicate_Aware = FALSE;
 // ====================================================================
 
 BOOL LRA_do_reorder = FALSE;
+#ifdef TARG_ST
+BOOL LRA_minregs    = FALSE;
+BOOL LRA_merge_extract = TRUE;
+#endif
 
 // ====================================================================
 //   GRA:
@@ -254,6 +258,9 @@ BOOL GRA_choose_best_split = TRUE;
 BOOL GRA_use_stacked_regs = TRUE;
 BOOL GRA_redo_liveness = FALSE;
 BOOL GRA_recalc_liveness = FALSE;
+#ifdef TARG_ST
+BOOL GRA_use_runeson_nystrom_spill_metric = FALSE;
+#endif
 INT32 GRA_non_home_hi = -1;
 INT32 GRA_non_home_lo = INT32_MAX;
 const char* GRA_call_split_freq_string = "0.1";

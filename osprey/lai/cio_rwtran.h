@@ -72,4 +72,8 @@
 
 extern BOOL Perform_Read_Write_Removal( LOOP_DESCR *loop );
 
+#ifdef TARG_ST
+extern BOOL Perform_Load_Packing( LOOP_DESCR *loop );
+#endif
+
 #endif /* cio_rwtran_INCLUDED */

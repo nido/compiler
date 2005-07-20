@@ -41,6 +41,7 @@
 #include "tracing.h"
 #include "mempool.h"
 #include "config.h"
+#include "config_TARG.h"
 #include "glob.h"
 #include "util.h"
 #include "data_layout.h"
@@ -97,6 +98,11 @@ Init_Mtype_RegClass_Map ()
   map[MTYPE_A4] = ISA_REGISTER_CLASS_integer;
   map[MTYPE_F4] = ISA_REGISTER_CLASS_integer;
 
+  if (Enable_64_Bits_Ops) {
+    map[MTYPE_F8] = ISA_REGISTER_CLASS_integer;
+    map[MTYPE_I8] = ISA_REGISTER_CLASS_integer;
+    map[MTYPE_U8] = ISA_REGISTER_CLASS_integer;
+  }
   return;
 }
 
@@ -188,17 +194,57 @@ REGISTER_SET
 CGTARG_Forbidden_GRA_Registers (ISA_REGISTER_CLASS rclass)
 {
   REGISTER_SET s = REGISTER_SET_EMPTY_SET;
-  return REGISTER_SET_Union1(s, TN_register(RA_TN));
+  if (Is_Target_st235 ()) {
+    if (rclass == ISA_REGISTER_CLASS_integer) {
+      return REGISTER_SET_Union1(s, TN_register(RA_TN));
+    }
+  }
+  return s;
 }
 
 REGISTER_SET
 CGTARG_Forbidden_LRA_Registers (ISA_REGISTER_CLASS rclass)
 {
+  return CGTARG_Forbidden_GRA_Registers (rclass);
+}
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   CGTARG_Prefered_GRA_Registers 
+ * ====================================================================
+ */
+REGISTER_SET
+CGTARG_Prefered_GRA_Registers(ISA_REGISTER_CLASS rclass)
+{
   REGISTER_SET s = REGISTER_SET_EMPTY_SET;
-  if (Is_Target_st235 ()) {
-    if (rclass == ISA_REGISTER_CLASS_integer) {
-      s = REGISTER_SET_Union1(s, TN_register(RA_TN));
+  if (Is_Target_st235 () && rclass == ISA_REGISTER_CLASS_integer) {
+    /* For ST235 we first prefer over the set of callee saved the
+     * registers that are subject to pairing.
+     * This will allow generation of paired save/restore of the
+     * callee saved registers.
+     */
+    REGISTER_SET regset = REGISTER_CLASS_callee_saves(rclass);
+    REGISTER reg;
+    for (reg = REGISTER_SET_Choose(regset);
+	 reg != REGISTER_UNDEFINED;
+	 reg = REGISTER_SET_Choose_Next(regset, reg)
+	 ) {
+      if (REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(ISA_REGISTER_SUBCLASS_paired), reg) &&
+	  REGISTER_SET_Choose_Next(regset, reg) != REGISTER_UNDEFINED &&
+	  REGISTER_SET_Choose_Next(regset, reg) == reg+1) {
+	s = REGISTER_SET_Union1(s, reg);
+	s = REGISTER_SET_Union1(s, reg+1);
+	// Skip next register
+	reg = REGISTER_SET_Choose_Next(regset, reg);
+      }
     }
   }
   return s;
 }
+
+REGISTER_SET
+CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass)
+{
+  return CGTARG_Prefered_GRA_Registers (rclass);
+}
+#endif
