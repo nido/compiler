@@ -4584,9 +4584,30 @@ find_duplicate_mem_op (BB *bb,
 
       if (OP_store(pred_op)) {
         INT pred_stored_idx = TOP_Find_Operand_Use(OP_code(pred_op),OU_storeval);
+	/* The stored register needs to be available at this point. */
+#ifdef TARG_ST
+	// [CG] Handle Multi ops
+	BOOL not_available = FALSE;
+	INT i;
+	for (i = pred_stored_idx; i < OP_opnds(pred_op); i++) {
+	  if (!TN_Is_Constant(OP_opnd(pred_op, i)) &&
+	      !EBO_tn_available(bb,opinfo->actual_opnd[i])) {
+	    not_available = TRUE;
+	  }
+	}
+	if (not_available) {
+	  opinfo->op_must_not_be_removed = TRUE;
+	  if (EBO_Trace_Hash_Search) {
+	    #pragma mips_frequency_hint NEVER
+	    fprintf(TFile,"%sMemory match found, but stored value is not available\n\t",
+		    EBO_trace_pfx);
+	    Print_OP_No_SrcLine(pred_op);
+	  }
+	  break;
+	}
+#else
         TN *pred_tn = OP_opnd(pred_op,pred_stored_idx);
         if (!TN_Is_Constant(pred_tn)) {
-         /* The stored register needs to be available at this point. */
           if (!EBO_tn_available(bb,opinfo->actual_opnd[pred_stored_idx])) {
             opinfo->op_must_not_be_removed = TRUE;
             if (EBO_Trace_Hash_Search) {
@@ -4598,10 +4619,31 @@ find_duplicate_mem_op (BB *bb,
             break;
           }
         }
+#endif
       } else {
-        TN *pred_tn = OP_result(pred_op,0);
-        if (!TN_Is_Constant(pred_tn)) {
          /* The previous result needs to be available at this point. */
+#ifdef TARG_ST
+	// [CG] Handle Multi ops
+	BOOL not_available = FALSE;
+	INT i;
+	for (i = 0; i < OP_results(pred_op); i++) {
+	  if (!TN_is_constant(OP_result(pred_op,i)) &&
+	      !EBO_tn_available(bb,opinfo->actual_rslt[i])) {
+	    not_available = TRUE;
+	  }
+	}
+	if (not_available) {
+	  if (EBO_Trace_Hash_Search) {
+	    #pragma mips_frequency_hint NEVER
+	    fprintf(TFile,"%sMemory match found, but loaded value is not available\n\t",
+		    EBO_trace_pfx);
+	    Print_OP_No_SrcLine(pred_op);
+	  }
+	  break;
+	}
+#else
+	TN *pred_tn = OP_result(pred_op,0);
+        if (!TN_Is_Constant(pred_tn)) {
           if (!EBO_tn_available(bb,opinfo->actual_rslt[0])) {
             if (EBO_Trace_Hash_Search) {
               #pragma mips_frequency_hint NEVER
@@ -4612,6 +4654,7 @@ find_duplicate_mem_op (BB *bb,
             break;
           }
         }
+#endif
       }
     }
 

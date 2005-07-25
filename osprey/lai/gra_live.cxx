@@ -2191,6 +2191,17 @@ GRA_LIVE_Compute_Local_Info(
 	  
 	  // For conditional def ops (until not fully predicate aware),
 	  // add the result TNs to live_use sets.
+#ifdef TARG_ST
+	  // [CG] If we are under SSA for the TN, it is defined only
+	  // once and thus the conditional definition is a kill.
+	  if (OP_cond_def(op) && (!SSA_Active() || TN_ssa_def(result_tn) != op)) {
+	    tmp_live_use = 
+	      TN_SET_Union1D(tmp_live_use,result_tn,&gra_live_local_pool);
+	  } else {
+	    tmp_live_use = 
+	      TN_SET_Difference1D(tmp_live_use,result_tn);
+	  }
+#else	      
 	  if (OP_cond_def(op))  {
 	    tmp_live_use = 
 	      TN_SET_Union1D(tmp_live_use,result_tn,&gra_live_local_pool);
@@ -2198,6 +2209,7 @@ GRA_LIVE_Compute_Local_Info(
 	    tmp_live_use = 
 	      TN_SET_Difference1D(tmp_live_use,result_tn);
 	  }
+#endif
 	}
       }
       
@@ -2395,7 +2407,8 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
       // Don't rename under the following conditions.
 #ifdef TARG_ST
       // Arthur: we're switching to a more generic TDT interface
-      if (TN_is_dedicated(tn) || OP_cond_def(op) || 
+      // [CG] Handle case of single SSA def
+      if (TN_is_dedicated(tn) || (OP_cond_def(op) && (!SSA_Active() || TN_ssa_def(tn) != op)) || 
 	  (OP_same_res(op,i) >= 0)) 
 	continue;
 #else

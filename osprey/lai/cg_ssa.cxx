@@ -903,20 +903,22 @@ Convert_PHI_to_PSI (
   return psi_op;
 }
 
-OP *
+void
 OP_Make_movc (
   TN *guard,
   TN *dst,
-  TN *src
+  TN *src,
+  OPS *cmov_ops
 )
 {
-  OPS cmov_ops = OPS_EMPTY;
   if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
     DevWarn("Conditional MOV should use a branch register");
-  Expand_Copy(dst, guard, src, &cmov_ops);
+  Expand_Copy(dst, guard, src, cmov_ops);
+#if 0
   if (OPS_length(&cmov_ops) != 1)
     Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
+#endif
 }
 
 //
@@ -1626,6 +1628,7 @@ SSA_Enter (
 
   return;
 }
+
 
 /* ================================================================
  *   SSA_Check
@@ -2605,16 +2608,18 @@ Normalize_Psi_Operations()
 	else {
 	  // Otherwise, a repair is needed.
 
-	  OP *op_repair;
 	  TN *tn_repair = Copy_TN(tn_opndi);
-
+	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
+	  
 	  if (OP_volatile(op_defi)) {
 	    /* The original instruction cannot be duplicated, introduce
 	       a new TN defined by a predicated MOVE instruction. */
 	    if (Trace_SSA_Out && opndi != opndj+1) {
 	      fprintf(TFile, "PSI Normalize: Create copy operation to match order in PSI operation\n");
 	    }
-	    op_repair = OP_Make_movc(tn_guardi, tn_repair, tn_opndi);
+	    OPS cmov_ops = OPS_EMPTY;  
+	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops);
+	    BB_Insert_Ops_After(OP_bb(op), op_prev, &cmov_ops);
 	  }
 	  else {
 
@@ -2622,11 +2627,10 @@ Normalize_Psi_Operations()
 	      fprintf(TFile, "PSI Normalize: Duplicate operation to match order in PSI operation\n");
 	    }
 
-	    op_repair = Dup_OP(op_defi);
+	    OP *op_repair = Dup_OP(op_defi);
 	    Set_OP_result(op_repair, 0, tn_repair);
+	    BB_Insert_Op_After(OP_bb(op), op_prev, op_repair);
 	  }
-	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
-	  BB_Insert_Op_After(OP_bb(op), op_prev, op_repair);
 	  Set_PSI_opnd(op, opndi, tn_repair);
 	}
 
@@ -2658,8 +2662,9 @@ Normalize_Psi_Operations()
           BB_Insert_Ops_Before(OP_bb(op), op, &mov_ops);
         }
         else {
-          OP *op_movi = OP_Make_movc(tn_guardi, tn_movi, tn_opndi);
-          BB_Insert_Op_Before(OP_bb(op), op, op_movi);
+	  OPS cmov_ops = OPS_EMPTY;
+          OP_Make_movc(tn_guardi, tn_movi, tn_opndi, &cmov_ops);
+          BB_Insert_Ops_Before(OP_bb(op), op, &cmov_ops);
         }
 
 	Set_PSI_opnd(op, opndi, tn_movi);
@@ -2696,12 +2701,13 @@ insert_psi_operand_copy (
   Set_PSI_opnd(psi_op, opnd_idx, new_tn);
 
   // Finally, append the copy op
-  OP *op_copy = OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn);
+  OPS cmov_ops = OPS_EMPTY;
+  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops);
   if (point)
-    BB_Insert_Op_After(OP_bb(point), point, op_copy);
+    BB_Insert_Ops_After(OP_bb(point), point, &cmov_ops);
   else
-    BB_Insert_Op_Before(OP_bb(psi_op), psi_op, op_copy);
-  Set_OP_ssa_move(op_copy);
+    BB_Insert_Ops_Before(OP_bb(psi_op), psi_op, &cmov_ops);
+  Set_OP_ssa_move(OPS_last(&cmov_ops));
 
   // Create a congruence class for new_tn
   PHI_CONGRUENCE_CLASS *cc = 

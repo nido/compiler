@@ -113,6 +113,10 @@ inline void SSA_unset(OP *o) {
 #define FOR_ALL_BB_PHI_OPs(bb,op)    \
   for (op = BB_first_op(bb); op != NULL && OP_code(op) == TOP_phi; op = OP_next(op))
 
+inline BOOL SSA_Active (void) {
+  return tn_ssa_map != NULL;
+}
+
 extern BOOL SSA_Check (RID *rid, BOOL region);
 extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
