@@ -693,7 +693,9 @@ Can_Speculate_BB(BB *bb)
       if (OP_memory (op)) {
 
         if (OP_load (op)) {
-          if ((Enable_Dismissible_Load || PROC_has_predicate_loads())
+          // loads will be optimized only if hardware support
+          if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
+              (Enable_Conditional_Load && PROC_has_predicate_loads())
               && CG_select_spec_loads) {
             if (!OP_has_predicate (op)) {
               pred_t memi;
@@ -706,6 +708,7 @@ Can_Speculate_BB(BB *bb)
             return FALSE;
         }
 
+        // stores can always be optimized
         else if (OP_store (op) && CG_select_spec_stores) {
           if (!OP_has_predicate (op)) {
             pred_t memi;
@@ -1734,7 +1737,7 @@ BB_Fix_Spec_Stores (BB *bb)
     TN *btn = (*i_iter).predtn;
 
     if (OP_store (op)) {
-      if (PROC_has_predicate_stores()) {
+      if (PROC_has_predicate_stores() && Enable_Conditional_Store) {
         TOP st_top = OP_has_predicate(op) ?
           OP_code(op) : CGTARG_Predicated_Store (op);
 
