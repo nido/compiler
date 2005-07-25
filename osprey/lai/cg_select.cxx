@@ -425,7 +425,8 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
     if (!opt) true_tn = false_tn;
     else if (!opf) false_tn = true_tn;
 
-    Expand_Select (target_tn, test_tn, true_tn, false_tn, MTYPE_I4,
+    Expand_Select (target_tn, test_tn, true_tn, false_tn, 
+		   TN_size(target_tn) == 8 ? MTYPE_I8: MTYPE_I4,
                    FALSE, cmov_ops);
     return;
   }
@@ -677,11 +678,6 @@ Can_Speculate_BB(BB *bb)
       TN *res = OP_result(op, opndnum);
       if (TN_is_register(res) && TN_is_global_reg(res) && TN_is_dedicated(res))
         return FALSE;
-      // [SC] cannot yet speculate paired registers (no support
-      // for paired-register select.
-      if (TN_nhardregs(res) > 1) {
-	return FALSE;
-      }
     }
 
     /* check if we are trying to speculate predicated ops */

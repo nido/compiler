@@ -1224,6 +1224,12 @@ CGTARG_Predicated_Store (OP *op)
   TOP stw = TOP_UNDEFINED;
 
   switch (opcode) {
+  case TOP_stp_i: 
+    stw = TOP_stpc_i;
+    break;
+  case TOP_stp_ii:
+    stw = TOP_stpc_ii;
+    break;
   case TOP_stw_i: 
     stw = TOP_stwc_i;
     break;
@@ -1258,6 +1264,12 @@ CGTARG_Predicated_Load (OP *op)
   TOP ld = TOP_UNDEFINED;
 
   switch (opcode) {
+  case TOP_ldp_i: 
+    ld = TOP_ldpc_i;
+    break;
+  case TOP_ldp_ii:
+    ld = TOP_ldpc_ii;
+    break;
   case TOP_ldw_i: 
     ld = TOP_ldwc_i;
     break;
