@@ -103,6 +103,13 @@ BE_EXPORTED extern BOOL SYNC_Allowed;
 BE_EXPORTED extern BOOL Slow_CVTDL;
 
 #ifdef TARG_ST
+/* (cbr): Enable predicated Loads/Stores generation.  */
+BE_EXPORTED extern BOOL Enable_Conditional_Load;
+BE_EXPORTED extern BOOL Enable_Conditional_Load_Set;
+
+BE_EXPORTED extern BOOL Enable_Conditional_Store;
+BE_EXPORTED extern BOOL Enable_Conditional_Store_Set;
+
 /* [CG]: Enable Dismissible Loads generation.  */
 BE_EXPORTED extern BOOL Enable_Dismissible_Load;
 BE_EXPORTED extern BOOL Enable_Dismissible_Load_Set;

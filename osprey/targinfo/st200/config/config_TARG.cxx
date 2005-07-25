@@ -94,6 +94,13 @@ BOOL SYNC_Allowed = TRUE;
 BOOL Slow_CVTDL = FALSE;
 
 #ifdef TARG_ST
+// (cbr) Enable Dismissible Loads/Stores generation.
+BOOL Enable_Conditional_Load = FALSE;
+BOOL Enable_Conditional_Load_Set;
+
+BOOL Enable_Conditional_Store = FALSE;
+BOOL Enable_Conditional_Store_Set;
+
 // [CG]: Enable Dismissible Loads generation.
 BOOL Enable_Dismissible_Load = TRUE;
 BOOL Enable_Dismissible_Load_Set;
@@ -167,6 +174,15 @@ static OPTION_DESC Options_TARG[] = {
     16,  4, 64, &Target_Stack_Alignment, NULL,
     "Specify the alignment of a stack frame" },
 #ifdef TARG_ST
+  // (cbr)
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "conditional_load", "",
+    0, 0, 0,    &Enable_Conditional_Load, &Enable_Conditional_Load_Set,
+    "Enable generation of predicated load" },
+
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "conditional_store", "",
+    0, 0, 0,    &Enable_Conditional_Store, &Enable_Conditional_Store_Set,
+    "Enable generation of predicated store" },
+
   // [CG]
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "dismissible_load", "",
     0, 0, 0,    &Enable_Dismissible_Load, &Enable_Dismissible_Load_Set,

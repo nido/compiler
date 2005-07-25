@@ -705,7 +705,13 @@ Configure_Target ()
     if (!Enable_Dismissible_Load_Set) {
       Enable_Dismissible_Load = FALSE;
     }    
-  } 
+    if (!Enable_Conditional_Load_Set) {
+      Enable_Conditional_Load = TRUE;
+    }    
+    if (!Enable_Conditional_Store_Set) {
+      Enable_Conditional_Store = TRUE;
+    }    
+  }
 
   // [CM]: Configuration for integer division and modulus operations
   if (Is_Target_st235()) {
