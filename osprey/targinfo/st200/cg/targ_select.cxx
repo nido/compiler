@@ -399,7 +399,7 @@ Expand_Cond_Store (
 
   tns[idx] = temp_tn;
 
-  Expand_Select (temp_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops);
+  Expand_Select (temp_tn, cond_tn, true_tn, false_tn, TN_size(temp_tn) == 8 ? MTYPE_I8: MTYPE_I4, FALSE, ops);
 
   TN *val  = tns[validx];
   TN *base = tns[baseidx];

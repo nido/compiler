@@ -3853,7 +3853,7 @@ Expand_Expr (
 		("Expand_Expr: cannot have more than 1 constant operand"));
 #else
         if (const_operands != 0) {
-	  TN *ldimm_tn = Build_TN_Like (opnd_tn[i]);
+	  TN *ldimm_tn = Build_TN_Of_Mtype(WN_rtype(WN_kid(expr,i)));
 	  Last_Mem_OP = OPS_last(&New_OPs);
 	  Exp_OP1 (OPC_I4INTCONST, ldimm_tn, opnd_tn[i], &New_OPs); 
 	  Set_OP_To_WN_Map(expr);
