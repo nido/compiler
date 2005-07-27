@@ -41,6 +41,8 @@
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
+ * -CG:select_force_uncond_load=TRUE  force conditional load to unconditional  *                                       if possible
+ *
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
  *
@@ -130,6 +132,8 @@ BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_spec_stores_overidden = FALSE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_allow_dup_overridden = FALSE;
+BOOL CG_select_force_uncond_load = FALSE;
+BOOL CG_select_force_uncond_load_overridden = FALSE;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
 const char* CG_select_factor = "1.1";
@@ -695,7 +699,7 @@ Can_Speculate_BB(BB *bb)
       if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())
           && CG_select_spec_loads) {
-        if (!OP_has_predicate (op)) {
+        if (!OP_has_predicate (op) && !OP_Can_Be_Speculative(op)) {
           pred_t memi;
           memi.memop = op;
           memi.predtn = 0;
@@ -1516,15 +1520,22 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   i_iter = pred_i.begin();
   i_end = pred_i.end();
 
+  bool loadfound = false;
+
   while(i_iter != i_end) {
     OP* op = (*i_iter).memop;
     
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
       TN *pred_tn = (*i_iter).predtn;
 
-      if (!pred_tn)
-        (*i_iter).predtn = false_br ? tn2 : cond_tn;
+      if (!pred_tn) {
+        if (CG_select_force_uncond_load && OP_load (op)) loadfound = 1;
 
+        if (false_br) 
+          (*i_iter).predtn = loadfound ? True_TN : tn2;
+        else
+          (*i_iter).predtn = cond_tn;
+      }
       else {
         TN *tn = false_br ? tn2 : cond_tn;
           
@@ -1552,8 +1563,14 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
     else if (BB_SET_MemberP(ft_set, OP_bb (op))) {
       TN *pred_tn = (*i_iter).predtn;
 
-      if (!pred_tn)
-        (*i_iter).predtn = false_br ? cond_tn : tn2;
+      if (!pred_tn) {
+        if (CG_select_force_uncond_load && OP_load (op)) loadfound = 1;
+
+        if (false_br) 
+          (*i_iter).predtn = cond_tn;
+        else
+          (*i_iter).predtn = loadfound ? True_TN : tn2;
+      }
       else  {
         TN *tn = false_br ? cond_tn : tn2;
 
@@ -1633,17 +1650,19 @@ BB_Fix_Spec_Loads (BB *bb)
       else if (PROC_has_predicate_loads()) {
         TN *btn = (*i_iter).predtn;
 
-        ld_top = OP_has_predicate(op) ? OP_code(op) :
-          CGTARG_Predicated_Load (op);
+        if (btn != True_TN) {
+          ld_top = OP_has_predicate(op) ? OP_code(op) :
+            CGTARG_Predicated_Load (op);
 
-        Build_OP (ld_top, OP_result(op,0),
-                  btn,
-                  OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
-                  OP_opnd(op, OP_find_opnd_use(op, OU_base)),
-                  &ops);
+          Build_OP (ld_top, OP_result(op,0),
+                    btn,
+                    OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
+                    OP_opnd(op, OP_find_opnd_use(op, OU_base)),
+                    &ops);
 
-        Copy_WN_For_Memory_OP(OPS_last(&ops), op);
-        BB_Replace_Op (op, &ops);
+          Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+          BB_Replace_Op (op, &ops);
+        }
       }
 
       disloads_count++;
