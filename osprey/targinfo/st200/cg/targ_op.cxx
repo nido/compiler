@@ -619,11 +619,23 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_BR(nandl);
       CASE_TOP_BR(orl);
       CASE_TOP_BR(norl);
+      /* (cbr) support for conditional loads */
+      CASE_TOP_I(ldpc);
+      CASE_TOP_I(ldwc);
+      CASE_TOP_I(ldhc);
+      CASE_TOP_I(ldbc);
+      CASE_TOP_I(ldhuc);
+      CASE_TOP_I(ldbuc);
     }
   } else if (opnd == 2) {
     switch(regform) {
       CASE_TOP(slct);
       CASE_TOP(slctf);
+      /* (cbr) support for conditional stores */
+      CASE_TOP_I(stpc);
+      CASE_TOP_I(stwc);
+      CASE_TOP_I(sthc);
+      CASE_TOP_I(stbc);
     }
   }
   return TOP_UNDEFINED;
