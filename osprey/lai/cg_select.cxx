@@ -382,6 +382,7 @@ Can_Predicate_Op (OP *op)
 {
   if (OP_load (op)) return PROC_has_predicate_loads();
   if (OP_store (op)) return PROC_has_predicate_stores();
+  if (OP_prefetch (op)) return PROC_has_predicate_loads();
 
   return FALSE;
 }
@@ -689,41 +690,46 @@ Can_Speculate_BB(BB *bb)
       pred_i.push_front(memi);
     }
 
-    else if (!OP_Can_Be_Speculative(op)) {
-      if (OP_memory (op)) {
-
-        if (OP_load (op)) {
-          // loads will be optimized only if hardware support
-          if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
-              (Enable_Conditional_Load && PROC_has_predicate_loads())
-              && CG_select_spec_loads) {
-            if (!OP_has_predicate (op)) {
-              pred_t memi;
-              memi.memop = op;
-              memi.predtn = 0;
-              pred_i.push_front(memi);
-            }
-          }
-          else
-            return FALSE;
+    else if (OP_load (op)) {
+      // loads will be optimized only if hardware support
+      if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
+          (Enable_Conditional_Load && PROC_has_predicate_loads())
+          && CG_select_spec_loads) {
+        if (!OP_has_predicate (op)) {
+          pred_t memi;
+          memi.memop = op;
+          memi.predtn = 0;
+          pred_i.push_front(memi);
         }
-
-        // stores can always be optimized
-        else if (OP_store (op) && CG_select_spec_stores) {
-          if (!OP_has_predicate (op)) {
-            pred_t memi;
-            memi.memop = op;
-            memi.predtn = 0;
-            pred_i.push_front(memi);
-          }
-        }
-        else
-          return FALSE;
       }
-
-      else
+      else if (!OP_Can_Be_Speculative(op))
         return FALSE;
     }
+
+    else if (OP_store (op)) {
+      // stores can always be optimized
+      if (CG_select_spec_stores) {
+        if (!OP_has_predicate (op)) {
+          pred_t memi;
+          memi.memop = op;
+          memi.predtn = 0;
+          pred_i.push_front(memi);
+        }
+      }
+      else if (!OP_Can_Be_Speculative(op))
+        return FALSE;
+    }
+    
+    else if (OP_prefetch (op) && Enable_Conditional_Prefetch && PROC_has_predicate_loads()) {
+      pred_t memi;
+      memi.memop = op;
+      memi.predtn = 0;
+      pred_i.push_front(memi);
+    }
+    
+    else if (!OP_Can_Be_Speculative(op))
+      return FALSE;
+
   }
 
   return TRUE;
@@ -1641,7 +1647,19 @@ BB_Fix_Spec_Loads (BB *bb)
       }
 
       disloads_count++;
+    }
+    else if (OP_prefetch (op)) {
+      TN *btn = (*i_iter).predtn;
 
+      ld_top = OP_has_predicate(op) ? OP_code(op) : CGTARG_Predicated_Load (op);
+
+      Build_OP (ld_top, btn, 
+                  OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
+                  OP_opnd(op, OP_find_opnd_use(op, OU_base)),
+                  &ops);
+
+        Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+        BB_Replace_Op (op, &ops);
     }
 
     i_iter++;
