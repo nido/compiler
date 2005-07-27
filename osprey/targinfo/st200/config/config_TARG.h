@@ -110,6 +110,9 @@ BE_EXPORTED extern BOOL Enable_Conditional_Load_Set;
 BE_EXPORTED extern BOOL Enable_Conditional_Store;
 BE_EXPORTED extern BOOL Enable_Conditional_Store_Set;
 
+BE_EXPORTED extern BOOL Enable_Conditional_Prefetch;
+BE_EXPORTED extern BOOL Enable_Conditional_Prefetch_Set;
+
 /* [CG]: Enable Dismissible Loads generation.  */
 BE_EXPORTED extern BOOL Enable_Dismissible_Load;
 BE_EXPORTED extern BOOL Enable_Dismissible_Load_Set;

@@ -101,6 +101,9 @@ BOOL Enable_Conditional_Load_Set;
 BOOL Enable_Conditional_Store = FALSE;
 BOOL Enable_Conditional_Store_Set;
 
+BOOL Enable_Conditional_Prefetch = FALSE;
+BOOL Enable_Conditional_Prefetch_Set;
+
 // [CG]: Enable Dismissible Loads generation.
 BOOL Enable_Dismissible_Load = TRUE;
 BOOL Enable_Dismissible_Load_Set;
@@ -182,6 +185,10 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "conditional_store", "",
     0, 0, 0,    &Enable_Conditional_Store, &Enable_Conditional_Store_Set,
     "Enable generation of predicated store" },
+
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "conditional_prefetch", "",
+    0, 0, 0,    &Enable_Conditional_Prefetch, &Enable_Conditional_Prefetch_Set,
+    "Enable generation of predicated prefetch" },
 
   // [CG]
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "dismissible_load", "",

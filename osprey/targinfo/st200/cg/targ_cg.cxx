@@ -1300,6 +1300,12 @@ CGTARG_Predicated_Load (OP *op)
   case TOP_ldbu_ii:
     ld = TOP_ldbuc_ii;
     break;
+  case TOP_pft_i: 
+    ld = TOP_pftc_i;
+    break;
+  case TOP_pft_ii: 
+    ld = TOP_pftc_ii;
+    break;
   }
 
   return ld;

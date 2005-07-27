@@ -711,6 +711,9 @@ Configure_Target ()
     if (!Enable_Conditional_Store_Set) {
       Enable_Conditional_Store = TRUE;
     }    
+    if (!Enable_Conditional_Prefetch_Set) {
+      Enable_Conditional_Prefetch = TRUE;
+    }    
   }
 
   // [CM]: Configuration for integer division and modulus operations
