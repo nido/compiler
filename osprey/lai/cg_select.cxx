@@ -1173,13 +1173,13 @@ Sanity_Check()
 static void
 Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
 {
-  TN *res, *new_tn;
+  TN *new_tn;
   OP *op;
 
   FOR_ALL_BB_OPs_FWD(bp, op) {
     if (OP_code (op) != TOP_phi) {
       for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
-        res = OP_opnd(op, opndnum);
+        TN *res = OP_opnd(op, opndnum);
         if (TN_is_register(res) && !TN_is_dedicated(res)) {
           new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
           if (new_tn != NULL) {
@@ -1239,6 +1239,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
     result[0] = OP_result(phi, 0);
 
     std::list<BB*> *bbs = new std::list<BB*>;
+
     TN *res1 = NULL;
     BB* tpred = Get_BB_Pos_in_PHI (phi, dup);
 
@@ -1262,6 +1263,107 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
   }
 
   BB_Update_Phis(tail);
+}
+
+// Create a phi for each GTNs use if there is not. GTN needs to be renamed
+static void
+Force_End_Tns (BB* bb, BB *tail)
+{
+  OP *op;
+
+  if (Trace_Select_Dup) {
+    fprintf (Select_TFile, "<select> Force_End_Tns %d %d\n", BB_id(bb), BB_id(tail));
+    Print_BB (bb);
+    Print_BB (tail);
+  }
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    for (UINT8 defnum = 0; defnum < OP_results(op); defnum++) {
+      TN *res = OP_result(op, defnum);
+
+      // if the GTN is alive after the hammock, need to give it a phi.
+      if (TN_is_register(res) && TN_is_global_reg(res) && !TN_is_dedicated(res)) {
+        OP *phi;
+        bool founddef = false;
+
+          FOR_ALL_BB_PHI_OPs(tail, phi) {
+          for (UINT8 usenum = 0; usenum < OP_opnds(phi); usenum++) {
+            if (OP_opnd(phi, usenum) == res) {
+              founddef = true;
+              break;
+            }
+          }
+        }
+   
+        if (!founddef) {
+          UINT8 npreds = BB_preds_len(tail);
+          TN * new_tn = Dup_TN(res);
+
+          Set_TN_is_global_reg (new_tn);
+          SSA_unset(op);
+          Set_OP_result(op, defnum, new_tn);
+          SSA_setup(op);
+          
+          // Rename uses in current BB
+          OP *op2;
+          for (op2 = OP_next(op); op2 != NULL; op2 = OP_next(op2)) {
+            for (UINT8 usenum = 0; usenum < OP_opnds(op2); usenum++) {
+              if (OP_opnd(op2, usenum) == res)
+                Set_OP_opnd(op2, usenum, new_tn);
+            }
+          }
+
+          BBLIST *succs;
+          FOR_ALL_BB_SUCCS(bb, succs) {
+            BB *succ = BBLIST_item(succs);
+            if (succ != tail) {
+              FOR_ALL_BB_OPs(succ, op2) { 
+                for (UINT8 usenum = 0; usenum < OP_opnds(op2); usenum++) {
+                  if (OP_opnd(op2, usenum) == res)
+                    Set_OP_opnd(op2, usenum, new_tn);
+                }
+              }
+            }
+          }
+
+          // Make up a phi in the tail basic block
+          TN *result[1];
+          TN *opnd[npreds];
+          result[0] = res;
+
+          std::list<BB*> *bbs = new std::list<BB*>;
+
+          BBLIST *preds;
+          UINT8 pos=0;
+
+          FOR_ALL_BB_PREDS(tail,preds) {
+            BB *pred = BBLIST_item(preds);
+            bbs->push_front(pred);
+            opnd[pos++] = new_tn;
+          }
+      
+          phi = Mk_VarOP (TOP_phi, 1, npreds, result, opnd);
+
+          BB_Prepend_Op(tail, phi);
+          Initialize_PHI_map(phi);
+
+          int i=0;
+          while(!bbs->empty())
+            {
+              BB *pred = bbs->back();
+              Set_PHI_Predecessor (phi, i++, pred);
+              bbs->pop_back();
+            }
+        }
+      }
+    }
+  }
+
+  if (Trace_Select_Dup) {
+    fprintf (Select_TFile, "<select> After Force_End_Tns %d %d\n", BB_id(bb), BB_id(tail));
+    Print_BB (bb);
+    Print_BB (tail);
+  }
 }
 
 //  Copy <old_bb> and all of its ops into BB.
@@ -1311,6 +1413,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
             OPS new_ops = OPS_EMPTY;  
             TN *res = OP_result (op, 0);
             TN *new_tn = Dup_TN(res);
+            if (TN_is_global_reg(res)) Set_TN_is_global_reg (new_tn);
             hTN_MAP_Set(dup_tn_map, res, new_tn);
 
             Exp_COPY (new_tn, OP_opnd (op, i), &new_ops);
@@ -1360,6 +1463,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
           TN *res = OP_result(new_op, opndnum);
           if (TN_is_register(res) && !TN_is_dedicated(res)) {
             TN *new_tn = Dup_TN(res);
+            if (TN_is_global_reg(res)) Set_TN_is_global_reg (new_tn);
             hTN_MAP_Set(dup_tn_map, res, new_tn);
             Set_OP_result(new_op, opndnum, new_tn);
           }
@@ -1394,7 +1498,8 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
   Calculate_Dominators();
 
   if (Trace_Select_Dup) {
-    Print_BB (to_bb);
+    fprintf (Select_TFile, "<select> After Duplication BB%d into BB%d\n",  BB_id(bp), BB_id(to_bb));
+    Print_All_BBs();
   }
 
   dup_bbs++;
@@ -2138,6 +2243,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     UINT8 nopnds = OP_opnds(phi);
     TN *opnd[nopnds];
     UINT8 j=0;
+
     std::list<BB*> *bbs = new std::list<BB*>;
 
     for (UINT8 i = 0; i < nopnds; i++) {
@@ -2230,6 +2336,8 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
       BB *phi_pred = other_pred;
 
+      Force_End_Tns (pred, tail);
+
       if (BB_preds_len (pred) > 1) {
         other_pred = Gen_And_Insert_BB_After (phi_pred);
         if (!BB_Retarget_Branch(phi_pred, pred, other_pred))
@@ -2260,6 +2368,8 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       }
 
       BB *phi_pred = other_pred;
+
+      Force_End_Tns (pred, tail);
 
       if (BB_preds_len (pred) > 1) {
         other_pred = Gen_And_Insert_BB_After (phi_pred);
