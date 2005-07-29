@@ -436,7 +436,6 @@ put_name (DST_STR_IDX str_idx, Dwarf_P_Die die, which_pb pb_type)
   }
 }
 
-
 /* write out the source position attributes for a declaration. */
 static void
 put_decl(USRCPOS decl, Dwarf_P_Die die)
@@ -444,7 +443,11 @@ put_decl(USRCPOS decl, Dwarf_P_Die die)
    if (USRCPOS_filenum(decl) != 0)
 //DevWarn("file # %d", USRCPOS_filenum(decl));
      dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_decl_file, 
+#ifdef TARG_ST // [CL] use the dwarf file number
+			   File_Dwarf_Idx(USRCPOS_filenum(decl)), &dw_error);
+#else
 			   (UINT32)USRCPOS_filenum(decl), &dw_error);
+#endif
    if (USRCPOS_linenum(decl) != 0)
      dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_decl_line, 
 			   (UINT32)USRCPOS_linenum(decl), &dw_error);
