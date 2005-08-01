@@ -834,7 +834,7 @@ CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, boo
       spilled_tn = OP_opnd(cgir_op, val_idx);
       offset_tn = OP_opnd(cgir_op, offset_idx);
       base_tn = OP_opnd(cgir_op, base_idx);
-    } else if (OP_load(cgir_op) && OP_results(cgir_op) == 1) {
+    } else if (OP_load(cgir_op)) {
       int offset_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_offset);
       int base_idx = TOP_Find_Operand_Use(OP_code(cgir_op),OU_base);
       spilled_tn = OP_result(cgir_op, 0);
