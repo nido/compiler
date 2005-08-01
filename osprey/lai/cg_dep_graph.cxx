@@ -5510,7 +5510,10 @@ LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb)
 {
   BB *head;
   LOOPDEP kind = (LOOPDEP)0;
-  
+#ifdef Is_True_On
+  static ST *last_pu_warning;
+  static BB *last_bb_warning;
+#endif
   // Get a tentative header of the loop containing bb
   head = bb;
 
@@ -5521,12 +5524,19 @@ LOOPDEP CG_Get_BB_Loopdep_Kind(BB *bb)
        annot = ANNOT_Get(ANNOT_next(annot), ANNOT_PRAGMA)) {
     if (WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_IVDEP ||
 	WN_pragma(ANNOT_pragma(annot)) == WN_PRAGMA_LOOPDEP) {
-      if (pragma != NULL)
-#ifdef TARG_ST
+#ifdef Is_True_On
+      if (pragma != NULL) {
 	/* FdF: Because of unrolling, pragma may be duplicated. */
-	if (pragma != ANNOT_pragma(annot))
+	if (pragma != ANNOT_pragma(annot)) {
+	  ST *pu = Get_Current_PU_ST();
+	  if (last_pu_warning != pu || last_bb_warning != bb) {
+	    DevWarn("Multiple LOOPDEP/IVDEP pragma at BB:%d, PU:%s", BB_id(bb), ST_name(pu));
+	    last_pu_warning = pu;
+	    last_bb_warning = bb;
+	  }
+	}
+      }
 #endif
-	DevWarn("Multiple LOOPDEP/IVDEP pragma at BB:%d", BB_id(bb));
       pragma = ANNOT_pragma(annot);
     }
   }
