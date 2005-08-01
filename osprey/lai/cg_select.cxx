@@ -1918,7 +1918,13 @@ Negate_Cmp_BB (OP *br)
   TN *btn = OP_opnd(br, 0);
 
   if (TN_is_global_reg(btn)) {
-    return FALSE;
+    OPS ops = OPS_EMPTY;
+
+    Exp_Pred_Complement(Dup_TN(btn), NULL, btn, &ops);
+    BB_Insert_Ops_Before(OP_bb(br), br, &ops);
+    btn = OP_result (OPS_last(&ops), 0);  
+    Set_OP_opnd(br, 0, btn);    
+    return TRUE;
   }
   
   OP *cmp_op = TN_ssa_def(btn);
