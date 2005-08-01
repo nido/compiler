@@ -1918,7 +1918,6 @@ Negate_Cmp_BB (OP *br)
   TN *btn = OP_opnd(br, 0);
 
   if (TN_is_global_reg(btn)) {
-    abort();
     return FALSE;
   }
   
