@@ -41,7 +41,7 @@
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_force_uncond_load=TRUE  force conditional load to unconditional  *                                       if possible
+ * -CG:select_force_spec_load=TRUE  force conditional load to unconditional  *                                       if possible
  *
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
@@ -82,10 +82,12 @@
 #include "gra_live.h"
 #include "cxx_memory.h"
 #include "cflow.h"
+#include "opt_alias_interface.h"
 #include "cg_sched_est.h"
 #include "cg_ssa.h"
 #include "cg_select.h"
 #include "DaVinci.h"
+
 
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
@@ -132,8 +134,8 @@ BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_spec_stores_overidden = FALSE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_allow_dup_overridden = FALSE;
-BOOL CG_select_force_uncond_load = FALSE;
-BOOL CG_select_force_uncond_load_overridden = FALSE;
+BOOL CG_select_force_spec_load = FALSE;
+BOOL CG_select_force_spec_load_overridden = FALSE;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
 const char* CG_select_factor = "1.1";
@@ -1282,7 +1284,8 @@ Force_End_Tns (BB* bb, BB *tail)
       TN *res = OP_result(op, defnum);
 
       // if the GTN is alive after the hammock, need to give it a phi.
-      if (TN_is_register(res) && TN_is_global_reg(res) && !TN_is_dedicated(res)) {
+      if (TN_is_register(res) && TN_is_global_reg(res) &&
+          !TN_is_dedicated(res) && GTN_SET_MemberP(BB_live_out(tail), res)) {
         OP *phi;
         bool founddef = false;
 
@@ -1625,7 +1628,7 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   i_iter = pred_i.begin();
   i_end = pred_i.end();
 
-  bool loadfound = false;
+  bool speculate_load = false;
 
   while(i_iter != i_end) {
     OP* op = (*i_iter).memop;
@@ -1634,10 +1637,16 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
       TN *pred_tn = (*i_iter).predtn;
 
       if (!pred_tn) {
-        if (CG_select_force_uncond_load && OP_load (op)) loadfound = 1;
+        if (CG_select_force_spec_load) {
+          if (OP_load(op) && !OP_has_predicate(op)) {
+            WN *wn = Get_WN_From_Memory_OP(op);
+            if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+              speculate_load = true;
+          }
+        }
 
         if (false_br) 
-          (*i_iter).predtn = loadfound ? True_TN : tn2;
+          (*i_iter).predtn = speculate_load ? True_TN : tn2;
         else
           (*i_iter).predtn = cond_tn;
       }
@@ -1669,12 +1678,18 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
       TN *pred_tn = (*i_iter).predtn;
 
       if (!pred_tn) {
-        if (CG_select_force_uncond_load && OP_load (op)) loadfound = 1;
+        if (CG_select_force_spec_load) {
+          if (OP_load(op) && !OP_has_predicate(op)) {
+            WN *wn = Get_WN_From_Memory_OP(op);
+            if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+              speculate_load = true;
+          }
+        }
 
         if (false_br) 
           (*i_iter).predtn = cond_tn;
         else
-          (*i_iter).predtn = loadfound ? True_TN : tn2;
+          (*i_iter).predtn = speculate_load ? True_TN : tn2;
       }
       else  {
         TN *tn = false_br ? cond_tn : tn2;
