@@ -106,7 +106,7 @@ typedef BB_Lst::const_iterator   BB_Lst_Const_Iter;
 
 typedef struct {
   OP *phi;
-  BB_Lst *bbs;
+  BB_Lst bbs;
 } phi_t;
 
 static OP_MAP phi_op_map;
@@ -516,15 +516,20 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
   OPS_Append_Op(cmov_ops, psi_op);
 }
 
-static void
-BB_Create_Phi (UINT8 nopnds, TN *result[], TN *opnd[], BB_Lst *bbs, OP *phi) 
+static phi_t *
+BB_Alloc_Phi ()
 {
-  phi_t *phi_infos;
-  phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
-  phi_infos->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
-  phi_infos->bbs = bbs;
+  phi_t *phi_info = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
+  new (&phi_info->bbs)BB_Lst;
+  return phi_info;
+}
 
-  OP_MAP_Set(phi_op_map, phi, phi_infos);
+static OP *
+BB_Create_And_Map_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
+                       OP *old_phi, phi_t *phi_info) 
+{
+  phi_info->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+  OP_MAP_Set(phi_op_map, old_phi, phi_info);
 }
      
 // Remove old phis or replace it with a new one from phi_op_map.
@@ -536,28 +541,24 @@ BB_Update_Phis(BB *bb)
   OP *phi;
 
   for (phi = BB_first_op(bb); phi && OP_code(phi) == TOP_phi; ) {
-    phi_t *phi_infos;
-
-    phi_infos = (phi_t *)OP_MAP_Get(phi_op_map, phi);
+    phi_t *phi_info = (phi_t *)OP_MAP_Get(phi_op_map, phi);
 
     OP *next = OP_next(phi);
     BB_Remove_Op(bb, phi);
 
-    if (phi_infos) {
-      OP *new_phi = phi_infos->phi;
+    if (phi_info) {
+      OP *new_phi = phi_info->phi;
 
       BB_Prepend_Op(bb, new_phi);
       Initialize_PHI_map(new_phi);
 
       int i=0;
-      while(!phi_infos->bbs->empty())
+      while(!phi_info->bbs.empty())
         {
-          BB *pred = phi_infos->bbs->back();
+          BB *pred = phi_info->bbs.back();
           Set_PHI_Predecessor (new_phi, i++, pred);
-          phi_infos->bbs->pop_back();
+          phi_info->bbs.pop_back();
         }
-
-      delete phi_infos->bbs;
 
       OP_MAP_Set(phi_op_map, phi, NULL);
     }
@@ -608,7 +609,9 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
       TN *result[1];
       UINT8 nopnds = npreds - 1;
       TN *opnd[nopnds];
-      BB_Lst *bbs = new BB_Lst;
+
+      phi_t *phi_info = BB_Alloc_Phi();
+      BB_Lst *bbs = &phi_info->bbs;
 
       Set_TN_is_global_reg (select_tn);
       
@@ -625,8 +628,7 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
       }
 
       result[0] = OP_result(phi, 0);
-
-      BB_Create_Phi (nopnds, result, opnd, bbs, phi);
+      BB_Create_And_Map_Phi (nopnds, result, opnd, phi, phi_info);
     }
     else
       old_phis.push_front(phi);      
@@ -1248,7 +1250,8 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
 
     result[0] = OP_result(phi, 0);
 
-    BB_Lst *bbs = new BB_Lst;
+    phi_t *phi_info = BB_Alloc_Phi();
+    BB_Lst *bbs = &phi_info->bbs;
 
     TN *res1 = NULL;
     BB* tpred = Get_BB_Pos_in_PHI (phi, dup);
@@ -1269,7 +1272,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
     bbs->push_front(new_bb);
     opnd[nopnds-1] = res1;
         
-    BB_Create_Phi (nopnds, result, opnd, bbs, phi);
+    BB_Create_And_Map_Phi (nopnds, result, opnd, phi, phi_info);
   }
 
   BB_Update_Phis(tail);
@@ -1416,7 +1419,8 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
         UINT8 nopnds = 0;
         TN *opnd[BB_preds_len(bp)];
       
-        BB_Lst *bbs = new BB_Lst;
+        phi_t *phi_info = BB_Alloc_Phi();
+        BB_Lst *bbs = &phi_info->bbs;
 
         for (UINT8 i = 0; i < OP_opnds(op); i++) {
           BB *ppred = Get_PHI_Predecessor (op, i);
@@ -1447,7 +1451,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
           // phi has only one def.
           TN *result[1];
           result[0] = OP_result (op, 0);
-          BB_Create_Phi (nopnds, result, opnd, bbs, op);
+          BB_Create_And_Map_Phi (nopnds, result, opnd, op, phi_info);
         }
       }
 
@@ -2272,7 +2276,8 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     TN *opnd[nopnds];
     UINT8 j=0;
 
-    BB_Lst *bbs = new BB_Lst;
+    phi_t *phi_info = BB_Alloc_Phi();
+    BB_Lst *bbs = &phi_info->bbs;
 
     for (UINT8 i = 0; i < nopnds; i++) {
       BB *pred = Get_PHI_Predecessor (phi, i);
@@ -2281,9 +2286,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     }
 
     result[0] = OP_result(phi, 0);
-
-    BB_Create_Phi (nopnds, result, opnd, bbs, phi);
-
+    BB_Create_And_Map_Phi (nopnds, result, opnd, phi, phi_info);
   }
 
   BB_Update_Phis(else_block);
@@ -2448,7 +2451,8 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       UINT8 nopnds = npreds - 1;
       TN *opnd[nopnds];
 
-      BB_Lst *bbs = new BB_Lst;
+      phi_t *phi_info = BB_Alloc_Phi();
+      BB_Lst *bbs = &phi_info->bbs;
 
       select_tn = Dup_TN(select_tn);
       Set_TN_is_global_reg (select_tn);
@@ -2484,8 +2488,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       }
       
       result[0] = OP_result(phi, 0);
-
-      BB_Create_Phi (nopnds, result, opnd, bbs, phi);
+      BB_Create_And_Map_Phi (nopnds, result, opnd, phi, phi_info);
     }
     else {
       // Mark phi to be deleted.
