@@ -34,14 +34,14 @@
  *
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_cond_loads=TRUE    enable conditional loads 
- * -CG:select_cond_stores=TRUE   enable conditional stores
+ * -CG:select_spec_loads=TRUE    enable conditional loads 
+ * -CG:select_spec_stores=TRUE   enable conditional stores
  *
  * The following flags to drive the algorithm and heuristics.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_force_spec_load=TRUE  force conditional load to unconditional  *                                       if possible
+ * -CG:select_force_spec_load=TRUE  speculate loads instead of predication
  *
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
@@ -99,9 +99,14 @@ static BB_MAP if_bb_map;        // Map fall_thru and targets of logif
 // the new phis in this map. Old phis are then replaced all in once with 
 // BB_Update_Phis.
 
+typedef mempool_allocator<BB*>   BB_ALLOC;
+typedef std::list<BB*,BB_ALLOC>  BB_Lst;
+typedef BB_Lst::iterator         BB_Lst_Iter;
+typedef BB_Lst::const_iterator   BB_Lst_Const_Iter;
+
 typedef struct {
   OP *phi;
-  std::list<BB*> *bbs;
+  BB_Lst *bbs;
 } phi_t;
 
 static OP_MAP phi_op_map;
@@ -119,7 +124,12 @@ typedef struct {
   OP *memop;
   TN *predtn;
 } pred_t;
-std::slist<pred_t> pred_i;
+
+typedef std::slist<pred_t>         PredOp_Lst;
+typedef PredOp_Lst::iterator       PredOp_Lst_Iter;
+typedef PredOp_Lst::const_iterator PredOp_Lst_ConstIter;
+
+PredOp_Lst pred_i;
 
 // Mapping of register class equivalent tns
 static TN_MAP btn_map = NULL;
@@ -400,8 +410,8 @@ Need_Predicate_Op (OP *op)
     return FALSE;
 
   if (Can_Predicate_Op (op)) {
-    std::slist<pred_t>::const_iterator i_iter;
-    std::slist<pred_t>::const_iterator i_end;
+    PredOp_Lst_ConstIter i_iter;
+    PredOp_Lst_ConstIter i_end;
 
     i_iter = pred_i.begin();
     i_end = pred_i.end();
@@ -448,8 +458,8 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
     if (opf) Print_OP (opf);
   }
 
-  std::slist<pred_t>::const_iterator i_iter;
-  std::slist<pred_t>::const_iterator i_end;
+  PredOp_Lst_ConstIter i_iter;
+  PredOp_Lst_ConstIter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -507,8 +517,7 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
 }
 
 static void
-BB_Create_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
-               std::list<BB*> *bbs, OP *phi) 
+BB_Create_Phi (UINT8 nopnds, TN *result[], TN *opnd[], BB_Lst *bbs, OP *phi) 
 {
   phi_t *phi_infos;
   phi_infos = (phi_t*)MEM_POOL_Alloc(&MEM_Select_pool, sizeof(phi_t));
@@ -593,14 +602,13 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
 
     Create_PSI_or_Select (select_tn, cond_tn1, true_tn, false_tn, &cmov_ops);
 
-    std::list<BB*> *bbs = new std::list<BB*>;
-
     if (npreds > 2) {
       BBLIST* edge;
       UINT8 j = 0;
       TN *result[1];
       UINT8 nopnds = npreds - 1;
       TN *opnd[nopnds];
+      BB_Lst *bbs = new BB_Lst;
 
       Set_TN_is_global_reg (select_tn);
       
@@ -1191,8 +1199,8 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
       }
 
       if (OP_has_predicate (op) || TOP_is_select (OP_code (op))) {
-        std::slist<pred_t>::iterator i_iter;
-        std::slist<pred_t>::iterator i_end;
+        PredOp_Lst_Iter i_iter;
+        PredOp_Lst_Iter i_end;
 
         i_iter = pred_i.begin();
         i_end = pred_i.end();
@@ -1213,8 +1221,8 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
 static void 
 Update_Predicates (OP *op, OP *new_op)
 {
-  std::slist<pred_t>::iterator i_iter;
-  std::slist<pred_t>::iterator i_end;
+  PredOp_Lst_Iter i_iter;
+  PredOp_Lst_Iter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -1240,7 +1248,7 @@ Rename_PHIs(hTN_MAP dup_tn_map, BB *new_bb, BB *tail, BB *dup)
 
     result[0] = OP_result(phi, 0);
 
-    std::list<BB*> *bbs = new std::list<BB*>;
+    BB_Lst *bbs = new BB_Lst;
 
     TN *res1 = NULL;
     BB* tpred = Get_BB_Pos_in_PHI (phi, dup);
@@ -1334,7 +1342,7 @@ Force_End_Tns (BB* bb, BB *tail)
           TN *opnd[npreds];
           result[0] = res;
 
-          std::list<BB*> *bbs = new std::list<BB*>;
+          BB_Lst *bbs = new BB_Lst;
 
           BBLIST *preds;
           UINT8 pos=0;
@@ -1408,7 +1416,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
         UINT8 nopnds = 0;
         TN *opnd[BB_preds_len(bp)];
       
-        std::list<BB*> *bbs = new std::list<BB*>;
+        BB_Lst *bbs = new BB_Lst;
 
         for (UINT8 i = 0; i < OP_opnds(op); i++) {
           BB *ppred = Get_PHI_Predecessor (op, i);
@@ -1622,15 +1630,14 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
 
-  std::slist<pred_t>::iterator i_iter;
-  std::slist<pred_t>::iterator i_end;
+  PredOp_Lst_Iter i_iter;
+  PredOp_Lst_Iter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
 
-  bool speculate_load = false;
-
   while(i_iter != i_end) {
+    bool speculate_load = false;
     OP* op = (*i_iter).memop;
     
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
@@ -1745,8 +1752,8 @@ BB_Fix_Spec_Loads (BB *bb)
 {
   Optimize_Spec_Loads (bb);
 
-  std::slist<pred_t>::const_iterator i_iter;
-  std::slist<pred_t>::const_iterator i_end;
+  PredOp_Lst_ConstIter i_iter;
+  PredOp_Lst_ConstIter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -1811,8 +1818,9 @@ Optimize_Spec_Stores(BB *bb)
   TN *tn1=NULL;
   TN *tn2=NULL;
 
-  std::slist<pred_t>::iterator i_iter;
-  std::slist<pred_t>::iterator i_end;
+  PredOp_Lst_Iter i_iter;
+  PredOp_Lst_Iter i_end;
+
   i_iter = pred_i.begin();
   i_end = pred_i.end();
 
@@ -1820,7 +1828,7 @@ Optimize_Spec_Stores(BB *bb)
 
   while(i_iter != i_end) {
 
-      std::slist<pred_t>::iterator i_iter2=i_iter;
+    PredOp_Lst_Iter i_iter2=i_iter;
       i_iter2++;
 
       while (i_iter2 != i_end) {
@@ -1882,8 +1890,8 @@ BB_Fix_Spec_Stores (BB *bb)
 {
   Optimize_Spec_Stores (bb);
 
-  std::slist<pred_t>::const_iterator i_iter;
-  std::slist<pred_t>::const_iterator i_end;
+  PredOp_Lst_ConstIter i_iter;
+  PredOp_Lst_ConstIter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -2264,7 +2272,7 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     TN *opnd[nopnds];
     UINT8 j=0;
 
-    std::list<BB*> *bbs = new std::list<BB*>;
+    BB_Lst *bbs = new BB_Lst;
 
     for (UINT8 i = 0; i < nopnds; i++) {
       BB *pred = Get_PHI_Predecessor (phi, i);
@@ -2440,7 +2448,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       UINT8 nopnds = npreds - 1;
       TN *opnd[nopnds];
 
-      std::list<BB*> *bbs = new std::list<BB*>;
+      BB_Lst *bbs = new BB_Lst;
 
       select_tn = Dup_TN(select_tn);
       Set_TN_is_global_reg (select_tn);
