@@ -5191,6 +5191,69 @@ bool CG_LOOP::Determine_Unroll_Fully()
   return false;
 }
 
+#ifdef TARG_ST
+int
+LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
+{
+  BB *bb;
+  float avg_cycles;
+  BB *head = LOOP_DESCR_loophead(loop);
+
+  if (BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1)
+    return 0;
+
+  BB_MAP sch_est = BB_MAP_Create();
+  CG_SCHED_EST *se = CG_SCHED_EST_Create(head, &MEM_local_nz_pool, SCHED_EST_FOR_SWP);
+  BB_MAP_Set(sch_est, head, se);
+  avg_cycles = CG_SCHED_EST_Avg_Cycles_Thru(LOOP_DESCR_bbset(loop), head, sch_est, SCHED_EST_FOR_UNROLL);
+
+  // Now, count the number of LOAD operations in the loop, we consider
+  // them part of of the critical path, and count the total number of
+  // operations in the loop.
+  int op_cnt = BB_length(head);
+  int load_cnt = 0;
+  int mem_cnt = 0;
+  OP *op;
+  FOR_ALL_BB_OPs(head, op) {
+    if (OP_memory(op))
+      mem_cnt ++;
+    if (OP_load(op))
+      load_cnt ++;
+  }
+
+  // We consider that a loop body has the following properties:
+  //   - All load operations are part of the critical path
+  //   - The exit test has the form (add, cmp, br) and will not be
+  //   duplicated, after optimizations, by the unrolling.
+
+  // Thus, adding N instances of the loop body will have the following
+  // impact:
+  //   - The critical path is augmented by N*(nb_load), because we
+  //   consider no dependencies between iterations for operations
+  //   involved in the critical path
+  //   - The minimum cycles of the loop is augmented by
+  //   nb_mem + (nb_op-nb_mem-3)/4
+
+  // The unrolling factor is computed to be the lowest value such that
+  // the critical path is smaller than the minimum cycles of the loop.
+
+  // This loop has fewer than expected non memory operations
+  if (op_cnt < (mem_cnt+3))
+    return 0;
+
+  int cp_cycles = se->cached_crit_path_len+load_cnt;
+  int min_cycles = MAX(mem_cnt, (op_cnt+3)/4);
+  int sched_unroll_factor = 1;
+  
+  while (cp_cycles > min_cycles && sched_unroll_factor < unroll_factor) {
+    sched_unroll_factor ++;
+    cp_cycles += load_cnt;
+    min_cycles = MAX(mem_cnt*sched_unroll_factor, ((op_cnt-3)*sched_unroll_factor+3+3)/4);
+  }
+
+  return sched_unroll_factor;
+}
+#endif
 
 void CG_LOOP::Determine_Unroll_Factor()
 { 
@@ -5361,6 +5424,13 @@ void CG_LOOP::Determine_Unroll_Factor()
       Set_unroll_factor(ntimes);
     }
   }
+#if 0
+  int sched_unroll_factor =  LOOP_DESCR_Estimate_Factor_For_Unrolling (Loop(), Unroll_factor());
+  printf("Unroll factor = %d, sched estimate gives %d\n", Unroll_factor(), sched_unroll_factor);
+
+  if (!pragma_unroll && (Unroll_factor() > sched_unroll_factor))
+    Set_unroll_factor(sched_unroll_factor);
+#endif
 }
 
 
@@ -5376,7 +5446,7 @@ inline bool CG_LOOP_OP_is_live(OP *op, TN_SET *live_set, bool keep_prefetch)
     return true;
 #ifdef TARG_ST
   // FDF: Keep branch instruction because we do not run Gen_SWP_Branch
-  if (OP_br(op) == 0)
+  if (OP_br(op))
     return true;
 #endif
   for (INT i = 0; i < OP_results(op); i++) {
@@ -6156,6 +6226,14 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	return FALSE;
       cg_loop.Build_CG_LOOP_Info();
       Perform_Load_Packing(loop);
+
+      cg_loop.Recompute_Liveness();
+      Induction_Variables_Removal(cg_loop, 
+				  true/*delete*/, 
+				  true/*keep prefetch*/,
+				  trace_loop_opt);
+      cg_loop.Recompute_Liveness();
+      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
     }
 
     break;
