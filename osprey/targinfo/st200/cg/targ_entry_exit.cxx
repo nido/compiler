@@ -62,11 +62,13 @@
 #include "cg.h"
 #include "calls.h"
 #include "register.h"
-#include "exp_targ.h"
+#include "cgexp.h"
 #include "cg_spill.h"
 #include "cgtarget.h"
 #include "mexpand.h"
 
+typedef std::pair<TN *, TN *> TN_TN_PAIR;
+typedef std::vector<TN_TN_PAIR> TN_TN_PAIR_VECTOR;
 typedef std::pair<TN *, ST *> TN_SYMBOL_PAIR;
 typedef std::vector<TN_SYMBOL_PAIR> TN_SYMBOL_PAIR_VECTOR;
 typedef std::vector<CLASS_REG_PAIR> CREG_VECTOR;
@@ -193,6 +195,49 @@ EETARG_Fixup_Entry_Code (
     while(!OP_store(op)) op = OP_prev(op);
     Set_OP_spill(op);
   }
+
+  // If in the prolog a callee saved was used before the sp_adjust op
+  // we need to rename it into a caller saved and restore it after the
+  // generation of the callee spill.
+  // This happens for the frame pointer that is moved to a temporary
+  // before the sp adjust code. It happens that this temporary is
+  // allocated top a preserved register
+  if (point != NULL) {
+    REGISTER caller_reg[ISA_REGISTER_CLASS_MAX+1];
+    ISA_REGISTER_CLASS rc;
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      caller_reg[rc] = 0;
+    }
+    TN_TN_PAIR_VECTOR copy_vector;
+    OP *op;
+    FOR_ALL_BB_OPs_FWD(bb, op) {
+      if (op == point) break;
+      for (i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op, i);
+	if (TN_is_register(tn) && TN_register(tn) != REGISTER_UNDEFINED) {
+	  ISA_REGISTER_CLASS rc = TN_register_class(tn);
+	  REGISTER reg = TN_register(tn);
+	  if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[rc], reg)) {
+	    REGISTER_SET caller_set = REGISTER_CLASS_caller_saves(rc);
+	    TN *caller_tn;
+	    if (caller_reg[rc] == 0) {
+	      caller_reg[rc] = REGISTER_SET_Choose(caller_set);
+	    } else {
+	      caller_reg[rc] = REGISTER_SET_Choose_Next(caller_set, 
+							caller_reg[rc]);
+	    }
+	    caller_tn = Build_Dedicated_TN(rc, caller_reg[rc], TN_size(tn));
+	    copy_vector.push_back(TN_TN_PAIR(tn, caller_tn));
+	    Set_OP_result(op, i, caller_tn);
+	  }
+	}
+      }
+    }
+    for (INT i = 0; i < copy_vector.size(); i++) {
+      Exp_COPY(copy_vector[i].first, copy_vector[i].second, &ops);
+    }
+  }
+
   if (point == NULL) {
     BB_Prepend_Ops (bb, &ops);
   } else {
@@ -240,6 +285,63 @@ EETARG_Fixup_Exit_Code (
     OP *op = OPS_last(&ops);
     while(!OP_load(op)) op = OP_prev(op);
     Set_OP_spill(op);
+  }
+  
+
+  // If in the epilogue we used FP to restore callee saved, we must ensure
+  // that FP has not been restored to its callee saved value.
+  // It may happen if in the epilogue, no use of FP appear except the ones
+  // we generate. In this case we must find the restore operation of FP
+  // and generate a temporary copy.
+  OP *op;
+  BOOL fp_used;
+  FOR_ALL_OPS_OPs(&ops, op) {
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      if (OP_opnd(op, i) == FP_TN) {
+	fp_used = true;
+      }
+    }
+  }
+  if (fp_used) {
+    OP *def_op = NULL;
+    INT def_idx;
+    TN *def_tn;
+    FOR_ALL_BB_OPs_FWD(bb, op) {
+      if (op == point) break; /* Stop at sp adjust. */
+      for (i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op, i);
+	if (TN_is_register(tn) && TN_register(tn) != REGISTER_UNDEFINED) {
+	  ISA_REGISTER_CLASS rc = TN_register_class(tn);
+	  REGISTER reg = TN_register(tn);
+	  if (TN_is_save_reg(tn) && 
+	      TN_save_rclass(tn) == TN_register_class(FP_TN) &&
+	      TN_save_reg(tn) == TN_register(FP_TN) &&
+	      rc == TN_register_class(FP_TN) &&
+	      reg == TN_register(FP_TN)
+	      ) {
+	    def_op = op;
+	    def_idx = i;
+	    def_tn = tn;
+	  }
+	}
+      }
+    }
+    if (def_op != NULL) {
+      REGISTER_SET caller_set = REGISTER_CLASS_caller_saves(TN_register_class(def_tn));
+      REGISTER caller_reg = REGISTER_SET_Choose(caller_set);
+      TN *caller_tn = Build_Dedicated_TN(TN_register_class(def_tn), caller_reg, TN_size(def_tn));
+      Set_OP_result(def_op, def_idx, caller_tn);
+      if (point == NULL) {
+	// If no sp adjust, simply add copy after callee restore
+	Exp_COPY(def_tn, caller_tn, &ops);
+      } else {
+	// If there is an sp adjust op, we must insert after it
+	// as it will used FP_TN
+	OPS copy_ops = OPS_EMPTY;
+	Exp_COPY(def_tn, caller_tn, &copy_ops);
+	BB_Insert_Ops_After(bb, point, &copy_ops);
+      }
+    }
   }
   
   BB_Insert_Ops_Before(bb, point, &ops);
