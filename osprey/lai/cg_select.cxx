@@ -707,6 +707,13 @@ Can_Speculate_BB(BB *bb)
     }
 
     else if (OP_load (op)) {
+      if (!(PROC_has_predicate_loads() && Enable_Conditional_Load) ||
+          CG_select_force_spec_load) {
+        WN *wn = Get_WN_From_Memory_OP(op);
+        if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+          continue;
+      }
+
       // loads will be optimized only if hardware support
       if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())
@@ -1641,25 +1648,13 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   i_end = pred_i.end();
 
   while(i_iter != i_end) {
-    bool speculate_load = false;
     OP* op = (*i_iter).memop;
     
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
       TN *pred_tn = (*i_iter).predtn;
 
       if (!pred_tn) {
-        if (CG_select_force_spec_load) {
-          if (OP_load(op) && !OP_has_predicate(op)) {
-            WN *wn = Get_WN_From_Memory_OP(op);
-            if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
-              speculate_load = true;
-          }
-        }
-
-        if (false_br) 
-          (*i_iter).predtn = speculate_load ? True_TN : tn2;
-        else
-          (*i_iter).predtn = cond_tn;
+        (*i_iter).predtn = false_br ? tn2 : cond_tn;
       }
       else {
         TN *tn = false_br ? tn2 : cond_tn;
@@ -1689,18 +1684,7 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
       TN *pred_tn = (*i_iter).predtn;
 
       if (!pred_tn) {
-        if (CG_select_force_spec_load) {
-          if (OP_load(op) && !OP_has_predicate(op)) {
-            WN *wn = Get_WN_From_Memory_OP(op);
-            if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
-              speculate_load = true;
-          }
-        }
-
-        if (false_br) 
-          (*i_iter).predtn = cond_tn;
-        else
-          (*i_iter).predtn = speculate_load ? True_TN : tn2;
+        (*i_iter).predtn = false_br ? cond_tn : tn2;
       }
       else  {
         TN *tn = false_br ? cond_tn : tn2;
