@@ -3715,13 +3715,12 @@ SSA_Remove_Pseudo_OPs (
 	OPS ops = OPS_EMPTY;
 	Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), &ops);
 	BB_Remove_Op(bb, op);
-	OP *prev_op = next_op->prev;
-	if (prev_op != NULL) {
-	  BB_Insert_Ops_After(bb, prev_op, &ops);
-	  next_op = prev_op->next;
+	OP *prev_next = next_op;
+	next_op = OPS_first(&ops);
+	if (prev_next != NULL) {
+	  BB_Insert_Ops_Before(bb, prev_next, &ops);
 	} else {
-	  BB_Prepend_Ops(bb, &ops);
-	  next_op = BB_first_op(bb);
+	  BB_Append_Ops(bb, &ops);
 	}
       }
 

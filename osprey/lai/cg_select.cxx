@@ -926,7 +926,8 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
         if (Need_Predicate_Op (op)) {
           int i;
           for (i = 0; i < OP_opnds(cmp_op); i++) {  
-            if (TN_ssa_def(OP_opnd (cmp_op, i)) == op) {
+            if (TN_is_register(OP_opnd (cmp_op, i)) &&
+		TN_ssa_def(OP_opnd (cmp_op, i)) == op) {
               cond_penalty += 3;
               break;
             }
