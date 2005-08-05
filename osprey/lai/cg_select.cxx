@@ -41,7 +41,10 @@
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_force_spec_load=TRUE  speculate loads instead of predication
+ * -CG:select_force_spec_load=[0,1,2]  speculate loads instead of predication
+ *                              0 = always used ldwc
+ *                              1 = speculate safe loads
+ *                              2 = speculate all loads 
  *
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
@@ -144,13 +147,14 @@ BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_spec_stores_overidden = FALSE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_allow_dup_overridden = FALSE;
-BOOL CG_select_force_spec_load = FALSE;
+INT32 CG_select_force_spec_load = 0;
 BOOL CG_select_force_spec_load_overridden = FALSE;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
 const char* CG_select_factor = "1.1";
 static float select_factor;
 static int branch_penalty;
+static int cond_penalty=0; 
 
 /* ================================================================
  *
@@ -709,9 +713,13 @@ Can_Speculate_BB(BB *bb)
     else if (OP_load (op)) {
       if (!(PROC_has_predicate_loads() && Enable_Conditional_Load) ||
           CG_select_force_spec_load) {
-        WN *wn = Get_WN_From_Memory_OP(op);
-        if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+        if (CG_select_force_spec_load == 2) 
           continue;
+        else {
+          WN *wn = Get_WN_From_Memory_OP(op);
+          if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+            continue;
+        }
       }
 
       // loads will be optimized only if hardware support
@@ -873,17 +881,48 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   float cycles1 = CG_SCHED_EST_Cycles(se1);
   float cycles2 = CG_SCHED_EST_Cycles(se2);
 
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "bb1 (%f cycles) = \n", cycles1);
+    if (se1)
+      CG_SCHED_EST_Print(Select_TFile, se1);
+    fprintf (Select_TFile, "\n");
+
+    fprintf (Select_TFile, "bb2 (%f cycles) = \n", cycles2);
+    if (se2)
+      CG_SCHED_EST_Print(Select_TFile, se2);
+    fprintf (Select_TFile, "\n");
+  }
+
   float bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
 
   // ponderate cost of each region taken separatly.
   float est_cost_before = cycles1 + bp + (cycles2 * prob);
 
-  OP *op = BB_branch_op(bb1);
-  DevAssert(op, ("Invalid conditional block"));
-  CG_SCHED_EST_Ignore_Op(se1, op);
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
-  float est_cost_after = CG_SCHED_EST_Cycles(se1) / select_factor;
+  CG_SCHED_EST_Subtract_Op_Resources(se1, OP_code(BB_branch_op(bb1)));
+  CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r);
+
+  cycles1 = CG_SCHED_EST_Cycles(se1);
+
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "ifconverted bb (%f cycles) = \n", cycles1);
+    if (se1)
+      CG_SCHED_EST_Print(Select_TFile, se1);
+    fprintf (Select_TFile, "\n");
+  }
+
+  float cp=0;
+
+  OP *op;
+  FOR_ALL_BB_OPs(bb2, op) {
+    if (Need_Predicate_Op (op)) {
+      cp = cond_penalty;
+      break;
+    }
+  }
+
+  float est_cost_after = (cycles1 + cp) / select_factor;
 
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
@@ -998,28 +1037,44 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
              cyclesh, cycles1, cycles2);
   }
 
-  // cost of if converted region. prob is one.
-  // Resulting block will not have branches. 
-
-  OP *op = BB_branch_op(head);
-  DevAssert(op, ("Invalid conditional block"));
-  CG_SCHED_EST_Ignore_Op(sehead, op);
+  float cp;
 
   if (se1) {
-    FOR_ALL_BB_SET_members(taken_reg, bb)
-      if (op = BB_branch_op(bb))
-        CG_SCHED_EST_Ignore_Op(se1, op);
+    FOR_ALL_BB_SET_members(taken_reg, bb) {
+      OP *op;
+      FOR_ALL_BB_OPs(bb, op) {
+        if (Need_Predicate_Op (op)) {
+          cp = cond_penalty;
+          break;
+        }
+      }
+    }
     CG_SCHED_EST_Append_Scheds(sehead, se1);
   }
 
   if (se2) {
-    FOR_ALL_BB_SET_members(fallthru_reg, bb)
-      if (op = BB_branch_op(bb))
-        CG_SCHED_EST_Ignore_Op(se2, op);
+    FOR_ALL_BB_SET_members(fallthru_reg, bb) {
+      OP *op;
+      FOR_ALL_BB_OPs(bb, op) {
+        if (Need_Predicate_Op (op)) {
+          cp = cond_penalty;
+          break;
+        }
+      }
+    }
     CG_SCHED_EST_Append_Scheds(sehead, se2);
   }
 
+  CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
   cyclesh = CG_SCHED_EST_Cycles(sehead);
+
+  if (Trace_Select_Candidates) {
+    fprintf (Select_TFile, "ifconverted bb (%f cycles) = \n", cyclesh);
+    if (sehead)
+      CG_SCHED_EST_Print(Select_TFile, sehead);
+    fprintf (Select_TFile, "\n");
+  }
+
   CG_SCHED_EST_Delete(sehead);
 
   if (se1)
@@ -1028,7 +1083,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     CG_SCHED_EST_Delete(se2);
 
   // cost of if converted region. prob is one. 
-  float est_cost_after = cyclesh / select_factor;
+  float est_cost_after = (cyclesh + cp) / select_factor;
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
@@ -2595,7 +2650,9 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
       
     // tests for logical expression 
-    if (bbb = Is_Double_Logif(bb)) {
+    if (
+        //        BB_id(bb) != 4 &&
+        (bbb = Is_Double_Logif(bb))) {
       Initialize_Hammock_Memory();
 
       if (Trace_Select_daVinci) {
