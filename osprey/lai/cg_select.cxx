@@ -912,17 +912,32 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
     fprintf (Select_TFile, "\n");
   }
 
-  float cp=0;
+  // if the condition depends of a load that is beeing conditionalized 
+  // in the same basic block there is a dependency difficult to estimate
+  // the real job should be to construct the if converted block with output
+  // the predicate, then take the estimated schedule (eembc/bmark_lite).
+  if (PROC_has_predicate_loads()) {
+    OP *br_op = BB_branch_op(bb2);
+    OP *cmp_op = TN_ssa_def(OP_opnd(br_op, 0));
 
-  OP *op;
-  FOR_ALL_BB_OPs(bb2, op) {
-    if (Need_Predicate_Op (op)) {
-      cp = cond_penalty;
-      break;
+    if (cmp_op) {
+      OP *op;
+      FOR_ALL_BB_OPs(bb2, op) {
+        if (Need_Predicate_Op (op)) {
+          int i;
+          for (i = 0; i < OP_opnds(cmp_op); i++) {  
+            if (TN_ssa_def(OP_opnd (cmp_op, i)) == op) {
+              cond_penalty += 3;
+              break;
+            }
+          }
+          break;
+        }
+      }
     }
   }
 
-  float est_cost_after = (cycles1 + cp) / select_factor;
+  float est_cost_after = (cycles1 + cond_penalty) / select_factor;
 
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
@@ -1037,33 +1052,11 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
              cyclesh, cycles1, cycles2);
   }
 
-  float cp;
-
-  if (se1) {
-    FOR_ALL_BB_SET_members(taken_reg, bb) {
-      OP *op;
-      FOR_ALL_BB_OPs(bb, op) {
-        if (Need_Predicate_Op (op)) {
-          cp = cond_penalty;
-          break;
-        }
-      }
-    }
+  if (se1)
     CG_SCHED_EST_Append_Scheds(sehead, se1);
-  }
 
-  if (se2) {
-    FOR_ALL_BB_SET_members(fallthru_reg, bb) {
-      OP *op;
-      FOR_ALL_BB_OPs(bb, op) {
-        if (Need_Predicate_Op (op)) {
-          cp = cond_penalty;
-          break;
-        }
-      }
-    }
+  if (se2) 
     CG_SCHED_EST_Append_Scheds(sehead, se2);
-  }
 
   CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
   cyclesh = CG_SCHED_EST_Cycles(sehead);
@@ -1083,7 +1076,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     CG_SCHED_EST_Delete(se2);
 
   // cost of if converted region. prob is one. 
-  float est_cost_after = (cyclesh + cp) / select_factor;
+  float est_cost_after = cyclesh / select_factor;
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
