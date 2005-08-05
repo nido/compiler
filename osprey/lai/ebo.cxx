@@ -1588,7 +1588,7 @@ EBO_delete_reload_across_dependency (
     Print_OP_No_SrcLine(op);
   }
 
- /* Be sure we have a "Store .. Store .. Load" pattern. */
+ /* Be sure we have a "Store/Load .. Store .. Load" pattern. */
   if ((pred_op == NULL) ||
       (intervening_op == NULL) ||
       !OP_load(op) ||
@@ -1623,6 +1623,36 @@ EBO_delete_reload_across_dependency (
   size_pred = OP_Mem_Ref_Bytes(pred_op);
   size_intervening = OP_Mem_Ref_Bytes(intervening_op);
 
+
+
+#ifdef TARG_ST
+  // [CG] We stop here if the intervening op predicate
+  // does not dominate the previous predicate op.
+  // This case appear for instance in:
+  //  true_p? X = load @A
+  //  p1?     store @A = Z
+  //  p1?     Y = load @A
+  // We do not want to replace the Y = load @A if
+  // we have no guarantee that the store is always executed if
+  // the X = load is executed
+  INT pred_predicate_idx = OP_find_opnd_use(pred_op, OU_predicate);
+  INT intervening_predicate_idx =  OP_find_opnd_use(intervening_op, OU_predicate);
+  if (OP_has_predicate(intervening_op) && 
+      OP_opnd(intervening_op,intervening_predicate_idx) != True_TN &&
+      (!OP_has_predicate(pred_op) ||
+       !EBO_predicate_dominates(OP_opnd(intervening_op,intervening_predicate_idx),
+				intervening_opinfo->optimal_opnd[intervening_predicate_idx],
+				OP_opnd(pred_op,pred_predicate_idx),
+				opinfo->optimal_opnd[pred_predicate_idx]))) {
+    if (EBO_Trace_Hash_Search) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"%sRe-load intervening op predicates do not match\n\t", EBO_trace_pfx);
+      Print_OP_No_SrcLine(pred_op);
+    }
+    return FALSE;
+  }
+#endif
+
   if ((size_succ != size_pred) ||
       (size_succ != size_intervening)) return FALSE;
 
@@ -1647,8 +1677,8 @@ EBO_delete_reload_across_dependency (
   }
 
   /* Paired loads are not supported. */
-  // This is a IA64 stuff -- leave for now ...
   if (OP_results(op) == 2) return FALSE;
+
   if ((OP_store(pred_op) &&
       ((OP_results(pred_op) > 1) ||
        ((OP_results(pred_op) > 0) &&

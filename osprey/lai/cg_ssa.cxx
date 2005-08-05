@@ -903,6 +903,31 @@ Convert_PHI_to_PSI (
   return psi_op;
 }
 
+#if 1
+// [CG]: We use a temporary pseudo TOP_movc for repairs
+// as it has a predicate information and thus avoid
+// multiple repairs (see repair code below).
+// After the out of SSA all movc are replaced by select
+// operations
+
+void
+OP_Make_movc (
+  TN *guard,
+  TN *dst,
+  TN *src,
+  OPS *cmov_ops
+)
+{
+  if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
+    DevWarn("Conditional MOV should use a branch register");
+  Build_OP(TOP_movc, dst, guard, src, cmov_ops);
+#if 0
+  if (OPS_length(&cmov_ops) != 1)
+    Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
+  return OPS_first(&cmov_ops);
+#endif
+}
+#else
 void
 OP_Make_movc (
   TN *guard,
@@ -920,6 +945,7 @@ OP_Make_movc (
   return OPS_first(&cmov_ops);
 #endif
 }
+#endif
 
 //
 // dominance frontier blocks for each BB in the region
@@ -2611,7 +2637,10 @@ Normalize_Psi_Operations()
 	  TN *tn_repair = Copy_TN(tn_opndi);
 	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
 	  
-	  if (OP_volatile(op_defi)) {
+	  // [CG]: Memory operations can not be moved without checking
+	  // aliasing with all crossed operations. For the moment
+	  // disable move of any memory operation
+	  if (OP_volatile(op_defi) /*[CG]*/|| OP_memory(op_defi)) {
 	    /* The original instruction cannot be duplicated, introduce
 	       a new TN defined by a predicated MOVE instruction. */
 	    if (Trace_SSA_Out && opndi != opndj+1) {
@@ -3574,6 +3603,7 @@ SSA_Make_Conventional (
   //
   SSA_UNIVERSE_Finalize();
 
+  //
   MEM_POOL_Pop(&MEM_local_pool);
 
   // Because, the above adds new TNs, we are not entirely able to
@@ -3595,6 +3625,8 @@ SSA_Make_Conventional (
  *
  *   Remove PHI-nodes renaming their resources into a representative
  *   name.
+ *   Also replace pseudo conditional moves inserted by PSI.
+ *   
  *   IMPORTANT: - maintains the liveness info.
  *              - removes maps and pops ssa_pool, no more trace of
  *                the SSA in this region.
@@ -3673,6 +3705,24 @@ SSA_Remove_Pseudo_OPs (
 	}
 
 	BB_Remove_Op(bb, op);
+      }
+
+      else if (OP_code(op) == TOP_movc) {
+	if (Trace_phi_removal) {
+	  fprintf(TFile, "  replacing a conditional move \n\n");
+	  //	  Print_OP_No_SrcLine(op);
+	}
+	OPS ops = OPS_EMPTY;
+	Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), &ops);
+	BB_Remove_Op(bb, op);
+	OP *prev_op = next_op->prev;
+	if (prev_op != NULL) {
+	  BB_Insert_Ops_After(bb, prev_op, &ops);
+	  next_op = prev_op->next;
+	} else {
+	  BB_Prepend_Ops(bb, &ops);
+	  next_op = BB_first_op(bb);
+	}
       }
 
       else {
