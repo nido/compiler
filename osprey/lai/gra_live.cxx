@@ -2082,7 +2082,12 @@ GRA_LIVE_Compute_Local_Info(
     for ( op = BB_last_op(bb); op != NULL; op = OP_prev(op) ) {
       // If there is no predicate TN, pretend it's the TRUE predicate
       if (OP_has_predicate(op)) {
+#ifdef TARG_ST
+      /* (cbr) predicate operand # is not necessary constant */
+	pred_tn = OP_opnd(op, OP_find_opnd_use(op, OU_predicate));
+#else
 	pred_tn = OP_opnd(op, OP_PREDICATE_OPND);
+#endif
 	// Predicates behave as if they are used under the TRUE predicate
 	use_set = get_usedef_set(use_map,pred_tn);
 	use_set->Insert(True_TN);

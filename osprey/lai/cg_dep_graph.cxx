@@ -536,14 +536,25 @@ OP_has_subset_predicate(const void *value1, const void *value2)
   TN *p1, *p2;
   if (OP_has_predicate((OP *) value1) && OP_has_predicate((OP *) value2)) {
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    p1 = OP_opnd((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate));
+    p2 = OP_opnd((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate));
+#else
     p1 = OP_opnd((OP*) value1, OP_PREDICATE_OPND);
     p2 = OP_opnd((OP*) value2, OP_PREDICATE_OPND);
+#endif
     v1P = v2P = TRUE;
 
   } else if (OP_has_predicate((OP *) value1) && 
 	     !OP_has_predicate((OP *) value2)) {
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    p1 = OP_opnd((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate));
+#else
     p1 = OP_opnd((OP*) value1, OP_PREDICATE_OPND);
+#endif
     p2 = True_TN;          // default case
     v1P = TRUE;
     v2P = FALSE;
@@ -552,7 +563,12 @@ OP_has_subset_predicate(const void *value1, const void *value2)
 	     OP_has_predicate((OP *) value2)) {
 
     p1 = True_TN;          // default case
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    p2 = OP_opnd((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate));
+#else
     p2 = OP_opnd((OP*) value2, OP_PREDICATE_OPND);
+#endif
     v1P = FALSE;
     v2P = TRUE;
 
@@ -585,8 +601,14 @@ OP_has_disjoint_predicate(const OP *value1, const OP *value2)
       OP_has_predicate(value1) && 
       OP_has_predicate(value2)) {
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    TN *p1 = OP_opnd(value1, OP_find_opnd_use(value1, OU_predicate));
+    TN *p2 = OP_opnd(value2, OP_find_opnd_use(value2, OU_predicate));
+#else
     TN *p1 = OP_opnd(value1, OP_PREDICATE_OPND);
     TN *p2 = OP_opnd(value2, OP_PREDICATE_OPND);
+#endif
 
     // Invoke PQS interface to determine if p1 and p2 are exclusive.
     if (PQSCG_is_disjoint(p1, p2)) return TRUE;
@@ -603,8 +625,14 @@ OP_has_subset_predicate_cyclic(OP *op1, OP *op2)
 #ifdef SUPPORTS_PREDICATION
   if (!OP_cond_def(op1)) return TRUE;
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+  TN *p1 = OP_has_predicate(op1) ? OP_opnd(op1, OP_find_opnd_use(op1, OU_predicate)) : True_TN;
+  TN *p2 = OP_has_predicate(op2) ? OP_opnd(op2, OP_find_opnd_use(op2, OU_predicate)) : True_TN;
+#else
   TN *p1 = OP_has_predicate(op1) ? OP_opnd(op1, OP_PREDICATE_OPND) : True_TN;
   TN *p2 = OP_has_predicate(op2) ? OP_opnd(op2, OP_PREDICATE_OPND) : True_TN;
+#endif
 
   if (!PQSCG_pqs_valid()) return FALSE;
   // Invoke PQS interface to determine if p2 is not a subset of p1.
@@ -623,9 +651,15 @@ OP_has_disjoint_predicate_cyclic(OP *op1, OP *op2)
       OP_has_predicate(op1) && 
       OP_has_predicate(op2)) {
 
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+    TN *p1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_predicate));
+    TN *p2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_predicate));
+#else
     TN *p1 = OP_opnd(op1, OP_PREDICATE_OPND);
     TN *p2 = OP_opnd(op2, OP_PREDICATE_OPND);
-    
+#endif
+
     // Invoke PQS interface to determine if p1 and p2 are exclusive.
     if (PQSCG_is_disjoint(p1, p2)) return TRUE;
   }
@@ -5090,7 +5124,13 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 
 	BOOL cond_use = TRUE;
 	if (OP_has_predicate(cur_op)) {
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	  if (!TN_is_true_pred(OP_opnd(cur_op, OP_find_opnd_use(cur_op, OU_predicate))) &&
+#else
 	  if (!TN_is_true_pred(OP_opnd(cur_op, OP_PREDICATE_OPND)) &&
+#endif
+
 #ifdef TARG_ST
 	      OP_Can_Be_Speculative(cur_op)) {
 #else
@@ -5170,7 +5210,12 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 	      // quering for its operands.
 	      if (defop && ((void *) defop != (void *) multiple_inst) &&
 		  OP_has_predicate(defop)) {
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+		if (!TN_is_true_pred(OP_opnd(defop, OP_find_opnd_use(defop, OU_predicate))))
+#else
 		if (!TN_is_true_pred(OP_opnd(defop, OP_PREDICATE_OPND)))
+#endif
 		  { cond_use = TRUE; break; }
 	      }
 	    }
@@ -5184,7 +5229,12 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 #ifdef Is_True_On
 	    // detect the case if the predicate TN is modified
 	    {
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	      TN *pred = OP_opnd(cur_op, OP_find_opnd_use(cur_op, OU_predicate));
+#else
 	      TN *pred = OP_opnd(cur_op, OP_PREDICATE_OPND);
+#endif
 	      BOOL pred_modified = FALSE;
 	      for (OP *op = OP_next(cur_op); op != NULL; op = OP_next(op)) {
 		if (pred_modified) {
@@ -5200,7 +5250,12 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 	      }
 	    }
 #endif
+#ifdef TARG_ST
+  /* (cbr) predicate operand # is not necessary constant */
+	    Set_OP_opnd(cur_op, OP_find_opnd_use(cur_op, OU_predicate), True_TN);
+#else
 	    Set_OP_opnd(cur_op, OP_PREDICATE_OPND, True_TN);
+#endif
 	    Set_OP_cond_def_kind(cur_op, OP_ALWAYS_UNC_DEF);
 	    if (trace) {
 	      fprintf(TFile, "<pred promotion> ");
