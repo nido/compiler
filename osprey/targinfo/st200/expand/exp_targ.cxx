@@ -3519,23 +3519,29 @@ Exp_GP_Init (
   OPS *ops
 )
 {
-  static INT Temp_Index = 0;
-
-  TN *call_dest_tn;
   TN *neg_gprel_tn;
- 
-  // Generate a symbol for the label to call.  It has
-  // to be a symbol (not a label) because we need to
-  // apply a reloc to it later.
   ST *st = New_ST (CURRENT_SYMTAB);
-  STR_IDX str_idx = Save_Str2i ("L?", ".gpinit_", Temp_Index++);
-  ST_Init (st, str_idx, CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
-	  ST_pu (fn_st));
-  call_dest_tn = Gen_Symbol_TN (st, 0, 0);
-  Build_OP (TOP_getpc, RA_TN, call_dest_tn, ops);
 
-  neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);
-  Expand_Add (dest, RA_TN, neg_gprel_tn, Pointer_Mtype, ops);
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_addpc_i)) {
+    ST_Init (st, Save_Str ("."), CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
+	     ST_pu (fn_st));
+    neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);
+
+    Build_OP (TOP_addpc_i, dest, neg_gprel_tn, ops);
+  } else {
+    // Generate a symbol for the label to call.  It has
+    // to be a symbol (not a label) because we need to
+    // apply a reloc to it later.
+    static INT Temp_Index = 0;
+    STR_IDX str_idx = Save_Str2i ("L?", ".gpinit_", Temp_Index++);
+
+    ST_Init (st, str_idx, CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
+	     ST_pu (fn_st));
+    neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);
+
+    Build_OP (TOP_getpc, RA_TN, Gen_Symbol_TN (st, 0, 0), ops);
+    Expand_Add (dest, RA_TN, neg_gprel_tn, Pointer_Mtype, ops);
+  }
 }
 
 /* ====================================================================
