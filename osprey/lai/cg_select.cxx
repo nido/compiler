@@ -63,9 +63,13 @@
 // [HK]
 #if __GNUC__ >=3
 #include <list>
+#include <ext/slist>
 #else
 #include <list.h>
+#include <slist.h>
 #endif // __GNUC__ >=3
+#include "namespace_trans.h"
+
 #include "defs.h"
 #include "config.h"
 #include "config_TARG.h"
@@ -133,7 +137,7 @@ typedef struct {
   TN *predtn;
 } pred_t;
 
-typedef std::slist<pred_t>         PredOp_Lst;
+typedef __GNUEXT::slist<pred_t>    PredOp_Lst;
 typedef PredOp_Lst::iterator       PredOp_Lst_Iter;
 typedef PredOp_Lst::const_iterator PredOp_Lst_ConstIter;
 
