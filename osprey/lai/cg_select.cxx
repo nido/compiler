@@ -34,8 +34,8 @@
  *
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_spec_loads=TRUE    enable conditional loads 
- * -CG:select_spec_stores=TRUE   enable conditional stores
+ * -CG:select_spec_loads=TRUE    enable conditional or speculative loads 
+ * -CG:select_spec_stores=TRUE   enable conditional or blackhole stores
  *
  * The following flags to drive the algorithm and heuristics.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
@@ -50,6 +50,11 @@
  *                              ifconverted region
  *
  * -CG:select_freq=TRUE         heuristic based on execution frequency (optimize  *                              speed) or size of block (optimize space).
+ *
+ * -TARG:conditional_load=TRUE    enable predicated loads
+ * -TARG:conditional_store=TRUE   enable predicated stores
+ * -TARG:conditional_prefetch=TRUE enable predicated prefetchs
+ * -TARG:dismissible_load=TRUE    enable dismissible loads
  *
  * ====================================================================
  * ====================================================================
@@ -1257,11 +1262,9 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
       }
 
       if (OP_has_predicate (op) || TOP_is_select (OP_code (op))) {
-        PredOp_Lst_Iter i_iter;
-        PredOp_Lst_Iter i_end;
+        PredOp_Lst_Iter i_iter = pred_i.begin();
+        PredOp_Lst_Iter i_end  = pred_i.end();
 
-        i_iter = pred_i.begin();
-        i_end = pred_i.end();
         while(i_iter != i_end) {
           if ((*i_iter).memop == op) {
             TN *cond_tn = (*i_iter).predtn;
@@ -1868,23 +1871,36 @@ Optimize_Spec_Stores(BB *bb)
     PredOp_Lst_Iter i_iter2=i_iter;
       i_iter2++;
 
+      OP *op1 = (*i_iter).memop;
+      TN *tn1 = (*i_iter).predtn;
+
+      if (OP_load (op1)) {
+        i_iter++;
+        continue;
+      }
+
       while (i_iter2 != i_end) {
 
-        OP *op1 = (*i_iter).memop;
-        TN *tn1 = (*i_iter).predtn;
         OP *op2 = (*i_iter2).memop;
         TN *tn2 = (*i_iter2).predtn;
 
-        if (OP_load(op1) || OP_load(op2))
-          return;
-
-        // don't reorder store that might alias
-        if (tn1 == tn2 && !Are_Not_Aliased(op1, op2))
-          return;
-
-        if (Are_Same_Location (op1, op2) && tn1 != tn2 &&
+        if (OP_store (op2) && 
+            Are_Same_Location (op1, op2) && tn1 != tn2 &&
             !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
           OPS ops = OPS_EMPTY;  
+          
+        // check that we don't cross an aliasing memory operation
+          for (OP *iop = OP_next(op1);
+               iop!= NULL && iop != op2;
+               iop = OP_next(iop)) {
+            if (OP_memory (iop) &&
+                (!OP_has_predicate(iop) ||
+                 tn1==OP_opnd(iop, OP_find_opnd_use(iop, OU_predicate))) &&
+                !Are_Not_Aliased (op1, iop)) {
+              i_iter++;
+              goto next_store;
+            }
+          }
 
           Expand_Cond_Store (tn1, op1, op2, OP_find_opnd_use(op1, OU_storeval),
                              &ops);
@@ -1906,9 +1922,8 @@ Optimize_Spec_Stores(BB *bb)
             Print_TN (True_TN, FALSE);
           }
 
-          BB_Append_Ops (bb, &ops);
+          BB_Replace_Op (op2, &ops);
           BB_Remove_Op (bb, op1);
-          BB_Remove_Op (bb, op2);
 
           i_iter2 = pred_i.erase(i_iter2);
           i_iter = pred_i.erase(i_iter);
