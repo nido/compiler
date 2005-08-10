@@ -50,7 +50,7 @@
 extern "C" {
 #define this THIS
 #define operator OPERATOR
-#define CHECK(condition)
+#define restrict
 #include "lao_interface.h"
 #undef operator
 #undef this
