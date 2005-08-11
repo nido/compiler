@@ -49,6 +49,7 @@
 #endif // USE_PCH
 #pragma hdrstop
 
+#include "W_math.h"
 #ifdef _KEEP_RCS_ID
 #endif
 
