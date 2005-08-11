@@ -122,6 +122,11 @@
 #include "mexpand.h"
 #endif
 
+#ifdef TARG_ST
+// [TB] gcov coverage utilities  
+#include "gcov_profile.h"
+#endif
+
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
@@ -456,6 +461,10 @@ CG_Generate_Code(
     // corresponding allocated TNs from previously compiled REGIONs.
     Localize_or_Replace_Dedicated_TNs();
   }
+  
+  /* TB: If coverage, do the instrumention + gcno dump */
+  if (Profile_Arcs_Enabled)
+    gcov_pu();
 
   // If using feedback, incorporate into the CFG as early as possible.
   // This phase also fills in any missing feedback using heuristics.

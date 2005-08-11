@@ -70,7 +70,7 @@
 #include "gra_grant.h"
 #include "gra_cflow.h"
 #include "gra_trace.h"
-
+#include <math.h> // for fabs
 
 static MEM_POOL  GRA_pool_struct;
 MEM_POOL* const GRA_pool = &GRA_pool_struct;

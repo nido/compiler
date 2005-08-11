@@ -426,7 +426,12 @@ CG_CXX_SRCS = 		\
   hb_tail_duplication.cxx	\
   hb_trace.cxx		\
 			\
-  $(DERIVED_SRCS)
+  $(DERIVED_SRCS) \
+  gcov_profile.cxx \
+  gcov_coverage.cxx 
+
+GENERATED_FILES = \
+  gcov-iov.h
 
 #add the pqs sources
 ifeq ($(BUILD_TARGET),IA64)
@@ -708,7 +713,7 @@ ifeq ($(DSO_MODE),DLL)
 endif
 endif
 
-local: first_local derived_files $(TARGETS)
+local: first_local derived_files $(GENERATED_FILES) $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
@@ -924,3 +929,18 @@ include $(COMMONRULES)
 .cxx.pch:
 	$(C++F) -c $(.IMPSRC)
 
+#----------------------------------------------------------------------
+#  GCOV specific build
+#----------------------------------------------------------------------
+# gcov-iov.c is run on the build machine to generate gcov-iov.h from version.c
+gcov-iov.bo: gcov-iov.c gcov-version.c 
+	$(BUILD_CC) -I$(COMMON_COM_DIR) $(BUILD_CFLAGS) -DGENERATOR_FILE $< -c -o $@
+
+gcov-iov$(BEXE): gcov-iov.bo
+	$(BUILD_CC) -o $@ $^ $(BUILD_LDFLAGS)
+
+gcov-iov.h: s-iov
+s-iov: gcov-iov$(BEXE) 
+	./gcov-iov$(build_exeext) > gcov-iov.h
+	touch s-iov
+LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i gcov-iov.h

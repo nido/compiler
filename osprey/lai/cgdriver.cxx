@@ -104,6 +104,11 @@
 #include "lao_stub.h"               /* for lao_init()/lao_fini() */
 #endif
 
+#ifdef TARG_ST
+// [TB] gcov coverage utilities  
+#include "gcov_profile.h"
+#endif
+
 #include "W_errno.h"
 
 extern void Set_File_In_Printsrc(char *); /* defined in printsrc.c */
@@ -1631,6 +1636,11 @@ CG_Init (void)
     lao_init();
   }
 #endif
+#ifdef TARG_ST
+  // TB: initialize coverage module
+  if (Profile_Arcs_Enabled)
+    gcov_init (Remove_Extension(Src_File_Name));
+#endif
 
   return;
 }
@@ -1644,6 +1654,12 @@ CG_Init (void)
 void
 CG_Fini (void)
 {
+
+#ifdef TARG_ST
+  // TB: finalize coverage module
+  if (Profile_Arcs_Enabled)
+    gcov_finish (Asm_File);
+#endif
 
 #ifdef LAO_ENABLED
   if (CG_LAO_optimizations != 0) {

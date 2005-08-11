@@ -40,6 +40,7 @@
 #include <libelf.h>
 #include <libdwarf.h>
 #include "dwarf_DST_mem.h"
+#include "em_elf.h"
 
 extern void Cg_Dwarf_Begin (BOOL is_64bit);
 
@@ -91,4 +92,25 @@ extern void Cg_Dwarf_Translate_To_Elf(Dwarf_Unsigned,
 				      Dwarf_Unsigned *,
 				      Dwarf_Unsigned *);
 
+#ifdef TARG_ST
+//TB: export these type for accessing file_table and incl_table for
+//gcov support
+typedef struct {
+  char *path_name;
+  BOOL already_processed;
+} include_info;
+  
+typedef struct {
+  char *filename;
+  INT incl_index;
+  FILE *fileptr;
+  INT max_line_printed;
+  BOOL already_processed;
+  Dwarf_Unsigned mod_time;
+  Dwarf_Unsigned file_size;
+} file_info;
+
+extern file_info Cg_Dwarf_File_Table(INT /* idx */);
+extern include_info Cg_Dwarf_Include_Table(INT /* idx */);
+#endif
 #endif /* cgdwarf_INCLUDED */

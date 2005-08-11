@@ -2216,6 +2216,9 @@ void Cg_Dwarf_Finish (pSCNINFO text_scninfo)
 #endif
 }
 
+#ifndef TARG_ST
+//TB: export these type for accessing file_table and incl_table for
+//gcov support
 typedef struct {
   char *path_name;
   BOOL already_processed;
@@ -2231,10 +2234,30 @@ typedef struct {
   Dwarf_Unsigned file_size;
 } file_info;
 
+file_info Cg_Dwarf_File_Table(INT idx){
+  return file_table[file_idx];
+}
+
+include_info Cg_Dwarf_Include_Table(INT idx){
+  return incl_table[idx];
+}
+
+#endif
 static file_info *file_table;
 static include_info *incl_table;
 static INT cur_file_index = 0;
 
+#ifdef TARG_ST
+//TB: access to file_table and incl_table for gcov support
+file_info Cg_Dwarf_File_Table(INT idx){
+  return file_table[idx];
+}
+
+include_info Cg_Dwarf_Include_Table(INT idx){
+  return incl_table[idx];
+}
+
+#endif
 void Cg_Dwarf_Gen_Asm_File_Table (void)
 {
   INT count;
