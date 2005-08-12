@@ -280,6 +280,10 @@ inline OP *LR_extract_op (const LIVE_RANGE *lr) { return lr->extract_op; }
 #define LR_RELOADABLE    0x4    /* LR is reloadable. */
 #define LR_FAT_ALLOCATED 0x8	// LR was allocated real register by fat point
                                 // calculation
+#ifdef TARG_ST
+#define LR_SINGLETON_REF 0x10   // LR is used as a singleton operand.
+#endif
+
 #define LR_assigned(lr)         (LR_flags(lr) & LR_ASSIGNED)
 #define Set_LR_assigned(lr)     (LR_flags(lr) |= LR_ASSIGNED)
 #define LR_added(lr)            (LR_flags(lr) & LR_ADDED)
@@ -290,6 +294,10 @@ inline OP *LR_extract_op (const LIVE_RANGE *lr) { return lr->extract_op; }
 #define LR_fat_allocated(lr)    (LR_flags(lr) & LR_FAT_ALLOCATED)
 #define Set_LR_fat_allocated(lr)(LR_flags(lr) |= LR_FAT_ALLOCATED)
 #define Reset_LR_fat_allocated(lr)(LR_flags(lr) &= ~LR_FAT_ALLOCATED)
+#ifdef TARG_ST
+#define LR_singleton_ref(lr)    (LR_flags(lr) & LR_SINGLETON_REF)
+#define Set_LR_singleton_ref(lr)(LR_flags(lr) |= LR_SINGLETON_REF)
+#endif
 
 #define LR_Is_Undefined_Local(lr) \
   (TN_is_local_reg(LR_tn(lr)) && LR_def_cnt(lr) == 0)
@@ -375,6 +383,9 @@ static ISA_REGISTER_CLASS trace_cl = (ISA_REGISTER_CLASS)2;
 #define Do_LRA_Fat_Point_Trace(t) ((t) && Calculating_Fat_Points())
 
 #ifdef TARG_ST
+
+static REGISTER
+Single_Register_Subclass (ISA_REGISTER_SUBCLASS subclass);
 
 // [SC] For an extract op, OP, return the set of registers that
 // must be avoided when allocating a result.
@@ -950,6 +961,10 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
     OP *op = OP_VECTOR_element (Insts_Vector, opnum);
     INT opndnum;
     INT resnum;
+#ifdef TARG_ST
+    ASM_OP_ANNOT* asm_info = (OP_code(op) == TOP_asm) ?
+      (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, op) : NULL;
+#endif
 
     /* process all the operand TNs. */
     for (opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
@@ -959,6 +974,13 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
       if (!TN_is_register(tn)) continue;
 
       clr = Create_LR_For_TN (tn, bb, in_lra, pool);
+#ifdef TARG_ST
+      ISA_REGISTER_SUBCLASS subclass = asm_info ?
+        ASM_OP_opnd_subclass(asm_info)[opndnum] : OP_opnd_reg_subclass(op, opndnum);
+      if (Single_Register_Subclass(subclass) != REGISTER_UNDEFINED) {
+	Set_LR_singleton_ref (clr);
+      }
+#endif
 
       if (!TN_is_local_reg(tn)) {
         if (LR_def_cnt(clr) == 0) {
@@ -1044,7 +1066,12 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 #endif
       }
       LR_def_cnt(clr)++;
-#ifdef TARG_ST      
+#ifdef TARG_ST
+      ISA_REGISTER_SUBCLASS subclass = asm_info ?
+        ASM_OP_result_subclass(asm_info)[resnum] : OP_result_reg_subclass(op, resnum);
+      if (Single_Register_Subclass(subclass) != REGISTER_UNDEFINED) {
+	Set_LR_singleton_ref (clr);
+      }
       if (OP_extract(op)) {
         // [SC] This result is defined by an extract.
         // Keep a note of the extract source.
@@ -3515,6 +3542,9 @@ Analyze_Spilling_Live_Range (
   float cost = 0.0;
   INT benefit = 0;
   INT cur_benefit = 0;
+#ifdef TARG_ST
+  INT benefit_since_last_use = 0;
+#endif
   INT first_def = LR_first_def(spill_lr);
   INT last_use = LR_last_use(spill_lr);
   INT last_def = 0;
@@ -3543,6 +3573,15 @@ Analyze_Spilling_Live_Range (
   // Yikes!  If this TN was created to spill another TN,
   // try real hard not to spill it again.
   if (spill_loc != NULL) cost += 16.0;
+
+#ifdef TARG_ST
+  // [SC] Do not consider spilling a live range referenced in a
+  // singleton subclass operand.  This is because we assert (in cgemit.cxx,
+  // Verify_Operand()), that all such operands use dedicated TNs.
+  if (LR_singleton_ref(spill_lr)) {
+    return;
+  }
+#endif
 
   //
   // if this is a large stack size integer spill, then we'll require
@@ -3591,7 +3630,12 @@ Analyze_Spilling_Live_Range (
     // and if there is a pending store, insert the store now.
     if (at_fatpoint) {
 #ifdef TARG_ST
-      cur_benefit += nregs;
+      // [SC] We get benefit if we are at a fatpoint AND the tn is still
+      // live.  For tns with multiple defs, we do not know for sure if
+      // they are live at this instruction, so accumulate the benefit
+      // into benefit_since_last_use.  When we have proof that the tn is
+      // live we move it from benefit_since_last_use to cur_benefit.
+      benefit_since_last_use += nregs;
 #else
       cur_benefit++;
 #endif
@@ -3606,6 +3650,11 @@ Analyze_Spilling_Live_Range (
     // spill. For global TNs, check if the current OP references the register
     // assigned to the global TN.
     if (Op_Uses_TN(spill_tn, i)) {
+#ifdef TARG_ST
+      // [SC] tn is still live.
+      cur_benefit = benefit_since_last_use;
+      benefit_since_last_use = 0;
+#endif
       //
       // check if the live range spans the spill_opnum.  get out if
       // if the spill_opnum references the live range.
@@ -3681,11 +3730,14 @@ Analyze_Spilling_Live_Range (
 	// this definition.  
 	//
 	benefit += cur_benefit;
-	lr_spans_spill_opnum = TRUE;
+#ifndef TARG_ST
+ 	lr_spans_spill_opnum = TRUE;
+#endif
       }
       last_def = i;
       cur_benefit = 0;
 #ifdef TARG_ST
+      benefit_since_last_use = 0;
       if (reloadable || 
 	  (already_spilled && Is_OP_Spill_Load (op, spill_loc)) && (i != first_def)) {
 #else
@@ -3743,6 +3795,10 @@ Analyze_Spilling_Live_Range (
   // Check if spill_tn is live-out from this basic block. If it is,
   // we need to create a definition of spill_tn.
   if (LR_last_use(spill_lr) == VECTOR_size(Insts_Vector)) {
+#ifdef TARG_ST
+    cur_benefit += benefit_since_last_use;
+    benefit_since_last_use = 0;
+#endif
     // check if the live range spans the spill_opnum.
     if (last_def < spill_opnum) {
       lr_spans_spill_opnum = TRUE;
