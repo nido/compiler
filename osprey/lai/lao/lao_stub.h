@@ -42,7 +42,8 @@ ConfigureSchedKind_NAME_[];
 typedef enum {
   ConfigureAllocKind_Localize,
   ConfigureAllocKind_LinearScan,
-  ConfigureAllocKind_GraphColor,
+  ConfigureAllocKind_ChordalScan,
+  ConfigureAllocKind_GraphColoring,
   ConfigureAllocKind_Integrated,
   ConfigureAllocKind__
 } ConfigureAllocKind;
@@ -134,6 +135,7 @@ typedef enum {
   ConfigureItem_MinTrip, // Minimum value of loop trip count.
   ConfigureItem_Modulus, // Modulus of loop trip count.
   ConfigureItem_Residue, // Residue of loop trip count.
+  ConfigureItem_Convention, // Calling Convention in use.
   ConfigureItem_StackModel, // See ConfigureStackModel.
   ConfigureItem_MaxIssue, // Override the maximum issue width.
   ConfigureItem_MinTaken, // Minimum branch taken penalty.
@@ -176,33 +178,33 @@ DependenceKind_NAME_[];
 
 
 /*
-  OptimizerPhase -- Enumerate the LAO optimizer phases.
+  OptimizerFlag -- Flags to activate the LAO optimizer phases.
 */
 typedef enum {
-  OptimizerPhase_NativeCode = 0x1,
-  OptimizerPhase_PostSched = 0x2,
-  OptimizerPhase_Allocate = 0x4,
-  OptimizerPhase_PreSched = 0x8,
-  OptimizerPhase_Transform = 0x20,
-  OptimizerPhase_EnableSSA = 0x40,
-  OptimizerPhase_Predicate = 0x80,
-  OptimizerPhase_EnableSSI = 0x100,
+  OptimizerFlag_NativeCode = 0x1,
+  OptimizerFlag_PostSched = 0x2,
+  OptimizerFlag_Allocate = 0x4,
+  OptimizerFlag_PreSched = 0x8,
+  OptimizerFlag_Transform = 0x20,
+  OptimizerFlag_EnableSSA = 0x40,
+  OptimizerFlag_Predicate = 0x80,
+  OptimizerFlag_EnableSSI = 0x100,
   // Used to force activation of the LAO interface.
-  OptimizerPhase_ForcePostPass = 0x1000,
-  OptimizerPhase_ForceRegAlloc = 0x2000,
-  OptimizerPhase_ForcePrePass = 0x4000
-} OptimizerPhase;
-extern struct ETable_ *OptimizerPhaseTable;
-#define OptimizerPhase_MustPostPass ( OptimizerPhase_NativeCode | OptimizerPhase_PostSched | OptimizerPhase_ForcePostPass | 0)
+  OptimizerFlag_ForcePostPass = 0x1000,
+  OptimizerFlag_ForceRegAlloc = 0x2000,
+  OptimizerFlag_ForcePrePass = 0x4000
+} OptimizerFlag;
+extern struct ETable_ *OptimizerFlagTable;
+#define OptimizerFlag_MustPostPass ( OptimizerFlag_NativeCode | OptimizerFlag_PostSched | OptimizerFlag_ForcePostPass | 0)
 
 
 
 
-#define OptimizerPhase_MustRegAlloc ( OptimizerPhase_Allocate | OptimizerPhase_ForceRegAlloc | 0)
+#define OptimizerFlag_MustRegAlloc ( OptimizerFlag_Allocate | OptimizerFlag_ForceRegAlloc | 0)
 
 
 
-#define OptimizerPhase_MustPrePass ( OptimizerPhase_PreSched | OptimizerPhase_Transform | OptimizerPhase_EnableSSA | OptimizerPhase_Predicate | OptimizerPhase_EnableSSI | OptimizerPhase_ForcePrePass | 0)
+#define OptimizerFlag_MustPrePass ( OptimizerFlag_PreSched | OptimizerFlag_Transform | OptimizerFlag_EnableSSA | OptimizerFlag_Predicate | OptimizerFlag_EnableSSI | OptimizerFlag_ForcePrePass | 0)
 extern void lao_init(void);
 extern void lao_fini(void);
 extern void lao_init_pu(void);

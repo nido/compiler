@@ -692,7 +692,7 @@ CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, LAI_NativeType 
     // - symbol referenced by a symbol Temporary
     //   This case occurs for generation of homed/rematerialized spill by LAO
     //   where the remat symbol was passed without being allocated yet.
-    //   The symbol is not modified, but should be allocated is not.
+    //   The symbol is not modified, but should be allocated if not.
     if (!Is_Allocated(&St_Table[cgir_sym])) {
       Allocate_Object(&St_Table[cgir_sym]);
     }
@@ -736,7 +736,7 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
       // Create Absolute cgir_tn.
       int64_t value = (int64_t)va_arg(va, int64_t);
       int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
-      cgir_tn = Gen_Literal_TN(value, size);;
+      cgir_tn = Gen_Literal_TN(value, size);
     } else if (cgir_type == CGIR_Type_Symbol) {
       // Create Symbol cgir_tn.
       CGIR_SYM cgir_sym = (CGIR_SYM)va_arg(va, CGIR_SYM);
@@ -752,7 +752,9 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
   } else {
     // Update cgir_tn.
     // Currently LAO is only allowed to update:
-    // - pseudo temporaries into assigned Temporary
+    // - pseudo temporaries into assigned temporary
+    // - value of absolute temporary
+    // - label of label temporary
     if (cgir_type == CGIR_Type_Assigned) {
       // Update Assigned cgir_tn.
       LAI_RegFile lai_refFile = (LAI_RegFile)va_arg(va, LAI_RegFile);
@@ -760,6 +762,19 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...) {
       Is_True (TN_Is_Allocatable(cgir_tn), ("Invalid TN for register allocation"));
       CLASS_REG_PAIR cgir_crp = Register_to_CGIR_CRP(lai_register);
       Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
+    } else if (cgir_type == CGIR_Type_Absolute) {
+      int64_t value = (int64_t)va_arg(va, int64_t);
+      if (value != TN_value(cgir_tn)) {
+	// Create new Literal cgir_tn because value has changed.
+	int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF) ? 4 : 8;
+	cgir_tn = Gen_Literal_TN(value, size);
+      }
+    } else if (cgir_type == CGIR_Type_Label) {
+      CGIR_LAB cgir_lab = (CGIR_LAB)va_arg(va, CGIR_LAB);
+      if (cgir_lab != TN_label(cgir_tn)) {
+	// Create new Label cgir_tn because cgir_lab has changed.
+	cgir_tn = Gen_Label_TN(cgir_lab, 0);
+      }
     }
   }
   va_end(va);
@@ -1126,15 +1141,15 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   }
   Stop_Timer( T_LAO_Interface_CU );
   //
-  if (lao_optimizations & OptimizerPhase_MustPrePass) Start_Timer( T_LAO_PRE_CU );
-  if (lao_optimizations & OptimizerPhase_MustRegAlloc) Start_Timer( T_LAO_REG_CU );
-  if (lao_optimizations & OptimizerPhase_MustPostPass) Start_Timer( T_LAO_POST_CU );
+  if (lao_optimizations & OptimizerFlag_MustPrePass) Start_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & OptimizerFlag_MustRegAlloc) Start_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & OptimizerFlag_MustPostPass) Start_Timer( T_LAO_POST_CU );
   //
   unsigned optimizations = LAI_Interface_optimize(interface, lao_optimizations);
   //
-  if (lao_optimizations & OptimizerPhase_MustPrePass) Stop_Timer( T_LAO_PRE_CU );
-  if (lao_optimizations & OptimizerPhase_MustRegAlloc) Stop_Timer( T_LAO_REG_CU );
-  if (lao_optimizations & OptimizerPhase_MustPostPass) Stop_Timer( T_LAO_POST_CU );
+  if (lao_optimizations & OptimizerFlag_MustPrePass) Stop_Timer( T_LAO_PRE_CU );
+  if (lao_optimizations & OptimizerFlag_MustRegAlloc) Stop_Timer( T_LAO_REG_CU );
+  if (lao_optimizations & OptimizerFlag_MustPostPass) Stop_Timer( T_LAO_POST_CU );
   //
   if (optimizations != 0) {
     Start_Timer( T_LAO_Interface_CU );
@@ -1214,7 +1229,7 @@ lao_optimize_pu(unsigned lao_optimizations) {
   }
   //
   // Create region map for postpass optimizations
-  if (lao_optimizations & OptimizerPhase_PostSched) {
+  if (lao_optimizations & OptimizerFlag_PostSched) {
     CG_LAO_Region_Map = BB_MAP32_Create();
   }
   //
