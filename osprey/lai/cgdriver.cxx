@@ -1234,6 +1234,7 @@ Configure_CG_Options(void)
 
   /* If not overidden, set LAO_optimization according to Opt_Level. */
 
+#ifdef LAO_ENABLED
   if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
     CG_LAO_optimizations = OptimizerPhase_PreSched+OptimizerPhase_PostSched;
 
@@ -1243,6 +1244,7 @@ Configure_CG_Options(void)
     DevWarn("CG: Ignoring LAO options, need optimization level -O2 or higher");
     CG_LAO_optimizations = 0;
   }
+#endif
 
 #endif  /* TARG_ST */
 
