@@ -102,7 +102,6 @@ GRA_BB::Add_LUNIT( LUNIT*  lunit)
   lunits[rc] = lunits[rc]->BB_List_Push(lunit);
 }
 
-#ifdef TARG_ST
 /////////////////////////////////////
 // Add <reg> to the set of registers used in the given <gbb> and <rc>.
 void
@@ -112,8 +111,8 @@ GRA_BB::Make_Register_Used( ISA_REGISTER_CLASS  rc, REGISTER reg)
   loop->Make_Register_Used(rc, reg);
   registers_used[rc] = REGISTER_SET_Union1(registers_used[rc],reg);
 }
+#ifdef TARG_ST
 
-#endif
 /////////////////////////////////////
 // Add [<reg>..<reg>+<nregs>-1] to the set of registers used in the
 // given <gbb> and <rc>.
@@ -124,6 +123,7 @@ GRA_BB::Make_Registers_Used (ISA_REGISTER_CLASS rc, REGISTER reg, INT nregs)
     Make_Register_Used (rc, reg + i);
   }
 }
+#endif
 
 /////////////////////////////////////
 REGISTER_SET
