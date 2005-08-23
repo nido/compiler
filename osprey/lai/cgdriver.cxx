@@ -1236,7 +1236,7 @@ Configure_CG_Options(void)
 
 #ifdef LAO_ENABLED
   if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
-    CG_LAO_optimizations = OptimizerPhase_PreSched+OptimizerPhase_PostSched;
+    CG_LAO_optimizations = OptimizerFlag_PreSched+OptimizerFlag_PostSched;
 
   // [FdF]: Ignore LAO options if opt_level < 2
   

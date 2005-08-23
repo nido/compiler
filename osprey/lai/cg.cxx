@@ -711,7 +711,7 @@ CG_Generate_Code(
 
 #ifdef LAO_ENABLED
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations & OptimizerPhase_MustPrePass) {
+  if (CG_LAO_optimizations & OptimizerFlag_MustPrePass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
@@ -735,15 +735,15 @@ CG_Generate_Code(
 
   // Register Allocation Phase
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizerPhase_MustRegAlloc) {
+  if (CG_LAO_optimizations & OptimizerFlag_MustRegAlloc) {
     // Live analysis and tn renaming
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_pu(CG_LAO_optimizations & OptimizerPhase_MustRegAlloc);
+    lao_optimize_pu(CG_LAO_optimizations & OptimizerFlag_MustRegAlloc);
     Check_for_Dump (TP_ALLOC, NULL);
   }
-  if (CG_LAO_optimizations & OptimizerPhase_Allocate) {
+  if (CG_LAO_optimizations & OptimizerFlag_Allocate) {
     if (CG_LAO_schedkind != ConfigureAllocKind_Localize) {
     // Full register allocation performed by LAO.
     } else  {
@@ -848,7 +848,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizerPhase_MustPostPass) {
+  if (CG_LAO_optimizations & OptimizerFlag_MustPostPass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
   } else {
