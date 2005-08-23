@@ -135,6 +135,7 @@ static UINT last_label = 0;
 static TN_MAP tn_def_op;
 
 static BOOL PU_has_FP = FALSE;  // does the current PU use a frame pointer?
+static BOOL PU_has_restored_FP = FALSE; // has the current PU already restored FP?
 
 static const char *
 UE_Register_Name (ISA_REGISTER_CLASS rc, REGISTER r)
@@ -359,22 +360,24 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     // 2. if FP is defined, any insn that modifies SP is to be ignored:
     //    it only serves to reserve space on the stack but cannot be used
     //    to compute the CFA
-    // 3. exception to the previous rule: when SP is restore from FP
+    // 3. exception to the previous rule: when SP is restored from FP
     // 4. restore of FP: ignore here, handled below
 
     // case 2: if FP is already defined, ignore this redefinition of SP
-    if (PU_has_FP && (OP_result(op,0) == SP_TN) && ! Restore_SP_From_FP(op)) {
+    if (PU_has_FP && !PU_has_restored_FP &&
+	(OP_result(op,0) == SP_TN) && ! Restore_SP_From_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
     // case 3:
-    } else if (PU_has_FP && (OP_result(op,0) == SP_TN)
-	       && Restore_SP_From_FP(op)) {
+    } else if (PU_has_FP && !PU_has_restored_FP &&
+	       (OP_result(op,0) == SP_TN) && Restore_SP_From_FP(op)) {
       ue.kind = UE_DESTROY_FP;
       ue.rc_reg = CLASS_REG_PAIR_sp;
-      PU_has_FP = FALSE;
+      PU_has_restored_FP = TRUE;
 
     // case 4:
-    } else if (!PU_has_FP && (OP_result(op,0) == FP_TN) && Restore_FP(op)) {
+    } else if ( (!PU_has_FP || PU_has_restored_FP)
+		&& (OP_result(op,0) == FP_TN) && Restore_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
     // case 1:
@@ -627,6 +630,11 @@ Find_Unwind_Info (void)
 	if (OP_dummy(op)) continue;
 	Analyze_OP_For_Unwind_Info(op, when, bb);
 	when += OP_Real_Inst_Words(op);
+    }
+    // if the current BB has restored FP and is an exit BB then the
+    // next BB is entered from a path where FP was not restored
+    if (PU_has_FP && PU_has_restored_FP && BB_exit(bb)) {
+      PU_has_restored_FP = FALSE;
     }
   }
   last_when = when - 1;
@@ -1154,6 +1162,7 @@ Init_Unwind_Info (BOOL trace)
   Trace_Unwind = trace;
   has_asm = FALSE;
   PU_has_FP = FALSE;
+  PU_has_restored_FP = FALSE;
 
   Find_Unwind_Info ();
   simple_unwind = Is_Unwind_Simple();
