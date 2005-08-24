@@ -2414,6 +2414,42 @@ Expand_Int_To_Float (
   Build_OP (top, dest, src, ops);
 }
 
+// [HK]
+/* ====================================================================
+ *   Expand_Unsigned_To_Float
+ * ====================================================================
+ */
+void 
+Expand_Unsigned_To_Float (
+  TN *dest, 
+  TN *src, 
+  TYPE_ID imtype, 
+  TYPE_ID fmtype, 
+  OPS *ops)
+{
+  TOP top = TOP_UNDEFINED ;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_U4)
+      {
+	  top = TOP_convif_n ;
+	  TN *dest1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+	  Build_OP(TOP_cmplt_r_b, p1, src, Zero_TN, ops);
+	  TN *mask1 = Gen_Literal_TN(0x7fffffff, 4);
+// 	  Expand_Binary_And(dest1, src, mask1, MTYPE_I4, ops);
+	  Build_OP(TOP_and_i, dest1, src, mask1, ops);
+	  Expand_Int_To_Float(dest1, dest1, MTYPE_I4, fmtype, ops);
+	  TN *mask2 =  Gen_Literal_TN(0x4f000000, 4);
+	  dest3 = Expand_Immediate_Into_Register(MTYPE_I4, mask2, ops);
+	  Expand_Float_Add(dest2, dest1, dest3, fmtype, ops);
+	  Build_OP(TOP_slct_r, dest, p1, dest2, dest1, ops);
+      }
+
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Unsigned_To_Float: unexpected IMTYPE %s or FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
+
+}
+
 /* ====================================================================
  *   Expand_Float_To_Int
  *
