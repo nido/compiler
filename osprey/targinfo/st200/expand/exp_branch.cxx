@@ -126,32 +126,38 @@ Pick_Compare_TOP (
   // pick tops
   switch (*variant) {
 
-    case V_BR_I4GE:
+  case V_BR_FGE:
+  case V_BR_I4GE:
       cmp = *is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
       mtype = MTYPE_I4;
       break;
 
-    case V_BR_I4GT:
+  case V_BR_FGT:
+  case V_BR_I4GT:
       cmp = *is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
       mtype = MTYPE_I4;
       break;
 
-    case V_BR_I4LE:
+  case V_BR_FLE:
+  case V_BR_I4LE:
       cmp = *is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
       mtype = MTYPE_I4;
       break;
 
-    case V_BR_I4LT:
+  case V_BR_FLT:
+  case V_BR_I4LT:
       cmp = *is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
       mtype = MTYPE_I4;
       break;
 
-    case V_BR_I4EQ:
+  case V_BR_FEQ:
+  case V_BR_I4EQ:
       cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_I4;
       break;
 
-    case V_BR_I4NE:
+  case V_BR_FNE:
+  case V_BR_I4NE:
       cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_I4;
       break;
@@ -192,40 +198,40 @@ Pick_Compare_TOP (
       mtype = MTYPE_U4;
       break;
 
-    case V_BR_FGE:
-    case V_BR_FGT:
-    case V_BR_FLE:
-    case V_BR_FLT:
-    case V_BR_FEQ:
-#if 0
-      if (Enable_Single_Float_Ops) {
-	mtype = MTYPE_F4;
-	*is_integer = TRUE;
-	switch(*variant) {
-	case V_BR_FGE:
-	  cmp = TOP_cmpgef;
-	  break;
-	case V_BR_FGT:
-	  cmp = TOP_cmpgtf;
-	  break;
-	case V_BR_FLE:
-	  cmp = TOP_cmplef;
-	  break;
-	case V_BR_FLT:
-	  cmp = TOP_cmpltf;
-	  break;
-	case V_BR_FEQ:
-	  cmp = TOP_cmpeqf;
-	  break;
-	default:
-	  break;
-	}
-      }
-#endif
-      break;
-    case V_BR_FNE:
-      /* Undefined on ST200. */
-      break;
+// [HK]    case V_BR_FGE:
+//     case V_BR_FGT:
+//     case V_BR_FLE:
+//     case V_BR_FLT:
+//     case V_BR_FEQ:
+// #if 0
+//       if (Enable_Single_Float_Ops) {
+// 	mtype = MTYPE_F4;
+// 	*is_integer = TRUE;
+// 	switch(*variant) {
+// 	case V_BR_FGE:
+// 	  cmp = TOP_cmpgef;
+// 	  break;
+// 	case V_BR_FGT:
+// 	  cmp = TOP_cmpgtf;
+// 	  break;
+// 	case V_BR_FLE:
+// 	  cmp = TOP_cmplef;
+// 	  break;
+// 	case V_BR_FLT:
+// 	  cmp = TOP_cmpltf;
+// 	  break;
+// 	case V_BR_FEQ:
+// 	  cmp = TOP_cmpeqf;
+// 	  break;
+// 	default:
+// 	  break;
+// 	}
+//       }
+// #endif
+//       break;
+//     case V_BR_FNE:
+//       /* Undefined on ST200. */
+//       break;
 
     case V_BR_DGE:
     case V_BR_DGT:
@@ -343,7 +349,7 @@ Expand_Branch (
 
   // check for special case of second arg being zero.
   if (src2 != NULL && TN_is_zero(src2)) {
-    switch (cond) {
+     switch (cond) {
       case V_BR_U8LT:	
       case V_BR_U4LT:	
 	cond = V_BR_NEVER; break;
@@ -352,6 +358,7 @@ Expand_Branch (
 	cond = V_BR_ALWAYS; break;
     }
   }
+
 
   // compare should calculate a branch reg result
   BOOL is_integer = FALSE;
@@ -390,6 +397,18 @@ Expand_Branch (
 
       FmtAssert(cmp != TOP_UNDEFINED, 
                                   ("Expand_Branch: unexpected comparison"));
+
+      //[HK] in case of FP comparison, make the following transformation:
+      // f1 cmp f2 <=> int(f1-f2) cmp 0
+      if( (cond == V_BR_FLT) || (cond == V_BR_FLE) ||(cond == V_BR_FGT) || \
+	  (cond == V_BR_FGE) || (cond == V_BR_FEQ) ||(cond == V_BR_FNE) )
+	  {
+	      TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	      Build_OP(TOP_subf_n, src, src1, src2, ops);
+	      src1 = src;
+	      src2 = Zero_TN;
+	  }
+
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
       if (is_integer) {
 	TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
