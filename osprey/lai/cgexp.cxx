@@ -293,9 +293,13 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
 	if (MTYPE_is_float(rtype) && MTYPE_is_float(desc)) {
 		Expand_Float_To_Float (result, op1, rtype, ops);
 	}
-	else if (MTYPE_is_float(rtype)) {
+	else if (MTYPE_is_float(rtype) && MTYPE_is_signed(desc)) {
 		// desc is int
 		Expand_Int_To_Float (result, op1, desc, rtype, ops);
+	}
+	else if (MTYPE_is_float(rtype)) {
+		// desc is unsigned int
+		Expand_Unsigned_To_Float (result, op1, desc, rtype, ops);
 	}
 	else if (MTYPE_is_float(desc)) {
 		// rtype is int
