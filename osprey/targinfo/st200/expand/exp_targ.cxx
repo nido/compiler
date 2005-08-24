@@ -3001,35 +3001,39 @@ Expand_Float_Compares(
   OPS *ops
 )
 {
-  TOP action;
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    BOOL is_integer = FALSE;
-    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
-    FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
-    if (is_integer) {
-      TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-      Build_OP (action, tmp_int, src1, src2, ops);
-      Expand_Copy(dest, NULL, tmp_int, ops);
-    } else {
-      Build_OP (action, dest, src1, src2, ops);
+      //[HK] FP SP comparison : we make the following transformation:
+      // f1 cmp f2 <=> int(f1-f2) cmp 0
+    TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+    Build_OP(TOP_subf_n, src, src1, src2, ops);
+    TOP action;
+    if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
+	BOOL is_integer = FALSE;
+	action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+	FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
+	if (is_integer) {
+	    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	    Build_OP (action, tmp_int, src, Zero_TN, ops);
+	    Expand_Copy(dest, NULL, tmp_int, ops);
+	} else {
+	    Build_OP (action, dest, src, Zero_TN, ops);
+	}
     }
-  }
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    BOOL is_integer = TRUE;
-    action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
-    FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
-    if (!is_integer) {
-      TN *tmp_br = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-      Build_OP (action, tmp_br, src1, src2, ops);
-      Expand_Copy(dest, NULL, tmp_br, ops);
-    } else {
-      Build_OP (action, dest, src1, src2, ops);
+    else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
+	BOOL is_integer = TRUE;
+	action = Pick_Compare_TOP (&variant, &src1, &src2, &is_integer, ops);
+	FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
+	if (!is_integer) {
+	    TN *tmp_br = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+	    Build_OP (action, tmp_br, src, Zero_TN, ops);
+	    Expand_Copy(dest, NULL, tmp_br, ops);
+	} else {
+	    Build_OP (action, dest, src, Zero_TN, ops);
+	}
     }
-  }
-  else {
-    FmtAssert(FALSE, ("Expand_Float_Compares: unhandled cmp target TN"));
-  }
-  return;
+    else {
+	FmtAssert(FALSE, ("Expand_Float_Compares: unhandled cmp target TN"));
+    }
+    return;
 }
 
 /* ====================================================================
@@ -3051,8 +3055,8 @@ Expand_Float_Less (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLT: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
-    break;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
+//     break;
   default:
     break;
   }
@@ -3081,8 +3085,8 @@ Expand_Float_Greater (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGT: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
-    break;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
+//     break;
   default:
     break;
   }
@@ -3111,8 +3115,8 @@ Expand_Float_Less_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLE: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
-    break;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
+//     break;
   default:
     break;
   }
@@ -3141,8 +3145,8 @@ Expand_Float_Greater_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGE: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
-    break;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
+//     break;
   default:
     break;
   }
@@ -3171,7 +3175,8 @@ Expand_Float_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FEQ: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
+//     break;
     break;
   default:
     break;
@@ -3201,20 +3206,20 @@ Expand_Float_Not_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FNE: V_NONE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
-    break;
+//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
+//     break;
   default:
     break;
   }
   FmtAssert(variant != V_NONE, ("unimplemented"));
 
-  if (variant == V_BR_FNE || variant == V_BR_DNE) {
-    /* Must use V_BR_EQ instead. */
-    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-      Expand_Float_Equal(tmp_int, src1, src2, V_NONE, mtype, ops);
-      Expand_Logical_Not(dest, tmp_int, V_NONE, ops);
-      return;
-  }
+// [HK]  if (variant == V_BR_FNE || variant == V_BR_DNE) {
+//     /* Must use V_BR_EQ instead. */
+//     TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+//       Expand_Float_Equal(tmp_int, src1, src2, V_NONE, mtype, ops);
+//       Expand_Logical_Not(dest, tmp_int, V_NONE, ops);
+//       return;
+//   }
 
   Expand_Float_Compares(dest, src1, src2, variant, ops);
   return;
