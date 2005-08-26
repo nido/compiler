@@ -5329,6 +5329,14 @@ void CG_LOOP::Determine_Unroll_Factor()
   INT32 body_len = 0;
   BB *bb;
   FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(loop), bb) {
+
+    if (BB_Has_Exc_Label(bb)) {
+      char *reason = "in exception region or handler";
+      note_not_unrolled(head, reason);
+      if (trace) fprintf(TFile, "<unroll> not unrolling; %s\n", reason);
+      return;
+    }
+
     body_len += BB_length(bb);
   }
 
