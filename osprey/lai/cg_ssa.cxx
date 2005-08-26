@@ -1109,10 +1109,6 @@ SSA_Place_Phi_In_BB (
 
   TN *result[1];
 
-  if (BB_SET_MemberP(region_entry_set, bb)) {
-    DevWarn("Unexpected PHI operation in entry block %d", BB_id(bb));
-  }
-
   // Arthur: amazingly, we can have a large number of predecessors !!
   TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
   BZERO(opnd, sizeof(TN*)*num_opnds);
