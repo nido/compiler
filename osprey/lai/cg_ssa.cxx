@@ -173,6 +173,14 @@ tn_stack_top (
     return TN_STACK_tn(base);
 }
 
+/* ================================================================
+ *      Auxilliary REGION handling stuff
+ * ================================================================
+ */
+
+static BB_SET *region_entry_set;
+static BB_SET *region_exit_set;
+
 //
 // This table is indexed with BB_id(bb). Each entry contains
 // the DOM_TREE info for this bb
@@ -297,6 +305,17 @@ DOM_TREE_Initialize ()
       }
     }
 
+    // FdF 20050826: Basic blocks with no immediate dominator are
+    // either Entry nodes, or basic blocks that can be reached from
+    // different Entry nodes. These latter nodes must also be
+    // considered as entry nodes for the purpose of SSA
+
+    if (!BB_dominator(bb) && BB_preds(bb)) {
+      region_entry_set = BB_SET_Union1D(region_entry_set,
+					bb,
+					&ssa_pool);
+    }
+
   }
 
   if (Trace_dom_frontier) 
@@ -315,14 +334,6 @@ DOM_TREE_Finalize()
   // Clean up the dominator/posdominator information:
   Free_Dominators_Memory();
 }
-
-/* ================================================================
- *      Auxilliary REGION handling stuff
- * ================================================================
- */
-
-static BB_SET *region_entry_set;
-static BB_SET *region_exit_set;
 
 //
 // The RID associated with the entire REGION being analyzed
@@ -1097,6 +1108,10 @@ SSA_Place_Phi_In_BB (
   INT num_opnds = BBlist_Len(BB_preds(bb));
 
   TN *result[1];
+
+  if (BB_SET_MemberP(region_entry_set, bb)) {
+    DevWarn("Unexpected PHI operation in entry block %d", BB_id(bb));
+  }
 
   // Arthur: amazingly, we can have a large number of predecessors !!
   TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
