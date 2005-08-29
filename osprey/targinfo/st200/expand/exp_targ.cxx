@@ -2669,6 +2669,14 @@ Expand_Compare_And_Select (
   FmtAssert (cmp1 != TOP_UNDEFINED,
 	     ("Expand_Compare_And_Select: unexpected comparison"));
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+  // [HK] treat FP comparison case: f1 cmp f2 <=> (f1 - f2) cmp 0
+  if (is_float)
+	  {
+	      TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	      Build_OP(TOP_subf_n, cond, cond1, cond2, ops);
+	      cond1 = cond;
+	      cond2 = Zero_TN;
+	  }
   if (is_integer) {
     TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
     Build_OP (cmp1, tmp_int, cond1, cond2, ops);
