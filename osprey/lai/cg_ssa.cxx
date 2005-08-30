@@ -3299,7 +3299,11 @@ insert_result_copy (
   // find first OP after the PHI-nodes
   OP *point = NULL;
   FOR_ALL_BB_PHI_OPs(in_bb,point);
-  BB_Insert_Ops_Before(in_bb, point, &ops);
+  // FdF 20050830: Point may be NULL (bug pro-release-1-8-0-B/9)
+  if (point)
+    BB_Insert_Ops_Before(in_bb, point, &ops);
+  else
+    BB_Append_Ops(in_bb, &ops);
 
   // Create a congruence class for new_tn
   PHI_CONGRUENCE_CLASS *cc = 
