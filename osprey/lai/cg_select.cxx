@@ -737,7 +737,7 @@ Can_Speculate_BB(BB *bb)
       // loads will be optimized only if hardware support
       if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())) {
-        if (!OP_has_predicate (op)) {
+        if (!OP_has_predicate (op) && !OP_Is_Speculative(op)) {
           pred_t memi;
           memi.memop = op;
           memi.predtn = 0;
