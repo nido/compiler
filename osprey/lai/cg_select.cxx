@@ -731,11 +731,13 @@ Can_Speculate_BB(BB *bb)
         }
       }
 
+      if (!CG_select_spec_loads || OP_volatile(op))
+        return FALSE;
+
       // loads will be optimized only if hardware support
       if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
-          (Enable_Conditional_Load && PROC_has_predicate_loads())
-          && CG_select_spec_loads) {
-        if (!OP_has_predicate (op) && !OP_Can_Be_Speculative(op)) {
+          (Enable_Conditional_Load && PROC_has_predicate_loads())) {
+        if (!OP_has_predicate (op)) {
           pred_t memi;
           memi.memop = op;
           memi.predtn = 0;
@@ -756,6 +758,7 @@ Can_Speculate_BB(BB *bb)
           pred_i.push_front(memi);
         }
       }
+
       else if (!OP_Can_Be_Speculative(op))
         return FALSE;
     }
@@ -2626,6 +2629,10 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   select_factor = atof(CG_select_factor);
   branch_penalty = CGTARG_Branch_Taken_Penalty();
 
+  if (!CG_select_force_spec_load_overridden && 
+      (!Enable_Conditional_Load || !PROC_has_predicate_loads()))
+    CG_select_force_spec_load = 1;
+  
   if (select_factor == 0.0) return;
 
   Trace_Select_Init();
@@ -2663,9 +2670,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     if (bb == NULL) continue;
       
     // tests for logical expression 
-    if (
-        //        BB_id(bb) != 4 &&
-        (bbb = Is_Double_Logif(bb))) {
+    if (bbb = Is_Double_Logif(bb)) {
       Initialize_Hammock_Memory();
 
       if (Trace_Select_daVinci) {
