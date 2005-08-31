@@ -545,9 +545,10 @@ inline TN *Build_TN_Of_Mtype(TYPE_ID mtype)
   ISA_REGISTER_CLASS rc = Register_Class_For_Mtype(mtype);
 #ifdef TARG_ST
   // FdF 20050830: MTYPE_RegisterSize(mtype) returns 0 for MTYPE_B,
-  // while size is expected to be > 0. Build_RCLASS_TN gives the
-  // correct size.
-  return Build_RCLASS_TN(rc);
+  // while size is expected to be > 0.
+  INT size = MTYPE_RegisterSize(mtype);
+  if (size == 0) size = 1;
+  return Gen_Register_TN (rc, size);
 #else
   return Gen_Register_TN (rc, MTYPE_RegisterSize(mtype) );
 #endif
