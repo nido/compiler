@@ -2387,6 +2387,18 @@ print_source (SRCPOS srcpos)
       if (fgets (text, sizeof(text), cur_file->fileptr) != NULL) {
 	// check for really long line
 	if (strlen(text) >= 1023) text[1022] = '\n'; 
+#ifdef TARG_ST
+	{
+	  int len = strlen(text);
+	  // [CL] ensure that text ends with a new line
+	  if (text[len-1] != '\n') {
+	    text[len] = '\n';
+	    if (len <= 1022) {
+	      text[len+1] = '\0';
+	    }
+	  }
+	}
+#endif
         fprintf (Asm_File, "%s%4d  %s", ASM_CMNT_LINE, i+1, text);
       }
     }
