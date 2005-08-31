@@ -2743,8 +2743,12 @@ insert_psi_operand_copy (
   // Finally, append the copy op
   OPS cmov_ops = OPS_EMPTY;
   OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops);
-  if (point)
+  if (point) {
+    // FdF 20050831: Be careful to insert after all PHI operations.
+    while (OP_next(point) && (OP_code(OP_next(point)) == TOP_phi))
+      point = OP_next(point);
     BB_Insert_Ops_After(OP_bb(point), point, &cmov_ops);
+  }
   else
     BB_Insert_Ops_Before(OP_bb(psi_op), psi_op, &cmov_ops);
   Set_OP_ssa_move(OPS_last(&cmov_ops));
