@@ -3035,11 +3035,6 @@ CIO_RWTRAN::LoadStore_Packing_Candidate_Op( OP *op )
        // Skip predicated operations
        OP_cond_def( op )      ||
 
-       // If we optimize small loads/stores then we need to
-       // introduce a truncation or sign-extension operation.
-       // Until we figure out how to do that, keep the problem
-       // from happening (pv647031).
-
        OP_Mem_Ref_Bytes(op) != 4 )
     return FALSE;
 
@@ -3055,7 +3050,7 @@ CIO_RWTRAN::Packing_Candidate_Arc( ARC *arc )
 {
   return ( ARC_kind( arc ) != CG_DEP_MEMIN &&
 	   //	   ARC_kind( arc ) != CG_DEP_MEMOUT &&
-	   ARC_kind( arc ) != CG_DEP_MEMANTI &&
+	   (ARC_kind( arc ) != CG_DEP_MEMANTI || ARC_is_definite(arc)) &&
 	   ARC_kind( arc ) != CG_DEP_MEMVOL);
 }
 
@@ -3237,15 +3232,16 @@ Adjust_Offset_TN(TN *offset_tn, INT64 adjust) {
     offset_val = TN_value(offset_tn);
     new_offset_tn = Gen_Literal_TN(offset_val + adjust, 4);
   }
+
+  return new_offset_tn;
 }
 
 // Code taken from CICSE_Transform
 
 // Candidate_Memory_t
-//
 // index is the index of this memory op in the Pack32_entry table.
-//
-// offset is the offset from this memory op to the 
+// offset is the offset from this memory op to the value of the
+// induction variable it is based on at the beginning of an iteration.
 
 
 typedef struct {
@@ -3489,7 +3485,7 @@ Combine_Adjacent_Loads( Pack32_entry *pack32_table, Candidate_Memory_t *Candidat
       }
 
       // Insert ops_last before load1 or load2, depending on which one
-      // is dominated the other.
+      // is dominated by the other.
       if (Candidate_table[candidate_index].index < Candidate_table[candidate_index+1].index)
 	BB_Insert_Ops(body, load2_op, &ops_last, TRUE);
       else
@@ -3592,7 +3588,7 @@ CIO_RWTRAN::LoadStore_Packing( BB *body )
 
   // Search the CG dependence graph, there must be no alias between
   // operations candidates for load/store packing.
-  for ( index = op_count; index > 0; --index ) {
+  for ( index = 1; index <= op_count; index++ ) {
     Pack32_entry& entry = pack32_table[index];
     if ( OP_flag1( entry.op ) ) {
       ARC_LIST *arcs = OP_preds( entry.op );
