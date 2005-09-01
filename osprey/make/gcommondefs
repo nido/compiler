@@ -230,12 +230,12 @@ CCACHE?=ccache
 export CCACHE_HASHDIR=1
 
 endif
-RUNNER=/apa/comp/SunOS5/st200/R3.1/bin/st200run -tsimfast --
-COMPILER_LOC=$(CCACHE) /apa/comp/SunOS5/st200/R3.1/bin/
+RUNNER=/apa/comp/SunOS5/st200/R4.1/bin/st200run -tsimfast --
+COMPILER_LOC=$(CCACHE) /apa/comp/SunOS5/st200/R4.1/bin/
 endif
 ifeq ($(BUILD_OS),LINUX_ST200)
-RUNNER=/apa/comp/Linux-RH-7.2/st200/R3.1/bin/st200run -tsimfast --
-COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R3.1/bin/
+RUNNER=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/st200run -tsimfast --
+COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/
 endif
 BINUTILS_LOC=$(COMPILER_LOC)
 #BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
