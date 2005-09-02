@@ -463,7 +463,7 @@ CG_Generate_Code(
   }
   
   /* TB: If coverage, do the instrumention + gcno dump */
-  if (Profile_Arcs_Enabled)
+  if (Profile_Arcs_Enabled_Cgir)
     gcov_pu();
 
   // If using feedback, incorporate into the CFG as early as possible.

@@ -1640,7 +1640,7 @@ CG_Init (void)
 #endif
 #ifdef TARG_ST
   // TB: initialize coverage module
-  if (Profile_Arcs_Enabled)
+  if (Profile_Arcs_Enabled_Cgir)
     gcov_init (Remove_Extension(Src_File_Name));
 #endif
 
@@ -1659,7 +1659,7 @@ CG_Fini (void)
 
 #ifdef TARG_ST
   // TB: finalize coverage module
-  if (Profile_Arcs_Enabled)
+  if (Profile_Arcs_Enabled_Cgir)
     gcov_finish (Asm_File);
 #endif
 
