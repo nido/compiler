@@ -236,5 +236,10 @@
     case BUILT_IN_ST200PRGINSPG:
     case BUILT_IN_ST200PSWCLR:
     case BUILT_IN_ST200PSWSET:
+    case BUILT_IN_NMADDS:
+    case BUILT_IN_NMSUBS:
+    case BUILT_IN_SQUARES:
+    case BUILT_IN_RECIPS:
+    case BUILT_IN_RSQRTS:
   break;
 #endif /* defined(TARG_ST200) */

@@ -949,5 +949,25 @@
       iopc = INTRN_ST200PSWSET ;
       intrinsic_op = FALSE ;
     break;
+    case BUILT_IN_NMADDS:
+      iopc = INTRN_NMADDS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_NMSUBS:
+      iopc = INTRN_NMSUBS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_SQUARES:
+      iopc = INTRN_SQUARES ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_RECIPS:
+      iopc = INTRN_RECIPS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_RSQRTS:
+      iopc = INTRN_RSQRTS ;
+      intrinsic_op = TRUE ;
+    break;
 
 #endif /* defined(TARG_ST200) */
