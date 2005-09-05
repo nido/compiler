@@ -709,3 +709,18 @@
 { /* __st200pswset */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st200pswset", NULL, "__st200pswset"}, 
+{ /* __nmadds */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+  IRETURN_F4, "__nmadds", NULL, "__nmadds"}, 
+{ /* __nmsubs */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+  IRETURN_F4, "__nmsubs", NULL, "__nmsubs"}, 
+{ /* __squares */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+  IRETURN_F4, "__squares", NULL, "__squares"}, 
+{ /* __recips */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+  IRETURN_F4, "__recips", NULL, "__recips"}, 
+{ /* __rsqrts */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+  IRETURN_F4, "__rsqrts", NULL, "__rsqrts"}, 

@@ -1370,4 +1370,32 @@ builtin_function ("__st200pswset",
                      tree_cons(NULL_TREE, integer_type_node, endlink)),
                    BUILT_IN_ST200PSWSET, BUILT_IN_NORMAL, NULL_PTR);
 
+builtin_function ("__nmadds",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node, endlink)))),
+                   BUILT_IN_NMADDS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__nmsubs",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node,
+                     tree_cons(NULL_TREE, float_type_node, endlink)))),
+                   BUILT_IN_NMSUBS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__squares",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node, endlink)),
+                   BUILT_IN_SQUARES, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__recips",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node, endlink)),
+                   BUILT_IN_RECIPS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__rsqrts",
+                   build_function_type( float_type_node, 
+                     tree_cons(NULL_TREE, float_type_node, endlink)),
+                   BUILT_IN_RSQRTS, BUILT_IN_NORMAL, NULL_PTR);
 #endif /* defined(TARG_ST200) */
