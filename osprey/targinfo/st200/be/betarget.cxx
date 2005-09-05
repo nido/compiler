@@ -670,6 +670,42 @@ OPCODE_To_INTRINSIC (
       }
       break;
 
+    case OPR_MADD:
+      switch (rtype) {
+      case MTYPE_F4: id = INTRN_MADDS; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MADD", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_MSUB:
+      switch (rtype) {
+      case MTYPE_F4: id = INTRN_MSUBS; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for MSUB", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_NMADD:
+      switch (rtype) {
+      case MTYPE_F4: id = INTRN_NMADDS; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for NMADD", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
+    case OPR_NMSUB:
+      switch (rtype) {
+      case MTYPE_F4: id = INTRN_NMSUBS; break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: mtype %s for NMSUB", 
+			 MTYPE_name(rtype)));
+      }
+      break;
+
     case OPR_MIN:
       switch (rtype) {
       case MTYPE_I8: id = INTRN_MINL; break;
