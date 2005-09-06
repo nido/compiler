@@ -3142,7 +3142,6 @@ addcg_sequence (
   EBO_TN_INFO **opnd_tninfo
 )
 {
-  if (getenv ("NO_ADDCG")) return FALSE;
   if (OP_code(op) != TOP_addcg) return FALSE;
 
   int op_idx;
