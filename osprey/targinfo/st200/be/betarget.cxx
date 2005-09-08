@@ -889,6 +889,20 @@ OPCODE_To_INTRINSIC (
       }
       break;
 
+    case OPR_RECIP:
+      Is_True(rtype == MTYPE_F4,
+	      ("OPR_RECIP: unknown rtype type %s", MTYPE_name(desc)));
+      switch (rtype) {
+      case MTYPE_F4:
+	id = INTRN_RECIPS;
+	break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: %s ??", 
+                                            OPCODE_name(opcode)));
+      }
+      break;
+
+
     case OPR_TRUNC:
       Is_True(desc == MTYPE_F4 || desc == MTYPE_F8,
 	      ("OPR_TRUNC: unknown desc type"));
@@ -918,6 +932,193 @@ OPCODE_To_INTRINSIC (
 
   return id;
 }
+
+
+/* Utility procedure which does a comparison on two symbols */
+static INT32 WN_Compare_Symbols(WN *t1, WN *t2)
+{
+   ST_IDX s1 = WN_st_idx(t1);
+   ST_IDX s2 = WN_st_idx(t2);
+
+   if (s1 < s2)
+       return -1;
+   else if (s1 > s2)
+       return 1;
+   else
+       return 0;
+}
+
+// [HK] static function added to check for tree equality
+// needed for x^2 opportunities check
+
+static INT32 WN_Compare_Trees(WN *t1, WN *t2)
+{
+   INT32  i;
+   INT32  rv;
+   
+   /* Trivial comparison, shouldn't ever happen for WHIRL nodes, but
+    * will happen for the WOPT IR.
+    */
+   if (t1 == t2) return (0);
+
+   /* First compare opcodes */
+   if (WN_opcode(t1) < WN_opcode(t2))
+     return (-1);
+   else if (WN_opcode(t1) > WN_opcode(t2))
+     return (1);
+   
+   /* Opcodes are the same, switch on operator class */
+   switch (WN_operator(t1)) {
+    case OPR_INTCONST:
+      if (WN_const_val(t1) < WN_const_val(t2)) return(-1);
+      if (WN_const_val(t1) > WN_const_val(t2)) return(1);
+      return (0);
+
+    case OPR_CVTL:
+      if (WN_cvtl_bits(t1) < WN_cvtl_bits(t2)) return (-1);
+      if (WN_cvtl_bits(t1) > WN_cvtl_bits(t2)) return (1);
+      return (WN_Compare_Trees(WN_kid0(t1),
+					  WN_kid0(t2)));
+      
+
+    case OPR_EXTRACT_BITS:
+      if (WN_bit_offset(t1) < WN_bit_offset(t2)) return (-1);
+      if (WN_bit_offset(t1) > WN_bit_offset(t2)) return (1);
+      if (WN_bit_size(t1) < WN_bit_size(t2)) return (-1);
+      if (WN_bit_size(t1) > WN_bit_size(t2)) return (1);
+      return (WN_Compare_Trees(WN_kid0(t1),
+					  WN_kid0(t2)));
+
+
+    case OPR_COMPOSE_BITS:
+      if (WN_bit_offset(t1) < WN_bit_offset(t2)) return (-1);
+      if (WN_bit_offset(t1) > WN_bit_offset(t2)) return (1);
+      if (WN_bit_size(t1) < WN_bit_size(t2)) return (-1);
+      if (WN_bit_size(t1) > WN_bit_size(t2)) return (1);
+      rv = WN_Compare_Trees(WN_kid0(t1), WN_kid0(t2));
+      if (rv == 0) {
+	rv = WN_Compare_Trees(WN_kid1(t1), WN_kid1(t2));
+      }
+      return rv;
+
+
+    case OPR_CONST:
+      return WN_Compare_Symbols(t1,t2);
+      
+    case OPR_ILOAD:
+      if (WN_load_offset(t1) < WN_load_offset(t2)) return(-1);
+      if (WN_load_offset(t1) > WN_load_offset(t2)) return(1);
+      if (WN_desc(t1) == MTYPE_BS || WN_desc(t2) == MTYPE_BS) {
+	if (WN_field_id(t1) < WN_field_id(t2)) return(-1);
+	if (WN_field_id(t1) > WN_field_id(t2)) return(1);
+      }
+      return (WN_Compare_Trees(WN_kid0(t1),
+					  WN_kid0(t2)));
+
+    case OPR_ILDBITS:
+      if (WN_load_offset(t1) < WN_load_offset(t2)) return(-1);
+      if (WN_load_offset(t1) > WN_load_offset(t2)) return(1);
+      if (WN_bit_offset(t1) < WN_bit_offset(t2)) return(-1);
+      if (WN_bit_offset(t1) > WN_bit_offset(t2)) return(1);
+      return (WN_Compare_Trees(WN_kid0(t1),
+					  WN_kid0(t2)));
+
+    case OPR_MLOAD:  /* Same procedure as ILOADX, though the children */
+    case OPR_ILOADX:  /* have very different meanings */    
+      if (WN_load_offset(t1) < WN_load_offset(t2)) return(-1);
+      if (WN_load_offset(t1) > WN_load_offset(t2)) return(1);
+      rv = WN_Compare_Trees(WN_kid0(t1),WN_kid0(t2));
+      if (rv != 0) return (rv);
+      return (WN_Compare_Trees(WN_kid1(t1),
+					  WN_kid1(t2)));
+
+    case OPR_LDID:
+      if (WN_load_offset(t1) < WN_load_offset(t2)) return(-1);
+      if (WN_load_offset(t1) > WN_load_offset(t2)) return(1);
+      if (WN_desc(t1) == MTYPE_BS || WN_desc(t2) == MTYPE_BS) {
+	if (WN_field_id(t1) < WN_field_id(t2)) return(-1);
+	if (WN_field_id(t1) > WN_field_id(t2)) return(1);
+      }
+      return WN_Compare_Symbols(t1,t2);
+
+    case OPR_LDBITS:
+      if (WN_load_offset(t1) < WN_load_offset(t2)) return(-1);
+      if (WN_load_offset(t1) > WN_load_offset(t2)) return(1);
+      if (WN_bit_offset(t1) < WN_bit_offset(t2)) return(-1);
+      if (WN_bit_offset(t1) > WN_bit_offset(t2)) return(1);
+      return WN_Compare_Symbols(t1,t2);
+      
+    case OPR_IDNAME:
+      if (WN_idname_offset(t1) < WN_idname_offset(t2)) return(-1);
+      if (WN_idname_offset(t1) > WN_idname_offset(t2)) return(1);
+      return WN_Compare_Symbols(t1,t2);
+
+    case OPR_LDA:
+      if (WN_lda_offset(t1) < WN_lda_offset(t2)) return(-1);
+      if (WN_lda_offset(t1) > WN_lda_offset(t2)) return(1);
+      return WN_Compare_Symbols(t1,t2);
+
+#ifdef TARG_ST
+      /* [CG]: Handle LDA_LABEL comparison. */
+   case OPR_LDA_LABEL:
+     return WN_label_number(t1) - WN_label_number(t2);
+#endif
+    case OPR_ARRAY:
+      if (WN_num_dim(t1) < WN_num_dim(t2)) return (-1);
+      if (WN_num_dim(t1) > WN_num_dim(t2)) return (1);
+      if (WN_element_size(t1) < WN_element_size(t2)) return (-1);
+      if (WN_element_size(t1) > WN_element_size(t2)) return (1);
+      /* Compare bases */
+      rv = WN_Compare_Trees(WN_array_base(t1),
+				       WN_array_base(t2));
+      if (rv != 0) return (rv);
+      
+      /* Compare array_index and array_dim */
+      for (i=0; i < WN_num_dim(t1); i++) {
+	 rv = WN_Compare_Trees(WN_array_index(t1,i),
+					  WN_array_index(t2,i));
+	 if (rv != 0) return (rv);
+	 rv = WN_Compare_Trees(WN_array_dim(t1,i),
+					  WN_array_dim(t2,i));
+	 if (rv != 0) return (rv);
+      }
+      /* everything compares */
+      return (0);
+
+    case OPR_INTRINSIC_OP:
+      if (WN_intrinsic(t1) < WN_intrinsic(t2)) return (-1);
+      if (WN_intrinsic(t1) > WN_intrinsic(t2)) return (1);
+      if (WN_kid_count(t1) < WN_kid_count(t2)) return (-1);
+      if (WN_kid_count(t1) > WN_kid_count(t2)) return (1);
+      
+      for (i=0; i<WN_kid_count(t1); i++) {
+	rv = WN_Compare_Trees(WN_kid(t1,i),
+					 WN_kid(t2,i));
+	if (rv != 0) return (rv);
+      }
+      return (0);
+
+    case OPR_COMMA:
+    case OPR_RCOMMA:
+    case OPR_CSELECT:
+
+      return ((INTPS)t1 - (INTPS)t2);
+
+    default:
+       if (OPCODE_is_expression(WN_opcode(t1))) {
+	  for (i=0; i<WN_kid_count(t1); i++) {
+	     rv = WN_Compare_Trees(WN_kid(t1,i),
+					      WN_kid(t2,i));
+	     if (rv != 0) return (rv);
+	  }
+	  return (0);
+       } else {
+	  /* Non-expression opcode. Return arbitrary */
+	  return ((INTPS)t1 - (INTPS)t2);
+       }
+   }
+}
+
 
 /* ===============================================================
  *   WN_To_INTRINSIC
@@ -953,6 +1154,12 @@ WN_To_INTRINSIC (
       kids[1] = WN_kid0(kids[1]);
     }
   }
+
+  // [HK]: select x^2 for F4 type
+  if (opcode == OPC_F4MPY)
+      if (WN_Compare_Trees(kids[0],kids[1]) == 0) {
+	  id = INTRN_SQUARES;
+      }
 
   if (id == INTRINSIC_INVALID) {
     return OPCODE_To_INTRINSIC(opcode);
