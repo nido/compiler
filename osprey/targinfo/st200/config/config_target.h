@@ -323,7 +323,9 @@ BE_EXPORTED extern BOOL BOOL_packed_arithmetic;
 BE_EXPORTED extern BOOL FP_packed_arithmetic;
 
 // don't try to canonalize 1/a. On st200 recip is implemented with a divide.
-#define ARCH_recip_is_exact FALSE
+// [HK] 20050906 1/a now available as an intrinsic function
+// #define ARCH_recip_is_exact FALSE
+#define ARCH_recip_is_exact TRUE
 #define ARCH_has_bit_tests TRUE
 
 /* default value for WHIRL_Keep_Cvt */
