@@ -5729,11 +5729,16 @@ static BOOL Skip_Loop_For_Reason(LOOP_DESCR *loop)
       break;
     }
 
-    /* Duplication of ASM instructions may not be possible. */
+#if 0
+    // FdF 20050909: Support for duplication of ASM instructions has
+    // been enabled.
+
+    /* DDTS 17117: Duplication of ASM instructions may not be possible. */
     if (BB_asm(bb)) {
       reason = "contains BB with ASM instruction";
       break;
     }
+#endif
 
     BBLIST *succs;
     FOR_ALL_BB_SUCCS(bb, succs) {

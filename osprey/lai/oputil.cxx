@@ -101,6 +101,18 @@
 #define Set_OP_opnds(o,n)	((o)->opnds = (n))
 #define Set_OP_results(o,n)	((o)->results = (n))
 
+#ifdef TARG_ST
+// ----------------------------------------
+// Copy ASM_OP_ANNOT when duplicating an OP
+// ----------------------------------------
+inline void
+Copy_Asm_OP_Annot(OP* new_op, OP* op) 
+{
+  if (OP_code(op) == TOP_asm) {
+    OP_MAP_Set(OP_Asm_Map, new_op, OP_MAP_Get(OP_Asm_Map, op));
+  }
+}
+#endif
 
 // ----------------------------------------
 // Copy ASM_OP_ANNOT when duplicating an OP

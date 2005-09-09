@@ -1066,6 +1066,9 @@ extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif
 
 // Copy ASM_OP_ANNOT when duplicating an OP.
+#ifdef TARG_ST
+inline void Copy_Asm_OP_Annot(OP* new_op, OP* op);
+#else
 inline void
 Copy_Asm_OP_Annot(OP* new_op, OP* op) 
 {
@@ -1076,7 +1079,7 @@ Copy_Asm_OP_Annot(OP* new_op, OP* op)
   */
   return;
 }
-
+#endif
 // check if an operation that saves all the predicate registers
 extern BOOL OP_save_predicates(OP *op);
 
