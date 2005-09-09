@@ -445,13 +445,25 @@ Expand_Divide (
 
   /* Look for simple shift optimizations and multiply_hi optimizations:
    */
-  INT64 src2_val;
+  INT64 src2_val, src1_val;
   BOOL const_src2 = TN_Value_At_Op (src2, NULL, &src2_val);
+  BOOL const_src1 = TN_Value_At_Op (src1, NULL, &src1_val);
+
+  
+
+  if (const_src1) {
+      TN* tmp1;
+      tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
+      src1 = tmp1;
+  }
 
   if (const_src2) {
     if (Expand_Divide_By_Constant (result, src1, src2, src2_val, mtype, ops)) {
       return NULL;
     }
+      TN* tmp2;
+      tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
+      src2 = tmp2;
   }
 
   Expand_NonConst_DivRem(result, NULL, src1, src2, mtype, ops);
@@ -560,10 +572,17 @@ Expand_Rem (
   //
   // Try to optimize when constant divisor.
   //
-  INT64 src2_val;
+  INT64 src2_val, src1_val;
   BOOL const_src2 = TN_Value_At_Op (src2, NULL, &src2_val);
+  BOOL const_src1 = TN_Value_At_Op (src1, NULL, &src1_val);
   BOOL is_signed = MTYPE_is_signed(mtype);
 
+
+  if (const_src1) {
+      TN* tmp1;
+      tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
+      src1 = tmp1;
+  }
 
   if (const_src2) {
 
@@ -606,6 +625,9 @@ Expand_Rem (
       }
     }
 #endif
+      TN* tmp2;
+      tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
+      src2 = tmp2;
   }
 
   Expand_NonConst_DivRem(NULL, result, src1, src2, mtype, ops);
