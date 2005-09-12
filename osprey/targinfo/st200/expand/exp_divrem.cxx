@@ -452,18 +452,22 @@ Expand_Divide (
   
 
   if (const_src1) {
-      TN* tmp1;
-      tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
-      src1 = tmp1;
+    if (!TN_is_constant(src1))
+      src1 = Gen_Literal_TN(src1_val, MTYPE_byte_size(mtype));
+    TN* tmp1;
+    tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
+    src1 = tmp1;
   }
 
   if (const_src2) {
     if (Expand_Divide_By_Constant (result, src1, src2, src2_val, mtype, ops)) {
       return NULL;
     }
-      TN* tmp2;
-      tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
-      src2 = tmp2;
+    if (!TN_is_constant(src2))
+      src2 = Gen_Literal_TN(src2_val, MTYPE_byte_size(mtype));
+    TN* tmp2;
+    tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
+    src2 = tmp2;
   }
 
   Expand_NonConst_DivRem(result, NULL, src1, src2, mtype, ops);
@@ -579,9 +583,11 @@ Expand_Rem (
 
 
   if (const_src1) {
-      TN* tmp1;
-      tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
-      src1 = tmp1;
+    if (!TN_is_constant(src1))
+      src1 = Gen_Literal_TN(src1_val, MTYPE_byte_size(mtype));
+    TN* tmp1;
+    tmp1 = Expand_Immediate_Into_Register(mtype, src1, ops); 
+    src1 = tmp1;
   }
 
   if (const_src2) {
@@ -625,9 +631,11 @@ Expand_Rem (
       }
     }
 #endif
-      TN* tmp2;
-      tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
-      src2 = tmp2;
+    if (!TN_is_constant(src2))
+      src2 = Gen_Literal_TN(src2_val, MTYPE_byte_size(mtype));
+    TN* tmp2;
+    tmp2 = Expand_Immediate_Into_Register(mtype, src2, ops); 
+    src2 = tmp2;
   }
 
   Expand_NonConst_DivRem(NULL, result, src1, src2, mtype, ops);
