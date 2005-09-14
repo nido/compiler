@@ -1761,7 +1761,7 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
             hTN_MAP_Set(dup_tn_map, pred_tn, new_tn);
               
             OP* opb = TN_ssa_def (pred_tn);
-            BB_Insert_Ops_After(OP_bb(op), opb, &ops);
+            BB_Insert_Ops_After(OP_bb(opb), opb, &ops);
             Rename_Local_Tns((*i_iter).predtn, new_tn, OPS_last(&ops));
           }
             
