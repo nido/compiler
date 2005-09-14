@@ -4940,14 +4940,27 @@ select_move_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   if (cond_tninfo != NULL && !EBO_tn_available (bb, cond_tninfo))
     return FALSE;
 
+  // FdF 20050914: Special treatment in the following case:
+  // 	cond_op:cond_tn = mtb x_tn
+  // 	def_op:	true_tn = x_tn
+  // 	op:	res_tn = slct cond_tn ? true_tn : 0
+  // The correct transformation is
+  // 	res_tn = true_tn
+
   OP *new_op;
-  new_op = Mk_OP(TOP_mfb, OP_result(op,0), cond_tn);
+  if (OP_copy(def_op))
+    new_op = Mk_OP(TOP_mov_r, OP_result(op,0), true_tn);
+  else
+    new_op = Mk_OP(TOP_mfb, OP_result(op,0), cond_tn);
   OP_srcpos(new_op) = OP_srcpos(op);
   if (EBO_in_loop) EBO_Set_OP_omega (new_op, cond_tninfo);
   if (!EBO_Verify_Op(new_op)) return FALSE;
   BB_Insert_Op_After(bb, op, new_op);
-  if (EBO_Trace_Optimization) 
-    fprintf(TFile,"Convert select of cmp into mfb\n");
+  if (EBO_Trace_Optimization)
+    if (OP_copy(def_op))
+      fprintf(TFile,"Convert select of cmp into mov_r\n");
+    else
+      fprintf(TFile,"Convert select of cmp into mfb\n");
   return TRUE;
 
 }
