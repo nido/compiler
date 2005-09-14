@@ -1067,7 +1067,7 @@ extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 
 // Copy ASM_OP_ANNOT when duplicating an OP.
 #ifdef TARG_ST
-inline void Copy_Asm_OP_Annot(OP* new_op, OP* op);
+void Copy_Asm_OP_Annot(OP* new_op, OP* op);
 #else
 inline void
 Copy_Asm_OP_Annot(OP* new_op, OP* op) 

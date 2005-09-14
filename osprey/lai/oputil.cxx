@@ -105,7 +105,7 @@
 // ----------------------------------------
 // Copy ASM_OP_ANNOT when duplicating an OP
 // ----------------------------------------
-inline void
+void
 Copy_Asm_OP_Annot(OP* new_op, OP* op) 
 {
   if (OP_code(op) == TOP_asm) {
