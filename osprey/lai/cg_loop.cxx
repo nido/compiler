@@ -5549,6 +5549,8 @@ void Induction_Variables_Removal(CG_LOOP& cl,
 	  if (TN_is_register(tn) && 
 	      !TN_is_const_reg(tn) &&
 	      !TN_SET_MemberP(tnset, tn)) {
+#ifndef TARG_ST
+	    // FdF 20050915: True_TN does not really exist on ST200
 	    if (TN_register_class(tn) == TN_register_class(True_TN)) {
 	      Set_OP_result(op, i, True_TN);
 	      if (trace) {
@@ -5556,6 +5558,7 @@ void Induction_Variables_Removal(CG_LOOP& cl,
 		Print_OP_No_SrcLine(op);
 	      }
 	    }
+#endif
 	  }
 	}
       }
