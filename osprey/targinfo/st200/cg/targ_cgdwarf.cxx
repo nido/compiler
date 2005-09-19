@@ -466,22 +466,27 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	    ue.kind = (store_tn == SP_TN) ? UE_SAVE_SP : UE_SAVE_FP;
 
 	    TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-	    ST* st = TN_var(offset_tn);
-	    ST* base_st;
-	    INT64 base_ofst;
-    
-	    Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-	    FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+	    // don't record constant offsets, they are not related to
+	    // restores of callee-saved (they appear in array access for
+	    // instance)
+	    if (TN_is_symbol(offset_tn)){
+	      ST* st = TN_var(offset_tn);
+	      ST* base_st;
+	      INT64 base_ofst;
+
+	      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
 		      ("not saving to the stack!"));
 
-	    ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
+	      ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
 
 #ifdef DEBUG_UNWIND
-	    fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
-		    REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
-					CLASS_REG_PAIR_reg(ue.rc_reg)),
-		    ue.offset);
+	      fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
+		      REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
+					  CLASS_REG_PAIR_reg(ue.rc_reg)),
+		      ue.offset);
 #endif
+	    }
 	}
     } else {
 #ifdef DEBUG_UNWIND
@@ -504,23 +509,28 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  ue.rc_reg = TN_class_reg(result_tn);
 
 	  TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-	  ST* st = TN_var(offset_tn);
-	  ST* base_st;
-	  INT64 base_ofst;
+	  // don't record constant offsets, they are not related to
+	  // restores of callee-saved (they appear in array access for
+	  // instance)
+	  if (TN_is_symbol(offset_tn)) {
+	    ST* st = TN_var(offset_tn);
+	    ST* base_st;
+	    INT64 base_ofst;
     
-	  Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-	  FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
-		    ("not restoring from the stack!"));
+	    Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	    FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+		      ("not restoring from the stack!"));
 
-	  ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
+	    ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
 
 #ifdef DEBUG_UNWIND
-	  fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
-		  __FUNCTION__,
-		  REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
-				      CLASS_REG_PAIR_reg(ue.rc_reg)),
-		  ue.offset);
+	    fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
+		    __FUNCTION__,
+		    REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
+					CLASS_REG_PAIR_reg(ue.rc_reg)),
+		    ue.offset);
 #endif
+	  }
 	}
       }
   }
