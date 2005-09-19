@@ -153,9 +153,9 @@ COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
 INSTALL_LOC=$(BINUTILS_GNU_LOC)
 
 ifeq ($(HOST_OS),MINGW)
-COMPILER_LOC=/apa/gnu/SunOS5/gcc-2.95.2-mingw32-msvcrt/bin/
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-mingw32-gcc-3.4.2/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i386-pc-mingw32msvc-
+PREFIX=i386-mingw32-
 endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
@@ -185,6 +185,12 @@ COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
 # (cbr) 
 YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
+
+ifeq ($(HOST_OS),MINGW)
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-mingw32-gcc-3.4.2/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-mingw32-
+endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
 COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
