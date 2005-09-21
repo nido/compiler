@@ -285,6 +285,23 @@ Pick_Compare_TOP (
       break;
   }
   
+  //[HK] in case of FP comparison, make the following transformation:
+  // f1 cmp f2 <=> int(f1-f2) cmp 0
+  if ( (Enable_Non_IEEE_Ops) && \
+       ( (*variant == V_BR_FLT) || (*variant == V_BR_FLE) ||(*variant == V_BR_FGT) || \
+	 (*variant == V_BR_FGE) || (*variant == V_BR_FEQ) ||(*variant == V_BR_FNE) ) )
+      {
+	  TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  Build_OP(TOP_subf_n, src, *src1, *src2, ops);
+	  *src1 = src;
+	  *src2 = Zero_TN;
+      }
+  if ( !(Enable_Non_IEEE_Ops) && \
+       ( (*variant == V_BR_FLT) || (*variant == V_BR_FLE) ||(*variant == V_BR_FGT) || \
+	 (*variant == V_BR_FGE) || (*variant == V_BR_FEQ) ||(*variant == V_BR_FNE) ) )
+      cmp = TOP_UNDEFINED;
+  
+  
   if (cmp != TOP_UNDEFINED) {
     // if src2 is immediate, get the immediate form
     if (*src2 != NULL && TN_has_value(*src2)) {
@@ -398,16 +415,6 @@ Expand_Branch (
       FmtAssert(cmp != TOP_UNDEFINED, 
                                   ("Expand_Branch: unexpected comparison"));
 
-      //[HK] in case of FP comparison, make the following transformation:
-      // f1 cmp f2 <=> int(f1-f2) cmp 0
-      if( (cond == V_BR_FLT) || (cond == V_BR_FLE) ||(cond == V_BR_FGT) || \
-	  (cond == V_BR_FGE) || (cond == V_BR_FEQ) ||(cond == V_BR_FNE) )
-	  {
-	      TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-	      Build_OP(TOP_subf_n, src, src1, src2, ops);
-	      src1 = src;
-	      src2 = Zero_TN;
-	  }
 
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
       if (is_integer) {
