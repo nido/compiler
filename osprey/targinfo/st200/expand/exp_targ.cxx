@@ -2670,7 +2670,9 @@ Expand_Compare_And_Select (
 	     ("Expand_Compare_And_Select: unexpected comparison"));
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
   // [HK] treat FP comparison case: f1 cmp f2 <=> (f1 - f2) cmp 0
-  if (is_float)
+  // [HK] 20050921 fix for Ph bug discovered by SC:
+  //   only generate subf when Enable_Non_IEEE_Ops is on
+  if (Enable_Non_IEEE_Ops && is_float)
 	  {
 	      TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
 	      Build_OP(TOP_subf_n, cond, cond1, cond2, ops);
