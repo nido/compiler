@@ -2174,6 +2174,7 @@ NOPs2Goto (
   OP_scycle(goto_op) = OP_scycle(op)-1;
   Set_OP_bundled (goto_op);
   Set_OP_end_group(goto_op);
+  Set_OP_nop2goto(goto_op);
 
   BB_Remove_Op(OP_bb(op), OP_prev(op));
   BB_Remove_Op(OP_bb(op), op);

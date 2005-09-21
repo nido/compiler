@@ -497,6 +497,8 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_PFT_BEFORE 0x0010 /* PFT OP is placed before a memop
 				     for prefetch in the current
 				     iteration. */
+#define OP_MASK_NOP2GOTO   0x0020 /* A goto operation replacing two
+				     NOPs, for scheduling/bundling. */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -576,6 +578,9 @@ enum OP_COND_DEF_KIND {
 # define OP_pft_before(o)	(OP_flags2(o) & OP_MASK_PFT_BEFORE)
 # define Set_OP_pft_before(o)	(OP_flags2(o) |= OP_MASK_PFT_BEFORE)
 # define Reset_OP_pft_before(o)	(OP_flags2(o) &= ~OP_MASK_PFT_BEFORE)
+# define OP_nop2goto(o)		(OP_flags2(o) & OP_MASK_NOP2GOTO)
+# define Set_OP_nop2goto(o)	(OP_flags2(o) |= OP_MASK_NOP2GOTO)
+# define Reset_OP_nop2goto(o)	(OP_flags2(o) &= ~OP_MASK_NOP2GOTO)
 #endif
 
 extern BOOL OP_cond_def( const OP*);
