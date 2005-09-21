@@ -942,57 +942,6 @@ Init_Resource_Table (
   return;
 }
 
-#ifdef TARG_ST200
-// ======================================================================
-//  Replace a sequence of [;; nop ;; nop ;;] by [;; goto 1 ;;]
-//  This is activated under option -CG:nop2goto=1
-// ======================================================================
-
-static BOOL NOPs_to_GOTO (
-  BB *bb,
-  OP *op
-)
-{
-  OP *nop_first, *nop_second;
-  BOOL bundle_start;
-
-  bundle_start = op ? OP_end_group(op) : TRUE;
-  nop_first = op ? OP_next(op) : BB_first_op(bb);
-  nop_second = nop_first ? OP_next(nop_first) : NULL;
-
-  if (bundle_start && 			   // ;;
-      nop_first && OP_noop(nop_first) &&   // NOP
-      OP_end_group(nop_first) &&	   // ;;
-      nop_second && OP_noop(nop_second) && // NOP
-      OP_end_group(nop_second)) {	   // ;;
-
-    // ;; GOTO 1 ;;    
-    LABEL_IDX lab;
-    LABEL *label;
-    OP *goto_op;
-
-    label = &New_LABEL(CURRENT_SYMTAB, lab);
-    // FdF: Need the extra space, because cgemit checks if the first
-    // character is a digit
-    LABEL_Init (*label, Save_Str(" 1"), LKIND_DEFAULT);
-
-    goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab, 0));
-    BB_Insert_Op(OP_bb(op), nop_second, goto_op, FALSE);
-  
-    BB_Remove_Op(OP_bb(op), nop_first);
-    BB_Remove_Op(OP_bb(op), nop_second);
-
-    OP_scycle(goto_op) = -1;
-    Set_OP_bundled (goto_op);
-    Set_OP_end_group(goto_op);
-
-    return TRUE;
-  }
-
-  return FALSE;
-}
-#endif
-
 /* ====================================================================
  *   Fill_Cycle_With_Noops
  *
