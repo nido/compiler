@@ -2669,16 +2669,6 @@ Expand_Compare_And_Select (
   FmtAssert (cmp1 != TOP_UNDEFINED,
 	     ("Expand_Compare_And_Select: unexpected comparison"));
   TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-  // [HK] treat FP comparison case: f1 cmp f2 <=> (f1 - f2) cmp 0
-  // [HK] 20050921 fix for Ph bug discovered by SC:
-  //   only generate subf when Enable_Non_IEEE_Ops is on
-  if (Enable_Non_IEEE_Ops && is_float)
-	  {
-	      TN *cond = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-	      Build_OP(TOP_subf_n, cond, cond1, cond2, ops);
-	      cond1 = cond;
-	      cond2 = Zero_TN;
-	  }
   if (is_integer) {
     TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
     Build_OP (cmp1, tmp_int, cond1, cond2, ops);
@@ -3011,10 +3001,6 @@ Expand_Float_Compares(
   OPS *ops
 )
 {
-      //[HK] FP SP comparison : we make the following transformation:
-      // f1 cmp f2 <=> int(f1-f2) cmp 0
-    TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-    Build_OP(TOP_subf_n, src, src1, src2, ops);
     TOP action;
     if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
 	BOOL is_integer = FALSE;
@@ -3022,10 +3008,12 @@ Expand_Float_Compares(
 	FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
 	if (is_integer) {
 	    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-	    Build_OP (action, tmp_int, src, Zero_TN, ops);
+// 	    Build_OP (action, tmp_int, src, Zero_TN, ops);
+	    Build_OP (action, tmp_int, src1, src2, ops);
 	    Expand_Copy(dest, NULL, tmp_int, ops);
 	} else {
-	    Build_OP (action, dest, src, Zero_TN, ops);
+	    Build_OP (action, dest, src1, src2, ops);
+// 	    Build_OP (action, dest, src, Zero_TN, ops);
 	}
     }
     else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
@@ -3034,10 +3022,12 @@ Expand_Float_Compares(
 	FmtAssert(action != TOP_UNDEFINED, ("Expand_Float_Compares: unhandled variant"));
 	if (!is_integer) {
 	    TN *tmp_br = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-	    Build_OP (action, tmp_br, src, Zero_TN, ops);
+// 	    Build_OP (action, tmp_br, src, Zero_TN, ops);
+	    Build_OP (action, tmp_br, src1, src2, ops);
 	    Expand_Copy(dest, NULL, tmp_br, ops);
 	} else {
-	    Build_OP (action, dest, src, Zero_TN, ops);
+// 	    Build_OP (action, dest, src, Zero_TN, ops);
+ 	    Build_OP (action, dest, src1, src2, ops);
 	}
     }
     else {
