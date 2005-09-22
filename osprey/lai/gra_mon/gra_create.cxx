@@ -1211,6 +1211,9 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       } else if (!gpl->Num_Defs()) {
 	gpl->Exposed_Use_Set(TRUE);
       }
+#ifdef TARG_ST
+      gpl->Last_Use_Set(op_count);
+#endif
     }
 
     for ( i = OP_results(xop) - 1; i >= 0; --i ) {
@@ -1243,6 +1246,9 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 
       gpl->Num_Defs_Set(gpl->Num_Defs() + 1);
       gpl->Last_Def_Set(op_count);
+      if (gpl->First_Def() == 0) {
+	gpl->First_Def_Set(op_count);
+      }
 
 #ifdef TARG_ST
       ISA_REGISTER_SUBCLASS sc = (asm_info
@@ -1341,8 +1347,18 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
     // there is more than one definition of it in the block, then
     // we are conservatively assuming that there is a conflict.
     //
+#ifdef TARG_ST
+    // [SC] Allow the dest to be defined multiple times provided that
+    // the src is live only until the first definition of the dest.
+    if (gpl_src->Last_Def() < gpl_dest->Last_Def()
+	&& ! gpl_dest->Exposed_Use()
+	&& (gpl_dest->Num_Defs() == 1
+	    || (gpl_src->Last_Use() == gpl_dest->First_Def()
+		&& ! GTN_SET_MemberP(BB_live_out(gbb->Bb()), tn_src)))) {
+#else
     if (gpl_src->Last_Def() < gpl_dest->Last_Def() &&
 	!gpl_dest->Exposed_Use() && gpl_dest->Num_Defs() == 1) {
+#endif
 
       //
       // Complement to complement preference.

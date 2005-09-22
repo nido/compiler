@@ -173,6 +173,10 @@ class GRA_PREF_LIVE {
   INT last_def;		// last definition of TN seen in BB
   INT num_defs;		// number of definitions of TN in BB
   INT exposed_use;	// true if exposed use of TN at top of BB
+#ifdef TARG_ST
+  INT first_def;        // first definition of TN seen in BB
+  INT last_use;         // last use of TN seen in BB
+#endif
 public:
   GRA_PREF_LIVE(void) {}
   ~GRA_PREF_LIVE(void) {}
@@ -183,6 +187,12 @@ public:
   void Num_Defs_Set(INT i)	{ num_defs = i; }
   INT Exposed_Use(void)		{ return exposed_use; }
   void Exposed_Use_Set(INT i)	{ exposed_use = i; }
+#ifdef TARG_ST
+  INT First_Def(void) { return first_def; }
+  void First_Def_Set(INT i) { first_def = i; }
+  INT Last_Use(void) { return last_use; }
+  void Last_Use_Set(INT i) { last_use = i; }
+#endif
 };
 
 
@@ -212,6 +222,10 @@ public:
     gpl->Last_Def_Set(0);
     gpl->Num_Defs_Set(0);
     gpl->Exposed_Use_Set(FALSE);
+#ifdef TARG_ST
+    gpl->First_Def_Set(0);
+    gpl->Last_Use_Set(0);
+#endif
     return gpl;
   }
 };
