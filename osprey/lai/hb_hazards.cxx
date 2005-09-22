@@ -1492,7 +1492,7 @@ Make_Bundles (
       Print_OP_No_SrcLine(op);
     }
 
-    if (OP_dummy(op)) continue;
+    if (OP_dummy(op)) { op = next_op; continue; }
 
 #ifdef SUPERBLOCK_ENABLED
     if (op != bb_first_op) {

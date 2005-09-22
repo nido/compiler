@@ -4370,6 +4370,7 @@ Assemble_Bundles(BB *bb)
 #endif
     ISA_BUNDLE bundle;
 #ifdef TARG_ST
+    INT n_slot_ops;
     ISA_EXEC_MASK slot_mask;
 #else
     UINT64 slot_mask;
@@ -4478,6 +4479,11 @@ Assemble_Bundles(BB *bb)
       if (slot == 0) {
 	  continue;
       }
+      // [SC] Care: if the OP_end_group(op) marker is on a dummy op
+      // then it may not be set on any member of slot_op[], so it cannot
+      // be used as a sentinel to mark the end of slot_op[].  Instead, use
+      // n_slot_ops as a count of the number of entries in slot_op[].
+      n_slot_ops = slot;
 #else
     if (slot == 0) break;
 #endif
@@ -4602,7 +4608,7 @@ Assemble_Bundles(BB *bb)
 	  break;
 	}
 	slot += ISA_PACK_Inst_Words(OP_code(sl_op));
-      } while (!OP_end_group(sl_op));
+      } while (slot < n_slot_ops);
     }
 
     /* Generate debug info for the 1st op of the bundle */
@@ -4618,7 +4624,7 @@ Assemble_Bundles(BB *bb)
 
       Emit_Unwind_Directives_For_OP(sl_op, Asm_File, FALSE);
       slot += ISA_PACK_Inst_Words(OP_code(sl_op));
-  } while (!OP_end_group(sl_op));
+  } while (slot < n_slot_ops);
 #endif
 
     slot = 0;
@@ -4627,7 +4633,7 @@ Assemble_Bundles(BB *bb)
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
 #ifdef TARG_ST200
-    } while (!OP_end_group(sl_op));
+    } while (slot < n_slot_ops);
 #else
     } while (slot < ISA_MAX_SLOTS);
 #endif
@@ -4665,7 +4671,7 @@ Assemble_Bundles(BB *bb)
       
       Emit_Unwind_Directives_For_OP(sl_op, Asm_File, TRUE);
       slot += ISA_PACK_Inst_Words(OP_code(sl_op));
-    } while (!OP_end_group(sl_op));
+    } while (slot < n_slot_ops);
 #endif
 
 #ifdef TARG_ST

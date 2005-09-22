@@ -2258,12 +2258,14 @@ Pad_Bundle (
   OP *bundle_end = OP_next(last_in_bundle);
   OP *op;
   for (op = bundle_start; op != bundle_end; op = OP_next(op)) {
-    ISA_EXEC_UNIT_PROPERTY prop = ISA_EXEC_Unit_Prop(OP_code(op));
-    for (INT w = 0; w < ISA_PACK_Inst_Words(OP_code(op)); w++) {
-      bundle_props[n_bundle_props++] = prop;
+    if (!OP_dummy(op)) {
+      ISA_EXEC_UNIT_PROPERTY prop = ISA_EXEC_Unit_Prop(OP_code(op));
+      for (INT w = 0; w < ISA_PACK_Inst_Words(OP_code(op)); w++) {
+	bundle_props[n_bundle_props++] = prop;
+      }
+      *pc = update_bundle_pc(op, *pc);
+      if (OP_scycle(op) != -1) { OP_scycle(op) += *scycle_delta; }
     }
-    *pc = update_bundle_pc(op, *pc);
-    if (OP_scycle(op) != -1) { OP_scycle(op) += *scycle_delta; }
   }
   qsort(bundle_props, n_bundle_props, sizeof(ISA_EXEC_UNIT_PROPERTY),
 	compare_prop);
