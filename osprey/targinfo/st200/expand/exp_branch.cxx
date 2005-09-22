@@ -450,7 +450,7 @@ Exp_Indirect_Branch (
 )
 {
   // put target in RA_TN register
-  Build_OP (TOP_mov_r, RA_TN, targ_reg, ops);
+  Expand_Copy (RA_TN, NULL, targ_reg, ops);
   Build_OP (TOP_igoto, RA_TN, ops);
   return;
 }
@@ -545,7 +545,7 @@ Exp_Call (
       }
       else {
 	// put target in LR
-	Build_OP(TOP_mov_r, RA_TN, target, ops);
+	Expand_Copy(RA_TN, NULL, target, ops);
       }
 
       if (Trace_Exp) {
