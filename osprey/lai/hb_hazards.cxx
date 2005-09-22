@@ -622,6 +622,10 @@ Check_For_Bundle_Hazards(OP *op, TI_BUNDLE *bundle, VECTOR *bundle_vector)
 
   BOOL slot_avail = FALSE;
 
+#ifdef TARG_ST
+  FmtAssert (!OP_dummy(op), ("Dummy op %d in Check_For_Bundle_Hazards", (int)op->opr));
+#endif
+
   // Legal values:
   // <slot_pos> : 0, 1,.. ISA_MAX_SLOTS - 1
   // <stop_pos> : -1, 0, 1, ... ISA_MAX_SLOTS - 1
@@ -1026,7 +1030,7 @@ Handle_Latency (
 
 #ifdef TARG_ST
   // [CG]: asm top are not bundled
-  BOOL bundling_reqd = (OP_code(op) != TOP_asm);
+  BOOL bundling_reqd = (OP_code(op) != TOP_asm && !OP_dummy(op));
   FmtAssert(OP_bundled(op) || !bundling_reqd, ("OP not bundled ?"));
 #else
   // 'op' should have been bundled and no unfilled slots before
@@ -1181,6 +1185,10 @@ Handle_Bundle_Hazards(
   // <stop_pos> : -1, 0, 1, ... ISA_MAX_SLOTS - 1
   // the extra "-1" stop_pos indicates a group dependence outside the
   // context of the current bundle but still need to be preserved.
+
+#ifdef TARG_ST
+  FmtAssert (!OP_dummy(op), ("Dummy op %d in Handle_Bundle_Hazards", (int)op->opr));
+#endif
 
   INT slot_pos = -1; // not a legal value
   INT stop_pos = -2; // not a legal value
