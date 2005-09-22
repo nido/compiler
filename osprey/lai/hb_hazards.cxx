@@ -1305,7 +1305,7 @@ Handle_Bundle_Hazards(
     TI_BUNDLE_Clear (bundle);
 
 #ifdef TARG_ST200
-    Set_OP_end_group(OP_prev(op));
+    Set_OP_end_group(Last_Real_OP(op));
     VECTOR_Reset (*bundle_vector);
 #endif
 
@@ -1331,7 +1331,7 @@ Handle_Bundle_Hazards(
 #endif
 
     // set <end_group> marker
-    Set_OP_end_group(OP_prev(op));
+    Set_OP_end_group(Last_Real_OP(op));
     VECTOR_Reset (*bundle_vector);
 #ifdef TARG_ST200 // CL: bundles have variable length
 	          // and can be reset at any time
@@ -1575,11 +1575,11 @@ Make_Bundles (
 	// TODO: need to be refined further.
 	//	OP *last_real_op = Last_Real_OP(op);
 	//	Set_OP_end_group(last_real_op);
-	if (!OP_end_group(OP_prev(op))) {
+	if (!OP_end_group(Last_Real_OP(op))) {
 #ifdef TARG_ST200 // [CL]
 	  CGTARG_Finish_Bundle(OP_prev(op), bundle);
 #endif
-	  Set_OP_end_group(OP_prev(op));
+	  Set_OP_end_group(Last_Real_OP(op));
 	  VECTOR_Reset (*bundle_vector);
 #ifdef TARG_ST200 // CL: bundles have variable length
 	          // and can be reset at any time
@@ -1635,13 +1635,13 @@ Make_Bundles (
 
     // Set the <end_group> flag if op
     // has to be first instruction in a group.
-    if (OP_f_group(op) && OP_prev(op) && !OP_end_group(OP_prev(op))) {
+    if (OP_f_group(op) && Last_Real_OP(op) && !OP_end_group(Last_Real_OP(op))) {
       // Add the <stop_bit> marker appropriately.
       // TODO: need to be refined further.
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(OP_prev(op), bundle);
 #endif
-      Set_OP_end_group(OP_prev(op));
+      Set_OP_end_group(Last_Real_OP(op));
       VECTOR_Reset (*bundle_vector);
 #ifdef TARG_ST200
       // Reset the bundle
@@ -1749,12 +1749,20 @@ Make_Bundles (
     if (Trace_HB) fprintf(TFile,"  adding noops for pending latency ...\n");
 
     // First, end the current group, if need to
+#ifdef TARG_ST
+    OP *last_real_op = BB_last_op(bb);
+    if (OP_Real_Ops(last_real_op) == 0) {
+      last_real_op = Last_Real_OP(last_real_op);
+    }
+    if (!OP_end_group(last_real_op)) {
+#else
     if (!OP_end_group(BB_last_op(bb))) {
+#endif
 #ifdef TARG_ST200 // [CL]
       CGTARG_Finish_Bundle(BB_last_op(bb), bundle);
 #endif
       // Set end group and reset bundle vector:
-      Set_OP_end_group(BB_last_op(bb));
+      Set_OP_end_group(last_real_op);
       VECTOR_Reset (*bundle_vector);
 
 #ifdef TARG_ST200

@@ -4413,6 +4413,10 @@ Assemble_Bundles(BB *bb)
 #ifdef TARG_ST200
       seen_end_group = OP_end_group(op);
 #endif
+#ifdef TARG_ST
+      FmtAssert(!(OP_dummy(op) && OP_end_group(op)),
+		("Dummy op should not have end group marker"));
+#endif
 
       if (OP_dummy(op)) continue;		// these don't get emitted
 
@@ -4479,9 +4483,10 @@ Assemble_Bundles(BB *bb)
       if (slot == 0) {
 	  continue;
       }
-      // [SC] Care: if the OP_end_group(op) marker is on a dummy op
-      // then it may not be set on any member of slot_op[], so it cannot
-      // be used as a sentinel to mark the end of slot_op[].  Instead, use
+      // [SC] Care: Previous code used the OP_end_group(op) marker
+      // as a sentinel to mark the last entry of slot_op[].  This is okay
+      // for some targets, but not for ia64, where the last operation
+      // of a bundle is not necessarily OP_end_group.  Instead, use
       // n_slot_ops as a count of the number of entries in slot_op[].
       n_slot_ops = slot;
 #else
