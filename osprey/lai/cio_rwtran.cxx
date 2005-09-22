@@ -2705,7 +2705,7 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
       if ( OP_has_predicate( change.source )
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
-	   && OP_opnd( change.source, OP_find_opnd_use(op, OU_predicate)) != True_TN )
+	   && OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate)) != True_TN )
 #else
 	   && OP_opnd( change.source, OP_PREDICATE_OPND ) != True_TN )
 #endif
@@ -2782,6 +2782,20 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   for ( index = oppor_count - 1; index >= 0; --index ) {
     CICSE_change& change = opportunities[index];
     if ( change.duplicate_source ) continue;
+
+#ifdef TARG_ST
+    // FdF 20050922: Copy Removal on predicated operations will
+    // speculate operations and use conditional copy operations. This
+    // requires more checks and some changes in the code, we currently
+    // disable this optimization.
+    if ((OP_has_predicate(change.source) &&
+	 (OP_opnd(change.source, OP_find_opnd_use(change.source, OU_predicate) ) != True_TN)) ||
+	(OP_has_predicate(change.op) &&
+	 (OP_opnd(change.op, OP_find_opnd_use(change.op, OU_predicate)) != True_TN))) {
+      change.okay = FALSE;
+      continue;
+    }
+#endif
 
     if ( ! Backpatch_Op_In_Prolog( change.op, change.new_tns,
 				   1, change.omega ) ) {
