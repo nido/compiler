@@ -5088,6 +5088,7 @@ EMT_Assemble_BB (
 #endif
   }
 
+#ifndef TARG_ST
   // hack to keep track of last label and offset for assembly dwarf (suneel)
   if (Last_Label == LABEL_IDX_ZERO) {
     Last_Label = Gen_Label_For_BB (bb);
@@ -5096,7 +5097,7 @@ EMT_Assemble_BB (
       Initial_Pu_Label = Last_Label;
     }
   }
-
+#endif
   st = BB_st(bb);
   if (st) {
     if (Assembly || Lai_Code) {
@@ -5972,11 +5973,14 @@ EMT_Emit_PU (
   // the final text_sequence dependent upon the location of the
   // beginning of the next PU)
   if (generate_dwarf) {
-    cache_last_label_info (Last_Label,
-			   Em_Create_Section_Symbol(PU_section),
-			   ST_pu(pu),
-			   PC2Addr(Offset_From_Last_Label));
-    end_previous_text_region(PU_section, PC);
+    if (Last_Label > 0) {
+      cache_last_label_info (Last_Label,
+			     Em_Create_Section_Symbol(PU_section),
+			     ST_pu(pu),
+			     PC2Addr(Offset_From_Last_Label));
+      end_previous_text_region(PU_section, PC);
+    
+    }
   }
 #endif
 
