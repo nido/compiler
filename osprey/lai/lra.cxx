@@ -161,26 +161,26 @@ static BOOL Trace_Move_GRA_Spills;      /* -Wb,-tt54:0x10 */
  * one should the TN be mapped to?)
  */
 static struct {
-  mINT16 first_def;
-  mINT16 last_use;
-  mINT16 exposed_use;
+  mINT32 first_def;
+  mINT32 last_use;
+  mINT32 exposed_use;
 } ded_reg_liveness[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
-inline INT16 ded_reg_first_def (ISA_REGISTER_CLASS cl, REGISTER r) {
+inline INT32 ded_reg_first_def (ISA_REGISTER_CLASS cl, REGISTER r) {
   return ded_reg_liveness[cl][r].first_def;
 }
-static void Set_ded_reg_first_def (ISA_REGISTER_CLASS cl, REGISTER r, INT16 v) {
+static void Set_ded_reg_first_def (ISA_REGISTER_CLASS cl, REGISTER r, INT32 v) {
   ded_reg_liveness[cl][r].first_def = v;
 }
-inline INT16 ded_reg_last_use (ISA_REGISTER_CLASS cl, REGISTER r) {
+inline INT32 ded_reg_last_use (ISA_REGISTER_CLASS cl, REGISTER r) {
   return ded_reg_liveness[cl][r].last_use;
 }
-static void Set_ded_reg_last_use (ISA_REGISTER_CLASS cl, REGISTER r, INT16 v) {
+static void Set_ded_reg_last_use (ISA_REGISTER_CLASS cl, REGISTER r, INT32 v) {
   ded_reg_liveness[cl][r].last_use = v;
 }
-inline INT16 ded_reg_exposed_use (ISA_REGISTER_CLASS cl, REGISTER r) {
+inline INT32 ded_reg_exposed_use (ISA_REGISTER_CLASS cl, REGISTER r) {
   return ded_reg_liveness[cl][r].exposed_use;
 }
-static void Set_ded_reg_exposed_use (ISA_REGISTER_CLASS cl, REGISTER r, INT16 v) {
+static void Set_ded_reg_exposed_use (ISA_REGISTER_CLASS cl, REGISTER r, INT32 v) {
   ded_reg_liveness[cl][r].exposed_use = v;
 }
 #endif
@@ -192,14 +192,14 @@ static void Set_ded_reg_exposed_use (ISA_REGISTER_CLASS cl, REGISTER r, INT16 v)
  */
 typedef struct live_range {
   TN *tn;               /* the live range tn */
-  mINT16 first_def;     /* instruction number for first def in live range. */
-  mINT16 last_use;      /* instruction number for last use in live range. */
-  mINT16 exposed_use;   /* instruction number for last exposed use (if any) */
+  mINT32 first_def;     /* instruction number for first def in live range. */
+  mINT32 last_use;      /* instruction number for last use in live range. */
+  mINT32 exposed_use;   /* instruction number for last exposed use (if any) */
   mUINT8 def_cnt;       /* number of defs in the live range. */
   mUINT8 use_cnt;       /* number of uses in the live range. */
   mUINT8 flags;         /* misc. flags (see definition below) */
   mREGISTER prefer_reg; /* if def of live range is a preferencing copy. */
-  mINT16 first_spill;    /* first spill of exposed global */
+  mINT32 first_spill;    /* first spill of exposed global */
 #ifdef TARG_ST
   OP *extract_op;       /* If this live range is defined by an
 			   extract operation, this is the operation. */
@@ -209,10 +209,10 @@ typedef struct live_range {
 
 #define LR_tn(lr)               ((lr)->tn)
 #ifdef TARG_ST
-inline INT16 LR_first_def (const LIVE_RANGE *lr) {
+inline INT32 LR_first_def (const LIVE_RANGE *lr) {
   return lr->first_def;
 }
-static void Set_LR_first_def (LIVE_RANGE *lr, INT16 v) {
+static void Set_LR_first_def (LIVE_RANGE *lr, INT32 v) {
   lr->first_def = v;
   TN *tn = LR_tn(lr);
   if (!TN_is_local_reg(tn)
@@ -226,10 +226,10 @@ static void Set_LR_first_def (LIVE_RANGE *lr, INT16 v) {
     }
   }
 }
-inline INT16 LR_last_use (const LIVE_RANGE *lr) {
+inline INT32 LR_last_use (const LIVE_RANGE *lr) {
   return lr->last_use;
 }
-static void Set_LR_last_use (LIVE_RANGE *lr, INT16 v) {
+static void Set_LR_last_use (LIVE_RANGE *lr, INT32 v) {
   lr->last_use = v;
   TN *tn = LR_tn(lr);
   if (!TN_is_local_reg(tn)
@@ -243,8 +243,8 @@ static void Set_LR_last_use (LIVE_RANGE *lr, INT16 v) {
     }
   }
 }
-inline INT16 LR_exposed_use (const LIVE_RANGE *lr) { return lr->exposed_use; }
-static void Set_LR_exposed_use (LIVE_RANGE *lr, INT16 v) {
+inline INT32 LR_exposed_use (const LIVE_RANGE *lr) { return lr->exposed_use; }
+static void Set_LR_exposed_use (LIVE_RANGE *lr, INT32 v) {
   lr->exposed_use = v;
   TN *tn = LR_tn(lr);
   if (!TN_is_local_reg(tn)
@@ -343,8 +343,8 @@ typedef struct spill_candidate {
     LIVE_RANGE *spill_lr;
     struct {
       LIVE_RANGE *move_lr;
-      mUINT16 from;
-      mUINT16 to;
+      mUINT32 from;
+      mUINT32 to;
     } s2;
   } u1;
   float cost;
@@ -949,7 +949,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
    FOR_ALL_ISA_REGISTER_CLASS (cl) {
      REGISTER r;
      for (r = REGISTER_MIN; r <= REGISTER_MAX; r++) {
-       Set_ded_reg_first_def (cl, r, INT16_MAX);
+       Set_ded_reg_first_def (cl, r, INT32_MAX);
        Set_ded_reg_last_use (cl, r, 0);
        Set_ded_reg_exposed_use (cl, r, 0);
      }
