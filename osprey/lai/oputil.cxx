@@ -346,7 +346,14 @@ void BB_Sink_Op_Before(BB *bb, OP *op, OP *point)
 #define MIN_INITIAL_SPACING \
   ((mORDER_TYPE)1 << (ORDER_BITS-(sizeof(mMAP_IDX_TYPE)*8)))
 #define INITIAL_SPACING ((ORDER_TYPE)(MIN_INITIAL_SPACING * 8))
+#ifdef TARG_ST
+// [SC] We only guarantee 16 bits for ORDER_TYPE, but note
+// that the type UINT16 is * at least * 16 bits, therefore
+// it is not safe to assume that ((ORDER_TYPE)-1) fits in 16 bits.
+#define MAX_ORDER UINT16_MAX
+#else
 #define MAX_ORDER ((ORDER_TYPE)-1)
+#endif
 
 
 static void setup_ops(BB *bb, OP *first, OP *last, UINT32 len)
