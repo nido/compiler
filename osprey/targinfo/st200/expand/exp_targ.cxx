@@ -2018,7 +2018,9 @@ Expand_Int_Not_Equal (
   TOP   action;
   TN   *tmp1, *tmp2;
 
-  FmtAssert(TN_register_class(src1) == ISA_REGISTER_CLASS_integer &&
+  // [HK] src1 can be a constant, as the argument swap is performed later on in Pick_compare_Top
+//   FmtAssert(TN_register_class(src1) == ISA_REGISTER_CLASS_integer &&
+  FmtAssert((!TN_is_register(src1) || TN_register_class(src1) == ISA_REGISTER_CLASS_integer ) &&
             (!TN_is_register(src2) || TN_register_class(src2) == ISA_REGISTER_CLASS_integer),
 	  ("Expand_Int_Not_Equal: operands have wrong RClass"));
 
