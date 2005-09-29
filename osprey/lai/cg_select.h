@@ -51,6 +51,7 @@ extern BOOL CG_select_spec_loads;
 extern BOOL CG_select_spec_stores;
 extern BOOL CG_select_allow_dup;
 extern INT32 CG_select_force_spec_load;
+extern BOOL CG_select_force_spec_load_overridden;
 extern const char* CG_select_factor;
 
 extern void Convert_Select(RID *, const BB_REGION&);

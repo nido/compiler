@@ -431,7 +431,7 @@ static OPTION_DESC Options_CG[] = {
     "Allow basic blocks duplication for select if conversion"},
 
   { OVK_INT32,	OV_INTERNAL, TRUE, "select_force_spec_load", "",
-    0, 0, 2,	&CG_select_force_spec_load, NULL,
+    0, 0, 2,	&CG_select_force_spec_load, &CG_select_force_spec_load_overridden,
     "force conditional load to be unconditional if possible"},
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_loads", "",
