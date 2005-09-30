@@ -181,7 +181,7 @@ BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
-COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
+COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
 # (cbr) 
 YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
