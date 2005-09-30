@@ -8,6 +8,7 @@
 #include <vector.h>
 #endif // __GNUC__ >=3
 
+#include "cg.h"
 #include "bb.h"
 #include "wn.h"
 #include "wn_core.h"
@@ -460,6 +461,10 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op) {
     int iteration = OP_unrolling(cgir_op);
     operation = LAI_Interface_makeOperation(interface, cgir_op, OPERATOR, iteration,
 	argCount, arguments, resCount, results, clobberCount, clobbers);
+    WN *wn = Get_WN_From_Memory_OP(cgir_op);
+    if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn)) {
+      LAI_Interface_Operation_setTrapFree(interface, operation);
+    }
     if (OP_volatile(cgir_op)) LAI_Interface_Operation_setVolatile(interface, operation);
     if (OP_prefetch(cgir_op)) LAI_Interface_Operation_setPrefetch(interface, operation);
     if (OP_barrier(cgir_op)) LAI_Interface_Operation_setBarrier(interface, operation);
@@ -1072,6 +1077,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
   //
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
+  int logPrePad = 0;
+  while (1<<logPrePad <= CG_LAO_prepadding) ++logPrePad;
+  --logPrePad;
+  int logPostPad = 0;
+  while (1<<logPostPad <= CG_LAO_postpadding) ++logPostPad;
+  --logPostPad;
   LAI_Interface_open(interface, name,
       ConfigureItem_StackModel, stackModel,
       ConfigureItem_SchedKind, CG_LAO_schedkind,
@@ -1083,6 +1094,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
       ConfigureItem_Pipelining, CG_LAO_pipelining,
       ConfigureItem_Renaming, CG_LAO_renaming,
       ConfigureItem_LoopDep, CG_LAO_loopdep,
+      ConfigureItem_LogPrePad, logPrePad,
+      ConfigureItem_LogPostPad, logPostPad,
       ConfigureItem__);
   //
   // Create the LAO BasicBlocks.

@@ -213,6 +213,8 @@ CG_EXPORTED extern INT32 CG_LAO_relaxation;	/* LAO control relaxation level */
 CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
 CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO software renaming level */
 CG_EXPORTED extern INT32 CG_LAO_loopdep;	/* LAO loop dependence level */
+CG_EXPORTED extern INT32 CG_LAO_prepadding;	/* LAO data pre-padding in bytes */
+CG_EXPORTED extern INT32 CG_LAO_postpadding;	/* LAO data post-padding in bytes */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */

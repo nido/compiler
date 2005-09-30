@@ -4,6 +4,8 @@
 #define linux 1
 #define unix 1
 
+
+
 /*
   ConfigureRegionType -- enumerates the ConfigureRegionType types.
 */
@@ -137,6 +139,8 @@ typedef enum {
   ConfigureItem_Residue, // Residue of loop trip count.
   ConfigureItem_Convention, // Calling Convention in use.
   ConfigureItem_StackModel, // See ConfigureStackModel.
+  ConfigureItem_LogPrePad, // Log2 of data pre-padding.
+  ConfigureItem_LogPostPad, // Log2 of data post-padding.
   ConfigureItem_MaxIssue, // Override the maximum issue width.
   ConfigureItem_MinTaken, // Minimum branch taken penalty.
   ConfigureItem__

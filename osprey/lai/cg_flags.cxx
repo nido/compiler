@@ -97,6 +97,8 @@ INT32 CG_LAO_relaxation = 0;
 INT32 CG_LAO_pipelining = 0;
 INT32 CG_LAO_renaming = 0;
 INT32 CG_LAO_loopdep = 1;
+INT32 CG_LAO_prepadding = 0;
+INT32 CG_LAO_postpadding = 0;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;

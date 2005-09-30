@@ -702,9 +702,9 @@ Configure_Target ()
 
   // [CM]: Configuration for dismissible loads
   if (Is_Target_st235()) {
-    if (!Enable_Dismissible_Load_Set) {
-      Enable_Dismissible_Load = FALSE;
-    }    
+    //BD3 if (!Enable_Dismissible_Load_Set) {
+      //BD3 Enable_Dismissible_Load = FALSE;
+    //BD3 }    
     if (!Enable_Conditional_Load_Set) {
       Enable_Conditional_Load = TRUE;
     }    

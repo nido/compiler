@@ -189,6 +189,8 @@ static BOOL CG_LAO_relaxation_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
 static BOOL CG_LAO_renaming_overridden = FALSE;
 static BOOL CG_LAO_loopdep_overridden = FALSE;
+static BOOL CG_LAO_prepadding_overridden = FALSE;
+static BOOL CG_LAO_postpadding_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
@@ -454,7 +456,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_compensation", "",
     0, 0, 3,	&CG_LAO_compensation, &CG_LAO_compensation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
-    3, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
+    2, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_relaxation", "",
     2, 0, 3,	&CG_LAO_relaxation, &CG_LAO_relaxation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
@@ -463,6 +465,10 @@ static OPTION_DESC Options_CG[] = {
     2, 0, 2,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_loopdep", "",
     1, 0, 3,	&CG_LAO_loopdep, &CG_LAO_loopdep_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_prepadding", "",
+    0, 0, 65536,	&CG_LAO_prepadding, &CG_LAO_prepadding_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_postpadding", "",
+    0, 0, 65536,	&CG_LAO_postpadding, &CG_LAO_postpadding_overridden },
 #endif
 
 #ifdef CGG_ENABLED
@@ -1624,13 +1630,15 @@ CG_Init (void)
     if (!CG_LAO_compensation_overridden) CG_LAO_compensation = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
-      else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
-      else CG_LAO_speculation = 3;
+      else if (!Enable_Dismissible_Load) CG_LAO_speculation = 1;
+      else CG_LAO_speculation = 2;
     }
     if (!CG_LAO_relaxation_overridden) CG_LAO_relaxation = 2;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
     if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 2;
     if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
+    if (!CG_LAO_prepadding_overridden) CG_LAO_prepadding = 0;
+    if (!CG_LAO_postpadding_overridden) CG_LAO_postpadding = 0;
     lao_init();
   }
 #endif

@@ -1870,7 +1870,7 @@ LOOP_INVAR_CODE_MOTION :: Scalarization_Is_Profitable (LI_MEMORY_INFO *memory, B
 
     /* In case of speculation, check if dismissible loads are
        allowed. */
-    if (speculate && !Enable_Dismissible_Load)
+    if (speculate && !(Enable_Dismissible_Load && PROC_has_dismissible_load()))
 	return FALSE;
 
     /* Count the number of load and store operations. */
