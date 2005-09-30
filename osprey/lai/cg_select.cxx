@@ -34,16 +34,15 @@
  *
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_spec_loads=TRUE    enable conditional or speculative loads 
  * -CG:select_spec_stores=TRUE   enable conditional or blackhole stores
  *
  * The following flags to drive the algorithm and heuristics.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_force_spec_load=[0,1,2]  speculate loads instead of predication
- *                              0 = always used ldwc
- *                              1 = speculate safe loads
+ * -CG:select_spec_loads=[0,1,2]  speculate loads 
+ *                              0 = no load speculation
+ *                              1 = speculate safe loads (default)
  *                              2 = speculate all loads 
  *
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
@@ -150,14 +149,9 @@ static TN_MAP btn_map = NULL;
  *   flags:
  * ====================================================================
  */
-BOOL CG_select_spec_loads = TRUE;
-BOOL CG_select_spec_loads_overridden = FALSE;
 BOOL CG_select_spec_stores = TRUE;
-BOOL CG_select_spec_stores_overidden = FALSE;
 BOOL CG_select_allow_dup = TRUE;
-BOOL CG_select_allow_dup_overridden = FALSE;
-INT32 CG_select_force_spec_load = 0;
-BOOL CG_select_force_spec_load_overridden = FALSE;
+INT32 CG_select_spec_loads = 1;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
 const char* CG_select_factor = "1.1";
@@ -720,18 +714,15 @@ Can_Speculate_BB(BB *bb)
     }
 
     else if (OP_load (op)) {
-      if (!(PROC_has_predicate_loads() && Enable_Conditional_Load) ||
-          CG_select_force_spec_load) {
-        if (CG_select_force_spec_load == 2) 
+      if (CG_select_spec_loads == 2) 
+        continue;
+      else if (CG_select_spec_loads == 1) {
+        WN *wn = Get_WN_From_Memory_OP(op);
+        if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
           continue;
-        else {
-          WN *wn = Get_WN_From_Memory_OP(op);
-          if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
-            continue;
-        }
       }
 
-      if (!CG_select_spec_loads || OP_volatile(op))
+      if (OP_volatile(op))
         return FALSE;
 
       // loads will be optimized only if hardware support
@@ -2629,10 +2620,6 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   select_factor = atof(CG_select_factor);
   branch_penalty = CGTARG_Branch_Taken_Penalty();
 
-  if (!CG_select_force_spec_load_overridden && 
-      (!Enable_Conditional_Load || !PROC_has_predicate_loads()))
-    CG_select_force_spec_load = 1;
-  
   if (select_factor == 0.0) return;
 
   Trace_Select_Init();
