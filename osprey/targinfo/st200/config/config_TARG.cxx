@@ -104,6 +104,10 @@ BOOL Enable_Conditional_Store_Set;
 BOOL Enable_Conditional_Prefetch = FALSE;
 BOOL Enable_Conditional_Prefetch_Set;
 
+/* [HK]: Enable Constant Division transformation into mul */
+BOOL Enable_Cst_Div = TRUE;
+BOOL Enable_Cst_Div_Set;
+
 // [CG]: Enable Dismissible Loads generation.
 BOOL Enable_Dismissible_Load = TRUE;
 BOOL Enable_Dismissible_Load_Set;
@@ -189,6 +193,11 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "conditional_prefetch", "",
     0, 0, 0,    &Enable_Conditional_Prefetch, &Enable_Conditional_Prefetch_Set,
     "Enable generation of predicated prefetch" },
+
+  // [HK]
+  { OVK_BOOL,   OV_VISIBLE,    TRUE, "division_by_constant", "",
+    0, 0, 0,    &Enable_Cst_Div, &Enable_Cst_Div_Set,
+    "Enable generation of division by constant code" },
 
   // [CG]
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "dismissible_load", "",
