@@ -1141,6 +1141,7 @@ WN_To_INTRINSIC (
   INTRINSIC id = INTRINSIC_INVALID;
 
   // [CG]: select 32x32->64 multiplies
+  // [HK] added selection for INTCONSTI8 not overflowing 32 bits
   if (opcode == OPC_I8MPY || opcode == OPC_U8MPY) {
     if (WN_opcode(kids[0]) == OPC_I8I4CVT &&
 	WN_opcode(kids[1]) == OPC_I8I4CVT) {
@@ -1152,7 +1153,22 @@ WN_To_INTRINSIC (
       id = INTRN_MULUN;
       kids[0] = WN_kid0(kids[0]);
       kids[1] = WN_kid0(kids[1]);
+    } else if (WN_opcode(kids[0]) == OPC_I8I4CVT &&
+	WN_opcode(kids[1]) == OPC_I8INTCONST) {
+	if ( WN_const_val(kids[1]) == (INT64)((INT32)WN_const_val(kids[1]))){
+	    id = INTRN_MULN;
+	    kids[0] = WN_kid0(kids[0]);
+	    kids[1] = WN_CreateIntconst(OPR_INTCONST, MTYPE_I4, MTYPE_V, WN_const_val(kids[1]));
+	}
+    } else if (WN_opcode(kids[1]) == OPC_I8I4CVT &&
+	WN_opcode(kids[0]) == OPC_I8INTCONST) {
+	if ( WN_const_val(kids[0]) == (INT64)((INT32)WN_const_val(kids[0]))){
+	    id = INTRN_MULN;
+	    kids[0] = WN_kid0(kids[1]);
+	    kids[1] = WN_CreateIntconst(OPR_INTCONST, MTYPE_I4, MTYPE_V, WN_const_val(kids[0]));
+	}
     }
+
   }
 
   // [HK]: select x^2 for F4 type
