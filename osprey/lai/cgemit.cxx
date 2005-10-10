@@ -5975,7 +5975,7 @@ EMT_Emit_PU (
   OP *op_last;
   if (bb_last && (op_last = (BB_last_op (bb_last))) &&
       OP_call(op_last))
-    fprintf(Output_File, "\t%s %d\n", AS_SPACE, 1);
+    fprintf(Output_File, "\t%s %d\n", AS_SPACE, 4);
 #endif
 
 #ifdef TARG_ST
