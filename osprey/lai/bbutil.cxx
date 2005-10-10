@@ -1284,6 +1284,12 @@ BB_xfer_op( BB *bb )
   /* Test the last two OPs looking for the terminating xfer OP (it may not
    * be the last OP if we have put something in the delay slot).
    */
+#ifdef TARG_ST
+  // FdF 20051010: The bundler may add "nop" or "goto 1" instructions
+  // at the end of a basic block.
+  while (op && (OP_noop(op) || OP_nop2goto(op)))
+    op = OP_prev(op);
+#endif
   if (op) {
     if (OP_xfer(op)) return op;
 
