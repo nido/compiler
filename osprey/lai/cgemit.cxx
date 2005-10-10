@@ -5973,7 +5973,7 @@ EMT_Emit_PU (
   // that $r63 is set with an address in the current function (needed
   // for unwinding).
   OP *op_last;
-  if (bb_last && (op_last = (BB_last_op (bb_last))) &&
+  if (bb_last && (op_last = (BB_xfer_op (bb_last))) &&
       OP_call(op_last)) {
     ISA_BUNDLE bundle[ISA_PACK_MAX_INST_WORDS];
     OP *noop = Mk_OP(TOP_nop);
