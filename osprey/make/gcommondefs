@@ -148,7 +148,7 @@ ifeq ($(BUILD_COMPILER), GNU)
 ifeq ($(BUILD_OS),SUNOS5)
 
 BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
-COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
 
 INSTALL_LOC=$(BINUTILS_GNU_LOC)
 
@@ -159,18 +159,18 @@ PREFIX=i386-mingw32-
 endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
-COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
-#COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+#COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
 #COMPILER_LOC=/apa/comp/pro64-cygwin/install/x-mallinfo-cygwin32-1.3.12/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
 # (cbr)
 YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
-PREFIX=i686-pc-cygwin32-
-#PREFIX=i386-pc-cygwin-
+#PREFIX=i686-pc-cygwin32-
+PREFIX=i386-pc-cygwin-
 endif
 
 ifeq ($(HOST_OS),SUNOS5)
-COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/gcc-2.95.2/bin/
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
 BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 # (cbr) 
 YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
@@ -181,7 +181,7 @@ BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
-COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-2.95.3/bin/
+COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
 # (cbr) 
 YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
@@ -193,11 +193,11 @@ PREFIX=i386-mingw32-
 endif
 
 ifeq ($(HOST_OS),CYGWIN_NT)
-COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
-#COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+#COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
 BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i686-pc-cygwin32-
-#PREFIX=i386-pc-cygwin-
+#PREFIX=i686-pc-cygwin32-
+PREFIX=i386-pc-cygwin-
 endif
 
 ifeq ($(HOST_OS),LINUX)
