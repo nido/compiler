@@ -5960,10 +5960,23 @@ EMT_Emit_PU (
   }
 
   /* Assemble each basic block in the PU */
+  BB *bb_last = NULL;
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     Setup_Text_Section_For_BB(bb);
     EMT_Assemble_BB (bb, rwn);
+    bb_last = bb;
   }
+
+#ifdef TARG_ST
+  // 20051010: Fix for ddts 23277: Insert a word at the end of a
+  // function that ends with a procedure call (must be noreturn), so
+  // that $r63 is set with an address in the current function (needed
+  // for unwinding).
+  OP *op_last;
+  if (bb_last && (op_last = (BB_last_op (bb_last))) &&
+      OP_call(op_last))
+    fprintf(Output_File, "\t%s %d\n", AS_SPACE, 1);
+#endif
 
 #ifdef TARG_ST
   // [CL] record end of final BB for this PU, so that this PU and the
