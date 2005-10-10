@@ -5974,8 +5974,13 @@ EMT_Emit_PU (
   // for unwinding).
   OP *op_last;
   if (bb_last && (op_last = (BB_last_op (bb_last))) &&
-      OP_call(op_last))
-    fprintf(Output_File, "\t%s %d\n", AS_SPACE, 4);
+      OP_call(op_last)) {
+    ISA_BUNDLE bundle[ISA_PACK_MAX_INST_WORDS];
+    OP *noop = Mk_OP(TOP_nop);
+    Set_OP_end_group(noop);
+    OP_scycle(noop) = -1;
+    Assemble_OP(noop, bb_last, bundle, 0);
+  }
 #endif
 
 #ifdef TARG_ST
