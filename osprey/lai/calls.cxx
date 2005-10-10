@@ -670,6 +670,16 @@ Can_Be_Tail_Call (
   /* The exit block can have only one pred, and it must be a call block.
    */
   pred = BB_Unique_Predecessor(exit_bb);
+#ifdef TARG_ST
+  // FdF 20051010, ddts 23277: In case of a "noreturn" call, the exit
+  // block is also the call block.
+  if (BB_call(exit_bb)) {
+    Is_True(WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(exit_bb), ANNOT_CALLINFO) ))),
+	    ("Only 'noreturn' call can be both CALL and EXIT before tail call optimization"));
+    pred = exit_bb;
+    exit_bb = NULL;
+  }
+#endif
   if (!pred || !BB_call(pred)) return NULL;
 
   /* Get some info about the call and the callee.
@@ -780,6 +790,11 @@ Can_Be_Tail_Call (
    */
   MEM_POOL_Push(&MEM_local_pool);
   fvals = hTN_MAP_Create(&MEM_local_pool);
+
+#ifdef TARG_ST
+  // FdF 20051010, ddts23277: In case of a "noreturn" call, there is no exit_bb.
+  if (exit_bb)
+#endif
 
   FOR_ALL_BB_OPs_FWD(exit_bb, op) {
     if (OP_copy(op)) {
@@ -932,11 +947,19 @@ Optimize_Tail_Calls (
        * The call block becomes the new exit block. The exit block
        * is removed from the succ chain and will be removed by cflow later.
        */
+#ifdef TARG_ST
+      // FdF 20051010, ddts 23277: In case of a "noreturn" call, the
+      // CALL and the EXIT bb are the same
+      if (call_bb != exit_bb) {
+#endif
       BB_Transfer_Exitinfo(exit_bb, call_bb);
       Unlink_Pred_Succ(call_bb, exit_bb);
       Exit_BB_Head = BB_LIST_Delete(exit_bb, Exit_BB_Head);
       Exit_BB_Head = BB_LIST_Push(call_bb, Exit_BB_Head, &MEM_pu_pool);
       Remove_BB(exit_bb);
+#ifdef TARG_ST
+      }
+#endif
 
       if (Trace_EE) {
 	#pragma mips_frequency_hint NEVER
