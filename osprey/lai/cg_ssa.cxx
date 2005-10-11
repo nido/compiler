@@ -2615,8 +2615,8 @@ Normalize_Psi_Operations()
 	 reordering the PSI opnds if guards are disjoints, or by
 	 introducing a repair variable otherwise. */
     
-      BOOL can_reorder = TRUE;
       for (int opndi = 1; opndi < PSI_opnds(op); opndi++) {
+	BOOL reorder_psi_args = TRUE;
 	TN *tn_opndi = PSI_opnd(op, opndi);
 	TN *tn_guardi = PSI_guard(op, opndi);
 	OP *op_defi = TN_ssa_def(tn_opndi);
@@ -2628,50 +2628,99 @@ Normalize_Psi_Operations()
 	  OP *op_defj = TN_ssa_def(tn_opndj);
 	  Is_True(op_defj && (opndj == 0 || OP_code(op_defj) != TOP_psi), ("Illegal PSI argument %d", opndj));
 	  Is_True(OP_code(op_defj) != TOP_psi || PSI_guard(op, opndj) == True_TN, ("Illegal Guard on PSI argument"));
-
-	  if (OP_dominate(op_defj, op_defi)) break;
+	  
+	  if (OP_dominate(op_defj, op_defi)) {
+	    // opndj is the last operand that is dominated by opndi
+	    opndj++;
+	    break;
+	  }
 	  if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
-	    can_reorder = FALSE;
+	    // opndj is the first operand with non disjoint predicate
+	    // with opndi
+	    reorder_psi_args = FALSE;
 	    break;
 	  }
 	}
 
-	if (can_reorder) {
-	  if (Trace_SSA_Out && opndi != opndj+1) {
-	    fprintf(TFile, "PSI Normalize: Move operand %d before operand %d.\n", opndj+1, opndi);
-	  }
-	  PSI_move_opnd(op, opndi, opndj+1);
+	if (opndj == opndi) {
+	  // Nothing to do. Arguments are in correct order compared to
+	  // the dominance order of their definitions.
 	}
-	else {
-	  // Otherwise, a repair is needed.
+
+	else if (reorder_psi_args) {
+	  // Reorder the arguments in the PSI, since predicate domains
+	  // of predicates for operands from opndj to opndi-1 are
+	  // disjoints with predicate for opndi.
+	  if (Trace_SSA_Out)
+	    fprintf(TFile, "PSI Normalize: Move operand %d before operand %d.\n", opndi, opndj);
+
+	  PSI_move_opnd(op, opndi, opndj);
+	}
+
+	/* Definitions for operands opndj to opndi-1 do not dominate
+	   definition for operand opndi, and at least one of the
+	   predicates for these operands intersect with the predicate
+	   for opndi. So, dominance order must be repaired, to match
+	   the order in the PSI operation. This can be done in three
+	   different ways:
+
+	   1/ Create a duplicate of defi that is moved below defi-1
+	   2/ if (opndj == opndi-1), create a duplicate of defj
+	      that is moved above defi.
+	   3/ Insert a conditional move of defi below defi-1
+	  */
+
+	// [CG]: Memory operations can not be moved without checking
+	// aliasing with all crossed operations. For the moment
+	// disable move of any memory operation
+	else if (!OP_volatile(op_defi) /*[CG]*/&& !OP_memory(op_defi)) {
+	  /* 1/ Move duplicate of defi below defi-1. */
+
+	  if (Trace_SSA_Out && opndi != opndj)
+	    fprintf(TFile, "PSI Normalize: 1/ Duplicate operation to match order in PSI operation\n");
 
 	  TN *tn_repair = Copy_TN(tn_opndi);
+	  OP *op_repair = Dup_OP(op_defi);
 	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
-	  
-	  // [CG]: Memory operations can not be moved without checking
-	  // aliasing with all crossed operations. For the moment
-	  // disable move of any memory operation
-	  if (OP_volatile(op_defi) /*[CG]*/|| OP_memory(op_defi)) {
-	    /* The original instruction cannot be duplicated, introduce
-	       a new TN defined by a predicated MOVE instruction. */
-	    if (Trace_SSA_Out && opndi != opndj+1) {
-	      fprintf(TFile, "PSI Normalize: Create copy operation to match order in PSI operation\n");
-	    }
-	    OPS cmov_ops = OPS_EMPTY;  
-	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops);
-	    BB_Insert_Ops_After(OP_bb(op), op_prev, &cmov_ops);
+
+	  Set_OP_result(op_repair, 0, tn_repair);
+	  Set_PSI_opnd(op, opndi, tn_repair);
+	  BB_Insert_Op_After(OP_bb(op_prev), op_prev, op_repair);
+	}
+
+	else {
+	  OP *op_defj = TN_ssa_def(PSI_opnd(op, opndj));
+	  if ((opndj == (opndi-1)) &&
+	      OP_move(op_defj) &&
+	      (TN_is_constant(OP_Copy_Operand_TN(op_defj)) ||
+	       TN_is_zero(OP_Copy_Operand_TN(op_defj)))) {
+	    /* 2/ Create duplicate of defj before defi. */
+
+	    if (Trace_SSA_Out && opndi != opndj)
+	      fprintf(TFile, "PSI Normalize: 2/ Duplicate operation to match order in PSI operation\n");
+
+	    TN *tn_repair = Copy_TN(tn_opndi);
+	    OP *op_repair = Dup_OP(op_defj);
+
+	    Set_OP_result(op_repair, 0, tn_repair);
+	    Set_PSI_opnd(op, opndj, tn_repair);
+	    BB_Insert_Op_Before(OP_bb(op_defi), op_defi, op_repair);
 	  }
 	  else {
+	    /* 3/ The original instruction cannot be duplicated.
+	          Introduce a new TN defined by a predicated MOVE
+	          instruction. */
+	    if (Trace_SSA_Out && opndi != opndj)
+	      fprintf(TFile, "PSI Normalize: 3/ Create copy operation to match order in PSI operation\n");
 
-	    if (Trace_SSA_Out && opndi != opndj+1) {
-	      fprintf(TFile, "PSI Normalize: Duplicate operation to match order in PSI operation\n");
-	    }
+	    TN *tn_repair = Copy_TN(tn_opndi);
+	    OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
+	    OPS cmov_ops = OPS_EMPTY;
 
-	    OP *op_repair = Dup_OP(op_defi);
-	    Set_OP_result(op_repair, 0, tn_repair);
-	    BB_Insert_Op_After(OP_bb(op), op_prev, op_repair);
+	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops);
+	    Set_PSI_opnd(op, opndi, tn_repair);
+	    BB_Insert_Ops_After(OP_bb(op_prev), op_prev, &cmov_ops);
 	  }
-	  Set_PSI_opnd(op, opndi, tn_repair);
 	}
 
 	tn_opndi = PSI_opnd(op, opndi);
@@ -2690,7 +2739,7 @@ Normalize_Psi_Operations()
 
 	/* The definition cannot be guarded or has been
 	   speculated. Introduce a predicated move instruction. */
-	if (Trace_SSA_Out && opndi != opndj+1) {
+	if (Trace_SSA_Out && opndi != opndj) {
 	  fprintf(TFile, "PSI Normalize: Introduce predicated move to match predicate in PSI operation\n");
 	}
 
