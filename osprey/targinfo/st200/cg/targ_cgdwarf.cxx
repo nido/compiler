@@ -39,7 +39,7 @@ using std::list;
 #else
 #include <list.h>
 #endif // __GNUC__ >= 3
-
+#include "W_alloca.h"
 #include "defs.h"
 #include "erglob.h"
 #include "glob.h"
