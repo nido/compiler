@@ -267,14 +267,14 @@ Subclass_Regs_Disallowed (GRA_BB *gbb)
 {
   LUNIT *lunit = gbb_mgr.Split_LUNIT(gbb);
 
+  // There are subclass restrictions only if there are
+  // references to the tn in the block.  If there are
+  // references, then there is an lunit.
+
   if (lunit != NULL) {
     return lunit->SubClass_Disallowed();
-  } else {
-    ISA_REGISTER_CLASS rc = split_lrange->Rc();
-    return REGISTER_SET_Difference
-      (REGISTER_CLASS_allocatable(rc),
-       split_lrange->SubClass_Allowed_Registers (gbb->Region()));
   }
+  return REGISTER_SET_EMPTY_SET;
 }
 
 #endif
