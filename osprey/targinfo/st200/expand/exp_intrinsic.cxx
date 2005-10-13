@@ -6155,14 +6155,12 @@ Expand__swapbh(
  OPS* ops
 )
 {
-  TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_21_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-  TN *c8 = Gen_Literal_TN(__EXTS32TOS64(8), 4) ;
+  TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_shru_i,	r0_20_0,	i0,	c8,	ops) ;
-  Build_OP (	TOP_shl_i,	r0_21_0,	i0,	c8,	ops) ;
-  Build_OP (	TOP_or_r,	o0,	r0_20_0,	r0_21_0,	ops) ;
+  Build_OP (	TOP_bswap_r,	r0_16_0,	i0,	ops) ;
+  Build_OP (	TOP_shru_i,	o0,	r0_16_0,	c16,	ops) ;
 } /* Expand__swapbh */
 
 /*
