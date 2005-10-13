@@ -208,6 +208,17 @@ CGTARG_Forbidden_LRA_Registers (ISA_REGISTER_CLASS rclass)
   return CGTARG_Forbidden_GRA_Registers (rclass);
 }
 
+REGISTER_SET
+CGTARG_Forbidden_Result_Registers (const OP *op, INT resnum)
+{
+  REGISTER_SET s = REGISTER_SET_EMPTY_SET;
+
+  if (Is_Target_st235 () && OP_load (op)) {
+    s = REGISTER_SET_Union1 (s, TN_register(Zero_TN));
+  }
+  return s;
+}
+
 #ifdef TARG_ST
 /* ====================================================================
  *   CGTARG_Prefered_GRA_Registers 
