@@ -50,6 +50,7 @@ main ()
   ISA_Create_Lit_Class("btarg", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("imm", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("isrc2", SIGNED, SignedBitRange(9), LIT_RANGE_END);
+  ISA_Create_Lit_Class("issrc2", SIGNED, SignedBitRange(9), LIT_RANGE_END);
   ISA_Create_Lit_Class("sbrknum", UNSIGNED, UnsignedBitRange(21), LIT_RANGE_END);
   ISA_Create_Lit_Class("xsrc2", SIGNED, SignedBitRange(32), LIT_RANGE_END);
  
