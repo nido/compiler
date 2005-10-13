@@ -6159,7 +6159,7 @@ Expand__swapbh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_bswap_r,	r0_16_0,	i0,	ops) ;
+  Build_OP (	TOP_bswap,	r0_16_0,	i0,	ops) ;
   Build_OP (	TOP_shru_i,	o0,	r0_16_0,	c16,	ops) ;
 } /* Expand__swapbh */
 
@@ -6331,6 +6331,74 @@ Expand__xshrw(
 /*
 @@@  case INTRN_XSHRW:
 @@@    Expand__xshrw(result[0],opnd[0],opnd[1],opnd[2],ops) ;
+@@@  break ;
+*/
+
+static void
+Expand__asm_n(
+ int asm_n,
+ TN* o0,
+ TN* i0,
+ TN* i1,
+ OPS* ops
+)
+{
+    typedef struct { TOP r ; TOP i ; } TOPpairs ;
+    TOPpairs toppairs [] = { { TOP_asm_0,  TOP_asm_16_i },
+			     { TOP_asm_1,  TOP_asm_17_i },
+			     { TOP_asm_2,  TOP_asm_18_i },
+			     { TOP_asm_3,  TOP_asm_19_i },
+			     { TOP_asm_4,  TOP_asm_20_i },
+			     { TOP_asm_5,  TOP_asm_21_i },
+			     { TOP_asm_6,  TOP_asm_22_i },
+			     { TOP_asm_7,  TOP_asm_23_i },
+			     { TOP_asm_8,  TOP_asm_24_i },
+			     { TOP_asm_9,  TOP_asm_25_i },
+			     { TOP_asm_10, TOP_asm_26_i },
+			     { TOP_asm_11, TOP_asm_27_i },
+			     { TOP_asm_12, TOP_asm_28_i },
+			     { TOP_asm_13, TOP_asm_29_i },
+			     { TOP_asm_14, TOP_asm_30_i },
+			     { TOP_asm_15, TOP_asm_31_i }
+    } ;
+    /* Half of asm_n are by convention for register, register, the upper being used for register, immediate */
+    TOP top = (asm_n >= 0) && (asm_n < sizeof(toppairs)/sizeof(toppairs[0])) 
+	? toppairs[asm_n].r
+	: TOP_UNDEFINED ;    
+    /* Can we produce the immediates ? */
+    if (TN_is_rematerializable(i1)) {
+	WN *wn = TN_home(i1) ;
+	if (WN_operator_is(wn, OPR_INTCONST)) {
+	    TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
+	    TOP top_ = TOP_opnd_immediate_variant(top, 1, WN_const_val(wn) ) ;	   
+	    if (top_ == TOP_UNDEFINED) {
+		TN *r = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+		Build_OP (	TOP_mov_i,	r,	cunknown,	ops) ;
+		Build_OP (	top ,  		o0, 	i0,  		r, 	ops) ;
+	    } else {
+		Build_OP (	top_ ,  	o0, 	i0, 		cunknown, 	ops) ;
+	    }
+	}
+    } else if (TN_is_zero(i1)) { 
+	Build_OP ( top ,  o0, i0, Zero_TN, ops) ;
+    } else if (TN_has_value(i1)) {
+	TN *cunknown = Gen_Literal_TN(TN_value(i1), 4) ;
+	TOP top_ = TOP_opnd_immediate_variant(top, 1, TN_value(i1) ) ;
+	if (top_ == TOP_UNDEFINED) {
+	    TN *r = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+	    Build_OP (	TOP_mov_i,	r,	cunknown,	ops) ;
+	    Build_OP (	top ,  		o0, 	i0,  		r, 	ops) ;
+	} else {
+	    Build_OP (	top_ ,  	o0, 	i0, 		cunknown, 	ops) ;
+	}
+    } else {
+	Build_OP ( top,	o0,	i0,	i1,	ops) ;	
+    }
+} /* Expand__asm_n */
+
+/*
+@@@  case INTRN_ASM_N:
+@@@    Expand__asm_n(n,result[0],opnd[0],opnd[1],ops) ;
 @@@  break ;
 */
 
@@ -7056,6 +7124,54 @@ Exp_Intrinsic_Op (
     break ;
     case INTRN_XSHRW:
       Expand__xshrw(result[0],opnd[0],opnd[1],opnd[2],ops) ;
+    break ;
+    case INTRN_ASM_0:
+      Expand__asm_n(0, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_1:
+      Expand__asm_n(1, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_2:
+      Expand__asm_n(2, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_3:
+      Expand__asm_n(3, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_4:
+      Expand__asm_n(4, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_5:
+      Expand__asm_n(5, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_6:
+      Expand__asm_n(6, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_7:
+      Expand__asm_n(7, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_8:
+      Expand__asm_n(8, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_9:
+      Expand__asm_n(9, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_10:
+      Expand__asm_n(10, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_11:
+      Expand__asm_n(11, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_12:
+      Expand__asm_n(12, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_13:
+      Expand__asm_n(13, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_14:
+      Expand__asm_n(14, result[0],opnd[0],opnd[1],ops) ;
+    break ;
+    case INTRN_ASM_15:
+      Expand__asm_n(15, result[0],opnd[0],opnd[1],ops) ;
     break ;
     default:
       FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s", INTRN_c_name(id)));
