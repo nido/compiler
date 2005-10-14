@@ -635,7 +635,7 @@ Op_Uses_TN(TN *spill_tn, INT opnum)
   BOOL is_local_tn = TN_is_local_reg (spill_tn);
   REGISTER spill_reg = REGISTER_UNDEFINED;
 #ifdef TARG_ST
-  REGISTER_SET spill_nregs;
+  INT spill_nregs;
 #endif
   OP *op = OP_VECTOR_element(Insts_Vector, opnum);
   ISA_REGISTER_CLASS cl = TN_register_class(spill_tn);
