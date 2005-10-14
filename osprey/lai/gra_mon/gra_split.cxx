@@ -316,7 +316,11 @@ Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
   if (BB_call(gbb->Bb())) {
     if (split_lrange->Spans_Infreq_Call() ||
 	GTN_SET_MemberP(BB_live_out(gbb->Bb()),tn)) {
+#ifdef TARG_ST
+      used = REGISTER_SET_Union(used, BB_call_clobbered(gbb->Bb(), rc));
+#else
       used = REGISTER_SET_Union(used, REGISTER_CLASS_caller_saves(rc));
+#endif
 #ifdef HAS_STACKED_REGISTERS
       if (REGISTER_Has_Stacked_Registers(rc)) 
         used = REGISTER_SET_Union(used, stacked_caller_used);
@@ -1644,6 +1648,9 @@ Fix_Call_Info( LRANGE* lrange )
 
   lrange->Spans_A_Call_Reset();
   lrange->Spans_Infreq_Call_Reset();
+#ifdef TARG_ST
+  lrange->Set_Call_Clobbered(REGISTER_SET_EMPTY_SET);
+#endif
 
   for (iter.Init(lrange); ! iter.Done(); iter.Step()) {
     GRA_BB* gbb = iter.Current();
@@ -1656,7 +1663,13 @@ Fix_Call_Info( LRANGE* lrange )
 
       if (gbb->Setjmp())
         lrange->Spans_A_Setjmp_Set();
+#ifdef TARG_ST
+      lrange->Set_Call_Clobbered (REGISTER_SET_Union (lrange->Call_Clobbered(),
+						      BB_call_clobbered(gbb->Bb(),
+									lrange->Rc())));
+#else
       return;
+#endif
     }
   }
 }

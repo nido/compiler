@@ -147,6 +147,9 @@ LRANGE_MGR::Create_Complement( TN* tn )
   // Why +2?  I think because 0 is reserved.
   result->u.c.live_bb_set = BB_SET_Create_Empty(PU_BB_Count+2,GRA_pool);
   result->u.c.global_pref_set = NULL;
+#ifdef TARG_ST
+  result->u.c.call_clobbered = REGISTER_SET_EMPTY_SET;
+#endif
   gra_region_mgr.Complement_Region()->Add_LRANGE(result);
   TN_MAP_Set(tn_map,tn,result);
   if (TN_is_save_reg(tn))
@@ -224,7 +227,12 @@ LRANGE::Candidate_Reg_Count(void) {
     region = Region();
   else region = gra_region_mgr.Complement_Region();
   if ( Spans_A_Call() ) 
+#ifdef TARG_ST
+    return REGISTER_SET_Size (REGISTER_SET_Difference(region->Registers_Available(rc),
+						      Call_Clobbered()));
+#else
     return region->Callee_Saves_Registers_Available_Count(rc);
+#endif
   else return REGISTER_SET_Size(region->Registers_Available(rc));
 }	
 
@@ -600,9 +608,10 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
   if (   Type() != LRANGE_TYPE_LOCAL && TN_is_save_reg(Tn())) {
     REGISTER sv_reg = TN_save_reg(Tn());
 #ifdef TARG_ST
-    REGISTER_SET sv_set = REGISTER_SET_EMPTY_SET;
-    for (INT i = 0; i < NHardRegs(); i++)
-      sv_set = REGISTER_SET_Union1(sv_set, sv_reg++);
+    REGISTER_SET sv_set = REGISTER_SET_Range (sv_reg, sv_reg + NHardRegs() - 1);
+    if (GRA_spill_to_caller_save) {
+      sv_set = REGISTER_SET_Union (sv_set, REGISTER_CLASS_caller_saves (rc));
+    }
     allowed = REGISTER_SET_Intersection(allowed, sv_set);
 #else
     REGISTER_SET singleton = REGISTER_SET_Union1(REGISTER_SET_EMPTY_SET,sv_reg);
@@ -679,8 +688,12 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
 #endif
 
     if ( Spans_A_Call() ) {
+#ifdef TARG_ST
+      return REGISTER_SET_Difference(allowed, Call_Clobbered());
+#else
       return REGISTER_SET_Difference(allowed,
 				     REGISTER_CLASS_caller_saves(rc));
+#endif
     } else {
       return allowed;
     }
@@ -698,9 +711,14 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
       if ( nlr->Allocated() )
         allowed = REGISTER_SET_Difference1(allowed, nlr->Reg());
     }
+
     if ( Spans_A_Call() ) {
+#ifdef TARG_ST
+      return REGISTER_SET_Difference(allowed, Call_Clobbered());
+#else
       return REGISTER_SET_Difference(allowed,
 				     REGISTER_CLASS_caller_saves(rc));
+#endif
     } else {
       return allowed;
     }
@@ -907,11 +925,40 @@ LRANGE::Print_Local_Colorability (FILE *f)
   fprintf (f, "Neighbors left = %d, Conflict = %d, Candidates = %d %s locally colorable", 
 	   (int)Neighbors_Left (), (int)conflict, (int)candidates,
 	   ! Locally_Colorable() ? "not" : "");
+  if (Spans_A_Call()) {
+    fprintf (f, " spans-call");
+  }
+  if (Spans_Infreq_Call()) {
+    fprintf (f, " spans-infreq-call");
+  }
   if (! Locally_Colorable ()) {
     fprintf (f, " Colorability Benefit = %g", (double)colorability_benefit);
   }
 }
 
+REGISTER_SET
+LRANGE::Call_Clobbered (void)
+{
+  if (Type() == LRANGE_TYPE_COMPLEMENT
+      && GRA_use_interprocedural_info) {
+    return u.c.call_clobbered;
+  } else {
+    return REGISTER_CLASS_caller_saves(Rc());
+  }
+}
+
+void
+LRANGE::Set_Call_Clobbered (REGISTER_SET r)
+{
+  if (Type() == LRANGE_TYPE_COMPLEMENT) {
+    u.c.call_clobbered = r;
+  }
+  // [SC] Otherwise ignore it.  Local lranges should
+  // never be call clobbered, and region lranges should
+  // rarely be call clobbered, so do not keep accurate
+  // information for them, to save space in the LRANGE
+  // data structure.
+}
 #endif
 /////////////////////////////////////
 // put here because in the header file, gbb_mgr has not yet been defined

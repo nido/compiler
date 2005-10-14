@@ -195,6 +195,10 @@ private:
       TN*       original_tn;	// original GTN (before any spilling) from which
 				// this lrange was created
       LRANGE*   next_split_list_lrange;
+#ifdef TARG_ST
+      // The set of registers in rc clobbered by calls within the live range.
+      REGISTER_SET call_clobbered;
+#endif
     } c;
     struct lrange_region_specific {
       TN*       tn;             // Corresponding to the LRANGE
@@ -363,6 +367,8 @@ public:
   void Recompute_Preference(void);
   char* Format( char* buff );
 #ifdef TARG_ST
+  REGISTER_SET Call_Clobbered(void);
+  void Set_Call_Clobbered(REGISTER_SET r);
   INT32 Conflict (LRANGE *neighbor);
   float Local_Colorability_Benefit (LRANGE *neighbor, BOOL include_listed = FALSE);
   void Initialize_Local_Colorability (GRA_REGION *region);

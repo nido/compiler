@@ -562,6 +562,10 @@ Set_Call_Flag(LRANGE* lrange, BB* bb)
       lrange->Spans_Infreq_Call_Set();
     }
   }
+#ifdef TARG_ST
+  lrange->Set_Call_Clobbered (REGISTER_SET_Union(lrange->Call_Clobbered(),
+						 BB_call_clobbered (bb, lrange->Rc())));
+#endif
 }
 
 /////////////////////////////////////

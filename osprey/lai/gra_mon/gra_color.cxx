@@ -1336,6 +1336,30 @@ GRA_Color_Complement( GRA_REGION* region )
       GRA_Trace_Color_LRANGE("Coloring",lr);
       GRA_Trace_Complement_LRANGE_Neighbors(lr, region);
 
+#ifdef TARG_ST
+      // [SC] Suppress the infreq-call trick for save-reg tns when
+      // they might be allocated to caller-save registers.
+      // This is because the infreq-call trick forces an immediate
+      // split.  That would be okay, but unfortunately, the split
+      // lrange does not have any preferencing information, and we rely
+      // on the preferencing.  Without the preferencing, the coloring
+      // will prefer a caller-save register for the save-reg tn, which
+      // forces a copy to and from the save-reg.
+      // A better fix would be to maintain the preferencing information
+      // when a split is made.  This would also improve the allocation
+      // generally.  see also the comment in gra_split.cxx/Fix_Interference()
+      // which also bemoans the missing preferencing.  The description
+      // at the head of gra_pref.h claims that the preferences are fixed
+      // when a split is made, but I can find no code to implement this.
+      if (GRA_spill_to_caller_save
+	  && lr->Tn_Is_Save_Reg()
+	  && REGISTER_SET_MemberP(REGISTER_CLASS_callee_saves(lr->Rc()),
+				  TN_save_reg(lr->Tn()))
+	  && lr->Spans_Infreq_Call()) {
+	lr->Spans_A_Call_Set();
+	lr->Spans_Infreq_Call_Reset();
+      }
+#endif
       // 
       // can't spill wired registers under any circumstances.  the only
       // way we're going to get here is if the frequency on the block is
