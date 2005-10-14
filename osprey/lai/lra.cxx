@@ -2200,11 +2200,6 @@ Usable_Registers (TN* tn, LIVE_RANGE* lr)
 						unusable_extract_result_regs(op));
 	}
       }
-      if (OP_result(op, resnum) == tn) {
-	usable_regs =
-	  REGISTER_SET_Difference(usable_regs,
-				  CGTARG_Forbidden_Result_Registers(op, resnum));
-      }
 #endif
       if (sc == ISA_REGISTER_SUBCLASS_UNDEFINED) {
         continue;
@@ -2369,8 +2364,8 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 #endif
 ) {
 #ifdef TARG_ST
-	    // unused_tn_def[result_cl] is in must_use,
-	    // therefore it is known to satisfy the subclass requirements.
+	    // Should we check that unused_tn_def[result_cl] is in the
+	    // appropriate subclass for op?
 #endif
             result_tn = unused_tn_def[result_cl];
             Set_OP_result(op,resnum,result_tn);
