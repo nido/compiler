@@ -368,6 +368,14 @@ static OPTION_DESC Options_GRA[] = {
     0, 0, 0,    &GRA_use_runeson_nystrom_spill_metric, NULL,
     "Use Runeson/Nystrom spill metric during simplify (only applicable when Runeson/Nystrom local colorability test is selected)",
   },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"use_interprocedural_info", "",
+    0, 0, 0,    &GRA_use_interprocedural_info, NULL,
+    "Use interprocedural information during register allocation",
+  },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"spill_to_caller_save", "",
+    0, 0, 0,    &GRA_spill_to_caller_save, NULL,
+    "Use interprocedural information during register allocation",
+  },
 #endif
   { OVK_COUNT }		/* List terminator -- must be last */
 };

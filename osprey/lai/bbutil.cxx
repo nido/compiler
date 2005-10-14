@@ -92,6 +92,10 @@
 #include "lra.h"
 #include "bb_set.h"       // BB_SET_* routines 
 #include "DaVinci.h"
+#ifdef TARG_ST
+#include "cg.h"
+#include "ipra.h"
+#endif
 
 /* Allocate basic blocks for the duration of the PU. */
 #define BB_Alloc()  TYPE_PU_ALLOC(BB)
@@ -2608,6 +2612,37 @@ ST *BB_st(BB *bb)
   return NULL;
 }
 
+#ifdef TARG_ST
+/* =======================================================================
+ *
+ *  BB_call_clobbered
+ *
+ *  See interface description.
+ *
+ * =======================================================================
+ */
+REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
+{
+  if (!BB_call(bb)) {
+    return REGISTER_SET_EMPTY_SET;
+  }
+  if (GRA_use_interprocedural_info) {
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(bb),ANNOT_CALLINFO);
+    if (annot) {
+      ST *st = CALLINFO_call_st(ANNOT_callinfo(annot));
+      if (st &&
+	  (! ST_is_preemptible(st)
+	   || (! Gen_PIC_Shared && ! ST_is_weak_symbol (st)))) {
+	IPRA_INFO info = cg_ipra.Get_Info (st);
+	if (info) {
+	  return info->used_regs[rc];
+	}
+      }
+    }
+  }
+  return REGISTER_CLASS_caller_saves(rc);
+}
+#endif
 
 /* =======================================================================
  *

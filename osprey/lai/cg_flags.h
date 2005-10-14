@@ -335,6 +335,8 @@ extern BOOL GRA_redo_liveness;
 extern BOOL GRA_recalc_liveness;
 #ifdef TARG_ST
 extern BOOL GRA_use_runeson_nystrom_spill_metric;
+extern BOOL GRA_use_interprocedural_info;
+extern BOOL GRA_spill_to_caller_save;
 #endif
 extern INT32 GRA_non_home_hi;
 extern INT32 GRA_non_home_lo;

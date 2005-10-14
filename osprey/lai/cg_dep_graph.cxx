@@ -3176,7 +3176,7 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	    || REGISTER_SET_IntersectsP (regs,
 					 REGISTER_CLASS_function_argument (rclass))
 	    || REGISTER_SET_IntersectsP (regs,
-					 REGISTER_CLASS_caller_saves (rclass)))
+					 BB_call_clobbered (OP_bb(call_op), rclass)))
 	  return FALSE;
 #else
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
@@ -3216,7 +3216,7 @@ CG_DEP_Can_OP_Move_Across_Call(OP *cur_op, OP *call_op, BOOL forw,
 	    || REGISTER_SET_IntersectsP (regs,
 					 REGISTER_CLASS_function_argument(opnd_cl))
 	    || REGISTER_SET_IntersectsP (regs,
-					 REGISTER_CLASS_caller_saves(opnd_cl)))
+					 BB_call_clobbered (OP_bb(call_op), opnd_cl)))
 #else
 	if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(opnd_cl), 
 				opnd_reg) ||

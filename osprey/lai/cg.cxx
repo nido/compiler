@@ -111,6 +111,7 @@
 #ifdef TARG_ST
 #include "cg_ssa.h"
 #include "loop_invar_hoist.h"
+#include "ipra.h"
 #endif
 
 #ifdef LAO_ENABLED
@@ -148,6 +149,10 @@ TN_MAP TN_To_PREG_Map;
 
 /* WOPT alias manager */
 struct ALIAS_MANAGER *Alias_Manager;
+
+#ifdef TARG_ST
+IPRA cg_ipra;
+#endif
 
 /* static BOOL Orig_Enable_SWP; */
 
@@ -864,6 +869,9 @@ CG_Generate_Code(
   extern void Schedule_Prefetch_Postpass(void);
   if (CG_opt_level >= 3)
     Schedule_Prefetch_Postpass ();
+  if (!region) {
+    cg_ipra.Save_Info (Get_Current_PU_ST() );
+  }
 #endif
 
   Reuse_Temp_TNs = orig_reuse_temp_tns;		/* restore */

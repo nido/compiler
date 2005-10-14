@@ -262,6 +262,8 @@ BOOL GRA_redo_liveness = FALSE;
 BOOL GRA_recalc_liveness = FALSE;
 #ifdef TARG_ST
 BOOL GRA_use_runeson_nystrom_spill_metric = FALSE;
+BOOL GRA_use_interprocedural_info = FALSE;
+BOOL GRA_spill_to_caller_save = FALSE;
 #endif
 INT32 GRA_non_home_hi = -1;
 INT32 GRA_non_home_lo = INT32_MAX;

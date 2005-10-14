@@ -46,6 +46,9 @@
 #include "symtab.h"
 #include "tn.h"
 #include "tn_map.h"            /* needed for TN_To_PREG_Map */
+#ifdef TARG_ST
+#include "ipra.h"
+#endif
 
 /* type stubs - can't include appropriate files since
  * this file is included by be/com/driver.c ...
@@ -56,6 +59,7 @@ extern BOOL PU_Has_Calls;
 extern BOOL PU_References_GP;
 #ifdef TARG_ST
 extern BOOL PU_Has_Asm;
+extern IPRA cg_ipra;
 #endif
 
 extern BOOL CG_PU_Has_Feedback;

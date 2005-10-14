@@ -409,6 +409,12 @@
  *	Return the symbol associated with the start of the BB, returning
  *	NULL if there is none.
  *
+#ifdef TARG_ST
+*    REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
+*       Returns the set of registers in class RC clobbered by a call at
+*       the end of BB.  Returns empty set if !BB_call(bb).
+*
+#endif
  * TODO: Complete this interface description.
  *
  * ====================================================================
@@ -1139,6 +1145,9 @@ BOOL BB_Is_Cold(BB *bb);
 
 ST *Gen_ST_For_BB(BB *bb);
 ST *BB_st(BB *bb);
+#ifdef TARG_ST
+REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc);
+#endif
 
 void Split_BBs();
 

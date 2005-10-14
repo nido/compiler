@@ -6249,6 +6249,17 @@ Estimate_Callee_Saves(void)
        */
       count = tn_count[rc];
 
+#ifdef TARG_ST
+      /* We can use caller saves that are not used by a call at the
+	 end of this block.
+       */
+     {
+        REGISTER_SET avail_caller_saves =
+	  REGISTER_SET_Difference(REGISTER_CLASS_caller_saves(rc),
+				  BB_call_clobbered(bb, rc));
+	count -= REGISTER_SET_Size(avail_caller_saves);
+     }
+#else
       /* If this is not a call, then we can use the caller saves
        * for so, bias the amount of regs needed by the number of
        * caller saves for this class.
@@ -6257,6 +6268,7 @@ Estimate_Callee_Saves(void)
 	INT caller = REGISTER_SET_Size(REGISTER_CLASS_caller_saves(rc));
 	count -= caller;
       }
+#endif
 
       /* Finally, account for shrink wrapping by dividing by 1.5 and
        * rounding up.

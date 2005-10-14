@@ -458,8 +458,13 @@ Compute_Call_Regs (
     ISA_REGISTER_CLASS rc;
 
     FOR_ALL_ISA_REGISTER_CLASS(rc) {
+#ifdef TARG_ST
+      kill[rc] = REGISTER_SET_Union (kill[rc],
+				     BB_call_clobbered(bb, rc));
+#else
       kill[rc] = REGISTER_SET_Union (kill[rc], 
 				    REGISTER_CLASS_caller_saves(rc));
+#endif
     }
   }
 }

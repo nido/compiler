@@ -738,13 +738,27 @@ static void Init_Avail_Set (BB *bb)
             OP_cond_def(call_op)) {
           /* If the call is conditionally executed, the return value registers
              may already contain values that must be preserved through the block. */
+#ifdef TARG_ST
+          avail_set[cl] = REGISTER_SET_Union (
+                            avail_set[cl],
+                            REGISTER_SET_Difference (REGISTER_CLASS_function_value(cl),
+                                                     BB_call_clobbered(bb, cl)));
+#else
           avail_set[cl] = REGISTER_SET_Union (
                             avail_set[cl],
                             REGISTER_SET_Difference (REGISTER_CLASS_function_value(cl),
                                                      REGISTER_CLASS_caller_saves(cl)));
+#endif
         } else {
+#ifdef TARG_ST
+          avail_set[cl] = REGISTER_SET_Union (
+                            avail_set[cl],
+			    REGISTER_SET_Intersection (REGISTER_CLASS_caller_saves(cl),
+						       BB_call_clobbered(bb, cl)));
+#else
           avail_set[cl] = REGISTER_SET_Union (
                             avail_set[cl], REGISTER_CLASS_caller_saves(cl));
+#endif
         }
       }
       if (BB_mod_rotating_registers(bb) ||

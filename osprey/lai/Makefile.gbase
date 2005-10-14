@@ -452,6 +452,7 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += targ_hb.cxx
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
+  CG_CXX_SRCS += ipra.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
