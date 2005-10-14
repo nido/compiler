@@ -547,6 +547,8 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
 			return s9 ? TOP_##top##_i_r : TOP_##top##_ii_r; \
 		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b: \
 			return s9 ? TOP_##top##_i_b : TOP_##top##_ii_b;
+#define CASE_TOP_ASM(n, nplus16) case TOP_asm_##n : \
+				return s9 ? TOP_asm_##nplus16##_i : TOP_asm_##nplus16##_ii;
 
   if (opnd == 0) {
     switch(regform) {
@@ -626,6 +628,23 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(ldbc);
       CASE_TOP_I(ldhuc);
       CASE_TOP_I(ldbuc);
+      /* support for asm */
+      CASE_TOP_ASM(0 , 16) ;
+      CASE_TOP_ASM(1 , 17) ;
+      CASE_TOP_ASM(2 , 18) ;
+      CASE_TOP_ASM(3 , 19) ;
+      CASE_TOP_ASM(4 , 20) ;
+      CASE_TOP_ASM(5 , 21) ;
+      CASE_TOP_ASM(6 , 22) ;
+      CASE_TOP_ASM(7 , 23) ;
+      CASE_TOP_ASM(8 , 24) ;
+      CASE_TOP_ASM(9 , 25) ;
+      CASE_TOP_ASM(10, 26) ;
+      CASE_TOP_ASM(11, 27) ;
+      CASE_TOP_ASM(12, 28) ;
+      CASE_TOP_ASM(13, 29) ;
+      CASE_TOP_ASM(14, 30) ;
+      CASE_TOP_ASM(15, 31) ;
     }
   } else if (opnd == 2) {
     switch(regform) {
@@ -642,6 +661,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
 #undef CASE_TOP
 #undef CASE_TOP_I
 #undef CASE_TOP_BR
+#undef CASE_TOP_ASM
 }
 
 /*

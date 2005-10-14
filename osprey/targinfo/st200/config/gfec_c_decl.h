@@ -1398,4 +1398,100 @@ builtin_function ("__rsqrts",
                    build_function_type( float_type_node, 
                      tree_cons(NULL_TREE, float_type_node, endlink)),
                    BUILT_IN_RSQRTS, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_0",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_0, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_1",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_1, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_2",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_2, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_3",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_3, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_4",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_4, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_5",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_5, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_6",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_6, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_7",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_7, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_8",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_8, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_9",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_9, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_10",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_10, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_11",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_11, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_12",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_12, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_13",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_13, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_14",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_14, BUILT_IN_NORMAL, NULL_PTR);
+
+builtin_function ("__asm_15",
+                   build_function_type( integer_type_node, 
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ASM_15, BUILT_IN_NORMAL, NULL_PTR);
 #endif /* defined(TARG_ST200) */

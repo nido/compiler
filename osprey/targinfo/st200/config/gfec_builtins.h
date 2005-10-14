@@ -241,5 +241,21 @@
     case BUILT_IN_SQUARES:
     case BUILT_IN_RECIPS:
     case BUILT_IN_RSQRTS:
+    case BUILT_IN_ASM_0:
+    case BUILT_IN_ASM_1:
+    case BUILT_IN_ASM_2:
+    case BUILT_IN_ASM_3:
+    case BUILT_IN_ASM_4:
+    case BUILT_IN_ASM_5:
+    case BUILT_IN_ASM_6:
+    case BUILT_IN_ASM_7:
+    case BUILT_IN_ASM_8:
+    case BUILT_IN_ASM_9:
+    case BUILT_IN_ASM_10:
+    case BUILT_IN_ASM_11:
+    case BUILT_IN_ASM_12:
+    case BUILT_IN_ASM_13:
+    case BUILT_IN_ASM_14:
+    case BUILT_IN_ASM_15:
   break;
 #endif /* defined(TARG_ST200) */

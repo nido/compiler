@@ -969,5 +969,68 @@
       iopc = INTRN_RSQRTS ;
       intrinsic_op = TRUE ;
     break;
-
+    case BUILT_IN_ASM_0:
+      iopc = INTRN_ASM_0 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_1:
+      iopc = INTRN_ASM_1 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_2:
+      iopc = INTRN_ASM_2 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_3:
+      iopc = INTRN_ASM_3 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_4:
+      iopc = INTRN_ASM_4 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_5:
+      iopc = INTRN_ASM_5 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_6:
+      iopc = INTRN_ASM_6 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_7:
+      iopc = INTRN_ASM_7 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_8:
+      iopc = INTRN_ASM_8 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_9:
+      iopc = INTRN_ASM_9 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_10:
+      iopc = INTRN_ASM_10 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_11:
+      iopc = INTRN_ASM_11 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_12:
+      iopc = INTRN_ASM_12 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_13:
+      iopc = INTRN_ASM_13 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_14:
+      iopc = INTRN_ASM_14 ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ASM_15:
+      iopc = INTRN_ASM_15 ;
+      intrinsic_op = TRUE ;
+    break;
 #endif /* defined(TARG_ST200) */
