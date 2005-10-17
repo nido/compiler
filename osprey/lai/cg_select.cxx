@@ -2614,6 +2614,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
   if (OPT_Space) {
       CG_select_freq = FALSE;
       CG_select_cycles = FALSE;
+      CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
   }
 
   // higher select_factor means ifc more aggressive.
