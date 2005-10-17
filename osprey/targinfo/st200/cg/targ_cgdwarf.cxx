@@ -1508,10 +1508,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      ("unwind: frame size should be > 0 at creation point"));
 
       if (ue_iter->when_bundle_start > current_loc) {
-	dwarf_add_fde_inst(fde, DW_CFA_advance_loc,
-			   (ue_iter->when_bundle_start - current_loc)
-			   * ISA_INST_BYTES / ISA_MAX_SLOTS,
-			   0,
+	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
+			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+						 ue_iter->label_idx,
+						 scn_index),
 			   &dw_error);
       }
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset,
@@ -1534,10 +1534,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      ("unwind: bad frame size at destroy point"));
 
       if (ue_iter->when_bundle_start > current_loc) {
-	dwarf_add_fde_inst(fde, DW_CFA_advance_loc,
-			   (ue_iter->when_bundle_start - current_loc)
-			   * ISA_INST_BYTES / ISA_MAX_SLOTS,
-			   0,
+	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
+			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+						 ue_iter->label_idx,
+						 scn_index),
 			   &dw_error);
       }
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa_offset, STACK_OFFSET_ADJUSTMENT,
@@ -1622,10 +1622,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
       if (ue_iter->when_bundle_start > current_loc) {
-	dwarf_add_fde_inst(fde, DW_CFA_advance_loc,
-			   (ue_iter->when_bundle_start - current_loc)
-			   * ISA_INST_BYTES / ISA_MAX_SLOTS,
-			   0,
+	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
+			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+						 ue_iter->label_idx,
+						 scn_index),
 			   &dw_error);
       }
 
@@ -1656,10 +1656,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
 
       if (ue_iter->when_bundle_start > current_loc) {
-	dwarf_add_fde_inst(fde, DW_CFA_advance_loc,
-			   (ue_iter->when_bundle_start - current_loc)
-			   * ISA_INST_BYTES / ISA_MAX_SLOTS,
-			   0,
+	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
+			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+						 ue_iter->label_idx,
+						 scn_index),
 			   &dw_error);
       }
 
@@ -1778,8 +1778,7 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 		    // supports symbolic ranges.
 		    INT       low_pc,
 		    INT       high_pc,
-		    Elf64_Word	scn_index,
-		    UINT64* code_len)
+		    Elf64_Word	scn_index)
 {
   Dwarf_P_Fde fde;
   Dwarf_Error dw_error;
@@ -1797,7 +1796,6 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   else if ( ! simple_unwind)
 	DevWarn("unwind info may be incorrect because PU is too complicated");
 
-  *code_len = (last_when+1) * ISA_INST_BYTES / ISA_MAX_SLOTS;
   return fde;
 }
 

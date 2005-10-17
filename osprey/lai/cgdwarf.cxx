@@ -2045,13 +2045,6 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   Dwarf_P_Fde fde;
   DST_SUBPROGRAM *PU_attr;
   static BOOL processed_globals = FALSE;
-#ifdef TARG_ST
-  // [CL] PU length computed by the FDE generator this is used to
-  // avoid emitting label differences which are not supported when we
-  // keep all the relocations in the object file in order to perform
-  // binary optimisations
-  UINT64 code_len = 0;
-#endif
   
   cur_text_index = scn_index;
   Trace_Dwarf = Get_Trace ( TP_EMIT, 8 );	// for each pu
@@ -2142,8 +2135,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 			    end_offset,
 #ifdef TARG_ST
     // [CL] need scn_index to connect debug_frame label to Dwarf symtab
-    // [CL] code_len is returned by the FDE generator
-			    low_pc, high_pc, scn_index, &code_len);
+			    low_pc, high_pc, scn_index);
 #else
 			    low_pc, high_pc);
 #endif
@@ -2164,11 +2156,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 		       PU_die,
 		       fde,
 		       eh_handle,
-		       eh_offset
-#ifdef TARG_ST // [CL]
-		       ,code_len
-#endif
-);
+		       eh_offset);
 
 }
 
@@ -3100,16 +3088,6 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	Is_True((reloc_buffer[k + 1].drd_type ==
 		 dwarf_drt_second_of_length_pair),
 		("unpaired first_of_length_pair"));
-#ifdef TARG_ST
-	// [CL] as we ask the assembler to emit all the relocations
-	// (to enable binary optimisations on the object file) and
-	// thus not to resolve any label operation, we must not
-	// generate label differences, which are not supported per ELF
-	Fail_FmtAssertion("illegal relocation on label differences (%s - %s)\n",
-			  Cg_Dwarf_Name_From_Handle(reloc_buffer[k + 1].drd_symbol_index),
-			  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index)
-		);
-#endif
 	// need unaligned AS_ADDRESS for dwarf, so add .ua
 	fprintf(asm_file, "\t%s\t%s - %s", reloc_name,
 		Cg_Dwarf_Name_From_Handle(reloc_buffer[k + 1].drd_symbol_index),
