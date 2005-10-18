@@ -1482,7 +1482,9 @@ Expand__st220syscall(
 	    DevWarn("targinfo/st200/expand/exp_intrinsics.cxx::Expand__st220syscall: TN_is_rematerializable BUT WN_operator_is *not* OPR_INTCONST.") ;
 	}
     } else if (TN_is_zero(i0)) { 
-	Build_OP (	top,	Zero_TN, 	ops) ;
+	// Using Zero_TN leads to try to select $r0
+	TN *czero = Gen_Literal_TN(0LL, 4) ;
+	Build_OP (	top,	czero, 	ops) ;
     } else if (TN_has_value(i0)) {
 	TN *cunknown = Gen_Literal_TN(TN_value(i0), 4) ;
 	Build_OP (	top,	cunknown, 	ops) ;
