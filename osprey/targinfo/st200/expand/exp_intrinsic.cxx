@@ -6402,6 +6402,28 @@ Expand__asm_n(
 @@@  break ;
 */
 
+static void
+Expand__trap(
+ OPS* ops
+)
+{
+  TOP top = TOP_UNDEFINED;
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk_i)) {
+    top = TOP_sbrk_i;
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk_ib)) {
+    top = TOP_sbrk_ib;
+  }
+  /* The representation of such a trap is 1 */
+  TN *c1 = Gen_Literal_TN(1LL, 4) ;
+  Build_OP (	top,	c1, 	ops) ;
+} /* Expand__trap */
+
+/*
+@@@  case INTRN_TRAP:
+@@@    Expand__trap(ops) ;
+@@@  break ;
+*/
+
 void
 Exp_Intrinsic_Op (
   INTRINSIC id,
@@ -7173,6 +7195,9 @@ Exp_Intrinsic_Op (
     case INTRN_ASM_15:
       Expand__asm_n(15, result[0],opnd[0],opnd[1],ops) ;
     break ;
+    case INTRN_TRAP:	
+      Expand__trap(ops) ;
+    break ;   
     default:
       FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s", INTRN_c_name(id)));
   } /* switch*/

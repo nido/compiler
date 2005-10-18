@@ -772,5 +772,7 @@
 { /* __asm_15 */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__asm_15", NULL, "__asm_15"},
-
+{ /* __builtin_trap */
+  BYVAL, NOT_PURE, SIDEEFFECTS, NEVER_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__builtin_trap", NULL, "__builtin_trap"},
 

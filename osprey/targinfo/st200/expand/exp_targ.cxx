@@ -3378,6 +3378,9 @@ Exp_Intrinsic_Call (
 	    Exp_Intrinsic_Op(id, 0, 1, NULL, in, ops) ;
 	}
 	break ;
+    case INTRN_TRAP:
+	Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops) ;
+        break ;
     default:
 	FmtAssert(FALSE,("Exp_Intrinsic_Call : Not Implemented."));
     }
