@@ -6,16 +6,16 @@
 #define USE_H_LIMITS_H 1
 
 /* whether to use or not the host machine errno.h directly */
-#define USE_H_ERRNO_H 1
+/*#define USE_H_ERRNO_H 1*/
 
 /* whether to use or not the host machine math.h directly */
-#define USE_H_MATH_H 1
+/*#define USE_H_MATH_H 1*/
 
 /* whether to use or not the host machine endian.h directly */
 #define USE_H_ENDIAN_H 1
 
 /* whether to use or not the host machine stdint.h directly */
-#define USE_H_STDINT_H 1
+/*#define USE_H_STDINT_H 1*/
 
 /* whether to use or not the host machine bstring.h directly */
 #define USE_H_BSTRING_H 1

@@ -526,6 +526,9 @@ typedef struct
 #define SHF_WRITE	(1 << 0)	/* Writable */
 #define SHF_ALLOC	(1 << 1)	/* Occupies memory during execution */
 #define SHF_EXECINSTR	(1 << 2)	/* Executable */
+#ifdef TARG_ST /* [SC] TLS support */
+#define SHF_TLS         (1 << 10)       /* Thread-local storage */
+#endif
 #define SHF_MASKPROC	0xf0000000	/* Processor-specific */
 
 /* Symbol table entry.  */
@@ -582,6 +585,9 @@ typedef struct
 #define STT_SECTION	3		/* Symbol associated with a section */
 #define STT_FILE	4		/* Symbol's name is file name */
 #define	STT_NUM		5		/* Number of defined types.  */
+#ifdef TARG_ST  /* [SC] TLS support */
+#define STT_TLS		6		/* Thread local data object */
+#endif
 #define STT_LOPROC	13		/* Start of processor-specific */
 #define STT_HIPROC	15		/* End of processor-specific */
 
