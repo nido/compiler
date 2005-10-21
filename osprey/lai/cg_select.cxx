@@ -1110,7 +1110,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
 
     // allow removing of side entries only on one of targets.
     if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || (OPT_Space && BB_length(bb) > 1))) {
+        (!allow_dup || BB_loophead(bb) || (OPT_Space && BB_length(bb) > 1))) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -1134,7 +1134,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     BB_Update_OP_Order(bb);
 
     if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || (OPT_Space && BB_length(bb) > 1))) {
+        (!allow_dup || BB_loophead(bb) || (OPT_Space && BB_length(bb) > 1))) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -1350,6 +1350,7 @@ Force_End_Tns (BB* bb, BB *tail)
   FOR_ALL_BB_OPs_FWD(bb, op) {
     for (UINT8 defnum = 0; defnum < OP_results(op); defnum++) {
       TN *res = OP_result(op, defnum);
+      TN *old_tn;
 
       // if the GTN is alive after the hammock, need to give it a phi.
       if (TN_is_register(res) && TN_is_global_reg(res) &&
@@ -1369,6 +1370,7 @@ Force_End_Tns (BB* bb, BB *tail)
         if (!founddef) {
           UINT8 npreds = BB_preds_len(tail);
           TN * new_tn = Dup_TN(res);
+          old_tn = res;
 
           Set_TN_is_global_reg (new_tn);
           SSA_unset(op);
@@ -1410,7 +1412,7 @@ Force_End_Tns (BB* bb, BB *tail)
           FOR_ALL_BB_PREDS(tail,preds) {
             BB *pred = BBLIST_item(preds);
             bbs->push_front(pred);
-            opnd[pos++] = new_tn;
+              opnd[pos++] = pred == bb ? new_tn : old_tn;
           }
       
           phi = Mk_VarOP (TOP_phi, 1, npreds, result, opnd);
