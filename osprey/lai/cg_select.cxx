@@ -157,7 +157,6 @@ BOOL CG_select_cycles = TRUE;
 const char* CG_select_factor = "1.1";
 static float select_factor;
 static int branch_penalty;
-static int cond_penalty=0; 
 
 /* ================================================================
  *
@@ -899,11 +898,10 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   float bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
 
   // ponderate cost of each region taken separatly.
-  float est_cost_before = cycles1 + bp + (cycles2 * prob);
+  float est_cost_before = cycles1 + ((bp + cycles2) * prob);
 
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
-  CG_SCHED_EST_Subtract_Op_Resources(se1, OP_code(BB_branch_op(bb1)));
   CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r);
 
   cycles1 = CG_SCHED_EST_Cycles(se1);
@@ -919,29 +917,15 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   // in the same basic block there is a dependency difficult to estimate
   // the real job should be to construct the if converted block with output
   // the predicate, then take the estimated schedule (eembc/bmark_lite).
-  if (PROC_has_predicate_loads()) {
-    OP *br_op = BB_branch_op(bb2);
-    OP *cmp_op = TN_ssa_def(OP_opnd(br_op, 0));
-
-    if (cmp_op) {
-      OP *op;
-      FOR_ALL_BB_OPs(bb2, op) {
-        if (Need_Predicate_Op (op)) {
-          int i;
-          for (i = 0; i < OP_opnds(cmp_op); i++) {  
-            if (TN_is_register(OP_opnd (cmp_op, i)) &&
-		TN_ssa_def(OP_opnd (cmp_op, i)) == op) {
-              cond_penalty += 2;
-              break;
-            }
-          }
-          break;
-        }
-      }
-    }
+  // artificially raise cost of memory loads to account for increased
+  // dependence height and cache impact.
+  OP *op;
+  FOR_ALL_BB_OPs(bb2, op) {
+    if (OP_memory (op))
+      cycles1 += 2;
   }
-
-  float est_cost_after = (cycles1 + cond_penalty) / select_factor;
+    
+  float est_cost_after = cycles1 / select_factor;
 
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
