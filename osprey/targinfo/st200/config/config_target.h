@@ -32,7 +32,6 @@
 
 */
 
-
 #ifndef config_targ_INCLUDED
 #define config_targ_INCLUDED
 #ifdef __cplusplus
@@ -327,6 +326,9 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
 // #define ARCH_recip_is_exact FALSE
 #define ARCH_recip_is_exact TRUE
 #define ARCH_has_bit_tests TRUE
+
+// [HK] 20051025 1/sqrt(a) now available as an intrinsic function
+#define ARCH_rsqrt_is_exact TRUE
 
 /* default value for WHIRL_Keep_Cvt */
 #define DEFAULT_KEEP_CVT	TRUE

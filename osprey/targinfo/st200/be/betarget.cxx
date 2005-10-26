@@ -902,6 +902,19 @@ OPCODE_To_INTRINSIC (
       }
       break;
 
+    case OPR_RSQRT:
+      Is_True(rtype == MTYPE_F4,
+	      ("OPR_RSQRT: unknown rtype type %s", MTYPE_name(desc)));
+      switch (rtype) {
+      case MTYPE_F4:
+	id = INTRN_RSQRTS;
+	break;
+      default:
+	FmtAssert(FALSE,("OPERATOR_To_Intrinsic: %s ??", 
+                                            OPCODE_name(opcode)));
+      }
+      break;
+
 
     case OPR_TRUNC:
       Is_True(desc == MTYPE_F4 || desc == MTYPE_F8,
@@ -1166,6 +1179,20 @@ WN_To_INTRINSIC (
 	    id = INTRN_MULN;
 	    kids[0] = WN_kid0(kids[1]);
 	    kids[1] = WN_CreateIntconst(OPR_INTCONST, MTYPE_I4, MTYPE_V, WN_const_val(kids[0]));
+	} 
+    } else if (WN_opcode(kids[0]) == OPC_U8U4CVT &&
+	WN_opcode(kids[1]) == OPC_U8INTCONST) {
+	if ( WN_const_val(kids[1]) == (UINT64)((UINT32)WN_const_val(kids[1]))){
+	    id = INTRN_MULUN;
+	    kids[0] = WN_kid0(kids[0]);
+	    kids[1] = WN_CreateIntconst(OPR_INTCONST, MTYPE_U4, MTYPE_V, WN_const_val(kids[1]));
+	}
+    } else if (WN_opcode(kids[1]) == OPC_U8U4CVT &&
+	WN_opcode(kids[0]) == OPC_U8INTCONST) {
+	if ( WN_const_val(kids[0]) == (UINT64)((UINT32)WN_const_val(kids[0]))){
+	    id = INTRN_MULUN;
+	    kids[0] = WN_kid0(kids[1]);
+	    kids[1] = WN_CreateIntconst(OPR_INTCONST, MTYPE_U4, MTYPE_V, WN_const_val(kids[0]));
 	}
     }
 
