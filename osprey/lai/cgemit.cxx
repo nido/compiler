@@ -2869,18 +2869,15 @@ end_previous_text_region(pSCNINFO scninfo,
 {
 #ifdef TARG_ST
   // CL: convert composite PC to actual PC address
-  // [CL] do not generate empty regions
-  if (prev_pu_end_offset_from_last_label > 0) {
-    Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
-					   PC2Addr(end_offset),
-					   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
-								 prev_pu_last_label,
-								 prev_pu_base_elfsym,
-								 prev_pu_pu_idx,
-								 prev_pu_last_label_name,
-								 prev_pu_last_offset),
-					   prev_pu_end_offset_from_last_label);
-  }
+  Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
+					 PC2Addr(end_offset),
+					 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+							       prev_pu_last_label,
+							       prev_pu_base_elfsym,
+							       prev_pu_pu_idx,
+							       prev_pu_last_label_name,
+							       prev_pu_last_offset),
+					 prev_pu_end_offset_from_last_label);
 #else
   Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
                                          end_offset,
