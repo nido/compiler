@@ -66,6 +66,7 @@
 #include "cg_spill.h"
 #include "cgtarget.h"
 #include "mexpand.h"
+#include "reg_live.h"
 
 typedef std::pair<TN *, TN *> TN_TN_PAIR;
 typedef std::vector<TN_TN_PAIR> TN_TN_PAIR_VECTOR;
@@ -203,11 +204,8 @@ EETARG_Fixup_Entry_Code (
   // before the sp adjust code. It happens that this temporary is
   // allocated top a preserved register
   if (point != NULL) {
-    REGISTER caller_reg[ISA_REGISTER_CLASS_MAX+1];
-    ISA_REGISTER_CLASS rc;
-    FOR_ALL_ISA_REGISTER_CLASS(rc) {
-      caller_reg[rc] = 0;
-    }
+    REGISTER_SET avail_temps[ISA_REGISTER_CLASS_MAX+1];
+    REG_LIVE_Prolog_Temps(bb, BB_first_op(bb), point, avail_temps);
     TN_TN_PAIR_VECTOR copy_vector;
     OP *op;
     FOR_ALL_BB_OPs_FWD(bb, op) {
@@ -218,15 +216,10 @@ EETARG_Fixup_Entry_Code (
 	  ISA_REGISTER_CLASS rc = TN_register_class(tn);
 	  REGISTER reg = TN_register(tn);
 	  if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[rc], reg)) {
-	    REGISTER_SET caller_set = REGISTER_CLASS_caller_saves(rc);
-	    TN *caller_tn;
-	    if (caller_reg[rc] == 0) {
-	      caller_reg[rc] = REGISTER_SET_Choose(caller_set);
-	    } else {
-	      caller_reg[rc] = REGISTER_SET_Choose_Next(caller_set, 
-							caller_reg[rc]);
-	    }
-	    caller_tn = Build_Dedicated_TN(rc, caller_reg[rc], TN_size(tn));
+	    REGISTER new_reg = REGISTER_SET_Choose(avail_temps[rc]);
+	    avail_temps[rc] = REGISTER_SET_Difference1(avail_temps[rc],
+						       new_reg);
+	    TN *caller_tn = Build_Dedicated_TN(rc, new_reg, TN_size(tn));
 	    copy_vector.push_back(TN_TN_PAIR(tn, caller_tn));
 	    Set_OP_result(op, i, caller_tn);
 	  }
@@ -236,6 +229,13 @@ EETARG_Fixup_Entry_Code (
     for (INT i = 0; i < copy_vector.size(); i++) {
       Exp_COPY(copy_vector[i].first, copy_vector[i].second, &ops);
     }
+  }
+
+  if (Get_Trace (TP_CGEXP, 64)) {
+    #pragma mips_frequency_hint NEVER
+    OP *op;
+    fprintf(TFile, "\nTarget fixed up entry code:\n");
+    FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
   }
 
   if (point == NULL) {
@@ -327,9 +327,11 @@ EETARG_Fixup_Exit_Code (
       }
     }
     if (def_op != NULL) {
-      REGISTER_SET caller_set = REGISTER_CLASS_caller_saves(TN_register_class(def_tn));
-      REGISTER caller_reg = REGISTER_SET_Choose(caller_set);
-      TN *caller_tn = Build_Dedicated_TN(TN_register_class(def_tn), caller_reg, TN_size(def_tn));
+      REGISTER_SET avail_temps[ISA_REGISTER_CLASS_MAX+1];
+      REG_LIVE_Epilog_Temps(Get_Current_PU_ST(), bb, def_op, avail_temps);
+      ISA_REGISTER_CLASS rc = TN_register_class(def_tn);
+      REGISTER caller_reg = REGISTER_SET_Choose(avail_temps[rc]);
+      TN *caller_tn = Build_Dedicated_TN(rc, caller_reg, TN_size(def_tn));
       Set_OP_result(def_op, def_idx, caller_tn);
       if (point == NULL) {
 	// If no sp adjust, simply add copy after callee restore
@@ -344,6 +346,12 @@ EETARG_Fixup_Exit_Code (
     }
   }
   
+  if (Get_Trace (TP_CGEXP, 64)) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile, "\nTarget fixed up exit code:\n");
+    FOR_ALL_OPS_OPs_FWD(&ops, op) Print_OP_No_SrcLine(op);
+  }
+
   BB_Insert_Ops_Before(bb, point, &ops);
 
   // Must call mexpand in case of multi load/store
