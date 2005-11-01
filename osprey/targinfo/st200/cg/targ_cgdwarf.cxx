@@ -1287,6 +1287,8 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
   static BOOL bundle_has_frame_change = FALSE;
   INT64 frame_size = 0;
 
+  BOOL emit_directives = TRUE;
+
   static LABEL_IDX Label_save_ra;
   static LABEL_IDX Label_restore_ra;
   static LABEL_IDX Label_adjust_sp;
@@ -1323,10 +1325,13 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
 
   saved_state = post_process;
 
-  if ( CG_emit_unwind_directives)
+  if ( CG_emit_unwind_directives) {
 	strcpy(prefix, "");
-  else
+	emit_directives = TRUE;
+  } else {
 	strcpy(prefix, ASM_CMNT_LINE);	// emit as comments
+	emit_directives = List_Notes;
+  }
 
   if (OP_dummy(op)) return;
 
@@ -1405,24 +1410,30 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
       break;
 
     case UE_EPILOG:
-      fprintf(f, "%s\t.body\n", prefix);
+      if (emit_directives) fprintf(f, "%s\t.body\n", prefix);
       break;
 
     case UE_LABEL:
-      fprintf(f, "%s\t.body\n", prefix);
-      fprintf(f, "%s\t.label_state %d\n", prefix, ue_iter->label);
+      if (emit_directives) {
+	fprintf(f, "%s\t.body\n", prefix);
+	fprintf(f, "%s\t.label_state %d\n", prefix, ue_iter->label);
+      }
       break;
 
     case UE_COPY:
-      fprintf(f, "%s\t.body\n", prefix);
-      fprintf(f, "%s\t.copy_state %d\n", prefix, ue_iter->label);
+      if (emit_directives) {
+	fprintf(f, "%s\t.body\n", prefix);
+	fprintf(f, "%s\t.copy_state %d\n", prefix, ue_iter->label);
+      }
       break;
 
     case UE_RESTORE_GR:
       if (ue_iter->qp != 0) {
-      	fprintf(f, "%s\t.restorereg.p p%d, %s\n", prefix, 
-		ue_iter->qp,
-		UE_Register_Name(rc, reg) );
+	if (emit_directives) {
+	  fprintf(f, "%s\t.restorereg.p p%d, %s\n", prefix, 
+		  ue_iter->qp,
+		  UE_Register_Name(rc, reg) );
+	}
       }
       else {
 	if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
@@ -1436,11 +1447,13 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
       break;
     case UE_SAVE_GR:
       if (ue_iter->qp != 0) {
-      	fprintf(f, "%s\t%s p%d, %s, %s\n", prefix, ".spillreg.p",
-		ue_iter->qp,
-		UE_Register_Name(rc, reg),
-		UE_Register_Name( CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg),
-				CLASS_REG_PAIR_reg(ue_iter->save_rc_reg) ) );
+	if (emit_directives) {
+	  fprintf(f, "%s\t%s p%d, %s, %s\n", prefix, ".spillreg.p",
+		  ue_iter->qp,
+		  UE_Register_Name(rc, reg),
+		  UE_Register_Name( CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg),
+				    CLASS_REG_PAIR_reg(ue_iter->save_rc_reg) ) );
+	}
       }
       else {
 
