@@ -20,6 +20,7 @@ typedef enum {
   ConfigureRegionType_HyperInner,
   ConfigureRegionType__
 } ConfigureRegionType;
+typedef uint8_t short_ConfigureRegionType;
 extern const char *
 ConfigureRegionType_NAME_[];
 #define ConfigureRegionType_NAME_(type) ConfigureRegionType_NAME_[type]
@@ -34,6 +35,7 @@ typedef enum {
   ConfigureSchedKind_Formulation,
   ConfigureSchedKind__
 } ConfigureSchedKind;
+typedef uint8_t short_ConfigureSchedKind;
 extern const char *
 ConfigureSchedKind_NAME_[];
 #define ConfigureSchedKind_NAME_(type) ConfigureSchedKind_NAME_[type]
@@ -49,6 +51,7 @@ typedef enum {
   ConfigureAllocKind_Integrated,
   ConfigureAllocKind__
 } ConfigureAllocKind;
+typedef uint8_t short_ConfigureAllocKind;
 extern const char *
 ConfigureAllocKind_NAME_[];
 #define ConfigureAllocKind_NAME_(type) ConfigureAllocKind_NAME_[type]
@@ -63,6 +66,7 @@ typedef enum {
   ConfigureRenaming_ModuloGeneral,
   ConfigureRenaming__
 } ConfigureRenaming;
+typedef uint8_t short_ConfigureRenaming;
 extern const char *
 ConfigureRenaming_NAME_[];
 #define ConfigureRenaming_NAME_(type) ConfigureRenaming_NAME_[type]
@@ -76,6 +80,7 @@ typedef enum {
   ConfigureStackModel_Dynamic,
   ConfigureStackModel__
 } ConfigureStackModel;
+typedef uint8_t short_ConfigureStackModel;
 extern const char *
 ConfigureStackModel_NAME_[];
 #define ConfigureStackModel_NAME_(type) ConfigureStackModel_NAME_[type]
@@ -91,6 +96,7 @@ typedef enum {
   ConfigureLoopDep_Liberal,
   ConfigureLoopDep__
 } ConfigureLoopDep;
+typedef uint8_t short_ConfigureLoopDep;
 extern const char *
 ConfigureLoopDep_NAME_[];
 #define ConfigureLoopDep_NAME_(type) ConfigureLoopDep_NAME_[type]
@@ -145,6 +151,7 @@ typedef enum {
   ConfigureItem_MinTaken, // Minimum branch taken penalty.
   ConfigureItem__
 } ConfigureItem;
+typedef uint8_t short_ConfigureItem;
 extern const char *
 ConfigureItem_NAME_[];
 #define ConfigureItem_NAME_(type) ConfigureItem_NAME_[type]
@@ -170,6 +177,7 @@ typedef enum {
   DependenceKind__,
   DependenceKind_Definite = 16,
 } DependenceKind;
+typedef uint8_t short_DependenceKind;
 extern const char *
 DependenceKind_NAME_[];
 #define DependenceKind(type) ((type) & (DependenceKind_Definite - 1))
@@ -198,7 +206,7 @@ typedef enum {
   OptimizerFlag_ForceRegAlloc = 0x2000,
   OptimizerFlag_ForcePrePass = 0x4000
 } OptimizerFlag;
-extern struct ETable_ *OptimizerFlagTable;
+typedef uint16_t OptimizerFlags;
 #define OptimizerFlag_MustPostPass ( OptimizerFlag_NativeCode | OptimizerFlag_PostSched | OptimizerFlag_ForcePostPass | 0)
 
 
