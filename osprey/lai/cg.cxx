@@ -521,6 +521,15 @@ CG_Generate_Code(
   if (CG_opt_level > 0 && CFLOW_opt_before_cgprep) {
     // Perform all the optimizations that make things more simple.
     // Reordering doesn't have that property.
+#ifdef TARG_ST
+    // FdF 2005/11/02: Cloning may decrease if-conversion
+    // opportunities.
+    if (CG_enable_ssa && CG_enable_select)
+      CFLOW_Optimize(  (CFLOW_ALL_OPTS|CFLOW_IN_CGPREP)
+		       & ~(CFLOW_FREQ_ORDER | CFLOW_REORDER | CFLOW_CLONE),
+		       "CFLOW (first pass)");
+    else
+#endif
     CFLOW_Optimize(  (CFLOW_ALL_OPTS|CFLOW_IN_CGPREP)
 		       & ~(CFLOW_FREQ_ORDER | CFLOW_REORDER),
 		       "CFLOW (first pass)");
@@ -623,7 +632,12 @@ CG_Generate_Code(
     // Run also an EBO pre pass after if-conversion as
     // merge points may have been removed
     if (CG_enable_ssa && CG_enable_select) {
+#ifdef TARG_ST
+      // FdF 2005/11/02: Perform cloning after if-conversion.
+      CFLOW_Optimize(CFLOW_MERGE|CFLOW_CLONE, "CFLOW (after ssa)");
+#else
       CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
+#endif
       if (CG_enable_peephole) {
 	Set_Error_Phase("Extended Block Optimizer (after ssa)");
 	Start_Timer(T_EBO_CU);
