@@ -1018,6 +1018,9 @@ Divide_LRANGE(void)
   LRANGE_LUNIT_ITER iter;
 
   deferred_lrange = split_lrange;
+#ifdef TARG_ST
+  deferred_lrange->Split_Deferred_Set();
+#endif
   alloc_lrange = lrange_mgr.Create_Duplicate(split_lrange);
 
   GRA_Trace_Split(0,"Divide_LRANGE TN%d split from TN%d",

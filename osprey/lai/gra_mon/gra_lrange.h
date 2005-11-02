@@ -134,6 +134,9 @@ enum LR_FLAG {
   LRANGE_FLAGS_tn_is_save_reg = 0x1000, // its TN marked TN_is_save_reg
   LRANGE_FLAGS_cannot_split = 0x2000,  // meaning evident
   LRANGE_FLAGS_no_appearance = 0x4000, // should not be assigned register
+#ifdef TARG_ST
+  LRANGE_FLAGS_split_deferred = 0x8000, // Live range is deferred part of a split
+#endif
 };
 
 // These represent a value that can be given a register by GRA.  They
@@ -300,6 +303,10 @@ public:
   void Cannot_Split_Set(void)	{ flags = (LR_FLAG)(flags|LRANGE_FLAGS_cannot_split); }
   BOOL No_Appearance(void)	{ return flags & LRANGE_FLAGS_no_appearance; }
   void No_Appearance_Set(void)	{ flags = (LR_FLAG)(flags|LRANGE_FLAGS_no_appearance); }
+#ifdef TARG_ST
+  BOOL Split_Deferred(void)	{ return flags & LRANGE_FLAGS_split_deferred; }
+  void Split_Deferred_Set(void) { flags = (LR_FLAG)(flags|LRANGE_FLAGS_split_deferred); }
+#endif
 
 #ifdef TARG_ST
   void Wire_Register(REGISTER r, INT nregs){ flags = (LR_FLAG)(flags|LRANGE_FLAGS_has_wired_register);

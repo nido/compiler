@@ -212,6 +212,11 @@ LRANGE_MGR::Create_Duplicate( LRANGE* lrange )
   result = Create_Complement(tn);
   result->u.c.original_tn = lrange->u.c.original_tn;
   result->flags = (LR_FLAG)(result->flags | (lrange->flags & LRANGE_FLAGS_avoid_ra));
+#ifdef TARG_ST
+  if (TN_is_save_reg(lrange->Tn())) {
+    result->pref = lrange->Pref();
+  }
+#endif
   return result;
 }
 
@@ -609,7 +614,13 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
     REGISTER sv_reg = TN_save_reg(Tn());
 #ifdef TARG_ST
     REGISTER_SET sv_set = REGISTER_SET_Range (sv_reg, sv_reg + NHardRegs() - 1);
-    if (GRA_spill_to_caller_save) {
+    // [SC] Allow save-regs to be allocated to their own register, or
+    // any caller-save register.  However, if a save-reg live range is
+    // split, it could be allocated to multiple places, which confuses
+    // the unwind information generator; so after a split, the deferred
+    // part of the live-range must be allocated to the specified register,
+    // or else spilled.
+    if (GRA_spill_to_caller_save && ! Split_Deferred ()) {
       sv_set = REGISTER_SET_Union (sv_set, REGISTER_CLASS_caller_saves (rc));
     }
     allowed = REGISTER_SET_Intersection(allowed, sv_set);

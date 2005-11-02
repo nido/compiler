@@ -91,8 +91,10 @@ LUNIT::Preference_Copy(LRANGE *lr)
   if (lr->Type() == LRANGE_TYPE_LOCAL && lr->Has_Wired_Register()) {
 #ifdef TARG_ST
     REGISTER reg = lr->Reg();
-    for(INT i = 0; i < lr->NHardRegs(); i++)
-      allowed_preferences = REGISTER_SET_Union1(allowed_preferences,reg++);
+    allowed_preferences =
+      REGISTER_SET_Union(allowed_preferences,
+			 REGISTER_SET_Range(reg,
+					    reg + lr->NHardRegs() - 1));
 #else
     allowed_preferences = REGISTER_SET_Union1(allowed_preferences,lr->Reg());
 #endif
