@@ -1596,6 +1596,13 @@ CIO_RWTRAN::Mark_Op_For_Epilog( OP *op, const UINT8 omega )
   Is_True( OP_store( op ),
 	   ( "CIO_RWTRAN::Mark_Op_For_Epilog op is not store" ) );
 
+#ifdef TARG_ST
+  // FdF 02/11/2005: Do not perform Write_Removal on predicated store
+  // operations (more work is needed).
+  if (OP_has_predicate(op))
+    return NULL;
+#endif
+
   // If trip count is constant and less than omega, don't copy op to epilog
   if ( TN_has_value( _trip_count_tn ) && TN_value( _trip_count_tn ) < omega )
     return NULL;
