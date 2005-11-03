@@ -537,19 +537,26 @@ CGIR_LD_to_LoopInfo(CGIR_LD cgir_ld) {
     BB *head_bb = LOOP_DESCR_loophead(cgir_ld);
     int pipelining = CG_LAO_pipelining;
     int renaming = CG_LAO_renaming;
-    ANNOTATION *remainder_annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
-    if (remainder_annot == NULL) {
-      // Try to access the #pragma pipeline arguments if any.
-      ANNOTATION *pipeline_annot = ANNOT_Get(BB_annotations(head_bb), ANNOT_PRAGMA);
-      while (pipeline_annot != NULL) {
-	if (WN_pragma(ANNOT_pragma(pipeline_annot)) == WN_PRAGMA_PIPELINE) break;
-	pipeline_annot = ANNOT_Get(ANNOT_next(pipeline_annot), ANNOT_PRAGMA);
+    int unroll_times = CG_LOOP_unroll_times_max;
+    ANNOTATION *annot_pipeline = NULL;
+    ANNOTATION *annot_remainder = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
+    if (annot_remainder == NULL) {
+      // Try to access the #pragma pipeline or #pragma unroll arguments if any.
+      ANNOTATION *annot_pragma = ANNOT_Get(BB_annotations(head_bb), ANNOT_PRAGMA);
+      while (annot_pragma != NULL) {
+        WN *wn = ANNOT_pragma(annot_pragma);
+	if (WN_pragma(wn) == WN_PRAGMA_PIPELINE) {
+          pipelining = WN_pragma_arg1(wn);
+          renaming = WN_pragma_arg2(wn);
+          annot_pipeline = annot_pragma;
+        }
+        if (WN_pragma(wn) == WN_PRAGMA_UNROLL) {
+          unroll_times = WN_pragma_arg1(wn);
+        }
+	annot_pragma = ANNOT_Get(ANNOT_next(annot_pragma), ANNOT_PRAGMA);
       }
-      if (pipeline_annot != NULL) {
-	WN *wn = ANNOT_pragma(pipeline_annot);
-	pipelining = WN_pragma_arg1(wn);
-	renaming = WN_pragma_arg2(wn);
-      }
+      // If unrolling prevented and no #pragma pipeline, prevent kernel unrolling.
+      if (unroll_times <= 1 && annot_pipeline == NULL) renaming = 1;
     } else pipelining = renaming = 0;
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
