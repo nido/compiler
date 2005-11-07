@@ -2640,6 +2640,12 @@ Normalize_Psi_Operations()
 	    reorder_psi_args = FALSE;
 	    break;
 	  }
+
+	  // FdF 20051107: Must consider also the case where opndi
+	  // dominates the first operand, so as to return 0 instead of
+	  // -1.
+	  if (opndj == 0)
+	    break;
 	}
 
 	if (opndj == opndi) {
