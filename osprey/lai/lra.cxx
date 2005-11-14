@@ -387,6 +387,110 @@ static ISA_REGISTER_CLASS trace_cl = (ISA_REGISTER_CLASS)2;
 static REGISTER
 Single_Register_Subclass (ISA_REGISTER_SUBCLASS subclass);
 
+// First of two unusable register conditions for extract/compose operations.
+// In this case, we want to allocate to a single-register tn that
+// is a result of an extract op, or a source of a compose op.
+static REGISTER_SET
+unusable_regs_for_multi_op_1 (TN *wide_tn, TN *narrow_tn[])
+{
+  // Need to avoid the situation where the wide_tn regs
+  // are a non-identity permutation of the narrow_tn regs.
+  // Detect when:
+  //   -  wide tn is allocated, all but one narrow tn is allocated,
+  //      and the allocated narrow tns are a non-identity permutation
+  //      of the registers allocated to the wide tn.
+  //      In this case, the unallocated narrow tn must not be
+  //      allocated to the remaining register in the permutation.
+  if (TN_register (wide_tn) != REGISTER_UNDEFINED
+      && TN_register (wide_tn) <= REGISTER_MAX) {
+    REGISTER wide_reg = TN_register (wide_tn);
+    REGISTER_SET wide_regs = TN_registers (wide_tn);
+    BOOL non_identity_permutation = FALSE;
+    INT n_regs = TN_nhardregs (wide_tn);
+    INT r;
+    // Remove from wide_regs all registers allocated to
+    // single-reg tns.
+    for (r = 0; r < n_regs; r++) {
+      REGISTER reg = TN_register (narrow_tn[r]);
+      if (reg != REGISTER_UNDEFINED
+	  && reg <= REGISTER_MAX) {
+	if (reg >= wide_reg
+	    && reg < (wide_reg + n_regs)
+	    && reg != (wide_reg + r)) {
+	  non_identity_permutation = TRUE;
+	}
+	wide_regs = REGISTER_SET_Difference1 (wide_regs, reg);
+      }
+    }
+    if (REGISTER_SET_Size (wide_regs) == 1) {
+      if (non_identity_permutation) {
+	// Only one register left and we have a
+	// non-identity permutation.
+	// Avoid the remaining register.
+	return wide_regs;
+      } else {
+	// Only one register left, but so far we have an
+	// identity permutation.
+	// This must mean that using remaining register
+	// maintains the identity permutation.
+	return REGISTER_SET_EMPTY_SET;
+      }
+    }
+  }
+  return REGISTER_SET_EMPTY_SET;
+}
+
+// Second of two conditions for extract/compose operations.
+// In this case, we want to allocate to a multi-register tn that
+// is a source of an extract op, or a result of a compose op.
+static REGISTER_SET
+unusable_regs_for_multi_op_2 (TN *wide_tn, TN *narrow_tn[])
+{
+  // Need to avoid the situation where the wide_tn regs
+  // are a non-identity permutation of the narrow_tn regs.
+  // Detect when:
+  //  - wide tn is unallocated
+  //  - all narrow_tns are allocated consecutively, but not
+  //      in sequence.
+  //  In this case we must avoid allocating at least
+  //  one of the allocated registers to the wide tn.
+  if (TN_register (wide_tn) == REGISTER_UNDEFINED) {
+    INT n_regs = TN_nhardregs(wide_tn);
+    REGISTER base_reg = REGISTER_UNDEFINED;
+    REGISTER low_reg = REGISTER_MAX + 1;
+    REGISTER high_reg = 0;
+    BOOL in_sequence = TRUE;
+    for (INT r = 0; r < n_regs; r++) {
+      REGISTER narrow_reg = TN_register (narrow_tn[r]);
+      if (narrow_reg != REGISTER_UNDEFINED
+	  && narrow_reg <= REGISTER_MAX) {
+	if (base_reg == REGISTER_UNDEFINED) {
+	  base_reg = narrow_reg - r;
+	} else if (narrow_reg != (base_reg + r)) {
+	  in_sequence = FALSE;
+	}
+	if (narrow_reg < low_reg) {
+	  low_reg = narrow_reg;
+	}
+	if (narrow_reg > high_reg) {
+	  high_reg = narrow_reg;
+	}
+      } else {
+	// There is an unallocated narrow reg, so no problem.
+	return REGISTER_SET_EMPTY_SET;
+      }
+    }
+    // The narrow tns are all allocated.
+    if (! in_sequence && (high_reg - low_reg + 1) == n_regs) {
+      // The registers allocated are consecutive, but not in sequence.
+      // Avoiding one of them is sufficient to prevent a non-identity
+      // permutation.
+      return REGISTER_SET_Range(low_reg, low_reg);
+    }
+  }
+  return REGISTER_SET_EMPTY_SET;
+}
+      
 // [SC] For an extract op, OP, return the set of registers that
 // must be avoided when allocating a result.
 // The situation we want to avoid is being unable to expand
@@ -396,45 +500,43 @@ Single_Register_Subclass (ISA_REGISTER_SUBCLASS subclass);
 static REGISTER_SET
 unusable_extract_result_regs (OP *op)
 {
-  TN *src = OP_opnd(op, 0);
-  if (TN_register (src) != REGISTER_UNDEFINED
-      && TN_register (src) <= REGISTER_MAX) {
-    REGISTER src_reg = TN_register (src);
-    REGISTER_SET src_regs = TN_registers (src);
-    BOOL non_identity_permutation = FALSE;
-    INT n_src_regs = TN_nhardregs (src);
-    INT r;
-    // Remove from src_regs all registers allocated to
-    // results.
-    for (r = 0; r < OP_results(op); r++) {
-      REGISTER reg = TN_register (OP_result(op, r));
-      if (reg != REGISTER_UNDEFINED
-	  && reg <= REGISTER_MAX) {
-	if (reg >= src_reg
-	    && reg < (src_reg + n_src_regs)
-	    && reg != (src_reg + r)) {
-	  non_identity_permutation = TRUE;
-	}
-	src_regs = REGISTER_SET_Difference1 (src_regs, reg);
-      }
-    }
-    if (REGISTER_SET_Size (src_regs) == 1) {
-      if (non_identity_permutation) {
-	// Only one source register left and we have a
-	// non-identity permutation.
-	// Avoid all source registers.
-	return TN_registers (src);
-      } else {
-	// Only one source register left, but so far we have an
-	// identity permutation.
-	// This must mean that using remaining source register
-	// maintains the identity permutation.
-	return REGISTER_SET_EMPTY_SET;
-      }
-    }
+  TN *dsts[OP_MAX_FIXED_RESULTS];
+  for (INT i = 0; i < OP_results(op); i++) {
+    dsts[i] = OP_result(op, i);
   }
-  return REGISTER_SET_EMPTY_SET;
+  return unusable_regs_for_multi_op_1 (OP_opnd(op, 0), dsts);
 }
+
+static REGISTER_SET
+unusable_compose_operand_regs (OP *op)
+{
+  TN *opds[OP_MAX_FIXED_OPNDS];
+  for (INT i = 0; i < OP_opnds(op); i++) {
+    opds[i] = OP_opnd(op, i);
+  }
+  return unusable_regs_for_multi_op_1 (OP_result(op, 0), opds);
+}
+
+static REGISTER_SET
+unusable_extract_operand_regs (OP *op)
+{
+  TN *dsts[OP_MAX_FIXED_RESULTS];
+  for (INT i = 0; i < OP_results(op); i++) {
+    dsts[i] = OP_result(op, i);
+  }
+  return unusable_regs_for_multi_op_2 (OP_opnd(op, 0), dsts);
+}
+
+static REGISTER_SET
+unusable_compose_result_regs (OP *op)
+{
+  TN *opds[OP_MAX_FIXED_OPNDS];
+  for (INT i = 0; i < OP_opnds(op); i++) {
+    opds[i] = OP_opnd(op, i);
+  }
+  return unusable_regs_for_multi_op_2 (OP_result(op, 0), opds);
+}
+
 #endif
 
 //
@@ -2175,7 +2277,7 @@ Update_Callee_Availability(BB *bb)
 // 
 // 1) If <tn> is used as an operand or a result from a particular
 //    register subclass, then it must be assigned a register that
-//    belongs to that cubclass.
+//    belongs to that subclass.
 // 
 // 2) If <tn> is used in an OP that has an operand or a result
 //    (different from <tn>) that requires a specific register,
@@ -2186,6 +2288,9 @@ Update_Callee_Availability(BB *bb)
 //    an allocated <tn>, and all but one of the source registers
 //    are allocated to other results, then <tn> must not be assigned
 //    to the final remaining register of the source.
+//
+// 4) If <tn> is the result of a compose op where the sources are
+//    all allocated <tns>, and <tn> cannot be allocated
 #endif
 static REGISTER_SET
 Usable_Registers (TN* tn, LIVE_RANGE* lr)
@@ -2223,15 +2328,20 @@ Usable_Registers (TN* tn, LIVE_RANGE* lr)
         ASM_OP_result_subclass(asm_info)[resnum] :
         OP_result_reg_subclass(op, resnum);
 #ifdef TARG_ST
-      if (OP_extract(op)) {
+      if (OP_extract(op) || OP_compose(op)) {
 	TN* result = OP_result(op, resnum);
-	// For an extract op, avoid the situation where the
-	// result registers are a non-identity permutation of the
-	// source registers, because that is impossible to expand
-	// into a sequence of copies.
 	if (result == tn) {
-	  usable_regs = REGISTER_SET_Difference(usable_regs,
-						unusable_extract_result_regs(op));
+	  // For extract and compose ops, avoid the situation where the
+	  // result registers are a non-identity permutation of the
+	  // source registers, because that is impossible to expand
+	  // into a sequence of copies.
+	  if (OP_extract(op)) {
+	    usable_regs = REGISTER_SET_Difference(usable_regs,
+						  unusable_extract_result_regs(op));
+	  } else {
+	    usable_regs = REGISTER_SET_Difference(usable_regs,
+						  unusable_compose_result_regs(op));
+	  }
 	}
       }
 #endif
@@ -2263,6 +2373,24 @@ Usable_Registers (TN* tn, LIVE_RANGE* lr)
       ISA_REGISTER_SUBCLASS sc = asm_info ?
         ASM_OP_opnd_subclass(asm_info)[opndnum] :
         OP_opnd_reg_subclass(op, opndnum);
+#ifdef TARG_ST
+      if (OP_extract(op) || OP_compose(op)) {
+	TN* opnd = OP_opnd(op, opndnum);
+	if (opnd == tn) {
+	  // For extract and compose ops, avoid the situation where the
+	  // result registers are a non-identity permutation of the
+	  // source registers, because that is impossible to expand
+	  // into a sequence of copies.
+	  if (OP_extract(op)) {
+	    usable_regs = REGISTER_SET_Difference(usable_regs,
+						  unusable_extract_operand_regs(op));
+	  } else {
+	    usable_regs = REGISTER_SET_Difference(usable_regs,
+						  unusable_compose_operand_regs(op));
+	  }
+	}
+      }
+#endif
       if (sc == ISA_REGISTER_SUBCLASS_UNDEFINED) {
         continue;
       }
