@@ -1578,7 +1578,12 @@ Make_Bundles (
 	// TODO: need to be refined further.
 	//	OP *last_real_op = Last_Real_OP(op);
 	//	Set_OP_end_group(last_real_op);
-	if (!OP_end_group(Last_Real_OP(op))) {
+	// [SC] Beware: in the case that we have artificially
+	// forced a new bundle (e.g. -O0 or prologue/epilogue boundary)
+	// there may not be a previous real op.  If there is none,
+        // there is no need to add a <stop_bit> marker.
+	if (Last_Real_OP(op)
+	    && ! OP_end_group(Last_Real_OP(op))) {
 #ifdef TARG_ST200 // [CL]
 	  CGTARG_Finish_Bundle(OP_prev(op), bundle);
 #endif
