@@ -522,6 +522,25 @@ ifeq ($(BUILD_TARGET),STxP70)
 #}CGG_DEV
 endif
 
+ifeq ($(BUILD_TARGET),STxP70)
+  CG_CXX_SRCS += cg_select.cxx
+  CG_CXX_SRCS += targ_select.cxx
+  CG_CXX_SRCS += targ_hb.cxx
+  CG_CXX_SRCS += top_properties.cxx
+  CG_CXX_SRCS += mexpand.cxx
+
+ CG_CXX_SRCS +=  pqs.cxx
+ CG_CXX_SRCS +=  pqs_cg.cxx
+ CG_CXX_SRCS +=  targ_pqs.cxx
+
+#CGG_DEV{
+  ifeq ($(BUILD_VARIANT), CGG_BUILD)
+   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
+   CG_C_SRCS += NBG_State.c NBG_Link.c
+  endif
+#}CGG_DEV
+endif
+
 ifdef LAO_ENABLED
 CG_CXX_SRCS +=	\
   lao_stub.cxx \
