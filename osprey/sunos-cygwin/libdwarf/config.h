@@ -72,8 +72,7 @@
 /* #define HAVE_LIBELF_H 1 */
 
 /* Define if you have the <libelf/libelf.h> header file.  */
-/* #undef HAVE_LIBELF_LIBELF_H */
-#define HAVE_LIBELF_LIBELF_H
+#define HAVE_LIBELF_LIBELF_H 1
 
 /* Define if you have the <sgidefs.h> header file.  */
 /*#define HAVE_SGIDEFS_H 1 */

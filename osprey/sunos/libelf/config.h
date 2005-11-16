@@ -25,8 +25,8 @@
 /* Define if you have the catgets function. */
 /* #undef HAVE_CATGETS */
 
-/* Define if you have the gettext function. */
-/*#define HAVE_GETTEXT 1*/
+/* Define if you have the dgettext function. */
+/* #undef HAVE_DGETTEXT */
 
 /* Define if you have the memset function.  */
 #define HAVE_MEMSET 1
@@ -35,19 +35,28 @@
 /* #undef HAVE_STRUCT_NLIST_DECLARATION */
 
 /* Define if Elf32_Dyn is declared in <link.h> */
-/* #undef NEED_LINK_H */
+/* #undef __LIBELF_NEED_LINK_H */
 
 /* Define to `<elf.h>' or `<sys/elf.h>' if one of them is present */
-#define __LIBELF_HEADER_ELF_H <elf.h>
+/*#define __LIBELF_HEADER_ELF_H <elf.h>*/
 
 /* Define if you want 64-bit support (and your system supports it) */
-#define __LIBELF64 1
+/*#define __LIBELF64 1*/
 
 /* Define if you want 64-bit support, and are running IRIX */
 /* #undef __LIBELF64_IRIX */
 
 /* Define if you want 64-bit support, and are running Linux */
 /* #undef __LIBELF64_LINUX */
+
+/* Define if you want symbol versioning (and your system supports it) */
+#define __LIBELF_SYMBOL_VERSIONS 1
+
+/* Define if symbol versioning uses Sun section type (SHT_SUNW_*) */
+#define __LIBELF_SUN_SYMBOL_VERSIONS 1
+
+/* Define if symbol versioning uses GNU section types (SHT_GNU_*) */
+/* #undef __LIBELF_GNU_SYMBOL_VERSIONS */
 
 /* Define to a 64-bit signed integer type if one exists */
 #define __libelf_i64_t long long
@@ -56,16 +65,19 @@
 #define __libelf_u64_t unsigned long long
 
 /* Define to a 32-bit signed integer type if one exists */
-#define __libelf_i32_t long
+#define __libelf_i32_t int
 
 /* Define to a 32-bit unsigned integer type if one exists */
-#define __libelf_u32_t unsigned long
+#define __libelf_u32_t unsigned int
 
 /* Define to a 16-bit signed integer type if one exists */
 #define __libelf_i16_t short
 
 /* Define to a 16-bit unsigned integer type if one exists */
 #define __libelf_u16_t unsigned short
+
+/* The number of bytes in a __int64.  */
+#define SIZEOF___INT64 8
 
 /* The number of bytes in a int.  */
 #define SIZEOF_INT 4
@@ -97,11 +109,35 @@
 /* Define if you have the memset function.  */
 #define HAVE_MEMSET 1
 
+/* Define if you have the <ar.h> header file.  */
+/* #undef HAVE_AR_H */
+
 /* Define if you have the <elf.h> header file.  */
-#define HAVE_ELF_H 1
+/* #undef HAVE_ELF_H */
+
+/* Define if you have the <fcntl.h> header file.  */
+#define HAVE_FCNTL_H 1
+
+/* Define if you have the <gelf.h> header file.  */
+/* #undef HAVE_GELF_H */
+
+/* Define if you have the <libelf.h> header file.  */
+/* #undef HAVE_LIBELF_H */
+
+/* Define if you have the <link.h> header file.  */
+/* #undef HAVE_LINK_H */
+
+/* Define if you have the <nlist.h> header file.  */
+/* #undef HAVE_NLIST_H */
+
+/* Define if you have the <stdint.h> header file.  */
+#define HAVE_STDINT_H 1
 
 /* Define if you have the <sys/elf.h> header file.  */
-#define HAVE_SYS_ELF_H 1
+/* #undef HAVE_SYS_ELF_H */
+
+/* Define if you have the <sys/link.h> header file.  */
+/* #undef HAVE_SYS_LINK_H */
 
 /* Define if you have the <unistd.h> header file.  */
 #define HAVE_UNISTD_H 1

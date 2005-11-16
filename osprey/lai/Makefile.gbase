@@ -95,6 +95,10 @@ ifeq ($(BUILD_TARGET), ST200)
 TARGDEFS += -DTARG_ST200 -DSUPPORTS_SELECT
 endif
 
+ifeq ($(BUILD_TARGET), STxP70)
+TARGDEFS += -DTARG_STxP70 -DSUPPORTS_SELECT
+endif
+
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
 HOSTDEFS += -DIs_True_On
 endif
@@ -118,6 +122,11 @@ endif
 
 #CGG_DEV{
 ifeq ($(BUILD_TARGET),ST200)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  HOSTDEFS += -DCGG_ENABLED -DHAS_INTTYPES_H
+endif
+endif
+ifeq ($(BUILD_TARGET),STxP70)
 ifeq ($(BUILD_VARIANT), CGG_BUILD)
   HOSTDEFS += -DCGG_ENABLED -DHAS_INTTYPES_H
 endif
@@ -197,6 +206,11 @@ ifeq ($(BUILD_VARIANT), CGG_BUILD)
   SRC_DIRS += $(COMMON_TARG_CGG_DIR)
 endif
 endif
+ifeq ($(BUILD_TARGET),STxP70)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  SRC_DIRS += $(COMMON_TARG_CGG_DIR)
+endif
+endif
 #}CGG_DEV
 
 ifdef LAO_ENABLED
@@ -224,6 +238,11 @@ HEADER_DIRS += $(TARGDIR)/include/libelf
 
 #CGG_DEV{
 ifeq ($(BUILD_TARGET),ST200)
+ifeq ($(BUILD_VARIANT), CGG_BUILD)
+  HEADER_DIRS += $(COMMON_TARG_CGG_DIR)
+endif
+endif
+ifeq ($(BUILD_TARGET),STxP70)
 ifeq ($(BUILD_VARIANT), CGG_BUILD)
   HEADER_DIRS += $(COMMON_TARG_CGG_DIR)
 endif
@@ -430,8 +449,7 @@ CG_CXX_SRCS = 		\
   gcov_profile.cxx \
   gcov_coverage.cxx 
 
-GENERATED_FILES = \
-  gcov-iov.h
+DERIVED_INCS += gcov-iov.h
 
 #add the pqs sources
 ifeq ($(BUILD_TARGET),IA64)
@@ -453,6 +471,44 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
   CG_CXX_SRCS += ipra.cxx
+
+ CG_CXX_SRCS +=  pqs.cxx
+ CG_CXX_SRCS +=  pqs_cg.cxx
+ CG_CXX_SRCS +=  targ_pqs.cxx
+
+#CGG_DEV{
+  ifeq ($(BUILD_VARIANT), CGG_BUILD)
+   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
+   CG_C_SRCS += NBG_State.c NBG_Link.c
+  endif
+#}CGG_DEV
+endif
+
+ifeq ($(BUILD_TARGET),STxP70)
+  CG_CXX_SRCS += cg_select.cxx
+  CG_CXX_SRCS += targ_select.cxx
+  CG_CXX_SRCS += targ_hb.cxx
+  CG_CXX_SRCS += top_properties.cxx
+  CG_CXX_SRCS += mexpand.cxx
+
+ CG_CXX_SRCS +=  pqs.cxx
+ CG_CXX_SRCS +=  pqs_cg.cxx
+ CG_CXX_SRCS +=  targ_pqs.cxx
+
+#CGG_DEV{
+  ifeq ($(BUILD_VARIANT), CGG_BUILD)
+   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
+   CG_C_SRCS += NBG_State.c NBG_Link.c
+  endif
+#}CGG_DEV
+endif
+
+ifeq ($(BUILD_TARGET),STxP70)
+  CG_CXX_SRCS += cg_select.cxx
+  CG_CXX_SRCS += targ_select.cxx
+  CG_CXX_SRCS += targ_hb.cxx
+  CG_CXX_SRCS += top_properties.cxx
+  CG_CXX_SRCS += mexpand.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
@@ -502,11 +558,6 @@ LC++INCS = $(addprefix -I, $(HEADER_DIRS))
 LASOPTS = $(STD_COMPILE_OPTS)
 LASDEFS = $(HOSTDEFS) $(TARGDEFS)
 LASINCS = $(addprefix -I, $(HEADER_DIRS))
-
-# setup stuff to build shared or non-shared
-ifeq ($(BUILD_TARGET), MIPS)
-GLDOPTS = $(STD_LOAD_OPTS)
-endif
 
 ifeq ($(BUILD_COMPILER), EDG)
 DSOSTARTOPT = -check_registry $(TARG_BE)/so_locations
@@ -590,6 +641,24 @@ endif
 endif #ST200
 
 
+ifeq ($(BUILD_TARGET), STxP70)
+
+# shared library
+ifeq ($(DSO_MODE),SO)
+TARGET_SO = 
+endif
+# windows dll import library
+ifeq ($(DSO_MODE),DLL)
+TARGET_SO =
+endif
+# static library
+ifeq ($(DSO_MODE),STATIC)
+TARGET_SO = libstxp70.a
+endif
+
+endif #STxP70
+
+
 ##
 ## Defining the wopt library
 ##
@@ -647,6 +716,7 @@ else
 CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
 	     $(TARG_LIBELFUTIL)/libelfutil.a \
 	     $(TARG_LIBELF)/libelf.a \
+	     $(TARGDIR)/libSYS/libSYS.a \
 	     $(TARG_LIBIBERTY)/libiberty.a
 LLDLIBS += $(CGDEPLIBS)
 endif
@@ -662,16 +732,10 @@ endif
 ifneq ($(HOST_OS),CYGWIN_NT)
 # all we need is provided by libcygwin
 LLDLIBS += -lm
-ifneq ($(HOST_OS),MINGW)
-LLDLIBS += -lc
-else
-LLDLIBS += $(TARGDIR)/libSYS/libSYS.a
-endif
-else
-LLDLIBS += $(TARGDIR)/libSYS/libSYS.a
 endif
 
-default: first local last
+default: first 
+	$(MAKE) local last
 
 #----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is
@@ -714,18 +778,20 @@ ifeq ($(DSO_MODE),DLL)
 endif
 endif
 
-local: first_local derived_files $(GENERATED_FILES) $(TARGETS)
+local: first_local derived_files
+	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local make_deps
+last: local 
+	$(MAKE) make_deps
 
 #----------------------------------------------------------------------
 #  Install target
 #----------------------------------------------------------------------
-install:: local
+install:: last
 ifneq ($(BUILD_OS), IRIX)
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
 	for h in $(TARGETS); do \
@@ -781,7 +847,7 @@ cg.so: $(CG_CXX_OBJS) $(CG_C_OBJS) $(TARG_BE)/$(BE_DSO) \
 	$(BE_CG_DIR)/Exported $(BE_BE_DIR)/so_locations $(CGDEPLIBS)
 	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
 		$(CG_C_OBJS) $(CG_CXX_OBJS) \
-		-o $@ $(LINK_DSOS) $(LLDLIBS)
+		-o $@ $(LINK_DSOS) $(LLDLIBS) $(LDOPTS)
 
 else # Using Pre-Compiled Headers
 cg_pch_files: $(CG_PCH_OBJS) cg_pch.pch
@@ -792,7 +858,7 @@ cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
 	$(BE_BE_DIR)/so_locations
 	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
 	$(CG_C_OBJS) $(CG_CXX_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
-	-o $@ $(TARG_BE)/$(BE_DSO) $(LLDLIBS)
+	-o $@ $(TARG_BE)/$(BE_DSO) $(LLDLIBS) $(LDOPTS)
 endif # BUILD_PCH
 endif # shared library
 
@@ -801,11 +867,11 @@ endif # shared library
 ##
 ifeq ($(DSO_MODE), DLL)
 
-LDDSOOPTS+= $(LINK_DSOS) $(LLDLIBS)
+LDDSOOPTS+=  $(LLDLIBS)
 
-cg.dll cg_dll.a : $(CG_CXX_OBJS) $(CG_C_OBJS)
+cg.dll cg_dll.a : $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_LIBS) $(LINK_DSOS)
 	$(CXX) --shared -o cg.dll -Wl,--out-implib,cg_dll.a \
-	$(CG_CXX_OBJS) $(CG_C_OBJS) $(LDDSOOPTS) -Wl,--image-base=0x68000000
+	$(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_LIBS) $(LINK_DSOS) $(LDOPTS) $(LDDSOOPTS) -Wl,--image-base=0x68000000
 endif
 
 ##
@@ -944,4 +1010,5 @@ gcov-iov.h: s-iov
 s-iov: gcov-iov$(BEXE) 
 	./gcov-iov$(build_exeext) > gcov-iov.h
 	touch s-iov
-LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i gcov-iov.h
+
+LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i

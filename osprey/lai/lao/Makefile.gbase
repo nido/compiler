@@ -182,7 +182,6 @@ HEADER_DIRS = 		\
   $(LAO_PREFIX)/include/CCL	\
   $(LAO_PREFIX)/include/LAO	\
   $(LAO_PREFIX)/include/CSD	\
-  $(LAO_PREFIX)/include/CSD/st200	\
   $(LAO_PREFIX)/include/LIR	\
   $(LAO_PREFIX)/include/PFA	\
   $(LAO_PREFIX)/include/SSA	\
@@ -190,6 +189,14 @@ HEADER_DIRS = 		\
   $(LAO_PREFIX)/include/SCD	\
   $(LAO_PREFIX)/include/LAI	\
   $(TARG_BE)
+
+ifeq ($(TARGET_BUILD), ST200)
+HEADER_DIRS += $(LAO_PREFIX)/include/CSD/st200
+endif
+
+ifeq ($(TARGET_BUILD), STxP70)
+HEADER_DIRS += $(LAO_PREFIX)/include/CSD/stxp70
+endif
 
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.
@@ -217,6 +224,11 @@ ifeq ($(BUILD_TARGET), ST200)
 # TARGET_DSO=st220.so
 TARGET_DSO=
 endif
+ifeq ($(BUILD_TARGET), STxP70)
+# (cbr) use ti_init dlsyms
+# TARGET_DSO=stxp70.so
+TARGET_DSO=
+endif
 endif
 
 # static library
@@ -234,6 +246,11 @@ CG_DSO=cg_dll.a
 ifeq ($(BUILD_TARGET), ST200)
 # (cbr) use ti_init dlsyms
 # TARGET_DSO=st220_dll.a
+TARGET_DSO=
+endif
+ifeq ($(BUILD_TARGET), STxP70)
+# (cbr) use ti_init dlsyms
+# TARGET_DSO=stxp70_dll.a
 TARGET_DSO=
 endif
 HOSTDEFS += -DCG_EXPORTED=$(DLLIMPORT)

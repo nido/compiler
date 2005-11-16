@@ -457,7 +457,7 @@ void ABI_Properties_End(void)
 		 "}\n");
   fprintf(efile, "ABI_PROPERTIES_Initialize\n");
 
-  fprintf(cfile, "\nTARGINFO_EXPORTED const ABI_PROPERTIES *ABI_PROPERTIES_target_props"
+  fprintf(cfile, "\nBE_EXPORTED const ABI_PROPERTIES *ABI_PROPERTIES_target_props"
 		 " = &abi_properties[ABI_PROPERTIES_ABI_UNDEFINED];\n");
   fprintf(efile, "ABI_PROPERTIES_target_props\n");
 
@@ -475,7 +475,7 @@ void ABI_Properties_End(void)
 		 "  ISA_REGISTER_CLASS rc,\n"
 		 "  INT reg)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
+		 "  BE_EXPORTED extern const ABI_PROPERTIES *ABI_PROPERTIES_target_props;\n"
 		 "  return ABI_PROPERTIES_target_props->reg_names[rc][reg];\n"
 		 "}\n");
 

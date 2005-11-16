@@ -15,7 +15,7 @@
 #define USE_H_ENDIAN_H 1
 
 /* whether to use or not the host machine stdint.h directly */
-/*#define USE_H_STDINT_H 1*/
+#define USE_H_STDINT_H 1
 
 /* whether to use or not the host machine bstring.h directly */
 #define USE_H_BSTRING_H 1

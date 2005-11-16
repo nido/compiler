@@ -226,4 +226,3 @@
 
 /* (cbr) Define if you have the <limits.h> header file.  */
 #define HAVE_LIMITS_H 1
-

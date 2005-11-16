@@ -88,6 +88,15 @@ TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
 endif
 
+ifeq ($(BUILD_TARGET), STxP70)
+TARGINFO_DIR		= $(BUILD_TOT)/targinfo
+TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
+TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
+TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
+TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
+TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+endif
+
 ifeq ($(BUILD_TARGET), IA64)
 TARGINFO_DIR		= $(BUILD_BASE)
 TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
@@ -139,7 +148,7 @@ LCINCS = $(addprefix -I, $(SRC_DIRS))
 BUILDDEFS += -DTARGINFO_EXPORTED= -DBE_EXPORTED= -DIPL_EXPORTED= -DLNO_EXPORTED=
 BUILD_CFLAGS = $(LCINCS) $(LCOPTS) $(BUILDDEFS) $(TARGDEFS)
 
-LCXXOPTS = $(STD_COMPILE_OPTS)
+LCXXOPTS = $(STD_COMPILE_OPTS) -g
 LCXXDEFS = $(HOSTDEFS) $(TARGDEFS)
 LCXXINCS = $(addprefix -I, $(SRC_DIRS))
 BUILD_CXXFLAGS = $(LCXXINCS)  $(LCXXOPTS) $(BUILDDEFS) $(TARGDEFS)
@@ -178,6 +187,7 @@ SO_TARGETS = st120.so
 endif
 
 ifeq ($(BUILD_TARGET), ST200)
+
 LDIRT += st220_si_gen$(BEXE) st230_si_gen$(BEXE) st231_si_gen$(BEXE) \
 	st235_si_gen$(BEXE)
 
@@ -195,6 +205,24 @@ SO_TARGETS = st220.so st230.so st231.so st235.so
 endif
 
 endif # ST200
+
+ifeq ($(BUILD_TARGET), STxP70)
+LDIRT += arch_1_3_1_si_gen$(BEXE)
+
+# building static library
+ifeq ($(DSO_MODE),STATIC)
+SO_TARGETS = libstxp70.a
+endif
+# building windows dll
+ifeq ($(DSO_MODE),DLL)
+SO_TARGETS = arch_1_3_1.dll libtarginfo.dll
+endif
+# building "unix" so library
+ifeq ($(DSO_MODE),SO)
+SO_TARGETS = arch_1_3_1.so
+endif
+
+endif # STxP70
 
 ifeq ($(BUILD_TARGET), MIPS)
 LDIRT += r10000_si_gen r8000_si_gen r5000_si_gen r4000_si_gen 
@@ -282,32 +310,39 @@ endif
 #----------------------------------------------------------------------
 LLDLIBS = 
 
-default: first local last
+default: first
+	$(MAKE) local last
 
 #----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is 
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 	cd $(BUILD_AREA)/include && $(MAKE)
+endif
 
 #----------------------------------------------------------------------
 # The commands in this section do not check the accuracy of
 # library/includes coming from other modules...
 #----------------------------------------------------------------------
-local: $(TARGETS)
+first_local:
+
+local: first_local
+	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is 
 #  built.
 #----------------------------------------------------------------------
-last: local make_deps
+last: local
+	$(MAKE) make_deps
 
 #----------------------------------------------------------------------
 #  install target
 #----------------------------------------------------------------------
 ifneq ($(BUILD_OS), IRIX)
-install: local
+install: last
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
 	for h in $(SO_TARGETS); do \
 	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC); \
@@ -949,6 +984,48 @@ libst220.a : st220.o
 	$(AR) rc $@ $<
 
 endif # ST200
+
+#----------------------------------------------------------------------
+# STxP70
+#----------------------------------------------------------------------
+
+ifeq ($(BUILD_TARGET), STxP70)
+
+ti_si.o: ti_si.c ti_si.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+arch_%.o: arch_%.c ti_si.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+arch_%.c: arch_%_si_gen$(BEXE)
+	$(SETPATH) $(RUN) ./$<
+
+arch_%_si_gen$(BEXE): arch_%_si.o si_gen.a build_topcode.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+arch_%_si.o: arch_%_si.cxx targ_isa_subset.h topcode.h si_gen.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+#
+# shared library
+#
+arch_%.so: arch_%.o ti_si.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< ti_si.o -o $@
+
+#
+# windows dll (+ import library)
+#
+arch_%.dll arch_%_dll.a : arch_%.o  ti_si.o arch_%_DllMain.o 
+	$(CC) --shared -o arch_$*.dll -Wl,--out-implib,arch_$*_dll.a \
+	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
+
+#
+# static library
+#
+lib_arch_1_3_1.a : arch_1_3_1.o
+	$(AR) rc $@ $<
+
+endif # STxP70
 
 
 #----------------------------------------------------------------------
