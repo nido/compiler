@@ -39,6 +39,7 @@ using std::list;
 #else
 #include <list.h>
 #endif // __GNUC__ >= 3
+
 #include "W_alloca.h"
 #include "defs.h"
 #include "erglob.h"
@@ -364,20 +365,17 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     // 4. restore of FP: ignore here, handled below
 
     // case 2: if FP is already defined, ignore this redefinition of SP
-    if (PU_has_FP && !PU_has_restored_FP &&
-	(OP_result(op,0) == SP_TN) && ! Restore_SP_From_FP(op)) {
+    if (PU_has_FP && !PU_has_restored_FP && !Restore_SP_From_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
     // case 3:
-    } else if (PU_has_FP && !PU_has_restored_FP &&
-	       (OP_result(op,0) == SP_TN) && Restore_SP_From_FP(op)) {
+    } else if (PU_has_FP && !PU_has_restored_FP && Restore_SP_From_FP(op)) {
       ue.kind = UE_DESTROY_FP;
       ue.rc_reg = CLASS_REG_PAIR_sp;
       PU_has_restored_FP = TRUE;
 
     // case 4:
-    } else if ( (!PU_has_FP || PU_has_restored_FP)
-		&& (OP_result(op,0) == FP_TN) && Restore_FP(op)) {
+    } else if ( (!PU_has_FP || PU_has_restored_FP) && Restore_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
     // case 1:
