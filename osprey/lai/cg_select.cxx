@@ -1877,10 +1877,7 @@ Optimize_Spec_Stores(BB *bb)
           for (OP *iop = OP_next(op1);
                iop!= NULL && iop != op2;
                iop = OP_next(iop)) {
-            if (OP_memory (iop) &&
-                (!OP_has_predicate(iop) ||
-                 tn1==OP_opnd(iop, OP_find_opnd_use(iop, OU_predicate))) &&
-                !Are_Not_Aliased (op1, iop)) {
+            if (OP_memory (iop) && !Are_Not_Aliased (op1, iop)) {
               i_iter++;
               goto next_store;
             }
