@@ -76,6 +76,10 @@ using std::list;
 #include "cgemit.h"
 #include "cgdwarf.h"               /* [CL] for CGD_LABIDX */
 
+#if 0
+#include "cxx_memory.h"            /* [CL] for CXX_NEW_ARRAY */
+#endif
+
 static BOOL Trace_Unwind = FALSE;
 
 static INT Data_Alignment_Factor = 4;
@@ -137,6 +141,20 @@ static TN_MAP tn_def_op;
 
 static BOOL PU_has_FP = FALSE;  // does the current PU use a frame pointer?
 static BOOL PU_has_restored_FP = FALSE; // has the current PU already restored FP?
+
+#if 0 // [CL] Try to ensure we only record restores corresponding to
+      // recorded saves. Achieve this by recording the offset at which
+      // a register was saved, and only record restore from the same
+      // offset. It turns out that this seems not necessary if we make
+      // sure the register we are loading is properly tagged as a
+      // save_reg. So disable this for the time being.
+struct reg_at_offset {
+  bool saved;
+  mINT64 offset;
+};
+
+static struct reg_at_offset *reg_saved_at_offset = NULL;
+#endif
 
 static const char *
 UE_Register_Name (ISA_REGISTER_CLASS rc, REGISTER r)
@@ -216,16 +234,18 @@ Print_All_Unwind_Elem (char *msg)
 static BOOL
 TN_Is_Unwind_Reg (TN *tn)
 {
-	if (REGISTER_SET_MemberP(
-		REGISTER_CLASS_callee_saves(TN_register_class(tn)),
-		TN_register(tn)))
-	{
-		return TRUE;
-	}
-	else if (CLASS_REG_PAIR_EqualP(TN_class_reg(tn), CLASS_REG_PAIR_ra)) {
-		return TRUE;
-	}
-	return FALSE;
+  if (!TN_is_register(tn))
+    return FALSE;
+
+  if (REGISTER_SET_MemberP(
+	   REGISTER_CLASS_callee_saves(TN_register_class(tn)),
+	   TN_register(tn))) {
+    return TRUE;
+  }
+  else if (CLASS_REG_PAIR_EqualP(TN_class_reg(tn), CLASS_REG_PAIR_ra)) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 static OP*
@@ -265,7 +285,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
 #endif
 	return tn;
     }
-	
+
     if (TN_is_dedicated(tn)) 
     {
 #ifdef DEBUG_UNWIND
@@ -380,23 +400,38 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 
     // case 1:
     } else {
-
-      TN* frame_tn = OP_opnd(op,1);
-      if (TN_is_constant(frame_tn)) {
-	ue.offset = TN_value (frame_tn);
-      } else {
-	// [CL] frame size is in a register
-	OP *frame_op = Find_Def_Of_TN (frame_tn);
-	if (OP_move(frame_op)) {
-	  frame_tn = OP_opnd(frame_op,0);
-	  if (TN_is_constant(frame_tn)) {
-	    ue.offset = TN_value (frame_tn);
-	  }
+      OP* frame_op = NULL;
+      if (OP_opnds(op) > 1 && ( OP_isub(op) || OP_iadd(op) ) ) {
+	TN* frame_tn = OP_opnd(op,1);
+	if (TN_is_constant(frame_tn)) {
+	  ue.offset = TN_value (frame_tn);
+	  goto case1_OK;
 	} else {
-	  FmtAssert(FALSE, ("unwind: unable to compute frame size"));
+	  // [CL] frame size is in a register defined earlier
+	  frame_op = Find_Def_Of_TN (frame_tn);
+	  if (OP_move(frame_op)) {
+	    frame_tn = OP_opnd(frame_op,0);
+	    if (TN_is_constant(frame_tn)) {
+	      ue.offset = TN_value (frame_tn);
+	      goto case1_OK;
+	    }
+	  }
+	}
+      } else {
+	// FP/SP is defined as a move from another reg
+	if (OP_move(op)) {
+	  ue.offset = 0;
+	  goto case1_OK;
 	}
       }
 
+      if (Trace_Unwind) {
+	Print_OP_No_SrcLine(op);
+	if (frame_op) Print_OP_No_SrcLine(frame_op);
+      }
+      FmtAssert(FALSE, ("unwind: unable to compute frame size"));
+
+    case1_OK:
       if (OP_result(op,0) == SP_TN) {
 	ue.rc_reg = CLASS_REG_PAIR_sp;
       
@@ -411,6 +446,9 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  // SP is increased
 	  ue.kind = UE_DESTROY_FRAME;
 	} else {
+	  if (Trace_Unwind) {
+	    Print_OP_No_SrcLine(op);
+	  }
 	  FmtAssert(FALSE, ("unwind: unsupported operation on SP"));
 	}
 
@@ -421,6 +459,17 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       } else if (OP_result(op,0) == FP_TN) {
 
 	// FP must be defined as an offset from SP
+	if (Trace_Unwind) {
+	  if (
+	      (OP_opnd(op,0) == SP_TN)
+	      &&
+	      (OP_iadd(op) || OP_isub(op))
+	      ) { /* OK */ } else 
+	      {
+		Print_OP_No_SrcLine(op);
+	      }
+	}
+
 	FmtAssert(OP_opnd(op,0) == SP_TN,
 		  ("unwind: FP not defined relative to SP"));
 	FmtAssert(OP_iadd(op) || OP_isub(op),
@@ -428,8 +477,8 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 
 	ue.rc_reg = CLASS_REG_PAIR_fp;
 
-	if ( ( ue.offset > 0 && OP_iadd(op) )
-	     || ( ue.offset < 0 && OP_isub(op) )
+	if ( ( ue.offset >= 0 && OP_iadd(op) )
+	     || ( ue.offset <= 0 && OP_isub(op) )
 	     ) {
 	  // FP is higher than SP
 	  ue.kind = UE_CREATE_FP;
@@ -453,10 +502,16 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     // also check if base comes from spill symbol.
     TN *save_tn;
     INT opndnum = OP_find_opnd_use(op, OU_storeval);
+    if (Trace_Unwind && opndnum < -1) {
+      Print_OP_No_SrcLine(op);
+    }
     FmtAssert(opndnum >= 0, ("no OU_storeval for %s", TOP_Name(opc)));
     save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op);
     if (save_tn) {
 	opndnum = OP_find_opnd_use(op, OU_base);
+	if (Trace_Unwind && opndnum < -1) {
+	  Print_OP_No_SrcLine(op);
+	}
 	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
 	ue.rc_reg = TN_save_creg(save_tn);
 	TN *store_tn = OP_opnd(op,opndnum);
@@ -473,10 +528,24 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	      INT64 base_ofst;
 
 	      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	        Print_OP_No_SrcLine(op);
+	      }
 	      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
 		      ("not saving to the stack!"));
 
 	      ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
+
+#if 0 // [CL] see comment at the beginning of this file
+
+	    // Remember at which offset ue.rc_reg was saved, so that
+	    // we can choose the right restore. Indeed, rc_reg may be
+	    // for spill, and restored with a value different from the
+	    // initial one, before finally being restored with the
+	    // caller's value
+	    reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved = TRUE;
+	    reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset = ue.offset;
+#endif
 
 #ifdef DEBUG_UNWIND
 	      fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
@@ -498,8 +567,11 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       // check if we are loading a callee saved
       // from the stack
       TN* result_tn = OP_result(op,0);
-      if (TN_Is_Unwind_Reg(result_tn)) {
+      if (TN_Is_Unwind_Reg(result_tn) && TN_is_save_reg(result_tn)) {
 	INT opndnum = OP_find_opnd_use(op, OU_base);
+	if (Trace_Unwind && opndnum < -1) {
+	  Print_OP_No_SrcLine(op);
+	}
 	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
 	TN *load_tn = OP_opnd(op,opndnum);
 	if (load_tn == SP_TN || load_tn == FP_TN) {
@@ -516,17 +588,36 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	    INT64 base_ofst;
     
 	    Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	    if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	      Print_OP_No_SrcLine(op);
+	    }
 	    FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
 		      ("not restoring from the stack!"));
 
 	    ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
 
+#if 0 // [CL] see comment at the beginning of this file
+
+	  // If rc_reg was not saved at this offset, it means op is
+	  // not a restore. Forget it.
+	  if ((reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved
+	       == FALSE)
+	      ||
+	      (reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset
+	      != ue.offset)
+	      ) {
+	    ue.kind = UE_UNDEFINED;
+	  }
+#endif
+
 #ifdef DEBUG_UNWIND
+	  if (ue.kind != UE_UNDEFINED) {
 	    fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
 		    __FUNCTION__,
 		    REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
 					CLASS_REG_PAIR_reg(ue.rc_reg)),
 		    ue.offset);
+	  }
 #endif
 	  }
 	}
@@ -544,10 +635,9 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       // and that the destination is not a dedicated
       // there is a special case for FP, which is removed
       // from the callee_save register set when used in a PU
-      if (TN_is_register(copy_tn)
-	  && (TN_Is_Unwind_Reg(copy_tn) || copy_tn==FP_TN)
-	  && TN_is_register(result_tn)
-	  && !TN_is_dedicated(result_tn))
+      if ( (TN_Is_Unwind_Reg(copy_tn) || copy_tn==FP_TN)
+	   && TN_is_register(result_tn)
+	   && !TN_is_dedicated(result_tn))
       {
 	  ue.kind = UE_SAVE_GR;
 	  ue.rc_reg = TN_class_reg(copy_tn);
@@ -555,10 +645,9 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 
       // or check that we are restoring a callee-saved,
       // not from a dedicated
-      } else if (TN_is_register(result_tn)
-		 && (TN_Is_Unwind_Reg(result_tn) || result_tn==FP_TN)
-		 && TN_is_register(copy_tn)
-		 && !TN_is_dedicated(copy_tn))
+      } else if ( (TN_Is_Unwind_Reg(result_tn) || result_tn==FP_TN)
+		  && TN_is_register(copy_tn)
+		  && !TN_is_dedicated(copy_tn))
       {
 	  ue.kind = UE_RESTORE_GR;
 	  ue.rc_reg = TN_class_reg(result_tn);
@@ -1172,6 +1261,18 @@ Init_Unwind_Info (BOOL trace)
   PU_has_FP = FALSE;
   PU_has_restored_FP = FALSE;
 
+#if 0 // [CL] see comment at the beginning of this file
+
+  // Reset mapping of offsets at which registers are saved
+  if (reg_saved_at_offset == NULL) {
+    reg_saved_at_offset = CXX_NEW_ARRAY(struct reg_at_offset, REGISTER_MAX+1, Malloc_Mem_Pool);
+  }
+
+  for(int i=0; i<REGISTER_MAX; i++) {
+    reg_saved_at_offset[i].saved = FALSE;
+  }
+#endif
+
   Find_Unwind_Info ();
   simple_unwind = Is_Unwind_Simple();
 
@@ -1542,7 +1643,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
     case UE_DESTROY_FRAME:
       Is_True(frame_size == ue_iter->offset,
-	      ("unwind: bad frame size at destroy point"));
+	      ("unwind: bad frame size at destroy point %d instead of %d", frame_size, ue_iter->offset));
 
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
