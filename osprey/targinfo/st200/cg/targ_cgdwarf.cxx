@@ -273,7 +273,7 @@ Find_Def_Of_TN (TN *tn)
 
 // search for save-tn that "tn" is copied from.
 static TN*
-Get_Copied_Save_TN (TN *tn, OP *cur_op)
+Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
 {
 	// might already be a save-tn
     if (TN_is_save_reg(tn)) 
@@ -282,6 +282,20 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op)
       fprintf(TFile, "** %s is a save reg %d\n", __FUNCTION__,
 	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(tn)),
 				  CLASS_REG_PAIR_reg(TN_save_creg(tn))));
+#endif
+	return tn;
+    }
+
+    // [CL] "temporary" fix to handle the "-O1" issue (it happens tn
+    // does not always have the TN_is_save_reg() property -- could
+    // also happen at any optim level). Check the ABI register
+    // property when in the entry block. We should also do the same
+    // thing in the exit block, but as this is a temporary fix...
+    if (BB_entry(bb) && TN_Is_Unwind_Reg(tn)) {
+#ifdef DEBUG_UNWIND
+      fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
+				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
 #endif
 	return tn;
     }
@@ -407,7 +421,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  ue.offset = TN_value (frame_tn);
 	  goto case1_OK;
 	} else {
-	  // [CL] frame size is in a register defined earlier
+	// [CL] frame size is in a register defined earlier
 	  frame_op = Find_Def_Of_TN (frame_tn);
 	  if (OP_move(frame_op)) {
 	    frame_tn = OP_opnd(frame_op,0);
@@ -506,14 +520,18 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       Print_OP_No_SrcLine(op);
     }
     FmtAssert(opndnum >= 0, ("no OU_storeval for %s", TOP_Name(opc)));
-    save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op);
+    save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op, bb);
     if (save_tn) {
 	opndnum = OP_find_opnd_use(op, OU_base);
 	if (Trace_Unwind && opndnum < -1) {
 	  Print_OP_No_SrcLine(op);
 	}
 	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
-	ue.rc_reg = TN_save_creg(save_tn);
+	if (TN_is_save_reg(save_tn)) {
+	  ue.rc_reg = TN_save_creg(save_tn);
+	} else {
+	  ue.rc_reg = TN_class_reg(save_tn);
+	}
 	TN *store_tn = OP_opnd(op,opndnum);
 	if (store_tn == SP_TN || store_tn == FP_TN) {
 	    ue.kind = (store_tn == SP_TN) ? UE_SAVE_SP : UE_SAVE_FP;
