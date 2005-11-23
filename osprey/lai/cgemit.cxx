@@ -707,6 +707,13 @@ r_qualified_name (
 #else
   if (ST_name(st) && *(ST_name(st)) != '\0') {
     *buf = vstr_concat(*buf, ST_name(st));
+
+#if defined (TARG_X8664) || defined (TARG_ST200)
+// This name is already unique, don't change it.
+	if (!strncmp (ST_name(st), ".range_table.", strlen(".range_table.")))
+		return;
+#endif // TARG_X8664
+
     if (ST_is_export_local(st) && ST_class(st) == CLASS_VAR) {
       // local var, but being written out.
       // so add suffix to help .s file distinguish names.
@@ -1180,8 +1187,10 @@ EMT_Put_Elf_Symbol (
 	case SCLASS_FSTATIC:
 	case SCLASS_DGLOBAL:
 	case SCLASS_UGLOBAL:
+#if defined (TARG_X8664) || defined (TARG_ST200)
+	case SCLASS_EH_REGION:
+#endif // TARG_X8664
 #ifdef TARG_ST
-        case SCLASS_EH_REGION:
         case SCLASS_PSTATIC:
 	      // [CL] take into account the right renaming of static variables.
               // Symbols with no base are not emitted: as they have not been
@@ -1355,6 +1364,40 @@ Trace_Init_Loc ( INT scn_idx, Elf64_Xword scn_ofst, INT32 repeat)
   return;
 }
 
+#ifdef KEY
+static int exception_table_id=0;
+const char *lsda_ttype_base = ".LSDATTYPEB";
+const char *lsda_ttype_disp = ".LSDATTYPED";
+const char *lsda_cs_begin = ".LSDACSB";
+const char *lsda_cs_end = ".LSDACSE";
+
+static Elf64_Word Write_Diff (LABEL_IDX, LABEL_IDX, INT, Elf64_Word);
+
+static Elf64_Xword Handle_EH_Region_Length (LABEL_IDX l, 
+				INT scn_idx, Elf64_Xword scn_ofst)
+{
+    static bool first_label_seen = false;
+    static LABEL_IDX first_label=0;
+
+    // process exception region length
+    if (!first_label_seen)
+    {
+	FmtAssert (first_label==0,("EH table processing error"));
+	first_label_seen = true;
+	first_label = l;
+    }
+    else
+    {// this is the 2nd label
+	FmtAssert (first_label!=0,("EH table processing error"));
+	scn_ofst = Write_Diff (first_label, l, scn_idx, scn_ofst);
+	// reset
+	first_label_seen = false;
+	first_label = 0;
+    }
+    return scn_ofst;
+}
+#endif // KEY
+
 /* ====================================================================
  *    Write_TCON
  *
@@ -1367,6 +1410,10 @@ Write_TCON (
   INT scn_idx,		/* Section to emit it into */
   Elf64_Xword scn_ofst,	/* Section offset to emit it at */
   INT32	repeat		/* Repeat count */
+#ifdef KEY
+  , bool etable = 0
+  , int format = 0
+#endif // KEY
 )
 {
   BOOL add_null = TCON_add_null(*tcon);
@@ -1382,6 +1429,11 @@ Write_TCON (
     INT32 scn_ofst32 = (INT32)scn_ofst;
     FmtAssert(scn_ofst32 == scn_ofst, 
        ("section offset exceeds 32 bits: 0x%llx", (INT64)scn_ofst));
+#ifdef KEY
+    if (etable)
+        Targ_Emit_EH_Const ( Asm_File, *tcon, add_null, repeat, scn_ofst32, format );
+    else
+#endif // KEY
     Targ_Emit_Const (Output_File, *tcon, add_null, repeat, scn_ofst32);
   } 
 #if 0
@@ -1601,6 +1653,9 @@ Write_Symdiff (
   Elf64_Word scn_ofst,	/* Section offset to emit it at */
   INT32	repeat,		/* Repeat count */
   INT size		/* 2 or 4 bytes */
+#ifdef KEY
+  , bool etable = 0
+#endif // KEY
 )
 {
   INT32 i;
@@ -1644,6 +1699,11 @@ Write_Symdiff (
 
   for ( i = 0; i < repeat; i++ ) {
     if (Assembly) {
+#ifdef KEY
+      if (etable)
+      	fprintf (Asm_File, "\t.uleb128\t");
+      else
+#endif // KEY
       fprintf (Output_File, "\t%s\t", (size == 2 ? AS_HALF : AS_WORD));
       fprintf(Output_File, "%s", LABEL_name(lab1));
       fprintf (Output_File, "-");
@@ -1658,6 +1718,7 @@ Write_Symdiff (
   return scn_ofst;
 }
 
+
 /* ====================================================================
  *    Write_INITV
  *
@@ -1665,11 +1726,11 @@ Write_Symdiff (
  * ====================================================================
  */
 static Elf64_Word
-Write_INITV (
-  INITV_IDX invidx, 
-  INT scn_idx, 
-  Elf64_Word scn_ofst
-)
+#ifdef KEY
+Write_INITV (INITV_IDX invidx, INT scn_idx, Elf64_Word scn_ofst, bool etable=0, int format=0)
+#else
+Write_INITV (INITV_IDX invidx, INT scn_idx, Elf64_Word scn_ofst)
+#endif // KEY
 {
   INT32 i;
   INITV_IDX ninv;
@@ -1677,21 +1738,41 @@ Write_INITV (
   LABEL_IDX lab;
   TCON tcon;
   ST *st;
-  // pSCNINFO scn = em_scn[scn_idx].scninfo;
+  pSCNINFO scn = em_scn[scn_idx].scninfo;
 
-  switch ( INITV_kind(inv) ) {
+#ifdef KEY
+  static bool emit_typeinfo=false;
+#endif
+
+ switch ( INITV_kind(inv) ) {
     case INITVKIND_ZERO:
       tcon = Host_To_Targ (INITV_mtype (inv), 0);
-      scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat2 (inv));
+#ifdef KEY
+      if (!emit_typeinfo)
+        scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat2 (inv),
+                               etable, format);
+      else
+#endif // KEY
+        scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat2 (inv));
       break;
 
     case INITVKIND_ONE:
       tcon = Host_To_Targ (INITV_mtype (inv), 1);
+#ifdef KEY
+      scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat2 (inv),
+				etable, format);
+#else
       scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat2 (inv));
+#endif // KEY
       break;
     case INITVKIND_VAL:
+#ifdef KEY
+      scn_ofst = Write_TCON (&INITV_tc_val(inv), scn_idx, scn_ofst,
+                              INITV_repeat2(inv), etable, format);
+#else
       scn_ofst = Write_TCON (&INITV_tc_val(inv), scn_idx, scn_ofst, 
 			      INITV_repeat2(inv));
+#endif // KEY
       break;
 
     case INITVKIND_SYMOFF:
@@ -1699,14 +1780,14 @@ Write_INITV (
       switch (ST_sclass(st)) {
 	case SCLASS_AUTO:
 	{ /* EH stack variable */
-	  tcon = Host_To_Targ(MTYPE_I4, 0);
+	  tcon = Host_To_Targ(MTYPE_I4, Offset_from_FP(st));
 	  scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat1(inv));
 	  break;
 	}
 
 	case SCLASS_FORMAL:
 	{ /* EH this-pointer */
-	  // ST * base = ST_base(st);
+          ST * base = ST_base(st);
 	  INT  ofst = ST_ofst(st);
 	  tcon = Host_To_Targ(MTYPE_I4, ofst);
 	  scn_ofst = Write_TCON (&tcon, scn_idx, scn_ofst, INITV_repeat1(inv));
@@ -1740,23 +1821,52 @@ Write_INITV (
 
     case INITVKIND_LABEL:
 	lab = INITV_lab(inv);
+#ifdef KEY
+	if (etable)
+	{
+	    scn_ofst = Handle_EH_Region_Length (lab, scn_idx, scn_ofst);
+	    break;
+	}
+#endif // KEY
 	scn_ofst = Write_Label (lab, 0, scn_idx, scn_ofst, INITV_repeat1(inv));
 	break;
     case INITVKIND_SYMDIFF:
+#ifdef KEY
+      scn_ofst = Write_Symdiff ( INITV_lab1(inv), INITV_st2(inv),
+			scn_idx, scn_ofst, INITV_repeat1(inv), 4, etable);
+#else
       scn_ofst = Write_Symdiff ( INITV_lab1(inv), INITV_st2(inv),
 				scn_idx, scn_ofst, INITV_repeat1(inv), 4);
+#endif // KEY
       break;
     case INITVKIND_SYMDIFF16:
+#ifdef KEY
+      scn_ofst = Write_Symdiff ( INITV_lab1(inv), INITV_st2(inv),
+			scn_idx, scn_ofst, INITV_repeat1(inv), 2, etable);
+#else
       scn_ofst = Write_Symdiff ( INITV_lab1(inv), INITV_st2(inv),
 				scn_idx, scn_ofst, INITV_repeat1(inv), 2);
+#endif // KEY
       break;
 
     case INITVKIND_BLOCK:
+#ifdef KEY
+      if (INITV_flags(inv) == INITVFLAGS_TYPEINFO)
+	emit_typeinfo = true;
+#endif
       for (i = 0; i < INITV_repeat1(inv); i++) {
 	for (ninv = INITV_blk(inv); ninv; ninv = INITV_next(ninv)) {
+#ifdef KEY
+          scn_ofst = Write_INITV (ninv, scn_idx, scn_ofst, etable, format);
+#else
           scn_ofst = Write_INITV (ninv, scn_idx, scn_ofst);
+#endif // KEY
 	}
       }
+#ifdef KEY
+      if (emit_typeinfo)
+	emit_typeinfo = false;
+#endif
       break;
 
     case INITVKIND_PAD:
@@ -1778,6 +1888,13 @@ Write_INITV (
   }
   return scn_ofst;
 }
+
+#ifdef KEY
+static Elf64_Xword
+Generate_Exception_Table_Header (INT scn_idx,
+                                 Elf64_Xword scn_ofst,
+                                 LABEL_IDX *);
+#endif // KEY
 
 /* ====================================================================
  *    Write_INITO (inop, scn_idx, scn_ofst)
@@ -1846,9 +1963,57 @@ Write_INITO (
     }
   } else {
     INITV_IDX inv;
+#ifdef KEY
+        char *name = ST_name (sym);
+        bool range_table = (name != NULL) &&
+                (!strncmp (".range_table.", name,strlen(".range_table."))) &&
+                (ST_sclass (sym) == SCLASS_EH_REGION);
+        LABEL_IDX labels[2];
+        if (range_table)
+        {
+            exception_table_id++;
+            scn_ofst = Generate_Exception_Table_Header (scn_idx, scn_ofst, labels);
+        }
+        bool action_table_started = false;
+	bool type_label_emitted = false;
+#endif // KEY
     FOREACH_INITV (INITO_val(ino), inv) {
+#ifdef KEY
+            if (range_table && !action_table_started &&
+                  (INITV_flags (Initv_Table[inv]) == INITVFLAGS_ACTION_REC))
+            {
+                action_table_started = true;
+                fprintf ( Asm_File, "%s:\n", LABEL_name(labels[0]));
+            }
+	    if (range_table && !type_label_emitted && 
+	    	INITV_flags(Initv_Table[inv]) == INITVFLAGS_EH_SPEC)
+	    {
+	    	type_label_emitted = true;
+            	fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+	    }
+            scn_ofst = Write_INITV (inv, scn_idx, scn_ofst, range_table,
+	    		range_table ? INITV_flags (Initv_Table[inv]) : 0);
+	    if (range_table && !type_label_emitted)
+	    {
+// Emit the type label IF we are emitting typeids AND this is the last
+// typeid, OR if we are beginning the eh-spec table (i.e. had an empty
+// typeid table) as above
+	    	if ((INITV_flags(Initv_Table[inv]) == INITVFLAGS_TYPEINFO) &&
+	      		(!INITV_next(inv) || 
+			!INITV_flags(Initv_Table[INITV_next(inv)])))
+	    	{
+	    	    type_label_emitted = true;
+            	    fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+	    	}
+	    }
+#else
       scn_ofst = Write_INITV (inv, scn_idx, scn_ofst);
+#endif // KEY
     }
+#ifdef KEY
+        if (range_table && !type_label_emitted)
+            fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+#endif // KEY
   }
 
   if (Assembly || Lai_Code) {
@@ -1861,6 +2026,110 @@ Write_INITO (
 
   return scn_ofst;
 }
+
+#ifdef KEY
+static Elf64_Word
+Write_Diff (
+  LABEL_IDX lab1,       /* left symbol */
+  LABEL_IDX lab2,       /* right symbol */
+  INT scn_idx,          /* Section to emit it in */
+  Elf64_Word scn_ofst)  /* Section offset to emit it at */
+{
+      fprintf (Asm_File, "\t.uleb128\t");
+      fprintf(Asm_File, "%s", LABEL_name(lab1));
+      fprintf (Asm_File, "-");
+      fprintf(Asm_File, "%s", LABEL_name(lab2));
+      fprintf (Asm_File, "\n");
+
+      return scn_ofst+4;
+}
+
+static int
+num_digits (int in)
+{
+    int num=1;
+    while (in/10 != 0)
+    {
+        num++;
+        in = in/10;
+    }
+    return num;
+}
+
+static Elf64_Xword
+Generate_Exception_Table_Header (INT scn_idx, Elf64_Xword scn_ofst, LABEL_IDX *labels)
+{
+    // Generate LPStart pointer, currently constant
+    TCON lpstart = Host_To_Targ (MTYPE_I1, 0xff);
+    scn_ofst = Write_TCON (&lpstart, scn_idx, scn_ofst, 1);
+
+    // Generate TType format
+    TCON ttype;
+    if (Gen_PIC_Call_Shared || Gen_PIC_Shared)
+    	ttype = Host_To_Targ (MTYPE_I1, 0x9b);
+    else
+    	ttype = Host_To_Targ (MTYPE_I1, 0);
+    scn_ofst = Write_TCON (&ttype, scn_idx, scn_ofst, 1);
+
+    // Generate TType base offset
+    int id_size = num_digits (exception_table_id);
+    LABEL_IDX ttype_base;
+    New_LABEL (CURRENT_SYMTAB, ttype_base);
+    char *ttype_base_name = (char *)malloc (strlen (lsda_ttype_base) +
+                                id_size + 1);
+    sprintf (ttype_base_name, "%s%d", lsda_ttype_base, exception_table_id);
+    Set_LABEL_name_idx (Label_Table[ttype_base], Save_Str (ttype_base_name));
+
+    LABEL_IDX ttype_disp;
+    New_LABEL (CURRENT_SYMTAB, ttype_disp);
+    char *ttype_disp_name = (char *)malloc (strlen (lsda_ttype_disp) +
+                                id_size + 1);
+    sprintf (ttype_disp_name, "%s%d", lsda_ttype_disp, exception_table_id);
+    Set_LABEL_name_idx (Label_Table[ttype_disp], Save_Str (ttype_disp_name));
+    /*
+    ST * csb = New_ST (CURRENT_SYMTAB);
+    char *csb_name = (char *)malloc ( strlen (lsda_cs_begin) +
+                                id_size + 1);
+    sprintf (csb_name, "%s%d", lsda_cs_begin, exception_table_id);
+    ST_Init (csb, Save_Str (csb_name), CLASS_BLOCK, 
+                SCLASS_EH_REGION, EXPORT_LOCAL, MTYPE_TO_TY_array[MTYPE_U4]);
+
+    ST * ttype_disp = New_ST (CURRENT_SYMTAB);
+    char *ttype_disp_name = (char *)malloc ( strlen (lsda_ttype_disp) +
+                                id_size + 1);
+    sprintf (ttype_disp_name, "%s%d", lsda_ttype_disp, exception_table_id);
+    ST_Init (ttype_disp, Save_Str (ttype_disp_name), CLASS_BLOCK, 
+                SCLASS_EH_REGION, EXPORT_LOCAL, MTYPE_TO_TY_array[MTYPE_U4]);
+    Set_ST_base_idx (*ttype_disp, ST_st_idx (*csb));
+    */
+    scn_ofst = Write_Diff (ttype_base, ttype_disp, scn_idx, scn_ofst);
+    fprintf ( Asm_File, "%s:\n", LABEL_name(ttype_disp));
+
+    // Generate call site format
+    TCON csf = Host_To_Targ (MTYPE_I1, 1);
+    scn_ofst = Write_TCON (&csf, scn_idx, scn_ofst, 1);
+
+    LABEL_IDX csb;
+    New_LABEL (CURRENT_SYMTAB, csb);
+    char *csb_name = (char *)malloc (strlen (lsda_cs_begin) +
+                                id_size + 1);
+    sprintf (csb_name, "%s%d", lsda_cs_begin, exception_table_id);
+    Set_LABEL_name_idx (Label_Table[csb], Save_Str (csb_name));
+
+    LABEL_IDX cse;
+    New_LABEL (CURRENT_SYMTAB, cse);
+    char *cse_name = (char *)malloc (strlen (lsda_cs_end) +
+                                id_size + 1);
+    sprintf (cse_name, "%s%d", lsda_cs_end, exception_table_id);
+    Set_LABEL_name_idx (Label_Table[cse], Save_Str (cse_name));
+    scn_ofst = Write_Diff (cse, csb, scn_idx, scn_ofst);
+    labels[0] = cse;
+    labels[1] = ttype_base;
+
+    fprintf ( Asm_File, "%s:\n", LABEL_name(csb));
+    return scn_ofst;
+}
+#endif // KEY
 
 #ifdef TARG_ST
 /* ====================================================================
@@ -4007,6 +4276,7 @@ Assemble_OP (
 
   if (OP_prefetch(op)) Use_Prefetch = TRUE;
 
+
 #ifdef TARG_ST200 // CL: with variable-length bundles
                   //     we call Cg_Dwarf_Add_Line_Entry
                   //     only at bundle starts in
@@ -5088,16 +5358,17 @@ EMT_Assemble_BB (
 #endif
   }
 
-#ifndef TARG_ST
   // hack to keep track of last label and offset for assembly dwarf (suneel)
-  if (Last_Label == LABEL_IDX_ZERO) {
-    Last_Label = Gen_Label_For_BB (bb);
-    Offset_From_Last_Label = 0;
-    if (Initial_Pu_Label == LABEL_IDX_ZERO) {
-      Initial_Pu_Label = Last_Label;
+  if (generate_dwarf && ! CG_emit_asm_dwarf) {
+    if (Last_Label == LABEL_IDX_ZERO) {
+      Last_Label = Gen_Label_For_BB (bb);
+      Offset_From_Last_Label = 0;
+      if (Initial_Pu_Label == LABEL_IDX_ZERO) {
+        Initial_Pu_Label = Last_Label;
+      }
     }
   }
-#endif
+
   st = BB_st(bb);
   if (st) {
     if (Assembly || Lai_Code) {
@@ -5653,6 +5924,14 @@ EMT_Begin_File (
 	generate_elf_symbols = TRUE;
   }
 
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CXX_Exceptions_On) {
+	generate_dwarf = TRUE;
+	generate_elf_symbols = TRUE;
+  }
+#endif
+
   if ( generate_elf_symbols ) {
 #ifdef TARG_ST
     // [CL] when generating .s file, do not
@@ -5983,6 +6262,13 @@ EMT_Emit_PU (
   }
 #endif
 
+
+#ifdef TARG_ST
+  /* (cbr) last instructions can't be a call for unwinder. (ddts 23277) */
+  if ((op_last = (BB_branch_op (bb_last))) && OP_call(op_last))
+    fprintf(Output_File, "\t%s %d\n",  AS_SPACE, 4);
+#endif
+
 #ifdef TARG_ST
   // [CL] record end of final BB for this PU, so that this PU and the
   // next one can be reordered later without invalidating Dwarf
@@ -5990,6 +6276,7 @@ EMT_Emit_PU (
   // would be ended when starting the next PU, resulting in a size of
   // the final text_sequence dependent upon the location of the
   // beginning of the next PU)
+  if (CG_emit_asm_dwarf) 
   if (generate_dwarf) {
     if (Last_Label > 0) {
       cache_last_label_info (Last_Label,
@@ -6028,7 +6315,7 @@ EMT_Emit_PU (
 
   if (generate_dwarf) {
     Elf64_Word symindex;
-    INT eh_offset;
+    INT eh_offset=0;
     BOOL has_exc_scopes = PU_has_exc_scopes(ST_pu(pu));
 #if 0
     if (Object_Code)
@@ -6045,9 +6332,15 @@ EMT_Emit_PU (
       sym = EH_Get_PU_Range_ST();
       if (sym != NULL) {
 	Base_Symbol_And_Offset (sym, &base, &ofst);
-	eh_offset = ofst;
 	Init_Section(base);	/* make sure eh_region is inited */
+#ifdef TARG_ST
+        /* (cbr) lsda entry is private range_table */
+	eh_offset = 0;
+	symindex = EMT_Put_Elf_Symbol (sym);
+#else
+	eh_offset = ofst;
 	symindex = ST_elf_index(base);
+#endif
       } else {
 	eh_offset = symindex = (Elf64_Word)DW_DLX_NO_EH_OFFSET;
       }
@@ -6386,7 +6679,12 @@ EMT_End_File( void )
 #endif
     fprintf(Asm_File, "\t## %s %d\n", AS_GPVALUE, GP_DISP);
     //    ASM_DIR_GPVALUE();
-    if (CG_emit_asm_dwarf) {
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CG_emit_asm_dwarf || CXX_Exceptions_On) {
+#else
+  if (CG_emit_asm_dwarf) {
+#endif
       Cg_Dwarf_Write_Assembly_From_Symbolic_Relocs(Asm_File,
 						   dwarf_section_count,
 						   !Use_32_Bit_Pointers);
@@ -6395,6 +6693,7 @@ EMT_End_File( void )
   if (Lai_Code) {
     fprintf(Lai_File, "//\t%s %d\n", AS_GPVALUE, GP_DISP);
   }
+
 #if 0
   if (Object_Code && !CG_emit_asm_dwarf) {
     /* TODO: compute the parameters more accurately. For now we assume 

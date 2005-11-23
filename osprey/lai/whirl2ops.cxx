@@ -327,7 +327,11 @@ region_stack_eh_set_has_call (void)
 {
   RID ** p;
   for (p = region_stack_ptr - 1; p >= region_stack_base; --p)
+#ifdef KEY
+    if (RID_TYPE_eh(*p) && RID_eh_range_ptr(*p))
+#else
     if (RID_TYPE_eh(*p))
+#endif
       EH_Set_Has_Call(RID_eh_range_ptr(*p));
 }
   
@@ -4520,8 +4524,15 @@ Handle_Entry (WN *entry)
         PU&    pu = New_PU (pu_idx);
         PU_Init (pu, ty, CURRENT_SYMTAB);
         entry_st = New_ST (GLOBAL_SYMTAB);
+#ifdef KEY
+	char *name = (char *) alloca (strlen("Handler")+1+8+1);
+	sprintf (name, "Handler.%d", Current_PU_Count());
+        ST_Init (entry_st, Save_Str2i (name, ".", Get_WN_Label(entry)),
+                 CLASS_FUNC, SCLASS_TEXT, EXPORT_LOCAL, (TY_IDX) pu_idx);
+#else
         ST_Init (entry_st, Save_Str2i ("Handler", ".", Get_WN_Label(entry)),
                  CLASS_FUNC, SCLASS_TEXT, EXPORT_LOCAL, (TY_IDX) pu_idx);
+#endif
 	Allocate_Object(entry_st);
   }
   else {
@@ -5278,7 +5289,11 @@ convert_stmt_list_to_OPs (
       Is_True(rid != NULL, ("convert_stmt_list_to_OPs NULL RID"));
       if ( RID_level( rid ) < RL_CG ) { /* the region is still WHIRL */
 	region_stack_push( rid );
+#ifdef KEY
+	if (RID_TYPE_eh(rid) && RID_eh_range_ptr(rid)) {
+#else
 	if (RID_TYPE_eh(rid)) {
+#endif
 	  EH_Set_Start_Label(RID_eh_range_ptr(rid));
         }
 
@@ -5291,7 +5306,11 @@ convert_stmt_list_to_OPs (
 	if (RID_is_glue_code(rid)) {
 		In_Glue_Region = FALSE;
 	}
+#ifdef KEY
+	if (RID_TYPE_eh(rid) && RID_eh_range_ptr(rid)) {
+#else
 	if (RID_TYPE_eh(rid)) {
+#endif
 	  EH_Set_End_Label(RID_eh_range_ptr(rid));
         }
 	rid = region_stack_pop();

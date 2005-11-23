@@ -754,7 +754,7 @@ put_location (
 				       &dw_error);
 		if (Trace_Dwarf) {
 	  		fprintf (TFile,"LocExpr: symbol = %s, offset = %lld\n", 
-			      ST_name(base_st), ST_ofst(st) + offs); 
+			      ST_name(base_st), ST_ofst(st) + offs);
 		}
 		break;
 	}
@@ -813,7 +813,7 @@ put_location (
 			       &dw_error);
 	if (Trace_Dwarf) {
 	  fprintf (TFile,"LocExpr: symbol = %s %s, offset = %lld\n", 
-			      ST_name(base_st), Sclass_Name(ST_sclass(st)), ST_ofst(st) + offs); 
+			      ST_name(base_st), ST_ofst(st) + offs); 
 	}
       }
       else {
@@ -2043,6 +2043,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   Dwarf_P_Die PU_die;
   Dwarf_P_Expr expr;
   Dwarf_P_Fde fde;
+
   DST_SUBPROGRAM *PU_attr;
   static BOOL processed_globals = FALSE;
   
@@ -2062,6 +2063,10 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 	// do this once, before PU info.
 	// we do this here rather than in Begin routine
 	// cause have to wait until globals are allocated.
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CG_emit_asm_dwarf)
+#endif  
 	Traverse_Global_DST ();	// emit global types before PUs
 	processed_globals = TRUE;
   }
@@ -2076,6 +2081,11 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
       DevWarn("NULL DST passed to CG for %s", ST_name(PU_st));
     return;
   }
+
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CG_emit_asm_dwarf)
+#endif  
   Traverse_DST (PU_st, pu_dst);
 
   if (DST_IS_NULL(pu_dst)) return;
@@ -2116,11 +2126,17 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 	REGISTER_machine_id (TN_register_class(SP_TN), TN_register(SP_TN)),
 	Frame_Len, &dw_error);
 
+#ifdef TARG_ST
+  if (CG_emit_asm_dwarf) {
+#endif
   dwarf_add_AT_location_expr(dw_dbg, PU_die, DW_AT_frame_base, expr, &dw_error);
   if (PU_is_mainpu(ST_pu(PU_st))) {
    	dwarf_add_AT_unsigned_const (dw_dbg, PU_die, DW_AT_calling_convention, 
 	     DW_CC_program, &dw_error);
   }
+#ifdef TARG_ST
+  }
+#endif
 
   Dwarf_Unsigned begin_entry = Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 						     begin_label,
@@ -2138,6 +2154,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 			    low_pc, high_pc, scn_index);
 #else
 			    low_pc, high_pc);
+
 #endif
 
   Dwarf_Unsigned eh_handle;
@@ -2190,6 +2207,11 @@ Cg_Dwarf_Begin (BOOL is_64bit)
   /* Read in the compile unit entry */
   cu_die = get_ref_die (cu_idx);
   Set_Enclosing_Die (cu_die, GLOBAL_LEVEL);
+
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CG_emit_asm_dwarf)
+#endif  
   Write_Attributes (DST_INFO_tag(cu_info), 
 		    DST_INFO_flag (cu_info), 
 		    DST_INFO_attributes(cu_info), 
@@ -2206,6 +2228,12 @@ Cg_Dwarf_Begin (BOOL is_64bit)
 void Cg_Dwarf_Finish (pSCNINFO text_scninfo)
 {
   if (Disable_DST) return;
+
+#ifdef TARG_ST
+  // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
+  if (CG_emit_asm_dwarf)
+#endif  
+
 #ifndef TARG_ST
   Traverse_Extra_DST();	/* do final pass for any info not emitted yet */
 #else
@@ -2488,7 +2516,7 @@ Cg_Dwarf_Add_Line_Entry (
       if ( ! incl_table[include_idx].already_processed) {
 	// new include
 #ifdef TARG_ST200
-	if (CG_emit_asm_dwarf) {
+  if (CG_emit_asm_dwarf) {
 #else
 	if (Object_Code) {
 #endif
@@ -2499,7 +2527,7 @@ Cg_Dwarf_Add_Line_Entry (
       }
 
 #ifdef TARG_ST200
-	if (CG_emit_asm_dwarf) {
+  if (CG_emit_asm_dwarf) {
 #else
       if (Object_Code) {
 #endif
@@ -3083,6 +3111,36 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	fprintf(asm_file, "\t%s\t%s", reloc_name,
 		Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
 	break;
+#ifdef KEY
+      case dwarf_drt_cie_label: // bug 2463
+        fprintf(asm_file, "\t%s\t%s", reloc_name, ".LCIE");
+	++k; // skip the DEBUG_FRAME label that is there just as a place-holder
+	break;
+      case dwarf_drt_data_reloc_by_str_id:
+	// it should be __gxx_personality_v0
+        if ((Gen_PIC_Call_Shared || Gen_PIC_Shared) && 
+	     !strcmp (&Str_Table[reloc_buffer[k].drd_symbol_index], 
+	     "__gxx_personality_v0"))
+	    fprintf (asm_file, "\t%s\tDW.ref.__gxx_personality_v0-.", reloc_name);
+ 	else
+	fprintf(asm_file, "\t%s\t%s", reloc_name,
+		&Str_Table[reloc_buffer[k].drd_symbol_index]);
+	break;
+      case dwarf_drt_first_of_length_pair_create_second:
+	{
+	static int count=1;
+	Is_True(k + 1 < reloc_count, ("unpaired first_of_length_pair"));
+	Is_True((reloc_buffer[k + 1].drd_type ==
+		 dwarf_drt_second_of_length_pair),
+		("unpaired first_of_length_pair"));
+	int this_count=count++;
+	fprintf(asm_file,".FDE%d:\n",this_count);
+	// bug 2729
+	fprintf(asm_file, "\t%s\t.FDE%d - .EHCIE", reloc_name, this_count);
+	++k;
+	}
+	break;
+#endif // KEY
       case dwarf_drt_first_of_length_pair:
 	Is_True(k + 1 < reloc_count, ("unpaired first_of_length_pair"));
 	Is_True((reloc_buffer[k + 1].drd_type ==
@@ -3098,6 +3156,7 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	Fail_FmtAssertion("unpaired first/second_of_length_pair");
 	break;
       default:
+        printf ("arg cgdwarf.cxx\n");
 	break;
       }
 
@@ -3128,9 +3187,14 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	ofst = ofst_tmp;
       }
 
-      if (ofst != 0) {
-	fprintf(asm_file, " + 0x%llx", (unsigned long long)ofst);
-      }
+#ifdef TARG_ST
+      if (reloc_buffer[k].drd_type == dwarf_drt_none)
+        fprintf(asm_file, "\t%s 0x%llx", reloc_name, (unsigned long long)ofst);
+      else
+#endif
+        if (ofst != 0) {
+          fprintf(asm_file, " + 0x%llx", (unsigned long long)ofst);
+        }
       fprintf(asm_file, "\n");
       cur_byte += current_reloc_size;
     }

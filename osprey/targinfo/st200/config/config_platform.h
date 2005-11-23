@@ -103,6 +103,8 @@ typedef struct {
 
 extern PLATFORM_OPTIONS * Get_Platform_Options ( char *name );
 
+#define Is_Target_64bit()       (FALSE)
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

@@ -207,6 +207,11 @@ CGEMIT_Prn_Scn_In_Asm (
     fprintf (asm_file, ", @%s", scn_type_string);
   fprintf (asm_file, "\n");
 #endif /* TARG_ST */
+
+    // Generate a label at the start of the .eh_frame CIE
+    if (!strcmp (scn_name, ".eh_frame")) 
+      fprintf (asm_file, "\n.EHCIE:");
+
 #if 0   // contrary to document, it should be align, not power of it.
   UINT32 tmp, power;
   power = 0;

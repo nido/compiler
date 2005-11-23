@@ -73,6 +73,9 @@ extern "C" {
 #define Struct_Return_Preg_Offset       16   /* returning structs */
 #ifdef TARG_ST //[TB]
 #define Function_Link_Preg_Offset       64   /* function link register (for mcount call) */
+  /* (cbr) define exceptions handler parameters. see EH_RETURN_DATA_REGNO(N) */
+#define Exc_Ptr_Param_Offset            9    /* exception struct ptr */
+#define Exc_Filter_Param_Offset         10   /* exception filter value */
 #endif
 
 /* most of the interface is shared between targets */

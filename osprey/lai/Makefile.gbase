@@ -168,6 +168,7 @@ BE_OPT_DIR              = $(BE_DIR)/opt
 COMMON_DIR 		= $(BUILD_TOT)/common
 COMMON_COM_DIR 		= $(COMMON_DIR)/com
 COMMON_UTIL_DIR 	= $(COMMON_DIR)/util
+LIBDWARF_DIR		= $(BUILD_TOT)/libdwarf
 COMMON_STL_DIR 		= $(COMMON_DIR)/stl
 COMMON_TARG_CONFIG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_TARG_BE_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/be
@@ -232,6 +233,7 @@ HEADER_DIRS = 		\
   $(BE_OPT_DIR)		\
   $(TARG_TARG_INFO_DIR)	\
   $(TARG_BE)            \
+  $(LIBDWARF_DIR)	\
   $(LIBINSTR_DIR)	
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
@@ -731,6 +733,9 @@ LLDLIBS += -lelf_xtnd -ldwarf_xtnd -lelfutil_xtnd -lm -lc
 else
  ifeq ($(BUILD_TARGET), IA64)
   CGDEPLIBS = $(TARG_LIBUNWIND)/libunwindP.a
+ endif
+ ifeq ($(BUILD_TARGET), ST200)
+# LLDLIBS += $(TARG_LIBUNWIND)/libunwindP.a
  endif
 CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
 	     $(TARG_LIBELFUTIL)/libelfutil.a \

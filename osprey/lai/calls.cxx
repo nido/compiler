@@ -519,8 +519,8 @@ Generate_Entry (BB *bb, BOOL gra_run)
 	  REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], TN_register(RA_TN));
       }
       else {
-	Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
-	Set_OP_no_move_before_gra(OPS_last(&ops));
+        Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
+        Set_OP_no_move_before_gra(OPS_last(&ops));
       }
 
 #else /* !TARG_ST */
@@ -1750,6 +1750,27 @@ Adjust_Entry (
   TN *sp_incr;
   TN *fp_incr;
 
+#ifdef TARG_ST200
+  /* (cbr) hugly hack for st200 c++ exceptions. the handler sequence starts by
+     saving r63 which is something after the catch. instead we are in the
+     handler context and r63 must be preserved. I could have read one frame over
+     in the runtime exceptions but it makes one extra frame to unwind.
+     I tried to disable the saving of r63 in Generate_Entry by it is then not restored if exit blocks from the handler and the try function are merged.
+  */
+  if (BB_handler(bb)) {
+    OP* op = BB_first_op(bb);
+    while (op) {
+      if (OP_store(op) &&
+          TN_register(OP_opnd(op, OP_find_opnd_use(op, OU_storeval))) ==
+          TN_register(RA_TN)) {
+        BB_Remove_Op(bb, op);
+        break;
+      }
+      op = OP_next(op);
+    }
+  }
+#endif
+
   if (BB_handler(bb)) return;
 
   FmtAssert(ent_adj != NULL, ("Adjust Entry OP missing in BB::%d\n", BB_id(bb)));
@@ -2272,6 +2293,24 @@ Adjust_Entry_Exit_Code (
     Adjust_Alloca_Code ();
   }
 }
+
+#ifdef KEY
+// See the interface description
+
+INT Cgdwarf_Num_Callee_Saved_Regs (void)
+{
+  if (PU_has_altentry(Get_Current_PU())) {
+    if (Debug_Level > 0 && Opt_Level > 1) {
+      fprintf(stderr, 
+            "Warning! -g is not supported at optimization level -O2 or above when ENTRY statements are used\n");
+      DevWarn("NYI: we need different Saved_Callee_Saved_Regs for different entry");
+    }
+    return 0;
+  }
+  return ISA_REGISTER_CLASS_MAX;
+}
+
+#endif
 
 #ifdef TARG_ST
 void

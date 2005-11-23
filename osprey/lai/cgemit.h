@@ -62,6 +62,10 @@ extern void EMT_Change_Symbol_To_Weak (ST *sym);
  */
 extern INT32 Check_If_Should_Align_BB (BB *bb, INT32 curpc);
 
+extern BOOL CG_emit_asm_dwarf;
+extern BOOL CG_emit_unwind_info;
+extern BOOL CG_emit_unwind_directives;
+
 /* Write a qualified name to a file. */
 extern void EMT_Write_Qualified_Name (FILE *f, ST *st);
 

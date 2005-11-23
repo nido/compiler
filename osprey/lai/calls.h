@@ -151,6 +151,13 @@ extern BOOL LC_Used_In_PU;	/* flag whether LC_TN was used */
 /* Tail calls: */
 extern void Optimize_Tail_Calls( ST* pu );
 
+#ifdef KEY
+// Number of callee saved registers
+extern INT Cgdwarf_Num_Callee_Saved_Regs (void);
+// The location on the stack that corresponds to the nth TN on the stack.
+extern ST* Cgdwarf_Nth_Callee_Saved_Reg_Location (INT n);
+#endif
+
 /* ====================================================================
  *   Is_Function_Value
  *
