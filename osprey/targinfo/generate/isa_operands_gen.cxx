@@ -262,6 +262,13 @@ static const char * const interface[] = {
   " *       For the instruction specified by 'topcode', return",
   " *       the usage of all its operands in the array pointed to",
   " *       by 'uses'. The use of operand n corresponds to 'uses'[n].",
+#ifdef TARG_ST // [CL]
+  " *",
+  " *   INT TOP_Find_Result_With_Usage(TOP topcode, ISA_OPERAND_USE use)",
+  " *       For the instruction specified by 'topcode', give the",
+  " *       result number with the use 'use'. If there is no such",
+  " *       result, return -1.",
+#endif
   " *",
   " * ====================================================================",
   " * ====================================================================",
@@ -1239,6 +1246,29 @@ void ISA_Operands_End(void)
 		 "  }\n"
 		 "}\n");
 */
+
+#ifdef TARG_ST
+  // --------------------------------------------------------------------
+  //
+  //       TOP_Find_Result_With_Usage
+  //
+  // --------------------------------------------------------------------
+
+  fprintf(hfile, "\nBE_EXPORTED extern INT TOP_Find_Result_With_Usage(TOP topcode, "
+		 "ISA_OPERAND_USE use);\n");
+  fprintf(efile, "TOP_Find_Result_With_Usage\n");
+  fprintf(cfile, "\nINT TOP_Find_Result_With_Usage(TOP topcode, ISA_OPERAND_USE use)\n"
+		 "{\n"
+		 "  INT i;\n"
+		 "  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(topcode);\n"
+		 "  INT results = ISA_OPERAND_INFO_Results(oinfo);\n"
+		 "  for (i = 0; i < results; ++i) {\n"
+		 "    ISA_OPERAND_USE this_use = ISA_OPERAND_INFO_Def(oinfo, i);\n"
+		 "    if (this_use & use) return i;\n"
+		 "  }\n"
+		 "  return -1;\n"
+		 "}\n");
+#endif
 
   // --------------------------------------------------------------------
   //
