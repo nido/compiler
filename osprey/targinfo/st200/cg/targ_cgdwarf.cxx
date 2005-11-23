@@ -365,6 +365,202 @@ static BOOL Restore_FP(OP *op)
   return FALSE;
 }
 
+static void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when)
+{
+  if (ue->kind != UE_UNDEFINED) {
+    ue->qp = 0;
+#if 0
+    if (OP_has_predicate(op)) {
+      ue.qp = REGISTER_machine_id (ISA_REGISTER_CLASS_predicate,
+			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
+    }
+#endif
+#if 0
+    if (ue.kind == UE_SAVE_GR) {
+      ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue.save_rc_reg);
+      REGISTER reg = CLASS_REG_PAIR_reg(ue.save_rc_reg);
+      if (ABI_PROPERTY_Is_stacked(rc, REGISTER_machine_id(rc, reg))
+	  && ! BB_rotating_kernel(bb)
+	  && REGISTER_Is_Stacked_Output(rc, reg) )
+	{
+	  reg = REGISTER_Translate_Stacked_Output(reg);
+	  Set_CLASS_REG_PAIR_reg(ue.save_rc_reg, reg);
+	}
+    }
+#endif
+    ue->when = when;
+    ue->bb = bb;
+    ue_list.push_back (*ue);
+    if (Trace_Unwind) Print_Unwind_Elem (*ue, "unwind1");
+  }
+}
+
+static void Record_Register_Save(OP* op, INT opndnum, BB* bb, UNWIND_ELEM* ue,
+				 BOOL opnd_is_multi)
+{
+  TOP opc = OP_code(op);
+
+  if (Trace_Unwind && opndnum < 0) {
+    Print_OP_No_SrcLine(op);
+  }
+  FmtAssert(opndnum >= 0, ("incorrect operand id %d for %s", opndnum, TOP_Name(opc)));
+
+  TN* save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op, bb);
+  if (save_tn) {
+    opndnum = OP_find_opnd_use(op, OU_base);
+
+    if (Trace_Unwind && opndnum < 0) {
+      Print_OP_No_SrcLine(op);
+    }
+    FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
+
+    if (TN_is_save_reg(save_tn)) {
+      ue->rc_reg = TN_save_creg(save_tn);
+    } else {
+      ue->rc_reg = TN_class_reg(save_tn);
+    }
+    TN *store_tn = OP_opnd(op,opndnum);
+    if (store_tn == SP_TN || store_tn == FP_TN) {
+      ue->kind = (store_tn == SP_TN) ? UE_SAVE_SP : UE_SAVE_FP;
+
+      TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
+      ST* st = TN_var(offset_tn);
+      ST* base_st;
+      INT64 base_ofst;
+
+      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	Print_OP_No_SrcLine(op);
+      }
+      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+		("not saving to the stack!"));
+
+      ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
+
+      // handle the multi-operand case.
+      // CAUTION: This is ABI dependent
+      if (OP_multi(op)) {
+	if (!opnd_is_multi) {
+	  // 1st operand
+	  if (Target_Byte_Sex == BIG_ENDIAN) {
+	    ue->offset += 4;
+	  }
+	} else {
+	  // 2nd operand (opnd_is_multi)
+	  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+	    ue->offset += 4;
+	  }
+	}
+      }
+
+#if 0 // [CL] see comment at the beginning of this file
+
+      // Remember at which offset ue.rc_reg was saved, so that
+      // we can choose the right restore. Indeed, rc_reg may be
+      // for spill, and restored with a value different from the
+      // initial one, before finally being restored with the
+      // caller's value
+      reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved = TRUE;
+      reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset = ue.offset;
+#endif
+
+#ifdef DEBUG_UNWIND
+      fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+				  CLASS_REG_PAIR_reg(ue->rc_reg)),
+	      ue->offset);
+#endif
+    }
+  } else {
+#ifdef DEBUG_UNWIND
+    fprintf(TFile, "** %s no save tn\n", __FUNCTION__);
+#endif
+  }
+}
+
+static void Record_Register_Restore(OP* op, INT opndnum, BB* bb,
+				    UNWIND_ELEM* ue, BOOL opnd_is_multi)
+{
+  TOP opc = OP_code(op);
+
+  if (Trace_Unwind && opndnum < 0) {
+    Print_OP_No_SrcLine(op);
+  }
+  FmtAssert(opndnum >= 0, ("incorrect result id %d for %s", opndnum, TOP_Name(opc)));
+
+  TN* result_tn = OP_result(op,opndnum);
+
+  if (TN_Is_Unwind_Reg(result_tn)
+      && ( TN_is_save_reg(result_tn) || BB_exit(bb) ) ) {
+    opndnum = OP_find_opnd_use(op, OU_base);
+
+    if (Trace_Unwind && opndnum < 0) {
+      Print_OP_No_SrcLine(op);
+    }
+    FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
+
+    TN *load_tn = OP_opnd(op,opndnum);
+    if (load_tn == SP_TN || load_tn == FP_TN) {
+      ue->kind = UE_RESTORE_MEM;
+      ue->rc_reg = TN_class_reg(result_tn);
+
+      TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
+      ST* st = TN_var(offset_tn);
+      ST* base_st;
+      INT64 base_ofst;
+    
+      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	Print_OP_No_SrcLine(op);
+      }
+      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+		("not restoring from the stack!"));
+
+      ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
+
+      // handle the multi-operand case. 
+      // CAUTION: This is ABI dependent
+      if (OP_multi(op)) {
+	if (!opnd_is_multi) {
+	  // 1st operand
+	  if (Target_Byte_Sex == BIG_ENDIAN) {
+	    ue->offset += 4;
+	  }
+	} else {
+	  // 2nd operand (opnd_is_multi)
+	  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+	    ue->offset += 4;
+	  }
+	}
+      }
+
+#if 0 // [CL] see comment at the beginning of this file
+
+      // If rc_reg was not saved at this offset, it means op is
+      // not a restore. Forget it.
+      if ((reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved
+	   == FALSE)
+	  ||
+	  (reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset
+	   != ue.offset)
+	  ) {
+	ue.kind = UE_UNDEFINED;
+      }
+#endif
+
+#ifdef DEBUG_UNWIND
+      if (ue->kind != UE_UNDEFINED) {
+	fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
+		__FUNCTION__,
+		REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+				    CLASS_REG_PAIR_reg(ue->rc_reg)),
+		ue->offset);
+      }
+#endif
+    }
+  }
+}
+
 static void
 Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 {
@@ -375,9 +571,9 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
   INT opnd_idx;
 
   FmtAssert(!OP_simulated(op) || opc== TOP_asm, 
-	("found a simulated OP"));
+	    ("found a simulated OP"));
   if (opc == TOP_asm) {
-	has_asm = TRUE;
+    has_asm = TRUE;
   }
 
 #ifdef DEBUG_UNWIND
@@ -402,17 +598,17 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     if (PU_has_FP && !PU_has_restored_FP && !Restore_SP_From_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
-    // case 3:
+      // case 3:
     } else if (PU_has_FP && !PU_has_restored_FP && Restore_SP_From_FP(op)) {
       ue.kind = UE_DESTROY_FP;
       ue.rc_reg = CLASS_REG_PAIR_sp;
       PU_has_restored_FP = TRUE;
 
-    // case 4:
+      // case 4:
     } else if ( (!PU_has_FP || PU_has_restored_FP) && Restore_FP(op)) {
       ue.kind = UE_UNDEFINED;
 
-    // case 1:
+      // case 1:
     } else {
       OP* frame_op = NULL;
       if (OP_opnds(op) > 1 && ( OP_isub(op) || OP_iadd(op) ) ) {
@@ -421,7 +617,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  ue.offset = TN_value (frame_tn);
 	  goto case1_OK;
 	} else {
-	// [CL] frame size is in a register defined earlier
+	  // [CL] frame size is in a register defined earlier
 	  frame_op = Find_Def_Of_TN (frame_tn);
 	  if (OP_move(frame_op)) {
 	    frame_tn = OP_opnd(frame_op,0);
@@ -512,192 +708,72 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	;	// already found
   else if (OP_store(op)) 
   {
+#ifdef DEBUG_UNWIND
+    fprintf(TFile, "** %s store\n", __FUNCTION__);
+#endif
+
     // find def of storeval and see if it is copy of save reg.
     // also check if base comes from spill symbol.
-    TN *save_tn;
     INT opndnum = OP_find_opnd_use(op, OU_storeval);
-    if (Trace_Unwind && opndnum < -1) {
-      Print_OP_No_SrcLine(op);
-    }
-    FmtAssert(opndnum >= 0, ("no OU_storeval for %s", TOP_Name(opc)));
-    save_tn = Get_Copied_Save_TN(OP_opnd(op,opndnum), op, bb);
-    if (save_tn) {
-	opndnum = OP_find_opnd_use(op, OU_base);
-	if (Trace_Unwind && opndnum < -1) {
-	  Print_OP_No_SrcLine(op);
-	}
-	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
-	if (TN_is_save_reg(save_tn)) {
-	  ue.rc_reg = TN_save_creg(save_tn);
-	} else {
-	  ue.rc_reg = TN_class_reg(save_tn);
-	}
-	TN *store_tn = OP_opnd(op,opndnum);
-	if (store_tn == SP_TN || store_tn == FP_TN) {
-	    ue.kind = (store_tn == SP_TN) ? UE_SAVE_SP : UE_SAVE_FP;
+    Record_Register_Save(op, opndnum, bb, &ue, FALSE);
 
-	    TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-	    // don't record constant offsets, they are not related to
-	    // restores of callee-saved (they appear in array access for
-	    // instance)
-	    if (TN_is_symbol(offset_tn)){
-	      ST* st = TN_var(offset_tn);
-	      ST* base_st;
-	      INT64 base_ofst;
+    if (OP_multi(op)) {
+      // if there are 2 inputs, record the 1st one, and prepare the next one
+      Record_UE(op, &ue, bb, when);
 
-	      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-	      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
-	        Print_OP_No_SrcLine(op);
-	      }
-	      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
-		      ("not saving to the stack!"));
-
-	      ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
-
-#if 0 // [CL] see comment at the beginning of this file
-
-	    // Remember at which offset ue.rc_reg was saved, so that
-	    // we can choose the right restore. Indeed, rc_reg may be
-	    // for spill, and restored with a value different from the
-	    // initial one, before finally being restored with the
-	    // caller's value
-	    reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved = TRUE;
-	    reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset = ue.offset;
-#endif
-
-#ifdef DEBUG_UNWIND
-	      fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
-		      REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
-					  CLASS_REG_PAIR_reg(ue.rc_reg)),
-		      ue.offset);
-#endif
-	    }
-	}
-    } else {
-#ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s no save tn\n", __FUNCTION__);
-#endif
+      opndnum = OP_find_opnd_use(op, OU_multi);
+      Record_Register_Save(op, opndnum, bb, &ue, TRUE);
     }
   } else if (OP_load(op)) {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s load\n", __FUNCTION__);
-#endif
-      // check if we are loading a callee saved
-      // from the stack
-      TN* result_tn = OP_result(op,0);
-      if (TN_Is_Unwind_Reg(result_tn) && TN_is_save_reg(result_tn)) {
-	INT opndnum = OP_find_opnd_use(op, OU_base);
-	if (Trace_Unwind && opndnum < -1) {
-	  Print_OP_No_SrcLine(op);
-	}
-	FmtAssert(opndnum >= 0, ("no OU_base for %s", TOP_Name(opc)));
-	TN *load_tn = OP_opnd(op,opndnum);
-	if (load_tn == SP_TN || load_tn == FP_TN) {
-	  ue.kind = UE_RESTORE_MEM;
-	  ue.rc_reg = TN_class_reg(result_tn);
-
-	  TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-	  // don't record constant offsets, they are not related to
-	  // restores of callee-saved (they appear in array access for
-	  // instance)
-	  if (TN_is_symbol(offset_tn)) {
-	    ST* st = TN_var(offset_tn);
-	    ST* base_st;
-	    INT64 base_ofst;
-    
-	    Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-	    if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
-	      Print_OP_No_SrcLine(op);
-	    }
-	    FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
-		      ("not restoring from the stack!"));
-
-	    ue.offset = CGTARG_TN_Value (offset_tn, base_ofst);
-
-#if 0 // [CL] see comment at the beginning of this file
-
-	  // If rc_reg was not saved at this offset, it means op is
-	  // not a restore. Forget it.
-	  if ((reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved
-	       == FALSE)
-	      ||
-	      (reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset
-	      != ue.offset)
-	      ) {
-	    ue.kind = UE_UNDEFINED;
-	  }
+    fprintf(TFile, "** %s load\n", __FUNCTION__);
 #endif
 
-#ifdef DEBUG_UNWIND
-	  if (ue.kind != UE_UNDEFINED) {
-	    fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
-		    __FUNCTION__,
-		    REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue.rc_reg),
-					CLASS_REG_PAIR_reg(ue.rc_reg)),
-		    ue.offset);
-	  }
-#endif
-	  }
-	}
-      }
+    // check if we are loading a callee saved
+    // from the stack
+    INT opndnum = 0;
+    Record_Register_Restore(op, opndnum, bb, &ue, FALSE);
+
+    if (OP_multi(op)) {
+      // if there are 2 results, record the 1st one, and prepare the next one
+      Record_UE(op, &ue, bb, when);
+
+      opndnum = OP_find_result_with_usage(op, OU_multi);
+      Record_Register_Restore(op, opndnum, bb, &ue, TRUE);
+    }
   }
   else if ((opnd_idx = OP_Copy_Operand(op)) != -1) 
   {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s copy\n", __FUNCTION__);
+    fprintf(TFile, "** %s copy\n", __FUNCTION__);
 #endif
-      TN* copy_tn = OP_opnd(op, opnd_idx);
-      TN* result_tn = OP_result(op, OP_Copy_Result(op));
+    TN* copy_tn = OP_opnd(op, opnd_idx);
+    TN* result_tn = OP_result(op, OP_Copy_Result(op));
       
-      // check that we are copying a callee saved,
-      // and that the destination is not a dedicated
-      // there is a special case for FP, which is removed
-      // from the callee_save register set when used in a PU
-      if ( (TN_Is_Unwind_Reg(copy_tn) || copy_tn==FP_TN)
-	   && TN_is_register(result_tn)
-	   && !TN_is_dedicated(result_tn))
+    // check that we are copying a callee saved,
+    // and that the destination is not a dedicated
+    // there is a special case for FP, which is removed
+    // from the callee_save register set when used in a PU
+    if ( (TN_Is_Unwind_Reg(copy_tn) || copy_tn==FP_TN)
+	 && TN_is_register(result_tn)
+	 && !TN_is_dedicated(result_tn))
       {
-	  ue.kind = UE_SAVE_GR;
-	  ue.rc_reg = TN_class_reg(copy_tn);
-	  ue.save_rc_reg = TN_class_reg(result_tn);
+	ue.kind = UE_SAVE_GR;
+	ue.rc_reg = TN_class_reg(copy_tn);
+	ue.save_rc_reg = TN_class_reg(result_tn);
 
-      // or check that we are restoring a callee-saved,
-      // not from a dedicated
+	// or check that we are restoring a callee-saved,
+	// not from a dedicated
       } else if ( (TN_Is_Unwind_Reg(result_tn) || result_tn==FP_TN)
 		  && TN_is_register(copy_tn)
 		  && !TN_is_dedicated(copy_tn))
       {
-	  ue.kind = UE_RESTORE_GR;
-	  ue.rc_reg = TN_class_reg(result_tn);
+	ue.kind = UE_RESTORE_GR;
+	ue.rc_reg = TN_class_reg(result_tn);
       }
   }
 
-  if (ue.kind != UE_UNDEFINED) {
-	ue.qp = 0;
-#if 0
-	if (OP_has_predicate(op)) {
-		ue.qp = REGISTER_machine_id (ISA_REGISTER_CLASS_predicate,
-			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
-	}
-#endif
-#if 0
-	if (ue.kind == UE_SAVE_GR) {
-		ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue.save_rc_reg);
-		REGISTER reg = CLASS_REG_PAIR_reg(ue.save_rc_reg);
-		if (ABI_PROPERTY_Is_stacked(rc, REGISTER_machine_id(rc, reg))
-			&& ! BB_rotating_kernel(bb)
-        		&& REGISTER_Is_Stacked_Output(rc, reg) )
-		{
-			reg = REGISTER_Translate_Stacked_Output(reg);
-			Set_CLASS_REG_PAIR_reg(ue.save_rc_reg, reg);
-		}
-	}
-#endif
-	ue.when = when;
-	ue.bb = bb;
-	ue_list.push_back (ue);
-    	if (Trace_Unwind) Print_Unwind_Elem (ue, "unwind1");
-  }
+  Record_UE(op, &ue, bb, when);
 }
 
 static UINT
