@@ -697,6 +697,9 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_inst_words(o)	(ISA_PACK_Inst_Words(OP_code(o)))
 #define OP_find_opnd_use(o,u)	(TOP_Find_Operand_Use(OP_code(o),(u)))
 #define OP_has_result(o)        (OP_results(o) != 0)
+#ifdef TARG_ST // [CL]
+#define OP_find_result_with_usage(o,u)	(TOP_Find_Result_With_Usage(OP_code(o),(u)))
+#endif
 
 /* _fixed_results and _fixed_opnds return how many fixed
  * results/operands an instruction has (OP_result/OP_opnds includes
