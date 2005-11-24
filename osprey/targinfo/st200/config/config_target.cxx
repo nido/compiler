@@ -125,7 +125,8 @@ BOOL Avoid_TFP_blikely_bug = FALSE;
 BOOL Avoid_TFP_blikely_bug_overridden = FALSE;
 
 /***** IEEE 754 options *****/
-BOOL Force_IEEE_Comparisons = TRUE;    /* IEEE NaN comparisons? */
+// BOOL Force_IEEE_Comparisons = TRUE;    /* IEEE NaN comparisons? */
+BOOL Force_IEEE_Comparisons = !(Finite_Math);    /* IEEE NaN comparisons? */
 
 /***** INTERNAL group options *****/
 
@@ -866,10 +867,11 @@ Configure_Source_Target ( char * /* filename */ )
   // [FdF] Revert some settings from config.cxx with -O3
   // [CM] We also need to do it whatever the optimization level is
   // since -ffast-math and other -ffast can be set and turn these on
+  // [HK] 20051122 these options should now be safely supported
   if (IEEE_Arithmetic > IEEE_ACCURATE) {
-    IEEE_Arithmetic = IEEE_ACCURATE;
-    Recip_Allowed = FALSE;
-    Rsqrt_Allowed = FALSE;
+//     IEEE_Arithmetic = IEEE_ACCURATE;
+//     Recip_Allowed = FALSE;
+//     Rsqrt_Allowed = FALSE;
     Div_Split_Allowed = FALSE;
   }
   if (Opt_Level > 2 && Roundoff_Level > ROUNDOFF_NONE) {

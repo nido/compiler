@@ -149,6 +149,7 @@ static const char source_file[] = __FILE__;
 #include "ebo_special.h"
 #include "ebo_util.h"
 
+#include "config_opt.h" // [HK] for Finite_Math
 /* ===================================================================== */
 /* Global Data:								 */
 /* ===================================================================== */
@@ -2554,7 +2555,9 @@ EBO_Constant_Operand0 (
 
   // Floating -point simplification:
   if (tn0 == FZero_TN) {
-    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
+// [HK] this is now activated by the -ffinite-math-only flag
+//    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
+    if ( Finite_Math && OP_fmul(op)) {
       OPS ops = OPS_EMPTY;
 
       if (EBO_Trace_Optimization) 
@@ -3377,8 +3380,10 @@ EBO_Constant_Operand1 (
 #if 0
   // Floating-point simplification
   if (tn1 == FZero_TN) {
-    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
-      OPS ops = OPS_EMPTY;
+// [HK] this is now activated by the -ffinite-math-only flag
+//    if ((IEEE_Arithmetic >= IEEE_INEXACT) && OP_fmul(op)) {
+      if ( Finite_Math && OP_fmul(op)) {
+	  OPS ops = OPS_EMPTY;
 
       if (EBO_Trace_Optimization) 
 	fprintf(TFile,"replace fmpy of 0.0 with 0.0\n");
