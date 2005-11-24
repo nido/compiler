@@ -255,6 +255,12 @@ extern void Exp_Pred_Complement(TN *dest, TN *cdest, TN *src, OPS *ops);
 extern void Exp_Pred_Compare(TN *dest, TN *cdest, TN *src1, TN *src2, 
 			     VARIANT variant, OPS *ops);
 
+
+#ifdef TARG_ST
+extern void Exp_Var_Extract (INT count, TN **dests, TN *src, OPS *ops);
+extern void Exp_Var_Compose (INT count, TN *dst, TN **srcs, OPS *ops);
+#endif
+
 #ifndef TARG_ST
 // Arthur: moved to be/com/betarget.h
 

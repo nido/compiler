@@ -1209,3 +1209,12 @@ WN_To_INTRINSIC (
   }
   return id;
 }
+
+BOOL
+Pass_Low_First (TYPE_ID type)
+{
+  /* ST200 always passes low order word of multi-register
+     parameters/results in the lowest numbered register.
+  */
+  return TRUE;
+}

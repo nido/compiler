@@ -1207,11 +1207,7 @@ Expand__st220addcg(
 
 /*
 @@@  case INTRN_ST220ADDCG:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__st220addcg(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1237,11 +1233,7 @@ Expand__st220divs(
 
 /*
 @@@  case INTRN_ST220DIVS:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__st220divs(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__st220divs(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1579,11 +1571,7 @@ Expand__abscl(
 
 /*
 @@@  case INTRN_ABSCL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__abscl(result[1],result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__abscl(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1679,11 +1667,7 @@ Expand__absl(
 
 /*
 @@@  case INTRN_ABSL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__absl(result[1],result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__absl(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1797,11 +1781,7 @@ Expand__addcl(
 
 /*
 @@@  case INTRN_ADDCL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__addcl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__addcl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1875,11 +1855,7 @@ Expand__addl(
 
 /*
 @@@  case INTRN_ADDL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__addl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__addl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -1907,11 +1883,7 @@ Expand__addul(
 
 /*
 @@@  case INTRN_ADDUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__addul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__addul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2352,11 +2324,7 @@ Expand__clamplw(
 
 /*
 @@@  case INTRN_CLAMPLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__clamplw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__clamplw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2587,11 +2555,7 @@ Expand__eql(
 
 /*
 @@@  case INTRN_EQL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__eql(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__eql(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2617,11 +2581,7 @@ Expand__equl(
 
 /*
 @@@  case INTRN_EQUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__equl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__equl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2649,11 +2609,7 @@ Expand__gel(
 
 /*
 @@@  case INTRN_GEL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__gel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__gel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2698,11 +2654,7 @@ Expand__gethw(
 
 /*
 @@@  case INTRN_GETHW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__gethw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__gethw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2741,11 +2693,7 @@ Expand__getlw(
 
 /*
 @@@  case INTRN_GETLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__getlw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__getlw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2773,11 +2721,7 @@ Expand__geul(
 
 /*
 @@@  case INTRN_GEUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__geul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__geul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2805,11 +2749,7 @@ Expand__gtl(
 
 /*
 @@@  case INTRN_GTL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__gtl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__gtl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -2837,11 +2777,7 @@ Expand__gtul(
 
 /*
 @@@  case INTRN_GTUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__gtul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__gtul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3205,11 +3141,7 @@ Expand__lel(
 
 /*
 @@@  case INTRN_LEL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__lel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__lel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3237,11 +3169,7 @@ Expand__leul(
 
 /*
 @@@  case INTRN_LEUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__leul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__leul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3269,11 +3197,7 @@ Expand__ltl(
 
 /*
 @@@  case INTRN_LTL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__ltl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__ltl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3301,11 +3225,7 @@ Expand__ltul(
 
 /*
 @@@  case INTRN_LTUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__ltul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__ltul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3366,11 +3286,7 @@ Expand__lzcntl(
 
 /*
 @@@  case INTRN_LZCNTL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__lzcntl(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__lzcntl(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3503,11 +3419,7 @@ Expand__maxl(
 
 /*
 @@@  case INTRN_MAXL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__maxl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__maxl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3559,11 +3471,7 @@ Expand__maxul(
 
 /*
 @@@  case INTRN_MAXUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__maxul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__maxul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3655,11 +3563,7 @@ Expand__minl(
 
 /*
 @@@  case INTRN_MINL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__minl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__minl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3711,11 +3615,7 @@ Expand__minul(
 
 /*
 @@@  case INTRN_MINUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__minul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__minul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3851,11 +3751,7 @@ Expand__mpfcwl(
 
 /*
 @@@  case INTRN_MPFCWL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mpfcwl(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__mpfcwl(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3901,11 +3797,7 @@ Expand__mpfml(
 
 /*
 @@@  case INTRN_MPFML:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mpfml(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__mpfml(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -3977,11 +3869,7 @@ Expand__mpml(
 
 /*
 @@@  case INTRN_MPML:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mpml(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__mpml(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4014,11 +3902,7 @@ Expand__mpuml(
 
 /*
 @@@  case INTRN_MPUML:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mpuml(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__mpuml(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4394,11 +4278,7 @@ Expand__mull(
 
 /*
 @@@  case INTRN_MULL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mull(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__mull(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4458,11 +4338,7 @@ Expand__muln(
 
 /*
 @@@  case INTRN_MULN:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__muln(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__muln(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4563,11 +4439,7 @@ Expand__mulul(
 
 /*
 @@@  case INTRN_MULUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mulul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__mulul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4642,11 +4514,7 @@ Expand__mulun(
 
 /*
 @@@  case INTRN_MULUN:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__mulun(result[1],result[0],opnd[0],opnd[1],ops) ;
-@@@  } else { 
 @@@    Expand__mulun(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4737,11 +4605,7 @@ Expand__nearclw(
 
 /*
 @@@  case INTRN_NEARCLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__nearclw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__nearclw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4810,11 +4674,7 @@ Expand__nearlw(
 
 /*
 @@@  case INTRN_NEARLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__nearlw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__nearlw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4919,11 +4779,7 @@ Expand__negcl(
 
 /*
 @@@  case INTRN_NEGCL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__negcl(result[1],result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__negcl(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -4982,11 +4838,7 @@ Expand__negl(
 
 /*
 @@@  case INTRN_NEGL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__negl(result[1],result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__negl(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5018,11 +4870,7 @@ Expand__negul(
 
 /*
 @@@  case INTRN_NEGUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__negul(result[1],result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__negul(result[0],result[1],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5048,11 +4896,7 @@ Expand__nel(
 
 /*
 @@@  case INTRN_NEL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__nel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__nel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5078,11 +4922,7 @@ Expand__neul(
 
 /*
 @@@  case INTRN_NEUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__neul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__neul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5168,11 +5008,7 @@ Expand__norml(
 
 /*
 @@@  case INTRN_NORML:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__norml(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__norml(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5279,11 +5115,7 @@ Expand__priorl(
 
 /*
 @@@  case INTRN_PRIORL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__priorl(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__priorl(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5336,11 +5168,7 @@ Expand__puthl(
 
 /*
 @@@  case INTRN_PUTHL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__puthl(result[1],result[0],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__puthl(result[0],result[1],opnd[0],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5386,11 +5214,7 @@ Expand__putll(
 
 /*
 @@@  case INTRN_PUTLL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__putll(result[1],result[0],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__putll(result[0],result[1],opnd[0],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5500,11 +5324,7 @@ Expand__roundclw(
 
 /*
 @@@  case INTRN_ROUNDCLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__roundclw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__roundclw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5561,11 +5381,7 @@ Expand__roundlw(
 
 /*
 @@@  case INTRN_ROUNDLW:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__roundlw(result[0],opnd[1],opnd[0],ops) ;
-@@@  } else { 
 @@@    Expand__roundlw(result[0],opnd[0],opnd[1],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5719,11 +5535,7 @@ Expand__shll(
 
 /*
 @@@  case INTRN_SHLL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__shll(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__shll(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5788,11 +5600,7 @@ Expand__shrl(
 
 /*
 @@@  case INTRN_SHRL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__shrl(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__shrl(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -5898,11 +5706,7 @@ Expand__shrul(
 
 /*
 @@@  case INTRN_SHRUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__shrul(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__shrul(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -6029,11 +5833,7 @@ Expand__subcl(
 
 /*
 @@@  case INTRN_SUBCL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__subcl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__subcl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -6106,11 +5906,7 @@ Expand__subl(
 
 /*
 @@@  case INTRN_SUBL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__subl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__subl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -6139,11 +5935,7 @@ Expand__subul(
 
 /*
 @@@  case INTRN_SUBUL:
-@@@  if (Target_Byte_Sex == BIG_ENDIAN) {
-@@@    Expand__subul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-@@@  } else { 
 @@@    Expand__subul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-@@@  }  
 @@@  break ;
 */
 
@@ -6471,18 +6263,10 @@ Exp_Intrinsic_Op (
 	Expand__st200pswset(opnd[0],ops) ;
     break ;
     case INTRN_ST220ADDCG:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__st220addcg(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
-    } else { 
       Expand__st220addcg(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-    }  
     break ;
     case INTRN_ST220DIVS:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__st220divs(result[1],result[0],opnd[0],opnd[1],opnd[2],ops) ;
-    } else { 
       Expand__st220divs(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-    }  
     break ;
     case INTRN_ST220MULHHS:
       Expand__st220mulhhs(result[0],opnd[0],opnd[1],ops) ;
@@ -6521,11 +6305,7 @@ Exp_Intrinsic_Op (
       Expand__absch(result[0],opnd[0],ops) ;
     break ;
     case INTRN_ABSCL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__abscl(result[1],result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__abscl(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_ABSCW:
       Expand__abscw(result[0],opnd[0],ops) ;
@@ -6534,11 +6314,7 @@ Exp_Intrinsic_Op (
       Expand__absh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_ABSL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__absl(result[1],result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__absl(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_ABSW:
       Expand__absw(result[0],opnd[0],ops) ;
@@ -6547,28 +6323,16 @@ Exp_Intrinsic_Op (
       Expand__addch(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ADDCL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__addcl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__addcl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_ADDCW:
       Expand__addcw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ADDL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__addl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__addl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_ADDUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__addul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__addul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_BITCLRH:
       Expand__bitclrh(result[0],opnd[0],opnd[1],ops) ;
@@ -6604,11 +6368,7 @@ Exp_Intrinsic_Op (
       Expand__bitvalw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_CLAMPLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__clamplw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__clamplw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_CLAMPWH:
       Expand__clampwh(result[0],opnd[0],ops) ;
@@ -6632,66 +6392,34 @@ Exp_Intrinsic_Op (
       Expand__edgesw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_EQL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__eql(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__eql(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_EQUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__equl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__equl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_GEL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__gel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__gel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_GETHH:
       Expand__gethh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_GETHW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__gethw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__gethw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_GETLH:
       Expand__getlh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_GETLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__getlw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__getlw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_GEUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__geul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__geul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_GTL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__gtl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__gtl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_GTUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__gtul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__gtul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_INSEQUW:
       Expand__insequw(result[0],opnd[0],opnd[1],opnd[2],ops) ;
@@ -6730,42 +6458,22 @@ Exp_Intrinsic_Op (
       Expand__insnew(result[0],opnd[0],opnd[1],opnd[2],ops) ;
     break ;
     case INTRN_LEL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__lel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__lel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_LEUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__leul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__leul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_LTL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__ltl(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__ltl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_LTUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__ltul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__ltul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_LZCNTH:
       Expand__lzcnth(result[0],opnd[0],ops) ;
     break ;
     case INTRN_LZCNTL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__lzcntl(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__lzcntl(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_LZCNTW:
       Expand__lzcntw(result[0],opnd[0],ops) ;
@@ -6777,21 +6485,13 @@ Exp_Intrinsic_Op (
       Expand__maxh(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MAXL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__maxl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__maxl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MAXUH:
       Expand__maxuh(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MAXUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__maxul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__maxul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MAXUW:
       Expand__maxuw(result[0],opnd[0],opnd[1],ops) ;
@@ -6803,21 +6503,13 @@ Exp_Intrinsic_Op (
       Expand__minh(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MINL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__minl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__minl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MINUH:
       Expand__minuh(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MINUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__minul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__minul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MINUW:
       Expand__minuw(result[0],opnd[0],opnd[1],ops) ;
@@ -6829,35 +6521,19 @@ Exp_Intrinsic_Op (
       Expand__mpfcw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MPFCWL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mpfcwl(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__mpfcwl(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MPFML:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mpfml(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__mpfml(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MPFRCH:
       Expand__mpfrch(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MPML:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mpml(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__mpml(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MPUML:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mpuml(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__mpuml(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MULFCH:
       Expand__mulfch(result[0],opnd[0],opnd[1],ops) ;
@@ -6884,41 +6560,25 @@ Exp_Intrinsic_Op (
       Expand__mulhw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MULL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mull(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__mull(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MULM:
       Expand__mulm(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MULN:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__muln(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__muln(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MULUH:
       Expand__muluh(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MULUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mulul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__mulul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_MULUM:
       Expand__mulum(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_MULUN:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__mulun(result[1],result[0],opnd[0],opnd[1],ops) ;
-    } else { 
       Expand__mulun(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_MULUW:
       Expand__muluw(result[0],opnd[0],opnd[1],ops) ;
@@ -6927,21 +6587,13 @@ Exp_Intrinsic_Op (
       Expand__mulw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_NEARCLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__nearclw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__nearclw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NEARCWH:
       Expand__nearcwh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_NEARLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__nearlw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__nearlw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NEARWH:
       Expand__nearwh(result[0],opnd[0],ops) ;
@@ -6950,52 +6602,28 @@ Exp_Intrinsic_Op (
       Expand__negch(result[0],opnd[0],ops) ;
     break ;
     case INTRN_NEGCL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__negcl(result[1],result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__negcl(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NEGCW:
       Expand__negcw(result[0],opnd[0],ops) ;
     break ;
     case INTRN_NEGL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__negl(result[1],result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__negl(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NEGUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__negul(result[1],result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__negul(result[0],result[1],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NEL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__nel(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__nel(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_NEUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__neul(result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__neul(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_NORMH:
       Expand__normh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_NORML:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__norml(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__norml(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_NORMW:
       Expand__normw(result[0],opnd[0],ops) ;
@@ -7004,31 +6632,19 @@ Exp_Intrinsic_Op (
       Expand__priorh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_PRIORL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__priorl(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__priorl(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_PRIORW:
       Expand__priorw(result[0],opnd[0],ops) ;
     break ;
     case INTRN_PUTHL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__puthl(result[1],result[0],opnd[0],ops) ;
-    } else { 
       Expand__puthl(result[0],result[1],opnd[0],ops) ;
-    }  
     break ;
     case INTRN_PUTHW:
       Expand__puthw(result[0],opnd[0],ops) ;
     break ;
     case INTRN_PUTLL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__putll(result[1],result[0],opnd[0],ops) ;
-    } else { 
       Expand__putll(result[0],result[1],opnd[0],ops) ;
-    }  
     break ;
     case INTRN_PUTLW:
       Expand__putlw(result[0],opnd[0],ops) ;
@@ -7040,21 +6656,13 @@ Exp_Intrinsic_Op (
       Expand__rotlw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ROUNDCLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__roundclw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__roundclw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_ROUNDCWH:
       Expand__roundcwh(result[0],opnd[0],ops) ;
     break ;
     case INTRN_ROUNDLW:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__roundlw(result[0],opnd[1],opnd[0],ops) ;
-    } else { 
       Expand__roundlw(result[0],opnd[0],opnd[1],ops) ;
-    }  
     break ;
     case INTRN_ROUNDWH:
       Expand__roundwh(result[0],opnd[0],ops) ;
@@ -7066,21 +6674,13 @@ Exp_Intrinsic_Op (
       Expand__shlcw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SHLL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__shll(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-    } else { 
       Expand__shll(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-    }  
     break ;
     case INTRN_SHLW:
       Expand__shlw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SHRL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__shrl(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-    } else { 
       Expand__shrl(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-    }  
     break ;
     case INTRN_SHRRH:
       Expand__shrrh(result[0],opnd[0],opnd[1],ops) ;
@@ -7089,11 +6689,7 @@ Exp_Intrinsic_Op (
       Expand__shrrw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SHRUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__shrul(result[1],result[0],opnd[1],opnd[0],opnd[2],ops) ;
-    } else { 
       Expand__shrul(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
-    }  
     break ;
     case INTRN_SHRUW:
       Expand__shruw(result[0],opnd[0],opnd[1],ops) ;
@@ -7105,28 +6701,16 @@ Exp_Intrinsic_Op (
       Expand__subch(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SUBCL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__subcl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__subcl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_SUBCW:
       Expand__subcw(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_SUBL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__subl(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__subl(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_SUBUL:
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      Expand__subul(result[1],result[0],opnd[1],opnd[0],opnd[3],opnd[2],ops) ;
-    } else { 
       Expand__subul(result[0],result[1],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
-    }  
     break ;
     case INTRN_SWAPBH:
       Expand__swapbh(result[0],opnd[0],ops) ;

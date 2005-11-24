@@ -209,6 +209,40 @@ Expand_Extract (
 }
 
 /* ====================================================================
+ *   Expand_Var_Compose provides an interface for generating compose
+ *      instructions of arbitrary width, so that machine-independent
+ *      parts of the compiler can abstract the width.
+ * ====================================================================
+ */
+void
+Exp_Var_Compose (
+		 INT count,
+		 TN *dst,
+		 TN **srcs,
+		 OPS *ops)
+{
+  FmtAssert (count == 2, ("Unsupported compose width (%d)", count));
+  Expand_Compose (dst, srcs[0], srcs[1], ops);
+}
+
+/* ====================================================================
+ *   Expand_Var_Extract provides an interface for generating extract
+ *      instructions of arbitrary width, so that machine-independent
+ *      parts of the compiler can abstract the width.
+ * ====================================================================
+ */
+void
+Exp_Var_Extract (
+		 INT count,
+		 TN **dsts,
+		 TN *src,
+		 OPS *ops)
+{
+  FmtAssert (count == 2, ("Unsupported extract width (%d)", count));
+  Expand_Extract (dsts[0], dsts[1], src, ops);
+}
+
+/* ====================================================================
  *   Expand_Multi (tgt_tn, low_tn, high_tn, ops)
  * ====================================================================
  */
@@ -949,19 +983,11 @@ Expand_Shift (
     TN *high_src1 = Build_TN_Of_Mtype (MTYPE_U4);
     TN *low_res = Build_TN_Of_Mtype (MTYPE_U4);
     TN *high_res = Build_TN_Of_Mtype (MTYPE_U4);
-    if (Target_Byte_Sex == BIG_ENDIAN) {
-      opnds[0] = high_src1;
-      opnds[1] = low_src1;
-      opnds[2] = src2;
-      results[0] = high_res;
-      results[1] = low_res;
-    } else {
-      opnds[0] = low_src1;
-      opnds[1] = high_src1;
-      opnds[2] = src2;
-      results[0] = low_res;
-      results[1] = high_res;
-    }
+    opnds[0] = low_src1;
+    opnds[1] = high_src1;
+    opnds[2] = src2;
+    results[0] = low_res;
+    results[1] = high_res;
     switch (kind) {
     case shift_left:
       intr_id = INTRN_SHLL;
