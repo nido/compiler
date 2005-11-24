@@ -1935,6 +1935,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_RESTORE_GR:
+#ifndef TARG_ST200
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
       save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
@@ -1968,6 +1969,9 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 #endif
 
       break;
+#else
+      continue;
+#endif
 
     default:
       FmtAssert(FALSE, ("%s: Unhandled UNWIND_ELEM kind (%d)\n", __FUNCTION__, ue_iter->kind));
