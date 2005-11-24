@@ -190,11 +190,11 @@ HEADER_DIRS = 		\
   $(LAO_PREFIX)/include/LAI	\
   $(TARG_BE)
 
-ifeq ($(TARGET_BUILD), ST200)
+ifeq ($(BUILD_TARGET), ST200)
 HEADER_DIRS += $(LAO_PREFIX)/include/CSD/st200
 endif
 
-ifeq ($(TARGET_BUILD), STxP70)
+ifeq ($(BUILD_TARGET), STxP70)
 HEADER_DIRS += $(LAO_PREFIX)/include/CSD/stxp70
 endif
 
