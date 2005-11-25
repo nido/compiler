@@ -51,7 +51,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <unistd.h>
+#include "W_unistd.h"
 #include "defs.h"
 #include "tracing.h"
 #include "cgir.h"

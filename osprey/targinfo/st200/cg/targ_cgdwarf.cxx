@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <libelf.h>
 #include <sys/unwindP.h>
+#include "W_alloca.h"
 // [HK]
 #if __GNUC__ >= 3
 #include <list>

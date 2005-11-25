@@ -399,7 +399,9 @@ extern INT SI_resource_count;
 #endif
 
 TARGINFO_EXPORTED extern SI_RESOURCE * const SI_resources[];
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_resources
+#endif
 
 #ifdef TARG_ST
 extern const char* SI_RESOURCE_Name( SI_RESOURCE*);
@@ -502,10 +504,14 @@ SI_RESOURCE_ID_SET_Complement( SI_RESOURCE_ID_SET s )
 typedef mUINT64 SI_RRW;
 
 TARGINFO_EXPORTED extern const SI_RRW SI_RRW_initializer;
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_RRW_initializer
+#endif
 
 TARGINFO_EXPORTED extern const SI_RRW SI_RRW_overuse_mask;
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_RRW_overuse_mask
+#endif
 
 inline SI_RRW SI_RRW_Reserve( SI_RRW table, SI_RRW requirement )
 {
@@ -563,10 +569,14 @@ inline INT SI_ISSUE_SLOT_Avail_Per_Cycle( SI_ISSUE_SLOT* slot )
 #endif
 
 TARGINFO_EXPORTED extern const INT SI_issue_slot_count;
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_issue_slot_count
+#endif
 
 TARGINFO_EXPORTED extern SI_ISSUE_SLOT* const SI_issue_slots[];
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_issue_slots
+#endif
 
 #ifdef TARG_ST
 extern INT SI_ISSUE_SLOT_Count(void);
@@ -667,7 +677,9 @@ typedef const struct {
 } SI;
 
 TARGINFO_EXPORTED extern SI* const SI_top_si[];
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_top_si
+#endif
 
 #ifdef TARG_ST
 extern const char* TSI_Name( TOP top );
@@ -785,7 +797,9 @@ inline INT TSI_Write_Write_Interlock( TOP top )
  ****************************************************************************/
 
 TARGINFO_EXPORTED extern const INT SI_ID_count;
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_count
+#endif
 
 #ifdef TARG_ST
 extern INT SI_ID_Count(void);
@@ -797,7 +811,9 @@ inline INT SI_ID_Count(void)
 #endif
 
 TARGINFO_EXPORTED extern SI* const SI_ID_si[];
+#ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_si
+#endif
 
 #ifdef TARG_ST
 extern const SI_RESOURCE_ID_SET* SI_ID_II_Cycle_Resource_Ids_Used(SI_ID, INT);

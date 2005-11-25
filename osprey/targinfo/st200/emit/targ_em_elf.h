@@ -39,6 +39,7 @@
 extern "C" {
 #endif
 
+#include <elf.h>
 
 struct section_info {
     Elf_Scn *scnptr;		/* ptr to the elf section. */
@@ -90,9 +91,14 @@ extern pSCNINFO Interface_Scn;
   /*
    * section flags that are the same other than the enum
    */
+#ifndef SHF_MERGE
+  /* May be defined in recent elf.h. */
 #define SHF_MERGE         SHF_IRIX_MERGE
+#endif
+#ifndef SHF_NOSTRIP
+  /* May be defined in recent elf.h. */
 #define SHF_NOSTRIP       SHF_MIPS_NOSTRIP
-
+#endif
   /*
    * section types that are the same other than the enum
    */

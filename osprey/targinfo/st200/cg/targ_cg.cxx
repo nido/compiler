@@ -47,7 +47,7 @@
  */
 
 #include <ctype.h>
-#include <alloca.h>
+#include "W_alloca.h"
 
 #include "defs.h"
 #include "util.h"

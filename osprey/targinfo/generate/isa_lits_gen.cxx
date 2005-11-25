@@ -128,10 +128,10 @@ void ISA_Lits_Begin (void)
 
   fprintf(hfile, "\ntypedef enum {\n");
   // start with undefined value
-  fprintf(hfile, "\tLC_UNDEFINED,\n");
+  fprintf(hfile, "\tISA_LC_UNDEFINED,\n");
 
   fprintf(cfile, "BE_EXPORTED const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_info[] = {\n");
-  fprintf(cfile, "  { { { 0x0000000000000000LL, 0x0000000000000000LL } }, 0, 0, \"LC_UNDEFINED\" },\n");
+  fprintf(cfile, "  { { { 0x0000000000000000LL, 0x0000000000000000LL } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
 
   for (int i = 1; i <= 64; ++i) {
     unsigned_range[i].min = 0;
@@ -239,7 +239,7 @@ void ISA_Lits_End(void)
 //  See interface description.
 /////////////////////////////////////
 {
-  fprintf(hfile, "\tLC_MAX\n");
+  fprintf(hfile, "\tISA_LC_MAX\n");
   fprintf(hfile, "} ISA_LIT_CLASS;\n");
 
   fprintf(cfile, "};\n");

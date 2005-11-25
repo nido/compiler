@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <alloca.h>
+#include "W_alloca.h"
 #include <stdarg.h>
 // [HK]
 #if __GNUC__ >=3
@@ -44,7 +44,7 @@
 
 #include "cg_flags.h"
 
-#include <dlfcn.h>		    /* for dlsym() */
+#include "W_dlfcn.h"		    /* for dlsym() */
 #include "dso.h"		    /* for load_so() */
 
 #include "lao_stub.h"

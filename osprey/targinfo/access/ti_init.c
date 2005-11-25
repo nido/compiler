@@ -62,7 +62,7 @@ static void * targ_handler = NULL;
 #ifdef TARG_ST
 
 #include "ti_si.h"
-#include <dlfcn.h>		    /* for sgidladd(), dlerror() */
+#include "W_dlfcn.h"		    /* for sgidladd(), dlerror() */
 
 /****************************************************************************
  ****************************************************************************/

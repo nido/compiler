@@ -358,8 +358,8 @@ OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create (
   result->name = name;
   result->register_class = register_class;
   result->register_subclass = subclass;
-  result->literal_class = LC_UNDEFINED;
-  result->enum_class = EC_UNDEFINED;
+  result->literal_class = ISA_LC_UNDEFINED;
+  result->enum_class = ISA_EC_UNDEFINED;
   result->size = size;
   result->is_register = true;
   result->is_signed = type == SIGNED;
@@ -395,7 +395,7 @@ OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create (
   result->register_class = ISA_REGISTER_CLASS_UNDEFINED;
   result->register_subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
   result->literal_class = literal_class;
-  result->enum_class = EC_UNDEFINED;
+  result->enum_class = ISA_EC_UNDEFINED;
   result->is_register = false;
   result->is_signed = (type == SIGNED) || (type == PCREL);
   result->is_pcrel = (type == PCREL);
@@ -430,7 +430,7 @@ OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create (
   result->name = name;
   result->register_class = ISA_REGISTER_CLASS_UNDEFINED;
   result->register_subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
-  result->literal_class = LC_UNDEFINED;
+  result->literal_class = ISA_LC_UNDEFINED;
   result->enum_class = enum_class;
   result->is_register = false;
   result->is_signed = type == SIGNED;
@@ -839,7 +839,7 @@ void ISA_Operands_End(void)
 	val_type_index = val_type->index;
 	++oper_iter;
 
-	if (!val_type->is_register && val_type->literal_class != LC_UNDEFINED) {
+	if (!val_type->is_register && val_type->literal_class != ISA_LC_UNDEFINED) {
 
 	  /* track the range of operands that can possibly be literal
 	   */
@@ -1070,13 +1070,13 @@ void ISA_Operands_End(void)
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Literal("
 		   "const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
-		 "  return (otype->lclass != LC_UNDEFINED);\n"
+		 "  return (otype->lclass != ISA_LC_UNDEFINED);\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Enum("
 		   "const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
-		 "  return (otype->eclass != EC_UNDEFINED);\n"
+		 "  return (otype->eclass != ISA_EC_UNDEFINED);\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Signed("
@@ -1164,7 +1164,7 @@ void ISA_Operands_End(void)
 		 "  for (iopnd = first; iopnd < opnds; ++iopnd) {\n"
 		 "    const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(opinfo, iopnd);\n"
 		 "    ISA_LIT_CLASS lit_class = ISA_OPERAND_VALTYP_Literal_Class(vtype);\n"
-		 "    if (lit_class != LC_UNDEFINED) {\n"
+		 "    if (lit_class != ISA_LC_UNDEFINED) {\n"
 		 "      if (lclass) *lclass = lit_class;\n"
 		 "      return iopnd;\n"
 		 "    }\n"

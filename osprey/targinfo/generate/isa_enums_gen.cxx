@@ -215,17 +215,17 @@ void ISA_Enums_End(void)
 
   fprintf(hfile, "\ntypedef enum {\n");
   for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
-  	fprintf(hfile, "\tEC%s,\n", Print_ECV_EName(iec->ec_name));
+  	fprintf(hfile, "\tISA_EC%s,\n", Print_ECV_EName(iec->ec_name));
   }
-  fprintf(hfile, "\tEC_MAX\n");
+  fprintf(hfile, "\tISA_EC_MAX\n");
   fprintf(hfile, "} ISA_ENUM_CLASS;\n");
   fprintf(hfile, "\ntypedef enum {\n");
   for ( iecv = all_ecv.begin(); iecv != all_ecv.end(); ++iecv) {
 	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(hfile, "\tECV%s", Print_ECV_EName (iecv->ecv_ecname));
+  	fprintf(hfile, "\tISA_ECV%s", Print_ECV_EName (iecv->ecv_ecname));
   	fprintf(hfile, "%s,\n", Print_ECV_EName (iecv->ecv_name));
   }
-  fprintf(hfile, "\tECV_MAX\n");
+  fprintf(hfile, "\tISA_ECV_MAX\n");
   fprintf(hfile, "} ISA_ENUM_CLASS_VALUE;\n");
 
   fprintf(hfile, "\ntypedef struct {\n"
@@ -237,14 +237,14 @@ void ISA_Enums_End(void)
   fprintf(efile, "ISA_ENUM_CLASS_info\n");
   fprintf(cfile, "const ISA_ENUM_CLASS_INFO ISA_ENUM_CLASS_info[] = {\n");
   for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
-  	fprintf(cfile, "\t{ \"EC%s\",", Print_ECV_EName(iec->ec_name));
+  	fprintf(cfile, "\t{ \"ISA_EC%s\",", Print_ECV_EName(iec->ec_name));
 	tecv = all_ecv[iec->first_ecv];
 	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(cfile, "\tECV%s", Print_ECV_EName(tecv.ecv_ecname));
+  	fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
   	fprintf(cfile, "%s,", Print_ECV_EName(tecv.ecv_name));
 	tecv = all_ecv[iec->last_ecv];
 	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(cfile, "\tECV%s", Print_ECV_EName(tecv.ecv_ecname));
+  	fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
   	fprintf(cfile, "%s },\n", Print_ECV_EName(tecv.ecv_name));
   }
   fprintf(cfile, "};\n\n");

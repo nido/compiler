@@ -131,7 +131,7 @@
 /* #undef HAVE_NLIST_H */
 
 /* Define if you have the <stdint.h> header file.  */
-#define HAVE_STDINT_H 1
+/* #define HAVE_STDINT_H 1 */
 
 /* Define if you have the <sys/elf.h> header file.  */
 /* #undef HAVE_SYS_ELF_H */
