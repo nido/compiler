@@ -227,9 +227,9 @@ YACC = bison
 
 
 endif
+
 ifeq ($(BUILD_COMPILER), OPEN64)
 
-ifeq ($(BUILD_OS),SUNOS5_ST200)
 ifeq ($(BUILD_CCACHE), CCACHE)
 ifndef CCACHE_DIR
 $(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
@@ -237,21 +237,32 @@ endif
 export CCACHE_DIR
 CCACHE?=ccache
 export CCACHE_HASHDIR=1
+endif # CCACHE
 
-endif
+ifeq ($(HOST_ARCH),ST200)
+
+ifeq ($(BUILD_OS),SUNOS5)
 RUNNER=/apa/comp/SunOS5/st200/R4.1/bin/st200run -tsimfast --
 COMPILER_LOC=$(CCACHE) /apa/comp/SunOS5/st200/R4.1/bin/
-endif
-ifeq ($(BUILD_OS),LINUX_ST200)
+COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
+BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
+endif # SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
 RUNNER=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/st200run -tsimfast --
 COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/
+COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
+BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
 endif
+
 BINUTILS_LOC=$(COMPILER_LOC)
-#BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
-#BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 PREFIX=st200-
 CCPREFIX=st200
-endif
+
+endif # ST200
+endif # OPEN64
 
 ##
 ## GNU tools names with ccache compilation cache tool
