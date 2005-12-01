@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <libelf.h>
 #include <sys/unwindP.h>
-#include "W_alloca.h"
 // [HK]
 #if __GNUC__ >= 3
 #include <list>
@@ -425,34 +424,39 @@ static void Record_Register_Save(OP* op, INT opndnum, BB* bb, UNWIND_ELEM* ue,
       ue->kind = (store_tn == SP_TN) ? UE_SAVE_SP : UE_SAVE_FP;
 
       TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-      ST* st = TN_var(offset_tn);
-      ST* base_st;
-      INT64 base_ofst;
 
-      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
-	Print_OP_No_SrcLine(op);
-      }
-      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
-		("not saving to the stack!"));
+      // don't record constant offsets, they are not related to
+      // restores of callee-saved (they appear in array access for
+      // instance)
+      if (TN_is_symbol(offset_tn)) {
+	ST* st = TN_var(offset_tn);
+	ST* base_st;
+	INT64 base_ofst;
 
-      ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
+	Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	  Print_OP_No_SrcLine(op);
+	}
+	FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+		  ("not saving to the stack!"));
 
-      // handle the multi-operand case.
-      // CAUTION: This is ABI dependent
-      if (OP_multi(op)) {
-	if (!opnd_is_multi) {
-	  // 1st operand
-	  if (Target_Byte_Sex == BIG_ENDIAN) {
-	    ue->offset += 4;
-	  }
-	} else {
-	  // 2nd operand (opnd_is_multi)
-	  if (Target_Byte_Sex == LITTLE_ENDIAN) {
-	    ue->offset += 4;
+	ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
+
+	// handle the multi-operand case.
+	// CAUTION: This is ABI dependent
+	if (OP_multi(op)) {
+	  if (!opnd_is_multi) {
+	    // 1st operand
+	    if (Target_Byte_Sex == BIG_ENDIAN) {
+	      ue->offset += 4;
+	    }
+	  } else {
+	    // 2nd operand (opnd_is_multi)
+	    if (Target_Byte_Sex == LITTLE_ENDIAN) {
+	      ue->offset += 4;
+	    }
 	  }
 	}
-      }
 
 #if 0 // [CL] see comment at the beginning of this file
 
@@ -461,16 +465,17 @@ static void Record_Register_Save(OP* op, INT opndnum, BB* bb, UNWIND_ELEM* ue,
       // for spill, and restored with a value different from the
       // initial one, before finally being restored with the
       // caller's value
-      reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved = TRUE;
-      reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset = ue.offset;
+	reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved = TRUE;
+	reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset = ue.offset;
 #endif
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
-				  CLASS_REG_PAIR_reg(ue->rc_reg)),
-	      ue->offset);
+	fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
+		REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+				    CLASS_REG_PAIR_reg(ue->rc_reg)),
+		ue->offset);
 #endif
+      }
     }
   } else {
 #ifdef DEBUG_UNWIND
@@ -506,58 +511,64 @@ static void Record_Register_Restore(OP* op, INT opndnum, BB* bb,
       ue->rc_reg = TN_class_reg(result_tn);
 
       TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
-      ST* st = TN_var(offset_tn);
-      ST* base_st;
-      INT64 base_ofst;
+
+      // don't record constant offsets, they are not related to
+      // restores of callee-saved (they appear in array access for
+      // instance)
+      if (TN_is_symbol(offset_tn)) {
+	ST* st = TN_var(offset_tn);
+	ST* base_st;
+	INT64 base_ofst;
     
-      Base_Symbol_And_Offset(st, &base_st, &base_ofst);
-      if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
-	Print_OP_No_SrcLine(op);
-      }
-      FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
-		("not restoring from the stack!"));
+	Base_Symbol_And_Offset(st, &base_st, &base_ofst);
+	if (Trace_Unwind && base_st != SP_Sym && base_st != FP_Sym) {
+	  Print_OP_No_SrcLine(op);
+	}
+	FmtAssert(base_st == SP_Sym || base_st == FP_Sym,
+		  ("not restoring from the stack!"));
 
-      ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
+	ue->offset = CGTARG_TN_Value (offset_tn, base_ofst);
 
-      // handle the multi-operand case. 
-      // CAUTION: This is ABI dependent
-      if (OP_multi(op)) {
-	if (!opnd_is_multi) {
-	  // 1st operand
-	  if (Target_Byte_Sex == BIG_ENDIAN) {
-	    ue->offset += 4;
-	  }
-	} else {
-	  // 2nd operand (opnd_is_multi)
-	  if (Target_Byte_Sex == LITTLE_ENDIAN) {
-	    ue->offset += 4;
+	// handle the multi-operand case. 
+	// CAUTION: This is ABI dependent
+	if (OP_multi(op)) {
+	  if (!opnd_is_multi) {
+	    // 1st operand
+	    if (Target_Byte_Sex == BIG_ENDIAN) {
+	      ue->offset += 4;
+	    }
+	  } else {
+	    // 2nd operand (opnd_is_multi)
+	    if (Target_Byte_Sex == LITTLE_ENDIAN) {
+	      ue->offset += 4;
+	    }
 	  }
 	}
-      }
 
 #if 0 // [CL] see comment at the beginning of this file
 
       // If rc_reg was not saved at this offset, it means op is
       // not a restore. Forget it.
-      if ((reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved
-	   == FALSE)
-	  ||
-	  (reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset
-	   != ue.offset)
-	  ) {
-	ue.kind = UE_UNDEFINED;
-      }
+	if ((reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].saved
+	     == FALSE)
+	    ||
+	    (reg_saved_at_offset[CLASS_REG_PAIR_reg(ue.rc_reg)].offset
+	     != ue.offset)
+	    ) {
+	  ue.kind = UE_UNDEFINED;
+	}
 #endif
 
 #ifdef DEBUG_UNWIND
-      if (ue->kind != UE_UNDEFINED) {
-	fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
-		__FUNCTION__,
-		REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
-				    CLASS_REG_PAIR_reg(ue->rc_reg)),
-		ue->offset);
-      }
+	if (ue->kind != UE_UNDEFINED) {
+	  fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
+		  __FUNCTION__,
+		  REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+				      CLASS_REG_PAIR_reg(ue->rc_reg)),
+		  ue->offset);
+	}
 #endif
+      }
     }
   }
 }
