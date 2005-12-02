@@ -1289,8 +1289,14 @@ Must_Split( LRANGE* lrange )
 //
 /////////////////////////////////////
 {
-  return    lrange->Type() == LRANGE_TYPE_COMPLEMENT
-    && TN_is_save_reg(lrange->Tn()) && GRA_shrink_wrap;
+  return    lrange->Type() == LRANGE_TYPE_COMPLEMENT 
+    && TN_is_save_reg(lrange->Tn()) && 
+#ifdef TARG_ST
+    // (cbr) must keep register savings in the prologue in order for the spill
+    // in the catch handlers to be removed. see Adjust_Entry.
+    !PU_has_exc_scopes (Get_Current_PU()) &&
+#endif
+    GRA_shrink_wrap;
 }
 
 /////////////////////////////////////
