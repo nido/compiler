@@ -117,7 +117,6 @@ main()
   has_bundles = PROC_Property_Create ("has_bundles");
   Processor_Group (has_bundles,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
@@ -129,7 +128,6 @@ main()
   has_delayed_exception = PROC_Property_Create ("has_delayed_exception");
   Processor_Group (has_delayed_exception,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
@@ -137,14 +135,12 @@ main()
   has_dismissible_load = PROC_Property_Create ("has_dismissible_load");
   Processor_Group (has_dismissible_load,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_UNDEFINED);
 
   has_enable_prefetch = PROC_Property_Create ("has_enable_prefetch");
   Processor_Group (has_enable_prefetch,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
@@ -182,7 +178,6 @@ main()
   has_prefetch = PROC_Property_Create ("has_prefetch");
   Processor_Group (has_prefetch,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
@@ -211,7 +206,6 @@ main()
   is_select = PROC_Property_Create ("is_select");
   Processor_Group (is_select,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);
@@ -219,7 +213,6 @@ main()
   is_superscalar = PROC_Property_Create ("is_superscalar");
   Processor_Group (is_superscalar,
 			PROCESSOR_st220,
-			PROCESSOR_st230,
 			PROCESSOR_st231,
 			PROCESSOR_st235,
 			PROCESSOR_UNDEFINED);

@@ -157,7 +157,6 @@ main()
 		 TOP_bwd_bar,
 		 TOP_CALL,
 		 TOP_COPY,
-		 TOP_dbgsbrk,
 		 TOP_fwd_bar,
 		 TOP_asm,
 		 TOP_GOTO,
@@ -191,8 +190,8 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_2", 
-		 TOP_sbrk_ib,
-		 TOP_syscall_ib,
+		 TOP_st235_sbrk,
+		 TOP_st235_syscall,
 		 TOP_UNDEFINED);
 
   Operand (0, Opd_brknum);
@@ -327,8 +326,8 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_16", 
-		 TOP_sbrk_i,
-		 TOP_syscall_i,
+		 TOP_sbrk,
+		 TOP_syscall,
 		 TOP_UNDEFINED);
 
   Operand (0, Opd_sbrknum);
@@ -428,13 +427,18 @@ main()
   /* ====================================== */ 
   Instruction_Group("O_26", 
 		 TOP_andl_r_b,
+		 TOP_cmpeqf_n_b,
 		 TOP_cmpeq_r_b,
+		 TOP_cmpgef_n_b,
 		 TOP_cmpgeu_r_b,
 		 TOP_cmpge_r_b,
+		 TOP_cmpgtf_n_b,
 		 TOP_cmpgtu_r_b,
 		 TOP_cmpgt_r_b,
+		 TOP_cmplef_n_b,
 		 TOP_cmpleu_r_b,
 		 TOP_cmple_r_b,
+		 TOP_cmpltf_n_b,
 		 TOP_cmpltu_r_b,
 		 TOP_cmplt_r_b,
 		 TOP_cmpne_r_b,
@@ -633,13 +637,18 @@ main()
 		 TOP_andc_r,
 		 TOP_andl_r_r,
 		 TOP_and_r,
+		 TOP_cmpeqf_n_r,
 		 TOP_cmpeq_r_r,
+		 TOP_cmpgef_n_r,
 		 TOP_cmpgeu_r_r,
 		 TOP_cmpge_r_r,
+		 TOP_cmpgtf_n_r,
 		 TOP_cmpgtu_r_r,
 		 TOP_cmpgt_r_r,
+		 TOP_cmplef_n_r,
 		 TOP_cmpleu_r_r,
 		 TOP_cmple_r_r,
+		 TOP_cmpltf_n_r,
 		 TOP_cmpltu_r_r,
 		 TOP_cmplt_r_r,
 		 TOP_cmpne_r_r,

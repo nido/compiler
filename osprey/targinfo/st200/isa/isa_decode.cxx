@@ -519,7 +519,7 @@ main()
   Transitions(st220_unit_8,
 	28, st220_unit_8_1,
 	29, st220_unit_8_2,
-	30, Final(TOP_syscall_i),
+	30, Final(TOP_syscall),
 	31, st220_unit_8_4,
 	END_TRANSITIONS);
 
@@ -536,7 +536,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st220_unit_8_2,
-	1, Final(TOP_sbrk_i),
+	1, Final(TOP_sbrk),
 	END_TRANSITIONS);
 
   Transitions(st220_unit_8_4,
@@ -744,743 +744,6 @@ main()
 	0, Final(TOP_rfi),
 	END_TRANSITIONS);
 
-  STATE st230_unit = Create_Inst_State("st230_unit", 0, 26, 5);
-  STATE st230_unit_1 = Create_Inst_State("st230_unit_1", 0, 18, 8);
-  STATE st230_unit_2 = Create_Inst_State("st230_unit_2", 0, 21, 5);
-  STATE st230_unit_2_1 = Create_Inst_State("st230_unit_2_1", 0, 18, 3);
-  STATE st230_unit_2_2 = Create_Inst_State("st230_unit_2_2", 0, 18, 3);
-  STATE st230_unit_2_3 = Create_Inst_State("st230_unit_2_3", 0, 18, 3);
-  STATE st230_unit_2_4 = Create_Inst_State("st230_unit_2_4", 0, 18, 3);
-  STATE st230_unit_2_5 = Create_Inst_State("st230_unit_2_5", 0, 18, 3);
-  STATE st230_unit_2_6 = Create_Inst_State("st230_unit_2_6", 0, 18, 3);
-  STATE st230_unit_2_7 = Create_Inst_State("st230_unit_2_7", 0, 18, 3);
-  STATE st230_unit_2_8 = Create_Inst_State("st230_unit_2_8", 0, 18, 3);
-  STATE st230_unit_2_9 = Create_Inst_State("st230_unit_2_9", 0, 18, 3);
-  STATE st230_unit_2_10 = Create_Inst_State("st230_unit_2_10", 0, 18, 3);
-  STATE st230_unit_2_11 = Create_Inst_State("st230_unit_2_11", 0, 18, 3);
-  STATE st230_unit_2_12 = Create_Inst_State("st230_unit_2_12", 0, 18, 3);
-  STATE st230_unit_2_13 = Create_Inst_State("st230_unit_2_13", 0, 18, 3);
-  STATE st230_unit_2_14 = Create_Inst_State("st230_unit_2_14", 0, 18, 3);
-  STATE st230_unit_2_15 = Create_Inst_State("st230_unit_2_15", 0, 12, 6);
-  STATE st230_unit_2_16 = Create_Inst_State("st230_unit_2_16", 0, 12, 6);
-  STATE st230_unit_2_17 = Create_Inst_State("st230_unit_2_17", 0, 12, 6);
-  STATE st230_unit_2_18 = Create_Inst_State("st230_unit_2_18", 0, 12, 6);
-  STATE st230_unit_2_19 = Create_Inst_State("st230_unit_2_19", 0, 12, 6);
-  STATE st230_unit_2_20 = Create_Inst_State("st230_unit_2_20", 0, 12, 6);
-  STATE st230_unit_2_21 = Create_Inst_State("st230_unit_2_21", 0, 12, 6);
-  STATE st230_unit_2_22 = Create_Inst_State("st230_unit_2_22", 0, 12, 6);
-  STATE st230_unit_2_23 = Create_Inst_State("st230_unit_2_23", 0, 12, 6);
-  STATE st230_unit_2_24 = Create_Inst_State("st230_unit_2_24", 0, 12, 6);
-  STATE st230_unit_2_25 = Create_Inst_State("st230_unit_2_25", 0, 12, 6);
-  STATE st230_unit_2_26 = Create_Inst_State("st230_unit_2_26", 0, 12, 6);
-  STATE st230_unit_2_27 = Create_Inst_State("st230_unit_2_27", 0, 12, 6);
-  STATE st230_unit_2_28 = Create_Inst_State("st230_unit_2_28", 0, 12, 6);
-  STATE st230_unit_3 = Create_Inst_State("st230_unit_3", 0, 21, 5);
-  STATE st230_unit_3_15 = Create_Inst_State("st230_unit_3_15", 0, 12, 8);
-  STATE st230_unit_3_15_1 = Create_Inst_State("st230_unit_3_15_1", 0, 20, 1);
-  STATE st230_unit_3_15_2 = Create_Inst_State("st230_unit_3_15_2", 0, 20, 1);
-  STATE st230_unit_3_15_3 = Create_Inst_State("st230_unit_3_15_3", 0, 20, 1);
-  STATE st230_unit_3_15_4 = Create_Inst_State("st230_unit_3_15_4", 0, 20, 1);
-  STATE st230_unit_3_15_5 = Create_Inst_State("st230_unit_3_15_5", 0, 20, 1);
-  STATE st230_unit_4 = Create_Inst_State("st230_unit_4", 0, 21, 5);
-  STATE st230_unit_4_15 = Create_Inst_State("st230_unit_4_15", 0, 9, 3);
-  STATE st230_unit_4_16 = Create_Inst_State("st230_unit_4_16", 0, 9, 3);
-  STATE st230_unit_4_17 = Create_Inst_State("st230_unit_4_17", 0, 9, 3);
-  STATE st230_unit_4_18 = Create_Inst_State("st230_unit_4_18", 0, 9, 3);
-  STATE st230_unit_4_19 = Create_Inst_State("st230_unit_4_19", 0, 9, 3);
-  STATE st230_unit_4_20 = Create_Inst_State("st230_unit_4_20", 0, 9, 3);
-  STATE st230_unit_4_21 = Create_Inst_State("st230_unit_4_21", 0, 9, 3);
-  STATE st230_unit_4_22 = Create_Inst_State("st230_unit_4_22", 0, 9, 3);
-  STATE st230_unit_4_23 = Create_Inst_State("st230_unit_4_23", 0, 9, 3);
-  STATE st230_unit_4_24 = Create_Inst_State("st230_unit_4_24", 0, 9, 3);
-  STATE st230_unit_4_25 = Create_Inst_State("st230_unit_4_25", 0, 9, 3);
-  STATE st230_unit_4_26 = Create_Inst_State("st230_unit_4_26", 0, 9, 3);
-  STATE st230_unit_4_27 = Create_Inst_State("st230_unit_4_27", 0, 9, 3);
-  STATE st230_unit_4_28 = Create_Inst_State("st230_unit_4_28", 0, 9, 3);
-  STATE st230_unit_5 = Create_Inst_State("st230_unit_5", 0, 24, 2);
-  STATE st230_unit_5_1 = Create_Inst_State("st230_unit_5_1", 0, 18, 3);
-  STATE st230_unit_5_2 = Create_Inst_State("st230_unit_5_2", 0, 18, 3);
-  STATE st230_unit_6 = Create_Inst_State("st230_unit_6", 0, 24, 2);
-  STATE st230_unit_7 = Create_Inst_State("st230_unit_7", 0, 24, 2);
-  STATE st230_unit_8 = Create_Inst_State("st230_unit_8", 0, 21, 5);
-  STATE st230_unit_8_1 = Create_Inst_State("st230_unit_8_1", 0, 0, 8);
-  STATE st230_unit_8_1_1 = Create_Inst_State("st230_unit_8_1_1", 0, 8, 8);
-  STATE st230_unit_8_1_1_1 = Create_Inst_State("st230_unit_8_1_1_1", 0, 16, 5);
-  STATE st230_unit_8_2 = Create_Inst_State("st230_unit_8_2", 0, 31, 1);
-  STATE st230_unit_8_4 = Create_Inst_State("st230_unit_8_4", 0, 0, 8);
-  STATE st230_unit_8_4_1 = Create_Inst_State("st230_unit_8_4_1", 0, 8, 8);
-  STATE st230_unit_8_4_1_1 = Create_Inst_State("st230_unit_8_4_1_1", 0, 16, 5);
-  STATE st230_unit_9 = Create_Inst_State("st230_unit_9", 0, 21, 5);
-  STATE st230_unit_10 = Create_Inst_State("st230_unit_10", 0, 21, 5);
-  STATE st230_unit_10_6 = Create_Inst_State("st230_unit_10_6", 0, 6, 6);
-  STATE st230_unit_10_7 = Create_Inst_State("st230_unit_10_7", 0, 6, 6);
-  STATE st230_unit_10_8 = Create_Inst_State("st230_unit_10_8", 0, 6, 6);
-  STATE st230_unit_11 = Create_Inst_State("st230_unit_11", 0, 21, 5);
-  STATE st230_unit_11_1 = Create_Inst_State("st230_unit_11_1", 0, 0, 8);
-  STATE st230_unit_11_1_1 = Create_Inst_State("st230_unit_11_1_1", 0, 8, 8);
-  STATE st230_unit_11_1_1_1 = Create_Inst_State("st230_unit_11_1_1_1", 0, 16, 5);
-  STATE st230_unit_11_2 = Create_Inst_State("st230_unit_11_2", 0, 6, 6);
-  STATE st230_unit_11_3 = Create_Inst_State("st230_unit_11_3", 0, 12, 8);
-  STATE st230_unit_11_3_1 = Create_Inst_State("st230_unit_11_3_1", 0, 0, 6);
-  STATE st230_unit_11_3_1_1 = Create_Inst_State("st230_unit_11_3_1_1", 0, 20, 1);
-  STATE st230_unit_11_4 = Create_Inst_State("st230_unit_11_4", 0, 12, 8);
-  STATE st230_unit_11_4_1 = Create_Inst_State("st230_unit_11_4_1", 0, 0, 6);
-  STATE st230_unit_11_4_1_1 = Create_Inst_State("st230_unit_11_4_1_1", 0, 20, 1);
-  STATE st230_unit_12 = Create_Inst_State("st230_unit_12", 0, 21, 5);
-  STATE st230_unit_12_1 = Create_Inst_State("st230_unit_12_1", 0, 18, 3);
-  STATE st230_unit_12_2 = Create_Inst_State("st230_unit_12_2", 0, 18, 3);
-  STATE st230_unit_12_3 = Create_Inst_State("st230_unit_12_3", 0, 18, 3);
-  STATE st230_unit_12_4 = Create_Inst_State("st230_unit_12_4", 0, 18, 3);
-  STATE st230_unit_12_5 = Create_Inst_State("st230_unit_12_5", 0, 18, 3);
-  STATE st230_unit_12_6 = Create_Inst_State("st230_unit_12_6", 0, 18, 3);
-  STATE st230_unit_12_7 = Create_Inst_State("st230_unit_12_7", 0, 18, 3);
-  STATE st230_unit_12_8 = Create_Inst_State("st230_unit_12_8", 0, 18, 3);
-  STATE st230_unit_12_9 = Create_Inst_State("st230_unit_12_9", 0, 18, 3);
-  STATE st230_unit_12_10 = Create_Inst_State("st230_unit_12_10", 0, 18, 3);
-  STATE st230_unit_12_11 = Create_Inst_State("st230_unit_12_11", 0, 18, 3);
-  STATE st230_unit_12_12 = Create_Inst_State("st230_unit_12_12", 0, 18, 3);
-  STATE st230_unit_12_13 = Create_Inst_State("st230_unit_12_13", 0, 18, 3);
-  STATE st230_unit_12_14 = Create_Inst_State("st230_unit_12_14", 0, 18, 3);
-  STATE st230_unit_12_15 = Create_Inst_State("st230_unit_12_15", 0, 18, 3);
-  STATE st230_unit_12_16 = Create_Inst_State("st230_unit_12_16", 0, 18, 3);
-  STATE st230_unit_13 = Create_Inst_State("st230_unit_13", 0, 23, 3);
-  STATE st230_unit_13_2 = Create_Inst_State("st230_unit_13_2", 0, 0, 8);
-  STATE st230_unit_13_2_1 = Create_Inst_State("st230_unit_13_2_1", 0, 8, 8);
-  STATE st230_unit_13_2_1_1 = Create_Inst_State("st230_unit_13_2_1_1", 0, 16, 7);
-  STATE st230_unit_13_4 = Create_Inst_State("st230_unit_13_4", 0, 0, 8);
-  STATE st230_unit_13_4_1 = Create_Inst_State("st230_unit_13_4_1", 0, 8, 8);
-  STATE st230_unit_13_4_1_1 = Create_Inst_State("st230_unit_13_4_1_1", 0, 16, 7);
-  STATE st230_unit_13_5 = Create_Inst_State("st230_unit_13_5", 0, 0, 8);
-  STATE st230_unit_13_5_1 = Create_Inst_State("st230_unit_13_5_1", 0, 8, 8);
-  STATE st230_unit_13_5_1_1 = Create_Inst_State("st230_unit_13_5_1_1", 0, 16, 7);
-
-  Transitions(st230_unit,
-	0, st230_unit_1,
-	1, st230_unit_2,
-	2, st230_unit_3,
-	3, st230_unit_4,
-	4, st230_unit_5,
-	5, st230_unit_6,
-	6, st230_unit_7,
-	7, st230_unit_8,
-	8, st230_unit_9,
-	9, st230_unit_10,
-	10, st230_unit_11,
-	11, st230_unit_12,
-	12, st230_unit_13,
-	14, Final(TOP_br),
-	15, Final(TOP_brf),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_1,
-	0, Final(TOP_add_r),
-	8, Final(TOP_sub_r),
-	16, Final(TOP_shl_r),
-	24, Final(TOP_shr_r),
-	32, Final(TOP_shru_r),
-	40, Final(TOP_sh1add_r),
-	48, Final(TOP_sh2add_r),
-	56, Final(TOP_sh3add_r),
-	64, Final(TOP_sh4add_r),
-	72, Final(TOP_and_r),
-	80, Final(TOP_andc_r),
-	88, Final(TOP_or_r),
-	96, Final(TOP_orc_r),
-	104, Final(TOP_xor_r),
-	120, Final(TOP_mullhus_r),
-	128, Final(TOP_max_r),
-	136, Final(TOP_maxu_r),
-	144, Final(TOP_min_r),
-	152, Final(TOP_minu_r),
-	160, Final(TOP_mulhhs_r),
-	168, Final(TOP_mull_r),
-	176, Final(TOP_mullu_r),
-	184, Final(TOP_mulh_r),
-	192, Final(TOP_mulhu_r),
-	200, Final(TOP_mulll_r),
-	208, Final(TOP_mulllu_r),
-	216, Final(TOP_mullh_r),
-	224, Final(TOP_mullhu_r),
-	232, Final(TOP_mulhh_r),
-	240, Final(TOP_mulhhu_r),
-	248, Final(TOP_mulhs_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2,
-	0, st230_unit_2_1,
-	1, st230_unit_2_2,
-	2, st230_unit_2_3,
-	3, st230_unit_2_4,
-	4, st230_unit_2_5,
-	5, st230_unit_2_6,
-	6, st230_unit_2_7,
-	7, st230_unit_2_8,
-	8, st230_unit_2_9,
-	9, st230_unit_2_10,
-	10, st230_unit_2_11,
-	11, st230_unit_2_12,
-	12, st230_unit_2_13,
-	13, st230_unit_2_14,
-	16, st230_unit_2_15,
-	17, st230_unit_2_16,
-	18, st230_unit_2_17,
-	19, st230_unit_2_18,
-	20, st230_unit_2_19,
-	21, st230_unit_2_20,
-	22, st230_unit_2_21,
-	23, st230_unit_2_22,
-	24, st230_unit_2_23,
-	25, st230_unit_2_24,
-	26, st230_unit_2_25,
-	27, st230_unit_2_26,
-	28, st230_unit_2_27,
-	29, st230_unit_2_28,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_1,
-	0, Final(TOP_cmpeq_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_2,
-	0, Final(TOP_cmpne_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_3,
-	0, Final(TOP_cmpge_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_4,
-	0, Final(TOP_cmpgeu_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_5,
-	0, Final(TOP_cmpgt_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_6,
-	0, Final(TOP_cmpgtu_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_7,
-	0, Final(TOP_cmple_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_8,
-	0, Final(TOP_cmpleu_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_9,
-	0, Final(TOP_cmplt_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_10,
-	0, Final(TOP_cmpltu_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_11,
-	0, Final(TOP_andl_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_12,
-	0, Final(TOP_nandl_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_13,
-	0, Final(TOP_orl_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_14,
-	0, Final(TOP_norl_r_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_15,
-	0, Final(TOP_cmpeq_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_16,
-	0, Final(TOP_cmpne_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_17,
-	0, Final(TOP_cmpge_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_18,
-	0, Final(TOP_cmpgeu_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_19,
-	0, Final(TOP_cmpgt_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_20,
-	0, Final(TOP_cmpgtu_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_21,
-	0, Final(TOP_cmple_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_22,
-	0, Final(TOP_cmpleu_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_23,
-	0, Final(TOP_cmplt_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_24,
-	0, Final(TOP_cmpltu_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_25,
-	0, Final(TOP_andl_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_26,
-	0, Final(TOP_nandl_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_27,
-	0, Final(TOP_orl_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_2_28,
-	0, Final(TOP_norl_r_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3,
-	0, Final(TOP_add_i),
-	1, Final(TOP_sub_i),
-	2, Final(TOP_shl_i),
-	3, Final(TOP_shr_i),
-	4, Final(TOP_shru_i),
-	5, Final(TOP_sh1add_i),
-	6, Final(TOP_sh2add_i),
-	7, Final(TOP_sh3add_i),
-	8, Final(TOP_sh4add_i),
-	9, Final(TOP_and_i),
-	10, Final(TOP_andc_i),
-	11, Final(TOP_or_i),
-	12, Final(TOP_orc_i),
-	13, Final(TOP_xor_i),
-	14, st230_unit_3_15,
-	15, Final(TOP_mullhus_i),
-	16, Final(TOP_max_i),
-	17, Final(TOP_maxu_i),
-	18, Final(TOP_min_i),
-	19, Final(TOP_minu_i),
-	20, Final(TOP_mulhhs_i),
-	21, Final(TOP_mull_i),
-	22, Final(TOP_mullu_i),
-	23, Final(TOP_mulh_i),
-	24, Final(TOP_mulhu_i),
-	25, Final(TOP_mulll_i),
-	26, Final(TOP_mulllu_i),
-	27, Final(TOP_mullh_i),
-	28, Final(TOP_mullhu_i),
-	29, Final(TOP_mulhh_i),
-	30, Final(TOP_mulhhu_i),
-	31, Final(TOP_mulhs_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15,
-	0, st230_unit_3_15_1,
-	1, st230_unit_3_15_2,
-	2, st230_unit_3_15_3,
-	3, st230_unit_3_15_4,
-	4, st230_unit_3_15_5,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15_1,
-	0, Final(TOP_sxtb),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15_2,
-	0, Final(TOP_sxth),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15_3,
-	0, Final(TOP_bswap),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15_4,
-	0, Final(TOP_zxth),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_3_15_5,
-	0, Final(TOP_clz),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4,
-	0, Final(TOP_cmpeq_i_r),
-	1, Final(TOP_cmpne_i_r),
-	2, Final(TOP_cmpge_i_r),
-	3, Final(TOP_cmpgeu_i_r),
-	4, Final(TOP_cmpgt_i_r),
-	5, Final(TOP_cmpgtu_i_r),
-	6, Final(TOP_cmple_i_r),
-	7, Final(TOP_cmpleu_i_r),
-	8, Final(TOP_cmplt_i_r),
-	9, Final(TOP_cmpltu_i_r),
-	10, Final(TOP_andl_i_r),
-	11, Final(TOP_nandl_i_r),
-	12, Final(TOP_orl_i_r),
-	13, Final(TOP_norl_i_r),
-	16, st230_unit_4_15,
-	17, st230_unit_4_16,
-	18, st230_unit_4_17,
-	19, st230_unit_4_18,
-	20, st230_unit_4_19,
-	21, st230_unit_4_20,
-	22, st230_unit_4_21,
-	23, st230_unit_4_22,
-	24, st230_unit_4_23,
-	25, st230_unit_4_24,
-	26, st230_unit_4_25,
-	27, st230_unit_4_26,
-	28, st230_unit_4_27,
-	29, st230_unit_4_28,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_15,
-	0, Final(TOP_cmpeq_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_16,
-	0, Final(TOP_cmpne_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_17,
-	0, Final(TOP_cmpge_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_18,
-	0, Final(TOP_cmpgeu_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_19,
-	0, Final(TOP_cmpgt_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_20,
-	0, Final(TOP_cmpgtu_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_21,
-	0, Final(TOP_cmple_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_22,
-	0, Final(TOP_cmpleu_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_23,
-	0, Final(TOP_cmplt_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_24,
-	0, Final(TOP_cmpltu_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_25,
-	0, Final(TOP_andl_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_26,
-	0, Final(TOP_nandl_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_27,
-	0, Final(TOP_orl_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_4_28,
-	0, Final(TOP_norl_i_b),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_5,
-	0, st230_unit_5_1,
-	1, st230_unit_5_2,
-	2, Final(TOP_addcg),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_5_1,
-	0, Final(TOP_slct_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_5_2,
-	0, Final(TOP_slctf_r),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_6,
-	0, Final(TOP_divs),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_7,
-	0, Final(TOP_slct_i),
-	1, Final(TOP_slctf_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8,
-	28, st230_unit_8_1,
-	29, st230_unit_8_2,
-	30, Final(TOP_syscall_i),
-	31, st230_unit_8_4,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_1,
-	0, st230_unit_8_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_1_1,
-	0, st230_unit_8_1_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_1_1_1,
-	0, Final(TOP_prgins),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_2,
-	1, Final(TOP_sbrk_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_4,
-	0, st230_unit_8_4_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_4_1,
-	0, st230_unit_8_4_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_8_4_1_1,
-	0, Final(TOP_break),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_9,
-	0, Final(TOP_ldw_i),
-	4, Final(TOP_ldw_d_i),
-	8, Final(TOP_ldh_i),
-	12, Final(TOP_ldh_d_i),
-	16, Final(TOP_ldhu_i),
-	20, Final(TOP_ldhu_d_i),
-	24, Final(TOP_ldb_i),
-	28, Final(TOP_ldb_d_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_10,
-	0, Final(TOP_ldbu_i),
-	4, Final(TOP_ldbu_d_i),
-	8, Final(TOP_stw_i),
-	12, Final(TOP_sth_i),
-	16, Final(TOP_stb_i),
-	20, st230_unit_10_6,
-	24, st230_unit_10_7,
-	28, st230_unit_10_8,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_10_6,
-	0, Final(TOP_pft_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_10_7,
-	0, Final(TOP_prgadd_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_10_8,
-	0, Final(TOP_prgset_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11,
-	0, st230_unit_11_1,
-	4, st230_unit_11_2,
-	8, st230_unit_11_3,
-	12, st230_unit_11_4,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_1,
-	0, st230_unit_11_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_1_1,
-	0, st230_unit_11_1_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_1_1_1,
-	0, Final(TOP_sync),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_2,
-	0, Final(TOP_prginspg_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_3,
-	0, st230_unit_11_3_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_3_1,
-	0, st230_unit_11_3_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_3_1_1,
-	0, Final(TOP_pswset),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_4,
-	0, st230_unit_11_4_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_4_1,
-	0, st230_unit_11_4_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_11_4_1_1,
-	0, Final(TOP_pswclr),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12,
-	0, st230_unit_12_1,
-	1, st230_unit_12_2,
-	2, st230_unit_12_3,
-	3, st230_unit_12_4,
-	4, st230_unit_12_5,
-	5, st230_unit_12_6,
-	6, st230_unit_12_7,
-	7, st230_unit_12_8,
-	8, st230_unit_12_9,
-	9, st230_unit_12_10,
-	10, st230_unit_12_11,
-	11, st230_unit_12_12,
-	12, st230_unit_12_13,
-	13, st230_unit_12_14,
-	14, st230_unit_12_15,
-	15, st230_unit_12_16,
-	16, Final(TOP_asm_16_i),
-	17, Final(TOP_asm_17_i),
-	18, Final(TOP_asm_18_i),
-	19, Final(TOP_asm_19_i),
-	20, Final(TOP_asm_20_i),
-	21, Final(TOP_asm_21_i),
-	22, Final(TOP_asm_22_i),
-	23, Final(TOP_asm_23_i),
-	24, Final(TOP_asm_24_i),
-	25, Final(TOP_asm_25_i),
-	26, Final(TOP_asm_26_i),
-	27, Final(TOP_asm_27_i),
-	28, Final(TOP_asm_28_i),
-	29, Final(TOP_asm_29_i),
-	30, Final(TOP_asm_30_i),
-	31, Final(TOP_asm_31_i),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_1,
-	0, Final(TOP_asm_0),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_2,
-	0, Final(TOP_asm_1),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_3,
-	0, Final(TOP_asm_2),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_4,
-	0, Final(TOP_asm_3),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_5,
-	0, Final(TOP_asm_4),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_6,
-	0, Final(TOP_asm_5),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_7,
-	0, Final(TOP_asm_6),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_8,
-	0, Final(TOP_asm_7),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_9,
-	0, Final(TOP_asm_8),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_10,
-	0, Final(TOP_asm_9),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_11,
-	0, Final(TOP_asm_10),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_12,
-	0, Final(TOP_asm_11),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_13,
-	0, Final(TOP_asm_12),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_14,
-	0, Final(TOP_asm_13),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_15,
-	0, Final(TOP_asm_14),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_12_16,
-	0, Final(TOP_asm_15),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13,
-	0, Final(TOP_call),
-	1, st230_unit_13_2,
-	2, Final(TOP_goto),
-	3, st230_unit_13_4,
-	4, st230_unit_13_5,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_2,
-	0, st230_unit_13_2_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_2_1,
-	0, st230_unit_13_2_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_2_1_1,
-	0, Final(TOP_icall),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_4,
-	0, st230_unit_13_4_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_4_1,
-	0, st230_unit_13_4_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_4_1_1,
-	0, Final(TOP_igoto),
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_5,
-	0, st230_unit_13_5_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_5_1,
-	0, st230_unit_13_5_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st230_unit_13_5_1_1,
-	0, Final(TOP_rfi),
-	END_TRANSITIONS);
-
   STATE st231_unit = Create_Inst_State("st231_unit", 0, 26, 5);
   STATE st231_unit_1 = Create_Inst_State("st231_unit_1", 0, 18, 8);
   STATE st231_unit_2 = Create_Inst_State("st231_unit_2", 0, 21, 5);
@@ -1567,12 +830,6 @@ main()
   STATE st231_unit_11_4 = Create_Inst_State("st231_unit_11_4", 0, 12, 8);
   STATE st231_unit_11_4_1 = Create_Inst_State("st231_unit_11_4_1", 0, 0, 6);
   STATE st231_unit_11_4_1_1 = Create_Inst_State("st231_unit_11_4_1_1", 0, 20, 1);
-  STATE st231_unit_11_5 = Create_Inst_State("st231_unit_11_5", 0, 0, 8);
-  STATE st231_unit_11_5_1 = Create_Inst_State("st231_unit_11_5_1", 0, 8, 8);
-  STATE st231_unit_11_5_1_1 = Create_Inst_State("st231_unit_11_5_1_1", 0, 16, 5);
-  STATE st231_unit_11_6 = Create_Inst_State("st231_unit_11_6", 0, 12, 8);
-  STATE st231_unit_11_6_1 = Create_Inst_State("st231_unit_11_6_1", 0, 20, 1);
-  STATE st231_unit_11_7 = Create_Inst_State("st231_unit_11_7", 0, 15, 6);
   STATE st231_unit_12 = Create_Inst_State("st231_unit_12", 0, 21, 5);
   STATE st231_unit_12_1 = Create_Inst_State("st231_unit_12_1", 0, 18, 3);
   STATE st231_unit_12_2 = Create_Inst_State("st231_unit_12_2", 0, 18, 3);
@@ -1589,7 +846,10 @@ main()
   STATE st231_unit_12_13 = Create_Inst_State("st231_unit_12_13", 0, 18, 3);
   STATE st231_unit_12_14 = Create_Inst_State("st231_unit_12_14", 0, 18, 3);
   STATE st231_unit_12_15 = Create_Inst_State("st231_unit_12_15", 0, 18, 3);
-  STATE st231_unit_12_16 = Create_Inst_State("st231_unit_12_16", 0, 18, 3);
+  STATE st231_unit_12_31 = Create_Inst_State("st231_unit_12_31", 0, 15, 6);
+  STATE st231_unit_12_31_1 = Create_Inst_State("st231_unit_12_31_1", 0, 12, 3);
+  STATE st231_unit_12_31_1_1 = Create_Inst_State("st231_unit_12_31_1_1", 0, 0, 8);
+  STATE st231_unit_12_31_1_1_1 = Create_Inst_State("st231_unit_12_31_1_1_1", 0, 8, 4);
   STATE st231_unit_13 = Create_Inst_State("st231_unit_13", 0, 23, 3);
   STATE st231_unit_13_2 = Create_Inst_State("st231_unit_13_2", 0, 0, 8);
   STATE st231_unit_13_2_1 = Create_Inst_State("st231_unit_13_2_1", 0, 8, 8);
@@ -1996,7 +1256,7 @@ main()
   Transitions(st231_unit_8,
 	28, st231_unit_8_1,
 	29, st231_unit_8_2,
-	30, Final(TOP_syscall_i),
+	30, Final(TOP_syscall),
 	31, st231_unit_8_4,
 	END_TRANSITIONS);
 
@@ -2013,7 +1273,7 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st231_unit_8_2,
-	1, Final(TOP_sbrk_i),
+	1, Final(TOP_sbrk),
 	END_TRANSITIONS);
 
   Transitions(st231_unit_8_4,
@@ -2067,9 +1327,6 @@ main()
 	4, st231_unit_11_2,
 	8, st231_unit_11_3,
 	12, st231_unit_11_4,
-	16, st231_unit_11_5,
-	20, st231_unit_11_6,
-	24, st231_unit_11_7,
 	END_TRANSITIONS);
 
   Transitions(st231_unit_11_1,
@@ -2112,30 +1369,6 @@ main()
 	0, Final(TOP_pswclr),
 	END_TRANSITIONS);
 
-  Transitions(st231_unit_11_5,
-	0, st231_unit_11_5_1,
-	END_TRANSITIONS);
-
-  Transitions(st231_unit_11_5_1,
-	0, st231_unit_11_5_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st231_unit_11_5_1_1,
-	0, Final(TOP_wmb),
-	END_TRANSITIONS);
-
-  Transitions(st231_unit_11_6,
-	0, st231_unit_11_6_1,
-	END_TRANSITIONS);
-
-  Transitions(st231_unit_11_6_1,
-	0, Final(TOP_ldwl),
-	END_TRANSITIONS);
-
-  Transitions(st231_unit_11_7,
-	0, Final(TOP_stwl),
-	END_TRANSITIONS);
-
   Transitions(st231_unit_12,
 	0, st231_unit_12_1,
 	1, st231_unit_12_2,
@@ -2152,7 +1385,6 @@ main()
 	12, st231_unit_12_13,
 	13, st231_unit_12_14,
 	14, st231_unit_12_15,
-	15, st231_unit_12_16,
 	16, Final(TOP_asm_16_i),
 	17, Final(TOP_asm_17_i),
 	18, Final(TOP_asm_18_i),
@@ -2168,7 +1400,7 @@ main()
 	28, Final(TOP_asm_28_i),
 	29, Final(TOP_asm_29_i),
 	30, Final(TOP_asm_30_i),
-	31, Final(TOP_asm_31_i),
+	31, st231_unit_12_31,
 	END_TRANSITIONS);
 
   Transitions(st231_unit_12_1,
@@ -2231,8 +1463,22 @@ main()
 	0, Final(TOP_asm_14),
 	END_TRANSITIONS);
 
-  Transitions(st231_unit_12_16,
-	0, Final(TOP_asm_15),
+  Transitions(st231_unit_12_31,
+	0, st231_unit_12_31_1,
+	32, Final(TOP_stwl),
+	END_TRANSITIONS);
+
+  Transitions(st231_unit_12_31_1,
+	3, st231_unit_12_31_1_1,
+	5, Final(TOP_ldwl),
+	END_TRANSITIONS);
+
+  Transitions(st231_unit_12_31_1_1,
+	0, st231_unit_12_31_1_1_1,
+	END_TRANSITIONS);
+
+  Transitions(st231_unit_12_31_1_1_1,
+	0, Final(TOP_wmb),
 	END_TRANSITIONS);
 
   Transitions(st231_unit_13,
@@ -2348,11 +1594,9 @@ main()
   STATE st235_unit_7_1 = Create_Inst_State("st235_unit_7_1", 0, 20, 6);
   STATE st235_unit_7_1_1 = Create_Inst_State("st235_unit_7_1_1", 0, 31, 1);
   STATE st235_unit_7_2 = Create_Inst_State("st235_unit_7_2", 0, 20, 6);
-  STATE st235_unit_7_2_1 = Create_Inst_State("st235_unit_7_2_1", 0, 31, 1);
-  STATE st235_unit_7_3 = Create_Inst_State("st235_unit_7_3", 0, 20, 6);
-  STATE st235_unit_7_4 = Create_Inst_State("st235_unit_7_4", 0, 0, 8);
-  STATE st235_unit_7_4_1 = Create_Inst_State("st235_unit_7_4_1", 0, 20, 6);
-  STATE st235_unit_7_4_1_1 = Create_Inst_State("st235_unit_7_4_1_1", 0, 8, 4);
+  STATE st235_unit_7_3 = Create_Inst_State("st235_unit_7_3", 0, 0, 8);
+  STATE st235_unit_7_3_1 = Create_Inst_State("st235_unit_7_3_1", 0, 20, 6);
+  STATE st235_unit_7_3_1_1 = Create_Inst_State("st235_unit_7_3_1_1", 0, 8, 4);
   STATE st235_unit_8 = Create_Inst_State("st235_unit_8", 0, 24, 2);
   STATE st235_unit_8_1 = Create_Inst_State("st235_unit_8_1", 0, 6, 6);
   STATE st235_unit_8_1_1 = Create_Inst_State("st235_unit_8_1_1", 0, 21, 3);
@@ -2516,15 +1760,15 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_3,
-	0, Final(TOP_cmpge_r_r),
+	0, Final(TOP_cmpgef_n_r),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_4,
-	0, Final(TOP_cmpgeu_r_r),
+	0, Final(TOP_cmpeqf_n_r),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_5,
-	0, Final(TOP_cmpgt_r_r),
+	0, Final(TOP_cmpgtf_n_r),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_6,
@@ -2580,15 +1824,15 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_19,
-	0, Final(TOP_cmpge_r_b),
+	0, Final(TOP_cmpgef_n_b),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_20,
-	0, Final(TOP_cmpgeu_r_b),
+	0, Final(TOP_cmpeqf_n_b),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_21,
-	0, Final(TOP_cmpgt_r_b),
+	0, Final(TOP_cmpgtf_n_b),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_2_22,
@@ -2813,10 +2057,9 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st235_unit_7,
-	0, st235_unit_7_1,
-	64, st235_unit_7_2,
-	128, st235_unit_7_3,
-	192, st235_unit_7_4,
+	64, st235_unit_7_1,
+	128, st235_unit_7_2,
+	192, st235_unit_7_3,
 	END_TRANSITIONS);
 
   Transitions(st235_unit_7_1,
@@ -2824,30 +2067,22 @@ main()
 	END_TRANSITIONS);
 
   Transitions(st235_unit_7_1_1,
-	1, Final(TOP_dbgsbrk),
+	1, Final(TOP_st235_sbrk),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_7_2,
-	62, st235_unit_7_2_1,
-	END_TRANSITIONS);
-
-  Transitions(st235_unit_7_2_1,
-	1, Final(TOP_sbrk_ib),
+	62, Final(TOP_st235_syscall),
 	END_TRANSITIONS);
 
   Transitions(st235_unit_7_3,
-	62, Final(TOP_syscall_ib),
+	0, st235_unit_7_3_1,
 	END_TRANSITIONS);
 
-  Transitions(st235_unit_7_4,
-	0, st235_unit_7_4_1,
+  Transitions(st235_unit_7_3_1,
+	62, st235_unit_7_3_1_1,
 	END_TRANSITIONS);
 
-  Transitions(st235_unit_7_4_1,
-	62, st235_unit_7_4_1_1,
-	END_TRANSITIONS);
-
-  Transitions(st235_unit_7_4_1_1,
+  Transitions(st235_unit_7_3_1_1,
 	0, Final(TOP_break),
 	END_TRANSITIONS);
 
@@ -3233,9 +2468,8 @@ main()
 
   Transitions(ex_unit,
         0, st220_unit,
-        1, st230_unit,
-        2, st231_unit,
-        3, st235_unit,
+        1, st231_unit,
+        2, st235_unit,
         END_TRANSITIONS);
 
   Initial_State(ex_unit);

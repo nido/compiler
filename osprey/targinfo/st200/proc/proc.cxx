@@ -40,6 +40,6 @@
 
 main ()
 {
-  PROC_Create ( "st200", "st220", "st230", "st231", "st235", NULL );
+  PROC_Create ( "st200", "st220", "st231", "st235", NULL );
 }
 

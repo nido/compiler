@@ -40,6 +40,116 @@
  
 main()
 {
+  Machine_To_Pseudo(TOP_cmpge_r_b, TOP_cmple_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmple_r_b, TOP_cmpge_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmpge_r_r, TOP_cmple_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmple_r_r, TOP_cmpge_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmpgeu_r_b, TOP_cmpleu_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpleu_r_b, TOP_cmpgeu_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmpgeu_r_r, TOP_cmpleu_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpleu_r_r, TOP_cmpgeu_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmpgt_r_b, TOP_cmplt_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmplt_r_b, TOP_cmpgt_r_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmpgt_r_r, TOP_cmplt_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmplt_r_r, TOP_cmpgt_r_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(0)");
+  Map_Arg("OPND(1)", "OPND(1)");
+
+
+  Machine_To_Pseudo(TOP_cmplef_n_b, TOP_cmpgef_n_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpgef_n_b, TOP_cmplef_n_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
+
+
+  Machine_To_Pseudo(TOP_cmplef_n_r, TOP_cmpgef_n_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpgef_n_r, TOP_cmplef_n_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
+
+
+  Machine_To_Pseudo(TOP_cmpltf_n_b, TOP_cmpgtf_n_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpgtf_n_b, TOP_cmpltf_n_b);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
+
+
+  Machine_To_Pseudo(TOP_cmpltf_n_r, TOP_cmpgtf_n_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(1)", "OPND(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+
+  Pseudo_To_Machine(TOP_cmpgtf_n_r, TOP_cmpltf_n_r);
+  Map_Arg("RESULT(0)", "RESULT(0)");
+  Map_Arg("OPND(0)", "OPND(1)");
+  Map_Arg("OPND(1)", "OPND(0)");
+
+
   Machine_To_Pseudo(TOP_idle, TOP_goto);
   Require("OPND(0) == 0");
 

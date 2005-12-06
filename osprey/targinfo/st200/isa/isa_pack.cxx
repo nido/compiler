@@ -57,7 +57,6 @@ main()
   ISA_PACK_TYPE p1 = ISA_Pack_Type_Create("p1");
   Instruction_Pack_Group(p1,
 	TOP_break, 0x1fe00000UL, 
-	TOP_dbgsbrk, 0x9fe00000UL, 
 	TOP_icall, 0x30800000UL, 
 	TOP_idle, 0x31000000UL, 
 	TOP_igoto, 0x31800000UL, 
@@ -67,23 +66,23 @@ main()
 	TOP_rfi, 0x32000000UL, 
 	TOP_sync, 0x28000000UL, 
 	TOP_syncins, 0x31000001UL, 
-	TOP_wmb, 0x2a000000UL, 
+	TOP_wmb, 0x2fe03000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p2: ===== */
   ISA_PACK_TYPE p2 = ISA_Pack_Type_Create("p2");
   Operand(0, 0, 0, 12);
   Instruction_Pack_Group(p2,
-	TOP_sbrk_ib, 0x9fe40000UL, 
-	TOP_syscall_ib, 0x1fe80000UL, 
+	TOP_st235_sbrk, 0x9fe40000UL, 
+	TOP_st235_syscall, 0x1fe80000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p3: ===== */
   ISA_PACK_TYPE p3 = ISA_Pack_Type_Create("p3");
   Operand(0, 0, 0, 21);
   Instruction_Pack_Group(p3,
-	TOP_sbrk_i, 0x9fa00000UL, 
-	TOP_syscall_i, 0x1fc00000UL, 
+	TOP_sbrk, 0x9fa00000UL, 
+	TOP_syscall, 0x1fc00000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p4: ===== */
@@ -221,7 +220,7 @@ main()
   Operand(0, 0, 0, 6);
   Operand(1, 0, 6, 6);
   Instruction_Pack_Group(p15,
-	TOP_stwl, 0x2b000000UL, 
+	TOP_stwl, 0x2ff00000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p16: ===== */
@@ -260,9 +259,12 @@ main()
 	TOP_asm_7, 0x2ce00000UL, 
 	TOP_asm_8, 0x2d000000UL, 
 	TOP_asm_9, 0x2d200000UL, 
+	TOP_cmpeqf_n_r, 0x04600000UL, 
 	TOP_cmpeq_r_r, 0x04000000UL, 
+	TOP_cmpgef_n_r, 0x04400000UL, 
 	TOP_cmpgeu_r_r, 0x04600000UL, 
 	TOP_cmpge_r_r, 0x04400000UL, 
+	TOP_cmpgtf_n_r, 0x04800000UL, 
 	TOP_cmpgtu_r_r, 0x04a00000UL, 
 	TOP_cmpgt_r_r, 0x04800000UL, 
 	TOP_cmpleu_r_r, 0x04e00000UL, 
@@ -338,6 +340,8 @@ main()
   Operand(0, 0, 6, 6);
   Operand(1, 0, 0, 6);
   Instruction_Pack_Group(p20,
+	TOP_cmplef_n_r, 0x04400000UL, 
+	TOP_cmpltf_n_r, 0x04800000UL, 
 	TOP_sub_r, 0x00200000UL, 
 	TOP_UNDEFINED);
 
@@ -368,9 +372,12 @@ main()
   Operand(1, 0, 6, 6);
   Instruction_Pack_Group(p23,
 	TOP_andl_r_b, 0x07400000UL, 
+	TOP_cmpeqf_n_b, 0x06600000UL, 
 	TOP_cmpeq_r_b, 0x06000000UL, 
+	TOP_cmpgef_n_b, 0x06400000UL, 
 	TOP_cmpgeu_r_b, 0x06600000UL, 
 	TOP_cmpge_r_b, 0x06400000UL, 
+	TOP_cmpgtf_n_b, 0x06800000UL, 
 	TOP_cmpgtu_r_b, 0x06a00000UL, 
 	TOP_cmpgt_r_b, 0x06800000UL, 
 	TOP_cmpleu_r_b, 0x06e00000UL, 
@@ -385,10 +392,20 @@ main()
 
   /* ===== p24: ===== */
   ISA_PACK_TYPE p24 = ISA_Pack_Type_Create("p24");
+  Result(0, 18, 3);
+  Operand(0, 0, 6, 6);
+  Operand(1, 0, 0, 6);
+  Instruction_Pack_Group(p24,
+	TOP_cmplef_n_b, 0x06400000UL, 
+	TOP_cmpltf_n_b, 0x06800000UL, 
+	TOP_UNDEFINED);
+
+  /* ===== p25: ===== */
+  ISA_PACK_TYPE p25 = ISA_Pack_Type_Create("p25");
   Result(0, 6, 3);
   Operand(0, 0, 0, 6);
   Operand(1, 0, 12, 9);
-  Instruction_Pack_Group(p24,
+  Instruction_Pack_Group(p25,
 	TOP_andl_i_b, 0x0f400000UL, 
 	TOP_cmpeq_i_b, 0x0e000000UL, 
 	TOP_cmpgeu_i_b, 0x0e600000UL, 
@@ -405,14 +422,14 @@ main()
 	TOP_orl_i_b, 0x0f800000UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p25: ===== */
-  ISA_PACK_TYPE p25 = ISA_Pack_Type_Create("p25");
+  /* ===== p26: ===== */
+  ISA_PACK_TYPE p26 = ISA_Pack_Type_Create("p26");
   Result(0, 6, 3);
   Operand(0, 0, 0, 6);
   Operand(1, 0, 12, 9);
   Next_Word(); 
   Operand(1, 9, 0, 23);
-  Instruction_Pack_Group(p25,
+  Instruction_Pack_Group(p26,
 	TOP_andl_ii_b, 0x0f400000UL, 0UL, 
 	TOP_cmpeq_ii_b, 0x0e000000UL, 0UL, 
 	TOP_cmpgeu_ii_b, 0x0e600000UL, 0UL, 
@@ -429,26 +446,26 @@ main()
 	TOP_orl_ii_b, 0x0f800000UL, 0UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p26: ===== */
-  ISA_PACK_TYPE p26 = ISA_Pack_Type_Create("p26");
+  /* ===== p27: ===== */
+  ISA_PACK_TYPE p27 = ISA_Pack_Type_Create("p27");
   Result(0, 6, 6);
   Operand(0, 0, 0, 6);
-  Instruction_Pack_Group(p26,
+  Instruction_Pack_Group(p27,
 	TOP_bswap, 0x09c02000UL, 
 	TOP_clz, 0x09c04000UL, 
-	TOP_ldwl, 0x2a800000UL, 
+	TOP_ldwl, 0x2fe05000UL, 
 	TOP_sxtb, 0x09c00000UL, 
 	TOP_sxth, 0x09c01000UL, 
 	TOP_zxtb, 0x092ff000UL, 
 	TOP_zxth, 0x09c03000UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p27: ===== */
-  ISA_PACK_TYPE p27 = ISA_Pack_Type_Create("p27");
+  /* ===== p28: ===== */
+  ISA_PACK_TYPE p28 = ISA_Pack_Type_Create("p28");
   Result(0, 6, 6);
   Operand(0, 0, 0, 6);
   Operand(1, 0, 12, 9);
-  Instruction_Pack_Group(p27,
+  Instruction_Pack_Group(p28,
 	TOP_add_i, 0x08000000UL, 
 	TOP_andc_i, 0x09400000UL, 
 	TOP_andl_i_r, 0x0d400000UL, 
@@ -516,14 +533,14 @@ main()
 	TOP_xor_i, 0x09a00000UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p28: ===== */
-  ISA_PACK_TYPE p28 = ISA_Pack_Type_Create("p28");
+  /* ===== p29: ===== */
+  ISA_PACK_TYPE p29 = ISA_Pack_Type_Create("p29");
   Result(0, 6, 6);
   Operand(0, 0, 0, 6);
   Operand(1, 0, 12, 9);
   Next_Word(); 
   Operand(1, 9, 0, 23);
-  Instruction_Pack_Group(p28,
+  Instruction_Pack_Group(p29,
 	TOP_add_ii, 0x08000000UL, 0UL, 
 	TOP_andc_ii, 0x09400000UL, 0UL, 
 	TOP_andl_ii_r, 0x0d400000UL, 0UL, 
@@ -590,32 +607,32 @@ main()
 	TOP_xor_ii, 0x09a00000UL, 0UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p29: ===== */
-  ISA_PACK_TYPE p29 = ISA_Pack_Type_Create("p29");
-  Result(0, 6, 6);
-  Operand(0, 0, 12, 9);
-  Instruction_Pack_Group(p29,
-	TOP_addpc_i, 0x09000000UL, 
-	TOP_mov_i, 0x08000000UL, 
-	TOP_UNDEFINED);
-
   /* ===== p30: ===== */
   ISA_PACK_TYPE p30 = ISA_Pack_Type_Create("p30");
   Result(0, 6, 6);
   Operand(0, 0, 12, 9);
-  Next_Word(); 
-  Operand(0, 9, 0, 23);
   Instruction_Pack_Group(p30,
-	TOP_addpc_ii, 0x09000000UL, 0UL, 
-	TOP_mov_ii, 0x08000000UL, 0UL, 
+	TOP_addpc_i, 0x09000000UL, 
+	TOP_mov_i, 0x08000000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p31: ===== */
   ISA_PACK_TYPE p31 = ISA_Pack_Type_Create("p31");
   Result(0, 6, 6);
   Operand(0, 0, 12, 9);
-  Operand(1, 0, 0, 6);
+  Next_Word(); 
+  Operand(0, 9, 0, 23);
   Instruction_Pack_Group(p31,
+	TOP_addpc_ii, 0x09000000UL, 0UL, 
+	TOP_mov_ii, 0x08000000UL, 0UL, 
+	TOP_UNDEFINED);
+
+  /* ===== p32: ===== */
+  ISA_PACK_TYPE p32 = ISA_Pack_Type_Create("p32");
+  Result(0, 6, 6);
+  Operand(0, 0, 12, 9);
+  Operand(1, 0, 0, 6);
+  Instruction_Pack_Group(p32,
 	TOP_ldbu_d_i, 0x24800000UL, 
 	TOP_ldbu_i, 0x24000000UL, 
 	TOP_ldb_d_i, 0x23800000UL, 
@@ -631,14 +648,14 @@ main()
 	TOP_sub_i, 0x08200000UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p32: ===== */
-  ISA_PACK_TYPE p32 = ISA_Pack_Type_Create("p32");
+  /* ===== p33: ===== */
+  ISA_PACK_TYPE p33 = ISA_Pack_Type_Create("p33");
   Result(0, 6, 6);
   Operand(0, 0, 12, 9);
   Operand(1, 0, 0, 6);
   Next_Word(); 
   Operand(0, 9, 0, 23);
-  Instruction_Pack_Group(p32,
+  Instruction_Pack_Group(p33,
 	TOP_ldbu_d_ii, 0x24800000UL, 0UL, 
 	TOP_ldbu_ii, 0x24000000UL, 0UL, 
 	TOP_ldb_d_ii, 0x23800000UL, 0UL, 
@@ -654,23 +671,12 @@ main()
 	TOP_sub_ii, 0x08200000UL, 0UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p33: ===== */
-  ISA_PACK_TYPE p33 = ISA_Pack_Type_Create("p33");
-  Result(0, 6, 6);
-  Operand(0, 0, 21, 3);
-  Instruction_Pack_Group(p33,
-	TOP_mfb, 0x19001000UL, 
-	TOP_UNDEFINED);
-
   /* ===== p34: ===== */
   ISA_PACK_TYPE p34 = ISA_Pack_Type_Create("p34");
   Result(0, 6, 6);
   Operand(0, 0, 21, 3);
-  Operand(1, 0, 0, 6);
-  Operand(2, 0, 12, 9);
   Instruction_Pack_Group(p34,
-	TOP_slctf_i, 0x19000000UL, 
-	TOP_slct_i, 0x18000000UL, 
+	TOP_mfb, 0x19001000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p35: ===== */
@@ -679,20 +685,31 @@ main()
   Operand(0, 0, 21, 3);
   Operand(1, 0, 0, 6);
   Operand(2, 0, 12, 9);
-  Next_Word(); 
-  Operand(2, 9, 0, 23);
   Instruction_Pack_Group(p35,
-	TOP_slctf_ii, 0x19000000UL, 0UL, 
-	TOP_slct_ii, 0x18000000UL, 0UL, 
+	TOP_slctf_i, 0x19000000UL, 
+	TOP_slct_i, 0x18000000UL, 
 	TOP_UNDEFINED);
 
   /* ===== p36: ===== */
   ISA_PACK_TYPE p36 = ISA_Pack_Type_Create("p36");
   Result(0, 6, 6);
   Operand(0, 0, 21, 3);
+  Operand(1, 0, 0, 6);
+  Operand(2, 0, 12, 9);
+  Next_Word(); 
+  Operand(2, 9, 0, 23);
+  Instruction_Pack_Group(p36,
+	TOP_slctf_ii, 0x19000000UL, 0UL, 
+	TOP_slct_ii, 0x18000000UL, 0UL, 
+	TOP_UNDEFINED);
+
+  /* ===== p37: ===== */
+  ISA_PACK_TYPE p37 = ISA_Pack_Type_Create("p37");
+  Result(0, 6, 6);
+  Operand(0, 0, 21, 3);
   Operand(1, 0, 12, 9);
   Operand(2, 0, 0, 6);
-  Instruction_Pack_Group(p36,
+  Instruction_Pack_Group(p37,
 	TOP_ldbc_i, 0x24000000UL, 
 	TOP_ldbuc_i, 0x25000000UL, 
 	TOP_ldhc_i, 0x22000000UL, 
@@ -702,15 +719,15 @@ main()
 	TOP_multi_ldpc_i, 0x20000000UL, 
 	TOP_UNDEFINED);
 
-  /* ===== p37: ===== */
-  ISA_PACK_TYPE p37 = ISA_Pack_Type_Create("p37");
+  /* ===== p38: ===== */
+  ISA_PACK_TYPE p38 = ISA_Pack_Type_Create("p38");
   Result(0, 6, 6);
   Operand(0, 0, 21, 3);
   Operand(1, 0, 12, 9);
   Operand(2, 0, 0, 6);
   Next_Word(); 
   Operand(1, 9, 0, 23);
-  Instruction_Pack_Group(p37,
+  Instruction_Pack_Group(p38,
 	TOP_ldbc_ii, 0x24000000UL, 0UL, 
 	TOP_ldbuc_ii, 0x25000000UL, 0UL, 
 	TOP_ldhc_ii, 0x22000000UL, 0UL, 
