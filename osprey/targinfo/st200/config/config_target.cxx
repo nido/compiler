@@ -233,7 +233,6 @@ Isa_Name ( TARGET_ISA b)
 
   switch ( b ) {
     case TARGET_ISA_ST220: return "ST220";
-    case TARGET_ISA_ST230: return "ST230";
     case TARGET_ISA_ST231: return "ST231";
     case TARGET_ISA_ST235: return "ST235";
     default:
@@ -252,7 +251,6 @@ Targ_Name ( TARGET_PROCESSOR b)
   switch ( b ) {
     case TARGET_st220: return "st220";
     case TARGET_st221: return "st221";
-    case TARGET_st230: return "st230";
     case TARGET_st231: return "st231";
     case TARGET_st235: return "st235";
     default:
@@ -312,10 +310,6 @@ Prepare_Target ( void )
       isa = TARGET_ISA_ST220;
       targ_default = TARGET_st220;
     }
-    else if ( strcasecmp ( ISA_Name, "ST230" ) == 0 ) {
-      isa = TARGET_ISA_ST230;
-      targ_default = TARGET_st230;
-    }
     else if ( strcasecmp ( ISA_Name, "ST231" ) == 0 ) {
       isa = TARGET_ISA_ST231;
       targ_default = TARGET_st231;
@@ -354,9 +348,6 @@ Prepare_Target ( void )
     else if ( strcasecmp ( Processor_Name, "st221" ) == 0 ) {
       targ = TARGET_st221;
     }
-    else if ( strcasecmp ( Processor_Name, "st230" ) == 0 ) {
-      targ = TARGET_st230;
-    }
     else if ( strcasecmp ( Processor_Name, "st231" ) == 0 ) {
       targ = TARGET_st231;
     }
@@ -383,9 +374,6 @@ Prepare_Target ( void )
     case TARGET_st220:
     case TARGET_st221:
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST220;
-      break;
-    case TARGET_st230:
-      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST230;
       break;
     case TARGET_st231:
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST231;

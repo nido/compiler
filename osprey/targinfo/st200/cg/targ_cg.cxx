@@ -538,7 +538,7 @@ CGTARG_Compute_Branch_Parameters (
   *brtaken = 0;
   *factor = 0.0;
 
-  // For ST220/ST221/ST230 targets we have:
+  // For ST220/ST231 targets we have:
   // - no hardware prediction
   // - fixed branch cost is null
   // - taken branch cost is 1

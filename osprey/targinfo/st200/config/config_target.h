@@ -122,7 +122,6 @@ typedef enum {
   TARGET_UNDEF,		/* Undefined */
   TARGET_st220,	        /* st220 */
   TARGET_st221,	        /* st221 */
-  TARGET_st230,	        /* st230 */
   TARGET_st231,	        /* st231 */
   TARGET_st235,	        /* st235 */
 } TARGET_PROCESSOR;
@@ -134,7 +133,6 @@ BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 
 #define Is_Target_st220()	(Target==TARGET_st220)
 #define Is_Target_st221()	(Target==TARGET_st221)
-#define Is_Target_st230()	(Target==TARGET_st230)
 #define Is_Target_st231()	(Target==TARGET_st231)
 #define Is_Target_st235()	(Target==TARGET_st235)
 
@@ -145,7 +143,6 @@ BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 typedef enum {
   TARGET_ISA_UNDEF,	/* Undefined */
   TARGET_ISA_ST220,
-  TARGET_ISA_ST230,
   TARGET_ISA_ST231,
   TARGET_ISA_ST235
 } TARGET_ISA;
@@ -156,7 +153,6 @@ BE_EXPORTED extern TARGET_ISA Target_ISA;	/* -Tc.Rc */
 BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 
 #define Is_Target_ISA_ST220()	(Target_ISA==TARGET_ISA_ST220)
-#define Is_Target_ISA_ST230()	(Target_ISA==TARGET_ISA_ST230)
 #define Is_Target_ISA_ST231()	(Target_ISA==TARGET_ISA_ST231)
 #define Is_Target_ISA_ST235()	(Target_ISA==TARGET_ISA_ST235)
 

@@ -63,9 +63,6 @@ Initialize_Targ_Info (void)
   case TARGET_ISA_ST220:
     isa = ISA_SUBSET_st220;
     break;
-  case TARGET_ISA_ST230:
-    isa = ISA_SUBSET_st230;
-    break;
   case TARGET_ISA_ST231:
     isa = ISA_SUBSET_st231;
     break;
@@ -82,9 +79,6 @@ Initialize_Targ_Info (void)
     break;
   case TARGET_st221:
     proc = PROCESSOR_st220;
-    break;
-  case TARGET_st230:
-    proc = PROCESSOR_st230;
     break;
   case TARGET_st231:
     proc = PROCESSOR_st231;

@@ -91,14 +91,6 @@ Config_Target_From_ELF (
       Target = TARGET_st220;
     }
     break;
-  case ELF_ST200_CORE_ST230:
-    if ((Target != TARGET_st230) && (Target != TARGET_UNDEF)) {
-      ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st230));
-    }
-    if (Target_ABI == ABI_UNDEF) {
-      Target = TARGET_st230;
-    }
-    break;
   case ELF_ST200_CORE_ST231:
     if ((Target != TARGET_st231) && (Target != TARGET_UNDEF)) {
       ErrMsg(EC_Conf_Targ, "processor", Targ_Name(Target), Targ_Name(TARGET_st231));
@@ -198,7 +190,6 @@ Config_ELF_From_Target (
   // [CL] setup ELF flags according to user options
 
   if (isa != (INT)TARGET_ISA_ST220
-      && isa != (INT)TARGET_ISA_ST230
       && isa != (INT)TARGET_ISA_ST231
       && isa != (INT)TARGET_ISA_ST235) {
       // [HK]
@@ -225,8 +216,6 @@ Config_ELF_From_Target (
     //    e_flags |= ELF_ST200_CORE_ST210; break;
   case TARGET_st220:
     e_flags |= ELF_ST200_CORE_ST220; break;
-  case TARGET_st230:
-    e_flags |= ELF_ST200_CORE_ST230; break;
   case TARGET_st231:
     e_flags |= ELF_ST200_CORE_ST231; break;
   case TARGET_st235:

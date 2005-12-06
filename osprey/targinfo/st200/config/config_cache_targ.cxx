@@ -63,7 +63,6 @@ static const char source_file[] = __FILE__;
 void MHD::Initialize()
 {
   if ( Is_Target_st220() ||
-       Is_Target_st230() ||
        Is_Target_st231() ||
        Is_Target_st235() ) {
 
