@@ -1460,10 +1460,10 @@ Expand__st220syscall(
       The case value is written but does not seem to be triggered
     */
     TOP top = TOP_UNDEFINED;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
-      top = TOP_syscall_i;
-    } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_ib)) {
-      top = TOP_syscall_ib;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall)) {
+      top = TOP_syscall;
+    } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st235_syscall)) {
+      top = TOP_st235_syscall;
     }
     if (TN_is_rematerializable(i0)) {
 	WN *wn = TN_home(i0) ;
@@ -6202,10 +6202,10 @@ Expand__trap(
 )
 {
   TOP top = TOP_UNDEFINED;
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk_i)) {
-    top = TOP_sbrk_i;
-  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk_ib)) {
-    top = TOP_sbrk_ib;
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk)) {
+    top = TOP_sbrk;
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st235_sbrk)) {
+    top = TOP_st235_sbrk;
   }
   /* The representation of such a trap is 1 */
   TN *c1 = Gen_Literal_TN(1LL, 4) ;
