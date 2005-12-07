@@ -4581,7 +4581,14 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   
   TN *new_tn0 = NULL, *new_tn1 = NULL;
   EBO_TN_INFO *new_tninfo0 = NULL, *new_tninfo1 = NULL;
-  
+
+
+  // [HK] must first check if the comparisons are not FP 
+  // (the min/max sequence is invalid in FP arithmetic)
+//   if (OP_fcmp(cond_opinfo->in_op))
+  if (!OP_icmp(cond_opinfo->in_op))
+      return FALSE;
+
   VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
 
   switch (variant) {
@@ -4734,6 +4741,11 @@ abs_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   } else if (rhs_tn == src_tn && TN_Has_Value(lhs_tn) && TN_Value(lhs_tn) == 0) {
     inverted = inverted ? FALSE: TRUE;
   } else return FALSE;
+
+  // [HK] must first check if the comparisons are not FP 
+  // (the min/max sequence is invalid in FP arithmetic)
+  if (OP_fcmp(cond_opinfo->in_op))
+      return FALSE;
 
   VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
   switch (variant) {

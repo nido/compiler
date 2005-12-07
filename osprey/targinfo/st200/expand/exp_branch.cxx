@@ -126,37 +126,37 @@ Pick_Compare_TOP (
   // pick tops
   switch (*variant) {
 
-  case V_BR_FGE:
+//   case V_BR_FGE:
   case V_BR_I4GE:
       cmp = *is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
       mtype = MTYPE_I4;
       break;
 
-  case V_BR_FGT:
+//   case V_BR_FGT:
   case V_BR_I4GT:
       cmp = *is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
       mtype = MTYPE_I4;
       break;
 
-  case V_BR_FLE:
+//   case V_BR_FLE:
   case V_BR_I4LE:
       cmp = *is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
       mtype = MTYPE_I4;
       break;
 
-  case V_BR_FLT:
+//   case V_BR_FLT:
   case V_BR_I4LT:
       cmp = *is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
       mtype = MTYPE_I4;
       break;
 
-  case V_BR_FEQ:
+//   case V_BR_FEQ:
   case V_BR_I4EQ:
       cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
       mtype = MTYPE_I4;
       break;
 
-  case V_BR_FNE:
+//   case V_BR_FNE:
   case V_BR_I4NE:
       cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
       mtype = MTYPE_I4;
@@ -198,47 +198,54 @@ Pick_Compare_TOP (
       mtype = MTYPE_U4;
       break;
 
-// [HK]    case V_BR_FGE:
-//     case V_BR_FGT:
-//     case V_BR_FLE:
-//     case V_BR_FLT:
-//     case V_BR_FEQ:
+// [HK] 20051207 FP SP cmp are available again on ST235
+    case V_BR_FGE:
+    case V_BR_FGT:
+    case V_BR_FLE:
+    case V_BR_FLT:
+    case V_BR_FEQ:
 // #if 0
-//       if (Enable_Single_Float_Ops) {
-// 	mtype = MTYPE_F4;
+      if (Enable_Single_Float_Ops) {
+	mtype = MTYPE_F4;
 // 	*is_integer = TRUE;
-// 	switch(*variant) {
-// 	case V_BR_FGE:
+	switch(*variant) {
+	case V_BR_FGE:
+	  cmp = *is_integer ? TOP_cmpgef_n_r : TOP_cmpgef_n_b;
 // 	  cmp = TOP_cmpgef;
-// 	  break;
-// 	case V_BR_FGT:
+	  break;
+	case V_BR_FGT:
+	  cmp = *is_integer ? TOP_cmpgtf_n_r : TOP_cmpgtf_n_b;
 // 	  cmp = TOP_cmpgtf;
-// 	  break;
-// 	case V_BR_FLE:
+	  break;
+	case V_BR_FLE:
+	  cmp = *is_integer ? TOP_cmplef_n_r : TOP_cmplef_n_b;
 // 	  cmp = TOP_cmplef;
-// 	  break;
-// 	case V_BR_FLT:
+	  break;
+	case V_BR_FLT:
+	  cmp = *is_integer ? TOP_cmpltf_n_r : TOP_cmpltf_n_b;
 // 	  cmp = TOP_cmpltf;
-// 	  break;
-// 	case V_BR_FEQ:
+	  break;
+	case V_BR_FEQ:
+	  cmp = *is_integer ? TOP_cmpeqf_n_r : TOP_cmpeqf_n_b;
 // 	  cmp = TOP_cmpeqf;
-// 	  break;
-// 	default:
-// 	  break;
-// 	}
-//       }
+	  break;
+	default:
+	  break;
+	}
+      }
 // #endif
-//       break;
-//     case V_BR_FNE:
-//       /* Undefined on ST200. */
-//       break;
+      break;
+    case V_BR_FNE:
+      /* Undefined on ST200. */
+      break;
 
     case V_BR_DGE:
     case V_BR_DGT:
     case V_BR_DLE:
     case V_BR_DLT:
     case V_BR_DEQ:
-#if 0
+// [HK] 20051207 FP SP cmp are available again on ST235
+ #if 0
       if (Enable_Double_Float_Ops) {
 	mtype = MTYPE_F8;
 	*is_integer = TRUE;
@@ -287,6 +294,8 @@ Pick_Compare_TOP (
   
   //[HK] in case of FP comparison, make the following transformation:
   // f1 cmp f2 <=> int(f1-f2) cmp 0
+  // [HK] 20051207 FP SP cmp are available again on ST235, doesn't need to do this anymore
+#if 0
   if ( (Enable_Non_IEEE_Ops) && \
        ( (*variant == V_BR_FLT) || (*variant == V_BR_FLE) ||(*variant == V_BR_FGT) || \
 	 (*variant == V_BR_FGE) || (*variant == V_BR_FEQ) ||(*variant == V_BR_FNE) ) )
@@ -296,6 +305,7 @@ Pick_Compare_TOP (
 	  *src1 = src;
 	  *src2 = Zero_TN;
       }
+#endif
   if ( !(Enable_Non_IEEE_Ops) && \
        ( (*variant == V_BR_FLT) || (*variant == V_BR_FLE) ||(*variant == V_BR_FGT) || \
 	 (*variant == V_BR_FGE) || (*variant == V_BR_FEQ) ||(*variant == V_BR_FNE) ) )

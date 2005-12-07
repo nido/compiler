@@ -3083,8 +3083,8 @@ Expand_Float_Less (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLT: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
+    break;
   default:
     break;
   }
@@ -3113,8 +3113,8 @@ Expand_Float_Greater (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGT: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
+    break;
   default:
     break;
   }
@@ -3143,8 +3143,8 @@ Expand_Float_Less_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLE: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
+    break;
   default:
     break;
   }
@@ -3173,8 +3173,8 @@ Expand_Float_Greater_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGE: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
+    break;
   default:
     break;
   }
@@ -3203,8 +3203,8 @@ Expand_Float_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FEQ: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
+    break;
     break;
   default:
     break;
@@ -3234,20 +3234,20 @@ Expand_Float_Not_Equal (
   switch (mtype) {
   case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FNE: V_NONE;
     break;
-//   case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
-//     break;
+  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
+    break;
   default:
     break;
   }
   FmtAssert(variant != V_NONE, ("unimplemented"));
 
-// [HK]  if (variant == V_BR_FNE || variant == V_BR_DNE) {
-//     /* Must use V_BR_EQ instead. */
-//     TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-//       Expand_Float_Equal(tmp_int, src1, src2, V_NONE, mtype, ops);
-//       Expand_Logical_Not(dest, tmp_int, V_NONE, ops);
-//       return;
-//   }
+if (variant == V_BR_FNE || variant == V_BR_DNE) {
+    /* Must use V_BR_EQ instead. */
+    TN *tmp_int = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Expand_Float_Equal(tmp_int, src1, src2, V_NONE, mtype, ops);
+      Expand_Logical_Not(dest, tmp_int, V_NONE, ops);
+      return;
+  }
 
   Expand_Float_Compares(dest, src1, src2, variant, ops);
   return;
