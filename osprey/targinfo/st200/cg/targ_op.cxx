@@ -753,6 +753,9 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
 		      case TOP_##top##_ii_b: case TOP_##top##_ii_r: \
 			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_ii_b : TOP_##top##_ii_r; \
 
+#define CASE_TOPF(top) case TOP_##top##_n_b: case TOP_##top##_n_r: \
+			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_n_b : TOP_##top##_n_r; \
+
   if (rslt == 0) {
     switch(regform) {
       CASE_TOP(cmpeq);
@@ -769,6 +772,11 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
       CASE_TOP(nandl);
       CASE_TOP(orl);
       CASE_TOP(norl);
+      CASE_TOPF(cmpeqf);
+      CASE_TOPF(cmpgef);
+      CASE_TOPF(cmpgtf);
+      CASE_TOPF(cmplef);
+      CASE_TOPF(cmpltf);
       case TOP_mtb:
       case TOP_mov_r:
 	return regclass == ISA_REGISTER_CLASS_branch ? TOP_mtb : TOP_mov_r;
