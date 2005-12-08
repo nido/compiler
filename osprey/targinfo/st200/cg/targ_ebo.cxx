@@ -4459,9 +4459,11 @@ op_match_compare(OP *op,
 		 TN **op1_tn, 
 		 EBO_TN_INFO **op1_tninfo)
 {
-  TOP top = OP_code(op);
+    //[HK] only used for integer cmp
+//   TOP top = OP_code(op);
   
-  if (!TOP_is_cmp(top)) return FALSE;
+//   if (!TOP_is_cmp(top)) return FALSE;
+  if (!OP_icmp(op)) return FALSE;
 
   *op0_tn = OP_opnd(op, 0);
   *op0_tninfo = opnd_tninfo[0];
@@ -4585,8 +4587,7 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
   // [HK] must first check if the comparisons are not FP 
   // (the min/max sequence is invalid in FP arithmetic)
-//   if (OP_fcmp(cond_opinfo->in_op))
-  if (!OP_icmp(cond_opinfo->in_op))
+  if (OP_fcmp(cond_opinfo->in_op))
       return FALSE;
 
   VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
