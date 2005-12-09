@@ -124,9 +124,10 @@ INT32 Align_Labels = 0;	             /* same as above. */
 BOOL Avoid_TFP_blikely_bug = FALSE;
 BOOL Avoid_TFP_blikely_bug_overridden = FALSE;
 
+// [HK] 20051209 this setting depens now on Finite_Math (treated in config_opt.cxx)
 /***** IEEE 754 options *****/
 // BOOL Force_IEEE_Comparisons = TRUE;    /* IEEE NaN comparisons? */
-BOOL Force_IEEE_Comparisons = !(Finite_Math);    /* IEEE NaN comparisons? */
+// BOOL Force_IEEE_Comparisons = !(Finite_Math);    /* IEEE NaN comparisons? */
 
 /***** INTERNAL group options *****/
 
