@@ -2219,7 +2219,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_DESTROY_FRAME:
-#ifndef TARG_ST200
       Is_True(frame_size == ue_iter->offset,
 	      ("unwind: bad frame size at destroy point %d instead of %d", frame_size, ue_iter->offset));
 
@@ -2244,9 +2243,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      Cg_Dwarf_Name_From_Handle(last_label_idx));
 #endif
       break;
-#else
-      continue;
-#endif
 
     case UE_CREATE_FP:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
@@ -2278,7 +2274,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_DESTROY_FP:
-#ifndef TARG_ST200
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2305,9 +2300,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      Cg_Dwarf_Name_From_Handle(last_label_idx));
 #endif
       break;
-#else
-      continue;
-#endif
 
     case UE_SAVE_SP:
     case UE_SAVE_FP:
@@ -2358,7 +2350,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_RESTORE_MEM:
-#ifndef TARG_ST200
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
 
@@ -2385,10 +2376,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
 	      REGISTER_machine_id(rc,reg));
 #endif
+
       break;
-#else
-      continue;
-#endif
 
     case UE_SAVE_GR:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
@@ -2427,7 +2416,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_RESTORE_GR:
-#ifndef TARG_ST200
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
       save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
@@ -2461,9 +2449,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 #endif
 
       break;
-#else
-      continue;
-#endif
 
     default:
       FmtAssert(FALSE, ("%s: Unhandled UNWIND_ELEM kind (%d)\n", __FUNCTION__, ue_iter->kind));
