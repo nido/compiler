@@ -699,11 +699,23 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 // ======================================================================
 // return TRUE if opsch1 has a larger 'estart' value than opsch2.
 // ======================================================================
+#ifdef TARG_ST
+static INT
+sort_by_estart (const void *opsch1, const void *opsch2)
+{
+  return (OPSCH_estart((OPSCH*) opsch1) < OPSCH_estart((OPSCH*) opsch2))
+    ? -1
+    : (OPSCH_estart((OPSCH*) opsch1) == OPSCH_estart((OPSCH*) opsch2))
+    ? 0
+    : 1;
+}
+#else
 static BOOL
 sort_by_estart (const void *opsch1, const void *opsch2)
 {
   return (OPSCH_estart((OPSCH*) opsch1) > OPSCH_estart((OPSCH*) opsch2));
 }
+#endif
  
 // ======================================================================
 // return TRUE if opsch1 has a smaller 'slack' value than opsch2.
@@ -783,7 +795,16 @@ Priority_Selector::Add_Element_Sorted (VECTOR vector, void *element, VECTOR_ELEM
     void *cur_element = VECTOR_element(vector, i - 1);
     void *cur_opsch = OP_opsch((OP*) cur_element, _cur_sched->hb_map());
     void *opsch = OP_opsch((OP*) element, _cur_sched->hb_map());
+#ifdef TARG_ST
+    // FdF 20051212: Keep the initial order of memory operations as
+    // much as possible for the pre-pass scheduling.
+    int cmp = comp_func(cur_opsch, opsch);
+    if (cmp > 0) break;
+    if (cmp == 0 && (OP_memory((OP *)cur_element) && OP_memory((OP *)element)) &&
+	OP_map_idx((OP *)cur_element) > OP_map_idx((OP *)element)) break;
+#else
     if (comp_func(cur_opsch, opsch)) break;
+#endif
     VECTOR_element(vector, i) = cur_element;
   }
   VECTOR_element(vector, i) = element;
@@ -1197,6 +1218,20 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
   }
 
   if (_hbs_type & HBS_CRITICAL_PATH) {
+    // FdF 20051212: Keep memory operations in lexical order as much
+    // as possible
+#ifdef TARG_ST
+    if (OP_memory(cur_op) && OP_memory(best_op) &&
+	(OPSCH_lstart(cur_opsch) == OPSCH_lstart(best_opsch))) {
+      // If only one has estart==lstart, return this one, otherwise
+      // use map_idx.
+      if ((OPSCH_estart(cur_opsch) != OPSCH_estart(best_opsch)) &&
+	  ((OPSCH_estart(cur_opsch) == OPSCH_lstart(cur_opsch)) ||
+	   (OPSCH_estart(best_opsch) == OPSCH_lstart(best_opsch))))
+	return (OPSCH_estart(cur_opsch) == OPSCH_lstart(cur_opsch));
+      return (OP_map_idx(cur_op) > OP_map_idx(best_op));
+    }
+#endif
     INT cur_slack, best_slack;
     cur_slack = OPSCH_lstart(cur_opsch) - OPSCH_estart(cur_opsch);
     best_slack = OPSCH_lstart(best_opsch) - OPSCH_estart(best_opsch);
@@ -1224,11 +1259,6 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
     }
 #endif
   }
-
-  // FdF: Try to schedule in OP_unrolling order. This may be better
-  // with scheduled prefetch instructions.
-  if (OP_unrolling(cur_op) > OP_unrolling(best_op))
-    return TRUE;
 
   return FALSE;
 }
