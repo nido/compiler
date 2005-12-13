@@ -642,13 +642,12 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
   ue.top_offset = 0;
   ue.is_copy = FALSE;
 #endif
+  ue.label_idx = LABEL_IDX_ZERO;
   TN *tn;
   TOP opc = OP_code(op);
   INT opnd_idx;
 
-  FmtAssert(!OP_simulated(op) || opc== TOP_asm, 
-	    ("found a simulated OP"));
-  if (opc == TOP_asm) {
+  if (OP_simulated(op) || opc == TOP_asm) {
     has_asm = TRUE;
   }
 
@@ -1084,6 +1083,10 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 	if (Trace_Unwind) {
 	  Print_Unwind_Elem (*ue_iter, "invalid");
 	}
+      } else {
+	if (Trace_Unwind) {
+	  Print_Unwind_Elem (*ue_iter, "valid");
+	}
       }
       pr_stack[p].push_front (*ue_iter);
       ue_iter->propagated = UE_PROP_PUSHED;
@@ -1146,7 +1149,11 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 	if (Trace_Unwind) {
 	  Print_Unwind_Elem (*ue_iter, "invalid");
 	}
-      }	
+      } else {
+	if (Trace_Unwind) {
+	  Print_Unwind_Elem (*ue_iter, "valid");
+	}
+      }
       pr_stack[p].front().propagated = UE_PROP_POPPED;
       pushed_popped_here.push_front(pr_stack[p].front());
       pr_stack[p].pop_front();
@@ -1448,6 +1455,7 @@ static void Prepend_UE(UNWIND_ELEM* pue, UINT when, BB *bb)
   ue.valid = TRUE;
   ue.top_offset = pue->top_offset;
   ue.is_copy = TRUE;
+  ue.label_idx = LABEL_IDX_ZERO;
 
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
@@ -1467,6 +1475,7 @@ Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
   ue.top_offset = 0;
   ue.is_copy = FALSE;
 #endif
+  ue.label_idx = LABEL_IDX_ZERO;
   UINT num_found = 0;
   for (prev_iter = prev_ue.begin(); prev_iter != prev_ue.end(); ++prev_iter) {
 	// look for save
@@ -1532,6 +1541,7 @@ Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb)
   ue.top_offset = 0;
   ue.is_copy = FALSE;
 #endif
+  ue.label_idx = LABEL_IDX_ZERO;
   ue.kind = kind;
   ue.qp = 0;
   ue.rc_reg = PR_To_CR(p);
@@ -1554,6 +1564,7 @@ Add_UE (INT8 kind, UINT label, UINT when, BB *bb)
   ue.top_offset = 0;
   ue.is_copy = FALSE;
 #endif
+  ue.label_idx = LABEL_IDX_ZERO;
   ue.kind = kind;
   ue.label = label;
   ue.when = when;
@@ -2489,10 +2500,8 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   // process info we've collected and create the unwind descriptors
   Create_Unwind_Descriptors(fde, scn_index, begin_label);
 
-  if (has_asm)
-	DevWarn("no unwind info cause PU has asm");
-  else if ( ! simple_unwind)
-	DevWarn("unwind info may be incorrect because PU is too complicated");
+  if (has_asm || ! simple_unwind)
+	DevWarn("unwind info may be incorrect because PU has asm or is too complicated");
 
   return fde;
 }

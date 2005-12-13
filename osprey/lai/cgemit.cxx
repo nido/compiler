@@ -4658,7 +4658,9 @@ Assemble_Bundles(BB *bb)
     if (OP_code(op) == TOP_asm) {
       FmtAssert(!Object_Code, ("can't emit asm in object code")); 
       Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(op));
+      Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE);
       Assemble_Simulated_OP(op, bb, NULL);
+      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
       op = OP_next(op);
       continue;
     }
@@ -4693,6 +4695,7 @@ Assemble_Bundles(BB *bb)
       if (OP_simulated(op)) {
 #ifdef TARG_ST
 	OPS new_ops = OPS_EMPTY;
+	Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE);
 	Assemble_Simulated_OP(op, bb, &new_ops);
 	BB_Insert_Ops_After (bb, op, &new_ops);
 #ifdef TARG_ST200
