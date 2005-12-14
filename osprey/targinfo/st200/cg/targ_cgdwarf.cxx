@@ -317,6 +317,17 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
 	return tn;
     }
 
+    // FIXME: ensure that find_def_of_tn returns an op that occurs BEFORE cur_op
+    if (TN_is_dedicated(tn)) 
+    {
+#ifdef DEBUG_UNWIND
+      fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
+	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
+				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+#endif
+	return NULL;
+    }
+    
 	// else find tn that this is a copy of.
     OP *op = Find_Def_Of_TN (tn);
 
@@ -1297,6 +1308,9 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 	Print_Unwind_Elem(*ue_iter, "erasing");
       }
       ue_iter = ue_list.erase(ue_iter);
+      if (ue_iter == ue_list.end()) {
+	break;
+      }
     }
 #endif
 	switch (ue_iter->kind) {
@@ -1746,7 +1760,8 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		  pred_id = BB_id(BB_prev(bb));
 		}
 #endif
-		fprintf(TFile, "copying entry state from bb %d\n", pred_id);
+		if (Trace_Unwind) 
+		  fprintf(TFile, "copying entry state from bb %d\n", pred_id);
 
   		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
 		  if (bb_entry_ue[pred_id][p]) {
