@@ -1016,6 +1016,8 @@ static inline PR_BITSET Clear_PR (PR_BITSET state, PR_TYPE p)
 #ifdef PROPAGATE_DEBUG
 static INT64 current_frame_size = 0;
 
+static BOOL is_handler = FALSE;
+
 static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 				     list < UNWIND_ELEM > pr_stack[PR_LAST],
 						     BOOL* visited)
@@ -1106,8 +1108,10 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 	ue_iter->top_offset = ue_iter->offset;
       }
 
-      FmtAssert(!pr_stack[p].empty(),
-		("unable to match restoring UNWIND_ELEM\n"));
+      if (!is_handler || !pr_stack[p].empty()) {
+	// this restore is not on the path of an exception handler, OR
+	// if on such a path, the corresponding store is likely to
+	// have already been processed (pr_strack[p] is not empty
 
       // check that this restore corresponds to the previous store. If
       // it does not, then ignore it (it is not related to callee-save
@@ -1157,6 +1161,23 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
       pr_stack[p].front().propagated = UE_PROP_POPPED;
       pushed_popped_here.push_front(pr_stack[p].front());
       pr_stack[p].pop_front();
+      } else if (is_handler) {
+	// this restore in of the path of an exception handler and
+	// pr_stack[p] is empty: this means that we are probably
+	// handling a restore which corresponds to a store made during
+	// the function prologue, which is not on this path.
+
+	// FIXME: accept it for now. Maybe we could check we are in an
+	// exit_bb (implying that exception handlers propably disable
+	// some optimizations
+	if (Trace_Unwind) {
+	  Print_Unwind_Elem (*ue_iter, "valid");
+	}
+
+      } else {
+	FmtAssert(!pr_stack[p].empty(),
+		  ("unable to match restoring UNWIND_ELEM\n"));
+      }
       break;
  
     default:
@@ -1239,6 +1260,11 @@ static void Tag_Irrelevant_Saves_And_Restores_BB_List(BB_LIST *elist,
 
   current_frame_size = 0;
 
+  if (BB_handler(bb)) {
+    is_handler = TRUE;
+  } else {
+    is_handler = FALSE;
+  }
   Tag_Irrelevant_Saves_And_Restores_For_BB(bb, pr_stack, visited);
 }
 
@@ -1703,9 +1729,28 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		// in addition to the (fake for us) COPY, explicitly
 		// add all the UEs required to restore the desired
 		// state
+
+#if 1
+		INT pred_id = BB_id(BB_prev(bb));
+#else
+		// FIXME: in theory, we should copy the state of the
+		// predecessor (assuming all preds have the same exit
+		// state), not that of the prev. However, in presence
+		// of EH, the state of the pred is 0.
+
+		// TODO: propagate bottom-up the entry states
+		INT pred_id;
+		if (BB_First_Pred(bb)) {
+		  pred_id = BB_id(BB_First_Pred(bb));
+		} else {
+		  pred_id = BB_id(BB_prev(bb));
+		}
+#endif
+		fprintf(TFile, "copying entry state from bb %d\n", pred_id);
+
   		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
-		  if (bb_entry_ue[BB_id(BB_prev(bb))][p]) {
-		    Prepend_UE(bb_entry_ue[BB_id(BB_prev(bb))][p], lwhen, bb);
+		  if (bb_entry_ue[pred_id][p]) {
+		    Prepend_UE(bb_entry_ue[pred_id][p], lwhen, bb);
 		  }
 		}
 #endif
@@ -2214,6 +2259,13 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
   uregion = PROLOGUE_UREGION;
 
   for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
+
+#ifdef PROPAGATE_DEBUG
+    // if this UE is a copy state, pretend its adress is the previous one
+    if (ue_iter->is_copy) {
+      ue_iter->when_bundle_start--;
+    }
+#endif
 
     switch (ue_iter->kind) {
     case UE_EPILOG:
