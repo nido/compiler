@@ -1208,6 +1208,40 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
   }
 }
 
+
+static void Tag_Irrelevant_Saves_And_Restores_BB_List(BB_LIST *elist,
+						      BOOL* visited)
+{
+  // Depth first search of the CFG in order to track the 'irrelevant'
+  // stores and restores.
+
+  // Do it recursively because the head of the list contains the last
+  // block: in presence of exception handlers, the handlers are first
+  // in the list, the function entry point is the last. This leads to
+  // cases where the EH branches to the function epilogue, which is
+  // studied before the function prologue; thus it cannot match
+  // restores.
+
+  // With this recursion, the EH are handled after the function
+  // prologue.
+  if (BB_LIST_rest(elist)) {
+    Tag_Irrelevant_Saves_And_Restores_BB_List(BB_LIST_rest(elist),
+					      visited);
+  }
+
+  // Use a stack to record the state of each PR along the CFG
+  list < UNWIND_ELEM > pr_stack[PR_LAST];
+  for (PR_TYPE p = PR_FIRST; p < PR_LAST; INCR(p)) {
+    pr_stack[p].clear();
+  }
+
+  BB* bb = BB_LIST_first(elist);
+
+  current_frame_size = 0;
+
+  Tag_Irrelevant_Saves_And_Restores_For_BB(bb, pr_stack, visited);
+}
+
 static void Tag_Irrelevant_Saves_And_Restores_TOP()
 {
   BB_LIST *elist;
@@ -1216,22 +1250,7 @@ static void Tag_Irrelevant_Saves_And_Restores_TOP()
   visited = (BOOL *)alloca(sizeof(BOOL)*(PU_BB_Count+1));
   BZERO(visited, sizeof(BOOL)*(PU_BB_Count+1));
 
-  for (elist = Entry_BB_Head; elist; elist = BB_LIST_rest(elist)) {
-    // Depth first search of the CFG in order to track the
-    // 'irrelevant' stores and restores
-
-    // Use a stack to record the state of each PR along the CFG
-    list < UNWIND_ELEM > pr_stack[PR_LAST];
-    for (PR_TYPE p = PR_FIRST; p < PR_LAST; INCR(p)) {
-      pr_stack[p].clear();
-    }
-
-    BB* bb = BB_LIST_first(elist);
-
-    current_frame_size = 0;
-
-    Tag_Irrelevant_Saves_And_Restores_For_BB(bb, pr_stack, visited);
-  }
+  Tag_Irrelevant_Saves_And_Restores_BB_List(Entry_BB_Head, visited);
 }
 #endif
 
