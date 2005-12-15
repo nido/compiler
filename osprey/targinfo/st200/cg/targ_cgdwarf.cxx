@@ -107,7 +107,9 @@ enum {
   UE_SAVE_SP,		// save a reg to memory (sp)
   UE_SAVE_FP,		// save a reg to memory (fp)
   UE_RESTORE_GR,	// restore a reg from a GR reg
-  UE_RESTORE_MEM,	// restore a reg from memory
+  //  UE_RESTORE_MEM,	// restore a reg from memory
+  UE_RESTORE_SP,	// restore a reg from memory (sp)
+  UE_RESTORE_FP,	// restore a reg from memory (fp)
   UE_EPILOG,		// body epilog
   UE_LABEL,		// body label
   UE_COPY		// body copy 
@@ -222,17 +224,25 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 		fprintf(TFile, " restore %s", UE_Register_Name(
 			CLASS_REG_PAIR_rclass(ue.rc_reg),
         		CLASS_REG_PAIR_reg(ue.rc_reg) ));
+		fprintf(TFile, " from %s", UE_Register_Name(
+			CLASS_REG_PAIR_rclass(ue.save_rc_reg),
+        		CLASS_REG_PAIR_reg(ue.save_rc_reg) ));
 		break;
-	case UE_RESTORE_MEM:  
+			//	case UE_RESTORE_MEM:  
+	case UE_RESTORE_SP:
+	case UE_RESTORE_FP:
 #ifdef PROPAGATE_DEBUG
-		fprintf(TFile, " restore %s from mem %lld(sp/fp) %lld(entry-sp/fp)",
+		fprintf(TFile, " restore %s from mem %lld(%s) %lld(entry-%s)",
 			UE_Register_Name(CLASS_REG_PAIR_rclass(ue.rc_reg),
 					 CLASS_REG_PAIR_reg(ue.rc_reg) ),
-			ue.offset, ue.top_offset);
+			ue.offset, (ue.kind == UE_RESTORE_SP ? "sp" : "fp"),
+			ue.top_offset,
+			(ue.kind == UE_RESTORE_SP ? "sp" : "fp"));
 #else
-		fprintf(TFile, " restore %s from mem", UE_Register_Name(
+		fprintf(TFile, " restore %s from mem %s", UE_Register_Name(
 			CLASS_REG_PAIR_rclass(ue.rc_reg),
-			CLASS_REG_PAIR_reg(ue.rc_reg) ));
+			CLASS_REG_PAIR_reg(ue.rc_reg) ),
+			(ue.kind == UE_RESTORE_SP ? "sp" : "fp"));
 #endif
 		break;
 	}
@@ -243,7 +253,9 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 	case UE_SAVE_SP:
 	case UE_SAVE_FP:
 	case UE_RESTORE_GR:  
-	case UE_RESTORE_MEM:  
+	  //	case UE_RESTORE_MEM:  
+	case UE_RESTORE_SP:
+	case UE_RESTORE_FP:
 	  fprintf(TFile, " %svalid", (ue.valid == TRUE) ? "" : "in");
 		break;
 	}
@@ -591,7 +603,8 @@ static void Record_Register_Restore(OP* op, INT opndnum, BB* bb,
 
     TN *load_tn = OP_opnd(op,opndnum);
     if (load_tn == SP_TN || load_tn == FP_TN) {
-      ue->kind = UE_RESTORE_MEM;
+      //      ue->kind = UE_RESTORE_MEM;
+      ue->kind = (load_tn == SP_TN) ? UE_RESTORE_SP : UE_RESTORE_FP;
       ue->rc_reg = TN_class_reg(result_tn);
 
       TN* offset_tn = OP_opnd(op, OP_find_opnd_use(op, OU_offset));
@@ -856,6 +869,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       {
 	ue.kind = UE_RESTORE_GR;
 	ue.rc_reg = TN_class_reg(result_tn);
+	ue.save_rc_reg = TN_class_reg(copy_tn);
       }
   }
 
@@ -1076,8 +1090,7 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 
     case UE_CREATE_FP:
     case UE_DESTROY_FP:
-      // FIXME is there anything to do in this case?
-      FmtAssert(FALSE, ("FRAME SIZE FOR FP\n"));
+      break;
 
     case UE_SAVE_GR:
     case UE_SAVE_SP:
@@ -1108,12 +1121,14 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
 
 
     case UE_RESTORE_GR:
-    case UE_RESTORE_MEM:
+      //    case UE_RESTORE_MEM:
+    case UE_RESTORE_SP:
+    case UE_RESTORE_FP:
       p = CR_To_PR (ue_iter->rc_reg);
       // FIXME if p was saved with SAVE_FP, maybe we should not use
       // current_frame_size. But so far there is no distinction
       // between a restore from SP and from FP
-      if (current_frame_size) {
+      if (current_frame_size && ue_iter->kind == UE_RESTORE_SP) {
 	ue_iter->top_offset = ue_iter->offset - current_frame_size;
       } else {
 	ue_iter->top_offset = ue_iter->offset;
@@ -1127,7 +1142,8 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
       // check that this restore corresponds to the previous store. If
       // it does not, then ignore it (it is not related to callee-save
       // handling, it may be a definition of 'p')
-      if (ue_iter->kind == UE_RESTORE_MEM) {
+	//      if (ue_iter->kind == UE_RESTORE_MEM) {
+	if (ue_iter->kind == UE_RESTORE_FP || ue_iter->kind == UE_RESTORE_SP) {
 	// Check that restore from memory corresponds to a save
 	// relative to SP or FP, and at the same offset
 	if ( ( (pr_stack[p].front().kind == UE_SAVE_SP)
@@ -1325,7 +1341,9 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 	case UE_DESTROY_FRAME:
 	case UE_DESTROY_FP:
 	case UE_RESTORE_GR:
-	case UE_RESTORE_MEM:
+	  //	case UE_RESTORE_MEM:
+	case UE_RESTORE_SP:
+	case UE_RESTORE_FP:
   		p = CR_To_PR (ue_iter->rc_reg);
   		Set_PR(local_restore_state, ue_iter->bb, p);
 		break;
@@ -1802,7 +1820,15 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 	if (BB_unreachable(bb)) {
 	  // FIXME
 	  current_state = entry_state[bbid];
-	} else
+	} else if (BB_handler(bb)) {
+	  // FIXME If bb is an EH entry block, keep the just-computed
+	  // entry_state. Indeed, the proper entry state of such a BB
+	  // has not been computed accurately (and is zero currently,
+	  // as we still need a bottom-up propagation phase) //
+	  // entry_state[bbid] = current_state; this is wrong because
+	  // it should also be propagated to the following BBs
+	  current_state = entry_state[bbid];
+	}
 #endif
 	if (current_state != entry_state[bbid]) {
   		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
@@ -1834,7 +1860,9 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 							   CLASS_REG_PAIR_reg(ue_iter->rc_reg) ),
 					  bbid);
 		if (ue_iter->kind == UE_RESTORE_GR
-		 || ue_iter->kind == UE_RESTORE_MEM)
+		    //		 || ue_iter->kind == UE_RESTORE_MEM)
+		 || ue_iter->kind == UE_RESTORE_SP
+		 || ue_iter->kind == UE_RESTORE_FP)
 		{
 			current_state = Clear_PR(current_state, p);
 		}
@@ -1884,7 +1912,8 @@ Insert_Epilogs (void)
 	--prev_ue;
 	while (prev_ue != ue_list.begin()) {
 		if (prev_ue->bb != ue_iter->bb) break;
-		if (prev_ue->kind != UE_RESTORE_GR && prev_ue->kind != UE_RESTORE_MEM)
+		//		if (prev_ue->kind != UE_RESTORE_GR && prev_ue->kind != UE_RESTORE_MEM)
+		if (prev_ue->kind != UE_RESTORE_GR && prev_ue->kind != UE_RESTORE_SP && prev_ue->kind != UE_RESTORE_FP)
 			break;
 		--prev_ue;
 	}
@@ -2155,7 +2184,9 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
       }
       break;
 
-    case UE_RESTORE_MEM:
+      //    case UE_RESTORE_MEM:
+    case UE_RESTORE_SP:
+    case UE_RESTORE_FP:
       if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
 	Generate_Label_For_Unwinding(&Label_restore_ra, &Idx_restore_ra,
 				   "restore_ra", *ue_iter, post_process);
@@ -2446,7 +2477,9 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
       break;
 
-    case UE_RESTORE_MEM:
+      //    case UE_RESTORE_MEM:
+    case UE_RESTORE_SP:
+    case UE_RESTORE_FP:
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
 
@@ -2462,7 +2495,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			 0, &dw_error);
 
       if (Trace_Unwind) {
-	fprintf(TFile, "restore reg from sp mem at when %d\n", ue_iter->when);
+	fprintf(TFile, "restore reg from %s mem at when %d\n",
+		ue_iter->kind == UE_RESTORE_FP ? "sp" : "fp", ue_iter->when);
 	if (ue_iter->frame_changed)
 	  fprintf(TFile, "  frame changed in the same bundle\n");
       }
