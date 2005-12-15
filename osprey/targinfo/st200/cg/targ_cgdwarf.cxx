@@ -81,8 +81,10 @@ static BOOL Trace_Unwind = FALSE;
 static INT Data_Alignment_Factor = 4;
 
 //#define DEBUG_UNWIND
+#ifdef notyet
 #define PROPAGATE_DEBUG
 #define USE_UNREACHABLE
+#endif
 
 // rp == ra
 // psp == fp
@@ -2281,7 +2283,7 @@ extern char *Cg_Dwarf_Name_From_Handle(Dwarf_Unsigned idx);
 // process info we've collected and create the unwind descriptors
 static void
 Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
-			   Dwarf_Unsigned begin_label)
+			   Dwarf_Unsigned begin_label, bool emit_restores)
 {
   ISA_REGISTER_CLASS rc, save_rc;
   REGISTER reg, save_reg;
@@ -2347,6 +2349,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_DESTROY_FRAME:
+      if (!emit_restores) continue;
+
       Is_True(frame_size == ue_iter->offset,
 	      ("unwind: bad frame size at destroy point %d instead of %d", frame_size, ue_iter->offset));
 
@@ -2402,6 +2406,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_DESTROY_FP:
+      if (!emit_restores) continue;
+
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2480,6 +2486,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       //    case UE_RESTORE_MEM:
     case UE_RESTORE_SP:
     case UE_RESTORE_FP:
+      if (!emit_restores) continue;
+
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
 
@@ -2547,6 +2555,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_RESTORE_GR:
+      if (!emit_restores) continue;
+
       rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
       reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
       save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
@@ -2607,7 +2617,8 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 		    // supports symbolic ranges.
 		    INT       low_pc,
 		    INT       high_pc,
-		    Elf64_Word	scn_index)
+		    Elf64_Word	scn_index,
+                    bool emit_restores)
 {
   Dwarf_P_Fde fde;
   Dwarf_Error dw_error;
@@ -2618,7 +2629,7 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   fde = dwarf_new_fde(dw_dbg, &dw_error);
 
   // process info we've collected and create the unwind descriptors
-  Create_Unwind_Descriptors(fde, scn_index, begin_label);
+  Create_Unwind_Descriptors(fde, scn_index, begin_label, emit_restores);
 
   if (has_asm || ! simple_unwind)
 	DevWarn("unwind info may be incorrect because PU has asm or is too complicated");

@@ -2043,6 +2043,9 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   Dwarf_P_Die PU_die;
   Dwarf_P_Expr expr;
   Dwarf_P_Fde fde;
+#ifdef TARG_ST
+  Dwarf_P_Fde eh_fde;
+#endif
 
   DST_SUBPROGRAM *PU_attr;
   static BOOL processed_globals = FALSE;
@@ -2151,10 +2154,18 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 			    end_offset,
 #ifdef TARG_ST
     // [CL] need scn_index to connect debug_frame label to Dwarf symtab
-			    low_pc, high_pc, scn_index);
+			    low_pc, high_pc, scn_index, true);
 #else
 			    low_pc, high_pc);
 
+#endif
+
+#ifdef TARG_ST
+  eh_fde = Build_Fde_For_Proc (dw_dbg, REGION_First_BB,
+			    begin_entry,
+			    end_entry,
+			    end_offset,
+			    low_pc, high_pc, scn_index);
 #endif
 
   Dwarf_Unsigned eh_handle;
@@ -2172,6 +2183,9 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 		       end_offset,
 		       PU_die,
 		       fde,
+#ifdef TARG_ST
+		       eh_fde,
+#endif
 		       eh_handle,
 		       eh_offset);
 
