@@ -1068,9 +1068,23 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 
     // first action index
     // build chain of actions
+#ifndef TARG_ST
+      /* (cbr) don't mess up with "no action" */
     FmtAssert (INITV_next (first_initv) != 0, ("No handler information available"));
+#endif
+
     INITV_IDX action_ofst = 0;
     INITV_IDX first_action = New_INITV();
+
+#ifdef TARG_ST
+    /* (cbr) don't mess up with "no action" */
+    if (!INITV_next (first_initv)) {
+      INITV_Set_ZERO (Initv_Table[first_action], MTYPE_I4, 1);
+      Set_INITV_next (pad, first_action);
+    }
+    else
+#endif
+
     for (INITV_IDX next_initv=INITV_next (first_initv);
     		next_initv; next_initv=INITV_next (next_initv))
     {
@@ -1107,6 +1121,7 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	// Check if we have any action for this eh-region, if not, emit 0
 	// for action start marker.
 	bool zero_action = false;
+
 	if (sym < 0) // eh spec offset
 	{
     	    INITV_Set_VAL (Initv_Table[action],
