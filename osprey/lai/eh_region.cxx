@@ -1110,7 +1110,12 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	    INITV_IDX tmp_idx = INITV_next (next_initv);
 	    if (INITV_kind (tmp_idx) != INITVKIND_ZERO)
 	    	next_sym = TCON_ival (INITV_tc_val (tmp_idx));
+#ifdef TARG_ST
+            /* (cbr) first null action is a cleanup */
+	    if (next_sym)
+#else
 	    if (next_sym < 0)
+#endif
 	    	catch_all = false;
 	}
 
