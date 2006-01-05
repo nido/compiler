@@ -4435,6 +4435,8 @@ Assemble_Simulated_OP (
 #ifdef TARG_ST
       // [SC] We need to emit directives just before the asm string
       CGEMIT_Asm_String_Prefix(op, &PC);
+      // [CL] debug_frame support
+      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
 #endif
       fprintf(Asm_File, "\t%s\n", Generate_Asm_String(op, bb));
       if (AS_STOP_BIT && 
@@ -4445,6 +4447,8 @@ Assemble_Simulated_OP (
 #ifdef TARG_ST
       // [SC] We need to emit directives just after the asm string
       CGEMIT_Asm_String_Suffix(op, &PC);
+      // [CL] debug_frame support
+      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
 #endif
 #ifdef TARG_ST200
       // [CG] Align end of asm to 8 bytes boundary such that 
@@ -4658,9 +4662,7 @@ Assemble_Bundles(BB *bb)
     if (OP_code(op) == TOP_asm) {
       FmtAssert(!Object_Code, ("can't emit asm in object code")); 
       Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(op));
-      Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE);
       Assemble_Simulated_OP(op, bb, NULL);
-      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
       op = OP_next(op);
       continue;
     }
@@ -4695,7 +4697,6 @@ Assemble_Bundles(BB *bb)
       if (OP_simulated(op)) {
 #ifdef TARG_ST
 	OPS new_ops = OPS_EMPTY;
-	Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE);
 	Assemble_Simulated_OP(op, bb, &new_ops);
 	BB_Insert_Ops_After (bb, op, &new_ops);
 #ifdef TARG_ST200
