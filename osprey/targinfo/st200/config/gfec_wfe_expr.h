@@ -1033,4 +1033,67 @@
       iopc = INTRN_ASM_15 ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_VA_START:
+      {
+	tree arg1, arg2;
+
+        arg1 = TREE_VALUE (arglist);
+	arg2 = TREE_VALUE (TREE_CHAIN (arglist));
+	WN *arg_wn = WFE_Expand_Expr (arg1);
+	TY_IDX arg_ty_idx = Get_TY (TREE_TYPE (arg1));
+	while (TREE_CODE (arg2) == NOP_EXPR
+	       || TREE_CODE (arg2) == CONVERT_EXPR
+	       || TREE_CODE (arg2) == NON_LVALUE_EXPR
+	       || TREE_CODE (arg2) == INDIRECT_REF)
+	  arg2 = TREE_OPERAND (arg2, 0);
+	ST *st2 = Get_ST (arg2);
+	wn = WN_Lda (Pointer_Mtype, 
+		     ((TY_size (ST_type (st2)) + 3) & (-4)),
+		     st2);
+	
+	if (WN_operator (arg_wn) == OPR_LDA) {
+	  wn = WN_Stid (Pointer_Mtype, WN_offset (arg_wn),
+			WN_st (arg_wn), arg_ty_idx, wn);
+	} else {
+	  wn = WN_CreateIstore (OPR_ISTORE, MTYPE_V,
+				Pointer_Mtype, 0, arg_ty_idx,
+				arg_wn, 0);
+	}
+	WFE_Stmt_Append (wn, Get_Srcpos());
+	if (TARGET_BIG_ENDIAN) {
+	  // [SC] Need to find the address just above where the 8th
+	  // (where 8 is MAX_ARGUMENT_SLOTS)
+	  // argument register would be saved to the stack.
+	  // We know that the fixed arguments occupy current_function_args_info
+	  // registers, and that the symbol st2 occupies the last of these.
+	  // Therefore the current_function_args_info + 1 register is
+	  // saved in the word above st2, and the 8th register is at
+	  // 8 - (current_function_args_info + 1) words from that.
+	  // However, current_function_args_info saturates at 8.
+	  // In this case, there will be no variable arguments passed in
+	  // registers, and we can just use the word above st2 as the
+	  // register argument limit.
+	  wn = WN_Binary (OPR_ADD, Pointer_Mtype,
+			  WN_Lda (Pointer_Mtype,
+				  ((TY_size (ST_type (st2)) + 3) & (-4)),
+				  st2),
+			  WN_Intconst (Pointer_Mtype,
+				       UNITS_PER_WORD * (MAX_ARGUMENT_SLOTS - current_function_args_info)));
+	  if (WN_operator (arg_wn) == OPR_LDA) {
+	    wn = WN_Stid (Pointer_Mtype,
+			  WN_offset (arg_wn) + MTYPE_byte_size(Pointer_Mtype),
+			  WN_st (arg_wn), arg_ty_idx, wn);
+	  } else {
+	    wn = WN_CreateIstore (OPR_ISTORE, MTYPE_V,
+				  Pointer_Mtype,
+				  MTYPE_byte_size(Pointer_Mtype), arg_ty_idx,
+				  arg_wn, 0);
+	  }
+	  WFE_Stmt_Append (wn, Get_Srcpos());
+	}
+	whirl_generated = TRUE;
+	wn = NULL;
+      }
+    break;
+
 #endif /* defined(TARG_ST200) */
