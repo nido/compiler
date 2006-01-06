@@ -965,7 +965,7 @@ CGIR_LD_make(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unroll
   if (cgir_ld == 0) {
     // Create cgir_ld.
     // LOOP_DESCR are re-created by LOOP_DESCR_Detect_Loops.
-    Is_True(0, ("CGIR_LD_create should not be called"));
+    DevWarn("CGIR_LD_make: LAO loop info not in CGIR");
   } else {
     // Update cgir_ld.
     Is_True(head_bb == LOOP_DESCR_loophead(cgir_ld), ("Broken CGIR_LD in CGIR_LD_make"));
