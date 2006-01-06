@@ -2060,7 +2060,8 @@ static void Generate_Label_For_Unwinding(LABEL_IDX* label, INT* idx, char* txt,
 }
 
 void 
-Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
+Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
+			      BOOL inserted_late)
 {
   char prefix[3];
   // remember when we finish exploring a bundle
@@ -2105,6 +2106,12 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process)
   Label_restore_csr = LABEL_IDX_ZERO;
 
   if (!CG_emit_unwind_info) return;
+
+  // If this OP was inserted after unwind elements computation (eg
+  // simulated_op), don't take it into account
+  if (inserted_late) {
+    return;
+  }
 
   if (!saved_state && post_process) {
     // we start post-processing this bundle, so rewind next_when

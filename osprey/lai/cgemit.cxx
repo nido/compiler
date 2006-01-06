@@ -4436,7 +4436,7 @@ Assemble_Simulated_OP (
       // [SC] We need to emit directives just before the asm string
       CGEMIT_Asm_String_Prefix(op, &PC);
       // [CL] debug_frame support
-      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
+      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE, FALSE);
 #endif
       fprintf(Asm_File, "\t%s\n", Generate_Asm_String(op, bb));
       if (AS_STOP_BIT && 
@@ -4448,7 +4448,7 @@ Assemble_Simulated_OP (
       // [SC] We need to emit directives just after the asm string
       CGEMIT_Asm_String_Suffix(op, &PC);
       // [CL] debug_frame support
-      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE);
+      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE, FALSE);
 #endif
 #ifdef TARG_ST200
       // [CG] Align end of asm to 8 bytes boundary such that 
@@ -4638,6 +4638,12 @@ Assemble_Bundles(BB *bb)
 #endif
 
 #ifdef TARG_ST
+    // [CL] handle simulated OPs and unwind information
+    BOOL is_inserted_op[ISA_MAX_SLOTS];
+    UINT n_inserted_ops = 0;
+#endif
+
+#ifdef TARG_ST
   for (op = BB_first_op(bb);op != NULL;) {
 #else
   for (op = BB_first_op(bb);;) {
@@ -4699,6 +4705,9 @@ Assemble_Bundles(BB *bb)
 	OPS new_ops = OPS_EMPTY;
 	Assemble_Simulated_OP(op, bb, &new_ops);
 	BB_Insert_Ops_After (bb, op, &new_ops);
+
+	n_inserted_ops += OP_Real_Ops(op) - 1;
+
 #ifdef TARG_ST200
 	if (OPS_first(&new_ops)) {
 	  seen_end_group = FALSE;
@@ -4728,6 +4737,16 @@ Assemble_Bundles(BB *bb)
 	FmtAssert(slot < ISA_MAX_SLOTS, 
 		  ("multi-word inst extends past end of bundle in BB:%d.",
 		   BB_id(bb)));
+#ifdef TARG_ST
+	// [CL] handle simulated OPs and unwind information
+	if (n_inserted_ops) {
+	  is_inserted_op[slot] = TRUE;
+	  n_inserted_ops--;
+	} else {
+	  is_inserted_op[slot] = FALSE;
+	}
+#endif
+
         slot_op[slot++] = op;
 #ifdef TARG_ST
 	slot_mask = TI_BUNDLE_Set_Slot_Mask_Property(slot_mask, slot - 1,
@@ -4901,7 +4920,9 @@ Assemble_Bundles(BB *bb)
   do {
       sl_op = slot_op[slot];
 
-      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, FALSE);
+      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, FALSE,
+				    is_inserted_op[slot]);
+
       slot += ISA_PACK_Inst_Words(OP_code(sl_op));
   } while (slot < n_slot_ops);
 #endif
@@ -4948,7 +4969,9 @@ Assemble_Bundles(BB *bb)
     do {
       sl_op = slot_op[slot];
       
-      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, TRUE);
+      Emit_Unwind_Directives_For_OP(sl_op, Asm_File, TRUE,
+				    is_inserted_op[slot]);
+
       slot += ISA_PACK_Inst_Words(OP_code(sl_op));
     } while (slot < n_slot_ops);
 #endif
