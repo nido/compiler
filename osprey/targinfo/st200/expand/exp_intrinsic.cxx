@@ -6159,12 +6159,33 @@ Expand__asm_n(
     TOP top = (asm_n >= 0) && (asm_n < sizeof(toppairs)/sizeof(toppairs[0])) 
 	? toppairs[asm_n].r
 	: TOP_UNDEFINED ;    
-    /* Can we produce the immediates ? */
-    if (TN_is_rematerializable(i1)) {
-	WN *wn = TN_home(i1) ;
-	if (WN_operator_is(wn, OPR_INTCONST)) {
-	    TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
-	    TOP top_ = TOP_opnd_immediate_variant(top, 1, WN_const_val(wn) ) ;	   
+    /* 
+       Some cores do not support all the asms : ST231 does not support asm_15/asm_31
+       Since we detect the situation quite late, we choose to emit a TOP_sbreak
+       This is similar to the handling of other bizarre cases (: see prginspg, )
+     */
+    if (!ISA_SUBSET_Member (ISA_SUBSET_Value, top)) { 
+	Build_OP (	TOP_break,  ops) ;
+    } else {
+	/* Can we produce the immediates ? */
+	if (TN_is_rematerializable(i1)) {
+	    WN *wn = TN_home(i1) ;
+	    if (WN_operator_is(wn, OPR_INTCONST)) {
+		TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
+		TOP top_ = TOP_opnd_immediate_variant(top, 1, WN_const_val(wn) ) ;	   
+		if (top_ == TOP_UNDEFINED) {
+		    TN *r = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+		    Build_OP (	TOP_mov_i,	r,	cunknown,	ops) ;
+		    Build_OP (	top ,  		o0, 	i0,  		r, 	ops) ;
+		} else {
+		    Build_OP (	top_ ,  	o0, 	i0, 		cunknown, 	ops) ;
+		}
+	    }
+	} else if (TN_is_zero(i1)) { 
+	    Build_OP ( top ,  o0, i0, Zero_TN, ops) ;
+	} else if (TN_has_value(i1)) {
+	    TN *cunknown = Gen_Literal_TN(TN_value(i1), 4) ;
+	    TOP top_ = TOP_opnd_immediate_variant(top, 1, TN_value(i1) ) ;
 	    if (top_ == TOP_UNDEFINED) {
 		TN *r = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 		Build_OP (	TOP_mov_i,	r,	cunknown,	ops) ;
@@ -6172,21 +6193,9 @@ Expand__asm_n(
 	    } else {
 		Build_OP (	top_ ,  	o0, 	i0, 		cunknown, 	ops) ;
 	    }
-	}
-    } else if (TN_is_zero(i1)) { 
-	Build_OP ( top ,  o0, i0, Zero_TN, ops) ;
-    } else if (TN_has_value(i1)) {
-	TN *cunknown = Gen_Literal_TN(TN_value(i1), 4) ;
-	TOP top_ = TOP_opnd_immediate_variant(top, 1, TN_value(i1) ) ;
-	if (top_ == TOP_UNDEFINED) {
-	    TN *r = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-	    Build_OP (	TOP_mov_i,	r,	cunknown,	ops) ;
-	    Build_OP (	top ,  		o0, 	i0,  		r, 	ops) ;
 	} else {
-	    Build_OP (	top_ ,  	o0, 	i0, 		cunknown, 	ops) ;
+	    Build_OP ( top,	o0,	i0,	i1,	ops) ;	
 	}
-    } else {
-	Build_OP ( top,	o0,	i0,	i1,	ops) ;	
     }
 } /* Expand__asm_n */
 
