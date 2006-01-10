@@ -61,6 +61,9 @@ extern BOOL PU_References_GP;
 extern BOOL PU_Has_Asm;
 extern IPRA cg_ipra;
 #endif
+#ifdef KEY
+extern BOOL PU_Has_Exc_Handler;
+#endif
 
 extern BOOL CG_PU_Has_Feedback;
 

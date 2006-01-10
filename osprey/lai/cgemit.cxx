@@ -1679,6 +1679,7 @@ Write_Symdiff (
   Is_True (sym2, ("cgemit: Symdiff sym2 is null"));
   Is_True (Has_Base_Block(sym2), ("cgemit: Symdiff sym2 not allocated"));
 
+  BB *labb = Get_Label_BB(lab1);
   basesym1 = BB_cold(Get_Label_BB(lab1)) ? cold_base : text_base;
   base1_ofst = Get_Label_Offset(lab1);
   Base_Symbol_And_Offset (sym2, &basesym2, &base2_ofst);

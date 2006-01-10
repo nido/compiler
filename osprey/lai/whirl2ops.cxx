@@ -4206,7 +4206,18 @@ static void Build_CFG(void)
 	  if ( br_op == NULL || OP_cond( br_op ) ) {
 	    if ( ! Has_External_Fallthru( bb ) ) {
  	      Link_Pred_Succ(bb, BB_next(bb));
-	    } else if ( rid ) {
+            }
+#ifdef KEY
+// Generally we have num_exits==0 while creating cgrin, so CGRIN_exits is
+// NULL. With exceptions disabled, PU_has_region is generally not set for
+// any PU, hence while creating the bb, we assign NULL to BB_rid. So, without
+// exceptions we have rid==0 here. With exceptions we set BB_rid, but 
+// num_exits is still 0, so we need the extra check.
+	    else if ( rid && CGRIN_exits ( RID_cginfo( rid ) ) ) 
+#else
+	    else if ( rid ) 
+#endif
+            {
 	      label_is_external( &num, branch_wn, bb );
 	      CGRIN_exit_i( RID_cginfo( rid ), num) = bb;
 	      CGRIN_exit_label_i( RID_cginfo( rid ), num) = 0;
@@ -4529,6 +4540,7 @@ Handle_Entry (WN *entry)
 	sprintf (name, "Handler.%d", Current_PU_Count());
         ST_Init (entry_st, Save_Str2i (name, ".", Get_WN_Label(entry)),
                  CLASS_FUNC, SCLASS_TEXT, EXPORT_LOCAL, (TY_IDX) pu_idx);
+	PU_Has_Exc_Handler = TRUE;
 #else
         ST_Init (entry_st, Save_Str2i ("Handler", ".", Get_WN_Label(entry)),
                  CLASS_FUNC, SCLASS_TEXT, EXPORT_LOCAL, (TY_IDX) pu_idx);
@@ -5312,6 +5324,20 @@ convert_stmt_list_to_OPs (
 	if (RID_TYPE_eh(rid)) {
 #endif
 	  EH_Set_End_Label(RID_eh_range_ptr(rid));
+#ifdef KEY
+	  /* When a region is ended, always force to create a new bb, so
+	     that the next region will not share any common bb with the
+	     current region. (bug#3140)
+	   */
+	  {
+	    BB* old_bb = Cur_BB;
+	    Start_New_Basic_Block();
+	    if( Cur_BB == old_bb ){
+	      Cur_BB = Gen_And_Append_BB( Cur_BB );
+	      BB_rid(Cur_BB) = Non_Transparent_RID(current_region);
+	    }
+	  }
+#endif
         }
 	rid = region_stack_pop();
       } else {			/* the region has been lowered to OPs */

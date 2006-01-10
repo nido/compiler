@@ -138,6 +138,9 @@ BOOL PU_References_GP;
 #ifdef TARG_ST
 BOOL PU_Has_Asm;
 #endif
+#ifdef KEY
+BOOL PU_Has_Exc_Handler;
+#endif
 
 BOOL CG_PU_Has_Feedback;
 
@@ -178,6 +181,9 @@ CG_PU_Initialize (
   PU_References_GP = FALSE;
 #ifdef TARG_ST
   PU_Has_Asm = FALSE;
+#endif
+#ifdef KEY
+  PU_Has_Exc_Handler = FALSE;
 #endif
 
   CG_Configure_Opt_Level((pu_num < CG_skip_before ||

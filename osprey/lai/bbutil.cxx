@@ -279,7 +279,14 @@ Gen_BB_Like (BB *model)
 BB *
 Gen_And_Append_BB (BB *prev_bb) 
 {
+#ifdef KEY
+  /* bug#448
+     The rid info from <prev_bb> should be propagated.
+   */
+  BB *bb = Gen_BB_Like(prev_bb);
+#else
   BB *bb = Gen_BB();
+#endif
 
   if (prev_bb != NULL) {
     Is_True (BB_next(prev_bb) == NULL, 
