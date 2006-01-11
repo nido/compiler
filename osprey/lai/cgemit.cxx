@@ -1598,6 +1598,15 @@ Write_Symbol (
 	fprintf (Output_File, " %+lld\n", sym_ofst);
       }
 
+#ifdef TARG_ST
+      // [SC] Make sure the weak attribute is emitted, in case
+      // this is the only reference to the symbol.
+      if (ST_is_weak_symbol(sym)) {
+	fprintf (Output_File, "\t%s\t", AS_WEAK);
+	EMT_Write_Qualified_Name(Output_File, sym);
+	fprintf(Output_File, "\n");
+      }
+#endif
       if (ST_class(sym) == CLASS_FUNC) {
 	fprintf (Output_File, "\t%s\t", AS_TYPE);
 	EMT_Write_Qualified_Name (Output_File, sym);
