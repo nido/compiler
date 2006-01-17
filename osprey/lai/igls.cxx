@@ -138,12 +138,12 @@ BB_cycles(BB *bb) {
     Is_True (OP_xfer(op), ("bb: %d, None branch instruction have no scheduling date", BB_id(bb)));
 
     // Assumes that prev_op is scheduled in the same cycle as op
-    bb_cycles = OP_prev(op) ? OP_scycle(OP_prev(op)) : 1;
+    bb_cycles = OP_prev(op) ? OP_scycle(OP_prev(op)) : 0;
   }
 
   Is_True(bb_cycles >= 0, ("No valid scheduling info for bb %d\n", BB_id(bb)));
 
-  return bb_cycles;
+  return bb_cycles+1;
 }
 
 /* FdF: Compute the prefetch distance of PFT instructions, now that
@@ -358,11 +358,6 @@ Schedule_Prefetch_Postpass () {
 
     FOR_ALL_BB_SET_members (LOOP_DESCR_bbset(cloop), bb) {
       OP *op;
-
-      op = BB_last_op(bb);
-      if (!op) continue;
-      if (OP_scycle(op) < 0) op = OP_prev(op);
-      Is_True(op && OP_scycle(op) >= 0, ("No valid scheduling info for bb %d\n", BB_id(bb)));
 
       if (BB_loop_head_bb(bb) != LOOP_DESCR_loophead(cloop)) {
 	is_inner_loop = FALSE;
