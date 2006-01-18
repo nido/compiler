@@ -630,7 +630,9 @@ Expand_Composed_Store (
   }
 
   while(--nStores >0) {
-    TN *tmp = Build_TN_Of_Mtype(mtype);
+    // FdF 20060118: There are a number of places where a TN of class
+    // integer is assumed to have a size equal to 4. (ddts 24363).
+    TN *tmp = Build_TN_Of_Mtype(MTYPE_RegisterSize(mtype) < 4 ? MTYPE_U4 : mtype);
     Expand_Shift(tmp, obj, Gen_Literal_TN(alignment*8, 4), 
                                                 mtype, shift_lright, ops);
     obj = tmp;
