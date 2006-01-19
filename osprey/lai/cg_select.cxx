@@ -62,10 +62,8 @@
 // [HK]
 #if __GNUC__ >=3
 #include <list>
-#include <ext/slist>
 #else
 #include <list.h>
-#include <slist.h>
 #endif // __GNUC__ >=3
 #include "namespace_trans.h"
 
@@ -136,7 +134,7 @@ typedef struct {
   TN *predtn;
 } pred_t;
 
-typedef __GNUEXT::slist<pred_t>    PredOp_Lst;
+typedef std::list<pred_t>    PredOp_Lst;
 typedef PredOp_Lst::iterator       PredOp_Lst_Iter;
 typedef PredOp_Lst::const_iterator PredOp_Lst_ConstIter;
 
@@ -709,7 +707,7 @@ Can_Speculate_BB(BB *bb)
       pred_t memi;
       memi.memop = op;
       memi.predtn = cond_tn;
-      pred_i.push_front(memi);
+      pred_i.push_back(memi);
     }
 
     else if (OP_load (op)) {
@@ -717,35 +715,40 @@ Can_Speculate_BB(BB *bb)
         continue;
       else if (CG_select_spec_loads == 1) {
         WN *wn = Get_WN_From_Memory_OP(op);
-        if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+        if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn) &&
+	    !OP_volatile(op)) {
           continue;
+	}
       }
 
-      if (OP_volatile(op))
-        return FALSE;
-
       // loads will be optimized only if hardware support
-      if ((Enable_Dismissible_Load && PROC_has_dismissible_load()) ||
+      if ((Enable_Dismissible_Load && PROC_has_dismissible_load() && 
+	   !OP_volatile(op)) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())) {
         if (!OP_has_predicate (op) && !OP_Is_Speculative(op)) {
           pred_t memi;
           memi.memop = op;
           memi.predtn = 0;
-          pred_i.push_front(memi);
+          pred_i.push_back(memi);
         }
       }
-      else if (!OP_Can_Be_Speculative(op))
+      else if (!OP_Can_Be_Speculative(op)) {
         return FALSE;
+      }
     }
 
     else if (OP_store (op)) {
       // stores can always be optimized
       if (CG_select_spec_stores) {
+	if ((!Enable_Conditional_Store || !PROC_has_predicate_stores()) && 
+	    OP_volatile(op))
+	  return FALSE;	  
+
         if (!OP_has_predicate (op)) {
           pred_t memi;
           memi.memop = op;
           memi.predtn = 0;
-          pred_i.push_front(memi);
+          pred_i.push_back(memi);
         }
       }
 
@@ -757,7 +760,7 @@ Can_Speculate_BB(BB *bb)
       pred_t memi;
       memi.memop = op;
       memi.predtn = 0;
-      pred_i.push_front(memi);
+      pred_i.push_back(memi);
     }
     
     else if (!OP_Can_Be_Speculative(op))
@@ -1793,6 +1796,7 @@ BB_Fix_Spec_Loads (BB *bb)
       if (PROC_has_dismissible_load()) { 
         ld_top = CGTARG_Speculative_Load (op);
         DevAssert(ld_top != TOP_UNDEFINED, ("couldnt find a speculative load"));
+        DevAssert(!OP_volatile (op), ("cannot speculate a load"));
 
         OP_Change_Opcode(op, ld_top); 
         Set_OP_speculative(op);  
@@ -1812,6 +1816,10 @@ BB_Fix_Spec_Loads (BB *bb)
                     &ops);
 
           Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+
+	  if (OP_volatile (op))
+	    Set_OP_volatile(OPS_last(&ops));
+
           BB_Replace_Op (op, &ops);
         }
       }
@@ -1928,6 +1936,7 @@ BB_Fix_Spec_Stores (BB *bb)
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
+
   while(i_iter != i_end) {
 
     OPS ops = OPS_EMPTY;  
@@ -1948,20 +1957,23 @@ BB_Fix_Spec_Stores (BB *bb)
       }
       else {
         UINT8 opnd_idx = OP_find_opnd_use(op, OU_base);
+        DevAssert(!OP_volatile (op), ("cannot speculate a store"));
         Expand_Cond_Store (btn, op, NULL, opnd_idx, &ops);
       }
 
+      DevAssert(OPS_length(&ops), ("cannot expand a conditional store"));
+
       Copy_WN_For_Memory_OP(OPS_last(&ops), op);
 
-      if (OPS_length(&ops)) {
-        if (Trace_Select_Gen) {
-          fprintf(Select_TFile, "<select> Insert conditional store in BB%d", BB_id(bb));
-          Print_OPS (&ops); 
-          fprintf (Select_TFile, "\n");
-        }
+      if (OP_volatile (op))
+	Set_OP_volatile(OPS_last(&ops));
 
-        BB_Replace_Op (op, &ops);        
+      BB_Replace_Op (op, &ops);
 
+      if (Trace_Select_Gen) {
+	fprintf(Select_TFile, "<select> Insert conditional store in BB%d", BB_id(bb));
+	Print_OPS (&ops); 
+	fprintf (Select_TFile, "\n");
       }
     }
     i_iter++;
