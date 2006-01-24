@@ -1911,8 +1911,14 @@ Optimize_Spec_Stores(BB *bb)
             Print_TN (True_TN, FALSE);
           }
 
-          BB_Replace_Op (op2, &ops);
-          BB_Remove_Op (bb, op1);
+          if (OP_Follows(op2, op1)) {
+            BB_Replace_Op (op2, &ops);
+            BB_Remove_Op (bb, op1);
+          }
+          else {
+            BB_Replace_Op (op1, &ops);
+            BB_Remove_Op (bb, op2);
+          }
 
           i_iter2 = pred_i.erase(i_iter2);
           i_iter = pred_i.erase(i_iter);
@@ -2272,6 +2278,8 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   Expand_Branch (label_tn, new_branch_tn, NULL, variant, &ops);
 
   BB_Append_Ops (bb1, &ops);
+
+  BB_Update_OP_Order(bb1);
 
   // Commit dismissible loads and stores
   BB_Fix_Spec_Loads (bb1);
