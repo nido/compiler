@@ -132,6 +132,10 @@ Initv_Contains_Address (INITV_IDX initv_idx)
 	break;
     case INITVKIND_SYMDIFF:
     case INITVKIND_SYMDIFF16:
+#ifdef TARG_ST
+/* (cbr) DDTSst24451. add support for label diffs initializers */
+    case INITVKIND_LABDIFF:
+#endif
       break;
     default:
       FmtAssert(FALSE, ("Initializer_Contains_Address: unknown initvkind"));

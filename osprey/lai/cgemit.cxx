@@ -1728,6 +1728,80 @@ Write_Symdiff (
   return scn_ofst;
 }
 
+#ifdef TARG_ST
+/* (cbr) DDTSst24451. add support for label diffs initializers */
+/* ====================================================================
+ *    Write_Labdiff (lab1, lab2, scn_idx, scn_ofst, repeat, size)
+ * ====================================================================
+ */
+static Elf64_Word
+Write_Labdiff (
+  LABEL_IDX lab1,	/* left symbol */
+  LABEL_IDX lab2,       /* right symbol */
+  INT scn_idx,		/* Section to emit it in */
+  Elf64_Word scn_ofst,	/* Section offset to emit it at */
+  INT32	repeat,		/* Repeat count */
+  INT size		/* 2 or 4 bytes */
+)
+{
+  INT32 i;
+  ST *basesym1;
+  ST *basesym2;
+  INT64 base1_ofst = 0;
+  INT64 base2_ofst = 0;
+  pSCNINFO scn = em_scn[scn_idx].scninfo;
+  INT32 val;
+
+  if ( Trace_Init ) {
+    #pragma mips_frequency_hint NEVER
+    Trace_Init_Loc (scn_idx, scn_ofst, repeat);
+    fprintf ( TFile, "LABDIFF " );
+    fprintf ( TFile, "%s - %s\n", LABEL_name(lab1), LABEL_name(lab2));
+  }
+
+  /* symbols must have an address */
+  Is_True (lab1, ("cgemit: Labdiff lab1 is null"));
+  Is_True (lab2, ("cgemit: Labdiff lab2 is null"));
+
+  BB *labb1 = Get_Label_BB(lab1);
+  BB *labb2 = Get_Label_BB(lab2);
+  basesym1 = BB_cold(Get_Label_BB(lab1)) ? cold_base : text_base;
+  basesym2 = BB_cold(Get_Label_BB(lab2)) ? cold_base : text_base;
+  base1_ofst = Get_Label_Offset(lab1);
+  base2_ofst = Get_Label_Offset(lab2);
+
+  if (Use_Separate_PU_Section(current_pu,basesym2)) {
+	/* use PU text section rather than generic one */
+	basesym2 = PU_base;
+  }
+  Is_True (basesym1 == basesym2, ("cgemit: Labdiff bases not same"));
+  val = base1_ofst - base2_ofst;
+  if (val < 0) val = 0;
+  if (size == 2) {
+	if (val > INT16_MAX) {
+		DevWarn("symdiff value not 16-bits; will try recompiling with -TENV:long_eh_offsets");
+		Early_Terminate (RC_OVERFLOW_ERROR);
+	}
+	val = val << 16;	/* for Add_Bytes */
+  }
+
+  for ( i = 0; i < repeat; i++ ) {
+    if (Assembly) {
+      fprintf (Output_File, "\t%s\t", (size == 2 ? AS_HALF : AS_WORD));
+      fprintf(Output_File, "%s", LABEL_name(lab1));
+      fprintf (Output_File, "-");
+      fprintf(Output_File, "%s", LABEL_name(lab2));
+      fprintf (Output_File, "\n");
+    }
+    if (Object_Code) {
+      Em_Add_Bytes_To_Scn (scn, (char *) &val, size, 1);
+    }
+    scn_ofst += size;
+  }
+  return scn_ofst;
+}
+#endif
+
 
 /* ====================================================================
  *    Write_INITV
@@ -1840,6 +1914,12 @@ Write_INITV (INITV_IDX invidx, INT scn_idx, Elf64_Word scn_ofst)
 #endif // KEY
 	scn_ofst = Write_Label (lab, 0, scn_idx, scn_ofst, INITV_repeat1(inv));
 	break;
+
+ case INITVKIND_LABDIFF:
+      scn_ofst = Write_Labdiff ( INITV_labd0(inv), INITV_labd1(inv),
+				scn_idx, scn_ofst, INITV_repeat1(inv), 4);
+      break;
+
     case INITVKIND_SYMDIFF:
 #ifdef KEY
       scn_ofst = Write_Symdiff ( INITV_lab1(inv), INITV_st2(inv),
