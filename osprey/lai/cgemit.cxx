@@ -1915,10 +1915,13 @@ Write_INITV (INITV_IDX invidx, INT scn_idx, Elf64_Word scn_ofst)
 	scn_ofst = Write_Label (lab, 0, scn_idx, scn_ofst, INITV_repeat1(inv));
 	break;
 
+#ifdef TARG_ST
+/* (cbr) DDTSst24451. add support for label diffs initializers */
  case INITVKIND_LABDIFF:
       scn_ofst = Write_Labdiff ( INITV_labd0(inv), INITV_labd1(inv),
 				scn_idx, scn_ofst, INITV_repeat1(inv), 4);
       break;
+#endif
 
     case INITVKIND_SYMDIFF:
 #ifdef KEY
