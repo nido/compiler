@@ -543,6 +543,30 @@ CG_Generate_Code(
       FREQ_Verify("CFLOW (first pass)");
   }
 
+  // FdF 20051212: Moved the computation of frequencies before the
+  // loop invariant code motion, because it uses these frequencies to
+  // compute the profitability of code motion.
+#ifdef BCO_ENABLED /* Thierry */
+  // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
+  if (CG_opt_level > 1 || CG_emit_bb_freqs)
+#else
+  if (CG_opt_level > 1)
+#endif
+    {
+      // Compute frequencies using heuristics when not using feedback.
+      // It is important to do this after the code has been given a
+      // cleanup by cflow so that it more closely resembles what it will
+      // to the later phases of cg.
+      if (!CG_PU_Has_Feedback) {
+	Set_Error_Phase("FREQ");
+	Start_Timer (T_Freq_CU);
+	FREQ_Compute_BB_Frequencies();
+	Stop_Timer (T_Freq_CU);
+	if (frequency_verify)
+	  FREQ_Verify("Heuristic Frequency Computation");
+      }
+    }
+
 #ifdef TARG_ST
   // FdF: Code imported from ORC2.1. Perform before SSA and if-conversion.
     if (IPFEC_Enable_LICM && CG_opt_level > 1) {
@@ -565,27 +589,6 @@ CG_Generate_Code(
 #endif
   } //CG_opt_level > 1
   
-#ifdef BCO_ENABLED /* Thierry */
-  // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
-  if (CG_opt_level > 1 || CG_emit_bb_freqs)
-#else
-  if (CG_opt_level > 1)
-#endif
-    {
-      // Compute frequencies using heuristics when not using feedback.
-      // It is important to do this after the code has been given a
-      // cleanup by cflow so that it more closely resembles what it will
-      // to the later phases of cg.
-      if (!CG_PU_Has_Feedback) {
-	Set_Error_Phase("FREQ");
-	Start_Timer (T_Freq_CU);
-	FREQ_Compute_BB_Frequencies();
-	Stop_Timer (T_Freq_CU);
-	if (frequency_verify)
-	  FREQ_Verify("Heuristic Frequency Computation");
-      }
-    }
-
   if (CG_opt_level > 1) {
 #ifdef TARG_ST
 #ifdef SUPPORTS_SELECT
