@@ -345,7 +345,7 @@ static int check_st200_opcodes(void)
 /*
  * Constraints on properties.
  */
-#define fail FmtAssert(0, ("TOP %s as inconsistent properties", TOP_Name((TOP)opc)))
+#define fail FmtAssert(0, ("TOP %s has inconsistent properties", TOP_Name((TOP)opc)))
 
 int TOP_check_properties(opc_t opc)
 {
@@ -367,7 +367,8 @@ int TOP_check_properties(opc_t opc)
       opc_is(opc, cmp)) {
     if (opnd1 < 0 || opnd2 < 0) fail;
     if (opc_opnd_bits(opc,opnd1) != opc_opnd_bits(opc,opnd2)) fail;
-    if (opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) fail;
+    if (opc_is(opc, intop)
+	&& opc_opnd_signed(opc,opnd1) != opc_opnd_signed(opc,opnd2)) fail;
     if (opc_opnd_bits(opc,opnd1) <= 0) fail;
   }
   if (opc_is(opc, mul)) {

@@ -685,6 +685,10 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 			return TOP_##newtop##_r_r; \
 		       case TOP_##top##_r_b: \
        			return TOP_##newtop##_r_b;
+#define CASE_TOP_FBR_INV(top,newtop) case TOP_##top##_r: \
+			return TOP_##newtop##_r; \
+		       case TOP_##top##_b: \
+       			return TOP_##newtop##_b;
   if (opnd1 > opnd2) {
     int tmp = opnd1;
     opnd1 = opnd2;
@@ -721,6 +725,10 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
       CASE_TOP_BR_INV(cmpleu,cmpgeu);
       CASE_TOP_BR_INV(cmplt,cmpgt);
       CASE_TOP_BR_INV(cmpltu,cmpgtu);
+      CASE_TOP_FBR_INV(cmpgef_n,cmplef_n);
+      CASE_TOP_FBR_INV(cmpgtf_n,cmpltf_n);
+      CASE_TOP_FBR_INV(cmplef_n,cmpgef_n);
+      CASE_TOP_FBR_INV(cmpltf_n,cmpgtf_n);
     }
   } else if (opnd1 == 1 && opnd2 == 2) {
     switch(top) {
@@ -733,6 +741,7 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 #undef CASE_TOP_INV
 #undef CASE_TOP_BR
 #undef CASE_TOP_BR_INV
+#undef CASE_TOP_FBR_INV
 }
 
 /*
@@ -786,6 +795,7 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
   }
   return TOP_UNDEFINED;
 #undef CASE_TOP
+#undef CASE_TOPF
 }
 
 /*
@@ -802,6 +812,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
 #define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
 #define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
 		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
+#define CASE_TOP_FBR(top) case TOP_##top##_r: case TOP_##top##_b
   switch(top) {
     CASE_TOP(sub):
       CASE_TOP(add):
@@ -818,6 +829,11 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP(maxu):
       CASE_TOP(min):
       CASE_TOP(minu):
+      CASE_TOP_FBR(cmpeqf_n):
+      CASE_TOP_FBR(cmpgef_n):
+      CASE_TOP_FBR(cmpgtf_n):
+      CASE_TOP_FBR(cmplef_n):
+      CASE_TOP_FBR(cmpltf_n):
       CASE_TOP_BR(cmpeq):
       CASE_TOP_BR(cmpne):
       CASE_TOP_BR(cmpge):
@@ -917,6 +933,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
 #undef CASE_TOP
 #undef CASE_TOP_I
 #undef CASE_TOP_BR
+#undef CASE_TOP_FBR
 }
 
 /*
