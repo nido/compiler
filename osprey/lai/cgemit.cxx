@@ -1017,8 +1017,11 @@ Print_Common (
     return;
   }
   
-  if (TY_size(ST_type(st)) > 0) {
-
+#ifndef TARG_ST
+  /* (cbr) ddts 24482 emit common symbol even though their size is 0 */
+  if (TY_size(ST_type(st)) > 0)
+#endif
+    {
     if (ST_is_weak_symbol(st)) {
       fprintf ( pfile, "\t%s\t", AS_WEAK);
       EMT_Write_Qualified_Name(pfile, st);
@@ -1056,6 +1059,7 @@ Print_Common (
     // this is needed so that we don't emit commons more than once
     Set_ST_elf_index(st, 1);
   }
+
 }
 
 /* ====================================================================
