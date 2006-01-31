@@ -268,8 +268,12 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 #ifdef __ALTERNATE_EMIT_CONST_IU8
 	{
 	  INTSC this_rc;
-	  TCON hi = Extract_Double_Hi(tc);
-	  TCON lo = Extract_Double_Lo(tc);
+	  // [HK] why using here double instead of long long ??
+	  //      This causes a bug on x86 (see bug #28 in bugs/pro-release-1-9-0-B)
+// 	  TCON hi = Extract_Double_Hi(tc);
+// 	  TCON lo = Extract_Double_Lo(tc);
+	  TCON hi = Extract_LongLong_Hi(tc);
+	  TCON lo = Extract_LongLong_Lo(tc);
 
 	  INT32 val1, val2;
 
