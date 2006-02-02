@@ -589,12 +589,10 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_remainder_after, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"unroll_multi_bb", "",
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
-  { OVK_INT32,  OV_INTERNAL, TRUE, "unroll_heuristics", "",
-    0, 0, 32,    &CG_LOOP_unroll_heuristics, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
-    1, 0, 7,	&CG_LOOP_load_store_packing, NULL },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
+    TRUE, 0, 0,	&CG_LOOP_load_store_packing, NULL },
 #endif
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
@@ -1616,6 +1614,7 @@ CG_Process_Command_Line (
 #ifdef Is_True_On
 extern "C" {
 #include <unistd.h>
+}
 #endif
 void
 CG_Init (void)
