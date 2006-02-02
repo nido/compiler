@@ -103,6 +103,12 @@ static void* lao_handler = NULL;
 // Initialization of the LAO, needs to be called once per running process.
 void
 lao_init(void) {
+#ifdef Is_True_On
+  if (getenv("LAOPID")) {
+    fprintf(stderr, "LAOPID=%d\n", getpid());
+    scanf("\n");
+  }
+#endif
   if (lao_initialized++ == 0) {
     LAI_Interface (*LAI_getInstance_p)(void);
     lao_handler = load_so("lao"SO_EXT, CG_Path, 0);
