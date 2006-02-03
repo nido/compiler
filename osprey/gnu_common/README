@@ -1,0 +1,11 @@
+This directory contains contributions from the FSF.
+
+This file should track changes of version or faile made with respect to the
+original archives from the FSF
+
+libelf: GNU libelf version 0.8.6
+	Unmodified file layout.
+	Added Makefile.gbase.
+	Modified nlist.c for MINGW32 support.
+
+	
