@@ -1,0 +1,79 @@
+#----------------------------------------------------------------------
+#  Set environment variables
+#
+#  TARGDIR   :  is the targ specific directory in which we do build.
+#               e.g.  /d1/cmplrs.src/v4.00/host32
+#
+#----------------------------------------------------------------------
+TARGDIR = $(BUILD_AREA)
+CURDIR  = .
+
+GCOV_DIR		= $(BUILD_TOT)/instrumentation/gcov
+COMMON_DIR 		= $(BUILD_TOT)/common
+COMMON_COM_DIR 		= $(COMMON_DIR)/com
+TARG_LIBIBERTY = $(TARGDIR)/libiberty
+TARG_INCLUDE = $(TARGDIR)/include
+TARG_GNU_COMMON = $(BUILD_TOT)/gnu_common/include
+
+VPATH    = $(GCOV_DIR) $(COMMON_COM_DIR)
+
+INSTALL_DIR=$(ROOT)
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+TARGETS = gcov$(HEXE) gcov-dump$(HEXE)
+
+GENERATED_FILES = \
+  gcov-iov.h
+
+GCOVCFLAGS = -DIN_GCC   -W -Wall -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes -pedantic -Wno-long-long    -DHAVE_CONFIG_H -I$(TARG_INCLUDE)/libiberty -I. -I$(COMMON_COM_DIR) -I$(TARG_GNU_COMMON) $(COMMONGOPTS) $(HOSTDEFS)
+
+
+#----------------------------------------------------------------------
+#  GCOV specific build
+#----------------------------------------------------------------------
+# gcov-iov.c is run on the build machine to generate gcov-iov.h from version.c
+gcov-iov.bo: gcov-iov.c gcov-version.c 
+	$(BUILD_CC) -I$(COMMON_COM_DIR) $(BUILD_CFLAGS) -DGENERATOR_FILE $< -c -o $@
+
+gcov-iov$(BEXE): gcov-iov.bo
+	$(BUILD_CC) -o $@ $^ $(BUILD_LDFLAGS)
+
+gcov-iov.h: s-iov
+s-iov: gcov-iov$(BEXE) 
+	./gcov-iov$(build_exeext) > gcov-iov.h
+	touch s-iov
+
+$(TARG_LIBIBERTY)/libiberty.a:
+	$(MAKE) -C $(TARG_LIBIBERTY) install
+
+libiberty.h:
+	$(MAKE) -C $(TARG_INCLUDE) install
+
+gcov$(HEXE): gcov.c intl.c gcov-version.c $(GENERATED_FILES) $(TARG_LIBIBERTY)/libiberty.a libiberty.h
+	$(CC) $(GCOVCFLAGS) $(filter %.c,$^) $(filter %.a,$^) -o $@
+
+gcov-dump$(HEXE): gcov-dump.c gcov-version.c $(GENERATED_FILES) $(TARG_LIBIBERTY)/libiberty.a libiberty.h
+	$(CC) $(GCOVCFLAGS) $(filter %.c,$^) $(filter %.a,$^) -o $@
+
+local: $(GENERATED_FILES) $(TARGETS)
+
+
+#----------------------------------------------------------------------
+#  Install target
+#----------------------------------------------------------------------
+install:: local
+	if [ ! -d $(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_DIR) ; \
+	done
+
+
+#----------------------------------------------------------------------
+#  Include the usual commonrules
+#----------------------------------------------------------------------
+include $(COMMONRULES)
+
+LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i gcov-iov.h $(TARGETS)
