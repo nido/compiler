@@ -1,0 +1,7257 @@
+
+
+#define i386 1
+#define linux 1
+#define unix 1
+
+
+
+#define CCL_h_INCLUDED 1
+#define Except_REQUIRE(t) 
+
+#define MDS_h_INCLUDED 
+
+/*
+  MDS.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+//
+#define MDS_ENUM(File) #File
+
+/*
+  Processor -- Enumeration.
+*/
+typedef enum Processor {
+#define Processor(NAME,MAXISSUE,MINTAKEN,INTERLOCKS,ENDIANNESS) Processor_ ##NAME,
+
+
+/*
+  st200/Processor.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Processor_st220_cpu,
+Processor_st231_cpu,
+Processor_st235_cpu,
+
+#undef Processor
+
+
+#define ProcessorIntPtr_TYPEDEF typedef int32_t ProcessorIntPtr;
+
+
+
+#define ProcessorUIntPtr_TYPEDEF typedef uint32_t ProcessorUIntPtr;
+
+
+  Processor__
+#undef Processor
+} Processor;
+typedef uint8_t short_Processor;
+
+//
+typedef int32_t ProcessorIntPtr;
+typedef uint32_t ProcessorUIntPtr;
+
+/*
+  Encoding -- Enumeration.
+*/
+typedef enum Encoding {
+#define Encoding(NAME,PROCESSOR,WORDTYPE,WORDCOUNT) Encoding_ ##NAME,
+
+
+/*
+  st200/Encoding.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Encoding_st220_ANY,
+Encoding_st220_ANYX,
+Encoding_st231_ANY,
+Encoding_st231_ANYX,
+Encoding_st235_ANY,
+Encoding_st235_ANYX,
+
+#undef Encoding
+
+
+#define Encoding_SIZE_MAX 8
+
+
+  Encoding__
+#undef Encoding
+} Encoding;
+typedef uint8_t short_Encoding;
+
+/*
+  NativeType -- Enumeration.
+*/
+typedef enum NativeType {
+#define NativeType(NAME,WIDTH,SIGNED,SIZEOF,ALIGN,SYNTAX,SLICE) NativeType_ ##NAME,
+
+
+/*
+  st200/NativeType.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+NativeType_st200_Bool,
+NativeType_st200_UInt8,
+NativeType_st200_Int8,
+NativeType_st200_UInt16,
+NativeType_st200_Int16,
+NativeType_st200_UInt32,
+NativeType_st200_Int32,
+NativeType_st200_UInt64,
+NativeType_st200_Int64,
+NativeType_st200_UIntPtr,
+NativeType_st200_IntPtr,
+NativeType_st200_Float32,
+NativeType_st200_Float64,
+
+#undef NativeType
+
+  NativeType__
+#undef NativeType
+} NativeType;
+typedef uint8_t short_NativeType;
+
+/*
+  Register -- Enumeration.
+*/
+typedef enum Register {
+#define Register(NAME,NAMES,REGFILE,WIRED,ALIASARRAY) Register_ ##NAME,
+
+
+/*
+  st200/Register.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Register_st200_BR0,
+Register_st200_BR1,
+Register_st200_BR2,
+Register_st200_BR3,
+Register_st200_BR4,
+Register_st200_BR5,
+Register_st200_BR6,
+Register_st200_BR7,
+Register_st200_GR0,
+Register_st200_GR1,
+Register_st200_GR2,
+Register_st200_GR3,
+Register_st200_GR4,
+Register_st200_GR5,
+Register_st200_GR6,
+Register_st200_GR7,
+Register_st200_GR8,
+Register_st200_GR9,
+Register_st200_GR10,
+Register_st200_GR11,
+Register_st200_GR12,
+Register_st200_GR13,
+Register_st200_GR14,
+Register_st200_GR15,
+Register_st200_GR16,
+Register_st200_GR17,
+Register_st200_GR18,
+Register_st200_GR19,
+Register_st200_GR20,
+Register_st200_GR21,
+Register_st200_GR22,
+Register_st200_GR23,
+Register_st200_GR24,
+Register_st200_GR25,
+Register_st200_GR26,
+Register_st200_GR27,
+Register_st200_GR28,
+Register_st200_GR29,
+Register_st200_GR30,
+Register_st200_GR31,
+Register_st200_GR32,
+Register_st200_GR33,
+Register_st200_GR34,
+Register_st200_GR35,
+Register_st200_GR36,
+Register_st200_GR37,
+Register_st200_GR38,
+Register_st200_GR39,
+Register_st200_GR40,
+Register_st200_GR41,
+Register_st200_GR42,
+Register_st200_GR43,
+Register_st200_GR44,
+Register_st200_GR45,
+Register_st200_GR46,
+Register_st200_GR47,
+Register_st200_GR48,
+Register_st200_GR49,
+Register_st200_GR50,
+Register_st200_GR51,
+Register_st200_GR52,
+Register_st200_GR53,
+Register_st200_GR54,
+Register_st200_GR55,
+Register_st200_GR56,
+Register_st200_GR57,
+Register_st200_GR58,
+Register_st200_GR59,
+Register_st200_GR60,
+Register_st200_GR61,
+Register_st200_GR62,
+Register_st200_GR63,
+Register_st200_PR0,
+Register_st200_PR1,
+Register_st200_PR2,
+Register_st200_PR3,
+Register_st200_PR4,
+Register_st200_PR5,
+Register_st200_PR6,
+Register_st200_PR7,
+Register_st200_PR8,
+Register_st200_PR9,
+Register_st200_PR10,
+Register_st200_PR11,
+Register_st200_PR12,
+Register_st200_PR13,
+Register_st200_PR14,
+Register_st200_PR15,
+Register_st200_PR16,
+Register_st200_PR17,
+Register_st200_PR18,
+Register_st200_PR19,
+Register_st200_PR20,
+Register_st200_PR21,
+Register_st200_PR22,
+Register_st200_PR23,
+Register_st200_PR24,
+Register_st200_PR25,
+Register_st200_PR26,
+Register_st200_PR27,
+Register_st200_PR28,
+Register_st200_PR29,
+Register_st200_PR30,
+
+#undef Register
+
+
+#define RegisterAliases(INDEX,ALIASES) 
+#undef RegisterAliases
+
+
+#define RegisterAliasArray_COUNT_MAX 2
+
+
+
+#define RegisterList_COUNT_MAX 103
+
+
+
+#define RegisterSet_WORDTYPE uint32_t
+
+
+#define RegisterSet_WORDBITS (sizeof(RegisterSet_WORDTYPE)*8)
+
+
+#define RegisterSet_MAJOR(member) ((Register)(member)/(RegisterSet_WORDBITS))
+
+
+#define RegisterSet_MINOR(member) ((Register)(member)&(RegisterSet_WORDBITS - 1))
+
+
+
+#define RegisterSet_WORDCOUNT RegisterSet_MAJOR(103 + RegisterSet_WORDBITS - 1)
+
+
+#define Register_Names_COUNT_MAX 1
+
+
+  Register__,
+#undef Register
+  // Extend the Register enumeration to represent Volatile, Control, Memory, resources.
+  Register__Volatile = Register__,
+  Register__Control,
+  Register__Memory,
+  Register__Spill,
+  Register___
+} Register;
+typedef uint8_t short_Register;
+
+/*
+  RegFile -- Enumeration.
+*/
+typedef enum RegFile {
+#define RegFile(NAME,WIDTH,LOWREGISTER,HIGHREGISTER,NATIVETYPES) RegFile_ ##NAME,
+
+
+/*
+  st200/RegFile.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+RegFile_st200_BR,
+
+RegFile_st200_GR,
+
+
+#undef RegFile
+
+  RegFile__
+#undef RegFile
+} RegFile;
+typedef uint8_t short_RegFile;
+
+/*
+  RegClass -- Enumeration.
+*/
+typedef enum RegClass {
+#define RegClass(NAME,REGISTERS,REGFILE,ENCODE,DECODE) RegClass_ ##NAME,
+
+
+/*
+  st200/RegClass.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+RegClass_st200_branch,
+
+
+
+
+RegClass_st200_general,
+
+
+
+
+RegClass_st200_nolink,
+
+
+
+
+RegClass_st200_link,
+
+
+
+
+RegClass_st200_predicate,
+
+
+
+
+RegClass_st200_paired,
+
+
+
+
+RegClass_st200_pairedfirst,
+
+
+
+
+RegClass_st200_pairedsecond,
+
+
+
+
+
+#undef RegClass
+
+  RegClass__
+#undef RegClass
+} RegClass;
+typedef uint8_t short_RegClass;
+
+/*
+  RegMask -- Enumeration.
+*/
+typedef enum RegMask {
+#define RegMask(NAME,REGISTERS,REGFILE,ENCODE,DECODE) RegMask_ ##NAME,
+
+
+/*
+  st200/RegMask.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef RegMask
+
+  RegMask__
+#undef RegMask
+} RegMask;
+typedef uint8_t short_RegMask;
+
+/*
+  ModifierClass -- Enumeration.
+*/
+typedef enum ModifierClass {
+#define Modifier(NAME,MEMBERS,ENCODE,DECODE) Modifier_ ##NAME,
+
+
+/*
+  st200/Modifier.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef Modifier
+
+
+#define Modifier_Names_COUNT_MAX 0
+
+
+  ModifierClass__
+#undef Modifier
+} ModifierClass;
+typedef uint8_t short_ModifierClass;
+
+/*
+  Modifier -- Enumeration.
+*/
+typedef enum Modifier {
+#define ALIAS(alias,name) Modifier_ ##alias = Modifier_ ##name,
+#define ALIASES(count,items) items
+#define MEMBER(name,ENCODED,NAMES,ALIASES) Modifier_ ##name, ALIASES
+
+#define MEMBERS(count,items) items
+#define Modifier(NAME,MEMBERS,ENCODE,DECODE) MEMBERS
+
+
+/*
+  st200/Modifier.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef Modifier
+
+
+
+
+
+  Modifier__
+#undef Modifier
+#undef MEMBERS
+#undef MEMBER
+#undef ALIASES
+#undef ALIAS
+#undef ENCODED
+} Modifier;
+typedef uint8_t short_Modifier;
+
+/*
+  Immediate -- Enumeration.
+*/
+typedef enum Immediate {
+#define Immediate(NAME,MINVALUE,MAXVALUE,RELATIVE,ENCODE,DECODE,TRANSCODE) Immediate_ ##NAME,
+
+
+/*
+  st200/Immediate.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Immediate_st200_btarg,
+
+
+
+Immediate_st200_isrc2,
+
+
+
+Immediate_st200_imm,
+
+
+
+Immediate_st200_sbrknum,
+
+
+
+Immediate_st200_xsrc2,
+
+
+
+Immediate_st200_issrc2,
+
+
+
+Immediate_st200_brknum,
+
+
+
+
+#undef Immediate
+
+  Immediate_LABEL,
+  Immediate__
+#undef Immediate
+} Immediate;
+typedef uint8_t short_Immediate;
+
+/*
+  Operand -- Enumeration.
+*/
+typedef enum Operand {
+#define Operand(NAME,METHOD,WORDTYPE,ENCODE,DECODE) Operand_ ##NAME,
+
+
+/*
+  st200/Operand.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Operand_st200_bcond,
+
+
+Operand_st200_bdest,
+
+
+Operand_st200_bdest2,
+
+
+Operand_st200_btarg,
+
+
+Operand_st200_dest,
+
+
+Operand_st200_nldest,
+
+
+Operand_st200_ibdest,
+
+
+Operand_st200_idest,
+
+
+Operand_st200_nlidest,
+
+
+Operand_st200_isrc2,
+
+
+Operand_st200_imm,
+
+
+Operand_st200_scond,
+
+
+Operand_st200_src1,
+
+
+Operand_st200_src2,
+
+
+Operand_st200_sbrknum,
+
+
+Operand_st200_xsrc2,
+
+
+Operand_st200_destp,
+
+
+Operand_st200_idestp,
+
+
+Operand_st200_issrc2,
+
+
+Operand_st200_nlsrc1,
+
+
+Operand_st200_nlsrc2,
+
+
+Operand_st200_pcond,
+
+
+Operand_st200_src1p,
+
+
+Operand_st200_src2p,
+
+
+Operand_st200_brknum,
+
+
+
+#undef Operand
+
+
+#define Operands(NAME,OPERANDS,RELOCATABLE) 
+#undef Operands
+
+
+#define Operands_COUNT_MAX 5
+
+
+
+#define Operands_IMMEDIATE_COUNT_MAX 1
+
+
+
+#define Operands_REGMASK_COUNT_MAX 0
+
+
+  Operand__
+#undef Operand
+} Operand;
+typedef uint8_t short_Operand;
+
+/*
+  Operands -- Enumeration.
+*/
+typedef enum Operands {
+#define Operands(NAME,OPERANDS,RELOCATABLE) Operands_ ##NAME,
+
+
+/*
+  st200/Operand.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+#define Operand(NAME,METHOD,WORDTYPE,ENCODE,DECODE) 
+#undef Operand
+
+
+
+
+Operands_st200_dest_src1_src2,
+Operands_st200_idest_src1_isrc2,
+Operands_st200_idest_src1_xsrc2,
+Operands_st200_dest_bdest_src1_src2_scond,
+Operands_st200_bdest_src1_src2,
+Operands_st200_ibdest_src1_isrc2,
+Operands_st200_ibdest_src1_xsrc2,
+Operands_st200_bcond_btarg,
+Operands_st200_idest_src1,
+Operands_st200_btarg,
+Operands_st200_imm,
+Operands_st200_nlidest_isrc2_src1,
+Operands_st200_nlidest_xsrc2_src1,
+Operands_st200_idest_isrc2_src1,
+Operands_st200_idest_xsrc2_src1,
+Operands_st200_nldest_src1_src2,
+Operands_st200_nlidest_src1_isrc2,
+Operands_st200_nlidest_src1_xsrc2,
+Operands_st200_isrc2_src1,
+Operands_st200_xsrc2_src1,
+Operands_st200_sbrknum,
+Operands_st200_dest_scond_src1_src2,
+Operands_st200_idest_scond_src1_isrc2,
+Operands_st200_idest_scond_src1_xsrc2,
+Operands_st200_isrc2_src1_src2,
+Operands_st200_xsrc2_src1_src2,
+Operands_st200_dest_src2_src1,
+Operands_st200_dest_src2,
+Operands_st200_idest_isrc2,
+Operands_st200_idest_xsrc2,
+Operands_st200_bdest_src1,
+Operands_st200_idest_scond,
+Operands_st200_nlidest_src1,
+Operands_st200_src2,
+Operands_st200_bdest2_src1_src2,
+Operands_st200_nldest_src1,
+Operands_st200_nlidest_pcond_isrc2_src1,
+Operands_st200_nlidest_pcond_xsrc2_src1,
+Operands_st200_idestp_isrc2_src1,
+Operands_st200_idestp_xsrc2_src1,
+Operands_st200_idestp_pcond_isrc2_src1,
+Operands_st200_idestp_pcond_xsrc2_src1,
+Operands_st200_pcond_isrc2_src1,
+Operands_st200_pcond_xsrc2_src1,
+Operands_st200_nlidest_src1_issrc2,
+Operands_st200_brknum,
+Operands_st200_isrc2_src1_pcond_src2,
+Operands_st200_xsrc2_src1_pcond_src2,
+Operands_st200_isrc2_src1_src2p,
+Operands_st200_xsrc2_src1_src2p,
+Operands_st200_isrc2_src1_pcond_src2p,
+Operands_st200_xsrc2_src1_pcond_src2p,
+Operands_st200_bdest_src2_src1,
+
+#undef Operands
+  Operands__
+#undef Operand
+} Operands;
+typedef uint8_t short_Operands;
+
+/*
+  Instance -- Enumeration.
+*/
+typedef enum Instance {
+#define Instance(NAME,SCHEDULING,ENCODING,OPCODES,OPERANDS,MNEMONIC,SYNTAX,ACTIONARRAY) Instance_ ##NAME,
+
+
+/*
+  st200/Instance.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Instance_st220_add_dest_src1_src2,
+Instance_st220_add_idest_src1_isrc2,
+Instance_st220_add_idest_src1_xsrc2,
+Instance_st220_addcg_dest_bdest_src1_src2_scond,
+Instance_st220_and_dest_src1_src2,
+Instance_st220_and_idest_src1_isrc2,
+Instance_st220_and_idest_src1_xsrc2,
+Instance_st220_andc_dest_src1_src2,
+Instance_st220_andc_idest_src1_isrc2,
+Instance_st220_andc_idest_src1_xsrc2,
+Instance_st220_andl_dest_src1_src2,
+Instance_st220_andl_bdest_src1_src2,
+Instance_st220_andl_idest_src1_isrc2,
+Instance_st220_andl_ibdest_src1_isrc2,
+Instance_st220_andl_idest_src1_xsrc2,
+Instance_st220_andl_ibdest_src1_xsrc2,
+Instance_st220_asm_0_dest_src1_src2,
+Instance_st220_asm_1_dest_src1_src2,
+Instance_st220_asm_2_dest_src1_src2,
+Instance_st220_asm_3_dest_src1_src2,
+Instance_st220_asm_4_dest_src1_src2,
+Instance_st220_asm_5_dest_src1_src2,
+Instance_st220_asm_6_dest_src1_src2,
+Instance_st220_asm_7_dest_src1_src2,
+Instance_st220_asm_8_dest_src1_src2,
+Instance_st220_asm_9_dest_src1_src2,
+Instance_st220_asm_10_dest_src1_src2,
+Instance_st220_asm_11_dest_src1_src2,
+Instance_st220_asm_12_dest_src1_src2,
+Instance_st220_asm_13_dest_src1_src2,
+Instance_st220_asm_14_dest_src1_src2,
+Instance_st220_asm_15_dest_src1_src2,
+Instance_st220_asm_16_idest_src1_isrc2,
+Instance_st220_asm_16_idest_src1_xsrc2,
+Instance_st220_asm_17_idest_src1_isrc2,
+Instance_st220_asm_17_idest_src1_xsrc2,
+Instance_st220_asm_18_idest_src1_isrc2,
+Instance_st220_asm_18_idest_src1_xsrc2,
+Instance_st220_asm_19_idest_src1_isrc2,
+Instance_st220_asm_19_idest_src1_xsrc2,
+Instance_st220_asm_20_idest_src1_isrc2,
+Instance_st220_asm_20_idest_src1_xsrc2,
+Instance_st220_asm_21_idest_src1_isrc2,
+Instance_st220_asm_21_idest_src1_xsrc2,
+Instance_st220_asm_22_idest_src1_isrc2,
+Instance_st220_asm_22_idest_src1_xsrc2,
+Instance_st220_asm_23_idest_src1_isrc2,
+Instance_st220_asm_23_idest_src1_xsrc2,
+Instance_st220_asm_24_idest_src1_isrc2,
+Instance_st220_asm_24_idest_src1_xsrc2,
+Instance_st220_asm_25_idest_src1_isrc2,
+Instance_st220_asm_25_idest_src1_xsrc2,
+Instance_st220_asm_26_idest_src1_isrc2,
+Instance_st220_asm_26_idest_src1_xsrc2,
+Instance_st220_asm_27_idest_src1_isrc2,
+Instance_st220_asm_27_idest_src1_xsrc2,
+Instance_st220_asm_28_idest_src1_isrc2,
+Instance_st220_asm_28_idest_src1_xsrc2,
+Instance_st220_asm_29_idest_src1_isrc2,
+Instance_st220_asm_29_idest_src1_xsrc2,
+Instance_st220_asm_30_idest_src1_isrc2,
+Instance_st220_asm_30_idest_src1_xsrc2,
+Instance_st220_asm_31_idest_src1_isrc2,
+Instance_st220_asm_31_idest_src1_xsrc2,
+Instance_st220_br_bcond_btarg,
+Instance_st220_break,
+Instance_st220_brf_bcond_btarg,
+Instance_st220_bswap_idest_src1,
+Instance_st220_call_btarg,
+Instance_st220_icall,
+Instance_st220_clz_idest_src1,
+Instance_st220_cmpeq_dest_src1_src2,
+Instance_st220_cmpeq_bdest_src1_src2,
+Instance_st220_cmpeq_idest_src1_isrc2,
+Instance_st220_cmpeq_ibdest_src1_isrc2,
+Instance_st220_cmpeq_idest_src1_xsrc2,
+Instance_st220_cmpeq_ibdest_src1_xsrc2,
+Instance_st220_cmpge_dest_src1_src2,
+Instance_st220_cmpge_bdest_src1_src2,
+Instance_st220_cmpge_idest_src1_isrc2,
+Instance_st220_cmpge_ibdest_src1_isrc2,
+Instance_st220_cmpge_idest_src1_xsrc2,
+Instance_st220_cmpge_ibdest_src1_xsrc2,
+Instance_st220_cmpgeu_dest_src1_src2,
+Instance_st220_cmpgeu_bdest_src1_src2,
+Instance_st220_cmpgeu_idest_src1_isrc2,
+Instance_st220_cmpgeu_ibdest_src1_isrc2,
+Instance_st220_cmpgeu_idest_src1_xsrc2,
+Instance_st220_cmpgeu_ibdest_src1_xsrc2,
+Instance_st220_cmpgt_dest_src1_src2,
+Instance_st220_cmpgt_bdest_src1_src2,
+Instance_st220_cmpgt_idest_src1_isrc2,
+Instance_st220_cmpgt_ibdest_src1_isrc2,
+Instance_st220_cmpgt_idest_src1_xsrc2,
+Instance_st220_cmpgt_ibdest_src1_xsrc2,
+Instance_st220_cmpgtu_dest_src1_src2,
+Instance_st220_cmpgtu_bdest_src1_src2,
+Instance_st220_cmpgtu_idest_src1_isrc2,
+Instance_st220_cmpgtu_ibdest_src1_isrc2,
+Instance_st220_cmpgtu_idest_src1_xsrc2,
+Instance_st220_cmpgtu_ibdest_src1_xsrc2,
+Instance_st220_cmple_dest_src1_src2,
+Instance_st220_cmple_bdest_src1_src2,
+Instance_st220_cmple_idest_src1_isrc2,
+Instance_st220_cmple_ibdest_src1_isrc2,
+Instance_st220_cmple_idest_src1_xsrc2,
+Instance_st220_cmple_ibdest_src1_xsrc2,
+Instance_st220_cmpleu_dest_src1_src2,
+Instance_st220_cmpleu_bdest_src1_src2,
+Instance_st220_cmpleu_idest_src1_isrc2,
+Instance_st220_cmpleu_ibdest_src1_isrc2,
+Instance_st220_cmpleu_idest_src1_xsrc2,
+Instance_st220_cmpleu_ibdest_src1_xsrc2,
+Instance_st220_cmplt_dest_src1_src2,
+Instance_st220_cmplt_bdest_src1_src2,
+Instance_st220_cmplt_idest_src1_isrc2,
+Instance_st220_cmplt_ibdest_src1_isrc2,
+Instance_st220_cmplt_idest_src1_xsrc2,
+Instance_st220_cmplt_ibdest_src1_xsrc2,
+Instance_st220_cmpltu_dest_src1_src2,
+Instance_st220_cmpltu_bdest_src1_src2,
+Instance_st220_cmpltu_idest_src1_isrc2,
+Instance_st220_cmpltu_ibdest_src1_isrc2,
+Instance_st220_cmpltu_idest_src1_xsrc2,
+Instance_st220_cmpltu_ibdest_src1_xsrc2,
+Instance_st220_cmpne_dest_src1_src2,
+Instance_st220_cmpne_bdest_src1_src2,
+Instance_st220_cmpne_idest_src1_isrc2,
+Instance_st220_cmpne_ibdest_src1_isrc2,
+Instance_st220_cmpne_idest_src1_xsrc2,
+Instance_st220_cmpne_ibdest_src1_xsrc2,
+Instance_st220_divs_dest_bdest_src1_src2_scond,
+Instance_st220_goto_btarg,
+Instance_st220_igoto,
+Instance_st220_imml_imm,
+Instance_st220_immr_imm,
+Instance_st220_ldb_nlidest_isrc2_src1,
+Instance_st220_ldb_nlidest_xsrc2_src1,
+Instance_st220_ldb_d_nlidest_isrc2_src1,
+Instance_st220_ldb_d_nlidest_xsrc2_src1,
+Instance_st220_ldbu_nlidest_isrc2_src1,
+Instance_st220_ldbu_nlidest_xsrc2_src1,
+Instance_st220_ldbu_d_nlidest_isrc2_src1,
+Instance_st220_ldbu_d_nlidest_xsrc2_src1,
+Instance_st220_ldh_nlidest_isrc2_src1,
+Instance_st220_ldh_nlidest_xsrc2_src1,
+Instance_st220_ldh_d_nlidest_isrc2_src1,
+Instance_st220_ldh_d_nlidest_xsrc2_src1,
+Instance_st220_ldhu_nlidest_isrc2_src1,
+Instance_st220_ldhu_nlidest_xsrc2_src1,
+Instance_st220_ldhu_d_nlidest_isrc2_src1,
+Instance_st220_ldhu_d_nlidest_xsrc2_src1,
+Instance_st220_ldw_idest_isrc2_src1,
+Instance_st220_ldw_idest_xsrc2_src1,
+Instance_st220_ldw_d_idest_isrc2_src1,
+Instance_st220_ldw_d_idest_xsrc2_src1,
+Instance_st220_max_dest_src1_src2,
+Instance_st220_max_idest_src1_isrc2,
+Instance_st220_max_idest_src1_xsrc2,
+Instance_st220_maxu_dest_src1_src2,
+Instance_st220_maxu_idest_src1_isrc2,
+Instance_st220_maxu_idest_src1_xsrc2,
+Instance_st220_min_dest_src1_src2,
+Instance_st220_min_idest_src1_isrc2,
+Instance_st220_min_idest_src1_xsrc2,
+Instance_st220_minu_dest_src1_src2,
+Instance_st220_minu_idest_src1_isrc2,
+Instance_st220_minu_idest_src1_xsrc2,
+Instance_st220_mulh_nldest_src1_src2,
+Instance_st220_mulh_nlidest_src1_isrc2,
+Instance_st220_mulh_nlidest_src1_xsrc2,
+Instance_st220_mulhh_nldest_src1_src2,
+Instance_st220_mulhh_nlidest_src1_isrc2,
+Instance_st220_mulhh_nlidest_src1_xsrc2,
+Instance_st220_mulhhs_nldest_src1_src2,
+Instance_st220_mulhhs_nlidest_src1_isrc2,
+Instance_st220_mulhhs_nlidest_src1_xsrc2,
+Instance_st220_mulhhu_nldest_src1_src2,
+Instance_st220_mulhhu_nlidest_src1_isrc2,
+Instance_st220_mulhhu_nlidest_src1_xsrc2,
+Instance_st220_mulhs_nldest_src1_src2,
+Instance_st220_mulhs_nlidest_src1_isrc2,
+Instance_st220_mulhs_nlidest_src1_xsrc2,
+Instance_st220_mulhu_nldest_src1_src2,
+Instance_st220_mulhu_nlidest_src1_isrc2,
+Instance_st220_mulhu_nlidest_src1_xsrc2,
+Instance_st220_mull_nldest_src1_src2,
+Instance_st220_mull_nlidest_src1_isrc2,
+Instance_st220_mull_nlidest_src1_xsrc2,
+Instance_st220_mullh_nldest_src1_src2,
+Instance_st220_mullh_nlidest_src1_isrc2,
+Instance_st220_mullh_nlidest_src1_xsrc2,
+Instance_st220_mullhu_nldest_src1_src2,
+Instance_st220_mullhu_nlidest_src1_isrc2,
+Instance_st220_mullhu_nlidest_src1_xsrc2,
+Instance_st220_mullhus_nldest_src1_src2,
+Instance_st220_mullhus_nlidest_src1_isrc2,
+Instance_st220_mullhus_nlidest_src1_xsrc2,
+Instance_st220_mulll_nldest_src1_src2,
+Instance_st220_mulll_nlidest_src1_isrc2,
+Instance_st220_mulll_nlidest_src1_xsrc2,
+Instance_st220_mulllu_nldest_src1_src2,
+Instance_st220_mulllu_nlidest_src1_isrc2,
+Instance_st220_mulllu_nlidest_src1_xsrc2,
+Instance_st220_mullu_nldest_src1_src2,
+Instance_st220_mullu_nlidest_src1_isrc2,
+Instance_st220_mullu_nlidest_src1_xsrc2,
+Instance_st220_nandl_dest_src1_src2,
+Instance_st220_nandl_bdest_src1_src2,
+Instance_st220_nandl_idest_src1_isrc2,
+Instance_st220_nandl_ibdest_src1_isrc2,
+Instance_st220_nandl_idest_src1_xsrc2,
+Instance_st220_nandl_ibdest_src1_xsrc2,
+Instance_st220_norl_dest_src1_src2,
+Instance_st220_norl_bdest_src1_src2,
+Instance_st220_norl_idest_src1_isrc2,
+Instance_st220_norl_ibdest_src1_isrc2,
+Instance_st220_norl_idest_src1_xsrc2,
+Instance_st220_norl_ibdest_src1_xsrc2,
+Instance_st220_or_dest_src1_src2,
+Instance_st220_or_idest_src1_isrc2,
+Instance_st220_or_idest_src1_xsrc2,
+Instance_st220_orc_dest_src1_src2,
+Instance_st220_orc_idest_src1_isrc2,
+Instance_st220_orc_idest_src1_xsrc2,
+Instance_st220_orl_dest_src1_src2,
+Instance_st220_orl_bdest_src1_src2,
+Instance_st220_orl_idest_src1_isrc2,
+Instance_st220_orl_ibdest_src1_isrc2,
+Instance_st220_orl_idest_src1_xsrc2,
+Instance_st220_orl_ibdest_src1_xsrc2,
+Instance_st220_pft_isrc2_src1,
+Instance_st220_pft_xsrc2_src1,
+Instance_st220_prgadd_isrc2_src1,
+Instance_st220_prgadd_xsrc2_src1,
+Instance_st220_prgset_isrc2_src1,
+Instance_st220_prgset_xsrc2_src1,
+Instance_st220_prgins,
+Instance_st220_rfi,
+Instance_st220_sbrk_sbrknum,
+Instance_st220_sh1add_dest_src1_src2,
+Instance_st220_sh1add_idest_src1_isrc2,
+Instance_st220_sh1add_idest_src1_xsrc2,
+Instance_st220_sh2add_dest_src1_src2,
+Instance_st220_sh2add_idest_src1_isrc2,
+Instance_st220_sh2add_idest_src1_xsrc2,
+Instance_st220_sh3add_dest_src1_src2,
+Instance_st220_sh3add_idest_src1_isrc2,
+Instance_st220_sh3add_idest_src1_xsrc2,
+Instance_st220_sh4add_dest_src1_src2,
+Instance_st220_sh4add_idest_src1_isrc2,
+Instance_st220_sh4add_idest_src1_xsrc2,
+Instance_st220_shl_dest_src1_src2,
+Instance_st220_shl_idest_src1_isrc2,
+Instance_st220_shl_idest_src1_xsrc2,
+Instance_st220_shr_dest_src1_src2,
+Instance_st220_shr_idest_src1_isrc2,
+Instance_st220_shr_idest_src1_xsrc2,
+Instance_st220_shru_dest_src1_src2,
+Instance_st220_shru_idest_src1_isrc2,
+Instance_st220_shru_idest_src1_xsrc2,
+Instance_st220_slct_dest_scond_src1_src2,
+Instance_st220_slct_idest_scond_src1_isrc2,
+Instance_st220_slct_idest_scond_src1_xsrc2,
+Instance_st220_slctf_dest_scond_src1_src2,
+Instance_st220_slctf_idest_scond_src1_isrc2,
+Instance_st220_slctf_idest_scond_src1_xsrc2,
+Instance_st220_stb_isrc2_src1_src2,
+Instance_st220_stb_xsrc2_src1_src2,
+Instance_st220_sth_isrc2_src1_src2,
+Instance_st220_sth_xsrc2_src1_src2,
+Instance_st220_stw_isrc2_src1_src2,
+Instance_st220_stw_xsrc2_src1_src2,
+Instance_st220_sub_dest_src2_src1,
+Instance_st220_sub_idest_isrc2_src1,
+Instance_st220_sub_idest_xsrc2_src1,
+Instance_st220_sxtb_idest_src1,
+Instance_st220_sxth_idest_src1,
+Instance_st220_sync,
+Instance_st220_syscall_sbrknum,
+Instance_st220_xor_dest_src1_src2,
+Instance_st220_xor_idest_src1_isrc2,
+Instance_st220_xor_idest_src1_xsrc2,
+Instance_st220_zxth_idest_src1,
+Instance_st220_nop,
+Instance_st220_mov_dest_src2,
+Instance_st220_mov_idest_isrc2,
+Instance_st220_mov_idest_xsrc2,
+Instance_st220_mtb_bdest_src1,
+Instance_st220_mfb_idest_scond,
+Instance_st220_zxtb_idest_src1,
+Instance_st220_syncins,
+Instance_st220_return,
+Instance_st231_add_dest_src1_src2,
+Instance_st231_add_idest_src1_isrc2,
+Instance_st231_add_idest_src1_xsrc2,
+Instance_st231_addcg_dest_bdest_src1_src2_scond,
+Instance_st231_and_dest_src1_src2,
+Instance_st231_and_idest_src1_isrc2,
+Instance_st231_and_idest_src1_xsrc2,
+Instance_st231_andc_dest_src1_src2,
+Instance_st231_andc_idest_src1_isrc2,
+Instance_st231_andc_idest_src1_xsrc2,
+Instance_st231_andl_dest_src1_src2,
+Instance_st231_andl_bdest_src1_src2,
+Instance_st231_andl_idest_src1_isrc2,
+Instance_st231_andl_ibdest_src1_isrc2,
+Instance_st231_andl_idest_src1_xsrc2,
+Instance_st231_andl_ibdest_src1_xsrc2,
+Instance_st231_asm_0_dest_src1_src2,
+Instance_st231_asm_1_dest_src1_src2,
+Instance_st231_asm_2_dest_src1_src2,
+Instance_st231_asm_3_dest_src1_src2,
+Instance_st231_asm_4_dest_src1_src2,
+Instance_st231_asm_5_dest_src1_src2,
+Instance_st231_asm_6_dest_src1_src2,
+Instance_st231_asm_7_dest_src1_src2,
+Instance_st231_asm_8_dest_src1_src2,
+Instance_st231_asm_9_dest_src1_src2,
+Instance_st231_asm_10_dest_src1_src2,
+Instance_st231_asm_11_dest_src1_src2,
+Instance_st231_asm_12_dest_src1_src2,
+Instance_st231_asm_13_dest_src1_src2,
+Instance_st231_asm_14_dest_src1_src2,
+Instance_st231_asm_16_idest_src1_isrc2,
+Instance_st231_asm_16_idest_src1_xsrc2,
+Instance_st231_asm_17_idest_src1_isrc2,
+Instance_st231_asm_17_idest_src1_xsrc2,
+Instance_st231_asm_18_idest_src1_isrc2,
+Instance_st231_asm_18_idest_src1_xsrc2,
+Instance_st231_asm_19_idest_src1_isrc2,
+Instance_st231_asm_19_idest_src1_xsrc2,
+Instance_st231_asm_20_idest_src1_isrc2,
+Instance_st231_asm_20_idest_src1_xsrc2,
+Instance_st231_asm_21_idest_src1_isrc2,
+Instance_st231_asm_21_idest_src1_xsrc2,
+Instance_st231_asm_22_idest_src1_isrc2,
+Instance_st231_asm_22_idest_src1_xsrc2,
+Instance_st231_asm_23_idest_src1_isrc2,
+Instance_st231_asm_23_idest_src1_xsrc2,
+Instance_st231_asm_24_idest_src1_isrc2,
+Instance_st231_asm_24_idest_src1_xsrc2,
+Instance_st231_asm_25_idest_src1_isrc2,
+Instance_st231_asm_25_idest_src1_xsrc2,
+Instance_st231_asm_26_idest_src1_isrc2,
+Instance_st231_asm_26_idest_src1_xsrc2,
+Instance_st231_asm_27_idest_src1_isrc2,
+Instance_st231_asm_27_idest_src1_xsrc2,
+Instance_st231_asm_28_idest_src1_isrc2,
+Instance_st231_asm_28_idest_src1_xsrc2,
+Instance_st231_asm_29_idest_src1_isrc2,
+Instance_st231_asm_29_idest_src1_xsrc2,
+Instance_st231_asm_30_idest_src1_isrc2,
+Instance_st231_asm_30_idest_src1_xsrc2,
+Instance_st231_br_bcond_btarg,
+Instance_st231_break,
+Instance_st231_brf_bcond_btarg,
+Instance_st231_bswap_idest_src1,
+Instance_st231_call_btarg,
+Instance_st231_icall,
+Instance_st231_clz_idest_src1,
+Instance_st231_cmpeq_dest_src1_src2,
+Instance_st231_cmpeq_bdest_src1_src2,
+Instance_st231_cmpeq_idest_src1_isrc2,
+Instance_st231_cmpeq_ibdest_src1_isrc2,
+Instance_st231_cmpeq_idest_src1_xsrc2,
+Instance_st231_cmpeq_ibdest_src1_xsrc2,
+Instance_st231_cmpge_dest_src1_src2,
+Instance_st231_cmpge_bdest_src1_src2,
+Instance_st231_cmpge_idest_src1_isrc2,
+Instance_st231_cmpge_ibdest_src1_isrc2,
+Instance_st231_cmpge_idest_src1_xsrc2,
+Instance_st231_cmpge_ibdest_src1_xsrc2,
+Instance_st231_cmpgeu_dest_src1_src2,
+Instance_st231_cmpgeu_bdest_src1_src2,
+Instance_st231_cmpgeu_idest_src1_isrc2,
+Instance_st231_cmpgeu_ibdest_src1_isrc2,
+Instance_st231_cmpgeu_idest_src1_xsrc2,
+Instance_st231_cmpgeu_ibdest_src1_xsrc2,
+Instance_st231_cmpgt_dest_src1_src2,
+Instance_st231_cmpgt_bdest_src1_src2,
+Instance_st231_cmpgt_idest_src1_isrc2,
+Instance_st231_cmpgt_ibdest_src1_isrc2,
+Instance_st231_cmpgt_idest_src1_xsrc2,
+Instance_st231_cmpgt_ibdest_src1_xsrc2,
+Instance_st231_cmpgtu_dest_src1_src2,
+Instance_st231_cmpgtu_bdest_src1_src2,
+Instance_st231_cmpgtu_idest_src1_isrc2,
+Instance_st231_cmpgtu_ibdest_src1_isrc2,
+Instance_st231_cmpgtu_idest_src1_xsrc2,
+Instance_st231_cmpgtu_ibdest_src1_xsrc2,
+Instance_st231_cmple_dest_src1_src2,
+Instance_st231_cmple_bdest_src1_src2,
+Instance_st231_cmple_idest_src1_isrc2,
+Instance_st231_cmple_ibdest_src1_isrc2,
+Instance_st231_cmple_idest_src1_xsrc2,
+Instance_st231_cmple_ibdest_src1_xsrc2,
+Instance_st231_cmpleu_dest_src1_src2,
+Instance_st231_cmpleu_bdest_src1_src2,
+Instance_st231_cmpleu_idest_src1_isrc2,
+Instance_st231_cmpleu_ibdest_src1_isrc2,
+Instance_st231_cmpleu_idest_src1_xsrc2,
+Instance_st231_cmpleu_ibdest_src1_xsrc2,
+Instance_st231_cmplt_dest_src1_src2,
+Instance_st231_cmplt_bdest_src1_src2,
+Instance_st231_cmplt_idest_src1_isrc2,
+Instance_st231_cmplt_ibdest_src1_isrc2,
+Instance_st231_cmplt_idest_src1_xsrc2,
+Instance_st231_cmplt_ibdest_src1_xsrc2,
+Instance_st231_cmpltu_dest_src1_src2,
+Instance_st231_cmpltu_bdest_src1_src2,
+Instance_st231_cmpltu_idest_src1_isrc2,
+Instance_st231_cmpltu_ibdest_src1_isrc2,
+Instance_st231_cmpltu_idest_src1_xsrc2,
+Instance_st231_cmpltu_ibdest_src1_xsrc2,
+Instance_st231_cmpne_dest_src1_src2,
+Instance_st231_cmpne_bdest_src1_src2,
+Instance_st231_cmpne_idest_src1_isrc2,
+Instance_st231_cmpne_ibdest_src1_isrc2,
+Instance_st231_cmpne_idest_src1_xsrc2,
+Instance_st231_cmpne_ibdest_src1_xsrc2,
+Instance_st231_divs_dest_bdest_src1_src2_scond,
+Instance_st231_goto_btarg,
+Instance_st231_igoto,
+Instance_st231_imml_imm,
+Instance_st231_immr_imm,
+Instance_st231_ldb_nlidest_isrc2_src1,
+Instance_st231_ldb_nlidest_xsrc2_src1,
+Instance_st231_ldb_d_nlidest_isrc2_src1,
+Instance_st231_ldb_d_nlidest_xsrc2_src1,
+Instance_st231_ldbu_nlidest_isrc2_src1,
+Instance_st231_ldbu_nlidest_xsrc2_src1,
+Instance_st231_ldbu_d_nlidest_isrc2_src1,
+Instance_st231_ldbu_d_nlidest_xsrc2_src1,
+Instance_st231_ldh_nlidest_isrc2_src1,
+Instance_st231_ldh_nlidest_xsrc2_src1,
+Instance_st231_ldh_d_nlidest_isrc2_src1,
+Instance_st231_ldh_d_nlidest_xsrc2_src1,
+Instance_st231_ldhu_nlidest_isrc2_src1,
+Instance_st231_ldhu_nlidest_xsrc2_src1,
+Instance_st231_ldhu_d_nlidest_isrc2_src1,
+Instance_st231_ldhu_d_nlidest_xsrc2_src1,
+Instance_st231_ldw_idest_isrc2_src1,
+Instance_st231_ldw_idest_xsrc2_src1,
+Instance_st231_ldw_d_idest_isrc2_src1,
+Instance_st231_ldw_d_idest_xsrc2_src1,
+Instance_st231_ldwl_nlidest_src1,
+Instance_st231_max_dest_src1_src2,
+Instance_st231_max_idest_src1_isrc2,
+Instance_st231_max_idest_src1_xsrc2,
+Instance_st231_maxu_dest_src1_src2,
+Instance_st231_maxu_idest_src1_isrc2,
+Instance_st231_maxu_idest_src1_xsrc2,
+Instance_st231_min_dest_src1_src2,
+Instance_st231_min_idest_src1_isrc2,
+Instance_st231_min_idest_src1_xsrc2,
+Instance_st231_minu_dest_src1_src2,
+Instance_st231_minu_idest_src1_isrc2,
+Instance_st231_minu_idest_src1_xsrc2,
+Instance_st231_mulh_nldest_src1_src2,
+Instance_st231_mulh_nlidest_src1_isrc2,
+Instance_st231_mulh_nlidest_src1_xsrc2,
+Instance_st231_mulhh_nldest_src1_src2,
+Instance_st231_mulhh_nlidest_src1_isrc2,
+Instance_st231_mulhh_nlidest_src1_xsrc2,
+Instance_st231_mulhhs_nldest_src1_src2,
+Instance_st231_mulhhs_nlidest_src1_isrc2,
+Instance_st231_mulhhs_nlidest_src1_xsrc2,
+Instance_st231_mulhhu_nldest_src1_src2,
+Instance_st231_mulhhu_nlidest_src1_isrc2,
+Instance_st231_mulhhu_nlidest_src1_xsrc2,
+Instance_st231_mulhs_nldest_src1_src2,
+Instance_st231_mulhs_nlidest_src1_isrc2,
+Instance_st231_mulhs_nlidest_src1_xsrc2,
+Instance_st231_mulhu_nldest_src1_src2,
+Instance_st231_mulhu_nlidest_src1_isrc2,
+Instance_st231_mulhu_nlidest_src1_xsrc2,
+Instance_st231_mull_nldest_src1_src2,
+Instance_st231_mull_nlidest_src1_isrc2,
+Instance_st231_mull_nlidest_src1_xsrc2,
+Instance_st231_mullh_nldest_src1_src2,
+Instance_st231_mullh_nlidest_src1_isrc2,
+Instance_st231_mullh_nlidest_src1_xsrc2,
+Instance_st231_mullhu_nldest_src1_src2,
+Instance_st231_mullhu_nlidest_src1_isrc2,
+Instance_st231_mullhu_nlidest_src1_xsrc2,
+Instance_st231_mullhus_nldest_src1_src2,
+Instance_st231_mullhus_nlidest_src1_isrc2,
+Instance_st231_mullhus_nlidest_src1_xsrc2,
+Instance_st231_mulll_nldest_src1_src2,
+Instance_st231_mulll_nlidest_src1_isrc2,
+Instance_st231_mulll_nlidest_src1_xsrc2,
+Instance_st231_mulllu_nldest_src1_src2,
+Instance_st231_mulllu_nlidest_src1_isrc2,
+Instance_st231_mulllu_nlidest_src1_xsrc2,
+Instance_st231_mullu_nldest_src1_src2,
+Instance_st231_mullu_nlidest_src1_isrc2,
+Instance_st231_mullu_nlidest_src1_xsrc2,
+Instance_st231_mul32_nldest_src1_src2,
+Instance_st231_mul32_nlidest_src1_isrc2,
+Instance_st231_mul32_nlidest_src1_xsrc2,
+Instance_st231_mul64h_nldest_src1_src2,
+Instance_st231_mul64h_nlidest_src1_isrc2,
+Instance_st231_mul64h_nlidest_src1_xsrc2,
+Instance_st231_mul64hu_nldest_src1_src2,
+Instance_st231_mul64hu_nlidest_src1_isrc2,
+Instance_st231_mul64hu_nlidest_src1_xsrc2,
+Instance_st231_mulfrac_nldest_src1_src2,
+Instance_st231_mulfrac_nlidest_src1_isrc2,
+Instance_st231_mulfrac_nlidest_src1_xsrc2,
+Instance_st231_nandl_dest_src1_src2,
+Instance_st231_nandl_bdest_src1_src2,
+Instance_st231_nandl_idest_src1_isrc2,
+Instance_st231_nandl_ibdest_src1_isrc2,
+Instance_st231_nandl_idest_src1_xsrc2,
+Instance_st231_nandl_ibdest_src1_xsrc2,
+Instance_st231_norl_dest_src1_src2,
+Instance_st231_norl_bdest_src1_src2,
+Instance_st231_norl_idest_src1_isrc2,
+Instance_st231_norl_ibdest_src1_isrc2,
+Instance_st231_norl_idest_src1_xsrc2,
+Instance_st231_norl_ibdest_src1_xsrc2,
+Instance_st231_or_dest_src1_src2,
+Instance_st231_or_idest_src1_isrc2,
+Instance_st231_or_idest_src1_xsrc2,
+Instance_st231_orc_dest_src1_src2,
+Instance_st231_orc_idest_src1_isrc2,
+Instance_st231_orc_idest_src1_xsrc2,
+Instance_st231_orl_dest_src1_src2,
+Instance_st231_orl_bdest_src1_src2,
+Instance_st231_orl_idest_src1_isrc2,
+Instance_st231_orl_ibdest_src1_isrc2,
+Instance_st231_orl_idest_src1_xsrc2,
+Instance_st231_orl_ibdest_src1_xsrc2,
+Instance_st231_pft_isrc2_src1,
+Instance_st231_pft_xsrc2_src1,
+Instance_st231_prgadd_isrc2_src1,
+Instance_st231_prgadd_xsrc2_src1,
+Instance_st231_prgins,
+Instance_st231_prginspg_isrc2_src1,
+Instance_st231_prginspg_xsrc2_src1,
+Instance_st231_prgset_isrc2_src1,
+Instance_st231_prgset_xsrc2_src1,
+Instance_st231_pswclr_src2,
+Instance_st231_pswset_src2,
+Instance_st231_rfi,
+Instance_st231_sbrk_sbrknum,
+Instance_st231_sh1add_dest_src1_src2,
+Instance_st231_sh1add_idest_src1_isrc2,
+Instance_st231_sh1add_idest_src1_xsrc2,
+Instance_st231_sh2add_dest_src1_src2,
+Instance_st231_sh2add_idest_src1_isrc2,
+Instance_st231_sh2add_idest_src1_xsrc2,
+Instance_st231_sh3add_dest_src1_src2,
+Instance_st231_sh3add_idest_src1_isrc2,
+Instance_st231_sh3add_idest_src1_xsrc2,
+Instance_st231_sh4add_dest_src1_src2,
+Instance_st231_sh4add_idest_src1_isrc2,
+Instance_st231_sh4add_idest_src1_xsrc2,
+Instance_st231_shl_dest_src1_src2,
+Instance_st231_shl_idest_src1_isrc2,
+Instance_st231_shl_idest_src1_xsrc2,
+Instance_st231_shr_dest_src1_src2,
+Instance_st231_shr_idest_src1_isrc2,
+Instance_st231_shr_idest_src1_xsrc2,
+Instance_st231_shru_dest_src1_src2,
+Instance_st231_shru_idest_src1_isrc2,
+Instance_st231_shru_idest_src1_xsrc2,
+Instance_st231_slct_dest_scond_src1_src2,
+Instance_st231_slct_idest_scond_src1_isrc2,
+Instance_st231_slct_idest_scond_src1_xsrc2,
+Instance_st231_slctf_dest_scond_src1_src2,
+Instance_st231_slctf_idest_scond_src1_isrc2,
+Instance_st231_slctf_idest_scond_src1_xsrc2,
+Instance_st231_stb_isrc2_src1_src2,
+Instance_st231_stb_xsrc2_src1_src2,
+Instance_st231_sth_isrc2_src1_src2,
+Instance_st231_sth_xsrc2_src1_src2,
+Instance_st231_stw_isrc2_src1_src2,
+Instance_st231_stw_xsrc2_src1_src2,
+Instance_st231_stwl_bdest2_src1_src2,
+Instance_st231_sub_dest_src2_src1,
+Instance_st231_sub_idest_isrc2_src1,
+Instance_st231_sub_idest_xsrc2_src1,
+Instance_st231_sxtb_idest_src1,
+Instance_st231_sxth_idest_src1,
+Instance_st231_sync,
+Instance_st231_syscall_sbrknum,
+Instance_st231_wmb,
+Instance_st231_xor_dest_src1_src2,
+Instance_st231_xor_idest_src1_isrc2,
+Instance_st231_xor_idest_src1_xsrc2,
+Instance_st231_zxth_idest_src1,
+Instance_st231_nop,
+Instance_st231_mov_dest_src2,
+Instance_st231_mov_idest_isrc2,
+Instance_st231_mov_idest_xsrc2,
+Instance_st231_mtb_bdest_src1,
+Instance_st231_mfb_idest_scond,
+Instance_st231_zxtb_idest_src1,
+Instance_st231_syncins,
+Instance_st231_idle,
+Instance_st231_return,
+Instance_st235_add_dest_src1_src2,
+Instance_st235_add_idest_src1_isrc2,
+Instance_st235_add_idest_src1_xsrc2,
+Instance_st235_addcg_dest_bdest_src1_src2_scond,
+Instance_st235_addf_n_nldest_src1_src2,
+Instance_st235_addpc_dest_src2,
+Instance_st235_addpc_idest_isrc2,
+Instance_st235_addpc_idest_xsrc2,
+Instance_st235_and_dest_src1_src2,
+Instance_st235_and_idest_src1_isrc2,
+Instance_st235_and_idest_src1_xsrc2,
+Instance_st235_andc_dest_src1_src2,
+Instance_st235_andc_idest_src1_isrc2,
+Instance_st235_andc_idest_src1_xsrc2,
+Instance_st235_andl_dest_src1_src2,
+Instance_st235_andl_bdest_src1_src2,
+Instance_st235_andl_idest_src1_isrc2,
+Instance_st235_andl_ibdest_src1_isrc2,
+Instance_st235_andl_idest_src1_xsrc2,
+Instance_st235_andl_ibdest_src1_xsrc2,
+Instance_st235_asm_0_dest_src1_src2,
+Instance_st235_asm_1_dest_src1_src2,
+Instance_st235_asm_2_dest_src1_src2,
+Instance_st235_asm_3_dest_src1_src2,
+Instance_st235_asm_4_dest_src1_src2,
+Instance_st235_asm_5_dest_src1_src2,
+Instance_st235_asm_6_dest_src1_src2,
+Instance_st235_asm_7_dest_src1_src2,
+Instance_st235_asm_8_dest_src1_src2,
+Instance_st235_asm_9_dest_src1_src2,
+Instance_st235_asm_10_dest_src1_src2,
+Instance_st235_asm_11_dest_src1_src2,
+Instance_st235_asm_12_dest_src1_src2,
+Instance_st235_asm_13_dest_src1_src2,
+Instance_st235_asm_14_dest_src1_src2,
+Instance_st235_asm_15_dest_src1_src2,
+Instance_st235_asm_16_idest_src1_isrc2,
+Instance_st235_asm_16_idest_src1_xsrc2,
+Instance_st235_asm_17_idest_src1_isrc2,
+Instance_st235_asm_17_idest_src1_xsrc2,
+Instance_st235_asm_18_idest_src1_isrc2,
+Instance_st235_asm_18_idest_src1_xsrc2,
+Instance_st235_asm_19_idest_src1_isrc2,
+Instance_st235_asm_19_idest_src1_xsrc2,
+Instance_st235_asm_20_idest_src1_isrc2,
+Instance_st235_asm_20_idest_src1_xsrc2,
+Instance_st235_asm_21_idest_src1_isrc2,
+Instance_st235_asm_21_idest_src1_xsrc2,
+Instance_st235_asm_22_idest_src1_isrc2,
+Instance_st235_asm_22_idest_src1_xsrc2,
+Instance_st235_asm_23_idest_src1_isrc2,
+Instance_st235_asm_23_idest_src1_xsrc2,
+Instance_st235_asm_24_idest_src1_isrc2,
+Instance_st235_asm_24_idest_src1_xsrc2,
+Instance_st235_asm_25_idest_src1_isrc2,
+Instance_st235_asm_25_idest_src1_xsrc2,
+Instance_st235_asm_26_idest_src1_isrc2,
+Instance_st235_asm_26_idest_src1_xsrc2,
+Instance_st235_asm_27_idest_src1_isrc2,
+Instance_st235_asm_27_idest_src1_xsrc2,
+Instance_st235_asm_28_idest_src1_isrc2,
+Instance_st235_asm_28_idest_src1_xsrc2,
+Instance_st235_asm_29_idest_src1_isrc2,
+Instance_st235_asm_29_idest_src1_xsrc2,
+Instance_st235_asm_30_idest_src1_isrc2,
+Instance_st235_asm_30_idest_src1_xsrc2,
+Instance_st235_asm_31_idest_src1_isrc2,
+Instance_st235_asm_31_idest_src1_xsrc2,
+Instance_st235_br_bcond_btarg,
+Instance_st235_break,
+Instance_st235_brf_bcond_btarg,
+Instance_st235_bswap_idest_src1,
+Instance_st235_call_btarg,
+Instance_st235_icall,
+Instance_st235_clz_idest_src1,
+Instance_st235_cmpeq_dest_src1_src2,
+Instance_st235_cmpeq_bdest_src1_src2,
+Instance_st235_cmpeq_idest_src1_isrc2,
+Instance_st235_cmpeq_ibdest_src1_isrc2,
+Instance_st235_cmpeq_idest_src1_xsrc2,
+Instance_st235_cmpeq_ibdest_src1_xsrc2,
+Instance_st235_cmpeqf_n_dest_src1_src2,
+Instance_st235_cmpeqf_n_bdest_src1_src2,
+Instance_st235_cmpge_idest_src1_isrc2,
+Instance_st235_cmpge_ibdest_src1_isrc2,
+Instance_st235_cmpge_idest_src1_xsrc2,
+Instance_st235_cmpge_ibdest_src1_xsrc2,
+Instance_st235_cmpgef_n_dest_src1_src2,
+Instance_st235_cmpgef_n_bdest_src1_src2,
+Instance_st235_cmpgeu_idest_src1_isrc2,
+Instance_st235_cmpgeu_ibdest_src1_isrc2,
+Instance_st235_cmpgeu_idest_src1_xsrc2,
+Instance_st235_cmpgeu_ibdest_src1_xsrc2,
+Instance_st235_cmpgtf_n_dest_src1_src2,
+Instance_st235_cmpgtf_n_bdest_src1_src2,
+Instance_st235_cmpgt_idest_src1_isrc2,
+Instance_st235_cmpgt_ibdest_src1_isrc2,
+Instance_st235_cmpgt_idest_src1_xsrc2,
+Instance_st235_cmpgt_ibdest_src1_xsrc2,
+Instance_st235_cmpgtu_dest_src1_src2,
+Instance_st235_cmpgtu_bdest_src1_src2,
+Instance_st235_cmpgtu_idest_src1_isrc2,
+Instance_st235_cmpgtu_ibdest_src1_isrc2,
+Instance_st235_cmpgtu_idest_src1_xsrc2,
+Instance_st235_cmpgtu_ibdest_src1_xsrc2,
+Instance_st235_cmple_dest_src1_src2,
+Instance_st235_cmple_bdest_src1_src2,
+Instance_st235_cmple_idest_src1_isrc2,
+Instance_st235_cmple_ibdest_src1_isrc2,
+Instance_st235_cmple_idest_src1_xsrc2,
+Instance_st235_cmple_ibdest_src1_xsrc2,
+Instance_st235_cmpleu_dest_src1_src2,
+Instance_st235_cmpleu_bdest_src1_src2,
+Instance_st235_cmpleu_idest_src1_isrc2,
+Instance_st235_cmpleu_ibdest_src1_isrc2,
+Instance_st235_cmpleu_idest_src1_xsrc2,
+Instance_st235_cmpleu_ibdest_src1_xsrc2,
+Instance_st235_cmplt_dest_src1_src2,
+Instance_st235_cmplt_bdest_src1_src2,
+Instance_st235_cmplt_idest_src1_isrc2,
+Instance_st235_cmplt_ibdest_src1_isrc2,
+Instance_st235_cmplt_idest_src1_xsrc2,
+Instance_st235_cmplt_ibdest_src1_xsrc2,
+Instance_st235_cmpltu_dest_src1_src2,
+Instance_st235_cmpltu_bdest_src1_src2,
+Instance_st235_cmpltu_idest_src1_isrc2,
+Instance_st235_cmpltu_ibdest_src1_isrc2,
+Instance_st235_cmpltu_idest_src1_xsrc2,
+Instance_st235_cmpltu_ibdest_src1_xsrc2,
+Instance_st235_cmpne_dest_src1_src2,
+Instance_st235_cmpne_bdest_src1_src2,
+Instance_st235_cmpne_idest_src1_isrc2,
+Instance_st235_cmpne_ibdest_src1_isrc2,
+Instance_st235_cmpne_idest_src1_xsrc2,
+Instance_st235_cmpne_ibdest_src1_xsrc2,
+Instance_st235_convfi_n_nldest_src1,
+Instance_st235_convif_n_nldest_src1,
+Instance_st235_div_nldest_src1_src2,
+Instance_st235_divu_nldest_src1_src2,
+Instance_st235_goto_btarg,
+Instance_st235_igoto,
+Instance_st235_imml_imm,
+Instance_st235_immr_imm,
+Instance_st235_ldb_nlidest_isrc2_src1,
+Instance_st235_ldb_nlidest_xsrc2_src1,
+Instance_st235_ldbc_nlidest_pcond_isrc2_src1,
+Instance_st235_ldbc_nlidest_pcond_xsrc2_src1,
+Instance_st235_ldbu_nlidest_isrc2_src1,
+Instance_st235_ldbu_nlidest_xsrc2_src1,
+Instance_st235_ldbuc_nlidest_pcond_isrc2_src1,
+Instance_st235_ldbuc_nlidest_pcond_xsrc2_src1,
+Instance_st235_ldh_nlidest_isrc2_src1,
+Instance_st235_ldh_nlidest_xsrc2_src1,
+Instance_st235_ldhc_nlidest_pcond_isrc2_src1,
+Instance_st235_ldhc_nlidest_pcond_xsrc2_src1,
+Instance_st235_ldhu_nlidest_isrc2_src1,
+Instance_st235_ldhu_nlidest_xsrc2_src1,
+Instance_st235_ldhuc_nlidest_pcond_isrc2_src1,
+Instance_st235_ldhuc_nlidest_pcond_xsrc2_src1,
+Instance_st235_ldp_idestp_isrc2_src1,
+Instance_st235_ldp_idestp_xsrc2_src1,
+Instance_st235_ldpc_idestp_pcond_isrc2_src1,
+Instance_st235_ldpc_idestp_pcond_xsrc2_src1,
+Instance_st235_ldw_idest_isrc2_src1,
+Instance_st235_ldw_idest_xsrc2_src1,
+Instance_st235_ldwc_nlidest_pcond_isrc2_src1,
+Instance_st235_ldwc_nlidest_pcond_xsrc2_src1,
+Instance_st235_ldwl_nlidest_src1,
+Instance_st235_max_dest_src1_src2,
+Instance_st235_max_idest_src1_isrc2,
+Instance_st235_max_idest_src1_xsrc2,
+Instance_st235_maxu_dest_src1_src2,
+Instance_st235_maxu_idest_src1_isrc2,
+Instance_st235_maxu_idest_src1_xsrc2,
+Instance_st235_min_dest_src1_src2,
+Instance_st235_min_idest_src1_isrc2,
+Instance_st235_min_idest_src1_xsrc2,
+Instance_st235_minu_dest_src1_src2,
+Instance_st235_minu_idest_src1_isrc2,
+Instance_st235_minu_idest_src1_xsrc2,
+Instance_st235_mulf_n_nldest_src1_src2,
+Instance_st235_mulfrac_nldest_src1_src2,
+Instance_st235_mulfrac_nlidest_src1_isrc2,
+Instance_st235_mulfrac_nlidest_src1_xsrc2,
+Instance_st235_mulh_nldest_src1_src2,
+Instance_st235_mulh_nlidest_src1_isrc2,
+Instance_st235_mulh_nlidest_src1_xsrc2,
+Instance_st235_mulhh_nldest_src1_src2,
+Instance_st235_mulhh_nlidest_src1_isrc2,
+Instance_st235_mulhh_nlidest_src1_xsrc2,
+Instance_st235_mulhhs_nldest_src1_src2,
+Instance_st235_mulhhs_nlidest_src1_isrc2,
+Instance_st235_mulhhs_nlidest_src1_xsrc2,
+Instance_st235_mulhhu_nldest_src1_src2,
+Instance_st235_mulhhu_nlidest_src1_isrc2,
+Instance_st235_mulhhu_nlidest_src1_xsrc2,
+Instance_st235_mulhs_nldest_src1_src2,
+Instance_st235_mulhs_nlidest_src1_isrc2,
+Instance_st235_mulhs_nlidest_src1_xsrc2,
+Instance_st235_mulhu_nldest_src1_src2,
+Instance_st235_mulhu_nlidest_src1_isrc2,
+Instance_st235_mulhu_nlidest_src1_xsrc2,
+Instance_st235_mull_nldest_src1_src2,
+Instance_st235_mull_nlidest_src1_isrc2,
+Instance_st235_mull_nlidest_src1_xsrc2,
+Instance_st235_mullh_nldest_src1_src2,
+Instance_st235_mullh_nlidest_src1_isrc2,
+Instance_st235_mullh_nlidest_src1_xsrc2,
+Instance_st235_mullhu_nldest_src1_src2,
+Instance_st235_mullhu_nlidest_src1_isrc2,
+Instance_st235_mullhu_nlidest_src1_xsrc2,
+Instance_st235_mullhus_nldest_src1_src2,
+Instance_st235_mullhus_nlidest_src1_isrc2,
+Instance_st235_mullhus_nlidest_src1_xsrc2,
+Instance_st235_mulll_nldest_src1_src2,
+Instance_st235_mulll_nlidest_src1_isrc2,
+Instance_st235_mulll_nlidest_src1_xsrc2,
+Instance_st235_mulllu_nldest_src1_src2,
+Instance_st235_mulllu_nlidest_src1_isrc2,
+Instance_st235_mulllu_nlidest_src1_xsrc2,
+Instance_st235_mullu_nldest_src1_src2,
+Instance_st235_mullu_nlidest_src1_isrc2,
+Instance_st235_mullu_nlidest_src1_xsrc2,
+Instance_st235_mul32_nldest_src1_src2,
+Instance_st235_mul32_nlidest_src1_isrc2,
+Instance_st235_mul32_nlidest_src1_xsrc2,
+Instance_st235_mul64h_nldest_src1_src2,
+Instance_st235_mul64h_nlidest_src1_isrc2,
+Instance_st235_mul64h_nlidest_src1_xsrc2,
+Instance_st235_mul64hu_nldest_src1_src2,
+Instance_st235_mul64hu_nlidest_src1_isrc2,
+Instance_st235_mul64hu_nlidest_src1_xsrc2,
+Instance_st235_nandl_dest_src1_src2,
+Instance_st235_nandl_bdest_src1_src2,
+Instance_st235_nandl_idest_src1_isrc2,
+Instance_st235_nandl_ibdest_src1_isrc2,
+Instance_st235_nandl_idest_src1_xsrc2,
+Instance_st235_nandl_ibdest_src1_xsrc2,
+Instance_st235_norl_dest_src1_src2,
+Instance_st235_norl_bdest_src1_src2,
+Instance_st235_norl_idest_src1_isrc2,
+Instance_st235_norl_ibdest_src1_isrc2,
+Instance_st235_norl_idest_src1_xsrc2,
+Instance_st235_norl_ibdest_src1_xsrc2,
+Instance_st235_or_dest_src1_src2,
+Instance_st235_or_idest_src1_isrc2,
+Instance_st235_or_idest_src1_xsrc2,
+Instance_st235_orc_dest_src1_src2,
+Instance_st235_orc_idest_src1_isrc2,
+Instance_st235_orc_idest_src1_xsrc2,
+Instance_st235_orl_dest_src1_src2,
+Instance_st235_orl_bdest_src1_src2,
+Instance_st235_orl_idest_src1_isrc2,
+Instance_st235_orl_ibdest_src1_isrc2,
+Instance_st235_orl_idest_src1_xsrc2,
+Instance_st235_orl_ibdest_src1_xsrc2,
+Instance_st235_pft_isrc2_src1,
+Instance_st235_pft_xsrc2_src1,
+Instance_st235_pftc_pcond_isrc2_src1,
+Instance_st235_pftc_pcond_xsrc2_src1,
+Instance_st235_prgadd_isrc2_src1,
+Instance_st235_prgadd_xsrc2_src1,
+Instance_st235_prgins,
+Instance_st235_prginsadd_isrc2_src1,
+Instance_st235_prginsadd_xsrc2_src1,
+Instance_st235_prginspg_isrc2_src1,
+Instance_st235_prginspg_xsrc2_src1,
+Instance_st235_prgset_isrc2_src1,
+Instance_st235_prgset_xsrc2_src1,
+Instance_st235_pswclr_src2,
+Instance_st235_pswset_src2,
+Instance_st235_rem_nldest_src1_src2,
+Instance_st235_remu_nldest_src1_src2,
+Instance_st235_returnadd_nlidest_src1_issrc2,
+Instance_st235_rfi,
+Instance_st235_sbrk_brknum,
+Instance_st235_sh1add_dest_src1_src2,
+Instance_st235_sh1add_idest_src1_isrc2,
+Instance_st235_sh1add_idest_src1_xsrc2,
+Instance_st235_sh2add_dest_src1_src2,
+Instance_st235_sh2add_idest_src1_isrc2,
+Instance_st235_sh2add_idest_src1_xsrc2,
+Instance_st235_sh3add_dest_src1_src2,
+Instance_st235_sh3add_idest_src1_isrc2,
+Instance_st235_sh3add_idest_src1_xsrc2,
+Instance_st235_shl_dest_src1_src2,
+Instance_st235_shl_idest_src1_isrc2,
+Instance_st235_shl_idest_src1_xsrc2,
+Instance_st235_shr_dest_src1_src2,
+Instance_st235_shr_idest_src1_isrc2,
+Instance_st235_shr_idest_src1_xsrc2,
+Instance_st235_shru_dest_src1_src2,
+Instance_st235_shru_idest_src1_isrc2,
+Instance_st235_shru_idest_src1_xsrc2,
+Instance_st235_slct_dest_scond_src1_src2,
+Instance_st235_slct_idest_scond_src1_isrc2,
+Instance_st235_slct_idest_scond_src1_xsrc2,
+Instance_st235_slctf_dest_scond_src1_src2,
+Instance_st235_slctf_idest_scond_src1_isrc2,
+Instance_st235_slctf_idest_scond_src1_xsrc2,
+Instance_st235_stb_isrc2_src1_src2,
+Instance_st235_stb_xsrc2_src1_src2,
+Instance_st235_stbc_isrc2_src1_pcond_src2,
+Instance_st235_stbc_xsrc2_src1_pcond_src2,
+Instance_st235_sth_isrc2_src1_src2,
+Instance_st235_sth_xsrc2_src1_src2,
+Instance_st235_sthc_isrc2_src1_pcond_src2,
+Instance_st235_sthc_xsrc2_src1_pcond_src2,
+Instance_st235_stp_isrc2_src1_src2p,
+Instance_st235_stp_xsrc2_src1_src2p,
+Instance_st235_stpc_isrc2_src1_pcond_src2p,
+Instance_st235_stpc_xsrc2_src1_pcond_src2p,
+Instance_st235_stw_isrc2_src1_src2,
+Instance_st235_stw_xsrc2_src1_src2,
+Instance_st235_stwc_isrc2_src1_pcond_src2,
+Instance_st235_stwc_xsrc2_src1_pcond_src2,
+Instance_st235_stwl_bdest2_src1_src2,
+Instance_st235_sub_dest_src2_src1,
+Instance_st235_sub_idest_isrc2_src1,
+Instance_st235_sub_idest_xsrc2_src1,
+Instance_st235_subf_n_nldest_src1_src2,
+Instance_st235_sxtb_idest_src1,
+Instance_st235_sxth_idest_src1,
+Instance_st235_sync,
+Instance_st235_syscall_brknum,
+Instance_st235_wmb,
+Instance_st235_xor_dest_src1_src2,
+Instance_st235_xor_idest_src1_isrc2,
+Instance_st235_xor_idest_src1_xsrc2,
+Instance_st235_zxth_idest_src1,
+Instance_st235_cmpge_dest_src2_src1,
+Instance_st235_cmpge_bdest_src2_src1,
+Instance_st235_cmpgeu_dest_src2_src1,
+Instance_st235_cmpgeu_bdest_src2_src1,
+Instance_st235_cmpgt_dest_src2_src1,
+Instance_st235_cmpgt_bdest_src2_src1,
+Instance_st235_cmplef_n_dest_src2_src1,
+Instance_st235_cmplef_n_bdest_src2_src1,
+Instance_st235_cmpltf_n_dest_src2_src1,
+Instance_st235_cmpltf_n_bdest_src2_src1,
+Instance_st235_idle,
+Instance_st235_mfb_idest_scond,
+Instance_st235_mov_dest_src2,
+Instance_st235_mov_idest_isrc2,
+Instance_st235_mov_idest_xsrc2,
+Instance_st235_mtb_bdest_src1,
+Instance_st235_nop,
+Instance_st235_return,
+Instance_st235_syncins,
+Instance_st235_zxtb_idest_src1,
+Instance_st220_ADJUST,
+Instance_st220_GETPC,
+Instance_st220_GNUASM,
+Instance_st220_PUSHREGS,
+Instance_st231_ADJUST,
+Instance_st231_GETPC,
+Instance_st231_GNUASM,
+Instance_st231_PUSHREGS,
+Instance_st235_ADJUST,
+Instance_st235_GETPC,
+Instance_st235_GNUASM,
+Instance_st235_MOVP,
+Instance_st235_COMPOSEP,
+Instance_st235_EXTRACTP,
+Instance_st235_PUSHREGS,
+
+#undef Instance
+
+
+#define InstanceActions(INDEX,ACTIONS) 
+#undef InstanceActions
+
+
+#define InstanceAction_COUNT_MAX 5
+
+
+  Instance__
+#undef Instance
+} Instance;
+typedef uint16_t short_Instance;
+
+/*
+  Operator -- Enumeration.
+*/
+typedef enum Operator {
+#define Operator(NAME,ATTRIBUTES,INSTANCES,MNEMONIC,SYNTAX,PARAMETERARRAY) Operator_ ##NAME,
+
+
+/*
+  st200/Operator.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Operator_LABEL,
+
+
+Operator_FALL,
+
+
+Operator_LOOP,
+
+
+Operator_PHI,
+
+
+Operator_PSI,
+
+
+Operator_SIGMA,
+
+
+Operator_KILL,
+
+
+Operator_FWDBAR,
+
+
+Operator_BWDBAR,
+
+
+Operator_IFIXUP,
+
+
+Operator_NOOP,
+
+
+Operator_COPY,
+
+
+Operator_GOTO,
+
+
+Operator_JUMP,
+
+
+Operator_CALL,
+
+
+Operator_LINK,
+
+
+Operator_RETURN,
+
+
+Operator_INTRINSIC,
+
+
+Operator_BEGIN_PREGTN,
+
+
+Operator_END_PREGTN,
+
+
+Operator_st200_ADJUST,
+
+
+Operator_st200_GETPC,
+
+
+Operator_st200_GNUASM,
+
+
+Operator_st200_PUSHREGS,
+
+
+Operator_st200_add_general_general_general,
+
+
+Operator_st200_add_general_general_isrc2,
+
+
+Operator_st200_add_general_general_xsrc2,
+
+
+Operator_st200_addcg_general_branch_general_general_branch,
+
+
+Operator_st200_and_general_general_general,
+
+
+Operator_st200_and_general_general_isrc2,
+
+
+Operator_st200_and_general_general_xsrc2,
+
+
+Operator_st200_andc_general_general_general,
+
+
+Operator_st200_andc_general_general_isrc2,
+
+
+Operator_st200_andc_general_general_xsrc2,
+
+
+Operator_st200_andl_general_general_general,
+
+
+Operator_st200_andl_branch_general_general,
+
+
+Operator_st200_andl_general_general_isrc2,
+
+
+Operator_st200_andl_branch_general_isrc2,
+
+
+Operator_st200_andl_general_general_xsrc2,
+
+
+Operator_st200_andl_branch_general_xsrc2,
+
+
+Operator_st200_asm_0_general_general_general,
+
+
+Operator_st200_asm_1_general_general_general,
+
+
+Operator_st200_asm_2_general_general_general,
+
+
+Operator_st200_asm_3_general_general_general,
+
+
+Operator_st200_asm_4_general_general_general,
+
+
+Operator_st200_asm_5_general_general_general,
+
+
+Operator_st200_asm_6_general_general_general,
+
+
+Operator_st200_asm_7_general_general_general,
+
+
+Operator_st200_asm_8_general_general_general,
+
+
+Operator_st200_asm_9_general_general_general,
+
+
+Operator_st200_asm_10_general_general_general,
+
+
+Operator_st200_asm_11_general_general_general,
+
+
+Operator_st200_asm_12_general_general_general,
+
+
+Operator_st200_asm_13_general_general_general,
+
+
+Operator_st200_asm_14_general_general_general,
+
+
+Operator_st200_asm_15_general_general_general,
+
+
+Operator_st200_asm_16_general_general_isrc2,
+
+
+Operator_st200_asm_16_general_general_xsrc2,
+
+
+Operator_st200_asm_17_general_general_isrc2,
+
+
+Operator_st200_asm_17_general_general_xsrc2,
+
+
+Operator_st200_asm_18_general_general_isrc2,
+
+
+Operator_st200_asm_18_general_general_xsrc2,
+
+
+Operator_st200_asm_19_general_general_isrc2,
+
+
+Operator_st200_asm_19_general_general_xsrc2,
+
+
+Operator_st200_asm_20_general_general_isrc2,
+
+
+Operator_st200_asm_20_general_general_xsrc2,
+
+
+Operator_st200_asm_21_general_general_isrc2,
+
+
+Operator_st200_asm_21_general_general_xsrc2,
+
+
+Operator_st200_asm_22_general_general_isrc2,
+
+
+Operator_st200_asm_22_general_general_xsrc2,
+
+
+Operator_st200_asm_23_general_general_isrc2,
+
+
+Operator_st200_asm_23_general_general_xsrc2,
+
+
+Operator_st200_asm_24_general_general_isrc2,
+
+
+Operator_st200_asm_24_general_general_xsrc2,
+
+
+Operator_st200_asm_25_general_general_isrc2,
+
+
+Operator_st200_asm_25_general_general_xsrc2,
+
+
+Operator_st200_asm_26_general_general_isrc2,
+
+
+Operator_st200_asm_26_general_general_xsrc2,
+
+
+Operator_st200_asm_27_general_general_isrc2,
+
+
+Operator_st200_asm_27_general_general_xsrc2,
+
+
+Operator_st200_asm_28_general_general_isrc2,
+
+
+Operator_st200_asm_28_general_general_xsrc2,
+
+
+Operator_st200_asm_29_general_general_isrc2,
+
+
+Operator_st200_asm_29_general_general_xsrc2,
+
+
+Operator_st200_asm_30_general_general_isrc2,
+
+
+Operator_st200_asm_30_general_general_xsrc2,
+
+
+Operator_st200_asm_31_general_general_isrc2,
+
+
+Operator_st200_asm_31_general_general_xsrc2,
+
+
+Operator_st200_br_branch_btarg,
+
+
+Operator_st200_break,
+
+
+Operator_st200_brf_branch_btarg,
+
+
+Operator_st200_bswap_general_general,
+
+
+Operator_st200_call_link_btarg,
+
+
+Operator_st200_icall_link_link,
+
+
+Operator_st200_clz_general_general,
+
+
+Operator_st200_cmpeq_general_general_general,
+
+
+Operator_st200_cmpeq_branch_general_general,
+
+
+Operator_st200_cmpeq_general_general_isrc2,
+
+
+Operator_st200_cmpeq_branch_general_isrc2,
+
+
+Operator_st200_cmpeq_general_general_xsrc2,
+
+
+Operator_st200_cmpeq_branch_general_xsrc2,
+
+
+Operator_st200_cmpge_general_general_general,
+
+
+Operator_st200_cmpge_branch_general_general,
+
+
+Operator_st200_cmpge_general_general_isrc2,
+
+
+Operator_st200_cmpge_branch_general_isrc2,
+
+
+Operator_st200_cmpge_general_general_xsrc2,
+
+
+Operator_st200_cmpge_branch_general_xsrc2,
+
+
+Operator_st200_cmpgeu_general_general_general,
+
+
+Operator_st200_cmpgeu_branch_general_general,
+
+
+Operator_st200_cmpgeu_general_general_isrc2,
+
+
+Operator_st200_cmpgeu_branch_general_isrc2,
+
+
+Operator_st200_cmpgeu_general_general_xsrc2,
+
+
+Operator_st200_cmpgeu_branch_general_xsrc2,
+
+
+Operator_st200_cmpgt_general_general_general,
+
+
+Operator_st200_cmpgt_branch_general_general,
+
+
+Operator_st200_cmpgt_general_general_isrc2,
+
+
+Operator_st200_cmpgt_branch_general_isrc2,
+
+
+Operator_st200_cmpgt_general_general_xsrc2,
+
+
+Operator_st200_cmpgt_branch_general_xsrc2,
+
+
+Operator_st200_cmpgtu_general_general_general,
+
+
+Operator_st200_cmpgtu_branch_general_general,
+
+
+Operator_st200_cmpgtu_general_general_isrc2,
+
+
+Operator_st200_cmpgtu_branch_general_isrc2,
+
+
+Operator_st200_cmpgtu_general_general_xsrc2,
+
+
+Operator_st200_cmpgtu_branch_general_xsrc2,
+
+
+Operator_st200_cmple_general_general_general,
+
+
+Operator_st200_cmple_branch_general_general,
+
+
+Operator_st200_cmple_general_general_isrc2,
+
+
+Operator_st200_cmple_branch_general_isrc2,
+
+
+Operator_st200_cmple_general_general_xsrc2,
+
+
+Operator_st200_cmple_branch_general_xsrc2,
+
+
+Operator_st200_cmpleu_general_general_general,
+
+
+Operator_st200_cmpleu_branch_general_general,
+
+
+Operator_st200_cmpleu_general_general_isrc2,
+
+
+Operator_st200_cmpleu_branch_general_isrc2,
+
+
+Operator_st200_cmpleu_general_general_xsrc2,
+
+
+Operator_st200_cmpleu_branch_general_xsrc2,
+
+
+Operator_st200_cmplt_general_general_general,
+
+
+Operator_st200_cmplt_branch_general_general,
+
+
+Operator_st200_cmplt_general_general_isrc2,
+
+
+Operator_st200_cmplt_branch_general_isrc2,
+
+
+Operator_st200_cmplt_general_general_xsrc2,
+
+
+Operator_st200_cmplt_branch_general_xsrc2,
+
+
+Operator_st200_cmpltu_general_general_general,
+
+
+Operator_st200_cmpltu_branch_general_general,
+
+
+Operator_st200_cmpltu_general_general_isrc2,
+
+
+Operator_st200_cmpltu_branch_general_isrc2,
+
+
+Operator_st200_cmpltu_general_general_xsrc2,
+
+
+Operator_st200_cmpltu_branch_general_xsrc2,
+
+
+Operator_st200_cmpne_general_general_general,
+
+
+Operator_st200_cmpne_branch_general_general,
+
+
+Operator_st200_cmpne_general_general_isrc2,
+
+
+Operator_st200_cmpne_branch_general_isrc2,
+
+
+Operator_st200_cmpne_general_general_xsrc2,
+
+
+Operator_st200_cmpne_branch_general_xsrc2,
+
+
+Operator_st200_divs_general_branch_general_general_branch,
+
+
+Operator_st200_goto_btarg,
+
+
+Operator_st200_igoto_link,
+
+
+Operator_st200_ldb_nolink_isrc2_general,
+
+
+Operator_st200_ldb_nolink_xsrc2_general,
+
+
+Operator_st200_ldb_d_nolink_isrc2_general,
+
+
+Operator_st200_ldb_d_nolink_xsrc2_general,
+
+
+Operator_st200_ldbu_nolink_isrc2_general,
+
+
+Operator_st200_ldbu_nolink_xsrc2_general,
+
+
+Operator_st200_ldbu_d_nolink_isrc2_general,
+
+
+Operator_st200_ldbu_d_nolink_xsrc2_general,
+
+
+Operator_st200_ldh_nolink_isrc2_general,
+
+
+Operator_st200_ldh_nolink_xsrc2_general,
+
+
+Operator_st200_ldh_d_nolink_isrc2_general,
+
+
+Operator_st200_ldh_d_nolink_xsrc2_general,
+
+
+Operator_st200_ldhu_nolink_isrc2_general,
+
+
+Operator_st200_ldhu_nolink_xsrc2_general,
+
+
+Operator_st200_ldhu_d_nolink_isrc2_general,
+
+
+Operator_st200_ldhu_d_nolink_xsrc2_general,
+
+
+Operator_st200_ldw_general_isrc2_general,
+
+
+Operator_st200_ldw_general_xsrc2_general,
+
+
+Operator_st200_ldw_d_general_isrc2_general,
+
+
+Operator_st200_ldw_d_general_xsrc2_general,
+
+
+Operator_st200_max_general_general_general,
+
+
+Operator_st200_max_general_general_isrc2,
+
+
+Operator_st200_max_general_general_xsrc2,
+
+
+Operator_st200_maxu_general_general_general,
+
+
+Operator_st200_maxu_general_general_isrc2,
+
+
+Operator_st200_maxu_general_general_xsrc2,
+
+
+Operator_st200_min_general_general_general,
+
+
+Operator_st200_min_general_general_isrc2,
+
+
+Operator_st200_min_general_general_xsrc2,
+
+
+Operator_st200_minu_general_general_general,
+
+
+Operator_st200_minu_general_general_isrc2,
+
+
+Operator_st200_minu_general_general_xsrc2,
+
+
+Operator_st200_mulh_nolink_general_general,
+
+
+Operator_st200_mulh_nolink_general_isrc2,
+
+
+Operator_st200_mulh_nolink_general_xsrc2,
+
+
+Operator_st200_mulhh_nolink_general_general,
+
+
+Operator_st200_mulhh_nolink_general_isrc2,
+
+
+Operator_st200_mulhh_nolink_general_xsrc2,
+
+
+Operator_st200_mulhhs_nolink_general_general,
+
+
+Operator_st200_mulhhs_nolink_general_isrc2,
+
+
+Operator_st200_mulhhs_nolink_general_xsrc2,
+
+
+Operator_st200_mulhhu_nolink_general_general,
+
+
+Operator_st200_mulhhu_nolink_general_isrc2,
+
+
+Operator_st200_mulhhu_nolink_general_xsrc2,
+
+
+Operator_st200_mulhs_nolink_general_general,
+
+
+Operator_st200_mulhs_nolink_general_isrc2,
+
+
+Operator_st200_mulhs_nolink_general_xsrc2,
+
+
+Operator_st200_mulhu_nolink_general_general,
+
+
+Operator_st200_mulhu_nolink_general_isrc2,
+
+
+Operator_st200_mulhu_nolink_general_xsrc2,
+
+
+Operator_st200_mull_nolink_general_general,
+
+
+Operator_st200_mull_nolink_general_isrc2,
+
+
+Operator_st200_mull_nolink_general_xsrc2,
+
+
+Operator_st200_mullh_nolink_general_general,
+
+
+Operator_st200_mullh_nolink_general_isrc2,
+
+
+Operator_st200_mullh_nolink_general_xsrc2,
+
+
+Operator_st200_mullhu_nolink_general_general,
+
+
+Operator_st200_mullhu_nolink_general_isrc2,
+
+
+Operator_st200_mullhu_nolink_general_xsrc2,
+
+
+Operator_st200_mullhus_nolink_general_general,
+
+
+Operator_st200_mullhus_nolink_general_isrc2,
+
+
+Operator_st200_mullhus_nolink_general_xsrc2,
+
+
+Operator_st200_mulll_nolink_general_general,
+
+
+Operator_st200_mulll_nolink_general_isrc2,
+
+
+Operator_st200_mulll_nolink_general_xsrc2,
+
+
+Operator_st200_mulllu_nolink_general_general,
+
+
+Operator_st200_mulllu_nolink_general_isrc2,
+
+
+Operator_st200_mulllu_nolink_general_xsrc2,
+
+
+Operator_st200_mullu_nolink_general_general,
+
+
+Operator_st200_mullu_nolink_general_isrc2,
+
+
+Operator_st200_mullu_nolink_general_xsrc2,
+
+
+Operator_st200_nandl_general_general_general,
+
+
+Operator_st200_nandl_branch_general_general,
+
+
+Operator_st200_nandl_general_general_isrc2,
+
+
+Operator_st200_nandl_branch_general_isrc2,
+
+
+Operator_st200_nandl_general_general_xsrc2,
+
+
+Operator_st200_nandl_branch_general_xsrc2,
+
+
+Operator_st200_norl_general_general_general,
+
+
+Operator_st200_norl_branch_general_general,
+
+
+Operator_st200_norl_general_general_isrc2,
+
+
+Operator_st200_norl_branch_general_isrc2,
+
+
+Operator_st200_norl_general_general_xsrc2,
+
+
+Operator_st200_norl_branch_general_xsrc2,
+
+
+Operator_st200_or_general_general_general,
+
+
+Operator_st200_or_general_general_isrc2,
+
+
+Operator_st200_or_general_general_xsrc2,
+
+
+Operator_st200_orc_general_general_general,
+
+
+Operator_st200_orc_general_general_isrc2,
+
+
+Operator_st200_orc_general_general_xsrc2,
+
+
+Operator_st200_orl_general_general_general,
+
+
+Operator_st200_orl_branch_general_general,
+
+
+Operator_st200_orl_general_general_isrc2,
+
+
+Operator_st200_orl_branch_general_isrc2,
+
+
+Operator_st200_orl_general_general_xsrc2,
+
+
+Operator_st200_orl_branch_general_xsrc2,
+
+
+Operator_st200_pft_isrc2_general,
+
+
+Operator_st200_pft_xsrc2_general,
+
+
+Operator_st200_prgadd_isrc2_general,
+
+
+Operator_st200_prgadd_xsrc2_general,
+
+
+Operator_st200_prgset_isrc2_general,
+
+
+Operator_st200_prgset_xsrc2_general,
+
+
+Operator_st200_prgins,
+
+
+Operator_st200_rfi,
+
+
+Operator_st200_sbrk,
+
+
+Operator_st200_sh1add_general_general_general,
+
+
+Operator_st200_sh1add_general_general_isrc2,
+
+
+Operator_st200_sh1add_general_general_xsrc2,
+
+
+Operator_st200_sh2add_general_general_general,
+
+
+Operator_st200_sh2add_general_general_isrc2,
+
+
+Operator_st200_sh2add_general_general_xsrc2,
+
+
+Operator_st200_sh3add_general_general_general,
+
+
+Operator_st200_sh3add_general_general_isrc2,
+
+
+Operator_st200_sh3add_general_general_xsrc2,
+
+
+Operator_st200_sh4add_general_general_general,
+
+
+Operator_st200_sh4add_general_general_isrc2,
+
+
+Operator_st200_sh4add_general_general_xsrc2,
+
+
+Operator_st200_shl_general_general_general,
+
+
+Operator_st200_shl_general_general_isrc2,
+
+
+Operator_st200_shl_general_general_xsrc2,
+
+
+Operator_st200_shr_general_general_general,
+
+
+Operator_st200_shr_general_general_isrc2,
+
+
+Operator_st200_shr_general_general_xsrc2,
+
+
+Operator_st200_shru_general_general_general,
+
+
+Operator_st200_shru_general_general_isrc2,
+
+
+Operator_st200_shru_general_general_xsrc2,
+
+
+Operator_st200_slct_general_branch_general_general,
+
+
+Operator_st200_slct_general_branch_general_isrc2,
+
+
+Operator_st200_slct_general_branch_general_xsrc2,
+
+
+Operator_st200_slctf_general_branch_general_general,
+
+
+Operator_st200_slctf_general_branch_general_isrc2,
+
+
+Operator_st200_slctf_general_branch_general_xsrc2,
+
+
+Operator_st200_stb_isrc2_general_general,
+
+
+Operator_st200_stb_xsrc2_general_general,
+
+
+Operator_st200_sth_isrc2_general_general,
+
+
+Operator_st200_sth_xsrc2_general_general,
+
+
+Operator_st200_stw_isrc2_general_general,
+
+
+Operator_st200_stw_xsrc2_general_general,
+
+
+Operator_st200_sub_general_general_general,
+
+
+Operator_st200_sub_general_isrc2_general,
+
+
+Operator_st200_sub_general_xsrc2_general,
+
+
+Operator_st200_sxtb_general_general,
+
+
+Operator_st200_sxth_general_general,
+
+
+Operator_st200_sync,
+
+
+Operator_st200_syscall,
+
+
+Operator_st200_xor_general_general_general,
+
+
+Operator_st200_xor_general_general_isrc2,
+
+
+Operator_st200_xor_general_general_xsrc2,
+
+
+Operator_st200_zxth_general_general,
+
+
+Operator_st200_nop,
+
+
+Operator_st200_mov_general_general,
+
+
+Operator_st200_mov_general_isrc2,
+
+
+Operator_st200_mov_general_xsrc2,
+
+
+Operator_st200_mtb_branch_general,
+
+
+Operator_st200_mfb_general_branch,
+
+
+Operator_st200_zxtb_general_general,
+
+
+Operator_st200_syncins,
+
+
+Operator_st200_return_link,
+
+
+Operator_st200_ldwl_nolink_general,
+
+
+Operator_st200_mul32_nolink_general_general,
+
+
+Operator_st200_mul32_nolink_general_isrc2,
+
+
+Operator_st200_mul32_nolink_general_xsrc2,
+
+
+Operator_st200_mul64h_nolink_general_general,
+
+
+Operator_st200_mul64h_nolink_general_isrc2,
+
+
+Operator_st200_mul64h_nolink_general_xsrc2,
+
+
+Operator_st200_mul64hu_nolink_general_general,
+
+
+Operator_st200_mul64hu_nolink_general_isrc2,
+
+
+Operator_st200_mul64hu_nolink_general_xsrc2,
+
+
+Operator_st200_mulfrac_nolink_general_general,
+
+
+Operator_st200_mulfrac_nolink_general_isrc2,
+
+
+Operator_st200_mulfrac_nolink_general_xsrc2,
+
+
+Operator_st200_prginspg_isrc2_general,
+
+
+Operator_st200_prginspg_xsrc2_general,
+
+
+Operator_st200_pswclr_general,
+
+
+Operator_st200_pswset_general,
+
+
+Operator_st200_stwl_branch_general_general,
+
+
+Operator_st200_wmb,
+
+
+Operator_st200_idle,
+
+
+Operator_MOVC,
+
+
+Operator_MOVCF,
+
+
+Operator_st200_MOVP,
+
+
+Operator_st200_COMPOSEP,
+
+
+Operator_st200_EXTRACTP,
+
+
+Operator_st200_addf_n_nolink_general_general,
+
+
+Operator_st200_addpc_general_general,
+
+
+Operator_st200_addpc_general_isrc2,
+
+
+Operator_st200_addpc_general_xsrc2,
+
+
+Operator_st200_cmpeqf_n_general_general_general,
+
+
+Operator_st200_cmpeqf_n_branch_general_general,
+
+
+Operator_st200_cmpgef_n_general_general_general,
+
+
+Operator_st200_cmpgef_n_branch_general_general,
+
+
+Operator_st200_cmpgtf_n_general_general_general,
+
+
+Operator_st200_cmpgtf_n_branch_general_general,
+
+
+Operator_st200_convfi_n_nolink_general,
+
+
+Operator_st200_convif_n_nolink_general,
+
+
+Operator_st200_div_nolink_general_general,
+
+
+Operator_st200_divu_nolink_general_general,
+
+
+Operator_st200_ldbc_nolink_predicate_isrc2_general,
+
+
+Operator_st200_ldbc_nolink_predicate_xsrc2_general,
+
+
+Operator_st200_ldbuc_nolink_predicate_isrc2_general,
+
+
+Operator_st200_ldbuc_nolink_predicate_xsrc2_general,
+
+
+Operator_st200_ldhc_nolink_predicate_isrc2_general,
+
+
+Operator_st200_ldhc_nolink_predicate_xsrc2_general,
+
+
+Operator_st200_ldhuc_nolink_predicate_isrc2_general,
+
+
+Operator_st200_ldhuc_nolink_predicate_xsrc2_general,
+
+
+Operator_st200_ldp_paired_isrc2_general,
+
+
+Operator_st200_MULTI_ldp_paired_isrc2_general,
+
+
+Operator_st200_ldp_paired_xsrc2_general,
+
+
+Operator_st200_MULTI_ldp_paired_xsrc2_general,
+
+
+Operator_st200_ldpc_paired_predicate_isrc2_general,
+
+
+Operator_st200_MULTI_ldpc_paired_predicate_isrc2_general,
+
+
+Operator_st200_ldpc_paired_predicate_xsrc2_general,
+
+
+Operator_st200_MULTI_ldpc_paired_predicate_xsrc2_general,
+
+
+Operator_st200_ldwc_nolink_predicate_isrc2_general,
+
+
+Operator_st200_ldwc_nolink_predicate_xsrc2_general,
+
+
+Operator_st200_mulf_n_nolink_general_general,
+
+
+Operator_st200_pftc_predicate_isrc2_general,
+
+
+Operator_st200_pftc_predicate_xsrc2_general,
+
+
+Operator_st200_prginsadd_isrc2_general,
+
+
+Operator_st200_prginsadd_xsrc2_general,
+
+
+Operator_st200_rem_nolink_general_general,
+
+
+Operator_st200_remu_nolink_general_general,
+
+
+Operator_st200_returnadd_nolink_link_general_issrc2,
+
+
+Operator_st235_sbrk,
+
+
+Operator_st200_stbc_isrc2_general_predicate_general,
+
+
+Operator_st200_stbc_xsrc2_general_predicate_general,
+
+
+Operator_st200_sthc_isrc2_general_predicate_general,
+
+
+Operator_st200_sthc_xsrc2_general_predicate_general,
+
+
+Operator_st200_stp_isrc2_general_paired,
+
+
+Operator_st200_MULTI_stp_isrc2_general_paired,
+
+
+Operator_st200_stp_xsrc2_general_paired,
+
+
+Operator_st200_MULTI_stp_xsrc2_general_paired,
+
+
+Operator_st200_stpc_isrc2_general_predicate_paired,
+
+
+Operator_st200_MULTI_stpc_isrc2_general_predicate_paired,
+
+
+Operator_st200_stpc_xsrc2_general_predicate_paired,
+
+
+Operator_st200_MULTI_stpc_xsrc2_general_predicate_paired,
+
+
+Operator_st200_stwc_isrc2_general_predicate_general,
+
+
+Operator_st200_stwc_xsrc2_general_predicate_general,
+
+
+Operator_st200_subf_n_nolink_general_general,
+
+
+Operator_st235_syscall,
+
+
+Operator_st200_cmplef_n_general_general_general,
+
+
+Operator_st200_cmplef_n_branch_general_general,
+
+
+Operator_st200_cmpltf_n_general_general_general,
+
+
+Operator_st200_cmpltf_n_branch_general_general,
+
+
+
+#undef Operator
+
+
+#define OperatorParameters(INDEX,PARAMETERS) 
+#undef OperatorParameters
+
+
+#define OperatorParameterArray_COUNT_MAX 5
+
+
+  Operator__
+#undef Operator
+} Operator;
+typedef uint16_t short_Operator;
+
+/*
+  Bundling -- Enumeration.
+*/
+typedef enum Bundling {
+#define Bundling(NAME) Bundling_ ##NAME,
+
+
+/*
+  st200/Bundling.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Bundling_st200_ANY,
+Bundling_st200_ANYX,
+Bundling_st200_FIRST,
+Bundling_st200_EVEN,
+Bundling_st200_ODD,
+Bundling_st200_ALONE,
+
+#undef Bundling
+
+
+#define Bundling_LOG2_MAX 3
+
+
+  Bundling__
+#undef Bundling
+} Bundling;
+typedef uint8_t short_Bundling;
+
+/*
+  Template -- Enumeration.
+*/
+typedef enum Template {
+#define Template(NAME,ALIGNMENT,INCREMENT,ENCODE,DECODE) Template_ ##NAME,
+
+
+/*
+  st200/Template.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Template_st200_E0_E1_E2_E3,
+
+
+Template_st200_E0_E1_E2,
+
+
+Template_st200_E0_E1,
+
+
+Template_st200_E0,
+
+
+Template_st200_E0E1_E2_E3,
+
+
+Template_st200_E0E1_E2,
+
+
+Template_st200_E0E1,
+
+
+Template_st200_E0E1_E2E3,
+
+
+Template_st200_E0_E1E2_E3,
+
+
+Template_st200_E0_E1E2,
+
+
+Template_st200_EALL,
+
+
+Template_st200_O0_O1_O2_O3,
+
+
+Template_st200_O0_O1_O2,
+
+
+Template_st200_O0_O1,
+
+
+Template_st200_O0,
+
+
+Template_st200_O0O1_O2_O3,
+
+
+Template_st200_O0O1_O2,
+
+
+Template_st200_O0O1,
+
+
+Template_st200_O0O1_O2O3,
+
+
+Template_st200_O0_O1O2_O3,
+
+
+Template_st200_O0_O1O2,
+
+
+Template_st200_OALL,
+
+
+
+#undef Template
+
+  Template__
+#undef Template
+} Template;
+typedef uint8_t short_Template;
+
+/*
+  Bundle -- Enumeration.
+*/
+typedef enum Bundle {
+#define Bundle(NAME,ALIGNMENT,CONTENTS,INVERSE,TEMPLATE) Bundle_ ##NAME,
+
+
+/*
+  st200/Bundle.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Bundle_st200_ANY_ANY_ANY_ANY_0_8,
+Bundle_st200_ANY_ANY_ANY_ANY_4_8,
+Bundle_st200_ANY_ANY_ANY_ODD_0_8,
+Bundle_st200_ANY_ANY_ODD_ANY_4_8,
+Bundle_st200_ANY_ANY_EVEN_ANY_0_8,
+Bundle_st200_ANY_ANY_ANY_EVEN_4_8,
+Bundle_st200_ANY_ANY_EVEN_ODD_0_8,
+Bundle_st200_ANY_ANY_ODD_EVEN_4_8,
+Bundle_st200_ANY_ODD_ANY_ODD_0_8,
+Bundle_st200_ODD_ANY_ODD_ANY_4_8,
+Bundle_st200_ANY_ODD_EVEN_ODD_0_8,
+Bundle_st200_ODD_ANY_ODD_EVEN_4_8,
+Bundle_st200_FIRST_ANY_ANY_ANY_0_8,
+Bundle_st200_FIRST_ANY_ANY_ANY_4_8,
+Bundle_st200_FIRST_ANY_ANY_ODD_0_8,
+Bundle_st200_FIRST_ANY_ODD_ANY_4_8,
+Bundle_st200_FIRST_ANY_EVEN_ANY_0_8,
+Bundle_st200_FIRST_ANY_ANY_EVEN_4_8,
+Bundle_st200_FIRST_ANY_EVEN_ODD_0_8,
+Bundle_st200_FIRST_ANY_ODD_EVEN_4_8,
+Bundle_st200_FIRST_ODD_ANY_ODD_0_8,
+Bundle_st200_FIRST_ODD_EVEN_ODD_0_8,
+Bundle_st200_EVEN_ANY_EVEN_ANY_0_8,
+Bundle_st200_ANY_EVEN_ANY_EVEN_4_8,
+Bundle_st200_EVEN_ANY_EVEN_ODD_0_8,
+Bundle_st200_ANY_EVEN_ODD_EVEN_4_8,
+Bundle_st200_EVEN_ODD_EVEN_ODD_0_8,
+Bundle_st200_ODD_EVEN_ODD_EVEN_4_8,
+Bundle_st200_ANY_ANY_ANY_0_8,
+Bundle_st200_ANY_ANY_ANY_4_8,
+Bundle_st200_ANY_ANY_EVEN_0_8,
+Bundle_st200_ANY_EVEN_ANY_4_8,
+Bundle_st200_ANY_ODD_ANY_0_8,
+Bundle_st200_ANY_ANY_ODD_4_8,
+Bundle_st200_ANY_ODD_EVEN_0_8,
+Bundle_st200_ANY_EVEN_ODD_4_8,
+Bundle_st200_FIRST_ANY_ANY_0_8,
+Bundle_st200_FIRST_ANY_ANY_4_8,
+Bundle_st200_FIRST_ANY_EVEN_0_8,
+Bundle_st200_FIRST_EVEN_ANY_4_8,
+Bundle_st200_FIRST_ODD_ANY_0_8,
+Bundle_st200_FIRST_ANY_ODD_4_8,
+Bundle_st200_FIRST_ODD_EVEN_0_8,
+Bundle_st200_FIRST_EVEN_ODD_4_8,
+Bundle_st200_EVEN_ANY_EVEN_0_8,
+Bundle_st200_EVEN_ODD_EVEN_0_8,
+Bundle_st200_ANY_ANY_0_8,
+Bundle_st200_ANY_ANY_4_8,
+Bundle_st200_ANY_ODD_0_8,
+Bundle_st200_ODD_ANY_4_8,
+Bundle_st200_FIRST_ANY_0_8,
+Bundle_st200_FIRST_ANY_4_8,
+Bundle_st200_FIRST_ODD_0_8,
+Bundle_st200_EVEN_ANY_0_8,
+Bundle_st200_ANY_EVEN_4_8,
+Bundle_st200_EVEN_ODD_0_8,
+Bundle_st200_ODD_EVEN_4_8,
+Bundle_st200_ANY_0_8,
+Bundle_st200_ANY_4_8,
+Bundle_st200_FIRST_0_8,
+Bundle_st200_FIRST_4_8,
+Bundle_st200_EVEN_0_8,
+Bundle_st200_ANYX_ANY_ANY_0_8,
+Bundle_st200_ANYX_ANY_ANY_4_8,
+Bundle_st200_ANYX_ANY_ODD_0_8,
+Bundle_st200_ANYX_ODD_ANY_4_8,
+Bundle_st200_ANYX_EVEN_ANY_0_8,
+Bundle_st200_ANYX_ANY_EVEN_4_8,
+Bundle_st200_ANYX_EVEN_ODD_0_8,
+Bundle_st200_ANYX_ODD_EVEN_4_8,
+Bundle_st200_ANYX_ANY_0_8,
+Bundle_st200_ANYX_ANY_4_8,
+Bundle_st200_ANYX_EVEN_0_8,
+Bundle_st200_ANYX_0_8,
+Bundle_st200_ANYX_4_8,
+Bundle_st200_ANYX_ANYX_0_8,
+Bundle_st200_ANYX_ANYX_4_8,
+Bundle_st200_FIRST_ANYX_ANY_0_8,
+Bundle_st200_FIRST_ANYX_ANY_4_8,
+Bundle_st200_FIRST_ANYX_ODD_0_8,
+Bundle_st200_FIRST_ANYX_0_8,
+Bundle_st200_FIRST_ANYX_4_8,
+Bundle_st200_ALONE_0_8,
+Bundle_st200_ALONE_4_8,
+Bundle_st200_FIRST_EVEN_ANY_EVEN_4_8,
+Bundle_st200_FIRST_EVEN_ODD_EVEN_4_8,
+Bundle_st200_ODD_ANY_ODD_4_8,
+Bundle_st200_ODD_EVEN_ODD_4_8,
+Bundle_st200_FIRST_EVEN_4_8,
+Bundle_st200_ODD_4_8,
+Bundle_st200_ANYX_ODD_4_8,
+Bundle_st200_FIRST_ANYX_EVEN_4_8,
+
+#undef Bundle
+
+
+#define Bundle_ISSUE_MAX 4
+
+
+
+#define BundleMatch(HASH,CANONIC,BUNDLES) 
+#undef BundleMatch
+
+
+#define BundleMatch_HASH_MAX 1042
+
+
+
+#define BundleMatch_COUNT_MAX 2
+
+
+  Bundle__
+#undef Bundle
+} Bundle;
+typedef uint16_t short_Bundle;
+
+/*
+  Resource -- Enumeration.
+*/
+typedef enum Resource {
+#define Resource(NAME,AVAILABILITY) Resource_ ##NAME,
+
+
+/*
+  st200/Resource.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Resource_st200_ISSUE,
+
+Resource_st200_MEM,
+
+Resource_st200_CTL,
+
+Resource_st200_ODD,
+
+Resource_st200_EVEN,
+
+
+#undef Resource
+
+  Resource__
+#undef Resource
+} Resource;
+typedef uint8_t short_Resource;
+
+/*
+  Reservation -- Enumeration.
+*/
+typedef enum Reservation {
+#define Reservation(NAME,TABLE) Reservation_ ##NAME,
+
+
+/*
+  st200/Reservation.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Reservation_st220_ALL,
+Reservation_st220_ALU,
+Reservation_st220_ALUX,
+Reservation_st220_CTL,
+Reservation_st220_ODD,
+Reservation_st220_ODDX,
+Reservation_st220_MEM,
+Reservation_st220_MEMX,
+Reservation_st220_PSW,
+Reservation_st220_EVEN,
+Reservation_st231_ALL,
+Reservation_st231_ALU,
+Reservation_st231_ALUX,
+Reservation_st231_CTL,
+Reservation_st231_ODD,
+Reservation_st231_ODDX,
+Reservation_st231_MEM,
+Reservation_st231_MEMX,
+Reservation_st231_PSW,
+Reservation_st231_EVEN,
+Reservation_st235_ALL,
+Reservation_st235_ALU,
+Reservation_st235_ALUX,
+Reservation_st235_CTL,
+Reservation_st235_ODD,
+Reservation_st235_ODDX,
+Reservation_st235_MEM,
+Reservation_st235_MEMX,
+Reservation_st235_PSW,
+Reservation_st235_EVEN,
+
+#undef Reservation
+
+
+#define ReservationColumn(COLUMNINDEX,REQUIREMENTS) 
+#undef ReservationColumn
+
+
+#define Reservation_COLUMNCOUNT_MAX 1
+
+
+  Reservation__
+#undef Reservation
+} Reservation;
+typedef uint8_t short_Reservation;
+
+/*
+  Scheduling -- Enumeration.
+*/
+typedef enum Scheduling {
+#define Scheduling(NAME,PROCESSOR,BUNDLING,RESERVATION) Scheduling_ ##NAME,
+
+
+/*
+  st200/Scheduling.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+Scheduling_st220_ALL,
+Scheduling_st220_ALU,
+Scheduling_st220_ALUX,
+Scheduling_st220_CTL,
+Scheduling_st220_ODD,
+Scheduling_st220_ODDX,
+Scheduling_st220_MEM,
+Scheduling_st220_MEMX,
+Scheduling_st220_PSW,
+Scheduling_st220_EVEN,
+Scheduling_st231_ALL,
+Scheduling_st231_ALU,
+Scheduling_st231_ALUX,
+Scheduling_st231_CTL,
+Scheduling_st231_ODD,
+Scheduling_st231_ODDX,
+Scheduling_st231_MEM,
+Scheduling_st231_MEMX,
+Scheduling_st231_PSW,
+Scheduling_st231_EVEN,
+Scheduling_st235_ALL,
+Scheduling_st235_ALU,
+Scheduling_st235_ALUX,
+Scheduling_st235_CTL,
+Scheduling_st235_ODD,
+Scheduling_st235_ODDX,
+Scheduling_st235_MEM,
+Scheduling_st235_MEMX,
+Scheduling_st235_PSW,
+Scheduling_st235_EVEN,
+
+#undef Scheduling
+
+  Scheduling__
+#undef Scheduling
+} Scheduling;
+typedef uint8_t short_Scheduling;
+
+/*
+  Convention -- Enumeration.
+*/
+typedef enum Convention {
+#define Convention(NAME,RESERVED,ARGUMENT,RESULT,STRUCT,CALLER,CALLEE,PROGRAM,RETURN,STACK,STATIC,FRAME,GLOBAL,LOCAL,WIRED,ZERO,ONE,ALIGNTEXT,ALIGNDATA,ALIGNHEAP,ALIGNSTACK,NATIVEINT,NATIVEUINT,NATIVEFLOAT,NATIVEPTR) Convention_ ##NAME,
+
+
+
+
+
+
+/*
+  st200/Convention.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+
+
+
+Convention_st200_embedded,
+#undef Convention
+
+  Convention__
+#undef Convention
+} Convention;
+typedef uint8_t short_Convention;
+
+//
+
+
+
+
+
+
+/*
+  Decode_Encoding function prototypes.
+*/
+
+#define Encoding(NAME,PROCESSOR,WORDTYPE,WORDCOUNT) extern Instance Decode_Encoding_ ##NAME(const void *buffer);
+
+
+
+/*
+  st200/Encoding.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+extern Instance Decode_Encoding_st220_ANY(const void *buffer);
+extern Instance Decode_Encoding_st220_ANYX(const void *buffer);
+extern Instance Decode_Encoding_st231_ANY(const void *buffer);
+extern Instance Decode_Encoding_st231_ANYX(const void *buffer);
+extern Instance Decode_Encoding_st235_ANY(const void *buffer);
+extern Instance Decode_Encoding_st235_ANYX(const void *buffer);
+
+#undef Encoding
+
+
+
+
+
+
+
+//
+
+
+#define Processor_h_INCLUDED 
+
+/*
+  Processor.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Processor_NAME_ -- NAME array for the Processor enumeration.
+*/
+extern const char *Processor_NAME_[];
+
+#define Processor_NAME_(this) (Processor_NAME_[this])
+
+
+
+
+/*
+  Processor_maxIssue -- This Processor maxIssue.
+*/
+extern const int8_t
+Processor_MaxIssue[];
+static inline int
+Processor_maxIssue(Processor this)
+{
+  ;
+  return Processor_MaxIssue[this];
+}
+
+/*
+  Processor_minTaken -- This Processor minTaken.
+*/
+extern int8_t
+Processor_MinTaken[];
+static inline int
+Processor_minTaken(Processor this)
+{
+  ;
+  return Processor_MinTaken[this];
+}
+
+/*
+  Processor_interlocks -- Whether this Processor interlocks registers.
+*/
+extern const bool
+Processor_Interlocks[];
+bool
+Processor_interlocks(Processor this);
+
+//
+typedef enum {
+  ProcessorEndianness_Little,
+  ProcessorEndianness_Big,
+  ProcessorEndianness__
+} ProcessorEndianness;
+typedef uint8_t short_ProcessorEndianness;
+
+/*
+  Processor_endianness -- Endianness of this Processor.
+*/
+extern const short_ProcessorEndianness
+Processor_Endianness[];
+static inline ProcessorEndianness
+Processor_endianness(Processor this)
+{
+  ;
+  return (ProcessorEndianness)Processor_Endianness[this];
+}
+
+/*
+  Processor_availability -- This Processor availability of Resource(s).
+*/
+extern uint8_t
+Processor_Availability[][Resource__];
+static inline const uint8_t *
+Processor_availability(Processor this)
+{
+  ;
+  return Processor_Availability[this];
+}
+
+
+
+
+
+#define Encoding_h_INCLUDED 
+
+/*
+  Encoding.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Encoding_NAME_ -- NAME array for the Encoding enumeration.
+*/
+extern const char *Encoding_NAME_[];
+
+#define Encoding_NAME_(this) (Encoding_NAME_[this])
+
+
+
+
+/*
+  Encoding_processor -- This Encoding Processor.
+*/
+extern const short_Processor
+Encoding_Processor[];
+static inline Processor
+Encoding_processor(Encoding this)
+{
+  ;
+  return (Processor)Encoding_Processor[this];
+}
+
+/*
+  Encoding_wordCount -- This Encoding word count.
+*/
+extern const uint8_t
+Encoding_WordCount[];
+static inline uint8_t
+Encoding_wordCount(Encoding this)
+{
+  ;
+  return Encoding_WordCount[this];
+}
+
+/*
+  Encoding_wordSize -- This Encoding word size.
+*/
+extern const uint8_t
+Encoding_WordSize[];
+static inline uint8_t
+Encoding_wordSize(Encoding this)
+{
+  ;
+  return Encoding_WordSize[this];
+}
+
+/*
+  Encoding_decode -- This Encoding decode function.
+*/
+
+typedef Instance (*EncodingDecode)(const void *buffer);
+extern const EncodingDecode
+Encoding_Decode[];
+static inline EncodingDecode
+Encoding_decode(Encoding this)
+{
+  ;
+  return Encoding_Decode[this];
+}
+
+
+
+
+
+
+#define NativeType_h_INCLUDED 
+
+/*
+  NativeType.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  NativeType_NAME_ -- NAME array for the NativeType enumeration.
+*/
+extern const char *NativeType_NAME_[];
+
+#define NativeType_NAME_(this) (NativeType_NAME_[this])
+
+
+
+
+/*
+  NativeType_syntax -- This NativeType bit syntax.
+*/
+const char *
+NativeType_syntax(NativeType this);
+
+/*
+  NativeType_width -- This NativeType bit width.
+*/
+extern const uint8_t
+NativeType_Width[];
+static inline unsigned
+NativeType_width(NativeType this)
+{
+  ;
+  return NativeType_Width[this];
+}
+
+/*
+  NativeType_signed -- This NativeType is signed.
+*/
+extern const bool
+NativeType_Signed[];
+static inline bool
+NativeType_signed(NativeType this)
+{
+  ;
+  return NativeType_Signed[this];
+}
+
+/*
+  NativeType_sizeOf -- This NativeType size in bytes when stored to memory.
+*/
+extern const uint8_t
+NativeType_SizeOf[];
+static inline unsigned
+NativeType_sizeOf(NativeType this)
+{
+  ;
+  return NativeType_SizeOf[this];
+}
+
+/*
+  NativeType_align -- This NativeType Alignment Base
+*/
+extern const uint8_t
+NativeType_Align[];
+static inline unsigned
+NativeType_align(NativeType this)
+{
+  ;
+  return NativeType_Align[this];
+}
+
+/*
+  NativeType_slice -- This NativeType slice width in bits.
+*/
+extern const uint8_t
+NativeType_Slice[];
+static inline unsigned
+NativeType_slice(NativeType this)
+{
+  ;
+  return NativeType_Slice[this];
+}
+
+
+
+
+
+#define Register_h_INCLUDED 
+
+/*
+  Register.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  RegisterArray -- Array of Register(s).
+*/
+struct RegisterArray_ {
+  int COUNT;
+  const short_Register *ITEMS;
+};
+typedef struct RegisterArray_ RegisterArray_, *RegisterArray;
+typedef const struct RegisterArray_ *const_RegisterArray;
+
+#define RegisterArray_COUNT(this) ((this)->COUNT)
+#define RegisterArray__COUNT(this) (&(this)->COUNT)
+#define RegisterArray_ITEMS(this) ((this)->ITEMS)
+#define RegisterArray__ITEMS(this) (&(this)->ITEMS)
+/*
+  RegisterArray_count -- Count of Register(s) in this RegisterArray.
+*/
+static inline int
+RegisterArray_count(const_RegisterArray this)
+{
+  return ((this)->COUNT);
+}
+
+/*
+  RegisterArray_items -- Register(s) in this RegisterArray.
+*/
+static inline const short_Register *
+RegisterArray_items(const_RegisterArray this)
+{
+  return ((this)->ITEMS);
+}
+
+/*
+  RegisterArray_FOREACH_Register -- Iterate this RegisterArray Register(s).
+*/
+#define RegisterArray_FOREACH_Register(this,registre) { const short_Register *RegisterArray_ITEMS = RegisterArray_items(this); int RegisterArray_COUNT = RegisterArray_count(this); int RegisterArray_INDEX = 0; for (; RegisterArray_INDEX < RegisterArray_COUNT; RegisterArray_INDEX++) { Register registre = (Register)RegisterArray_ITEMS[RegisterArray_INDEX];
+
+
+
+
+
+
+#define RegisterArray_ENDEACH_Register } }
+
+
+
+/*
+  Register_NAME_ -- NAME array for the Register enumeration.
+*/
+extern const char *Register_NAME_[];
+
+#define Register_NAME_(this) (Register_NAME_[this])
+#define Register_NAME(this) (Register_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  Register_names -- The names of this Register.
+*/
+extern const char *
+Register_Names[][1 +1];
+static inline const char **
+Register_names(Register this)
+{
+  ;
+  return Register_Names[this];
+}
+
+/*
+  Register_regFile -- The RegFile of this Register.
+*/
+extern const short_RegFile
+Register_RegFile[];
+static inline enum RegFile
+Register_regFile(Register this)
+{
+  ;
+  return (RegFile)Register_RegFile[this];
+}
+
+/*
+  Register_isWired -- True if this Register is wired.
+*/
+extern bool
+Register_Wired[];
+static inline bool
+Register_isWired(Register this)
+{
+  ;
+  return Register_Wired[this];
+}
+
+/*
+  Register_aliasArray -- This Register RegisterArray.
+*/
+extern RegisterArray_
+Register_AliasArray_[];
+static inline const_RegisterArray
+Register_aliasArray(Register this)
+{
+  ;
+  return Register_AliasArray_ + this;
+}
+
+/*
+  Register_aliasCount -- This Register count of alias Register(s).
+*/
+static inline int
+Register_aliasCount(Register this) {
+  const_RegisterArray aliasArray = Register_aliasArray(this);
+  return RegisterArray_count(aliasArray);
+}
+
+/*
+  Register_aliases -- This Register array of alias Register(s).
+*/
+static inline const short_Register *
+Register_aliases(Register this) {
+  const_RegisterArray aliasArray = Register_aliasArray(this);
+  return RegisterArray_items(aliasArray);
+}
+
+/*
+  RegisterList -- Non-mutable list of Register(s).
+*/
+struct RegisterList_ {
+  //@args
+  uint8_t COUNT;
+  short_Register ITEMS[103];
+};
+typedef struct RegisterList_ RegisterList_, *RegisterList;
+typedef const struct RegisterList_ *const_RegisterList;
+
+extern RegisterList
+RegisterList_CTOR_(RegisterList this);
+
+extern RegisterList
+RegisterList_COPY_(RegisterList this, const_RegisterList that);
+
+
+extern void
+RegisterList_DTOR_(RegisterList this, ...);
+
+
+
+
+extern size_t
+RegisterList_SIZE_(void);
+
+#define RegisterList_COUNT(this) ((this)->COUNT)
+#define RegisterList__COUNT(this) (&(this)->COUNT)
+#define RegisterList_ITEMS(this) ((this)->ITEMS)
+#define RegisterList__ITEMS(this) (&(this)->ITEMS)
+/*
+  RegisterList_count -- Count the Register(s) in this RegisterList.
+*/
+static inline int
+RegisterList_count(const_RegisterList this)
+{
+  return ((this)->COUNT);
+}
+
+/*
+  RegisterList_first -- First item of the RegisterList.
+  Return:       The first Register.
+*/
+static inline Register
+RegisterList_first(const_RegisterList this)
+{
+  ;
+  return (Register)((this)->ITEMS)[0];
+}
+
+/*
+  RegisterList_access -- Access the RegisterList by index.
+  index:        The index.
+  Return:       Corresponding Register.
+*/
+static inline Register
+RegisterList_access(const_RegisterList this, int32_t index)
+{
+  ;
+  return (Register)((this)->ITEMS)[index];
+}
+
+/*
+  RegisterList_items -- For use by RegisterList_FOREACH_Register.
+*/
+static inline const short_Register *
+RegisterList_items(const_RegisterList this)
+{
+  return ((this)->ITEMS);
+}
+
+/*
+  RegisterList_FOREACH_Register -- Iterate over this RegisterList Register(s).
+*/
+#define RegisterList_FOREACH_Register(this,registre) { const short_Register *RegisterList_ITEMS = RegisterList_items(this); int RegisterList_COUNT = RegisterList_count(this), RegisterList_INDEX = 0; for (; RegisterList_INDEX < RegisterList_COUNT; RegisterList_INDEX++) { Register registre = RegisterList_ITEMS[RegisterList_INDEX];
+
+
+
+
+#define RegisterList_ENDEACH_Register } }
+
+
+
+/*
+  RegisterList_contains -- True if this RegisterList contains the given Register.
+*/
+bool
+RegisterList_contains(const_RegisterList this, Register member);
+
+/*
+  Register_isLifetime -- Test if this Register Lifetime should be minimized.
+*/
+bool
+Register_isLifetime(Register this, Convention convention);
+
+//
+
+/*
+  st200/Register.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+#define Register(NAME,NAMES,REGFILE,WIRED,ALIASARRAY) 
+#undef Register
+
+
+#define RegisterAliases(INDEX,ALIASES) 
+#undef RegisterAliases
+typedef uint32_t RegisterSetWord;
+
+/*
+  RegisterSet -- Set of architectural registers.
+//  See the CCL/RegisterSet.xcc code to add RegisterSet methods.
+*/
+struct RegisterSet_ {
+  //@args
+  RegisterSetWord WORDS[((Register)(103 + (sizeof(uint32_t)*8) - 1)/((sizeof(uint32_t)*8)))];
+    //@ctor	int i;
+    //@ctor	for (i = 0; i < RegisterSet_WORDCOUNT; i++) {
+    //@ctor	  RegisterSet_WORDS(this)[i] = 0;
+    //@ctor	}
+    //@copy	*(this) = *(that);
+    //@dtor	;
+};
+typedef struct RegisterSet_ RegisterSet_, *RegisterSet;
+typedef const struct RegisterSet_ *const_RegisterSet;
+
+extern RegisterSet
+RegisterSet_CTOR_(RegisterSet this);
+
+extern RegisterSet
+RegisterSet_COPY_(RegisterSet this, const_RegisterSet that);
+
+
+extern void
+RegisterSet_DTOR_(RegisterSet this, ...);
+
+
+
+
+extern size_t
+RegisterSet_SIZE_(void);
+
+#define RegisterSet_WORDS(this) ((this)->WORDS)
+#define RegisterSet__WORDS(this) (&(this)->WORDS)
+/*
+  RegisterSet_words -- Return the RegisterSet word array.
+*/
+static inline const RegisterSetWord *
+RegisterSet_words(const_RegisterSet this)
+{
+  return ((this)->WORDS);
+}
+
+/*
+  RegisterSet_isEmpty -- True iff this RegisterSet is empty.
+*/
+bool
+RegisterSet_isEmpty(const_RegisterSet this);
+
+/*
+  RegisterSet_count -- Count members contained in the RegisterSet.
+  Return:	The count of members in this RegisterSet.
+*/
+int
+RegisterSet_count(const_RegisterSet this);
+
+/*
+  RegisterSet_empty -- Empty this RegisterSet.
+*/
+void
+RegisterSet_empty(RegisterSet this);
+
+/*
+  RegisterSet_choose -- Choose and remove a member of the RegisterSet.
+//
+  Return:	Valid Register or Register__ if this RegisterSet is empty.
+*/
+Register
+RegisterSet_choose(RegisterSet this);
+
+/*
+  RegisterSet_contains -- Test a member for containment.
+  Return:	True if this RegisterSet contains member.
+*/
+bool
+RegisterSet_contains(const_RegisterSet this, Register member);
+
+/*
+  RegisterSet_insert -- Insert a member in this RegisterSet.
+  Return:	False iff member was already contained in this RegisterSet.
+*/
+bool
+RegisterSet_insert(RegisterSet this, Register member);
+
+/*
+  RegisterSet_remove -- Remove a member from this RegisterSet.
+  Return:	False iff member was not contained in this RegisterSet.
+*/
+bool
+RegisterSet_remove(RegisterSet this, Register member);
+
+/*
+  RegisterSet_equals -- Test for RegisterSet equality.
+*/
+bool
+RegisterSet_equals(const_RegisterSet this, const_RegisterSet that);
+
+/*
+  RegisterSet_union -- Union of this RegisterSet with that RegisterSet.
+*/
+void
+RegisterSet_union(RegisterSet this, const_RegisterSet that);
+
+/*
+  RegisterSet_inter -- Intersect this RegisterSet with that RegisterSet.
+*/
+void
+RegisterSet_inter(RegisterSet this, const_RegisterSet that);
+
+/*
+  RegisterSet_diff -- Remove that RegisterSet members from this RegisterSet.
+*/
+void
+RegisterSet_diff(RegisterSet this, const_RegisterSet that);
+
+/*
+  RegisterSet_FOREACH_Register -- Iterate over this RegisterSet registers
+*/
+#define RegisterSet_FOREACH_Register(this,reg) { Register reg = (Register)0; const_RegisterSet RegisterSet_THIS = (this); int RegisterSet_COUNT = RegisterSet_WORDCOUNT, RegisterSet_I, RegisterSet_J; for (RegisterSet_I = 0; RegisterSet_I < RegisterSet_COUNT; RegisterSet_I++) { RegisterSetWord RegisterSet_WORD = RegisterSet_WORDS(RegisterSet_THIS)[RegisterSet_I]; for (RegisterSet_J = 0; RegisterSet_J < RegisterSet_WORDBITS; RegisterSet_J++, RegisterSet_WORD >>= 1, reg++) { if (RegisterSet_WORD & 1) {
+#define RegisterSet_ENDEACH_Register } } if (RegisterSet_J != RegisterSet_WORDBITS) break; } }
+
+
+
+
+
+
+/*
+  RegisterSet_pretty -- Pretty-print this RegisterSet.
+*/
+bool
+RegisterSet_pretty(const_RegisterSet this, FILE *file);
+
+/*
+  RegisterAction -- Action on a Register for scoreboarding and bundling.
+*/
+struct RegisterAction_ {
+  short_RegClass REGCLASS;
+  short_Register REGISTER;
+  int8_t RANK;
+  int8_t STAGE;
+};
+typedef struct RegisterAction_ RegisterAction_, *RegisterAction;
+typedef const struct RegisterAction_ *const_RegisterAction;
+
+#define RegisterAction_REGCLASS(this) ((this)->REGCLASS)
+#define RegisterAction__REGCLASS(this) (&(this)->REGCLASS)
+#define RegisterAction_REGISTER(this) ((this)->REGISTER)
+#define RegisterAction__REGISTER(this) (&(this)->REGISTER)
+#define RegisterAction_RANK(this) ((this)->RANK)
+#define RegisterAction__RANK(this) (&(this)->RANK)
+#define RegisterAction_STAGE(this) ((this)->STAGE)
+#define RegisterAction__STAGE(this) (&(this)->STAGE)
+/*
+  RegisterAction_regClass -- RegClass of this RegisterAction.
+*/
+static inline RegClass
+RegisterAction_regClass(const_RegisterAction this)
+{
+  return (RegClass)((this)->REGCLASS);
+}
+
+/*
+  RegisterAction_register -- Register of this RegisterAction.
+*/
+static inline Register
+RegisterAction_register(const_RegisterAction this)
+{
+  return (Register)((this)->REGISTER);
+}
+
+/*
+  RegisterAction_setRegister -- Set the register of this RegisterAction.
+*/
+static inline void
+RegisterAction_setRegister(RegisterAction this, Register registre)
+{
+  *(&(this)->REGISTER) = registre;
+}
+
+/*
+  RegisterAction_rank -- Rank of this RegisterAction in the Instance Operand list.
+//
+  Return:	0 if the RegisterAction has no corresponding Operand.
+*/
+static inline int
+RegisterAction_rank(const_RegisterAction this)
+{
+  return ((this)->RANK);
+}
+
+/*
+  RegisterAction_stage -- The pipeline stage of this RegisterAction.
+*/
+static inline int
+RegisterAction_stage(const_RegisterAction this)
+{
+  return ((this)->STAGE);
+}
+
+/*
+  RegisterActionArray -- Array of RegisterAction(s).
+*/
+struct RegisterActionArray_ {
+  uint8_t READCOUNT; // Count of Read RegisterAction(s).
+  uint8_t READSTART; // Start index of variant Read RegisterAction(s).
+  uint8_t WRITECOUNT; // Count of Write RegisterAction(s).
+  uint8_t WRITESTART; // Start index of variant Write RegisterAction(s).
+  RegisterAction_ *ACTIONS; // This RegisterActionArray actions.
+};
+typedef struct RegisterActionArray_ RegisterActionArray_, *RegisterActionArray;
+typedef const struct RegisterActionArray_ *const_RegisterActionArray;
+
+#define RegisterActionArray_READCOUNT(this) ((this)->READCOUNT)
+#define RegisterActionArray__READCOUNT(this) (&(this)->READCOUNT)
+#define RegisterActionArray_READSTART(this) ((this)->READSTART)
+#define RegisterActionArray__READSTART(this) (&(this)->READSTART)
+#define RegisterActionArray_WRITECOUNT(this) ((this)->WRITECOUNT)
+#define RegisterActionArray__WRITECOUNT(this) (&(this)->WRITECOUNT)
+#define RegisterActionArray_WRITESTART(this) ((this)->WRITESTART)
+#define RegisterActionArray__WRITESTART(this) (&(this)->WRITESTART)
+#define RegisterActionArray_ACTIONS(this) ((this)->ACTIONS)
+#define RegisterActionArray__ACTIONS(this) (&(this)->ACTIONS)
+/*
+  RegisterActionArray_readCount -- Count of Read RegisterAction(s).
+*/
+static inline int
+RegisterActionArray_readCount(const_RegisterActionArray this)
+{
+  return ((this)->READCOUNT);
+}
+
+/*
+  RegisterActionArray_readStart -- Start index of variant Read RegisterAction(s).
+*/
+static inline int
+RegisterActionArray_readStart(const_RegisterActionArray this)
+{
+  return ((this)->READSTART);
+}
+
+/*
+  RegisterActionArray_writeCount -- Count of Write RegisterAction(s).
+*/
+static inline int
+RegisterActionArray_writeCount(const_RegisterActionArray this)
+{
+  return ((this)->WRITECOUNT);
+}
+
+/*
+  RegisterActionArray_writeStart -- Start index of variant Write RegisterAction(s).
+*/
+static inline int
+RegisterActionArray_writeStart(const_RegisterActionArray this)
+{
+  return ((this)->WRITESTART);
+}
+
+/*
+  RegisterActionArray_count -- Count of Read and Write RegisterAction(s).
+*/
+static inline int
+RegisterActionArray_count(const_RegisterActionArray this)
+{
+  return ((this)->READCOUNT) + ((this)->WRITECOUNT);
+}
+
+/*
+  RegisterActionArray_actions -- For use by RegisterActionArray_FOREACH_RegisterAction.
+*/
+static inline const RegisterAction_ *
+RegisterActionArray_actions(const_RegisterActionArray this)
+{
+  return ((this)->ACTIONS);
+}
+
+/*
+  RegisterActionArray_FORREAD_RegisterAction -- Iterate over this RegisterActionArray Read RegisterAction(s).
+*/
+#define RegisterActionArray_FORREAD_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_READACTIONS = RegisterActionArray_actions(this) + 0; int RegisterActionArray_READCOUNT = RegisterActionArray_readCount(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_READCOUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_READACTIONS + RegisterActionArray_INDEX;
+#define RegisterActionArray_ENDREAD_RegisterAction } }
+
+
+
+/*
+  RegisterActionArray_FORWRITE_RegisterAction -- Iterate over this RegisterActionArray Write RegisterAction(s).
+*/
+#define RegisterActionArray_FORWRITE_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_WRITEACTIONS = RegisterActionArray_actions(this) + RegisterActionArray_readCount(this); int RegisterActionArray_WRITECOUNT = RegisterActionArray_writeCount(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_WRITECOUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_WRITEACTIONS + RegisterActionArray_INDEX;
+#define RegisterActionArray_ENDWRITE_RegisterAction } }
+
+
+
+/*
+  RegisterActionArray_setActions -- Set this RegisterActionArray ACTIONS.
+*/
+static inline void
+RegisterActionArray_setActions(RegisterActionArray this, RegisterAction_ *actions)
+{
+  *(&(this)->ACTIONS) = actions;
+}
+
+
+
+
+
+#define RegFile_h_INCLUDED 
+
+/*
+  RegFile.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  RegFile_NAME_ -- NAME array for the RegFile enumeration.
+*/
+extern const char *RegFile_NAME_[];
+
+#define RegFile_NAME_(this) (RegFile_NAME_[this])
+#define RegFile_NAME(this) (RegFile_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  RegFile_width -- This RegFile Width attribute.
+*/
+extern const uint8_t
+RegFile_Width[];
+static inline unsigned
+RegFile_width(RegFile this)
+{
+  ;
+  return RegFile_Width[this];
+}
+
+/*
+  RegFile_getNativeType -- Return the default NativeType for this RegFile.
+  If this regFile has no associated storage type, return NativeType__.
+*/
+extern const short_NativeType
+RegFile_NativeType[][NativeType__+1];
+static inline NativeType
+RegFile_getNativeType(RegFile this)
+{
+  ;
+  return (NativeType)RegFile_NativeType[this][0];
+}
+
+/*
+  RegFile_lowRegister -- This RegFile low Register.
+*/
+extern const short_Register
+RegFile_LowReg[];
+static inline enum Register
+RegFile_lowRegister(RegFile this)
+{
+  ;
+  return (Register)RegFile_LowReg[this];
+}
+
+/*
+  RegFile_highRegister -- This RegFile high Register.
+*/
+extern const short_Register
+RegFile_HighReg[];
+static inline enum Register
+RegFile_highRegister(RegFile this)
+{
+  ;
+  return (Register)RegFile_HighReg[this];
+}
+
+/*
+  RegFile_FOREACH_Register -- Iterate in this RegFile Registers
+*/
+#define RegFile_FOREACH_Register(this,reg) { Register RegFile_LOWREG = RegFile_lowRegister(this), reg; Register RegFile_HIGHREG = RegFile_highRegister(this); for (reg = RegFile_LOWREG; reg <= RegFile_HIGHREG; reg++) {
+
+
+
+#define RegFile_ENDEACH_Register } }
+
+
+
+/*
+  RegFile_isStickyReg -- True if this RegFile contains sticky registers.
+*/
+static inline bool
+RegFile_isStickyReg(RegFile this)
+{
+  // TODO: use RegFile.enum
+  return false;
+}
+
+/*
+  RegFile_registerSet -- A RegisterSet with the members of this RegFile.
+*/
+RegisterSet
+RegFile_registerSet(RegFile this);
+
+
+
+
+
+#define RegClass_h_INCLUDED 
+
+/*
+  RegClass.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  RegClass_NAME_ -- NAME array for the RegClass enumeration.
+*/
+extern const char *RegClass_NAME_[];
+
+#define RegClass_NAME_(this) (RegClass_NAME_[this])
+
+
+
+
+/*
+  RegClass_registerList -- This RegClass Register(s) as a RegisterList.
+*/
+extern const RegisterList_
+RegClass_RegisterList_[];
+static inline const_RegisterList
+RegClass_registerList(RegClass this)
+{
+  ;
+  return &RegClass_RegisterList_[this];
+}
+
+/*
+  RegClass_regFile -- The RegFile this RegClass belongs to.
+*/
+extern const short_RegFile
+RegClass_RegFile[];
+static inline RegFile
+RegClass_regFile(RegClass this)
+{
+  ;
+  return (RegFile)RegClass_RegFile[this];
+}
+
+/*
+  RegClass_registerSet -- This RegClass Register(s) as a RegisterSet.
+*/
+extern RegisterSet_
+RegClass_RegisterSet_[];
+static inline const_RegisterSet
+RegClass_registerSet(RegClass this)
+{
+  ;
+  return &RegClass_RegisterSet_[this];
+}
+
+
+
+
+
+#define RegMask_h_INCLUDED 
+
+/*
+  RegMask.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  RegMask_NAME_ -- NAME array for the RegMask enumeration.
+*/
+extern const char *RegMask_NAME_[];
+
+#define RegMask_NAME_(this) (RegMask_NAME_[this])
+#define RegMask_NAME(this) (RegMask_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  RegMask_registerList -- This RegMask Register(s) as a RegisterList.
+*/
+extern const RegisterList_
+RegMask_RegisterList_[];
+static inline const_RegisterList
+RegMask_registerList(RegMask this)
+{
+  ;
+  return &RegMask_RegisterList_[this];
+}
+
+/*
+  RegMask_regFile -- The RegFile this RegMask belongs to.
+*/
+extern const short_RegFile
+RegMask_RegFile[];
+static inline RegFile
+RegMask_regFile(RegMask this)
+{
+  ;
+  return (RegFile)RegMask_RegFile[this];
+}
+
+/*
+  RegMask_registerSet -- This RegMask Register(s) as a RegisterSet.
+*/
+extern RegisterSet_
+RegMask_RegisterSet_[];
+static inline const_RegisterSet
+RegMask_registerSet(RegMask this)
+{
+  ;
+  return &RegMask_RegisterSet_[this];
+}
+
+
+
+
+
+#define Modifier_h_INCLUDED 
+
+/*
+  Modifier.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  ModifierClass_NAME_ -- NAME array for the ModifierClass enumeration.
+*/
+extern const char *ModifierClass_NAME_[];
+
+#define ModifierClass_NAME_(this) (ModifierClass_NAME_[this])
+
+
+
+
+/*
+  Modifier_NAME_ -- NAME array for the Modifier enumeration.
+*/
+extern const char *Modifier_NAME_[];
+
+#define Modifier_NAME_(this) (Modifier_NAME_[this])
+
+
+
+
+/*
+  Modifier_names -- The names of this Modifier.
+*/
+extern const char *
+Modifier_Names[][0 +1];
+static inline const char **
+Modifier_names(Modifier this)
+{
+  ;
+  return Modifier_Names[this];
+}
+
+
+
+
+
+#define Immediate_h_INCLUDED 
+
+/*
+  Immediate.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Immediate_NAME_ -- NAME array for the Immediate enumeration.
+*/
+extern const char *Immediate_NAME_[];
+
+#define Immediate_NAME_(this) (Immediate_NAME_[this])
+
+
+
+
+/*
+  Immediate_minValue -- This Immediate MinValue attribute.
+*/
+extern const int64_t
+Immediate_MinValue[];
+static inline int64_t
+Immediate_minValue(Immediate this)
+{
+  ;
+  return Immediate_MinValue[this];
+}
+
+/*
+  Immediate_maxValue -- This Immediate MaxValue attribute.
+*/
+extern const int64_t
+Immediate_MaxValue[];
+static inline int64_t
+Immediate_maxValue(Immediate this)
+{
+  ;
+  return Immediate_MaxValue[this];
+}
+
+/*
+  ImmediateRelative -- Enumeration for the Immediate_relative values.
+*/
+typedef enum {
+  ImmediateRelative_,
+  ImmediateRelative_PC,
+  ImmediateRelative_GP,
+} ImmediateRelative;
+typedef uint8_t short_ImmediateRelative;
+#define Immediate_isRelativePC(this) (Immediate_relative(this) == ImmediateRelative_PC)
+#define Immediate_isRelativeGP(this) (Immediate_relative(this) == ImmediateRelative_GP)
+
+/*
+  Immediate_relativePC -- Test if this Immediate is PC-relative.
+*/
+extern const short_ImmediateRelative
+Immediate_Relative[];
+static inline bool
+Immediate_relative(Immediate this)
+{
+  ;
+  return Immediate_Relative[this];
+}
+
+/*
+  ImmediateValue -- Type for the largest Immediate value.
+*/
+typedef int64_t ImmediateValue;
+
+/*
+  ImmediateConstant -- Base class for decoded Immediate constants.
+*/
+struct ImmediateConstant_ {
+  //@args	ImmediateValue value, void *handle
+  ImmediateValue VALUE; // Value of this ImmediateConstant once resolved.
+    //@ctor	*ImmediateConstant__VALUE(this) = value;
+  void *HANDLE; // The relocatable Label or Symbol if any.
+    //@ctor	*ImmediateConstant__HANDLE(this) = handle;
+  //@access isRelocatable	(ImmediateConstant_HANDLE(this) != NULL)
+  void *POINTER; // Client pointer for use by derived types.
+    //@ctor	*ImmediateConstant__POINTER(this) = NULL;
+};
+typedef struct ImmediateConstant_ ImmediateConstant_, *ImmediateConstant;
+typedef const struct ImmediateConstant_ *const_ImmediateConstant;
+
+extern ImmediateConstant
+ImmediateConstant_CTOR_(ImmediateConstant this, ImmediateValue value, void *handle);
+
+extern ImmediateConstant
+ImmediateConstant_COPY_(ImmediateConstant this, const_ImmediateConstant that);
+
+
+extern void
+ImmediateConstant_DTOR_(ImmediateConstant this, ...);
+
+
+
+
+extern size_t
+ImmediateConstant_SIZE_(ImmediateValue value, void *handle);
+
+#define ImmediateConstant_VALUE(this) ((this)->VALUE)
+#define ImmediateConstant__VALUE(this) (&(this)->VALUE)
+#define ImmediateConstant_HANDLE(this) ((this)->HANDLE)
+#define ImmediateConstant__HANDLE(this) (&(this)->HANDLE)
+#define ImmediateConstant_POINTER(this) ((this)->POINTER)
+#define ImmediateConstant__POINTER(this) (&(this)->POINTER)
+#define ImmediateConstant_isRelocatable(this) ((ImmediateConstant_HANDLE(this) != NULL))
+/*
+  Immediate_canEncode -- Check wether this Immediate can encode value.
+*/
+bool
+Immediate_canEncode(Immediate this, int64_t value, ProcessorUIntPtr PC);
+
+
+
+
+
+#define Operand_h_INCLUDED 
+
+/*
+  Operand.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+//
+typedef uintptr_t OperandEncoded;
+typedef uintptr_t OperandDecoded;
+
+/*
+  Operand_NAME_ -- NAME array for the Operand enumeration.
+*/
+extern const char *Operand_NAME_[];
+
+#define Operand_NAME_(this) (Operand_NAME_[this])
+
+
+
+
+//
+typedef enum {
+  OperandType_RegClass,
+  OperandType_Immediate,
+  OperandType_Modifier,
+  OperandType_RegMask,
+  OperandType__,
+} OperandType;
+typedef uint8_t short_OperandType;
+extern const char *
+OperandType_NAME_[];
+#define OperandType_NAME_(type) OperandType_NAME_[type]
+
+/*
+  Operand_type -- The OperandType of this Operand.
+*/
+extern const short_OperandType
+Operand_Type[];
+static inline OperandType
+Operand_type(Operand this)
+{
+  ;
+  return (OperandType)Operand_Type[this];
+}
+
+/*
+  Operand_enum -- The RegClass or Immediate or Modifier or Regmask of this Operand.
+*/
+extern const int8_t
+Operand_Enum[];
+static inline int
+Operand_enum(Operand this)
+{
+  ;
+  return Operand_Enum[this];
+}
+
+/*
+  Operand_modifier -- The Modifier of this Operand.
+*/
+static inline ModifierClass
+Operand_modifier(Operand this)
+{
+  if (Operand_type(this) == OperandType_Modifier) {
+    return (ModifierClass)Operand_Enum[this];
+  }
+  return ModifierClass__;
+}
+
+/*
+  Operand_immediate -- The Immediate of this Operand.
+*/
+static inline Immediate
+Operand_immediate(Operand this)
+{
+  if (Operand_type(this) == OperandType_Immediate) {
+    return (Immediate)Operand_Enum[this];
+  }
+  return Immediate__;
+}
+
+/*
+  Operand_regClass -- The RegClass of this Operand.
+*/
+static inline RegClass
+Operand_regClass(Operand this)
+{
+  if (Operand_type(this) == OperandType_RegClass) {
+    return (RegClass)Operand_Enum[this];
+  }
+  return RegClass__;
+}
+
+/*
+  Operand_regMask -- The RegMask of this Operand.
+*/
+static inline RegMask
+Operand_regMask(Operand this)
+{
+  if (Operand_type(this) == OperandType_RegMask) {
+    return (RegMask)Operand_Enum[this];
+  }
+  return RegMask__;
+}
+
+/*
+  Operand_encode -- This Operand encode function.
+*/
+typedef void (*OperandEncode)(OperandDecoded decoded, ProcessorUIntPtr PC, void *opcodes);
+extern const OperandEncode
+Operand_Encode[];
+static inline OperandEncode
+Operand_encode(Operand this)
+{
+  ;
+  return Operand_Encode[this];
+}
+
+/*
+  Operand_encodeImmediateConstant -- Macro to encode an ImmediateConstant.
+*/
+#define Operand_encodeImmediateConstant(operand,constant,nativePC,encoded) (*Operand_encode(operand))((OperandDecoded)(constant), nativePC, encoded)
+
+
+/*
+  Operand_decode -- This Operand decode function.
+*/
+typedef void (*OperandDecode)(ProcessorUIntPtr PC, const void * restrict opcodes,
+                              void * restrict result);
+extern const OperandDecode
+Operand_Decode[];
+static inline OperandDecode
+Operand_decode(Operand this)
+{
+  ;
+  return Operand_Decode[this];
+}
+
+/*
+  Operand_decodeImmediateConstant -- Macro to decode an ImmediateConstant.
+*/
+#define Operand_decodeImmediateConstant(operand,nativePC,opcodes,constant) (*Operand_decode(operand))(nativePC, opcodes, (void * restrict)(constant))
+
+
+/*
+  OperandList -- Sequence of Operand(s).
+*/
+struct OperandList_ {
+  uint8_t COUNT;
+  short_Operand ITEMS[5];
+};
+typedef struct OperandList_ OperandList_, *OperandList;
+typedef const struct OperandList_ *const_OperandList;
+
+#define OperandList_COUNT(this) ((this)->COUNT)
+#define OperandList__COUNT(this) (&(this)->COUNT)
+#define OperandList_ITEMS(this) ((this)->ITEMS)
+#define OperandList__ITEMS(this) (&(this)->ITEMS)
+/*
+  OperandList_count -- Count the Operand(s) in this OperandList.
+*/
+static inline int
+OperandList_count(const_OperandList this)
+{
+  return ((this)->COUNT);
+}
+
+/*
+  OperandList_access -- Access the Operand at the given index.
+*/
+static inline Operand
+OperandList_access(const_OperandList this, int index)
+{
+  ;
+  return (Operand)((this)->ITEMS)[index];
+}
+
+/*
+  OperandList_items -- For use by OperandList_FOREACH_Operand.
+*/
+static inline const short_Operand *
+OperandList_items(const_OperandList this)
+{
+  return ((this)->ITEMS);
+}
+
+/*
+  OperandList_FOREACH_Operand -- Iterate over this OperandList Operand(s).
+*/
+#define OperandList_FOREACH_Operand(this,operand) { const short_Operand *OperandList_ITEMS = OperandList_items(this); int OperandList_COUNT = OperandList_count(this), OperandList_INDEX = 0; for (; OperandList_INDEX < OperandList_COUNT; OperandList_INDEX++) { Operand operand = OperandList_ITEMS[OperandList_INDEX];
+
+
+
+
+#define OperandList_ENDEACH_Operand } }
+
+
+
+/*
+  Operands_NAME_ -- NAME array for the Operands enumeration.
+*/
+extern const char *Operands_NAME_[];
+
+#define Operands_NAME_(this) (Operands_NAME_[this])
+#define Operands_NAME(this) (Operands_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  Operands_operandList -- This Operands OperandList.
+*/
+extern OperandList_
+Operands_OperandList_[];
+static inline OperandList
+Operands_operandList(Operands this)
+{
+  ;
+  return &Operands_OperandList_[this];
+}
+
+/*
+  Operands_FOREACH_Operand -- Iterate over this Operands Operand(s).
+*/
+#define Operands_FOREACH_Operand(this,operand) OperandList_FOREACH_Operand(Operands_operandList(this), operand) { int Operands_INDEX = OperandList_INDEX;
+
+
+#define Operands_ENDEACH_Operand } OperandList_ENDEACH_Operand;
+
+
+/*
+  Operands_count -- This Operands count of Operand(s).
+*/
+static inline int
+Operands_count(Operands this)
+{
+  ;
+  return OperandList_count(&Operands_OperandList_[this]);
+}
+
+/*
+  Operands_access -- Access the Operand at the given index.
+*/
+static inline Operand
+Operands_access(Operands this, int index)
+{
+  ;
+  return OperandList_access(&Operands_OperandList_[this], index);
+}
+
+/*
+  Operands_encode -- This Operands encode function.
+*/
+typedef void
+(*OperandsEncode)(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC,
+                  void * restrict opcodes);
+extern OperandsEncode
+Operands_Encode[];
+static inline OperandsEncode
+Operands_encode(Operands this)
+{
+  ;
+  return Operands_Encode[this];
+}
+
+/*
+ Operands_relocatableOperand -- Relocatable Operand in this Operands.
+*/
+extern int8_t
+Operands_RelocatableOperand[];
+static inline Operand
+Operands_relocatableOperand(Operands this)
+{
+  ;
+  return (Operand)Operands_RelocatableOperand[this];
+}
+
+/*
+ Operands_relocatableRank -- Rank of relocatable Operand in this Operands.
+*/
+extern int8_t
+Operands_RelocatableRank[];
+static inline int
+Operands_relocatableRank(Operands this)
+{
+  ;
+  return Operands_RelocatableRank[this];
+}
+
+/*
+  OperandsBuffer -- Buffer used to decode Operands.
+*/
+struct OperandsBuffer_ {
+  //@args
+    //@ctor	int i;
+  OperandDecoded DECODED[5];
+  ImmediateConstant_ CONSTANTS_[1];
+    //@ctor	for (i = 0; i < Operands_IMMEDIATE_COUNT_MAX; i++) {
+    //@ctor	  ImmediateConstant_CTOR_(&OperandsBuffer_CONSTANTS_(this)[i], 0, NULL);
+    //@ctor	}
+  RegisterSet_ REGISTERSETS_[0];
+    //@ctor	for (i = 0; i < Operands_REGMASK_COUNT_MAX; i++) {
+    //@ctor	  RegisterSet_CTOR_(&OperandsBuffer_REGISTERSETS_(this)[i]);
+    //@ctor	}
+};
+typedef struct OperandsBuffer_ OperandsBuffer_, *OperandsBuffer;
+typedef const struct OperandsBuffer_ *const_OperandsBuffer;
+
+extern OperandsBuffer
+OperandsBuffer_CTOR_(OperandsBuffer this);
+
+extern OperandsBuffer
+OperandsBuffer_COPY_(OperandsBuffer this, const_OperandsBuffer that);
+
+
+extern void
+OperandsBuffer_DTOR_(OperandsBuffer this, ...);
+
+
+
+
+extern size_t
+OperandsBuffer_SIZE_(void);
+
+#define OperandsBuffer_DECODED(this) ((this)->DECODED)
+#define OperandsBuffer__DECODED(this) (&(this)->DECODED)
+#define OperandsBuffer_CONSTANTS_(this) ((this)->CONSTANTS_)
+#define OperandsBuffer__CONSTANTS_(this) (&(this)->CONSTANTS_)
+#define OperandsBuffer_REGISTERSETS_(this) ((this)->REGISTERSETS_)
+#define OperandsBuffer__REGISTERSETS_(this) (&(this)->REGISTERSETS_)
+/*
+  Operands_decode -- This Operands decode function.
+*/
+
+typedef void
+(*OperandsDecode)(OperandsBuffer buffer, ProcessorUIntPtr PC, const void *opcodes);
+extern OperandsDecode
+Operands_Decode[];
+static inline OperandsDecode
+Operands_decode(Operands this)
+{
+  ;
+  return Operands_Decode[this];
+}
+
+
+
+
+
+
+#define Instance_h_INCLUDED 
+
+/*
+  Instance.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Instance_NAME_ -- NAME array for the Instance enumeration.
+*/
+extern const char *Instance_NAME_[];
+
+#define Instance_NAME_(this) (Instance_NAME_[this])
+
+
+
+
+/*
+ Instance_scheduling -- This Instance Scheduling class.
+*/
+extern const short_Scheduling
+Instance_Scheduling[];
+static inline Scheduling
+Instance_scheduling(Instance this)
+{
+  ;
+  return (Scheduling)Instance_Scheduling[this];
+}
+
+/*
+ Instance_encoding -- This Instance Encoding.
+*/
+extern const short_Encoding
+Instance_Encoding[];
+static inline Encoding
+Instance_encoding(Instance this)
+{
+  ;
+  return (Encoding)Instance_Encoding[this];
+}
+
+//
+struct InstanceOpcodes_ {
+  //@args	
+  uint32_t _[2];
+    //@ctor	InstanceOpcodes__(this)[0] = 0;
+    //@ctor	InstanceOpcodes__(this)[1] = 0;
+};
+typedef struct InstanceOpcodes_ InstanceOpcodes_, *InstanceOpcodes;
+typedef const struct InstanceOpcodes_ *const_InstanceOpcodes;
+
+extern InstanceOpcodes
+InstanceOpcodes_CTOR_(InstanceOpcodes this);
+
+extern InstanceOpcodes
+InstanceOpcodes_COPY_(InstanceOpcodes this, const_InstanceOpcodes that);
+
+
+extern void
+InstanceOpcodes_DTOR_(InstanceOpcodes this, ...);
+
+
+
+
+extern size_t
+InstanceOpcodes_SIZE_(void);
+
+#define InstanceOpcodes__(this) ((this)->_)
+#define InstanceOpcodes___(this) (&(this)->_)
+/*
+  Instance_opcodes -- This Instance opcodes.
+*/
+extern const InstanceOpcodes_
+Instance_Opcodes_[];
+static inline const_InstanceOpcodes
+Instance_opcodes(Instance this)
+{
+  ;
+  return &Instance_Opcodes_[this];
+}
+
+/*
+ Instance_operands -- This Instance Operands.
+*/
+extern const short_Operands
+Instance_Operands[];
+static inline Operands
+Instance_operands(Instance this)
+{
+  ;
+  return (Operands)Instance_Operands[this];
+}
+
+/*
+ Instance_mnemonic -- This Instance mnemonic string.
+*/
+const char *
+Instance_mnemonic(Instance this);
+
+/*
+ Instance_syntax -- This Instance syntax string.
+*/
+const char *
+Instance_syntax(Instance this);
+
+/*
+  Instance_actionArray -- This Instance RegisterActionArray.
+*/
+extern const RegisterActionArray_
+Instance_ActionArray_[];
+static inline const_RegisterActionArray
+Instance_actionArray(Instance this)
+{
+  ;
+  return Instance_ActionArray_ + this;
+}
+
+/*
+  Instance_readCount -- This Instance count of argument RegisterAction(s).
+*/
+static inline int
+Instance_readCount(Instance this) {
+  const_RegisterActionArray actionArray = Instance_actionArray(this);
+  return RegisterActionArray_readCount(actionArray);
+}
+
+/*
+  Instance_readStart -- This Instance count of argument RegisterAction(s).
+*/
+static inline int
+Instance_readStart(Instance this) {
+  const_RegisterActionArray actionArray = Instance_actionArray(this);
+  return RegisterActionArray_readStart(actionArray);
+}
+
+/*
+  Instance_writeCount -- This Instance count of result RegisterAction(s).
+*/
+static inline int
+Instance_writeCount(Instance this) {
+  const_RegisterActionArray actionArray = Instance_actionArray(this);
+  return RegisterActionArray_writeCount(actionArray);
+}
+
+/*
+  Instance_writeStart -- This Instance count of result RegisterAction(s).
+*/
+static inline int
+Instance_writeStart(Instance this) {
+  const_RegisterActionArray actionArray = Instance_actionArray(this);
+  return RegisterActionArray_writeStart(actionArray);
+}
+
+/*
+  Instance_actions -- This Instance RegisterAction(s).
+*/
+static inline const RegisterAction_ *
+Instance_actions(Instance this) {
+  const_RegisterActionArray actionArray = Instance_actionArray(this);
+  return RegisterActionArray_actions(actionArray);
+}
+
+//
+typedef enum {
+  InstanceAttribute_Control,
+  InstanceAttribute_Volatile,
+  InstanceAttribute_MemoryRead,
+  InstanceAttribute_MemoryWrite,
+  InstanceAttribute_FixRegisterRAW,
+} InstanceAttribute;
+typedef uint8_t InstanceAttributes;
+
+//
+#define Instance_isControl(this) (Instance_attributes(this)>>InstanceAttribute_Control & 1)
+
+#define Instance_isVolatile(this) (Instance_attributes(this)>>InstanceAttribute_Volatile & 1)
+
+#define Instance_isMemoryRead(this) (Instance_attributes(this)>>InstanceAttribute_MemoryRead & 1)
+
+#define Instance_isMemoryWrite(this) (Instance_attributes(this)>>InstanceAttribute_MemoryWrite & 1)
+
+#define Instance_isFixRegisterRAW(this) (Instance_attributes(this)>>InstanceAttribute_FixRegisterRAW & 1)
+
+
+/*
+  Instance_attributes -- Access this Instance attributes.
+*/
+extern const InstanceAttributes
+Instance_Attributes[];
+static inline InstanceAttributes
+Instance_attributes(Instance this)
+{
+  ;
+  return Instance_Attributes[this];
+}
+
+//
+static inline unsigned
+Instance_fixupRegisterRAW(Instance this)
+{
+  ;
+  return Instance_Attributes[this] & (1<<InstanceAttribute_FixRegisterRAW);
+}
+
+//
+int
+Instance_latencyRegisterRAW(Instance this, Instance that, Register registre);
+
+
+
+
+
+#define Operator_h_INCLUDED 
+
+/*
+  Operator.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+//
+typedef enum {
+  OperatorParameterKind_Read,
+  OperatorParameterKind_ReadCond,
+  OperatorParameterKind_ReadPred,
+  OperatorParameterKind_ReadBase,
+  OperatorParameterKind_ReadOffset,
+  OperatorParameterKind_ReadStored,
+  OperatorParameterKind_ReadTarget,
+  OperatorParameterKind_ReadLeft,
+  OperatorParameterKind_ReadRight,
+  OperatorParameterKind_ReadList,
+  OperatorParameterKind_ReadMultiStored,
+  OperatorParameterKind_Write,
+  OperatorParameterKind_WriteList,
+  OperatorParameterKind_WriteMulti,
+  OperatorParameterKind__
+} OperatorParameterKind;
+typedef uint8_t short_OperatorParameterKind;
+
+//
+struct OperatorParameter_ {
+  short_OperatorParameterKind KIND;
+  //@access isRead	(OperatorParameter_kind(this) < OperatorParameterKind_Write)
+  //@access isWrite	(OperatorParameter_kind(this) >= OperatorParameterKind_Write)
+  int8_t RANK; // The rank of this OperatorParameter in the Operand list.
+  short_OperandType TYPE; // The OperandType of this OperatorParameter.
+  int8_t ENUM; // Modifier/Immediate/RegClass/Regmask enum.
+};
+typedef struct OperatorParameter_ OperatorParameter_, *OperatorParameter;
+typedef const struct OperatorParameter_ *const_OperatorParameter;
+
+#define OperatorParameter_KIND(this) ((this)->KIND)
+#define OperatorParameter__KIND(this) (&(this)->KIND)
+#define OperatorParameter_RANK(this) ((this)->RANK)
+#define OperatorParameter__RANK(this) (&(this)->RANK)
+#define OperatorParameter_TYPE(this) ((this)->TYPE)
+#define OperatorParameter__TYPE(this) (&(this)->TYPE)
+#define OperatorParameter_ENUM(this) ((this)->ENUM)
+#define OperatorParameter__ENUM(this) (&(this)->ENUM)
+#define OperatorParameter_isRead(this) ((OperatorParameter_kind(this) < OperatorParameterKind_Write))
+#define OperatorParameter_isWrite(this) ((OperatorParameter_kind(this) >= OperatorParameterKind_Write))
+/*
+  OperatorParameter_kind -- OperatorParameterKind of this OperatorParameter.
+*/
+static inline OperatorParameterKind
+OperatorParameter_kind(const_OperatorParameter this)
+{
+  return (OperatorParameterKind)((this)->KIND);
+}
+
+/*
+  OperatorParameter_rank -- Rank of this OperatorParameter in the Instance Operand list.
+  Return:	0 if the OperatorParameter has no corresponding Operand.
+*/
+static inline int
+OperatorParameter_rank(const_OperatorParameter this)
+{
+  return ((this)->RANK);
+}
+
+/*
+  OperatorParameter_type -- The OperandType of this OperatorParameter.
+*/
+static inline OperandType
+OperatorParameter_type(const_OperatorParameter this)
+{
+  return (OperandType)((this)->TYPE);
+}
+
+/*
+  OperatorParameter_enum -- The Modifier/Immediate/RegClass/Regmask of this OperatorParameter.
+*/
+static inline int
+OperatorParameter_enum(const_OperatorParameter this)
+{
+  return ((this)->ENUM);
+}
+
+/*
+  OperatorParameterArray -- Array of OperatorParameter(s).
+*/
+struct OperatorParameterArray_ {
+  int16_t ARGCOUNT;
+  int16_t RESCOUNT;
+  const OperatorParameter_ *ITEMS;
+};
+typedef struct OperatorParameterArray_ OperatorParameterArray_, *OperatorParameterArray;
+typedef const struct OperatorParameterArray_ *const_OperatorParameterArray;
+
+#define OperatorParameterArray_ARGCOUNT(this) ((this)->ARGCOUNT)
+#define OperatorParameterArray__ARGCOUNT(this) (&(this)->ARGCOUNT)
+#define OperatorParameterArray_RESCOUNT(this) ((this)->RESCOUNT)
+#define OperatorParameterArray__RESCOUNT(this) (&(this)->RESCOUNT)
+#define OperatorParameterArray_ITEMS(this) ((this)->ITEMS)
+#define OperatorParameterArray__ITEMS(this) (&(this)->ITEMS)
+/*
+  OperatorParameterArray_argCount -- Argument count in this OperatorParameterArray.
+*/
+static inline int
+OperatorParameterArray_argCount(const_OperatorParameterArray this)
+{
+  return ((this)->ARGCOUNT);
+}
+
+/*
+  OperatorParameterArray_resCount -- Result count in this OperatorParameterArray.
+*/
+static inline int
+OperatorParameterArray_resCount(const_OperatorParameterArray this)
+{
+  return ((this)->RESCOUNT);
+}
+
+/*
+  OperatorParameterArray_items -- For use by OperatorParameterArray_FOREACH_OperatorParameter.
+*/
+static inline const OperatorParameter_ *
+OperatorParameterArray_items(const_OperatorParameterArray this)
+{
+  return ((this)->ITEMS);
+}
+
+/*
+  OperatorParameterArray_count -- OperatorParameter count in this OperatorParameterArray.
+*/
+static inline int
+OperatorParameterArray_count(const_OperatorParameterArray this)
+{
+  return ((this)->ARGCOUNT) + ((this)->RESCOUNT);
+}
+
+/*
+  OperatorParameterArray_FOREACH_OperatorParameter -- Iterate over this OperatorParameterArray OperatorParameter(s).
+*/
+#define OperatorParameterArray_FOREACH_OperatorParameter(this,parameter) { const OperatorParameter_ *OperatorParameterArray_ITEMS = OperatorParameterArray_items(this); int OperatorParameterArray_COUNT = OperatorParameterArray_count(this); int OperatorParameterArray_INDEX = 0; for (; OperatorParameterArray_INDEX < OperatorParameterArray_COUNT; OperatorParameterArray_INDEX++) { const_OperatorParameter parameter = OperatorParameterArray_ITEMS + OperatorParameterArray_INDEX;
+#define OperatorParameterArray_ENDEACH_OperatorParameter } }
+
+
+
+/*
+  Operator_NAME_ -- NAME array for the Operator enumeration.
+*/
+extern const char *Operator_NAME_[];
+
+#define Operator_NAME_(this) (Operator_NAME_[this])
+
+
+
+
+//
+typedef enum {
+  OperatorAttribute_Pseudo,
+  OperatorAttribute_ReadList,
+  OperatorAttribute_WriteList,
+  OperatorAttribute_Control,
+  OperatorAttribute_MemoryRead,
+  OperatorAttribute_MemoryWrite,
+  OperatorAttribute_MemoryProbe,
+  OperatorAttribute_MemoryBarrier,
+  OperatorAttribute_Conditional,
+  OperatorAttribute_Multi,
+} OperatorAttribute;
+typedef uint16_t OperatorAttributes;
+
+/*
+  Operator_attributes -- Access this Operator attributes.
+*/
+extern const OperatorAttributes
+Operator_Attributes[];
+static inline OperatorAttributes
+Operator_attributes(Operator this)
+{
+  ;
+  return Operator_Attributes[this];
+}
+
+//
+#define Operator_isPseudo(this) (Operator_attributes(this)>>OperatorAttribute_Pseudo & 1)
+
+#define Operator_isReadList(this) (Operator_attributes(this)>>OperatorAttribute_ReadList & 1)
+
+#define Operator_isWriteList(this) (Operator_attributes(this)>>OperatorAttribute_WriteList & 1)
+
+#define Operator_isControl(this) (Operator_attributes(this)>>OperatorAttribute_Control & 1)
+
+#define Operator_isMemoryRead(this) (Operator_attributes(this)>>OperatorAttribute_MemoryRead & 1)
+
+#define Operator_isMemoryWrite(this) (Operator_attributes(this)>>OperatorAttribute_MemoryWrite & 1)
+
+#define Operator_isConditional(this) (Operator_attributes(this)>>OperatorAttribute_Conditional & 1)
+
+#define Operator_isMulti(this) (Operator_attributes(this)>>OperatorAttribute_Multi & 1)
+
+#define Operator_isMemory(this) ( (Operator_attributes(this) & ((1<<OperatorAttribute_MemoryRead) | (1<<OperatorAttribute_MemoryWrite)) ) || Operator_isMemoryBarrier(this) || Operator_isPrefetch(this) )
+
+
+
+
+
+/*
+  Operator_instance -- This Operator Instance for a Processor.
+*/
+extern const short_Instance
+Operator_Instances[][Processor__];
+static inline Instance
+Operator_instance(Operator this, Processor processor)
+{
+  ;
+  ;
+  return (Instance)Operator_Instances[this][processor];
+}
+
+/*
+  Operator_mnemonic -- This Operator Mnemonic attribute.
+*/
+const char *
+Operator_mnemonic(Operator this);
+
+/*
+  Operator_parameterArray -- This Operator OperatorParameterArray.
+*/
+extern const OperatorParameterArray_
+Operator_ParameterArray_[];
+static inline const_OperatorParameterArray
+Operator_parameterArray(Operator this)
+{
+  ;
+  return Operator_ParameterArray_ + this;
+}
+
+/*
+  Operator_argCount -- This Operator count of argument OperatorParameter(s).
+*/
+static inline int
+Operator_argCount(Operator this) {
+  const_OperatorParameterArray parameterArray = Operator_parameterArray(this);
+  return OperatorParameterArray_argCount(parameterArray);
+}
+
+/*
+  Operator_resCount -- This Operator count of result OperatorParameter(s).
+*/
+static inline int
+Operator_resCount(Operator this) {
+  const_OperatorParameterArray parameterArray = Operator_parameterArray(this);
+  return OperatorParameterArray_resCount(parameterArray);
+}
+
+/*
+  Operator_isFixRegisterRAW -- True if Register RAW latency needs a fix.
+*/
+bool
+Operator_isFixRegisterRAW(Operator this);
+
+/*
+ Operator_selectInstance -- Select a suitable instance for the processor.
+*/
+Instance
+Operator_selectInstance(Operator this, Processor processor);
+
+/*
+  Operator_require -- The register lifetime flow requirements.
+*/
+int
+Operator_require(Operator this, RegFile regFile);
+
+/*
+  Operator_immediateIndex -- The index of this Operator Immediate OperatorParameter(s).
+  Return:	The index starting at 0 of Immediate OperatorParameter among reads.
+*/
+int
+Operator_immediateIndex(Operator this);
+
+/*
+  Operator_baseAddressIndex -- The index of this Operator base address OperatorParameter(s).
+  Return:	The index starting at 0 of base address OperatorParameter among writes.
+*/
+int
+Operator_baseAddressIndex(Operator this);
+
+/*
+  Operator_memoryAccessSize -- Get the access size in bytes of a memory access.
+*/
+int
+Operator_memoryAccessSize(Operator this);
+
+/*
+  Operator_isXXX -- Test if this Operator is a XXX.
+*/
+#define Operator_isLabel(this) (this == Operator_LABEL)
+#define Operator_isFall(this) (this == Operator_FALL)
+#define Operator_isLoop(this) (this == Operator_LOOP)
+#define Operator_isPhi(this) (this == Operator_PHI)
+#define Operator_isPsi(this) (this == Operator_PSI)
+#define Operator_isSigma(this) (this == Operator_SIGMA)
+#define Operator_isKill(this) (this == Operator_KILL)
+
+/*
+  Operator_isAdjust -- Test if this Operator is a ADJUST.
+*/
+bool
+Operator_isAdjust(Operator this);
+
+/*
+  Operator_isCopy -- Test if this Operator is a COPY.
+//
+  In this case result 0 is the destination and argument 0 is the source.
+*/
+bool
+Operator_isCopy(Operator this);
+
+/*
+  Operator_isAdd -- Test if this Operator is an ADD.
+*/
+bool
+Operator_isAdd(Operator this);
+
+/*
+  Operator_isAdditive -- Test if this Operator is additive.
+//
+  An operator OP is additive if OP(a, b) = OP(a+c, b-c).
+*/
+bool
+Operator_isAdditive(Operator this, int aIndex, int bIndex);
+
+/*
+  Operator_isSubtractive -- Test if this Operator is subtractive.
+//
+  An operator OP is subtractive if OP(a, b) = OP(a+c, b+c).
+*/
+bool
+Operator_isSubtractive(Operator this, int aIndex, int bIndex);
+
+/*
+  Operator_isTranslative -- Test if this Operator is translative.
+//
+  An operator OP is translative if OP(a+c, b+c) = OP(a, b) + c.
+*/
+bool
+Operator_isTranslative(Operator this, int aIndex, int bIndex);
+
+/*
+  Operator_isAssociative -- Test if this Operator is associative.
+//
+  An operator OP is associative if OP(OP(a, b), c) = OP(a, OP(b, c)).
+*/
+bool
+Operator_isAssociative(Operator this, int aIndex, int bIndex);
+
+/*
+  Operator_isCommutative -- Test if this Operator is commutative.
+//
+  An operator OP is commutative if OP(a, b) = OP(b, a).
+*/
+bool
+Operator_isCommutative(Operator this, int aIndex, int bIndex);
+
+/*
+  Operator_isGoTo -- Test if this Operator is a GOTO operator.
+//
+  A GOTO operator branches to a PC-relative or an absolute address, and has one
+  or two targets.
+*/
+bool
+Operator_isGoTo(Operator this);
+
+/*
+  Operator_isJump -- Test if this Operator is a JUMP operator.
+//
+  A JUMP operator branches to an address contained in a register.
+*/
+bool
+Operator_isJump(Operator this);
+
+/*
+  Operator_isBranch -- Test if this Operator is a branch operator.
+//
+  A branch is a control-flow change that remains inside the function.
+*/
+bool
+Operator_isBranch(Operator this);
+
+/*
+  Operator_isCall -- Test if this Operator is a CALL operator.
+//
+  A CALL operator branches to a PC-relative or an absolute address.
+*/
+bool
+Operator_isCall(Operator this);
+
+/*
+  Operator_isLink -- Test if this Operator is a LINK operator.
+*/
+bool
+Operator_isLink(Operator this);
+
+/*
+  Operator_isRoutine -- Test if this Operator is a function call operator.
+*/
+bool
+Operator_isRoutine(Operator this);
+
+/*
+  Operator_isReturn -- Test if this Operator is a function return operator.
+*/
+bool
+Operator_isReturn(Operator this);
+
+/*
+  Operator_isGNUASM -- Test if this Operator is a GNU ASM.
+*/
+bool
+Operator_isGNUASM(Operator this);
+
+/*
+  Operator_isMemoryBarrier -- Test if this Operator is a memory barrier.
+*/
+bool
+Operator_isMemoryBarrier(Operator this);
+
+/*
+  Operator_isPrefetch -- Test if this Operator prefetches memory.
+*/
+bool
+Operator_isPrefetch(Operator this);
+
+/*
+  Operator_isSafeLoad -- Test if this Operator is a safe memory load.
+*/
+bool
+Operator_isSafeLoad(Operator this);
+
+/*
+  Operator_position -- The position of this Operator in a bundle.
+*/
+static inline int
+Operator_position(Operator this)
+{
+  if ((Operator_attributes(this)>>OperatorAttribute_Control & 1)) return 255;
+  if ((Operator_attributes(this)>>OperatorAttribute_Pseudo & 1)) {
+    if ((this == Operator_LABEL)) return 0;
+  }
+  return 1;
+}
+
+/*
+  Operator_compensation -- Get the compensation level of this Operator.
+*/
+static inline int
+Operator_compensation(Operator this)
+{
+  if (Operator_isAdjust(this)) return (uint8_t)-1;
+  return 1;
+}
+
+/*
+  Operator_speculation -- Get the speculation level of this Operator.
+*/
+int
+Operator_speculation(Operator this, Processor processor);
+
+/*
+  Operator_speculate -- Return the speculated variant of this Operator.
+*/
+Operator
+Operator_speculate(Operator this, Processor processor);
+
+/*
+  Operator_invertCondition -- Invert the condition of this Operator.
+*/
+Operator
+Operator_invertCondition(Operator this);
+
+/*
+  Operator_isHWLSkip -- Test if this Operator is a Hardware Loop Skip.
+*/
+static inline bool
+Operator_isHWLSkip(Operator this)
+{
+  return false;
+}
+
+/*
+  Operator_isHWLBreak -- Test if this Operator is a Hardware Loop Break.
+*/
+static inline bool
+Operator_isHWLBreak(Operator this)
+{
+  return false;
+}
+
+/*
+  Operator_isHWLIter -- Test if this Operator is a Hardware Loop Iter.
+*/
+static inline bool
+Operator_isHWLIter(Operator this)
+{
+  return false;
+}
+
+/*
+  Operator_isHWLBranch -- Test if this Operator is a Hardware Loop Branch.
+*/
+static inline bool
+Operator_isHWLBranch(Operator this)
+{
+  return false;
+}
+
+/*
+  Operator_isHWLPseudo -- Test if this Operator is a Hardware Loop Pseudo.
+*/
+static inline bool
+Operator_isHWLPseudo(Operator this)
+{
+  return false;
+}
+
+
+
+
+
+#define Bundling_h_INCLUDED 
+
+/*
+  Bundling.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Bundling_NAME_ -- NAME array for the Bundling enumeration.
+*/
+extern const char *Bundling_NAME_[];
+
+#define Bundling_NAME_(this) (Bundling_NAME_[this])
+
+
+
+
+/*
+  BundlingList -- Non-mutable list of Bundling classes.
+*/
+struct BundlingList_ {
+  uint8_t COUNT;
+  short_Bundling ITEMS[4];
+};
+typedef struct BundlingList_ BundlingList_, *BundlingList;
+typedef const struct BundlingList_ *const_BundlingList;
+
+#define BundlingList_COUNT(this) ((this)->COUNT)
+#define BundlingList__COUNT(this) (&(this)->COUNT)
+#define BundlingList_ITEMS(this) ((this)->ITEMS)
+#define BundlingList__ITEMS(this) (&(this)->ITEMS)
+/*
+  BundlingList_count -- Count the Bundling(s) in this BundlingList.
+*/
+static inline int
+BundlingList_count(const_BundlingList this)
+{
+  return ((this)->COUNT);
+}
+
+/*
+  BundlingList_items -- For use by BundlingList_FOREACH_Bundling.
+*/
+static inline const short_Bundling *
+BundlingList_items(const_BundlingList this)
+{
+  return ((this)->ITEMS);
+}
+
+/*
+  BundlingBuffer -- Buffer used to reorder Bundling(s).
+*/
+struct BundlingBuffer_ {
+  short_Bundling BUNDLINGS[4];
+  uint8_t PERMUTE[4];
+};
+typedef struct BundlingBuffer_ BundlingBuffer_, *BundlingBuffer;
+typedef const struct BundlingBuffer_ *const_BundlingBuffer;
+
+#define BundlingBuffer_BUNDLINGS(this) ((this)->BUNDLINGS)
+#define BundlingBuffer__BUNDLINGS(this) (&(this)->BUNDLINGS)
+#define BundlingBuffer_PERMUTE(this) ((this)->PERMUTE)
+#define BundlingBuffer__PERMUTE(this) (&(this)->PERMUTE)
+/*
+  BundlingBuffer_sort -- Sort the BUNDLINGS array and fill the PERMUTE array.
+//
+  Return:	hash value suitable for use by =BundleMatch_FindBundle=.
+*/
+uint32_t
+BundlingBuffer_sort(BundlingBuffer this, int count);
+
+
+
+
+
+#define Template_h_INCLUDED 
+
+/*
+  Template.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Template_NAME_ -- NAME array for the Template enumeration.
+*/
+extern const char *Template_NAME_[];
+
+#define Template_NAME_(this) (Template_NAME_[this])
+
+
+
+
+/*
+  Template_increment -- This Template increment of the PC.
+*/
+extern const int8_t
+Template_Increment[];
+static inline int
+Template_increment(Template this)
+{
+  ;
+  return Template_Increment[this];
+}
+
+
+
+
+
+#define Bundle_h_INCLUDED 
+
+/*
+  Bundle.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Bundle_NAME_ -- NAME array for the Bundle enumeration.
+*/
+extern const char *Bundle_NAME_[];
+
+#define Bundle_NAME_(this) (Bundle_NAME_[this])
+
+
+
+
+/*
+  Bundle_alignBias -- This Bundle align bias.
+*/
+extern const uint8_t
+Bundle_AlignBias[];
+static inline int
+Bundle_alignBias(Bundle this)
+{
+  ;
+  return Bundle_AlignBias[this];
+}
+
+/*
+  Bundle_alignBase -- This Bundle align bias.
+*/
+extern const uint8_t
+Bundle_AlignBase[];
+static inline int
+Bundle_alignBase(Bundle this)
+{
+  ;
+  return Bundle_AlignBase[this];
+}
+
+/*
+  Bundle_contents -- This Bundle contents.
+*/
+extern const BundlingList_
+Bundle_Contents_[];
+static inline const_BundlingList
+Bundle_contents(Bundle this)
+{
+  ;
+  return Bundle_Contents_ + this;
+}
+
+/*
+  Bundle_template -- This Bundle Template.
+*/
+extern const short_Template
+Bundle_Template[];
+static inline Template
+Bundle_template(Bundle this)
+{
+  ;
+  return (Template)Bundle_Template[this];
+}
+
+/*
+  BundleMatch -- Match between a canonic sequence of Bundling classes an Bundle(s).
+//
+  The HASH value is computed from a sorted sequence of Bundling classes as follows:
+//
+	HASH = -1;
+        for (i = 0; i < length; i++) {
+	  HASH++; HASH *= Bundling__; HASH += bundlings[i];
+	}
+*/
+struct BundleMatch_ {
+  uint16_t HASH; // HASH value for this BundleMatch.
+  uint16_t COUNT; // Count of Bundle(s) in ITEMS.
+  short_Bundle ITEMS[2];
+};
+typedef struct BundleMatch_ BundleMatch_, *BundleMatch;
+typedef const struct BundleMatch_ *const_BundleMatch;
+
+#define BundleMatch_HASH(this) ((this)->HASH)
+#define BundleMatch__HASH(this) (&(this)->HASH)
+#define BundleMatch_COUNT(this) ((this)->COUNT)
+#define BundleMatch__COUNT(this) (&(this)->COUNT)
+#define BundleMatch_ITEMS(this) ((this)->ITEMS)
+#define BundleMatch__ITEMS(this) (&(this)->ITEMS)
+/*
+  BundleMatch_FindBundle -- Given a HASH and nativePC, find a matching Bundle.
+*/
+Bundle
+BundleMatch_FindBundle(uint32_t hash, ProcessorUIntPtr nativePC);
+
+
+
+
+
+#define Resource_h_INCLUDED 
+
+/*
+  Resource.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Resource_NAME_ -- NAME array for the Resource enumeration.
+*/
+extern const char *Resource_NAME_[];
+
+#define Resource_NAME_(this) (Resource_NAME_[this])
+#define Resource_NAME(this) (Resource_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  Resource_Availability -- Resource availability arrays.
+*/
+extern const uint8_t
+Resource_Availability[][Processor__];
+
+
+
+
+
+#define Reservation_h_INCLUDED 
+
+/*
+  Reservation.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  ReservationColumn -- Column of a ReservationTable (Resource requirements at given time).
+*/
+struct ReservationColumn_ {
+  uint8_t REQUIREMENTS[Resource__];
+};
+typedef struct ReservationColumn_ ReservationColumn_, *ReservationColumn;
+typedef const struct ReservationColumn_ *const_ReservationColumn;
+
+#define ReservationColumn_REQUIREMENTS(this) ((this)->REQUIREMENTS)
+#define ReservationColumn__REQUIREMENTS(this) (&(this)->REQUIREMENTS)
+/*
+  ReservationTable -- Reservation table.
+*/
+struct ReservationTable_ {
+  int COLUMNCOUNT;
+  const ReservationColumn_ *COLUMNS;
+};
+typedef struct ReservationTable_ ReservationTable_, *ReservationTable;
+typedef const struct ReservationTable_ *const_ReservationTable;
+
+#define ReservationTable_COLUMNCOUNT(this) ((this)->COLUMNCOUNT)
+#define ReservationTable__COLUMNCOUNT(this) (&(this)->COLUMNCOUNT)
+#define ReservationTable_COLUMNS(this) ((this)->COLUMNS)
+#define ReservationTable__COLUMNS(this) (&(this)->COLUMNS)
+/*
+  Reservation_NAME_ -- NAME array for the Reservation enumeration.
+*/
+extern const char *Reservation_NAME_[];
+
+#define Reservation_NAME_(this) (Reservation_NAME_[this])
+
+
+
+
+/*
+  Reservation_table -- Access to this Reservation class ReservationTable
+*/
+extern const ReservationTable_
+Reservation_Table_[];
+static inline const_ReservationTable
+Reservation_table(Reservation this)
+{
+  ;
+  return Reservation_Table_ + this;
+}
+
+/*
+  Reservation_requirements -- The Resource requirements of this Reservation at cycle 0.
+*/
+static inline const uint8_t *
+Reservation_requirements(Reservation this)
+{
+  const_ReservationTable table = Reservation_table(this);
+  const ReservationColumn_ *column = ((table)->COLUMNS) + 0;
+  return ((column)->REQUIREMENTS);
+}
+
+/*
+  Reservation_odot -- The minimum number of cycles between two Reservation classes.
+*/
+extern int8_t
+Reservation_ODot[Reservation__+1][Reservation__+1][Processor__];
+static inline int
+Reservation_odot(Reservation this, Reservation that, Processor processor)
+{
+  ;
+  return Reservation_ODot[this][that][processor];
+}
+
+
+
+
+
+#define Scheduling_h_INCLUDED 
+
+/*
+  Scheduling.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Scheduling_NAME_ -- NAME array for the Scheduling enumeration.
+*/
+extern const char *Scheduling_NAME_[];
+
+#define Scheduling_NAME_(this) (Scheduling_NAME_[this])
+#define Scheduling_NAME(this) (Scheduling_NAME_[this] + sizeof(MDS_TARGET))
+
+
+
+
+
+/*
+  Scheduling_processor -- This Scheduling class processor.
+*/
+extern const short_Processor
+Scheduling_Processor[];
+static inline Processor
+Scheduling_processor(Scheduling this)
+{
+  ;
+  return (Processor)Scheduling_Processor[this];
+}
+
+/*
+  Scheduling_bundling -- This Scheduling class Bundling class.
+*/
+extern const short_Bundling
+Scheduling_Bundling[];
+static inline Bundling
+Scheduling_bundling(Scheduling this)
+{
+  ;
+  return (Bundling)Scheduling_Bundling[this];
+}
+
+/*
+  Scheduling_reservation -- This Scheduling class Reservation.
+*/
+extern const short_Reservation
+Scheduling_Reservation[];
+static inline Reservation
+Scheduling_reservation(Scheduling this)
+{
+  ;
+  return (Reservation)Scheduling_Reservation[this];
+}
+
+
+
+
+
+#define Convention_h_INCLUDED 
+
+/*
+  Convention.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Convention_NAME_ -- NAME array for the Convention enumeration.
+*/
+extern const char *Convention_NAME_[];
+
+#define Convention_NAME_(this) (Convention_NAME_[this])
+
+
+
+
+/*
+ Convention_reservedRegisterList -- List of reserved (non allocatable) REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ReservedRegisterList_[];
+static inline const_RegisterList
+Convention_reservedRegisterList(Convention this)
+{
+  ;
+  return &Convention_ReservedRegisterList_[this];
+}
+
+/*
+  Convention_reservedRegisterSet -- This Convention reserved RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ReservedRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_reservedRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ReservedRegisterSet_[convention];
+}
+
+//
+#define Convention_isReservedRegister(convention,registre) RegisterList_contains(Convention_reservedRegisterList(convention), registre)
+
+
+/*
+ Convention_argumentRegisterList -- List of function argument REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ArgumentRegisterList_[];
+static inline const_RegisterList
+Convention_argumentRegisterList(Convention this)
+{
+  ;
+  return &Convention_ArgumentRegisterList_[this];
+}
+
+/*
+  Convention_argumentRegisterSet -- This Convention argument RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ArgumentRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_argumentRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ArgumentRegisterSet_[convention];
+}
+
+//
+#define Convention_isArgumentRegister(convention,registre) RegisterList_contains(Convention_argumentRegisterList(convention), registre)
+
+
+/*
+ Convention_resultRegisterList -- List of function result REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ResultRegisterList_[];
+static inline const_RegisterList
+Convention_resultRegisterList(Convention this)
+{
+  ;
+  return &Convention_ResultRegisterList_[this];
+}
+
+/*
+  Convention_resultRegisterSet -- This Convention result RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ResultRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_resultRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ResultRegisterSet_[convention];
+}
+
+//
+#define Convention_isResultRegister(convention,registre) RegisterList_contains(Convention_resultRegisterList(convention), registre)
+
+
+/*
+ Convention_structRegisterList -- List of struct result pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_StructRegisterList_[];
+static inline const_RegisterList
+Convention_structRegisterList(Convention this)
+{
+  ;
+  return &Convention_StructRegisterList_[this];
+}
+
+/*
+  Convention_structRegisterSet -- This Convention struct RegisterSet.
+*/
+extern const RegisterSet_
+Convention_StructRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_structRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_StructRegisterSet_[convention];
+}
+
+//
+#define Convention_isStructRegister(convention,registre) RegisterList_contains(Convention_structRegisterList(convention), registre)
+
+
+/*
+ Convention_callerRegisterList -- List of caller saved (scratch) REGISTER(s).
+*/
+extern const RegisterList_
+Convention_CallerRegisterList_[];
+static inline const_RegisterList
+Convention_callerRegisterList(Convention this)
+{
+  ;
+  return &Convention_CallerRegisterList_[this];
+}
+
+/*
+  Convention_callerRegisterSet -- This Convention caller RegisterSet.
+*/
+extern const RegisterSet_
+Convention_CallerRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_callerRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_CallerRegisterSet_[convention];
+}
+
+//
+#define Convention_isCallerRegister(convention,registre) RegisterList_contains(Convention_callerRegisterList(convention), registre)
+
+
+/*
+ Convention_calleeRegisterList -- List of callee saved (preserved) REGISTER(s).
+*/
+extern const RegisterList_
+Convention_CalleeRegisterList_[];
+static inline const_RegisterList
+Convention_calleeRegisterList(Convention this)
+{
+  ;
+  return &Convention_CalleeRegisterList_[this];
+}
+
+/*
+  Convention_calleeRegisterSet -- This Convention callee RegisterSet.
+*/
+extern const RegisterSet_
+Convention_CalleeRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_calleeRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_CalleeRegisterSet_[convention];
+}
+
+//
+#define Convention_isCalleeRegister(convention,registre) RegisterList_contains(Convention_calleeRegisterList(convention), registre)
+
+
+/*
+ Convention_programRegisterList -- List of program counter REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ProgramRegisterList_[];
+static inline const_RegisterList
+Convention_programRegisterList(Convention this)
+{
+  ;
+  return &Convention_ProgramRegisterList_[this];
+}
+
+/*
+  Convention_programRegisterSet -- This Convention program counter RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ProgramRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_programRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ProgramRegisterSet_[convention];
+}
+
+//
+#define Convention_isProgramRegister(convention,registre) RegisterList_contains(Convention_programRegisterList(convention), registre)
+
+
+/*
+ Convention_returnRegisterList -- List of return address REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ReturnRegisterList_[];
+static inline const_RegisterList
+Convention_returnRegisterList(Convention this)
+{
+  ;
+  return &Convention_ReturnRegisterList_[this];
+}
+
+/*
+  Convention_returnRegisterSet -- This Convention return RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ReturnRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_returnRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ReturnRegisterSet_[convention];
+}
+
+//
+#define Convention_isReturnRegister(convention,registre) RegisterList_contains(Convention_returnRegisterList(convention), registre)
+
+
+/*
+ Convention_stackRegisterList -- List of stack pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_StackRegisterList_[];
+static inline const_RegisterList
+Convention_stackRegisterList(Convention this)
+{
+  ;
+  return &Convention_StackRegisterList_[this];
+}
+
+/*
+  Convention_stackRegisterSet -- This Convention stack RegisterSet.
+*/
+extern const RegisterSet_
+Convention_StackRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_stackRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_StackRegisterSet_[convention];
+}
+
+//
+#define Convention_isStackRegister(convention,registre) RegisterList_contains(Convention_stackRegisterList(convention), registre)
+
+
+/*
+ Convention_staticRegisterList -- List of static link pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_StaticRegisterList_[];
+static inline const_RegisterList
+Convention_staticRegisterList(Convention this)
+{
+  ;
+  return &Convention_StaticRegisterList_[this];
+}
+
+/*
+  Convention_staticRegisterSet -- This Convention static RegisterSet.
+*/
+extern const RegisterSet_
+Convention_StaticRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_staticRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_StaticRegisterSet_[convention];
+}
+
+//
+#define Convention_isStaticRegister(convention,registre) RegisterList_contains(Convention_staticRegisterList(convention), registre)
+
+
+/*
+ Convention_frameRegisterList -- List of frame pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_FrameRegisterList_[];
+static inline const_RegisterList
+Convention_frameRegisterList(Convention this)
+{
+  ;
+  return &Convention_FrameRegisterList_[this];
+}
+
+/*
+  Convention_frameRegisterSet -- This Convention frame RegisterSet.
+*/
+extern const RegisterSet_
+Convention_FrameRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_frameRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_FrameRegisterSet_[convention];
+}
+
+//
+#define Convention_isFrameRegister(convention,registre) RegisterList_contains(Convention_frameRegisterList(convention), registre)
+
+
+/*
+ Convention_globalRegisterList -- List of global data or GOT pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_GlobalRegisterList_[];
+static inline const_RegisterList
+Convention_globalRegisterList(Convention this)
+{
+  ;
+  return &Convention_GlobalRegisterList_[this];
+}
+
+/*
+  Convention_globalRegisterSet -- This Convention global RegisterSet.
+*/
+extern const RegisterSet_
+Convention_GlobalRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_globalRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_GlobalRegisterSet_[convention];
+}
+
+//
+#define Convention_isGlobalRegister(convention,registre) RegisterList_contains(Convention_globalRegisterList(convention), registre)
+
+
+/*
+ Convention_localRegisterList -- List of local data or TLS pointer REGISTER(s).
+*/
+extern const RegisterList_
+Convention_LocalRegisterList_[];
+static inline const_RegisterList
+Convention_localRegisterList(Convention this)
+{
+  ;
+  return &Convention_LocalRegisterList_[this];
+}
+
+/*
+  Convention_localRegisterSet -- This Convention local RegisterSet.
+*/
+extern const RegisterSet_
+Convention_LocalRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_localRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_LocalRegisterSet_[convention];
+}
+
+//
+#define Convention_isLocalRegister(convention,registre) RegisterList_contains(Convention_localRegisterList(convention), registre)
+
+
+/*
+ Convention_wiredRegisterList -- List of wired REGISTER(s).
+*/
+extern const RegisterList_
+Convention_WiredRegisterList_[];
+static inline const_RegisterList
+Convention_wiredRegisterList(Convention this)
+{
+  ;
+  return &Convention_WiredRegisterList_[this];
+}
+
+/*
+  Convention_wiredRegisterSet -- This Convention wired RegisterSet.
+*/
+extern const RegisterSet_
+Convention_WiredRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_wiredRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_WiredRegisterSet_[convention];
+}
+
+//
+#define Convention_isWiredRegister(convention,registre) RegisterList_contains(Convention_wiredRegisterList(convention), registre)
+
+
+/*
+ Convention_zeroRegisterList -- List of zero value REGISTER(s).
+*/
+extern const RegisterList_
+Convention_ZeroRegisterList_[];
+static inline const_RegisterList
+Convention_zeroRegisterList(Convention this)
+{
+  ;
+  return &Convention_ZeroRegisterList_[this];
+}
+
+/*
+  Convention_zeroRegisterSet -- This Convention zero RegisterSet.
+*/
+extern const RegisterSet_
+Convention_ZeroRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_zeroRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_ZeroRegisterSet_[convention];
+}
+
+//
+#define Convention_isZeroRegister(convention,registre) RegisterList_contains(Convention_zeroRegisterList(convention), registre)
+
+
+/*
+ Convention_oneRegisterList -- List of one value REGISTER(s).
+*/
+extern const RegisterList_
+Convention_OneRegisterList_[];
+static inline const_RegisterList
+Convention_oneRegisterList(Convention this)
+{
+  ;
+  return &Convention_OneRegisterList_[this];
+}
+
+/*
+  Convention_oneRegisterSet -- This Convention one RegisterSet.
+*/
+extern const RegisterSet_
+Convention_OneRegisterSet_[Convention__];
+static inline const_RegisterSet
+Convention_oneRegisterSet(Convention convention)
+{
+  ;
+  return &Convention_OneRegisterSet_[convention];
+}
+
+//
+#define Convention_isOneRegister(convention,registre) RegisterList_contains(Convention_oneRegisterList(convention), registre)
+
+
+/*
+  Convention_textAlign -- This Convention Text Alignment Base.
+*/
+extern const uint8_t
+Convention_TextAlign[];
+static inline unsigned
+Convention_textAlign(Convention this)
+{
+  ;
+  return Convention_TextAlign[this];
+}
+
+/*
+  Convention_dataAlign -- This Convention Data Alignment Base.
+*/
+extern const uint8_t
+Convention_DataAlign[];
+static inline unsigned
+Convention_dataAlign(Convention this)
+{
+  ;
+  return Convention_DataAlign[this];
+}
+
+/*
+  Convention_heapAlign -- This Convention Heap Alignment Base.
+*/
+extern const uint8_t
+Convention_HeapAlign[];
+static inline unsigned
+Convention_heapAlign(Convention this)
+{
+  ;
+  return Convention_HeapAlign[this];
+}
+
+/*
+  Convention_stackAlign -- This Convention Stack Alignment Base.
+*/
+extern const uint8_t
+Convention_StackAlign[];
+static inline unsigned
+Convention_stackAlign(Convention this)
+{
+  ;
+  return Convention_StackAlign[this];
+}
+
+/*
+  Convention_nativeInt -- This Convention Native Int.
+*/
+extern const short_NativeType
+Convention_NativeInt[];
+static inline NativeType
+Convention_nativeInt(Convention this)
+{
+  ;
+  return (NativeType)Convention_NativeInt[this];
+}
+
+/*
+  Convention_nativeUInt -- This Convention Native UInt.
+*/
+extern const short_NativeType
+Convention_NativeUInt[];
+static inline NativeType
+Convention_nativeUInt(Convention this)
+{
+  ;
+  return (NativeType)Convention_NativeUInt[this];
+}
+
+/*
+  Convention_nativeFloat -- This Convention Native Float.
+*/
+extern const short_NativeType
+Convention_NativeFloat[];
+static inline NativeType
+Convention_nativeFloat(Convention this)
+{
+  ;
+  return (NativeType)Convention_NativeFloat[this];
+}
+
+/*
+  Convention_nativePtr -- This Convention Native Ptr.
+*/
+extern const short_NativeType
+Convention_NativePtr[];
+static inline NativeType
+Convention_nativePtr(Convention this)
+{
+  ;
+  return (NativeType)Convention_NativePtr[this];
+}
+
+
+
+
+
+#define Encode_h_INCLUDED 
+
+/*
+  Encode.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+/*
+  Encode_Modifier functions.
+*/
+#define ENCODE(e) e;
+#define Modifier(NAME,VALUES,ENCODE,DECODE) static inline OperandEncoded Encode_Modifier_ ##NAME(OperandDecoded decoded, ProcessorUIntPtr PC) { ENCODE }
+
+
+
+
+
+
+/*
+  st200/Modifier.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef Modifier
+
+
+
+
+
+#undef ENCODE
+
+/*
+  Encode_Immediate functions.
+*/
+#define ENCODE(e) e;
+#define Immediate(NAME,MINVALUE,MAXVALUE,RELATIVE,ENCODE,DECODE,TRANSCODE) static inline OperandEncoded Encode_Immediate_ ##NAME(OperandDecoded decoded, ProcessorUIntPtr PC) { ENCODE }
+
+
+
+
+
+
+/*
+  st200/Immediate.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_btarg(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); value -= PC; value >>= 2; return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_isrc2(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_imm(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_sbrknum(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_xsrc2(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_issrc2(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+static inline OperandEncoded Encode_Immediate_st200_brknum(OperandDecoded decoded, ProcessorUIntPtr PC) { ImmediateConstant constant = (ImmediateConstant)decoded; int32_t value = ((constant)->VALUE); return (OperandEncoded)value; }
+
+
+
+
+#undef Immediate
+
+#undef ENCODE
+
+/*
+  Encode_RegClass functions.
+*/
+#define ENCODE(e) e;
+#define RegClass(NAME,REGISTERS,REGFILE,ENCODE,DECODE) static inline OperandEncoded Encode_RegClass_ ##NAME(OperandDecoded decoded, ProcessorUIntPtr PC) { ENCODE }
+
+
+
+
+
+
+/*
+  st200/RegClass.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_branch(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_general(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 8; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_nolink(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 8; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_link(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 71; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_predicate(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 1; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_paired(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 72; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_pairedfirst(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 8; return encoded; }
+
+
+
+
+static inline OperandEncoded Encode_RegClass_st200_pairedsecond(OperandDecoded decoded, ProcessorUIntPtr PC) { OperandEncoded encoded = decoded; encoded -= 8; return encoded; }
+
+
+
+
+
+#undef RegClass
+
+#undef ENCODE
+
+/*
+  Encode_RegMask functions.
+*/
+#define ENCODE(e) e;
+#define RegMask(NAME,REGISTERS,REGFILE,ENCODE,DECODE) static inline OperandEncoded Encode_RegMask_ ##NAME(OperandDecoded decoded, ProcessorUIntPtr PC) { ENCODE }
+
+
+
+
+
+
+/*
+  st200/RegMask.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef RegMask
+
+#undef ENCODE
+
+/*
+  Encode_Operand functions.
+*/
+#define METHOD(type,name) OperandEncoded encoded = Encode_ ##type ##_ ##name(decoded, PC);
+#define WORDTYPE(type) type *words = (type *)opcodes;
+#define ENCODE(e) e;
+#define Operand(NAME,METHOD,WORDTYPE,ENCODE,DECODE) static inline void Encode_Operand_ ##NAME(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { METHOD WORDTYPE ENCODE }
+/*
+  st200/Operand.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+static inline void Encode_Operand_st200_bcond(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_branch(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<23))|(encoded&7)<<23; }
+
+
+static inline void Encode_Operand_st200_bdest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_branch(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<18))|(encoded&7)<<18; }
+
+
+static inline void Encode_Operand_st200_bdest2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_branch(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<12))|(encoded&7)<<12; }
+
+
+static inline void Encode_Operand_st200_btarg(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_btarg(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(8388607<<0))|(encoded&8388607)<<0; }
+
+
+static inline void Encode_Operand_st200_dest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_general(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<12))|(encoded&63)<<12; }
+
+
+static inline void Encode_Operand_st200_nldest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_nolink(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<12))|(encoded&63)<<12; }
+
+
+static inline void Encode_Operand_st200_ibdest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_branch(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<6))|(encoded&7)<<6; }
+
+
+static inline void Encode_Operand_st200_idest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_general(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_nlidest(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_nolink(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_isrc2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_isrc2(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(511<<12))|(encoded&511)<<12; }
+
+
+static inline void Encode_Operand_st200_imm(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_imm(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(8388607<<0))|(encoded&8388607)<<0; }
+
+
+static inline void Encode_Operand_st200_scond(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_branch(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<21))|(encoded&7)<<21; }
+
+
+static inline void Encode_Operand_st200_src1(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_general(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<0))|(encoded&63)<<0; }
+
+
+static inline void Encode_Operand_st200_src2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_general(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_sbrknum(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_sbrknum(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(2097151<<0))|(encoded&2097151)<<0; }
+
+
+static inline void Encode_Operand_st200_xsrc2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_xsrc2(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(511<<12))|(encoded&511)<<12; encoded >>= 9; words[1] = (words[1]&~(8388607<<0))|(encoded&8388607)<<0; }
+
+
+static inline void Encode_Operand_st200_destp(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_paired(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<12))|(encoded&63)<<12; }
+
+
+static inline void Encode_Operand_st200_idestp(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_paired(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_issrc2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_issrc2(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(511<<12))|(encoded&511)<<12; }
+
+
+static inline void Encode_Operand_st200_nlsrc1(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_nolink(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<0))|(encoded&63)<<0; }
+
+
+static inline void Encode_Operand_st200_nlsrc2(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_nolink(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_pcond(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_predicate(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(7<<21))|(encoded&7)<<21; }
+
+
+static inline void Encode_Operand_st200_src1p(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_paired(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<0))|(encoded&63)<<0; }
+
+
+static inline void Encode_Operand_st200_src2p(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_RegClass_st200_paired(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(63<<6))|(encoded&63)<<6; }
+
+
+static inline void Encode_Operand_st200_brknum(OperandDecoded decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OperandEncoded encoded = Encode_Immediate_st200_brknum(decoded, PC); uint32_t *words = (uint32_t *)opcodes; words[0] = (words[0]&~(4095<<0))|(encoded&4095)<<0; }
+
+
+
+#undef Operand
+
+
+#define Operands(NAME,OPERANDS,RELOCATABLE) 
+#undef Operands
+#undef ENCODE
+#undef WORDTYPE
+#undef METHOD
+
+/*
+  Encode_Operands functions.
+*/
+#define OPERAND(NAME,index,setup) Encode_Operand_ ##NAME(decoded[index], PC, opcodes);
+
+#define OPERANDS(count,items) items
+#define Operands(NAME,OPERANDS,RELOCATABLE) static inline void Encode_Operands_ ##NAME(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { OPERANDS }
+
+
+
+
+
+
+
+/*
+  st200/Operand.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+#define Operand(NAME,METHOD,WORDTYPE,ENCODE,DECODE) 
+#undef Operand
+
+
+
+
+static inline void Encode_Operands_st200_dest_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_dest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_src1_isrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_isrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_src1_xsrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_dest_bdest_src1_src2_scond(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_dest(decoded[0], PC, opcodes); Encode_Operand_st200_bdest(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); Encode_Operand_st200_src2(decoded[3], PC, opcodes); Encode_Operand_st200_scond(decoded[4], PC, opcodes); }
+static inline void Encode_Operands_st200_bdest_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_bdest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_ibdest_src1_isrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_ibdest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_isrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_ibdest_src1_xsrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_ibdest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_bcond_btarg(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_bcond(decoded[0], PC, opcodes); Encode_Operand_st200_btarg(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_btarg(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_btarg(decoded[0], PC, opcodes); }
+static inline void Encode_Operands_st200_imm(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_imm(decoded[0], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_isrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_isrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nldest_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nldest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_src1_isrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_isrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_src1_xsrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_isrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_xsrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_sbrknum(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_sbrknum(decoded[0], PC, opcodes); }
+static inline void Encode_Operands_st200_dest_scond_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_dest(decoded[0], PC, opcodes); Encode_Operand_st200_scond(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); Encode_Operand_st200_src2(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_scond_src1_isrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_scond(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); Encode_Operand_st200_isrc2(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_scond_src1_xsrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_scond(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_isrc2_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_isrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_xsrc2_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_xsrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_dest_src2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_dest(decoded[0], PC, opcodes); Encode_Operand_st200_src2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_dest_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_dest(decoded[0], PC, opcodes); Encode_Operand_st200_src2(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_isrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_isrc2(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_xsrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_bdest_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_bdest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_idest_scond(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idest(decoded[0], PC, opcodes); Encode_Operand_st200_scond(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_src2(decoded[0], PC, opcodes); }
+static inline void Encode_Operands_st200_bdest2_src1_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_bdest2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nldest_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nldest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_pcond_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_pcond(decoded[1], PC, opcodes); Encode_Operand_st200_isrc2(decoded[2], PC, opcodes); Encode_Operand_st200_src1(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_pcond_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_pcond(decoded[1], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[2], PC, opcodes); Encode_Operand_st200_src1(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_idestp_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idestp(decoded[0], PC, opcodes); Encode_Operand_st200_isrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idestp_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idestp(decoded[0], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_idestp_pcond_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idestp(decoded[0], PC, opcodes); Encode_Operand_st200_pcond(decoded[1], PC, opcodes); Encode_Operand_st200_isrc2(decoded[2], PC, opcodes); Encode_Operand_st200_src1(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_idestp_pcond_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_idestp(decoded[0], PC, opcodes); Encode_Operand_st200_pcond(decoded[1], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[2], PC, opcodes); Encode_Operand_st200_src1(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_pcond_isrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_pcond(decoded[0], PC, opcodes); Encode_Operand_st200_isrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_pcond_xsrc2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_pcond(decoded[0], PC, opcodes); Encode_Operand_st200_xsrc2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_nlidest_src1_issrc2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_nlidest(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_issrc2(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_brknum(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_brknum(decoded[0], PC, opcodes); }
+static inline void Encode_Operands_st200_isrc2_src1_pcond_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_isrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_pcond(decoded[2], PC, opcodes); Encode_Operand_st200_src2(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_xsrc2_src1_pcond_src2(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_xsrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_pcond(decoded[2], PC, opcodes); Encode_Operand_st200_src2(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_isrc2_src1_src2p(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_isrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2p(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_xsrc2_src1_src2p(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_xsrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_src2p(decoded[2], PC, opcodes); }
+static inline void Encode_Operands_st200_isrc2_src1_pcond_src2p(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_isrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_pcond(decoded[2], PC, opcodes); Encode_Operand_st200_src2p(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_xsrc2_src1_pcond_src2p(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_xsrc2(decoded[0], PC, opcodes); Encode_Operand_st200_src1(decoded[1], PC, opcodes); Encode_Operand_st200_pcond(decoded[2], PC, opcodes); Encode_Operand_st200_src2p(decoded[3], PC, opcodes); }
+static inline void Encode_Operands_st200_bdest_src2_src1(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC, void * restrict opcodes) { Encode_Operand_st200_bdest(decoded[0], PC, opcodes); Encode_Operand_st200_src2(decoded[1], PC, opcodes); Encode_Operand_st200_src1(decoded[2], PC, opcodes); }
+
+#undef Operands
+#undef OPERANDS
+#undef OPERAND
+static inline void
+Encode_Operands__(const OperandDecoded * restrict decoded, ProcessorUIntPtr PC,
+                  void * restrict opcodes)
+{
+}
+
+
+
+
+
+#define Decode_h_INCLUDED 
+
+/*
+  Decode.xcc
+//
+  Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+//
+  Copyright 2002 - 2003 STMicroelectronics.
+  Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+//
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of either (at your option): the GNU
+  General Public License (GPL) version 2; the GNU Lesser General
+  Public License (LGPL) version 2.1; any later version of these
+  licences as published by the Free Software Foundation.
+*/
+
+//
+extern Instance
+Decode_Encoding_st220_ANY(const void *buffer);
+
+//
+extern Instance
+Decode_Encoding_st220_ANYX(const void *buffer);
+
+//
+extern Instance
+Decode_Encoding_st231_ANY(const void *buffer);
+
+//
+extern Instance
+Decode_Encoding_st231_ANYX(const void *buffer);
+
+//
+extern Instance
+Decode_Encoding_st235_ANY(const void *buffer);
+
+//
+extern Instance
+Decode_Encoding_st235_ANYX(const void *buffer);
+
+
+
+
+/*
+  MDS_TRACE -- File handle used to trace the MDS.
+*/
+extern FILE *MDS_TRACE;
+
+
+
+
+/*
+  Variables used to control PFA in non-release mode.
+*/
+extern int LAO_INTERLOCK;
+extern int LAO_MAXISSUE;
+extern int LAO_MINTAKEN;
+
+//
+void
+MDS_setMaxIssue(int maxIssue);
+
+//
+void
+MDS_setMinTaken(int taken);
+
+/*
+  MDS_INIT -- MDS init function.
+*/
+void
+MDS_INIT(void);
+
+/*
+  MDS_FINI -- MDS fini function.
+*/
+void
+MDS_FINI(void);
+
+//
+#define MDS_TARGET "st200"
+#define MDS_TARGET_st200 
+#define MDS_MACHINE "st200"
+#define MDS_MACHINE_st200 
