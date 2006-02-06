@@ -1,4 +1,5 @@
- 
+This README file is the original README from the PRO64 SGI 0.13 version.
+It does not give information on the open64 port of the compiler at STMicroelectronics.
 
 The SGI Pro64(TM) compiler suite includes optimizing compilers 
 and runtime support for C, C++, and Fortran90. These compilers 
