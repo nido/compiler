@@ -461,6 +461,7 @@ extern BOOL CG_LOOP_optimize_non_trip_countable;
 extern BOOL CG_LOOP_unroll_do_unwind;
 extern BOOL CG_LOOP_unroll_remainder_after;
 extern BOOL CG_LOOP_unroll_multi_bb;
+extern INT32 CG_LOOP_unroll_heuristics;
 extern BOOL CG_LOOP_load_store_packing;
 #endif
 /* Exported functions.
@@ -553,6 +554,9 @@ class CG_LOOP {
 private:
   LOOP_DESCR *loop;
   BOOL        unroll_fully;
+#ifdef TARG_ST
+  INT32	      unroll_sched_est;
+#endif
   INT32       unroll_factor;
   OP_MAP      op_map;
   BB         *unroll_remainder_bb;
@@ -586,10 +590,17 @@ public:
   void Set_unroll_fully()         { unroll_fully = TRUE; }
   INT32 Unroll_factor() const     { return unroll_factor; }
   void Set_unroll_factor(INT32 n) { unroll_factor = n; }
+#ifdef TARG_ST
+  INT32 Unroll_sched_est() const  { return unroll_sched_est; }
+  void Set_unroll_sched_est(INT32 n) { unroll_sched_est = n; }
+#endif
 
   void Recompute_Liveness();
   bool Determine_Unroll_Fully();
   INT32 Get_Unroll_Times(ANNOTATION *&);
+#ifdef TARG_ST
+  void Determine_Sched_Est_Unroll_Factor();
+#endif
   void Determine_Unroll_Factor();
   void Determine_SWP_Unroll_Factor();
   void Build_CG_LOOP_Info();

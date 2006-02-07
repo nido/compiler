@@ -197,6 +197,13 @@ BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 BOOL CG_LOOP_unroll_do_unwind = FALSE;
 BOOL CG_LOOP_unroll_remainder_after = FALSE;
 BOOL CG_LOOP_load_store_packing = FALSE;
+enum UNROLL_HEURISTICS {
+  DEFAULT_HEURISTIC = 0,
+  SCHED_HEURISTIC   = 1,
+  UNROLL2_HEURISTIC = 2,
+  DOWHILE_HEURISTIC = 4
+};
+INT32 CG_LOOP_unroll_heuristics = SCHED_HEURISTIC | UNROLL2_HEURISTIC | DOWHILE_HEURISTIC;
 #endif
 BOOL CG_LOOP_ignore_pragmas = FALSE;
 
@@ -1110,6 +1117,10 @@ CG_LOOP::CG_LOOP(LOOP_DESCR *loop)
   prolog_start = prolog_end = NULL;
   epilog_start = epilog_end = NULL;
 
+#ifdef TARG_ST
+  unroll_sched_est = -1;
+#endif
+
   Attach_Prolog_And_Epilog(loop);
 
   prolog_start = CG_LOOP_prolog_start;
@@ -1892,10 +1903,9 @@ void Remove_Notations_With_Copies(BB *body, BB *head, BB *tail,
 }
 
 
-void CG_LOOP_Remove_Notations(CG_LOOP& cl, BB *head, BB *tail)
+void CG_LOOP_Remove_Notations(LOOP_DESCR* loop, BB *head, BB *tail)
 {
-  LOOP_DESCR *loop = cl.Loop();
-  BB *body = cl.Loop_header();
+  BB *body = LOOP_DESCR_loophead(loop);
 
   if (Get_Trace(TP_CGLOOP, 0x4)) {
     #pragma mips_frequency_hint NEVER
@@ -2088,19 +2098,90 @@ static void unroll_names_finish(void)
   unroll_names_valid = FALSE;
 }
 
+#ifdef KEY
+/* Given a result <tn>, check whether it shows up in the epilog backpatch with
+   omega > 0.
+ */
+static BOOL Has_Nonzero_Omega_in_Epilog( TN* tn )
+{
+  if( !TN_is_gra_homeable(tn) )
+    return FALSE;
+
+  CG_LOOP_BACKPATCH* bpatches = CG_LOOP_Backpatch_First(CG_LOOP_epilog,tn);
+  while( bpatches != NULL ){
+    const TN* body_tn = CG_LOOP_BACKPATCH_body_tn(bpatches);
+    if( body_tn == tn ){
+      if( CG_LOOP_BACKPATCH_omega(bpatches) > 0 )
+	return TRUE;
+    }
+    bpatches = CG_LOOP_Backpatch_Next(bpatches);
+  }
+
+  return FALSE;
+}
+#endif
 
 static void unroll_names_init_tn(TN *result, UINT16 ntimes, MEM_POOL *pool)
 {
   TN **entry = TYPE_MEM_POOL_ALLOC_N(TN *, pool, ntimes);
   UINT16 unrolling;
   TN_MAP_Set(unroll_names, result, entry);
-  for (unrolling = 0; unrolling < ntimes; ++unrolling)
-    if (TN_is_dedicated(result))
+#ifdef KEY
+  const BOOL reset_gra_home =
+    !TN_is_dedicated(result) && Has_Nonzero_Omega_in_Epilog(result);
+#endif // KEY
+  for (unrolling = 0; unrolling < ntimes; ++unrolling){
+    if (TN_is_dedicated(result)){
       entry[unrolling] = result;
-    else
+    }
+#ifdef KEY
+    /* Avoid generating code like
+           <result> = <result_body_tn>
+       in the loop epilog, where <result> is a gra homeable non_body tn;
+       otherwise, redundant spill code could be generated.
+     */
+    else if( unrolling == ntimes - 1 && 
+	     TN_is_gra_homeable(result) ){
+      entry[unrolling] = result;
+    }
+#endif // KEY
+    else{
       entry[unrolling] = Dup_TN(result);
+#ifdef KEY
+      /* If the <result> has a use outside of the body, and the omega is
+	 greater than 0, we should nullify the home of the copied tn of
+	 <result>; otherwise, gra cannot tell which home is the real home.
+	 (bug#2698)
+      */
+      if( reset_gra_home &&
+	  unrolling < ntimes - 1 ){
+	Reset_TN_is_gra_homeable( entry[unrolling] );
+	Set_TN_home( entry[unrolling], NULL );
+      }
+#endif // KEY      
+    }
+  }
 }
-  
+
+// Bug 1064 & Bug 1221
+#ifdef KEY
+static BOOL TN_is_cond_def_of_another_op(BB *bb, TN *tn, OP *cand_op)
+{
+  OP *op;
+  FOR_ALL_BB_OPs(bb, op) {
+    if (cand_op == op)
+      break;
+    if (!OP_cond_def(op))
+      continue;
+    for (INT i = 0; i < OP_results(op); ++i) {
+      TN *result_tn = OP_result(op,i);
+      if (result_tn == tn)
+        return TRUE;
+    }
+  }
+  return FALSE;
+}
+#endif
 
 static void unroll_names_init(LOOP_DESCR *loop, UINT16 ntimes, MEM_POOL *pool)
 /* -----------------------------------------------------------------------
@@ -2128,8 +2209,11 @@ static void unroll_names_init(LOOP_DESCR *loop, UINT16 ntimes, MEM_POOL *pool)
 	
 	if (OP_base_update_kind(op) == NO_BASE_UPDATE || 
 	    (OP_load(op) && i == 0))  // prevent renaming of base-update incr
-
-	  if (!TN_MAP_Get(unroll_names, result_tn)) 
+#ifdef KEY
+          if (!TN_MAP_Get(unroll_names, result_tn) && !TN_is_cond_def_of_another_op(bb, result_tn, op))
+#else
+          if (!TN_MAP_Get(unroll_names, result_tn))
+#endif
 	    unroll_names_init_tn(result_tn, ntimes, pool);
       }
     }
@@ -2630,9 +2714,9 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
     Set_OP_opnd(op,
 		Branch_Target_Operand(op),
 		Gen_Label_TN(Gen_Label_For_BB(unrolled_body), 0));
+    INT loop_count = WN_loop_trip_est(wn) ? WN_loop_trip_est(wn) : 100;
     Link_Pred_Succ_with_Prob(unrolled_body, unrolled_body,
-			     (WN_loop_trip_est(wn) - 1.0) /
-			     WN_loop_trip_est(wn));
+			     (loop_count - 1.0) / loop_count);
   }
 
   float new_body_freq = BB_freq(body) / ntimes;
@@ -2642,8 +2726,9 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
   Chain_BBs(unrolled_body, BB_next(body));
   LOOP_DESCR_Retarget_Loop_Entrances(loop, unrolled_body);
   Unlink_Pred_Succ(body, BB_next(body));
+  INT loop_count = WN_loop_trip_est(wn) ? WN_loop_trip_est(wn) : 100;
   Link_Pred_Succ_with_Prob(unrolled_body, BB_next(body),
-			   1.0 / WN_loop_trip_est(wn));
+			   1.0 / loop_count);
   BB_next(body) = BB_prev(body) = NULL;
 
   if (FREQ_Frequencies_Computed() || BB_freq_fb_based(body)) {
@@ -2675,22 +2760,40 @@ Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, UINT32 nti
     return FALSE;
 
   if (tn1 != trip_count_tn && tn2 != trip_count_tn) {
-    // Check if there is not a copy at loop entry. */
-    if (trip_count_bb) {
-      OP *def_op = BB_last_op(trip_count_bb);
-      while (def_op) {
-	if (OP_move(def_op) && OP_result(def_op, 0) == trip_count_tn)
-	  break;
-	def_op = OP_prev(def_op);
+    OP *def;
+    DEF_KIND kind;
+    if (TN_is_register(trip_count_tn)) {
+      def = TN_Reaching_Value_At_Op(trip_count_tn, cmp_op, &kind, TRUE);
+      if (def && OP_move(def)) {
+	trip_count_tn = OP_opnd(def, OP_Copy_Operand(def));
       }
-      if (def_op)
-	trip_count_tn = OP_opnd(def_op, 0);
-      if (tn1 != trip_count_tn && tn2 != trip_count_tn)
-	return FALSE;
     }
-    else
-      return FALSE;
   }
+
+  if (tn1 != trip_count_tn && tn2 != trip_count_tn) {
+    OP *def;
+    DEF_KIND kind;
+    if (TN_is_register(tn1)) {
+      def = TN_Reaching_Value_At_Op(tn1, cmp_op, &kind, TRUE);
+      if (def && OP_move(def)) {
+	tn1 = OP_opnd(def, OP_Copy_Operand(def));
+      }
+    }
+  }
+
+  if (tn1 != trip_count_tn && tn2 != trip_count_tn) {
+    OP *def;
+    DEF_KIND kind;
+    if (tn2 /* cmp_op may be mtb */ && TN_is_register(tn2)) {
+      def = TN_Reaching_Value_At_Op(tn2, cmp_op, &kind, TRUE);
+      if (def && OP_move(def)) {
+	tn2 = OP_opnd(def, OP_Copy_Operand(def));
+      }
+    }
+  }
+
+  if (tn1 != trip_count_tn && tn2 != trip_count_tn)
+    return FALSE;
 
   TN *trip_count_floor;
   
@@ -2713,7 +2816,7 @@ Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, UINT32 nti
     BB_Append_Ops(CG_LOOP_prolog, &prolog_ops);
   }
 
-  if (OP_opnd(cmp_op, 0) == trip_count_tn)
+  if (tn1 == trip_count_tn)
     Set_OP_opnd(cmp_op, 0, trip_count_floor);
   else
     Set_OP_opnd(cmp_op, 1, trip_count_floor);
@@ -3167,7 +3270,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 
       OPS body_ops = OPS_EMPTY;
       if (!const_trip) {
+#ifdef TARG_ST
+	BB_Append_Ops(SAVE_prolog, &prolog_ops);
+#else
 	BB_Append_Ops(CG_LOOP_prolog, &prolog_ops);
+#endif
 	BB_Append_Ops(CG_LOOP_prolog, &zero_trip_guard_ops);
 
 	INT32 trip_size = TN_size(new_trip_count);
@@ -3217,6 +3324,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	    Set_OP_unroll_bb(new_op, unrolled_body);
           }
 #endif
+	  CG_LOOP_Init_Op(new_op);
 	  Copy_WN_For_Memory_OP(new_op, op);
 	  BB_Append_Op(unrolled_body, new_op);
 	}
@@ -3294,8 +3402,23 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
       CGTARG_Generate_Remainder_Branch(new_trip_count, label_tn,
 				       &prolog_ops, &body_ops);
 
+
+#ifdef TARG_ST
+      // Append prolog_ops and all the zero_trip_guard_ops, except the
+      // branch op, in the original loop prolog. */
+      BB_Append_Ops(SAVE_prolog, &prolog_ops);
+      OP *guard_op, *next_op;
+      for (guard_op = OPS_first(&zero_trip_guard_ops); guard_op; guard_op = next_op) {
+	next_op = OP_next(guard_op);
+	if (!OP_br(guard_op))
+	  BB_Append_Op(SAVE_prolog, guard_op);
+	else
+	  BB_Append_Op(CG_LOOP_prolog, guard_op);
+      }
+#else
       BB_Append_Ops(CG_LOOP_prolog, &prolog_ops);
       BB_Append_Ops(CG_LOOP_prolog, &zero_trip_guard_ops);
+#endif
       BB_Append_Ops(body, &body_ops);
 
       if (freqs || BB_freq_fb_based(body)) {
@@ -3407,8 +3530,15 @@ void unroll_remove_notations(BB *fully_unrolled_body)
       UINT8 omega = OP_omega(op,i);
       if (omega) {
 	TN *old_tn = OP_opnd(op,i);
-	TN *new_tn = CG_LOOP_Backpatch_Find_Non_Body_TN(CG_LOOP_prolog,
-							old_tn, omega);
+	TN *new_tn;
+#ifdef KEY
+	// Dedicated TNs are not backpatched.  Bug 5176.
+	if (!TN_is_register(old_tn) || TN_is_dedicated(old_tn))
+	  new_tn = old_tn;
+	else
+#endif
+	new_tn = CG_LOOP_Backpatch_Find_Non_Body_TN(CG_LOOP_prolog,
+						    old_tn, omega);
 	Is_True(new_tn, ("missing prolog backpatch for TN%d[%d]",
 			 TN_number(old_tn), omega));
 	Set_OP_opnd(op, i, new_tn);
@@ -4652,27 +4782,26 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 #endif
   }
 
-  if (PROC_has_counted_loops())
+  if (PROC_has_counted_loops()) {
     // Replace the loop-back branch with the counted loop branch
     // instruction.  It is a nop for the MIPS architecture.
-    {
-      OPS body_ops = OPS_EMPTY;
-      OP *br_op = BB_branch_op(head);
-      TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
+    OPS body_ops = OPS_EMPTY;
+    OP *br_op = BB_branch_op(head);
+    TN *label_tn = OP_opnd(br_op, Branch_Target_Operand(br_op));
 
 #ifdef TARG_ST
-      if (CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn, ntimes, label_tn, &ops, &body_ops)) {
+    if (CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn, ntimes, label_tn, &ops, &body_ops)) {
 #else
-      CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn,
+    CGTARG_Generate_Branch_Cloop(br_op, unrolled_trip_count, trip_count_tn,
 				 ntimes, label_tn, &ops, &body_ops);
-      if (OPS_length(&body_ops) > 0) {
+    if (OPS_length(&body_ops) > 0) {
 #endif
-	BB_Remove_Op(head, br_op);
-	BB_Append_Ops(head, &body_ops);
-	CGPREP_Init_Op(BB_branch_op(head));
-	CG_LOOP_Init_Op(BB_branch_op(head));
-      }
+      BB_Remove_Op(head, br_op);
+      BB_Append_Ops(head, &body_ops);
+      CGPREP_Init_Op(BB_branch_op(head));
+      CG_LOOP_Init_Op(BB_branch_op(head));
     }
+  }
 
   /* Initialize the TN renamer */
   unroll_names_init(loop, ntimes, &MEM_phase_nz_pool);
@@ -5192,23 +5321,19 @@ bool CG_LOOP::Determine_Unroll_Fully()
 }
 
 #ifdef TARG_ST
-int
+// FdF 20060207: Use scheduling estimate to adjust the unrolling
+// factor
+static int
 LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
 {
   BB *bb;
-  float avg_cycles;
   BB *head = LOOP_DESCR_loophead(loop);
 
   if (BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1)
     return 0;
 
-  BB_MAP sch_est = BB_MAP_Create();
-  CG_SCHED_EST *se = CG_SCHED_EST_Create(head, &MEM_local_nz_pool, SCHED_EST_FOR_SWP);
-  BB_MAP_Set(sch_est, head, se);
-  avg_cycles = CG_SCHED_EST_Avg_Cycles_Thru(LOOP_DESCR_bbset(loop), head, sch_est, SCHED_EST_FOR_UNROLL);
-
   // Now, count the number of LOAD operations in the loop, we consider
-  // them part of of the critical path, and count the total number of
+  // them part of the critical path, and count the total number of
   // operations in the loop.
   int op_cnt = BB_length(head);
   int load_cnt = 0;
@@ -5221,18 +5346,10 @@ LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
       load_cnt ++;
   }
 
-  // We consider that a loop body has the following properties:
+  // We consider that a do-loop body has the following properties:
   //   - All load operations are part of the critical path
   //   - The exit test has the form (add, cmp, br) and will not be
   //   duplicated, after optimizations, by the unrolling.
-
-  // Thus, adding N instances of the loop body will have the following
-  // impact:
-  //   - The critical path is augmented by N*(nb_load), because we
-  //   consider no dependencies between iterations for operations
-  //   involved in the critical path
-  //   - The minimum cycles of the loop is augmented by
-  //   nb_mem + (nb_op-nb_mem-3)/4
 
   // The unrolling factor is computed to be the lowest value such that
   // the critical path is smaller than the minimum cycles of the loop.
@@ -5241,16 +5358,42 @@ LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
   if (op_cnt < (mem_cnt+3))
     return 0;
 
-  int cp_cycles = se->cached_crit_path_len+load_cnt;
-  int min_cycles = MAX(mem_cnt, (op_cnt+3)/4);
+  BB_MAP sch_est = BB_MAP_Create();
+  CG_SCHED_EST *se = CG_SCHED_EST_Create(head, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
+  BB_MAP_Set(sch_est, head, se);
+
+  // Critical Path is under estimated, fix it
+  int cp_cycles = CG_SCHED_EST_Critical_Length(se) + load_cnt;
+  int min_cycles = CG_SCHED_EST_Resource_Cycles(se);
   int sched_unroll_factor = 1;
   
   while (cp_cycles > min_cycles && sched_unroll_factor < unroll_factor) {
     sched_unroll_factor ++;
-    cp_cycles += load_cnt;
-    min_cycles = MAX(mem_cnt*sched_unroll_factor, ((op_cnt-3)*sched_unroll_factor+3+3)/4);
+
+    // Add an iteration in the loop body and compute the new estimated
+    // critical path and min resource cycles.
+    OP *op;
+    BOOL dup_INCIV = FALSE, dup_CMP = FALSE, dup_BR = FALSE;
+    FOR_ALL_BB_OPs(head, op) {
+      // Loop unrolling does not duplicate the BR and CMP operations,
+      // and at least the ADD of the main IV will be factorized
+      if ((OP_iadd(op) || OP_isub(op)) && !dup_INCIV)
+	dup_INCIV = TRUE;
+      else if (OP_icmp(op) && !dup_CMP)
+	dup_CMP = TRUE;
+      else if (OP_br(op) && !dup_BR)
+	dup_BR = TRUE;
+      else
+	CG_SCHED_EST_Add_Op_Resources(se, OP_code(op));
+    }
+
+    // Critical Path is under estimated, fix it
+    cp_cycles = CG_SCHED_EST_Critical_Length(se) + load_cnt*sched_unroll_factor;
+    min_cycles = CG_SCHED_EST_Resource_Cycles(se);
+    //    printf("cp_cycles %d, min_cycles %d\n", cp_cycles, min_cycles);
   }
 
+  //  printf("sched estimate gives %d\n", sched_unroll_factor);
   return sched_unroll_factor;
 }
 #endif
@@ -5276,23 +5419,33 @@ void CG_LOOP::Determine_Unroll_Factor()
   unroll_times_max = Get_Unroll_Times(pragma_unroll);
 
 #ifdef TARG_ST
+  // FdF 20060207: Determine_Sched_Est_Unroll_Factor may have computed
+  // an estimate Unroll_Factor.
+  if (Unroll_sched_est() > 0 && Unroll_sched_est() < unroll_times_max)
+    unroll_times_max = Unroll_sched_est();
+#endif
+
+#ifdef TARG_ST
   INT32 trip_estimate = -1;
 
-  /* FdF 20050302: The very low frequency execution of a loop do not
-     justify unrolling it. The threshold is the same as for hot/cold
-     regions. */
-  if (trip_estimate == -1 && BB_freq_fb_based(head) && BB_freq(head) <= 0.01)
-    trip_estimate = unroll_times_max = 0;
+  if (!pragma_unroll) {
 
-  /* FdF 20050302: Otherwise, make sure unrolling factor is less than
-     half the estimated trip count. */
-  else if (info && (!trip_count_tn || !TN_is_constant(trip_count_tn))) {
-    WN *wn = LOOPINFO_wn(info);
-    if ( wn ) {
-      INT32 trip_est = WN_loop_trip_est(wn);
-      if (trip_est && (trip_est/2) < unroll_times_max) {
-	trip_estimate = trip_est;
-	unroll_times_max = trip_est/2;
+    /* FdF 20050302: The very low frequency execution of a loop do not
+       justify unrolling it. The threshold is the same as for hot/cold
+       regions. */
+    if (trip_estimate == -1 && BB_freq_fb_based(head) && BB_freq(head) <= 0.01)
+      trip_estimate = unroll_times_max = 0;
+
+    /* FdF 20050302: Otherwise, make sure unrolling factor is less than
+       half the estimated trip count. */
+    else if (info && (!trip_count_tn || !TN_is_constant(trip_count_tn))) {
+      WN *wn = LOOPINFO_wn(info);
+      if ( wn ) {
+	INT32 trip_est = WN_loop_trip_est(wn);
+	if (trip_est && (trip_est/2) < unroll_times_max) {
+	  trip_estimate = trip_est;
+	  unroll_times_max = trip_est/2;
+	}
       }
     }
   }
@@ -5429,16 +5582,67 @@ void CG_LOOP::Determine_Unroll_Factor()
 	while (ntimes > 1 && const_trip_count < 2 * ntimes) 
 	  ntimes /= 2;
       }
+#ifdef TARG_ST
+      // FdF 20060207: Force unrolling by two if scheduling estimated
+      // unroll factor says unrolling is profitable.
+      if ((CG_LOOP_unroll_heuristics & UNROLL2_HEURISTIC) && (ntimes == 1) && (Unroll_sched_est() > 1)) {
+	ntimes = 2;
+      }
+#endif
       Set_unroll_factor(ntimes);
     }
   }
-#if 0
-  int sched_unroll_factor =  LOOP_DESCR_Estimate_Factor_For_Unrolling (Loop(), Unroll_factor());
-  printf("Unroll factor = %d, sched estimate gives %d\n", Unroll_factor(), sched_unroll_factor);
+#ifdef KEY
+  if( Unroll_factor() > 1 ){
+    for( OP* op = BB_first_op(head); op != NULL; op = OP_next(op) ){
+      if( !OP_store(op) )
+	continue;
 
-  if (!pragma_unroll && (Unroll_factor() > sched_unroll_factor))
-    Set_unroll_factor(sched_unroll_factor);
+      TN* tn = OP_opnd( op, OP_find_opnd_use(op,OU_storeval) );
+      if( TN_is_dedicated(tn)   || 
+	  !TN_is_global_reg(tn) ||
+	  !TN_is_gra_homeable(tn) )
+	continue;
+
+      WN* wn = Get_WN_From_Memory_OP(op);
+      if( wn == NULL )
+	continue;
+
+      /* After unrolling, more than one tn will store to the same home
+	 location.  (bug#3471)
+      */
+      if( Aliased( Alias_Manager, TN_home(tn), wn ) == SAME_LOCATION ){
+      	Reset_TN_is_gra_homeable( tn );
+	Set_TN_home( tn, NULL );
+      }
+    }    
+  }
 #endif
+}
+
+// FdF 20060207: For single BB do-loop only, use scheduling estimate
+// information to reduce the unrolling factor when it will not have a
+// significant impact on the performance of the loop.
+// 
+
+void CG_LOOP::Determine_Sched_Est_Unroll_Factor()
+{ 
+  int sched_unroll_factor = CG_LOOP_unroll_times_max;
+  ANNOTATION *pragma_unroll;
+
+  // Just check if there is a pragma unroll on the loop.
+  int unroll_times_max = Get_Unroll_Times(pragma_unroll);
+
+  // Compute a maximum unroll factor based on a schedule estimate of
+  // the loop
+  if ((CG_LOOP_unroll_heuristics & SCHED_HEURISTIC) && !pragma_unroll) {
+    sched_unroll_factor = LOOP_DESCR_Estimate_Factor_For_Unrolling (Loop(), unroll_times_max);
+    if (sched_unroll_factor > 0)
+      Set_unroll_sched_est(sched_unroll_factor);
+  }
+
+  // Then, call the normal function to determine the unrolling factor
+  Determine_Unroll_Factor();
 }
 
 
@@ -5953,6 +6157,12 @@ Gen_Counted_Loop_Branch(
 //  Fix backpatches.  Some backpatches are obsoleted because
 //  EBO and other optimizations has deleted the def and uses
 //
+static inline std::pair<BB*, CG_LOOP_BACKPATCH *>
+make_pair(BB* a, CG_LOOP_BACKPATCH* b)
+{
+  return std::pair<BB*, CG_LOOP_BACKPATCH *>(a, b);
+}
+
 void Fix_Backpatches(CG_LOOP& cl, bool trace)
 {
   std::vector<std::pair<BB*, CG_LOOP_BACKPATCH *> > dead_bp;
@@ -6013,7 +6223,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
  
   // Determine how to optimize the loop
   //
-  LOOP_OPT_ACTION action;
+  LOOP_OPT_ACTION action = NO_LOOP_OPT;
   BOOL has_trip_count = CG_LOOP_Trip_Count(loop) != NULL;
   BOOL single_bb = (BB_SET_Size(LOOP_DESCR_bbset(loop)) == 1);
 
@@ -6183,7 +6393,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #ifndef TARG_ST
       if (!Perform_SWP(cg_loop, fixup, true /*doloop*/)) {
 	Undo_SWP_Branch(cg_loop, true /*is_doloop*/);
-	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+	CG_LOOP_Remove_Notations(loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	cg_loop.Recompute_Liveness();
       }
 #endif
@@ -6209,9 +6419,17 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (trace_loop_opt) 
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_DOLOOP_UNROLL ***");
 
-      cg_loop.Recompute_Liveness();
+      // Already in Build_CG_LOOP_Info()
+      //      cg_loop.Recompute_Liveness();
 
+#ifdef TARG_ST
+      // FdF 20060207: Use scheduling estimate to adjust the unrolling
+      // factor
+      cg_loop.Determine_Sched_Est_Unroll_Factor();
+#else
       cg_loop.Determine_Unroll_Factor();
+#endif
+      //      printf("DO_LOOP_UNROLL: factor = %d\n", cg_loop.Unroll_factor());
       if (cg_loop.Unroll_fully()) {
 	// No need to call RW removal because EBO
 	// should find all such CSEs after full unrolling.
@@ -6229,7 +6447,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	}
 
 	cg_loop.Recompute_Liveness();
-	CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+	CG_LOOP_Remove_Notations(loop, CG_LOOP_prolog, CG_LOOP_epilog);
       }
 
       cg_loop.Recompute_Liveness();
@@ -6249,7 +6467,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 				  true/*keep prefetch*/,
 				  trace_loop_opt);
       cg_loop.Recompute_Liveness();
-      CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+      CG_LOOP_Remove_Notations(loop, CG_LOOP_prolog, CG_LOOP_epilog);
     }
 
     break;
@@ -6302,7 +6520,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	  
 	  //  Undo SWP preparations, if SWP failed
 	  Undo_SWP_Branch(cg_loop, false/*is_doloop*/);
-	  CG_LOOP_Remove_Notations(cg_loop, CG_LOOP_prolog, CG_LOOP_epilog);
+	  CG_LOOP_Remove_Notations(loop, CG_LOOP_prolog, CG_LOOP_epilog);
 	  cg_loop.Recompute_Liveness();
 	}
 #endif
@@ -6320,6 +6538,10 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Build_CG_LOOP_Info();
       cg_loop.Determine_Unroll_Factor();
+      // FdF 20060207: Divide the unrolling factor on while loops.
+      if ((CG_LOOP_unroll_heuristics & DOWHILE_HEURISTIC) &&
+	  (cg_loop.Unroll_factor() > 1))
+	cg_loop.Set_unroll_factor(cg_loop.Unroll_factor()/2);
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
@@ -6346,6 +6568,11 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       Gen_Counted_Loop_Branch(cg_loop);
 
       cg_loop.Determine_Unroll_Factor();
+      // FdF 20060207: Divide the unrolling factor on while loops.
+      if ((action == MULTI_BB_WHILELOOP) &&
+	  (CG_LOOP_unroll_heuristics & DOWHILE_HEURISTIC) &&
+	  (cg_loop.Unroll_factor() > 1))
+	cg_loop.Set_unroll_factor(cg_loop.Unroll_factor()/2);
       if (cg_loop.Unroll_factor() > 1) {
 #ifdef TARG_ST
 	/* FdF: We cannot rely on prolog/epilog to create the frontier
