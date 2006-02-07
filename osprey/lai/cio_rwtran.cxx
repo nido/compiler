@@ -2750,6 +2750,15 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	if( !change.need_copy[res] ){
 	  for( index_dup = oppor_index - 2; index_dup >= 0; index_dup-- ){
 	    if( tn_result == opportunities[index_dup].new_tns[res] ){
+	      change.new_tns[res] = Build_TN_Like( tn_result );
+	      change.need_copy[res] = TRUE;
+	      break;
+	    }
+	    // FdF 20060126: Need also to check that there is no two
+	    // identicals new_tns.
+	    if ((change.new_tns[res] == opportunities[index_dup].new_tns[res]) &&
+		(change.omega == opportunities[index_dup].omega)) {
+	      change.new_tns[res] = Build_TN_Like( change.new_tns[res] );
 	      change.need_copy[res] = TRUE;
 	      break;
 	    }

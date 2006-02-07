@@ -897,19 +897,42 @@ CODEMAP::Convert_to_loop_invar(CODEREP *cr, BB_LOOP *loop)
 
   // Try to generate a copy of the initial value into a temp
   MTYPE temp_type;
+#ifdef KEY
+  MTYPE temp_rtype; 
+#endif
   if ( cr->Kind() == CK_VAR ) {
     // come up with a preg-sized mtype
     temp_type = TY_mtype(ST_type(MTYPE_To_PREG(cr->Dsctyp())));
+#ifdef KEY
+    temp_rtype = TY_mtype(ST_type(MTYPE_To_PREG(cr->Dtyp())));
+#endif
   }
   else {
     temp_type = cr->Dtyp();
+#ifdef KEY
+    temp_rtype = cr->Dtyp();
+#endif
   }
-  IDTYPE new_temp = Opt_stab()->Create_preg( temp_type );
+#ifdef KEY
+// Bug 1640
+  static INT Temp_Index = 0;
+  UINT len = strlen("_temp_") + 17;
+  char *new_str = (char *) alloca (len);
+  sprintf(new_str, "%s%d", "_temp_", Temp_Index++);
+  IDTYPE new_temp = Opt_stab()->Create_preg( temp_type, new_str );
+#else
+  IDTYPE new_temp = Opt_stab()->Create_preg( temp_type, new_str );
+#endif
   Add_new_auxid_to_entry_chis(new_temp, Cfg(), this, Opt_stab());
-
+#ifdef KEY
+  CODEREP *new_cr = Add_def(new_temp, 1, NULL, temp_rtype, temp_type,
+			    Opt_stab()->Aux_stab_entry(new_temp)->St_ofst(),
+			    MTYPE_To_TY(cr->Dtyp()), 0, TRUE);
+#else
   CODEREP *new_cr = Add_def(new_temp, 1, NULL, temp_type, temp_type,
 			    Opt_stab()->Aux_stab_entry(new_temp)->St_ofst(),
 			    MTYPE_To_TY(cr->Dtyp()), 0, TRUE);
+#endif
 
   Insert_var_phi(new_cr, loop->Preheader());
 
@@ -1062,8 +1085,14 @@ IVR::Ident_all_iv_cands(const BB_LOOP *loop, const BB_NODE *bb)
       // the incr cannot be a volatile stmt (i.e., cannot contain
       // volatile var) it is sufficient to check just the incr stmt
       // here because expand_expr will not expand volatiles.
+#ifdef KEY 
+// BUG 510
+      if (!incr->Is_flag_set(CF_DEF_BY_PHI) && incr->Defstmt() &&
+	  incr->Defstmt()->Volatile_stmt()) break;
+#else
       if (!incr->Is_flag_set(CF_DEF_BY_PHI) &&
 	  incr->Defstmt()->Volatile_stmt()) break;
+#endif
       
       // Expand the phi opnds (but do not modify the program)
       INT32 limit = WOPT_Enable_IVR_Expand_Limit;
@@ -1084,11 +1113,12 @@ IVR::Ident_all_iv_cands(const BB_LOOP *loop, const BB_NODE *bb)
 
       // the type of the IV is the type of increment expr.
       MTYPE dtype;
-      if (incr->Defstmt()) 
-	dtype = incr->Defstmt()->Rhs()->Dsctyp();
+      if (incr->Defstmt())
+	// FdF 20060124:  Was incr->Defstmt()->Rhs()->Dsctyp()
+	dtype = incr->Defstmt()->Rhs()->Dtyp();
       else
 	dtype = incr->Defphi()->OPND(0)->Defstmt()->Rhs()->Dtyp();
-      
+
       // *** update type: make sure the type of init and incr matches
       // TODO: this shouldn't be necessary, if we did it right when we
       // build htable. 
@@ -1214,6 +1244,139 @@ Primary_IV_preference(IV_CAND *iv, OPT_STAB *opt_stab)
   return score > MIN_SCORE ? score : MIN_SCORE;
 }
 
+#ifdef TARG_ST
+// FdF 20060124: Promote an induction variable on less than 32 bit
+// into a 32 bit integer variable.
+IV_CAND*
+IVR::Promote_IV(const BB_LOOP *loop, IV_CAND * iv, MTYPE mtype)
+{
+  // generate a new IV
+  IDTYPE new_temp = Opt_stab()->Create_preg( mtype, "whiledo_var" );
+
+  Add_new_auxid_to_entry_chis(new_temp, Cfg(), Htable(), Opt_stab());
+
+  CODEREP *init_cr = Htable()->Add_def(new_temp, 1, NULL, mtype, mtype,
+				       Opt_stab()->Aux_stab_entry(new_temp)->St_ofst(),
+				       MTYPE_To_TY(mtype), 0, TRUE);
+      
+  CODEREP *phi_cr = Htable()->Add_def(new_temp, 2, NULL, mtype, mtype,
+				      Opt_stab()->Aux_stab_entry(new_temp)->St_ofst(),
+				      MTYPE_To_TY(mtype), 0, TRUE);
+
+  CODEREP *incr_cr = Htable()->Add_def(new_temp, 3, NULL, mtype, mtype,
+				       Opt_stab()->Aux_stab_entry(new_temp)->St_ofst(),
+				       MTYPE_To_TY(mtype), 0, TRUE);
+  // FdF: PHI arguments must be marked DONT_PROP
+  init_cr->Set_flag(CF_DONT_PROP);
+  incr_cr->Set_flag(CF_DONT_PROP);
+
+  PHI_NODE *phi = loop->Header()->Phi_list()->
+    New_phi_node(new_temp, Htable()->Ssa()->Mem_pool(), loop->Header());
+
+      phi_cr->Set_flag(CF_DEF_BY_PHI);
+      phi_cr->Set_defphi(phi);
+      phi->Reset_dse_dead();
+      phi->Reset_dce_dead();
+      phi->Set_res_is_cr();
+      phi->Set_live();
+      phi->Set_result(phi_cr);
+      phi->Set_incomplete();
+      
+      STMTREP *init_stmt = iv->Init_value()->Create_cpstmt(init_cr, Htable()->Mem_pool());
+      iv->Init_var()->Defstmt()->Bb()->Insert_stmtrep_after(init_stmt, iv->Init_var()->Defstmt());
+      init_stmt->Set_bb(iv->Init_var()->Defstmt()->Bb());
+
+      OPCODE addop = OPCODE_make_op(OPR_ADD, mtype, MTYPE_V);
+      CODEREP *incr_rhs = Htable()->Add_bin_node_and_fold(addop, phi_cr, iv->Step_value());
+
+      STMTREP *incr_stmt =
+	incr_rhs->Create_cpstmt(incr_cr, Htable()->Mem_pool());
+      iv->Incr_var()->Defstmt()->Bb()->Insert_stmtrep_after(incr_stmt, iv->Incr_var()->Defstmt());
+      incr_stmt->Set_bb(iv->Incr_var()->Defstmt()->Bb());
+
+      Htable()->Enter_var_phi_hash(phi);
+      Htable()->Insert_var_phi(phi->RESULT(), phi->Bb());
+      Htable()->Insert_var_phi(incr_stmt->Lhs(), incr_stmt->Bb());
+      Htable()->Insert_var_phi(init_stmt->Lhs(), init_stmt->Bb());
+
+      phi->Set_opnd(Loop()->Preheader_pred_num(), init_cr);
+      phi->Set_opnd(Loop()->Loopback_pred_num(),  incr_cr);
+
+      IV_CAND *new_cand =
+        CXX_NEW(IV_CAND(phi, init_cr, incr_cr, iv->Step_value(), mtype), Mem_pool());
+      new_cand->Set_init_value( iv->Init_value() );
+
+      iv_cand_container.push_back(new_cand);
+
+      if (_trace) {
+	fprintf(TFile, "IVR: generate primary IV with aux-id %d\n", new_temp);
+	fprintf(TFile, "IVR: insert phi at BB%d, init at BB%d, incr at BB%d\n",
+		phi->Bb()->Id(), init_stmt->Bb()->Id(), incr_stmt->Bb()->Id());
+      }
+
+      return new_cand;
+    }
+
+static CODEREP *
+subst_cr_occurrences(CODEREP *cr, const IV_CAND *iv_from, const IV_CAND *iv_to) {
+
+  if (cr == iv_from->Var())
+    return iv_to->Var();
+  else if (cr == iv_from->Init_var())
+    return iv_to->Init_var();
+  else if (cr == iv_from->Incr_var())
+    return iv_to->Incr_var();
+
+  switch (cr->Kind())
+    {
+    case CK_CONST:
+    case CK_RCONST:
+    case CK_LDA:
+    case CK_VAR:
+      break;
+
+    case CK_IVAR:
+      if (cr->Ilod_base())
+	cr->Set_ilod_base(subst_cr_occurrences(cr->Ilod_base(), iv_from, iv_to));
+      else
+	cr->Set_istr_base(subst_cr_occurrences(cr->Istr_base(), iv_from, iv_to));
+      break;
+
+    case CK_OP:
+      for (INT32 i=0; i<cr->Kid_count(); i++) { 
+	cr->Set_opnd(i, subst_cr_occurrences(cr->Opnd(i), iv_from, iv_to));
+      }
+      break;
+
+    case CK_DELETED:	// should never happen
+    default:		// illegal kind
+      FmtAssert(FALSE, 
+		("VNFRE::insert_cr_occurrences(), unexpected kind 0x%x",
+		 cr->Kind()));
+      break;
+    }
+
+  return cr;
+}
+
+void
+IVR::Substitute_IV(const IV_CAND *iv,
+		   const IV_CAND *new_iv,
+		   BB_NODE *startbb,
+		   BB_LOOP *loop)
+{
+  BB_NODE *bb;
+  BB_NODE_SET_ITER bb_iter;
+  FOR_ALL_ELEM(bb, bb_iter, Init(loop->True_body_set())) {
+    STMTREP_ITER      stmt_iter(bb->Stmtlist());
+    STMTREP          *stmt;
+    FOR_ALL_NODE(stmt, stmt_iter, Init()) {
+      if (stmt != iv->Incr_var()->Defstmt() && (stmt->Rhs() != NULL))
+	subst_cr_occurrences(stmt->Rhs(), iv, new_iv);
+    }
+  }
+}
+#endif
 
 //  Choose an IV to be the primary induction variable based on the
 //  following preference: 
@@ -1304,7 +1467,12 @@ IVR::Choose_primary_IV(const BB_LOOP *loop)
 
       STMTREP *incr_stmt =
 	incr_rhs->Create_cpstmt(incr_cr, Htable()->Mem_pool());
+// Bug 2569
+# ifdef KEY
+      Loop()->Loopback()->Append_stmt_before_branch(incr_stmt);
+# else
       Loop()->Loopback()->Append_stmtrep(incr_stmt);
+# endif
       incr_stmt->Set_bb(Loop()->Loopback());
 
       Htable()->Enter_var_phi_hash(phi);
@@ -1882,6 +2050,13 @@ IVR::Compute_trip_count(const OPCODE cmp_opc,
 	// (init - bound) / (-step)
 	OPCODE subop = OPCODE_make_op(OPR_SUB, dtype, MTYPE_V);
 	CODEREP *diff = Htable()->Add_bin_node_and_fold(subop, init, bound);
+#ifdef KEY // bug 3738
+	if (MTYPE_byte_size(var->Dsctyp()) < 4) {
+	  diff = Htable()->Add_unary_node(
+	  			OPCODE_make_op(OPR_CVTL, dtype, MTYPE_V), diff);
+	  diff->Set_offset(MTYPE_size_min(var->Dsctyp()));
+	}
+#endif
 	CODEREP *neg_step = Htable()->Add_const(tripcount_type, -
                                                 step->Const_val());
 
@@ -2504,7 +2679,13 @@ IVR::Replace_secondary_IV(const IV_CAND *primary,
 
   // secondary->Incr()->Reset_flag(CF_DONT_PROP);
   //  this must be done after the BB of the newstmt be set.
+// Bug #564
+#ifdef KEY
+  if (!loop->Exit_early())
+    Reset_dont_prop(secondary->Incr_var(), loop);
+#else
   Reset_dont_prop(secondary->Incr_var(), loop);
+#endif
 
   // Replace the phi result by a zero version
   // Generate a new version.
@@ -2735,6 +2916,30 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
   Determine_trip_IV_and_exit_count(loop, &trip_iv, primary);
   CODEREP *trip_count = Trip_count();
 
+  // FdF 20060124: trip_iv do not wrap around. If its type is lower
+  // than I4, then promote it to type I4
+  if (trip_count && (trip_count->Kind() == CK_CONST) &&
+      (MTYPE_size_min(trip_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4))) {
+
+    // For this loop only, create a new symbol, and replace occurences
+    // of the original symbol by the new one.
+    // Do something like: Generate_Primary_IV, Replace_secondary_IV
+
+    IV_CAND *trip_iv_I4 = Promote_IV(loop, trip_iv, MTYPE_I4);
+
+    // Check also if this new IV can be a primary_IV.
+    if (primary == NULL) {
+      primary = Choose_primary_IV(loop);
+    }
+
+    // Then, process all loop statements, and replace the use of
+    // trip_iv->Init, trip_iv->Var and trip_iv->Incr by the
+    // corresponding variables from trip_iv_I4.
+    Update_exit_stmt(trip_iv_I4, loop->Merge(), loop);
+    Substitute_IV(trip_iv, trip_iv_I4, loop->Header(), loop);
+    trip_iv = trip_iv_I4;
+  }
+
   // ************************************************************************
   //    Update the BB_LOOP entry test condition
   // ************************************************************************
@@ -2756,6 +2961,9 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
   if (primary && trip_iv && ivr_generated_primary) {
     AUX_ID primary_id = primary->Var()->Aux_id();
     ST *trip_st = Opt_stab()->St(trip_iv->Var()->Aux_id());
+#ifdef KEY
+    if (ST_class(Opt_stab()->St(primary_id)) == CLASS_PREG)
+#endif
     Set_Preg_Name((PREG_NUM) Opt_stab()->St_ofst(primary_id),
 		  ST_name(trip_st));
     if (_trace)
