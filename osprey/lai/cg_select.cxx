@@ -1882,15 +1882,26 @@ Optimize_Spec_Stores(BB *bb)
           OPS ops = OPS_EMPTY;  
           
         // check that we don't cross an aliasing memory operation
-          for (OP *iop = OP_next(op1);
-               iop!= NULL && iop != op2;
-               iop = OP_next(iop)) {
-            if (OP_memory (iop) && !Are_Not_Aliased (op1, iop)) {
-              i_iter++;
-              goto next_store;
-            }
-          }
+	  OP *first;
+	  OP *last;
+          if (OP_Follows(op2, op1)) {
+	    first = op1;
+	    last = op2;
+	  }
+	  else {
+	    first = op2;
+	    last = op1;
+	  }
 
+	  for (OP *iop = OP_next(first);
+	       iop!= NULL && iop != last;
+	       iop = OP_next(iop)) {
+	    if (OP_memory (iop) && !Are_Not_Aliased (first, iop)) {
+	      i_iter++;
+	      goto next_store;
+	    }
+	  }
+	  
           Expand_Cond_Store (tn1, op1, op2, OP_find_opnd_use(op1, OU_storeval),
                              &ops);
           
