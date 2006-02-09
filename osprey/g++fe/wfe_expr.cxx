@@ -760,6 +760,9 @@ WFE_Expand_End_Stmt_Expr (tree t)
 typedef struct wfe_save_expr_t {
   tree  exp;
   ST   *st;
+#ifdef KEY
+  INT32  level;	// to identify which cleanup the save expr belongs to
+#endif
 } WFE_SAVE_EXPR;
 
 WFE_SAVE_EXPR *wfe_save_expr_stack      = NULL;
@@ -788,7 +791,12 @@ WFE_Save_Expr (tree save_exp,
   bool     found = false;  
 
   for (i = wfe_save_expr_stack_last; i >= 0; i--) {
+#ifndef KEY
     if (wfe_save_expr_stack [i].exp == exp) {
+#else
+    if (wfe_save_expr_stack [i].exp == save_exp &&
+    	wfe_save_expr_stack [i].level == wfe_save_expr_level) {
+#endif
       st = wfe_save_expr_stack [i].st;
       FmtAssert (st != 0,
                  ("WFE_Save_Expr: st not yet assigned"));
@@ -825,7 +833,12 @@ WFE_Save_Expr (tree save_exp,
                                      sizeof (WFE_SAVE_EXPR));
       }
     }
+#ifndef KEY
     wfe_save_expr_stack [i].exp = exp;
+#else
+    wfe_save_expr_stack [i].exp = save_exp;
+    wfe_save_expr_stack [i].level = wfe_save_expr_level;
+#endif
     wfe_save_expr_stack [i].st  = 0;
     wn = WFE_Expand_Expr (exp);
     st = Gen_Temp_Symbol (ty_idx, "__save_expr");
