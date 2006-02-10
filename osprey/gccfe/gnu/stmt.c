@@ -4055,7 +4055,9 @@ expand_decl (decl)
 {
   struct nesting *thisblock;
   tree type;
-
+#ifdef TARG_ST
+  bool alloca_done = false;
+#endif
   type = TREE_TYPE (decl);
 
   /* For a CONST_DECL, set mode, alignment, and sizes from those of the
@@ -4202,6 +4204,7 @@ expand_decl (decl)
 	 the size.  */
 #ifdef SGI_MONGOOSE
       WFE_Alloca_ST (decl);
+      alloca_done = true;
 #endif /* SGI_MONGOOSE */
 
       address = allocate_dynamic_stack_space (size, NULL_RTX,
@@ -4227,7 +4230,8 @@ expand_decl (decl)
  {
    // (cbr) must check the current scope is not closed (24272) 
    extern unsigned char Current_scope;
-   if (decl->decl.symtab_idx == Current_scope)
+   if (decl->decl.symtab_idx == Current_scope
+       && ! alloca_done)
      (void)Create_ST_For_Tree(decl);
  }
 #endif
