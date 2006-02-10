@@ -1603,6 +1603,12 @@ Handle_LDID (
 #else
     TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid));
 #endif
+    // TB 02 2006: FIX bug pro-release-1-9-0-B/39: Do not create ops for node such as
+    // U4U4LDID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg>
+    // U4STID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg> {freq: 0, ln: 110, col: 0}
+    // Otherwise freq.cxx module will not finish (function Is_Pointer)
+    if (ldid_result == result)
+      return result;
 
 #ifdef ENABLE_64_BITS
     FmtAssert(result == NULL || TN_size(result) == MTYPE_bsize(OPCODE_rtype(opcode)), ("Unexpected result size for LDID"));

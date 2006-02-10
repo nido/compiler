@@ -1731,7 +1731,7 @@ Compute_Branch_Probabilities(void)
 
       /* 2-way branch
        */
-      INT i;
+      INT j;
       double prob_succ1;
       double prob_succ2;
       EDGE *edge1 = BB_succ_edges(bb);
@@ -1755,10 +1755,10 @@ Compute_Branch_Probabilities(void)
 	/* Using "Dempster-Shafer" combine probabilities for each
 	 * heuristic that applies to this branch.
 	 */
-	for (i = 0; i < sizeof(heuristic) / sizeof(*heuristic); i++) {
+	for (j = 0; j < sizeof(heuristic) / sizeof(*heuristic); j++) {
 	  double prob_s1_taken;
 
-	  if ((heuristic[i].f)(bb, succ1, succ2, loops, &prob_s1_taken)) {
+	  if ((heuristic[j].f)(bb, succ1, succ2, loops, &prob_s1_taken)) {
 	    double d = prob_succ1 * prob_s1_taken 
 		     + prob_succ2 * (1.0 - prob_s1_taken);
 	    prob_succ1 = (prob_succ1 * prob_s1_taken) / d;
@@ -1767,7 +1767,7 @@ Compute_Branch_Probabilities(void)
 	    if (CFLOW_Trace_Freq) {
 	      #pragma mips_frequency_hint NEVER
 	      fprintf(TFile, "       %3s     %.13f  %.13f\n",
-			     heuristic[i].name,
+			     heuristic[j].name,
 			     prob_s1_taken, 1.0 - prob_s1_taken);
 	    }
 	  }
@@ -1782,7 +1782,7 @@ Compute_Branch_Probabilities(void)
       EDGE_prob(edge1) = prob_succ1;
       EDGE_prob(edge2) = prob_succ2;
     }
-  }
+  } // end of (i = max_dfo_id - 1; i >= 0; i--)
 }
 
 
