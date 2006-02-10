@@ -1169,6 +1169,12 @@ WFE_Finish_Function (void)
       Set_PU_is_nested_func (Get_Current_PU ());
     }
 
+#ifdef TARG_ST
+    /* (cbr) support for deferred cleanups. */
+    extern void Emit_Cleanup_Initializers();
+    Emit_Cleanup_Initializers();
+#endif
+
     // Insert a RETURN if it does not exist
     WN * wn = WN_last (WFE_Stmt_Top ());
     if (wn == NULL || WN_operator (wn) != OPR_RETURN &&

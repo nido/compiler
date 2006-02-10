@@ -139,6 +139,20 @@ static TEMP_CLEANUP_INFO *temp_cleanup_stack;
 static INT32	    	  temp_cleanup_i;
 static INT32	    	  temp_cleanup_max;
 
+#ifdef TARG_ST
+/* (cbr) support for deferred cleanups */
+typedef struct nested_cleanup_t {
+  ST *guard_st;
+  int flag_set;
+  tree cond_expr;
+} NESTED_COND_CLEANUP;
+
+static NESTED_COND_CLEANUP *cond_cleanup_stack;
+INT32	    	 max_cleanup_i=-1;
+static INT32	 cond_cleanup_i;
+static INT32	 cond_cleanup_max;
+#endif
+
 #ifdef KEY
 #include <vector>
 #include <algorithm>
@@ -833,6 +847,7 @@ Do_Temp_Cleanups (tree t)
   while (temp_cleanup_stack[temp_cleanup_i].expr != t)
 #endif
     {
+
 #ifdef KEY
     if (temp_cleanup_stack[temp_cleanup_i].cleanup_eh_only) {
 // We don't want this cleanup to be emitted here -- it is to be executed only
@@ -1728,7 +1743,106 @@ WFE_Stmt_Init (void)
 #endif // __GNUC__ >=3
 
   scope_number           = 0;
+
+#ifdef TARG_ST
+  cond_cleanup_max       = 32;
+  cond_cleanup_i	 = -1;
+  cond_cleanup_stack	 =
+	// [HK]
+    (NESTED_COND_CLEANUP *) xmalloc (sizeof (NESTED_COND_CLEANUP) * 
+				  cond_cleanup_max);
+#endif
 } /* WFE_Stmt_Init */
+
+#ifdef TARG_ST
+/* (cbr) support for deferred cleanups */
+void
+Push_Cleanup_Deferral (tree e)
+{
+  ST *guard_st;
+  static int i = 0;
+
+  if (++cond_cleanup_i == cond_cleanup_max) {
+    cond_cleanup_max = ENLARGE (cond_cleanup_max);
+    cond_cleanup_stack =
+      (NESTED_COND_CLEANUP *) xrealloc (cond_cleanup_stack,
+	 	        cond_cleanup_max * sizeof (NESTED_COND_CLEANUP));
+  }
+
+  guard_st = New_ST (CURRENT_SYMTAB);
+  ST_Init (guard_st, Save_Str2i (".guard_dtor", "", i++), CLASS_VAR, SCLASS_AUTO,
+           EXPORT_LOCAL, MTYPE_To_TY(Boolean_type));
+
+  cond_cleanup_stack [cond_cleanup_i].guard_st=guard_st;
+  cond_cleanup_stack [cond_cleanup_i].cond_expr=e;
+
+  if (cond_cleanup_i) {
+    if (TREE_OPERAND(cond_cleanup_stack [cond_cleanup_i-1].cond_expr, 0) != e)
+       cond_cleanup_stack [cond_cleanup_i].flag_set=1;
+    else
+       cond_cleanup_stack [cond_cleanup_i].flag_set=0;
+
+    cond_cleanup_stack [cond_cleanup_i-1].flag_set=1;  
+  }
+  else {
+    cond_cleanup_stack [cond_cleanup_i].flag_set=0;  
+  }
+}
+
+ST *
+Get_Deferred_Cleanup() 
+ {
+   if (cond_cleanup_i == -1)
+      return 0;
+
+   NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[cond_cleanup_i];
+
+   int cond_flag = nested_cond->flag_set;
+   ST *guard_st = nested_cond->guard_st;
+
+   FmtAssert (cond_flag == 0 || cond_flag == 1, ("wrong cleanup guard"));
+
+   if (cond_flag) {
+      max_cleanup_i = MAX(cond_cleanup_i, max_cleanup_i);
+      WN *val = WN_Intconst (Boolean_type, 1);
+      val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
+      WFE_Stmt_Append (val, Get_Srcpos());
+      return guard_st;
+   }
+   else {
+     nested_cond->flag_set=1;
+     return 0;
+   }
+ }
+
+void Emit_Cleanup_Initializers()
+{
+  WN *body =  WFE_Stmt_Top ();
+  WN *first = WN_first(body);
+
+  for (int i = 0; i <= max_cleanup_i; i++) {
+    NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[i];
+    ST *guard_st = nested_cond->guard_st;
+
+    if (guard_st) {
+
+      WN *val = WN_Intconst (Boolean_type, 0);
+      val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
+    
+      if (WN_pragma(first) == WN_PRAGMA_PREAMBLE_END)
+          WN_INSERT_BlockAfter (body, first, val);
+      else
+          WN_INSERT_BlockBefore (body, first, val);
+    }
+  }
+  max_cleanup_i = -1;
+}
+
+void Pop_Cleanup_Deferral() 
+ {
+  cond_cleanup_i--;
+ }
+#endif
 
 #ifdef KEY
 // Special case to also handle while we are inside a handler

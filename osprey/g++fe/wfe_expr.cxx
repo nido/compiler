@@ -2679,7 +2679,6 @@ WFE_Expand_Expr (tree exp,
             TREE_OPERAND(t, 1) = args;
             WFE_Expand_Expr (t, false);
           }
-
         else
 #endif
 
@@ -2700,12 +2699,40 @@ WFE_Expand_Expr (tree exp,
           }
 #endif
 	}
-        if (TREE_OPERAND(exp, 2))
+
+        if (TREE_OPERAND(exp, 2)) {
+#ifdef TARG_ST
+          /* (cbr) support for deferred cleanups */
+          ST *guard_st=0;
+
+          if ((TREE_CODE (t) == COMPOUND_EXPR && TREE_SIDE_EFFECTS(t) ||
+              (TREE_CODE (t) == CALL_EXPR && TYPE_HAS_NONTRIVIAL_DESTRUCTOR (TREE_TYPE (t))))) {
+            guard_st = Get_Deferred_Cleanup(); 
+        }
+#endif
+
+          tree cleanup = TREE_OPERAND(exp, 2);
+
+#ifdef TARG_ST
+            /* (cbr) conditionalize the cleanup.  */
+          if (guard_st) {
+            tree cond = build_decl (VAR_DECL, get_identifier(ST_name(ST_st_idx(guard_st))), unsigned_type_node);
+            DECL_ST(cond) = guard_st;
+
+            cleanup = build (COND_EXPR, void_type_node,
+                             c_common_truthvalue_conversion(cond),
+                             cleanup, integer_zero_node);
+            }
+          
+          Push_Temp_Cleanup(cleanup, true, CLEANUP_EH_ONLY (exp));
+#else
 #ifdef KEY
           Push_Temp_Cleanup(TREE_OPERAND(exp, 2), true, CLEANUP_EH_ONLY (exp));
 #else
           Push_Temp_Cleanup(TREE_OPERAND(exp, 2), true);
 #endif
+#endif
+        }
       }
 
 
@@ -3660,6 +3687,11 @@ WFE_Expand_Expr (tree exp,
     case TRUTH_ANDIF_EXPR:
     case TRUTH_ORIF_EXPR:
       {
+#ifdef TARG_ST
+        /* (cbr) support for deferred cleanups */
+        Push_Cleanup_Deferral (exp);
+#endif
+
         wn0 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 0),
 						   Boolean_type);
         wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
@@ -3669,6 +3701,12 @@ WFE_Expand_Expr (tree exp,
         if (Boolean_type != MTYPE_B &&
 	    Widen_Mtype(TY_mtype(Get_TY(TREE_TYPE(exp)))) != Boolean_type)
 	  wn = WN_Cvt (Boolean_type, Widen_Mtype(TY_mtype(Get_TY(TREE_TYPE(exp)))), wn);
+
+#ifdef TARG_ST
+        /* (cbr) support for deferred cleanups */
+        Pop_Cleanup_Deferral ();
+#endif
+
       }
       break;
 

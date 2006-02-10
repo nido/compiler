@@ -18,6 +18,14 @@ extern void Do_EH_Cleanups (void);
 extern void Do_Cleanups_For_EH (void);
 #endif
 extern void Call_Throw();
+
+#ifdef TARG_ST
+/* (cbr) support for deferred cleanups */
+void Push_Cleanup_Deferral (tree);
+ST* Get_Deferred_Cleanup ();
+void Pop_Cleanup_Deferral (); 
+#endif
+
 #ifdef KEY
 extern void Push_Temp_Cleanup (tree, bool, bool=0);
 extern void Do_EH_Tables (void);
