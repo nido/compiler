@@ -133,6 +133,11 @@ endif
 endif
 #}CGG_DEV
 
+ifeq ($(BUILD_TARGET),ST200)
+# Build LAO support ?
+LAO_ENABLED=1
+endif
+
 ifdef LAO_ENABLED
   HOSTDEFS += -DLAO_ENABLED
 endif

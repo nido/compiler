@@ -122,101 +122,33 @@ LEXNAME	= flex
 YACCNAME= bison --output-file=y.tab.c
 AWKNAME	= awk
 
-# host platform definitions
-COMPILER_LOC=
-BINUTILS_LOC=
-PREFIX=
-SUFFIX=
-# build platform definitions
-BUILD_PREFIX=
-BUILD_SUFFIX=
-BUILD_COMPILER_LOC=
-BUILD_BINUTILS_LOC=
 
-##
-## GNU tools names
-##
+# host platform definitions, may be set before in Makefile.tooldefs
+COMPILER_LOC?=
+BINUTILS_LOC?=
+PREFIX?=
+SUFFIX?=
+YACC_LOC?=
+LEX_LOC?=
+INSTALL_LOC?=
+
+# build platform definitions, may be set before in Makefile.tooldefs
+BUILD_PREFIX?=
+BUILD_SUFFIX?=
+BUILD_COMPILER_LOC?=
+BUILD_BINUTILS_LOC?=
+
+#
+# Configuration for GNU tools
+#
 ifeq ($(BUILD_COMPILER), GNU)
+#
+# Moved path definitions to tooldefs/<tooldefs>/Makefile.tooldefs
+#
 
-# when using cross-compilation, tools usually have a prefix.
-ifeq ($(BUILD_OS),SUNOS5)
-
-BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
-COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
-# (cbr) 
-YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
-
-INSTALL_LOC=$(BINUTILS_GNU_LOC)
-
-ifeq ($(HOST_OS),MINGW)
-COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-mingw32-gcc-3.4.2/bin/
-BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i386-mingw32-
-endif
-
-ifeq ($(HOST_OS),CYGWIN_NT)
-#COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin32-1.3.12/bin/
-COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
-#COMPILER_LOC=/apa/comp/pro64-cygwin/install/x-mallinfo-cygwin32-1.3.12/bin/
-BINUTILS_LOC=$(COMPILER_LOC)
-# (cbr)
-YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
-#PREFIX=i686-pc-cygwin32-
-PREFIX=i386-pc-cygwin-
-endif
-
-ifeq ($(HOST_OS),SUNOS5)
-COMPILER_LOC=$(COMP_GNU_LOC)
-BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-endif
-
-BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
-BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-endif # BUILD_OS = SUNOS5
-
-ifeq ($(BUILD_OS),LINUX)
-COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
-BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
-# (cbr) 
-YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
-
-ifeq ($(HOST_OS),MINGW)
-COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-mingw32-gcc-3.4.2/bin/
-BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i386-mingw32-
-endif
-
-ifeq ($(HOST_OS),CYGWIN_NT)
-#COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin32-1.3.12/bin/
-COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
-BINUTILS_LOC=$(COMPILER_LOC)
-#PREFIX=i686-pc-cygwin32-
-PREFIX=i386-pc-cygwin-
-endif
-
-ifeq ($(HOST_OS),MINGW)
-COMPILER_LOC= /apa/gnu/Linux-RH-7.2/gcc/x-mingw32-gcc-3.4.2/bin/
-BINUTILS_LOC=$(COMPILER_LOC)
-PREFIX=i386-mingw32-
-endif
-
-ifeq ($(HOST_OS),LINUX)
-COMPILER_LOC=$(COMP_GNU_LOC)
-BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-endif
-
-BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
-BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-endif # BUILD_OS = LINUX
-
-ifeq ($(BUILD_OS),MINGW)
-SUFFIX=.exe
-endif
-
-# [HK] 
-GCC=$(COMPILER_LOC)/$(PREFIX)gcc
-GNU_VERSION:=$(shell echo | $(GCC) -dM -E -  | grep "define __GNUC__" | awk '{print $$3;}')
-
+#
+# Tool names
+#
 ASNAME = gcc
 CCNAME = gcc
 C++NAME = g++
@@ -225,60 +157,19 @@ F90 = g90
 LEX = flex
 YACC = bison
 
-
 endif
 
+
+#
+# Configuration for OPEN64 tools
+#
 ifeq ($(BUILD_COMPILER), OPEN64)
-
-ifeq ($(BUILD_CCACHE), CCACHE)
-ifndef CCACHE_DIR
-$(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
-endif
-export CCACHE_DIR
-CCACHE?=ccache
-export CCACHE_HASHDIR=1
-endif # CCACHE
-
 ifeq ($(HOST_ARCH),ST200)
-
-ifeq ($(BUILD_OS),SUNOS5)
-RUNNER=/apa/comp/SunOS5/st200/R4.1/bin/st200run -tsimfast --
-COMPILER_LOC=$(CCACHE) /apa/comp/SunOS5/st200/R4.1/bin/
-COMP_GNU_LOC?=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
-BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
-endif # SUNOS5
-
-ifeq ($(BUILD_OS),LINUX)
-RUNNER=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/st200run -tsimfast --
-COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/
-COMP_GNU_LOC?=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
-BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
-endif
-
-BINUTILS_LOC=$(COMPILER_LOC)
-BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
-BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
-PREFIX=st200-
-CCPREFIX=st200
-
+#
+# Moved path definitions to tooldefs/<tooldefs>/Makefile.tooldefs
+#
 endif # ST200
 endif # OPEN64
-
-##
-## GNU tools names with ccache compilation cache tool
-##
-ifeq ($(BUILD_COMPILER), GNU)
-ifeq ($(BUILD_CCACHE), CCACHE)
-
-ifndef CCACHE_DIR
-$(error Error: You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
-endif
-export CCACHE_DIR
-CCACHE?=ccache
-export CCACHE_HASHDIR=1
-
-endif # BUILD_CCACHE = CCACHE
-endif # BUILD_COMPILER = GNU
 
 ##
 ## SGI tools names
@@ -308,6 +199,22 @@ endif
 ifndef CCPREFIX
 CCPREFIX=$(PREFIX)
 endif
+
+##
+## ccache tool configuration
+##
+ifeq ($(BUILD_CCACHE), CCACHE)
+
+ifndef CCACHE_DIR
+$(error You must defined your CCACHE_DIR before using GNU_CCACHE compiler)
+endif
+export CCACHE_DIR
+CCACHE?=ccache
+export CCACHE_HASHDIR=1
+
+endif # BUILD_CCACHE = CCACHE
+
+
 ##
 ## Tools definition
 ##
@@ -902,7 +809,41 @@ FTR_EXITOP_IDB= -idb 'exitop( " \
 # the command line, and likewise for localrules.  Or you can have localdefs
 # just sinclude the appropriate other include file.
 #
-LOCALDEFS  = ./localdefs
-LOCALRULES = ./localrules
+LOCALDEFS  = $(BUILD_AREA)/localdefs
+LOCALRULES = $(BUILD_AREA)/localrules
 
 -include $(LOCALDEFS)
+
+#
+# Check Compiler settings
+# Must appear after localdefs as the full compiler path must be deetermined
+#
+
+#
+# Check that compiler exists
+#
+ifeq ($(shell $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX) -v >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "C Compiler not found: $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX)")
+endif
+
+
+#
+# Check GNU compiler version
+# 
+ifeq ($(BUILD_COMPILER), GNU)
+GNU_VERSION:=$(shell echo | $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX)  -dM -E -  | grep "define __GNUC__" | awk '{print $$3;}')
+
+ifeq ($(GNU_VERSION), 1)
+$(error GCC build compiler version 1.x no longer supported)
+endif
+ifeq ($(GNU_VERSION), 2)
+$(error GCC build compiler version 2.x no longer supported)
+endif
+ifeq ($(GNU_VERSION), 3)
+# OK
+endif
+ifeq ($(GNU_VERSION), 4)
+$(warning GCC build compiler version 4.x not tested)
+endif
+
+endif

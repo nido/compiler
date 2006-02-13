@@ -38,8 +38,12 @@
 #     BUILD_TOT      = specifies the Top-Of-Trunk directory containing
 #                      the top-level Makefile.gsetup
 #
+#     BUILD_MOD     = specifies the module to build, must be one for which
+#		      a BUILD_BASE_<module> exists in this makefile
+#
 #     BUILD_BASE     = specifies the base directory containing the module 
-#                      specific Makefile.gbase (and almost always the source files)
+#                      specific Makefile.gbase (and almost always the source files). It is derived from BUILD_MOD in this makefile if not set otherwise.
+#
 #     BUILD_ROOTS    = specifies which ROOT & TOOLROOT to use
 #     BUILD_ABI      = specifies ABI to build for (32BIT/N32BIT/64BIT/
 #                      I32BIT/I64BIT)
@@ -189,15 +193,19 @@ endif
 ################################################################################
 
 #
-#  Check HOST_OS
+#  Verify that HOST_OS is defined
 #
 ifndef HOST_OS
-  HOST_OS = $(BUILD_OS)
+  ABORT_BUILD = HOST_OS has no value
 else
+ ifneq ($(HOST_OS), LINUX)
+ ifneq ($(HOST_OS), SUNOS5)
  ifneq ($(HOST_OS), BARE_OS21)
  ifneq ($(HOST_OS), CYGWIN_NT)
  ifneq ($(HOST_OS), MINGW)
    ABORT_BUILD = HOST_OS has bad value - $(HOST_OS)!
+ endif
+ endif
  endif
  endif
  endif
@@ -208,13 +216,23 @@ endif
 # Check HOST_ARCH
 #
 ifdef HOST_ARCH
+ ifneq ($(HOST_ARCH), MIPS3)
+ ifneq ($(HOST_ARCH), MIPS4)
+ ifneq ($(HOST_ARCH), IA32)
+ ifneq ($(HOST_ARCH), IA64)
+ ifneq ($(HOST_ARCH), SPARC)
  ifneq ($(HOST_ARCH), ST200)
-   ifneq ($(HOST_ARCH), IA32)
-     ABORT_BUILD = HOST_ARCH has bad value - $(HOST_ARCH)!
-   endif
+ ifneq ($(HOST_ARCH), STxP70)
+   ABORT_BUILD = HOST_ARCH has bad value - $(HOST_ARCH)!
+ endif
+ endif
+ endif
+ endif
+ endif
+ endif
  endif
 else
-  HOST_ARCH=$(BUILD_ARCH)
+  ABORT_BUILD = HOST_ARCH not defined!
 endif
 
 
@@ -226,7 +244,7 @@ endif
 
 
 #
-#  Verify that BUILD_TARGET is defined and is either ST100 or ST200.
+#  Verify that BUILD_TARGET is defined and is one of the supported targets.
 #
 ifdef BUILD_TARGET
  ifneq ($(BUILD_TARGET), MIPS)
@@ -271,6 +289,50 @@ endif
 #                               BUILD process parameters                       #
 #                                                                              #
 ################################################################################
+#
+# First derive BUILD_BASE from BUILD_MOD
+#
+ifdef BUILD_MOD
+ ifeq ($(BUILD_MOD), "")
+   ABORT_BUILD = BUILD_MOD has no value!
+ endif
+endif
+
+ifdef BUILD_MOD
+#
+# Add here real path for each new module
+#
+BUILD_BASE_include	= $(BUILD_TOT)/include
+BUILD_BASE_targ_info	= $(BUILD_TOT)/targinfo
+BUILD_BASE_libiberty	= $(BUILD_TOT)/gnu_common/libiberty
+BUILD_BASE_libelf	= $(BUILD_TOT)/gnu_common/libelf
+BUILD_BASE_libcmplrs	= $(BUILD_TOT)/libcmplrs
+BUILD_BASE_libcomutil	= $(BUILD_TOT)/common/util
+BUILD_BASE_libdwarf	= $(BUILD_TOT)/libdwarf
+BUILD_BASE_libelfutil	= $(BUILD_TOT)/libelfutil
+BUILD_BASE_libSYS	= $(BUILD_TOT)/libSYS
+BUILD_BASE_instrumentationC	= $(BUILD_TOT)/instrumentation/libinstrC
+BUILD_BASE_gccfe	= $(BUILD_TOT)/gccfe
+BUILD_BASE_gccfe_gnu	= $(BUILD_TOT)/gccfe/gnu
+BUILD_BASE_g++fe	= $(BUILD_TOT)/g++fe
+BUILD_BASE_g++fe_gnu	= $(BUILD_TOT)/g++fe/gnu
+BUILD_BASE_wopt		= $(BUILD_TOT)/be/opt
+BUILD_BASE_be		= $(BUILD_TOT)/be/be
+BUILD_BASE_lai		= $(BUILD_TOT)/lai
+BUILD_BASE_ipl		= $(BUILD_TOT)/ipa/local
+BUILD_BASE_ipa		= $(BUILD_TOT)/ipa/main
+BUILD_BASE_lno		= $(BUILD_TOT)/be/lno
+BUILD_BASE_lw_inline	= $(BUILD_TOT)/ipa/lw_inline
+BUILD_BASE_whirl2c	= $(BUILD_TOT)/be/whirl2c
+BUILD_BASE_whirl2f	= $(BUILD_TOT)/be/whirl2f
+BUILD_BASE_ir_tools	= $(BUILD_TOT)/ir_tools
+BUILD_BASE_driver	= $(BUILD_TOT)/driver
+BUILD_BASE_libgcov	= $(BUILD_TOT)/instrumentation/libgcov
+BUILD_BASE_libunwind	= $(BUILD_TOT)/g++fe/gnu
+
+BUILD_BASE		?= $(BUILD_BASE_$(BUILD_MOD))
+endif
+
 
 ifndef BUILD_COMPILER
   BUILD_COMPILER = GNU

@@ -231,8 +231,8 @@ install_all_st200:
 	$(MAKE) HOSTDEFS='-EB -mcore=st220' INSTALL_DIR=st220/be/bare clean _install
 	$(MAKE) HOSTDEFS='-EL -mcore=st231' INSTALL_DIR=st231/le/bare clean _install
 	$(MAKE) HOSTDEFS='-EB -mcore=st231' INSTALL_DIR=st231/be/bare clean _install
-	$(MAKE) HOSTDEFS='-EL -mcore=st235' INSTALL_DIR=st235/le/bare clean _install
-	$(MAKE) HOSTDEFS='-EB -mcore=st235' INSTALL_DIR=st235/be/bare clean _install
+#	$(MAKE) HOSTDEFS='-EL -mcore=st235' INSTALL_DIR=st235/le/bare clean _install
+#	$(MAKE) HOSTDEFS='-EB -mcore=st235' INSTALL_DIR=st235/be/bare clean _install
 
 install_all_stxp70: 
 	$(MAKE) HOSTDEFS='-EL -mcore=arch_1_3_1' INSTALL_DIR=arch_1_3_1/le/bare clean _install

@@ -1,0 +1,180 @@
+
+*** TABLE OF CONTENTS
+* Available Targets and Hosts
+* Predefined Compiler Build
+* Make Targets
+* Invoking configure directly
+* Adding a New Predefined Build Variant
+
+*** Available Targets and Hosts
+The build is parameterized as a target and a (build, host) pair.
+The compiler can be build for a defined target on a set of defined
+build and host combination.
+For each supported (build, host, target) triplet there exist a
+targ... directory in which the compiler can be built.
+
+The available targets are:
+ST200 compiler: st200cc/st200c++
+STxp70 compiler: stxp70cc/stxp70c++ -- currently only in branch 
+				       branches/pro-branch-dev-stxp70
+
+The available (build,host) pairs are:
+(linux,linux): directory targia32_<target>,
+(linux,cygwin): directory targia32_Cygwin_<target>,
+(linux,mingw): directory targia32_Mingwin_<target>,
+(solaris,solaris): directory targSunOS5_<target>,
+(solaris,cygwin): directory targSunOS5_Cygwin_<target>,
+
+*** Predefined Compiler Build
+Change dir to the corresponding target and (build,host) pair:
+> cd targia32_st200 # for building st200 compiler from linux for instance
+
+Configure the build:
+> ./configure
+
+Make the compiler:
+> make install
+
+This will build and install the compiler in the 
+targia32_st200/devimage directory.
+
+Note that the default configuration relies on tools located in the
+/apa/gnu repository in Grenoble.
+
+The minimum tools required are:
+- gcc 3.x
+- bison 1.35
+
+In order to build from a site where /apa/gnu is not available, you have
+two choices:
+
+A. Use the path to find the tools:
+Configure with default PATH based tools
+> ./configure TOOLDEFS=default
+> make install
+
+This requires that you have in your PATH the necessary tools.
+
+B. If A fails or if you want to force tool paths:
+Configure with default Grenoble site tools
+> ./configure
+
+Then modify the generated Makefile.tooldefs to change paths, before make:
+> # edit Makefile.tooldefs
+> make install
+
+*** Make Targets
+The two most commonly used make targets available are:
+
+* To build and install the compiler
+> make install
+
+* To clean the build (intermediate and final files)
+> make clobber
+
+Some other targets are of less important use, such as:
+> make default	# build the compiler without installing
+> make local 	# build each module without check for modules dependencies
+> make last	# build the compiler without installing
+> make clean	# clean only intermediate files
+
+*** Invoking configure directly
+In each predefined targ... directory the local configure script
+invokes the top level configure with some predefined options.
+
+One can invoke configure directly from any location for a customized build.
+The configure step currently does not provide a way to fully customize
+the build as it only perform substitution on a restricted set of variables.
+Thus this set of configurable variables may be augmented if necessary.
+
+Though in order to describe the configure process here are some details on
+the configure script options.
+
+The configure script is responsible of creating in the build area the
+necessary makefile fragments and subdirs for building the compiler. It
+is a required step before the effecive invokation of make.
+
+The configure script is located at the top level source directory, i.e.
+open64/osprey/configure.
+
+From a clean build directory invoque configure like this:
+> <path_to_sources>/configure [options...]
+Then you can invoke make:
+> make install
+
+The configure script options are:
+This script has the following options:
+
+./configure [VAR=VALUE...] [options] where:
+options are:
+ -v: verbose mode
+ -h|--help: help
+
+and VAR=VALUE optins are:
+BUILD=<build_id> : the configure will use the
+                   =make/build/<build_id>/Makefile.build= fragment.
+                   [defaults to 'gnu-default']
+PLATFORMS=<platforms_id> : the configure will use the
+                   =make/platforms/<platforms_id>/Makefile.build= fragment.
+                   [no default, i.e. mandatory]
+TOOLDEFS=<tooldefs_id> : the configure will use the
+                   =make/tooldefs/<tooldefs_id>/Makefile.build= fragment.
+                   [default to 'default']
+ROOT=<install_dir> : the configure will defined the installation root
+		     to <install_dir>.
+		   [default to <build_area>/devimage]
+SUBDIRS=<list> : the configure will create the corresponding
+                 modules subdirs and update the same variable in the top
+                 level =Makefile=
+		 this will have the effect of oinly building the declared
+		 modules
+                 [default to the list of supported modules]
+
+*** Adding a New Predefined Build Variant
+It is possible to add a new predefined build variant for instance when
+creating a new target or when configuring a new set of tools location.
+
+First the kind of variant must be determined:
+
+* BUILD variant: for a new set of build specific options, for instance:
+  * defining a new BUILD_OPTIMIZE value, 
+  * defining predefined RELEASE_... variables.
+
+* PLATFORMS variant: for defining a build,host,target pair, for instance:
+  * adding a new supported target, BUILD_TARGET/BUILD_TARG_OS variables.
+
+* TOOLDEFS variant: for declaring a new set of path to standard tools,
+  for instance when configuring the compiler for your particular site.
+
+For a new BUILD (resp. PLATFORMS, resp. TOOLDEFS) variant copy the
+corresponding make/build/Makefile.build (resp. 
+make/platforms/Makefile.platforms, resp. make/tooldefs/Makefile.tooldefs)
+to a new variant make/<my_build>/Makefile.build 
+(resp.make/<my_platforms>/Makefile.platforms, 
+resp. make/<my_tooldefs>/Makwefile.tooldefs).
+Then edit the relevent Makefile fragment and publish it to the sources
+repository.
+
+Then to build a compiler with your variant, invoque configure with the
+variant name in the BUILD= (resp. PLATFORMS=, resp. TOOLDEFS=) option,
+for instance:
+> mkdir my_build_area
+> cd my_build_area
+> ../configure BUILD=<my_build> PLATFORMS=<my_platforms> TOOLDEFS=<my_tooldefs>
+> make install
+
+To publish also a standard build directory for your variant, add a
+targ... directory for it and create a configure script that performs the
+configure phase above:
+> mkdir targNewVariant
+> cat >configure
+#!/bin/sh
+../configure BUILD=<my_build> PLATFORMS=<my_platforms> TOOLDEFS=<my_tooldefs>
+> chmod 755 configure
+
+Then to build:
+> cd targMyVariant
+> ./configure
+> make install
+
+

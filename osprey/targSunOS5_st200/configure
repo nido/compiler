@@ -1,0 +1,2 @@
+#!/bin/sh
+../configure BUILD=gnu-default PLATFORMS=sunos-st200 TOOLDEFS=apagnu $*

@@ -1,0 +1,21 @@
+#
+# Makefile.build
+#
+# Makefile fragment configuring the build settings
+#
+
+BUILD_ROOTS    = TARGET
+BUILD_TYPE     = SHARED
+BUILD_OPTIMIZE = -O2
+BUILD_VARIANT  = RELEASE
+BUILD_INSTALL  = DEFAULT
+BUILD_COMPILER = GNU
+
+# Use ccache to compile ?
+#BUILD_CCACHE = CCACHE
+#export CCACHE_DIR=/work1/$(USER)/.ccache
+
+# Use distcc in addition to ccache ?
+#export CCACHE_PREFIX=distcc
+# gnb linux hosts
+#export DISTCC_HOSTS=gnx287 gnx344 gnx366 gnx343

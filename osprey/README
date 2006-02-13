@@ -1,5 +1,55 @@
-This README file is the original README from the PRO64 SGI 0.13 version.
-It does not give information on the open64 port of the compiler at STMicroelectronics.
+
+*** FILES
+README: this file
+INSTALL: installation instructions
+
+*** TABLE OF CONTENTS
+* Open64 Compiler Summary
+* Installation
+* ST Open64 compiler dependencies
+* Original README file from SGI pro64-0.13
+
+*** Open64 Compiler Summary
+
+The Open64 is an Open Source GCC compatible C/C++/Fortran compiler suitable mainly for 32 bits cores with high performance requirements.
+
+The Open64 compiler is an open source project with no patent under the terms
+of the GNU General Public License.
+The Open64 copyright olders include Silicon Graphics and for their
+contributions the Free Software Foundation, STMicroelectronics, PathScale,
+ Intel Corporation, University of Alberta, Chinese Academy of Sciences.
+
+Refer to the Codex project: https://codex.cro.st.com/projects/open64
+for more information.
+
+*** Installation
+To extract the compiler sources do:
+svn co svn://gnx287.gnb.st.com/open64/trunk
+
+To build and install the compiler read the INSTALL file in this directory.
+This source tree only includes the compiler sources. Libraries, runtime 
+support, binary utilities and other tools must be provided otherwise.
+See the next section for these dependencies.
+
+*** ST Open64 compiler dependencies
+
+The Open64 compiler must be integrated with other components to build a full compiler toolchain. For instance:
+- GNU Binary utilities for the binary level tools,
+- The MCDT IFR integer arithmetic support library,
+- The MCDT IFR floating point support library,
+- The Cygnus Newlib libc/libm library.
+
+Other optional components can be used for engineering or improved performance:
+- The MCDT/CEA Linear Assembly Optimizer (LAO) for improved Instruction Scheduling and Software pipelining,
+- The MCDT Binopt tool for link time optimizations,
+- The MCDT/AST Machine Description System (MDS) or other architectural description to drive the generation of the target description into the compiler,
+- The MCDT QA Validation framework for functional validation,
+- The MCDT Performance Tracking System (PTS) for functional and performance tracking.
+
+
+*** Original README file from SGI pro64-0.13
+
+The following of this README file is the original README from the PRO64 SGI 0.13 version. It does not give information on the open64 port of the compiler at STMicroelectronics.
 
 The SGI Pro64(TM) compiler suite includes optimizing compilers 
 and runtime support for C, C++, and Fortran90. These compilers 

@@ -1,0 +1,2 @@
+#!/bin/sh
+../configure BUILD=gnu-default PLATFORMS=linux-mingw-st200 TOOLDEFS=apagnu $*

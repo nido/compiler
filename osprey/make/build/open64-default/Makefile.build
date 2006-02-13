@@ -1,0 +1,26 @@
+#
+# Makefile.build
+#
+# Makefile fragment configuring the build settings
+#
+
+BUILD_ROOTS    = TARGET
+BUILD_TYPE     = NONSHARED
+BUILD_OPTIMIZE = -Wall -O2 
+# -g
+# add --deadcode with care: when building a library, you need to give
+# function to be kept (-Wo,--preserved) otherwise your library might be
+# a litte light
+
+BUILD_VARIANT  = RELEASE
+BUILD_INSTALL  = DEFAULT
+BUILD_COMPILER = OPEN64
+
+# Use ccache to compile ?
+#BUILD_CCACHE = CCACHE
+#export CCACHE_DIR=/work1/$(USER)/.ccache
+
+# Use distcc in addition to ccache ?
+#export CCACHE_PREFIX=distcc
+# gnb linux hosts
+#export DISTCC_HOSTS=gnx287 gnx344 gnx366 gnx343
