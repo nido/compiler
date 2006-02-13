@@ -694,6 +694,15 @@ static BOOL Is_Pointer(TN *tn, OP *use_op)
 #else
 	use_tn = OP_opnd(def_op, OP_COPY_OPND);
 #endif
+#ifdef TARG_ST
+	// TB 02 2006: FIX bug pro-release-1-9-0-B/39: Do not create ops for node such as
+	// U4U4LDID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg>
+	// U4STID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg> {freq: 0, ln: 110, col: 0}
+	// Otherwise freq.cxx module will not finish (function Is_Pointer) (see whirl2ops.cxx)
+	// Fix is_pointer in the case the def == use, otherwise it does not finish
+ 	if (use_op == def_op)
+ 	  return FALSE;
+#endif
 	use_op = def_op;
 	continue;
       }
