@@ -117,6 +117,8 @@
 #define Set_TN_is_reloc_none(r)         Set_TN_relocs(r,TN_RELOC_NONE)
 #define TN_is_reloc_got_disp(r)         (TN_relocs(r) == TN_RELOC_GOT_DISP)
 #define Set_TN_is_reloc_got_disp(r)     Set_TN_relocs(r,TN_RELOC_GOT_DISP)
+#define TN_is_reloc_gotoff(r)           (TN_relocs(r) == TN_RELOC_GOTOFF)
+#define Set_TN_is_reloc_gotoff(r)       Set_TN_relocs(r,TN_RELOC_GOTOFF)
 #define TN_is_reloc_gotoff_fptr(r)      (TN_relocs(r) == TN_RELOC_GOTOFF_FPTR)
 #define Set_TN_is_reloc_gotoff_fptr(r)  Set_TN_relocs(r,TN_RELOC_GOTOFF_FPTR)
 #define TN_is_reloc_neg_got_disp(r)     (TN_relocs(r) == TN_RELOC_NEG_GOT_DISP)

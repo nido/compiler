@@ -1232,11 +1232,19 @@ Expand_Lda_Label (
     // Adding offset to PC is painful on ST200, as it requires
     // a call instruction, and overwrites R63, so instead load
     // from initialized data.
-    Set_TN_is_reloc_got_disp (lab);
-    Expand_Load (OPCODE_make_signed_op(OPR_LDID, Pointer_Mtype,
-				       Pointer_Mtype, FALSE),
-		 dest, GP_TN, lab, ops);
-    Set_OP_no_alias (OPS_last (ops));
+    PU_References_GP = TRUE;
+    if (! Is_Caller_Save_GP) {
+      // [SC]: In the non-caller-save-GP PIC model, we can
+      // calculate a code address by adding a (large) constant to GP.
+      Set_TN_is_reloc_got_disp (lab);
+      Expand_Add (dest, GP_TN, lab, Pointer_Mtype, ops);
+    } else {
+      Set_TN_is_reloc_gotoff (lab);
+      Expand_Load (OPCODE_make_signed_op(OPR_LDID, Pointer_Mtype,
+					 Pointer_Mtype, FALSE),
+		   dest, GP_TN, lab, ops);
+      Set_OP_no_alias (OPS_last (ops));
+    }
   }
   else {
     // [CG]: On the ST200 base model, address of a label
