@@ -1613,20 +1613,9 @@ CG_Process_Command_Line (
  *   read 
  * ====================================================================
  */
-#ifdef Is_True_On
-extern "C" {
-#include <unistd.h>
-}
-#endif
 void
 CG_Init (void)
 {
-#ifdef Is_True_On
-  if (getenv("CGPID")) {
-    fprintf(stderr, "CGPID=%d\n", getpid());
-    scanf("\n");
-  }
-#endif
   Set_Error_Phase ( "CG Initialization" );
 
   MEM_POOL_Initialize (&MEM_local_region_pool, "local_region_pool", TRUE);

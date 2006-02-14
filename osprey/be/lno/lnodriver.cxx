@@ -98,12 +98,6 @@
  * ====================================================================
  */
 
-
-#ifdef Is_True_On
-extern "C" {
-#include <unistd.h>
-}
-#endif
 /*ARGSUSED*/
 void
 lno_main (INT lno_argc, char **lno_argv, INT be_argc, char **be_argv)
@@ -116,13 +110,6 @@ lno_main (INT lno_argc, char **lno_argv, INT be_argc, char **be_argv)
 		    Whirl_Revision, WHIRL_REVISION));
 
     Set_Error_Descriptor (EP_BE, EDESC_BE);
-
-#ifdef Is_True_On
-    if (getenv("LNOPID")) {
-      fprintf(stderr, "LNOPID=%d\n", getpid());
-      scanf("\n");
-    }
-#endif
 } /* lno_main */
 
 extern "C" {

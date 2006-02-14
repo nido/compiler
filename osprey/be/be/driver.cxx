@@ -1931,9 +1931,20 @@ Process_Feedback_Options (OPTION_LIST* olist)
 } // Process_Feedback_Options
 
 
+extern "C" {
+#include <unistd.h>
+}
+
 // Provide a place to stop after components are loaded
 extern "C" {
-  void be_debug(void) {}
+  void be_debug(void) {
+#ifdef Is_True_On
+    if (getenv("BEPID")) {
+      fprintf(stderr, "BEPID=%d\n", getpid());
+      scanf("\n");
+    }
+#endif
+  }
 }
 
 // a place holder with a debugging purpose under gdb (call a function
@@ -1944,10 +1955,6 @@ extern "C" {
     }
 }
 
-
-extern "C" {
-#include <unistd.h>
-}
 
 INT
 main (INT argc, char **argv)
@@ -1968,12 +1975,6 @@ main (INT argc, char **argv)
   Set_Error_File ( NULL );
   Set_Error_Phase ( "Back End Driver" );
 
-#ifdef Is_True_On
-  if (getenv("BEPID")) {
-    fprintf(stderr, "BEPID=%d\n", getpid());
-    scanf("\n");
-  }
-#endif
   Preconfigure ();
   Process_Command_Line (argc, argv);
   if (Inhibit_EH_opt && Opt_Level > 1) Opt_Level = 1;

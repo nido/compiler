@@ -91,13 +91,6 @@
  * ====================================================================
  */
 
-
-#ifdef Is_True_On
-extern "C" {
-#include <unistd.h>
-}
-#endif
-
 /*ARGSUSED*/
 void
 wopt_main (INT wopt_argc, char **wopt_argv, INT be_argc, char **be_argv)
@@ -117,13 +110,6 @@ wopt_main (INT wopt_argc, char **wopt_argv, INT be_argc, char **be_argv)
 
   /* Construct a skip list from the -WOPT:skip_* options: */
   WOPT_Skip_List = Build_Skiplist ( WOPT_Skip );
-
-#ifdef Is_True_On
-  if (getenv("OPTPID")) {
-    fprintf(stderr, "OPTPID=%d\n", getpid());
-    scanf("\n");
-  }
-#endif
 } /* wopt_main */
 
 
