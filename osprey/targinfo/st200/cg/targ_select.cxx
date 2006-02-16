@@ -280,8 +280,8 @@ Expand_CondStoreOP (
     offset = Gen_Literal_TN (0, 4);
 
   switch (OP_code(store_op)) {
-  case TOP_stp_i:
-  case TOP_stp_ii:
+  case TOP_stl_i:
+  case TOP_stl_ii:
     desc = MTYPE_I8;
     break;
 
@@ -422,8 +422,8 @@ Expand_Cond_Store (
   else {
 #endif
     switch (OP_code(op1)) {
-    case TOP_stp_i:
-    case TOP_stp_ii:
+    case TOP_stl_i:
+    case TOP_stl_ii:
       desc = MTYPE_I8;
       break;
 

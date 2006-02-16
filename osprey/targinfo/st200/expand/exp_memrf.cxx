@@ -124,11 +124,11 @@ Pick_Load_Imm_Instruction (
     }
     break;
   case MTYPE_F8: 
-    if (Enable_64_Bits_Ops) top = TOP_ldp_i; 
+    if (Enable_64_Bits_Ops) top = TOP_ldl_i; 
     break;
   case MTYPE_I8: 
   case MTYPE_U8: 
-    if (Enable_64_Bits_Ops) top = TOP_ldp_i; 
+    if (Enable_64_Bits_Ops) top = TOP_ldl_i; 
     break;
   default:
     break;
@@ -232,11 +232,11 @@ Pick_Store_Imm_Instruction (
   case MTYPE_F4:
   case MTYPE_A4: top = TOP_stw_i; break;
   case MTYPE_F8: 
-    if (Enable_64_Bits_Ops) top = TOP_stp_i; 
+    if (Enable_64_Bits_Ops) top = TOP_stl_i; 
     break;
   case MTYPE_I8: 
   case MTYPE_U8: 
-    if (Enable_64_Bits_Ops) top = TOP_stp_i; 
+    if (Enable_64_Bits_Ops) top = TOP_stl_i; 
     break;
   default:
     break;

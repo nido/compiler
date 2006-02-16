@@ -554,11 +554,11 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
     switch(regform) {
       CASE_TOP(mov);
       CASE_TOP(sub);
-      CASE_TOP_I(stp);
+      CASE_TOP_I(stl);
       CASE_TOP_I(stw);
       CASE_TOP_I(sth);
       CASE_TOP_I(stb);
-      CASE_TOP_I(ldp);
+      CASE_TOP_I(ldl);
       CASE_TOP_I(ldw);
       CASE_TOP_I(ldh);
       CASE_TOP_I(ldb);
@@ -622,7 +622,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_BR(orl);
       CASE_TOP_BR(norl);
       /* (cbr) support for conditional loads */
-      CASE_TOP_I(ldpc);
+      CASE_TOP_I(ldlc);
       CASE_TOP_I(ldwc);
       CASE_TOP_I(ldhc);
       CASE_TOP_I(ldbc);
@@ -651,7 +651,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP(slct);
       CASE_TOP(slctf);
       /* (cbr) support for conditional stores */
-      CASE_TOP_I(stpc);
+      CASE_TOP_I(stlc);
       CASE_TOP_I(stwc);
       CASE_TOP_I(sthc);
       CASE_TOP_I(stbc);
@@ -848,7 +848,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
       CASE_TOP_BR(nandl):
       CASE_TOP_BR(orl):
       CASE_TOP_BR(norl):
-      CASE_TOP_I(ldp):
+      CASE_TOP_I(ldl):
       CASE_TOP_I(ldw):
       CASE_TOP_I(ldh):
       CASE_TOP_I(ldb):
@@ -919,7 +919,7 @@ TOP_opnd_use_bits(TOP top, int opnd)
     CASE_TOP(mulhu):
       return 32;
 
-    CASE_TOP_I(stp):
+    CASE_TOP_I(stl):
       return opnd == 2 ? 64: 32;
     CASE_TOP_I(stw):
       return opnd == 2 ? 32: 32;
@@ -980,7 +980,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
       CASE_TOP_BR(nandl):
       CASE_TOP_BR(orl):
       CASE_TOP_BR(norl):
-      CASE_TOP_I(ldp):
+      CASE_TOP_I(ldl):
       CASE_TOP_I(ldw):
       CASE_TOP_I(ldh):
       CASE_TOP_I(ldb):
@@ -1061,7 +1061,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
     CASE_TOP(mulhu):
       return TRUE;
 
-    CASE_TOP_I(stp):
+    CASE_TOP_I(stl):
     CASE_TOP_I(stw):
     CASE_TOP_I(sth):
     CASE_TOP_I(stb):
