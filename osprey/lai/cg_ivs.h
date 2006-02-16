@@ -125,7 +125,9 @@ class LOOP_IVS {
  public:
 
   LOOP_IVS(LOOP_DESCR *loop, MEM_POOL *mem_pool)
-    : _loc_mem_pool(mem_pool)  {}
+    : _loc_mem_pool(mem_pool) ,
+    ivs_table( NULL ),
+    ivs_count( 0 ) {}
 
   ~LOOP_IVS(void) {}
 
