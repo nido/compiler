@@ -593,8 +593,10 @@ static OPTION_DESC Options_CG[] = {
     7, 0, 7,    &CG_LOOP_unroll_heuristics, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
-    TRUE, 0, 0,	&CG_LOOP_load_store_packing, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
+    0xa7, 0, 255,	&CG_LOOP_load_store_packing, NULL },
+  { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
+    8, 0, 8,	&CG_LOOP_stream_align, NULL },
 #endif
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
