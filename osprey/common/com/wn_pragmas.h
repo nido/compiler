@@ -362,6 +362,7 @@ typedef enum {
   WN_PRAGMA_PIPELINE,
   WN_PRAGMA_LOOPTRIP,		/* estimated trip count for the loop. Scope: loop. */
   WN_PRAGMA_LOOPSEQ,		/* preserve the user given order for the access to the referenced object. Scope: loop. */
+  WN_PRAGMA_STREAM_ALIGNMENT,	/* Gives the alignment of the memory streams in a loop. */
 #endif
 
   MAX_WN_PRAGMA			/* last one in enum			*/

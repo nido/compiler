@@ -173,6 +173,9 @@
 #include "ebo.h"
 #include "hb.h"
 #include "gra_live.h"
+#ifdef TARG_ST
+#include "cg_ivs.h"
+#endif
 
 /* Error tolerance for feedback-based frequency info */
 #define FB_TOL 0.05
@@ -196,7 +199,6 @@ BOOL CG_LOOP_unroll_remainder_fully = TRUE;
 #ifdef TARG_ST
 BOOL CG_LOOP_unroll_do_unwind = FALSE;
 BOOL CG_LOOP_unroll_remainder_after = FALSE;
-BOOL CG_LOOP_load_store_packing = FALSE;
 enum UNROLL_HEURISTICS {
   DEFAULT_HEURISTIC = 0,
   SCHED_HEURISTIC   = 1,
@@ -204,6 +206,20 @@ enum UNROLL_HEURISTICS {
   DOWHILE_HEURISTIC = 4
 };
 INT32 CG_LOOP_unroll_heuristics = SCHED_HEURISTIC | UNROLL2_HEURISTIC | DOWHILE_HEURISTIC;
+/* CG_LOOP load_store_packing:
+   0x1 : Enable load packing
+   0x2 : Enable store packing
+   0x4 : Disable load paking if alignment is unknown
+   0x8 : Perform packing analysis and loop transformation, but do not actually pack
+   0x10: Disable loop peeling if loop trip count is a compile time literal value
+   0x20: If loop unrolling would not unroll a loop, but packing asks
+         for an even unroll factor, forces loop unrolling to 2.
+   0x40: Packing is not performed if the loop is not memory bounded,
+         but loop transformations are performed.
+   0x80: Allow loop specialization
+*/
+INT32 CG_LOOP_load_store_packing = 0;
+INT32 CG_LOOP_stream_align = 4;
 #endif
 BOOL CG_LOOP_ignore_pragmas = FALSE;
 
@@ -1118,7 +1134,12 @@ CG_LOOP::CG_LOOP(LOOP_DESCR *loop)
   epilog_start = epilog_end = NULL;
 
 #ifdef TARG_ST
-  unroll_sched_est = -1;
+  this->even_factor = FALSE;
+  this->remainder_after = FALSE;
+  this->unroll_sched_est = -1;
+  this->special_streams = 0;
+  this->stream_tn[0] = NULL;
+  this->stream_op[0] = NULL;
 #endif
 
   Attach_Prolog_And_Epilog(loop);
@@ -3485,6 +3506,338 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   }
 }
 
+#ifdef TARG_ST
+static void
+Unroll_Peel_Guard(LOOP_DESCR *loop,
+		  LOOPINFO *unrolled_info,
+		  BB *guard_bb,
+		  TN *trip_count) {
+
+  INT64 trip_est = WN_loop_trip_est(LOOPINFO_wn(unrolled_info));
+  float ztrip_prob = 1.0 / MAX(trip_est, 1);
+  float orig_post_prolog_freq = BB_freq(BB_next(CG_LOOP_prolog));
+  OPS ops = OPS_EMPTY;
+  BB *continuation_bb;
+  LABEL_IDX continuation_lbl;
+
+  continuation_bb = CG_LOOP_epilog;
+  continuation_lbl = Gen_Label_For_BB(continuation_bb);
+
+  INT32 trip_size = TN_size(trip_count);
+  Exp_OP3v(OPC_FALSEBR,
+	   NULL,
+	   Gen_Label_TN(continuation_lbl,0),
+	   trip_count,
+	   Zero_TN,
+	   trip_size == 4 ? V_BR_I4LE : V_BR_I8LE,
+	   &ops);
+
+  BB_Append_Ops(guard_bb, &ops);
+
+  Link_Pred_Succ_with_Prob(guard_bb, continuation_bb, ztrip_prob);
+  Change_Succ_Prob(guard_bb, BB_next(guard_bb), 1.0 - ztrip_prob);
+}
+
+static void
+Unroll_Update_Loop_Counter(CG_LOOP &cl) {
+  LOOP_DESCR *loop = cl.Loop();
+  BB *body = LOOP_DESCR_loophead(loop);
+
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+  LOOPINFO *info = ANNOT_loopinfo(annot);
+  WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
+  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+
+  Is_True(trip_count_tn, ("trip_count_tn should not be NULL"));
+
+  OP *br_op = BB_branch_op(body);
+  Is_True(br_op && OP_cond(br_op), ("Missing loop exit branch"));
+
+  /* Now, update the test to use the trip_count_tn. */
+  TN *guard_br = OP_opnd(br_op, 0);
+  TN *target_br = OP_opnd(br_op, 1);
+  INT32 trip_size = TN_size(trip_count_tn);
+  TN *trip_count_iv;
+
+  if (TN_is_constant(trip_count_tn))
+    trip_count_iv = Gen_Register_TN(ISA_REGISTER_CLASS_integer, TN_size(trip_count_tn));
+  else
+    trip_count_iv = Build_TN_Like(trip_count_tn);
+  Set_TN_is_global_reg(trip_count_iv);
+
+  OPS prolog_ops = OPS_EMPTY;
+  Exp_Immediate(trip_count_iv, Gen_Literal_TN(0, trip_size), TRUE, &prolog_ops);
+  BB_Append_Ops(CG_LOOP_prolog, &prolog_ops);
+
+  GRA_LIVE_Add_Live_In_GTN(body, trip_count_iv);
+
+  OPS body_ops = OPS_EMPTY;
+  Exp_OP2(trip_size == 4 ? OPC_I4ADD : OPC_I8ADD,
+	  trip_count_iv,
+	  trip_count_iv,
+	  Gen_Literal_TN(1, trip_size),
+	  &body_ops);
+  Exp_OP3v(OPC_TRUEBR,
+	   NULL,
+	   target_br,
+	   trip_count_iv,
+	   trip_count_tn,
+	   trip_size == 4 ? V_BR_I4NE : V_BR_I8NE,
+	   &body_ops);
+
+  BB_Remove_Op(body, br_op);
+  BB_Append_Ops(body, &body_ops);
+
+  // Update loop info
+  CG_LOOP_DEF tn_def(body);
+  OP *op;
+  FOR_ALL_OPS_OPs(&body_ops, op) {
+    CG_LOOP_Init_Op(op);
+    for (INT i = 0; i < OP_results(op); i++) {
+      TN *res = OP_result(op,i);
+      if (TN_is_register(res) &&
+	  !TN_is_const_reg(res)) {
+	if (GTN_SET_MemberP(BB_live_in(CG_LOOP_epilog), res)) {
+	  Is_True(TN_is_global_reg(res), ("TN in GTN_SET not a global_reg."));
+
+	  if (!TN_is_dedicated(res))
+	    CG_LOOP_Backpatch_Add(CG_LOOP_epilog, res, res, 0);
+
+	  if (GTN_SET_MemberP(BB_live_in(body), res))
+	    if (!TN_is_dedicated(res))
+	      CG_LOOP_Backpatch_Add(CG_LOOP_prolog, res, res, 1);
+	}
+      }
+    }
+    for (INT opnd = 0; opnd < OP_opnds(op); opnd++) {
+      TN *tn = OP_opnd(op,opnd);
+      if (TN_is_register(tn) &&
+	  !TN_is_const_reg(tn)) {
+	OP *def_op = tn_def.Get(tn);
+	// TN is not an invariant and
+	// TN is not defined before this OP.
+	if (def_op && 
+	    !OP_Precedes(def_op, op)) {
+	  if ( !CG_LOOP_Backpatch_Find_Non_Body_TN(CG_LOOP_prolog, tn, 1) )
+	    if (!TN_is_dedicated(tn))
+	      CG_LOOP_Backpatch_Add(CG_LOOP_prolog, tn, tn, 1);
+	  Set_OP_omega(op, opnd, 1);
+	}
+      }
+    }
+  }
+}
+
+/* Insert peel iteration before loop prolog ? */
+static void
+Unroll_Peel_Loop(CG_LOOP &cl) {
+
+  LOOP_DESCR *loop = cl.Loop();
+  BB *body = LOOP_DESCR_loophead(loop);
+
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+  LOOPINFO *info = ANNOT_loopinfo(annot);
+  WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
+  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+
+  /* Check if a zero-trip guard around the peel code is needed. */
+  BB *guard_bb = NULL;
+
+  /* Check if a dynamic test on base alignment is needed. */
+  BB *check_bb = NULL;
+  if (cl.Peel_cond()) {
+    check_bb = CG_LOOP_prolog;
+    extend_prolog();
+  }
+
+  /* Generate the BB for the peel code. */
+  BB *peel_bb = CG_LOOP_prolog;
+  extend_prolog();
+
+  /* Generate a continuation label. */
+  LABEL_IDX continuation_lbl;
+  continuation_lbl = Gen_Label_For_BB(CG_LOOP_prolog);
+
+  if (cl.Peel_cond()) {
+
+    /* Requires a check to detect the alignment. */
+    TN *base_align = Build_TN_Like(cl.Peel_tn());
+    OPS check_ops = OPS_EMPTY;
+    Exp_OP2(OPC_U4BAND,
+	    base_align,
+	    cl.Peel_tn(),
+	    Gen_Literal_TN(7, TN_size(base_align)),
+	    &check_ops);
+    Exp_OP3v(OPC_TRUEBR,
+	     NULL,
+	     Gen_Label_TN(continuation_lbl,0),
+	     base_align,
+	     Gen_Literal_TN(cl.Peel_align(), TN_size(base_align)),
+	     V_BR_I4EQ,
+	     &check_ops);
+    BB_Append_Ops(check_bb, &check_ops);
+
+    Link_Pred_Succ_with_Prob(check_bb, CG_LOOP_prolog, 0.5);
+    Change_Succ_Prob(check_bb, BB_next(check_bb), 0.5);
+  }
+
+  /* Then, replicate one iteration of the loop, and fall-thru to the
+     loop prolog. */
+
+  OP *op;
+  FOR_ALL_BB_OPs(body, op) {
+
+    if (OP_br(op))
+      continue;
+
+    UINT8 opnd;
+    UINT8 res;
+    OP *new_op = Dup_OP(op);
+    Copy_WN_For_Memory_OP(new_op, op);
+
+    BB_Append_Op(peel_bb, new_op);
+  }
+
+  /* Then update the trip_count_tn. This will turn a constant
+     trip_count_tn into a non constant value if a check for dynamic
+     alignment was needed. */
+  if (check_bb && TN_is_constant(trip_count_tn)) {
+    TN *new_trip_count_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, TN_size(trip_count_tn));
+    /* add a copy in check_bb */
+    OPS ops = OPS_EMPTY;
+    Exp_Immediate(new_trip_count_tn, trip_count_tn, TRUE, &ops);
+    BB_Prepend_Ops(check_bb, &ops);
+    trip_count_tn = new_trip_count_tn;
+  }
+  
+  if (!TN_is_constant(trip_count_tn)) {
+    OPS ops = OPS_EMPTY;
+    INT32 trip_size = TN_size(trip_count_tn);
+    Exp_OP2(trip_size == 4 ? OPC_U4SUB : OPC_U8SUB,
+	    trip_count_tn,
+	    trip_count_tn,
+	    Gen_Literal_TN(1, trip_size),
+	    &ops);
+    BB_Append_Ops(peel_bb, &ops);
+  }
+  else
+    trip_count_tn = Gen_Literal_TN(TN_value(trip_count_tn)-1, TN_size(trip_count_tn));
+
+  /* Then, regenerate the test at the end of the loop body. */
+
+  LOOPINFO_trip_count_tn(info) = trip_count_tn;
+  Unroll_Update_Loop_Counter(cl);
+}
+#endif
+
+void
+CG_LOOP::Unroll_Specialize_Loop() {
+
+  LOOP_DESCR *loop = Loop();
+  BB *body = LOOP_DESCR_loophead(loop);
+
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+  LOOPINFO *info = ANNOT_loopinfo(annot);
+  WN *wn = LOOPINFO_wn(info);
+  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+
+  /* Insert a BB for alignement check before the loop */
+
+  BB *check_bb = CG_LOOP_prolog;
+  extend_prolog();
+
+  BB *special_prolog = CG_LOOP_prolog;
+
+  /* Before the loop epilog, create a goto_bb, a new prolog and a new
+     body for the general loop. */
+
+  BB *old_epilog = CG_LOOP_epilog;
+  extend_epilog(loop);
+
+  BB *general_body = CG_LOOP_epilog;
+  extend_epilog(loop);
+
+  BB *new_prolog = CG_LOOP_epilog;
+  extend_epilog(loop);
+
+  Unlink_Pred_Succ(CG_LOOP_epilog, new_prolog);
+
+  // Insert code in check_bb to check that all dynamic aligned streams
+  // are correctly aligned.
+  TN *or_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, 4);
+  TN *not_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, 4);
+  OPS ops = OPS_EMPTY;
+  for (int i=0; i < Special_streams(); i++) {
+    TN *tn1 = stream_tn[i];
+    if (stream_align[i] == 4) {
+      Exp_OP1(OPC_I4BNOT,
+	      not_tn,
+	      tn1,
+	      &ops);
+      tn1 = not_tn;
+    }
+    if (i == 0)
+      Exp_COPY(or_tn, tn1, &ops);
+    else
+      Exp_OP2(OPC_U4BIOR,
+	      or_tn,
+	      or_tn,
+	      tn1,
+	      &ops);
+  }
+  Exp_OP2(OPC_U4BAND,
+	  or_tn,
+	  or_tn,
+	  Gen_Literal_TN(4, 4),
+	  &ops);
+
+  TN *body_label_tn = Gen_Label_TN(Gen_Label_For_BB(new_prolog),0);
+  Exp_OP3v(OPC_TRUEBR,
+	   NULL,
+	   body_label_tn,
+	   or_tn,
+	   Zero_TN,
+	   V_BR_I4NE,
+	   &ops);
+  BB_Append_Ops(check_bb, &ops);
+  Link_Pred_Succ_with_Prob(check_bb, new_prolog, 0.5);
+  Change_Succ_Prob(check_bb, special_prolog, 0.5);
+
+  OP *op;
+  FOR_ALL_BB_OPs(body, op) {
+    UINT8 opnd;
+    UINT8 res;
+    OP *new_op = Dup_OP(op);
+    CGPREP_Init_Op(new_op);
+    CG_LOOP_Init_Op(new_op);
+    Copy_WN_For_Memory_OP(new_op, op);
+
+    if (OP_loh(op)) 
+      Set_OP_loh(new_op);
+
+    Set_OP_unrolling(new_op, OP_unrolling(op));
+    Set_OP_orig_idx(new_op, OP_map_idx(op));
+    Set_OP_unroll_bb(new_op, OP_unroll_bb(op));
+
+    for (opnd = 0; opnd < OP_opnds(op); opnd++)
+      Set_OP_omega(new_op, opnd, OP_omega(op, opnd));
+
+    BB_Append_Op(general_body, new_op);
+  }
+
+  op = BB_branch_op(general_body);
+  Set_OP_opnd(op,
+	      Branch_Target_Operand(op),
+	      Gen_Label_TN(Gen_Label_For_BB(general_body), 0));
+  Link_Pred_Succ_with_Prob(general_body, general_body,
+			   (WN_loop_trip_est(wn) - 1.0) /
+			   WN_loop_trip_est(wn));
+  Change_Succ_Prob(general_body, old_epilog, 1.0-((WN_loop_trip_est(wn) - 1.0) / WN_loop_trip_est(wn)));
+
+  // Append a goto to the epilog in goto_bb.
+  Add_Goto(CG_LOOP_epilog, old_epilog);
+}
+
 
 
 void unroll_rename_backpatches(CG_LOOP_BACKPATCH *bpatches, UINT16 n,
@@ -4708,6 +5061,11 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 		       "Unroll_Do_Loop: Before unrolling BB:%d %d times:",
 		       BB_id(LOOP_DESCR_loophead(loop)), ntimes);
 
+  if (Get_Trace(TP_CGLOOP, 0x10)) {
+    if (cl.Even_factor() && (ntimes&1))
+      fprintf(stdout, "<packing> Not even unroll factor (%d)\n", ntimes);
+  }
+
   BB *head = LOOP_DESCR_loophead(loop);
   TN *trip_count_tn = CG_LOOP_Trip_Count(loop);
   BB *unrolled_body;
@@ -4826,17 +5184,28 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 
 #ifdef TARG_ST
     BOOL remainder_after = CG_LOOP_unroll_remainder_after;
-    if (remainder_after) {
+    if (remainder_after || cl.Remainder_after()) {
       remainder_after = Check_remainder_after(unrolled_body, cl.Trip_count_bb(), trip_count_tn, ntimes);
-      if (!remainder_after)
+      if (!remainder_after) {
 	DevWarn("unroll_make_remainder_loop: remainder loop could not be put after unrolled loop");
+	cl.Reset_special_stream();
+      }
     }
+
+    /* TBD: Insert peeled body if necessary. Be careful if remainder
+       cannot be put after the loop. */
+
     // Pass new loop head and remainder_after flag.
     Unroll_Make_Remainder_Loop(cl, ntimes, remainder_trip_count_val, unrolled_body, remainder_after);
 #else
     Unroll_Make_Remainder_Loop(cl, ntimes);
 #endif
   }
+#ifdef TARG_ST
+  /* TBD: Insert peeled body if necessary. Be careful if remainder
+     cannot be put after the loop. */
+
+#endif
 
   /* Update loop descriptor for unrolled loop */
   LOOP_DESCR_loophead(loop) = unrolled_body;
@@ -5503,6 +5872,14 @@ void CG_LOOP::Determine_Unroll_Factor()
     if (!pragma_unroll) {
       while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
 	ntimes--;
+      if (Even_factor() && (ntimes&1)) {
+	if (ntimes > 1 || ((CG_LOOP_load_store_packing&0x20) != 0)) {
+	  if (Get_Trace(TP_CGLOOP, 0x10)) {
+	    fprintf(stdout, "<packing> Making unroll factor even (%d)\n", ntimes);
+	  }
+	  ntimes ++;
+	}
+      }
     }
     Set_unroll_factor(ntimes);
 
@@ -5587,6 +5964,14 @@ void CG_LOOP::Determine_Unroll_Factor()
       // unroll factor says unrolling is profitable.
       if ((CG_LOOP_unroll_heuristics & UNROLL2_HEURISTIC) && (ntimes == 1) && (Unroll_sched_est() > 1)) {
 	ntimes = 2;
+      }
+      if (Even_factor() && (ntimes&1) && !pragma_unroll) {
+	if (ntimes > 1 || ((CG_LOOP_load_store_packing&0x20) != 0)) {
+	  if (Get_Trace(TP_CGLOOP, 0x10)) {
+	    fprintf(stdout, "<packing> Making unroll factor even (%d)\n", ntimes);
+	  }
+	  ntimes ++;
+	}
       }
 #endif
       Set_unroll_factor(ntimes);
@@ -6423,6 +6808,18 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       //      cg_loop.Recompute_Liveness();
 
 #ifdef TARG_ST
+      BOOL can_be_packed = FALSE;
+      if (CG_LOOP_load_store_packing)
+	can_be_packed = Analyze_Load_Store_Packing(cg_loop);
+
+      if (CG_LOOP_unroll_remainder_after || cg_loop.Remainder_after())
+	Unroll_Update_Loop_Counter(cg_loop);
+
+      if (cg_loop.Peel_stream())
+	Unroll_Peel_Loop(cg_loop);
+#endif
+
+#ifdef TARG_ST
       // FdF 20060207: Use scheduling estimate to adjust the unrolling
       // factor
       cg_loop.Determine_Sched_Est_Unroll_Factor();
@@ -6452,22 +6849,35 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
-    }
 
-    if (CG_LOOP_load_store_packing) { 
-      CG_LOOP cg_loop(loop);
-      if (!cg_loop.Has_prolog_epilog()) 
-	return FALSE;
-      cg_loop.Build_CG_LOOP_Info();
-      Perform_Load_Packing(loop);
+#ifdef TARG_ST200
+      if (can_be_packed && !cg_loop.Unroll_fully()) { 
+	//	CG_LOOP_prolog = cg_loop.Prolog_start();
+	//	CG_LOOP_epilog = cg_loop.Epilog_end();
+	//	cg_loop.Build_CG_LOOP_Info();
+	/* With flag 0x8, only perform loop transformation, but do not
+	   actually perform loop packing. */
+	if ((CG_LOOP_load_store_packing&0x8) == 0) {
+	  // Perform loop specialization before loop packing. Loop
+	  // specialization can be performed even if loop unrolling is
+	  // not performed (even_factor was not necessary).
+	  if (cg_loop.Special_streams() > 0) {
+	    // Duplicate the loop body, then add checks to select the
+	    // normal or the to be packed loop version.
+	    cg_loop.Unroll_Specialize_Loop();
+	    cg_loop.Recompute_Liveness();
+	  }
+	  Perform_Load_Store_Packing(cg_loop);
+	}
 
-      cg_loop.Recompute_Liveness();
-      Induction_Variables_Removal(cg_loop, 
-				  true/*delete*/, 
-				  true/*keep prefetch*/,
-				  trace_loop_opt);
-      cg_loop.Recompute_Liveness();
-      CG_LOOP_Remove_Notations(loop, CG_LOOP_prolog, CG_LOOP_epilog);
+	cg_loop.Recompute_Liveness();
+	Induction_Variables_Removal(cg_loop, 
+				    true/*delete*/, 
+				    true/*keep prefetch*/,
+				    trace_loop_opt);
+	cg_loop.Recompute_Liveness();
+      }
+#endif
     }
 
     break;
@@ -6753,6 +7163,3 @@ void Perform_Loop_Optimizations()
 
   Free_Dominators_Memory ();
 }
-
-
-

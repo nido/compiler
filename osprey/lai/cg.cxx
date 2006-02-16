@@ -77,6 +77,9 @@
 #include "lra.h"
 #include "cgemit.h"
 #include "cg_loop.h"
+#ifdef TARG_ST
+#include "cg_ivs.h"
+#endif
 #include "loop_invar_hoist.h"
 #include "glob.h"
 #include "cgexp.h"

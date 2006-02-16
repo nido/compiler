@@ -78,6 +78,8 @@
 
 #ifdef TARG_ST
 #include "config_TARG.h"	// for Enable_64_Bits_Ops
+#include "cg_flags.h"  // for GRA_LIVE_Phase_Invoked
+#include "gra_live.h"
 #endif
 
 #ifdef TARG_ST
@@ -1385,7 +1387,7 @@ TN_Reaching_Value_At_Op(
     }
 
     if (bb) {
-      /* used to simplify from here:
+      /* used to simplify from here:*/
       BB *new_bb = NULL;
       if (GRA_LIVE_Phase_Invoked) {
 	BBLIST *edge;
@@ -1397,6 +1399,9 @@ TN_Reaching_Value_At_Op(
 	  FOR_ALL_BB_PREDS(bb, edge) {
 	    cur_bb = BBLIST_item(edge);
 	    if (cur_bb == bb) continue;	// ignore self predecessor
+#ifdef TARG_ST
+	    if (!BB_bbregs(cur_bb)) continue;
+#endif
 	    BOOL live_out = GRA_LIVE_TN_Live_Outof_BB(tn, cur_bb);
 	    val_cnt += (live_out) ? 1 : 0;
 	    val_bb = (live_out) ? cur_bb : val_bb;
@@ -1405,6 +1410,9 @@ TN_Reaching_Value_At_Op(
 	  FOR_ALL_BB_SUCCS(bb, edge) {
 	    cur_bb = BBLIST_item(edge);
 	    if (cur_bb == bb) continue;	// ignore self successor
+#ifdef TARG_ST
+	    if (!BB_bbregs(cur_bb)) continue;
+#endif
 	    BOOL live_in = GRA_LIVE_TN_Live_Into_BB(tn, cur_bb);
 	    val_cnt += (live_in) ? 1 : 0;
 	    val_bb = (live_in) ? cur_bb : val_bb;

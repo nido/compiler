@@ -462,7 +462,8 @@ extern BOOL CG_LOOP_unroll_do_unwind;
 extern BOOL CG_LOOP_unroll_remainder_after;
 extern BOOL CG_LOOP_unroll_multi_bb;
 extern INT32 CG_LOOP_unroll_heuristics;
-extern BOOL CG_LOOP_load_store_packing;
+extern INT32 CG_LOOP_load_store_packing;
+extern INT32 CG_LOOP_stream_align;
 #endif
 /* Exported functions.
  */
@@ -556,6 +557,12 @@ private:
   BOOL        unroll_fully;
 #ifdef TARG_ST
   INT32	      unroll_sched_est;
+  BOOL	      even_factor; // Unroll the loop an even number of times, for packing
+  BOOL	      remainder_after; // Put remainder loop after the unrolled loop, for packing
+  INT	      special_streams; // -1 means cond peeling, -2 means uncond peeling, 1..4 means specialization.
+  OP *        stream_op[4];    // Load or store operation that represents the peeled stream.
+  TN *	      stream_tn[4];    // TN that must be checked and modified for alignment
+  INT32	      stream_align[4]; // Alignment expected after loop peeling
 #endif
   INT32       unroll_factor;
   OP_MAP      op_map;
@@ -588,11 +595,41 @@ public:
   BOOL Single_BB() const          { return BB_SET_Size(LOOP_DESCR_bbset(loop)) == 1; }
   BOOL Unroll_fully() const       { return unroll_fully; }
   void Set_unroll_fully()         { unroll_fully = TRUE; }
+  void Reset_unroll_fully()         { unroll_fully = FALSE; }
   INT32 Unroll_factor() const     { return unroll_factor; }
   void Set_unroll_factor(INT32 n) { unroll_factor = n; }
 #ifdef TARG_ST
+  BOOL Even_factor()		  { return even_factor; }
+  void Set_even_factor()	  { even_factor = TRUE; }
+  void Reset_even_factor()	  { even_factor = FALSE; }
+  BOOL Remainder_after()	  { return remainder_after; }
+  void Set_remainder_after()	  { remainder_after = TRUE; }
+  void Reset_remainder_after()	  { remainder_after = FALSE; }
   INT32 Unroll_sched_est() const  { return unroll_sched_est; }
   void Set_unroll_sched_est(INT32 n) { unroll_sched_est = n; }
+  OP *Peel_op() const	  	  { return stream_op[0]; }
+  void Set_peel_op(OP *op)	  { stream_op[0] = op; }
+  TN *Peel_tn() const	  	  { return stream_tn[0]; }
+  void Set_peel_tn(TN *tn)	  { stream_tn[0] = tn; }
+  void Set_peel_stream(BOOL cond) { special_streams = (cond) ? -1 : -2; }
+  BOOL Peel_stream()              { return (special_streams < 0); }
+  BOOL Peel_cond()                { return (special_streams == -1); }
+  BOOL Specialize_streams()       { return (special_streams > 0); }
+  void Reset_special_stream()        { special_streams = 0; }
+  INT32 Special_streams()         { return special_streams; }
+  void Set_special_streams(INT32 n) { special_streams = n; }
+  INT32 Peel_align() const	  { return stream_align[0]; }
+  void Set_peel_align(INT32 n)    { stream_align[0] = n; }
+  OP * Special_stream_op(INT32 i) { return stream_op[i]; }
+  INT32 Special_stream_align(INT32 i) { return stream_align[i]; }
+  
+  void Push_special_stream(OP *op, TN* tn, INT32 aligned) {
+    stream_op[special_streams] = op;
+    stream_tn[special_streams] = tn;
+    stream_align[special_streams] = aligned;
+    special_streams ++;
+  }
+  
 #endif
 
   void Recompute_Liveness();
@@ -600,6 +637,7 @@ public:
   INT32 Get_Unroll_Times(ANNOTATION *&);
 #ifdef TARG_ST
   void Determine_Sched_Est_Unroll_Factor();
+  void Unroll_Specialize_Loop();
 #endif
   void Determine_Unroll_Factor();
   void Determine_SWP_Unroll_Factor();
