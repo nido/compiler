@@ -53,13 +53,18 @@
 //  INT Lookup_Op(OP *op);
 //    Returns an ID for an OP in the LOOP_IVS instance.
 //
-//  DefID_t Get_IV_cycle(OP *op, INT opnd_idx, INT *offset);
-//    Returns an ID for an Induction Variable. Initializes offset to
-//    be the constant value from this use to the value of the IV at
-//    the beginnning of a loop iteration.
+//  DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
+//    Returns an ID for an Induction Variable. 
 //
-//  void Get_IV_desc(DefID_t iv_cycle, TN **step, OP **init);
-//    Get the step and the init operation for an IV
+//  INT OPND_IV_offset(INT op_idx, INT opnd_idx);
+//    Initializes offset to be the constant value from this use to the
+//    value of the IV at the beginnning of a loop iteration.
+//
+//  INT IV_step(DefID_t iv_cycle);
+//    Get the step of an IV
+//
+//  OP *IV_init(DefID_t iv_cycle);
+//    Get the init operation of an IV
 //
 //  void Trace_IVs_Entries(const char *message);
 //    Dump some traces for an LOOP_IVS instance.
@@ -137,9 +142,9 @@ class LOOP_IVS {
   OP *Op(INT op_idx) {
     return ((op_idx > 0) && (op_idx < ivs_count)) ? ivs_table[op_idx].op : NULL;
   }
-
+#if 0
   INT Lookup_Op(OP *op);
-
+#endif
   DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
   INT OPND_IV_offset(INT op_idx, INT opndx_idx);
   INT IV_step(DefID_t iv_cycle);

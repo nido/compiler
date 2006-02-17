@@ -72,9 +72,4 @@
 
 extern BOOL Perform_Read_Write_Removal( LOOP_DESCR *loop );
 
-#ifdef TARG_ST
-BOOL Analyze_Load_Store_Packing( CG_LOOP &cg_loop );
-BOOL Perform_Load_Store_Packing( CG_LOOP &cg_loop );
-#endif
-
 #endif /* cio_rwtran_INCLUDED */

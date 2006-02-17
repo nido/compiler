@@ -5063,7 +5063,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 
   if (Get_Trace(TP_CGLOOP, 0x10)) {
     if (cl.Even_factor() && (ntimes&1))
-      fprintf(stdout, "<packing> Not even unroll factor (%d)\n", ntimes);
+      fprintf(TFile, "<packing> Not even unroll factor (%d)\n", ntimes);
   }
 
   BB *head = LOOP_DESCR_loophead(loop);
@@ -5875,7 +5875,7 @@ void CG_LOOP::Determine_Unroll_Factor()
       if (Even_factor() && (ntimes&1)) {
 	if (ntimes > 1 || ((CG_LOOP_load_store_packing&0x20) != 0)) {
 	  if (Get_Trace(TP_CGLOOP, 0x10)) {
-	    fprintf(stdout, "<packing> Making unroll factor even (%d)\n", ntimes);
+	    fprintf(TFile, "<packing> Making unroll factor even (%d)\n", ntimes);
 	  }
 	  ntimes ++;
 	}
@@ -5968,7 +5968,7 @@ void CG_LOOP::Determine_Unroll_Factor()
       if (Even_factor() && (ntimes&1) && !pragma_unroll) {
 	if (ntimes > 1 || ((CG_LOOP_load_store_packing&0x20) != 0)) {
 	  if (Get_Trace(TP_CGLOOP, 0x10)) {
-	    fprintf(stdout, "<packing> Making unroll factor even (%d)\n", ntimes);
+	    fprintf(TFile, "<packing> Making unroll factor even (%d)\n", ntimes);
 	  }
 	  ntimes ++;
 	}
@@ -6810,7 +6810,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #ifdef TARG_ST
       BOOL can_be_packed = FALSE;
       if (CG_LOOP_load_store_packing)
-	can_be_packed = Analyze_Load_Store_Packing(cg_loop);
+	can_be_packed = IVS_Analyze_Load_Store_Packing(cg_loop);
 
       if (CG_LOOP_unroll_remainder_after || cg_loop.Remainder_after())
 	Unroll_Update_Loop_Counter(cg_loop);
@@ -6867,7 +6867,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 	    cg_loop.Unroll_Specialize_Loop();
 	    cg_loop.Recompute_Liveness();
 	  }
-	  Perform_Load_Store_Packing(cg_loop);
+	  IVS_Perform_Load_Store_Packing(cg_loop);
 	}
 
 	cg_loop.Recompute_Liveness();

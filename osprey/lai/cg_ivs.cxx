@@ -78,45 +78,26 @@ static const char rcs_id[] = "";
 #include "stblock.h" // for ST_alignment
 #endif
 
+// ======================================================================
+//
+//  Implementation of the interface for class LOOP_IVS, defined in cg_ivs.h
+//
+// ======================================================================
+
 // TBD: Traiter les multi BB en inserant les operations qui
 // definissent des GTN et qui ne sont pas sur des dominateurs de la
 // queue de boucle sous forme de KILL.
 
-INT
-LOOP_IVS::Lookup_Op(OP *op)
-{
-
-  // TBD: Does not work when some operations have been removed from
-  // the BB since the creation of ivs_table
-  // Assumes table[0] is not used
-  INT left  = 1;
-  INT right = ivs_count-1;
-  while ( left <= right ) {
-    INT middle = ( left + right ) / 2;
-    OP *middle_op = ivs_table[middle].op;
-    if ( op == middle_op )
-      return middle;
-    if ( OP_Precedes( op, middle_op ) )
-      right = middle - 1;
-    else
-      left = middle + 1;
-  }
-  return 0;
-}
-
 // For a TN used in an operation, returns the Induction Variable from
-// which it is derived. Returns 0 if not derived from an IV. If
-// *offset is not NULL, sets the offset from the value of the IV at
-// loop entry to this use.
-
+// which it is derived. Returns 0 if not derived from an IV.
 DefID_t
 LOOP_IVS::OPND_IV_cycle(INT op_idx, INT opnd_idx) {
   Is_True(op_idx > 0, ("Calling OPND_IV_cycle with an invalid op."));
-  int defidx = Find_IV(op_idx, opnd_idx);
-
-  return defidx;
+  return Find_IV(op_idx, opnd_idx);
 }
 
+// For a TN used in an operation, returns theoffset from the value of
+// the IV at loop entry to this use.
 INT
 LOOP_IVS::OPND_IV_offset(INT op_idx, INT opnd_idx) {
   Is_True(op_idx > 0, ("Calling OPND_IV_offset with an invalid op."));
@@ -126,12 +107,15 @@ LOOP_IVS::OPND_IV_offset(INT op_idx, INT opnd_idx) {
     return IV_offset(OPND_defid(op_idx, opnd_idx));
 }
 
+// For an induction variable, returns its step
 INT
 LOOP_IVS::IV_step(DefID_t iv_cycle) {
   Is_True(IV_cycle(iv_cycle) == iv_cycle, ("Calling IV_step on a non IV-representative op"));
   return IV_offset(iv_cycle);
 }
 
+// For an induction variable, returns its defining operation, if
+// found, outside of the loop.
 OP *
 LOOP_IVS::IV_init(DefID_t iv_cycle) {
   Is_True(iv_cycle > 0, ("Calling IV_init with an invalid IV."));
@@ -372,6 +356,44 @@ void LOOP_IVS::Init( BB *body )
   Init_IVs_Table(BB_first_op( body ), tn_last_op);
 }
 
+// ======================================================================
+//
+//  End of the implementation of the interface for class LOOP_IVS
+//
+// ======================================================================
+
+#if 0
+// ======================================================================
+//
+//  Implementation example for optimizations based on loop induction
+//  variables
+//
+// ======================================================================
+
+#if 0
+INT
+LOOP_IVS::Lookup_Op(OP *op)
+{
+
+  // TBD: Does not work when some operations have been removed from
+  // the BB since the creation of ivs_table
+  // Assumes table[0] is not used
+  INT left  = 1;
+  INT right = ivs_count-1;
+  while ( left <= right ) {
+    INT middle = ( left + right ) / 2;
+    OP *middle_op = ivs_table[middle].op;
+    if ( op == middle_op )
+      return middle;
+    if ( OP_Precedes( op, middle_op ) )
+      right = middle - 1;
+    else
+      left = middle + 1;
+  }
+  return 0;
+}
+#endif
+
 static void
 Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
 
@@ -448,19 +470,22 @@ void Perform_Induction_Variables_Optimizations() {
 
   Free_Dominators_Memory ();
 }
-
+#endif
 
 #ifdef TARG_ST200
 
 // ======================================================================
 //
-//  Perform_Load_Packing looks for ldw instructions that access
-//  consecutive words in memory and pack them into ldp instructions.
-//  It will generate code to handle dynamic alignment, or will produce
-//  more efficient code when the alignment is known at compile time.
+//  An implementation of load-store packing based on the loop
+//  induction variable module.
+//
+//  Perform_Load_Store_Packing looks for ldw and stw instructions that
+//  access consecutive words in memory and pack them respectively into
+//  ldp and stp instructions.  It will generate code to handle dynamic
+//  alignment, or will produce more efficient code when the alignment
+//  is known at compile time.
 //
 // ======================================================================
-
 
 static
 LOOPDEP Get_Loopdep_Kind(BB *bb) {
@@ -701,7 +726,7 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
     else {
       base_alignment = ST_alignment(base_sym);
     }
-    //    fprintf(stdout, "alignment(=%d), ", base_alignment);
+    //    fprintf(TFile, "alignment(=%d), ", base_alignment);
   }
 
   /* aligned_memop:
@@ -736,11 +761,9 @@ Generate_Select_Or_Copy (
     Expand_Select(dest_tn, cond_tn, true_tn, false_tn, MTYPE_I4, FALSE, ops); 
 }
 
-// Code taken from CICSE_Transform
-
-// Candidate_Memory_t
-
 /*
+  Candidate_Memory_t
+
   - index is the index of this memory op in the Pack32_entry table.
   - offset is the offset from this memory op to the value of the
      induction variable it is based on at the beginning of an
@@ -805,7 +828,7 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
   INT memop_count = memop_table[0].count;
 
   if (Get_Trace(TP_CGLOOP, 0x10))
-      fprintf(stdout, "<ivs packing> Combine adjacent %d Loads\n", memop_count);
+      fprintf(TFile, "<ivs packing> Combine adjacent %d Loads\n", memop_count);
 
   int load_index = memop_table[0].index;
   OP *load_op = loop_ivs->Op(load_index);
@@ -985,7 +1008,7 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 	  // is used. This is unsafe though.
 	  if (Get_Loopdep_Kind(body) != 0) {
 	    if (Get_Trace(TP_CGLOOP, 0x10) && candidate_index == 0)
-	      fprintf(stdout, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
+	      fprintf(TFile, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
 	    Set_OP_unroll_bb(new_op, OP_unroll_bb(load1_op));
 	    Set_OP_unrolling(new_op, OP_unrolling(load1_op));
 	    Set_OP_orig_idx(new_op, OP_map_idx(load1_op));
@@ -1116,7 +1139,7 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 	       ( "Combine_Adjacent_Stores: Illegal alignment for store operation" ) );
 
   if (Get_Trace(TP_CGLOOP, 0x10))
-    fprintf(stdout, "<ivs packing> Combine adjacent %d Stores\n", memop_count);
+    fprintf(TFile, "<ivs packing> Combine adjacent %d Stores\n", memop_count);
 
   // Get the offset of the value of IV_addr_tn at the entry of the
   // loop to the effective address of the first store operation.
@@ -1195,7 +1218,7 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 	  // is used. This is unsafe though.
 	  if (Get_Loopdep_Kind(body) != 0) {
 	    if (Get_Trace(TP_CGLOOP, 0x10) && candidate_index == 0)
-	      fprintf(stdout, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
+	      fprintf(TFile, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
 	    Set_OP_unroll_bb(new_op, OP_unroll_bb(store1_op));
 	    Set_OP_unrolling(new_op, OP_unrolling(store1_op));
 	    Set_OP_orig_idx(new_op, OP_map_idx(store1_op));
@@ -1525,12 +1548,12 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       candidate_stream += memop_count;
   }
 
-  //  fprintf(stdout, "32 bit Packing = {");
+  //  fprintf(TFile, "32 bit Packing = {");
   for ( candidate_stream = memop_table;
 	candidate_stream->count > 0;
 	candidate_stream += candidate_stream->count ) {
 
-    //    fprintf(stdout, "%d, ", memop_count);
+    //    fprintf(TFile, "%d, ", memop_count);
 
     if ((candidate_stream->alignment == -1) &&
 	cg_loop.Peel_stream()) {
@@ -1545,7 +1568,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 	candidate_stream->alignment = (cg_loop.Peel_align()+candidate_stream->offset)&4;
 	candidate_stream->aligned = 1; /* Peeling always aligns the stream. */
 	if (Get_Trace(TP_CGLOOP, 0x10)) {
-	  fprintf(stdout, "<ivs packing> Using static alignment %d after loop peeling.\n", candidate_stream->alignment);
+	  fprintf(TFile, "<ivs packing> Using static alignment %d after loop peeling.\n", candidate_stream->alignment);
 	}
       }
     }
@@ -1560,7 +1583,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 	  candidate_stream->alignment = (cg_loop.Special_stream_align(idx)+candidate_stream->offset)&4;
 	  candidate_stream->aligned = 1; /* Specialization always aligns the stream. */
 	  if (Get_Trace(TP_CGLOOP, 0x10)) {
-	    fprintf(stdout, "<ivs packing> Using static alignment %d after loop specialization.\n", candidate_stream->alignment);
+	    fprintf(TFile, "<ivs packing> Using static alignment %d after loop specialization.\n", candidate_stream->alignment);
 	  }
 	  break;
 	}
@@ -1581,7 +1604,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     if (OP_load(loop_ivs->Op(candidate_stream->index))) {
       if (Get_Trace(TP_CGLOOP, 0x10)) {
 	const char *align_kind = (candidate_stream->alignment == -1) ? "select" : "static";
-	fprintf(stdout, "<ivs packing> Load stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
+	fprintf(TFile, "<ivs packing> Load stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
       }
       if (Combine_Adjacent_Loads(loop_ivs, candidate_stream)) {
 	load_stream_count ++;
@@ -1590,7 +1613,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     }
     else {
       if (Get_Trace(TP_CGLOOP, 0x10)) {
-	fprintf(stdout, "<ivs packing> Store stream, %d memops, alignment static(%d)\n", candidate_stream->count, candidate_stream->alignment);
+	fprintf(TFile, "<ivs packing> Store stream, %d memops, alignment static(%d)\n", candidate_stream->count, candidate_stream->alignment);
       }
       if (Combine_Adjacent_Stores(loop_ivs, candidate_stream)) {
 	store_stream_count ++;
@@ -1599,10 +1622,10 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     }
   }
 
-  //  fprintf(stdout, "}\n");
+  //  fprintf(TFile, "}\n");
   if (Get_Trace(TP_CGLOOP, 0x10)) {
-    fprintf(stdout, "<ivs packing> after unrolling Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
-    fprintf(stdout, "<ivs packing> latency_II %d, resource_II %d %s(memop=%d)\n", latency_II, resource_II, (mem_cnt == resource_II) ? "(memory bounded)" : "", mem_cnt);
+    fprintf(TFile, "<ivs packing> after unrolling Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
+    fprintf(TFile, "<ivs packing> latency_II %d, resource_II %d %s(memop=%d)\n", latency_II, resource_II, (mem_cnt == resource_II) ? "(memory bounded)" : "", mem_cnt);
 
     mem_cnt = 0;
     load_cnt = 0;
@@ -1624,7 +1647,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     }
     resource_II = CG_SCHED_EST_Resource_Cycles(se);
 
-    fprintf(stdout, "<ivs packing> new_latency_II %d, new_resource_II %d %s(memop=%d)\n", latency_II, resource_II, (mem_cnt == resource_II) ? "(memory bounded)" : "", mem_cnt);
+    fprintf(TFile, "<ivs packing> new_latency_II %d, new_resource_II %d %s(memop=%d)\n", latency_II, resource_II, (mem_cnt == resource_II) ? "(memory bounded)" : "", mem_cnt);
   }
 
   return packing_done;
@@ -1681,7 +1704,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
       if (Get_Trace(TP_CGLOOP, 0x10)) {
 	const char *align_kind = (candidate_stream->alignment == -1) ? "select" : "static";
-	fprintf(stdout, "<ivs packing> Load stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
+	fprintf(TFile, "<ivs packing> Load stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
       }
 
     }
@@ -1694,7 +1717,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
       if (Get_Trace(TP_CGLOOP, 0x10)) {
 	const char *align_kind = (candidate_stream->aligned == 1) ? "static" : "discard";
-	fprintf(stdout, "<ivs packing> Store stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
+	fprintf(TFile, "<ivs packing> Store stream, %d memops, alignment %s(%d)\n", candidate_stream->count, align_kind, candidate_stream->alignment);
       }
 
     }
@@ -1746,7 +1769,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
     if (dynamic_streams > 4) {
       if (Get_Trace(TP_CGLOOP, 0x10))
-	fprintf(stdout, "<ivs packing> Specialization cannot be applied on loops with more than 4(%d) dynamic streams.\n", dynamic_streams);
+	fprintf(TFile, "<ivs packing> Specialization cannot be applied on loops with more than 4(%d) dynamic streams.\n", dynamic_streams);
     }
     // Otherwise, mark the loop for specialization
     else
@@ -1770,7 +1793,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   if ((doPeeling || doSpecialize) && (loop_iter <= 16)) {
     if (Get_Trace(TP_CGLOOP, 0x10)) {
       const char *text = doPeeling ? "Peeling" : "Specialization";
-      fprintf(stdout, "<ivs packing> %s cannot be applied on loops with less or equal to 16 iterations.\n", text);
+      fprintf(TFile, "<ivs packing> %s cannot be applied on loops with less or equal to 16 iterations.\n", text);
     }
   }
   else if (doPeeling) {
@@ -1802,7 +1825,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   }
   else if (doSpecialize) {
 
-    fprintf(stdout, "Loop can be specialized\n");
+    fprintf(TFile, "Loop can be specialized\n");
     
     for (candidate_stream = memop_table;
 	 candidate_stream->count > 0;
@@ -1867,9 +1890,9 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
   if (Get_Trace(TP_CGLOOP, 0x10)) {
     if (cg_loop.Even_factor()) {
-      fprintf(stdout, "<ivs packing> Loop requires even unroll factor\n");
+      fprintf(TFile, "<ivs packing> Loop requires even unroll factor\n");
     }
-    fprintf(stdout, "<ivs packing> before unrolling: Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
+    fprintf(TFile, "<ivs packing> before unrolling: Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
   }
 
   return TRUE;
