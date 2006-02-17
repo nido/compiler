@@ -6,7 +6,6 @@
 
 
 
-
 /*
   ConfigureRegionType -- enumerates the ConfigureRegionType types.
 */
@@ -26,7 +25,6 @@ extern const char *
 ConfigureRegionType_NAME_[];
 #define ConfigureRegionType_NAME_(type) ConfigureRegionType_NAME_[type]
 
-
 /*
   ConfigureSchedKind -- Enumeration of the scheduling kinds.
 */
@@ -41,7 +39,6 @@ typedef uint8_t short_ConfigureSchedKind;
 extern const char *
 ConfigureSchedKind_NAME_[];
 #define ConfigureSchedKind_NAME_(type) ConfigureSchedKind_NAME_[type]
-
 
 /*
   ConfigureAllocKind -- Enumeration of the allocation kinds.
@@ -59,7 +56,6 @@ extern const char *
 ConfigureAllocKind_NAME_[];
 #define ConfigureAllocKind_NAME_(type) ConfigureAllocKind_NAME_[type]
 
-
 /*
   ConfigureRenaming -- Enumeration of the renaming levels.
 */
@@ -75,7 +71,6 @@ extern const char *
 ConfigureRenaming_NAME_[];
 #define ConfigureRenaming_NAME_(type) ConfigureRenaming_NAME_[type]
 
-
 /*
   ConfigureStackModel -- Stack frame model.
 */
@@ -89,7 +84,6 @@ typedef uint8_t short_ConfigureStackModel;
 extern const char *
 ConfigureStackModel_NAME_[];
 #define ConfigureStackModel_NAME_(type) ConfigureStackModel_NAME_[type]
-
 
 /*
   ConfigureLoopDep -- Loop dependence model.
@@ -106,7 +100,6 @@ typedef uint8_t short_ConfigureLoopDep;
 extern const char *
 ConfigureLoopDep_NAME_[];
 #define ConfigureLoopDep_NAME_(type) ConfigureLoopDep_NAME_[type]
-
 
 /*
   ConfigureItem -- Enumerate the Configure items.
@@ -163,7 +156,6 @@ extern const char *
 ConfigureItem_NAME_[];
 #define ConfigureItem_NAME_(type) ConfigureItem_NAME_[type]
 
-
 /*
   DependenceKind -- Enumerates the Dependence kinds.
 */
@@ -193,7 +185,6 @@ DependenceKind_NAME_[];
 #define DependenceKind_mayAdjust(type) ((type) <= DependenceKind_WAW)
 #define DependenceKind_mayRefine(type) ((type) <= DependenceKind_Spill)
 #define DependenceKind_isActive(type) ( (type) >= DependenceKind_RAW && (type) <= DependenceKind_Link )
-
 
 
 
