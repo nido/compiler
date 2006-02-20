@@ -107,7 +107,8 @@ lao_init(void) {
     lao_handler = load_so("lao"SO_EXT, CG_Path, 0);
     LAI_getInstance_p = (LAI_Interface (*)(void))dlsym(lao_handler, "LAI_getInstance");
     LAI_instance = (*LAI_getInstance_p)();
-    FmtAssert(LAI_Interface_size(LAI_instance) == sizeof(LAI_Interface_), ("LAI_Instance mistmatch"));
+    FmtAssert(LAI_Interface_size(LAI_instance) == sizeof(LAI_Interface_),
+              ("LAI_Interface mistmatch"));
     // Initialize LAI Interface
     LAI_Interface_Initialize();
     interface = LAI_Interface_getInstance();
@@ -115,6 +116,24 @@ lao_init(void) {
     LIR_CGIR_callback_init(callback);
     // Initialize the target dependent LIR<->CGIR interface
     CGIR_LAI_Init();
+    // Initialize the LAO register latencies with Open64 values.
+    LAI_Processor processor = CGIR_IS_to_Processor(ISA_SUBSET_Value);
+    for (int op = 0; op < TOP_UNDEFINED; op++) {
+      TOP top = (TOP)op;
+      if (TOP_is_dummy(top) || TOP_is_var_opnds(top)) continue;
+      if (!ISA_SUBSET_Member(ISA_SUBSET_Value, top)) continue;
+      LAI_Operator lai_operator = CGIR_TOP_to_Operator(top);
+      int opnds = TOP_fixed_opnds(top);
+      for (int opnd = 0; opnd < opnds; opnd++) {
+        int stage = TI_LATENCY_Operand_Access_Cycle(top, opnd);
+        LAI_Interface_setArgStage(interface, processor, lai_operator, opnd, stage);
+      }
+      int results = TOP_fixed_results(top);
+      for (int result = 0; result < results; result++) {
+        int stage = TI_LATENCY_Result_Available_Cycle(top, result);
+        LAI_Interface_setResStage(interface, processor, lai_operator, result, stage);
+      }
+    }
   }
 }
 

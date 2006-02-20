@@ -4484,10 +4484,10 @@ RegisterSet_pretty(const_RegisterSet this, FILE *file);
   RegisterAction -- Action on a Register for scoreboarding and bundling.
 */
 struct RegisterAction_ {
-  short_RegClass REGCLASS;
-  short_Register REGISTER;
-  int8_t RANK;
-  int8_t STAGE;
+  short_RegClass REGCLASS; // RegClass of the Register.
+  int8_t XXXINDEX; // Index of argument or result.
+  int8_t RANK; // Operand rank in Operands.
+  int8_t STAGE; // Access stage in the pipeline.
 };
 typedef struct RegisterAction_ RegisterAction_, *RegisterAction;
 typedef const struct RegisterAction_ *const_RegisterAction;
@@ -4495,8 +4495,8 @@ typedef struct RegisterAction_ * restrict_RegisterAction;
 
 #define RegisterAction_REGCLASS(this) ((this)->REGCLASS)
 #define RegisterAction__REGCLASS(this) (&(this)->REGCLASS)
-#define RegisterAction_REGISTER(this) ((this)->REGISTER)
-#define RegisterAction__REGISTER(this) (&(this)->REGISTER)
+#define RegisterAction_XXXINDEX(this) ((this)->XXXINDEX)
+#define RegisterAction__XXXINDEX(this) (&(this)->XXXINDEX)
 #define RegisterAction_RANK(this) ((this)->RANK)
 #define RegisterAction__RANK(this) (&(this)->RANK)
 #define RegisterAction_STAGE(this) ((this)->STAGE)
@@ -4511,12 +4511,12 @@ RegisterAction_regClass(const_RegisterAction this)
 }
 
 /*
-  RegisterAction_register -- Register of this RegisterAction.
+  RegisterAction_xxxIndex -- Index of argument or result OperatorParameter(s).
 */
-static inline Register
-RegisterAction_register(const_RegisterAction this)
+static inline int
+RegisterAction_xxxIndex(const_RegisterAction this)
 {
-  return (Register)((this)->REGISTER);
+  return (Register)((this)->XXXINDEX);
 }
 
 /*
@@ -4540,70 +4540,27 @@ RegisterAction_stage(const_RegisterAction this)
 }
 
 /*
+  RegisterAction_setStage -- Set the pipeline stage of this RegisterAction.
+*/
+static inline void
+RegisterAction_setStage(RegisterAction this, int stage)
+{
+  *(&(this)->STAGE) = stage;
+}
+
+/*
   RegisterActionArray -- Array of RegisterAction(s).
 */
 struct RegisterActionArray_ {
-  //@args	RegisterAction_ *this_actions,
-  //@args	const struct RegisterActionArray_ *that,
-  //@args	const short_Register *registers
-    //@ctor	const short_Register *biasRegisters = registers - 1;
-    //@ctor	int readCount = RegisterActionArray_READCOUNT(that);
-    //@ctor	int readStart = RegisterActionArray_READSTART(that);
-    //@ctor	int writeCount = RegisterActionArray_WRITECOUNT(that);
-    //@ctor	int writeStart = RegisterActionArray_WRITESTART(that), index;
-    //@ctor	const RegisterAction_ *that_actions = RegisterActionArray_ACTIONS(that);
-    //@ctor	const RegisterAction_ *that_readActions =  that_actions;
-    //@ctor	const RegisterAction_ *that_writeActions =  that_actions + readCount;
-    //@ctor	RegisterAction_ *this_readActions =  this_actions;
-    //@ctor	RegisterAction_ *this_writeActions =  this_actions + readCount;
   uint8_t READCOUNT; // Count of Read RegisterAction(s).
-    //@ctor	*RegisterActionArray__READCOUNT(this) = readCount;
   uint8_t READSTART; // Start index of variant Read RegisterAction(s).
-    //@ctor	*RegisterActionArray__READSTART(this) = readStart;
   uint8_t WRITECOUNT; // Count of Write RegisterAction(s).
-    //@ctor	*RegisterActionArray__WRITECOUNT(this) = writeCount;
   uint8_t WRITESTART; // Start index of variant Write RegisterAction(s).
-    //@ctor	*RegisterActionArray__WRITESTART(this) = writeStart;
-  RegisterAction_ *ACTIONS; // This RegisterActionArray actions.
-    //@ctor	*RegisterActionArray__ACTIONS(this) = this_actions;
-    //@ctor	for (index = 0; index < readStart; index++) {
-    //@ctor	  this_readActions[index] = that_readActions[index];
-    //@ctor	}
-    //@ctor	for (; index < readCount; index++) {
-    //@ctor	  int rank = RegisterAction_RANK(that_readActions + index);
-    //@ctor	  Register registre = biasRegisters[rank];
-    //@ctor	  this_readActions[index] = that_readActions[index];
-    //@ctor	  *RegisterAction__REGISTER(this_readActions + index) = registre;
-    //@ctor	}
-    //@ctor	for (index = 0; index < writeStart; index++) {
-    //@ctor	  this_writeActions[index] = that_writeActions[index];
-    //@ctor	}
-    //@ctor	for (; index < writeCount; index++) {
-    //@ctor	  int rank = RegisterAction_RANK(that_writeActions + index);
-    //@ctor	  Register registre = biasRegisters[rank];
-    //@ctor	  this_writeActions[index] = that_writeActions[index];
-    //@ctor	  *RegisterAction__REGISTER(this_writeActions + index) = registre;
-    //@ctor	}
+  RegisterAction_ *ITEMS; // This RegisterActionArray items.
 };
 typedef struct RegisterActionArray_ RegisterActionArray_, *RegisterActionArray;
 typedef const struct RegisterActionArray_ *const_RegisterActionArray;
 typedef struct RegisterActionArray_ * restrict_RegisterActionArray;
-
-extern RegisterActionArray
-RegisterActionArray_CTOR_(RegisterActionArray this, RegisterAction_ *this_actions, const struct RegisterActionArray_ *that, const short_Register *registers);
-
-extern RegisterActionArray
-RegisterActionArray_COPY_(RegisterActionArray this, const_RegisterActionArray that);
-
-
-extern void
-RegisterActionArray_DTOR_(RegisterActionArray this, ...);
-
-
-
-
-extern size_t
-RegisterActionArray_SIZE_(RegisterAction_ *this_actions, const struct RegisterActionArray_ *that, const short_Register *registers);
 
 #define RegisterActionArray_READCOUNT(this) ((this)->READCOUNT)
 #define RegisterActionArray__READCOUNT(this) (&(this)->READCOUNT)
@@ -4613,8 +4570,8 @@ RegisterActionArray_SIZE_(RegisterAction_ *this_actions, const struct RegisterAc
 #define RegisterActionArray__WRITECOUNT(this) (&(this)->WRITECOUNT)
 #define RegisterActionArray_WRITESTART(this) ((this)->WRITESTART)
 #define RegisterActionArray__WRITESTART(this) (&(this)->WRITESTART)
-#define RegisterActionArray_ACTIONS(this) ((this)->ACTIONS)
-#define RegisterActionArray__ACTIONS(this) (&(this)->ACTIONS)
+#define RegisterActionArray_ITEMS(this) ((this)->ITEMS)
+#define RegisterActionArray__ITEMS(this) (&(this)->ITEMS)
 /*
   RegisterActionArray_readCount -- Count of Read RegisterAction(s).
 */
@@ -4661,18 +4618,43 @@ RegisterActionArray_count(const_RegisterActionArray this)
 }
 
 /*
-  RegisterActionArray_actions -- For use by RegisterActionArray_FOREACH_RegisterAction.
+  RegisterActionArray_readActions -- this RegisterActionArray read RegisterAction(s).
 */
 static inline const RegisterAction_ *
-RegisterActionArray_actions(const_RegisterActionArray this)
+RegisterActionArray_readActions(const_RegisterActionArray this)
 {
-  return ((this)->ACTIONS);
+  return ((this)->ITEMS) + 0;
+}
+
+/*
+  RegisterActionArray_writeActions -- this RegisterActionArray write RegisterAction(s).
+*/
+static inline const RegisterAction_ *
+RegisterActionArray_writeActions(const_RegisterActionArray this)
+{
+  return ((this)->ITEMS) + ((this)->READCOUNT);
+}
+
+/*
+  RegisterActionArray_items -- For use by RegisterActionArray_FOREACH_RegisterAction.
+*/
+static inline const RegisterAction_ *
+RegisterActionArray_items(const_RegisterActionArray this)
+{
+  return ((this)->ITEMS);
 }
 
 /*
   RegisterActionArray_FOREACH_RegisterAction -- Iterate over this RegisterActionArray RegisterAction(s).
 */
-#define RegisterActionArray_FOREACH_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ACTIONS = RegisterActionArray_actions(this); int RegisterActionArray_COUNT = RegisterActionArray_count(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_COUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ACTIONS + RegisterActionArray_INDEX;
+#define RegisterActionArray_FOREACH_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ITEMS = RegisterActionArray_items(this); int RegisterActionArray_COUNT = RegisterActionArray_count(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_COUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ITEMS + RegisterActionArray_INDEX;
+
+
+
+
+
+
+
 #define RegisterActionArray_ENDEACH_RegisterAction } }
 
 
@@ -4680,7 +4662,14 @@ RegisterActionArray_actions(const_RegisterActionArray this)
 /*
   RegisterActionArray_FORREAD_RegisterAction -- Iterate over this RegisterActionArray Read RegisterAction(s).
 */
-#define RegisterActionArray_FORREAD_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ACTIONS = RegisterActionArray_actions(this); int RegisterActionArray_READCOUNT = RegisterActionArray_readCount(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_READCOUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ACTIONS + RegisterActionArray_INDEX;
+#define RegisterActionArray_FORREAD_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ITEMS = RegisterActionArray_items(this); int RegisterActionArray_READCOUNT = RegisterActionArray_readCount(this); int RegisterActionArray_INDEX = 0; for (; RegisterActionArray_INDEX < RegisterActionArray_READCOUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ITEMS + RegisterActionArray_INDEX;
+
+
+
+
+
+
+
 #define RegisterActionArray_ENDREAD_RegisterAction } }
 
 
@@ -4688,7 +4677,7 @@ RegisterActionArray_actions(const_RegisterActionArray this)
 /*
   RegisterActionArray_FORWRITE_RegisterAction -- Iterate over this RegisterActionArray Write RegisterAction(s).
 */
-#define RegisterActionArray_FORWRITE_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ACTIONS = RegisterActionArray_actions(this); int RegisterActionArray_READCOUNT = RegisterActionArray_readCount(this); int RegisterActionArray_COUNT = RegisterActionArray_count(this); int RegisterActionArray_INDEX = RegisterActionArray_READCOUNT; for (; RegisterActionArray_INDEX < RegisterActionArray_COUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ACTIONS + RegisterActionArray_INDEX;
+#define RegisterActionArray_FORWRITE_RegisterAction(this,action) { const RegisterAction_ *RegisterActionArray_ITEMS = RegisterActionArray_items(this); int RegisterActionArray_READCOUNT = RegisterActionArray_readCount(this); int RegisterActionArray_COUNT = RegisterActionArray_count(this); int RegisterActionArray_INDEX = RegisterActionArray_READCOUNT; for (; RegisterActionArray_INDEX < RegisterActionArray_COUNT; RegisterActionArray_INDEX++) { const_RegisterAction action = RegisterActionArray_ITEMS + RegisterActionArray_INDEX;
 #define RegisterActionArray_ENDWRITE_RegisterAction } }
 
 
@@ -4800,12 +4789,12 @@ RegFile_isStickyReg(RegFile this)
   RegFile_registerSet -- A RegisterSet with the members of this RegFile.
 */
 extern /*const*/ RegisterSet_
-RegFile_RegisterSet[];
+RegFile_RegisterSet_[];
 static inline const_RegisterSet
 RegFile_registerSet(RegFile this)
 {
   ;
-  return RegFile_RegisterSet + this;
+  return RegFile_RegisterSet_ + this;
 }
 
 
@@ -4850,6 +4839,8 @@ RegClass_registerList(RegClass this)
   ;
   return &RegClass_RegisterList_[this];
 }
+#define RegClass_firstRegister(this) RegisterList_first(RegClass_registerList(this))
+#define RegClass_lastRegister(this) RegisterList_last(RegClass_registerList(this))
 
 /*
   RegClass_regFile -- The RegFile this RegClass belongs to.
@@ -6191,7 +6182,7 @@ Instance_syntax(Instance this);
 /*
   Instance_actionArray -- This Instance RegisterActionArray.
 */
-extern const RegisterActionArray_
+extern /*const*/ RegisterActionArray_
 Instance_ActionArray_[];
 static inline const_RegisterActionArray
 Instance_actionArray(Instance this)
@@ -6201,49 +6192,12 @@ Instance_actionArray(Instance this)
 }
 
 /*
-  Instance_readCount -- This Instance count of argument RegisterAction(s).
+  Instance_makeRegisterActionItems -- Make this Instance RegisterActionArray_ITEMS.
+//
+  Onlu used to replace the MDS-initialized ITEMS with a writeable copy for patching.
 */
-static inline int
-Instance_readCount(Instance this) {
-  const_RegisterActionArray actionArray = Instance_actionArray(this);
-  return RegisterActionArray_readCount(actionArray);
-}
-
-/*
-  Instance_readStart -- This Instance count of argument RegisterAction(s).
-*/
-static inline int
-Instance_readStart(Instance this) {
-  const_RegisterActionArray actionArray = Instance_actionArray(this);
-  return RegisterActionArray_readStart(actionArray);
-}
-
-/*
-  Instance_writeCount -- This Instance count of result RegisterAction(s).
-*/
-static inline int
-Instance_writeCount(Instance this) {
-  const_RegisterActionArray actionArray = Instance_actionArray(this);
-  return RegisterActionArray_writeCount(actionArray);
-}
-
-/*
-  Instance_writeStart -- This Instance count of result RegisterAction(s).
-*/
-static inline int
-Instance_writeStart(Instance this) {
-  const_RegisterActionArray actionArray = Instance_actionArray(this);
-  return RegisterActionArray_writeStart(actionArray);
-}
-
-/*
-  Instance_actions -- This Instance RegisterAction(s).
-*/
-static inline const RegisterAction_ *
-Instance_actions(Instance this) {
-  const_RegisterActionArray actionArray = Instance_actionArray(this);
-  return RegisterActionArray_actions(actionArray);
-}
+RegisterAction_ *
+Instance_makeRegisterActionItems(Instance this, Memory memory);
 
 //
 typedef enum {
@@ -6280,11 +6234,12 @@ Instance_attributes(Instance this)
 }
 
 //
-static inline unsigned
-Instance_fixupRegisterRAW(Instance this)
+static inline bool
+Instance_fixupRegisterRAW(Instance this, Instance that)
 {
   ;
-  return Instance_Attributes[this] & (1<<InstanceAttribute_FixRegisterRAW);
+  unsigned attributes = Instance_Attributes[this] | Instance_Attributes[that];
+  return (attributes>>InstanceAttribute_FixRegisterRAW) & 0x1;
 }
 
 //
