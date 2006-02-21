@@ -3857,7 +3857,12 @@ WFE_Expand_Expr (tree exp,
 	  WN *if_stmt    = WN_CreateIf (wn0, then_block, else_block);
 	  WFE_Stmt_Append (if_stmt, Get_Srcpos());
 	  WFE_Stmt_Push (then_block, wfe_stmk_if_then, Get_Srcpos());
+#ifdef TARG_ST
+          /* (cbr) pro-release-1-9-0-B/6 need if throw_expr part of the conditiol assignment */
+	  wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1), need_result);
+#else
 	  wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1), FALSE);
+#endif
 	  if (wn1) {
 #ifdef TARG_ST
 	    wn1 = WFE_Append_Expr_Stmt (wn1);
@@ -3868,7 +3873,12 @@ WFE_Expand_Expr (tree exp,
 	  }
 	  WFE_Stmt_Pop (wfe_stmk_if_then);
 	  WFE_Stmt_Push (else_block, wfe_stmk_if_else, Get_Srcpos());
+#ifdef TARG_ST
+          /* (cbr) need if throw_expr part of the conditiol assignment */
+	  wn2 = WFE_Expand_Expr (TREE_OPERAND (exp, 2), need_result);
+#else
 	  wn2 = WFE_Expand_Expr (TREE_OPERAND (exp, 2), FALSE);
+#endif
 	  if (wn2) {
 #ifdef TARG_ST
 	    wn2 = WFE_Append_Expr_Stmt (wn2);
@@ -4998,7 +5008,7 @@ WFE_Expand_Expr (tree exp,
                code == LOOP_EXPR     ||
                code == NOP_EXPR      ||
                code == (enum tree_code)THROW_EXPR    ||
-               ((code == COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
+               ((code == COND_EXPR)),
 	       ("WFE_Expand_Expr: NULL WHIRL tree for %s",
 		Operator_From_Tree [code].name));
 #else

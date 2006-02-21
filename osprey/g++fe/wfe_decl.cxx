@@ -1948,7 +1948,58 @@ static void
 Gen_Assign_Of_Init_Val (ST *st, tree init, UINT offset, UINT array_elem_offset,
 	TY_IDX ty, BOOL is_bit_field, UINT field_id, FLD_HANDLE fld, INT &bytes)
 {
-    WN *init_wn = WFE_Expand_Expr (init);
+#ifdef TARG_ST
+  /* (cbr) pro-release-1-9-0-B/6 need if throw_expr part of the conditiol assignment */
+  WN *init_wn;
+
+  if (TREE_CODE (init) == COND_EXPR) {
+    init_wn = WFE_Expand_Expr (init, TRUE);
+
+    if (!init_wn) {
+      WN * lwn = WN_last (WFE_Stmt_Top ());
+      if (WN_operator (lwn) == OPR_IF) {
+        WN *awn = WN_kid1(lwn);
+
+        if (TREE_CODE (TREE_OPERAND (init, 1)) == THROW_EXPR) {
+          awn = WN_kid2(lwn);
+          if (WN_operator (awn) == OPR_BLOCK) {
+            WN *awn1 = WN_kid0(awn);
+            if (WN_operator (awn1) == OPR_EVAL) {
+              TYPE_ID mtype = is_bit_field ? MTYPE_BS : TY_mtype(ty);
+              WN *awn2 = WN_kid0(awn1);
+              awn2 = WN_Stid (mtype, ST_ofst(st) + offset, st,
+                              ty, awn2, field_id);
+              WN_kid0(awn) = awn2;
+              bytes += TY_size(ty);
+              return;
+            }
+          }
+
+        }
+        else if (TREE_CODE (TREE_OPERAND (init, 2)) == THROW_EXPR) {
+          awn = WN_kid1(lwn);
+          if (WN_operator (awn) == OPR_BLOCK) {
+            WN *awn1 = WN_kid0(awn);
+            if (WN_operator (awn1) == OPR_EVAL) {
+              TYPE_ID mtype = is_bit_field ? MTYPE_BS : TY_mtype(ty);
+              WN *awn2 = WN_kid0(awn1);
+              awn2 = WN_Stid (mtype, ST_ofst(st) + offset, st,
+                              ty, awn2, field_id);
+              WN_kid0(awn) = awn2;
+              bytes += TY_size(ty);
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+  else
+    init_wn = WFE_Expand_Expr (init);
+#else
+  WN *init_wn = WFE_Expand_Expr (init);
+#endif
+    
 #ifdef WFE_DEBUG
   fprintf(stdout, "    Gen_Assign_Of_Init_Val %s:",
 	  ST_name(st));
