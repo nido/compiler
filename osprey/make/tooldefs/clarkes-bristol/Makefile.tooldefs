@@ -1,0 +1,129 @@
+#
+# Specific tool paths 
+#
+# Specify full absolute paths with the trailing '/'.
+# Empty path are allowed which will imply a PATH search.
+#
+# Platform variant and build variant are include before this file,
+# thus path may be setup depending on these settings.
+#
+
+# host platform definitions
+COMPILER_LOC=
+BINUTILS_LOC=
+PREFIX=
+SUFFIX=
+YACC_LOC=
+LEX_LOC=
+INSTALL_LOC=
+
+# build platform definitions
+BUILD_PREFIX=
+BUILD_SUFFIX=
+BUILD_COMPILER_LOC=
+BUILD_BINUTILS_LOC=
+
+##
+## GNU tools names
+##
+ifeq ($(BUILD_COMPILER), GNU)
+
+ifeq ($(BUILD_OS),SUNOS5)
+BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
+COMP_GNU_LOC=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
+YACC_LOC=/apa/gnu/SunOS5.7/.package/bison-1.35/bin/
+LEX_LOC=
+INSTALL_LOC=$(BINUTILS_GNU_LOC)
+
+ifeq ($(HOST_OS),SUNOS5)
+COMPILER_LOC=$(COMP_GNU_LOC)
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+endif
+
+ifeq ($(HOST_OS),MINGW)
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-mingw32-gcc-3.4.2/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-mingw32-
+endif
+
+ifeq ($(HOST_OS),CYGWIN_NT)
+COMPILER_LOC=/apa/gnu/SunOS5.7/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-pc-cygwin-
+endif
+
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+endif # BUILD_OS = SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
+BINUTILS_GNU_LOC=/usr/bin/
+COMP_GNU_LOC=/home/afra/users/clarkes/gcc/install-gcc-3.4.4-ws3/bin/
+YACC_LOC=/home/afra/users/clarkes/bison/install-1.35/bin
+LEX_LOC=
+INSTALL_LOC=
+
+ifeq ($(HOST_OS),LINUX)
+COMPILER_LOC=$(COMP_GNU_LOC)
+BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+endif
+
+ifeq ($(HOST_OS),MINGW)
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-mingw32-gcc-3.4.2/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-mingw32-
+endif
+
+ifeq ($(HOST_OS),CYGWIN_NT)
+COMPILER_LOC=/apa/gnu/Linux-RH-7.2/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+PREFIX=i386-pc-cygwin-
+endif
+
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+endif # BUILD_OS = LINUX
+endif # BUILD_COMPILER = GNU
+
+
+##
+## OPEN64 tools names
+##
+ifeq ($(BUILD_COMPILER), OPEN64)
+
+ifeq ($(HOST_ARCH),ST200)
+
+ifeq ($(BUILD_OS),SUNOS5)
+RUNNER=/apa/comp/SunOS5/st200/R4.1/bin/st200run -tsimfast --
+COMPILER_LOC=/apa/comp/SunOS5/st200/R4.1/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+COMP_GNU_LOC=/apa/gnu/SunOS5.7/gcc/gcc-3.4.4/bin/
+BINUTILS_GNU_LOC=/apa/gnu/SunOS5.7/bin/
+endif # SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
+RUNNER=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/st200run -tsimfast --
+COMPILER_LOC=/apa/comp/Linux-RH-7.2/st200/R4.1/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+COMP_GNU_LOC=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
+BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
+endif
+
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+PREFIX=st200-
+CCPREFIX=st200
+
+endif # HOST_ARCH = ST200
+endif # BUILD_COMPILER = OPEN64
+
+#
+# Win32 suffix
+# 
+ifeq ($(BUILD_OS),MINGW)
+SUFFIX=.exe
+endif
+
+
