@@ -2422,8 +2422,8 @@ WN *WN_UVConst( TYPE_ID type)
   case MTYPE_U4:
 #ifdef TARG_ST
     //TB Add -trapuv_int_value option   
-#   return WN_Intconst( Mtype_TransferSign(type, MTYPE_I4), DEBUG_Trapuv_Int_Value);
- else
+    return WN_Intconst( Mtype_TransferSign(type, MTYPE_I4), DEBUG_Trapuv_Int_Value);
+#else
     return WN_Intconst(type, 0xfffa5a5a);
 #endif
   case MTYPE_I8:
