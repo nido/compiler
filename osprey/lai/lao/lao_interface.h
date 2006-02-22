@@ -7,6 +7,7 @@
 
 
 #define Except_REQUIRE(t) 
+typedef struct Memory_ *Memory;
 typedef struct Label_ *Label;
 typedef struct Symbol_ *Symbol;
 typedef struct Temporary_ *Temporary;
