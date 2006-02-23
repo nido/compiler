@@ -1826,7 +1826,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   }
   else if (doSpecialize) {
 
-    if (Get_Trace(TP_CGLOOP, 0x10)) {
+    if (Get_Trace(TP_CGLOOP, 0x10))
       fprintf(TFile, "<ivs packing> Loop can be specialized\n");
 
     for (candidate_stream = memop_table;
