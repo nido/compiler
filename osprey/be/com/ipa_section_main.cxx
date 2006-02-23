@@ -69,7 +69,7 @@ SYSTEM_OF_EQUATIONS::_work_rows_eq;
 mINT32
 SYSTEM_OF_EQUATIONS::_work_rows;
 // [HK] this should be fixed unconditionnaly, but it throws an undefined reference error at link-time with the Cygwin 2.95.3 and 3.3.1 cross-compilers
-#if (__GNUC__ >= 3) && !defined(__CYGWIN__)
+#if (__GNUC__ >= 3) && !(defined(__CYGWIN__) && __GNUC__ == 3 && __GNUC_MINOR__ == 3)
 template<> MEM_POOL* MAT<int>::_default_pool = 0;
 
 #else

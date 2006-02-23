@@ -334,9 +334,15 @@ else
 #    BUILD_OS -- CYGWIN_NT
 ###################################################################
  ifeq ($(BUILD_OS), CYGWIN_NT)
+  ifneq ($(HOST_OS), CYGWIN_NT)
+    $(error unsupported HOST_OS=$(HOST_OS) for BUILD_OS=$(BUILD_OS))
+  endif
+
   HOST_HFILES =  \
 	elf.h     \
 	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
   HOST_HOST_SYS_HFILES = \
 	H_wait.h
   HOST_HOST_HFILES = \
@@ -349,7 +355,7 @@ else
 	H_alloca.h   \
 	H_values.h   \
 	H_wait.h
-  HOST_INCLUDE_DIR=cygwin_nt
+  HOST_INCLUDE_DIR=cygwin
  endif
 
 ###################################################################

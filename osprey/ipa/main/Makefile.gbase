@@ -149,15 +149,9 @@ HEADER_DIRS = \
   $(LD_COMMON_DIR)	\
   $(LD_DIR)		\
   $(TARGDIR)/be         \
-  $(LIBINSTR_DIR)	
+  $(LIBINSTR_DIR)	\
+  $(TARGDIR)/include/libelf
 
-
-ifeq ($(BUILD_OS), LINUX)
-HEADER_DIRS += $(TARGDIR)/include/libelf
-endif
-ifeq ($(BUILD_OS), SUNOS5)
-HEADER_DIRS += $(TARGDIR)/include/libelf
-endif
 
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.

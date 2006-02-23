@@ -160,14 +160,8 @@ HEADER_DIRS = \
   $(TARGDIR)/be		\
   $(BE_VHO_DIR)	        \
   $(LIBINSTR_DIR)	\
-  $(LD_COMMON_DIR)
-
-ifeq ($(BUILD_OS), LINUX)
-HEADER_DIRS += $(TARGDIR)/include/libelf
-endif
-ifeq ($(BUILD_OS), SUNOS5)
-HEADER_DIRS += $(TARGDIR)/include/libelf
-endif
+  $(LD_COMMON_DIR)	\
+  $(TARGDIR)/include/libelf
 
 #  $(GNU_DIR)            \
 
