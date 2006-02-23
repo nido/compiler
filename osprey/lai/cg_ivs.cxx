@@ -409,7 +409,7 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
   BB *body = LOOP_DESCR_loophead( loop );
   loop_ivs.Init( body );
 
-  loop_ivs.Trace_IVs_Entries("Before optimizations");
+  //  loop_ivs.Trace_IVs_Entries("Before optimizations");
 
   // Write here the code to optimize the IVs
 
@@ -1493,7 +1493,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
   INT Candidate_count = Compute_Packing_IVs(loop_ivs);
 
-  loop_ivs->Trace_IVs_Entries("LoadStore_Packing: after Compute_Packing_IVs");
+  //  loop_ivs->Trace_IVs_Entries("LoadStore_Packing: after Compute_Packing_IVs");
 
   // Now, look for a sequence of load or store operations that can be
   // packed.
@@ -1514,12 +1514,13 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
   BB_MAP sch_est;
   CG_SCHED_EST *se;
+  int latency_II = 0;
   if (Get_Trace(TP_CGLOOP, 0x10)) {
     sch_est = BB_MAP_Create();
     se = CG_SCHED_EST_Create(body, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
-    BB_MAP_Set(sch_est, body, se);
+    BB_MAP_Set(sch_est, body, se); 
+    latency_II = CG_SCHED_EST_Critical_Length(se);
   }
-  int latency_II = CG_SCHED_EST_Critical_Length(se);
 
   se = CG_SCHED_EST_Create_Empty(&MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
   FOR_ALL_BB_OPs(body, op) {
@@ -1825,8 +1826,9 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   }
   else if (doSpecialize) {
 
-    fprintf(TFile, "Loop can be specialized\n");
-    
+    if (Get_Trace(TP_CGLOOP, 0x10)) {
+      fprintf(TFile, "<ivs packing> Loop can be specialized\n");
+
     for (candidate_stream = memop_table;
 	 candidate_stream->count > 0;
 	 candidate_stream += candidate_stream->count) {
