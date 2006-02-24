@@ -811,6 +811,10 @@ Are_Same_Location(OP* op1, OP* op2)
 
                   if (OP_opnd (op3, i) != OP_opnd (op4, i))
                     return FALSE;
+
+                  if (WN_desc (wn1) != WN_desc (wn2) || 
+                      WN_field_id (wn1) != WN_field_id (wn2))
+                    return FALSE;
                 }
 
                 return TRUE;
