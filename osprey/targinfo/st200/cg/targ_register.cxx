@@ -193,19 +193,13 @@ REGISTER_Get_Requested_Rotating_Registers (
 REGISTER_SET 
 CGTARG_Forbidden_GRA_Registers (ISA_REGISTER_CLASS rclass)
 {
-  REGISTER_SET s = REGISTER_SET_EMPTY_SET;
-  if (Is_Target_st235 ()) {
-    if (rclass == ISA_REGISTER_CLASS_integer) {
-      return REGISTER_SET_Union1(s, TN_register(RA_TN));
-    }
-  }
-  return s;
+  return REGISTER_SET_EMPTY_SET;
 }
 
 REGISTER_SET
 CGTARG_Forbidden_LRA_Registers (ISA_REGISTER_CLASS rclass)
 {
-  return CGTARG_Forbidden_GRA_Registers (rclass);
+  return REGISTER_SET_EMPTY_SET;
 }
 
 #ifdef TARG_ST

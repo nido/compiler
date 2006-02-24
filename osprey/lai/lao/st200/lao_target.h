@@ -11,6 +11,7 @@
 
 #define MDS_h_INCLUDED 
 
+
 /*
   MDS.xcc
 //
@@ -26,8 +27,10 @@
   licences as published by the Free Software Foundation.
 */
 
+
 //
 #define MDS_ENUM(File) #File
+
 
 /*
   Processor -- Enumeration.
@@ -62,9 +65,11 @@ Processor_st235_cpu,
 } Processor;
 typedef uint8_t short_Processor;
 
+
 //
 typedef int32_t ProcessorIntPtr;
 typedef uint32_t ProcessorUIntPtr;
+
 
 /*
   Encoding -- Enumeration.
@@ -97,6 +102,7 @@ Encoding_st235_ANYX,
 #undef Encoding
 } Encoding;
 typedef uint8_t short_Encoding;
+
 
 /*
   NativeType -- Enumeration.
@@ -132,6 +138,7 @@ NativeType_st200_Float64,
 #undef NativeType
 } NativeType;
 typedef uint8_t short_NativeType;
+
 
 /*
   Register -- Enumeration.
@@ -296,6 +303,7 @@ Register_st200_PR30,
 } Register;
 typedef uint8_t short_Register;
 
+
 /*
   RegFile -- Enumeration.
 */
@@ -321,6 +329,7 @@ RegFile_st200_GR,
 #undef RegFile
 } RegFile;
 typedef uint8_t short_RegFile;
+
 
 /*
   RegClass -- Enumeration.
@@ -399,6 +408,7 @@ RegClass_st200_nzpairedsecond,
 } RegClass;
 typedef uint8_t short_RegClass;
 
+
 /*
   RegMask -- Enumeration.
 */
@@ -420,6 +430,7 @@ typedef enum RegMask {
 #undef RegMask
 } RegMask;
 typedef uint8_t short_RegMask;
+
 
 /*
   ModifierClass -- Enumeration.
@@ -446,6 +457,7 @@ typedef enum ModifierClass {
 #undef Modifier
 } ModifierClass;
 typedef uint8_t short_ModifierClass;
+
 
 /*
   Modifier -- Enumeration.
@@ -483,6 +495,7 @@ typedef enum Modifier {
 } Modifier;
 typedef uint8_t short_Modifier;
 
+
 /*
   Relocation -- Enumeration.
 */
@@ -514,6 +527,7 @@ Relocation_st200_xsrc2,
 #undef Relocation
 } Relocation;
 typedef uint8_t short_Relocation;
+
 
 /*
   Immediate -- Enumeration.
@@ -564,6 +578,7 @@ Immediate_st200_brknum,
 #undef Immediate
 } Immediate;
 typedef uint8_t short_Immediate;
+
 
 /*
   Operand -- Enumeration.
@@ -677,6 +692,7 @@ Operand_st200_brknum,
 #undef Operand
 } Operand;
 typedef uint8_t short_Operand;
+
 
 /*
   Operands -- Enumeration.
@@ -792,9 +808,6 @@ Operands_st200_bdest_src1,
 Operands_st200_idest_scond,
 
 
-Operands_st200_nlidest_src1,
-
-
 Operands_st200_src2,
 
 
@@ -865,6 +878,7 @@ Operands_st200_bdest_src2_src1,
 } Operands;
 typedef uint8_t short_Operands;
 
+
 /*
   Instance -- Enumeration.
 */
@@ -895,6 +909,54 @@ Instance_st220_andl_idest_src1_isrc2,
 Instance_st220_andl_ibdest_src1_isrc2,
 Instance_st220_andl_idest_src1_xsrc2,
 Instance_st220_andl_ibdest_src1_xsrc2,
+Instance_st220_asm_0_dest_src1_src2,
+Instance_st220_asm_1_dest_src1_src2,
+Instance_st220_asm_2_dest_src1_src2,
+Instance_st220_asm_3_dest_src1_src2,
+Instance_st220_asm_4_dest_src1_src2,
+Instance_st220_asm_5_dest_src1_src2,
+Instance_st220_asm_6_dest_src1_src2,
+Instance_st220_asm_7_dest_src1_src2,
+Instance_st220_asm_8_dest_src1_src2,
+Instance_st220_asm_9_dest_src1_src2,
+Instance_st220_asm_10_dest_src1_src2,
+Instance_st220_asm_11_dest_src1_src2,
+Instance_st220_asm_12_dest_src1_src2,
+Instance_st220_asm_13_dest_src1_src2,
+Instance_st220_asm_14_dest_src1_src2,
+Instance_st220_asm_15_dest_src1_src2,
+Instance_st220_asm_16_idest_src1_isrc2,
+Instance_st220_asm_16_idest_src1_xsrc2,
+Instance_st220_asm_17_idest_src1_isrc2,
+Instance_st220_asm_17_idest_src1_xsrc2,
+Instance_st220_asm_18_idest_src1_isrc2,
+Instance_st220_asm_18_idest_src1_xsrc2,
+Instance_st220_asm_19_idest_src1_isrc2,
+Instance_st220_asm_19_idest_src1_xsrc2,
+Instance_st220_asm_20_idest_src1_isrc2,
+Instance_st220_asm_20_idest_src1_xsrc2,
+Instance_st220_asm_21_idest_src1_isrc2,
+Instance_st220_asm_21_idest_src1_xsrc2,
+Instance_st220_asm_22_idest_src1_isrc2,
+Instance_st220_asm_22_idest_src1_xsrc2,
+Instance_st220_asm_23_idest_src1_isrc2,
+Instance_st220_asm_23_idest_src1_xsrc2,
+Instance_st220_asm_24_idest_src1_isrc2,
+Instance_st220_asm_24_idest_src1_xsrc2,
+Instance_st220_asm_25_idest_src1_isrc2,
+Instance_st220_asm_25_idest_src1_xsrc2,
+Instance_st220_asm_26_idest_src1_isrc2,
+Instance_st220_asm_26_idest_src1_xsrc2,
+Instance_st220_asm_27_idest_src1_isrc2,
+Instance_st220_asm_27_idest_src1_xsrc2,
+Instance_st220_asm_28_idest_src1_isrc2,
+Instance_st220_asm_28_idest_src1_xsrc2,
+Instance_st220_asm_29_idest_src1_isrc2,
+Instance_st220_asm_29_idest_src1_xsrc2,
+Instance_st220_asm_30_idest_src1_isrc2,
+Instance_st220_asm_30_idest_src1_xsrc2,
+Instance_st220_asm_31_idest_src1_isrc2,
+Instance_st220_asm_31_idest_src1_xsrc2,
 Instance_st220_br_bcond_btarg,
 Instance_st220_break,
 Instance_st220_brf_bcond_btarg,
@@ -1150,12 +1212,12 @@ Instance_st231_asm_6_dest_src1_src2,
 Instance_st231_asm_7_dest_src1_src2,
 Instance_st231_asm_8_dest_src1_src2,
 Instance_st231_asm_9_dest_src1_src2,
-Instance_st231_asm_10_nldest_src1_src2,
-Instance_st231_asm_11_nldest_src1_src2,
-Instance_st231_asm_12_nldest_src1_src2,
-Instance_st231_asm_13_nldest_src1_src2,
-Instance_st231_asm_14_nldest_src1_src2,
-Instance_st231_asm_15_nldest_src1_src2,
+Instance_st231_asm_10_dest_src1_src2,
+Instance_st231_asm_11_dest_src1_src2,
+Instance_st231_asm_12_dest_src1_src2,
+Instance_st231_asm_13_dest_src1_src2,
+Instance_st231_asm_14_dest_src1_src2,
+Instance_st231_asm_15_dest_src1_src2,
 Instance_st231_asm_16_idest_src1_isrc2,
 Instance_st231_asm_16_idest_src1_xsrc2,
 Instance_st231_asm_17_idest_src1_isrc2,
@@ -1176,18 +1238,18 @@ Instance_st231_asm_24_idest_src1_isrc2,
 Instance_st231_asm_24_idest_src1_xsrc2,
 Instance_st231_asm_25_idest_src1_isrc2,
 Instance_st231_asm_25_idest_src1_xsrc2,
-Instance_st231_asm_26_nlidest_src1_isrc2,
-Instance_st231_asm_26_nlidest_src1_xsrc2,
-Instance_st231_asm_27_nlidest_src1_isrc2,
-Instance_st231_asm_27_nlidest_src1_xsrc2,
-Instance_st231_asm_28_nlidest_src1_isrc2,
-Instance_st231_asm_28_nlidest_src1_xsrc2,
-Instance_st231_asm_29_nlidest_src1_isrc2,
-Instance_st231_asm_29_nlidest_src1_xsrc2,
-Instance_st231_asm_30_nlidest_src1_isrc2,
-Instance_st231_asm_30_nlidest_src1_xsrc2,
-Instance_st231_asm_31_nlidest_src1_isrc2,
-Instance_st231_asm_31_nlidest_src1_xsrc2,
+Instance_st231_asm_26_idest_src1_isrc2,
+Instance_st231_asm_26_idest_src1_xsrc2,
+Instance_st231_asm_27_idest_src1_isrc2,
+Instance_st231_asm_27_idest_src1_xsrc2,
+Instance_st231_asm_28_idest_src1_isrc2,
+Instance_st231_asm_28_idest_src1_xsrc2,
+Instance_st231_asm_29_idest_src1_isrc2,
+Instance_st231_asm_29_idest_src1_xsrc2,
+Instance_st231_asm_30_idest_src1_isrc2,
+Instance_st231_asm_30_idest_src1_xsrc2,
+Instance_st231_asm_31_idest_src1_isrc2,
+Instance_st231_asm_31_idest_src1_xsrc2,
 Instance_st231_br_bcond_btarg,
 Instance_st231_break,
 Instance_st231_brf_bcond_btarg,
@@ -1280,7 +1342,7 @@ Instance_st231_ldw_idest_isrc2_src1,
 Instance_st231_ldw_idest_xsrc2_src1,
 Instance_st231_ldw_d_idest_isrc2_src1,
 Instance_st231_ldw_d_idest_xsrc2_src1,
-Instance_st231_ldwl_nlidest_src1,
+Instance_st231_ldwl_idest_src1,
 Instance_st231_max_dest_src1_src2,
 Instance_st231_max_idest_src1_isrc2,
 Instance_st231_max_idest_src1_xsrc2,
@@ -1466,12 +1528,12 @@ Instance_st235_asm_6_dest_src1_src2,
 Instance_st235_asm_7_dest_src1_src2,
 Instance_st235_asm_8_dest_src1_src2,
 Instance_st235_asm_9_dest_src1_src2,
-Instance_st235_asm_10_nldest_src1_src2,
-Instance_st235_asm_11_nldest_src1_src2,
-Instance_st235_asm_12_nldest_src1_src2,
-Instance_st235_asm_13_nldest_src1_src2,
-Instance_st235_asm_14_nldest_src1_src2,
-Instance_st235_asm_15_nldest_src1_src2,
+Instance_st235_asm_10_dest_src1_src2,
+Instance_st235_asm_11_dest_src1_src2,
+Instance_st235_asm_12_dest_src1_src2,
+Instance_st235_asm_13_dest_src1_src2,
+Instance_st235_asm_14_dest_src1_src2,
+Instance_st235_asm_15_dest_src1_src2,
 Instance_st235_asm_16_idest_src1_isrc2,
 Instance_st235_asm_16_idest_src1_xsrc2,
 Instance_st235_asm_17_idest_src1_isrc2,
@@ -1492,18 +1554,18 @@ Instance_st235_asm_24_idest_src1_isrc2,
 Instance_st235_asm_24_idest_src1_xsrc2,
 Instance_st235_asm_25_idest_src1_isrc2,
 Instance_st235_asm_25_idest_src1_xsrc2,
-Instance_st235_asm_26_nlidest_src1_isrc2,
-Instance_st235_asm_26_nlidest_src1_xsrc2,
-Instance_st235_asm_27_nlidest_src1_isrc2,
-Instance_st235_asm_27_nlidest_src1_xsrc2,
-Instance_st235_asm_28_nlidest_src1_isrc2,
-Instance_st235_asm_28_nlidest_src1_xsrc2,
-Instance_st235_asm_29_nlidest_src1_isrc2,
-Instance_st235_asm_29_nlidest_src1_xsrc2,
-Instance_st235_asm_30_nlidest_src1_isrc2,
-Instance_st235_asm_30_nlidest_src1_xsrc2,
-Instance_st235_asm_31_nlidest_src1_isrc2,
-Instance_st235_asm_31_nlidest_src1_xsrc2,
+Instance_st235_asm_26_idest_src1_isrc2,
+Instance_st235_asm_26_idest_src1_xsrc2,
+Instance_st235_asm_27_idest_src1_isrc2,
+Instance_st235_asm_27_idest_src1_xsrc2,
+Instance_st235_asm_28_idest_src1_isrc2,
+Instance_st235_asm_28_idest_src1_xsrc2,
+Instance_st235_asm_29_idest_src1_isrc2,
+Instance_st235_asm_29_idest_src1_xsrc2,
+Instance_st235_asm_30_idest_src1_isrc2,
+Instance_st235_asm_30_idest_src1_xsrc2,
+Instance_st235_asm_31_idest_src1_isrc2,
+Instance_st235_asm_31_idest_src1_xsrc2,
 Instance_st235_br_bcond_btarg,
 Instance_st235_break,
 Instance_st235_brf_bcond_btarg,
@@ -1603,7 +1665,7 @@ Instance_st235_ldw_idest_isrc2_src1,
 Instance_st235_ldw_idest_xsrc2_src1,
 Instance_st235_ldwc_idest_pcond_isrc2_src1,
 Instance_st235_ldwc_idest_pcond_xsrc2_src1,
-Instance_st235_ldwl_nlidest_src1,
+Instance_st235_ldwl_idest_src1,
 Instance_st235_max_dest_src1_src2,
 Instance_st235_max_idest_src1_isrc2,
 Instance_st235_max_idest_src1_xsrc2,
@@ -1816,6 +1878,7 @@ Instance_st235_PUSHREGS,
 } Instance;
 typedef uint16_t short_Instance;
 
+
 /*
   Operator -- Enumeration.
 */
@@ -1948,6 +2011,150 @@ Operator_st200_andl_general_general_xsrc2,
 
 
 Operator_st200_andl_branch_general_xsrc2,
+
+
+Operator_st200_asm_0_general_general_general,
+
+
+Operator_st200_asm_1_general_general_general,
+
+
+Operator_st200_asm_2_general_general_general,
+
+
+Operator_st200_asm_3_general_general_general,
+
+
+Operator_st200_asm_4_general_general_general,
+
+
+Operator_st200_asm_5_general_general_general,
+
+
+Operator_st200_asm_6_general_general_general,
+
+
+Operator_st200_asm_7_general_general_general,
+
+
+Operator_st200_asm_8_general_general_general,
+
+
+Operator_st200_asm_9_general_general_general,
+
+
+Operator_st200_asm_10_general_general_general,
+
+
+Operator_st200_asm_11_general_general_general,
+
+
+Operator_st200_asm_12_general_general_general,
+
+
+Operator_st200_asm_13_general_general_general,
+
+
+Operator_st200_asm_14_general_general_general,
+
+
+Operator_st200_asm_15_general_general_general,
+
+
+Operator_st200_asm_16_general_general_isrc2,
+
+
+Operator_st200_asm_16_general_general_xsrc2,
+
+
+Operator_st200_asm_17_general_general_isrc2,
+
+
+Operator_st200_asm_17_general_general_xsrc2,
+
+
+Operator_st200_asm_18_general_general_isrc2,
+
+
+Operator_st200_asm_18_general_general_xsrc2,
+
+
+Operator_st200_asm_19_general_general_isrc2,
+
+
+Operator_st200_asm_19_general_general_xsrc2,
+
+
+Operator_st200_asm_20_general_general_isrc2,
+
+
+Operator_st200_asm_20_general_general_xsrc2,
+
+
+Operator_st200_asm_21_general_general_isrc2,
+
+
+Operator_st200_asm_21_general_general_xsrc2,
+
+
+Operator_st200_asm_22_general_general_isrc2,
+
+
+Operator_st200_asm_22_general_general_xsrc2,
+
+
+Operator_st200_asm_23_general_general_isrc2,
+
+
+Operator_st200_asm_23_general_general_xsrc2,
+
+
+Operator_st200_asm_24_general_general_isrc2,
+
+
+Operator_st200_asm_24_general_general_xsrc2,
+
+
+Operator_st200_asm_25_general_general_isrc2,
+
+
+Operator_st200_asm_25_general_general_xsrc2,
+
+
+Operator_st200_asm_26_general_general_isrc2,
+
+
+Operator_st200_asm_26_general_general_xsrc2,
+
+
+Operator_st200_asm_27_general_general_isrc2,
+
+
+Operator_st200_asm_27_general_general_xsrc2,
+
+
+Operator_st200_asm_28_general_general_isrc2,
+
+
+Operator_st200_asm_28_general_general_xsrc2,
+
+
+Operator_st200_asm_29_general_general_isrc2,
+
+
+Operator_st200_asm_29_general_general_xsrc2,
+
+
+Operator_st200_asm_30_general_general_isrc2,
+
+
+Operator_st200_asm_30_general_general_xsrc2,
+
+
+Operator_st200_asm_31_general_general_isrc2,
+
+
+Operator_st200_asm_31_general_general_xsrc2,
 
 
 Operator_st200_br_branch_btarg,
@@ -2631,151 +2838,7 @@ Operator_st200_syncins,
 Operator_st200_return_link,
 
 
-Operator_st200_asm_0_general_general_general,
-
-
-Operator_st200_asm_1_general_general_general,
-
-
-Operator_st200_asm_2_general_general_general,
-
-
-Operator_st200_asm_3_general_general_general,
-
-
-Operator_st200_asm_4_general_general_general,
-
-
-Operator_st200_asm_5_general_general_general,
-
-
-Operator_st200_asm_6_general_general_general,
-
-
-Operator_st200_asm_7_general_general_general,
-
-
-Operator_st200_asm_8_general_general_general,
-
-
-Operator_st200_asm_9_general_general_general,
-
-
-Operator_st200_asm_10_nolink_general_general,
-
-
-Operator_st200_asm_11_nolink_general_general,
-
-
-Operator_st200_asm_12_nolink_general_general,
-
-
-Operator_st200_asm_13_nolink_general_general,
-
-
-Operator_st200_asm_14_nolink_general_general,
-
-
-Operator_st200_asm_15_nolink_general_general,
-
-
-Operator_st200_asm_16_general_general_isrc2,
-
-
-Operator_st200_asm_16_general_general_xsrc2,
-
-
-Operator_st200_asm_17_general_general_isrc2,
-
-
-Operator_st200_asm_17_general_general_xsrc2,
-
-
-Operator_st200_asm_18_general_general_isrc2,
-
-
-Operator_st200_asm_18_general_general_xsrc2,
-
-
-Operator_st200_asm_19_general_general_isrc2,
-
-
-Operator_st200_asm_19_general_general_xsrc2,
-
-
-Operator_st200_asm_20_general_general_isrc2,
-
-
-Operator_st200_asm_20_general_general_xsrc2,
-
-
-Operator_st200_asm_21_general_general_isrc2,
-
-
-Operator_st200_asm_21_general_general_xsrc2,
-
-
-Operator_st200_asm_22_general_general_isrc2,
-
-
-Operator_st200_asm_22_general_general_xsrc2,
-
-
-Operator_st200_asm_23_general_general_isrc2,
-
-
-Operator_st200_asm_23_general_general_xsrc2,
-
-
-Operator_st200_asm_24_general_general_isrc2,
-
-
-Operator_st200_asm_24_general_general_xsrc2,
-
-
-Operator_st200_asm_25_general_general_isrc2,
-
-
-Operator_st200_asm_25_general_general_xsrc2,
-
-
-Operator_st200_asm_26_nolink_general_isrc2,
-
-
-Operator_st200_asm_26_nolink_general_xsrc2,
-
-
-Operator_st200_asm_27_nolink_general_isrc2,
-
-
-Operator_st200_asm_27_nolink_general_xsrc2,
-
-
-Operator_st200_asm_28_nolink_general_isrc2,
-
-
-Operator_st200_asm_28_nolink_general_xsrc2,
-
-
-Operator_st200_asm_29_nolink_general_isrc2,
-
-
-Operator_st200_asm_29_nolink_general_xsrc2,
-
-
-Operator_st200_asm_30_nolink_general_isrc2,
-
-
-Operator_st200_asm_30_nolink_general_xsrc2,
-
-
-Operator_st200_asm_31_nolink_general_isrc2,
-
-
-Operator_st200_asm_31_nolink_general_xsrc2,
-
-
-Operator_st200_ldwl_nolink_general,
+Operator_st200_ldwl_general_general,
 
 
 Operator_st200_mul32_nolink_general_general,
@@ -3043,6 +3106,7 @@ Operator_st200_cmpltf_n_branch_general_general,
 } Operator;
 typedef uint16_t short_Operator;
 
+
 /*
   Bundling -- Enumeration.
 */
@@ -3074,6 +3138,7 @@ Bundling_st200_ALONE,
 #undef Bundling
 } Bundling;
 typedef uint8_t short_Bundling;
+
 
 /*
   Template -- Enumeration.
@@ -3339,6 +3404,7 @@ Template_st200_O0_O1O2_NOP_O0,
 } Template;
 typedef uint8_t short_Template;
 
+
 /*
   Bundle -- Enumeration.
 */
@@ -3487,6 +3553,7 @@ Bundle_st200_FIRST_EVEN_EVEN_4_8,
 } Bundle;
 typedef uint16_t short_Bundle;
 
+
 /*
   Resource -- Enumeration.
 */
@@ -3518,6 +3585,7 @@ Resource_st200_EVEN,
 #undef Resource
 } Resource;
 typedef uint8_t short_Resource;
+
 
 /*
   Reservation -- Enumeration.
@@ -3579,6 +3647,7 @@ Reservation_st235_EVEN,
 } Reservation;
 typedef uint8_t short_Reservation;
 
+
 /*
   Scheduling -- Enumeration.
 */
@@ -3631,6 +3700,7 @@ Scheduling_st235_EVEN,
 } Scheduling;
 typedef uint8_t short_Scheduling;
 
+
 /*
   Convention -- Enumeration.
 */
@@ -3661,7 +3731,9 @@ Convention_st200_embedded,
 } Convention;
 typedef uint8_t short_Convention;
 
+
 //
+
 
 
 
@@ -3691,17 +3763,11 @@ extern Instance Decode_Encoding_st235_ANY(const void *buffer);
 extern Instance Decode_Encoding_st235_ANYX(const void *buffer);
 
 #undef Encoding
-
-
-
-
-
-
-
 //
 
 
 #define Resource_h_INCLUDED 
+
 
 /*
   Resource.xcc
@@ -3718,6 +3784,7 @@ extern Instance Decode_Encoding_st235_ANYX(const void *buffer);
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Pack a vector of Resource__ units in a word.
 */
@@ -3732,6 +3799,7 @@ typedef union ResourceVector_ *restrict restrict_ResourceVector;
 #define ResourceVector_PACKED(this) ((this)->PACKED)
 #define ResourceVector__PACKED(this) (&(this)->PACKED)
 
+
 /*
   ResourceVector_clear -- Clear this ResourceVector.
 */
@@ -3743,6 +3811,7 @@ static inline void
 ResourceVector_clear(ResourceVector this) {
   *(&(this)->PACKED) = 0;
 }
+
 
 
 /*
@@ -3757,6 +3826,7 @@ ResourceVector_accumulate(ResourceVector this, const_ResourceVector that)
 {
   *(&(this)->PACKED) += ((that)->PACKED);
 }
+
 
 
 /*
@@ -3781,6 +3851,7 @@ ResourceVector_mayIncrease(const_ResourceVector this,
   x &= mask; // Grab high bits after substract.
   return x != mask; // High bit change means this + increase > limit.
 }
+
 
 
 /*
@@ -3811,6 +3882,7 @@ ResourceVector_maxMerge(ResourceVector this, const_ResourceVector that)
 }
 
 
+
 /*
   Resource_NAME_ -- NAME array for the Resource enumeration.
 */
@@ -3819,6 +3891,7 @@ extern const char *Resource_NAME_[];
 #define Resource_NAME_(this) (Resource_NAME_[this])
 #define Resource_NAME(this) (Resource_NAME_[this] + sizeof(MDS_TARGET))
 #define Processor_h_INCLUDED 
+
 
 /*
   Processor.xcc
@@ -3835,12 +3908,14 @@ extern const char *Resource_NAME_[];
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Processor_NAME_ -- NAME array for the Processor enumeration.
 */
 extern const char *Processor_NAME_[];
 
 #define Processor_NAME_(this) (Processor_NAME_[this])
+
 
 
 
@@ -3857,6 +3932,7 @@ Processor_maxIssue(Processor this)
   return Processor_MaxIssue[this];
 }
 
+
 /*
   Processor_minTaken -- This Processor minTaken.
 */
@@ -3869,6 +3945,7 @@ Processor_minTaken(Processor this)
   return Processor_MinTaken[this];
 }
 
+
 /*
   Processor_interlocks -- Whether this Processor interlocks registers.
 */
@@ -3877,6 +3954,7 @@ Processor_Interlocks[];
 bool
 Processor_interlocks(Processor this);
 
+
 //
 typedef enum {
   ProcessorEndianness_Little,
@@ -3884,6 +3962,7 @@ typedef enum {
   ProcessorEndianness__
 } ProcessorEndianness;
 typedef uint8_t short_ProcessorEndianness;
+
 
 /*
   Processor_endianness -- Endianness of this Processor.
@@ -3896,6 +3975,7 @@ Processor_endianness(Processor this)
   ;
   return (ProcessorEndianness)Processor_Endianness[this];
 }
+
 
 /*
   Processor_availability -- This Processor availability of Resource(s).
@@ -3915,6 +3995,7 @@ Processor_availability(Processor this)
 
 #define Encoding_h_INCLUDED 
 
+
 /*
   Encoding.xcc
 //
@@ -3930,12 +4011,14 @@ Processor_availability(Processor this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Encoding_NAME_ -- NAME array for the Encoding enumeration.
 */
 extern const char *Encoding_NAME_[];
 
 #define Encoding_NAME_(this) (Encoding_NAME_[this])
+
 
 
 
@@ -3952,6 +4035,7 @@ Encoding_processor(Encoding this)
   return (Processor)Encoding_Processor[this];
 }
 
+
 /*
   Encoding_wordCount -- This Encoding word count.
 */
@@ -3964,6 +4048,7 @@ Encoding_wordCount(Encoding this)
   return Encoding_WordCount[this];
 }
 
+
 /*
   Encoding_wordSize -- This Encoding word size.
 */
@@ -3975,6 +4060,7 @@ Encoding_wordSize(Encoding this)
   ;
   return Encoding_WordSize[this];
 }
+
 
 /*
   Encoding_decode -- This Encoding decode function.
@@ -3997,6 +4083,7 @@ Encoding_decode(Encoding this)
 
 #define NativeType_h_INCLUDED 
 
+
 /*
   NativeType.xcc
 //
@@ -4012,6 +4099,7 @@ Encoding_decode(Encoding this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   NativeType_NAME_ -- NAME array for the NativeType enumeration.
 */
@@ -4022,11 +4110,13 @@ extern const char *NativeType_NAME_[];
 
 
 
+
 /*
   NativeType_syntax -- This NativeType bit syntax.
 */
 const char *
 NativeType_syntax(NativeType this);
+
 
 /*
   NativeType_width -- This NativeType bit width.
@@ -4040,6 +4130,7 @@ NativeType_width(NativeType this)
   return NativeType_Width[this];
 }
 
+
 /*
   NativeType_signed -- This NativeType is signed.
 */
@@ -4051,6 +4142,7 @@ NativeType_signed(NativeType this)
   ;
   return NativeType_Signed[this];
 }
+
 
 /*
   NativeType_sizeOf -- This NativeType size in bytes when stored to memory.
@@ -4064,6 +4156,7 @@ NativeType_sizeOf(NativeType this)
   return NativeType_SizeOf[this];
 }
 
+
 /*
   NativeType_align -- This NativeType Alignment Base
 */
@@ -4075,6 +4168,7 @@ NativeType_align(NativeType this)
   ;
   return NativeType_Align[this];
 }
+
 
 /*
   NativeType_slice -- This NativeType slice width in bits.
@@ -4094,6 +4188,7 @@ NativeType_slice(NativeType this)
 
 #define Register_h_INCLUDED 
 
+
 /*
   Register.xcc
 //
@@ -4108,6 +4203,7 @@ NativeType_slice(NativeType this)
   Public License (LGPL) version 2.1; any later version of these
   licences as published by the Free Software Foundation.
 */
+
 
 /*
   RegisterArray -- Array of Register(s).
@@ -4133,6 +4229,7 @@ RegisterArray_count(const_RegisterArray this)
   return ((this)->COUNT);
 }
 
+
 /*
   RegisterArray_items -- Register(s) in this RegisterArray.
 */
@@ -4141,6 +4238,7 @@ RegisterArray_items(const_RegisterArray this)
 {
   return ((this)->ITEMS);
 }
+
 
 /*
   RegisterArray_FOREACH_Register -- Iterate this RegisterArray Register(s).
@@ -4156,6 +4254,7 @@ RegisterArray_items(const_RegisterArray this)
 
 
 
+
 /*
   Register_NAME_ -- NAME array for the Register enumeration.
 */
@@ -4163,6 +4262,7 @@ extern const char *Register_NAME_[];
 
 #define Register_NAME_(this) (Register_NAME_[this])
 #define Register_NAME(this) (Register_NAME_[this] + sizeof(MDS_TARGET))
+
 
 
 
@@ -4180,6 +4280,7 @@ Register_names(Register this)
   return Register_Names[this];
 }
 
+
 /*
   Register_regFile -- The RegFile of this Register.
 */
@@ -4191,6 +4292,7 @@ Register_regFile(Register this)
   ;
   return (RegFile)Register_RegFile[this];
 }
+
 
 /*
   Register_isWired -- True if this Register is wired.
@@ -4204,6 +4306,7 @@ Register_isWired(Register this)
   return Register_Wired[this];
 }
 
+
 /*
   Register_aliasArray -- This Register RegisterArray.
 */
@@ -4216,6 +4319,7 @@ Register_aliasArray(Register this)
   return Register_AliasArray_ + this;
 }
 
+
 /*
   Register_aliasCount -- This Register count of alias Register(s).
 */
@@ -4225,6 +4329,7 @@ Register_aliasCount(Register this) {
   return RegisterArray_count(aliasArray);
 }
 
+
 /*
   Register_aliases -- This Register array of alias Register(s).
 */
@@ -4233,6 +4338,7 @@ Register_aliases(Register this) {
   const_RegisterArray aliasArray = Register_aliasArray(this);
   return RegisterArray_items(aliasArray);
 }
+
 
 /*
   RegisterList -- Non-mutable list of Register(s).
@@ -4275,6 +4381,7 @@ RegisterList_count(const_RegisterList this)
   return ((this)->COUNT);
 }
 
+
 /*
   RegisterList_first -- First item of the RegisterList.
   Return:       The first Register.
@@ -4285,6 +4392,7 @@ RegisterList_first(const_RegisterList this)
   ;
   return (Register)((this)->ITEMS)[0];
 }
+
 
 /*
   RegisterList_access -- Access the RegisterList by index.
@@ -4298,6 +4406,7 @@ RegisterList_access(const_RegisterList this, int32_t index)
   return (Register)((this)->ITEMS)[index];
 }
 
+
 /*
   RegisterList_items -- For use by RegisterList_FOREACH_Register.
 */
@@ -4306,6 +4415,7 @@ RegisterList_items(const_RegisterList this)
 {
   return ((this)->ITEMS);
 }
+
 
 /*
   RegisterList_FOREACH_Register -- Iterate over this RegisterList Register(s).
@@ -4319,17 +4429,20 @@ RegisterList_items(const_RegisterList this)
 
 
 
+
 /*
   RegisterList_contains -- True if this RegisterList contains the given Register.
 */
 bool
 RegisterList_contains(const_RegisterList this, Register member);
 
+
 /*
   Register_isLifetime -- Test if this Register Lifetime should be minimized.
 */
 bool
 Register_isLifetime(Register this, Convention convention);
+
 
 //
 
@@ -4345,6 +4458,7 @@ Register_isLifetime(Register this, Convention convention);
 #define RegisterAliases(INDEX,ALIASES) 
 #undef RegisterAliases
 typedef uint32_t RegisterSetWord;
+
 
 /*
   RegisterSet -- Set of architectural registers.
@@ -4391,11 +4505,13 @@ RegisterSet_words(const_RegisterSet this)
   return ((this)->WORDS);
 }
 
+
 /*
   RegisterSet_isEmpty -- True iff this RegisterSet is empty.
 */
 bool
 RegisterSet_isEmpty(const_RegisterSet this);
+
 
 /*
   RegisterSet_count -- Count members contained in the RegisterSet.
@@ -4404,11 +4520,13 @@ RegisterSet_isEmpty(const_RegisterSet this);
 int
 RegisterSet_count(const_RegisterSet this);
 
+
 /*
   RegisterSet_empty -- Empty this RegisterSet.
 */
 void
 RegisterSet_empty(RegisterSet this);
+
 
 /*
   RegisterSet_choose -- Choose and remove a member of the RegisterSet.
@@ -4418,12 +4536,14 @@ RegisterSet_empty(RegisterSet this);
 Register
 RegisterSet_choose(RegisterSet this);
 
+
 /*
   RegisterSet_contains -- Test a member for containment.
   Return:	True if this RegisterSet contains member.
 */
 bool
 RegisterSet_contains(const_RegisterSet this, Register member);
+
 
 /*
   RegisterSet_insert -- Insert a member in this RegisterSet.
@@ -4432,6 +4552,7 @@ RegisterSet_contains(const_RegisterSet this, Register member);
 bool
 RegisterSet_insert(RegisterSet this, Register member);
 
+
 /*
   RegisterSet_remove -- Remove a member from this RegisterSet.
   Return:	False iff member was not contained in this RegisterSet.
@@ -4439,11 +4560,13 @@ RegisterSet_insert(RegisterSet this, Register member);
 bool
 RegisterSet_remove(RegisterSet this, Register member);
 
+
 /*
   RegisterSet_equals -- Test for RegisterSet equality.
 */
 bool
 RegisterSet_equals(const_RegisterSet this, const_RegisterSet that);
+
 
 /*
   RegisterSet_union -- Union of this RegisterSet with that RegisterSet.
@@ -4451,17 +4574,20 @@ RegisterSet_equals(const_RegisterSet this, const_RegisterSet that);
 void
 RegisterSet_union(RegisterSet this, const_RegisterSet that);
 
+
 /*
   RegisterSet_inter -- Intersect this RegisterSet with that RegisterSet.
 */
 void
 RegisterSet_inter(RegisterSet this, const_RegisterSet that);
 
+
 /*
   RegisterSet_diff -- Remove that RegisterSet members from this RegisterSet.
 */
 void
 RegisterSet_diff(RegisterSet this, const_RegisterSet that);
+
 
 /*
   RegisterSet_FOREACH_Register -- Iterate over this RegisterSet registers
@@ -4474,11 +4600,13 @@ RegisterSet_diff(RegisterSet this, const_RegisterSet that);
 
 
 
+
 /*
   RegisterSet_pretty -- Pretty-print this RegisterSet.
 */
 bool
 RegisterSet_pretty(const_RegisterSet this, FILE *file);
+
 
 /*
   RegisterAction -- Action on a Register for scoreboarding and bundling.
@@ -4510,6 +4638,7 @@ RegisterAction_regClass(const_RegisterAction this)
   return (RegClass)((this)->REGCLASS);
 }
 
+
 /*
   RegisterAction_xxxIndex -- Index of argument or result OperatorParameter(s).
 */
@@ -4518,6 +4647,7 @@ RegisterAction_xxxIndex(const_RegisterAction this)
 {
   return (Register)((this)->XXXINDEX);
 }
+
 
 /*
   RegisterAction_rank -- Rank of this RegisterAction in the Instance Operand list.
@@ -4530,6 +4660,7 @@ RegisterAction_rank(const_RegisterAction this)
   return ((this)->RANK);
 }
 
+
 /*
   RegisterAction_stage -- The pipeline stage of this RegisterAction.
 */
@@ -4539,6 +4670,7 @@ RegisterAction_stage(const_RegisterAction this)
   return ((this)->STAGE);
 }
 
+
 /*
   RegisterAction_setStage -- Set the pipeline stage of this RegisterAction.
 */
@@ -4547,6 +4679,7 @@ RegisterAction_setStage(RegisterAction this, int stage)
 {
   *(&(this)->STAGE) = stage;
 }
+
 
 /*
   RegisterActionArray -- Array of RegisterAction(s).
@@ -4581,6 +4714,7 @@ RegisterActionArray_readCount(const_RegisterActionArray this)
   return ((this)->READCOUNT);
 }
 
+
 /*
   RegisterActionArray_readStart -- Start index of variant Read RegisterAction(s).
 */
@@ -4589,6 +4723,7 @@ RegisterActionArray_readStart(const_RegisterActionArray this)
 {
   return ((this)->READSTART);
 }
+
 
 /*
   RegisterActionArray_writeCount -- Count of Write RegisterAction(s).
@@ -4599,6 +4734,7 @@ RegisterActionArray_writeCount(const_RegisterActionArray this)
   return ((this)->WRITECOUNT);
 }
 
+
 /*
   RegisterActionArray_writeStart -- Start index of variant Write RegisterAction(s).
 */
@@ -4607,6 +4743,7 @@ RegisterActionArray_writeStart(const_RegisterActionArray this)
 {
   return ((this)->WRITESTART);
 }
+
 
 /*
   RegisterActionArray_count -- Count of Read and Write RegisterAction(s).
@@ -4617,6 +4754,7 @@ RegisterActionArray_count(const_RegisterActionArray this)
   return ((this)->READCOUNT) + ((this)->WRITECOUNT);
 }
 
+
 /*
   RegisterActionArray_readActions -- this RegisterActionArray read RegisterAction(s).
 */
@@ -4625,6 +4763,7 @@ RegisterActionArray_readActions(const_RegisterActionArray this)
 {
   return ((this)->ITEMS) + 0;
 }
+
 
 /*
   RegisterActionArray_writeActions -- this RegisterActionArray write RegisterAction(s).
@@ -4635,6 +4774,7 @@ RegisterActionArray_writeActions(const_RegisterActionArray this)
   return ((this)->ITEMS) + ((this)->READCOUNT);
 }
 
+
 /*
   RegisterActionArray_items -- For use by RegisterActionArray_FOREACH_RegisterAction.
 */
@@ -4643,6 +4783,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
 {
   return ((this)->ITEMS);
 }
+
 
 /*
   RegisterActionArray_FOREACH_RegisterAction -- Iterate over this RegisterActionArray RegisterAction(s).
@@ -4656,6 +4797,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
 
 
 #define RegisterActionArray_ENDEACH_RegisterAction } }
+
 
 
 
@@ -4674,6 +4816,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
 
 
 
+
 /*
   RegisterActionArray_FORWRITE_RegisterAction -- Iterate over this RegisterActionArray Write RegisterAction(s).
 */
@@ -4687,6 +4830,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
 
 
 #define RegFile_h_INCLUDED 
+
 
 /*
   RegFile.xcc
@@ -4703,6 +4847,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   RegFile_NAME_ -- NAME array for the RegFile enumeration.
 */
@@ -4710,6 +4855,7 @@ extern const char *RegFile_NAME_[];
 
 #define RegFile_NAME_(this) (RegFile_NAME_[this])
 #define RegFile_NAME(this) (RegFile_NAME_[this] + sizeof(MDS_TARGET))
+
 
 
 
@@ -4727,6 +4873,7 @@ RegFile_width(RegFile this)
   return RegFile_Width[this];
 }
 
+
 /*
   RegFile_getNativeType -- Return the default NativeType for this RegFile.
   If this regFile has no associated storage type, return NativeType__.
@@ -4740,6 +4887,7 @@ RegFile_getNativeType(RegFile this)
   return (NativeType)RegFile_NativeType[this][0];
 }
 
+
 /*
   RegFile_lowRegister -- This RegFile low Register.
 */
@@ -4751,6 +4899,7 @@ RegFile_lowRegister(RegFile this)
   ;
   return (Register)RegFile_LowReg[this];
 }
+
 
 /*
   RegFile_highRegister -- This RegFile high Register.
@@ -4764,6 +4913,7 @@ RegFile_highRegister(RegFile this)
   return (Register)RegFile_HighReg[this];
 }
 
+
 /*
   RegFile_FOREACH_Register -- Iterate in this RegFile Registers
 */
@@ -4772,6 +4922,7 @@ RegFile_highRegister(RegFile this)
 
 
 #define RegFile_ENDEACH_Register } }
+
 
 
 
@@ -4784,6 +4935,7 @@ RegFile_isStickyReg(RegFile this)
   // TODO: use RegFile.enum
   return false;
 }
+
 
 /*
   RegFile_registerSet -- A RegisterSet with the members of this RegFile.
@@ -4803,6 +4955,7 @@ RegFile_registerSet(RegFile this)
 
 #define RegClass_h_INCLUDED 
 
+
 /*
   RegClass.xcc
 //
@@ -4818,12 +4971,14 @@ RegFile_registerSet(RegFile this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   RegClass_NAME_ -- NAME array for the RegClass enumeration.
 */
 extern const char *RegClass_NAME_[];
 
 #define RegClass_NAME_(this) (RegClass_NAME_[this])
+
 
 
 
@@ -4842,6 +4997,7 @@ RegClass_registerList(RegClass this)
 #define RegClass_firstRegister(this) RegisterList_first(RegClass_registerList(this))
 #define RegClass_lastRegister(this) RegisterList_last(RegClass_registerList(this))
 
+
 /*
   RegClass_regFile -- The RegFile this RegClass belongs to.
 */
@@ -4853,6 +5009,7 @@ RegClass_regFile(RegClass this)
   ;
   return (RegFile)RegClass_RegFile[this];
 }
+
 
 /*
   RegClass_registerSet -- This RegClass Register(s) as a RegisterSet.
@@ -4872,6 +5029,7 @@ RegClass_registerSet(RegClass this)
 
 #define RegMask_h_INCLUDED 
 
+
 /*
   RegMask.xcc
 //
@@ -4887,6 +5045,7 @@ RegClass_registerSet(RegClass this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   RegMask_NAME_ -- NAME array for the RegMask enumeration.
 */
@@ -4894,6 +5053,7 @@ extern const char *RegMask_NAME_[];
 
 #define RegMask_NAME_(this) (RegMask_NAME_[this])
 #define RegMask_NAME(this) (RegMask_NAME_[this] + sizeof(MDS_TARGET))
+
 
 
 
@@ -4911,6 +5071,7 @@ RegMask_registerList(RegMask this)
   return &RegMask_RegisterList_[this];
 }
 
+
 /*
   RegMask_regFile -- The RegFile this RegMask belongs to.
 */
@@ -4922,6 +5083,7 @@ RegMask_regFile(RegMask this)
   ;
   return (RegFile)RegMask_RegFile[this];
 }
+
 
 /*
   RegMask_registerSet -- This RegMask Register(s) as a RegisterSet.
@@ -4941,6 +5103,7 @@ RegMask_registerSet(RegMask this)
 
 #define Modifier_h_INCLUDED 
 
+
 /*
   Modifier.xcc
 //
@@ -4956,6 +5119,7 @@ RegMask_registerSet(RegMask this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   ModifierClass_NAME_ -- NAME array for the ModifierClass enumeration.
 */
@@ -4966,12 +5130,14 @@ extern const char *ModifierClass_NAME_[];
 
 
 
+
 /*
   Modifier_NAME_ -- NAME array for the Modifier enumeration.
 */
 extern const char *Modifier_NAME_[];
 
 #define Modifier_NAME_(this) (Modifier_NAME_[this])
+
 
 
 
@@ -4994,6 +5160,7 @@ Modifier_names(Modifier this)
 
 #define Relocation_h_INCLUDED 
 
+
 /*
   Relocation.xcc
 //
@@ -5008,6 +5175,7 @@ Modifier_names(Modifier this)
   Public License (LGPL) version 2.1; any later version of these
   licences as published by the Free Software Foundation.
 */
+
 
 /*
   RelocationList -- Sequence of Relocation(s).
@@ -5033,6 +5201,7 @@ RelocationList_count(const_RelocationList this)
   return ((this)->COUNT);
 }
 
+
 /*
   RelocationList_access -- Access the Relocation at the given index.
 */
@@ -5043,6 +5212,7 @@ RelocationList_access(const_RelocationList this, int index)
   return (Relocation)((this)->ITEMS)[index];
 }
 
+
 /*
   RelocationList_items -- For use by RelocationList_FOREACH_Relocation.
 */
@@ -5051,6 +5221,7 @@ RelocationList_items(const_RelocationList this)
 {
   return ((this)->ITEMS);
 }
+
 
 /*
   RelocationList_FOREACH_Relocation -- Iterate over this RelocationList Relocation(s).
@@ -5064,12 +5235,14 @@ RelocationList_items(const_RelocationList this)
 
 
 
+
 /*
   Relocation_NAME_ -- NAME array for the Relocation enumeration.
 */
 extern const char *Relocation_NAME_[];
 
 #define Relocation_NAME_(this) (Relocation_NAME_[this])
+
 
 
 
@@ -5085,6 +5258,7 @@ typedef enum {
 typedef uint8_t short_RelocationRelative;
 #define Relocation_isRelativePC(this) (Relocation_relative(this) == RelocationRelative_PC)
 #define Relocation_isRelativeGP(this) (Relocation_relative(this) == RelocationRelative_GP)
+
 
 /*
   Relocation_relative -- This Relocation RelocationRelative.
@@ -5104,6 +5278,7 @@ Relocation_relative(Relocation this)
 
 #define Immediate_h_INCLUDED 
 
+
 /*
   Immediate.xcc
 //
@@ -5119,10 +5294,12 @@ Relocation_relative(Relocation this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   ImmediateValue -- Type for the largest Immediate value.
 */
 typedef int64_t ImmediateValue;
+
 
 /*
   ImmediateConstant -- Base class for decoded Immediate constants.
@@ -5164,6 +5341,7 @@ extern const char *Immediate_NAME_[];
 
 
 
+
 /*
   Immediate_minValue -- This Immediate MinValue attribute.
 */
@@ -5175,6 +5353,7 @@ Immediate_minValue(Immediate this)
   ;
   return Immediate_MinValue[this];
 }
+
 
 /*
   Immediate_maxValue -- This Immediate MaxValue attribute.
@@ -5188,6 +5367,7 @@ Immediate_maxValue(Immediate this)
   return Immediate_MaxValue[this];
 }
 
+
 /*
   Immediate_relocationList -- This Immediate RelocationList.
 */
@@ -5200,6 +5380,7 @@ Immediate_relocationList(Immediate this)
   return &Immediate_RelocationList_[this];
 }
 
+
 /*
   Immediate_FOREACH_Relocation -- Iterate over this Immediate Relocation(s).
 */
@@ -5207,6 +5388,7 @@ Immediate_relocationList(Immediate this)
 
 
 #define Immediate_ENDEACH_Relocation } RelocationList_ENDEACH_Relocation;
+
 
 
 /*
@@ -5220,6 +5402,7 @@ Immediate_canEncode(Immediate this, int64_t value);
 
 
 #define Operand_h_INCLUDED 
+
 
 /*
   Operand.xcc
@@ -5236,9 +5419,11 @@ Immediate_canEncode(Immediate this, int64_t value);
   licences as published by the Free Software Foundation.
 */
 
+
 //
 typedef uintptr_t OperandEncoded;
 typedef uintptr_t OperandDecoded;
+
 
 /*
   Operand_NAME_ -- NAME array for the Operand enumeration.
@@ -5246,6 +5431,7 @@ typedef uintptr_t OperandDecoded;
 extern const char *Operand_NAME_[];
 
 #define Operand_NAME_(this) (Operand_NAME_[this])
+
 
 
 
@@ -5263,6 +5449,7 @@ extern const char *
 OperandType_NAME_[];
 #define OperandType_NAME_(type) OperandType_NAME_[type]
 
+
 /*
   Operand_type -- The OperandType of this Operand.
 */
@@ -5274,6 +5461,7 @@ Operand_type(Operand this)
   ;
   return (OperandType)Operand_Type[this];
 }
+
 
 /*
   Operand_enum -- The RegClass or Immediate or Modifier or Regmask of this Operand.
@@ -5287,6 +5475,7 @@ Operand_enum(Operand this)
   return Operand_Enum[this];
 }
 
+
 /*
   Operand_modifier -- The Modifier of this Operand.
 */
@@ -5298,6 +5487,7 @@ Operand_modifier(Operand this)
   }
   return ModifierClass__;
 }
+
 
 /*
   Operand_immediate -- The Immediate of this Operand.
@@ -5311,6 +5501,7 @@ Operand_immediate(Operand this)
   return Immediate__;
 }
 
+
 /*
   Operand_regClass -- The RegClass of this Operand.
 */
@@ -5323,6 +5514,7 @@ Operand_regClass(Operand this)
   return RegClass__;
 }
 
+
 /*
   Operand_regMask -- The RegMask of this Operand.
 */
@@ -5334,6 +5526,7 @@ Operand_regMask(Operand this)
   }
   return RegMask__;
 }
+
 
 /*
   Operand_encode -- This Operand encode function.
@@ -5348,6 +5541,7 @@ Operand_encode(Operand this)
   return Operand_Encode[this];
 }
 
+
 /*
   Operand_encodeImmediateValue -- Encode a ImmediateValue.
 */
@@ -5356,6 +5550,7 @@ Operand_encodeImmediateValue(Operand this, ImmediateValue value, void *opcodes)
 {
   (*Operand_encode(this))((OperandDecoded)(&value), opcodes);
 }
+
 
 /*
   Operand_decode -- This Operand decode function.
@@ -5370,6 +5565,7 @@ Operand_decode(Operand this)
   ;
   return Operand_Decode[this];
 }
+
 
 /*
   Decode_Operand function prototypes.
@@ -5472,6 +5668,7 @@ void Decode_Operand_st200_brknum(const void *opcodes, void *restrict result);
 #define Operand_decodeImmediateValue(operand,opcodes,value_ptr) (*Operand_decode(operand))(opcodes, (void *restrict)(value_ptr))
 
 
+
 /*
   OperandList -- Sequence of Operand(s).
 */
@@ -5496,6 +5693,7 @@ OperandList_count(const_OperandList this)
   return ((this)->COUNT);
 }
 
+
 /*
   OperandList_access -- Access the Operand at the given index.
 */
@@ -5506,6 +5704,7 @@ OperandList_access(const_OperandList this, int index)
   return (Operand)((this)->ITEMS)[index];
 }
 
+
 /*
   OperandList_items -- For use by OperandList_FOREACH_Operand.
 */
@@ -5514,6 +5713,7 @@ OperandList_items(const_OperandList this)
 {
   return ((this)->ITEMS);
 }
+
 
 /*
   OperandList_FOREACH_Operand -- Iterate over this OperandList Operand(s).
@@ -5527,6 +5727,7 @@ OperandList_items(const_OperandList this)
 
 
 
+
 /*
   Operands_NAME_ -- NAME array for the Operands enumeration.
 */
@@ -5534,6 +5735,7 @@ extern const char *Operands_NAME_[];
 
 #define Operands_NAME_(this) (Operands_NAME_[this])
 #define Operands_NAME(this) (Operands_NAME_[this] + sizeof(MDS_TARGET))
+
 
 
 
@@ -5551,6 +5753,7 @@ Operands_operandList(Operands this)
   return &Operands_OperandList_[this];
 }
 
+
 /*
   Operands_FOREACH_Operand -- Iterate over this Operands Operand(s).
 */
@@ -5558,6 +5761,7 @@ Operands_operandList(Operands this)
 
 
 #define Operands_ENDEACH_Operand } OperandList_ENDEACH_Operand;
+
 
 
 /*
@@ -5570,6 +5774,7 @@ Operands_count(Operands this)
   return OperandList_count(&Operands_OperandList_[this]);
 }
 
+
 /*
   Operands_access -- Access the Operand at the given index.
 */
@@ -5579,6 +5784,7 @@ Operands_access(Operands this, int index)
   ;
   return OperandList_access(&Operands_OperandList_[this], index);
 }
+
 
 /*
   Operands_encode -- This Operands encode function.
@@ -5593,6 +5799,7 @@ Operands_encode(Operands this)
   ;
   return Operands_Encode[this];
 }
+
 
 /*
   OperandsEncode function prototypes.
@@ -5708,9 +5915,6 @@ void OperandsEncode_st200_bdest_src1(const OperandDecoded *restrict decoded, voi
 void OperandsEncode_st200_idest_scond(const OperandDecoded *restrict decoded, void *restrict opcodes);
 
 
-void OperandsEncode_st200_nlidest_src1(const OperandDecoded *restrict decoded, void *restrict opcodes);
-
-
 void OperandsEncode_st200_src2(const OperandDecoded *restrict decoded, void *restrict opcodes);
 
 
@@ -5779,6 +5983,7 @@ void OperandsEncode_st200_bdest_src2_src1(const OperandDecoded *restrict decoded
 void
 OperandsEncode__(const OperandDecoded *restrict decoded, void *restrict buffer);
 
+
 /*
  Operands_relocatableRank -- Rank of relocatable Immediate in this Operands.
 */
@@ -5790,6 +5995,7 @@ Operands_relocatableRank(Operands this)
   ;
   return Operands_RelocatableRank[this];
 }
+
 
 /*
  Operands_relocatableOperand -- Relocatable Operand in this Operands.
@@ -5803,6 +6009,7 @@ Operands_relocatableOperand(Operands this)
   return (Operand)Operands_RelocatableOperand[this];
 }
 
+
 /*
  Operands_relocatableImmediate -- Relocatable Immediate in this Operands.
 */
@@ -5814,6 +6021,7 @@ Operands_relocatableImmediate(Operands this)
   ;
   return (Immediate)Operands_RelocatableImmediate[this];
 }
+
 
 /*
   OperandsBuffer -- Buffer used to decode Operands.
@@ -5871,6 +6079,7 @@ Operands_decode(Operands this)
   ;
   return Operands_Decode[this];
 }
+
 
 
 /*
@@ -5987,9 +6196,6 @@ void Decode_Operands_st200_bdest_src1(OperandsBuffer buffer, const void *opcodes
 void Decode_Operands_st200_idest_scond(OperandsBuffer buffer, const void *opcodes);
 
 
-void Decode_Operands_st200_nlidest_src1(OperandsBuffer buffer, const void *opcodes);
-
-
 void Decode_Operands_st200_src2(OperandsBuffer buffer, const void *opcodes);
 
 
@@ -6065,6 +6271,7 @@ Decode_Operands__(OperandsBuffer buffer, const void *opcodes);
 
 #define Instance_h_INCLUDED 
 
+
 /*
   Instance.xcc
 //
@@ -6080,12 +6287,14 @@ Decode_Operands__(OperandsBuffer buffer, const void *opcodes);
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Instance_NAME_ -- NAME array for the Instance enumeration.
 */
 extern const char *Instance_NAME_[];
 
 #define Instance_NAME_(this) (Instance_NAME_[this])
+
 
 
 
@@ -6102,6 +6311,7 @@ Instance_scheduling(Instance this)
   return (Scheduling)Instance_Scheduling[this];
 }
 
+
 /*
  Instance_encoding -- This Instance Encoding.
 */
@@ -6113,6 +6323,7 @@ Instance_encoding(Instance this)
   ;
   return (Encoding)Instance_Encoding[this];
 }
+
 
 //
 struct InstanceOpcodes_ {
@@ -6155,6 +6366,7 @@ Instance_opcodes(Instance this)
   return &Instance_Opcodes_[this];
 }
 
+
 /*
  Instance_operands -- This Instance Operands.
 */
@@ -6167,17 +6379,20 @@ Instance_operands(Instance this)
   return (Operands)Instance_Operands[this];
 }
 
+
 /*
  Instance_mnemonic -- This Instance mnemonic string.
 */
 const char *
 Instance_mnemonic(Instance this);
 
+
 /*
  Instance_syntax -- This Instance syntax string.
 */
 const char *
 Instance_syntax(Instance this);
+
 
 /*
   Instance_actionArray -- This Instance RegisterActionArray.
@@ -6191,6 +6406,7 @@ Instance_actionArray(Instance this)
   return Instance_ActionArray_ + this;
 }
 
+
 /*
   Instance_makeRegisterActionItems -- Make this Instance RegisterActionArray_ITEMS.
 //
@@ -6198,6 +6414,7 @@ Instance_actionArray(Instance this)
 */
 RegisterAction_ *
 Instance_makeRegisterActionItems(Instance this, Memory memory);
+
 
 //
 typedef enum {
@@ -6209,6 +6426,7 @@ typedef enum {
 } InstanceAttribute;
 typedef uint8_t InstanceAttributes;
 
+
 //
 #define Instance_isControl(this) (Instance_attributes(this)>>InstanceAttribute_Control & 1)
 
@@ -6219,6 +6437,7 @@ typedef uint8_t InstanceAttributes;
 #define Instance_isMemoryWrite(this) (Instance_attributes(this)>>InstanceAttribute_MemoryWrite & 1)
 
 #define Instance_isFixRegisterRAW(this) (Instance_attributes(this)>>InstanceAttribute_FixRegisterRAW & 1)
+
 
 
 /*
@@ -6233,14 +6452,17 @@ Instance_attributes(Instance this)
   return Instance_Attributes[this];
 }
 
+
 //
 static inline bool
 Instance_fixupRegisterRAW(Instance this, Instance that)
 {
+  unsigned attributes;
   ;
-  unsigned attributes = Instance_Attributes[this] | Instance_Attributes[that];
+  attributes = Instance_Attributes[this] | Instance_Attributes[that];
   return (attributes>>InstanceAttribute_FixRegisterRAW) & 0x1;
 }
+
 
 //
 int
@@ -6251,6 +6473,7 @@ Instance_latencyRegisterRAW(Instance this, Instance that, Register registre);
 
 
 #define Operator_h_INCLUDED 
+
 
 /*
   Operator.xcc
@@ -6266,6 +6489,7 @@ Instance_latencyRegisterRAW(Instance this, Instance that, Register registre);
   Public License (LGPL) version 2.1; any later version of these
   licences as published by the Free Software Foundation.
 */
+
 
 //
 typedef enum {
@@ -6286,6 +6510,7 @@ typedef enum {
   OperatorParameterKind__
 } OperatorParameterKind;
 typedef uint8_t short_OperatorParameterKind;
+
 
 //
 struct OperatorParameter_ {
@@ -6319,6 +6544,7 @@ OperatorParameter_kind(const_OperatorParameter this)
   return (OperatorParameterKind)((this)->KIND);
 }
 
+
 /*
   OperatorParameter_rank -- Rank of this OperatorParameter in the Instance Operand list.
   Return:	0 if the OperatorParameter has no corresponding Operand.
@@ -6329,6 +6555,7 @@ OperatorParameter_rank(const_OperatorParameter this)
   return ((this)->RANK);
 }
 
+
 /*
   OperatorParameter_type -- The OperandType of this OperatorParameter.
 */
@@ -6338,6 +6565,7 @@ OperatorParameter_type(const_OperatorParameter this)
   return (OperandType)((this)->TYPE);
 }
 
+
 /*
   OperatorParameter_enum -- The Modifier/Immediate/RegClass/Regmask of this OperatorParameter.
 */
@@ -6346,6 +6574,7 @@ OperatorParameter_enum(const_OperatorParameter this)
 {
   return ((this)->ENUM);
 }
+
 
 /*
   OperatorParameterArray -- Array of OperatorParameter(s).
@@ -6374,6 +6603,7 @@ OperatorParameterArray_argCount(const_OperatorParameterArray this)
   return ((this)->ARGCOUNT);
 }
 
+
 /*
   OperatorParameterArray_resCount -- Result count in this OperatorParameterArray.
 */
@@ -6382,6 +6612,7 @@ OperatorParameterArray_resCount(const_OperatorParameterArray this)
 {
   return ((this)->RESCOUNT);
 }
+
 
 /*
   OperatorParameterArray_items -- For use by OperatorParameterArray_FOREACH_OperatorParameter.
@@ -6392,6 +6623,7 @@ OperatorParameterArray_items(const_OperatorParameterArray this)
   return ((this)->ITEMS);
 }
 
+
 /*
   OperatorParameterArray_count -- OperatorParameter count in this OperatorParameterArray.
 */
@@ -6401,11 +6633,13 @@ OperatorParameterArray_count(const_OperatorParameterArray this)
   return ((this)->ARGCOUNT) + ((this)->RESCOUNT);
 }
 
+
 /*
   OperatorParameterArray_FOREACH_OperatorParameter -- Iterate over this OperatorParameterArray OperatorParameter(s).
 */
 #define OperatorParameterArray_FOREACH_OperatorParameter(this,parameter) { const OperatorParameter_ *OperatorParameterArray_ITEMS = OperatorParameterArray_items(this); int OperatorParameterArray_COUNT = OperatorParameterArray_count(this); int OperatorParameterArray_INDEX = 0; for (; OperatorParameterArray_INDEX < OperatorParameterArray_COUNT; OperatorParameterArray_INDEX++) { const_OperatorParameter parameter = OperatorParameterArray_ITEMS + OperatorParameterArray_INDEX;
 #define OperatorParameterArray_ENDEACH_OperatorParameter } }
+
 
 
 
@@ -6415,6 +6649,7 @@ OperatorParameterArray_count(const_OperatorParameterArray this)
 extern const char *Operator_NAME_[];
 
 #define Operator_NAME_(this) (Operator_NAME_[this])
+
 
 
 
@@ -6434,6 +6669,7 @@ typedef enum {
 } OperatorAttribute;
 typedef uint16_t OperatorAttributes;
 
+
 /*
   Operator_attributes -- Access this Operator attributes.
 */
@@ -6445,6 +6681,7 @@ Operator_attributes(Operator this)
   ;
   return Operator_Attributes[this];
 }
+
 
 //
 #define Operator_isPseudo(this) (Operator_attributes(this)>>OperatorAttribute_Pseudo & 1)
@@ -6469,6 +6706,7 @@ Operator_attributes(Operator this)
 
 
 
+
 /*
   Operator_instance -- This Operator Instance for a Processor.
 */
@@ -6482,11 +6720,13 @@ Operator_instance(Operator this, Processor processor)
   return (Instance)Operator_Instances[this][processor];
 }
 
+
 /*
   Operator_mnemonic -- This Operator Mnemonic attribute.
 */
 const char *
 Operator_mnemonic(Operator this);
+
 
 /*
   Operator_parameterArray -- This Operator OperatorParameterArray.
@@ -6500,6 +6740,7 @@ Operator_parameterArray(Operator this)
   return Operator_ParameterArray_ + this;
 }
 
+
 /*
   Operator_argCount -- This Operator count of argument OperatorParameter(s).
 */
@@ -6508,6 +6749,7 @@ Operator_argCount(Operator this) {
   const_OperatorParameterArray parameterArray = Operator_parameterArray(this);
   return OperatorParameterArray_argCount(parameterArray);
 }
+
 
 /*
   Operator_resCount -- This Operator count of result OperatorParameter(s).
@@ -6518,11 +6760,13 @@ Operator_resCount(Operator this) {
   return OperatorParameterArray_resCount(parameterArray);
 }
 
+
 /*
   Operator_isFixRegisterRAW -- True if Register RAW latency needs a fix.
 */
 bool
 Operator_isFixRegisterRAW(Operator this);
+
 
 /*
  Operator_selectInstance -- Select a suitable instance for the processor.
@@ -6530,11 +6774,13 @@ Operator_isFixRegisterRAW(Operator this);
 Instance
 Operator_selectInstance(Operator this, Processor processor);
 
+
 /*
   Operator_require -- The register lifetime flow requirements.
 */
 int
 Operator_require(Operator this, RegFile regFile);
+
 
 /*
   Operator_immediateIndex -- The index of this Operator Immediate OperatorParameter(s).
@@ -6543,6 +6789,7 @@ Operator_require(Operator this, RegFile regFile);
 int
 Operator_immediateIndex(Operator this);
 
+
 /*
   Operator_baseAddressIndex -- The index of this Operator base address OperatorParameter(s).
   Return:	The index starting at 0 of base address OperatorParameter among writes.
@@ -6550,11 +6797,13 @@ Operator_immediateIndex(Operator this);
 int
 Operator_baseAddressIndex(Operator this);
 
+
 /*
   Operator_memoryAccessSize -- Get the access size in bytes of a memory access.
 */
 int
 Operator_memoryAccessSize(Operator this);
+
 
 /*
   Operator_isXXX -- Test if this Operator is a XXX.
@@ -6567,11 +6816,13 @@ Operator_memoryAccessSize(Operator this);
 #define Operator_isSigma(this) (this == Operator_SIGMA)
 #define Operator_isKill(this) (this == Operator_KILL)
 
+
 /*
   Operator_isAdjust -- Test if this Operator is a ADJUST.
 */
 bool
 Operator_isAdjust(Operator this);
+
 
 /*
   Operator_isCopy -- Test if this Operator is a COPY.
@@ -6581,11 +6832,13 @@ Operator_isAdjust(Operator this);
 bool
 Operator_isCopy(Operator this);
 
+
 /*
   Operator_isAdd -- Test if this Operator is an ADD.
 */
 bool
 Operator_isAdd(Operator this);
+
 
 /*
   Operator_isAdditive -- Test if this Operator is additive.
@@ -6595,6 +6848,7 @@ Operator_isAdd(Operator this);
 bool
 Operator_isAdditive(Operator this, int aIndex, int bIndex);
 
+
 /*
   Operator_isSubtractive -- Test if this Operator is subtractive.
 //
@@ -6602,6 +6856,7 @@ Operator_isAdditive(Operator this, int aIndex, int bIndex);
 */
 bool
 Operator_isSubtractive(Operator this, int aIndex, int bIndex);
+
 
 /*
   Operator_isTranslative -- Test if this Operator is translative.
@@ -6611,6 +6866,7 @@ Operator_isSubtractive(Operator this, int aIndex, int bIndex);
 bool
 Operator_isTranslative(Operator this, int aIndex, int bIndex);
 
+
 /*
   Operator_isAssociative -- Test if this Operator is associative.
 //
@@ -6619,6 +6875,7 @@ Operator_isTranslative(Operator this, int aIndex, int bIndex);
 bool
 Operator_isAssociative(Operator this, int aIndex, int bIndex);
 
+
 /*
   Operator_isCommutative -- Test if this Operator is commutative.
 //
@@ -6626,6 +6883,7 @@ Operator_isAssociative(Operator this, int aIndex, int bIndex);
 */
 bool
 Operator_isCommutative(Operator this, int aIndex, int bIndex);
+
 
 /*
   Operator_isGoTo -- Test if this Operator is a GOTO operator.
@@ -6636,6 +6894,7 @@ Operator_isCommutative(Operator this, int aIndex, int bIndex);
 bool
 Operator_isGoTo(Operator this);
 
+
 /*
   Operator_isJump -- Test if this Operator is a JUMP operator.
 //
@@ -6643,6 +6902,7 @@ Operator_isGoTo(Operator this);
 */
 bool
 Operator_isJump(Operator this);
+
 
 /*
   Operator_isBranch -- Test if this Operator is a branch operator.
@@ -6652,6 +6912,7 @@ Operator_isJump(Operator this);
 bool
 Operator_isBranch(Operator this);
 
+
 /*
   Operator_isCall -- Test if this Operator is a CALL operator.
 //
@@ -6660,11 +6921,13 @@ Operator_isBranch(Operator this);
 bool
 Operator_isCall(Operator this);
 
+
 /*
   Operator_isLink -- Test if this Operator is a LINK operator.
 */
 bool
 Operator_isLink(Operator this);
+
 
 /*
   Operator_isRoutine -- Test if this Operator is a function call operator.
@@ -6672,11 +6935,13 @@ Operator_isLink(Operator this);
 bool
 Operator_isRoutine(Operator this);
 
+
 /*
   Operator_isReturn -- Test if this Operator is a function return operator.
 */
 bool
 Operator_isReturn(Operator this);
+
 
 /*
   Operator_isGNUASM -- Test if this Operator is a GNU ASM.
@@ -6684,11 +6949,13 @@ Operator_isReturn(Operator this);
 bool
 Operator_isGNUASM(Operator this);
 
+
 /*
   Operator_isMemoryBarrier -- Test if this Operator is a memory barrier.
 */
 bool
 Operator_isMemoryBarrier(Operator this);
+
 
 /*
   Operator_isPrefetch -- Test if this Operator prefetches memory.
@@ -6696,11 +6963,13 @@ Operator_isMemoryBarrier(Operator this);
 bool
 Operator_isPrefetch(Operator this);
 
+
 /*
   Operator_isSafeLoad -- Test if this Operator is a safe memory load.
 */
 bool
 Operator_isSafeLoad(Operator this);
+
 
 /*
   Operator_position -- The position of this Operator in a bundle.
@@ -6715,6 +6984,7 @@ Operator_position(Operator this)
   return 1;
 }
 
+
 /*
   Operator_compensation -- Get the compensation level of this Operator.
 */
@@ -6725,11 +6995,13 @@ Operator_compensation(Operator this)
   return 1;
 }
 
+
 /*
   Operator_speculation -- Get the speculation level of this Operator.
 */
 int
 Operator_speculation(Operator this, Processor processor);
+
 
 /*
   Operator_speculate -- Return the speculated variant of this Operator.
@@ -6737,11 +7009,13 @@ Operator_speculation(Operator this, Processor processor);
 Operator
 Operator_speculate(Operator this, Processor processor);
 
+
 /*
   Operator_invertCondition -- Invert the condition of this Operator.
 */
 Operator
 Operator_invertCondition(Operator this);
+
 
 /*
   Operator_isHWLSkip -- Test if this Operator is a Hardware Loop Skip.
@@ -6752,6 +7026,7 @@ Operator_isHWLSkip(Operator this)
   return false;
 }
 
+
 /*
   Operator_isHWLBreak -- Test if this Operator is a Hardware Loop Break.
 */
@@ -6760,6 +7035,7 @@ Operator_isHWLBreak(Operator this)
 {
   return false;
 }
+
 
 /*
   Operator_isHWLIter -- Test if this Operator is a Hardware Loop Iter.
@@ -6770,6 +7046,7 @@ Operator_isHWLIter(Operator this)
   return false;
 }
 
+
 /*
   Operator_isHWLBranch -- Test if this Operator is a Hardware Loop Branch.
 */
@@ -6778,6 +7055,7 @@ Operator_isHWLBranch(Operator this)
 {
   return false;
 }
+
 
 /*
   Operator_isHWLPseudo -- Test if this Operator is a Hardware Loop Pseudo.
@@ -6794,6 +7072,7 @@ Operator_isHWLPseudo(Operator this)
 
 #define Bundling_h_INCLUDED 
 
+
 /*
   Bundling.xcc
 //
@@ -6809,12 +7088,14 @@ Operator_isHWLPseudo(Operator this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Bundling_NAME_ -- NAME array for the Bundling enumeration.
 */
 extern const char *Bundling_NAME_[];
 
 #define Bundling_NAME_(this) (Bundling_NAME_[this])
+
 
 
 
@@ -6857,6 +7138,7 @@ BundlingBuffer_sort(BundlingBuffer this, int count);
 
 #define Template_h_INCLUDED 
 
+
 /*
   Template.xcc
 //
@@ -6872,12 +7154,14 @@ BundlingBuffer_sort(BundlingBuffer this, int count);
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Template_NAME_ -- NAME array for the Template enumeration.
 */
 extern const char *Template_NAME_[];
 
 #define Template_NAME_(this) (Template_NAME_[this])
+
 
 
 
@@ -6894,6 +7178,7 @@ Template_increment(Template this)
   return Template_Increment[this];
 }
 
+
 /*
   Template_count -- This Template count of Syllables.
 */
@@ -6906,6 +7191,7 @@ Template_count(Template this)
   return Template_Count[this];
 }
 
+
 /*
   Template_syllables -- This Template Syllable PC offsets.
 */
@@ -6917,6 +7203,7 @@ Template_offsets(Template this)
   ;
   return Template_Offsets[this];
 }
+
 
 /*
   Template_encode -- This Template encode function.
@@ -6938,6 +7225,7 @@ Template_encode(Template this)
 
 #define Bundle_h_INCLUDED 
 
+
 /*
   Bundle.xcc
 //
@@ -6953,12 +7241,14 @@ Template_encode(Template this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Bundle_NAME_ -- NAME array for the Bundle enumeration.
 */
 extern const char *Bundle_NAME_[];
 
 #define Bundle_NAME_(this) (Bundle_NAME_[this])
+
 
 
 
@@ -6975,6 +7265,7 @@ Bundle_alignBias(Bundle this)
   return Bundle_AlignBias[this];
 }
 
+
 /*
   Bundle_alignBase -- This Bundle align bias.
 */
@@ -6986,6 +7277,7 @@ Bundle_alignBase(Bundle this)
   ;
   return Bundle_AlignBase[this];
 }
+
 
 /*
   Bundle_count -- This Bundle count of Bundling classes.
@@ -6999,6 +7291,7 @@ Bundle_count(Bundle this)
   return Bundle_Count[this];
 }
 
+
 /*
   Bundle_contents -- This Bundle contents.
 */
@@ -7010,6 +7303,7 @@ Bundle_contents(Bundle this)
   ;
   return Bundle_Contents[this];
 }
+
 
 /*
   Bundle_inverse -- This Bundle inverse permutation.
@@ -7023,6 +7317,7 @@ Bundle_inverse(Bundle this)
   return Bundle_Inverse[this];
 }
 
+
 /*
   Bundle_template -- This Bundle Template.
 */
@@ -7034,6 +7329,7 @@ Bundle_template(Bundle this)
   ;
   return (Template)Bundle_Template[this];
 }
+
 
 /*
   BundleMatch -- Match between a canonic sequence of Bundling classes an Bundle(s).
@@ -7073,6 +7369,7 @@ BundleMatch_FindBundle(uint32_t hash, ProcessorUIntPtr nativePC);
 
 #define Reservation_h_INCLUDED 
 
+
 /*
   Reservation.xcc
 //
@@ -7087,6 +7384,7 @@ BundleMatch_FindBundle(uint32_t hash, ProcessorUIntPtr nativePC);
   Public License (LGPL) version 2.1; any later version of these
   licences as published by the Free Software Foundation.
 */
+
 
 /*
   ReservationTable -- Reservation table.
@@ -7113,6 +7411,7 @@ extern const char *Reservation_NAME_[];
 
 
 
+
 /*
   Reservation_table -- Access to this Reservation class ReservationTable
 */
@@ -7125,6 +7424,7 @@ Reservation_table(Reservation this)
   return Reservation_Table_ + this;
 }
 
+
 /*
   Reservation_requirements -- The Resource requirements of this Reservation.
 */
@@ -7134,6 +7434,7 @@ Reservation_requirements(Reservation this)
   const_ReservationTable table = Reservation_table(this);
   return ((table)->COLUMNS);
 }
+
 
 /*
   Reservation_odot -- The minimum number of cycles between two Reservation classes.
@@ -7153,6 +7454,7 @@ Reservation_odot(Reservation this, Reservation that, Processor processor)
 
 #define Scheduling_h_INCLUDED 
 
+
 /*
   Scheduling.xcc
 //
@@ -7168,6 +7470,7 @@ Reservation_odot(Reservation this, Reservation that, Processor processor)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Scheduling_NAME_ -- NAME array for the Scheduling enumeration.
 */
@@ -7175,6 +7478,7 @@ extern const char *Scheduling_NAME_[];
 
 #define Scheduling_NAME_(this) (Scheduling_NAME_[this])
 #define Scheduling_NAME(this) (Scheduling_NAME_[this] + sizeof(MDS_TARGET))
+
 
 
 
@@ -7192,6 +7496,7 @@ Scheduling_processor(Scheduling this)
   return (Processor)Scheduling_Processor[this];
 }
 
+
 /*
   Scheduling_bundling -- This Scheduling class Bundling class.
 */
@@ -7203,6 +7508,7 @@ Scheduling_bundling(Scheduling this)
   ;
   return (Bundling)Scheduling_Bundling[this];
 }
+
 
 /*
   Scheduling_reservation -- This Scheduling class Reservation.
@@ -7222,6 +7528,7 @@ Scheduling_reservation(Scheduling this)
 
 #define Convention_h_INCLUDED 
 
+
 /*
   Convention.xcc
 //
@@ -7237,12 +7544,14 @@ Scheduling_reservation(Scheduling this)
   licences as published by the Free Software Foundation.
 */
 
+
 /*
   Convention_NAME_ -- NAME array for the Convention enumeration.
 */
 extern const char *Convention_NAME_[];
 
 #define Convention_NAME_(this) (Convention_NAME_[this])
+
 
 
 
@@ -7259,6 +7568,7 @@ Convention_reservedRegisterList(Convention this)
   return &Convention_ReservedRegisterList_[this];
 }
 
+
 /*
   Convention_reservedRegisterSet -- This Convention reserved RegisterSet.
 */
@@ -7271,8 +7581,10 @@ Convention_reservedRegisterSet(Convention convention)
   return &Convention_ReservedRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isReservedRegister(convention,registre) RegisterList_contains(Convention_reservedRegisterList(convention), registre)
+
 
 
 /*
@@ -7287,6 +7599,7 @@ Convention_argumentRegisterList(Convention this)
   return &Convention_ArgumentRegisterList_[this];
 }
 
+
 /*
   Convention_argumentRegisterSet -- This Convention argument RegisterSet.
 */
@@ -7299,8 +7612,10 @@ Convention_argumentRegisterSet(Convention convention)
   return &Convention_ArgumentRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isArgumentRegister(convention,registre) RegisterList_contains(Convention_argumentRegisterList(convention), registre)
+
 
 
 /*
@@ -7315,6 +7630,7 @@ Convention_resultRegisterList(Convention this)
   return &Convention_ResultRegisterList_[this];
 }
 
+
 /*
   Convention_resultRegisterSet -- This Convention result RegisterSet.
 */
@@ -7327,8 +7643,10 @@ Convention_resultRegisterSet(Convention convention)
   return &Convention_ResultRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isResultRegister(convention,registre) RegisterList_contains(Convention_resultRegisterList(convention), registre)
+
 
 
 /*
@@ -7343,6 +7661,7 @@ Convention_structRegisterList(Convention this)
   return &Convention_StructRegisterList_[this];
 }
 
+
 /*
   Convention_structRegisterSet -- This Convention struct RegisterSet.
 */
@@ -7355,8 +7674,10 @@ Convention_structRegisterSet(Convention convention)
   return &Convention_StructRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isStructRegister(convention,registre) RegisterList_contains(Convention_structRegisterList(convention), registre)
+
 
 
 /*
@@ -7371,6 +7692,7 @@ Convention_callerRegisterList(Convention this)
   return &Convention_CallerRegisterList_[this];
 }
 
+
 /*
   Convention_callerRegisterSet -- This Convention caller RegisterSet.
 */
@@ -7383,8 +7705,10 @@ Convention_callerRegisterSet(Convention convention)
   return &Convention_CallerRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isCallerRegister(convention,registre) RegisterList_contains(Convention_callerRegisterList(convention), registre)
+
 
 
 /*
@@ -7399,6 +7723,7 @@ Convention_calleeRegisterList(Convention this)
   return &Convention_CalleeRegisterList_[this];
 }
 
+
 /*
   Convention_calleeRegisterSet -- This Convention callee RegisterSet.
 */
@@ -7411,8 +7736,10 @@ Convention_calleeRegisterSet(Convention convention)
   return &Convention_CalleeRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isCalleeRegister(convention,registre) RegisterList_contains(Convention_calleeRegisterList(convention), registre)
+
 
 
 /*
@@ -7427,6 +7754,7 @@ Convention_programRegisterList(Convention this)
   return &Convention_ProgramRegisterList_[this];
 }
 
+
 /*
   Convention_programRegisterSet -- This Convention program counter RegisterSet.
 */
@@ -7439,8 +7767,10 @@ Convention_programRegisterSet(Convention convention)
   return &Convention_ProgramRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isProgramRegister(convention,registre) RegisterList_contains(Convention_programRegisterList(convention), registre)
+
 
 
 /*
@@ -7455,6 +7785,7 @@ Convention_returnRegisterList(Convention this)
   return &Convention_ReturnRegisterList_[this];
 }
 
+
 /*
   Convention_returnRegisterSet -- This Convention return RegisterSet.
 */
@@ -7467,8 +7798,10 @@ Convention_returnRegisterSet(Convention convention)
   return &Convention_ReturnRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isReturnRegister(convention,registre) RegisterList_contains(Convention_returnRegisterList(convention), registre)
+
 
 
 /*
@@ -7483,6 +7816,7 @@ Convention_stackRegisterList(Convention this)
   return &Convention_StackRegisterList_[this];
 }
 
+
 /*
   Convention_stackRegisterSet -- This Convention stack RegisterSet.
 */
@@ -7495,8 +7829,10 @@ Convention_stackRegisterSet(Convention convention)
   return &Convention_StackRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isStackRegister(convention,registre) RegisterList_contains(Convention_stackRegisterList(convention), registre)
+
 
 
 /*
@@ -7511,6 +7847,7 @@ Convention_staticRegisterList(Convention this)
   return &Convention_StaticRegisterList_[this];
 }
 
+
 /*
   Convention_staticRegisterSet -- This Convention static RegisterSet.
 */
@@ -7523,8 +7860,10 @@ Convention_staticRegisterSet(Convention convention)
   return &Convention_StaticRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isStaticRegister(convention,registre) RegisterList_contains(Convention_staticRegisterList(convention), registre)
+
 
 
 /*
@@ -7539,6 +7878,7 @@ Convention_frameRegisterList(Convention this)
   return &Convention_FrameRegisterList_[this];
 }
 
+
 /*
   Convention_frameRegisterSet -- This Convention frame RegisterSet.
 */
@@ -7551,8 +7891,10 @@ Convention_frameRegisterSet(Convention convention)
   return &Convention_FrameRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isFrameRegister(convention,registre) RegisterList_contains(Convention_frameRegisterList(convention), registre)
+
 
 
 /*
@@ -7567,6 +7909,7 @@ Convention_globalRegisterList(Convention this)
   return &Convention_GlobalRegisterList_[this];
 }
 
+
 /*
   Convention_globalRegisterSet -- This Convention global RegisterSet.
 */
@@ -7579,8 +7922,10 @@ Convention_globalRegisterSet(Convention convention)
   return &Convention_GlobalRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isGlobalRegister(convention,registre) RegisterList_contains(Convention_globalRegisterList(convention), registre)
+
 
 
 /*
@@ -7595,6 +7940,7 @@ Convention_localRegisterList(Convention this)
   return &Convention_LocalRegisterList_[this];
 }
 
+
 /*
   Convention_localRegisterSet -- This Convention local RegisterSet.
 */
@@ -7607,8 +7953,10 @@ Convention_localRegisterSet(Convention convention)
   return &Convention_LocalRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isLocalRegister(convention,registre) RegisterList_contains(Convention_localRegisterList(convention), registre)
+
 
 
 /*
@@ -7623,6 +7971,7 @@ Convention_wiredRegisterList(Convention this)
   return &Convention_WiredRegisterList_[this];
 }
 
+
 /*
   Convention_wiredRegisterSet -- This Convention wired RegisterSet.
 */
@@ -7635,8 +7984,10 @@ Convention_wiredRegisterSet(Convention convention)
   return &Convention_WiredRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isWiredRegister(convention,registre) RegisterList_contains(Convention_wiredRegisterList(convention), registre)
+
 
 
 /*
@@ -7651,6 +8002,7 @@ Convention_zeroRegisterList(Convention this)
   return &Convention_ZeroRegisterList_[this];
 }
 
+
 /*
   Convention_zeroRegisterSet -- This Convention zero RegisterSet.
 */
@@ -7663,8 +8015,10 @@ Convention_zeroRegisterSet(Convention convention)
   return &Convention_ZeroRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isZeroRegister(convention,registre) RegisterList_contains(Convention_zeroRegisterList(convention), registre)
+
 
 
 /*
@@ -7679,6 +8033,7 @@ Convention_oneRegisterList(Convention this)
   return &Convention_OneRegisterList_[this];
 }
 
+
 /*
   Convention_oneRegisterSet -- This Convention one RegisterSet.
 */
@@ -7691,8 +8046,10 @@ Convention_oneRegisterSet(Convention convention)
   return &Convention_OneRegisterSet_[convention];
 }
 
+
 //
 #define Convention_isOneRegister(convention,registre) RegisterList_contains(Convention_oneRegisterList(convention), registre)
+
 
 
 /*
@@ -7707,6 +8064,7 @@ Convention_textAlign(Convention this)
   return Convention_TextAlign[this];
 }
 
+
 /*
   Convention_dataAlign -- This Convention Data Alignment Base.
 */
@@ -7718,6 +8076,7 @@ Convention_dataAlign(Convention this)
   ;
   return Convention_DataAlign[this];
 }
+
 
 /*
   Convention_heapAlign -- This Convention Heap Alignment Base.
@@ -7731,6 +8090,7 @@ Convention_heapAlign(Convention this)
   return Convention_HeapAlign[this];
 }
 
+
 /*
   Convention_stackAlign -- This Convention Stack Alignment Base.
 */
@@ -7742,6 +8102,7 @@ Convention_stackAlign(Convention this)
   ;
   return Convention_StackAlign[this];
 }
+
 
 /*
   Convention_nativeInt -- This Convention Native Int.
@@ -7755,6 +8116,7 @@ Convention_nativeInt(Convention this)
   return (NativeType)Convention_NativeInt[this];
 }
 
+
 /*
   Convention_nativeUInt -- This Convention Native UInt.
 */
@@ -7767,6 +8129,7 @@ Convention_nativeUInt(Convention this)
   return (NativeType)Convention_NativeUInt[this];
 }
 
+
 /*
   Convention_nativeFloat -- This Convention Native Float.
 */
@@ -7778,6 +8141,7 @@ Convention_nativeFloat(Convention this)
   ;
   return (NativeType)Convention_NativeFloat[this];
 }
+
 
 /*
   Convention_nativePtr -- This Convention Native Ptr.
@@ -7797,6 +8161,7 @@ Convention_nativePtr(Convention this)
 
 #define Decode_h_INCLUDED 
 
+
 /*
   Decode.xcc
 //
@@ -7812,29 +8177,36 @@ Convention_nativePtr(Convention this)
   licences as published by the Free Software Foundation.
 */
 
+
 //
 extern Instance
 Decode_Encoding_st220_ANY(const void *buffer);
+
 
 //
 extern Instance
 Decode_Encoding_st220_ANYX(const void *buffer);
 
+
 //
 extern Instance
 Decode_Encoding_st231_ANY(const void *buffer);
+
 
 //
 extern Instance
 Decode_Encoding_st231_ANYX(const void *buffer);
 
+
 //
 extern Instance
 Decode_Encoding_st235_ANY(const void *buffer);
 
+
 //
 extern Instance
 Decode_Encoding_st235_ANYX(const void *buffer);
+
 
 
 
@@ -7847,19 +8219,23 @@ extern FILE *MDS_TRACE;
 
 
 
+
 /*
   Variables used to control PFA in non-release mode.
 */
 extern int LAO_MAXISSUE;
 extern int LAO_MINTAKEN;
 
+
 //
 void
 MDS_setMaxIssue(int maxIssue);
 
+
 //
 void
 MDS_setMinTaken(int taken);
+
 
 /*
   MDS_INIT -- MDS init function.
@@ -7867,11 +8243,13 @@ MDS_setMinTaken(int taken);
 void
 MDS_INIT(void);
 
+
 /*
   MDS_FINI -- MDS fini function.
 */
 void
 MDS_FINI(void);
+
 
 //
 #define MDS_TARGET "st200"
