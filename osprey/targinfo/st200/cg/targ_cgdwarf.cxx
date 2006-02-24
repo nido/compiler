@@ -476,6 +476,16 @@ static BOOL Restore_FP(OP *op)
   return FALSE;
 }
 
+// is 'op' a move from SP to FP ? (ie define FP as equal to SP)
+static BOOL Copy_SP_To_FP(OP *op)
+{
+  if (OP_move(op) && (OP_result(op,0) == FP_TN)
+      && (OP_opnd(op,0) == SP_TN)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
 static void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when)
 {
   if (ue->kind != UE_UNDEFINED) {
@@ -706,7 +716,10 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
       PU_has_restored_FP = TRUE;
 
       // case 4:
-    } else if ( (!PU_has_FP || PU_has_restored_FP) && Restore_FP(op)) {
+    } else if ( (!PU_has_FP || PU_has_restored_FP) && Restore_FP(op)
+		&& !Copy_SP_To_FP(op) ) {
+      // a copy of SP to FP is considered as a definition of FP,
+      // to be handled as case 1 below
       ue.kind = UE_UNDEFINED;
 
       // case 1:
@@ -774,7 +787,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  if (
 	      (OP_opnd(op,0) == SP_TN)
 	      &&
-	      (OP_iadd(op) || OP_isub(op))
+	      (OP_iadd(op) || OP_isub(op) || OP_move(op))
 	      ) { /* OK */ } else 
 	      {
 		Print_OP_No_SrcLine(op);
@@ -783,13 +796,14 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 
 	FmtAssert(OP_opnd(op,0) == SP_TN,
 		  ("unwind: FP not defined relative to SP"));
-	FmtAssert(OP_iadd(op) || OP_isub(op),
+	FmtAssert(OP_iadd(op) || OP_isub(op) || OP_move(op),
 		  ("unwind: FP not defined relative to SP"));
 
 	ue.rc_reg = CLASS_REG_PAIR_fp;
 
 	if ( ( ue.offset >= 0 && OP_iadd(op) )
 	     || ( ue.offset <= 0 && OP_isub(op) )
+	     || ( ue.offset == 0 && OP_move(op) )
 	     ) {
 	  // FP is higher than SP
 	  ue.kind = UE_CREATE_FP;
