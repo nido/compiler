@@ -4720,7 +4720,7 @@ WFE_Expand_Expr (tree exp,
 	{
 #ifdef TARG_ST
             /* (cbr) also if eh handler need (e.g cleanup) without try seen */
-          if (!inside_eh_region && (try_block_seen || DECL_HAS_CLEANUP(Current_Function_Decl()) || Current_Function_Has_EH_Spec()))
+          if (!inside_eh_region)
 #else
             if (!inside_eh_region && try_block_seen)
 #endif
