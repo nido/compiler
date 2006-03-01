@@ -3326,6 +3326,19 @@ Merge_With_Pred ( BB *b, BB *pred )
     return FALSE;
   }
 
+#ifdef TARG_ST
+  // [SC]
+  if (BB_asm(pred)) {
+    if (CFLOW_Trace_Merge) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "Merge_With_Pred rejecting merge of BB:%d into BB:%d"
+		     " (predecessor has an asm)\n",
+		     BB_id(b), BB_id(pred));
+    }
+    return FALSE;
+  }
+#endif
+
   /* GRA cannot handle a single block being the entry and exit block
    * of a region. Reject a merge that will create that case.
    */

@@ -2583,6 +2583,12 @@ static void unroll_xfer_annotations(BB *unrolled_bb, BB *orig_bb)
   if (BB_has_note(orig_bb)) {
     BB_Copy_Annotations(unrolled_bb, orig_bb, ANNOT_NOTE);
   }
+
+#ifdef TARG_ST
+  if (BB_asm(orig_bb)) {
+    BB_Copy_Annotations(unrolled_bb, orig_bb, ANNOT_ASMINFO);
+  }
+#endif
 }
   
 

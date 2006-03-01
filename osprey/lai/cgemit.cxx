@@ -4344,6 +4344,16 @@ Verify_Instruction (
     }
     //}
 #endif
+
+#ifdef TARG_ST
+    // [SC] Verify that TOP_asm is in a BB that is marked BB_asm.
+    if (top == TOP_asm) {
+      BB *bb = OP_bb(op);
+      FmtAssert(BB_asm(bb),
+	       ("TOP_asm in BB %ld, which is not BB_asm", (long)BB_id(bb)));
+    }
+#endif
+
 }
 
 /* ====================================================================
@@ -4520,6 +4530,9 @@ Assemble_Simulated_OP (
   if (OP_code(op) == TOP_asm) {
     FmtAssert((Assembly || Lai_Code) && !Object_Code,
 	      ("can't emit object code when ASM"));
+#ifdef TARG_ST
+    Verify_Instruction (op);
+#endif
     if (Assembly) {
 #ifndef TARG_ST
       // [CG] We don't emit stop bit before asm
