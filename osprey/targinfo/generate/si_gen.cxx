@@ -307,9 +307,9 @@ void RES_WORD::Output_All(FILE* fd)
   else {
     // Important special case.  We don't need a vector of resource words at all
     // and can just use a scalar.
-    fprintf(fd,"TARGINFO_EXPORTED const SI_RRW SI_RRW_initializer = 0x%llx;\n",
+    fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_initializer = 0x%llx;\n",
                res_words.front()->initializer);
-    fprintf(fd,"TARGINFO_EXPORTED const SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
+    fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
                res_words.front()->overuse_mask);
   }
 }
@@ -406,7 +406,7 @@ void RES::Output_All( FILE* fd )
   // [HK]
 //    fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
   fprintf(fd,"TARGINFO_EXPORTED int SI_resource_count = %d;\n",total);
-  fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * const SI_resources[] = {");
+  fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * TI_SI_CONST SI_resources[] = {");
 
   bool is_first = true;
   for ( i = 0; i < total; ++i ) {
@@ -704,7 +704,7 @@ void RES_REQ::Output(FILE* fd)
     res_used_set[cycle] |= 1ll << res->Id();
   }
 
-  fprintf(fd,"static const SI_RRW %s[] = {\n  %d",
+  fprintf(fd,"static TI_SI_CONST SI_RRW %s[] = {\n  %d",
              gname.Gname(),
              max_res_cycle + 1);
 
@@ -718,7 +718,7 @@ void RES_REQ::Output(FILE* fd)
     return;
   }
 
-  fprintf(fd,"static const SI_RESOURCE_ID_SET %s[] = {",
+  fprintf(fd,"static TI_SI_CONST SI_RESOURCE_ID_SET %s[] = {",
              res_id_set_gname.Gname());
 
   bool is_first = true;
@@ -780,7 +780,7 @@ void ISLOT::Output_All(FILE* fd)
 {
   list<ISLOT*>::iterator isi;
 
-  fprintf(fd,"TARGINFO_EXPORTED const int SI_issue_slot_count = %d;\n",count);
+  fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST int SI_issue_slot_count = %d;\n",count);
 
   for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
     ISLOT* islot = *isi;
@@ -792,9 +792,9 @@ void ISLOT::Output_All(FILE* fd)
   }
 
   if ( count == 0 )
-    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * const SI_issue_slots[1] = {0};\n");
+    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * TI_SI_CONST SI_issue_slots[1] = {0};\n");
   else {
-    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * const SI_issue_slots[%d] = {",count);
+    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * TI_SI_CONST SI_issue_slots[%d] = {",count);
 
     bool is_first = true;
     for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
@@ -891,7 +891,7 @@ void LATENCY_INFO::Set_Time(int index, int time)
 
 void LATENCY_INFO::Output(FILE* fd)
 {
-  fprintf(fd,"static const mUINT8 %s[] = {",gname.Gname());
+  fprintf(fd,"static TI_SI_CONST mUINT8 %s[] = {",gname.Gname());
 
     bool is_first = true;
     vector<int>::iterator i;
@@ -1108,7 +1108,7 @@ void INSTRUCTION_GROUP::Output_II_Info(FILE* fd)
  
   // Print vector of pointers to the II relative resource requirements
 
-  fprintf(fd,"static const SI_RR %s[] = {",
+  fprintf(fd,"static TI_SI_CONST SI_RR %s[] = {",
           ii_res_req_gname.Gname());
 
   is_first = true;
@@ -1124,7 +1124,7 @@ void INSTRUCTION_GROUP::Output_II_Info(FILE* fd)
 
   // Print vector of pointers to the II relative resoruce id sets
 
-  fprintf(fd,"static const SI_RESOURCE_ID_SET * const %s[] = {",
+  fprintf(fd,"static TI_SI_CONST SI_RESOURCE_ID_SET * TI_SI_CONST %s[] = {",
           ii_res_id_set_gname.Gname());
 
   is_first = true;
@@ -1162,7 +1162,7 @@ void INSTRUCTION_GROUP::Output_Issue_Slot_Info(FILE* fd)
     return;
   }
 
-  fprintf(fd,"static SI_ISSUE_SLOT * const %s[] = {",islot_vec_gname.Gname());
+  fprintf(fd,"static SI_ISSUE_SLOT * TI_SI_CONST %s[] = {",islot_vec_gname.Gname());
 
   bool is_first = true;
   list<ISLOT*>::iterator i;
@@ -1195,6 +1195,10 @@ void INSTRUCTION_GROUP::Output(FILE* fd)
              operand_latency_info.Gname());
   fprintf(fd,"  %-15s, /* result latency */\n",
              result_latency_info.Gname());
+#ifdef TARG_ST
+  fprintf(fd,"  FALSE, /* operand_access_times_overridden */\n");
+  fprintf(fd,"  FALSE, /* result_available_times_overridden */\n");
+#endif
   fprintf(fd,"  %-15d, /* load access time */\n",
              load_access_time);
   fprintf(fd,"  %-15d, /* last issue cycle */\n",
@@ -1241,7 +1245,7 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
     (*iig)->Output(fd);
   }
 
-  fprintf(fd,"TARGINFO_EXPORTED SI * const SI_ID_si[] = {");
+  fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST SI_ID_si[] = {");
 
   bool is_first = true;
   for (iig = instruction_groups.begin();
@@ -1254,7 +1258,7 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
 
   fprintf(fd,"\n};\n");
 
-  fprintf(fd,"TARGINFO_EXPORTED const int SI_ID_count = %d;\n",count);
+  fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST int SI_ID_count = %d;\n",count);
 
   fprintf(fd,"\n"); // One extra new line to separate from what follows.
 
@@ -1323,7 +1327,7 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
 {
   int i;
 
-  fprintf(fd,"TARGINFO_EXPORTED SI * const SI_top_si[%d] = {",TOP_count);
+  fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST SI_top_si[%d] = {",TOP_count);
 
   bool err = false;
   bool is_first = true;

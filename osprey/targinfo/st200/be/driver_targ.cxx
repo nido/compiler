@@ -34,10 +34,15 @@
 
 
 #include "defs.h"
+#include "erglob.h"
 #include "errors.h"
 #include "config.h"
 #include "config_target.h"
+#include "config_TARG.h"
 #include "ti_init.h"
+#include "targ_isa_operands.h"
+#include "targ_isa_print.h"
+#include "ti_si.h"
 
 /* ====================================================================
  *   Initialize_Targ_Info
@@ -50,6 +55,7 @@ Initialize_Targ_Info (void)
   ABI_PROPERTIES_ABI abi;
   ISA_SUBSET isa;
   PROCESSOR proc;
+  void *result;
 
   switch (Target_ABI) {
   case ABI_ST200_embedded:
@@ -90,6 +96,71 @@ Initialize_Targ_Info (void)
     FmtAssert(FALSE, ("targinfo doesn't handle target: %s\n", Targ_Name(Target)));
   }
 
-  return TI_Initialize(abi, isa, proc, Targ_Path);
+  result = TI_Initialize(abi, isa, proc, Targ_Path);
+
+  if (result) {
+    // [SC] Handle scheduler cycle time overrides.
+    const static struct { const char *opt; BOOL res; int num; } opts[] =
+      {
+	{ "result1_avail", TRUE, 0 },
+	{ "result2_avail", TRUE, 1 },
+	{ "result3_avail", TRUE, 2 },
+	{ "result4_avail", TRUE, 3 },
+	{ "result5_avail", TRUE, 4 },
+	{ "op1_read", FALSE, 0 },
+	{ "op2_read", FALSE, 1 },
+	{ "op3_read", FALSE, 2 },
+	{ "op4_read", FALSE, 3 },
+	{ "op5_read", FALSE, 4 }
+      };
+								 
+    OPTION_LIST *ol;
+    for (ol = Cycle_Time_Overrides; ol != NULL; ol = OLIST_next(ol)) {
+      char *opt = OLIST_opt (ol);
+      char *val = strdup (OLIST_val (ol));
+      char *p;
+      long cycle;
+      int opt_ix;
+      for (opt_ix = 0; opt_ix < (sizeof(opts)/sizeof(opts[0])); opt_ix++) {
+	if (strcmp (opt, opts[opt_ix].opt) == 0) {
+	  break;
+	}
+      }
+      if (opt_ix == (sizeof(opts)/sizeof(opts[0]))) {
+	ErrMsg (EC_Inv_TARG, opt, "...");
+	continue;
+      }
+      cycle = strtol (val, &val, 0);
+      for (p = strtok (val, ","); p != NULL; p = strtok (NULL, ",")) {
+	// Find all instructions whose mnemonic matches p.
+	int plen = strlen(p);
+	int i;
+	BOOL found = FALSE;
+	for (i = 0; i < TOP_count; i++) {
+	  const char *topname = ISA_PRINT_AsmName ((TOP)i);
+	  if (strcmp(topname, p) == 0) {
+	    int j, start, count;
+	    const char *internal_topname = TOP_Name((TOP)i);
+	    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info((TOP)i);
+	    found = TRUE;
+	    if (opts[opt_ix].res) {
+	      //printf ("TSI_Set_Result_Available_Time ( %s, %d, %ld );\n",
+	      //      internal_topname, opts[opt_ix].num, cycle);
+	      TSI_Set_Result_Available_Time ( (TOP)i, opts[opt_ix].num, cycle );
+	    } else {
+	      //printf ("TSI_Set_Operand_Access_Time ( %s, %d, %ld );\n",
+	      //      internal_topname, opts[opt_ix].num, cycle);
+	      TSI_Set_Operand_Access_Time ( (TOP)i, opts[opt_ix].num, cycle );
+	    }
+	  }
+	}
+	if (!found) {
+	  ErrMsg (EC_Inv_TARG, opt, p);
+	}
+      }
+    }
+  }
+
+  return result;
 }
 

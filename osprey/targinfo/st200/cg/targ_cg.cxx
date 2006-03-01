@@ -1998,6 +1998,9 @@ find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_MAX_SLOTS],
     }
     const ISA_EXEC_UNIT_PROPERTY *t_props = template_props[t];
     INT n_t_props = ISA_EXEC_Slot_Count(t);
+    if (n_t_props > CGTARG_Max_Issue_Width()) {
+      continue;
+    }
     if (n_bundle_props == n_t_props
 	&& memcmp(bundle_props, t_props,
 		  sizeof(ISA_EXEC_UNIT_PROPERTY) * n_bundle_props) == 0) {
@@ -2278,14 +2281,14 @@ Pad_Bundle (
     OP *noop = Mk_OP(TOP_nop);
     Set_OP_end_group(noop);
     Set_OP_bundled(noop);
-    if (n_bundle_props == ISA_MAX_SLOTS) {
+    if (n_bundle_props == CGTARG_Max_Issue_Width()) {
       // No room for nops in current bundle, so insert them in
       // previous bundle.
       if (*free_slots_in_previous_bundle == 0) {
 	// No room for nops in previous bundle either, so create
 	// a new bundle between current and previous.
 	DevWarn("Creating nop bundle to satisfy alignment\n");
-	*free_slots_in_previous_bundle = ISA_MAX_SLOTS - 1;
+	*free_slots_in_previous_bundle = CGTARG_Max_Issue_Width() - 1;
 	BB_Insert_Op_Before(OP_bb(bundle_start), bundle_start, noop);
 	OP_scycle(noop) = OP_scycle(bundle_start);
 	// Inserting a nop bundle bumps all the start cycles by 1.
@@ -2307,7 +2310,8 @@ Pad_Bundle (
       BB_Insert_Op_After(OP_bb(last_in_bundle), last_in_bundle, noop);
       last_in_bundle = noop;
       for (INT w = 0; w < ISA_PACK_Inst_Words(OP_code(noop)); w++) {
-	FmtAssert(n_bundle_props < ISA_MAX_SLOTS, ("Pad_Bundle: too many nops inserted\n"));
+	FmtAssert(n_bundle_props < CGTARG_Max_Issue_Width(),
+		  ("Pad_Bundle: too many nops inserted\n"));
 	bundle_props[n_bundle_props++] = ISA_EXEC_Unit_Prop(OP_code(noop));
 	qsort(bundle_props, n_bundle_props, sizeof(ISA_EXEC_UNIT_PROPERTY),
 	      compare_prop);
@@ -2315,7 +2319,7 @@ Pad_Bundle (
     }
     *pc = update_bundle_pc(noop, *pc);
   }
-  *free_slots_in_previous_bundle = (ISA_MAX_SLOTS - n_bundle_props);
+  *free_slots_in_previous_bundle = (CGTARG_Max_Issue_Width() - n_bundle_props);
   return bundle_end;
 }
 
@@ -2994,6 +2998,33 @@ Hardware_Workarounds(void)
  * ====================================================================
  */
 
+/*
+ * Initialize resources based on given issue width
+ */
+#ifdef TARG_ST
+extern "C" void SI_RESOURCE_ID_Set_Max_Avail(UINT, INT);
+#endif
+
+static void
+init_max_issue_width(UINT32 max_issue)
+{
+  INT max_resource = 0;
+  INT id;
+  for (id = 0; id < SI_resource_count; id++) {
+    if (max_resource < SI_RESOURCE_ID_Avail_Per_Cycle(id)) {
+      max_resource = SI_RESOURCE_ID_Avail_Per_Cycle(id);
+    }
+  }
+
+  for (id = 0; id < SI_resource_count; id++) {
+    INT new_avail = (SI_RESOURCE_ID_Avail_Per_Cycle(id) * max_issue) /
+      max_resource;
+    if (new_avail < 1) new_avail = 1;
+    SI_RESOURCE_ID_Set_Max_Avail(id, new_avail);
+  }
+}
+
+
 /* ====================================================================
  *   CGTARG_Initialize
  * ====================================================================
@@ -3118,6 +3149,9 @@ CGTARG_Initialize ()
   CGTARG_Invert_Table[TOP_norl_ii_b]  = TOP_orl_ii_b;
 
   init_templates();
+
+  if (CGTARG_max_issue_width_overriden) 
+    init_max_issue_width(CGTARG_max_issue_width);
 
   return;
 }

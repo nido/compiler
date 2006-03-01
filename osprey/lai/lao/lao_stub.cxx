@@ -31,6 +31,7 @@
 #include "findloops.h"
 #include "hb.h"
 #include "cgtarget.h"
+#include "ti_si.h"
 #include "cgexp.h"
 #include "data_layout.h"
 #include "timing.h"
@@ -123,15 +124,19 @@ lao_init(void) {
       if (TOP_is_dummy(top) || TOP_is_var_opnds(top)) continue;
       if (!ISA_SUBSET_Member(ISA_SUBSET_Value, top)) continue;
       LAI_Operator lai_operator = CGIR_TOP_to_Operator(top);
-      int opnds = TOP_fixed_opnds(top);
-      for (int opnd = 0; opnd < opnds; opnd++) {
-        int stage = TI_LATENCY_Operand_Access_Cycle(top, opnd);
-        LAI_Interface_setArgStage(interface, processor, lai_operator, opnd, stage);
+      if (TSI_Operand_Access_Times_Overridden (top)) {
+	int opnds = TOP_fixed_opnds(top);
+	for (int opnd = 0; opnd < opnds; opnd++) {
+	  int stage = TI_LATENCY_Operand_Access_Cycle(top, opnd);
+	  LAI_Interface_setArgStage(interface, processor, lai_operator, opnd, stage);
+	}
       }
-      int results = TOP_fixed_results(top);
-      for (int result = 0; result < results; result++) {
-        int stage = TI_LATENCY_Result_Available_Cycle(top, result);
-        LAI_Interface_setResStage(interface, processor, lai_operator, result, stage);
+      if (TSI_Result_Available_Times_Overridden (top)) {
+	int results = TOP_fixed_results(top);
+	for (int result = 0; result < results; result++) {
+	  int stage = TI_LATENCY_Result_Available_Cycle(top, result);
+	  LAI_Interface_setResStage(interface, processor, lai_operator, result, stage);
+	}
       }
     }
   }
@@ -1097,6 +1102,12 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
     Current_PU_Stack_Model == SMODEL_LARGE   ? 1 :
     Current_PU_Stack_Model == SMODEL_DYNAMIC ? 2 : -1;
   //
+  // Get issue width
+  int maxIssue = CGTARG_Max_Issue_Width();
+  //
+  // Get branch taken latency
+  int minTaken = CGTARG_Branch_Taken_Penalty();
+  //
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
   int logPrePad = 0;
@@ -1118,6 +1129,8 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, int pipelini
       ConfigureItem_LoopDep, CG_LAO_loopdep,
       ConfigureItem_LogPrePad, logPrePad,
       ConfigureItem_LogPostPad, logPostPad,
+      ConfigureItem_MaxIssue, maxIssue,
+      ConfigureItem_MinTaken, minTaken,
       ConfigureItem__);
   //
   // Create the LAO BasicBlocks.

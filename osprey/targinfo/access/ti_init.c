@@ -111,6 +111,7 @@ SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void)
 typedef const char * si_issue_slot_name_t (SI_ISSUE_SLOT*);
 typedef int si_issue_slot_skew_t(SI_ISSUE_SLOT*);
 typedef int si_issue_slot_avail_per_cycle_t(SI_ISSUE_SLOT*);
+typedef void si_resource_id_set_max_avail_t( SI_RESOURCE_ID, INT);
 typedef int si_issue_slot_count_t(void);
 typedef SI_ISSUE_SLOT * si_ith_issue_slot_t(UINT);
 
@@ -418,6 +419,16 @@ UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID id )
   return so_call (id);
 }
 
+void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max)
+{
+  static si_resource_id_set_max_avail_t* so_call = 0;
+  if (! so_call && !(so_call = (si_resource_id_set_max_avail_t*)
+		     dlsym(targ_handler, "SI_RESOURCE_ID_Set_Max_Avail")))
+    return;
+  
+  return so_call (id, max);
+}
+
 /****************************************************************************
  ****************************************************************************/
 INT TSI_Operand_Access_Time( TOP top, INT operand_index ) 
@@ -431,6 +442,30 @@ INT TSI_Operand_Access_Time( TOP top, INT operand_index )
     return so_call(top, operand_index);
 }
 
+#ifdef TARG_ST
+void TSI_Set_Operand_Access_Time( TOP top, INT operand_index, INT tm ) 
+{
+    typedef void tsi_set_operand_access_time_t (TOP, INT, INT)  ;
+    static  tsi_set_operand_access_time_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_set_operand_access_time_t*)
+		      dlsym(targ_handler, "TSI_Set_Operand_Access_Time")))
+	return;
+    
+    so_call(top, operand_index, tm);
+}
+
+BOOL TSI_Operand_Access_Times_Overridden ( TOP top )
+{
+    typedef BOOL tsi_operand_access_times_overridden_t (TOP)  ;
+    static  tsi_operand_access_times_overridden_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_operand_access_times_overridden_t*)
+		      dlsym(targ_handler, "TSI_Operand_Access_Times_Overridden")))
+	return 0;
+    
+    return so_call(top);
+}
+#endif
+
 INT TSI_Result_Available_Time( TOP top, INT result_index )
 {
     typedef INT tsi_result_available_time_t ( TOP , INT ) ;
@@ -441,6 +476,30 @@ INT TSI_Result_Available_Time( TOP top, INT result_index )
     
     return so_call(top, result_index);
 }
+
+#ifdef TARG_ST
+void TSI_Set_Result_Available_Time( TOP top, INT result_index, INT tm )
+{
+    typedef void tsi_set_result_available_time_t ( TOP , INT , INT ) ;
+    static tsi_set_result_available_time_t*  so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_set_result_available_time_t*)
+		      dlsym(targ_handler, "TSI_Set_Result_Available_Time")))
+	return;
+    
+    so_call(top, result_index, tm);
+}
+
+BOOL TSI_Result_Available_Times_Overridden ( TOP top )
+{
+    typedef BOOL tsi_result_available_times_overridden_t (TOP)  ;
+    static  tsi_result_available_times_overridden_t* so_call = 0 ;
+    if (!so_call && !(so_call = (tsi_result_available_times_overridden_t*)
+		      dlsym(targ_handler, "TSI_Result_Available_Times_Overridden")))
+	return 0;
+    
+    return so_call(top);
+}
+#endif
 
 INT TSI_Load_Access_Time( TOP top )
 {

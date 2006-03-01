@@ -64,6 +64,8 @@
 #ifndef config_TARG_INCLUDED
 #define config_TARG_INCLUDED
 
+#include "flags.h"
+
 #ifdef _KEEP_RCS_ID
 /*REFERENCED*/
 #endif /* _KEEP_RCS_ID */
@@ -147,6 +149,8 @@ BE_EXPORTED extern BOOL Enable_Misaligned_Access;
 // 2: error
 BE_EXPORTED extern INT32 Warn_Misaligned_Access;
 
+// [SC]: Cycle time overrides.
+BE_EXPORTED extern OPTION_LIST *Cycle_Time_Overrides;
 #endif
 
 /* ====================================================================

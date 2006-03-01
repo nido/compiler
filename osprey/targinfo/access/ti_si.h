@@ -321,6 +321,29 @@
  *                      length of these directly.  Rather we are always able
  *                      to derive that information from the topcode relative
  *                      TSI_II_Resource_Requirement.
+#ifdef TARG_ST
+ *
+ *  Some functions to allow the scheduling information to be
+ *  overridden from the command-line:
+ *
+ *	    void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max)
+ *
+ *		Redefine the maximum availability for the resource given.
+ *		Note that this function in addition to pre-reserving a
+ *		number of the given resource also update all scheduling
+ *		information (SI) such that none of them overflow the new
+ *		resource requierements. For instance is a resource 
+ *		availability is set to 2 by this function, all instructions
+ *		that require more than 2 such resource will be modified
+ *		such that they use at most 2 such resources.
+ *
+ *          void TSI_Set_Operand_Access_Time( TOP top, INT operand_index, INT tm )
+ *              Override time <top> accesses it's <operand_index>'th operand.
+ *
+ *          void TSI_Set_Result_Avail_Time( TOP top,INT result_index, INT tm )
+ *              Override time <top> makes it's <result_index>'th result available.
+ *
+#endif
  *
  ************************************
  */
@@ -342,6 +365,15 @@ extern "C" {
 typedef enum topcode TOPCODE;
 
 #include <topcode.h>
+
+#ifdef TARG_ST
+/* Do not define types and scheduling information as const in order
+ * to configure them at runtime
+ */
+#define TI_SI_CONST
+#else
+#define TI_SI_CONST const
+#endif
 
 /****************************************************************************
  ****************************************************************************/
@@ -383,7 +415,7 @@ inline SI_BAD_II_SET SI_BAD_II_SET_Empty( void )
 
 typedef UINT SI_RESOURCE_ID;
 
-typedef const struct {
+typedef TI_SI_CONST struct {
   const char* name;
   SI_RESOURCE_ID id;
   mUINT8 avail_per_cycle;
@@ -398,7 +430,7 @@ extern INT SI_resource_count;
 #pragma weak SI_resource_count
 #endif
 
-TARGINFO_EXPORTED extern SI_RESOURCE * const SI_resources[];
+TARGINFO_EXPORTED extern SI_RESOURCE * TI_SI_CONST SI_resources[];
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_resources
 #endif
@@ -503,12 +535,12 @@ SI_RESOURCE_ID_SET_Complement( SI_RESOURCE_ID_SET s )
 /* SI_RRW -- A resource reservation word */
 typedef mUINT64 SI_RRW;
 
-TARGINFO_EXPORTED extern const SI_RRW SI_RRW_initializer;
+TARGINFO_EXPORTED extern TI_SI_CONST SI_RRW SI_RRW_initializer;
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_RRW_initializer
 #endif
 
-TARGINFO_EXPORTED extern const SI_RRW SI_RRW_overuse_mask;
+TARGINFO_EXPORTED extern TI_SI_CONST SI_RRW SI_RRW_overuse_mask;
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_RRW_overuse_mask
 #endif
@@ -541,7 +573,7 @@ inline SI_RRW SI_RRW_Has_Overuse( SI_RRW word_with_reservations )
 /****************************************************************************
  ****************************************************************************/
 
-typedef const struct {
+typedef TI_SI_CONST struct {
   const char* name;
   mINT32 skew;
   mINT32 avail_per_cycle;
@@ -568,12 +600,12 @@ inline INT SI_ISSUE_SLOT_Avail_Per_Cycle( SI_ISSUE_SLOT* slot )
 }
 #endif
 
-TARGINFO_EXPORTED extern const INT SI_issue_slot_count;
+TARGINFO_EXPORTED extern TI_SI_CONST INT SI_issue_slot_count;
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_issue_slot_count
 #endif
 
-TARGINFO_EXPORTED extern SI_ISSUE_SLOT* const SI_issue_slots[];
+TARGINFO_EXPORTED extern SI_ISSUE_SLOT* TI_SI_CONST SI_issue_slots[];
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_issue_slots
 #endif
@@ -596,7 +628,7 @@ inline SI_ISSUE_SLOT* SI_Ith_Issue_Slot( UINT i )
 /****************************************************************************
  ****************************************************************************/
 
-typedef const struct {
+typedef TI_SI_CONST struct {
   SI_RESOURCE* resource;
   mINT32 total_used;
 } SI_RESOURCE_TOTAL;
@@ -632,7 +664,7 @@ inline INT SI_RESOURCE_TOTAL_Total_Used( SI_RESOURCE_TOTAL* pair )
 /****************************************************************************
  ****************************************************************************/
 
-typedef const SI_RRW* SI_RR;
+typedef TI_SI_CONST SI_RRW* SI_RR;
 
 #ifdef TARG_ST
 BE_EXPORTED extern UINT SI_RR_Length(SI_RR);
@@ -655,19 +687,23 @@ inline SI_RRW SI_RR_Cycle_RRW( SI_RR req, UINT cycle )
  ****************************************************************************/
 typedef UINT SI_ID;
 
-typedef const struct {
+typedef TI_SI_CONST struct {
   const char* name;
   SI_ID id;
-  const mUINT8 *operand_access_times;
-  const mUINT8 *result_available_times;
+  TI_SI_CONST mUINT8 *operand_access_times;
+  TI_SI_CONST mUINT8 *result_available_times;
+#ifdef TARG_ST
+  mBOOL operand_access_times_overridden;
+  mBOOL result_available_times_overridden;
+#endif
   mINT32 load_access_time;
   mINT32 last_issue_cycle;
   mINT32 store_available_time;
   SI_RR rr;
-  const SI_RESOURCE_ID_SET *resources_used;
+  TI_SI_CONST SI_RESOURCE_ID_SET *resources_used;
   mUINT32 ii_info_size;
-  const SI_RR *ii_rr;
-  const SI_RESOURCE_ID_SET * const *ii_resources_used;
+  TI_SI_CONST SI_RR *ii_rr;
+  TI_SI_CONST SI_RESOURCE_ID_SET * TI_SI_CONST *ii_resources_used;
   SI_BAD_II_SET bad_iis;
   mINT32 valid_issue_slot_count;
   SI_ISSUE_SLOT * const *valid_issue_slots;
@@ -676,7 +712,7 @@ typedef const struct {
   mUINT8 write_write_interlock;
 } SI;
 
-TARGINFO_EXPORTED extern SI* const SI_top_si[];
+TARGINFO_EXPORTED extern SI* TI_SI_CONST SI_top_si[];
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_top_si
 #endif
@@ -686,6 +722,10 @@ extern const char* TSI_Name( TOP top );
 BE_EXPORTED extern SI_ID TSI_Id( TOP top );
 BE_EXPORTED extern INT TSI_Operand_Access_Time( TOP top, INT operand_index );
 BE_EXPORTED extern INT TSI_Result_Available_Time( TOP top, INT result_index );
+BE_EXPORTED extern void TSI_Set_Operand_Access_Time ( TOP top, INT operand_index, INT tm );
+BE_EXPORTED extern void TSI_Set_Result_Available_Time( TOP top, INT result_index, INT tm );
+BE_EXPORTED extern BOOL TSI_Operand_Access_Times_Overridden ( TOP top );
+BE_EXPORTED extern BOOL TSI_Result_Available_Times_Overridden ( TOP top );
 BE_EXPORTED extern INT TSI_Load_Access_Time( TOP top );
 BE_EXPORTED extern INT TSI_Last_Issue_Cycle( TOP top );
 BE_EXPORTED extern INT TSI_Store_Available_Time( TOP top );
@@ -796,7 +836,7 @@ inline INT TSI_Write_Write_Interlock( TOP top )
 /****************************************************************************
  ****************************************************************************/
 
-TARGINFO_EXPORTED extern const INT SI_ID_count;
+TARGINFO_EXPORTED extern TI_SI_CONST INT SI_ID_count;
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_count
 #endif
@@ -810,7 +850,7 @@ inline INT SI_ID_Count(void)
 }
 #endif
 
-TARGINFO_EXPORTED extern SI* const SI_ID_si[];
+TARGINFO_EXPORTED extern SI* TI_SI_CONST SI_ID_si[];
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_si
 #endif
@@ -827,6 +867,10 @@ SI_ID_II_Cycle_Resource_Ids_Used( SI_ID id, INT ii )
   return info->ii_resources_used[ii - 1];
 }
 
+#endif
+
+#ifdef TARG_ST
+extern void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max);
 #endif
 
 #ifdef __cplusplus

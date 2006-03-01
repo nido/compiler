@@ -1336,12 +1336,6 @@ Configure_CG_Options(void)
 		  CGTARG_max_issue_width, 1));
   }
   
-#ifdef TARG_ST200
-  if (CGTARG_max_issue_width < 2) {
-    FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
-		  CGTARG_max_issue_width, 2));
-  }
-#endif
 #endif
 
   Configure_Prefetch();

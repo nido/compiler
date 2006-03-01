@@ -144,6 +144,9 @@ INT32 Enable_Misaligned_Access;
 // 1: warning
 // 2: error
 INT32 Warn_Misaligned_Access = 0;
+
+// [SC]: Cycle time overrides.
+OPTION_LIST *Cycle_Time_Overrides;
 #endif
 
 /* Target machine specification options.  This group defines the target
@@ -219,6 +222,30 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_INT32,   OV_VISIBLE,    FALSE, "warn_misaligned", "",
     0, 0, 2,    &Warn_Misaligned_Access, NULL,
     "Warning level on misaligned access (0 = no warning, 1 = warning, 2 = error" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "op1_read", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override operand access cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "op2_read", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override operand access cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "op3_read", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override operand access cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "op4_read", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override operand access cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "op5_read", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override operand access cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "result1_avail", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override result available cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "result2_avail", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override result available cycle" },
+  { OVK_LIST,    OV_VISIBLE,   FALSE, "result3_avail", "",
+    -1, 0, 255, &Cycle_Time_Overrides, NULL,
+    "Override result available cycle" },
 #endif
 
   /* Unimplemented options: */
