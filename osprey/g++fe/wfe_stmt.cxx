@@ -1757,7 +1757,7 @@ WFE_Stmt_Init (void)
 #ifdef TARG_ST
 /* (cbr) support for deferred cleanups */
 void
-Push_Cleanup_Deferral (tree e)
+Push_Cleanup_Deferral (tree e, int iflag)
 {
   ST *guard_st;
   static int i = 0;
@@ -1785,7 +1785,7 @@ Push_Cleanup_Deferral (tree e)
     cond_cleanup_stack [cond_cleanup_i-1].flag_set=1;  
   }
   else {
-    cond_cleanup_stack [cond_cleanup_i].flag_set=0;  
+    cond_cleanup_stack [cond_cleanup_i].flag_set=iflag;  
   }
 }
 
@@ -3747,6 +3747,11 @@ Generate_unwind_resume (void)
   WN * call_wn = WN_Create (OPR_CALL, Pointer_Mtype, MTYPE_V, 1);
   WN_kid0 (call_wn) = arg0;
   WN_st_idx (call_wn) = ST_st_idx (st);
+
+#ifdef TARG_ST
+  /* (cbr) end of eh_region. never return */
+  WN_Set_Call_Never_Return(call_wn);
+#endif  
 
 // Before calling _Unwind_Resume(), if we have eh-spec, compare filter with
 // -1, goto __cxa_call_unexpected call if required. Otherwise fall-through.

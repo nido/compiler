@@ -21,7 +21,7 @@ extern void Call_Throw();
 
 #ifdef TARG_ST
 /* (cbr) support for deferred cleanups */
-void Push_Cleanup_Deferral (tree);
+void Push_Cleanup_Deferral (tree, int i = 0);
 ST* Get_Deferred_Cleanup ();
 void Pop_Cleanup_Deferral (); 
 #endif

@@ -3890,12 +3890,21 @@ WFE_Expand_Expr (tree exp,
 	  WFE_Stmt_Pop (wfe_stmk_if_else);
         }
 	else {
+#ifdef TARG_ST
+        /* (cbr) support for deferred cleanups */
+          Push_Cleanup_Deferral (exp, 1);
+#endif
 	  wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
 						     TY_mtype (ty_idx));
 	  wn2 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 2),
 						     TY_mtype (ty_idx));
+#ifdef TARG_ST
+        /* (cbr) support for deferred cleanups */
+        Pop_Cleanup_Deferral ();
+#endif
 	  wn  = WN_CreateExp3 (OPR_CSELECT, Mtype_comparison (TY_mtype (ty_idx)),
 			   MTYPE_V, wn0, wn1, wn2);
+
 	  Set_PU_has_very_high_whirl (Get_Current_PU ());
         }
       }
@@ -4593,9 +4602,7 @@ WFE_Expand_Expr (tree exp,
           tree func = TREE_OPERAND (arg0, 0);
           if (TREE_THIS_VOLATILE (func) &&
               TREE_TYPE (TREE_TYPE (func))) {
-            /* can return from catch  */
-            if (!try_block_seen || TYPE_NOTHROW_P(TREE_TYPE(func)))
-              WN_Set_Call_Never_Return(call_wn);
+            WN_Set_Call_Never_Return(call_wn);
           }
 
           /* (cbr) for 'malloc' attribute */
