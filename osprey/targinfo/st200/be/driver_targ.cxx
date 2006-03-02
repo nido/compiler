@@ -141,7 +141,6 @@ Initialize_Targ_Info (void)
 	  if (strcmp(topname, p) == 0) {
 	    int j, start, count;
 	    const char *internal_topname = TOP_Name((TOP)i);
-	    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info((TOP)i);
 	    found = TRUE;
 	    if (opts[opt_ix].res) {
 	      //printf ("TSI_Set_Result_Available_Time ( %s, %d, %ld );\n",

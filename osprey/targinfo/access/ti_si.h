@@ -693,6 +693,8 @@ typedef TI_SI_CONST struct {
   TI_SI_CONST mUINT8 *operand_access_times;
   TI_SI_CONST mUINT8 *result_available_times;
 #ifdef TARG_ST
+  mUINT8 n_opds;
+  mUINT8 n_results;
   mBOOL operand_access_times_overridden;
   mBOOL result_available_times_overridden;
 #endif

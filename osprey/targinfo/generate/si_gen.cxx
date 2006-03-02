@@ -834,6 +834,10 @@ public:
   char* Gname() { return gname.Gname(); }
   // Return name of pointer to me in generated file.
 
+#ifdef TARG_ST
+  int Max_Elements() { return max_elements; }
+#endif
+
 private:
   GNAME gname;                  // Name in generated
   const int max_elements;       // Maximum number of operands or results
@@ -1196,8 +1200,10 @@ void INSTRUCTION_GROUP::Output(FILE* fd)
   fprintf(fd,"  %-15s, /* result latency */\n",
              result_latency_info.Gname());
 #ifdef TARG_ST
-  fprintf(fd,"  FALSE, /* operand_access_times_overridden */\n");
-  fprintf(fd,"  FALSE, /* result_available_times_overridden */\n");
+  fprintf(fd,"  %-15d, /* n_opds */\n", operand_latency_info.Max_Elements());
+  fprintf(fd,"  %-15d, /* n_results */\n", result_latency_info.Max_Elements());
+  fprintf(fd,"  FALSE          , /* operand_access_times_overridden */\n");
+  fprintf(fd,"  FALSE          , /* result_available_times_overridden */\n");
 #endif
   fprintf(fd,"  %-15d, /* load access time */\n",
              load_access_time);
