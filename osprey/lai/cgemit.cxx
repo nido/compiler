@@ -4546,7 +4546,7 @@ Assemble_Simulated_OP (
       // [SC] We need to emit directives just before the asm string
       CGEMIT_Asm_String_Prefix(op, &PC);
       // [CL] debug_frame support
-      Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE, FALSE);
+      Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE, FALSE);
 #endif
       fprintf(Asm_File, "\t%s\n", Generate_Asm_String(op, bb));
       if (AS_STOP_BIT && 
