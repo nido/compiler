@@ -3689,23 +3689,25 @@ WFE_Expand_Expr (tree exp,
       {
 #ifdef TARG_ST
         /* (cbr) support for deferred cleanups */
-        Push_Cleanup_Deferral (exp);
+        Push_Cleanup_Deferral ();
 #endif
 
         wn0 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 0),
 						   Boolean_type);
+
+#ifdef TARG_ST
+        /* (cbr) support for deferred cleanups */
+        Push_Cleanup_Deferral ();
+#endif
+
         wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
 						   Boolean_type);
+
         wn  = WN_Binary (Operator_From_Tree [code].opr,
                          Boolean_type, wn0, wn1);
         if (Boolean_type != MTYPE_B &&
 	    Widen_Mtype(TY_mtype(Get_TY(TREE_TYPE(exp)))) != Boolean_type)
 	  wn = WN_Cvt (Boolean_type, Widen_Mtype(TY_mtype(Get_TY(TREE_TYPE(exp)))), wn);
-
-#ifdef TARG_ST
-        /* (cbr) support for deferred cleanups */
-        Pop_Cleanup_Deferral ();
-#endif
 
       }
       break;
@@ -3892,16 +3894,18 @@ WFE_Expand_Expr (tree exp,
 	else {
 #ifdef TARG_ST
         /* (cbr) support for deferred cleanups */
-          Push_Cleanup_Deferral (exp, 1);
+          Push_Cleanup_Deferral ();
 #endif
 	  wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
 						     TY_mtype (ty_idx));
-	  wn2 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 2),
-						     TY_mtype (ty_idx));
+
 #ifdef TARG_ST
         /* (cbr) support for deferred cleanups */
-        Pop_Cleanup_Deferral ();
+          Push_Cleanup_Deferral ();
 #endif
+	  wn2 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 2),
+						     TY_mtype (ty_idx));
+
 	  wn  = WN_CreateExp3 (OPR_CSELECT, Mtype_comparison (TY_mtype (ty_idx)),
 			   MTYPE_V, wn0, wn1, wn2);
 
