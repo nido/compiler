@@ -1169,12 +1169,6 @@ WFE_Finish_Function (void)
       Set_PU_is_nested_func (Get_Current_PU ());
     }
 
-#ifdef TARG_ST
-    /* (cbr) support for deferred cleanups. */
-    extern void Emit_Cleanup_Initializers();
-    Emit_Cleanup_Initializers();
-#endif
-
     // Insert a RETURN if it does not exist
     WN * wn = WN_last (WFE_Stmt_Top ());
     if (wn == NULL || WN_operator (wn) != OPR_RETURN &&
@@ -1185,6 +1179,13 @@ WFE_Finish_Function (void)
     // Add any handler code
     Do_Handlers ();
     Do_EH_Cleanups ();
+
+#ifdef TARG_ST
+    /* (cbr) support for deferred cleanups. */
+    extern void Emit_Cleanup_Initializers();
+    Emit_Cleanup_Initializers();
+#endif
+
 #ifdef KEY
     //    if (key_exceptions)
     if (flag_exceptions)
@@ -1960,7 +1961,7 @@ Gen_Assign_Of_Init_Val (ST *st, tree init, UINT offset, UINT array_elem_offset,
       if (WN_operator (lwn) == OPR_IF) {
         WN *awn = WN_kid1(lwn);
 
-        if (TREE_CODE (TREE_OPERAND (init, 1)) == THROW_EXPR) {
+        if (TREE_CODE (TREE_OPERAND (init, 1)) == (enum tree_code)THROW_EXPR) {
           awn = WN_kid2(lwn);
           if (WN_operator (awn) == OPR_BLOCK) {
             WN *awn1 = WN_kid0(awn);
@@ -1976,7 +1977,7 @@ Gen_Assign_Of_Init_Val (ST *st, tree init, UINT offset, UINT array_elem_offset,
           }
 
         }
-        else if (TREE_CODE (TREE_OPERAND (init, 2)) == THROW_EXPR) {
+        else if (TREE_CODE (TREE_OPERAND (init, 2)) == (enum tree_code)THROW_EXPR) {
           awn = WN_kid1(lwn);
           if (WN_operator (awn) == OPR_BLOCK) {
             WN *awn1 = WN_kid0(awn);
