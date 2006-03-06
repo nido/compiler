@@ -143,12 +143,10 @@ static INT32	    	  temp_cleanup_max;
 /* (cbr) support for deferred cleanups */
 typedef struct nested_cleanup_t {
   ST *guard_st;
-  int flag_set;
-  tree cond_expr;
+  int emit_needed;
 } NESTED_COND_CLEANUP;
 
 static NESTED_COND_CLEANUP *cond_cleanup_stack;
-INT32	    	 max_cleanup_i=-1;
 static INT32	 cond_cleanup_i;
 static INT32	 cond_cleanup_max;
 #endif
@@ -1757,10 +1755,12 @@ WFE_Stmt_Init (void)
 #ifdef TARG_ST
 /* (cbr) support for deferred cleanups */
 void
-Push_Cleanup_Deferral (tree e, int iflag)
+Push_Cleanup_Deferral ()
 {
-  ST *guard_st;
   static int i = 0;
+
+  if (cond_cleanup_i > 0 && !cond_cleanup_stack [cond_cleanup_i].emit_needed)
+  return;
 
   if (++cond_cleanup_i == cond_cleanup_max) {
     cond_cleanup_max = ENLARGE (cond_cleanup_max);
@@ -1769,50 +1769,29 @@ Push_Cleanup_Deferral (tree e, int iflag)
 	 	        cond_cleanup_max * sizeof (NESTED_COND_CLEANUP));
   }
 
-  guard_st = New_ST (CURRENT_SYMTAB);
+  ST *guard_st = New_ST (CURRENT_SYMTAB);
   ST_Init (guard_st, Save_Str2i (".guard_dtor", "", i++), CLASS_VAR, SCLASS_AUTO,
            EXPORT_LOCAL, MTYPE_To_TY(Boolean_type));
 
   cond_cleanup_stack [cond_cleanup_i].guard_st=guard_st;
-  cond_cleanup_stack [cond_cleanup_i].cond_expr=e;
-
-  if (cond_cleanup_i) {
-    if (TREE_OPERAND(cond_cleanup_stack [cond_cleanup_i-1].cond_expr, 0) != e)
-       cond_cleanup_stack [cond_cleanup_i].flag_set=1;
-    else
-       cond_cleanup_stack [cond_cleanup_i].flag_set=0;
-
-    cond_cleanup_stack [cond_cleanup_i-1].flag_set=1;  
-  }
-  else {
-    cond_cleanup_stack [cond_cleanup_i].flag_set=iflag;  
-  }
+  cond_cleanup_stack [cond_cleanup_i].emit_needed=0;
 }
 
 ST *
 Get_Deferred_Cleanup() 
- {
+{
    if (cond_cleanup_i == -1)
       return 0;
 
    NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[cond_cleanup_i];
 
-   int cond_flag = nested_cond->flag_set;
    ST *guard_st = nested_cond->guard_st;
+   WN *val = WN_Intconst (Boolean_type, 1);
+   val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
+   WFE_Stmt_Append (val, Get_Srcpos());
 
-   FmtAssert (cond_flag == 0 || cond_flag == 1, ("wrong cleanup guard"));
-
-   if (cond_flag) {
-      max_cleanup_i = MAX(cond_cleanup_i, max_cleanup_i);
-      WN *val = WN_Intconst (Boolean_type, 1);
-      val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
-      WFE_Stmt_Append (val, Get_Srcpos());
-      return guard_st;
-   }
-   else {
-     nested_cond->flag_set=1;
-     return 0;
-   }
+   nested_cond->emit_needed=1;
+   return guard_st;
  }
 
 void Emit_Cleanup_Initializers()
@@ -1820,11 +1799,11 @@ void Emit_Cleanup_Initializers()
   WN *body =  WFE_Stmt_Top ();
   WN *first = WN_first(body);
 
-  for (int i = 0; i <= max_cleanup_i; i++) {
+  for (int i = 0; i <= cond_cleanup_i; i++) {
     NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[i];
-    ST *guard_st = nested_cond->guard_st;
 
-    if (guard_st) {
+    if (nested_cond->emit_needed) {
+      ST *guard_st = nested_cond->guard_st;
 
       WN *val = WN_Intconst (Boolean_type, 0);
       val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
@@ -1835,13 +1814,9 @@ void Emit_Cleanup_Initializers()
           WN_INSERT_BlockBefore (body, first, val);
     }
   }
-  max_cleanup_i = -1;
+  cond_cleanup_i = -1;
 }
 
-void Pop_Cleanup_Deferral() 
- {
-  cond_cleanup_i--;
- }
 #endif
 
 #ifdef KEY
