@@ -5301,7 +5301,10 @@ Spill_Callee_Saved_Regs (void)
     if (annot) {
       CALLINFO *callinfo = ANNOT_callinfo (annot);
       if (callinfo
-	  && WN_Call_Never_Return (CALLINFO_call_wn (callinfo))) {
+	  && WN_Call_Never_Return (CALLINFO_call_wn (callinfo))
+          /* (cbr) need return for unwinder */
+          && !PU_has_region(Get_Current_PU())
+          ) {
 	continue;
       }
     }

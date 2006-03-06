@@ -1199,6 +1199,8 @@ Generate_Exit (
 #ifdef TARG_ST
   // FdF 20041105: No need for an epilog in case of a "noreturn" call.
   if (BB_call(bb) &&
+      /* (cbr) need return for unwinder */
+      !PU_has_region(Get_Current_PU()) &&
       WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO)))))
     return;
 #endif

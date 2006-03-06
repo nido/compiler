@@ -1352,7 +1352,10 @@ Handle_Call_Site (
   // FdF 20041105: A "noreturn" call is also an exit block, so as to
   // enable tail call optimization and optimization of the call
   // sequence.
-  if (WN_Call_Never_Return( call )) {
+  if (WN_Call_Never_Return( call )
+      /* (cbr) need return for unwinder */
+      && !PU_has_region(Get_Current_PU())
+      ) {
     EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
     EXITINFO_srcpos(exit_info) = current_srcpos;
     BB_Add_Annotation (Cur_BB, ANNOT_EXITINFO, exit_info);
@@ -1603,15 +1606,13 @@ Handle_LDID (
 #else
     TN *ldid_result = PREG_To_TN (WN_st(ldid), WN_load_offset(ldid));
 #endif
-
-#ifdef TARG_ST
-    // TB 02 2006: FIX bug pro-release-1-9-0-B/39: Do not create ops for node such as
+    // TB 02 2006: FIX bug pro-release-1-9-0-B/39: DO not create ops for node such as
     // U4U4LDID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg>
     // U4STID 76 <1,4,.preg_U4> T<8,.predef_U4,4> # <preg> {freq: 0, ln: 110, col: 0}
-    // Otherwise freq.cxx module will not finish (function Is_Pointer)
+    // Otherwise freq.cxx module will not finished (function Is_Pointer)
     if (ldid_result == result)
       return result;
-#endif
+
 #ifdef ENABLE_64_BITS
     FmtAssert(result == NULL || TN_size(result) == MTYPE_bsize(OPCODE_rtype(opcode)), ("Unexpected result size for LDID"));
 
@@ -4320,6 +4321,8 @@ static void Build_CFG(void)
 	Link_Pred_Succ (bb, region_entry);
       } 
       else if (BB_call(bb)
+      /* (cbr) need return for unwinder */
+        && !PU_has_region(Get_Current_PU())
 	&& WN_Call_Never_Return( CALLINFO_call_wn(ANNOT_callinfo(
 		ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO) ))) )
       {
