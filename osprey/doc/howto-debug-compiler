@@ -160,6 +160,7 @@ in common/util/tracing.c and are as follows:
   { TP_EBO,             "EBO",  "Extended Block Optimizer" },
   { TP_FLOWOPT,         "FLW",  "Control flow optimization" },
   { TP_HBF,             "HBF",  "Hyperblock Formation" },
+  { TP_CGPREP,		"PRP",	"Code generator scheduling prep" },
   { TP_CGLOOP,          "LOP",  "Code generator loop optimization" },
   { TP_SWPIPE,          "SWP",  "Software pipelining" },
   { TP_SRA,             "SRA",  "SWP register allocation" },
@@ -171,6 +172,11 @@ in common/util/tracing.c and are as follows:
   { TP_PQS,             "PQS",  "Predicate query system" },
   { TP_THR,             "THR",  "Tree-Height Reduction" },
   { TP_EMIT,            "EMT",  "Code emission" },
+
+#ifdef TARG_ST
+  { TP_SSA,		"SSA",	"SSA form" },
+  { TP_SELECT,		"SLC",	"Select if-conversion" },
+#endif
 
 The mnemonic names can be specified in either upper or lower case, 
 e.g. -trlow or -trLOW.
@@ -770,6 +776,7 @@ To see details of control flow optimization:
 	-ttFLW:0x0080       BB cloning
 	-ttFLW:0x0100   Frequency estimates
 	-ttFLW:0x0200   Dominators
+	-ttFLW:0x0400   Merge OPs
 
 To see details of finding global register live ranges:
 	-ttGLR:1	dump liveness info
@@ -791,6 +798,7 @@ To see details of CG loop optimization:
 	-ttLOP:0x0001   minimal loop info
 	-ttLOP:0x0002   trace unrolling and prefetches
 	-ttLOP:0x0004   loop optimization checkpoints
+	-ttLOP:0x0010	trace load/store packing and induction variables
 	-ttLOP:0x0100   TN duplication trace
 	-ttLOP:0x0200   R/W trans. trace
 	-ttLOP:0x0400   checkpoints during R/W
@@ -837,6 +845,24 @@ To see details of code emit:
 	-ttEMT:0x0040  Trace emitting of unwind info
 	-ttEMT:0x0200  Disable emitting dwarf
 	-ttEMT:0x0800  Trace long branch fixup
+
+To see details of SSA construction/destruction:
+	-ttSSA:0x01	trace SSA build
+	-ttSSA:0x02	trace make conventional
+	-ttSSA:0x04	trace interference graph
+	-ttSSA:0x08	trace PHI-removal
+	-ttSSA:0x10	trace dominance frontier
+	-ttSSA:0x20	collect statistics for SSA
+
+To see details of if-conversion under SSA:
+	-ttSLC:0x0001	trace candidates
+	-ttSLC:0x0002	trace generation
+	-ttSLC:0x0004	trace speculation
+	-ttSLC:0x0008	trace merge
+	-ttSLC:0x0010	trace duplication
+	-ttSLC:0x0020	trace statistics
+	-ttSLC:0x4000	trace DaVinci
+	-ttSLC:0x8000	trace stdout
 
 3i) CG Flags
 
