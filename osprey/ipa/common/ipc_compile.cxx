@@ -1061,9 +1061,9 @@ void ipacom_doit (const char* ipaa_filename)
     if (! IS_ABSOLUTE_PATH((*command_map)["cc"]))
       relativepath = "../";
 
-    fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d %s\n",
+    fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d -TENV:ipa_exec_name=%s %s\n",
 	    tmpdir_macro, relativepath, (*commands)[i], ipa_time, getpid(),
-	    extra_args);
+	    Ipa_Exec_Name, extra_args);
 #else
     fprintf(makefile, "\tcd -P %s; %s %s\n",
             tmpdir_macro, (*commands)[i], extra_args);
