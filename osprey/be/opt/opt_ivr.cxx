@@ -1250,8 +1250,12 @@ Primary_IV_preference(IV_CAND *iv, OPT_STAB *opt_stab)
 IV_CAND*
 IVR::Promote_IV(const BB_LOOP *loop, IV_CAND * iv, MTYPE mtype)
 {
+
+  //  fprintf(stdout, "Promote_IV for BB %d, in Phase %d\n", loop->Body()->Id(), Phase());
+  //  Cfg()->Print(stdout, 1, -1);
   // generate a new IV
-  IDTYPE new_temp = Opt_stab()->Create_preg( mtype, "whiledo_var" );
+  AUX_STAB_ENTRY *aux_iv = Opt_stab()->Aux_stab_entry(iv->Var()->Aux_id());
+  IDTYPE new_temp = Opt_stab()->Create_preg( mtype, aux_iv->St_name());
 
   Add_new_auxid_to_entry_chis(new_temp, Cfg(), Htable(), Opt_stab());
 
@@ -1375,6 +1379,9 @@ IVR::Substitute_IV(const IV_CAND *iv,
 	subst_cr_occurrences(stmt->Rhs(), iv, new_iv);
     }
   }
+  Is_True(loop->Iv() == iv->Var(), ("Unexpected IV in Promote_IV"));
+  loop->Set_iv(new_iv->Var());
+
 }
 #endif
 
@@ -2916,14 +2923,19 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
   Determine_trip_IV_and_exit_count(loop, &trip_iv, primary);
   CODEREP *trip_count = Trip_count();
 
-  // FdF 20060124: trip_iv do not wrap around. If its type is lower
-  // than I4, then promote it to type I4
-  if (trip_count && (trip_count->Kind() == CK_CONST) &&
-      (MTYPE_size_min(trip_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4))) {
-
+#ifdef TARG_ST
+  // FdF 20060124: In case the trip_iv will not wrap (either a
+  // constant has been computed or the type is a signed type in C or
+  // C++,and its type is lower than I4), then promote it to type I4
+  if ((Phase() == MAINOPT_PHASE) && trip_count &&
+      (MTYPE_size_min(trip_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4)) &&
+      ((trip_count->Kind() == CK_CONST) ||
+       (!PU_mixed_lang(Get_Current_PU()) &&
+	(PU_c_lang(Get_Current_PU()) || PU_cxx_lang(Get_Current_PU())) &&
+	MTYPE_signed(trip_iv->Var()->Dsctyp())))) {
     // For this loop only, create a new symbol, and replace occurences
-    // of the original symbol by the new one.
-    // Do something like: Generate_Primary_IV, Replace_secondary_IV
+    // of the original symbol by the new one.  Do something like:
+    // Generate_Primary_IV, Replace_secondary_IV
 
     IV_CAND *trip_iv_I4 = Promote_IV(loop, trip_iv, MTYPE_I4);
 
@@ -2939,7 +2951,7 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
     Substitute_IV(trip_iv, trip_iv_I4, loop->Header(), loop);
     trip_iv = trip_iv_I4;
   }
-
+#endif
   // ************************************************************************
   //    Update the BB_LOOP entry test condition
   // ************************************************************************
