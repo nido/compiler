@@ -204,8 +204,9 @@ LOOP_IVS::Find_IV( INT op_idx, INT opnd_idx ) {
     }
 
     /* Check if a cycle is found. */
-    if ( OPND_omega(entry, iv_idx) == 1 )
+    if ( OPND_omega(entry, iv_idx) == 1 ) {
       if (IV_index == 0) {
+	// At this point we will start an IV cycle
 	IV_index = defid;
 	// IV_step is the offset from the use of the variable
 	// ivs_table[op_idx]->opnd_source[opnd_idx], to the
@@ -215,11 +216,22 @@ LOOP_IVS::Find_IV( INT op_idx, INT opnd_idx ) {
 	// induction variable.
 	IV_step = 0;
       }
-      else {
-	Is_True(IV_index == defid, ("Inconsistent IVs table."));
+      else if (IV_index == defid) {
+	// We have found an IV cycle that span only one iteration
 	Set_IV_cycle(defid_src, IV_index);
 	break;
       }
+      else {
+	// This is an IV cycle that spans several iterations. This can
+	// be produced with the following code:
+	//   while (i < N) {
+	//     k = i + 1;
+	//     i = j + 1;
+	//     j = k + 1;
+	//   }
+	return 0;
+      }
+    }
     entry = &ivs_table[DEFID_idx(defid)];
 
     /* Only ADD and SUB operations with an immediate operand are
@@ -421,6 +433,8 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
     Print_OP(op);
     INT opndx;
     for (opndx = 0; opndx < OP_opnds(op); opndx++) {
+      if (!TN_is_register(OP_opnd(op, opndx)))
+	continue;
       DefID_t iv_cycle = loop_ivs.OPND_IV_cycle(idx, opndx);
       fprintf(TFile, "\t");
       Print_TN(OP_opnd(op, opndx), 0);
