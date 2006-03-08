@@ -81,10 +81,8 @@ static BOOL Trace_Unwind = FALSE;
 static INT Data_Alignment_Factor = 4;
 
 //#define DEBUG_UNWIND
-#ifdef notyet
 #define PROPAGATE_DEBUG
 #define USE_UNREACHABLE
-#endif
 
 // rp == ra
 // psp == fp
