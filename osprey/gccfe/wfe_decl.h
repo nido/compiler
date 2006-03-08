@@ -142,6 +142,14 @@ extern void WFE_Alias_Finish(void);
 /* variable to keep track track of ST to be used for varargs */
 extern ST *WFE_Vararg_Start_ST;
 
+#ifdef TARG_ST
+/* get the current function declaration.  This just comes from a static
+ * global variable in the absence of nested function declarations.
+ */
+
+extern tree Current_Function_Decl(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

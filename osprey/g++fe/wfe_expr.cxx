@@ -4906,6 +4906,151 @@ WFE_Expand_Expr (tree exp,
       break;
 
     case VA_ARG_EXPR:
+#ifdef TARG_ST200
+      {
+	INT64 align;
+	INT64 rounded_size;
+	INT64 adjustment;
+	tree type = TREE_TYPE (exp);
+	TY_IDX ty_idx = Get_TY (type);
+	TYPE_ID mtype = TY_mtype (ty_idx);
+	INT64 type_size = int_size_in_bytes (type);
+	TY_IDX va_list_ty_idx = Get_TY (va_list_type_node);
+	TYPE_ID va_list_mtype = TY_mtype (va_list_ty_idx);
+	WN *ap_addr, *ap_load, *ap_store;
+	WN *arg_addr;
+	UINT field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
+	tree operand = TREE_OPERAND (exp, 0);
+	
+	// [SC] I would like to use WFE_Address_Of(operand) here,
+	// but WFE_Address_Of is available in C++ translator but not the
+	// C translator.
+	if (TREE_CODE (operand) == INDIRECT_REF) {
+	  ap_addr = WFE_Expand_Expr (TREE_OPERAND(operand, 0));
+	} else {
+	  ap_addr = WFE_Expand_Expr (build1 
+				     (ADDR_EXPR,
+				      build_pointer_type (TREE_TYPE (operand)),
+				      operand));
+	}
+	if (WN_operator (ap_addr) == OPR_LDA) {
+	  ap_load = WN_Ldid (Pointer_Mtype, 0, WN_st (ap_addr),
+			     va_list_ty_idx, field_id);
+	} else {
+	  ap_load = WN_Iload (Pointer_Mtype, 0, va_list_ty_idx,
+			      ap_addr, field_id);
+	}
+	
+	// Any parameter larger than 4 bytes is 8-byte aligned.
+	align = (type_size > 4) ? 8 : 4;
+	rounded_size = (((int_size_in_bytes (type) + align - 1) / align) * align);
+
+	// Set wn = start address of arg.
+	if (align > 4) {
+	  // ap is guaranteed to be 4-byte aligned, but for larger
+	  // alignments we must adjust it.
+	  wn = WN_Binary (OPR_BAND,
+			  Pointer_Mtype,
+			  WN_Binary (OPR_ADD, Pointer_Mtype, ap_load,
+				     WN_Intconst (Pointer_Mtype, align - 1)),
+			  WN_Intconst (Pointer_Mtype, ~(align - 1)));
+	} else {
+	  wn = ap_load;
+	}
+
+	// add to wn the rounded size of the arg
+	wn = WN_Binary (OPR_ADD, Pointer_Mtype, wn,
+			WN_Intconst (Pointer_Mtype, rounded_size));
+	// store back in ap
+	if (WN_operator (ap_addr) == OPR_LDA) {
+	  ap_store = WN_Stid (Pointer_Mtype, 0, WN_st (ap_addr),
+			      va_list_ty_idx, wn, field_id);
+	} else {
+	  ap_store = WN_Istore (Pointer_Mtype, 0,
+				Make_Pointer_Type (va_list_ty_idx),
+				WN_COPY_Tree (ap_addr),
+				wn, field_id);
+	}
+        WFE_Stmt_Append (ap_store, Get_Srcpos ());
+	
+	if (Target_Byte_Sex == BIG_ENDIAN
+	    && type_size > UNITS_PER_WORD
+	    && (INTEGRAL_MODE_P(TYPE_MODE (type))
+		|| FLOAT_MODE_P(TYPE_MODE (type)))) {
+	  // Handle multi-word scalar/complex, passed in registers.
+	  UINT64 n_words = type_size / UNITS_PER_WORD;
+	  // Need to exchange alternate words.
+	  // Create a temporary of the appropriate type.
+	  ST *temp_st = Gen_Temp_Symbol (ty_idx, "_va_arg_temp");
+	  Set_ST_addr_saved (temp_st);
+	  // Copy words from stack to symbol, swapping
+	  // alternate words.
+	  INT64 load_offset = -type_size;
+	  INT64 store_offset = 0;
+	  for (UINT64 w = 0; w < n_words; w+= 2) {
+	    wn = WN_CreateIload(OPR_ILOAD, Def_Int_Mtype, Def_Int_Mtype,
+				load_offset,
+				MTYPE_TO_TY_array[Def_Int_Mtype],
+				Make_Pointer_Type(ty_idx),
+				WN_COPY_Tree (ap_load));
+	    wn = WN_Stid(Def_Int_Mtype, store_offset + UNITS_PER_WORD,
+			 temp_st, ty_idx, wn);
+	    WFE_Stmt_Append (wn, Get_Srcpos ());
+	    wn = WN_CreateIload(OPR_ILOAD, Def_Int_Mtype, Def_Int_Mtype,
+				load_offset + UNITS_PER_WORD,
+				MTYPE_TO_TY_array[Def_Int_Mtype],
+				Make_Pointer_Type(ty_idx),
+				WN_COPY_Tree (ap_load));
+	    wn = WN_Stid(Def_Int_Mtype, store_offset,
+			 temp_st, ty_idx, wn);
+	    WFE_Stmt_Append (wn, Get_Srcpos ());
+	    load_offset += 2 * UNITS_PER_WORD;
+	    store_offset += 2 * UNITS_PER_WORD;
+	  }
+	  // load the ap limit value.
+	  if (WN_operator (ap_addr) == OPR_LDA) {
+	    wn = WN_Ldid (Pointer_Mtype, 4, WN_st (ap_addr),
+			  va_list_ty_idx, 2);
+	  } else {
+	    wn = WN_Iload (Pointer_Mtype, 4, va_list_ty_idx,
+			   WN_COPY_Tree (ap_addr), 2);
+	  }
+	  // compare ap with the limit.
+	  wn = WN_Relational (OPR_LT,
+			      Pointer_Mtype,
+			      WN_Binary (OPR_SUB,
+					 Pointer_Mtype,
+					 WN_COPY_Tree (ap_load),
+					 WN_Intconst (Pointer_Mtype,
+						      rounded_size)),
+			      wn);
+	  // if ap is below limit, load the temporary,
+	  // otherwise load through ap.
+	  wn = WN_Select (mtype,
+			  wn,
+			  WN_Ldid (mtype, 0, temp_st, ty_idx),
+			  WN_CreateIload (OPR_ILOAD, mtype, mtype,
+					  -type_size,
+					  ty_idx,
+					  Make_Pointer_Type (ty_idx, FALSE),
+					  WN_COPY_Tree (ap_load)));
+	} else {
+	  if (Target_Byte_Sex == BIG_ENDIAN
+	      && type_size < 4
+	      && ! AGGREGATE_TYPE_P (type)) {
+	    adjustment = type_size;
+	  } else {
+	    adjustment = rounded_size;
+	  }
+	  arg_addr = WN_COPY_Tree (ap_load);
+	  // Now ap points to the word just after the arg.
+	  wn = WN_CreateIload (OPR_ILOAD, Widen_Mtype (mtype), mtype,
+			       -adjustment,
+			       ty_idx, Make_Pointer_Type (ty_idx, FALSE),
+			       arg_addr);
+	}
+      }
+#else
       {
         // code swiped from builtins.c (std_expand_builtin_va_arg)
 	INT64 align;
@@ -4942,6 +5087,7 @@ WFE_Expand_Expr (tree exp,
 			     ty_idx, Make_Pointer_Type (ty_idx, FALSE),
 			     WN_Ldid (Pointer_Mtype, 0, st, ST_type (st)));
       }
+#endif
       break;
 
 

@@ -1040,7 +1040,9 @@
         arg1 = TREE_VALUE (arglist);
 	arg2 = TREE_VALUE (TREE_CHAIN (arglist));
 	WN *arg_wn = WFE_Expand_Expr (arg1);
-	TY_IDX arg_ty_idx = Get_TY (TREE_TYPE (arg1));
+	TY_IDX va_list_ty_idx = Get_TY (va_list_type_node);
+	TYPE_ID va_list_mtype = TY_mtype (arg_ty_idx);
+	UINT ap_field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
 	while (TREE_CODE (arg2) == NOP_EXPR
 	       || TREE_CODE (arg2) == CONVERT_EXPR
 	       || TREE_CODE (arg2) == NON_LVALUE_EXPR
@@ -1053,11 +1055,11 @@
 	
 	if (WN_operator (arg_wn) == OPR_LDA) {
 	  wn = WN_Stid (Pointer_Mtype, WN_offset (arg_wn),
-			WN_st (arg_wn), arg_ty_idx, wn);
+			WN_st (arg_wn), va_list_ty_idx, wn, ap_field_id);
 	} else {
-	  wn = WN_CreateIstore (OPR_ISTORE, MTYPE_V,
-				Pointer_Mtype, 0, arg_ty_idx,
-				arg_wn, 0);
+	  wn = WN_Istore (Pointer_Mtype, 0,
+			  Make_Pointer_Type (va_list_ty_idx),
+			  arg_wn, wn, ap_field_id);
 	}
 	WFE_Stmt_Append (wn, Get_Srcpos());
 	if (TARGET_BIG_ENDIAN) {
@@ -1073,21 +1075,49 @@
 	  // In this case, there will be no variable arguments passed in
 	  // registers, and we can just use the word above st2 as the
 	  // register argument limit.
+	  // Beware: gcc code would here just use
+	  // current_function_args_info to determine the number of
+	  // register arguments.  However, current_function_args_info
+	  // may not be available during whirl translation because
+	  // cfun may have already been freed.
+	  // So here attempt to recreate current_function_args_info.
+	  const UINT reg_limit_field_id = 2;
+	  int cum = 0;
+	  tree current_fn_decl = Current_Function_Decl();
+	  tree parm;
+	  for (parm = DECL_ARGUMENTS (current_fn_decl);
+	       parm != NULL;
+	       parm = TREE_CHAIN (parm)) {
+	    int words;
+	    tree passed_type = DECL_ARG_TYPE (parm);
+	    if (DECL_TRANSPARENT_UNION (parm)
+		|| (TREE_CODE (passed_type) == UNION_TYPE
+		    && TYPE_TRANSPARENT_UNION (passed_type))) {
+	      passed_type = TREE_TYPE (TYPE_FIELDS (passed_type));
+	    }
+	    words = ((int_size_in_bytes (passed_type) + UNITS_PER_WORD - 1)
+		     / UNITS_PER_WORD);
+	    if (words > 1 && (cum & 1)) cum++;
+	    cum += words;
+	  }
+	  if (cum > MAX_ARGUMENT_SLOTS) cum = MAX_ARGUMENT_SLOTS;
+
 	  wn = WN_Binary (OPR_ADD, Pointer_Mtype,
 			  WN_Lda (Pointer_Mtype,
 				  ((TY_size (ST_type (st2)) + 3) & (-4)),
 				  st2),
 			  WN_Intconst (Pointer_Mtype,
-				       UNITS_PER_WORD * (MAX_ARGUMENT_SLOTS - current_function_args_info)));
+				       UNITS_PER_WORD * (MAX_ARGUMENT_SLOTS -
+							 cum)));
 	  if (WN_operator (arg_wn) == OPR_LDA) {
 	    wn = WN_Stid (Pointer_Mtype,
 			  WN_offset (arg_wn) + MTYPE_byte_size(Pointer_Mtype),
-			  WN_st (arg_wn), arg_ty_idx, wn);
+			  WN_st (arg_wn), va_list_ty_idx, wn,
+			  reg_limit_field_id);
 	  } else {
-	    wn = WN_CreateIstore (OPR_ISTORE, MTYPE_V,
-				  Pointer_Mtype,
-				  MTYPE_byte_size(Pointer_Mtype), arg_ty_idx,
-				  arg_wn, 0);
+	    wn = WN_Istore (Pointer_Mtype, MTYPE_byte_size (Pointer_Mtype),
+			    Make_Pointer_Type (va_list_ty_idx),
+			    WN_COPY_Tree (arg_wn), wn, reg_limit_field_id);
 	  }
 	  WFE_Stmt_Append (wn, Get_Srcpos());
 	}

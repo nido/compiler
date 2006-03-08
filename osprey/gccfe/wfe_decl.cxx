@@ -106,6 +106,13 @@ static BOOL not_at_root = FALSE;
 static int __ctors = 0;
 static int __dtors = 0;
 
+#ifdef TARG_ST
+// [SC] For compatibility with g++fe, provide this
+// function for use by code common to gccfe and g++fe
+// (in particular, the builtins expansion).
+tree Current_Function_Decl(void) {return current_function_decl;}
+#endif
+
 extern "C" tree lookup_name (tree);
 
 /* Generate WHIRL representing an asm at file scope (between
