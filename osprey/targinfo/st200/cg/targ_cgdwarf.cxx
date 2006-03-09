@@ -1776,22 +1776,15 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		// add all the UEs required to restore the desired
 		// state
 
-#if 1
-		INT pred_id = BB_id(BB_prev(bb));
-#else
-		// FIXME: in theory, we should copy the state of the
-		// predecessor (assuming all preds have the same exit
-		// state), not that of the prev. However, in presence
-		// of EH, the state of the pred is 0.
-
+		// FIXME: for an EH BB, the state of the pred is 0.
 		// TODO: propagate bottom-up the entry states
 		INT pred_id;
 		if (BB_First_Pred(bb)) {
 		  pred_id = BB_id(BB_First_Pred(bb));
 		} else {
+		  FmtAssert(BB_handler(bb), ("BB %d has no predecessor and is not EH", BB_id(bb)));
 		  pred_id = BB_id(BB_prev(bb));
 		}
-#endif
 		if (Trace_Unwind) 
 		  fprintf(TFile, "copying entry state from bb %d\n", pred_id);
 
