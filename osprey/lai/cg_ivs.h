@@ -41,13 +41,13 @@
 //  void Perform_Induction_Variables_Optimizations();
 //    Performs Loop Induction Variables optmization on all loops
 //
-// LOOP_IVS::LOOP_IVS(LOOP_DESCR *loop, MEM_POOL *mem_pool)
+// LOOP_IVS::LOOP_IVS(MEM_POOL *mem_pool)
 //    Constructor for a new LOOP_IVS instance
 //
 //  LOOP_IVS::~LOOP_IVS(void)
 //    Destructor for a LOOP_IVS instance
 //
-//  void LOOP_IVS::Init( BB *body )
+//  void LOOP_IVS::Init( LOOP_DESCR *loop )
 //    Initializes a LOOP_IVS instance for a Single_BB loop
 //
 //  INT Lookup_Op(OP *op);
@@ -57,8 +57,8 @@
 //    Returns an ID for an Induction Variable. 
 //
 //  INT OPND_IV_offset(INT op_idx, INT opnd_idx);
-//    Initializes offset to be the constant value from this use to the
-//    value of the IV at the beginnning of a loop iteration.
+//    Returns the constant value from this use to the value of the IV
+//    at the beginnning of a loop iteration.
 //
 //  INT IV_step(DefID_t iv_cycle);
 //    Get the step of an IV
@@ -108,7 +108,6 @@ class LOOP_IVS {
 
   IVs_entry_t& DEFID_entry(DefID_t defid) { return ivs_table[DEFID_idx(defid)]; }
   OP *DEFID_op(DefID_t defid) { return ivs_table[DEFID_idx(defid)].op; }
-  DefID_t OPND_defid(INT op_idx, INT opnd_idx) { return ivs_table[op_idx].opnd_source[opnd_idx]; }
   INT OPND_omega(INT op_idx, INT opnd_idx) { return DEFID_idx(OPND_defid(op_idx, opnd_idx)) >= op_idx; }
   INT OPND_omega(IVs_entry_t *ivs_entry, INT opnd_idx) { return OPND_omega(ivs_entry-ivs_table, opnd_idx); }
 
@@ -129,15 +128,16 @@ class LOOP_IVS {
 
  public:
 
-  LOOP_IVS(LOOP_DESCR *loop, MEM_POOL *mem_pool)
+  LOOP_IVS(MEM_POOL *mem_pool)
     : _loc_mem_pool(mem_pool) ,
     ivs_table( NULL ),
     ivs_count( 0 ) {}
 
   ~LOOP_IVS(void) {}
 
-  void Init( BB *body );
-  INT Count() { return ivs_count; }
+  void Init( LOOP_DESCR *loop );
+  INT First_opidx() { return 1; }
+  INT Last_opidx() { return ivs_count-1; }
 
   OP *Op(INT op_idx) {
     return ((op_idx > 0) && (op_idx < ivs_count)) ? ivs_table[op_idx].op : NULL;
@@ -145,6 +145,7 @@ class LOOP_IVS {
 #if 0
   INT Lookup_Op(OP *op);
 #endif
+  DefID_t OPND_defid(INT op_idx, INT opnd_idx) { return ivs_table[op_idx].opnd_source[opnd_idx]; }
   DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
   INT OPND_IV_offset(INT op_idx, INT opndx_idx);
   INT IV_step(DefID_t iv_cycle);
@@ -154,7 +155,10 @@ class LOOP_IVS {
 };
 
 #define FOR_ALL_LOOP_IVS_OPs_FWD(loop_ivs, opidx, op) \
-  for (op = (loop_ivs)->Op(opidx=1); opidx < (loop_ivs)->Count(); op = (loop_ivs)->Op(++opidx))
+  for (op = (loop_ivs)->Op(opidx=((loop_ivs)->First_opidx())); opidx <= (loop_ivs)->Last_opidx(); op = (loop_ivs)->Op(++opidx))
+
+#define FOR_ALL_LOOP_IVS_OPs_REV(loop_ivs, opidx, op) \
+  for (op = (loop_ivs)->Op(opidx=((loop_ivs)->Last_opidx())); opidx >= (loop_ivs)->First_opidx(); op = (loop_ivs)->Op(--opidx))
 
 void Perform_Induction_Variables_Optimizations();
 

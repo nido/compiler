@@ -340,13 +340,14 @@ LOOP_IVS::Init_IVs_Table(OP *first_op, hTN_MAP32 tn_last_op) {
   }
 }
 
-void LOOP_IVS::Init( BB *body )
+void LOOP_IVS::Init( LOOP_DESCR *loop )
 {
   // First, deallocate the ivs_table if not NULL.
   if (ivs_table) {
     CXX_DELETE_ARRAY( ivs_table, _loc_mem_pool );
   }
   
+  BB *body = LOOP_DESCR_loophead( loop );
   // Count the number of OPs in the loop body.
   ivs_count = 1;
   OP *op;
@@ -374,7 +375,7 @@ void LOOP_IVS::Init( BB *body )
 //
 // ======================================================================
 
-#if 0
+#if 1
 // ======================================================================
 //
 //  Implementation example for optimizations based on loop induction
@@ -417,9 +418,8 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
   MEM_POOL_Initialize( &local_mem_pool, "LOOP_IVS local pool", FALSE );
   MEM_POOL_Push( &local_mem_pool );
 
-  LOOP_IVS loop_ivs( loop, &local_mem_pool );
-  BB *body = LOOP_DESCR_loophead( loop );
-  loop_ivs.Init( body );
+  LOOP_IVS loop_ivs( &local_mem_pool );
+  loop_ivs.Init( loop );
 
   //  loop_ivs.Trace_IVs_Entries("Before optimizations");
 
@@ -427,9 +427,12 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
 
   OP *op;
   int idx;
+#if 1
   FOR_ALL_LOOP_IVS_OPs_FWD( &loop_ivs, idx, op ) {
+#if 0
     INT op_idx = loop_ivs.Lookup_Op(op);
     Is_True(op_idx == idx, ("LOOP_IVS_Verify failed"));
+#endif
     Print_OP(op);
     INT opndx;
     for (opndx = 0; opndx < OP_opnds(op); opndx++) {
@@ -443,7 +446,7 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
       else {
 	INT offset = loop_ivs.OPND_IV_offset(idx, opndx);
 	fprintf(TFile, ": IV = (%d,%d), offset = %d\n", DEFID_idx(iv_cycle), DEFID_res(iv_cycle), offset);
-	if (DEFID_idx(iv_cycle) == op_idx) {
+	if (DEFID_idx(iv_cycle) == idx) {
 	  INT64 step = loop_ivs.IV_step(iv_cycle);
 	  OP *op_init =  loop_ivs.IV_init(iv_cycle);
 	  fprintf(TFile, "\tIV: step %lld, init ", step);
@@ -455,6 +458,7 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
       }
     }
   }
+#endif
 
   // Dispose memory pool for LOOP_IVS
   MEM_POOL_Pop( &local_mem_pool );
@@ -1410,7 +1414,7 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
 
     OP *op2;
     INT opidx2;
-    for (opidx2 = opidx+1; opidx2 < loop_ivs->Count(); opidx2 ++) {
+    for (opidx2 = opidx+1; opidx2 <= loop_ivs->Last_opidx(); opidx2 ++) {
       op2 = loop_ivs->Op(opidx2);
       // Look for a sequence of identical operations
       if ( !OP_flag1( op2 ) || (OP_code(op) != OP_code(op2)))
@@ -1495,7 +1499,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   BOOL packing_done = FALSE;
 
   BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
-  loop_ivs->Init( body );
+  loop_ivs->Init( cg_loop.Loop() );
 
   // Identify (set flag1 for) all OPs that are suitable candidates for
   // 64 bit load/store packing.
@@ -1672,7 +1676,7 @@ static BOOL
 LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 {
   BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
-  loop_ivs->Init( body );
+  loop_ivs->Init( cg_loop.Loop() );
 
   // Identify (set flag1 for) all OPs that are suitable candidates for
   // 64 bit load/store packing.
@@ -1940,7 +1944,7 @@ BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop )
 			  INCLUDE_MEMREAD_ARCS, INCLUDE_MEMIN_ARCS,
 			  NO_CONTROL_ARCS, NULL );
 
-    LOOP_IVS loop_ivs( loop, &local_mem_pool );
+    LOOP_IVS loop_ivs( &local_mem_pool );
     changed_loop = LoadStore_Packing( &loop_ivs, cg_loop );
 
     CG_DEP_Addr_Analysis = save_CG_DEP_Addr_Analysis;
@@ -1982,7 +1986,7 @@ BOOL IVS_Analyze_Load_Store_Packing( CG_LOOP &cg_loop )
 			  INCLUDE_MEMREAD_ARCS, INCLUDE_MEMIN_ARCS,
 			  NO_CONTROL_ARCS, NULL );
 
-    LOOP_IVS loop_ivs( loop, &local_mem_pool );
+    LOOP_IVS loop_ivs( &local_mem_pool );
     can_be_packed = LoadStore_Check_Packing( &loop_ivs, cg_loop );
 
     CG_DEP_Addr_Analysis = save_CG_DEP_Addr_Analysis;
