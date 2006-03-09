@@ -975,7 +975,7 @@ Delete_Function (NODE_INDEX node, BOOL update_modref_count, mUINT8 *visited)
 		 ipa_node->Name ());
 
 #ifdef TARG_ST
-    if (Verbose)
+    if (Verbose || INLINE_List_Actions)
       fprintf (stderr, "   %s deleted (unused)\n", ipa_node->Name());
 #endif
 
@@ -1024,7 +1024,7 @@ Delete_Function (NODE_INDEX node, BOOL update_modref_count, mUINT8 *visited)
 	    if (Trace_IPA || Trace_Perf)
 	      fprintf (TFile, "%s alias deleted (unused)\n", ST_name(s));
 
-	    if (Verbose)
+	    if (Verbose || INLINE_List_Actions)
 	      fprintf (stderr, "   %s alias deleted (unused)\n", ST_name(s));
 	  }
       }

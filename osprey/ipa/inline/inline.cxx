@@ -415,8 +415,11 @@ Write_inline_pu(IPA_NODE* node)
 
     }
 #ifdef TARG_ST
-    if (Verbose) {
-      if (node->Is_Deletable ()) {
+    if (node->Is_Deletable ()) {
+      if (INLINE_List_Actions) {
+	fprintf (stderr, "%s deleted\n", node->Name());
+      }
+      if (Verbose) {
 	fprintf (stderr, "   %s [d]\n", node->Name());
       }
     }
