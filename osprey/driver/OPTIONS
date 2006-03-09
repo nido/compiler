@@ -1837,9 +1837,13 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Enable generation of rtti information"
 -fno-rtti			;		CC	f,cpp	self
 	"Disable generation of rtti information"
+-fhandle-exceptions	toggle(&noexceptions,FALSE);	Cc	f,cpp	self "-LANG:exc=ON -CG:emit_unwind_info=on"
+	"Enable exception handling"
 -fexceptions	toggle(&noexceptions,FALSE);	Cc	f,cpp	self "-LANG:exc=ON -CG:emit_unwind_info=on"
 	"Enable exception handling"
 -fno-exceptions	toggle(&noexceptions,TRUE);	Cc	f,cpp	self "-LANG:exc=OFF"
+	"Disable exception handling"
+-fno-handle-exceptions	toggle(&noexceptions,TRUE);	Cc	f,cpp	self "-LANG:exc=OFF"
 	"Disable exception handling"
 -funwind-tables	;		Cc	NONE	"-CG:emit_unwind_info=on -LANG:exc=ON"
 	""
@@ -1902,6 +1906,20 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Warn when compiler generates code that is probably not compatible with the vendor-neutral C++ ABI"
 -Wctor-dtor-privacy 		;		CC	f,cpp	self
 	"Warn when a class seems unusable because all the constructors or destructors in that class are private"
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
+// (cbr) ddts st24831
+-Wno-ctor-dtor-privacy 		;		CC	f,cpp	self
+	"Warn when a class seems unusable because all the constructors or destructors in that class are private"
+-Wnon-virtual-dtor 		;		CC	f,cpp	self
+	"warn when declaring a class that has a non virtual destructor, when it really ought to have a virtual one. "
+-Wno-non-virtual-dtor 		;		CC	f,cpp	self
+	"don't warn when declaring a class that has a non virtual destructor, when it really ought to have a virtual one. "
+-Wsynth ;			Cc	f,cpp	self
+	"Nonzero means warn when synthesis behavior differs from Cfront's."
+-Wsign-promo ;			Cc	f,cpp	self
+	"warn where overload resolution chooses a promotion from unsigned to signed over a conversion to an unsigned of the same size."
+#endif
+
 -Weffc++			;		CC	f,cpp	self
 	"Warn about violations of style guidelines from Scott Meyers' Effective C++ book"
 -Wold-style-cast		;		CC	f,cpp	self
