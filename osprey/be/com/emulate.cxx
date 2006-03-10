@@ -3174,6 +3174,9 @@ static BOOL check_size(WN *size, WN *src, WN *dst)
 
 static void aux_memory_msg(char *msg, WN *tree, WN *mstore)
 {
+#ifdef TARG_ST // [CL]
+  WN_copy_linenum(tree, mstore);
+#endif
 #if 0
   char	buff[120];
   INT32 n;
