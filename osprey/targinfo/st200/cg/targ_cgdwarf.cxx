@@ -82,7 +82,7 @@ static INT Data_Alignment_Factor = 4;
 
 //#define DEBUG_UNWIND
 #define PROPAGATE_DEBUG
-#define USE_UNREACHABLE
+//#define USE_UNREACHABLE
 
 // rp == ra
 // psp == fp
@@ -161,6 +161,9 @@ static TN_MAP tn_def_op;
 
 static BOOL PU_has_FP = FALSE;  // does the current PU use a frame pointer?
 static BOOL PU_has_restored_FP = FALSE; // has the current PU already restored FP?
+
+static BOOL UE_validated; // was the Tag_Irrelevant_Saves_And_Restores
+			  // pass alreadly run?
 
 static const char *
 UE_Register_Name (ISA_REGISTER_CLASS rc, REGISTER r)
@@ -256,8 +259,10 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 	  //	case UE_RESTORE_MEM:  
 	case UE_RESTORE_SP:
 	case UE_RESTORE_FP:
-	  fprintf(TFile, " %svalid", (ue.valid == TRUE) ? "" : "in");
-		break;
+	  if (UE_validated) {
+	    fprintf(TFile, " %svalid", (ue.valid == TRUE) ? "" : "in");
+	  }
+	  break;
 	}
 #endif
 
@@ -1686,6 +1691,7 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
   // to/from callee-saved registers, some of which may not be related
   // to this ABI property.
   Tag_Irrelevant_Saves_And_Restores_TOP();
+  UE_validated = TRUE;
 #endif
 
   // mark all saves/restores in local state
@@ -1824,10 +1830,7 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 
 	// add implicit changes upon entry
 #ifdef PROPAGATE_DEBUG
-	if (BB_unreachable(bb)) {
-	  // FIXME
-	  current_state = entry_state[bbid];
-	} else if (BB_handler(bb)) {
+	if (BB_handler(bb)) {
 	  // FIXME If bb is an EH entry block, keep the just-computed
 	  // entry_state. Indeed, the proper entry state of such a BB
 	  // has not been computed accurately (and is zero currently,
@@ -1836,6 +1839,12 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 	  // it should also be propagated to the following BBs
 	  current_state = entry_state[bbid];
 	}
+#ifndef USE_UNREACHABLE
+	else if (BB_unreachable(bb)) {
+	  // FIXME
+	  current_state = entry_state[bbid];
+	}
+#endif
 #endif
 	if (current_state != entry_state[bbid]) {
   		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
@@ -1956,6 +1965,7 @@ Init_Unwind_Info (BOOL trace)
   has_asm = FALSE;
   PU_has_FP = FALSE;
   PU_has_restored_FP = FALSE;
+  UE_validated = FALSE;
 
   Find_Unwind_Info ();
   simple_unwind = Is_Unwind_Simple();
