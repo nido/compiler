@@ -787,15 +787,6 @@ Build_Call_Graph ()
 
 
 
-#ifdef TARG_ST
-// [CL] Check if node is an implementation of an intrinsic
-// If node has the same name as an intrinsic , prevent node
-// from being deleted by DFE, which could be the case if no
-// reference is made to node with normal calls
-BOOL Is_Intrinsic_Implementation(IPA_NODE* node) {
-    return is_intrinsic_rt_name(node->Name()) ;
-}
-#endif
 
 // ======================================================================
 // Dead function elimination
@@ -838,14 +829,29 @@ Mark_Deletable_Funcs (NODE_INDEX v, DFE_ACTION action, mUINT8 *visited)
 
     case MARK_USED:
 	node->Clear_Deletable ();
+#ifdef TARG_ST
+	if (node->Is_Externally_Callable() || node->Is_Undeletable()
+	    || node->Is_Intrinsic_Implementation()
+	    || ST_is_used(node->Func_ST())) {
+#else
 	if (node->Is_Externally_Callable() || node->Is_Undeletable()) {
+#endif
 	    node->Set_Undeletable();
 	}
 	visited[v] = VISITED_AND_KEEP;
 	break;
 
     case SEARCH_FOR_USED:
+#ifdef TARG_ST
+      // [SC] Don't discard functions implementing INTRINSIC_CALLS
+      // (we cannot see all intrinsic calls yet).
+      // Don't discard functions marked as used.
+	if (node->Is_Externally_Callable() || node->Is_Undeletable()
+	    || node->Is_Intrinsic_Implementation()
+	    || ST_is_used(node->Func_ST())) {
+#else
 	if (node->Is_Externally_Callable() || node->Is_Undeletable()) {
+#endif
 	    node->Clear_Deletable ();
 	    node->Set_Undeletable();
 	    action = MARK_USED;
@@ -862,7 +868,7 @@ Mark_Deletable_Funcs (NODE_INDEX v, DFE_ACTION action, mUINT8 *visited)
 #endif
 #ifdef TARG_ST // [CL] don't discard functions implementing INTRINSIC_CALLS
 	    // in case they have been rewritten by the user
-	    || Is_Intrinsic_Implementation(node)
+	    || node->Is_Intrinsic_Implementation()
 	    // [CL] handle used attribute
 	    || ST_is_used(node->Func_ST())
 #endif

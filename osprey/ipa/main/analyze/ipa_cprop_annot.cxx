@@ -1451,6 +1451,10 @@ PU_is_dead (IPA_NODE *node, BOOL *updated)
     IPA_PRED_ITER pred_iter (node);
 
     if (node->Is_Externally_Callable () || 
+#ifdef TARG_ST
+	node->Is_Intrinsic_Implementation() ||
+	ST_is_used(node->Func_ST()) ||
+#endif
         node->Summary_Proc()->Is_alt_entry () ||
 	node->Summary_Proc()->Has_alt_entry ())
 	return FALSE;

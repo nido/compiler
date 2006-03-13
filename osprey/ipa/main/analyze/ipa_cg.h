@@ -102,6 +102,12 @@
 #include "fb_whirl.h"
 #endif
 
+#ifdef TARG_ST
+#ifndef intrn_info_INCLUDED
+#include "intrn_info.h"
+#endif
+#endif
+
 // forward class declarations to minimize included headers
 class CALLEE_STATE;
 class IPAA_NODE_INFO;
@@ -194,6 +200,9 @@ private:
   static const mUINT32 _quasi_clone =        0x20000;   
   static const mUINT32 _preoptimized =       0x40000;   
   static const mUINT32 _has_aliased_formal = 0x80000;
+#ifdef TARG_ST
+  static const mUINT32 _intrinsic_impl =    0x100000;
+#endif
 
   // map to the file I/O info
   mINT32 _file_index;			// index into the file header structure
@@ -273,6 +282,11 @@ public:
                           summary_proc->Get_call_count ());
     _total_succ = summary_proc->Get_callsite_count();
 
+#ifdef TARG_ST
+    if (is_intrinsic_rt_name (Name())) {
+      Set_Intrinsic_Implementation ();
+    }
+#endif
     Is_True ((_flags & _mempool_init) == 0,
              ("Uninitialized IPA NODE mempool"));
     Is_True(st != 0, ("IPA NODE must have valid st"));
@@ -473,6 +487,10 @@ public:
   void Set_Aliased_Formal ()	   { _flags |= _has_aliased_formal; }
   BOOL Has_Aliased_Formal () const { return _flags & _has_aliased_formal; }
 
+#ifdef TARG_ST
+  void Set_Intrinsic_Implementation () { _flags |= _intrinsic_impl; }
+  BOOL Is_Intrinsic_Implementation () const { return _flags & _intrinsic_impl; }
+#endif
 
   SUMMARY_PROCEDURE* Summary_Proc () const
   { 

@@ -458,6 +458,7 @@ Write_callee(IPA_NODE* callee, BOOL non_local, BOOL inline_performed)
 #ifdef TARG_ST
 	    // [CL] handle used attribute
 	    !ST_is_used(callee->Func_ST()) &&
+	    ! callee->Is_Intrinsic_Implementation() &&
 #endif
 	    !callee->Is_Externally_Callable ()) {
 	    callee->Set_Deletable();
@@ -886,6 +887,7 @@ Inliner_Write_PUs (PU_Info *pu_tree, INT *p_num_PU)
 #ifdef TARG_ST
 		    // [CL] handle used attribute
 		    !ST_is_used(node->Func_ST()) &&
+		    ! node->Is_Intrinsic_Implementation() &&
 #endif
                     	!node->Is_Externally_Callable ()) {
                     node->Set_Deletable();

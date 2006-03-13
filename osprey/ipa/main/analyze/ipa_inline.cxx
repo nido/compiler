@@ -415,6 +415,10 @@ Update_Total_Prog_Size (const IPA_NODE *caller, IPA_NODE *callee,
     }
 	
     if (! callee->Is_Undeletable () &&
+#ifdef TARG_ST
+	! callee->Is_Intrinsic_Implementation() &&
+	! ST_is_used(callee->Func_ST()) &&
+#endif
 	! callee->Should_Be_Skipped() &&
 	All_Calls_Inlined (callee, cg) &&
 	! callee->Is_Externally_Callable ()) {
@@ -477,8 +481,8 @@ check_size_and_freq (IPA_EDGE *ed, IPA_NODE *caller,
 	e_bb_cnt= e_stmt_cnt = -1;
 	
 	if(callee->Has_frequency ()) {
-	    e_bb_cnt = (fb==NULL)? -1:fb->Get_effective_bb_count ();
-	    e_stmt_cnt = (fb==NULL)? -1:fb->Get_effective_stmt_count ();
+	    e_bb_cnt = (fb==NULL)? -1:(INT)fb->Get_effective_bb_count ();
+	    e_stmt_cnt = (fb==NULL)? -1:(INT)fb->Get_effective_stmt_count ();
 	}
 	fprintf(e_weight, "%-8d%-8d%-8d%-8d%-8d%-8d%-8d%s \n", e_bb_cnt, e_stmt_cnt, callee->PU_Size().Call_Count (),callee_weight, callee->PU_Size().Bb_count(), callee->PU_Size().Stmt_count(),callee->Weight() , callee->Name() );
     }
