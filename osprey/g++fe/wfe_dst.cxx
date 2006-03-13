@@ -2456,11 +2456,14 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     DST_INFO_IDX dst = DST_INVALID_INIT;
     DST_INFO_IDX ret_dst = DST_INVALID_IDX;
                                      
-    DST_INFO_IDX current_scope_idx = fndecl ? 
-	(DST_get_context(TYPE_CONTEXT(fndecl))): 
+    DST_INFO_IDX current_scope_idx = fndecl ?
+#ifndef TARG_ST // [CL]
+      	(DST_get_context(TYPE_CONTEXT(fndecl))): 
+#else
+      	(DST_get_context(DECL_CONTEXT(fndecl))): 
+#endif
 	comp_unit_idx;
 
-     
     BOOL is_prototyped = FALSE;
 
     if(Debug_Level >= 2 && fndecl) {
@@ -2507,6 +2510,10 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
         /*look for  static data member decl*/
         class_func_idx =
                 DST_find_class_member(linkage_name, context);
+#if 0
+	// [CL] keep the function name, otherwise GDB complains.
+	// Actually, it seems that such info should be linked to the
+	// proper scope, but this is not done in cgdwarf.cxx
         if(!DST_IS_NULL(class_func_idx)) {
                 class_func_found_member = 1;
                 funcname = 0; // we will use DW_AT_specification
@@ -2515,6 +2522,7 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
  		   // and no src position: leave that to member
 		 USRCPOS_clear(src);
         }
+#endif
         // Field name should now have the class name and ::
         // prepended, per dwarf2
         // Save_Str2 can glob 2 pieces together.
