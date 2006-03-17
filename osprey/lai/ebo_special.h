@@ -218,6 +218,10 @@ BOOL EBO_Special_Sequence (OP *op,
 // The replacement TN must be a literal TN.
 extern TN *EBO_literal_replacement_tn(OP *op);
 
+BOOL EBO_Simplify_Special_Compare (OP *op,
+				   TN **opnd_tn,
+				   EBO_TN_INFO **opnd_tninfo);
+
 #else
 
 INT EBO_Copy_Operand (OP *op);

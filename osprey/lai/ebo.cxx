@@ -3954,6 +3954,129 @@ EBO_Fold_Constant_Compare (
   return TRUE;
 }
 
+#ifdef TARG_ST
+// [HK] 20060316
+/* =====================================================================
+ *    EBO_Simplify_Special_Compare
+ *    
+ *    Look for special constant results cases for comparison:
+ *    1) cmpgeu tn0, 0 = 1, cmpltu tn0, 0 = 0
+ *    2) cmpleu 0, tn1 = 1, cmpgtu 0, tn1 = 0
+ *    3) When TNs_Are_Equivalent(tn0, tn1), cmp tn0, tn1 = 0 or 1 
+ *       depending on the cmp variant
+ * =====================================================================
+ */
+BOOL
+EBO_Simplify_Special_Compare (
+  OP *op, 
+  TN **opnd_tn,
+  EBO_TN_INFO **opnd_tninfo
+)
+{
+  TOP opcode = OP_code(op);
+  TN *tnr = OP_result(op,0);
+  TN *tn0, *tn1;
+  INT64 tn0_val, tn1_val;
+  UINT64 tn0_uval, tn1_uval;
+  INT op1_idx, op2_idx;
+  INT64 result_val;
+
+  /* Currently only handle integer compares. */
+  if (!OP_icmp(op)) return FALSE;
+
+  op1_idx = OP_find_opnd_use(op, OU_opnd1);
+  op2_idx = OP_find_opnd_use(op, OU_opnd2);
+  FmtAssert(op1_idx >= 0,("operand OU_opnd1 not defined for cmp TOP %s", TOP_Name(opcode)));
+  FmtAssert(op2_idx >= 0,("operand OU_opnd2 not defined for cmp TOP %s", TOP_Name(opcode)));
+
+  tn0 = opnd_tn[op1_idx];
+  tn1 = opnd_tn[op2_idx];
+
+  if (!TN_is_constant(tn0) && (tn1 == Zero_TN)){
+	  VARIANT variant = TOP_cmp_variant(opcode);
+	  switch (variant) {
+	  case V_CMP_GEU: result_val = 1; break;
+	  case V_CMP_LTU: result_val = 0; break;
+	  default: return FALSE; break;
+	  }
+	  goto  Constant_Created;
+  }         
+  else if (!TN_is_constant(tn1) && (tn0 == Zero_TN)){ 
+	  VARIANT variant = TOP_cmp_variant(opcode);
+	  switch (variant) {
+	  case V_CMP_LEU: result_val = 1; break;
+	  case V_CMP_GTU: result_val = 0; break;
+	  default: return FALSE; break;
+	  }
+	  goto  Constant_Created;
+  }
+  else if (!TN_is_constant(tn0) && !TN_is_constant(tn1)){
+      if (TNs_Are_Equivalent(tn0, tn1)){
+	  VARIANT variant = TOP_cmp_variant(opcode);
+	  switch (variant) {
+	  case V_CMP_NE: 
+	  case V_CMP_LT: 
+	  case V_CMP_GT: 
+	  case V_CMP_LTU: 
+	  case V_CMP_GTU: 
+	      result_val = 0; break;
+	  case V_CMP_LE: 
+	  case V_CMP_GE: 
+	  case V_CMP_EQ: 
+	  case V_CMP_LEU: 
+	  case V_CMP_GEU:
+	      result_val = 1; break;
+	  default: return FALSE; break;
+	  }
+	  goto  Constant_Created;
+      }
+  }
+
+  return FALSE;
+
+Constant_Created:
+
+  OPS ops = OPS_EMPTY;
+  TN *tnc;
+
+  result_val = sext(result_val, TN_size(tnr)*8);
+
+  tnc = Gen_Literal_TN(result_val, TN_size(tnr));
+
+  Expand_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
+  if (OP_next(OPS_first(&ops)) != NULL) {
+   /* What's the point in replacing one instruction with several? */
+    return FALSE;
+  }
+  if (OP_has_predicate(op)) {
+    EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
+  }
+
+  /* No need to replace if same op, avoids infinite loops. */
+  if (OPs_Are_Equivalent(op, OPS_first(&ops))) return FALSE;
+
+  if (EBO_in_loop) EBO_OPS_omega (&ops, 
+				  (OP_has_predicate(op)? OP_opnd(op,OP_PREDICATE_OPND):NULL),
+				  (OP_has_predicate(op) ? opnd_tninfo[OP_PREDICATE_OPND] : NULL));
+  OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
+
+  BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
+
+  if (EBO_Trace_Optimization) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile, "%sin BB:%d Redefine ",
+            EBO_trace_pfx, BB_id(OP_bb(op)));
+    Print_TN(tnr,TRUE);
+    fprintf(TFile," with load of ");
+    Print_TN(tnc,FALSE);
+    fprintf(TFile, "\n");
+  }
+
+  return TRUE;
+}
+#endif
+
+
 
 /* =====================================================================
  *    EBO_Fold_Constant_Expression
@@ -4051,6 +4174,8 @@ EBO_Fold_Constant_Expression (
   if (EBO_Fold_Special_Opcode(op, opnd_tn, &result_val)) {
     goto Constant_Created;
   }
+
+  
 
   // [CG]: use opnd1, opnd2 semantic to get effective operands
   // opnd2 may be undefined 
@@ -5556,6 +5681,11 @@ Find_BB_TNs (BB *bb)
               }
             }
         }
+#ifdef TARG_ST
+        if (!op_replaced) {
+          op_replaced = EBO_Simplify_Special_Compare (op, opnd_tn, orig_tninfo);
+        }
+#endif
         if (!op_replaced) {
           op_replaced = EBO_Special_Sequence (op, opnd_tn, orig_tninfo);
         }
