@@ -1251,6 +1251,11 @@ IV_CAND*
 IVR::Promote_IV(const BB_LOOP *loop, IV_CAND * iv, MTYPE mtype)
 {
 
+  // We only support real statement on the init and incr statements.
+  if (iv->Init_var()->Is_flag_set((CR_FLAG)(CF_DEF_BY_CHI|CF_DEF_BY_PHI)) ||
+      iv->Incr_var()->Is_flag_set((CR_FLAG)(CF_DEF_BY_CHI|CF_DEF_BY_PHI)))
+    return NULL;
+
   //  fprintf(stdout, "Promote_IV for BB %d, in Phase %d\n", loop->Body()->Id(), Phase());
   //  Cfg()->Print(stdout, 1, -1);
   // generate a new IV
@@ -1277,49 +1282,49 @@ IVR::Promote_IV(const BB_LOOP *loop, IV_CAND * iv, MTYPE mtype)
   PHI_NODE *phi = loop->Header()->Phi_list()->
     New_phi_node(new_temp, Htable()->Ssa()->Mem_pool(), loop->Header());
 
-      phi_cr->Set_flag(CF_DEF_BY_PHI);
-      phi_cr->Set_defphi(phi);
-      phi->Reset_dse_dead();
-      phi->Reset_dce_dead();
-      phi->Set_res_is_cr();
-      phi->Set_live();
-      phi->Set_result(phi_cr);
-      phi->Set_incomplete();
+  phi_cr->Set_flag(CF_DEF_BY_PHI);
+  phi_cr->Set_defphi(phi);
+  phi->Reset_dse_dead();
+  phi->Reset_dce_dead();
+  phi->Set_res_is_cr();
+  phi->Set_live();
+  phi->Set_result(phi_cr);
+  phi->Set_incomplete();
       
-      STMTREP *init_stmt = iv->Init_value()->Create_cpstmt(init_cr, Htable()->Mem_pool());
-      iv->Init_var()->Defstmt()->Bb()->Insert_stmtrep_after(init_stmt, iv->Init_var()->Defstmt());
-      init_stmt->Set_bb(iv->Init_var()->Defstmt()->Bb());
+  STMTREP *init_stmt = iv->Init_value()->Create_cpstmt(init_cr, Htable()->Mem_pool());
+  iv->Init_var()->Defbb()->Insert_stmtrep_after(init_stmt, iv->Init_var()->Defstmt());
+  init_stmt->Set_bb(iv->Init_var()->Defbb());
 
-      OPCODE addop = OPCODE_make_op(OPR_ADD, mtype, MTYPE_V);
-      CODEREP *incr_rhs = Htable()->Add_bin_node_and_fold(addop, phi_cr, iv->Step_value());
+  OPCODE addop = OPCODE_make_op(OPR_ADD, mtype, MTYPE_V);
+  CODEREP *incr_rhs = Htable()->Add_bin_node_and_fold(addop, phi_cr, iv->Step_value());
 
-      STMTREP *incr_stmt =
-	incr_rhs->Create_cpstmt(incr_cr, Htable()->Mem_pool());
-      iv->Incr_var()->Defstmt()->Bb()->Insert_stmtrep_after(incr_stmt, iv->Incr_var()->Defstmt());
-      incr_stmt->Set_bb(iv->Incr_var()->Defstmt()->Bb());
+  STMTREP *incr_stmt =
+    incr_rhs->Create_cpstmt(incr_cr, Htable()->Mem_pool());
+  iv->Incr_var()->Defbb()->Insert_stmtrep_after(incr_stmt, iv->Incr_var()->Defstmt());
+  incr_stmt->Set_bb(iv->Incr_var()->Defbb());
 
-      Htable()->Enter_var_phi_hash(phi);
-      Htable()->Insert_var_phi(phi->RESULT(), phi->Bb());
-      Htable()->Insert_var_phi(incr_stmt->Lhs(), incr_stmt->Bb());
-      Htable()->Insert_var_phi(init_stmt->Lhs(), init_stmt->Bb());
+  Htable()->Enter_var_phi_hash(phi);
+  Htable()->Insert_var_phi(phi->RESULT(), phi->Bb());
+  Htable()->Insert_var_phi(incr_stmt->Lhs(), incr_stmt->Bb());
+  Htable()->Insert_var_phi(init_stmt->Lhs(), init_stmt->Bb());
 
-      phi->Set_opnd(Loop()->Preheader_pred_num(), init_cr);
-      phi->Set_opnd(Loop()->Loopback_pred_num(),  incr_cr);
+  phi->Set_opnd(Loop()->Preheader_pred_num(), init_cr);
+  phi->Set_opnd(Loop()->Loopback_pred_num(),  incr_cr);
 
-      IV_CAND *new_cand =
-        CXX_NEW(IV_CAND(phi, init_cr, incr_cr, iv->Step_value(), mtype), Mem_pool());
-      new_cand->Set_init_value( iv->Init_value() );
+  IV_CAND *new_cand =
+    CXX_NEW(IV_CAND(phi, init_cr, incr_cr, iv->Step_value(), mtype), Mem_pool());
+  new_cand->Set_init_value( iv->Init_value() );
 
-      iv_cand_container.push_back(new_cand);
+  iv_cand_container.push_back(new_cand);
 
-      if (_trace) {
-	fprintf(TFile, "IVR: generate primary IV with aux-id %d\n", new_temp);
-	fprintf(TFile, "IVR: insert phi at BB%d, init at BB%d, incr at BB%d\n",
-		phi->Bb()->Id(), init_stmt->Bb()->Id(), incr_stmt->Bb()->Id());
-      }
+  if (_trace) {
+    fprintf(TFile, "IVR: generate primary IV with aux-id %d\n", new_temp);
+    fprintf(TFile, "IVR: insert phi at BB%d, init at BB%d, incr at BB%d\n",
+	    phi->Bb()->Id(), init_stmt->Bb()->Id(), incr_stmt->Bb()->Id());
+  }
 
-      return new_cand;
-    }
+  return new_cand;
+}
 
 static CODEREP *
 subst_cr_occurrences(CODEREP *cr, const IV_CAND *iv_from, const IV_CAND *iv_to) {
@@ -2938,18 +2943,20 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
     // Generate_Primary_IV, Replace_secondary_IV
 
     IV_CAND *trip_iv_I4 = Promote_IV(loop, trip_iv, MTYPE_I4);
+    if (trip_iv_I4 != NULL) {
 
-    // Check also if this new IV can be a primary_IV.
-    if (primary == NULL) {
-      primary = Choose_primary_IV(loop);
+      // Check also if this new IV can be a primary_IV.
+      if (primary == NULL) {
+	primary = Choose_primary_IV(loop);
+      }
+
+      // Then, process all loop statements, and replace the use of
+      // trip_iv->Init, trip_iv->Var and trip_iv->Incr by the
+      // corresponding variables from trip_iv_I4.
+      Update_exit_stmt(trip_iv_I4, loop->Merge(), loop);
+      Substitute_IV(trip_iv, trip_iv_I4, loop->Header(), loop);
+      trip_iv = trip_iv_I4;
     }
-
-    // Then, process all loop statements, and replace the use of
-    // trip_iv->Init, trip_iv->Var and trip_iv->Incr by the
-    // corresponding variables from trip_iv_I4.
-    Update_exit_stmt(trip_iv_I4, loop->Merge(), loop);
-    Substitute_IV(trip_iv, trip_iv_I4, loop->Header(), loop);
-    trip_iv = trip_iv_I4;
   }
 #endif
   // ************************************************************************
