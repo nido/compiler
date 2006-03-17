@@ -3464,6 +3464,10 @@ Exp_Simulated_Op (
       Set_OP_bundled (newop);
       if (OP_end_group (op)) Set_OP_end_group (newop);
       OP_scycle (newop) = OP_scycle(op);
+      if (OP_prologue(op)) Set_OP_prologue(newop);
+      else Reset_OP_prologue(newop);
+      if (OP_epilogue(op)) Set_OP_epilogue(newop);
+      else Reset_OP_epilogue(newop);
     }
     break;
 

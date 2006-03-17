@@ -1335,9 +1335,9 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
   memset (local_save_state, 0, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
   memset (local_restore_state, 0, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
 
-  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
 #ifdef PROPAGATE_DEBUG
-    // remove the invalid UEs from the list
+  // remove the invalid UEs from the list
+  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
     while (!ue_iter->valid) {
       if (Trace_Unwind) {
 	Print_Unwind_Elem(*ue_iter, "erasing");
@@ -1347,7 +1347,9 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 	break;
       }
     }
+  }
 #endif
+  for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
 	switch (ue_iter->kind) {
 	case UE_CREATE_FRAME:
 	case UE_CREATE_FP:
