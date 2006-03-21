@@ -1473,14 +1473,19 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
     if (i != memop_count)
       continue;
 
-    int alignment = Pack32_Get_Alignment(loop_ivs->Op(memop_table[0].index), memop_table[0].offset);
-    // Look for an option or a #pragma stream_alignment
-    if (alignment == -1) {
-      BB *loophead = BB_loop_head_bb(OP_bb(loop_ivs->Op(memop_table[0].index)));
-      int pragma_alignment = Get_Pragma_Alignment(loophead);
-      if (((pragma_alignment&0x7) == 0) ||
-	  ((pragma_alignment == -1) && ((CG_LOOP_stream_align&0x7) == 0)))
-	alignment = (step > 0) ? 0 : 4;
+    int alignment;
+    if (CG_LOOP_unaligned_packing)
+      alignment = (step > 0) ? 0 : 4;
+    else {
+      alignment = Pack32_Get_Alignment(loop_ivs->Op(memop_table[0].index), memop_table[0].offset);
+      // Look for an option or a #pragma stream_alignment
+      if (alignment == -1) {
+	BB *loophead = BB_loop_head_bb(OP_bb(loop_ivs->Op(memop_table[0].index)));
+	int pragma_alignment = Get_Pragma_Alignment(loophead);
+	if (((pragma_alignment&0x7) == 0) ||
+	    ((pragma_alignment == -1) && ((CG_LOOP_stream_align&0x7) == 0)))
+	  alignment = (step > 0) ? 0 : 4;
+      }
     }
     memop_table[0].count = memop_count;
     memop_table[0].alignment = alignment;

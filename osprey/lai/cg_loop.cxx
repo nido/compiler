@@ -219,6 +219,7 @@ INT32 CG_LOOP_unroll_heuristics = SCHED_HEURISTIC | UNROLL2_HEURISTIC | DOWHILE_
    0x80: Allow loop specialization
 */
 INT32 CG_LOOP_load_store_packing = 0;
+INT32 CG_LOOP_unaligned_packing = 0;
 INT32 CG_LOOP_stream_align = 4;
 #endif
 BOOL CG_LOOP_ignore_pragmas = FALSE;
@@ -5741,7 +5742,7 @@ LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
   int cp_cycles = CG_SCHED_EST_Critical_Length(se) + load_cnt;
   int min_cycles = CG_SCHED_EST_Resource_Cycles(se);
   int sched_unroll_factor = 1;
-  
+
   while (cp_cycles > min_cycles && sched_unroll_factor < unroll_factor) {
     sched_unroll_factor ++;
 

@@ -597,6 +597,8 @@ static OPTION_DESC Options_CG[] = {
     0xa7, 0, 255,	&CG_LOOP_load_store_packing, NULL },
   { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
     8, 0, 8,	&CG_LOOP_stream_align, NULL },
+  { OVK_BOOL, OV_INTERNAL,	TRUE, "packing_unaligned", "", 
+    0, 0, 0,	&CG_LOOP_unaligned_packing, NULL },
 #endif
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",

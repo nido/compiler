@@ -463,6 +463,7 @@ extern BOOL CG_LOOP_unroll_remainder_after;
 extern BOOL CG_LOOP_unroll_multi_bb;
 extern INT32 CG_LOOP_unroll_heuristics;
 extern INT32 CG_LOOP_load_store_packing;
+extern INT32 CG_LOOP_unaligned_packing;
 extern INT32 CG_LOOP_stream_align;
 #endif
 /* Exported functions.
