@@ -1665,7 +1665,7 @@ void Fix_do_loop(BB_LOOP *loop, CODEMAP *htable)
 				       MTYPE_To_TY(dtype),
 				       0, TRUE);
     STMTREP *incr_stmt = incr_value->Create_cpstmt(incr_cr, htable->Mem_pool());
-    loop->Loopback()->Append_stmtrep(incr_stmt);
+    loop->Loopback()->Append_stmt_before_branch(incr_stmt);
     incr_stmt->Set_bb(loop->Loopback());
     phi->Set_opnd(loop->Loopback_pred_num(), incr_cr);
   }
