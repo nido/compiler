@@ -3150,7 +3150,19 @@ WFE_Expand_Expr (tree exp,
 	else {
 	  mtyp = Widen_Mtype(TY_mtype(ty_idx));
 	  if (mtyp == WN_rtype(wn0) || mtyp == MTYPE_V)
+#ifdef TARG_ST
+	    {
+	      TY_IDX kid_ty = Get_TY(TREE_TYPE(TREE_OPERAND (exp, 0)));
+	      if ((TY_kind (ty_idx) == KIND_POINTER) !=
+		  (TY_kind (kid_ty) == KIND_POINTER)) {
+		wn = WN_Tas(mtyp, ty_idx, wn0);
+	      } else {
+		wn = wn0;
+	      }
+	    }
+#else
 	    wn = wn0;
+#endif
 	  else {
 	    wn = WN_Cvt(WN_rtype(wn0), mtyp, wn0);
 	    // The following opcodes are not valid for MIPS
@@ -3158,7 +3170,14 @@ WFE_Expand_Expr (tree exp,
 	        WN_opcode(wn) == OPC_U4I4CVT ||
 	        WN_opcode(wn) == OPC_I8U8CVT ||
 	        WN_opcode(wn) == OPC_U8I8CVT) {
-	      wn = WN_kid0 (wn);
+#ifdef TARG_ST
+	      TY_IDX kid_ty = Get_TY(TREE_TYPE(TREE_OPERAND (exp, 0)));
+	      if ((TY_kind (ty_idx) == KIND_POINTER) !=
+		  (TY_kind (kid_ty) == KIND_POINTER)) {
+		wn = WN_Tas(mtyp, ty_idx, WN_kid0 (wn));
+	      } else
+#endif
+		wn = WN_kid0 (wn);
 	    }
 	  }
 	}
