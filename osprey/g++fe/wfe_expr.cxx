@@ -550,11 +550,19 @@ static WN *WFE_Append_Expr_Stmt(WN *wn)
 // start address and the lowest possible starting address of the next parameter.
 inline UINT64 Parameter_Size(UINT64 sz)
 {
+#ifdef TARG_ST
+  if (Target_Byte_Sex == BIG_ENDIAN) {
+    return sz;
+  } else {
+    return (sz + UNITS_PER_WORD - 1) & ~(UNITS_PER_WORD - 1);
+  }
+#else
 #   if WORDS_BIG_ENDIAN
 	return sz;
 #   else
 	return (sz + UNITS_PER_WORD - 1) & ~(UNITS_PER_WORD - 1);
 #   endif
+#endif
 }
 
 inline TYPE_ID
@@ -4940,7 +4948,7 @@ WFE_Expand_Expr (tree exp,
 	WN *arg_addr;
 	UINT field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
 	tree operand = TREE_OPERAND (exp, 0);
-	
+
 	// [SC] I would like to use WFE_Address_Of(operand) here,
 	// but WFE_Address_Of is available in C++ translator but not the
 	// C translator.
@@ -4960,9 +4968,13 @@ WFE_Expand_Expr (tree exp,
 			      ap_addr, field_id);
 	}
 	
-	// Any parameter larger than 4 bytes is 8-byte aligned.
-	align = (type_size > 4) ? 8 : 4;
-	rounded_size = (((int_size_in_bytes (type) + align - 1) / align) * align);
+	// Any parameter larger than a word is double-word aligned.
+	align = ((type_size > UNITS_PER_WORD)
+		 ? (2 * UNITS_PER_WORD)
+		 : UNITS_PER_WORD);
+	// All parameters are passd in a multiple of word-sized slots.
+	rounded_size = (((int_size_in_bytes (type) + (UNITS_PER_WORD - 1))
+			 / UNITS_PER_WORD) * UNITS_PER_WORD);
 
 	// Set wn = start address of arg.
 	if (align > 4) {
@@ -4994,34 +5006,66 @@ WFE_Expand_Expr (tree exp,
 	
 	if (Target_Byte_Sex == BIG_ENDIAN
 	    && type_size > UNITS_PER_WORD
-	    && (INTEGRAL_MODE_P(TYPE_MODE (type))
-		|| FLOAT_MODE_P(TYPE_MODE (type)))) {
+	    && (INTEGRAL_TYPE_P(type)
+		|| FLOAT_TYPE_P(type))) {
 	  // Handle multi-word scalar/complex, passed in registers.
 	  UINT64 n_words = type_size / UNITS_PER_WORD;
 	  // Need to exchange alternate words.
 	  // Create a temporary of the appropriate type.
-	  ST *temp_st = Gen_Temp_Symbol (ty_idx, "_va_arg_temp");
+	  // The type is union { ty; struct { int; int; ... } };
+	  TY_IDX struct_ty_idx;
+	  TY &struct_ty = New_TY (struct_ty_idx);
+	  TY_Init (struct_ty, type_size, KIND_STRUCT, MTYPE_M, 0);
+	  Set_TY_align (struct_ty_idx, TY_align (MTYPE_To_TY (Def_Int_Mtype)));
+	  FLD_HANDLE struct_fld;
+	  for (UINT64 offs = 0; offs < type_size; offs += UNITS_PER_WORD) {
+	    struct_fld = New_FLD ();
+	    FLD_Init (struct_fld, 0 /* anonymous */,
+		      MTYPE_To_TY(Def_Int_Mtype), offs);
+	    if (offs == 0) Set_TY_fld (struct_ty, struct_fld);
+	  }
+	  Set_FLD_last_field (struct_fld);
+	  TY_IDX union_ty_idx;
+	  TY &union_ty = New_TY (union_ty_idx);
+	  TY_Init (union_ty, type_size, KIND_STRUCT, MTYPE_M, 0);
+	  Set_TY_is_union (union_ty_idx);
+	  Set_TY_align (union_ty_idx, TY_align (ty_idx));
+	  FLD_HANDLE union_fld;
+	  union_fld = New_FLD ();
+	  FLD_Init (union_fld, 0 /* anonymous */, ty_idx, 0);
+	  Set_TY_fld (union_ty, union_fld);
+	  union_fld = New_FLD ();
+	  FLD_Init (union_fld, 0 /* anonymous */, struct_ty_idx, 0);
+	  Set_FLD_last_field (union_fld);
+	  // Finally created the type, now create the temporary.
+	  ST *temp_st = Gen_Temp_Symbol (union_ty_idx, "_va_arg_temp");
 	  Set_ST_addr_saved (temp_st);
 	  // Copy words from stack to symbol, swapping
 	  // alternate words.
 	  INT64 load_offset = -type_size;
 	  INT64 store_offset = 0;
+	  // field_id 3 is the first field of the struct within the
+	  // union.
+	  UINT store_field_id = 3;
 	  for (UINT64 w = 0; w < n_words; w+= 2) {
 	    wn = WN_CreateIload(OPR_ILOAD, Def_Int_Mtype, Def_Int_Mtype,
 				load_offset,
 				MTYPE_TO_TY_array[Def_Int_Mtype],
 				Make_Pointer_Type(ty_idx),
 				WN_COPY_Tree (ap_load));
-	    wn = WN_Stid(Def_Int_Mtype, store_offset + UNITS_PER_WORD,
-			 temp_st, ty_idx, wn);
+	    wn = WN_Stid (Def_Int_Mtype, 
+			  store_offset + UNITS_PER_WORD,
+			  temp_st, union_ty_idx,
+			  wn, store_field_id++);
 	    WFE_Stmt_Append (wn, Get_Srcpos ());
 	    wn = WN_CreateIload(OPR_ILOAD, Def_Int_Mtype, Def_Int_Mtype,
 				load_offset + UNITS_PER_WORD,
 				MTYPE_TO_TY_array[Def_Int_Mtype],
 				Make_Pointer_Type(ty_idx),
 				WN_COPY_Tree (ap_load));
-	    wn = WN_Stid(Def_Int_Mtype, store_offset,
-			 temp_st, ty_idx, wn);
+	    wn = WN_Stid (Def_Int_Mtype, store_offset,
+			  temp_st, union_ty_idx,
+			  wn, store_field_id++);
 	    WFE_Stmt_Append (wn, Get_Srcpos ());
 	    load_offset += 2 * UNITS_PER_WORD;
 	    store_offset += 2 * UNITS_PER_WORD;
@@ -5045,17 +5089,17 @@ WFE_Expand_Expr (tree exp,
 			      wn);
 	  // if ap is below limit, load the temporary,
 	  // otherwise load through ap.
-	  wn = WN_Select (mtype,
-			  wn,
-			  WN_Ldid (mtype, 0, temp_st, ty_idx),
-			  WN_CreateIload (OPR_ILOAD, mtype, mtype,
-					  -type_size,
-					  ty_idx,
-					  Make_Pointer_Type (ty_idx, FALSE),
-					  WN_COPY_Tree (ap_load)));
+	  wn = WN_Cselect (mtype,
+			   wn,
+			   WN_Ldid (mtype, 0, temp_st, union_ty_idx, 1),
+			   WN_CreateIload (OPR_ILOAD, mtype, mtype,
+					   -type_size,
+					   ty_idx,
+					   Make_Pointer_Type (ty_idx, FALSE),
+					   WN_COPY_Tree (ap_load)));
 	} else {
 	  if (Target_Byte_Sex == BIG_ENDIAN
-	      && type_size < 4
+	      && type_size < UNITS_PER_WORD
 	      && ! AGGREGATE_TYPE_P (type)) {
 	    adjustment = type_size;
 	  } else {

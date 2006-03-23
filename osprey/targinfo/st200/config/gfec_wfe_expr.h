@@ -1043,15 +1043,28 @@
 	TY_IDX va_list_ty_idx = Get_TY (va_list_type_node);
 	TYPE_ID va_list_mtype = TY_mtype (arg_ty_idx);
 	UINT ap_field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
+	INT64 rounded_size;
+	tree arg2_type = TREE_TYPE (arg2);
+
 	while (TREE_CODE (arg2) == NOP_EXPR
 	       || TREE_CODE (arg2) == CONVERT_EXPR
 	       || TREE_CODE (arg2) == NON_LVALUE_EXPR
 	       || TREE_CODE (arg2) == INDIRECT_REF)
 	  arg2 = TREE_OPERAND (arg2, 0);
 	ST *st2 = Get_ST (arg2);
-	wn = WN_Lda (Pointer_Mtype, 
-		     ((TY_size (ST_type (st2)) + 3) & (-4)),
-		     st2);
+	// Set rounded_size to be the difference between the address
+	// of st2 and the address of the next argument slot.
+	rounded_size = ST_size(st2);
+	if (! TARGET_BIG_ENDIAN || AGGREGATE_TYPE_P (arg2_type)) {
+	  // Big-endian scalars are placed at the end of their argument
+	  // slot, so for those no need to pad up to word size.
+	  // Everything else must be padded to word size.
+	  rounded_size = (((rounded_size + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
+			  * UNITS_PER_WORD);
+	}
+	wn = WN_Lda (Pointer_Mtype, ST_ofst(st2), st2);
+	wn = WN_Binary (OPR_ADD, Pointer_Mtype, wn,
+			WN_Intconst (Pointer_Mtype, rounded_size));
 	
 	if (WN_operator (arg_wn) == OPR_LDA) {
 	  wn = WN_Stid (Pointer_Mtype, WN_offset (arg_wn),
@@ -1103,12 +1116,11 @@
 	  if (cum > MAX_ARGUMENT_SLOTS) cum = MAX_ARGUMENT_SLOTS;
 
 	  wn = WN_Binary (OPR_ADD, Pointer_Mtype,
-			  WN_Lda (Pointer_Mtype,
-				  ((TY_size (ST_type (st2)) + 3) & (-4)),
-				  st2),
+			  WN_Lda (Pointer_Mtype, ST_ofst(st2), st2),
 			  WN_Intconst (Pointer_Mtype,
-				       UNITS_PER_WORD * (MAX_ARGUMENT_SLOTS -
-							 cum)));
+				       UNITS_PER_WORD *
+				       (MAX_ARGUMENT_SLOTS - cum)
+				       + rounded_size));
 	  if (WN_operator (arg_wn) == OPR_LDA) {
 	    wn = WN_Stid (Pointer_Mtype,
 			  WN_offset (arg_wn) + MTYPE_byte_size(Pointer_Mtype),
