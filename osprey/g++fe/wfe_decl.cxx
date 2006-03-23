@@ -2772,6 +2772,19 @@ Add_Inito_For_Tree (tree init, ST *st)
       return;
     }
   }
+#ifdef TARG_ST
+  // (cbr) treat OPR_TAS. it's ok for the address we don't need the type.
+  if (WN_operator(init_wn) == OPR_TAS) {
+    if (WN_operator(WN_kid0(init_wn)) == OPR_LDA) {
+      aggregate_inito = New_INITO (st);
+      not_at_root = FALSE;
+      WFE_Add_Aggregate_Init_Integer (
+                         WN_const_val(WN_kid0(init_wn)), TY_size(ST_type(st)));
+      return;
+    }
+  }
+#endif
+  
   Fail_FmtAssertion ("unexpected static init tree for %s", ST_name(st));
 }
 
