@@ -1035,4 +1035,20 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_ASM_15,
              "__builtin___asm_15",
              BT_FN_INT_INT_INT,
              ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__DIVH,
+             "__builtin__divh",
+             BT_FN_SHORT_SHORT_SHORT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__DIVUH,
+             "__builtin__divuh",
+             BT_FN_USHORT_USHORT_USHORT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__MODH,
+             "__builtin__modh",
+             BT_FN_SHORT_SHORT_SHORT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__MODUH,
+             "__builtin__moduh",
+             BT_FN_USHORT_USHORT_USHORT,
+             ATTR_PURE_NOTHROW_LIST)
 #endif /*defined(TARG_ST200)*/

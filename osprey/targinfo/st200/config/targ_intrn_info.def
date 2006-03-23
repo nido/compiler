@@ -775,4 +775,16 @@
 { /* __builtin_trap */
   BYVAL, NOT_PURE, SIDEEFFECTS, NEVER_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__builtin_trap", NULL, "__builtin_trap"},
+{ /* __builtin__divh */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I2, "__builtin__divh", NULL, "__builtin__divh"}, 
+{ /* __builtin__divuh */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U2, "__builtin__divuh", NULL, "__builtin__divuh"}, 
+{ /* __builtin__modh */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_I2, "__builtin__modh", NULL, "__builtin__modh"}, 
+{ /* __builtin__moduh */
+  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_U2, "__builtin__moduh", NULL, "__builtin__moduh"}, 
 
