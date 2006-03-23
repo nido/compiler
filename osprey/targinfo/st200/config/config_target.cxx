@@ -701,9 +701,12 @@ Configure_Target ()
     if (!Enable_Conditional_Store_Set) {
       Enable_Conditional_Store = TRUE;
     }    
+#if 0
+    // (cbr) keep conditional prefetch disabled by default
     if (!Enable_Conditional_Prefetch_Set) {
       Enable_Conditional_Prefetch = TRUE;
     }    
+#endif
   }
 
   // [CM]: Configuration for integer division and modulus operations
