@@ -2189,6 +2189,12 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
 
   // not recognized, so try to simplify
   WN *init_wn = WFE_Expand_Expr (init);
+#ifdef TARG_ST
+  // [SC] Skip OPR_TAS since it does not change the representation.
+  while (WN_operator(init_wn) == OPR_TAS) {
+    init_wn = WN_kid0(init_wn);
+  }
+#endif
   if (WN_operator(init_wn) == OPR_INTCONST) {
 	aggregate_inito = New_INITO (st);
 	not_at_root = FALSE;
