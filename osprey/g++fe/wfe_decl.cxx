@@ -1454,6 +1454,34 @@ WFE_Add_Aggregate_Init_Symbol (ST *st, WN_OFFSET offset = 0)
   last_aggregate_initv = inv;
 }
 
+#ifdef TARG_ST
+/* (cbr) DDTSst24451. add support for label diffs initializers */
+void
+WFE_Add_Aggregate_Init_Labeldiff (LABEL_IDX lab1, LABEL_IDX lab2) 
+{
+#ifdef WFE_DEBUG
+    fprintf(stdout,"====================================================\n");
+    fprintf(stdout,"      WFE_Add_Aggregate_Init_Labeldiff %s \n\n", ST_name(st));
+    fprintf(stdout,"  last_aggregate_initv = %d\n", last_aggregate_initv);
+    fprintf(stdout,"====================================================\n");
+#endif
+
+  if (aggregate_inito == 0) return;
+  INITV_IDX inv = New_INITV();
+
+  INITV_Init_Labdiff (inv, lab1, lab2);
+
+  if (last_aggregate_initv != 0)
+    Set_INITV_next(last_aggregate_initv, inv);
+  else if (! not_at_root)
+    Set_INITO_val(aggregate_inito, inv);
+  last_aggregate_initv = inv;
+
+  Set_LABEL_addr_saved (lab1);
+  Set_LABEL_addr_saved (lab2);
+}
+#endif
+
 void
 WFE_Add_Aggregate_Init_Label (LABEL_IDX lab)
 {
@@ -2604,6 +2632,17 @@ Traverse_Aggregate_Constructor (
   return field_id;
 } /* Traverse_Aggregate_Constructor */
 
+#ifdef TARG_ST
+static WN *
+skip_tas (WN *wn_tree)
+{
+  while (WN_operator (wn_tree) == OPR_TAS) {
+    wn_tree = WN_kid0 (wn_tree);
+  }
+  return wn_tree;
+}
+#endif
+
 static void
 #ifdef TARG_ST
 /* (cbr) need decl for DECL_SECTION_NAME */
@@ -2736,6 +2775,10 @@ Add_Inito_For_Tree (tree init, ST *st)
 
   // not recognized, so try to simplify
   WN *init_wn = WFE_Expand_Expr (init);
+#ifdef TARG_ST
+  // [SC] Skip OPR_TAS since it does not change the representation.
+  init_wn = skip_tas (init_wn);
+#endif
   if (WN_operator(init_wn) == OPR_INTCONST) {
 	aggregate_inito = New_INITO (st);
 	not_at_root = FALSE;
@@ -2752,38 +2795,85 @@ Add_Inito_For_Tree (tree init, ST *st)
   }
   else
   if (WN_operator(init_wn) == OPR_ADD) {
+#ifdef TARG_ST
+    WN *kid0 = skip_tas (WN_kid0(init_wn));
+    WN *kid1 = skip_tas (WN_kid1(init_wn));
+    if (WN_operator(kid0) == OPR_LDA &&
+        WN_operator(kid1) == OPR_INTCONST) {
+      aggregate_inito = New_INITO (st);
+      not_at_root = FALSE;
+      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+		WN_offset(kid0) + WN_const_val(kid1));
+#else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) + WN_const_val(WN_kid1(init_wn)));
+#endif
       return;
     }
   }
   else
   if (WN_operator(init_wn) == OPR_SUB) {
+#ifdef TARG_ST
+    WN *kid0 = skip_tas (WN_kid0(init_wn));
+    WN *kid1 = skip_tas (WN_kid1(init_wn));
+    if (WN_operator(kid0) == OPR_LDA &&
+        WN_operator(kid1) == OPR_INTCONST) {
+      aggregate_inito = New_INITO (st);
+      not_at_root = FALSE;
+      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+		WN_offset(kid0) - WN_const_val(kid1));
+#else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) - WN_const_val(WN_kid1(init_wn)));
+#endif
       return;
     }
-  }
 #ifdef TARG_ST
-  // (cbr) treat OPR_TAS. it's ok for the address we don't need the type.
-  if (WN_operator(init_wn) == OPR_TAS) {
-    if (WN_operator(WN_kid0(init_wn)) == OPR_LDA) {
+/* (cbr) DDTSst24451. add support for label diffs initializers */
+    if (WN_operator(kid0) == OPR_LDA_LABEL &&
+        WN_operator(kid1) == OPR_LDA_LABEL) {
+ 
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
-      WFE_Add_Aggregate_Init_Integer (
-                         WN_const_val(WN_kid0(init_wn)), TY_size(ST_type(st)));
-      return;
+
+      kid = TREE_OPERAND(init, 0);
+
+      tree label0=NULL;
+      tree label1=NULL;
+
+      if (TREE_CODE (kid)== CONVERT_EXPR) {
+        kid = TREE_OPERAND(kid,0);
+        if (TREE_CODE (kid)== ADDR_EXPR) {
+          label0 = TREE_OPERAND(kid,0);
+        }
+      }
+
+      kid = TREE_OPERAND(init, 1);
+      if (TREE_CODE (kid)== CONVERT_EXPR) {
+        kid = TREE_OPERAND(kid,0);
+        if (TREE_CODE (kid)== ADDR_EXPR) {
+          label1 = TREE_OPERAND(kid,0);
+        }
+      }
+      
+      if (label0 && label1) {
+        LABEL_IDX label_idx0 = WFE_Get_LABEL (label0, FALSE);
+        LABEL_IDX label_idx1 = WFE_Get_LABEL (label1, FALSE);
+
+        WFE_Add_Aggregate_Init_Labeldiff (label_idx0, label_idx1);
+        return;
+      }
     }
-  }
 #endif
+  }
   
   Fail_FmtAssertion ("unexpected static init tree for %s", ST_name(st));
 }

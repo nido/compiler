@@ -2055,6 +2055,17 @@ Traverse_Aggregate_Constructor (
   return field_id;
 } /* Traverse_Aggregate_Constructor */
 
+#ifdef TARG_ST
+static WN *
+skip_tas (WN *wn_tree)
+{
+  while (WN_operator (wn_tree) == OPR_TAS) {
+    wn_tree = WN_kid0 (wn_tree);
+  }
+  return wn_tree;
+}
+#endif
+
 static void
 Add_Inito_For_Tree (tree init, tree decl, ST *st)
 {
@@ -2191,9 +2202,7 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
   WN *init_wn = WFE_Expand_Expr (init);
 #ifdef TARG_ST
   // [SC] Skip OPR_TAS since it does not change the representation.
-  while (WN_operator(init_wn) == OPR_TAS) {
-    init_wn = WN_kid0(init_wn);
-  }
+  init_wn = skip_tas (init_wn);
 #endif
   if (WN_operator(init_wn) == OPR_INTCONST) {
 	aggregate_inito = New_INITO (st);
@@ -2211,29 +2220,51 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
   }
   else
   if (WN_operator(init_wn) == OPR_ADD) {
+#ifdef TARG_ST
+    WN *kid0 = skip_tas (WN_kid0(init_wn));
+    WN *kid1 = skip_tas (WN_kid1(init_wn));
+    if (WN_operator(kid0) == OPR_LDA &&
+	WN_operator(kid1) == OPR_INTCONST) {
+      aggregate_inito = New_INITO (st);
+      not_at_root = FALSE;
+      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+		WN_offset(kid0) + WN_const_val(kid1));
+#else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) + WN_const_val(WN_kid1(init_wn)));
+#endif
       return;
     }
   }
   else
   if (WN_operator(init_wn) == OPR_SUB) {
+#ifdef TARG_ST
+    WN *kid0 = skip_tas (WN_kid0(init_wn));
+    WN *kid1 = skip_tas (WN_kid1(init_wn));
+    if (WN_operator(kid0) == OPR_LDA &&
+	WN_operator(kid1) == OPR_INTCONST) {
+      aggregate_inito = New_INITO (st);
+      not_at_root = FALSE;
+      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+		WN_offset(kid0) - WN_const_val(kid1));
+#else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) - WN_const_val(WN_kid1(init_wn)));
+#endif
       return;
     }
 #ifdef TARG_ST
 /* (cbr) DDTSst24451. add support for label diffs initializers */
-    if (WN_operator(WN_kid0(init_wn)) == OPR_LDA_LABEL &&
-        WN_operator(WN_kid1(init_wn)) == OPR_LDA_LABEL) {
+    if (WN_operator(kid0) == OPR_LDA_LABEL &&
+        WN_operator(kid1) == OPR_LDA_LABEL) {
  
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
