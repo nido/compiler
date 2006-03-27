@@ -2257,6 +2257,10 @@ Pad_Bundle (
   OP *last_in_bundle = bundle_start;
   while (!OP_end_group(last_in_bundle)) {
     last_in_bundle = OP_next(last_in_bundle);
+    // FdF 20060327: The basic block may end with dummy ops, which are
+    // never marked end_group
+    if (last_in_bundle == NULL)
+      return NULL;
   }
   OP *bundle_end = OP_next(last_in_bundle);
   OP *op;

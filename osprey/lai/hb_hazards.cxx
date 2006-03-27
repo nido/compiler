@@ -1796,10 +1796,11 @@ Make_Bundles (
   if (!TI_BUNDLE_Is_Empty(bundle, &ti_err)) {
 #ifndef TARG_ST200 // CL: ST200 has variable-length bundles
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
-#endif
       Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector);
-#ifndef TARG_ST200
     }
+#else
+    // FdF 20060327: Ignore the dummy ops at the end of the basic block.
+    Fill_Cycle_With_Noops (bb, BB_last_real_op(bb), bundle, bundle_vector);
 #endif
   }
 
