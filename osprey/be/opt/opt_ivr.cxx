@@ -106,6 +106,9 @@
 #include "opt_mu_chi.h"
 #include "opt_fold.h"
 #include "stab.h"
+#ifdef TARG_ST
+#include "glob.h"	// FdF: for Cur_PU_Name
+#endif
 
 // provided for compatibility
 
@@ -1384,9 +1387,8 @@ IVR::Substitute_IV(const IV_CAND *iv,
 	subst_cr_occurrences(stmt->Rhs(), iv, new_iv);
     }
   }
-  Is_True(loop->Iv() == iv->Var(), ("Unexpected IV in Promote_IV"));
-  loop->Set_iv(new_iv->Var());
-
+  if (loop->Iv() == iv->Var())
+    loop->Set_iv(new_iv->Var());
 }
 #endif
 
@@ -2888,6 +2890,30 @@ IVR::Update_exit_stmt(const IV_CAND *secondary,
   Inc_exit_value_counter();
 }
 
+#ifdef TARG_ST
+IV_CAND*
+IVR::Choose_promote_IV(const BB_LOOP *loop, IV_CAND *trip_iv)
+{
+  WN *index = loop->Index();
+  
+  vector<IV_CAND*>::iterator iv_cand_iter;
+
+  if (Phase() != MAINOPT_PHASE)
+    return NULL;
+
+  // FdF 20060124: In case the trip_iv will not wrap (either a
+  // constant has been computed or the type is a signed type in C or
+  // C++,and its type is lower than I4), then promote it to type I4
+  if (Trip_count() && (MTYPE_size_min(trip_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4)) &&
+      ((Trip_count()->Kind() == CK_CONST) ||
+       (!PU_mixed_lang(Get_Current_PU()) &&
+	(PU_c_lang(Get_Current_PU()) || PU_cxx_lang(Get_Current_PU())) &&
+	MTYPE_signed(trip_iv->Var()->Dsctyp()))))
+    return trip_iv;
+
+  return NULL;
+}
+#endif
 
 // ====================================================================
 //
@@ -2895,6 +2921,11 @@ IVR::Update_exit_stmt(const IV_CAND *secondary,
 //
 // ====================================================================
 
+#ifdef TARG_ST
+static int trc_loop_nb = 0;
+static int trc_loop_short_before = 0;
+static int trc_loop_short_after = 0;
+#endif
 
 void
 IVR::Convert_all_ivs(BB_LOOP *loop)
@@ -2929,21 +2960,35 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
   CODEREP *trip_count = Trip_count();
 
 #ifdef TARG_ST
-  // FdF 20060124: In case the trip_iv will not wrap (either a
-  // constant has been computed or the type is a signed type in C or
-  // C++,and its type is lower than I4), then promote it to type I4
-  if ((Phase() == MAINOPT_PHASE) && trip_count &&
-      (MTYPE_size_min(trip_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4)) &&
-      ((trip_count->Kind() == CK_CONST) ||
-       (!PU_mixed_lang(Get_Current_PU()) &&
-	(PU_c_lang(Get_Current_PU()) || PU_cxx_lang(Get_Current_PU())) &&
-	MTYPE_signed(trip_iv->Var()->Dsctyp())))) {
-    // For this loop only, create a new symbol, and replace occurences
-    // of the original symbol by the new one.  Do something like:
-    // Generate_Primary_IV, Replace_secondary_IV
+  int trc_iv_count = 0;
+  int trc_short_iv_count = 0;
+  int trc_short_iv_count_opt = 0;
 
-    IV_CAND *trip_iv_I4 = Promote_IV(loop, trip_iv, MTYPE_I4);
-    if (trip_iv_I4 != NULL) {
+  if ((Phase() == MAINOPT_PHASE) && Get_Trace(TP_GLOBOPT, IVR_DUMP_FLAG)) {
+    // Add a trace on how much induction variables are on types <
+    // I4/U4.
+    trc_loop_nb ++;
+    for (iv_cand_iter = iv_cand_container.begin(); 
+	 iv_cand_iter != iv_cand_container.end();
+	 iv_cand_iter++) {
+      IV_CAND *cur_iv = *iv_cand_iter;
+      trc_iv_count ++;
+      if (MTYPE_size_min(cur_iv->Var()->Dsctyp()) < MTYPE_size_min(MTYPE_I4))
+	trc_short_iv_count ++;
+    }
+    if (trc_short_iv_count > 0)
+      trc_loop_short_before ++;
+  }
+
+  IV_CAND *promote_iv = Choose_promote_IV(loop, trip_iv);
+
+  if (promote_iv) {
+
+    IV_CAND *new_iv = Promote_IV(loop, promote_iv, MTYPE_I4);
+    if (new_iv != NULL) {
+      if (Get_Trace(TP_GLOBOPT, IVR_DUMP_FLAG)) {
+	trc_short_iv_count_opt ++;
+      }
 
       // Check also if this new IV can be a primary_IV.
       if (primary == NULL) {
@@ -2952,11 +2997,17 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
 
       // Then, process all loop statements, and replace the use of
       // trip_iv->Init, trip_iv->Var and trip_iv->Incr by the
-      // corresponding variables from trip_iv_I4.
-      Update_exit_stmt(trip_iv_I4, loop->Merge(), loop);
-      Substitute_IV(trip_iv, trip_iv_I4, loop->Header(), loop);
-      trip_iv = trip_iv_I4;
+      // corresponding variables from new_iv.
+      Update_exit_stmt(new_iv, loop->Merge(), loop);
+      Substitute_IV(trip_iv, new_iv, loop->Header(), loop);
+      trip_iv = new_iv;
     }
+  }
+
+  if ((Phase() == MAINOPT_PHASE) && Get_Trace(TP_GLOBOPT, IVR_DUMP_FLAG)) {
+    fprintf(TFile, "<IVp> %s: IVs %d, short IV %d(%d)\n", Cur_PU_Name, trc_iv_count, trc_short_iv_count, trc_short_iv_count-trc_short_iv_count_opt);
+    if (trc_short_iv_count > trc_short_iv_count_opt)
+      trc_loop_short_after ++;
   }
 #endif
   // ************************************************************************
@@ -3484,8 +3535,21 @@ COMP_UNIT::Do_iv_recognition(void)
 			      Mem_pool());
     }
 #endif
+
+#ifdef TARG_ST
+    trc_loop_nb = 0;
+    trc_loop_short_before = 0;
+    trc_loop_short_after = 0;
+#endif
+
     FOR_ALL_NODE(loop, loop_iter, Init())
       iv_recog.Process_one_loop(loop);
+
+#ifdef TARG_ST
+    if ((Phase() == MAINOPT_PHASE) && Get_Trace(TP_GLOBOPT, IVR_DUMP_FLAG)) {
+      fprintf(TFile, "<IVp> %s: Loops %d, with short iv %d(%d)\n", Cur_PU_Name, trc_loop_nb, trc_loop_short_before, trc_loop_short_after);
+    }
+#endif
 
 #ifdef TARG_ST
     // FdF 20060105
