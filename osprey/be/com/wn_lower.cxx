@@ -10272,6 +10272,11 @@ static WN *lower_mstore(WN * /*block*/, WN *mstore, LOWER_ACTIONS actions)
     */
     if (WN_opcode(load) == OPC_MLOAD)
     {
+#ifdef TARG_ST
+      if (WN_field_id(load) != 0)
+	lower_field_id (load);
+#endif
+
       srcTY = TY_pointed(Ty_Table[WN_ty(load)]);
       expr =	WN_kid0(load);
      /*
