@@ -73,15 +73,26 @@ local: $(TARGETS)
 
 INSTALL_DIR=cmplrs
 INSTALL_PREFIX:=$(ROOT)/lib
-install_all_st200: 
-	$(MAKE) HOSTDEFS+='-EL -mcore=st220' INSTALL_DIR=st220/le/bare clean _install
-	$(MAKE) HOSTDEFS+='-EB -mcore=st220' INSTALL_DIR=st220/be/bare clean _install
-	$(MAKE) HOSTDEFS+='-EL -mcore=st231' INSTALL_DIR=st231/le/bare clean _install
-	$(MAKE) HOSTDEFS+='-EB -mcore=st231' INSTALL_DIR=st231/be/bare clean _install
-	$(MAKE) HOSTDEFS+='-EL -mcore=st235' INSTALL_DIR=st235/le/bare clean _install
-	$(MAKE) HOSTDEFS+='-EB -mcore=st235' INSTALL_DIR=st235/be/bare clean _install
+
+install_all_st200:
+	@for core in $(TARGET_LIBGCOV_CORES); do \
+	  for endian in $(TARGET_LIBGCOV_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_st200_core_endian_libraries_; \
+	  done; \
+	done
+
+target_install_st200_core_endian_libraries_:
+	$(MAKE) \
+	HOSTDEFS+="-mcore=$(TARGET_CORE) $(addprefix -,$(subst be,EB,$(subst le,EL,$(TARGET_ENDIANESS))))" \
+	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
 
 ifeq ($(HOST_ARCH), ST200)
+ifeq (x$(TARGET_LIBGCOV_CORES)x,xx)
+$(error no target is defined. choose a subset of st220/st231/st235 for TARGET_LIBGCOV_CORES)
+endif
+ifeq (x$(TARGET_LIBGCOV_ENDIANESS)x,xx)
+$(error no endianess is defined. Need to define TARGET_LIBGCOV_ENDIANESS anong le/be)
+endif
 install: install_all_st200
 else
 install: local
