@@ -5097,6 +5097,7 @@ WFE_Expand_Expr (tree exp,
 					   ty_idx,
 					   Make_Pointer_Type (ty_idx, FALSE),
 					   WN_COPY_Tree (ap_load)));
+	  Set_PU_has_very_high_whirl (Get_Current_PU ());
 	} else {
 	  if (Target_Byte_Sex == BIG_ENDIAN
 	      && type_size < UNITS_PER_WORD
