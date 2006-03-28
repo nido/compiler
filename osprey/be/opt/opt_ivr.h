@@ -238,6 +238,7 @@ private:
   IV_CAND *Choose_primary_IV(const BB_LOOP *loop);
 
 #ifdef TARG_ST
+  IV_CAND *Choose_promote_IV(const BB_LOOP *loop, IV_CAND *trip_iv);
   IV_CAND *Promote_IV(const BB_LOOP *loop, IV_CAND *iv, MTYPE mtype);
   void Substitute_IV(const IV_CAND *iv, const IV_CAND *new_iv, BB_NODE *startbb, BB_LOOP *loop);
 #endif
