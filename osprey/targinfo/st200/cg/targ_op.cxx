@@ -717,6 +717,8 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
       CASE_TOP_BR(cmpne);
       CASE_TOP_BR(andl);
       CASE_TOP_BR(orl);
+      CASE_TOP_BR(nandl);
+      CASE_TOP_BR(norl);
       CASE_TOP_BR_INV(cmpge,cmple);
       CASE_TOP_BR_INV(cmpgeu,cmpleu);
       CASE_TOP_BR_INV(cmpgt,cmplt);
