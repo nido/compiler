@@ -33,6 +33,8 @@
  * ====================================================================
  */
 
+#ifdef TARG_ST
+
 #ifdef _KEEP_RCS_ID
 static const char source_file[] = __FILE__;
 static const char rcs_id[] = "";
@@ -62,9 +64,7 @@ static const char rcs_id[] = "";
 #include "gtn_universe.h"
 #include "gtn_set.h"
 #include "cg_cflow.h"
-#ifdef TARG_ST
 #include "wn_util.h"
-#endif
 #include "whirl2ops.h"
 #include "cg_db_op.h"
 #include "cio.h"
@@ -74,9 +74,7 @@ static const char rcs_id[] = "";
 #include "cg_sched_est.h"
 #include "cg_ivs.h"
 
-#ifdef TARG_ST
 #include "stblock.h" // for ST_alignment
-#endif
 
 // ======================================================================
 //
@@ -375,7 +373,6 @@ void LOOP_IVS::Init( LOOP_DESCR *loop )
 //
 // ======================================================================
 
-#if 1
 // ======================================================================
 //
 //  Implementation example for optimizations based on loop induction
@@ -427,12 +424,10 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
 
   OP *op;
   int idx;
-#if 1
+
   FOR_ALL_LOOP_IVS_OPs_FWD( &loop_ivs, idx, op ) {
-#if 0
-    INT op_idx = loop_ivs.Lookup_Op(op);
-    Is_True(op_idx == idx, ("LOOP_IVS_Verify failed"));
-#endif
+    //    INT op_idx = loop_ivs.Lookup_Op(op);
+    //    Is_True(op_idx == idx, ("LOOP_IVS_Verify failed"));
     Print_OP(op);
     INT opndx;
     for (opndx = 0; opndx < OP_opnds(op); opndx++) {
@@ -458,7 +453,6 @@ Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
       }
     }
   }
-#endif
 
   // Dispose memory pool for LOOP_IVS
   MEM_POOL_Pop( &local_mem_pool );
@@ -488,9 +482,6 @@ void Perform_Induction_Variables_Optimizations() {
 
   Free_Dominators_Memory ();
 }
-#endif
-
-#ifdef TARG_ST200
 
 // ======================================================================
 //

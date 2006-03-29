@@ -72,6 +72,7 @@
 // =======================================================================
 // ======================================================================= */
 
+#ifdef TARG_ST
 #include "bb.h"
 #include "cg_loop.h"
 #include "findloops.h"
@@ -164,5 +165,6 @@ void Perform_Induction_Variables_Optimizations();
 
 extern BOOL IVS_Analyze_Load_Store_Packing( CG_LOOP &cg_loop);
 extern BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop );
-
 #endif /* CG_IVS_INCLUDED */
+
+#endif /* TARG_ST */

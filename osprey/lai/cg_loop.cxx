@@ -5068,10 +5068,12 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 		       "Unroll_Do_Loop: Before unrolling BB:%d %d times:",
 		       BB_id(LOOP_DESCR_loophead(loop)), ntimes);
 
+#ifdef TARG_ST
   if (Get_Trace(TP_CGLOOP, 0x10)) {
     if (cl.Even_factor() && (ntimes&1))
       fprintf(TFile, "<packing> Not even unroll factor (%d)\n", ntimes);
   }
+#endif
 
   BB *head = LOOP_DESCR_loophead(loop);
   TN *trip_count_tn = CG_LOOP_Trip_Count(loop);
@@ -5879,6 +5881,7 @@ void CG_LOOP::Determine_Unroll_Factor()
     if (!pragma_unroll) {
       while (ntimes > 1 && ntimes * body_len > CG_LOOP_unrolled_size_max)
 	ntimes--;
+#ifdef TARG_ST
       if (Even_factor() && (ntimes&1)) {
 	if (ntimes > 1 || ((CG_LOOP_load_store_packing&0x20) != 0)) {
 	  if (Get_Trace(TP_CGLOOP, 0x10)) {
@@ -5887,6 +5890,7 @@ void CG_LOOP::Determine_Unroll_Factor()
 	  ntimes ++;
 	}
       }
+#endif
     }
     Set_unroll_factor(ntimes);
 
@@ -6857,7 +6861,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.Recompute_Liveness();
       cg_loop.EBO_After_Unrolling();
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
       if (can_be_packed && !cg_loop.Unroll_fully()) { 
 	//	CG_LOOP_prolog = cg_loop.Prolog_start();
 	//	CG_LOOP_epilog = cg_loop.Epilog_end();
