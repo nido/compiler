@@ -1969,6 +1969,8 @@ Init_Unwind_Info (BOOL trace)
   PU_has_restored_FP = FALSE;
   UE_validated = FALSE;
 
+  if (Get_Trace (TP_EMIT, 128)) draw_flow_graph();
+
   Find_Unwind_Info ();
   simple_unwind = Is_Unwind_Simple();
 
