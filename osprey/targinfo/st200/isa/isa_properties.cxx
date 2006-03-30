@@ -74,7 +74,9 @@ main()
     likely, 
     load, 
     madd, 
+    max, 
     mem_fill_type, 
+    min, 
     move, 
     mul, 
     multi, 
@@ -750,8 +752,30 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  max = ISA_Property_Create ("max"); 
+  Instruction_Group (max, 
+		 TOP_maxu_r, 
+		 TOP_maxu_i, 
+		 TOP_maxu_ii, 
+		 TOP_max_r, 
+		 TOP_max_i, 
+		 TOP_max_ii, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   mem_fill_type = ISA_Property_Create ("mem_fill_type"); 
   Instruction_Group (mem_fill_type, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  min = ISA_Property_Create ("min"); 
+  Instruction_Group (min, 
+		 TOP_minu_r, 
+		 TOP_minu_i, 
+		 TOP_minu_ii, 
+		 TOP_min_r, 
+		 TOP_min_i, 
+		 TOP_min_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
