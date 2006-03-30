@@ -1782,6 +1782,15 @@ IPA_CALL_GRAPH::Create_Quasi_Clone (IPA_EDGE* call_edge)
   EDGE_INDEX* in_edges = 
     (EDGE_INDEX*) alloca (Num_In_Edges(node) * sizeof(EDGE_INDEX));
 
+#ifdef TARG_ST
+  //TB: When feedback info, update IPA frequencies for the outgoing
+  //edges of node and create IPA frequencies for the new edges
+  //(outooing from the clone)
+  FB_FREQ clone_freq (FB_FREQ_ZERO);
+  FB_FREQ total_freq (FB_FREQ_ZERO);
+  FB_FREQ scale_clone (FB_FREQ_ZERO);
+  FB_FREQ scale_orig (FB_FREQ_ZERO);
+#endif  
   INT32 in_count = 0;
   IPA_PRED_ITER pred_iter (this, node);
   for (pred_iter.First(); !pred_iter.Is_Empty(); pred_iter.Next()) {
@@ -1794,12 +1803,30 @@ IPA_CALL_GRAPH::Create_Quasi_Clone (IPA_EDGE* call_edge)
       
       Add_Edge (Caller(edge), clone, edge);
       in_edges[in_count++] = pred_iter.Current_Edge_Index();
+#ifdef TARG_ST
+      // Keep in memory the frequencies of all edges moved to the clone
+      if (edge->Has_frequency())
+	clone_freq += edge->Get_frequency();
+#endif
     }
+#ifdef TARG_ST
+      // Keep in memory the frequencies of all edges incoming to node
+    if (edge->Has_frequency())
+      total_freq += edge->Get_frequency();
+  }
+  
+  if (!total_freq.Zero() && !clone_freq.Zero()){
+    //Scale node is the % of the flow that incomes to clone
+    scale_clone = clone_freq / total_freq;
+    //Scale node is the % of the flow that incomes to node
+    scale_orig = (total_freq - clone_freq) / total_freq;
+#endif
   }
 
   // get the number of successor edges
-  EDGE_INDEX* out_edges = 
-    (EDGE_INDEX*) alloca (Num_Out_Edges (node) * sizeof(EDGE_INDEX));
+  // TB: unused code???
+  //   EDGE_INDEX* out_edges = 
+  //     (EDGE_INDEX*) alloca (Num_Out_Edges (node) * sizeof(EDGE_INDEX));
 
   // move all successor edges from the original node to the clone
   INT32 out_count = 0;
@@ -1813,6 +1840,16 @@ IPA_CALL_GRAPH::Create_Quasi_Clone (IPA_EDGE* call_edge)
                                       clone->Node_Index(),
                                       Callee(edge)->Node_Index());
       Copy_edge_cprop_annot (edge, ecopy);
+#ifdef TARG_ST
+      //TB: distribute outgoing frequencies between orig and the clone
+      if (edge->Has_frequency()) {
+	FB_FREQ freq_orig = edge->Get_frequency();
+	SUMMARY_CALLSITE* sc = edge->Summary_Callsite();
+	sc->Set_frequency_count(freq_orig * scale_orig);
+	FB_FREQ *newfreq = CXX_NEW (FB_FREQ(freq_orig * scale_clone), Malloc_Mem_Pool);
+	ecopy->Set_Clone_Frequency(newfreq);
+      }
+#endif
     }
   }
 
@@ -1855,14 +1892,34 @@ IPA_CALL_GRAPH::Quasi_To_Real_Clone (IPA_NODE* clone)
   // set all global-context variables for the original node
   IPA_NODE_CONTEXT context (origin);
   
+#ifdef TARG_ST
+  // Put summary_proc build for the clone before IPO_Clone call. Now
+  // IPO_Clone is able to update SUMMARY_FEEDBACK of the clone. we need
+  // to add a new entry to the SUMMARY_PROCEDURE array
+  clone->Set_Summary_Proc_Index (IPA_add_new_procedure (clone));
+  *(clone->Summary_Proc()) = *(origin->Summary_Proc());
+
+  //TB: I do not realy understand why we need to copy
+  //SUMMARY_PROCEDURE of the origin to the clone???  For instance
+  //feedback index for the clone cannot be the same as for the origin,
+  //or the nb of time the clone is called is != to the nb of times the
+  //origin is called...
+  // So create a new SUMMARY_FEEDBACK for the clone
+  if (origin->Has_Feedback()) {
+    SUMMARY_FEEDBACK *fb = CXX_NEW (SUMMARY_FEEDBACK(), clone->Mem_Pool());
+    fb->Init();
+    clone->Set_Clone_Summary_Feedback(fb);
+  }
+#endif
   // this performs actual tree and symtab cloning and
   // sets all PU_Info related information
   IPO_Clone (origin, clone);
 
+#ifndef TARG_ST
   // we need to add a new entry to the SUMMARY_PROCEDURE array
   clone->Set_Summary_Proc_Index (IPA_add_new_procedure (clone));
   *(clone->Summary_Proc()) = *(origin->Summary_Proc());
-
+#endif
   // check for the fake formal ST used with vla-s (661817)
   if (origin->Has_Aliased_Formal()) {
     clone->Set_Aliased_Formal();

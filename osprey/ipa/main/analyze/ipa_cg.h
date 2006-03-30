@@ -239,6 +239,10 @@ private:
 
   mUINT32            _flags;		// various Boolean attribute flags
 
+#ifdef TARG_ST
+  // TB: add a special SUMMARY_FEEDBACK object for clone node
+  SUMMARY_FEEDBACK * _clone_summary_feedback;
+#endif
 #ifdef _LIGHTWEIGHT_INLINER
   INLINED_BODY_LIST  _inlined_list;     // Hold pts to all inlined callees
                                         // for this node
@@ -675,10 +679,27 @@ public:
   BOOL Has_frequency() const 	{ return Summary_Proc()->Has_PU_freq(); };
 
 
+#ifdef TARG_ST
+  //TB: Add a SUMMARY_FEEDBACK object for clone node
+  void Set_Clone_Summary_Feedback (SUMMARY_FEEDBACK *sf) { _clone_summary_feedback = sf;}
+#endif
   SUMMARY_FEEDBACK *Get_feedback () const {
 #if (defined(_STANDALONE_INLINER) || defined(_LIGHTWEIGHT_INLINER))
     return NULL;
 #else 
+#ifdef KEY
+    /* If a proc is never invoked, then Summary_Proc()->Get_feedback_index()
+       will always return 0 by default, which will give ipa some other function's
+       feedback info.
+    */
+    if( Summary_Proc()->Is_Never_Invoked() ){
+      return NULL;
+    }
+#endif
+#ifdef TARG_ST
+    if (Is_Clone())
+      return _clone_summary_feedback;
+#endif
     return IPA_get_feedback_array (this) + Summary_Proc()->Get_feedback_index ();
 #endif 
   }
@@ -738,6 +759,10 @@ private:
   mUINT32 _readonly_actuals;		// bitmap for readonly actual param.
   mUINT32 _pass_not_saved_actuals;	// bitmap for addr_passed_but_not_saved
   UINT32 _reason_ID; float _reason_data; 	//IPA_TRACE_TUNING
+#ifdef TARG_ST
+  // TB: add a special frequency object for clone edge
+  FB_FREQ* _clone_frequency;
+#endif
 
 public:
   // constructor
@@ -752,8 +777,12 @@ public:
     _flags(0),
     _readonly_actuals(0),
     _pass_not_saved_actuals(0),
-	_reason_ID(0),
-	_reason_data(0.0)
+    _reason_ID(0),
+    _reason_data(0.0),
+#ifdef TARG_ST
+    //TB: Add a specific frequency for clone edge
+    _clone_frequency(NULL)
+#endif
   {}
 
     
@@ -852,12 +881,21 @@ public:
   }
 
   // Feedback support:
+#ifdef TARG_ST
+  //TB: Add a SUMMARY_FEEDBACK object for clone node
+  void Set_Clone_Frequency (FB_FREQ *ff) { _clone_frequency = ff;}
+#endif
+
   BOOL Has_frequency () const {
     return Summary_Callsite() ?  Summary_Callsite()->Has_callsite_freq() : FALSE;
   }
 
   FB_FREQ Get_frequency ( void ) {
+#ifdef TARG_ST
+    return _clone_frequency ? *_clone_frequency : Summary_Callsite() ?  Summary_Callsite()->Get_frequency_count() : FB_FREQ_UNKNOWN;
+#else
     return Summary_Callsite() ?  Summary_Callsite()->Get_frequency_count() : FB_FREQ_UNKNOWN;
+#endif
   }
 
 }; // IPA_EDGE

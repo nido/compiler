@@ -1632,7 +1632,8 @@ IPO_INLINE::Clone_Callee(BOOL same_file)
   WN *result = copy.Clone_Tree(WN_func_body(Callee_Wn ()));
 
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))
-
+  //TB: Update IPA frequencies for the node following the inlining
+  //(=delete Call_edge)
   if (Caller_node ()->Has_frequency ()) {
       FB_FREQ call_freq = Call_edge()->Get_frequency();
       if (call_freq.Known ()) {
@@ -1650,7 +1651,7 @@ IPO_INLINE::Clone_Callee(BOOL same_file)
 	  }
 	  
 #ifdef _DEBUG_TEST
-printf("scale for %s in %s is %f", Callee_node()->Name(), Caller_node()->Name(), scale);
+printf("scale for %s in %s is %f", Callee_node()->Name(), Caller_node()->Name(), scale.Value());
 printf(", callee_freq = %f", callee_freq.Value());
 printf(", call_freq = %f\n", call_freq.Value());
 #endif // _DEBUG_TEST
