@@ -1,0 +1,10 @@
+#
+# Define DMUCS server
+#
+ifeq ($(BUILD_OS),LINUX)
+DMUCS=pcx0003
+else
+ifeq ($(BUILD_OS),SUNOS5)
+DMUCS=gnx1634
+endif
+endif

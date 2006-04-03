@@ -22,5 +22,11 @@ BUILD_COMPILER = OPEN64
 
 # Use distcc in addition to ccache ?
 #export CCACHE_PREFIX=distcc
-# gnb linux hosts
-#export DISTCC_HOSTS=gnx287 gnx344 gnx366 gnx343
+#ifneq ($(DMUCS),)
+#CCACHE=gethost -s $(DMUCS) ccache
+#endif
+
+# Use distcc instead of ccache ?
+ifneq ($(DMUCS),)
+CCACHE=gethost -s $(DMUCS) distcc
+endif

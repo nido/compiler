@@ -46,6 +46,11 @@ BUILD_TOT=@BUILD_TOT@
 include $(BUILD_AREA)/Makefile.platforms
 
 #
+# Define site specific variables
+#
+include $(BUILD_AREA)/Makefile.sitedefs
+
+#
 # Define the build parameters that are common to most of the modules
 #
 include $(BUILD_AREA)/Makefile.build

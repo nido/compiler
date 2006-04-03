@@ -132,6 +132,7 @@ esac
 BUILD=default
 PLATFORMS=default
 TOOLDEFS=default
+SITE=${ST_SITE:-default}
 
 #
 # Declare makefile variables to substitute and default values
@@ -163,7 +164,7 @@ while [ $# != 0 ]; do
       -v) \
 	  verbose=`expr $verbose + 1`
 	  ;;
-      BUILD=*|PLATFORMS=*|TOOLDEFS=*) \
+      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*) \
 	  var=`echo $1 | sed 's!=.*$!!'`
 	  value=`echo $1 | sed 's!^.*=!!'`
 	  eval ${var}=\'${value}\'
@@ -198,17 +199,19 @@ if [ $verbose -ge 1 ]; then
     echo "BUILD=$BUILD"
     echo "PLATFORMS=$PLATFORMS"
     echo "TOOLDEFS=$TOOLDEFS"
+    echo "SITE=$SITE"
     subst_all_print
 fi
 
 
 #
 # Create the three top level Makefile fragments from the given
-# BUILD, PLATFORMS and TOOLDEFS configurations.
+# BUILD, PLATFORMS, TOOLDEFS and SITE configurations.
 #
 files_to_copy="$makepath/build/$BUILD/Makefile.build"
 files_to_copy="$files_to_copy $makepath/platforms/$PLATFORMS/Makefile.platforms"
 files_to_copy="$files_to_copy $makepath/tooldefs/$TOOLDEFS/Makefile.tooldefs"
+files_to_copy="$files_to_copy $makepath/sitedefs/$SITE/Makefile.sitedefs"
 for i in $files_to_copy; do
     base=`basename $i`
     if [ ! -f $i ]; then
