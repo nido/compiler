@@ -255,11 +255,13 @@ public:
 
   // IPA interface
 
+  BE_EXPORTED
   friend void FB_IPA_Clone_node(
 			    FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
 			    WN             *wn_origl, WN             *wn_clone,
 			    FB_FREQ freq_scale );
 
+  BE_EXPORTED
   friend void FB_IPA_Clone( FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
 			    WN             *wn_origl, WN             *wn_clone,
 			    FB_FREQ freq_scale );

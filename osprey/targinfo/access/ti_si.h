@@ -425,7 +425,7 @@ typedef TI_SI_CONST struct {
 
 // [HK]
 // extern const INT SI_resource_count;
-extern INT SI_resource_count;
+BE_EXPORTED extern INT SI_resource_count;
 #ifndef TARG_ST
 #pragma weak SI_resource_count
 #endif
@@ -436,13 +436,13 @@ TARGINFO_EXPORTED extern SI_RESOURCE * TI_SI_CONST SI_resources[];
 #endif
 
 #ifdef TARG_ST
-extern const char* SI_RESOURCE_Name( SI_RESOURCE*);
-extern UINT SI_RESOURCE_Id( SI_RESOURCE*);
-extern UINT SI_RESOURCE_Avail_Per_Cycle( SI_RESOURCE*);
-extern UINT SI_RESOURCE_Word_Index( SI_RESOURCE*);
-extern UINT SI_RESOURCE_Bit_Index( SI_RESOURCE*);
-extern const char* SI_RESOURCE_ID_Name( SI_RESOURCE_ID);
-extern UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID);
+BE_EXPORTED extern const char* SI_RESOURCE_Name( SI_RESOURCE*);
+BE_EXPORTED extern UINT SI_RESOURCE_Id( SI_RESOURCE*);
+BE_EXPORTED extern UINT SI_RESOURCE_Avail_Per_Cycle( SI_RESOURCE*);
+BE_EXPORTED extern UINT SI_RESOURCE_Word_Index( SI_RESOURCE*);
+BE_EXPORTED extern UINT SI_RESOURCE_Bit_Index( SI_RESOURCE*);
+BE_EXPORTED extern const char* SI_RESOURCE_ID_Name( SI_RESOURCE_ID);
+BE_EXPORTED extern UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID);
 #else
 inline const char* SI_RESOURCE_Name( SI_RESOURCE* res )
 {
@@ -486,7 +486,7 @@ inline UINT SI_RESOURCE_ID_Avail_Per_Cycle( SI_RESOURCE_ID id )
 typedef mUINT64 SI_RESOURCE_ID_SET;
 
 #ifdef TARG_ST
-extern SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void);
+BE_EXPORTED extern SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void);
 #else
 inline SI_RESOURCE_ID_SET SI_RESOURCE_ID_SET_Universe(void)
 {
@@ -872,7 +872,7 @@ SI_ID_II_Cycle_Resource_Ids_Used( SI_ID id, INT ii )
 #endif
 
 #ifdef TARG_ST
-extern void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max);
+BE_EXPORTED extern void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max);
 #endif
 
 #ifdef __cplusplus
