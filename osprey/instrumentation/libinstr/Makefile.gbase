@@ -238,7 +238,8 @@ libinstr.so: $(LIBINSTR_CXX_OBJS) $(SO_LOCATION_DIR)/Exported \
 	 $(LLDLIBS) -show
 else
 .PRECIOUS : $(LIBRARY)
-$(LIBRARY): $(LIBRARY)($(LIBINSTR_CXX_OBJS))
+$(LIBRARY): $(LIBINSTR_CXX_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
 
 $(DSO): $(LIBRARY)
 	$(LD) $(STD_DSO_LOADOPTS) -exports_file $(BUILD_BASE)/common.exports $(EXTRA_EXPORTS) \
