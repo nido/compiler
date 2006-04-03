@@ -101,7 +101,7 @@ MAKELIB: .USE .PRECIOUS
 %.i : %.cxx
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -E > $@
 
-make_deps:
+make_deps: local
 ifneq ($(BUILD_COMPILER), EDG)
 	-@cat *.d > $(MKDEPFILE)
 endif
