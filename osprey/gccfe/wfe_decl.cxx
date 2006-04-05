@@ -638,6 +638,10 @@ WFE_Finish_Function (void)
           (WN_operator (WN_last (wn)) != OPR_RETURN &&
            WN_operator (WN_last (wn)) != OPR_RETURN_VAL)) {
         WN_INSERT_BlockLast (wn, WN_CreateReturn ());
+#ifdef TARG_ST
+	// [CL] force line number for closing brace
+	WN_Set_Linenum(WN_last(wn), Get_Srcpos());
+#endif
       }
 
     WN *func_wn = WFE_Stmt_Pop (wfe_stmk_func_entry);
