@@ -806,12 +806,23 @@ WFE_Expand_End_Case (tree orig_index)
                                def_goto,
                                switch_info_stack [switch_info_i].exit_label_idx);
   switch_block = WFE_Stmt_Pop (wfe_stmk_switch);
+#ifdef TARG_ST
+  // [CL] use line number of switch() statement in user's source code
+  WFE_Stmt_Append (switch_wn, WN_linenum(switch_block));
+  WFE_Stmt_Append (switch_block, 0);
+#else
   WFE_Stmt_Append (switch_wn, Get_Srcpos ());
   WFE_Stmt_Append (switch_block, Get_Srcpos ());
+#endif
   wn = WN_CreateLabel ((ST_IDX) 0,
                        switch_info_stack [switch_info_i].exit_label_idx,
                        0, NULL);
+#ifdef TARG_ST
+  // [CL] use line number of switch() statement in user's source code
+  WFE_Stmt_Append (wn, WN_linenum(switch_block));
+#else
   WFE_Stmt_Append (wn, Get_Srcpos ());
+#endif
   case_info_i = switch_info_stack [switch_info_i].start_case_index - 1;
   --switch_info_i;
 } /* WFE_Expand_End_Case */
