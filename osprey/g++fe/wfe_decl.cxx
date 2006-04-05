@@ -2884,10 +2884,37 @@ WFE_Generate_Temp_For_Initialized_Aggregate (tree init, char * name)
 {
   TY_IDX ty_idx = Get_TY(TREE_TYPE(init));
   ST *temp = New_ST (CURRENT_SYMTAB);
+
+#ifdef TARG_ST
+  /* (cbr) pro-release-1-9-0-B/30. TYPE_SIZE is not set for constructor initializers. 
+     need to allocate the object */
+  if (TREE_CODE(init) == CONSTRUCTOR && 
+      TY_kind (ty_idx) == KIND_ARRAY && TY_size (ty_idx) == 0 && !TYPE_SIZE(TREE_TYPE(init))) {
+      tree init_elt;
+      UINT tsize = 0;
+      UINT align = 1;
+      for (init_elt = CONSTRUCTOR_ELTS(init);
+           init_elt;
+           init_elt = TREE_CHAIN(init_elt)) {
+        if (TREE_PURPOSE(init_elt)) {
+          tree ppose = TREE_PURPOSE(init_elt);
+          tree ssize = TYPE_SIZE(TREE_TYPE (ppose));
+          align = TYPE_ALIGN(TREE_TYPE(ppose)) / BITSPERBYTE;
+          tsize += Get_Integer_Value(ssize) / BITSPERBYTE;
+        }
+      }
+      if (tsize) {
+        Set_TY_align (ty_idx, align);
+        Set_TY_size (ty_idx, tsize);
+      }
+    }
+#endif
+
   ST_Init (temp,
 	Save_Str2 (name, ".init"),
 	CLASS_VAR, SCLASS_PSTATIC, EXPORT_LOCAL,
 	ty_idx );
+
   if (TREE_CODE(init) == CONSTRUCTOR
 	&& ! Use_Static_Init_For_Aggregate (temp, init)) 
   {
