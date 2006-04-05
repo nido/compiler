@@ -87,7 +87,8 @@ ST_visible_outside_dso(const ST &s)
       || (ST_export(s) == EXPORT_LOCAL
 	  && ! ST_addr_saved (s)
 	  && ! ST_addr_passed (s)
-	  && ! ST_is_alias_base (&s)))
+	  && ! ST_is_alias_base (&s)
+	  && ! ST_is_used (&s)))
     return FALSE;
   return TRUE;
 #else
