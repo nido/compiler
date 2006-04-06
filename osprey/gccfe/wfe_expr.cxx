@@ -2880,7 +2880,7 @@ WFE_Expand_Expr (tree exp,
 #ifdef TARG_ST
             /* (cbr) don't forget the conversion ! */
 	    else { // same size
-	      if (mtyp != WN_rtype(wn)) 
+	      if (WN_operator(wn) != OPR_TAS && mtyp != WN_rtype(wn)) 
 	        wn = WN_Cvt(WN_rtype(wn), mtyp, wn);
 	    }            
 #endif
