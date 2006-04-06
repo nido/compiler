@@ -467,8 +467,10 @@ check_size_and_freq (IPA_EDGE *ed, IPA_NODE *caller,
     UINT32 callee_weight = Effective_weight (callee);
     UINT32 combined_weight =
 	Get_combined_weight (caller->PU_Size(), callee->PU_Size(), callee);
+#ifndef TARG_ST
+    //TB: compute hotness only when freq are known
     float  hotness = compute_hotness (ed, callee, callee_weight); 
-
+#endif
 #ifdef TARG_ST // [CL]
     bool inline_reported=FALSE;
 #endif
@@ -627,6 +629,10 @@ check_size_and_freq (IPA_EDGE *ed, IPA_NODE *caller,
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))
 	    } else if (ed->Has_frequency () && callee->Has_frequency () &&
 		       ed->Get_frequency().Known() && callee->Get_frequency ().Known()) {
+#ifdef TARG_ST
+	      //TB: compute hotness only when freq are known
+	      float  hotness = compute_hotness (ed, callee, callee_weight); 
+#endif
 		float min_hotness = (float)IPA_Min_Hotness;
 		
 		//following codes deal with the PUs that are invoked 
