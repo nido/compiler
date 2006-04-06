@@ -608,24 +608,10 @@ WFE_Finish_Function (void)
 #ifdef TARG_ST
     extern void Do_Cleanups_For_EH (void);
     extern bool need_manual_unwinding;
-    if (flag_exceptions && need_manual_unwinding) {
-      // Insert a RETURN if it does not exist
+
+    // Insert a RETURN if it does not exist
+    {
       WN * wn = WN_last (WFE_Stmt_Top ());
-      if (wn == NULL || WN_operator (wn) != OPR_RETURN &&
-          WN_operator (wn) != OPR_RETURN_VAL) {
-        WFE_Stmt_Append (WN_CreateReturn (), Get_Srcpos ());
-      }
-
-      Do_Cleanups_For_EH();
-      need_manual_unwinding=false;
-    }
-    else
-      Get_Current_PU().unused = 0;
-#endif
-
-    // write out all the PU information
-    WN *wn = WFE_Stmt_Pop (wfe_stmk_func_body);
-
 #ifdef TARG_ST 
     /* GNU C interprets a `volatile void' return type to indicate
        that the function does not return. 
@@ -633,6 +619,25 @@ WFE_Finish_Function (void)
     if (! (TREE_THIS_VOLATILE (current_function_decl) &&
            TREE_TYPE (TREE_TYPE (current_function_decl))))
 #endif
+      if (wn == NULL || WN_operator (wn) != OPR_RETURN &&
+          WN_operator (wn) != OPR_RETURN_VAL) {
+        WFE_Stmt_Append (WN_CreateReturn (), Get_Srcpos ());
+      }
+    }
+
+    if (flag_exceptions && need_manual_unwinding) {
+      Do_Cleanups_For_EH();
+      need_manual_unwinding=false;
+    }
+    else
+      Get_Current_PU().unused = 0;
+#endif
+
+#ifdef TARG_ST
+     WFE_Stmt_Pop (wfe_stmk_func_body);
+#else
+    // write out all the PU information
+    WN *wn = WFE_Stmt_Pop (wfe_stmk_func_body);
       // Insert a RETURN at the end if it does not exist
       if (WN_last (wn) == NULL ||
           (WN_operator (WN_last (wn)) != OPR_RETURN &&
@@ -643,6 +648,7 @@ WFE_Finish_Function (void)
 	WN_Set_Linenum(WN_last(wn), Get_Srcpos());
 #endif
       }
+#endif
 
     WN *func_wn = WFE_Stmt_Pop (wfe_stmk_func_entry);
     if (PU_has_syscall_linkage (Get_Current_PU ())) {
@@ -1243,6 +1249,16 @@ Use_Static_Init_For_Aggregate (ST *st, tree init)
 	}
 }
 
+#ifdef TARG_ST
+static WN *
+skip_tas (WN *wn_tree)
+{
+  while (WN_operator (wn_tree) == OPR_TAS) {
+    wn_tree = WN_kid0 (wn_tree);
+  }
+  return wn_tree;
+}
+#endif
 
 static void
 Add_Initv_For_Tree (tree val, UINT size)
@@ -1335,6 +1351,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 		init_block = WN_CreateBlock ();
                 WFE_Stmt_Push (init_block, wfe_stmk_func_body, Get_Srcpos());
 		init_wn = WFE_Expand_Expr (val);
+#ifdef TARG_ST
+                // Skip OPR_TAS since it does not change the representation.
+                init_wn = skip_tas (init_wn);
+#endif
                 WFE_Stmt_Pop (wfe_stmk_func_body);
 
 		if ((WN_opcode (init_wn) == OPC_I4U4CVT &&
@@ -2059,16 +2079,6 @@ Traverse_Aggregate_Constructor (
   return field_id;
 } /* Traverse_Aggregate_Constructor */
 
-#ifdef TARG_ST
-static WN *
-skip_tas (WN *wn_tree)
-{
-  while (WN_operator (wn_tree) == OPR_TAS) {
-    wn_tree = WN_kid0 (wn_tree);
-  }
-  return wn_tree;
-}
-#endif
 
 static void
 Add_Inito_For_Tree (tree init, tree decl, ST *st)
