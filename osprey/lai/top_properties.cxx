@@ -98,6 +98,32 @@ intm_t TOP_fold_imul(opc_t opc, const opnd_t *opnds) {
   return result;
 }
 
+intm_t TOP_fold_imin(opc_t opc, const opnd_t *opnds) {
+  intm_t result;
+  int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
+  int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
+  intm_t op1 = fetch(opc, opnds, opnd1);
+  intm_t op2 = fetch(opc, opnds, opnd2);
+  if (opc_opnd_signed(opc, opnd1))
+      result = op1 < op2 ? op1 : op2;
+  else
+      result = (uintm_t)op1 < op2 ? op1 : op2;      
+  return result;
+}
+
+intm_t TOP_fold_imax(opc_t opc, const opnd_t *opnds) {
+  intm_t result;
+  int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
+  int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
+  intm_t op1 = fetch(opc, opnds, opnd1);
+  intm_t op2 = fetch(opc, opnds, opnd2);
+  if (opc_opnd_signed(opc, opnd1))
+      result = op1 > op2 ? op1 : op2;
+  else
+      result = (uintm_t)op1 > op2 ? op1 : op2;      
+  return result;
+}
+
 intm_t TOP_fold_not(opc_t opc, const opnd_t *opnds) {
   intm_t result;
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
