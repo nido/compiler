@@ -5110,7 +5110,8 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPTRIP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPSEQ) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP)) {
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_STREAM_ALIGNMENT)) {
 	WN *pragma = stmt;
 	if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
 	    // [HK] using typedef-name  after `enum' is no more allowed in gcc-3-4-0

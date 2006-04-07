@@ -746,6 +746,7 @@ Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
       case WN_PRAGMA_LOOPTRIP:
       case WN_PRAGMA_PIPELINE:
       case WN_PRAGMA_LOOPSEQ:
+      case WN_PRAGMA_STREAM_ALIGNMENT:
 	Remove_wn_in(from_bb, wn);
 	cfg->Append_wn_in(to_bb, wn);
 	to_bb->Set_haspragma();

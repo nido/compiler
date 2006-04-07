@@ -2013,6 +2013,8 @@ DCE::Loop_pragma(WN_PRAGMA_ID pragma) const
     /* FdF 30/09/2004 */
     case WN_PRAGMA_LOOPTRIP:
     case WN_PRAGMA_LOOPSEQ:
+    /* FdF 07/04/2006 */
+    case WN_PRAGMA_STREAM_ALIGNMENT:
 #endif
       return TRUE;
   }
