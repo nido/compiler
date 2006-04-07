@@ -629,6 +629,8 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_icmp(o)		(TOP_is_cmp(OP_code(o)) && OP_intop(o))
 #define OP_idiv(o)		(TOP_is_div(OP_code(o)) && OP_intop(o))
 #define OP_imul(o)		(TOP_is_mul(OP_code(o)) && OP_intop(o))
+#define OP_imin(o)		(TOP_is_min(OP_code(o)) && OP_intop(o))
+#define OP_imax(o)		(TOP_is_max(OP_code(o)) && OP_intop(o))
 #define OP_ior(o)		(TOP_is_or(OP_code(o)) && OP_intop(o))
 #define OP_isub(o)		(TOP_is_sub(OP_code(o)) && OP_intop(o))
 #define OP_ixor(o)		(TOP_is_xor(OP_code(o)) && OP_intop(o))
