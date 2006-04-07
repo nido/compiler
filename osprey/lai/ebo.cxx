@@ -4202,6 +4202,16 @@ EBO_Fold_Constant_Expression (
       goto Constant_Created;
     }
 
+    else if (OP_imin(op)) {
+      result_val = TOP_fold_imin(opcode, opnd_tn);
+      goto Constant_Created;
+    }
+
+    else if (OP_imax(op)) {
+      result_val = TOP_fold_imax(opcode, opnd_tn);
+      goto Constant_Created;
+    }
+
     else if (OP_iand(op)) {
       result_val = TOP_fold_and(opcode, opnd_tn);
       goto Constant_Created;
