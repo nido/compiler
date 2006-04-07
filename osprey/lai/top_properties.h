@@ -35,6 +35,8 @@ int TOP_check_properties(TOP opc);
 INT64 TOP_fetch_opnd(TOP opc, const TN * const opnds[], int opnd);
 INT64 TOP_fold_iadd(TOP opc, const TN * const opnds[]);
 INT64 TOP_fold_isub(TOP opc, const TN * const opnds[]);
+INT64 TOP_fold_imax(TOP opc, const TN * const opnds[]);
+INT64 TOP_fold_imin(TOP opc, const TN * const opnds[]);
 INT64 TOP_fold_imul(TOP opc, const TN * const opnds[]);
 INT64 TOP_fold_not(TOP opc, const TN * const opnds[]);
 INT64 TOP_fold_and(TOP opc, const TN * const opnds[]);
