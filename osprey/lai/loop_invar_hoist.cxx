@@ -1158,6 +1158,10 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
                 it_is = FALSE;
             }
 
+	    // FdF 20060407: This was not checked ! (ddts 25090)
+	    if (OP_has_implicit_interactions(op))
+	      it_is = FALSE;
+
                 /* mark all non-constant results as loop-invariant or 
                  * non-loop-invariant accordingly
                  */
