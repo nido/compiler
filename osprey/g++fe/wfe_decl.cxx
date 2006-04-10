@@ -1742,6 +1742,16 @@ Use_Static_Init_For_Aggregate (ST *st, tree init)
 #endif
 }
 
+#ifdef TARG_ST
+static WN *
+skip_tas (WN *wn_tree)
+{
+  while (WN_operator (wn_tree) == OPR_TAS) {
+    wn_tree = WN_kid0 (wn_tree);
+  }
+  return wn_tree;
+}
+#endif
 
 static void
 Add_Initv_For_Tree (tree val, UINT size)
@@ -1812,6 +1822,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 		{
 		WN *init_wn;
 		init_wn = WFE_Expand_Expr (val);
+#ifdef TARG_ST
+                // Skip OPR_TAS since it does not change the representation.
+                init_wn = skip_tas (init_wn);
+#endif
 
 		// handle converts over LDA
 		if ((WN_opcode (init_wn) == OPC_I4U4CVT &&
@@ -1845,6 +1859,11 @@ Add_Initv_For_Tree (tree val, UINT size)
 		else if (WN_operator(init_wn) == OPR_ADD) {
 			WN *kid0 = WN_kid0(init_wn);
 			WN *kid1 = WN_kid1(init_wn);
+#ifdef TARG_ST
+                        // Skip OPR_TAS since it does not change the representation.            
+                        kid0 = skip_tas(kid0);
+                        kid1 = skip_tas(kid1);
+#endif
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
@@ -1863,6 +1882,11 @@ Add_Initv_For_Tree (tree val, UINT size)
 		else if (WN_operator(init_wn) == OPR_SUB) {
 			WN *kid0 = WN_kid0(init_wn);
 			WN *kid1 = WN_kid1(init_wn);
+#ifdef TARG_ST
+                        // Skip OPR_TAS since it does not change the representation.            
+                        kid0 = skip_tas(kid0);
+                        kid1 = skip_tas(kid1);
+#endif
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
@@ -2631,17 +2655,6 @@ Traverse_Aggregate_Constructor (
 
   return field_id;
 } /* Traverse_Aggregate_Constructor */
-
-#ifdef TARG_ST
-static WN *
-skip_tas (WN *wn_tree)
-{
-  while (WN_operator (wn_tree) == OPR_TAS) {
-    wn_tree = WN_kid0 (wn_tree);
-  }
-  return wn_tree;
-}
-#endif
 
 static void
 #ifdef TARG_ST
