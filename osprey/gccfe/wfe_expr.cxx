@@ -1137,6 +1137,31 @@ WFE_Array_Expr(tree exp,
     else *ty_idx = component_ty_idx;
 
     return wn;
+  } else if (code == VA_ARG_EXPR) {
+    // [SC] va_arg.
+    // Assign to temporary, then act on temporary.
+    // TREE_TYPE (exp) is the type of the va_arg;
+    // TREE_OPERAND (exp, 0) is the va_list.
+    tree type = TREE_TYPE (exp);
+    TY_IDX va_ty_idx = Get_TY (type);
+    TYPE_ID va_mtype = TY_mtype (va_ty_idx);
+    ST *temp_st = Gen_Temp_Symbol (va_ty_idx, ".tmp");
+    Set_ST_addr_saved (temp_st);
+    wn = WFE_Expand_Expr (exp);
+    wn = WN_Stid (va_mtype, 0, temp_st, va_ty_idx, wn);
+    WFE_Stmt_Append (wn, Get_Srcpos ());
+    wn = WN_Lda (Pointer_Mtype, ST_ofst(temp_st)+component_offset,
+		 temp_st, field_id);
+    if (component_ty_idx == 0)
+      *ty_idx = ST_type(temp_st);
+    else {
+      *ty_idx = component_ty_idx;
+      if (TY_align(ST_type(temp_st)) < TY_align(component_ty_idx))
+	Set_TY_align(*ty_idx, TY_align(ST_type(temp_st)));//pick more stringent align
+    }
+    Is_True(TY_kind(*ty_idx) == KIND_ARRAY,
+	    ("WFE_Array_Expr: VA_ARG_EXPR not of type KIND_ARRAY"));
+    return wn;
   }
 #endif
 
