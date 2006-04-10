@@ -1384,6 +1384,13 @@ Add_Initv_For_Tree (tree val, UINT size)
 		else if (WN_operator(init_wn) == OPR_ADD) {
 			WN *kid0 = WN_kid0(init_wn);
 			WN *kid1 = WN_kid1(init_wn);
+
+#ifdef TARG_ST
+                        // Skip OPR_TAS since it does not change the representation.            
+                        kid0 = skip_tas(kid0);
+                        kid1 = skip_tas(kid1);
+#endif
+
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
@@ -1402,6 +1409,11 @@ Add_Initv_For_Tree (tree val, UINT size)
 		else if (WN_operator(init_wn) == OPR_SUB) {
 			WN *kid0 = WN_kid0(init_wn);
 			WN *kid1 = WN_kid1(init_wn);
+#ifdef TARG_ST
+                        // Skip OPR_TAS since it does not change the representation.            
+                        kid0 = skip_tas(kid0);
+                        kid1 = skip_tas(kid1);
+#endif
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
