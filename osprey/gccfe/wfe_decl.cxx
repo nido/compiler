@@ -1516,6 +1516,10 @@ Add_Bitfield_Initv_For_Tree (tree val, FLD_HANDLE fld, INT &bytes)
       TREE_CODE (TREE_TYPE (val)) == INTEGER_TYPE){ 
 
     WN *init_wn = WFE_Expand_Expr (val);
+#ifdef TARG_ST
+  // Skip OPR_TAS since it does not change the representation.
+    init_wn = skip_tas (init_wn);
+#endif
     FmtAssert (WN_operator (init_wn) == OPR_LDA,
                ("expected operator encountered"));
 
