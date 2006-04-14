@@ -83,6 +83,11 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   // so as to create also def-def links, for predicated definitions
   // for example.
 
+  // TBD: Save SPACE by restricting the defsites to global registers,
+  // and one defsite per basic block for a global register. Local TNs
+  // and multiple definitions of a global TN in a a basic block will
+  // be handled in part -3-
+
   // TBD: Define a clear user interface.
   // Given a (OP,RES), gives the List (or iterator) of OPs where this site is used
   // Given a (OP,USE), gives the List (or iterator) of OPs where this site is def
@@ -158,13 +163,17 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   typedef std::vector<INT> DEF_DUD_site_t;
 
 #define FOR_ALL_DEFSITE_LIST_ITEMS(list,item) \
-        for(item = list->begin; item != list->end; item++)
+        for (item = list->begin(); item != list->end(); item++)
 
   /* declarations */
 
   INT DUD_op_count;
   INT DEFsite_count;
   TN *DUD_tn;
+
+  // Pointer and iterator to a list of DEFsites
+  DEFsite_list_t *DEFsite_list;
+  DEFsite_list_t::iterator DEFsite_iter;
 
   // For each DUD_tn, associate a list of defsites
   TN_MAP TN_DEFsites_map;
@@ -177,8 +186,6 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   INT defsite_idx = 0;
 
   /* Initialization */
-
-  DUD_opid_map = OP_MAP32_Create();
   TN_DEFsites_map = TN_MAP_Create();
 
   DUD_op_count = 1; // 0 is reserved to represent operations outside of the region
@@ -190,17 +197,17 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   // Create the array DEFsite -> DUDsite
   // Create the lists DUD_tn -> (DEFsite-1, DEFsite-2, ..., DEFsite-n)
 
-  // First, consider all the live-registers of the region
+  // First, consider all the live-registers of the region. This
+  // creates virtual def-sites
   FOR_ALL_GTN_SET_members(BB_live_in(BB_REGION_entry), DUD_tn) {
     if (!TN_is_DUDreg(DUD_tn)) continue;
     defsite_idx = DEFsite_count ++;
 
-    DEFsite_list_t *DEFsite_list;
     DEFsite_list = CXX_NEW(DEFsite_list_t, dud_pool());
     TN_MAP_Set(TN_DEFsites_map, DUD_tn, DEFsite_list);
     DEFsite_list->push_back(defsite_idx);
 
-    DEF_DUD_site.push_back(DUDsite_makeDef(0,0));
+    DEF_DUD_site.push_back(DUDsite_makeDef(0,0)); // Virtual def-site on entry
   }
 
   // Then, traverse the operations in topological order
@@ -216,7 +223,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	if (!TN_is_DUDreg(DUD_tn)) continue;
 	defsite_idx = DEFsite_count ++;
 
-	DEFsite_list_t *DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
+	DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
 	if (DEFsite_list == NULL) {
 	  DEFsite_list = CXX_NEW(DEFsite_list_t, dud_pool());
 	  TN_MAP_Set(TN_DEFsites_map, DUD_tn, DEFsite_list);
@@ -228,12 +235,12 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     }
   }
 
+  if (!DUD_check_size(DUD_op_count))
+    return FALSE;
+
   /* ************************************************************* *
    * Initialization before solving the DefReach data flow analysis *
    * ************************************************************* */
-
-  Set_DUD_size(DUD_op_count);
-  DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, DUD_size(), region_pool );
 
   // Allocate and Compute the GEN, KILL, RCHin and RCHout bit-vectors
   // for each BB
@@ -269,18 +276,19 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     BS_RCHout[topo_idx] = BS_Create_Empty(DEFsite_count, dud_pool());
 
     FOR_ALL_BB_OPs_FWD( bb, op ) {
-      op_idx = DUD_opid(op);
-      DUDinfo_table[op_idx].op = op;
+      op_idx = Get_DUD_opid(op);
 
       for ( INT res = 0; res < OP_results( op ); res++ ) {
 	DUD_tn = OP_result(op, res);
 	if (!TN_is_DUDreg(DUD_tn)) continue;
 
-	DEFsite_list_t *DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
-	DEFsite_list_t::iterator defsite_iter;
-	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, defsite_iter) {
-	  BS_Union1D(BB_kill, *defsite_iter, NULL);
-	  BS_Difference1D(BB_gen, *defsite_iter);
+	Is_True(DEF_DUD_site[defsite_idx] == DUDsite_makeDef(op_idx, res),
+		("DUD_REGION_Init defsites traversal is not identical to first traversal"));
+
+	DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
+	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
+	  BS_Union1D(BB_kill, *DEFsite_iter, NULL);
+	  BS_Difference1D(BB_gen, *DEFsite_iter);
 	}
 	BS_Union1D(BB_gen, defsite_idx, NULL);
 	defsite_idx ++;
@@ -339,15 +347,16 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   /* ************************************************************** *
    * Finally, create the def-use and use-def links                  *
    * ************************************************************** */
-  
-  // Then, create the use-def lists
+
+  DUD_Allocate(DUD_op_count, region_pool);
 
   for (topo_idx = 0; topo_idx < BB_REGION_size; topo_idx++) {
     bb = BB_REGION_topo_order[topo_idx];
     BS_CopyD(BS_RCHin_tmp, BS_RCHin[topo_idx], NULL);
 
     FOR_ALL_BB_OPs_FWD( bb, op ) {
-      op_idx = DUD_opid(op);
+      op_idx = Get_DUD_opid(op);
+      Set_DUD_op(op_idx, op);
 
       for (INT opnd = 0; opnd < OP_opnds(op); opnd ++) {
 	DUD_tn = OP_opnd(op, opnd);
@@ -355,21 +364,19 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
 	// From the list of defsites for a TN, look for the ones that
 	// are reaching
-	DEFsite_list_t *DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
+	DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
 	Is_True(DEFsite_list != NULL, ("DUD_REGION::Init DUD_tn should be defined or live-in in the region"));
 
-	DEFsite_list_t::iterator defsite_iter;
-	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, defsite_iter) {
-	  if (BS_MemberP(BS_RCHin_tmp, *defsite_iter)) {
-	    DUDsite_t ud_link = DEF_DUD_site[*defsite_iter];
+	DUDsite_t DUDuse_site = DUDsite_makeUse(op_idx, opnd);
+	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
+	  if (BS_MemberP(BS_RCHin_tmp, *DEFsite_iter)) {
+	    DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
 	    // Create the use-def links.
-	    if (opnd < OP_MAX_FIXED_OPNDS) {
-	      DUDinfo_table[op_idx].use_def[opnd].push_back(ud_link);
-	    }
+	    if (opnd < OP_MAX_FIXED_OPNDS)
+	      TNuse_Push_DUDsite(op_idx, opnd, DUDdef_site);
 	    // Create the def-use links
-	    if ((ud_link > 0) && (DUDsite_opnd(ud_link) < OP_MAX_FIXED_RESULTS)) {
-	      DUDinfo_table[DUDsite_opid(ud_link)].def_use[DUDsite_opnd(ud_link)].push_back(DUDsite_makeUse(op_idx, opnd));
-	    }
+	    if ((DUDsite_opid(DUDdef_site) > 0) && (DUDsite_opnd(DUDdef_site) < OP_MAX_FIXED_RESULTS))
+	      TNdef_Push_DUDsite(DUDsite_opid(DUDdef_site), DUDsite_opnd(DUDdef_site), DUDuse_site);
 	  }
 	}
       }
@@ -379,25 +386,30 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	DUD_tn = OP_result(op, res);
 	if (!TN_is_DUDreg(DUD_tn)) continue;
 
-	DUDsite_t thisSite = DUDsite_makeDef(op_idx, res);
-	DEFsite_list_t *DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
-	defsite_idx = 0;
-	DEFsite_list_t::iterator defsite_iter;
-	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, defsite_iter) {
-	  if (DEF_DUD_site[*defsite_iter] == thisSite)
-	    defsite_idx = *defsite_iter;
-	  BS_Difference1D(BS_RCHin_tmp, *defsite_iter);
+	DUDsite_t DUDdef_site = DUDsite_makeDef(op_idx, res);
+	DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
+
+	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
+	  if (DEF_DUD_site[*DEFsite_iter] == DUDdef_site)
+	    // This def is reaching from now on
+	    BS_Union1D(BS_RCHin_tmp, *DEFsite_iter, NULL);
+	  else
+	    // This def kills reaching defs from other sites
+	    BS_Difference1D(BS_RCHin_tmp, *DEFsite_iter);
 	}
-	BS_Union1D(BS_RCHin_tmp, defsite_idx, NULL);
       }
     }
+    if (!BS_EqualP(BS_RCHin_tmp, BS_RCHout[topo_idx]))
+      Is_True(BS_EqualP(BS_RCHin_tmp, BS_RCHout[topo_idx]), ("DUD_REGION::Init Internal error on BS_RCHin/BS_RCHout"));
   }
 
-  // Then, look for defs used outside the region
+  // Finally, DUD_tn that are live-out of the region creates
+  // additional def-use links to virtual uses.
   INT exit_idx;
   for (exit_idx = 0; exit_idx < bb_region->exits.size(); exit_idx++) {
     BB *exit = bb_region->exits[exit_idx];
-    // Compute the RCHin for the basic block, but keeping the live-out TNs
+
+    // Compute the RCHin on the exit blocks
     BBLIST *preds;
     BS_ClearD(BS_RCHin_tmp);
     FOR_ALL_BB_PREDS(exit, preds) {
@@ -405,21 +417,22 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
       if (!BB_SET_MemberP(BB_REGION_set, pred)) continue;
       BS_UnionD(BS_RCHin_tmp, BS_RCHout[BB_MAP32_Get(BB_REGION_topo_map, pred)-1], NULL);
     }
+
+    DUDsite_t DUDuse_site;
+    DUDuse_site = DUDsite_makeUse(Get_DUD_size()+exit_idx, 0); // Virtual use site on exit
+
     // Now, complete the def-use sites for those reaching defs that
     // are live-in on exit.
     FOR_ALL_GTN_SET_members(BB_live_in(exit), DUD_tn) {
       if (!TN_is_DUDreg(DUD_tn)) continue;
-      DEFsite_list_t *DEFsite_list;
       DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
       if (DEFsite_list == NULL) continue;
 
-      DEFsite_list_t::iterator defsite_iter;
-      FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, defsite_iter) {
-	if (BS_MemberP(BS_RCHin_tmp, *defsite_iter)) {
-	  DUDsite_t DUDsite = DEF_DUD_site[*defsite_iter];
-	  if ((DUDsite_opnd(DUDsite) < OP_MAX_FIXED_RESULTS)) {
-	    DUDinfo_table[DUDsite_opid(DUDsite)].def_use[DUDsite_opnd(DUDsite)].push_back(DUDsite_makeUse(DUD_size()+exit_idx, 0));
-	  }
+      FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
+	if (BS_MemberP(BS_RCHin_tmp, *DEFsite_iter)) {
+	  DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
+	  if ((DUDsite_opid(DUDdef_site) > 0) && (DUDsite_opnd(DUDdef_site) < OP_MAX_FIXED_RESULTS))
+	    TNdef_Push_DUDsite(DUDsite_opid(DUDdef_site), DUDsite_opnd(DUDdef_site), DUDuse_site);
 	}
       }
     }
@@ -434,9 +447,9 @@ void DUD_REGION::Trace_DUD() {
 
   fprintf(TFile, "\n%s %s\n%s", DBar,"                     Trace DUD", DBar);
 
-  for (op_idx = 1; op_idx < DUD_size(); op_idx++) {
+  for (op_idx = 1; op_idx < Get_DUD_size(); op_idx++) {
     fprintf(TFile, "[%3d]", op_idx);
-    OP *op = DUDinfo_table[op_idx].op;
+    OP *op = Get_DUD_op(op_idx);
     Print_OP_No_SrcLine(op);
     for (INT opnd = 0; opnd < OP_opnds(op); opnd ++) {
       if (!TN_is_DUDreg(OP_opnd(op, opnd))) continue;

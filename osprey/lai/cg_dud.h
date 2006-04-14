@@ -31,15 +31,16 @@
 //  Description:
 //  ============
 
-//  This module consists of Loop Induction Variables analysis and
-//  optimization
+//  This module buils the def-use and use-def links on a single-entry
+//  BB_REGION
 //
 // 
 //  Exported Functions:
 //  ===================
 //
-//  void Perform_Induction_Variables_Optimizations();
-//    Performs Loop Induction Variables optmization on all loops
+//  DUD_REGION *Build_DUD_info(BB_REGION *, MEM_POOL *);
+//    Build a DUD_REGION that represents def-use and use-def between
+//    TNs in operation in a BB_REGION
 //
 // LOOP_IVS::LOOP_IVS(MEM_POOL *mem_pool)
 //    Constructor for a new LOOP_IVS instance
@@ -80,27 +81,38 @@
 #ifndef CG_DUD_INCLUDED
 #define CG_DUD_INCLUDED
 
-#define IDX_WIDTH 3
-#define IDX_MASK ((1<<IDX_WIDTH)-1)
-
-typedef unsigned int DUDsite_t;
-static inline DUDsite_t DUDsite_makeDef(UINT op_idx, UINT res_idx) {
-  Is_True(res_idx <= IDX_MASK, ("DUDsite_makeDef: Internal Error"));
-  return ((op_idx << IDX_WIDTH)|res_idx);
-}
-static inline DUDsite_t DUDsite_makeUse(UINT op_idx, UINT opnd_idx) {
-  Is_True(opnd_idx <= IDX_MASK, ("DUDsite_make: Internal Error"));
-  return ((op_idx << IDX_WIDTH)|opnd_idx);
-}
-static inline UINT DUDsite_opid(DUDsite_t dudlink) { return (dudlink >> IDX_WIDTH); }
-static inline UINT DUDsite_opnd(DUDsite_t dudlink) { return (dudlink & IDX_MASK); }
-
-typedef std::list<DUDsite_t> DUDsite_list;
-
 class DUD_REGION {
   // For each operation, define a struct that olds def-use and use-def
   // links.
-  public:
+  private:
+
+  /* ******************** *
+   *      DUDsite         *
+   * ******************** */
+
+  static const int IDX_WIDTH = 3;
+  static const int IDX_MASK = ((1<<IDX_WIDTH)-1);
+
+  typedef unsigned int DUDsite_t;
+  typedef std::list<DUDsite_t> DUDsite_list;
+
+  DUDsite_t DUDsite_makeDef(UINT op_idx, UINT res_idx) {
+    Is_True(res_idx <= IDX_MASK, ("DUDsite_makeDef: Internal Error"));
+    return ((op_idx << IDX_WIDTH)|res_idx);
+  }
+
+  DUDsite_t DUDsite_makeUse(UINT op_idx, UINT opnd_idx) {
+    Is_True(opnd_idx <= IDX_MASK, ("DUDsite_make: Internal Error"));
+    return ((op_idx << IDX_WIDTH)|opnd_idx);
+  }
+
+  UINT DUDsite_opid(DUDsite_t dudlink) { return (dudlink >> IDX_WIDTH); };
+  UINT DUDsite_opnd(DUDsite_t dudlink) { return (dudlink & IDX_MASK); };
+
+
+  /* ******************** *
+   *      DUDinfo         *
+   * ******************** */
 
   typedef struct DUDinfo {
     OP *op;
@@ -118,7 +130,26 @@ class DUD_REGION {
   INT DUDinfo_size;
   DUDinfo_t *DUDinfo_table;
 
-  INT DUD_opidx(DUDinfo_t *dud_item) { return dud_item-DUDinfo_table; };
+  MEM_POOL *dud_pool() { return _loc_mem_pool; };
+
+  void Set_DUD_size(INT size) { DUDinfo_size = size; };
+  INT Get_DUD_size() { return DUDinfo_size; };
+
+  void Set_DUD_op(INT opid, OP *op) { DUDinfo_table[opid].op = op; };
+  OP *Get_DUD_op(INT opid) { return DUDinfo_table[opid].op; };
+
+  void Set_DUD_opid(OP *op, INT opid) { OP_MAP32_Set(DUD_opid_map, op, opid); };
+  INT Get_DUD_opid(OP *op) { return OP_MAP32_Get(DUD_opid_map, op); };
+
+  void TNuse_Push_DUDsite(INT opid, INT opnd, DUDsite_t site) {
+    DUDinfo_table[opid].use_def[opnd].push_back(site);
+  }
+
+  void TNdef_Push_DUDsite(INT opid, INT res, DUDsite_t site) {
+    DUDinfo_table[opid].def_use[res].push_back(site);
+  }
+
+  public:
 
   DUD_REGION(MEM_POOL *mem_pool)
     : _loc_mem_pool(mem_pool) ,
@@ -126,20 +157,26 @@ class DUD_REGION {
       DUDinfo_size ( 0) {
     Is_True((OP_MAX_FIXED_RESULTS <= (1<<IDX_WIDTH)) &&
 	    (OP_MAX_FIXED_OPNDS <= (1<<IDX_WIDTH)), ("Internal Error in DUD_REGION"));
+    DUD_opid_map = OP_MAP32_Create();
   };
 
+  ~DUD_REGION() {
+    OP_MAP_Delete(DUD_opid_map);
+  }
+
   BOOL Init( BB_REGION *bb_region, MEM_POOL *region_pool );
-  void Trace_DUD();
 
-  MEM_POOL *dud_pool() { return _loc_mem_pool; };
+  BOOL DUD_check_size(INT op_count) {
+    return (op_count < (UINT_MAX >> IDX_WIDTH));
+  }
 
-  INT DUD_size() { return DUDinfo_size; };
-  void Set_DUD_size(INT size) { DUDinfo_size = size; };
-  void Set_DUD_opid(OP *op, INT ID) { OP_MAP32_Set(DUD_opid_map, op, ID); };
-  INT DUD_opid(OP *op) { return OP_MAP32_Get(DUD_opid_map, op); };
+  void DUD_Allocate(INT op_count, MEM_POOL *pool) {
+    Set_DUD_size(op_count);
+    DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, Get_DUD_size(), pool );
+  }
+
+  void Trace_DUD();  
 };
-
-BOOL TN_is_DUDreg(TN *tn);
 
 DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool);
 
