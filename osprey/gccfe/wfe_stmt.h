@@ -81,12 +81,22 @@ extern void Wfe_Expand_Asm_Operands (tree, tree, tree, tree,
 
 extern LABEL_IDX WFE_Get_LABEL (tree label, int def);
 
+#ifdef TARG_ST
+  // [CL] support lexical blocks
+struct lexical_block_info_t* Push_Lexical_Block();
+struct lexical_block_info_t* Pop_Lexical_Block();
+void Set_Current_Scope_DST(tree x);
+void Start_Lexical_Block(struct lexical_block_info_t*);
+void End_Lexical_Block(struct lexical_block_info_t*);
+#endif
+
 #ifdef __cplusplus
 
 #ifdef TARG_ST
 extern LABEL_IDX lookup_cleanups(INITV_IDX&);
 extern void Push_Scope_Cleanup (tree t);
 extern void Pop_Scope_And_Do_Cleanups ();
+
 #endif
 
 }

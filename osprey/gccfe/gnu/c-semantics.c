@@ -145,11 +145,19 @@ add_scope_stmt (begin_p, partial_p)
     {
       top = tree_cons (ss, NULL_TREE, top);
       *stack_ptr = top;
+#ifdef TARG_ST
+      // [CL] support for lexical blocks
+      ss->common.scope = Push_Lexical_Block();
+#endif
     }
   else
     {
       TREE_VALUE (top) = ss;
       *stack_ptr = TREE_CHAIN (top);
+#ifdef TARG_ST
+      // [CL] support for lexical blocks
+      ss->common.scope = Pop_Lexical_Block();
+#endif
     }
 
   /* Add the new statement to the statement-tree.  */
@@ -866,10 +874,20 @@ expand_stmt (t)
 	  genrtl_scope_stmt (t);
 #ifdef TARG_ST
 	  /* (cbr) support cleanup */
-	  if (SCOPE_BEGIN_P(t)) 
+	  if (SCOPE_BEGIN_P(t)) {
 	    Push_Scope_Cleanup (t);
-	  else
+	    // [CL] support for lexical blocks
+	    if (!SCOPE_NULLIFIED_P(t)) {
+	      Start_Lexical_Block(t->common.scope);
+	    }
+	  }
+	  else {
 	    Pop_Scope_And_Do_Cleanups ();
+	    // [CL] support for lexical blocks
+	    if (!SCOPE_NULLIFIED_P(t)) {
+	      End_Lexical_Block(t->common.scope);
+	    }
+	  }
 #endif
 	  break;
 

@@ -177,6 +177,31 @@ cp_to_dst_from_tree(
 	dest->byte_idx = src->offset;
 }
 
+#ifdef TARG_ST
+// [CL] support lexical blocks
+struct mongoose_gcc_DST_IDX DST_Create_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
+{
+  DST_INFO_IDX dst;
+  struct mongoose_gcc_DST_IDX g_dst;
+
+  dst = DST_mk_lexical_block(NULL,
+  			     (void*)lexical_block->lexical_block_start_idx,
+			     (void*)lexical_block->lexical_block_end_idx,
+			     DST_INVALID_IDX);
+  cp_to_tree_from_dst(&g_dst, &dst);
+
+  return g_dst;
+}
+
+void DST_Link_Lexical_Block(LEXICAL_BLOCK_INFO* parent, LEXICAL_BLOCK_INFO* child)
+{
+  DST_INFO_IDX dst, prev_dst;
+  cp_to_dst_from_tree(&dst, &child->dst);
+  cp_to_dst_from_tree(&prev_dst, &parent->dst);
+  DST_append_child(prev_dst, dst);
+}
+#endif
+
 // Use DECL_CONTEXT or TYPE_CONTEXT to get
 // the  index of the current applicable scope
 // for the thing indicated.
@@ -1693,8 +1718,21 @@ DST_Create_var(ST *var_st, tree decl)
     // producer routines thinks we will set pc to fe ptr initially
     //DST_RESET_assoc_fe (DST_INFO_flag(DST_INFO_IDX_TO_PTR(dst)));
 
+#ifdef TARG_ST
+    // [CL] support lexical blocks
+    DST_INFO_IDX current_scope_idx;
+
+    if (decl->common.scope) {
+      // local var
+      cp_to_dst_from_tree(&current_scope_idx, &decl->common.scope->dst);
+    } else {
+      // global var
+      current_scope_idx = comp_unit_idx;
+    }
+#else
     DST_INFO_IDX current_scope_idx =
          DST_get_context(DECL_CONTEXT(decl));
+#endif
 
     DST_append_child (current_scope_idx, dst);
     return dst;

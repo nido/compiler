@@ -933,6 +933,26 @@ Clear_LABEL_addr_passed (const LABEL_IDX lbi)
 	Clear_LABEL_addr_passed(Label_Table[lbi]);
 }
 
+#ifdef TARG_ST
+// [CL] this information is only valid after code emission, used for
+// debug info generation
+inline BOOL
+LABEL_emitted (const LABEL_IDX lbi)
+{
+	return (LABEL_emitted(Label_Table[lbi]));
+}
+inline void
+Set_LABEL_emitted (const LABEL_IDX lbi)
+{
+	Set_LABEL_emitted(Label_Table[lbi]);
+}
+inline void
+Clear_LABEL_emitted (const LABEL_IDX lbi)
+{
+	Clear_LABEL_emitted(Label_Table[lbi]);
+}
+#endif
+
 // PREG
 /*
 inline void

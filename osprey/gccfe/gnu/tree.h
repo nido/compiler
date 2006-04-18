@@ -165,6 +165,10 @@ struct tree_common GTY(())
   unsigned lang_flag_5 : 1;
   unsigned lang_flag_6 : 1;
   unsigned unused_1 : 1;
+
+#ifdef TARG_ST // [CL] support for lexical blocks
+  struct lexical_block_info_t *scope;
+#endif
 };
 
 /* The following table lists the uses of each of the above flags and

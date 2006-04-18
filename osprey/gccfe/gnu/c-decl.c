@@ -2040,6 +2040,11 @@ pushdecl (x)
   TREE_CHAIN (x) = b->names;
   b->names = x;
 
+#ifdef TARG_ST // [CL] support lexical blocks
+  extern void Set_Current_Scope_DST(tree);
+  Set_Current_Scope_DST(x);
+#endif
+
   return x;
 }
 

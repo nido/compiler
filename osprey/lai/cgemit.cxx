@@ -1651,6 +1651,10 @@ Write_Label (
     fprintf (Output_File, "\n");
     scn_ofst += address_size;
   }
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(lab);
+#endif
   return scn_ofst;
 }
 
@@ -1729,6 +1733,10 @@ Write_Symdiff (
     }
     scn_ofst += size;
   }
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(lab1);
+#endif
   return scn_ofst;
 }
 
@@ -1802,6 +1810,11 @@ Write_Labdiff (
     }
     scn_ofst += size;
   }
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(lab1);
+  Set_LABEL_emitted(lab2);
+#endif
   return scn_ofst;
 }
 #endif
@@ -2081,12 +2094,20 @@ Write_INITO (
             {
                 action_table_started = true;
                 fprintf ( Asm_File, "%s:\n", LABEL_name(labels[0]));
+#ifdef TARG_ST
+		// [CL]
+		Set_LABEL_emitted(labels[0]);
+#endif
             }
 	    if (range_table && !type_label_emitted && 
 	    	INITV_flags(Initv_Table[inv]) == INITVFLAGS_EH_SPEC)
 	    {
 	    	type_label_emitted = true;
             	fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+#ifdef TARG_ST
+		// [CL]
+		Set_LABEL_emitted(labels[1]);
+#endif
 	    }
             scn_ofst = Write_INITV (inv, scn_idx, scn_ofst, range_table,
 	    		range_table ? INITV_flags (Initv_Table[inv]) : 0);
@@ -2101,6 +2122,10 @@ Write_INITO (
 	    	{
 	    	    type_label_emitted = true;
             	    fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+#ifdef TARG_ST
+		    // [CL]
+		    Set_LABEL_emitted(labels[1]);
+#endif
 	    	}
 	    }
 #else
@@ -2108,8 +2133,13 @@ Write_INITO (
 #endif // KEY
     }
 #ifdef KEY
-        if (range_table && !type_label_emitted)
+    if (range_table && !type_label_emitted) {
             fprintf ( Asm_File, "%s:\n", LABEL_name(labels[1]));
+#ifdef TARG_ST
+	    // [CL]
+	    Set_LABEL_emitted(labels[1]);
+#endif
+    }
 #endif // KEY
   }
 
@@ -2138,6 +2168,11 @@ Write_Diff (
       fprintf(Asm_File, "%s", LABEL_name(lab2));
       fprintf (Asm_File, "\n");
 
+#ifdef TARG_ST
+      // [CL]
+      Set_LABEL_emitted(lab1);
+      Set_LABEL_emitted(lab2);
+#endif
       return scn_ofst+4;
 }
 
@@ -2201,6 +2236,10 @@ Generate_Exception_Table_Header (INT scn_idx, Elf64_Xword scn_ofst, LABEL_IDX *l
     */
     scn_ofst = Write_Diff (ttype_base, ttype_disp, scn_idx, scn_ofst);
     fprintf ( Asm_File, "%s:\n", LABEL_name(ttype_disp));
+#ifdef TARG_ST
+    // [CL]
+    Set_LABEL_emitted(ttype_disp);
+#endif
 
     // Generate call site format
     TCON csf = Host_To_Targ (MTYPE_I1, 1);
@@ -2224,6 +2263,10 @@ Generate_Exception_Table_Header (INT scn_idx, Elf64_Xword scn_ofst, LABEL_IDX *l
     labels[1] = ttype_base;
 
     fprintf ( Asm_File, "%s:\n", LABEL_name(csb));
+#ifdef TARG_ST
+    // [CL]
+    Set_LABEL_emitted(csb);
+#endif
     return scn_ofst;
 }
 #endif // KEY
@@ -3227,6 +3270,10 @@ cache_last_label_info(LABEL_IDX      label_idx,
   prev_pu_end_offset_from_last_label = end_offset;
   prev_pu_last_label_name = LABEL_name(label_idx);
   prev_pu_last_offset = Get_Label_Offset(label_idx);
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(label_idx);
+#endif
 }
 
 static void
@@ -3312,6 +3359,10 @@ void New_Debug_Line_Set_Label(INT code_address)
 #else
     fprintf (Output_File, "%s:\t%s\n", 
 	     LABEL_name(Last_Label), ASM_CMNT);
+#endif
+#ifdef TARG_ST
+    // [CL]
+    Set_LABEL_emitted(Last_Label);
 #endif
   }
 
@@ -3534,6 +3585,10 @@ put_TN_comment (
   else if (TN_is_label(t) && val != 0) {
     *comment = vstr_concat (*comment, LABEL_name(TN_label(t)));
     vstr_sprintf (comment, vstr_len(*comment), "%+lld", val); 
+#ifdef TARG_ST
+    // [CL]
+    Set_LABEL_emitted(TN_label(t));
+#endif
   }
 }
 
@@ -3701,10 +3756,18 @@ r_apply_l_const (
       // when have multiple instruction slots.
       // Instead just do label+offset.
       *buf = vstr_concat (*buf, LABEL_name(TN_label(t)));
+#ifdef TARG_ST
+      // [CL]
+      Set_LABEL_emitted(TN_label(t));
+#endif
       vstr_sprintf (buf, vstr_len(*buf), "%+lld", val); 
     }
     else {
       *buf = vstr_concat(*buf, LABEL_name(TN_label(t)));
+#ifdef TARG_ST
+      // [CL]
+      Set_LABEL_emitted(TN_label(t));
+#endif
       if (isdigit(LABEL_name(TN_label(t))[0])) {
       	*buf = vstr_concat(*buf, 
                 (PC > Get_Label_Offset(TN_label(t))) ? "b" : "f");
@@ -3714,6 +3777,10 @@ r_apply_l_const (
   }
   else if (TN_is_tag(t)) {
     *buf = vstr_concat(*buf, LABEL_name(TN_label(t)));
+#ifdef TARG_ST
+    // [CL]
+    Set_LABEL_emitted(TN_label(t));
+#endif
     print_TN_offset = FALSE;
   }
   else if (TN_is_enum(t)) {
@@ -3999,6 +4066,10 @@ r_assemble_list (
   if (OP_has_tag(op)) {
 #endif
 	fprintf(Asm_File, "%s:\n", LABEL_name(Get_OP_Tag(op)));
+#ifdef TARG_ST
+	// [CL]
+	Set_LABEL_emitted(Get_OP_Tag(op));
+#endif
   }
 #endif
 
@@ -4876,6 +4947,10 @@ Assemble_Bundles(BB *bb)
       if (OP_has_tag(op)) {
 #endif
 	fprintf(Asm_File, "\n%s:\n", LABEL_name(Get_OP_Tag(op)));
+#ifdef TARG_ST
+	// [CL]
+	Set_LABEL_emitted(Get_OP_Tag(op));
+#endif
       }
 #endif
 
@@ -5297,6 +5372,10 @@ EMT_ProfileInfo_BB (
   /* Dump profile info */
   fprintf(file, "\t%s\t%s, 0x%x\n", AS_WORD,
 	  label_name, PU_BB_current_idx_for_profile);
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(lab);
+#endif
   
   fprintf(file, "\t%s\t0x%x, 0x%x, 0x%x, 0x%x\n", AS_BYTE,
 	  buf[0], buf[1], buf[2], buf[3]);
@@ -5481,6 +5560,10 @@ EMT_Assemble_BB (
 #else
       fprintf (Output_File, "%s:\t%s 0x%llx\n", 
 		   LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
+#endif
+#ifdef TARG_ST
+      // [CL]
+      Set_LABEL_emitted(lab);
 #endif
     }
 #ifndef TARG_IA64

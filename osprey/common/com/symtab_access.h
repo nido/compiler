@@ -1465,6 +1465,15 @@ Set_LABEL_addr_passed (LABEL& l)	{ l.flags |= LABEL_ADDR_PASSED; }
 inline void
 Clear_LABEL_addr_passed (LABEL& l)	{ l.flags &= ~LABEL_ADDR_PASSED; }
 
+#ifdef TARG_ST
+// [CL]
+inline BOOL
+LABEL_emitted (const LABEL& l)	{ return l.flags & LABEL_EMITTED;}
+inline void
+Set_LABEL_emitted (LABEL& l)		{ l.flags |= LABEL_EMITTED; }
+inline void
+Clear_LABEL_emitted (LABEL& l)	{ l.flags &= ~LABEL_EMITTED; }
+#endif
 
 //----------------------------------------------------------------------
 // access functions for PREG

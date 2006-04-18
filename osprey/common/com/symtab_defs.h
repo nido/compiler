@@ -387,6 +387,13 @@ enum LABEL_FLAGS
     LABEL_TARGET_OF_GOTO_OUTER_BLOCK	= 1,
     LABEL_ADDR_SAVED			= 2,
     LABEL_ADDR_PASSED			= 4
+#ifdef TARG_ST
+    // [CL] support for lexical blocks in debug information: we need
+    // to know if the label was actually generated
+    // This information is only valid after code emission, used for
+    // debug info generation
+    ,LABEL_EMITTED                       = 8
+#endif
 };
 
 struct LABEL

@@ -411,6 +411,110 @@ Pop_Scope_And_Do_Cleanups (void)
 
 }       
 
+// [CL] support lexical blocks
+static LEXICAL_BLOCK_INFO **lexical_block_stack;
+static INT32	    	    lexical_block_i=-1;
+static INT32	            lexical_block_max;
+
+LEXICAL_BLOCK_INFO*
+Push_Lexical_Block ()
+{
+  LEXICAL_BLOCK_INFO* lexical_block;
+  extern struct mongoose_gcc_DST_IDX DST_Create_Lexical_Block(LEXICAL_BLOCK_INFO*);
+
+  lexical_block_i++;
+
+  if (lexical_block_i == lexical_block_max) {
+    lexical_block_max = ENLARGE (lexical_block_max);
+    lexical_block_stack =
+      (LEXICAL_BLOCK_INFO **) xrealloc (lexical_block_stack,
+               lexical_block_max * sizeof (LEXICAL_BLOCK_INFO*));
+  }
+
+  lexical_block = (LEXICAL_BLOCK_INFO*) malloc(sizeof(LEXICAL_BLOCK_INFO));
+  lexical_block_stack[lexical_block_i] = lexical_block;
+  lexical_block->level = lexical_block_i;
+
+  // [CL] lexical_block_i == 0 for function scope, which does not need
+  // an additional lexical block (a function is a scope itself)
+  if (lexical_block_i > 0) {
+    New_LABEL (CURRENT_SYMTAB,
+	       lexical_block->lexical_block_start_idx);
+
+    New_LABEL (CURRENT_SYMTAB,
+	       lexical_block->lexical_block_end_idx);
+
+    if(Debug_Level >= 2) {
+      lexical_block->dst = DST_Create_Lexical_Block(lexical_block);
+    }
+
+  } else {
+    if(Debug_Level >= 2) {
+      lexical_block->dst = DECL_DST_IDX(current_function_decl);
+    }
+  }
+
+  return lexical_block;
+}
+
+LEXICAL_BLOCK_INFO*
+Pop_Lexical_Block ()
+{
+  LEXICAL_BLOCK_INFO* lexical_block;
+
+  lexical_block = lexical_block_stack[lexical_block_i];
+  lexical_block_i--;
+
+  return lexical_block;
+}
+
+void Set_Current_Scope_DST(tree x)
+{
+  // [CL] global scope variables get NULL scope here, so as to be
+  // identified as "compilation unit" in the DST generator
+  if (lexical_block_i >= 0) {
+    LEXICAL_BLOCK_INFO* cur_lexical_block = lexical_block_stack [lexical_block_i];
+    x->common.scope = cur_lexical_block;
+  } else {
+    x->common.scope = NULL;
+  }
+}
+
+void Start_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
+{
+  ++lexical_block_i;
+
+  lexical_block_stack[lexical_block_i] = lexical_block;
+
+  // [CL] create a label only for inner scopes
+  if (lexical_block->level > 0) {
+    WFE_Stmt_Append(
+		    WN_CreateLabel(lexical_block->lexical_block_start_idx,
+				   0, NULL),
+		    Get_Srcpos());
+
+    if(Debug_Level >= 2) {
+      extern void DST_Link_Lexical_Block(LEXICAL_BLOCK_INFO*, LEXICAL_BLOCK_INFO*);
+      DST_Link_Lexical_Block(lexical_block_stack [lexical_block_i-1],
+			     lexical_block_stack [lexical_block_i]);
+    }
+  }
+}
+
+void End_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
+{
+  // [CL] create a label only for inner scopes
+  if (lexical_block->level > 0) {
+    WFE_Stmt_Append(
+		    WN_CreateLabel(lexical_block->lexical_block_end_idx,
+				   0, NULL),
+		    Get_Srcpos());
+  }
+  lexical_block_i--;
+
+  // [CL] end of life for this lexical block
+  free(lexical_block);
+}
 #endif
 
 void
@@ -436,6 +540,11 @@ WFE_Stmt_Init (void)
   scope_cleanup_max      = 32;
   scope_cleanup_i  	 = -1;
   scope_cleanup_stack    = (SCOPE_CLEANUP_INFO *) xmalloc (sizeof (SCOPE_CLEANUP_INFO) * scope_cleanup_max);
+
+  // [CL] support for lexical blocks
+  lexical_block_max      = 32;
+  lexical_block_i  	 = -1;
+  lexical_block_stack    = (LEXICAL_BLOCK_INFO **) xmalloc (sizeof (LEXICAL_BLOCK_INFO*) * lexical_block_max);
 #endif
 
 } /* WFE_Stmt_Init */
@@ -483,6 +592,11 @@ WFE_Expand_Start_Else (void)
              ("WFE_Expand_Start_Else: no ifs"));
   if_else_info_stack [if_else_info_i] = TRUE;
   WFE_Stmt_Pop (wfe_stmk_if_then);
+
+#ifdef TARG_ST
+  // [CL]
+  WN_Set_Linenum(WFE_Stmt_Top(), Get_Srcpos());
+#endif
 } /* WFE_Expand_Start_Else */
 
 void
@@ -880,7 +994,7 @@ WFE_Expand_Exit_Something (struct nesting *n,
 #ifdef TARG_ST
       if (scope_cleanup_i != -1) {
         tree t = scope_cleanup_stack [scope_cleanup_i].stmt;
-        if (t && TREE_CODE (t) == CLEANUP_STMT) {
+        if (t && TREE_CODE (t) == (enum tree_code)CLEANUP_STMT) {
           WFE_One_Stmt_Cleanup (CLEANUP_EXPR(t));
         }
       }

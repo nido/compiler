@@ -883,6 +883,28 @@ put_lexical_block(DST_flag flag, DST_LEXICAL_BLOCK *attr, Dwarf_P_Die die)
 {
   put_name (DST_LEXICAL_BLOCK_name(attr), die, pb_none);
 #if 1
+#ifdef TARG_ST
+  LABEL_IDX low = (LABEL_IDX) DST_ASSOC_INFO_fe_ptr(DST_LEXICAL_BLOCK_low_pc(attr));
+  LABEL_IDX high = (LABEL_IDX) DST_ASSOC_INFO_fe_ptr(DST_LEXICAL_BLOCK_high_pc(attr));
+  // [CL] if the lexical block was optimized out (ie labels not
+  // created), don't emit low and high bounds
+  //  if (!LABEL_name_idx(low) || !LABEL_name_idx(high)) {
+  if (!LABEL_emitted(low) || !LABEL_emitted(high)) {
+    return;
+  }
+  put_pc_value_symbolic (DW_AT_low_pc,
+			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+					       low,
+					       cur_text_index),
+			 (Dwarf_Addr) 0,
+			 die);
+  put_pc_value_symbolic (DW_AT_high_pc,
+			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+					       high,
+					       cur_text_index),
+			 (Dwarf_Addr) 0,
+			 die);
+#else
   put_pc_value_symbolic (DW_AT_low_pc,
 			 Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
 					       (LABEL_IDX) DST_ASSOC_INFO_st_index(DST_LEXICAL_BLOCK_low_pc(attr)),
@@ -895,6 +917,7 @@ put_lexical_block(DST_flag flag, DST_LEXICAL_BLOCK *attr, Dwarf_P_Die die)
 					       cur_text_index),
 			 (Dwarf_Addr) 0,
 			 die);
+#endif
 #else
   put_pc_value (DW_AT_low_pc, 
 	get_ofst_from_label_ASSOC_INFO(DST_LEXICAL_BLOCK_low_pc(attr)),
