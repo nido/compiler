@@ -30,45 +30,39 @@
 //
 //  Description:
 //  ============
-
+//
 //  This module buils the def-use and use-def links on a single-entry
 //  BB_REGION
 //
+//  Exported Types:
+//  ==============
+//
+//  typedef std::vector< std::pair<OP *, INT> > dud_link_t;
 // 
 //  Exported Functions:
 //  ===================
 //
-//  DUD_REGION *Build_DUD_info(BB_REGION *, MEM_POOL *);
-//    Build a DUD_REGION that represents def-use and use-def between
-//    TNs in operation in a BB_REGION
+//  DUD_REGION *DUD_REGION::DUD_REGION(MEM_POOL *mem_pool)
+//    Constructor for the DUD_REGION object.
 //
-// LOOP_IVS::LOOP_IVS(MEM_POOL *mem_pool)
-//    Constructor for a new LOOP_IVS instance
+//  DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool);
+//    Computes the Def-Use/Use-Def links between TNs in a BB_REGION.
 //
-//  LOOP_IVS::~LOOP_IVS(void)
-//    Destructor for a LOOP_IVS instance
+//  DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL
+//  *region_pool); Creates a DUD_REGION object, build the
+//  def-use/use-def links in the region, and return a DUD_REGION
+//  object if successful.
 //
-//  void LOOP_IVS::Init( LOOP_DESCR *loop )
-//    Initializes a LOOP_IVS instance for a Single_BB loop
+//  DUD_REGION::Trace_DUD()
+//    Trace the Def-Use/Use-Def links
 //
-//  INT Lookup_Op(OP *op);
-//    Returns an ID for an OP in the LOOP_IVS instance.
+//  INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link);
+//    Returns in dud_link a vector of def-sites for a use
+//    site. Returns the number of elements in dud-link
 //
-//  DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
-//    Returns an ID for an Induction Variable. 
-//
-//  INT OPND_IV_offset(INT op_idx, INT opnd_idx);
-//    Returns the constant value from this use to the value of the IV
-//    at the beginnning of a loop iteration.
-//
-//  INT IV_step(DefID_t iv_cycle);
-//    Get the step of an IV
-//
-//  OP *IV_init(DefID_t iv_cycle);
-//    Get the init operation of an IV
-//
-//  void Trace_IVs_Entries(const char *message);
-//    Dump some traces for an LOOP_IVS instance.
+//  INT DUD_REGION::Get_Def_Use(OP *op, INT opnd, dud_link_t &dud_link);
+//    Returns in dud_link a vector of use sites for a def
+//    site. Returns the number of elements in dud-link
 //
 // =======================================================================
 // ======================================================================= */
@@ -80,6 +74,8 @@
 
 #ifndef CG_DUD_INCLUDED
 #define CG_DUD_INCLUDED
+
+typedef std::vector< std::pair<OP *, INT> > dud_link_t;
 
 class DUD_REGION {
   // For each operation, define a struct that olds def-use and use-def
@@ -103,12 +99,19 @@ class DUD_REGION {
 
   DUDsite_t DUDsite_makeUse(UINT op_idx, UINT opnd_idx) {
     Is_True(opnd_idx <= IDX_MASK, ("DUDsite_make: Internal Error"));
-    return ((op_idx << IDX_WIDTH)|opnd_idx);
+    return ((op_idx << IDX_WIDTH)|(OP_MAX_FIXED_RESULTS+opnd_idx));
   }
 
   UINT DUDsite_opid(DUDsite_t dudlink) { return (dudlink >> IDX_WIDTH); };
-  UINT DUDsite_opnd(DUDsite_t dudlink) { return (dudlink & IDX_MASK); };
-
+  UINT DUDsite_opnd(DUDsite_t dudlink, BOOL *result) { 
+    INT opnd = dudlink & IDX_MASK;
+    *result = TRUE;
+    if (opnd >= OP_MAX_FIXED_RESULTS) {
+      *result = FALSE;
+      opnd -= OP_MAX_FIXED_RESULTS;
+    }
+    return opnd;
+  }
 
   /* ******************** *
    *      DUDinfo         *
@@ -116,8 +119,7 @@ class DUD_REGION {
 
   typedef struct DUDinfo {
     OP *op;
-    DUDsite_list def_use[OP_MAX_FIXED_RESULTS];
-    DUDsite_list use_def[OP_MAX_FIXED_OPNDS];
+    DUDsite_list dud_list[OP_MAX_FIXED_RESULTS+OP_MAX_FIXED_OPNDS];
   } DUDinfo_t;
 
   MEM_POOL *_loc_mem_pool;
@@ -135,6 +137,15 @@ class DUD_REGION {
   void Set_DUD_size(INT size) { DUDinfo_size = size; };
   INT Get_DUD_size() { return DUDinfo_size; };
 
+  BOOL DUD_check_size(INT op_count) {
+    return (op_count < (UINT_MAX >> IDX_WIDTH));
+  }
+
+  void DUD_Allocate(INT op_count, MEM_POOL *pool) {
+    Set_DUD_size(op_count);
+    DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, Get_DUD_size(), pool );
+  }
+
   void Set_DUD_op(INT opid, OP *op) { DUDinfo_table[opid].op = op; };
   OP *Get_DUD_op(INT opid) { return DUDinfo_table[opid].op; };
 
@@ -142,11 +153,11 @@ class DUD_REGION {
   INT Get_DUD_opid(OP *op) { return OP_MAP32_Get(DUD_opid_map, op); };
 
   void TNuse_Push_DUDsite(INT opid, INT opnd, DUDsite_t site) {
-    DUDinfo_table[opid].use_def[opnd].push_back(site);
+    DUDinfo_table[opid].dud_list[opnd+OP_MAX_FIXED_RESULTS].push_back(site);
   }
 
   void TNdef_Push_DUDsite(INT opid, INT res, DUDsite_t site) {
-    DUDinfo_table[opid].def_use[res].push_back(site);
+    DUDinfo_table[opid].dud_list[res].push_back(site);
   }
 
   public:
@@ -155,8 +166,7 @@ class DUD_REGION {
     : _loc_mem_pool(mem_pool) ,
       DUDinfo_table ( NULL),
       DUDinfo_size ( 0) {
-    Is_True((OP_MAX_FIXED_RESULTS <= (1<<IDX_WIDTH)) &&
-	    (OP_MAX_FIXED_OPNDS <= (1<<IDX_WIDTH)), ("Internal Error in DUD_REGION"));
+    Is_True(((OP_MAX_FIXED_RESULTS+OP_MAX_FIXED_OPNDS) <= (1<<IDX_WIDTH)), ("Internal Error in DUD_REGION"));
     DUD_opid_map = OP_MAP32_Create();
   };
 
@@ -166,14 +176,8 @@ class DUD_REGION {
 
   BOOL Init( BB_REGION *bb_region, MEM_POOL *region_pool );
 
-  BOOL DUD_check_size(INT op_count) {
-    return (op_count < (UINT_MAX >> IDX_WIDTH));
-  }
-
-  void DUD_Allocate(INT op_count, MEM_POOL *pool) {
-    Set_DUD_size(op_count);
-    DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, Get_DUD_size(), pool );
-  }
+  INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link);
+  INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &dud_link);
 
   void Trace_DUD();  
 };
