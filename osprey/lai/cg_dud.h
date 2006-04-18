@@ -134,23 +134,20 @@ class DUD_REGION {
 
   MEM_POOL *dud_pool() { return _loc_mem_pool; };
 
-  void Set_DUD_size(INT size) { DUDinfo_size = size; };
-  INT Get_DUD_size() { return DUDinfo_size; };
+  void Set_size(INT size) { DUDinfo_size = size; };
 
   BOOL DUD_check_size(INT op_count) {
     return (op_count < (UINT_MAX >> IDX_WIDTH));
   }
 
   void DUD_Allocate(INT op_count, MEM_POOL *pool) {
-    Set_DUD_size(op_count);
-    DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, Get_DUD_size(), pool );
+    Set_size(op_count);
+    DUDinfo_table = (DUDinfo_t *) CXX_NEW_ARRAY( DUDinfo_t, Get_size(), pool );
   }
 
-  void Set_DUD_op(INT opid, OP *op) { DUDinfo_table[opid].op = op; };
-  OP *Get_DUD_op(INT opid) { return DUDinfo_table[opid].op; };
+  void Set_op(INT opid, OP *op) { DUDinfo_table[opid].op = op; };
 
-  void Set_DUD_opid(OP *op, INT opid) { OP_MAP32_Set(DUD_opid_map, op, opid); };
-  INT Get_DUD_opid(OP *op) { return OP_MAP32_Get(DUD_opid_map, op); };
+  void Set_opid(OP *op, INT opid) { OP_MAP32_Set(DUD_opid_map, op, opid); };
 
   void TNuse_Push_DUDsite(INT opid, INT opnd, DUDsite_t site) {
     DUDinfo_table[opid].dud_list[opnd+OP_MAX_FIXED_RESULTS].push_back(site);
@@ -176,13 +173,18 @@ class DUD_REGION {
 
   BOOL Init( BB_REGION *bb_region, MEM_POOL *region_pool );
 
-  INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link);
-  INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &dud_link);
+  INT Get_size() { return DUDinfo_size; };
+  OP *Get_op(INT opid) { return DUDinfo_table[opid].op; };
+  INT Get_opid(OP *op) { return OP_MAP32_Get(DUD_opid_map, op); };
+
+  INT Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link);
+  INT Get_Def_Use(OP *op, INT res, dud_link_t &dud_link);
 
   void Trace_DUD();  
 };
 
 DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool);
+void Perform_AutoMode_Opt(DUD_REGION *dud);
 
 #endif /* CG_DUD_INCLUDED */
 

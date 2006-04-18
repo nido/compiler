@@ -209,7 +209,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
     FOR_ALL_BB_OPs_FWD( bb, op ) {
       op_idx = DUD_op_count ++;
-      Set_DUD_opid(op, op_idx);
+      Set_opid(op, op_idx);
 
       for ( INT res = 0; res < OP_results( op ); res++ ) {
 	DUD_tn = OP_result(op, res);
@@ -269,7 +269,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     BS_RCHout[topo_idx] = BS_Create_Empty(DEFsite_count, dud_pool());
 
     FOR_ALL_BB_OPs_FWD( bb, op ) {
-      op_idx = Get_DUD_opid(op);
+      op_idx = Get_opid(op);
 
       for ( INT res = 0; res < OP_results( op ); res++ ) {
 	DUD_tn = OP_result(op, res);
@@ -354,8 +354,8 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     BS_CopyD(BS_RCHin_tmp, BS_RCHin[topo_idx], NULL);
 
     FOR_ALL_BB_OPs_FWD( bb, op ) {
-      op_idx = Get_DUD_opid(op);
-      Set_DUD_op(op_idx, op);
+      op_idx = Get_opid(op);
+      Set_op(op_idx, op);
 
       for (INT opnd = 0; opnd < OP_opnds(op); opnd ++) {
 	DUD_tn = OP_opnd(op, opnd);
@@ -419,7 +419,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
     DUDsite_t DUDuse_site;
     // Each exit-block is associated with a different use-site
-    DUDuse_site = DUDsite_makeUse(Get_DUD_size()+exit_idx, 0);
+    DUDuse_site = DUDsite_makeUse(Get_size()+exit_idx, 0);
 
     // Now, complete the def-use sites for those reaching defs that
     // are live-out of the region.
@@ -451,7 +451,7 @@ make_pair(OP* op, INT opnd)
 INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link) {
   dud_link.clear();
 
-  INT op_idx = Get_DUD_opid(op);
+  INT op_idx = Get_opid(op);
   if (op_idx == 0)
     return -1;
 
@@ -461,8 +461,8 @@ INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link) {
     BOOL is_result;
     INT opidx_use = DUDsite_opid(*iter);
     OP *op_use = NULL;
-    if ((opidx_use > 0) && (opidx_use < Get_DUD_size()))
-      op_use = Get_DUD_op(opidx_use);
+    if ((opidx_use > 0) && (opidx_use < Get_size()))
+      op_use = Get_op(opidx_use);
     dud_link.push_back(std::make_pair(op_use, DUDsite_opnd(*iter, &is_result)));
     Is_True(is_result, ("DUD_REGION: Use_Use links not implemented.\n"));
   }
@@ -472,7 +472,7 @@ INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link) {
 INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &dud_link) {
   dud_link.clear();
 
-  INT op_idx = Get_DUD_opid(op);
+  INT op_idx = Get_opid(op);
   if (op_idx == 0)
     return -1;
 
@@ -482,8 +482,8 @@ INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &dud_link) {
     BOOL is_result;
     INT opidx_def = DUDsite_opid(*iter);
     OP *op_def = NULL;
-    if ((opidx_def > 0) && (opidx_def < Get_DUD_size()))
-      op_def = Get_DUD_op(opidx_def);
+    if ((opidx_def > 0) && (opidx_def < Get_size()))
+      op_def = Get_op(opidx_def);
     dud_link.push_back(std::make_pair(op_def, DUDsite_opnd(*iter, &is_result)));
     Is_True(!is_result, ("DUD_REGION: Def_Def links not implemented.\n"));
   }
@@ -497,9 +497,9 @@ void DUD_REGION::Trace_DUD() {
 
   fprintf(TFile, "\n%s %s\n%s", DBar,"                     Trace DUD", DBar);
 
-  for (op_idx = 1; op_idx < Get_DUD_size(); op_idx++) {
+  for (op_idx = 1; op_idx < Get_size(); op_idx++) {
     fprintf(TFile, "[%3d]", op_idx);
-    OP *op = Get_DUD_op(op_idx);
+    OP *op = Get_op(op_idx);
     Print_OP_No_SrcLine(op);
     for (INT opnd = 0; opnd < OP_opnds(op); opnd ++) {
       if (!TN_is_DUDreg(OP_opnd(op, opnd))) continue;
@@ -558,5 +558,102 @@ DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
   return dudRegion;
 
+}
+
+static BOOL
+check_Incrop(OP *defop) {
+
+  if (defop == NULL) return FALSE;
+
+  if (!OP_iadd(defop) && !OP_isub(defop)) return FALSE;
+
+  // One arg must be a register, the other a constant
+  INT op1_idx = TOP_Find_Operand_Use(OP_code(defop),OU_opnd1);
+  INT op2_idx = TOP_Find_Operand_Use(OP_code(defop),OU_opnd2);
+
+  INT useopnd;
+  if (OP_iadd(defop)) {
+    if (TN_is_constant(OP_opnd(defop, op2_idx)))
+      useopnd = op1_idx;
+    else if (TN_is_constant(OP_opnd(defop, op1_idx)))
+      useopnd = op2_idx;
+    else return FALSE;
+  }
+  else {
+    useopnd = op1_idx;
+    if (!TN_is_constant(OP_opnd(defop, op2_idx))) return FALSE;
+  }
+
+  if (!TN_is_register(OP_opnd(defop, useopnd))) return FALSE;
+
+}
+
+void Memop_to_Incrop(DUD_REGION *dud, OP* op) {
+
+  // Look for Base TN
+  INT base_idx = OP_find_opnd_use(op, OU_base);
+  INT offset_idx = OP_find_opnd_use(op, OU_offset);
+
+  if (base_idx < 0 || offset_idx < 0) return;
+
+  TN *tn_base = OP_opnd(op, base_idx);
+  TN *tn_offset = OP_opnd(op, offset_idx);
+
+  // Only support for constant offset.
+  if (!TN_is_constant(tn_offset)) return;    
+
+  // Look for use-def link. If unique and a ADD/SUB, this is a candidate
+
+  dud_link_t ud_link, du_link;
+
+  if (dud->Get_Use_Def(op, base_idx, ud_link) > 2) return;
+  if (ud_link.size() == 0) return;
+  if (ud_link.size() == 2) {
+    // Check that first def is outside the region
+    if (ud_link[0].first != NULL) return;
+    Is_True(dud->Get_opid(ud_link[1].first) > dud->Get_opid(op), ("DefOP was expected to appear after memop"));
+  }
+  OP *defop = ud_link[ud_link.size()-1].first;
+  INT defidx = ud_link[ud_link.size()-1].second;
+
+  if (!check_Incrop(defop)) return;
+
+  fprintf(TFile, "[%3d]", dud->Get_opid(op));
+  Print_OP_No_SrcLine(op);
+  if (ud_link.size() == 1) {
+    fprintf(TFile, "\t[%3d]", dud->Get_opid(defop));
+    Print_OP_No_SrcLine(defop);
+  }
+
+  dud->Get_Def_Use(defop, defidx, du_link);
+
+  INT i;
+  for (i = 0; i < du_link.size(); i++) {
+    OP *useop = du_link[i].first;
+    if (check_Incrop(useop)) {
+      fprintf(TFile, "\t[%3d]", dud->Get_opid(useop));
+      Print_OP_No_SrcLine(useop);
+    }
+  }
+
+  fprintf(TFile, "\n");
+
+  // TBD: Filter with dominance relation, 
+
+  return;
+}
+
+void Perform_AutoMode_Opt(DUD_REGION *dud) {
+
+  fprintf(TFile, "******************** AutoMod ********************\n");
+
+  INT opid;
+
+  for (opid = 1; opid < dud->Get_size(); opid ++) {
+    OP *op = dud->Get_op(opid);
+    Memop_to_Incrop(dud, op);
+  }
+
+  fprintf(TFile, "*************************************************\n");
 }
 #endif
