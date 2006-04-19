@@ -31,7 +31,7 @@
 //  Description:
 //  ============
 //
-//  This module buils the def-use and use-def links on a single-entry
+//  This module builds the def-use and use-def links on a single-entry
 //  BB_REGION
 //
 //  Exported Classes:
@@ -39,7 +39,7 @@
 //
 //  DUD_REGION
 //    Implements the def-use and use-def on a
-//    single-entry/multiple-exit region. The loop can contain
+//    single-entry/multiple-exit region. The region can contain
 //    control-flow and loops.
 //
 //  DUD_LIST
@@ -55,10 +55,9 @@
 //  DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool);
 //    Computes the Def-Use/Use-Def links between TNs in a BB_REGION.
 //
-//  DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL
-//  *region_pool); Creates a DUD_REGION object, build the
-//  def-use/use-def links in the region, and return a DUD_REGION
-//  object if successful.
+//  DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool);
+//    Create a DUD_REGION object, build the def-use/use-def links in
+//    the region, and return a DUD_REGION object if successful.
 //
 //  DUD_REGION::Trace_DUD()
 //    Trace the Def-Use/Use-Def links
@@ -67,9 +66,9 @@
 //    Returns in ud_list the list of use-def links from a given (op,
 //    opnd) in the region.
 //
-//  INT DUD_REGION::Get_Def_Use(OP *op, INT opnd, dud_link_t &du_list);
+//  INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &du_list);
 //    Returns in du_list the list of def-use links from a given (op,
-//    opnd) in the region.
+//    res) in the region.
 //
 //  INT DUD_REGION::Get_opid(OP *op)
 //    Returns the index in topological order of an operation in the
@@ -85,9 +84,11 @@
 //  INT DUD_LIST::size()
 //    Returns the number of elements in a def-use or use-def list
 //
-//  INT DUD_LIST::op(INT listIdx)
+//  OP *DUD_LIST::op(INT listIdx)
 //    Returns the operation that is referenced by a DU or UD link at
-//    index listIdx in the def-use or use-def list.
+//    index listIdx in the def-use or use-def list. Will return NULL
+//    in case of a DU or UD link that refers to an operation outside
+//    the region.
 //
 //  INT DUD_LIST::idx(INT listIdx)
 //    Returns the index of the operand or result in the operation that
@@ -95,7 +96,7 @@
 //    or use-def list.
 //
 // BOOL DUD_LIST::is_def(INT listIdx)
-//    Returns whether the DUD_LIST::idx returned an operand or a
+//    Returns whether DUD_LIST::idx(listIdx) returned an operand or a
 //    result index in the operation that is referenced by a DU or UD
 //    link at index listIdx in the def-use or use-def list.
 //
