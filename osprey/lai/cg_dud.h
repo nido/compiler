@@ -99,6 +99,11 @@
 //    result index in the operation that is referenced by a DU or UD
 //    link at index listIdx in the def-use or use-def list.
 //
+// BOOL DUD_LIST::has_partial_def()
+//    Returns TRUE if this is a Def-Use list and the list contains
+//    some definitions. These definitions are actually predicated
+//    definitions that introduces implicit uses.
+//
 // =======================================================================
 // ======================================================================= */
 
@@ -126,7 +131,6 @@ class DUD_SITE {
   INT oper_id;
   INT res_opnd;
   BOOL is_result;
-
 
  protected:
   typedef unsigned int DUDsite_t;
@@ -201,6 +205,11 @@ class DUD_LIST {
 
   INT size() { return DU_UD_list.size(); };
 
+  // Interface copied from DUD_SITE
+  OP *op(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.op(); };
+  INT idx(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.idx(); };
+  BOOL is_def(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.is_def(); };
+
   BOOL has_partial_def() {
     if (!is_UD) {
       INT i;
@@ -213,11 +222,6 @@ class DUD_LIST {
     }
     return FALSE;
   }
-
-  // Interface copied from DUD_SITE
-  OP *op(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.op(); };
-  INT idx(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.idx(); };
-  BOOL is_def(INT list_idx) { DUD_SITE dud_site; site(list_idx, dud_site); return dud_site.is_def(); };
 };
 
 // typedef std::vector< std::pair<OP *, INT> > dud_link_t;
@@ -306,7 +310,7 @@ class DUD_REGION {
 };
 
 DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool);
-void Perform_AutoMode_Opt(DUD_REGION *dud);
+void Perform_AutoMode_Opt();
 
 #endif /* CG_DUD_INCLUDED */
 

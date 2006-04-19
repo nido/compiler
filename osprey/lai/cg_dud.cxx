@@ -47,6 +47,8 @@ static const char rcs_id[] = "";
 #include "gtn_universe.h"
 #include "bitset.h"	/* our clients do not need to know about it */
 #include "gtn_set.h"
+#include "dominate.h"
+#include "findloops.h"
 #include "cxx_memory.h"
 #include "tracing.h"
 
@@ -217,7 +219,6 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
   // Then, traverse the operations in topological order
   for (topo_idx = 0; topo_idx < BB_REGION_size; topo_idx++) {
     bb = BB_REGION_topo_order[topo_idx];
-
     FOR_ALL_BB_OPs_FWD( bb, op ) {
       op_idx = DUD_op_count ++;
       Set_opid(op, op_idx);
@@ -632,6 +633,9 @@ void Memop_to_Incrop(DUD_REGION *dud, OP* op) {
 
   dud->Get_Def_Use(defop, defidx, du_link);
 
+  // No support for predicated code yet
+  if (du_link.has_partial_def()) return;
+
   INT i;
   for (i = 0; i < du_link.size(); i++) {
     OP *useop = du_link.op(i);
@@ -648,16 +652,47 @@ void Memop_to_Incrop(DUD_REGION *dud, OP* op) {
   return;
 }
 
-void Perform_AutoMode_Opt(DUD_REGION *dud) {
+void Perform_AutoMode_Opt() {
 
-  fprintf(TFile, "******************** AutoMod ********************\n");
+  MEM_POOL loop_descr_pool;
+  MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
+  MEM_POOL_Push (&loop_descr_pool);
+  BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
-  INT opid;
+  Calculate_Dominators();		/* needed for loop recognition */
 
-  for (OP *op = dud->Begin_op(); op != dud->End_op(); op = dud->Next_op(op)) {
-    Memop_to_Incrop(dud, op);
+  for (LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
+       loop;
+       loop = LOOP_DESCR_next(loop)) {
+
+    BB *head = LOOP_DESCR_loophead(loop);
+
+    // Restrict to innermost loop to avoid processing large amount of
+    // code ??
+    // if (!BB_innermost(head)) continue;
+    BB_REGION bbRegion(LOOP_DESCR_bbset(loop), &loop_descr_pool);
+
+    bbRegion.Print();
+    DUD_REGION *dudRegion = Build_DUD_info(&bbRegion, &loop_descr_pool);
+
+    if (dudRegion != NULL) {
+      dudRegion->Trace_DUD();
+
+      fprintf(TFile, "******************** AutoMod ********************\n");
+
+      for (OP *op = dudRegion->Begin_op();
+	   op != dudRegion->End_op();
+	   op = dudRegion->Next_op(op)) {
+	Memop_to_Incrop(dudRegion, op);
+      }
+
+      fprintf(TFile, "*************************************************\n");
+    }
   }
 
-  fprintf(TFile, "*************************************************\n");
+  MEM_POOL_Pop (&loop_descr_pool);
+  MEM_POOL_Delete(&loop_descr_pool);
+
+  Free_Dominators_Memory ();
 }
 #endif
