@@ -2063,6 +2063,24 @@ BB_MAP BB_Postorder_Map(BB_SET *region, BB *entry)
 }
 #endif
 
+#ifdef TARG_ST
+// FdF 20060419: Support for backedges in the region
+static BOOL all_bbs_mapped(BB *bb, BBLIST *bbs, BB_MAP map)
+/* -----------------------------------------------------------------------
+ * Return TRUE iff every BB in <bbs> has a nonzero entry in <map>.
+ * -----------------------------------------------------------------------
+ */
+{
+  while (bbs) {
+    if (BB_MAP32_Get(map, BBLIST_item(bbs)) == 0) {
+      if (!BB_loophead(bb) || (BB_loop_head_bb(BBLIST_item(bbs)) != bb))
+	return FALSE;
+    }
+    bbs = BBLIST_next(bbs);
+  }
+  return TRUE;
+}
+#else
 static BOOL all_bbs_mapped(BBLIST *bbs, BB_MAP map)
 /* -----------------------------------------------------------------------
  * Return TRUE iff every BB in <bbs> has a nonzero entry in <map>.
@@ -2076,7 +2094,7 @@ static BOOL all_bbs_mapped(BBLIST *bbs, BB_MAP map)
   }
   return TRUE;
 }
-
+#endif
 
 static INT32 map_topologically(BB_MAP map, BB_SET *region, BB *bb,
 			       INT32 max_id)
@@ -2097,7 +2115,13 @@ static INT32 map_topologically(BB_MAP map, BB_SET *region, BB *bb,
     fall_thru = BB_next(bb);
   if (fall_thru && BB_MAP32_Get(map, fall_thru) == 0 &&
       (region == NULL || BB_SET_MemberP(region, fall_thru)) &&
-      all_bbs_mapped(BB_preds(fall_thru), map))
+#ifdef TARG_ST
+      // FdF 20060419: Support for backedges in the region
+      all_bbs_mapped(fall_thru, BB_preds(fall_thru), map)
+#else
+      all_bbs_mapped(BB_preds(fall_thru), map)
+#endif
+      )
     /* <bb> and <fall_thru> already topologically ordered. */
     max_id = map_topologically(map, region, fall_thru, max_id);
 
@@ -2107,7 +2131,13 @@ static INT32 map_topologically(BB_MAP map, BB_SET *region, BB *bb,
     BB *succ = BBLIST_item(succs);
     if (succ != fall_thru && BB_MAP32_Get(map, succ) == 0 &&
 	(region == NULL || BB_SET_MemberP(region, succ)) &&
-	all_bbs_mapped(BB_preds(succ), map))
+#ifdef TARG_ST
+      // FdF 20060419: Support for backedges in the region
+	all_bbs_mapped(succ, BB_preds(succ), map)
+#else
+	all_bbs_mapped(BB_preds(succ), map)
+#endif
+	)
       /* <succ> can be next in topological ordering. */
       max_id = map_topologically(map, region, succ, max_id);
   }
@@ -2939,7 +2969,12 @@ BB_SET *BB_REGION_to_BB_SET(BB_SET *bbs, const BB_REGION& r, MEM_POOL *pool)
     BBLIST *succs;
     FOR_ALL_BB_SUCCS(bb, succs) {
       BB *succ = BBLIST_item(succs);
+#ifdef TARG_ST
+      // FdF 20060419: bug fix
+      if (!BB_SET_MemberP(bbs, succ) && !region_exits(succ))
+#else
       if (!BB_SET_MemberP(bbs, succ) && !region_exits(bb))
+#endif
 	stack.push_back(succ);
     }
   }
@@ -2982,7 +3017,10 @@ BB_REGION::BB_REGION(BB_SET *included, MEM_POOL *pool)
 	region_exits.Set(succ);
       }
     }
+#ifndef TARG_ST
+    // FdF 20060419: bug fix
     region_exits.Reset(exits);
+#endif
 
     // A "included" block that has at least one predecessor not included
     // is an entry block.
@@ -3059,7 +3097,12 @@ void BB_REGION::Verify() const
       BBLIST *succs;
       FOR_ALL_BB_SUCCS(bb, succs) {
 	BB *succ = BBLIST_item(succs);
+#ifdef TARG_ST
+      // FdF 20060419: bug fix
+	if (!region_exits(succ))
+#else
 	if (!region_exits(bb))
+#endif
 	  stack.push_back(succ);
       }
     }
