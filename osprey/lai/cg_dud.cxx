@@ -54,6 +54,19 @@ static const char rcs_id[] = "";
 
 #define TN_is_DUDreg(tn) (TN_is_register(tn) && !TN_is_dedicated(tn))
 
+void DUD_SITE::Init(DUD_REGION *dud, DUDsite_t site) {
+  oper_id = site >> IDX_WIDTH;
+  oper = dud->Get_op(oper_id);
+
+  res_opnd = site & IDX_MASK;
+  if (res_opnd >= OP_MAX_FIXED_RESULTS) {
+    is_result = FALSE;
+    res_opnd -= OP_MAX_FIXED_RESULTS;
+  }
+  else
+    is_result = TRUE;
+}
+
 /* ************************************************************ *
  * This functions creates Def-Use and Use-Def links for all TNs *
  * in all operations of the region                              *
@@ -108,8 +121,6 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     Is_True(i >= 0 && i <= BB_REGION_size, ("bad <BB_REGION_topo_map> value"));
     if (i == 0) {
       BB_MAP_Delete(BB_REGION_topo_map);
-      MEM_POOL_Pop( dud_pool() );
-      MEM_POOL_Delete( dud_pool() );
       return FALSE;
     }
     BB_REGION_topo_order[i-1] = bb;
@@ -200,7 +211,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
     TN_MAP_Set(TN_DEFsites_map, DUD_tn, DEFsite_list);
     DEFsite_list->push_back(defsite_idx);
 
-    DEF_DUD_site.push_back(DUDsite_makeDef(0,0)); // Virtual def-site on entry
+    DEF_DUD_site.push_back(DUD_SITE::makeDef(0,0)); // Virtual def-site on entry
   }
 
   // Then, traverse the operations in topological order
@@ -223,7 +234,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	}
 	DEFsite_list->push_back(defsite_idx);
 
-	DEF_DUD_site.push_back(DUDsite_makeDef(op_idx, res));
+	DEF_DUD_site.push_back(DUD_SITE::makeDef(op_idx, res));
       }
     }
   }
@@ -275,7 +286,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	DUD_tn = OP_result(op, res);
 	if (!TN_is_DUDreg(DUD_tn)) continue;
 
-	Is_True(DEF_DUD_site[defsite_idx] == DUDsite_makeDef(op_idx, res),
+	Is_True(DEF_DUD_site[defsite_idx] == DUD_SITE::makeDef(op_idx, res),
 		("DUD_REGION_Init defsites traversal is not identical to first traversal"));
 
 	DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
@@ -366,16 +377,16 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	DEFsite_list = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
 	Is_True(DEFsite_list != NULL, ("DUD_REGION::Init DUD_tn should be defined or live-in in the region"));
 
-	DUDsite_t DUDuse_site = DUDsite_makeUse(op_idx, opnd);
+	DUD_SITE::DUDsite_t DUDuse_site = DUD_SITE::makeUse(op_idx, opnd);
 	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
 	  if (BS_MemberP(BS_RCHin_tmp, *DEFsite_iter)) {
-	    DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
+	    DUD_SITE::DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
 	    // Create the use-def links.
 	    if (opnd < OP_MAX_FIXED_OPNDS)
 	      TNuse_Push_DUDsite(op_idx, opnd, DUDdef_site);
 	    // Create the def-use links
-	    if ((DUDsite_opid(DUDdef_site) > 0) && (DUDsite_opnd(DUDdef_site, &is_result) < OP_MAX_FIXED_RESULTS))
-	      TNdef_Push_DUDsite(DUDsite_opid(DUDdef_site), DUDsite_opnd(DUDdef_site, &is_result), DUDuse_site);
+	    if ((DUD_SITE::get_opid(DUDdef_site) > 0) && (DUD_SITE::get_opnd(DUDdef_site, &is_result) < OP_MAX_FIXED_RESULTS))
+	      TNdef_Push_DUDsite(DUD_SITE::get_opid(DUDdef_site), DUD_SITE::get_opnd(DUDdef_site, &is_result), DUDuse_site);
 	  }
 	}
       }
@@ -385,7 +396,7 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	DUD_tn = OP_result(op, res);
 	if (!TN_is_DUDreg(DUD_tn)) continue;
 
-	DUDsite_t DUDdef_site = DUDsite_makeDef(op_idx, res);
+	DUD_SITE::DUDsite_t DUDdef_site = DUD_SITE::makeDef(op_idx, res);
 	DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
 
 	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
@@ -417,9 +428,9 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
       BS_UnionD(BS_RCHin_tmp, BS_RCHout[BB_MAP32_Get(BB_REGION_topo_map, pred)-1], NULL);
     }
 
-    DUDsite_t DUDuse_site;
+    DUD_SITE::DUDsite_t DUDuse_site;
     // Each exit-block is associated with a different use-site
-    DUDuse_site = DUDsite_makeUse(Get_size()+exit_idx, 0);
+    DUDuse_site = DUD_SITE::makeUse(Last_opid()+1+exit_idx, 0);
 
     // Now, complete the def-use sites for those reaching defs that
     // are live-out of the region.
@@ -430,9 +441,9 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
       FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
 	if (BS_MemberP(BS_RCHin_tmp, *DEFsite_iter)) {
-	  DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
-	  if ((DUDsite_opid(DUDdef_site) > 0) && (DUDsite_opnd(DUDdef_site, &is_result) < OP_MAX_FIXED_RESULTS))
-	    TNdef_Push_DUDsite(DUDsite_opid(DUDdef_site), DUDsite_opnd(DUDdef_site, &is_result), DUDuse_site);
+	  DUD_SITE::DUDsite_t DUDdef_site = DEF_DUD_site[*DEFsite_iter];
+	  if ((DUD_SITE::get_opid(DUDdef_site) > 0) && (DUD_SITE::get_opnd(DUDdef_site, &is_result) < OP_MAX_FIXED_RESULTS))
+	    TNdef_Push_DUDsite(DUD_SITE::get_opid(DUDdef_site), DUD_SITE::get_opnd(DUDdef_site, &is_result), DUDuse_site);
 	}
       }
     }
@@ -448,46 +459,32 @@ make_pair(OP* op, INT opnd)
   return std::pair<OP*, INT>(op, opnd);
 }
 
-INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, dud_link_t &dud_link) {
-  dud_link.clear();
+INT DUD_REGION::Get_Use_Def(OP *op, INT opnd, DUD_LIST &UD_list) {
+  UD_list.clear();
 
   INT op_idx = Get_opid(op);
   if (op_idx == 0)
     return -1;
 
-  for (DUDsite_list::iterator iter = DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd].begin ();
-       iter != DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd].end ();
-       iter++) {
-    BOOL is_result;
-    INT opidx_use = DUDsite_opid(*iter);
-    OP *op_use = NULL;
-    if ((opidx_use > 0) && (opidx_use < Get_size()))
-      op_use = Get_op(opidx_use);
-    dud_link.push_back(std::make_pair(op_use, DUDsite_opnd(*iter, &is_result)));
-    Is_True(is_result, ("DUD_REGION: Use_Use links not implemented.\n"));
-  }
-  return dud_link.size();
+  if ((opnd < 0) || (opnd >= OP_MAX_FIXED_OPNDS))
+    return -1;
+
+  UD_list.Init(this, &DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd], TRUE);
+  return UD_list.size();
 }
 
-INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &dud_link) {
-  dud_link.clear();
+INT DUD_REGION::Get_Def_Use(OP *op, INT res, DUD_LIST &DU_list) {
+  DU_list.clear();
 
   INT op_idx = Get_opid(op);
   if (op_idx == 0)
     return -1;
 
-  for (DUDsite_list::iterator iter = DUDinfo_table[op_idx].dud_list[res].begin ();
-       iter != DUDinfo_table[op_idx].dud_list[res].end ();
-       iter++) {
-    BOOL is_result;
-    INT opidx_def = DUDsite_opid(*iter);
-    OP *op_def = NULL;
-    if ((opidx_def > 0) && (opidx_def < Get_size()))
-      op_def = Get_op(opidx_def);
-    dud_link.push_back(std::make_pair(op_def, DUDsite_opnd(*iter, &is_result)));
-    Is_True(!is_result, ("DUD_REGION: Def_Def links not implemented.\n"));
-  }
-  return dud_link.size();
+  if ((res < 0) || (res >= OP_MAX_FIXED_RESULTS))
+    return -1;
+
+  DU_list.Init(this, &DUDinfo_table[op_idx].dud_list[res], FALSE);
+  return DU_list.size();
 }
 
 void DUD_REGION::Trace_DUD() {
@@ -497,7 +494,8 @@ void DUD_REGION::Trace_DUD() {
 
   fprintf(TFile, "\n%s %s\n%s", DBar,"                     Trace DUD", DBar);
 
-  for (op_idx = 1; op_idx < Get_size(); op_idx++) {
+  for (op_idx = First_opid(); op_idx <= Last_opid(); op_idx ++) {
+
     fprintf(TFile, "[%3d]", op_idx);
     OP *op = Get_op(op_idx);
     Print_OP_No_SrcLine(op);
@@ -505,12 +503,14 @@ void DUD_REGION::Trace_DUD() {
       if (!TN_is_DUDreg(OP_opnd(op, opnd))) continue;
       fprintf(TFile, "\t");
       Print_TN(OP_opnd(op, opnd), FALSE);
-      if (opnd < OP_MAX_FIXED_OPNDS && !DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd].empty()) {
+      DUD_LIST ud_list;
+      if (Get_Use_Def(op, opnd, ud_list) > 0) {
 	fprintf(TFile, ": ud");
 	char *sep = " ";
-	for (DUDsite_list::iterator iter = DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd].begin ();
-	     iter != DUDinfo_table[op_idx].dud_list[OP_MAX_FIXED_RESULTS+opnd].end (); iter++) {
-	  fprintf(TFile, "%s(%d,%d)", sep, DUDsite_opid(*iter), DUDsite_opnd(*iter, &is_result));
+	for (INT i = 0; i < ud_list.size(); i++) {
+	  DUD_SITE ud_site;
+	  ud_list.site(i, ud_site);
+	  fprintf(TFile, "%s(%d,%d)", sep, ud_site.opid(), ud_site.idx());
 	  sep = ", ";
 	}
       }
@@ -521,12 +521,14 @@ void DUD_REGION::Trace_DUD() {
       if (!TN_is_DUDreg(OP_result(op, res))) continue;
       fprintf(TFile, "\t");
       Print_TN(OP_result(op, res), FALSE);
-      if (res < OP_MAX_FIXED_RESULTS && !DUDinfo_table[op_idx].dud_list[res].empty()) {
+      DUD_LIST du_list;
+      if (Get_Def_Use(op, res, du_list) > 0) {
 	fprintf(TFile, ": du");
 	char *sep = " ";
-	for (DUDsite_list::iterator iter = DUDinfo_table[op_idx].dud_list[res].begin ();
-	     iter != DUDinfo_table[op_idx].dud_list[res].end (); iter++) {
-	  fprintf(TFile, "%s(%d,%d)", sep, DUDsite_opid(*iter), DUDsite_opnd(*iter, &is_result));
+	for (INT i = 0; i < du_list.size(); i++) {
+	  DUD_SITE du_site;
+	  du_list.site(i, du_site);
+	  fprintf(TFile, "%s(%d,%d)", sep, du_site.opid(), du_site.idx());
 	  sep = ", ";
 	}
       }
@@ -604,17 +606,20 @@ void Memop_to_Incrop(DUD_REGION *dud, OP* op) {
 
   // Look for use-def link. If unique and a ADD/SUB, this is a candidate
 
-  dud_link_t ud_link, du_link;
+  DUD_LIST ud_link, du_link;
 
   if (dud->Get_Use_Def(op, base_idx, ud_link) > 2) return;
   if (ud_link.size() == 0) return;
+
+  INT ud_idx = 0;
   if (ud_link.size() == 2) {
     // Check that first def is outside the region
-    if (ud_link[0].first != NULL) return;
-    Is_True(dud->Get_opid(ud_link[1].first) > dud->Get_opid(op), ("DefOP was expected to appear after memop"));
+    if (ud_link.op(0) != NULL) return;
+    ud_idx = 1;
   }
-  OP *defop = ud_link[ud_link.size()-1].first;
-  INT defidx = ud_link[ud_link.size()-1].second;
+
+  OP *defop = ud_link.op(ud_idx);
+  INT defidx = ud_link.idx(ud_idx);
 
   if (!check_Incrop(defop)) return;
 
@@ -629,7 +634,7 @@ void Memop_to_Incrop(DUD_REGION *dud, OP* op) {
 
   INT i;
   for (i = 0; i < du_link.size(); i++) {
-    OP *useop = du_link[i].first;
+    OP *useop = du_link.op(i);
     if (check_Incrop(useop)) {
       fprintf(TFile, "\t[%3d]", dud->Get_opid(useop));
       Print_OP_No_SrcLine(useop);
@@ -649,8 +654,7 @@ void Perform_AutoMode_Opt(DUD_REGION *dud) {
 
   INT opid;
 
-  for (opid = 1; opid < dud->Get_size(); opid ++) {
-    OP *op = dud->Get_op(opid);
+  for (OP *op = dud->Begin_op(); op != dud->End_op(); op = dud->Next_op(op)) {
     Memop_to_Incrop(dud, op);
   }
 
