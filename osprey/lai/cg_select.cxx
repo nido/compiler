@@ -2568,12 +2568,31 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     select_count++;
   }
   
-  // Promote the instructions from the sides bblocks.
-  if (fall_thru_bb != tail) {
-    Promote_BB_Chain (head, fall_thru_bb, tail);
+  bool target_bb_first = false;
+
+  OP *first = OPS_first(&cmov_ops);
+  if (first && OP_code(first) == TOP_psi) {
+    if (OP_opnd(first,0) == True_TN &&
+        BB_id(OP_bb(TN_ssa_def(OP_opnd(first,1)))) == BB_id(target_bb))
+      target_bb_first = true;
   }
-  if (target_bb != tail) {
-    Promote_BB_Chain (head, target_bb, tail);
+
+  // Promote the instructions from the sides bblocks.
+  if (target_bb_first) {
+    if (target_bb != tail) {
+      Promote_BB_Chain (head, target_bb, tail);
+    }
+    if (fall_thru_bb != tail) {
+      Promote_BB_Chain (head, fall_thru_bb, tail);
+    }
+  }
+  else {
+    if (fall_thru_bb != tail) {
+      Promote_BB_Chain (head, fall_thru_bb, tail);
+    }
+    if (target_bb != tail) {
+      Promote_BB_Chain (head, target_bb, tail);
+    }
   }
 
    if (Trace_Select_Gen) {
