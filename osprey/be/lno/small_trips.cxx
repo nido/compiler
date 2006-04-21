@@ -1318,6 +1318,23 @@ Unroll_Loop_By_Trip_Count(WN* outerloop, INT u)
   //  Prompf_Info->Register_Tile(WN_MAP32_Get(Prompf_Id_Map, outerloop));
   //} 
 
+#ifdef TARG_ST
+  // FdF 20060420: Fix for ddts 25220.
+  // Also remove pragma unroll on this loop
+  WN *wn_pragma;
+  WN *wn_prev;
+  for (wn_pragma = WN_prev(outerloop); wn_pragma; wn_pragma = wn_prev) {
+    wn_prev = WN_prev(wn_pragma);
+    OPCODE op = WN_opcode(wn_pragma);
+    if (op != OPC_PRAGMA && op != OPC_XPRAGMA) {
+      break;
+    }
+    if ((WN_PRAGMA_ID)WN_pragma(wn_pragma) == WN_PRAGMA_UNROLL) {
+      LWN_Delete_From_Block(LWN_Get_Parent(wn_pragma), wn_pragma);
+    }
+  }
+#endif
+
   // ctor does not set Type correctly for loop index variable
   SYMBOL indexsym(WN_index(outerloop));
   indexsym.Type = Do_Wtype(outerloop);

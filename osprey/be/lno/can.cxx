@@ -341,6 +341,13 @@ static void Mark_Code(WN *wn, WN *func_nd, DOLOOP_STACK *stack,
                      ("FE Error: pragma prefetch_ref not followed by prefetch\n"));
           WN_pf_set_confidence(pf_wn, 3);
         }
+#ifdef TARG_ST
+	// FdF 20060420: Fix for ddts 25220.
+        if (WN_pragma(kid) == WN_PRAGMA_UNROLL) {
+	  extern BOOL PU_has_pragma_unroll;
+	  PU_has_pragma_unroll = TRUE;
+	}
+#endif
       }
 #ifdef TARG_ST
       // FdF 11062004: Manual prefetch can be set through a builtin

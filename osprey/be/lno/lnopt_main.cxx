@@ -368,7 +368,35 @@ Fully_Unroll_Short_Loops(WN* wn)
       Remove_Zero_Trip_Loop(wn);
       return;
     }
+#ifdef TARG_ST
+    // FdF 20060420: Fix for ddts 25220. Look for a #pragma unroll on
+    // the loop, and fully unroll those loops for which the unroll
+    // factor is greater or equal to the trip_count.
+    INT required_unroll = 0;
+    if (trip_count > LNO_Full_Unrolling_Limit && Get_Trace(TP_TEMP, 0x40)) {
+      for (WN *wn_pragma = WN_prev(wn); wn_pragma; wn_pragma = WN_prev(wn_pragma)) {
+	OPCODE op = WN_opcode(wn_pragma);
+	if (op != OPC_PRAGMA && op != OPC_XPRAGMA)
+	  break;
+	WN_PRAGMA_ID pragma = (WN_PRAGMA_ID)WN_pragma(wn_pragma);
+	if (pragma == WN_PRAGMA_UNROLL) {
+	  required_unroll = WN_pragma_arg1(wn_pragma);
+	}
+	else if (pragma == WN_PRAGMA_IVDEP ||
+		 pragma == WN_PRAGMA_LOOPDEP) {
+	  // Do not unroll if IVDEP or LOOPDEP is used, otherwise code
+	  // may be worst
+	  required_unroll = 0;
+	  break;
+	}
+      }
+    }
+    if ((trip_count >= 1) &&
+	((trip_count <= LNO_Full_Unrolling_Limit) ||
+	 (trip_count <= required_unroll))) {
+#else
     if (trip_count >= 1 && trip_count <= LNO_Full_Unrolling_Limit) {
+#endif
       if (trip_count > 1) {
         Unroll_Loop_By_Trip_Count(wn, trip_count);
         // Du_Sanity_Check(Current_Func_Node);
@@ -437,6 +465,10 @@ extern void Parallel_And_Padding_Phase(PU_Info* current_pu,
 
 }
 
+#ifdef TARG_ST
+// FdF 20060420: Fix for ddts 25220.
+BOOL PU_has_pragma_unroll = FALSE;
+#endif
 BOOL Run_autopar_save; 
 
 extern WN * Lnoptimizer(PU_Info* current_pu, 
@@ -636,7 +668,12 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
       goto return_point;  // no do loops, no point in continuing
     }
   
+#ifdef TARG_ST
+    // FdF 20060420: Fix for ddts 25220.
+    if (LNO_Full_Unrolling_Limit != 0 || PU_has_pragma_unroll) {
+#else
     if (LNO_Full_Unrolling_Limit != 0) {
+#endif
       Fully_Unroll_Short_Loops(func_nd);
     }
 
