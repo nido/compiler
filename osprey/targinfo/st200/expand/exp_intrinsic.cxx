@@ -6308,28 +6308,27 @@ Expand__shlcw(
 )
 {
   TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_0_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
   TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
   TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *r0_21_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *r0_21_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *r0_22_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *r0_22_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-  TN *r0_24_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-#define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0 = Gen_Literal_TN(__EXTS32TOS64(0), 4) ;
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
   Build_OP (    TOP_mov_i,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
 #undef __EXTS32TOS64
-  Build_OP (	TOP_cmplt_i_b,	b0_0_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_cmplt_i_r,	r0_24_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_orc_i,	r0_21_0,	i0,	c0,	ops) ;
-  Build_OP (	TOP_slct_r,	r0_22_1,	b0_0_0,	r0_21_0,	i0,	ops) ;
-  Build_OP (	TOP_clz,	r0_21_2,	r0_22_1,	ops) ;
-  Build_OP (	TOP_add_r,	r0_20_2,	c0x7fffffff,	r0_24_0,	ops) ;
-  Build_OP (	TOP_shl_r,	r0_22_3,	i0,	i1,	ops) ;
-  Build_OP (	TOP_cmple_r_b,	b0_0_3,	r0_21_2,	i1,	ops) ;
-  Build_OP (	TOP_slct_r,	o0,	b0_0_3,	r0_20_2,	r0_22_3,	ops) ;
+  Build_OP (    TOP_cmplt_i_b,  b0_0_0, i0,     c0,     ops) ;
+  Build_OP (    TOP_orc_i,      r0_21_0,        i0,     c0,     ops) ;
+  Build_OP (    TOP_slct_r,     r0_22_1,        b0_0_0, r0_21_0,        i0,     ops) ;
+  Build_OP (    TOP_clz,        r0_21_2,        r0_22_1,        ops) ;
+  Build_OP (    TOP_addcg,      r0_20_2,        b0_0_2, c0x7fffffff,        Zero_TN,        b0_0_0, ops) ;
+  Build_OP (    TOP_shl_r,      r0_22_3,        i0,     i1,     ops) ;
+  Build_OP (    TOP_cmple_r_b,  b0_0_3, r0_21_2,        i1,     ops) ;
+  Build_OP (    TOP_slct_r,     o0,     b0_0_3, r0_20_2,        r0_22_3,        ops) ;
 } /* Expand__shlcw */
 
 /*
