@@ -4754,14 +4754,15 @@ WFE_Expand_Expr (tree exp,
 	INT64 rounded_size;
 	INT64 adjustment;
 	tree type = TREE_TYPE (exp);
-	TY_IDX ty_idx = Get_TY (type);
+	TY_IDX hi_ty_idx = Get_TY (type);
+	TY_IDX ty_idx = component_ty_idx ? component_ty_idx : hi_ty_idx;
 	TYPE_ID mtype = TY_mtype (ty_idx);
 	INT64 type_size = int_size_in_bytes (type);
 	TY_IDX va_list_ty_idx = Get_TY (va_list_type_node);
 	TYPE_ID va_list_mtype = TY_mtype (va_list_ty_idx);
 	WN *ap_addr, *ap_load, *ap_store;
 	WN *arg_addr;
-	UINT field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
+	UINT va_list_field_id = (Target_Byte_Sex == BIG_ENDIAN) ? 1 : 0;
 	tree operand = TREE_OPERAND (exp, 0);
 
 	// [SC] I would like to use WFE_Address_Of(operand) here,
@@ -4777,10 +4778,10 @@ WFE_Expand_Expr (tree exp,
 	}
 	if (WN_operator (ap_addr) == OPR_LDA) {
 	  ap_load = WN_Ldid (Pointer_Mtype, 0, WN_st (ap_addr),
-			     va_list_ty_idx, field_id);
+			     va_list_ty_idx, va_list_field_id);
 	} else {
 	  ap_load = WN_Iload (Pointer_Mtype, 0, va_list_ty_idx,
-			      ap_addr, field_id);
+			      ap_addr, va_list_field_id);
 	}
 	
 	// Any parameter larger than a word is double-word aligned.
@@ -4810,12 +4811,12 @@ WFE_Expand_Expr (tree exp,
 	// store back in ap
 	if (WN_operator (ap_addr) == OPR_LDA) {
 	  ap_store = WN_Stid (Pointer_Mtype, 0, WN_st (ap_addr),
-			      va_list_ty_idx, wn, field_id);
+			      va_list_ty_idx, wn, va_list_field_id);
 	} else {
 	  ap_store = WN_Istore (Pointer_Mtype, 0,
 				Make_Pointer_Type (va_list_ty_idx),
 				WN_COPY_Tree (ap_addr),
-				wn, field_id);
+				wn, va_list_field_id);
 	}
         WFE_Stmt_Append (ap_store, Get_Srcpos ());
 	
@@ -4908,10 +4909,10 @@ WFE_Expand_Expr (tree exp,
 			   wn,
 			   WN_Ldid (mtype, 0, temp_st, union_ty_idx, 1),
 			   WN_CreateIload (OPR_ILOAD, mtype, mtype,
-					   -type_size,
-					   ty_idx,
-					   Make_Pointer_Type (ty_idx, FALSE),
-					   WN_COPY_Tree (ap_load)));
+					   -type_size + component_offset,
+					   field_id != 0 ? hi_ty_idx : ty_idx,
+					   Make_Pointer_Type (hi_ty_idx, FALSE),
+					   WN_COPY_Tree (ap_load), field_id));
 	  Set_PU_has_very_high_whirl (Get_Current_PU ());
 	} else {
 	  if (Target_Byte_Sex == BIG_ENDIAN
@@ -4924,9 +4925,11 @@ WFE_Expand_Expr (tree exp,
 	  arg_addr = WN_COPY_Tree (ap_load);
 	  // Now ap points to the word just after the arg.
 	  wn = WN_CreateIload (OPR_ILOAD, Widen_Mtype (mtype), mtype,
-			       -adjustment,
-			       ty_idx, Make_Pointer_Type (ty_idx, FALSE),
-			       arg_addr);
+			       -adjustment + component_offset,
+			       field_id != 0 ? hi_ty_idx : ty_idx,
+			       Make_Pointer_Type (hi_ty_idx, FALSE),
+			       arg_addr,
+			       field_id);
 	}
       }
 #else
