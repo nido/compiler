@@ -3958,10 +3958,6 @@ static simpnode cancel_in_relop(OPCODE opc, TYPE_ID ty, simpnode k0, simpnode k1
    
    simpnode   x[4],lhs,rhs,del1,del2,del3;
    BOOL     s[4],s_lhs,s_rhs,pointer_seen;
-#ifdef TARG_ST
-   BOOL     is_pointer[4];
-   BOOL     pointers_removed;
-#endif
    INT32    i,j,jmax;
    
    op0 = SIMPNODE_operator(k0);
@@ -4045,23 +4041,13 @@ static simpnode cancel_in_relop(OPCODE opc, TYPE_ID ty, simpnode k0, simpnode k1
 
    /* Check for pointer arithmetic in any of the X's */
    pointer_seen = FALSE;
+#ifndef TARG_ST
+  /* [SC] Pointer information is not guaranteed correct in the
+     whirl, so we cannot use it here. MBTst24912.
+     If/when we use the pointer mtypes A4/A8 we can test the
+     desc of the comparison operator to determine pointer comparisons. */
    if (mainopr != OPR_EQ && mainopr != OPR_NE) {  /* We only want to special case for 
 						     <, <=, > ,>= */
-#ifdef TARG_ST
-      for (i=0; i <= jmax; i++) {
-	is_pointer[i] = FALSE;
-	 kidop = SIMPNODE_opcode(x[i]);
-	 if (OPCODE_has_1ty(kidop) || OPCODE_has_2ty(kidop)) {
-	    if (TY_kind (SIMPNODE_ty(x[i])) == KIND_POINTER) {
-	       pointer_seen = TRUE;
-	       is_pointer[i] = TRUE;
-	    }
-	 } else if (OPCODE_operator(kidop) == OPR_LDA) {
-	    pointer_seen = TRUE;
-	    is_pointer[i] = TRUE;
-	 }
-      }
-#else
       for (i=0; i <= jmax; i++) {
 	 kidop = SIMPNODE_opcode(x[i]);
 	 if (OPCODE_has_1ty(kidop) || OPCODE_has_2ty(kidop)) {
@@ -4074,8 +4060,8 @@ static simpnode cancel_in_relop(OPCODE opc, TYPE_ID ty, simpnode k0, simpnode k1
 	    break;
 	 }
       }
-#endif
    }
+#endif
    
    /* Can't do this for unsigned's either */
    if (SIMP_IS_TYPE_UNSIGNED(ty) && !pointer_seen && !Simp_Fold_Unsigned_Relops &&
@@ -4095,9 +4081,6 @@ static simpnode cancel_in_relop(OPCODE opc, TYPE_ID ty, simpnode k0, simpnode k1
 	    /* get the remaining quantities */
 	    lhs = x[1-i]; s_lhs = s[1-i];
 	    rhs = x[5-j]; s_rhs = s[5-j];
-#ifdef TARG_ST
-	    pointers_removed = ! is_pointer[1-i] && ! is_pointer[5-j];
-#endif
 	    if (!rhs) {
 	       rhs = dt;
 	       if (!s_lhs) {
@@ -4112,13 +4095,7 @@ static simpnode cancel_in_relop(OPCODE opc, TYPE_ID ty, simpnode k0, simpnode k1
 	       lhs = SIMPNODE_SimpCreateExp2(OPC_FROM_OPR(OPR_ADD,ty),lhs,dt);
 	    }
 
-#ifdef TARG_ST
-	    // [SC] Fix to signed comparison only if we cancelled the
-	    // pointers, not if we cancelled offsets.
-	    if (pointer_seen && pointers_removed) {
-#else
 	    if (pointer_seen) {
-#endif
 	    /* Special treatment of pointer comparisons. After
 	     *  cancellation, we need to do a SIGNED comparison on the two
 	     *  remaining arguments cases.
