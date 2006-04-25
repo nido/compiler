@@ -3164,6 +3164,15 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
       continue;
     }
 
+    // FdF 20060425: For performance reason, and util strength
+    // reduction is not improved to handle more complex expression,
+    // disable secondary IV replacement when this will introduce a MUL
+    // operation.
+    if ((secondary->Step_value()->Kind() != CK_CONST) ||
+	((secondary->Step_value()->Const_val() != 1) &&
+	 (secondary->Step_value()->Const_val() != -1)))
+      continue;
+
     if (secondary->Init_value() != NULL) {
       // Update_exit_stmt must run before Replace_secondary_IV because
       // it needs to access the phi node at the loop start and
