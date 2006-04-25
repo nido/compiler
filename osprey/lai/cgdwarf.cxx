@@ -1866,6 +1866,77 @@ postorder_visit (DST_INFO_IDX idx)
 }
 #endif
 
+#ifdef TARG_ST
+// [CL]
+/* Check if 'idx' is a type, and if so, check if the types it
+   references (if any) have been emitted. If it is the case, 'idx'
+   should be emitted even though it was not used by the emitted
+   code. It may be used by the debugger.
+ */
+static BOOL
+type_with_emitted_refs (DST_INFO_IDX idx)
+{
+  DST_INFO *info;
+  DST_INFO_IDX child_idx;
+  Dwarf_P_Die die;
+  DST_DW_tag tag;
+  DST_ATTR_IDX attr;
+
+  info = DST_INFO_IDX_TO_PTR (idx);
+  tag = DST_INFO_tag (info);
+  die = (Dwarf_P_Die) DST_INFO_dieptr (info);
+  attr = DST_INFO_attributes(info);
+
+  DST_INFO *ref_info;
+  Dwarf_P_Die ref_die;
+  DST_INFO_IDX ref_idx;
+
+  switch (tag) {
+  case DW_TAG_pointer_type:
+    ref_idx = DST_POINTER_TYPE_type(DST_ATTR_IDX_TO_PTR(attr,
+							DST_POINTER_TYPE));
+    break;
+  case DW_TAG_const_type:
+    ref_idx = DST_CONST_TYPE_type(DST_ATTR_IDX_TO_PTR(attr, DST_CONST_TYPE));
+    break;
+  case DW_TAG_volatile_type:
+    ref_idx = DST_VOLATILE_TYPE_type(DST_ATTR_IDX_TO_PTR(attr,
+							 DST_VOLATILE_TYPE));
+    break;
+  case DW_TAG_reference_type:
+    ref_idx = DST_REFERENCE_TYPE_type(DST_ATTR_IDX_TO_PTR(attr,
+							  DST_REFERENCE_TYPE));
+    break;
+  case DW_TAG_typedef:
+    ref_idx = DST_TYPEDEF_type(DST_ATTR_IDX_TO_PTR(attr, DST_TYPEDEF));
+    break;
+  case DW_TAG_array_type:
+    ref_idx = DST_ARRAY_TYPE_type(DST_ATTR_IDX_TO_PTR(attr, DST_ARRAY_TYPE));
+    break;
+  case DW_TAG_subroutine_type:
+    ref_idx = DST_SUBROUTINE_TYPE_type(DST_ATTR_IDX_TO_PTR(attr,
+							   DST_SUBROUTINE_TYPE));
+    break;
+  default:
+    return FALSE;
+  }
+
+  if (DST_IS_NULL(ref_idx)) {
+    /* [CL] for instance, handle pointer to void */
+    return TRUE;
+  }
+
+  /* Check if ref_idx's die has been generated */
+  ref_info = DST_INFO_IDX_TO_PTR(ref_idx);
+  ref_die = (Dwarf_P_Die) DST_INFO_dieptr (info);
+  if (ref_die) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+#endif
+
 /* traverse all DSTs and handle the non-pu info */
 static void
 Traverse_Global_DST (void)
@@ -1914,7 +1985,8 @@ Traverse_Global_DST (void)
      */
     parent = CGD_enclosing_proc[GLOBAL_LEVEL];
 #ifdef TARG_ST
-    if (postorder_visit (idx) || DST_INFO_tag(info) == DW_TAG_variable) {
+    if (postorder_visit (idx) || DST_INFO_tag(info) == DW_TAG_variable
+	|| type_with_emitted_refs(idx)) {
 #endif
     (void) preorder_visit (idx, parent, NULL, LOCAL_LEVEL, TRUE /* visit children */);
     DST_SET_info_mark(DST_INFO_flag(info));	/* mark has been traversed */
