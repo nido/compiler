@@ -2331,6 +2331,9 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
   { /* SINCOSL */
 	BYVAL, PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
 	IRETURN_V, NULL, "SINCOS", "__sincosl"},
+  { /* VA_START */
+	BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+        IRETURN_V, "__builtin_va_start", NULL, NULL},
 
 #ifdef TARG_ST
 #include "targ_intrn_info.def"

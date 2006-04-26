@@ -562,6 +562,12 @@ BE_EXPORTED extern BOOL  OPT_unroll_size_overridden;
 BE_EXPORTED extern BOOL  OPT_Lower_Speculate;
 BE_EXPORTED extern BOOL  OPT_Lower_Treeheight;
 BE_EXPORTED extern BOOL  OPT_Inline_Divide;
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL  OPT_Cnst_DivRem;
+BE_EXPORTED extern BOOL  OPT_Cnst_DivRem_Set;
+BE_EXPORTED extern BOOL  OPT_Cnst_Mul;
+BE_EXPORTED extern BOOL  OPT_Cnst_Mul_Set;
+#endif
 BE_EXPORTED extern BOOL  OPT_Space;
 BE_EXPORTED extern INT32 Olimit; /* stop optimization or use regions at this limit */
 /* FALSE => stop optimization if Olimit reached;

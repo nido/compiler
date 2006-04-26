@@ -1058,8 +1058,11 @@ typedef enum {
   INTRN_SINCOS    = 761,
   INTRN_SINCOSL   = 762,
 
+  /* vararg support */
+  INTRN_VA_START  = 763,
+
 /* More C intrinsics */
-  INTRINSIC_GENERAL_LAST = 762,
+  INTRINSIC_GENERAL_LAST = 763,
 
 #ifdef TARG_ST
 #include "targ_wintrinsic.h"  /* should at least define INTRINSIC_TARG_LAST */

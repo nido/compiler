@@ -260,6 +260,7 @@ BE_EXPORTED extern BOOL	INLINE_All;	/* Inline everything possible? */
 #ifdef TARG_ST //CL
 BE_EXPORTED extern BOOL	INLINE_All_Inline; /* Mark must-inline 'inline' functions */
 BE_EXPORTED extern BOOL	INLINE_Only_Inline; /* Mark may-inline only 'inline' functions */
+BE_EXPORTED extern BOOL	INLINE_Only_Inline_Set;
 #endif
 BE_EXPORTED extern BOOL	INLINE_Optimize_Alloca;	/* When inlining calls with alloca fix the stack and pop  */
 BE_EXPORTED extern BOOL	INLINE_Enable_Copy_Prop; /* Copy Propogation during stand-alone inlining? */

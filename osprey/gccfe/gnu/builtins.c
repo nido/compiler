@@ -4173,8 +4173,8 @@ expand_builtin (exp, target, subtarget, mode, ignore)
       expand_builtin_prefetch (arglist);
       return const0_rtx;
 
-#if defined(TARG_ST200)
-#include "gfec_builtins.h"		/* Will come from targinfo/st200/...*/	
+#ifdef TARG_ST
+#include "gfec_builtins.h"		/* Will come from targinfo/<arch>/...*/	
 #endif /* defined(TARG_ST200) */
 
     default:	/* just do library call, if unknown builtin */

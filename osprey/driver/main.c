@@ -93,7 +93,6 @@ static char compiler_version[] = INCLUDE_STAMP;
 #define THREAD_MODEL "generic"
 #else
 #define THREAD_MODEL "single"
-#define
 #endif
 static const char thread_model[] = THREAD_MODEL ;
 #endif
@@ -257,6 +256,8 @@ main (int argc, char *argv[])
 	if (dump_machine) {
 #ifdef TARG_ST200
 	    fprintf(stdout, "st200\n") ;
+#elif defined( TARG_STxP70 )
+	    fprintf(stdout, "stxp70\n") ;
 #else
 	    fprint(stdout, "unknown\n") ;
 #endif

@@ -590,19 +590,15 @@ CGSPILL_OP_Spill_Location (OP *op)
   if (!spill_ids) return NULL;
   
   // [CG]: op must be marked as spill
-  if (!CGSPILL_Is_Spill_Op(op)) return NULL;
+  if (!OP_spill(op)) return NULL;
   
-  TN *offset_tn;
+  // Get the spilled_tn
+  TN *spilled_tn = OP_spilled_tn(op);
+  FmtAssert(spilled_tn != NULL, ("OP does not have a OP_spilled_tn():  BB:%d, OP:%d\n", BB_id(OP_bb(op)), OP_map_idx(op)));
   
-  if (OP_load(op)) {
-    offset_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_offset));
-  } else if (OP_store(op)) {
-    offset_tn = OP_opnd(op,TOP_Find_Operand_Use(OP_code(op), OU_offset));
-  }
+  if (TN_spill_is_valid(spilled_tn)) 
+    mem_loc = TN_spill(spilled_tn);
   
-  mem_loc = TN_var(offset_tn);
-  FmtAssert(mem_loc != NULL, ("Invalid offset for a spill operation  BB:%d, OP:%d\n", BB_id(OP_bb(op)), OP_map_idx(op)));
-
   if (mem_loc && !CGSPILL_Is_Spill_Location(mem_loc))
     mem_loc = NULL;
   
@@ -856,6 +852,7 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
     OP *op = OPS_last(ops);
     while(!OP_load(op)) op = OP_prev(op);
     Set_OP_spill(op);
+    Set_OP_spilled_tn(op, tn);
 
 #ifdef TARG_ST
     // [CL] set the epilogue field if we are in an Exit_BB
@@ -915,6 +912,7 @@ CGSPILL_Store_To_Memory (TN *src_tn, ST *mem_loc, OPS *ops,
   OP *op = OPS_last(ops);
   while(!OP_store(op)) op = OP_prev(op);
   Set_OP_spill(op);
+  Set_OP_spilled_tn(op, src_tn);
 
 #ifdef TARG_ST
   // [CL] set the prologue field if we are in an Entry_BB

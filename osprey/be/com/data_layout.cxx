@@ -86,6 +86,7 @@
 
 #ifdef TARG_ST
 #include "be_symtab.h"
+#include "cg_flags.h"
 #endif
 #ifdef TARG_ST
 
@@ -322,6 +323,7 @@ typedef enum {
   SFSEG_UNKNOWN,	/* Unknown/undefined */
   SFSEG_ACTUAL,		/* Actual arguments */
   SFSEG_FTEMP,		/* Fixed temporaries (altentry formals) */
+  SFSEG_REGSAVE,        /* Register save area used with push/pops. */
   SFSEG_FORMAL,         /* Formal argument save area */
   SFSEG_UPFORMAL	/* Up-level Formal argument save area */
 			/* (e.g. stack vars get put in caller's frame) */
@@ -392,6 +394,7 @@ static SF_SEG_DESC SF_Seg_Descriptors [SFSEG_LAST+1] = {
   { SFSEG_UNKNOWN, NULL, MAX_SFSEG_BYTES, "Unknown" },
   { SFSEG_ACTUAL,  NULL, MAX_SFSEG_BYTES, "Actual_Arg" },
   { SFSEG_FTEMP,   NULL, MAX_SFSEG_BYTES, "Fixed_Temp" },
+  { SFSEG_REGSAVE, NULL, MAX_SFSEG_BYTES, "Reg_Save" },
   { SFSEG_FORMAL,  NULL, MAX_SFSEG_BYTES, "Formal_Arg" },
   { SFSEG_UPFORMAL,  NULL, MAX_SFSEG_BYTES, "UpFormal_Arg" }
 };
@@ -1802,6 +1805,9 @@ static TY_IDX Formal_ST_type(ST *sym)
   return type;
 }
 
+#ifdef TARG_ST
+SF_VARARG_INFO sf_vararg_info;
+#else /* !TARG_ST */
 /* indexed list of vararg symbols */
 # if MAX_NUMBER_OF_REGISTER_PARAMETERS > 0
     ST *vararg_symbols[MAX_NUMBER_OF_REGISTER_PARAMETERS];	
@@ -1809,17 +1815,55 @@ static TY_IDX Formal_ST_type(ST *sym)
     // zero length arrays not allowed.
 #   define vararg_symbols ((ST * *)0)  // Not accessed
 # endif
+#endif /* !TARG_ST */
 
 /* this is just so we don't have symbols dangling around in next PU */
 static void
 Clear_Vararg_Symbols (void)
 {
+#ifdef TARG_ST
+	memset(&sf_vararg_info, 0, sizeof(sf_vararg_info));
+#else
 	INT i;
 	for (i = 0; i < MAX_NUMBER_OF_REGISTER_PARAMETERS; i++) {
 		vararg_symbols[i] = NULL;
 	}
+#endif
 }
 
+#ifdef TARG_ST
+/*
+ * Get_Vararg_Ploc_Symbol()
+ *
+ * See interface description.
+ */
+void
+Get_Vararg_Ploc_Symbol (PLOC ploc, ST **st, INT *offset)
+{
+  if (Preg_Offset_Is_Int(PLOC_reg(ploc))) {
+    *st = sf_vararg_info.var_int_save_base;
+    *offset = (PLOC_reg(ploc) - (First_Int_Preg_Param_Offset + sf_vararg_info.fixed_int_slots)) * sf_vararg_info.int_slot_size + sf_vararg_info.var_int_save_offset;
+  } else if (Preg_Offset_Is_Float(PLOC_reg(ploc))) {
+    *st = sf_vararg_info.var_float_save_base;
+    *offset = (PLOC_reg(ploc) - (First_Float_Preg_Param_Offset + sf_vararg_info.fixed_float_slots)) * sf_vararg_info.float_slot_size + sf_vararg_info.var_float_save_offset;
+  } else {
+    DevAssert(0, ("PLOC type not supported for varargs"));
+  }
+}
+
+/*
+ * Get_Vararg_Save_Area_Info()
+ *
+ * See interface description.
+ */
+void
+Get_Vararg_Save_Area_Info(SF_VARARG_INFO *vararg_info)
+{
+  *vararg_info = sf_vararg_info;
+}
+#endif
+
+#ifndef TARG_ST
 /* get vararg symbol that corresponds to ploc value */
 extern ST*
 Get_Vararg_Symbol (PLOC ploc)
@@ -1829,6 +1873,193 @@ Get_Vararg_Symbol (PLOC ploc)
 		("Get_Vararg_Symbol:  ploc %d out of range", PLOC_reg(ploc)));
 	return vararg_symbols[PLOC_reg(ploc)-First_Int_Preg_Param_Offset];
 }
+#endif
+
+#ifdef TARG_ST
+/*
+ * Allocate_Vararg_Formals ()
+ *
+ * Allocate formals if the pu ia a vararg function.
+ * It as been separated from the Allocate_Vararg_Formal() of
+ * non vararg functions to simplify the code.
+ */
+static void
+Allocate_Vararg_Formals (WN *pu)
+{
+  TY_IDX pu_type = ST_pu_type (WN_st (pu));
+  BOOL varargs = TY_is_varargs (pu_type);
+
+  /* If PU is not a vararg function, there is nothing to do. */
+  if (!varargs) return;
+
+  /* [CG] I don't understand how to handle altentries and varargs. */
+  if ( PU_has_altentry(Get_Current_PU())) {
+    FmtAssert(0, ("Altentry not supported with varargs functions."));
+  }
+
+  /* Simulate the parameter passing for varargs. */
+  PLOC ploc;
+  INT i;
+
+  ploc = Setup_Input_Parameter_Locations(pu_type);
+
+#ifdef Is_True_On
+  if (Trace_Frame) {
+    fprintf(TFile, "<lay> %s (): \n", __FUNCTION__);
+  }
+#endif
+  
+  for (i = 0; i < WN_num_formals(pu); i++) {
+    ST *sym = WN_st(WN_formal(pu, i));
+    ploc = Get_Input_Parameter_Location(Formal_ST_type(sym));
+    sym =  Formal_Sym(sym, PLOC_on_stack(ploc) || varargs); 
+    Allocate_Entry_Formal (sym, 
+			   PLOC_on_stack(ploc),
+			   Is_Formal_Preg(PLOC_reg(ploc)),
+			   PLOC_lpad(ploc),
+			   PLOC_rpad(ploc));
+#ifdef Is_True_On
+    if (Trace_Frame) {
+      fprintf(TFile, "<lay> %s: %s (formal: %s): %s [preg %d]; lpad %d; size %d; rpad %d;\n", 
+	      __FUNCTION__,
+	      ST_name(WN_st(WN_formal(pu, i))),
+	      ST_name(sym),
+	      PLOC_on_stack(ploc) ? "on stack" : "in a register",
+	      PLOC_reg(ploc),
+	      PLOC_lpad(ploc),
+	      PLOC_size(ploc),
+	      PLOC_rpad(ploc));
+      fprintf(TFile, "<lay> %s: PLOC_offset = %d;\n", 
+	      __FUNCTION__,
+	      PLOC_offset(ploc));
+
+    }
+#endif
+
+  }
+  
+  /*
+   *  For varargs, the func-entry just has the list of fixed
+   *  parameters, so also have to allocate the vararg registers.
+   */
+  
+  INT num_var_plocs = 0;
+  INT int_slot_size = 0;
+  INT float_slot_size = 0;
+  INT num_int_slots = 0;
+  INT num_float_slots = 0;
+  INT start_int_offset = 0;
+  INT start_float_offset = 0;
+  INT total_int_size = 0;
+  INT total_float_size = 0;
+  PREG_NUM start_int_preg = First_Int_Preg_Param_Offset;
+  PREG_NUM start_float_preg = First_Float_Preg_Param_Offset;
+  
+  /* don't do if already reached stack params */
+  if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
+    ploc = Get_Vararg_Input_Parameter_Location (ploc);
+    while (!PLOC_on_stack(ploc)) {
+      num_var_plocs++;
+      PREG_NUM preg = PLOC_reg(ploc);
+      if (Preg_Offset_Is_Int(preg)) {
+	if (start_int_offset == 0) {
+	  start_int_offset = PLOC_offset(ploc);
+	  start_int_preg = preg;
+	}
+	int_slot_size = PLOC_size(ploc);
+	num_int_slots++;
+	total_int_size = PLOC_total_size(ploc);
+      } else if (Preg_Offset_Is_Float(preg)) {
+	if (start_float_offset == 0) {
+	  start_float_offset = PLOC_offset(ploc);
+	  start_float_preg = preg;
+	}
+	float_slot_size = PLOC_size(ploc);
+	num_float_slots++;
+	total_float_size = PLOC_total_size(ploc);
+      } else {
+	DevAssert(0, ("PLOC type not supported for varargs"));
+      }
+      DevAssert(PLOC_lpad(ploc) == 0 && PLOC_rpad(ploc) == 0, 
+		("Unexpected padding for vararg parameters"));
+#ifdef Is_True_On
+      if (Trace_Frame) {
+	fprintf(TFile, "<lay> %s(): vararg slot in register [preg %d] %s\n",
+		__FUNCTION__,
+		preg,
+		Preg_Offset_Is_Int(preg) ? "is_int":
+		Preg_Offset_Is_Float(preg) ? "is_float": "is_other");
+      }
+#endif
+      ploc = Get_Vararg_Input_Parameter_Location (ploc);
+    }
+  }
+  
+  if (num_var_plocs > 0) {
+    INT int_size = int_slot_size * num_int_slots;
+    INT float_size = float_slot_size * num_float_slots;
+    /* Some consistency checks. */
+    DevAssert(int_size == total_int_size - start_int_offset, ("slot size and ploc size mismatch for int"));
+    DevAssert(float_size == total_float_size - start_float_offset, ("slot size and ploc size mismatch"));
+    
+    /* Compute the total size and alignment of the register vararg area for. */
+    INT size = int_size + float_size;
+    INT align = MAX(int_slot_size, float_slot_size);
+    TY_IDX vararg_array_ty_idx = Make_Array_Type(MTYPE_I1, 
+						 1, size);
+    Set_TY_align(vararg_array_ty_idx, align);
+    /* Set flag for alias analyzer */
+    Set_TY_no_ansi_alias (vararg_array_ty_idx);
+    ST *sym = Gen_Temp_Symbol(vararg_array_ty_idx, "vararg_array");
+    Set_ST_sclass (sym, SCLASS_FORMAL);
+    Set_ST_is_value_parm(sym);
+    Set_ST_addr_saved(sym);
+    Allocate_Entry_Formal(sym, 
+			  FALSE, /* Formals not on stack. */ 
+			  TRUE, /* Formals in registers. */
+			  0, 0 /* No padding. */);
+    sf_vararg_info.flags = SF_VARARG_INFO_HAS_STACK;
+    if (num_int_slots > 0) sf_vararg_info.flags |= SF_VARARG_INFO_HAS_INT;
+    if (num_float_slots > 0) sf_vararg_info.flags |= SF_VARARG_INFO_HAS_FLOAT;
+    sf_vararg_info.fixed_int_slots = start_int_preg - First_Int_Preg_Param_Offset;
+    sf_vararg_info.int_slot_size = int_slot_size;
+    sf_vararg_info.fixed_float_slots = start_float_preg - First_Float_Preg_Param_Offset;
+    sf_vararg_info.float_slot_size = float_slot_size;
+    /* If the float plocs came first we order the float area first. */
+    if (start_float_offset < start_int_offset) {
+      sf_vararg_info.var_int_save_base = sym;
+      sf_vararg_info.var_int_save_offset = float_size;
+      sf_vararg_info.var_float_save_base = sym;
+      sf_vararg_info.var_float_save_offset = 0;
+    } else {
+      sf_vararg_info.var_int_save_base = sym;
+      sf_vararg_info.var_int_save_offset = 0;
+      sf_vararg_info.var_float_save_base = sym;
+      sf_vararg_info.var_float_save_offset = int_size;
+    }
+    sf_vararg_info.var_stack_base = SF_Block(SFSEG_UPFORMAL);
+    sf_vararg_info.var_stack_offset = STB_size(SF_Block(SFSEG_UPFORMAL));
+#ifdef Is_True_On
+      if (Trace_Frame) {
+	fprintf(TFile, "<lay> %s(): allocated vararg area %s, size: %d, align %d, int_size: %d, int_offset: %d, float_size: %d,  float_offset: %d, fixed_int_slots: %d, fixed_float_slots: %d\n",
+		__FUNCTION__,
+		ST_name(sym),
+		size, align, 
+		int_size, sf_vararg_info.var_int_save_offset,
+		float_size, sf_vararg_info.var_float_save_offset,
+		sf_vararg_info.fixed_int_slots,
+		sf_vararg_info.fixed_float_slots
+		);
+      }
+#endif
+  } else {
+    sf_vararg_info.flags = 
+      SF_VARARG_INFO_HAS_STACK;
+    sf_vararg_info.var_stack_base = SF_Block(SFSEG_UPFORMAL);
+    sf_vararg_info.var_stack_offset = STB_size(SF_Block(SFSEG_UPFORMAL));
+  }
+}
+#endif
 
 /*
  * Search for all formals, including alt-entry formals,
@@ -1845,6 +2076,15 @@ Allocate_All_Formals (WN *pu)
 
   Init_ST_formal_info_for_PU (WN_num_formals(pu));
   varargs = TY_is_varargs (pu_type);
+
+#ifdef TARG_ST
+  /* For vararg functions, call specific routine. */
+  if (varargs) {
+    Allocate_Vararg_Formals (pu);
+    return;
+  }
+#endif
+
   ploc = Setup_Input_Parameter_Locations(pu_type);
 
 #ifdef Is_True_On
@@ -1853,13 +2093,14 @@ Allocate_All_Formals (WN *pu)
 	                          varargs ? "varargs" : "no varargs");
   }
 #endif
-  /*
-   *  for varargs functions do not put the scalar formal base in a preg
-   */
+
 #ifdef TARG_ST
   // Arthur: so we can compute lpad/rpad
   INT cur_offset = 0;
 #endif
+  /*
+   *  for varargs functions do not put the scalar formal base in a preg
+   */
   for (i = 0; i < WN_num_formals(pu); i++) {
     sym = WN_st(WN_formal(pu, i));
     ploc = Get_Input_Parameter_Location( Formal_ST_type(sym));
@@ -1882,7 +2123,7 @@ Allocate_All_Formals (WN *pu)
 
 #ifdef TARG_ST
     Allocate_Entry_Formal (sym, 
-			   PLOC_on_stack(ploc), 
+			   PLOC_on_stack(ploc),
 			   Is_Formal_Preg(PLOC_reg(ploc)),
 			   PLOC_lpad(ploc),
 			   PLOC_rpad(ploc));
@@ -1924,6 +2165,8 @@ Allocate_All_Formals (WN *pu)
     }
   }
 
+  /* End of processing for TARG_ST code. */
+#ifndef TARG_ST
   if (varargs) {
     /*
      *  For varargs, the func-entry just has the list of fixed
@@ -1975,6 +2218,15 @@ Allocate_All_Formals (WN *pu)
       Allocate_Entry_Formal(sym, PLOC_on_stack(ploc), 
                                        Is_Formal_Preg(PLOC_reg(ploc)));
 #endif
+#ifndef TARG_ST
+      /* [CG]: We do not base the vararg symbol as an offset from the
+       * last fixed symbol as mentionned below. This has wrong
+       * effects on the alias analysis as the symbol is
+       * based on another symbol. This causes aliased accesses
+       * to become unaliased. In particular the store of
+       * the vararg symbols if then unaliased with the load
+       * of the variable args.
+       */
       /*
        * The optimizer sees these varargs references as *ap+n,
        * i.e. as an offset past the last fixed arg, so to help
@@ -1983,10 +2235,11 @@ Allocate_All_Formals (WN *pu)
        */
       Set_ST_base(sym, last_fixed_symbol);
       Set_ST_ofst(sym, PLOC_offset(ploc) - PLOC_offset(last_fixed_ploc));
-
+#endif
       ploc = Get_Vararg_Input_Parameter_Location (ploc);
     }
   }
+#endif /* !TARG_ST */
 }
 
 /* For stack parameters in altentry functions, 
@@ -2158,6 +2411,10 @@ Init_Segment_Descriptors(void)
   }
   // mark formal block as unused until someone references it
   Set_ST_is_not_used(SF_Block(SFSEG_FORMAL));
+
+  // mark formal block as unused until someone references it
+  Set_ST_is_not_used(SF_Block(SFSEG_REGSAVE));
+
 #ifdef TARG_ST
   // [CG]
   // mark formal block as basereg as objects may overlap between formal and upformal
@@ -2208,7 +2465,7 @@ Init_Frame_For_PU (INT32 actual_size)
   /* temps can use max frame size minus the fixed space required for
    * formals and actuals. */
   SF_Maxsize ( SFSEG_FTEMP ) = 
-	MAX_FRAME_OFFSET - SEG_SIZE(SFSEG_FORMAL) - SEG_SIZE(SFSEG_ACTUAL);
+    MAX_FRAME_OFFSET - SEG_SIZE(SFSEG_FORMAL) - SEG_SIZE(SFSEG_ACTUAL) - SEG_SIZE(SFSEG_REGSAVE);
 
   /* Initialize the size of a large object.  Note that if we can
    * determine in advance the size of the frame per the FE, and it is
@@ -2236,10 +2493,15 @@ Bind_Stack_Frame ( ST *SP_baseST, ST *FP_baseST )
 
   switch (Current_PU_Stack_Model) {
   case SMODEL_SMALL:
+    Set_Direction (Get_Direction(SP_baseST), SF_Block(SFSEG_REGSAVE));
+    Set_Direction (Get_Direction(SP_baseST), SF_Block(SFSEG_FTEMP));
+    break;
   case SMODEL_LARGE:
+    Set_Direction (Get_Direction(SP_baseST), SF_Block(SFSEG_REGSAVE));
     Set_Direction (Get_Direction(SP_baseST), SF_Block(SFSEG_FTEMP));
     break;
   case SMODEL_DYNAMIC:
+    Set_Direction (Get_Direction(SP_baseST), SF_Block(SFSEG_REGSAVE));
     Set_Direction (Get_Direction(FP_baseST), SF_Block(SFSEG_FTEMP));
     break;
   default:
@@ -2255,9 +2517,9 @@ Bind_Stack_Frame ( ST *SP_baseST, ST *FP_baseST )
  *
  * Merge_Fixed_Stack_Frame
  *
- * At this point all but the TEMP segment are allocated, so merge the
- * other segments so that the offsets are exact.
- *
+ * At this point all but the TEMP and REGSAVE segments are allocated, 
+ * so merge the other segments so that the offsets are exact.
+ * The REGSAVE segment will only be merged in Finalize_Stack_Frame.
  * ====================================================================
  */
 static void
@@ -2298,6 +2560,7 @@ Merge_Fixed_Stack_Frame(ST *SP_baseST, ST *FP_baseST)
   case SMODEL_LARGE:
     MERGE_SEGMENT(SP_baseST, SFSEG_ACTUAL, MAX_LARGE_FRAME_OFFSET);
     MERGE_SEGMENT(SP_baseST, SFSEG_FTEMP, MAX_LARGE_FRAME_OFFSET);
+
     Set_ST_base(SF_Block(SFSEG_UPFORMAL), FP_baseST);
     Set_ST_ofst (SF_Block(SFSEG_UPFORMAL), Stack_Offset_Adjustment);
     MERGE_SEGMENT(FP_baseST, SFSEG_FORMAL, MAX_LARGE_FRAME_OFFSET);
@@ -2305,6 +2568,7 @@ Merge_Fixed_Stack_Frame(ST *SP_baseST, ST *FP_baseST)
 
   case SMODEL_DYNAMIC:
     MERGE_SEGMENT(SP_baseST, SFSEG_ACTUAL, MAX_LARGE_FRAME_OFFSET);
+
     Set_ST_base(SF_Block(SFSEG_UPFORMAL), FP_baseST);
     Set_ST_ofst (SF_Block(SFSEG_UPFORMAL), Stack_Offset_Adjustment);
     MERGE_SEGMENT(FP_baseST, SFSEG_FORMAL, MAX_LARGE_FRAME_OFFSET);
@@ -2690,6 +2954,15 @@ INT64 Finalize_Stack_Frame (void)
 
   switch ( Current_PU_Stack_Model ) {
   case SMODEL_SMALL:
+#ifdef TARG_ST
+    if (!ST_is_not_used(SF_Block(SFSEG_REGSAVE)) ) {
+      if (Trace_Frame) fprintf(TFile, "<lay> Before regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+      MERGE_SEGMENT(SP_Sym, SFSEG_REGSAVE, MAX_SMALL_FRAME_OFFSET);
+      if (Trace_Frame) fprintf(TFile, "<lay> After regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+	    
+    }
+#endif
+
     // if formals are unused (and no upformals), 
     // then don't add formals to frame.
 #ifdef TARG_ST
@@ -2756,10 +3029,26 @@ INT64 Finalize_Stack_Frame (void)
     break;
 
   case SMODEL_LARGE:
+#ifdef TARG_ST
+    if (!ST_is_not_used(SF_Block(SFSEG_REGSAVE)) ) {
+      if (Trace_Frame) fprintf(TFile, "<lay> Before regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+      MERGE_SEGMENT(SP_Sym, SFSEG_REGSAVE, MAX_LARGE_FRAME_OFFSET);
+      if (Trace_Frame) fprintf(TFile, "<lay> After regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+    }
+#endif
+
     Frame_Size = STB_size(SP_Sym) + STB_size(FP_Sym);
     break;
 
   case SMODEL_DYNAMIC:
+#ifdef TARG_ST
+    if (!ST_is_not_used(SF_Block(SFSEG_REGSAVE)) ) {
+      if (Trace_Frame) fprintf(TFile, "<lay> Before regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+      MERGE_SEGMENT(FP_Sym, SFSEG_REGSAVE, MAX_LARGE_FRAME_OFFSET);
+      if (Trace_Frame) fprintf(TFile, "<lay> After regsave merge: .SP %lld .FP %lld\n", STB_size(SP_Sym), STB_size(FP_Sym));
+    }
+#endif
+
     Frame_Size = STB_size(SP_Sym) + STB_size(FP_Sym);
     break;
 
@@ -3568,7 +3857,38 @@ Stack_Offset_Adjustment_For_PU (void)
 	return 0;
 }
 
-void foo (void)
+#ifdef TARG_ST
+/*
+ * Allocate_Reg_Save_Area()
+ *
+/* Allocate space for the REGSAVE located area after FTEMP.
+ * The effective allocation will only be done in Finalize_Stack_Frame.
+ */
+BE_EXPORTED extern void
+Allocate_Reg_Save_Area(INT64 size)
 {
-  printf ("IN FOO\n");
+  FmtAssert(ST_is_not_used(SF_Block(SFSEG_REGSAVE)), ("Reg Save area must be allocated only once"));
+  Set_STB_size(SF_Block(SFSEG_REGSAVE), size);
+  Clear_ST_is_not_used(SF_Block(SFSEG_REGSAVE));
+  if (Trace_Frame)
+    fprintf(TFile, "<lay> allocating regsave size = %lld\n", size);
 }
+
+
+/*
+ * Get_Reg_Save_Area()
+ *
+ * Returns the block symbol corresponding to the REGSAVE area.
+ * Should be used by the code generator to locate the REGSAVE area
+ * into the frame once Finalize_Stack_Frame has been done.
+ * Returns NULL if no REGSAVE area is allocated.
+ */
+BE_EXPORTED extern ST *
+Get_Reg_Save_Area(void)
+{
+  if (ST_is_not_used(SF_Block(SFSEG_REGSAVE))) return NULL;
+  return SF_Block(SFSEG_REGSAVE);
+}
+
+#endif
+

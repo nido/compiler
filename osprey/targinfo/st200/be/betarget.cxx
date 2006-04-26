@@ -191,10 +191,10 @@ static BOOL Is_Power_Of_2(INT64 val, TYPE_ID mtype)
 extern BOOL
 Can_Do_Fast_Divide (TYPE_ID mtype, INT64 dividend)
 {
-	if (Is_Power_Of_2(dividend, mtype)) {
-		return TRUE;
-	}
-	return FALSE;
+  if (Is_Power_Of_2(dividend, mtype)) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /* =============================================================
@@ -206,105 +206,27 @@ Can_Do_Fast_Divide (TYPE_ID mtype, INT64 dividend)
 extern BOOL
 Can_Do_Fast_Remainder (TYPE_ID mtype, INT64 dividend)
 {
-	if (Is_Power_Of_2(dividend, mtype)) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
-/* ====================================================================
- *
- * Multiply_Limit
- * Divide_Limit
- *
- * When trying to convert a multiply or divide operation into a series
- * of shifts/adds/subtracts, there is some limit (cycles? ops?) at
- * which the conversion is not profitable.  Return that limit.
- * The number of cycles should be the mult latency + mflo cycle.
- * TODO: Revisit these limits to check for I-cache effects, timing.
- *
- * ====================================================================
- */
-extern INT
-Multiply_Limit ( 
-  BOOL is_64bit, 
-  INT64 val
-)
-{
-  INT limit = 0;
-
-  if (is_64bit)	{ /* 64-bit multiply */
-    switch (Target) {
-      case TARGET_st220:	
-	limit = 14; break;
-      default:		
-	limit = 14; break;
-    }
-  } else { /* 32-bit multiply */
-    switch( Target ) {
-      case TARGET_st220:	
-	limit = 14; break;
-      default:		
-	limit = 14; break;
-    }
+  if (Is_Power_Of_2(dividend, mtype)) {
+    return TRUE;
   }
-  return limit;
-}
-
-extern INT
-Divide_Limit ( BOOL is_64bit)
-{
-  INT limit = 0;
-  if (is_64bit)	{ /* 64-bit divide */
-    switch( Target ) {
-    case TARGET_st220:	limit = 50; break;
-    default:		limit = 50; break;
-    }
-  } else { /* 32-bit divide */
-    switch( Target ) {
-    case TARGET_st220:	limit = 50; break;
-    default:		limit = 50; break;
-    }
-  }
-  return ( limit );
+  return FALSE;
 }
 
 /* =============================================================
- *   Count_Multiply_Shifts (constant)
+ *   Can_Do_Select (mtype)
  *
- *   Count # instructions needed to do multiply with shifts 
- *   and adds.
- *   NOTE:  this routine must stay in sync with cg's 
- *          Expand_Multiply_Into_Shifts.
- *   See that routine for an explanation of the algorithm. 
+ *   return whether select can be translated.
+ *   Case where we don't want select translated if for instance on
+ *   machines with no predication nor pertial predication.
  * =============================================================
  */
-static INT
-Count_Multiply_Shifts (TARG_UINT constant)
+extern BOOL
+Can_Do_Select (TYPE_ID mtype)
 {
-  switch (constant) {
-  case 0:
-  case 1:
-  case 2:
-	return 1;
-  default:
-    if ((constant % 2) == 1) {		/* odd */
-	if ((constant & 2) != 0)
-		return 1 + Count_Multiply_Shifts (constant+1);
-	else
-		return 1 + Count_Multiply_Shifts (constant-1);
-    }
-    else {                  		/* even */
-	while ((constant % 2) == 0) {	/* even */
-		constant = (TARG_UINT)constant >> 1;
-	}
-	if (constant == 1)
-		return 1;
-	else
-		return 1 + Count_Multiply_Shifts (constant);
-    }
-  }
+  /* For st200, we have a select. */
+  return TRUE;
 }
+
 
 /* =============================================================
  *   Can_Do_Fast_Multiply (mtype, val)
@@ -360,13 +282,7 @@ INT Copy_Quantum_Ratio(void)
 {
   INT32  ratio;
 
-  //  Lmt_DevWarn(1, ("Copy_Quantum_Ratio needs work"));
-  // I don't think it still needs work
-  switch(Target) {
-  case TARGET_st220:	ratio=	4; break;
-  default:		ratio=	4; break;
-  }
-
+  ratio = 4;
   return ratio;    
 }
 

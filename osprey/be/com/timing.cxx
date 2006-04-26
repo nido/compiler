@@ -225,7 +225,7 @@ Initialize_Timing ( BOOL enable )
 	    Resource_Alloc ( "   Calculate_Dominators", NULL );
     Timer ( T_CalcDom_CU) =
 	    Resource_Alloc ( "  Calculate_Dominators", Timer(T_CalcDom_Comp));
-#ifdef TARG_ST200
+#ifdef TARG_ST
     Timer ( T_Select_Comp) =
 	    Resource_Alloc ( "  Select if conversion", NULL );
     Timer ( T_Select_CU) =

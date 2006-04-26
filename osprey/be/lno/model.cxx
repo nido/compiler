@@ -342,7 +342,7 @@ static char *source_file = __FILE__;
 #include "config_lno.h"
 #include "config_opt.h"
 #include "tlog.h"
-#ifdef TARG_ST200
+#ifdef TARG_ST
 #include "erbe.h"
 #endif
 
@@ -736,7 +736,7 @@ LOOP_MODEL::Model(WN* wn,
   for (i=num_good+num_bad-1; i>=0; i--) {
     // FdF: Do not try any transformation for ST200, just do what the
     // pragmas say.
-#ifndef TARG_ST200
+#ifndef TARG_ST
     if (can_be_inner[i]) {
       Try_Inner(can_be_unrolled,outermost_can_be_tiled,
 		                                     i,num_good+num_bad);
@@ -1895,7 +1895,7 @@ LOOP_MODEL::OP_Resources_R(WN* wn,
   TYPE_ID  desc = WN_desc(wn);
   
   // FdF: Model not implemented for TARG_ST
-#ifdef TARG_ST200
+#ifdef TARG_ST
   return -1;
 #endif
 

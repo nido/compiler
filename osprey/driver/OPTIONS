@@ -180,7 +180,12 @@
 % Thierry: transmit also -v to icache optim 
 -v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,ld,binopt	self "-show"
 #else
+#ifdef TARG_STxP70
+% STxP70: do not pass to ld that do not support these options.
+-v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp	self "-show"
+#else
 -v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,ld	self "-show"
+#endif
 #endif
 	"show phases and version as they are being invoked"
 -fullwarn toggle(&msglevel,2);		Cc,FTN,as  cpp	self "-m2"
@@ -971,10 +976,30 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 %-EL	toggle(&endian,ENDIAN_LITTLE);		ALL	NONE	""
 %	""
 
+#ifdef TARG_ST200
 -EB	toggle(&endian,ENDIAN_BIG);	ALL	as,ld  self  "-TENV:big_endian"
 	"generate code for big endian target"
 -EL	toggle(&endian,ENDIAN_LITTLE);	ALL	as,ld  self "-TENV:little_endian"
 	"generate code for little endian target"
+#endif
+#ifdef TARG_STxP70
+% STxP70: do not pass endianess options to as,ld 
+-EB	toggle(&endian,ENDIAN_BIG);	ALL	NONE  "-TENV:big_endian"
+	"generate code for big endian target"
+-EL	toggle(&endian,ENDIAN_LITTLE);	ALL	NONE  "-TENV:little_endian"
+	"generate code for little endian target"
+#endif
+
+#ifdef TARG_STxP70
+-fp_ace toggle(&fp_lib,LIB_FP_ACE);         ALL     ld     ""
+        "use lib ACE of COSY instead of lib soft float"
+-mlib16	toggle(&lib_kind,LIB_STXP70_16);         ALL     ld     ""
+        "use 16 registers lib for STxP70"
+-mlib32	toggle(&lib_kind,LIB_STXP70_32);         ALL     ld     ""
+        "use 32 registers lib for STxP70"
+-mlib-short-double	toggle(&lib_short_double,TRUE);	ALL	ld	""
+        "use libraries suitable for -fshort-double code generation"
+#endif
 
 %
 % These two options are passed to the C front end only
@@ -1624,7 +1649,7 @@ I-u%s		;		Cc	ld	"-u %s"
 #endif
 -nofilt	warn_ignored(option_name);	 	CC	NONE	""
 	""
-#ifndef TARG_ST200
+#ifndef TARG_ST
 % to be enabled with 2.13 version of the linker.
 -demangle	;		CC	ld	self
 	""
@@ -1831,7 +1856,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -std=%s Process_Std(optargs);		Cc	NONE	""
 	"Determine the language standard"
 #endif
-#ifdef TARG_ST200
+#ifdef TARG_ST
 %%% C++ language options
 -frtti				;		CC	f,cpp	self
 	"Enable generation of rtti information"
@@ -2625,7 +2650,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Don't allocate zero initialized data to .bss section"
 #endif
 
-#ifdef TARG_ST
+#ifdef TARG_ST200
 %%% ST200 specific optimization options
 % Dismissable load generation
 -fdismissible-load	;		Cc	NONE	self "-TARG:dismissible_load=on"
@@ -2744,7 +2769,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 -fpcc-struct-return	;		Cc	NONE	""
 	""
-#ifdef TARG_ST
+#ifdef TARG_ST200
 -fembedded      toggle(&abi,ABI_ST200_embedded);	Cc      NONE    ""
         "Generate code for the embedded ABI"
 -fpic		toggle(&abi,ABI_ST200_embedded);	Cc	NONE	"-TENV:GPREL -TENV:PIC -D__PIC__ -D__pic__"
@@ -2759,6 +2784,17 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	NA__"Generate position independent code for the PIC ABI"
 -fcpic-caller-sets-gp toggle(&abi,ABI_ST200_PIC); Cc      NONE "-TENV:GPREL -TENV:CPIC -TARG:abi=pic-abi -D__CPIC__ -D__cpic__"
 	NA__"Generate main program code for the PIC ABI"
+#elif defined( TARG_STxP70 )
+-fembedded      toggle(&abi,ABI_STxP70_embedded);	Cc      NONE    ""
+        "Generate code for the embedded ABI"
+-fpic		toggle(&abi,ABI_STxP70_embedded);	Cc	NONE	"-TENV:GPREL -TENV:PIC -D__PIC__ -D__pic__"
+	"Generate position independent code for the embedded ABI"
+-fno-pic	toggle(&abi,ABI_STxP70_embedded);	Cc	NONE	""
+	"Generate position-dependant code for the embedded ABI"
+-fPIC		toggle(&abi,ABI_STxP70_embedded);	Cc	NONE	"-TENV:GPREL -TENV:PIC -TENV:large_GOT -D__PIC__ -D__pic__"
+ 	"Generate position indepdendent code, assume large GOT"
+-fno-PIC	toggle(&abi,ABI_STxP70_embedded);	Cc	NONE	""
+	"Generate position-dependant code for the embedded ABI"
 #else
 -fpic	;		Cc	NONE	""
 	NA__"Generate position independent code, if possible"

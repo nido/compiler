@@ -48,3 +48,6 @@
 #ifdef TARG_ST200
 #include "gnu/st200/config.h"
 #endif
+#ifdef TARG_STxP70
+#include "gnu/stxp70/config.h"
+#endif

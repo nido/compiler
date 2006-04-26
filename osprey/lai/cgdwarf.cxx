@@ -2591,7 +2591,7 @@ Cg_Dwarf_Add_Line_Entry (
   // But can't generate object code with that,
   // because libdwarf expects addresses to be aligned with instructions,
   // so ignore such cases.
-#ifndef TARG_ST200 // CL: For ST200, this function is only called
+#ifndef TARG_ST	   // CL: For ST targets, this function is only called
                    //     at bundle starts
   if ((code_address % ISA_INST_BYTES) != 0) {
 #if 0
@@ -2601,7 +2601,7 @@ Cg_Dwarf_Add_Line_Entry (
 	return;
 #endif
   }
-#endif /* TARG_ST200 */
+#endif /* !TARG_ST */
 
 #ifdef TARG_ST // [CL]
   if (CG_emit_asm_dwarf) {
@@ -2624,7 +2624,7 @@ Cg_Dwarf_Add_Line_Entry (
       include_idx = file_table[file_idx].incl_index;
       if ( ! incl_table[include_idx].already_processed) {
 	// new include
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (CG_emit_asm_dwarf) {
 #else
 	if (Object_Code) {
@@ -2635,7 +2635,7 @@ Cg_Dwarf_Add_Line_Entry (
 	incl_table[include_idx].already_processed = TRUE;
       }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (CG_emit_asm_dwarf) {
 #else
       if (Object_Code) {
@@ -2677,7 +2677,7 @@ Cg_Dwarf_Add_Line_Entry (
 
 
   // now do line number:
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (CG_emit_asm_dwarf) {
 #else
   if (Object_Code) {

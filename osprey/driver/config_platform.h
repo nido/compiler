@@ -106,6 +106,7 @@ typedef enum {
   PROC_ST221    = 42,
   PROC_ST231    = 44,
   PROC_ST235    = 45,
+  PROC_arch_1_3_1    = 46,
 } PROCESSOR;
 
 extern PLATFORM Platform;	/* Target platform */
@@ -140,7 +141,8 @@ typedef enum {
   ABI_IA32,
   ABI_ST100,
   ABI_ST200_embedded,
-  ABI_ST200_PIC
+  ABI_ST200_PIC,
+  ABI_STxP70_embedded,
 } ABI;
 
 typedef enum {
@@ -157,6 +159,7 @@ typedef enum {
   ISA_ST100     = 14,
   ISA_ST210     = 15,
   ISA_ST220     = 16,
+  ISA_arch_1_3_1 = 17,
 } ISA;
 
 #ifdef MUMBLE_ST200_BSP
@@ -166,9 +169,17 @@ typedef enum {
   RUNTIME_OS21 = 2,
   RUNTIME_OS21_DEBUG = 3
 } RUNTIME;
-
 extern RUNTIME st200_runtime;
 #endif
+
+#ifdef MUMBLE_STxP70_BSP
+typedef enum {
+  RUNTIME_NONE = 0,
+  RUNTIME_BARE = 1
+} RUNTIME;
+extern RUNTIME stxp70_runtime;
+#endif
+
 
 #ifdef __cplusplus
 }

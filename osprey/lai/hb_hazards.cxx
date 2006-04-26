@@ -499,7 +499,7 @@ Is_There_OP_Dependence(OP *op, OP *prev_op)
 
   INT j;
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   INT16 latency;
   if (CGTARG_Dependence_Required(prev_op, op, &latency)) return TRUE;
 #else

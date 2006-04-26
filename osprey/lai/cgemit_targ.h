@@ -81,6 +81,13 @@ extern void STACK_FP_Fixup_PU();
 // Generate the entry (.proc) directive.
 extern void CGEMIT_Prn_Ent_In_Asm (ST *pu);
 
+// generate predicate suffix depending of the TOP
+extern char* CGEMIT_Asm_Predicate_Suffix( OP *op );
+
+// generate value in hexa decimal for particular op or operand.
+// Case of push/pop mask.
+extern BOOL CGEMIT_TN_Value_In_Hexa_Format( OP *op, TN *t );
+
 // generate weak alias directive.
 extern void CGEMIT_Weak_Alias (ST *sym, ST *strongsym);
 
@@ -88,6 +95,12 @@ extern void CGEMIT_Weak_Alias (ST *sym, ST *strongsym);
 extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 
 #ifdef TARG_ST
+#ifdef TARG_STxP70
+// Special registers fixup just before verify_instruction 
+extern void CGEMIT_Special_Register_Function_Fixup( OP *op );
+#endif
+
+
 // generate procedure end directive
 extern void CGEMIT_Exit_In_Asm (ST *pu);
 

@@ -418,6 +418,8 @@ Get_Parameter_Location (
   ploc.lpad = 0;
   ploc.rpad = 0;
 
+  ploc.by_reference = 0;
+
   //
   // If we're returning a structure/union via $r0.15, just
   // return the register number, no ploc size/offset changes
@@ -677,6 +679,7 @@ Get_Struct_Parameter_Location (PLOC prev)
     next.vararg_reg = 0;               // to silence purify
     next.lpad = 0;
     next.rpad = 0;
+    next.by_reference = 0;
     //}
 
     if (PSTRUCT_first_call) {

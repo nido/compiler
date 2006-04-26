@@ -60,6 +60,9 @@
 #include "fb_whirl.h"
 #include "be_symtab.h"
 #include "intrn_info.h"
+#ifdef TARG_ST
+#include "targ_emulate.h"	// For BETARG_...()
+#endif
 
 #if defined(__GNUC__)
 // [HK]
@@ -3976,6 +3979,13 @@ static WN *emulate_intrinsic_op(WN *block, WN *tree)
 	  ("expected intrinsic call node, not %s", OPCODE_name(WN_opcode(tree))));
   Is_True((INTRN_is_actual(WN_intrinsic(tree))==FALSE),
 	 ("cannot emulate INTRN_is_actual"));
+
+#ifdef TARG_ST
+  /* First invoque target specific emulation defined in 
+   * targinfo/<targ>/be/targ_emulate.cxx.  */
+  WN *targ_wn = BETARG_emulate_intrinsic_op(block, tree);
+  if (targ_wn != NULL) return targ_wn;
+#endif
 
   switch(id) {
   case INTRN_I4EXPEXPR:

@@ -78,6 +78,9 @@ extern "C" {
 #define Exc_Filter_Param_Offset         10   /* exception filter value */
 #endif
 
+#define MAX_NUMBER_OF_REGISTER_PARAMETERS  8      // used in data_layout.cxx
+#define MAX_NUMBER_OF_REGISTERS_FOR_RETURN 8
+
 /* most of the interface is shared between targets */
 #include "targ_sim_core.h"
 

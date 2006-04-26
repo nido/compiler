@@ -705,6 +705,7 @@ check_size_and_freq (IPA_EDGE *ed, IPA_NODE *caller,
 		}
 
 #ifdef TARG_ST
+#ifndef TARG_STxP70 // [CG] To be tuned
 		// [CL] add more constraints on non-inline functions
 		if (!PU_is_inline_function(Pu_Table[ST_pu(callee->Func_ST())])) {
 
@@ -742,6 +743,7 @@ check_size_and_freq (IPA_EDGE *ed, IPA_NODE *caller,
 		  }
 		}
 #endif
+#endif /* TARG_ST */
 	    }
 	} else {
 	    if (combined_weight > IPA_PU_Hard_Limit) {

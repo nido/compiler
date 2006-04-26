@@ -2517,11 +2517,12 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
         if (prefer_reg == REGISTER_UNDEFINED) {
           if (TN_is_local_reg(result_tn) && (unused_tn_def[result_cl] != NULL) && !OP_side_effects(op)
 #ifdef TARG_ST
+	      && !OP_Has_Flag_Effect(op)
 	      && REGISTER_SET_MemberP (must_use, 
 				       LRA_TN_register (unused_tn_def[result_cl]))
 	      && TN_nhardregs(result_tn) == TN_nhardregs (unused_tn_def[result_cl])
 #endif
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	      && (OP_code(op) != TOP_asm)
 #endif
 ) {
@@ -3088,7 +3089,7 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
     }
   }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (BB_asm(bb)) {
     ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_ASMINFO);
     Is_True(ant, ("ASMINFO annotation info not present"));
@@ -3383,6 +3384,9 @@ Can_Def_Be_Moved (
   // but that refinement is not implemented here.
 #endif
   if (OP_side_effects(def_op)) return FALSE;
+#ifdef TARG_ST
+  if (OP_Has_Flag_Effect(def_op)) return FALSE;
+#endif
   if (OP_flag1 (def_op)) return FALSE;
   if (LR_def_cnt(lr) != 1) return FALSE;
   if (tgt_opnum <= spill_opnum) return FALSE;
@@ -4776,8 +4780,8 @@ Fix_LRA_Blues (BB *bb, TN *tn, HB_Schedule *Sched)
                 REGISTER_SET_Size(avail_set[cl])));
 
   if (Do_LRA_Trace(Trace_LRA_Spill)) {
-     fprintf (TFile,"LRA_SPILL>> Attempt to spill (cl:%d) in BB:%d, GRA grant:%d\n",
-                cl, BB_id(bb), REGISTER_SET_Size(avail_set[cl]));
+     fprintf (TFile,"LRA_SPILL>> Attempt to spill (cl:%d) in BB:%d, GRA grant:%d, TN:%d\n",
+                cl, BB_id(bb), REGISTER_SET_Size(avail_set[cl]), TN_number(tn));
   }
 
   // If this is the first attempt to spill for the bb, then try to 

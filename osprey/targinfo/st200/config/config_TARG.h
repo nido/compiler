@@ -115,9 +115,9 @@ BE_EXPORTED extern BOOL Enable_Conditional_Store_Set;
 BE_EXPORTED extern BOOL Enable_Conditional_Prefetch;
 BE_EXPORTED extern BOOL Enable_Conditional_Prefetch_Set;
 
-/* [HK]: Enable Constant Division transformation into mul */
-BE_EXPORTED extern BOOL Enable_Cst_Div;
-BE_EXPORTED extern BOOL Enable_Cst_Div_Set;
+/* [CG]: Enable Dismissible Loads generation.  */
+BE_EXPORTED extern BOOL Enable_Conditional_Op;
+BE_EXPORTED extern BOOL Enable_Conditional_Op_Set;
 
 /* [CG]: Enable Dismissible Loads generation.  */
 BE_EXPORTED extern BOOL Enable_Dismissible_Load;

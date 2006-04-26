@@ -441,9 +441,9 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     INT64 base_ofst;
 
     Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    if (base_st != SP_Sym) return FALSE;
     ldst_const = CGTARG_TN_Value (old_ofst_tn, base_ofst);
-    if ((base_st != SP_Sym) ||
-        ((ldst_const + addiu_const*multiplier) < 0))
+    if (ldst_const + addiu_const*multiplier < 0)
       return FALSE;
   } else if (OP_opnd(ldst_op, base_opndnum) == SP_TN) {
     // [CG]: We may have SP based accesses with no symbol associated

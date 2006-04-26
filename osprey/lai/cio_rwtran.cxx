@@ -1461,7 +1461,7 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
 
   // Use predication, if available
   if ( OP_has_predicate( op ) ) {
-#ifdef TARG_ST
+#ifdef TARG_ST200
     // (cbr) not yet
     abort();
 #endif
@@ -1552,7 +1552,7 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   TN *tn_safe_base  = Build_TN_Like( tn_base );
   TOP code = CGTARG_Which_OP_Select( TN_size( tn_base ) * 8, FALSE, FALSE );
   OP *op_select = Mk_OP( code, tn_safe_base, tn_predicate, tn_base, tn_hole_base );
-  OP *op_select = Mk_OP( code, tn_safe_base, Zero_TN, Zero_TN, Zero_TN );
+  OP *op_select = Mk_OP( code, tn_safe_base, Get_Zero_TN(TN_size(tn_base)), Get_Zero_TN(TN_size(tn_base)), Get_Zero_TN(TN_size(tn_base)) );
   Set_OP_selcondopnd( op_select, tn_predicate );
   // I MAY HAVE THESE NEXT TWO BACKWARDS
   Set_OP_selndfopnd( op_select, tn_base );

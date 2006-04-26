@@ -222,7 +222,7 @@ DST_get_context(tree intree)
 	    // cannot find our context from here
 	    return comp_unit_idx;
 	default:
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	    DevWarn("Unhandled scope of tree code %d",
 			TREE_CODE(ltree));
 #endif
@@ -2200,7 +2200,7 @@ DST_Create_var(ST *var_st, tree decl)
 	char *classname = Get_Name(context);
 	if(classname && !class_var_found_member) {
 	   int len = strlen(classname);
-#ifdef TARG_ST200
+#ifdef TARG_ST
            /* (cbr) dummy_new_mempool not yet set */
 	   char newname [len+5 
 			/* 5 makes room for :: and null char */];
@@ -2221,7 +2221,7 @@ DST_Create_var(ST *var_st, tree decl)
 	    field_name = Index_To_Str(Save_Str2(newname,field_name));
 	   }
 
-#ifndef TARG_ST200
+#ifndef TARG_ST
            /* (cbr) dummy_new_mempool not yet set */
 	   delete [] newname;
 #endif
@@ -2529,7 +2529,7 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
         char *classname = Get_Name(context);
         if(classname && !class_func_found_member) {
            int len = strlen(classname);
-#ifdef TARG_ST200
+#ifdef TARG_ST
            /* (cbr) dummy_new_mempool not yet set */
            char newname [len+5
                         /* 5 makes room for :: and null char */];
@@ -2549,7 +2549,7 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
             funcname = Index_To_Str(Save_Str2(newname,funcname));
            }
 
-#ifndef TARG_ST200
+#ifndef TARG_ST
            /* (cbr) dummy_new_mempool not yet set */
            delete [] newname;
 #endif

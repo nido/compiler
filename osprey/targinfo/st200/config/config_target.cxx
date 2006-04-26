@@ -707,6 +707,16 @@ Configure_Target ()
       Enable_Conditional_Prefetch = TRUE;
     }    
 #endif
+
+    if (!Enable_Conditional_Op_Set) {
+      Enable_Conditional_Op = TRUE;
+    }
+    if (!Enable_Conditional_Op) {
+      /* The Enable_Conditional_Op controls all the others. */
+      Enable_Conditional_Load = FALSE;
+      Enable_Conditional_Store = FALSE;
+      Enable_Conditional_Prefetch = FALSE;
+    }
   }
 
   // [CM]: Configuration for integer division and modulus operations
@@ -717,6 +727,15 @@ Configure_Target ()
   } else {      
     Emulate_DivRem_Integer_Ops = TRUE;
   }
+
+  /* For ST200 enables const div but not const mul. */
+  if (!OPT_Cnst_DivRem_Set) {
+    OPT_Cnst_DivRem = TRUE;
+  }
+  if (!OPT_Cnst_Mul_Set) {
+    OPT_Cnst_Mul = FALSE;
+  }
+
 #endif
 
   

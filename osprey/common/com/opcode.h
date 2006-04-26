@@ -224,8 +224,7 @@ CG_EXPORTED inline OPCODE OPCODE_make_op(OPERATOR opr, TYPE_ID rtype, TYPE_ID de
 
   ret = OPCODE_make_op_MACRO(opr,rtype,desc);
   Is_True(Is_Valid_Opcode(ret),
-	  ("OPCODE_make_op: no opcode available: %d %d %d", opr, rtype, desc));
-
+	  ("OPCODE_make_op: no opcode available: %d (%s) %d %d", opr, OPERATOR_name(opr), rtype, desc));
   return ret;
 }
 #else /* Is_True_On */

@@ -109,6 +109,9 @@ extern char * Targ_Print ( char *fmt, TCON c );
 #include "dvector.h"
 #endif /* BACK_END */
 
+/* [JV] to print more info. */
+#define WN_VERBOSE
+
 /* Extended Ascii-WHIRL */
 
 enum OPR_EXTENDED {
@@ -835,7 +838,11 @@ ir_put_st (ST_IDX st_idx)
 	}
     } else
       name = ST_name(st);
+#ifdef WN_VERBOSE
+    fprintf (ir_ofile, " <level:%d,idx:%d,name:%s>", ST_level (st), ST_index (st), name);
+#else
     fprintf (ir_ofile, " <%d,%d,%s>", ST_level (st), ST_index (st), name);
+#endif
   }
 }
 
@@ -851,8 +858,13 @@ extern "C" BOOL LnoDependenceEdge(WN *, WN *, mUINT16 *, DIRECTION *, BOOL *, BO
 static void
 ir_put_ty(TY_IDX ty)
 {
+#ifdef WN_VERBOSE
+   fprintf(ir_ofile, " T<id:%d,name:%s,align:%d", TY_id(ty),
+	   TY_name(ty),TY_align(ty));
+#else
    fprintf(ir_ofile, " T<%d,%s,%d", TY_id(ty),
 	   TY_name(ty),TY_align(ty));
+#endif
    
    if (TY_is_restrict(ty)) 
       fprintf(ir_ofile, ",R");
@@ -909,10 +921,19 @@ static void ir_put_wn(WN * wn, INT indent)
 	    OPCODE_operator(opcode) == OPR_XPRAGMA)
 	    fprintf(ir_ofile, " %d %d", WN_pragma_flags(wn), WN_pragma(wn));
 	else
+#ifdef WN_VERBOSE
+	    fprintf(ir_ofile, " ofst:%d", WN_offset(wn));
+#else
 	    fprintf(ir_ofile, " %d", WN_offset(wn));
+#endif
     } else if (OPCODE_has_2offsets(opcode)) {
+#ifdef WN_VERBOSE
+	fprintf(ir_ofile, " trip_est:%d loop_depth:%d",
+		WN_loop_trip_est(wn), WN_loop_depth(wn));
+#else
 	fprintf(ir_ofile, " %d %d",
 		WN_loop_trip_est(wn), WN_loop_depth(wn));
+#endif
     }
 
     switch (OPCODE_operator(opcode)) {
@@ -1016,7 +1037,11 @@ static void ir_put_wn(WN * wn, INT indent)
 	fprintf(ir_ofile, " %d", WN_last_label(wn));
 
     if (OPCODE_has_value(opcode)) {
+#ifdef WN_VERBOSE
 	fprintf(ir_ofile, " %lld", WN_const_val(wn));
+#else
+	fprintf(ir_ofile, " val:%lld", WN_const_val(wn));
+#endif
 	/* Also print the hex value for INTCONSTs */
 	if (OPCODE_operator(opcode) == OPR_INTCONST || opcode == OPC_PRAGMA) {
 	    fprintf(ir_ofile, " (0x%llx)", WN_const_val(wn));

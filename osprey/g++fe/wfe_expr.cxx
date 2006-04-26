@@ -2356,7 +2356,7 @@ WFE_Address_Of(tree arg0)
 
   case LABEL_DECL:
     {
-#ifndef TARG_ST200
+#ifndef TARG_ST
       DevWarn ("taking address of a label at line %d", lineno);
 #endif
       LABEL_IDX label_idx = WFE_Get_LABEL (arg0, FALSE);
@@ -2452,7 +2452,7 @@ WFE_Address_Of(tree arg0)
     }
     break;
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     /* (cbr) compute, save expression and return address */
     case SAVE_EXPR:
       {
@@ -2589,7 +2589,7 @@ WFE_Expand_Expr (tree exp,
 
     case BIND_EXPR:
 #ifdef GPLUSPLUS_FE
-#ifndef TARG_ST200
+#ifndef TARG_ST
       DevWarn ("Encountered BIND_EXPR at line %d", lineno);
 #endif
       // ignore the first operand as it ia a list of temporary variables
@@ -2602,7 +2602,7 @@ WFE_Expand_Expr (tree exp,
         TYPE_ID  mtype;
         tree     t;
 
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	DevWarn ("Encountered BIND_EXPR at line %d", lineno);
 #endif
         for (i = wfe_bind_expr_stack_last; i >= 0; --i) {
@@ -2937,7 +2937,7 @@ WFE_Expand_Expr (tree exp,
         }
 	else
 	if (code == CONSTRUCTOR) {
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	  DevWarn ("Encountered CONSTRUCTOR at line %d", lineno);
 #endif
 	  st = WFE_Generate_Temp_For_Initialized_Aggregate (exp, "");
@@ -4353,7 +4353,7 @@ WFE_Expand_Expr (tree exp,
 
               case BUILT_IN_CONSTANT_P:
               {
-#ifndef TARG_ST200
+#ifndef TARG_ST
 		DevWarn ("Encountered BUILT_IN_CONSTANT_P: at line %d\n",
                          lineno);
 #endif
@@ -4538,8 +4538,8 @@ WFE_Expand_Expr (tree exp,
 	      intrinsic_op = TRUE;
 	      break;
 #endif
-#if defined(TARG_ST200)
-#include "gfec_wfe_expr.h"	/* Will come from targinfo/st200/...*/
+#ifdef TARG_ST
+#include "gfec_wfe_expr.h"	/* Will come from targinfo/<arch>/...*/
 #endif /* defined(TARG_ST200) */
 	      default:
 		DevWarn ("Encountered BUILT_IN: %d (%s) at line %d\n",
@@ -4889,7 +4889,7 @@ WFE_Expand_Expr (tree exp,
 
     case SAVE_EXPR:
       {
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	DevWarn ("Encountered SAVE_EXPR at line %d", lineno);
 #endif
         wn = WFE_Save_Expr (exp, need_result, nop_ty_idx,
@@ -4904,7 +4904,7 @@ WFE_Expand_Expr (tree exp,
 
     case LOOP_EXPR:
       {
-#ifndef TARG_ST200
+#ifndef TARG_ST
         DevWarn ("Encountered LOOP_EXPR at line %d\n", lineno);
 #endif
         LABEL_IDX saved_loop_expr_exit_label = loop_expr_exit_label;
@@ -4928,7 +4928,7 @@ WFE_Expand_Expr (tree exp,
 
     case EXIT_EXPR:
       {
-#ifndef TARG_ST200
+#ifndef TARG_ST
         DevWarn ("Encountered EXIT_EXPR at line %d\n", lineno);
 #endif
 	WN *test = WFE_Expand_Expr (TREE_OPERAND(exp, 0));

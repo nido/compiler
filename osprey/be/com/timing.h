@@ -135,7 +135,7 @@ typedef enum {
 				 * (this time is included in callers time) */
 	T_CalcDom_Comp,
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	T_Select_Comp,               /* Select if conversion */
 	T_Select_CU,
 	T_LAO_Interface_Comp,        /* LAO Interface */

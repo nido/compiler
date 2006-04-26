@@ -278,12 +278,7 @@ extern BOOL CGSPILL_Is_Spill_Location (ST *mem_loc);
 CG_EXPORTED extern ST * CGSPILL_OP_Spill_Location (OP *op);
 inline BOOL CGSPILL_Is_Spill_Op (OP *op)
 {
-#ifdef TARG_ST
-  // [CG]: See interface description.
-  return OP_spill(op);
-#else
   return CGSPILL_OP_Spill_Location(op) != (ST *)0;
-#endif
 }
 extern void CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc, float *store_cost,
 				   float *restore_cost, CGSPILL_CLIENT client);

@@ -664,8 +664,14 @@ BOOL WN_Verifier::Proper_Block_Structure(WN *wn,OPCODE op)
 
     // Check WN_last can reach WN_first through WN_prev
     tmp = last;
-    while (tmp && WN_prev(tmp) != NULL) 
+    while (tmp && WN_prev(tmp) != NULL) {
+#ifdef TARG_ST
+      if (tmp == WN_prev(tmp)) {
+	FmtAssert (FALSE, ("WN_verifier Error (Proper_Block_Structure): WN_prev points to itself\n"));
+      }
+#endif
       tmp = WN_prev(tmp);
+    }
     if (tmp != first) {
       FmtAssert (FALSE, ("WN_verifier Error (Proper_Block_Structure): first is not really firstt\n"));
       block_ok = FALSE;

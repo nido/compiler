@@ -144,6 +144,16 @@ static BOOL Gen_Frame_Pointer;
 /* Trace flags: */
 static BOOL Trace_EE = FALSE;	/* Trace entry/exit processing */
 
+#if 1
+/* [JV] When set, use this register for spadjust. */
+/* This is the case when there is no more scratch register ...*/
+/* It is possible to use callee save by using a push/pop like sequence
+   before the spadjust. This does not work with varargs using va_list
+   declared as void*.
+*/
+static TN *Use_Callee_Save_TN_For_SpAdjust = NULL;
+#endif
+
 /* macro to test if we will use a scratch register to hold gp for
  * the pu.  we do this in leaf routines if there are no regions
  * and gra will be run.
@@ -827,6 +837,7 @@ Can_Be_Tail_Call (
   }
   MEM_POOL_Pop(&MEM_local_pool);
 
+#ifdef TARG_ST200
   /* If we had preemptible symbol for the callee, then change
    * its relocation so we avoid generating a stub for it.
    */
@@ -837,6 +848,7 @@ Can_Be_Tail_Call (
     Set_OP_opnd(addr_op, addr_opnd, new_tn);
     Set_ST_is_weak_symbol(call_st);
   }
+#endif
 
   return pred;
 }
@@ -1427,6 +1439,10 @@ Set_Frame_Len (
   Frame_Len = val;
   Set_TN_value(Frame_Len_TN, val);
   Set_TN_value(Neg_Frame_Len_TN, -val);
+#ifdef TARG_ST
+  /* Inform the target dependent part. */
+  EETARG_Set_Frame_Len(val);
+#endif
   return;
 }
 
@@ -1680,8 +1696,8 @@ Assign_Prolog_Temps(OP *first, OP *last, REGISTER_SET *temps)
    */
   cl = TN_register_class(SP_TN);
   reg = REGISTER_SET_Choose(temps[cl]);
-  FmtAssert(reg != REGISTER_UNDEFINED, ("no free temps"));
-  temps[cl] = REGISTER_SET_Difference1(temps[cl], reg);
+  /* Normally already initialized before the call. */
+  FmtAssert(reg != REGISTER_UNDEFINED,("Undefined register"));
 
   /* Loop over the OPs in the sequence, allocating registers.
    */
@@ -1783,6 +1799,7 @@ Adjust_Entry (
 	      DBar, ST_name(ENTRYINFO_name(ent_info)), BB_id(bb));
     fprintf(TFile, "\nFinal frame size: %llu (0x%llx)\n", 
                                             frame_len, frame_len);
+
     fprintf(TFile, "Adjust OP: ");
     Print_OP_No_SrcLine(ent_adj);
   }
@@ -1837,7 +1854,7 @@ Adjust_Entry (
 	    && TN_is_sp_reg(OP_opnd(sp_adj, OP_has_predicate(sp_adj) ? 1:0))
 	    && sp_incr == Neg_Frame_Len_TN
 	    && (!OP_has_predicate(sp_adj) 
-		|| OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
+		|| OP_opnd(sp_adj, OP_find_opnd_use(sp_adj,OU_predicate)) == True_TN), 
 	    ("Unexpected form of entry SP-adjust OP"));
 
   if (fp_adj != sp_adj) {
@@ -1850,7 +1867,7 @@ Adjust_Entry (
 	      && fp_incr != NULL 
 	      && fp_incr == Frame_Len_TN 
 	      && ( ! OP_has_predicate(fp_adj) 
-		  || OP_opnd(fp_adj, OP_PREDICATE_OPND) == True_TN), 
+		   || OP_opnd(fp_adj, OP_find_opnd_use(fp_adj,OU_predicate)) == True_TN), 
 	      ("Unexpected form of entry FP-adjust OP"));
   }
 
@@ -1893,10 +1910,31 @@ Adjust_Entry (
      */
     if (!CGTARG_Can_Fit_Immediate_In_Add_Instruction (frame_len)) {
       REGISTER_SET temps[ISA_REGISTER_CLASS_MAX+1];
+      ISA_REGISTER_CLASS cl;
+      REGISTER reg;
 
       /* Get the frame size into a register
        */
       REG_LIVE_Prolog_Temps(bb, sp_adj, fp_adj, temps);
+
+      cl = TN_register_class(SP_TN);
+
+      reg = REGISTER_SET_Choose(temps[cl]);
+
+      if(reg == REGISTER_UNDEFINED) {
+	Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(0);
+	FmtAssert(Use_Callee_Save_TN_For_SpAdjust != NULL,("cannot find callee save"));
+	if(TN_is_dedicated(Use_Callee_Save_TN_For_SpAdjust)) {
+	  reg = TN_register(Use_Callee_Save_TN_For_SpAdjust);
+	}
+	else if(TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust)) {
+	  reg = TN_save_reg(Use_Callee_Save_TN_For_SpAdjust);
+	}
+	else {
+	  FmtAssert(FALSE,("Don't know how to get reg"));
+	}
+	temps[cl] = REGISTER_SET_Union1(temps[cl], reg);
+      }
 
       if (Trace_EE) {
 	ISA_REGISTER_CLASS cl;
@@ -2048,7 +2086,7 @@ Adjust_Exit (
 	      && TN_is_sp_reg(OP_has_predicate(sp_adj) ? OP_opnd(sp_adj, 1) : OP_opnd(sp_adj, 0))
 	      && sp_incr == Frame_Len_TN
 	      && ( ! OP_has_predicate(sp_adj) 
-		  || OP_opnd(sp_adj, OP_PREDICATE_OPND) == True_TN), 
+		   || OP_opnd(sp_adj, OP_find_opnd_use(sp_adj,OU_predicate)) == True_TN), 
 	      ("Unexpected form of exit SP-adjust OP"));
   }
 
@@ -2064,7 +2102,7 @@ Adjust_Exit (
     if ( Trace_EE ) {
       #pragma mips_frequency_hint NEVER
       fprintf(TFile, "\nNew stack frame de-allocation:\n"
-		     "-- unchanged --\n");
+	      "-- unchanged --\n");
     }
   } else if (frame_len == 0) {
     BB_Remove_Op(bb, sp_adj);
@@ -2143,8 +2181,36 @@ Adjust_Exit (
   EXITINFO_sp_adj(exit_info) = sp_adj;
 
 #ifdef TARG_ST
+  if ( Trace_EE ) {
+#pragma mips_frequency_hint NEVER
+    fprintf(TFile, "\nExit sequence before EETARG_Fixup_Exit_Code:\n");
+    OP *op, *sp_op = EXITINFO_sp_adj(exit_info);
+    BOOL emit = TRUE;//FALSE;
+    if (sp_op == NULL) fprintf(TFile, "\n--- empty sp_adjust sequence\n");
+    else {
+      FOR_ALL_BB_OPs_FWD(bb, op) {
+	if (sp_op == op) emit = TRUE;
+	if (emit) Print_OP_No_SrcLine(op);
+      }
+    }
+  }
+  
   // possible do target-dependent fixups
   EETARG_Fixup_Exit_Code (bb);
+
+  if ( Trace_EE ) {
+#pragma mips_frequency_hint NEVER
+    fprintf(TFile, "\nExit sequence after EETARG_Fixup_Exit_Code:\n");
+    OP *op, *sp_op = EXITINFO_sp_adj(exit_info);
+    BOOL emit = TRUE;//FALSE;
+    if (sp_op == NULL) fprintf(TFile, "\n--- empty sp_adjust sequence\n");
+    else {
+      FOR_ALL_BB_OPs_FWD(bb, op) {
+	if (sp_op == op) emit = TRUE;
+	if (emit) Print_OP_No_SrcLine(op);
+      }
+    }
+  }
 #endif
 }
 
@@ -2212,12 +2278,12 @@ Adjust_Alloca_Code (void)
 
       FOR_ALL_OPS_OPs_FWD(&ops, new_op) {
 	OP_srcpos(new_op) = OP_srcpos(op);
-	Is_True(OP_has_predicate(new_op) == OP_has_predicate(op),
+	Is_True(OP_has_predicate(new_op) || !OP_has_predicate(op),
 		                ("spadjust can't copy predicates"));
 	// copy predicate to new copy/sub ops
-	if (OP_has_predicate(new_op))
-	  Set_OP_opnd (new_op, OP_PREDICATE_OPND,
-				   OP_opnd(op, OP_PREDICATE_OPND) );
+	if (OP_has_predicate(op))
+	  Set_OP_opnd (new_op, OP_find_opnd_use(new_op,OU_predicate),
+		       OP_opnd(op, OP_find_opnd_use(op,OU_predicate) ));
       }
 
       BB_Insert_Ops_Before(bb, op, &ops);
@@ -2243,6 +2309,8 @@ Adjust_Entry_Exit_Code (
 )
 {
   BB_LIST *elist;
+
+  Use_Callee_Save_TN_For_SpAdjust = NULL;
 
 #ifdef TARG_ST
 

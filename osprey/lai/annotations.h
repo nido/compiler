@@ -287,6 +287,10 @@ struct ASM_OP_ANNOT
   mUINT32 result_position[10];
   bool result_clobber[10];
   bool result_memory[10];
+#ifdef TARG_ST
+  /* Track operand number that must match the result (or -1). */
+  mINT8 result_same_opnd[10];
+#endif
 
   const char* opnd_constraint[10];
   ISA_REGISTER_SUBCLASS opnd_subclass[10];
@@ -305,7 +309,9 @@ struct ASM_OP_ANNOT
 #define ASM_OP_opnd_subclass(x)		((x)->opnd_subclass)
 #define ASM_OP_opnd_position(x)		((x)->opnd_position)
 #define ASM_OP_opnd_memory(x)		((x)->opnd_memory)
-
+#ifdef TARG_ST
+#define ASM_OP_result_same_opnd(x)	((x)->result_same_opnd)
+#endif
 
 #endif /* ANNOTATIONS_INCLUDED */
 

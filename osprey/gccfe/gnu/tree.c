@@ -4829,7 +4829,13 @@ build_common_tree_nodes_2 (short_double)
   layout_type (double_type_node);
 
   long_double_type_node = make_node (REAL_TYPE);
-  TYPE_PRECISION (long_double_type_node) = LONG_DOUBLE_TYPE_SIZE;
+#ifdef TARG_ST
+  /* [JV] Transform also long double in float when -fshort-double is used */
+  if (short_double)
+    TYPE_PRECISION (long_double_type_node) = FLOAT_TYPE_SIZE;
+  else
+#endif
+    TYPE_PRECISION (long_double_type_node) = LONG_DOUBLE_TYPE_SIZE;
   layout_type (long_double_type_node);
 
   complex_integer_type_node = make_node (COMPLEX_TYPE);

@@ -292,8 +292,8 @@ struct tn {
 
 inline TN * CAN_USE_REG_TN (const TN *t)
 {
-	Is_True(TN_is_register(t), ("not a register tn"));
-	return (TN*)t;
+  Is_True(TN_is_register(t), ("not a register tn"));
+  return (TN*)t;
 }
 
 #define     TN_relocs(t)	(CAN_USE_TN(t)->relocs)
@@ -420,6 +420,13 @@ extern  TN *Link_TN;            // Link TN for indirect branching
 extern  TN *RS_TN;              // TN for returning structs by value
 #ifdef TARG_ST                  // [SC] TLS supprt 
 extern TN *TP_TN;               // Thread Pointer
+#endif
+
+#ifdef TARG_ST
+/* [JV] Add this macro to use in place of Zero_TN to guarantee
+   none NULL TN for target without dedicated constant register set to 0.
+*/
+#define Get_Zero_TN(size) (Zero_TN != NULL ? Zero_TN : Gen_Literal_TN(0,(size)))
 #endif
 
 /* ====================================================================
@@ -580,9 +587,9 @@ inline BOOL TN_is_dedicated_class_and_reg( TN *tn, UINT16 class_n_reg )
 
 /* Only the following routines should be used to build constant TNs. */
 
-CG_EXPORTED extern	TN *Gen_Literal_TN ( INT64 val, INT size );
+CG_EXPORTED extern	TN *Gen_Literal_TN ( INT64 val, INT size, INT is_signed = 1 );
 // normally literals are hashed and reused; this creates unique TN
-extern TN *Gen_Unique_Literal_TN (INT64 ivalue, INT size);
+extern TN *Gen_Unique_Literal_TN (INT64 ivalue, INT size, INT is_signed = 1);
 
 extern TN *Gen_Enum_TN (ISA_ENUM_CLASS_VALUE ecv);
 

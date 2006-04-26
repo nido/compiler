@@ -91,6 +91,11 @@
 #include "opt_cvtl_rule.h"
 #include "fb_whirl.h"
 #include "intrn_info.h"
+#ifdef TARG_ST
+#include "wn_lower_private.h"
+#include "wn_lower_util.h"
+#include "wn_lower_mul.h"
+#endif
 
 /* My changes are a hack till blessed by Steve. (suneel) */
 #define SHORTCIRCUIT_HACK 1
@@ -113,8 +118,6 @@ static BOOL wn_lower_no_wn_simplify;
  *			 Exported Functions
  * ====================================================================
  */
-extern PREG_NUM AssignExpr(WN *, WN *, TYPE_ID);
-
 extern BOOL lower_is_aliased(WN *, WN *, INT64 size, BOOL defalt);
 
 extern INT32 compute_copy_alignment(TY_IDX, TY_IDX, INT32 offset);
@@ -124,6 +127,7 @@ extern TYPE_ID compute_copy_quantum(INT32 );
 extern WN *WN_I1const(TYPE_ID, INT64 con);
 
 #ifdef TARG_ST
+/* In rt_lower_wn.cxx. */
 extern WN *RT_LOWER_expr (WN *tree);
 #endif
 
@@ -168,15 +172,23 @@ extern BE_ST_TAB   Be_st_tab;
  * ====================================================================
  */
 
+#ifdef TARG_ST
+/* Export it to other wn_lower files. */
+WN *lower_scf(WN *, WN *, LOWER_ACTIONS);
+WN *lower_expr(WN *, WN *, LOWER_ACTIONS);
+WN *lower_stmt(WN *, WN *, LOWER_ACTIONS);
+#else
 static WN *lower_scf(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_expr(WN *, WN *, LOWER_ACTIONS);
+static WN *lower_stmt(WN *, WN *, LOWER_ACTIONS);
+#endif
+
 static WN *lower_store(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_call(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_intrinsic(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_intrinsic_call(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_intrinsic_op(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_if(WN *, WN *, LOWER_ACTIONS);
-static WN *lower_stmt(WN *, WN *, LOWER_ACTIONS);
 static WN *lower_entry(WN *, LOWER_ACTIONS);
 #ifdef KEY
 static WN *lower_landing_pad_entry(WN *);
@@ -234,12 +246,16 @@ static WN *lower_cst_irem(WN *block, WN *tree, LOWER_ACTIONS actions);
 static WN *lower_cst_urem(WN *block, WN *tree, LOWER_ACTIONS actions);
 #endif
 
+#ifdef TARG_ST
+static BOOL Is_Fast_Divide(WN *wn);
+static BOOL Is_Const_Divide(WN *wn);
+#endif
+
 /* ====================================================================
  *			 private variables
  * ====================================================================
  */
 static INT   max_region;
-static char *current_preg_name;
 static UINT16 loop_nest_depth;
 static BOOL contains_a_loop;
 static struct ALIAS_MANAGER *alias_manager;
@@ -267,6 +283,11 @@ static BOOL traceLdid            = FALSE;
 static BOOL traceCall            = FALSE;
 static BOOL traceRuntime         = FALSE;
 
+#ifdef TARG_ST
+/*
+ * Moved to wn_lower_util.h
+ */
+#else /* !TARG_ST */
 typedef struct CURRENT_STATE
 {
   SRCPOS	srcpos;
@@ -281,6 +302,7 @@ CURRENT_STATE	current_state;
 #define	current_stmt		current_state.stmt
 #define	current_actions		current_state.actions
 #define current_function	current_state.function
+#endif  /* !TARG_ST */
 
 typedef enum MSTORE_ACTIONS
 {
@@ -523,7 +545,11 @@ extern WN *WN_I1const(TYPE_ID type, INT64 con)
 					  MTYPE_type_class(type)), n);
 }
 
-
+#ifdef TARG_ST
+/*
+ * Moved to wn_lower_util.h
+ */
+#else
 /* ====================================================================
  *
  * void push_current_state(WN *tree, STATE *state)
@@ -571,7 +597,7 @@ static void popCurrentState(CURRENT_STATE state)
 {
   current_state = state;
 }
-    
+#endif    
 
 /* ====================================================================
  *
@@ -684,6 +710,7 @@ static WN_OFFSET coerceOFFSET(WN *tree, TYPE_ID realTY, WN_OFFSET offset)
 #endif
     if (WN_class(tree) == CLASS_PREG)
     {
+#ifndef TARG_ST
      /*
       *  amazing kludge
       *  for dedicated return register (F0) the ABI defines [F0,F2]
@@ -694,6 +721,7 @@ static WN_OFFSET coerceOFFSET(WN *tree, TYPE_ID realTY, WN_OFFSET offset)
 	  return Float_Preg_Min_Offset + 2;
       }
       else
+#endif
       {
 	return offset + Preg_Increment(realTY);
       }
@@ -704,32 +732,6 @@ static WN_OFFSET coerceOFFSET(WN *tree, TYPE_ID realTY, WN_OFFSET offset)
 		    OPCODE_name(WN_opcode(tree)));
   /*NOTREACHED*/
 }
-
-/* ====================================================================
- *
- *
- * ==================================================================== */
-
-static void rename_preg(char *f, char *preg_class)
-{
-  static char name[41];
-
-  name[0] = '\0';
-  
-  strncat(name, f, 30);
-
-  if (preg_class)
-  {
-    strncat(name, preg_class, 10);
-  }
-  current_preg_name = name;
-}
-
-static void rename_reset(void)
-{
-  current_preg_name = NULL;
-}
-
 
 static void WN_Set_Flags(WN *src, WN *dst)
 {
@@ -1397,80 +1399,6 @@ static WN *lower_copy_tree(WN *tree, LOWER_ACTIONS actions)
   return dup;
 }
 
-/* ====================================================================
- *
- * PREG_NUM AssignPregExprPos(WN *block, WN *tree, TY_IDX ty, SRCPOS srcpos,
- *                            LOWER_ACTIONS actions)
- *
- * PREG_NUM AssignExprPos(WN *block, WN *tree, TYPE_ID type, SRCPOS srcpos,
- *                        LOWER_ACTIONS)
- *
- * PREG_NUM AssignExpr(WN *block, WN *tree, TYPE_ID type)
- *
- * PREG_NUM AssignExprTY(WN *block, WN *tree, TY_IDX ty)
- *
- * Allocate a preg of type ST_type(preg) and assign expression tree to it
- * and attach it to block. 
- *
- * Assign srcpos (if not NULL)
- *
- * ==================================================================== */
-
-static PREG_NUM AssignPregExprPos(WN *block, WN *tree, TY_IDX ty,
-				  SRCPOS srcpos, LOWER_ACTIONS actions)
-{
-  PREG_NUM	pregNo;
-  TYPE_ID	type;
-  ST		*preg = MTYPE_To_PREG(TY_mtype(Ty_Table[ty]));
-
-  Is_True((WN_operator_is(tree, OPR_PARM)==FALSE),("bad parm"));
-
-  type = TY_mtype(Ty_Table[ty]);
-  pregNo = Create_Preg(type, current_preg_name);
-
-  {
-    WN	*stBlock, *stid;
-
-    stid = WN_Stid(type, pregNo, preg, ty, tree);
-
-    if (srcpos) {
-      WN_Set_Linenum (stid, srcpos);
-    }
-
-    stBlock = WN_CreateBlock();
-
-   /*
-    *	This lowering may leed to infinite regress if the
-    * 	children cannot be lowered (and are allocated a temp, for example) 
-    */
-    if (actions)
-      stid = lower_store(stBlock, stid, actions);
-
-#ifdef TARG_ST
-    // [TB] Improve line number.
-    WN_copy_linenum(tree, stid);
-#endif
-    WN_INSERT_BlockLast(stBlock, stid);
-
-    WN_INSERT_BlockLast(block, stBlock);
-  }
-
-  return pregNo;
-}
-
-
-extern PREG_NUM AssignExprTY(WN *block, WN *tree, TY_IDX type)
-{
-  return AssignPregExprPos(block, tree, type, current_srcpos,
-			   current_actions);
-}
-
-extern PREG_NUM AssignExpr(WN *block, WN *tree, TYPE_ID type)
-{
-  return AssignPregExprPos(block, tree, MTYPE_To_TY(type), current_srcpos,
-			   current_actions);
-}
-
 
 
 static BOOL WN_unconditional_goto(WN *tree)
@@ -1903,81 +1831,6 @@ static void lower_to_base_index(WN *addr, WN **base, WN **index)
   }
 }
 
-
-/*
- * Describe a leaf expression (see Make_Leaf/Load_Leaf).
- */
-typedef enum {LEAF_IS_CONST, LEAF_IS_INTCONST, LEAF_IS_PREG} LEAF_KIND;
-typedef struct {
-  LEAF_KIND kind;
-  TYPE_ID type;
-  union {
-    PREG_NUM n;
-    INT64 intval;
-    TCON tc;
-  } u;
-} LEAF;
-
-/* ====================================================================
- *
- * LEAF Make_Leaf(WN *block, WN *tree, TYPE_ID type)
- *
- * Make an aribtrary expression tree into a leaf.
- * If the expression is an integer or floating point constant
- * no transformation is made. However, other expressions are stored
- * into a PREG.
- *
- * Make_Leaf is used in place of AssignExpr when performing a sort
- * of "poor man's" CSE, and you want to avoid creating unnecessary
- * PREGs for constants (which can also thwart the simplifier).
- *
- * ==================================================================== */
-
-static LEAF Make_Leaf(WN *block, WN *tree, TYPE_ID type)
-{
-  LEAF leaf;
-  leaf.type = type;
-  switch (WN_operator(tree)) {
-  case OPR_CONST:
-    leaf.kind = LEAF_IS_CONST;
-    leaf.u.tc = Const_Val(tree);
-    WN_Delete(tree);
-    break;
-  case OPR_INTCONST:
-    leaf.kind = LEAF_IS_INTCONST;
-    leaf.u.intval = WN_const_val(tree);
-    WN_Delete(tree);
-    break;
-  default:
-    leaf.kind = LEAF_IS_PREG;
-    leaf.u.n = AssignExpr(block, tree, type);
-    break;
-  }
-  return leaf;
-}
-
-/* ====================================================================
- *
- * WN *Load_Leaf(const LEAF &leaf)
- *
- * Generate whirl to load the value of a leaf expression created by
- * Make_Leaf().
- *
- * ==================================================================== */
-
-static WN *Load_Leaf(const LEAF &leaf)
-{
-  switch (leaf.kind) {
-  case LEAF_IS_CONST:
-    return Make_Const(leaf.u.tc);
-  case LEAF_IS_INTCONST:
-    return WN_CreateIntconst(OPR_INTCONST, leaf.type, MTYPE_V, leaf.u.intval);
-  case LEAF_IS_PREG:
-    return WN_LdidPreg(leaf.type, leaf.u.n);
-  }
-  FmtAssert(FALSE, ("unhandled leaf kind in Load_Leaf"));
-  /*NOTREACHED*/
-}
 
 /* ====================================================================
  *
@@ -2837,9 +2690,9 @@ lower_hilo_expr (
 	ST *preg = MTYPE_To_PREG(rtype);
 	TYPE_ID ltype = get_hilo_type(rtype);
 
-	rename_preg(INTR_intrinsic_name(tree), ".return");
-	pregNo = Create_Preg(rtype, current_preg_name);
-	rename_reset();
+	AssignPregName(INTR_intrinsic_name(tree), ".return");
+	pregNo = Create_Preg(rtype, CurrentPregName());
+	ResetPregName();
 
 	WN *lo = WN_LdidPreg (ltype, pregNo);
 	WN *hi = WN_LdidPreg (ltype, pregNo+1);
@@ -4918,7 +4771,7 @@ static WN *lower_split_sym_addrs(WN *tree, INT64 offset, LOWER_ACTIONS actions)
   ST *base = ST_base(sym);
   INT64	newoffset = 0;
 
-#if defined(TARG_ST100) || defined(TARG_ST200)
+#ifdef TARG_ST
   //
   // Arthur:
   //
@@ -6183,58 +6036,10 @@ static void lower_trapuv_alloca (WN *block, WN *tree, LOWER_ACTIONS actions
 	WN_INSERT_BlockLast(block, mstore);
 }
 
-#ifndef TARG_ST
-// This are handled in rt_lower_wn.cxx
-
-inline BOOL Should_Call_Divide(TYPE_ID rtype)
-{
-#if defined(TARG_IA64)
-  if (!OPT_Inline_Divide) {
-    if (   rtype == MTYPE_I8 || rtype == MTYPE_U8
-	|| rtype == MTYPE_I4 || rtype == MTYPE_U4
-	|| rtype == MTYPE_F4 || rtype == MTYPE_F8) return TRUE;
- }
-#elif defined(EMULATE_LONGLONG)
-  if (rtype == MTYPE_I8 || rtype == MTYPE_U8) return TRUE;
-#endif
-  return FALSE;
-}
-#endif
-
-static BOOL Is_Fast_Divide(WN *wn)
-{
-  OPERATOR opr = WN_operator(wn);
-  switch (opr) {
-  case OPR_DIV:
-  case OPR_REM:
-  case OPR_MOD:
-    {
-	if (WN_operator(WN_kid1(wn)) == OPR_LDID &&
-	    WN_class(WN_kid1(wn)) == CLASS_PREG &&
-	    Preg_Home(WN_offset(WN_kid1(wn))) != NULL &&
-	    WN_operator_is(Preg_Home(WN_offset(WN_kid1(wn))), OPR_INTCONST)) {
-	    TYPE_ID rtype = OPCODE_rtype(WN_opcode(wn));
-	    INT64 constval = WN_const_val(Preg_Home(WN_offset(WN_kid1(wn))));
-	    return  opr == OPR_DIV
-	       ? Can_Do_Fast_Divide(rtype, constval)
-	       : Can_Do_Fast_Remainder(rtype, constval);
-	}
-	    
-	if (WN_operator_is(WN_kid1(wn), OPR_INTCONST)) {
-	    TYPE_ID rtype = OPCODE_rtype(WN_opcode(wn));
-	    INT64 constval = WN_const_val(WN_kid1(wn));
-	    
-	    return   opr == OPR_DIV
-		? Can_Do_Fast_Divide(rtype, constval)
-		: Can_Do_Fast_Remainder(rtype, constval);
-	}
-    }
-    break;
-  }
-  
-  return FALSE;
-}
-
+#ifdef TARG_ST
+/*
+ * For Handling of LOWER_FAST_DIV/LOWER_CNST_DIV.
+ */
 static BOOL Is_Const_Divide(WN *wn)
 {
   OPERATOR opr = WN_operator(wn);
@@ -6242,25 +6047,213 @@ static BOOL Is_Const_Divide(WN *wn)
   case OPR_DIV:
   case OPR_REM:
   case OPR_MOD:
-    {
-	if (WN_operator(WN_kid1(wn)) == OPR_LDID &&
-	    WN_class(WN_kid1(wn)) == CLASS_PREG &&
-	    Preg_Home(WN_offset(WN_kid1(wn))) != NULL &&
-	    WN_operator_is(Preg_Home(WN_offset(WN_kid1(wn))), OPR_INTCONST) && 
-	    (WN_const_val(Preg_Home(WN_offset(WN_kid1(wn)))) != 0)) {
-	    return TRUE;
-	}
-	    
-	
-	if (WN_operator_is(WN_kid1(wn), OPR_INTCONST) && (WN_const_val(WN_kid1(wn)) != 0) ) {
-	    return TRUE;
-	}
+    if (Is_Intconst_Val(WN_kid1(wn))) {
+      INT64 constval = Get_Intconst_Val(WN_kid1(wn));
+      if (constval != 0) return TRUE;
     }
     break;
   }
-
+  
   return FALSE;
 }
+
+static BOOL Is_Fast_Divide(WN *wn)
+{
+  if (Is_Const_Divide(wn)) {
+    INT64 constval = Get_Intconst_Val(WN_kid1(wn));
+    TYPE_ID rtype = WN_rtype(wn);
+    OPERATOR opr = WN_operator(wn);
+    if (opr == OPR_DIV && Can_Do_Fast_Divide(rtype, constval))
+      return TRUE;
+    if (opr == OPR_REM && Can_Do_Fast_Remainder(rtype, constval))
+      return TRUE;
+  }
+  return FALSE;
+}
+#endif /* TARG_ST */
+
+
+#ifdef TARG_ST
+/* ====================================================================
+ * Lowering of fast (power of 2) div/rem/mod.
+ *
+ * This falls under the Is_Fast_Divide condition.
+ * It handles the cases:
+ * - type is MTYPE_I4 or MTYPE_U4
+ * - 1 (signed/unsigned)
+ * - -1 (signed)
+ * - power of two ([+-]2^n)
+ *
+ * This code has been moved to the target independent part as it is
+ * quite common and there is no strong motivation to put it in the
+ * target dependent part as it was done in open64-0.13
+ *  ====================================================================
+ */
+#define IS_POWER_OF_2(val)	((val != 0) && ((val & (val-1)) == 0))
+static BOOL 
+Is_Power_Of_2 (
+  INT64 val, 
+  TYPE_ID mtype
+)
+{
+  if (MTYPE_is_signed(mtype) && val < 0) val = -val;
+
+  if (mtype == MTYPE_U4) val &= 0xffffffffull;
+
+  return IS_POWER_OF_2(val);
+}
+
+static INT
+Get_Power_Of_2 (
+  INT64 val, 
+  TYPE_ID mtype
+)
+{
+  INT i;
+  INT64 pow2mask;
+
+  if (MTYPE_is_signed(mtype) && val < 0) val = -val;
+
+  if (mtype == MTYPE_U4) val &= 0xffffffffull;
+
+  pow2mask = 1;
+  for ( i = 0; i < MTYPE_size_reg(mtype); ++i ) {
+    if (val == pow2mask) return i;
+    pow2mask <<= 1;
+  }
+
+  FmtAssert(FALSE, ("Get_Power_Of_2 unexpected value"));
+  /* NOTREACHED */
+}
+
+static WN *
+lower_fast_div(WN *block, WN *tree, LOWER_ACTIONS actions)
+{
+  TYPE_ID type;
+  BOOL is_signed;
+  INT64 constval;
+  WN *kid0, *kid1;
+  WN *expr = NULL;
+
+  DevAssert(Is_Fast_Divide(tree) && MTYPE_is_integral(WN_rtype(tree)),
+	    ("unexpected call to lower_fast_div"));
+
+  type = WN_rtype(tree);
+  kid0 = WN_kid0(tree);
+  kid1 = WN_kid1(tree);
+  is_signed = MTYPE_is_signed(type) ? TRUE: FALSE;
+  constval = Get_Intconst_Val(kid1);
+  
+  if (constval == 1) {
+    return kid0;
+  } else if (is_signed && constval == -1) {
+    expr = WN_Neg(type, kid0);
+  } else if (Is_Power_Of_2(constval, type)) {
+    INT pow2 = Get_Power_Of_2 (constval, type);
+    if (!is_signed) {
+      expr = WN_Lshr(type, kid0, WN_Intconst(type, pow2));
+    } else {
+      INT64 absdvsr = constval < 0 ? -constval : constval;
+      if (absdvsr == 2) {
+	/* Optimize for abs(divisor) == 2:
+	   If abs(divisor) == 2 we have the equivalence:
+	   divisor < 0 ? divisor + abs(divisor)-1: divisor == 
+	     divisor + bit(divisor, signbit)
+	   Thus we can write:
+	   expr = (divisor + bit(divisor, signbit)) >> 1
+	   if (divisor < 0) expr  = -expr 
+	*/
+	INT signbit = MTYPE_bit_size(type)-1;
+	LEAF tmp0 = Make_Leaf(block, kid0, type);
+	expr = WN_Ashr(type,
+		       WN_Add(type,
+			      WN_Lshr(type, 
+				      Load_Leaf(tmp0), 
+				      WN_Intconst(type, signbit)),
+			      Load_Leaf(tmp0)),
+		       WN_Intconst(type, 1));
+	if (constval < 0) {
+	  expr = WN_Neg(type, expr);
+	}
+      } else {
+	/* Optimize for abs(divisor) != 2:
+	   if (kid0 < 0)  expr = (kid0 + abs(divisor)-1)
+	   else           expr = kid0
+	   expr = expr >> pow2(abs(divisor))
+	   if (divisor < 0) expr = - expr
+	*/
+	LEAF tmp0 = Make_Leaf(block, kid0, type);
+	WN *expr0 = WN_Add(type, 
+			   Load_Leaf(tmp0), 
+			   WN_Intconst(type, absdvsr-1));
+	WN *expr1 = WN_Select(type, 
+			      WN_LT(type, 
+				    Load_Leaf(tmp0), WN_Intconst(type, 0)),
+			      expr0,
+			      Load_Leaf(tmp0));
+	expr = WN_Ashr(type, expr1, WN_Intconst(type, pow2));
+	if (constval < 0) {
+	  expr = WN_Neg(type, expr);
+	}
+      }
+    }
+  } 
+  FmtAssert(expr != NULL, ("Unexpected non power of 2 while lowering fast divide: %lld", constval));
+  return lower_expr(block, expr, actions);
+}
+
+static WN *
+lower_fast_rem(WN *block, WN *tree, LOWER_ACTIONS actions)
+{
+  TYPE_ID type;
+  BOOL is_signed;
+  INT64 constval;
+  WN *kid0, *kid1;
+  WN *expr = NULL;
+
+  DevAssert(Is_Fast_Divide(tree) && MTYPE_is_integral(WN_rtype(tree)),
+	    ("unexpected call to lower_fast_rem"));
+
+  type = WN_rtype(tree);
+  kid0 = WN_kid0(tree);
+  kid1 = WN_kid1(tree);
+  is_signed = MTYPE_is_signed(type) ? TRUE: FALSE;
+  constval = Get_Intconst_Val(kid1);
+  
+  if (constval == 1 ||
+      (is_signed && constval == -1)) {
+    return WN_Intconst(type, 0);
+  } else if (Is_Power_Of_2(constval, type)) {
+    INT pow2 = Get_Power_Of_2 (constval, type);
+    INT64 mask = (1LL << pow2) - 1;
+    if (!is_signed) {
+      expr = WN_Band(type, kid0, WN_Intconst(type, mask));
+    } else {
+      /*
+       * We use the properties:
+       *  rem(x,y) =  rem( x,-y)
+       *  rem(x,y) = -rem(-x, y)
+       * Thus:
+       * if (kid0 < 0) expr = - (-kid0 & mask)
+       * else 	expr = kid0 & mask
+       */
+      INT signbit = MTYPE_bit_size(type)-1;
+      LEAF tmp0 = Make_Leaf(block, kid0, type);
+      expr = WN_Select(type,
+		       WN_LT(type, 
+			     Load_Leaf(tmp0), 
+			     WN_Intconst(type, 0)),
+		       WN_Neg(type, WN_Band(type,
+					    WN_Neg(type,Load_Leaf(tmp0)),
+					    WN_Intconst(type, mask))),
+		       WN_Band(type, Load_Leaf(tmp0), WN_Intconst(type, mask)));
+    }
+  }
+  FmtAssert(expr != NULL, ("Unexpected non power of 2 while lowering fast remainder"));
+  return lower_expr(block, expr, actions);
+}
+
+#endif /* TARG_ST */
 
 #ifdef TARG_ST
 // [SC] Support for nested function trampolines
@@ -6329,7 +6322,11 @@ find_nested_function_trampoline (ST *sym)
  *
  * ==================================================================== */
 
+#ifdef TARG_ST
+WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
+#else
 static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
+#endif
 {
   BOOL kids_lowered = FALSE;	/* becomes TRUE when kids are lowered */
   BOOL intrinsic_lowered;
@@ -6998,6 +6995,25 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 	WN_Delete(kid0);
 	return lower_expr(block, tree, actions);
       }
+#ifdef TARG_ST
+      // Emulate select if not available
+      else if (Action(LOWER_SELECT) && !Can_Do_Select(WN_rtype(tree))) {
+	WN *cond = WN_kid0(tree);
+	WN *true_part = WN_kid1(tree);
+	WN *false_part = WN_kid2(tree);
+	WN *test, *then_block, *else_block;
+	WN *if_stmt;
+	PREG_NUM result;
+	then_block = WN_CreateBlock ();
+	result = AssignExpr(then_block, true_part, WN_rtype(true_part));
+	else_block = WN_CreateBlock ();
+	AssignToPregExpr(result, else_block, false_part, WN_rtype(false_part));
+	if_stmt    = WN_CreateIf (cond, then_block, else_block);
+	if_stmt = lower_scf(block, if_stmt, actions);
+	WN_INSERT_BlockLast(block, if_stmt);
+	return lower_expr(block, WN_LdidPreg(WN_rtype(true_part), result), actions);
+      }
+#endif
     }
     break;
 
@@ -7022,19 +7038,34 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
     break;
 
 
-#ifdef TARG_ST
   case OPR_DIV:
-    //
-    // Arthur: the ST targets undergo a special rt_lower pass which
-    //         decides whether it is necessary to turn it into an
-    //         intrinsic
-    //
+  case OPR_REM:
+  case OPR_MOD:
+
+#ifdef TARG_ST
+
+    // [CG] perform lowering of fast division (power of 2) at whirl level.
+    // Under the control of Is_Fast_Divide which itself is controlled
+    // by Can_Do_Fast_Divide.
+    if (Action(LOWER_FAST_DIV) && 
+	(WN_operator(tree) == OPR_DIV || WN_operator(tree) == OPR_REM) &&
+	(type ==  MTYPE_I4 || type == MTYPE_U4 ||
+	 type ==  MTYPE_I8 || type == MTYPE_U8) &&
+	Is_Const_Divide(tree) && Is_Fast_Divide(tree)) {
+      WN *fast_div_tree;
+      if (WN_operator(tree) == OPR_DIV)
+	fast_div_tree = lower_fast_div(block, tree, actions);
+      else // OPR == OPR_REM
+	fast_div_tree = lower_fast_rem(block, tree, actions);
+      WN_Delete(tree);
+      return fast_div_tree;
+    }
 
     // [HK] perform division by constant optimization for I4 and U4
-  if ( Action(LOWER_CST_DIV) &&
-      Enable_Cst_Div && 
-      ((type == MTYPE_I4) || (type == MTYPE_U4)) &&
-      Is_Const_Divide(tree) && !Is_Fast_Divide(tree)) {
+    if (Action(LOWER_CNST_DIV) && WN_operator(tree) == OPR_DIV &&
+	OPT_Cnst_DivRem &&
+	((type == MTYPE_I4) || (type == MTYPE_U4)) &&
+	Is_Const_Divide(tree) && !Is_Fast_Divide(tree)) {
       WN *cst_div_tree;
       if (type == MTYPE_I4)
 	  cst_div_tree = lower_cst_idiv(block, tree, actions);
@@ -7044,32 +7075,9 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       return cst_div_tree;
   }
 
-  if (Action(LOWER_COMPLEX) && MTYPE_is_complex(WN_rtype(tree))) {
-      // complex div creates if-then-else structure,
-      // so want to expand this early, then just return C*LDID preg here
-      // (e.g. in case is under a PARM node, and is not first parm).
-      // Note that fortran fe moves this out from under call, 
-      // but C doesn't.  Apparently only get here for C PARM case.
-      TYPE_ID	cdiv_mtype = WN_rtype(tree);
-      // using a preg causes wopt to get confused and not
-      // connect the F* preg numbers with the C* preg number.
-      // so use temp symbol instead.
-      TY_IDX cdiv_ty = MTYPE_To_TY(cdiv_mtype);
-      ST *cdiv_st = Gen_Temp_Symbol (cdiv_ty, ".complex_div");
-      WN *stid = WN_Stid(cdiv_mtype, 0, cdiv_st, cdiv_ty, tree);
-      WN_Set_Linenum (stid, current_srcpos);
-      stid = lower_store(block, stid, actions);
-      WN_INSERT_BlockLast(block, stid);
-      WN *ldid = WN_Ldid(cdiv_mtype, 0, cdiv_st, cdiv_ty);
-      return ldid;
-  }
-  break;
-  
-  case OPR_REM:
-
-    // [HK] perform division by constant optimization for I4 and U4
-  if ( Action(LOWER_CST_DIV) &&
-      Enable_Cst_Div && 
+    // [HK] perform remainder by constant optimization for I4 and U4
+  if ( Action(LOWER_CNST_DIV) && WN_operator(tree) == OPR_REM &&
+      OPT_Cnst_DivRem &&
       ((type == MTYPE_I4) || (type == MTYPE_U4)) &&
       Is_Const_Divide(tree) && !Is_Fast_Divide(tree)) {
       WN *cst_rem_tree;
@@ -7081,29 +7089,8 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       return cst_rem_tree;
   }
 
-  if (Action(LOWER_COMPLEX) && MTYPE_is_complex(WN_rtype(tree))) {
-      // complex div creates if-then-else structure,
-      // so want to expand this early, then just return C*LDID preg here
-      // (e.g. in case is under a PARM node, and is not first parm).
-      // Note that fortran fe moves this out from under call, 
-      // but C doesn't.  Apparently only get here for C PARM case.
-      TYPE_ID	cdiv_mtype = WN_rtype(tree);
-      // using a preg causes wopt to get confused and not
-      // connect the F* preg numbers with the C* preg number.
-      // so use temp symbol instead.
-      TY_IDX cdiv_ty = MTYPE_To_TY(cdiv_mtype);
-      ST *cdiv_st = Gen_Temp_Symbol (cdiv_ty, ".complex_div");
-      WN *stid = WN_Stid(cdiv_mtype, 0, cdiv_st, cdiv_ty, tree);
-      WN_Set_Linenum (stid, current_srcpos);
-      stid = lower_store(block, stid, actions);
-      WN_INSERT_BlockLast(block, stid);
-      WN *ldid = WN_Ldid(cdiv_mtype, 0, cdiv_st, cdiv_ty);
-      return ldid;
-  }
-  break;
+    // fallthrough to complex case below (after #endif)
 
-  case OPR_MOD:
-      
 #else
   case OPR_DIV:
   case OPR_REM:
@@ -7220,6 +7207,32 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 	return ldid;
     }
     break;
+
+#ifdef TARG_ST
+  case OPR_MPY:
+    // [CG] perform lowering of fast multiply (power of 2) multiply.
+    // This lowering is supposed to be always profitable and thus is
+    // not controlled by external option.
+    if (Action(LOWER_FAST_MUL)  &&
+	WNL_Is_Fast_Int_Mul_By_Constant_Candidate(tree)) {
+      WN *fast_mul_tree;
+      fast_mul_tree = WNL_Lower_Fast_Int_Mul_By_Constant(block, tree, actions);
+      WN_Delete(tree);
+      return fast_mul_tree;
+    }
+
+    // [CG] perform lowering of general constant multiply.
+    // This lowering can be enabled/disabled by OPT_Cnst_Mul option.
+    if (Action(LOWER_CNST_MUL) && OPT_Cnst_Mul &&
+	WNL_Is_Int_Mul_By_Constant_Candidate(tree)) {
+      WN *cnst_mul_tree;
+      cnst_mul_tree = WNL_Lower_Int_Mul_By_Constant(block, tree, actions);
+      WN_Delete(tree);
+      return cnst_mul_tree;
+    }
+
+    break;
+#endif
 
   case OPR_COMMA:
     {
@@ -10599,6 +10612,64 @@ lower_mload_actual (
 #endif
   }
 
+  if(PLOC_by_reference(ploc)) {
+    if(PLOC_on_stack(ploc)) {
+     /*
+      *  create WN to copy @mload to sp+offset
+      *
+      *  dstPreg = SP + offset
+      */
+      PREG_NUM	dstPreg;
+      PREG_NUM	srcPreg = addrN;
+      WN 	*add;
+      INT64	offset;
+      TY_IDX srcTY =	mloadTY;
+      TY_IDX dstTY =	MTYPE_To_TY(Max_Uint_Mtype);
+      TYPE_ID		quantum;
+      INT32		copy_alignment;
+
+      
+#ifdef TARG_ST
+#ifdef FIXED_FORMAL_AREA_SIZE // CG
+      offset = PLOC_offset(ploc) - Formal_Save_Area_Size
+	+ STACK_OFFSET_ADJUSTMENT;
+#else
+      offset = PLOC_offset(ploc) - _Formal_Save_Area_Size
+	+ STACK_OFFSET_ADJUSTMENT;
+#endif
+#else
+      offset = PLOC_offset(ploc) - Formal_Save_Area_Size
+	+ Stack_Offset_Adjustment;
+#endif
+      add = WN_Add(Pointer_type,
+		   WN_LdidPreg(Pointer_type, Stack_Pointer_Preg_Offset),
+		   WN_Intconst(Pointer_type, offset));
+      
+#ifdef TARG_ST
+      dstPreg = AssignExpr(memcpyblock ? memcpyblock : block, add, Pointer_type);
+#else
+      dstPreg = AssignExpr(block, add, Pointer_type);
+#endif
+      
+      /*
+       *  copy ref of object to add.
+       */
+
+      WN *value = WN_LdidPreg(Pointer_type, srcPreg);
+      WN *addr = WN_LdidPreg(Pointer_type, dstPreg);
+      WN *store = WN_Istore(Pointer_type, 0, Make_Pointer_Type (struct_memop_type (Pointer_type, dstTY)), addr,	value);
+      WN_INSERT_BlockLast(block, store);
+    }
+    else {
+      PREG_NUM regNo = PLOC_reg(ploc);
+      ST	*reg = Preg_Offset_Is_Float(regNo) ? Float_Preg : Int_Preg;
+
+      WN *addr = WN_LdidPreg(Pointer_type, addrN);
+      WN *stid= WN_Stid(Pointer_type, regNo, reg, ST_type(reg), addr);
+      WN_INSERT_BlockLast(block, stid);
+    }
+  }
+  else
   while (PLOC_is_nonempty(ploc))
   {
     if (PLOC_on_stack(ploc))
@@ -10716,64 +10787,61 @@ lower_mload_actual (
     }
     else
     {
-     /*
-      *  copy structure element to register
-      */
+      /*
+       *  copy structure element to register
+       */
       PREG_NUM regNo = PLOC_reg(ploc);
       ST	*reg = Preg_Offset_Is_Float(regNo) ? Float_Preg : Int_Preg;
       TYPE_ID   type = TY_mtype(Ty_Table[ST_type(reg)]);
-
+      
       {
 	WN      *load, *stid;
 	INT32	todo = size - mloadOffset;
-
+	
 	if (PLOC_size(ploc) < MTYPE_size_reg(type)
-		&& type == MTYPE_F8 && PLOC_size(ploc) == 4)
-	{
-		// need to copy a smaller size than default reg-size
-		DevWarn("actual_mload: switch from mtype_f8 to mtype_f4");
-		type = MTYPE_F4;
-		reg = MTYPE_To_PREG(type);
+	    && type == MTYPE_F8 && PLOC_size(ploc) == 4) {
+	  // need to copy a smaller size than default reg-size
+	  DevWarn("actual_mload: switch from mtype_f8 to mtype_f4");
+	  type = MTYPE_F4;
+	  reg = MTYPE_To_PREG(type);
 	}
-
-       /*
-	*  special case "small" structs (or remainder of struct)
-	*  we will try not to run off the end of the structure (as bad)
-	*/
-	if (todo < MTYPE_alignment(type))
-	{
+	
+	/*
+	 *  special case "small" structs (or remainder of struct)
+	 *  we will try not to run off the end of the structure (as bad)
+	 */
+	if (todo < MTYPE_alignment(type))   {
 	  TYPE_ID	quantum;
 	  INT32		newAlign, shiftn;
-
+	  
 	  Is_True(Preg_Offset_Is_Int(regNo),
 		  ("mload actual->reg(size/alignment problem"));
 	  newAlign = nearest_power_of_two(todo);
-
+	  
 	  quantum = Mtype_AlignmentClass(newAlign, MTYPE_type_class(type));
-
+	  
 	  load = WN_IloadLdid(quantum, mloadOffset,
 			      struct_memop_type (quantum, mloadTY), preg,
 			      addrN); 
-
+	  
 	  lower_copy_maps(mload, load, actions);
-
+	  
 	  if (Target_Byte_Sex == BIG_ENDIAN) {
 	    shiftn = MTYPE_size_reg(type) - MTYPE_size_reg(quantum);
-  
+	    
 	    load = WN_Shl(type, load, WN_Intconst(type, shiftn));
 	  }
 	}
-	else
-	{
+	else {
 	  load = WN_IloadLdid(type, mloadOffset,
 			      struct_memop_type (type, mloadTY), preg,
 			      addrN); 
-
+	  
 	  lower_copy_maps(mload, load, actions);
 	}
-
+	
 	stid= WN_Stid(type, regNo, reg, ST_type(reg), load);
-
+	
 #ifdef TARG_ST
 	// [TB] Improve line number.
 	WN_copy_linenum(mload, stid);
@@ -10791,6 +10859,42 @@ lower_mload_actual (
 #endif
     ploc = Get_Struct_Output_Parameter_Location(ploc);
   }
+}
+
+
+/* ====================================================================
+ *
+ * static void lower_formal_by_hidden_reference
+ *
+ * Perform lowering (see WN_Lower description) for argument passed by
+ * hidden reference instead of by value.
+ * Pointed formal will be copied to [stack].
+ *
+ * ==================================================================== */
+
+static void lower_formal_by_hidden_reference(WN *block, WN *formal, PLOC ploc,
+			       LOWER_ACTIONS actions)
+{
+  INT32   size;
+  ST     *sym = WN_st(formal);
+  TY_IDX  symTY = ST_type(sym);
+
+  FmtAssert(PLOC_by_reference(ploc),("Formal not by reference"));
+  size = TY_size(Ty_Table[symTY]);
+
+  // Formal passed by reference is in caller stack, so have to perform a local copy.
+
+  PREG_NUM 	regNo =	PLOC_reg(ploc);
+  ST	*reg = Preg_Offset_Is_Float(regNo) ? Float_Preg : Int_Preg;
+  TYPE_ID   type = TY_mtype(ST_type(reg));
+
+  WN *preg_wn = WN_LdidPreg (Pointer_type, regNo);
+  WN *size_wn = WN_Intconst(Integer_type, size);
+  WN *mload_wn = WN_CreateMload(0, Make_Pointer_Type(symTY), preg_wn, size_wn);
+  WN *store_wn = WN_Stid (TY_mtype(Ty_Table[symTY]), 0, sym, symTY, mload_wn);   
+
+  lower_copy_maps(formal, store_wn, actions);
+  WN_INSERT_BlockLast(block, store_wn);
 }
 
 
@@ -10832,6 +10936,7 @@ static void lower_mload_formal(WN *block, WN *mload, PLOC ploc,
       ST	*reg = Preg_Offset_Is_Float(regNo) ? Float_Preg : Int_Preg;
       TYPE_ID   type = TY_mtype(ST_type(reg));
       INT32	todo = size - offset;
+
       {
 	WN        *ldid, *store;
 
@@ -10845,6 +10950,7 @@ static void lower_mload_formal(WN *block, WN *mload, PLOC ploc,
 	}
 
 	ldid = WN_LdidPreg(type, regNo);
+
        /*
 	*  special case "small" structs (or remainder of struct)
 	*  to use type closer to size of remaining todo
@@ -11171,9 +11277,9 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
     PREG_NUM	reg1, reg2;
     TYPE_ID	type = WN_rtype(tree);
 
-    rename_preg(INTR_intrinsic_name(tree), ".return");
-
 #ifdef TARG_ST
+    AssignPregName(INTR_intrinsic_name(tree), ".return");
+
     // can have more than 2 return regs
     // Also don't need to check for WHIRL_Return_Info_On
 
@@ -11263,7 +11369,7 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
 	   *         2 PREGs for this types
 	   */
 	  /* reserve the second PREG */
-	  retReg = Create_Preg(MTYPE_F8, current_preg_name);
+	  retReg = Create_Preg(MTYPE_F8, CurrentPregName());
 	}
 #endif
       }
@@ -11282,7 +11388,7 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
 	   *         2 PREGs for this types
 	   */
 	  /* reserve the second PREG */
-	  retReg = Create_Preg(type, current_preg_name);
+	  retReg = Create_Preg(type, CurrentPregName());
 	}
 #endif
       }
@@ -11310,7 +11416,7 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
 	   *         2 PREGs for this types
 	   */
 	  /* reserve the second PREG */
-	  retReg = Create_Preg(TY_mtype(Ty_Table[type]), current_preg_name);
+	  retReg = Create_Preg(TY_mtype(Ty_Table[type]), CurrentPregName());
 	}
 #endif
 
@@ -11371,12 +11477,15 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
 
     }
 
-    rename_reset();
+    ResetPregName();
   }
 
   return wn;
 
-#else
+#else /* !TARG_ST */
+    AssignPregName(INTR_intrinsic_name(tree), ".return");
+
+
     if (WHIRL_Return_Info_On) {
 
       RETURN_INFO return_info = Get_Return_Info (MTYPE_To_TY(type),
@@ -11466,7 +11575,7 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
       }
       break;
     }
-    rename_reset();
+    ResetPregName();
   }
 
   /*
@@ -11503,7 +11612,7 @@ static WN *lower_intrinsic_op(WN *block, WN *tree, LOWER_ACTIONS actions)
   *  The preg may need map processing
   */
   return lower_expr(block, wn, actions);
-#endif /* TARG_ST */
+#endif /* !TARG_ST */
 }
 
 
@@ -11810,7 +11919,7 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
   for (i = 0; i < WN_kid_count(tree); i++)
     WN_actual(tree, i) = lower_expr(block, WN_actual(tree, i), actions);
 
-#if 0
+#if 1
   if (traceCall) {
     fprintf(TFile, "-----> after lower_expr for actuals: \n");
     fdump_tree (TFile, tree);
@@ -13004,8 +13113,11 @@ static WN *lower_return_val(WN *block, WN *tree, LOWER_ACTIONS actions)
  * statements.
  *
  * ==================================================================== */
-
+#ifdef TARG_ST
+WN *lower_stmt(WN *block, WN *tree, LOWER_ACTIONS actions)
+#else
 static WN *lower_stmt(WN *block, WN *tree, LOWER_ACTIONS actions)
+#endif
 {
   CURRENT_STATE stmtState = pushCurrentState(tree, actions);
 
@@ -14828,6 +14940,27 @@ static void lower_formals(WN *block, WN *formal, PLOC ploc,
 	WN_INSERT_BlockLast(block, stid);
       }
     }
+
+    if (PLOC_by_reference(ploc)) {
+      INT32   size;
+
+      size = TY_size(Ty_Table[formalTY]);
+
+      // Formal passed by reference is in up formal, so have to perform a local copy.
+
+      ST	*upformal = Get_Altentry_UpFormal_Symbol (sym, ploc);
+
+      WN *lda_wn = WN_Lda(Pointer_type, 0, upformal);
+
+      lda_wn = WN_Iload(Pointer_type, 0, Make_Pointer_Type(formalTY), lda_wn);
+      WN *size_wn = WN_Intconst(Integer_type, size);
+      WN *mload_wn = WN_CreateMload(0, Make_Pointer_Type(formalTY), lda_wn, size_wn);
+      WN *store_wn = WN_Stid (TY_mtype(Ty_Table[formalTY]), 0, sym, formalTY, mload_wn);   
+
+      store_wn = lower_store(block, store_wn, actions);
+      WN_Set_Linenum (store_wn, current_srcpos);
+      WN_INSERT_BlockLast(block, store_wn);
+    }
   }
   else if (MTYPE_is_m(TY_mtype(Ty_Table[formalTY])))
   {
@@ -14870,6 +15003,7 @@ static PLOC lower_entry_formals(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
   PLOC	ploc;
   INT32	i, n;
+
 
   ploc = Setup_Input_Parameter_Locations(ST_pu_type(WN_st(tree)));
 
@@ -15007,8 +15141,9 @@ lower_entry_promoted_formals(WN *block, WN *tree)
 	       CLASS_VAR, SCLASS_FORMAL, EXPORT_LOCAL, regTY);
       Set_ST_is_value_parm(promotedST);
 
-      ST_Init (formalST, Save_Str(ST_name(formalST)), CLASS_VAR, SCLASS_AUTO,
-	       EXPORT_LOCAL, formalTY);
+      /* Transform original formal into automatic. */
+      Set_ST_sclass(formalST, SCLASS_AUTO);
+      Clear_ST_is_value_parm(formalST);
 
       WN *cvt = lower_caller_callee_formal(promotedST, formalST); 
       WN *stid = WN_Stid(TY_mtype(formalTY), ST_ofst(formalST), formalST, ST_type(formalST), cvt);
@@ -15017,6 +15152,75 @@ lower_entry_promoted_formals(WN *block, WN *tree)
 
       // Replace the funcentry kid by the promoted formal
       WN *idname = WN_CreateIdname(0, promotedST);
+      WN_kid(tree, i) = idname;
+      WN_Delete(formal);
+    }
+  }
+}
+#endif
+
+#ifdef TARG_ST //[JV]
+static WN *lower_caller_hidden_reference_formal(ST *ptrST, ST *formalST)
+{
+  TYPE_ID ptrType = TY_mtype(Ty_Table[ST_type(ptrST)]);
+  TYPE_ID formalType = TY_mtype(Ty_Table[ST_type(formalST)]);
+  INT32 size = TY_size(Ty_Table[ST_type(formalST)]);
+
+  WN *ldid_wn = WN_Ldid(ptrType, 0, ptrST, ST_type(ptrST));
+  WN *size_wn = WN_Intconst(Integer_type, size);
+  WN *mload_wn = WN_CreateMload(0, Make_Pointer_Type(ST_type(formalST)), ldid_wn, size_wn);
+  return mload_wn;
+}
+
+
+
+static void
+lower_entry_hidden_ref_formals( WN *block, WN *tree, LOWER_ACTIONS actions)
+{
+  INT32	i, n;
+  PLOC ploc;
+  
+  if (WN_opcode(tree) == OPC_ALTENTRY) {
+    n =	WN_kid_count(tree);
+  } else {
+    n =	WN_num_formals(tree);
+  }
+
+  ploc = Setup_Input_Parameter_Locations(ST_pu_type(WN_st(tree)));
+
+  for (i = 0; i < n; i++) {
+    WN *formal = WN_formal(tree, i);
+    
+    ST     *formalST = WN_st(formal);
+    TY_IDX  formalTY = WN_type(formal);
+    TY_IDX  regTY;
+
+    ploc = Get_Input_Parameter_Location(formalTY);
+  
+    if (PLOC_by_reference(ploc)) {
+      regTY = Make_Pointer_Type(formalTY);
+      ST *ptrST = New_ST (ST_level(formalST));
+      ST_Init (ptrST, Save_Str2(".caller.ptr.", ST_name(formalST)),
+	       CLASS_VAR, SCLASS_FORMAL, EXPORT_LOCAL, regTY);
+      Set_ST_is_value_parm(ptrST);
+
+      /* Transform original formal into automatic. */
+      Set_ST_sclass(formalST, SCLASS_AUTO);
+      Clear_ST_is_value_parm(formalST);
+
+      WN *mload = lower_caller_hidden_reference_formal(ptrST, formalST);
+      WN *stid = WN_Stid(TY_mtype(Ty_Table[formalTY]), 0, formalST, formalTY, mload);
+      WN_Set_Linenum (stid, current_srcpos);
+
+#if 0
+      lower_copy_maps(formal, stid, actions);
+#endif
+      stid = lower_store(block, stid, actions);
+
+      WN_INSERT_BlockLast(block, stid);
+
+      // Replace the funcentry kid by the promoted formal
+      WN *idname = WN_CreateIdname(0, ptrST);
       WN_kid(tree, i) = idname;
       WN_Delete(formal);
     }
@@ -15422,6 +15626,12 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
       WN_operator(tree) == OPR_FUNC_ENTRY) {
     lower_entry_promoted_formals(block, tree);
   }
+
+  if (Action(LOWER_FORMAL_HIDDEN_REF) &&
+      WN_operator(tree) == OPR_FUNC_ENTRY) {
+    lower_entry_hidden_ref_formals(block, tree, actions);
+  }
+
 #endif
 
   if (Action(LOWER_ENTRY_EXIT))
@@ -15451,6 +15661,46 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 
     ploc = lower_entry_formals(block, tree, actions);
 
+#ifdef TARG_ST
+    if (TY_is_varargs(Ty_Table[PU_prototype(Pu_Table[ST_pu(WN_st(tree))])]))
+    {
+      /*
+      *  For varargs, the func-entry just has the list of fixed
+      *  parameters, so also have to store the vararg registers. 
+      */
+      TYPE_ID	type = Def_Int_Mtype;
+      
+      if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
+	/* don't do if already reached stack params */
+        ploc = Get_Vararg_Input_Parameter_Location (ploc);
+      }
+
+      while (!PLOC_on_stack(ploc))
+      {
+       /*
+        *  vararg registers must be integer registers
+        */
+	WN	*wn;
+	WN 	*var_addr;
+	ST	*st;
+	INT 	offset;
+	wn = WN_Ldid (type, PLOC_reg(ploc), Int_Preg, ST_type(Int_Preg));
+	/*
+	*  Get the symbol address for the vararg register.
+	*/
+	Get_Vararg_Ploc_Symbol(ploc, &st, &offset);
+	var_addr = WN_Lda (Pointer_type, 0, st);
+	wn = WN_Istore(type,
+		       offset,
+		       Make_Pointer_Type(ST_type(Int_Preg)),
+		       var_addr,
+		       wn);
+	WN_Set_Linenum (wn, current_srcpos);
+	WN_INSERT_BlockLast(block, wn);
+	ploc = Get_Vararg_Input_Parameter_Location (ploc);
+      }
+    }
+#else /* !TARG_ST */
     if (TY_is_varargs(Ty_Table[PU_prototype(Pu_Table[ST_pu(WN_st(tree))])]))
     {
      /*
@@ -15477,14 +15727,13 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 	*  get the symbol for the vararg formal
 	*/
 	st = Get_Vararg_Symbol (ploc);
-
 	wn = WN_Stid (type, 0, st, ST_type(st), wn);
 	WN_Set_Linenum (wn, current_srcpos);
 	WN_INSERT_BlockLast(block, wn);
-
 	ploc = Get_Vararg_Input_Parameter_Location (ploc);
       }
     }
+#endif /* !TARG_ST */
 
    /*
     * add initialization code for trapuv
@@ -15678,7 +15927,11 @@ WN *lower_scf_non_recursive(WN *block, WN *tree, LOWER_ACTIONS actions)
  *
  * ==================================================================== */
 
+#ifdef TARG_ST
+WN *lower_scf(WN *block, WN *tree, LOWER_ACTIONS actions)
+#else
 static WN *lower_scf(WN *block, WN *tree, LOWER_ACTIONS actions)
+#endif
 {
   CURRENT_STATE scfState = pushCurrentState(tree, actions);
 
@@ -16020,7 +16273,12 @@ const char * LOWER_ACTIONS_name(LOWER_ACTIONS actions)
   case LOWER_ENTRY_PROMOTED:		return "LOWER_ENTRY_PROMOTED";
   case LOWER_NESTED_FN_PTRS:            return "LOWER_NESTED_FN_PTRS";
   case LOWER_INSTRUMENT:            	return "LOWER_INSTRUMENT";
-  case LOWER_CST_DIV:			return "LOWER_CST_DIV";
+  case LOWER_CNST_DIV:			return "LOWER_CNST_DIV";
+  case LOWER_FORMAL_HIDDEN_REF:		return "LOWER_FORMAL_HIDDEN_REF";
+  case LOWER_SELECT:			return "LOWER_SELECT";
+  case LOWER_FAST_DIV:			return "LOWER_FAST_DIV";
+  case LOWER_FAST_MUL:			return "LOWER_FAST_MUL";
+  case LOWER_CNST_MUL:			return "LOWER_CNST_MUL";
 #endif
   default:				return "<unrecognized>";
   }
@@ -16183,7 +16441,11 @@ static LOWER_ACTIONS lower_actions(WN *pu, LOWER_ACTIONS actions)
    /*
     * these form the major LOWER_TO_CG actions
     */
-    actions |=	LOWER_SCF		  |
+    actions |=	
+#ifdef TARG_ST
+      		LOWER_SELECT		  |
+#endif
+      		LOWER_SCF		  |
 		LOWER_ARRAY		  |
 		LOWER_MP		  |
 		LOWER_IO_STATEMENT	  |

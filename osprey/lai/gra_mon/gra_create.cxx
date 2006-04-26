@@ -196,9 +196,9 @@ Create_GRA_BB_Call_Spill_Block(BB *bb)
 
   } else if (OP_has_predicate(BB_last_op(bb)) &&
              OP_has_predicate(BB_last_op(succ)) &&
-             !TN_is_const_reg(OP_opnd(BB_last_op(bb), OP_PREDICATE_OPND)) &&
-             !TNs_Are_Equivalent(OP_opnd(BB_last_op(bb), OP_PREDICATE_OPND),
-                                 OP_opnd(BB_last_op(succ), OP_PREDICATE_OPND))) {
+             !TN_is_const_reg(OP_opnd(BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate))) &&
+             !TNs_Are_Equivalent(OP_opnd(BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate)),
+                                 OP_opnd(BB_last_op(succ), OP_find_opnd_use(BB_last_op(bb),OU_predicate)))) {
    /* We really don't know what is going on here - so insert the block! */
     goto block_needed;
   } else {
@@ -1278,7 +1278,7 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       }
     }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     if (OP_code(xop) == TOP_asm) {
       ISA_REGISTER_CLASS rc;
       FOR_ALL_ISA_REGISTER_CLASS(rc) {

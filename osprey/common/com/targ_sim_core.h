@@ -39,9 +39,6 @@
 extern "C" {
 #endif
 
-#define MAX_NUMBER_OF_REGISTERS_FOR_RETURN 8
-#define MAX_NUMBER_OF_REGISTER_PARAMETERS 8
-
 /*
  * This defines the ABI subprogram interface,
  * and is used to determine how parameters and results are passed.
@@ -57,6 +54,8 @@ extern "C" {
         ((n) >= Ptr_Preg_Min_Offset && (n) <= Ptr_Preg_Max_Offset)
 #define Preg_Offset_Is_Float(n) \
         ((n) >= Float_Preg_Min_Offset && (n) <= Float_Preg_Max_Offset)
+#define Preg_Offset_Is_Branch(n) \
+        ((n) >= Branch_Preg_Min_Offset && (n) <= Branch_Preg_Max_Offset)
 #define Preg_Offset_Is_Fcc(n) \
         ((n) >= Fcc_Preg_Min_Offset && (n) <= Fcc_Preg_Max_Offset)
 #define Preg_Is_Dedicated(n) (n <= Last_Dedicated_Preg_Offset)
@@ -153,6 +152,9 @@ typedef struct {
   //         routines.
   INT32 lpad;
   INT32 rpad;
+
+  // [JV] To say if the parameter is passed by reference.
+  BOOL  by_reference;
 #endif
 } PLOC;
 
@@ -167,6 +169,7 @@ typedef struct {
 #ifdef TARG_ST
 #define PLOC_lpad(p)            (p.lpad)
 #define PLOC_rpad(p)            (p.rpad)
+#define PLOC_by_reference(p)    ((p).by_reference)
 #endif
 
 /* 

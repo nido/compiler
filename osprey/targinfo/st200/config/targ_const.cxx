@@ -3190,7 +3190,7 @@ Targ_Print ( char *fmt, TCON c )
       if (string_as_bytes) {
 	 spos = 0;
 	 spos = sprintf(r,"(%d hex bytes) ",slen);
-	 for (i=0; i < slen && spos < 1000; i++) {
+	 for (i=0; i < slen && spos < 500; i++) {
 	    if (i == slen-1) {
 	       spos += sprintf(r+spos,"%x",bytes[i]);
 	    } else {
@@ -3203,7 +3203,9 @@ Targ_Print ( char *fmt, TCON c )
       } else {
 	 sprintf(r, "(%d bytes) \"", slen);
 	 char *t = r + strlen (r);
-         char *s = r + 1000;
+	 // [JV] In Print_TN (tnutil.cxx), the buffer size is 1024, so replace 1000 by 500 
+	 // due to some additional printed information.
+         char *s = r + 500;
 	 for (i = 0; i < slen && t < s; i++) {
 		t = Targ_Append_To_Dbuf (t, bytes[i]);
          }

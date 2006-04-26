@@ -217,6 +217,9 @@ check_for_driver_controls (int argc, char *argv[])
 		else if (strcmp(argv[i], "-st200") == 0) {
 			abi = ABI_ST200_embedded;
                 }
+		else if (strcmp(argv[i], "-stxp70") == 0) {
+			abi = ABI_STxP70_embedded;
+                }
         }
 }
 

@@ -25,7 +25,7 @@ Boston, MA 02111-1307, USA.  */
 
 #include "obstack.h"
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   /* (cbr) in stdbool.h */
   typedef bool boolean;
 #else

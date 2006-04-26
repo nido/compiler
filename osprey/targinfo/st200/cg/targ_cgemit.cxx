@@ -54,6 +54,17 @@
  * symbols that are function statics.
  */
      
+/* ====================================================================
+ *   CGEMIT_TN_Value_In_Hexa_Format
+ * ====================================================================
+ */
+
+BOOL
+CGEMIT_TN_Value_In_Hexa_Format( OP *op, TN *t )
+{
+  return FALSE;
+}
+
 
 /* ====================================================================
  *    CGEMIT_Weak_Alias (sym, stringsym)

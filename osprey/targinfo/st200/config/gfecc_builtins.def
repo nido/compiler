@@ -1,4 +1,4 @@
-#if defined (TARG_ST200) && (GNU_FRONT_END==33)
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_ABSCH,
              "__builtin___absch",
              BT_FN_SHORT_SHORT,
@@ -1051,4 +1051,4 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__MODUH,
              "__builtin__moduh",
              BT_FN_USHORT_USHORT_USHORT,
              ATTR_PURE_NOTHROW_LIST)
-#endif /*defined(TARG_ST200)*/
+#endif /*defined(TARG_ST)*/

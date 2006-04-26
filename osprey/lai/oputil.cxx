@@ -91,6 +91,10 @@
 #include "cg_ssa.h"
 #endif
 
+#ifdef TARG_ST
+#include "op_map.h"			/* For using OP_Asm_Map */
+#endif
+
 /* #include "targ_isa_hazards.h" */ /* Should be included through op.h */
 
 /* Allocate OPs for the duration of the PU. */
@@ -964,6 +968,8 @@ else
   if (OP_spill(op)) fprintf (TFile, " spill");
   if (OP_ssa_move(op)) fprintf (TFile, " ssa_move");
   if (OP_black_hole(op)) fprintf (TFile, " black_hole");
+  if (OP_Get_Flag_Effects(op) & OP_FE_WRITE) fprintf (TFile, " flag_write");
+  if (OP_Get_Flag_Effects(op) & OP_FE_READ) fprintf (TFile, " flag_read");
 #endif
 
   if (wn = Get_WN_From_Memory_OP(op)) {
@@ -1359,7 +1365,11 @@ BOOL OP_cond_def(const OP *op)
 
 BOOL OP_has_implicit_interactions(OP *op) 
 {
-  if (OP_volatile(op) || OP_side_effects(op))
+  if (OP_volatile(op) || OP_side_effects(op) 
+#ifdef TARG_ST
+      || OP_Has_Flag_Effect(op)
+#endif
+      )
     return TRUE;
 
   INT i;
@@ -1409,3 +1419,29 @@ void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
   }
 }
 
+
+#ifdef TARG_ST
+/* ====================================================================
+ * OP_same_res()
+ *
+ * Handle the architecture constraint same_res.
+ * Handles the result/opnd constraint on ASM statements.
+ * ====================================================================
+ */
+extern OP_MAP OP_Asm_Map;
+INT
+OP_same_res(OP *op, INT i) {
+  INT opnd_idx = -1;
+  TOP top = OP_code(op);
+  const ISA_OPERAND_INFO *oinfo;
+  /* Check architectural description for same res. */
+  oinfo = OP_operand_info(op);
+  opnd_idx = ISA_OPERAND_INFO_Same_Res(oinfo, i); 
+  /* check for ASM statements with same res on operand constraint. */
+  if (top == TOP_asm) {
+    ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT *)OP_MAP_Get(OP_Asm_Map, op);
+    opnd_idx = ASM_OP_result_same_opnd(asm_info)[i];
+  }
+  return opnd_idx;
+} 
+#endif

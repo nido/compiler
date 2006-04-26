@@ -900,7 +900,7 @@ EBO_simplify_operand0 (
 
   opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
   opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
-  FmtAssert(opnd1_idx >= 0 && opnd2_idx >= 0, ("OU_opnd1 and/or OU_opnd2 not defined for TOP %s\n", TOP_Name(opcode)));
+  DevAssert(opnd1_idx >= 0 && opnd2_idx >= 0, ("OU_opnd1 and/or OU_opnd2 not defined for TOP %s\n", TOP_Name(opcode)));
 
   if (EBO_Trace_Optimization) { 
     fprintf(TFile,"Enter EBO_simplify_operand0: %s ", TOP_Name(opcode));
@@ -932,7 +932,7 @@ EBO_simplify_operand0 (
     if (new_val == 0) new_tn1 = Zero_TN;
     else new_tn1 = Gen_Literal_TN(new_val, 4);
     if (TN_has_value(new_tn1))
-      new_opcode = TOP_opnd_immediate_variant(new_opcode, opnd2_idx, const_val);
+      new_opcode = TOP_opnd_immediate_variant(new_opcode, opnd2_idx, TN_value(new_tn1));
     if (new_opcode == TOP_UNDEFINED) return NULL;
     new_op = Mk_OP(new_opcode, tnr, new_tn0, new_tn1);
     if (EBO_Trace_Optimization) fprintf(TFile,"shiftadd -> add\n");
@@ -996,7 +996,7 @@ EBO_simplify_operand1 (
 
   opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
   opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
-  FmtAssert(opnd1_idx >= 0 && opnd2_idx >= 0, ("OU_opnd1 and/or OU_opnd2 not defined for TOP %s\n", TOP_Name(opcode)));
+  DevAssert(opnd1_idx >= 0 && opnd2_idx >= 0, ("OU_opnd1 and/or OU_opnd2 not defined for TOP %s\n", TOP_Name(opcode)));
 
   if (EBO_Trace_Optimization) { 
     fprintf(TFile,"Enter EBO_simplify_operand1: %s ", TOP_Name(opcode));
@@ -1130,6 +1130,7 @@ EBO_Fold_Special_Opcode (
     else return FALSE;
   }
 
+  /* Nothing target specific to fold. */
   return FALSE;
 
  Folded:
@@ -2750,6 +2751,15 @@ t1c(INT64 val)
  * Returns true if the defined bits of the def can
  * be guessed and returns bit width and sign extension.
  *
+ * Property driven cases are:
+ * - loads
+ * - shift right
+ * - sext/zext
+ * - and
+ *
+ * Target specific for STxP70 are:
+ * - TOP_bool (generate 1 bit register)
+ *
  */
 static BOOL
 def_bit_width(OP *op, INT32 def_idx, INT32 *def_bits, INT32 *def_signed)
@@ -2808,7 +2818,6 @@ def_bit_width(OP *op, INT32 def_idx, INT32 *def_bits, INT32 *def_signed)
     *def_signed = 0;
     return TRUE;
   }
-
   return FALSE;
 }
 
@@ -2817,7 +2826,7 @@ def_bit_width(OP *op, INT32 def_idx, INT32 *def_bits, INT32 *def_signed)
  *
  * Returns true if the effective used bit of the operand def can
  * be guessed and returns bit width.
- * Some special cases are:
+ * Property driven cases are:
  * - shift left: use bits - shift amount
  * - and : use bits - leading zeros
  * - or : use bits - leading one
@@ -2831,7 +2840,9 @@ use_bit_width(OP *op, INT32 opnd_idx, INT32 *use_bits)
   TOP opcode = OP_code(op);
   INT32 bits = TOP_opnd_use_bits(opcode, opnd_idx);
 
-  if (bits < 0) return FALSE;
+  if (bits < 0) {
+    return FALSE;
+  }
   *use_bits = bits;
 
   if (OP_ishl(op) &&
@@ -2859,8 +2870,9 @@ use_bit_width(OP *op, INT32 opnd_idx, INT32 *use_bits)
 /*
  * OP_is_extension()
  *
- * Returns true if the operation acts as an extension
+ * Returns true if the operation acts as an extension for the given operand.
  * Set signed to true if sign extension
+ * TODO: generic
  */
 static BOOL
 OP_is_extension(OP *op, INT32 opnd_idx, INT32 *ext_bits, INT32 *ext_signed)
@@ -2871,26 +2883,31 @@ OP_is_extension(OP *op, INT32 opnd_idx, INT32 *ext_bits, INT32 *ext_signed)
   
   if (OP_results(op) != 1) return FALSE;
   
-  if ((OP_sext(op) || OP_zext(op)) &&
-      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
-      opnd1_idx == opnd_idx) {
-    *ext_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
-    *ext_signed = TOP_opnd_use_signed(opcode, opnd1_idx);
-    return TRUE;
+  if ((OP_sext(op) || OP_zext(op))) {
+    opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1);
+    DevAssert(opnd1_idx >= 0, ("missing OU_opnd1 for OP_sext/OP_zext"));
+    if (opnd1_idx == opnd_idx) {
+      *ext_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+      *ext_signed = TOP_opnd_use_signed(opcode, opnd1_idx);
+      return TRUE;
+    }
   }
 
-  if (OP_iand(op) &&
-      (opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1)) >= 0 &&
-      (opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2)) >= 0 &&
-      opnd1_idx == opnd_idx &&
-      TN_Has_Value(OP_opnd(op,opnd2_idx))) {
-    val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
-    INT32 use_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
-    INT32 bits = t1c(val);
-    if (bits < use_bits) {
-      *ext_bits = bits;
-      *ext_signed = 0;
-      return TRUE;
+  if (OP_iand(op)) {
+    opnd1_idx = TOP_Find_Operand_Use(opcode,OU_opnd1);
+    opnd2_idx = TOP_Find_Operand_Use(opcode,OU_opnd2);
+    DevAssert(opnd1_idx >= 0, ("missing OU_opnd1 for OP_sext/OP_zext"));
+    DevAssert(opnd2_idx >= 0, ("missing OU_opnd2 for OP_sext/OP_zext"));
+    if (opnd1_idx == opnd_idx &&
+	TN_Has_Value(OP_opnd(op,opnd2_idx))) {
+      val = TOP_fetch_opnd(opcode, op->res_opnd+OP_opnd_offset(op), opnd2_idx);
+      INT32 use_bits = TOP_opnd_use_bits(opcode, opnd1_idx);
+      INT32 bits = t1c(val);
+      if (bits < use_bits) {
+	*ext_bits = bits;
+	*ext_signed = 0;
+	return TRUE;
+      }
     }
   }
   return FALSE;
@@ -4358,6 +4375,9 @@ find_equivalent_tn(OP *op, EBO_TN_INFO *input_tninfo, int use_bits, TN **equiv_t
    // Get defining op
   if (!find_def_opinfo(input_tninfo, &def_opinfo)) return FALSE;
   
+  // Skip predicated definitions
+  if (OP_cond_def(def_opinfo->in_op)) return FALSE;
+
   if (!is_same_bits(def_opinfo->in_op, def_opinfo->actual_opnd, use_bits, &match_tn, &match_tninfo))
     return FALSE;
   if (match_tninfo != NULL && !EBO_tn_available (OP_bb(op), match_tninfo)) return FALSE;
@@ -4382,22 +4402,48 @@ operand_special_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   int i;
   int replaced = 0;
   INT num_opnds = OP_opnds(op);
+  INT same_res_opnd[OP_MAX_FIXED_OPNDS];
+
+  /* ASM are not subject to this and must not, as the ASM_OP_Map must be preserved. */
+  if (OP_code(op) == TOP_asm) return FALSE;
 
   if (num_opnds > OP_MAX_FIXED_OPNDS) return FALSE;
 
   // Don't propagate into mul until mul32x32 are reduced.
   if (EBO_in_pre && IS_MUL32_PART(op)) return FALSE;
 
+  // [JV] Don't know if there is a better solution to have information from operand idx
+  // instead of result idx.
+  for (i = 0; i < num_opnds; i++) {
+    same_res_opnd[i] = -1;
+  }
+
+  for (i = 0; i < OP_results(op); i++) {
+    INT same_opnd = -1;
+    if((same_opnd = OP_same_res(op,i)) != -1) {
+      if (EBO_Trace_Optimization) {
+	fprintf(TFile,"Operand %d is same as result %d in OP:\n", i, same_opnd);
+	Print_OP_No_SrcLine(op);
+      }
+
+      same_res_opnd[same_opnd] = i;
+    }
+  }
+
+
   for (i = 0; i < num_opnds; i++) {
     EBO_TN_INFO *tninfo, *new_tninfo;
     TN *new_tn;
     int use_bits;
     tninfo = opnd_tninfo[i];
+
     if (tninfo == NULL ||
 	!use_bit_width(op, i, &use_bits) ||
 	!find_equivalent_tn(op, tninfo, use_bits, &new_tn, &new_tninfo) ||
 	!TN_is_register(new_tn) ||
-	TN_register_class(new_tn) != TN_register_class(OP_opnd(op, i))) {
+	TN_register_class(new_tn) != TN_register_class(OP_opnd(op, i)) ||
+	TN_is_dedicated(OP_opnd(op, i)) ||  /* Don't replace dedicated TNs. */
+	same_res_opnd[i] != -1) { /* Don't replace TNs if there is a result identical to operand. */
       new_opnd_tn[i] = OP_opnd(op, i);
     } else {
       new_opnd_tn[i] = new_tn;
@@ -4406,7 +4452,7 @@ operand_special_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   }
   if (replaced == 0) return FALSE;
 
-  /* Replace the current instruction. */
+  /* Replace the current instruction operands. */
   OP *new_op;
   new_op = Dup_OP (op);
   OP_srcpos(new_op) = OP_srcpos(op);
@@ -6010,6 +6056,10 @@ EBO_Special_Sequence (
 {
   BOOL ret;
   TOP opcode = OP_code(op);
+
+#ifdef Is_True_On
+  if (getenv("NO_EBO_SPECIAL")) return FALSE;
+#endif
 
   if (opnd_tn == NULL || opnd_tninfo == NULL) return FALSE;
 

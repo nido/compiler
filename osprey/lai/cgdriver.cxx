@@ -391,6 +391,14 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_emit_bb_freqs, NULL, "Emit .profile_info with basic block frequncies (estimated or feedback)" },
 
 #endif /* BCO_Enabled Thierry */
+
+#ifdef TARG_ST /* [JV] */
+  
+  { OVK_BOOL,	OV_INTERNAL, FALSE, "use_push_pop", "",
+    0, 0, 0,	&CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden, "Use push/pop instructions for callee saved registers. If disabled use spill code." },
+
+#endif
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_bad_freqs", "",
     0, 0, 0,	&CG_warn_bad_freqs, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "skip_before", "skip_b",
@@ -1140,7 +1148,7 @@ Configure_CG_Options(void)
     CG_enable_loop_optimizations = (CG_opt_level >= 2 ? TRUE: FALSE);
   }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if ((Opt_Level >= 2) && !CG_LOOP_unroll_multi_bb_overridden) {
     CG_LOOP_unroll_multi_bb = TRUE;
   }
@@ -1285,7 +1293,7 @@ Configure_CG_Options(void)
       CG_maxinss = CG_split_BB_length;
     }
   }
-#ifdef TARG_ST200
+#ifdef TARG_ST
   // ST200 BB length default: 
   // - default up to O1 (300)
   // - 500 at O2
@@ -1305,8 +1313,16 @@ Configure_CG_Options(void)
   }
 #endif
 
-#ifdef TARG_ST
+#ifdef TARG_ST200
   if (Enable_64_Bits_Ops && Opt_Level >= 2) {
+    if (!CG_gen_callee_saved_regs_mask_overriden)
+      CG_gen_callee_saved_regs_mask = TRUE;
+  }
+#endif
+
+#ifdef TARG_STxP70
+  /* Use push pop by default at level > -O0 (may not work with debug). */
+  if (Opt_Level > 0) {
     if (!CG_gen_callee_saved_regs_mask_overriden)
       CG_gen_callee_saved_regs_mask = TRUE;
   }

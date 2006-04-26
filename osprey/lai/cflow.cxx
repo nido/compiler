@@ -934,12 +934,12 @@ Negate_Branch(OP *br)
     OP *cmp = BBINFO_compare_op(br_bb);
     if (cmp != NULL && OP_results(cmp) == 2) {
       if (   OP_has_predicate(cmp) 
-	  && !TN_is_true_pred(OP_opnd(cmp, OP_PREDICATE_OPND))) return FALSE;
+	     && !TN_is_true_pred(OP_opnd(cmp, OP_find_opnd_use(cmp,OU_predicate)))) return FALSE;
 
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
-      TN *pred = OP_opnd(br, OP_PREDICATE_OPND);
+      TN *pred = OP_opnd(br, OP_find_opnd_use(cmp,OU_predicate));
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (TN_is_true_pred(neg_tn)) {
@@ -947,7 +947,7 @@ Negate_Branch(OP *br)
 	return FALSE;
       }
 
-      Set_OP_opnd(br, OP_PREDICATE_OPND, neg_tn);
+      Set_OP_opnd(br, OP_find_opnd_use(br,OU_predicate), neg_tn);
 
       if (br_bb != cmp_bb && !CG_localize_tns) {
 	GRA_LIVE_Compute_Local_Info(br_bb);
@@ -1650,7 +1650,7 @@ Initialize_BB_Info(void)
 	   */
 	  if (   cmp != NULL 
 	      && OP_has_predicate(cmp) 
-	      && !TN_is_true_pred(OP_opnd(cmp, OP_PREDICATE_OPND)))
+		 && !TN_is_true_pred(OP_opnd(cmp, OP_find_opnd_use(cmp,OU_predicate))))
 	  {
 	    cmp = NULL;
 	  }

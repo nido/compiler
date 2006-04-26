@@ -7640,6 +7640,6 @@ Exp_Intrinsic_Op (
       Expand__trap(ops) ;
     break ;   
     default:
-      FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s", INTRN_c_name(id)));
+      FmtAssert (FALSE, ("Exp_Intrinsic_Op: unknown intrinsic op %s (id: %d)", INTRN_c_name(id), id));
   } /* switch*/
 }

@@ -137,8 +137,17 @@ is_emulated_type (TYPE_ID type)
 static BOOL
 is_emulated_operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 {
+#ifndef TARG_STxP70
   if (!is_emulated_type(rtype) &&
-      !is_emulated_type(desc)) return FALSE;
+      !is_emulated_type(desc)) {
+    return FALSE;
+  }
+#else
+  if (is_emulated_type(rtype) ||
+      is_emulated_type(desc)) {
+    return TRUE;
+  }
+#endif
   
   /* All long long operators require emulation if emulation is on. */
   if (MTYPE_is_longlong(rtype) ||
@@ -191,6 +200,16 @@ is_emulated_operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       break;
     }
   }
+#endif
+#ifdef TARG_STxP70
+  switch (opr) {
+    case OPR_MPY:
+    case OPR_DIV:
+      return TRUE;
+  default:
+    break;
+  }
+
 #endif
   /* All single operators require emulation if emulation is on. */
   if (rtype == MTYPE_F4 || desc == MTYPE_F4) return TRUE;
@@ -575,6 +594,7 @@ RT_LOWER_expr (
   case OPR_SUB: 
   case OPR_MPY:
 
+
 #ifdef NEW_LOWER
     if (is_emulated_operator(opr, res, desc))
 #else
@@ -803,11 +823,6 @@ RT_LOWER_expr (
 			       intrinsic, 2, kids);
 
       WN_Delete(tree);
-
-#if 0
-      fprintf(TFile, "--- DIV into: \n");
-      fdump_tree(TFile, nd);
-#endif
 
       return nd;
     }

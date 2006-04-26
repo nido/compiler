@@ -204,10 +204,10 @@ Compute_Parameter_Regs (TY_IDX call_ty, WN *call_wn, REGSET parms)
       ploc = First_Output_PLOC_Reg (ploc, parm_ty);
     }
     while (PLOC_is_nonempty(ploc)) {
-    	if (PLOC_on_stack(ploc)) break;	// no more register parameters.
-	Add_PREG_To_REGSET (PLOC_reg(ploc), parms);
-        ploc = func_entry ? Next_Input_PLOC_Reg (ploc)
-                          : Next_Output_PLOC_Reg (ploc);
+      if (PLOC_on_stack(ploc)) break;	// no more register parameters.
+      Add_PREG_To_REGSET (PLOC_reg(ploc), parms);
+      ploc = func_entry ? Next_Input_PLOC_Reg (ploc) :
+	Next_Output_PLOC_Reg (ploc);
     }
   }
 }

@@ -1194,7 +1194,7 @@ idname_from_regnum (int gcc_reg)
 		st = Int_Preg;
 	else if (Preg_Offset_Is_Float(preg))
 		st = Float_Preg;
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	else if (preg >= Branch_Preg_Min_Offset && 
 		                 preg <= Branch_Preg_Max_Offset) {
 	  st = MTYPE_To_PREG (MTYPE_B);

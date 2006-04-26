@@ -210,6 +210,16 @@ BOOL OPT_Lower_Treeheight = FALSE;	/* reassociate commutative ops */
 static BOOL OPT_Lower_Treeheight_Set = FALSE;
 BOOL OPT_Inline_Divide = TRUE;		/* inline divide sequences */
 static BOOL OPT_Inline_Divide_Set = FALSE;
+#ifdef TARG_ST
+BOOL  OPT_Cnst_DivRem = FALSE;		/* Optimize div/rem by a constant. 
+					   Should be set in config_target.cxx
+					   if usefull for the target.*/
+BOOL  OPT_Cnst_DivRem_Set;
+BOOL  OPT_Cnst_Mul = FALSE;		/* Optimize mul by a constant.
+					   Should be set in config_target.cxx
+					   if usefull for the target. */
+BOOL  OPT_Cnst_Mul_Set;
+#endif
 BOOL OPT_Space = FALSE;			/* various text space optimizations */
 BOOL Early_MP_Processing = FALSE; /* Do mp lowerering before lno/preopt */
 BOOL Implied_Do_Io_Opt = TRUE;	/* Do implied-do loop opt for I/O */
@@ -660,6 +670,16 @@ static OPTION_DESC Options_OPT[] = {
 
   { OVK_OBSOLETE,	OV_INTERNAL,	FALSE, "fprop_limit",		NULL,
     0, 0, INT32_MAX,	NULL,	NULL,	"" },
+
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "cnst_div",		"",
+    0, 0, 0,	&OPT_Cnst_DivRem, &OPT_Cnst_DivRem_Set,
+    "Optimizes division/remainder by constant if possible" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "cnst_mul",		"",
+    0, 0, 0,	&OPT_Cnst_Mul, &OPT_Cnst_Mul_Set,
+    "Optimizes multiplication by constant if possible" },
+#endif
 
   { OVK_COUNT }		/* List terminator -- must be last */
 };

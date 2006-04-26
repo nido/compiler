@@ -261,6 +261,7 @@ CGTARG_Predicate_OP (
  *   Return the operand index if the operation is a copy from an
  *   immediate value or a register to a register of the same class.
  *   Returns -1 if the operation is not a copy.
+ *   This function returns -1 also if the copy is predicated.
  * ====================================================================
  */
 INT 
@@ -270,11 +271,12 @@ OP_Copy_Operand (
 {
   TOP opcode = OP_code(op);
 
+  if (opcode == TOP_spadjust) {
+    return -1;
+  }
+
   if (OP_iadd(op) || OP_ior(op) || OP_ixor(op)) {
 
-    if (opcode == TOP_spadjust) {
-      return -1;
-    }
 
     if ((TN_is_register(OP_opnd(op,0)) &&
          TN_register_and_class(OP_opnd(op,0)) == CLASS_AND_REG_zero) ||
@@ -349,8 +351,14 @@ CGTARG_Noop_Top (ISA_EXEC_UNIT_PROPERTY unit) { return TOP_nop; }
  *   OP_save_predicates/OP_restore_predicates
  * ====================================================================
  */
-BOOL OP_save_predicates(OP *op) { return FALSE; }
-BOOL OP_restore_predicates(OP *op) { return FALSE; }
+BOOL OP_save_predicates(OP *op) {
+  
+ return FALSE; 
+}
+
+BOOL OP_restore_predicates(OP *op) {
+  return FALSE;
+}
 
 /* ====================================================================
  *   OP_is_associative
@@ -443,6 +451,20 @@ CGTARG_Which_OP_Select (
   if (!is_float && !is_fcc) return TOP_slct_r;
   return TOP_UNDEFINED;
 }
+
+
+/* ====================================================================
+ *   CGTARG_OP_Get_Flag_Effects
+ * ====================================================================
+ */
+OP_Flag_Effects
+CGTARG_OP_Get_Flag_Effects(const OP *op)
+{
+  /* For ST200 there is no operation with implicit flag effect. */
+  return OP_FE_NONE;
+}
+
+
 
 /* ====================================================================
  *   OP_opnd_can_be_reassociated
@@ -815,123 +837,82 @@ TOP_opnd_use_bits(TOP top, int opnd)
 #define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
 		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
 #define CASE_TOP_FBR(top) case TOP_##top##_r: case TOP_##top##_b
-  switch(top) {
-    CASE_TOP(sub):
-      CASE_TOP(add):
-      CASE_TOP(sh1add):
-      CASE_TOP(sh2add):
-      CASE_TOP(sh3add):
-      CASE_TOP(sh4add):
-      CASE_TOP(and):
-      CASE_TOP(andc):
-      CASE_TOP(or):
-      CASE_TOP(orc):
-      CASE_TOP(xor):
-      CASE_TOP(max):
-      CASE_TOP(maxu):
-      CASE_TOP(min):
-      CASE_TOP(minu):
-      CASE_TOP_FBR(cmpeqf_n):
-      CASE_TOP_FBR(cmpgef_n):
-      CASE_TOP_FBR(cmpgtf_n):
-      CASE_TOP_FBR(cmplef_n):
-      CASE_TOP_FBR(cmpltf_n):
-      CASE_TOP_BR(cmpeq):
-      CASE_TOP_BR(cmpne):
-      CASE_TOP_BR(cmpge):
-      CASE_TOP_BR(cmpgeu):
-      CASE_TOP_BR(cmpgt):
-      CASE_TOP_BR(cmpgtu):
-      CASE_TOP_BR(cmple):
-      CASE_TOP_BR(cmpleu):
-      CASE_TOP_BR(cmplt):
-      CASE_TOP_BR(cmpltu):
-      CASE_TOP_BR(andl):
-      CASE_TOP_BR(nandl):
-      CASE_TOP_BR(orl):
-      CASE_TOP_BR(norl):
-      CASE_TOP_I(ldl):
-      CASE_TOP_I(ldw):
-      CASE_TOP_I(ldh):
-      CASE_TOP_I(ldb):
-      CASE_TOP_I(ldhu):
-      CASE_TOP_I(ldbu):
-      CASE_TOP_I(ldw_d):
-      CASE_TOP_I(ldh_d):
-      CASE_TOP_I(ldb_d):
-      CASE_TOP_I(ldhu_d):
-      CASE_TOP_I(ldbu_d):
-      CASE_TOP_I(pft):
-      CASE_TOP(mul32):
-      CASE_TOP(mul64h):
-      CASE_TOP(mul64hu):
-      CASE_TOP(mulfrac):
-      return 32;
-    
-    CASE_TOP(slct):
-      CASE_TOP(slctf):
-      return opnd == 0 ? 1: 32;
-    
-    CASE_TOP(mov):
-  case TOP_bswap:
-  case TOP_mtb:
-      return 32;
 
+  int use_bits;
+  const ISA_OPERAND_INFO *oinfo;
+  const ISA_OPERAND_VALTYP *vtype;
+  
+  // Default cases depend on register class.
+  // ISA_REGISTER_CLASS_gr defaults to 32 bits, signed
+  // ISA_REGISTER_CLASS_br default to 1 bit unsigned
+  // Non registers default to 32 bit signed
+  oinfo = ISA_OPERAND_Info(top);
+  vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+
+  use_bits = ISA_OPERAND_VALTYP_Size(vtype);
+
+  switch(top) {
   case TOP_movp:
-    return 64;
-    
+    use_bits = 64;
+    break;
   case TOP_sxth:
   case TOP_zxth:
-    return 16;
+    use_bits =  16;
+    break;
   case TOP_sxtb:
   case TOP_zxtb:
-    return 8;
-    
-  case TOP_mfb:
-    return 1;
-  case TOP_addcg:
-  case TOP_divs:
-    return opnd == 2 ? 1: 32;
-    
+    use_bits =  8;
+    break;
     CASE_TOP(shl):
       CASE_TOP(shr):
       CASE_TOP(shru):
-      return opnd == 0 ? 32: 8;
-    
+      // This is the size of the bits fetched by the shifts.
+      if (opnd == 1) use_bits = 8;
+    break;
 
     CASE_TOP(mulll):
     CASE_TOP(mulllu):
-    return 16;
+    use_bits = 16;
+    break;
 
     CASE_TOP(mull):
     CASE_TOP(mullu):
     CASE_TOP(mullhus):
-      return opnd == 0 ? 32: 16;
-
+      if (opnd == 1) use_bits = 16;
+    break;
+    
     CASE_TOP(mullh):
     CASE_TOP(mullhu):
-      return opnd == 0 ? 16: 32;
-
-
-    CASE_TOP(mulh):
-    CASE_TOP(mulhh):
-    CASE_TOP(mulhhs):
-    CASE_TOP(mulhhu):
-    CASE_TOP(mulhs):
-    CASE_TOP(mulhu):
-      return 32;
+      if (opnd == 0) use_bits = 16;
+    break;
 
     CASE_TOP_I(stl):
-      return opnd == 2 ? 64: 32;
+      if (opnd == 2) use_bits = 64;
+    break;
     CASE_TOP_I(stw):
-      return opnd == 2 ? 32: 32;
+      if (opnd == 2) use_bits = 32;
+    break;
     CASE_TOP_I(sth):
-      return opnd == 2 ? 16: 32;
+      if (opnd == 2) use_bits = 16;
+    break;
     CASE_TOP_I(stb):
-      return opnd == 2 ? 8: 32;
+      if (opnd == 2) use_bits = 8;
+    break;
+    CASE_TOP_I(stlc):
+      if (opnd == 3) use_bits = 64;
+    break;
+    CASE_TOP_I(stwc):
+      if (opnd == 3) use_bits = 32;
+    break;
+    CASE_TOP_I(sthc):
+      if (opnd == 3) use_bits = 16;
+    break;
+    CASE_TOP_I(stbc):
+      if (opnd == 3) use_bits = 8;
+    break;
   }
   
-  return -1;
+  return use_bits;
 #undef CASE_TOP
 #undef CASE_TOP_I
 #undef CASE_TOP_BR
@@ -958,119 +939,53 @@ TOP_opnd_use_signed(TOP top, int opnd)
 #define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
 #define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
 		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
-  switch(top) {
-    CASE_TOP(sub):
-      CASE_TOP(add):
-      CASE_TOP(sh1add):
-      CASE_TOP(sh2add):
-      CASE_TOP(sh3add):
-      CASE_TOP(sh4add):
-      CASE_TOP(and):
-      CASE_TOP(andc):
-      CASE_TOP(or):
-      CASE_TOP(orc):
-      CASE_TOP(xor):
-      CASE_TOP(max):
-      CASE_TOP(min):
-      CASE_TOP_BR(cmpeq):
-      CASE_TOP_BR(cmpne):
-      CASE_TOP_BR(cmpge):
-      CASE_TOP_BR(cmpgt):
-      CASE_TOP_BR(cmple):
-      CASE_TOP_BR(cmplt):
-      CASE_TOP_BR(andl):
-      CASE_TOP_BR(nandl):
-      CASE_TOP_BR(orl):
-      CASE_TOP_BR(norl):
-      CASE_TOP_I(ldl):
-      CASE_TOP_I(ldw):
-      CASE_TOP_I(ldh):
-      CASE_TOP_I(ldb):
-      CASE_TOP_I(ldhu):
-      CASE_TOP_I(ldbu):
-      CASE_TOP_I(ldw_d):
-      CASE_TOP_I(ldh_d):
-      CASE_TOP_I(ldb_d):
-      CASE_TOP_I(ldhu_d):
-      CASE_TOP_I(ldbu_d):
-      CASE_TOP_I(pft):
-      CASE_TOP(mul32):
-      CASE_TOP(mul64h):
-      CASE_TOP(mulfrac):
-      return TRUE;
+  INT is_signed;
+  const ISA_OPERAND_INFO *oinfo;
+  const ISA_OPERAND_VALTYP *vtype;
+  ISA_REGISTER_CLASS rc;
+  
+  // Default cases depend on operand value type.
+  oinfo = ISA_OPERAND_Info(top);
+  vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
 
-      CASE_TOP(minu):
+  is_signed =  ISA_OPERAND_VALTYP_Is_Signed(vtype);
+
+  switch(top) {
+    CASE_TOP(minu):
       CASE_TOP(maxu):
       CASE_TOP_BR(cmpgeu):
       CASE_TOP_BR(cmpgtu):
       CASE_TOP_BR(cmpleu):
       CASE_TOP_BR(cmpltu):
       CASE_TOP(mul64hu):
-	return FALSE;
-
-    CASE_TOP(slct):
-      CASE_TOP(slctf):
-      return opnd == 0 ? FALSE: TRUE;
+      is_signed = FALSE;
+    break;
     
-    CASE_TOP(mov):
-  case TOP_bswap:
-  case TOP_mtb:
-      return TRUE;
-    
-  case TOP_movp:
-      return TRUE;
-
-  case TOP_sxth:
-  case TOP_sxtb:
-    return TRUE;
-
   case TOP_zxth:
   case TOP_zxtb:
-    return FALSE;
-
-  case TOP_mfb:
-    return FALSE;
-  case TOP_addcg:
-  case TOP_divs:
-    return opnd == 2 ? FALSE: TRUE;
+    is_signed = FALSE;
+    break;
     
     CASE_TOP(shl):
       CASE_TOP(shr):
-      return opnd == 0 ? TRUE: FALSE;
-
-      CASE_TOP(shru):
-      return opnd == 0 ? FALSE: FALSE;
-    
-
-    CASE_TOP(mulll):
-    return TRUE;
+      // Shift amount is interpreted unsigned
+      if (opnd == 1) is_signed =  FALSE;
+    break;
+    CASE_TOP(shru):
+      // Shift amount and shifted value are interpreted unsigned
+      is_signed =  FALSE;
+    break;
+      
     CASE_TOP(mulllu):
-    return FALSE;
-
-    CASE_TOP(mull):
-      return TRUE;
+      is_signed = FALSE;
+    break;
+    
     CASE_TOP(mullu):
-      return FALSE;
-
-    CASE_TOP(mullhus):
-    CASE_TOP(mullh):
-    CASE_TOP(mullhu):
-    CASE_TOP(mulh):
-    CASE_TOP(mulhh):
-    CASE_TOP(mulhhs):
-    CASE_TOP(mulhhu):
-    CASE_TOP(mulhs):
-    CASE_TOP(mulhu):
-      return TRUE;
-
-    CASE_TOP_I(stl):
-    CASE_TOP_I(stw):
-    CASE_TOP_I(sth):
-    CASE_TOP_I(stb):
-      return TRUE;
+      is_signed = FALSE;
+    break;
   }
   
-  return TRUE;
+  return is_signed;
 #undef CASE_TOP
 #undef CASE_TOP_I
 #undef CASE_TOP_BR

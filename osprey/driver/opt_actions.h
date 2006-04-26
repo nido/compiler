@@ -40,6 +40,14 @@
 
 #define UNDEFINED	-1	/* for any undefined option */
 
+#ifdef TARG_STxP70
+#define LIB_FP_SOFT_FLOAT      0
+#define LIB_FP_ACE             1
+/* Control for lib_kind. */
+#define LIB_STXP70_16	       0
+#define LIB_STXP70_32	       1
+#endif
+
 #define ENDIAN_BIG	0
 #define ENDIAN_LITTLE	1
 

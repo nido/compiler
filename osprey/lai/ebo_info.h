@@ -264,7 +264,11 @@ extern BOOL EBO_Trace_Hash_Search;
 /* Define macros that will allow us to treat Zero_TN as having a value of 0. */
 #define TN_Is_Constant(tn) (TN_is_const_reg(tn) ? TRUE : TN_is_constant(tn))
 #define TN_Has_Value(tn) (TN_is_const_reg(tn) ? TRUE : TN_has_value(tn))
-#define TN_Value(tn) ((tn == Zero_TN) ? 0 : TN_value(tn))
+#define TN_Value(tn) (TN_is_const_reg(tn) ? \
+		      (TN_is_true_pred(tn) ? 1 : \
+		       (TN_is_zero_reg(tn) ?  0 : \
+			/*unexpected*/ 0)): \
+		      TN_value(tn))
 #define has_assigned_reg(tn) (TN_is_register(tn) &&			\
 				(TN_is_dedicated(tn) ||			\
 				 TN_register(tn) != REGISTER_UNDEFINED))

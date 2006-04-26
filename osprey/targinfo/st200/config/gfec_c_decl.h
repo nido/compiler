@@ -1,4 +1,4 @@
-#if defined(TARG_ST200)
+#if defined(TARG_ST)
 builtin_function ("__absch",
                    build_function_type( short_integer_type_node, 
                      tree_cons(NULL_TREE, short_integer_type_node, endlink)),
@@ -1518,4 +1518,4 @@ builtin_function ("__asm_15",
                      tree_cons(NULL_TREE, integer_type_node,
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ASM_15, BUILT_IN_NORMAL, NULL_PTR);
-#endif /* defined(TARG_ST200) */
+#endif /* defined(TARG_ST) */

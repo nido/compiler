@@ -612,7 +612,7 @@ size_t ipacom_process_file (char* input_file,
 
   char* str = (char*) malloc(2 * PATH_MAX + 64);
   sprintf(str, "-TENV:ipa_ident=%d -TENV:read_global_data=%s %s",
-          time(0),
+          (int)time(0),
           whirl_symtab_name,
           IPA_Enable_AutoGnum?"-Gspace 0":"");
 
@@ -1280,7 +1280,7 @@ static const char* get_extra_args(const char* ipaa_filename)
   std::vector<const char*> args;
   args.reserve(16);
   
-#ifdef TARG_ST
+#ifdef TARG_ST200
   if (Target_ABI == ABI_ST200_embedded) {
     switch (ld_ipa_opt[LD_IPA_SHARABLE].flag) {
     case F_MAKE_SHARABLE:
@@ -1317,6 +1317,26 @@ static const char* get_extra_args(const char* ipaa_filename)
     }
   }
 #else
+#ifdef TARG_STxP70
+  if (Target_ABI == ABI_STxP70_embedded) {
+    switch (ld_ipa_opt[LD_IPA_SHARABLE].flag) {
+    case F_MAKE_SHARABLE:
+      args.push_back("-fpic");
+      break;
+    case F_CALL_SHARED:
+    case F_CALL_SHARED_RELOC:
+      args.push_back("-fpic");
+      break;
+    case F_NON_SHARED:
+      args.push_back("-fembedded");
+      break;
+    case F_RELOCATABLE:
+      if (IPA_Enable_Relocatable_Opt == TRUE)
+	args.push_back("-fpic");
+      break;
+    }
+  }
+#else
   switch (ld_ipa_opt[LD_IPA_SHARABLE].flag) {
   case F_MAKE_SHARABLE:
     args.push_back("-pic2");
@@ -1333,6 +1353,7 @@ static const char* get_extra_args(const char* ipaa_filename)
       args.push_back("-pic1");
     break;
   }
+#endif
 #endif
   
 #if 1

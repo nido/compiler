@@ -67,7 +67,7 @@ using std::vector;
  * generated targ_isa_operands.h file -- Ken)
  */
 #define MAX_OPNDS 6
-#define MAX_RESULTS 2
+#define MAX_RESULTS 3
 
 typedef enum {
 	END	= 0,			// end of list marker

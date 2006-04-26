@@ -422,9 +422,12 @@ Exp_OP (
     // trailing arguments.
     if (result) args[i++] = result;
     if (TOP_is_predicated(top)) {
+#ifdef TARG_ST
       Is_True(TOP_Find_Operand_Use(top, OU_predicate) == 0,
 	      ("predicate operand is not 0"));
-      //Is_True(OP_PREDICATE_OPND == 0, ("predicate operand is not 0"));
+#else
+      Is_True(OP_PREDICATE_OPND == 0, ("predicate operand is not 0"));
+#endif
       args[i++] = True_TN;
     }
     args[i++] = op1;

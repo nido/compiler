@@ -252,7 +252,8 @@ Collect_Base_Offset(vec_base_ops& Base_Ops_List) {
       TN *tn_base = OP_opnd(op, base_idx);
       TN *tn_offset = OP_opnd(op, offset_idx);
 
-      Is_True(TN_is_constant(tn_offset), ("Illegal offset in operation."));
+      /* Handle only literal offsets. */
+      if(!TN_is_constant(tn_offset)) { continue; }
 
       INT64 val;
       if (CGTARG_offset_is_extended(tn_offset, &val)) {

@@ -167,7 +167,7 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
  * that can be defined.  The following two definitions define this
  * upper bound for 32 and 64 bits mode compilations respectively.
  */
-#define MAX_64BITS_OBJECT_SIZE 0x000000ffffffffffULL /* 40 bits */
+#define MAX_64BITS_OBJECT_SIZE 0x000000007fffffffULL /* 31 bits */
 #define MAX_32BITS_OBJECT_SIZE 0x000000007fffffffULL /* 31 bits */
 
 /* On most targets, it will be necessary to decide whether a text

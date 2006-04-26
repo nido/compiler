@@ -695,9 +695,7 @@ extern BOOL CGTARG_Is_OP_Speculative(OP *op);
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif
 
-#ifdef TARG_ST200
 extern BOOL CGTARG_Is_OP_Inter_RegClass_Copy(OP *op);
-#endif
 
 extern BOOL CGTARG_OP_is_counted_loop(OP *op);
 extern BOOL CGTARG_Can_Change_To_Brlikely(OP *xfer_op, TOP *new_opcode);
@@ -801,7 +799,7 @@ INT32 CGTARG_Max_OP_Latency(OP *op);
 INT32 CGTARG_Max_RES_Latency(OP *op, INT i);
 #endif
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op, INT16 *latency);
 #else
 extern BOOL CGTARG_Dependence_Required(OP *pred_op, OP *succ_op);
@@ -845,6 +843,8 @@ extern void CGTARG_Make_Bundles_Postpass(BB *bb);
 #ifdef TARG_ST
 // Perform target-specific instruction size adjustments.
 extern void CGTARG_Resize_Instructions ();
+// Perform target-specific immediates adjustment.
+extern void CGTARG_Fixup_Immediates ();
 #endif
 
 // Handle all bundle hazards.

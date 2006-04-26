@@ -1413,7 +1413,13 @@ GRA_Color_Complement( GRA_REGION* region )
       Force_Color_Some_Locals(region,rc);
 
     if (Is_Predicate_REGISTER_CLASS(rc) &&
-	REGISTER_SET_EmptyP(callee_saves_used[rc]))
+	REGISTER_SET_EmptyP(callee_saves_used[rc])
+#ifdef TARG_ST
+	// If the register class is not multiple save, we should not
+	// have generated the save of predicates into a single register.
+	&& REGISTER_CLASS_multiple_save(rc)
+#endif
+	)
       GRA_Remove_Predicates_Save_Restore();  // because they're always generated
   }
 

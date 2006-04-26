@@ -1268,6 +1268,7 @@ initialize_argument_information (num_actuals, args, args_size, n_named_args,
 	      /* In the V3 C++ ABI, parameters are destroyed in the caller.
 		 We implement this by passing the address of the temporary
 	         rather than expanding it into another allocated slot.  */
+
 	      args[i].tree_value = build1 (ADDR_EXPR,
 					   build_pointer_type (type),
 					   args[i].tree_value);

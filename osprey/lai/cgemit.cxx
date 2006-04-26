@@ -2807,7 +2807,7 @@ Process_Bss_Data (
     if (!STB_nobits(base))
       continue;	/* not a bss symbol */
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     if (ST_assigned_to_dedicated_preg(sym))
       continue;
 #endif
@@ -3614,12 +3614,6 @@ r_apply_l_const (
   ST *st;
   INT64 val;
 
-#if 0
-  fprintf(TFile,"  const TN ");
-  Print_TN(t, TRUE);
-  fprintf(TFile, "\n");
-#endif
-
   /* special case for stack symbols */
   if (TN_is_symbol(t)) {
     ST *base_st;
@@ -3792,27 +3786,13 @@ r_apply_l_const (
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else if ( TN_has_value(t) ) {
-#if 0
-    if ( TN_size(t) <= 4 ) {
-      vstr_sprintf (buf, 
-		    vstr_len(*buf), 
-		    hexfmt ? "0x%x" : "%d",
-		    (mINT32)TN_value(t) );
-    }
-    else {
-      vstr_sprintf (buf, 
-		    vstr_len(*buf), 
-		    hexfmt ? "0x%llx" : "%lld",
-		    TN_value(t) );
-    }
-#else
+    if(!hexfmt) { hexfmt = CGEMIT_TN_Value_In_Hexa_Format(op,t); }
     if ( TN_size(t) <= 4 )
       vstr_sprintf (buf, vstr_len(*buf), 
 		(hexfmt ? "0x%x" : "%d"), (mINT32)TN_value(t) );
     else
       vstr_sprintf (buf, vstr_len(*buf), 
       		(hexfmt ? "0x%llx" : "%lld"), TN_value(t) );
-#endif
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else {
@@ -3875,8 +3855,10 @@ r_assemble_opnd (
   if (TN_is_constant(t)) {
     *add_name |= r_apply_l_const (op, i, buf);
   }
-  else if (TN_is_true_pred(t)) {
-    /* nada */ ;
+  /* [JV] True_TN must be printed when operand of gmi. */
+  else if (TN_is_true_pred(t) && 
+	   (i == OP_find_opnd_use(op,OU_condition) || i == OP_find_opnd_use(op,OU_predicate)) ) {
+    /* nada. */
   }
   else {
     const char *rname;
@@ -3905,15 +3887,22 @@ r_assemble_opnd (
       rname = vname;
     }
 
-#ifdef TARG_ST200
+#if defined( TARG_ST200 )
   /* (cbr) predicate is a regular operand format on st235 */
     if (0) {
+#elif defined( TARG_STxP70 )
+    if ( (OP_cond(op) && i == OP_find_opnd_use(op,OU_condition)) || 
+	 (OP_has_predicate(op) && i == OP_find_opnd_use(op,OU_predicate)) ||
+	 (OP_result_reg_class(op,0) == ISA_REGISTER_CLASS_gr && i == 0 &&
+	  !OP_load(op))) {
 #else
-    if (OP_has_predicate(op) && i == OP_PREDICATE_OPND) {
+    if (OP_has_predicate(op) && i == OP_find_opnd_use(op,OU_predicate)) {
 #endif
 
 #ifdef TARG_IA64
       vstr_sprintf(buf, start, ISA_PRINT_PREDICATE, rname);
+#elif defined( TARG_STxP70 )
+      vstr_sprintf(buf, start, "%s %s", rname, CGEMIT_Asm_Predicate_Suffix(op));
 #else
       if (TOP_is_guard_t(OP_code(op)))
 	vstr_sprintf(buf, start, True_Predicate_Format, rname);
@@ -4242,19 +4231,20 @@ Verify_Operand (
     if (TN_register_class(tn) != rc) goto incorrect_register;
     if (reg != REGISTER_UNDEFINED) {
       class_regs =   (sc == ISA_REGISTER_SUBCLASS_UNDEFINED)
-		 ? REGISTER_CLASS_universe(rc)
-		 : REGISTER_SUBCLASS_members(sc);
+	? REGISTER_CLASS_universe(rc)
+	: REGISTER_SUBCLASS_members(sc);
       if (!REGISTER_SET_MemberP(class_regs, reg)) goto incorrect_register;
     }
 #ifdef TARG_ST
     if (sc != ISA_REGISTER_SUBCLASS_UNDEFINED) {
       const ISA_REGISTER_SUBCLASS_INFO *info = ISA_REGISTER_SUBCLASS_Info (sc);
       if (ISA_REGISTER_SUBCLASS_INFO_Count (info) == 1) {
- 	// Register TN for a singleton subclass must use a
- 	// dedicated register.
- 	if (! TN_is_dedicated(tn)) goto incorrect_register;
+	// Register TN for a singleton subclass must use a
+	// dedicated register.
+	if (! TN_is_dedicated(tn)) goto incorrect_register;
       }
     }
+
 #endif
     return;
   incorrect_register:
@@ -4282,6 +4272,27 @@ Verify_Operand (
 	      ("incorrect register for %s %d in opcode %s", 
 	       res_or_opnd, opnd, TOP_Name(OP_code(op))));
   } else if (ISA_OPERAND_VALTYP_Is_Literal(vtype)) {
+#if Is_True_On
+    /* More verbose error in debug mode. */
+    if(!TN_is_constant(tn)){
+      int i;
+      int opndnum = OP_opnds(op);
+      int resnum = OP_results(op);
+      fprintf(TFile, "Incorrect register operand in:\n");
+      fprintf(TFile, "BB:%d  %s ",
+	      BB_id(OP_bb(op)),TOP_Name(OP_code(op)));
+      for (i = 0; i < resnum; i++) {
+	fprintf(TFile," ");
+	Print_TN(OP_result(op, i),TRUE);
+      }
+      fprintf(TFile,"=");
+      for (i = 0; i < opndnum; i++) {
+	fprintf(TFile," ");
+	Print_TN(OP_opnd(op, i),TRUE);
+      }
+      fprintf(TFile,"\n");
+    }
+#endif
     FmtAssert(TN_is_constant(tn),
 	     ("%s %d is not a constant", res_or_opnd, opnd));
 
@@ -4292,8 +4303,15 @@ Verify_Operand (
       if ((TFile != stdout) && !ISA_LC_Value_In_Class(imm, lc)) {
         Print_OP_No_SrcLine (op);
       }
+#if Is_True_On
+      /* More verbose error in debug mode. */
+      if (!ISA_LC_Value_In_Class(imm, lc)) {
+	fprintf(TFile,  "in operation:");
+	Print_OP_No_SrcLine(op);
+      }
+#endif
       FmtAssert(ISA_LC_Value_In_Class(imm, lc),
-	        ("literal for %s %d is not in range", res_or_opnd, opnd));
+		("literal for %s %d is not in range for top: %s", res_or_opnd, opnd, TOP_Name(OP_code(op))));
     } else if (TN_is_label(tn)) {
 
 #ifndef TARG_ST
@@ -4449,6 +4467,10 @@ Assemble_OP (
     fprintf(TFile, "<cgemit> ");
     Print_OP(op);
   }
+
+#ifdef TARG_STxP70
+  CGEMIT_Special_Register_Function_Fixup( op );
+#endif
 
   Verify_Instruction(op);
 
@@ -4937,7 +4959,9 @@ Assemble_Bundles(BB *bb)
 #endif
         stop_mask = stop_mask << 1;
       }
+#ifdef TARG_ST200
       stop_mask |= (seen_end_group != 0);
+#endif
 
 #ifndef GAS_TAGS_WORKED
 // remove this when gas can handle tags inside explicit bundle
@@ -5051,6 +5075,7 @@ Assemble_Bundles(BB *bb)
 
     /* Assemble the bundle.
      */
+    OP *sl_op;
 #ifdef TARG_ST200
     BOOL force_dwarf=FALSE;
     SRCPOS line;
@@ -5080,7 +5105,6 @@ Assemble_Bundles(BB *bb)
 
     line = OP_srcpos(slot_op[0]);
 
-    OP *sl_op;
     if ( (!force_dwarf || (line == 0)) && (Opt_Level > 0) ) {
       slot = 0;
       do {
@@ -6897,7 +6921,7 @@ EMT_End_File( void )
 #ifdef TARG_ST
     if (List_Notes)
 #endif
-    fprintf(Asm_File, "\t## %s %d\n", AS_GPVALUE, GP_DISP);
+      fprintf(Asm_File, "\t%s %s %d\n", ASM_CMNT, AS_GPVALUE, GP_DISP);
     //    ASM_DIR_GPVALUE();
 #ifdef TARG_ST
   // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 

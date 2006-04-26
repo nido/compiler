@@ -148,6 +148,7 @@ init_crt_paths (void)
 	init_given_crt_path ("crtbegin.o", gcc_name, tmp_name);
 	init_given_crt_path ("crt1.o", gcc_name, tmp_name);
 #else
+#ifdef TARG_ST200
 	char *path;
 	char *p;
 
@@ -155,6 +156,15 @@ init_crt_paths (void)
 	p = drop_path (path);
 	*p = '\0';
 	add_library_dir (path);
+#else
+	char *path;
+	char *p;
+
+	path = find_crt_path("boot.o");
+	p = drop_path (path);
+	*p = '\0';
+	add_library_dir (path);
+#endif
 #endif /* TARG_ST */
 }
 
@@ -430,6 +440,41 @@ add_library_options (void)
 	  internal_error("no runtime set? (%d)", st200_runtime);
 	}
 #endif
+#elif defined( TARG_STxP70 )
+#ifdef MUMBLE_STxP70_BSP
+	extern string stxp70_core, stxp70_soc, stxp70_board;
+	extern string stxp70_core_name, stxp70_soc_name, stxp70_board_name ;
+	extern string stxp70_targetdir ;
+	string ofile;
+#endif
+	extern string stxp70_libdir;
+
+	switch (proc) {
+	case PROC_arch_1_3_1:
+	  append_phase_dir(P_library, "/arch_1_3_1");
+	  append_phase_dir(P_startup, "/arch_1_3_1");
+	  break;
+	}
+
+	if (endian == ENDIAN_LITTLE) {
+	  append_phase_dir(P_library, "/le");
+	  append_phase_dir(P_startup, "/le");
+	}
+	else {
+	  append_phase_dir(P_library, "/be");
+	  append_phase_dir(P_startup, "/be");
+	}
+
+	switch (stxp70_runtime) {
+	case RUNTIME_NONE:
+	  break;
+	case RUNTIME_BARE:
+	  append_phase_dir(P_library, "/bare");
+	  append_phase_dir(P_startup, "/bare");
+	  break;	  
+	default:
+	  internal_error("no runtime set? (%d)", stxp70_runtime);
+	}
 #endif
 
 	switch (abi) {
@@ -451,6 +496,7 @@ add_library_options (void)
         case ABI_ST100:
 	case ABI_ST200_embedded:
 	case ABI_ST200_PIC:
+	case ABI_STxP70_embedded:
 	  break;
 	default:
 		internal_error("no abi set? (%d)", abi);
@@ -583,6 +629,103 @@ add_library_options (void)
 #endif /* MUMBLE_ST200_BSP */
 
 #endif /* TARG_ST200 */
+
+#ifdef TARG_STxP70
+#ifdef MUMBLE_STxP70_BSP
+#define DEF_CORE_NAME "arch_1_3_1"
+#define DEF_BOARD_NAME "default"
+#define DEF_SOC_NAME "default"
+	/* set core path */
+	if (!stxp70_core) {
+	  stxp70_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", DEF_CORE_NAME));
+	  stxp70_core_name = string_copy (DEF_CORE_NAME);
+	}
+	if (stxp70_targetdir) {
+	  stxp70_core = concat_path(stxp70_targetdir, concat_path("core", stxp70_core_name));
+	  if (!is_directory (stxp70_core))
+	    stxp70_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", stxp70_core_name));
+	}
+
+	/* set soc path */
+	if (!stxp70_soc) {
+	  stxp70_soc = concat_path(get_phase_dir(P_alt_library), concat_path("soc", DEF_SOC_NAME));
+	  stxp70_soc_name = string_copy (DEF_SOC_NAME);
+	}
+	if (stxp70_targetdir) {
+	  stxp70_soc = concat_path(stxp70_targetdir, concat_path("soc", stxp70_soc_name));
+	  if (!is_directory (stxp70_soc))
+	    stxp70_soc = concat_path(get_phase_dir(P_alt_library), concat_path("soc", stxp70_soc_name));
+	}
+
+	/* set board path */
+	if (!stxp70_board) {
+	  stxp70_board = concat_path(get_phase_dir(P_alt_library), concat_path("board", DEF_BOARD_NAME));
+	  stxp70_board_name = string_copy (DEF_BOARD_NAME);
+	}
+	if (stxp70_targetdir) {
+	  stxp70_board = concat_path(stxp70_targetdir, concat_path("board", stxp70_board_name));
+	  if (!is_directory (stxp70_board))
+	    stxp70_board = concat_path(get_phase_dir(P_alt_library), concat_path("board", stxp70_board_name));
+	}
+
+	if (!nostdinc) {
+	  /* set core include path */
+	  if (stxp70_core && is_directory (stxp70_core)) {
+	    flag = add_string_option(O_isystem__, stxp70_core);
+	    add_option_seen (flag);
+	  }
+
+	  /* set soc include path */
+	  if (stxp70_soc && is_directory (stxp70_soc)) {
+	    flag = add_string_option(O_isystem__, stxp70_soc);
+	    add_option_seen (flag);
+	  }
+
+	  /* set board include path */
+	  if (stxp70_board && is_directory (stxp70_board)) {
+	    flag = add_string_option(O_isystem__, stxp70_board);
+	    add_option_seen (flag);
+	  }
+	}
+
+	if (!option_was_seen(O_nostdlib)) {
+	  if (stxp70_core && is_directory (stxp70_core)) {
+	    stxp70_core = concat_path (stxp70_core, 
+				      concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+						  stxp70_runtime == RUNTIME_NONE ? "none" : "unknown"));
+	    flag = add_string_option(O_L__, stxp70_core);
+	    add_option_seen (flag);
+	  }
+
+	  if (stxp70_soc && is_directory (stxp70_soc)) {
+	    stxp70_soc = concat_path (stxp70_soc, 
+				      concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							      stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	    flag = add_string_option(O_L__, stxp70_soc);
+	    add_option_seen (flag);
+	  }
+
+	  if (stxp70_board && is_directory (stxp70_board)) {
+	    stxp70_board = concat_path (stxp70_board, 
+					concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+						    
+						    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+								stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	    flag = add_string_option(O_L__, stxp70_board);
+	    add_option_seen (flag);
+	  }
+	}
+#endif /* MUMBLE_STxP70_BSP */
+	
+	if (stxp70_libdir) {
+	  stxp70_libdir = concat_path (stxp70_libdir, 
+				       concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							       stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	  add_library_dir (stxp70_libdir);
+	}
+#endif /* TARG_STxP70 */
 }
 
 /* search library_dirs for the crt file */

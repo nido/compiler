@@ -338,7 +338,14 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn) {
   Temporary temporary = NULL;
   switch (WN_operator(home)) {
   case OPR_LDA: {
+#ifdef TARG_ST200
     LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+#elif defined(TARG_STxP70)
+    LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#else
+#error TARGET
+#endif
+
     ST *var_st = WN_st(home);
     ST_IDX st_idx = ST_st_idx(*var_st);
     int64_t offset = WN_lda_offset(home);
@@ -410,19 +417,40 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn) {
     } else if (TN_is_constant(cgir_tn)) {
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
+#ifdef TARG_ST200
 	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+#elif defined(TARG_STxP70)
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#else
+#error TARGET
+#endif
+
 	temporary = LAI_Interface_makeAbsoluteTemporary(interface, cgir_tn, immediate, value);
       } else if (TN_is_symbol(cgir_tn)) {
 	Symbol symbol = NULL;
 	ST *var_st = TN_var(cgir_tn);
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
+#ifdef TARG_ST200
 	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+#elif defined(TARG_STxP70)
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#else
+#error TARGET
+#endif
+
 	symbol = CGIR_SYM_to_Symbol(st_idx);
 	temporary = LAI_Interface_makeSymbolTemporary(interface, cgir_tn, immediate, symbol, offset);
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
+#ifdef TARG_ST200
 	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+#elif defined(TARG_STxP70)
+	LAI_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#else
+#error TARGET
+#endif
+
 	Label label = CGIR_LAB_to_Label(cgir_lab);
 	temporary = LAI_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
@@ -892,6 +920,8 @@ CGIR_OP_more(CGIR_OP cgir_op, CGIR_OP orig_op, int iteration, int issueDate, boo
     }
     Is_True(base_tn == SP_TN || base_tn == FP_TN, ("Invalid base TN for LAO spill op"));
     Set_OP_spill(cgir_op);
+    Set_OP_spilled_tn(cgir_op, spilled_tn);
+    Set_TN_spill(spilled_tn, TN_var(offset_tn));
   }
   // Set volatile.
   if (isVolatile) {

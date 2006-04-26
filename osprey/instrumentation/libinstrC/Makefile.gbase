@@ -259,7 +259,7 @@ install: last
 	$(MAKE) install_all_st200
 endif
 
-ifeq ($(BUILD_ARCH), STxP70)
+ifeq ($(HOST_ARCH), STxP70)
 install: last
 	$(MAKE) install_all_stxp70
 endif

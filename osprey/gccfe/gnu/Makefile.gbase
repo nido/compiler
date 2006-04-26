@@ -352,7 +352,7 @@ ifeq ($(BUILD_TARGET), ST200)
   GNU_SRCS += lx.c
 endif
 ifeq ($(BUILD_TARGET), STxP70)
-  GNU_SRCS += lx.c
+  GNU_SRCS += stxp70.c
 endif
 
 # There is no st100.c description for gcc, use the dummy one.

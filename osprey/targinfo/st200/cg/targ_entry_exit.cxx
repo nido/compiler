@@ -165,6 +165,18 @@ EETARG_Fixup_Stack_Frame (void)
 }
 
 /* ====================================================================
+ *   EETARG_Set_Frame_Len
+ *
+ *   Setup the computed frame len for the specific code defined here.
+ * ====================================================================
+ */
+void
+EETARG_Set_Frame_Len(INT64 frame_len)
+{
+  /* No op for ST200. */
+}
+
+/* ====================================================================
  *   EETARG_Fixup_Entry_Code
  *
  *   Generate push/pop sequence.

@@ -189,19 +189,17 @@ string orig_program_name = NULL;
 string absolute_program_name = NULL;
 #endif
 
-#if 0
-/* (cbr) use P_include */
-#ifdef TARG_ST
-string include_path = NULL;
-#endif
-#endif
-
 #ifdef TARG_ST
 /* (cbr) crt_mode we are using */
 enum {nocrt, crt0, crt1} crt_mode;
 
+
 static int find_crt_mode(void)
 {
+#ifdef TARG_STxP70
+  return crt0;
+#endif
+
   /* (cbr) check crtmode, in this order */
 #ifdef MUMBLE_ST200_BSP
   extern string st200_libdir;		    
@@ -220,7 +218,7 @@ static int find_crt_mode(void)
   /* default */
   return crt0;
 }
-#endif
+#endif /* TARG_ST */
 
 static string_list_t *ipl_cmds = 0; /* record the user options that needed
 				       to be passed to ipl */
@@ -1180,6 +1178,11 @@ add_file_args (string_list_t *args, phases_t index)
 		  add_string(args,"--");
 		add_string(args, input_source);
 #endif
+#ifdef TARG_STxP70
+		/* Add X3 extension to be able to assemble clrcc/setcc for example. */
+		add_string(args, "-Mextension=x3");
+#endif
+
 		current_phase = P_any_as;
 		add_string(args, "-o");
 		/* cc -c -o <file> puts output from as in <file>,
@@ -1261,7 +1264,11 @@ add_file_args (string_list_t *args, phases_t index)
 		      add_string(args, find_crt_path("crtbegin.o"));
 		    }
 		    else if (crt_mode == crt0) 
+#ifdef TARG_STxP70
+		      if (shared != DSO_SHARED) add_string(args, find_crt_path("boot.o"));
+#else
 		      if (shared != DSO_SHARED) add_string(args, find_crt_path("crt0.o"));
+#endif
 		  }
 #endif
 #endif
@@ -1272,6 +1279,17 @@ add_file_args (string_list_t *args, phases_t index)
 		    shared != DSO_SHARED) {
 		  extern void  set_st200_bsp (string_list_t *);
 		  set_st200_bsp (args);
+		}
+#endif
+#endif
+
+
+#ifdef TARG_STxP70
+#ifdef MUMBLE_STxP70_BSP
+		if (!option_was_seen(O_nostartfiles) &&
+		    shared != DSO_SHARED) {
+		  extern void  set_stxp70_bsp (string_list_t *);
+		  set_stxp70_bsp (args);
 		}
 #endif
 #endif
@@ -1306,7 +1324,11 @@ add_file_args (string_list_t *args, phases_t index)
 #ifdef TARG_ST
 		  }
 		  else if (crt_mode == crt0) 
+#ifdef TARG_STxP70
+		    if (shared != DSO_SHARED) add_string(args, find_crt_path("boot.o"));
+#else
 		    if (shared != DSO_SHARED) add_string(args, find_crt_path("crt0.o"));
+#endif
 #endif
 			if (ftz_crt) {
 				add_string(args, find_crt_path("ftz.o"));
@@ -1346,6 +1368,16 @@ add_file_args (string_list_t *args, phases_t index)
 		    shared != DSO_SHARED) {
 		  extern void  set_st200_bsp (string_list_t *);
 		  set_st200_bsp (args);
+		}
+#endif
+#endif
+
+#ifdef TARG_STxP70
+#ifdef MUMBLE_STxP70_BSP
+		if (!option_was_seen(O_nostartfiles) &&
+		    shared != DSO_SHARED) {
+		  extern void  set_stxp70_bsp (string_list_t *);
+		  set_stxp70_bsp (args);
 		}
 #endif
 #endif
@@ -1532,7 +1564,7 @@ add_script_files_args (string_list_t *args)
 	spath = st200_targetdir;
       else
 	spath = get_phase_dir(P_alt_library);
-
+      
       /* TB: platform_r.ld: no more need */
       if (!at_least_one_icache_optim || next_ld_for_icache_is_simple != FALSE)
 	if (shared != RELOCATABLE && shared != DSO_SHARED) {
@@ -1548,10 +1580,34 @@ add_script_files_args (string_list_t *args)
 	}
     }
 #endif
+#endif /* TARG_ST200 */
+    
+#ifdef TARG_STxP70
+#ifdef MUMBLE_STxP70_BSP
+    if (shared != DSO_SHARED &&
+	!option_was_seen (O_T) &&
+	!option_was_seen (O_nostdlib)) {
+      extern string stxp70_targetdir ;
+      string spath;
+      string ofile;
+      
+      spath = get_phase_dir(P_library);
+      spath = concat_path (spath, "ldscript");
+      ofile = concat_path (spath, "sx_valid.ld");	      
+      if (!file_exists (ofile)) {
+	spath = get_phase_dir(P_library);
+	ofile = concat_path (spath, "sx_valid.ld");   
+      }
+      if (file_exists (ofile)) {
+	add_string(args, "-T");
+	add_string(args, ofile);
+      }
+    }
 #endif
+#endif /* TARG_STxP70 */
   }
 }
-#endif
+#endif /* TARG_ST */
 
 static void
 add_final_ld_args (string_list_t *args)
@@ -1560,150 +1616,197 @@ add_final_ld_args (string_list_t *args)
   if (next_ld_for_icache_is_simple != TRUE) {
     /* Append libs for normal link or ld -r link in binopt mode. */
 #endif
-	/* add -l libs and ending crt files */
-	if ((!option_was_seen(O_nodefaultlibs)) /* && (shared != RELOCATABLE) */)
-	{
-	    if (invoked_lang == L_f90) {
-		add_string(args, "-lfortran");
-		add_string(args, "-lffio");
-		add_string(args, "-lmsgi");
-		add_string(args, "-lmv");
-		add_string(args, "-lm");
-	    }
-	    if (option_was_seen(O_mp)) {
-		add_string(args, "-lpthread");
-		add_string(args, "-lmp");
-	    }
-
+    /* add -l libs and ending crt files */
+    if ((!option_was_seen(O_nodefaultlibs)) /* && (shared != RELOCATABLE) */) {
+      if (invoked_lang == L_f90) {
+	add_string(args, "-lfortran");
+	add_string(args, "-lffio");
+	add_string(args, "-lmsgi");
+	add_string(args, "-lmv");
+	add_string(args, "-lm");
+      }
+      if (option_was_seen(O_mp)) {
+	add_string(args, "-lpthread");
+	add_string(args, "-lmp");
+      }
+      
 #ifdef TARG_ST
-	    /* [CG]: with --rmain option add librl.a and librl_s.so libraries. */
-	    if (option_was_seen(O__rmain)) {
-	      add_string(args, "-lrl");
-	      if (next_ld_for_icache_is_simple == UNDEFINED) add_string(args, "-lrl_s");
-	    }
+      /* [CG]: with --rmain option add librl.a and librl_s.so libraries. */
+      if (option_was_seen(O__rmain)) {
+	add_string(args, "-lrl");
+	if (next_ld_for_icache_is_simple == UNDEFINED) add_string(args, "-lrl_s");
+      }
 #endif
-
+      
 #ifdef TARG_ST
-	    /* [TB]: with -pg add lib gprof to link */
-	    if (option_was_seen(O_pg) || option_was_seen(O_p)) {
-	      add_string(args, "-lgprof");
-	    }
+      /* [TB]: with -pg add lib gprof to link */
+      if (option_was_seen(O_pg) || option_was_seen(O_p)) {
+	add_string(args, "-lgprof");
+      }
 #endif
-
+      
 #ifdef TARG_ST
-	    /* [TB]: with -fprofile-arcs add lib gcov to link */
-	    if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)) {
-	      add_string(args, "-lgcov");
-	    }
+      /* [TB]: with -fprofile-arcs add lib gcov to link */
+      if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)) {
+	add_string(args, "-lgcov");
+      }
 #endif
-#ifdef TARG_ST
-	      /* [TB]: with -fb_create add lib libinstr */
-	      if (instrumentation_invoked == TRUE) {
-		add_string(args, "-lst200-instrC");
-	      }
-#endif
-
+      
 #ifdef TARG_ST200
-#ifdef TARG_ST
-	      /* (cbr) libc++ comes before libc */
-	    if (invoked_lang == L_CC) {
-	      add_string(args, "-lstdc++");
-		/* (cbr) for C++ exceptions unwinding */
-	      add_string(args, "-lgcc_eh");
-	      add_string(args, "-lm");
-	    }
+      /* [TB]: with -fb_create add lib libinstr */
+      if (instrumentation_invoked == TRUE) {
+	add_string(args, "-lst200-instrC");
+      }
 #endif
-#ifdef MUMBLE_ST200_BSP
-	    if (st200_runtime == RUNTIME_OS21) {
-	      add_string (args, "-los21");
-	    } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
-	      add_string (args, "-los21_d");
-	    }
-#endif
-	      /* add the libc.a,so */
-#ifdef TARG_ST // [CL]
-	      if (ipalibs == TRUE) add_string(args, "-lc-ipa");
-#endif
-	      add_string(args, "-lc");
+      
+#ifdef TARG_ST200
+      // [CG] Whole section conditionalized on target as libraries support
+      // vary greatly.
+      
+      /* (cbr) libc++ comes before libc */
+      if (invoked_lang == L_CC) {
+	add_string(args, "-lstdc++");
+	/* (cbr) for C++ exceptions unwinding */
+	add_string(args, "-lgcc_eh");
+	add_string(args, "-lm");
+      }
 
 #ifdef MUMBLE_ST200_BSP
-	      if(file_exists (concat_path(get_phase_dir(P_library), "libgloss.a"))) {
-		add_string(args, "-lgloss");
-	      }
+      if (st200_runtime == RUNTIME_OS21) {
+	add_string (args, "-los21");
+      } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
+	add_string (args, "-los21_d");
+      }
 #endif
+      
+      /* add the libc.a,so */
+      if (ipalibs == TRUE) add_string(args, "-lc-ipa");
+      
+      add_string(args, "-lc");
+      
 #ifdef MUMBLE_ST200_BSP
-	    {
-	      extern string st200_core, st200_soc, st200_board;
-	      string ofile;
-	      
-	      // Need to make this conditional because -mcore is also
-	      // used for compiler's code generation.
-	      ofile = concat_path (st200_board, "libboard.a");
-	      if (file_exists (ofile)) {
-		add_string (args, "-lboard");
-	      }
-
-	      ofile = concat_path (st200_soc, "libsoc.a");
-	      if (file_exists (ofile)) {
-		add_string (args, "-lsoc");
-	      }
-
-	      ofile = concat_path (st200_core, "libcore.a");
-	      if (file_exists (ofile)) {
-		add_string (args, "-lcore");
-	      }
-	    }
-	    if (st200_runtime == RUNTIME_OS21) {
-	      add_string (args, "-los21");
-	    } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
-	      add_string (args, "-los21_d");
-	    }	    
-#endif
-	      /*
-	       * [CM] Transitional. If we have the simpler model with a libarith
-	       * we use it. Else fall back on old scheme.
-	       * [CM 20030923] More transitional to use the libgcc.a name in replacement
-	       * of the libarith.a library.
-	       * In the long term, the alternate clauses should be removed
-	       */
-	      if(file_exists (concat_path(get_phase_dir(P_library), "libgcc.a"))) {
-#ifdef TARG_ST // [CL]
-		  if (ipalibs == TRUE) add_string(args, "-lgcc-ipa");
-#endif
-		  add_string(args, "-lgcc") ;
-	      }	else if (file_exists (concat_path(get_phase_dir(P_library), "libarith.a"))) {
-		  add_string(args, "-larith") ;
-	      } else {
-		  add_string(args, "-lst200-cfpi");
-		  add_string(args, "-lst200-arith");
-	      }
-	}
-#endif
-
-	if (ipa == TRUE) {
-#ifndef TARG_ST // [CL]
-	    if (invoked_lang == L_CC) {
-	        add_string(args, "-lstdc++");
-		/* (cbr) for C++ exceptions unwinding */
-		add_string(args, "-lgcc_eh");
-	        add_string(args, "-lm");
-	    }
-	    add_string(args, "-lgcc");
-	    add_string(args, "-lc");
-	    add_string(args, "-lgcc");
-	  
-#endif
+      if(file_exists (concat_path(get_phase_dir(P_library), "libgloss.a"))) {
+	add_string(args, "-lgloss");
+      }
+      
+      {
+	extern string st200_core, st200_soc, st200_board;
+	string ofile;
+	
+	// Need to make this conditional because -mcore is also
+	// used for compiler's code generation.
+	ofile = concat_path (st200_board, "libboard.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lboard");
 	}
 	
-#ifdef TARG_ST
-	/* (cbr) C++ dtors */
-	/* (cbr) if crt1 exists use the ones for _fini */
-	if (! option_was_seen(O_nostartfiles) && crt_mode == crt1) {
-	  add_string(args, find_crt_path("crtend.o"));
-	  add_string(args, find_crt_path("crtn.o"));
+	ofile = concat_path (st200_soc, "libsoc.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lsoc");
 	}
-#endif
+	
+	ofile = concat_path (st200_core, "libcore.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lcore");
+	}
+      }
+      if (st200_runtime == RUNTIME_OS21) {
+	add_string (args, "-los21");
+      } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
+	add_string (args, "-los21_d");
+      }	    
+#endif /* MUMBLE_ST200_BSP */
+      
+      /* libgcc selection. */
+      if (ipalibs == TRUE) add_string(args, "-lgcc-ipa");
+      add_string(args, "-lgcc") ;
 
+      if (ipa == TRUE) {
+#ifndef TARG_ST // [CL]
+	if (invoked_lang == L_CC) {
+	  add_string(args, "-lstdc++");
+	/* (cbr) for C++ exceptions unwinding */
+	  add_string(args, "-lgcc_eh");
+	  add_string(args, "-lm");
+	}
+	add_string(args, "-lgcc");
+	add_string(args, "-lc");
+	add_string(args, "-lgcc");
+#endif
+      }
+
+#endif /* TARG_ST200 */
+      
+#ifdef TARG_STxP70
+      /* Select 32 registers libraries. */
+      if( lib_kind == LIB_STXP70_32) {
+        add_string(args, "-lsys");
+        if(lib_short_double) {
+          add_string(args, "-lm_ext");
+	}
+        add_string(args, "-lm-32");
+        add_string(args, "-ldivmod-for-cosy-32");
+        add_string(args, "-lCRT2-32");
+        add_string(args, "-lc-32");
+        add_string(args, "-lc2-32");
+        if(lib_short_double) {
+          add_string(args, "-lm_ext");
+	}
+        add_string(args, "-lm-32");
+        if( fp_lib == LIB_FP_SOFT_FLOAT) {
+	  add_string(args, "-lcfpi-for-cosy-32");
+	  add_string(args, "-lcfpi-32");
+	  add_string(args, "-lCRT2-32");
+        } else if (fp_lib == LIB_FP_ACE) {
+	  add_string(args, "-lfpe-32");
+	  add_string(args, "-ldivmod-for-cosy-32");
+        }
+        add_string(args, "-lc-32");
+        add_string(args, "-lc2-32");
+        add_string(args, "-ldivmod-for-cosy-32");
+        add_string(args, "-lCRT2-32");
+        add_string(args, "-lsys");
+      } else if ( lib_kind == LIB_STXP70_16) {
+        add_string(args, "-lsys");
+        if(lib_short_double) {
+          add_string(args, "-lm_ext");
+	}
+        add_string(args, "-lm-16");
+        add_string(args, "-ldivmod-open64-16");
+        add_string(args, "-lCRT2-16");
+        add_string(args, "-lc-16");
+        add_string(args, "-lc2-16");
+        if(lib_short_double) {
+          add_string(args, "-lm_ext");
+	}
+        add_string(args, "-lm-16");
+        if( fp_lib == LIB_FP_SOFT_FLOAT) {
+	  add_string(args, "-lcfpi-for-cosy-16");
+	  add_string(args, "-lcfpi-16");
+	  add_string(args, "-lCRT2-16");
+        } else if (fp_lib == LIB_FP_ACE) {
+	  add_string(args, "-lfpe-16");
+	  add_string(args, "-ldivmod-for-cosy-16");
+        }
+        add_string(args, "-lc-16");
+        add_string(args, "-lc2-16");
+        add_string(args, "-ldivmod-for-cosy-16");
+        add_string(args, "-lCRT2-16");
+        add_string(args, "-lsys");
+      }
+#endif /* TARG_STxP70 */
+
+    }
+    
+#ifdef TARG_ST
+    /* (cbr) C++ dtors */
+    /* (cbr) if crt1 exists use the ones for _fini */
+    if (! option_was_seen(O_nostartfiles) && crt_mode == crt1) {
+      add_string(args, find_crt_path("crtend.o"));
+      add_string(args, find_crt_path("crtn.o"));
+    }
+#endif
+    
 #ifdef BCO_ENABLED
   } else /* if (next_ld_for_icache_is_simple == TRUE) */{
     /* [CG]: with --rmain option add librl_s.so library in final
@@ -1713,7 +1816,6 @@ add_final_ld_args (string_list_t *args)
     }
   }
 #endif
-
 }
 
 #define MAX_PHASE_ORDER 10
@@ -2004,13 +2106,14 @@ determine_phase_order (void)
 		case P_ipa_link:
 			add_phase(next_phase);
 #ifndef BCO_ENABLED /* Thierry */
-                        if (cordflag==TRUE) {
+                        if (cordflag==TRUE)
 #else /* BCO_Enabled Thierry */
 			/* Thierry */
 			if (deadcode== TRUE || (icache_opt==TRUE && (icache_static || icache_profile || icache_mapping))) {
 			  next_phase = P_binopt;
-			} else if (cordflag==TRUE) {
+			} else if (cordflag==TRUE)
 #endif /* BCO_Enabled Thierry */
+			  {
 			   next_phase = P_cord;
 			} else {
 			  add_phase(P_NONE);
@@ -2160,7 +2263,16 @@ void init_cmplrs_phases_info (
     // Base the ld library path on an actual directory existing for a mandatory phase
     // that has been set up previously. Originally this used cmplrs_root, but
     // this no more ensures that it points to the lib/cmplrs directory installation part.
-    ld_library_path = strdup(get_phase_dir(P_be));
+    // [CG] Add lib/cmplrs library path on top of existing library path.
+    // we want to preserve user LD_LIBRARY_PATH for binutils tools
+    // that may require it.
+    ld_library_path = getenv("LD_LIBRARY_PATH");
+    if (ld_library_path == NULL || *ld_library_path == '\0') {
+      ld_library_path = strdup(get_phase_dir(P_be));
+    } else {
+      ld_library_path = concat_strings(get_phase_dir(P_be), 
+				       concat_strings(":", ld_library_path));
+    }
 
 #ifdef TARG_ST
     /* [CL] remember absolute compiler path for IPA */

@@ -732,6 +732,8 @@ static const struct {
   INTRN_SINCOS,			"SINCOS",
   INTRN_SINCOSL,		"SINCOSL",
 
+  INTRN_VA_START,               "VA_START",
+
 #ifdef TARG_ST
 #include "targ_wutil.def"
 #endif

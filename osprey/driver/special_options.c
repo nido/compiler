@@ -114,28 +114,49 @@ set_defaults (void)
 	prepend_option_seen(flag);
 #endif
 
-#ifdef TARG_ST200
-	if (endian == UNDEFINED) 
-	  toggle(&endian, ENDIAN_LITTLE);
-
+#ifdef TARG_ST
 	// (cbr) -fstrict-aliasing default on 3.3.3 
 	if (aliasing == UNDEFINED) {
 	  flag = add_string_option(O_OPT_, "alias=typed");
 	  prepend_option_seen(flag);
 	}
 
+	// Set exception support options.
 	if (invoked_lang == L_CC && !is_toggled(noexceptions)) {
 	  flag = add_string_option(O_LANG_, "exc=ON");
 	  prepend_option_seen(flag);
 	  flag = add_string_option(O_CG_, "emit_unwind_info=ON");
 	  prepend_option_seen(flag);
 	}
+#endif
 
+#ifdef TARG_ST200
+	if (endian == UNDEFINED) 
+	  toggle(&endian, ENDIAN_LITTLE);
 #ifdef MUMBLE_ST200_BSP
 	if (st200_runtime == UNDEFINED) 
 	  toggle(&st200_runtime, RUNTIME_BARE);
 #endif
+#endif /* TARG_ST200 */
+
+#ifdef TARG_STxP70
+	if (endian == UNDEFINED) 
+	  toggle(&endian, ENDIAN_LITTLE);
+
+	if(fp_lib == UNDEFINED)
+	  toggle(&fp_lib, LIB_FP_SOFT_FLOAT);
+
+	if(lib_kind == UNDEFINED)
+	  toggle(&lib_kind, LIB_STXP70_32);
+
+	if(lib_short_double == UNDEFINED)
+	  toggle(&lib_short_double, FALSE);
+
+#ifdef MUMBLE_STxP70_BSP
+	if (stxp70_runtime == UNDEFINED) 
+	  toggle(&stxp70_runtime, RUNTIME_BARE);
 #endif
+#endif /* TARG_STxP70 */
 
 #if defined (TARG_ST) && (GNU_FRONT_END==29)
 	/* Default gcc behavior. */
@@ -211,7 +232,7 @@ set_defaults (void)
 	
 	prepend_option_seen(O_ptnone);
 	prepend_option_seen(O_prelink);
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	/* to be enabled with 2.13 version of the linker. */
 	prepend_option_seen(O_demangle);
 #endif
@@ -222,7 +243,7 @@ set_defaults (void)
 	    toggle(&shared,NON_SHARED);
 	    prepend_option_seen(O_non_shared);
 	  }
-	  else if (abi != ABI_ST100 && abi != ABI_ST200_embedded) {
+	  else if (abi != ABI_ST100 && abi != ABI_ST200_embedded && abi != ABI_STxP70_embedded) {
 	    if (gprel == UNDEFINED) {
 	      toggle(&shared,CALL_SHARED);
 	      prepend_option_seen(O_call_shared);
@@ -252,6 +273,9 @@ set_defaults (void)
 	    else {
 	      toggle(&gprel,FALSE);
 	    }
+	  }
+	  else if (abi == ABI_STxP70_embedded) {
+	    toggle(&gprel,FALSE);
 	  }
 	  else {
 	    toggle(&gprel,TRUE);
@@ -423,6 +447,7 @@ add_special_options (void)
     			flag = add_string_option(O_D, "_LITTLE_ENDIAN");
 		else
     			flag = add_string_option(O_D, "_BIG_ENDIAN");
+
 		prepend_option_seen (flag);
     		flag = add_string_option(O_D, "__LONG_MAX__=9223372036854775807L");
 		prepend_option_seen (flag);
@@ -708,7 +733,7 @@ add_special_options (void)
 	}
 #endif /* BCO_Enabled Thierry */
 
-#ifdef TARG_ST
+#ifdef TARG_ST200
 	if (relax == UNDEFINED) {
 	  /* TB: in relocatable mode, desactivate --relax */
 	  relax = (olevel >= 2 && (shared != RELOCATABLE)) ? TRUE : FALSE;
@@ -901,6 +926,7 @@ add_special_options (void)
 	    error("Optimization level > 3 is not currently supported");
 	  }
 #endif
+
 	  /* 
 	   * On ST200 we need to pass the endianness down the
 	   * toolchain
@@ -993,7 +1019,9 @@ add_special_options (void)
 	    
 	    flag = add_string_option(O_D, "__open64__");
 	    prepend_option_seen (flag);
-
+#ifdef TARG_ST200
+	    /* This part depends on macro defined only for TARG_ST200
+	       thus we conditionalize it.  */
 	    flag = add_string_option(O_D, ST200CC_EXPAND__(__ST200CC__, ST200CC_MAJOR__));
 	    prepend_option_seen (flag);
 
@@ -1008,6 +1036,7 @@ add_special_options (void)
 
 	    flag = add_string_option(O_D, ST200CC_EXPAND__(__ST200CC_VERSION__, ST200CC_VERSION__));
 	    prepend_option_seen (flag);
+#endif
 
 	    /* [CM] Must know the final optimization level to treat that expansion properly */
 #if 0
@@ -1023,6 +1052,60 @@ add_special_options (void)
 	    }
 #endif
 
+	  } /* !is_toggled(cppundef) */
+	  break;
+
+	case ABI_STxP70_embedded:
+	  /*
+	   * STxP70 specific flags: 
+	   */
+	  if(endian == ENDIAN_BIG) {
+	    error("BIG endian mode is not supported on STxP70 platforms");
+	  }
+
+	  if (!option_was_seen(O_EL)) {
+	    prepend_option_seen(O_EL);
+	  }
+
+	  if (!is_toggled(cppundef)) {
+	    if (proc == PROC_arch_1_3_1) {
+              flag = add_string_option(O_D, "__arch_1_3_1__");
+	      prepend_option_seen (flag);
+ 	      flag = add_string_option(O_D, "__ARCH_1_3_1__");
+	      prepend_option_seen (flag);
+	    }
+
+	    flag = add_string_option(O_D, "__stxp70__");
+	    prepend_option_seen (flag);
+	    flag = add_string_option(O_D, "__STxP70__");
+	    prepend_option_seen (flag);
+	    flag = add_string_option(O_D, "__STXP70__");
+	    prepend_option_seen (flag);
+	    
+	    flag = add_string_option(O_D, "__open64__");
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, "__LITTLE_ENDIAN__");
+	    prepend_option_seen (flag);
+
+#ifdef TARG_STxP70
+	    /* This part depends on macro defined only for TARG_STxP70
+	       thus we conditionalize it.  */
+	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC__, STXP70CC_MAJOR__));
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC_MINOR__, STXP70CC_MINOR__));
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC_PATCHLEVEL__, STXP70CC_PATCHLEVEL__));
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC_DATE__, STXP70CC_DATE__));
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC_VERSION__, STXP70CC_VERSION__));
+	    prepend_option_seen (flag);
+#endif
 	  } /* !is_toggled(cppundef) */
 	  break;
 
@@ -1166,6 +1249,14 @@ set_st200_bsp (string_list_t *args)
   ofile = concat_path (st200_board, "bootboard.o");
   if (file_exists (ofile))
     add_string (args, ofile);
+}
+#endif
+
+#ifdef MUMBLE_STxP70_BSP
+extern void
+set_stxp70_bsp (string_list_t *args)
+{
+  // No BSP specific .o files for STxP70.
 }
 #endif
 

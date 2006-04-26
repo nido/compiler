@@ -1,0 +1,481 @@
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Apr 26 14:54:47 CEST 2006
+	Author:    guillon
+	Parent:    svn://gnx287.gnb.st.com/open64/trunk
+	Branch:    svn://gnx287.gnb.st.com/open64/branches/guillon/dev-merge-stxp70
+
+Description:
+------------
+	Synchronize with guillon/dev/merge-stxp70 r8398 with authorization of branch tracker codex-13468.
+	Retargeting to STxP70.  
+
+
+Modified Files:
+---------------
+	M      osprey/Makefile.gsetup
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/lno/model.cxx
+	A  +   osprey/be/com/wn_lower_util.h
+	M      osprey/be/com/wn_lower.h
+	M      osprey/be/com/rt_lower_wn.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/wn_verifier.cxx
+	M      osprey/be/com/emulate.cxx
+	M      osprey/be/com/data_layout.cxx
+	A  +   osprey/be/com/wn_lower_mul.cxx
+	A  +   osprey/be/com/wn_lower_util.cxx
+	M      osprey/be/com/data_layout.h
+	A  +   osprey/be/com/wn_lower_private.h
+	M      osprey/be/com/timing.h
+	M      osprey/be/com/w2op.h
+	M      osprey/be/com/timing.cxx
+	A  +   osprey/be/com/wn_lower_mul.h
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/opt_actions.h
+	M      osprey/driver/objects.c
+	M      osprey/driver/get_options.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/main.c
+	M      osprey/gnu_common/libelf/lib/elf_repl.h
+	A  +   osprey/targia32_stxp70
+	A  +   osprey/targia32_stxp70/configure
+	M      osprey/instrumentation/libinstrC/Makefile.gbase
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgemit_targ.h
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/gcov_profile.cxx
+	M      osprey/lai/annotations.h
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/reg_live.cxx
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/tn.h
+	M      osprey/lai/cio_rwtran.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/top_properties.cxx
+	M      osprey/lai/cg_spill.h
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/localize.cxx
+	M      osprey/lai/cgexp.cxx
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/cg_loop_recur.cxx
+	M      osprey/lai/gra_live.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/gra_mon/gra_create.cxx
+	M      osprey/lai/gra_mon/gra_color.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/entry_exit_targ.h
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/cg_swp_emit.cxx
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/lai/hb_tail_duplication.cxx
+	M      osprey/lai/gcov_coverage.cxx
+	M      osprey/lai/oputil.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/calls.c
+	M      osprey/gccfe/gnu/hash.h
+	M      osprey/gccfe/gnu/tree.c
+	M      osprey/gccfe/gnu/builtins.c
+	M      osprey/gccfe/gnu/Makefile.gbase
+	M      osprey/gccfe/gnu/builtin-types.def
+	M      osprey/gccfe/gnu/builtins.def
+	A  +   osprey/gccfe/gnu/config/stxp70
+	A  +   osprey/gccfe/gnu/config/stxp70/stxp70-protos.h
+	A  +   osprey/gccfe/gnu/config/stxp70/stxp70.md
+	A  +   osprey/gccfe/gnu/config/stxp70/stxp70.c
+	A  +   osprey/gccfe/gnu/config/stxp70/stxp70-modes.def
+	A  +   osprey/gccfe/gnu/config/stxp70/stxp70.h
+	A  +   osprey/gccfe/gnu/config/stxp70/elf.h
+	A  +   osprey/gccfe/gnu/config/stxp70/xm-stxp70.h
+	A  +   osprey/gccfe/gnu/stxp70
+	A  +   osprey/gccfe/gnu/stxp70/gt-gcse.h
+	A  +   osprey/gccfe/gnu/stxp70/auto-host_mingw32.h
+	A  +   osprey/gccfe/gnu/stxp70/tconfig.h
+	A  +   osprey/gccfe/gnu/stxp70/xlimits.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-mangle.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-integrate.h
+	A  +   osprey/gccfe/gnu/stxp70/genrtl.h
+	A  +   osprey/gccfe/gnu/stxp70/options.h
+	A  +   osprey/gccfe/gnu/stxp70/cs-tconfig.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-desc.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-alias.h
+	A  +   osprey/gccfe/gnu/stxp70/cs-tm_p.h
+	A  +   osprey/gccfe/gnu/stxp70/auto-host_linux.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-constants.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-objc.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-desc.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-expr.h
+	A  +   osprey/gccfe/gnu/stxp70/config.h
+	A  +   osprey/gccfe/gnu/stxp70/print-rtl1.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-profile.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-repo.h
+	A  +   osprey/gccfe/gnu/stxp70/specs.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-decl.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-attr.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-jcf-write.h
+	A  +   osprey/gccfe/gnu/stxp70/obstack.c
+	A  +   osprey/gccfe/gnu/stxp70/cs-tm.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-spew.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-c-objc-common.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-stmt.h
+	A  +   osprey/gccfe/gnu/stxp70/tm_p.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-parse.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-attrtab.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-c-parse.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-codes.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-opinit.c
+	A  +   osprey/gccfe/gnu/stxp70/hashtab.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-lists.h
+	A  +   osprey/gccfe/gnu/stxp70/stdbool.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-tree.h
+	A  +   osprey/gccfe/gnu/stxp70/cs-config.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-config.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-f.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-builtins.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-fold-const.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-c-common.h
+	A  +   osprey/gccfe/gnu/stxp70/splay-tree.c
+	A  +   osprey/gccfe/gnu/stxp70/configargs.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-reg-stack.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-peep.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-pt.h
+	A  +   osprey/gccfe/gnu/stxp70/safe-ctype.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-class.h
+	A  +   osprey/gccfe/gnu/stxp70/libintl.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-c-decl.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-c-pragma.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-optabs.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-jcf-parse.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-decl2.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-varasm.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-flags.h
+	A  +   osprey/gccfe/gnu/stxp70/gencheck.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-lang.h
+	A  +   osprey/gccfe/gnu/stxp70/auto-host_sun.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-conditions.c
+	A  +   osprey/gccfe/gnu/stxp70/tree-check.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-constants.h
+	A  +   osprey/gccfe/gnu/stxp70/multilib.h
+	A  +   osprey/gccfe/gnu/stxp70/auto-host.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-call.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-f-ste.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-function.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-java-decl.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-emit.c
+	A  +   osprey/gccfe/gnu/stxp70/insn-recog.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-except.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-output.c
+	A  +   osprey/gccfe/gnu/stxp70/auto-host_cygwin.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-f-where.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-emit-rtl.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-ra-build.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-tree.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-java.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-sdbout.h
+	A  +   osprey/gccfe/gnu/stxp70/gtype-c.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-f-com.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cselib.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-stor-layout.h
+	A  +   osprey/gccfe/gnu/stxp70/insn-extract.c
+	A  +   osprey/gccfe/gnu/stxp70/gt-regclass.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-mangle.h
+	A  +   osprey/gccfe/gnu/stxp70/hconfig.h
+	A  +   osprey/gccfe/gnu/stxp70/cs-hconfig.h
+	A  +   osprey/gccfe/gnu/stxp70/tm.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-cp-parse.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-f-lex.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-bitmap.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-dwarf2out.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-expr.h
+	A  +   osprey/gccfe/gnu/stxp70/gt-explow.h
+	A  +   osprey/gccfe/gnu/stxp70/genrtl.c
+	A  +   osprey/gccfe/gnu/stxp70/gtype-cp.h
+	M      osprey/gccfe/wfe_stmt.cxx
+	M      osprey/gccfe/c_int_model.c
+	M      osprey/gccfe/gnu_config.h
+	M      osprey/gccfe/wfe_decl.cxx
+	A  +   osprey/make/platforms/linux-stxp70
+	A  +   osprey/make/platforms/linux-stxp70/Makefile.platforms
+	M      osprey/include/stamp.h
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/gnu/builtins.c
+	M      osprey/g++fe/gnu/Makefile.gbase
+	M      osprey/g++fe/gnu/builtin-types.def
+	M      osprey/g++fe/gnu/builtins.def
+	A  +   osprey/g++fe/gnu/config/stxp70
+	A  +   osprey/g++fe/gnu/config/stxp70/stxp70-protos.h
+	A  +   osprey/g++fe/gnu/config/stxp70/lx.md
+	A  +   osprey/g++fe/gnu/config/stxp70/st200-protos.h
+	A  +   osprey/g++fe/gnu/config/stxp70/lx.c
+	A  +   osprey/g++fe/gnu/config/stxp70/stxp70.md
+	A  +   osprey/g++fe/gnu/config/stxp70/stxp70.c
+	A  +   osprey/g++fe/gnu/config/stxp70/stxp70-modes.def
+	A  +   osprey/g++fe/gnu/config/stxp70/lx.h
+	A  +   osprey/g++fe/gnu/config/stxp70/st200-modes.def
+	A  +   osprey/g++fe/gnu/config/stxp70/stxp70.h
+	A  +   osprey/g++fe/gnu/config/stxp70/xm-lx.h
+	A  +   osprey/g++fe/gnu/config/stxp70/elf.h
+	A  +   osprey/g++fe/gnu/config/stxp70/xm-stxp70.h
+	A  +   osprey/g++fe/gnu/stxp70
+	A  +   osprey/g++fe/gnu/stxp70/gt-gcse.h
+	A  +   osprey/g++fe/gnu/stxp70/auto-host_mingw32.h
+	A  +   osprey/g++fe/gnu/stxp70/tconfig.h
+	A  +   osprey/g++fe/gnu/stxp70/xlimits.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-mangle.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-integrate.h
+	A  +   osprey/g++fe/gnu/stxp70/genrtl.h
+	A  +   osprey/g++fe/gnu/stxp70/options.h
+	A  +   osprey/g++fe/gnu/stxp70/cs-tconfig.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-desc.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-alias.h
+	A  +   osprey/g++fe/gnu/stxp70/cs-tm_p.h
+	A  +   osprey/g++fe/gnu/stxp70/auto-host_linux.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-constants.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-objc.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-desc.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-expr.h
+	A  +   osprey/g++fe/gnu/stxp70/config.h
+	A  +   osprey/g++fe/gnu/stxp70/print-rtl1.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-profile.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-repo.h
+	A  +   osprey/g++fe/gnu/stxp70/specs.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-decl.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-attr.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-jcf-write.h
+	A  +   osprey/g++fe/gnu/stxp70/obstack.c
+	A  +   osprey/g++fe/gnu/stxp70/cs-tm.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-spew.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-c-objc-common.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-stmt.h
+	A  +   osprey/g++fe/gnu/stxp70/tm_p.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-parse.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-attrtab.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-c-parse.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-codes.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-opinit.c
+	A  +   osprey/g++fe/gnu/stxp70/hashtab.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-lists.h
+	A  +   osprey/g++fe/gnu/stxp70/stdbool.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-tree.h
+	A  +   osprey/g++fe/gnu/stxp70/cs-config.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-config.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-f.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-builtins.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-fold-const.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-c-common.h
+	A  +   osprey/g++fe/gnu/stxp70/splay-tree.c
+	A  +   osprey/g++fe/gnu/stxp70/configargs.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-reg-stack.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-peep.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-pt.h
+	A  +   osprey/g++fe/gnu/stxp70/safe-ctype.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-class.h
+	A  +   osprey/g++fe/gnu/stxp70/libintl.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-c-decl.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-c-pragma.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-optabs.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-jcf-parse.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-decl2.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-varasm.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-flags.h
+	A  +   osprey/g++fe/gnu/stxp70/gencheck.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-lang.h
+	A  +   osprey/g++fe/gnu/stxp70/auto-host_sun.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-conditions.c
+	A  +   osprey/g++fe/gnu/stxp70/tree-check.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-constants.h
+	A  +   osprey/g++fe/gnu/stxp70/multilib.h
+	A  +   osprey/g++fe/gnu/stxp70/auto-host.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-call.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-f-ste.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-function.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-java-decl.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-emit.c
+	A  +   osprey/g++fe/gnu/stxp70/insn-recog.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-except.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-output.c
+	A  +   osprey/g++fe/gnu/stxp70/auto-host_cygwin.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-f-where.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-emit-rtl.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-ra-build.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-tree.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-java.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-sdbout.h
+	A  +   osprey/g++fe/gnu/stxp70/gtype-c.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-f-com.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cselib.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-stor-layout.h
+	A  +   osprey/g++fe/gnu/stxp70/insn-extract.c
+	A  +   osprey/g++fe/gnu/stxp70/gt-regclass.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-mangle.h
+	A  +   osprey/g++fe/gnu/stxp70/hconfig.h
+	A  +   osprey/g++fe/gnu/stxp70/cs-hconfig.h
+	A  +   osprey/g++fe/gnu/stxp70/tm.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-cp-parse.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-f-lex.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-bitmap.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-dwarf2out.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-expr.h
+	A  +   osprey/g++fe/gnu/stxp70/gt-explow.h
+	A  +   osprey/g++fe/gnu/stxp70/genrtl.c
+	A  +   osprey/g++fe/gnu/stxp70/gtype-cp.h
+	M      osprey/g++fe/wfe_stmt.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+	M      osprey/g++fe/gnu_config.h
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/common/com/symtab_compatible.h
+	M      osprey/common/com/opcode.h
+	M      osprey/common/com/targ_sim_core.h
+	M      osprey/common/com/config_cache.h
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/config_ipa.cxx
+	M      osprey/common/com/config_ipa.h
+	M      osprey/common/com/config_opt.cxx
+	M      osprey/common/com/ir_reader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+	M      osprey/common/com/wn.cxx
+	M      osprey/ipa/main/analyze/ipa_inline.cxx
+	M      osprey/ipa/common/ipc_compile.cxx
+	M      osprey/ipa/inline/inline_summarize.h
+	A  +   osprey/targinfo/stxp70
+	A  +   osprey/targinfo/stxp70/expand
+	A  +   osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	A  +   osprey/targinfo/stxp70/expand/exp_targ.h
+	A  +   osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	A  +   osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	A  +   osprey/targinfo/stxp70/expand/exp_pred.cxx
+	A  +   osprey/targinfo/stxp70/expand/exp_branch.cxx
+	A  +   osprey/targinfo/stxp70/expand/exp_targ.cxx
+	A  +   osprey/targinfo/stxp70/proc
+	A  +   osprey/targinfo/stxp70/proc/proc_properties.cxx
+	A  +   osprey/targinfo/stxp70/proc/proc.cxx
+	A  +   osprey/targinfo/stxp70/proc/arch_1_3_1_si.cxx
+	A  +   osprey/targinfo/stxp70/config
+	A  +   osprey/targinfo/stxp70/config/targ_intrn_info.def
+	A  +   osprey/targinfo/stxp70/config/gfec_c_decl.h
+	A  +   osprey/targinfo/stxp70/config/config_host.c
+	A  +   osprey/targinfo/stxp70/config/config_TARG.cxx
+	A  +   osprey/targinfo/stxp70/config/targ_const_private.h
+	A  +   osprey/targinfo/stxp70/config/gfec_wfe_expr.h
+	A  +   osprey/targinfo/stxp70/config/config_platform.c
+	A  +   osprey/targinfo/stxp70/config/config_asm.h
+	A  +   osprey/targinfo/stxp70/config/targ_sim.h
+	A  +   osprey/targinfo/stxp70/config/targ_wintrinsic.h
+	A  +   osprey/targinfo/stxp70/config/config_platform.h
+	A  +   osprey/targinfo/stxp70/config/config_target.h
+	A  +   osprey/targinfo/stxp70/config/gfec_builtins.h
+	A  +   osprey/targinfo/stxp70/config/cg_flags_arch.cxx
+	A  +   osprey/targinfo/stxp70/config/targ_const.cxx
+	A  +   osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	A  +   osprey/targinfo/stxp70/config/targ_sim.cxx
+	A  +   osprey/targinfo/stxp70/config/targ_ctrl.h
+	A  +   osprey/targinfo/stxp70/config/config_TARG.h
+	A  +   osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	A  +   osprey/targinfo/stxp70/config/targ_elf.h
+	A  +   osprey/targinfo/stxp70/config/targ_trap.h
+	A  +   osprey/targinfo/stxp70/config/gfec_builtins.def
+	A  +   osprey/targinfo/stxp70/config/config_target.cxx
+	A  +   osprey/targinfo/stxp70/config/gfecc_builtins.def
+	A  +   osprey/targinfo/stxp70/config/targ_wutil.def
+	A  +   osprey/targinfo/stxp70/be
+	A  +   osprey/targinfo/stxp70/be/targ_emulate.h
+	A  +   osprey/targinfo/stxp70/be/targ_sections.cxx
+	A  +   osprey/targinfo/stxp70/be/driver_targ.cxx
+	A  +   osprey/targinfo/stxp70/be/targ_emulate.cxx
+	A  +   osprey/targinfo/stxp70/be/targ_sections.h
+	A  +   osprey/targinfo/stxp70/be/betarget.cxx
+	A  +   osprey/targinfo/stxp70/be/fill_align_targ.cxx
+	A  +   osprey/targinfo/stxp70/lno
+	A  +   osprey/targinfo/stxp70/lno/lnotarget.cxx
+	A  +   osprey/targinfo/stxp70/lno/targ_model.h
+	A  +   osprey/targinfo/stxp70/lno/targ_prefetch.h
+	A  +   osprey/targinfo/stxp70/cg
+	A  +   osprey/targinfo/stxp70/cg/targ_swp_bundle.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_pqs.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_cg_sup.h
+	A  +   osprey/targinfo/stxp70/cg/targ_tn.h
+	A  +   osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_loop_recur.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_register.h
+	A  +   osprey/targinfo/stxp70/cg/targ_swp.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_op.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_cg.h
+	A  +   osprey/targinfo/stxp70/cg/targ_grouping.h
+	A  +   osprey/targinfo/stxp70/cg/targ_select.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_tn.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_calls.h
+	A  +   osprey/targinfo/stxp70/cg/targ_register.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_pqs.h
+	A  +   osprey/targinfo/stxp70/cg/targ_hb.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_cg.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_calls.cxx
+	A  +   osprey/targinfo/stxp70/abi
+	A  +   osprey/targinfo/stxp70/abi/abi_properties.cxx
+	A  +   osprey/targinfo/stxp70/isa
+	A  +   osprey/targinfo/stxp70/isa/isa_decode.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_subset.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_enums.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_registers.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_lits.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_operands.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_hazards.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_print.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_properties.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_pack.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_pseudo.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa.cxx
+	A  +   osprey/targinfo/stxp70/emit
+	A  +   osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	A  +   osprey/targinfo/stxp70/emit/targ_em_const.cxx
+	A  +   osprey/targinfo/stxp70/emit/targ_em_elf.cxx
+	A  +   osprey/targinfo/stxp70/emit/targ_em_dwarf.h
+	A  +   osprey/targinfo/stxp70/emit/targ_em_elf.h
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/config/gfec_c_decl.h
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/targ_sim.h
+	M      osprey/targinfo/st200/config/config_target.h
+	M      osprey/targinfo/st200/config/gfec_builtins.h
+	M      osprey/targinfo/st200/config/targ_const.cxx
+	M      osprey/targinfo/st200/config/targ_sim.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/gfec_builtins.def
+	M      osprey/targinfo/st200/config/config_target.cxx
+	M      osprey/targinfo/st200/config/gfecc_builtins.def
+	A  +   osprey/targinfo/st200/be/targ_emulate.h
+	A  +   osprey/targinfo/st200/be/targ_emulate.cxx
+	M      osprey/targinfo/st200/be/betarget.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_cgemit.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/generate/isa_print_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+
+

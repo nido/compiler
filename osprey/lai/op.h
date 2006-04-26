@@ -356,6 +356,9 @@ typedef struct op {
   mUINT8	unrolling;	/* which unrolled replication (if any) */
   mUINT8	results;	/* Number of results */
   mUINT8	opnds;		/* Number of operands */
+#ifdef TARG_ST
+  struct tn	*spilled_tn;	/* Spilled TN if OP_spill(). */
+#endif
   struct tn     *res_opnd[10];	/* result/operand array (see OP_sizeof for info)
 				 * !!! THIS FIELD MUST BE LAST !!!
 				 */
@@ -554,6 +557,9 @@ enum OP_COND_DEF_KIND {
 # define OP_spill(o)		(OP_flags(o) & OP_MASK_SPILL)
 # define Set_OP_spill(o)	(OP_flags(o) |= OP_MASK_SPILL)
 # define Reset_OP_spill(o) 	(OP_flags(o) &= ~OP_MASK_SPILL)
+# define OP_spilled_tn(o)		((o)->spilled_tn)
+# define Set_OP_spilled_tn(o,tn)	((o)->spilled_tn = (tn))
+# define Reset_OP_spilled_tn(o,tn) ((o)->spilled_tn = NULL)
 #else
 # define OP_has_tag(o)		(OP_flags(o) & OP_MASK_TAG)
 # define Set_OP_has_tag(o)	(OP_flags(o) |= OP_MASK_TAG)
@@ -592,6 +598,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
  */
 #ifdef TARG_ST
 /* (cbr) poison. should not use */
+/* [JV] Use 'OP_find_opnd_use(op,OU_predicate)' instead */
 #define OP_PREDICATE_OPND (abort(), 0)
 #else
 #ifdef SUPPORTS_PREDICATION
@@ -608,7 +615,12 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
 #define OP_branch_predict(o)	(TOP_is_branch_predict(OP_code(o)))
 #define OP_call(o)		(TOP_is_call(OP_code(o)))
+#ifdef TARG_STxP70
+#define OP_cond(o)		(TOP_is_cond(OP_code(o)) && \
+				 (True_TN != OP_opnd(o, OP_find_opnd_use(o ,OU_condition))))
+#else
 #define OP_cond(o)		(TOP_is_cond(OP_code(o)))
+#endif
 #define OP_cond_move(o)		(TOP_is_cond_move(OP_code(o)))
 #define OP_dismissible(o)	(TOP_is_dismissible(OP_code(o)))
 #define OP_dummy(o)		(TOP_is_dummy(OP_code(o)))
@@ -793,6 +805,9 @@ inline TN *OP_base_update_tn(OP *op)
   return NULL;
 }
 
+#ifdef TARG_ST
+extern TOP TOP_opnd_immediate_equivalent(TOP top, int opnd, INT64 *imm);
+#endif
 extern TOP TOP_opnd_immediate_variant(TOP top, int opnd, INT64 imm);
 extern TOP TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2);
 extern TOP TOP_result_register_variant(TOP top, int rslt, ISA_REGISTER_CLASS regclass);
@@ -815,11 +830,19 @@ inline BOOL OP_uniq_res(OP *op, INT i) {
   return FALSE; 
 } 
 
+#ifdef TARG_ST
+/* Returns index of operand that must be same register as result i.
+   This has been moved into oputil.cxx as now this handles the
+   case of asm statements with same result/opnd constraints.
+*/
+extern INT OP_same_res(OP *op, INT i);
+#else
 /* Returns index of operand that must be same register as result i */ 
 inline INT OP_same_res(OP *op, INT i) { 
   const ISA_OPERAND_INFO *oinfo = OP_operand_info(op);
   return ISA_OPERAND_INFO_Same_Res(oinfo, i); 
-} 
+}
+#endif
 
 inline INT OP_result_size(OP *op, INT result)
 {
@@ -1118,6 +1141,46 @@ inline void OP_Change_To_Noop(OP *op)
 //
 extern TOP CGTARG_Which_OP_Select (UINT16 bit_size, BOOL is_float,
 				    BOOL is_fcc);
+#endif
+
+#ifdef TARG_ST
+/*
+ * Handling of implicit architectural flags (or other resources) 
+ * effects that are not described accurately with the architecture description.
+ * We do not distinguish different flag effects, but we track operations that
+ * have flag effects whatever the flags. This is an inaccuracy.
+ * The possible flag effects as:
+ * - OP_FE_NONE: no flag access
+ * - OP_FE_READ: the operation read an implicit flag,
+ * - OP_FE_WRITE: the operation writes a useful flag value,
+ * - OP_FE_CLOBBER: the operation clobbers flag values (write useless value) .
+ * For instance an operation which is OP_FA_WRITE can't be deleted, while
+ * a OP_FE_CLOBBER can be deleted is it does not generate value otherwise.
+ * For dependencies between operations, there is a dependence between
+ * two operations that access flags if:
+ * 1. both operations access the flag (~OP_FE_NONE),
+ * 2. at least one is a usefull write (OP_FE_WRITE).
+ * Note that an operation may have multiple flag effect at the same time,
+ * for instance OP_FE_WRITE|OP_FE_READ.
+ * We distinguish such operations from OP_side_effects operations, though
+ * we must handle the flag effects in the code generator for avoiding deletion
+ * of usefull flag settings.
+ */
+typedef enum {
+  OP_FE_NONE = 0,
+  OP_FE_READ = 1,
+  OP_FE_WRITE = 2,
+  OP_FE_CLOBBER = 4
+} OP_Flag_Effect;
+typedef int OP_Flag_Effects;
+
+/*
+ * Target dependent interface for getting the flag effects of an operation.
+ */
+extern OP_Flag_Effects CGTARG_OP_Get_Flag_Effects(const OP *op);
+
+#define OP_Get_Flag_Effects(op) CGTARG_OP_Get_Flag_Effects(op)
+#define OP_Has_Flag_Effect(op) (CGTARG_OP_Get_Flag_Effects(op) & OP_FE_WRITE)
 #endif
 
 /* ---------------------------------------------------------------------

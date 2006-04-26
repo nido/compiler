@@ -2303,7 +2303,7 @@ BOOL GRA_LIVE_TN_Live_Outof_BB (TN *tn, BB *bb)
     return TRUE;
   }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
   // (cbr) pro-release-1-9-0-B/50 don't check for TRUE_tn that can appear in psi instructions
   if (TN_is_dedicated (tn) && TN_register(tn) != REGISTER_UNDEFINED) {
 #else

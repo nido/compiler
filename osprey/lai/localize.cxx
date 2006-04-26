@@ -228,7 +228,8 @@ Localize_Global_Return_Reg (BB *current_bb, TN *ret_tn)
 			}
 		}
 	}
-	FmtAssert(bb != NULL && BB_call(bb), ("didn't find call BB before bb %d for tn %d", BB_id(current_bb), TN_number(ret_tn)));
+	FmtAssert(bb != NULL && BB_call(bb), ("In %s, didn't find call BB before bb %d for tn %d", ST_name(Get_Current_PU_ST()), 
+					      BB_id(current_bb), TN_number(ret_tn)));
 	bb = BB_next(bb);	/* go back to bb after call */
 	/* insert copy at beginning of bb */
 	Exp_COPY (new_tn, ret_tn, &ops);

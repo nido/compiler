@@ -146,6 +146,13 @@ SUMMARIZE<INLINER>::Process_procedure (WN *w)
 
 #endif // _LIGHTWEIGHT_INLINER
 
+#ifdef TARG_STxP70
+    if (Opt_Level >= 3) {
+      if (!INLINE_Only_Inline_Set) {
+	INLINE_Only_Inline = FALSE;
+      }
+    }
+#endif
     // the index into the symbols array for the st to this procedure
     proc->Set_symbol_index(Get_symbol_index(st));
 

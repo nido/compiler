@@ -243,8 +243,8 @@ CG_PU_Initialize (
   }
 
 #ifdef TARG_ST
-  // [CG]: In debug mod we perform on check on topcode
-#ifndef RELEASE
+  // [CG]: In debug mode we perform on check on topcode
+#if Is_True_On
   for(int i = 0; i <= TOP_count; ++i) {
     FmtAssert(TOP_check_properties((TOP)i), ("topcode %s as inconsistant properties", TOP_Name((TOP)i)));
   }
@@ -572,13 +572,13 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // FdF: Code imported from ORC2.1. Perform before SSA and if-conversion.
-    if (IPFEC_Enable_LICM && CG_opt_level > 1) {
+    if (IPFEC_Enable_LICM && CG_opt_level > 1 && !CG_localize_tns) {
       Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
       Perform_Loop_Invariant_Code_Motion ();
     }
 #endif
   // Invoke global optimizations before register allocation at -O2 and above.
-  if (CG_opt_level > 1) {
+  if (CG_opt_level > 1 && !CG_localize_tns) {
 #ifdef TARG_ST
     if (CG_enable_ssa)
       CG_enable_ssa = SSA_Check(region ? REGION_get_rid(rwn) : NULL, region);
@@ -592,7 +592,7 @@ CG_Generate_Code(
 #endif
   } //CG_opt_level > 1
   
-  if (CG_opt_level > 1) {
+  if (CG_opt_level > 1 && !CG_localize_tns) {
 #ifdef TARG_ST
 #ifdef SUPPORTS_SELECT
     if (CG_enable_ssa && CG_enable_select) {
@@ -608,7 +608,7 @@ CG_Generate_Code(
 #endif
   }
 
-  if (CG_opt_level > 1) {
+  if (CG_opt_level > 1 && !CG_localize_tns) {
 #if defined(TARG_IA64)
     //
     // Perform hyperblock formation (if-conversion). 
@@ -629,7 +629,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef TARG_ST
-    if (CG_enable_ssa) {
+    if (CG_enable_ssa && !CG_localize_tns) {
       Set_Error_Phase("Out of SSA Translation");
       SSA_Make_Conventional (region ? REGION_get_rid(rwn) : NULL, region);
       SSA_Remove_Pseudo_OPs(region ? REGION_get_rid(rwn) : NULL, region);
@@ -643,7 +643,7 @@ CG_Generate_Code(
     // Currently enabled only if select_if_convert is true
     // Run also an EBO pre pass after if-conversion as
     // merge points may have been removed
-    if (CG_enable_ssa && CG_enable_select) {
+    if (CG_enable_ssa && CG_enable_select && !CG_localize_tns) {
 #ifdef TARG_ST
       // FdF 2005/11/02: Perform cloning after if-conversion.
       CFLOW_Optimize(CFLOW_MERGE|CFLOW_CLONE, "CFLOW (after ssa)");
@@ -983,7 +983,9 @@ CG_Generate_Code(
      */
     Set_Error_Phase ( "Assembly" );
     Start_Timer (	T_Emit_CU );
-
+#ifdef TARG_STxP70
+    CGTARG_Fixup_Immediates();
+#endif
     EMT_Emit_PU (Get_Current_PU_ST(), pu_dst, rwn);
     Check_for_Dump (TP_EMIT, NULL);
     Stop_Timer ( T_Emit_CU );

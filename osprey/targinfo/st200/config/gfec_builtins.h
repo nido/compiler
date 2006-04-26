@@ -1,4 +1,4 @@
-#if defined(TARG_ST200)
+#if defined(TARG_ST)
     case BUILT_IN_ABSCH:
     case BUILT_IN_ABSCL:
     case BUILT_IN_ABSCW:
@@ -262,4 +262,4 @@
     case BUILT_IN_ASM_14:
     case BUILT_IN_ASM_15:
   break;
-#endif /* defined(TARG_ST200) */
+#endif /* defined(TARG_ST) */

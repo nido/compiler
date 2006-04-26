@@ -391,9 +391,11 @@ Gen_Register_TN (
  *   Get_Normalized_TN_Value
  *
  *   [CG]: normalizes upper non significant bits of a TN.
- *   We normalize values by sign-extending from <size> to 8 bytes.
+ *   We normalize values by sign-extending or zero-extending
+ *   from <size> to 8 bytes.
  *   For instance a TN of size 4 with 0x80000000 will have
- *   a 64 bits value of 0xffffffff80000000.
+ *   a 64 bits value of 0xffffffff80000000 is signed or 0x0000000080000000
+ *   if not signed.
  *   The rational is to get always identical values is 2 values differ
  *   in the upper non significant bits.
  *   It is also done like this in the WHIRL.
@@ -402,14 +404,15 @@ Gen_Register_TN (
  * ====================================================================
  */
 static INT64
-Get_Normalized_TN_Value(INT64 ivalue, INT size)
+Get_Normalized_TN_Value(INT64 ivalue, INT size, INT is_signed)
 {
   FmtAssert(8*size <= 64, ("Get_Normalized_TN_Value: TN size is too large: %d\n", size));
   FmtAssert(8*size == 64 || (ivalue >= (- 1LL << (8*size-1)) &&
 			     ivalue <= (((1LL << (8*size)) - 1LL))),
        ("Get_Normalized_TN_Value: %d-byte literal 0x%016llx is out-of-range", size, ivalue));
 
-  return ((ivalue) << (64 - size*8)) >> (64 - size*8);
+  return is_signed ? ((INT64)((ivalue) << (64 - size*8))) >> (64 - size*8):
+    ((UINT64)((ivalue) << (64 - size*8))) >> (64 - size*8);
 }
 
 #endif
@@ -423,12 +426,13 @@ Get_Normalized_TN_Value(INT64 ivalue, INT size)
 TN *
 Gen_Unique_Literal_TN (
   INT64 ivalue, 
-  INT size
+  INT size,
+  INT is_signed
 )
 {
   TN *tn = Gen_TN ();
 #ifdef TARG_ST
-  ivalue = Get_Normalized_TN_Value(ivalue, size);
+  ivalue = Get_Normalized_TN_Value(ivalue, size, is_signed);
 #endif
   Set_TN_size(tn, size);
   Set_TN_is_constant(tn);
@@ -447,14 +451,15 @@ Gen_Unique_Literal_TN (
 TN *
 Gen_Literal_TN ( 
   INT64 ivalue, 
-  INT size 
+  INT size,
+  INT is_signed
 )
 {
   INT hash_value;
   TN *tn;
 
 #ifdef TARG_ST
-  ivalue = Get_Normalized_TN_Value(ivalue, size);
+  ivalue = Get_Normalized_TN_Value(ivalue, size, is_signed);
 #endif
 
   Is_True(size != 4 || (ivalue >= -2147483648LL && ivalue <= 4294967295LL),
@@ -675,9 +680,11 @@ Build_Dedicated_TN (
   if (size == 0 || size == DEFAULT_RCLASS_SIZE(rclass)) {
     return ded_tns[rclass][reg];
   }
+#ifdef TARG_ST200
   if (size == DEFAULT_RCLASS_SIZE(rclass)*2) {
     return paired_ded_tns[rclass][reg];
   }
+#endif
   DevAssert(0, ("unexpected size, rclass:%d, reg:%d, size:%d", rclass, reg, size));
 #else
     return ded_tns[rclass][reg];
@@ -745,6 +752,7 @@ Init_Dedicated_TNs (void)
   else
     GP_TN = NULL;
 
+#ifdef TARG_ST200
   if (!True_TN) {
     // (cbr) we need a true_tn for predicated instructions that are sunk
     // into a psi instruction.
@@ -752,6 +760,7 @@ Init_Dedicated_TNs (void)
     True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_branch, 0); 
     Set_TN_register_and_class(True_TN, CLASS_AND_REG_true);
   }
+#endif
 
 #else
   /* Initialize the dedicated integer register TNs: */
@@ -853,7 +862,8 @@ sPrint_TN (
       ST *var = TN_var(tn);
 
       buf += sprintf ( buf, "(sym" );
-      buf += sprintf ( buf, TN_RELOCS_Name(TN_relocs(tn)) );
+      // [JV] On STxP70, some relocs have name starting with '%' ...
+      buf += sprintf ( buf, "%s", TN_RELOCS_Name(TN_relocs(tn)) );
 
       /*
       switch (TN_relocs(tn)) {
@@ -884,10 +894,12 @@ sPrint_TN (
       }
       */
 
-      if (ST_class(var) == CLASS_CONST)
+      if (ST_class(var) == CLASS_CONST) {
       	buf += sprintf ( buf, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));
-      else
+      }
+      else {
       	buf += sprintf ( buf, ":%s%+lld)", ST_name(var), TN_offset(tn) );
+      }
     } 
     else {
       ErrMsg (EC_Unimplemented, "sPrint_TN: illegal constant TN");

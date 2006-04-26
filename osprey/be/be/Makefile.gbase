@@ -389,9 +389,11 @@ BE_COM_PCH_CXX_SRCS = \
 GENERATED_FILES = \
   gcov-iov.h
 
-# For ST targets add rt_lower_wn.cxx
+# Add specific ST files
 ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
-BE_COM_PCH_CXX_SRCS += rt_lower_wn.cxx
+BE_COM_PCH_CXX_SRCS += rt_lower_wn.cxx \
+		       wn_lower_mul.cxx \
+		       wn_lower_util.cxx
 endif
 
 BE_COM_CXX_SRCS += $(BE_COM_PCH_CXX_SRCS)
@@ -404,6 +406,11 @@ ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
   BE_COM_TARG_CXX_SRCS += targ_sections.cxx
 else
   BE_COM_TARG_CXX_SRCS += sections.cxx
+endif
+
+# Add specific ST files
+ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
+BE_COM_TARG_CXX_SRCS += targ_emulate.cxx
 endif
 
 BE_COM_CXX_SRCS +=	\
@@ -484,7 +491,6 @@ BE_DSO_LDLIBS +=  -ldl
 BE_DRIVER_LDLIBS += -ldl
 endif
 endif
-
 
 
 ifeq ($(BUILD_VARIANT), MEM_STATS)

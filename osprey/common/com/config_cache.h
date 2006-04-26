@@ -397,7 +397,7 @@ typedef struct MHD {
   BOOL      Non_Blocking_Loads;
   INT32     TLB_Trustworthiness;
   BOOL      TLB_NoBlocking_Model;
-#ifdef TARG_ST200
+#ifdef TARG_ST
   // FdF 20050110: Parameterize the number of prefetch buffers
   // available on a ST200 processor.
   INT32     DCache_Prefetch_Buffers;

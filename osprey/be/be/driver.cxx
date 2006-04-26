@@ -1165,6 +1165,9 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 		       "Lower structured control flow");
 	wn_coverage_pu(rwn);
       } 
+#endif
+
+#ifdef TARG_ST
       //
       // Need to perform lowering of OPERATORs not supported
       // directly in the target ISA
@@ -1175,11 +1178,26 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 	  Emulate_Double_Float_Ops ||
           Emulate_DivRem_Integer_Ops ||
 	  Only_32_Bit_Ops) {
-	  rwn = WN_Lower(rwn, LOWER_MADD | LOWER_CST_DIV, NULL, 
-		       "Lower Madd & Cst_Div");
-	  RT_lower_wn(rwn);
-      }
+	LOWER_ACTIONS actions = 0;
+	/* [CG] We always lower fast div/rem */
+	actions |= LOWER_FAST_DIV;
+	/* [CG] We also always lower cnst  div/rem */
+	actions |= LOWER_CNST_DIV;
+#ifndef TARG_STxP70
+	/* Lower madd before RT for madd instrinsics. */
+	actions |= LOWER_MADD; 
 #endif
+#ifdef TARG_STxP70
+	/* Lower array before RT to catch MUL that are emulated on STxP70. */
+	actions |= LOWER_ARRAY;
+	actions |= LOWER_FAST_MUL;
+	actions |= LOWER_CNST_MUL;
+#endif
+	rwn = WN_Lower(rwn, actions, NULL, 
+		       "Lowering in preparation to RT_Lower");
+	RT_lower_wn(rwn);
+      }
+#endif /* TARG_ST */
 
       /* we may still have to print the .O file:		   */
       /* (Olimit stops optimization for one PU but not all)	   */
@@ -1215,7 +1233,8 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
       if (Run_cg) { /* lower for cg */
 	Set_Error_Phase ("Lowering");
         WB_LWR_Initialize(rwn, alias_mgr);
-	rwn = WN_Lower(rwn, LOWER_TO_CG, alias_mgr, "Lowering to CG");
+	LOWER_ACTIONS actions = LOWER_TO_CG;
+	rwn = WN_Lower(rwn, actions, alias_mgr, "Lowering to CG");
 	if (Only_Unsigned_64_Bit_Ops && ! Run_wopt)
 	  U64_lower_wn(rwn, FALSE);
 #ifdef TARG_ST
@@ -1418,7 +1437,8 @@ Backend_Processing (PU_Info *current_pu, WN *pu)
     // it may change formal arguments for the FUNC_ENTRY nodes.
     // Must be done before frame data layout.
     {
-      INT64 actions = LOWER_ENTRY_PROMOTED;
+      INT64 actions = LOWER_ENTRY_PROMOTED | LOWER_FORMAL_HIDDEN_REF;
+
       if (WHIRL_Return_Val_On || WHIRL_Mldid_Mstid_On) {
         Is_True(WHIRL_Return_Val_On && WHIRL_Mldid_Mstid_On,
 	        ("-INTERNAL:return_val and -INTERNAL:mldid_mstid must be on the same time"));

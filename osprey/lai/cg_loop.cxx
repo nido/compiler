@@ -349,7 +349,7 @@ static BOOL Negate_Branch(OP *br)
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
-      TN *pred = OP_opnd(br,OP_PREDICATE_OPND);
+      TN *pred = OP_opnd(br,OP_find_opnd_use(br,OU_predicate));
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (neg_tn == True_TN) {
@@ -357,7 +357,7 @@ static BOOL Negate_Branch(OP *br)
         return FALSE;
       }
 
-      Set_OP_opnd(br, OP_PREDICATE_OPND, neg_tn);
+      Set_OP_opnd(br, OP_find_opnd_use(br,OU_predicate), neg_tn);
 
       if (br_bb != cmp_bb && !CG_localize_tns) {
         GRA_LIVE_Compute_Local_Info(br_bb);
@@ -2509,7 +2509,7 @@ static void unroll_guard_unrolled_body(LOOP_DESCR *loop,
 	     NULL,
 	     Gen_Label_TN(continuation_lbl,0),
 	     new_trip_count_tn,
-	     Zero_TN,
+	     Get_Zero_TN(trip_size),
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
 	     &ops);
 #else 
@@ -3083,7 +3083,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	// of the loop, initialize the TN to zero.
 	if (WN_Loop_Nz_Trip(LOOPINFO_wn(info)) &&
 	    !GTN_SET_MemberP(BB_live_in(CG_LOOP_prolog), tn)) {
-	  Exp_COPY(tn, Zero_TN, &uninit_ops);
+	  Exp_COPY(tn, Get_Zero_TN(4), &uninit_ops);
 	}
 #endif
       }
@@ -3235,7 +3235,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 	     NULL,
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
-	     Zero_TN,
+	     Get_Zero_TN(trip_size),
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
 	     &zero_trip_guard_ops);
 #else
@@ -3316,7 +3316,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 		 NULL,
 		 Gen_Label_TN(continuation_label,0),
 		 new_trip_count,
-		 Zero_TN,
+		 Get_Zero_TN(trip_size),
 		 trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
 		 &body_ops);
 #else
@@ -3364,7 +3364,7 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 
 	// do not generate branch for the last unrolling
 	if (unrolling < unroll_times && !const_trip) {
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	  /* Override the operations already in body_ops, and put a
              more efficient sequence of code. */
 	  INT32 trip_size = TN_size(new_trip_count);
@@ -3567,7 +3567,7 @@ Unroll_Update_Loop_Counter(CG_LOOP &cl) {
   TN *trip_count_iv;
 
   if (TN_is_constant(trip_count_tn))
-    trip_count_iv = Gen_Register_TN(ISA_REGISTER_CLASS_integer, TN_size(trip_count_tn));
+    trip_count_iv = CGTARG_gen_trip_count_TN(TN_size(trip_count_tn));
   else
     trip_count_iv = Build_TN_Like(trip_count_tn);
   Set_TN_is_global_reg(trip_count_iv);
@@ -3709,7 +3709,7 @@ Unroll_Peel_Loop(CG_LOOP &cl) {
      trip_count_tn into a non constant value if a check for dynamic
      alignment was needed. */
   if (check_bb && TN_is_constant(trip_count_tn)) {
-    TN *new_trip_count_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, TN_size(trip_count_tn));
+    TN *new_trip_count_tn = CGTARG_gen_trip_count_TN(TN_size(trip_count_tn));
     /* add a copy in check_bb */
     OPS ops = OPS_EMPTY;
     Exp_Immediate(new_trip_count_tn, trip_count_tn, TRUE, &ops);
@@ -3771,8 +3771,8 @@ CG_LOOP::Unroll_Specialize_Loop() {
 
   // Insert code in check_bb to check that all dynamic aligned streams
   // are correctly aligned.
-  TN *or_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, 4);
-  TN *not_tn = Gen_Register_TN(ISA_REGISTER_CLASS_integer, 4);
+  TN *or_tn = Build_TN_Of_Mtype(MTYPE_I4);
+  TN *not_tn = Build_TN_Of_Mtype(MTYPE_I4);
   OPS ops = OPS_EMPTY;
   for (int i=0; i < Special_streams(); i++) {
     TN *tn1 = stream_tn[i];
@@ -4127,7 +4127,7 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 	     NULL,
 	     Gen_Label_TN(continuation_label,0),
 	     new_trip_count,
-	     Zero_TN,
+	     Get_Zero_TN(trip_size),
 	     trip_size == 4 ? V_BR_I4EQ : V_BR_I8EQ,
 	     &ops);
 #else
@@ -4273,7 +4273,7 @@ static BOOL unroll_multi_make_remainder_loop(LOOP_DESCR *loop, UINT8 ntimes,
 	     NULL,
 	     Gen_Label_TN(Gen_Label_For_BB(head), 0),
 	     trip_counter,
-	     Zero_TN,
+	     Get_Zero_TN(trip_size),
 	     trip_size == 4 ? V_BR_I4NE : V_BR_I8NE,
 	     &ops);
     BB_Append_Ops(tail, &ops);
@@ -6819,6 +6819,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       //      cg_loop.Recompute_Liveness();
 
 #ifdef TARG_ST
+#ifndef TARG_STxP70
       BOOL can_be_packed = FALSE;
       if (CG_LOOP_load_store_packing)
 	can_be_packed = IVS_Analyze_Load_Store_Packing(cg_loop);
@@ -6829,11 +6830,16 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       if (cg_loop.Peel_stream())
 	Unroll_Peel_Loop(cg_loop);
 #endif
+#endif
 
 #ifdef TARG_ST
+#ifndef TARG_STxP70  // [CG] To be tuned
       // FdF 20060207: Use scheduling estimate to adjust the unrolling
       // factor
       cg_loop.Determine_Sched_Est_Unroll_Factor();
+#else
+      cg_loop.Determine_Unroll_Factor();
+#endif
 #else
       cg_loop.Determine_Unroll_Factor();
 #endif
@@ -6862,6 +6868,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_After_Unrolling();
 
 #ifdef TARG_ST
+#ifndef TARG_STxP70   // [CG] To be tuned
       if (can_be_packed && !cg_loop.Unroll_fully()) { 
 	//	CG_LOOP_prolog = cg_loop.Prolog_start();
 	//	CG_LOOP_epilog = cg_loop.Epilog_end();
@@ -6888,6 +6895,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 				    trace_loop_opt);
 	cg_loop.Recompute_Liveness();
       }
+#endif
 #endif
     }
 

@@ -174,6 +174,35 @@ tn_stack_top (
 }
 
 /* ================================================================
+ *   Insert_Kill_op
+ *
+ *  Insert a Pseudo Kill operation. This is needed for uninitialized
+ *  uses and for predicated code.
+ * ================================================================
+ */
+static TN *Copy_TN (TN *tn);
+
+static void
+Insert_Kill_op (
+  BB *bb,
+  OP *point,
+  TN *tn
+)
+{
+  // FdF: Create a pseudo-def for uninitialized uses.
+  OP* psi_op = Mk_VarOP(TOP_psi, 1, 0, &tn, NULL);
+  if (point)
+    BB_Insert_Op_Before(bb, point, psi_op);
+  else
+    BB_Append_Op(bb, psi_op);
+  // ssa_map is set, but psi_op has not been renamed yet
+  SSA_unset(psi_op);
+  TN *new_tn = Copy_TN(tn);
+  tn_stack_push(tn, new_tn);
+}
+
+
+/* ================================================================
  *      Auxilliary REGION handling stuff
  * ================================================================
  */
@@ -593,9 +622,9 @@ Disjoint_Predicates(TN *guard1, TN *guard2) {
     TN *cmp_opnd1 = OP_opnd(def_guard2, OP_find_opnd_use(def_guard2, OU_opnd1));
     TN *cmp_opnd2 = OP_opnd(def_guard2, OP_find_opnd_use(def_guard2, OU_opnd2));
     TN *cmp_opnd = NULL;
-    if (cmp_opnd1 == Zero_TN)
+    if (TN_is_zero(cmp_opnd1))
       cmp_opnd = cmp_opnd2;
-    else if (cmp_opnd2 == Zero_TN)
+    else if (TN_is_zero(cmp_opnd2))
       cmp_opnd = cmp_opnd1;
 
     if (cmp_opnd != NULL) {
@@ -929,6 +958,7 @@ OP_Make_movc (
   OPS *cmov_ops
 )
 {
+#ifdef TARG_ST200
   if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
     DevWarn("Conditional MOV should use a branch register");
   Build_OP(TOP_movc, dst, guard, src, cmov_ops);
@@ -936,6 +966,9 @@ OP_Make_movc (
   if (OPS_length(&cmov_ops) != 1)
     Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
+#endif
+#else
+  FmtAssert(0,("Not implemented"));
 #endif
 }
 #else
@@ -947,8 +980,10 @@ OP_Make_movc (
   OPS *cmov_ops
 )
 {
+#ifdef TARG_ST200
   if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
     DevWarn("Conditional MOV should use a branch register");
+#endif
   Expand_Copy(dst, guard, src, cmov_ops);
 #if 0
   if (OPS_length(&cmov_ops) != 1)
@@ -1332,6 +1367,8 @@ Rename_Phi_Operands (
     for (i = 0; i < OP_opnds(op); i++) {
       TN *tn = OP_opnd(op,i);
       if (Get_PHI_Predecessor(op,i) == bb) {
+	if (TN_STACK_empty(tn))
+	  Insert_Kill_op(bb, BB_branch_op(bb), tn);
 	TN *new_tn = tn_stack_top(tn);
 	Set_OP_opnd(op,i,new_tn);
 	break;
@@ -1404,8 +1441,10 @@ SSA_Rename_BB (
 	//
 	// don't rename not allocatable TNs
 	//
-	if (!TN_is_register(tn) || TN_is_dedicated(tn)) continue;
+	if (!TN_is_register(tn) || !TN_can_be_renamed(tn)) continue;
 
+	if (TN_STACK_empty(tn))
+	  Insert_Kill_op(bb, op, tn);
 	new_tn = tn_stack_top(tn);
 	Set_OP_opnd(op, i, new_tn);
       }  /* while opnds */
@@ -1421,8 +1460,34 @@ SSA_Rename_BB (
       // but do not touch dedicated TNs
       if (TN_can_be_renamed(tn)) {
 	//
-	new_tn = Copy_TN (tn);
-	tn_stack_push(tn, new_tn);
+	if (OP_cond_def(op)) {
+	  /* Create a PSI to merge the previous value with the new
+	     one. */
+	  if (TN_STACK_empty(tn))
+	    Insert_Kill_op(bb, op, tn);
+	  TN *old_tn = tn_stack_top(tn);
+
+	  new_tn = Copy_TN (tn);
+	  tn_stack_push(tn, new_tn);
+
+	  TN *opnd[4];
+	  opnd[0] = True_TN;
+	  opnd[1] = old_tn;
+	  opnd[2] = OP_guard(op);
+	  opnd[3] = new_tn;
+	  OP* psi_op = Mk_VarOP(TOP_psi, 1, 4, &tn, opnd);
+	  BB_Insert_Op_After(bb, op, psi_op);
+	  // tn_ssa_map is set, but psi_op has not been renamed yet
+	  SSA_unset(psi_op);
+
+	  TN *psi_tn = Copy_TN (tn);
+	  tn_stack_push(tn, psi_tn);
+	  op = psi_op;
+	}
+	else {
+	  new_tn = Copy_TN (tn);
+	  tn_stack_push(tn, new_tn);
+	}
 #if 0
 	fprintf(TFile, "  top of stack for ");
 	Print_TN(tn, FALSE);
@@ -2634,13 +2699,20 @@ Normalize_Psi_Operations()
 	    opndj++;
 	    break;
 	  }
-	  if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
-	    // opndj is the first operand with non disjoint predicate
-	    // with opndi
-	    reorder_psi_args = FALSE;
-	    break;
+	  // FdF 20051010: On stxp70, guardi and guardj may be the
+	  // same, but defi and defj can be guarded one on true and
+	  // the other on false.
+	  if (!((tn_guardi == PSI_guard(op, opndj)) &&
+		((TOP_is_guard_t(op_defi) && TOP_is_guard_f(op_defj)) ||
+		 (TOP_is_guard_f(op_defi) && TOP_is_guard_t(op_defj))))) {
+	    if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
+	      // opndj is the first operand with non disjoint predicate
+	      // with opndi
+	      reorder_psi_args = FALSE;
+	      break;
+	    }
 	  }
-
+	  
 	  // FdF 20051107: Must consider also the case where opndi
 	  // dominates the first operand, so as to return 0 instead of
 	  // -1.
@@ -3165,13 +3237,35 @@ SSA_UNIVERSE_Finalize ()
 }
 
 /* ================================================================
- *   repair_machine_ssa
+ *   repair_machine_constraints
+ *   For the moment we do:
+ *   - repair OP_same_res operations by inserting a copy before the
+ *   operation.
  * ================================================================
  */
 static void
-repair_machine_ssa ()
+repair_machine_constraints ()
 {
-  // not implemented
+  BB *bb;
+
+  // Repair op same res operations.
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    OP *op = BB_first_op(bb);
+    while (op != NULL) {
+      OP *next_op = OP_next(op);
+      INT res_idx, opnd_idx;
+      for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
+	if ((opnd_idx = OP_same_res(op, res_idx)) != -1 &&
+	    OP_result(op, res_idx) != OP_opnd(op, opnd_idx)) {
+	  OPS ops = OPS_EMPTY;
+	  Exp_COPY(OP_result(op, res_idx), OP_opnd(op, opnd_idx), &ops);
+	  BB_Insert_Ops_Before(OP_bb(op), op, &ops);
+	  Set_OP_opnd(op, opnd_idx, OP_result(op, res_idx));
+	}
+      }
+      op = next_op;
+    }
+  }
   return;
 }
 
@@ -3611,11 +3705,6 @@ SSA_Make_Conventional (
   }
 
   //
-  // First, fix interferences due to ISA/ABI constraints
-  //
-  repair_machine_ssa();
-
-  //
   // Delete the tn_to_new_name map that may have been left
   // from a previous invocation of the routine. And initialize
   // a new one.
@@ -3780,7 +3869,7 @@ SSA_Remove_Pseudo_OPs (
 
 	BB_Remove_Op(bb, op);
       }
-
+#ifdef TARG_ST200
       else if (OP_code(op) == TOP_movc) {
 	if (Trace_phi_removal) {
 	  fprintf(TFile, "  replacing a conditional move \n\n");
@@ -3797,6 +3886,7 @@ SSA_Remove_Pseudo_OPs (
 	  BB_Append_Ops(bb, &ops);
 	}
       }
+#endif
 
       else {
 
@@ -3852,6 +3942,14 @@ SSA_Remove_Pseudo_OPs (
   tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
   OP_MAP_Delete(phi_op_map);
   MEM_POOL_Pop (&ssa_pool);
+
+  //
+  // Last, fix machine constraints due to ISA/ABI constraints
+  //
+  repair_machine_constraints();
+
+
+
 
 #if 0
   //

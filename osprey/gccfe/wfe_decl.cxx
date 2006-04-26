@@ -515,7 +515,8 @@ WFE_Start_Function (tree fndecl)
       }
       else {
         if (TY_mtype (arg_ty_idx) == MTYPE_F4 &&
-            !TY_has_prototype (ST_pu_type (func_st)))
+            !TY_has_prototype (ST_pu_type (func_st)) &&
+	    !flag_short_double /* disable promotion if -fshort-double.  */)
           Set_ST_promote_parm (st);
 	WN_kid(wn,i) = WN_CreateIdname ( 0, ST_st_idx(st) );
 	++i;

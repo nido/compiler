@@ -80,7 +80,7 @@ extern void error (char*,...);	// from gnu
 #include "config_opt.h"
 #endif
 
-// #define WFE_DEBUG
+//#define WFE_DEBUG
 
 extern void dump_ty_idx (TY_IDX);
 
@@ -1137,6 +1137,40 @@ WFE_Array_Expr(tree exp,
     else *ty_idx = component_ty_idx;
 
     return wn;
+  } else if (code == (enum tree_code)STMT_EXPR) {
+    tree stmt = STMT_EXPR_STMT (exp);
+    wn = WFE_Array_Expr(stmt, ty_idx,
+			component_ty_idx,
+			component_offset,
+			field_id);
+
+    return wn;
+  } else if (code == (enum tree_code)EXPR_STMT) {
+    if (EXPR_STMT_EXPR(exp)) {
+      wn = WFE_Array_Expr(EXPR_STMT_EXPR(exp), ty_idx,
+			  component_ty_idx,
+			  component_offset,
+			  field_id);
+      return wn;
+    }
+  } else if (code == (enum tree_code)COMPOUND_STMT) {
+    tree expr = COMPOUND_BODY (exp);
+    if (expr) {
+      tree last = TREE_CHAIN (expr);
+      while (TREE_CHAIN (last))
+	{
+	  wn = WFE_Expand_Expr(expr, FALSE);
+	  if (wn)
+	    wn = WFE_Append_Expr_Stmt (wn);
+	  expr = last;
+	  last = TREE_CHAIN (last);
+	}
+      wn = WFE_Array_Expr(expr, ty_idx,
+			  component_ty_idx,
+			  component_offset,
+			  field_id);
+      return wn;
+    }
   } else if (code == VA_ARG_EXPR) {
     // [SC] va_arg.
     // Assign to temporary, then act on temporary.
@@ -1163,13 +1197,15 @@ WFE_Array_Expr(tree exp,
 	    ("WFE_Array_Expr: VA_ARG_EXPR not of type KIND_ARRAY"));
     return wn;
   }
+    
 #endif
 
 #endif /* TARG_ST */
 
   else {
     Is_True(FALSE,
-	    ("WFE_Array_Expr: unsupported node for base of ARRAY_REF"));
+	    ("WFE_Array_Expr: unsupported node for base of ARRAY_REF: %s",
+	     Operator_From_Tree [code].name));
     return NULL;
   }
 }
@@ -1809,7 +1845,7 @@ WFE_Expand_Expr_With_Sequence_Point (tree exp, TYPE_ID mtype)
   WN *wn;
 
 #ifdef WFE_DEBUG
-      printf("EXPR:\n");
+      printf("%s: EXPR (type %s):\n", __FUNCTION__, MTYPE_name(mtype));
       print_tree (stdout, exp);
 #endif
 
@@ -3791,7 +3827,7 @@ WFE_Expand_Expr (tree exp,
 	      case END_BUILTINS:
 		break;
 
-	      case BUILT_IN_STDARG_START:
+  	      case BUILT_IN_STDARG_START:
 	      {
 		arg1 = TREE_VALUE (arglist);
 		arg2 = TREE_VALUE (TREE_CHAIN (arglist));
@@ -4304,8 +4340,8 @@ WFE_Expand_Expr (tree exp,
 	      intrinsic_op = TRUE;
 	      break;
 #endif
-#if defined(TARG_ST200)
-#include "gfec_wfe_expr.h"	/* Will come from targinfo/st200/...*/
+#ifdef TARG_ST
+#include "gfec_wfe_expr.h"	/* Will come from targinfo/<arch>/...*/
 #endif /* defined(TARG_ST200) */
 	    default:
 	      DevWarn ("Encountered BUILT_IN: %d at line %d\n",
@@ -5034,7 +5070,9 @@ WFE_Expand_Expr (tree exp,
 
       case STMT_EXPR: {
         tree stmt = STMT_EXPR_STMT (exp);
-        wn = WFE_Expand_Expr(stmt, need_result);
+        wn = WFE_Expand_Expr(stmt, need_result,
+			     nop_ty_idx, component_ty_idx,
+			     component_offset, field_id, is_bit_field);
         break;
       }
         
@@ -5050,7 +5088,9 @@ WFE_Expand_Expr (tree exp,
               expr = last;
               last = TREE_CHAIN (last);
             }
-          wn = WFE_Expand_Expr(expr, need_result);
+          wn = WFE_Expand_Expr(expr, need_result, 
+			       nop_ty_idx, component_ty_idx,
+			       component_offset, field_id, is_bit_field);
         }
 
         break;
@@ -5074,12 +5114,16 @@ WFE_Expand_Expr (tree exp,
         
       case EXPR_STMT: {
         if (EXPR_STMT_EXPR(exp))
-          wn = WFE_Expand_Expr (EXPR_STMT_EXPR(exp), need_result);
+          wn = WFE_Expand_Expr (EXPR_STMT_EXPR(exp), need_result,
+				nop_ty_idx, component_ty_idx,
+				component_offset, field_id, is_bit_field);
         break;
       }
 
       case EXPR_WITH_FILE_LOCATION:
-        wn = WFE_Expand_Expr (EXPR_WFL_NODE(exp));
+        wn = WFE_Expand_Expr (EXPR_WFL_NODE(exp), need_result,
+			      nop_ty_idx, component_ty_idx,
+			      component_offset, field_id, is_bit_field);
         break;
 
       case COMPOUND_LITERAL_EXPR:
@@ -5241,10 +5285,10 @@ WFE_Expand_Expr (tree exp,
                code == COMPONENT_REF ||
 #ifdef TARG_ST
                /* (cbr) ddts 24439 */
-               code == RETURN_STMT || 
-               code == ASM_STMT || 
-               code == COMPOUND_STMT || 
-               code == STMT_EXPR || 
+               code == (enum tree_code)RETURN_STMT || 
+               code == (enum tree_code)ASM_STMT || 
+               code == (enum tree_code)COMPOUND_STMT || 
+               code == (enum tree_code)STMT_EXPR || 
 #endif
                ((code == COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
 	       ("WFE_Expand_Expr: NULL WHIRL tree for %s at line %d",
@@ -5278,6 +5322,11 @@ WFE_One_Stmt_Cleanup (tree exp)
 void WFE_One_Stmt (tree exp)
 {
   WN *wn;
+
+#ifdef WFE_DEBUG
+      printf("%s: EXPR:\n", __FUNCTION__);
+      print_tree (stdout, exp);
+#endif
 
   wfe_save_expr_stack_last = -1; // to minimize searches
   if (get_expr_stmts_for_value ())

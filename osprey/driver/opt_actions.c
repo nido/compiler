@@ -160,6 +160,17 @@ static struct {
 };
 #endif
 
+#ifdef MUMBLE_STxP70_BSP
+static struct {
+  string pname;
+  RUNTIME pid;
+} Runtime_Map[] =
+{
+  { NULL,	RUNTIME_NONE }
+};
+#endif
+
+
 int ofast = UNDEFINED;	/* -Ofast toggle -- implicit in Process_Ofast */
 char *Ofast_Name = NULL;/* -Ofast= name */
 
@@ -486,7 +497,7 @@ Process_Targ_Group ( string targ_args )
 	    }
 	    ++cp;
 	  }
-#ifndef TARG_ST200
+#ifndef TARG_ST
 	  flag = add_string_option(O_WlC, "-defsym,_IEEE_ENABLE_DEFINED=1");
 	  add_option_seen (flag);
 	  sprintf(buf, "-defsym,_IEEE_ENABLE=%#x", mask);
@@ -660,7 +671,35 @@ add_st200_phase_for_option( int flag )
   }
 }
 #endif /* TARG_ST200 */
-
+
+#ifdef TARG_STxP70
+/* ====================================================================
+ *
+ * add_stxp70_phase_for_option
+ *
+ *   Add flag to all needed phase for stxp70 target option
+ *
+ * ====================================================================
+ */
+static void
+add_stxp70_phase_for_option( int flag )
+{
+  add_phase_for_option(flag, P_be);
+  add_phase_for_option(flag, P_any_ipl);
+  add_phase_for_option(flag, P_any_fe);
+#if (GNU_FRONT_END==33)
+  /* (cbr) -TARG now passed to cpp */
+  add_phase_for_option(flag, P_gcpp);
+  add_phase_for_option(flag, P_gcpp_plus);
+#endif
+  if (!already_provided(flag)) {
+    /* [CL] Only prepend this option if
+       not already provided by the user */
+    prepend_option_seen (flag);
+  }
+}
+#endif /* TARG_STxP70 */
+
 /* ====================================================================
  *
  * Check_Target
@@ -688,7 +727,7 @@ Check_Target ( void )
     Ofast_Target ();
   }
 
-#ifdef ST200
+#ifdef TARG_ST200
   switch (proc) {
   case UNDEFINED:
     toggle(&proc, PROC_ST220);
@@ -715,6 +754,22 @@ Check_Target ( void )
   }
 #endif
 
+
+#ifdef TARG_STxP70
+  switch (proc) {
+  case UNDEFINED:
+    toggle(&proc, PROC_arch_1_3_1);
+    /* fallthru arch_1_3_1 default. */
+  case PROC_arch_1_3_1:
+    flag = add_new_option("-TARG:proc=arch_1_3_1");
+    break;
+  }
+
+  if (proc != PROC_NONE) {
+    add_stxp70_phase_for_option(flag);
+  }
+#endif
+
   if (abi == UNDEFINED) {
 #ifdef IA64
 	toggle(&abi, ABI_I64);
@@ -727,6 +782,8 @@ Check_Target ( void )
     	add_option_seen ( O_st100 );
 #elif ST200
 	toggle(&abi, ABI_ST200_embedded);
+#elif defined( TARG_STxP70 )
+	toggle(&abi, ABI_STxP70_embedded);
 #else
 	warning("abi should have been specified by driverwrap");
   	/* If nothing is defined, default to -n32 */
@@ -817,6 +874,10 @@ Check_Target ( void )
       case ABI_ST200_embedded:
       case ABI_ST200_PIC:
 	opt_val = ISA_ST220;
+	toggle ( &isa, opt_val );
+	break;
+      case ABI_STxP70_embedded:
+	opt_val = ISA_arch_1_3_1;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_IA32:
@@ -913,7 +974,7 @@ Check_Target ( void )
 	}
 	/* ST100 may have more than one implementation in the future */
 	if (abi == ABI_ST100 || abi == ABI_ST200_embedded
-	    || abi == ABI_ST200_PIC) {
+	    || abi == ABI_ST200_PIC || abi == ABI_STxP70_embedded) {
 	  opt_id = 0;
 	}
 	if (opt_id != 0) {
@@ -928,7 +989,7 @@ Check_Target ( void )
 	      abi, isa, proc );
   }
 }
-
+
 /* ====================================================================
  *
  * Routines to manage inlining choices (the -INLINE group and friends).
@@ -1650,6 +1711,18 @@ Process_Std(string option_args) {
 
 #endif
 
+#ifdef TARG_ST
+/* TB: add -Wuninitialized option with -Wall */
+void Add_Wuninitialized() {
+  int flag = add_new_option("-WOPT:warn_uninit=on") ;    
+  add_phase_for_option(flag, P_be);
+  if (!already_provided(flag)) {
+    prepend_option_seen (flag);
+  }
+}
+#endif
+
+
 #ifdef TARG_ST200
 
 #ifdef MUMBLE_ST200_BSP
@@ -1739,14 +1812,95 @@ Process_ST200_Targ (string option,  string targ_args )
 
 #endif
 }
+#endif /* TARG_ST200 */
 
-/* TB: add -Wuninitialized option with -Wall */
-void Add_Wuninitialized() {
-  int flag = add_new_option("-WOPT:warn_uninit=on") ;    
-  add_phase_for_option(flag, P_be);
-  if (!already_provided(flag)) {
-    prepend_option_seen (flag);
+
+#ifdef TARG_STxP70
+
+#ifdef MUMBLE_STxP70_BSP
+string stxp70_core, stxp70_soc, stxp70_board;
+string stxp70_core_name, stxp70_soc_name, stxp70_board_name;
+RUNTIME stxp70_runtime = UNDEFINED;
+string stxp70_targetdir ; /* Set iff targetdir is command-line overriden */
+#endif
+string stxp70_libdir;
+
+void
+Process_STxP70_Targ (string option,  string targ_args )
+{
+  char *targ;
+  int i;
+  int flag;
+  buffer_t buf;
+  string spath;
+
+  if (debug)
+    fprintf ( stderr, "Process_STxP70_Targ %s%s\n", option,targ_args);
+
+  if (strncasecmp (option, "-mlibdir", 8) == 0) {
+    if (is_directory(targ_args)) 
+      stxp70_libdir = string_copy (targ_args);
+    else
+      warning("libdir %s undefined. ", targ_args);
   }
+
+  if (strncasecmp (option, "-mtargetdir", 11) == 0) {
+      if (is_directory(targ_args)) {
+	/* Substitution should happen only if core/soc/board hiearchy exists */
+	/* So we cannot use the obvious set_phase_dir (get_phase_mask(P_alt_library), targ_args) ; */
+	stxp70_targetdir = string_copy (targ_args);
+      } else {
+	warning("targetdir %s undefined. setting to default", targ_args);
+      }
+  }
+
+  if (stxp70_targetdir) 
+    spath = stxp70_targetdir;
+  else
+    spath = get_phase_dir(P_alt_library);
+
+  if (strncasecmp (option, "-mcore", 6) == 0) {
+    for (i = 0; Proc_Map[i].pname != NULL; i++) {
+      if (same_string(targ_args, Proc_Map[i].pname)) {
+	toggle (&proc, Proc_Map[i].pid);
+      }
+    }
+    if ( proc == UNDEFINED ) {
+      warning("unsupported processor %s\n", targ_args);
+      proc = PROC_NONE;
+    }
+#ifdef MUMBLE_STxP70_BSP
+    sprintf(buf, "%s/core/%s", spath, targ_args);
+    stxp70_core = string_copy (buf);
+    stxp70_core_name = string_copy (targ_args);
+#endif
+  }
+
+#ifdef MUMBLE_STxP70_BSP
+  else if (strncasecmp (option, "-msoc", 5) == 0) {
+    sprintf(buf, "%s/soc/%s", spath, targ_args);
+    stxp70_soc = string_copy (buf);
+    stxp70_soc_name = string_copy (targ_args);
+  }
+
+  else if (strncasecmp (option, "-mboard", 7) == 0) {
+    sprintf(buf, "%s/board/%s", spath, targ_args);
+    stxp70_board = string_copy (buf);
+    stxp70_board_name = string_copy (targ_args);
+  }
+
+  else if (strncasecmp (option, "-mruntime", 9) == 0) {
+    for (i = 0; Runtime_Map[i].pname != NULL; i++) {
+      if (same_string(targ_args, Runtime_Map[i].pname)) {
+	toggle (&stxp70_runtime, Runtime_Map[i].pid);
+      }
+    }
+    if (stxp70_runtime == UNDEFINED ) {
+      warning("runtime %s undefined.", targ_args);
+    }
+  }
+
+#endif
 }
 #endif
 #include "opt_action.i"

@@ -1635,6 +1635,8 @@ WN_CreateIload (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc,
   OPCODE opc = OPCODE_make_op (opr, rtype, desc);
   WN *wn;
 
+  Is_True(WN_rtype(addr) != MTYPE_M, ("Type M used as address"));
+
   Is_True(MTYPE_is_pointer(WN_rtype(addr)) ||
           WN_rtype(addr) == MTYPE_U8 ||
 	  WN_rtype(addr) == MTYPE_U4 ||

@@ -483,6 +483,7 @@ void Perform_Induction_Variables_Optimizations() {
   Free_Dominators_Memory ();
 }
 
+#ifndef TARG_STxP70
 // ======================================================================
 //
 //  An implementation of load-store packing based on the loop
@@ -1995,4 +1996,6 @@ BOOL IVS_Analyze_Load_Store_Packing( CG_LOOP &cg_loop )
 
   return can_be_packed;
 }
+#endif /* !TARG_STxP70 */
+
 #endif

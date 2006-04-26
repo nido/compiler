@@ -602,8 +602,15 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
     TN *false_tn = OP_opnd(phi, fpos);
 
     // cond_tn1 need to be a pred register
+#ifdef TARG_ST200
     if (OP_code(TN_ssa_def (cond_tn1)) == TOP_mfb)
       cond_tn1 = OP_opnd(TN_ssa_def (cond_tn1), 0);
+#endif
+
+#ifdef TARG_STxP70
+    FmtAssert(Is_Predicate_REGISTER_CLASS( TN_register_class(cond_tn1)),
+	      ("cond_tn1 is not a predicate"));
+#endif
 
     Create_PSI_or_Select (select_tn, cond_tn1, true_tn, false_tn, &cmov_ops);
 
@@ -1636,8 +1643,10 @@ Rename_Local_Tns (TN *tn, TN *new_tn, OP*op)
 static TN*
 Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
 {
+  // [JV] On STxP70 it is possible to use andg to merge predicates.
   TN *new_tn = Dup_TN(pred_tn);
           
+#ifdef TARG_ST200
   OP *opb = TN_ssa_def (tn);
   if (opb && OP_code(opb) == TOP_mtb) {
     tn = OP_opnd(opb, 0);
@@ -1650,9 +1659,25 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
       TN_MAP_Set(btn_map, tn, tn2);
     }
   }
+#else
+#ifdef TARG_STxP70
+  {
+    // [JV] Force a copy even if registers are of the same type
+    // and hope that redundante copy will be removed.
+    TN *tn2 = tn;
+    if (!(tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
+      tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_gpr);
+      Exp_COPY(tn, tn2, ops);
+      TN_MAP_Set(btn_map, tn, tn2);
+    }
+  }
+#else
+#error TARGET
+#endif
+#endif
 
+#ifdef TARG_ST200
   opb = TN_ssa_def (pred_tn);
-
   if (opb && OP_code(opb) == TOP_mtb) {
     pred_tn = OP_opnd(opb, 0);
   }
@@ -1664,6 +1689,22 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
       TN_MAP_Set(btn_map, pred_tn, tn2);
     }
   }
+#else
+#ifdef TARG_STxP70
+  {
+    // [JV] Force a copy even if registers are of the same type
+    // and hope that redundante copy will be removed.
+    TN *tn2 = pred_tn;
+    if (!(pred_tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
+      pred_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_gpr);
+      Exp_COPY(pred_tn, tn2, ops);
+      TN_MAP_Set(btn_map, pred_tn, tn2);
+    }
+  }
+#else
+#error TARGET
+#endif
+#endif
 
   Expand_Logical_And (new_tn, pred_tn, tn, variant, ops);
 

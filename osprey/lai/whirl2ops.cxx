@@ -558,10 +558,12 @@ Start_New_Basic_Block (void)
 #if defined TARG_ST || defined EMULATE_LONGLONG
     bb = Split_Jumpy_BB (bb);
 #endif
-    if ( dedicated_seen )
+    if ( dedicated_seen ) {
       Set_BB_has_globals( bb );
-    else
+    }
+    else {
       Reset_BB_has_globals( bb );
+    }
     bb = Gen_And_Append_BB (bb);
   } else if (BB_entry(bb) || BB_exit(bb)) {
     // If current basic block is a entry point or an exit, create a new
@@ -595,10 +597,12 @@ Start_New_Basic_Block (void)
   }
 #endif
 
-  if (PU_has_region(Get_Current_PU()))
+  if (PU_has_region(Get_Current_PU())) {
     BB_rid(bb) = Non_Transparent_RID(current_region);
-  else
+  }
+  else {
     BB_rid(bb) = NULL;
+  }
 
   total_bb_insts = 0;
   Last_Processed_OP = NULL;
@@ -2706,6 +2710,9 @@ Handle_STID (
 	TN *stidTN = TN_CORRESPOND_Get(result, kid);
 	Exp_COPY(stidTN, ldidTN2, &New_OPs);
       } else if (Is_Predicate_REGISTER_CLASS(TN_register_class(ldidTN))) {
+#if !defined(TARG_ST) ||  defined(TARG_IA64)
+	/* [CG]: This code handle the double predicate definition for IA64
+	   conditionalized it under TARG_IA64. */
 	Is_True(Is_Predicate_REGISTER_CLASS(TN_register_class(result)),
 		  ("result should be predicate register class"));
 	PREG_NUM cpreg_num = WN_load_offset(kid) + 1;
@@ -2713,6 +2720,7 @@ Handle_STID (
 	PREG_NUM cresult_num = WN_store_offset(stid) + 1;
 	TN *cresult = PREG_To_TN_Array[cresult_num];
 	Exp_COPY (cresult, ctn, &New_OPs);
+#endif
       }
     }
 
@@ -3233,6 +3241,10 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   FmtAssert(Lai_Code || INTRN_cg_intrinsic(id), 
                           ("Handle_INTRINSIC_OP: not a cg INTRINSIC_OP"));
 
+  if (Trace_Exp) {
+    fprintf(TFile, "Handle_INTRINSIC_OP %s\n", INTRN_c_name(id));
+  }
+
 #ifdef TARG_ST
 
   FmtAssert(Inline_Intrinsics_Allowed,("inlining intrinsics not allowed"));
@@ -3534,7 +3546,7 @@ Expand_Expr (
     /* For TAS nodes, if the new opcode is noop, we can ignore the TAS.
      * For PAREN and PARM nodes, ignore it for now.
      */
-      return Expand_Expr (WN_kid0(expr), parent, result);
+    return Expand_Expr (WN_kid0(expr), parent, result);
   }
   /* get #opnds from topcode or from #kids of whirl
    * (special cases like store handled directly). */
@@ -3853,7 +3865,7 @@ Expand_Expr (
 	return NULL;
 
   case OPR_INTRINSIC_OP:
-	return Handle_INTRINSIC_OP (expr, result);
+    return Handle_INTRINSIC_OP (expr, result);
 
   default:
     for (i = 0; i < num_opnds; i++) {
@@ -4639,7 +4651,7 @@ Find_Asm_Out_Parameter_Load (const WN* stmt, PREG_NUM preg_num, ST** ded_st)
       *ded_st = WN_st(stmt);
     }
   }
-#ifndef TARG_ST200
+#ifndef TARG_ST
   else {
     DevWarn("didn't find out store for asm preg %d", preg_num);
   }
@@ -4722,7 +4734,7 @@ Handle_ASM (const WN* asm_wn)
     }
   }
   
-#ifdef TARG_ST200
+#ifdef TARG_ST
   OPS reload_ops = OPS_EMPTY;
 #endif
 
@@ -4771,6 +4783,10 @@ Handle_ASM (const WN* asm_wn)
       (strchr(constraint, '&') != NULL);
     ASM_OP_result_memory(asm_info)[num_results] = 
       (strchr(constraint, 'm') != NULL);
+#ifdef TARG_ST
+    // Initialize same res info to -1
+    ASM_OP_result_same_opnd(asm_info)[num_results] = -1;
+#endif
     
     result[num_results] = tn;
     num_results++;
@@ -4780,10 +4796,9 @@ Handle_ASM (const WN* asm_wn)
     // it is possible that wopt optimized away the output store
     if (load) {
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
       if (TN_register_class(tn) != Register_Class_For_Mtype(WN_rtype(load))) {
-	FmtAssert(TN_register_class(tn) == ISA_REGISTER_CLASS_branch, 
-		  ("confused"));
+	/* We may need to convert to the correct register class. */
 	TN* tmp = Build_RCLASS_TN (Register_Class_For_Mtype(WN_rtype(load)));
 	Exp_COPY(tmp, tn, &reload_ops);
 	tn = tmp;
@@ -4841,6 +4856,13 @@ Handle_ASM (const WN* asm_wn)
     ASM_OP_opnd_position(asm_info)[num_opnds] = WN_asm_opnd_num(asm_input);
     ASM_OP_opnd_memory(asm_info)[num_opnds] = 
       (strchr(constraint, 'm') != NULL);
+#ifdef TARG_ST
+    // Update result_same_opnd if the operand matches a result
+    if (isdigit(*constraint)) {
+      INT res_idx = *constraint-'0';
+      ASM_OP_result_same_opnd(asm_info)[res_idx] = num_opnds;
+    }
+#endif
 
     opnd[num_opnds] = tn;
     num_opnds++;
@@ -4848,10 +4870,9 @@ Handle_ASM (const WN* asm_wn)
     // we should create a TN even if it's an immediate
     // constraints on immediates are target-specific
     if (TN_is_register(tn)) {
-#ifdef TARG_ST200
+#ifdef TARG_ST
       if (TN_register_class(tn) != Register_Class_For_Mtype(WN_rtype(load))) {
-	FmtAssert(TN_register_class(tn) == ISA_REGISTER_CLASS_branch, 
-		  ("confused"));
+	/* We may need to convert to the corect register class. */
 	TN* tmp = Build_RCLASS_TN (Register_Class_For_Mtype(WN_rtype(load)));
 	Expand_Expr (load, NULL, tmp);
 	Exp_COPY(tn, tmp, &New_OPs);
@@ -4869,7 +4890,7 @@ Handle_ASM (const WN* asm_wn)
   }
   OPS_Append_Op(&New_OPs, asm_op);
   OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
-#ifdef TARG_ST200
+#ifdef TARG_ST
   // TODO: Determine what ASM_livein/out are ?
   ASMINFO* info = TYPE_PU_ALLOC (ASMINFO);
   ISA_REGISTER_CLASS rc;
@@ -5490,8 +5511,9 @@ Convert_WHIRL_To_OPs (
     break;
   }
 
-  if ( stmt )
+  if ( stmt ) {
     convert_stmt_list_to_OPs( stmt );
+   }
 
   /* If we have any OPs that have not been entered into a basic block,
    * do so now. This can happen if there is no exit for a procedure.

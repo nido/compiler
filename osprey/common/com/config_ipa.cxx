@@ -518,6 +518,7 @@ BOOL	INLINE_All = FALSE;	/* Inline everything possible? */
 //CL: make 'inline' functions must-inline instead of may-inline
 BOOL	INLINE_All_Inline = FALSE; /* Mark must-inline 'inline' functions */
 BOOL	INLINE_Only_Inline = TRUE; /* Mark may-inline only 'inline' functions */
+BOOL INLINE_Only_Inline_Set = FALSE; /* Is only_inline set?. */
 #endif
 BOOL    INLINE_Optimize_Alloca = TRUE; /* when inlining calls with alloca fix the stack and pop */
 BOOL	INLINE_Enable_Copy_Prop = TRUE; /* Copy Propogation during stand-alone inlining? */
@@ -574,7 +575,7 @@ static OPTION_DESC Options_INLINE[] = {
 	  0, 0, 0,	&INLINE_All_Inline,	NULL,
 	  "Force inlining of all 'inline' functions" },
     { OVK_BOOL,	OV_VISIBLE,	FALSE, "only_inline",	"",
-	  0, 0, 0,	&INLINE_Only_Inline,	NULL,
+	  0, 0, 0,	&INLINE_Only_Inline,	&INLINE_Only_Inline_Set,
 	  "Attempt to inline only 'inline' functions" },
 #endif
     { OVK_BOOL,	OV_SHY,		FALSE, "alloca",	"alloca",

@@ -2460,7 +2460,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     { return_value =  FALSE; goto return_point; }
       
 
-#ifndef TARG_ST200
+#ifndef TARG_ST
   // [CG]: Don't ignore spills even in cyclic world
   // We may be called for cyclic dependence out of SWP.
   // SWP should handle this or we should ensure that we are here for SWP.
@@ -3323,7 +3323,7 @@ Add_BRANCH_Arcs(BB* bb, std::list<BB*> bb_list, BOOL include_latency)
 	}
 
 	// Build any cross-bb MISC dependences here. 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	// Arthur: this routine will also get the dependence for us
 	INT16 latency;
 	if (CGTARG_Dependence_Required(op, cur_xfer_op, &latency)) {
@@ -3358,7 +3358,7 @@ Add_BRANCH_Arcs(BB* bb, std::list<BB*> bb_list, BOOL include_latency)
 	}
 
 	// Build any cross-bb MISC dependences here.
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	INT16 latency;
 	if (CGTARG_Dependence_Required(cur_xfer_op, op, &latency)) {
 	  new_arc_with_latency(CG_DEP_MISC, cur_xfer_op, op, latency, 0, 0,FALSE);
@@ -3404,7 +3404,7 @@ Add_MISC_Arcs(BB* bb)
 	// not real register dependences, set the omega value conservative
 	// to 1.
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	INT16 latency;
 	if (CGTARG_Dependence_Required(prev_op, op,&latency)) {
 	  new_arc_with_latency(CG_DEP_MISC, prev_op, op, latency, 1, 0, FALSE);
@@ -3420,7 +3420,7 @@ Add_MISC_Arcs(BB* bb)
     // Build the acyclic dependence edge here.
 
     for (next_op = OP_next(op); next_op; next_op = OP_next(next_op)) {
-#ifdef TARG_ST200
+#ifdef TARG_ST
       // Arthur: latency not necessarily 0 !
       INT latency;
       if (CGTARG_Dependence_Required(op, next_op, &latency)) {

@@ -445,7 +445,7 @@ void WFE_Expand_Decl(tree decl)
   switch (TREE_CODE(decl)) { 
 
     case CONST_DECL:
-#ifndef TARG_ST200
+#ifndef TARG_ST
       /* (cbr) nothing to do */
       DevWarn("WFE_Expand_Decl:  don't know what to do with CONST_DECL");
 #endif

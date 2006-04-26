@@ -1423,6 +1423,7 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
     INT32 LOW_PROB_FOR_LD_OP  = (40);
     INT32 LOW_PROB_FOR_LONG_LATENCY = (40);
 
+#ifdef Is_True_On
     if (getenv("PROB_ALU"))
       LOW_PROB_FOR_ALU_OP = atoi(getenv("PROB_ALU"));
 
@@ -1431,7 +1432,7 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
 
     if (getenv("PROB_LONG"))
       LOW_PROB_FOR_LONG_LATENCY = atoi(getenv("PROB_LONG"));
-
+#endif
 #else
     #define PROG_SCALE          (100)
     #define LOW_PROB_FOR_ALU_OP (70)
@@ -1968,6 +1969,7 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
     if (IPFEC_Enable_LICM < 2)
       return code_motion_num;
 
+#ifdef TARG_ST200
     /* Add tags on explicit memory references, so as to group together
        memory operations to a same location. */
     Identify_Memory_Groups ();
@@ -1976,6 +1978,9 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
     for (LI_MEMORY_INFO *memory = _memory_groups; memory; memory = memory->Next()) {
 	code_motion_num += Perform_Scalarization (memory);
     }
+#elif defined(TARG_STxP70)
+    /* Not activated for STxP70. */
+#endif
 #endif
 
     return code_motion_num;
@@ -1998,15 +2003,39 @@ Scalarize_OP(OP *memop, TN *scalar) {
 	    TN *arg2 = NULL;
 	    OP *scalar_op;
 	    if (size == 2) {
+#ifdef TARG_ST200
 		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_zxth : TOP_sxth;
+#else
+#ifdef TARG_STxP70
+		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_extuh : TOP_exth;
+#else
+		opcode = TOP_UNDEFINED;
+#endif
+#endif
 	    }
 	    else if (size == 1) {
 		if (TOP_is_unsign(OP_code(memop))) {
+#ifdef TARG_ST200
 		    opcode = TOP_and_i;
+#else
+#ifdef TARG_STxP70
+		    opcode = TOP_and_i8;
+#else
+		    opcode = TOP_UNDEFINED;
+#endif
+#endif
 		    arg2 = Gen_Literal_TN(0xff, 4);
 		}
 		else {
+#ifdef TARG_ST200
 		    opcode = TOP_sxtb;
+#else
+#ifdef TARG_STxP70
+		    opcode = TOP_extb;
+#else
+		    opcode = TOP_UNDEFINED;
+#endif
+#endif
 		}
 	    }
 	    scalar_op = Mk_OP(opcode, OP_result(memop, 0), scalar, arg2);
@@ -2165,7 +2194,16 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 		/* Generate a black-hole location and set
                    memory->Addr() to it in the prolog. */
 
+#ifdef TARG_ST200
 		TN *addrTN = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
+#else
+#ifdef TARG_STxP70
+		TN *addrTN = Gen_Register_TN (ISA_REGISTER_CLASS_gpr, Pointer_Size);
+#else
+		TN *addrTN = NULL;
+		FmtAssert(FALSE,("do not know how to generate address TN"));
+#endif
+#endif
 		memory->Set_Addr(addrTN);
 		Expand_BlackHole(mem_op, addrTN, &New_OPs);
 		BB_Append_Ops(_prolog, &New_OPs);
@@ -2200,7 +2238,7 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
        uninitialized use. */		
     if (speculate && !memory->Hoisted()) {
         OPS New_OPs = OPS_EMPTY;
-        Build_OP(TOP_mov_r, memory->Get_Scalar(), Zero_TN, &New_OPs);
+	Expand_Immediate (memory->Get_Scalar(), Gen_Literal_TN(0, 4), FALSE, &New_OPs);
         BB_Append_Ops(_prolog, &New_OPs);
     }
 
