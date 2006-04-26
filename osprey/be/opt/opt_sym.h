@@ -356,9 +356,16 @@ private:
     mUINT32 emitter_flags;
   } u;
 
-  AUX_STAB_ENTRY(void)                   
+  AUX_STAB_ENTRY(void)
 		{ st_chain = 0; 
 		  st = NULL;
+#ifdef TARG_ST
+		  // FdF 20060426: Sometimes (in opt_ssa.cxx for
+		  // example), mclass is used in a context where it
+		  // was never initialized (on Default_vsym() entry
+		  // for example).
+		  _mclass = 0;
+#endif
 		  _flags = 0;
 		  _more_flags = 0;
 		  _spre_node = NULL;

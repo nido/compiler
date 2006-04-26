@@ -761,6 +761,10 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
   sym->Set_home_sym((AUX_ID) 0);
   sym->Set_zero_cr(NULL);
   sym->Set_field_id(field_id);
+#ifdef TARG_ST
+  // FdF 20060426: otherwise used uninitialized in opt_ssa.cxx.
+  sym->Set_mclass(0);
+#endif
 
   if (is_scalar) {
     sym->Set_stype(VT_NO_LDA_SCALAR);
@@ -907,6 +911,10 @@ OPT_STAB::Create_vsym(EXPR_KIND k)
   AUX_STAB_ENTRY *vsym = Aux_stab_entry(retv);
   vsym->Set_stype(VT_SPECIAL_VSYM);
   vsym->Clear_flags();
+#ifdef TARG_ST
+  // FdF 20060426: otherwise used uninitialized in opt_ssa.cxx
+  vsym->Set_mclass(0);
+#endif
   vsym->Set_st(NULL);
   vsym->Set_st_ofst(0);
   vsym->Set_nonzerophis(NULL);
