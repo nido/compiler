@@ -373,7 +373,7 @@ Fully_Unroll_Short_Loops(WN* wn)
     // the loop, and fully unroll those loops for which the unroll
     // factor is greater or equal to the trip_count.
     INT required_unroll = 0;
-    if (trip_count > LNO_Full_Unrolling_Limit && Get_Trace(TP_TEMP, 0x40)) {
+    if (trip_count > LNO_Full_Unrolling_Limit) {
       for (WN *wn_pragma = WN_prev(wn); wn_pragma; wn_pragma = WN_prev(wn_pragma)) {
 	OPCODE op = WN_opcode(wn_pragma);
 	if (op != OPC_PRAGMA && op != OPC_XPRAGMA)
