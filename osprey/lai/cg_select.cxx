@@ -223,6 +223,8 @@ CG_SELECT_Statistics()
   }
 }
 
+#ifdef SUPPORTS_SELECT
+
 /* ================================================================
  *
  *   Initialize/Finalize
@@ -3205,3 +3207,5 @@ draw_CFG(void)
 
   dv.Event_Loop (NULL);
 }
+
+#endif /* SUPPOTS_SELECT */
