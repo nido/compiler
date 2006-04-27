@@ -4301,10 +4301,10 @@ Expand__mpfcw(
       }
     }
   }
+
   if (! overflow_possible) {
     TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c1 = Gen_Literal_TN(1, 4) ;
-
     Build_OP (	TOP_mulll_r,	r0_26_2,	i0,	i1,	ops) ;
     Build_OP (	TOP_shl_i,	o0,	r0_26_2,	c1,	ops) ;
   } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfrac_r)) { 
@@ -4318,25 +4318,21 @@ Expand__mpfcw(
     Build_OP (	TOP_mulfrac_r,	o0,	r0_20_0,	r0_21_0,	ops) ;
   }  else {
     TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+    TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-    TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-    TN *r0_21_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-    TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
     Build_OP (    TOP_mov_i,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
-    TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-    TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    TN *c0x40000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+    TN *c0x40000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x40000000), 4) ;
+    Build_OP (    TOP_mov_i,      c0x40000000,    c0x40000000_ltn,        ops) ;
     TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
 #undef __EXTS32TOS64
-    Build_OP (	TOP_mulll_r,	r0_26_2,	i0,	i1,	ops) ;
-    Build_OP (	TOP_cmpeq_r_r,	r0_20_0,	i0,	c0xffff8000,	ops) ;
-    Build_OP (	TOP_cmpeq_r_r,	r0_21_1,	i0,	i1,	ops) ;
-    Build_OP (	TOP_andl_r_b,	b0_0_3,	r0_20_0,	r0_21_1,	ops) ;
-    Build_OP (	TOP_shl_i,	r0_16_3,	r0_26_2,	c1,	ops) ;
-    Build_OP (	TOP_slctf_r,	o0,	b0_0_3,	r0_16_3,	c0x7fffffff,	ops) ;
+    Build_OP (    TOP_mulll_r,    r0_16_2,        i0,     i1,     ops) ;
+    Build_OP (    TOP_cmpne_r_b,  b0_0_3, r0_16_2,        c0x40000000,    ops) ;
+    Build_OP (    TOP_shl_i,      r0_16_3,        r0_16_2,        c1,     ops) ;
+    Build_OP (    TOP_slct_r,     o0,     b0_0_3, r0_16_3,        c0x7fffffff,    ops) ;
   }
 } /* Expand__mpfcw */
 
