@@ -3104,6 +3104,15 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
   loop->Set_iv(primary->Var());
   if (_trace) { fprintf(TFile, "PRIMARY "); primary->Print(TFile); }
 
+#ifdef TARG_ST
+  // FdF 20060531: Do not replace secondary IVs on loops that are
+  // detected invalid. This detection is made in PREOPT, and the only
+  // known case of invalid do loop is when a normalized IV (.do_ivar)
+  // is introduced (bug 190B/59)
+  if (!loop->Valid_doloop())
+    return;
+#endif
+
   for (iv_cand_iter = iv_cand_container.begin(); 
        iv_cand_iter != iv_cand_container.end();
        iv_cand_iter++) {
@@ -3164,14 +3173,15 @@ IVR::Convert_all_ivs(BB_LOOP *loop)
       continue;
     }
 
+#ifdef TARG_ST
     // FdF 20060425: For performance reason, and util strength
     // reduction is not improved to handle more complex expression,
     // disable secondary IV replacement when this will introduce a MUL
     // operation.
-    if ((secondary->Step_value()->Kind() != CK_CONST) ||
-	((secondary->Step_value()->Const_val() != 1) &&
-	 (secondary->Step_value()->Const_val() != -1)))
+    if (((secondary->Step_value()->Kind() != CK_CONST) ||
+	 (secondary->Step_value()->Const_val() != 1)))
       continue;
+#endif
 
     if (secondary->Init_value() != NULL) {
       // Update_exit_stmt must run before Replace_secondary_IV because
