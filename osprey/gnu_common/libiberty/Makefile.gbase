@@ -115,7 +115,7 @@ OBJS =	alloca.o	\
 	bcmp.o \
 	regex.o
 
-ifneq ($(HOST_OS),MINGW)
+ifeq ($(HOST_OS),MINGW)
 OBJS +=	cygpath.o	
 endif
 
