@@ -77,7 +77,6 @@ OBJS =	alloca.o	\
 	concat.o	\
 	cp-demangle.o 	\
 	cplus-dem.o 	\
-	cygpath.o	\
 	dyn-string.o	\
 	fdmatch.o	\
 	fibheap.o	\
@@ -116,7 +115,9 @@ OBJS =	alloca.o	\
 	bcmp.o \
 	regex.o
 
-
+ifneq ($(HOST_OS),MINGW)
+OBJS +=	cygpath.o	
+endif
 
 install: last
 default: local
