@@ -77,6 +77,7 @@ OBJS =	alloca.o	\
 	concat.o	\
 	cp-demangle.o 	\
 	cplus-dem.o 	\
+	cygpath.o	\
 	dyn-string.o	\
 	fdmatch.o	\
 	fibheap.o	\

@@ -1,6 +1,32 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun  6 08:11:42 CEST 2006
+	Author:    monat
+	Parent:    svn://gnx287.gnb.st.com/open64/trunk
+	Branch:    svn://gnx287.gnb.st.com/open64/branches/monat/dev-mingw32
+
+Description:
+------------
+	* [trunk] Merge of monat/dev-mingw32 at r8652 with approval codex #14653 
+
+
+Modified Files:
+---------------
+	M      osprey/be/lno/Makefile.gbase
+	M      osprey/be/whirl2c/Makefile.gbase
+	M      osprey/gnu_common/include/libiberty.h
+	A  +   osprey/gnu_common/libiberty/cygpath.c
+	M      osprey/gnu_common/libiberty/Makefile.gbase
+	A  +   osprey/libSYS/wrap_file.c
+	M      osprey/libSYS/Makefile.gbase
+	M      osprey/libSYS/SYS.c
+	M      osprey/make/gcommondefs
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 26 15:01:02 CEST 2006
 	Author:    guillon
 	Parent:    svn://gnx287.gnb.st.com/open64/trunk

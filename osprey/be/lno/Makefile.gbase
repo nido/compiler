@@ -623,7 +623,7 @@ $(LNOPT_CXX_OBJS) : %.o : %.cxx
 
 lno.dll lno_dll.a : $(LNOPT_OBJS) $(LNOPT_CXX_OBJS) lno_DllMain.ho $(LNODEPLIBS)
 	$(CXX) --shared -o lno.dll -Wl,--out-implib,lno_dll.a \
-	$(LNOPT_OBJS) $(LNOPT_CXX_OBJS) $(LNODEPLIBS) $(LDDSOOPTS) lno_DllMain.ho \
+	$(LNOPT_OBJS) $(LNOPT_CXX_OBJS) $(LNODEPLIBS) $(LDDSOOPTS) $(LDOPTS) lno_DllMain.ho \
 	-Wl,--image-base=0x80000000
 endif
 

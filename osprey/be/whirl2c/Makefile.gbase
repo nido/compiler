@@ -311,7 +311,7 @@ LLDLIBS	= -none -lc
 endif
 
 ifeq ($(HOST_OS), MINGW)
-LLDLIBS += $(BUILD_AREA)/libSYS/libSYS.a
+LLDLIBS += $(BUILD_AREA)/libSYS/libSYS.a $(BUILD_AREA)/libiberty/libiberty.a
 endif
 
 default: first
