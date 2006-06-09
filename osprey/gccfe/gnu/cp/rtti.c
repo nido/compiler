@@ -1454,8 +1454,15 @@ emit_tinfo_decl (decl_ptr, data)
   tree decl = *decl_ptr;
   tree type = TREE_TYPE (DECL_NAME (decl));
   int non_public;
-  int in_library = typeinfo_in_lib_p (type);
   tree var_desc, var_init;
+#ifdef TARG_ST
+  int in_library;
+  if (!type)
+    return 0;
+  in_library = typeinfo_in_lib_p (type);
+#else
+  int in_library = typeinfo_in_lib_p (type);
+#endif
   
   import_export_tinfo (decl, type, in_library);
   if (DECL_REALLY_EXTERN (decl) || !DECL_NEEDED_P (decl))

@@ -108,9 +108,13 @@ extern void Setup_EH_Region ();
 extern "C" {
 #endif /* __cplusplus */
 
+#ifdef TARG_ST
+extern __attribute__ ((weak)) void WFE_Expand_Start_Stmt_Expr (tree);
+extern __attribute__ ((weak)) void WFE_Expand_End_Stmt_Expr (tree);
+#else
 extern void WFE_Expand_Start_Stmt_Expr (tree);
 extern void WFE_Expand_End_Stmt_Expr (tree);
-
+#endif
 
 #ifdef __cplusplus
 }

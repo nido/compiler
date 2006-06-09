@@ -4469,6 +4469,14 @@ expand_anon_union_decl (decl, cleanup, decl_elts)
 	    SET_DECL_RTL (decl_elt, x);
 	  else
 	    SET_DECL_RTL (decl_elt, adjust_address_nv (x, mode, 0));
+
+#ifdef TARG_ST
+      // (cbr) support for anonymous union. ST * indexed from tree decl
+      // don't use rtx. (plumhall_cpp t07a, t09c)
+      char *name = XSTR (XEXP (x, 0), 0);
+      if (name)
+	SET_DECL_ASSEMBLER_NAME (decl_elt, get_identifier(name));
+#endif
 	}
       else if (GET_CODE (x) == REG)
 	{

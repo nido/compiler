@@ -3757,8 +3757,16 @@ layout_nonempty_base_or_field (record_layout_info rli,
 	 a data member.  */
       /* G++ 3.2 did not check for overlaps when placing a non-empty
 	 virtual base.  */
+#ifdef TARG_ST
+      /* (cbr) check pro-release-1-5-0-B/31
+	 vho_lower scalarize field by field introducing a mismatch with
+         TREE_SIZE */ 
+      if (!abi_version_at_least (2))
+#else
       if (!abi_version_at_least (2) && binfo && TREE_VIA_VIRTUAL (binfo))
+#endif
 	break;
+
       if (layout_conflict_p (field_p ? type : binfo, offset, 
 			     offsets, field_p))
 	{
@@ -5208,8 +5216,13 @@ layout_class_type (tree t, tree *virtuals_p)
     CLASSTYPE_AS_BASE (t) = t;
 
   /* Every empty class contains an empty class.  */
-  if (CLASSTYPE_EMPTY_P (t))
+  if (CLASSTYPE_EMPTY_P (t)) {
     CLASSTYPE_CONTAINS_EMPTY_CLASS_P (t) = 1;
+#ifdef TARG_ST200
+    /* (cbr) plumhall_cpp/931Y33. causes a problem with load speculation in if conversion when alignment can be 1 or 4 depending if speculating with a vtable or not while pfm conversion */
+    TYPE_ALIGN (t) = MAX (TYPE_ALIGN (t), BITS_PER_WORD);
+#endif
+  }
 
   /* Set the TYPE_DECL for this type to contain the right
      value for DECL_OFFSET, so that we can use it as part

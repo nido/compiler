@@ -105,7 +105,7 @@ HOSTDEFS += -DFRONT_END
 HOSTDEFS += -DUSE_DECL_SRCPOS
 HOSTDEFS += -D_NEW_SYMTAB
 
-HOSTDEFS += -DFRONT_END_C
+HOSTDEFS += -DFRONT_END_CPLUSPLUS
 HOSTDEFS += -DCFE -DCIL
 HOSTDEFS += -DDO_IL_LOWERING=0
 HOSTDEFS += -DNO_USR_INCLUDE=TRUE
@@ -190,8 +190,8 @@ else
 INCLUDE_DIR 		= $(BUILD_AREA)/include
 endif
 
-GNU_DIR			= $(BUILD_TOT)/g++fe/gnu
-GNU_CONFIG_DIR		= $(BUILD_TOT)/g++fe/gnu/config
+GNU_DIR			= $(BUILD_TOT)/gccfe/gnu
+GNU_CONFIG_DIR		= $(BUILD_TOT)/gccfe/gnu/config
 GNU_COMMON_DIR		= $(BUILD_TOT)/gnu_common
 
 GNU_TARG_DIR = $(GNU_DIR)/$(BUILD_TARGET_DIR)
@@ -203,7 +203,7 @@ ifeq ($(BUILD_TARGET), MIPS)
 GNU_CONFIG_TARG_DIR = $(GNU_CONFIG_DIR)/mips
 endif
 
-TARG_GNU_DIR            = $(TARGDIR)/g++fe/gnu
+TARG_GNU_DIR            = $(TARGDIR)/gccfe/gnu
 TARG_COMUTIL_DIR	= $(TARGDIR)/libcomutil
 # TARG_LIBM_DIR		= $(TARGDIR)/libm
 TARG_CMPLRS_DIR		= $(TARGDIR)/libcmplrs
@@ -228,6 +228,7 @@ INC_DIRS =		\
   $(COMMON_TARG_INFO_ACCESS_DIR) \
   $(COMMON_TARGINFO_CONFIG_DIR)\
   $(FE_DIR)		\
+  $(GNU_DIR)/../		\
   $(GNU_DIR)		\
   $(GNU_TARG_DIR)	\
   $(GNU_CONFIG_DIR)	\
@@ -351,7 +352,8 @@ COMUTIL_OBJS = $(TARG_COMUTIL_DIR)/libcomutil.a
 CMPLRS_OBJS  = $(TARG_CMPLRS_DIR)/libcmplrs.a
 LIBIBERTY_OBJS = $(TARG_LIBIBERTY_DIR)/libiberty.a
 LIBSYS_OBJS = $(TARGDIR)/libSYS/libSYS.a
-LIBGNU_OBJS = $(TARG_GNU_DIR)/libgfecc.a
+LIBGNU_OBJS = $(TARG_GNU_DIR)/libgfecc.a $(TARG_GNU_DIR)/libgfec.a
+GNU_CPP_OBJS = $(TARG_GNU_DIR)/libcpp.a
 
 ifneq ($(HOST_OS),CYGWIN_NT)
 # all we need is in libcygwin
@@ -369,12 +371,12 @@ default: first
 #  The commands in this section are done BEFORE any other target is 
 #  built.
 #----------------------------------------------------------------------
-first:
+$(LIBGNU_OBJS) first:
 	cd $(TARG_GNU_DIR) && $(MAKE)
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
 
-local: gnu_libs
+local: 
 	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
@@ -390,12 +392,7 @@ install: last
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
 
-gnu_libs:
-	cd $(TARG_GNU_DIR) && $(MAKE) `basename $(LIBGNU_OBJS)`
-
-$(LIBGNU_OBJS): gnu_libs
-
-GFECC_OBJS=$(OBJECTS) $(LIBGNU_OBJS) $(COMUTIL_OBJS)  $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS)
+GFECC_OBJS=$(FRONT_END_OBJS) $(LIBGNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS) $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS)
 
 gfecc$(HEXE) : $(GFECC_OBJS)
 	$(CXXF) -o $@ $(GFECC_LDOPTS) $(LDOPTS) $(GFECC_OBJS) $(GFECC_LDLIBS) $(LDLIBS)
@@ -403,7 +400,6 @@ gfecc$(HEXE) : $(GFECC_OBJS)
 #----------------------------------------------------------------------
 #  Include the usual commonrules
 #----------------------------------------------------------------------
-BUILD_SUBDIRS = gnu
 include $(COMMONRULES)
 
 ifeq ($(HOST_OS), MINGW)

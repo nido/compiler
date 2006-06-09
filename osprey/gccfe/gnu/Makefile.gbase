@@ -109,7 +109,7 @@ HOSTDEFS += -DGNU_FRONT_END=33
 # HOSTDEFS += -DFRONT_END
 # HOSTDEFS += -DUSE_DECL_SRCPOS
 
-# HOSTDEFS += -DFRONT_END_C
+HOSTDEFS += -DFRONT_END_C
 # HOSTDEFS += -DCFE -DCIL
 # HOSTDEFS += -DDO_IL_LOWERING=0
 # HOSTDEFS += -DNO_USR_INCLUDE=TRUE
@@ -200,6 +200,7 @@ endif
 
 SRC_DIRS =		\
   $(GNU_DIR)		\
+  $(GNU_DIR)/cp		\
   $(GNU_TARG_DIR)	\
   $(GNU_CONFIG_TARG_DIR) 
 
@@ -225,7 +226,7 @@ GNU_SRCS =		\
   c-objc-common.c	\
   c-dump.c 		\
   c-errors.c		\
-  c-lang.c		\
+  c-lex.c		\
   caller-save.c		\
   calls.c		\
   cfg.c			\
@@ -361,16 +362,55 @@ ifeq ($(BUILD_TARGET), ST100)
   GNU_SRCS += ia64.c
 endif
 
-GNU_SRCS += 		\
+GNU_C_SRCS = 		\
   c-aux-info.c		\
   c-convert.c		\
   c-decl.c		\
   c-lang.c		\
-  c-lex.c		\
   c-parse.c		\
   c-typeck.c
 
-GNU_OBJS = $(GNU_SRCS:.c=.o)
+GNU_C_OBJS = $(GNU_SRCS:.c=.o) $(GNU_C_SRCS:.c=.o)
+
+#----------------------------------------------------------------------
+#  List of source files for cxx. 
+#----------------------------------------------------------------------
+
+GNU_CP_UNIQ_SRCS =	\
+  call.c		\
+  class.c		\
+  cvt.c			\
+  decl.c		\
+  decl2.c		\
+  dump.c		\
+  error.c		\
+  friend.c		\
+  init.c		\
+  lex.c			\
+  mangle.c		\
+  method.c		\
+  optimize.c		\
+  parse.c		\
+  pt.c			\
+  ptree.c		\
+  repo.c		\
+  rtti.c		\
+  search.c		\
+  semantics.c		\
+  spew.c		\
+  typeck.c		\
+  typeck2.c		
+
+GNU_CP_DUP_SRCS =	\
+  except.c		\
+  expr.c		\
+  tree.c
+
+GNU_CP_DUP_OBJS  = cp-except.o cp-expr.o cp-tree.o cp-lang.o cp-dump.o
+
+GNU_CP_UNIQ_OBJS = $(GNU_CP_UNIQ_SRCS:.c=.o)
+
+GNU_CC_OBJS = $(GNU_SRCS:.c=.o) $(GNU_CP_UNIQ_OBJS) $(GNU_CP_DUP_OBJS)
 
 #----------------------------------------------------------------------
 #  List of source files for cpp. 
@@ -410,9 +450,17 @@ LDIRT =
 #------------------------------------------------------------
 #  Define target
 #------------------------------------------------------------
-LIBRARY = libgfec.a
+CLIBRARY = libgfec.a
+CCLIBRARY = libgfecc.a
 CPPLIB = libcpp.a
-TARGETS = $(CPPLIB) $(LIBRARY)
+
+ifeq ($(BUILD_MOD), libunwind)
+# (cbr) libunwind support 
+TARGETS = $(LIBUNWIND)
+LIBUNWIND=libgcc_eh.a
+else
+TARGETS = $(CPPLIB) $(CLIBRARY) $(CCLIBRARY)
+endif
 
 default: first local last
 
@@ -432,13 +480,22 @@ local: $(TARGETS)
 #----------------------------------------------------------------------
 last: local make_deps
 
+ifeq ($(BUILD_MOD), libunwind)
+install: install-libunwind
+else
+install: local
+endif
+
 include $(COMMONRULES)
 
 install: local
 
-.PRECIOUS : $(LIBRARY) $(CPPLIB)
+.PRECIOUS : $(CLIBRARY) $(CCLIBRARY) $(CPPLIB)
 
-$(LIBRARY): $(OBJECTS)
+$(CLIBRARY): $(GNU_C_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(CCLIBRARY): $(GNU_CC_OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
 #------------------------------------------------------------
@@ -447,8 +504,70 @@ $(LIBRARY): $(OBJECTS)
 $(CPPLIB): $(GNU_CPP_OBJS)
 	$(AR) rv $(CPPLIB) $(GNU_CPP_OBJS)
 
+GNU_CP_DIR		= $(BUILD_BASE)/cp
+
+cp-expr.o: $(GNU_CP_DIR)/expr.c
+	$(CCF) -I$(GNU_CP_DIR) -c -o cp-expr.o $(GNU_CP_DIR)/expr.c
+
+cp-except.o: $(GNU_CP_DIR)/except.c
+	$(CCF) -I$(GNU_CP_DIR) -c -o cp-except.o $(GNU_CP_DIR)/except.c
+
+cp-tree.o: $(GNU_CP_DIR)/tree.c
+	$(CCF) -I$(GNU_CP_DIR) -c -o cp-tree.o $(GNU_CP_DIR)/tree.c
+
+cp-dump.o: $(GNU_CP_DIR)/dump.c
+	$(CCF) -I$(GNU_CP_DIR) -c -o cp-dump.o $(GNU_CP_DIR)/dump.c
+
 prefix.o: prefix.c
-	$(CCF) -c $< -DPREFIX=\"\"
+	$(CCF) -I$(GNU_CP_DIR) -c $< -DPREFIX=\"\"
 
 gcc.o: gcc.c
 	$(CCF) -c $< -DDEFAULT_TARGET_VERSION=\"\" -DDEFAULT_TARGET_MACHINE=\"\" -DSTANDARD_STARTFILE_PREFIX=\"\" -DSTANDARD_EXEC_PREFIX=\"\"
+
+$(GNU_CP_UNIQ_OBJS):%.o:%.c
+	$(CCF) -I$(GNU_CP_DIR) $< -c 
+
+#----------------------------------------------------------------------
+#  (cbr) special section for cross compiled library.
+#----------------------------------------------------------------------
+UNWIND_OBJS=unwind-dw2.o unwind-dw2-fde.o unwind-c.o 
+
+_install: $(LIBUNWIND)
+	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
+	done
+
+ifeq ($(BUILD_MOD), libunwind)
+# (cbr) libunwind support 
+CFLAGS+=-DIN_GCC -DIN_LIBGCC2 -D__GCC_FLOAT_NOT_NEEDED -DEH_RETURN_STACKADJ_RTX -funwind-tables
+
+$(LIBUNWIND): $(UNWIND_OBJS)
+	$(AR) rv $(LIBUNWIND) $(UNWIND_OBJS)
+
+INSTALL_DIR=cmplrs
+INSTALL_PREFIX:=$(ROOT)/lib
+LDIRT += libunwind.a
+
+install-libunwind:
+	@for core in $(TARGET_LIBUNWIND_CORES); do \
+	  for endian in $(TARGET_LIBUNWIND_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_st200_core_endian_libraries_; \
+	  done; \
+	done
+
+target_install_st200_core_endian_libraries_:
+	$(MAKE) \
+	HOSTDEFS+="-mcore=$(TARGET_CORE) $(addprefix -,$(subst be,EB,$(subst le,EL,$(TARGET_ENDIANESS))))" \
+	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
+
+ifeq ($(HOST_ARCH), ST200)
+ifeq (x$(TARGET_LIBUNWIND_CORES)x,xx)
+$(error no target is defined. choose a subset of st220/st231/st235 for TARGET_LIBUNWIND_CORES)
+endif
+ifeq (x$(TARGET_LIBUNWIND_ENDIANESS)x,xx)
+$(error no endianess is defined. choose anong le/be for TARGET_LIBUNWIND_ENDIANESS)
+endif
+endif
+endif
+

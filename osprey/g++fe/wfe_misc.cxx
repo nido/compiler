@@ -70,16 +70,6 @@ static BOOL Prepare_Source (void);
 static void WFE_Stmt_Stack_Init (void);
 static void WFE_Stmt_Stack_Free (void);
 
-#ifdef KEY
-static void WFE_Guard_Var_Init();
-// When region optimization is enabled using -foptimize-regions, we try not
-// to close a region as soon as a call stmt finishes. We try to keep it open
-// and include as many calls as possible.
-// If we got an opportunity but did not close a region in WFE_Stmt_Append,
-// we set the following flag.
-bool Did_Not_Terminate_Region = FALSE;
-#endif
-
 #ifdef TARG_ST
 #include "gnu/flags.h"
 #else
@@ -636,14 +626,6 @@ WFE_Stmt_Push (WN* wn, WFE_STMT_KIND kind, SRCPOS srcpos)
 {
   INT new_stack_size;
 
-#ifdef KEY
-  // Close any existing EH region before we push a new stmt, since we don't
-  // know what the new stmt offers, and may have difficulty closing the region
-  // then.
-  if (opt_regions && wn_stmt_sp)
-    Check_For_Call_Region ();
-#endif
-
   if (wn_stmt_sp == wn_stmt_stack_last) {
     new_stack_size = ENLARGE(wn_stmt_stack_size);
     wn_stmt_stack =
@@ -713,11 +695,7 @@ WFE_Stmt_Append (WN* wn, SRCPOS srcpos)
   }
 
 #ifdef KEY
-// This should not ideally be mixed with this function code, but ...
-  if (!opt_regions)
-    Check_For_Call_Region();
-  else if (wn_stmt_sp->kind == wfe_stmk_call_region_body)
-    Did_Not_Terminate_Region = TRUE;
+  Check_For_Call_Region();
 #endif // KEY
 } /* WFE_Stmt_Append */
 
@@ -767,21 +745,12 @@ WFE_Stmt_Pop (WFE_STMT_KIND kind)
   //  if (key_exceptions && wn_stmt_sp->kind != kind)
   if (flag_exceptions && wn_stmt_sp->kind != kind)
   {
-    if (!opt_regions || !Did_Not_Terminate_Region)
-    {
   	FmtAssert (wn_stmt_sp->kind == wfe_stmk_call_region_body,
              ("mismatch in statements: expected %s, got %s\n",
               WFE_Stmt_Kind_Name [kind],
               WFE_Stmt_Kind_Name [wn_stmt_sp->kind]));
 
 	to_be_pushed = WFE_Stmt_Pop (wfe_stmk_call_region_body);
-    }
-    else
-    { // If we got an opportunity but did not close the region earlier in
-      // WFE_Stmt_Append, then close it now.
-    	Check_For_Call_Region ();
-	Did_Not_Terminate_Region = FALSE;
-    }
   }
 #endif // KEY
 

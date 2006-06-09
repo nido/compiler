@@ -2333,11 +2333,6 @@ expand_body (fn)
       return;
     }
 
-  /* There's no reason to do any of the work here if we're only doing
-     semantic analysis; this code just generates RTL.  */
-  if (flag_syntax_only)
-    return;
-
   /* If possible, avoid generating RTL for this function.  Instead,
      just record it as an inline function, and wait until end-of-file
      to decide whether to write it out or not.  */
@@ -2379,6 +2374,7 @@ expand_body (fn)
   /* Save the current file name and line number.  When we expand the
      body of the function, we'll set LINENO and INPUT_FILENAME so that
      error-mesages come out in the right places.  */
+
   saved_lineno = lineno;
   saved_input_filename = input_filename;
   saved_function = current_function_decl;
@@ -2386,19 +2382,24 @@ expand_body (fn)
   input_filename = DECL_SOURCE_FILE (fn);
   current_function_decl = fn;
 
+#ifndef TARG_ST
   timevar_push (TV_INTEGRATION);
 
   /* Optimize the body of the function before expanding it.  */
   optimize_function (fn);
-
   timevar_pop (TV_INTEGRATION);
+#endif
+
   timevar_push (TV_EXPAND);
 
   genrtl_start_function (fn);
+
   current_function_is_thunk = DECL_THUNK_P (fn);
 
+#ifndef TARG_ST
   /* Expand the body.  */
   expand_stmt (DECL_SAVED_TREE (fn));
+#endif
 
   /* Statements should always be full-expressions at the outermost set
      of curly braces for a function.  */
@@ -2420,9 +2421,11 @@ expand_body (fn)
     /* We might need the body of this function so that we can expand
        it inline somewhere else.  */
     ;
+#ifndef TARG_ST
   else
     /* We don't need the body; blow it away.  */
     DECL_SAVED_TREE (fn) = NULL_TREE;
+#endif
 
   /* And restore the current source position.  */
   current_function_decl = saved_function;
@@ -2432,8 +2435,10 @@ expand_body (fn)
 
   timevar_pop (TV_EXPAND);
 
+#ifndef TARG_ST
   /* Emit any thunks that should be emitted at the same time as FN.  */
   emit_associated_thunks (fn);
+#endif
 }
 
 /* Helper function for walk_tree, used by finish_function to override all
@@ -2614,8 +2619,12 @@ genrtl_finish_function (fn)
 
   --function_depth;
 
+#ifndef TARG_ST
+  /* (cbr) I don't understand where it is set. but since we don't go thru
+     rtl generation I guess it is safe to disable the assert */
   /* In C++, we should never be saving RTL for the function.  */
   my_friendly_assert (!DECL_SAVED_INSNS (fn), 20010903);
+#endif
 
   /* Since we don't need the RTL for this function anymore, stop
      pointing to it.  That's especially important for LABEL_DECLs,

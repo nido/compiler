@@ -1028,12 +1028,22 @@ enum languages { lang_c, lang_cplusplus, lang_java };
    template template parameters.  Despite its name,
    this macro has nothing to do with the definition of aggregate given
    in the standard.  Think of this macro as MAYBE_CLASS_TYPE_P.  */
+#ifdef TARG_ST
+/* (cbr) shut up warning */
+#define IS_AGGR_TYPE(T)					\
+  (TREE_CODE (T) == (enum tree_code)TEMPLATE_TYPE_PARM	\
+   || TREE_CODE (T) == (enum tree_code)TYPENAME_TYPE	\
+   || TREE_CODE (T) == (enum tree_code)TYPEOF_TYPE	\
+   || TREE_CODE (T) == (enum tree_code)BOUND_TEMPLATE_TEMPLATE_PARM	\
+   || TYPE_LANG_FLAG_5 (T))
+#else
 #define IS_AGGR_TYPE(T)					\
   (TREE_CODE (T) == TEMPLATE_TYPE_PARM			\
    || TREE_CODE (T) == TYPENAME_TYPE			\
    || TREE_CODE (T) == TYPEOF_TYPE			\
    || TREE_CODE (T) == BOUND_TEMPLATE_TEMPLATE_PARM	\
    || TYPE_LANG_FLAG_5 (T))
+#endif
 
 /* Set IS_AGGR_TYPE for T to VAL.  T must be a class, struct, or
    union type.  */
@@ -1794,7 +1804,13 @@ struct lang_decl_flags GTY(())
   unsigned u1sel : 1;
   unsigned u2sel : 1;
   unsigned can_be_full : 1;
+
   unsigned unused : 1; /* One unused bit.  */
+
+#ifdef TARG_ST
+  /* (cbr) for a FUNCTION_DECL, current's nrv */
+  tree nrv;
+#endif
 
   union lang_decl_u {
     /* In a FUNCTION_DECL, VAR_DECL, TYPE_DECL, or TEMPLATE_DECL, this
@@ -1882,11 +1898,20 @@ struct lang_decl GTY(())
    just been used somewhere, even if it's not really needed.  We need
    anything that isn't comdat, but we don't know for sure whether or
    not something is comdat until end-of-file.  */
+#ifdef TARG_ST
+/* (cbr) needed also if addressable when syntax_only */
+#define DECL_NEEDED_P(DECL)					\
+  ((at_eof && TREE_PUBLIC (DECL) && !DECL_COMDAT (DECL))	\
+   || (DECL_ASSEMBLER_NAME_SET_P (DECL)				\
+       && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (DECL)))	\
+   || ((TREE_USED (DECL) || TREE_ADDRESSABLE (DECL))))
+#else
 #define DECL_NEEDED_P(DECL)					\
   ((at_eof && TREE_PUBLIC (DECL) && !DECL_COMDAT (DECL))	\
    || (DECL_ASSEMBLER_NAME_SET_P (DECL)				\
        && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (DECL)))	\
    || (flag_syntax_only && TREE_USED (DECL)))
+#endif
 
 /* Nonzero iff DECL is memory-based.  The DECL_RTL of
    certain const variables might be a CONST_INT, or a REG
@@ -1971,11 +1996,20 @@ struct lang_decl GTY(())
 
 /* Nonzero if NODE (a FUNCTION_DECL) is a cloned constructor or
    destructor.  */
+#ifdef TARG_ST
+/* (cbr) shut up warning */
+#define DECL_CLONED_FUNCTION_P(NODE)		\
+  ((TREE_CODE (NODE) == FUNCTION_DECL 		\
+    || TREE_CODE (NODE) == (enum tree_code)TEMPLATE_DECL)	\
+   && DECL_LANG_SPECIFIC (NODE)			\
+   && DECL_CLONED_FUNCTION (NODE) != NULL_TREE)
+#else
 #define DECL_CLONED_FUNCTION_P(NODE)		\
   ((TREE_CODE (NODE) == FUNCTION_DECL 		\
     || TREE_CODE (NODE) == TEMPLATE_DECL)	\
    && DECL_LANG_SPECIFIC (NODE)			\
    && DECL_CLONED_FUNCTION (NODE) != NULL_TREE)
+#endif
 
 /* If DECL_CLONED_FUNCTION_P holds, this is the function that was
    cloned.  */
@@ -2986,6 +3020,11 @@ struct lang_decl GTY(())
    tell us whether the decl is really not external.  */
 #define DECL_NOT_REALLY_EXTERN(NODE) \
   (DECL_LANG_SPECIFIC (NODE)->decl_flags.not_really_extern)
+
+#ifdef TARG_ST
+#define DECL_NRV(NODE) \
+  (DECL_LANG_SPECIFIC (NODE)->decl_flags.nrv)
+#endif
 
 #define DECL_REALLY_EXTERN(NODE) \
   (DECL_EXTERNAL (NODE) && ! DECL_NOT_REALLY_EXTERN (NODE))

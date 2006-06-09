@@ -45,6 +45,42 @@ extern "C" {
 
 /* expand one gnu stmt tree into symtab & whirl */
 
+#ifdef TARG_ST
+extern void __attribute__ ((weak)) WFE_Expand_Start_Cond (tree cond, int exitflag);
+extern void __attribute__ ((weak)) WFE_Expand_Start_Else (void);
+extern void __attribute__ ((weak)) WFE_Expand_End_Cond (void);
+
+extern void __attribute__ ((weak)) WFE_Expand_Start_Loop (int exitflag, struct nesting *whichloop);
+extern void __attribute__ ((weak)) WFE_Expand_Start_Loop_Continue_Elsewhere (int exitflag, struct nesting *whichloop);
+extern void __attribute__ ((weak)) WFE_Expand_Loop_Continue_Here (void);
+extern void __attribute__ ((weak)) WFE_Expand_End_Loop (void);
+extern void __attribute__ ((weak)) WFE_Expand_Continue_Loop (struct nesting *whichloop);
+extern void __attribute__ ((weak)) WFE_Expand_Exit_Loop (struct nesting *whichloop);
+extern void __attribute__ ((weak)) WFE_Expand_Exit_Loop_If_False (struct nesting *whichloop, tree cond);
+
+extern void __attribute__ ((weak)) WFE_Expand_Start_Case (int exit_flag, tree expr, tree type, char *printname);
+extern void __attribute__ ((weak)) WFE_Expand_Start_Case_Dummy (void);
+extern void __attribute__ ((weak)) WFE_Add_Case_Node (tree low, tree high, tree label);
+extern void __attribute__ ((weak)) WFE_Emit_Case_Nodes (void);
+extern void __attribute__ ((weak)) WFE_Expand_End_Case_Dummy (void);
+extern void __attribute__ ((weak)) WFE_Expand_End_Case (tree orig_index);
+extern void __attribute__ ((weak)) WFE_Expand_Label (tree label);
+extern void __attribute__ ((weak)) WFE_Expand_Goto (tree label);
+extern void __attribute__ ((weak)) WFE_Expand_Exit_Something (struct nesting *n,
+                                struct nesting *cond_stack,
+                                struct nesting *loop_stack,
+                                struct nesting *case_stack,
+                                LABEL_IDX      *label_idx);
+extern void __attribute__ ((weak)) WFE_Record_Switch_Default_Label (tree label);
+extern void __attribute__ ((weak)) WFE_Expand_Return (tree retval);
+extern void __attribute__ ((weak)) WFE_Check_Undefined_Labels (void);
+extern void __attribute__ ((weak)) WFE_Expand_Computed_Goto (tree exp);
+extern void __attribute__ ((weak)) WFE_Declare_Nonlocal_Label (tree label);
+
+extern void __attribute__ ((weak)) Wfe_Expand_Asm_Operands (tree, tree, tree, tree,
+				     int, const char *, int);
+
+#else
 extern void WFE_Expand_Start_Cond (tree cond, int exitflag);
 extern void WFE_Expand_Start_Else (void);
 extern void WFE_Expand_End_Cond (void);
@@ -79,30 +115,35 @@ extern void WFE_Declare_Nonlocal_Label (tree label);
 extern void Wfe_Expand_Asm_Operands (tree, tree, tree, tree,
 				     int, const char *, int);
 
+#endif
+
 extern LABEL_IDX WFE_Get_LABEL (tree label, int def);
 
 #ifdef TARG_ST
   // [CL] support lexical blocks
-struct lexical_block_info_t* Push_Lexical_Block();
-struct lexical_block_info_t* Pop_Lexical_Block();
+struct lexical_block_info_t* __attribute__ ((weak)) Push_Lexical_Block();
+struct lexical_block_info_t* __attribute__ ((weak)) Pop_Lexical_Block();
 void Set_Current_Scope_DST(tree x);
-void Start_Lexical_Block(struct lexical_block_info_t*);
-void End_Lexical_Block(struct lexical_block_info_t*);
+void __attribute__ ((weak)) Start_Lexical_Block(struct lexical_block_info_t*);
+void __attribute__ ((weak)) End_Lexical_Block(struct lexical_block_info_t*);
 #endif
 
 #ifdef __cplusplus
-
-#ifdef TARG_ST
 extern LABEL_IDX lookup_cleanups(INITV_IDX&);
-extern void Push_Scope_Cleanup (tree t);
-extern void Pop_Scope_And_Do_Cleanups ();
-
-#endif
-
 }
 #endif
 
-
+#ifdef TARG_ST
+// (cbr) commonalized front ends
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern void __attribute__ ((weak)) Push_Scope_Cleanup (tree t);
+extern void __attribute__ ((weak)) Pop_Scope_And_Do_Cleanups ();
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 #ifdef TARG_ST
 extern LABEL_IDX WFE_unusable_label_idx;

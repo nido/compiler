@@ -2396,7 +2396,7 @@ WFE_Expand_Return (tree stmt, tree retval)
       tree prett = make_indirect_tree(TREE_OPERAND(retval, 0));
 
       DECL_ST (prett) = first_formal;
-
+      
       tree targexp = TREE_OPERAND(retval, 1);
 
       if (TREE_CODE (targexp) == CALL_EXPR) {
@@ -3913,15 +3913,6 @@ WFE_Expand_Stmt(tree stmt)
            "{( WFE_Expand_Expr: %s\n", WFE_Tree_Node_Name (stmt)); // ")}"
 #endif /* WFE_DEBUG */
 
-#ifdef KEY
-#if 0
- // Close a region before any stmt, we may be able to relax this restriction.
- // We at least want to close it on seeing a cleanup_stmt.
- if (opt_regions && Check_For_Call_Region ())
-   Did_Not_Terminate_Region = FALSE;
-#endif
-#endif
-
  if (TREE_CODE(stmt) == LABEL_DECL)
    lineno = DECL_SOURCE_LINE(stmt);
  else
@@ -3952,8 +3943,6 @@ WFE_Expand_Stmt(tree stmt)
 
     case CLEANUP_STMT:
 #ifdef KEY
-      if (opt_regions && Check_For_Call_Region ())
-          Did_Not_Terminate_Region = FALSE;
       if (!CLEANUP_EH_ONLY(stmt))
     	  Push_Scope_Cleanup (stmt);
       else Push_Scope_Cleanup (stmt, true /* cleanup_eh_only */);
@@ -4013,11 +4002,6 @@ WFE_Expand_Stmt(tree stmt)
       break;
 
     case RETURN_STMT: {
-#ifdef KEY
-      if (opt_regions && Check_For_Call_Region ())
-          Did_Not_Terminate_Region = FALSE;
-#endif
-
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
   /* (cbr) gcc 3.3 upgrade */
       tree t = RETURN_STMT_EXPR(stmt);
@@ -4033,8 +4017,17 @@ WFE_Expand_Stmt(tree stmt)
         tree te = t1;
         while (TREE_CODE (te) == NOP_EXPR)
           te = TREE_OPERAND(te, 0);
-	if (TREE_CODE(te) == TARGET_EXPR)
+	if (TREE_CODE(te) == TARGET_EXPR) {
   	  TREE_OPERAND(te, 2) = 0;
+          if (TREE_CODE (TREE_OPERAND (te, 1)) == COND_EXPR) {
+            tree t2 = TREE_OPERAND(TREE_OPERAND(te, 1), 1);
+            if (TREE_CODE (t2) == TARGET_EXPR)
+              TREE_OPERAND(t2, 2) = 0;    
+            t2 = TREE_OPERAND(TREE_OPERAND(te, 1), 2);
+            if (TREE_CODE (t2) == TARGET_EXPR)
+              TREE_OPERAND(t2, 2) = 0;    
+          }
+        }
 #else
 	if (TREE_CODE(t1) == TARGET_EXPR)
   	  TREE_OPERAND(t1, 2) = 0;
@@ -4047,10 +4040,6 @@ WFE_Expand_Stmt(tree stmt)
     }
 
     case SCOPE_STMT:
-#ifdef KEY
-      if (opt_regions && Check_For_Call_Region ())
-          Did_Not_Terminate_Region = FALSE;
-#endif
       if (SCOPE_BEGIN_P(stmt))
 	Push_Scope_Cleanup (stmt);
       else

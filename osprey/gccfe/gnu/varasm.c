@@ -1527,8 +1527,9 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
   if (flag_syntax_only)
     return;
 
-#ifndef TARG_ST
-  WFE_Start_Aggregate_Init (decl);
+#ifdef TARG_ST
+  /* need to have the translator initialized in c++*/
+  if (!Current_Function_Decl())
     return;
 #endif
 

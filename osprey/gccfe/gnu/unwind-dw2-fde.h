@@ -90,17 +90,23 @@ struct dwarf_eh_bases
 };
 
 
+#ifdef CRT_WEAK_DECL // (cbr) for TARG_ST200's crtbegin
+#define ATTR_WEAK __attribute__ ((weak))
+#else
+#define ATTR_WEAK
+#endif
+
 extern void __register_frame_info_bases (void *, struct object *,
-					 void *, void *);
-extern void __register_frame_info (void *, struct object *);
-extern void __register_frame (void *);
+					 void *, void *) ATTR_WEAK;
+extern void __register_frame_info (void *, struct object *) ATTR_WEAK; 
+extern void __register_frame (void *) ATTR_WEAK;
 extern void __register_frame_info_table_bases (void *, struct object *,
-					       void *, void *);
-extern void __register_frame_info_table (void *, struct object *);
-extern void __register_frame_table (void *);
-extern void *__deregister_frame_info (void *);
-extern void *__deregister_frame_info_bases (void *);
-extern void __deregister_frame (void *);
+					       void *, void *) ATTR_WEAK;
+extern void __register_frame_info_table (void *, struct object *) ATTR_WEAK;
+extern void __register_frame_table (void *) ATTR_WEAK;
+extern void *__deregister_frame_info (void *) ATTR_WEAK;
+extern void *__deregister_frame_info_bases (void *) ATTR_WEAK;
+extern void __deregister_frame (void *) ATTR_WEAK; 
 
 
 typedef          int  sword __attribute__ ((mode (SI)));

@@ -350,6 +350,10 @@ int use_gnu_debug_info_extensions = 0;
 
 int optimize = 0;
 
+#ifdef TARG_ST
+int do_nrv;
+#endif
+
 /* Nonzero means optimize for size.  -Os.
    The only valid values are zero and nonzero. When optimize_size is
    nonzero, optimize defaults to 2, but certain individual code
@@ -625,7 +629,7 @@ int flag_volatile_static;
 int flag_syntax_only = 0;
 
 #ifdef TARG_ST
-#include "wfe_misc.h"
+#include "wfe_decl.h"
 #endif
 
 /* Nonzero means perform global cse.  */
@@ -2403,8 +2407,10 @@ rest_of_type_compilation (type, toplev)
   if (errorcount != 0 || sorrycount != 0)
     return;
 
-  timevar_push (TV_SYMOUT);
 #ifndef TARG_ST
+  /* (cbr) don't output nothing */
+  timevar_push (TV_SYMOUT);
+
 #if defined (DBX_DEBUGGING_INFO) || defined (XCOFF_DEBUGGING_INFO)
   if (write_symbols == DBX_DEBUG || write_symbols == XCOFF_DEBUG)
     dbxout_symbol (TYPE_STUB_DECL (type), !toplev);
@@ -2419,8 +2425,9 @@ rest_of_type_compilation (type, toplev)
        || write_symbols == VMS_AND_DWARF2_DEBUG)
       && toplev)
     dwarf2out_decl (TYPE_STUB_DECL (type));
-#endif
+
   timevar_pop (TV_SYMOUT);
+#endif
 }
 
 /* This is called from finish_function (within langhooks.parse_file)
@@ -2648,6 +2655,11 @@ rest_of_compilation (decl)
       || errorcount || sorrycount)
     goto exit_rest_of_compilation;
 
+#ifdef TARG_ST
+  if (!Current_Function_Decl())
+    goto exit_rest_of_compilation;
+#endif
+
   timevar_push (TV_JUMP);
   open_dump_file (DFI_sibling, decl);
   insns = get_insns ();
@@ -2691,6 +2703,10 @@ rest_of_compilation (decl)
     }
   close_dump_file (DFI_sibling, print_rtl, get_insns ());
 
+#ifdef TARG_ST
+  /* (cbr) expand_stmts is not done so the return values are not seen */
+  if (Current_Function_Decl())
+#endif
   /* We have to issue these warnings now already, because CFG cleanups
      further down may destroy the required information.  However, this
      must be done after the sibcall optimization pass because the barrier
@@ -2699,9 +2715,11 @@ rest_of_compilation (decl)
      CFG is inaccurate.  */
   check_function_return_warnings ();
 
+
   timevar_pop (TV_JUMP);
 
 #ifdef TARG_ST
+  if (Current_Function_Decl())
     goto exit_rest_of_compilation;
 #endif
 
@@ -4780,6 +4798,9 @@ static void
 init_asm_output (name)
      const char *name;
 {
+#ifdef TARG_ST
+  asm_out_file = NULL;
+#else
   if (name == NULL && asm_file_name == 0)
     asm_out_file = stdout;
   else
@@ -4788,6 +4809,7 @@ init_asm_output (name)
 	{
 	  int len = strlen (dump_base_name);
 	  char *dumpname = (char *) xmalloc (len + 6);
+
 	  memcpy (dumpname, dump_base_name, len + 1);
 	  strip_off_ending (dumpname, len);
 	  strcat (dumpname, ".s");
@@ -4825,6 +4847,7 @@ init_asm_output (name)
 	}
 #endif
     }
+#endif
 }
 
 /* Initialization of the front end environment, before command line
@@ -4942,6 +4965,11 @@ parse_options_and_default_flags (argc, argv)
 	    }
 	}
     }
+
+#ifdef TARG_ST
+  /* (cbr) can't have nrv if not optimizing untill dwarf is fixed */
+  do_nrv = (optimize || optimize_size);
+#endif
 
   if (!optimize)
     {
@@ -5359,11 +5387,7 @@ lang_dependent_init (name)
   /* Is this duplication necessary?  */
   name = ggc_strdup (name);
   main_input_filename = input_filename = name;
-
-#ifndef TARG_ST
-  /* (cbr) */
   init_asm_output (name);
-#endif
 
   /* These create various _DECL nodes, so need to be called after the
      front end is initialized.  */
@@ -5379,6 +5403,9 @@ lang_dependent_init (name)
   /* Put an entry on the input file stack for the main input file.  */
   push_srcloc (input_filename, 0);
 
+#ifndef TARG_ST
+  /* (cbr) don't emit */
+
   /* If dbx symbol table desired, initialize writing it and output the
      predefined types.  */
   timevar_push (TV_SYMOUT);
@@ -5388,14 +5415,13 @@ lang_dependent_init (name)
     dwarf2out_frame_init ();
 #endif
 
-#ifndef TARG_ST
-  /* (cbr) */
   /* Now we have the correct original filename, we can initialize
      debug output.  */
   (*debug_hooks->init) (name);
-#endif
 
   timevar_pop (TV_SYMOUT);
+
+#endif
 
   return 1;
 }
@@ -5496,8 +5522,22 @@ do_compile (void)
     backend_init ();
 
   /* Language-dependent initialization.  Returns true on success.  */
-  if (lang_dependent_init (filename))
+#ifdef TARG_ST
+  /* (cbr) wfe hook */
+  if (lang_dependent_init (filename)) {
+    extern __attribute__ ((weak)) WFE_Hook(void);
+
     compile_file ();
+    
+    if (WFE_Hook) {
+      WFE_Hook();
+    }
+
+  }
+#else
+  if (lang_dependent_init (filename)) 
+    compile_file ();
+#endif
 
   finalize ();
 

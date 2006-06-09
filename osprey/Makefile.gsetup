@@ -315,7 +315,7 @@ BUILD_BASE_instrumentationC	= $(BUILD_TOT)/instrumentation/libinstrC
 BUILD_BASE_gccfe	= $(BUILD_TOT)/gccfe
 BUILD_BASE_gccfe_gnu	= $(BUILD_TOT)/gccfe/gnu
 BUILD_BASE_g++fe	= $(BUILD_TOT)/g++fe
-BUILD_BASE_g++fe_gnu	= $(BUILD_TOT)/g++fe/gnu
+# BUILD_BASE_g++fe_gnu	= $(BUILD_TOT)/g++fe/gnu
 BUILD_BASE_wopt		= $(BUILD_TOT)/be/opt
 BUILD_BASE_be		= $(BUILD_TOT)/be/be
 BUILD_BASE_lai		= $(BUILD_TOT)/lai
@@ -328,7 +328,7 @@ BUILD_BASE_whirl2f	= $(BUILD_TOT)/be/whirl2f
 BUILD_BASE_ir_tools	= $(BUILD_TOT)/ir_tools
 BUILD_BASE_driver	= $(BUILD_TOT)/driver
 BUILD_BASE_libgcov	= $(BUILD_TOT)/instrumentation/libgcov
-BUILD_BASE_libunwind	= $(BUILD_TOT)/g++fe/gnu
+BUILD_BASE_libunwind	= $(BUILD_TOT)/gccfe/gnu
 
 BUILD_BASE		?= $(BUILD_BASE_$(BUILD_MOD))
 endif

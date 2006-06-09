@@ -52,6 +52,11 @@ Boston, MA 02111-1307, USA.  */
 #include "timevar.h"
 #include "input.h"
 
+#ifdef TARG_ST
+  /* (cbr) can't have nrv if not optimizing untill dwarf is fixed */
+extern int do_nrv; // set in toplev.c
+#endif
+
 static tree grokparms				PARAMS ((tree));
 static const char *redeclaration_error_message	PARAMS ((tree, tree));
 
@@ -3875,6 +3880,11 @@ duplicate_decls (newdecl, olddecl)
   /* Merge the storage class information.  */
   merge_weak (newdecl, olddecl);
 
+#ifdef TARG_ST
+  /* [TB] handle 'used' attribute */
+  DECL_IS_USED (newdecl) |= DECL_IS_USED (olddecl);
+#endif
+
   DECL_ONE_ONLY (newdecl) |= DECL_ONE_ONLY (olddecl);
   DECL_DEFER_OUTPUT (newdecl) |= DECL_DEFER_OUTPUT (olddecl);
   TREE_PUBLIC (newdecl) = TREE_PUBLIC (olddecl);
@@ -6987,6 +6997,8 @@ cxx_init_decl_processing ()
 
   c_common_nodes_and_builtins ();
 
+#ifndef TARG_ST
+  /* (cbr) is it needed for c++ ? confuses TYPE_PRECISION in tree_symtab.cxx */
   java_byte_type_node = record_builtin_java_type ("__java_byte", 8);
   java_short_type_node = record_builtin_java_type ("__java_short", 16);
   java_int_type_node = record_builtin_java_type ("__java_int", 32);
@@ -6995,6 +7007,7 @@ cxx_init_decl_processing ()
   java_double_type_node = record_builtin_java_type ("__java_double", -64);
   java_char_type_node = record_builtin_java_type ("__java_char", -16);
   java_boolean_type_node = record_builtin_java_type ("__java_boolean", -1);
+#endif
 
   integer_two_node = build_int_2 (2, 0);
   TREE_TYPE (integer_two_node) = integer_type_node;
@@ -9282,6 +9295,13 @@ register_dtor_fn (decl)
 
   /* Call atexit with the cleanup function.  */
   cxx_mark_addressable (cleanup);
+#ifdef TARG_ST
+  /* [SC] Fix imported from net gcc source. See gcc/cp ChangeLog.3 entry
+     dated 2003-06-23 (Jan Hubicka).
+     Avoid warnings about unused cleanup functions.
+  */
+  mark_used (cleanup);
+#endif
   cleanup = build_unary_op (ADDR_EXPR, cleanup, 0);
   if (flag_use_cxa_atexit)
     {
@@ -11093,6 +11113,14 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
 	  longlong = 0;
 	}
     }
+
+#ifdef TARG_ST
+  /* (cbr) not yet */
+  if (RIDBIT_SETP (RID_COMPLEX, specbits)) {
+      error ("__complex__ type not currently supported");
+      RIDBIT_RESET (RID_COMPLEX, specbits);
+  }
+#endif
 
   if (RIDBIT_SETP (RID_COMPLEX, specbits)
       && TREE_CODE (type) != INTEGER_TYPE && TREE_CODE (type) != REAL_TYPE)
@@ -15012,12 +15040,23 @@ finish_function (flags)
      eliminate the copy from the nrv into the RESULT_DECL and any cleanup
      for the nrv.  genrtl_start_function and declare_return_variable
      handle making the nrv and RESULT_DECL share space.  */
+
+#ifdef TARG_ST
+  /* (cbr) only if optimizing untill dwarf2 emit are able to track it*/
+  if (current_function_return_value && do_nrv)
+#else
   if (current_function_return_value)
+#endif
     {
       tree r = current_function_return_value;
       tree outer;
 
       if (r != error_mark_node
+#ifdef TARG_ST
+	  /* (cbr) can do nrv is volatile */ 
+	  && !TYPE_VOLATILE (TREE_TYPE (r))
+	  && !TYPE_VOLATILE(TREE_TYPE (TREE_TYPE (fndecl)))
+#endif
 	  /* This is only worth doing for fns that return in memory--and
 	     simpler, since we don't have to worry about promoted modes.  */
 	  && aggregate_value_p (TREE_TYPE (TREE_TYPE (fndecl)))
@@ -15028,12 +15067,15 @@ finish_function (flags)
 	  && (outer = BLOCK_SUBBLOCKS (DECL_INITIAL (fndecl)),
 	      chain_member (r, BLOCK_VARS (outer))))
 	{
-	  
+#ifdef TARG_ST
+	  /* (cbr) remember nrv */
+	  DECL_NRV (fndecl) = r;
+#endif
 	  DECL_ALIGN (r) = DECL_ALIGN (DECL_RESULT (fndecl));
 	  walk_tree_without_duplicates (&DECL_SAVED_TREE (fndecl),
 					nullify_returns_r, r);
 	}
-      else
+      else 
 	/* Clear it so genrtl_start_function and declare_return_variable
 	   know we're not optimizing.  */
 	current_function_return_value = NULL_TREE;

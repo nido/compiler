@@ -206,6 +206,7 @@ cxx_init_options ()
 
   /* Default exceptions on.  */
   flag_exceptions = 1;
+
   /* By default wrap lines at 80 characters.  Is getenv ("COLUMNS")
      preferable?  */
   diagnostic_line_cutoff (global_dc) = 80;

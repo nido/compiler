@@ -61,8 +61,34 @@ struct _Unwind_Context
   _Unwind_Word args_size;
 };
 
-#ifdef TARG_ST
-void __my_builtin_eh_return () __attribute__ ((noreturn));
+#ifdef TARG_ST200
+/* (cbr) */
+void __int_builtin_eh_return () __attribute__ ((noreturn));
+void __int_builtin_eh_return (void* handler, void* sp, void* r8, void* r9,
+			     void *r1, void *r2, void *r3, void *r4, void *r5, 
+			     void *r6, void *r7, void *r13, void *r14)
+{
+   __asm__("mov $r63 = %0\n\t"
+	   "mov $r1 = %1\n\t"
+	   "mov $r2 = %2\n\t"
+	   "mov $r3 = %3\n\t"
+	   : : "r"(handler), "r"(r1), "r"(r2), "r"(r3));
+
+   __asm__("mov $r4 = %0\n\t"
+	   "mov $r5 = %1\n\t"
+	   "mov $r6 = %2\n\t"
+	   "mov $r7 = %3\n\t"
+	   : : "r"(r4), "r"(r5), "r"(r6), "r"(r7));
+
+   __asm__("mov $r13 = %0\n\t"
+	   "mov $r14 = %1\n\t"
+           : : "r"(r13), "r"(r14));
+
+   __asm__("goto $r63\n\t"
+           "mov $r8 = %0\n\t"
+           "mov $r9 = %1\n\t"
+	   "mov $r12 = %2\n\t": : "r"(r8), "r"(r9), "r"(sp));
+}
 #endif
 
 /* Byte size of every register managed by these routines.  */
@@ -739,7 +765,12 @@ execute_cfa_program (const unsigned char *insn_ptr,
      assume that the call itself is unwind info-neutral; if not, or if
      there are delay instructions that adjust the stack, these must be
      reflected at the point immediately before the call insn.  */
+#ifdef TARG_ST200
+  /* (cbr),CL store can be in the same bundle than the call */
+  while (insn_ptr < insn_end && fs->pc <= context->ra)
+#else
   while (insn_ptr < insn_end && fs->pc < context->ra)
+#endif
     {
       unsigned char insn = *insn_ptr++;
       _Unwind_Word reg, utmp;
@@ -1079,8 +1110,9 @@ uw_update_context_1 (struct _Unwind_Context *context, _Unwind_FrameState *fs)
 
   if (!orig_context.reg[__builtin_dwarf_sp_column ()])
     {
-#ifdef TARG_ST
-      tmp_sp = (_Unwind_Ptr) context->cfa-16;
+#ifdef TARG_ST200
+      /* (cbr) */
+      tmp_sp = (_Unwind_Ptr) context->cfa-INCOMING_FRAME_SP_OFFSET;
 #else
       tmp_sp = (_Unwind_Ptr) context->cfa;
 #endif
@@ -1162,7 +1194,8 @@ uw_update_context (struct _Unwind_Context *context, _Unwind_FrameState *fs)
 /* Fill in CONTEXT for top-of-stack.  The only valid registers at this
    level will be the return address and the CFA.  */
 
-#ifdef TARG_ST
+#ifdef TARG_ST200
+/* (cbr) */
 #define uw_init_context(CONTEXT)					   \
   do									   \
     {									   \
@@ -1198,14 +1231,16 @@ uw_init_context_1 (struct _Unwind_Context *context,
     abort ();
 
   /* Force the frame state to use the known cfa value.  */
-#ifdef TARG_ST
-  sp_slot = (_Unwind_Ptr) outer_cfa-16;
+#ifdef TARG_ST200
+  /* (cbr) */
+  sp_slot = (_Unwind_Ptr) outer_cfa-STACK_POINTER_OFFSET;
 #else
   sp_slot = (_Unwind_Ptr) outer_cfa;
 #endif
   context->reg[__builtin_dwarf_sp_column ()] = &sp_slot;
 
 #ifndef TARG_ST200
+  /* (cbr) */
   fs.cfa_how = CFA_REG_OFFSET;
   fs.cfa_reg = __builtin_dwarf_sp_column ();
   fs.cfa_offset = 0;
@@ -1225,14 +1260,33 @@ uw_init_context_1 (struct _Unwind_Context *context,
    our caller.  */
 
 #ifdef TARG_ST
+void dump_context(struct _Unwind_Context *pt)
+{
+  printf ("reg[63] = 0x%x\n", pt->reg[63]);
+  printf ("cfa = 0x%x\n", pt->cfa);
+  printf ("ra = 0x%x\n", pt->ra);
+}
+#endif
+
+#ifdef TARG_ST200
+/* (cbr) */
 #define uw_install_context(CURRENT, TARGET)				 \
   do									 \
     {									 \
-      void *handler = __builtin_frob_return_addr ((TARGET)->ra);         \
-      __my_builtin_eh_return (handler,                                   \
-                     (TARGET)->cfa-16,                                   \
-                     (TARGET)->reg[__builtin_eh_return_data_regno (0)],  \
-                     (TARGET)->reg[__builtin_eh_return_data_regno (1)]); \
+      void *handler = (TARGET)->ra;                                      \
+      __int_builtin_eh_return (handler,                                   \
+                 (TARGET)->cfa-16,                                       \
+                 _Unwind_GetGR((TARGET), __builtin_eh_return_data_regno (0)),  \
+                 _Unwind_GetGR((TARGET), __builtin_eh_return_data_regno (1)),  \
+                 (TARGET)->reg[1] ? _Unwind_GetGR((TARGET), 1) : 0xdead,     \
+                 (TARGET)->reg[2] ? _Unwind_GetGR((TARGET), 2) : 0xdead,     \
+                 (TARGET)->reg[3] ? _Unwind_GetGR((TARGET), 3) : 0xdead,     \
+                 (TARGET)->reg[4] ? _Unwind_GetGR((TARGET), 4) : 0xdead,     \
+                 (TARGET)->reg[5] ? _Unwind_GetGR((TARGET), 5) : 0xdead,     \
+                 (TARGET)->reg[6] ? _Unwind_GetGR((TARGET), 6) : 0xdead,     \
+                 (TARGET)->reg[7] ? _Unwind_GetGR((TARGET), 7) : 0xdead,     \
+                 (TARGET)->reg[13] ? _Unwind_GetGR((TARGET), 13) : 0xdead,   \
+                 (TARGET)->reg[14] ? _Unwind_GetGR((TARGET), 14) : 0xdead);  \
     } \
   while (0)
 #else
@@ -1250,6 +1304,7 @@ static inline void
 init_dwarf_reg_size_table (void)
 {
 #ifdef TARG_ST
+  /* (cbr) */
   int i;
   for (i = 0; i < DWARF_FRAME_REGISTERS+1; i++)
     dwarf_reg_size_table[i] = 4;

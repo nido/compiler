@@ -1154,15 +1154,6 @@ WFE_Finish_Function (void)
     WFE_Check_Undefined_Labels ();
     PU_Info *pu_info = PU_Info_Table [CURRENT_SYMTAB];
 
-#ifdef KEY
-    if (opt_regions)
-    {
-    	Check_For_Call_Region ();
-	// Since we are finishing a function, we must have terminated all
-	// regions. So reset the flag.
-	Did_Not_Terminate_Region = FALSE;
-    }
-#endif
     if (CURRENT_SYMTAB > GLOBAL_SYMTAB + 1) {
 
       DevWarn ("Encountered nested function");

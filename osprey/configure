@@ -237,7 +237,7 @@ conf_subdirs=""
 for i in ${var_subst_SUBDIRS}; do
     conf_subdirs="${conf_subdirs} $i"
     case $i in
-	g++fe|gccfe) conf_subdirs="$conf_subdirs $i/gnu"
+	gccfe) conf_subdirs="$conf_subdirs $i/gnu"
 	;;
     esac
 done

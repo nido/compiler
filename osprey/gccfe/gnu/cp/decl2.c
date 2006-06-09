@@ -1915,7 +1915,8 @@ import_export_decl (decl)
       || DECL_FRIEND_PSEUDO_TEMPLATE_INSTANTIATION (decl))
     {
       DECL_NOT_REALLY_EXTERN (decl) = 1;
-      if ((DECL_IMPLICIT_INSTANTIATION (decl)
+
+     if ((DECL_IMPLICIT_INSTANTIATION (decl)
 	   || DECL_FRIEND_PSEUDO_TEMPLATE_INSTANTIATION (decl))
 	  && (flag_implicit_templates
 	      || (flag_implicit_inline_templates 
@@ -2059,6 +2060,7 @@ get_guard (decl)
       /* We use a type that is big enough to contain a mutex as well
 	 as an integer counter.  */
       guard_type = long_long_integer_type_node;
+
       guard = build_decl (VAR_DECL, sname, guard_type);
       
       /* The guard should have the same linkage as what it guards.  */
@@ -2206,6 +2208,10 @@ finish_objects (method_type, initp, body)
   fn = finish_function (0);
   expand_body (fn);
 
+#ifdef TARG_ST
+  return;
+#endif
+
   /* When only doing semantic analysis, and no RTL generation, we
      can't call functions that directly emit assembly code; there is
      no assembly file in which to put the code.  */
@@ -2239,7 +2245,19 @@ static GTY(()) tree initialize_p_decl;
 static GTY(()) tree priority_decl;
 
 /* The declaration for the static storage duration function.  */
-static GTY(()) tree ssdf_decl;
+#ifndef TARG_ST
+/* (cbr) export for wfe */
+static
+#endif
+GTY(()) tree ssdf_decl;
+
+#ifdef TARG_ST
+void WFE_Hook() {
+ /* (cbr) commonalize front ends */
+  extern void WFE_Compile_File (tree decl);
+  WFE_Compile_File(global_namespace);
+}
+#endif
 
 /* All the static storage duration functions created in this
    translation unit.  */

@@ -39,7 +39,7 @@ enum tree_code {
 
 #undef DEFTREECODE
 
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
 typedef unsigned int LABEL_IDX;
 struct mongoose_gcc_DST_IDX {unsigned int block; unsigned int offset; };
 #if defined(__cplusplus)
@@ -619,6 +619,13 @@ extern void tree_vec_elt_check_failed PARAMS ((int, int, const char *,
 /* Non-zero if NODE is a _DECL with TREE_READONLY set.  */
 #define TREE_READONLY_DECL_P(NODE) (TREE_READONLY (NODE) && DECL_P (NODE))
 
+/* Non zero means the expression is restrict qualified.
+   In SGI mode, we need to propagate restrict information to Whirl
+   symbol table, this query is needed and externally used*/
+#ifdef TARG_ST
+#define TREE_RESTRICT(NODE) ((NODE)->type.restrict_flag)
+#endif /* TARG_ST */
+
 /* Value of expression is constant.
    Always appears in all ..._CST nodes.
    May also appear in an arithmetic expression, an ADDR_EXPR or a CONSTRUCTOR
@@ -778,7 +785,8 @@ struct tree_real_cst GTY(())
 #else
 #define TREE_STRING_POINTER(NODE) (STRING_CST_CHECK (NODE)->string.pointer)
 #endif
-#ifdef SGI_MONGOOSE
+// (cbr) XXX try to cleanup that.
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
 #define TREE_STRING_ST(NODE) (STRING_CST_CHECK (NODE)->string.st)
 #endif /* SGI_MONGOOSE */
 
@@ -788,7 +796,7 @@ struct tree_string GTY(())
   rtx rtl;	/* acts as link to register transfer language (rtl) info */
   int length;
   const char *pointer;
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
   ST *st;     /* for storing whirl symtab idx */
 #endif /* SGI_MONGOOSE */
 };
@@ -1064,7 +1072,8 @@ struct tree_block GTY(())
    neither a RECORD_TYPE, QUAL_UNION_TYPE, nor a UNION_TYPE.  */
 #define TYPE_BINFO(NODE) (TYPE_CHECK (NODE)->type.binfo)
 
-#ifdef SGI_MONGOOSE
+// (cbr) XXX try to cleanup that.
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
 /* WHIRL TY idx */
 #define TYPE_TY_IDX(NODE) (TYPE_CHECK (NODE)->type.ty_idx)
 #define TYPE_FIELD_IDS_USED(NODE) (TYPE_CHECK (NODE)->type.field_ids_used)
@@ -1327,7 +1336,8 @@ struct tree_type GTY(())
   HOST_WIDE_INT alias_set;
   /* Points to a structure whose details depend on the language in use.  */
   struct lang_type *lang_specific;
-#ifdef SGI_MONGOOSE
+// (cbr) XXX try to cleanup that.
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
   unsigned int ty_idx;  /* whirl type idx */
   unsigned int field_ids_used;  /* for structs and unions only; 0 otherwise */
   struct mongoose_gcc_DST_IDX dst_id; /* whirl DST */
@@ -1646,7 +1656,7 @@ struct tree_type GTY(())
 /* Language-specific decl information.  */
 #define DECL_LANG_SPECIFIC(NODE) (DECL_CHECK (NODE)->decl.lang_specific)
 
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
 /* field number within the enclosing struct */
 #define DECL_FIELD_ID(NODE) (DECL_CHECK (NODE)->decl.sgi_u1.field_id)
 #ifdef TARG_ST
@@ -1860,7 +1870,7 @@ struct tree_type GTY(())
    argument's depth.  */
 #define DECL_POINTER_DEPTH(DECL) (DECL_CHECK (DECL)->decl.pointer_depth)
 
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
 /* Used to indicate that this FUNCTION_DECL has syscall_linkage */
 #define DECL_SYSCALL_LINKAGE(NODE) (DECL_CHECK (NODE)->decl.syscall_linkage_flag)
 
@@ -1928,7 +1938,7 @@ struct tree_decl GTY(())
   unsigned lang_flag_6 : 1;
   unsigned lang_flag_7 : 1;
 
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
   unsigned syscall_linkage_flag : 1;    /* has syscall_linkage attribute */
   unsigned widen_retval_flag : 1;       /* widen return value attribute */
 #endif /* SGI_MONGOOSE */
@@ -1985,7 +1995,7 @@ struct tree_decl GTY(())
   /* Points to a structure whose details depend on the language in use.  */
   struct lang_decl *lang_specific;
 
-#ifdef SGI_MONGOOSE
+#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
   unsigned symtab_idx    : 8;  /* whirl SYMTAB_IDX */
   unsigned label_defined : 1;
 

@@ -100,6 +100,15 @@ extern void
 DST_build(int num_copts, /* Number of options passed to fec(c) */
 	  char *copts[]); /* The array of option passed to fec(c) */
 
+#ifdef TARG_ST // [CL] support lexical blocks
+typedef struct lexical_block_info_t {
+  LABEL_IDX         lexical_block_start_idx;
+  LABEL_IDX         lexical_block_end_idx;
+  DST_INFO_IDX      dst;
+  int               level;
+} LEXICAL_BLOCK_INFO;
+#endif
+
 extern void DST_write_to_dotB(void);
 
 extern DST_INFO_IDX DST_Create_Subprogram (ST *func_st,tree fndecl);

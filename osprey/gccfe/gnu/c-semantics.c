@@ -147,7 +147,8 @@ add_scope_stmt (begin_p, partial_p)
       *stack_ptr = top;
 #ifdef TARG_ST
       // [CL] support for lexical blocks
-      ss->common.scope = Push_Lexical_Block();
+      if (Push_Lexical_Block)
+	ss->common.scope = Push_Lexical_Block();
 #endif
     }
   else
@@ -156,6 +157,7 @@ add_scope_stmt (begin_p, partial_p)
       *stack_ptr = TREE_CHAIN (top);
 #ifdef TARG_ST
       // [CL] support for lexical blocks
+      if (Pop_Lexical_Block)
       ss->common.scope = Pop_Lexical_Block();
 #endif
     }
@@ -878,13 +880,15 @@ expand_stmt (t)
 	    Push_Scope_Cleanup (t);
 	    // [CL] support for lexical blocks
 	    if (!SCOPE_NULLIFIED_P(t)) {
-	      Start_Lexical_Block(t->common.scope);
+	      if (Start_Lexical_Block)
+		Start_Lexical_Block(t->common.scope);
 	    }
 	  }
 	  else {
 	    Pop_Scope_And_Do_Cleanups ();
 	    // [CL] support for lexical blocks
 	    if (!SCOPE_NULLIFIED_P(t)) {
+	      if (End_Lexical_Block)
 	      End_Lexical_Block(t->common.scope);
 	    }
 	  }

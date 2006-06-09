@@ -2461,6 +2461,25 @@ WFE_Address_Of(tree arg0)
         wn = WN_Lda (Pointer_Mtype, ST_ofst(st), st);
       }
       break;
+    case VA_ARG_EXPR:
+      wn = WFE_Expand_Expr (arg0);
+      if (WN_operator (wn) == OPR_ILOAD) {
+	/* [SC] Remove the indirection to get the address. */
+	wn = WN_Binary (OPR_ADD, Pointer_Mtype,
+			WN_kid0 (wn),
+			WN_Intconst (Pointer_Mtype, WN_offset (wn)));
+      } else {
+	/* [SC] Save to temp, and return address of temp. */
+	tree type = TREE_TYPE (arg0);
+	TY_IDX va_ty_idx = Get_TY (type);
+	TYPE_ID va_mtype = TY_mtype (va_ty_idx);
+	ST *temp_st = Gen_Temp_Symbol (va_ty_idx, ".tmp");
+	Set_ST_addr_saved (temp_st);
+	wn = WN_Stid (va_mtype, 0, temp_st, va_ty_idx, wn);
+	WFE_Stmt_Append (wn, Get_Srcpos ());
+	wn = WN_Lda (Pointer_Mtype, ST_ofst(temp_st), temp_st);
+      }
+      break;
 #endif
 
   default:
@@ -2679,6 +2698,17 @@ WFE_Expand_Expr (tree exp,
 	  TREE_OPERAND(t, 2) = 0;
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
+        if (TREE_CODE (t) == COND_EXPR) {
+          tree targ = TREE_OPERAND(t, 1);
+          if (TREE_CODE (targ) == TARGET_EXPR)
+            TREE_OPERAND(targ, 2) = NULL_TREE;
+          targ = TREE_OPERAND(t, 2);
+          if (TREE_CODE (targ) == TARGET_EXPR)
+            TREE_OPERAND(targ, 2) = NULL_TREE;
+        }
+#endif
+
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
         /* (cbr) avoid creating a temporary object for ctors */
         if (TREE_CODE (t) == COMPOUND_EXPR && 
             !TREE_OPERAND(exp,2) &&
@@ -2687,7 +2717,6 @@ WFE_Expand_Expr (tree exp,
             DECL_CONSTRUCTOR_P (TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (t, 0), 0) ,0))) {
           tree args = TREE_VALUE(TREE_OPERAND (TREE_OPERAND (t, 0), 1));
 
-          TREE_OPERAND(exp,2) = NULL;
 	  TREE_OPERAND(args, 0) = TREE_OPERAND(exp, 0);
 
 	  WFE_Expand_Expr (TREE_OPERAND (t, 0));
@@ -2755,6 +2784,7 @@ WFE_Expand_Expr (tree exp,
             cleanup = build (COND_EXPR, void_type_node,
                              c_common_truthvalue_conversion(cond),
                              cleanup, integer_zero_node);
+            TREE_OPERAND(exp, 2) = cleanup;
             }
           
           Push_Temp_Cleanup(cleanup, true, CLEANUP_EH_ONLY (exp));
@@ -4774,15 +4804,7 @@ WFE_Expand_Expr (tree exp,
             	WFE_Stmt_Push (region_body, wfe_stmk_call_region_body, Get_Srcpos());
 	    }
 
-            //	} else if (key_exceptions && inside_eh_region && opt_regions)
-            } else if (flag_exceptions && inside_eh_region && opt_regions)
-	{
-	    // The above conditions dictate that this call MUST not be inside
-	    // a region. So close the region.
-	    // TODO: Is this only for opt_regions or in general?
-	    if (Check_For_Call_Region ())
-	    	Did_Not_Terminate_Region = FALSE;
-	}
+            }
 
 #endif // KEY
 

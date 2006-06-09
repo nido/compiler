@@ -117,7 +117,6 @@ extern WN*  WFE_Stmt_Pop (WFE_STMT_KIND kind);
 
 #ifdef KEY
 extern bool Check_For_Call_Region (int cleanup=0);
-extern bool Did_Not_Terminate_Region;
 #endif
 
 extern UINT current_file;
