@@ -371,12 +371,12 @@ default: first
 #  The commands in this section are done BEFORE any other target is 
 #  built.
 #----------------------------------------------------------------------
-$(LIBGNU_OBJS) first:
+first:
 	cd $(TARG_GNU_DIR) && $(MAKE)
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
 
-local: 
+local: gnu_libs
 	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
@@ -391,6 +391,11 @@ install: last
 	for h in $(TARGETS); do \
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
+
+gnu_libs:
+	cd $(TARG_GNU_DIR) && $(MAKE) `basename $(LIBGNU_OBJS) $(GNU_CPP_OBJS)`
+
+$(LIBGNU_OBJS) $(GNU_CPP_OBJS): gnu_libs
 
 GFECC_OBJS=$(FRONT_END_OBJS) $(LIBGNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS) $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS)
 
