@@ -763,6 +763,20 @@ WFE_Expand_End_Stmt_Expr (tree t)
   wfe_bind_expr_stack [wfe_bind_expr_stack_last].rtl_expr = t;
   wfe_bind_expr_stack [wfe_bind_expr_stack_last].block    = block;
 } /* WFE_End_Stmt_Expr */
+#else
+#if defined TARG_ST && defined (_NO_WEAK_SUPPORT_)
+void
+WFE_Expand_Start_Stmt_Expr (tree t)
+{
+  abort();
+}
+
+void
+WFE_Expand_End_Stmt_Expr (tree t)
+{
+  abort();
+}
+#endif
 #endif /* GPLUSPLUS_FE */
 
 typedef struct wfe_save_expr_t {

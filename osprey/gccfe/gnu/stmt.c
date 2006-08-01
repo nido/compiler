@@ -5526,7 +5526,7 @@ expand_end_case_type (orig_index, orig_type)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("end case", orig_index);
-  WFE_Expand_End_Case (orig_index);
+  WFE_Expand_End_Case ();
 #endif /* SGI_MONGOOSE */
 
   /* Don't crash due to previous errors.  */

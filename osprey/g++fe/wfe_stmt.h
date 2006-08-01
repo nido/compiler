@@ -42,9 +42,55 @@ extern void Add_Handler_Info (WN * call_wn, INT i, INT num_handlers);
 
 extern
 #ifdef __cplusplus
-"C"
+"C" {
 #endif
 void WFE_Expand_Stmt (tree stmt);
+#ifdef _NO_WEAK_SUPPORT_
+  extern void WFE_Expand_Start_Case (tree selector, tree sel_type);
+extern void WFE_Expand_End_Case (void);
+extern void WFE_Add_Case_Node (tree low, tree high, tree label);
+extern void WFE_Record_Switch_Default_Label (tree label);
+extern void WFE_Expand_Start_Case_Dummy (void);
+extern void WFE_Expand_End_Case_Dummy (void);
+extern void WFE_Expand_Return (tree stmt, tree retval);
+extern void WFE_Expand_Exit_Something (struct nesting *n,
+                           struct nesting *cond_stack,
+                           struct nesting *loop_stack,
+                           struct nesting *case_stack,
+				       LABEL_IDX      *label_idx);
+extern void WFE_Expand_Exit_Loop_If_False (struct nesting *whichloop, tree cond);
+extern void WFE_Expand_Exit_Loop (struct nesting *whichloop);
+extern void WFE_Expand_Continue (void);
+extern void WFE_Expand_Continue_Loop (struct nesting *whichloop);
+extern void WFE_Expand_End_Loop (void);
+extern void WFE_Expand_Loop_Continue_Here (void);
+extern void WFE_Expand_Start_Loop_Continue_Elsewhere (int exitflag, struct nesting *whichloop);
+extern void WFE_Expand_Start_Loop (int exitflag, struct nesting *whichloop);
+extern void WFE_Expand_End_Cond (void);
+extern void WFE_Expand_Start_Else (void);
+extern void WFE_Expand_Start_Cond (tree cond, int exitflag);
+extern void Wfe_Expand_Asm_Operands (tree  string,
+			 tree  outputs,
+			 tree  inputs,
+			 tree  clobbers,
+			 int   vol,
+			 char *filename,
+  		     int   line);
+extern void WFE_Expand_Goto (tree label);
+extern void WFE_Declare_Nonlocal_Label (tree label);
+extern void WFE_Expand_Label (tree label);
+extern void WFE_Expand_Computed_Goto (tree exp);
+extern void Push_Scope_Cleanup (tree t, bool eh_only);
+extern void Start_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block);
+extern void End_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block);
+extern void Pop_Scope_And_Do_Cleanups (void);
+extern LEXICAL_BLOCK_INFO* Pop_Lexical_Block ();
+extern LEXICAL_BLOCK_INFO* Push_Lexical_Block ();
+extern void WFE_Add_Aggregate_Init_Real (REAL_VALUE_TYPE real, INT size);
+#endif
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef KEY
 extern LABEL_IDX WFE_unusable_label_idx;

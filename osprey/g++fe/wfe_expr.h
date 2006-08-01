@@ -22,6 +22,11 @@ extern void WFE_One_Stmt_Cleanup (tree exp);
 /* generate a RET statement */
 extern void WFE_Null_Return (void);
 
+#if defined TARG_ST && defined (_NO_WEAK_SUPPORT_)
+extern void WFE_Expand_Start_Stmt_Expr (tree t);
+extern void WFE_Expand_End_Stmt_Expr (tree t);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

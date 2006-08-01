@@ -845,7 +845,7 @@ WFE_Expand_End_Case_Dummy (void)
 } /* WFE_Expand_End_Case_Dummy */
 
 void
-WFE_Expand_End_Case (tree orig_index)
+WFE_Expand_End_Case ()
 {
   INT32  i;
   INT32  n;

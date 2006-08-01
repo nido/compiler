@@ -108,7 +108,7 @@ extern void Setup_EH_Region ();
 extern "C" {
 #endif /* __cplusplus */
 
-#ifdef TARG_ST
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
 extern __attribute__ ((weak)) void WFE_Expand_Start_Stmt_Expr (tree);
 extern __attribute__ ((weak)) void WFE_Expand_End_Stmt_Expr (tree);
 #else

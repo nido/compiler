@@ -5063,7 +5063,7 @@ WFE_Expand_Expr (tree exp,
         if (body) 
           WFE_Expand_Expr (body, FALSE);
 
-        WFE_Expand_End_Case (cond);
+        WFE_Expand_End_Case ();
 
         break;
       }

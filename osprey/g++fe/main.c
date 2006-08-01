@@ -98,6 +98,10 @@ void WFE_Compile_File (struct tree *decl)
 void (*back_end_hook) (struct tree *) = &WFE_Compile_File;
 #endif
 
+/* (cbr) wfe hooks. called from gnu/toplev.c */
+extern void WFE_Hook();
+void (*WFE_Hook_Ptr)() = WFE_Hook;
+
 int
 main ( 
   INT argc,	/* Number of command line arguments */

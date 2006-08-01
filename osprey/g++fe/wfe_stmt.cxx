@@ -334,7 +334,10 @@ Emit_Cleanup(tree cleanup)
 }
 #endif
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 #ifdef KEY
 Push_Scope_Cleanup (tree t, bool eh_only=false)
 #else
@@ -720,7 +723,10 @@ Do_Cleanups_For_EH (void)
 }
 #endif // KEY
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 Pop_Scope_And_Do_Cleanups (void)
 {
   Is_True(scope_cleanup_i != -1,
@@ -948,7 +954,10 @@ WFE_Record_Loop_Switch (int tree_code)
   }
 } /* WFE_Record_Loop_Switch */
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 WFE_Expand_Case (tree low, tree high)
 {
   WN        *wn;
@@ -1007,7 +1016,10 @@ WFE_Expand_Case (tree low, tree high)
   WFE_Stmt_Append (wn, Get_Srcpos ());
 } /* WFE_Expand_Case */
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+ void
 WFE_Declare_Nonlocal_Label (tree label)
 {
   WFE_Get_LABEL (label, FALSE);
@@ -1985,7 +1997,10 @@ WFE_Expand_Break (void)
 #endif // KEY
 
 #ifdef KEY
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 WFE_Expand_Continue (void)
 {
   INT32     i = break_continue_info_i;
@@ -2184,7 +2199,10 @@ WFE_Expand_Loop (tree stmt)
 } /* WFE_Expand_Loop */
   
 #ifndef KEY
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 WFE_Expand_Goto (tree label)
 {
   WN *wn;
@@ -2308,7 +2326,10 @@ WFE_Expand_Goto (tree label)	// KEY VERSION
 } /* WFE_Expand_Goto */
 #endif
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 WFE_Expand_Computed_Goto (tree exp)
 {
   DevWarn ("encountered indirect jump");
@@ -2356,7 +2377,10 @@ WFE_Expand_If (tree stmt)
   }
 } /* WFE_Expand_If */
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+void
 WFE_Expand_Label (tree label)
 {
   LABEL_IDX label_idx = WFE_Get_LABEL (label, TRUE);
@@ -2369,7 +2393,10 @@ WFE_Expand_Label (tree label)
   }
 } /* WFE_Expand_Label */
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static 
+#endif
+void
 WFE_Expand_Return (tree stmt, tree retval)
 {
   WN *wn;
@@ -2663,7 +2690,10 @@ Mark_Scopes_And_Labels (tree stmt)
   }
 }
 
-static void
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+ void
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
   /* (cbr) gcc 3.3 upgrade */
 WFE_Expand_Start_Case (tree selector, tree sel_type)
@@ -2699,7 +2729,114 @@ WFE_Expand_Start_Case (tree selector)
   WFE_Record_Loop_Switch (SWITCH_STMT);
 } /* WFE_Expand_Start_Case */
 
-static void
+#if defined (TARG_ST) && defined(_NO_WEAK_SUPPORT_)
+void
+WFE_Add_Case_Node (tree low, tree high, tree label)
+  {
+    abort();
+  }
+void
+WFE_Record_Switch_Default_Label (tree label)
+  {
+    abort();
+  }
+void
+WFE_Expand_Start_Case_Dummy (void)
+{
+  abort();
+} 
+void
+WFE_Expand_End_Case_Dummy (void)
+{
+  abort();
+}
+void
+WFE_Expand_Exit_Something (struct nesting *n,
+                           struct nesting *cond_stack,
+                           struct nesting *loop_stack,
+                           struct nesting *case_stack,
+                           LABEL_IDX      *label_idx)
+{
+  abort();
+}
+void
+WFE_Expand_Exit_Loop_If_False (struct nesting *whichloop, tree cond)
+{
+  abort();
+}
+void
+WFE_Expand_Exit_Loop (struct nesting *whichloop)
+{
+  abort();
+} 
+void
+WFE_Expand_Continue_Loop (struct nesting *whichloop)
+{
+  abort();
+} 
+void
+WFE_Expand_End_Loop (void)
+{
+  abort();
+}
+void
+WFE_Expand_Loop_Continue_Here (void)
+{
+  abort();
+}
+void
+WFE_Expand_Start_Loop_Continue_Elsewhere (int exitflag, struct nesting *whichloop)
+{
+  abort();
+}
+void
+WFE_Expand_Start_Loop (int exitflag, struct nesting *whichloop)
+{
+  abort();
+}
+void
+WFE_Expand_End_Cond (void)
+{
+  abort();
+}
+void
+WFE_Expand_Start_Else (void)
+{
+  abort();
+}
+void
+WFE_Expand_Start_Cond (tree cond, int exitflag)
+{
+  abort();
+}
+void End_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
+{
+  abort();
+}
+void Start_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
+{
+  abort();
+}
+LEXICAL_BLOCK_INFO* Pop_Lexical_Block ()
+{
+  abort();
+}
+LEXICAL_BLOCK_INFO*
+Push_Lexical_Block ()
+{
+  abort();
+}
+void 
+WFE_Add_Aggregate_Init_Real (REAL_VALUE_TYPE real, INT size)
+{
+  abort();
+}
+#endif
+
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
+static
+#endif
+  void
 WFE_Expand_End_Case (void)
 {
   INT32  i;
@@ -4122,3 +4259,4 @@ bool Current_Function_Has_EH_Spec()
 {
   return !eh_spec_vector.empty();
 }
+

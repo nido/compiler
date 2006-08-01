@@ -53,6 +53,9 @@ extern char * gnu_init (INT argc, char **argv, char **envp);
 #endif
 extern void check_gnu_errors (int *, int *);
 
+/* (cbr) wfe hooks */
+void (*WFE_Hook_Ptr)(void) = NULL;
+
 int
 main ( 
   INT argc,	/* Number of command line arguments */

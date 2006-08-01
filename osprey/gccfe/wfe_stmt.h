@@ -45,7 +45,7 @@ extern "C" {
 
 /* expand one gnu stmt tree into symtab & whirl */
 
-#ifdef TARG_ST
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
 extern void __attribute__ ((weak)) WFE_Expand_Start_Cond (tree cond, int exitflag);
 extern void __attribute__ ((weak)) WFE_Expand_Start_Else (void);
 extern void __attribute__ ((weak)) WFE_Expand_End_Cond (void);
@@ -63,7 +63,7 @@ extern void __attribute__ ((weak)) WFE_Expand_Start_Case_Dummy (void);
 extern void __attribute__ ((weak)) WFE_Add_Case_Node (tree low, tree high, tree label);
 extern void __attribute__ ((weak)) WFE_Emit_Case_Nodes (void);
 extern void __attribute__ ((weak)) WFE_Expand_End_Case_Dummy (void);
-extern void __attribute__ ((weak)) WFE_Expand_End_Case (tree orig_index);
+extern void __attribute__ ((weak)) WFE_Expand_End_Case (void);
 extern void __attribute__ ((weak)) WFE_Expand_Label (tree label);
 extern void __attribute__ ((weak)) WFE_Expand_Goto (tree label);
 extern void __attribute__ ((weak)) WFE_Expand_Exit_Something (struct nesting *n,
@@ -98,7 +98,7 @@ extern void WFE_Expand_Start_Case_Dummy (void);
 extern void WFE_Add_Case_Node (tree low, tree high, tree label);
 extern void WFE_Emit_Case_Nodes (void);
 extern void WFE_Expand_End_Case_Dummy (void);
-extern void WFE_Expand_End_Case (tree orig_index);
+extern void WFE_Expand_End_Case (void);
 extern void WFE_Expand_Label (tree label);
 extern void WFE_Expand_Goto (tree label);
 extern void WFE_Expand_Exit_Something (struct nesting *n,
@@ -121,11 +121,18 @@ extern LABEL_IDX WFE_Get_LABEL (tree label, int def);
 
 #ifdef TARG_ST
   // [CL] support lexical blocks
+#if !defined(_NO_WEAK_SUPPORT_)
 struct lexical_block_info_t* __attribute__ ((weak)) Push_Lexical_Block();
 struct lexical_block_info_t* __attribute__ ((weak)) Pop_Lexical_Block();
-void Set_Current_Scope_DST(tree x);
 void __attribute__ ((weak)) Start_Lexical_Block(struct lexical_block_info_t*);
 void __attribute__ ((weak)) End_Lexical_Block(struct lexical_block_info_t*);
+#else
+struct lexical_block_info_t*  Push_Lexical_Block();
+struct lexical_block_info_t* Pop_Lexical_Block();
+void Start_Lexical_Block(struct lexical_block_info_t*);
+void  End_Lexical_Block(struct lexical_block_info_t*);
+#endif
+void Set_Current_Scope_DST(tree x);
 #endif
 
 #ifdef __cplusplus
@@ -138,8 +145,13 @@ extern LABEL_IDX lookup_cleanups(INITV_IDX&);
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if defined(_NO_WEAK_SUPPORT_)
+extern void Push_Scope_Cleanup (tree t);
+extern void Pop_Scope_And_Do_Cleanups ();
+#else
 extern void __attribute__ ((weak)) Push_Scope_Cleanup (tree t);
 extern void __attribute__ ((weak)) Pop_Scope_And_Do_Cleanups ();
+#endif
 #ifdef __cplusplus
 }
 #endif
@@ -151,5 +163,8 @@ extern LABEL_IDX WFE_last_label_idx;
 #endif
 
 extern void WFE_Stmt_Init (void);
+
+#if defined (TARG_ST) && defined (FRONT_END_CPLUSPLUS)
+#endif
 
 #endif

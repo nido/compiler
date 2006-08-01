@@ -5525,12 +5525,12 @@ do_compile (void)
 #ifdef TARG_ST
   /* (cbr) wfe hook */
   if (lang_dependent_init (filename)) {
-    extern __attribute__ ((weak)) WFE_Hook(void);
+    extern  void (*WFE_Hook_Ptr)(void);
 
     compile_file ();
     
-    if (WFE_Hook) {
-      WFE_Hook();
+    if (WFE_Hook_Ptr) {
+      WFE_Hook_Ptr();
     }
 
   }

@@ -74,7 +74,7 @@ extern void WFE_Add_Aggregate_Init_Padding (INT size);
 /* add integer to aggregate initialization */
 extern void WFE_Add_Aggregate_Init_Integer (INT64 val, INT size);
 
-#ifdef TARG_ST
+#if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
   // (cbr) front end commonalizations 
 extern __attribute__ ((weak)) void WFE_Add_Aggregate_Init_Real (REAL_VALUE_TYPE val, INT size);
 #else
