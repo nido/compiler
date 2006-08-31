@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 31 15:07:24 CEST 2006
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-ipa-make
+
+Description:
+------------
+	*  IPA no longer relies on make. Works under Mingwin
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver_util.cxx
+	M      osprey/libSYS/mmap.c
+	M      osprey/common/util/file_util.c
+	M      osprey/ipa/main/optimize/ipo_main.cxx
+	M      osprey/ipa/main/Makefile.gbase
+	M      osprey/ipa/common/ipc_compile.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jun  9 11:56:41 CEST 2006
 	Author:    bruel
 	Parent:    svn://gnx287.gnb.st.com/open64/trunk

@@ -406,7 +406,11 @@ Process_Command_Line (INT argc, char **argv)
 
     myname = Last_Pathname_Component (argv[0]);
 
+#ifdef TARG_ST // [CL] Support Win32 too
+    if (myname[0] == 'i' && strncmp (myname, "ipl", sizeof("ipl")-1) == 0) {
+#else
     if (myname[0] == 'i' && strcmp (myname, "ipl") == 0) {
+#endif
 	Run_ipl = TRUE;
 	/* We don't support olimit region for ipl (yet).  So if we overflow
 	   the olimit, we don't want to run preopt, but still run ipl. */
@@ -416,25 +420,53 @@ Process_Command_Line (INT argc, char **argv)
 
 	switch (myname[0]) {
 	case 'l':
+#ifdef TARG_ST // [CL] Support Win32 too
+	    if (strncmp (myname, "lnopt", sizeof("lnopt")-1) == 0)
+#else
 	    if (strcmp (myname, "lnopt") == 0)
+#endif
 		Run_lno = TRUE;
 	    break;
 	case 'w':
+#ifdef TARG_ST // [CL] Support Win32 too
+	    if (strncmp (myname, "wopt", sizeof("wopt")-1) == 0)
+#else
 	    if (strcmp (myname, "wopt") == 0)
+#endif
 		Run_wopt = TRUE;
+#ifdef TARG_ST // [CL] Support Win32 too
+	    else if (strncmp (myname, "whirl2c", sizeof("whirl2c")-1) == 0)
+#else
 	    else if (strcmp (myname, "whirl2c") == 0)
+#endif
 		Run_w2c = TRUE;
+#ifdef TARG_ST // [CL] Support Win32 too
+	    else if (strncmp (myname, "whirl2f", sizeof("whirl2f")-1) == 0)
+#else
 	    else if (strcmp (myname, "whirl2f") == 0)
+#endif
 		Run_w2f = TRUE;
 	    break;
 	case 'p':
+#ifdef TARG_ST // [CL] Support Win32 too
+	  if (strncmp (myname, "preopt", sizeof("preopt")-1) == 0)
+#else
 	    if (strcmp (myname, "preopt") == 0)
+#endif
 		Run_preopt = TRUE;
+#ifdef TARG_ST // [CL] Support Win32 too
+	    else if (strncmp (myname, "purple", sizeof("purple")-1) == 0)
+#else
 	    else if (strcmp (myname, "purple") == 0)
+#endif
 		Run_purple = TRUE;
 	    break;
 	case 'c':
+#ifdef TARG_ST // [CL] Support Win32 too
+	  if (strncmp (myname, "cg", sizeof("cg")-1) == 0)
+#else
 	    if (strcmp (myname, "cg") == 0)
+#endif
 		Run_cg = TRUE;
 	    break;
 	}

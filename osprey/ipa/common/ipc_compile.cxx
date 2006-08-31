@@ -78,6 +78,20 @@
 #endif
 
 #ifndef TARG_ST
+// [CL] by default, no longer rely on make: launch subcommands
+// directly, this makes the MingWin port easier.
+#define USE_MAKE
+#endif
+
+#ifndef USE_MAKE
+#include "W_wait.h"
+#include "W_signal.h"
+#include "sys_process.h"
+#include <dirent.h>
+#define LOGFILE "/var/log/messages"
+#endif
+
+#ifndef TARG_ST
 #pragma weak tos_string
 #pragma weak outfilename
 #endif
@@ -123,15 +137,21 @@
 // makefile_name is a full pathname, as is outfiles_fullpath, 
 // all of the others are basename only.
 
+#ifdef USE_MAKE
 static char* makefile_name = 0;         // name of the makefile
 static FILE* makefile = 0; 
+#else
+static char* current_dir = NULL;
+#endif
 
 static std::vector<const char*>* infiles = 0;
 static std::vector<const char*>* outfiles = 0;
 static std::vector<const char*>* outfiles_fullpath = 0;
 static std::vector<const char*>* commands = 0;
 static std::vector<UINT32>* ProMP_Idx = 0;
+#ifdef USE_MAKE
 static std::vector<std::vector<const char*> >* comments = 0;
+#endif
 
 // Name of the symtab file as written by the ipa.  (e.g. symtab.I)
 static char input_symtab_name[PATH_MAX] = "";
@@ -176,7 +196,9 @@ static COMMAND_MAP_TYPE* command_map;
 
 static const char* get_extra_args(const char* ipaa_filename);
 static const char* get_extra_symtab_args(const ARGV&);
+#ifdef USE_MAKE
 static void exec_smake(char* cmdfile_name);
+#endif
 
 /*
   This is here because the gnu basename() doesn't strip
@@ -249,23 +271,33 @@ ipa_compile_init ()
 { 
   Is_True(tmpdir, ("no IPA temp. directory"));
 
+#ifdef USE_MAKE
   Is_True(infiles == 0 && outfiles == 0 && commands == 0 && comments == 0
           && makefile_name == 0 && makefile == 0 && command_map == 0,
+#else
+  Is_True(infiles == 0 && outfiles == 0 && command_map == 0,
+#endif
           ("ipa_compile_init already initialized"));
 
   infiles           = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
   outfiles          = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
   outfiles_fullpath = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
   commands          = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
+#ifdef USE_MAKE
   comments          = CXX_NEW (std::vector<std::vector<const char*> >, Malloc_Mem_Pool);
 
   if (infiles == 0 || outfiles == 0 || outfiles_fullpath == 0 ||
       commands == 0 || comments == 0)
+#else
+  if (infiles == 0 || outfiles == 0 || outfiles_fullpath == 0 ||
+      commands == 0)
+#endif
     ErrMsg (EC_No_Mem, "ipa_compile_init");
 
   if (ProMP_Listing)
       ProMP_Idx = CXX_NEW (std::vector<UINT32>, Malloc_Mem_Pool);
 
+#ifdef USE_MAKE
   char name_buffer[256];
   sprintf(name_buffer, "makefile.ipa%ld", (long) getpid());
 
@@ -276,6 +308,7 @@ ipa_compile_init ()
   if (makefile == 0)
     ErrMsg (EC_Ipa_Open, makefile_name, sys_errlist[errno]);
   chmod(makefile_name, 0644);
+#endif
 
   command_map = CXX_NEW(COMMAND_MAP_TYPE, Malloc_Mem_Pool);
   if (command_map == 0)
@@ -351,6 +384,7 @@ ipa_compile_init ()
   }
 #endif
 
+#ifdef USE_MAKE
   // For smake we first try $TOOLROOT/usr/sbin/smake.  If that doesn't
   // exist then we try /usr/sbin/smake, and finally if *that* doesn't
   // exist we just use smake and hope that the user's search path 
@@ -372,6 +406,7 @@ ipa_compile_init ()
   }
 
   (*command_map)[MAKE_STRING] = smake_name;
+#endif
 
 #ifdef TODO
   if (IPA_Enable_Cord) {
@@ -504,8 +539,13 @@ extern "C" void
 ipacom_process_symtab (char* symtab_file)
 {
 
+#ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0 && comments != 0,
+#else
+  Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
+          commands != 0,
+#endif
           ("ipacom_process_symtab: ipacom not yet initialized"));
 
   Is_True(strlen(input_symtab_name) == 0 &&
@@ -578,8 +618,12 @@ extern "C"
 size_t ipacom_process_file (char* input_file,
                             const PU_Info* pu, UINT32 ProMP_id)
 {
+#ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles_fullpath != 0 && commands != 0 &&
           comments != 0,
+#else
+  Is_True(infiles != 0 && outfiles_fullpath != 0 && commands != 0,
+#endif
           ("ipacom_process_file: ipacom not initialized"));
 
   Is_True(strlen(input_symtab_name) != 0 &&
@@ -665,6 +709,7 @@ size_t ipacom_process_file (char* input_file,
 
   commands->push_back(cmdline);
     
+#ifdef USE_MAKE
   // Add an empty vector for this file's comments.
   // [HK]
 #if __GNUC__ >= 3
@@ -678,6 +723,12 @@ size_t ipacom_process_file (char* input_file,
            infiles->size() == outfiles_fullpath->size() &&
            infiles->size() == commands->size() &&
            infiles->size() == comments->size(),
+#else
+  Is_True (infiles->size() > 0 &&
+           infiles->size() == outfiles->size() &&
+           infiles->size() == outfiles_fullpath->size() &&
+           infiles->size() == commands->size(),
+#endif
            ("ipacom_process_file: inconsistent vector sizes"));
 
   // Set up extra args for compiling symtab, if necessary.
@@ -694,6 +745,7 @@ size_t ipacom_process_file (char* input_file,
 extern "C"
 void ipacom_add_comment(size_t n, const char* comment)
 {
+#ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0 && comments != 0,
           ("ipacom_add_comment: ipacom not initialized"));
@@ -710,6 +762,7 @@ void ipacom_add_comment(size_t n, const char* comment)
   strcpy(tmp, comment);
 
   (*comments)[n].push_back(tmp);
+#endif
 }
 
 namespace {
@@ -735,6 +788,7 @@ char* ipc_copy_of (char *str)
 bool has_dummy2 = FALSE;
 #endif
 
+#ifdef USE_MAKE
 void print_all_outfiles(const char* dirname)
 {
   for (std::vector<const char*>::iterator i = outfiles->begin();
@@ -754,19 +808,372 @@ void print_all_outfiles(const char* dirname)
     }
 #endif
 }
+#endif
 
 } // Close unnamed namespace
+
+#ifndef USE_MAKE
+	  // [CL] convert string arguments into argv[]
+void string2argv(const char* string, ARGV& argv)
+{
+  char *mystring = CXX_NEW_ARRAY(char, strlen(string)+1, Malloc_Mem_Pool);
+
+  char* curptr = mystring;
+  char* ptr = curptr;
+  strcpy(ptr, string);
+
+  // Simple handling of quote chars: based on the assumption that
+  // quote chars have been added by the driver, simply remove them
+  // now, and accept spaces within the current string.
+
+#define QUOTE_CHAR(c)				\
+  ( (c) == '"' ||				\
+    (c) == '\'' ||				\
+    (c) == '`' )
+  int quote = 0;
+  int isspace;
+  
+  while(*ptr) {
+    isspace = 0;
+    curptr = ptr;
+    while(*curptr) {
+      if (QUOTE_CHAR(*curptr)) {
+	if (quote == 0) {
+	  quote++;
+	} else {
+	  quote--;
+	}
+	// remove quoting char
+	strcpy(curptr, curptr+1);
+	continue;
+      }
+      if ((*curptr) == ' ') {
+	if (quote == 0) {
+	  *curptr = '\0';
+	  isspace = 1;
+	  break;
+	}
+      }
+      curptr++;
+    }
+    if (strlen(ptr) > 0) {
+      argv.push_back(ptr);
+    }
+    if (isspace) {
+      ptr = curptr + 1;
+    } else {
+      ptr = curptr;
+    }
+  }
+}
+
+// [CL] code cloned from the driver
+#include <cmplrs/rcodes.h>
+
+static void error(string format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	fprintf(stderr, "ERROR:  ");
+	vfprintf(stderr, format, args);
+	fprintf(stderr, "\n");
+	va_end (args);
+}
+
+static void internal_error (string format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	fprintf(stderr, "INTERNAL ERROR:  ");
+	vfprintf(stderr, format, args);
+	fprintf(stderr, "\n");
+	va_end (args);
+}
+
+static void remove_file(const char* name)
+{
+  int status;
+
+  status = unlink(name);
+  if (status != 0 && errno != ENOENT) {
+    internal_error("cannot unlink temp file %s", name);
+  }
+}
+
+// Concatenate file 'srcname' into 'dstname'
+#define MAX_RBUF_SIZE 1*1024*1024
+static void concat(const char* srcname, const char* dstname)
+{
+  void *rbuf = NULL;
+  size_t size_buf = 0;
+  long cur_size = 0;
+  struct stat buf;
+  int elem_size;
+  int dst_fd, src_fd;
+  int mode=0666;
+
+  if (stat(srcname, &buf)) {
+    perror("error generating log file");
+    return;
+  }
+
+  elem_size = buf.st_size;
+
+  if (elem_size > MAX_RBUF_SIZE) {
+      rbuf = (void *) malloc(MAX_RBUF_SIZE);
+      if (rbuf == NULL) {
+	perror("error generating log file");
+	return;
+      }
+      size_buf = MAX_RBUF_SIZE;
+  } else {
+      rbuf = (void *) malloc(elem_size);
+      if (rbuf == NULL) {
+	perror("error generating log file");
+	return;
+      }
+      size_buf = elem_size;
+  }
+
+  src_fd = open (srcname, O_RDONLY, mode);
+  if (src_fd == -1) {
+    perror("error generating log file");
+    return;
+  }
+
+  dst_fd = open (dstname, O_RDWR|O_CREAT|O_APPEND, mode);
+  if (dst_fd == -1) {
+    perror("error generating log file");
+    close(src_fd);
+    free(rbuf);
+    return;
+  }
+
+  cur_size = elem_size;
+  while (cur_size > 0) {
+      ssize_t ret;
+
+      ret = read(src_fd, rbuf, size_buf);
+      if (ret > 0) {
+	  ssize_t w_ret;
+
+	  w_ret = write(dst_fd, rbuf , ret);
+	  if (w_ret == -1) {
+	    perror("error generating log file");
+	    close(dst_fd);
+	    close(src_fd);
+	    free(rbuf);
+	    return;
+	  }
+	  cur_size -= ret;
+      } else {
+	perror("error generating log file");
+	close(dst_fd);
+	close(src_fd);
+	free(rbuf);
+	return;
+      }
+  }
+  
+  free(rbuf);
+  close(dst_fd);
+  close(src_fd);
+}
+
+static void cleanup()
+{
+  // Concatenate all *.t files into 1 single trace file. Same for *.tlog
+  DIR* dirp = opendir(tmpdir);
+  bool removed_t_file = false;
+  bool removed_tlog_file = false;
+
+  if (dirp) {
+    struct dirent* direntp;
+
+    while ((direntp = readdir(dirp)) != NULL) {
+      unsigned int len = strlen(direntp->d_name);
+      // check if *.t file
+      if (len > 1){
+	if (strcmp(&direntp->d_name[len-2], ".t") == 0) {
+	  // Concat .t file
+	  char* tname = (char*)malloc(strlen(outfilename)+1+strlen(".t"));
+	  sprintf(tname, "%s.t", outfilename);
+
+	  char* srcname = (char*)malloc(strlen(tmpdir)+strlen(direntp->d_name)+1+1);
+	  sprintf(srcname, "%s/%s", tmpdir, direntp->d_name);
+
+	  // First, remove any existing file if we are about to concat new ones
+	  if (!removed_t_file) {
+	    remove_file(tname);
+	    removed_t_file = true;
+	  }
+
+	  concat(srcname, tname);
+
+	  free(tname);
+	  free(srcname);
+
+	} else if (strcmp(&direntp->d_name[len-5], ".tlog") == 0) {
+	  // Concat .tlog file
+	  char* tlogname = (char*)malloc(strlen(outfilename)+1+strlen(".tlog"));
+	  sprintf(tlogname, "%s.tlog", outfilename);
+
+	  char* srcname = (char*)malloc(strlen(tmpdir)+strlen(direntp->d_name)+1+1);
+	  sprintf(srcname, "%s/%s", tmpdir, direntp->d_name);
+
+	  // First, remove any existing file if we are about to concat new ones
+	  if (!removed_tlog_file) {
+	    remove_file(tlogname);
+	    removed_tlog_file = true;
+	  }
+
+	  concat(srcname, tlogname);
+
+	  free(tlogname);
+	  free(srcname);
+	}
+      }
+    }
+    closedir(dirp);
+  }
+
+  if (ld_ipa_opt[LD_IPA_KEEP_TEMPS].flag) {
+    return;
+  }
+
+  chdir(tmpdir);
+
+  // Remove each temporary file that we know about.
+  std::vector<const char*>::iterator i;
+  for (i = infiles->begin(); i != infiles->end(); ++i) {
+    remove_file(*i);
+  }
+
+  for (i = outfiles->begin(); i != outfiles->end(); ++i) {
+    remove_file(*i);
+  }
+
+  if (infiles->size() > 0) {
+    remove_file(input_symtab_name);
+    remove_file(whirl_symtab_name);
+    remove_file(elf_symtab_name);
+  }
+
+  rmdir(tmpdir);
+}
+
+// [CL] code cloned from the driver
+static int run_program(ARGV& myargv)
+{
+  int status = -1;
+  int pid, waitstatus, termsig;
+
+  const char* symtab_cmd_argv[myargv.size()];
+  char *errmsg_fmt, *errmsg_arg;
+
+  int i = 0;
+  for (ARGV::const_iterator it = myargv.begin();
+       it != myargv.end();
+       ++it, i++) {
+    symtab_cmd_argv[i] = *it;
+    if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+      fprintf(stderr, "%s ", *it);
+    }
+  }
+  symtab_cmd_argv[i] = NULL;
+  if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+    fprintf(stderr, "\n");
+  }
+
+  const char* program = symtab_cmd_argv[0];
+
+  pid = sys_pexecute(symtab_cmd_argv[0], symtab_cmd_argv, (const char **)&errmsg_fmt,
+			 (const char **)&errmsg_arg, SYS_P_STOP_ON_EXIT, NULL, NULL, NULL);
+
+  /* Check return of pexecute. */
+  if (pid < 0) {
+    error(errmsg_fmt, errmsg_arg);
+    cleanup ();
+    exit (RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  }
+  
+  pid = sys_pwait(pid, &waitstatus, 0);
+  if (pid < 0) {
+    error("unexpected error waiting for %s", program);
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  }
+  
+  pid = sys_pwait(pid, &waitstatus, SYS_P_TERM);
+  if (pid < 0) {
+    error("unexpected error waiting for %s", program);
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  }
+#ifdef WIFSTOPPED
+  if (WIFSTOPPED(waitstatus)) {
+    termsig = WSTOPSIG(waitstatus);
+    error("STOPPED signal %d received by %s", program, termsig);
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  } 
+#endif
+  if (WIFEXITED(waitstatus)) {
+    status = WEXITSTATUS(waitstatus);
+    /* Will return at end of function with status set. */
+  } else if(WIFSIGNALED(waitstatus)){
+    termsig = WTERMSIG(waitstatus);
+    error("%s died due to signal %d", program, termsig);
+#ifdef WCOREFLAG
+    if(waitstatus & WCOREFLAG) {
+      error("core dumped");
+    }
+#endif
+#ifdef SIGKILL
+    if (termsig == SIGKILL) {
+      error("Probably caused by running out of swap space -- check %s", LOGFILE);
+    }
+#endif
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  } else {
+    /* cannot happen, I think! */
+    internal_error("unexpected status returned by %s", program);
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+    /* NOTREACHED */
+  }
+  return status;
+}
+#endif
 
 extern "C"
 void ipacom_doit (const char* ipaa_filename)
 {
+#ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0 && comments != 0 && makefile != 0,
+#else
+  Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
+          commands != 0,
+#endif
           ("ipacom_doit: ipacom not yet initialized"));
+
+#ifdef USE_MAKE
   Is_True(infiles->size() == outfiles->size() &&
           infiles->size() == outfiles_fullpath->size() &&
           infiles->size() == commands->size() &&
           infiles->size() == comments->size(),
+#else
+  Is_True(infiles->size() == outfiles->size() &&
+          infiles->size() == outfiles_fullpath->size() &&
+          infiles->size() == commands->size(),
+#endif
           ("ipacom_doit: vectors are inconsistent"));
 
 
@@ -791,15 +1198,27 @@ void ipacom_doit (const char* ipaa_filename)
 
   const char* tmpdir_macro_name = "IPA_TMPDIR";
   const char* tmpdir_macro      = "$(IPA_TMPDIR)";
+#ifdef USE_MAKE
   fprintf(makefile, "%s = %s\n\n", tmpdir_macro_name, tmpdir);
+#endif
 
   char* link_cmdfile_name = 0;
 
   // The default target: either the executable, or all of the
   // elf object files.
 
+#ifndef USE_MAKE
+    ARGV link_argv;
+
+    // remember current dir
+    if ((current_dir = getcwd(current_dir, 0)) == NULL) {
+      internal_error("could not find current working directory");
+    }
+#endif
+
   if (IPA_Enable_final_link) {
     // Path (possibly relative to cwd) of the executable we're creating.
+#ifdef USE_MAKE
     const char* executable = outfilename;
     const char* executable_macro_name = "IPA_OUTFILENAME";
     const char* executable_macro      = "$(IPA_OUTFILENAME)";
@@ -826,12 +1245,20 @@ void ipacom_doit (const char* ipaa_filename)
     if (cmdfile == 0)
       ErrMsg (EC_Ipa_Open, link_cmdfile_name, sys_errlist[errno]);
     chmod(link_cmdfile_name, 0644);
-    
+#endif /* USE_MAKE */
+
     // Get the link command line.
     const ARGV* link_line = ipa_link_line_argv (outfiles_fullpath, 
     	    	    	    	    	    	tmpdir, 
 						elf_symtab_name);
     Is_True(link_line->size() > 1, ("Invalid link line ARGV vector"));
+
+#ifndef USE_MAKE
+    link_argv.push_back(link_line->front());
+    if (ld_ipa_opt[LD_IPA_RELOCATABLE].flag) {
+      link_argv.push_back("-r");
+    }
+#endif
 
     // Print all but link_line[0] into cmdfile.
     ARGV::const_iterator i = link_line->begin();
@@ -854,13 +1281,20 @@ void ipacom_doit (const char* ipaa_filename)
 	continue;
       }
 #endif
+#ifdef USE_MAKE
       fputs(*i, cmdfile);
       fputs(" \n", cmdfile);
+#else
+      link_argv.push_back(*i);
+#endif
     }
 
+#ifdef USE_MAKE
     fputs("\n", cmdfile);
     fclose(cmdfile);
+#endif
 
+#ifdef USE_MAKE
     // If we're compiling with -show, make sure we see the link line.
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
 #ifndef TARG_ST
@@ -877,6 +1311,7 @@ void ipacom_doit (const char* ipaa_filename)
       fprintf(makefile, "\t...\n");
 #endif
     }
+#endif
 
     // Print the final link command into the makefile.
 #ifdef TARG_IA64
@@ -885,26 +1320,31 @@ void ipacom_doit (const char* ipaa_filename)
             link_cmdfile_name);
 #else
 #ifdef TARG_ST
+#ifdef USE_MAKE
     fprintf(makefile, "\t%s %s `cat %s `\n",
 	    //	    (*command_map)["compiler"],
 	    link_line->front(),
 	      ld_ipa_opt[LD_IPA_RELOCATABLE].flag ? "-r" : "",
             link_cmdfile_name);
+#endif
 #else
     fprintf(makefile, "\t%s -from %s\n",
             link_line->front(),
             link_cmdfile_name);
-#endif
+#endif /* TARG_ST */
 #endif
 
 #ifdef TARG_ST
+#ifdef USE_MAKE
     // [CL] Handle the case where no input file contains Whirl
     if (has_dummy2) {
       fprintf(makefile, "\n%s/dummy2" TARGET_DELIMITER "\n",
 	      tmpdir_macro);
     }
 #endif
+#endif
 
+#ifdef USE_MAKE
     //For ProMP we need to run a Perl script after doing the final link.
     if (ProMP_Listing) {
       char* toolroot = getenv("TOOLROOT");
@@ -936,6 +1376,7 @@ void ipacom_doit (const char* ipaa_filename)
       fprintf(makefile, "\t'cat' %s/*.list > %s.list\n",
               tmpdir_macro, executable_macro);
     }
+#endif
 
     // Do the same thing with .t and .tlog files (if they exist) as
     // with .list files.
@@ -943,6 +1384,7 @@ void ipacom_doit (const char* ipaa_filename)
                          Get_Trace(TP_PTRACE2, 0xffffffff);
     bool t_enabled = TFile != stdout;
 
+#ifdef USE_MAKE
     if (tlogs_enabled) {
       fprintf(makefile, "\tif [ -f %s/*.tlog ] ; then ",
               tmpdir);
@@ -955,17 +1397,25 @@ void ipacom_doit (const char* ipaa_filename)
       fprintf(makefile, "'cat' %s/*.t >> %s.t ; true ; fi\n",
               tmpdir, executable);
     }
+#endif
   }
   else {
+#ifdef USE_MAKE
     fprintf(makefile, "\ndefault: \\\n");      
     print_all_outfiles(tmpdir_macro);
+#endif
   }
 
+#ifdef USE_MAKE
   fputs("\n", makefile);
+#endif
 
 #ifdef TARG_ST
   // [CL] generate unique identifier for all following compilations
   INT32 ipa_time = time(0);
+
+  // [CL] use updated "cc" name
+  char* relativepath = "";
 #endif
 
   // This generates both the .o symtab and the .G symtab.
@@ -980,14 +1430,13 @@ void ipacom_doit (const char* ipaa_filename)
 
 #if defined(TARG_IA64) || defined(TARG_ST)
 
+#ifdef USE_MAKE
     fprintf(makefile, "%s/%s" TARGET_DELIMITER "\n",
             tmpdir_macro, "dummy");
+#endif
 
 #ifdef TARG_ST
-    // [CL] use updated "cc" name
-    char* relativepath = "";
-
-#if defined(__CYGWIN__)
+#if defined(__CYGWIN__) || defined(__MINGW32__)
 
 #define IS_DIR_SEPARATOR(c)     ((c) == '/' || (c) == '\\')
 /* Note that IS_ABSOLUTE_PATH accepts d:foo as well, although it is
@@ -1007,17 +1456,24 @@ void ipacom_doit (const char* ipaa_filename)
 
 #endif
 
-    if (! IS_ABSOLUTE_PATH((*command_map)["cc"]))
+    if (! IS_ABSOLUTE_PATH((*command_map)["cc"])) {
+      if ( ((*command_map)["cc"])[0] != '"' ||  // Handle case of path quoted by the driver
+	   (! IS_ABSOLUTE_PATH(&((*command_map)["cc"])[1])) ) {
       relativepath = "../";
+      }
+    }
 
+#ifdef USE_MAKE
     fprintf(makefile, "\tcd %s; %s%s %s -TENV:ipa_suffix=%d_%d %s\n\n",
 	    tmpdir_macro, relativepath, (*command_map)["cc"],
 	    symtab_command_line, ipa_time, getpid(), symtab_extra_args);
+#endif
 #else
     fprintf(makefile, "\tcd %s; %s %s\n\n",
             tmpdir_macro, symtab_command_line, symtab_extra_args);
 #endif
       
+#ifdef USE_MAKE
     fprintf(makefile, "%s/%s" TARGET_DELIMITER "%s/%s %s/%s\n\n",
             tmpdir_macro, elf_symtab_name,
             tmpdir_macro, input_symtab_name,
@@ -1027,6 +1483,7 @@ void ipacom_doit (const char* ipaa_filename)
             tmpdir_macro, whirl_symtab_name,
             tmpdir_macro, elf_symtab_name,
             tmpdir_macro, "dummy");
+#endif
 #endif
 
 #ifdef _TARG_MIPS
@@ -1044,10 +1501,44 @@ void ipacom_doit (const char* ipaa_filename)
 
 #endif
 
+#ifndef USE_MAKE
+    ARGV myargv;
+
+    char symtab_buf1[strlen( (*command_map)["cc"]) + strlen(relativepath) + 1];
+    sprintf(symtab_buf1, "%s%s", relativepath, (*command_map)["cc"]);
+    string2argv(symtab_buf1, myargv);
+
+    string2argv(symtab_command_line, myargv);
+
+    char symtab_buf2[100];
+    sprintf(symtab_buf2, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
+    myargv.push_back(symtab_buf2);
+
+    string2argv(symtab_extra_args, myargv);
+
+    if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+      fprintf(stderr, "cd %s\n", tmpdir);
+    }
+    chdir(tmpdir);
+    int status = run_program(myargv);
+    if (status != RC_OKAY) {
+      cleanup();
+      exit(RC_SYSTEM_ERROR);
+    }
+#endif
   }
+
+#ifndef USE_MAKE
+  char file_buf1[100];
+  sprintf(file_buf1, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
+
+  char file_buf2[strlen(Ipa_Exec_Name) + strlen("-TENV::ipa_exec_name=") + 1];
+  sprintf(file_buf2, "-TENV::ipa_exec_name=%s", Ipa_Exec_Name);
+#endif
 
   // For each whirl file, tell how to create the corresponding elf file.
   for (size_t i = 0; i < infiles->size(); ++i) {
+#ifdef USE_MAKE
     fprintf(makefile, "%s/%s" TARGET_DELIMITER "%s/%s %s/%s %s/%s\n",
             tmpdir_macro, (*outfiles)[i],
             tmpdir_macro, elf_symtab_name,
@@ -1057,11 +1548,7 @@ void ipacom_doit (const char* ipaa_filename)
     fprintf(makefile, "\tcd %s; %s %s\n",
             tmpdir_macro, (*commands)[i], extra_args);
 #elif defined(TARG_ST)
-    char* relativepath = "";
-    if (! IS_ABSOLUTE_PATH((*command_map)["cc"]))
-      relativepath = "../";
-
-    fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d -TENV:ipa_exec_name=%s %s\n",
+    fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d -TENV::ipa_exec_name=%s %s\n",
 	    tmpdir_macro, relativepath, (*commands)[i], ipa_time, getpid(),
 	    Ipa_Exec_Name, extra_args);
 #else
@@ -1069,19 +1556,55 @@ void ipacom_doit (const char* ipaa_filename)
             tmpdir_macro, (*commands)[i], extra_args);
 #endif
 
+#else /* USE_MAKE */
+    ARGV myargv;
+    string2argv(relativepath, myargv);
+    string2argv((*commands)[i], myargv);
+    myargv.push_back(file_buf1);
+    myargv.push_back(file_buf2);
+    string2argv(extra_args, myargv);
+
+    int status = run_program(myargv);
+    if (status != RC_OKAY) {
+      cleanup();
+      exit(RC_SYSTEM_ERROR);
+    }
+#endif /* USE_MAKE */
+
+#ifdef USE_MAKE
     const std::vector<const char*>& com = (*comments)[i];
     for (std::vector<const char*>::const_iterator it = com.begin();
          it != com.end();
          ++it)
       fprintf(makefile, "## %s\n", *it);
     fputs("\n", makefile);
+#endif
   }
 
+#ifndef USE_MAKE
+	  // [CL] get back to original dir before link step
+    if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+      fprintf(stderr, "cd %s\n", current_dir);
+    }
+  chdir(current_dir);
+  int status = run_program(link_argv);
+  if (status != RC_OKAY) {
+    cleanup();
+    exit(RC_SYSTEM_ERROR);
+  }
+  cleanup();
+#endif
+
+#ifdef USE_MAKE
   fclose(makefile);
+#endif
   if (Tlog_File_Name) {
     fclose (Tlog_File);  
   }
 
+#ifndef USE_MAKE
+  exit(0);
+#else
   // We don't call make directly.  Instead we call sh, and have it
   // call sh.  This makes cleanup simpler.
   char sh_cmdfile_buf[256];
@@ -1258,8 +1781,10 @@ void ipacom_doit (const char* ipaa_filename)
 #else
   exec_smake(sh_cmdfile_name);
 #endif
-} // ipacom_doit
 
+#endif /* USE_MAKE */
+
+} // ipacom_doit
 
 // Helper function for get_extra_args.
 static void escape_char (char *str)
@@ -1542,6 +2067,7 @@ static const char* get_extra_symtab_args(const ARGV& argv)
   return result;
 }
 
+#ifdef USE_MAKE
 static void exec_smake (char* sh_cmdfile_name)
 {
   /* Clear the trace file: */
@@ -1573,3 +2099,4 @@ static void exec_smake (char* sh_cmdfile_name)
 
   Fail_FmtAssertion ("ipa: exec sh failed");
 }
+#endif

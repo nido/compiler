@@ -41,6 +41,11 @@
 #----------------------------------------------------------------------
 include $(COMMONDEFS)
 
+ifeq ($(HOST_OS),MINGW)
+# For GetProcessMemoryInfo function
+LLDLIBS += -lpsapi
+endif
+
 ifeq ($(BUILD_TARGET), IA64)
 # need _ version of targ_ia64
 LCDEFS += -D__MIPS_AND_IA64_ELF_H -DTARG_IA64

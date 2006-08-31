@@ -336,10 +336,22 @@ Last_Pathname_Component ( char *pname )
   char *cp = pname + strlen(pname);
 
   while (cp != pname) {
+#ifdef TARG_ST // [CL] support Mingwin32
+    if ( (*cp == '/') ||
+	 (*cp == '\\') ||
+	 (*cp == ':')) return cp+1;
+#else
     if (*cp == '/') return cp+1;
+#endif
     --cp;
   }
+#ifdef TARG_ST // [CL] support Mingwin32
+    if ( (*cp == '/') ||
+	 (*cp == '\\') ||
+	 (*cp == ':')) return cp+1;
+#else
   if (*cp == '/') return cp+1;
+#endif
   return cp;
 
 } /*end: Last_Pathname_Component */

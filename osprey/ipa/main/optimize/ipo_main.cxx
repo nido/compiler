@@ -799,6 +799,12 @@ Perform_Alias_Class_Annotation(void)
 	}
 	free(save_file_name);
       }
+#ifdef TARG_ST
+      // [CL] Under Win32, we cannot rename to an already existing file.
+      // Delete the target before renaming.
+      int status = unlink(*name);
+      // Ignore return code: if necessary, it will be caught by rename()
+#endif
       if (rename(output_file_name, *name) != 0) {
 	ErrMsg(EC_Ipa_Rename, output_file_name, *name);
       }
