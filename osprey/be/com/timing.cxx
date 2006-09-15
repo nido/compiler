@@ -342,7 +342,11 @@ Report_Delta_Time (
     utime = Get_Time ( r, RR_Delta_User );
     stime = Get_Time ( r, RR_Delta_System );
     etime = Get_Time ( r, RR_Delta_Elapsed );
+#if (defined __MINGW32__) || (defined _WIN32)
+    mem = 0;
+#else
     mem = Get_Memory ( r, RR_Delta_Memory );
+#endif
 
 #if (1)
     fprintf ( file, "%-32s  %4d.%06du  %4d.%06ds  %4d.%06de",

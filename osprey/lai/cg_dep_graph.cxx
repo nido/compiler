@@ -2351,9 +2351,7 @@ static BOOL verify_mem(BOOL              result,
 }
 
 #ifdef Is_True_On
-#if ! (__GNUC__ >=3 && __GNUC_MINOR__ >= 3 && __GNUC_PATCHLEVEL__ >= 2)
-extern "C" int getpid(void);
-#endif
+#   include "W_unistd.h" // For getpid
 #endif
 #ifdef TARG_ST
 static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg)

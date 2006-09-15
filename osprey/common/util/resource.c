@@ -210,8 +210,12 @@ Get_Resources (
     r->stime.usecs = 0;
 #endif
 
+#if (defined __MINGW32__) || (defined _WIN32)
+    r->memory = (INT)0;
+#else
     /* Get the memory information */
     r->memory = (INT) sbrk(0);
+#endif
     r->freemem = 0;
 }
 
@@ -471,6 +475,9 @@ Get_Memory (
     RES_REQUEST req
 )
 {
+#if (defined __MINGW32__) || (defined _WIN32)
+    DevWarn("Memory information is wrong under win32 platform\n");
+#endif
     switch ( req ) {
 	case RR_Current_Memory:		return r->cur.memory;
 	case RR_Delta_Memory:		return r->del.memory;
