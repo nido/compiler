@@ -526,7 +526,7 @@ EH_Set_Start_Label(EH_RANGE* p)
 #endif
     EH_RANGE_LIST::reverse_iterator rlast  = range_list.rend();
     EH_RANGE_LIST::reverse_iterator riter =
-      find_if(rfirst, rlast, IS_SIB_RANGE(p));
+      std::find_if(rfirst, rlast, IS_SIB_RANGE(p));
     if (riter == rlast) {
       if (p->parent != NULL) {
 	label = Duplicate_LABEL(p->parent->start_label);
@@ -585,7 +585,7 @@ void EH_Set_Has_Call(EH_RANGE* p)
     EH_RANGE_LIST::reverse_iterator rfirst(p);
 #endif
     EH_RANGE_LIST::reverse_iterator rlast  = range_list.rend();
-    rfirst = find_if(rfirst, rlast, IS_SIB_RANGE(p));
+    rfirst = std::find_if(rfirst, rlast, IS_SIB_RANGE(p));
     Is_True(rfirst != rlast && rfirst->kind == ehk_guard,
 		      ("mask region must have guard"));
     rfirst->has_call = TRUE;
@@ -761,7 +761,11 @@ struct FIX_MASK_PARENT {
       EH_RANGE_LIST_PARENT_ITER first(r.parent);
       EH_RANGE_LIST_PARENT_ITER last (NULL);
 #endif
-      first = find_if(first, last, IS_CLEANUP_RANGE(), std::__iterator_category(first));
+      //       // [HK] do not call library internal version of
+      //       std::find_if. Use standard find_if with 3 arguments
+      //       instead.
+      //       first = std::find_if(first, last, IS_CLEANUP_RANGE(), std::__iterator_category(first));
+      first = std::find_if(first, last, IS_CLEANUP_RANGE());
       Is_True(first != last, ("mask region must have cleanup ancestor"));
       r.parent = (*first).parent;
     }

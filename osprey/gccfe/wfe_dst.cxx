@@ -391,8 +391,9 @@ DST_get_command_line_options(INT32 num_copts,
   char      ch;
   INT32     record_option;
 
-  selected_opt = (char **)malloc(sizeof(char*) * num_copts);
-  opt_size = (INT32 *)malloc(sizeof(INT32) * num_copts);
+  // [HK] malloc is poisoned, use xmalloc instead
+  selected_opt = (char **)xmalloc(sizeof(char*) * num_copts);
+  opt_size = (INT32 *)xmalloc(sizeof(INT32) * num_copts);
   
   for (i = 1; i <= num_copts; i++)
   {
@@ -422,11 +423,13 @@ DST_get_command_line_options(INT32 num_copts,
   
   if (strlength == 0)
   {
-     rtrn = (char *)calloc(1, 1); /* An empty string */
+  // [HK] calloc is poisoned, use xmalloc instead
+     rtrn = (char *)xcalloc(1, 1); /* An empty string */
   }
   else
   {
-     rtrn = (char *)malloc(strlength);
+  // [HK] malloc is poisoned, use xmalloc instead
+     rtrn = (char *)xmalloc(strlength);
      cp = rtrn;
 
      /* Append the selected options to the string (rtrn) */

@@ -844,7 +844,7 @@ ifeq ($(GNU_VERSION), 3)
 # OK
 endif
 ifeq ($(GNU_VERSION), 4)
-$(warning GCC build compiler version 4.x not tested)
+# OK
 endif
 
 endif

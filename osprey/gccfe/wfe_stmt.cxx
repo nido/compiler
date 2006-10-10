@@ -431,7 +431,8 @@ Push_Lexical_Block ()
                lexical_block_max * sizeof (LEXICAL_BLOCK_INFO*));
   }
 
-  lexical_block = (LEXICAL_BLOCK_INFO*) malloc(sizeof(LEXICAL_BLOCK_INFO));
+  // [HK] malloc is poisoned, use xmalloc instead
+  lexical_block = (LEXICAL_BLOCK_INFO*) xmalloc(sizeof(LEXICAL_BLOCK_INFO));
   lexical_block_stack[lexical_block_i] = lexical_block;
   lexical_block->level = lexical_block_i;
 
@@ -522,19 +523,24 @@ WFE_Stmt_Init (void)
 {
   if_else_info_max   = 32;
   if_else_info_i     = -1;
-  if_else_info_stack = (BOOL *) malloc (sizeof (BOOL) * if_else_info_max);
+  // [HK] malloc is poisoned, use xmalloc instead
+  if_else_info_stack = (BOOL *) xmalloc (sizeof (BOOL) * if_else_info_max);
   loop_info_max      = 32;
   loop_info_i        = -1;
-  loop_info_stack    = (LOOP_INFO *) malloc (sizeof (LOOP_INFO) * loop_info_max);
+  // [HK] malloc is poisoned, use xmalloc instead
+  loop_info_stack    = (LOOP_INFO *) xmalloc (sizeof (LOOP_INFO) * loop_info_max);
   switch_info_max    = 32;
   switch_info_i      = -1;
-  switch_info_stack  = (SWITCH_INFO *) malloc (sizeof (SWITCH_INFO) * switch_info_max);
+  // [HK] malloc is poisoned, use xmalloc instead
+  switch_info_stack  = (SWITCH_INFO *) xmalloc (sizeof (SWITCH_INFO) * switch_info_max);
   case_info_max      = 32;
   case_info_i        = -1;
-  case_info_stack    = (CASE_INFO *) malloc (sizeof (CASE_INFO) * case_info_max);
+  // [HK] malloc is poisoned, use xmalloc instead
+  case_info_stack    = (CASE_INFO *) xmalloc (sizeof (CASE_INFO) * case_info_max);
   undefined_labels_max   = 32;
   undefined_labels_i     = -1;
-  undefined_labels_stack = (LABEL_INFO *) malloc (sizeof (LABEL_INFO) * undefined_labels_max);
+  // [HK] malloc is poisoned, use xmalloc instead
+  undefined_labels_stack = (LABEL_INFO *) xmalloc (sizeof (LABEL_INFO) * undefined_labels_max);
 
 #ifdef TARG_ST
   scope_cleanup_max      = 32;
@@ -560,7 +566,8 @@ WFE_Expand_Start_Cond (tree cond, int exitflag)
   if (++if_else_info_i == if_else_info_max) {
 
     if_else_info_max   = ENLARGE(if_else_info_max);
-    if_else_info_stack = (BOOL *) realloc (if_else_info_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+    if_else_info_stack = (BOOL *) xrealloc (if_else_info_stack,
                                            if_else_info_max * sizeof (BOOL));
   }
 
@@ -618,7 +625,8 @@ WFE_Expand_Start_Loop (int exitflag, struct nesting *whichloop)
   if (++loop_info_i == loop_info_max) {
 
     loop_info_max   = ENLARGE(loop_info_max);
-    loop_info_stack = (LOOP_INFO *) realloc (loop_info_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+    loop_info_stack = (LOOP_INFO *) xrealloc (loop_info_stack,
                                              loop_info_max * sizeof (LOOP_INFO));
   }
 
@@ -784,7 +792,8 @@ WFE_Expand_Start_Case (int exit_flag, tree expr, tree type, char *printname)
   if (++switch_info_i == switch_info_max) {
 
     switch_info_max   = ENLARGE(switch_info_max);
-    switch_info_stack = (SWITCH_INFO *) realloc (switch_info_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+    switch_info_stack = (SWITCH_INFO *) xrealloc (switch_info_stack,
                                              switch_info_max * sizeof (SWITCH_INFO));
   }
   switch_info_stack [switch_info_i].index             = index;
@@ -811,7 +820,8 @@ WFE_Add_Case_Node (tree low, tree high, tree label)
   if (++case_info_i == case_info_max) {
 
     case_info_max   = ENLARGE(case_info_max);
-    case_info_stack = (CASE_INFO *) realloc (case_info_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+    case_info_stack = (CASE_INFO *) xrealloc (case_info_stack,
                                              case_info_max * sizeof (CASE_INFO));
   }
   case_info_stack [case_info_i].case_lower_bound_value = WN_const_val (lower_bound);
@@ -1019,7 +1029,8 @@ WFE_Get_LABEL (tree label, int def)
       if (++undefined_labels_i == undefined_labels_max) {
         undefined_labels_max   = ENLARGE(undefined_labels_max);
         undefined_labels_stack =
-          (LABEL_INFO *) realloc (undefined_labels_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+          (LABEL_INFO *) xrealloc (undefined_labels_stack,
                                   undefined_labels_max * sizeof (LABEL_INFO));
       }
       undefined_labels_stack [undefined_labels_i].label_idx  = label_idx;

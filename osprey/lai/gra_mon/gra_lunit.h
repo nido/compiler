@@ -121,6 +121,10 @@ enum LU_FLAG {
 //		by this block?
 };
 
+#if __GNUC__ >= 4
+// [HK] declaration outside the scope of LUNIT is needed 
+class LRANGE;
+#endif 
 
 class LUNIT {
 friend class LRANGE;

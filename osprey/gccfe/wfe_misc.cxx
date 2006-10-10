@@ -252,7 +252,8 @@ Terminate ( INT status )
  */
 void WFE_Prepare_Gcc_Options(int argc, char **argv, int *gnu_argc, char ***gnu_argv)
 {
-  char **new_argv = (char **)malloc(sizeof(char *)*(argc+1));
+  // [HK] malloc is poisoned, use xmalloc instead
+  char **new_argv = (char **)xmalloc(sizeof(char *)*(argc+1));
   int new_argc = 1;
 
   int i;
@@ -417,7 +418,8 @@ Prepare_Source ( void )
 
       /* Copy the given source name: */
       len = strlen ( Argv[i] );
-      Src_File_Name = (char *) malloc (len+5);
+  // [HK] malloc is poisoned, use xmalloc instead
+      Src_File_Name = (char *) xmalloc (len+5);
       strcpy ( Src_File_Name, Argv[i] );
 
       /* We've got a source file name -- open other files.
@@ -622,7 +624,8 @@ static void
 WFE_Stmt_Stack_Init (void)
 {
   wn_stmt_stack_size = WN_STMT_STACK_SIZE;
-  wn_stmt_stack      = (WN_STMT *) malloc (sizeof (WN_STMT) *
+  // [HK] malloc is poisoned, use xmalloc instead
+  wn_stmt_stack      = (WN_STMT *) xmalloc (sizeof (WN_STMT) *
                                            wn_stmt_stack_size );
   wn_stmt_sp         = wn_stmt_stack - 1;
   wn_stmt_stack_last = wn_stmt_stack + wn_stmt_stack_size - 1;
@@ -643,7 +646,8 @@ WFE_Stmt_Push (WN* wn, WFE_STMT_KIND kind, SRCPOS srcpos)
   if (wn_stmt_sp == wn_stmt_stack_last) {
     new_stack_size = ENLARGE(wn_stmt_stack_size);
     wn_stmt_stack =
-      (WN_STMT *) realloc (wn_stmt_stack, new_stack_size * sizeof (WN_STMT));
+  // [HK] realloc is poisoned, use xrealloc instead
+      (WN_STMT *) xrealloc (wn_stmt_stack, new_stack_size * sizeof (WN_STMT));
     wn_stmt_sp = wn_stmt_stack + wn_stmt_stack_size - 1;
     wn_stmt_stack_size = new_stack_size;
     wn_stmt_stack_last = wn_stmt_stack + wn_stmt_stack_size - 1;

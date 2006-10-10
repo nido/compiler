@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct 10 11:09:23 CEST 2006
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/knochelh/dev-gcc-4-1-0
+
+Description:
+------------
+	* Synchronize with knochelh/dev-gcc-4-1-0 at rev #9665 with authorization art #19050 trunk
+	* Allow building open64 with gcc-4.x  
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_cfg_trans.h
+	M      osprey/be/com/cxx_template.h
+	M      osprey/lai/gra_mon/gra_lunit.h
+	M      osprey/lai/eh_region.cxx
+	M      osprey/lai/pqs.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	D      osprey/gccfe/gnu/st200/libintl.h
+	M      osprey/gccfe/gnu/cp/decl.c
+	M      osprey/gccfe/gnu/system.h
+	D      osprey/gccfe/gnu/stxp70/libintl.h
+	M      osprey/gccfe/wfe_stmt.cxx
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/gccfe/wfe_pragmas.cxx
+	M      osprey/gccfe/wfe_misc.cxx
+	M      osprey/make/gcommondefs
+	M      osprey/g++fe/wfe_stmt.cxx
+	M      osprey/g++fe/wfe_pragmas.cxx
+	M      osprey/common/com/targ_sim_core.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 31 15:07:24 CEST 2006
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

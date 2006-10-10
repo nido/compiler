@@ -388,7 +388,8 @@ Push_Handler_Info (tree handler, vector<tree> *v,
    if (++handler_info_i == handler_info_max) {
     handler_info_max = ENLARGE (handler_info_max);
     handler_info_stack =
-      (HANDLER_INFO *) realloc (handler_info_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+      (HANDLER_INFO *) xrealloc (handler_info_stack,
                         handler_info_max * sizeof (HANDLER_INFO));
   }
 

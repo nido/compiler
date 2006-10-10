@@ -574,7 +574,8 @@ typedef char _Bool;
 #define really_call_realloc realloc
 #define really_call_bzero bzero
 
-#if (GCC_VERSION >= 3000)
+// [HK] avoid poisoning issues in standart STL headers occuring in gcc-3.x and gcc4.x
+#if (GCC_VERSION >= 5000)
 
 /* Note autoconf checks for prototype declarations and includes
    system.h while doing so.  Only poison these tokens if actually

@@ -91,6 +91,13 @@ public:
   friend BE_EXPORTED RETURN_INFO Get_Return_Info (TY_IDX rtype, Mtype_Return_Level level);
 };
 
+#if __GNUC__ >= 4
+    // [HK] name-injection of friend declarations is no longer allowed in gcc-4.1.x.
+    // a declaration of Get_Return_Info needs to be present outside of the scope 
+    // of class RETURN_INFO
+BE_EXPORTED RETURN_INFO Get_Return_Info (TY_IDX, Mtype_Return_Level);
+#endif
+
 inline mINT8
 RETURN_INFO_count (const RETURN_INFO& info) { return info.count; }
 

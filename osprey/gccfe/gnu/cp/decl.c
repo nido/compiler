@@ -682,6 +682,23 @@ struct cp_binding_level GTY(())
    ? cp_function_chain->bindings		\
    : scope_chain->bindings)
 
+#if __GNUC__ >= 4
+    // [HK] From gcc-4.x.x on, cast-as-lvalue,
+    // conditional-expression-as-lvalue and
+    // compound-expression-as-lvalue extensions, which were deprecated
+    // in 3.3.4 and 3.4, have been removed. So using the
+    // current_binding_level macro as lvalue is forbidden. A new macro
+    // has to be defined to use for assignment
+
+#define current_binding_level_assign(x) \
+  ({if  (cfun && cp_function_chain->bindings)	\
+       cp_function_chain->bindings = x;         \
+    else   \
+       scope_chain->bindings = x;})         
+
+#endif // __GNUC__ >= 4
+
+
 /* The binding level of the current class, if any.  */
 
 #define class_binding_level scope_chain->class_bindings
@@ -729,7 +746,11 @@ push_binding_level (newlevel, tag_transparent, keep)
      are active.  */
   memset ((char*) newlevel, 0, sizeof (struct cp_binding_level));
   newlevel->level_chain = current_binding_level;
+#if  __GNUC__ >= 4
+  current_binding_level_assign(newlevel);
+#else
   current_binding_level = newlevel;
+#endif
   newlevel->tag_transparent = tag_transparent;
   newlevel->more_cleanups_ok = 1;
 
@@ -785,7 +806,11 @@ pop_binding_level ()
     }
   {
     register struct cp_binding_level *level = current_binding_level;
-    current_binding_level = current_binding_level->level_chain;
+#if  __GNUC__ >= 4
+  current_binding_level_assign(current_binding_level->level_chain);
+#else
+  current_binding_level = current_binding_level->level_chain;
+#endif
     level->level_chain = free_binding_level;
     if (level->parm_flag != 2)
       binding_table_free (level->type_decls);
@@ -802,8 +827,11 @@ static void
 suspend_binding_level ()
 {
   if (class_binding_level)
-    current_binding_level = class_binding_level;
-
+#if  __GNUC__ >= 4
+  current_binding_level_assign(class_binding_level);
+#else
+  current_binding_level = class_binding_level;
+#endif
   if (NAMESPACE_LEVEL (global_namespace))
     my_friendly_assert (!global_scope_p (current_binding_level), 20030527);
   /* Suspend the current level.  */
@@ -821,7 +849,12 @@ suspend_binding_level ()
         }
       is_class_level = 0;
     }
+
+#if  __GNUC__ >= 4
+  current_binding_level_assign(current_binding_level->level_chain);
+#else
   current_binding_level = current_binding_level->level_chain;
+#endif
   find_class_binding_level ();
 }
 
@@ -834,7 +867,11 @@ resume_binding_level (b)
   my_friendly_assert(!class_binding_level, 386);
   /* Also, resuming a non-directly nested namespace is a no-no.  */
   my_friendly_assert(b->level_chain == current_binding_level, 386);
+#if  __GNUC__ >= 4
+  current_binding_level_assign(b);
+#else
   current_binding_level = b;
+#endif
   if (ENABLE_SCOPE_CHECKING)
     {
       b->binding_depth = binding_depth;
@@ -4566,9 +4603,17 @@ pushdecl_with_scope (x, level)
   else
     {
       b = current_binding_level;
+#if  __GNUC__ >= 4
+      current_binding_level_assign(level);
+#else
       current_binding_level = level;
+#endif
       x = pushdecl (x);
+#if  __GNUC__ >= 4
+      current_binding_level_assign(b);
+#else
       current_binding_level = b;
+#endif
     }
   current_function_decl = function_decl;
   POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, x);
@@ -6971,7 +7016,11 @@ cxx_init_decl_processing ()
   current_lang_name = lang_name_c;
 
   current_function_decl = NULL_TREE;
+#if  __GNUC__ >= 4
+  current_binding_level_assign(NULL_BINDING_LEVEL);
+#else
   current_binding_level = NULL_BINDING_LEVEL;
+#endif
   free_binding_level = NULL_BINDING_LEVEL;
 
   build_common_tree_nodes (flag_signed_char);
@@ -10833,10 +10882,18 @@ grokdeclarator (declarator, declspecs, decl_context, initialized, attrlist)
   if (decl_context == NORMAL && !toplevel_bindings_p ())
     {
       struct cp_binding_level *b = current_binding_level;
+#if  __GNUC__ >= 4
+      current_binding_level_assign(b->level_chain);
+#else
       current_binding_level = b->level_chain;
+#endif
       if (current_binding_level != 0 && toplevel_bindings_p ())
 	decl_context = PARM;
+#if  __GNUC__ >= 4
+      current_binding_level_assign(b);
+#else
       current_binding_level = b;
+#endif
     }
 
   if (name == NULL)
@@ -14490,7 +14547,11 @@ start_function (declspecs, declarator, attrs, flags)
      FIXME factor out the non-RTL stuff.  */
   bl = current_binding_level;
   init_function_start (decl1, input_filename, lineno);
-  current_binding_level = bl;
+#if  __GNUC__ >= 4
+      current_binding_level_assign(bl);
+#else
+      current_binding_level = bl;
+#endif
 
   /* Even though we're inside a function body, we still don't want to
      call expand_expr to calculate the size of a variable-sized array.

@@ -206,7 +206,10 @@ public:
             { Is_True(idx <= _lastidx, ("DYN_ARRAY::[]:Subscript out of range"));
               return (_array[idx]); }
 
-  void    AddElement (const T& val) { _array[Newidx()] = val; }
+    // [HK]  the later leads to a segmentation fault in lno.so when compiled with gcc-4.1.0. Anyway, is this really ISO C++ valid code (Newidx() modifies the value of _array, which may be uninitialized before) ?
+//   void    AddElement (const T& val) {_array[Newidx()] = val; }
+  void    AddElement (const T& val) { mUINT32 idx = Newidx();
+                                      _array[idx] = val; }
   mUINT32 Elements () const  { return (_lastidx+1); }
 
   mUINT32 Newidx(void);                  // allocate a valid index

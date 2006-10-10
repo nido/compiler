@@ -690,14 +690,16 @@ WFE_Expand_End_Stmt_Expr (tree t)
     if (wfe_bind_expr_stack == NULL) {
       wfe_bind_expr_stack_max = 32;
       wfe_bind_expr_stack     =
-        (WFE_BIND_EXPR *) malloc (wfe_bind_expr_stack_max *
+  // [HK] malloc is poisoned, use xmalloc instead
+        (WFE_BIND_EXPR *) xmalloc (wfe_bind_expr_stack_max *
                                   sizeof (WFE_BIND_EXPR));
     }
     else {
       wfe_bind_expr_stack_max = wfe_bind_expr_stack_max +
                                 (wfe_bind_expr_stack_max >> 1);
       wfe_bind_expr_stack     =
-        (WFE_BIND_EXPR *) realloc (wfe_bind_expr_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+        (WFE_BIND_EXPR *) xrealloc (wfe_bind_expr_stack,
                                    wfe_bind_expr_stack_max *
                                    sizeof (WFE_BIND_EXPR));
     }
@@ -744,14 +746,16 @@ WFE_Save_Expr (tree save_exp)
     if (wfe_save_expr_stack == NULL) {
       wfe_save_expr_stack_max = 32;
       wfe_save_expr_stack     =
-        (WFE_SAVE_EXPR *) malloc (wfe_save_expr_stack_max *
+  // [HK] malloc is poisoned, use xmalloc instead
+        (WFE_SAVE_EXPR *) xmalloc (wfe_save_expr_stack_max *
                                   sizeof (WFE_SAVE_EXPR));
     }
     else {
       wfe_save_expr_stack_max = wfe_save_expr_stack_max +
                                 (wfe_save_expr_stack_max >> 1);
       wfe_save_expr_stack     =
-        (WFE_SAVE_EXPR *) realloc (wfe_save_expr_stack,
+  // [HK] realloc is poisoned, use xrealloc instead
+        (WFE_SAVE_EXPR *) xrealloc (wfe_save_expr_stack,
                                    wfe_save_expr_stack_max *
                                    sizeof (WFE_SAVE_EXPR));
     }

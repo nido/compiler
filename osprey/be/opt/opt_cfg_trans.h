@@ -159,7 +159,10 @@ public:
       }
     }
   }
-  friend bool adjacent(Cluster_iterator c1, const Cluster_iterator c2) {
+    // [HK] Misuse of friend keyword, instead of static.
+    // Allowed by gcc-2.x,-3.x,-4.0.x, but throw an error with gcc-4.1.0
+//   friend bool adjacent(Cluster_iterator c1, const Cluster_iterator c2) {
+  static bool adjacent(Cluster_iterator c1, const Cluster_iterator c2) {
     // assert(c1 < c2)
     ++c1;
     while (c1 < c2) {
