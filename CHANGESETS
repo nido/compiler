@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov  8 15:44:52 CET 2006
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-20076
+
+Description:
+------------
+	*  generate volatile and const attributes to struct/union fields
+
+
+Modified Files:
+---------------
+	 M     .
+	M      osprey/gccfe/wfe_dst.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Oct 10 11:09:23 CEST 2006
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

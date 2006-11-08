@@ -571,6 +571,15 @@ DST_enter_struct_union_members(tree parent_tree,
 	cp_to_dst_from_tree(&fidx,&g_idx);
 
 #ifdef TARG_ST
+	if (TREE_THIS_VOLATILE(field)) {
+	  fidx = DST_mk_volatile_type(fidx);
+	  DST_append_child(comp_unit_idx,fidx);
+	}
+	if (TREE_READONLY(field)) {
+	  fidx = DST_mk_const_type(fidx);
+	  DST_append_child(comp_unit_idx,fidx);
+	}
+
 	/* The following code is inspired from dwarf2out.c:
 	   field_byte_offset, add_bit_offset_attribute */
 
@@ -1269,7 +1278,19 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		       	inner_dst,    // type ptd to
 			DW_ADDR_none, // no address class
 			tsize);
-                                
+                   
+#ifdef TARG_ST
+		  // [CL]
+		  if (TYPE_READONLY(type_tree)) {
+		    DST_append_child(current_scope_idx,dst_idx);
+		    dst_idx = DST_mk_const_type(dst_idx);
+		  }
+		  if (TYPE_VOLATILE(type_tree)) {
+		    DST_append_child(current_scope_idx,dst_idx);
+		    dst_idx = DST_mk_volatile_type(dst_idx);
+		  }
+#endif
+
                   DST_append_child(current_scope_idx,dst_idx);
 
                   struct mongoose_gcc_DST_IDX ptr_dst_idx;
