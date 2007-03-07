@@ -376,10 +376,11 @@ ti_errors.h:
 
 ti_asm.o: ti_asm.c topcode.h targ_isa_operands.h targ_isa_print.h \
 	  targ_isa_pack.h targ_isa_bundle.h targ_isa_decode.h \
-	  targ_isa_pseudo.h ti_errors.h ti_asm.h 
+	  targ_isa_pseudo.h targ_isa_enums.h targ_isa_operands.h \
+	  targ_abi_properties.h targ_proc_properties.h ti_errors.h ti_asm.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-ti_bundle.o: ti_bundle.c ti_si.h targ_isa_bundle.h ti_bundle.h 
+ti_bundle.o: ti_bundle.c ti_si.h ti_errors.h targ_isa_bundle.h ti_bundle.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ti_latency.o: ti_latency.c ti_si.h targ_isa_properties.h targ_isa_hazards.h \
