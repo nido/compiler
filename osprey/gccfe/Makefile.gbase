@@ -389,7 +389,7 @@ install: last
 	done
 
 gnu_libs:
-	cd $(TARG_GNU_DIR) && $(MAKE) `basename $(GNU_CPP_OBJS)` `basename $(GNU_OBJS)`
+	cd $(TARG_GNU_DIR) && $(MAKE) $(foreach obj, $(GNU_CPP_OBJS) $(GNU_OBJS), $(shell basename $(obj)))
 
 $(GNU_CPP_OBJS) $(GNU_OBJS): gnu_libs
 
