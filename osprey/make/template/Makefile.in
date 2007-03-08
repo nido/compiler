@@ -106,22 +106,21 @@ TOOL_SUBDIRS = \
 #	elfdump \
 #	whirl2f \
 
-DEPS_FOR_gccfe	:= $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_g++fe	:= $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_gccfe	:= $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_be	:= $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_lai	=  be
-DEPS_FOR_wopt	= be
-DEPS_FOR_ipl	= be
-DEPS_FOR_ipa	= be wopt ipl
-DEPS_FOR_lno	= be wopt ipl
-DEPS_FOR_lw_inline :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) be
-DEPS_FOR_whirl2c :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) be
-DEPS_FOR_whirl2f :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) be
-DEPS_FOR_elfdump :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_dwarfdump :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
-DEPS_FOR_ir_tools :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) be
-DEPS_FOR_driver :=  $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS)
+DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_g++fe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
+DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_lai		:= be
+DEPS_FOR_wopt		:= be
+DEPS_FOR_ipl		:= be
+DEPS_FOR_ipa		:= be wopt ipl
+DEPS_FOR_lno		:= be wopt ipl
+DEPS_FOR_lw_inline	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
+DEPS_FOR_whirl2c	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
+DEPS_FOR_whirl2f	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
+DEPS_FOR_elfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_dwarfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_ir_tools	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
+DEPS_FOR_driver		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 
 #
 #  Comes last, some additional target libraries built by the target compiler.
@@ -142,7 +141,7 @@ DEPS_FOR_libunwind =
 # All modules to compile are put in SUBDIRS
 # By default it includes INCLUDE/LIBRARY/TOOL_SUBDIRS.
 #
-SUBDIRS := $(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) $(TOOL_SUBDIRS)
+SUBDIRS := $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) $(TOOL_SUBDIRS)
 
 # Configured SUBDIRS may override the default
 ifneq ($(CONF_SUBDIRS),)
