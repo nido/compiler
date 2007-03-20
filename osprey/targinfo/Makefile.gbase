@@ -440,7 +440,7 @@ topcode.h: isa_gen$(BEXE)
 isa_gen$(BEXE): isa_gen.o gen_util.o isa.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_gen.o: isa_gen.cxx isa_gen.h
+isa_gen.o: isa_gen.cxx isa_gen.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa.o: isa.cxx isa_gen.h
@@ -456,13 +456,13 @@ targ_isa_enums.h: isa_enums_gen$(BEXE)
 isa_enums_gen$(BEXE): isa_enums_gen.o gen_util.o isa_enums.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_enums_gen.o: isa_enums_gen.cxx isa_enums_gen.h
+isa_enums_gen.o: isa_enums_gen.cxx isa_enums_gen.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_enums.o: isa_enums.cxx isa_enums_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_enums.o: targ_isa_enums.c
+build_isa_enums.o: targ_isa_enums.c targ_isa_enums.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_enums.c -o $@
 
 ## targ_isa_lits.[ch] ##
@@ -474,13 +474,13 @@ targ_isa_lits.h: isa_lits_gen$(BEXE)
 isa_lits_gen$(BEXE): isa_lits_gen.o gen_util.o isa_lits.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_lits_gen.o: isa_lits_gen.cxx isa_lits_gen.h
+isa_lits_gen.o: isa_lits_gen.cxx isa_lits_gen.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_lits.o: isa_lits.cxx isa_lits_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_lits.o: targ_isa_lits.c
+build_isa_lits.o: targ_isa_lits.c targ_isa_lits.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_lits.c -o $@
 
 ## targ_isa_registers.[ch] ##
@@ -493,13 +493,15 @@ isa_registers_gen$(BEXE): isa_registers_gen.o gen_util.o isa_registers.o \
 			  build_topcode.o build_isa_subset.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_registers_gen.o: isa_registers_gen.cxx isa_registers_gen.h targ_isa_subset.h
+isa_registers_gen.o: isa_registers_gen.cxx isa_registers_gen.h \
+		     targ_isa_subset.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_registers.o: isa_registers.cxx isa_registers_gen.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_registers.o: targ_isa_registers.c
+build_isa_registers.o: targ_isa_registers.c targ_isa_registers.h \
+		       targ_isa_subset.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_registers.c -o $@
 
 
@@ -513,7 +515,8 @@ isa_hazards_gen$(BEXE): isa_hazards_gen.o gen_util.o isa_hazards.o \
 			build_topcode.o build_isa_subset.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_hazards_gen.o: isa_hazards_gen.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
+isa_hazards_gen.o: isa_hazards_gen.cxx isa_hazards_gen.h topcode.h \
+		   targ_isa_subset.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_hazards.o: isa_hazards.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
@@ -530,13 +533,13 @@ isa_subset_gen$(BEXE): isa_subset_gen.o gen_util.o isa_subset.o \
 			build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_subset_gen.o: isa_subset_gen.cxx isa_subset_gen.h topcode.h
+isa_subset_gen.o: isa_subset_gen.cxx isa_subset_gen.h topcode.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_subset.o: isa_subset.cxx isa_subset_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_subset.o: targ_isa_subset.c
+build_isa_subset.o: targ_isa_subset.c targ_isa_subset.h topcode.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_subset.c -o $@
 
 ## targ_isa_properties.[ch] ##
@@ -549,13 +552,14 @@ isa_properties_gen$(BEXE): isa_properties_gen.o gen_util.o isa_properties.o \
 			   build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_properties_gen.o: isa_properties_gen.cxx isa_properties_gen.h topcode.h
+isa_properties_gen.o: isa_properties_gen.cxx isa_properties_gen.h topcode.h \
+		      gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_properties.o: isa_properties.cxx isa_properties_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_properties.o: targ_isa_properties.c
+build_isa_properties.o: targ_isa_properties.c targ_isa_properties.h topcode.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_properties.c -o $@
 
 ## targ_isa_operands.[ch] ##
@@ -575,15 +579,18 @@ isa_operands_gen$(BEXE): isa_operands_gen.o gen_util.o isa_operands.o \
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_operands_gen.o: isa_operands_gen.cxx isa_operands_gen.h \
-		    targ_isa_registers.h targ_isa_enums.h targ_isa_lits.h \
-		    topcode.h
+		    targ_isa_registers.h targ_isa_enums.h targ_isa_lits.h  \
+		    topcode.h gen_util.h targ_isa_properties.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_operands.o: isa_operands.cxx isa_operands_gen.h targ_isa_registers.h \
 		targ_isa_enums.h targ_isa_lits.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c -I$(COMMON_COM_DIR) $< -o $@
 
-build_isa_operands.o: targ_isa_operands.c targ_isa_operands.h targ_isa_properties.h
+build_isa_operands.o: targ_isa_operands.c targ_isa_operands.h \
+		      targ_isa_properties.h targ_isa_registers.h \
+		      targ_isa_lits.h topcode.h targ_isa_registers.h \
+		      targ_isa_enums.h targ_isa_lits.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_isa_pack.[ch] ##
@@ -597,7 +604,7 @@ isa_pack_gen$(BEXE): gen_util.o isa_pack_gen.o gen_util.o isa_pack.o \
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_pack_gen.o: isa_pack_gen.cxx isa_pack_gen.h topcode.h \
-		targ_isa_properties.h
+		targ_isa_properties.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_pack.o: isa_pack.cxx isa_pack_gen.h topcode.h
@@ -614,11 +621,10 @@ isa_decode_gen$(BEXE): gen_util.o isa_decode_gen.o gen_util.o \
 			isa_decode.o build_topcode.o build_isa_bundle.o 
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h 
+isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h \
-	      targ_isa_pack.h
+isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 
@@ -635,7 +641,7 @@ isa_pseudo_gen$(BEXE): gen_util.o isa_pseudo_gen.o gen_util.o isa_pseudo.o \
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_pseudo_gen.o: isa_pseudo_gen.cxx isa_pseudo_gen.h topcode.h \
-		  targ_isa_operands.h
+		  targ_isa_operands.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_pseudo.o: isa_pseudo.cxx isa_pseudo_gen.h topcode.h
@@ -651,7 +657,8 @@ isa_print_gen$(BEXE): gen_util.o isa_print_gen.o isa_print.o build_topcode.o \
 		      build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h targ_isa_properties.h
+isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h \
+		 targ_isa_properties.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_print.o: isa_print.cxx isa_print_gen.h topcode.h
@@ -668,7 +675,8 @@ abi_properties_gen$(BEXE): abi_properties_gen.o gen_util.o abi_properties.o \
 			build_isa_subset.o build_isa_registers.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-abi_properties_gen.o: abi_properties_gen.cxx abi_properties_gen.h targ_isa_registers.h
+abi_properties_gen.o: abi_properties_gen.cxx abi_properties_gen.h \
+		      targ_isa_registers.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 abi_properties.o: abi_properties.cxx abi_properties_gen.h targ_isa_registers.h
@@ -685,13 +693,13 @@ isa_bundle_gen$(BEXE): gen_util.o isa_bundle_gen.o gen_util.o isa_bundle.o \
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_bundle_gen.o: isa_bundle_gen.cxx isa_bundle_gen.h topcode.h \
-                  targ_isa_properties.h
+                  targ_isa_properties.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_bundle.o: isa_bundle.cxx isa_bundle_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-build_isa_bundle.o: targ_isa_bundle.c
+build_isa_bundle.o: targ_isa_bundle.c targ_isa_bundle.h topcode.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_proc.[ch] ##
@@ -709,7 +717,7 @@ targ_proc.o: proc_gen$(BEXE) targ_proc.c
 proc_gen$(BEXE): proc_gen.o gen_util.o proc.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-proc_gen.o: proc_gen.cxx proc_gen.h
+proc_gen.o: proc_gen.cxx proc_gen.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 proc.o: proc.cxx proc_gen.h
@@ -724,7 +732,8 @@ targ_proc_properties.h: proc_properties_gen$(BEXE)
 proc_properties_gen$(BEXE): proc_properties_gen.o gen_util.o proc_properties.o targ_proc.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-proc_properties_gen.o: proc_properties_gen.cxx proc_properties_gen.h targ_proc.h
+proc_properties_gen.o: proc_properties_gen.cxx proc_properties_gen.h \
+		       targ_proc.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 proc_properties.o: proc_properties.cxx proc_properties_gen.h targ_proc.h
