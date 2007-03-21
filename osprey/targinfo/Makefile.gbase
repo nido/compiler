@@ -611,7 +611,7 @@ isa_pack_gen.o: isa_pack_gen.cxx isa_pack_gen.h topcode.h \
 isa_pack.o: isa_pack.cxx isa_pack_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-targ_isa_pack.o: targ_isa_pack.c targ_isa_pach.h topcode.h
+targ_isa_pack.o: targ_isa_pack.c targ_isa_pack.h topcode.h
 
 ## targ_isa_decode.[ch] ##
 
