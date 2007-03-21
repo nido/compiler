@@ -522,6 +522,8 @@ isa_hazards_gen.o: isa_hazards_gen.cxx isa_hazards_gen.h topcode.h \
 isa_hazards.o: isa_hazards.cxx isa_hazards_gen.h topcode.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+targ_isa_hazards.o: targ_isa_hazards.c topcode.h targ_isa_subset.h \
+		    targ_isa_hazards.h
 
 ## targ_isa_subset.[ch] ##
 
@@ -589,8 +591,7 @@ isa_operands.o: isa_operands.cxx isa_operands_gen.h targ_isa_registers.h \
 
 build_isa_operands.o: targ_isa_operands.c targ_isa_operands.h \
 		      targ_isa_properties.h targ_isa_registers.h \
-		      targ_isa_lits.h topcode.h targ_isa_registers.h \
-		      targ_isa_enums.h targ_isa_lits.h
+		      targ_isa_lits.h topcode.h targ_isa_enums.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_isa_pack.[ch] ##
@@ -610,6 +611,7 @@ isa_pack_gen.o: isa_pack_gen.cxx isa_pack_gen.h topcode.h \
 isa_pack.o: isa_pack.cxx isa_pack_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+targ_isa_pack.o: targ_isa_pack.c targ_isa_pach.h topcode.h
 
 ## targ_isa_decode.[ch] ##
 
@@ -627,6 +629,8 @@ isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h gen_util.h
 isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+targ_isa_decode.o: targ_isa_decode.c targ_isa_decode.h topcode.h \
+		   targ_isa_bundle.h targ_isa_pack.h
 
 ## targ_isa_pseudo.[ch] ##
 
@@ -647,6 +651,8 @@ isa_pseudo_gen.o: isa_pseudo_gen.cxx isa_pseudo_gen.h topcode.h \
 isa_pseudo.o: isa_pseudo.cxx isa_pseudo_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+targ_isa_pseudo.o: targ_isa_pseudo.c targ_isa_pseudo.h topcode.h
+
 ## targ_isa_print.[ch] ##
 
 targ_isa_print.c: targ_isa_print.h
@@ -664,6 +670,7 @@ isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h \
 isa_print.o: isa_print.cxx isa_print_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
+targ_isa_print.o: targ_isa_print.c targ_isa_print.h topcode.h
 
 ## targ_abi_properties.[ch] ##
 
@@ -681,6 +688,9 @@ abi_properties_gen.o: abi_properties_gen.cxx abi_properties_gen.h \
 
 abi_properties.o: abi_properties.cxx abi_properties_gen.h targ_isa_registers.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+targ_abi_properties.o: targ_abi_properties.c targ_abi_properties.h \
+		       targ_isa_registers.h
 
 ## targ_isa_bundle.[ch] ##
 
@@ -711,7 +721,7 @@ targ_proc.h: proc_gen$(BEXE)
 #
 # Needed for building proc_properties.o
 #
-targ_proc.o: proc_gen$(BEXE) targ_proc.c
+targ_proc.o: proc_gen$(BEXE) targ_proc.c targ_proc.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_proc.c -o $@
 
 proc_gen$(BEXE): proc_gen.o gen_util.o proc.o
@@ -738,6 +748,9 @@ proc_properties_gen.o: proc_properties_gen.cxx proc_properties_gen.h \
 
 proc_properties.o: proc_properties.cxx proc_properties_gen.h targ_proc.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+targ_proc_properties.o: targ_proc_properties.c targ_proc_properties.h \
+			targ_proc.h
 
 #
 # Scheduling info library building
