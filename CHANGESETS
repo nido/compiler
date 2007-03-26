@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 26 12:48:01 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-debug-frame
+
+Description:
+------------
+	*  Deliver branch with generic Dwarf debug_frame support. art #17043
+
+
+Modified Files:
+---------------
+	D      osprey/lai/cgdwarf_targ.h
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf.cxx
+	A  +   osprey/lai/cgdwarf_debug_frame.h
+	A  +   osprey/lai/cgdwarf_debug_frame.cxx
+	M      osprey/lai/Makefile.gbase
+	A  +   osprey/make/tooldefs/crolles
+	A  +   osprey/make/tooldefs/crolles/Makefile.tooldefs
+	A  +   osprey/targinfo/stxp70/cg/cgdwarf_targ.h
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.h
+	A  +   osprey/targinfo/st200/cg/cgdwarf_targ.h
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov  8 15:44:52 CET 2006
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

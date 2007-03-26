@@ -38,6 +38,28 @@
 
 extern BOOL Trace_Dwarf;
 
+void Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb);
+
+// enum of all preserved regs (PR) that can be saved/restored
+typedef enum {
+	PR_SP,
+	PR_R1,
+	PR_R2,
+	PR_R3,
+	PR_R4,
+	PR_R5,
+	PR_R6,
+	PR_R7,
+	PR_R13,
+	PR_R14,
+	PR_RA,
+	PR_LAST
+} PR_TYPE;
+#define PR_FIRST PR_SP
+
+PR_TYPE CR_To_PR (CLASS_REG_PAIR crp);
+CLASS_REG_PAIR PR_To_CR (PR_TYPE p);
+
 /* construct the fde for the current procedure. */
 
 #ifdef TARG_ST

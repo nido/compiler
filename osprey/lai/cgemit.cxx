@@ -4788,9 +4788,17 @@ Assemble_Ops (
 #endif
       continue;
     }
-
+// CQ1: I do not know why this is not done for all kind of operation at the
+// begining and the end of the loop. Currently each assemble function does this
+// this work!
+#ifdef TARG_STxP70
+    Emit_Unwind_Directives_For_OP(op, Asm_File, FALSE, FALSE);
+#endif
     // Perform_Sanity_Checks_For_OP(op, TRUE);
     words = Assemble_OP (op, bb, bundle, 0);
+#ifdef TARG_STxP70
+    Emit_Unwind_Directives_For_OP(op, Asm_File, TRUE, FALSE);
+#endif
 #if 0
     if (Object_Code) {
       Em_Add_Bytes_To_Scn(PU_section, (char *)bundle,

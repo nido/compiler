@@ -401,6 +401,7 @@ CG_CXX_SRCS = 		\
   cg.cxx		\
   cgdriver.cxx		\
   cgdwarf.cxx		\
+  cgdwarf_debug_frame.cxx \
   cgemit.cxx		\
   cgexp.cxx		\
   cgprep.cxx		\

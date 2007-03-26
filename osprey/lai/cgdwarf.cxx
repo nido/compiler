@@ -93,6 +93,7 @@
 #include "label_util.h"
 #include "vstring.h"
 #include "cgemit_targ.h"
+#include "cgdwarf_debug_frame.h"
 #include "cgdwarf_targ.h"
 
 BOOL Trace_Dwarf;
