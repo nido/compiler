@@ -45,41 +45,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <libelf.h>
-//#include <sys/unwindP.h>
 
-//#include "W_alloca.h"
-//#include "defs.h"
-//#include "erglob.h"
-//#include "glob.h"
-//#include "flags.h"
+#include "W_alloca.h"
 #include "tracing.h"
-//#include "config.h"
 #include "config_asm.h"
-//#include "config_TARG.h"
-//#include "config_debug.h"
 #include "config_list.h"
-//#include "vstring.h"
 #include "glob.h"
-//#include "xstats.h"
-//#include "targ_const.h"
-//#include "strtab.h"
-//#include "symtab.h"
-//#include "tag.h"
-//#include "wn.h"
 
-//#include "stblock.h"
-//#include "data_layout.h"
-
-//#include "be_util.h"
 #include "cgir.h"
-//#include "register.h"
 #include "tn_map.h"
 #include "em_elf.h"
 #include "dwarf_DST_mem.h"         /* for DST_IDX */
 #include "em_dwarf.h"
 
-//#include "cgtarget.h"
-//#include "calls.h"
 #include "cgemit.h"
 #include "cgdwarf.h"               /* [CL] for CGD_LABIDX */
 #include "cgdwarf_debug_frame.h"

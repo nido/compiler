@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 26 14:31:25 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-debug-frame
+
+Description:
+------------
+	*  Deliver fix for Win32 build
+
+
+Modified Files:
+---------------
+	M      osprey/targia32_Mingwin_st200/configure
+	M      osprey/targia32_st200/configure
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 26 12:48:01 CEST 2007
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
