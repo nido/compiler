@@ -56,6 +56,21 @@ extern void check_gnu_errors (int *, int *);
 /* (cbr) wfe hooks */
 void (*WFE_Hook_Ptr)(void) = NULL;
 
+#ifdef TARG_ST
+#include "W_unistd.h"
+/* Debug facility. Define FEPID and attach. */
+void fe_debug(void)
+{
+#ifdef Is_True_On
+  if (getenv("FEPID")) {
+    fprintf(stderr, "FEPID=%d\n", getpid());
+    scanf("\n");
+  }
+#endif
+}
+#endif
+
+
 int
 main ( 
   INT argc,	/* Number of command line arguments */
@@ -64,6 +79,10 @@ main (
 {
 	INT error_count, sorry_count;
 	BOOL need_inliner;
+
+#ifdef TARG_ST
+	fe_debug();
+#endif
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 	extern int flag_preprocess_only;
@@ -106,6 +125,8 @@ main (
 
 #ifdef TARG_ST
     /* (cbr) wfe hooks */
+extern void weak_finish (void);
+extern void WFE_Alias_Finish(void);
     weak_finish ();
     WFE_Alias_Finish();
 #endif

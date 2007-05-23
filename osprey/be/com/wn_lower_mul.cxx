@@ -89,6 +89,9 @@
 #include "wn_lower_private.h"
 #include "wn_lower_util.h"
 #include "wn_lower_mul.h"
+#include "tracing.h"	// For TFile
+#include "ir_reader.h"	// For fdump_tree()
+#include "mul_cost_model.h"
 
 /*
  * Utility defines.
@@ -101,63 +104,6 @@
  */
 /* Define to 1 or 2 for tracing level. Trace is outputed  into TFile. */
 #define TRACE 0
-
-
-/*
- * Cost model. The cost model takes into account size and 
- * cycles cost estimations.
- * For size we ensure that the size cost is not greater
- * than the mul size cost.
- * For performance we allow a expansion factor depending on the optimization
- * level.
- */
-typedef struct {
-  INT c_mul;	/* Cost of a MUL (non constant mul). */
-  INT c_add;	/* Cost of a ADD. */
-  INT c_sub;	/* Cost of a SUB or NEG. */
-  INT c_shift;  /* Cost of a SHIFT. */
-  INT c_cnst;    /* Cost of a INTCONST. */
-} MUL_COST_T;
-
-typedef struct {
-  MUL_COST_T cycles;	/* Cost model for cycles. */
-  MUL_COST_T size;	/* Cost model for size. */
-} MUL_COST_MODEL_T;
-
-/* Effective costs, rougthly:
- * mul cycles: half the bit length
- * add/shift/sub cycles: 1 for 32 bits, 3 for 64 bits.
- * cnst cycles: 1 for 32/64 bits
- * mul size: cost of a call (4) for 32/64 bits
- * add/mul/shift size: 1 for 32 bits, 4 for 64 bits.
- * cnst size: 1 for 32/64 bits
- * TODO: Put it in target dependent part.
- */
-   
-static MUL_COST_MODEL_T mul_cost_64 = {
-  /* Mul cycle cost for 64 bits. */
-  { 32, 4, 3, 3, 1 },
-  /* Mul size cost for 64 bits. */
-  { 4, 4, 4, 4, 1 }};
-static MUL_COST_MODEL_T mul_cost_32 = {
-  /* Mul cycle cost for 32 bits. */
-  { 16, 1, 1, 1, 1 },
-  /* Mul size cost for 32 bits. */
-  { 4, 1, 1, 1, 1 }};
-
-/*
- * Get_Mul_Cost_Model()
- * Returns the cost model for the given type.
- * Returns NULL if no cost is available.
- */
-static MUL_COST_MODEL_T *
-Get_Mul_Cost_Model(TYPE_ID rtype)
-{
-  if (MTYPE_byte_size(rtype) <= 4) return &mul_cost_32;
-  if (MTYPE_byte_size(rtype) <= 8) return &mul_cost_64;
-  return NULL;
-}
-  
 
 #define MUL_TYPE UINT64
 #define MUL_BITS sizeof(MUL_TYPE)*8
@@ -365,7 +311,9 @@ Print_Mul_Seq(MUL_SEQ_T mul_seq, FILE *file)
   MUL_OP_T *ops_ptr;
   INT num;
   INT tnum = 0;
-  
+  fprintf(file, "Mul sequence (%d ops):\n", mul_seq.num_ops);
+  ops_ptr = mul_seq.ops;
+
   for (num = 0; num < mul_seq.num_ops; num++) {
     if (ops_ptr[num].opr == MUL_OP_SHIFT) {
       if (tnum == 0) {
@@ -388,6 +336,8 @@ Print_Mul_Seq(MUL_SEQ_T mul_seq, FILE *file)
       }
     } else if (ops_ptr[num].opr == MUL_OP_ZERO) {
       fprintf(file, "t%d = 0 \n", tnum);
+    } else {
+      DevAssert(0, ("Unexpected cnst_mul operator (pos %d): %d\n", num, ops_ptr[num].opr));
     }
     tnum++;
   }
@@ -457,10 +407,7 @@ WNL_Is_Int_Mul_By_Constant_Candidate(WN *wn)
       MUL_SEQ_T mul_seq = Build_Mul_By_Constant(rtype, constval);
       if (Should_Do_Mul_By_Constant(cost_model, mul_seq)) {
 #if TRACE > 0
-	fprintf(TFile, "Is_Mul_By_Constant_Candidate(%lld)\n", constval);
-#if TRACE > 1
-	Print_Mul_Seq(mul_seq, TFile);
-#endif
+	fprintf(TFile, "WNL_Is_Int_Mul_By_Constant_Candidate(%lld)\n", constval);
 #endif
 	return TRUE;
       }
@@ -492,10 +439,22 @@ WNL_Lower_Int_Mul_By_Constant(WN *block, WN *wn, LOWER_ACTIONS actions)
     constval = Get_Intconst_Val(kid1);
     kid = kid0;
   }
-  MUL_SEQ_T mul_seq = Build_Mul_By_Constant(rtype, constval);
 
+  // Must turn other operand into a leaf.
+  // We must do this before computing the mul_seq as this function
+  // can be called recursively from Make_leaf which itself calls
+  // lower_expr().
   LEAF leaf_kid = Make_Leaf(block, kid, rtype);
   
+
+  MUL_SEQ_T mul_seq = Build_Mul_By_Constant(rtype, constval);
+#if TRACE > 0
+  fprintf(TFile, "WNL_Lower_Int_Mul_By_Constant(%lld)\n", constval);
+#if TRACE > 1
+  Print_Mul_Seq(mul_seq, TFile);
+#endif
+#endif
+
   MUL_OP_T *ops_ptr = mul_seq.ops;
   INT num;
   WN *tmp_wn = NULL;
@@ -523,7 +482,11 @@ WNL_Lower_Int_Mul_By_Constant(WN *block, WN *wn, LOWER_ACTIONS actions)
     }
   }
 #if TRACE > 0
-  fprintf(TFile, "Lower_Mul_By_constant((%lld) Done.\n", constval);
+#if TRACE > 1
+  fprintf(TFile, "Lower_Int_Mul_By_constant(%lld), result of lowering:\n", constval);
+  fdump_tree(TFile, tmp_wn);
+#endif
+  fprintf(TFile, "Lower_Int_Mul_By_constant(%lld) Done.\n", constval);
 #endif
   return lower_expr(block, tmp_wn, actions);
 }

@@ -40,7 +40,14 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "except.h"		/* For USING_SJLJ_EXCEPTIONS.  */
 #include "tree-inline.h"
 #include "c-tree.h"
+#ifdef TARG_ST
+  extern tree dynamic_tree_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
+  extern tree dynamic_tree_unsigned_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
+//TB for loader initialization
+extern void WFE_Init_Loader(void);
+extern void WFE_Add_Builtins(void);
 
+#endif
 cpp_reader *parse_in;		/* Declared in c-pragma.h.  */
 
 /* We let tm.h override the types used here, to handle trivial differences
@@ -1320,10 +1327,10 @@ combine_strings (strings)
 }
 
 static int is_valid_printf_arglist PARAMS ((tree));
-static rtx c_expand_builtin PARAMS ((tree, rtx, enum machine_mode, enum expand_modifier));
-static rtx c_expand_builtin_printf PARAMS ((tree, rtx, enum machine_mode,
+static rtx c_expand_builtin PARAMS ((tree, rtx, machine_mode_t, enum expand_modifier));
+static rtx c_expand_builtin_printf PARAMS ((tree, rtx, machine_mode_t,
 					    enum expand_modifier, int, int));
-static rtx c_expand_builtin_fprintf PARAMS ((tree, rtx, enum machine_mode,
+static rtx c_expand_builtin_fprintf PARAMS ((tree, rtx, machine_mode_t,
 					     enum expand_modifier, int, int));
 
 /* Print a warning if a constant expression had overflow in folding.
@@ -1982,7 +1989,7 @@ c_common_type_for_size (bits, unsignedp)
 
 tree
 c_common_type_for_mode (mode, unsignedp)
-     enum machine_mode mode;
+     machine_mode_t mode;
      int unsignedp;
 {
   if (mode == TYPE_MODE (integer_type_node))
@@ -2065,6 +2072,10 @@ c_common_type_for_mode (mode, unsignedp)
     case V2DFmode:
       return V2DF_type_node;
     default:
+      if (mode < COUNT_MACHINE_MODE)
+	return unsignedp ? 
+	  dynamic_tree_unsigned_type[mode - STATIC_COUNT_MACHINE_MODE] :
+	  dynamic_tree_type[mode - STATIC_COUNT_MACHINE_MODE];
       break;
     }
 
@@ -2892,10 +2903,13 @@ c_common_truthvalue_conversion (expr)
   return build_binary_op (NE_EXPR, expr, integer_zero_node, 1);
 }
 
+#ifndef TARG_ST
+/* TB:builtin_function_2 is now exported to be accessible for the */
+/*  loader initialisation */
 static tree builtin_function_2 PARAMS ((const char *, const char *, tree, tree,
 					int, enum built_in_class, int, int,
 					tree));
-
+#endif
 /* Make a variant type in the proper way for C/C++, propagating qualifiers
    down to the element type of an array.  */
 
@@ -3179,7 +3193,7 @@ static void c_init_attributes PARAMS ((void));
 void
 c_common_nodes_and_builtins ()
 {
-  enum builtin_type 
+  enum builtin_type2 
   {
 #define DEF_PRIMITIVE_TYPE(NAME, VALUE) NAME,
 #define DEF_FUNCTION_TYPE_0(NAME, RETURN) NAME,
@@ -3207,7 +3221,7 @@ c_common_nodes_and_builtins ()
     BT_LAST
   };
 
-  typedef enum builtin_type builtin_type;
+  typedef enum builtin_type2 builtin_type2;
 
   tree builtin_types[(int) BT_LAST];
   int wchar_type_size;
@@ -3315,6 +3329,12 @@ c_common_nodes_and_builtins ()
   set_sizetype (size_type_node);
 
   build_common_tree_nodes_2 (flag_short_double);
+#ifdef TARG_ST
+  // [TB] set up dynamic mode. Goes here because we need to have global
+  // modes to be defined for vector types may reference a static mode
+  // (call to make_vector to build the vector type tree).
+  WFE_Init_Loader(); // do extension loader set up
+#endif
 
   record_builtin_type (RID_FLOAT, NULL, float_type_node);
   record_builtin_type (RID_DOUBLE, NULL, double_type_node);
@@ -3600,7 +3620,10 @@ c_common_nodes_and_builtins ()
     }									
 #include "builtins.def"
 #undef DEF_BUILTIN
-
+#ifdef TARG_ST
+/*  TB: Add dynamic builtins */
+  WFE_Add_Builtins();
+#endif
   (*targetm.init_builtins) ();
 
   main_identifier_node = get_identifier ("main");
@@ -3676,7 +3699,11 @@ builtin_function_disabled_p (name)
    the declaration of NAME.  Does not declare NAME if flag_no_builtin,
    or if NONANSI_P and flag_no_nonansi_builtin.  */
 
+#ifndef TARG_ST
 static tree
+#else
+tree
+#endif
 builtin_function_2 (builtin_name, name, builtin_type, type, function_code,
 		    class, library_name_p, nonansi_p, attrs)
      const char *builtin_name;
@@ -4252,7 +4279,7 @@ rtx
 c_expand_expr (exp, target, tmode, modifier)
      tree exp;
      rtx target;
-     enum machine_mode tmode;
+     machine_mode_t tmode;
      int modifier;  /* Actually enum_modifier.  */
 {
   switch (TREE_CODE (exp))
@@ -4426,7 +4453,7 @@ static rtx
 c_expand_builtin (exp, target, tmode, modifier)
      tree exp;
      rtx target;
-     enum machine_mode tmode;
+     machine_mode_t tmode;
      enum expand_modifier modifier;
 {
   tree type = TREE_TYPE (exp);
@@ -4524,7 +4551,7 @@ static rtx
 c_expand_builtin_printf (arglist, target, tmode, modifier, ignore, unlocked)
      tree arglist;
      rtx target;
-     enum machine_mode tmode;
+     machine_mode_t tmode;
      enum expand_modifier modifier;
      int ignore;
      int unlocked;
@@ -4628,7 +4655,7 @@ static rtx
 c_expand_builtin_fprintf (arglist, target, tmode, modifier, ignore, unlocked)
      tree arglist;
      rtx target;
-     enum machine_mode tmode;
+     machine_mode_t tmode;
      enum expand_modifier modifier;
      int ignore;
      int unlocked;
@@ -5651,7 +5678,7 @@ handle_mode_attribute (node, name, args, flags, no_add_attrs)
       int j;
       const char *p = IDENTIFIER_POINTER (TREE_VALUE (args));
       int len = strlen (p);
-      enum machine_mode mode = VOIDmode;
+      machine_mode_t mode = VOIDmode;
       tree typefm;
 
       if (len > 4 && p[0] == '_' && p[1] == '_'
@@ -5675,7 +5702,7 @@ handle_mode_attribute (node, name, args, flags, no_add_attrs)
       else
 	for (j = 0; j < NUM_MACHINE_MODES; j++)
 	  if (!strcmp (p, GET_MODE_NAME (j)))
-	    mode = (enum machine_mode) j;
+	    mode = (machine_mode_t) j;
 
       if (mode == VOIDmode)
 	error ("unknown machine mode `%s'", p);
@@ -6236,7 +6263,7 @@ handle_vector_size_attribute (node, name, args, flags, no_add_attrs)
      bool *no_add_attrs;
 {
   unsigned HOST_WIDE_INT vecsize, nunits;
-  enum machine_mode mode, orig_mode, new_mode;
+  machine_mode_t mode, orig_mode, new_mode;
   tree type = *node, new_type = NULL_TREE;
   tree type_list_node;
 
@@ -6709,3 +6736,20 @@ check_function_arguments_recurse (callback, ctx, param, param_num)
 }
 
 #include "gt-c-common.h"
+
+#ifdef TARG_ST
+/*  TB: Add dynamic builtins: returns tree attribute for listed
+    attributes */
+tree 
+c_get_gcc_attributes(bool never_returns, bool is_const, bool is_pure) {
+  int attr = 0;
+  if (never_returns)
+    return built_in_attributes[(int)ATTR_NORETURN_NOTHROW_LIST];
+  if (is_const)
+    return built_in_attributes[(int)ATTR_CONST_NOTHROW_LIST];
+  if (is_pure)
+    return built_in_attributes[(int)ATTR_PURE_NOTHROW_LIST];
+  
+  return built_in_attributes[(int)ATTR_NOTHROW_LIST];
+}
+#endif

@@ -48,7 +48,10 @@
 #endif
 #include "wio.h"
 #include "wutil.h"
-
+#ifdef TARG_ST
+//TB: dynamic intrinsics support
+BE_EXPORTED INTRINSIC INTRINSIC_COUNT;
+#endif
 static const struct {
   INTRINSIC   opcode;
   char      * name;
@@ -738,7 +741,7 @@ static const struct {
 #include "targ_wutil.def"
 #endif
 
-  INTRINSIC_LAST,		"INTRINSIC_LAST"
+  INTRINSIC_STATIC_COUNT,		"INTRINSIC_LAST"
 
 };
 
@@ -912,7 +915,7 @@ get_intrinsic_name ( INTRINSIC opcode )
   if ( ! init_intrinsic ) {
     init_intrinsic = TRUE;
 
-    for (INT opc = INTRINSIC_FIRST; opc <= INTRINSIC_LAST; opc++ ) {
+    for (INT opc = INTRINSIC_FIRST; opc <= INTRINSIC_STATIC_COUNT; opc++ ) {
       if ( opc != intrinsic_name_table [opc].opcode ) {
         printf ( "get_intrinsic_name : %d %d %s\n", opc,
                  intrinsic_name_table [opc].opcode,
@@ -922,8 +925,11 @@ get_intrinsic_name ( INTRINSIC opcode )
       }
     }
   }
-
+#ifdef TARG_ST
+  return opcode > INTRINSIC_STATIC_COUNT ? intrn_info[opcode].c_name : intrinsic_name_table [opcode].name;
+#else
   return intrinsic_name_table [opcode].name;
+#endif
 }
 
 char *
@@ -1071,6 +1077,11 @@ WN_intrinsic_return_ty (
       ret_ty = WN_Tree_Type(WN_kid0(call));
       break;
       */
+   case IRETURN_DYNAMIC:
+      Is_True(FALSE, 
+	      ("IRETURN_DYNAMIC not yet handled in WN_intrinsic_return_ty()"));
+      ret_ty = MTYPE_To_TY(MTYPE_V);
+      break;
    default:
       Is_True(FALSE, 
 	      ("Unexpected INTRN_RETKIND in WN_intrinsic_return_ty()"));

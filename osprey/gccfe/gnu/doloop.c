@@ -59,13 +59,13 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 static rtx doloop_condition_get
   PARAMS ((rtx));
 static unsigned HOST_WIDE_INT doloop_iterations_max
-  PARAMS ((const struct loop_info *, enum machine_mode, int));
+  PARAMS ((const struct loop_info *, machine_mode_t, int));
 static int doloop_valid_p
   PARAMS ((const struct loop *, rtx));
 static int doloop_modify
   PARAMS ((const struct loop *, rtx, rtx, rtx, rtx, rtx));
 static int doloop_modify_runtime
-  PARAMS ((const struct loop *, rtx, rtx, rtx, enum machine_mode, rtx));
+  PARAMS ((const struct loop *, rtx, rtx, rtx, machine_mode_t, rtx));
 
 
 /* Return the loop termination condition for PATTERN or zero
@@ -145,7 +145,7 @@ doloop_condition_get (pattern)
 static unsigned HOST_WIDE_INT
 doloop_iterations_max (loop_info, mode, nonneg)
      const struct loop_info *loop_info;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int nonneg;
 {
   unsigned HOST_WIDE_INT n_iterations_max;
@@ -548,7 +548,7 @@ doloop_modify_runtime (loop, iterations_max,
      rtx iterations_max;
      rtx doloop_seq;
      rtx start_label;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx condition;
 {
   const struct loop_info *loop_info = LOOP_INFO (loop);
@@ -764,7 +764,7 @@ doloop_optimize (loop)
   rtx final_value;
   rtx increment;
   rtx jump_insn;
-  enum machine_mode mode;
+  machine_mode_t mode;
   unsigned HOST_WIDE_INT n_iterations;
   unsigned HOST_WIDE_INT n_iterations_max;
   rtx doloop_seq, doloop_pat, doloop_reg;

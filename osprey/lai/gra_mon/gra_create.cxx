@@ -640,10 +640,12 @@ Create_Live_BB_Sets(void)
 // block, we know we haven't created one for the current block yet.  Since we
 // scan each block only once to both create the wired LRANGEs and do the
 // preferencing, this works.
-LRANGE** wired_lranges[ISA_REGISTER_CLASS_MAX + 1];
 #ifdef TARG_ST
+LRANGE** wired_lranges[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
 // We define an alternative array for possible paired hardwired registers
-LRANGE** wired_paired_lranges[ISA_REGISTER_CLASS_MAX + 1];
+LRANGE** wired_paired_lranges[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
+LRANGE** wired_lranges[ISA_REGISTER_CLASS_MAX + 1];
 #endif
 
 /////////////////////////////////////
@@ -1201,10 +1203,11 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       ISA_REGISTER_SUBCLASS sc = (asm_info
 				  ? ASM_OP_opnd_subclass (asm_info)[i]
 				  : OP_opnd_reg_subclass(xop, i));
-      if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals, sc)) {
+      if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals, sc))
 #else
-      if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals)) {
+      if (Complement_TN_Reference(xop, op_tn, gbb, &lunit, wired_locals))
 #endif
+      {
         if (!lunit->Has_Def()) {
 	  lunit->Has_Exposed_Use_Set();
 	  gpl->Exposed_Use_Set(TRUE);
@@ -1235,10 +1238,11 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 	ISA_REGISTER_SUBCLASS sc = (asm_info
 				    ? ASM_OP_result_subclass (asm_info)[i]
 				    : OP_result_reg_subclass(xop, i));
-        if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals, sc)) {
+        if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals, sc))
 #else
-        if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals)) {
+        if (Complement_TN_Reference(xop, res_tn, gbb, &lunit, wired_locals))
 #endif
+	{
           if (!lunit->Has_Def()) {
 	    lunit->Has_Exposed_Use_Set();
 	    gpl->Exposed_Use_Set(TRUE);
@@ -1258,10 +1262,11 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
       ISA_REGISTER_SUBCLASS sc = (asm_info
 				  ? ASM_OP_result_subclass (asm_info)[i]
 				  : OP_result_reg_subclass(xop, i));
-      if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals, sc)) {
+      if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals, sc))
 #else
-      if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals)) {
+      if ( Complement_TN_Reference(xop, res_tn,gbb,&lunit, wired_locals))
 #endif
+      {
 	if (lunit) {
 	  //
 	  // Complement reference.  Want flag set if last def in the
@@ -1286,11 +1291,20 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 	for (reg = REGISTER_SET_Choose(ASM_OP_clobber_set(asm_info)[rc]);
 	     reg != REGISTER_UNDEFINED;
 	     reg = REGISTER_SET_Choose_Next(ASM_OP_clobber_set(asm_info)[rc], reg)) {
-#ifdef TARG_ST
+	  TN *ded_tn = Build_Dedicated_TN(rc, reg, 0);
+	  GRA_PREF_LIVE* gpl = (GRA_PREF_LIVE*) hTN_MAP_Get(live_data, ded_tn);
+	  if (!gpl) {
+	    gpl = gra_pref_mgr.LIVE_Create(&MEM_local_nz_pool);
+	    hTN_MAP_Set(live_data, ded_tn, gpl);
+	  }
 	  Wired_TN_Reference(gbb, rc, reg, 1, wired_locals);
-#else
-	  Wired_TN_Reference(gbb, rc, reg, wired_locals);
-#endif
+	  // Clobber acts as a kill, we can consider for the live summary information
+	  // that it is an additional  def.
+	  gpl->Num_Defs_Set(gpl->Num_Defs() + 1);
+	  gpl->Last_Def_Set(op_count);
+	  if (gpl->First_Def() == 0) {
+	    gpl->First_Def_Set(op_count);
+	  }
 	}
       }
     }

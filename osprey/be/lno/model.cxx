@@ -358,7 +358,8 @@ typedef HASH_TABLE<WN*,INT> WN2INT;
 #define Reserved_Int_Regs	3	// $sp, $bp, fudge(1)
 #endif
 
-#define MTYPE_is_double(m)	(MTYPE_size_reg(m)==MTYPE_size_reg(MTYPE_I8))
+//TB: rename the macro to avoid duplicate def
+#define MTYPE_is_double_model(m)	(MTYPE_size_reg(m)==MTYPE_size_reg(MTYPE_I8))
 
 static MEM_POOL Model_Local_Pool;
 static MEM_POOL Model_Lat_Pool;
@@ -2058,7 +2059,7 @@ LOOP_MODEL::OP_Resources_R(WN* wn,
              rtype == MTYPE_U8) {
 #endif
 
-      BOOL double_word = (MTYPE_is_double(desc) || MTYPE_is_double(rtype));
+      BOOL double_word = (MTYPE_is_double_model(desc) || MTYPE_is_double_model(rtype));
 
       switch (oper) {
         case OPR_ARRAY: 

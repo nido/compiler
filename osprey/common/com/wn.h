@@ -1007,6 +1007,13 @@ BE_EXPORTED extern WN *WN_CreateParm(TYPE_ID rtype,
 			 TY_IDX ty, 
 			 UINT32 flag);
 
+#ifdef TARG_ST
+BE_EXPORTED extern WN *WN_CreateSubPart(WN *kid0, 
+					 TYPE_ID rtype, 
+					 TYPE_ID desc, 
+					 WN_OFFSET subpart_idx);
+#endif
+
 BE_EXPORTED extern WN *WN_CreateComma(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc, WN *block, WN *value);
 inline WN *
 WN_CreateComma (OPCODE opc, WN *block, WN *value) {

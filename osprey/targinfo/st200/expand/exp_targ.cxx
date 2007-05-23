@@ -1000,7 +1000,7 @@ Expand_Shift (
       break;
     }
     Expand_Extract(low_src1, high_src1, src1, ops);
-    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops);
+    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops, 0LL);
     Expand_Compose(result, low_res, high_res, ops);
     return;
   }
@@ -2495,54 +2495,47 @@ Expand_Float_To_Int (
 )
 {
   TOP top = TOP_UNDEFINED;
+  
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_I4) {
-      switch (rm) {
-      case ROUND_CHOP:
-	top = TOP_convfi_n ;
-	break;
-	/* All others are not supported. */
-      case ROUND_USER:
-      case ROUND_NEAREST:
-      case ROUND_NEG_INF:
-      case ROUND_PLUS_INF:
-      default:
-	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
-	break;
-      }
+    switch (rm) {
+    case ROUND_CHOP:
+      top = TOP_convfi_n ;
+      break;
+      /* All others are not supported. */
+    case ROUND_USER:
+    case ROUND_NEAREST:
+    case ROUND_NEG_INF:
+    case ROUND_PLUS_INF:
+    default:
+      FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
+      break;
     }
-#if 0
-  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4 && (imtype == MTYPE_I4 || imtype == MTYPE_U4)) {
-      BOOL is_signed = MTYPE_is_signed(imtype);
-      switch (rm) {
-      case ROUND_CHOP:
-	top = is_signed ? TOP_convfi : TOP_convfu;
-	break;
-	/* All others are not supported. */
-      case ROUND_USER:
-      case ROUND_NEAREST:
-      case ROUND_NEG_INF:
-      case ROUND_PLUS_INF:
-      default:
-	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
-	break;
-      }
-    } else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype) && (imtype == MTYPE_I4 || imtype == MTYPE_U4)) {
-      BOOL is_signed = MTYPE_is_signed(imtype);
-      switch (rm) {
-      case ROUND_CHOP:
-	top = is_signed ? TOP_convdi : TOP_convdu;
-	break;
-	/* All others are not supported. */
-      case ROUND_USER:
-      case ROUND_NEAREST:
-      case ROUND_NEG_INF:
-      case ROUND_PLUS_INF:
-      default:
-	  FmtAssert(FALSE, ("Expand_Float_To_Int : unexpected rounding mode"));
-	break;
-      }
-    }
-#endif
+  }
+  
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_To_Int: unexpected IMTYPE %s of FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
+  
+  Build_OP (top, dest, src, ops);
+
+  return;
+}
+
+/* ====================================================================
+ *   Expand_Float_To_Unsigned
+ *
+ *   TODO how do you trap on float val too big for [u]int32?
+ * ====================================================================
+ */
+static void
+Expand_Float_To_Unsigned (
+  ROUND_MODE rm,
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  TOP top = TOP_UNDEFINED;
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_To_Int: unexpected IMTYPE %s of FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
 
@@ -2557,6 +2550,23 @@ Expand_Float_To_Int (
  */
 void
 Expand_Float_To_Int_Cvt (
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  Expand_Float_To_Int (ROUND_USER, dest, src, imtype, fmtype, ops);
+}
+
+
+/* ====================================================================
+ *   Expand_Float_To_Unsigned_Cvt
+ * ====================================================================
+ */
+void
+Expand_Float_To_Unsigned_Cvt (
   TN *dest,
   TN *src,
   TYPE_ID imtype,
@@ -2584,6 +2594,22 @@ Expand_Float_To_Int_Round (
 }
 
 /* ====================================================================
+ *   Expand_Float_To_Unsigned_Round
+ * ====================================================================
+ */
+void
+Expand_Float_To_Unsigned_Round (
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  Expand_Float_To_Unsigned (ROUND_NEAREST, dest, src, imtype, fmtype, ops);
+}
+
+/* ====================================================================
  *   Expand_Float_To_Int_Trunc
  * ====================================================================
  */
@@ -2597,6 +2623,22 @@ Expand_Float_To_Int_Trunc (
 )
 {
   Expand_Float_To_Int (ROUND_CHOP, dest, src, imtype, fmtype, ops);
+}
+
+/* ====================================================================
+ *   Expand_Float_To_Unsigned_Trunc
+ * ====================================================================
+ */
+void
+Expand_Float_To_Unsigned_Trunc (
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  Expand_Float_To_Unsigned (ROUND_CHOP, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -2616,6 +2658,22 @@ Expand_Float_To_Int_Floor (
 }
 
 /* ====================================================================
+ *   Expand_Float_To_Unsigned_Floor
+ * ====================================================================
+ */
+void
+Expand_Float_To_Unsigned_Floor (
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  Expand_Float_To_Unsigned (ROUND_NEG_INF, dest, src, imtype, fmtype, ops);
+}
+
+/* ====================================================================
  *   Expand_Float_To_Int_Ceil
  * ====================================================================
  */
@@ -2629,6 +2687,22 @@ Expand_Float_To_Int_Ceil (
 )
 {
   Expand_Float_To_Int (ROUND_PLUS_INF, dest, src, imtype, fmtype, ops);
+}
+
+/* ====================================================================
+ *   Expand_Float_To_Unsigned_Ceil
+ * ====================================================================
+ */
+void
+Expand_Float_To_Unsigned_Ceil (
+  TN *dest,
+  TN *src,
+  TYPE_ID imtype,
+  TYPE_ID fmtype,
+  OPS *ops
+)
+{
+  Expand_Float_To_Unsigned (ROUND_PLUS_INF, dest, src, imtype, fmtype, ops);
 }
 
 /* ====================================================================
@@ -3348,18 +3422,18 @@ Expand_TOP_intrncall (
  *   Otherwise only ops is filled in.
  * ======================================================================
  */
-TN *
+void
 Exp_Intrinsic_Call (
   INTRINSIC id,
-  TN *op0,
-  TN *op1,
-  TN *op2,
+  INT num_results,
+  INT num_opnds,
+  TN **result,
+  TN **opnd,
   OPS *ops,
   LABEL_IDX *label,
-  OPS *loop_ops
-)
-{
-    TN *result = NULL ;
+  OPS *loop_ops,
+  SRCPOS srcpos
+) {
 
     /*
      * Currently treated as intrinsics calls:
@@ -3368,49 +3442,11 @@ Exp_Intrinsic_Call (
      */
 
     switch(id) {    
-    case INTRN_ST220PFT:
-    case INTRN_ST220PRGADD:
-    case INTRN_ST220PRGSET:
-    case INTRN_ST200PRGINSPG:
-	{
-	    /* For these, input is offset and base address, output is effective address used */
-	    TN *in[2] ;
-	    TN *out[1] ;
-	    in[0] = op0 ;
-	    in[1] = op1 ;
-	    result = out[0] = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
-	    /* We fall back to the usual intrinsic generation */
-	    Exp_Intrinsic_Op(id, 1, 2, out, in, ops) ;
-	    FmtAssert(result,("Exp_Intrinsic_Call (INTRN_ST220PFT|INTRN_ST220PRGADD|ST220PRGSET): Invalid expansion."));
-	}
-	break;
-    case INTRN_ST220PRGINS:
-    case INTRN_ST220SYNC:
-    case INTRN_ST220SYNCINS:
-	{
-	    /* For these, no input nor output*/
-	    /* We fall back to the usual intrinsic generation */
-	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops) ;
-	}
-	break ;
-    case INTRN_ST220SYSCALL:
-    case INTRN_ST200PSWCLR:
-    case INTRN_ST200PSWSET:
-	{
-	    /* This one has one input, hopefully constant and no output*/
-	    TN *in[1] ;
-	    in[0] = op0 ;
-	    /* We fall back to the usual intrinsic generation */
-	    Exp_Intrinsic_Op(id, 0, 1, NULL, in, ops) ;
-	}
-	break ;
-    case INTRN_TRAP:
-	Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops) ;
-        break ;
+      /* Add here intrinsic that will be expanded effectively as intrinsic call */
     default:
-	FmtAssert(FALSE,("Exp_Intrinsic_Call : Not Implemented."));
+      /* Default is intrinsic op */
+      Exp_Intrinsic_Op(id,num_results,num_opnds,result,opnd,ops,srcpos);
     }
-  return result ;
 }
 
 /* ======================================================================

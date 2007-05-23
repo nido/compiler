@@ -12140,7 +12140,7 @@ Handle_ISTORE_ (
   
   Last_Mem_OP = OPS_last(ops);
 
-  if (V_alignment(variant) != V_NONE) {
+  if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
     Expand_Misaligned_Store (OPCODE_desc(opcode), op0, op1, offset_tn, variant, ops);
   } else {
     Expand_Store (OPCODE_desc(opcode), op0, op1, offset_tn, ops);
@@ -12246,7 +12246,7 @@ Handle_ISTBITS_(WN *istbits, WN *kid, OPCODE opcode, TN *op0, TN *op1, OPS *ops)
   field_tn = ALLOC_REG(WN_rtype(kid));
 
   Last_Mem_OP = OPS_last(ops);
-  if (V_alignment(variant) != V_NONE) {
+  if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
     Expand_Misaligned_Load (OPCODE_make_op(OPR_ILOAD, rtype, desc),
 			    field_tn, op1, offset_tn, variant, ops);
   } else {
@@ -12262,7 +12262,7 @@ Handle_ISTBITS_(WN *istbits, WN *kid, OPCODE opcode, TN *op0, TN *op1, OPS *ops)
 		   result, field_tn, op0, ops);
   
   Last_Mem_OP = OPS_last(ops);
-  if (V_alignment(variant) != V_NONE) {
+  if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
     Expand_Misaligned_Store(OPCODE_make_op(OPR_ISTORE, MTYPE_V, desc), 
 			    result, op1, offset_tn, variant, ops);
   } else { 
@@ -12406,7 +12406,7 @@ Handle_ILOAD_ (
   
   offset_tn = Gen_Literal_TN (WN_offset(iload), 4);
   Last_Mem_OP = OPS_last(ops);
-  if (V_alignment(variant) != V_NONE) {
+  if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
     Expand_Misaligned_Load (opcode, result, op0, offset_tn,
 			    variant, ops);
   } else {

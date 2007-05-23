@@ -75,7 +75,7 @@ struct arg_data
   /* Tree node for this argument.  */
   tree tree_value;
   /* Mode for value; TYPE_MODE unless promoted.  */
-  enum machine_mode mode;
+  machine_mode_t mode;
   /* Current RTL value for argument, or 0 if it isn't precomputed.  */
   rtx value;
   /* Initially-compute RTL value for argument; only for const functions.  */
@@ -217,7 +217,7 @@ static void load_register_parameters		PARAMS ((struct arg_data *,
 							 int, rtx *, int));
 static rtx emit_library_call_value_1 		PARAMS ((int, rtx, rtx,
 							 enum libcall_type,
-							 enum machine_mode,
+							 machine_mode_t,
 							 int, va_list));
 static int special_function_p			PARAMS ((tree, int));
 static int flags_from_decl_or_type 		PARAMS ((tree));
@@ -978,7 +978,7 @@ save_fixed_argument_area (reg_parm_stack_space, argblock,
   if (*low_to_save >= 0)
     {
       int num_to_save = *high_to_save - *low_to_save + 1;
-      enum machine_mode save_mode
+      machine_mode_t save_mode
 	= mode_for_size (num_to_save * BITS_PER_UNIT, MODE_INT, 1);
       rtx stack_area;
 
@@ -1024,7 +1024,7 @@ restore_fixed_argument_area (save_area, argblock, high_to_save, low_to_save)
      int high_to_save;
      int low_to_save;
 {
-  enum machine_mode save_mode = GET_MODE (save_area);
+  machine_mode_t save_mode = GET_MODE (save_area);
 #ifdef ARGS_GROW_DOWNWARD
   rtx stack_area
     = gen_rtx_MEM (save_mode,
@@ -1192,7 +1192,7 @@ initialize_argument_information (num_actuals, args, args_size, n_named_args,
     {
       tree type = TREE_TYPE (TREE_VALUE (p));
       int unsignedp;
-      enum machine_mode mode;
+      machine_mode_t mode;
 
       args[i].tree_value = TREE_VALUE (p);
 
@@ -1539,7 +1539,7 @@ precompute_arguments (flags, num_actuals, args)
     if ((flags & ECF_LIBCALL_BLOCK)
 	|| calls_function (args[i].tree_value, !ACCUMULATE_OUTGOING_ARGS))
       {
-	enum machine_mode mode;
+	machine_mode_t mode;
 
 	/* If this is an addressable type, we cannot pre-evaluate it.  */
 	if (TREE_ADDRESSABLE (TREE_TYPE (args[i].tree_value)))
@@ -3362,7 +3362,7 @@ expand_call (exp, target, ignore)
 	  for (i = 0; i < num_actuals; i++)
 	    if (args[i].save_area)
 	      {
-		enum machine_mode save_mode = GET_MODE (args[i].save_area);
+		machine_mode_t save_mode = GET_MODE (args[i].save_area);
 		rtx stack_area
 		  = gen_rtx_MEM (save_mode,
 				 memory_address (save_mode,
@@ -3502,7 +3502,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
      rtx orgfun;
      rtx value;
      enum libcall_type fn_type;
-     enum machine_mode outmode;
+     machine_mode_t outmode;
      int nargs;
      va_list p;
 {
@@ -3520,7 +3520,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
   struct arg
   {
     rtx value;
-    enum machine_mode mode;
+    machine_mode_t mode;
     rtx reg;
     int partial;
     struct args_size offset;
@@ -3699,7 +3699,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
   for (; count < nargs; count++)
     {
       rtx val = va_arg (p, rtx);
-      enum machine_mode mode = va_arg (p, enum machine_mode);
+      machine_mode_t mode = va_arg (p, machine_mode_t);
 
       /* We cannot convert the arg value to the mode the library wants here;
 	 must do it earlier where we know the signedness of the arg.  */
@@ -3947,7 +3947,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
       if (low_to_save >= 0)
 	{
 	  int num_to_save = high_to_save - low_to_save + 1;
-	  enum machine_mode save_mode
+	  machine_mode_t save_mode
 	    = mode_for_size (num_to_save * BITS_PER_UNIT, MODE_INT, 1);
 	  rtx stack_area;
 
@@ -3989,7 +3989,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
      are to be pushed.  */
   for (count = 0; count < nargs; count++, argnum += inc)
     {
-      enum machine_mode mode = argvec[argnum].mode;
+      machine_mode_t mode = argvec[argnum].mode;
       rtx val = argvec[argnum].value;
       rtx reg = argvec[argnum].reg;
       int partial = argvec[argnum].partial;
@@ -4023,7 +4023,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
 		{
 		  /* We need to make a save area.  See what mode we can make
 		     it.  */
-		  enum machine_mode save_mode
+		  machine_mode_t save_mode
 		    = mode_for_size (argvec[argnum].size.constant
 				     * BITS_PER_UNIT,
 				     MODE_INT, 1);
@@ -4254,7 +4254,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
 #ifdef REG_PARM_STACK_SPACE
       if (save_area)
 	{
-	  enum machine_mode save_mode = GET_MODE (save_area);
+	  machine_mode_t save_mode = GET_MODE (save_area);
 #ifdef ARGS_GROW_DOWNWARD
 	  rtx stack_area
 	    = gen_rtx_MEM (save_mode,
@@ -4282,7 +4282,7 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
       for (count = 0; count < nargs; count++)
 	if (argvec[count].save_area)
 	  {
-	    enum machine_mode save_mode = GET_MODE (argvec[count].save_area);
+	    machine_mode_t save_mode = GET_MODE (argvec[count].save_area);
 	    rtx stack_area
 	      = gen_rtx_MEM (save_mode,
 			     memory_address
@@ -4323,12 +4323,12 @@ emit_library_call_value_1 (retval, orgfun, value, fn_type, outmode, nargs, p)
 
 void
 emit_library_call VPARAMS((rtx orgfun, enum libcall_type fn_type,
-			   enum machine_mode outmode, int nargs, ...))
+			   machine_mode_t outmode, int nargs, ...))
 {
   VA_OPEN (p, nargs);
   VA_FIXEDARG (p, rtx, orgfun);
   VA_FIXEDARG (p, int, fn_type);
-  VA_FIXEDARG (p, enum machine_mode, outmode);
+  VA_FIXEDARG (p, machine_mode_t, outmode);
   VA_FIXEDARG (p, int, nargs);
 
   emit_library_call_value_1 (0, orgfun, NULL_RTX, fn_type, outmode, nargs, p);
@@ -4347,7 +4347,7 @@ emit_library_call VPARAMS((rtx orgfun, enum libcall_type fn_type,
 rtx
 emit_library_call_value VPARAMS((rtx orgfun, rtx value,
 				 enum libcall_type fn_type,
-				 enum machine_mode outmode, int nargs, ...))
+				 machine_mode_t outmode, int nargs, ...))
 {
   rtx result;
   
@@ -4355,7 +4355,7 @@ emit_library_call_value VPARAMS((rtx orgfun, rtx value,
   VA_FIXEDARG (p, rtx, orgfun);
   VA_FIXEDARG (p, rtx, value);
   VA_FIXEDARG (p, int, fn_type);
-  VA_FIXEDARG (p, enum machine_mode, outmode);
+  VA_FIXEDARG (p, machine_mode_t, outmode);
   VA_FIXEDARG (p, int, nargs);
 
   result = emit_library_call_value_1 (1, orgfun, value, fn_type, outmode,
@@ -4441,7 +4441,7 @@ store_one_arg (arg, argblock, flags, variable_size, reg_parm_stack_space)
 	  if (i != upper_bound)
 	    {
 	      /* We need to make a save area.  See what mode we can make it.  */
-	      enum machine_mode save_mode
+	      machine_mode_t save_mode
 		= mode_for_size (arg->size.constant * BITS_PER_UNIT, MODE_INT, 1);
 	      rtx stack_area
 		= gen_rtx_MEM (save_mode,

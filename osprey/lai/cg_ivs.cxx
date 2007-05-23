@@ -1799,7 +1799,11 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
   LOOPINFO *info = ANNOT_loopinfo(annot);
   WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
+#ifdef TARG_STxP70
+  TN *trip_count_tn = LOOPINFO_CG_trip_count_tn(info);
+#else
   TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+#endif
 
   if (trip_count_tn != NULL && TN_has_value(trip_count_tn))
     loop_iter = TN_value(trip_count_tn);

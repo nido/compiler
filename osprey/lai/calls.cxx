@@ -63,6 +63,7 @@
 #include "config_targ.h"
 #endif
 #include "config.h"
+#include "config_TARG.h"
 
 #include "symtab.h"
 #include "strtab.h"
@@ -100,7 +101,12 @@ INT32 Callee_Saved_Regs_Count;
 /* 
  * regs that need to be saved at prolog and restored at epilog.
  */
+#ifdef TARG_ST
+REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
 REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
+REGISTER_SET Caller_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
+#endif
 #endif
 
 /* Special PREGs associated with save locations for Callee Saved registers */
@@ -242,7 +248,7 @@ Setup_GP_TN_For_PU (
     }
   }
 #ifdef TARG_ST
-  else if (!Gen_GP_Relative && PU_References_GP) {
+  else if (!Gen_GP_Relative && PU_References_GP && Is_Caller_Save_GP) {
     // [SC] TLS support
     // Even absolute code can reference the GP for thread support.
     GP_Setup_Code = need_code;
@@ -315,7 +321,10 @@ Init_Callee_Saved_Regs_for_REGION (
 
 #ifdef TARG_ST
   // [SC] Allow GP to be used even in absolute code (some TLS models want it)
+  // [VCdV] on xp70, GP is always activated.
+#ifndef TARG_STxP70
   if (Gen_GP_Relative || PU_References_GP)
+#endif
     Setup_GP_TN_For_PU( pu );
 #else
   if (Gen_GP_Relative)
@@ -364,6 +373,8 @@ Init_Callee_Saved_Regs_for_REGION (
     REGISTER_SET regset = REGISTER_CLASS_callee_saves(cl);
 
     if (REGISTER_CLASS_multiple_save(cl)) continue;
+
+    if (EETARG_Do_Not_Save_Callee_Reg_Class(cl)) continue;
 
     for ( reg = REGISTER_SET_Choose(regset);
 	  reg != REGISTER_UNDEFINED;
@@ -757,7 +768,7 @@ Can_Be_Tail_Call (
       ploc = First_Output_PLOC_Reg (ploc, ty);
       while(PLOC_is_nonempty(ploc)) {
 	if (PLOC_on_stack(ploc)) return NULL;
-	ploc = Next_Output_PLOC_Reg (ploc);
+	ploc = Next_Output_PLOC_Reg ();
       }
     }
   } else {
@@ -769,7 +780,7 @@ Can_Be_Tail_Call (
       ploc = First_Output_PLOC_Reg (ploc, ty);
       while(PLOC_is_nonempty(ploc)) {
 	if (PLOC_on_stack(ploc)) return NULL;
-	ploc = Next_Output_PLOC_Reg (ploc);
+	ploc = Next_Output_PLOC_Reg ();
       }
     }
   }
@@ -876,6 +887,18 @@ Can_Do_Tail_Calls_For_PU ()
   //	#pragma unknown_control_flow (func)
   // then we cannot do tail-call optimization for it.
   if (PU_has_unknown_control_flow (Get_Current_PU())) return FALSE;
+
+#ifdef TARG_ST
+  // If PU is an interrupt handler, cannot do tail-call opt
+  if (PU_is_interrupt(Get_Current_PU())
+      || PU_is_interrupt_nostkaln(Get_Current_PU())) return FALSE;
+#endif
+
+#ifdef TARG_STxP70
+  // If farcall option, cannot so tail-call opt
+  if (farcall)
+    return FALSE;
+#endif
 
   // If a PU has a call to setjmp and some other tail call from this
   // PU ultimately has a call to longjmp, then the stack frame will be
@@ -1011,7 +1034,11 @@ static void
 Target_Unique_Exit (
   BB *bb,
   BB *unique_exit_bb,
+#ifdef TARG_ST
+  TN *rtn_tns[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1]
+#else
   TN *rtn_tns[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1]
+#endif
 )
 {
   OP *op;
@@ -1122,7 +1149,7 @@ Generate_Unique_Exit (void)
    * We track the return value TNs as well as the BB containing the
    * real exit.
    */
-  TN *rtn_tns[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
+  TN *rtn_tns[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1];
 
   /* Should we generate a unique exit?
    */
@@ -1390,8 +1417,15 @@ Generate_Exit (
   /* Generate the return instruction, unless is this a tail call
    * block, in which case the xfer instruction is already there.
    */
-  if (!BB_call(bb_epi)) { 
-    Exp_Return (RA_TN, &ops);
+  if (!BB_call(bb_epi)) {
+#ifdef TARG_ST
+    if (PU_is_interrupt(Get_Current_PU()) ||
+	PU_is_interrupt_nostkaln(Get_Current_PU())) {
+      Exp_Return_Interrupt(RA_TN, &ops);
+    }
+    else
+#endif
+      Exp_Return (RA_TN, &ops);
   }
 
   /* set the srcpos field for all the exit OPs */
@@ -1922,7 +1956,53 @@ Adjust_Entry (
       reg = REGISTER_SET_Choose(temps[cl]);
 
       if(reg == REGISTER_UNDEFINED) {
-	Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(0);
+	if(Callee_Saved_Regs_Count > 0) {
+	  Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(0);
+	}
+
+#ifdef TARG_ST
+	// [JV] Check that we do not use the same TN as the one used
+	// to save FP.
+	// Check also that we get a register of same reg class as SP.
+	INT callee_num = 1;
+	TN *fp_save = NULL;
+	while(callee_num < Callee_Saved_Regs_Count &&
+	      ( TN_register_class(SP_TN) != TN_register_class(Use_Callee_Save_TN_For_SpAdjust) ||
+		(fp_adj != sp_adj &&
+		 TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust) &&
+		 TN_save_rclass(Use_Callee_Save_TN_For_SpAdjust) == TN_register_class(FP_TN) &&
+		 TN_save_reg(Use_Callee_Save_TN_For_SpAdjust) == TN_register(FP_TN) )
+		)
+	      ) {
+
+	  if(fp_adj != sp_adj &&
+	     TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust) &&
+	     TN_save_rclass(Use_Callee_Save_TN_For_SpAdjust) == TN_register_class(FP_TN) &&
+	     TN_save_reg(Use_Callee_Save_TN_For_SpAdjust) == TN_register(FP_TN) ) {
+	    fp_save = Use_Callee_Save_TN_For_SpAdjust;
+	  }
+
+	  Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(callee_num);
+	  callee_num++;
+	}
+
+	if(callee_num >= Callee_Saved_Regs_Count ||
+	   Use_Callee_Save_TN_For_SpAdjust == NULL) {
+	  // Let target give an available temp tn
+	  Use_Callee_Save_TN_For_SpAdjust = EETARG_get_temp_for_spadjust(bb);
+	  if(Use_Callee_Save_TN_For_SpAdjust != NULL &&
+	     fp_save != NULL &&
+	     TN_register_class(fp_save) == TN_register_class(Use_Callee_Save_TN_For_SpAdjust)) {
+	    FmtAssert(TN_register(fp_save) != TN_register(Use_Callee_Save_TN_For_SpAdjust),("Selected register is the same as the one used to save FP"));
+	  }
+	}
+	FmtAssert(Use_Callee_Save_TN_For_SpAdjust != NULL,("Cannot find callee saved reg"));
+#endif
+	if (Trace_EE) {
+	  fprintf(TFile, "No more scrashed registers, get: ");
+	  Print_TN(Use_Callee_Save_TN_For_SpAdjust,FALSE);
+	}
+
 	FmtAssert(Use_Callee_Save_TN_For_SpAdjust != NULL,("cannot find callee save"));
 	if(TN_is_dedicated(Use_Callee_Save_TN_For_SpAdjust)) {
 	  reg = TN_register(Use_Callee_Save_TN_For_SpAdjust);

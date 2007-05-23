@@ -296,7 +296,12 @@ INT32 Current_PU_Actual_Size;
 #ifdef TARG_ST
 
 // Formal parameters homing area size for the current PU
-INT Formal_Save_Area_Size = DEFAULT_FORMAL_SAVE_AREA_SIZE;
+// [JV] This is no more initialized because Default_Formal_Save_Area_Size
+// is now a variable in targ_sim.h
+INT Max_Formal_Save_Area_Size;
+INT Vararg_Formal_Save_Area_Size;
+INT Formal_Save_Area_Size;
+INT Upformal_Area_Size;
 
 // Used to account for push/pop area that may be written before the
 // stack pointer is set:
@@ -410,7 +415,13 @@ static SF_SEG_DESC SF_Seg_Descriptors [SFSEG_LAST+1] = {
  */
 static INT32 Large_Object_Bytes;
 
-static BOOL Trace_Frame = FALSE;
+/* Use a macro here such that each use effectively calls the Get_Trace() function. 
+   Indeed this function must be called whenever Current_PU_name changes for -tf.. to work. */
+#ifdef Is_True_On
+#define Trace_Frame Get_Trace(TP_DATALAYOUT, 1)
+#else
+#define Trace_Frame FALSE
+#endif
 
 /* ====================================================================
  *
@@ -451,8 +462,8 @@ Is_Allocated (ST *st)
   return ((base != st && Is_root_base(base)) || Is_root_base(st));
 }
 
-#define ROUNDUP(val,align) 	( (-(INT64)align) & (INT64)(val+align-1) )
-#define ROUNDDOWN(val,align)	( (-(INT64)align) & (INT64)(val)         )
+#define ROUNDUP(val,align) 	( (-(INT64)(align)) & (INT64)((val)+(align)-1) )
+#define ROUNDDOWN(val,align)	( (-(INT64)(align)) & (INT64)(val)         )
 #define IS_POW2(num)		( (~((num)-1) & (num) ) == (num) )
 
 /* ====================================================================
@@ -970,73 +981,29 @@ Add_Object_To_Frame_Segment (ST *sym, SF_SEGMENT seg, BOOL allocate)
   }
 
   if (allocate) {
-#ifdef TARG_ST
-    // Arthur: nada
-#else
-    INT64 size;
-    INT32 lpad, rpad;
-    lpad = rpad = 0;
-
-    switch (seg) {
-    case SFSEG_ACTUAL:
-    case SFSEG_UPFORMAL:
-    case SFSEG_FORMAL:
-      size = ST_size(sym);
-
-      // struct params are left-justified.
-      if (TY_kind(ST_type(sym)) == KIND_STRUCT) {
-	rpad = ROUNDUP(size, MTYPE_RegisterSize(Spill_Int_Mtype)) - size;
-      }
-      else {
-       /*
-	* for parameters, we want to right-justify the objects;
-	* so add in a pad amount to do the right-justifying.
-	* container is the register size
-	* Except float parms are left-justified!
-	*/
-	if (size < MTYPE_RegisterSize(Spill_Int_Mtype)) {
-	  if (Target_Byte_Sex == LITTLE_ENDIAN ||
-	      MTYPE_is_float(TY_mtype(ST_type(sym)))) {
-	    rpad = MTYPE_RegisterSize(Spill_Int_Mtype) - size;
-	  }
-	  else
-	    lpad = MTYPE_RegisterSize(Spill_Int_Mtype) - size;
-	}
-      }
-      break;
-    }
-#endif /* TARG_ST */
-
-#ifdef TARG_ST
-    // [CG] We may account for formals that are in UPFORMAL seg
-    // while FORMAL_SEG is not yet completed due to lpad > 0.
-    if (seg == SFSEG_UPFORMAL && SF_Block(SFSEG_FORMAL) != NULL) {
-      ST *upformal = SF_Block(seg);
-      ST *formal = SF_Block(SFSEG_FORMAL);
-      if (STB_size(formal) < Formal_Save_Area_Size) {
-	int formal_pad = Formal_Save_Area_Size - STB_size(formal);
-	FmtAssert(lpad >= formal_pad,
-		  ("unexpected upformal/formal overlapping (lpad: %d, formal_pad: %d) for symbol %s\n", lpad, formal_pad, ST_name(sym)));
-	Set_STB_size(formal, Formal_Save_Area_Size);
-	lpad -= formal_pad;
-      }
-    }
-#endif
 
     ST_Block_Merge (SF_Block(seg), sym, lpad, rpad, SF_Maxsize(seg));
 
     if (seg == SFSEG_FORMAL) {
       ST *formal = SF_Block(seg);
 
-     /* formal overlaps both formal and upformal area,
-      * so reset the blksizes of the segments.
-      */
-      if (STB_size(formal) > Formal_Save_Area_Size) {
+      /* formal overlaps both formal and upformal area,
+       * so reset the blksizes of the segments.
+       */
+      /* [JV] This should not happen on any target, because in case of
+       * multiple register files the Max_Formal_Save_Area_Size is not
+       * equal to the sum of parameter register sizes due to alignment
+       * constraints. With the new model (not finished), ploc formal_offset
+       * and upformal_offset should be setted correctly to distribute a struct
+       * by value on both segments if necessary.
+       */
+      // [CG] Commented out for the moment: FmtAssert(STB_size(formal) <= Max_Formal_Save_Area_Size,("Overlap between formal and upformal areas"));
+      if (STB_size(formal) > Max_Formal_Save_Area_Size) {
 	ST *upformal = SF_Block(SFSEG_UPFORMAL);
 	Initialize_Frame_Segment (SFSEG_UPFORMAL, ST_sclass(sym), INCREMENT);
 	Set_STB_size(upformal, 
-	    STB_size(upformal) + STB_size(formal) - Formal_Save_Area_Size);
-	Set_STB_size(formal, Formal_Save_Area_Size);
+	    STB_size(upformal) + STB_size(formal) - Max_Formal_Save_Area_Size);
+	Set_STB_size(formal, Max_Formal_Save_Area_Size);
 
 	if (Trace_Frame) {
 	  fprintf(TFile, "<lay> split formal between segs:\n");
@@ -1050,78 +1017,6 @@ Add_Object_To_Frame_Segment (ST *sym, SF_SEGMENT seg, BOOL allocate)
   else {
     Set_ST_base(sym, SF_Block(seg));
   }
-}
-
-/* ====================================================================
- * Map PU idx to arg-area-size.
- * The arg-area-size is stored for efficiency, 
- * to avoid recomputing at each call.
- * ====================================================================
- */
-static UINT32 *arg_area_size_array;
-static INT max_arg_area_size_index = 0;
-
-/* ====================================================================
- *   Init_PU_arg_area_size_array
- *
- *   initialize and possibly realloc the arg-area-size array.
- * ====================================================================
- */
-static void
-Init_PU_arg_area_size_array (void)
-{
-	INT num_pus = TY_Table_Size();
-	if (arg_area_size_array == NULL) {
-		max_arg_area_size_index = num_pus;
-		arg_area_size_array = (UINT32*) Src_Alloc (
-			sizeof(UINT32) * (max_arg_area_size_index+1));
-	}
-	else if (num_pus >= max_arg_area_size_index) {
-		// realloc space
-	        num_pus = MAX(num_pus, 2 * max_arg_area_size_index);
-		arg_area_size_array = TYPE_MEM_POOL_REALLOC_N (
-			UINT32, &MEM_src_pool, 
-			arg_area_size_array,
-			max_arg_area_size_index,
-			num_pus);
-                max_arg_area_size_index = num_pus;
-	}
-}
-
-/* ====================================================================
- *   Get_PU_arg_area_size
- *
- *   Look for the arg-area-size corresponding to the pu.
- * ====================================================================
- */
-UINT32
-Get_PU_arg_area_size (TY_IDX pu)
-{
-  Is_True(TY_kind(pu) == KIND_FUNCTION, ("Get_PU_arg_area_size of non-pu"));
-  INT index = TY_id(pu);
-  if (index >= max_arg_area_size_index) {
-	// overflowed
-	Init_PU_arg_area_size_array ();
-  }
-  Is_True(index < max_arg_area_size_index, ("Get_PU_arg_area_size still overflows?"));
-  return arg_area_size_array[index];
-}
-
-/* ====================================================================
- *   Set_PU_arg_area_size
- * ====================================================================
- */
-void
-Set_PU_arg_area_size (TY_IDX pu, UINT32 size)
-{
-  Is_True(TY_kind(pu) == KIND_FUNCTION, ("Set_PU_arg_area_size of non-pu"));
-  INT index = TY_id(pu);
-  if (index >= max_arg_area_size_index) {
-	// overflowed
-	Init_PU_arg_area_size_array ();
-  }
-  Is_True(index < max_arg_area_size_index, ("Set_PU_arg_area_size still overflows?"));
-  arg_area_size_array[index] = size;
 }
 
 // return ST for __return_address if one exists
@@ -1440,96 +1335,41 @@ Calc_Actual_Area ( TY_IDX pu_type, WN *pu_tree )
   INT regsize = MTYPE_RegisterSize(Spill_Int_Mtype);
   INTRINSIC	id;
 
+  if (Trace_Frame) {
+    fprintf(TFile, "<lay> %s for %s: \n", __FUNCTION__,  ST_name(WN_st(pu_tree)));
+  }
+
   switch (WN_operator(pu_tree)) {
 
   case OPR_PICCALL:
   case OPR_ICALL:
   case OPR_CALL:
-
-#ifdef TARG_ST
-    // Arthur: treat these in the same way since intrinsics can be
-    //         more complicated that this
   case OPR_INTRINSIC_OP:
   case OPR_INTRINSIC_CALL:
-#endif
-
-#ifdef NEW_FRAME_METHOD
-    // Experiment with a new algorithm. On ST100, the simple rule
-    // "I am over max arg area size => I am on stack, count me"
-    // does not work.
+    /* Compute maximum upformal size. */
     num_parms = WN_num_actuals(pu_tree);
     ploc = Setup_Output_Parameter_Locations(pu_type);
     size = 0;
     for (i = 0; i < num_parms; i++) {
+      BOOL is_struct = Is_Struct_Output_Parameter (TY_Of_Parameter(WN_actual(pu_tree,i)));
       ploc = Get_Output_Parameter_Location (TY_Of_Parameter(WN_actual(pu_tree,i)));
-      if (PLOC_on_stack(ploc))
-	size += PLOC_size(ploc); // count it it's on stack
-    }
-#else
-    num_parms = WN_num_actuals(pu_tree);
-    ploc = Setup_Output_Parameter_Locations(pu_type);
-    for (i = 0; i < num_parms; i++) {
-      ploc = Get_Output_Parameter_Location (TY_Of_Parameter(WN_actual(pu_tree,i)));
-    }
-    size = PLOC_total_size(ploc);
-#endif
-    break;
-
-#ifndef TARG_ST
-  case OPR_INTRINSIC_OP:
-  case OPR_INTRINSIC_CALL:
-    id = (INTRINSIC) WN_intrinsic(pu_tree);
-
-    switch(id) {
-    case INTRN_CONCATEXPR:
-      size = 5 * regsize;
-      break;
-    default:
-      num_parms = WN_num_actuals(pu_tree);
-      /*
-       *  CQ return via hidden argument
-       *  Assumption:  CQ Intrinsics always have CQ parameter
-       *  after the hidden argument, so pad the space.
-       */
-      if (MTYPE_id(WN_rtype(pu_tree)) == MTYPE_CQ)
-	size = ROUNDUP(regsize, MTYPE_align_best(MTYPE_CQ));
-
-      if (INTRN_by_value(id) == TRUE) {	
-	for(i= 0; i<num_parms; i++) {
-	  size += ROUNDUP(TY_size(TY_Of_Parameter(WN_actual(pu_tree,i))), regsize);
+      
+      if (is_struct) Setup_Struct_Output_Parameter_Locations(TY_Of_Parameter(WN_actual(pu_tree,i)));
+      do {
+	if (is_struct) ploc = Get_Struct_Output_Parameter_Location(ploc);
+	if (PLOC_on_stack(ploc)) {
+	  size = PLOC_upformal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
 	}
-      }
-      else	/* by reference */
-	{
-	  size += num_parms * regsize;
-	}
-      break;
+      } while (is_struct && PLOC_is_nonempty(ploc));
     }
     break;
-#endif
-
   default:
     FmtAssert(FALSE, ("Calc_Actual_Area: unexpected opcode"));
   }
 
-  /* if not varargs and have prototype, then store size in TY;
-   * else will have to recalculate it each time. */
-  /* Note:  the TY_parms may be incomplete due to implicit arguments */
-  if (pu_type != (TY_IDX) NULL && TY_has_prototype (pu_type) &&
-      !TY_is_varargs (pu_type)) {
-    Set_PU_arg_area_size(pu_type, size);
-  }
-
-#ifdef NEW_FRAME_METHOD
-  // no need for this.
-#else
-  size -= Formal_Save_Area_Size;
-  if (size < 0) 
-    size = 0;
-#endif
-  else if (Trace_Frame)
-    fprintf(TFile, "<lay> actual_arg_area = %d\n", size);
-
+  if (Trace_Frame)
+    fprintf(TFile, "<lay> %s for call to %s. actual_arg_area = %d\n", __FUNCTION__, ST_name(WN_st(pu_tree)), size);
+  
   return size;
 }
 
@@ -1606,6 +1446,10 @@ Max_Arg_Area_Bytes(WN *node)
     break;
   case OPR_INTRINSIC_OP:
   case OPR_INTRINSIC_CALL:
+#ifdef TARG_ST
+    //TB: dynamic intrinsics and dynamic MTYPE
+    if (!(Inline_Intrinsics_Allowed && INTRN_cg_intrinsic(WN_intrinsic(node)))) {
+#endif
     maxsize = Calc_Actual_Area ( (TY_IDX) NULL, node );
     Frame_Has_Calls = TRUE;
 #ifdef TARG_ST
@@ -1622,6 +1466,9 @@ Max_Arg_Area_Bytes(WN *node)
 	fprintf(TFile, "<lay> Max_Arg_Area_Bytes: INTRINSIC_OP %d (no name)\n", id);
       }
       fprintf(TFile, "       actual_arg_area = %d\n", maxsize);
+    }
+#endif
+#ifdef TARG_ST
     }
 #endif
     break;
@@ -1716,20 +1563,64 @@ Reset_UPFORMAL_Segment(void)
   }
 }
 
-/*
- *  Allocate each formal parameter on the stack,
- * 
+/* ============================================================
+ *  Allocate_Entry_Formal()
+ *
+ *  Allocate a formal parameter on the frame segments.
+ *  The possibly modified segments are ftmp, formal, upformal.
+ *
+ * ============================================================
  */
 #ifdef TARG_ST
-// Arthur: we need padding info, and this is derived from the PLOC !
+/* This interface uses explicit parameters. */
+static void Allocate_Entry_Formal(
+  ST   *formal, 
+  BOOL  on_stack, 
+  BOOL  in_formal_reg,
+  INT   lpad = 0,
+  INT   rpad = 0,
+  INT   lpad_overlap = 0
+  );
+
+/* This interface uses the PLOC information for formal parameters. */
 static void
-Allocate_Entry_Formal(
+Allocate_Entry_Formal(ST *formal, PLOC ploc);
+#endif /* TARG_ST */
+
+/* Implementation of Allocate_Entry_Formal(). */
+#ifdef TARG_ST
+static void
+Allocate_Entry_Formal(ST *formal, PLOC ploc)
+{
+  BOOL on_stack = PLOC_on_stack(ploc);
+  BOOL in_formal_reg = Is_Formal_Preg(PLOC_reg(ploc));
+  INT lpad = PLOC_lpad(ploc);
+  INT rpad = PLOC_rpad(ploc);
+  INT lpad_overlap = PLOC_lpad_overlap(ploc);
+
+  Allocate_Entry_Formal(formal,
+			PLOC_on_stack(ploc),
+			Is_Formal_Preg(PLOC_reg(ploc)),
+			PLOC_lpad(ploc),
+			PLOC_rpad(ploc),
+			PLOC_lpad_overlap(ploc));
+  
+}
+#else /* !TARG_ST */
+static void
+Allocate_Entry_Formal(ST *formal, BOOL on_stack, BOOL in_formal_reg);
+#endif /* !TARG_ST */
+
+/* Implementation of Allocate_Entry_Formal(). */
+#ifdef TARG_ST
+static void Allocate_Entry_Formal(
   ST   *formal, 
   BOOL  on_stack, 
   BOOL  in_formal_reg,
   INT   lpad,
-  INT   rpad
-)
+  INT   rpad,
+  INT   lpad_overlap
+  )
 #else
 static void
 Allocate_Entry_Formal(ST *formal, BOOL on_stack, BOOL in_formal_reg)
@@ -1748,7 +1639,9 @@ Allocate_Entry_Formal(ST *formal, BOOL on_stack, BOOL in_formal_reg)
       sec = Shorten_Section(formal, _SEC_BSS);
       Allocate_Object_To_Section(formal, sec, Adjusted_Alignment(formal));
     }
-    else if (in_formal_reg) {
+    // [JV] Can be formal but push on stack with multiple register files.
+    // So add !on_stack
+    else if (in_formal_reg && !on_stack) {
       /* parameter is in register, so put in FORMAL area */
 #ifdef TARG_ST
       Add_Object_To_Frame_Segment (formal, SFSEG_FORMAL, lpad, rpad, TRUE);
@@ -1767,6 +1660,23 @@ Allocate_Entry_Formal(ST *formal, BOOL on_stack, BOOL in_formal_reg)
       }
       else {
 #ifdef TARG_ST
+	// [CG] We must account for formals that are in UPFORMAL seg
+	// while FORMAL_SEG is not yet completed due to alignment constraints for instance.
+	// This information is given by the lpad_overlap value.
+	if (lpad_overlap > 0) {
+	  if (SF_Block(SFSEG_FORMAL) != NULL) {
+	    ST *formal = SF_Block(SFSEG_FORMAL);
+	    // Check that formal area size has the expected size in this case.
+	    // Indeed this case assumes that the formal and upformal_sefgment are continuous,
+	    // hence the lpad_overlap is used to complete the formal size up to Formal_Save_Area_Size.
+	    FmtAssert(Max_Formal_Save_Area_Size == Formal_Save_Area_Size,
+		      ("Unexpected formal size: Max_Formal_Save_Area_Size (%s) != Formal_Save_Area_Size (%s)", Max_Formal_Save_Area_Size, Formal_Save_Area_Size));
+	    FmtAssert(STB_size(formal) == Formal_Save_Area_Size - lpad_overlap,
+		      ("unexpected formal size ( STB_size(formal)[%d] + lpad[%d] !=  Formal_Save_Area_Size[%d] ) for symbol %s\n", STB_size(formal), lpad, Formal_Save_Area_Size, ST_name(formal)));
+	    Set_STB_size(formal, STB_size(formal) + lpad_overlap);
+	  }
+	  lpad -= lpad_overlap;
+	}    
 	Add_Object_To_Frame_Segment (formal, SFSEG_UPFORMAL, lpad, rpad, TRUE);
 #else
       	Add_Object_To_Frame_Segment ( formal, SFSEG_UPFORMAL, TRUE );
@@ -1852,6 +1762,26 @@ Get_Vararg_Ploc_Symbol (PLOC ploc, ST **st, INT *offset)
 }
 
 /*
+ * Get_Vararg_Preg_Symbol()
+ *
+ * See interface description.
+ */
+
+ST *
+Get_Vararg_Preg_Symbol (PLOC ploc)
+{
+  if (Preg_Offset_Is_Int(PLOC_reg(ploc))) {
+    return Int_Preg;
+  } else if (Preg_Offset_Is_Float(PLOC_reg(ploc))) {
+    return Float_Preg;
+  } else if (Preg_Offset_Is_Ptr(PLOC_reg(ploc))) {
+    return Ptr_Preg;
+  } else {
+    DevAssert(0, ("PLOC type not supported for varargs"));
+  }
+}
+
+/*
  * Get_Vararg_Save_Area_Info()
  *
  * See interface description.
@@ -1882,6 +1812,7 @@ Get_Vararg_Symbol (PLOC ploc)
  * Allocate formals if the pu ia a vararg function.
  * It as been separated from the Allocate_Vararg_Formal() of
  * non vararg functions to simplify the code.
+ * [CG] Obsoleted alt_entry code as we cannot validate it.
  */
 static void
 Allocate_Vararg_Formals (WN *pu)
@@ -1889,53 +1820,37 @@ Allocate_Vararg_Formals (WN *pu)
   TY_IDX pu_type = ST_pu_type (WN_st (pu));
   BOOL varargs = TY_is_varargs (pu_type);
 
-  /* If PU is not a vararg function, there is nothing to do. */
-  if (!varargs) return;
-
-  /* [CG] I don't understand how to handle altentries and varargs. */
-  if ( PU_has_altentry(Get_Current_PU())) {
-    FmtAssert(0, ("Altentry not supported with varargs functions."));
-  }
+  DevAssert(varargs, ("Failed precondition."));
+  DevAssert(!PU_has_altentry(Get_Current_PU()), ("Not implemented"));
 
   /* Simulate the parameter passing for varargs. */
   PLOC ploc;
   INT i;
 
+  if (Trace_Frame) {
+    fprintf(TFile, "<lay> %s for PU %s\n", __FUNCTION__,
+	    ST_name(WN_st(pu)));
+  }
+
   ploc = Setup_Input_Parameter_Locations(pu_type);
 
-#ifdef Is_True_On
-  if (Trace_Frame) {
-    fprintf(TFile, "<lay> %s (): \n", __FUNCTION__);
-  }
-#endif
-  
   for (i = 0; i < WN_num_formals(pu); i++) {
     ST *sym = WN_st(WN_formal(pu, i));
     ploc = Get_Input_Parameter_Location(Formal_ST_type(sym));
     sym =  Formal_Sym(sym, PLOC_on_stack(ploc) || varargs); 
-    Allocate_Entry_Formal (sym, 
-			   PLOC_on_stack(ploc),
-			   Is_Formal_Preg(PLOC_reg(ploc)),
-			   PLOC_lpad(ploc),
-			   PLOC_rpad(ploc));
-#ifdef Is_True_On
+    Allocate_Entry_Formal (sym, ploc);
+
     if (Trace_Frame) {
-      fprintf(TFile, "<lay> %s: %s (formal: %s): %s [preg %d]; lpad %d; size %d; rpad %d;\n", 
-	      __FUNCTION__,
+      fprintf(TFile, "<lay> %s (formal: %s): %s [preg %d]; lpad %d; size %d; rpad %d; formal_offset %d; upformal_offset %d;\n", 
 	      ST_name(WN_st(WN_formal(pu, i))),
 	      ST_name(sym),
 	      PLOC_on_stack(ploc) ? "on stack" : "in a register",
 	      PLOC_reg(ploc),
 	      PLOC_lpad(ploc),
 	      PLOC_size(ploc),
-	      PLOC_rpad(ploc));
-      fprintf(TFile, "<lay> %s: PLOC_offset = %d;\n", 
-	      __FUNCTION__,
-	      PLOC_offset(ploc));
-
+	      PLOC_rpad(ploc),
+	      PLOC_formal_offset(ploc), PLOC_upformal_offset(ploc));
     }
-#endif
-
   }
   
   /*
@@ -1950,47 +1865,54 @@ Allocate_Vararg_Formals (WN *pu)
   INT num_float_slots = 0;
   INT start_int_offset = 0;
   INT start_float_offset = 0;
-  INT total_int_size = 0;
-  INT total_float_size = 0;
+  INT next_int_offset = 0;
+  INT next_float_offset = 0;
   PREG_NUM start_int_preg = First_Int_Preg_Param_Offset;
   PREG_NUM start_float_preg = First_Float_Preg_Param_Offset;
   
   /* don't do if already reached stack params */
+#if 0
   if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
+#else
+  // [JV] With multiple register files and stxp ABI, it is 
+  // possible to be in stack and to have register to save
+  // in vararg case.
+  if (PLOC_is_nonempty(ploc)) {
+#endif
     ploc = Get_Vararg_Input_Parameter_Location (ploc);
     while (!PLOC_on_stack(ploc)) {
       num_var_plocs++;
       PREG_NUM preg = PLOC_reg(ploc);
       if (Preg_Offset_Is_Int(preg)) {
 	if (start_int_offset == 0) {
-	  start_int_offset = PLOC_offset(ploc);
+	  start_int_offset = PLOC_formal_offset(ploc);
 	  start_int_preg = preg;
 	}
 	int_slot_size = PLOC_size(ploc);
 	num_int_slots++;
-	total_int_size = PLOC_total_size(ploc);
+	next_int_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
       } else if (Preg_Offset_Is_Float(preg)) {
 	if (start_float_offset == 0) {
-	  start_float_offset = PLOC_offset(ploc);
+	  start_float_offset = PLOC_formal_offset(ploc);
 	  start_float_preg = preg;
 	}
 	float_slot_size = PLOC_size(ploc);
 	num_float_slots++;
-	total_float_size = PLOC_total_size(ploc);
+	next_float_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
       } else {
 	DevAssert(0, ("PLOC type not supported for varargs"));
       }
       DevAssert(PLOC_lpad(ploc) == 0 && PLOC_rpad(ploc) == 0, 
 		("Unexpected padding for vararg parameters"));
-#ifdef Is_True_On
+
       if (Trace_Frame) {
-	fprintf(TFile, "<lay> %s(): vararg slot in register [preg %d] %s\n",
+	fprintf(TFile, "<lay> %s(): vararg slot in register [preg %d] %s.\n",
 		__FUNCTION__,
 		preg,
 		Preg_Offset_Is_Int(preg) ? "is_int":
 		Preg_Offset_Is_Float(preg) ? "is_float": "is_other");
       }
-#endif
+
       ploc = Get_Vararg_Input_Parameter_Location (ploc);
     }
   }
@@ -1999,8 +1921,8 @@ Allocate_Vararg_Formals (WN *pu)
     INT int_size = int_slot_size * num_int_slots;
     INT float_size = float_slot_size * num_float_slots;
     /* Some consistency checks. */
-    DevAssert(int_size == total_int_size - start_int_offset, ("slot size and ploc size mismatch for int"));
-    DevAssert(float_size == total_float_size - start_float_offset, ("slot size and ploc size mismatch"));
+    DevAssert(int_size == next_int_offset - start_int_offset, ("slot size and ploc size mismatch for int: int_size (%d) != next_int_offset (%d) - start_int_offset (%d)", int_size, next_int_offset, start_int_offset));
+    DevAssert(float_size == next_float_offset - start_float_offset, ("slot size and ploc size mismatch for float: float_size (%d) != next_float_offset(%d) - start_float_offset(%d)", float_size, next_float_offset, start_float_offset));
     
     /* Compute the total size and alignment of the register vararg area for. */
     INT size = int_size + float_size;
@@ -2017,7 +1939,7 @@ Allocate_Vararg_Formals (WN *pu)
     Allocate_Entry_Formal(sym, 
 			  FALSE, /* Formals not on stack. */ 
 			  TRUE, /* Formals in registers. */
-			  0, 0 /* No padding. */);
+			  0, 0 , 0 /* No padding. */);
     sf_vararg_info.flags = SF_VARARG_INFO_HAS_STACK;
     if (num_int_slots > 0) sf_vararg_info.flags |= SF_VARARG_INFO_HAS_INT;
     if (num_float_slots > 0) sf_vararg_info.flags |= SF_VARARG_INFO_HAS_FLOAT;
@@ -2039,19 +1961,17 @@ Allocate_Vararg_Formals (WN *pu)
     }
     sf_vararg_info.var_stack_base = SF_Block(SFSEG_UPFORMAL);
     sf_vararg_info.var_stack_offset = STB_size(SF_Block(SFSEG_UPFORMAL));
-#ifdef Is_True_On
-      if (Trace_Frame) {
-	fprintf(TFile, "<lay> %s(): allocated vararg area %s, size: %d, align %d, int_size: %d, int_offset: %d, float_size: %d,  float_offset: %d, fixed_int_slots: %d, fixed_float_slots: %d\n",
-		__FUNCTION__,
-		ST_name(sym),
-		size, align, 
-		int_size, sf_vararg_info.var_int_save_offset,
-		float_size, sf_vararg_info.var_float_save_offset,
-		sf_vararg_info.fixed_int_slots,
-		sf_vararg_info.fixed_float_slots
-		);
+
+    if (Trace_Frame) {
+      fprintf(TFile, "<lay> allocated vararg area %s, size: %d, align %d, int_size: %d, int_offset: %d, float_size: %d,  float_offset: %d, fixed_int_slots: %d, fixed_float_slots: %d\n",
+	      ST_name(sym),
+	      size, align, 
+	      int_size, sf_vararg_info.var_int_save_offset,
+	      float_size, sf_vararg_info.var_float_save_offset,
+	      sf_vararg_info.fixed_int_slots,
+	      sf_vararg_info.fixed_float_slots
+	      );
       }
-#endif
   } else {
     sf_vararg_info.flags = 
       SF_VARARG_INFO_HAS_STACK;
@@ -2064,6 +1984,7 @@ Allocate_Vararg_Formals (WN *pu)
 /*
  * Search for all formals, including alt-entry formals,
  * and allocate them.  This way regions can always access the formals.
+ * [CG] Obsoleted alt_entry code as we cannot validate it.
  */
 static void
 Allocate_All_Formals (WN *pu)
@@ -2074,8 +1995,17 @@ Allocate_All_Formals (WN *pu)
   BOOL varargs;
   TY_IDX pu_type = ST_pu_type (WN_st (pu));
 
+#ifdef TARG_ST
+  DevAssert(!PU_has_altentry(Get_Current_PU()), ("Not implemented"));
+#endif
+
   Init_ST_formal_info_for_PU (WN_num_formals(pu));
   varargs = TY_is_varargs (pu_type);
+
+  if (Trace_Frame) {
+    fprintf(TFile, "<lay> %s for PU %s (%s): \n", __FUNCTION__,  ST_name(WN_st(pu)),
+	    varargs ? "varargs" : "no varargs");
+  }
 
 #ifdef TARG_ST
   /* For vararg functions, call specific routine. */
@@ -2085,161 +2015,36 @@ Allocate_All_Formals (WN *pu)
   }
 #endif
 
+
   ploc = Setup_Input_Parameter_Locations(pu_type);
 
-#ifdef Is_True_On
-  if (Trace_Frame) {
-    fprintf(TFile, "<lay> Allocate_All_Formals (%s): \n", 
-	                          varargs ? "varargs" : "no varargs");
-  }
-#endif
-
-#ifdef TARG_ST
-  // Arthur: so we can compute lpad/rpad
-  INT cur_offset = 0;
-#endif
   /*
    *  for varargs functions do not put the scalar formal base in a preg
    */
   for (i = 0; i < WN_num_formals(pu); i++) {
     sym = WN_st(WN_formal(pu, i));
     ploc = Get_Input_Parameter_Location( Formal_ST_type(sym));
-    sym =  Formal_Sym(sym, PLOC_on_stack(ploc) || varargs);
-#ifdef Is_True_On
+    sym =  Formal_Sym(sym, PLOC_on_stack(ploc));
+
     if (Trace_Frame) {
-      fprintf(TFile, "<lay> %s(%s): %s [preg %d]; lpad %d; size %d; rpad %d;\n", 
+      fprintf(TFile, "<lay> %s (formal: %s): %s [preg %d]; lpad %d; size %d; rpad %d; formal_offset %d; upformal_offset %d;\n", 
 	      ST_name(WN_st(WN_formal(pu, i))),
 	      ST_name(sym),
 	      PLOC_on_stack(ploc) ? "on stack" : "in a register",
 	      PLOC_reg(ploc),
 	      PLOC_lpad(ploc),
 	      PLOC_size(ploc),
-	      PLOC_rpad(ploc));
-
-      fprintf(TFile, " PLOC_offset = %d; cur_offset = %d\n", PLOC_offset(ploc), cur_offset);
-
+	      PLOC_rpad(ploc),
+	      PLOC_formal_offset(ploc), PLOC_upformal_offset(ploc));
     }
-#endif
-
 #ifdef TARG_ST
-    Allocate_Entry_Formal (sym, 
-			   PLOC_on_stack(ploc),
-			   Is_Formal_Preg(PLOC_reg(ploc)),
-			   PLOC_lpad(ploc),
-			   PLOC_rpad(ploc));
-    cur_offset = PLOC_total_size(ploc)+PLOC_rpad(ploc);
+    Allocate_Entry_Formal (sym, ploc); 
 #else
     Allocate_Entry_Formal (sym, PLOC_on_stack(ploc), 
 			              Is_Formal_Preg(PLOC_reg(ploc)));
 #endif
   }
-
-  if ( PU_has_altentry(Get_Current_PU())) {
-    WN *tree;
-
-    for (tree = WN_first(WN_func_body(pu)); 
-	 tree != NULL; 
-	 tree = WN_next(tree)) {
-      if (WN_opcode(tree) == OPC_ALTENTRY) {
-	Reset_UPFORMAL_Segment();
-	ploc = Setup_Input_Parameter_Locations(ST_pu_type(WN_st(tree)));
-#ifdef TARG_ST
-	cur_offset = 0;
-#endif
-	for (i = 0; i < WN_kid_count(tree); i++) {
-	  sym = WN_st(WN_formal(tree, i));
-	  ploc = Get_Input_Parameter_Location ( Formal_ST_type(sym));
-	  sym =  Formal_Sym(sym, PLOC_on_stack(ploc) || varargs);
-#ifdef TARG_ST
-    	  Allocate_Entry_Formal (sym, 
-				 TRUE, 
-				 Is_Formal_Preg(PLOC_reg(ploc)),
-				 PLOC_lpad(ploc),
-				 PLOC_rpad(ploc));
-	  cur_offset = PLOC_total_size(ploc)+PLOC_rpad(ploc);
-#else
-    	  Allocate_Entry_Formal (sym, TRUE, Is_Formal_Preg(PLOC_reg(ploc)));
-#endif
-	}
-      }
-    }
-  }
-
-  /* End of processing for TARG_ST code. */
-#ifndef TARG_ST
-  if (varargs) {
-    /*
-     *  For varargs, the func-entry just has the list of fixed
-     *  parameters, so also have to allocate the vararg registers.
-     *  The lowerer needs to find these symbols, so put them in list
-     *  that get_vararg_symbol can use.
-     */
-
-    ST *last_fixed_symbol = sym;
-    PLOC last_fixed_ploc = ploc;
-#ifdef TARG_ST
-    cur_offset = PLOC_total_size(ploc);
-#endif
-    /* vararg registers must be integer registers */
-    TY_IDX vararg_type = Copy_TY(ST_type(Int_Preg));
-    /* set flag for alias analyzer */
-    Set_TY_no_ansi_alias (vararg_type);
-
-    if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
-      /* don't do if already reached stack params */
-      ploc = Get_Vararg_Input_Parameter_Location (ploc);
-    }
-
-    while (!PLOC_on_stack(ploc)) {
-      /*
-       *  create a temporary for the vararg formal
-       */
-      sym = Gen_Temp_Symbol (vararg_type, "vararg");
-      Set_ST_sclass (sym, SCLASS_FORMAL);
-      Set_ST_is_value_parm( sym);
-      Set_ST_addr_saved(sym);
-      vararg_symbols[PLOC_reg(ploc)-First_Int_Preg_Param_Offset] = sym;
-#ifdef Is_True_On
-      if (Trace_Frame) {
-	fprintf(TFile, "<lay> Vararg formals: \n");
-	fprintf(TFile, "      %s: in register [preg %d]\n", 
-		ST_name(sym),
-		PLOC_reg(ploc));
-      }
-#endif
-#ifdef TARG_ST
-      Allocate_Entry_Formal(sym, 
-			    PLOC_on_stack(ploc), 
-			    Is_Formal_Preg(PLOC_reg(ploc)),
-			    PLOC_lpad(ploc),
-			    PLOC_rpad(ploc));
-      cur_offset = PLOC_total_size(ploc)+PLOC_rpad(ploc);
-#else
-      Allocate_Entry_Formal(sym, PLOC_on_stack(ploc), 
-                                       Is_Formal_Preg(PLOC_reg(ploc)));
-#endif
-#ifndef TARG_ST
-      /* [CG]: We do not base the vararg symbol as an offset from the
-       * last fixed symbol as mentionned below. This has wrong
-       * effects on the alias analysis as the symbol is
-       * based on another symbol. This causes aliased accesses
-       * to become unaliased. In particular the store of
-       * the vararg symbols if then unaliased with the load
-       * of the variable args.
-       */
-      /*
-       * The optimizer sees these varargs references as *ap+n,
-       * i.e. as an offset past the last fixed arg, so to help
-       * aliasing work properly we set the base of these symbols
-       * to the last fixed symbol rather than to the formal_stkseg.
-       */
-      Set_ST_base(sym, last_fixed_symbol);
-      Set_ST_ofst(sym, PLOC_offset(ploc) - PLOC_offset(last_fixed_ploc));
-#endif
-      ploc = Get_Vararg_Input_Parameter_Location (ploc);
-    }
-  }
-#endif /* !TARG_ST */
+	        /* End of processing for TARG_ST code. */
 }
 
 /* For stack parameters in altentry functions, 
@@ -2259,7 +2064,13 @@ Get_Altentry_UpFormal_Symbol (ST *formal, PLOC ploc)
   Set_ST_sclass(upformal, SCLASS_FORMAL);	// this is a stack location
   Clear_ST_gprel(upformal);
 
-  INT offset = PLOC_offset(ploc) - Formal_Save_Area_Size;
+  FmtAssert(PLOC_on_stack(ploc),("Preg not on stack"));
+
+#ifdef TARG_ST
+  INT offset = PLOC_upformal_offset(ploc) + STACK_OFFSET_ADJUSTMENT;
+#else
+  INT offset = PLOC_offset(ploc) - Max_Formal_Save_Area_Size;
+#endif
   if (PUSH_FRAME_POINTER_ON_STACK) {
     offset += MTYPE_byte_size(Pointer_Mtype);
   }
@@ -2271,15 +2082,15 @@ Get_Altentry_UpFormal_Symbol (ST *formal, PLOC ploc)
   return upformal;
 }
 
+
 /* ====================================================================
- *   Calc_Formal_Area
+ * Calc_Formal_Size
  *
- *   Calculate size needed for formals and upformals 
- *   TODO:  account for FTEMP area needed for alt-entry
+ * Calculate size needed for formals and upformals parameters.
  * ====================================================================
  */
-static void 
-Calc_Formal_Area (WN *pu_tree, INT32 *formal_size, INT32 *upformal_size)
+static void
+Calc_Formal_Size (WN *pu_tree, INT32 *formal_size, INT32 *upformal_size )
 {
   INT maxsize;
   ST *st = WN_st (pu_tree);
@@ -2288,63 +2099,76 @@ Calc_Formal_Area (WN *pu_tree, INT32 *formal_size, INT32 *upformal_size)
   FmtAssert(WN_opcode(pu_tree) == OPC_FUNC_ENTRY, ("not a func-entry"));
 
   if (TY_is_varargs (pu_ty)) {
-    *formal_size = Formal_Save_Area_Size;
-    *upformal_size = 0;
-    /* don't set PU_arg_area_size, cause changes with each call */
-    return;
-  } 
-  else if (Get_PU_arg_area_size(pu_ty) > 0) {
-    ;	/* size is known */
+    *formal_size = Vararg_Formal_Save_Area_Size;
+    *upformal_size = 0; /* Unknown apriori. */
   } 
   else {
     PLOC ploc;
     INT i;
-
+    INT prev_offset = 0;
+    *formal_size = 0;
+    *upformal_size = 0;
     ploc = Setup_Input_Parameter_Locations(pu_ty);
+    
     for (i = 0; i < WN_num_formals(pu_tree); i++) {
-#ifdef TARG_ST
       // [CG] use Formal_ST_type()
       ST *formalST = WN_st(WN_formal(pu_tree,i));
+      BOOL is_struct = Is_Struct_Input_Parameter (Formal_ST_type(formalST));
       ploc = Get_Input_Parameter_Location (Formal_ST_type(formalST));
-#else
-      ploc = Get_Input_Parameter_Location (TY_Of_Parameter(WN_formal(pu_tree,i)));
-#endif
-    }
-
-    Set_PU_arg_area_size(pu_ty, PLOC_total_size(ploc));
-  }
-
-  maxsize = Get_PU_arg_area_size(pu_ty);
-  if (PU_has_altentry(Get_Current_PU())) {
-    /* need to reserve upformal space for maximum of alt-entries */
-    /* Note that formal space may be smaller than save-area-size
-     * yet still have upformal space, because altentry formals are put
-     * in ftemp area. */
-    WN *tree = WN_first(WN_func_body(pu_tree));
-    for (; tree != NULL; tree = WN_next(tree)) {
-      if (WN_opcode(tree) == OPC_ALTENTRY) {
-	PLOC ploc;
-	INT i;
-	ploc = Setup_Input_Parameter_Locations(ST_pu_type(WN_st(tree)));
-	for (i = 0; i < WN_kid_count(tree); i++) {
-#ifdef TARG_ST
-	  // [CG] use Formal_ST_type()
-	  ST *formalST = WN_st(WN_formal(tree,i));
-	  ploc = Get_Input_Parameter_Location (Formal_ST_type(formalST));
-#else
-	  ploc = Get_Input_Parameter_Location (TY_Of_Parameter(WN_formal(tree,i)));
-#endif
+      
+      if (is_struct) Setup_Struct_Input_Parameter_Locations(Formal_ST_type(formalST));
+      do {
+	if (is_struct) {
+	  ploc = Get_Struct_Input_Parameter_Location(ploc);
 	}
-	maxsize = MAX(maxsize, PLOC_total_size(ploc));
-      }
+	if(!PLOC_on_stack(ploc)) {
+	  *formal_size = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
+	} else if (PLOC_on_stack(ploc)) {
+	  if (PLOC_lpad_overlap(ploc) > 0) {
+	    // Padding into the formal area. See other references to lpad_overlap.
+	    *formal_size = PLOC_formal_offset(ploc);
+	  } 
+	  *upformal_size = PLOC_upformal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
+	}
+      } while (is_struct && PLOC_is_nonempty(ploc));
     }
   }
-
-  /* formal area cannot be larger than save-area size */
-  *formal_size = MIN (Get_PU_arg_area_size(pu_ty), Formal_Save_Area_Size);
-  /* upformal size is 0 or size > save-area size */
-  *upformal_size = MAX (maxsize - Formal_Save_Area_Size, 0);
+  
+  /* Formal area cannot be larger than max formal save area size.
+     In the case where objects overlap between formal and upformal, we
+     consider that the formal size is fixed to Max_Formal_Save_Area_Size. */
+  *formal_size = MIN(*formal_size, Max_Formal_Save_Area_Size);
 }
+
+
+/* ====================================================================
+ * Initialize_Formal_Area
+ *
+ * Calculate size needed for formals and upformals 
+ * [CG] Obsoleted alt_entry code as we cannot validate it.
+ *
+ * ====================================================================
+ */
+static void 
+Initialize_Formal_Area (WN *pu_tree)
+{
+  INT maxsize;
+  ST *st = WN_st (pu_tree);
+  TY_IDX pu_ty = ST_pu_type (st);
+  INT32 formal_size, upformal_size;
+
+  FmtAssert(WN_opcode(pu_tree) == OPC_FUNC_ENTRY, ("not a func-entry"));
+  DevAssert(!PU_has_altentry(Get_Current_PU()), ("Not implemented"));
+
+  Max_Formal_Save_Area_Size = Default_Max_Formal_Save_Area_Size;
+  Vararg_Formal_Save_Area_Size = Default_Vararg_Formal_Save_Area_Size;
+  
+  Calc_Formal_Size(pu_tree, &formal_size, &upformal_size);
+
+  Formal_Save_Area_Size = formal_size;
+  Upformal_Area_Size = upformal_size;
+}
+
 
 /* ====================================================================
  *   Calc_Local_Area
@@ -2641,7 +2465,6 @@ Initialize_Stack_Frame (WN *PU_tree)
   INT64 frame_size = 0;
 
   Set_Error_Phase("Data Layout");
-  Trace_Frame = Get_Trace(TP_DATALAYOUT, 1);
   FmtAssert(WN_opcode(PU_tree) == OPC_FUNC_ENTRY,
 	    ("Determine_Stack_Model: The PU_tree node does not point to a OPC_FUNC_ENTRY"));
 
@@ -2678,16 +2501,15 @@ Initialize_Stack_Frame (WN *PU_tree)
 #endif
 
   Init_Segment_Descriptors();
-  Init_PU_arg_area_size_array();
 
-#ifdef TARG_ST
-  // Initialize the formal size of formals passed in registers.
-  // The real value is calculated by Calc_Formal_Area.
-  //Formal_Save_Area_Size = 0;
-#endif
-
-  Calc_Formal_Area (PU_tree, &formal_size, &upformal_size);
+  Initialize_Formal_Area (PU_tree);
   /* also can be ftemp size, but probably small */
+  formal_size = Formal_Save_Area_Size;
+  upformal_size = Upformal_Area_Size;
+  
+  if (Trace_Frame) {
+    fprintf(TFile,"formal_size = %d, upformal_size = %d\n",formal_size,upformal_size);
+  }
 
   Frame_Has_Calls = FALSE;
   actual_size = Max_Arg_Area_Bytes(PU_tree);
@@ -2780,8 +2602,7 @@ Calculate_Stack_Frame_Sizes (WN *PU_tree)
   }
 
   if (Trace_Frame) {
-    fprintf(TFile, "<lay> Calculate_Stack_Frame_Sizes for %s\n", 
-		ST_name(WN_st(PU_tree)));
+    fprintf(TFile, "<lay> %s for %s\n", __FUNCTION__, ST_name(WN_st(PU_tree)));
   }
 
   INT32 actual_size;
@@ -3489,6 +3310,55 @@ Allocate_Label (ST *lab)
  * ====================================================================
  */
 
+/* 
+ * Auxiliary function of Allocate_Object that allocates object's
+ * initializers
+ * [vcdv]
+ *
+ * Parameter parent is used as a protection against infinite loop in
+ * case some struct/array values are initialized using their own
+ * adresses. [see bug #22236]
+ */
+static void
+Allocate_Object_Initializer (ST* parent, INITV_IDX invidx)
+{
+  int i;
+  ST* st;
+  INITV_IDX ninv;
+  INITV inv = Initv_Table[invidx];
+  switch(INITV_kind(inv))
+    {
+#ifdef TARG_ST
+    case INITVKIND_SYMOFF16:
+#endif
+    case  INITVKIND_SYMOFF:
+      st = &St_Table[INITV_st(inv)];
+      if (parent != st)
+        Allocate_Object(st);
+      break;
+    case INITVKIND_BLOCK:
+      for (i = 0; i < INITV_repeat1(inv); i++) {
+        for (ninv = INITV_blk(inv); ninv; ninv = INITV_next(ninv)) {
+          Allocate_Object_Initializer(parent, ninv);
+        }
+      }
+      break;
+    case INITVKIND_ZERO:
+    case INITVKIND_ONE:
+    case INITVKIND_VAL:
+    case INITVKIND_LABEL:
+#ifdef TARG_ST
+    case INITVKIND_LABDIFF:
+    case INITVKIND_SYMDIFF:
+    case INITVKIND_SYMDIFF16:
+    case INITVKIND_PAD:
+#endif
+    default:
+      break;
+    }
+}
+
+
 extern void
 Allocate_Object ( ST *st )
 {
@@ -3516,6 +3386,35 @@ Allocate_Object ( ST *st )
 
   if (Is_Allocated(st)) return;
   if (ST_is_not_used(st)) return;
+
+#ifdef TARG_STxP70
+
+  /* [vcdv] fix for bug20142
+   * It allocates sub objects (INITV) that are used to initialize current
+   * object.
+   */
+  
+   if (ST_is_initialized (st))
+      {
+         INITV_IDX inito_idx = ST_has_inito (st);
+         if (inito_idx != 0) {
+           INITV_IDX invidx;
+           FOREACH_INITV (INITO_val(inito_idx), invidx)
+             {
+               Allocate_Object_Initializer(st, invidx);
+             }
+         }
+      }
+
+  // (cbr) memory space support. If placement is needed
+  // allocate the symbol to the section here.
+  ST_MEMORY_SPACE kind;
+  if ((kind = Get_Memory_Space(st)) != ST_MEMORY_NONE) {
+    STR_IDX name = Find_Memory_Space_Name(st, kind);
+    Assign_ST_To_Named_Section (st, name);
+    return;
+  }
+#endif
 
   if (ST_has_named_section(st)) {
     STR_IDX name = Find_Section_Name_For_ST (st);
@@ -3546,6 +3445,7 @@ Allocate_Object ( ST *st )
   case SCLASS_PSTATIC :
   case SCLASS_FSTATIC :
 #ifdef TARG_ST
+
     sec = Assign_Static_Variable (st);
 #else
     if (ST_is_thread_private(st)) {
@@ -3672,7 +3572,6 @@ Allocate_File_Statics (void)
 {
   ST *st;
   INT i;
-  Trace_Frame = Get_Trace(TP_DATALAYOUT, 1);
 
   // first look in global st-attr table for section assignments
   if ( ST_ATTR_Table_Size (GLOBAL_SYMTAB)) {

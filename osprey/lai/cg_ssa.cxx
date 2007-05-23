@@ -431,9 +431,31 @@ Set_Entries_Exits(
 //
 // Only rename TNs that are not dedicated or a save for callee
 // saves
+// Temporary: Do not rename TN register class with few registers (< 4).
+// This is to avoid generating useless moves in the presence of
+// automodified operations. A better handling would
+// involve treating automodified better in the out of ssa phase.
+// Typical example is:
+// A <- B
+// C <- ASM A (and must be sameres)
+// the current out of ssa (in repair_machine_constraints ()) will do:
+// A <- B
+// C <- A	
+// C <- ASM C (and must be sameres)
+// While if A is dead it should do:
+// C <- B
+// C <- ASM C
 //
-#define TN_can_be_renamed(tn)  (!TN_is_dedicated(tn) && !TN_is_save_reg(tn))
-
+static BOOL
+TN_can_be_renamed(TN *tn) {
+  ISA_REGISTER_CLASS cl;
+  if (!TN_is_register(tn)) return FALSE;
+  if (TN_is_dedicated(tn) || TN_is_save_reg(tn)) return FALSE;
+  cl = TN_register_class(tn);
+  if (REGISTER_CLASS_register_count(cl) < 4) return FALSE;
+  return TRUE;
+}
+  
 //
 // 1. We need some mapping between PHI-function opnds
 //    and BB predecessors of the BB where the PHI-function lives.
@@ -2703,8 +2725,8 @@ Normalize_Psi_Operations()
 	  // same, but defi and defj can be guarded one on true and
 	  // the other on false.
 	  if (!((tn_guardi == PSI_guard(op, opndj)) &&
-		((TOP_is_guard_t(op_defi) && TOP_is_guard_f(op_defj)) ||
-		 (TOP_is_guard_f(op_defi) && TOP_is_guard_t(op_defj))))) {
+		((OP_is_guard_t(op_defi) && OP_is_guard_f(op_defj)) ||
+		 (OP_is_guard_f(op_defi) && OP_is_guard_t(op_defj))))) {
 	    if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
 	      // opndj is the first operand with non disjoint predicate
 	      // with opndi

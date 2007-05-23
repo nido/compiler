@@ -1262,9 +1262,17 @@ Create_Preg_explicit(TYPE_ID mtype, const char *name,
 		(void) New_PREG_explicit (scope_tab, level, preg_idx2);
                 Set_PREG_name_idx ((*scope_tab[level].preg_tab)[preg_idx2], 0);
 		break;
+#ifdef TARG_ST
+	default:
+	  ;
+	  // Reconfigurability: currently consider that extension types need a single pseudo-reg
+// 	  if (mtype > MTYPE_STATIC_COUNT) {
+// 	    ;
+// 	  }
+#endif
 	}
 	// return preg-num of first preg
-	return (PREG_NUM) preg_idx + Last_Dedicated_Preg_Offset;
+	return (PREG_NUM) preg_idx +Last_Dedicated_Preg_Offset;
 }
 
 PREG_NUM
@@ -1316,6 +1324,12 @@ Preg_Increment (TYPE_ID mtype)
 	// bool mtype not usually used, but if used, saves space for
 	// complement preg.
 	return 2;
+#ifdef TARG_ST
+    default:
+      if (mtype > MTYPE_STATIC_COUNT) {
+	FmtAssert(FALSE, ("Unhandled dynamic mtype\n"));
+      }
+#endif
     }
     return 1;
 }
@@ -1780,6 +1794,16 @@ ST::Print (FILE *f, BOOL verbose) const
 	    if (flags_ext & ST_IS_COMDAT)	fprintf (f, " comdat");
 #endif
 	}
+
+#ifdef TARG_STxP70
+	// (cbr)
+	switch (memory_space) {
+	case ST_MEMORY_DA:  fprintf (f, " da");  break;
+	case ST_MEMORY_SDA: fprintf (f, " sda"); break;
+	case ST_MEMORY_TDA: fprintf (f, " tda"); break;
+	case ST_MEMORY_NONE: fprintf (f, " none"); break;
+	}
+#endif
 
 	switch (export_class) {
 
@@ -2282,15 +2306,23 @@ Promoted_Parm_Type(const ST *formal_parm)
 //----------------------------------------------------------------------
 
 // for fast conversion of predefined types and preg.
-ST *MTYPE_TO_PREG_array[MTYPE_LAST+1];
+ST *MTYPE_TO_PREG_array[MTYPE_MAX_LIMIT+1];
 
 ST *Int_Preg, *Ptr_Preg, *Float_Preg; 
 ST *Return_Val_Preg = NULL;
+#ifdef TARG_ST
+//TB: Return specific symbol to handle things like non general register in
+//clobber asm list
+static ST *Untyped_Preg_Var = NULL;
+#endif
+TY_IDX MTYPE_TO_TY_array[MTYPE_MAX_LIMIT+1];
 
-TY_IDX MTYPE_TO_TY_array[MTYPE_LAST+1];
-
-TY_IDX Quad_Type, Void_Type, FE_int_Type, FE_double_Type;
+TY_IDX Quad_Type, Void_Type;
 TY_IDX Spill_Int_Type, Spill_Ptr_Type, Spill_Float_Type;
+#ifndef TARG_ST
+// [CG] Obsolete
+TY_IDX FE_int_Type, FE_double_Type;
+#endif
 
 #if defined(FRONT_END) && !defined(FRONT_END_MFEF77)
 extern "C" TYPE_ID FE_int_To_Mtype (void);
@@ -2410,7 +2442,13 @@ Create_All_Preg_Symbols ()
 	    continue;
 	if (MTYPE_To_PREG (i) != NULL)
 	    continue;
+#ifdef TARG_ST
+	//TB: fix codex-22500 (dynamic mtype with size < 4)
+	// Remain valid for composed MTYPE
+	if (!MTYPE_is_dynamic(i) && MTYPE_byte_size(i) < 4) {
+#else
 	if (MTYPE_byte_size(i) < 4) {
+#endif
 	    // special case:  allow mtype_B
 	    if (i != MTYPE_B) continue;
 	}
@@ -2429,6 +2467,17 @@ Create_All_Preg_Symbols ()
 	Return_Val_Preg = st;
     }
 
+#ifdef TARG_ST
+//TB: Return specific symbol to handle things like non general register in
+//clobber asm list
+    if (Untyped_Preg_Var == NULL) {
+
+	ST *st = New_ST (GLOBAL_SYMTAB);
+	ST_Init (st, Save_Str (".preg_untyped"),
+		 CLASS_PREG, SCLASS_REG, EXPORT_LOCAL, 0);
+	Untyped_Preg_Var = st;
+    }
+#endif
     Setup_Preg_Pointers ();
 } // Create_All_Preg_Symbols
 
@@ -2460,7 +2509,16 @@ Set_up_all_preg_symbols ()
 		continue;
 	    }
 	}
-
+#ifdef TARG_ST
+//TB: Return specific symbol to handle things like non general register in
+//clobber asm list
+	if (Untyped_Preg_Var == NULL) {
+	    if (strcmp (ST_name (&st), ".preg_untyped") == 0) {
+		Untyped_Preg_Var = &st;
+		continue;
+	    }
+	}
+#endif
 	TY_IDX ty_idx = ST_type (st);
 	const TY& ty = Ty_Table[ty_idx];
 	TYPE_ID mtype = TY_mtype (ty);
@@ -2474,6 +2532,13 @@ Set_up_all_preg_symbols ()
 
 } // Set_up_all_preg_symbols
     
+#ifdef TARG_ST
+//[TB]Return specific symnbol to handle things like non general register in
+//clobber asm list
+extern ST* Untyped_Preg() {
+  return Untyped_Preg_Var;
+}
+#endif
 /* ====================================================================
  *
  * Gen_Predef_Type_Name
@@ -2532,6 +2597,8 @@ Create_Special_Global_Symbols ()
 	if ( i == MTYPE_FQ )
 	    Quad_Type = ty_idx;
 
+#ifndef TARG_ST
+	/* [CG] Obsolete. */
 #if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
 #ifndef FRONT_END_MFEF77
 	if ( i == FE_int_To_Mtype() )
@@ -2540,6 +2607,8 @@ Create_Special_Global_Symbols ()
 	if ( i == MTYPE_F8 )
 	    FE_double_Type = ty_idx;
 #endif /* FRONT_END_C || FRONT_END_CPLUSPLUS */
+#endif /*!TARG_ST */
+
 	if ( i == MTYPE_V ) {
 	    Void_Type = ty_idx;
 	    ty_kind = KIND_VOID;

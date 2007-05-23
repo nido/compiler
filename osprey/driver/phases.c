@@ -181,6 +181,10 @@ int flag_M = UNDEFINED;
 #define next_ld_for_icache_is_simple (UNDEFINED)
 #endif /* BCO_Enabled Thierry */
 
+#ifdef TARG_STxP70
+boolean flag_HWLOOP = TRUE;
+#endif
+
 string ld_library_path = NULL;
 string ld_libraryn32_path = NULL;
 string orig_program_name = NULL;
@@ -189,7 +193,7 @@ string orig_program_name = NULL;
 string absolute_program_name = NULL;
 #endif
 
-#ifdef TARG_ST
+#ifdef TARG_ST200
 /* (cbr) crt_mode we are using */
 enum {nocrt, crt0, crt1} crt_mode;
 
@@ -218,7 +222,55 @@ static int find_crt_mode(void)
   /* default */
   return crt0;
 }
-#endif /* TARG_ST */
+#endif /* TARG_ST200 */
+
+#ifdef TARG_STxP70
+/* (cbr) crt_mode we are using */
+enum {nocrt, crt0, crt1} crt_mode;
+
+static const char * STxP70_get_boot_fname ( void ) {
+  string boot_path;
+  extern int STxP70mult;
+  
+  if (lib_short_double == TRUE) {
+    boot_path = string_copy("spieee754/");
+  } else {
+    boot_path = string_copy("");
+  }
+  
+  if (fpx == TRUE) {
+    boot_path = concat_strings(boot_path,"fpx");
+  } else if (STxP70mult == TRUE) {
+    boot_path = concat_strings(boot_path,"mult");
+  } else {
+    boot_path = concat_strings(boot_path,"nomult");
+  }
+  if (lib_kind == LIB_STXP70_16) {
+    boot_path = concat_strings(boot_path,"/reg16");
+  } else {
+    boot_path = concat_strings(boot_path,"/reg32");
+  }
+  if (flag_HWLOOP == TRUE) {
+    return concat_strings(boot_path,"/crt0.o");
+  } else {
+    return concat_strings(boot_path,"/crt0-nohwloop.o");
+  }
+  /* cannot be reached */
+}
+static int find_crt_mode(void)
+{
+  /* (cbr) check crtmode, in this order */
+  extern string stxp70_libdir;		    
+
+  if (stxp70_libdir && file_exists (concat_strings(stxp70_libdir, concat_strings("/", (char *)STxP70_get_boot_fname())))) 
+    return crt0;
+  else if (file_exists (concat_strings(get_phase_dir(P_library), concat_strings("/", (char *)STxP70_get_boot_fname())))) 
+    return crt0;
+
+  /* default */
+  return crt0;
+}
+#endif /* TARG_STxP70 */
 
 static string_list_t *ipl_cmds = 0; /* record the user options that needed
 				       to be passed to ipl */
@@ -642,6 +694,10 @@ add_file_args (string_list_t *args, phases_t index)
 	      add_string(args, "-MMD");
 	    add_string(args, output_d_file);
 
+	    /* (cbr) add object dependency. DDTS 27224 */
+	    add_string(args, "-MQ");
+	    add_string(args, outfile);
+
 	    /* (cbr) handle -MF here. DDTS 21439 */
 	    if (option_was_seen(O_MF)) {  
 	      add_string(args, "-MF");
@@ -908,7 +964,7 @@ add_file_args (string_list_t *args, phases_t index)
 		/* It's much easier for the driver to generate this */
 		if (option_was_seen(O_MDupdate) && !option_was_seen(O_MDtarget)) {
 		   add_string(args, "-MDtarget"); 
-		   add_string(args, construct_given_name(source_file,"o",TRUE));
+		   add_string(args, get_associated_src_object(source_file)); /* fix #14600 */
 		}
 		if (keep_listing) {
 			sprintf(buf, "-fl,%s",construct_given_name(source_file,"L",TRUE));
@@ -1045,9 +1101,7 @@ add_file_args (string_list_t *args, phases_t index)
 			{
 			  sprintf(buf, "-fo,%s", outfile);
 			} else {
-			  sprintf(buf, "-fo,%s", 
-			    construct_given_name(source_file,"o",
-				(keep_flag || multiple_source_files || ((shared == RELOCATABLE) && (ipa == TRUE))) ? TRUE : FALSE));
+			  sprintf(buf, "-fo,%s", get_associated_src_object(source_file)); /* fix #14600 */
 			}
 		add_string(args, buf);
 		if (dashdash_flag)
@@ -1161,9 +1215,7 @@ add_file_args (string_list_t *args, phases_t index)
 			  {
 			    sprintf(buf, "-fo,%s", outfile);
 			  } else {
-			        sprintf(buf, "-fo,%s", 
-			            construct_given_name(source_file,"o",
-					(keep_flag || multiple_source_files || ((shared == RELOCATABLE) && (ipa == TRUE))) ? TRUE : FALSE));
+			        sprintf(buf, "-fo,%s", get_associated_src_object(source_file));  /* fix #14600 */
 			  }
 			  add_string(args, buf);
 		}
@@ -1179,8 +1231,25 @@ add_file_args (string_list_t *args, phases_t index)
 		add_string(args, input_source);
 #endif
 #ifdef TARG_STxP70
-		/* Add X3 extension to be able to assemble clrcc/setcc for example. */
-		add_string(args, "-Mextension=x3");
+		if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__)) {
+		  	char str[32];
+		  	extern unsigned int corecfg;
+         
+			sprintf(str,"-corecfg=%#x",corecfg);
+			add_string(args,str);
+		}
+		if (option_was_seen(O_fshort_double)) {
+         add_string(args,"-double=32");
+      } else {
+         add_string(args,"-double=64");
+      }
+		if (option_was_seen(O_Mextension__)) {
+			extern char Mextension_str[256];
+
+			add_string(args,Mextension_str);
+		} else {
+			add_string(args,"-Mextension=x3");
+		}
 #endif
 
 		current_phase = P_any_as;
@@ -1195,8 +1264,7 @@ add_file_args (string_list_t *args, phases_t index)
 		{
 			add_string(args, outfile);
 		} else {
-			add_string(args, construct_given_name(source_file,"o",
-			  (keep_flag || multiple_source_files || ((shared == RELOCATABLE) && (ipa == TRUE))) ? TRUE : FALSE));
+			add_string(args, get_associated_src_object(source_file));  /* fix #14600 */
 		}
 #ifdef TARG_ST
 		// [CG]: Set input source and dashdash after output
@@ -1251,7 +1319,11 @@ add_file_args (string_list_t *args, phases_t index)
 		 */
 #ifndef TARG_ST100
 		/* We do not invoke the gcc */
-		if (!option_was_seen(O_nostartfiles))
+		if (!option_was_seen(O_nostartfiles)
+#ifdef TARG_STxP70
+         && !option_was_seen(O_Mnostartup)
+#endif
+         )
 		  {
 		    /* (cbr) find crt mode */
 		    crt_mode = find_crt_mode();
@@ -1265,7 +1337,7 @@ add_file_args (string_list_t *args, phases_t index)
 		    }
 		    else if (crt_mode == crt0) 
 #ifdef TARG_STxP70
-		      if (shared != DSO_SHARED) add_string(args, find_crt_path("boot.o"));
+            if (shared != DSO_SHARED) add_string(args, find_crt_path((char *)STxP70_get_boot_fname()));
 #else
 		      if (shared != DSO_SHARED) add_string(args, find_crt_path("crt0.o"));
 #endif
@@ -1325,7 +1397,7 @@ add_file_args (string_list_t *args, phases_t index)
 		  }
 		  else if (crt_mode == crt0) 
 #ifdef TARG_STxP70
-		    if (shared != DSO_SHARED) add_string(args, find_crt_path("boot.o"));
+          if (shared != DSO_SHARED) add_string(args, find_crt_path((char *)STxP70_get_boot_fname()));
 #else
 		    if (shared != DSO_SHARED) add_string(args, find_crt_path("crt0.o"));
 #endif
@@ -1591,6 +1663,13 @@ add_script_files_args (string_list_t *args)
       string spath;
       string ofile;
       
+#if 1 /* fix #14883: stxp70-ld (not the GNU one) searchs link script  
+       * locally and if it does not exist then continues searchins 
+       * in -L library path list
+       */
+      add_string(args, "-T");
+      add_string(args, "sx_valid.ld");
+#else
       spath = get_phase_dir(P_library);
       spath = concat_path (spath, "ldscript");
       ofile = concat_path (spath, "sx_valid.ld");	      
@@ -1602,6 +1681,7 @@ add_script_files_args (string_list_t *args)
 	add_string(args, "-T");
 	add_string(args, ofile);
       }
+#endif
     }
 #endif
 #endif /* TARG_STxP70 */
@@ -1639,10 +1719,12 @@ add_final_ld_args (string_list_t *args)
 #endif
       
 #ifdef TARG_ST
+#ifndef TARG_STxP70
       /* [TB]: with -pg add lib gprof to link */
       if (option_was_seen(O_pg) || option_was_seen(O_p)) {
 	add_string(args, "-lgprof");
       }
+#endif
 #endif
       
 #ifdef TARG_ST
@@ -1738,64 +1820,76 @@ add_final_ld_args (string_list_t *args)
 #endif /* TARG_ST200 */
       
 #ifdef TARG_STxP70
-      /* Select 32 registers libraries. */
-      if( lib_kind == LIB_STXP70_32) {
-        add_string(args, "-lsys");
-        if(lib_short_double) {
-          add_string(args, "-lm_ext");
-	}
-        add_string(args, "-lm-32");
-        add_string(args, "-ldivmod-for-cosy-32");
-        add_string(args, "-lCRT2-32");
-        add_string(args, "-lc-32");
-        add_string(args, "-lc2-32");
-        if(lib_short_double) {
-          add_string(args, "-lm_ext");
-	}
-        add_string(args, "-lm-32");
-        if( fp_lib == LIB_FP_SOFT_FLOAT) {
-	  add_string(args, "-lcfpi-for-cosy-32");
-	  add_string(args, "-lcfpi-32");
-	  add_string(args, "-lCRT2-32");
-        } else if (fp_lib == LIB_FP_ACE) {
-	  add_string(args, "-lfpe-32");
-	  add_string(args, "-ldivmod-for-cosy-32");
-        }
-        add_string(args, "-lc-32");
-        add_string(args, "-lc2-32");
-        add_string(args, "-ldivmod-for-cosy-32");
-        add_string(args, "-lCRT2-32");
-        add_string(args, "-lsys");
-      } else if ( lib_kind == LIB_STXP70_16) {
-        add_string(args, "-lsys");
-        if(lib_short_double) {
-          add_string(args, "-lm_ext");
-	}
-        add_string(args, "-lm-16");
-        add_string(args, "-ldivmod-open64-16");
-        add_string(args, "-lCRT2-16");
-        add_string(args, "-lc-16");
-        add_string(args, "-lc2-16");
-        if(lib_short_double) {
-          add_string(args, "-lm_ext");
-	}
-        add_string(args, "-lm-16");
-        if( fp_lib == LIB_FP_SOFT_FLOAT) {
-	  add_string(args, "-lcfpi-for-cosy-16");
-	  add_string(args, "-lcfpi-16");
-	  add_string(args, "-lCRT2-16");
-        } else if (fp_lib == LIB_FP_ACE) {
-	  add_string(args, "-lfpe-16");
-	  add_string(args, "-ldivmod-for-cosy-16");
-        }
-        add_string(args, "-lc-16");
-        add_string(args, "-lc2-16");
-        add_string(args, "-ldivmod-for-cosy-16");
-        add_string(args, "-lCRT2-16");
-        add_string(args, "-lsys");
-      }
-#endif /* TARG_STxP70 */
 
+#ifndef COSY_LIB /* [HC] dealing with newlib. Keep former code for CoSy compat. */
+    add_string(args,"-lgloss");
+    add_string(args,"-lm");
+    add_string(args,"-larith");
+    add_string(args,"-lc");
+    add_string(args,"-lm");
+    add_string(args,"-lcfpi");
+    add_string(args,"-lc");
+    add_string(args,"-larith");
+    add_string(args,"-lgloss");
+#else
+
+#define STxP70_FILE_TO_LINK_FPX_VARIANT(base,end) {	     \
+      if(fpx == TRUE) { add_string(args, base "-fpx" end); } \
+      else { add_string(args,base end); } \
+    }
+
+#define STxP70_FILE_TO_LINK_REG_VARIANT(base,end) {	\
+      if( lib_kind == LIB_STXP70_32 ) {			\
+	add_string(args, base "-32" end);		\
+      } else if( lib_kind == LIB_STXP70_16 ) {		\
+	add_string(args, base "-16" end);		\
+      }							\
+    }
+
+#define STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT(base,end) {	\
+      if( lib_kind == LIB_STXP70_32 ) {				\
+	STxP70_FILE_TO_LINK_FPX_VARIANT(base,"-32" end);	\
+      } else if( lib_kind == LIB_STXP70_16 ) {			\
+	STxP70_FILE_TO_LINK_FPX_VARIANT(base,"-16" end);	\
+      }								\
+    }
+      STxP70_FILE_TO_LINK_FPX_VARIANT("-lsys","");
+      if(lib_short_double) {
+         STxP70_FILE_TO_LINK_FPX_VARIANT("-lm_ext","");
+      }
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lm","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-ldivmod-for-cosy","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lCRT2","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lc","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lc2","");
+      if(lib_short_double) {
+         STxP70_FILE_TO_LINK_FPX_VARIANT("-lm_ext","");
+      }
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lm","");
+      if( fp_lib == LIB_FP_SOFT_FLOAT) {
+         STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lcfpi-for-cosy","");
+         STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lcfpi","");
+         STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lCRT2","");
+      } else if (fp_lib == LIB_FP_ACE) {
+         if(fpx == TRUE) {
+            STxP70_FILE_TO_LINK_REG_VARIANT("-lfpx","");	
+         }
+         else {
+            STxP70_FILE_TO_LINK_REG_VARIANT("-lfpe","");
+         }
+         STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-ldivmod-for-cosy","");
+      }
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lc","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lc2","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-ldivmod-for-cosy","");
+      STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT("-lCRT2","");
+      STxP70_FILE_TO_LINK_FPX_VARIANT("-lsys","");
+#undef STxP70_FILE_TO_LINK_FPX_VARIANT
+#undef STxP70_FILE_TO_LINK_REG_VARIANT
+#undef STxP70_FILE_TO_LINK_REG_AND_FPX_VARIANT
+
+#endif /* COSY_LIB */
+#endif /* TARG_STxP70 */
     }
     
 #ifdef TARG_ST
@@ -2273,7 +2367,6 @@ void init_cmplrs_phases_info (
       ld_library_path = concat_strings(get_phase_dir(P_be), 
 				       concat_strings(":", ld_library_path));
     }
-
 #ifdef TARG_ST
     /* [CL] remember absolute compiler path for IPA */
     absolute_program_name = driver_path;
@@ -2284,7 +2377,7 @@ void init_cmplrs_phases_info (
 extern void
 init_phase_info (
   string argv0
-)
+  )
 {
 #ifndef TARG_ST
 	string toolroot;
@@ -2468,6 +2561,22 @@ run_ld (void)
 	  ipa = FALSE; // [CL] reset IPA mode to ensure final 'simple' link
 	}
 #endif /* BCO_Enabled Thierry */
+#ifdef TARG_STxP70
+   if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__)) {
+      char str[32];
+      extern unsigned int corecfg;
+         
+      sprintf(str,"-corecfg=%#x",corecfg);
+      add_string(args,str);
+   }
+   if (option_was_seen(O_Mextension__)) {
+      extern char Mextension_str[256];
+      
+      add_string(args,Mextension_str);
+   } else {
+      add_string(args,"-Mextension=x3");
+   }
+#endif
 	run_phase (ldphase, ldpath, args);
 #ifdef BCO_ENABLED /* Thierry */
 	if (has_errors()) {
@@ -2606,6 +2715,35 @@ run_compiler (void)
 	input_source = source_file;
 	for (i = 0; phase_order[i] != P_NONE; i++) {
 
+#ifdef TARG_STxP70
+          /* [VCdV] Dump Command-Line to temporary file and pass as an option
+           *       temp filename to back-end.
+           */
+          char* tmpfilename = NULL;
+          int cmdlineflag;
+         if (phase_order[i] == P_be)
+            {
+              boolean dump_cmdline(char* filename);
+              
+              // file is auto-removed by cleanup()
+              char* tmpfilename = create_temp_file_name("cmdline");
+
+              if (tmpfilename != NULL && dump_cmdline(tmpfilename))
+                {
+                  // 16 is strlen("-TARG:cmd_line=")+1
+                  char* targoption = malloc(strlen(tmpfilename)+17);
+                  sprintf(targoption, "-TARG::cmd_line=%s", tmpfilename);
+                  
+                  cmdlineflag = add_new_option(targoption);
+                  free(targoption);
+                  
+                  if (proc != PROC_NONE) {
+                    add_phase_for_option(cmdlineflag, P_be);
+                    add_option_seen (cmdlineflag);
+                  }
+                }
+            }
+#endif
 	        /* special case where the frontend decided that
 		   inliner should not be run */
 	        if (inline_t == FALSE &&
@@ -2678,6 +2816,15 @@ run_compiler (void)
 			}
 		}
 		if (has_current_errors()) break;
+#ifdef TARG_STxP70
+                if (cmdlineflag!=0 && phase_order[i] == P_be)
+                  {
+                    // Remove Option for cmdline after executing be
+                    // (the option must not be reused for next file!)
+                    remove_phase_for_option(cmdlineflag, P_be);
+                  }
+#endif
+                  
 	}
 }
 

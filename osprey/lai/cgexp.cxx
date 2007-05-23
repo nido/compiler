@@ -143,11 +143,12 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
   case OPR_ILOAD:
   case OPR_LDID:
 #ifdef TARG_ST
-	if (V_alignment(variant) != V_NONE) {
+	if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
 	  Expand_Misaligned_Load ( opcode, result, op1, op2, variant, ops);
 	}
 	else {
-	  Expand_Load (opcode, result, op1, op2, ops);
+	  // variant might contain an overalignment information
+	  Expand_Load (opcode, result, op1, op2, ops, variant);
 	}
 #else
 	if ( V_align_all(variant) != 0 ) {
@@ -161,11 +162,12 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
   case OPR_ISTORE:
   case OPR_STID:
 #ifdef TARG_ST
-    if (V_alignment(variant) != V_NONE) {
-      Expand_Misaligned_Store (desc, op1, op2, op3, variant, ops);
-    }
-    else {
-      Expand_Store (desc, op1, op2, op3, ops);
+    if ((V_alignment(variant) != V_NONE) && V_misalign(variant)) {
+	  Expand_Misaligned_Store (desc, op1, op2, op3, variant, ops);
+	}
+	else {
+	  // variant might contain an overalignment information
+	  Expand_Store (desc, op1, op2, op3, ops, variant);
     }
 #else
 	if ( V_align_all(variant) != 0 ) {
@@ -302,8 +304,12 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
 		Expand_Unsigned_To_Float (result, op1, desc, rtype, ops);
 	}
 	else if (MTYPE_is_float(desc)) {
-		// rtype is int
-		Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
+	  if(MTYPE_is_signed(rtype)) {
+	    Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
+	  }
+	  else {
+	    Expand_Float_To_Unsigned_Cvt (result, op1, rtype, desc, ops);
+	  }
 	} else {
                 Expand_Convert (result, op1, op2, rtype, desc, ops);
         }
@@ -338,16 +344,36 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
     break;
 
   case OPR_RND:
-	Expand_Float_To_Int_Round (result, op1, rtype, desc, ops);
+        if(MTYPE_is_signed(rtype)) {
+	  Expand_Float_To_Int_Round (result, op1, rtype, desc, ops);
+	}
+	else {
+	  Expand_Float_To_Unsigned_Round (result, op1, rtype, desc, ops);
+	}
 	break;
   case OPR_TRUNC:
-	Expand_Float_To_Int_Trunc (result, op1, rtype, desc, ops);
+        if(MTYPE_is_signed(rtype)) {
+          Expand_Float_To_Int_Trunc (result, op1, rtype, desc, ops);
+	}
+	else {
+	  Expand_Float_To_Unsigned_Trunc (result, op1, rtype, desc, ops);
+	}
 	break;
   case OPR_CEIL:
-	Expand_Float_To_Int_Ceil (result, op1, rtype, desc, ops);
+        if(MTYPE_is_signed(rtype)) {
+	  Expand_Float_To_Int_Ceil (result, op1, rtype, desc, ops);
+	}
+	else {
+	  Expand_Float_To_Unsigned_Ceil (result, op1, rtype, desc, ops);
+	}
 	break;
   case OPR_FLOOR:
-	Expand_Float_To_Int_Floor (result, op1, rtype, desc, ops);
+        if(MTYPE_is_signed(rtype)) {
+	  Expand_Float_To_Int_Floor (result, op1, rtype, desc, ops);
+	}
+	else {
+	  Expand_Float_To_Unsigned_Floor (result, op1, rtype, desc, ops);
+	}
 	break;
   case OPR_MIN:
 	Expand_Min (result, op1, op2, rtype, ops);

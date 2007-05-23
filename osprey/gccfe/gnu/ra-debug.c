@@ -211,7 +211,7 @@ ra_print_rtx_object (file, x)
      rtx x;
 {
   enum rtx_code code = GET_CODE (x);
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   switch (code)
     {
       case CONST_INT:

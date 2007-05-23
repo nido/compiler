@@ -474,7 +474,11 @@ extern void CG_LOOP_Finish();
 inline TN *CG_LOOP_Trip_Count(LOOP_DESCR *loop)
 {
   LOOPINFO *info = LOOP_DESCR_loopinfo(loop);
+#ifdef TARG_STxP70
+  return info ? LOOPINFO_CG_trip_count_tn(info) : NULL;
+#else
   return info ? LOOPINFO_trip_count_tn(info) : NULL;
+#endif
 }
 
 CG_LOOP_BACKPATCH *CG_LOOP_Backpatch_Add(BB *bb, TN *non_body_tn,

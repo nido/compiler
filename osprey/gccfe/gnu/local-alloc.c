@@ -138,7 +138,7 @@ struct qty
   /* This holds the mode of the registers that are tied to given qty,
      or VOIDmode if registers with differing modes are tied together.  */
 
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* the hard reg number chosen for given quantity,
      or -1 if none was found.  */
@@ -269,7 +269,7 @@ static struct equivalence *reg_equiv;
 /* Nonzero if we recorded an equivalence for a LABEL_REF.  */
 static int recorded_label_ref;
 
-static void alloc_qty		PARAMS ((int, enum machine_mode, int, int));
+static void alloc_qty		PARAMS ((int, machine_mode_t, int, int));
 static void validate_equiv_mem_from_store PARAMS ((rtx, rtx, void *));
 static int validate_equiv_mem	PARAMS ((rtx, rtx, rtx));
 static int equiv_init_varies_p  PARAMS ((rtx));
@@ -290,10 +290,10 @@ static void update_qty_class	PARAMS ((int, int));
 static void reg_is_set		PARAMS ((rtx, rtx, void *));
 static void reg_is_born		PARAMS ((rtx, int));
 static void wipe_dead_reg	PARAMS ((rtx, int));
-static int find_free_reg	PARAMS ((enum reg_class, enum machine_mode,
+static int find_free_reg	PARAMS ((enum reg_class, machine_mode_t,
 				       int, int, int, int, int));
-static void mark_life		PARAMS ((int, enum machine_mode, int));
-static void post_mark_life	PARAMS ((int, enum machine_mode, int, int, int));
+static void mark_life		PARAMS ((int, machine_mode_t, int));
+static void post_mark_life	PARAMS ((int, machine_mode_t, int, int, int));
 static int no_conflict_p	PARAMS ((rtx, rtx, rtx));
 static int requires_inout	PARAMS ((const char *));
 
@@ -304,7 +304,7 @@ static int requires_inout	PARAMS ((const char *));
 static void
 alloc_qty (regno, mode, size, birth)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int size, birth;
 {
   int qtyno = next_qty++;
@@ -956,7 +956,7 @@ update_equiv_regs ()
 	  /* If this register is known to be equal to a constant, record that
 	     it is always equivalent to the constant.  */
 	  if (note && ! rtx_varies_p (XEXP (note, 0), 0))
-	    PUT_MODE (note, (enum machine_mode) REG_EQUIV);
+	    PUT_MODE (note, (machine_mode_t) REG_EQUIV);
 
 	  /* If this insn introduces a "constant" register, decrease the priority
 	     of that register.  Record this insn if the register is only used once
@@ -2165,7 +2165,7 @@ static int
 find_free_reg (class, mode, qtyno, accept_call_clobbered, just_try_suggested,
 	       born_index, dead_index)
      enum reg_class class;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int qtyno;
      int accept_call_clobbered;
      int just_try_suggested;
@@ -2317,7 +2317,7 @@ find_free_reg (class, mode, qtyno, accept_call_clobbered, just_try_suggested,
 static void
 mark_life (regno, mode, life)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int life;
 {
   int j = HARD_REGNO_NREGS (regno, mode);
@@ -2336,7 +2336,7 @@ mark_life (regno, mode, life)
 static void
 post_mark_life (regno, mode, life, birth, death)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int life, birth, death;
 {
   int j = HARD_REGNO_NREGS (regno, mode);

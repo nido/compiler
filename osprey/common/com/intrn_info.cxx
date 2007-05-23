@@ -35,7 +35,22 @@
 
 #include "intrn_info.h"
 
+#ifdef TARG_ST
+//TB: Add some proto info for multiple results
+// Use to get parameter information on the gcc tree, to know if a
+// parameter is an input, an output or an inout parameter.
+// This array is internal to the WHIRL translator.
+proto_intrn_info_t *Proto_Intrn_Info_Array;
+#endif
+
+
+#ifdef TARG_ST
+//TB: dynamic intrinsics support
+intrn_info_t *intrn_info;
+const intrn_info_t intrn_info_static[INTRINSIC_STATIC_COUNT+1] = {
+#else
 const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
+#endif
   { /* NONE */
 	NOT_BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
 	IRETURN_UNKNOWN, NULL, NULL, NULL},

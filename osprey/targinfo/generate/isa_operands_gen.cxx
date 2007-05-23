@@ -31,6 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+/*
+ * This file has been modified by STMicroelectronics.
+ */
 
 
 //  isa_operands_gen.cxx
@@ -48,9 +51,8 @@ typedef struct operand_value_type *OPERAND_VALUE_TYPE;
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <assert.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 #include <algorithm>
@@ -60,11 +62,28 @@ using std::vector;
 #include <list.h>
 #include <vector.h>
 #include <algo.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 #include "topcode.h"
 #include "targ_isa_properties.h"
 #include "gen_util.h"
 #include "isa_operands_gen.h"
+
+#include "isa_ext_limits.h"
+
+#ifdef DYNAMIC_CODE_GEN
+#include "dyn_isa_topcode.h"
+#include "dyn_stub3.h"
+#endif
+
+// In following loops, we iterate on the number of
+// TOP. This number differs whether we generate
+// static or dynamic TOPs.
+#ifndef DYNAMIC_CODE_GEN
+static mUINT32 TOP_count_limit = TOP_static_count;
+#else
+static mUINT32 TOP_count_limit = TOP_dyn_count;
+#endif
+
 
 
 struct operand_value_type {
@@ -101,9 +120,16 @@ typedef struct operands_group {
   int index;
 } *OPERANDS_GROUP;
 
+// Description of operand types.
+// Mask 0x1 is reserved to OU_UNDEFINED.
+// As a result, the relation between mask and
+// index is mask = 1U<<(index+1). Mask of first
+// item is following OPERAND_USE_TYPE lists is
+// therefore 0x2.
 struct operand_use_type {
   const char *name;
-  int index;
+  mUINT32     index;
+  mUINT32     mask;
 };
 
 static vector <OPERANDS_GROUP> op_groups;
@@ -112,13 +138,22 @@ static list <OPERAND_VALUE_TYPE> all_operand_types;
 static list <OPERAND_USE_TYPE> all_use_types;
 static list <OPERANDS_GROUP> all_groups; // All the instruction groups
 
-static int max_operands = 0;
-static int max_results = 0;
+// max_operands and max_results are initialized to the highest indexes
+// available 
+static int max_operands = (EXTENSION_NB_OPERAND_MAX > 0)?EXTENSION_NB_OPERAND_MAX-1:0;
+static int max_results  = (EXTENSION_NB_RESULT_MAX  > 0)?EXTENSION_NB_RESULT_MAX-1:0;
 static int max_valtypes = 0;
 static int max_groups = 0;
 static int max_uses = 0;
 
 static int cur_res_index;
+
+#ifdef DYNAMIC_CODE_GEN
+// Support for register class definition and remapping in extension
+static bool referenced_core_reg_classes[ISA_REGISTER_CLASS_STATIC_MAX+1];
+static bool referenced_core_reg_subclasses[ISA_REGISTER_SUBCLASS_STATIC_MAX+1];
+#endif
+
 
 /* The generated interface description:
  */
@@ -276,6 +311,11 @@ static const char * const interface[] = {
   NULL
 };
 
+static bool gen_static_code = true;          // Whether we generate code for an
+static bool gen_dyn_code    = false;         // extension or for the core.
+
+static char *extname        = NULL;          // Extension name (NULL if no ext).
+
 
 // Arthur: some operand uses are built-in
 OPERAND_USE_TYPE base;
@@ -293,7 +333,20 @@ void ISA_Operands_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
-  op_groups = vector <OPERANDS_GROUP> (TOP_count, (OPERANDS_GROUP) false);
+   op_groups = vector <OPERANDS_GROUP>(TOP_count_limit,(OPERANDS_GROUP) false);
+
+   gen_static_code = Is_Static_Code();
+   gen_dyn_code    =!gen_static_code;
+
+   if(gen_dyn_code)
+     extname = Get_Extension_Name();
+
+#ifdef DYNAMIC_CODE_GEN
+   if (! gen_static_code) {
+     memset(referenced_core_reg_classes, 0, (ISA_REGISTER_CLASS_STATIC_MAX+1)*sizeof(bool));
+     memset(referenced_core_reg_subclasses, 0, (ISA_REGISTER_SUBCLASS_STATIC_MAX+1)*sizeof(bool));
+  }
+#endif
 
 #if 0
   // Initialize built-in operand uses
@@ -346,8 +399,10 @@ OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create (
 )
 {
   if (type != SIGNED && type != UNSIGNED) {
-    fprintf(stderr, "### Error: RTYPE for register operand %s must be SIGNED or UNSIGNED\n",
-		    name);
+    fprintf(stderr, 
+            "### Error: "
+            "RTYPE for register operand %s must be SIGNED or UNSIGNED\n",
+            name);
     exit(EXIT_FAILURE);
   }
 
@@ -366,6 +421,21 @@ OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create (
   result->is_pcrel = false;
   result->is_fpu_int = fp_int != INVALID;
   result->index = max_valtypes++;
+
+#ifdef DYNAMIC_CODE_GEN
+  if ( (! gen_static_code) &&
+       (register_class >= ISA_REGISTER_CLASS_MIN) &&
+       (register_class <= ISA_REGISTER_CLASS_STATIC_MAX)) {
+
+    referenced_core_reg_classes[register_class] = true;
+
+    if ((subclass >= ISA_REGISTER_SUBCLASS_MIN) &&
+	(subclass <= ISA_REGISTER_SUBCLASS_MAX)) {
+
+      referenced_core_reg_subclasses[subclass] = true;
+    }
+  }
+#endif
 
   return result;
 }
@@ -466,6 +536,7 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 
   result->name = name;
   result->index = max_uses++;
+  result->mask = 1U<<(result->index+1U);
 
   // remember "usefull" use types:
   if (!strcmp(name, "base")) base = result;
@@ -483,6 +554,7 @@ void Instruction_Group( const char *name, ... )
 {
   va_list ap;
   TOP opcode;
+  TOP termination = gen_static_code ? TOP_UNDEFINED : static_cast<TOP>(-1);
 
   OPERANDS_GROUP oper_group = new operands_group;
 
@@ -506,7 +578,7 @@ void Instruction_Group( const char *name, ... )
   va_start(ap, name);
 
   // The first OPcode determines whether it is a load/store group
-  if ((opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+  if ((opcode = static_cast<TOP>(va_arg(ap,int))) != termination ) {
     if (op_groups[(int)opcode]) {
       fprintf(stderr, 
 	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
@@ -517,7 +589,7 @@ void Instruction_Group( const char *name, ... )
     op_groups[(int)opcode] = oper_group;
   }
 
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != termination ) {
     if (op_groups[(int)opcode]) {
       fprintf(stderr, 
 	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
@@ -547,7 +619,18 @@ void Operand (int operand_index,
 	      OPERAND_VALUE_TYPE operand_type,
 	      OPERAND_USE_TYPE operand_use)
 {
-  if (operand_index > max_operands) max_operands = operand_index;
+  if (operand_index > max_operands) {
+    if (EXTENSION_NB_OPERAND_MAX > 0) {
+      // When dealing with extension (either for Core or extension part),
+      // it is not allowed to overflow the predefined 'max_operands'
+      fprintf(stderr, "### Error: %s has too much operands in the context of"
+	      " dynamic extension. (maximum number of operand is %d)\n",
+	      cur_oper_group->name, EXTENSION_NB_OPERAND_MAX);
+      exit(EXIT_FAILURE);
+    }
+
+    max_operands = operand_index;
+  }
 
   if (operand_index >= cur_oper_group->opnd_count) {
     cur_oper_group->opnd_count = operand_index + 1;
@@ -578,7 +661,7 @@ void Operand (int operand_index,
 
   // Add the use to the set of this operand uses
   if (operand_use != (OPERAND_USE_TYPE)NULL) {
-    cur_oper_group->opnd_use[operand_index] |= 1 << (operand_use->index + 1);
+    cur_oper_group->opnd_use[operand_index] |= /*1 << (operand_use->index + 1)*/ operand_use->mask;
     if (operand_use == base) cur_oper_group->base = true;
     if (operand_use == offset) cur_oper_group->offset = true;
     if (operand_use == storeval) cur_oper_group->storeval = true;
@@ -612,7 +695,16 @@ void Result (
   OPERAND_USE_TYPE result_use
 )
 {
-  if (result_index > max_results) max_results = result_index;
+  if (result_index > max_results) {
+    if (EXTENSION_NB_RESULT_MAX > 0) {
+      fprintf(stderr, "### Error: %s has too much results in the context of"
+	      " dynamic extension. (maximum number of result is %d)\n",
+	      cur_oper_group->name, EXTENSION_NB_RESULT_MAX);
+      exit(EXIT_FAILURE);
+    }
+
+    max_results = result_index;
+  }
 
   if (result_index >= cur_oper_group->result_count) {
     cur_oper_group->result_count = result_index + 1;
@@ -646,11 +738,61 @@ void Result (
 
   // Add this result use to the set of this operand uses
   if (result_use != (OPERAND_USE_TYPE)NULL) {
-    cur_oper_group->res_use[result_index] |= 1 << (result_use->index + 1);
+    cur_oper_group->res_use[result_index] |= /*1 << (result_use->index + 1)*/ result_use->mask;
   }
 
   //  cur_oper_group->res_use[result_index] = (OPERANDS_GROUP_OPERAND_USES)NULL;
   cur_res_index = result_index;
+}
+
+/* ====================================================================
+ *   Printing operand use as a list of bitwise elementary flags
+ *   'OU_xxx | OU_xxx ....'
+ * ====================================================================
+ */
+static mUINT32
+print_use_type( FILE *f, OPERANDS_GROUP_OPERAND_USES type )
+{
+   mUINT32       pos = 0;                   /* Return value */
+   bool          first;
+   const char   *tmp;
+   list<OPERAND_USE_TYPE>::iterator iuti;
+
+   /* OPERAND_GROUP_OPERAND_USES is normally an unsigned integral type but */
+   /* it remains safer to make a local copy (in order to prevent any       */
+   /* further change).                                                     */
+   mUINT32 localtype  = (mUINT32) type;
+
+   if(sizeof(mUINT32) != sizeof(OPERANDS_GROUP_OPERAND_USES))
+    { fprintf(stderr," ### Error: types should have identical size\n");
+      exit(EXIT_FAILURE);
+    }
+
+   /* We simply iterate on */
+   for(iuti  = all_use_types.begin(),first=true; 
+       iuti != all_use_types.end() && localtype != 0;
+       ++iuti)
+    { if((localtype & (*iuti)->mask))
+       { if(first)
+          { tmp   = "";
+            first = false;
+          }
+         else
+          { tmp   = " | ";
+          }
+         pos+=(mUINT32)fprintf(f,"%sOU_%s",tmp,(*iuti)->name);
+       }
+    }
+
+   if(true==first)
+    { if(localtype!=0)
+       { fprintf(stderr," ### Internal error: unknown type\n");
+         exit(EXIT_FAILURE);
+       }
+     pos+=fprintf(f,"0x%08x",localtype);
+    }
+
+   return pos;
 }
 
 /* ====================================================================
@@ -673,32 +815,33 @@ void Same_Res (int operand_index)
   cur_oper_group->same_res[cur_res_index] = operand_index+1;
 }
 
-
 /////////////////////////////////////
 void ISA_Operands_End(void)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
 {
-  list<OPERAND_VALUE_TYPE>::iterator ivti;
-  list<OPERANDS_GROUP>::iterator ogi;
-  list<OPERAND_USE_TYPE>::iterator iuti;
-  int code;
-  bool err;
-  const char *info_index_type;
-  int first_literal = max_operands;
-  int last_literal = -1;
-  int flag_mask = 0;
+  list          <OPERAND_VALUE_TYPE>::iterator ivti;
+  list          <OPERANDS_GROUP>::iterator ogi;
+  list          <OPERAND_USE_TYPE>::iterator iuti;
+  TOP           code;
+  bool          err;
+  const char   *info_index_type;
+  const char   *info_reloc_opnd_type;
+  int           first_literal = max_operands;
+  int           last_literal = -1;
+  int           flag_mask = 0;
   unsigned long long use_mask = 0;
   unsigned long long def_mask = 0;
-  const char *max_operands_name = "ISA_OPERAND_max_operands";
-  const char *max_results_name = "ISA_OPERAND_max_results";
+  const char   *max_operands_name = "ISA_OPERAND_max_operands";
+  const char   *max_results_name = "ISA_OPERAND_max_results";
   enum {
     FLAG_IS_REG	    = 0x1,
     FLAG_IS_SIGNED  = 0x2,
     FLAG_IS_FPU_INT = 0x4,
     FLAG_IS_PCREL   = 0x8
   };
+  unsigned int  i;
 
   if (max_uses > 32 - 1) {
     fprintf(stderr, "###Error: can't handle > 31 (%d) OPERAND_USE_TYPEs\n",
@@ -706,7 +849,7 @@ void ISA_Operands_End(void)
     exit(EXIT_FAILURE);
   }
 
-  for (err = false, code = 0; code < TOP_count; ++code) {
+  for (err = false, code = 0; code < TOP_count_limit; ++code) {
     if (!op_groups[code]) {
       fprintf (stderr, "###Error: no specification for opcode: %s\n",
 		       TOP_Name((TOP)code));
@@ -715,105 +858,287 @@ void ISA_Operands_End(void)
   }
   if (err) exit(EXIT_FAILURE);
 
-#define FNAME "targ_isa_operands"
-  char filename[1000];
-  sprintf (filename, "%s.h", FNAME);
-  FILE* hfile = fopen(filename, "w");
-  sprintf (filename, "%s.c", FNAME);
-  FILE* cfile = fopen(filename, "w");
-  sprintf (filename, "%s.Exported", FNAME);
-  FILE* efile = fopen(filename, "w");
-  int maxenum;
+  char *cfilename = NULL;                             /* C file name      */
+  char *hfilename = NULL;                             /* Header file name */
+  char *efilename = NULL;                             /* Export file name */
 
-  fprintf(cfile,"#include \"%s.h\"\n", FNAME);
-  fprintf(cfile,"#include \"targ_isa_registers.h\"\n");
-  fprintf(cfile,"#include \"targ_isa_properties.h\"\n");
-  fprintf(cfile,"#include \"targ_isa_lits.h\"\n\n");
+  FILE *cfile     = NULL;                             /* C file handler   */
+  FILE *hfile     = NULL;                             /* Header f. handler*/
+  FILE *efile     = NULL;                             /* Export f. handler*/
 
-  Emit_Header (hfile, "targ_isa_operands", interface);
+  const char *const bname = FNAME_TARG_ISA_OPERANDS;  /* Base name        */
+  int    maxenum;
 
-  fprintf(hfile, "#include \"topcode.h\"\n");
-  fprintf(hfile, "#include \"targ_isa_registers.h\"\n");
-  fprintf(hfile, "#include \"targ_isa_enums.h\"\n");
-  fprintf(hfile, "#include \"targ_isa_lits.h\"\n");
+  const char *const tabinc_static[] = {               /* Building the list*/
+    FNAME_TOPCODE,                                    /* of files to be   */
+    FNAME_TARG_ISA_REGISTERS,                         /* included.        */
+    FNAME_TARG_ISA_PROPERTIES,
+    FNAME_TARG_ISA_LITS,
+    FNAME_TARG_ISA_ENUMS,
+  };
 
-  //  fprintf(hfile, "\ntypedef enum {\n"
-  //		 "  OU_UNDEFINED,\n");
+  const char *const tabinc_dynamic[] = {              /* Building the list */
+    FNAME_ISA_REGISTERS,                              /* of files to be    */
+    FNAME_ISA_PROPERTIES,                             /* included for dyn. */
+    FNAME_ISA_LITS,                                   /* extensions.       */
+    FNAME_ISA_ENUMS,
+  };
 
-  fprintf(hfile, "\ntypedef UINT32 ISA_OPERAND_USE;\n");
-  fprintf(hfile, "\n#define OU_UNDEFINED\t 0x00000000\n");
+#ifdef DYNAMIC_CODE_GEN
+   /* For dynamic extensions, we need to initialize tables
+      that describe register files in a similar way to what
+      is done by dynamic loader. Indeed, following code require
+      that routines
 
-  for (maxenum = 0, iuti = all_use_types.begin(); 
-       iuti != all_use_types.end(); 
-       ++maxenum, ++iuti)
-  {
-    OPERAND_USE_TYPE use_type = *iuti;
-    fprintf(hfile, "#define OU_%s\t 0x%08x\n", use_type->name,
-                                       1 << (use_type->index + 1));
-  }
-  //  fprintf(hfile, "  OU_MAX = %d\n"
-  fprintf(hfile, "#define OU_MAX 0x%08x\n", 1 << maxenum);
-	  //		 "} ISA_OPERAND_USE;\n",
-	  //		 maxenum);
+        ISA_REGISTER_CLASS_INFO_Name(rcinfo),
+        ISA_REGISTER_CLASS_SUBCLASS_INFO_Name(rcinfo),
 
-  fprintf(hfile, "\ntypedef struct {\n"
-		 "  mUINT8 rclass;\n"
-		 "  mUINT8 rsubclass;\n"
-		 "  mUINT8 lclass;\n"
-		 "  mUINT8 eclass;\n"
-		 "  mUINT8 size;\n"
-		 "  mUINT8 flags;\n"
-		 "} ISA_OPERAND_VALTYP;\n");
+      return correct results.
+    */
+   Initialize_Register_Class_Stub();
+#endif
 
-  fprintf(efile, "ISA_OPERAND_operand_types\n");
+  hfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_hfile);
+  hfile     = Gen_Open_File_Handle(hfilename, "w");
 
-  fprintf(cfile, "\nBE_EXPORTED const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[] = {\n");
+  cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
+  cfile     = Gen_Open_File_Handle(cfilename, "w");
+
+  if(gen_static_code)
+   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+     efile     = Gen_Open_File_Handle(efilename, "w");
+   }
+
+
+  fprintf(cfile,"\n");
+  Emit_C_Header(cfile);           /* Emit extern "C" directive */
+  fprintf(cfile,"\n\n");
+
+  /* The following loop adds all necessary #include in header file. */
+  if(gen_static_code)
+   { for(i=0;i<sizeof(tabinc_static)/sizeof(char*);i++)
+      { char *tmpname=Gen_Build_Filename(tabinc_static[i],NULL,
+                                         gen_util_file_type_hfile);
+        fprintf(hfile,"#include \"%s\"\n",tmpname);
+        Gen_Free_Filename(tmpname);
+      }
+   }
+  else
+   { for(i=0;i<sizeof(tabinc_dynamic)/sizeof(char*);i++)
+      { char *tmpname=Gen_Build_Filename(tabinc_dynamic[i],NULL,
+                                         gen_util_file_type_dyn_hfile);
+        fprintf(hfile,"#include \"%s\"\n",tmpname);
+        Gen_Free_Filename(tmpname);
+      }
+   }
+  fprintf(hfile,"\n\n");
+  Emit_Header (hfile,bname,interface,extname);
+
+  if(gen_static_code)
+   {fprintf(cfile,"#include \"%s\"\n", hfilename);
+   }
+  else
+   { char *tmpname = Gen_Build_Filename(FNAME_ISA_OPERANDS,NULL,
+                                        gen_util_file_type_dyn_hfile);
+     fprintf(cfile,"#include \"%s\"\n",tmpname);
+     Gen_Free_Filename(tmpname);
+   }
+ 
+  // --------------------------------------------------------------------
+  //
+  //       Definition of operand use flags.
+  //
+  // --------------------------------------------------------------------
+
+  if(gen_static_code)
+   { fprintf(hfile, "\ntypedef UINT32 ISA_OPERAND_USE;\n");
+     fprintf(hfile, "\n#define OU_UNDEFINED%-6s 0x00000000\n","");
+
+     for (maxenum = 0, iuti = all_use_types.begin(); 
+          iuti != all_use_types.end(); 
+          ++maxenum, ++iuti)
+      { OPERAND_USE_TYPE use_type = *iuti;
+        fprintf(hfile, "#define OU_%-15s 0x%08x\n", 
+                use_type->name,/* 1 << (use_type->index + 1)*/use_type->mask);
+      }
+     fprintf(hfile, "#define OU_MAX%-12s 0x%08x\n", "",1 << maxenum);
+   }
+
+  if(gen_static_code)
+   { fprintf(hfile, 
+             "\ntypedef struct {\n"
+             "  mUINT8  rclass;\n"
+             "  mUINT8  rsubclass;\n"
+             "  mUINT8  lclass;\n"
+             "  mUINT8  eclass;\n"
+             "  mUINT16 size;\n"
+             "  mUINT8  flags;\n"
+             "} ISA_OPERAND_VALTYP;\n");
+
+     fprintf(hfile,
+             "\n"
+             "#define ISA_OPERAND_TYPES_STATIC_COUNT (%d)\n",
+             all_operand_types.size());
+
+     fprintf(efile, 
+             "ISA_OPERAND_operand_types\n");
+    }
+
+  const char *tabname = gen_static_code ? "ISA_OPERAND_operand_types_static" :
+                                          "ISA_OPERAND_operand_types_dynamic";
+  fprintf(cfile, "\nstatic ISA_OPERAND_VALTYP %s[] = {\n",tabname);
   for (ivti = all_operand_types.begin(); ivti != all_operand_types.end(); ++ivti) {
-    unsigned int flags;
+    unsigned int       flags;
+    bool               is_core_class, 
+                       is_core_sub_class;
     OPERAND_VALUE_TYPE val_type = *ivti;
+
     const ISA_REGISTER_CLASS_INFO *rcinfo = ISA_REGISTER_CLASS_Info(val_type->register_class);
-    const ISA_REGISTER_SUBCLASS_INFO *scinfo = ISA_REGISTER_SUBCLASS_Info(val_type->register_subclass);
+    const ISA_REGISTER_SUBCLASS_INFO *scinfo  = ISA_REGISTER_SUBCLASS_Info(val_type->register_subclass);
     flags = 0;
     if (val_type->is_register) flags |= FLAG_IS_REG;
-    if (val_type->is_signed) flags |= FLAG_IS_SIGNED;
-    if (val_type->is_fpu_int) flags |= FLAG_IS_FPU_INT;
-    if (val_type->is_pcrel) flags |= FLAG_IS_PCREL;
+    if (val_type->is_signed)   flags |= FLAG_IS_SIGNED;
+    if (val_type->is_fpu_int)  flags |= FLAG_IS_FPU_INT;
+    if (val_type->is_pcrel)    flags |= FLAG_IS_PCREL;
     flag_mask |= flags;
-    fprintf(cfile, "  { ISA_REGISTER_CLASS_%-10s, ISA_REGISTER_SUBCLASS_%-10s,\n"
-		   "    %3d, %s, %2d, 0x%02x }, /* %s */\n",
-		   ISA_REGISTER_CLASS_INFO_Name(rcinfo),
-		   ISA_REGISTER_SUBCLASS_INFO_Name(scinfo),
-		   val_type->literal_class,
-		   ISA_EC_Name(val_type->enum_class),
-		   val_type->size,
-		   flags,
-		   val_type->name);
+
+    /* Coherency check - we want to be sure that we fall in one of the
+     * two following cases:
+     *   - both register class and subclass belong to the core
+     *   - both register class and subclass belong to the extension.
+     * In the "static" case, we always pass the test (by construction).
+     *
+     * For the "dynamic" case, we must also take into account the
+     * "UNDEFINED" class and subclass whose index has been set to 0.
+     */
+    is_core_class    =
+      val_type->register_class<=ISA_REGISTER_CLASS_STATIC_MAX?true:false;
+    is_core_sub_class=
+      val_type->register_subclass<=ISA_REGISTER_SUBCLASS_STATIC_MAX?true:false;
+
+    if(is_core_class != is_core_sub_class &&
+       val_type->register_subclass != ISA_REGISTER_SUBCLASS_UNDEFINED)
+     { const char *errmsg = 
+       "### Fatal: cannot have %s registers with %s register subclasses\n";
+       const char *regname;
+       const char *subregname;
+
+       regname    = ISA_REGISTER_CLASS_INFO_Name(rcinfo);
+       subregname = ISA_REGISTER_SUBCLASS_INFO_Name(scinfo);
+
+       if(is_core_class)
+          fprintf(stderr,errmsg,"core","extension");
+       else
+          fprintf(stderr,errmsg,"extension","core");
+
+       fprintf(stderr,"register %s (%d), subregisters %s (%d)\n",
+               regname    ? regname   :"<unknown>",
+               val_type->register_class,
+               subregname ? subregname:"<unknown>",
+               val_type->register_subclass);
+       exit(EXIT_FAILURE);
+     }
+
+
+    if(is_core_class)              /* Write first part of structure  */
+      fprintf(cfile, 
+        "  { ISA_REGISTER_CLASS_%-10s, ",
+        ISA_REGISTER_CLASS_INFO_Name(rcinfo));
+    else
+      fprintf(cfile,
+        "  { ISA_REGISTER_CLASS_%s_%-10s, ",
+        extname,
+        ISA_REGISTER_CLASS_INFO_Name(rcinfo));
+
+     if(is_core_sub_class)
+       fprintf(cfile,
+         "ISA_REGISTER_SUBCLASS_%-10s,\n",
+          ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
+     else
+       fprintf(cfile,
+         "ISA_REGISTER_SUBCLASS_%s_%-10s,\n",
+         extname,
+         ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
+ 
+    fprintf(                        /* Write second part of structure */
+        cfile,
+        "    %3d, %s, %2d, 0x%02x }, /* %s */\n",
+        val_type->literal_class,
+        ISA_EC_Name(val_type->enum_class),
+        val_type->size,
+        flags,
+        val_type->name);
+  }                                /* End of for loop                 */
+  fprintf(cfile, "};\n");          /* Print end of table              */
+
+  if(gen_static_code) {
+   fprintf(cfile, 
+       "\n"
+       "BE_EXPORTED ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types = %s;\n",
+       tabname); 
+   fprintf(hfile, 
+       "\n"
+       "BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n");
   }
-  fprintf(cfile, "};\n");
+  else {
+    fprintf(cfile,
+       "\n"
+       "const ISA_OPERAND_VALTYP *dyn_get_ISA_OPERAND_operand_types_tab( void )\n"
+       "{ return %s;\n"
+       "}\n"
+       "\n"
+       "const mUINT32 dyn_get_ISA_OPERAND_operand_types_tab_sz( void )\n"
+       "{ return %dU;\n"
+       "}\n"
+       "\n",
+        tabname,static_cast<mUINT32>(all_operand_types.size()) );
+
+    fprintf(hfile,
+       "\n\n"
+       "extern const ISA_OPERAND_VALTYP *dyn_get_ISA_OPERAND_operand_types_tab(void);\n"
+       "extern const mUINT32             dyn_get_ISA_OPERAND_operand_types_tab_sz(void);\n"
+       "\n\n");
+  }
 
   max_operands++;
   max_results++;
-  fprintf (hfile, "\nenum {\n"
-		  "  %s=%d,\n"
-		  "  %s=%d\n"
-		  "};\n",
-		  max_operands_name, max_operands,
-		  max_results_name, max_results);
 
-  fprintf (hfile, "\ntypedef struct {\n"
-		  "  mUINT8 opnds;\n"
-		  "  mUINT8 opnd[%s];\n"
-		  "  mUINT16 ouse[%s];\n"
-		  "  mUINT8 results;\n"
-		  "  mUINT8 result[%s];\n"
-		  "  mUINT16 ruse[%s];\n"
-		  "  mINT8 same_res[%s];\n"
-		  "} ISA_OPERAND_INFO;\n",
-	          max_operands_name, max_operands_name, 
-	          max_results_name, max_results_name, max_results_name);
-  fprintf(efile, "ISA_OPERAND_info\n");
+  if(gen_static_code) {
+   fprintf (hfile, "\n"
+                   "#define %s (%d)\n"
+                   "#define %s (%d)\n"
+                   "\n",
+                   max_operands_name, max_operands,
+                   max_results_name, max_results);
 
-  fprintf(cfile, "\nBE_EXPORTED const ISA_OPERAND_INFO ISA_OPERAND_info[] = {\n");
+   fprintf (hfile, "\ntypedef struct {\n"
+                   "  mUINT8 opnds;\n"
+                   "  mUINT8 opnd[%s];\n"
+                   "  mUINT16 ouse[%s];\n"
+                   "  mUINT8 results;\n"
+                   "  mUINT8 result[%s];\n"
+                   "  mUINT16 ruse[%s];\n"
+                   "  mINT8 same_res[%s];\n"
+                   "} ISA_OPERAND_INFO;\n",
+                   max_operands_name, max_operands_name, 
+                   max_results_name, max_results_name, max_results_name);
+    fprintf(efile, "ISA_OPERAND_info\n");
+
+    fprintf(hfile, 
+            "\n"
+            "#define ISA_OPERAND_INFO_STATIC_COUNT (%d)\n", 
+            all_groups.size());
+   }
+
+  // --------------------------------------------------------------------
+  //
+  //       Defining OPERAND_info table.
+  //
+  // --------------------------------------------------------------------
+
+  tabname = gen_static_code ? "ISA_OPERAND_info_static" :
+                              "ISA_OPERAND_info_dynamic";
+  fprintf(cfile, "\nstatic ISA_OPERAND_INFO %s[] = {\n",tabname);
   for (ogi = all_groups.begin(); ogi != all_groups.end(); ++ogi) {
     int i;
     int pos;
@@ -833,13 +1158,15 @@ void ISA_Operands_End(void)
       if (oper_iter != oper_group->operands.end()) {
         OPERAND_VALUE_TYPE val_type = *oper_iter;
         if (val_type == NULL) {
-	  fprintf(stderr, "### Error: operand missing for %s\n", oper_group->name);
+	  fprintf(stderr, "### Error: operand missing for %s\n", 
+                  oper_group->name);
 	  exit(EXIT_FAILURE);
         }
 	val_type_index = val_type->index;
 	++oper_iter;
 
-	if (!val_type->is_register && val_type->literal_class != ISA_LC_UNDEFINED) {
+	if (!val_type->is_register && 
+             val_type->literal_class != ISA_LC_UNDEFINED) {
 
 	  /* track the range of operands that can possibly be literal
 	   */
@@ -849,9 +1176,6 @@ void ISA_Operands_End(void)
       }
       pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
     }
-#if 0
-    fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
-#endif
     fprintf(cfile, " },\n");
 
     pos = fprintf(cfile, "       {");
@@ -873,9 +1197,7 @@ void ISA_Operands_End(void)
       }
 
       OPERANDS_GROUP_OPERAND_USES use_type = 0;
-      int use_type_index = 0;
       if (use_iter != oper_group->opnd_use.end()) {
-	//	OPERAND_USE_TYPE use_type = *use_iter;
 	use_type = *use_iter;
 	if (use_type) {
 	  //	  use_type_index = use_type->index + 1; // +1 for OU_UNDEFINED
@@ -886,12 +1208,10 @@ void ISA_Operands_End(void)
 	}
 	++use_iter;
       }
-      //      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", use_type_index);
-      pos += fprintf(cfile, "%s0x%08x", i == 0 ? " " : ", ", use_type);
+
+      pos+=fprintf(cfile,"%s", i == 0 ? " " : ", ");
+      pos+=print_use_type(cfile,use_type);
     }
-#if 0
-    fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
-#endif
     fprintf(cfile, " },\n");
 
     pos = fprintf(cfile, "    %d, {", oper_group->result_count);
@@ -911,10 +1231,6 @@ void ISA_Operands_End(void)
       }
       pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
     }
-    //    fprintf(cfile, " } },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
-#if 0
-    fprintf(cfile, " }, %*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
-#endif
     fprintf(cfile, " },\n");
 
     //
@@ -926,7 +1242,6 @@ void ISA_Operands_End(void)
 	 ++i
     ) {
       OPERANDS_GROUP_OPERAND_USES def_type = 0;
-      int def_type_index = 0;
       if (use_iter != oper_group->res_use.end()) {
 	def_type = *use_iter;
 	if (def_type) {
@@ -936,11 +1251,10 @@ void ISA_Operands_End(void)
 	}
 	++use_iter;
       }
-      pos += fprintf(cfile, "%s0x%08x", i == 0 ? " " : ", ", def_type);
+
+      pos+=fprintf(cfile,"%s", 0==i ? " " : ", ");/* Put a comma if necessary*/
+      pos+=print_use_type(cfile,def_type);
     }
-#if 0
-    fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 3), "", oper_group->name);
-#endif
     fprintf(cfile, " },\n");
 
     //
@@ -965,12 +1279,44 @@ void ISA_Operands_End(void)
 
   fprintf(cfile, "};\n");
 
-  info_index_type = max_groups < 256 ? "mUINT8" : "mUINT16";
-  assert(max_groups <= 0xffff);
+  if(gen_static_code)
+  { fprintf(cfile, 
+      "\n"
+      "BE_EXPORTED ISA_OPERAND_INFO *ISA_OPERAND_info = %s;\n",
+      tabname);
+    fprintf(hfile,
+      "\n"
+      "BE_EXPORTED extern ISA_OPERAND_INFO *ISA_OPERAND_info;\n");
+  }
+  else
+  { fprintf(cfile,
+      "const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab ( void )\n"
+      "{ return %s;\n"
+      "}\n"
+      "\n"
+      "const mUINT32 dyn_get_ISA_OPERAND_info_tab_sz( void )\n"
+      "{ return %dU;\n"
+      "}\n"
+      "\n",
+      tabname,static_cast<mUINT32>(all_groups.size()) );
 
-  fprintf (efile, "ISA_OPERAND_info_index\n");
-  fprintf (cfile, "\nBE_EXPORTED const %s ISA_OPERAND_info_index[] = {\n", info_index_type);
-  for (code = 0; code < TOP_count; code++) {
+    fprintf(hfile,
+      "\n"
+      "extern const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab    ( void );\n"
+      "extern const mUINT32            dyn_get_ISA_OPERAND_info_tab_sz ( void );\n");
+  }
+
+  info_index_type = "mUINT16";
+  if(max_groups>0xffff)
+   { fprintf(stderr," ### Error: number of operands groups exceeds %d\n",
+             0xffff);
+     exit(EXIT_FAILURE);
+   }
+
+  tabname = gen_static_code? "ISA_OPERAND_info_index_static" :
+                             "ISA_OPERAND_info_index_dynamic";
+  fprintf (cfile, "\nstatic %s %s[] = {\n", info_index_type,tabname);
+  for (code = 0; code < TOP_count_limit; code++) {
     OPERANDS_GROUP oper_group = op_groups[code];
     fprintf (cfile, "  %3d,  /* %s: %s */\n",
 		    oper_group->index,
@@ -979,21 +1325,70 @@ void ISA_Operands_End(void)
   }
   fprintf (cfile, "};\n");
 
-  fprintf(efile, "ISA_OPERAND_relocatable_opnd\n");
-  fprintf(cfile, "\nTARGINFO_EXPORTED const mINT8 ISA_OPERAND_relocatable_opnd[] = {\n");
-  for (code = 0; code < TOP_count; code++) {
+  if(gen_static_code) {
+     fprintf (cfile, "\nBE_EXPORTED %s *ISA_OPERAND_info_index = %s;\n", 
+              info_index_type,tabname);
+    fprintf (hfile,"\nBE_EXPORTED extern %s *ISA_OPERAND_info_index;\n", 
+              info_index_type);
+    fprintf (efile, "ISA_OPERAND_info_index\n");
+   }
+  else {
+     fprintf(cfile,
+       "\n"
+       "const %s* dyn_get_ISA_OPERAND_info_index_tab ( void )\n"
+       "{ return %s;\n"
+       "};\n",
+       info_index_type,tabname);
+     fprintf(hfile,
+       "\n"
+       "extern const %s* dyn_get_ISA_OPERAND_info_index_tab(void);\n",
+       info_index_type);
+   }
+
+  info_reloc_opnd_type = "mINT8";
+  tabname = gen_static_code ? "ISA_OPERAND_relocatable_opnd_static":
+                              "ISA_OPERAND_relocatable_opnd_dynamic";
+  fprintf(cfile, "\nstatic %s %s[] = {\n",info_reloc_opnd_type,tabname);
+  for (code = 0; code < TOP_count_limit; code++) {
     OPERANDS_GROUP oper_group = op_groups[code];
     fprintf(cfile, "  %2d,  /* %s */\n",
 		   oper_group->relocatable_opnd,
 		   TOP_Name((TOP)code));
   }
-  fprintf (cfile, "};\n");
+  fprintf (cfile, "};\n\n");
 
+  if(gen_static_code) {
+     fprintf(cfile,
+             "BE_EXPORTED %s *ISA_OPERAND_relocatable_opnd = %s;\n",
+             info_reloc_opnd_type,tabname);
+     fprintf(hfile,
+             "\nBE_EXPORTED extern %s *ISA_OPERAND_relocatable_opnd;\n",
+	     info_reloc_opnd_type);
+     fprintf(efile, "ISA_OPERAND_relocatable_opnd\n");
+   }
+  else {
+    fprintf(cfile,
+      "const %s *dyn_get_ISA_OPERAND_relocatable_opnd_tab( void )\n"
+      "{ return %s;\n"
+      "}\n",
+      info_reloc_opnd_type,tabname);
+    fprintf(hfile,
+      "extern const %s *dyn_get_ISA_OPERAND_relocatable_opnd_tab( void );\n",
+      info_reloc_opnd_type);
+   }
+
+  // --------------------------------------------------------------------
+  //
+  //       Definition of inline routines.
+  //
+  // --------------------------------------------------------------------
+
+  if(gen_static_code) {
   fprintf(hfile, "\ninline const ISA_OPERAND_INFO *"
 		   "ISA_OPERAND_Info(TOP topcode)\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const %s ISA_OPERAND_info_index[];\n"
-		 "  BE_EXPORTED extern const ISA_OPERAND_INFO ISA_OPERAND_info[];\n"
+		 "  BE_EXPORTED extern %s *ISA_OPERAND_info_index;\n"
+		 "  BE_EXPORTED extern ISA_OPERAND_INFO *ISA_OPERAND_info;\n"
 		 "  INT index = ISA_OPERAND_info_index[(INT)topcode];\n"
 
 		 "  return &ISA_OPERAND_info[index];\n"
@@ -1010,7 +1405,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT opnd)\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n"
 		 "  INT index = oinfo->opnd[opnd];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1025,7 +1420,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT result)\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const ISA_OPERAND_VALTYP ISA_OPERAND_operand_types[];\n"
+		 "  BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n"
 		 "  INT index = oinfo->result[result];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1137,7 +1532,17 @@ void ISA_Operands_End(void)
 		 "}\n",
 		 use_mask);
 
-  assert(first_literal <= last_literal); // incorrect if arch has no literals!
+  }                                       /* gen_static_code */
+
+  // For dynamic code generation, we skip the test on literals.
+  // We've got to see if this test could be applied as well in
+  // such a case.
+  if(gen_static_code)
+   { if(first_literal >  last_literal) // incorrect if arch has no literals!
+      { fprintf(stderr," ### Error: found no literals !\n");
+        exit(EXIT_FAILURE);
+      }
+   }
 
   // --------------------------------------------------------------------
   //
@@ -1145,6 +1550,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
+  if(gen_static_code) {
   fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Immediate_Operand\n");
   fprintf(cfile, "\nINT TOP_Immediate_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
@@ -1152,14 +1558,7 @@ void ISA_Operands_End(void)
 		 "  INT iopnd;\n"
 		 "  const ISA_OPERAND_INFO *opinfo = ISA_OPERAND_Info(topcode);\n"
 		 "  INT opnds = ISA_OPERAND_INFO_Operands(opinfo);\n"
-		 "  const INT first = %d;\n",
-		 first_literal);
-  if (last_literal != max_operands - 1) {
-    fprintf(cfile, "  const INT last = %d;\n"
-		   "\n"
-		   "  if (last + 1 < opnds) opnds = last + 1;\n",
-		   last_literal);
-  }
+		 "  const INT first = 0;\n");
   fprintf(cfile, "\n"
 		 "  for (iopnd = first; iopnd < opnds; ++iopnd) {\n"
 		 "    const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(opinfo, iopnd);\n"
@@ -1172,6 +1571,7 @@ void ISA_Operands_End(void)
 		 "\n"
 		 "  return -1;\n"
 		 "}\n");
+  }                                       /* gen_static_code */
 
   // --------------------------------------------------------------------
   //
@@ -1179,11 +1579,12 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
+  if(gen_static_code) {
   fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
   fprintf(efile, "TOP_Relocatable_Operand\n");
   fprintf(cfile, "\nINT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const mINT8 ISA_OPERAND_relocatable_opnd[];\n"
+		 "  TARGINFO_EXPORTED extern mINT8 *ISA_OPERAND_relocatable_opnd;\n"
 		 "  INT iopnd = ISA_OPERAND_relocatable_opnd[(INT)topcode];\n"
 		 "  if (lclass && iopnd >= 0) {\n"
 		 "    const ISA_OPERAND_INFO *opinfo = ISA_OPERAND_Info(topcode);\n"
@@ -1203,12 +1604,15 @@ void ISA_Operands_End(void)
 		 "}\n",
 		 false);
 
+  }                                       /* gen_static_code */
+
   // --------------------------------------------------------------------
   //
   //       TOP_Find_Operand_Use
   //
   // --------------------------------------------------------------------
 
+  if(gen_static_code) {
   fprintf(hfile, "\nBE_EXPORTED extern INT TOP_Find_Operand_Use(TOP topcode, "
 		 "ISA_OPERAND_USE use);\n");
   fprintf(efile, "TOP_Find_Operand_Use\n");
@@ -1224,6 +1628,7 @@ void ISA_Operands_End(void)
 		 "  }\n"
 		 "  return -1;\n"
 		 "}\n");
+  }                                       /* gen_static_code */
 
   // --------------------------------------------------------------------
   //
@@ -1254,6 +1659,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
+  if(gen_static_code) {
   fprintf(hfile, "\nBE_EXPORTED extern INT TOP_Find_Result_With_Usage(TOP topcode, "
 		 "ISA_OPERAND_USE use);\n");
   fprintf(efile, "TOP_Find_Result_With_Usage\n");
@@ -1268,6 +1674,9 @@ void ISA_Operands_End(void)
 		 "  }\n"
 		 "  return -1;\n"
 		 "}\n");
+
+   
+  }                                       /* gen_static_code */
 #endif
 
   // --------------------------------------------------------------------
@@ -1276,6 +1685,7 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
+  if(gen_static_code) {
   fprintf(hfile, "\nTARGINFO_EXPORTED extern mINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx);\n");
   fprintf(efile, "TOP_Same_Res_Operand\n");
   fprintf(cfile, "\nmINT8 TOP_Same_Res_Operand(TOP topcode, mUINT8 residx)\n"
@@ -1293,6 +1703,201 @@ void ISA_Operands_End(void)
 		 "  if (this_def & OU_uniq_res) return TRUE;\n"
 		 "  return FALSE;\n"
 		 "}\n");
+  }                                       /* gen_static_code */
 
-  Emit_Footer (hfile);
+
+  // --------------------------------------------------------------------
+  //
+  //      ISA OPERAND USE attributes table and access functions
+  //
+  // Used in reconfigurability to check Core/Extension targinfo
+  // compatibility and potentially allow attribute id remapping 
+  // when loading extensions.
+  //
+  // --------------------------------------------------------------------
+
+  fprintf (hfile,
+	   "\n"
+	   "/* Description of Operand use attributes */\n");
+  fprintf (cfile,
+	   "\n"
+	   "/* ============================================================\n"
+	   " *  ISA OPERAND USE attribute description\n"
+	   " * ============================================================\n"
+	   " */\n");
+
+  // Generate datatype specification
+  if (gen_static_code) {
+    fprintf(hfile,
+	    "typedef struct { const char *name; mUINT32 attribute; } ISA_OPERAND_USE_ATTRIBUTE;\n");
+  }
+  
+  // Generate attribute description table
+  fprintf (cfile, "static const ISA_OPERAND_USE_ATTRIBUTE ISA_OPERAND_USE_attribute_tab[] = {\n");
+  for ( iuti = all_use_types.begin(); iuti != all_use_types.end(); ++iuti) {
+    OPERAND_USE_TYPE use_type = *iuti;
+    fprintf (cfile, "  { \"%s\", OU_%s},\n", use_type->name, use_type->name);
+  }
+  fprintf (cfile, "};\n\n");
+  
+  // Generate access to attribute description table
+  if (gen_static_code) {
+    fprintf (
+      hfile,
+     "#define ISA_OPERAND_USE_ATTRIBUTE_COUNT (%d)\n", all_use_types.size());
+
+    fprintf (
+      hfile,
+     "BE_EXPORTED extern const ISA_OPERAND_USE_ATTRIBUTE * ISA_OPERAND_USE_get_attribute_table();\n"
+     "\n");
+
+    fprintf (
+      cfile,
+     "BE_EXPORTED const ISA_OPERAND_USE_ATTRIBUTE * ISA_OPERAND_USE_get_attribute_table() {\n"
+     "  return (ISA_OPERAND_USE_attribute_tab);\n"
+     "}\n"
+     "\n");
+
+    fprintf(efile, "ISA_OPERAND_USE_get_attribute_table\n");
+  }
+  else {
+    fprintf (hfile,
+	     "extern const mUINT32                    dyn_get_ISA_OPERAND_USE_attribute_tab_sz();\n"
+	     "extern const ISA_OPERAND_USE_ATTRIBUTE* dyn_get_ISA_OPERAND_USE_attribute_tab();\n"
+	     "\n");
+    fprintf (cfile,
+	     "\n"
+	     "const mUINT32 dyn_get_ISA_OPERAND_USE_attribute_tab_sz() {\n"
+	     "  return (%d);\n"
+	     "}\n"
+	     "\n", all_use_types.size());
+    fprintf (cfile,
+	     "const ISA_OPERAND_USE_ATTRIBUTE* dyn_get_ISA_OPERAND_USE_attribute_tab() {\n"
+	     "  return (ISA_OPERAND_USE_attribute_tab);\n"
+	     "}\n"
+	     "\n");
+  }
+
+
+#ifdef DYNAMIC_CODE_GEN
+  // --------------------------------------------------------------------
+  //
+  //       Static Register classes & subclasses info
+  //
+  // Used in reconfigurability to check Core/Extension targinfo
+  // compatibility and potentially allow register classes id &
+  // register subclasses id remapping when loading extensions.
+  //
+  // --------------------------------------------------------------------
+  if (!gen_static_code) {
+    int i;
+    /* 
+     * Generate a table of register class name, indexed by register class id.
+     * The table only contains static register classes (ones defined for the
+     * core) and contains a NULL pointer when the corresponding register class
+     * is not referenced by operands.
+     */
+    fprintf(cfile,
+	    "\n"
+	    "/* Access to static reg class names indexed by their id      */\n"
+	    "/* (Names are provided only for ones referenced in operands) */\n"
+	    "static const char * ISA_OPERAND_static_rclass_tab[] = {\n"
+	    "  0, /* 'UNDEFINED' */\n");
+    for (i = 1; i <= ISA_REGISTER_CLASS_STATIC_MAX; i++) {
+      if (referenced_core_reg_classes[i]) {
+	fprintf(cfile,
+		"  \"%s\",\n",
+		ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(i)));
+      }
+      else {
+	fprintf(cfile,
+		"  0, /* register class '%s' not used in extension */\n",
+		ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(i)));
+      }
+    }
+    fprintf(cfile,
+	    "};\n\n");
+
+    fprintf(cfile,
+	    "const char* const *dyn_get_ISA_OPERAND_static_rclass_tab( void ) {\n"
+	    "  return (ISA_OPERAND_static_rclass_tab);\n"
+	    "}\n"
+	    "\n"
+	    "const mUINT32 dyn_get_ISA_OPERAND_static_rclass_tab_sz( void )\n"
+	    "{ return %dU;\n"
+	    "}\n"
+	    "\n",
+	    ISA_REGISTER_CLASS_STATIC_MAX+1);
+
+    fprintf(hfile,
+	    "\n\n"
+	    "/* Access to static reg class names indexed by their id */\n"
+	    "extern const char* const *dyn_get_ISA_OPERAND_static_rclass_tab(void);\n"
+	    "extern const mUINT32      dyn_get_ISA_OPERAND_static_rclass_tab_sz(void);\n"
+	    "\n");
+    /* 
+     * Generate a table of register subclasses name, indexed by register subclass id.
+     * The table only contains static register subclasses (ones defined for the
+     * core) and contains a NULL pointer when the corresponding register subclass
+     * is not referenced by operands.
+     */
+    fprintf(cfile,
+	    "\n"
+	    "/* Access to static reg subclass names indexed by their id   */\n"
+	    "/* (Names are provided only for ones referenced in operands) */\n"
+	    "static const char * ISA_OPERAND_static_rsubclass_tab[] = {\n"
+	    "  0, /* 'UNDEFINED' */\n");
+    for (i = 1; i <= ISA_REGISTER_SUBCLASS_STATIC_MAX; i++) {
+      if (referenced_core_reg_subclasses[i]) {
+	fprintf(cfile,
+		"  \"%s\",\n",
+		ISA_REGISTER_SUBCLASS_INFO_Name(ISA_REGISTER_SUBCLASS_Info(i)));
+      }
+      else {
+	fprintf(cfile,
+		"  0, /* register subclass '%s' not used in extension */\n",
+		ISA_REGISTER_SUBCLASS_INFO_Name(ISA_REGISTER_SUBCLASS_Info(i)));
+      }
+    }
+    fprintf(cfile,
+	    "};\n\n");
+
+    fprintf(cfile,
+	    "const char* const *dyn_get_ISA_OPERAND_static_rsubclass_tab( void ) {\n"
+	    "  return (ISA_OPERAND_static_rsubclass_tab);\n"
+	    "}\n"
+	    "\n"
+	    "const mUINT32 dyn_get_ISA_OPERAND_static_rsubclass_tab_sz( void )\n"
+	    "{ return %dU;\n"
+	    "}\n"
+	    "\n",
+	    ISA_REGISTER_SUBCLASS_STATIC_MAX+1);
+
+    fprintf(hfile,
+	    "\n"
+	    "/* Access to static reg subclass names indexed by their id */\n"
+	    "extern const char* const *dyn_get_ISA_OPERAND_static_rsubclass_tab(void);\n"
+	    "extern const mUINT32      dyn_get_ISA_OPERAND_static_rsubclass_tab_sz(void);\n"
+	    "\n\n");
+  }
+  
+#endif
+
+
+  Emit_Footer  (hfile);
+  Emit_C_Footer(cfile);
+
+ // Closing file handlers.
+  Gen_Close_File_Handle(hfile,hfilename);
+  Gen_Close_File_Handle(cfile,cfilename);
+  if(efile)
+    Gen_Close_File_Handle(efile,efilename);
+
+  // Memory deallocation.
+  Gen_Free_Filename(cfilename);
+  Gen_Free_Filename(hfilename);
+  if(efilename)
+    Gen_Free_Filename(efilename);
+
+  return;
 }

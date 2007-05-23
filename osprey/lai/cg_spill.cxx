@@ -139,8 +139,10 @@ typedef struct local_spills {
 
 /* One for each kind of spill location: */
 #ifdef TARG_ST
-static LOCAL_SPILLS lra_spills[CGTARG_NUM_SPILL_TYPES];
-static LOCAL_SPILLS swp_spills[CGTARG_NUM_SPILL_TYPES];
+// Count of valid entries is specified by CGTARG_NUM_SPILL_TYPES,
+// that is no more constant (reconfigurability)
+static LOCAL_SPILLS lra_spills[MTYPE_MAX_LIMIT+1];
+static LOCAL_SPILLS swp_spills[MTYPE_MAX_LIMIT+1];
 #else
 static LOCAL_SPILLS lra_float_spills, lra_int_spills;
 static LOCAL_SPILLS swp_float_spills, swp_int_spills;
@@ -1404,6 +1406,14 @@ found_def:
 	      TN_number(tn), BB_id(bb));
     }
   } else if (op == BB_last_op(bb)) {
+#ifdef TARG_STxP70
+    // FdF 20060706: This situation is not handled, where a branch
+    // instruction defines a TN that is spilled. This can occur on the
+    // J{R,A}GTUDEC instructions. In this case, we must put the store
+    // instructions in each successors where the TN is live-in.
+    if (OP_xfer(op))
+      CGTARG_Spill_on_Xfer(tn, bb, ops);
+#endif
     //
     // we do some fancy footwork if we're spilling the delay slot
     // instruction.  let CGSPILL_Append_Ops handle it.

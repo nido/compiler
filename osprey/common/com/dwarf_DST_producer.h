@@ -498,7 +498,8 @@ DST_mk_subrange_type(DST_flag is_lb_cval,
 #else
 		     DST_cval_ref high, 	/* upper bound */
                      DST_flag is_count,
-                     DST_count_t count); 	/* size */
+                 DST_count_t count, 	/* size */
+                 DST_INFO_IDX type);
 #endif
 
 

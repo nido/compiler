@@ -273,12 +273,26 @@ class CODEREP : public SLIST_NODE {
 friend class CODEREP_CONTAINER;
 friend class CODEMAP;
 private:
+#ifdef TARG_ST
+  // Reconfigurability: Redesign the structure, as dynamic mtype required more than 5 bits
+#if (MTYPE_ENCODING_BITWIDTH > 8) // Sanity check
+#error "_dtyp and dsctyp fields too small to contain MTYPEs"
+#endif
+  CODEKIND  kind:7;                  // code kind
+  MTYPE     _dtyp:8;                 // data type
+  MTYPE     dsctyp:8;                // descriptor type for various opcode
+  INT32     usecnt:15;               // number of times this node's
+                                     // expression appears.
+                                     // not used for ISCONST and ISLDA
+  INT32     _pad:26;                 // unused data
+#else
   CODEKIND  kind:7;                  // code kind
   MTYPE     _dtyp:5;                 // data type
   MTYPE     dsctyp:5;                // descriptor type for various opcode
   INT32     usecnt:15;               // number of times this node's
                                      // expression appears.
                                      // not used for ISCONST and ISLDA
+#endif
   CR_FLAG   flags:10;                
   UINT32   _is_sign_extd:1;          // load is sign
   UINT32    is_lcse:1;               // one bit for lcse, also used for IVE
@@ -306,6 +320,9 @@ private:
 	  mUINT8 op_bit_size;	     // for EXTRACT_BITS and COMPOSE_BITS
 	} op_bit_offset_size;
 	INTRINSIC intrinsic;         // for INTRINSIC_CALL
+#ifdef TARG_ST
+	mINT32 subpart_index;        // for SUBPART
+#endif
         CODEREP *index;              // index register for ILOADX
         TY_IDX   ty_index;           // for TAS
 	ST_IDX   asm_constraint;     // for ASM_INPUT
@@ -580,7 +597,11 @@ public:
     //
   }
   void      Set_dtyp_strictly(MTYPE dt) { _dtyp = dt; }
+#ifdef TARG_ST
+  MTYPE     Dsctyp(void) const        { return MTYPE_ENCODING_MASK & dsctyp; }
+#else
   MTYPE     Dsctyp(void) const        { return 0x1f&dsctyp; }
+#endif
   void      Set_dsctyp(const MTYPE t) { dsctyp = t; }
   mINT16    Usecnt(void) const        { return 0x3ff & usecnt; }
   void      IncUsecnt(void)	      { if (usecnt >= 1023) Warn_todo
@@ -625,6 +646,10 @@ public:
   void      Set_elm_siz(INT64 siz)    { u1.elm_siz = siz; }
   INTRINSIC Intrinsic(void) const     { return u1.nonarr.u11.intrinsic; }
   void      Set_intrinsic(INTRINSIC i) { u1.nonarr.u11.intrinsic = i; }
+#ifdef TARG_ST
+  mINT32      Subpart_index(void) const { return u1.nonarr.u11.subpart_index; }
+  void      Set_subpart_index(mINT32 i) { u1.nonarr.u11.subpart_index = i; }
+#endif
   TY_IDX    Ty_index(void) const      { return u1.nonarr.u11.ty_index; }
   void      Set_ty_index(TY_IDX i)    { u1.nonarr.u11.ty_index = i; }
   ST_IDX    Asm_constraint(void) const{ return u1.nonarr.u11.asm_constraint; }
@@ -805,8 +830,13 @@ public:
 					u2.isconst.const_val = v; }
   INT64     Const_val(void) const     { Is_True(Kind() == CK_CONST,
 					 ("CODEREP::Const_val, illegal kind"));
+#ifdef TARG_ST
+					Is_True(!MTYPE_float(MTYPE_ENCODING_MASK & _dtyp),
+					 ("CODEREP::Const_val, illegal type"));
+#else
 					Is_True(!MTYPE_float(0x1f&_dtyp),
 					 ("CODEREP::Const_val, illegal type"));
+#endif
 					return u2.isconst.const_val; }
   // return the floating point value of a CK_RCONST
   // the Is_True checks are in Const_ftcon because that is the
@@ -1622,6 +1652,9 @@ private:
     // field.
   };
 
+#if (MTYPE_ENCODING_BITWIDTH > 8) // Sanity check
+#error "_rtype and _desc fields too small to contain MTYPEs"
+#endif
   OPERATOR  _opr:8;
   MTYPE     _rtype:8;        // result type
   MTYPE     _desc:8;         // descriptor type 

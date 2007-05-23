@@ -1145,7 +1145,7 @@ estimate_bb_frequencies (loops)
 {
   basic_block bb;
   REAL_VALUE_TYPE freq_max;
-  enum machine_mode double_mode = TYPE_MODE (double_type_node);
+  machine_mode_t double_mode = TYPE_MODE (double_type_node);
 
   if (flag_branch_probabilities)
     counts_to_freqs ();

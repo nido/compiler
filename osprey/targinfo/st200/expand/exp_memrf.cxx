@@ -149,7 +149,8 @@ Expand_Load (
   TN    *result, 
   TN    *base, 
   TN    *ofst, 
-  OPS   *ops
+  OPS   *ops,
+  VARIANT real_alignment
 )
 {
   TYPE_ID  mtype = OPCODE_desc(opcode);
@@ -256,7 +257,8 @@ Expand_Store (
   TN     *src, 
   TN     *base, 
   TN     *ofst, 
-  OPS    *ops
+  OPS    *ops,
+  VARIANT real_alignment
 )
 {
   TOP   top = TOP_UNDEFINED;
@@ -958,7 +960,7 @@ Exp_Ldst (
   }
 
   if (is_store) {
-    if (V_alignment(variant) == V_NONE) {
+    if ((V_alignment(variant) == V_NONE) || V_overalign(variant)) {
       Expand_Store (OPCODE_desc(opcode), tn, base_tn, ofst_tn, &newops);
     }
     else {
@@ -967,7 +969,7 @@ Exp_Ldst (
     }
   }
   else if (is_load) {
-    if (V_alignment(variant) == V_NONE)
+    if ((V_alignment(variant) == V_NONE) || V_overalign(variant))
       Expand_Load (opcode, tn, base_tn, ofst_tn, &newops);
     else 
       Expand_Misaligned_Load (opcode, tn, 

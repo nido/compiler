@@ -38,6 +38,8 @@
 
 include	$(COMMONDEFS)
 
+TARGDIR = $(BUILD_AREA)
+
 CVERSION =
 LCOPTS += $(STD_COMPILE_OPTS)
 ifeq ($(BUILD_COMPILER), EDG)
@@ -77,6 +79,10 @@ LC++DEFS += $(HOSTDEFS) $(TARGDEFS)
 
 GLDOPTS = $(STD_LOAD_OPTS)
 
+#Reconfigurability: Some symbols needs to be exported fron the main 
+#to be visible by the extension.so
+LDFLAGS += -Wl,--export-dynamic
+
 LIBCOMUTIL = $(BUILD_AREA)/libcomutil/libcomutil.a
 
 ifeq ($(BUILD_COMPILER), EDG)
@@ -86,17 +92,26 @@ LLDLIBS	= $(LIBCOMUTIL)
 endif
 
 ifneq ($(HOST_OS), CYGWIN_NT)
-# all we need is already in lcygwin
-LLDLIBS	+= -lm
+ifneq ($(HOST_OS), MINGW)
+# all we need is already in lcygwin and mingwin
+LIBSYS = $(BUILD_AREA)/libSYS/libSYS.a
+LIBIBERTY = $(BUILD_AREA)/libiberty/libiberty.a
+LLDLIBS	+= -lm -ldl $(LIBSYS) $(LIBIBERTY)
+endif
 endif
 
 ifeq ($(HOST_OS), MINGW)
 LIBSYS = $(BUILD_AREA)/libSYS/libSYS.a
-LLDLIBS += $(LIBSYS) -liberty
+LIBIBERTY = $(BUILD_AREA)/libiberty/libiberty.a
+LLDLIBS += $(LIBSYS) $(LIBIBERTY)
 endif
 ifeq ($(HOST_OS), CYGWIN_NT)
-LLDLIBS += -liberty
+LIBIBERTY = $(BUILD_AREA)/libiberty/libiberty.a
+LLDLIBS += $(LIBIBERTY)
 endif
+
+LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
+LLDLIBS += $(LIBTARGINFO)
 
 TARGETS = ir_b2a$(HEXE) ir_size$(HEXE)
 
@@ -109,19 +124,20 @@ COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 endif
 ifeq ($(BUILD_TARGET), ST200)
 COMMON_COM_TARG_DIR=
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 else
 ifeq ($(BUILD_TARGET), STxP70)
 COMMON_COM_TARG_DIR=
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 else
 COMMON_COM_TARG_DIR= $(BUILD_TOT)/common/com/$(BUILD_TARGET_DIR)
 endif
 endif
+TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 
 COMMON_COM_DIR= $(BUILD_TOT)/common/com
 
@@ -148,6 +164,7 @@ INC_DIRS =		\
 	$(XINC) \
 	$(COMMON_UTIL_TARG_DIR) \
 	$(COMMON_TARGINFO_CONFIG_DIR) \
+	$(TARG_TARG_INFO_DIR) \
 	$(COMMON_TARG_INFO_ACCESS_DIR)
 
 LDIRT = ir_a2b ir_sel
@@ -172,6 +189,8 @@ LCXXINCS = $(LCINCS)
 COMMON_COM_TARG_SRC = \
 	config_host.c \
 	config_platform.c \
+
+COMMON_COM_SRC= dso.c
 
 CFILES= \
 	$(COMMON_COM_SRC) \
@@ -204,6 +223,8 @@ COMMON_COM_CXX_SRC =	\
 	wn_util.cxx	\
 	wutil.cxx	\
 	xstats.cxx	\
+	loader.cxx      \
+	intrn_info.cxx
 
 # there is no way to distinguish between config_targ.cxx and
 # config_TARG.cxx on windows platforms... we use a different name for

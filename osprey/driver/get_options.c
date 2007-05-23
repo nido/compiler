@@ -37,6 +37,7 @@
 #include <ctype.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #ifndef sun
 #include <getopt.h>
@@ -561,6 +562,10 @@ parse_K_option (char **argv, int *argi)
 	}
 	return flag;
 }
+
+#ifdef TARG_STxP70
+#include "stxp70_options.i"
+#endif
 
 #include "get_option.i"
 

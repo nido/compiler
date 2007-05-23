@@ -208,10 +208,34 @@ INT Need_type_conversion(TYPE_ID from_ty, TYPE_ID to_ty, OPCODE *opc)
 {
   if (!(MTYPE_is_integral(from_ty) && MTYPE_is_integral(to_ty))) {
     if (from_ty == to_ty) return NOT_AT_ALL;
+#ifdef TARG_ST
+    // Reconfigurability: No support for conversion with dynamic type.
+    if (MTYPE_is_dynamic(from_ty) || MTYPE_is_dynamic(to_ty)) {
+      FmtAssert(0, ("Need_type_conversion():Conversion including dynamic"
+		    " mtypes that are not equal are not yet supported",
+		    __FILE__, __LINE__));
+    }
+#endif
     if (opc != NULL) 
       *opc = OPCODE_make_op(OPR_CVT, to_ty, from_ty);
     return NEED_CVT;
   }
+
+#ifdef TARG_ST
+  // Reconfigurability: This point might be reached with dynamic MTYPE
+  // that are integral. Currently, very limited support only.
+  if (MTYPE_is_dynamic(from_ty) || MTYPE_is_dynamic(to_ty)) {
+    if (from_ty == to_ty) {
+      return NOT_AT_ALL;
+    }
+    else {
+      FmtAssert(0, ("Need_type_conversion():Conversion including dynamic"
+		    " mtypes that are not equal are not yet supported",
+		    __FILE__, __LINE__));
+      return NOT_AT_ALL;
+    }
+  }
+#endif
 
   if (opc != NULL)
     *opc = (OPCODE)cvt_rule[to_ty][from_ty]._cvt_opcode;

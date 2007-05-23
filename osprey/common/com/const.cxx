@@ -98,6 +98,7 @@
 #include "targ_const_private.h"
 
 #include "config_debug.h" // TB: for -DEBUG:trapuv_float_value option
+#include "config_TARG.h"
 #else
 
 #include "defs.h"
@@ -244,6 +245,11 @@ Make_Const ( TCON c )
 #endif /* Is_True_On */
 
   switch(TCON_ty(c)) {
+#ifdef TARG_STxP70
+    case MTYPE_I4:
+      opc = OPC_I4CONST;
+      break;
+#endif
     case MTYPE_F4:
       opc = OPC_F4CONST;
       break;
@@ -875,7 +881,17 @@ Extract_Double_Hi(TCON v)
 
   DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
 
+#ifdef TARG_STxP70
+  if(Enable_Fpx) {
+    TCON_ty(c) = MTYPE_I4;
+  }
+  else {
+    TCON_ty(c) = MTYPE_F4;
+  }
+#else
   TCON_ty(c) = MTYPE_F4;
+#endif
+
 #if __GNUC__ < 3
   // [CL] copying floats on x86 with gcc-2.95 implies conversions
   // which may change the copied value (especially in our case where
@@ -900,7 +916,17 @@ Extract_Double_Lo(TCON v)
 
   DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
 
+#ifdef TARG_STxP70
+  if(Enable_Fpx) {
+    TCON_ty(c) = MTYPE_I4;
+  }
+  else {
+    TCON_ty(c) = MTYPE_F4;
+  }
+#else
   TCON_ty(c) = MTYPE_F4;
+#endif
+
 #if __GNUC__ < 3
   // [CL] copying floats on x86 with gcc-2.95 implies conversions
   // which may change the copied value (especially in our case where
@@ -2993,8 +3019,12 @@ Targ_Conv (
   INT32 err;
 #endif
 
+#ifdef TARG_ST
+// [TB] Extension support
+#define FROM_TO(type_from, type_to) (type_from)*(MTYPE_MAX_LIMIT+1)+(type_to)
+#else
 #define FROM_TO(type_from, type_to) (type_from)*(MTYPE_LAST+1)+(type_to)
-
+#endif
   r = MTYPE_size_min(ty_to) <= 32 ? Zero_I4_Tcon : Zero_I8_Tcon;
 
   TCON_v0(r) = 0;

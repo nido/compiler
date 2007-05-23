@@ -104,14 +104,14 @@ static const char * const output_42[] = {
 };
 
 
-extern int nonimmediate_operand PARAMS ((rtx, enum machine_mode));
-extern int general_operand PARAMS ((rtx, enum machine_mode));
-extern int register_operand PARAMS ((rtx, enum machine_mode));
-extern int nonmemory_operand PARAMS ((rtx, enum machine_mode));
-extern int lx_shXadd_operand PARAMS ((rtx, enum machine_mode));
-extern int const_int_operand PARAMS ((rtx, enum machine_mode));
-extern int memory_operand PARAMS ((rtx, enum machine_mode));
-extern int comparison_operator PARAMS ((rtx, enum machine_mode));
+extern int nonimmediate_operand PARAMS ((rtx, machine_mode_t));
+extern int general_operand PARAMS ((rtx, machine_mode_t));
+extern int register_operand PARAMS ((rtx, machine_mode_t));
+extern int nonmemory_operand PARAMS ((rtx, machine_mode_t));
+extern int lx_shXadd_operand PARAMS ((rtx, machine_mode_t));
+extern int const_int_operand PARAMS ((rtx, machine_mode_t));
+extern int memory_operand PARAMS ((rtx, machine_mode_t));
+extern int comparison_operator PARAMS ((rtx, machine_mode_t));
 
 
 

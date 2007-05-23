@@ -2,7 +2,11 @@
 #ifndef H_BSTRING_H
 #define H_BSTRING_H
 
+#ifdef _MSC_VER
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 
 /* For MINGW32, need to provide bxx functions (defined in libiberty). */
 #ifdef __cplusplus

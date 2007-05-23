@@ -77,8 +77,9 @@ extern "C" {
 #include "wfe_stmt.h"
 #ifdef TARG_ST
 #include "wfe_pragmas.h"
+#include "wfe_loader.h" //[TB] For Map_Reg_To_Preg
 #endif
-//#define WFE_DEBUG
+// #define WFE_DEBUG
 
 #ifdef TARG_ST
 // [CG] Handle volatile field accesses. See comments
@@ -265,7 +266,11 @@ Setup_Entry_For_EH (void)
     /* (cbr) valid if EH_RETURN_DATA_REGNO live in a callee registers.
        if not must lower_landing_pad_entry to force their saving on handler's entry */
  {
-  extern PREG_NUM Map_Reg_To_Preg []; 
+#ifndef TARG_ST
+	extern PREG_NUM Map_Reg_To_Preg [];
+#else
+	//TB now Map_Reg_To_Preg is defined.
+#endif
   TY_IDX ty_idx = ST_type (exc_ptr_st);
   Set_TY_is_volatile (ty_idx);
   Set_ST_type (exc_ptr_st, ty_idx);
@@ -292,7 +297,11 @@ Setup_Entry_For_EH (void)
     /* (cbr) valid if EH_RETURN_DATA_REGNO live in a callee registers.
        if not must lower_landing_pad_entry to force their saving on handler's entry */
  {
-  extern PREG_NUM Map_Reg_To_Preg []; 
+#ifndef TARG_ST
+	extern PREG_NUM Map_Reg_To_Preg [];
+#else
+	//TB now Map_Reg_To_Preg is defined
+#endif
   TY_IDX ty_idx = ST_type (filter_st);
   Set_TY_is_volatile (ty_idx);
   Set_ST_type (filter_st, ty_idx);
@@ -457,6 +466,33 @@ WFE_Start_Function (tree fndecl)
     if (DECL_IS_PURE (fndecl)) {
       Set_PU_no_side_effects (Pu_Table [ST_pu (func_st)]);
     }
+
+    // [CR] interrupt attributes
+    if (lookup_attribute("interrupt", DECL_ATTRIBUTES(fndecl))) {
+      Set_PU_is_interrupt(Pu_Table [ST_pu (func_st)]);
+    }
+    if (lookup_attribute("interrupt_nostkaln", DECL_ATTRIBUTES(fndecl))) {
+      Set_PU_is_interrupt_nostkaln(Pu_Table [ST_pu (func_st)]);
+    }
+
+    // [VB] Stack alignment attribute for more than 64bit types
+      {
+	tree attr = lookup_attribute("aligned_stack", DECL_ATTRIBUTES(fndecl));
+	if (attr) {
+	  attr = TREE_VALUE (TREE_VALUE (attr));
+	  FmtAssert (TREE_CODE(attr) == INTEGER_CST, 
+		     ("Malformed stack alignment attribute - arg not an integer"));
+	  UINT64 h = TREE_INT_CST_HIGH (attr);
+	  UINT64 l = TREE_INT_CST_LOW (attr);
+	  l = l << 32 >> 32;	
+	  h = h << 32;
+	  UINT64 val = h | l;
+	  FmtAssert (((val > 8) && (val <= 256) && ((val & (val-1)) == 0)),
+		     ("Malformed stack alignment attribute - value must be a power of 2 strictly greater than 8 and less than or equal to 256"));
+	  Set_PU_aligned_stack(Pu_Table [ST_pu (func_st)], val);
+	}
+      }
+
 #endif
     Set_ST_export (func_st, eclass);
 
@@ -491,6 +527,35 @@ WFE_Start_Function (tree fndecl)
       else
 	++num_args;
     }
+
+#ifdef TARG_ST
+    // [TTh] Check that dynamically added mtypes are not used
+    //       for return value and arguments of function.
+    {
+      // Check argument type
+      INT pi;
+      for (pi=1, pdecl = DECL_ARGUMENTS (fndecl);
+	   pdecl;
+	   pi++, pdecl = TREE_CHAIN (pdecl)) {
+	TY_IDX arg_ty_idx = Get_TY(TREE_TYPE(pdecl));
+	if (MTYPE_is_dynamic(TY_mtype(arg_ty_idx))) {
+	  error ("forbidden type `%s' for parameter %d of `%s'",
+		 MTYPE_name(TY_mtype(arg_ty_idx)),
+		 pi,
+		 (DECL_NAME (fndecl)) ? IDENTIFIER_POINTER (DECL_NAME (fndecl)) : "<unknown>");
+	}
+      }
+      // Check return value
+      if (DECL_RESULT(fndecl)) {
+	TY_IDX ret_ty_idx = Get_TY(TREE_TYPE(DECL_RESULT(fndecl)));
+	if (MTYPE_is_dynamic(TY_mtype(ret_ty_idx))) {
+	  error ("forbidden return type `%s' for `%s'",
+		 MTYPE_name(TY_mtype(ret_ty_idx)),
+		 (DECL_NAME (fndecl)) ? IDENTIFIER_POINTER (DECL_NAME (fndecl)) : "<unknown>");
+	}
+      }
+    }
+#endif
 
     WN *body, *wn;
     body = WN_CreateBlock ( );
@@ -951,7 +1016,7 @@ WFE_Add_Aggregate_Init_Labeldiff (LABEL_IDX lab1, LABEL_IDX lab2)
 {
 #ifdef WFE_DEBUG
     fprintf(stdout,"====================================================\n");
-    fprintf(stdout,"      WFE_Add_Aggregate_Init_Labeldiff %s \n\n", ST_name(st));
+//     fprintf(stdout,"      WFE_Add_Aggregate_Init_Labeldiff %s \n\n", ST_name(st));
     fprintf(stdout,"  last_aggregate_initv = %d\n", last_aggregate_initv);
     fprintf(stdout,"====================================================\n");
 #endif
@@ -2454,6 +2519,36 @@ WFE_Decl (tree decl)
 {
   if (DECL_INITIAL (decl) != 0) return; // already processed
   if (DECL_IGNORED_P(decl)) return;
+#ifdef TARG_ST
+  // [TTh] Check that dynamically added mtypes are not used
+  //       for return value and arguments of function.
+  if ((TREE_CODE (decl) == FUNCTION_DECL) && (DECL_FUNCTION_CODE(decl) == 0)) {
+    // ...Current node is a function and not a builtin
+
+    // Check argument types
+    INT pi;
+    tree list;
+    for (pi=1, list = TYPE_ARG_TYPES (TREE_TYPE (decl));
+	 list;
+	 pi++, list = TREE_CHAIN (list)) {
+      TY_IDX arg_ty_idx = Get_TY (TREE_VALUE (list));
+      if (MTYPE_is_dynamic (TY_mtype (arg_ty_idx))) {
+	error ("forbidden type `%s' for parameter %d of `%s'",
+	       MTYPE_name(TY_mtype(arg_ty_idx)),
+	       pi,
+	       (DECL_NAME (decl)) ? IDENTIFIER_POINTER (DECL_NAME (decl)) : "<unknown>");
+      }
+    }
+  
+    // Check return value
+    TY_IDX ret_ty_idx = Get_TY(TREE_TYPE(TREE_TYPE(decl)));
+    if (MTYPE_is_dynamic(TY_mtype(ret_ty_idx))) {
+      error ("forbidden return type `%s' for `%s'",
+	     MTYPE_name(TY_mtype(ret_ty_idx)),
+	     (DECL_NAME (decl)) ? IDENTIFIER_POINTER (DECL_NAME (decl)) : "<unknown>");
+    }
+  }
+#endif
   if (TREE_CODE(decl) != VAR_DECL) return;
   if (DECL_CONTEXT(decl) != 0) return;  // local
 #ifndef TARG_ST
@@ -2789,7 +2884,11 @@ WFE_Dealloca (ST *alloca_st, tree vars)
 void
 WFE_Record_Asmspec_For_ST (tree decl, const char *asmspec, int reg)
 {
-  extern PREG_NUM Map_Reg_To_Preg []; // defined in common/com/arch/config_targ.cxx
+#ifndef TARG_ST
+	extern PREG_NUM Map_Reg_To_Preg [];
+#else
+	//TB now Map_Reg_To_Preg is defined
+#endif
   PREG_NUM preg = Map_Reg_To_Preg [reg];
   FmtAssert (preg >= 0,
              ("mapping register %d to preg failed\n", reg));

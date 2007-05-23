@@ -32,6 +32,11 @@
 
 */
 
+/*
+ * This file has beem modified by STMicroelectronics
+ *
+ */
+
 
 //  isa_subset_gen.cxx
 /////////////////////////////////////
@@ -48,40 +53,57 @@
 #include <stdio.h>
 #include <assert.h>
 // [HK]
-#if __GNUC__ >= 3
+#if __GNUC__ >= 3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 using std::vector;
 #else
 #include <list.h>
 #include <vector.h>
-#endif //  __GNUC__ >= 3
+#endif //  __GNUC__ >= 3 || defined(_MSC_VER)
+
+#ifdef DYNAMIC_CODE_GEN
+#include "dyn_isa_topcode.h"  // Specific adaptation
+#else
 #include "topcode.h"
-#include "gen_util.h"
+#endif
+
 #include "isa_subset_gen.h"
+#include "gen_util.h"
 
 
 struct isa_subset {
   const char* name;         // Name given for documentation and debugging
   int index;                // value in enum
   ISA_SUBSET superset;      // Parent in subset tree, NULL for roots
-  vector<unsigned char> members;
-                            // Bitset of opcodes that are members of the subset
+
+  vector<bool> members;     // true if opcode belongs to the subset.
+
+  bool is_dyn_extensible;   // Whether a subset can be extended dynamically
+                            // This property can only be declared for subtree
+                            // with NULL root.
 };
 
 static int isa_subset_count = 0;    // How many subsets?
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 static std::list<ISA_SUBSET> subsets;    // All the subsets
 #else
 static list<ISA_SUBSET> subsets;    // All the subsets
-#endif // __GNUC__ >=3
-static size_t bit_vector_sizeof;    // How many bytes in a bit set of all
-                                    //  opcodes
-#ifndef TARG_ST
-static vector<ISA_SUBSET> opcode_subset;
-                                    // Which subset introduces the opcode?
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
+
+// In following loops, we iterate on the number of
+// TOP. This number differs following we generate
+// static or dynamic TOP.
+#ifndef DYNAMIC_CODE_GEN
+static TOP TOP_count_limit = TOP_static_count;
+#else
+static TOP TOP_count_limit = TOP_dyn_count;
 #endif
+// ====================================================================
+// ====================================================================
+
+
 
 static const char * const interface[] = {
   "/* ====================================================================",
@@ -120,12 +142,7 @@ void ISA_Subset_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
-  bit_vector_sizeof =   (TOP_count + 7) / 8;
-#ifndef TARG_ST
-  opcode_subset = vector<ISA_SUBSET>(TOP_count,(ISA_SUBSET)0);
-  for ( int code =  0; code < TOP_count; ++code )
-    opcode_subset[code] = NULL;
-#endif
+   return;
 }
 
 /////////////////////////////////////
@@ -139,11 +156,28 @@ ISA_SUBSET ISA_Subset_Create( ISA_SUBSET parent, const char* name )
   result->name = name;
   result->index = isa_subset_count++;
   result->superset = parent;
-  result->members = vector<unsigned char>(bit_vector_sizeof,0);
+  result->members = vector<bool>(TOP_count_limit,false);
+  result->is_dyn_extensible = false;
 
   subsets.push_front(result);
 
   return result;
+}
+
+/////////////////////////////////////
+void ISA_Subset_Is_Extensible( ISA_SUBSET subset )
+/////////////////////////////////////
+// Set a subset as being able to handle extensions.
+/////////////////////////////////////
+{
+   if(subset->superset!=NULL)
+    { fprintf(stderr,
+              " ### Extensibility is currently a global property that cannot applied to sub-subset.\n");
+      exit(EXIT_FAILURE);
+    }
+
+   subset->is_dyn_extensible=true;
+   return;
 }
 
 /////////////////////////////////////
@@ -155,27 +189,27 @@ void Instruction_Group( ISA_SUBSET subset, ... )
   va_list ap;
   TOP opcode;
 
+  /*
+   * For static code generation, TOP_UNDEFINED is the
+   * last item of the vararg list. In case of dynamic
+   * code generation, the static value of TOP_UNDEFINED
+   * cannot be used anymore.  Indeed we can define in the
+   * dynamic part of the code, more instructions than
+   * they are in the static instruction set.
+   * To solve the problem, we suppose that in case
+   * of dynamic code generation, vararg list ends with -1.
+   */
+
+  TOP stop = Is_Static_Code() ? TOP_UNDEFINED : static_cast<TOP>(-1);
+
   va_start(ap,subset);
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != stop ) {
     ISA_SUBSET ss;
-    int byte_index = ((unsigned int) opcode) / 8;
-    int bit_index = ((unsigned int) opcode) % 8;
 
     for ( ss = subset; ss != NULL; ss = ss->superset )
-      ss->members[byte_index] |= (1 << bit_index);
+        ss->members[(mUINT32)opcode] = true;
 
-#ifndef TARG_ST
-    if ( opcode_subset[opcode] != NULL ) {
-      fprintf(stderr,"### attempting to add %s to ISA subset %s but "
-                     "already in %s\n",
-              TOP_Name(opcode),
-              subset->name,
-              opcode_subset[opcode]->name);
-      exit(EXIT_FAILURE);
-    }
-    opcode_subset[opcode] = subset;
-#endif
-  }
+  }                          // End while.
   va_end(ap);
 }
 
@@ -186,104 +220,264 @@ void ISA_Subset_End(void)
 /////////////////////////////////////
 {
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
   std::list<ISA_SUBSET>::iterator isi;
 #else
   list<ISA_SUBSET>::iterator isi;
-#endif // __GNUC__ >=3
-  bool err;
-  int code;
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 
-#ifndef TARG_ST
-  for ( err = false, code = 0; code < TOP_count; ++code ) {
-    if ( ! opcode_subset[code] ) {
-      fprintf(stderr,"### Error: no opcode subset for %s\n",
-                     TOP_Name((TOP)code));
-      err = true;
-    }
-  }
-  if (err) exit(EXIT_FAILURE);
-#endif
+  static FILE* hfile    = NULL ;
+  static FILE* cfile    = NULL ;
+  static FILE* efile    = NULL ;
 
-#define FNAME	"targ_isa_subset"
-  char filename[1000];
-  sprintf(filename,"%s.h", FNAME);
-  FILE* hfile = fopen(filename,"w");
-  sprintf(filename,"%s.c", FNAME);
-  FILE* cfile = fopen(filename,"w");
-  sprintf(filename,"%s.Exported", FNAME);
-  FILE* efile = fopen(filename,"w");
+  // Whether we generate code for the core (static) or for an extension.
+  bool  gen_static_code = Is_Static_Code();
 
-  fprintf(cfile,"#include \"topcode.h\"\n");
-  fprintf(cfile,"#include \"%s.h\"\n", FNAME);
+  // Get extension name or NULL for static code generation.
+  char *extname = gen_static_code ? NULL : Get_Extension_Name();
 
-  sprintf (filename, "%s", FNAME);
-  Emit_Header (hfile, filename, interface);
+  char *hfilename     = NULL ;    /* Header file name              */
+  char *cfilename     = NULL ;    /* C file name                   */
+  char *efilename     = NULL ;    /* Export file name              */
+
+  const char * const bname = FNAME_TARG_ISA_SUBSET;
+
+  int k ;
+
+  // Beginning of code.
+  // Opening files.
+  hfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_hfile);
+  hfile     = Gen_Open_File_Handle(hfilename, "w");
+
+  cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
+  cfile     = Gen_Open_File_Handle(cfilename, "w");
+
+  if(gen_static_code)
+   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+     efile     = Gen_Open_File_Handle(efilename, "w");
+   }
+
+  if(gen_static_code)
+   {fprintf(cfile,"#include \"%s.h\"\n", bname);
+   }
+  else
+   { char *static_name;
+
+     static_name = Gen_Build_Filename(bname,NULL,gen_util_file_type_hfile);
+
+     fprintf(cfile,"#include \"%s\"\n",static_name);
+     fprintf(cfile,"#include \"%s\"\n\n",hfilename);
+
+     Gen_Free_Filename(static_name);
+   }
+
+  Emit_Header (hfile, bname, interface,extname);
   fprintf(hfile,"#include \"topcode.h\"\n");
 
-  fprintf(hfile,"\ntypedef enum {\n");
-  fprintf(cfile,"\nstatic const char* const isa_subset_names[] = {\n");
+  if(gen_static_code)
+   { fprintf(hfile,"\ntypedef enum {\n");
+   }
+
+  // For dynamic code, check that we have one and only one
+  // subset.
+  if(!gen_static_code)
+   { if(isa_subset_count!=1)
+      { fprintf(stderr,
+        " ### Dynamic extensions: can only define one subset currently.\n");
+        exit(EXIT_FAILURE);
+      }
+   }
+
+  fprintf(cfile,"\nstatic const char* const isa_subset_names[%d] = {\n",
+          gen_static_code ? isa_subset_count+1:isa_subset_count);
 
   for ( isi = subsets.begin(); isi != subsets.end(); ++isi ) {
     ISA_SUBSET subset = *isi;
-    fprintf(hfile,"  ISA_SUBSET_%s,\n", subset->name);
+    if(gen_static_code)
+     { fprintf(hfile,"  ISA_SUBSET_%s,\n", subset->name);
+     }
     fprintf(cfile,"  \"%s\",", subset->name);
   }
-  fprintf(hfile,"  ISA_SUBSET_UNDEFINED,\n"
+
+  // For dynamic extensions, we assume that the
+  // number of subsets is not modified. More
+  // precisely, dynamic instructions extend
+  // the instruction subsets that have been
+  // marked as accepting dynamic extensions. At load time,
+  // dynamic TOPs and static TOPs belonging to the
+  // extensible subsets are merged in a coherent
+  // representation.
+  if(gen_static_code)
+   { fprintf(hfile,"  ISA_SUBSET_UNDEFINED,\n"
 		"  ISA_SUBSET_MIN=ISA_SUBSET_%s,\n"
 		"  ISA_SUBSET_MAX=ISA_SUBSET_%s\n"
 		"} ISA_SUBSET;\n",
 		(*subsets.begin())->name,
 		(*subsets.rbegin())->name);
-  fprintf(cfile,"  \"UNDEFINED\"\n"
-		"};\n");
+   }
 
-  fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET ISA_SUBSET_Value;\n\n");
-  fprintf(efile,"ISA_SUBSET_Value\n");
-  fprintf(cfile,"ISA_SUBSET ISA_SUBSET_Value = ISA_SUBSET_UNDEFINED;\n\n");
+  if(gen_static_code)
+    fprintf(cfile,"  \"UNDEFINED\"\n"
+                  "};\n\n");
+  else
+    fprintf(cfile,"\n};\n\n");
 
-  fprintf(hfile,"BE_EXPORTED extern const char* ISA_SUBSET_Name( ISA_SUBSET subset );\n");
-  fprintf(efile,"ISA_SUBSET_Name\n");
-  fprintf(cfile,"const char* ISA_SUBSET_Name( ISA_SUBSET subset ) {\n");
-  fprintf(cfile,"  return isa_subset_names[(INT)subset];\n");
-  fprintf(cfile,"}\n");
+  if(gen_static_code)
+   { fprintf(cfile,
+             "\nstatic const int isa_subset_is_extensible [ %d ] = {\n",
+             isa_subset_count+1);
 
-  fprintf(cfile,"static const char isa_subset_opcode_table[%d][%d] = {\n",
-          isa_subset_count+1,bit_vector_sizeof);
+     const char * const str_template = "  %d, /* %-25s */\n";
 
-  for ( isi = subsets.begin(); isi != subsets.end(); ++isi ) {
+     for ( isi = subsets.begin(); isi != subsets.end(); ++isi )
+        fprintf(cfile,str_template,
+                (*isi)->is_dyn_extensible? 1 : 0, 
+                (*isi)->name);
+
+     fprintf(cfile,str_template,0,"UNDEFINED"); 
+     fprintf(cfile,"};\n\n");
+   }
+
+  if(gen_static_code) {
+    fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET ISA_SUBSET_Value;\n\n");
+    fprintf(efile,"ISA_SUBSET_Value\n");
+    fprintf(cfile,"ISA_SUBSET ISA_SUBSET_Value = ISA_SUBSET_UNDEFINED;\n\n");
+
+    fprintf(hfile,"BE_EXPORTED extern const char* ISA_SUBSET_Name( ISA_SUBSET subset );\n");
+    fprintf(efile,"ISA_SUBSET_Name\n");
+    fprintf(cfile,"const char* ISA_SUBSET_Name( ISA_SUBSET subset ) {\n");
+    fprintf(cfile,"  return isa_subset_names[(INT)subset];\n");
+    fprintf(cfile,"}\n\n");
+
+    fprintf(hfile,"BE_EXPORTED extern int ISA_SUBSET_Is_Extensible( ISA_SUBSET subset );\n");
+    fprintf(efile,"ISA_SUBSET_Is_Extensible");
+    fprintf(cfile,"int ISA_SUBSET_Is_Extensible( ISA_SUBSET subset ) {\n"
+                  "  return  isa_subset_is_extensible[(INT)subset];\n"
+                  "}\n\n");
+   }    // gen_static_code
+
+
+  for ( isi = subsets.begin(),k=0; isi != subsets.end(); ++isi,++k ) {
     ISA_SUBSET subset = *isi;
 
-    fprintf(cfile,"  { /* %s */\n", subset->name);
-    for ( int i = 0; i < bit_vector_sizeof; ++i ) {
-      int members = subset->members[i];
-      fprintf(cfile,"    0%03o, /* ",members);
-      for (int j = 0; j < 8; ++j) {
-	if (members & (1 << j)) {
-	  TOP top = (TOP)((i * 8) + j);
-	  fprintf(cfile,"%s ",TOP_Name(top));
-	}
-      }
-      fprintf(cfile,"*/\n");
-    }
-    fprintf(cfile,"  },\n");
-  }
-  fprintf(cfile,"  { /* UNDEFINED */\n"
-		"    0\n"
-		"  }\n");
-  fprintf(cfile,"};\n");
+    fprintf(cfile,
+            "static const unsigned char isa_subset_%d_opcode_table[%d] =\n",
+            k,TOP_count_limit);
 
+    fprintf(cfile,"  { /* %s */\n", subset->name);
+    for ( unsigned int i = 0; i < TOP_count_limit; ++i ) {
+      fprintf(cfile,
+              "   %d,  /* %-30s */\n",subset->members[i]==true ? 1 : 0,
+              TOP_Name((TOP)i));
+    }
+    fprintf(cfile,"};\n\n");
+  }
+
+  if(gen_static_code)
+   { fprintf(cfile,
+             "static const unsigned char isa_subset_%s_opcode_table[%d] = {\n",
+             "undefined",TOP_count_limit);
+     for(unsigned int i = 0 ; i<TOP_count_limit; ++i)
+       fprintf(cfile,"   %d,\n",0);
+     fprintf(cfile,"};\n");
+   }
+
+  /* 
+   * Now generate the global table.
+   * Number of entries in table depends on
+   * the number of subsets. For static code generation.
+   * don't forget entry for last "undefined" subset!
+   */
+  if(gen_static_code) {
+  fprintf(cfile,
+          "\n\n"
+          "const unsigned char *ISA_SUBSET_opcode_table[%d] = {\n",
+          isa_subset_count+1);
+  }
+  else {
+  fprintf(cfile,
+          "\n\n"
+          "static const unsigned char *ISA_SUBSET_dyn_opcode_table[%d] = {\n",
+          isa_subset_count);
+  }
+  for(k=0;k<isa_subset_count;k++)
+   { fprintf(cfile,"isa_subset_%d_opcode_table,\n",k);
+   }
+  if(gen_static_code)                                 /* Add undefined entry */
+   fprintf(cfile,"isa_subset_%s_opcode_table,\n","undefined");
+  fprintf(cfile,"};\n\n\n");                          /* End of global table */
+
+  if(gen_static_code) {
+  fprintf(hfile, "\nBE_EXPORTED extern const unsigned char *ISA_SUBSET_opcode_table[%d];\n\n",
+	  isa_subset_count+1);
+  fprintf(efile,"ISA_SUBSET_opcode_table\n");
   fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_Member( ISA_SUBSET subset,\n"
                 "                              TOP opcode );\n");
   fprintf(efile,"ISA_SUBSET_Member\n");
   fprintf(cfile,
 	  "int ISA_SUBSET_Member( ISA_SUBSET subset, TOP opcode )\n"
-	  "{\n"
-	  "  INT byte_index = ((UINT) opcode) / 8;\n"
-	  "  INT bit_index = ((UINT) opcode) %% 8;\n"
-	  "  INT byte = isa_subset_opcode_table[(int) subset][byte_index];\n"
-	  "  return (byte >> bit_index) & 1;\n"
-	  "}\n");
+	  "{ return ISA_SUBSET_opcode_table[(mUINT32)subset][(mUINT32)opcode];\n"
+          "}\n");
+  }
+  else {
+  const char * const fct1_name = "dyn_get_ISA_SUBSET_tab";
+  const char * const fct2_name = "dyn_get_ISA_SUBSET_tab_sz";
+  const char * const fct3_name = "dyn_get_ISA_SUBSET_op_tab";
+
+  /* Declaration of routines in header files */
+  fprintf(hfile,
+          "\n"
+          "extern const char* const *  %s ( void );\n"
+          "extern const mUINT32 %s ( void );\n"
+          "extern unsigned const char** %s ( void );\n"
+          "\n",
+          fct1_name,
+          fct2_name,
+          fct3_name);
+
+  fprintf(cfile,                      /* Printing routine 1 */
+          "\n"
+          "const char * const * %s ( void )\n"
+          "{ return %s;\n"
+          "}\n"
+          "\n",
+          fct1_name,
+          "isa_subset_names"
+          );
+
+   fprintf(cfile,                      /* Printing routine 2 */
+           "const mUINT32 %s ( void )\n"
+           "{ return (const mUINT32) %d;\n"
+           "}\n"
+           "\n",
+           fct2_name,
+           isa_subset_count
+           );
+
+   fprintf(cfile,                      /* Printing routine 3 */
+           "unsigned const char** %s ( void )\n"
+           "{ return %s;\n"
+           "}\n"
+           "\n",
+           fct3_name,
+           "ISA_SUBSET_dyn_opcode_table"
+           ); 
+  }
 
   Emit_Footer (hfile);
+
+  // Closing file handlers.
+  Gen_Close_File_Handle(hfile,hfilename);
+  Gen_Close_File_Handle(cfile,cfilename);
+  if(efile)
+    Gen_Close_File_Handle(efile,efilename);
+
+  // Memory deallocation.
+  Gen_Free_Filename(cfilename);
+  Gen_Free_Filename(hfilename);
+  if(efilename)
+    Gen_Free_Filename(efilename);
+
+  return;
+
 }

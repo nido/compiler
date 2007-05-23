@@ -1341,6 +1341,8 @@ LOOP_INVAR_CODE_MOTION :: Def_Dominate_All_Use (OP* linvar) {
             }
         }
     }
+
+    return TRUE;
 }
 
     /* ============================================================
@@ -1751,7 +1753,7 @@ LOOP_INVAR_CODE_MOTION :: Invariant_Address (OP* op) {
 
     Is_True(OP_load(op) || OP_store(op), ("Must be load or store"));
 
-    if (OP_volatile(op))
+    if (OP_volatile(op) || OP_has_implicit_interactions(op))
         return FALSE;
 
     offset_opnd = OP_find_opnd_use(op, OU_offset);
@@ -1927,10 +1929,10 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
     INT32 code_motion_num = 0;
     for (OP_Vector_Iter iter = _loop_invar_defs.begin ();
          iter != _loop_invar_defs.end (); iter++) {
-        
+
         OP* linvar = *iter;
         LI_OP_INFO* opinfo = Get_OP_Info (linvar);
-        
+
         BOOL perform = TRUE;
 
         if (!opinfo->Def_Loop_Invar ()) {
@@ -1943,7 +1945,7 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
                  */ 
             perform = FALSE;
         }
-            
+
         if (perform && Illegal_Or_Nonprofitable (linvar)) {
             perform = FALSE;
         }
@@ -2258,12 +2260,26 @@ void
 LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (OP* linvar) {
 
 #ifdef TARG_ST
+  BB* tgt = NULL;
+  BB* src = OP_bb(linvar);
   if (OP_store(linvar)) {
     BB_Move_Op_To_Start (_epilog, OP_bb(linvar), linvar);
+    tgt = _epilog;
   }
-  else
+  else {
 #endif
     BB_Move_Op_To_End (_prolog, OP_bb(linvar), linvar);
+#ifdef TARG_ST
+    tgt = _prolog;
+  }
+  // Fix for bug #20894: Assertion failure "TOP_asm not in BB_asm" in cgemit
+  if(OP_code(linvar) == TOP_asm) {
+      Set_BB_asm(tgt);
+      // A basic block can have at most one asm instruction, so we have just to
+      // transfer the information
+      BB_Transfer_Asminfo(src, tgt);
+  }
+#endif
 
     /* we need to change the result TNs to be global version since 
      * later on we will recaculate liveness from scratch.
@@ -2287,7 +2303,11 @@ Count_Loop_Interation (LOOP_DESCR* l) {
 
     TN* trip_count = NULL; 
     if (li) {
+#ifdef TARG_STxP70
+        trip_count = LOOPINFO_CG_trip_count_tn(li); 
+#else
         trip_count = LOOPINFO_trip_count_tn(li); 
+#endif
     }
     
     if (trip_count && TN_is_constant(trip_count) && 

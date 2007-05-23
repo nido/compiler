@@ -480,10 +480,11 @@ run_phase (phases_t phase, string name, string_list_t *args)
 	int	num_maps;
 	string rld_path;
 	struct stat stat_buf;
+	char *env_name, *new_ld_library_path, *old_ld_library_path;
 	const boolean uses_message_system = 
 			(phase == P_f90_fe || phase == P_f90_cpp ||
 			 phase == P_cppf90_fe);
-	
+
 	if (show_flag) {
 		/* echo the command */
 		fprintf(stderr, "%s ", name);
@@ -567,15 +568,41 @@ run_phase (phases_t phase, string name, string_list_t *args)
 #endif
 
 #ifdef TARG_ST
+	new_ld_library_path = NULL;
 	rld_path = get_phase_ld_library_path (phase);
-	if (rld_path != NULL) 
-	  SYS_setenv("LD_LIBRARY_PATH", rld_path);
+	if (ld_library_path != NULL || rld_path != NULL) {
+	  env_name = "LD_LIBRARY_PATH";
+	  old_ld_library_path = SYS_getenv(env_name);
+	  if (old_ld_library_path != NULL) 
+	    old_ld_library_path = SYS_strdup(old_ld_library_path);
+	  
+	  /* The library path is contructed as:
+	     [rld_path][:ld_library_path]
+	     Note that ld_library_path (ref phases.c) should contains the
+	     the path to lib/cmplrs and the initial user ld library path.
+	  */
+	  if (rld_path != NULL && *rld_path != '\0')
+	    new_ld_library_path = rld_path;
+	  if (ld_library_path != NULL && *ld_library_path != '\0') {
+	    if (new_ld_library_path != NULL) new_ld_library_path = concat_strings(new_ld_library_path, concat_strings(":", ld_library_path));
+	    else new_ld_library_path = ld_library_path;
+	  }
+	}
+	if (new_ld_library_path != NULL) 
+	  SYS_setenv(env_name, new_ld_library_path);
+
 	// [CG] Use common interface with run_simple_program
 	if (save_stderr) {
 	  status = run_redirected_program (name, argv, NULL, NULL, output);
 	} else {
 	  status = run_redirected_program (name, argv, NULL, output, NULL);
 	}
+	
+	/* Reset old LD_LIBRARY_PATH. */
+	if (new_ld_library_path != NULL &&
+	    old_ld_library_path != NULL) 
+	  SYS_setenv(env_name, old_ld_library_path);
+	
 	/* [CG] Now done in reun_redirected_program. *
 	/*	if (time_flag) print_time(name);*/
 	if (status != -1) {

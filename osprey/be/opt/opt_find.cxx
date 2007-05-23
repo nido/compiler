@@ -157,6 +157,10 @@ CODEREP::Same_bitpos(const CODEREP *cr) const
 	  return FALSE;
 	else if (OPCODE_operator(Op()) == OPR_CVTL && Offset() != cr->Offset())
 	  return FALSE;
+#ifdef TARG_ST
+	else if (OPCODE_operator(Op()) == OPR_SUBPART && Subpart_index() != cr->Subpart_index())
+	  return FALSE;
+#endif
 
 	for (IDX_32 i=0; i< Kid_count(); i++) {
 	  if (!Opnd(i)->Same_bitpos(cr->Opnd(i)))

@@ -23,6 +23,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 /* GC roots.  */
 
 const struct ggc_root_tab gt_ggc_r_gt_regclass_h[] = {
+#if 0
   {
     &top_of_stack[0],
     1 * (MAX_MACHINE_MODE),
@@ -30,6 +31,7 @@ const struct ggc_root_tab gt_ggc_r_gt_regclass_h[] = {
     &gt_ggc_mx_rtx_def
 
   },
+#endif
   LAST_GGC_ROOT_TAB
 };
 

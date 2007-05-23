@@ -73,8 +73,10 @@
 #include "cgexp.h"
 #include "config_asm.h"
 #include "hb_sched.h"
+#include "targ_isa_variants.h"
 
-#include "targ_cg_sup.h"
+/* for asm stmt */
+#include "register_preg.h"
 
 /* Import from targ_cgemit.cxx. */
 extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
@@ -87,17 +89,29 @@ UINT32 CGTARG_max_issue_width;
 BOOL CGTARG_max_issue_width_overriden = FALSE;
 #endif
 
+#ifdef TARG_ST
+TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
+CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
+#else
 TY_IDX CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES];
 CLASS_INDEX CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES];
-static TOP CGTARG_Invert_Table[TOP_count+1];
+#endif
+static TOP *CGTARG_Invert_Table;
 
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
 
 static BOOL earliest_regclass_use_initialized = FALSE;
+#ifdef TARG_ST
+static INT earliest_regclass_use[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+static INT earliest_regsubclass_use[ISA_REGISTER_SUBCLASS_MAX_LIMIT+1];
+static INT earliest_dedicated_reg_use[ISA_REGISTER_CLASS_MAX_LIMIT+1][ISA_REGISTER_MAX+1];
+static INT earliest_assigned_reg_use[ISA_REGISTER_CLASS_MAX_LIMIT+1][ISA_REGISTER_MAX+1];
+#else
 static INT earliest_regclass_use[ISA_REGISTER_CLASS_MAX+1];
 static INT earliest_regsubclass_use[ISA_REGISTER_SUBCLASS_MAX+1];
 static INT earliest_dedicated_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
 static INT earliest_assigned_reg_use[ISA_REGISTER_CLASS_MAX+1][ISA_REGISTER_MAX+1];
+#endif
 
 /* ====================================================================
  *   CGTARG_Preg_Register_And_Class
@@ -110,32 +124,24 @@ CGTARG_Preg_Register_And_Class (
   REGISTER *p_reg
 )
 {
-  ISA_REGISTER_CLASS rclass;
+  ISA_REGISTER_CLASS rclass = 0, rclassi;
   INT regnum;
   REGISTER reg;
-
+  
   /* Get the target register number and class associated with the
    * preg, if there is one that is.
    */
-  if (Preg_Offset_Is_Int(preg)) {
-    regnum = preg - Int_Preg_Min_Offset;
-    rclass = ISA_REGISTER_CLASS_integer;
+  FOR_ALL_ISA_REGISTER_CLASS( rclassi ) {
+    int preg_min = CGTARG_Regclass_Preg_Min(rclassi);
+    int preg_max = CGTARG_Regclass_Preg_Max(rclassi);
+    if (preg >= preg_min && preg <= preg_max) {
+      regnum = preg - preg_min;
+      rclass = rclassi;
+      break;
+    }
   }
-  else if (preg >= Branch_Preg_Min_Offset && 
-		            preg <= Branch_Preg_Max_Offset) {
-    regnum = preg - Branch_Preg_Min_Offset;
-    rclass = ISA_REGISTER_CLASS_branch;
-  }
-  else if (preg == 0) {
-    FmtAssert(FALSE, ("preg = 0"));
-    /* 0 not considered part of normal int group for error purposes,
-     * but in our case it can be zero_tn. */
-    regnum = 0;
-    rclass = ISA_REGISTER_CLASS_integer;
-  }
-  else {
+  if (rclass == 0)
     return FALSE;
-  }
 
   /* Find the CG register for the target register and class.
    */
@@ -1005,13 +1011,15 @@ Replace_Substring (
  *   CGTARG_Modify_Asm_String
  * ====================================================================
  */
+//TB add subclass parameter to CGTARG_Modify_Asm_String to handle
+//registers that have different name depending on thier subclass
 char* 
 CGTARG_Modify_Asm_String (
   char* asm_string, 
   UINT32 position, 
   bool memory, 
-  TN* tn
-)
+  TN* tn,
+  ISA_REGISTER_SUBCLASS sc)
 {
   char* name;
   if (TN_is_register(tn)) {
@@ -1406,7 +1414,16 @@ CGTARG_Generate_Remainder_Branch (
  *   CGTARG_Generate_Branch_Cloop
  * ====================================================================
  */
+#ifdef TARG_ST
 BOOL
+CGTARG_Generate_Branch_Cloop(LOOP_DESCR *loop,
+                             OP *br_op,
+			     TN *trip_count_tn,
+			     TN *label_tn,
+			     OPS *prolog_ops,
+			     OPS *body_ops)
+#else
+void
 CGTARG_Generate_Branch_Cloop(OP *br_op,
 			     TN *unrolled_trip_count,
 			     TN *trip_count_tn,
@@ -1414,9 +1431,10 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
 			     TN *label_tn,
 			     OPS *prolog_ops,
 			     OPS *body_ops)
+#endif
 { 
+  // Related option: -TARG:activate_hwloop (Activate_Hwloop variable in config_TARG.cxx).
   return FALSE;
-  //FmtAssert(FALSE,("target does not support counted loop branches"));
 }
 
 /* ====================================================================
@@ -1425,37 +1443,6 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
  * ====================================================================
  * ====================================================================
  */
-
-/* ====================================================================
- *   CGTARG_Is_OP_Addr_Incr
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Addr_Incr (
-  OP *op
-)
-{
-  return OP_iadd(op) &&
-         TN_has_value(OP_opnd(op, 1)) &&
-         OP_result(op, 0) == OP_opnd(op, 0);
-}
-
-/* ====================================================================
- *   CGTARG_Is_OP_Cmp_Eq_Ne
- * ====================================================================
- */
-BOOL
-CGTARG_Is_OP_Cmp_Eq_Ne (
-  OP *op
-)
-{
-  TOP top = OP_code(op);
-
-  return ((top == TOP_cmpeq_i_b) ||
-	  (top == TOP_cmpeq_ii_b) ||
-	  (top == TOP_cmpne_i_b) ||
-	  (top == TOP_cmpne_ii_b));
-}
 
 /* ====================================================================
  *   CGTARG_Max_OP_Latency
@@ -1828,20 +1815,6 @@ CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot)
 }
 
 /* ====================================================================
- *   Get_Extended_Opcode
- * ====================================================================
- */
-static TOP
-Get_Extended_Opcode (
-  TOP opcode
-)
-{
-  // Arthur: a hack -- I use the fact that all _ii opcodes follow
-  //         immediately corresponding _i opcodes ...
-  return (TOP) (opcode+1);
-}
-
-/* ====================================================================
  *   CGTARG_offset_is_extended
  *   Does this offset TN is an extended immediate operand ?
  * ====================================================================
@@ -1871,6 +1844,32 @@ CGTARG_offset_is_extended(TN *offset, INT64 *val) {
   }
 
   return FALSE;
+}
+  
+/* ====================================================================
+ *   Get_Extended_Opcode
+ * ====================================================================
+ */
+static TOP
+Get_Extended_Opcode (
+  TOP opcode
+)
+{
+  // Arthur: a hack -- I use the fact that all _ii opcodes follow
+  //         immediately corresponding _i opcodes ...
+  return (TOP) (opcode+1);
+}
+
+/* =========================================================================
+ *   CGTARG_Get_Info_For_Common_Base_Opt
+ *   Get information on memory op used in common base pointer optimisation.
+ * =========================================================================
+ */
+void
+CGTARG_Get_Info_For_Common_Base_Opt( INT *min_offset_alignment, INT *min_offset, INT *max_offset) {
+  *min_offset_alignment = 1; /* char offset alignment. No scaling constraint on offset. */
+  *min_offset = ISA_LC_Min (LC_isrc2); /* LC_imm_isrc2 for word memory accesses. */
+  *max_offset = ISA_LC_Max (LC_isrc2);
 }
   
 /* ====================================================================
@@ -2369,6 +2368,17 @@ void CGTARG_Make_Bundles_Postpass(BB *bb)
   INT scycle_delta = 0;
   Pad_Bundles_With_NOPs (bb, &scycle_delta);
 }  
+
+/* ====================================================================
+ *   CGTARG_Pseudo_Make_Expand
+ *
+ *   Generate sequence that correspond to pseudo MAKE.
+ * ====================================================================
+ */
+void
+CGTARG_Pseudo_Make_Expand() {
+  /* No pseudo MAKE (TOP_MAKE) selected on ST200. */
+}
 
 /* ====================================================================
  *   CGTARG_Resize_Instructions
@@ -2980,6 +2990,113 @@ CGTARG_Compute_PRC_INFO(
 
 /**********************************************************************
  *
+ *                  Load immediate information
+ *
+ **********************************************************************
+ */
+BOOL CGTARG_is_expensive_load_imm(OP* op)
+{
+    return FALSE;
+}
+
+INT CGTARG_expensive_load_imm_immediate_index(OP* op)
+{
+    return -1;
+}
+
+
+BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op)
+{
+    return ops && OPS_length(ops) <= 1;
+}
+
+/**********************************************************************
+ *
+ *                  TOP to/from Multi conversion
+ *
+ **********************************************************************
+ */
+static TOP *TOP_To_Multi_Table = NULL;
+static TOP *TOP_From_Multi_Table = NULL;
+static TOP *TOP_Register_Variant_Table = NULL;
+
+static void
+Init_TOP_Variant_Tables() {
+  TOP top, top_multi, top_immediate;
+  TOP_To_Multi_Table   = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
+  TOP_From_Multi_Table = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
+  TOP_Register_Variant_Table = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
+
+  TOP_To_Multi_Table[TOP_UNDEFINED] = TOP_UNDEFINED;
+  TOP_From_Multi_Table[TOP_UNDEFINED] = TOP_UNDEFINED;
+  TOP_Register_Variant_Table[TOP_UNDEFINED] = TOP_UNDEFINED;
+
+  for (top = 0; top < TOP_count; top++) {
+	TOP_From_Multi_Table[top] = top;
+	TOP_Register_Variant_Table[top] = TOP_UNDEFINED;
+  }
+  
+  for (top = 0; top < TOP_count; top++) {
+	top_multi = TOP_get_variant(top, VARATT_multi);
+	
+	if (top_multi != TOP_UNDEFINED) {
+	  TOP_To_Multi_Table[top] = top_multi;
+	  TOP_From_Multi_Table[top_multi] = top;
+	}
+	else {
+	  TOP_To_Multi_Table[top] = top;
+	}
+
+	top_immediate = TOP_get_variant(top, VARATT_immediate);
+	// In some description the immediate form reference itself. 
+	// We must skip this.
+	if (top != top_immediate) {
+	  // Iterate over all the immediate forms.
+	  while (top_immediate != TOP_UNDEFINED) {
+	    DevAssert(TOP_Register_Variant_Table[top_immediate] == TOP_UNDEFINED, ("Unexpected duplicate register variant: immediate form: %s, register_form1: %s, register_form2: %s ", TOP_Name(top_immediate), TOP_Name(TOP_Register_Variant_Table[top_immediate]), TOP_Name(top)));
+	    TOP_Register_Variant_Table[top_immediate] = top;
+	    top_immediate = TOP_get_variant(top_immediate, VARATT_next_immediate);
+	  }
+	}
+  }
+}
+
+/* =======================================================================
+ *   CGTARG_TOP_To_Multi
+ *
+ *   Return the multi version of a given TOP
+ * =======================================================================
+ */
+TOP CGTARG_TOP_To_Multi(TOP top) {
+  return (TOP_To_Multi_Table[top]);
+}
+
+/* =======================================================================
+ *   CGTARG_TOP_From_Multi
+ *
+ *   Return the standard version of a given multi TOP
+ * =======================================================================
+ */
+TOP CGTARG_TOP_From_Multi(TOP multi_top) {
+  return (TOP_From_Multi_Table[multi_top]);
+}
+
+
+/* =======================================================================
+ *   CGTARG_TOP_Register_Variant
+ *
+ *   Return the register variant of the given immediate form top.
+ *   This function must be kept private to targinfo.
+ *   The user level function is TOP_opnd_register_variant().
+ * =======================================================================
+ */
+TOP CGTARG_TOP_Register_Variant(TOP immform_top) {
+  return TOP_Register_Variant_Table[immform_top];
+}
+
+
+/**********************************************************************
+ *
  *                  Hardware Workarounds ??
  *
  **********************************************************************
@@ -3050,6 +3167,10 @@ CGTARG_Initialize ()
   FmtAssert (CGTARG_NUM_SPILL_TYPES == 3, ("CGTARG_NUM_SPILL_TYPES mismatch"));
 
   /* TODO: tabulate in the arch data base */
+
+  /* Allocate table
+   */
+  CGTARG_Invert_Table = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
 
   /* Init all table entries to TOP_UNDEFINED.
    */
@@ -3154,8 +3275,17 @@ CGTARG_Initialize ()
 
   init_templates();
 
+  Init_TOP_Variant_Tables();
+
   if (CGTARG_max_issue_width_overriden) 
     init_max_issue_width(CGTARG_max_issue_width);
 
   return;
+}
+
+BOOL
+CGTARG_Is_Simple_Jump(const OP* op)
+{
+    // targeting not done, but not needed for the moment
+    return FALSE;
 }

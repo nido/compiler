@@ -1003,16 +1003,35 @@ DST_enter_array_type(tree type_tree, TY_IDX ttidx  , TY_IDX idx,INT tsize)
 	    DST_cval_ref dmin, dmax;
 
 	    DST_INFO_IDX range_idx;
-
+        DST_INFO_IDX index_type_idx = DST_INVALID_IDX;
+        if(!(TREE_CODE (index_type) == INTEGER_TYPE
+             && TYPE_NAME (index_type) == NULL_TREE
+             && TREE_CODE (TREE_TYPE (index_type)) == INTEGER_TYPE
+             && TYPE_NAME (TREE_TYPE (index_type)) == NULL_TREE))
+            {
+                struct mongoose_gcc_DST_IDX ret_g_idx;
+                ret_g_idx = TYPE_DST_IDX(TREE_TYPE(index_type));
+                cp_to_dst_from_tree(&index_type_idx,&ret_g_idx);
+                if(DST_IS_NULL(index_type_idx))
+                    {
+                        tree index_ty_tree = TREE_TYPE(index_type);
+                        TY_IDX type_idx = TYPE_TY_IDX(index_ty_tree);
+                        // not created yet, so create
+                        ret_g_idx =
+                            Create_DST_type_For_Tree (index_ty_tree, type_idx,
+                                                      Get_TY(index_ty_tree));
+                    }
+                cp_to_dst_from_tree(&index_type_idx,&ret_g_idx);
+            }
 	    Create_bound_info(min, &dmin, &is_lb_cval);
 	    if (max){
 	      Create_bound_info(max, &dmax, &is_ub_cval);
 
-	      range_idx = DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, FALSE, 0LL);
+	      range_idx = DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, FALSE, 0LL, index_type_idx);
 	    } else {
-	      range_idx = DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, TRUE, 0LL);
+            range_idx = DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, TRUE, 0LL, index_type_idx);
 	    }
-
+	     
 	    DST_append_child(dst_idx, range_idx);
 	  }
 	}
@@ -1301,6 +1320,10 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 	       break;
 
     case ARRAY_TYPE:
+#ifdef TARG_ST
+      //TB: generate dst for vector type
+   case VECTOR_TYPE:
+#endif
 		
 	       {
                 dst_idx = DST_enter_array_type(type_tree, 

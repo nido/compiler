@@ -1747,6 +1747,33 @@ Is_Empty_BB(BB *bb)
   }
   return FALSE;
 }
+
+#ifdef TARG_STxP70
+// FdF 20060810: Returns bb if bb is a HWLoop head, NULL otherwise
+static BB *
+BB_HWLoop_head(BB *bb) {
+  if (BB_loophead(bb)) {
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
+    if (annot) {
+      LOOPINFO *info = ANNOT_loopinfo(annot);
+      if (info && LOOPINFO_is_HWLoop(info))
+	return bb;
+    }
+  }
+  return NULL;
+}
+
+static BB *
+// FdF 20060810: Returns the head of the loop if bb is a HWLoop tail,
+// NULL otherwise
+BB_HWLoop_tail(BB *bb) {
+  OP *br_op = BB_branch_op(bb);
+  if (br_op && OP_Is_Counted_Loop(br_op))
+    return BB_loop_head_bb(bb);
+  return NULL;
+}
+#endif
+
 
 /* ====================================================================
  * ====================================================================
@@ -1866,6 +1893,17 @@ Collapse_Empty_Goto(BB *bp, BB *targ, float in_freq)
 
   if (BBINFO_cold(bp) != BBINFO_cold(targ)) return targ;
 
+#ifdef TARG_STxP70
+  // FdF 20060810: Do not change the fall-thru successsor to an
+  // hardware loop.
+  if (BB_HWLoop_head(targ))
+    return targ;
+  // FdF 20060620: Do not change the fall-thru successor of an
+  // hardware loop.
+  if (BB_HWLoop_tail(bp))
+    return targ;
+#endif
+
   new_targ = targ;
   cnt = 0;
   while (   BBINFO_kind(new_targ) == BBKIND_GOTO 
@@ -1967,6 +2005,13 @@ Redundant_Logif(BB *pred, BB *succ, BOOL *pnegated)
   if (   pred_cmp != succ_cmp
       && (pred_cmp != BB_branch_op(pred) || succ_cmp != BB_branch_op(succ))
   ) return FALSE;
+
+#ifdef TARG_STxP70
+  // FdF 20060811: Must also check that none is an hardware loop
+  // branch instruction.
+  if (BB_HWLoop_tail(pred) || BB_HWLoop_tail(succ))
+    return FALSE;
+#endif
 
   /* They're redundant!
    */
@@ -3410,7 +3455,6 @@ Merge_With_Pred ( BB *b, BB *pred )
   return TRUE;
 }
 
-
 /* ====================================================================
  *
  * Can_Append_Succ
@@ -3574,9 +3618,26 @@ Can_Append_Succ(
 	fprintf(TFile, "rejecting %s of BB:%d into BB:%d (would change RID for REGION_First_BB)\n",
 		     oper_name, BB_id(suc), BB_id(b));
       }
-    return FALSE;
+      return FALSE;
     }
   }
+
+#ifdef TARG_STxP70
+  /* FdF 20060724: Reject if removing the succ will create a GOTO to
+   * the start of an hardware loop
+   */
+  if (delete_suc) {
+    BB *suc_next = BB_next(suc);
+    if (suc_next && BB_HWLoop_head(suc_next) && (BB_next(b) != suc)) {
+      if (trace) {
+        #pragma mips_frequency_hint NEVER
+	fprintf(TFile, "rejecting %s of BB:%d into BB:%d (would create a GOTO to start of HW loop)\n",
+		oper_name, BB_id(suc), BB_id(b));
+      }
+      return FALSE;
+    }
+  }
+#endif
 
   /* Reject if the region has been scheduled.
    */
@@ -4098,6 +4159,11 @@ OP_equiv(OP *op1, OP *op2) {
   if (!op1 || !op2)
     return FALSE;
 
+  if (OP_xfer(op1) || OP_xfer(op2) ||
+      OP_code(op1) == TOP_asm || OP_code(op2) == TOP_asm ||
+      OP_volatile(op1) || OP_volatile(op2))
+    return FALSE;
+  
   if ((OP_code(op1) != OP_code(op2)) ||
       (OP_opnds(op1) != OP_opnds(op2)) ||
       (OP_results(op1) != OP_results(op2)))
@@ -4166,6 +4232,7 @@ Merge_Ops_in_Preds(BB *b) {
       }
       OP *new_common = Dup_OP(common_op);
       if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
+      OP_scycle(new_common) = 0; // Reset cycle to 0 for safeness at postscheduling time.
 
       BB_Insert_Op(b, NULL, new_common, TRUE);
       for (i = 0; i < pred_count; i ++) {
@@ -4939,6 +5006,9 @@ Init_Chains(BBCHAIN *chains)
   BB_MAP chain_map = BB_MAP_Create();
   BBCHAIN *prev = NULL;
 
+#ifdef TARG_STxP70
+  BB *outer_HWLoop = NULL;
+#endif
   /* Make initial chains for all the BBs in the region.
    */
   for (bb = REGION_First_BB; bb; bb = next_bb) {
@@ -4957,18 +5027,49 @@ Init_Chains(BBCHAIN *chains)
      * Exception regions are similar except that the created chain need
      * only consist of the BBs in the same or nested exception region.
      */
+
+    /* FdF 20060627: It seems that hardware loops follow the rules for
+       REGION. */
+
     Is_True(BB_rid(bb) == first_rid, 
 	    ("region nesting botched at BB:%d", BB_id(bb)));
     next_bb = BB_next(tail);
+#ifdef TARG_STxP70
+    // Check if we are entering an hardware loop
+    while (   next_bb
+	   &&    ((BB_rid(next_bb) != first_rid)
+	      || (BBINFO_eh_rgn(tail) && BBINFO_eh_rgn(next_bb))
+	      || BB_HWLoop_head(next_bb))
+    ) {
+      if (BB_HWLoop_head(next_bb))
+	outer_HWLoop = next_bb;
+#else
     while (   next_bb
 	   &&    ((BB_rid(next_bb) != first_rid) 
 	      || (BBINFO_eh_rgn(tail) && BBINFO_eh_rgn(next_bb)))
     ) {
+#endif
       do {
+	// Check if we are leaving an hardware loop
+#ifdef TARG_STxP70
+	if (BB_HWLoop_tail(tail) == outer_HWLoop)
+	  outer_HWLoop = NULL;
+#endif
 	tail = next_bb;
 	BB_MAP_Set(chain_map, tail, chains);
 	next_bb = BB_next(tail);
+#ifdef TARG_STxP70
+	// Check if we are entering an hardware loop
+	if (outer_HWLoop == NULL) {
+	  if (BB_HWLoop_head(tail))
+	    outer_HWLoop = tail;
+	}
+      } while (next_bb &&
+	       ((BB_rid(tail) != first_rid) ||
+		(outer_HWLoop != NULL)));
+#else
       } while (next_bb && BB_rid(tail) != first_rid);
+#endif
     }
 
     /* Isolate the new chain.
@@ -5681,6 +5782,9 @@ Optimize_Cyclic_Chain(BBCHAIN *chain, BB_MAP chain_map)
    * the order of the chain does not affect performance, we choose
    * the current tail and don't perform a gratuitous rotation.
    */
+#ifdef TARG_ST
+  BB *outer_HWLoop = NULL;
+#endif
   best_gain = -FLT_MAX;
   for (bb = chain->tail; bb; bb = BB_prev(bb)) {
     float tail_gain;
@@ -5699,6 +5803,22 @@ Optimize_Cyclic_Chain(BBCHAIN *chain, BB_MAP chain_map)
      * would not be in the same region as originally.
      */
     if (BB_rid(bb) != outer_rid || BB_rid(next) != outer_rid) continue;
+
+#ifdef TARG_STxP70
+    // FdF 20060721: While in an hardware loop, none of the block can
+    // be head or tail.
+    if (!outer_HWLoop) {
+      if (BB_HWLoop_tail(bb))
+	outer_HWLoop = BB_HWLoop_tail(bb);
+    }
+    else
+      if (next == outer_HWLoop) {
+	outer_HWLoop = NULL;
+	continue;
+      }
+    if (outer_HWLoop)
+      continue;
+#endif
 
     /* Compute the gain in performance we would see by making this
      * BB be the tail of the chain. We model dynamic branch costs
@@ -5770,10 +5890,17 @@ Optimize_Cyclic_Chain(BBCHAIN *chain, BB_MAP chain_map)
     /* If we found a bigger gain, or the same gain but this is the
      * loophead of the outermost cycle, then this is best candidate so far.
      */
+#ifdef TARG_ST
+    if (   KnuthCompareGT(tail_gain, best_gain)
+	|| (   KnuthCompareEQ(tail_gain, best_gain)
+	    && BB_loop_head_bb(next) == next
+	    && BB_loop_head_bb(bb) == next)
+#else
     if (   (tail_gain > best_gain)
 	|| (   tail_gain == best_gain
 	    && BB_loop_head_bb(next) == next
 	    && BB_loop_head_bb(bb) == next)
+#endif
     ) {
       best_tail = bb;
       best_gain = tail_gain;
@@ -6169,7 +6296,11 @@ typedef struct clone_cand {
 /* Use to track the callee saved regs we estimate the PU will need.
  * Each register class is tracked seperately.
  */
+#ifdef TARG_ST
+static INT callee_saves[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 static INT callee_saves[ISA_REGISTER_CLASS_MAX + 1];
+#endif
 
 
 /* ====================================================================
@@ -6322,7 +6453,11 @@ Estimate_BB_Length(BB *bb)
   INT32 cost = BB_length(bb);
 
   if (!CG_localize_tns && (BB_exit(bb) || BB_entry(bb))) {
+#ifdef TARG_ST
+    INT callees_needed[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
     INT callees_needed[ISA_REGISTER_CLASS_MAX + 1];
+#endif
     OP *op;
     BCOPY(callee_saves, callees_needed, sizeof(callee_saves));
     FOR_ALL_BB_OPs(bb, op) {
@@ -6367,7 +6502,11 @@ Create_Sched_Est(BB *bb, MEM_POOL *pool)
   se = CG_SCHED_EST_Create(bb, pool, SCHED_EST_FOR_CLONING);
 
   if (!CG_localize_tns && (BB_entry(bb) || BB_exit(bb))) {
+#ifdef TARG_ST
+    INT callees_needed[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
     INT callees_needed[ISA_REGISTER_CLASS_MAX + 1];
+#endif
     OP *op;
     BCOPY(callee_saves, callees_needed, sizeof(callee_saves));
     FOR_ALL_BB_OPs(bb, op) {

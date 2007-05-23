@@ -44,7 +44,7 @@ struct optab GTY(())
   struct optab_handlers {
     enum insn_code insn_code;
     rtx libfunc;
-  } handlers [NUM_MACHINE_MODES];
+  } handlers [MAX_LIMIT_MACHINE_MODE];
 };
 typedef struct optab * optab;
 
@@ -217,18 +217,18 @@ extern GTY(()) optab optab_table[OTI_MAX];
 #define push_optab (optab_table[OTI_push])
 
 /* Tables of patterns for extending one integer mode to another.  */
-extern enum insn_code extendtab[MAX_MACHINE_MODE][MAX_MACHINE_MODE][2];
+extern enum insn_code extendtab[MAX_LIMIT_MACHINE_MODE][MAX_LIMIT_MACHINE_MODE][2];
 
 /* Tables of patterns for converting between fixed and floating point.  */
-extern enum insn_code fixtab[NUM_MACHINE_MODES][NUM_MACHINE_MODES][2];
-extern enum insn_code fixtrunctab[NUM_MACHINE_MODES][NUM_MACHINE_MODES][2];
-extern enum insn_code floattab[NUM_MACHINE_MODES][NUM_MACHINE_MODES][2];
+extern enum insn_code fixtab[MAX_LIMIT_MACHINE_MODE][MAX_LIMIT_MACHINE_MODE][2];
+extern enum insn_code fixtrunctab[MAX_LIMIT_MACHINE_MODE][MAX_LIMIT_MACHINE_MODE][2];
+extern enum insn_code floattab[MAX_LIMIT_MACHINE_MODE][MAX_LIMIT_MACHINE_MODE][2];
 
 /* These arrays record the insn_code of insns that may be needed to
    perform input and output reloads of special objects.  They provide a
    place to pass a scratch register.  */
-extern enum insn_code reload_in_optab[NUM_MACHINE_MODES];
-extern enum insn_code reload_out_optab[NUM_MACHINE_MODES];
+extern enum insn_code reload_in_optab[MAX_LIMIT_MACHINE_MODE];
+extern enum insn_code reload_out_optab[MAX_LIMIT_MACHINE_MODE];
 
 /* Contains the optab used for each rtx code.  */
 extern optab code_to_optab[NUM_RTX_CODE + 1];
@@ -251,36 +251,36 @@ extern enum insn_code setcc_gen_code[NUM_RTX_CODE];
 /* Indexed by the machine mode, gives the insn code to make a conditional
    move insn.  */
 
-extern enum insn_code movcc_gen_code[NUM_MACHINE_MODES];
+extern enum insn_code movcc_gen_code[MAX_LIMIT_MACHINE_MODE];
 #endif
 
 /* This array records the insn_code of insns to perform block moves.  */
-extern enum insn_code movstr_optab[NUM_MACHINE_MODES];
+extern enum insn_code movstr_optab[MAX_LIMIT_MACHINE_MODE];
 
 /* This array records the insn_code of insns to perform block clears.  */
-extern enum insn_code clrstr_optab[NUM_MACHINE_MODES];
+extern enum insn_code clrstr_optab[MAX_LIMIT_MACHINE_MODE];
 
 /* Define functions given in optabs.c.  */
 
 /* Expand a binary operation given optab and rtx operands.  */
-extern rtx expand_binop PARAMS ((enum machine_mode, optab, rtx, rtx, rtx,
+extern rtx expand_binop PARAMS ((machine_mode_t, optab, rtx, rtx, rtx,
 				 int, enum optab_methods));
 
 /* Expand a binary operation with both signed and unsigned forms.  */
-extern rtx sign_expand_binop PARAMS ((enum machine_mode, optab, optab, rtx,
+extern rtx sign_expand_binop PARAMS ((machine_mode_t, optab, optab, rtx,
 				      rtx, rtx, int, enum optab_methods));
 
 /* Generate code to perform an operation on two operands with two results.  */
 extern int expand_twoval_binop PARAMS ((optab, rtx, rtx, rtx, rtx, int));
 
 /* Expand a unary arithmetic operation given optab rtx operand.  */
-extern rtx expand_unop PARAMS ((enum machine_mode, optab, rtx, rtx, int));
+extern rtx expand_unop PARAMS ((machine_mode_t, optab, rtx, rtx, int));
 
 /* Expand the absolute value operation.  */
-extern rtx expand_abs PARAMS ((enum machine_mode, rtx, rtx, int, int));
+extern rtx expand_abs PARAMS ((machine_mode_t, rtx, rtx, int, int));
 
 /* Expand the complex absolute value operation.  */
-extern rtx expand_complex_abs PARAMS ((enum machine_mode, rtx, rtx, int));
+extern rtx expand_complex_abs PARAMS ((machine_mode_t, rtx, rtx, int));
 
 /* Generate an instruction with a given INSN_CODE with an output and
    an input.  */
@@ -298,7 +298,7 @@ extern void emit_0_to_1_insn PARAMS ((rtx));
 
 /* Emit one rtl insn to compare two rtx's.  */
 extern void emit_cmp_insn PARAMS ((rtx, rtx, enum rtx_code, rtx,
-				   enum machine_mode, int));
+				   machine_mode_t, int));
 
 /* The various uses that a comparison can have; used by can_compare_p:
    jumps, conditional moves, store flag operations.  */
@@ -311,20 +311,20 @@ enum can_compare_purpose
 
 /* Nonzero if a compare of mode MODE can be done straightforwardly
    (without splitting it into pieces).  */
-extern int can_compare_p PARAMS ((enum rtx_code, enum machine_mode,
+extern int can_compare_p PARAMS ((enum rtx_code, machine_mode_t,
 				  enum can_compare_purpose));
 
-extern rtx prepare_operand PARAMS ((int, rtx, int, enum machine_mode,
-				    enum machine_mode, int));
+extern rtx prepare_operand PARAMS ((int, rtx, int, machine_mode_t,
+				    machine_mode_t, int));
 
 /* Return the INSN_CODE to use for an extend operation.  */
-extern enum insn_code can_extend_p PARAMS ((enum machine_mode,
-					    enum machine_mode, int));
+extern enum insn_code can_extend_p PARAMS ((machine_mode_t,
+					    machine_mode_t, int));
 
 /* Generate the body of an insn to extend Y (with mode MFROM)
    into X (with mode MTO).  Do zero-extension if UNSIGNEDP is nonzero.  */
-extern rtx gen_extend_insn PARAMS ((rtx, rtx, enum machine_mode,
-				    enum machine_mode, int));
+extern rtx gen_extend_insn PARAMS ((rtx, rtx, machine_mode_t,
+				    machine_mode_t, int));
 
 /* Initialize the tables that control conversion between fixed and
    floating values.  */

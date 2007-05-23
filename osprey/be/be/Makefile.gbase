@@ -253,6 +253,8 @@ COMMON_COM_CXX_SRCS = \
   opcode_core.cxx	\
   wutil.cxx		\
   DaVinci.cxx           \
+  loader.cxx      \
+  lai_loader.cxx      \
 
 COMMON_COM_PCH_CXX_SRCS = \
   const.cxx		\
@@ -325,10 +327,13 @@ COMMON_UTIL_SRCS =	\
   stacktrace.c		\
   elfr.c
 
+COMMON_COM_SRC= 
+
 BE_C_SRCS = \
   $(COMMON_TARG_INFO_ACCESS_SRCS)\
   $(COMMON_UTIL_SRCS)           \
-  $(COMMON_COM_TARG_SRCS)
+  $(COMMON_COM_TARG_SRCS)       \
+  $(COMMON_COM_SRC)
 
 
 BE_C_OBJS =  $(BE_C_SRCS:.c=.o)
@@ -393,7 +398,8 @@ GENERATED_FILES = \
 ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
 BE_COM_PCH_CXX_SRCS += rt_lower_wn.cxx \
 		       wn_lower_mul.cxx \
-		       wn_lower_util.cxx
+		       wn_lower_util.cxx \
+                       mul_cost_model.cxx
 endif
 
 BE_COM_CXX_SRCS += $(BE_COM_PCH_CXX_SRCS)

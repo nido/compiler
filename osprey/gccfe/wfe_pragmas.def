@@ -101,3 +101,12 @@ DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPTRIP, "looptrip", 1, WN_PRAGMA_LOOPTRIP, 1, "(I)"
 
 DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPSEQ, "loopseq", 1, WN_PRAGMA_LOOPSEQ, 1, "A", "pragma loopseq READ|WRITE")
 
+DECL_WFE_PRAGMA(WFE_PRAGMA_HWLOOP, "hwloop", 1, WN_PRAGMA_HWLOOP, 1, "AI*", "pragma hwloop none|forcehw [-|0|1] |forcejrgtudec")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMINITERCOUNT, "loopminitercount", 1, WN_PRAGMA_LOOPMINITERCOUNT, 1, "(I)", "pragma loopmin[itercount] (n) - where n >=0")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMIN, "loopmin", 1, WN_PRAGMA_LOOPMINITERCOUNT, 1, "(I)", "pragma loopmin[itercount] (n) - where n >=0")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMAXITERCOUNT, "loopmaxitercount", 1, WN_PRAGMA_LOOPMAXITERCOUNT, 1, "(I)", "pragma loopmax[itercount] (n) - where n >=0")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMAX, "loopmax", 1, WN_PRAGMA_LOOPMAXITERCOUNT, 1, "(I)", "pragma loopmax[itercount] (n) - where n >=0")

@@ -496,6 +496,12 @@ COND_DO_INFO COND_Do_Info(WN* wn_do, MEM_POOL* pool)
       info.Reset_Bounds_To(le, eq, c, &kill_array);
 
       DO_LOOP_INFO* dli = Get_Do_Loop_Info(wn_do);
+#ifdef TARG_ST
+      if (dli->Min_Iterations > 0) {
+	rval = COND_DO_AT_LEAST_ONCE;
+	goto return_point;
+      }
+#endif
       if (dli->LB->Too_Messy || dli->UB->Too_Messy)
         rval = COND_DO_MAYBE;
       else {

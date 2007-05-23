@@ -3082,8 +3082,8 @@ unsigned int
 subreg_lsb (x)
      rtx x;
 {
-  enum machine_mode inner_mode = GET_MODE (SUBREG_REG (x));
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t inner_mode = GET_MODE (SUBREG_REG (x));
+  machine_mode_t mode = GET_MODE (x);
   unsigned int bitpos;
   unsigned int byte;
   unsigned int word;
@@ -3127,9 +3127,9 @@ subreg_lsb (x)
 unsigned int
 subreg_regno_offset (xregno, xmode, offset, ymode)
      unsigned int xregno;
-     enum machine_mode xmode;
+     machine_mode_t xmode;
      unsigned int offset;
-     enum machine_mode ymode;
+     machine_mode_t ymode;
 {
   int nregs_xmode, nregs_ymode;
   int mode_multiple, nregs_multiple;
@@ -3173,9 +3173,9 @@ subreg_regno_offset (xregno, xmode, offset, ymode)
 bool
 subreg_offset_representable_p (xregno, xmode, offset, ymode)
      unsigned int xregno;
-     enum machine_mode xmode;
+     machine_mode_t xmode;
      unsigned int offset;
-     enum machine_mode ymode;
+     machine_mode_t ymode;
 {
   int nregs_xmode, nregs_ymode;
   int mode_multiple, nregs_multiple;

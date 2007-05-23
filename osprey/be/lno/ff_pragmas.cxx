@@ -386,6 +386,27 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       else
 	Get_Do_Loop_Info(next_non_prag_stid)->Est_Num_Iterations = prag_arg1;
       break;
+
+     case WN_PRAGMA_LOOPMINITERCOUNT:
+      remove = TRUE;
+      if (next_non_prag_stid == NULL ||
+          WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
+	remove = FALSE;
+	break;
+      }
+      Get_Do_Loop_Info(next_non_prag_stid)->Min_Iterations = prag_arg1;
+      break;
+
+     case WN_PRAGMA_LOOPMAXITERCOUNT:
+      remove = TRUE;
+      if (next_non_prag_stid == NULL ||
+          WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
+	remove = FALSE;
+	break;
+      }
+      Get_Do_Loop_Info(next_non_prag_stid)->Max_Iterations = prag_arg1;
+      break;
+
 #endif
       
      case WN_PRAGMA_AGGRESSIVE_INNER_LOOP_FISSION:
@@ -731,6 +752,18 @@ extern void  LNO_Insert_Pragmas(WN* wn)
     if (dli->Pragma_Modulus > 1) {
       WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMOD, (ST_IDX) NULL,
 				   dli->Pragma_Modulus, dli->Pragma_Residue);
+      WN_set_pragma_compiler_generated(pragma);
+      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+    }
+    if (dli->Min_Iterations >= 0) {
+      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMINITERCOUNT, (ST_IDX) NULL,
+				   dli->Min_Iterations, 0);
+      WN_set_pragma_compiler_generated(pragma);
+      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+    }
+    if (dli->Max_Iterations >= 0) {
+      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMAXITERCOUNT, (ST_IDX) NULL,
+				   dli->Max_Iterations, 0);
       WN_set_pragma_compiler_generated(pragma);
       LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
     }

@@ -508,6 +508,22 @@ Exp_Return (
 }
 
 /* ====================================================================
+ *   Exp_Return_Interrupt
+ * ====================================================================
+ */
+void 
+Exp_Return_Interrupt (
+  TN *return_address, 
+  OPS *ops
+)
+{
+  /* Code generation for interrupt function is not
+   * available on ST200. */
+  FmtAssert(FALSE, ("Not implemented: %s", __FUNCTION__));
+  return;
+}
+
+/* ====================================================================
  *   Exp_Call
  *
  *   There are three types of calls:

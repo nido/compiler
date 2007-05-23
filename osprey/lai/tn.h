@@ -656,4 +656,12 @@ extern TN* Gen_Predicate_TN(void);
 extern BOOL TN_Use_Base_ST_For_Reloc (INT reloc, ST *st);
 extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
 
+#ifdef TARG_ST
+//TB: Return the name of a register, given a tn and a subclass Useful
+//for register whose name depends on the register subclass. For
+//instance on the VX extension register 6 is V6 or D3 dependin on the
+//subclass
+extern const char *REGISTER_extended_name(TN* tn,
+					  ISA_REGISTER_SUBCLASS sc) ;
+#endif
 #endif /* tn_INCLUDED */

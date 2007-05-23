@@ -205,8 +205,15 @@ inline UINT64
 BITWISE_DCE::Bits_in_type(MTYPE dt)
 {
   Is_True(dt != MTYPE_UNKNOWN, ("BITWISE_DCE::Bits_in_type: type is unknown"));
+#ifdef TARG_ST
+  //[TB] For multiple result mtype treat as VOID
+  if (dt == MTYPE_V || dt == MTYPE_M ||
+      MTYPE_is_composed(dt))
+    return UINT64_MAX;
+#else
   if (dt == MTYPE_V || dt == MTYPE_M)
     return UINT64_MAX;
+#endif
   UINT64 vsize = MTYPE_size_min(dt);
   return Bitmask_of_size(vsize);
 }
@@ -659,6 +666,13 @@ BITWISE_DCE::Mark_tree_bits_live(CODEREP *cr, UINT64 live_bits,
 	}
       }
       return;
+
+#ifdef TARG_ST
+    case OPR_SUBPART:
+      if(visit_all)
+	  Mark_tree_bits_live(cr->Opnd(0), UINT64_MAX, stmt_visit);
+      return;
+#endif
 
     default:
       Is_True(FALSE,

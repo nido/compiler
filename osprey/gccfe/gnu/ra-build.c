@@ -84,7 +84,7 @@ static int copy_insn_p PARAMS ((rtx, rtx *, rtx *));
 static void remember_move PARAMS ((rtx));
 static void handle_asm_insn PARAMS ((struct df *, rtx));
 static void prune_hardregs_for_mode PARAMS ((HARD_REG_SET *,
-					     enum machine_mode));
+					     machine_mode_t));
 static void init_one_web_common PARAMS ((struct web *, rtx));
 static void init_one_web PARAMS ((struct web *, rtx));
 static void reinit_one_web PARAMS ((struct web *, rtx));
@@ -1234,7 +1234,7 @@ connect_rmw_web_parts (df)
 static void
 prune_hardregs_for_mode (s, mode)
      HARD_REG_SET *s;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   AND_HARD_REG_SET (*s, hardregs_for_mode[(int) mode]);
 }
@@ -1420,7 +1420,7 @@ add_subweb_2 (web, size_word)
      _their_ modeclasses as base for a search for ourself.  */
   rtx ref_rtx = (web->subreg_next ? web->subreg_next : web)->orig_x;
   unsigned int size = BYTE_LENGTH (size_word) * BITS_PER_UNIT;
-  enum machine_mode mode;
+  machine_mode_t mode;
   mode = mode_for_size (size, GET_MODE_CLASS (GET_MODE (ref_rtx)), 0);
   if (mode == BLKmode)
     mode = mode_for_size (size, MODE_INT, 0);
@@ -2858,7 +2858,7 @@ handle_asm_insn (df, insn)
      rtx insn;
 {
   const char *constraints[MAX_RECOG_OPERANDS];
-  enum machine_mode operand_mode[MAX_RECOG_OPERANDS];
+  machine_mode_t operand_mode[MAX_RECOG_OPERANDS];
   int i, noperands, in_output;
   HARD_REG_SET clobbered, allowed, conflict;
   rtx pat;

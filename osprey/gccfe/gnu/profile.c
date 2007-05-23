@@ -1314,7 +1314,7 @@ static rtx
 gen_edge_profiler (edgeno)
      int edgeno;
 {
-  enum machine_mode mode = mode_for_size (GCOV_TYPE_SIZE, MODE_INT, 0);
+  machine_mode_t mode = mode_for_size (GCOV_TYPE_SIZE, MODE_INT, 0);
   rtx mem_ref, tmp;
   rtx sequence;
 
@@ -1348,7 +1348,7 @@ output_func_start_profiler ()
   char buf[20];
   const char *cfnname;
   rtx table_address;
-  enum machine_mode mode = mode_for_size (GCOV_TYPE_SIZE, MODE_INT, 0);
+  machine_mode_t mode = mode_for_size (GCOV_TYPE_SIZE, MODE_INT, 0);
   int save_flag_inline_functions = flag_inline_functions;
 
   /* It's either already been output, or we don't need it because we're

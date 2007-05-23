@@ -20,6 +20,8 @@ along with GCC; see the file COPYING.  If not, write to the Free
 Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.  */
 
+#ifndef OUTPUT_H_included
+#define OUTPUT_H_included
 /* Compute branch alignments based on frequency information in the CFG.  */
 extern void compute_alignments  PARAMS ((void));
 
@@ -223,7 +225,7 @@ extern void mergeable_string_section	PARAMS ((tree, unsigned HOST_WIDE_INT,
 						 unsigned int));
 
 /* Tell assembler to switch to the section for constant merging.  */
-extern void mergeable_constant_section	PARAMS ((enum machine_mode,
+extern void mergeable_constant_section	PARAMS ((machine_mode_t,
 						 unsigned HOST_WIDE_INT,
 						 unsigned int));
 
@@ -340,7 +342,7 @@ extern bool assemble_integer		PARAMS ((rtx, unsigned, unsigned, int));
 #ifdef REAL_VALUE_TYPE_SIZE
 /* Assemble the floating-point constant D into an object of size MODE.  */
 extern void assemble_real		PARAMS ((REAL_VALUE_TYPE,
-					         enum machine_mode,
+					         machine_mode_t,
 						 unsigned));
 #endif
 
@@ -525,9 +527,9 @@ extern void default_elf_select_section_1 PARAMS ((tree, int,
 						  unsigned HOST_WIDE_INT, int));
 extern void default_unique_section PARAMS ((tree, int));
 extern void default_unique_section_1 PARAMS ((tree, int, int));
-extern void default_select_rtx_section PARAMS ((enum machine_mode, rtx,
+extern void default_select_rtx_section PARAMS ((machine_mode_t, rtx,
 						unsigned HOST_WIDE_INT));
-extern void default_elf_select_rtx_section PARAMS ((enum machine_mode, rtx,
+extern void default_elf_select_rtx_section PARAMS ((machine_mode_t, rtx,
 						    unsigned HOST_WIDE_INT));
 extern const char *default_strip_name_encoding PARAMS ((const char *));
 extern bool default_binds_local_p PARAMS ((tree));
@@ -538,3 +540,12 @@ extern void default_globalize_label PARAMS ((FILE *, const char *));
 extern void assemble_vtable_entry PARAMS ((struct rtx_def *, HOST_WIDE_INT));
 extern void assemble_vtable_inherit PARAMS ((struct rtx_def *,
 					     struct rtx_def *));
+#ifdef TARG_ST
+#include "gcc_config.h"
+extern int Additional_Register_Names_Size;
+extern gcc_register_map_t *Additional_Register_Names;
+extern char *Call_Used_Registers;
+extern char *Fixed_Registers;
+extern int Number_Of_Registers;
+#endif
+#endif //OUTPUT_H_included

@@ -165,7 +165,7 @@ INT TI_ASM_Print_Inst(
   INT i;
   INT st;
   INT comp;
-  const char *arg[ISA_PRINT_COMP_MAX];
+  const char *arg[(ISA_PRINT_COMP_MAX<13)?13:ISA_PRINT_COMP_MAX];
   const ISA_PRINT_INFO *pinfo = ISA_PRINT_Info(topcode);
 
   if (!pinfo) {
@@ -182,37 +182,40 @@ INT TI_ASM_Print_Inst(
     case ISA_PRINT_COMP_name:
       arg[i] = ISA_PRINT_AsmName(topcode);
       break;
-
-    case ISA_PRINT_COMP_opnd:
-    case ISA_PRINT_COMP_opnd+1:
-    case ISA_PRINT_COMP_opnd+2:
-    case ISA_PRINT_COMP_opnd+3:
-    case ISA_PRINT_COMP_opnd+4:
-    case ISA_PRINT_COMP_opnd+5:
-      arg[i] = opnd[comp - ISA_PRINT_COMP_opnd];
-      break;
-
-    case ISA_PRINT_COMP_result:
-    case ISA_PRINT_COMP_result+1:
-      arg[i] = result[comp - ISA_PRINT_COMP_result];
-      break;
-
+      
     case ISA_PRINT_COMP_end:
       break;
 
     default:
-      #pragma mips_frequency_hint NEVER
-      sprintf(TI_errmsg, "Unhandled listing component %d for %s",
-			 comp, TOP_Name(topcode));
-      return TI_RC_ERROR;
-      /*NOTREACHED*/
+      if ((comp >= ISA_PRINT_COMP_opnd) &&
+	  (comp <= ISA_PRINT_COMP_opnd_MAX)) {
+	arg[i] = opnd[comp - ISA_PRINT_COMP_opnd];
+      }
+      else if ((comp >= ISA_PRINT_COMP_result) &&
+	       (comp <= ISA_PRINT_COMP_result_MAX)) {
+	arg[i] = result[comp - ISA_PRINT_COMP_result];
+      }
+      else {
+        #pragma mips_frequency_hint NEVER
+        sprintf(TI_errmsg, "Unhandled listing component %d for %s",
+			   comp, TOP_Name(topcode));
+	return TI_RC_ERROR;
+	/*NOTREACHED*/
+      }
     }
   } while (++i, comp != ISA_PRINT_COMP_end);
 
+  if (i > 12) {
+      sprintf(TI_errmsg, "Too much argument parameter for %s",
+	      TOP_Name(topcode));
+      return TI_RC_ERROR;
+  }
+
   st = fprintf (f, ISA_PRINT_INFO_Format(pinfo),
-		     arg[0], arg[1], arg[2], arg[3], 
-		     arg[4], arg[5], arg[6], arg[7],
-		     arg[8]);
+		     arg[0],  arg[1],  arg[2],  arg[3], 
+		     arg[4],  arg[5],  arg[6],  arg[7],
+		     arg[8],  arg[9],  arg[10], arg[11],
+		     arg[12]);
   if (st == -1) {
 	sprintf(TI_errmsg, "fprintf failed:  not enough disk space");
 	return TI_RC_ERROR;

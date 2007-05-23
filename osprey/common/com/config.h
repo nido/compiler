@@ -716,6 +716,9 @@ BE_EXPORTED extern BOOL  BE_EXPORTED Run_w2fc_early; /* run whirl2f after LNO pa
 BE_EXPORTED extern BOOL  BE_EXPORTED Run_prompf;/* create prompf analysis file */
 BE_EXPORTED extern BOOL  BE_EXPORTED Run_purple;/* run purple instrumenter */
 BE_EXPORTED extern BOOL  BE_EXPORTED Run_ipl;   /* run summary phase of IPA */
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL  BE_EXPORTED Run_extension_check_only;   /* run extension compatibility check only */
+#endif
 BE_EXPORTED extern char * LNO_Path;		    /* path to lno.so */
 BE_EXPORTED extern char * WOPT_Path;		    /* path to wopt.so */
 BE_EXPORTED extern char * CG_Path; /* path to cg.so */
@@ -1051,11 +1054,11 @@ BE_EXPORTED extern BOOL Only_32_Bit_Ops;
 BE_EXPORTED extern BOOL Emulate_FloatingPoint_Ops;
 BE_EXPORTED extern BOOL Emulate_FloatingPoint_Ops_Set;
 /* Does target support single floating point */
-BE_EXPORTED extern BOOL Emulate_Single_Float_Ops;
-BE_EXPORTED extern BOOL Emulate_Single_Float_Ops_Set;
+BE_EXPORTED extern BOOL Emulate_Single_Float_Type;
+BE_EXPORTED extern BOOL Emulate_Single_Float_Type_Set;
 /* Does target support double floating point */
-BE_EXPORTED extern BOOL Emulate_Double_Float_Ops;
-BE_EXPORTED extern BOOL Emulate_Double_Float_Ops_Set;
+BE_EXPORTED extern BOOL Emulate_Double_Float_Type;
+BE_EXPORTED extern BOOL Emulate_Double_Float_Type_Set;
 /* Does target support integer division and modulus operations */
 BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops;
 BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops_Set;
@@ -1065,6 +1068,9 @@ BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops_Set;
 /* Enable expansion of front-end builtins. */
 BE_EXPORTED extern BOOL Enable_Expand_Builtin;
 BE_EXPORTED extern BOOL Enable_Expand_Builtin_Set;
+/* TB: extension is present? */
+BE_EXPORTED extern char *Extension_Names;
+BE_EXPORTED extern BOOL Extension_Is_Present ;
 #endif
 
 BE_EXPORTED extern INT32 Align_Instructions;	/* Align frequent blocks and funcs */
@@ -1108,7 +1114,10 @@ BE_EXPORTED extern void Configure_Source_Target ( char *filename );
 /* return FALSE if abi mismatch */
 BE_EXPORTED extern BOOL Set_Target_ABI (BOOL is_64bit, INT isa);
 
-
+#ifdef FRONT_END
+//TB: Targinfo ABI initialization:for GCC
+  extern void GCC_Configure_ABI (void);
+#endif
 #ifdef __cplusplus
 }
 #endif

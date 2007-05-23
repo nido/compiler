@@ -29,7 +29,7 @@
 
   http: 
 */ 
-
+ 
 // AUTOMATICALLY GENERATED FROM MDS DATA BASE !!! 
 
 //  Generate ISA properties information 
@@ -46,6 +46,7 @@ main()
     Xor, 
     access_reg_bank, 
     add, 
+    automod, 
     atomicseq, 
     barrier, 
     branch_predict, 
@@ -99,7 +100,8 @@ main()
     var_opnds, 
     widemove, 
     xfer, 
-    zext; 
+    xmove, 
+    zext;
 
   ISA_Properties_Begin ("st200"); 
 
@@ -151,6 +153,11 @@ main()
   Instruction_Group (atomicseq, 
 		 TOP_ldwl, 
 		 TOP_stwl, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  automod = ISA_Property_Create ("automod"); 
+  Instruction_Group (automod, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 

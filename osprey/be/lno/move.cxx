@@ -306,9 +306,15 @@ extern WN* Hoist_Place(WN* wn_stat,
     {
       if (dg == NULL || dg->Get_Vertex(wn_stat))
         return NULL; 
+#ifdef TARG_STT
+      // [CG] Use more complete interface.
+      if (Contains_Dedicated_Preg(wn_stat))
+	return NULL; 
+#else
       if (ST_class(WN_st(wn_stat)) == CLASS_PREG
 	  && Preg_Is_Dedicated(WN_offset(wn_stat)))
 	return NULL; 
+#endif
       wn_return = Hoist_Place(WN_kid0(wn_stat), du);
       if (wn_return == NULL) 
         return NULL; 
@@ -379,10 +385,16 @@ extern WN* Hoist_Place(WN* wn_stat,
       const DU_NODE* node = NULL;
       for (node = iter.First(); !iter.Is_Empty(); node = iter.Next()) {
 	WN* wn_use = node->Wn();
+#ifdef TARG_ST
+	// [CG] Use more complete interface.
+	if (Contains_Dedicated_Preg(wn_use))
+	  return wn_stat; 
+#else
 	if (OPCODE_has_sym(WN_opcode(wn_use)) 
 	    && ST_class(WN_st(wn_use)) == CLASS_PREG 
 	    && Preg_Is_Dedicated(WN_offset(wn_use)))
 	  return wn_stat; 
+#endif
       } 
       WN* wn_return = Initial_Hoist_Place(wn_stat); 
       for (INT i = 0; i < WN_kid_count(wn_stat); i++) {       
@@ -871,14 +883,24 @@ static BOOL Sinkable_Into_Loop(WN* wn_stat,
   case OPR_LDID: 
     return !Maybe_Assigned(wn_test, WN_next(wn_stat), wn_sibling); 
   case OPR_STID:
+#ifdef TARG_ST
+    // [CG] Use more complete interface.
+    if (Contains_Dedicated_Preg(wn_test)) {
+      return FALSE;
+    }
+#endif
     if (ST_class(WN_st(wn_test)) != CLASS_PREG) {
       WN* wn_enclosing = Enclosing_Loop(wn_stat); 
       for (WN* wn = wn_sink_loop; wn != wn_enclosing; wn = LWN_Get_Parent(wn))
 	if (WN_opcode(wn) == OPC_DO_LOOP && !Trip_One_Loop(wn))
 	  return FALSE; 
-    } else if (Preg_Is_Dedicated(WN_offset(wn_test))) { 
+    }
+#ifndef TARG_ST
+    // [CG] already skiped,see above.
+    else if (Preg_Is_Dedicated(WN_offset(wn_test))) { 
       return FALSE; 
     } 
+#endif
     if (Maybe_Assigned(wn_test, WN_next(wn_stat), wn_sibling))
       return FALSE;
     if (!Loop_Dominates_Uses(wn_stat, wn_sink_loop, du))

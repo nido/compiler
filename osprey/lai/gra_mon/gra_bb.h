@@ -101,17 +101,37 @@ friend class GRA_BB_LOCAL_LRANGE_ITER;
 private:
   BB*           bb;
   GRA_REGION*   region;
+#ifdef TARG_ST
+  LRANGE*       local_lranges[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LRANGE*       local_lranges[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // Heads of internally linked (through _BB_Local_List) lists of local
     // LRANGEs by ISA_REGISTER_CLASS.
+#ifdef TARG_ST
+  LUNIT*        lunits[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LUNIT*        lunits[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // Heads of internally linked (through _BB_List) list of LUNITs by
     // ISA_REGISTER_CLASS.
+#ifdef TARG_ST
+  INTERFERE     global_lranges[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INTERFERE     global_lranges[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // All the complement LRANGEs live in the block by register class.
+#ifdef TARG_ST
+  REGISTER_SET  registers_used[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   REGISTER_SET  registers_used[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // the set of registers used in this <gbb> for <rc>.
+#ifdef TARG_ST
+  REGISTER_SET  glue_registers_used[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   REGISTER_SET  glue_registers_used[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // the set of registers used in this <gbb> and <rc> only in glue copy 
     // references.
   GRA_BB*       region_next;
@@ -133,11 +153,23 @@ private:
   INT		split_succ_border_count; // Count of the successor blocks that 
 					 // are on the border of the split.
   INT		split_lunit_count;
+#ifdef TARG_ST
+  LRANGE_SET*   spill_above[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LRANGE_SET*   spill_above[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // set of live ranges spilled at top of <gbb> for <rc>
+#ifdef TARG_ST
+  LRANGE_SET*   restore_below[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LRANGE_SET*   restore_below[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // set of live ranges restored at bottom of <gbb> for <rc>
+#ifdef TARG_ST
+  LRANGE_LIST*  unpreferenced_wired_lranges[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LRANGE_LIST*  unpreferenced_wired_lranges[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // Keeps track of wired local lranges that are not preferenced
     // to anything.  These are kept out of the normal list of local
     // live ranges so that they do not appear in the conflict graph.
@@ -165,7 +197,11 @@ private:
     // block are those that are both live into the block and which
     // have a reaching definition at the start of the block.
     // Similarly, for the exit of the block.
+#ifdef TARG_ST
+  mINT8         local_lrange_count[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   mINT8         local_lrange_count[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // the number of local LRANGEs for this <gbb> and <rc>.
   GRA_LOOP*	loop;
   UINT8		flags;

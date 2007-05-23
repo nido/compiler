@@ -628,6 +628,11 @@ ERROR_DESC EDESC_Globals[] = {
   { EC_P_Heur_No_RA,	EM_User | ES_WARNING,	RAG_EN_NONE,
     "No register allocation limit given for priority heuristic '%s'",
     1, ET_STRING, 0, 0, 0, 0},
+#ifdef TARG_ST
+  { EC_Ext_Expand, EM_User | ES_ERRABORT,	RAG_EN_NONE,
+    "Error while Expanding Extension code: %s",
+    1, ET_STRING,0,0,0,0 },
+#endif
 
 
 /* ====================================================================
@@ -925,6 +930,11 @@ ERROR_DESC EDESC_Globals[] = {
   { EC_No_Lai,		EM_User | ES_ERRABORT,	RAG_EN_NONE,
     "LAI file (%s) does not exist",
     1, ET_STRING, 0,0,0,0,0 },
+#ifdef TARG_ST
+  { EC_Lib_Ext_Load, EM_User | ES_ERRABORT,	RAG_EN_NONE,
+    "Error while loading extension library '%s': %s",
+    2, ET_STRING, ET_STRING,0,0,0,0 },
+#endif
 
   /* All error descriptor lists must end with a -1 error code: */
   { -1,	0, RAG_EN_NONE, "", 0, 0,0,0,0,0,0 }

@@ -3,6 +3,7 @@
 #include "top_properties.h"
 #include "variants.h"
 #include "op.h"
+#include "tracing.h"
 
 /*
  * Definition for the largest host int type.
@@ -25,9 +26,11 @@ TN_Value(const TN *tn) {
     DevAssert(0,("Unexpected"));
   } else if (TN_has_value(tn)) {
     return TN_value(tn);
+  } else if (TN_is_symbol(tn)) {
+    return TN_offset(tn);
   } else {
     DevAssert(0,("Unexpected"));
-  }    
+  }
 }
 static intm_t opnd_value(opnd_t opnd) { return TN_Value(opnd); }
 static int opc_opnd_signed(opc_t opc, int opnd) { return TOP_opnd_use_signed(opc, opnd); }
@@ -64,11 +67,19 @@ static intm_t sext(intm_t value, int bits) {
 /* Operand fetch. */
 static intm_t fetch(opc_t opc, const opnd_t *opnds, int opnd) {
   intm_t value = opnd_value(opnds[opnd]);
-  if (opc_opnd_signed(opc, opnd))
+  if (opc_opnd_signed(opc, opnd)) {
     value = sext(value, opc_opnd_bits(opc, opnd));
-  else
+  }
+  else {
     value = zext(value, opc_opnd_bits(opc, opnd));
+  }
   return value;
+}
+
+/* max_representable_value */
+static uintm_t 
+max_representable_value(opc_t opc, int opnd) {
+  return (1 << opc_opnd_bits(opc, opnd)) - 1;
 }
 
 /*
@@ -179,7 +190,7 @@ intm_t TOP_fold_shl(opc_t opc, const opnd_t *opnds) {
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
   intm_t op1 = fetch(opc, opnds, opnd1);
   intm_t op2 = fetch(opc, opnds, opnd2);
-  if (op2 < opc_opnd_bits(opc, opnd1))
+  if (op2 <= max_representable_value(opc,opnd2))
     result = op1 << op2;
   else
     result = 0;
@@ -192,7 +203,7 @@ intm_t TOP_fold_shr(opc_t opc, const opnd_t *opnds) {
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
   intm_t op1 = fetch(opc, opnds, opnd1);
   intm_t op2 = fetch(opc, opnds, opnd2);
-  if (op2 < opc_opnd_bits(opc, opnd1))
+  if (op2 <= max_representable_value(opc,opnd2))
     result = op1 >> op2;
   else
     result = op1 < 0 ? -1: 0;
@@ -205,10 +216,12 @@ intm_t TOP_fold_shru(opc_t opc, const opnd_t *opnds) {
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
   intm_t op1 = fetch(opc, opnds, opnd1);
   intm_t op2 = fetch(opc, opnds, opnd2);
-  if (op2 < opc_opnd_bits(opc, opnd1))
+  if (op2 <= max_representable_value(opc,opnd2)) {
     result = (uintm_t)op1 >> op2;
-  else
+  }
+  else {
     result = op1 < 0 ? -1: 0;
+  }
   return result;
 }
 

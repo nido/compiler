@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <stamp.h>
 #include "string_utils.h"
+#include "file_utils.h"
 #include "options.h"
 #include "option_seen.h"
 #include "option_names.h"
@@ -154,7 +155,7 @@ set_defaults (void)
 
 #ifdef MUMBLE_STxP70_BSP
 	if (stxp70_runtime == UNDEFINED) 
-	  toggle(&stxp70_runtime, RUNTIME_BARE);
+	  toggle((int*)&stxp70_runtime, RUNTIME_BARE);
 #endif
 #endif /* TARG_STxP70 */
 
@@ -243,7 +244,8 @@ set_defaults (void)
 	    toggle(&shared,NON_SHARED);
 	    prepend_option_seen(O_non_shared);
 	  }
-	  else if (abi != ABI_ST100 && abi != ABI_ST200_embedded && abi != ABI_STxP70_embedded) {
+	  else if (abi != ABI_ST100 && abi != ABI_ST200_embedded && 
+		   abi != ABI_STxP70_embedded && abi != ABI_STxP70_fpx) {
 	    if (gprel == UNDEFINED) {
 	      toggle(&shared,CALL_SHARED);
 	      prepend_option_seen(O_call_shared);
@@ -274,7 +276,7 @@ set_defaults (void)
 	      toggle(&gprel,FALSE);
 	    }
 	  }
-	  else if (abi == ABI_STxP70_embedded) {
+	  else if (abi == ABI_STxP70_embedded || abi == ABI_STxP70_fpx) {
 	    toggle(&gprel,FALSE);
 	  }
 	  else {
@@ -476,6 +478,12 @@ add_special_options (void)
 	if (!nostdinc) {
 	  flag = add_string_option(O_isystem__, get_phase_dir(P_include));
 	  add_option_seen (flag);
+#ifdef TARG_STxP70
+          flag = add_string_option(O_isystem__,
+                                   concat_strings(get_phase_dir(P_include),
+                                                  "/models"));
+          add_option_seen (flag);
+#endif
 	}
 
 	/* (cbr) specific path for c++ includes */
@@ -1056,6 +1064,7 @@ add_special_options (void)
 	  break;
 
 	case ABI_STxP70_embedded:
+	case ABI_STxP70_fpx:
 	  /*
 	   * STxP70 specific flags: 
 	   */
@@ -1068,19 +1077,18 @@ add_special_options (void)
 	  }
 
 	  if (!is_toggled(cppundef)) {
-	    if (proc == PROC_arch_1_3_1) {
-              flag = add_string_option(O_D, "__arch_1_3_1__");
+	    if (proc == PROC_stxp70 || proc == PROC_stxp70_ext) {
+              flag = add_string_option(O_D, "__stxp70__");
 	      prepend_option_seen (flag);
- 	      flag = add_string_option(O_D, "__ARCH_1_3_1__");
+ 	      flag = add_string_option(O_D, "__STXP70__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__STxP70__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__SX");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__X3");
 	      prepend_option_seen (flag);
 	    }
-
-	    flag = add_string_option(O_D, "__stxp70__");
-	    prepend_option_seen (flag);
-	    flag = add_string_option(O_D, "__STxP70__");
-	    prepend_option_seen (flag);
-	    flag = add_string_option(O_D, "__STXP70__");
-	    prepend_option_seen (flag);
 	    
 	    flag = add_string_option(O_D, "__open64__");
 	    prepend_option_seen (flag);
@@ -1104,6 +1112,7 @@ add_special_options (void)
 	    prepend_option_seen (flag);
 
 	    flag = add_string_option(O_D, STXP70CC_EXPAND__(__STXP70CC_VERSION__, STXP70CC_VERSION__));
+	    flag = add_string_option(O_g0, "");
 	    prepend_option_seen (flag);
 #endif
 	  } /* !is_toggled(cppundef) */

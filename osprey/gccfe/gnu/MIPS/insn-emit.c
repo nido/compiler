@@ -6351,7 +6351,7 @@ gen_movdi (operand0, operand1)
 {
   if (mips_split_addresses && mips_check_split (operands[1], DImode))
     {
-      enum machine_mode mode = GET_MODE (operands[0]);
+      machine_mode_t mode = GET_MODE (operands[0]);
       rtx tem = ((reload_in_progress | reload_completed)
 		 ? operands[0] : gen_reg_rtx (mode));
 
@@ -6775,7 +6775,7 @@ gen_movsi (operand0, operand1)
 {
   if (mips_split_addresses && mips_check_split (operands[1], SImode))
     {
-      enum machine_mode mode = GET_MODE (operands[0]);
+      machine_mode_t mode = GET_MODE (operands[0]);
       rtx tem = ((reload_in_progress | reload_completed)
 		 ? operands[0] : gen_reg_rtx (mode));
 

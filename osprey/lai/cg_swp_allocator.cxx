@@ -1093,7 +1093,11 @@ SWP_Update_Lifetime(TN2INT32_MAP &tn2lt_map,
 	   
 static void
 SWP_Gather_Lifetime_Extents(TN2INT32_MAP        &tn2lt_map,
+#ifdef TARG_ST
+			    LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX_LIMIT+1],
+#else
 			    LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX+1],
+#endif
 			    const SWP_OP_vector& op_state,
 			    MEM_POOL            *apool)
 {
@@ -1197,7 +1201,12 @@ Get_Cycle_Of_Defining_SWP_Op (const SWP_OP_vector& op_state, TN *def_tn)
 }
 		   
 static void
-SWP_Gather_Lifetimes(LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX+1],
+SWP_Gather_Lifetimes(
+#ifdef TARG_ST
+		     LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX_LIMIT+1],
+#else
+		     LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX+1],
+#endif
 		     const SWP_OP_vector& op_state,
 		     BB                  *head,
 		     BB                  *tail,
@@ -1468,7 +1477,11 @@ SWP_REG_ASSIGNMENT::Allocate_Loop_Variants(const SWP_OP_vector& op_state,
   {
     INT32                ctrl_pred_loc; // Location of control predicate reg.
     ISA_REGISTER_CLASS   reg_class;
+#ifdef TARG_ST
+    LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
     LIFETIME_SET         lt[ISA_REGISTER_CLASS_MAX+1];
+#endif
     
     // Force "lt" to use the allocator_pool (size is zero, so copy is trivial).
     //

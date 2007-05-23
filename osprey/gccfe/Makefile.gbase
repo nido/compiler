@@ -68,21 +68,12 @@ endif
 
 HOSTDEFS += -DIN_GCC -DHAVE_CONFIG_H
 
-ifeq ($(BUILD_TARGET), IA64)
-HOSTDEFS += -DTARGET_NAME=\"ia64-linux\"
-endif
-ifeq ($(BUILD_TARGET), IA32)
-HOSTDEFS += -DTARGET_NAME=\"i686-pc-linux-gnu\"
-endif
-ifeq ($(BUILD_TARGET), MIPS)
-HOSTDEFS += -DTARGET_NAME=\"mips-sgi-irix6\"
-endif
-
 # (cbr) define gnu version
 HOSTDEFS += -DGNU_FRONT_END=33
 HOSTDEFS += -DLONGLONG
 HOSTDEFS += -DFRONT_END
 HOSTDEFS += -DUSE_DECL_SRCPOS
+HOSTDEFS += -D_NEW_SYMTAB
 HOSTDEFS += -DFRONT_END_C
 HOSTDEFS += -DCFE -DCIL
 HOSTDEFS += -DDO_IL_LOWERING=0
@@ -101,7 +92,6 @@ endif
 endif
 endif
 
-# just for st200 for now.
 ifeq  ($(BUILD_TARGET), ST200)
 HOSTDEFS += -DHANDLE_WFE_PRAGMAS
 endif
@@ -123,7 +113,7 @@ HOSTDEFS += -DCHECKING=0
 endif
 
 ifeq ($(DSO_MODE),DLL)
-HOSTDEFS += -DBE_EXPORTED= -DCG_EXPORTED=
+HOSTDEFS += -DBE_EXPORTED= -DCG_EXPORTED= -DTARGINFO_EXPORTED=
 endif
 
 ### SHOULD GO AWAY after elf.h cleanup !!
@@ -154,13 +144,13 @@ COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 endif
 ifeq ($(BUILD_TARGET), ST200)
 COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 endif
 ifeq ($(BUILD_TARGET), STxP70)
 COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 endif
@@ -170,6 +160,7 @@ COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/common/targ_info/access
 COMMON_TARGINFO_CONFIG_DIR  = 
 COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/common/util/$(BUILD_TARGET_DIR)
 endif
+TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 
 ifeq ($(BUILD_OS), IRIX)
 INCLUDE_DIR 		= $(BUILD_TOT)/include
@@ -205,6 +196,7 @@ SRC_DIRS =		\
   $(COMMON_UTIL_TARG_DIR)\
   $(COMMON_TARG_INFO_ACCESS_DIR) \
   $(COMMON_TARGINFO_CONFIG_DIR)
+
 INC_DIRS =		\
   $(INCLUDE_DIR)	\
   $(COMMON_COM_DIR)	\
@@ -218,15 +210,20 @@ INC_DIRS =		\
   $(GNU_TARG_DIR)	\
   $(GNU_CONFIG_DIR)	\
   $(GNU_CONFIG_TARG_DIR) \
-  $(GNU_COMMON_DIR)/include
+  $(TARG_TARG_INFO_DIR) \
+  $(GNU_COMMON_DIR)/include \
+  .
 
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.
 #----------------------------------------------------------------------
 
 FE_C_SRCS =		\
-  c_int_model.c		\
-  main.c
+  main.c                \
+  dso.c
+
+GENERATED_FILES = \
+  extension_include.h
 
 FE_CXX_SRCS =		\
   rt_symtab.cxx		\
@@ -236,7 +233,8 @@ FE_CXX_SRCS =		\
   wfe_expr.cxx		\
   wfe_misc.cxx          \
   wfe_pragmas.cxx       \
-  wfe_stmt.cxx
+  wfe_stmt.cxx          \
+  wfe_loader.cxx
 
 COMMON_COM_CXX_SRCS =	\
   config.cxx		\
@@ -267,7 +265,9 @@ COMMON_COM_CXX_SRCS =	\
   wn_simp.cxx		\
   wn_util.cxx		\
   wutil.cxx		\
-  xstats.cxx
+  xstats.cxx            \
+  loader.cxx		\
+  gccfe_targinfo_interface.cxx
 
 COMMON_COM_TARG_SRCS =	\
   config_host.c		\
@@ -286,7 +286,7 @@ COMMON_COM_TARG_CXX_SRCS = \
   $(CONFIG_TARGET_NAME).cxx \
   config_elf_targ.cxx	\
   targ_const.cxx	\
-  targ_sim.cxx
+  targ_sim.cxx          
 
 FRONT_END_C_SRCS =		\
   $(COMMON_COM_SRCS)		\
@@ -326,7 +326,10 @@ ifeq ($(BUILD_COMPILER), GNU)
 # (cbr) LC++OPTS += -fwritable-strings
 endif
 
-LDIRT =
+LDIRT = $(GENERATED_FILES)
+
+#Reconfigurability: Some symbols are required by extension dlls
+GFEC_LDOPTS += -Wl,--export-dynamic
 
 #+----------------------------------------------------------------------
 #  Extra Rules
@@ -349,15 +352,18 @@ LIBIBERTY_OBJS = $(TARG_LIBIBERTY_DIR)/libiberty.a
 LIBSYS_OBJS = $(TARGDIR)/libSYS/libSYS.a
 GNU_OBJS = $(TARG_GNU_DIR)/libgfec.a
 GNU_CPP_OBJS = $(TARG_GNU_DIR)/libcpp.a
+LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
 
 ifneq ($(HOST_OS),CYGWIN_NT)
+ifneq ($(HOST_OS),MINGW)
 # all we need is in libcygwin
-GFEC_LDLIBS +=  -lm
+GFEC_LDLIBS +=  -lm -ldl
+endif
 endif
 
 
 ifeq ($(HOST_OS), MINGW)
-GFEC_LDLIBS += -lwsock32
+GFEC_LDLIBS += -lwsock32 -lm
 endif
 
 default: first
@@ -372,7 +378,7 @@ first:
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
 
-local: gnu_libs 
+local: gnu_libs $(GENERATED_FILES)
 	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
@@ -388,12 +394,13 @@ install: last
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
 
-gnu_libs:
+gnu_libs: $(GENERATED_FILES)
 	cd $(TARG_GNU_DIR) && $(MAKE) $(foreach obj, $(GNU_CPP_OBJS) $(GNU_OBJS), $(shell basename $(obj)))
+	cd $(TARG_GNU_DIR) && $(MAKE) make_deps
 
 $(GNU_CPP_OBJS) $(GNU_OBJS): gnu_libs
 
-GFEC_OBJS=$(OBJECTS) $(GNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS)  $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS)
+GFEC_OBJS=$(OBJECTS) $(GNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS)  $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS) $(LIBTARGINFO)
 
 gfec$(HEXE) :  $(GFEC_OBJS)
 	$(CXX) -o $@ $(GFEC_LDOPTS) $(LDOPTS) $(GFEC_OBJS) $(GFEC_LDLIBS) $(LDLIBS)
@@ -414,3 +421,42 @@ ifeq ($(HOST_OS), MINGW)
 wfe_dst.o : wfe_dst.cxx
 	$(CXXF) $< -c -o $@ -ULONGLONG
 endif
+
+#----------------------------------------------------------------------
+#  Build the include file needed by the extension dll
+#  Needs to be compatible for both C (for extension) and
+#  C++ (for loader)
+#----------------------------------------------------------------------
+# -P to discard #line
+# -C to keep comments
+# -dD to keep #define definition
+extension_include.h: extension_include.hin
+	echo "#ifndef _EXTENSION_INCLUDE_H_" > $@
+	echo "#define _EXTENSION_INCLUDE_H_" >> $@
+	echo "#ifndef __cplusplus" >> $@
+	echo "typedef __WCHAR_TYPE__ wchar_t;" >> $@
+	echo "#endif" >> $@
+	echo "#ifndef PARAMS" >> $@
+	echo "#define PARAMS(x) x" >> $@
+	echo "#endif" >> $@
+	echo "#ifdef __cplusplus" >> $@
+	echo "extern \"C\" {" >> $@
+	echo "#endif" >> $@
+
+	echo "#ifdef __cplusplus" >> $@
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -x c++ $< -P -E -C -dD | fgrep -v -e '#define __S' | fgrep -v -e "BE_EXPORTED" | grep -v -w -e "FRONT_END">> $@
+	echo "#else /*__cplusplus */" >> $@
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -x c $< -E -P -C -dD | fgrep -v -e '#define __S' | grep -v -e "typedef .* wchar_t *;" | fgrep -v -e "BE_EXPORTED" | grep -v -w -e "FRONT_END">> $@
+	echo "#endif" >> $@
+
+	echo  "#ifdef __cplusplus" >> $@
+	echo  "};        /* extern \"C\" */ ">> $@
+	echo  "#endif" >> $@
+	echo  "#endif  /* _EXTENSION_INCLUDE_H_ */" >> $@
+	# The just executed CC generated a dependent file but with a wrong target extension_include.o.
+	# We replace it by extension_include.h which is the file to be rebuilt.
+	sed 's/extension_include\.o/extension_include.h/' <extension_include.d >extension_include.d2
+	mv extension_include.d2 extension_include.d
+
+
+

@@ -66,10 +66,10 @@ static void freeze_moves PARAMS ((struct web *));
 static void freeze PARAMS ((void));
 static void select_spill PARAMS ((void));
 static int color_usable_p PARAMS ((int, HARD_REG_SET, HARD_REG_SET,
-				   enum machine_mode));
-int get_free_reg PARAMS ((HARD_REG_SET, HARD_REG_SET, enum machine_mode));
+				   machine_mode_t));
+int get_free_reg PARAMS ((HARD_REG_SET, HARD_REG_SET, machine_mode_t));
 static int get_biased_reg PARAMS ((HARD_REG_SET, HARD_REG_SET, HARD_REG_SET,
-				   HARD_REG_SET, enum machine_mode));
+				   HARD_REG_SET, machine_mode_t));
 static int count_long_blocks PARAMS ((HARD_REG_SET, int));
 static char * hardregset_to_string PARAMS ((HARD_REG_SET));
 static void calculate_dont_begin PARAMS ((struct web *, HARD_REG_SET *));
@@ -1017,7 +1017,7 @@ static int
 color_usable_p (c, dont_begin_colors, free_colors, mode)
      int c;
      HARD_REG_SET dont_begin_colors, free_colors;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!TEST_HARD_REG_BIT (dont_begin_colors, c)
       && TEST_HARD_REG_BIT (free_colors, c)
@@ -1048,7 +1048,7 @@ color_usable_p (c, dont_begin_colors, free_colors, mode)
 int
 get_free_reg (dont_begin_colors, free_colors, mode)
      HARD_REG_SET dont_begin_colors, free_colors;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int c;
   int last_resort_reg = -1;
@@ -1099,7 +1099,7 @@ get_free_reg (dont_begin_colors, free_colors, mode)
 static int
 get_biased_reg (dont_begin_colors, bias, prefer_colors, free_colors, mode)
      HARD_REG_SET dont_begin_colors, bias, prefer_colors, free_colors;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int c = -1;
   HARD_REG_SET s;

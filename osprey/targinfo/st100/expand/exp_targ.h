@@ -113,8 +113,13 @@ extern BOOL Expand_Special_And_Immed(TN *dest, TN *src1, INT64 imm, OPS *ops);
 extern void Expand_Shift (TN *result, TN *src1, TN *src2, TYPE_ID mtype, SHIFT_DIRECTION kind, OPS *ops);
 
 extern void Expand_Lda (TN *dest, TN *src, OPS *ops);
+#ifdef TARG_ST
+extern void Expand_Load (OPCODE opcode, TN *result, TN *src1, TN *src2, OPS *ops, VARIANT real_alignment=V_NONE);
+extern void Expand_Store (TYPE_ID mtype, TN *src1, TN *src2, TN *src3, OPS *ops, VARIANT real_alignment=V_NONE);
+#else
 extern void Expand_Load (OPCODE opcode, TN *result, TN *src1, TN *src2, OPS *ops);
 extern void Expand_Store (TYPE_ID mtype, TN *src1, TN *src2, TN *src3, OPS *ops);
+#endif
 extern void Expand_Misaligned_Load (OPCODE op, TN *result, TN *base, TN *disp, VARIANT variant, OPS *ops);
 extern void Expand_Misaligned_Store (TYPE_ID mtype, TN *obj_tn, TN *base_tn, TN *disp_tn, VARIANT variant, OPS *ops);
 extern void Expand_Lda_Label (TN *dest, TN *lab, OPS *ops);

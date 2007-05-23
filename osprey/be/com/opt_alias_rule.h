@@ -387,7 +387,11 @@ class BE_EXPORTED_CLASS ALIAS_RULE {
 private:
   
   //  Obtain the basic type from TY
+#ifdef TARG_ST
+  INT64 Get_stripped_mtype(TY_IDX ty) const;
+#else
   INT32 Get_stripped_mtype(TY_IDX ty) const;
+#endif
 
   //  This routine are used by alias analysis internally.
   //  Each function implements one of the alias rules.

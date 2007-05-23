@@ -47,9 +47,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+#ifndef _MSC_VER
 #include <strings.h>
+#else
+#include <string.h>
+#endif
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 using std::list;
@@ -57,8 +61,14 @@ using std::vector;
 #else
 #include <list.h>
 #include <vector.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
+
+#ifndef DYNAMIC_CODE_GEN
 #include "topcode.h"
+#else
+#include "dyn_isa_topcode.h"
+#endif
+
 #include "targ_isa_properties.h"
 #include "gen_util.h"
 #include "isa_bundle_gen.h"
@@ -71,6 +81,16 @@ using std::vector;
 #define TAG_SHIFT 12    // max # of bits required to encode all the
                         // execution property types.
 #endif
+
+// In following loops, we iterate on the number of
+// TOP. This number differs whether we generate
+// static or dynamic TOPs.
+#ifndef DYNAMIC_CODE_GEN
+static TOP TOP_count_limit = TOP_static_count;
+#else
+static TOP TOP_count_limit = TOP_dyn_count;
+#endif
+
 
 struct isa_exec_unit_type {
   const char *name; 	// Name given for documentation and debugging
@@ -242,6 +262,14 @@ static const char * const interface[] = {
   " *       component.",
   " *",
   " * ====================================================================",
+  " *   Management of dynamic extensions",
+  " *",
+  " *   The assumption that has been made so far, is that extensions don't",
+  " *   modify the bundling and packing properties. Adding new TOP don't",
+  " *   modify the description of bundles (in particular, we assume",
+  " *   that it doesn't introduce new bundles). The only thing that has",
+  " *   to be done, is to specify in which bundles each TOP can enter.",
+  " * ====================================================================",
   " * ====================================================================",
   " */",
   NULL
@@ -265,7 +293,7 @@ ISA_EXEC_UNIT_TYPE ISA_Exec_Unit_Type_Create ( const char* name,
 
   cur_type->name = name;
   cur_type->bit_position = isa_exec_property_count++;
-  cur_type->members = vector<bool> (TOP_count, false);
+  cur_type->members = vector<bool> (TOP_count_limit, false);
   cur_type->base_unit = base_unit;
 
   current_exec_type_desc = cur_type;
@@ -282,6 +310,10 @@ void Instruction_Exec_Unit_Group(ISA_EXEC_UNIT_TYPE unit_type, ... )
   va_list ap;
   TOP opcode;
 
+  // Last TOP in variable length enumeration is not the
+  // same if we are in the static case or in the dynamic one.
+  TOP TOP_limit = Is_Static_Code() ? TOP_UNDEFINED : static_cast<TOP>(-1);
+
   if (!current_exec_type_desc->name) {
     fprintf(stderr,"### Error: no execution unit type name specified for %s\n",
                    current_exec_type_desc->name);
@@ -289,8 +321,8 @@ void Instruction_Exec_Unit_Group(ISA_EXEC_UNIT_TYPE unit_type, ... )
   }
  
   va_start(ap, unit_type);
-  while ( (opcode = static_cast<TOP>(va_arg(ap, int))) != TOP_UNDEFINED) {
-      unit_type->members[(int)opcode] = true;      
+  while ( (opcode = static_cast<TOP>(va_arg(ap, int))) != TOP_limit) {
+      unit_type->members[(int)opcode] = true;
   }
   va_end(ap);  
 }
@@ -391,6 +423,8 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
   list<ISA_EXEC_UNIT_TYPE>::iterator iei;
   list<ISA_BUNDLE_TYPE>::iterator ibi;
   int i;
+  bool gen_static_code = Is_Static_Code();   // "static" or "dynamic" TOP.
+  const char *tabname;
 
   //  const char *isa_exec_type_format = "  %3d,  /* %s: ";
   const char *info_index_type;
@@ -421,69 +455,78 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     int_suffix = "ULL";
   }
 
-  fprintf (hfile, "\n#define ISA_MAX_SLOTS (%d)\n", max_slots);
+  
+  if(gen_static_code) {
+    fprintf (hfile, "\n#define ISA_MAX_SLOTS (%d)\n", max_slots);
 #ifdef TARG_ST
-  fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", tag_shift);
-  fprintf (hfile, "#define ISA_SLOT_MASK_WORDS (%d)\n", slot_mask_words);
+    fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", tag_shift);
+    fprintf (hfile, "#define ISA_SLOT_MASK_WORDS (%d)\n", slot_mask_words);
 #else
-  fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", TAG_SHIFT);
+    fprintf (hfile, "#define ISA_TAG_SHIFT (%d)\n", TAG_SHIFT);
 #endif
-  // Define the number of bytes in an instruction (bundle)
-  // bundle should be a multiple of 8 !
-  fprintf (hfile, "#define ISA_INST_BYTES (%d)\n", bundle_bits/8);
+    // Define the number of bytes in an instruction (bundle)
+    // bundle should be a multiple of 8 !
+    fprintf (hfile, "#define ISA_INST_BYTES (%d)\n", bundle_bits/8);
 
-  fprintf (hfile, "\ntypedef %s ISA_EXEC_UNIT_PROPERTY;\n",
-	   info_index_type);
+    fprintf (hfile, "\ntypedef %s ISA_EXEC_UNIT_PROPERTY;\n",
+             info_index_type);
 
-  fprintf (hfile, "\n");
-  for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
-    ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
-    fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (0x%llx%s)\n",
-		    curr_exec_type->name,
-		    (1ULL << curr_exec_type->bit_position), int_suffix);
-  }
+    fprintf (hfile, "\n");
+    for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
+      ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
+      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (0x%llx%s)\n",
+                       curr_exec_type->name,
+                       (1ULL << curr_exec_type->bit_position), int_suffix);
+    }
 
-  fprintf (hfile, "\ntypedef enum {\n");
-  for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
-    ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
-    fprintf (hfile, "  ISA_EXEC_%-15s = %d,\n",
-		    curr_exec_type->name,
-		    curr_exec_type->bit_position);
-  }
-  fprintf (hfile, "  ISA_EXEC_%-15s = %d\n"
-		  "} ISA_EXEC_UNIT;\n",
-		  "MAX", isa_exec_property_count - 1);
+    fprintf (hfile, "\ntypedef enum {\n");
+    for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
+      ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
+      fprintf (hfile, "  ISA_EXEC_%-15s = %d,\n",
+                      curr_exec_type->name,
+                      curr_exec_type->bit_position);
+    }
+    fprintf (hfile, "  ISA_EXEC_%-15s = %d\n"
+                    "} ISA_EXEC_UNIT;\n",
+                    "MAX", isa_exec_property_count - 1);
 
 #ifdef TARG_ST
-  fprintf (hfile, "\ntypedef struct {\n"
-	          "  mUINT64 v[%d];\n"
-	          "} ISA_EXEC_MASK;\n",
-	          slot_mask_words);
+    fprintf (hfile, "\ntypedef struct {\n"
+                    "  mUINT64 v[%d];\n"
+                    "} ISA_EXEC_MASK;\n",
+                    slot_mask_words);
 #endif
 
-  fprintf (hfile, "\ntypedef struct {\n"
-		  "  const char *name;\n"
-		  "  const char *asm_name;\n"
+    fprintf (hfile, "\ntypedef struct {\n"
+                    "  const char *name;\n"
+                    "  const char *asm_name;\n"
 #ifdef TARG_ST
-	          "  int bias, base;\n"
+                   "  int bias, base;\n"
 #endif
-		  "  int slot_count;\n"
-		  "  ISA_EXEC_UNIT_PROPERTY slot[%d];\n"
-		  "  mBOOL stop[%d];\n"
-		  "  mUINT8 unit[%d];\n"
-		  "  mUINT8 pack_code;\n"
-		  "  mUINT8 stop_mask;\n"
+                   "  int slot_count;\n"
+                   "  ISA_EXEC_UNIT_PROPERTY slot[%d];\n"
+                   "  mBOOL stop[%d];\n"
+                   "  mUINT8 unit[%d];\n"
+                   "  mUINT8 pack_code;\n"
+                   "  mUINT8 stop_mask;\n"
 #ifdef TARG_ST
-		  "  ISA_EXEC_MASK slot_mask;\n"
+                   "  ISA_EXEC_MASK slot_mask;\n"
 #else
-		  "  mUINT64 slot_mask;\n"
+                   "  mUINT64 slot_mask;\n"
 #endif
-		  "} ISA_BUNDLE_INFO;\n",
-		  max_slots ? max_slots : 1,
-		  max_slots ? max_slots : 1,
-		  max_slots ? max_slots : 1);
+                   "} ISA_BUNDLE_INFO;\n",
+                   max_slots ? max_slots : 1,
+                   max_slots ? max_slots : 1,
+                   max_slots ? max_slots : 1);
+  }                                  // if(gen_static_code)
 
+  ///////////////////////////////////////////////////////////
+  // Building ISA_BUNDLE_info table
+  ///////////////////////////////////////////////////////////
+
+  if(gen_static_code) {
   fprintf(efile, "ISA_BUNDLE_info\n");
+
   fprintf(cfile, "\nBE_EXPORTED const ISA_BUNDLE_INFO ISA_BUNDLE_info[] = {\n");
 
 #ifndef TARG_ST
@@ -572,49 +615,84 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
 #else
   fprintf (cfile, ",},\n    -1, 0x0, 0x%0*x\n  }\n};\n", slot_mask_digits, 0);
 #endif
-
   fprintf(hfile,"\n#define ISA_MAX_BUNDLES %d\n",num_bundles);
 
-  fprintf (efile, "ISA_EXEC_unit_prop\n");
-  fprintf (cfile, "\nconst ISA_EXEC_UNIT_PROPERTY ISA_EXEC_unit_prop[%d] = {\n",
-	  TOP_count);
+  }               // gen_static_code
 
-  for (int top = 0; top < TOP_count; ++top) {
-    unsigned long long flag_value = 0;
+  /////////////////////////////////////////////////////////
+  // Building ISA_EXEC_unit_prop table
+  /////////////////////////////////////////////////////////
+  
+  tabname = gen_static_code ? "ISA_EXEC_unit_prop_static" :
+                              "ISA_EXEC_unit_prop_dynamic";
+
+  fprintf (cfile, "\nstatic const ISA_EXEC_UNIT_PROPERTY %s[%d] = {\n",
+	  tabname,TOP_count_limit);
+  for (unsigned int top = 0; top < TOP_count_limit; ++top) {
+    bool is_first   = true;
+
+    fprintf(cfile,"  /* %-30s */   ",TOP_Name((TOP)top));
 
     for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
       ISA_EXEC_UNIT_TYPE exec_type = *iei;
       if (exec_type->members[top]) {
-	flag_value |= (1ULL << exec_type->bit_position);
+
+        if(!is_first)
+          fprintf(cfile," | ");   // Add bitwise or operator.
+        else
+          is_first = false;
+
+        fprintf(cfile,"ISA_EXEC_PROPERTY_%-15s",exec_type->name);
       }
     }
-#ifdef TARG_ST
-    fprintf(cfile, "  0x%08llx,  /* %s: ",
-#else
-    fprintf(cfile, "  0x%0*llx,  /* %s: ", slot_mask_digits,
-#endif
-	    //    fprintf(cfile, "  %3llu,  /* %s: ",
-	    //    fprintf(cfile, 	isa_exec_type_format,
-			flag_value,
-			TOP_Name((TOP)top));
-    for ( iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei ) {
-      ISA_EXEC_UNIT_TYPE exec_type = *iei;
-      if (exec_type->members[top]) 
-	fprintf (cfile, " %s", exec_type->name);
-    }
-    fprintf (cfile, " */\n");
-  }
-  fprintf(cfile, "};\n");
 
-  fprintf(hfile, "\nBE_EXPORTED extern const ISA_EXEC_UNIT_PROPERTY ISA_EXEC_unit_prop[];\n");
-  fprintf(hfile, "\n");
-  for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
-    ISA_EXEC_UNIT_TYPE exec_type = *iei;
+    if(true==is_first)           // No property detected
+      fprintf(cfile,"0x0");
+
+    fprintf(cfile, ",\n");       // Add comma to prepare next table item
+
+  }
+  fprintf(cfile, "};\n");                    // End of table ISA_EXEC_Unit_prop
+
+  if(gen_static_code) {
+    fprintf(cfile,
+      "\n"
+      "const ISA_EXEC_UNIT_PROPERTY *ISA_EXEC_unit_prop = %s;\n"
+      "\n",
+      tabname);
+
+    fprintf(hfile, 
+      "\n"
+      "BE_EXPORTED extern const ISA_EXEC_UNIT_PROPERTY *ISA_EXEC_unit_prop;\n"
+      "\n");
+
+    fprintf (efile, "ISA_EXEC_unit_prop\n");
+  }
+  else {
+    fprintf(cfile,
+    "\n"
+    "const ISA_EXEC_UNIT_PROPERTY *dyn_get_ISA_EXEC_unit_prop_tab ( void )\n"
+    "{  return %s;\n"
+    "}\n"
+    "\n",
+    tabname);
+
     fprintf(hfile,
+    "\n"
+    "extern const ISA_EXEC_UNIT_PROPERTY *dyn_get_ISA_EXEC_unit_prop_tab(void);\n"
+     );
+  }                              // if(gen_static_code) then else
+
+  if(gen_static_code) {
+    for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
+      ISA_EXEC_UNIT_TYPE exec_type = *iei;
+      fprintf(hfile,
              "#define EXEC_PROPERTY_is_%s(t)\t (ISA_EXEC_unit_prop[(INT)t] & ISA_EXEC_PROPERTY_%s)\n",
              exec_type->name, exec_type->name);
-  }
+    }
+  }                               // gen_static_code
 
+  if(gen_static_code) {
   fprintf (hfile, "\ninline ISA_EXEC_UNIT_PROPERTY "
                    "ISA_EXEC_Unit_Prop(TOP topcode)\n"
                  "{\n"
@@ -645,11 +723,11 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                  "  return info->slot_count;\n"
                  "}\n");
 
-  fprintf (hfile, "\ninline ISA_EXEC_MASK "
+  fprintf (hfile, "\ninline ISA_EXEC_MASK ");
 #else
-  fprintf (hfile, "\ninline UINT64 "
+  fprintf (hfile, "\ninline UINT64 ");
 #endif
-	         "ISA_EXEC_Slot_Mask(INT bundle)\n"
+  fprintf (hfile, "ISA_EXEC_Slot_Mask(INT bundle)\n"
                  "{\n"
 		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
 		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
@@ -711,6 +789,9 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                  "  return info->base;\n"
                  "}\n");
 #endif
+  }                           // gen_static_code
+
+  return;
 }
 
 /* ====================================================================
@@ -964,6 +1045,17 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
   int word_size = bundle_bits >= 64 ? 64 : (bundle_bits + 7) & ~7;
   int pack_index = 0;
 
+  /* Shunt routine in the dynamic case */
+  if(Is_Dynamic_Code())
+   { if(bundle_pack_info!=NULL)
+      { fprintf(stderr,"### Error: current model for dynamic extensions does not allow to\n"
+                       "###        modify bundle packing specification at extension level!\n");
+        exit(EXIT_FAILURE);
+      }
+     return;
+   }
+
+  /* Dealing with the normal "static" case */
   if (bundle_pack_info == NULL) {
     fprintf(stderr, "### Error: no bundle packing specification!\n");
     exit(EXIT_FAILURE);
@@ -1047,7 +1139,7 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
 
   fprintf(hfile, "\ninline const ISA_BUNDLE_PACK_INFO *ISA_BUNDLE_Pack_Info(void)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const ISA_BUNDLE_PACK_INFO ISA_BUNDLE_pack_info[];\n"
+		 "  extern const ISA_BUNDLE_PACK_INFO ISA_BUNDLE_pack_info[];\n"
 		 "  return ISA_BUNDLE_pack_info;\n"
 		 "}\n");
 
@@ -1095,7 +1187,7 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
 
   fprintf(hfile, "\ninline INT ISA_BUNDLE_Pack_Info_Index(ISA_BUNDLE_PACK_COMP comp)\n"
 		 "{\n"
-		 "  TARGINFO_EXPORTED extern const mUINT8 ISA_BUNDLE_pack_info_index[%d];\n"
+		 "  extern const mUINT8 ISA_BUNDLE_pack_info_index[%d];\n"
 		 "  return ISA_BUNDLE_pack_info_index[(INT)comp];\n"
 		 "}\n",
 #ifdef TARG_ST
@@ -1127,26 +1219,66 @@ void ISA_Bundle_End(void)
 //  See interface description.
 /////////////////////////////////////
 {
+  // Whether we generate code for an extension
+  // or for the core.
+  bool gen_static_code = Is_Static_Code();
 
-#define FNAME "targ_isa_bundle"
-  char buf[1000];
-  sprintf (buf, "%s.h", FNAME);
-  FILE* hfile = fopen(buf, "w");
-  sprintf (buf, "%s.c", FNAME);
-  FILE* cfile = fopen(buf, "w");
-  sprintf (buf, "%s.Exported", FNAME);
-  FILE* efile = fopen(buf, "w");
+  const char* const extname = gen_static_code ? NULL: Get_Extension_Name();
+  const char* const fname_h = Gen_Build_Filename (FNAME_TARG_ISA_BUNDLE,
+                                                  extname,
+                                                  gen_util_file_type_hfile);
+  const char* const fname_c = Gen_Build_Filename (FNAME_TARG_ISA_BUNDLE,
+                                                  extname,
+                                                  gen_util_file_type_cfile);
+  const char* const fname_e = Gen_Build_Filename (FNAME_TARG_ISA_BUNDLE,
+                                                  extname,
+                                                  gen_util_file_type_efile);
 
-  fprintf(hfile, "#include \"topcode.h\"\n");
-  fprintf(cfile,"#include \"%s.h\"\n\n", FNAME);
+  FILE* hfile = Gen_Open_File_Handle(fname_h,"w");
+  FILE* cfile = Gen_Open_File_Handle(fname_c,"w");
+  FILE* efile = gen_static_code ? Gen_Open_File_Handle(fname_e,"w") : NULL;
 
-  sprintf (buf, "%s", FNAME);
-  Emit_Header (hfile, buf, interface);
+  const char*  fname_top_h;  // file name of (dynamic) topcode header file
+  const char*  fname_bun_h;  // file name of (dynamic) bundle  header file
+  const char*  basename;
+  GEN_UTIL_FILE_TYPE filetype;
+
+  filetype   = gen_static_code ? gen_util_file_type_hfile:
+                                 gen_util_file_type_dyn_hfile;
+
+  basename   = gen_static_code ? FNAME_TOPCODE : FNAME_ISA_TOPCODE;
+  fname_top_h= Gen_Build_Filename(basename,extname,filetype); 
+ 
+  basename   = gen_static_code ? FNAME_TARG_ISA_BUNDLE : FNAME_ISA_BUNDLE;
+  fname_bun_h= Gen_Build_Filename(basename,extname,filetype);
+
+  fprintf(hfile,"#include \"%s\"\n\n",fname_top_h);
+  fprintf(cfile,"#include \"%s\"\n\n",fname_bun_h);
+
+  Emit_Header  (hfile, FNAME_TARG_ISA_BUNDLE, interface,extname);
+  Emit_C_Header(cfile);           // emit "C" directive
 
   Emit_Bundle_Scheduling(hfile, cfile, efile);
   fprintf(hfile, "\f");
   fprintf(cfile, "\f");
   Emit_Bundle_Packing(hfile, cfile, efile);
-		   
-  Emit_Footer (hfile);
+
+  Emit_Footer  (hfile);
+  Emit_C_Footer(cfile);
+
+  // Closing all file handlers.
+  Gen_Close_File_Handle(cfile,fname_c);
+  Gen_Close_File_Handle(hfile,fname_h);
+  if(efile)
+    Gen_Close_File_Handle(efile,fname_e);
+
+  // Memory deallocation
+  Gen_Free_Filename(const_cast<char*> (fname_c));
+  Gen_Free_Filename(const_cast<char*> (fname_h));
+  Gen_Free_Filename(const_cast<char*> (fname_e));
+
+  Gen_Free_Filename(const_cast<char*> (fname_top_h));
+  Gen_Free_Filename(const_cast<char*> (fname_bun_h));
+
+  return;
 }

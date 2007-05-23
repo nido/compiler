@@ -701,7 +701,9 @@ dwarf_add_fde_inst(
     switch (op) {
 
 #ifdef TARG_ST // [CL] derived from pathscale, but we use 2 words
-	case DW_CFA_advance_loc4:
+	case DW_CFA_advance_loc4: /* Backward compatibility */
+        op = DW_CFA_ST_relocation;
+    case DW_CFA_ST_relocation:
 	  // We use 2 words to copy the labels; cg will later
 	  // fix the relocatable symbols.
 	  dw = val1;
@@ -874,8 +876,34 @@ dwarf_add_fde_inst(
 
 #ifdef TARG_ST // [CL] support for DW_CFA_restore
         case DW_CFA_restore:
-	  db = val1;
-	  op |= db;
+	    if (val1 <= MAX_6_BIT_VALUE) {
+	        db = val1;
+	        op |= db;
+	    }
+	    else {
+		op = DW_CFA_restore_extended;
+
+	        res =  _dwarf_pro_encode_leb128_nm(val1, &nbytes1,
+			buff1,sizeof(buff1));
+	        if (res != DW_DLV_OK) {
+	            _dwarf_p_error(NULL, error, DW_DLE_STRING_ALLOC);
+		    return((Dwarf_P_Fde)DW_DLV_BADADDR);
+	        }
+	        res =  _dwarf_pro_encode_leb128_nm(val2, &nbytes2,
+			buff2,sizeof(buff2));
+	        if (res != DW_DLV_OK) {
+	            _dwarf_p_error(NULL, error, DW_DLE_STRING_ALLOC);
+		    return((Dwarf_P_Fde)DW_DLV_BADADDR);
+	        }
+	        ptr =  (char *) _dwarf_p_get_alloc(NULL, nbytes1+nbytes2);
+                if (ptr == NULL) {
+                    _dwarf_p_error(NULL, error, DW_DLE_STRING_ALLOC);
+                    return((Dwarf_P_Fde)DW_DLV_BADADDR);
+                }
+	        memcpy(ptr, buff1, nbytes1);
+	        memcpy(ptr+nbytes1, buff2, nbytes2);
+	        nbytes = nbytes1 + nbytes2;
+	    }
 	  break;
 #endif
 

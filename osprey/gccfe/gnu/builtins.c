@@ -63,7 +63,14 @@ const char *const built_in_class_names[4]
   = {"NOT_BUILT_IN", "BUILT_IN_FRONTEND", "BUILT_IN_MD", "BUILT_IN_NORMAL"};
 
 #define DEF_BUILTIN(X, N, C, T, LT, B, F, NA, AT) STRINGX(X),
+#ifdef TARG_ST
+/* TB: add dynamic arrays to support extension */
+const char **built_in_names;
+enum built_in_function BUILT_IN_COUNT; 
+const char *const built_in_names_static[(int) END_BUILTINS] =
+#else
 const char *const built_in_names[(int) END_BUILTINS] =
+#endif
 {
 #include "builtins.def"
 };
@@ -71,8 +78,12 @@ const char *const built_in_names[(int) END_BUILTINS] =
 
 /* Setup an array of _DECL trees, make sure each element is
    initialized to NULL_TREE.  */
+#ifdef TARG_ST
+/* TB:built_in_decls becomes now dynamic */
+tree *built_in_decls;
+#else
 tree built_in_decls[(int) END_BUILTINS];
-
+#endif
 static int get_pointer_alignment	PARAMS ((tree, unsigned int));
 #ifndef TARG_ST
 /* (cbr) */
@@ -81,7 +92,7 @@ static
 tree c_strlen			PARAMS ((tree));
 static const char *c_getstr		PARAMS ((tree));
 static rtx c_readstr			PARAMS ((const char *,
-						 enum machine_mode));
+						 machine_mode_t));
 static int target_char_cast		PARAMS ((tree, char *));
 static rtx get_memory_rtx		PARAMS ((tree));
 static int apply_args_size		PARAMS ((void));
@@ -105,45 +116,45 @@ static rtx expand_builtin_va_start	PARAMS ((tree));
 static rtx expand_builtin_va_end	PARAMS ((tree));
 static rtx expand_builtin_va_copy	PARAMS ((tree));
 static rtx expand_builtin_memcmp	PARAMS ((tree, tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strcmp	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strncmp	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx builtin_memcpy_read_str	PARAMS ((PTR, HOST_WIDE_INT,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strcat	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strncat	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strspn	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strcspn	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_memcpy	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strcpy	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx builtin_strncpy_read_str	PARAMS ((PTR, HOST_WIDE_INT,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strncpy	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx builtin_memset_read_str	PARAMS ((PTR, HOST_WIDE_INT,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx builtin_memset_gen_str	PARAMS ((PTR, HOST_WIDE_INT,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_memset	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_bzero		PARAMS ((tree));
 static rtx expand_builtin_strlen	PARAMS ((tree, rtx));
 static rtx expand_builtin_strstr	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strpbrk	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strchr	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_strrchr	PARAMS ((tree, rtx,
-						 enum machine_mode));
+						 machine_mode_t));
 static rtx expand_builtin_alloca	PARAMS ((tree, rtx));
 static rtx expand_builtin_ffs		PARAMS ((tree, rtx, rtx));
 static rtx expand_builtin_frame_address	PARAMS ((tree));
@@ -331,7 +342,7 @@ c_getstr (src)
 static rtx
 c_readstr (str, mode)
      const char *str;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   HOST_WIDE_INT c[2];
   HOST_WIDE_INT ch;
@@ -462,7 +473,7 @@ expand_builtin_setjmp_setup (buf_addr, receiver_label)
      rtx buf_addr;
      rtx receiver_label;
 {
-  enum machine_mode sa_mode = STACK_SAVEAREA_MODE (SAVE_NONLOCAL);
+  machine_mode_t sa_mode = STACK_SAVEAREA_MODE (SAVE_NONLOCAL);
   rtx stack_save;
   rtx mem;
 
@@ -651,7 +662,7 @@ expand_builtin_longjmp (buf_addr, value)
      rtx buf_addr, value;
 {
   rtx fp, lab, stack, insn, last;
-  enum machine_mode sa_mode = STACK_SAVEAREA_MODE (SAVE_NONLOCAL);
+  machine_mode_t sa_mode = STACK_SAVEAREA_MODE (SAVE_NONLOCAL);
 
   if (setjmp_alias_set == -1)
     setjmp_alias_set = new_alias_set ();
@@ -867,14 +878,14 @@ get_memory_rtx (exp)
    the register is not used for calling a function.  If the machine
    has register windows, this gives only the outbound registers.
    INCOMING_REGNO gives the corresponding inbound register.  */
-static enum machine_mode apply_args_mode[FIRST_PSEUDO_REGISTER];
+static machine_mode_t apply_args_mode[FIRST_PSEUDO_REGISTER];
 
 /* For each register that may be used for returning values, this gives
    a mode used to copy the register's value.  VOIDmode indicates the
    register is not used for returning values.  If the machine has
    register windows, this gives only the outbound registers.
    INCOMING_REGNO gives the corresponding inbound register.  */
-static enum machine_mode apply_result_mode[FIRST_PSEUDO_REGISTER];
+static machine_mode_t apply_result_mode[FIRST_PSEUDO_REGISTER];
 
 /* For each register that may be used for calling a function, this
    gives the offset of that register into the block returned by
@@ -909,7 +920,7 @@ apply_args_size ()
   static int size = -1;
   int align;
   unsigned int regno;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* The values computed by this function never change.  */
   if (size < 0)
@@ -927,7 +938,7 @@ apply_args_size ()
 	  {
 	    /* Search for the proper mode for copying this register's
 	       value.  I'm not sure this is right, but it works so far.  */
-	    enum machine_mode best_mode = VOIDmode;
+	    machine_mode_t best_mode = VOIDmode;
 
 	    for (mode = GET_CLASS_NARROWEST_MODE (MODE_INT);
 		 mode != VOIDmode;
@@ -988,7 +999,7 @@ apply_result_size ()
 {
   static int size = -1;
   int align, regno;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* The values computed by this function never change.  */
   if (size < 0)
@@ -1000,7 +1011,7 @@ apply_result_size ()
 	  {
 	    /* Search for the proper mode for copying this register's
 	       value.  I'm not sure this is right, but it works so far.  */
-	    enum machine_mode best_mode = VOIDmode;
+	    machine_mode_t best_mode = VOIDmode;
 
 	    for (mode = GET_CLASS_NARROWEST_MODE (MODE_INT);
 		 mode != TImode;
@@ -1065,7 +1076,7 @@ result_vector (savep, result)
      rtx result;
 {
   int regno, size, align, nelts;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx reg, mem;
   rtx *savevec = (rtx *) alloca (FIRST_PSEUDO_REGISTER * sizeof (rtx));
 
@@ -1095,7 +1106,7 @@ expand_builtin_apply_args_1 ()
 {
   rtx registers;
   int size, align, regno;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* Create a block where the arg-pointer, structure value address,
      and argument registers can be saved.  */
@@ -1187,7 +1198,7 @@ expand_builtin_apply (function, arguments, argsize)
      rtx function, arguments, argsize;
 {
   int size, align, regno;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx incoming_args, result, reg, dest, src, call_insn;
   rtx old_stack_level = 0;
   rtx call_fusage = 0;
@@ -1367,7 +1378,7 @@ expand_builtin_return (result)
      rtx result;
 {
   int size, align, regno;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx reg;
   rtx call_fusage = 0;
 
@@ -1465,7 +1476,7 @@ expand_builtin_constant_p (exp)
      tree exp;
 {
   tree arglist = TREE_OPERAND (exp, 1);
-  enum machine_mode value_mode = TYPE_MODE (TREE_TYPE (exp));
+  machine_mode_t value_mode = TYPE_MODE (TREE_TYPE (exp));
   rtx tmp;
 
   if (arglist == 0)
@@ -1496,7 +1507,7 @@ expand_builtin_mathfn (exp, target, subtarget)
   rtx op0, insns;
   tree fndecl = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
   tree arglist = TREE_OPERAND (exp, 1);
-  enum machine_mode argmode;
+  machine_mode_t argmode;
 
   if (!validate_arglist (arglist, REAL_TYPE, VOID_TYPE))
     return 0;
@@ -1618,7 +1629,7 @@ expand_builtin_strlen (exp, target)
      rtx target;
 {
   tree arglist = TREE_OPERAND (exp, 1);
-  enum machine_mode value_mode = TYPE_MODE (TREE_TYPE (exp));
+  machine_mode_t value_mode = TYPE_MODE (TREE_TYPE (exp));
 
   if (!validate_arglist (arglist, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -1631,7 +1642,7 @@ expand_builtin_strlen (exp, target)
 	= get_pointer_alignment (src, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
 
       rtx result, src_reg, char_rtx, before_strlen;
-      enum machine_mode insn_mode = value_mode, char_mode;
+      machine_mode_t insn_mode = value_mode, char_mode;
       enum insn_code icode = CODE_FOR_nothing;
 
       /* If SRC is not a pointer type, don't do this operation inline.  */
@@ -1713,7 +1724,7 @@ static rtx
 expand_builtin_strstr (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -1769,7 +1780,7 @@ static rtx
 expand_builtin_strchr (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, INTEGER_TYPE, VOID_TYPE))
     return 0;
@@ -1815,7 +1826,7 @@ static rtx
 expand_builtin_strrchr (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, INTEGER_TYPE, VOID_TYPE))
     return 0;
@@ -1869,7 +1880,7 @@ static rtx
 expand_builtin_strpbrk (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -1931,7 +1942,7 @@ static rtx
 builtin_memcpy_read_str (data, offset, mode)
      PTR data;
      HOST_WIDE_INT offset;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const char *str = (const char *) data;
 
@@ -1952,7 +1963,7 @@ static rtx
 expand_builtin_memcpy (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist,
 			 POINTER_TYPE, POINTER_TYPE, INTEGER_TYPE, VOID_TYPE))
@@ -2040,7 +2051,7 @@ static rtx
 expand_builtin_strcpy (exp, target, mode)
      tree exp;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   tree arglist = TREE_OPERAND (exp, 1);
   tree fn, len, src, dst;
@@ -2074,7 +2085,7 @@ static rtx
 builtin_strncpy_read_str (data, offset, mode)
      PTR data;
      HOST_WIDE_INT offset;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const char *str = (const char *) data;
 
@@ -2091,7 +2102,7 @@ static rtx
 expand_builtin_strncpy (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist,
 			 POINTER_TYPE, POINTER_TYPE, INTEGER_TYPE, VOID_TYPE))
@@ -2170,7 +2181,7 @@ static rtx
 builtin_memset_read_str (data, offset, mode)
      PTR data;
      HOST_WIDE_INT offset ATTRIBUTE_UNUSED;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const char *c = (const char *) data;
   char *p = alloca (GET_MODE_SIZE (mode));
@@ -2189,7 +2200,7 @@ static rtx
 builtin_memset_gen_str (data, offset, mode)
      PTR data;
      HOST_WIDE_INT offset ATTRIBUTE_UNUSED;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx target, coeff;
   size_t size;
@@ -2217,7 +2228,7 @@ static rtx
 expand_builtin_memset (exp, target, mode)
      tree exp;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   tree arglist = TREE_OPERAND (exp, 1);
 
@@ -2371,7 +2382,7 @@ expand_builtin_memcmp (exp, arglist, target, mode)
      tree exp ATTRIBUTE_UNUSED;
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   tree arg1, arg2, len;
   const char *p1, *p2;
@@ -2436,7 +2447,7 @@ expand_builtin_memcmp (exp, arglist, target, mode)
       = get_pointer_alignment (arg1, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
     int arg2_align
       = get_pointer_alignment (arg2, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
-    enum machine_mode insn_mode
+    machine_mode_t insn_mode
       = insn_data[(int) CODE_FOR_cmpstrsi].operand[0].mode;
 
     /* If we don't have POINTER_TYPE, call the function.  */
@@ -2495,7 +2506,7 @@ static rtx
 expand_builtin_strcmp (exp, target, mode)
      tree exp;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   tree arglist = TREE_OPERAND (exp, 1);
   tree arg1, arg2;
@@ -2545,7 +2556,7 @@ expand_builtin_strcmp (exp, target, mode)
 	= get_pointer_alignment (arg1, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
       int arg2_align
 	= get_pointer_alignment (arg2, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
-      enum machine_mode insn_mode
+      machine_mode_t insn_mode
 	= insn_data[(int) CODE_FOR_cmpstrsi].operand[0].mode;
 
       len1 = c_strlen (arg1);
@@ -2627,7 +2638,7 @@ static rtx
 expand_builtin_strncmp (exp, target, mode)
      tree exp;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   tree arglist = TREE_OPERAND (exp, 1);
   tree arg1, arg2, arg3;
@@ -2696,7 +2707,7 @@ expand_builtin_strncmp (exp, target, mode)
 	= get_pointer_alignment (arg1, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
       int arg2_align
 	= get_pointer_alignment (arg2, BIGGEST_ALIGNMENT) / BITS_PER_UNIT;
-      enum machine_mode insn_mode
+      machine_mode_t insn_mode
 	= insn_data[(int) CODE_FOR_cmpstrsi].operand[0].mode;
 
       len1 = c_strlen (arg1);
@@ -2781,7 +2792,7 @@ static rtx
 expand_builtin_strcat (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -2807,7 +2818,7 @@ static rtx
 expand_builtin_strncat (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist,
 			 POINTER_TYPE, POINTER_TYPE, INTEGER_TYPE, VOID_TYPE))
@@ -2859,7 +2870,7 @@ static rtx
 expand_builtin_strspn (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -2896,7 +2907,7 @@ static rtx
 expand_builtin_strcspn (arglist, target, mode)
      tree arglist;
      rtx target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (!validate_arglist (arglist, POINTER_TYPE, POINTER_TYPE, VOID_TYPE))
     return 0;
@@ -3785,7 +3796,7 @@ expand_builtin (exp, target, subtarget, mode, ignore)
      tree exp;
      rtx target;
      rtx subtarget;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int ignore;
 {
   tree fndecl = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
@@ -4419,7 +4430,7 @@ default_expand_builtin (exp, target, subtarget, mode, ignore)
      tree exp ATTRIBUTE_UNUSED;
      rtx target ATTRIBUTE_UNUSED;
      rtx subtarget ATTRIBUTE_UNUSED;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      int ignore ATTRIBUTE_UNUSED;
 {
   return NULL_RTX;

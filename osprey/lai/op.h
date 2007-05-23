@@ -318,6 +318,9 @@
 #include "targ_isa_properties.h"
 #include "targ_isa_hazards.h"
 #include "targ_isa_bundle.h"
+#ifdef TARG_ST
+#include "targ_isa_variants.h"
+#endif
 
 /* Declare some structures from elsewhere: */
 struct tn;  /* TODO: should not use it since tn.h included */
@@ -648,6 +651,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_ixor(o)		(TOP_is_xor(OP_code(o)) && OP_intop(o))
 
 #ifdef TARG_ST
+#define OP_automod(o)		(TOP_is_automod(OP_code(o)))
 //[CG]: Added semantic queries
 #define OP_ishl(o)		(TOP_is_shl(OP_code(o)) && OP_intop(o))
 #define OP_ishr(o)		(TOP_is_shr(OP_code(o)) && OP_intop(o))
@@ -663,6 +667,9 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #endif
 
 #define TOP_is_predicated(t)    (TOP_is_guard_t(t) || TOP_is_guard_f(t))
+#define OP_is_predicated(o)     (TOP_is_predicated(OP_code(o)))
+#define OP_is_guard_t(o)        (TOP_is_guard_t(OP_code(o)))
+#define OP_is_guard_f(o)        (TOP_is_guard_f(OP_code(o)))
 #define OP_has_predicate(o)	(TOP_is_predicated(OP_code(o)))
 #define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
 #define OP_jump(o)		(TOP_is_jump(OP_code(o)))
@@ -805,14 +812,15 @@ inline TN *OP_base_update_tn(OP *op)
   return NULL;
 }
 
-#ifdef TARG_ST
-extern TOP TOP_opnd_immediate_equivalent(TOP top, int opnd, INT64 *imm);
-#endif
+extern TOP TOP_opnd_register_variant(TOP top, int opnd, ISA_REGISTER_CLASS regclass);
 extern TOP TOP_opnd_immediate_variant(TOP top, int opnd, INT64 imm);
 extern TOP TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2);
 extern TOP TOP_result_register_variant(TOP top, int rslt, ISA_REGISTER_CLASS regclass);
 extern INT TOP_opnd_use_bits(TOP top, int opnd);
 extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
+
+extern BOOL TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm);
+extern TOP TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass);
 
 extern VARIANT TOP_cond_variant(TOP top);
 extern VARIANT TOP_cmp_variant(TOP top);
@@ -1046,24 +1054,6 @@ inline TN *CGTARG_Copy_Operand_TN(OP *op)
 inline BOOL CGTARG_Is_OP_Intrinsic(OP *op) { 
   return OP_code(op) == TOP_intrncall; 
 }
-
-#ifdef TARG_ST
-extern BOOL CGTARG_Is_OP_Addr_Incr(OP *op);
-#else
-inline BOOL CGTARG_Is_OP_Addr_Incr(OP *op)
-{
-  return FALSE;
-}
-#endif
-
-#ifdef TARG_ST
-extern BOOL CGTARG_Is_OP_Cmp_Eq_Ne(OP *op);
-#else
-inline BOOL CGTARG_Is_OP_Cmp_Eq_Ne(OP *op)
-{
-  return FALSE;
-}
-#endif
 
 #ifdef TARG_ST
 #define OP_Mem_Ref_Bytes(o)  TOP_Mem_Bytes(OP_code(o))
@@ -1473,7 +1463,8 @@ BOOL OP_Alloca_Barrier(OP *op);
 BOOL Is_Delay_Slot_Op (OP *xfer_op, OP *op);
 
 extern void OP_Base_Offset_TNs(OP *memop, struct tn **base_tn, struct tn **offset_tn);
-
+#ifdef TARG_STxP70
+#endif
 /***********************************************************************
  *
  *      Return a boolean to indicate if <tn> is both an operand and a

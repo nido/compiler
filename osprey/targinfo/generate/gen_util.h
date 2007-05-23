@@ -31,6 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+/*
+  This file has been modified by STMicroelectronics
+ */
 
 
 // gen_util.h
@@ -40,19 +43,42 @@
 // These functions are only to be used by the generators.
 //
 //  void Emit_Header (FILE *hfile, 
-//		      const char *name, 
-//		      const char * const *interface_desc)
+//		      const char *name,
+//		      const char * const *interface_desc,
+//                    const char *extname=NULL)
 //     Write out the standard h file header to <hfile>. The basename
 //     of the header being created is specified by <name>. An optional
 //     interface description is specified by <interface_desc> (pass NULL
-//     if it is not desired).
+//     if it is not desired). An second optional argument is used to
+//     pass extension name (dynamic code generation only). For legacy
+//     purpose, it is possible not to specify extension name (in such
+//     a case, a NULL argument is passed).
 //
-//  void Emit_Footer (FILE *file)
+//  void Emit_Footer   (FILE *file)
 //     Write out the standard h file footer to <hfile>.
+//
+//  void Emit_C_Header (FILE *file)
+//     Write out "extern \"C\" {" directive to file <cfile>.
+//
+//  void Emit_C_Footer (FILE *file)
+//     Write out "}" (end of "C" directive) in file <cfile>.
 //
 //  void Emit_Definitions (FILE *hfile, const char *prefix)
 //     Write out client specified definitions (specified with Define_xxx)
 //     to <hfile>. The definition names will all be prefxed by <prefix>.
+//
+//  void  Set_Dynamic(char* extname)
+//     Useful only for the so-called "dynamic extensions". Must be
+//     invoked at the very beginning of main() routine. First parameter
+//     is mandatory and contains the name of the considered extension.
+//
+//  bool Is_Static_Code()
+//      Return true if generator is running for "static" code (that is, we
+//      are not considering generation of code for a dynamic extension).
+//      Return false otherwise.
+//      
+//  boot Is_Dynamic_Code()
+//      equivalent to !Is_Static_Code().
 //
 ////////////////////////////////////
 
@@ -66,21 +92,105 @@
 extern "C" {
 #endif
 
+#ifndef BZERO
 #ifdef __CYGWIN__
 #define BZERO(s,n) bzero((char*)s,n)
 #else
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(_MSC_VER)
 #define BZERO(s,n) memset ((void*)(s),0,(n))
 #else
 #define BZERO(s,n) bzero((void*)s,n)
 #endif
 #endif
+#endif
 
+/* In order to keep code legacy, and in the same time */
+/* add a new parameter (extname), this last parameter */
+/* is optional and set to NULL if not specified.      */
 extern void Emit_Header (FILE *hfile, 
 			 const char *name, 
-			 const char * const *interface_desc);
+			 const char *const *interface_desc,
+                         const char *extname = NULL /* Optional parameter */);
+
 extern void Emit_Footer (FILE *hfile);
 extern void Emit_Definitions (FILE *hfile, const char *prefix);
+
+/* Added by STMicroelectronics.                     */
+/* Defining the type of files that can be generated */
+/* or included.                                     */
+typedef enum{
+
+gen_util_file_type_unknown=0 ,
+
+gen_util_file_type_cfile     ,/* C file      */
+gen_util_file_type_hfile     ,/* Header file */
+gen_util_file_type_efile     ,/* Export file */
+gen_util_file_type_c_i_file  ,/* C file to be included in another C file     */
+gen_util_file_type_cpp_i_file,/* C++ file to be included in another C++ file */
+gen_util_file_type_dyn_hfile ,/* Header files in generate/dyn folder         */
+
+gen_util_file_type_last = gen_util_file_type_dyn_hfile,
+
+} GEN_UTIL_FILE_TYPE;
+
+/* The following macros lists the base name of files generated */
+/* by Open64 code generator.                                   */
+#define FNAME_TOPCODE              "topcode"
+
+#define FNAME_TARG                 "targ_"
+#define FNAME_ISA                  "isa_"
+#define FNAME_ABI                  "abi_"
+#define FNAME_CG                   "cg_"
+
+#define FNAME_ISA_PROPERTIES        FNAME_ISA "properties"
+#define FNAME_ISA_VARIANTS          FNAME_ISA "variants"
+#define FNAME_ISA_LITS              FNAME_ISA "lits"
+#define FNAME_ISA_PRINT             FNAME_ISA "print"
+#define FNAME_ISA_FCT_PTR           FNAME_ISA "fct_ptr"
+#define FNAME_ISA_SUBSET            FNAME_ISA "subset"
+#define FNAME_ISA_REGISTERS         FNAME_ISA "registers"
+#define FNAME_ISA_OPERANDS          FNAME_ISA "operands"
+#define FNAME_ISA_ENUMS             FNAME_ISA "enums"
+#define FNAME_ISA_HAZARDS           FNAME_ISA "hazards"
+#define FNAME_ISA_SI                FNAME_ISA "si"
+#define FNAME_ISA_BUNDLE            FNAME_ISA "bundle"
+#define FNAME_ISA_TOPCODE           FNAME_ISA FNAME_TOPCODE
+#define FNAME_ABI_PROPERTIES        FNAME_ABI "properties"
+#define FNAME_CG_TOP_MULTI          FNAME_CG  "top_multi"
+
+#define FNAME_TARG_ISA_PROPERTIES   FNAME_TARG  FNAME_ISA_PROPERTIES
+#define FNAME_TARG_ISA_VARIANTS     FNAME_TARG  FNAME_ISA_VARIANTS
+#define FNAME_TARG_ISA_LITS         FNAME_TARG  FNAME_ISA_LITS
+#define FNAME_TARG_ISA_PRINT        FNAME_TARG  FNAME_ISA_PRINT
+#define FNAME_TARG_ISA_FCT_PTR      FNAME_TARG  FNAME_ISA_FCT_PTR
+#define FNAME_TARG_ISA_SUBSET       FNAME_TARG  FNAME_ISA_SUBSET
+#define FNAME_TARG_ISA_REGISTERS    FNAME_TARG  FNAME_ISA_REGISTERS
+#define FNAME_TARG_ISA_OPERANDS     FNAME_TARG  FNAME_ISA_OPERANDS
+#define FNAME_TARG_ISA_ENUMS        FNAME_TARG  FNAME_ISA_ENUMS
+#define FNAME_TARG_ISA_SI           FNAME_TARG  FNAME_ISA_SI
+#define FNAME_TARG_ISA_BUNDLE       FNAME_TARG  FNAME_ISA_BUNDLE
+#define FNAME_TARG_ISA_HAZARDS      FNAME_TARG  FNAME_ISA_HAZARDS
+#define FNAME_TARG_ABI_PROPERTIES   FNAME_TARG  FNAME_ABI_PROPERTIES
+#define FNAME_TARG_CG_TOP_MULTI     FNAME_TARG  FNAME_CG_TOP_MULTI
+
+/* Managing dynamic extensions */
+extern bool  Is_Static_Code           (void         );
+extern bool  Is_Dynamic_Code          (void         );
+extern char* Get_Extension_Name       (void         );
+extern void  Set_Dynamic              (char* extname);
+extern void  Gen_Close_File_Handle    (FILE* f, const char * const name);
+extern FILE* Gen_Open_File_Handle     (const char * const filename,
+                                       const char * const mode);
+extern char* Gen_Build_Filename       (const char * const bodyname,
+                                       const char * const extname,
+                                       const GEN_UTIL_FILE_TYPE type);
+extern void  Gen_Free_Filename        (char *filename);
+extern void  Emit_C_Header            (FILE* hfile);
+extern void  Emit_C_Footer            (FILE* hfile);
+
+/* String manipulation */
+extern void  Remove_Filename_Extension(const char * src_fname,
+                                       char       * tgt_fname);
 
 #ifdef __cplusplus
 }

@@ -3367,11 +3367,22 @@ DCE::Mark_block_live( BB_NODE *bb ) const
   // FdF 20060119: If this block will not reach the exit, mark ALL
   // statements live, since the side effects of this code are
   // difficult to know (ddts 24412).
+
+  // FdF 20061115: Merged from st200/main for bug #20296
+  // FdF 20060613: Do not keep scalar store to local variables. They
+  // must be deleted if not used, since this is expected during copy
+  // propagation (COPYPROP::Copy_propagate).
+
   if (!bb->Willexit() && (bb != _cfg->Fake_entry_bb()) && (bb != _cfg->Fake_exit_bb())) {
     STMTREP_ITER stmt_iter(bb->Stmtlist());
     STMTREP *stmt;
     FOR_ALL_NODE(stmt, stmt_iter, Init()) {
-      Mark_statement_live( stmt );
+      // Do not force STID operations to be live
+      if (OPERATOR_is_scalar_store (stmt->Opr()) &&
+	  (stmt->Lhs()->Kind() == CK_VAR)) {
+      }
+      else
+	Mark_statement_live( stmt );
     }
   }
 #endif

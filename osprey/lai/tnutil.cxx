@@ -80,6 +80,8 @@
 #include "config_TARG.h"	// for Enable_64_Bits_Ops
 #include "cg_flags.h"  // for GRA_LIVE_Phase_Invoked
 #include "gra_live.h"
+//TB; for List_Software_Names
+#include "config_list.h"
 #endif
 
 #ifdef TARG_ST
@@ -120,9 +122,13 @@ TN *TP_TN; // [SC] TLS support
  * register-class/register pair. We save pointers to them here
  * so we can get at them later.
  */
+#ifdef TARG_ST
+static TN *ded_tns[ISA_REGISTER_CLASS_MAX_LIMIT + 1][REGISTER_MAX + 1];
+#else
 static TN *ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#endif
 #ifdef TARG_ST200
-static TN *paired_ded_tns[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+static TN *paired_ded_tns[ISA_REGISTER_CLASS_MAX_LIMIT + 1][REGISTER_MAX + 1];
 #endif
 /* The register TNs are in a table named TNvec, indexed by their TN
  * numbers in the range 1..Last_TN.  The first part of the table, the
@@ -373,7 +379,12 @@ Gen_Register_TN (
     Check_TN_Vec_Size ();
     Set_TN_number(tn,++Last_TN);
     TNvec(Last_TN) = tn;
+#ifdef TARG_ST
+    // [Reconfigurability] Removed initial useless limitation
+	if ( size >= 256) ErrMsg ( EC_TN_Size, size );
+#else
     if ( size > 16 ) ErrMsg ( EC_TN_Size, size );
+#endif
     Set_TN_size(tn, size);
 #ifdef TARG_ST
     // Arthur: this is target dependent. 
@@ -1823,6 +1834,40 @@ Gen_Literal_TN_Pair (
 }
 
 
+#ifdef TARG_ST
+//TB: Return the name of a register, given a tn and a subclass Useful
+//for register whose name depends on the register subclass. For
+//instance on the VX extension register 6 is V6 or D3 dependin on the
+//subclass
+const char *REGISTER_extended_name(TN* tn,
+				   ISA_REGISTER_SUBCLASS sc) 
+{
+  const char *rname;
+  ISA_REGISTER_CLASS rc = TN_register_class(tn);
+  REGISTER reg = TN_register(tn);
+
+  // If register is physical,print its real name, otherwise
+  // virtual:
+  if (reg != REGISTER_UNDEFINED) {
+    if (REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), reg)
+	&& REGISTER_SUBCLASS_reg_name(sc, reg)) {
+      rname = REGISTER_SUBCLASS_reg_name(sc, reg);
+    } 
+    else if (List_Software_Names) {
+      rname = ABI_PROPERTY_Reg_Name(rc, REGISTER_machine_id(rc, reg));
+    } 
+    else {
+      rname = REGISTER_name(rc, reg);
+    }
+  }
+  else {
+    char *vname = TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool, 10);
+    sprintf(vname, "%s%d", ISA_REGISTER_CLASS_Symbol(rc), TN_number(tn));
+    rname = vname;
+  }
+  return rname;
+}
+#endif
 
 
 

@@ -654,7 +654,7 @@ reversed_comparison_code_parts (code, arg0, arg1, insn)
      rtx insn, arg0, arg1;
      enum rtx_code code;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* If this is not actually a comparison, we can't reverse it.  */
   if (GET_RTX_CLASS (code) != '<')

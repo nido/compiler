@@ -883,6 +883,7 @@ typedef struct DST_subrange_type
    DST_cval_ref stride;		/* stride - for non-contiguous sections (F90) */
 #ifdef TARG_ST
    DST_count_t count_val;	/* size */
+   DST_INFO_IDX type; /* Defining type, NULL for incomplete declaration */
 #endif
 } DST_SUBRANGE_TYPE;
 
@@ -894,6 +895,7 @@ typedef struct DST_subrange_type
 #define DST_SUBRANGE_TYPE_stride_ref(attr) ((attr)->stride.ref)
 #ifdef TARG_ST
 #define DST_SUBRANGE_TYPE_count_val(attr) ((attr)->count_val)
+#define DST_SUBRANGE_TYPE_type(attr) ((attr)->type)
 #endif
 
 

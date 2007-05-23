@@ -111,6 +111,10 @@
 static BOOL wn_lower_no_wn_simplify;
 #endif
 
+#ifdef TARG_STxP70
+extern BOOL farcall;
+#endif
+
 /* this next header should be after the external declarations in the others */
 #include "pragma_weak.h"	/* Alias routines defined in wopt.so */
 
@@ -268,7 +272,16 @@ static BOOL save_Div_Split_Allowed ;
 
 #ifdef TARG_ST
 // [CG] Map of mtypes to aliasing types for ansi rules
-static TY_IDX TY_alias_array[MTYPE_LAST + 1];
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define TY_alias_array(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("TY_alias_array: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       TY_alias_array[t])
+#define TY_alias_array_set(t) \
+       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), TY_alias_array[t]
+static TY_IDX TY_alias_array[MTYPE_STATIC_COUNT + 1];
 #endif
 
 static BOOL traceIO              = FALSE;
@@ -330,11 +343,11 @@ static const char * MSTORE_ACTIONS_name(MSTORE_ACTIONS);
 static TY_IDX
 MTYPE_To_TY_Alias(TYPE_ID mtype)
 {
-  if (TY_alias_array[mtype] == 0) {
-    TY_alias_array[mtype] = Copy_TY(MTYPE_To_TY (mtype));
-    Set_TY_no_ansi_alias(TY_alias_array[mtype]);
+  if (TY_alias_array(mtype) == 0) {
+    TY_alias_array_set(mtype) = Copy_TY(MTYPE_To_TY (mtype));
+    Set_TY_no_ansi_alias(TY_alias_array(mtype));
   }
-  return TY_alias_array[mtype];
+  return TY_alias_array(mtype);
 }
 #endif
 
@@ -2597,12 +2610,29 @@ get_hilo_type (
 {
   TYPE_ID type;
 
+#ifdef TARG_STxP70
+  if (MTYPE_is_double(orig_type)) {
+    if(Enable_Fpx) {
+      type = MTYPE_I4;
+    }
+    else {
+      type = MTYPE_F4;
+    }
+  }
+  else if (orig_type == MTYPE_I8) type = MTYPE_I4;
+  else if (orig_type == MTYPE_U8) type = MTYPE_U4;
+  else {
+    FmtAssert(FALSE,("can't handle MTYPE_%s", MTYPE_name(orig_type)));
+  }
+#else
   if (MTYPE_is_double(orig_type)) type = MTYPE_F4;
   else if (orig_type == MTYPE_I8) type = MTYPE_I4;
   else if (orig_type == MTYPE_U8) type = MTYPE_U4;
   else {
     FmtAssert(FALSE,("can't handle MTYPE_%s", MTYPE_name(orig_type)));
   }
+#endif
+
   return type;
 }
 
@@ -5517,7 +5547,34 @@ static WN *lower_return_ldid(WN *block, WN *tree, LOWER_ACTIONS actions)
 			 " of expression");
       /*NOTREACHED*/
     default:
+#ifdef TARG_ST
+     // YJ: for dynamic mtypes, we cancel lowering, 
+     // LDID operator is used as a return
+     // result of an intrinsic call.
+     // This mechanism could be extended in order to manage
+     // other types.
+
+     // TODO: search for INTRINSIC_CALL operator. 
+     // For multi-results builtins, relation
+     // WN_operator(WN_last(block)) == OPR_INTRINSIC_CALL is not always
+     // true.
+     if( MTYPE_is_dynamic(mtype) &&
+         Inline_Intrinsics_Allowed) { 
+
+         if(traceLdid) {
+           fprintf(TFile,"-->Lowering dynamic mtype \"%s\" ldid return preg\n",
+                         MTYPE_name(mtype));
+         }
+
+         WN_st_idx(tree) = ST_st_idx(MTYPE_To_PREG(mtype));
+         WN_load_offset(tree) = -1;  // By convention
+     }
+     else {
       Fail_FmtAssertion ("Unexpected type in lower_return_ldid");
+     }
+#else
+      Fail_FmtAssertion ("Unexpected type in lower_return_ldid");
+#endif
       /*NOTREACHED*/
   }
 
@@ -7321,6 +7378,10 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 	return lower_expr(block, select, actions);
       }
     }
+    break;
+
+  default:
+    /* Handled below. */
     break;
   }
 
@@ -10524,13 +10585,6 @@ lower_complex_actual (
 }
 
 
-#ifdef TARG_ST
-// Arthur: Some architectures (eg. ST100) need this to be calculated
-//         rather than specified once in the targ description.
-static INT _Formal_Save_Area_Size;
-#define FIXED_FORMAL_AREA_SIZE	
-#endif
-
 /* ====================================================================
  *
  * void lower_mload_actual
@@ -10583,18 +10637,13 @@ lower_mload_actual (
 	  ("expected MLOAD node, not %s", OPCODE_name(WN_opcode(mload))));
 
   Setup_Struct_Output_Parameter_Locations(mloadTY);
-#ifdef TARG_ST
-  //
-  // Arthur: We need to keep track of the _Formal_Save_Area_Size
-  //
-  INT last_ploc_ofst = PLOC_offset(ploc)-PLOC_lpad(ploc);
-#endif
+
   ploc = Get_Struct_Output_Parameter_Location(ploc);
 
- /*
-  *  create addrN assignment to hold the address of the mload
-  *  Adjust the address if there is an offset in the mload
-  */
+  /*
+   *  create addrN assignment to hold the address of the mload
+   *  Adjust the address if there is an offset in the mload
+   */
   preg = MTYPE_To_PREG(Pointer_type);
   {
     WN	*addr = WN_COPY_Tree(WN_kid0(mload));
@@ -10630,13 +10679,9 @@ lower_mload_actual (
 
       
 #ifdef TARG_ST
-#ifdef FIXED_FORMAL_AREA_SIZE // CG
-      offset = PLOC_offset(ploc) - Formal_Save_Area_Size
-	+ STACK_OFFSET_ADJUSTMENT;
-#else
-      offset = PLOC_offset(ploc) - _Formal_Save_Area_Size
-	+ STACK_OFFSET_ADJUSTMENT;
-#endif
+      //      offset = PLOC_offset(ploc) - Formal_Save_Area_Size
+      //	+ STACK_OFFSET_ADJUSTMENT;
+      offset = PLOC_offset(ploc) + STACK_OFFSET_ADJUSTMENT;
 #else
       offset = PLOC_offset(ploc) - Formal_Save_Area_Size
 	+ Stack_Offset_Adjustment;
@@ -10686,13 +10731,9 @@ lower_mload_actual (
 	INT64	offset;
 
 #ifdef TARG_ST
-#ifdef FIXED_FORMAL_AREA_SIZE // CG
-	offset = PLOC_offset(ploc) - Formal_Save_Area_Size
-	  + STACK_OFFSET_ADJUSTMENT - mloadOffset; 
-#else
-	offset = PLOC_offset(ploc) - _Formal_Save_Area_Size
-	  + STACK_OFFSET_ADJUSTMENT - mloadOffset; 
-#endif
+	//	offset = PLOC_offset(ploc) - Formal_Save_Area_Size
+	//	  + STACK_OFFSET_ADJUSTMENT - mloadOffset; 
+	offset = PLOC_offset(ploc) + STACK_OFFSET_ADJUSTMENT - mloadOffset; 
 #else
 	offset = PLOC_offset(ploc) - Formal_Save_Area_Size
 	  + Stack_Offset_Adjustment - mloadOffset; 
@@ -10850,13 +10891,6 @@ lower_mload_actual (
       }
     }
     mloadOffset += PLOC_size(ploc);
-#ifdef TARG_ST
-    // Arthur: update _Formal_Save_Area_Size
-    if (!PLOC_on_stack(ploc)) {
-      _Formal_Save_Area_Size += PLOC_total_size(ploc) - last_ploc_ofst;
-    }
-    last_ploc_ofst = PLOC_total_size(ploc);
-#endif
     ploc = Get_Struct_Output_Parameter_Location(ploc);
   }
 }
@@ -11887,6 +11921,52 @@ WN_convert_to_pic (
   return itree;
 }
 
+#ifdef TARG_STxP70
+/* ====================================================================
+ *   WN_convert_to_abs
+ *
+ *   convert a CALL to ICALL when -Mfarcall
+ * ====================================================================
+ */
+WN *
+WN_convert_to_abs (
+  WN *tree,
+  ST *callee_st
+)
+{
+  INT16        n = WN_kid_count(tree);
+  SRCPOS       srcpos = WN_Get_Linenum(tree);
+  WN          *itree;
+  TYPE_ID rtype;
+  TYPE_ID desc;
+ 
+  /*
+   *  convert (CALL sym args ...) into (ICALL args ... (LDA sym)). 
+   *  The LDA does not have an OP_PARM
+   */
+  rtype = WN_rtype(tree);
+  desc = WN_desc(tree);
+
+  if (MTYPE_is_complex(rtype))
+    rtype = Mtype_complex_to_real(rtype);
+
+  if (MTYPE_is_complex(desc))
+    desc = Mtype_complex_to_real(desc);
+
+  itree = WN_Icall(rtype, desc, n+1, ST_pu_type(callee_st));
+  Is_True(callee_st == WN_st(tree),
+	      ("lower_call: something changed that Robert didn't expect!"));
+  WN_actual(itree, n) = WN_Lda(Pointer_type, 0, callee_st);
+  WN_Set_Linenum(itree, srcpos);
+  WN_Set_Flags(tree, itree);
+  
+  while (--n >= 0)
+    WN_actual(itree, n) = WN_actual(tree, n);
+
+  return itree;
+}
+#endif
+
 /* ====================================================================
  *
  * WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
@@ -11915,9 +11995,19 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
     fdump_tree (TFile, tree);
     fflush(TFile);
   }
-
-  for (i = 0; i < WN_kid_count(tree); i++)
-    WN_actual(tree, i) = lower_expr(block, WN_actual(tree, i), actions);
+#ifdef TARG_ST
+  // Fix for bug #23772. If lowering of actuals is done at that lower hilo
+  // time, this means actuals are lowered two times and code are duplicated.
+  // Thus, we block that lower for lower hilo action
+  if(!Action(LOWER_HILO))
+      {
+#endif
+          for (i = 0; i < WN_kid_count(tree); i++)
+              WN_actual(tree, i) = lower_expr(block, WN_actual(tree, i),
+                                              actions);
+#ifdef TARG_ST
+      }
+#endif
 
 #if 1
   if (traceCall) {
@@ -12019,7 +12109,25 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
       tree = itree;
     }
   }
-  
+
+#ifdef TARG_STxP70
+  if (Action(LOWER_FARCALL))
+  {
+    // convert a CALL to ICALL (-Mfarcall option)
+    if (WN_operator_is(tree, OPR_CALL)  && farcall) 
+    {
+      WN          *itree = WN_convert_to_abs (tree, callee_st);
+
+      if (Cur_PU_Feedback) {
+	Cur_PU_Feedback->FB_lower_call( tree, itree );
+      }
+      WN_Delete(tree);
+      tree = itree;
+    }
+  }
+
+#endif
+
 #ifdef TARG_ST
   // 
   // Arthur: it seems necessary to insert the TAS nodes for function
@@ -12044,7 +12152,14 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
 
   if (Action(LOWER_RETURN_VAL)) {
 
+#ifdef TARG_ST
+    // [JV] When return struct via first hidden parameter, this parameter
+    // is not yet lowered at this point. So we inform the parameter passing
+    // simulation (targ_sim) in this case
+    ploc = Setup_Output_Parameter_Locations(call_ty,FALSE);
+#else
     ploc = Setup_Output_Parameter_Locations(call_ty);
+#endif
 
     for (i = 0; i < num_actuals; i++) {
       WN       *parm = WN_actual(tree, i);
@@ -12102,6 +12217,7 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
   }
 #endif
 
+  
   if (NotAction(LOWER_CALL))
     return tree;
 
@@ -12164,24 +12280,6 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
 	  callee_st == WN_st(tree),
 	  ("lower_call: something changed that Robert didn't expect!"));
 
-#ifdef TARG_ST
-  //
-  // Arthur: during this iteration over all PLOCs, we need to
-  //         compute the _Formal_Save_Area_Size.
-  //
-  //         lower_mload_actual() and lower_complex_actual update
-  //         the _Formal_Save_Area_Size as well.
-  //
-  // NOTE: it only works if we are guaranteed that once a PLOC,
-  //       corresponding to a structure passed by value,
-  //       is on stack => all the following PLOCs are on stack.
-  //       This is indeed the case with all known to us ABIs:
-  //       MIPS,IA64,ST200,ST100(the most exotic but structures
-  //       passed by technical reference, so OK).
-  //
-  INT prev_ploc_ofst = 0;
-  _Formal_Save_Area_Size = 0;
-#endif
 
   ploc = Setup_Output_Parameter_Locations(call_ty);
   for (i = 0; i < num_actuals; i++)
@@ -12217,13 +12315,6 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
     else
     {
       ploc = Get_Output_Parameter_Location( MTYPE_To_TY(parmType));
-#ifdef TARG_ST
-      if (!PLOC_on_stack(ploc)) {
-	_Formal_Save_Area_Size += PLOC_total_size(ploc) + 
-	                          PLOC_rpad(ploc) - prev_ploc_ofst;
-      }
-      prev_ploc_ofst = PLOC_total_size(ploc)+PLOC_rpad(ploc);
-#endif /* TARG_ST */
     }
   }
 
@@ -12277,15 +12368,8 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
       */
       WN *wn;
 #ifdef TARG_ST
-#ifdef FIXED_FORMAL_AREA_SIZE // CG
-      wn = WN_Stid(parmType, PLOC_offset(ploc) - Formal_Save_Area_Size
-		             + STACK_OFFSET_ADJUSTMENT,
-      		   SP_Sym, ty, actual);
-#else
-      wn = WN_Stid(parmType, PLOC_offset(ploc) - _Formal_Save_Area_Size
-		             + STACK_OFFSET_ADJUSTMENT,
-      		   SP_Sym, ty, actual);
-#endif
+      wn = WN_Stid(parmType, PLOC_offset(ploc) + STACK_OFFSET_ADJUSTMENT,
+     		   SP_Sym, ty, actual);
 #else
       wn = WN_Stid(parmType, PLOC_offset(ploc) - Formal_Save_Area_Size
 		             + Stack_Offset_Adjustment,
@@ -12293,7 +12377,7 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
 #endif
       WN_Set_Linenum(wn, srcpos);
       WN_INSERT_BlockLast(callblock, wn);
-
+      
 #if 1
       if (traceCall) {
 	fprintf(TFile, "  ------ actual after lowering: \n");
@@ -12356,18 +12440,6 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
 	}
       }
     }
-  }
-
- /*
-  * store param size in tree for later re-use 
-  * unless has no prototype (then could have varying # args). 
-  */
-  if (num_actuals > 0 &&
-      TY_has_prototype(call_ty) &&
-      Get_PU_arg_area_size(call_ty) == 0 &&
-      ! TY_is_varargs(call_ty))
-  {
-      Set_PU_arg_area_size(call_ty, PLOC_total_size(ploc));
   }
 
  /*
@@ -14587,6 +14659,9 @@ Move_Loop_Pragmas(WN *wn_orig, WN *block_orig, WN *block_dest)
       case WN_PRAGMA_PIPELINE:
       case WN_PRAGMA_LOOPSEQ:
       case WN_PRAGMA_STREAM_ALIGNMENT:
+      case WN_PRAGMA_HWLOOP:
+      case WN_PRAGMA_LOOPMINITERCOUNT:
+      case WN_PRAGMA_LOOPMAXITERCOUNT:
 	WN_EXTRACT_FromBlock(block_orig, wn);
 	WN_INSERT_BlockLast(block_dest, wn);
 	break;
@@ -15670,7 +15745,14 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
       */
       TYPE_ID	type = Def_Int_Mtype;
       
+#if 0
       if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
+#else
+      // [JV] With multiple register files and stxp ABI, it is 
+      // possible to be in stack and to have register to save
+      // in vararg case.
+      if (PLOC_is_nonempty(ploc)) {
+#endif
 	/* don't do if already reached stack params */
         ploc = Get_Vararg_Input_Parameter_Location (ploc);
       }
@@ -15684,7 +15766,11 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 	WN 	*var_addr;
 	ST	*st;
 	INT 	offset;
-	wn = WN_Ldid (type, PLOC_reg(ploc), Int_Preg, ST_type(Int_Preg));
+	ST      *preg_sym = Get_Vararg_Preg_Symbol(ploc);
+	type = ST_mtype(preg_sym);
+	FmtAssert(type != MTYPE_UNKNOWN,("PLOC mtype unknown"));
+
+	wn = WN_Ldid (type, PLOC_reg(ploc), preg_sym, ST_type(preg_sym));
 	/*
 	*  Get the symbol address for the vararg register.
 	*/
@@ -15692,7 +15778,7 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 	var_addr = WN_Lda (Pointer_type, 0, st);
 	wn = WN_Istore(type,
 		       offset,
-		       Make_Pointer_Type(ST_type(Int_Preg)),
+		       Make_Pointer_Type(ST_type(preg_sym)),
 		       var_addr,
 		       wn);
 	WN_Set_Linenum (wn, current_srcpos);
@@ -15722,7 +15808,11 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 	WN	*wn;
 	ST	*st;
 
-	wn = WN_Ldid (type, PLOC_reg(ploc), Int_Preg, ST_type(Int_Preg));
+	ST      *preg_sym = Get_Vararg_Preg_Symbol(ploc);
+	type = ST_mtype(preg_sym);
+	FmtAssert(type != MTYPE_UNKNOWN,("PLOC mtype unknown"));
+
+	wn = WN_Ldid (type, PLOC_reg(ploc), preg_sym, ST_type(preg_sym));
        /*
 	*  get the symbol for the vararg formal
 	*/
@@ -16254,6 +16344,9 @@ const char * LOWER_ACTIONS_name(LOWER_ACTIONS actions)
     // NOTE: Delete LOWER_FREQUENCY_MAPS
   case LOWER_FREQUENCY_MAPS:		return "LOWER_FREQUENCY_MAPS";
   case LOWER_PICCALL:			return "LOWER_PICCALL";
+#ifdef TARG_STxP70
+  case LOWER_FARCALL:			return "LOWER_FARCALL";
+#endif
   case LOWER_BASE_INDEX:		return "LOWER_BASE_INDEX";
   case LOWER_TO_CG:			return "LOWER_TO_CG";
   case LOWER_ASSERT:			return "LOWER_ASSERT";
@@ -16458,6 +16551,9 @@ static LOWER_ACTIONS lower_actions(WN *pu, LOWER_ACTIONS actions)
 		LOWER_INTRINSIC		  |
 		LOWER_ASSERT		  |
 		LOWER_PICCALL		  |
+#ifdef TARG_STxP70
+      		LOWER_FARCALL		  |
+#endif
 		LOWER_ALL_MAPS		  |
 		LOWER_SHORTCIRCUIT	  |
 		LOWER_INL_STACK_INTRINSIC |
@@ -16557,7 +16653,7 @@ void Lower_Init(void)
 
 #ifdef TARG_ST
    // [CG] Map of mtypes to aliasing types for ansi rules
-   BZERO (TY_alias_array, sizeof(TY_IDX) * (MTYPE_LAST + 1));
+   BZERO (TY_alias_array, sizeof(TY_IDX) * (MTYPE_STATIC_COUNT + 1));
 #endif
 }
 

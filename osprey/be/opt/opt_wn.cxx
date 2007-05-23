@@ -63,7 +63,6 @@
 #include "tracing.h"
 #include "mempool.h"
 #include "opt_base.h"
-#include "topcode.h"
 
 #include "wn.h"
 #include "wn_util.h"
@@ -225,6 +224,17 @@ Mtype_from_class_size (
 {
   Is_True(t1 != MTYPE_BS && t2 != MTYPE_BS,
   	  ("Mtype_from_class_size: MTYPE_BS not handled here."));
+
+#ifdef TARG_ST
+  // Reconfigurability: handle dynamic types
+  if (MTYPE_is_dynamic(t1) || MTYPE_is_dynamic(t2)) {
+    if (t1 == t2) {
+	return t1;
+    }
+    DevWarn("%s[%d]::Mtype_from_class_size(%d, %d): Unexpected type in parameter",
+	    __FILE__, __LINE__, t1, t2);
+  }
+#endif
 
   if ((MTYPE_type_class(t1) & (MTYPE_CLASS_UNSIGNED_INTEGER|MTYPE_CLASS_POINTER)) == 0)
     return t1;
@@ -624,6 +634,27 @@ Mtype_from_mtype_class_and_size( INT mtype_class, INT bytes )
 
   return MTYPE_UNKNOWN;
 }
+
+#ifdef TARG_ST
+// ====================================================================
+// Get a MTYPE given an AUX_STAB_ENTRY symbol.
+// ====================================================================
+extern MTYPE
+Mtype_from_AUX_STAB_ENTRY( AUX_STAB_ENTRY *sym ) {
+  MTYPE rtype;
+  if (MTYPE_is_dynamic(sym->Mtype())) {
+    // For dynamic mtypes, the mclass field cannot be used.
+    // Retrieve the mtype directly from the symbol.
+    rtype = sym->Mtype();
+    FmtAssert((MTYPE_byte_size(rtype) == sym->Byte_size()),
+	      ("Incorrect MTYPE size"));
+  }
+  else {
+    rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), sym->Byte_size());
+  }
+  return rtype;
+}
+#endif
 
 // ====================================================================
 // Get a LDID opcode given an mtype class and size.  This function 
@@ -1153,8 +1184,14 @@ Identity_assignment_type( AUX_STAB_ENTRY *sym )
   // determine if we can substitute a predefined type if it has
   // same characteristics (alignment,signedness,etc.)
   if ( ! Is_Simple_Type( ty ) ) {
+#ifdef TARG_ST
+    // Reconfigurability: Removed direct access to mclass, that is
+    //                    not supported for dynamic mtypes
+    MTYPE mtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
     MTYPE mtype = Mtype_from_mtype_class_and_size(sym->Mclass(),
 						  sym->Byte_size());
+#endif
 
     if ( mtype == MTYPE_UNKNOWN )
       return TY_IDX_ZERO;
@@ -1178,10 +1215,27 @@ WN *
 Create_identity_assignment(AUX_STAB_ENTRY *sym, AUX_ID aux_id, TY_IDX ty)
 {
   ST          *st  = sym->St();
-  const OPCODE ldidop = Ldid_from_mtype_class_and_size(sym->Mclass(),
-                                                       sym->Byte_size());
-  const OPCODE stidop = Stid_from_mtype_class_and_size(sym->Mclass(),
-                                                       sym->Byte_size());
+  OPCODE ldidop;
+  OPCODE stidop;
+
+#ifdef TARG_ST
+  // Reconfigurability: mclass cannot be used to retrieve mtype of dynamic type
+  if (MTYPE_is_dynamic(sym->Mtype())) {
+    ldidop = OPCODE_make_op(OPR_LDID, sym->Mtype(), sym->Mtype());
+    stidop = OPCODE_make_op(OPR_STID, MTYPE_V, sym->Mtype());
+  }
+  else {
+    ldidop = Ldid_from_mtype_class_and_size(sym->Mclass(),
+					    sym->Byte_size());
+    stidop = Stid_from_mtype_class_and_size(sym->Mclass(),
+					    sym->Byte_size());
+  }
+#else
+  ldidop = Ldid_from_mtype_class_and_size(sym->Mclass(),
+					  sym->Byte_size());
+  stidop = Stid_from_mtype_class_and_size(sym->Mclass(),
+					  sym->Byte_size());
+#endif
 
   WN *rhs = WN_CreateLdid( ldidop, sym->St_ofst(), st, ty );
   WN *copy = WN_CreateStid( stidop, sym->St_ofst(), st, ty, rhs);

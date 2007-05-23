@@ -539,9 +539,17 @@ public:
   // the blocks contain whirl statements rather than stmtreps
   void         Process_multi_entryexit( BOOL is_whirl );
 
-  // update pred/succ arcs of fake entry/exit blocks so they are not
+#ifdef TARG_ST
+  // Attach fake entry exit arcs such that they are reachable.
+  // One must call Remove_fake_entryexit_arcs() to restore
+  // cfg state.
+  void         Attach_fake_entryexit_arcs( void );
+#endif
+
+  // restore pred/succ arcs of fake entry/exit blocks so they are not
   // reachable from normal blocks
   void         Remove_fake_entryexit_arcs( void );
+
 
   // Rebuild or mark for rebuilding all auxilliary data structures:
   // dom/pdom trees, _dpo_vec, _po_vec...

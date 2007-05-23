@@ -453,10 +453,16 @@ extern void wn_dumpexpr(WN* wn, INT fancy, FILE* f,
     if (OPCODE_has_sym(opc))
       fprintf(f, " %s", SYMBOL(wn).Name());
     if (fancy >= 2 && OPERATOR(opc) == OPR_STID) {
+#ifdef TARG_ST
+      if (Du_Mgr->Du_Get_Use(wn) == NULL && 
+	  !Contains_Dedicated_Preg(wn))
+	fprintf(f, " <<missing DU uses>>");
+#else
       if (Du_Mgr->Du_Get_Use(wn) == NULL && 
 	  !((ST_class(WN_st(wn))==CLASS_PREG) &&
           Preg_Is_Dedicated(WN_offset(wn))))
 	fprintf(f, " <<missing DU uses>>");
+#endif
       else if (Du_Mgr->Du_Get_Use(wn)->Incomplete() )
 	fprintf(f, " <<incomplete DU uses>>");
     }
@@ -464,7 +470,7 @@ extern void wn_dumpexpr(WN* wn, INT fancy, FILE* f,
       fprintf(f, " LAB%d", WN_offset(wn));
     if (opr == OPR_INTRINSIC_OP || opr == OPR_INTRINSIC_CALL) {
       INTRINSIC        i = (INTRINSIC) WN_intrinsic(wn);
-      if (i >= INTRINSIC_FIRST && i <= INTRINSIC_LAST)
+      if (i >= INTRINSIC_FIRST && i <= INTRINSIC_COUNT)
         fprintf(f, "<%s>", INTRINSIC_name(i));
       else
         fprintf(f, "<bad intr #=%d>", i);
@@ -2668,11 +2674,18 @@ static BOOL LNO_Check_Du_Check(HASH_TABLE<WN*,WN*>* ht)
 
       USE_LIST* ul = Du_Mgr->Du_Get_Use(copy);
       INT ul_len = ul == NULL ? 0 : ul->Len();
+#ifdef TARG_ST
+      if (!OPCODE_is_call(opc) && !ul_len &&
+          !Contains_Dedicated_Preg(orig)) {
+	fprintf(stderr,"Missing use list in copy \n");
+      }
+#else
       if (!OPCODE_is_call(opc) && !ul_len &&
           !((ST_class(WN_st(orig))==CLASS_PREG) && 
 	    Preg_Is_Dedicated((WN_offset(orig))))) {
 	fprintf(stderr,"Missing use list in copy \n");
       }
+#endif
 //      FmtAssert(OPCODE_is_call(opc) || ul_len, ("Missing use list in copy"));
 
       USE_LIST* ul2 = Du_Mgr->Du_Get_Use(orig);
@@ -3008,8 +3021,13 @@ static void Du_Sanity_Check_r(
         }
      }
     } else if ((opr == OPR_STID) && !TY_is_volatile(WN_ty(wn)) &&
-       !((ST_class(WN_st(wn)) ==  CLASS_PREG) && 
-		Preg_Is_Dedicated(WN_offset(wn)))) {
+#ifdef TARG_ST
+	       !Contains_Dedicated_Preg(wn)
+#else
+	       !((ST_class(WN_st(wn)) ==  CLASS_PREG) && 
+		 Preg_Is_Dedicated(WN_offset(wn)))
+#endif
+	       ) {
        fprintf(fp,"WARNING: %s %d [0x%p]", OPERATOR_name(opr), 
 	 WN_map_id(wn), wn);
        Dump_WN(wn,fp,fancy,2,2,NULL,NULL,NULL,FALSE);
@@ -4555,6 +4573,7 @@ extern BOOL Index_Variable(WN* wn_index)
   return FALSE;
 }
 
+
 //-----------------------------------------------------------------------
 // NAME: Contains_Dedicated_Preg
 // FUNCTION: Returns TRUE when 'wn_tree' contains a reference to a dedicated
@@ -4563,10 +4582,19 @@ extern BOOL Index_Variable(WN* wn_index)
 
 extern BOOL Contains_Dedicated_Preg(WN* wn_tree)
 {
+#ifdef TARG_ST
+  // [CG] Handle assigned symbols
+  if (OPCODE_has_sym(WN_opcode(wn_tree)) && WN_st(wn_tree) != NULL
+      && (ST_assigned_to_dedicated_preg(WN_st(wn_tree)) ||
+	  (ST_class(WN_st(wn_tree)) == CLASS_PREG
+	   && Preg_Is_Dedicated(WN_offset(wn_tree)))))
+    return TRUE;
+#else
   if (OPCODE_has_sym(WN_opcode(wn_tree)) && WN_st(wn_tree) != NULL
     && ST_class(WN_st(wn_tree)) == CLASS_PREG
     && WN_offset(wn_tree) <= Last_Dedicated_Preg_Offset)
     return TRUE;
+#endif
 
   if (WN_opcode(wn_tree) == OPC_BLOCK) {
     for (WN* wn = WN_first(wn_tree); wn != NULL; wn = WN_next(wn))

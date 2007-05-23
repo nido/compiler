@@ -49,7 +49,7 @@
 #include <stdio.h>
 #include <assert.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 using std::list;
@@ -57,7 +57,7 @@ using std::vector;
 #else
 #include <list.h>
 #include <vector.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 #include "gen_util.h"
 #include "targ_proc.h"
 #include "proc_properties_gen.h"

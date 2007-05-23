@@ -204,6 +204,11 @@ OP_Copy_Properties(OP *op, OP *src_op)
   op->flags = src_op->flags;
   op->flags2 = src_op->flags2;
 
+  if (OP_spill(src_op)) {
+    FmtAssert (OP_spilled_tn(src_op) != NULL, ("Missing spilled tn"));
+    Set_OP_spilled_tn(op, OP_spilled_tn(src_op));
+  }
+
   /* Copy scheduling info. */
   op->scycle = src_op->scycle;
 
@@ -360,6 +365,32 @@ void BB_Sink_Op_Before(BB *bb, OP *op, OP *point)
 #endif
 
 
+#ifdef TARG_ST
+static void
+verify_same_res(OP *op)
+{
+  if (!tn_ssa_map) {
+    INT i;
+    for (i = 0; i < OP_results(op); i++) {
+      INT same_res = OP_same_res(op, i);
+      if (same_res >= 0) {
+	TN *tn1 = OP_result(op, i);
+	TN *tn2 = OP_opnd(op, same_res); 
+
+	if (!(tn1 == tn2 ||
+	      ((TN_is_register(tn1) && TN_is_register(tn2) &&
+		(TN_is_dedicated(tn1) || (TN_register(tn1) != REGISTER_UNDEFINED)) &&
+		(TN_is_dedicated(tn2) || (TN_register(tn2) != REGISTER_UNDEFINED)) &&
+		(TN_register_and_class(tn1) == TN_register_and_class(tn2)))))) {
+          
+	  FmtAssert(0, ("same result operand mismatch when inserting op"));
+	}
+      }
+    }
+  }
+}
+#endif
+
 static void setup_ops(BB *bb, OP *first, OP *last, UINT32 len)
 {
   OP *op;
@@ -400,6 +431,7 @@ static void setup_ops(BB *bb, OP *first, OP *last, UINT32 len)
     REGISTER_CLASS_OP_Update_Mapping (op);
 #ifdef TARG_ST
     SSA_setup(op);
+    verify_same_res(op);
 #endif
     op = OP_next(op);
   } while (op != OP_next(last));
@@ -1368,6 +1400,7 @@ BOOL OP_has_implicit_interactions(OP *op)
   if (OP_volatile(op) || OP_side_effects(op) 
 #ifdef TARG_ST
       || OP_Has_Flag_Effect(op)
+      || OP_Is_Barrier(op)
 #endif
       )
     return TRUE;
@@ -1415,12 +1448,34 @@ void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
       }
     }
   } else {
+#ifdef TARG_ST
+    // FdF 20060517: Support for automod addressing mode
+    if (OP_find_opnd_use(memop, OU_postincr) >= 0)
+      *offset_tn = Zero_TN;
+    else
+#endif
     *offset_tn = OP_opnd(memop, offset_num);
   }
 }
 
 
 #ifdef TARG_ST
+/* ====================================================================
+ * Imm_Value_In_Range
+ *
+ * Returns whether an immediate value can be encoded at a given
+ * operand in an operation.
+ * ====================================================================
+ */
+BOOL
+TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm) {
+
+  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+  const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+  ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
+  return ISA_LC_Value_In_Class(imm, lc);
+} 
+
 /* ====================================================================
  * OP_same_res()
  *

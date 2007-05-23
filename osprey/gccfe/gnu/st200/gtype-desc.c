@@ -947,6 +947,7 @@ gt_ggc_m_P17cselib_val_struct4htab (x_p)
 /* GC roots.  */
 
 const struct ggc_root_tab gt_ggc_r_gtype_desc_c[] = {
+#if 0
   {
     &tail_recursion_label_list,
     1,
@@ -1108,6 +1109,7 @@ const struct ggc_root_tab gt_ggc_r_gtype_desc_c[] = {
     &gt_ggc_mx_function
 
   },
+#endif
   LAST_GGC_ROOT_TAB
 };
 

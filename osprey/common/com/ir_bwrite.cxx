@@ -163,10 +163,11 @@ ir_bwrite_signal_handler (int sig, int err_num)
 {
     void (*old_handler) (int) = 0;
 
-    if (Doing_mmapped_io && err_num > 0 && err_num < sys_nerr)
+    if (Doing_mmapped_io && err_num > 0 // && err_num < sys_nerr
+	)
 	Fatal_Error ("I/O error in %s: %s", Current_Output ?
 		     Current_Output->file_name : "mmapped object",
-		     sys_errlist[err_num]);
+		     strerror(err_num));
     switch (sig) {
 #ifdef SIGBUS
     case SIGBUS:

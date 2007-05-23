@@ -369,6 +369,15 @@ create_help_msg (string s)
 		internal_error("| help msg expected: %s", s);
 	s = strtok(NULL, DQUOTE);
 	if (s == NULL) return NULL;
+#ifdef TARG_STxP70 /* [HC] Concat help strings prefixed by NA__ or  NA_STxP70__ */
+   if (s[strlen(s)+1]=='"') {
+      string s1;
+   
+      s1 = string_copy(s);
+   	s = strtok(NULL, DQUOTE);
+      return concat_strings(s1,string_copy(s));
+   }
+#endif
 	else return string_copy(s);
 }
 
@@ -388,7 +397,7 @@ static int reverse_strcmp(const void* x, const void* y) {
 /* read table from stdin, without assuming options section is sorted. */
 static void read_table(void) 
 {
-	char line[512];
+	char line[2048];
         char *option_lines[MAX_OPTIONS];
         int option_line_count = 0;
 	char *p;
@@ -649,7 +658,11 @@ write_init_options (void)
 	fprintf(f, "\toptions[flag].name = string_copy(name);\n");
 	fprintf(f, "\toptions[flag].help_msg = string_copy(help_msg);\n");
 	fprintf(f, "}\n\n");
+#ifdef TARG_STxP70
+	fprintf(f, "extern void\n");
+#else
 	fprintf(f, "static void\n");
+#endif
 	fprintf(f, "create_implies_item (int key, int index, string name)\n");
 	fprintf(f, "{\n");
 	fprintf(f, "\toption_list_t *p;\n");

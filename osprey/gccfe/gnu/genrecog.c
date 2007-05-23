@@ -94,14 +94,14 @@ struct decision_test
 
   union
   {
-    enum machine_mode mode;	/* Machine mode of node.  */
+    machine_mode_t mode;	/* Machine mode of node.  */
     RTX_CODE code;		/* Code to test.  */
 
     struct
     {
       const char *name;		/* Predicate to call.  */
       int index;		/* Index into `preds' or -1.  */
-      enum machine_mode mode;	/* Machine mode for node.  */
+      machine_mode_t mode;	/* Machine mode for node.  */
     } pred;
 
     const char *c_test;		/* Additional test to perform.  */
@@ -636,7 +636,7 @@ validate_pattern (pattern, insn, set, set_code)
 
     case SET:
       {
-	enum machine_mode dmode, smode;
+	machine_mode_t dmode, smode;
 	rtx dest, src;
 
 	dest = SET_DEST (pattern);
@@ -781,7 +781,7 @@ add_to_sequence (pattern, last, position, insn_type, top)
   const char *fmt;
   int depth = strlen (position);
   int len;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   if (depth > max_depth)
     max_depth = depth;

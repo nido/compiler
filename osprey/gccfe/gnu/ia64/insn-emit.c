@@ -3998,7 +3998,7 @@ gen_call (operand0, operand1, operand2, operand3)
 {
   /* ??? Stripping off the MEM isn't correct.  Will lose alias info.  */
   rtx addr = XEXP (operands[0], 0);
-  enum machine_mode mode = GET_MODE (addr);
+  machine_mode_t mode = GET_MODE (addr);
 
   if (TARGET_NO_PIC || TARGET_AUTO_PIC)
     emit_call_insn (gen_call_internal (addr, operands[1],
@@ -4212,7 +4212,7 @@ gen_call_value (operand0, operand1, operand2, operand3, operand4)
 {
   /* ??? Stripping off the MEM isn't correct.  Will lose alias info.  */
   rtx addr = XEXP (operands[1], 0);
-  enum machine_mode mode = GET_MODE (addr);
+  machine_mode_t mode = GET_MODE (addr);
 
   if (TARGET_NO_PIC || TARGET_AUTO_PIC)
     emit_call_insn (gen_call_value_internal (operands[0], addr, operands[2],

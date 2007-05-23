@@ -80,13 +80,13 @@ static void do_replace PARAMS ((struct du_chain *, int));
 static void scan_rtx_reg PARAMS ((rtx, rtx *, enum reg_class,
 				  enum scan_actions, enum op_type, int));
 static void scan_rtx_address PARAMS ((rtx, rtx *, enum reg_class,
-				      enum scan_actions, enum machine_mode));
+				      enum scan_actions, machine_mode_t));
 static void scan_rtx PARAMS ((rtx, rtx *, enum reg_class,
 			      enum scan_actions, enum op_type, int));
 static struct du_chain *build_def_use PARAMS ((basic_block));
 static void dump_def_use_chain PARAMS ((struct du_chain *));
 static void note_sets PARAMS ((rtx, rtx, void *));
-static void clear_dead_regs PARAMS ((HARD_REG_SET *, enum machine_mode, rtx));
+static void clear_dead_regs PARAMS ((HARD_REG_SET *, machine_mode_t, rtx));
 static void merge_overlapping_regs PARAMS ((basic_block, HARD_REG_SET *,
 					    struct du_chain *));
 
@@ -121,7 +121,7 @@ note_sets (x, set, data)
 static void
 clear_dead_regs (pset, kind, notes)
      HARD_REG_SET *pset;
-     enum machine_mode kind;
+     machine_mode_t kind;
      rtx notes;
 {
   rtx note;
@@ -397,7 +397,7 @@ scan_rtx_reg (insn, loc, class, action, type, earlyclobber)
 {
   struct du_chain **p;
   rtx x = *loc;
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   int this_regno = REGNO (x);
   int this_nregs = HARD_REGNO_NREGS (this_regno, mode);
 
@@ -519,7 +519,7 @@ scan_rtx_address (insn, loc, class, action, mode)
      rtx *loc;
      enum reg_class class;
      enum scan_actions action;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx x = *loc;
   RTX_CODE code = GET_CODE (x);
@@ -1020,7 +1020,7 @@ dump_def_use_chain (chains)
 
 struct value_data_entry
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
   unsigned int oldest_regno;
   unsigned int next_regno;
 };
@@ -1033,24 +1033,24 @@ struct value_data
 
 static void kill_value_regno PARAMS ((unsigned, struct value_data *));
 static void kill_value PARAMS ((rtx, struct value_data *));
-static void set_value_regno PARAMS ((unsigned, enum machine_mode,
+static void set_value_regno PARAMS ((unsigned, machine_mode_t,
 				     struct value_data *));
 static void init_value_data PARAMS ((struct value_data *));
 static void kill_clobbered_value PARAMS ((rtx, rtx, void *));
 static void kill_set_value PARAMS ((rtx, rtx, void *));
 static int kill_autoinc_value PARAMS ((rtx *, void *));
 static void copy_value PARAMS ((rtx, rtx, struct value_data *));
-static bool mode_change_ok PARAMS ((enum machine_mode, enum machine_mode,
+static bool mode_change_ok PARAMS ((machine_mode_t, machine_mode_t,
 				    unsigned int));
-static rtx maybe_mode_change PARAMS ((enum machine_mode, enum machine_mode,
-				      enum machine_mode, unsigned int,
+static rtx maybe_mode_change PARAMS ((machine_mode_t, machine_mode_t,
+				      machine_mode_t, unsigned int,
 				      unsigned int));
 static rtx find_oldest_value_reg PARAMS ((enum reg_class, rtx,
 					  struct value_data *));
 static bool replace_oldest_value_reg PARAMS ((rtx *, enum reg_class, rtx,
 					      struct value_data *));
 static bool replace_oldest_value_addr PARAMS ((rtx *, enum reg_class,
-					       enum machine_mode, rtx,
+					       machine_mode_t, rtx,
 					       struct value_data *));
 static bool replace_oldest_value_mem PARAMS ((rtx, rtx, struct value_data *));
 static bool copyprop_hardreg_forward_1 PARAMS ((basic_block,
@@ -1141,7 +1141,7 @@ kill_value (x, vd)
 static void
 set_value_regno (regno, mode, vd)
      unsigned int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      struct value_data *vd;
 {
   unsigned int nregs;
@@ -1307,7 +1307,7 @@ copy_value (dest, src, vd)
 
 static bool
 mode_change_ok (orig_mode, new_mode, regno)
-     enum machine_mode orig_mode, new_mode;
+     machine_mode_t orig_mode, new_mode;
      unsigned int regno ATTRIBUTE_UNUSED;
 {
   if (GET_MODE_SIZE (orig_mode) < GET_MODE_SIZE (new_mode))
@@ -1327,7 +1327,7 @@ mode_change_ok (orig_mode, new_mode, regno)
 
 static rtx
 maybe_mode_change (orig_mode, copy_mode, new_mode, regno, copy_regno)
-     enum machine_mode orig_mode, copy_mode, new_mode;
+     machine_mode_t orig_mode, copy_mode, new_mode;
      unsigned int regno, copy_regno;
 {
   if (orig_mode == new_mode)
@@ -1364,7 +1364,7 @@ find_oldest_value_reg (class, reg, vd)
      struct value_data *vd;
 {
   unsigned int regno = REGNO (reg);
-  enum machine_mode mode = GET_MODE (reg);
+  machine_mode_t mode = GET_MODE (reg);
   unsigned int i;
 
   /* If we are accessing REG in some mode other that what we set it in,
@@ -1383,7 +1383,7 @@ find_oldest_value_reg (class, reg, vd)
 
   for (i = vd->e[regno].oldest_regno; i != regno; i = vd->e[i].next_regno)
     {
-      enum machine_mode oldmode = vd->e[i].mode;
+      machine_mode_t oldmode = vd->e[i].mode;
       rtx new;
 
     if (TEST_HARD_REG_BIT (reg_class_contents[class], i)
@@ -1429,7 +1429,7 @@ static bool
 replace_oldest_value_addr (loc, class, mode, insn, vd)
      rtx *loc;
      enum reg_class class;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx insn;
      struct value_data *vd;
 {
@@ -1644,7 +1644,7 @@ copyprop_hardreg_forward_1 (bb, vd)
 	{
 	  rtx src = SET_SRC (set);
 	  unsigned int regno = REGNO (src);
-	  enum machine_mode mode = GET_MODE (src);
+	  machine_mode_t mode = GET_MODE (src);
 	  unsigned int i;
 	  rtx new;
 

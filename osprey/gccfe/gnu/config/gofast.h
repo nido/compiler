@@ -39,7 +39,7 @@ Boston, MA 02111-1307, USA.  */
   do { \
     int mode; \
     for (mode = SFmode; (int) mode <= (int) TFmode; \
-	 mode = (enum machine_mode) ((int) mode + 1)) \
+	 mode = (machine_mode_t) ((int) mode + 1)) \
       neg_optab->handlers[(int) mode].libfunc = NULL_RTX; \
   } while (0)
 

@@ -197,7 +197,7 @@ gendecl (format)
   int i, pos;
 
   printf ("extern rtx gen_rtx_fmt_%s\tPARAMS ((RTX_CODE, ", format);
-  printf ("enum machine_mode mode");
+  printf ("machine_mode_t mode");
 
   /* Write each parameter that is needed and start a new line when the line
      would overflow.  */
@@ -269,7 +269,7 @@ gendef (format)
     if (*p != '0')
       printf (", arg%d", i++);
 
-  puts (")\n     RTX_CODE code;\n     enum machine_mode mode;");
+  puts (")\n     RTX_CODE code;\n     machine_mode_t mode;");
   for (p = format, i = 0; *p != 0; p++)
     if (*p != '0')
       printf ("     %sarg%d;\n", type_from_format (*p), i++);

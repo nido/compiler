@@ -126,7 +126,7 @@ int ia64_section_threshold;
 int
 call_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (mode != GET_MODE (op))
     return 0;
@@ -140,7 +140,7 @@ call_operand (op, mode)
 int
 sdata_symbolic_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   switch (GET_CODE (op))
     {
@@ -163,7 +163,7 @@ sdata_symbolic_operand (op, mode)
 int
 symbolic_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   switch (GET_CODE (op))
     {
@@ -183,7 +183,7 @@ symbolic_operand (op, mode)
 int
 function_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   if (GET_CODE (op) == SYMBOL_REF && SYMBOL_REF_FLAG (op))
     return 1;
@@ -198,7 +198,7 @@ function_operand (op, mode)
 int
 setjmp_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   const char *name;
   int retval = 0;
@@ -250,7 +250,7 @@ setjmp_operand (op, mode)
 int
 move_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (! TARGET_NO_PIC && symbolic_operand (op, mode))
     return 0;
@@ -263,7 +263,7 @@ move_operand (op, mode)
 int
 reg_or_0_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return (op == const0_rtx || register_operand (op, mode));
 }
@@ -273,7 +273,7 @@ reg_or_0_operand (op, mode)
 int
 reg_or_6bit_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_M (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -285,7 +285,7 @@ reg_or_6bit_operand (op, mode)
 int
 reg_or_8bit_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_K (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -298,7 +298,7 @@ reg_or_8bit_operand (op, mode)
 int
 reg_or_8bit_adjusted_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_L (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -313,7 +313,7 @@ reg_or_8bit_adjusted_operand (op, mode)
 int
 reg_or_8bit_and_adjusted_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_K (INTVAL (op))
 	   && CONST_OK_FOR_L (INTVAL (op)))
@@ -326,7 +326,7 @@ reg_or_8bit_and_adjusted_operand (op, mode)
 int
 reg_or_14bit_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_I (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -338,7 +338,7 @@ reg_or_14bit_operand (op, mode)
 int
 reg_or_22bit_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_J (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -350,7 +350,7 @@ reg_or_22bit_operand (op, mode)
 int
 shift_count_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return ((GET_CODE (op) == CONST_INT && CONST_OK_FOR_M (INTVAL (op)))
 	  || GET_CODE (op) == CONSTANT_P_RTX);
@@ -361,7 +361,7 @@ shift_count_operand (op, mode)
 int
 shift_32bit_count_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return ((GET_CODE (op) == CONST_INT
 	   && (INTVAL (op) >= 0 && INTVAL (op) < 32))
@@ -373,7 +373,7 @@ shift_32bit_count_operand (op, mode)
 int
 shladd_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return (GET_CODE (op) == CONST_INT
 	  && (INTVAL (op) == 2 || INTVAL (op) == 4
@@ -385,7 +385,7 @@ shladd_operand (op, mode)
 int
 fetchadd_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return (GET_CODE (op) == CONST_INT
           && (INTVAL (op) == -16 || INTVAL (op) == -8 ||
@@ -399,7 +399,7 @@ fetchadd_operand (op, mode)
 int
 reg_or_fp01_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return ((GET_CODE (op) == CONST_DOUBLE && CONST_DOUBLE_OK_FOR_G (op))
 	  || GET_CODE (op) == CONSTANT_P_RTX
@@ -412,7 +412,7 @@ reg_or_fp01_operand (op, mode)
 int
 normal_comparison_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   enum rtx_code code = GET_CODE (op);
   return ((mode == VOIDmode || GET_MODE (op) == mode)
@@ -426,7 +426,7 @@ normal_comparison_operator (op, mode)
 int
 adjusted_comparison_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   enum rtx_code code = GET_CODE (op);
   return ((mode == VOIDmode || GET_MODE (op) == mode)
@@ -439,7 +439,7 @@ adjusted_comparison_operator (op, mode)
 int
 call_multiple_values_operation (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   int count = XVECLEN (op, 0) - 2;
   int i;
@@ -473,7 +473,7 @@ call_multiple_values_operation (op, mode)
 int
 predicate_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   enum rtx_code code = GET_CODE (op);
   return ((GET_MODE (op) == mode || mode == VOIDmode)
@@ -1197,13 +1197,13 @@ ia64_setup_incoming_varargs (cum, int_mode, type, pretend_size, second_time)
    fields/elements in it have the same floating point type (e.g,
    SFmode).  128-bit quad-precision floats are excluded.  */
 
-static enum machine_mode
+static machine_mode_t
 hfa_element_mode (type, nested)
      tree type;
      int nested;
 {
-  enum machine_mode element_mode = VOIDmode;
-  enum machine_mode mode;
+  machine_mode_t element_mode = VOIDmode;
+  machine_mode_t mode;
   enum tree_code code = TREE_CODE (type);
   int know_element_mode = 0;
   tree t;
@@ -1282,7 +1282,7 @@ hfa_element_mode (type, nested)
 rtx
 ia64_function_arg (cum, mode, type, named, incoming)
      CUMULATIVE_ARGS *cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named;
      int incoming;
@@ -1292,7 +1292,7 @@ ia64_function_arg (cum, mode, type, named, incoming)
 		 : GET_MODE_SIZE (mode)) + UNITS_PER_WORD - 1)
 	       / UNITS_PER_WORD);
   int offset = 0;
-  enum machine_mode hfa_mode = VOIDmode;
+  machine_mode_t hfa_mode = VOIDmode;
 
   /* Arguments larger than 8 bytes start at the next even boundary.  */
   if (words > 1 && (cum->words & 1))
@@ -1357,7 +1357,7 @@ ia64_function_arg (cum, mode, type, named, incoming)
 
       for (; offset < byte_size && int_regs < MAX_ARGUMENT_SLOTS; i++)
 	{
-	  enum machine_mode gr_mode = DImode;
+	  machine_mode_t gr_mode = DImode;
 
 	  /* If we have an odd 4 byte hunk because we ran out of FR regs,
 	     then this goes in a GR reg left adjusted/little endian, right
@@ -1427,7 +1427,7 @@ ia64_function_arg (cum, mode, type, named, incoming)
 int
 ia64_function_arg_partial_nregs (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named ATTRIBUTE_UNUSED;
 {
@@ -1461,7 +1461,7 @@ ia64_function_arg_partial_nregs (cum, mode, type, named)
 void
 ia64_function_arg_advance (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named;
 {
@@ -1469,7 +1469,7 @@ ia64_function_arg_advance (cum, mode, type, named)
 		 : GET_MODE_SIZE (mode)) + UNITS_PER_WORD - 1)
 	       / UNITS_PER_WORD);
   int offset = 0;
-  enum machine_mode hfa_mode = VOIDmode;
+  machine_mode_t hfa_mode = VOIDmode;
 
   /* If all arg slots are already full, then there is nothing to do.  */
   if (cum->words >= MAX_ARGUMENT_SLOTS)
@@ -1601,8 +1601,8 @@ int
 ia64_return_in_memory (valtype)
      tree valtype;
 {
-  enum machine_mode mode;
-  enum machine_mode hfa_mode;
+  machine_mode_t mode;
+  machine_mode_t hfa_mode;
   int byte_size;
 
   mode = TYPE_MODE (valtype);
@@ -1636,8 +1636,8 @@ ia64_function_value (valtype, func)
      tree valtype;
      tree func ATTRIBUTE_UNUSED;
 {
-  enum machine_mode mode;
-  enum machine_mode hfa_mode;
+  machine_mode_t mode;
+  machine_mode_t hfa_mode;
 
   mode = TYPE_MODE (valtype);
   hfa_mode = hfa_element_mode (valtype, 0);
@@ -1924,7 +1924,7 @@ ia64_expand_prediction (insn, template)
 enum reg_class
 ia64_secondary_reload_class (class, mode, x)
      enum reg_class class;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      rtx x;
 {
   int regno = -1;
@@ -3360,7 +3360,7 @@ ia64_init_builtins ()
 void
 ia64_expand_fetch_and_op (code, mode, operands)
      enum fetchop_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx operands[];
 {
   rtx oldval, newlabel;
@@ -3473,7 +3473,7 @@ ia64_expand_fetch_and_op (code, mode, operands)
 void
 ia64_expand_op_and_fetch (code, mode, operands)
      enum fetchop_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx operands[];
 {
   rtx oldval, newlabel;
@@ -3569,7 +3569,7 @@ ia64_expand_compare_and_swap (icode, arglist, target, boolcode)
 {
   tree arg0, arg1, arg2;
   rtx op0, op1, op2, pat;
-  enum machine_mode tmode, mode0, mode1, mode2;
+  machine_mode_t tmode, mode0, mode1, mode2;
 
   arg0 = TREE_VALUE (arglist);
   arg1 = TREE_VALUE (TREE_CHAIN (arglist));
@@ -3625,9 +3625,9 @@ ia64_expand_binop_builtin (icode, arglist, target)
   tree arg1 = TREE_VALUE (TREE_CHAIN (arglist));
   rtx op0 = expand_expr (arg0, NULL_RTX, VOIDmode, 0);
   rtx op1 = expand_expr (arg1, NULL_RTX, VOIDmode, 0);
-  enum machine_mode tmode = insn_data[icode].operand[0].mode;
-  enum machine_mode mode0 = insn_data[icode].operand[1].mode;
-  enum machine_mode mode1 = insn_data[icode].operand[2].mode;
+  machine_mode_t tmode = insn_data[icode].operand[0].mode;
+  machine_mode_t mode0 = insn_data[icode].operand[1].mode;
+  machine_mode_t mode1 = insn_data[icode].operand[2].mode;
 
   if (! target
       || GET_MODE (target) != tmode
@@ -3650,7 +3650,7 @@ ia64_expand_builtin (exp, target, subtarget, mode, ignore)
      tree exp;
      rtx target;
      rtx subtarget ATTRIBUTE_UNUSED;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      int ignore ATTRIBUTE_UNUSED;
 {
   rtx op0, op1, pat;
@@ -3659,7 +3659,7 @@ ia64_expand_builtin (exp, target, subtarget, mode, ignore)
   tree arglist = TREE_OPERAND (exp, 1);
   tree fndecl = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
   int fcode = DECL_FUNCTION_CODE (fndecl);
-  enum machine_mode tmode, mode0, mode1;
+  machine_mode_t tmode, mode0, mode1;
   enum insn_code icode;
   int i;
   struct builtin_description *d;

@@ -222,31 +222,31 @@ struct insns_for_mem_entry
 
 /* Forward declarations.  */
 
-static rtx assign_stack_local_1 PARAMS ((enum machine_mode, HOST_WIDE_INT,
+static rtx assign_stack_local_1 PARAMS ((machine_mode_t, HOST_WIDE_INT,
 					 int, struct function *));
 static struct temp_slot *find_temp_slot_from_address  PARAMS ((rtx));
 static void put_reg_into_stack	PARAMS ((struct function *, rtx, tree,
-					 enum machine_mode, enum machine_mode,
+					 machine_mode_t, machine_mode_t,
 					 int, unsigned int, int,
 					 htab_t));
 static void schedule_fixup_var_refs PARAMS ((struct function *, rtx, tree,
-					     enum machine_mode,
+					     machine_mode_t,
 					     htab_t));
-static void fixup_var_refs	PARAMS ((rtx, enum machine_mode, int, rtx,
+static void fixup_var_refs	PARAMS ((rtx, machine_mode_t, int, rtx,
 					 htab_t));
 static struct fixup_replacement
   *find_fixup_replacement	PARAMS ((struct fixup_replacement **, rtx));
-static void fixup_var_refs_insns PARAMS ((rtx, rtx, enum machine_mode,
+static void fixup_var_refs_insns PARAMS ((rtx, rtx, machine_mode_t,
 					  int, int, rtx));
 static void fixup_var_refs_insns_with_hash
 				PARAMS ((htab_t, rtx,
-					 enum machine_mode, int, rtx));
-static void fixup_var_refs_insn PARAMS ((rtx, rtx, enum machine_mode,
+					 machine_mode_t, int, rtx));
+static void fixup_var_refs_insn PARAMS ((rtx, rtx, machine_mode_t,
 					 int, int, rtx));
-static void fixup_var_refs_1	PARAMS ((rtx, enum machine_mode, rtx *, rtx,
+static void fixup_var_refs_1	PARAMS ((rtx, machine_mode_t, rtx *, rtx,
 					 struct fixup_replacement **, rtx));
-static rtx fixup_memory_subreg	PARAMS ((rtx, rtx, enum machine_mode, int));
-static rtx walk_fixup_memory_subreg  PARAMS ((rtx, rtx, enum machine_mode,
+static rtx fixup_memory_subreg	PARAMS ((rtx, rtx, machine_mode_t, int));
+static rtx walk_fixup_memory_subreg  PARAMS ((rtx, rtx, machine_mode_t,
 					      int));
 static rtx fixup_stack_1	PARAMS ((rtx, rtx));
 static void optimize_bit_field	PARAMS ((rtx, rtx, rtx *));
@@ -258,7 +258,7 @@ static int instantiate_virtual_regs_1 PARAMS ((rtx *, rtx, int));
 static void delete_handlers	PARAMS ((void));
 static void pad_to_arg_alignment PARAMS ((struct args_size *, int,
 					  struct args_size *));
-static void pad_below		PARAMS ((struct args_size *, enum machine_mode,
+static void pad_below		PARAMS ((struct args_size *, machine_mode_t,
 					 tree));
 static rtx round_trampoline_addr PARAMS ((rtx));
 static rtx adjust_trampoline_addr PARAMS ((rtx));
@@ -516,7 +516,7 @@ get_frame_size ()
 
 static rtx
 assign_stack_local_1 (mode, size, align, function)
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT size;
      int align;
      struct function *function;
@@ -611,7 +611,7 @@ assign_stack_local_1 (mode, size, align, function)
 
 rtx
 assign_stack_local (mode, size, align)
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT size;
      int align;
 {
@@ -637,7 +637,7 @@ assign_stack_local (mode, size, align)
 
 rtx
 assign_stack_temp_for_type (mode, size, keep, type)
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT size;
      int keep;
      tree type;
@@ -818,7 +818,7 @@ assign_stack_temp_for_type (mode, size, keep, type)
 
 rtx
 assign_stack_temp (mode, size, keep)
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT size;
      int keep;
 {
@@ -843,7 +843,7 @@ assign_temp (type_or_decl, keep, memory_required, dont_promote)
      int dont_promote ATTRIBUTE_UNUSED;
 {
   tree type, decl;
-  enum machine_mode mode;
+  machine_mode_t mode;
 #ifndef PROMOTE_FOR_CALL_ONLY
   int unsignedp;
 #endif
@@ -1339,7 +1339,7 @@ put_var_into_stack (decl, rescan)
      int rescan;
 {
   rtx reg;
-  enum machine_mode promoted_mode, decl_mode;
+  machine_mode_t promoted_mode, decl_mode;
   struct function *function = 0;
   tree context;
   int can_use_addressof;
@@ -1425,7 +1425,7 @@ put_var_into_stack (decl, rescan)
 	 We fixup references to the parts only after we fixup references
 	 to the whole CONCAT, lest we do double fixups for the latter
 	 references.  */
-      enum machine_mode part_mode = GET_MODE (XEXP (reg, 0));
+      machine_mode_t part_mode = GET_MODE (XEXP (reg, 0));
       tree part_type = (*lang_hooks.types.type_for_mode) (part_mode, 0);
       rtx lopart = XEXP (reg, 0);
       rtx hipart = XEXP (reg, 1);
@@ -1485,7 +1485,7 @@ put_reg_into_stack (function, reg, type, promoted_mode, decl_mode, volatile_p,
      struct function *function;
      rtx reg;
      tree type;
-     enum machine_mode promoted_mode, decl_mode;
+     machine_mode_t promoted_mode, decl_mode;
      int volatile_p;
      unsigned int original_regno;
      int used_p;
@@ -1536,7 +1536,7 @@ schedule_fixup_var_refs (function, reg, type, promoted_mode, ht)
      struct function *function;
      rtx reg;
      tree type;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      htab_t ht;
 {
   int unsigned_p = type ? TREE_UNSIGNED (type) : 0;
@@ -1561,7 +1561,7 @@ schedule_fixup_var_refs (function, reg, type, promoted_mode, ht)
 static void
 fixup_var_refs (var, promoted_mode, unsignedp, may_share, ht)
      rtx var;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int unsignedp;
      htab_t ht;
      rtx may_share;
@@ -1646,7 +1646,7 @@ static void
 fixup_var_refs_insns (insn, var, promoted_mode, unsignedp, toplevel, may_share)
      rtx insn;
      rtx var;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int unsignedp;
      int toplevel;
      rtx may_share;
@@ -1701,7 +1701,7 @@ static void
 fixup_var_refs_insns_with_hash (ht, var, promoted_mode, unsignedp, may_share)
      htab_t ht;
      rtx var;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int unsignedp;
      rtx may_share;
 {
@@ -1728,7 +1728,7 @@ static void
 fixup_var_refs_insn (insn, var, promoted_mode, unsignedp, toplevel, no_share)
      rtx insn;
      rtx var;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int unsignedp;
      int toplevel;
      rtx no_share;
@@ -1917,7 +1917,7 @@ fixup_var_refs_insn (insn, var, promoted_mode, unsignedp, toplevel, no_share)
 static void
 fixup_var_refs_1 (var, promoted_mode, loc, insn, replacements, no_share)
      rtx var;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      rtx *loc;
      rtx insn;
      struct fixup_replacement **replacements;
@@ -2083,20 +2083,20 @@ fixup_var_refs_1 (var, promoted_mode, loc, insn, replacements, no_share)
 	      && ! mode_dependent_address_p (XEXP (tem, 0))
 	      && ! MEM_VOLATILE_P (tem))
 	    {
-	      enum machine_mode wanted_mode = VOIDmode;
-	      enum machine_mode is_mode = GET_MODE (tem);
+	      machine_mode_t wanted_mode = VOIDmode;
+	      machine_mode_t is_mode = GET_MODE (tem);
 	      HOST_WIDE_INT pos = INTVAL (XEXP (x, 2));
 
 	      if (GET_CODE (x) == ZERO_EXTRACT)
 		{
-		  enum machine_mode new_mode
+		  machine_mode_t new_mode
 		    = mode_for_extraction (EP_extzv, 1);
 		  if (new_mode != MAX_MACHINE_MODE)
 		    wanted_mode = new_mode;
 		}
 	      else if (GET_CODE (x) == SIGN_EXTRACT)
 		{
-		  enum machine_mode new_mode
+		  machine_mode_t new_mode
 		    = mode_for_extraction (EP_extv, 1);
 		  if (new_mode != MAX_MACHINE_MODE)
 		    wanted_mode = new_mode;
@@ -2180,7 +2180,7 @@ fixup_var_refs_1 (var, promoted_mode, loc, insn, replacements, no_share)
 	  replacement = find_fixup_replacement (replacements, x);
 	  if (replacement->new)
 	    {
-	      enum machine_mode mode = GET_MODE (x);
+	      machine_mode_t mode = GET_MODE (x);
 	      *loc = replacement->new;
 
 	      /* Careful!  We may have just replaced a SUBREG by a MEM, which
@@ -2301,8 +2301,8 @@ fixup_var_refs_1 (var, promoted_mode, loc, insn, replacements, no_share)
 		&& ! mode_dependent_address_p (XEXP (tem, 0))
 		&& ! MEM_VOLATILE_P (tem))
 	      {
-		enum machine_mode wanted_mode;
-		enum machine_mode is_mode = GET_MODE (tem);
+		machine_mode_t wanted_mode;
+		machine_mode_t is_mode = GET_MODE (tem);
 		HOST_WIDE_INT pos = INTVAL (XEXP (outerdest, 2));
 
 		wanted_mode = mode_for_extraction (EP_insv, 0);
@@ -2494,7 +2494,7 @@ fixup_var_refs_1 (var, promoted_mode, loc, insn, replacements, no_share)
 	  {
 	    rtx temp;
 	    rtx fixeddest = SET_DEST (x);
-	    enum machine_mode temp_mode;
+	    machine_mode_t temp_mode;
 
 	    /* STRICT_LOW_PART can be discarded, around a MEM.  */
 	    if (GET_CODE (fixeddest) == STRICT_LOW_PART)
@@ -2559,13 +2559,13 @@ static rtx
 fixup_memory_subreg (x, insn, promoted_mode, uncritical)
      rtx x;
      rtx insn;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int uncritical;
 {
   int offset;
   rtx mem = SUBREG_REG (x);
   rtx addr = XEXP (mem, 0);
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   rtx result, seq;
 
   /* Paradoxical SUBREGs are usually invalid during RTL generation.  */
@@ -2605,7 +2605,7 @@ static rtx
 walk_fixup_memory_subreg (x, insn, promoted_mode, uncritical)
      rtx x;
      rtx insn;
-     enum machine_mode promoted_mode;
+     machine_mode_t promoted_mode;
      int uncritical;
 {
   enum rtx_code code;
@@ -2722,7 +2722,7 @@ optimize_bit_field (body, insn, equiv_mem)
   rtx bitfield;
   int destflag;
   rtx seq = 0;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   if (GET_CODE (SET_DEST (body)) == SIGN_EXTRACT
       || GET_CODE (SET_DEST (body)) == ZERO_EXTRACT)
@@ -2948,7 +2948,7 @@ gen_mem_addressof (reg, decl, rescan)
   if (decl)
     {
       tree type = TREE_TYPE (decl);
-      enum machine_mode decl_mode
+      machine_mode_t decl_mode
 	= (DECL_P (decl) ? DECL_MODE (decl) : TYPE_MODE (TREE_TYPE (decl)));
       rtx decl_rtl = (TREE_CODE (decl) == SAVE_EXPR ? SAVE_EXPR_RTL (decl)
 		      : DECL_RTL_IF_SET (decl));
@@ -3502,7 +3502,7 @@ purge_single_hard_subreg_set (pattern)
      rtx pattern;
 {
   rtx reg = SET_DEST (pattern);
-  enum machine_mode mode = GET_MODE (SET_DEST (pattern));
+  machine_mode_t mode = GET_MODE (SET_DEST (pattern));
   int offset = 0;
 
   if (GET_CODE (reg) == SUBREG && GET_CODE (SUBREG_REG (reg)) == REG
@@ -3694,7 +3694,7 @@ instantiate_decl (x, size, valid_only)
      HOST_WIDE_INT size;
      int valid_only;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx addr;
 
   /* If this is not a MEM, no need to do anything.  Similarly if the
@@ -4338,8 +4338,8 @@ assign_parms (fndecl)
   rtx entry_parm = 0;
   rtx stack_parm = 0;
   CUMULATIVE_ARGS args_so_far;
-  enum machine_mode promoted_mode, passed_mode;
-  enum machine_mode nominal_mode, promoted_nominal_mode;
+  machine_mode_t promoted_mode, passed_mode;
+  machine_mode_t nominal_mode, promoted_nominal_mode;
   int unsignedp;
   /* Total space needed so far for args on the stack,
      given as a constant and a tree-expression.  */
@@ -4983,7 +4983,7 @@ assign_parms (fndecl)
 
 	  if (GET_CODE (parmreg) == CONCAT)
 	    {
-	      enum machine_mode submode = GET_MODE (XEXP (parmreg, 0));
+	      machine_mode_t submode = GET_MODE (XEXP (parmreg, 0));
 
 	      regnor = REGNO (gen_realpart (submode, parmreg));
 	      regnoi = REGNO (gen_imagpart (submode, parmreg));
@@ -5243,7 +5243,7 @@ assign_parms (fndecl)
 rtx
 promoted_input_arg (regno, pmode, punsignedp)
      unsigned int regno;
-     enum machine_mode *pmode;
+     machine_mode_t *pmode;
      int *punsignedp;
 {
   tree arg;
@@ -5254,7 +5254,7 @@ promoted_input_arg (regno, pmode, punsignedp)
 	&& REGNO (DECL_INCOMING_RTL (arg)) == regno
 	&& TYPE_MODE (DECL_ARG_TYPE (arg)) == TYPE_MODE (TREE_TYPE (arg)))
       {
-	enum machine_mode mode = TYPE_MODE (TREE_TYPE (arg));
+	machine_mode_t mode = TYPE_MODE (TREE_TYPE (arg));
 	int unsignedp = TREE_UNSIGNED (TREE_TYPE (arg));
 
 	mode = promote_mode (TREE_TYPE (arg), mode, &unsignedp, 1);
@@ -5305,7 +5305,7 @@ void
 locate_and_pad_parm (passed_mode, type, in_regs, fndecl,
 		     initial_offset_ptr, offset_ptr, arg_size_ptr,
 		     alignment_pad)
-     enum machine_mode passed_mode;
+     machine_mode_t passed_mode;
      tree type;
      int in_regs ATTRIBUTE_UNUSED;
      tree fndecl ATTRIBUTE_UNUSED;
@@ -5487,7 +5487,7 @@ pad_to_arg_alignment (offset_ptr, boundary, alignment_pad)
 static void
 pad_below (offset_ptr, passed_mode, sizetree)
      struct args_size *offset_ptr;
-     enum machine_mode passed_mode;
+     machine_mode_t passed_mode;
      tree sizetree;
 {
   if (passed_mode != BLKmode)

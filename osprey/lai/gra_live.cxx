@@ -1187,7 +1187,11 @@ Live_Init(
   if (BB_call(bb)) {
     GTN_UNIVERSE_Add_TN(SP_TN);
     GTN_SET_Union1D (BB_live_out(bb), SP_TN, &liveness_pool);
-    if (Gen_GP_Relative) {
+    // [VCdV] on xp70, GP is always activated.
+#ifndef TARG_STxP70
+    if (Gen_GP_Relative)
+#endif
+    {
       GTN_UNIVERSE_Add_TN(GP_TN);
       GTN_SET_Union1D (BB_live_out(bb), GP_TN, &liveness_pool);
     }

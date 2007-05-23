@@ -23,14 +23,14 @@ Boston, MA 02111-1307, USA.  */
 
 #ifdef RTX_CODE
 extern rtx  lx_builtin_saveregs           PARAMS ((void));
-extern int  lx_long_imm_operand           PARAMS ((rtx, enum machine_mode));
-extern int  lx_long_add_operand           PARAMS ((rtx, enum machine_mode));
+extern int  lx_long_imm_operand           PARAMS ((rtx, machine_mode_t));
+extern int  lx_long_add_operand           PARAMS ((rtx, machine_mode_t));
 extern void lx_print_operand              PARAMS ((FILE *, rtx, int));
-extern enum reg_class lx_secondary_reload_class  PARAMS ((enum reg_class, enum machine_mode, rtx));
+extern enum reg_class lx_secondary_reload_class  PARAMS ((enum reg_class, machine_mode_t, rtx));
 extern void lx_reorg                      PARAMS ((rtx));
 
 #ifdef TREE_CODE
-extern rtx  lx_function_arg               PARAMS ((CUMULATIVE_ARGS *, enum machine_mode, tree, int));
+extern rtx  lx_function_arg               PARAMS ((CUMULATIVE_ARGS *, machine_mode_t, tree, int));
 extern void lx_va_start                   PARAMS ((tree, rtx));
 extern rtx  lx_va_arg                     PARAMS ((tree, tree));
 
@@ -38,10 +38,10 @@ extern rtx  lx_va_arg                     PARAMS ((tree, tree));
 #endif /* RTX_CODE */
 
 #ifdef TREE_CODE
-extern int  lx_function_arg_partial_nregs PARAMS ((CUMULATIVE_ARGS, enum machine_mode, tree, int));
-extern void lx_function_arg_advance       PARAMS ((CUMULATIVE_ARGS *, enum machine_mode, tree, int named));
+extern int  lx_function_arg_partial_nregs PARAMS ((CUMULATIVE_ARGS, machine_mode_t, tree, int));
+extern void lx_function_arg_advance       PARAMS ((CUMULATIVE_ARGS *, machine_mode_t, tree, int named));
 extern tree lx_build_va_list              PARAMS ((void));
-extern int  lx_must_pass_in_stack     	  PARAMS ((enum machine_mode, tree));
+extern int  lx_must_pass_in_stack     	  PARAMS ((machine_mode_t, tree));
 #endif /* TREE_CODE */
 
 extern int  lx_direct_return              PARAMS ((void));

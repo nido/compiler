@@ -222,16 +222,27 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TP_PQS		58	/* Predicate query system */
 #define TP_THR		59	/* Tree-Height reduction */
 #ifdef TARG_ST
-#define TP_SSA          60	/* SSA representation */
-#define TP_SELECT       61	/* Select generation */
-#define TP_TEMP         62	/* Temporary use */
-#endif
+#   define TP_SSA          60	/* SSA representation */
+#   define TP_SELECT       61	/* Select generation */
+#   define TP_EXTLOAD      62  /* Extension loader */
+#   define TP_TEMP         63	/* Temporary use */
+#   define TP_TAIL         64	/* Tailmerge */
 
 /* WARNING: TP_LAST must be at least as large as the largest phase
  * number above, and TP_COUNT must be at least one larger.
  */
-#define TP_LAST         TP_TEMP	  /* Largest valid phase number */
-#define TP_COUNT	TP_TEMP+1 /* Number of valid phase numbers */
+#   define TP_LAST         TP_TAIL	  /* Largest valid phase number */
+#else
+/* WARNING: TP_LAST must be at least as large as the largest phase
+ * number above, and TP_COUNT must be at least one larger.
+ */
+#   define TP_LAST         TP_THR	  /* Largest valid phase number */
+#endif
+
+#define TP_COUNT	TP_LAST+1 /* Number of valid phase numbers */
+
+
+
 
 /* Extract the phase number from a trace option: */
 BE_EXPORTED extern INT32 Get_Trace_Phase_Number ( char **cp, char *arg );

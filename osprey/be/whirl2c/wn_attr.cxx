@@ -154,7 +154,7 @@ WN_intrinsic_name(INTRINSIC intr_opc)
 {
    const char *name;
    
-   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
+   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_COUNT,
 	   ("Intrinsic Opcode (%d) out of range", intr_opc)); 
    if (INTRN_high_level_name(intr_opc) != NULL)
       name = INTRN_high_level_name(intr_opc);
@@ -188,7 +188,7 @@ WN_intrinsic_return_ty(OPCODE wn_opc, INTRINSIC intr_opc, const WN *call)
 {
    TY_IDX ret_ty;
    
-   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_LAST,
+   Is_True(INTRINSIC_FIRST<=intr_opc && intr_opc<=INTRINSIC_COUNT,
 	   ("Intrinsic Opcode (%d) out of range", intr_opc)); 
    switch (INTRN_return_kind(intr_opc))
    {

@@ -128,6 +128,10 @@
 #include "wn_coverage.h"          /* whirl coverage */
 #include "mem_ctr.h"
 
+#ifdef TARG_ST
+//TB: loader stuff
+BE_EXPORTED extern void Initialize_Extension_Loader(void);
+#endif
 extern void* Initialize_Targ_Info(void);
 
 // symbols defined in cg.so
@@ -454,10 +458,21 @@ load_components (INT argc, char **argv)
 	= Run_prompf = Run_purple = Run_w2c = Run_w2f = FALSE;
     }
 
+#ifdef TARG_ST
+    if (Run_extension_check_only) {
+      Run_lno = Run_wopt = Run_cg = Run_w2fc_early = Run_ipl
+	= Run_prompf = Run_purple = Run_w2c = Run_w2f = FALSE;
+    }
+#endif
+
     /*
      * This loads the library with scheduling info.
      */
+#ifdef TARG_ST
+    if (Run_cg || Run_lno || Run_autopar || Run_extension_check_only) {
+#else
     if (Run_cg || Run_lno || Run_autopar) {
+#endif
       // initialize target-info before cg or lno
       targinfo_handler = Initialize_Targ_Info();
     }
@@ -853,7 +868,7 @@ Ipl_Processing (PU_Info *current_pu, WN *pu)
     
 } /* Ipl_Processing */
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
 static BOOL has_asm (WN* wn)
 {
   OPCODE opc=WN_opcode(wn);
@@ -881,7 +896,7 @@ static BOOL has_asm (WN* wn)
 static WN *
 LNO_Processing (PU_Info *current_pu, WN *pu)
 {
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (has_asm(pu)) return pu;
 #endif
 
@@ -1174,8 +1189,8 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
       // Convert all of them into INTRINSIC_OPs, first
       //
       if (Emulate_FloatingPoint_Ops || 
-	  Emulate_Single_Float_Ops ||
-	  Emulate_Double_Float_Ops ||
+	  Emulate_Single_Float_Type ||
+	  Emulate_Double_Float_Type ||
           Emulate_DivRem_Integer_Ops ||
 	  Only_32_Bit_Ops) {
 	LOWER_ACTIONS actions = 0;
@@ -1190,6 +1205,11 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 #ifdef TARG_STxP70
 	/* Lower array before RT to catch MUL that are emulated on STxP70. */
 	actions |= LOWER_ARRAY;
+	/* Lower bit ops before RT as long long shifts are emulated. */
+	if (WOPT_Enable_Bits_Load_Store)
+	  actions |= LOWER_BIT_FIELD_ID;
+	else
+	  actions |= LOWER_BITS_OP;
 	actions |= LOWER_FAST_MUL;
 	actions |= LOWER_CNST_MUL;
 #endif
@@ -1951,12 +1971,9 @@ Process_Feedback_Options (OPTION_LIST* olist)
 } // Process_Feedback_Options
 
 
-extern "C" {
-#include <unistd.h>
-}
-
 // Provide a place to stop after components are loaded
 extern "C" {
+#include "W_unistd.h"
   void be_debug(void) {
 #ifdef Is_True_On
     if (getenv("BEPID")) {
@@ -2016,8 +2033,24 @@ main (INT argc, char **argv)
 
   Init_Operator_To_Opcode_Table();
 
+#ifdef TARG_ST
+  //TB: initialized mtypes and builtins for extensions 
+  Initialize_Extension_Loader ();
+#endif
   /* decide which phase to call */
   load_components (argc, argv);
+#ifdef TARG_STxP70
+  // [TTh] Perform early exit when checking extension compatibility
+  if (Run_extension_check_only) {
+    if ( Show_Progress ) {
+      fprintf ( stderr, "Extension compatibility check done (success). "
+		"Leaving -- Back End\n" );
+      fflush ( stderr );
+    }
+    goto extension_check_cleanup;
+//     exit(0);
+  }
+#endif
   be_debug();
 
 
@@ -2074,27 +2107,29 @@ main (INT argc, char **argv)
   if (Run_Dsm_Cloner || Run_Dsm_Common_Check) {
     DRA_Initialize();
   }
-  BOOL needs_lno = FILE_INFO_needs_lno (File_info);
+  {
+    BOOL needs_lno = FILE_INFO_needs_lno (File_info);
 
-  if (needs_lno && !Run_ipl) {
-    Run_Distr_Array = TRUE;
-    if (!Run_lno && !Run_autopar) {
-      /* ipl is not running, and LNO has not been loaded */
-      /* Has distributed arrays, so load LNO, initialize, and setup */
-      INT phase_argc;
-      char **phase_argv;
+    if (needs_lno && !Run_ipl) {
+      Run_Distr_Array = TRUE;
+      if (!Run_lno && !Run_autopar) {
+	/* ipl is not running, and LNO has not been loaded */
+	/* Has distributed arrays, so load LNO, initialize, and setup */
+	INT phase_argc;
+	char **phase_argv;
+	
+	if (!Run_wopt && !Run_preopt) {
+	  /* load wopt */
+	  Get_Phase_Args (PHASE_WOPT, &phase_argc, &phase_argv);
+	  load_so ("woptSO_EXT", WOPT_Path, Show_Progress);
+	  wopt_main (phase_argc, phase_argv, argc, argv);
+	  wopt_loaded = TRUE;
+	}
 
-      if (!Run_wopt && !Run_preopt) {
-	/* load wopt */
-	Get_Phase_Args (PHASE_WOPT, &phase_argc, &phase_argv);
-	load_so ("woptSO_EXT", WOPT_Path, Show_Progress);
-	wopt_main (phase_argc, phase_argv, argc, argv);
-	wopt_loaded = TRUE;
+	Get_Phase_Args (PHASE_LNO, &phase_argc, &phase_argv);
+	load_so ("lnoSO_EXT", LNO_Path, Show_Progress);
+	lno_main (phase_argc, phase_argv, argc, argv);
       }
-
-      Get_Phase_Args (PHASE_LNO, &phase_argc, &phase_argv);
-      load_so ("lnoSO_EXT", LNO_Path, Show_Progress);
-      lno_main (phase_argc, phase_argv, argc, argv);
     }
   }
 
@@ -2214,6 +2249,7 @@ main (INT argc, char **argv)
   /* Close and delete files as necessary: */
   Cleanup_Files ( TRUE, FALSE );
 
+ extension_check_cleanup:
   // TB: for gcov, remove call to _exit...
 #ifndef OPEN64_COVERAGE
   /* dlclose shared libraries ... */
@@ -2238,6 +2274,7 @@ main (INT argc, char **argv)
 #endif
 #else
   fflush(0); //flush all files
+  return (RC_OKAY);
 #endif
   /*NOTREACHED*/
 } /* main */

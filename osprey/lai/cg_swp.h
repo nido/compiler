@@ -173,13 +173,25 @@ struct SWP_REG_ASSIGNMENT {
   typedef std::map<TN*, CLASS_REG_PAIR> TN2REG_MAP;
 
  // 1st rotating registers (
+#ifdef TARG_ST
+  INT rotating_reg_base[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INT rotating_reg_base[ISA_REGISTER_CLASS_MAX+1];
+#endif
 
   // Num of available rotating registers (an upper limit on what we can use)
+#ifdef TARG_ST
+  INT rotating_reg_avail[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INT rotating_reg_avail[ISA_REGISTER_CLASS_MAX+1];
+#endif
 
   // Num of rotating registers used by this allocation (<= rotating_reg_avail)
+#ifdef TARG_ST
+  INT rotating_reg_used[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INT rotating_reg_used[ISA_REGISTER_CLASS_MAX+1];
+#endif
 
   // The allocated physical pseudo-register location for the control predicate.
   // This may be any register number, and once we know the size of the 
@@ -189,7 +201,11 @@ struct SWP_REG_ASSIGNMENT {
   INT control_predicate_loc;
 
   // Sets of all non-rotating registers
+#ifdef TARG_ST
+  REGISTER_SET non_rotating_reg[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   REGISTER_SET non_rotating_reg[ISA_REGISTER_CLASS_MAX+1];
+#endif
 
   //  reg_allocation is a mapping from a TN into a logical register 
   //  as if it is used at cycle 0

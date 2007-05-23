@@ -60,7 +60,7 @@ struct elt_list GTY(())
   cselib_val *elt;
 };
 
-extern cselib_val *cselib_lookup	PARAMS ((rtx, enum machine_mode, int));
+extern cselib_val *cselib_lookup	PARAMS ((rtx, machine_mode_t, int));
 extern void cselib_update_varray_sizes	PARAMS ((void));
 extern void cselib_init			PARAMS ((void));
 extern void cselib_finish		PARAMS ((void));

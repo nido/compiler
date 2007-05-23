@@ -4000,6 +4000,17 @@ build_modify_expr (lhs, modifycode, rhs)
   return convert_for_assignment (olhstype, result, _("assignment"),
 				 NULL_TREE, NULL_TREE, 0);
 }
+
+#ifdef TARG_ST
+/* Return TRUE if tree is an extension builtin */
+#define is_extension_builtin(function) \
+ ((function) != NULL_TREE && \
+    DECL_BUILT_IN ((function)) &&  \
+    DECL_FUNCTION_CODE ((function)) >= BUILT_IN_STATIC_COUNT  && \
+    DECL_FUNCTION_CODE ((function)) < BUILT_IN_COUNT)
+#endif
+
+
 
 /* Convert value RHS to type TYPE as preparation for an assignment
    to an lvalue of type TYPE.
@@ -4024,6 +4035,10 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
   enum tree_code codel = TREE_CODE (type);
   tree rhstype;
   enum tree_code coder;
+
+#ifdef TARG_ST
+  bool convert_param_for_extension_builtin;
+#endif
 
   /* Strip NON_LVALUE_EXPRs since we aren't using as an lvalue.  */
   /* Do not use STRIP_NOPS here.  We do not want an enumerator
@@ -4059,21 +4074,59 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
       error ("void value not ignored as it ought to be");
       return error_mark_node;
     }
+
+#ifdef TARG_ST
+  /* For extension builtins with a reference parameter, silently
+     authorize  1 - integer to pointer conversion
+                2 - signed/unsigned integer conversion
+     In all cases, we require both types to have the same size.
+   */
+  convert_param_for_extension_builtin = 
+    is_extension_builtin(fundecl) &&
+    codel == REFERENCE_TYPE &&
+    TREE_CODE(TREE_TYPE (type)) == INTEGER_TYPE && 
+    (TREE_CODE(TREE_TYPE (rhs)) == POINTER_TYPE ||
+     TREE_CODE(TREE_TYPE (rhs)) == INTEGER_TYPE) &&
+     TYPE_PRECISION(TREE_TYPE(type)) == TYPE_PRECISION(TREE_TYPE(rhs));
+#endif                                      /* TARG_ST */ 
+
   /* A type converts to a reference to it.  
      This code doesn't fully support references, it's just for the
      special case of va_start and va_copy.  */
+#ifdef TARG_ST
+  if ((codel == REFERENCE_TYPE
+       && comptypes (TREE_TYPE (type), TREE_TYPE (rhs)) == 1) || 
+       convert_param_for_extension_builtin)
+#else
   if (codel == REFERENCE_TYPE
       && comptypes (TREE_TYPE (type), TREE_TYPE (rhs)) == 1)
+#endif
     {
       if (!lvalue_p (rhs))
 	{
 	  error ("cannot pass rvalue to reference parameter");
 	  return error_mark_node;
 	}
-      if (!c_mark_addressable (rhs))
-	return error_mark_node;
+#ifdef TARG_ST
+      //TB: For variable defined as asm declaration and passed to an intrinsic avoid the check
+      if ( is_extension_builtin(fundecl) && TREE_CODE(rhs) == VAR_DECL 
+	  && DECL_REGISTER (rhs) && !TREE_ADDRESSABLE (rhs)) {
+      } else
+#endif	
+	if (!c_mark_addressable (rhs))
+	  return error_mark_node;
+#ifdef TARG_ST
+      // [CG] Handle reference to x[y] as an lvalue. 
+      // Implementation extracted from build_unary_op(ADDR_EXPR, ...).
+      if (TREE_CODE(rhs) == ARRAY_REF) {
+	rhs = build_binary_op (PLUS_EXPR, TREE_OPERAND (rhs, 0),
+			       TREE_OPERAND (rhs, 1), 1);
+      } else {
+	rhs = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (rhs)), rhs);
+      }
+#else
       rhs = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (rhs)), rhs);
-
+#endif
       /* We already know that these two types are compatible, but they
 	 may not be exactly identical.  In fact, `TREE_TYPE (type)' is
 	 likely to be __builtin_va_list and `TREE_TYPE (rhs)' is
@@ -4263,15 +4316,29 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
 	     && TREE_CODE (TREE_TYPE (rhs)) == INTEGER_TYPE
 	     && TREE_CODE (TREE_OPERAND (rhs, 0)) == INTEGER_CST
 	     && integer_zerop (TREE_OPERAND (rhs, 0))))
+#ifdef TARG_ST
+	if (!(TREE_CODE (rhs) == CALL_EXPR &&
+	      TREE_CODE(TREE_OPERAND (rhs, 0)) == ADDR_EXPR &&
+	      TREE_CODE(TREE_OPERAND(TREE_OPERAND (rhs, 0), 0)) == FUNCTION_DECL &&
+	      is_extension_builtin(TREE_OPERAND(TREE_OPERAND (rhs, 0), 0))))
+	  //TB: athorize implicit cast between POINTER_TYPE and
+	  //INTEGER_TYPE for expression like ptr = builtin(); with
+	  //builtin() returning int and not (void *)
+#endif
 	  warn_for_assignment ("%s makes pointer from integer without a cast",
 			       errtype, funname, parmnum);
-
       return convert (type, rhs);
     }
   else if (codel == INTEGER_TYPE && coder == POINTER_TYPE)
     {
-      warn_for_assignment ("%s makes integer from pointer without a cast",
-			   errtype, funname, parmnum);
+
+#ifdef TARG_ST
+      //TB: Remove warnings for extension builtins. We don't know if
+      //the parameter is an INTEGER_TYPE or a POINTER_TYPE
+      if (!is_extension_builtin(fundecl))
+#endif
+	warn_for_assignment ("%s makes integer from pointer without a cast",
+			     errtype, funname, parmnum);
       return convert (type, rhs);
     }
   else if (codel == BOOLEAN_TYPE && coder == POINTER_TYPE)
@@ -5145,6 +5212,7 @@ finish_init ()
   struct initializer_stack *p = initializer_stack;
 
 #ifdef SGI_MONGOOSE
+extern void WFE_Finish_Aggregate_Init (void);
   if (constructor_incremental) {
         WFE_Finish_Aggregate_Init ();
   }

@@ -394,6 +394,10 @@ static INT64 zext(INT64 value, int bits)
   return (UINT64)(value << 64-bits) >> 64-bits;
 }
 
+static TN **OP_opnds_ptr(OP *op) {
+  return &op->res_opnd[OP_opnd_offset(op)];
+}
+
 #endif
 
 /* ===================================================================== */
@@ -663,6 +667,12 @@ inline BOOL op_is_needed_globally(OP *op)
   if (OP_call(op)) 
    /* Calls may have side effects we don't understand */
     return TRUE;
+#ifdef TARG_ST
+  // FdF 20060810: Because jrgtudec instructions in STxP70 are not
+  // considered otherwise.
+  if (OP_xfer(op))
+    return TRUE;
+#endif
   if (op == BB_exit_sp_adj_op(bb) || op == BB_entry_sp_adj_op(bb))
     return TRUE;
   return FALSE;
@@ -1642,6 +1652,13 @@ EBO_delete_reload_across_dependency (
       OP_unalign_mem(pred_op) ||
       OP_unalign_mem(intervening_op)) return FALSE;
 
+#ifdef TARG_ST
+  // FdF 20060517: No support for preinc addressing mode.
+  if ((OP_automod(op) && OP_find_opnd_use(op, OU_preincr)) ||
+      (OP_automod(pred_op) && OP_find_opnd_use(pred_op, OU_preincr)))
+    return FALSE;
+#endif
+
 
   INT pred_base_idx = OP_find_opnd_use(pred_op, OU_base);
   INT intervening_base_idx =  OP_find_opnd_use(intervening_op, OU_base);
@@ -2375,6 +2392,9 @@ EBO_Memory_Sequence (
     fprintf(TFile,"\n");
   }
 
+  // FdF 20060517: No support for automod
+  if (OP_automod(op)) return FALSE;
+
   l0_base_idx = OP_find_opnd_use(op, OU_base);
   l0_offset_idx = OP_find_opnd_use(op, OU_offset);
 
@@ -2386,8 +2406,7 @@ EBO_Memory_Sequence (
   if (TN_size(tn_base) != TN_size(tn_offset)) { return FALSE; }
 
   if (TN_Has_Value(tn_offset) || TN_is_symbol(tn_offset)) {
-    offset_val = TN_is_symbol(tn_offset)? TN_offset(tn_offset): TN_Value(tn_offset);
-    offset_val = sext(offset_val, TOP_opnd_use_bits(opcode, l0_offset_idx));
+    offset_val = TOP_fetch_opnd(opcode, opnd_tn, l0_offset_idx);
     offset_sym = TN_is_symbol(tn_offset)? TN_var(tn_offset): NULL;
     offset_relocs = TN_is_symbol(tn_offset)? TN_relocs(tn_offset): 0;
   } else return FALSE;
@@ -2418,14 +2437,12 @@ EBO_Memory_Sequence (
   if (TN_size(ptn1) != TN_size(tn_offset)) { return FALSE; }
       
   if (TN_Has_Value(ptn1) || TN_is_symbol(ptn1)) {
-    pred_val = TN_is_symbol(ptn1)? TN_offset(ptn1): TN_Value(ptn1);
-    pred_val = sext(pred_val, TOP_opnd_use_bits(pred_opcode, ptn1_idx));
+    pred_val = TOP_fetch_opnd(pred_opcode, OP_opnds_ptr(pred_op), ptn1_idx);
     pred_sym = TN_is_symbol(ptn1)? TN_var(ptn1): NULL;
     pred_relocs = TN_is_symbol(ptn1)? TN_relocs(ptn1): 0;
     ptn0_tninfo = pred_opinfo->actual_opnd[ptn0_idx];
   } else if (OP_iadd(pred_op) && (TN_Has_Value(ptn0) || TN_is_symbol(ptn0))) {
-    pred_val = TN_is_symbol(ptn0)? TN_offset(ptn0): TN_Value(ptn0);
-    pred_val = sext(pred_val, TOP_opnd_use_bits(pred_opcode, ptn0_idx));
+    pred_val = TOP_fetch_opnd(pred_opcode, OP_opnds_ptr(pred_op), ptn0_idx);
     pred_sym = TN_is_symbol(ptn0)? TN_var(ptn0): NULL;
     pred_relocs = TN_is_symbol(ptn0)? TN_relocs(ptn0): 0;
     ptn0 = ptn1;
@@ -3224,7 +3241,6 @@ EBO_Simplify_Special_Compare (
 )
 {
   TOP opcode = OP_code(op);
-  TN *tnr = OP_result(op,0);
   TN *tn0, *tn1;
   INT64 tn0_val, tn1_val;
   UINT64 tn0_uval, tn1_uval;
@@ -3285,7 +3301,7 @@ EBO_Simplify_Special_Compare (
   return FALSE;
 
 Constant_Created:
-
+  TN *tnr = OP_result(op,0);
   OPS ops = OPS_EMPTY;
   TN *tnc;
 
@@ -3519,11 +3535,15 @@ EBO_Fold_Constant_Expression (
   } else if (tn1 != NULL && (TN_is_symbol(tn0) || TN_is_symbol(tn1))) {
     if (TN_is_symbol(tn0) && TN_is_symbol(tn1)) return FALSE;
     if (OP_iadd(op) || OP_isub(op)) {
-      if (OP_iadd(op) && TN_is_symbol(tn1)) { TN *tmp = tn0; tn0 = tn1; tn1 = tmp; }
+      if (OP_iadd(op) && TN_is_symbol(tn1)) { 
+	/* Swap opnds. */
+	INT tmp_idx = op1_idx; TN *tmp = tn0; 
+	op1_idx = op2_idx; tn0 = tn1; 
+	op2_idx = tmp_idx; tn1 = tmp; 
+      }
       if (TN_is_symbol(tn1)) return FALSE;
-      tn0_val = TN_offset(tn0);
-      tn0_val = sext(tn0_val, TOP_opnd_use_bits(opcode, op1_idx));
-      tn1_val = sext(TN_Value(tn1), TOP_opnd_use_bits(opcode, op1_idx));
+      tn0_val = TOP_fetch_opnd(opcode, opnd_tn, op1_idx);
+      tn1_val = TOP_fetch_opnd(opcode, opnd_tn, op2_idx);
       result_val = OP_iadd(op) ? tn0_val + tn1_val : tn0_val - tn1_val;
       result_sym = TN_var(tn0);
       result_relocs = TN_relocs(tn0);
@@ -3539,6 +3559,10 @@ Constant_Created:
   OPS ops = OPS_EMPTY;
   TN *tnc;
 
+  if (EBO_Trace_Execution) {
+    fprintf(TFile,"<ebo> %s: constant created\n",__FUNCTION__);
+  }
+
   result_val = sext(result_val, TN_size(tnr)*8);
 
   if (result_sym != NULL) {
@@ -3547,17 +3571,36 @@ Constant_Created:
     tnc = Gen_Literal_TN(result_val, TN_size(tnr));
   }
 
-  Expand_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
+  Exp_Immediate (tnr, tnc, OP_result_is_signed(op,0), &ops);
   if (OP_next(OPS_first(&ops)) != NULL) {
-   /* What's the point in replacing one instruction with several? */
+    /* What's the point in replacing one instruction with several? */
+    if (EBO_Trace_Execution) {
+      fprintf(TFile,"<ebo> %s: try to replace one instruction by several instructions -> do nothing:\n",
+	      __FUNCTION__);
+      Print_OPS_No_SrcLines(&ops);
+    }
     return FALSE;
   }
   if (OP_has_predicate(op)) {
     EBO_OPS_predicate (OP_opnd(op, OP_find_opnd_use(op, OU_predicate)), &ops);
   }
 
+  BOOL check_remat = (BOOL)OP_has_result(op);
+  {
+      int i;
+      for (i = 0; i < OP_results(op) && check_remat; i++) {
+          check_remat = (BOOL)TN_is_rematerializable(OP_result(op, i));
+      }
+  }
   /* No need to replace if same op, avoids infinite loops. */
-  if (OPs_Are_Equivalent(op, OPS_first(&ops))) return FALSE;
+  if (OPs_Are_Equivalent(op, OPS_first(&ops)) || check_remat) {
+    if (EBO_Trace_Execution) {
+      fprintf(TFile,"<ebo> %s: ops are equivalent -> do nothing:\n",
+	      __FUNCTION__);
+      Print_OPS_No_SrcLines(&ops);
+    }
+    return FALSE;
+  }
 
   if (EBO_in_loop) EBO_OPS_omega (&ops, 
 				  (OP_has_predicate(op)? OP_opnd(op,OP_find_opnd_use(op, OU_predicate)):NULL),
@@ -3618,6 +3661,11 @@ find_duplicate_mem_op (BB *bb,
   
   if (!(OP_load(op) || OP_store(op))) return FALSE;
 
+#ifdef TARG_ST
+  // FdF 20060517: No support for automod addressing mode
+  if (OP_automod(op)) return FALSE;
+#endif
+
  /* Determine the indexes of the address components of this memory op. */
   INT succ_base_idx = TOP_Find_Operand_Use(OP_code(op),OU_base);
   INT succ_offset_idx = TOP_Find_Operand_Use(OP_code(op),OU_offset);
@@ -3667,6 +3715,12 @@ find_duplicate_mem_op (BB *bb,
     EBO_TN_INFO *pred_base_tninfo = NULL;
     TN *pred_offset_tn = NULL;
     EBO_TN_INFO *pred_offset_tninfo = NULL;
+
+#ifdef TARG_ST
+    // FdF 200605017: No support for automod addresing mode
+    if (pred_op && OP_automod(pred_op))
+      pred_op = NULL;
+#endif
 
     if ((pred_op != NULL) &&
         (OP_load(pred_op) || OP_store(pred_op))) {
@@ -4210,8 +4264,13 @@ find_duplicate_op (BB *bb,
     hash_search_length++;
     hash_op_matches =    (pred_op != NULL)
                       && (OP_results(op) == OP_results(pred_op))
-		      && (OP_opnds(op) == OP_opnds(pred_op))
+                      && (OP_opnds(op) == OP_opnds(pred_op))
+#ifdef TARG_ST
+      // Remove hack for double predicate define on IA64
+                      && (OP_code(op) == OP_code(pred_op));
+#else
 		      && (OP_results(op) == 2 || OP_code(op) == OP_code(pred_op));
+#endif
 
     if (hash_op_matches) {
 
@@ -4433,8 +4492,13 @@ find_previous_constant (OP *op,
         }
       }
 
+#ifdef TARG_ST
+      /* [JV] TN should not be rematerializable !? */
+      if (EBO_tn_available(OP_bb(op),check_tninfo))
+#else
       if (EBO_tn_available(OP_bb(op),check_tninfo) &&
           (TN_is_rematerializable(pred_tn)))
+#endif
 	{
           OPS ops = OPS_EMPTY;
 
@@ -4569,6 +4633,22 @@ Find_BB_TNs (BB *bb)
 	    fprintf(TFile,"%sASM clobbers tninfo for\n\t",EBO_trace_pfx); Print_TN(ctn,FALSE);fprintf(TFile,"\n");
 	  }
 
+	}
+      }
+      /* Early clobber results which are pre-assigned also kill the value in the assigned register. */
+      for (INT resnum = 0; resnum < OP_results(op); resnum++) {
+	TN *res_tn = OP_result(op, resnum);
+	if (ASM_OP_result_clobber(asm_info)[resnum] &&
+	    has_assigned_reg(res_tn)) {
+	  REGISTER reg;
+	  FOR_ALL_REGISTER_SET_members (TN_registers (res_tn), reg) {
+	    TN* ctn = Build_Dedicated_TN (TN_register_class(res_tn), reg,0);
+	    set_tn_info(ctn, NULL);
+	    
+	    if (EBO_Trace_Data_Flow) {
+	      fprintf(TFile,"%sASM clobbers tninfo for\n\t",EBO_trace_pfx); Print_TN(ctn,FALSE);fprintf(TFile,"\n");
+	    }
+	  }
 	}
       }
     }
@@ -4727,6 +4807,7 @@ Find_BB_TNs (BB *bb)
 	       ISA_REGISTER_SUBCLASS_INFO_Count (ISA_REGISTER_SUBCLASS_Info (ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)))) == 1)) &&
 #endif
 #ifdef TARG_ST
+	    /* Do not replace pre-assigned registers in asm operands. */
 	    (!(has_assigned_reg(actual_tn) && OP_code(op) == TOP_asm)) &&
 #endif
             (!has_assigned_reg(actual_tn) ||
@@ -4885,7 +4966,7 @@ Find_BB_TNs (BB *bb)
                !OP_side_effects(op) &&
                !OP_access_reg_bank(op)
 #ifdef TARG_ST
-	       && !OP_Has_Flag_Effect(op)
+	       && !OP_has_implicit_interactions(op)
 #endif
 	       ) {
       if (!in_delay_slot) {
@@ -5784,7 +5865,6 @@ op_is_needed:
 static BOOL
 EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 {
-  TN *res = OP_result(op, 0);
   TN *tn1;
   TN *tn2;
 
@@ -5803,6 +5883,10 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[0];
     if (tninfo == NULL) return FALSE;
     if (!EBO_tn_available(OP_bb(op), tninfo)) return FALSE;
+#ifdef TARG_ST
+    /* Reconfigurability: compose/extract must operate on same sub-TN count */
+    if (OP_results(def_opinfo->in_op) != OP_opnds(op)) return FALSE;
+#endif
     OPS ops = OPS_EMPTY;
     Exp_COPY(OP_result(op, 0), tninfo->local_tn, &ops);
     BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
@@ -5818,6 +5902,10 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     EBO_OP_INFO *def_opinfo = locate_opinfo_entry(tninfo);
     if (def_opinfo == NULL || def_opinfo->in_op == NULL) return FALSE;
     if (!OP_compose(def_opinfo->in_op)) return FALSE;
+#ifdef TARG_ST
+    /* Reconfigurability: compose/extract must operate on same sub-TN count */
+    if (OP_opnds(def_opinfo->in_op) != OP_results(op)) return FALSE;
+#endif
     OPS ops = OPS_EMPTY;
     for (INT i = 0; i < OP_results(op); i++) {
       EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[i];

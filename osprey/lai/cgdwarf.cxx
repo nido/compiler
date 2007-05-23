@@ -95,6 +95,12 @@
 #include "cgemit_targ.h"
 #include "cgdwarf_debug_frame.h"
 #include "cgdwarf_targ.h"
+#ifdef TARG_ST
+#include "whirl2ops.h" // [CL] needed for Find_PREG_For_Symbol()
+#endif
+#ifdef TARG_STxP70
+#    include "config_TARG.h"
+#endif
 
 BOOL Trace_Dwarf;
 
@@ -800,6 +806,25 @@ put_location (
 	dwarf_add_expr_gen (expr, DW_OP_GNU_push_tls_address, 0,0, &dw_error);
 
       }
+      // [CL] support variables assigned to a dedicated register
+      else if (ST_assigned_to_dedicated_preg(st))
+	{
+	  PREG_NUM preg = Find_PREG_For_Symbol (st);
+	  ISA_REGISTER_CLASS rclass;
+	  REGISTER reg;
+	  if (CGTARG_Preg_Register_And_Class(preg, &rclass, &reg)) {
+#   ifdef TARG_STxP70
+	    // Ther should have another way to retrieve size information!
+	    int size = TN_size(Build_Dedicated_TN(rclass, reg, 0)) * CHAR_BIT;
+	    DebugRegId reg_num = Get_Debug_Reg_Id(rclass, reg, size);
+#   else
+ 	    int reg_num = REGISTER_machine_id(rclass, reg);
+#   endif
+	    dwarf_add_expr_gen (expr, DW_OP_regx, reg_num,0, &dw_error);
+	  } else {
+	    DevWarn("Could not find dedicated register for variable %s", ST_name(st));
+	  }
+	}
       // [CL] output symbol name if it exists, rather than base name:
       // in case attributes have been added, the name of the base
       // make include spurious characters
@@ -813,7 +838,7 @@ put_location (
 						     EMT_Put_Elf_Symbol(base_st)),
 			       &dw_error);
 	if (Trace_Dwarf) {
-	  fprintf (TFile,"LocExpr: symbol = %s %s, offset = %lld\n", 
+	  fprintf (TFile,"LocExpr: symbol = %s, offset = %lld\n", 
 			      ST_name(base_st), ST_ofst(st) + offs); 
 	}
       }
@@ -1251,6 +1276,10 @@ put_subrange_type(DST_flag flag, DST_SUBRANGE_TYPE *attr, Dwarf_P_Die die)
     att = DW_AT_count;
     
 #ifdef TARG_ST
+  if(!DST_IS_NULL(DST_SUBRANGE_TYPE_type(attr)))
+      {
+          put_reference (DST_SUBRANGE_TYPE_type(attr), DW_AT_type, die);
+      }
   if (DST_IS_count(flag)) {
     dwarf_add_AT_unsigned_const (dw_dbg, die, att,
 		       DST_SUBRANGE_TYPE_count_val(attr), &dw_error);
@@ -2328,7 +2357,7 @@ Cg_Dwarf_Begin (BOOL is_64bit)
 		    cu_die);
 
   // Invalid entry up front to keep from using the zero index.
-  CGD_Symtab.push_back(CGD_SYMTAB_ENTRY(CGD_ELFSYM, -1));
+  CGD_Symtab.push_back(CGD_SYMTAB_ENTRY(CGD_ELFSYM, (UINT64)-1));
 }
 
 
@@ -2575,7 +2604,7 @@ Cg_Dwarf_Add_Line_Entry (
   static SRCPOS last_srcpos = 0;
   USRCPOS usrcpos;
 
-  if (srcpos == 0 && last_srcpos == 0)
+  if (srcpos == 0 && last_srcpos == 0 )
 	DevWarn("no valid srcpos at PC %d\n", code_address);
 
 #ifdef TARG_ST // [CL]
@@ -2753,6 +2782,31 @@ struct UINT64_unaligned {
 
 
 
+#ifdef TARG_STxP70 
+#   include <string>
+#   include <list>
+#   include <map>
+
+// Since we need to interpret array of bytes with the "dwarf specification" of
+// the target, we have to known internal libdwarf structure. Actually, we need
+// only the size of some operands 
+#   include "pro_incl.h"
+
+ static BOOL
+ HasReloc(const char* section_name);
+
+/**
+ * Constant used to specify a 'not set' file position.
+ */
+static const long NOT_SET = -1;
+
+/**
+ * Standard identifier (DWARF 2.0 norm) used to distinguish a CIE from a FDE
+ */
+static const unsigned long g_CIE_id = 0xffffffff;
+
+#endif
+
 // These are intended to be file-local, and the unnamed namespace
 // tells c++ to make them file-local
 
@@ -2763,6 +2817,1105 @@ struct UINT64_unaligned {
 
 // The following allows multiple sections
 namespace {
+
+#ifdef TARG_STxP70
+
+//------------------------------------------------------------------------------
+// Types declaration
+//------------------------------------------------------------------------------
+
+// Forward declaration
+ class CDwarfOperand;
+ class CDwarfInstruction; 
+
+// We do not set a memory pool allocator, since it complicates for nothing (no
+// dynamic allocation) 
+ typedef Dwarf_Small Byte; 
+ typedef std::list<Byte> Bytes;
+ typedef Bytes::iterator BytesIt;
+ typedef Bytes::const_iterator BytesCIt; 
+
+ typedef std::list<CDwarfOperand> DwarfOperands; 
+ typedef DwarfOperands::iterator DwarfOperandsIt; 
+ typedef DwarfOperands::const_iterator DwarfOperandsCIt; 
+
+ typedef std::list<CDwarfInstruction> DwarfInstructions;
+ typedef DwarfInstructions::iterator DwarfInstructionsIt;
+ typedef DwarfInstructions::const_iterator DwarfInstructionsCIt;
+
+//------------------------------------------------------------------------------
+// Global variables
+//------------------------------------------------------------------------------
+/**
+ * Maximum length in bytes of a LEB128 variable
+ */
+ static const INT DW_LEB128_SIZE_IN_BYTES = 16;
+
+#define SIZEOF_SECTION_LENGTH dw_dbg->de_offset_size
+
+ static const char* PADDING_STR = "\t%s\t0x00\n";
+
+//------------------------------------------------------------------------------
+// Classes declaration / definition
+//------------------------------------------------------------------------------
+/**
+ * @class CDwarfOperand
+ * A CDwarfOperand represents an operand in a dwarf instruction. It is aware of
+ * what it represents (in a limited way) and know how to emit itself, with the
+ * right relocation.
+ */
+ class CDwarfOperand
+ {
+ public:
+
+     /**
+      * @enum EEncoding
+      * Represents the different encoding support by the decoding algorithm
+      * embedded in dwarf operand class
+      */
+     typedef enum
+         {
+             NORMAL,  /**< Default target encoding, i.e. big or little endian */
+             LEB128,  /**< Dwarf signed LEB128 encoding. This encoding is used
+                       *   for variable length data
+                       */
+             ULEB128, /**< Dwarf unsigned LEB128 encoding.
+                       * @see LEB128 encoding for more details
+                       */
+             STRING   /**< Null terminated string encoding */
+         } EEncoding;
+
+     /**
+      * Constructor.
+      * Create a new initialized instance of CDwarfOperand class
+      *
+      * @param  a_remainingBytesToRead Maximum number of bytes that should be
+      *         read to have the operand definition. Set it to -1 for unknown
+      *         value like for string encoding
+      * @param  a_encod Type of the encoding used for the operand
+      * @param  a_isRegister Specify whether the operand represents a register
+      *         or not
+      *
+      * @pre    true
+      * @post   All members are initialized with given parameters and default
+      *         values
+      *
+      */
+     CDwarfOperand(INT a_remainingBytesToRead = 0, EEncoding a_encod = NORMAL,
+                   BOOL a_isRegister = FALSE)
+         : m_remainingBytesToRead(a_remainingBytesToRead), m_raw(),
+           m_decoded(0), m_shiftSize(0),
+           m_encoding(a_encod), m_isRegister(a_isRegister)
+     {}
+     
+     /**
+      * Copy constructor.
+      * Set all members with members' value of given object
+      *
+      * @param  a_operandClass Object to be copied
+      *
+      * @pre    true
+      * @post   RemainingBytesToRead() = a_operandClass.RemainingBytesToRead()
+      *         and Raw() = a_operandClass.Raw() and
+      *         Decoded() = a_operandClass.Decoded() and
+      *         Encoding() = a_operandClass.Encoding() and
+      *         IsRegister() = a_operandClass.IsRegister() and
+      *         ShiftSize() = a_operandClass.ShiftSize()
+      *
+      */
+     CDwarfOperand(const CDwarfOperand& a_operandClass)
+     {
+         CopyMembers(a_operandClass);
+     }
+
+     /**
+      * Operator=.
+      * Assign members' value of right hand side operand to members of left hand
+      * side operand.
+      *
+      * @param  a_operandClass Object to be copied
+      *
+      * @pre    true
+      * @post   RemainingBytesToRead() = a_operandClass.RemainingBytesToRead()
+      *         and Raw() = a_operandClass.Raw() and
+      *         Decoded() = a_operandClass.Decoded() and
+      *         Encoding() = a_operandClass.Encoding() and
+      *         IsRegister() = a_operandClass.IsRegister() and
+      *         ShiftSize() = a_operandClass.ShiftSize()
+      *
+      * @return The left hand side
+      */
+     CDwarfOperand&
+     operator=(const CDwarfOperand& a_operandClass)
+     {
+         if(this != &a_operandClass)
+             {
+                 CopyMembers(a_operandClass);
+             }
+         return *this;
+     }
+
+     /**
+      * Getter for m_remainingBytesToRead member.
+      *
+      * @pre    true
+      * @post   result = m_remainingBytesToRead
+      *
+      * @return The value of m_remainingBytesToRead member
+      *
+      * @see m_remainingBytesToRead for more details
+      */
+     INT
+     RemainingBytesToRead() const
+     {
+         return m_remainingBytesToRead;
+     }
+
+     /**
+      * Getter for m_raw member.
+      *
+      * @pre    true
+      * @post   result is meaningless unless RemainingBytesToRead() = 0
+      *
+      * @return A constant reference on m_raw member
+      *
+      * @see m_raw for more details
+      */
+     const Bytes&
+     Raw() const
+     {
+         return m_raw;
+     }
+
+     /**
+      * Getter for m_decoded member.
+      *
+      * @pre    true
+      * @post   result is meaningless if RemainingBytesToRead() <> 0 or
+      *         Encoding() = CDwarfOperand::STRING
+      *
+      * @return The value of m_decoded member
+      *
+      * @see m_decoded for more details
+      */
+     Dwarf_Unsigned
+     Decoded() const
+     {
+         return m_decoded;
+     }
+
+     /**
+      * Add a byte to the operand.
+      * The byte is added to the operand if RemainingBytesToRead() <> 0. The
+      * value of RemainingBytesToRead() is automatically updated according to
+      * what we read and what is the current encoding.
+      * 
+      * @warning You cannot assume RemainingBytesToRead() =
+      *          RemainingBytesToRead()@pre - 1.
+      *
+      * @param  a_byte Byte to add to the operand
+      *
+      * @pre    true
+      * @post   RemainingBytesToRead()@pre <> 0 implies Raw() =
+      *         Raw()@pre->append(a_byte)
+      *
+      */
+     void
+     AddByte(Dwarf_Small a_byte)
+     {
+         if(RemainingBytesToRead() != 0)
+             {
+                 m_raw.push_back(a_byte);
+                 if(Encoding() == CDwarfOperand::STRING)
+                     {
+                         AddStringByte(a_byte);
+                     }
+                 else
+                     {
+                         AddNormalByte(a_byte);
+                     }
+             }
+     }
+
+     /**
+      * Getter for m_encoding member.
+      *
+      * @pre    true
+      * @post   result = m_encoding
+      *
+      * @return The value of m_encoding member
+      *
+      * @see m_encoding for more details
+      */
+     EEncoding
+     Encoding() const
+     {
+         return m_encoding;
+     }
+
+     /**
+      * Getter for m_isRegister member.
+      *
+      * @pre    true
+      * @post   result = m_isRegister
+      *
+      * @return The value of m_isRegister member
+      *
+      * @see m_isRegister for more details
+      */
+     BOOL
+     IsRegister() const
+     {
+         return m_isRegister;
+     }
+
+     /**
+      * Emit current operand in given file.
+      * 
+      * @warning No checks are done on RemainingBytesToRead(), so if you
+      *          do not call this function when RemainingBytesToRead() = 0, you
+      *          will write in asm_file something that may be wrong
+      *
+      * @param  asm_file [in/out] File where we will write the operand
+      *
+      * @pre    true
+      * @post   if IsRegister() and Decoded() represents an extension
+      *         register then a dwarf register relocation has been emitted in
+      *         asm_file else Raw() has been emitted in asm_file endif
+      *
+      * @return The number of emitted bytes (without comment)
+      */
+     int
+     Emit(FILE* asm_file) const
+     {
+         BOOL emitted = FALSE;
+         int size = 0;
+         if(IsRegister())
+             {
+                 CExtensionAndRegister extAndReg(Decoded());
+                 if(extAndReg.IsExtension())
+                     {
+                         emitted = TRUE;
+                         size += CDwarfOperand::EmitReloc(asm_file, extAndReg);
+                     }
+             }
+         if(!emitted)
+             {
+                 BytesCIt it;
+                 for(it = Raw().begin(); it != Raw().end(); ++it)
+                     {
+                         if(it != Raw().begin())
+                             {
+                                 fprintf(asm_file, ", ");
+                             }
+                         fprintf(asm_file, "0x%02x", (INT)(*it));
+                         ++size;
+                     }
+             }
+         return size;
+     }
+
+ protected:
+
+     /**
+      * Copy members' value.
+      * Assign members' value of given object to members of this object.
+      *
+      * @param  a_operandClass Object to be copied
+      *
+      * @pre    true
+      * @post   RemainingBytesToRead() = a_operandClass.RemainingBytesToRead()
+      *         and Raw() = a_operandClass.Raw() and
+      *         Decoded() = a_operandClass.Decoded() and
+      *         Encoding() = a_operandClass.Encoding() and
+      *         IsRegister() = a_operandClass.IsRegister() and
+      *         ShiftSize() = a_operandClass.ShiftSize()
+      *
+      */
+     void
+     CopyMembers(const CDwarfOperand& a_operandClass)
+     {
+         m_remainingBytesToRead = a_operandClass.RemainingBytesToRead();
+         m_raw = a_operandClass.Raw();
+         m_decoded = a_operandClass.Decoded();
+         m_shiftSize = a_operandClass.ShiftSize();
+         m_encoding = a_operandClass.Encoding();
+         m_isRegister = a_operandClass.IsRegister();
+     }
+
+     /**
+      * Add a byte to a "normal" operand.
+      * A "normal" operand is an operand with a known maximal size, i.e. not
+      * with a string encoding.
+      *
+      * @param  a_byte Byte to be added to the operand
+      *
+      * @pre    Encoding() != CDwarfOperand::STRING
+      * @post   RemainingBytesToRead() < RemainingBytesToRead()@pre and
+      *         Decoded() has been augmented at the right place with
+      *         given byte.
+      *
+      */
+     void
+     AddNormalByte(Dwarf_Small a_byte)
+     {
+         // We will write one byte, so we test with the global length of the
+         // target type minus one byte
+         DevAssert(ShiftSize() <= (sizeof(Dwarf_Unsigned) - sizeof(a_byte)) * 8,
+                   ("Type overflow during LEB128 decoding!"));
+         // We keep both coded and decoded operands to avoid re-encoding
+         // at emission time
+         m_remainingBytesToRead -= sizeof(a_byte);
+         if(Encoding() != CDwarfOperand::NORMAL)
+             {
+                 // ULEB128 decoding
+                 m_decoded |= ((Dwarf_Unsigned)(a_byte & DATA_MASK))
+                     << ShiftSize();
+                 m_shiftSize += DW_BIT_BY_LEB;
+                 if((a_byte & MORE_BYTE) == 0)
+                     {
+                         m_remainingBytesToRead = 0;
+                     }
+             }
+         else
+             {
+#ifdef WORDS_BIGENDIAN
+                 m_decoded |= ((Dwarf_Unsigned)a_byte) <<
+                     (RemainingBytesToRead() * 8);
+#else
+                 m_decoded |= ((Dwarf_Unsigned)a_byte) << ShiftSize();
+                 m_shiftSize += 8;
+#endif
+             }
+         // Even if we did not perform the right decoding, this is not
+         // a problem, since the decoded value is used only for
+         // registers, thus unsigned.
+         if(Encoding() == CDwarfOperand::LEB128 && !RemainingBytesToRead() &&
+            ShiftSize() < sizeof(Dwarf_Signed) * 8 && a_byte & SIGN_BYTE)
+             {
+                 // Sign extension
+                 m_decoded |= -(((Dwarf_Unsigned)1) << ShiftSize());
+             }
+     }
+
+     /**
+      * Add a byte to a "string" operand.
+      * A "string" operand is an operand with an unknown size which end is
+      * marked by a zero byte. (Definition of a null terminated string)
+      *
+      * @param  a_byte Byte which is part of the string
+      *
+      * @pre    Encoding() = CDwarfOperand::STRING
+      * @post   a_byte = 0 implies RemainingBytesToRead() = 0
+      *
+      */
+     void
+     AddStringByte(Dwarf_Small a_byte)
+     {
+         if(a_byte == '\0')
+             {
+                 m_remainingBytesToRead = 0;
+             }
+     }
+ 
+     /**
+      * Getter for m_shiftSize.
+      * Used to remember the last offset used for decoding the operand
+      *
+      * @pre    true
+      * @post   result = m_shiftSize
+      *
+      * @return The value of m_shiftSize member
+      *
+      * @see m_shiftSize member for more details
+      */
+     INT
+     ShiftSize() const
+     {
+         return m_shiftSize;
+     }
+
+     /**
+      * Emit relocation string with given extension and register in given
+      * asm_file.
+      *
+      * @param  asm_file  [in/out] Will contains the relocation string
+      * @param  extAndReg Slot and register information
+      *
+      * @pre    true
+      * @post   A relocation string has been emitted in asm_file with extAndReg
+      *         information
+      *
+      * @return The number of emitted bytes
+      */
+     static int
+     EmitReloc(FILE* asm_file, const CExtensionAndRegister& extAndReg)
+     {
+         int i;
+         for(i = 0; CDwarfOperand::RELOC_FORMAT &&
+                 CDwarfOperand::RELOC_FORMAT[i]; ++i)
+             {
+                 if(i)
+                     {
+                         fprintf(asm_file, ", ");
+                     }
+                 fprintf(asm_file, CDwarfOperand::RELOC_FORMAT[i],
+                         extAndReg.Extension(), (UINT)extAndReg.Register());
+             }
+         return i;
+     }
+
+
+     /**
+      * Number of bytes remaining to read to have a meaningful operand.
+      * This number is a maximum, i.e. for a LEB128 encoding, one should set 16.
+      * When your operand is a string and thus, you do not know the size, set
+      * any non-zero value, e.g. -1
+      */
+     INT m_remainingBytesToRead;
+
+     /**
+      * Raw member.
+      * Represents all bytes added to the object.
+      *
+      * @invariant m_raw.size() = number of call of AddByte made when
+      *            RemainingBytesToRead() <> 0
+      */
+     Bytes m_raw;
+
+     /**
+      * Decoded operand member.
+      * Contains operand decoded value if encoding type is not
+      * CDwarfOperand::STRING. The decoding method depends on the encoding type.
+      *
+      * @todo This member cannot handle all values which size is greater than
+      *       the size of Dwarf_Unsigned. Currently, when the decoded operand
+      *       become too big for this variable, an assertion is raised. This
+      *       problem occurs if you set very big value (2 power size of
+      *       Dwarf_Unsigned (actually long long type) * 8) in LEB128 operand.
+      *       This should not occur, because LEB128 operand are used to encode
+      *       register number or data/code alignment.
+      *
+      * @see m_encoding member.
+      */
+     Dwarf_Unsigned m_decoded;
+
+     /**
+      * Shift size member.
+      * Contains the last size used to set the byte in the decoded operand.
+      */
+     INT m_shiftSize;
+
+     /**
+      * Encoding type of the operand.
+      * This member affects path used in decoding algorithms.
+      */
+     EEncoding m_encoding;
+
+     /**
+      * Is register member.
+      * Specify whether this operand represents a register or not.
+      */
+     BOOL m_isRegister;
+
+     /**
+      * Number of significant bits store in one byte of the dwarf LEB128
+      * representation
+      */
+     static const INT DW_BIT_BY_LEB;
+     
+     /**
+      * Mask used for dwarf 2 translation to set padding bit for LEB128
+      */
+     static const INT MORE_BYTE;
+
+     /**
+      * Mask used to know whether the last LEB128 byte of an operand represents
+      * a negative value
+      */
+     static const INT SIGN_BYTE;
+     
+     /**
+      * Mask used for dwarf 2 translation in or from LEB128
+      */
+     static const INT DATA_MASK;
+
+     /**
+      * Dwarf register relocation format.
+      * The expected format is a printf like string, where two unsigned operands
+      * are expected in that order: The slot number of an extension and the
+      * dwarf register identifier in the related extension.
+      */
+     static const char* RELOC_FORMAT[];
+ };
+
+/**
+ * @class CDwarfInstruction
+ * Represents a dwarf instruction, i.e. an operator and several operands.
+ */
+ class CDwarfInstruction
+ {
+ public:
+
+     /**
+      * @enum EInstKind
+      * Represents the different type of instructions
+      */
+     typedef enum
+         {
+             LENGTH,  /**< The instruction represents a length */
+             ID,      /**< The instruction represents an identifier */
+             INST     /**< The instruction represents an instruction (we do not
+                       *   care the type)
+                       */
+         } EInstKind;
+
+     /**
+      * Constructor.
+      * Create a new initialized instance of CDwarfInstruction class
+      *
+      * @param  a_remainingBytesToRead Maximum number of bytes that remain to
+      *         read before having the operator
+      * @param  a_isDwarfOperator Specify whether operator is a dwarf one or not
+      * @param  a_name The name of the instruction
+      * @param  a_kind Specify whether the instruction represents a
+      *         section length, an id or anything else.
+      * @param  encod Specify the encoding type of the operator
+      *
+      * @pre    a_name <> NULL
+      * @post   Operator().RemainingBytesToRead() = a_remainingBytesToRead and
+      *         Operator().Encoding() = encod and Name() = a_name and
+      *         IsDwarfOperator() = a_isDwarfOperator and Kind() =
+      *         a_kind and Operands().empty()
+      *
+      * @remarks The API of this class does not allow to modify the operands.
+      *          Indeed, operands are automatically set when we have a dwarf
+      *          operator. To reuse this class in a true instruction context,
+      *          you have to generalize this implementation.
+      */
+     CDwarfInstruction(INT a_remainingBytesToRead = 0,
+                       BOOL a_isDwarfOperator = TRUE,
+                       const char* a_name = "",
+                       CDwarfInstruction::EInstKind a_kind = INST,
+                       CDwarfOperand::EEncoding encod = CDwarfOperand::NORMAL)
+         : m_operator(a_remainingBytesToRead, encod, FALSE),
+           m_isDwarfOperator(a_isDwarfOperator),
+           m_kind(a_kind), m_name(a_name), m_operands()
+     {
+         m_curOperand = m_operands.begin();
+     }
+
+     /**
+      * Copy constructor.
+      * Set all members with members' value of given object
+      *
+      * @param  a_dwInst Object to be copied
+      *
+      * @pre    true
+      * @post   Operator() = a_dwInst.Operator() and
+      *         GlobalRemainingBytesToRead() =
+      *         a_dwInst.GlobalRemainingBytesToRead() and
+      *         Operands() = a_dwInst.Operands() and Name() = a_dwInst.Name()
+      *         and IsDwarfOperator() = a_dwInst.IsDwarfOperator() and
+      *         Kind() = a_dwInst.Kind()
+      *
+      */
+     CDwarfInstruction(const CDwarfInstruction& a_dwInst)
+     {
+         CopyMembers(a_dwInst);
+     }
+
+     /**
+      * Operator=.
+      * Assign members' value of right hand side operand to members of left hand
+      * side operand.
+      *
+      * @param  a_dwInst Object to be copied
+      *
+      * @pre    true
+      * @post   Operator() = a_dwInst.Operator() and
+      *         GlobalRemainingBytesToRead() =
+      *         a_dwInst.GlobalRemainingBytesToRead() and
+      *         Operands() = a_dwInst.Operands() and Name() = a_dwInst.Name()
+      *         and IsDwarfOperator() = a_dwInst.IsDwarfOperator() and
+      *         Kind() = a_dwInst.Kind()
+      *
+      * @return The left hand side
+      */
+     CDwarfInstruction&
+     operator=(const CDwarfInstruction& a_dwInst)
+     {
+         if(this != &a_dwInst)
+             {
+                 CopyMembers(a_dwInst);
+             }
+         return *this;
+     }
+
+     /**
+      * Give the maximal number of bytes that remain to read..
+      * In case of this number is not already known, e.g. we do not know yet the
+      * operator, thus the operands or we have a string operand/operator,
+      * returned value is -1.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return The maximal number of remaining bytes to read or -1 if unknown
+      */
+     INT
+     GlobalRemainingBytesToRead() const
+     {
+         INT result = Operator().RemainingBytesToRead();
+         if(!result)
+             {
+                 result = 0;
+                 DwarfOperandsCIt it;
+                 for(it = Operands().begin(); it != Operands().end(); ++it)
+                     {
+                         if(it->RemainingBytesToRead() < 0)
+                             {
+                                 result = -1;
+                                 break;
+                             }
+                         else
+                             {
+                                 result += it->RemainingBytesToRead();
+                             }
+                     }
+             }
+         else if(IsDwarfOperator())
+             {
+                 // We have not finished to read the operator, so operands are
+                 // not set (remember, we set the operands only for dwarf
+                 // operator)
+                 result = -1;
+             }
+         return result;
+     }
+
+     /**
+      * Add a byte to the instruction.
+      * This method needs a FILE because it emits the operator or an operands
+      * as soon as the remaing bytes to read number is equal to 0. If
+      * GlobalRemainingBytesToRead() = 0 then given byte is not added to the
+      * instruction.
+      *
+      * @warning You cannot assume GlobalRemainingBytesToRead() =
+      *          GlobalRemainingBytesToRead()@pre - 1.
+      *
+      * @param  asm_file [in/out] Assembler file which will contains the emitted
+      *         bytes if any
+      * @param  a_byte Byte to be added to the instruction
+      *
+      * @pre    true
+      * @post   GlobalRemainingBytesToRead() <> 0 implies if
+      *         Operator().RemainingBytesToRead()@pre <> 0 then
+      *         Operator().Raw() = Operator().Raw()@pre->append(a_byte)
+      *         else let curOperand: CDwarfOperand =
+      *         Operands()->select(RemainingBytesToRead()@pre <> 0)->first() in
+      *         curOperand.Raw() = curOperand.Raw()@pre->append(a_byte)
+      *         endif
+      *
+      * @return The number of emitted bytes, if any (without comment)
+      */
+     int
+     AddByte(FILE* asm_file, Dwarf_Small a_byte)
+     {
+         int size = 0;
+         if(Operator().RemainingBytesToRead())
+             {
+                 m_operator.AddByte(a_byte);
+                 // We finished to read the operator, so, now, we can set the
+                 // operands specification.
+                 if(!Operator().RemainingBytesToRead())
+                     {
+                         if(IsDwarfOperator())
+                             {
+                                 InitDwarfOperands();
+                             }
+                         // We cannot gather all printing functions in the same
+                         // method, because some of the emitted bytes do not use
+                         // this mecanism. I.e. they are directly emitted, so if
+                         // we wait to have the full instruction to emit it, we
+                         // will break the order, thus the information
+                         // Note: It is important to emit the operator after
+                         // setting the operands to set the right format
+                         size = EmitOperator(asm_file);
+                     }
+             }
+         else
+             {
+                 if(m_curOperand != Operands().end())
+                     {
+                         m_curOperand->AddByte(a_byte);
+                         if(!m_curOperand->RemainingBytesToRead())
+                             {
+                                 size = EmitOperand(asm_file);
+                                 ++m_curOperand;
+                             }
+                     }
+             }
+         return size;
+     }
+
+     /**
+      * Getter for m_operator member.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return A constant reference to m_operator member.
+      *
+      * @see m_operator member for more details
+      */
+     const CDwarfOperand&
+     Operator() const
+     {
+         return m_operator;
+     }
+
+     /**
+      * Getter for m_operands member.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return A constant reference to m_operands member.
+      *
+      * @see m_operands member for more details
+      */
+     const DwarfOperands&
+     Operands() const
+     {
+         return m_operands;
+     }
+
+     /**
+      * Getter for m_name member.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return A constant reference to m_name member.
+      *
+      * @see m_name member for more details
+      */
+     const std::string&
+     Name() const
+     {
+         return m_name;
+     }
+
+     /**
+      * Getter for m_isDwarfOperator member.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return A constant reference to m_isDwarfOperator member.
+      *
+      * @see m_isDwarfOperator member for more details
+      */
+     BOOL
+     IsDwarfOperator() const
+     {
+         return m_isDwarfOperator;
+     }
+
+     /**
+      * Getter for m_kind member.
+      *
+      * @pre    true
+      * @post   true
+      *
+      * @return A copy of the value of m_kind member.
+      *
+      * @see m_kind member for more details
+      */
+     EInstKind
+     Kind() const
+     {
+         return m_kind;
+     }
+
+ protected:
+     /**
+      * Copy members' value.
+      * Assign members' value of given object to members of this object.
+      *
+      * @param  a_dwInst Object to be copied
+      *
+      * @pre    true
+      * @post   Operator() = a_dwInst.Operator() and
+      *         GlobalRemainingBytesToRead() =
+      *         a_dwInst.GlobalRemainingBytesToRead() and
+      *         Operands() = a_dwInst.Operands() and Name() = a_dwInst.Name()
+      *         and IsDwarfOperator() = a_dwInst.IsDwarfOperator() and
+      *         Kind() = a_dwInst.Kind() and
+      *         m_curOperand = a_dwInst.m_curOperand
+      */
+     void
+     CopyMembers(const CDwarfInstruction& a_dwInst)
+     {
+
+         m_operator = a_dwInst.Operator();
+         m_isDwarfOperator = a_dwInst.IsDwarfOperator();
+         m_kind = a_dwInst.Kind();
+         m_name = a_dwInst.Name();
+         m_operands = a_dwInst.Operands();
+         m_curOperand = a_dwInst.m_curOperand;
+     }
+
+     /**
+      * Set operands for current dwarf operator.
+      * According to the value of Operator().Raw()
+      *
+      * @pre    IsDwarfOperator() and Operator().RemainingBytesToRead() = 0
+      * @post   m_operands is initialized with the related dwarf operands
+      *
+      * @remarks Supported dwarf operator are only DW_CFA_* ones
+      */
+     void
+     InitDwarfOperands()
+     {
+         DevAssert(Operands().empty(), ("New operands definition implies list "
+                                        "of operands is empty"));
+         DevAssert(IsDwarfOperator() && !Operator().Raw().empty(),
+                   ("Definition of operand is done only for dwarf operator"));
+         BOOL bFound = TRUE;
+         Dwarf_Small curInst = *(Operator().Raw().begin());
+         // Check instructions that part of the operand is embedded in the
+         // operator.
+         // Note: embedded operands are not relocated. We assume relocatable
+         // registers (we relocate only registers) use related extended
+         // operators
+         switch(curInst & (0x3 << 6))
+             {
+             case DW_CFA_advance_loc:
+                 Name("DW_CFA_advance_loc");
+             case DW_CFA_restore:
+                 // Name is set by this setter only if m_name is empty.
+                 // So we do not override the previous value.
+                 Name("DW_CFA_restore");
+                 break;
+             case DW_CFA_offset:
+                 Name("DW_CFA_offset");
+                 m_operands.push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                    CDwarfOperand::ULEB128,
+                                                    FALSE));
+                 break;
+             default:
+                 bFound = FALSE;
+             }
+         if(!bFound)
+             {
+                 switch(curInst)
+                     {
+                     case DW_CFA_def_cfa_offset:
+                         Name("DW_CFA_def_cfa_offset");
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      FALSE));
+                         break;
+                     case DW_CFA_advance_loc1:
+                         Name("DW_CFA_advance_loc1");
+                         m_operands
+                             .push_back(CDwarfOperand(1, CDwarfOperand::NORMAL,
+                                                      FALSE));
+                         break;
+                     case DW_CFA_advance_loc2:
+                         Name("DW_CFA_advance_loc2");
+                         m_operands
+                             .push_back(CDwarfOperand(2, CDwarfOperand::NORMAL,
+                                                      FALSE));
+                         break;
+                     case DW_CFA_set_loc:
+                         Name("DW_CFA_set_loc");
+                     case DW_CFA_advance_loc4:
+                         Name("DW_CFA_advance_loc4");
+                         m_operands
+                             .push_back(CDwarfOperand(4, CDwarfOperand::NORMAL,
+                                                      FALSE));
+                         break;
+                     case DW_CFA_restore_extended:
+                         Name("DW_CFA_restore_extended");
+                     case DW_CFA_undefined:
+                         Name("DW_CFA_undefined");
+                     case DW_CFA_same_value:
+                         Name("DW_CFA_same_value");
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      TRUE));
+                         break;
+                     case DW_CFA_offset_extended:
+                         Name("DW_CFA_offset_extended");
+                     case DW_CFA_def_cfa:
+                         Name("DW_CFA_def_cfa");
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      TRUE));
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      FALSE));
+                         break;
+                     case DW_CFA_def_cfa_register:
+                         Name("DW_CFA_def_cfa_register");
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      TRUE));
+                         break;
+                     case DW_CFA_register:
+                         Name("DW_CFA_register");
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      TRUE));
+                         m_operands
+                             .push_back(CDwarfOperand(DW_LEB128_SIZE_IN_BYTES,
+                                                      CDwarfOperand::ULEB128,
+                                                      TRUE));
+                         break;
+                     case DW_CFA_nop:
+                         Name("DW_CFA_nop");
+                         // These two does not exists
+                         // * case DW_CFA_lo_user:
+                         // * case DW_CFA_hi_user:
+                         // No operands
+                         break;
+                     default:
+                         DevWarn("Unknown dwarf operator: 0x%02x\n", curInst);
+                     }
+             }
+         m_curOperand = m_operands.begin();
+     }
+
+     /**
+      * Emit current operand in given assembler file.
+      *
+      * @warning No checks are done on RemainingBytesToRead() for the current
+      *          operand, so if you do not call this function when
+      *          RemainingBytesToRead() = 0, you will write in asm_file
+      *          something that may be wrong
+      *
+      * @param  asm_file [in/out] File where we will write the operand
+      *
+      * @pre    true
+      * @post   current operand has been emitted in asm_file
+      *
+      * @return The number of emitted bytes (without comment)
+      */
+     int
+     EmitOperand(FILE* asm_file) const
+     {
+         fprintf(asm_file, ", ");
+         return m_curOperand->Emit(asm_file);
+     }
+
+     /**
+      * Emit operator in given assembler file.
+      *
+      * @warning No checks are done on RemainingBytesToRead() for the operator,
+      *          so if you do not call this function when RemainingBytesToRead()
+      *          = 0, you will write in asm_file something that may be wrong
+      *
+      * @param  asm_file [in/out] File where we will write the operand
+      *
+      * @pre    true
+      * @post   operator has been emitted in asm_file
+      *
+      * @return The number of emitted bytes (without comment)
+      */
+     int
+     EmitOperator(FILE* asm_file) const
+     {
+         if(!Name().empty() && Dwarf_Comment)
+             {
+                 fprintf(asm_file, "\t%s %s\n", ASM_CMNT_LINE, Name().c_str());
+             }
+         fprintf(asm_file, "\t%s\t", AS_BYTE);
+         return Operator().Emit(asm_file);
+     }
+
+     /**
+      * Setter for m_name member.
+      *
+      * @param  a_name Name to be assigned to m_name
+      *
+      * @pre    true
+      * @post   if m_name@pre->isEmpty() then m_name = a_name else
+      *         m_name = m_name@pre endif
+      *
+      */
+     void
+     Name(const std::string& a_name)
+     {
+         if(m_name.empty())
+             {
+                 m_name = a_name;
+             }
+     }
+
+     /**
+      * Operator member.
+      * Represents intruction operator. Its type is CDwarfOperand because it
+      * has the same behavior of a dwarf operand (especially encoding aspect)
+      */
+     CDwarfOperand m_operator;
+
+     /**
+      * Is dwarf operator member.
+      * Specify whether operator of the instruction is a dwarf one. In that
+      * case, the operator value is interpreted as soon as it is complete to
+      * set operands definition.
+      */
+     BOOL m_isDwarfOperator;
+
+     /**
+      * Kind member.
+      * Specify whether the instruction represents a section length, an id or
+      * anything else (INST). It is useful at application level to retrieve
+      * current section length or kind of a section regarding the id.
+      */
+     EInstKind m_kind;
+
+     /**
+      * Name member.
+      * Contains the name of the instruction. Its purpose is to comment
+      * instruction at assembler level
+      */
+     std::string m_name;
+
+     /**
+      * List of operands member.
+      */
+     DwarfOperands m_operands;
+
+     /**
+      * Current operand member.
+      * References the operand currently "under construction" when adding some
+      * bytes
+      */
+     DwarfOperandsIt m_curOperand;
+ };
+
+//------------------------------------------------------------------------------
+// Static variable class initialization
+//------------------------------------------------------------------------------
+ const INT CDwarfOperand::DW_BIT_BY_LEB = 7;
+ const INT CDwarfOperand::MORE_BYTE = (1 << DW_BIT_BY_LEB);
+ const INT CDwarfOperand::SIGN_BYTE = (1 << (DW_BIT_BY_LEB - 1));
+ const INT CDwarfOperand::DATA_MASK = MORE_BYTE - 1;
+ const char* CDwarfOperand::RELOC_FORMAT[] =
+     {"%%dwl(__DWR%u+%u)", "%%dwh(__DWR%u+%u)", NULL};
+
+#endif
+
   // scn_handles are buffer holders for section buffers.
 
   // The 'buffer' pointer does not own the space, but
@@ -2794,15 +3947,92 @@ namespace {
 
     scn_handle **  vsp_buffers; // pointer to the array of 
 		// pointers to  buffers.
-			
 
-    virtual_section_position(Dwarf_Signed ct,scn_handle **buffers):
-      //vsp_base(0), 
-      vsp_virtpos(0),vsp_curbufpos(0),
-      vsp_remaining_buffercount(ct),
-      vsp_buffers(buffers)  {}
+#ifdef TARG_STxP70
+      typedef std::map<Dwarf_Unsigned, Dwarf_Unsigned> PosToPos;
 
-    ~virtual_section_position() {}
+      /**
+       * List of expected instructions
+       */
+      DwarfInstructions m_instructions;
+
+      /**
+       * Total section length.
+       */
+      Dwarf_Unsigned m_totalSectionLength;
+
+      /**
+       * Current section length
+       */
+      Dwarf_Unsigned m_sectionLength;
+
+      /**
+       * Number of bytes emitted from the begining.
+       * This value is updated only in vsp_print_bytes function
+       */
+      Dwarf_Unsigned m_sectionPos;
+
+      /**
+       * Number of emitted bytes, since the begin of current section
+       */
+      int m_emittedBytes;
+
+      /**
+       * Total number of emitted bytes. This variable contains the sum of all
+       * value of m_emittedBytes
+       */
+      Dwarf_Unsigned m_totalEmittedBytes;
+
+      /**
+       * Specify whether current emitted section may have dwarf relocation or
+       * not
+       */
+      BOOL m_hasReloc;
+
+      /**
+       * Position in assembly file of the begining of the section.
+       */
+      long m_sectionBegining;
+
+      /**
+       * Maps old relocation offset to new one.
+       */
+      PosToPos m_oldToNewSectionOffset;
+
+      /**
+       * Current instruction under construction
+       */
+      DwarfInstructionsIt m_curInst;
+#endif
+
+    virtual_section_position(Dwarf_Signed ct,scn_handle **buffers
+#ifdef TARG_STxP70
+                             , BOOL a_hasReloc = FALSE
+#endif
+                             )
+        :
+        //vsp_base(0), 
+        vsp_virtpos(0),vsp_curbufpos(0),
+        vsp_remaining_buffercount(ct),
+        vsp_buffers(buffers)
+#ifdef TARG_STxP70
+        , m_instructions(), m_totalSectionLength(0), m_sectionLength(0),
+        m_sectionPos(0), m_emittedBytes(0), m_totalEmittedBytes(0),
+        m_hasReloc(a_hasReloc), m_sectionBegining(NOT_SET),
+        m_oldToNewSectionOffset()
+#endif
+      {
+#ifdef TARG_STxP70
+          m_curInst = m_instructions.begin();
+#endif
+      }
+
+    ~virtual_section_position()
+      {
+#ifdef TARG_STxP70
+          FinalizeCurrentSection(NULL);
+#endif
+      }
 
    
     Dwarf_Unsigned vsp_get_bytes(Dwarf_Unsigned offset, int size)  
@@ -2858,6 +4088,128 @@ namespace {
 		Dwarf_Unsigned current_reloc_target,
                 Dwarf_Unsigned cur_byte_in);
 
+#ifdef TARG_STxP70
+
+      /**
+       * Emit relocation.
+       * This function interprets the bytes of the section and rebuilds the
+       * dwarf information to emit relocation for dwarf register if needed.
+       * Bytes are emitted when part of the related dwarf instruction is
+       * completed. I.e. emission occurs for the operator of an instruction
+       * when it is completed, same for each of its operands.
+       *
+       * @param  asm_file [in/out] Assembler file where emission will be done
+       * @param  size Number of bytes to be emitted
+       * @param  cur_byte [in/out] Current position in the section. This value
+       *         will be updated by reading done in that function.
+       *
+       * @pre    asm_file <> NULL and cur_byte = vsp_virtpos
+       * @post   size bytes have been read and prepared for emission. Some of
+       *         that bytes have been emitted.
+       *
+       */
+      void
+      EmitReloc(FILE* asm_file, int size, Dwarf_Unsigned& cur_byte);
+      
+      /**
+       * Set current expected instructions right remaing bytes to read.
+       * This call sets the right position in dwarf information when some bytes
+       * are not emitted in vsp_print_bytes.
+       *
+       * @pre    number of bytes to be removed must match some complete
+       *         expected instructions. I.e. removed bytes cannot be a sub part
+       *         of an instruction.
+       * @post   vsp_virtpos = m_sectionPos
+       *
+       */
+      void
+      RemoveEmittedInstructions();
+
+      /**
+       * Set instruction used to determine section type.
+       *
+       * @pre    m_totalSectionLength = m_sectionPos and
+       *         m_curInst = m_instructions.end()
+       * @post   m_instructions is set
+       *
+       */
+      void
+      DetermineHeader();
+
+      /**
+       * Set specification header.
+       * Set in current expected instructions the header specification of new
+       * section
+       *
+       * @param  a_isCIE Specify whether current section is a CIE or a FDE
+       *
+       * @pre    m_instructions.empty()
+       * @post   m_instructions is set
+       *
+       */
+      void
+      ReadHeader(BOOL a_isCIE);
+
+      /**
+       * Emit new section length if it changed.
+       * The emission consists in overwritting the length instruction. It is
+       * possible because length instruction has a fixed size.
+       *
+       * @param  asm_file [in/out] Will contain new length
+       *
+       * @pre    true
+       * @post   true
+       *
+       * @return The number of padding bytes needed.
+       */
+      int
+      EmitNewLength(FILE* asm_file);
+
+      /**
+       * Emit padding bytes in given asm_file at current position.
+       * The syntax of the padding bytes if specified by PADDING_STR
+       *
+       * @param  asm_file [in/out] Will contain padding bytes
+       * @param  padding Number of padding bytes to be emitted
+       *
+       * @pre    true
+       * @post   padding bytes have been emitted in asm_file according to
+       *         PADDING_STR format
+       *
+       */
+      void
+      EmitPadding(FILE* asm_file, int padding);
+
+      /**
+       * Put an end to the redirection.
+       *
+       * @param  asm_file [out] Will contains the original file pointer
+       *
+       * @pre    true
+       * @post   true
+       *
+       */
+      void
+      FinalizeCurrentSection(FILE* asm_file);
+
+      /**
+       * Relocate given offset if needed.
+       * The relocation is needed when given offset applied to a CIE pointer and
+       * we have emitted some dwarf relocation, i.e. we changed the size of some
+       * CIEs, FDEs. Therefore old offset is no more valid
+       *
+       * @param  a_ofst A relocation offset
+       *
+       * @pre    true
+       * @post   result <> a_ofst implies given offset is applied to a CIE's
+       *         pointer
+       *
+       * @return A relocated offset
+       */
+      Dwarf_Unsigned
+      RelocateOffset(Dwarf_Unsigned a_ofst);
+#endif
+
   };
 }
 
@@ -2876,6 +4228,10 @@ virtual_section_position::vsp_print_bytes(
 
     int nlines_this_reloc = (current_reloc_target - cur_byte) / bytes_per_line;
 
+#ifdef TARG_STxP70
+    if(Dwarf_Old_Style_Emission || !m_hasReloc)
+        {
+#endif
     int i;
     for (i = 0; i < nlines_this_reloc; ++i) {
       fprintf(asm_file, "\t%s\t", AS_BYTE);
@@ -2900,9 +4256,283 @@ virtual_section_position::vsp_print_bytes(
 		(int)vsp_get_bytes(cur_byte,1));
       ++cur_byte;
     }
-
+#ifdef TARG_STxP70
+        } // if Dwarf_Old_Style_Emission
+    else
+        {
+            EmitReloc(asm_file, current_reloc_target - cur_byte, cur_byte);
+        }
+#endif
     return cur_byte - cur_byte_in;
 }
+
+#ifdef TARG_STxP70
+void
+virtual_section_position::EmitReloc(FILE* asm_file, int size,
+                                    Dwarf_Unsigned& cur_byte)
+{
+    int i;
+    for(i = 0; i < size; ++i)
+        {
+            if(m_sectionPos < vsp_virtpos)
+                {
+                    m_emittedBytes += vsp_virtpos - m_sectionPos;
+                    RemoveEmittedInstructions();
+                }
+            if(m_sectionPos == m_totalSectionLength)
+                {
+                    DevAssert(m_curInst == m_instructions.end(),
+                              ("Instruction cannot be on several section"));
+                    m_instructions.clear();
+                    FinalizeCurrentSection(asm_file);
+                    // We are at the begin of a section (CIE or FDE), determine
+                    // which one. Actually, set the instructions that will give
+                    // this information
+                    DetermineHeader();
+                    m_sectionBegining = ftell(asm_file);
+                    FmtAssert(m_sectionBegining != -1,
+                              ("Error when trying to know current position in "
+                               "assembly file"));
+                    m_emittedBytes = 0;
+                    m_curInst = m_instructions.begin();
+                }
+            Dwarf_Small readByte = (Dwarf_Small)(vsp_get_bytes(cur_byte, 1)
+                                                 & 0xFF);
+            ++cur_byte;
+            ++m_sectionPos;
+            // Current instruction is not set, so current byte should be an
+            // instruction
+            if(m_curInst == m_instructions.end())
+                {
+                    // Instruction emitted, seek for next one
+                    m_instructions.clear();
+                    // Instruction handling
+                    m_instructions.push_back(CDwarfInstruction(1, TRUE));
+                    m_curInst = m_instructions.begin();
+                }
+            m_emittedBytes += m_curInst->AddByte(asm_file, readByte);
+            if(!m_curInst->GlobalRemainingBytesToRead())
+                {
+                    fprintf(asm_file, "\n");
+                    if(m_curInst->Kind() == CDwarfInstruction::LENGTH)
+                        {
+                            m_sectionLength = m_curInst->Operator().Decoded();
+                            m_totalSectionLength += m_sectionLength +
+                                SIZEOF_SECTION_LENGTH;
+                        }
+                    else if(m_curInst->Kind() == CDwarfInstruction::ID)
+                        {
+                            BOOL isCIE =
+                                m_curInst->Operator().Decoded() == g_CIE_id;
+                            ReadHeader(isCIE);
+                        }
+                    ++m_curInst;
+                }
+        }
+}
+
+void
+virtual_section_position::DetermineHeader()
+{
+    // length, uword
+    m_instructions.push_back(CDwarfInstruction(SIZEOF_SECTION_LENGTH,
+                                               FALSE, "length",
+                                               CDwarfInstruction::LENGTH));
+    
+    // CIE id or FDE pointer, uword
+    m_instructions.push_back(CDwarfInstruction(dw_dbg->de_offset_size,
+                                               FALSE, "id or pointer",
+                                               CDwarfInstruction::ID));
+}
+
+void
+virtual_section_position::ReadHeader(BOOL a_isCIE)
+{
+    if(a_isCIE)
+        {
+            // CIE header specification:
+            // length, uword: Already read at determine header time
+            // id, uword:  Already read at determine header time
+
+            // version, ubyte
+            m_instructions.push_back(CDwarfInstruction(1, FALSE,
+                                                       "CIE version"));
+            // augmentation, null terminated string
+            m_instructions.push_back(CDwarfInstruction(-1, FALSE,
+                                                       "CIE augmentation",
+                                                       CDwarfInstruction::INST,
+                                                       CDwarfOperand::STRING));
+            // code alignment factor, LEB128
+            m_instructions.push_back(CDwarfInstruction(DW_LEB128_SIZE_IN_BYTES,
+                                                       FALSE, "code alignement"
+                                                       " factor",
+                                                       CDwarfInstruction::INST,
+                                                       CDwarfOperand::LEB128));
+            // data alignement factor, LEB128
+            m_instructions.push_back(CDwarfInstruction(DW_LEB128_SIZE_IN_BYTES,
+                                                       FALSE, "data alignement"
+                                                       " factor",
+                                                       CDwarfInstruction::INST,
+                                                       CDwarfOperand::LEB128));
+            // return address, ubyte
+            m_instructions.push_back(CDwarfInstruction(1, FALSE,
+                                                       "return address"));
+        }
+    else
+        {
+            // FDE header specification
+            // length, uword: Already read at determine header time
+            // cie pointer, uword: Already read at determine header time
+
+            // initial location, addressing-unit sized
+            m_instructions.push_back(CDwarfInstruction(dw_dbg->de_pointer_size,
+                                                       FALSE,
+                                                       "initial location"));
+            // address range, addressing-unit sized
+            m_instructions.push_back(CDwarfInstruction(dw_dbg->de_pointer_size,
+                                                       FALSE, "address range"));
+        }
+}
+
+void
+virtual_section_position::RemoveEmittedInstructions()
+{
+    if(m_curInst != m_instructions.end())
+        {
+            Dwarf_Unsigned offset = vsp_virtpos - m_sectionPos;
+            BOOL isId = m_curInst->Kind() == CDwarfInstruction::ID;
+            while(m_curInst != m_instructions.end() && offset)
+                {
+                    DevAssert(m_curInst->GlobalRemainingBytesToRead() >= 0,
+                              ("Do not know how many bytes this instruction is "
+                               "composed of"));
+                    DevAssert(offset >= m_curInst->GlobalRemainingBytesToRead(),
+                              ("Emitted bytes are part of an instruction, do "
+                               "not how to continue"));
+                    offset -= m_curInst->GlobalRemainingBytesToRead();
+                    m_curInst = m_instructions.erase(m_curInst);
+                }
+            // If first current instruction is an identifier, this means we have
+            // not determine the header kind, that's why we do not raise any
+            // error, we can only assume next instruction is a dwarf one
+            DevAssert(offset == 0 || isId,
+                      ("do not know where we stopped the emission"));
+        }
+    m_sectionPos = vsp_virtpos;
+}
+
+int
+virtual_section_position::EmitNewLength(FILE* asm_file)
+{
+    int bytesReduction = m_sectionLength + SIZEOF_SECTION_LENGTH -
+        m_emittedBytes;
+    DevAssert(bytesReduction >= 0, ("We emitted more bytes than the section "
+                                    "length!!!"));
+    int padding = 0;
+    if(bytesReduction)
+        {
+            int newLength = m_sectionLength - bytesReduction;
+            padding = newLength % SIZEOF_SECTION_LENGTH;
+            newLength += padding;
+            // WARNING: The instruction name must be the same previously
+            // defined, since we may override written character without
+            // enlarging or reducing asm_file length
+            CDwarfInstruction dwInst(SIZEOF_SECTION_LENGTH, FALSE, "length",
+                                     CDwarfInstruction::LENGTH);
+            int emittedBytes = 0;
+            DevAssert(SIZEOF_SECTION_LENGTH <= sizeof(newLength),
+                      ("Type too narrow"));
+            for(int i = 0; i < SIZEOF_SECTION_LENGTH; ++i)
+                {
+                    emittedBytes +=
+                        dwInst.AddByte(asm_file, 
+#ifdef WORDS_BIGENDIAN
+                                       (newLength >> (sizeof(newLength) - i) * 
+                                        8) & 0xff
+#else
+                                       (newLength >> (i * 8)) & 0xff
+#endif
+                                       );
+                }
+            DevAssert(emittedBytes == SIZEOF_SECTION_LENGTH,
+                      ("Number of emitted bytes does not match definition"));
+        }
+    return padding;
+}
+
+void
+virtual_section_position::EmitPadding(FILE* asm_file, int padding)
+{
+    int i;
+    for(i = 0; i < padding; ++i)
+        {
+            fprintf(asm_file, PADDING_STR, AS_BYTE);
+        }
+}
+
+void
+virtual_section_position::FinalizeCurrentSection(FILE* asm_file)
+{
+    if(m_sectionBegining != NOT_SET)
+        {
+            DevAssert(asm_file, ("Final emission, if not null, required a valid"
+                                 " file"));
+            // Go at the begining of the section
+            int result = fseek(asm_file, m_sectionBegining, SEEK_SET);
+            FmtAssert(!result, ("Cannot update section length"));
+            // vsp_virtpos - m_sectionPos == 0 except for the last emission
+            // of an empty fde
+            m_emittedBytes += vsp_virtpos - m_sectionPos;
+            // Overwrite the length
+            int padding = EmitNewLength(asm_file);
+            // Go at the end of the section
+            result = fseek(asm_file, 0, SEEK_END);
+            FmtAssert(!result, ("Cannot update section padding"));
+            // Emit additional padding
+            EmitPadding(asm_file, padding);
+            m_sectionBegining = NOT_SET;
+        }
+    m_totalEmittedBytes += m_emittedBytes;
+    m_oldToNewSectionOffset[m_sectionPos] = m_totalEmittedBytes;
+}
+
+Dwarf_Unsigned
+virtual_section_position::RelocateOffset(Dwarf_Unsigned a_ofst)
+{
+    if(!Dwarf_Old_Style_Emission && m_hasReloc &&
+       m_curInst != m_instructions.end() &&
+       m_curInst->Kind() == CDwarfInstruction::ID)
+        {
+            // We move on the next instruction because if we are here, the id
+            // instruction has been emitted without using the vsp_print_bytes
+            // method and next relocation offset will not applied to the id
+            ++m_curInst;
+            DevAssert(m_oldToNewSectionOffset.find(a_ofst) !=
+                      m_oldToNewSectionOffset.end(),
+                      ("Current offset relocation must have been set in "
+                       "EmitReloc function!"));
+            a_ofst = m_oldToNewSectionOffset[a_ofst];
+        }
+    return a_ofst;
+}
+
+/**
+ * Specify whether given section has relocation (dwarf register relocation) to
+ * be emitted.
+ *
+ * @param  section_name Name of the section to be checked
+ *
+ * @pre    true
+ * @post   result implies vsp_print_bytes should handle relocation
+ *
+ * @return TRUE is section may have relocation to be emitted, FALSE otherwise
+ */
+static BOOL
+HasReloc(const char* section_name)
+{
+    return strcmp(section_name, ".debug_frame") == 0;
+}
+#endif
 
 //
 // Find the list of sections that are section secnum
@@ -2996,7 +4626,11 @@ Cg_Dwarf_Output_Asm_Bytes_Elf_Relocs (FILE          *asm_file,
   Dwarf_Unsigned cur_byte =  buffer;
 
   // initialize position
-  virtual_section_position vsp(buffer_cnt, buffers);
+  virtual_section_position vsp(buffer_cnt, buffers
+#ifdef TARG_STxP70
+                               , HasReloc(section_name)
+#endif
+                               );
 
   char * current_reloc = (char *) reloc_buffer;
 
@@ -3090,6 +4724,9 @@ Cg_Dwarf_Output_Asm_Bytes_Elf_Relocs (FILE          *asm_file,
 		reloc_scn_type);
 	exit (-1);
       }
+#ifdef TARG_STxP70
+      ofst = vsp.RelocateOffset(ofst);
+#endif
       if (ofst != 0) {
 	fprintf(asm_file, " + 0x%llx", (unsigned long long)ofst);
       }
@@ -3097,6 +4734,10 @@ Cg_Dwarf_Output_Asm_Bytes_Elf_Relocs (FILE          *asm_file,
       cur_byte += current_reloc_size;
     }
   } while (cur_byte != ( buffer) + bufsize);
+
+#ifdef TARG_STxP70
+  vsp.FinalizeCurrentSection(asm_file);
+#endif
   fflush(asm_file);
 }
 
@@ -3143,7 +4784,11 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
   Dwarf_Unsigned cur_byte =  buffer;
   Dwarf_Unsigned bufsize =  compute_buffer_net_size(buffer_cnt,buffers);
 
-  virtual_section_position vsp(buffer_cnt, buffers);
+  virtual_section_position vsp(buffer_cnt, buffers
+#ifdef TARG_STxP70
+                               , HasReloc(section_name)
+#endif
+                               );
 
   Dwarf_Unsigned k = 0;
   while (k <= reloc_count) {
@@ -3197,6 +4842,18 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 #endif
       char *reloc_name = (reloc_buffer[k].drd_length == 8)?
 			AS_ADDRESS_UNALIGNED: AS_WORD_UNALIGNED;
+
+#ifdef TARG_STxP70
+      if(vsp.m_instructions.end() != vsp.m_curInst &&
+         vsp.m_curInst->Operator().RemainingBytesToRead() == 0)
+          {
+              // operator of current instruction has been emitted but this is
+              // not the case for all operands. So remaining operands may be
+              // emitted here, with a new assembler directive, that must be at
+              // the begining of the line.
+              fprintf(asm_file, "\n");
+          }
+#endif
 
       switch (reloc_buffer[k].drd_type) {
       case dwarf_drt_none:
@@ -3297,6 +4954,9 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	ofst = ofst_tmp;
       }
 
+#ifdef TARG_STxP70
+      ofst = vsp.RelocateOffset(ofst);
+#endif
 #ifdef TARG_ST
       if (reloc_buffer[k].drd_type == dwarf_drt_none)
         fprintf(asm_file, "\t%s 0x%llx", reloc_name, (unsigned long long)ofst);
@@ -3310,6 +4970,9 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
     }
     ++k;
   }
+#ifdef TARG_STxP70
+  vsp.FinalizeCurrentSection(asm_file);
+#endif
   fflush(asm_file);
 }
 

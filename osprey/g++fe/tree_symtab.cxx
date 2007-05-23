@@ -77,6 +77,10 @@ extern "C" {
 #include "wfe_dst.h"
 #include "ir_reader.h"
 #include "tree_symtab.h"
+#ifdef TARG_ST
+//TB: extension loader
+extern TYPE_ID MachineMode_To_Mtype(machine_mode_t mode);
+#endif
 
 //#define WFE_DEBUG
 
@@ -740,10 +744,6 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 		break;
 	case BOOLEAN_TYPE:
 	case INTEGER_TYPE:
-#ifdef TARG_ST
-         /* (cbr) what more to support that ?*/
-        case VECTOR_TYPE:
-#endif
 		switch (tsize) {
 		case 1:  mtype = MTYPE_I1;  break;
 		case 2:  mtype = MTYPE_I2;  break;
@@ -1306,6 +1306,22 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 
 		} // end FUNCTION_TYPE scope
 		break;
+#ifdef TARG_ST
+		// TB: extension vector types
+		case VECTOR_TYPE:
+		  {
+		    FmtAssert((TYPE_MODE (type_tree) - STATIC_COUNT_MACHINE_MODE) >= 0,
+			      ("Get_TY: not a dynamic vector type %s", TYPE_NAME (type_tree)));
+		    // Find MTYPE associated to TYPE_MODE (type_tree)
+		    mtype = MachineMode_To_Mtype(TYPE_MODE (type_tree));
+		    if (TREE_UNSIGNED(type_tree)) 
+		      mtype = MTYPE_complement(mtype);
+		    idx = MTYPE_To_TY (mtype);
+		    Set_TY_align (idx, align);
+		  }
+		  break;
+#endif // TARG_ST
+		  
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
         case TEMPLATE_TYPE_PARM:
           break;
@@ -1801,6 +1817,28 @@ Create_ST_For_Tree (tree decl_node)
     }
   }
 
+#ifdef TARG_STxP70
+    // (cbr) memory_space support
+    tree attr;
+    ST_MEMORY_SPACE kind=ST_MEMORY_DEFAULT;
+    attr = lookup_attribute ("memory", DECL_ATTRIBUTES (decl_node));
+    if (attr) {
+      attr = TREE_VALUE (TREE_VALUE (attr));
+      FmtAssert (TREE_CODE (attr) == STRING_CST, ("Malformed memory attribute"));
+      if (!strcmp (TREE_STRING_POINTER (attr), "da"))
+	kind = ST_MEMORY_DA;
+      else if (!strcmp (TREE_STRING_POINTER (attr), "sda"))
+	kind = ST_MEMORY_SDA;
+      else if (!strcmp (TREE_STRING_POINTER (attr), "tda"))
+	kind = ST_MEMORY_TDA;
+      else if (!strcmp (TREE_STRING_POINTER (attr), "none"))
+	kind = ST_MEMORY_NONE;
+      else
+	FmtAssert (FALSE, ("Malformed tls_model attribute"));
+    } 
+    Set_ST_memory_space (*st, kind);
+#endif
+
   if (DECL_WEAK      (decl_node) &&
       !DECL_EXTERNAL (decl_node)) {
     Set_ST_is_weak_symbol (st);
@@ -1828,7 +1866,7 @@ Create_ST_For_Tree (tree decl_node)
 #endif
 
   if (DECL_SECTION_NAME (decl_node)) {
-#if 1
+#if 0
     DevWarn ("section %s specified for %s",
              TREE_STRING_POINTER (DECL_SECTION_NAME (decl_node)),
              ST_name (st));
@@ -2381,3 +2419,5 @@ LABEL_IDX& HANDLER_LABEL(tree t)    { return handler_label_map[t]; }
 
 
 #endif
+
+

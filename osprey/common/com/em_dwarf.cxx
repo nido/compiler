@@ -67,6 +67,10 @@ static Dwarf_Unsigned cie_index;
 static Dwarf_Unsigned eh_cie_index;
 #endif
 
+#ifdef TARG_STxP70
+static MEM_POOL mempool;
+#endif
+
 typedef struct {
   UINT16 dwarf_idx;
   char *path;
@@ -277,6 +281,7 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
 #endif // KEY
 
 #define EXT_OP(v)  (DW_CFA_extended | v)
+
   static unsigned char init_bytes[] = TARG_INIT_BYTES;
 
   if (record_symidx == NULL) {
@@ -302,21 +307,32 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
   dw_dbg = dwarf_producer_init_b (flags, setup_new_section_for_dwarf, 
 		      0, 0, &dw_error);
 
-#ifdef TARG_ST
+// [CQ1]: Initialization of cie is no more statically known because of
+// reconfigurability and interruption function.
+#ifdef TARG_STxP70
+  MEM_POOL_Initialize(&mempool, "CIE initialization", TRUE);
+  MEM_POOL_Push (&mempool);
+
+  Init_CIEs(dw_dbg, &mempool);
+#else
+
+#   ifdef TARG_ST
   // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 
   if (CG_emit_asm_dwarf)
-#endif
+#   endif
   cie_index = dwarf_add_frame_cie (dw_dbg, augmenter,
-#ifdef TARG_ST
+#   ifdef TARG_ST
 // [CL] code_alignment_factor is 1, as we use labels and label differences
 		    1, data_alignment_factor,
-#else
+#   else
 		    4, data_alignment_factor,
-#endif
+#   endif
 		    DW_FRAME_RA_COL, 
-		    init_bytes, sizeof(init_bytes), &dw_error);
+		    init_bytes,
+            sizeof(init_bytes)
+                                   , &dw_error);
 
-#ifdef TARG_ST
+#   ifdef TARG_ST
   // (cbr) Generate a CIE for .eh_frame only if it is C++
   if (CXX_Exceptions_On) {
     if (is_cplus)
@@ -334,10 +350,12 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
 		    1, data_alignment_factor,
                     DW_FRAME_RA_COL, 
 		    personality,
-                    init_bytes, sizeof(init_bytes),
+                    init_bytes,
+            sizeof(init_bytes)
+                                          ,
 		    &dw_error);
   }
-#else
+#   else
     if (is_cplus)
       {
         augmenter = DW_CIE_AUGMENTER_STRING_V0;
@@ -355,7 +373,8 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
                     init_bytes, sizeof(init_bytes),
 		    &dw_error);
   }
-#endif 
+#   endif  // end of else of idef TARG_ST
+#endif // end of else of ifdef TARG_STxP70
 
   return dw_dbg;
 }
@@ -549,6 +568,11 @@ void
 Em_Dwarf_End (void)
 {
   dwarf_producer_finish (dw_dbg, &dw_error);
+#ifdef TARG_STxP70
+    Clear_CIEs(&mempool);
+    MEM_POOL_Pop(&mempool);
+    MEM_POOL_Delete(&mempool);
+#endif
 }
 
 
@@ -691,7 +715,12 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
 #endif  
   /* emit the debug_frame information for this procedure. */
   if (eh_offset == DW_DLX_NO_EH_OFFSET)	/* no exception handler */
-  	dwarf_add_frame_fde_b (dw_dbg, fde, PU_die, cie_index, 
+  	dwarf_add_frame_fde_b (dw_dbg, fde, PU_die,
+#   ifdef TARG_STxP70
+                           CIE_index(Get_Current_PU()),
+#   else
+                           cie_index, 
+#   endif
 			       begin_offset,
 			       0 /* dummy code length */,
 			       (Dwarf_Unsigned) begin_label,
@@ -699,7 +728,12 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
 			       end_offset,
 			       &dw_error);
   else
-  	dwarf_add_frame_info_b (dw_dbg, fde, PU_die, cie_index, 
+  	dwarf_add_frame_info_b (dw_dbg, fde, PU_die,
+#   ifdef TARG_STxP70
+                            CIE_index(Get_Current_PU()),
+#   else
+                            cie_index, 
+#   endif
 				begin_offset,
 				0 /* dummy code length */,
 				(Dwarf_Unsigned) begin_label,
@@ -714,7 +748,12 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
       !TY_is_nothrow(PU_prototype(Get_Current_PU())) &&
       PU_Has_Calls) {
     if (eh_offset == DW_DLX_NO_EH_OFFSET)	/* no exception handler */
-      dwarf_add_ehframe_fde_b (dw_dbg, eh_fde, PU_die, eh_cie_index, 
+      dwarf_add_ehframe_fde_b (dw_dbg, eh_fde, PU_die,
+#   ifdef TARG_STxP70
+                               eh_CIE_index(Get_Current_PU()),
+#   else
+                               eh_cie_index, 
+#   endif
 			       begin_offset,
 			       0 /* dummy code length */,
 			       (Dwarf_Unsigned) begin_label,
@@ -722,7 +761,12 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
 			       end_offset,
 			       &dw_error);
     else
-      dwarf_add_ehframe_info_b (dw_dbg, eh_fde, PU_die, eh_cie_index, 
+      dwarf_add_ehframe_info_b (dw_dbg, eh_fde, PU_die,
+#   ifdef TARG_STxP70
+                               eh_CIE_index(Get_Current_PU()),
+#   else
+                               eh_cie_index, 
+#   endif
 				begin_offset,
 				0 /* dummy code length */,
 				(Dwarf_Unsigned) begin_label,
@@ -730,5 +774,5 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
 				end_offset,
 				eh_offset, eh_symindex, &dw_error);
   }
-#endif
+#endif // end of ifdef TARG_ST
 }

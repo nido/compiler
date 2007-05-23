@@ -94,6 +94,10 @@ extern const char *const built_in_class_names[4];
 /* Codes that identify the various built in functions
    so that expand_call can identify them quickly.  */
 
+#ifdef TARG_ST
+//TB: isolate builtins definition in a own .h file
+#include "builtins.h"
+#else
 #define DEF_BUILTIN(ENUM, N, C, T, LT, B, F, NA, AT) ENUM,
 enum built_in_function
 {
@@ -103,12 +107,20 @@ enum built_in_function
   END_BUILTINS
 };
 #undef DEF_BUILTIN
-
+#endif /* TARG_ST */
+#ifdef TARG_ST
+extern const char **built_in_names;
+extern tree *built_in_decls;
+/* Names for the above.  */
+extern const char *const built_in_names_static[(int) END_BUILTINS];
+/* An array of _DECL trees for the above.  */
+#else
 /* Names for the above.  */
 extern const char *const built_in_names[(int) END_BUILTINS];
 
 /* An array of _DECL trees for the above.  */
 extern tree built_in_decls[(int) END_BUILTINS];
+#endif
 
 /* The definition of tree nodes fills the next several pages.  */
 
@@ -2130,6 +2142,13 @@ enum tree_index
 
 extern GTY(()) tree global_trees[TI_MAX];
 
+#ifdef TARG_ST
+//TB: Add global type tree table for dynamic machine mode. These type
+//trees will be created dynamicaly
+extern tree dynamic_tree_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
+extern tree dynamic_tree_unsigned_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
+#endif
+
 #define error_mark_node			global_trees[TI_ERROR_MARK]
 
 #define intQI_type_node			global_trees[TI_INTQI_TYPE]
@@ -2628,7 +2647,7 @@ extern void layout_decl			PARAMS ((tree, unsigned));
    The value is BLKmode if no other mode is found.  This is like
    mode_for_size, but is passed a tree.  */
 
-extern enum machine_mode mode_for_size_tree PARAMS ((tree, enum mode_class,
+extern machine_mode_t mode_for_size_tree PARAMS ((tree, enum mode_class,
 						     int));
 
 /* Return an expr equal to X but certainly not valid as an lvalue.  */
@@ -2859,7 +2878,7 @@ extern tree get_narrower		PARAMS ((tree, int *));
 
 extern tree get_inner_reference		PARAMS ((tree, HOST_WIDE_INT *,
 						 HOST_WIDE_INT *, tree *,
-						 enum machine_mode *, int *,
+						 machine_mode_t *, int *,
 						 int *));
 
 /* Return 1 if T is an expression that get_inner_reference handles.  */
@@ -3309,5 +3328,16 @@ extern void fancy_abort PARAMS ((const char *, int, const char *))
 /* Called from expand_stmt for PRAGMA_STMT statements. */
 extern void expand_pragma_stmt PARAMS ((tree));
 #endif
+
+#ifdef TARG_ST
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* TB: need to export make vector for dynamic machine mode */
+extern tree make_vector PARAMS ((machine_mode_t, tree, int));
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* TARG_ST */
 
 #endif  /* GCC_TREE_H  */

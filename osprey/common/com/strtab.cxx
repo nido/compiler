@@ -624,6 +624,16 @@ Save_Str2 (const char *s1, const char *s2)
     return Save_Str (new_str);
 } // Save_Str2
 
+// (cbr) add string and an int to the string table
+STR_IDX
+Save_Stri (const char *s1, UINT i)
+{
+    UINT len = strlen (s1) + 17;
+    char *new_str = (char *) alloca (len);
+    sprintf(new_str, "%s%d", s1, i);
+    return Save_Str (new_str);
+} // Save_Stri
+
 STR_IDX
 Save_Str2i (const char *s1, const char *s2, UINT i)
 {
@@ -1138,7 +1148,6 @@ Save_Str (const char *str)
     return Strtab.insert (str);
 
 } // Save_Str
-
 
 STR_IDX
 Save_Str2 (const char *s1, const char *s2)

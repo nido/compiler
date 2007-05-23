@@ -44,6 +44,14 @@
 CONF_SUBDIRS=@SUBDIRS@
 
 #
+# CORE_EXTENSION as provided by configure
+# (management of dynamic extensions)
+# This variable is empty if core does
+# not support extensions.
+#
+CORE_EXTENSIONS=@CORE_EXTENSIONS@
+
+#
 #  These directories must be "built" first because they generate header files
 #  which other directories depend on.
 #  Please Specify dependencies for each new <directory> in the variable
@@ -69,6 +77,7 @@ LIBRARY_SUBDIRS =  \
 	libcomutil \
 	libdwarf   \
 	libelfutil \
+   librcparser \
 	libSYS     \
 	instrumentationC
 
@@ -79,6 +88,7 @@ DEPS_FOR_libcomutil	= include
 DEPS_FOR_libdwarf	= include
 DEPS_FOR_libelfutil	= include
 DEPS_FOR_libSYS		= include
+DEPS_FOR_librcparser	= 
 DEPS_FOR_instrumentationC =
 
 #
@@ -106,6 +116,10 @@ TOOL_SUBDIRS = \
 #	elfdump \
 #	whirl2f \
 
+ifneq (,$(CORE_EXTENSIONS))
+TOOL_SUBDIRS += targ_info_ext
+endif
+
 DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_g++fe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
 DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
@@ -121,6 +135,7 @@ DEPS_FOR_elfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_dwarfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_ir_tools	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
 DEPS_FOR_driver		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_targ_info_ext := $(INCLUDE_SUBDIRS) gccfe
 
 #
 #  Comes last, some additional target libraries built by the target compiler.

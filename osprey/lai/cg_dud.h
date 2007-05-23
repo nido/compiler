@@ -66,7 +66,7 @@
 //    Returns in ud_list the list of use-def links from a given (op,
 //    opnd) in the region.
 //
-//  INT DUD_REGION::Get_Def_Use(OP *op, INT res, dud_link_t &du_list);
+//  INT DUD_REGION::Get_Def_Use(OP *op, INT res, DUD_LIST &du_list);
 //    Returns in du_list the list of def-use links from a given (op,
 //    res) in the region.
 //
@@ -80,6 +80,12 @@
 //    These functions are used to iterate on the operations in the
 //    DUD_REGION, in topological order:
 //      for (op = dudRegion.Begin_op(); op != dudRegion.End_op(); op = dudRegion.Next_op(op))
+//
+//  OP *DUD_REGION::Last_op()
+//  OP *DUD_REGION::Prev_op()
+//    These functions are used to iterate on the operations in the
+//    DUD_REGION, in reverse topological order:
+//      for (op = dudRegion.Last_op(); op != NULL; op = dudRegion.Prev_op(op))
 //
 //  INT DUD_LIST::size()
 //    Returns the number of elements in a def-use or use-def list
@@ -125,7 +131,19 @@ class DUD_SITE {
   friend class DUD_LIST;
  private:
 
+  // Statically evaluate the number of bits required to encode
+  // an index on operands+results
+#if   (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 8)
   static const int IDX_WIDTH = 3;
+#elif (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 16)
+  static const int IDX_WIDTH = 4;
+#elif (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 32)
+  static const int IDX_WIDTH = 5;
+#elif (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 64)
+  static const int IDX_WIDTH = 6;
+#else
+#error "Need to extend IDX_WIDTH value here"
+#endif
   static const int IDX_MASK = ((1<<IDX_WIDTH)-1);
 
   OP *oper;
@@ -302,9 +320,14 @@ class DUD_REGION {
 
   OP *Begin_op() { return DUDinfo_table[1].op; };
   OP *End_op() { return NULL; };
+  OP *Last_op() { return DUDinfo_table[DUDinfo_size-1].op; };
   OP *Next_op(OP *op) {
     INT opid = Get_opid(op);
     return ((opid) > 0 && (opid < (DUDinfo_size-1))) ? DUDinfo_table[opid+1].op : NULL;
+  }
+  OP *Prev_op(OP *op) {
+    INT opid = Get_opid(op);
+    return ((opid) > 1 && (opid < DUDinfo_size)) ? DUDinfo_table[opid-1].op : NULL;
   }
 
   void Trace_DUD();  

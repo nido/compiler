@@ -783,6 +783,15 @@ DST_enter_normal_field(tree  parent_tree,
     USRCPOS_clear(src);
 
 #ifdef TARG_ST
+	if (TREE_THIS_VOLATILE(field)) {
+	  fidx = DST_mk_volatile_type(fidx);
+	  DST_append_child(comp_unit_idx,fidx);
+	}
+	if (TREE_READONLY(field)) {
+	  fidx = DST_mk_const_type(fidx);
+	  DST_append_child(comp_unit_idx,fidx);
+	}
+
 	/* The following code is inspired from dwarf2out.c:
 	   field_byte_offset, add_bit_offset_attribute */
 
@@ -1365,13 +1374,18 @@ DST_enter_array_type(tree type_tree, TY_IDX ttidx  , TY_IDX idx,INT tsize)
 	    Create_bound_info(min, &dmin, &is_lb_cval);
 	    Create_bound_info(max, &dmax, &is_ub_cval);
 
+        DST_INFO_IDX index_type_idx = DST_INVALID_IDX;
+        if(!(TREE_CODE (index_type) == INTEGER_TYPE
+             && TYPE_NAME (index_type) == NULL_TREE
+             && TREE_CODE (TREE_TYPE (index_type)) == INTEGER_TYPE
+             && TYPE_NAME (TREE_TYPE (index_type)) == NULL_TREE))
+            {
+                index_type_idx = TYPE_DST_IDX(TREE_TYPE(index_type));
+            }
+
 	    DST_INFO_IDX range_idx =
-#ifdef TARG_ST
-              /* (cbr) */
-	      DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, FALSE, 0LL);
-#else
-	      DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax);
-#endif
+            /* (cbr) */
+            DST_mk_subrange_type(is_lb_cval, dmin, is_ub_cval, dmax, FALSE, 0LL, index_type_idx);
 
 	    DST_append_child(dst_idx, range_idx);
 	  }
@@ -1680,7 +1694,19 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		       	inner_dst,    // type ptd to
 			DW_ADDR_none, // no address class
 			tsize);
-                                
+                   
+#ifdef TARG_ST
+		  // [CL]
+		  if (TYPE_READONLY(type_tree)) {
+		    DST_append_child(current_scope_idx,dst_idx);
+		    dst_idx = DST_mk_const_type(dst_idx);
+		  }
+		  if (TYPE_VOLATILE(type_tree)) {
+		    DST_append_child(current_scope_idx,dst_idx);
+		    dst_idx = DST_mk_volatile_type(dst_idx);
+		  }
+#endif
+
                   DST_append_child(current_scope_idx,dst_idx);
 
 		  TYPE_DST_IDX(type_tree) = dst_idx;
@@ -1722,6 +1748,10 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		break;
 
     case ARRAY_TYPE:
+#ifdef TARG_ST
+      //TB: generate dst for vector type
+   case VECTOR_TYPE:
+#endif
 		
 	       {
                 dst_idx = DST_enter_array_type(type_tree, 

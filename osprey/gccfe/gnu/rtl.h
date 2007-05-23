@@ -113,7 +113,7 @@ union rtunion_def
   const char *rtstr;
   rtx rtx;
   rtvec rtvec;
-  enum machine_mode rttype;
+  machine_mode_t rttype;
   addr_diff_vec_flags rt_addr_diff_vec_flags;
   struct cselib_val_struct *rt_cselib;
   struct bitmap_head_def *rtbit;
@@ -231,7 +231,7 @@ struct rtx_def GTY((chain_next ("RTX_NEXT (&%h)"),
 #define GET_CODE(RTX)	    ((enum rtx_code) (RTX)->code)
 #define PUT_CODE(RTX, CODE) ((RTX)->code = (ENUM_BITFIELD(rtx_code)) (CODE))
 
-#define GET_MODE(RTX)	    ((enum machine_mode) (RTX)->mode)
+#define GET_MODE(RTX)	    ((machine_mode_t) (RTX)->mode)
 #define PUT_MODE(RTX, MODE) ((RTX)->mode = (ENUM_BITFIELD(machine_mode)) (MODE))
 
 /* RTL vector.  These appear inside RTX's when there is a need
@@ -748,7 +748,7 @@ enum reg_note
 /* Define macros to extract and insert the reg-note kind in an EXPR_LIST.  */
 #define REG_NOTE_KIND(LINK) ((enum reg_note) GET_MODE (LINK))
 #define PUT_REG_NOTE_KIND(LINK, KIND) \
-  PUT_MODE (LINK, (enum machine_mode) (KIND))
+  PUT_MODE (LINK, (machine_mode_t) (KIND))
 
 /* Names for REG_NOTE's in EXPR_LIST insn's.  */
 
@@ -1031,13 +1031,13 @@ enum label_kind
 /* in rtlanal.c */
 extern unsigned int subreg_lsb		PARAMS ((rtx));
 extern unsigned int subreg_regno_offset 	PARAMS ((unsigned int, 
-							 enum machine_mode, 
+							 machine_mode_t, 
 							 unsigned int, 
-							 enum machine_mode));
+							 machine_mode_t));
 extern bool subreg_offset_representable_p 	PARAMS ((unsigned int, 
-							 enum machine_mode, 
+							 machine_mode_t, 
 							 unsigned int, 
-							 enum machine_mode));
+							 machine_mode_t));
 extern unsigned int subreg_regno 	PARAMS ((rtx));
 
 /* 1 if RTX is a subreg containing a reg that is already known to be
@@ -1354,19 +1354,19 @@ extern rtx expand_builtin_expect_jump	PARAMS ((tree, rtx, rtx));
 /* In explow.c */
 extern void set_stack_check_libfunc PARAMS ((rtx));
 extern HOST_WIDE_INT trunc_int_for_mode	PARAMS ((HOST_WIDE_INT,
-					       enum machine_mode));
+					       machine_mode_t));
 extern rtx plus_constant_wide		 PARAMS ((rtx, HOST_WIDE_INT));
 extern rtx plus_constant_for_output_wide PARAMS ((rtx, HOST_WIDE_INT));
 extern void optimize_save_area_alloca	PARAMS ((rtx));
 
 /* In emit-rtl.c */
 extern rtx gen_rtx			PARAMS ((enum rtx_code,
-						 enum machine_mode, ...));
+						 machine_mode_t, ...));
 extern rtvec gen_rtvec			PARAMS ((int, ...));
 extern rtx copy_insn_1			PARAMS ((rtx));
 extern rtx copy_insn			PARAMS ((rtx));
 extern rtx gen_int_mode			PARAMS ((HOST_WIDE_INT,
-						 enum machine_mode));
+						 machine_mode_t));
 extern rtx emit_copy_of_insn_after	PARAMS ((rtx, rtx));
 
 /* In rtl.c */
@@ -1384,36 +1384,36 @@ extern int rtx_equal_p                  PARAMS ((rtx, rtx));
 
 /* In emit-rtl.c */
 extern rtvec gen_rtvec_v		PARAMS ((int, rtx *));
-extern rtx gen_reg_rtx			PARAMS ((enum machine_mode));
+extern rtx gen_reg_rtx			PARAMS ((machine_mode_t));
 extern rtx gen_label_rtx		PARAMS ((void));
 extern int subreg_hard_regno		PARAMS ((rtx, int));
-extern rtx gen_lowpart_common		PARAMS ((enum machine_mode, rtx));
-extern rtx gen_lowpart			PARAMS ((enum machine_mode, rtx));
+extern rtx gen_lowpart_common		PARAMS ((machine_mode_t, rtx));
+extern rtx gen_lowpart			PARAMS ((machine_mode_t, rtx));
 
 /* In cse.c */
-extern rtx gen_lowpart_if_possible	PARAMS ((enum machine_mode, rtx));
+extern rtx gen_lowpart_if_possible	PARAMS ((machine_mode_t, rtx));
 
 /* In emit-rtl.c */
-extern rtx gen_highpart			PARAMS ((enum machine_mode, rtx));
-extern rtx gen_highpart_mode		PARAMS ((enum machine_mode,
-						 enum machine_mode, rtx));
-extern rtx gen_realpart			PARAMS ((enum machine_mode, rtx));
-extern rtx gen_imagpart			PARAMS ((enum machine_mode, rtx));
+extern rtx gen_highpart			PARAMS ((machine_mode_t, rtx));
+extern rtx gen_highpart_mode		PARAMS ((machine_mode_t,
+						 machine_mode_t, rtx));
+extern rtx gen_realpart			PARAMS ((machine_mode_t, rtx));
+extern rtx gen_imagpart			PARAMS ((machine_mode_t, rtx));
 extern rtx operand_subword		PARAMS ((rtx, unsigned int, int,
-						 enum machine_mode));
+						 machine_mode_t));
 extern rtx constant_subword		PARAMS ((rtx, int,
-						 enum machine_mode));
+						 machine_mode_t));
 
 /* In emit-rtl.c */
 extern rtx operand_subword_force	PARAMS ((rtx, unsigned int,
-						 enum machine_mode));
+						 machine_mode_t));
 extern int subreg_lowpart_p		PARAMS ((rtx));
-extern unsigned int subreg_lowpart_offset PARAMS ((enum machine_mode,
-						   enum machine_mode));
-extern unsigned int subreg_highpart_offset PARAMS ((enum machine_mode,
-						    enum machine_mode));
+extern unsigned int subreg_lowpart_offset PARAMS ((machine_mode_t,
+						   machine_mode_t));
+extern unsigned int subreg_highpart_offset PARAMS ((machine_mode_t,
+						    machine_mode_t));
 extern rtx make_safe_from		PARAMS ((rtx, rtx));
-extern rtx convert_memory_address	PARAMS ((enum machine_mode, rtx));
+extern rtx convert_memory_address	PARAMS ((machine_mode_t, rtx));
 extern rtx get_insns			PARAMS ((void));
 extern const char *get_insn_name	PARAMS ((int));
 extern rtx get_last_insn		PARAMS ((void));
@@ -1427,25 +1427,25 @@ extern void push_to_full_sequence	PARAMS ((rtx, rtx));
 extern void end_full_sequence		PARAMS ((rtx*, rtx*));
 
 /* In varasm.c  */
-extern rtx immed_double_const		PARAMS ((HOST_WIDE_INT, HOST_WIDE_INT, enum machine_mode));
+extern rtx immed_double_const		PARAMS ((HOST_WIDE_INT, HOST_WIDE_INT, machine_mode_t));
 extern rtx mem_for_const_double		PARAMS ((rtx));
-extern rtx force_const_mem		PARAMS ((enum machine_mode, rtx));
+extern rtx force_const_mem		PARAMS ((machine_mode_t, rtx));
 
 /* In varasm.c  */
 extern rtx get_pool_constant		PARAMS ((rtx));
 extern rtx get_pool_constant_mark	PARAMS ((rtx, bool *));
-extern enum machine_mode get_pool_mode	PARAMS ((rtx));
+extern machine_mode_t get_pool_mode	PARAMS ((rtx));
 extern rtx get_pool_constant_for_function	PARAMS ((struct function *, rtx));
-extern enum machine_mode get_pool_mode_for_function	PARAMS ((struct function *, rtx));
+extern machine_mode_t get_pool_mode_for_function	PARAMS ((struct function *, rtx));
 extern int get_pool_offset		PARAMS ((rtx));
 extern rtx simplify_subtraction		PARAMS ((rtx));
 
 /* In function.c  */
-extern rtx assign_stack_local		PARAMS ((enum machine_mode,
+extern rtx assign_stack_local		PARAMS ((machine_mode_t,
 					       HOST_WIDE_INT, int));
-extern rtx assign_stack_temp		PARAMS ((enum machine_mode,
+extern rtx assign_stack_temp		PARAMS ((machine_mode_t,
 					       HOST_WIDE_INT, int));
-extern rtx assign_stack_temp_for_type	PARAMS ((enum machine_mode,
+extern rtx assign_stack_temp_for_type	PARAMS ((machine_mode_t,
 						 HOST_WIDE_INT, int, tree));
 extern rtx assign_temp			PARAMS ((tree, int, int, int));
 /* In emit-rtl.c */
@@ -1525,39 +1525,39 @@ extern rtx split_insns			PARAMS ((rtx, rtx));
 
 /* In simplify-rtx.c  */
 extern rtx simplify_unary_operation	PARAMS ((enum rtx_code,
-						 enum machine_mode, rtx,
-						 enum machine_mode));
+						 machine_mode_t, rtx,
+						 machine_mode_t));
 extern rtx simplify_binary_operation	PARAMS ((enum rtx_code,
-						 enum machine_mode, rtx,
+						 machine_mode_t, rtx,
 						 rtx));
 extern rtx simplify_ternary_operation	PARAMS ((enum rtx_code,
-						 enum machine_mode,
-						 enum machine_mode, rtx, rtx,
+						 machine_mode_t,
+						 machine_mode_t, rtx, rtx,
 						 rtx));
 extern rtx simplify_relational_operation PARAMS ((enum rtx_code,
-						  enum machine_mode, rtx,
+						  machine_mode_t, rtx,
 						  rtx));
 extern rtx simplify_gen_binary		PARAMS ((enum rtx_code,
-						 enum machine_mode,
+						 machine_mode_t,
 						 rtx, rtx));
 extern rtx simplify_gen_unary		PARAMS ((enum rtx_code,
-						 enum machine_mode, rtx,
-						 enum machine_mode));
+						 machine_mode_t, rtx,
+						 machine_mode_t));
 extern rtx simplify_gen_ternary		PARAMS ((enum rtx_code,
-						 enum machine_mode,
-						 enum machine_mode,
+						 machine_mode_t,
+						 machine_mode_t,
 						 rtx, rtx, rtx));
 extern rtx simplify_gen_relational	PARAMS ((enum rtx_code,
-						 enum machine_mode,
-						 enum machine_mode,
+						 machine_mode_t,
+						 machine_mode_t,
 						 rtx, rtx));
-extern rtx simplify_subreg		PARAMS ((enum machine_mode,
+extern rtx simplify_subreg		PARAMS ((machine_mode_t,
 						 rtx,
-						 enum machine_mode,
+						 machine_mode_t,
 						 unsigned int));
-extern rtx simplify_gen_subreg		PARAMS ((enum machine_mode,
+extern rtx simplify_gen_subreg		PARAMS ((machine_mode_t,
 						 rtx,
-						 enum machine_mode,
+						 machine_mode_t,
 						 unsigned int));
 extern rtx simplify_replace_rtx		PARAMS ((rtx, rtx, rtx));
 extern rtx simplify_rtx			PARAMS ((rtx));
@@ -1567,7 +1567,7 @@ extern rtx avoid_constant_pool_reference PARAMS ((rtx));
 extern rtx gen_mem_addressof		PARAMS ((rtx, tree, int));
 
 /* In regclass.c  */
-extern enum machine_mode choose_hard_reg_mode PARAMS ((unsigned int,
+extern machine_mode_t choose_hard_reg_mode PARAMS ((unsigned int,
 						       unsigned int));
 
 /* In emit-rtl.c  */
@@ -1680,7 +1680,7 @@ extern void free_reg_info		PARAMS ((void));
 extern int asm_noperands		PARAMS ((rtx));
 extern const char *decode_asm_operands	PARAMS ((rtx, rtx *, rtx **,
 					       const char **,
-					       enum machine_mode *));
+					       machine_mode_t *));
 
 extern enum reg_class reg_preferred_class PARAMS ((int));
 extern enum reg_class reg_alternate_class PARAMS ((int));
@@ -1699,7 +1699,7 @@ extern GTY(()) rtx const_int_rtx[MAX_SAVED_CONST_INT * 2 + 1];
 #define constm1_rtx	(const_int_rtx[MAX_SAVED_CONST_INT-1])
 extern GTY(()) rtx const_true_rtx;
 
-extern GTY(()) rtx const_tiny_rtx[3][(int) MAX_MACHINE_MODE];
+extern GTY(()) rtx const_tiny_rtx[3][(int) MAX_LIMIT_MACHINE_MODE];
 
 /* Returns a constant 0 rtx in mode MODE.  Integer modes are treated the
    same as VOIDmode.  */
@@ -1788,14 +1788,14 @@ extern GTY(()) rtx return_address_pointer_rtx;
    add to this list, modify special_rtx in gengenrtl.c as well.  You
    should also modify gen_rtx to use the special function.  */
 
-extern rtx gen_rtx_CONST_INT PARAMS ((enum machine_mode, HOST_WIDE_INT));
-extern rtx gen_rtx_CONST_VECTOR PARAMS ((enum machine_mode, rtvec));
-extern rtx gen_raw_REG PARAMS ((enum machine_mode, int));
-extern rtx gen_rtx_REG PARAMS ((enum machine_mode, unsigned));
-extern rtx gen_rtx_SUBREG PARAMS ((enum machine_mode, rtx, int));
-extern rtx gen_rtx_MEM PARAMS ((enum machine_mode, rtx));
+extern rtx gen_rtx_CONST_INT PARAMS ((machine_mode_t, HOST_WIDE_INT));
+extern rtx gen_rtx_CONST_VECTOR PARAMS ((machine_mode_t, rtvec));
+extern rtx gen_raw_REG PARAMS ((machine_mode_t, int));
+extern rtx gen_rtx_REG PARAMS ((machine_mode_t, unsigned));
+extern rtx gen_rtx_SUBREG PARAMS ((machine_mode_t, rtx, int));
+extern rtx gen_rtx_MEM PARAMS ((machine_mode_t, rtx));
 
-extern rtx gen_lowpart_SUBREG PARAMS ((enum machine_mode, rtx));
+extern rtx gen_lowpart_SUBREG PARAMS ((machine_mode_t, rtx));
 
 /* We need the cast here to ensure that we get the same result both with
    and without prototypes.  */
@@ -1924,7 +1924,7 @@ struct cse_basic_block_data;
 #define MAX_COST INT_MAX
 
 extern int rtx_cost			PARAMS ((rtx, enum rtx_code));
-extern int address_cost			PARAMS ((rtx, enum machine_mode));
+extern int address_cost			PARAMS ((rtx, machine_mode_t));
 extern int delete_trivially_dead_insns	PARAMS ((rtx, int));
 #ifdef BUFSIZ
 extern int cse_main			PARAMS ((rtx, int, int, FILE *));
@@ -2012,7 +2012,7 @@ extern void delete_insn_chain_and_edges	PARAMS ((rtx, rtx));
 
 /* In combine.c */
 extern int combine_instructions		PARAMS ((rtx, unsigned int));
-extern unsigned int extended_count	PARAMS ((rtx, enum machine_mode, int));
+extern unsigned int extended_count	PARAMS ((rtx, machine_mode_t, int));
 extern rtx remove_death			PARAMS ((unsigned int, rtx));
 #ifdef BUFSIZ
 extern void dump_combine_stats		PARAMS ((FILE *));
@@ -2083,7 +2083,7 @@ extern void dump_flow_info			PARAMS ((FILE *));
 extern void init_expmed			PARAMS ((void));
 extern void expand_inc			PARAMS ((rtx, rtx));
 extern void expand_dec			PARAMS ((rtx, rtx));
-extern rtx expand_mult_highpart		PARAMS ((enum machine_mode, rtx,
+extern rtx expand_mult_highpart		PARAMS ((machine_mode_t, rtx,
 						unsigned HOST_WIDE_INT, rtx,
 						int, int));
 
@@ -2119,12 +2119,12 @@ extern void reg_scan_update		PARAMS ((rtx, rtx, unsigned int));
 extern void fix_register		PARAMS ((const char *, int, int));
 #ifdef HARD_CONST
 extern void cannot_change_mode_set_regs PARAMS ((HARD_REG_SET *,
-						 enum machine_mode,
+						 machine_mode_t,
 						 unsigned int));
 #endif
 extern bool invalid_mode_change_p	PARAMS ((unsigned int,
 						 enum reg_class,
-						 enum machine_mode));
+						 machine_mode_t));
 
 extern int delete_null_pointer_checks	PARAMS ((rtx));
 
@@ -2202,10 +2202,10 @@ enum libcall_type
 };
 
 extern void emit_library_call		PARAMS ((rtx, enum libcall_type,
-						 enum machine_mode, int,
+						 machine_mode_t, int,
 						 ...));
 extern rtx emit_library_call_value	PARAMS ((rtx, rtx, enum libcall_type,
-						 enum machine_mode, int,
+						 machine_mode_t, int,
 						 ...));
 
 /* In unroll.c */
@@ -2242,10 +2242,10 @@ extern void fancy_abort PARAMS ((const char *, int, const char *))
 /* In alias.c */
 extern void clear_reg_alias_info	PARAMS ((rtx));
 extern rtx canon_rtx                    PARAMS ((rtx));
-extern int true_dependence		PARAMS ((rtx, enum machine_mode, rtx,
+extern int true_dependence		PARAMS ((rtx, machine_mode_t, rtx,
 						int (*)(rtx, int)));
 extern rtx get_addr                     PARAMS ((rtx));
-extern int canon_true_dependence        PARAMS ((rtx, enum machine_mode, rtx,
+extern int canon_true_dependence        PARAMS ((rtx, machine_mode_t, rtx,
                                                 rtx, int (*)(rtx, int)));
 extern int read_dependence		PARAMS ((rtx, rtx));
 extern int anti_dependence		PARAMS ((rtx, rtx));

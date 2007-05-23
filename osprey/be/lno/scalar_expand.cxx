@@ -1308,8 +1308,13 @@ extern STACK<WN*>* Scalar_Equivalence_Class(WN* ref, DU_MANAGER* du,
     }
 
     // will not collect equivalence class for dedicated pregs
+#ifdef TARG_ST
+    if (Contains_Dedicated_Preg(scalar_ref))
+#else
     if (ST_class(WN_st(scalar_ref)) == CLASS_PREG &&
-        WN_offset(scalar_ref) <= Last_Dedicated_Preg_Offset) {
+        WN_offset(scalar_ref) <= Last_Dedicated_Preg_Offset)
+#endif
+      {
       if (find_restrict) 
 	*wn_outer_loop = NULL; 
       CXX_DELETE(class_stack, pool);
@@ -1841,8 +1846,20 @@ static void Mark_Calls(WN* wn)
 
 static INT unique_se_id = 0;
 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define se_type_array(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("se_type_array: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       se_type_array[t])
+#define se_type_array_set(t) \
+       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), se_type_array[t]
+static TY_IDX se_type_array[MTYPE_STATIC_COUNT + 1]; 
+#else
 static TY_IDX se_type_array[MTYPE_LAST + 1]; 
-
+#endif
 extern void SE_Symbols_For_SE(SYMBOL* ptr_array, char* pref, INT unique_id, 
   TYPE_ID mtype)
 {
@@ -1852,10 +1869,10 @@ extern void SE_Symbols_For_SE(SYMBOL* ptr_array, char* pref, INT unique_id,
   sprintf(name, "$%s%d_%s", pref, unique_id, MTYPE_name(mtype));
   st = New_ST(CURRENT_SYMTAB);
 
-  TY_IDX ty_base = se_type_array[mtype];  
+  TY_IDX ty_base = se_type_array(mtype);  
   if (ty_base == (TY_IDX) NULL) {
     ty_base = Copy_TY(Be_Type_Tbl(mtype)); 
-    se_type_array[mtype] = ty_base; 
+    se_type_array_set(mtype) = ty_base; 
   }
   TY_IDX ty_idx = Make_Pointer_Type (ty_base);
   if (!TY_ptr_as_array(ty_idx)) {

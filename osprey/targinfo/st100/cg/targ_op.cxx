@@ -780,4 +780,9 @@ Hack_For_Printing_Push_Pop (
 
   return FALSE;
 }
+
+TOP
+TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass) {
+  return TOP_UNDEFINED;
+}
 #endif

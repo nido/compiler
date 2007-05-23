@@ -46,12 +46,15 @@
  *    instead of register class <dst1>
  * --------------------------------------------------------------------
  */
-static TOP TOP_Branch_To_Reg_Table[TOP_count+1];
+static TOP *TOP_Branch_To_Reg_Table;
 
 static void
 Init_TOP_Branch_To_Reg()
 {
   int i;
+  TOP_Branch_To_Reg_Table = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
+
+  TOP_Branch_To_Reg_Table[TOP_UNDEFINED] = TOP_UNDEFINED;
 
   for(i = 0; i <= TOP_count; ++i) {
     TOP_Branch_To_Reg_Table[i] = TOP_UNDEFINED;

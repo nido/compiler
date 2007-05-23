@@ -479,6 +479,9 @@ extern "C" {
 
 #define DW_CFA_low_user          0x1c
 #define DW_CFA_MIPS_advance_loc8 0x1d
+#ifdef TARG_ST
+#   define DW_CFA_ST_relocation  0x1e
+#endif
 
 /* the following two from egcs-1.1.2 */
 #define DW_CFA_GNU_window_save   0x2d 

@@ -729,9 +729,22 @@ Remove_wn_in(BB_NODE *bb, WN* wn)
   WN_prev(wn) = NULL;
 }
 
+static BOOL
+Loop_Pragma_Nz_Trip(BB_NODE *pragma_bb) {
+  WN *wn;
+  for (wn = pragma_bb->Firststmt(); wn; wn = WN_next(wn)) {
+    if ((WN_operator(wn) == OPR_PRAGMA) &&
+	((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMINITERCOUNT))
+      return (WN_pragma_arg1(wn) > 0);
+  }
+  return FALSE;
+}
+
 static void
 Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
 {
+  if (from_bb == to_bb)
+    return;
   WN *wn, *next_wn = NULL;
   BOOL remove_all_pragmas = TRUE;
   for (wn = from_bb->Firststmt(); wn; wn = next_wn) {
@@ -747,6 +760,9 @@ Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
       case WN_PRAGMA_PIPELINE:
       case WN_PRAGMA_LOOPSEQ:
       case WN_PRAGMA_STREAM_ALIGNMENT:
+      case WN_PRAGMA_HWLOOP:
+      case WN_PRAGMA_LOOPMINITERCOUNT:
+      case WN_PRAGMA_LOOPMAXITERCOUNT:
 	Remove_wn_in(from_bb, wn);
 	cfg->Append_wn_in(to_bb, wn);
 	to_bb->Set_haspragma();
@@ -905,15 +921,25 @@ CFG::Lower_while_do( WN *wn, END_BLOCK *ends_bb )
   BB_NODE *exit_bb = Create_labelled_bb();
   BB_NODE *dohead_bb = Create_labelled_bb( BB_DOHEAD );
 
+#ifdef TARG_ST
+  WN *wn_top_branch = NULL;
+  BB_NODE *entry_test_bb = _current_bb;
+  BOOL nz_trip_count = Loop_Pragma_Nz_Trip(_current_bb);
+  if (!nz_trip_count) {
+#endif
+
   // Create loop entry test bb, and make a copy of original expn.
   WN *testcopy = WN_copy(WN_while_test(wn));
   WN_copy_stmap(WN_while_test(wn), testcopy);
   if (Cur_PU_Feedback)
     Cur_PU_Feedback->FB_clone_loop_test( WN_while_test(wn), testcopy, wn );
 
-  WN *wn_top_branch;
-  BB_NODE *entry_test_bb = 
+  entry_test_bb = 
     Create_conditional( testcopy, dohead_bb, exit_bb, FALSE , &wn_top_branch);
+
+#ifdef TARG_ST
+  }
+#endif
 
   // Create and connect the loop head
   Connect_predsucc( entry_test_bb, dohead_bb );
@@ -966,7 +992,13 @@ CFG::Lower_while_do( WN *wn, END_BLOCK *ends_bb )
   //  WHILE-loop do not have entry guard because the loop-exit condition
   //  might be modified inside a loop.
   //
-  // loopinfo->Set_has_entry_guard();
+  // FdF 20070112 (codex-22293): In case of a Not Zero Loop Trip
+  // Count, consider that the while loop has an entry guard (see
+  // Lower_do_loop).
+#ifdef TARG_ST
+  if (nz_trip_count)
+    loopinfo->Set_has_entry_guard();
+#endif
   loopinfo->Set_flag(LOOP_WHILE);
   dohead_bb->Set_loop(loopinfo);
   cond_bb->Set_loop(loopinfo);
@@ -2479,11 +2511,19 @@ CFG::Agoto_succ_bb(INT32 idx)
 // ====================================================================
 // process multiple entry or exit blocks.  If redo_exits is true, we
 // recalculate the _exit_vec[].
+//
+// Preconditions:
+//  - fake entry/exit must not be connected
+//
+// Postcondition:
+//  - fake entry/exit are connected, thus must be deconnected explicitly
+//    after the call to this function.
 // ====================================================================
 void
 CFG::Process_multi_entryexit( BOOL is_whirl )
 {
   Is_Trace(Trace(), (TFile,"CFG::Process_multi_entryexit\n"));
+
 
   // For our purposes "is_whirl" also means we can disconnect
   // unreachable blocks because we have not yet inserted phi nodes.
@@ -2517,6 +2557,7 @@ CFG::Process_multi_entryexit( BOOL is_whirl )
     for ( i=0; i <= _notreach_vec.Lastidx(); i++ )
       Connect_predsucc(_entry_bb, _notreach_vec[i]);
   }
+
   // for exits, also does region exits
   Find_exit_blocks();
 
@@ -2527,29 +2568,32 @@ CFG::Process_multi_entryexit( BOOL is_whirl )
     ("CFG::Process_multi_entryexit: no exit blocks") );
 
   // if only one exit BB that indeed exits, no fake BB needed
-  if ( _exit_vec.Lastidx() == 0 && Fake_exit_bb() == NULL ) {
+  if ( _exit_vec.Lastidx() == 0 && Fake_exit_bb() == NULL &&
+       _exit_vec[0]->Willexit()) {
     _exit_bb = _exit_vec[0];
-
-    if ( _exit_bb->Willexit() ) {
-      return;
+  } else {
+    // multiple exit BBs or blocks that do not reach an exit, need fake BB
+    if (Fake_exit_bb() == NULL) {
+      _fake_exit_bb = New_bb( FALSE/*!connect*/, BB_EXIT );
+      _fake_exit_bb->Set_willexit();
+      _exit_bb = _fake_exit_bb;
+    } else {
+      // if a fake exit BB already exists,  no need to create a new one.
+      _exit_bb = Fake_exit_bb();
+    }
+    INT i;
+    for (i=0; i <= _exit_vec.Lastidx(); i++) {
+      Is_True( _exit_vec[i] != _exit_bb,
+	       ("CFG::Process_multi_entryexit: _exit_bb in _exit_vec") );
+      Connect_predsucc(_exit_vec[i], _exit_bb);
     }
   }
+  
+#ifdef TARG_ST
+  // [CG] The default now is to have fake entry/exit disconnected.
+  Remove_fake_entryexit_arcs();
+#endif
 
-  // multiple exit BBs or blocks that do not reach an exit, need fake BB
-  if (Fake_exit_bb() == NULL) {
-    _fake_exit_bb = New_bb( FALSE/*!connect*/, BB_EXIT );
-    _fake_exit_bb->Set_willexit();
-    _exit_bb = _fake_exit_bb;
-  } else {
-    // if a fake exit BB already exists,  no need to create a new one.
-    _exit_bb = Fake_exit_bb();
-  }
-
-  for (INT i=0; i <= _exit_vec.Lastidx(); i++) {
-    Is_True( _exit_vec[i] != _exit_bb,
-      ("CFG::Process_multi_entryexit: _exit_bb in _exit_vec") );
-    Connect_predsucc(_exit_vec[i], _exit_bb);
-  }
 }
 
 // ====================================================================
@@ -2600,6 +2644,9 @@ CFG::Ident_mp_regions(void)
 
 // ====================================================================
 // Creates the CFG for a function node or other high-level node
+//
+// Postcondition:
+//  - fake entry/exit are disconnected.
 // ====================================================================
 
 void 
@@ -3156,7 +3203,12 @@ CFG::Process_no_exit(void)
 
   // reset both reach and willexit flag
   FOR_ALL_NODE( bb, cfg_iter, Init() ) {
+#ifdef TARG_ST
+    // [CG] Improve maintainability. Actuall dforder and visit flags are equivalent.
+    bb->Reset_dforder();
+#else
     bb->Reset_visit();
+#endif
     bb->Reset_willexit();
   }
 
@@ -3186,6 +3238,10 @@ CFG::Process_no_exit(void)
 // ====================================================================
 // Find all of the blocks that exit from the region, and fill in the
 // _exit_vec[] array.
+//
+// Preconditions:
+//  - Fake_exit_bb() must not be reachable by other blocks. This is
+//    the normal state of the CFG.
 // ====================================================================
 
 void
@@ -3256,7 +3312,7 @@ CFG::Find_exit_blocks( void )
       // save the last real block in source order to later consider it
       // as a block that leaves the region even if it has no return.
       if (bb->Succ() == NULL ||
-	  (bb->Succ() != NULL && bb->Succ()->Len() == 0)) {
+          (bb->Succ() != NULL && (bb->Succ()->Len() == 0))) {
 	Add_earlyexit( bb ); // don't reset the kind here, just connect up
       }
     }
@@ -3265,10 +3321,18 @@ CFG::Find_exit_blocks( void )
 }
 
 // ====================================================================
+// CFG::Remove_fake_entryexit_arcs()
+//
 // update pred/succ arcs of fake entry/exit blocks so they are not
 // reachable from normal blocks - Basically, make the arcs one-way so
 // fake blocks can reach succs/preds but their succs/preds cannot reach
 // them.
+// This is the default state of the CFG, in particular, after CFG:Create()
+// and CFG::Invalidate_and_update_aux_info().
+//
+// If one requires to have fake entry exists attaches, such as before
+// Compute_dom_tree(), one must call   Attach_fake_entryexit_arcs().
+//
 // ====================================================================
 
 void
@@ -3286,6 +3350,40 @@ CFG::Remove_fake_entryexit_arcs( void )
     BB_LIST_ITER bb_pred_iter;
     FOR_ALL_ELEM( pred, bb_pred_iter, Init(Fake_exit_bb()->Pred()) ) {
       pred->Remove_succ( Fake_exit_bb(), Mem_pool() );
+    }
+  }
+}
+
+// ====================================================================
+// CFG::Attach_fake_entryexit_arcs()
+//
+// add pred/succ arcs to fake exit/entry blocks so they are
+// reachable from normal blocks.
+// This function must be used before algorithms that rely on reachable
+// fake entry/exits.
+// Note though that the fake entry/exits even if reachable are still
+// NOT marked Reachable().
+// At least Compute_dom_tree() requires this particular state, thus
+// a call to Compute_dome_tree()  must always be of this form:
+// cfg->Attach_fake_entryexit_arcs();
+// cfg->Compute_dom_tree();
+// cfg->Remove_fake_entryexit_arcs();
+// ====================================================================
+void
+CFG::Attach_fake_entryexit_arcs(void)
+{
+  if(Fake_entry_bb()) {
+    BB_NODE     *succ;
+    BB_LIST_ITER bb_succ_iter;
+    FOR_ALL_ELEM( succ, bb_succ_iter, Init(Fake_entry_bb()->Succ()) ) {
+      succ->Append_pred(Fake_entry_bb(), Mem_pool());
+    }
+  }
+  if(Fake_exit_bb()) {
+    BB_NODE     *pred;
+    BB_LIST_ITER bb_pred_iter;
+    FOR_ALL_ELEM( pred, bb_pred_iter, Init(Fake_exit_bb()->Pred()) ) {
+      pred->Append_succ(Fake_exit_bb(), Mem_pool());
     }
   }
 }
@@ -4469,7 +4567,11 @@ CFG::Is_outermost_loop_in_parallel_region( BB_LOOP *loop,
 // Add a BB_NODE to each CFG edge from a bb with multiple successors to
 // a bb with multiple predecessors.  Rebuild the data structure if
 // rebuild_ds is TRUE.
-
+//
+// Preconditions: 
+//  - fake entry/exit are not connected.
+// Postconditions:
+//  - fake entry/exits are not connected.
 void    
 CFG::Invalidate_and_update_aux_info(void)
 {
@@ -4483,6 +4585,10 @@ CFG::Invalidate_and_update_aux_info(void)
     _dfs_vec = NULL;
   }
 
+#ifdef TARG_ST
+  // Must explicitly ask for connection of fake entry/exit for Compute_dom_tree().
+  Attach_fake_entryexit_arcs();
+#endif
   Compute_dom_tree(TRUE); // create dom tree
   Compute_dom_tree(FALSE);// create post-dom tree
   Remove_fake_entryexit_arcs();

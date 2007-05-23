@@ -72,7 +72,7 @@
 
 #if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
 typedef unsigned char an_integer_kind;
-#include "c_int_model.h"
+#include "targ_abi_properties.h" // TB: For ABI_PROPERTIES_ABI_Value
 #endif
 
 /* =====================================================================
@@ -167,23 +167,6 @@ BOOL Has_GP_Groups = FALSE;
  * Note: CG should instead test:
  * ( TOP_Find_Operand_Use( OP_code(op), OU_offset ) >= 0 ) */
 BOOL Use_Load_Store_Offset = TRUE;
-
-#if defined (FRONT_END_C) || defined (FRONT_END_CPLUSPLUS)
-
-PREG_NUM Map_Reg_To_Preg [] = {
-  0x001, 0x002, 0x003, 0x004, 0x005, 0x006, 0x007,
-  0x008, 0x009, 0x00a, 0x00b, 0x00c, 0x00d, 0x00e, 0x00f,
-  0x010, 0x011, 0x012, 0x013, 0x014, 0x015, 0x016, 0x017,
-  0x018, 0x019, 0x01a, 0x01b, 0x01c, 0x01d, 0x01e, 0x01f,
-  0x020, 0x021, 0x022, 0x023, 0x024, 0x025, 0x026, 0x027,
-  0x028, 0x029, 0x02a, 0x02b, 0x02c, 0x02d, 0x02e, 0x02f,
-  0x030, 0x031, 0x032, 0x033, 0x034, 0x035, 0x036, 0x037,
-  0x038, 0x039, 0x03a, 0x03b, 0x03c, 0x03d, 0x03e, 0x03f,
-  0x040, 0x041, 0x042, 0x043, 0x044, 0x045, 0x046, 0x047,
-  0x048
-};
-
-#endif /* defined (FRONT_END_C) || defined (FRONT_END_CPLUSPLUS) */
 
 /* ====================================================================
  *
@@ -409,11 +392,6 @@ Prepare_Target ( void )
   /* Set descriptive variables: */
   Use_32_Bit_Pointers = TRUE; /* Always true for ST200 ABIs. */
 
-#if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
-  Target_Int_Model = TARGET_INT_ILP32;
-  Make_Int_Model_Consistent ();
-#endif
-
   return;
 }
 
@@ -592,12 +570,6 @@ Configure_Target ()
   // Same hack as above ...
   Integer_type = MTYPE_I4;
 
-#if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
-#ifndef EDG_FORTRAN
-  Make_Int_Model_Consistent();
-#endif
-#endif
-
   /* Initialize pointer information */
   if (Use_32_Bit_Pointers) {
     Pointer_Size = 4;
@@ -666,8 +638,8 @@ Configure_Target ()
 #ifdef TARG_ST
   // [CG]: Configuration for floating point
   Emulate_FloatingPoint_Ops = TRUE;
-  Emulate_Single_Float_Ops = TRUE;
-  Emulate_Double_Float_Ops = TRUE;
+  Emulate_Single_Float_Type = TRUE;
+  Emulate_Double_Float_Type = TRUE;
 
   // [CG]: Configuration for non-ieee ops
   if (Is_Target_st235()) {
@@ -738,10 +710,7 @@ Configure_Target ()
 
 #endif
 
-  
-#if defined(BACK_END)
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
-#endif
 
 #define IS_POW2(n)              (((n) & ((n)-1))==0)
   FmtAssert (IS_POW2(Align_Instructions), 
@@ -891,3 +860,57 @@ Configure_Source_Target ( char * /* filename */ )
 
   return;
 }
+
+/* ====================================================================
+ *
+ * Check_Asm_Constraints
+ *
+ * Chech that asm constraints are compatible with the given MTYPE
+ *
+ * ====================================================================
+ */
+BOOL Check_Asm_Constraints(char* constraint_string, UINT8 mtype)
+{
+  char *s = constraint_string;
+  char *mtype_name = MTYPE_name(mtype);
+  //Remove + or = qualifier
+  while (*s == '+' || *s == '=' || *s == '&' || *s == '%')
+    {
+      ++s;
+    }
+  
+  if (strcmp(s, mtype_name) == 0) {
+    return TRUE;
+  }
+  if (*s == 'r' ||
+      *s == 'f' ||
+      *s == 'b' ||
+      *s == 'm' ||
+      *s == 'i' ||
+      *s == 'n' ||
+      *s == 'g' ||
+      (*s >= '0' &&
+       *s <= '9')){
+    return TRUE;
+  }
+  return FALSE;
+}
+#ifdef FRONT_END
+//TB: Targinfo ABI initialization:for GCC
+extern void 
+GCC_Configure_ABI (void)
+{
+  switch (Target_ABI) {
+  case ABI_ST200_embedded:
+    ABI_PROPERTIES_ABI_Value = ABI_PROPERTIES_ABI_embedded;
+    break;
+  case ABI_ST200_PIC:
+    //TB: I don't know what to put here?
+    FmtAssert(FALSE, ("targinfo for gcc doesn't handle abi: %d\n", Target_ABI));
+    break;
+  default:
+    FmtAssert(FALSE, ("targinfo for gcc doesn't handle abi: %d\n", Target_ABI));
+  }
+}
+
+#endif

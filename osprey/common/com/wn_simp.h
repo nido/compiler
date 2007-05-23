@@ -78,6 +78,7 @@
 	   f) CVTL compares cvtl_bits before its child.
            g) Symbol table entries are compared by examining id first, then
 	      index.
+           h) SUBPART compares subpart_index before its child.
 
   WN * WN_Simplify_Tree(WN * tree)
       Run the simplifier over a tree using a bottom up walk. This routine is

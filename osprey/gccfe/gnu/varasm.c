@@ -64,7 +64,12 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #ifndef ASM_STABS_OP
 #define ASM_STABS_OP "\t.stabs\t"
 #endif
-
+#ifdef TARG_ST
+#include "gcc_config.h"
+//TB: for extension, make ADDITIONAL_REGISTER_NAMES a real array
+int Additional_Register_Names_Size;
+gcc_register_map_t *Additional_Register_Names;
+#endif
 /* The (assembler) name of the first globally-visible object output.  */
 const char *first_global_object_name;
 const char *weak_global_object_name;
@@ -145,13 +150,13 @@ static unsigned int const_hash_1	PARAMS ((tree));
 static int compare_constant		PARAMS ((tree, tree));
 static tree copy_constant		PARAMS ((tree));
 static void output_constant_def_contents  PARAMS ((tree, int, int));
-static void decode_rtx_const		PARAMS ((enum machine_mode, rtx,
+static void decode_rtx_const		PARAMS ((machine_mode_t, rtx,
 					       struct rtx_const *));
-static unsigned int const_hash_rtx	PARAMS ((enum machine_mode, rtx));
+static unsigned int const_hash_rtx	PARAMS ((machine_mode_t, rtx));
 static int compare_constant_rtx
-  PARAMS ((enum machine_mode, rtx, struct constant_descriptor_rtx *));
+  PARAMS ((machine_mode_t, rtx, struct constant_descriptor_rtx *));
 static struct constant_descriptor_rtx * record_constant_rtx
-  PARAMS ((enum machine_mode, rtx));
+  PARAMS ((machine_mode_t, rtx));
 static struct pool_constant *find_pool_constant PARAMS ((struct function *, rtx));
 static void mark_constant_pool		PARAMS ((void));
 static void mark_constants		PARAMS ((rtx));
@@ -601,7 +606,7 @@ mergeable_string_section (decl, align, flags)
       && align <= 256
       && TREE_STRING_LENGTH (decl) >= int_size_in_bytes (TREE_TYPE (decl)))
     {
-      enum machine_mode mode;
+      machine_mode_t mode;
       unsigned int modesize;
       const char *str;
       int i, j, len, unit;
@@ -665,7 +670,7 @@ mergeable_string_section (decl, align, flags)
 
 void
 mergeable_constant_section (mode, align, flags)
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      unsigned HOST_WIDE_INT align ATTRIBUTE_UNUSED;
      unsigned int flags ATTRIBUTE_UNUSED;
 {
@@ -701,8 +706,14 @@ strip_reg_name (name)
   if (!strncmp (name, REGISTER_PREFIX, strlen (REGISTER_PREFIX)))
     name += strlen (REGISTER_PREFIX);
 #endif
+#ifdef TARG_ST
+  //TB: authorized %
+  if (name[0] == '#')
+    name++;
+#else
   if (name[0] == '%' || name[0] == '#')
     name++;
+#endif
   return name;
 }
 
@@ -725,6 +736,8 @@ decode_reg_name (asmspec)
       /* Get rid of confusing prefixes.  */
       asmspec = strip_reg_name (asmspec);
 
+#ifndef TARG_ST
+      //TB: Do not allow PSEUDO register name
       /* Allow a decimal number as a "register name".  */
       for (i = strlen (asmspec) - 1; i >= 0; i--)
 	if (! ISDIGIT (asmspec[i]))
@@ -742,22 +755,37 @@ decode_reg_name (asmspec)
 	if (reg_names[i][0]
 	    && ! strcmp (asmspec, strip_reg_name (reg_names[i])))
 	  return i;
-
-#ifdef ADDITIONAL_REGISTER_NAMES
+#endif
       {
+#ifndef TARG_ST
+#ifdef ADDITIONAL_REGISTER_NAMES
 	static const struct { const char *const name; const int number; } table[]
 	  = ADDITIONAL_REGISTER_NAMES;
-
 	for (i = 0; i < (int) ARRAY_SIZE (table); i++)
 	  if (! strcmp (asmspec, table[i].name))
 	    return table[i].number;
-      }
 #endif /* ADDITIONAL_REGISTER_NAMES */
+#else
+//TB: for extension, make ADDITIONAL_REGISTER_NAMES a real array
+	for (i = 0; i < Additional_Register_Names_Size; i++)
+	  if (asmspec[0] != '%') {
+	    char *whole_name = Additional_Register_Names[i].name;
+	      while (strchr(whole_name, '%')) {
+		whole_name++;
+	      }
+	    if (! strcasecmp (asmspec, whole_name))
+	      return Additional_Register_Names[i].number;
+	  } else {
+	    if (! strcasecmp (asmspec, Additional_Register_Names[i].name))
+	      return Additional_Register_Names[i].number;
+	  }
+#endif//TARG_ST
+      }
 
-      if (!strcmp (asmspec, "memory"))
+      if (!strcasecmp (asmspec, "memory"))
 	return -4;
 
-      if (!strcmp (asmspec, "cc"))
+      if (!strcasecmp (asmspec, "cc"))
 	return -3;
 
       return -2;
@@ -2023,7 +2051,7 @@ assemble_integer (x, size, align, force)
      it into words it if is multi-word, otherwise split it into bytes.  */
   if (size > 1)
     {
-      enum machine_mode omode, imode;
+      machine_mode_t omode, imode;
       unsigned int subalign;
       unsigned int subsize, i;
 
@@ -2057,7 +2085,7 @@ assemble_integer (x, size, align, force)
 void
 assemble_real (d, mode, align)
      REAL_VALUE_TYPE d;
-     enum machine_mode mode;
+     machine_mode_t mode;
      unsigned int align;
 {
 #ifdef SGI_MONGOOSE
@@ -2969,7 +2997,7 @@ struct pool_constant GTY(())
   struct pool_constant *next;
   struct pool_constant *next_sym;
   rtx constant;
-  enum machine_mode mode;
+  machine_mode_t mode;
   int labelno;
   unsigned int align;
   HOST_WIDE_INT offset;
@@ -3010,7 +3038,7 @@ init_varasm_status (f)
 
 static void
 decode_rtx_const (mode, x, value)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
      struct rtx_const *value;
 {
@@ -3211,7 +3239,7 @@ simplify_subtraction (x)
 
 static unsigned int
 const_hash_rtx (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   union {
@@ -3237,7 +3265,7 @@ const_hash_rtx (mode, x)
 
 static int
 compare_constant_rtx (mode, x, desc)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
      struct constant_descriptor_rtx *desc;
 {
@@ -3254,7 +3282,7 @@ compare_constant_rtx (mode, x, desc)
 
 static struct constant_descriptor_rtx *
 record_constant_rtx (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   struct constant_descriptor_rtx *ptr;
@@ -3272,7 +3300,7 @@ rtx
 mem_for_const_double (x)
      rtx x;
 {
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   struct constant_descriptor_rtx *desc;
 
   for (desc = const_rtx_hash_table[const_hash_rtx (mode, x)]; desc;
@@ -3288,7 +3316,7 @@ mem_for_const_double (x)
 
 rtx
 force_const_mem (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   int hash;
@@ -3426,14 +3454,14 @@ get_pool_constant_for_function (f, addr)
 
 /* Similar, return the mode.  */
 
-enum machine_mode
+machine_mode_t
 get_pool_mode (addr)
      rtx addr;
 {
   return (find_pool_constant (cfun, addr))->mode;
 }
 
-enum machine_mode
+machine_mode_t
 get_pool_mode_for_function (f, addr)
      struct function *f;
      rtx addr;
@@ -4184,7 +4212,7 @@ output_constant (exp, size, align)
 	  int elt_size;
 	  tree link;
 	  unsigned int nalign;
-	  enum machine_mode inner;
+	  machine_mode_t inner;
 
 	  inner = GET_MODE_INNER (TYPE_MODE (TREE_TYPE (exp)));
 	  nalign = MIN (align, GET_MODE_ALIGNMENT (inner));
@@ -5511,7 +5539,7 @@ default_unique_section_1 (decl, reloc, shlib)
 
 void
 default_select_rtx_section (mode, x, align)
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      rtx x;
      unsigned HOST_WIDE_INT align ATTRIBUTE_UNUSED;
 {
@@ -5533,7 +5561,7 @@ default_select_rtx_section (mode, x, align)
 
 void
 default_elf_select_rtx_section (mode, x, align)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
      unsigned HOST_WIDE_INT align;
 {

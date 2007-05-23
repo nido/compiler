@@ -206,8 +206,8 @@ Compute_Parameter_Regs (TY_IDX call_ty, WN *call_wn, REGSET parms)
     while (PLOC_is_nonempty(ploc)) {
       if (PLOC_on_stack(ploc)) break;	// no more register parameters.
       Add_PREG_To_REGSET (PLOC_reg(ploc), parms);
-      ploc = func_entry ? Next_Input_PLOC_Reg (ploc) :
-	Next_Output_PLOC_Reg (ploc);
+      ploc = func_entry ? Next_Input_PLOC_Reg () :
+	Next_Output_PLOC_Reg ();
     }
   }
 }
@@ -872,7 +872,16 @@ REG_LIVE_Epilog_Temps(
 
   /* Get the return registers for the exit block.  */
   REGSET_CLEAR(temps);
-  Compute_Return_Regs (ST_pu_type(pu_st), temps);
+
+#ifdef TARG_ST
+  if (BB_tail_call(bb)) {
+    Compute_Call_Regs (bb,temps,NULL,NULL);
+  }
+  else
+#endif
+ {
+    Compute_Return_Regs (ST_pu_type(pu_st), temps);
+  }
 
   /* The set of available temps at the end of the exit block is
    * the caller saved regs with the return regs removed.

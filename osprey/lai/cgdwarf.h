@@ -112,5 +112,6 @@ typedef struct {
 
 extern file_info Cg_Dwarf_File_Table(INT /* idx */);
 extern include_info Cg_Dwarf_Include_Table(INT /* idx */);
-#endif
+
+#endif /* TARG_ST */
 #endif /* cgdwarf_INCLUDED */

@@ -586,7 +586,12 @@ You Lose!  You must define PREFERRED_DEBUGGING_TYPE!
 #endif
 
 #ifndef VECTOR_MODE_SUPPORTED_P
+#ifdef TARG_ST
+//TB: to be moved in target dependant part
+#define VECTOR_MODE_SUPPORTED_P(MODE) ((MODE) >= STATIC_COUNT_MACHINE_MODE && (MODE) < COUNT_MACHINE_MODE)
+#else
 #define VECTOR_MODE_SUPPORTED_P(MODE) 0
+#endif
 #endif
 
 /* Determine whether __cxa_atexit, rather than atexit, is used to

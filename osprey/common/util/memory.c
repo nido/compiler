@@ -1821,9 +1821,9 @@ MEM_POOL_Initialize_P
   MEM_POOL_pure_stack(pool) = NULL;
 
   /* Don't allow duplicate initializations */
-  Is_True (MEM_POOL_magic_num(pool) != MAGIC_NUM,
-           ("Initialization of an already initialized pool: %s\n",
-            MEM_POOL_name(pool)));
+//  Is_True (MEM_POOL_magic_num(pool) != MAGIC_NUM,
+//           ("Initialization of an already initialized pool: %s\n",
+//            MEM_POOL_name(pool)));
 
   MEM_POOL_magic_num(pool) = MAGIC_NUM;
 

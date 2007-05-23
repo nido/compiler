@@ -102,6 +102,20 @@ void (*back_end_hook) (struct tree *) = &WFE_Compile_File;
 extern void WFE_Hook();
 void (*WFE_Hook_Ptr)() = WFE_Hook;
 
+#ifdef TARG_ST
+#include "W_unistd.h"
+/* Debug facility. Define FEPID and attach. */
+void fe_debug(void)
+{
+#ifdef Is_True_On
+  if (getenv("FEPID")) {
+    fprintf(stderr, "FEPID=%d\n", getpid());
+    scanf("\n");
+  }
+#endif
+}
+#endif
+
 int
 main ( 
   INT argc,	/* Number of command line arguments */
@@ -115,6 +129,10 @@ main (
 	argc_save = argc;
 	argv_save = argv;
 	envp_save = envp;
+
+#ifdef TARG_ST
+	fe_debug();
+#endif
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 	/* (cbr) gcc 3.3 upgrade */

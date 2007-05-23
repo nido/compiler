@@ -53,6 +53,9 @@ extern "C" {
 #include "config.h"
 #include "wn.h"
 #include "wn_util.h"
+#ifdef TARG_ST
+#include "wn_simp.h" //For WN_Simp_Fold_ILOAD
+#endif
 #include "const.h"
 
 extern "C" {
@@ -78,6 +81,9 @@ extern void error (char*,...);	// from gnu
 #include "wfe_pragmas.h"
 // [HK] needed for No_Math_Errno
 #include "config_opt.h"
+#include "wfe_loader.h" // TB: For maching between gcc buitins and OPEN64
+		      // intrinsics for dynamic builtins
+#include "intrn_info.h" //To get proto info for INTRINSIC
 #endif
 
 //#define WFE_DEBUG
@@ -515,6 +521,11 @@ inline UINT64 Parameter_Size(UINT64 sz)
 inline TYPE_ID
 Widen_Mtype (TYPE_ID t)
 {
+#ifdef TARG_ST
+  //TB: Vector type support
+  if (MTYPE_is_random(t))
+    return t;
+#endif
   if (MTYPE_is_m(t))
     return t;
   if (MTYPE_is_void(t) || t == MTYPE_BS) {
@@ -2979,8 +2990,16 @@ WFE_Expand_Expr (tree exp,
 	}
 #endif /* TARG_ST */
 	else {
-	  if (mtyp != WN_rtype(wn))
+	  if (mtyp != WN_rtype(wn)) {
+#ifdef TARG_ST
+	    // [TTh] Conversion not allowed for extension mtypes
+	    if (MTYPE_is_dynamic(mtyp) || MTYPE_is_dynamic(WN_rtype(wn))) {
+	      error("forbidden type conversion from '%s' to '%s'", MTYPE_name(WN_rtype(wn)), MTYPE_name(mtyp));
+	      exit (RC_USER_ERROR); // Early exit required as WN will have incorrect type
+	    }
+#endif
 	    wn = WN_Cvt(WN_rtype(wn), mtyp, wn);
+	  }
 	}
       }
       break;
@@ -3754,6 +3773,7 @@ WFE_Expand_Expr (tree exp,
 	WN *whirl_args[3];
 	TY_IDX whirl_types[3];
 	BOOL whirl_args_generated = FALSE;
+	proto_intrn_info_t  *built_info = NULL;
 #endif
 
 #ifdef WFE_DEBUG
@@ -3828,9 +3848,11 @@ WFE_Expand_Expr (tree exp,
 
             switch (DECL_FUNCTION_CODE (func)) {
 
+#ifndef TARG_ST
+	      //TB: dynamic builtins are now handle in the default case
 	      case END_BUILTINS:
 		break;
-
+#endif
   	      case BUILT_IN_STDARG_START:
 	      {
 		arg1 = TREE_VALUE (arglist);
@@ -4348,6 +4370,21 @@ WFE_Expand_Expr (tree exp,
 #include "gfec_wfe_expr.h"	/* Will come from targinfo/<arch>/...*/
 #endif /* defined(TARG_ST200) */
 	    default:
+#ifdef TARG_ST
+	      //TB: matching between buitins and open64 INTRINSIC
+	      if ((DECL_FUNCTION_CODE (func) >= BUILT_IN_STATIC_COUNT)  &&
+		  (DECL_FUNCTION_CODE (func) < BUILT_IN_COUNT))
+		{
+		  iopc = WFE_Intrinsic(DECL_FUNCTION_CODE (func));
+		  built_info = INTRN_proto_info(iopc);
+		  //test if the builtin has SIDE_EFFECTS OPEN64 = gcc not PURE
+		  if (!INTRN_is_by_reference(built_info) && TREE_READONLY(func))
+		    intrinsic_op = TRUE;
+		  ret_mtype = INTRN_return_type(built_info);
+		  //not pure func will be expanded in INTRINSIC_CALL
+		  break;
+		} else
+#endif
 	      DevWarn ("Encountered BUILT_IN: %d at line %d\n",
 			 DECL_FUNCTION_CODE (func), lineno);
 	      break;
@@ -4390,7 +4427,8 @@ WFE_Expand_Expr (tree exp,
 
 	    BOOL need_cvtl = FALSE;
 	    UINT cvtl_size;
-	    if (MTYPE_byte_size(ret_mtype) < MTYPE_byte_size(Max_Int_Mtype)) {
+	    if (MTYPE_byte_size(ret_mtype) < MTYPE_byte_size(Max_Int_Mtype) &&
+		(!MTYPE_is_dynamic(ret_mtype))) {
 	      cvtl_size = MTYPE_byte_size(ret_mtype) * 8;
 	      ret_mtype = MTYPE_signed(ret_mtype) ? Max_Int_Mtype : Max_Uint_Mtype;
 	      need_cvtl = TRUE;
@@ -4413,10 +4451,48 @@ WFE_Expand_Expr (tree exp,
 	  }
 
 	  if (iopc) {
-            call_wn = WN_Create (OPR_INTRINSIC_CALL, ret_mtype, MTYPE_V, num_args);
+#ifdef TARG_ST
+	    //[TB]: For multiple result intrinsic, remove pur out 
+	    // parameters from the call
+	    if (built_info && INTRN_is_by_reference(built_info)) {
+	      call_wn = WN_Create (OPR_INTRINSIC_CALL, ret_mtype, MTYPE_V, INTRN_number_of_in_param(built_info));
+	      FmtAssert(num_args == built_info->argument_count, 
+			("Unexpected number of parameters for intrinsic call"));
+	    } else
+#endif
+	      call_wn = WN_Create (OPR_INTRINSIC_CALL, ret_mtype, MTYPE_V, num_args);
 	    WN_intrinsic (call_wn) = iopc;
 	  }
 	  else {
+#ifdef TARG_ST
+	    // [TTh] Check that dynamically added mtypes are not used
+	    //       for return value and arguments of function calls.
+	    // Check argument types
+	    for (i = 1, list = TREE_OPERAND (exp, 1);
+		 list;
+		 i++, list = TREE_CHAIN (list)) {
+	      arg_ty_idx = Get_TY (TREE_TYPE (TREE_VALUE (list)));
+	      if (MTYPE_is_dynamic(TY_mtype(arg_ty_idx))) {
+		error ("forbidden type `%s' for argument %d of `%s'",
+		       MTYPE_name(TY_mtype(arg_ty_idx)),
+		       i,
+		       (TREE_CODE_CLASS (TREE_CODE (func)) == 'd' && (DECL_NAME (func)))
+		       ? IDENTIFIER_POINTER (DECL_NAME (func))
+		       : "<unknown>");
+		break;
+	      }
+	    }
+	    
+	    // Check return type
+	    if (MTYPE_is_dynamic(ret_mtype)) {
+	      error ("forbidden type `%s' for return value of `%s'",
+		     MTYPE_name(ret_mtype),
+		     (TREE_CODE_CLASS (TREE_CODE (func)) == 'd' && (DECL_NAME (func)))
+		     ? IDENTIFIER_POINTER (DECL_NAME (func))
+		     : "<unknown>");
+	      break;
+	    }
+#endif
             call_wn = WN_Create (OPR_CALL, ret_mtype, MTYPE_V, num_args);
             {
               st = Get_ST (TREE_OPERAND (arg0, 0));
@@ -4526,12 +4602,44 @@ WFE_Expand_Expr (tree exp,
 #endif
 	  {
         i = 0;
+#ifdef TARG_ST
+	int gcc_index = -1;
+#endif
 	for (list = TREE_OPERAND (exp, 1);
 	     list;
 	     list = TREE_CHAIN (list)) {
+#ifdef TARG_ST
+	  //TB: Multiple result intrinsic support: only input and
+	  //output parameters are added to the INTRINSIC_CALL whirl
+	  //node
+	  gcc_index ++;
+	  if (built_info && INTRN_is_by_reference(built_info)) {
+	    if (!INTRN_is_in_param(gcc_index, built_info)) {
+	      continue;
+	    }
+	  }
+#endif
           arg_wn     = WFE_Expand_Expr (TREE_VALUE (list));
 	  arg_ty_idx = Get_TY(TREE_TYPE(TREE_VALUE(list)));
 	  arg_mtype  = TY_mtype(arg_ty_idx);
+
+#ifdef TARG_ST
+	  //Create an ILOAD for multiple result
+	  if (built_info && INTRN_is_by_reference(built_info)) {
+	    if (INTRN_is_inout_param(gcc_index, built_info)) {
+	      arg_mtype  = TY_mtype(TY_pointed(arg_ty_idx));
+	      BOOL Fold_ILOAD_save = WN_Simp_Fold_ILOAD;
+	      WN_Simp_Fold_ILOAD = TRUE;
+	      arg_wn = WN_CreateIload (OPR_ILOAD, arg_mtype /*rtype*/,
+				       arg_mtype /*desc */,
+				       0 /*offset */, TY_pointed(arg_ty_idx) /* pointed type */, 
+				       arg_ty_idx /* addr type */, 
+				       arg_wn /*addr*/);
+	      WN_Simp_Fold_ILOAD = Fold_ILOAD_save;;
+	      arg_ty_idx = TY_pointed(arg_ty_idx);
+	    }
+	  }
+#endif	  
           if (!WFE_Keep_Zero_Length_Structs    &&
               TY_mtype (arg_ty_idx) == MTYPE_M &&
               TY_size (arg_ty_idx) == 0) {
@@ -4576,7 +4684,47 @@ WFE_Expand_Expr (tree exp,
         if (ret_mtype == MTYPE_V) {
 	  WFE_Stmt_Append (call_wn, Get_Srcpos());
         }
-
+#ifdef TARG_ST
+	//TB Build the return value for multiple result intrinsic
+	else if (built_info && INTRN_is_by_reference(built_info)) {
+          wn0 = WN_CreateBlock ();
+          WN_INSERT_BlockLast (wn0, call_wn);
+	  int i = 0;
+	  int gcc_index = -1;
+	  for (list = TREE_OPERAND (exp, 1);
+	       list;
+	       list = TREE_CHAIN (list)) {
+	    gcc_index ++;
+	    if (!INTRN_is_out_param(gcc_index, built_info)) {
+	      continue;
+	    }
+	    //outparam[i] = subpart(i, Return_Val_Preg);
+	    wn1 = WN_Ldid (ret_mtype, -1, Return_Val_Preg, MTYPE_To_TY(ret_mtype));
+	    //Only create subpart WN for mutiple result intrinsics
+	    if (INTRN_number_of_out_param(built_info) > 1)
+	      wn1 = WN_CreateSubPart(wn1, built_info->arg_type[gcc_index], ret_mtype, i);
+	    
+	    arg_wn     = WFE_Expand_Expr (TREE_VALUE (list));
+	    arg_ty_idx = Get_TY(TREE_TYPE(TREE_VALUE(list)));
+	    arg_mtype  = TY_mtype(arg_ty_idx);
+	    //Transform arg_wn should be a ldid
+	    // Move it to a STID
+	    //should: built_info->outparam[i] == arg_mtype
+	    // WN_operator(arg_wn) == OPR_LDID
+	    //FmtAssert (	built_info->arg_type[gcc_index] == arg_mtype, 
+	    //	("WFE_Expand_Expr: Multiple result intrinsic: Unexpected mtype for argument %d", gcc_index));
+            TYPE_ID arg_pointed_mtype = TY_mtype(TY_pointed(arg_ty_idx));
+	    BOOL Fold_ILOAD_save = WN_Simp_Fold_ILOAD;
+	    WN_Simp_Fold_ILOAD = TRUE;
+	    wn1 = WN_CreateIstore(OPR_ISTORE, MTYPE_V, arg_pointed_mtype, 0/*offset*/, 
+				  arg_ty_idx/*pointer ty_idx*/, wn1 /*value*/, arg_wn /*addr*/);
+	    WN_Simp_Fold_ILOAD = Fold_ILOAD_save;;
+	    WN_INSERT_BlockLast (wn0, wn1);
+	    i++;
+	  }
+	  WFE_Stmt_Append (wn0, Get_Srcpos());
+	}
+#endif
 	else {
           wn0 = WN_CreateBlock ();
           WN_INSERT_BlockLast (wn0, call_wn);
@@ -5282,19 +5430,23 @@ WFE_Expand_Expr (tree exp,
            ")} WFE_Expand_Expr: %s\n", Operator_From_Tree [code].name);
 #endif /* WFE_DEBUG */
 
-  if (need_result)
-    FmtAssert (wn != 0 || code == CALL_EXPR || code == BIND_EXPR ||
-               code == COMPOUND_EXPR ||
-               code == INDIRECT_REF ||
-               code == COMPONENT_REF ||
+        // ifdef pattern cannot exist in macro expansion for gcc 3.2.3
+        BOOL tmp_predicate = TRUE;
 #ifdef TARG_ST
                /* (cbr) ddts 24439 */
-               code == (enum tree_code)RETURN_STMT || 
-               code == (enum tree_code)ASM_STMT || 
-               code == (enum tree_code)COMPOUND_STMT || 
-               code == (enum tree_code)STMT_EXPR || 
+        tmp_predicate =
+        code == (enum tree_code)RETURN_STMT || 
+        code == (enum tree_code)ASM_STMT || 
+        code == (enum tree_code)COMPOUND_STMT || 
+        code == (enum tree_code)STMT_EXPR;
 #endif
-               ((code == COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
+  if (need_result)
+    FmtAssert (wn != 0 || code == (enum tree_code)CALL_EXPR || code == (enum tree_code)BIND_EXPR ||
+               code == (enum tree_code)COMPOUND_EXPR ||
+               code == (enum tree_code)INDIRECT_REF ||
+               code == (enum tree_code)COMPONENT_REF ||
+               tmp_predicate ||
+               ((code == (enum tree_code)COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
 	       ("WFE_Expand_Expr: NULL WHIRL tree for %s at line %d",
 		Operator_From_Tree [code].name, lineno));
 
@@ -5559,7 +5711,3 @@ WFE_Promoted_Binary_Type(TYPE_ID mtype1, TYPE_ID mtype2)
 }
 
 #endif
-void foo(void)
-{
-  printf ("in gcc foo\n");
-}

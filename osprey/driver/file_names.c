@@ -49,10 +49,12 @@
 #include "option_seen.h"
 #include "option_names.h"
 #include "run.h"
+#include "SYS.h"
 
 extern int errno;
 
 boolean keep_flag = FALSE;
+string keep_dir = NULL;
 
 string_list_t *count_files = NULL;
 static string_list_t *temp_files = NULL;
@@ -166,7 +168,14 @@ construct_name (string src, string suffix)
 			srcname = outfile;
 		else
 			srcname = src;
-		return change_suffix(drop_path(srcname), suffix);
+/* fix #14600 */
+      srcname = change_suffix(drop_path(srcname), suffix);
+      if (keep_flag && (NULL!=keep_dir)) {
+         return concat_path(keep_dir,srcname);
+      } else {
+         return srcname;
+      }
+/* end of fix */
 	} else {
 		return create_temp_file_name (suffix);
 	}
@@ -178,6 +187,11 @@ construct_given_name (string src, string suffix, boolean keep)
 {
 	string s;
 	s = change_suffix(drop_path(src), suffix);
+/* fix #14600 */
+   if (keep_flag && (NULL!=keep_dir)) {
+      s = concat_path(keep_dir,s);
+   }
+/* end of fix */
 	if (keep || current_phase == remember_last_phase) {
 		return s;
 	} else {
@@ -257,6 +271,9 @@ cleanup (void)
 {
 #ifdef TARG_ST
   cleanup_list(temp_files);
+  if (has_errors()) {
+     cleanup_src_objects();
+  }
 #else
 	/* cleanup temp-files */
 	string_item_t *p;
@@ -277,3 +294,123 @@ cleanup (void)
 }
 
 
+/* fix #14600 */
+
+extern string_list_t *objects;
+
+/* linked list of couples src/obj strings */
+typedef struct src_obj_string_item_rec {
+	string src;
+	string obj;
+   int    read;
+   int    keep;
+	struct src_obj_string_item_rec *next;
+} src_obj_string_item_t;
+typedef struct src_obj_string_list_rec {
+	src_obj_string_item_t *head;
+	src_obj_string_item_t *tail;
+} src_obj_string_list_t;
+
+/* iterator */
+#define FOREACH_SRCOBJ(p,list)	\
+	for (p = list->head; p != NULL; p = p->next)
+#define SRCOBJ_SRC(p)	(p->src)
+#define SRCOBJ_OBJ(p)	(p->obj)
+#define SRCOBJ_READ(p)	(p->read)
+#define SRCOBJ_KEEP(p)	(p->keep)
+
+static src_obj_string_list_t src_obj_list = { NULL, NULL };
+
+/* associates a source file name to its temporary object file 
+   in a specific list */
+extern void 
+associate_src_object ( string src, string obj ) {
+	src_obj_string_item_t *p;
+
+	p = (src_obj_string_item_t *) malloc(sizeof(src_obj_string_item_t));
+	SRCOBJ_SRC(p) = src;
+   SRCOBJ_OBJ(p) = obj;
+   SRCOBJ_READ(p)= 0;
+   SRCOBJ_KEEP(p)= 0;
+	p->next = NULL;
+	if ((&src_obj_list)->head == NULL) {
+		(&src_obj_list)->head = (&src_obj_list)->tail = p;
+	} else {
+		(&src_obj_list)->tail->next = p;
+		(&src_obj_list)->tail = p;
+	}
+}
+
+static src_obj_string_item_t *
+find_associated_src_object ( string src ) {
+	src_obj_string_item_t *p;
+   
+   FOREACH_SRCOBJ(p,(&src_obj_list)) {
+      if (!strcmp(SRCOBJ_SRC(p),src)) {
+         return p;
+      }
+   }
+   return NULL;
+}
+
+extern string
+get_associated_src_object ( string src ) {
+   src_obj_string_item_t *result;
+   
+   result = find_associated_src_object(src);
+   
+   if (NULL==result) {
+      associate_src_object(src,construct_name(src,"o"));
+      result = find_associated_src_object(src);
+   } else {
+      extern boolean multiple_source_files;
+      
+      if (!SRCOBJ_READ(result)) {
+         string_item_t * pobj, *svgpobj=NULL;
+         string tmp;
+         int status;
+         
+         if (keep_flag || option_was_seen(O_c)) {
+            if (NULL!=keep_dir) {
+               tmp = concat_path(keep_dir,change_suffix(drop_path(src), "o"));
+            } else {
+               tmp = change_suffix(drop_path(src),"o");
+            }
+            SRCOBJ_KEEP(result) = 1;
+         } else {
+              tmp = change_suffix(drop_path(src),"o");
+         }
+         FOREACH_STRING(pobj,objects) {
+            if (!strcmp(STRING_NAME(pobj),SRCOBJ_OBJ(result))) {
+               STRING_NAME(pobj) = tmp;
+               svgpobj = pobj;
+            }
+         }
+         /* must unlink preceeding tmp file */
+         status = unlink(SRCOBJ_OBJ(result));
+         if (status != 0 && errno != ENOENT) {
+            internal_error("cannot unlink temp file %s", SRCOBJ_OBJ(result));
+            perror(program_name);			
+         }
+         SRCOBJ_OBJ(result) = tmp;
+      }
+   }
+   SRCOBJ_READ(result) = 1;
+   return SRCOBJ_OBJ(result);
+}
+
+extern void cleanup_src_objects ( void ) {
+   src_obj_string_item_t * pobj;
+   int status;
+
+   FOREACH_SRCOBJ(pobj,(&src_obj_list)) {
+      if (has_errors() || !SRCOBJ_KEEP(pobj)) {
+         status = unlink(SRCOBJ_OBJ(pobj));
+         if (status != 0 && errno != ENOENT) {
+            internal_error("cannot unlink temp file %s", SRCOBJ_OBJ(pobj));
+            perror(program_name);			
+         }
+      }
+   }
+}
+/* end of fix #14600 */

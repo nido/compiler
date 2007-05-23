@@ -226,7 +226,10 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
  * Default, maximal area that may be needed to home formal arguments
  * passed in registers 
  */
+#ifndef TARG_ST
+  /* Moved to targ_sim.h under name Default_Formal_Save_Area_Size */
 #define DEFAULT_FORMAL_SAVE_AREA_SIZE   32      // 32 bytes
+#endif
 
 #define MAX_SFSEG_BYTES		0x7FFFFFFFL     // 32 bits
 
@@ -334,7 +337,20 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
  * dependencies.
  * ====================================================================
  */
+#ifdef TARG_ST
 
+  //[TB] Support for asm stmt with dynamic mtype
+/* ====================================================================
+ *
+ * Check_Asm_Constraints
+ *
+ * Check that asm constraints are compatible with the given MTYPE
+ *
+ * ====================================================================
+ */
+BE_EXPORTED extern BOOL Check_Asm_Constraints(char* constraint_string, UINT8 mtype);
+
+#endif //TARG_ST
 #ifdef __cplusplus
 }
 #endif

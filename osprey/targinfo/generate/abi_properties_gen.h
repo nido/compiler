@@ -78,17 +78,55 @@
 //
 /////////////////////////////////////
 //
+//  Debug information:
+//
+//  EXT_DESCRIPTION DW_DEBUG_Extension     ( const char *extname, 
+//                                           const char *reloc_string
+//     For extensible architectures, this routine makes it possible to
+//     specify 
+//       - 1 the extension name
+//       - 2 the relocation string associated to the extension (can
+//           be NULL.
+//
+//  void            DW_DEBUG_Extension_Reg  ( ISA_REGISTER_CLASS rc,
+//                                            EXT_DESCRIPTION    ext,
+//                                            unsigned int       base_id);
+//     Specify for a given register class:
+//       - 1 the extension from which it is an architectural 
+//           ressource (or a NULL pointer for the core). 
+//       - 2 the DWARF base identifier of the register class.
+//
+//     Note: for the STxP70 architecture, the DWARF identifier will
+//           be in many cases 0 since the relocation process at link
+//           time will assign the right base identifier. This base_id
+//           identifier is only meaningful for extensions that have
+//           more than one register file.
+//
+/////////////////////////////////////
+
 
 #include "targ_isa_registers.h"
 
-typedef struct abi_property *ABI_PROPERTY;
+typedef struct abi_property    *ABI_PROPERTY;
+typedef struct ext_description *EXT_DESCRIPTION;
 
 extern void ABI_Properties_Begin(const char *name);
 extern ABI_PROPERTY Create_Reg_Property(const char *name);
 extern void Begin_ABI(const char *name);
+extern void Begin_ABI_dynamic(const char *name);
 extern void Reg_Property(ABI_PROPERTY prop, ISA_REGISTER_CLASS rc, ...);
 extern void Reg_Names(ISA_REGISTER_CLASS rc, 
 		      INT minreg, 
 		      INT maxreg, 
 		      const char **names);
 extern void ABI_Properties_End(void);
+
+/////////////////////////////////////////
+
+extern EXT_DESCRIPTION DW_DEBUG_Extension      (const char *extname,
+                                                const char *reloc_string);
+extern void            DW_DEBUG_Extension_Reg  (ISA_REGISTER_CLASS rc,
+                                                EXT_DESCRIPTION    ext,
+                                                unsigned int       dw_base_id);
+
+/////////////////////////////////////////

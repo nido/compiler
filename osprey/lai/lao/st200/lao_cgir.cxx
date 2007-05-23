@@ -23,20 +23,20 @@ extern "C" {
 static LAI_Processor IS__Processor[ISA_SUBSET_MAX+1];
 
 // Map CGIR TOP to LIR Operator.
-static LAI_Operator TOP__Operator[TOP_UNDEFINED];
+static LAI_Operator *TOP__Operator;
 
 // Map LIR Operator to CGIR TOP.
-static TOP Operator__TOP[Operator__];
+static TOP *Operator__TOP;
 
 // Map CGIR ISA_ENUM_CLASS to LIR Modifier.
-static LAI_Modifier IEC__Modifier[ISA_EC_MAX];
+static LAI_Modifier *IEC__Modifier;
 
 // Map CGIR Literal to LIR Immediate.
-static LAI_Immediate LC__Immediate[ISA_LC_MAX];
+static LAI_Immediate *LC__Immediate;
 
 // Map CGIR ISA_REGISTER_CLASS to LIR RegFile.
 // WARNING! ISA_REGISTER_CLASS reaches ISA_REGISTER_CLASS_MAX
-static LAI_RegFile IRC__RegFile[ISA_REGISTER_CLASS_MAX+1];
+static LAI_RegFile IRC__RegFile[ISA_REGISTER_CLASS_MAX_LIMIT+1];
 
 // Map LIR RegFile to CGIR ISA_REGISTER_CLASS.
 static ISA_REGISTER_CLASS RegFile__IRC[RegFile__];
@@ -168,7 +168,9 @@ CGIR_LAI_Init(void) {
     IS__Processor[ISA_SUBSET_st231] = Processor_st231_cpu;
     IS__Processor[ISA_SUBSET_st235] = Processor_st235_cpu;
     // initialize the TOP__Operator array
-    for (int i = 0; i < TOP_UNDEFINED; i++) TOP__Operator[i] = Operator__;
+    TOP__Operator = TYPE_MEM_POOL_ALLOC_N(LAI_Operator, Malloc_Mem_Pool, (TOP_count + 1));
+    TOP__Operator[TOP_UNDEFINED] = Operator__;
+    for (int i = 0; i < TOP_count; i++) TOP__Operator[i] = Operator__;
     TOP__Operator[TOP_addcg] = Operator_st200_addcg_general_branch_general_general_branch;
     TOP__Operator[TOP_addf_n] = Operator_st200_addf_n_nolink_general_general;
     TOP__Operator[TOP_addpc_i] = Operator_st200_addpc_general_isrc2;
@@ -569,16 +571,19 @@ CGIR_LAI_Init(void) {
     TOP__Operator[TOP_zxtb] = Operator_st200_zxtb_general_general;
     TOP__Operator[TOP_zxth] = Operator_st200_zxth_general_general;
     // initialize Operator__TOP;
+    Operator__TOP = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (Operator__));
     for (int i = 0; i < Operator__; i++) Operator__TOP[i] = TOP_UNDEFINED;
     Operator__TOP[Operator_GOTO] = TOP_goto;	// FIXME in LAO_PRO!
     //
-    for (int i = 0; i < TOP_UNDEFINED; i++) {
+    for (int i = 0; i < TOP_count; i++) {
       if (TOP__Operator[i] < 0 || TOP__Operator[i] >= Operator__);
       else Operator__TOP[TOP__Operator[i]] = (TOP)i;
     }
     // initialize IEC__Modifier
+    IEC__Modifier =  TYPE_MEM_POOL_ALLOC_N(LAI_Modifier, Malloc_Mem_Pool, ISA_EC_MAX);
     for (int i = 0; i < ISA_EC_MAX; i++) IEC__Modifier[i] = Modifier__;
     // initialize LC__Immediate
+    LC__Immediate =  TYPE_MEM_POOL_ALLOC_N(LAI_Immediate, Malloc_Mem_Pool, ISA_LC_MAX);
     for (int i = 0; i < ISA_LC_MAX; i++) LC__Immediate[i] = Immediate__;
     LC__Immediate[0] = Immediate_st200_xsrc2; // HACK ALERT
     LC__Immediate[LC_btarg] = Immediate_st200_btarg;

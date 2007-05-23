@@ -161,7 +161,7 @@ lx_print_operand (file, op, letter)
 	REAL_VALUE_FROM_CONST_DOUBLE (rv, op);
 	REAL_VALUE_TO_TARGET_SINGLE (rv, k);
 
-	fprintf (file, HOST_WIDE_INT_PRINT_HEX, k);
+	fprintf (file, HOST_WIDE_INT_PRINT_HEX, (unsigned int)k);
 	return;
       }
 
@@ -227,7 +227,7 @@ lx_print_operand (file, op, letter)
 int
 lx_long_imm_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (CONSTANT_P(op)) {
     if ((GET_CODE (op) == LABEL_REF) || (GET_CODE (op) == SYMBOL_REF) ||
@@ -261,7 +261,7 @@ lx_long_imm_operand (op, mode)
 int
 lx_long_add_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx add;
 
@@ -304,7 +304,7 @@ lx_long_add_operand (op, mode)
 int
 lx_shXadd_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (GET_CODE (op) == CONST_INT) {
     if ((INTVAL (op) == 2) ||  /* sh1add */
@@ -532,7 +532,7 @@ lx_expand_epilogue ()
 enum reg_class
 lx_secondary_reload_class (class, mode, x)
      enum reg_class class;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   /* if (mode == CCmode) */
@@ -547,7 +547,7 @@ lx_secondary_reload_class (class, mode, x)
 rtx
 lx_function_arg (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named;
 {
@@ -575,7 +575,7 @@ lx_function_arg (cum, mode, type, named)
 int
 lx_function_arg_partial_nregs (cum, mode, type, named)
      CUMULATIVE_ARGS cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named;
 {
@@ -603,7 +603,7 @@ lx_function_arg_partial_nregs (cum, mode, type, named)
 
 int
 lx_must_pass_in_stack (mode, type)
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
 {
   return 0;
@@ -613,7 +613,7 @@ lx_must_pass_in_stack (mode, type)
 void
 lx_function_arg_advance (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree type;
      int named;
 {

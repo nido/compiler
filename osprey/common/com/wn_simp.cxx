@@ -125,6 +125,7 @@ typedef WN * simpnode;
 #ifdef TARG_ST
 #define SIMPNODE_label_number WN_label_number
 #define SIMPNODE_base_ty WN_load_addr_ty
+#define SIMPNODE_subpart_index WN_subpart_index
 #endif
 
 /* Functions */

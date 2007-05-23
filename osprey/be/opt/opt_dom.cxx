@@ -454,8 +454,8 @@ DOM_INFO::Build_dom_tree( CFG *cfg )
       // dominator
       FmtAssert( bb == cfg->Entry_bb() || 
 		 bb == cfg->Fake_entry_bb() ||
-		 bb == cfg->Fake_exit_bb(),
-	("DOM_INFO::Build_dom_tree: No dom for BB_NODE %d", bbid) );
+                 bb == cfg->Fake_exit_bb(),
+                 ("DOM_INFO::Build_dom_tree: No dom for BB_NODE %d", bbid) );
     }
   }
 }
@@ -498,6 +498,10 @@ DOM_INFO::Build_pdom_tree( const CFG *cfg )
 //
 //  build_dom == TRUE  if we should build dominator tree
 //  build_dom == FALSE if we should build post-dominator tree
+//
+// Preconditions:
+//  - fake entry/exit must be connected. Use Attach_entryexit_arcs() for that
+//    before calling this function.
 // ====================================================================
 
 void

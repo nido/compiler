@@ -257,4 +257,3 @@ Assign_Global_Variable (
 
   return sec;
 }
-

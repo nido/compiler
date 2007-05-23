@@ -83,8 +83,8 @@ extern int num_validated_changes	PARAMS ((void));
 extern void cancel_changes		PARAMS ((int));
 extern int constrain_operands		PARAMS ((int));
 extern int constrain_operands_cached	PARAMS ((int));
-extern int memory_address_p		PARAMS ((enum machine_mode, rtx));
-extern int strict_memory_address_p	PARAMS ((enum machine_mode, rtx));
+extern int memory_address_p		PARAMS ((machine_mode_t, rtx));
+extern int strict_memory_address_p	PARAMS ((machine_mode_t, rtx));
 extern int validate_replace_rtx_subexp	PARAMS ((rtx, rtx, rtx, rtx *));
 extern int validate_replace_rtx		PARAMS ((rtx, rtx, rtx));
 extern void validate_replace_rtx_group	PARAMS ((rtx, rtx, rtx));
@@ -95,29 +95,29 @@ extern int num_changes_pending		PARAMS ((void));
 extern int next_insn_tests_no_inequality PARAMS ((rtx));
 #endif
 extern int reg_fits_class_p		PARAMS ((rtx, enum reg_class, int,
-					       enum machine_mode));
+					       machine_mode_t));
 extern rtx *find_single_use		PARAMS ((rtx, rtx, rtx *));
 
-extern int general_operand		PARAMS ((rtx, enum machine_mode));
-extern int address_operand		PARAMS ((rtx, enum machine_mode));
-extern int register_operand		PARAMS ((rtx, enum machine_mode));
-extern int pmode_register_operand	PARAMS ((rtx, enum machine_mode));
-extern int scratch_operand		PARAMS ((rtx, enum machine_mode));
-extern int immediate_operand		PARAMS ((rtx, enum machine_mode));
-extern int const_int_operand		PARAMS ((rtx, enum machine_mode));
-extern int const_double_operand		PARAMS ((rtx, enum machine_mode));
-extern int nonimmediate_operand		PARAMS ((rtx, enum machine_mode));
-extern int nonmemory_operand		PARAMS ((rtx, enum machine_mode));
-extern int push_operand			PARAMS ((rtx, enum machine_mode));
-extern int pop_operand			PARAMS ((rtx, enum machine_mode));
-extern int memory_operand		PARAMS ((rtx, enum machine_mode));
-extern int indirect_operand		PARAMS ((rtx, enum machine_mode));
-extern int mode_independent_operand	PARAMS ((rtx, enum machine_mode));
-extern int comparison_operator		PARAMS ((rtx, enum machine_mode));
+extern int general_operand		PARAMS ((rtx, machine_mode_t));
+extern int address_operand		PARAMS ((rtx, machine_mode_t));
+extern int register_operand		PARAMS ((rtx, machine_mode_t));
+extern int pmode_register_operand	PARAMS ((rtx, machine_mode_t));
+extern int scratch_operand		PARAMS ((rtx, machine_mode_t));
+extern int immediate_operand		PARAMS ((rtx, machine_mode_t));
+extern int const_int_operand		PARAMS ((rtx, machine_mode_t));
+extern int const_double_operand		PARAMS ((rtx, machine_mode_t));
+extern int nonimmediate_operand		PARAMS ((rtx, machine_mode_t));
+extern int nonmemory_operand		PARAMS ((rtx, machine_mode_t));
+extern int push_operand			PARAMS ((rtx, machine_mode_t));
+extern int pop_operand			PARAMS ((rtx, machine_mode_t));
+extern int memory_operand		PARAMS ((rtx, machine_mode_t));
+extern int indirect_operand		PARAMS ((rtx, machine_mode_t));
+extern int mode_independent_operand	PARAMS ((rtx, machine_mode_t));
+extern int comparison_operator		PARAMS ((rtx, machine_mode_t));
 
 extern int offsettable_memref_p		PARAMS ((rtx));
 extern int offsettable_nonstrict_memref_p	PARAMS ((rtx));
-extern int offsettable_address_p	PARAMS ((int, enum machine_mode, rtx));
+extern int offsettable_address_p	PARAMS ((int, machine_mode_t, rtx));
 extern int mode_dependent_address_p	PARAMS ((rtx));
 
 extern int recog			PARAMS ((rtx, rtx, int *));
@@ -133,7 +133,7 @@ extern int peep2_regno_dead_p		PARAMS ((int, int));
 extern int peep2_reg_dead_p		PARAMS ((int, rtx));
 #ifdef CLEAR_HARD_REG_SET
 extern rtx peep2_find_free_register	PARAMS ((int, int, const char *,
-						 enum machine_mode,
+						 machine_mode_t,
 						 HARD_REG_SET *));
 #endif
 extern void peephole2_optimize		PARAMS ((FILE *));
@@ -169,7 +169,7 @@ struct recog_data
   const char *constraints[MAX_RECOG_OPERANDS];
 
   /* Gives the mode of operand N.  */
-  enum machine_mode operand_mode[MAX_RECOG_OPERANDS];
+  machine_mode_t operand_mode[MAX_RECOG_OPERANDS];
 
   /* Gives the type (in, out, inout) for operand N.  */
   enum op_type operand_type[MAX_RECOG_OPERANDS];
@@ -214,7 +214,7 @@ extern struct operand_alternative recog_op_alt[MAX_RECOG_OPERANDS][MAX_RECOG_ALT
 /* A table defined in insn-output.c that give information about
    each insn-code value.  */
 
-typedef int (*insn_operand_predicate_fn) PARAMS ((rtx, enum machine_mode));
+typedef int (*insn_operand_predicate_fn) PARAMS ((rtx, machine_mode_t));
 typedef const char * (*insn_output_fn) PARAMS ((rtx *, rtx));
 typedef rtx (*insn_gen_fn) PARAMS ((rtx, ...));
 

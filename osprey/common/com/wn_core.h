@@ -172,6 +172,10 @@
 ***
 ***		    INT32		    label_number
 ***
+***		For OPR_SUBPART
+***
+***		    INT32		    subpart_index
+***
 ***		For OPR_LABEL, OPC_PREFETCH, OPC_PREFETCHX
 ***			OPR_INTRINSIC_CALL and OPR_INTRINSIC_OP
 ***
@@ -411,6 +415,10 @@ public:
 	    WN_OFFSET	    lda_offset; 
 	    WN_OFFSET	    store_offset;
 	    WN_OFFSET	    idname_offset;
+#ifdef TARG_ST
+	   //TB for OPR_SUBPART node
+	    WN_OFFSET	    subpart_index;
+#endif
 	    INT32   	    num_entries; /* used by computed goto statements; may be used by regions */
 	    TY_IDX	    loadx_addr_ty; /* for OPR_ILOADX */
 	    INT16	    cvtl_bits;
@@ -457,10 +465,18 @@ public:
    // this permits loading of wn_operator, rtype and desc as bytes
    struct {
       OPERATOR          wn_operator : 8;  /* 8 bits of operator       */
+#ifndef TARG_ST
       TYPE_ID           rtype       : 5;  /* result */
       mINT16            kid_count   :14; /* gives kid_count for free */
       TYPE_ID           desc        : 5;  /* descriptor type */
       INT32             map_id;
+#else
+     //TB: for dynamic MTYPE, handle rtype on 6 bits
+      TYPE_ID           rtype      :8 ;  /* result */
+      mINT16            kid_count   ; /* gives kid_count for free */
+      TYPE_ID           desc       :8 ;  /* descriptor type */
+      INT32             map_id;
+#endif
    } common;
 
    union {
@@ -536,6 +552,10 @@ public:
   friend inline INT16&      WN_cvtl_bits (WN *);
   friend inline INT32&      WN_label_number (WN *);
   friend inline INT32       WN_label_number (const WN *);
+#ifdef TARG_ST
+  friend inline INT32&      WN_subpart_index (WN *);
+  friend inline INT32       WN_subpart_index (const WN *);
+#endif
   friend inline UINT32&     WN_call_flag (WN *);
   friend inline UINT32      WN_call_flag (const WN *);
   friend inline UINT32&     WN_if_flag (WN *);
@@ -685,6 +705,10 @@ inline INT16 WN_cvtl_bits (const WN* wn) { return wn->u1u2.uu.ua.cvtl_bits; }
 inline INT16& WN_cvtl_bits (WN* wn) { return wn->u1u2.uu.ua.cvtl_bits; }
 inline INT32 WN_label_number (const WN* wn) { return wn->u1u2.uu.ua.label_number; }
 inline INT32& WN_label_number (WN* wn) { return wn->u1u2.uu.ua.label_number; }
+#ifdef TARG_ST
+inline INT32 WN_subpart_index (const WN* wn) { return wn->u1u2.uu.ua.subpart_index; }
+inline INT32& WN_subpart_index (WN* wn) { return wn->u1u2.uu.ua.subpart_index; }
+#endif
 inline UINT32 WN_call_flag (const WN* wn) { return wn->u1u2.uu.ua.call_flag; }
 inline UINT32& WN_call_flag (WN* wn) { return wn->u1u2.uu.ua.call_flag; }
 inline UINT32 WN_if_flag (const WN* wn) { return wn->u1u2.uu.ua.if_flag; }
@@ -804,6 +828,9 @@ inline void WN_Copy_u3 (WN* dst, const WN* src) { dst->u3 = src->u3; }
 #define WN_num_entries(x)       ((x)->u1u2.uu.ua.num_entries)
 #define WN_cvtl_bits(x)         ((x)->u1u2.uu.ua.cvtl_bits)
 #define WN_label_number(x)      ((x)->u1u2.uu.ua.label_number)
+#ifdef TARG_ST
+#define WN_subpart_index(x)      ((x)->u1u2.uu.ua.subpart_index)
+#endif
 #define WN_call_flag(x)         ((x)->u1u2.uu.ua.call_flag)
 #define WN_if_flag(x)           ((x)->u1u2.uu.ua.if_flag)
 #define WN_io_flag(x)           ((x)->u1u2.uu.ua.io_flag)
@@ -1270,7 +1297,8 @@ inline void WN_copy_linenum (WN* src, WN* dest)
   if (src && dest &&
       WN_operator(src) != OPERATOR_UNKNOWN &&
       WN_operator(dest) != OPERATOR_UNKNOWN &&
-      OPCODE_is_stmt(WN_opcode(src)) && OPCODE_is_stmt(WN_opcode(dest)))
+      OPCODE_is_stmt(WN_opcode(src)) && OPCODE_is_stmt(WN_opcode(dest)) &&
+      WN_linenum(src))
     WN_linenum(dest) = WN_linenum(src);
 
   return;

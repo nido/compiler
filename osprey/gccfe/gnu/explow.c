@@ -45,7 +45,7 @@ static void emit_stack_probe		PARAMS ((rtx));
 HOST_WIDE_INT
 trunc_int_for_mode (c, mode)
      HOST_WIDE_INT c;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int width = GET_MODE_BITSIZE (mode);
 
@@ -82,7 +82,7 @@ plus_constant_wide (x, c)
 {
   RTX_CODE code;
   rtx y;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx tem;
   int all_constant = 0;
 
@@ -364,13 +364,13 @@ break_out_memory_refs (x)
 
 rtx
 convert_memory_address (to_mode, x)
-     enum machine_mode to_mode ATTRIBUTE_UNUSED;
+     machine_mode_t to_mode ATTRIBUTE_UNUSED;
      rtx x;
 {
 #ifndef POINTERS_EXTEND_UNSIGNED
   return x;
 #else /* defined(POINTERS_EXTEND_UNSIGNED) */
-  enum machine_mode from_mode;
+  machine_mode_t from_mode;
   rtx temp;
   enum rtx_code code;
 
@@ -491,7 +491,7 @@ copy_all_regs (x)
 
 rtx
 memory_address (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   rtx oldx = x;
@@ -621,7 +621,7 @@ memory_address (mode, x)
 
 rtx
 memory_address_noforce (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   int ambient_force_addr = flag_force_addr;
@@ -733,7 +733,7 @@ copy_addr_to_reg (x)
 
 rtx
 copy_to_mode_reg (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   rtx temp = gen_reg_rtx (mode);
@@ -760,7 +760,7 @@ copy_to_mode_reg (mode, x)
 
 rtx
 force_reg (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   rtx temp, insn, set;
@@ -821,7 +821,7 @@ force_not_mem (x)
 rtx
 copy_to_suggested_reg (x, target, mode)
      rtx x, target;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx temp;
 
@@ -840,10 +840,10 @@ copy_to_suggested_reg (x, target, mode)
 
    FOR_CALL is nonzero if this call is promoting args for a call.  */
 
-enum machine_mode
+machine_mode_t
 promote_mode (type, mode, punsignedp, for_call)
      tree type;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int *punsignedp;
      int for_call ATTRIBUTE_UNUSED;
 {
@@ -989,7 +989,7 @@ emit_stack_save (save_level, psave, after)
   rtx sa = *psave;
   /* The default is that we use a move insn and save in a Pmode object.  */
   rtx (*fcn) PARAMS ((rtx, rtx)) = gen_move_insn;
-  enum machine_mode mode = STACK_SAVEAREA_MODE (save_level);
+  machine_mode_t mode = STACK_SAVEAREA_MODE (save_level);
 
   /* See if this machine has anything special to do for this kind of save.  */
   switch (save_level)
@@ -1368,7 +1368,7 @@ allocate_dynamic_stack_space (size, target, known_align)
 #ifdef HAVE_allocate_stack
   if (HAVE_allocate_stack)
     {
-      enum machine_mode mode = STACK_SIZE_MODE;
+      machine_mode_t mode = STACK_SIZE_MODE;
       insn_operand_predicate_fn pred;
 
       /* We don't have to check against the predicate for operand 0 since
@@ -1658,7 +1658,7 @@ hard_function_value (valtype, func, outgoing)
       && GET_MODE (val) == BLKmode)
     {
       unsigned HOST_WIDE_INT bytes = int_size_in_bytes (valtype);
-      enum machine_mode tmpmode;
+      machine_mode_t tmpmode;
 
       /* int_size_in_bytes can return -1.  We don't need a check here
 	 since the value of bytes will be large enough that no mode
@@ -1687,7 +1687,7 @@ hard_function_value (valtype, func, outgoing)
 
 rtx
 hard_libcall_value (mode)
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return LIBCALL_VALUE (mode);
 }

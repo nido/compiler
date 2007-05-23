@@ -105,6 +105,33 @@
 #ifndef wn_lower_mul_INCLUDED
 #define wn_lower_mul_INCLUDED
 
+
+#include "defs.h"
+#include "wn.h"
+#include "wn_lower.h"
+
+/*
+ * Cost model. The cost model takes into account size and 
+ * cycles cost estimations.
+ * For size we ensure that the size cost is not greater
+ * than the mul size cost.
+ * For performance we allow a expansion factor depending on the optimization
+ * level.
+ */
+typedef struct {
+  INT c_mul;	/* Cost of a MUL (non constant mul). */
+  INT c_add;	/* Cost of a ADD. */
+  INT c_sub;	/* Cost of a SUB or NEG. */
+  INT c_shift;  /* Cost of a SHIFT. */
+  INT c_cnst;    /* Cost of a INTCONST. */
+} MUL_COST_T;
+
+typedef struct {
+  MUL_COST_T cycles;	/* Cost model for cycles. */
+  MUL_COST_T size;	/* Cost model for size. */
+} MUL_COST_MODEL_T;
+
+
 /* ====================================================================
  * Multiply by Constant Support
  * ====================================================================

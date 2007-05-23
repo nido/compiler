@@ -77,6 +77,7 @@ TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
 TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
 TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
 endif
 
 ifeq ($(BUILD_TARGET), ST200)
@@ -86,6 +87,7 @@ TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
 TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
 TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
 endif
 
 ifeq ($(BUILD_TARGET), STxP70)
@@ -95,6 +97,7 @@ TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
 TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
 TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
 endif
 
 ifeq ($(BUILD_TARGET), IA64)
@@ -104,6 +107,7 @@ TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
 TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/isa/$(BUILD_TARGET_DIR)
 TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/abi/$(BUILD_TARGET_DIR)
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/proc/$(BUILD_TARGET_DIR)
+TARGINFO_CG_DIR 	= 
 endif
 
 TARG_INCLUDE_DIR        = $(BUILD_AREA)/include
@@ -117,7 +121,9 @@ SRC_DIRS = \
   $(TARGINFO_ISA_DIR)		\
   $(TARGINFO_PROC_DIR)		\
   $(TARGINFO_ABI_DIR)		\
-  $(TARG_INCLUDE_DIR)
+  $(TARGINFO_CG_DIR)		\
+  $(TARG_INCLUDE_DIR) \
+  $(BUILD_TOT)/common/com
 
 VPATH    =  $(SRC_DIRS)
 
@@ -168,7 +174,7 @@ DSOSTARTOPT_N32 = $(DSOSTARTOPT)
 #----------------------------------------------------------------------
 
 LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE) \
-	isa_operands_gen$(BEXE) isa_properties_gen$(BEXE) \
+	isa_operands_gen$(BEXE) isa_properties_gen$(BEXE) isa_variants_gen$(BEXE) \
 	isa_hazards_gen$(BEXE) isa_pack_gen$(BEXE) isa_print_gen$(BEXE) \
 	isa_decode_gen$(BEXE) isa_pseudo_gen$(BEXE) \
 	isa_registers_gen$(BEXE) isa_enums_gen$(BEXE) \
@@ -207,7 +213,8 @@ endif
 endif # ST200
 
 ifeq ($(BUILD_TARGET), STxP70)
-LDIRT += arch_1_3_1_si_gen$(BEXE)
+LDIRT += stxp70_si_gen$(BEXE)
+LDIRT += stxp70_ext_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
@@ -215,12 +222,21 @@ SO_TARGETS = libstxp70.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = arch_1_3_1.dll libtarginfo.dll
+SO_TARGETS = stxp70.dll stxp70_ext.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = arch_1_3_1.so
+SO_TARGETS = stxp70.so stxp70_ext.so
 endif
+
+BUILTINS_INC_TARGETS = builtins_fpx.h builtins_model_sx.h  builtins_sx.h builtins_model_common.h  builtins_model_x3.h  builtins_x3.h fpx.h x3.h sx.h
+BUILTINS_SRC_TARGETS = builtins_model_x3.c builtins_model_sx.c
+INTRN = ../../targinfo/stxp70/intrn
+
+else  # Not STxP70
+BUILTINS_INC_TARGETS =
+BUILTINS_SRC_TARGETS =
+INTRN = 
 
 endif # STxP70
 
@@ -264,6 +280,7 @@ TARGINFO_ACCESS_HOST_OBJS = $(TARGINFO_ACCESS_SRCS:.c=.o)
 TARG_INFO_SRCS = \
 	targ_isa_subset.c	\
 	targ_isa_properties.c	\
+	targ_isa_variants.c	\
 	targ_isa_enums.c	\
 	targ_isa_hazards.c	\
 	targ_isa_lits.c		\
@@ -347,6 +364,18 @@ install: last
 	for h in $(SO_TARGETS); do \
 	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC); \
 	done
+ifneq ($(STD_BUILTINS_INC_LOC),)
+	if [ ! -d $(STD_BUILTINS_INC_LOC) ]; then $(STD_INSTALL) -d $(STD_BUILTINS_INC_LOC); fi ; \
+	for h in $(BUILTINS_INC_TARGETS); do \
+	   $(STD_INSTALL) $(INTRN)/$$h $(STD_BUILTINS_INC_LOC); \
+	done
+endif
+ifneq ($(STD_BUILTINS_SRC_LOC),)
+	if [ ! -d $(STD_BUILTINS_SRC_LOC) ]; then $(STD_INSTALL) -d $(STD_BUILTINS_SRC_LOC); fi ; \
+	for h in $(BUILTINS_SRC_TARGETS); do \
+	   $(STD_INSTALL) $(INTRN)/$$h $(STD_BUILTINS_SRC_LOC); \
+	done
+endif
 else
 install: exports
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) $(SO_TARGETS)
@@ -418,6 +447,7 @@ targ_isa_registers.Exported: targ_isa_registers.h
 targ_isa_hazards.Exported: targ_isa_hazards.h
 targ_isa_subset.Exported: targ_isa_subset.h
 targ_isa_properties.Exported: targ_isa_properties.h
+targ_isa_variants.Exported: targ_isa_variants.h
 targ_isa_operands.Exported: targ_isa_operands.h
 targ_isa_pack.Exported: targ_isa_pack.h
 targ_isa_decode.Exported: targ_isa_decode.h
@@ -564,6 +594,25 @@ isa_properties.o: isa_properties.cxx isa_properties_gen.h topcode.h
 build_isa_properties.o: targ_isa_properties.c targ_isa_properties.h topcode.h
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_properties.c -o $@
 
+## targ_isa_variants.[ch] ##
+
+targ_isa_variants.c: targ_isa_variants.h
+targ_isa_variants.h: isa_variants_gen$(BEXE)
+	$(RUN) ./isa_variants_gen$(BEXE)
+
+isa_variants_gen$(BEXE): isa_variants_gen.o gen_util.o isa_variants.o \
+			   build_topcode.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+isa_variants_gen.o: isa_variants_gen.cxx isa_variants_gen.h topcode.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+isa_variants.o: isa_variants.cxx isa_variants_gen.h topcode.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_variants.o: targ_isa_variants.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_variants.c -o $@
+
 ## targ_isa_operands.[ch] ##
 
 targ_isa_operands.c: targ_isa_operands.h
@@ -663,8 +712,8 @@ isa_print_gen$(BEXE): gen_util.o isa_print_gen.o isa_print.o build_topcode.o \
 		      build_isa_properties.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h \
-		 targ_isa_properties.h gen_util.h
+isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h targ_isa_properties.h \
+		 targ_isa_operands.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_print.o: isa_print.cxx isa_print_gen.h topcode.h
@@ -939,7 +988,7 @@ st120.o: st120.c ti_si.h
 st120.c: st120_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./st120_si_gen$(BEXE)
 
-st120_si_gen$(BEXE): st120_si.o si_gen.a build_topcode.o
+st120_si_gen$(BEXE): st120_si.o si_gen.a gen_util.o build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 st120_si.o: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
@@ -981,7 +1030,7 @@ st2%.o: st2%.c ti_si.h
 st2%.c: st2%_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./$<
 
-st2%_si_gen$(BEXE): st2%_si.o si_gen.a build_topcode.o
+st2%_si_gen$(BEXE): st2%_si.o si_gen.a gen_util.o build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 st2%_si.o: st2%_si.cxx targ_isa_subset.h topcode.h si_gen.h
@@ -1017,35 +1066,38 @@ ifeq ($(BUILD_TARGET), STxP70)
 ti_si.o: ti_si.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-arch_%.o: arch_%.c ti_si.h
+stxp%.o: stxp%.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-arch_%.c: arch_%_si_gen$(BEXE)
+stxp%.c: stxp%_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./$<
 
-arch_%_si_gen$(BEXE): arch_%_si.o si_gen.a build_topcode.o
+stxp%_si_gen$(BEXE): stxp%_si.o si_gen.a gen_util.o build_topcode.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-arch_%_si.o: arch_%_si.cxx targ_isa_subset.h topcode.h si_gen.h
+stxp%_si.o: stxp%_si.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 #
 # shared library
 #
-arch_%.so: arch_%.o ti_si.o
+stxp%.so: stxp%.o ti_si.o
 	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< ti_si.o -o $@
 
 #
 # windows dll (+ import library)
 #
-arch_%.dll arch_%_dll.a : arch_%.o  ti_si.o arch_%_DllMain.o 
-	$(CC) --shared -o arch_$*.dll -Wl,--out-implib,arch_$*_dll.a \
+stxp%.dll stxp%_dll.a : stxp%.o  ti_si.o stxp%_DllMain.o 
+	$(CC) --shared -o stxp$*.dll -Wl,--out-implib,stxp$*_dll.a \
 	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
 
 #
 # static library
 #
-lib_arch_1_3_1.a : arch_1_3_1.o
+lib_stxp70.a : stxp70.o
+	$(AR) rc $@ $<
+
+lib_stxp70_ext.a : stxp70_ext.o
 	$(AR) rc $@ $<
 
 endif # STxP70

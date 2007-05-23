@@ -990,10 +990,27 @@ struct OPERATOR_info_struct OPERATOR_info[OPERATOR_LAST+1] = {
    2 /* nkids */,
    OPERATOR_MAPCAT_OEXP /* mapcat */,
    OPERATOR_PROPERTY_expression},
+#ifdef TARG_ST
+  //TB: New operator for multiple results call
+  {"OPR_SUBPART", 
+   1 /* nkids */,
+   OPERATOR_MAPCAT_OEXP /* mapcat */,
+   OPERATOR_PROPERTY_expression},
+#endif
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_p[t])
+static BOOL
+Is_MTYPE_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1026,8 +1043,18 @@ Is_MTYPE_p [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_V(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_V: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_V[t])
+static BOOL
+Is_MTYPE_V [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_V [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1060,8 +1087,18 @@ Is_MTYPE_V [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_b_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_b_f_i_p_z[t])
+static BOOL
+Is_MTYPE_M_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_b_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1094,8 +1131,18 @@ Is_MTYPE_M_b_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_b_bs_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_b_bs_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_b_bs_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -1128,8 +1175,18 @@ Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_f_i_p_z[t])
+static BOOL
+Is_MTYPE_M_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1162,8 +1219,18 @@ Is_MTYPE_M_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_I4_I8_U4_U8_s(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8_s: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_I4_I8_U4_U8_s[t])
+static BOOL
+Is_MTYPE_I4_I8_U4_U8_s [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8_s [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -1196,8 +1263,18 @@ Is_MTYPE_I4_I8_U4_U8_s [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_V_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_V_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_V_f_i_p_z[t])
+static BOOL
+Is_MTYPE_M_V_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_V_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1230,8 +1307,18 @@ Is_MTYPE_M_V_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_b_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_b_f_i_p_z[t])
+static BOOL
+Is_MTYPE_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_b_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1264,8 +1351,18 @@ Is_MTYPE_b_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_B_V(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_B_V: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_B_V[t])
+static BOOL
+Is_MTYPE_B_V [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_B_V [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1298,8 +1395,18 @@ Is_MTYPE_B_V [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_i(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_i: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_i[t])
+static BOOL
+Is_MTYPE_i [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_i [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1332,8 +1439,18 @@ Is_MTYPE_i [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f[t])
+static BOOL
+Is_MTYPE_f [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1366,8 +1483,18 @@ Is_MTYPE_f [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_z[t])
+static BOOL
+Is_MTYPE_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1400,8 +1527,18 @@ Is_MTYPE_z [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_i(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_i: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_i[t])
+static BOOL
+Is_MTYPE_f_i [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_i [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1434,8 +1571,18 @@ Is_MTYPE_f_i [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_i_p_z[t])
+static BOOL
+Is_MTYPE_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1468,8 +1615,18 @@ Is_MTYPE_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_I4_I5_I8_f(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_I4_I5_I8_f: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_I4_I5_I8_f[t])
+static BOOL
+Is_MTYPE_I4_I5_I8_f [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_I4_I5_I8_f [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1502,8 +1659,18 @@ Is_MTYPE_I4_I5_I8_f [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_V_b_f_i_p_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_V_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_V_b_f_i_p_z[t])
+static BOOL
+Is_MTYPE_M_V_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_V_b_f_i_p_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1536,8 +1703,18 @@ Is_MTYPE_M_V_b_f_i_p_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_z[t])
+static BOOL
+Is_MTYPE_f_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1570,8 +1747,18 @@ Is_MTYPE_f_z [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M[t])
+static BOOL
+Is_MTYPE_M [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1604,8 +1791,18 @@ Is_MTYPE_M [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_V_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_V_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_V_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_M_V_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_V_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -1638,8 +1835,18 @@ Is_MTYPE_M_V_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_F4_F8_M_V_i_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_F4_F8_M_V_i_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_F4_F8_M_V_i_p[t])
+static BOOL
+Is_MTYPE_F4_F8_M_V_i_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_F4_F8_M_V_i_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1672,8 +1879,18 @@ Is_MTYPE_F4_F8_M_V_i_p [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_U4_U8(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_U4_U8[t])
+static BOOL
+Is_MTYPE_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_U4_U8 [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1706,8 +1923,18 @@ Is_MTYPE_U4_U8 [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_U1_U2_U4_U8(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_U1_U2_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_U1_U2_U4_U8[t])
+static BOOL
+Is_MTYPE_U1_U2_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_U1_U2_U4_U8 [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1740,8 +1967,18 @@ Is_MTYPE_U1_U2_U4_U8 [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_b_i_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_b_i_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_b_i_p[t])
+static BOOL
+Is_MTYPE_b_i_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_b_i_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1774,8 +2011,18 @@ Is_MTYPE_b_i_p [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_M_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -1808,8 +2055,18 @@ Is_MTYPE_M_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_i_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_i_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_i_p[t])
+static BOOL
+Is_MTYPE_f_i_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_i_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1842,8 +2099,18 @@ Is_MTYPE_f_i_p [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_I4_I8_U4_U8(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_I4_I8_U4_U8[t])
+static BOOL
+Is_MTYPE_I4_I8_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8 [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1876,8 +2143,18 @@ Is_MTYPE_I4_I8_U4_U8 [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_F4_F8_V_i_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_F4_F8_V_i_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_F4_F8_V_i_p[t])
+static BOOL
+Is_MTYPE_F4_F8_V_i_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_F4_F8_V_i_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1910,8 +2187,18 @@ Is_MTYPE_F4_F8_V_i_p [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_f_i_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_f_i_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_f_i_z[t])
+static BOOL
+Is_MTYPE_M_f_i_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_f_i_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1944,8 +2231,18 @@ Is_MTYPE_M_f_i_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_I4_I8_U4_U8_b(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8_b: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_I4_I8_U4_U8_b[t])
+static BOOL
+Is_MTYPE_I4_I8_U4_U8_b [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8_b [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -1978,8 +2275,18 @@ Is_MTYPE_I4_I8_U4_U8_b [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -2012,8 +2319,18 @@ Is_MTYPE_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_V_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_V_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_V_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_V_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_V_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -2046,8 +2363,18 @@ Is_MTYPE_V_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_f_i_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_f_i_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_f_i_z[t])
+static BOOL
+Is_MTYPE_f_i_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_f_i_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   0, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -2080,8 +2407,18 @@ Is_MTYPE_f_i_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_b(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_b: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_b[t])
+static BOOL
+Is_MTYPE_b [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_b [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -2114,8 +2451,18 @@ Is_MTYPE_b [MTYPE_LAST+1] = {
   0  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_M_b_f_i_p_s_z(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_M_b_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_M_b_f_i_p_s_z[t])
+static BOOL
+Is_MTYPE_M_b_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_M_b_f_i_p_s_z [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   1, /* MTYPE_I1 */
@@ -2148,8 +2495,18 @@ Is_MTYPE_M_b_f_i_p_s_z [MTYPE_LAST+1] = {
   1  /* MTYPE_U16 */
 };
 
+#ifdef TARG_ST
+#define Is_MTYPE_b_f_i_p(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Is_MTYPE_b_f_i_p: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       Is_MTYPE_b_f_i_p[t])
+static BOOL
+Is_MTYPE_b_f_i_p [MTYPE_STATIC_COUNT+1] = {
+#else
 static BOOL
 Is_MTYPE_b_f_i_p [MTYPE_LAST+1] = {
+#endif
   0, /* MTYPE_UNKNOWN */
   1, /* MTYPE_B */
   0, /* MTYPE_I1 */
@@ -2188,6 +2545,78 @@ breakpoint ()
 {
 }
 
+#ifdef TARG_ST
+// TB: dynamic mtype check
+static BOOL
+Is_Valid_Opcode_For_Dynamic_Mtype(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
+{
+  FmtAssert (MTYPE_is_dynamic(rtype) || MTYPE_is_dynamic(desc), ("Is_Valid_Opcode_For_Dynamic_Mtype: not a dynamic mtype"));
+  BOOL valid;
+  switch (opr) {
+  case OPR_ILOAD:
+  case OPR_LDID:
+    valid = (rtype == desc);
+    break;
+  case OPR_CSELECT:
+  case OPR_COMMA:
+  case OPR_INTRINSIC_CALL:
+  case OPR_INTRINSIC_OP:
+  case OPR_PARM:
+    // (RTYPE): any dynamic (DESC): V 
+    valid = Is_MTYPE_V(desc);
+    break;
+  case OPR_ISTORE:
+  case OPR_STID:
+    // (RTYPE): any dynamic (DESC): V 
+    valid = Is_MTYPE_V(rtype);
+    break;
+  case OPR_SUBPART:
+    // Rtype: any non composed MTYPE
+    // desc: any composed mtype
+    valid = MTYPE_is_composed(desc) && !MTYPE_is_composed(rtype);
+    break;
+  default:
+    valid = FALSE;
+    break;
+  }
+  return valid;
+}
+// TB: dynamic mtype check
+static BOOL
+Is_Valid_Opcode_For_Composed_Mtype(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
+{
+  FmtAssert (MTYPE_is_composed(rtype) || MTYPE_is_composed(desc), ("Is_Valid_Opcode_For_Composed_Mtype: not a composed mtype"));
+  BOOL valid;
+  switch (opr) {
+  case OPR_ILOAD:
+  case OPR_LDID:
+    valid = (rtype == desc);
+    break;
+  case OPR_CSELECT:
+  case OPR_COMMA:
+  case OPR_INTRINSIC_CALL:
+  case OPR_INTRINSIC_OP:
+  case OPR_PARM:
+    // (RTYPE): any dynamic (DESC): V 
+    valid = Is_MTYPE_V(desc);
+    break;
+  case OPR_ISTORE:
+  case OPR_STID:
+    // (RTYPE): any dynamic (DESC): V 
+    valid = Is_MTYPE_V(rtype);
+    break;
+  case OPR_SUBPART:
+    // Rtype: any non composed MTYPE
+    // desc: any composed mtype
+    valid = MTYPE_is_composed(desc) && !MTYPE_is_composed(rtype);
+    break;
+  default:
+    valid = FALSE;
+    break;
+  }
+  return valid;
+}
+#endif
 BOOL
 Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 {
@@ -2196,7 +2625,12 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
        if (opr   < OPERATOR_FIRST || opr   > OPERATOR_LAST) valid = FALSE;
   else if (rtype < MTYPE_FIRST    || rtype > MTYPE_LAST)    valid = FALSE;
   else if (desc  < MTYPE_FIRST    || desc  > MTYPE_LAST)    valid = FALSE;
-
+  
+  // TB: dynamic mtype
+  else if  (MTYPE_is_dynamic(rtype) || MTYPE_is_dynamic(desc))
+    valid = Is_Valid_Opcode_For_Dynamic_Mtype( opr,rtype, desc);
+  else if  (MTYPE_is_composed(rtype) || MTYPE_is_composed(desc))
+    valid = Is_Valid_Opcode_For_Composed_Mtype( opr,rtype, desc);
   else  {
     switch (opr) {
       case OPR_LDA_LABEL:
@@ -2206,8 +2640,8 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_ILDA:
       case OPR_ARRSECTION:
       case OPR_ARRAY:
-        // [RTYPE]: p [DESC]: V 
-        valid = Is_MTYPE_p[rtype] && Is_MTYPE_V[desc];
+        // [RTYPE]: p (DESC): V 
+        valid = Is_MTYPE_p(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_LDID:
@@ -2330,44 +2764,44 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 
       case OPR_RCOMMA:
       case OPR_COMMA:
-        // [RTYPE]: M,f,i,p,z [DESC]: V 
-        valid = Is_MTYPE_M_f_i_p_z[rtype] && Is_MTYPE_V[desc];
+        // [RTYPE]: M,f,i,p,z (DESC): V 
+        valid = Is_MTYPE_M_f_i_p_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_STBITS:
       case OPR_ISTBITS:
-        // [RTYPE]: V [DESC]: I4,I8,U4,U8,s 
-        valid = Is_MTYPE_V[rtype] && Is_MTYPE_I4_I8_U4_U8_s[desc];
+        // [RTYPE]: V (DESC): I4,I8,U4,U8,s 
+        valid = Is_MTYPE_V(rtype) && Is_MTYPE_I4_I8_U4_U8_s(desc);
         break;
 
       case OPR_PARM:
-        // [RTYPE]: M,V,f,i,p,z [DESC]: V 
-        valid = Is_MTYPE_M_V_f_i_p_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M,V,f,i,p,z (DESC): V 
+        valid = Is_MTYPE_M_V_f_i_p_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_SELECT:
-        // [RTYPE]: b,f,i,p,z [DESC]: B,V 
-        valid = Is_MTYPE_b_f_i_p_z[rtype] && Is_MTYPE_B_V[desc];
+        // (RTYPE): b,f,i,p,z (DESC): B,V 
+        valid = Is_MTYPE_b_f_i_p_z(rtype) && Is_MTYPE_B_V(desc);
         break;
 
       case OPR_TRUNC:
       case OPR_RND:
       case OPR_FLOOR:
       case OPR_CEIL:
-        // [RTYPE]: i [DESC]: f 
-        valid = Is_MTYPE_i[rtype] && Is_MTYPE_f[desc];
+        // (RTYPE): i (DESC): f 
+        valid = Is_MTYPE_i(rtype) && Is_MTYPE_f(desc);
         break;
 
       case OPR_PAIR:
-        // [RTYPE]: z [DESC]: V 
-        valid = Is_MTYPE_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): z (DESC): V 
+        valid = Is_MTYPE_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_MINPART:
       case OPR_MAXPART:
       case OPR_MADD:
-        // [RTYPE]: f,i [DESC]: V 
-        valid = Is_MTYPE_f_i[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,i (DESC): V 
+        valid = Is_MTYPE_f_i(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_ASM_EXPR:
@@ -2376,43 +2810,43 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MPY:
       case OPR_CONST:
       case OPR_ADD:
-        // [RTYPE]: f,i,p,z [DESC]: V 
-        valid = Is_MTYPE_f_i_p_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,i,p,z (DESC): V 
+        valid = Is_MTYPE_f_i_p_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_STID:
       case OPR_ISTORE:
-        // [RTYPE]: V [DESC]: M,b,bs,f,i,p,s,z 
-        valid = Is_MTYPE_V[rtype] && Is_MTYPE_M_b_bs_f_i_p_s_z[desc];
+        // (RTYPE): V (DESC): M,b,bs,f,i,p,s,z 
+        valid = Is_MTYPE_V(rtype) && Is_MTYPE_M_b_bs_f_i_p_s_z(desc);
         break;
 
       case OPR_ABS:
-        // [RTYPE]: I4,I5,I8,f [DESC]: V 
-        valid = Is_MTYPE_I4_I5_I8_f[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): I4,I5,I8,f (DESC): V 
+        valid = Is_MTYPE_I4_I5_I8_f(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_CSELECT:
-        // [RTYPE]: M,V,b,f,i,p,z [DESC]: V 
-        valid = Is_MTYPE_M_V_b_f_i_p_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M,V,b,f,i,p,z (DESC): V 
+        valid = Is_MTYPE_M_V_b_f_i_p_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_LDBITS:
       case OPR_ILDBITS:
-        // [RTYPE]: i [DESC]: I4,I8,U4,U8,s 
-        valid = Is_MTYPE_i[rtype] && Is_MTYPE_I4_I8_U4_U8_s[desc];
+        // (RTYPE): i (DESC): I4,I8,U4,U8,s 
+        valid = Is_MTYPE_i(rtype) && Is_MTYPE_I4_I8_U4_U8_s(desc);
         break;
 
       case OPR_SQRT:
       case OPR_RSQRT:
       case OPR_RECIP:
       case OPR_PAREN:
-        // [RTYPE]: f,z [DESC]: V 
-        valid = Is_MTYPE_f_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,z (DESC): V 
+        valid = Is_MTYPE_f_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_MLOAD:
-        // [RTYPE]: M [DESC]: V 
-        valid = Is_MTYPE_M[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M (DESC): V 
+        valid = Is_MTYPE_M(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_INTRINSIC_CALL:
@@ -2506,19 +2940,19 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
           valid = FALSE;
         }
         else {
-          // [RTYPE]: U4,U8 [DESC]: U1,U2,U4,U8 
-          valid = Is_MTYPE_U4_U8[rtype] && Is_MTYPE_U1_U2_U4_U8[desc];
+          // (RTYPE): U4,U8 (DESC): U1,U2,U4,U8 
+          valid = Is_MTYPE_U4_U8(rtype) && Is_MTYPE_U1_U2_U4_U8(desc);
         }
         break;
 
       case OPR_INTCONST:
-        // [RTYPE]: b,i,p [DESC]: V 
-        valid = Is_MTYPE_b_i_p[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): b,i,p (DESC): V 
+        valid = Is_MTYPE_b_i_p(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_RETURN_VAL:
-        // [RTYPE]: M,f,i,p,s,z [DESC]: V 
-        valid = Is_MTYPE_M_f_i_p_s_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M,f,i,p,s,z (DESC): V 
+        valid = Is_MTYPE_M_f_i_p_s_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_GOTO_OUTER_BLOCK:
@@ -2566,21 +3000,21 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_ASSERT:
       case OPR_ALTENTRY:
       case OPR_AGOTO:
-        // [RTYPE]: V [DESC]: V 
-        valid = Is_MTYPE_V[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): V (DESC): V 
+        valid = Is_MTYPE_V(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_MINMAX:
       case OPR_MIN:
       case OPR_MAX:
-        // [RTYPE]: f,i,p [DESC]: V 
-        valid = Is_MTYPE_f_i_p[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,i,p (DESC): V 
+        valid = Is_MTYPE_f_i_p(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_COMPOSE_BITS:
       case OPR_EXTRACT_BITS:
-        // [RTYPE]: I4,I8,U4,U8 [DESC]: V 
-        valid = Is_MTYPE_I4_I8_U4_U8[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): I4,I8,U4,U8 (DESC): V 
+        valid = Is_MTYPE_I4_I8_U4_U8(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_ICALL:
@@ -2625,8 +3059,8 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         break;
 
       case OPR_ARRAYEXP:
-        // [RTYPE]: M,f,i,z [DESC]: V 
-        valid = Is_MTYPE_M_f_i_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M,f,i,z (DESC): V 
+        valid = Is_MTYPE_M_f_i_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_NE:
@@ -2638,8 +3072,8 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
           valid = FALSE;
         }
         else {
-          // [RTYPE]: I4,I8,U4,U8,b [DESC]: b,f,i,p,z 
-          valid = Is_MTYPE_I4_I8_U4_U8_b[rtype] && Is_MTYPE_b_f_i_p_z[desc];
+          // (RTYPE): I4,I8,U4,U8,b (DESC): b,f,i,p,z 
+          valid = Is_MTYPE_I4_I8_U4_U8_b(rtype) && Is_MTYPE_b_f_i_p_z(desc);
         }
         break;
 
@@ -2652,14 +3086,14 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
           valid = FALSE;
         }
         else {
-          // [RTYPE]: I4,I8,U4,U8,b [DESC]: b,f,i,p,z 
-          valid = Is_MTYPE_I4_I8_U4_U8_b[rtype] && Is_MTYPE_b_f_i_p_z[desc];
+          // (RTYPE): I4,I8,U4,U8,b (DESC): b,f,i,p,z 
+          valid = Is_MTYPE_I4_I8_U4_U8_b(rtype) && Is_MTYPE_b_f_i_p_z(desc);
         }
         break;
 
       case OPR_TAS:
-        // [RTYPE]: f,i,p,s,z [DESC]: V 
-        valid = Is_MTYPE_f_i_p_s_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,i,p,s,z (DESC): V 
+        valid = Is_MTYPE_f_i_p_s_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_PICCALL:
@@ -2701,8 +3135,8 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 
       case OPR_OPTPARM:
       case OPR_DIV:
-        // [RTYPE]: f,i,z [DESC]: V 
-        valid = Is_MTYPE_f_i_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f,i,z (DESC): V 
+        valid = Is_MTYPE_f_i_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_LNOT:
@@ -2710,13 +3144,13 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_LAND:
       case OPR_CIOR:
       case OPR_CAND:
-        // [RTYPE]: b [DESC]: V 
-        valid = Is_MTYPE_b[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): b (DESC): V 
+        valid = Is_MTYPE_b(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_INTRINSIC_OP:
-        // [RTYPE]: M,b,f,i,p,s,z [DESC]: V 
-        valid = Is_MTYPE_M_b_f_i_p_s_z[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): M,b,f,i,p,s,z (DESC): V 
+        valid = Is_MTYPE_M_b_f_i_p_s_z(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_CVT:
@@ -2746,8 +3180,8 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
           valid = FALSE;
         }
         else {
-          // [RTYPE]: f,i,p [DESC]: b,f,i,p 
-          valid = Is_MTYPE_f_i_p[rtype] && Is_MTYPE_b_f_i_p[desc];
+          // (RTYPE): f,i,p (DESC): b,f,i,p 
+          valid = Is_MTYPE_f_i_p(rtype) && Is_MTYPE_b_f_i_p(desc);
         }
         break;
 
@@ -2757,21 +3191,21 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MSUB:
       case OPR_SECONDPART:
       case OPR_ILOADX:
-        // [RTYPE]: f [DESC]: V 
-        valid = Is_MTYPE_f[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): f (DESC): V 
+        valid = Is_MTYPE_f(rtype) && Is_MTYPE_V(desc);
         break;
 
       case OPR_ISTOREX:
-        // [RTYPE]: V [DESC]: f 
-        valid = Is_MTYPE_V[rtype] && Is_MTYPE_f[desc];
+        // (RTYPE): V (DESC): f 
+        valid = Is_MTYPE_V(rtype) && Is_MTYPE_f(desc);
         break;
 
       case OPR_LT:
       case OPR_LE:
       case OPR_GT:
       case OPR_GE:
-        // [RTYPE]: I4,I8,U4,U8,b [DESC]: f,i,p 
-        valid = Is_MTYPE_I4_I8_U4_U8_b[rtype] && Is_MTYPE_f_i_p[desc];
+        // (RTYPE): I4,I8,U4,U8,b (DESC): f,i,p 
+        valid = Is_MTYPE_I4_I8_U4_U8_b(rtype) && Is_MTYPE_f_i_p(desc);
         break;
 
       case OPR_XMPY:
@@ -2791,10 +3225,17 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_BIOR:
       case OPR_BAND:
       case OPR_ASHR:
-        // [RTYPE]: i [DESC]: V 
-        valid = Is_MTYPE_i[rtype] && Is_MTYPE_V[desc];
+        // (RTYPE): i (DESC): V 
+        valid = Is_MTYPE_i(rtype) && Is_MTYPE_V(desc);
         break;
-
+#ifdef TARG_ST
+	//TB: New subpart opr
+    case OPR_SUBPART:
+      // Rtype: any non composed MTYPE
+      // desc: any composed mtype
+      valid = MTYPE_is_composed(desc) && !MTYPE_is_composed(rtype);
+      break;
+#endif
       default:
         valid = FALSE;
         break;
@@ -2811,8 +3252,14 @@ BOOL
 Is_Valid_Opcode_FUNC (OPCODE opc)
 {
   OPERATOR opr   = (OPERATOR) (((UINT32) opc) & 0xFF);
+#ifdef TARG_ST
+  // [TTh] Reconfigurability: extended mtype encoding
+  TYPE_ID  rtype = (TYPE_ID)  ((((UINT32) opc) >> 8) & MTYPE_ENCODING_MASK);
+  TYPE_ID  desc  = (TYPE_ID)  ((((UINT32) opc) >> (8+MTYPE_ENCODING_BITWIDTH)) & MTYPE_ENCODING_MASK);
+#else
   TYPE_ID  rtype = (TYPE_ID)  ((((UINT32) opc) >> 8) & 0x1F);
   TYPE_ID  desc  = (TYPE_ID)  ((((UINT32) opc) >> 13) & 0x1F);
+#endif
 
   return Is_Valid_Opcode_Parts (opr, rtype, desc);
 }
@@ -2834,35 +3281,35 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_ILDA:
       case OPR_ARRSECTION:
       case OPR_ARRAY:
-        // [RTYPE]: p [DESC]: V 
+        // (RTYPE): p (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_LDID:
       case OPR_ILOAD:
-        // [RTYPE]: M,b,f,i,p,z [DESC]: M,b,bs,f,i,p,s,z 
+        // (RTYPE): M,b,f,i,p,z (DESC): M,b,bs,f,i,p,s,z 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_RCOMMA:
       case OPR_COMMA:
-        // [RTYPE]: M,f,i,p,z [DESC]: V 
+        // (RTYPE): M,f,i,p,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_STBITS:
       case OPR_ISTBITS:
-        // [RTYPE]: V [DESC]: I4,I8,U4,U8,s 
+        // (RTYPE): V (DESC): I4,I8,U4,U8,s 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_PARM:
-        // [RTYPE]: M,V,f,i,p,z [DESC]: V 
+        // (RTYPE): M,V,f,i,p,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_SELECT:
-        // [RTYPE]: b,f,i,p,z [DESC]: B,V 
+        // (RTYPE): b,f,i,p,z (DESC): B,V 
         if (desc == MTYPE_V)
           sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         else
@@ -2873,19 +3320,19 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_RND:
       case OPR_FLOOR:
       case OPR_CEIL:
-        // [RTYPE]: i [DESC]: f 
+        // (RTYPE): i (DESC): f 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_PAIR:
-        // [RTYPE]: z [DESC]: V 
+        // (RTYPE): z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_MINPART:
       case OPR_MAXPART:
       case OPR_MADD:
-        // [RTYPE]: f,i [DESC]: V 
+        // (RTYPE): f,i (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -2895,29 +3342,29 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MPY:
       case OPR_CONST:
       case OPR_ADD:
-        // [RTYPE]: f,i,p,z [DESC]: V 
+        // (RTYPE): f,i,p,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_STID:
       case OPR_ISTORE:
-        // [RTYPE]: V [DESC]: M,b,bs,f,i,p,s,z 
+        // (RTYPE): V (DESC): M,b,bs,f,i,p,s,z 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_ABS:
-        // [RTYPE]: I4,I5,I8,f [DESC]: V 
+        // (RTYPE): I4,I5,I8,f (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_CSELECT:
-        // [RTYPE]: M,V,b,f,i,p,z [DESC]: V 
+        // (RTYPE): M,V,b,f,i,p,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_LDBITS:
       case OPR_ILDBITS:
-        // [RTYPE]: i [DESC]: I4,I8,U4,U8,s 
+        // (RTYPE): i (DESC): I4,I8,U4,U8,s 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -2925,17 +3372,17 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_RSQRT:
       case OPR_RECIP:
       case OPR_PAREN:
-        // [RTYPE]: f,z [DESC]: V 
+        // (RTYPE): f,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
-        // [RTYPE]: M [DESC]: V 
+        // (RTYPE): M (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_INTRINSIC_CALL:
       case OPR_CALL:
-        // [RTYPE]: M,V,f,i,p,s,z [DESC]: F4,F8,M,V,i,p 
+        // (RTYPE): M,V,f,i,p,s,z (DESC): F4,F8,M,V,i,p 
         if (desc == MTYPE_V)
           sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         else
@@ -2943,17 +3390,17 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         break;
 
       case OPR_RROTATE:
-        // [RTYPE]: U4,U8 [DESC]: U1,U2,U4,U8 
+        // (RTYPE): U4,U8 (DESC): U1,U2,U4,U8 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_INTCONST:
-        // [RTYPE]: b,i,p [DESC]: V 
+        // (RTYPE): b,i,p (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_RETURN_VAL:
-        // [RTYPE]: M,f,i,p,s,z [DESC]: V 
+        // (RTYPE): M,f,i,p,s,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -3002,25 +3449,25 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_ASSERT:
       case OPR_ALTENTRY:
       case OPR_AGOTO:
-        // [RTYPE]: V [DESC]: V 
+        // (RTYPE): V (DESC): V 
         sprintf (buffer, "OPC_%s", &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_MINMAX:
       case OPR_MIN:
       case OPR_MAX:
-        // [RTYPE]: f,i,p [DESC]: V 
+        // (RTYPE): f,i,p (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_COMPOSE_BITS:
       case OPR_EXTRACT_BITS:
-        // [RTYPE]: I4,I8,U4,U8 [DESC]: V 
+        // (RTYPE): I4,I8,U4,U8 (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_ICALL:
-        // [RTYPE]: M,V,f,i,p,s,z [DESC]: F4,F8,V,i,p 
+        // (RTYPE): M,V,f,i,p,s,z (DESC): F4,F8,V,i,p 
         if (desc == MTYPE_V)
           sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         else
@@ -3028,23 +3475,26 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         break;
 
       case OPR_ARRAYEXP:
-        // [RTYPE]: M,f,i,z [DESC]: V 
+        // (RTYPE): M,f,i,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_NE:
       case OPR_EQ:
-        // [RTYPE]: I4,I8,U4,U8,b [DESC]: b,f,i,p,z 
+#ifdef TARG_ST
+  case OPR_SUBPART:
+#endif
+        // (RTYPE): I4,I8,U4,U8,b (DESC): b,f,i,p,z 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_TAS:
-        // [RTYPE]: f,i,p,s,z [DESC]: V 
+        // (RTYPE): f,i,p,s,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_PICCALL:
-        // [RTYPE]: V,f,i,p,s,z [DESC]: F4,F8,V,i,p 
+        // (RTYPE): V,f,i,p,s,z (DESC): F4,F8,V,i,p 
         if (desc == MTYPE_V)
           sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         else
@@ -3053,7 +3503,7 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 
       case OPR_OPTPARM:
       case OPR_DIV:
-        // [RTYPE]: f,i,z [DESC]: V 
+        // (RTYPE): f,i,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -3062,17 +3512,17 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_LAND:
       case OPR_CIOR:
       case OPR_CAND:
-        // [RTYPE]: b [DESC]: V 
+        // (RTYPE): b (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_INTRINSIC_OP:
-        // [RTYPE]: M,b,f,i,p,s,z [DESC]: V 
+        // (RTYPE): M,b,f,i,p,s,z (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_CVT:
-        // [RTYPE]: f,i,p [DESC]: b,f,i,p 
+        // (RTYPE): f,i,p (DESC): b,f,i,p 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -3082,12 +3532,12 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MSUB:
       case OPR_SECONDPART:
       case OPR_ILOADX:
-        // [RTYPE]: f [DESC]: V 
+        // (RTYPE): f (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
       case OPR_ISTOREX:
-        // [RTYPE]: V [DESC]: f 
+        // (RTYPE): V (DESC): f 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -3095,7 +3545,7 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_LE:
       case OPR_GT:
       case OPR_GE:
-        // [RTYPE]: I4,I8,U4,U8,b [DESC]: f,i,p 
+        // (RTYPE): I4,I8,U4,U8,b (DESC): f,i,p 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 
@@ -3116,12 +3566,12 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_BIOR:
       case OPR_BAND:
       case OPR_ASHR:
-        // [RTYPE]: i [DESC]: V 
+        // (RTYPE): i (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
 
     case OPR_MLOAD: 
-      // [RTYPE] : M [DESC] : V 
+      // (RTYPE) : M (DESC) : V 
       sprintf (buffer, "OPC_%s", &OPERATOR_info [opr]._name [4]);
       break;
 
@@ -3137,8 +3587,14 @@ char*
 OPCODE_name (OPCODE opc)
 {
   OPERATOR opr   = (OPERATOR) (((UINT32) opc) & 0xFF);
+#ifdef TARG_ST
+  // [TTh] Reconfigurability: extended mtype encoding
+  TYPE_ID  rtype = (TYPE_ID)  ((((UINT32) opc) >> 8) & MTYPE_ENCODING_MASK);
+  TYPE_ID  desc  = (TYPE_ID)  ((((UINT32) opc) >> (8+MTYPE_ENCODING_BITWIDTH)) & MTYPE_ENCODING_MASK);
+#else
   TYPE_ID  rtype = (TYPE_ID)  ((((UINT32) opc) >> 8) & 0x1F);
   TYPE_ID  desc  = (TYPE_ID)  ((((UINT32) opc) >> 13) & 0x1F);
+#endif
 
   return OPCODE_name (opr, rtype, desc);
 }

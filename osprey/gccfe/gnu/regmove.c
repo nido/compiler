@@ -237,7 +237,7 @@ mark_flags_life_zones (flags)
      mark the entire function as being in a flags shadow.  */
   if (flags == NULL_RTX || flags == pc_rtx)
     {
-      enum machine_mode mode = (flags ? HImode : VOIDmode);
+      machine_mode_t mode = (flags ? HImode : VOIDmode);
       rtx insn;
       for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
 	PUT_MODE (insn, mode);
@@ -669,7 +669,7 @@ optimize_reg_copy_3 (insn, dest, src)
   int src_no = REGNO (src_reg);
   int dst_no = REGNO (dest);
   rtx p, set, subreg;
-  enum machine_mode old_mode;
+  machine_mode_t old_mode;
 
   if (src_no < FIRST_PSEUDO_REGISTER
       || dst_no < FIRST_PSEUDO_REGISTER

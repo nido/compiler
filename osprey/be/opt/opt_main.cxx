@@ -334,6 +334,9 @@
 #include "opt_alias_mgr.h"
 #include "opt_alias_interface.h"	/* for Verify_alias() */
 #include "opt_vn.h"                     /* Global value numbering (gvn) */
+#ifdef TARG_ST
+#   include "opt_tailmerge.h"   // For tailmerge optimization
+#endif
 
 #include "config_lno.h"
 #include "config_opt.h"			// for Delay_U64_Lowering
@@ -1163,6 +1166,7 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
     
     wn_tree = WN_Lower(wn_orig, actions, alias_mgr, "Pre_Opt");
 
+
     if (Cur_PU_Feedback)
       Cur_PU_Feedback->Reset_Root_WN(wn_tree);
 #ifdef TARG_IA64
@@ -1337,7 +1341,20 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
     // TODO: Perhaps clear out Cur_PU_Feedback now?
   }
 
+#ifdef TARG_ST
+  if(WOPT_Enable_Tailmerge)
+      {
+          SET_OPT_PHASE("Tailmerge");
+          OPT_Tailmerge(*comp_unit->Cfg(), wn_tree);
+      }
+#endif
+
   SET_OPT_PHASE("Control Flow Analysis");
+#ifdef TARG_ST
+  // [CG] Fake entry exits must be explicitly attached now.
+  // The default is that they are disconnected.
+  comp_unit->Cfg()->Attach_fake_entryexit_arcs();
+#endif
   comp_unit->Cfg()->Compute_dom_tree(TRUE); // create dominator tree
   comp_unit->Cfg()->Compute_dom_tree(FALSE); // create post-dominator tree
   comp_unit->Cfg()->Remove_fake_entryexit_arcs();

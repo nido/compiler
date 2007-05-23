@@ -337,7 +337,7 @@ extern const char* WB_Whirl_Symbol(WN* wn)
     return NULL;   
   name = ST_class(WN_st(wn_symbol)) != CLASS_PREG
     ? ST_name(WN_st(wn_symbol)) :
-      WN_offset(wn_symbol) > Last_Dedicated_Preg_Offset
+    WN_offset(wn_symbol) > Last_Dedicated_Preg_Offset
     ? Preg_Name(WN_offset(wn_symbol)) : "DEDICATED PREG";
   return name; 
 } 
@@ -367,7 +367,7 @@ extern const char* WB_Whirl_Symbol_Type(WN* wn)
     return NULL;   
   name = ST_class(WN_st(wn_symbol)) != CLASS_PREG
     ? ST_name(WN_st(wn_symbol)) :
-      WN_offset(wn_symbol) > Last_Dedicated_Preg_Offset
+    WN_offset(wn_symbol) > Last_Dedicated_Preg_Offset
     ? Preg_Name(WN_offset(wn_symbol)) : "DEDICATED PREG";
 
   return name; 
@@ -1042,7 +1042,7 @@ static INT dump_whirl_node(WN* wn,
       cc += sprintf(buffer + cc, " LAB%d", WN_offset(wn));
     if (opr == OPR_INTRINSIC_OP || opr == OPR_INTRINSIC_CALL) {
       INTRINSIC        i = (INTRINSIC) WN_intrinsic(wn);
-      if (i >= INTRINSIC_FIRST && i <= INTRINSIC_LAST)
+      if (i >= INTRINSIC_FIRST && i <= INTRINSIC_COUNT)
         cc += sprintf(buffer + cc, "<%s>", INTRINSIC_name(i));
       else
         cc += sprintf(buffer + cc, "<bad intr #=%d>", i);

@@ -65,6 +65,11 @@ extern char* basename(char *);
 #include "profile_com.h"
 #include "fb_info.h"
 
+#ifdef TARG_ST
+//TB
+extern void Initialize_Extension_Loader(void);
+extern void Initialize_Extension_Loader_Register(void);
+#endif
 static BOOL simplify_tree = FALSE; /* Should we run the simplifier (for testing purposes) */
 
 extern BOOL 
@@ -201,7 +206,13 @@ ir_b2a (char *global_file, char *input_file, char *output_file, BOOL stflag,
         (void)Open_Local_Input (input_file);
     }
 
+#ifdef TARG_ST
+    //TB: by default the extension is not present... to be changed
+    Initialize_Extension_Loader ();
+    Initialize_Extension_Loader_Register();
+#endif
     Initialize_Symbol_Tables (FALSE);
+
     New_Scope (GLOBAL_SYMTAB, Malloc_Mem_Pool, FALSE);
     pu_tree = Read_Global_Info (NULL);
 
@@ -305,6 +316,10 @@ usage (char *progname)
     fprintf (stderr, "\t-lines option will print out line numbers\n");
     fprintf (stderr, "\t-global_local <.G file> option will use separate global table\n");
     fprintf (stderr, "\t-sym <.G file> is the same as -global_local\n");
+#ifdef TARG_ST
+    //TB: Dynamic extension
+    fprintf (stderr, "\t-extension <file.so,file.so> to give extension dlls\n");
+#endif
   } else if (sel) {
     fprintf (stderr, "Usage: %s <function> <Binary IR input> [<Binary IR output>]\n", progname);
 
@@ -384,6 +399,13 @@ main (INT argc, char *argv[])
 		      strcmp(argv[binarg], "-sym") == 0) {
 		++binarg;
 		Read_Global_Data = argv[binarg];
+#ifdef TARG_ST
+		// TB: Reconfigurabilty options
+	   } else if (strcmp(argv[binarg], "-extension") == 0) {
+		++binarg;
+		Extension_Is_Present = TRUE;
+		Extension_Names=argv[binarg];
+#endif
 	   } else {
 	      usage(progname);
 	   }

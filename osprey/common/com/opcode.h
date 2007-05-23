@@ -200,7 +200,12 @@ BE_EXPORTED extern OPCODE           OPCODE_commutative_op(OPCODE op);
 BE_EXPORTED extern BOOL Operator_To_Opcode_Table_Inited;
 BE_EXPORTED void Init_Operator_To_Opcode_Table(void);
 
+#ifdef TARG_ST
+// [TTh] Reconfigurability: extended mtype encoding 
+#define OPCODE_make_op_MACRO(opr,rtype,desc)  ((OPCODE) ((opr) | ((rtype) << 8) | ((desc) << (8+MTYPE_ENCODING_BITWIDTH))))
+#else
 #define OPCODE_make_op_MACRO(opr,rtype,desc)  ((OPCODE) ((opr) | ((rtype) << 8) | ((desc) << 13)))
+#endif
 
 
 

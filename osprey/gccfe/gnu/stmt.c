@@ -80,6 +80,7 @@ extern void WFE_Dealloca (ST *alloca0_st, tree vars);
 
 #ifdef TARG_ST
 #include "tree_symtab.h" // [CL] for Create_ST_For_Tree() (DDTS MBTst23502)
+extern bool Extension_Is_Present ;
 #endif
 
 #endif /* SGI_MONGOOSE */
@@ -1277,6 +1278,14 @@ parse_output_constraint (constraint_p, operand_num, ninputs, noutputs,
       constraint = *constraint_p;
     }
 
+#ifdef TARG_ST
+  //TB: Enable to have a string as register file descriptor for
+  //dynamic types
+  if (Extension_Is_Present && strlen(constraint + 1) > 1) {
+    *allows_reg = true;
+    return true;
+  }
+#endif
   /* Loop through the constraint string.  */
   for (p = constraint + 1; *p; ++p)
     switch (*p)
@@ -1376,6 +1385,14 @@ parse_input_constraint (constraint_p, input_num, ninputs, noutputs, ninout,
   *allows_mem = false;
   *allows_reg = false;
 
+#ifdef TARG_ST
+  //TB: Enable to have a string as register file descriptor for
+  //dynamic types
+  if (Extension_Is_Present && c_len > 1) {
+    *allows_reg = true;
+    return true;
+  }
+#endif
   /* Make sure constraint has neither `=', `+', nor '&'.  */
 
   for (j = 0; j < c_len; j++)
@@ -1556,8 +1573,8 @@ expand_asm_operands (string, outputs, inputs, clobbers, vol, filename, line)
   rtx *output_rtx = (rtx *) alloca (noutputs * sizeof (rtx));
   int *inout_opnum = (int *) alloca (noutputs * sizeof (int));
   rtx *real_output_rtx = (rtx *) alloca (noutputs * sizeof (rtx));
-  enum machine_mode *inout_mode
-    = (enum machine_mode *) alloca (noutputs * sizeof (enum machine_mode));
+  machine_mode_t *inout_mode
+    = (machine_mode_t *) alloca (noutputs * sizeof (machine_mode_t));
   const char **constraints
     = (const char **) alloca ((noutputs + ninputs) * sizeof (const char *));
   /* The insn we have emitted.  */
@@ -3157,9 +3174,9 @@ expand_value_return (val)
       tree type = TREE_TYPE (DECL_RESULT (current_function_decl));
 #ifdef PROMOTE_FUNCTION_RETURN
       int unsignedp = TREE_UNSIGNED (type);
-      enum machine_mode old_mode
+      machine_mode_t old_mode
 	= DECL_MODE (DECL_RESULT (current_function_decl));
-      enum machine_mode mode
+      machine_mode_t mode
 	= promote_mode (type, old_mode, &unsignedp, 1);
 
       if (mode != old_mode)
@@ -3304,7 +3321,7 @@ expand_return (retval)
       rtx *result_pseudos = (rtx *) alloca (sizeof (rtx) * n_regs);
       rtx result_reg, src = NULL_RTX, dst = NULL_RTX;
       rtx result_val = expand_expr (retval_rhs, NULL_RTX, VOIDmode, 0);
-      enum machine_mode tmpmode, result_reg_mode;
+      machine_mode_t tmpmode, result_reg_mode;
 
       if (bytes == 0)
 	{
@@ -4114,7 +4131,7 @@ expand_decl (decl)
     {
       /* Automatic variable that can go in a register.  */
       int unsignedp = TREE_UNSIGNED (type);
-      enum machine_mode reg_mode
+      machine_mode_t reg_mode
 	= promote_mode (type, DECL_MODE (decl), &unsignedp, 0);
 
       SET_DECL_RTL (decl, gen_reg_rtx (reg_mode));
@@ -4443,7 +4460,7 @@ expand_anon_union_decl (decl, cleanup, decl_elts)
     {
       tree decl_elt = TREE_VALUE (t);
       tree cleanup_elt = TREE_PURPOSE (t);
-      enum machine_mode mode = TYPE_MODE (TREE_TYPE (decl_elt));
+      machine_mode_t mode = TYPE_MODE (TREE_TYPE (decl_elt));
 
       /* If any of the elements are addressable, so is the entire
 	 union.  */
@@ -5661,7 +5678,7 @@ expand_end_case_type (orig_index, orig_type)
 	  if (GET_MODE_CLASS (GET_MODE (index)) == MODE_INT
 	      && ! have_insn_for (COMPARE, GET_MODE (index)))
 	    {
-	      enum machine_mode wider_mode;
+	      machine_mode_t wider_mode;
 	      for (wider_mode = GET_MODE (index); wider_mode != VOIDmode;
 		   wider_mode = GET_MODE_WIDER_MODE (wider_mode))
 		if (have_insn_for (COMPARE, wider_mode))
@@ -6267,8 +6284,8 @@ emit_case_nodes (index, node, default_label, index_type)
 {
   /* If INDEX has an unsigned type, we must make unsigned branches.  */
   int unsignedp = TREE_UNSIGNED (index_type);
-  enum machine_mode mode = GET_MODE (index);
-  enum machine_mode imode = TYPE_MODE (index_type);
+  machine_mode_t mode = GET_MODE (index);
+  machine_mode_t imode = TYPE_MODE (index_type);
 
   /* See if our parents have already tested everything for us.
      If they have, emit an unconditional jump for this node.  */

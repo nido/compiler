@@ -301,35 +301,52 @@ BOOL ALIAS_RULE::Aliased_F_Param_Rule(const POINTS_TO *mem1,
 //  Return the member type for a KIND_ARRAY type.
 //  Return the set of basic types for a structure/class.
 //  Exclude pointers.
-//  Use bit 0 to bit 30 for mtypes.
-//  Use bit 31 for pointers.
+//  Use bit 0 to bit 30 for mtypes (0 to 62 for TARG_ST).
+//  Use bit 31 for pointers        (63 for TARG_ST).
 //
+#ifdef TARG_ST
+// Reconfigurability: Extended container to support more than 31 mtypes
+static const INT32 MTYPE_PTR = 63;
+static const INT64 ALL_TYPE = 0xffffffffffffffffLL;
+static const INT64 NO_TYPE  = 0LL;
+static const INT64 CST_ONE  = 1LL;
+#else
 static const INT32 MTYPE_PTR = 31;
 static const INT32 ALL_TYPE = 0xffffffff;
 static const INT32 NO_TYPE  = 0;
+static const INT32 CST_ONE  = 1;
+#endif
 
+#ifdef TARG_ST
+INT64 ALIAS_RULE::Get_stripped_mtype(TY_IDX ty_idx) const
+#else
 INT32 ALIAS_RULE::Get_stripped_mtype(TY_IDX ty_idx) const
+#endif
 {
   const TY& ty = Ty_Table[ty_idx];
-  INT32 ret_type = 0;
+#ifdef TARG_ST
+  INT64 ret_type = NO_TYPE;
+#else
+  INT32 ret_type = NO_TYPE;
+#endif
   switch (TY_kind(ty)) {
   case KIND_SCALAR:
     //  Get the de-qualified and unsigned basic type for KIND_SCALAR.
     //    Note that enum is represented as KIND_SCALAR.
     {
       TYPE_ID mtype = TY_mtype(ty);
-      Is_True(mtype < MTYPE_PTR, ("more than 31 mtypes."));
+      Is_True(mtype < MTYPE_PTR, ("more than %d mtypes.", (MTYPE_PTR-1)));
       switch (mtype) {
       case MTYPE_I1:
-	ret_type = (1 << MTYPE_U1); break;
+	ret_type = (CST_ONE << MTYPE_U1); break;
       case MTYPE_I2:
-	ret_type = (1 << MTYPE_U2); break;
+	ret_type = (CST_ONE << MTYPE_U2); break;
       case MTYPE_I4:
-	ret_type = (1 << MTYPE_U4); break;
+	ret_type = (CST_ONE << MTYPE_U4); break;
       case MTYPE_I8:
-	ret_type = (1 << MTYPE_U8); break;
+	ret_type = (CST_ONE << MTYPE_U8); break;
       default:
-	ret_type = (1 << mtype); break;
+	ret_type = (CST_ONE << mtype); break;
       }
     }
     break;
@@ -356,7 +373,7 @@ INT32 ALIAS_RULE::Get_stripped_mtype(TY_IDX ty_idx) const
     ret_type = NO_TYPE;
     break;
   case KIND_POINTER:  // All pointers considered equal.
-    ret_type = (1 << MTYPE_PTR);
+    ret_type = (CST_ONE << MTYPE_PTR);
     break;
   case KIND_VOID:  // Void aliased to all types.
     ret_type = ALL_TYPE;
@@ -372,9 +389,9 @@ INT32 ALIAS_RULE::Get_stripped_mtype(TY_IDX ty_idx) const
   // from a dedicated register to stack location, assume we don't
   // know its type.
 
-  if (ret_type & (1 << MTYPE_UNKNOWN) || 
-      ret_type & (1 << MTYPE_V) ||	// MTYPE_V is another void type
-      ret_type & (1 << MTYPE_U1) ||	// unsigned char type 
+  if (ret_type & (CST_ONE << MTYPE_UNKNOWN) || 
+      ret_type & (CST_ONE << MTYPE_V) ||	// MTYPE_V is another void type
+      ret_type & (CST_ONE << MTYPE_U1) ||	// unsigned char type 
       TY_no_ansi_alias(ty))		// varargs TY:  See PV 329475.
     ret_type = ALL_TYPE;
 

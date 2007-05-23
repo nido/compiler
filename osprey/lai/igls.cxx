@@ -442,7 +442,11 @@ Schedule_Prefetch_Postpass () {
 	  LOOPINFO *info = LOOP_DESCR_loopinfo(cloop);
 	  INT32 max_iter;
 
+#ifdef TARG_STxP70
+	  TN *trip_count_tn = info ? LOOPINFO_CG_trip_count_tn(info) : NULL;
+#else
 	  TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
+#endif
 	  if (trip_count_tn && TN_is_constant(trip_count_tn))
 	    max_iter = TN_value(trip_count_tn) / 2;
 	  else max_iter = WN_loop_trip_est(LOOPINFO_wn(info)) / 2;
@@ -774,20 +778,42 @@ IGLS_Schedule_Region (BOOL before_regalloc)
       // FdF 20050502: resched means that post-pass scheduling is not
       // necessary. If performed, it can be ignored if it is not
       // better than the current scheduling.
-      resched = skip_bb && Reschedule_BB(bb); /* FALSE; */
+      resched = skip_bb && Reschedule_BB(bb) && (BB_length(bb)>1); /* FALSE; */
 #endif
+
 
       if (should_we_schedule && should_we_local_schedule &&
 	  (!skip_bb || resched)) {
 
 	// TODO: try locs_type = LOCS_DEPTH_FIRST also.
 	INT32 max_sched = (resched) ?  OP_scycle(BB_last_op(bb))+1 : INT32_MAX;
-	if (LOCS_Enable_Scheduling) {
+	if (LOCS_Enable_Scheduling && LOCS_POST_Enable_Scheduling) {
 	  if (!Sched) {
 	    Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
 	  }
-	  Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
-	  Sched->Schedule_BB(bb, NULL);
+#ifdef TARG_ST
+          switch(LOCS_POST_Scheduling)
+            {
+            default:
+            case Forward_Post_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              break;
+            case Backward_Post_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, FALSE);
+              break;
+            case Double_Post_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, FALSE);
+              break;
+            }
+#else
+          Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+          Sched->Schedule_BB(bb, NULL);
+#endif
 	}
       }
       Handle_All_Hazards (bb);

@@ -253,7 +253,13 @@ typedef enum {
   OPR_GOTO_OUTER_BLOCK = 136,
   OPR_EXTRACT_BITS = 137,
   OPR_COMPOSE_BITS = 138,
+#ifdef TARG_ST
+  //TB: New operator for multiple results call
+  OPR_SUBPART = 139,
+  OPERATOR_LAST = 139
+#else
   OPERATOR_LAST = 138
+#endif
 } OPERATOR;
 
 /* Definition of type OPCODE */
@@ -283,8 +289,14 @@ typedef enum {
 #define OPC_F10IMAGPART OPC_F10SECONDPART
 #define OPC_F16IMAGPART OPC_F16SECONDPART
 
+#ifdef TARG_ST
+// [TTh] Reconfigurability: extended mtype encoding 
+#define RTYPE(x) (x<<8)
+#define DESC(x)  (x<<(8+MTYPE_ENCODING_BITWIDTH))
+#else
 #define RTYPE(x) (x<<8)
 #define DESC(x)  (x<<13)
+#endif
 
 typedef enum {
   OPCODE_UNKNOWN	 = 0,
@@ -2384,7 +2396,11 @@ typedef enum {
   OPC_I8COMPOSE_BITS	 = OPR_COMPOSE_BITS + RTYPE(MTYPE_I8) + DESC(MTYPE_V),
   OPC_U4COMPOSE_BITS	 = OPR_COMPOSE_BITS + RTYPE(MTYPE_U4) + DESC(MTYPE_V),
   OPC_U8COMPOSE_BITS	 = OPR_COMPOSE_BITS + RTYPE(MTYPE_U8) + DESC(MTYPE_V),
+#ifdef TARG_ST
+  OPCODE_LAST = 0xFF + RTYPE(MTYPE_ENCODING_MASK) + DESC(MTYPE_ENCODING_MASK)
+#else
   OPCODE_LAST = 0x3FFFF
+#endif
 } OPCODE;
 
 /* typedef UINT32 OPCODE; */

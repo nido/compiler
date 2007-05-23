@@ -18,6 +18,11 @@ You should have received a copy of the GNU General Public License
 along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
+#ifndef LX_H_INCLUDED
+#define LX_H_INCLUDED
+
+//TB: For register definition
+#include "gccfe_targinfo_interface.h"
 
 extern int lx_delay_model;
 
@@ -114,10 +119,12 @@ extern int target_flags;
 #define MASK_BIG_ENDIAN	  0x0001	    /* Generate big endian code.  */
 #define MASK_NO_BUNDLE    0x0002	    /* One instruction/bundle.    */
 #define MASK_KERNEL_MODE  0x0004	    /* Kernel execution mode.     */
+#define MASK_DUMP_INFO  0x0008	    /* dump register, intrinsic and type info.     */
 
 #define TARGET_BIG_ENDIAN	(target_flags & MASK_BIG_ENDIAN)
 #define TARGET_NO_BUNDLE	(target_flags & MASK_NO_BUNDLE)
 #define TARGET_KERNEL_MODE	(target_flags & MASK_KERNEL_MODE)
+#define TARGET_DUMP_INFO        (target_flags & MASK_DUMP_INFO)
 
 /* Default target_flags if no switches are specified  */
 #ifndef TARGET_DEFAULT
@@ -145,6 +152,8 @@ extern int target_flags;
       "Kernel execution mode" },                \
   { "no-kernel",	-MASK_KERNEL_MODE,      \
       "User execution mode" },                  \
+  { "dumpinfo",	MASK_DUMP_INFO,      \
+      "Displays info info.txt" },                  \
   { "",			TARGET_DEFAULT | TARGET_CPU_DEFAULT,  \
       NULL }				        \
 }
@@ -164,6 +173,7 @@ extern int target_flags;
    particular target machine.  You can define a macro `OVERRIDE_OPTIONS' to
    take account of this.  This macro, if defined, is executed once just after
    all the command options have been parsed.  */
+extern int override_options (void);
 #define OVERRIDE_OPTIONS      override_options ();
 
 /* Some machines may desire to change what optimizations are performed for
@@ -403,13 +413,17 @@ extern int target_flags;
 /* Number of hardware registers known to the compiler.
    We have 64 general registers, 8 branch registers,
    and program counter register.  */
-#define FIRST_PSEUDO_REGISTER 74
+//TB: I have splitted FIRST_PSEUDO_REGISTER macro in two.  Keep the
+//original name for unused part of gcc for open64 fe. Add
+//FIRST_PSEUDO_REGISTER_USED for used part of the front end. This last
+//macro comes now from targinfo
+#define FIRST_PSEUDO_REGISTER 1024/*GCCTARG_UNUSED*/
+#define FIRST_PSEUDO_REGISTER_USED GCCTARG_Initial_Number_Of_Registers()
+#define LAST_GR_REGNUM        0/*GCCTARG_UNUSED*/
 
-#define LAST_GR_REGNUM        63
-
-#define GR_REGNO_P(REGNO)   ((REGNO) >= 0 &&  (REGNO) <= 62)
+#define GR_REGNO_P(REGNO)   ((REGNO) >= GCCTARG_First_Int_Regnum() &&  (REGNO) <= GCCTARG_Last_Int_Regnum())
 #define LINK_REGNO_P(REGNO) ((REGNO) == RETURN_POINTER_REGNUM)
-#define BR_REGNO_P(REGNO)   ((REGNO) >= 64 && (REGNO) <= 71)
+#define BR_REGNO_P(REGNO)   ((REGNO) >= GCCTARG_First_Branch_Regnum() && (REGNO) <= GCCTARG_Last_Branch_Regnum())
 
 
 #define GENERAL_REGNO_P(REGNO)      \
@@ -425,55 +439,15 @@ extern int target_flags;
    r12: stack pointer (sp)
    r63: link pointer (rp)
 */
-#define FIXED_REGISTERS \
-{ /* General registers.  */				\
-  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,	\
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	\
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	\
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	\
- /* Branch registers.  */				\
-  0, 0, 0, 0, 0, 0, 0, 0,                               \
- /* virtual registers. */				\
-  1, 1                                                  \
-}
+// [TB]Replaced by GCCTARG_Initial_Fixed_Core_Regs(), comes from targinfo
+#define FIXED_REGISTERS {/* GCCTARG_UNUSED */ } 
 
 /* Like `FIXED_REGISTERS' but has 1 for each register that is clobbered (in
    general) by function calls as well as for fixed registers.  This macro
    therefore identifies the registers that are not available for general
    allocation of values that must live across function calls.  */
-#if 1 
-/* New ABI. */
-/* [CG] 20040817: changed r13/r14 to be not CALL USED to conform
-   new ABI. Noit doing this introduces spurious warnings when
-   used as harwired register for variables, for instance in:
-   register void *thread_ptr asm("r13"); 
-   the front-end emits:
-   warning: call-clobbered register used for global register variable.
-*/
-#define CALL_USED_REGISTERS \
-{ /* General registers.  */				\
-  1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,	\
- /* Branch registers.  */				\
-  1, 1, 1, 1, 1, 1, 1, 1,                               \
- /* virtual registers. */				\
-  1, 1                                                  \
-}
-#else
-#define CALL_USED_REGISTERS \
-{ /* General registers.  */				\
-  1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,	\
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,	\
- /* Branch registers.  */				\
-  1, 1, 1, 1, 1, 1, 1, 1,                               \
- /* virtual registers. */				\
-  1, 1                                                  \
-}
-#endif
+// [TB] Replaced by GCCTARG_Initial_Call_Used_Core_Regs(), comes from targinfo
+#define CALL_USED_REGISTERS { /* GCCTARG_UNUSED */ }
 
 /* Replaces `FIXED_REGISTERS' when TARGET_KERNEL_MODE, since more regs
    are fixed.  */
@@ -503,40 +477,10 @@ extern int target_flags;
 #define REGISTER_NAMES \
 {							      \
   /* General registers.  */				      \
-   ".0",  ".1",  ".2",  ".3",  ".4",  ".5",  ".6",  ".7",     \
-   ".8",  ".9", ".10", ".11", ".12", ".13", ".14", ".15",     \
-  ".16", ".17", ".18", ".19", ".20", ".21", ".22", ".23",     \
-  ".24", ".25", ".26", ".27", ".28", ".29", ".30", ".31",     \
-  ".32", ".33", ".34", ".35", ".36", ".37", ".38", ".39",     \
-  ".40", ".41", ".42", ".43", ".44", ".45", ".46", ".47",     \
-  ".48", ".49", ".50", ".51", ".52", ".53", ".54", ".55",     \
-  ".56", ".57", ".58", ".59", ".60", ".61", ".62", ".63",     \
-   ".0",  ".1",  ".2",  ".3",  ".4",  ".5",  ".6",  ".7",     \
-  ".FP", ".AP",                                               \
 }
 
 /* Define additional names for use in asm clobbers and asm declarations.  */
-#define ADDITIONAL_REGISTER_NAMES  \
-{ {"r0", 0},   {"r1", 1},   {"r2", 2},   {"r3", 3},           \
-  {"r4", 4},   {"r5", 5},   {"r6", 6},   {"r7", 7},           \
-  {"r8", 8},   {"r9", 9},   {"r10", 10}, {"r11", 11},         \
-  {"r12", 12}, {"r13", 13}, {"r14", 14}, {"r15", 15},         \
-  {"r16", 16}, {"r17", 17}, {"r18", 18}, {"r19", 19},         \
-  {"r20", 20}, {"r21", 21}, {"r22", 22}, {"r23", 23},         \
-  {"r24", 24}, {"r25", 25}, {"r26", 26}, {"r27", 27},         \
-  {"r28", 28}, {"r29", 29}, {"r30", 30}, {"r31", 31},         \
-  {"r32", 32}, {"r33", 33}, {"r34", 34}, {"r35", 35},         \
-  {"r36", 36}, {"r37", 37}, {"r38", 38}, {"r39", 39},         \
-  {"r40", 40}, {"r41", 41}, {"r42", 42}, {"r43", 43},         \
-  {"r44", 44}, {"r45", 45}, {"r46", 46}, {"r47", 47},         \
-  {"r48", 48}, {"r49", 49}, {"r50", 50}, {"r51", 51},         \
-  {"r52", 52}, {"r53", 53}, {"r54", 54}, {"r55", 55},         \
-  {"r56", 56}, {"r57", 57}, {"r58", 58}, {"r59", 59},         \
-  {"r60", 60}, {"r61", 61}, {"r62", 62}, {"r63", 63},         \
-  {"b0",  64}, {"b1",  65}, {"b2",  66}, {"b3",  67},         \
-  {"b4",  68}, {"b5",  69}, {"b6",  70}, {"b7",  71},         \
-  { "sp", STACK_POINTER_REGNUM},                              \
-  { "lp", RETURN_POINTER_REGNUM} }
+// #define ADDITIONAL_REGISTER_NAMES [TB] replaces by GCCTARG_Additional_Register_Names()
 
 #define MAX_ARGUMENT_SLOTS 8
 
@@ -550,7 +494,7 @@ extern int target_flags;
   50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 12,  0,      \
   64, 65, 66, 67, 68, 69, 70, 71                                       \
 }
-
+#undef REG_ALLOC_ORDER //TB: No need of realloc for gccfe
 /* A C expression for the number of consecutive hard registers, starting at
    register number REGNO, required to hold a value of mode MODE.  */
 #define HARD_REGNO_NREGS(REGNO, MODE)                         \
@@ -788,17 +732,22 @@ extern int lx_elimination_offset ();
    before the call instruction.  */
 #define INCOMING_FRAME_SP_OFFSET 16
 
-#define GP_ARG_REGNUM          16
-#define RETURN_POINTER_REGNUM  63
+//[TB] Now special register def comes from targinfo
+#define GP_ARG_REGNUM          GCCTARG_Gp_Arg_Regnum()
+#define RETURN_POINTER_REGNUM  GCCTARG_Return_Pointer_Regnum()
 
 /* Register to use for pushing function arguments.  */
-#define STACK_POINTER_REGNUM   12
+#define STACK_POINTER_REGNUM   GCCTARG_Stack_Pointer_Regnum()
 
 /* Base register for access to local variables of the function.  */
 #define FRAME_POINTER_REGNUM   72
 
 /* Base register for access to arguments of the function.  */
 #define ARG_POINTER_REGNUM     73
+
+//TB: Reconf
+/* The last reg number for the core.  */
+#define STATIC_LAST_REGNUM  GCCTARG_Static_last_Regnum()
 
 /* On some machines the offset between the frame pointer and starting
    offset of the automatic variables is not known until after register
@@ -829,11 +778,7 @@ extern int lx_elimination_offset ();
 
 /* If defined, this macro specifies a table of register pairs used to eliminate
    unneeded registers that point into the stack frame.  */
-#define ELIMINABLE_REGS				        \
-{{ FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM },	\
- { ARG_POINTER_REGNUM,	 STACK_POINTER_REGNUM },	\
- { FRAME_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM },	\
- { ARG_POINTER_REGNUM,   HARD_FRAME_POINTER_REGNUM }}			
+#define ELIMINABLE_REGS	{ /* GCCTARG_UNUSED */}
 
 /* A C expression that returns non-zero if the compiler is allowed to try to
    replace register number FROM with register number TO. */
@@ -997,15 +942,19 @@ extern int lx_elimination_offset ();
 /* Implementing the Varargs Macros.  */
 
 /* Define the `__builtin_va_list' type for the ABI. */
+
+extern tree lx_build_va_list              PARAMS ((void));
 #define BUILD_VA_LIST_TYPE(VALIST) \
   (VALIST) = lx_build_va_list ()
 
 extern struct rtx_def *lx_builtin_saveregs ();
 #define EXPAND_BUILTIN_SAVEREGS() lx_builtin_saveregs ()
 
+extern void lx_va_start                   PARAMS ((tree, rtx));
 #define EXPAND_BUILTIN_VA_START(valist, nextarg) \
   lx_va_start (valist, nextarg)
 
+extern rtx  lx_va_arg                     PARAMS ((tree, tree));
 #define EXPAND_BUILTIN_VA_ARG(valist, type) \
   lx_va_arg (valist, type)
 
@@ -1474,3 +1423,4 @@ do {                                              \
 /* assembly emission done by open64 code generator */
 extern void default_lxopen64_assemble ();
 #define TARGET_ASM_ASSEMBLE_VISIBILITY  default_lxopen64_assemble
+#endif

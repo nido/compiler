@@ -94,7 +94,41 @@ get_option_name (int flag)
 extern string 
 get_option_help (int flag)
 {
-	return options[flag].help_msg;
+#ifdef TARG_STxP70
+   if ((NULL!=options[flag].help_msg) && (flag==O_Mextension__)) {
+      static char extension_help[4096];
+      extension_T * ext_opt;
+      int ext_nr;
+      int i, j;
+      
+      ext_nr = extract_from_sxextensionrc(orig_program_name,&ext_opt);
+      strcpy(extension_help,"-Mextension[=");
+      for (i=0;i<ext_nr;i++) {
+         if (i!=0) strcat(extension_help,"|");
+         strcat(extension_help,ext_opt[i].name);
+      }
+      if (strlen(extension_help)>=19) {
+         strcat(extension_help,"]\n                    ");
+      } else {
+         strcat(extension_help,"]");
+         for (i=strlen(extension_help);i<20;i++) {
+            strcat(extension_help," ");
+         }
+      }
+      strcat(extension_help,options[flag].help_msg);
+      for (i=0;i<ext_nr;i++) {
+         strcat(extension_help,"\n    ");
+         strcat(extension_help,ext_opt[i].name);
+         for (j=6+strlen(ext_opt[i].name);j<20;j++) {
+            strcat(extension_help," ");
+         }
+         strcat(extension_help,"  ");
+         strcat(extension_help,ext_opt[i].help);
+      }
+      return (extension_help);
+   }
+#endif
+ 	return options[flag].help_msg;
 }
 
 

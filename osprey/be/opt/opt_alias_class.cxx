@@ -1357,10 +1357,39 @@ ALIAS_CLASSIFICATION::Stmt_stores_return_value(const WN *const stmt)
 {
   WN *rhs = WN_kid0(stmt);
 
+#ifdef TARG_ST
+  BOOL is_store_return_value =false;    // Default value.
+  WN  *rhsrhs;
+
+  if(OPCODE_is_store(WN_opcode(stmt))) {
+    switch(WN_operator(rhs))
+     { 
+       case OPR_LDID:
+          if(ST_sclass(ST_of_wn(rhs)) == SCLASS_REG &&
+	     Preg_Is_Dedicated(WN_offset(rhs)))
+                is_store_return_value = true;
+           break;
+
+       case OPR_SUBPART:
+           rhsrhs = WN_kid0(rhs);
+           if( WN_operator(rhsrhs) == OPR_LDID &&
+	       ST_sclass(ST_of_wn(rhsrhs)) == SCLASS_REG &&
+	       Preg_Is_Dedicated(WN_offset(rhsrhs)))
+                 is_store_return_value = true;
+       default:
+          break;
+
+     }  // End switch
+  }     // End if
+
+  return is_store_return_value;
+
+#else
   return (OPCODE_is_store(WN_opcode(stmt)) &&
 	  (WN_operator(rhs) == OPR_LDID) &&
 	  (ST_sclass(ST_of_wn(rhs)) == SCLASS_REG) &&
 	  Preg_Is_Dedicated(WN_offset(rhs)));
+#endif
 }
 
 BOOL

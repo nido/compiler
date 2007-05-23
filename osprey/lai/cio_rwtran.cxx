@@ -630,6 +630,13 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
   // algorithm can skip one step.
   BOOL predicated_OPs = FALSE;
 
+#ifdef TARG_ST
+  // [CG]: We cannot propagate acrosss same_res ops.
+  // As for predicated ops, we will disable copy prop if one of the operation
+  // in the loop is a same res op that read/write the copy destination.
+  BOOL same_res_OPs = FALSE;
+#endif
+
   // For each result TN of an eligible copy OP, cio_copy_table
   // remembers the most recent OP that stores to that TN.
   // cio_copy_table_size is the number of entries in cio_copy_table.
@@ -654,6 +661,13 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
     else {
       for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
 	TN *tn = OP_result( op, res );
+#ifdef TARG_ST
+	// Detect results that have a same res operand.
+	if (OP_same_res(op, res) >= 0) {
+	  same_res_OPs = TRUE;
+	  continue;
+	}
+#endif
 	INT index;
 	for ( index = cio_copy_table_size - 1; index >= 0; --index )
 	  if ( cio_copy_table[index].tn_result == tn )
@@ -676,7 +690,12 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
   // Identify any copy OPs that cannot be propagated.  In particular,
   // predicated OPs may prevent the removal of earlier copy OPs with the
   // same result TNs.
-  if ( predicated_OPs ) {
+#ifdef TARG_ST
+  if ( predicated_OPs || same_res_OPs) 
+#else
+  if ( predicated_OPs )
+#endif
+  {
     FOR_ALL_BB_OPs_FWD( body, op ) {
       BOOL predicated
 	= ( OP_has_predicate( op ) &&
@@ -688,9 +707,17 @@ CIO_RWTRAN::CIO_Copy_Remove( BB *body )
 #endif
       for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
 	TN *tn = OP_result( op, res );
+#ifdef TARG_ST
+        BOOL same_res = OP_same_res(op, res) >= 0;
+#endif
 	for ( INT index = cio_copy_table_size - 1; index >= 0; --index )
 	  if ( cio_copy_table[index].tn_result == tn ) {
-	    if ( predicated ) {
+#ifdef TARG_ST
+	    if ( predicated || same_res) 
+#else
+	    if ( predicated )
+#endif
+            {
 	      // Cannot propagate this source OP
 	      Reset_OP_flag1( cio_copy_table[index].op );
 	    } else {
@@ -1458,6 +1485,9 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   Is_True( OP_memory( op ), ( "OP_memory(op) == FALSE" ) );
   Is_True( OP_store( op ), ( "OP_store(op) == FALSE" ) );
   Is_True( tn_predicate != NULL, ( "tn_predicate == NULL" ) );
+#ifdef TARG_ST
+  Is_True( !OP_automod( op ), ( "OP_automod(op) == TRUE" ) );
+#endif
 
   // Use predication, if available
   if ( OP_has_predicate( op ) ) {

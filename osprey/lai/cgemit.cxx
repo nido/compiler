@@ -2522,7 +2522,11 @@ Process_Initos_And_Literals (
 
   UINT i;
   static UINT last_inito = 1;
-  
+// #ifdef TARG_ST
+//   /* [vcdv] store INITO table size [ fix for bug #20142.] */
+//   int Inito_table_size = INITO_Table_Size(stab);
+// #endif
+
   // First walk the INITOs from the global table
   for (i = last_inito; i < INITO_Table_Size(GLOBAL_SYMTAB); ++i) {
     INITO* ino = &Inito_Table(GLOBAL_SYMTAB,i);
@@ -2579,7 +2583,15 @@ Process_Initos_And_Literals (
   stable_sort (st_list.begin(), st_list.end(), section_lt);
   // Print_ST_List(st_list, "SORTED BY SECTION");
 
-  for (st_iter = st_list.begin(); st_iter != st_list.end(); ++st_iter) {
+// #ifdef TARG_ST
+//   /* [vcdv] store number of iteration in st_list [ fix for bug #20142.]*/
+//   int st_iter_rank;
+//   for (st_iter = st_list.begin(), st_iter_rank=0; st_iter != st_list.end();
+//        st_iter_rank++, ++st_iter) {
+// #else
+    for (st_iter = st_list.begin(); st_iter != st_list.end(); ++st_iter) {
+// #endif
+
 
     INT64 ofst;
     ST* base;
@@ -2675,6 +2687,42 @@ Process_Initos_And_Literals (
       Set_Section_Offset(base, ofst);
 #endif
     }
+// #ifdef TARG_ST
+//     /* [vcdv] fix for bug #20142.
+//        a local static array was not initialized in tda/sda/da mode.
+//        This loop adds any new items from INITOS into the st_list so as
+//        to dump it as well.
+
+//        Another way to fix this issue would be to modify the
+//        Allocate_Object() function : It could run Allocate_Object() on
+//        its dependencies (initial values).       
+//      */
+//     if (stab != GLOBAL_SYMTAB) {
+//       int newSize = INITO_Table_Size(stab);
+//       if (newSize != Inito_table_size)
+//         {
+//           int i;
+//           for (i=Inito_table_size; i<newSize; i++)
+//             {
+//               INITO* ino = &Inito_Table(stab,i);
+//               ST* st = INITO_st(ino);
+//               /* don't emit initialization if st not used or extern */
+//               if (ST_is_not_used(st) ||
+//                   ST_sclass(st) == SCLASS_EXTERN)
+//                 {
+//                   continue;
+//                 }
+//               st_list.push_back(st);
+//               st_inito_map[ST_st_idx(st)] = ino;
+//               /* reinit st_iter to guarantee that new items are
+//                * effectively parsed in the loop
+//                */
+//               st_iter= st_list.begin()+st_iter_rank;
+//             }
+//         }
+//           Inito_table_size = newSize;
+//     }
+// #endif
   }
 
   return;
@@ -3337,7 +3385,19 @@ Gen_Label_For_Source_Line() {
 // [CL] Create a new label for each new source line
 void New_Debug_Line_Set_Label(INT code_address)
 {
-  if (Last_Label > 0) {
+#ifdef TARG_STxP70
+    // Do not emitted label line in non -g mode.
+    // It is important to do nothing, otherwise the created label may be
+    // referenced in debug frame information (which is always emitted) to
+    // specify function bound (first line to last line label)
+    if(!Full_Debug_Info)
+        {
+            return;
+        }
+#endif
+
+  if (Last_Label > 0)
+ {
     cache_last_label_info (Last_Label,
 			   Em_Create_Section_Symbol(PU_section),
 			   current_pu,
@@ -3351,6 +3411,8 @@ void New_Debug_Line_Set_Label(INT code_address)
 
   Last_Label = Gen_Label_For_Source_Line ();
   Offset_From_Last_Label = 0;
+
+
 
   if (Assembly || Lai_Code) {
 #ifdef TARG_ST
@@ -4575,17 +4637,47 @@ Generate_Asm_String (
   char* asm_string = strdup(WN_asm_string(ASM_OP_wn(asm_info)));
 
   for (i = 0; i < OP_results(asm_op); i++) {
+#ifdef TARG_ST
+    // [TTh] Results corresponding to subparts of Multi-registers TNs
+    //       are not referenced in asm string
+    if (ASM_OP_result_position(asm_info)[i] != ASM_OP_position_UNDEF) {
+      //TB add subclass parameter to CGTARG_Modify_Asm_String to handle
+      //registers that have different name depending on their subclass
+      ISA_REGISTER_SUBCLASS sc = ASM_OP_result_subclass(asm_info)[i];
+      asm_string = CGTARG_Modify_Asm_String(asm_string, 
+					    ASM_OP_result_position(asm_info)[i], 
+					    ASM_OP_result_memory(asm_info)[i], 
+					    OP_result(asm_op, i),
+					    sc);
+    }
+#else
     asm_string = CGTARG_Modify_Asm_String(asm_string, 
                                    ASM_OP_result_position(asm_info)[i], 
                                    ASM_OP_result_memory(asm_info)[i], 
-                                   OP_result(asm_op, i));
+				   OP_result(asm_op, i))
+#endif
   }
 
   for (i = 0; i < OP_opnds(asm_op); i++) {
+#ifdef TARG_ST
+    // [TTh] Operands corresponding to subparts of Multi-registers TNs
+    //       are not referenced in asm string
+    if (ASM_OP_opnd_position(asm_info)[i] != ASM_OP_position_UNDEF) {
+      //TB add subclass parameter to CGTARG_Modify_Asm_String to handle
+      //registers that have different name depending on thier subclass
+      ISA_REGISTER_SUBCLASS sc = ASM_OP_opnd_subclass (asm_info)[i];
+      asm_string = CGTARG_Modify_Asm_String(asm_string, 
+					    ASM_OP_opnd_position(asm_info)[i], 
+					    ASM_OP_opnd_memory(asm_info)[i], 
+					    OP_opnd(asm_op, i),
+					    sc);
+    }
+#else
     asm_string = CGTARG_Modify_Asm_String(asm_string, 
                                    ASM_OP_opnd_position(asm_info)[i], 
                                    ASM_OP_opnd_memory(asm_info)[i], 
-                                   OP_opnd(asm_op, i));
+				   OP_opnd(asm_op, i));
+#endif
   }
 
   CGTARG_Postprocess_Asm_String(asm_string);
@@ -4788,6 +4880,7 @@ Assemble_Ops (
 #endif
       continue;
     }
+// TODO POST MERGE: sync with st200. Why is it STxP70 specific?
 // CQ1: I do not know why this is not done for all kind of operation at the
 // begining and the end of the loop. Currently each assemble function does this
 // this work!
@@ -5265,9 +5358,42 @@ Emit_Loop_Note (
     fprintf (file, "%s<loop> Loop body line %d", ASM_CMNT_LINE, lineno);
 #endif
 
+    // [CR] Add minitercount and maxitercount information
+    ANNOTATION *min_annot;
+    INT32 minitercount = -1;
+    /* FdF 20060913: The information is now set in LOOPINFO. */
+    if (info)
+      minitercount = LOOPINFO_trip_min(info);
+#if 0
+    for (min_annot = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+	 min_annot != NULL;
+	 min_annot = ANNOT_Get(ANNOT_next(min_annot), ANNOT_PRAGMA)) {
+      if (WN_pragma(ANNOT_pragma(min_annot)) == WN_PRAGMA_LOOPMINITERCOUNT) {
+	WN *pragma = ANNOT_pragma(min_annot);
+	minitercount = (INT32)WN_pragma_arg1(pragma);
+	break;
+      } 
+    }
+#endif
+    ANNOTATION *max_annot;
+    INT32 maxitercount = -1;
+    for (max_annot = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+	 max_annot != NULL;
+	 max_annot = ANNOT_Get(ANNOT_next(max_annot), ANNOT_PRAGMA)) {
+      if (WN_pragma(ANNOT_pragma(max_annot)) == WN_PRAGMA_LOOPMAXITERCOUNT) {
+	WN *pragma = ANNOT_pragma(max_annot);
+	maxitercount = (INT32)WN_pragma_arg1(pragma);
+	break;
+      } 
+    }
+
     if (info) {
       WN *wn = LOOPINFO_wn(info);
+#ifdef TARG_STxP70
+      TN *trip_tn = LOOPINFO_CG_trip_count_tn(info);
+#else
       TN *trip_tn = LOOPINFO_trip_count_tn(info);
+#endif
       BOOL constant_trip = trip_tn && TN_is_constant(trip_tn);
       INT depth = WN_loop_depth(wn);
       const char *estimated = constant_trip ? "" : "estimated ";
@@ -5283,6 +5409,14 @@ Emit_Loop_Note (
       fprintf (file, fmt, depth, estimated, trip_count);
     }
 
+    if (minitercount != -1) {
+      const char *fmt = "\n%s<loop>  pragma minitercount :%ld";
+      fprintf (file, fmt, ASM_CMNT_LINE, minitercount);
+    }
+    if (maxitercount != -1) {
+      const char *fmt = "\n%s<loop>  pragma minitercount :%ld";
+      fprintf (file, fmt, ASM_CMNT_LINE, minitercount);
+    }
     fprintf (file, "\n");
   } 
 #if 0
@@ -5611,7 +5745,11 @@ EMT_Assemble_BB (
   }
 
   // hack to keep track of last label and offset for assembly dwarf (suneel)
-  if (generate_dwarf && ! CG_emit_asm_dwarf) {
+  if (generate_dwarf && ! (CG_emit_asm_dwarf
+#ifdef TARG_STxP70
+                           && Full_Debug_Info
+#endif
+                           )) {
     if (Last_Label == LABEL_IDX_ZERO) {
       Last_Label = Gen_Label_For_BB (bb);
       Offset_From_Last_Label = 0;
@@ -6215,7 +6353,16 @@ EMT_Begin_File (
     // situation, we generate the object file, but we unlink it here
     // so it never shows up after the compilation is done.
     if ( ! Object_Code) {
+#ifdef TARG_ST
+      // [CL] under Win32, we must close the file before calling unlink()
+      fclose(Obj_File);
+      if (unlink(Obj_File_Name)) {
+	ErrMsg ( EC_Obj_Close, Obj_File_Name, errno );
+      }
+      Obj_File = NULL;
+#else
       unlink(Obj_File_Name);
+#endif
     }
 
     buff = (char *) alloca (strlen("be") + sizeof(INCLUDE_STAMP) + 
@@ -6276,6 +6423,27 @@ EMT_Begin_File (
   return;
 }
 
+#ifdef TARG_STxP70
+static OP*
+Create_Asm_Macro(const char* macro)
+{
+    // WN_CreateAsm_Stmt take a non const char* so we have to duplicate the
+    // string
+    char *buf = (char*)alloca(strlen(macro) + 1);
+    strcpy(buf, macro);
+    TN* result[1];
+    TN* opnd[1];
+    OP* asm_op = Mk_VarOP(TOP_asm, 0, 0, result, opnd);
+    Set_OP_volatile(asm_op);
+    ASM_OP_ANNOT* asm_info = TYPE_PU_ALLOC(ASM_OP_ANNOT);
+    bzero(asm_info, sizeof(ASM_OP_ANNOT));
+    WN *asm_wn = WN_CreateAsm_Stmt (0, buf);
+    ASM_OP_wn(asm_info) = asm_wn;
+    OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
+    return asm_op;
+}
+#endif
+
 /* ====================================================================
  *    EMT_Emit_PU (pu, pu_dst, rwn)
  * ====================================================================
@@ -6301,6 +6469,50 @@ EMT_Emit_PU (
     fprintf(TFile, "%s CFG before cgemit \n%s", DBar, DBar);
     Print_All_BBs ();
   }
+
+#ifdef TARG_STxP70
+  // [CR] Interrupt handler with stkaln generates a asm directive
+  // CQ1: The specific operations of interrupt functions must be set before
+  // debug information generation
+  // [VB] if pu.stkaln != 0, then generates an asm directive
+  if (Assembly &&
+      ((PU_is_interrupt(Get_Current_PU())) ||
+       (PU_aligned_stack(Get_Current_PU())!=Target_Stack_Alignment))) {
+      BB_LIST* bbList;
+      char *align;
+      INT macrolength;
+
+      macrolength = strlen(ASM_PROLOG_STKALN_STR);
+      if (strlen(ASM_PROLOG_STKALN_STR) < strlen(ASM_EPILOG_STKALN_STR)) {
+	 macrolength = strlen(ASM_EPILOG_STKALN_STR);
+      }
+      macrolength += 5;
+      align = (char*)alloca(macrolength);
+
+      if (PU_is_interrupt(Get_Current_PU())) {
+	sprintf(align, "%s 7", ASM_PROLOG_STKALN_STR);
+      }
+      if (PU_aligned_stack(Get_Current_PU())!=0) {
+	sprintf(align, "%s %d", ASM_PROLOG_STKALN_STR,
+		(int)(PU_aligned_stack(Get_Current_PU())-1));
+      }
+      for(bbList = Entry_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
+          {
+              OP* asmOp = Create_Asm_Macro(align);
+              BB_Prepend_Op(BB_LIST_first(bbList), asmOp);
+              Set_BB_asm(BB_LIST_first(bbList));
+          }
+
+      for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
+          {
+              OP* asmOp = Create_Asm_Macro(ASM_EPILOG_STKALN_STR);
+              BB_Insert_Op(BB_LIST_first(bbList),
+                           OPS_last(&(BB_LIST_first(bbList)->ops)), asmOp,
+                           TRUE);
+              Set_BB_asm(BB_LIST_first(bbList));
+          }
+  }
+#endif
 
   Init_Unwind_Info (trace_unwind);
 
@@ -6400,6 +6612,7 @@ EMT_Emit_PU (
       fprintf(Asm_File, "\t%s\t%s,%s\n", AS_TYPE, ST_name(pu), AS_TYPE_FUNC);
     }
 #endif
+
     Print_Label (Asm_File, pu, 0);
     // .fframe is only used for unwind info,
     // and we plan on emitting that info directly.

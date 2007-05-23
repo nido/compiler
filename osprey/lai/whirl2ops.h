@@ -125,6 +125,14 @@ extern void Get_Memory_OP_Predicate_Info(OP *memop, TN **pred_tn,
  */
 CG_EXPORTED extern void Copy_WN_For_Memory_OP(OP *dest, OP *src);
 
+#ifdef TARG_ST
+/* [TTh] Test if the memory OP is associated to a WN and
+ * if its memory access is smaller than the WN memory access
+ * (case of splitted memory accesses)
+ */
+extern BOOL Memory_OP_Is_Partial_WN_Access(OP *op);
+#endif
+
 /* Return the OP corresponding to a given prefetch WN. 
  * If WN is not a prefetch WN returns NULL. 
  */

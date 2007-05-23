@@ -536,8 +536,14 @@ OPT_REVISE_SSA::Update_phis(BB_NODE *bb)
       phi->Reset_dse_dead();
       phi->Reset_dce_dead();
       AUX_STAB_ENTRY *sym = _opt_stab->Aux_stab_entry(i);
+#ifdef TARG_ST
+      // Reconfigurability: Removed direct access to mclass, that is
+      //                    not supported for dynamic mtypes
+      MTYPE rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
       MTYPE rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), 
 						    sym->Byte_size());
+#endif
       MTYPE desc = rtype;
       phi_res = _htable->Add_def(i, -1, NULL, rtype, desc, 
 			 _opt_stab->St_ofst(i), MTYPE_To_TY(rtype), 0, TRUE);
@@ -576,7 +582,13 @@ OPT_REVISE_SSA::Update_chi_list_for_old_var(STMTREP *stmt, AUX_ID i)
 	cnode->Set_live(TRUE);
 	cnode->Set_dse_dead(FALSE);
         sym = _opt_stab->Aux_stab_entry(i);
+#ifdef TARG_ST
+	// Reconfigurability: Removed direct access to mclass, that is
+	//                    not supported for dynamic mtypes
+	rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
 	rtype = Mtype_from_mtype_class_and_size(sym->Mclass(),sym->Byte_size());
+#endif
 	MTYPE desc = rtype;
 	chi_res = _htable->Add_def(i, -1, stmt, rtype, desc, 
 			   _opt_stab->St_ofst(i), MTYPE_To_TY(rtype), 0, TRUE);
@@ -590,7 +602,13 @@ OPT_REVISE_SSA::Update_chi_list_for_old_var(STMTREP *stmt, AUX_ID i)
       else if (cnode->RESULT()->Dtyp() == MTYPE_UNKNOWN) { // fix the types
 	chi_res = cnode->RESULT();
         sym = _opt_stab->Aux_stab_entry(i);
+#ifdef TARG_ST
+	// Reconfigurability: Removed direct access to mclass, that is
+	//                    not supported for dynamic mtypes
+	rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
 	rtype = Mtype_from_mtype_class_and_size(sym->Mclass(),sym->Byte_size());
+#endif
 	chi_res->Set_dtyp(rtype);
 	chi_res->Set_dsctyp(rtype);
 	chi_res->Set_lod_ty(MTYPE_To_TY(rtype));
@@ -684,8 +702,14 @@ OPT_REVISE_SSA::Insert_mu_and_chi_list_for_new_var(STMTREP *stmt, AUX_ID i)
     newchi->Set_live(TRUE);
     newchi->Set_dse_dead(FALSE);
     AUX_STAB_ENTRY *sym = _opt_stab->Aux_stab_entry(i);
+#ifdef TARG_ST
+    // Reconfigurability: Removed direct access to mclass, that is
+    //                    not supported for dynamic mtypes
+    MTYPE rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
     MTYPE rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), 
 						  sym->Byte_size());
+#endif
     MTYPE desc = rtype;
     chi_res = _htable->Add_def(i, -1, stmt, rtype, desc, 
 			 _opt_stab->St_ofst(i), MTYPE_To_TY(rtype), 0, TRUE);
@@ -800,6 +824,11 @@ OPT_REVISE_SSA::Form_extract(CODEREP *cr)
       x = _htable->Ssa()->Get_zero_version_CR(cr->Scalar_aux_id(), _opt_stab,0);
       AUX_STAB_ENTRY *sym = _opt_stab->Aux_stab_entry(cr->Scalar_aux_id());
       x->Set_dtyp(cr->Dtyp());
+#ifdef TARG_ST
+      // Reconfigurability: Sanity check
+      FmtAssert((!MTYPE_is_dynamic(cr->Dtyp())),
+		("Extension Mtype not supported here: no corresponding mclass"));
+#endif
       x->Set_dsctyp(Mtype_from_mtype_class_and_size(MTYPE_type_class(cr->Dtyp()), sym->Byte_size()));
       return Create_EXTRACT_BITS(cr->Bit_offset(), cr->Bit_size(), x, cr->Dtyp());
     }
@@ -955,6 +984,11 @@ OPT_REVISE_SSA::Form_extract_compose(void)
 						  _opt_stab, 0);
 	  AUX_STAB_ENTRY *sym = _opt_stab->Aux_stab_entry(lhs->Scalar_aux_id());
 	  v->Set_dtyp(lhs->Dtyp());
+#ifdef TARG_ST
+	  // Reconfigurability: Sanity check
+	  FmtAssert((!MTYPE_is_dynamic(lhs->Dtyp())),
+		    ("Extension Mtype not supported here: no corresponding mclass"));
+#endif
 	  v->Set_dsctyp(Mtype_from_mtype_class_and_size(MTYPE_type_class(lhs->Dtyp()), sym->Byte_size()));
 	  stmt->Set_rhs(Create_COMPOSE_BITS(lhs->Bit_offset(), lhs->Bit_size(), v, rhs));
 	  // generate a new version of the new scalar variable

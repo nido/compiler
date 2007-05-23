@@ -712,7 +712,7 @@ dbxout_fptype_value (type)
      tree type;
 {
   char value = '0';
-  enum machine_mode mode = TYPE_MODE (type);
+  machine_mode_t mode = TYPE_MODE (type);
 
   if (TREE_CODE (type) == REAL_TYPE)
     {

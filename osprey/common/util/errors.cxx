@@ -161,13 +161,13 @@ typedef struct {
 } SEVERITY_DESCRIPTOR;
 
 static SEVERITY_DESCRIPTOR Severities[] = {
-    {ES_IGNORE,		"??? ",	"Ignore"},
-    {ES_ADVISORY,	"--- ", "Advisory"},
-    {ES_WARNING,	"!!! ", "Warning"},
-    {ES_CONFORMANCE,	"!!! ", "Conformance warning"},
-    {ES_ERRBENIGN,	"### ", "Error"},
-    {ES_ERRPHASE,	"### ", "Error"},
-    {ES_ERRABORT,	"### ", "Error"}
+    {ES_IGNORE,		"??? ",	"ignore"},
+    {ES_ADVISORY,	"--- ", "advisory"},
+    {ES_WARNING,	"!!! ", "warning"},
+    {ES_CONFORMANCE,	"!!! ", "conformance warning"},
+    {ES_ERRBENIGN,	"### ", "error"},
+    {ES_ERRPHASE,	"### ", "error"},
+    {ES_ERRABORT,	"### ", "error"}
 };
 
 /* Access functions: */
@@ -247,7 +247,7 @@ static void
 catch_signal (INT sig, INT error_num)
 {
 #if defined(sun) || defined(sgi)
-  extern char *sys_errlist[];
+//   extern char *sys_errlist[];
 #endif
 
     signal ( sig, SIG_DFL );
@@ -262,7 +262,7 @@ catch_signal (INT sig, INT error_num)
 	    /* special case for I/O error on mmapped object: report as an
 	       ordinary fatal error */ 
 	    Fatal_Error ("I/O error in mmapped object: %s",
-			 sys_errlist[error_num]);
+			 strerror(error_num));
 #endif
     }
     
@@ -766,9 +766,9 @@ ErrMsg_Report_Nonuser ( ERROR_DESC *edesc, INT ecode, INT line,
   INTPS mparm[MAX_ERR_PARMS];
 
   /* Interface to Unix system error messages: */
-  DLLIMPORT extern INT sys_nerr;
+//   DLLIMPORT extern INT sys_nerr;
 #if defined(sun) || defined(sgi)
-  extern char *sys_errlist[];
+//   extern char *sys_errlist[];
 #endif
 
   /* Formatting buffer: */
@@ -876,14 +876,15 @@ ErrMsg_Report_Nonuser ( ERROR_DESC *edesc, INT ecode, INT line,
       case ET_SYSERR:	parm = (INTPS) va_arg(vp,int);
       			if (parm < 0) {
 			  mparm[pnum] = (INTPS) host_errlist[-parm];
-			} else if ( parm <= sys_nerr ) {
-			  mparm[pnum] = (INTPS) sys_errlist[parm];
-			} else {
-			  result = &buf[++loc];
-			  loc += sprintf ( &buf[loc],
-					   "Unix error %ld", parm );
-			  mparm[pnum] = (INTPS) result;
-			}
+			} else // if ( parm <= sys_nerr )
+			  {
+			  mparm[pnum] = (INTPS) strerror(parm);
+			} // else {
+// 			  result = &buf[++loc];
+// 			  loc += sprintf ( &buf[loc],
+// 					   "Unix error %ld", parm );
+// 			  mparm[pnum] = (INTPS) result;
+// 			}
 			break;
 
       /* The default case takes care of all host program-specific
@@ -944,9 +945,9 @@ ErrMsg_Report_User (ERROR_DESC *edesc, INT ecode, INT line,
   INTPS mparm[MAX_ERR_PARMS];
 
   /* Interface to Unix system error messages: */
-  DLLIMPORT extern INT sys_nerr;
+//   DLLIMPORT extern INT sys_nerr;
 #if defined(sun)
-  extern char *sys_errlist[];
+//   extern char *sys_errlist[];
 #endif
 
   /* Formatting buffer: */
@@ -974,13 +975,28 @@ ErrMsg_Report_User (ERROR_DESC *edesc, INT ecode, INT line,
   /* Prepare header line: */
   if ( ! ED_continuation(edesc) ) {
     if ( file != NULL && *file != 0 && line != ERROR_LINE_UNKNOWN ) {
+#ifdef TARG_ST
+      /* [TTh] gcc-like header */
+      loc = sprintf ( &hmsg[0], "%s:%d: ", file, line );
+#else
       loc = sprintf ( &hmsg[0], "\"%s\", line %d: ", file, line );
+#endif
     }
     else if ( file != NULL && *file != 0 ) {
+#ifdef TARG_ST
+      /* [TTh] gcc-like header */
+      loc = sprintf ( &hmsg[0], "%s:: ", file );
+#else
       loc = sprintf ( &hmsg[0], "\"%s\": ", file );
+#endif
     }
     else if ( line != ERROR_LINE_UNKNOWN ) {
+#ifdef TARG_ST
+      /* [TTh] gcc-like header */
+      loc = sprintf ( &hmsg[0], ":%d: ", line );
+#else
       loc = sprintf ( &hmsg[0], "line %d: ", line );
+#endif
     }
     else {
       loc = 0;
@@ -1044,14 +1060,15 @@ ErrMsg_Report_User (ERROR_DESC *edesc, INT ecode, INT line,
       case ET_SYSERR:	parm = (INTPS) va_arg(vp,int);
       			if (parm < 0) {
 			  mparm[pnum] = (INTPS) host_errlist[-parm];
-			} else if ( parm <= sys_nerr ) {
-			  mparm[pnum] = (INTPS) sys_errlist[parm];
-			} else {
-			  result = &buf[++loc];
-			  loc += sprintf ( &buf[loc],
-					   "Unix error %ld", parm );
-			  mparm[pnum] = (INTPS) result;
-			}
+			} else // if ( parm <= sys_nerr )
+			  {
+			  mparm[pnum] = (INTPS) strerror(parm);
+			} // else {
+// 			  result = &buf[++loc];
+// 			  loc += sprintf ( &buf[loc],
+// 					   "Unix error %ld", parm );
+// 			  mparm[pnum] = (INTPS) result;
+// 			}
 			break;
 
       /* The default case takes care of all host program-specific

@@ -44,7 +44,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define MEMORY_MOVE_COST(MODE,CLASS,IN) 4
 #endif
 #endif
-extern int memory_move_secondary_cost PARAMS ((enum machine_mode, enum reg_class, int));
+extern int memory_move_secondary_cost PARAMS ((machine_mode_t, enum reg_class, int));
 
 /* Maximum number of reloads we can need.  */
 #define MAX_RELOADS (2 * MAX_RECOG_OPERANDS * (MAX_REGS_PER_ADDRESS + 1))
@@ -96,12 +96,12 @@ struct reload
   enum reg_class class;
 
   /* The mode this operand should have when reloaded, on input.  */
-  enum machine_mode inmode;
+  machine_mode_t inmode;
   /* The mode this operand should have when reloaded, on output.  */
-  enum machine_mode outmode;
+  machine_mode_t outmode;
 
   /* The mode of the reload register.  */
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* the largest number of registers this reload will require.  */
   unsigned int nregs;
@@ -257,7 +257,7 @@ extern void compute_use_by_pseudos		PARAMS ((HARD_REG_SET *, regset));
 /* Return a memory location that will be used to copy X in mode MODE.  
    If we haven't already made a location for this mode in this insn,
    call find_reloads_address on the location being returned.  */
-extern rtx get_secondary_mem PARAMS ((rtx, enum machine_mode,
+extern rtx get_secondary_mem PARAMS ((rtx, machine_mode_t,
 				    int, enum reload_type));
 
 /* Clear any secondary memory locations we've made.  */
@@ -324,10 +324,10 @@ extern int refers_to_mem_for_reload_p PARAMS ((rtx));
 /* Check the insns before INSN to see if there is a suitable register
    containing the same value as GOAL.  */
 extern rtx find_equiv_reg PARAMS ((rtx, rtx, enum reg_class, int, short *,
-				 int, enum machine_mode));
+				 int, machine_mode_t));
 
 /* Return 1 if register REGNO is the subject of a clobber in insn INSN.  */
-extern int regno_clobbered_p PARAMS ((unsigned int, rtx, enum machine_mode,
+extern int regno_clobbered_p PARAMS ((unsigned int, rtx, machine_mode_t,
 				      int));
 
 /* Return 1 if X is an operand of an insn that is being earlyclobbered.  */
@@ -335,7 +335,7 @@ extern int earlyclobber_operand_p PARAMS ((rtx));
 
 /* Record one reload that needs to be performed.  */
 extern int push_reload PARAMS ((rtx, rtx, rtx *, rtx *, enum reg_class,
-				enum machine_mode, enum machine_mode,
+				machine_mode_t, machine_mode_t,
 				int, int, int, enum reload_type));
 
 /* Functions in reload1.c:  */
@@ -355,7 +355,7 @@ extern void mark_home_live PARAMS ((int));
 
 /* Scan X and replace any eliminable registers (such as fp) with a
    replacement (such as sp), plus an offset.  */
-extern rtx eliminate_regs PARAMS ((rtx, enum machine_mode, rtx));
+extern rtx eliminate_regs PARAMS ((rtx, machine_mode_t, rtx));
 
 /* Emit code to perform a reload from IN (which may be a reload register) to
    OUT (which may also be a reload register).  IN or OUT is from operand

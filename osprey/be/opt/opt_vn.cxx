@@ -613,6 +613,15 @@ VN::_valnum_op(CODEREP *cr)
 	    vn1 = _valnum_integer(OFFSET_AND_SIZE_TOGETHER(cr->Op_bit_size(),cr->Op_bit_offset()), FALSE);
 	    vn_expr_ptr = VN_EXPR::Create_Binary(opc, vn0, vn1);
 	 }
+#ifdef TARG_ST
+	 // [CG] Include subpart_index in value number
+	 else if (cr->Opr() == OPR_SUBPART) {
+	   // also treat EXTRACT_BITS as binary
+	   vn0 = _valnum_expr(cr->Opnd(0));
+	   vn1 = _valnum_integer(cr->Subpart_index(), FALSE);
+	   vn_expr_ptr = VN_EXPR::Create_Binary(opc, vn0, vn1);
+	 }
+#endif
 	 else
 	 {
 	    vn0 = _valnum_expr(cr->Opnd(0));

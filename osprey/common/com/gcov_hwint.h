@@ -11,7 +11,7 @@
 
 /* Number of bits in a `char'.  */
 #undef CHAR_BIT
-#if __GNUC__ >= 3
+#if __GNUC__ >= 3 && defined __CHAR_BIT__
 #define CHAR_BIT __CHAR_BIT__
 #else
 #define CHAR_BIT 8

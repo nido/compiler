@@ -65,7 +65,11 @@ friend class GRA_REGION_MGR;
   RID* rid;
     //  Region ID associated with the blocks in the region.  This could be
     //  non-unique for the complement.  Do we care?
+#ifdef TARG_ST
+  LRANGE_SUBUNIVERSE* subuniverse[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   LRANGE_SUBUNIVERSE* subuniverse[ISA_REGISTER_CLASS_MAX+1];
+#endif
     // The subuniverse of non-local LRANGEs associated
     // with the <region> that need a register in the
     // REGISTER_CLASS <rc>.  Note that any local LRANGEs are not
@@ -79,13 +83,25 @@ friend class GRA_REGION_MGR;
     //  Head of internally linked list of BBs associated with the region.
   GRA_BB* last_gbb;
     //  Final BB on internally linked list.
+#ifdef TARG_ST
+  INT32 lrange_count[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INT32 lrange_count[ISA_REGISTER_CLASS_MAX+1];
+#endif
     //  Total number of LRANGEs (local and non-local) associated with the region
     // per ISA_REGISTER_CLASS.
+#ifdef TARG_ST
+  REGISTER_SET registers_used[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   REGISTER_SET registers_used[ISA_REGISTER_CLASS_MAX+1];
+#endif
     //  the set of registers of each REGISTER_CLASS 
     //  currently allocated to any LR in this region
+#ifdef TARG_ST
+  REGISTER_SET registers_available[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   REGISTER_SET registers_available[ISA_REGISTER_CLASS_MAX+1];
+#endif
     //  the set of registers in each REGISTER_CLASS  available in
     //  this region.  These are the allocatable
     //  registers that have not been preallocated to any

@@ -604,7 +604,12 @@ STMTREP::Verify_CODEMAP(CODEMAP *htable, OPT_STAB *opt_stab)
     ST *st = opt_stab->St(Lhs()->Aux_id());
 
     // do not test registers because epre might not introduce all phi functions
-    if (st != NULL && ST_sclass(st) != SCLASS_REG) {
+#ifdef TARG_ST
+    if (st != NULL && ST_sclass(st) != SCLASS_REG && !ST_assigned_to_dedicated_preg(st))
+#else
+    if (st != NULL && ST_sclass(st) != SCLASS_REG)
+#endif
+    {
       BB_NODE_SET_ITER    df_iter;
       BB_NODE *bb_phi;
       FOR_ALL_ELEM (bb_phi, df_iter, Init(Bb()->Dom_frontier())) {
@@ -670,7 +675,12 @@ STMTREP::Verify_CODEMAP(CODEMAP *htable, OPT_STAB *opt_stab)
 	  ST *st = opt_stab->St(res->Aux_id());
 
 	  // do not test registers because epre might not introduce all phi functions
-	  if (st != NULL && ST_sclass(st) != SCLASS_REG) {
+#ifdef TARG_ST
+	  if (st != NULL && ST_sclass(st) != SCLASS_REG && !ST_assigned_to_dedicated_preg(st))
+#else
+	  if (st != NULL && ST_sclass(st) != SCLASS_REG)
+#endif
+	  {
 	    BB_NODE_SET_ITER    df_iter;
 	    BB_NODE *bb_phi;
 	    FOR_ALL_ELEM (bb_phi, df_iter, Init(Bb()->Dom_frontier())) {

@@ -138,14 +138,20 @@ extern INT Simulated_Op_Real_Inst_Words (const OP *op);
  * return result TN (if set).
  * if creates a loop, then returns loop ops and label for new bb.
  */
+#ifdef TARG_ST
+/* JV: Use same kind of interface for Exp_Intrinsic_Op and Exp_Intrinsic_Call */
+extern void Exp_Intrinsic_Call (INTRINSIC id, INT num_results, INT num_opnds, TN **result, TN **opnd,
+				OPS *ops, LABEL_IDX *label, OPS *loop_ops, SRCPOS srcpos);
+#else
 extern TN * Exp_Intrinsic_Call (
   INTRINSIC id, TN *op0, TN *op1, TN *op2, OPS *ops, 
   LABEL_IDX *label, OPS *loop_ops);
+#endif
 
 /* expand intrinsic op */
 #ifdef TARG_ST
 /* Arthur: this is because I may have to generate them for Lai */
-extern void Exp_Intrinsic_Op (INTRINSIC id, INT num_results, INT num_opnds, TN **result, TN **opnd, OPS *ops);
+extern void Exp_Intrinsic_Op (INTRINSIC id, INT num_results, INT num_opnds, TN **result, TN **opnd, OPS *ops, SRCPOS scrpos);
 #else
 extern void Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op2, OPS *ops);
 #endif
@@ -211,6 +217,7 @@ extern void Exp_Deposit_Bits (TYPE_ID rtype, TYPE_ID desc,
 
 /* expand return instruction */
 extern void Exp_Return (TN *return_address, OPS *ops);
+extern void Exp_Return_Interrupt (TN *return_address, OPS *ops);
 
 /* expand call instruction */
 extern void Exp_Call (OPERATOR opr, TN *return_address, TN *target, OPS *ops);

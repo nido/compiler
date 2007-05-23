@@ -79,7 +79,7 @@
 extern "C" {
 #endif
 
-typedef enum {
+/* typedef */ enum {
 
   INTRINSIC_INVALID = -1,
   INTRINSIC_NONE = 0,
@@ -1070,10 +1070,20 @@ typedef enum {
   INTRINSIC_TARG_LAST  = INTRINSIC_GENERAL_LAST,
 #endif /* TARG_ST */
 
+#ifndef TARG_ST
   INTRINSIC_LAST  = INTRINSIC_TARG_LAST
+#endif
+} /* INTRINSIC */;
 
-} INTRINSIC;
+#ifdef TARG_ST
+  typedef int INTRINSIC;
+#define INTRINSIC_LAST	 INTRINSIC_COUNT
 
+  /* [TB] extension support */
+#define INTRINSIC_STATIC_COUNT INTRINSIC_TARG_LAST
+#define INTRINSIC_STATIC_LAST INTRINSIC_TARG_LAST
+BE_EXPORTED extern INTRINSIC INTRINSIC_COUNT;
+#endif
 #ifdef __cplusplus
 }
 #endif

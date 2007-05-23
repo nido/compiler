@@ -145,7 +145,7 @@ int orig_max_uid;
 HARD_REG_SET never_use_colors;
 HARD_REG_SET usable_regs[N_REG_CLASSES];
 unsigned int num_free_regs[N_REG_CLASSES];
-HARD_REG_SET hardregs_for_mode[NUM_MACHINE_MODES];
+HARD_REG_SET hardregs_for_mode[MAX_LIMIT_MACHINE_MODE];
 unsigned char byte2bitcount[256];
 
 unsigned int debug_new_regalloc = -1;
@@ -220,7 +220,7 @@ rtx
 ra_emit_move_insn (x, y)
      rtx x, y;
 {
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   if (GET_MODE_CLASS (mode) == MODE_CC)
     return emit_insn (gen_move_insn (x, y));
   else

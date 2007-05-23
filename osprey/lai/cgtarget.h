@@ -530,6 +530,9 @@
  *        The TN is the load-result of the OP, so use of TN has the
  *        latency of a load
  *
+ *  BOOL CGTARG_Is_Simple_Jump(const OP* op);
+ *    Check whether given op is a simple jump, i.e. an unconditional jump
+ *
  * ====================================================================
  * ==================================================================== */
 
@@ -544,6 +547,7 @@
 #include "cg_vector.h"
 #ifdef TARG_ST 
 #include "config_target.h"
+#include "cg_loop.h"
 #else
 #include "config_targ.h"
 #endif
@@ -617,9 +621,9 @@ extern void CGTARG_Generate_Remainder_Branch(TN *trip_count, TN *label_tn,
 					     OPS *prolog_ops, OPS *body_ops);
 
 #ifdef TARG_ST
-extern BOOL CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count, 
-                                         TN *trip_count,
-					 INT32 ntimes, TN *label_tn, 
+extern BOOL CGTARG_Generate_Branch_Cloop(LOOP_DESCR* cl,
+                                         OP *op, TN *trip_count,
+					 TN *label_tn, 
                                          OPS *prolog_ops, OPS *body_ops);
 #else
 extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count, 
@@ -843,8 +847,11 @@ extern void CGTARG_Make_Bundles_Postpass(BB *bb);
 #ifdef TARG_ST
 // Perform target-specific instruction size adjustments.
 extern void CGTARG_Resize_Instructions ();
+// Perform pseudo MAKE expansion.
+extern void CGTARG_Pseudo_Make_Expand ();
 // Perform target-specific immediates adjustment.
 extern void CGTARG_Fixup_Immediates ();
+extern void Perform_HwLoop_Checking();
 #endif
 
 // Handle all bundle hazards.
@@ -876,8 +883,12 @@ extern BOOL CGTARG_Bundle_Slot_Available(TI_BUNDLE              *bundle,
                                          const CG_GROUPING      *grouping);
 
 #ifdef TARG_ST
+extern void  CGTARG_Get_Info_For_Common_Base_Opt( INT *min_offset_alignment, INT *min_offset, INT *max_offset);
 extern BOOL CGTARG_offset_is_extended(TN *offset, INT64 *val);
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
+extern BOOL CGTARG_is_expensive_load_imm(OP* op);
+extern INT CGTARG_expensive_load_imm_immediate_index(OP* op);
+extern BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op);
 extern TOP CGTARG_TOP_To_Multi(TOP top);
 extern TOP CGTARG_TOP_From_Multi(TOP top);
 #endif
@@ -948,8 +959,14 @@ extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
  *   Target specific spill information:
  * ====================================================================
  */
-extern TY_IDX CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES];
-extern CLASS_INDEX CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES];
+// Count of valid entries is specified by CGTARG_NUM_SPILL_TYPES,
+// that is no more constant (reconfigurability)
+extern TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
+extern CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
+#endif
+
+#ifdef TARG_ST
+extern BOOL CGTARG_Is_Simple_Jump(const OP* op);
 #endif
 
 #endif /* CGTARGET_INCLUDED */

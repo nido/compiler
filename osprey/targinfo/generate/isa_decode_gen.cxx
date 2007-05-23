@@ -49,12 +49,12 @@
 #include <assert.h>
 #include "W_alloca.h"
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 using std::list;
 #else
 #include <list.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 #include "topcode.h"
 #include "gen_util.h"
 #include "isa_decode_gen.h"

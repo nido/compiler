@@ -82,7 +82,8 @@
 //				       ISA_REGISTER_CLASS rclass,
 //				       int count,
 //				       const int *members,
-//				       const char **names )
+//				       const char **names,
+//                                     bool is_canonical=false )
 //	Describes a subclass of registers. <name> names the subclass
 //	and is used to form an enum identifying the subclass. 
 //	<rclass> is the base register class. <count> is the number of
@@ -95,6 +96,17 @@
 //	NULL can be passed in place of the entire array if there are
 //	no subclass specific names.
 //
+//      Last parameter specifies whether subclass is canonical. Definition
+//      is related to appaired registers and is to be taken in the
+//      following sense:
+//      A register subclass of with apparaired registers of size n is canonical,
+//      if it contains all paired registers with size n that belongs to
+//      the considered register class.
+//      Ex: let us consider a register class V {V0,V1,V2,V3} where the register
+//          bitwidth is 64 bits. Register subclass {D0,D1} (n=128 bits) is
+//          a canonical register subclass (where D0=(V0,V1), D1=(V2,V3) ).
+//      Last parameter is optional: by default, a subclass is not canonical.
+//       
 //  void ISA_Registers_End( void )
 //      Complete processing.
 //
@@ -133,7 +145,8 @@ void ISA_Register_Subclass_Create( const char *name,
 				   ISA_REGISTER_CLASS rclass,
 				   int count,
 				   const int *members,
-				   const char **names );
+				   const char **names,
+                                   bool is_canonical=false /* optional */);
 void ISA_Registers_End( void );
 
 #ifdef __cplusplus

@@ -172,11 +172,11 @@ extern bool real_identical	PARAMS ((const REAL_VALUE_TYPE *,
 
 /* Extend or truncate to a new mode.  */
 extern void real_convert	PARAMS ((REAL_VALUE_TYPE *,
-					 enum machine_mode,
+					 machine_mode_t,
 					 const REAL_VALUE_TYPE *));
 
 /* Return true if truncating to NEW is exact.  */
-extern bool exact_real_truncate PARAMS ((enum machine_mode,
+extern bool exact_real_truncate PARAMS ((machine_mode_t,
 					 const REAL_VALUE_TYPE *));
 
 /* Render R as a decimal floating point constant.  */
@@ -197,24 +197,24 @@ extern void real_from_string	PARAMS ((REAL_VALUE_TYPE *, const char *));
 
 /* Initialize R from an integer pair HIGH/LOW.  */
 extern void real_from_integer	PARAMS ((REAL_VALUE_TYPE *,
-					 enum machine_mode,
+					 machine_mode_t,
 					 unsigned HOST_WIDE_INT,
 					 HOST_WIDE_INT, int));
 
 extern long real_to_target_fmt	PARAMS ((long *, const REAL_VALUE_TYPE *,
 					 const struct real_format *));
 extern long real_to_target	PARAMS ((long *, const REAL_VALUE_TYPE *,
-					 enum machine_mode));
+					 machine_mode_t));
 
 extern void real_from_target_fmt PARAMS ((REAL_VALUE_TYPE *, const long *,
 					  const struct real_format *));
 extern void real_from_target	PARAMS ((REAL_VALUE_TYPE *, const long *,
-					 enum machine_mode));
+					 machine_mode_t));
 
 extern void real_inf		PARAMS ((REAL_VALUE_TYPE *));
 
 extern bool real_nan		PARAMS ((REAL_VALUE_TYPE *, const char *,
-					 int, enum machine_mode));
+					 int, machine_mode_t));
 
 extern void real_2expN		PARAMS ((REAL_VALUE_TYPE *, int));
 
@@ -280,7 +280,7 @@ extern const struct real_format real_internal_format;
 #define REAL_VALUE_FROM_UNSIGNED_INT(r, lo, hi, mode) \
   real_from_integer (&(r), mode, lo, hi, 1)
 
-extern REAL_VALUE_TYPE real_value_truncate PARAMS ((enum machine_mode,
+extern REAL_VALUE_TYPE real_value_truncate PARAMS ((machine_mode_t,
 						    REAL_VALUE_TYPE));
 
 #define REAL_VALUE_TO_INT(plow, phigh, r) \
@@ -295,10 +295,10 @@ extern REAL_VALUE_TYPE real_arithmetic2 PARAMS ((int, const REAL_VALUE_TYPE *,
 #define REAL_VALUE_ABS(X) \
   real_arithmetic2 (ABS_EXPR, &(X), NULL)
 
-extern int significand_size PARAMS ((enum machine_mode));
+extern int significand_size PARAMS ((machine_mode_t));
 
 extern REAL_VALUE_TYPE real_from_string2 PARAMS ((const char *,
-						  enum machine_mode));
+						  machine_mode_t));
 
 #define REAL_VALUE_ATOF(s, m) \
   real_from_string2 (s, m)
@@ -344,10 +344,10 @@ REAL_VALUE_TYPE real_value_from_int_cst	PARAMS ((union tree_node *,
 #define CONST_DOUBLE_FROM_REAL_VALUE(r, m) \
   const_double_from_real_value (r, m)
 extern rtx const_double_from_real_value PARAMS ((REAL_VALUE_TYPE,
-						 enum machine_mode));
+						 machine_mode_t));
 
 /* Replace R by 1/R in the given machine mode, if the result is exact.  */
-extern bool exact_real_inverse	PARAMS ((enum machine_mode, REAL_VALUE_TYPE *));
+extern bool exact_real_inverse	PARAMS ((machine_mode_t, REAL_VALUE_TYPE *));
 
 /* In tree.c: wrap up a REAL_VALUE_TYPE in a tree node.  */
 extern tree build_real			PARAMS ((tree, REAL_VALUE_TYPE));

@@ -123,7 +123,7 @@ struct operand_data
   int index;
   const char *predicate;
   const char *constraint;
-  enum machine_mode mode;
+  machine_mode_t mode;
   unsigned char n_alternatives;
   char address_p;
   char strict_low;
@@ -259,7 +259,7 @@ output_predicate_decls ()
 
 	if (p == 0)
 	  {
-	    printf ("extern int %s PARAMS ((rtx, enum machine_mode));\n",
+	    printf ("extern int %s PARAMS ((rtx, machine_mode_t));\n",
 		    d->predicate);
 	    p = (struct predicate *) xmalloc (sizeof (struct predicate));
 	    p->name = d->predicate;

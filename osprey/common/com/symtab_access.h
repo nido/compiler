@@ -163,6 +163,15 @@ inline ST_TLS_MODEL
 ST_tls_model (const ST& s)              { return s.tls_model; }
 inline void
 Set_ST_tls_model (ST& s, ST_TLS_MODEL tls) { s.tls_model = tls; }
+
+#ifdef TARG_STxP70
+// (cbr)
+inline ST_MEMORY_SPACE
+ST_memory_space (const ST& s)              { return s.memory_space; }
+inline void
+Set_ST_memory_space (ST& s, ST_MEMORY_SPACE space) { s.memory_space = space; }
+#endif
+
 #endif
  
 inline TY_IDX
@@ -881,6 +890,27 @@ inline void
 Set_PU_no_instrument_function (PU& pu)		{ pu.flags |= PU_NO_INSTRUMENT_FUNCTION; }
 inline void
 Clear_PU_no_instrument_function (PU& pu)		{ pu.flags &= ~PU_NO_INSTRUMENT_FUNCTION; }
+
+/* [CR] Support for interrupt attribute. */
+inline BOOL
+PU_is_interrupt (const PU& pu)		{ return (pu.flags & PU_IS_INTERRUPT) != 0; }
+inline void
+Set_PU_is_interrupt (PU& pu)		{ pu.flags |= PU_IS_INTERRUPT; }
+inline void
+Clear_PU_is_interrupt (PU& pu)		{ pu.flags &= ~PU_IS_INTERRUPT; }
+inline BOOL
+PU_is_interrupt_nostkaln (const PU& pu)		{ return (pu.flags & PU_IS_INTERRUPT_NOSTKALN) != 0; }
+inline void
+Set_PU_is_interrupt_nostkaln (PU& pu)		{ pu.flags |= PU_IS_INTERRUPT_NOSTKALN; }
+inline void
+Clear_PU_is_interrupt_nostkaln (PU& pu)		{ pu.flags &= ~PU_IS_INTERRUPT_NOSTKALN; }
+
+/* [VB] Support for stack alignment attribute. */
+inline UINT64
+PU_aligned_stack (const PU& pu)		{ return pu.stkaln; }
+inline void
+Set_PU_aligned_stack (PU& pu, UINT64 i)	{ pu.stkaln = i; }
+
 #endif
 
 inline UINT64

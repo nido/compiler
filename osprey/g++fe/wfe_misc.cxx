@@ -48,7 +48,6 @@ extern "C" {
 #include "wfe_misc.h"
 #include "wfe_expr.h"
 #include "wfe_stmt.h"
-#include "c_int_model.h"
 #ifdef TARG_MIPS
 #include "mips/mips.h"
 #endif
@@ -229,6 +228,14 @@ void WFE_Prepare_Gcc_Options(int argc, char **argv, int *gnu_argc, char ***gnu_a
       // before calling Configure()
       if (strncmp(argv[i]+1, "TARG:", 5) == 0) {
 	Process_Command_Line_Group (argv[i]+1, Common_Option_Groups);
+      }
+#endif
+#ifdef TARG_ST
+      if (strncmp(argv[i]+1, "TENV:", 5) == 0) {
+	// [TB]: need to know if an extension is present very early
+	if (strncmp(argv[i]+6, ":extension", strlen("extension")) == 0) {
+	  Process_Command_Line_Group (argv[i]+1, Common_Option_Groups);
+	}
       }
 #endif
       continue;
@@ -454,11 +461,23 @@ Prepare_Source ( void )
 }
 
 
+#ifdef TARG_ST
+void
+WFE_Init_Errors ()
+  {
+  Set_Error_Tables ( Phases, host_errlist );
+  }
+      
+#endif
+
 
 void
 WFE_Init (INT argc, char **argv, char **envp )
 {
+#ifndef TARG_ST
+  // (cbr) done in toplev.c before WFE_Prepare_Gcc_Option
   Set_Error_Tables ( Phases, host_errlist );
+#endif
   MEM_Initialize();
 #ifndef TARG_ST
   // (cbr) for gcc errors compatibility use the one registered in gcc.
@@ -484,8 +503,11 @@ WFE_Init (INT argc, char **argv, char **envp )
 #ifdef TARG_ST
   Target_Byte_Sex = TARGET_BIG_ENDIAN ? BIG_ENDIAN : LITTLE_ENDIAN;
 #endif
+#ifndef TARG_ST
+  // [TB] Moved to toplevel.c
   Configure ();
-  Initialize_C_Int_Model();
+#endif
+  //Initialize_C_Int_Model();
   IR_reader_init();
   Initialize_Symbol_Tables (TRUE);
   WFE_Stmt_Stack_Init ();

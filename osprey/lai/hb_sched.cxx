@@ -110,10 +110,10 @@ Print_OPSCH (OP *op, BB_MAP value_map)
 {
   OPSCH *opsch = OP_opsch(op, value_map);
   Print_OP_No_SrcLine (op);
-  fprintf (TFile, "\t<dfs:%3d cyc:%2d reg:%2d est:%2d lst:%2d succs:%d preds:%d>\n", 
+  fprintf (TFile, "\t<dfs:%3d cyc:%2d reg:%2d est:%2d lst:%2d succs:%d preds:%d flgs:%d>\n", 
     OPSCH_dfsnum(opsch), OPSCH_scycle(opsch), OPSCH_regcost(opsch),
     OPSCH_estart(opsch), OPSCH_lstart(opsch), 
-    OPSCH_num_succs(opsch), OPSCH_num_preds(opsch));
+    OPSCH_num_succs(opsch), OPSCH_num_preds(opsch), OPSCH_flags(opsch));
 }
 
 static void
@@ -158,6 +158,10 @@ BOOL
 Reschedule_BB(BB *bb)
 {
 
+  // always reschedule on stxp70 [vcdv]
+#ifdef TARG_STxP70
+  return TRUE;
+#else
   // At the moment, target single_BB loops ONLY.
   if (BB_loop_head_bb(bb) == bb) {
     BBLIST *succ_list;
@@ -168,6 +172,7 @@ Reschedule_BB(BB *bb)
   }
 
   return FALSE;
+#endif
 }
 
 // ======================================================================
@@ -184,6 +189,47 @@ Can_Schedule_HB(std::list<BB*> hb_blocks)
   }
 
   return TRUE;
+}
+
+//
+// Return true if op is a ne/eq compare with a constant
+//
+static BOOL
+OP_Is_Cmp_Eq_Ne(OP *op)
+{
+  VARIANT variant;
+  TOP opcode = OP_code(op);
+  INT opnd1_idx, opnd2_idx;
+  
+  if (OP_icmp(op)) {
+    opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+    variant = TOP_cmp_variant(opcode);
+    if (variant == V_CMP_EQ ||
+	variant == V_CMP_NE) {
+      if (TN_has_value(OP_opnd(op, opnd2_idx)))
+	return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+//
+// Returns true if op is a self add with a constant: rx = rx + cst
+//
+static BOOL
+OP_Is_Addr_Incr(OP *op)
+{
+  TOP opcode = OP_code(op);
+  INT opnd1_idx, opnd2_idx;
+  if (OP_iadd(op)) {
+    opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+    if (TN_has_value(OP_opnd(op, opnd2_idx)) &&
+	OP_result(op, 0) == OP_opnd(op, opnd1_idx))
+      return TRUE;
+  }
+  return FALSE;
 }
 
 INT
@@ -403,24 +449,34 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   }
 
 #ifdef TARG_ST
-// FdF 20/10/2003 : Support for sequences (cmpeq,cmpne; add)
-  if (CGTARG_Is_OP_Cmp_Eq_Ne(ldst_op)) {
-    if (OP_result(addiu_op,0) != OP_opnd(ldst_op, 0))
+  Is_True(OP_iadd(addiu_op), ("OPSCH_addiu but not OP_iadd"));
+  INT add_opnd1_idx = OP_find_opnd_use(addiu_op, OU_opnd1);
+  INT add_opnd2_idx = OP_find_opnd_use(addiu_op, OU_opnd2);
+  Is_True(TN_has_value(OP_opnd(addiu_op, add_opnd2_idx)), ("OPSCH_addiu but second operand is not literal"));
+  INT64 addiu_const = TN_value (OP_opnd(addiu_op, add_opnd2_idx));
+  
+  // FdF 20/10/2003 : Support for sequences (cmpeq,cmpne; add)
+  if (OP_Is_Cmp_Eq_Ne(ldst_op)) {
+    INT cmp_opnd1_idx = OP_find_opnd_use(ldst_op, OU_opnd1);
+    INT cmp_opnd2_idx = OP_find_opnd_use(ldst_op, OU_opnd2);
+    Is_True(TN_has_value(OP_opnd(ldst_op, cmp_opnd2_idx)), ("OP_Is_Cmp_Eq_Ne returned true but opnd2 is not literal"));
+    if (OP_result(addiu_op,0) != OP_opnd(ldst_op, cmp_opnd1_idx))
       return FALSE;
-    INT64 addiu_const = TN_value (OP_opnd(addiu_op, 1));
-    INT64 ldst_const = TN_value (OP_opnd(ldst_op, 1));
-    return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), 1, ldst_const - addiu_const*multiplier);
+    INT64 ldst_const = TN_value (OP_opnd(ldst_op, cmp_opnd2_idx));
+    return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), cmp_opnd2_idx, ldst_const - addiu_const*multiplier);
   }
 #endif
 
+  Is_True(OP_memory(ldst_op), ("OPSCH_ldst but non memory op"));
+  INT base_opndnum = Memory_OP_Base_Opndnum(ldst_op);
+  INT offset_opndnum = Memory_OP_Offset_Opndnum(ldst_op);
   // Check that the result of the addiu is the same as the base of the ldst.
   // Also check that if the memory OP is a store, the source is not the same
-  // as the result of the addiu.
-  INT base_opndnum = Memory_OP_Base_Opndnum(ldst_op);
-  if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op,base_opndnum) ||
+  // as the result of the addiu. Assume that add result is result index 0.
+  if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op, base_opndnum) ||
       (OP_store(ldst_op) &&
 #ifdef TARG_ST
-       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))
+       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op, TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))
 #else
        OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,0)
 #endif
@@ -429,10 +485,12 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     return FALSE;
   }
 
-  INT64 addiu_const = TN_value (OP_opnd(addiu_op, 1));
-  INT offset_opndnum = Memory_OP_Offset_Opndnum(ldst_op);
   INT64 ldst_const;
 #ifdef TARG_ST
+  // FdF 20060518: Support for automod addressing mode
+  if (OP_automod(ldst_op))
+    return FALSE;
+
   // FdF 15/12/2003: Added support for symbolic offsets in the stack.
   if (TN_is_symbol(OP_opnd(ldst_op, offset_opndnum))) {
     TN *old_ofst_tn = OP_opnd(ldst_op, offset_opndnum);
@@ -483,14 +541,15 @@ Fixup_Ldst_Offset (OP *ldst_op, INT64 addiu_const, INT64 multiplier,
   INT index;
 
 #ifdef TARG_ST
-  if (CGTARG_Is_OP_Cmp_Eq_Ne(ldst_op)) {
-    index = 1;
+  if (OP_Is_Cmp_Eq_Ne(ldst_op)) {
+    index = OP_find_opnd_use(ldst_op, OU_opnd2);
     multiplier = -multiplier;
+  } else {
+    index = Memory_OP_Offset_Opndnum (ldst_op);
   }
-  else
-#endif
-
+#else
   index = Memory_OP_Offset_Opndnum (ldst_op);
+#endif
 
   old_ofst_tn = OP_opnd(ldst_op, index);
 
@@ -521,15 +580,29 @@ Fixup_Ldst_Offset (OP *ldst_op, INT64 addiu_const, INT64 multiplier,
 // or store OPs that have been moved across corresponding addiu OPs. For
 // all such load/store OPs, adjust their offset field.
 // ======================================================================
+#ifdef TARG_ST
+  // Handle fwd/bwd cases
+void
+HB_Schedule::Adjust_Ldst_Offsets (BOOL is_fwd)
+#else
 void
 HB_Schedule::Adjust_Ldst_Offsets (void)
+#endif
 {
-  for (INT i = VECTOR_count(_sched_vector)-1; i >= 0; i--) {
+#ifdef TARG_ST
+  // Handle fwd/bwd cases
+  for (INT i = (is_fwd) ? 0 : VECTOR_count(_sched_vector) - 1; 
+       (is_fwd) ? i < VECTOR_count(_sched_vector) : i >= 0; 
+       (is_fwd) ? i++ : i--) 
+#else
+    for (INT i = VECTOR_count(_sched_vector)-1; i >= 0; i--)
+#endif
+      {
     OP *op = OP_VECTOR_element(_sched_vector, i);
     OPSCH *opsch = OP_opsch(op, _hb_map);
     Set_OPSCH_visited (opsch);
     if (!OPSCH_addiu (opsch)) continue;
-    INT64 addiu_const = TN_value (OP_opnd(op,1));
+    INT64 addiu_const = TN_value (OP_opnd(op,OP_find_opnd_use(op, OU_opnd2)));
     ARC_LIST *arcs;
     for (arcs = OP_succs(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
       ARC *arc = ARC_LIST_first(arcs);
@@ -636,7 +709,7 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 #ifdef TARG_ST
     // FdF 15/12/2003: Support for symbolic offset in the stack, in
     // postpass scheduling only.
-    if (CGTARG_Is_OP_Addr_Incr(op) && 
+    if (OP_Is_Addr_Incr(op) && 
 	(!TN_is_sp_reg(OP_result(op,0 /*???*/)) || !Before_LRA)) {
 #else
     if (CGTARG_Is_OP_Addr_Incr(op) && 
@@ -676,7 +749,7 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
     }
 #ifdef TARG_ST
     // Check if this is a cmpeq or cmpne with a constant value.
-    else if (CGTARG_Is_OP_Cmp_Eq_Ne(op)) {
+    else if (OP_Is_Cmp_Eq_Ne(op)) {
       Set_OPSCH_ldst (opsch);
     }
 #endif
@@ -825,8 +898,8 @@ Priority_Selector::Build_Ready_Vector (BB* bb, BOOL is_fwd)
   if (is_fwd) {
     FOR_ALL_BB_OPs_FWD (bb, op) {
       OPSCH *opsch = OP_opsch(op, _cur_sched->hb_map());
-      // Add it to the ready vector if there are no successors.
-      if (OPSCH_num_preds(opsch) == 0) {
+      // Add it to the ready vector if there are no predecessors.
+      if (OPSCH_num_preds(opsch) == 0 && (!OP_xfer(op))) {
 	Add_Element_Sorted (_cur_sched->ready_vector(), op, sort_by_slack);
       }
     }
@@ -1100,9 +1173,21 @@ HB_Schedule::Add_OP_To_Sched_Vector (OP *op, BOOL is_fwd)
 	INT scycle = Clock + ARC_latency(arc);
 	// update the OPSCH_scycle field for the predecessor OP.
 	OPSCH_scycle(succ_opsch) = MAX (scycle, OPSCH_scycle(succ_opsch));
-	OPSCH_num_preds(succ_opsch)--;
-	if (OPSCH_num_preds(succ_opsch) == 0) {
-	  VECTOR_Add_Element (_ready_vector, succ_op);
+	if (!Is_Ldst_Addiu_Pair (opsch, succ_opsch, op, succ_op)) {
+	  FmtAssert (OPSCH_num_preds(succ_opsch) != 0, 
+		     ("HBS: invalid count of succs"));
+	  
+	  OPSCH_num_preds(succ_opsch)--;
+	  if (OPSCH_num_preds(succ_opsch) == 0
+#ifdef TARG_ST
+	      // [vcdv] do not add xfer op top ready list, they are
+	      // treated in Schedule_Block()            
+	      && !OP_xfer(succ_op)
+#endif
+	      
+	      ) {
+	    VECTOR_Add_Element (_ready_vector, succ_op);
+	  }
 	}
       }
     }
@@ -1144,7 +1229,7 @@ HB_Schedule::Add_OP_To_Sched_Vector (OP *op, BOOL is_fwd)
 	  // FdF 18/06/2004: OPSCH_ldst is set also on cmpne/cmpeq
 	  // operations, for which Memory_OP_Base_Opndnum is not
 	  // defined (returns -1).
-	  INT opndnum = CGTARG_Is_OP_Cmp_Eq_Ne(op)
+	  INT opndnum = OP_Is_Cmp_Eq_Ne(op)
 	                  ? TOP_Find_Operand_Use(OP_code(op), OU_opnd1)
 	                  : Memory_OP_Base_Opndnum (op);
 #else
@@ -1346,7 +1431,7 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
   }
 
   if (Trace_HB)
-    fprintf(TFile, "BB:%d, hbs_type:0x%04x: cycles=%d\n", BB_id(bb), type(), cur_cycle);
+    fprintf(TFile, "BB:%d, hbs_type:0x%04x: cycles=%d fwd: %d, max_sched: %d\n", BB_id(bb), type(), cur_cycle, is_fwd, _max_sched);
 
   // FdF: update OP_scycle only if the new scheduled is better
   if (cur_cycle < _max_sched) {
@@ -1373,8 +1458,11 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
   // the Sched_Vector buffer. Otherwise, preserve the previous one.
 
   if (cur_cycle < _max_sched) {
+#ifdef TARG_ST
+    Adjust_Ldst_Offsets (is_fwd);
+#else
     Adjust_Ldst_Offsets ();
-
+#endif
     if (bbsch != NULL) {
       Compute_BBSCH (bb, bbsch);
     }
@@ -1896,18 +1984,23 @@ HB_Schedule::Can_Schedule_Op (OP *cur_op, INT cur_time)
 }
 
 void
-HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch)
+HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch, bool is_fwd)
 {
+  // keep old behavior on non targ_st code.
+#ifdef TARG_IA64
+  is_fwd = TRUE;
+#else
+#ifndef TARG_ST
+  is_fwd = FALSE;
+#endif
+#endif
+
   _sched_vector = VECTOR_Init (BB_length(bb), &_hb_pool);
 
   std::list<BB*> blocks;
   blocks.push_back(bb);
 
-#ifdef TARG_IA64
-  Init_RFlag_Table (blocks, TRUE);
-#else
-  Init_RFlag_Table (blocks, FALSE);
-#endif
+  Init_RFlag_Table (blocks, is_fwd);
 
   Before_LRA = HBS_Before_LRA();
   Compute_OPSCH (bb, _hb_map, &_hb_pool);
@@ -1919,19 +2012,21 @@ HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch)
   Priority_Selector *priority_fn;
   Cycle_Selector *cycle_fn;
 
-#ifdef TARG_IA64
+  if (is_fwd)
+    {
     // Do forward scheduling and cycle selector.
     priority_fn = 
       CXX_NEW(List_Based_Fwd(bb, this, _hbs_type, &_hb_pool), &_hb_pool);
     cycle_fn = CXX_NEW(Fwd_Cycle_Sel(), &_hb_pool);
 
-#else 
-    // Do backward scheduling and cycle selector.
-    priority_fn = 
-      CXX_NEW(List_Based_Bkwd(bb, this, _hbs_type, &_hb_pool), &_hb_pool);
-    cycle_fn = CXX_NEW(Bkwd_Cycle_Sel(), &_hb_pool);
-
-#endif
+    }
+  else
+    {
+      // Do backward scheduling and cycle selector.
+      priority_fn = 
+        CXX_NEW(List_Based_Bkwd(bb, this, _hbs_type, &_hb_pool), &_hb_pool);
+      cycle_fn = CXX_NEW(Bkwd_Cycle_Sel(), &_hb_pool);
+    }
 
   OP *cur_op;
   OP *xfer_op = BB_xfer_op(bb);
@@ -1951,7 +2046,7 @@ HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch)
 	if (cur_op) {
 	  Add_OP_To_Sched_Vector(cur_op, priority_fn->Is_Fwd_Schedule());
 	}
-      } 
+      }
       Add_OP_To_Sched_Vector(xfer_op, priority_fn->Is_Fwd_Schedule());
     }
   }
@@ -1976,7 +2071,25 @@ HB_Schedule::Schedule_Block (BB *bb, BBSCH *bbsch)
 
     Add_OP_To_Sched_Vector(cur_op, priority_fn->Is_Fwd_Schedule());
   }
-    
+  
+  if (priority_fn->Is_Fwd_Schedule()) {
+    if (xfer_op) {
+#ifdef TARG_IA64
+      if (PROC_has_branch_delay_slot())
+#else
+      if (PROC_Has_Branch_Delay_Slot())
+#endif
+          {
+            FmtAssert (TRUE,("HB_SCHED: delay slot not implemented for fwd scheduling"));
+          }
+      
+      OPSCH *ready_opsch = OP_opsch (xfer_op, _hb_map);
+      OPSCH_scycle(ready_opsch) = MAX (Clock, OPSCH_scycle(ready_opsch));
+      
+      Add_OP_To_Sched_Vector(xfer_op, priority_fn->Is_Fwd_Schedule());
+    }
+  }
+ 
   // Insert the scheduled list of instructions into the bb.
   Put_Sched_Vector_Into_BB (bb, bbsch, priority_fn->Is_Fwd_Schedule());
 
@@ -2106,7 +2219,7 @@ HB_Schedule::Init(std::list<BB*> bblist, HBS_TYPE hbs_type, mINT8 *regs_avail)
 }
 
 void
-HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch)
+HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch, bool is_fwd)
 {
 
   Invoke_Pre_HBS_Phase(bb);
@@ -2150,7 +2263,7 @@ HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch)
 
       if (Trace_HB) CG_DEP_Trace_Graph (bb);
 
-      Schedule_Block (bb, bbsch);
+      Schedule_Block (bb, bbsch, is_fwd);
 
       CG_DEP_Delete_Graph (bb);
     }

@@ -80,11 +80,11 @@ rtx
 cxx_expand_expr (exp, target, tmode, modifier)
      tree exp;
      rtx target;
-     enum machine_mode tmode;
+     machine_mode_t tmode;
      int modifier;  /* Actually an enum expand_modifier.  */
 {
   tree type = TREE_TYPE (exp);
-  register enum machine_mode mode = TYPE_MODE (type);
+  register machine_mode_t mode = TYPE_MODE (type);
   register enum tree_code code = TREE_CODE (exp);
   rtx ret;
 

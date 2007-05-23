@@ -213,14 +213,24 @@ DEF_C99_BUILTIN(BUILT_IN_CIMAGL,
 		"__builtin_cimagl",
 		BT_FN_LONG_DOUBLE_COMPLEX_LONG_DOUBLE,
 		ATTR_NOTHROW_LIST)
-
+#ifdef BUILT_IN_DIV
 DEF_UNUSED_BUILTIN(BUILT_IN_DIV)
+#endif
+#ifdef BUILT_IN_LDIV
 DEF_UNUSED_BUILTIN(BUILT_IN_LDIV)
+#endif
+#ifdef BUILT_IN_FFLOOR
 DEF_UNUSED_BUILTIN(BUILT_IN_FFLOOR)
+#endif
+#ifdef BUILT_IN_FCEIL
 DEF_UNUSED_BUILTIN(BUILT_IN_FCEIL)
+#endif
+#ifdef BUILT_IN_FMOD
 DEF_UNUSED_BUILTIN(BUILT_IN_FMOD)
+#endif
+#ifdef BUILT_IN_FREM
 DEF_UNUSED_BUILTIN(BUILT_IN_FREM)
-
+#endif
 /* The system prototypes for `bzero' and `bcmp' functions have many
    variations, so don't specify parameters to avoid conflicts.  The
    expand_* functions check the argument types anyway.  */
@@ -724,10 +734,18 @@ DEF_GCC_BUILTIN(BUILT_IN_EXPECT,
 		ATTR_NULL)
 
 /* C++ extensions */
+#ifdef BUILT_IN_NEW
 DEF_UNUSED_BUILTIN(BUILT_IN_NEW)
+#endif
+#ifdef BUILT_IN_VEC_NEW
 DEF_UNUSED_BUILTIN(BUILT_IN_VEC_NEW)
+#endif
+#ifdef BUILT_IN_DELETE
 DEF_UNUSED_BUILTIN(BUILT_IN_DELETE)
+#endif
+#ifdef BUILT_IN_VEC_DELETE
 DEF_UNUSED_BUILTIN(BUILT_IN_VEC_DELETE)
+#endif
 
 /* Declare abort, exit, _exit and _Exit */
 DEF_BUILTIN (BUILT_IN_ABORT,

@@ -787,16 +787,34 @@ BOOL WN_Verifier::Call_children_are_PARM(WN *wn)
  * Since all possible combinations of the opcodes are defined in
  * the opcode_gen_core.h file I only need to check the range of the
  * opcode
+ * [TTh] For reconfigurability, it is required to check that the 
+ *       rtype and desc mtypes are defined.
  *------------------------------------------------------------------*/
 BOOL WN_Verifier::Is_legal_wn_opcode(OPCODE opc)
 {
-  
+#ifdef TARG_ST
+  OPERATOR opr;
+  TYPE_ID  rtype, desc;
+  opr   = OPCODE_operator(opc);
+  rtype = OPCODE_rtype(opc);
+  desc  = OPCODE_desc(opc);
+  BOOL legal = ((opr   >= OPERATOR_FIRST) && (opr   <= OPERATOR_LAST) &&
+				(rtype >= MTYPE_FIRST)    && (rtype <= MTYPE_LAST)    &&
+				(desc  >= MTYPE_FIRST)    && (desc  <= MTYPE_LAST));
+  if (!legal)
+  {
+    DevWarn("WN_verifier Error (Is_legal_wn_opcode): The opcode %s "
+	    "is illegal",OPCODE_name(opc));
+  }
+  return (legal);
+#else
   if (opc < OPCODE_FIRST || opc > OPCODE_LAST)
   {
     DevWarn("WN_verifier Error (Is_legal_wn_opcode): The opcode %s "
 	    "is illegal",OPCODE_name(opc));
   }
   return ((opc >= OPCODE_FIRST) && (opc <= OPCODE_LAST));
+#endif
 }
 
 // This subroutine checks that LDA's TY is not NULL,

@@ -462,7 +462,7 @@ visit_expression (insn, block)
 	    {
 	      rtx src0 = XEXP (src, 0);
 	      rtx src1 = XEXP (src, 1);
-	      enum machine_mode mode;
+	      machine_mode_t mode;
 
 	      /* If either is undefined, then the result is undefined.  */
 	      if ((GET_CODE (src0) == REG
@@ -501,7 +501,7 @@ visit_expression (insn, block)
 	  case '1':
 	    {
 	      rtx src0 = XEXP (src, 0);
-	      enum machine_mode mode0 = GET_MODE (src0);
+	      machine_mode_t mode0 = GET_MODE (src0);
 
 	      /* If the operand is undefined, then the result is undefined.  */
 	      if (GET_CODE (src0) == REG

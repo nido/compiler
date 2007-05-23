@@ -38,6 +38,10 @@ extern int isdigit(int);
 #include "tree_symtab.h"
 #include "targ_sim.h"
 #include "wfe_pragmas.h"
+#ifdef TARG_ST
+//TB: for EXTENSION_Get_Mtype_For_Preg
+#include "wfe_loader.h"
+#endif
 
 #ifdef KEY
 #include "wn.h"		// New_Region_Id()
@@ -1041,7 +1045,12 @@ idname_from_regnum (int gcc_reg)
   	return NULL;
   }
   else {
+
+#ifndef TARG_ST
 	extern PREG_NUM Map_Reg_To_Preg [];
+#else
+	//TB now Map_Reg_To_Preg is defined
+#endif
 	PREG_NUM preg = Map_Reg_To_Preg [gcc_reg];
 	if (preg < 0) {
 		DevWarn("couldn't map asm regname to preg");
@@ -1057,9 +1066,22 @@ idname_from_regnum (int gcc_reg)
 		                 preg <= Branch_Preg_Max_Offset) {
 	  st = MTYPE_To_PREG (MTYPE_B);
 	}
+	//TB: add preg to register class mapping for extension
+	else if(preg > Get_Static_Last_Dedicated_Preg_Offset() &&
+	  preg <= Last_Dedicated_Preg_Offset) {
+	  TYPE_ID type = EXTENSION_Get_Mtype_For_Preg(preg);
+	  st = MTYPE_To_PREG (type);
+	}
 #endif
-	else
-		FmtAssert (FALSE, ("unexpected preg %d", preg));
+	else {
+#ifdef TARG_ST
+	  //TB: Return specific PREG to handle think like non general register in
+	  //clobber asm list
+	  st = Untyped_Preg();
+#else
+	  FmtAssert (FALSE, ("unexpected preg %d", preg));
+#endif
+	}
   	return WN_CreateIdname((WN_OFFSET) preg, st);
   }
 }
@@ -1067,7 +1089,7 @@ idname_from_regnum (int gcc_reg)
 char *
 remove_plus_modifier(char *s)
 {
-#define MAX_NON_PLUS_CONSTRAINT_CHARS 7
+#define MAX_NON_PLUS_CONSTRAINT_CHARS 128
   static char out[MAX_NON_PLUS_CONSTRAINT_CHARS + 1];
   int i = 0;
   while (i <= MAX_NON_PLUS_CONSTRAINT_CHARS)
@@ -1089,7 +1111,8 @@ remove_plus_modifier(char *s)
   Fail_FmtAssertion("Constraint string too long");
   /*NOTREACHED*/
 }
-
+//TB: no more need. Now defined in config_target.cxx in the targinfo
+#ifndef TARG_ST
 BOOL
 constraint_supported (const char *s)
 {
@@ -1108,7 +1131,7 @@ constraint_supported (const char *s)
   }
   return TRUE;
 }
-
+#endif
 ST *
 st_of_new_temp_for_expr(const WN *expr)
 {
@@ -1138,9 +1161,18 @@ static BOOL
 constraint_by_address (const char *s)
 {
 #ifdef TARG_ST
+  static const char modifiers[] = "=&%+";
   /* (cbr) in case of error */
   if (!s)
     return FALSE;
+  while (*s != '\0' && strchr(modifiers, *s)) {
+    s++;
+  }
+  //TB: Dynamic register files: scan first because the register
+  //nickname might contain any character with a specific meaning
+  if (strlen(s) > 1) {
+    return FALSE;
+  }
 #endif
 
   if (strchr (s, 'm')) {
@@ -1418,7 +1450,7 @@ Wfe_Expand_Asm_Operands (tree  string,
 #else
       constraint_string = TREE_STRING_POINTER (TREE_PURPOSE (tail));
 #endif
-
+      
 #if !defined (TARG_ST) || (GNU_FRONT_END!=33)
       /* (cbr) gcc 3.3 upgrade */
       if (flag_bad_asm_constraint_kills_stmt &&
@@ -1431,7 +1463,15 @@ Wfe_Expand_Asm_Operands (tree  string,
 #endif
 
       WN *input_rvalue = WFE_Expand_Expr (TREE_VALUE (tail));
-
+#ifdef TARG_ST
+      //[TB]: Add dynamic mtype checking
+      if (!Check_Asm_Constraints(constraint_string, WN_rtype(input_rvalue))) {
+	error ("Unrecognized constraint %s; "
+		 "asm statement at line %d discarded",
+		 constraint_string, lineno);
+	return;
+      }
+#endif
       if (constraint_by_address(constraint_string)) {
 	WN *addr_of_rvalue = address_of(input_rvalue);
 	if (addr_of_rvalue != NULL) {
@@ -1540,6 +1580,15 @@ Wfe_Expand_Asm_Operands (tree  string,
 	// reference in the output operand. This duplicates work done in
 	// WFE_Lhs_Of_Modify_Expr.
 	TYPE_ID desc = TY_mtype (Get_TY (TREE_TYPE (TREE_VALUE (tail))));
+#ifdef TARG_ST
+      //[TB]: Add dynamic mtype checking
+      if (!Check_Asm_Constraints(constraint_string, desc)) {
+	error ("Unrecognized constraint %s; "
+		 "asm statement at line %d discarded",
+		 constraint_string, lineno);
+	return;
+      }
+#endif
 	ST *preg_st = MTYPE_To_PREG(desc);
 
 	ST *constraint_st = New_ST(CURRENT_SYMTAB);
@@ -2493,6 +2542,16 @@ WFE_Expand_Return (tree stmt, tree retval)
   else {
     WN *rhs_wn;
     TY_IDX ret_ty_idx = Get_TY(TREE_TYPE(TREE_TYPE(Current_Function_Decl())));
+
+#ifdef TARG_ST
+    // [TTh] Check that dynamically added mtypes are not used
+    //       as return type of a function call.
+    if (MTYPE_is_dynamic(TY_mtype(ret_ty_idx))) {
+      error ("forbidden type `%s' for return value",
+	     MTYPE_name(TY_mtype(ret_ty_idx)));
+      return;
+    }
+#endif
 
     rhs_wn = WFE_Expand_Expr_With_Sequence_Point (
 		retval,

@@ -1,115 +1,115 @@
 /* Generated automatically by the program `gengenrtl'
    from the RTL description file `rtl.def' */
 
-extern rtx gen_rtx_fmt_ee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_ee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1));
-extern rtx gen_rtx_fmt_ue	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_ue	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1));
-extern rtx gen_rtx_fmt_iss	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iss	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, const char *arg1,
 				       const char *arg2));
-extern rtx gen_rtx_fmt_is	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_is	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, const char *arg1));
-extern rtx gen_rtx_fmt_i	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_i	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0));
-extern rtx gen_rtx_fmt_isE	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_isE	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, const char *arg1,
 				       rtvec arg2));
-extern rtx gen_rtx_fmt_iE	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iE	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtvec arg1));
-extern rtx gen_rtx_fmt_Ess	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_Ess	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtvec arg0, const char *arg1,
 				       const char *arg2));
-extern rtx gen_rtx_fmt_sEss	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_sEss	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0, rtvec arg1,
 				       const char *arg2, const char *arg3));
-extern rtx gen_rtx_fmt_eE	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eE	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtvec arg1));
-extern rtx gen_rtx_fmt_E	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_E	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtvec arg0));
-extern rtx gen_rtx_fmt_e	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_e	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0));
-extern rtx gen_rtx_fmt_sse	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_sse	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0, const char *arg1,
 				       rtx arg2));
-extern rtx gen_rtx_fmt_s	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_s	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0));
-extern rtx gen_rtx_fmt_ss	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_ss	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0, const char *arg1));
-extern rtx gen_rtx_fmt_sE	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_sE	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0, rtvec arg1));
-extern rtx gen_rtx_fmt_iuueiee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iuueiee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtx arg1, rtx arg2,
 				       rtx arg3, int arg4, rtx arg5,
 				       rtx arg6));
-extern rtx gen_rtx_fmt_iuueiee0	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iuueiee0	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtx arg1, rtx arg2,
 				       rtx arg3, int arg4, rtx arg5,
 				       rtx arg6));
-extern rtx gen_rtx_fmt_iuueieee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iuueieee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtx arg1, rtx arg2,
 				       rtx arg3, int arg4, rtx arg5,
 				       rtx arg6, rtx arg7));
-extern rtx gen_rtx_fmt_iuu	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iuu	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtx arg1, rtx arg2));
-extern rtx gen_rtx_fmt_iuu00iss	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iuu00iss	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, rtx arg1, rtx arg2,
 				       int arg3, const char *arg4,
 				       const char *arg5));
-extern rtx gen_rtx_fmt_ssiEEsi	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_ssiEEsi	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       const char *arg0, const char *arg1,
 				       int arg2, rtvec arg3, rtvec arg4,
 				       const char *arg5, int arg6));
-extern rtx gen_rtx_fmt_Ei	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_Ei	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtvec arg0, int arg1));
-extern rtx gen_rtx_fmt_eEee0	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eEee0	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtvec arg1, rtx arg2,
 				       rtx arg3));
-extern rtx gen_rtx_fmt_	PARAMS ((RTX_CODE, enum machine_mode mode));
-extern rtx gen_rtx_fmt_w	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_	PARAMS ((RTX_CODE, machine_mode_t mode));
+extern rtx gen_rtx_fmt_w	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       HOST_WIDE_INT arg0));
-extern rtx gen_rtx_fmt_e0ww	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_e0ww	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, HOST_WIDE_INT arg1,
 				       HOST_WIDE_INT arg2));
-extern rtx gen_rtx_fmt_0	PARAMS ((RTX_CODE, enum machine_mode mode));
-extern rtx gen_rtx_fmt_i0	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_0	PARAMS ((RTX_CODE, machine_mode_t mode));
+extern rtx gen_rtx_fmt_i0	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0));
-extern rtx gen_rtx_fmt_ei	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_ei	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, int arg1));
-extern rtx gen_rtx_fmt_e0	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_e0	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0));
-extern rtx gen_rtx_fmt_u00	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_u00	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0));
-extern rtx gen_rtx_fmt_eit	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eit	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, int arg1,
 				       union tree_node *arg2));
-extern rtx gen_rtx_fmt_eeeee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eeeee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1, rtx arg2,
 				       rtx arg3, rtx arg4));
-extern rtx gen_rtx_fmt_eee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1, rtx arg2));
-extern rtx gen_rtx_fmt_Ee	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_Ee	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtvec arg0, rtx arg1));
-extern rtx gen_rtx_fmt_uuEiiiiiibbii	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_uuEiiiiiibbii	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1, rtvec arg2,
 				       int arg3, int arg4, int arg5,
 				       int arg6, int arg7, int arg8,
 				       struct bitmap_head_def *arg9,
 				       struct bitmap_head_def *arg10,
 				       int arg11, int arg12));
-extern rtx gen_rtx_fmt_iiiiiiiitt	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_iiiiiiiitt	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       int arg0, int arg1, int arg2,
 				       int arg3, int arg4, int arg5,
 				       int arg6, int arg7,
 				       union tree_node *arg8,
 				       union tree_node *arg9));
-extern rtx gen_rtx_fmt_eti	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_eti	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, union tree_node *arg1,
 				       int arg2));
-extern rtx gen_rtx_fmt_bi	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_bi	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       struct bitmap_head_def *arg0,
 				       int arg1));
-extern rtx gen_rtx_fmt_uuuu	PARAMS ((RTX_CODE, enum machine_mode mode,
+extern rtx gen_rtx_fmt_uuuu	PARAMS ((RTX_CODE, machine_mode_t mode,
 				       rtx arg0, rtx arg1, rtx arg2,
 				       rtx arg3));
 

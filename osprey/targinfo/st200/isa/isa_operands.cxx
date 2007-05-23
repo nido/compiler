@@ -157,11 +157,15 @@ main()
   OPERAND_USE_TYPE base = Create_Operand_Use("base"); 
   OPERAND_USE_TYPE condition = Create_Operand_Use("condition"); 
   OPERAND_USE_TYPE multi = Create_Operand_Use("multi"); 
+  OPERAND_USE_TYPE negoffset = Create_Operand_Use("negoffset"); 
   OPERAND_USE_TYPE offset = Create_Operand_Use("offset"); 
   OPERAND_USE_TYPE opnd1 = Create_Operand_Use("opnd1"); 
   OPERAND_USE_TYPE opnd2 = Create_Operand_Use("opnd2"); 
   OPERAND_USE_TYPE postincr = Create_Operand_Use("postincr"); 
   OPERAND_USE_TYPE predicate = Create_Operand_Use("predicate"); 
+  OPERAND_USE_TYPE preincr = Create_Operand_Use("preincr"); 
+  OPERAND_USE_TYPE scale_1 = Create_Operand_Use("scale_1"); 
+  OPERAND_USE_TYPE scale_2 = Create_Operand_Use("scale_2"); 
   OPERAND_USE_TYPE storeval = Create_Operand_Use("storeval"); 
   OPERAND_USE_TYPE target = Create_Operand_Use("target"); 
   OPERAND_USE_TYPE uniq_res = Create_Operand_Use("uniq_res"); 

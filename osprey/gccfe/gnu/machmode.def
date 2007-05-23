@@ -142,8 +142,10 @@ DEF_MACHMODE (V4DFmode, "V4DF", MODE_VECTOR_FLOAT, BITS_PER_UNIT*32, 32, 8, V8DF
 
 DEF_MACHMODE (V8SFmode, "V8SF", MODE_VECTOR_FLOAT, BITS_PER_UNIT*32, 32, 4,V4DFmode, SFmode)
 DEF_MACHMODE (V8DFmode, "V8DF", MODE_VECTOR_FLOAT, BITS_PER_UNIT*64, 64, 8, VOIDmode, DFmode)
+#ifndef TARG_ST
+/* [TB] Put below */
 DEF_MACHMODE (V16SFmode, "V16SF", MODE_VECTOR_FLOAT, 512, 64, 4, VOIDmode, SFmode)
-
+#endif
 /* BLKmode is used for structures, arrays, etc.
    that fit no more specific mode.  */
 DEF_MACHMODE (BLKmode, "BLK", MODE_RANDOM, 0, 0, 0, VOIDmode, VOIDmode)
@@ -163,6 +165,13 @@ DEF_MACHMODE (CCmode, "CC", MODE_CC, BITS_PER_UNIT*4, 4, 4, VOIDmode, VOIDmode)
                 MODE_CC, BITS_PER_UNIT*4, 4, 4, VOIDmode, VOIDmode)
 #include EXTRA_MODES_FILE
 #undef CC
+#endif
+
+#ifdef TARG_ST
+     /* TB To put in place dynamic mode, I need to know the last enum
+	value; So move V16SFmode after target dependant mode*/
+DEF_MACHMODE (V16SFmode, "V16SF", MODE_VECTOR_FLOAT, 512, 64, 4, VOIDmode, SFmode)
+
 #endif
 
 /* The symbol Pmode stands for one of the above machine modes (usually SImode).

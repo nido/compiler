@@ -103,6 +103,7 @@
 #include "cgtarget.h"
 #include "ebo.h"
 #include "hb.h"
+#include "cg_automod.h"
 #ifdef SUPPORTS_PREDICATION
 #include "pqs_cg.h"
 #endif
@@ -140,6 +141,7 @@ BOOL PU_Has_Calls;
 BOOL PU_References_GP;
 #ifdef TARG_ST
 BOOL PU_Has_Asm;
+BOOL PU_Has_Hwloops;
 #endif
 #ifdef KEY
 BOOL PU_Has_Exc_Handler;
@@ -184,6 +186,7 @@ CG_PU_Initialize (
   PU_References_GP = FALSE;
 #ifdef TARG_ST
   PU_Has_Asm = FALSE;
+  PU_Has_Hwloops = FALSE;
 #endif
 #ifdef KEY
   PU_Has_Exc_Handler = FALSE;
@@ -245,7 +248,7 @@ CG_PU_Initialize (
 #ifdef TARG_ST
   // [CG]: In debug mode we perform on check on topcode
 #if Is_True_On
-  for(int i = 0; i <= TOP_count; ++i) {
+  for(int i = 0; i < TOP_count; ++i) {
     FmtAssert(TOP_check_properties((TOP)i), ("topcode %s as inconsistant properties", TOP_Name((TOP)i)));
   }
 #endif
@@ -689,6 +692,12 @@ CG_Generate_Code(
       Set_Error_Phase( "Extended Block Optimizer");
       Start_Timer( T_EBO_CU );
       EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+#ifdef TARG_ST
+      if (CG_AutoMod) {
+	Perform_AutoMod_Optimization();
+	EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+      }
+#endif
 #ifdef TARG_IA64
       PQSCG_reinit(REGION_First_BB);
 #endif
@@ -876,6 +885,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   CGTARG_Resize_Instructions ();
+  CGTARG_Pseudo_Make_Expand();
 #endif
 
 #ifdef LAO_ENABLED
@@ -985,6 +995,7 @@ CG_Generate_Code(
     Start_Timer (	T_Emit_CU );
 #ifdef TARG_STxP70
     CGTARG_Fixup_Immediates();
+    Perform_HwLoop_Checking();
 #endif
     EMT_Emit_PU (Get_Current_PU_ST(), pu_dst, rwn);
     Check_for_Dump (TP_EMIT, NULL);

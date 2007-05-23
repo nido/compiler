@@ -31,6 +31,11 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+/*
+ * 
+ * This file has been modified by STMicroelectronics
+ *
+ */
 
 
 // isa_print_gen.cxx
@@ -47,7 +52,7 @@
 #include <stdio.h>
 #include <assert.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 using std::list;
@@ -55,18 +60,34 @@ using std::vector;
 #else
 #include <list.h>
 #include <vector.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
+
+#ifdef DYNAMIC_CODE_GEN
+#include "dyn_isa_topcode.h"   /* Dynamic TOPcode */
+#else
 #include "topcode.h"
+#endif
+
 #include "targ_isa_properties.h"
+#include "targ_isa_operands.h"
 #include "gen_util.h"
 #include "isa_print_gen.h"
 
-/* The maximum number of operands and results used by ANY target.
- * (It would be better to get the max operands and results from the
- * generated targ_isa_operands.h file -- Ken)
+// In following loops, we iterate on the number of
+// TOP. This number differs whether we generate
+// static or dynamic TOPs.
+#ifndef DYNAMIC_CODE_GEN
+static TOP TOP_count_limit = TOP_static_count;
+#else
+static TOP TOP_count_limit = TOP_dyn_count;
+#endif
+
+
+/* The maximum number of operands and results, retrieved from
+ * generated targ_isa_operands.h file
  */
-#define MAX_OPNDS 6
-#define MAX_RESULTS 3
+#define MAX_OPNDS   (ISA_OPERAND_max_operands)
+#define MAX_RESULTS (ISA_OPERAND_max_results)
 
 typedef enum {
 	END	= 0,			// end of list marker
@@ -101,11 +122,15 @@ struct op_pr {
 
 static list<LISTING_INFO> all_prints;  // all the different print formats
 static LISTING_INFO current_print_desc;
-static op_pr *op_prints[TOP_count+1];
+
+//static op_pr *op_prints[TOP_count+1];
+//static bool top_specified[TOP_count];
+static op_pr **op_prints     = NULL;    // Dynamic mem. alloc in ISA_Print_Begin
+static bool   *top_specified = NULL;    // Dynamic mem. alloc in ISA_Print_Begin
+
 static list<op_pr*> op_prints_list;
 static int list_index;
 static const char *(*asmname)(TOP topcode);
-static bool top_specified[TOP_count];
 
 static const char * const interface[] = {
   "/* ====================================================================",
@@ -198,6 +223,12 @@ void ISA_Print_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
+   // Memory allocation
+   op_prints     = new op_pr* [TOP_count_limit+1];
+   for (unsigned int i=0; i<TOP_count_limit+1; i++) op_prints[i] = NULL;
+   top_specified = new bool   [TOP_count_limit  ];
+   for (unsigned int i=0; i<TOP_count_limit; i++) top_specified[i] = false;
+
 }
 
 /////////////////////////////////////
@@ -228,13 +259,27 @@ void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
 /////////////////////////////////////
 {
   va_list ap;
-  TOP opcode;
+  TOP     opcode;
+
+  // For static code, variable length list
+  // halts on TOP_UNDEFINED. For dynamic code,
+  // variable length list ends with -1.
+  TOP     stop = Is_Static_Code() ? TOP_UNDEFINED : static_cast<TOP> (-1);
+
+  // An additional check to memory has been allocated.
+  if(NULL==op_prints || NULL==top_specified)
+   { fprintf(stderr,"### Fatal error: internal table op_print not initialized\n");
+     fprintf(stderr,"### Please check that function \"%s\" has been called previously\n",
+             "ISA_Print_Begin" );
+     exit(EXIT_FAILURE);
+   }
 
   if (!current_print_desc->have_name) {
     fprintf(stderr, "### Warning: no instruction name specified for %s\n",
 		    current_print_desc->type->name);
     // exit(EXIT_FAILURE);
   }
+  
   op_pr *op_print = new op_pr;
   op_prints_list.push_back(op_print);
   op_print->desc = current_print_desc;
@@ -242,7 +287,7 @@ void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
   top_specified[(int)top] = true;
 
   va_start(ap, top);
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED ) {
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != stop ) {
     op_print = new op_pr;
     op_prints_list.push_back(op_print);
     op_print->desc = current_print_desc;
@@ -328,23 +373,43 @@ void ISA_Print_End(void)
 {
   list<LISTING_INFO>::iterator isi;
 
-#define FNAME "targ_isa_print"
-  char buf[1000];
-  sprintf (buf, "%s.h", FNAME);
-  FILE* hfile = fopen(buf, "w");
-  sprintf (buf, "%s.c", FNAME);
-  FILE* cfile = fopen(buf, "w");
-  sprintf (buf, "%s.Exported", FNAME);
-  FILE* efile = fopen(buf, "w");
+  FILE* hfile    = NULL ;
+  FILE* cfile    = NULL ;
+  FILE* efile    = NULL ;
+
+  // Whether we generate code for the core (static) or for an extension.
+  bool  gen_static_code = Is_Static_Code();
+
+  // Get extension name or NULL for static code generation.
+  char *extname = gen_static_code ? NULL : Get_Extension_Name();
+
+  // File handler initialization.
+  char *hfilename     = NULL ;    /* Header file name              */
+  char *cfilename     = NULL ;    /* C file name                   */
+  char *efilename     = NULL ;    /* Export file name              */
+
+  const char * const bname = FNAME_TARG_ISA_PRINT;
+
+  hfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_hfile);
+  hfile     = Gen_Open_File_Handle(hfilename, "w");
+
+  cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
+  cfile     = Gen_Open_File_Handle(cfilename, "w");
+
+  if(gen_static_code)
+   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+     efile     = Gen_Open_File_Handle(efilename, "w");
+   }
+
   const char comma = ',';
   const char space = ' ';
   const char *isa_print_type_format = "\t/* %s[%d] */";
   const char *isa_print_format_format = "  { %-14s ";
   const char *isa_print_args_format = " %s%c";
-  int top;
+  unsigned int top;
   bool err;
 
-  for (err = false, top = 0; top < TOP_count; ++top) {
+  for (err = false, top = 0; top < TOP_count_limit; ++top) {
     bool is_dummy = TOP_is_dummy((TOP)top);
     bool is_simulated = TOP_is_simulated((TOP)top);
     if (!top_specified[top]) {
@@ -365,19 +430,31 @@ void ISA_Print_End(void)
   }
   if (err) exit(EXIT_FAILURE);
 
-  fprintf(cfile,"#include <string.h>\n");
-  fprintf(cfile,"#include \"topcode.h\"\n");
-  fprintf(cfile,"#include \"%s.h\"\n\n", FNAME);
+  /* For dynamic extensions, we want to emit C and not C++     */
+  Emit_C_Header(cfile);     /* Emit ifdef _cplusplus directive */
+  fprintf(cfile,
+          "\n"
+          "#include <string.h>\n"
+          "#include \"topcode.h\"\n");
 
-  sprintf (buf, "%s", FNAME);
-  Emit_Header (hfile, buf, interface);
+  fprintf(cfile,"#include \"%s\"\n\n", 
+          gen_static_code ? hfilename : "dyn_isa_print.h");
+
+  Emit_Header (hfile, bname, interface,extname);
   fprintf(hfile,"#include \"topcode.h\"\n");
 
-  Emit_Definitions (hfile, "ISA_PRINT_");
+  // We assume that macros are common to
+  // static and dynamic code generation.
+  if(gen_static_code)
+   {Emit_Definitions (hfile, "ISA_PRINT_");
+   }
 
+  if(gen_static_code) {
   fprintf(hfile, "\ntypedef enum {\n"
 	"  %-21s = %d,  /* %s */\n"
 	"  %-21s = %d,  /* %s */\n"
+	"  %-21s = %d,  /* %s */\n"
+   	"  %-21s = %d,  /* %s */\n"
 	"  %-21s = %d,  /* %s */\n"
    	"  %-21s = %d,  /* %s */\n"
    	"  %-21s = %d   /* %s */\n"
@@ -385,7 +462,9 @@ void ISA_Print_End(void)
 	Print_Name(END), END, "End of list marker",
 	Print_Name(NAME), NAME, "Instruction name",
 	Print_Name(OPND), OPND, "OPND+n => operand n",
+	"ISA_PRINT_COMP_opnd_MAX", OPND + MAX_OPNDS - 1, "Max operand id",
 	Print_Name(RESULT), RESULT, "RESULT+n => result n",
+	"ISA_PRINT_COMP_result_MAX", RESULT + MAX_RESULTS - 1, "Max result id",
         "ISA_PRINT_COMP_MAX", MAX_LISTING_OPERANDS-1, "Last component");
 
   fprintf(hfile, "\ntypedef struct {\n"
@@ -395,19 +474,35 @@ void ISA_Print_End(void)
 	  //"} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS,MAX_LISTING_OPERANDS);
 	        "} ISA_PRINT_INFO;\n",MAX_LISTING_OPERANDS);
 
-  fprintf(hfile, "\nBE_EXPORTED extern const ISA_PRINT_INFO ISA_PRINT_info[%d];\n",
-						list_index + 1);
+  fprintf(hfile,"\nBE_EXPORTED extern const ISA_PRINT_INFO *ISA_PRINT_info;\n");
+  fprintf(hfile,"\nBE_EXPORTED extern unsigned int ISA_PRINT_info_size;\n\n");
 
   fprintf(efile, "ISA_PRINT_info\n");
+  fprintf(efile, "ISA_PRINT_info_size\n");
+  }
 
-  fprintf(cfile, "\nconst ISA_PRINT_INFO ISA_PRINT_info[%d] = {\n",
-						list_index + 1);
+  // Emission of static table.
+  if(gen_static_code)
+   { fprintf(cfile, "\nstatic const ISA_PRINT_INFO ISA_PRINT_static_info[%d] = {\n",
+                    list_index + 1);
+   }
+  // Emission of dynamic table.
+  else
+   { fprintf(cfile, "\nstatic const ISA_PRINT_INFO ISA_PRINT_dynamic_info[%d] = {\n",
+                     list_index);
+   }
 
-  fprintf (cfile, isa_print_format_format, "\"\",");
-  fprintf (cfile, isa_print_args_format, Print_Name(END), space);
-  fprintf (cfile, "},");
-  fprintf (cfile, isa_print_type_format, "print_NULL", 0);
-  fprintf (cfile, "\n");
+  // First empty element is reserved to static code table.
+  if(gen_static_code)
+   { fprintf (cfile, isa_print_format_format, "\"\",");
+     fprintf (cfile, isa_print_args_format, Print_Name(END), space);
+     fprintf (cfile, "},");
+     fprintf (cfile, isa_print_type_format, "print_NULL", 0);
+     fprintf (cfile, "\n");
+   }
+
+  char buf[1000];
+
   for ( isi = all_prints.begin(); isi != all_prints.end(); ++isi ) {
   	LISTING_INFO curr_type = *isi;
 	sprintf (buf, "\"%s\",", curr_type->type->format_string);
@@ -415,7 +510,7 @@ void ISA_Print_End(void)
 
 	// printout component types
 	//fprintf (cfile, "\n%17s {", "");
-	fprintf (cfile, "\n%2s ", "");
+	fprintf (cfile, "\n%2s{", "");
 	for (int i = 0; i < curr_type->args; i++) {
 	    fprintf (cfile, isa_print_args_format,
 			Print_Name(curr_type->arg[i]),
@@ -424,7 +519,7 @@ void ISA_Print_End(void)
 	    fprintf (cfile, "\n%3s", "");
 	}
 	fprintf (cfile, isa_print_args_format, Print_Name(END), space);
-	fprintf (cfile, "\n  },");
+	fprintf (cfile, "\n  }},");
 
 	fprintf (cfile, isa_print_type_format, 
 			curr_type->type->name,
@@ -449,12 +544,60 @@ void ISA_Print_End(void)
   }
   fprintf (cfile, "};\n");
 
-  fprintf(hfile, "\nBE_EXPORTED extern const unsigned char ISA_PRINT_info_index[%d];\n", TOP_count);
+  if(gen_static_code)
+   { fprintf(hfile,
+	     "#define ISA_PRINT_info_static_size (%d)\n",
+	     list_index+1);
+     fprintf(cfile,
+             "\n"
+             "const ISA_PRINT_INFO *ISA_PRINT_info      = ISA_PRINT_static_info;\n"
+             "mUINT32               ISA_PRINT_info_size = %d;\n\n",
+             list_index+1);
+   }
+  else
+   { const char * const routine1 = "dyn_get_ISA_PRINT_info_tab";
+     const char * const routine2 = "dyn_get_ISA_PRINT_info_tab_sz";
 
-  fprintf(efile, "ISA_PRINT_info_index\n");
+     fprintf(cfile, 
+             "\n"
+             "const ISA_PRINT_INFO*\n"
+             "%s ( void )\n"
+             "{ return (const ISA_PRINT_INFO*) ISA_PRINT_dynamic_info;\n"
+             "}\n"
+             "\n",
+             routine1
+            );
 
-  fprintf(cfile, "\nconst mUINT8 ISA_PRINT_info_index[%d] = {\n", TOP_count);
-  for (top = 0; top < TOP_count; ++top ) {
+     fprintf(cfile,
+             "const mUINT32\n"
+             "%s ( void )\n"
+             "{ return (const mUINT32) %d;\n"
+             "}",
+             routine2,
+             list_index
+            );
+                   
+     fprintf(hfile,"\n"
+                   "extern const ISA_PRINT_INFO* %s ( void );\n"
+                   "extern const mUINT32 %s ( void );\n",
+                   routine1,
+                   routine2);
+   }
+
+  // ISA_PRINT_info_index used to be of type unsigned char*.
+  // We transform it into unsigned short* to add room for extensions.
+  if(gen_static_code)
+   {  fprintf(hfile, 
+        "\nBE_EXPORTED extern const unsigned short* ISA_PRINT_info_index;\n");
+      fprintf(efile, "ISA_PRINT_info_index\n");
+   }
+
+  if(gen_static_code)
+   fprintf(cfile, "\nstatic const mUINT16 ISA_PRINT_static_info_index[%d] = {\n", TOP_count_limit);
+  else
+   fprintf(cfile, "\nstatic const mUINT16 ISA_PRINT_dynamic_info_index[%d] = {\n",TOP_count_limit);
+
+  for (top = 0; top < TOP_count_limit; ++top ) {
   	op_pr *op_print = op_prints[top];
     	if (op_print) {
   	    fprintf(cfile, "  %3d,  /* %s: %s */\n", 
@@ -467,20 +610,38 @@ void ISA_Print_End(void)
 			TOP_Name((TOP)top));
 	}
   }
-  fprintf(cfile, "};\n");
+  fprintf(cfile, "};\n\n");
 
-  fprintf(hfile, "\ninline const ISA_PRINT_INFO *ISA_PRINT_Info(TOP topcode)\n"
-		 "{\n"
+  if(gen_static_code)
+  { fprintf(cfile,"const mUINT16 * ISA_PRINT_info_index = ISA_PRINT_static_info_index;\n\n");
+  }
+  else
+  { const char * const routine_name = "dyn_get_ISA_PRINT_info_index_tab"; 
+
+    fprintf(cfile,"\n"
+                  "const mUINT16*\n"
+                  "%s ( void )\n"
+                  "{ return (const mUINT16*) ISA_PRINT_dynamic_info_index;\n"
+                  "}\n\n",
+                  routine_name);
+    fprintf(hfile,"\n"
+                  "extern const mUINT16 *%s (void);\n\n",
+                  routine_name);
+  }
+
+  if(gen_static_code)
+  { fprintf(hfile, "\ninline const ISA_PRINT_INFO *ISA_PRINT_Info(TOP topcode)\n"
+                 "{\n"
 		 "  INT index = ISA_PRINT_info_index[(INT)topcode];\n"
 		 "  return index == 0 ? 0 : &ISA_PRINT_info[index];\n"
 		 "}\n");
 
-  fprintf(hfile, "\ninline const char* ISA_PRINT_INFO_Format(const ISA_PRINT_INFO *info)\n"
+   fprintf(hfile, "\ninline const char* ISA_PRINT_INFO_Format(const ISA_PRINT_INFO *info)\n"
 		 "{\n"
 		 "  return info->format;\n"
 		 "}\n");
 
-  fprintf(hfile, "\ninline INT ISA_PRINT_INFO_Comp(const ISA_PRINT_INFO *info, INT index)\n"
+   fprintf(hfile, "\ninline INT ISA_PRINT_INFO_Comp(const ISA_PRINT_INFO *info, INT index)\n"
 		 "{\n"
 		 "  return info->comp[index];\n"
 		 "}\n");
@@ -490,35 +651,74 @@ void ISA_Print_End(void)
 		 "  return info->fmt[index];\n"
 		 "}\n");
 #endif
+  }
 
   if (asmname) {
-    fprintf(cfile, "\nBE_EXPORTED const char * const ISA_PRINT_asmname[] = {\n");
-    for (top = 0; top < TOP_count; ++top) {
+    // Printing name table.
+    if(gen_static_code)
+      { fprintf(cfile, 
+         "\nstatic const char * const ISA_PRINT_static_asmname[] = {\n");
+      }
+    else
+      { fprintf(cfile,
+         "\nstatic const char * const ISA_PRINT_dynamic_asmname[] = {\n");
+      }
+
+    for (top = 0; top < TOP_count_limit; ++top) {
       fprintf(cfile, "  \"%s\",\n", asmname((TOP)top));
     }
-    fprintf(cfile, "  \"UNDEFINED\"\n"
-		   "};\n");
 
-    fprintf(hfile, "\ninline const char *ISA_PRINT_AsmName(TOP topcode)\n"
-		   "{\n"
-		   "  BE_EXPORTED extern const char * const ISA_PRINT_asmname[];\n"
-		   "  return ISA_PRINT_asmname[(INT)topcode];\n"
-		   "}\n");
+    if(gen_static_code)
+      fprintf(cfile, "  \"UNDEFINED\"\n");  // UNDEFINED item reserved to static code gen.
+    fprintf(cfile, "};\n");                 // Ending the table.
 
-    fprintf(efile, "ISA_PRINT_asmname\n");
-  } else {
-    fprintf(hfile, "\ninline const char *ISA_PRINT_AsmName(TOP topcode)\n"
-		   "{\n"
-		   "  return TOP_Name(topcode);\n"
-		   "}\n");
+    if(gen_static_code)
+     { fprintf(cfile, "\nBE_EXPORTED const char * const * ISA_PRINT_asmname = ISA_PRINT_static_asmname;\n");
+	   fprintf(hfile, "\nBE_EXPORTED extern const char * const * ISA_PRINT_asmname;\n");
+       fprintf(efile, "ISA_PRINT_asmname\n");
+     }
+    else
+     { const char* const routine_name = "dyn_get_ISA_PRINT_name_tab";
+
+       fprintf(cfile,"\n"
+                     "const char**\n"
+                     "%s ( void )\n"
+                     "{ return (const char**) ISA_PRINT_dynamic_asmname;\n"
+                     "}\n"
+                     "\n"
+                     "\n",
+                     routine_name);
+       fprintf(hfile,"extern const char** %s (void );\n",
+                     routine_name);
+     }
+
+    // Inline routine is reserved for static code.
+    if(gen_static_code) {
+      fprintf(hfile, "\ninline const char *ISA_PRINT_AsmName(TOP topcode)\n"
+                     "{\n"
+                     "  BE_EXPORTED extern const char * const * ISA_PRINT_asmname;\n"
+                     "  return ISA_PRINT_asmname[(INT)topcode];\n"
+                     "}\n");
+    }                                      // gen_static_code
+
+  } else {                                 // else (!asmname)
+    // Inline routine is reserved for static code.
+     if(gen_static_code) {
+       fprintf(hfile, "\ninline const char *ISA_PRINT_AsmName(TOP topcode)\n"
+                      "{\n"
+                      "  return TOP_Name(topcode);\n"
+                      "}\n");
+      }
   }
 
   //
   // Emit function ISA_PRINT_Operand_Is_Part_Of_Name:
-  //
-  fprintf(hfile, "\nBE_EXPORTED extern BOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex);\n");
-  fprintf(efile, "ISA_PRINT_Operand_Is_Part_Of_Name\n");
-  fprintf(cfile, "\nBOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex)\n"
+  // (Only for static code).
+  if(gen_static_code)
+  { fprintf(hfile, "\nBE_EXPORTED extern BOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex);\n");
+    fprintf(efile, "ISA_PRINT_Operand_Is_Part_Of_Name\n");
+    fprintf(cfile, 
+                "\nBOOL ISA_PRINT_Operand_Is_Part_Of_Name(TOP topcode, INT opindex)\n"
 		"{\n"
   		"  const ISA_PRINT_INFO *info = ISA_PRINT_Info(topcode);\n"
   		"  const char *place_in_format = ISA_PRINT_INFO_Format(info);\n"
@@ -549,6 +749,7 @@ void ISA_Print_End(void)
   		"  }\n"
   		"  return 0;\n"
 		"}\n");
+    }
 
 #if 0
   //
@@ -579,4 +780,21 @@ void ISA_Print_End(void)
 #endif
 
   Emit_Footer (hfile);
+  Emit_C_Footer(cfile);
+
+  /* Closing file handlers */
+  Gen_Close_File_Handle(hfile,hfilename);
+  Gen_Close_File_Handle(cfile,cfilename);
+  if(efile)
+    Gen_Close_File_Handle(efile,efilename);
+
+  /* Memory deallocation */
+  delete [] op_prints;
+  delete [] top_specified;
+
+  Gen_Free_Filename(cfilename);
+  Gen_Free_Filename(hfilename);
+  if(efilename) Gen_Free_Filename(efilename);
+
+  return ;
 }

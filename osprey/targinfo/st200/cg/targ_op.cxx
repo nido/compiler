@@ -546,6 +546,55 @@ OP_Is_Unconditional_Compare (
 
 
 /*
+ * TOP_opnd_immediate_variant_default
+ *
+ * Default target independent implementation for
+ * TOP_opend_immediate_variant.
+ * The implementation is driven by the targinfo variant 
+ * description (see isa_variant.cxx).
+ * VARATT_immediate gives for any register or immediate operator the first immediate form.
+ * VARATT_next_immediate gives the next larger immediate form.
+ * Note that this model works only when 1 operand varies for the operator.
+ * The matching test is done on the literal class for the given operand.
+ */
+static TOP
+TOP_opnd_immediate_variant_default(TOP regform, int opnd, INT64 imm)
+{
+  TOP immform;
+  // Check if it is already an immediate form
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, regform)) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (regform);
+    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    if (ISA_OPERAND_VALTYP_Is_Literal(otype)) {
+      immform = regform;
+      // Get to the first immediate variant.
+      TOP prevform = TOP_get_variant(immform, VARATT_prev_immediate);
+      while (prevform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, prevform)) {
+	immform = prevform;
+	prevform = TOP_get_variant(prevform, VARATT_prev_immediate);
+      }
+    } else {
+      immform = TOP_get_variant(regform, VARATT_immediate);
+    }
+  }  
+  
+  // Get the first immediate form that fits the operand
+  while (immform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, immform)) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (immform);
+    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    if (ISA_OPERAND_VALTYP_Is_Literal(otype)) {
+      ISA_LIT_CLASS lit_class = ISA_OPERAND_VALTYP_Literal_Class(otype);
+      if (ISA_LC_Value_In_Class (imm, lit_class))
+	break;
+    }
+    immform = TOP_get_variant(immform, VARATT_next_immediate);
+
+  }
+  return immform;
+}
+
+
+/*
  * TOP_opnd_immediate_variant
  *
  * Returns the TOP immediate variant, depending on the immediate value.
@@ -679,12 +728,73 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
       CASE_TOP_I(stbc);
     }
   }
+
+  /* MERGE TODO */
+  /* return TOP_opnd_immediate_variant_default() */ 
+
   return TOP_UNDEFINED;
 #undef CASE_TOP
 #undef CASE_TOP_I
 #undef CASE_TOP_BR
 #undef CASE_TOP_ASM
 }
+
+
+/*
+ * TOP_opnd_register_variant_default
+ *
+ * Default target independent implementation for
+ * TOP_opend_register_variant.
+ * The implementation is driven by the targinfo variant 
+ * description (see isa_variant.cxx).
+ * VARATT_immediate gives for any register or immediate operator the first immediate form.
+ * VARATT_next_immediate gives the next larger immediate form.
+ * We use these two variants to generate the reverse mapping which
+ * gives for each top immediate or immediate next the initial register variant.
+ */
+extern TOP CGTARG_TOP_Register_Variant(TOP immform_top); /* Defined in targ_cg.cxx. */
+static TOP
+TOP_opnd_register_variant_default(TOP immform, int opnd, ISA_REGISTER_CLASS regclass)
+{
+  TOP regform;
+ 
+  // Check if already a register variant.
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, immform)) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (immform);
+    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    if (ISA_OPERAND_VALTYP_Is_Register(otype) &&
+	regclass == ISA_OPERAND_VALTYP_Register_Class(otype))
+      return immform;
+  }
+  regform = CGTARG_TOP_Register_Variant(immform);
+  
+  if (regform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, regform)) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (regform);
+    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    if (ISA_OPERAND_VALTYP_Is_Register(otype)) {
+      if (regclass == ISA_OPERAND_VALTYP_Register_Class(otype))
+	return regform;
+    }
+  }
+  return TOP_UNDEFINED;
+}
+
+/*
+ * TOP_opnd_register_variant
+ *
+ * Returns the TOP register variant, matching the given register class.
+ * Target dependent.
+ * opnd is the operand number that may be replaced (0..2).
+ * regclass is the requested register class.
+ * Returns TOP_UNDEFINED, if no register variant is available.
+ */
+TOP
+TOP_opnd_register_variant(TOP regform, int opnd, ISA_REGISTER_CLASS regclass)
+{
+  // No target dependent specificities.
+  return TOP_opnd_register_variant_default(regform, opnd, regclass);
+}
+
 
 /*
  * TOP_opnd_swapped_variant
@@ -991,3 +1101,7 @@ TOP_opnd_use_signed(TOP top, int opnd)
 #undef CASE_TOP_BR
 }
 
+TOP
+TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass) {
+  return TOP_UNDEFINED;
+}

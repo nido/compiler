@@ -36,6 +36,9 @@
 
 /* Inlines for looking up attribute values */
 
+#define CHECK_OPCODE(cond,op) Is_True(cond, ("Bad opcode 0x%x (operator: 0x%x, rtype: 0x%x, desc: 0x%x)", (op), \
+	(op)&0xFF, ((op)>>8)&MTYPE_ENCODING_MASK, ((op)>>(8+MTYPE_ENCODING_BITWIDTH))&MTYPE_ENCODING_MASK))
+
 /*REFERENCED*/
 inline mUINT32 
 OPERATOR_is_scf (OPERATOR op)
@@ -339,7 +342,7 @@ BE_EXPORTED extern BOOL Is_Valid_Opcode_FUNC (OPCODE op);
 inline OPERATOR 
 OPCODE_operator (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR)(op & 0xFF);
 }
 
@@ -347,16 +350,26 @@ OPCODE_operator (OPCODE op)
 inline TYPE_ID 
 OPCODE_rtype (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
+#ifdef TARG_ST
+  // [TTh] Reconfigurability: extended mtype encoding
+  return (TYPE_ID)((op >> 8) & MTYPE_ENCODING_MASK);
+#else
   return (TYPE_ID)((op >> 8) & 0x1F);
+#endif
 }
 
 /*REFERENCED*/
 inline TYPE_ID 
 OPCODE_desc (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
+#ifdef TARG_ST
+  // [TTh] Reconfigurability: extended mtype encoding
+  return (TYPE_ID)((op >> (8+MTYPE_ENCODING_BITWIDTH)) & MTYPE_ENCODING_MASK);
+#else
   return (TYPE_ID)((op >> 13) & 0x1F);
+#endif
 }
 
 BE_EXPORTED extern char* OPCODE_name (OPCODE op);
@@ -367,7 +380,7 @@ BE_EXPORTED extern char* OPCODE_name (OPCODE op);
 inline mUINT32
 OPCODE_is_scf (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_scf (OPCODE_operator (op)));
 }
 
@@ -375,7 +388,7 @@ OPCODE_is_scf (OPCODE op)
 inline mUINT32
 OPCODE_is_stmt (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_stmt (OPCODE_operator (op)));
 }
 
@@ -383,7 +396,7 @@ OPCODE_is_stmt (OPCODE op)
 inline mUINT32
 OPCODE_is_expression (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_expression (OPCODE_operator (op)));
 }
 
@@ -391,7 +404,7 @@ OPCODE_is_expression (OPCODE op)
 inline mUINT32
 OPCODE_is_leaf (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_leaf (OPCODE_operator (op)));
 }
 
@@ -399,7 +412,7 @@ OPCODE_is_leaf (OPCODE op)
 inline mUINT32
 OPCODE_is_store (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_store (OPCODE_operator (op)));
 }
 
@@ -407,7 +420,7 @@ OPCODE_is_store (OPCODE op)
 inline mUINT32
 OPCODE_is_load (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_load (OPCODE_operator (op)));
 }
 
@@ -415,7 +428,7 @@ OPCODE_is_load (OPCODE op)
 inline mUINT32
 OPCODE_is_call (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_call (OPCODE_operator (op)));
 }
 
@@ -423,7 +436,7 @@ OPCODE_is_call (OPCODE op)
 inline mUINT32
 OPCODE_is_compare (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_compare (OPCODE_operator (op)));
 }
 
@@ -431,7 +444,7 @@ OPCODE_is_compare (OPCODE op)
 inline mUINT32
 OPCODE_is_non_scf (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_non_scf (OPCODE_operator (op)));
 }
 
@@ -439,7 +452,7 @@ OPCODE_is_non_scf (OPCODE op)
 inline mUINT32
 OPCODE_is_boolean (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_boolean (OPCODE_operator (op)));
 }
 
@@ -447,7 +460,7 @@ OPCODE_is_boolean (OPCODE op)
 inline mUINT32
 OPCODE_is_endsbb (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_endsbb (OPCODE_operator (op)));
 }
 
@@ -455,7 +468,7 @@ OPCODE_is_endsbb (OPCODE op)
 inline mUINT32
 OPCODE_is_comp_unit_if (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_comp_unit_if (OPCODE_operator (op)));
 }
 
@@ -463,7 +476,7 @@ OPCODE_is_comp_unit_if (OPCODE op)
 inline mUINT32
 OPCODE_is_not_executable (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_not_executable (OPCODE_operator (op)));
 }
 
@@ -471,7 +484,7 @@ OPCODE_is_not_executable (OPCODE op)
 inline mUINT32
 OPCODE_is_prefetch (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_prefetch (OPCODE_operator (op)));
 }
 
@@ -479,7 +492,7 @@ OPCODE_is_prefetch (OPCODE op)
 inline mUINT32
 OPCODE_has_next_prev (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_next_prev (OPCODE_operator (op)));
 }
 
@@ -487,7 +500,7 @@ OPCODE_has_next_prev (OPCODE op)
 inline mUINT32
 OPCODE_has_sym (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_sym (OPCODE_operator (op)));
 }
 
@@ -495,7 +508,7 @@ OPCODE_has_sym (OPCODE op)
 inline mUINT32
 OPCODE_has_label (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_label (OPCODE_operator (op)));
 }
 
@@ -503,7 +516,7 @@ OPCODE_has_label (OPCODE op)
 inline mUINT32
 OPCODE_has_num_entries (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_num_entries (OPCODE_operator (op)));
 }
 
@@ -511,7 +524,7 @@ OPCODE_has_num_entries (OPCODE op)
 inline mUINT32
 OPCODE_has_offset (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_offset (OPCODE_operator (op)));
 }
 
@@ -519,7 +532,7 @@ OPCODE_has_offset (OPCODE op)
 inline mUINT32
 OPCODE_has_2offsets (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_2offsets (OPCODE_operator (op)));
 }
 
@@ -527,7 +540,7 @@ OPCODE_has_2offsets (OPCODE op)
 inline mUINT32
 OPCODE_has_bits (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_bits (OPCODE_operator (op)));
 }
 
@@ -535,7 +548,7 @@ OPCODE_has_bits (OPCODE op)
 inline mUINT32
 OPCODE_has_ndim (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_ndim (OPCODE_operator (op)));
 }
 
@@ -543,7 +556,7 @@ OPCODE_has_ndim (OPCODE op)
 inline mUINT32
 OPCODE_has_esize (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_esize (OPCODE_operator (op)));
 }
 
@@ -551,7 +564,7 @@ OPCODE_has_esize (OPCODE op)
 inline mUINT32
 OPCODE_has_value (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_value (OPCODE_operator (op)));
 }
 
@@ -559,7 +572,7 @@ OPCODE_has_value (OPCODE op)
 inline mUINT32
 OPCODE_has_flags (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_flags (OPCODE_operator (op)));
 }
 
@@ -567,7 +580,7 @@ OPCODE_has_flags (OPCODE op)
 inline mUINT32
 OPCODE_has_inumber (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_inumber (OPCODE_operator (op)));
 }
 
@@ -575,7 +588,7 @@ OPCODE_has_inumber (OPCODE op)
 inline mUINT32
 OPCODE_has_1ty (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_1ty (OPCODE_operator (op)));
 }
 
@@ -583,7 +596,7 @@ OPCODE_has_1ty (OPCODE op)
 inline mUINT32
 OPCODE_has_2ty (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_2ty (OPCODE_operator (op)));
 }
 
@@ -591,7 +604,7 @@ OPCODE_has_2ty (OPCODE op)
 inline mUINT32
 OPCODE_has_ereg_supp (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_ereg_supp (OPCODE_operator (op)));
 }
 
@@ -599,7 +612,7 @@ OPCODE_has_ereg_supp (OPCODE op)
 inline mUINT32
 OPCODE_has_barrier (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_barrier (OPCODE_operator (op)));
 }
 
@@ -607,7 +620,7 @@ OPCODE_has_barrier (OPCODE op)
 inline mUINT32
 OPCODE_has_last_label (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_last_label (OPCODE_operator (op)));
 }
 
@@ -615,7 +628,7 @@ OPCODE_has_last_label (OPCODE op)
 inline mUINT32
 OPCODE_has_field_id (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_has_field_id (OPCODE_operator (op)));
 }
 
@@ -623,7 +636,7 @@ OPCODE_has_field_id (OPCODE op)
 inline mINT8
 OPCODE_nkids (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_nkids (OPCODE_operator (op)));
 }
 
@@ -631,7 +644,7 @@ OPCODE_nkids (OPCODE op)
 inline OPERATOR_MAPCAT
 OPCODE_mapcat (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_mapcat (OPCODE_operator (op)));
 }
 
@@ -639,6 +652,6 @@ OPCODE_mapcat (OPCODE op)
 inline BOOL 
 OPCODE_is_black_box (OPCODE op)
 {
-  Is_True(Is_Valid_Opcode (op), ("Bad opcode %d", op));
+  CHECK_OPCODE(Is_Valid_Opcode(op), op);
   return (OPERATOR_is_black_box (OPCODE_operator (op)));
 }

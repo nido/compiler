@@ -86,7 +86,7 @@ static tree optimize_bit_field_compare PARAMS ((enum tree_code, tree,
 						tree, tree));
 static tree decode_field_reference PARAMS ((tree, HOST_WIDE_INT *,
 					    HOST_WIDE_INT *,
-					    enum machine_mode *, int *,
+					    machine_mode_t *, int *,
 					    int *, tree *, tree *));
 static int all_ones_mask_p	PARAMS ((tree, int));
 static tree sign_bit_p		PARAMS ((tree, tree));
@@ -2448,7 +2448,7 @@ optimize_bit_field_compare (code, compare_type, lhs, rhs)
   tree type = TREE_TYPE (lhs);
   tree signed_type, unsigned_type;
   int const_p = TREE_CODE (rhs) == INTEGER_CST;
-  enum machine_mode lmode, rmode, nmode;
+  machine_mode_t lmode, rmode, nmode;
   int lunsignedp, runsignedp;
   int lvolatilep = 0, rvolatilep = 0;
   tree linner, rinner = NULL_TREE;
@@ -2620,7 +2620,7 @@ decode_field_reference (exp, pbitsize, pbitpos, pmode, punsignedp,
 			pvolatilep, pmask, pand_mask)
      tree exp;
      HOST_WIDE_INT *pbitsize, *pbitpos;
-     enum machine_mode *pmode;
+     machine_mode_t *pmode;
      int *punsignedp, *pvolatilep;
      tree *pmask;
      tree *pand_mask;
@@ -3523,8 +3523,8 @@ fold_truthop (code, truth_type, lhs, rhs)
   HOST_WIDE_INT xll_bitpos, xlr_bitpos, xrl_bitpos, xrr_bitpos;
   HOST_WIDE_INT lnbitsize, lnbitpos, rnbitsize, rnbitpos;
   int ll_unsignedp, lr_unsignedp, rl_unsignedp, rr_unsignedp;
-  enum machine_mode ll_mode, lr_mode, rl_mode, rr_mode;
-  enum machine_mode lnmode, rnmode;
+  machine_mode_t ll_mode, lr_mode, rl_mode, rr_mode;
+  machine_mode_t lnmode, rnmode;
   tree ll_mask, lr_mask, rl_mask, rr_mask;
   tree ll_and_mask, lr_and_mask, rl_and_mask, rr_and_mask;
   tree l_const, r_const;

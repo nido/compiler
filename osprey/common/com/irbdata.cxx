@@ -493,7 +493,7 @@ Print_INITV (const INITV& initv)
     case INITVKIND_LABDIFF:
 	repeat = INITV_repeat1 (initv);
         fputs (" LABDIFF: ", TFile);
-	fprintf (TFile," %s-%s(0x%x)", LABEL_name (INITV_labd0 (initv)), 
+	fprintf (TFile," %s-%s(0x%%x)", LABEL_name (INITV_labd0 (initv)), 
                  LABEL_name (INITV_labd1 (initv)));
 	break;
 #endif

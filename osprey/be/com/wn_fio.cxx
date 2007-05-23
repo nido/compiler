@@ -1870,7 +1870,20 @@ lower_f77_record_items (WN *, WN *, WN *, WN *, WN *, WN *,
 
 /*  The following table gives the I/O mask code for each of the basic types.  */
 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define fio_maskcode(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("fio_maskcode: no access for dynamic MTYPE %d", (t))), 0 \
+     : \
+       fio_maskcode[t])
+#define fio_maskcode_set(t) \
+       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), fio_maskcode[t]
+static INT32 fio_maskcode [MTYPE_STATIC_COUNT + 1] = {
+#else
 static INT32 fio_maskcode [MTYPE_LAST + 1] = {
+#endif
   0,	/* MTYPE_UNKNOWN */
   0,	/* MTYPE_B */
   1,	/* MTYPE_I1 */
@@ -4137,7 +4150,7 @@ static void Build_Io_Mask ( INT32 * iomask, INT32 ioshift, WN * wn )
   /*  Based on the type, get the size code, shift it into position and add  */
   /*  it to the iomask being built.					    */
 
-  *iomask |= (fio_maskcode[mtype] << ioshift);
+  *iomask |= (fio_maskcode(mtype) << ioshift);
 
 }
 

@@ -52,8 +52,13 @@ const char * const rtx_name[NUM_RTX_CODE] = {
    This name does not include the letters "mode".  */
 
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  NAME,
-
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+const char *mode_name[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const char * const mode_name[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -63,7 +68,13 @@ const char * const mode_name[NUM_MACHINE_MODES] = {
 
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  CLASS,
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+enum mode_class mode_class[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const enum mode_class mode_class[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -74,7 +85,13 @@ const enum mode_class mode_class[NUM_MACHINE_MODES] = {
 
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  BITSIZE,
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+unsigned short mode_bitsize[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const unsigned short mode_bitsize[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -85,7 +102,13 @@ const unsigned short mode_bitsize[NUM_MACHINE_MODES] = {
 
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  SIZE,
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+unsigned char mode_size[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const unsigned char mode_size[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -96,7 +119,13 @@ const unsigned char mode_size[NUM_MACHINE_MODES] = {
 
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  UNIT,
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+unsigned char mode_unit_size[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const unsigned char mode_unit_size[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"		/* machine modes are documented here */
 };
 
@@ -109,7 +138,13 @@ const unsigned char mode_unit_size[NUM_MACHINE_MODES] = {
 #define DEF_MACHMODE(SYM, NAME, CLASS, BITSIZE, SIZE, UNIT, WIDER, INNER)  \
   (unsigned char) WIDER,
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+unsigned char mode_wider_mode[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const unsigned char mode_wider_mode[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"		/* machine modes are documented here */
 };
 
@@ -120,7 +155,13 @@ const unsigned char mode_wider_mode[NUM_MACHINE_MODES] = {
 
 /* Indexed by machine mode, gives mask of significant bits in mode.  */
 
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+unsigned HOST_WIDE_INT mode_mask_array[MAX_LIMIT_MACHINE_MODE] = {
+#else
 const unsigned HOST_WIDE_INT mode_mask_array[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -131,7 +172,13 @@ const unsigned HOST_WIDE_INT mode_mask_array[NUM_MACHINE_MODES] = {
 /* Indexed by machine mode, gives the mode of the inner elements in a
    vector type.  */
 
-const enum machine_mode inner_mode_array[NUM_MACHINE_MODES] = {
+#ifdef TARG_ST
+/* TB: readonly array becomes writable to support dynamic machine
+   mode */
+machine_mode_t inner_mode_array[MAX_LIMIT_MACHINE_MODE] = {
+#else
+const machine_mode_t inner_mode_array[NUM_MACHINE_MODES] = {
+#endif
 #include "machmode.def"
 };
 
@@ -144,7 +191,7 @@ const enum machine_mode inner_mode_array[NUM_MACHINE_MODES] = {
    structures and the like, which we do not want.  Only the target
    md file should generate BImode widgets.  */
 
-const enum machine_mode class_narrowest_mode[(int) MAX_MODE_CLASS] = {
+const machine_mode_t class_narrowest_mode[(int) MAX_MODE_CLASS] = {
     /* MODE_RANDOM */		VOIDmode,
     /* MODE_INT */		QImode,
     /* MODE_FLOAT */		QFmode,

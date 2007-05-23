@@ -31,6 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+/*
+ * This file has been modified by STMicroelectronics.
+ */
 
 
 //  isa_registers_gen.cxx
@@ -49,15 +52,31 @@
 #include <stdio.h>
 #include <assert.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 using std::list;
 #else
 #include <list.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
+
 #include "gen_util.h"
 #include "targ_isa_subset.h"
 #include "isa_registers_gen.h"
+
+// #ifdef DYNAMIC_CODE_GEN
+// namespace DYNA {
+// #include "dyn_isa_registers.h"
+// };
+// #endif
+
+/*
+ * For cores that are not extensible, all #define
+ * imported from "isa_ext_limits.h" are set to 0. 
+ * As a result, constants 'extension_max_xxx' defined
+ * below are useless in following algorithms.
+ *
+ */
+#include "isa_ext_limits.h"
 
 typedef struct isa_register_set {
   int isa_mask;
@@ -73,6 +92,7 @@ typedef struct isa_register_subclass {
   int count;
   const int *members;
   const char **names;
+  bool  is_canonical;
 } *ISA_REGISTER_SUBCLASS;
 
 struct isa_register_class {
@@ -87,8 +107,14 @@ struct isa_register_class {
   list<ISA_REGISTER_SUBCLASS> subclasses;
 };
 
-static list<ISA_REGISTER_CLASS> rclasses; // All the classes
+static list<ISA_REGISTER_CLASS> rclasses;      // All the classes
 static list<ISA_REGISTER_SUBCLASS> subclasses; // All the sub classes
+
+static const int extension_max_registers  = EXTENSION_NB_REGISTER_MAX != 0 ? 
+                                            EXTENSION_NB_REGISTER_MAX-1 : 0;
+
+static const int extension_max_rclasses   = EXTENSION_NB_REGISTER_CLASS_MAX;
+static const int extension_max_subclasses = EXTENSION_NB_REGISTER_SUBCLASS_MAX;
 
 static const char * const interface[] = {
   "/* ====================================================================",
@@ -273,6 +299,10 @@ static const char * const interface[] = {
   NULL
 };
 
+static bool gen_static_code = true;          // Whether we generate code for an
+static bool gen_dyn_code    = false;         // extension or for the core.
+
+static char *extname        = NULL;          // Extension name (NULL if no ext).
 
 /////////////////////////////////////
 void ISA_Registers_Begin( const char* /* name */ )
@@ -280,6 +310,13 @@ void ISA_Registers_Begin( const char* /* name */ )
 //  See interface description.
 /////////////////////////////////////
 {
+   gen_static_code = Is_Static_Code();
+   gen_dyn_code    =!gen_static_code;
+
+   if(gen_dyn_code)
+     extname = Get_Extension_Name();
+
+   return;
 }
 
 
@@ -306,9 +343,10 @@ ISA_REGISTER_CLASS ISA_Register_Class_Create(
     for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
       ISA_REGISTER_CLASS rclass = *rc_iter;
       if (rclass->is_ptr) {
-	fprintf(stderr, "### Error: attempt to specify two ptr rclasses.\n");
-	fprintf(stderr, "### Error: current %s, previous %s\n", 
+       fprintf(stderr, "### Error: attempt to specify two ptr rclasses.\n");
+       fprintf(stderr, "### Error: current %s, previous %s\n", 
 		name, rclass->name);
+       exit(EXIT_FAILURE);
       }
     }
   }
@@ -350,7 +388,8 @@ void ISA_Register_Subclass_Create(
   ISA_REGISTER_CLASS rclass,
   int count,
   const int *members,
-  const char **names
+  const char **names,
+  bool is_canonical /* optional argument */
 )
 /////////////////////////////////////
 //  See interface description.
@@ -358,11 +397,12 @@ void ISA_Register_Subclass_Create(
 {
   ISA_REGISTER_SUBCLASS result = new isa_register_subclass;
   subclasses.push_back(result);
-  result->name = name;
-  result->rclass = rclass;
-  result->count = count;
-  result->members = members;
-  result->names = names;
+  result->name         = name;
+  result->rclass       = rclass;
+  result->count        = count;
+  result->members      = members;
+  result->names        = names;
+  result->is_canonical = is_canonical;
   rclass->subclasses.push_back(result);
 }
 
@@ -376,10 +416,73 @@ void ISA_Registers_End(void)
   list <ISA_REGISTER_CLASS>::iterator rc_iter;
   list <ISA_REGISTER_SUBCLASS>::iterator rsc_iter;
   int i;
-  bool ptr_specified;
+#if 0
+  bool ptr_specified = false;
+#endif
 
+  // Compute max_reg, max_reg & min_reg for each class,
   int max_reg = 0;
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
+    ISA_REGISTER_CLASS rclass = *rc_iter;
+    int class_max = 0;
+    int class_min = 0;
+    list<ISA_REGISTER_SET>::iterator reg_iter;
+
+    /* We adopt here a conservative attitude.
+     * Indeed, we want to be sure that there is
+     * one and only one register set associated to
+     * a given register class. Having more than one
+     * register set is possible but not supported
+     * yet.
+     */
+    if(1!=rclass->regsets.size()) {
+      if(rclass->regsets.empty())
+        fprintf(stderr,
+          "### Fatal: No register set associated to register class %s.\n",
+           rclass->name);
+      else
+        fprintf(stderr,
+"### Error: currently we only support one register file by register class.\n"
+"### Register class %s has %d register sets and does not respect this rule.\n",
+                rclass->name,
+                rclass->regsets.size()); 
+
+      exit(EXIT_FAILURE);
+     }
+
+    for (reg_iter = rclass->regsets.begin();
+	 reg_iter != rclass->regsets.end();
+	 ++reg_iter
+    ) {
+      ISA_REGISTER_SET regset = *reg_iter;
+      int this_max = regset->max_regnum;
+      if (this_max > class_max) class_max = this_max;
+
+      int this_min = regset->min_regnum;
+      if (this_min > class_min) class_min = this_min;
+    }
+    rclass->max_reg = class_max;
+    rclass->min_reg = class_min;
+    if (class_max > max_reg) max_reg = class_max;
+
+#if 0
+    if (rclass->is_ptr) ptr_specified = true;
+#endif
+  }
+
+#if 0
+  // Arthur: check that the ptr class is specified
+  if (!ptr_specified) {
+    fprintf(stderr, "### Error: ptr rclass has not been specified.\n");
+    exit(EXIT_FAILURE);
+  }
+#endif
+
+  if(gen_dyn_code)  {
+
+  // Compute max_reg, max_reg & min_reg for each class,
+  max_reg = 0;
+  for (; rc_iter != rclasses.end(); ++rc_iter) {
     ISA_REGISTER_CLASS rclass = *rc_iter;
     int class_max = 0;
     int class_min = 0;
@@ -398,52 +501,131 @@ void ISA_Registers_End(void)
     rclass->max_reg = class_max;
     rclass->min_reg = class_min;
     if (class_max > max_reg) max_reg = class_max;
+    if (max_reg > extension_max_registers) {
+      fprintf(stderr, "### Error: rclass %s contains too much registers.\n",
+              rclass->name);
+      exit(EXIT_FAILURE);
+    }
 
+#if 0
     if (rclass->is_ptr) ptr_specified = true;
+#endif
+   }
+  }                       // Code for dynamic extensions.
+
+  /* Opening files */
+  char *hfilename                 = NULL ;
+  char *cfilename                 = NULL ;
+  char *efilename                 = NULL ;
+  char *targ_isa_subset_hfilename = NULL ;
+
+  FILE *hfile    = NULL ;
+  FILE *cfile    = NULL ;
+  FILE *efile    = NULL ;
+
+  const char * const bname = FNAME_TARG_ISA_REGISTERS ;      /* base name */
+
+  hfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_hfile);
+  hfile     = Gen_Open_File_Handle(hfilename, "w");
+
+  cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
+  cfile     = Gen_Open_File_Handle(cfilename, "w");
+
+  if(gen_static_code)
+   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+     efile     = Gen_Open_File_Handle(efilename, "w");
+   }
+
+  targ_isa_subset_hfilename = Gen_Build_Filename(FNAME_TARG_ISA_SUBSET,NULL,
+                                                 gen_util_file_type_hfile);
+
+  /* Now, we're all set to write files. */
+  Emit_Header (hfile,bname,interface,extname);
+
+  if(gen_dyn_code) 
+  { char *dyn_hfilename = Gen_Build_Filename(FNAME_ISA_REGISTERS,
+                                             NULL,
+                                             gen_util_file_type_dyn_hfile);
+
+    fprintf(hfile,"#include \"%s\"\n",targ_isa_subset_hfilename);
+    fprintf(cfile,"#include \"%s\"\n",dyn_hfilename);
+    Gen_Free_Filename(dyn_hfilename);
+  }                        // Dynamic code
+  else
+  { fprintf(cfile,"#include \"%s\"\n",hfilename);
+    fprintf(hfile,"#include \"%s\"\n",targ_isa_subset_hfilename);
+  }                        // Static code
+
+  Emit_C_Header(cfile);
+
+
+  // [TTh] max register might need to be resized for extension
+  // register classes
+  if (max_reg < extension_max_registers) {
+	max_reg = extension_max_registers;
   }
 
-  // Arthur: check that the ptr class is specified
-  if (!ptr_specified) {
-    fprintf(stderr, "### Error: ptr rclass has not been specified.\n");
+  if(gen_static_code) {
+   fprintf(hfile, "\n"
+                  "#define ISA_EXTENSION_REGISTER_CLASS_MAX (%d)\n",
+                  extension_max_rclasses);
+   fprintf(hfile, "\n"
+                  "#define ISA_EXTENSION_REGISTER_SUBCLASS_MAX (%d)\n",
+                  extension_max_subclasses);
+   fprintf(hfile, "\n"
+                  "#define ISA_REGISTER_MAX (%d)\n", max_reg);
   }
-
-#define FNAME "targ_isa_registers"
-  char filename[1000];
-  sprintf(filename,"%s.h",FNAME);
-  FILE* hfile = fopen(filename,"w");
-  sprintf(filename,"%s.c",FNAME);
-  FILE* cfile = fopen(filename,"w");
-  sprintf(filename,"%s.Exported",FNAME);
-  FILE* efile = fopen(filename,"w");
-
-  fprintf(cfile,"#include \"targ_isa_subset.h\"\n");
-  fprintf(cfile,"#include \"%s.h\"\n",FNAME);
-
-  sprintf (filename, "%s", FNAME);
-  Emit_Header (hfile, filename, interface);
-  fprintf(hfile,"#include \"targ_isa_subset.h\"\n");
-
-  fprintf(hfile, "\n#define ISA_REGISTER_MAX (%d)\n", max_reg);
 
   /**************************************************
    * classes:
    */
 
-  fprintf(hfile, "\ntypedef enum {\n");
-  fprintf(hfile, "  ISA_REGISTER_CLASS_UNDEFINED,\n");
-  for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
-    ISA_REGISTER_CLASS rclass = *rc_iter;
-    fprintf(hfile, "  ISA_REGISTER_CLASS_%s,\n", rclass->name);
-  }
-  fprintf(hfile, "  ISA_REGISTER_CLASS_MIN = ISA_REGISTER_CLASS_%s,\n",
-	  rclasses.front()->name);
-  fprintf(hfile, "  ISA_REGISTER_CLASS_MAX = ISA_REGISTER_CLASS_%s,\n",
+  if(gen_static_code)
+   { fprintf(hfile, "\nenum {\n");
+     fprintf(hfile, "  ISA_REGISTER_CLASS_UNDEFINED,\n");
+
+     for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
+       ISA_REGISTER_CLASS rclass = *rc_iter;
+       fprintf(hfile, "  ISA_REGISTER_CLASS_%s,\n", rclass->name);
+     }
+
+     fprintf(hfile, "  ISA_REGISTER_CLASS_MIN = ISA_REGISTER_CLASS_%s,\n",
+  	  rclasses.front()->name);
+     fprintf(hfile, "  ISA_REGISTER_CLASS_STATIC_MAX = ISA_REGISTER_CLASS_%s,\n",
 	  rclasses.back()->name);
-  fprintf(hfile, "  ISA_REGISTER_CLASS_COUNT = "
-		 "ISA_REGISTER_CLASS_MAX - ISA_REGISTER_CLASS_MIN + 1\n");
+     fprintf(hfile, "  ISA_REGISTER_CLASS_STATIC_COUNT = "
+		 "ISA_REGISTER_CLASS_STATIC_MAX - ISA_REGISTER_CLASS_MIN + 1,\n");
+     fprintf(hfile, "  ISA_REGISTER_CLASS_MAX_LIMIT = "
+                    "ISA_REGISTER_CLASS_STATIC_MAX + ISA_EXTENSION_REGISTER_CLASS_MAX + 1\n");
+     fprintf(hfile, "};\n");
+     fprintf(hfile, "typedef mUINT32 ISA_REGISTER_CLASS; \n");
 
-  fprintf(hfile, "} ISA_REGISTER_CLASS;\n");
+     fprintf(hfile, "\nextern mUINT32 ISA_REGISTER_CLASS_MAX;\n");
+     fprintf(cfile, "\nBE_EXPORTED mUINT32 ISA_REGISTER_CLASS_MAX = ISA_REGISTER_CLASS_STATIC_MAX;\n");
+     fprintf(hfile, "\nextern mUINT32 ISA_REGISTER_CLASS_COUNT;\n");
+     fprintf(cfile, "\nBE_EXPORTED mUINT32 ISA_REGISTER_CLASS_COUNT = ISA_REGISTER_CLASS_STATIC_COUNT;\n");
+   }
+  else                            /* Code for dynamic extensions */
+   {
+      fprintf(hfile, "\n");
+      for (rc_iter = rclasses.begin(),i=0; 
+           rc_iter != rclasses.end(); ++rc_iter,++i) {
+             ISA_REGISTER_CLASS rclass = *rc_iter;
+             fprintf(
+               hfile, 
+               "#define ISA_REGISTER_CLASS_LOCAL_%s_%-9s %d\n"
+               "#define ISA_REGISTER_CLASS_%s_%-15s "
+               "(ISA_REGISTER_CLASS_LOCAL_%s_%s+ISA_REGISTER_CLASS_STATIC_MAX+1)\n",
+                extname,rclass->name,i,extname,rclass->name,extname,rclass->name);
+          }
 
+      fprintf(hfile, 
+              "\n"
+              "#define ISA_REGISTER_CLASS_EXTENSION_%s_COUNT %d\n\n",
+              extname,rclasses.size());
+  }
+
+  if(gen_static_code) {
   fprintf(hfile, "\ntypedef mUINT8 mISA_REGISTER_CLASS;\n");
 
   fprintf(hfile, "\n#define FOR_ALL_ISA_REGISTER_CLASS(cl) \\\n"
@@ -467,13 +649,20 @@ void ISA_Registers_End(void)
 		 "  const char *name;\n"
 		 "  const char *reg_name[ISA_REGISTER_MAX+1];\n"
   		 "} ISA_REGISTER_CLASS_INFO;\n");
+  }
 
-  fprintf(efile, "ISA_REGISTER_CLASS_info\n");
+  /*
+   * Building ISA_REGISTER_CLASS_info_static and 
+   * ISA_REGISTER_CLASS_info_dynamic (for dynamic extensions)
+   */
+  const char* tabname =gen_static_code? "ISA_REGISTER_CLASS_info_static" : 
+                                        "ISA_REGISTER_CLASS_info_dynamic";
 
-  fprintf(cfile, "\nBE_EXPORTED const ISA_REGISTER_CLASS_INFO"
-		   " ISA_REGISTER_CLASS_info[] = {\n");
-  fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
-		 0, 0, -1, 0, 0, 0, 0, "UNDEFINED");
+  fprintf(cfile, "\nstatic const ISA_REGISTER_CLASS_INFO %s[] = {\n",tabname);
+  if(gen_static_code)              /* Managed UNDEFINED entry */
+    fprintf(cfile, 
+            "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
+            0, 0, -1, 0, 0, 0, 0, "UNDEFINED");
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
     ISA_REGISTER_CLASS rclass = *rc_iter;
     list<ISA_REGISTER_SET>::iterator reg_iter;
@@ -508,71 +697,204 @@ void ISA_Registers_End(void)
   }
   fprintf(cfile, "};\n");
 
-  fprintf(efile, "ISA_REGISTER_CLASS_info_index\n");
+  if(gen_static_code)
+   { fprintf(cfile, "\nBE_EXPORTED const ISA_REGISTER_CLASS_INFO * "
+                    " ISA_REGISTER_CLASS_info = %s;\n\n",tabname);
+     fprintf(hfile, "\nBE_EXPORTED extern const ISA_REGISTER_CLASS_INFO *"
+                    " ISA_REGISTER_CLASS_info;\n\n");
+     fprintf(efile, "ISA_REGISTER_CLASS_info\n");
+   }
+  else
+   { fprintf(
+      cfile,
+      "\n"
+      "DLL_EXPORTED const ISA_REGISTER_CLASS_INFO *dyn_get_ISA_REGISTER_CLASS_tab (void)\n"
+      "{  return %s;\n"
+      "}\n"
+      "DLL_EXPORTED const mUINT32 dyn_get_ISA_REGISTER_CLASS_tab_sz (void)\n"
+      "{  return  ISA_REGISTER_CLASS_EXTENSION_%s_COUNT;\n"
+      "}\n\n",
+      tabname,extname);
 
-  fprintf(cfile, "\nBE_EXPORTED mUINT8 ISA_REGISTER_CLASS_info_index[] = {\n");
-  fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s */\n", 0, "UNDEFINED");
-  int index = 1;
+     fprintf(
+       hfile,
+       "#ifndef DLL_EXPORTED\n"
+       "#define DLL_EXPORTED\n"
+       "#endif\n\n");
+     fprintf(
+       hfile,
+       "DLL_EXPORTED extern const ISA_REGISTER_CLASS_INFO *dyn_get_ISA_REGISTER_CLASS_tab ( void );\n"
+       "DLL_EXPORTED extern const mUINT32 dyn_get_ISA_REGISTER_CLASS_tab_sz ( void );\n");
+   }
+
+  /* Building index table - In the static case, table has one additional */
+  /* entry, since we must take into account UNDEFINED item.              */
+  tabname   = gen_static_code ? "ISA_REGISTER_CLASS_info_index_static" :
+                                "ISA_REGISTER_CLASS_info_index_dynamic";
+  int index = gen_static_code ?  1 : 0;
+
+  fprintf(cfile,"\nstatic mUINT8 %s[] = {\n",tabname);
+  if(gen_static_code)
+   fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s */\n", 
+           0,"UNDEFINED");
+
   for (rc_iter = rclasses.begin(); rc_iter != rclasses.end(); ++rc_iter) {
     ISA_REGISTER_CLASS rclass = *rc_iter;
     list<ISA_REGISTER_SET>::iterator reg_iter;
-    fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s */\n", index, rclass->name);
+
+    if(gen_static_code)
+      fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s */\n", 
+              index, rclass->name);
+    else
+      fprintf(cfile, "  %d,  /* ISA_REGISTER_CLASS_%s_%s */\n", 
+              index,extname,rclass->name);
+
     for (reg_iter = rclass->regsets.begin();
 	 reg_iter != rclass->regsets.end();
-	 ++reg_iter
-    ) ++index;
-  };
-  fprintf(cfile, "};\n");
+	 ++reg_iter) 
+           ++index;
+  }
+  fprintf(cfile, "};\n");      /* End of index table */
+
+  if(gen_static_code)
+   { fprintf(cfile,
+             "\n"
+             "BE_EXPORTED mUINT8 *ISA_REGISTER_CLASS_info_index = %s;\n",
+             tabname);
+     fprintf(hfile, 
+             "\n"
+             "BE_EXPORTED extern mUINT8 *ISA_REGISTER_CLASS_info_index;\n\n"
+             "#define ISA_REGISTER_CLASS_INDEX_DYNAMIC_NEXT (%d)\n", 
+             index);
+     fprintf(efile, 
+             "ISA_REGISTER_CLASS_info_index\n");
+   }
+  else
+   { fprintf(cfile,
+             "const mUINT8 *dyn_get_ISA_REGISTER_CLASS_index_tab ( void )\n"
+             "{   return %s;\n"
+             "}\n",
+             tabname);
+     fprintf(hfile,
+             "extern const mUINT8 *dyn_get_ISA_REGISTER_CLASS_index_tab ( void );\n");
+   }
 
   /**************************************************
    * subclasses:
    */
 
-  fprintf(hfile, "\ntypedef enum {\n");
-  fprintf(hfile, "  ISA_REGISTER_SUBCLASS_UNDEFINED,\n");
-  for (rsc_iter = subclasses.begin(); rsc_iter != subclasses.end(); ++rsc_iter) {
-    ISA_REGISTER_SUBCLASS subclass = *rsc_iter;
+  if(gen_static_code)
+  { fprintf(hfile, "\nenum {\n");
+    fprintf(hfile, "  ISA_REGISTER_SUBCLASS_UNDEFINED,\n");
+    for (rsc_iter = subclasses.begin(); rsc_iter != subclasses.end(); ++rsc_iter) {
+      ISA_REGISTER_SUBCLASS subclass = *rsc_iter;
       fprintf(hfile, "  ISA_REGISTER_SUBCLASS_%s,\n", subclass->name);
     }
-  if (subclasses.empty()) {
-    fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MIN = 1,\n");
-    fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MAX = 0,\n");
-  } else {
-    fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MIN = ISA_REGISTER_SUBCLASS_%s,\n",
-	    subclasses.front()->name);
-    fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MAX = ISA_REGISTER_SUBCLASS_%s,\n",
-	    subclasses.back()->name);
-  }
-  fprintf(hfile, "  ISA_REGISTER_SUBCLASS_COUNT = "
-		 "ISA_REGISTER_SUBCLASS_MAX - ISA_REGISTER_SUBCLASS_MIN + 1\n");
+    if (subclasses.empty()) {
+      fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MIN = 1,\n");
+      fprintf(hfile, "  ISA_REGISTER_SUBCLASS_STATIC_MAX = 0,\n");
+    } else {
+      fprintf(hfile, "  ISA_REGISTER_SUBCLASS_MIN = ISA_REGISTER_SUBCLASS_%s,\n",
+              subclasses.front()->name);
+      fprintf(hfile, "  ISA_REGISTER_SUBCLASS_STATIC_MAX = ISA_REGISTER_SUBCLASS_%s,\n",
+              subclasses.back()->name);
+    }
 
-  fprintf(hfile, "} ISA_REGISTER_SUBCLASS;\n");
+   fprintf(hfile,
+           "  ISA_REGISTER_SUBCLASS_STATIC_COUNT = "
+           "  ISA_REGISTER_SUBCLASS_STATIC_MAX - ISA_REGISTER_SUBCLASS_MIN + 1,\n"
+           "  ISA_REGISTER_SUBCLASS_MAX_LIMIT = "
+           "  ISA_REGISTER_SUBCLASS_STATIC_MAX + ISA_EXTENSION_REGISTER_SUBCLASS_MAX + 1\n"
+           "};\n"
+           "typedef mUINT32 ISA_REGISTER_SUBCLASS;\n\n"
+           "extern mUINT32 ISA_REGISTER_SUBCLASS_MAX;\n");
 
-  fprintf(hfile, "\ntypedef mUINT8 mISA_REGISTER_SUBCLASS;\n");
+   fprintf(cfile, 
+           "\n"
+           "BE_EXPORTED mUINT32 ISA_REGISTER_SUBCLASS_MAX = ISA_REGISTER_SUBCLASS_STATIC_MAX;\n");
+   fprintf(hfile, 
+           "\n"
+           "extern mUINT32 ISA_REGISTER_SUBCLASS_COUNT;\n");
+   fprintf(cfile,
+           "\n"
+           "BE_EXPORTED mUINT32 ISA_REGISTER_SUBCLASS_COUNT = ISA_REGISTER_SUBCLASS_STATIC_COUNT;\n");
+  }                            /* if (gen_static_code)   */
 
-  fprintf(hfile, "\n#define FOR_ALL_ISA_REGISTER_SUBCLASS(sc) \\\n"
-		 "\tfor (sc = ISA_REGISTER_SUBCLASS_MIN; \\\n"
-		 "\t     sc <= ISA_REGISTER_SUBCLASS_MAX; \\\n"
-		 "\t     sc = (ISA_REGISTER_SUBCLASS)(sc + 1))\n");
+  if(gen_dyn_code)             /* For dynamic extensions */
+   { fprintf(hfile,"\n");
 
-  fprintf(hfile, "\ntypedef struct {\n"
-		 "  const char *name;\n"
-		 "  mISA_REGISTER_CLASS rclass;\n"
-		 "  mUINT8 count;\n"
-		 "  mUINT8 members[ISA_REGISTER_MAX+1];\n"
-		 "  const char *reg_name[ISA_REGISTER_MAX+1];\n"
-  		 "} ISA_REGISTER_SUBCLASS_INFO;\n");
+     for (rsc_iter=subclasses.begin(),i=0; 
+          rsc_iter != subclasses.end(); ++rsc_iter, ++i) {
+          ISA_REGISTER_SUBCLASS subclass = *rsc_iter;
+          fprintf(
+           hfile, 
+           "#define ISA_REGISTER_SUBCLASS_LOCAL_%s_%-9s %d\n"
+           "#define ISA_REGISTER_SUBCLASS_%s_%-15s "
+           "(ISA_REGISTER_SUBCLASS_LOCAL_%s_%s+ISA_REGISTER_SUBCLASS_STATIC_MAX+1)\n"
+           "\n",
+           extname,subclass->name,i,
+           extname,subclass->name,extname,subclass->name);
+           }
 
-  fprintf(efile, "ISA_REGISTER_SUBCLASS_info\n");
+     fprintf(hfile, 
+             "\n"
+             "#define ISA_REGISTER_SUBCLASS_EXTENSION_%s_COUNT %d\n\n", 
+             extname,i);
+   }
 
-  fprintf(cfile, "\nBE_EXPORTED const ISA_REGISTER_SUBCLASS_INFO"
-		   " ISA_REGISTER_SUBCLASS_info[] = {\n");
-  fprintf(cfile, "  { \"%s\", ISA_REGISTER_CLASS_%s, 0, { 0 }, { 0 } },\n", 
-		 "UNDEFINED", "UNDEFINED");
-  for (rsc_iter = subclasses.begin(); rsc_iter != subclasses.end(); ++rsc_iter) {
+  if(gen_static_code)
+   { fprintf(hfile, 
+             "\n"
+             "typedef mUINT8 mISA_REGISTER_SUBCLASS;\n\n"
+             "#define FOR_ALL_ISA_REGISTER_SUBCLASS(sc) \\\n"
+             "\tfor (sc = ISA_REGISTER_SUBCLASS_MIN; \\\n"
+             "\t     sc <= ISA_REGISTER_SUBCLASS_MAX; \\\n"
+             "\t     sc = (ISA_REGISTER_SUBCLASS)(sc + 1))\n"
+             "\n\n"
+             "typedef struct {\n"
+             "const char *name;\n"
+             "  mISA_REGISTER_CLASS rclass;\n"
+             "  mUINT8 count;\n"
+             "  mUINT8 is_canonical;\n"
+             "  mUINT8 members[ISA_REGISTER_MAX+1];\n"
+             "  const char *reg_name[ISA_REGISTER_MAX+1];\n"
+             "} ISA_REGISTER_SUBCLASS_INFO;\n");
+
+     fprintf(efile, "ISA_REGISTER_SUBCLASS_info\n");
+    }
+
+  tabname = gen_static_code ? "ISA_REGISTER_SUBCLASS_info_static" :
+                              "ISA_REGISTER_SUBCLASS_info_dynamic";
+
+  fprintf(cfile,
+         "\n"
+         "static const ISA_REGISTER_SUBCLASS_INFO %s[] = {\n",
+         tabname);
+  if(gen_static_code)     /* Manage entry for UNDEFINED item. */
+    fprintf(cfile,
+         "  { \"%s\", ISA_REGISTER_CLASS_%s, 0, 0, { 0 }, { 0 } },\n", 
+         "UNDEFINED", 
+         "UNDEFINED");
+
+  for (rsc_iter = subclasses.begin(); rsc_iter != subclasses.end();++rsc_iter) {
     ISA_REGISTER_SUBCLASS subclass = *rsc_iter;
-    fprintf(cfile, "  { \"%s\", ISA_REGISTER_CLASS_%s, %d,", 
-		   subclass->name, subclass->rclass->name, subclass->count);
+
+    if(gen_static_code)
+      fprintf(cfile, 
+        "  { \"%s\", ISA_REGISTER_CLASS_%s, %d, %d /*canonical*/,", 
+        subclass->name, 
+        subclass->rclass->name, 
+        subclass->count,
+        subclass->is_canonical ? 1:0);
+    else
+      fprintf(cfile,
+        "  { \"%s\", ISA_REGISTER_CLASS_LOCAL_%s_%s, %d , %d /*canonical*/,",
+        subclass->name,
+        extname,
+        subclass->rclass->name,
+        subclass->count,
+        subclass->is_canonical ? 1:0);
+
     int len = fprintf(cfile, "\n    { ");
     for (i = 0; i < subclass->count; ++i) {
       if (len > 70) len = fprintf(cfile, "\n      ");
@@ -600,16 +922,43 @@ void ISA_Registers_End(void)
   }
   fprintf(cfile, "};\n");
 
+  if(gen_static_code)
+   { fprintf(cfile,
+             "\n"
+             "BE_EXPORTED const ISA_REGISTER_SUBCLASS_INFO *"
+             "ISA_REGISTER_SUBCLASS_info = %s;\n",
+             tabname);
+     fprintf(hfile,
+             "\n"
+             "BE_EXPORTED extern const ISA_REGISTER_SUBCLASS_INFO"
+             " *ISA_REGISTER_SUBCLASS_info;\n");
+   }
+  else
+   { fprintf(cfile,
+             "\n"
+             "const ISA_REGISTER_SUBCLASS_INFO *dyn_get_ISA_REGISTER_SUBCLASS_tab (void)\n"
+             "{  return %s;\n"
+             "}\n"
+             "const mUINT32 dyn_get_ISA_REGISTER_SUBCLASS_tab_sz (void)\n"
+             "{  return  ISA_REGISTER_SUBCLASS_EXTENSION_%s_COUNT;\n"
+             "}\n\n",
+             tabname,extname);
+     fprintf(hfile,
+             "extern const ISA_REGISTER_SUBCLASS_INFO *dyn_get_ISA_REGISTER_SUBCLASS_tab ( void );\n"
+             "extern const mUINT32 dyn_get_ISA_REGISTER_SUBCLASS_tab_sz ( void );\n");
+   }
+
   /**************************************************
    * accessors:
    */
 
+  if(gen_static_code) {
   fprintf(hfile, "\ninline const ISA_REGISTER_CLASS_INFO *ISA_REGISTER_CLASS_Info(\n"
 		 "  ISA_REGISTER_CLASS rc\n"
 		 ")\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const ISA_REGISTER_CLASS_INFO ISA_REGISTER_CLASS_info[];\n"
-		 "  BE_EXPORTED extern mUINT8 ISA_REGISTER_CLASS_info_index[];\n"
+		 "  BE_EXPORTED extern const ISA_REGISTER_CLASS_INFO *ISA_REGISTER_CLASS_info;\n"
+		 "  BE_EXPORTED extern mUINT8 *ISA_REGISTER_CLASS_info_index;\n"
 		 "  INT index = ISA_REGISTER_CLASS_info_index[(INT)rc];\n"
 		 "  return &ISA_REGISTER_CLASS_info[index];\n"
 		 "}\n");
@@ -675,7 +1024,7 @@ void ISA_Registers_End(void)
 		 "  ISA_REGISTER_SUBCLASS sc\n"
 		 ")\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const ISA_REGISTER_SUBCLASS_INFO ISA_REGISTER_SUBCLASS_info[];\n"
+		 "  BE_EXPORTED extern const ISA_REGISTER_SUBCLASS_INFO *ISA_REGISTER_SUBCLASS_info;\n"
 		 "  return &ISA_REGISTER_SUBCLASS_info[sc];\n"
 		 "}\n");
 
@@ -716,6 +1065,13 @@ void ISA_Registers_End(void)
 		 "  return info->reg_name[n];\n"
 		 "}\n");
 
+  fprintf(hfile, "\ninline INT ISA_REGISTER_SUBCLASS_INFO_Canonical(\n"
+                 "   const ISA_REGISTER_SUBCLASS_INFO *info\n"
+                 ")\n"
+                 "{\n"
+                 "  return info->is_canonical ? 1 : 0;\n"
+                 "}\n");
+
   fprintf(hfile, "\nBE_EXPORTED extern void ISA_REGISTER_Initialize(void);\n");
 
   fprintf(efile, "ISA_REGISTER_Initialize\n");
@@ -725,7 +1081,7 @@ void ISA_Registers_End(void)
 		 "  INT rc;\n"
 		 "  INT mask = 1 << (INT)ISA_SUBSET_Value;\n"
 		 "  for (rc = ISA_REGISTER_CLASS_MIN; "
-			 "rc <= ISA_REGISTER_CLASS_MAX; ++rc) {\n"
+			 "rc <= ISA_REGISTER_CLASS_STATIC_MAX; ++rc) {\n"
 		 "    INT i = ISA_REGISTER_CLASS_info_index[rc];\n"
 		 "    const ISA_REGISTER_CLASS_INFO *info = "
 			    "&ISA_REGISTER_CLASS_info[i];\n"
@@ -733,6 +1089,33 @@ void ISA_Registers_End(void)
 		 "    ISA_REGISTER_CLASS_info_index[rc] = i;\n"
 		 "  }\n"
 		 "}\n");
+  }                             // gen_static_code
+
+// #ifdef DYNAMIC_CODE_GEN
+//   fprintf(cfile, "\nstatic const char * ISA_REGISTER_CLASS_static_name_tab[] = {\n");
+//   for (i = DYNA::ISA_REGISTER_CLASS_MIN; i < DYNA::ISA_REGISTER_CLASS_STATIC_MAX; i++) {
+//   fprintf(cfile,
+// 	  "  \"%s\",\n", DYNA::ISA_REGISTER_CLASS_INFO_Name(DYNA::ISA_REGISTER_CLASS_Info(i)));
+//   }
+//   fprintf(cfile,
+// 	  "};\n\n");
+// #endif
 
   Emit_Footer(hfile);
+  Emit_C_Footer(cfile);
+
+  // Closing file handlers.
+  Gen_Close_File_Handle(hfile,hfilename);
+  Gen_Close_File_Handle(cfile,cfilename);
+  if(efile)
+    Gen_Close_File_Handle(efile,efilename);
+
+  // Memory deallocation.
+  Gen_Free_Filename(cfilename);
+  Gen_Free_Filename(hfilename);
+  Gen_Free_Filename(targ_isa_subset_hfilename);
+  if(efilename)
+    Gen_Free_Filename(efilename);
+
+  return;
 }

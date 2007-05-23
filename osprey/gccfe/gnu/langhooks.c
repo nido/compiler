@@ -236,7 +236,7 @@ rtx
 lhd_expand_expr (t, r, mm, em)
      tree t ATTRIBUTE_UNUSED;
      rtx r ATTRIBUTE_UNUSED;
-     enum machine_mode mm ATTRIBUTE_UNUSED;
+     machine_mode_t mm ATTRIBUTE_UNUSED;
      int em ATTRIBUTE_UNUSED;
 {
   abort ();

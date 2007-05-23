@@ -67,15 +67,25 @@ static void init_reg_autoinc	PARAMS ((void));
    These are the registers that cannot be used to allocate
    a pseudo reg for general use.  */
 
+#ifdef TARG_ST
+char *fixed_regs;
+#else
 char fixed_regs[FIRST_PSEUDO_REGISTER];
-
+#endif
 /* Same info as a HARD_REG_SET.  */
 
 HARD_REG_SET fixed_reg_set;
 
 /* Data for initializing the above.  */
 
+#ifndef TARG_ST
 static const char initial_fixed_regs[] = FIXED_REGISTERS;
+#else
+//TB: reconf. Callused is now a dyn array
+char *Fixed_Registers;
+int Number_Of_Registers;
+static char *initial_fixed_regs;
+#endif
 
 /* Indexed by hard register number, contains 1 for registers
    that are fixed use or are clobbered by function calls.
@@ -83,7 +93,12 @@ static const char initial_fixed_regs[] = FIXED_REGISTERS;
    a pseudo reg whose life crosses calls unless we are able
    to save/restore them across the calls.  */
 
+#ifndef TARG_ST
 char call_used_regs[FIRST_PSEUDO_REGISTER];
+#else
+//TB: reconf
+char *call_used_regs = NULL;
+#endif
 
 /* Same info as a HARD_REG_SET.  */
 
@@ -93,9 +108,13 @@ HARD_REG_SET call_used_reg_set;
 HARD_REG_SET losing_caller_save_reg_set;
 
 /* Data for initializing the above.  */
-
+#ifndef TARG_ST
 static const char initial_call_used_regs[] = CALL_USED_REGISTERS;
-
+#else
+//TB: reconf. Callused is now a dyn array
+char *Call_Used_Registers;
+static char *initial_call_used_regs;;
+#endif
 /* This is much like call_used_regs, except it doesn't have to
    be a superset of FIXED_REGISTERS. This vector indicates
    what is really call clobbered, and is used when defining
@@ -110,8 +129,11 @@ char call_really_used_regs[] = CALL_REALLY_USED_REGISTERS;
    calls even if we are willing to save and restore them.  call fixed
    registers are a subset of call used registers.  */
 
+#ifdef TARG_ST
+char *call_fixed_regs;
+#else
 char call_fixed_regs[FIRST_PSEUDO_REGISTER];
-
+#endif
 /* The same info as a HARD_REG_SET.  */
 
 HARD_REG_SET call_fixed_reg_set;
@@ -125,8 +147,11 @@ int n_non_fixed_regs;
    These must be exempt from ordinary flow analysis
    and are also considered fixed.  */
 
+#ifdef TARG_ST
+char *global_regs;
+#else
 char global_regs[FIRST_PSEUDO_REGISTER];
-
+#endif
 /* Contains 1 for registers that are set or clobbered by calls.  */
 /* ??? Ideally, this would be just call_used_regs plus global_regs, but
    for someone's bright idea to have call_used_regs strictly include
@@ -138,10 +163,19 @@ HARD_REG_SET regs_invalidated_by_call;
 
 /* Table of register numbers in the order in which to try to use them.  */
 #ifdef REG_ALLOC_ORDER
+
+#ifdef TARG_ST
+		int *reg_alloc_order;
+#else
 int reg_alloc_order[FIRST_PSEUDO_REGISTER] = REG_ALLOC_ORDER;
+#endif
 
 /* The inverse of reg_alloc_order.  */
+#ifdef TARG_ST
+int *inv_reg_alloc_order;
+#else
 int inv_reg_alloc_order[FIRST_PSEUDO_REGISTER];
+#endif
 #endif
 
 /* For each reg class, a HARD_REG_SET saying which registers are in it.  */
@@ -156,9 +190,12 @@ HARD_REG_SET reg_class_contents[N_REG_CLASSES];
 #define N_REG_INTS  \
   ((FIRST_PSEUDO_REGISTER + (32 - 1)) / 32)
 
+#ifdef TARG_ST
+		static const unsigned *int_reg_class_contents[N_REG_CLASSES];
+#else
 static const unsigned int_reg_class_contents[N_REG_CLASSES][N_REG_INTS]
   = REG_CLASS_CONTENTS;
-
+#endif
 /* For each reg class, number of regs it contains.  */
 
 unsigned int reg_class_size[N_REG_CLASSES];
@@ -193,26 +230,30 @@ const char * reg_names[] = REGISTER_NAMES;
    it will be a MODE_FLOAT or a MODE_CC mode, whichever is valid for the
    register.  */
 
-enum machine_mode reg_raw_mode[FIRST_PSEUDO_REGISTER];
+/* #ifdef TARG_ST */
+/* machine_mode_t *reg_raw_mode; */
+/* #else */
+machine_mode_t reg_raw_mode[FIRST_PSEUDO_REGISTER];
+/* #endif */
 
 /* 1 if class does contain register of given mode.  */
 
-static char contains_reg_of_mode [N_REG_CLASSES] [MAX_MACHINE_MODE];
+static char contains_reg_of_mode [N_REG_CLASSES] [MAX_LIMIT_MACHINE_MODE];
 
 /* Maximum cost of moving from a register in one class to a register in
    another class.  Based on REGISTER_MOVE_COST.  */
 
-static int move_cost[MAX_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
+static int move_cost[MAX_LIMIT_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
 
 /* Similar, but here we don't have to move if the first index is a subset
    of the second so in that case the cost is zero.  */
 
-static int may_move_in_cost[MAX_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
+static int may_move_in_cost[MAX_LIMIT_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
 
 /* Similar, but here we don't have to move if the first index is a superset
    of the second so in that case the cost is zero.  */
 
-static int may_move_out_cost[MAX_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
+static int may_move_out_cost[MAX_LIMIT_MACHINE_MODE][N_REG_CLASSES][N_REG_CLASSES];
 
 #ifdef FORBIDDEN_INC_DEC_CLASSES
 
@@ -229,14 +270,14 @@ static char *in_inc_dec;
 #endif /* FORBIDDEN_INC_DEC_CLASSES */
 
 #ifdef CANNOT_CHANGE_MODE_CLASS
-/* All registers that have been subreged.  Indexed by regno * MAX_MACHINE_MODE
+/* All registers that have been subreged.  Indexed by regno * MAX_LIMIT_MACHINE_MODE
    + mode.  */
 bitmap_head subregs_of_mode;
 #endif
 
 /* Sample MEM values for use by memory_move_secondary_cost.  */
 
-static GTY(()) rtx top_of_stack[MAX_MACHINE_MODE];
+static GTY(()) rtx top_of_stack[MAX_LIMIT_MACHINE_MODE];
 
 /* Linked list of reg_info structures allocated for reg_n_info array.
    Grouping all of the allocated structures together in one lump
@@ -272,18 +313,33 @@ init_reg_sets ()
   for (i = 0; i < N_REG_CLASSES; i++)
     {
       CLEAR_HARD_REG_SET (reg_class_contents[i]);
-
+#ifndef TARG_ST
       /* Note that we hard-code 32 here, not HOST_BITS_PER_INT.  */
       for (j = 0; j < FIRST_PSEUDO_REGISTER; j++)
 	if (int_reg_class_contents[i][j / 32]
 	    & ((unsigned) 1 << (j % 32)))
 	  SET_HARD_REG_BIT (reg_class_contents[i], j);
+#endif
     }
-
+#ifdef TARG_ST
+  //TB: reconf
+  fixed_regs = Fixed_Registers;
+#else
   memcpy (fixed_regs, initial_fixed_regs, sizeof fixed_regs);
+#endif  
+#ifndef TARG_ST
   memcpy (call_used_regs, initial_call_used_regs, sizeof call_used_regs);
+#else
+  //TB: reconf
+  call_used_regs = Call_Used_Registers;
+  //  memcpy (call_used_regs, Call_Used_Registers, Number_Of_Registers * sizeof(char));
+#endif
+#ifdef TARG_ST
+  global_regs = (char *) xmalloc (Number_Of_Registers * sizeof (char));
+  memset (global_regs, 0,Number_Of_Registers * sizeof (char));
+#else
   memset (global_regs, 0, sizeof global_regs);
-
+#endif
   /* Do any additional initialization regsets may need.  */
   INIT_ONCE_REG_SET ();
 
@@ -300,7 +356,7 @@ static void
 init_reg_sets_1 ()
 {
   unsigned int i, j;
-  unsigned int /* enum machine_mode */ m;
+  unsigned int /* machine_mode_t */ m;
   char allocatable_regs_of_mode [MAX_MACHINE_MODE];
 
   /* This macro allows the fixed or call-used registers
@@ -314,7 +370,7 @@ init_reg_sets_1 ()
 
   memset ((char *) reg_class_size, 0, sizeof reg_class_size);
   for (i = 0; i < N_REG_CLASSES; i++)
-    for (j = 0; j < FIRST_PSEUDO_REGISTER; j++)
+    for (j = 0; j < Number_Of_Registers; j++)
       if (TEST_HARD_REG_BIT (reg_class_contents[i], j))
 	reg_class_size[i]++;
 
@@ -420,11 +476,15 @@ init_reg_sets_1 ()
   CLEAR_HARD_REG_SET (call_fixed_reg_set);
   CLEAR_HARD_REG_SET (regs_invalidated_by_call);
 
+#ifdef TARG_ST
+  call_fixed_regs = (char *) xmalloc (Number_Of_Registers * sizeof (char));
+  memcpy (call_fixed_regs, fixed_regs, Number_Of_Registers * sizeof (char));
+#else
   memcpy (call_fixed_regs, fixed_regs, sizeof call_fixed_regs);
-
+#endif
   n_non_fixed_regs = 0;
 
-  for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+  for (i = 0; i < Number_Of_Registers; i++)
     {
       if (fixed_regs[i])
 	SET_HARD_REG_BIT (fixed_reg_set, i);
@@ -476,7 +536,7 @@ init_reg_sets_1 ()
   for (m = 0; m < (unsigned int) MAX_MACHINE_MODE; m++)
     for (i = 0; i < N_REG_CLASSES; i++)
       if ((unsigned) CLASS_MAX_NREGS (i, m) <= reg_class_size[i])
-	for (j = 0; j < FIRST_PSEUDO_REGISTER; j++)
+	for (j = 0; j < Number_Of_Registers; j++)
 	  if (!fixed_regs [j] && TEST_HARD_REG_BIT (reg_class_contents[i], j)
 	      && HARD_REGNO_MODE_OK (j, m))
 	     {
@@ -552,7 +612,7 @@ init_reg_modes ()
 {
   int i;
 
-  for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+  for (i = 0; i < Number_Of_Registers; i++)
     {
       reg_raw_mode[i] = choose_hard_reg_mode (i, 1);
 
@@ -604,7 +664,7 @@ init_fake_stack_mems ()
 
 int
 memory_move_secondary_cost (mode, class, in)
-     enum machine_mode mode;
+     machine_mode_t mode;
      enum reg_class class;
      int in;
 {
@@ -659,13 +719,13 @@ memory_move_secondary_cost (mode, class, in)
 /* Return a machine mode that is legitimate for hard reg REGNO and large
    enough to save nregs.  If we can't find one, return VOIDmode.  */
 
-enum machine_mode
+machine_mode_t
 choose_hard_reg_mode (regno, nregs)
      unsigned int regno ATTRIBUTE_UNUSED;
      unsigned int nregs;
 {
-  unsigned int /* enum machine_mode */ m;
-  enum machine_mode found_mode = VOIDmode, mode;
+  unsigned int /* machine_mode_t */ m;
+  machine_mode_t found_mode = VOIDmode, mode;
 
   /* We first look for the largest integer mode that can be validly
      held in REGNO.  If none, we look for the largest floating-point mode.
@@ -714,7 +774,7 @@ choose_hard_reg_mode (regno, nregs)
   /* Iterate over all of the CCmodes.  */
   for (m = (unsigned int) CCmode; m < (unsigned int) NUM_MACHINE_MODES; ++m)
     {
-      mode = (enum machine_mode) m;
+      mode = (machine_mode_t) m;
       if ((unsigned) HARD_REGNO_NREGS (regno, mode) == nregs
 	  && HARD_REGNO_MODE_OK (regno, mode))
 	return mode;
@@ -778,6 +838,11 @@ void
 globalize_reg (i)
      int i;
 {
+#ifdef TARG_ST
+  /* Check that i is not > to Number_Of_Registers*/
+  if (i >= Number_Of_Registers)
+    return;
+#endif
   if (fixed_regs[i] == 0 && no_global_reg_vars)
     error ("global register variable follows a function definition");
 
@@ -796,7 +861,9 @@ globalize_reg (i)
   if (fixed_regs[i])
     return;
 
-  fixed_regs[i] = call_used_regs[i] = call_fixed_regs[i] = 1;
+  fixed_regs[i] = 1;
+  call_used_regs[i] = 1;
+  call_fixed_regs[i] = 1;
   n_non_fixed_regs--;
 
   SET_HARD_REG_BIT (fixed_reg_set, i);
@@ -858,14 +925,14 @@ static int frequency;
 static rtx scan_one_insn	PARAMS ((rtx, int));
 static void record_operand_costs PARAMS ((rtx, struct costs *, struct reg_pref *));
 static void dump_regclass	PARAMS ((FILE *));
-static void record_reg_classes	PARAMS ((int, int, rtx *, enum machine_mode *,
+static void record_reg_classes	PARAMS ((int, int, rtx *, machine_mode_t *,
 				       const char **, rtx,
 				       struct costs *, struct reg_pref *));
-static int copy_cost		PARAMS ((rtx, enum machine_mode,
+static int copy_cost		PARAMS ((rtx, machine_mode_t,
 				       enum reg_class, int));
 static void record_address_regs	PARAMS ((rtx, enum reg_class, int));
 #ifdef FORBIDDEN_INC_DEC_CLASSES
-static int auto_inc_dec_reg_p	PARAMS ((rtx, enum machine_mode));
+static int auto_inc_dec_reg_p	PARAMS ((rtx, machine_mode_t));
 #endif
 static void reg_scan_mark_refs	PARAMS ((rtx, rtx, int, unsigned int));
 
@@ -918,7 +985,7 @@ dump_regclass (dump)
 {
   static const char *const reg_class_names[] = REG_CLASS_NAMES;
   int i;
-  for (i = FIRST_PSEUDO_REGISTER; i < max_regno; i++)
+  for (i = Number_Of_Registers; i < max_regno; i++)
     {
       int /* enum reg_class */ class;
       if (REG_N_REFS (i))
@@ -952,7 +1019,7 @@ record_operand_costs (insn, op_costs, reg_pref)
      struct reg_pref *reg_pref;
 {
   const char *constraints[MAX_RECOG_OPERANDS];
-  enum machine_mode modes[MAX_RECOG_OPERANDS];
+  machine_mode_t modes[MAX_RECOG_OPERANDS];
   int i;
 
   for (i = 0; i < recog_data.n_operands; i++)
@@ -1131,7 +1198,7 @@ scan_one_insn (insn, pass)
 
   for (i = 0; i < recog_data.n_operands; i++)
     if (GET_CODE (recog_data.operand[i]) == REG
-	&& REGNO (recog_data.operand[i]) >= FIRST_PSEUDO_REGISTER)
+	&& REGNO (recog_data.operand[i]) >= Number_Of_Registers)
       {
 	int regno = REGNO (recog_data.operand[i]);
 	struct costs *p = &costs[regno], *q = &op_costs[i];
@@ -1156,16 +1223,16 @@ init_reg_autoinc ()
   for (i = 0; i < N_REG_CLASSES; i++)
     {
       rtx r = gen_rtx_raw_REG (VOIDmode, 0);
-      enum machine_mode m;
+      machine_mode_t m;
       int j;
 
-      for (j = 0; j < FIRST_PSEUDO_REGISTER; j++)
+      for (j = 0; j < Number_Of_Registers; j++)
 	if (TEST_HARD_REG_BIT (reg_class_contents[i], j))
 	  {
 	    REGNO (r) = j;
 
 	    for (m = VOIDmode; (int) m < (int) MAX_MACHINE_MODE;
-		 m = (enum machine_mode) ((int) m + 1))
+		 m = (machine_mode_t) ((int) m + 1))
 	      if (HARD_REGNO_MODE_OK (j, m))
 		{
 		  PUT_MODE (r, m);
@@ -1280,7 +1347,7 @@ regclass (f, nregs, dump)
 	  dump_regclass (dump);
 	  fprintf (dump,"\n");
 	}
-      for (i = FIRST_PSEUDO_REGISTER; i < nregs; i++)
+      for (i = Number_Of_Registers; i < nregs; i++)
 	{
 	  int best_cost = (1 << (HOST_BITS_PER_INT - 2)) - 1;
 	  enum reg_class best = ALL_REGS, alt = NO_REGS;
@@ -1401,7 +1468,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
      int n_alts;
      int n_ops;
      rtx *ops;
-     enum machine_mode *modes;
+     machine_mode_t *modes;
      const char **constraints;
      rtx insn;
      struct costs *op_costs;
@@ -1427,7 +1494,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 	{
 	  const char *p = constraints[i];
 	  rtx op = ops[i];
-	  enum machine_mode mode = modes[i];
+	  machine_mode_t mode = modes[i];
 	  int allows_addr = 0;
 	  int win = 0;
 	  unsigned char c;
@@ -1441,7 +1508,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 
 	  if (*p == 0)
 	    {
-	      if (GET_CODE (op) == REG && REGNO (op) >= FIRST_PSEUDO_REGISTER)
+	      if (GET_CODE (op) == REG && REGNO (op) >= Number_Of_Registers)
 		memset ((char *) &this_op_costs[i], 0, sizeof this_op_costs[i]);
 
 	      continue;
@@ -1464,7 +1531,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 	      classes[i] = classes[j];
 	      allows_mem[i] = allows_mem[j];
 
-	      if (GET_CODE (op) != REG || REGNO (op) < FIRST_PSEUDO_REGISTER)
+	      if (GET_CODE (op) != REG || REGNO (op) < Number_Of_Registers)
 		{
 		  /* If this matches the other operand, we have no added
 		     cost and we win.  */
@@ -1479,7 +1546,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 		    alt_cost += copy_cost (op, mode, classes[j], 1), win = 1;
 		}
 	      else if (GET_CODE (ops[j]) != REG
-		       || REGNO (ops[j]) < FIRST_PSEUDO_REGISTER)
+		       || REGNO (ops[j]) < Number_Of_Registers)
 		{
 		  /* This op is a pseudo but the one it matches is not.  */
 
@@ -1714,7 +1781,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 	     register preferencing.  If some register class is valid, compute
 	     the costs of moving the pseudo into that class.  */
 
-	  if (GET_CODE (op) == REG && REGNO (op) >= FIRST_PSEUDO_REGISTER)
+	  if (GET_CODE (op) == REG && REGNO (op) >= Number_Of_Registers)
 	    {
 	      if (classes[i] == NO_REGS)
 		{
@@ -1802,7 +1869,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 
       for (i = 0; i < n_ops; i++)
 	if (GET_CODE (ops[i]) == REG
-	    && REGNO (ops[i]) >= FIRST_PSEUDO_REGISTER)
+	    && REGNO (ops[i]) >= Number_Of_Registers)
 	  {
 	    struct costs *pp = &op_costs[i], *qq = &this_op_costs[i];
 	    int scale = 1 + (recog_data.operand_type[i] == OP_INOUT);
@@ -1835,14 +1902,14 @@ record_reg_classes (n_alts, n_ops, ops, modes,
       && GET_CODE (ops[0]) == REG && GET_CODE (ops[1]) == REG
       && find_regno_note (insn, REG_DEAD, REGNO (ops[1])))
     for (i = 0; i <= 1; i++)
-      if (REGNO (ops[i]) >= FIRST_PSEUDO_REGISTER)
+      if (REGNO (ops[i]) >= Number_Of_Registers)
 	{
 	  unsigned int regno = REGNO (ops[!i]);
-	  enum machine_mode mode = GET_MODE (ops[!i]);
+	  machine_mode_t mode = GET_MODE (ops[!i]);
 	  int class;
 	  unsigned int nr;
 
-	  if (regno >= FIRST_PSEUDO_REGISTER && reg_pref != 0)
+	  if (regno >= Number_Of_Registers && reg_pref != 0)
 	    {
 	      enum reg_class pref = reg_pref[regno].prefclass;
 
@@ -1851,7 +1918,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 		  && REGISTER_MOVE_COST (mode, pref, pref) < 10 * 2)
 		op_costs[i].cost[(unsigned char) pref] = -1;
 	    }
-	  else if (regno < FIRST_PSEUDO_REGISTER)
+	  else if (regno < Number_Of_Registers)
 	    for (class = 0; class < N_REG_CLASSES; class++)
 	      if (TEST_HARD_REG_BIT (reg_class_contents[class], regno)
 		  && reg_class_size[class] == (unsigned) CLASS_MAX_NREGS (class, mode))
@@ -1882,7 +1949,7 @@ record_reg_classes (n_alts, n_ops, ops, modes,
 static int
 copy_cost (x, mode, class, to_p)
      rtx x;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      enum reg_class class;
      int to_p ATTRIBUTE_UNUSED;
 {
@@ -2023,14 +2090,14 @@ record_address_regs (x, class, scale)
 
 #ifdef REG_OK_FOR_BASE_P
 	else if (code0 == REG && code1 == REG
-		 && REGNO (arg0) < FIRST_PSEUDO_REGISTER
+		 && REGNO (arg0) < Number_Of_Registers
 		 && (REG_OK_FOR_BASE_P (arg0) || REG_OK_FOR_INDEX_P (arg0)))
 	  record_address_regs (arg1,
 			       REG_OK_FOR_BASE_P (arg0)
 			       ? INDEX_REG_CLASS : MODE_BASE_REG_CLASS (VOIDmode),
 			       scale);
 	else if (code0 == REG && code1 == REG
-		 && REGNO (arg1) < FIRST_PSEUDO_REGISTER
+		 && REGNO (arg1) < Number_Of_Registers
 		 && (REG_OK_FOR_BASE_P (arg1) || REG_OK_FOR_INDEX_P (arg1)))
 	  record_address_regs (arg0,
 			       REG_OK_FOR_BASE_P (arg1)
@@ -2093,7 +2160,7 @@ record_address_regs (x, class, scale)
 
 #ifdef FORBIDDEN_INC_DEC_CLASSES
       if (GET_CODE (XEXP (x, 0)) == REG
-	  && REGNO (XEXP (x, 0)) >= FIRST_PSEUDO_REGISTER)
+	  && REGNO (XEXP (x, 0)) >= Number_Of_Registers)
 	in_inc_dec[REGNO (XEXP (x, 0))] = 1;
 #endif
 
@@ -2131,7 +2198,7 @@ record_address_regs (x, class, scale)
 static int
 auto_inc_dec_reg_p (reg, mode)
      rtx reg;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (HAVE_POST_INCREMENT
       && memory_address_p (mode, gen_rtx_POST_INC (Pmode, reg)))
@@ -2485,7 +2552,7 @@ reg_scan_mark_refs (x, insn, note_flag, min_regno)
 	 on the type.  */
 
       if (GET_CODE (SET_DEST (x)) == REG
-	  && REGNO (SET_DEST (x)) >= FIRST_PSEUDO_REGISTER
+	  && REGNO (SET_DEST (x)) >= Number_Of_Registers
 	  && REGNO (SET_DEST (x)) >= min_regno
 	  /* If the destination pseudo is set more than once, then other
 	     sets might not be to a pointer value (consider access to a
@@ -2620,10 +2687,10 @@ regset_release_memory ()
 void
 cannot_change_mode_set_regs (used, from, regno)
      HARD_REG_SET *used;
-     enum machine_mode from;
+     machine_mode_t from;
      unsigned int regno;
 {
-  enum machine_mode to;
+  machine_mode_t to;
   int n, i;
   int start = regno * MAX_MACHINE_MODE;
 
@@ -2631,7 +2698,7 @@ cannot_change_mode_set_regs (used, from, regno)
     if (n >= MAX_MACHINE_MODE + start)
       return;
     to = n - start;
-    for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+    for (i = 0; i < Number_Of_Registers; i++)
       if (! TEST_HARD_REG_BIT (*used, i)
 	  && REG_CANNOT_CHANGE_MODE_P (i, from, to))
 	SET_HARD_REG_BIT (*used, i);
@@ -2645,9 +2712,9 @@ bool
 invalid_mode_change_p (regno, class, from_mode)
      unsigned int regno;
       enum reg_class class;
-     enum machine_mode from_mode;
+     machine_mode_t from_mode;
 {
-  enum machine_mode to_mode;
+  machine_mode_t to_mode;
   int n;
   int start = regno * MAX_MACHINE_MODE;
 

@@ -59,7 +59,10 @@
 #include "targ_isa_properties.h"
 #include "betarget.h"
 #include "w2op.h"
-
+#ifdef TARG_ST
+//TB
+#include <config_TARG.h>	/* For Enable_Non_IEEE_Ops. */
+#endif
 BOOL Targ_Lower_Float_To_Unsigned = FALSE;
 BOOL Targ_Lower_Unsigned_To_Float = FALSE;
 
@@ -158,6 +161,70 @@ TAS_To_TOP (WN *tas_wn)
         return TOP_UNDEFINED;
   }
 }
+
+/* =============================================================
+ * BETARG_is_emulated_operator
+ * 
+ * used in rt_lower_wn to know if an operator must be lowered 
+ * as runtime call or inlined by code expansion.
+ * Flags like 'Emulate_Single_Float_Type' or 'Enable_Non_IEEE_Ops'
+ * initialised in config_target should be used here.
+ *
+ * =============================================================
+ */
+
+BOOL
+BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc) {
+
+  /* All long long operators require emulation if emulation is on. */
+  if (MTYPE_is_longlong(rtype) ||
+      MTYPE_is_longlong(desc)) return TRUE;
+
+  /* All double operators require emulation if emulation is on. */
+  if (MTYPE_is_double(rtype) ||
+      MTYPE_is_double(desc)) return TRUE;
+
+  /* For ST200, the target options may allow non-ieee architectural support. 
+   * In this case the basic operators do not require emulation. */
+  if (Enable_Non_IEEE_Ops &&
+      (rtype == MTYPE_F4 || desc == MTYPE_F4)) {
+    switch (opr) {
+    case OPR_ADD: 
+    case OPR_SUB: 
+    case OPR_MPY:
+    case OPR_ABS:
+    case OPR_NEG:
+	// [HK]
+    case OPR_MADD: 
+    case OPR_MSUB: 
+    case OPR_NMADD: 
+    case OPR_NMSUB: 
+	return FALSE;
+    case OPR_LT:
+    case OPR_LE:
+    case OPR_EQ:
+    case OPR_NE:
+    case OPR_GE:
+    case OPR_GT:
+      // [HK] 20051207, never emulate for ST235, as fcmp are now hardware instructions.
+      // Fallthru.
+    case OPR_CVT:
+    case OPR_TRUNC:
+// [HK]      if (rtype == MTYPE_I4 || desc == MTYPE_I4)
+      if (rtype == MTYPE_I4 || desc == MTYPE_I4 || desc == MTYPE_U4 )
+	return FALSE;
+      break;
+    default:
+      break;
+    }
+  }
+
+  /* All single operators require emulation if emulation is on. */
+  if (rtype == MTYPE_F4 || desc == MTYPE_F4) return TRUE;
+
+  return FALSE;
+}
+
 
 /* =============================================================
  *   Is_Power_Of_2 (val, mtype)
@@ -1032,6 +1099,13 @@ static INT32 WN_Compare_Trees(WN *t1, WN *t2)
     case OPR_CSELECT:
 
       return ((INTPS)t1 - (INTPS)t2);
+
+#ifdef TARG_ST
+   case OPR_SUBPART:
+     if (WN_subpart_index(t1) < WN_subpart_index(t2)) return (-1);
+     if (WN_subpart_index(t1) > WN_subpart_index(t2)) return (1);
+     return (WN_Compare_Trees(WN_kid0(t1), WN_kid0(t2)));
+#endif
 
     default:
        if (OPCODE_is_expression(WN_opcode(t1))) {

@@ -115,7 +115,7 @@ LDLIBS += -llmsgi
 endif
 
 # don't want to use common/com/defs.h
-LCINCS	= -I. -I$(BUILD_BASE)
+LCINCS	= -I. -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser
 
 TARGETS	= driver$(HEXE)
 
@@ -239,7 +239,7 @@ CPPCMD="$(BUILD_COMPILER_LOC)cpp -traditional -P"
 OPTIONS.P : $(OPTIONS_SRC)
 	$(BUILD_BASE)/sort_options.sh $(CPPCMD) $(BUILD_BASE) OPTIONS $(LCDEFS) > OPTIONS.P
 
-DRIVERDEPLIBS += $(BUILD_AREA)/libSYS/libSYS.a $(BUILD_AREA)/libiberty/libiberty.a
+DRIVERDEPLIBS += $(BUILD_AREA)/libSYS/libSYS.a $(BUILD_AREA)/libiberty/libiberty.a $(BUILD_AREA)/librcparser/librcparser.a
 
 driver$(HEXE): $(OBJECTS)  $(DRIVERDEPLIBS)
 	$(CCF) -o $@ $(OBJECTS) $(DRIVERDEPLIBS) $(LDFLAGS)

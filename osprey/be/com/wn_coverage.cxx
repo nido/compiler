@@ -2595,7 +2595,7 @@ wn_coverage_pu(WN *pu)
     if (coverage_begin_output (pu)) {
       coverage_blocks();
     } else {
-      fprintf (stderr, "Cancel coverage instrumentation\n", bbg_file_name);
+      fprintf (stderr, "Cancel coverage instrumentation\n");
       goto finish;
     }
     
@@ -3214,14 +3214,14 @@ wn_coverage_branch_probabilities(void)
       total += e->count;
     }
     if (list_bb->bb->count != total) {
-      fprintf(stderr,"bb %d: some of predecessor edges (%ld) != count for this bb (%ld)\b", list_bb->bb->index, total, list_bb->bb->count);
+      fprintf(stderr,"bb %d: some of predecessor edges (%ld) != count for this bb (%ld)\b", list_bb->bb->index, (long)total, (long)list_bb->bb->count);
       for (unsigned i = 0; i < list_bb->bb->n_preds; i++) {
 	edge_t e = INDEX_EDGE (edges_list, list_bb->bb->index_of_pred_edges[i]);
 	if (!e->fake && !e->on_tree)
 	  fprintf(stderr,"\tedge nb:%d, global nb: %d, offset .LPBX1+%d might have invalid count : %ld\n ", list_bb->bb->index_of_pred_edges[i],  
 		  list_bb->bb->index_of_pred_edges[i] + prg_n_ctrs[GCOV_COUNTER_ARCS] + fn_b_ctrs[GCOV_COUNTER_ARCS] - 1,
 		  (list_bb->bb->index_of_pred_edges[i] + prg_n_ctrs[GCOV_COUNTER_ARCS] + fn_b_ctrs[GCOV_COUNTER_ARCS] - 1)
-		  * (MTYPE_RegisterSize( MTYPE_U8 )), e->count);
+		  * (MTYPE_RegisterSize( MTYPE_U8 )), (long)e->count);
       }
     }
     FmtAssert(list_bb->bb->count == total, ("wn_coverage_branch_probabilities: bb %d has invalid count in relation to its predecessors", list_bb->bb->index));
@@ -3310,7 +3310,7 @@ Annotate_Circuit( WN *wn, basic_block_list_t *list_bb)
     
   Cur_PU_Feedback->Annot_circuit( wn, FB_Info_Circuit( FB_FREQ((list_bb->bb->count + 1)/2),
 						       FB_FREQ(list_bb->bb->count/2),
-						       FB_FREQ(0.0) ) );
+						       FB_FREQ(0) ) );
 }
 
 // Create feedback info for a call

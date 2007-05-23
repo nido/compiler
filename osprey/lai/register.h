@@ -600,7 +600,6 @@
 
 #include "mtypes.h"
 #include "targ_abi_properties.h"
-
 struct st;
 struct op;
 struct tn;
@@ -614,8 +613,11 @@ typedef UINT   REGISTER;
 typedef mUINT8 mREGISTER;
 typedef union class_reg_pair CLASS_REG_PAIR;
 
+#ifndef TARG_ST
+// [CG] Obsolete. Moved to register_targ.h.
 /* Target-specific register info */
 #include "targ_register.h"
+#endif
 
 /* define 16-bit structure to hold both the class and register number,
    and a union with an mUINT16 so that we can efficiently compare
@@ -755,7 +757,12 @@ extern const REGISTER_SET REGISTER_SET_EMPTY_SET;
  */
 typedef struct {
   mUINT8            reg_machine_id[REGISTER_MAX + 1];
+#ifdef TARG_ST
+  // [Reconfigurability] Extended supported register width
+  mUINT16           reg_bit_size[REGISTER_MAX + 1];
+#else
   mUINT8            reg_bit_size[REGISTER_MAX + 1];
+#endif
   mBOOL             reg_allocatable[REGISTER_MAX + 1];
   const char       *reg_name[REGISTER_MAX + 1];
 
@@ -779,12 +786,20 @@ typedef struct {
 
 
 extern REGISTER_CLIENT_CONST ISA_REGISTER_CLASS
+#ifdef TARG_ST
+REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX + 1];
+#endif
 
 /* Cached information about each ISA_REGISTER_CLASS:
  */
 extern REGISTER_CLIENT_CONST REGISTER_CLASS_INFO
+#ifdef TARG_ST
+CG_EXPORTED REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 CG_EXPORTED REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
+#endif
 
 /* Accessing cached information about a ISA_REGISTER_CLASS
  */
@@ -858,7 +873,11 @@ typedef struct {
 /* Cached information about each ISA_REGISTER_SUBCLASS:
  */
 extern REGISTER_CLIENT_CONST REGISTER_SUBCLASS_INFO
+#ifdef TARG_ST
+REGISTER_SUBCLASS_info[ISA_REGISTER_SUBCLASS_MAX_LIMIT + 1];
+#else
 REGISTER_SUBCLASS_info[ISA_REGISTER_SUBCLASS_MAX + 1];
+#endif
 
 /* Accessing cached information about a ISA_REGISTER_SUBCLASS
  */
@@ -1285,31 +1304,34 @@ extern void REGISTER_Set_Allocatable(
 extern void Set_Register_Never_Allocatable (char *regname);
 extern void Set_Register_Never_Allocatable (PREG_NUM preg);
 
+#ifdef TARG_ST
+/* [CG] Implemented in register.cxx. */
+extern ISA_REGISTER_CLASS Register_Class_For_Mtype(TYPE_ID mtype);
+extern ISA_REGISTER_SUBCLASS Register_Subclass_For_Mtype(TYPE_ID mtype);
+extern ISA_REGISTER_CLASS Register_Class_Num_From_Name(char *regname, INT32 *regnum);
+extern char *ISA_REGISTER_CLASS_Symbol(ISA_REGISTER_CLASS rc);
+extern char *ISA_REGISTER_CLASS_ASM_Name(ISA_REGISTER_CLASS rc);
+#else
 inline ISA_REGISTER_CLASS Register_Class_For_Mtype(TYPE_ID mtype)
 {
-  extern mISA_REGISTER_CLASS Mtype_RegClass_Map[MTYPE_LAST+1];
+  extern mISA_REGISTER_CLASS Mtype_RegClass_Map[MTYPE_MAX_LIMIT+1];
   return   (mtype <= MTYPE_LAST)
 	 ? (ISA_REGISTER_CLASS)Mtype_RegClass_Map[mtype] 
 	 : ISA_REGISTER_CLASS_UNDEFINED;
 }
-
-extern void Init_Mtype_RegClass_Map(void);
+#endif /* !TARG_ST */
 
 extern void Mark_Specified_Registers_As_Not_Allocatable (void);
 
-/* ====================================================================
- *   These are defined in the target dependent part of compiler
- * ==================================================================== 
- */
 
-extern char *ISA_REGISTER_CLASS_symbol[];
-#define ISA_REGISTER_CLASS_Symbol(rc) (ISA_REGISTER_CLASS_symbol[rc])
+// Returns TRUE if the rclass is the predicate register class.
+extern BOOL Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass);
 
-// target-specific register class initializations
-extern void CGTARG_Initialize_Register_Class(ISA_REGISTER_CLASS rclass);
+// Returns TRUE if stacked register set exists for <rclass>.
+extern BOOL REGISTER_Has_Stacked_Registers(ISA_REGISTER_CLASS rclass);
 
-// given regname (from asm), return its register class
-extern ISA_REGISTER_CLASS CGTARG_Regname_Register_Class(char *regname); 
+// Returns TRUE if rotating register set exists for <rclass>.
+extern BOOL REGISTER_Has_Rotating_Registers(ISA_REGISTER_CLASS rclass);
 
 // Return true if the supplied register is a rotating register
 // in the register stack for the given register class.
@@ -1319,26 +1341,19 @@ extern BOOL REGISTER_Is_Rotating(ISA_REGISTER_CLASS rclass, REGISTER reg);
 extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLASS rclass);
 
 #ifdef TARG_ST
-// Returns the set of forbidden registers for GRA.
-// We forbid some registers from being used by the GRA. Such is the
-// case of the $r0.63 on st200 which is a dedicated register for 
-// the igoto instruction. GRA should never allocate this register 
-// to a global live-range (unless dedicated to); or otherwise LRA
-// may not be able to spill a local liverange (like the one used
-// for an igoto) because of "spill beyond the end of BB, etc.
-extern REGISTER_SET CGTARG_Forbidden_GRA_Registers(ISA_REGISTER_CLASS rclass);
-// [SC] The set of forbidden registers for LRA.
-extern REGISTER_SET CGTARG_Forbidden_LRA_Registers(ISA_REGISTER_CLASS rclass);
+// Maximum number of sub-parts in Composite registers.
+// Set to a max value for all targets.
+#define REGISTER_COMPOSITE_SIZE_MAX  4
+#endif
 
+/* ====================================================================
+ *   These are defined in the target dependent part of compiler
+ * ==================================================================== 
+ */
 
-// Returns the set of registers that will be selected in priority by
-// GRA (resp. LRA).
-// This may be used for instance to select some registers subjects
-// to multi load/store operations first.
-// This is NOT used for instance to select first caller or callee saved
-// register, this is handled specially in GRA or LRA.
-extern REGISTER_SET CGTARG_Prefered_GRA_Registers(ISA_REGISTER_CLASS rclass);
-extern REGISTER_SET CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass);
+#ifdef TARG_ST
+/* [CG] Target specific register interface is defined in lai/register_targ.h. */
+#include "register_targ.h"
 #endif
 
 #endif /* REGISTER_INCLUDED */

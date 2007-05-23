@@ -215,6 +215,9 @@ BOOL LOCS_Enable_Bundle_Formation = FALSE;
 BOOL LOCS_PRE_Enable_Scheduling = TRUE;
 BOOL LOCS_POST_Enable_Scheduling = TRUE;
 BOOL LOCS_Enable_Scheduling = TRUE;
+#ifdef TARG_ST
+INT32 LOCS_POST_Scheduling =  Forward_Post_Sched;
+#endif
 
 // ====================================================================
 //   IGLS:

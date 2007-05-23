@@ -1179,11 +1179,20 @@ VN_BINARY_EXPR::Create(OPCODE           opc,
 		       const VN_VALNUM &vn1, 
 		       const VN_VALNUM &vn2) 
 {
+#ifdef TARG_ST
+   Is_True((OPCODE_nkids(opc) == 2 || OPCODE_operator(opc) == OPR_CVTL ||
+	    OPCODE_operator(opc) == OPR_SUBPART ||
+	    OPCODE_operator(opc) == OPR_EXTRACT_BITS ) && 
+	   OPCODE_operator(opc) != OPR_COMMA                            &&
+	   OPCODE_operator(opc) != OPR_RCOMMA,
+	   ("Unexpected opcode in call to VN_BINARY_EXPR::Create()"));
+#else
    Is_True((OPCODE_nkids(opc) == 2 || OPCODE_operator(opc) == OPR_CVTL ||
 	    OPCODE_operator(opc) == OPR_EXTRACT_BITS ) && 
 	   OPCODE_operator(opc) != OPR_COMMA                            &&
 	   OPCODE_operator(opc) != OPR_RCOMMA,
 	   ("Unexpected opcode in call to VN_BINARY_EXPR::Create()"));
+#endif                                 /* TARG_ST */
 
    VN_BINARY_EXPR *expr = (VN_BINARY_EXPR *)_Free->pop();
    if (expr == NULL)

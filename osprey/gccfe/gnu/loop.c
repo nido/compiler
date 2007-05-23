@@ -222,7 +222,7 @@ struct movable
   unsigned int move_insn_first:1;/* Same as above, if this is necessary for the
 				    first insn of a consecutive sets group.  */
   unsigned int is_equiv : 1;	/* 1 means a REG_EQUIV is present on INSN.  */
-  enum machine_mode savemode;   /* Nonzero means it is a mode for a low part
+  machine_mode_t savemode;   /* Nonzero means it is a mode for a low part
 				   that we should avoid changing when clearing
 				   the rest of the reg.  */
   struct movable *match;	/* First entry for same value */
@@ -302,12 +302,12 @@ static void update_giv_derive PARAMS ((const struct loop *, rtx));
 static void check_ext_dependent_givs PARAMS ((struct iv_class *,
 					      struct loop_info *));
 static int basic_induction_var PARAMS ((const struct loop *, rtx,
-					enum machine_mode, rtx, rtx,
+					machine_mode_t, rtx, rtx,
 					rtx *, rtx *, rtx **));
 static rtx simplify_giv_expr PARAMS ((const struct loop *, rtx, rtx *, int *));
 static int general_induction_var PARAMS ((const struct loop *loop, rtx, rtx *,
 					  rtx *, rtx *, rtx *, int, int *,
-					  enum machine_mode));
+					  machine_mode_t));
 static int consec_sets_giv PARAMS ((const struct loop *, int, rtx,
 				    rtx, rtx, rtx *, rtx *, rtx *, rtx *));
 static int check_dbra_loop PARAMS ((struct loop *, int));
@@ -1471,7 +1471,7 @@ combine_movables (movables, regs)
 {
   struct movable *m;
   char *matched_regs = (char *) xmalloc (regs->num);
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* Regs that are set more than once are not allowed to match
      or be matched.  I'm no longer sure why not.  */
@@ -6274,7 +6274,7 @@ static int
 basic_induction_var (loop, x, mode, dest_reg, p, inc_val, mult_val, location)
      const struct loop *loop;
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx dest_reg;
      rtx p;
      rtx *inc_val;
@@ -6483,7 +6483,7 @@ general_induction_var (loop, x, src_reg, add_val, mult_val, ext_val,
      rtx *ext_val;
      int is_addr;
      int *pbenefit;
-     enum machine_mode addr_mode;
+     machine_mode_t addr_mode;
 {
   struct loop_ivs *ivs = LOOP_IVS (loop);
   rtx orig_x = x;
@@ -6582,7 +6582,7 @@ general_induction_var (loop, x, src_reg, add_val, mult_val, ext_val,
 
    *BENEFIT will be incremented by the benefit of any sub-giv encountered.  */
 
-static rtx sge_plus PARAMS ((enum machine_mode, rtx, rtx));
+static rtx sge_plus PARAMS ((machine_mode_t, rtx, rtx));
 static rtx sge_plus_constant PARAMS ((rtx, rtx));
 
 static rtx
@@ -6594,7 +6594,7 @@ simplify_giv_expr (loop, x, ext_val, benefit)
 {
   struct loop_ivs *ivs = LOOP_IVS (loop);
   struct loop_regs *regs = LOOP_REGS (loop);
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   rtx arg0, arg1;
   rtx tem;
 
@@ -7042,7 +7042,7 @@ sge_plus_constant (x, c)
 
 static rtx
 sge_plus (mode, x, y)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x, y;
 {
   while (GET_CODE (y) == PLUS)
@@ -7275,9 +7275,9 @@ express_from_1 (a, b, mult)
     }
   else if (CONSTANT_P (a))
     {
-      enum machine_mode mode_a = GET_MODE (a);
-      enum machine_mode mode_b = GET_MODE (b);
-      enum machine_mode mode = mode_b == VOIDmode ? mode_a : mode_b;
+      machine_mode_t mode_a = GET_MODE (a);
+      machine_mode_t mode_b = GET_MODE (b);
+      machine_mode_t mode = mode_b == VOIDmode ? mode_a : mode_b;
       return simplify_gen_binary (MINUS, mode, b, a);
     }
   else if (GET_CODE (b) == PLUS)
@@ -7442,7 +7442,7 @@ check_ext_dependent_givs (bl, loop_info)
      struct loop_info *loop_info;
 {
   int ze_ok = 0, se_ok = 0, info_ok = 0;
-  enum machine_mode biv_mode = GET_MODE (bl->biv->src_reg);
+  machine_mode_t biv_mode = GET_MODE (bl->biv->src_reg);
   HOST_WIDE_INT start_val;
   unsigned HOST_WIDE_INT u_end_val = 0;
   unsigned HOST_WIDE_INT u_start_val = 0;
@@ -7544,7 +7544,7 @@ check_ext_dependent_givs (bl, loop_info)
 	       derived GIV.  */
 	    if (se_ok && ze_ok)
 	      {
-		enum machine_mode outer_mode = GET_MODE (v->ext_dependent);
+		machine_mode_t outer_mode = GET_MODE (v->ext_dependent);
 		unsigned HOST_WIDE_INT max = GET_MODE_MASK (outer_mode) >> 1;
 
 		/* We know from the above that both endpoints are nonnegative,
@@ -8510,7 +8510,7 @@ check_dbra_loop (loop, insn_count)
 		}
 	      else if (GET_CODE (initial_value) == CONST_INT)
 		{
-		  enum machine_mode mode = GET_MODE (reg);
+		  machine_mode_t mode = GET_MODE (reg);
 		  rtx offset = GEN_INT (-INTVAL (initial_value) - add_adjust);
 		  rtx add_insn = gen_add3_insn (reg, comparison_value, offset);
 
@@ -8526,7 +8526,7 @@ check_dbra_loop (loop, insn_count)
 		}
 	      else if (! add_adjust)
 		{
-		  enum machine_mode mode = GET_MODE (reg);
+		  machine_mode_t mode = GET_MODE (reg);
 		  rtx sub_insn = gen_sub3_insn (reg, comparison_value,
 						initial_value);
 
@@ -8829,7 +8829,7 @@ maybe_eliminate_biv_1 (loop, x, insn, bl, eliminate_p, where_bb, where_insn)
 {
   enum rtx_code code = GET_CODE (x);
   rtx reg = bl->biv->dest_reg;
-  enum machine_mode mode = GET_MODE (reg);
+  machine_mode_t mode = GET_MODE (reg);
   struct induction *v;
   rtx arg, tem;
 #ifdef HAVE_cc0
@@ -9310,7 +9310,7 @@ canonicalize_condition (insn, cond, reverse, earliest, want_reg)
   rtx tem;
   rtx op0, op1;
   int reverse_code = 0;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   code = GET_CODE (cond);
   mode = GET_MODE (cond);
@@ -9385,7 +9385,7 @@ canonicalize_condition (insn, cond, reverse, earliest, want_reg)
 	 relevant.  */
       if (set)
 	{
-	  enum machine_mode inner_mode = GET_MODE (SET_DEST (set));
+	  machine_mode_t inner_mode = GET_MODE (SET_DEST (set));
 #ifdef FLOAT_STORE_FLAG_VALUE
 	  REAL_VALUE_TYPE fsfv;
 #endif

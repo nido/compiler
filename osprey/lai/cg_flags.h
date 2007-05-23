@@ -305,6 +305,12 @@ extern BOOL LOCS_PRE_Enable_Scheduling;
 extern BOOL LOCS_POST_Enable_Scheduling;
 extern BOOL LOCS_Enable_Bundle_Formation;
 extern BOOL LOCS_Enable_Scheduling;
+#ifdef TARG_ST
+#define Backward_Post_Sched 1
+#define Forward_Post_Sched 2
+#define Double_Post_Sched 3
+extern INT32 LOCS_POST_Scheduling;
+#endif 
 
 extern BOOL IGLS_Enable_PRE_HB_Scheduling;
 extern BOOL IGLS_Enable_POST_HB_Scheduling;
@@ -386,6 +392,20 @@ extern BOOL EMIT_explicit_bundles;
 extern BOOL CG_emit_asm_dwarf;
 extern BOOL CG_emit_unwind_info;
 extern BOOL CG_emit_unwind_directives;
+
+#ifdef TARG_ST
+/* CBPO */
+extern BOOL CG_cbpo_optimize_load_imm;
+extern INT32 CG_cbpo_ratio;
+extern INT CG_cbpo_block_method;
+enum CBPO_BLOCK_METHOD
+    {
+        CBPO_BLOCK_NONE = 0,
+        CBPO_BLOCK_LOCAL = 1,
+        CBPO_BLOCK_GLOBAL = 2,
+        CBPO_BLOCK_GLOBAL_THEN_LOCAL = 3
+    };
+#endif
 
 /*
  * CGEXPand flags 

@@ -58,6 +58,7 @@ extern int  WFE_Keep_Zero_Length_Structs;
 
 #ifdef TARG_ST
 extern void WFE_Prepare_Gcc_Options(int argc, char **argv, int *gnu_argc, char ***gnu_argv);
+extern void WFE_Init_Errors ();
 #endif
 extern void WFE_Init (INT argc, char **arrgv);
 extern void WFE_Finish (void);

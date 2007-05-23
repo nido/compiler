@@ -200,6 +200,12 @@ TYPE_ID Promoted_Mtype (
       return mtype;
 
     default:
+#ifdef TARG_ST
+      // Reconf: support of dynamic mtypes
+      if (MTYPE_is_dynamic(mtype)) {
+	return mtype;
+      }
+#endif
       return MTYPE_UNKNOWN;
   }
 }
@@ -1771,6 +1777,9 @@ vho_lower_set_st_addr_info ( WN * wn, ADDRESS_INFO_TYPE code )
     case OPR_RECIP:
     case OPR_RSQRT:
     case OPR_PARM:
+#ifdef TARG_ST
+  case OPR_SUBPART:
+#endif
 
       vho_lower_set_st_addr_info ( WN_kid0(wn), code );
       break;
@@ -1837,6 +1846,15 @@ vho_initialize_bool_info ( BOOL_INFO * bool_info )
 } /* vho_initialize_bool_info */
 
 
+#ifdef TARG_ST
+static BOOL
+vho_is_ldid_of_return_val(WN *wn)
+{
+  return WN_operator(wn) == OPR_LDID
+    && WN_st(wn) == Return_Val_Preg;
+}
+#endif
+
 static WN *
 vho_lower_comma ( WN * wn, WN *block, BOOL_INFO * bool_info )
 {
@@ -1850,9 +1868,13 @@ vho_lower_comma ( WN * wn, WN *block, BOOL_INFO * bool_info )
   BOOL       call;
 
   result = WN_kid1 (wn);
-  call   =   WHIRL_Return_Val_On
+#ifdef TARG_ST
+  call   = WHIRL_Return_Val_On && vho_is_ldid_of_return_val(result);
+#else
+  call   = WHIRL_Return_Val_On
           && WN_operator(result) == OPR_LDID
           && WN_st(result) == Return_Val_Preg;
+#endif
 
   comma_block = vho_lower_block (WN_kid0(wn));
   WN_Set_Linenum ( comma_block, VHO_Srcpos );
@@ -1973,7 +1995,10 @@ vho_lower_comma ( WN * wn, WN *block, BOOL_INFO * bool_info )
       TYPE_ID rtype  = WN_rtype (result);
       TYPE_ID desc   = WN_desc  (result);
       TY_IDX  ty_idx = WN_ty (result);
-
+      
+      FmtAssert (WN_first(result_block) == NULL,
+		 ("call comma should not have non-empty result block") );
+      
       if (desc == MTYPE_M) {
 
         ST* st = Gen_Temp_Symbol (ty_idx, ".call");
@@ -3614,6 +3639,9 @@ vho_lower_expr ( WN * wn, WN * block, BOOL_INFO * bool_info )
       break;
 
     case OPR_TAS:
+#ifdef TARG_ST
+  case OPR_SUBPART:
+#endif
 
       WN_kid0(wn) = vho_lower_expr (WN_kid0(wn), block, NULL);
       break;
@@ -3958,6 +3986,21 @@ vho_lower_mstore ( WN * wn, WN * block )
 static WN *
 vho_lower_stid ( WN * wn, WN * block )
 {
+
+#ifdef TARG_ST
+  if (WHIRL_Return_Val_On && 
+      ST_assigned_to_dedicated_preg(WN_st(wn)) &&
+      WN_operator(WN_kid0(wn)) == OPR_COMMA &&
+      vho_is_ldid_of_return_val(WN_kid1(WN_kid0(wn)))) {
+    // [CG] In the case of an INTRINSIC_CALL returning into a dedicated register
+    // it is mandatory to directly generate the STID "ded" (LDID "return_val_preg").
+    WN *comma_tree = WN_kid0(wn);
+    WN *comma_block = vho_lower_block (WN_kid0(comma_tree));
+    WN_INSERT_BlockLast ( block, comma_block );
+    WN_kid0(wn) = WN_kid1(comma_tree);
+  }
+#endif
+
   WN_kid0(wn) = vho_lower_expr ( WN_kid0(wn), block, NULL );
 
 #ifdef TARG_ST
@@ -4680,6 +4723,9 @@ vho_lower_check_labels ( WN * wn )
       break;
 
     case OPR_TAS:
+#ifdef TARG_ST
+  case OPR_SUBPART:
+#endif
 
       vho_lower_check_labels ( WN_kid0(wn) );
       break;
@@ -5058,6 +5104,9 @@ vho_lower_rename_labels_defined ( WN * wn )
       break;
 
     case OPR_TAS:
+#ifdef TARG_ST
+  case OPR_SUBPART:
+#endif
 
       vho_lower_rename_labels_defined ( WN_kid0(wn) );
       break;

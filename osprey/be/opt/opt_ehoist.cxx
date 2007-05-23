@@ -405,6 +405,11 @@ BOOL CR_match_kids(CODEREP *cr1, CODEREP *cr2)
       if (OPCODE_operator(cr1->Op()) == OPR_CVTL && 
 	  cr1->Offset() != cr2->Offset())
 	return FALSE;
+#ifdef TARG_ST
+      if (OPCODE_operator(cr1->Op()) == OPR_SUBPART && 
+	  cr1->Subpart_index() != cr2->Subpart_index())
+	return FALSE;
+#endif
       return TRUE;
     }
   default:

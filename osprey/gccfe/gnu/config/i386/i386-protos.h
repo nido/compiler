@@ -41,39 +41,39 @@ extern int ix86_aligned_p PARAMS ((rtx));
 extern int standard_80387_constant_p PARAMS ((rtx));
 extern int symbolic_reference_mentioned_p PARAMS ((rtx));
 
-extern int symbolic_operand PARAMS ((rtx, enum machine_mode));
-extern int pic_symbolic_operand PARAMS ((rtx, enum machine_mode));
-extern int call_insn_operand PARAMS ((rtx, enum machine_mode));
-extern int constant_call_address_operand PARAMS ((rtx, enum machine_mode));
-extern int const0_operand PARAMS ((rtx, enum machine_mode));
-extern int const1_operand PARAMS ((rtx, enum machine_mode));
-extern int const248_operand PARAMS ((rtx, enum machine_mode));
-extern int incdec_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_no_sp_operand PARAMS ((rtx, enum machine_mode));
-extern int general_no_elim_operand PARAMS ((rtx, enum machine_mode));
-extern int nonmemory_no_elim_operand PARAMS ((rtx, enum machine_mode));
-extern int q_regs_operand PARAMS ((rtx, enum machine_mode));
-extern int non_q_regs_operand PARAMS ((rtx, enum machine_mode));
-extern int no_comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int fcmov_comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int uno_comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int cmp_fp_expander_operand PARAMS ((rtx, enum machine_mode));
-extern int ext_register_operand PARAMS ((rtx, enum machine_mode));
-extern int binary_fp_operator PARAMS ((rtx, enum machine_mode));
-extern int mult_operator PARAMS ((rtx, enum machine_mode));
-extern int div_operator PARAMS ((rtx, enum machine_mode));
-extern int arith_or_logical_operator PARAMS ((rtx, enum machine_mode));
-extern int promotable_binary_operator PARAMS ((rtx, enum machine_mode));
-extern int memory_displacement_operand PARAMS ((rtx, enum machine_mode));
-extern int cmpsi_operand PARAMS ((rtx, enum machine_mode));
-extern int long_memory_operand PARAMS ((rtx, enum machine_mode));
-extern int aligned_operand PARAMS ((rtx, enum machine_mode));
+extern int symbolic_operand PARAMS ((rtx, machine_mode_t));
+extern int pic_symbolic_operand PARAMS ((rtx, machine_mode_t));
+extern int call_insn_operand PARAMS ((rtx, machine_mode_t));
+extern int constant_call_address_operand PARAMS ((rtx, machine_mode_t));
+extern int const0_operand PARAMS ((rtx, machine_mode_t));
+extern int const1_operand PARAMS ((rtx, machine_mode_t));
+extern int const248_operand PARAMS ((rtx, machine_mode_t));
+extern int incdec_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_no_sp_operand PARAMS ((rtx, machine_mode_t));
+extern int general_no_elim_operand PARAMS ((rtx, machine_mode_t));
+extern int nonmemory_no_elim_operand PARAMS ((rtx, machine_mode_t));
+extern int q_regs_operand PARAMS ((rtx, machine_mode_t));
+extern int non_q_regs_operand PARAMS ((rtx, machine_mode_t));
+extern int no_comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int fcmov_comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int uno_comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int cmp_fp_expander_operand PARAMS ((rtx, machine_mode_t));
+extern int ext_register_operand PARAMS ((rtx, machine_mode_t));
+extern int binary_fp_operator PARAMS ((rtx, machine_mode_t));
+extern int mult_operator PARAMS ((rtx, machine_mode_t));
+extern int div_operator PARAMS ((rtx, machine_mode_t));
+extern int arith_or_logical_operator PARAMS ((rtx, machine_mode_t));
+extern int promotable_binary_operator PARAMS ((rtx, machine_mode_t));
+extern int memory_displacement_operand PARAMS ((rtx, machine_mode_t));
+extern int cmpsi_operand PARAMS ((rtx, machine_mode_t));
+extern int long_memory_operand PARAMS ((rtx, machine_mode_t));
+extern int aligned_operand PARAMS ((rtx, machine_mode_t));
 
 
 extern int legitimate_pic_address_disp_p PARAMS ((rtx));
-extern int legitimate_address_p PARAMS ((enum machine_mode, rtx, int));
+extern int legitimate_address_p PARAMS ((machine_mode_t, rtx, int));
 extern rtx legitimize_pic_address PARAMS ((rtx, rtx));
-extern rtx legitimize_address PARAMS ((rtx, rtx, enum machine_mode));
+extern rtx legitimize_address PARAMS ((rtx, rtx, machine_mode_t));
 
 extern void print_reg PARAMS ((rtx, int, FILE*));
 extern void print_operand PARAMS ((FILE*, rtx, int));
@@ -88,16 +88,16 @@ extern const char *output_fp_compare PARAMS ((rtx, rtx*, int, int));
 extern void i386_dwarf_output_addr_const PARAMS ((FILE*, rtx));
 extern rtx i386_simplify_dwarf_addr PARAMS ((rtx));
 
-extern void ix86_expand_move PARAMS ((enum machine_mode, rtx[]));
+extern void ix86_expand_move PARAMS ((machine_mode_t, rtx[]));
 extern void ix86_expand_binary_operator PARAMS ((enum rtx_code,
-					       enum machine_mode, rtx[]));
-extern int ix86_binary_operator_ok PARAMS ((enum rtx_code, enum machine_mode,
+					       machine_mode_t, rtx[]));
+extern int ix86_binary_operator_ok PARAMS ((enum rtx_code, machine_mode_t,
 					  rtx[]));
-extern void ix86_expand_unary_operator PARAMS ((enum rtx_code, enum machine_mode,
+extern void ix86_expand_unary_operator PARAMS ((enum rtx_code, machine_mode_t,
 					      rtx[]));
-extern int ix86_unary_operator_ok PARAMS ((enum rtx_code, enum machine_mode,
+extern int ix86_unary_operator_ok PARAMS ((enum rtx_code, machine_mode_t,
 					 rtx[]));
-extern int ix86_match_ccmode PARAMS ((rtx, enum machine_mode));
+extern int ix86_match_ccmode PARAMS ((rtx, machine_mode_t));
 extern rtx ix86_expand_fp_compare PARAMS ((enum rtx_code, rtx, rtx, rtx));
 extern int ix86_use_fcomi_compare PARAMS ((enum rtx_code));
 extern void ix86_expand_branch PARAMS ((enum rtx_code, rtx));
@@ -111,7 +111,7 @@ extern void ix86_split_lshrdi PARAMS ((rtx *, rtx));
 extern void ix86_expand_strlensi_unroll_1 PARAMS ((rtx, rtx, rtx));
 extern int ix86_address_cost PARAMS ((rtx));
 
-extern rtx assign_386_stack_local PARAMS ((enum machine_mode, int));
+extern rtx assign_386_stack_local PARAMS ((machine_mode_t, int));
 extern int ix86_attr_length_default PARAMS ((rtx));
 
 extern int ix86_issue_rate PARAMS ((void));
@@ -122,8 +122,8 @@ extern int ix86_variable_issue PARAMS ((FILE *, int, rtx, int));
 
 #ifdef TREE_CODE
 extern void init_cumulative_args PARAMS ((CUMULATIVE_ARGS *, tree, rtx));
-extern rtx function_arg PARAMS ((CUMULATIVE_ARGS *, enum machine_mode, tree, int));
-extern void function_arg_advance PARAMS ((CUMULATIVE_ARGS *, enum machine_mode,
+extern rtx function_arg PARAMS ((CUMULATIVE_ARGS *, machine_mode_t, tree, int));
+extern void function_arg_advance PARAMS ((CUMULATIVE_ARGS *, machine_mode_t,
 					tree, int));
 #endif
 

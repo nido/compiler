@@ -158,6 +158,24 @@ WFE_PragmaArgs_LOOPSEQ (const char *what, int *args)
   return 0;
 }
 
+// Handle pragma hwloop arguments.
+static int
+WFE_PragmaArgs_HWLOOP (const char *what, int *args)
+{
+  if (!what)
+    return 1;
+  if (strcmp (what, "none") == 0) {
+    args[0] = 0;
+  } else if (strcmp (what, "forcehw") == 0) {
+    args[0] = 1;
+  } else if (strcmp (what, "forcejrgtudec") == 0) {
+    args[0] = 2;
+  } else {
+    return 1;
+  }
+  return 0;
+}
+
 // Prepend pragma inline_pragma to list, and update the list head
 static void
 Prepend_Inline_Pragma(WN** list, WN* inline_pragma)
@@ -514,6 +532,31 @@ void WFE_Expand_Pragma(tree stmt)
       WFE_Pragma_Error(wfe_pragma);
       return;
     }
+    break;
+  
+  case  WFE_PRAGMA_HWLOOP:
+    what = IDENTIFIER_POINTER (TREE_VALUE(pragma_args));
+    if (WFE_PragmaArgs_HWLOOP (what, args)) {
+      WFE_Pragma_Error(wfe_pragma);
+      return;
+    }
+    if (args[0] == 1) {
+      if (TREE_CHAIN(pragma_args))
+	args[1] = Get_Integer_Value(TREE_VALUE(TREE_CHAIN(pragma_args)));
+      else
+	args[1] = -1;
+    }
+    break;
+  
+  case  WFE_PRAGMA_LOOPMINITERCOUNT:
+  case  WFE_PRAGMA_LOOPMIN:
+  case  WFE_PRAGMA_LOOPMAXITERCOUNT:
+  case  WFE_PRAGMA_LOOPMAX:
+    if (wfe_pragma == WFE_PRAGMA_LOOPMINITERCOUNT)
+      warning ("#pragma %s is obsolete, use #pragma loopmin(n) instead", pragma_name);
+    if (wfe_pragma == WFE_PRAGMA_LOOPMAXITERCOUNT)
+      warning ("#pragma %s is obsolete, use #pragma loopmax(n) instead", pragma_name);    
+    args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
     break;
   
   case  WFE_PRAGMA_STREAM_ALIGNMENT:

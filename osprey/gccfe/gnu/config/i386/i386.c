@@ -387,11 +387,11 @@ int ix86_align_loops;
 int ix86_align_jumps;
 
 static void output_pic_addr_const PARAMS ((FILE *, rtx, int));
-static void put_condition_code PARAMS ((enum rtx_code, enum machine_mode,
+static void put_condition_code PARAMS ((enum rtx_code, machine_mode_t,
 				       int, int, FILE *));
 static enum rtx_code unsigned_comparison PARAMS ((enum rtx_code code));
 static rtx ix86_expand_int_compare PARAMS ((enum rtx_code, rtx, rtx));
-static enum machine_mode ix86_fp_compare_mode PARAMS ((enum rtx_code));
+static machine_mode_t ix86_fp_compare_mode PARAMS ((enum rtx_code));
 static enum rtx_code ix86_prepare_fp_compare_args PARAMS ((enum rtx_code,
 							   rtx *, rtx *));
 static rtx ix86_expand_compare PARAMS ((enum rtx_code));
@@ -409,7 +409,7 @@ static rtx * ix86_pent_find_pair PARAMS ((rtx *, rtx *, enum attr_pent_pair,
 					 rtx));
 static void ix86_init_machine_status PARAMS ((struct function *));
 static void ix86_mark_machine_status PARAMS ((struct function *));
-static void ix86_split_to_parts PARAMS ((rtx, rtx *, enum machine_mode));
+static void ix86_split_to_parts PARAMS ((rtx, rtx *, machine_mode_t));
 static int ix86_safe_length_prefix PARAMS ((rtx));
 static HOST_WIDE_INT ix86_compute_frame_size PARAMS((HOST_WIDE_INT,
 						     int *, int *, int *));
@@ -897,7 +897,7 @@ init_cumulative_args (cum, fntype, libname)
 void
 function_arg_advance (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;	/* current arg information */
-     enum machine_mode mode;	/* current arg mode */
+     machine_mode_t mode;	/* current arg mode */
      tree type;			/* type of the argument or 0 if lib support */
      int named;			/* whether or not the argument was named */
 {
@@ -939,7 +939,7 @@ function_arg_advance (cum, mode, type, named)
 struct rtx_def *
 function_arg (cum, mode, type, named)
      CUMULATIVE_ARGS *cum;	/* current arg information */
-     enum machine_mode mode;	/* current arg mode */
+     machine_mode_t mode;	/* current arg mode */
      tree type;			/* type of the argument or 0 if lib support */
      int named;			/* != 0 for normal args, == 0 for ... args */
 {
@@ -987,7 +987,7 @@ function_arg (cum, mode, type, named)
 int
 symbolic_operand (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   switch (GET_CODE (op))
     {
@@ -1032,7 +1032,7 @@ symbolic_operand (op, mode)
 int
 pic_symbolic_operand (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   if (GET_CODE (op) == CONST)
     {
@@ -1056,7 +1056,7 @@ pic_symbolic_operand (op, mode)
 int
 call_insn_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   if (GET_CODE (op) != MEM)
     return 0;
@@ -1092,7 +1092,7 @@ call_insn_operand (op, mode)
 int
 constant_call_address_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return (GET_CODE (op) == MEM
 	  && CONSTANT_ADDRESS_P (XEXP (op, 0))
@@ -1104,7 +1104,7 @@ constant_call_address_operand (op, mode)
 int 
 const0_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return op == CONST0_RTX (mode);
 }
@@ -1112,7 +1112,7 @@ const0_operand (op, mode)
 int 
 const1_operand (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return op == const1_rtx;
 }
@@ -1122,7 +1122,7 @@ const1_operand (op, mode)
 int
 const248_operand (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return (GET_CODE (op) == CONST_INT
 	  && (INTVAL (op) == 2 || INTVAL (op) == 4 || INTVAL (op) == 8));
@@ -1133,7 +1133,7 @@ const248_operand (op, mode)
 int
 incdec_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (op == const1_rtx || op == constm1_rtx)
     return 1;
@@ -1158,7 +1158,7 @@ incdec_operand (op, mode)
 int
 reg_no_sp_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx t = op;
   if (GET_CODE (t) == SUBREG)
@@ -1175,7 +1175,7 @@ reg_no_sp_operand (op, mode)
 int
 general_no_elim_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx t = op;
   if (GET_CODE (t) == SUBREG)
@@ -1194,7 +1194,7 @@ general_no_elim_operand (op, mode)
 int
 nonmemory_no_elim_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx t = op;
   if (GET_CODE (t) == SUBREG)
@@ -1212,7 +1212,7 @@ nonmemory_no_elim_operand (op, mode)
 int
 q_regs_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (mode != VOIDmode && GET_MODE (op) != mode)
     return 0;
@@ -1226,7 +1226,7 @@ q_regs_operand (op, mode)
 int
 non_q_regs_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (mode != VOIDmode && GET_MODE (op) != mode)
     return 0;
@@ -1242,7 +1242,7 @@ non_q_regs_operand (op, mode)
 int
 no_comparison_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   if (mode != VOIDmode && GET_MODE (op) != mode)
     return 0;
@@ -1264,7 +1264,7 @@ no_comparison_operator (op, mode)
 int
 fcmov_comparison_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   if (mode != VOIDmode && GET_MODE (op) != mode)
     return 0;
@@ -1286,7 +1286,7 @@ fcmov_comparison_operator (op, mode)
 int 
 uno_comparison_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   if (mode != VOIDmode && GET_MODE (op) != mode)
     return 0;
@@ -1309,7 +1309,7 @@ uno_comparison_operator (op, mode)
 int
 promotable_binary_operator (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   switch (GET_CODE (op))
     {
@@ -1335,7 +1335,7 @@ promotable_binary_operator (op, mode)
 int
 cmp_fp_expander_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (mode != VOIDmode && mode != GET_MODE (op))
     return 0;
@@ -1349,7 +1349,7 @@ cmp_fp_expander_operand (op, mode)
 int
 ext_register_operand (op, mode)
      register rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   if (GET_MODE (op) != SImode && GET_MODE (op) != HImode)
     return 0;
@@ -1362,7 +1362,7 @@ ext_register_operand (op, mode)
 int
 binary_fp_operator (op, mode)
     register rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   if (mode != VOIDmode && mode != GET_MODE (op))
     return 0;
@@ -1383,7 +1383,7 @@ binary_fp_operator (op, mode)
 int
 mult_operator(op, mode)
     register rtx op;
-    enum machine_mode mode ATTRIBUTE_UNUSED;
+    machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return GET_CODE (op) == MULT;
 }
@@ -1391,7 +1391,7 @@ mult_operator(op, mode)
 int
 div_operator(op, mode)
     register rtx op;
-    enum machine_mode mode ATTRIBUTE_UNUSED;
+    machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return GET_CODE (op) == DIV;
 }
@@ -1399,7 +1399,7 @@ div_operator(op, mode)
 int
 arith_or_logical_operator (op, mode)
       rtx op;
-      enum machine_mode mode;
+      machine_mode_t mode;
 {
   return ((mode == VOIDmode || GET_MODE (op) == mode)
           && (GET_RTX_CLASS (GET_CODE (op)) == 'c'
@@ -1411,7 +1411,7 @@ arith_or_logical_operator (op, mode)
 int
 memory_displacement_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   struct ix86_address parts;
 
@@ -1433,7 +1433,7 @@ memory_displacement_operand (op, mode)
 int
 cmpsi_operand (op, mode)
       rtx op;
-      enum machine_mode mode;
+      machine_mode_t mode;
 {
   if (general_operand (op, mode))
     return 1;
@@ -1457,7 +1457,7 @@ cmpsi_operand (op, mode)
 int
 long_memory_operand (op, mode)
      register rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (! memory_operand (op, mode))
     return 0;
@@ -1470,7 +1470,7 @@ long_memory_operand (op, mode)
 int
 aligned_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   struct ix86_address parts;
 
@@ -2355,7 +2355,7 @@ legitimate_pic_address_disp_p (disp)
 
 int
 legitimate_address_p (mode, addr, strict)
-     enum machine_mode mode;
+     machine_mode_t mode;
      register rtx addr;
      int strict;
 {
@@ -2667,7 +2667,7 @@ rtx
 legitimize_address (x, oldx, mode)
      register rtx x;
      register rtx oldx ATTRIBUTE_UNUSED;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int changed = 0;
   unsigned log;
@@ -2990,7 +2990,7 @@ i386_simplify_dwarf_addr (orig_x)
 static void
 put_condition_code (code, mode, reverse, fp, file)
      enum rtx_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int reverse, fp;
      FILE *file;
 {
@@ -4148,7 +4148,7 @@ ix86_output_block_profiler (file, blockno)
 
 void
 ix86_expand_move (mode, operands)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx operands[];
 {
   int strict = (reload_in_progress || reload_completed);
@@ -4209,7 +4209,7 @@ ix86_expand_move (mode, operands)
 void
 ix86_expand_binary_operator (code, mode, operands)
      enum rtx_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx operands[];
 {
   int matching_memory;
@@ -4298,7 +4298,7 @@ ix86_expand_binary_operator (code, mode, operands)
 int
 ix86_binary_operator_ok (code, mode, operands)
      enum rtx_code code;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      rtx operands[3];
 {
   /* Both source operands cannot be in memory.  */
@@ -4329,7 +4329,7 @@ ix86_binary_operator_ok (code, mode, operands)
 void
 ix86_expand_unary_operator (code, mode, operands)
      enum rtx_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx operands[];
 {
   int matching_memory;
@@ -4390,7 +4390,7 @@ ix86_expand_unary_operator (code, mode, operands)
 int
 ix86_unary_operator_ok (code, mode, operands)
      enum rtx_code code ATTRIBUTE_UNUSED;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      rtx operands[2] ATTRIBUTE_UNUSED;
 {
   /* If one of operands is memory, source and destination must match.  */
@@ -4408,10 +4408,10 @@ ix86_unary_operator_ok (code, mode, operands)
 int
 ix86_match_ccmode (insn, req_mode)
      rtx insn;
-     enum machine_mode req_mode;
+     machine_mode_t req_mode;
 {
   rtx set;
-  enum machine_mode set_mode;
+  machine_mode_t set_mode;
 
   set = PATTERN (insn);
   if (GET_CODE (set) == PARALLEL)
@@ -4482,7 +4482,7 @@ ix86_expand_int_compare (code, op0, op1)
      enum rtx_code code;
      rtx op0, op1;
 {
-  enum machine_mode cmpmode;
+  machine_mode_t cmpmode;
   rtx tmp, flags;
 
   cmpmode = SELECT_CC_MODE (code, op0, op1);
@@ -4501,7 +4501,7 @@ ix86_expand_int_compare (code, op0, op1)
 /* Figure out whether to use ordered or unordered fp comparisons.
    Return the appropriate mode to use.  */
 
-static enum machine_mode
+static machine_mode_t
 ix86_fp_compare_mode (code)
      enum rtx_code code;
 {
@@ -4558,9 +4558,9 @@ ix86_prepare_fp_compare_args (code, pop0, pop1)
      enum rtx_code code;
      rtx *pop0, *pop1;
 {
-  enum machine_mode fpcmp_mode = ix86_fp_compare_mode (code);
+  machine_mode_t fpcmp_mode = ix86_fp_compare_mode (code);
   rtx op0 = *pop0, op1 = *pop1;
-  enum machine_mode op_mode = GET_MODE (op0);
+  machine_mode_t op_mode = GET_MODE (op0);
 
   /* All of the unordered compare instructions only work on registers.
      The same is true of the XFmode compare instructions.  The same is
@@ -4613,7 +4613,7 @@ ix86_expand_fp_compare (code, op0, op1, scratch)
      enum rtx_code code;
      rtx op0, op1, scratch;
 {
-  enum machine_mode fpcmp_mode, intcmp_mode;
+  machine_mode_t fpcmp_mode, intcmp_mode;
   rtx tmp;
 
   fpcmp_mode = ix86_fp_compare_mode (code);
@@ -5376,7 +5376,7 @@ ix86_expand_fp_movcc (operands)
      rtx operands[];
 {
   enum rtx_code code;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx tmp;
 
   /* The floating point conditional move instructions don't directly
@@ -5425,7 +5425,7 @@ static void
 ix86_split_to_parts (operand, parts, mode)
      rtx operand;
      rtx *parts;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int size = GET_MODE_SIZE (mode) / 4;
 
@@ -6017,13 +6017,13 @@ static void
 ix86_init_machine_status (p)
      struct function *p;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
   int n;
   p->machine
     = (struct machine_function *) xmalloc (sizeof (struct machine_function));
 
   for (mode = VOIDmode; (int) mode < (int) MAX_MACHINE_MODE;
-       mode = (enum machine_mode) ((int) mode + 1))
+       mode = (machine_mode_t) ((int) mode + 1))
     for (n = 0; n < MAX_386_STACK_LOCALS; n++)
       ix86_stack_locals[(int) mode][n] = NULL_RTX;
 }
@@ -6033,11 +6033,11 @@ static void
 ix86_mark_machine_status (p)
      struct function *p;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
   int n;
 
   for (mode = VOIDmode; (int) mode < (int) MAX_MACHINE_MODE;
-       mode = (enum machine_mode) ((int) mode + 1))
+       mode = (machine_mode_t) ((int) mode + 1))
     for (n = 0; n < MAX_386_STACK_LOCALS; n++)
       ggc_mark_rtx (p->machine->stack_locals[(int) mode][n]);
 }
@@ -6050,7 +6050,7 @@ ix86_mark_machine_status (p)
 
 rtx
 assign_386_stack_local (mode, n)
-     enum machine_mode mode;
+     machine_mode_t mode;
      int n;
 {
   if (n < 0 || n >= MAX_386_STACK_LOCALS)

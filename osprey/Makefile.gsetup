@@ -311,6 +311,7 @@ BUILD_BASE_libcomutil	= $(BUILD_TOT)/common/util
 BUILD_BASE_libdwarf	= $(BUILD_TOT)/libdwarf
 BUILD_BASE_libelfutil	= $(BUILD_TOT)/libelfutil
 BUILD_BASE_libSYS	= $(BUILD_TOT)/libSYS
+BUILD_BASE_librcparser	= $(BUILD_TOT)/common/rcparser
 BUILD_BASE_instrumentationC	= $(BUILD_TOT)/instrumentation/libinstrC
 BUILD_BASE_gccfe	= $(BUILD_TOT)/gccfe
 BUILD_BASE_gccfe_gnu	= $(BUILD_TOT)/gccfe/gnu
@@ -329,6 +330,13 @@ BUILD_BASE_ir_tools	= $(BUILD_TOT)/ir_tools
 BUILD_BASE_driver	= $(BUILD_TOT)/driver
 BUILD_BASE_libgcov	= $(BUILD_TOT)/instrumentation/libgcov
 BUILD_BASE_libunwind	= $(BUILD_TOT)/gccfe/gnu
+BUILD_BASE_targ_info_ext= $(BUILD_TOT)/targinfo_ext
+
+#For extensions, the following makefile adds the
+#needed paths.
+ifneq (,$(EXTENSION_LIST))
+  include $(BUILD_AREA)/Makefile.extensions
+endif
 
 BUILD_BASE		?= $(BUILD_BASE_$(BUILD_MOD))
 endif
@@ -904,6 +912,56 @@ ifeq ($(BUILD_VARIANT), RELEASE)
 else
  STD_MONGOOSE_OS_LOC=$(ROOT)/lib/cmplrs
 endif
+
+    ifeq ($(BUILD_TARGET),STxP70)
+	
+	 ifdef RELEASE_ROOT
+	 STD_BUILTINS_INC_LOC=$(RELEASE_ROOT)/include/models
+	 STD_BUILTINS_SRC_LOC=$(RELEASE_ROOT)/src/models
+	 else
+	 STD_BUILTINS_INC_LOC=$(ROOT)/include/models
+	 STD_BUILTINS_SRC_LOC=$(ROOT)/src/models
+	 endif
+
+        SVNROOT_OPEN64?=https://codex.cro.st.com/svnroot/open64/
+        SVN?=svn
+
+        ifndef RELEASE_ID
+
+	  ifndef NO_SVN
+# Check whether we have subversion or not and if we need to emit a release id
+# to make it appears in compiler version string
+            ifeq ($(shell (which $(SVN) && ((echo $(BUILD_MOD) | grep 'lai$$') || (echo $(BUILD_MOD) | grep 'driver$$'))) > /dev/null 2>&1 ; echo $$?), 0)
+
+                SVN_VERSIONS:=$(shell $(SVN) info -R $(BUILD_TOT) | grep '^Revision:' | sed 's;^Revision: *;;' | sort -n)
+                COMPILER_MIN_VERSION:=$(shell echo $(SVN_VERSIONS) | awk '{print $$1}')
+                COMPILER_MAX_VERSION:=$(shell echo $(SVN_VERSIONS) | awk '{print $$NF}')
+                ifneq ($(COMPILER_MAX_VERSION),$(COMPILER_MIN_VERSION))
+                    COMPILER_VERSION_RANGE:=$(COMPILER_MIN_VERSION)-$(COMPILER_MAX_VERSION)
+                else
+                    COMPILER_VERSION_RANGE:=$(COMPILER_MIN_VERSION)
+                endif
+
+# driver/sort_options.sh script does not accept space characters in Makefile
+# variable.
+# Here we touch driver/main.c and cgemit.cxx, because both display the version
+# string respectivly on the command line and in the assembly file.
+# Note that it would be cleaner to touch include/stamp.h, but this makes
+# recompile too many files.
+                RELEASE_ID:=$(shell $(SVN) info $(BUILD_TOT) | grep '^URL:' | sed 's;^URL: *$(SVNROOT_OPEN64);;')@$(COMPILER_VERSION_RANGE)$(shell $(SVN) st $(BUILD_TOT) | grep -v '^ *?' | (grep '.\+' > /dev/null 2>&1 && echo '*'))$(shell rm -f $(shell ((echo $(BUILD_MOD) | grep 'lai$$') && echo cgemit.o) ||  echo main.o))
+                STD_COMPILE_OPTS += -DRELEASE_ID='"$(RELEASE_ID)"'
+
+# We set release date only if release_id is not set
+                ifndef RELEASE_DATE
+
+                    RELEASE_DATE:=$(shell date +%D | sed 's; ;_;g')
+                    STD_COMPILE_OPTS += -DRELEASE_DATE='"$(RELEASE_DATE)"'
+
+                endif # if RELEASE_DATE is not defined
+            endif # if has svn and is in a directory which need compiler version
+          endif # ndef NO_SVN
+        endif # if RELEASE_ID is not defined
+    endif # if STxP70
 
 endif
 

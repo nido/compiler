@@ -54,26 +54,155 @@
 #include "stab.h"
 #include "config_target.h"
 #include "targ_sim.h"
+#include "tracing.h"
+#ifdef TARG_ST
+#include "register_preg.h" // TB: For CGTARG_Regclass_Preg_Min
+#endif
+
+#ifdef Is_True_On
+/* Use a macro here such that each use effectively calls the Get_Trace() function. 
+   Indeed this function must be called whenever Current_PU_name changes for -tf.. to work. */
+#define TRACE_ON Get_Trace(TP_DATALAYOUT, 1)
+#else
+#define TRACE_ON FALSE
+#endif
+
 #include "targ_sim_body.h"
+
 
 static mDED_PREG_NUM Input_Base_Preg = 0;
 static mDED_PREG_NUM Output_Base_Preg = 0;
+
+/* [JV] struct by technical reference. */
+static BOOL CG_struct_by_ref = FALSE;
 
 #define I0 Int_Preg_Min_Offset
 #define P0 Ptr_Preg_Min_Offset
 #define F0 Float_Preg_Min_Offset
 
+INT Default_Max_Formal_Save_Area_Size;
+INT Default_Vararg_Formal_Save_Area_Size;
+
+/* some definitions for the dedicated hardware pregs: */
+INT Int_Preg_Min_Offset;
+INT Int_Preg_Max_Offset;
+INT Ptr_Preg_Min_Offset;
+INT Ptr_Preg_Max_Offset;
+INT Float_Preg_Min_Offset;
+INT Float_Preg_Max_Offset;
+INT Branch_Preg_Min_Offset;
+INT Branch_Preg_Max_Offset;
+INT Fcc_Preg_Min_Offset;
+INT Fcc_Preg_Max_Offset;
+//TB Extend PREG registers to extension
+//TB: make a static var for preg linits. Only functional accesses
+static INT Last_Dedicated_Preg_Offset_Var;
+static INT Static_Last_Dedicated_Preg_Offset;
+
+/* The offsets for return registers are fixed: */
+INT First_Int_Preg_Return_Offset;
+INT Last_Int_Preg_Return_Offset;
+INT First_Ptr_Preg_Return_Offset;
+INT Last_Ptr_Preg_Return_Offset;
+INT First_Float_Preg_Return_Offset;
+INT Last_Float_Preg_Return_Offset;
+
+INT First_Int_Preg_Param_Offset;
+INT First_Ptr_Preg_Param_Offset;
+INT First_Float_Preg_Param_Offset;
+
+INT Stack_Pointer_Preg_Offset;
+INT Frame_Pointer_Preg_Offset;
+INT Static_Link_Preg_Offset;
+INT Struct_Return_Preg_Offset;
+#ifdef TARG_ST //[TB]
+INT Function_Link_Preg_Offset;
+INT Exc_Ptr_Param_Offset;           /* exception struct ptr */
+INT Exc_Filter_Param_Offset;   /* exception filter value */
+#endif
+
+static void
+Init_Pregs( void ) {
+
+  if (Static_Last_Dedicated_Preg_Offset != 0)
+    //TB: Init already done
+    return;
+  /* some definitions for the dedicated hardware pregs: */
+
+  Int_Preg_Min_Offset =             CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer);
+  Int_Preg_Max_Offset =             CGTARG_Regclass_Preg_Max(ISA_REGISTER_CLASS_integer);
+  Ptr_Preg_Min_Offset =             1;
+  Ptr_Preg_Max_Offset =             0;
+  Float_Preg_Min_Offset =           1;//1
+  Float_Preg_Max_Offset =           0;//0
+  Branch_Preg_Min_Offset =          CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_branch);
+  Branch_Preg_Max_Offset =          CGTARG_Regclass_Preg_Max(ISA_REGISTER_CLASS_branch);
+  Fcc_Preg_Min_Offset =             1;
+  Fcc_Preg_Max_Offset =             0;
+  Last_Dedicated_Preg_Offset_Var =      CGTARG_Regclass_Preg_Max(ISA_REGISTER_CLASS_MAX);
+  //[TB]: Keep a trace of last dedicated offet of the core
+  // Last_Dedicated_Preg_Offset_Var will be incremented by the extension loader
+  Static_Last_Dedicated_Preg_Offset = Last_Dedicated_Preg_Offset_Var;
+
+/* The offsets for return registers are fixed: */
+  First_Int_Preg_Return_Offset =    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 16;	/* register r16 */
+  Last_Int_Preg_Return_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 23;	/* register r23 */
+  First_Ptr_Preg_Return_Offset =    0;	/* undef */
+  Last_Ptr_Preg_Return_Offset =     0;	/* undef */
+  First_Float_Preg_Return_Offset =  0;	/* undef */	
+  Last_Float_Preg_Return_Offset =   0;	/* undef */	
+
+  First_Int_Preg_Param_Offset   =   CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 16;  /* register r16 */
+  First_Float_Preg_Param_Offset =  0; /* undef */
+  First_Ptr_Preg_Param_Offset   =   0;  /* undef */
+
+  Stack_Pointer_Preg_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 12;	/* register sp (r12) */
+  Frame_Pointer_Preg_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 7;	/* register fp (r7) */
+  Static_Link_Preg_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 8;	/* register r8 */
+  Struct_Return_Preg_Offset =       CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 15;   	/* register r15 */
+#ifdef TARG_ST //[TB]
+  Function_Link_Preg_Offset =       CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 63;   	/* r63 function link register (for mcount call) */
+#endif
+
+  Exc_Ptr_Param_Offset = CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 8;    /* exception struct ptr: r8 */
+  Exc_Filter_Param_Offset = CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 9;   /* exception filter value: r9 */
+  
+  Default_Max_Formal_Save_Area_Size = 32;
+  Default_Vararg_Formal_Save_Area_Size = 32;
+
+  return;
+}
+
+INT Get_Static_Last_Dedicated_Preg_Offset(){
+  if (Static_Last_Dedicated_Preg_Offset == 0)
+    Init_Pregs();
+  return Static_Last_Dedicated_Preg_Offset;
+}
+
+INT Get_Last_Dedicated_Preg_Offset_Func(){
+  if (Static_Last_Dedicated_Preg_Offset == 0)
+    Init_Pregs();
+  return Last_Dedicated_Preg_Offset_Var;
+}
+
+void Set_Last_Dedicated_Preg_Offset(INT offset){
+  if (Static_Last_Dedicated_Preg_Offset == 0)
+    Init_Pregs();
+  Last_Dedicated_Preg_Offset_Var = offset;
+}
+
+
+
 // [HK]
 #if __GNUC__ >= 3
-extern
 #else
 static
 #endif
 SIM SIM_Info[] = {
 	/* flags */
-	/* int args, flt args, dbl args */
-	/* int res , flt res, dbl res */
-	/* int type, flt type, dbl type */
+	/* int args, ptr args, flt args, dbl args */
+	/* int res , ptr res, flt res, dbl res */
+	/* int type, ptr type, flt type, dbl type */
 	/* save area, formal-area, var ofst */
 	/* struct arg, struct res, slink, pic */
   {/* ABI_UNDEF */
@@ -98,10 +227,29 @@ SIM SIM_Info[] = {
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	{I0+16,I0+23,1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
 	MTYPE_I4, MTYPE_U4, MTYPE_U4, MTYPE_U8,
-	0, 64, -64, 
+	0, 64, -64,
 	32, 32, I0+62, I0+25
   }
 };
+
+static void
+Init_Sim_Info( void ) {
+
+  /* [JV] I am not happy with this ... perhaps it should be generated */
+  if(Int_Preg_Min_Offset < Int_Preg_Max_Offset) {
+    PR_first_reg(SIM_INFO.int_args) += I0;
+    PR_last_reg(SIM_INFO.int_args) += I0;
+    PR_first_reg(SIM_INFO.int_results) += I0;
+    PR_last_reg(SIM_INFO.int_results) += I0;
+  }
+}
+
+
+void
+Set_struct_by_ref_for_parameter_location( BOOL _CG_struct_by_ref ) {
+  CG_struct_by_ref = _CG_struct_by_ref;
+  return;
+}
 
 /* ====================================================================
  *   Is_Return_Preg
@@ -328,9 +476,23 @@ Get_Return_Info (
 } /* Get_Return_Info */
 
 static INT Current_Int_Param_Num = 0;
-static INT Current_Offset;
+static INT Current_Formal_Offset;
+static INT Current_UpFormal_Offset;
+//static INT Current_Offset;
 //static INT Current_Formal_Save_Area_Size = 0;
 static BOOL First_Param_In_Return_Reg = FALSE;
+
+/* ====================================================================
+ *    Init_Stack_Offsets
+ * ====================================================================
+ */
+static void
+Init_Stack_Offsets(void)
+{
+  Current_Formal_Offset = 0;
+  Current_UpFormal_Offset = 0;
+}
+
 
 /* ====================================================================
  *   Setup_Parameter_Locations
@@ -338,7 +500,12 @@ static BOOL First_Param_In_Return_Reg = FALSE;
  */
 static PLOC
 Setup_Parameter_Locations (
+#ifdef TARG_ST
+			   TY_IDX pu_type,
+			   BOOL   first_hidden_param_is_lowered
+#else
   TY_IDX pu_type
+#endif
 )
 {
   static PLOC plocNULL;
@@ -350,8 +517,13 @@ Setup_Parameter_Locations (
   TY_IDX ret_type = (TY_kind(pu_type) == KIND_FUNCTION ? TY_ret_type(pu_type)
 			: pu_type);
   RETURN_INFO info = Get_Return_Info (ret_type, No_Simulated);
+#ifdef TARG_ST
+  First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) & SIM_return_addr_via_int_return_reg)
+    && first_hidden_param_is_lowered;
+#else
   First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) 
 			       & SIM_return_addr_via_int_return_reg);
+#endif
 
   if (TY_is_varargs (pu_type)) {
     // find last fixed parameter
@@ -375,8 +547,12 @@ Setup_Parameter_Locations (
   }
 
   Current_Int_Param_Num = 0;
-  Current_Offset = 0;
+  //Current_Offset = 0;
   //Current_Formal_Save_Area_Size = 0;
+  //  Current_Formal_Offset = 0;
+  //Current_UpFormal_Offset = 0;
+  Init_Stack_Offsets();
+  //Formal_Size = 0;
 
   return plocNULL;
 } 
@@ -399,6 +575,79 @@ Get_Current_Int_Preg_Num (
     return i;
 }
 
+/*
+ * roundup to alignment. If alignment is 0, ignore it.
+ */
+#define ROUNDUP(val,align) 	((align) > 0 ? (-(INT64)align) & (INT64)((val)+(align)-1): (INT64)(val) )
+
+/* ====================================================================
+ *    Get.
+ * ====================================================================
+ */
+static INT
+Get_Formal_Offset(void)
+{
+  return Current_Formal_Offset;
+}
+
+static INT
+Get_UpFormal_Offset(void)
+{
+  return Current_UpFormal_Offset;
+}
+
+/* ============================================================
+ * Modifiers to stack offsets
+ * ============================================================
+ */
+static void
+Pad_UpFormal_Offset(INT n)
+{
+  Current_UpFormal_Offset += n;
+}
+
+static void
+Pad_Formal_Offset(INT n)
+{
+  Current_Formal_Offset += n;
+}
+
+/* ====================================================================
+ *   Update_Stack_Offsets
+ * ====================================================================
+ */
+static void
+Update_Stack_Offsets(PLOC *ploc) {
+
+  if(PLOC_on_stack(*ploc)) {
+    if (ploc->lpad_overlap > 0) {
+      // Specific case of lpad in formal area and object starts in upformal area
+      ploc->formal_offset = Current_Formal_Offset + PLOC_lpad_overlap(*ploc);
+      Current_Formal_Offset = ploc->formal_offset;
+      ploc->upformal_offset = 0;
+    } else {
+      ploc->formal_offset = Current_Formal_Offset;
+      ploc->upformal_offset = Current_UpFormal_Offset + PLOC_lpad(*ploc);
+    }
+    Current_UpFormal_Offset = ploc->upformal_offset + PLOC_size(*ploc) + PLOC_rpad(*ploc);
+  }
+  else {
+    ploc->formal_offset = Current_Formal_Offset + PLOC_lpad(*ploc);
+    Current_Formal_Offset = ploc->formal_offset + PLOC_size(*ploc) + PLOC_rpad(*ploc);
+    /* If Current_Formal_Offset is greater than Max_Formal_Save_Area_size, we
+       report the difference to the upformal offset. */
+    if (Current_Formal_Offset > Default_Max_Formal_Save_Area_Size) {
+      Current_UpFormal_Offset = Current_Formal_Offset - Default_Max_Formal_Save_Area_Size;
+      Current_Formal_Offset = Default_Max_Formal_Save_Area_Size;
+    }
+  }
+}
+
+// Redefine these variables such that they remain private from now
+#define Current_Formal_Offset PRIVATE
+#define Current_UpFormal_Offset PRIVATE
+
+
 /* ====================================================================
  *   Get_Parameter_Location
  * ====================================================================
@@ -411,14 +660,20 @@ Get_Parameter_Location (
 {
   PLOC ploc;				// return location
 
+  // Init PLOC from current state
+  PLOC_clear(ploc);
+  ploc.formal_offset = Get_Formal_Offset();
+  ploc.upformal_offset = Get_UpFormal_Offset();
+
+#if 0 //OLD
   ploc.reg = 0;
   ploc.start_offset = Current_Offset;
   ploc.size = 0;
   ploc.vararg_reg = 0;               // to silence purify
   ploc.lpad = 0;
   ploc.rpad = 0;
-
   ploc.by_reference = 0;
+#endif
 
   //
   // If we're returning a structure/union via $r0.15, just
@@ -430,40 +685,10 @@ Get_Parameter_Location (
     return ploc;
   }
 
-#if 0
-  // Arthur: NEVER REACHED ??
-  if (TY_kind (ty) == KIND_VOID) {
-    if (is_output && IS_INT_PREG(PLOC_reg(ploc)))
-      PLOC_reg(ploc) = Output_Base_Preg - PLOC_reg(ploc) + 32;
-    else if ( ! is_output && IS_INT_PREG(PLOC_reg(ploc)))
-      PLOC_reg(ploc) = Input_Base_Preg + PLOC_reg(ploc) - 32;
-    return ploc;
-  }
-#endif
-
   /* check for array case where fe doesn't fill in right btype */
   TYPE_ID pmtype = Fix_TY_mtype (ty);	/* Target type */
 
   ploc.size = MTYPE_RegisterSize(pmtype);
-
-#if 0
-  // Arthur:  I may nedd to check for alignment later ??
-  ++Current_Param_Num;
-  if (TY_align_exp (ty) == 4 && (Current_Param_Num % 2) == 1) {
-
-    FmtAssert(FALSE,("Get_Parameter_Location: type quad aligned"));
-
-    /* skip a parameter slot so quad-aligned */
-
-    ++Current_Param_Num;
-
-    /* adjust Last_Fixed_Param in varargs case */
-
-    if (Last_Fixed_Param < INT_MAX)
-      ++Last_Fixed_Param;
-    ploc.start_offset += MTYPE_RegisterSize(SIM_INFO.flt_type);
-  }
-#endif
 
   INT lpad = 0;                 /* padding to left of object */
   INT rpad = 0;			/* padding to right of object */
@@ -480,11 +705,10 @@ Get_Parameter_Location (
       if (Target_Byte_Sex == BIG_ENDIAN) {
 	/* want to right-justify the object */
 	lpad = MTYPE_RegisterSize(SIM_INFO.int_type) - ploc.size;
-	ploc.start_offset += lpad;
       }
       else {
 	/* Pad to word; leave address alone */
-          rpad = (MTYPE_RegisterSize(SIM_INFO.int_type) - ploc.size);
+	rpad = MTYPE_RegisterSize(SIM_INFO.int_type) - ploc.size;
       }
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
       Current_Int_Param_Num++;
@@ -494,7 +718,6 @@ Get_Parameter_Location (
     case MTYPE_F4:
 
     case MTYPE_A4:
-
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
       Current_Int_Param_Num++;
       break;
@@ -511,15 +734,22 @@ Get_Parameter_Location (
       //
       ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
 
-      //if (Get_Preg_Alignment(ploc.reg) == 4) {
-      if ((ploc.start_offset % 8 == 4)) {
-	//
-	// skip one slot if the next still fits the register list
-	//
-	Current_Int_Param_Num++;
+      // [CG] PLOC_offset if relative to either the formal
+      // or upformal segment. 
+      // If it is odd we must pad to the left in both
+      // stack or register case.
+      if (PLOC_offset(ploc) % 8 == 4) {
+	PREG_NUM prev_preg = ploc.reg;
+	// skip one integer slot
 	lpad = MTYPE_RegisterSize(SIM_INFO.int_type);
-	ploc.start_offset += lpad;
+	Current_Int_Param_Num++;
 	ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+	
+	if (IS_INT_PREG(prev_preg) && !IS_INT_PREG(ploc.reg)) {
+	  // For this target, the formal and upformal areas are continuous, hence
+	  // the padding must be allocated to the formal area when lpad is overlaping.
+	  ploc.lpad_overlap = lpad;
+	}
       }
 
       // takes two registers:
@@ -540,41 +770,29 @@ Get_Parameter_Location (
     case MTYPE_FQ:
 
       FmtAssert(FALSE,("FQ are passed"));
-#if 0
-        ++Current_Float_Param_Num;
-	if (Current_Param_Num > Last_Fixed_Param && !SIM_varargs_floats) {
-	    /* varargs causes float args to be int regs */
-	    ploc.reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-	} else {
-	    ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
-	    ploc.vararg_reg = Get_Current_Preg_Num (SIM_INFO.int_args);
-	}
-	Current_Param_Num++;
-	/* adjust Last_Fixed_Param in varargs case */
-	if (Last_Fixed_Param < INT_MAX)
-	    ++Last_Fixed_Param;
-	Current_Float_Param_Num++;
-#endif
-	break;
+      break;
 	
     case MTYPE_C4:
     case MTYPE_C8:
     case MTYPE_CQ:
 
       FmtAssert(FALSE,("Complex are passed"));
-#if 0
-        ++Current_Float_Param_Num;
-	ploc.reg = Get_Current_Float_Preg_Num (SIM_INFO.flt_args);
-	Current_Param_Num++;
-	/* adjust Last_Fixed_Param in varargs case */
-	if (Last_Fixed_Param < INT_MAX)
-	    ++Last_Fixed_Param;
-	Current_Float_Param_Num++;
-#endif
-	break;
+      break;
 	
     case MTYPE_M:
         {
+	  if(CG_struct_by_ref) {
+	    ploc.by_reference = 1;
+
+	    //
+	    // When passed by reference, we reserve one pointer register slot
+	    //
+	    ploc.size = MTYPE_RegisterSize(MTYPE_A4);
+	    
+	    ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+	    Current_Int_Param_Num++;
+	  }
+	  else {
 	  //
 	  // When passed by value, parameters will be put in the
 	  // register slots as many as can fit and the rest copied
@@ -598,14 +816,20 @@ Get_Parameter_Location (
 	  // Structures over 4 bytes are aligned on a 8-byte boundary
 	  //if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
 
-	  if (psize > 1 && (ploc.start_offset % 8 == 4)) {
+	  if (psize > 1 && ((!PLOC_on_stack(ploc) && (Get_Formal_Offset() % 8 == 4)) ||
+			    (PLOC_on_stack(ploc) && (Get_UpFormal_Offset() % 8 == 4)))) {
 	    //
 	    // skip one slot if the next still fits the register list
 	    //
-	    Current_Int_Param_Num++;
+	    PREG_NUM prev_preg = ploc.reg;
 	    lpad = 4;
-	    ploc.start_offset += lpad;
+	    Current_Int_Param_Num++;
 	    ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+	    if (IS_INT_PREG(prev_preg) && !IS_INT_PREG(ploc.reg)) {
+	      // For this target, the formal and upformal areas are continuous, hence
+	      // the padding must be allocated to the formal area when lpad is overlaping.
+	      ploc.lpad_overlap = lpad;
+	    }
 	  }
 
 	  // takes psize parameter slots:
@@ -615,6 +839,7 @@ Get_Parameter_Location (
 	  if (Last_Fixed_Param < INT_MAX)
 	    Last_Fixed_Param += psize - 1;
 
+	  }
 	}
 	break;
 	
@@ -625,7 +850,17 @@ Get_Parameter_Location (
 
   ploc.lpad = lpad;
   ploc.rpad = rpad;
-  Current_Offset = ploc.start_offset + ploc.size + rpad;
+  Update_Stack_Offsets(&ploc);
+
+  if(TRACE_ON) {
+    fprintf(TFile,"Parameter %s: preg = %d, lpad = %d, rpad = %d,"
+	    "offset = %d, size = %d, Current_Formal_Offset = %d,"
+	    "Current_UpFormal_Offset = %d\n",
+	    MTYPE_name(pmtype),ploc.reg,ploc.lpad,ploc.rpad,
+	    PLOC_offset(ploc),ploc.size,
+	    Get_Formal_Offset(),Get_UpFormal_Offset());
+  }
+
   return ploc;
 } 
 
@@ -638,9 +873,6 @@ struct PSTRUCT {
     BOOL        first_call;
     INT64	offset;			// offset from beginning of struct
     INT64	size;
-
-    PSTRUCT () : is_struct (FALSE), first_call (TRUE),
-		 offset (0), size (0) {}
 };
 
 static PSTRUCT pstruct;
@@ -654,6 +886,12 @@ static PSTRUCT pstruct;
  *   Setup_Struct_Parameter_Locations
  * ====================================================================
  */
+static BOOL
+Is_Struct_Parameter (TY_IDX struct_ty)
+{
+  return MTYPE_is_m(TY_mtype(Ty_Table[struct_ty]));
+}
+
 static void
 Setup_Struct_Parameter_Locations (TY_IDX struct_ty)
 {
@@ -664,54 +902,97 @@ Setup_Struct_Parameter_Locations (TY_IDX struct_ty)
 }
 
 /* ====================================================================
+ * Get the Next ploc for by struct value passing for 
+ * the given preg/lpad/rpad/size.
+ * ====================================================================
+ */
+static PLOC
+Get_Struct_Next_PLOC(PLOC prev, PREG_NUM preg, INT size, INT lpad, INT rpad)
+{
+  PLOC next;
+  PLOC_clear(next)
+  next.size = size;
+  next.lpad = lpad;
+  next.rpad = rpad;
+  next.reg = preg;
+  
+  if (preg == 0) {
+    // Will be on stack
+    if (prev.reg == 0) {
+      // Previous was on stack also
+      next.formal_offset = prev.formal_offset;
+      next.upformal_offset =  prev.upformal_offset +  prev.size + prev.rpad + lpad;  
+    } else {
+      // Previous was in register
+      next.formal_offset = prev.formal_offset + prev.size + prev.rpad;
+      next.upformal_offset = lpad;
+    }
+  } else {
+    // Will be in register
+    next.formal_offset = prev.formal_offset + prev.size + prev.rpad + lpad;
+    next.upformal_offset = prev.upformal_offset;
+  }
+  return next;
+}
+
+
+/* ====================================================================
  *   Get_Struct_Parameter_Location
  * ====================================================================
  */
 static PLOC 
 Get_Struct_Parameter_Location (PLOC prev)
 {
-    TYPE_ID pmtype;
-    PLOC next;
-    INT ireg_size = MTYPE_RegisterSize(SIM_INFO.int_type);
-    BOOL	onStack = (prev.reg == 0);
-
-    // [CG]{
-    next.vararg_reg = 0;               // to silence purify
-    next.lpad = 0;
-    next.rpad = 0;
-    next.by_reference = 0;
-    //}
-
-    if (PSTRUCT_first_call) {
-      PLOC_offset(next) = PLOC_offset(prev);
+  PLOC next;
+  INT ireg_size = MTYPE_RegisterSize(SIM_INFO.int_type);
+  
+  // Update PLOC location
+  if (PSTRUCT_first_call) {
+    // For the first call, the prev ploc is already set to the correct initial setting,
+    // beacuse Get_Parameter_location() must be called first.
+    // We just change in this case the size information to match the 
+    // transfer done by fragments of size ireg_size.
+    PLOC_clear(next);
+    PLOC_upformal_offset(next) = PLOC_upformal_offset(prev);
+    PLOC_formal_offset(next) = PLOC_formal_offset(prev);
+    PLOC_lpad(next) = PLOC_lpad(prev);
+    PLOC_lpad_overlap(next) = PLOC_lpad_overlap(prev);
+    PLOC_reg(next) = PLOC_reg(prev);
+    PLOC_rpad(next) = PLOC_rpad(prev);
+    PLOC_size(next) = PLOC_size(prev) < ireg_size ? PLOC_size(prev) : ireg_size;
+  } else  {
+    INT lpad, rpad, size;
+    PREG_NUM preg;
+    lpad = rpad = 0;
+    size = ireg_size;
+    preg = PLOC_reg(prev);
+    if (PSTRUCT_offset  <  PSTRUCT_size) {
+      // for subsequent calls, we must update correctly the next PLOC.
+      if (preg != 0 && IS_INT_PREG(preg) &&
+	  IS_INT_PREG(preg + PR_skip_value(SIM_INFO.int_args))) {
+	preg += PR_skip_value(SIM_INFO.int_args);
+      } else {
+	preg = 0;
+      }
+      next = Get_Struct_Next_PLOC(prev, preg, size, lpad, rpad);
+    } else /* PSTRUCT_offset >= PSTRUCT_size */ {
+      // Last call, the structure is fully passed. 
+      // We set the size to 0 and keep previous preg value.
+      size = 0;
+      next = Get_Struct_Next_PLOC(prev, preg, size, lpad, rpad);
     }
-    else {
-	PLOC_offset(next) = PLOC_offset(prev) + PLOC_size(prev);
-    }
+  }
 
-    if (PSTRUCT_offset >= PSTRUCT_size) {
-      PLOC_size(next) = 0;
-      return next;
-    }
+  if(TRACE_ON) {
+    fprintf(TFile,"Struct parameter: first_call = %d, preg = %d, lpad = %d, rpad = %d, formal_offset = %d, upformal_offset = %d, size = %d\n",
+	    PSTRUCT_first_call, next.reg, next.lpad, next.rpad, next.formal_offset, next.upformal_offset, next.size);
+  }
+  
+  PSTRUCT_offset += next.size;
+  if (PSTRUCT_first_call) PSTRUCT_first_call = FALSE;
+  
 
-    PLOC_size(next) = ireg_size;
-    PSTRUCT_offset += ireg_size;
-
-    if (onStack) {
-      PLOC_reg(next) = 0;
-      PSTRUCT_first_call = FALSE;
-    } else if (PSTRUCT_first_call) {
-      PSTRUCT_first_call = FALSE;
-      PLOC_reg(next) = PLOC_reg(prev);
-      if (!IS_INT_PREG(PLOC_reg(next)))
-        PLOC_reg(next) = 0;
-    } else if (IS_INT_PREG(PLOC_reg(prev))) {
-      PLOC_reg(next) =  PLOC_reg(prev) + PR_skip_value(SIM_INFO.int_args);
-      if (!IS_INT_PREG(PLOC_reg(next)))
-        PLOC_reg(next) = 0;
-    }
-
-    return next;
+  return next;
 } // Get_Struct_Parameter_Location
 
 /* ====================================================================
@@ -741,15 +1022,19 @@ Get_Vararg_Parameter_Location (
   }
   /* use Last_Param_Offset in case last fixed arg had padding */
   /*
-  next.start_offset = Last_Param_Offset;
-  Last_Param_Offset = next.start_offset + next.size;
+  next.formal_offset = Last_Param_Offset;
+  Last_Param_Offset = next.formal_offset + next.size;
   */
-
-  next.start_offset = Current_Offset;
-  Current_Offset = next.start_offset + next.size;
 
   next.lpad = 0;
   next.rpad = 0;
+  
+  Update_Stack_Offsets(&next);
+
+  if(TRACE_ON) {
+    fprintf(TFile,"Vararg parameter: preg = %d, lpad = %d, rpad = %d, start_offset = %d, size = %d\n",
+	    next.reg,next.lpad,next.rpad,PLOC_offset(next),next.size);
+  }
 
   return next;
 }
@@ -779,5 +1064,10 @@ extern void
 Init_Targ_Sim (void)
 {
   Is_Caller_Save_GP = SIM_caller_save_gp;
+
+  Init_Pregs();
+
+  Init_Sim_Info();
+
 }
 

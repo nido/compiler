@@ -1250,7 +1250,7 @@ real_identical (a, b)
 
 bool
 exact_real_inverse (mode, r)
-     enum machine_mode mode;
+     machine_mode_t mode;
      REAL_VALUE_TYPE *r;
 {
   const REAL_VALUE_TYPE *one = real_digit (1);
@@ -1983,7 +1983,7 @@ real_from_string (r, str)
 REAL_VALUE_TYPE
 real_from_string2 (s, mode)
      const char *s;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   REAL_VALUE_TYPE r;
 
@@ -1999,7 +1999,7 @@ real_from_string2 (s, mode)
 void
 real_from_integer (r, mode, low, high, unsigned_p)
      REAL_VALUE_TYPE *r;
-     enum machine_mode mode;
+     machine_mode_t mode;
      unsigned HOST_WIDE_INT low;
      HOST_WIDE_INT high;
      int unsigned_p;
@@ -2160,7 +2160,7 @@ real_nan (r, str, quiet, mode)
      REAL_VALUE_TYPE *r;
      const char *str;
      int quiet;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const struct real_format *fmt;
 
@@ -2428,7 +2428,7 @@ round_for_format (fmt, r)
 void
 real_convert (r, mode, a)
      REAL_VALUE_TYPE *r;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const REAL_VALUE_TYPE *a;
 {
   const struct real_format *fmt;
@@ -2449,7 +2449,7 @@ real_convert (r, mode, a)
 
 REAL_VALUE_TYPE
 real_value_truncate (mode, a)
-     enum machine_mode mode;
+     machine_mode_t mode;
      REAL_VALUE_TYPE a;
 {
   REAL_VALUE_TYPE r;
@@ -2461,7 +2461,7 @@ real_value_truncate (mode, a)
 
 bool
 exact_real_truncate (mode, a)
-     enum machine_mode mode;
+     machine_mode_t mode;
      const REAL_VALUE_TYPE *a;
 {
   REAL_VALUE_TYPE t;
@@ -2500,7 +2500,7 @@ long
 real_to_target (buf, r, mode)
      long *buf;
      const REAL_VALUE_TYPE *r;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const struct real_format *fmt;
 
@@ -2530,7 +2530,7 @@ void
 real_from_target (r, buf, mode)
      REAL_VALUE_TYPE *r;
      const long *buf;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const struct real_format *fmt;
 
@@ -2546,7 +2546,7 @@ real_from_target (r, buf, mode)
 
 int
 significand_size (mode)
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   const struct real_format *fmt;
 

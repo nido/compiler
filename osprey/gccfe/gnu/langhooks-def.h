@@ -55,7 +55,7 @@ extern int lhd_unsafe_for_reeval PARAMS ((tree));
 extern void lhd_clear_binding_stack PARAMS ((void));
 extern void lhd_print_tree_nothing PARAMS ((FILE *, tree, int));
 extern const char *lhd_decl_printable_name PARAMS ((tree, int));
-extern rtx lhd_expand_expr PARAMS ((tree, rtx, enum machine_mode, int));
+extern rtx lhd_expand_expr PARAMS ((tree, rtx, machine_mode_t, int));
 extern void lhd_print_error_function PARAMS ((struct diagnostic_context *,
 					      const char *));
 extern void lhd_set_decl_assembler_name PARAMS ((tree));

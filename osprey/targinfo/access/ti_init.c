@@ -47,6 +47,7 @@ static const char source_file[] = __FILE__;
 #include "targ_isa_registers.h"
 #include "targ_abi_properties.h"
 #include "targ_proc.h"
+#include "errors.h"
 #include "dso.h"
 
 #include "ti_init.h"
@@ -535,6 +536,229 @@ INT TSI_Store_Available_Time( TOP top )
 }
 
 /****************************************************************************
+ Need read/write accesses to SI tables for Reconfigurability
+ ****************************************************************************/
+
+typedef SI * TI_SI_CONST * get_si_pp_t(void);
+typedef void set_si_pp_t(SI * TI_SI_CONST *);
+typedef void set_si_RRW_t(SI_RRW);
+typedef SI_RRW get_si_RRW_t(void);
+
+void Set_SI_resource_count(INT i)
+{
+    typedef void set_si_rc_t(INT);
+    static set_si_rc_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_rc_t*)
+		       dlsym(targ_handler, "Set_SI_resource_count"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_resource_count'!\n"));
+	return ;
+    }    
+
+    so_call (i);
+}
+
+void Set_SI_resources(SI_RESOURCE * TI_SI_CONST* tab)
+{
+    typedef void set_si_res_t(SI_RESOURCE * TI_SI_CONST *);
+    static set_si_res_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_res_t*)
+		       dlsym(targ_handler, "Set_SI_resources"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_resources'!\n"));
+	return ;
+    }    
+
+    so_call (tab);
+}
+
+void Set_SI_RRW_initializer(SI_RRW i)
+{
+    static set_si_RRW_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_RRW_t*)
+		       dlsym(targ_handler, "Set_SI_RRW_initializer"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_RRW_initializer'!\n"));
+	return ;
+    }    
+
+    so_call (i);
+}
+
+void Set_SI_RRW_overuse_mask(SI_RRW i)
+{
+    static set_si_RRW_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_RRW_t*)
+		       dlsym(targ_handler, "Set_SI_RRW_overuse_mask"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_RRW_overuse_mask'!\n"));
+	return ;
+    }    
+
+    so_call (i);
+}
+
+void Set_SI_issue_slot_count(INT i)
+{
+    typedef void set_si_is_count_t(INT);
+    static set_si_is_count_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_is_count_t*)
+		       dlsym(targ_handler, "Set_SI_issue_slot_count"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_issue_slot_count'!\n"));
+	return ;
+    }    
+
+    so_call (i);
+}
+
+void Set_SI_issue_slots(SI_ISSUE_SLOT * TI_SI_CONST* tab)
+{
+    typedef void set_si_is_t(SI_ISSUE_SLOT * TI_SI_CONST *);
+    static set_si_is_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_is_t*)
+		       dlsym(targ_handler, "Set_SI_issue_slots"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_issue_slots'!\n"));
+	return ;
+    }    
+
+    so_call (tab);
+}
+
+void Set_SI_ID_si(SI * TI_SI_CONST * t)
+{
+    static set_si_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_pp_t*)
+		       dlsym(targ_handler, "Set_SI_ID_si"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_ID_si'!\n"));
+	return ;
+    }    
+
+    so_call (t);
+}
+
+void Set_SI_top_si(SI * TI_SI_CONST * t)
+{
+    static set_si_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_pp_t*)
+		       dlsym(targ_handler, "Set_SI_top_si"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_top_si'!\n"));
+	return ;
+    }
+    
+    so_call (t);
+}
+
+void Set_SI_ID_count(INT i)
+{
+    typedef void set_si_id_count_t(INT);
+    static set_si_id_count_t* so_call = 0;
+    if (! so_call && !(so_call = (set_si_id_count_t*)
+		       dlsym(targ_handler, "Set_SI_ID_count"))) {
+	DevWarn(("Cannot retrieve symbol 'Set_SI_ID_count'!\n"));
+	return ;
+    }
+    
+    so_call (i);
+}
+
+INT Get_SI_resource_count(void)
+{
+    typedef INT get_si_rc_t(void);
+    static get_si_rc_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_rc_t*)
+		       dlsym(targ_handler, "Get_SI_resource_count"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_resource_count'!\n"));
+	return 0;
+    }
+    
+    return so_call ();
+}
+
+extern SI_RESOURCE * TI_SI_CONST* Get_SI_resources(void)
+{
+    typedef SI_RESOURCE * TI_SI_CONST* get_si_RES_pp_t(void);
+    static get_si_RES_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_RES_pp_t*)
+		       dlsym(targ_handler, "Get_SI_resources"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_resources'!\n"));
+	return 0;
+    }
+    
+    return so_call ();    
+}
+
+extern TI_SI_CONST SI_RRW Get_SI_RRW_initializer(void)
+{
+    static get_si_RRW_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_RRW_t*)
+		       dlsym(targ_handler, "Get_SI_RRW_initializer"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_RRW_initializer'!\n"));
+	return 0;
+    }
+    
+    return so_call ();    
+}
+
+extern TI_SI_CONST SI_RRW Get_SI_RRW_overuse_mask(void)
+{
+    static get_si_RRW_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_RRW_t*)
+		       dlsym(targ_handler, "Get_SI_RRW_overuse_mask"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_RRW_overuse_mask'!\n"));
+	return 0;
+    }
+    
+    return so_call ();    
+}
+
+INT Get_SI_issue_slot_count(void)
+{
+    typedef INT get_si_is_count_t(void);
+    static get_si_is_count_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_is_count_t*)
+		       dlsym(targ_handler, "Get_SI_issue_slot_count"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_issue_slot_count'!\n"));
+	return 0;
+    }
+    
+    return so_call ();
+}
+
+extern SI_ISSUE_SLOT * TI_SI_CONST* Get_SI_issue_slots(void)
+{
+    typedef SI_ISSUE_SLOT * TI_SI_CONST* get_si_is_pp_t(void);
+    static get_si_is_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_is_pp_t*)
+		       dlsym(targ_handler, "Get_SI_issue_slots"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_issue_slots'!\n"));
+	return 0;
+    }
+    
+    return so_call ();    
+}
+
+SI * TI_SI_CONST * Get_SI_ID_si(void)
+{
+    static get_si_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_pp_t*)
+		       dlsym(targ_handler, "Get_SI_ID_si"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_ID_si'!\n"));
+	return 0;
+    }
+    
+    return so_call ();
+}
+
+SI * TI_SI_CONST * Get_SI_top_si(void)
+{
+    static get_si_pp_t* so_call = 0;
+    if (! so_call && !(so_call = (get_si_pp_t*)
+		       dlsym(targ_handler, "Get_SI_top_si"))) {
+	DevWarn(("Cannot retrieve symbol 'Get_SI_top_si'!\n"));
+	return 0;
+    }
+    
+    return so_call ();
+}
+
+
+/****************************************************************************
  ****************************************************************************/
 
 typedef INT si_id_count_t(void);
@@ -565,15 +789,16 @@ int SI_resource_count;
 
 /****************************************************************************
  ****************************************************************************/
+/*
+ * SI_Resource_count information is stored both in targ_so library and in 
+ * back-end executable (for fast access)
+ * Here, we retrieve the information from the library and store it in
+ * SI_resource_count variable.
+ */
 static void
-SI_Resource_Count(void)
-{
-  int *ptr;
-  ptr = (int*) dlsym(targ_handler, "SI_resource_count");
-  if (ptr) {
-    // Shadows the const declaration in ti_si.h. Expects warning here.
-    SI_resource_count = *ptr;
-  }
+Update_SI_Resource_Count(void)
+{    
+    SI_resource_count = Get_SI_resource_count();
 }
 #endif
 
@@ -604,9 +829,20 @@ TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *t
 
     targ_handler = load_so(targ_so_name, tpath, FALSE /*verbose*/);
 
+    // Retrieve SI_resource_count value from library
+    Update_SI_Resource_Count();
+    
     ISA_SUBSET_Value = tisa;
     PROCESSOR_Value = tproc;
     ABI_PROPERTIES_ABI_Value = tabi;
+
+    // Reconfigurability
+    extern void TI_Initialize_Extension_Loader();
+    TI_Initialize_Extension_Loader();
+
+    // Retrieve SI_resource_count value from library
+    // (might have been updated by the extension loader)
+    Update_SI_Resource_Count();
 
     ABI_PROPERTIES_Initialize();
     ISA_HAZARD_Initialize();
@@ -614,8 +850,6 @@ TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *t
 
     initialized = TRUE;
     
-    SI_Resource_Count();
-
     return targ_handler;
   }
 }

@@ -456,7 +456,7 @@ validate_replace_rtx_1 (loc, from, to, object)
   const char *fmt;
   rtx x = *loc;
   enum rtx_code code;
-  enum machine_mode op0_mode = VOIDmode;
+  machine_mode_t op0_mode = VOIDmode;
   int prev_changes = num_changes;
   rtx new;
 
@@ -577,20 +577,20 @@ validate_replace_rtx_1 (loc, from, to, object)
 	  && !mode_dependent_address_p (XEXP (XEXP (x, 0), 0))
 	  && !MEM_VOLATILE_P (XEXP (x, 0)))
 	{
-	  enum machine_mode wanted_mode = VOIDmode;
-	  enum machine_mode is_mode = GET_MODE (XEXP (x, 0));
+	  machine_mode_t wanted_mode = VOIDmode;
+	  machine_mode_t is_mode = GET_MODE (XEXP (x, 0));
 	  int pos = INTVAL (XEXP (x, 2));
 
 	  if (GET_CODE (x) == ZERO_EXTRACT)
 	    {
-	      enum machine_mode new_mode
+	      machine_mode_t new_mode
 		= mode_for_extraction (EP_extzv, 1);
 	      if (new_mode != MAX_MACHINE_MODE)
 		wanted_mode = new_mode;
 	    }
 	  else if (GET_CODE (x) == SIGN_EXTRACT)
 	    {
-	      enum machine_mode new_mode
+	      machine_mode_t new_mode
 		= mode_for_extraction (EP_extv, 1);
 	      if (new_mode != MAX_MACHINE_MODE)
 		wanted_mode = new_mode;
@@ -939,7 +939,7 @@ find_single_use (dest, insn, ploc)
 int
 general_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   enum rtx_code code = GET_CODE (op);
 
@@ -1043,7 +1043,7 @@ general_operand (op, mode)
 int
 address_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return memory_address_p (mode, op);
 }
@@ -1065,7 +1065,7 @@ address_operand (op, mode)
 int
 register_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (GET_MODE (op) != mode && mode != VOIDmode)
     return 0;
@@ -1118,7 +1118,7 @@ register_operand (op, mode)
 int
 pmode_register_operand (op, mode)
      rtx op;
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
 {
   return register_operand (op, Pmode);
 }
@@ -1129,7 +1129,7 @@ pmode_register_operand (op, mode)
 int
 scratch_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (GET_MODE (op) != mode && mode != VOIDmode)
     return 0;
@@ -1147,7 +1147,7 @@ scratch_operand (op, mode)
 int
 immediate_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   /* Don't accept CONST_INT or anything similar
      if the caller wants something floating.  */
@@ -1181,7 +1181,7 @@ immediate_operand (op, mode)
 int
 const_int_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (GET_CODE (op) != CONST_INT)
     return 0;
@@ -1199,7 +1199,7 @@ const_int_operand (op, mode)
 int
 const_double_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   /* Don't accept CONST_INT or anything similar
      if the caller wants something floating.  */
@@ -1218,7 +1218,7 @@ const_double_operand (op, mode)
 int
 nonimmediate_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   return (general_operand (op, mode) && ! CONSTANT_P (op));
 }
@@ -1228,7 +1228,7 @@ nonimmediate_operand (op, mode)
 int
 nonmemory_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (CONSTANT_P (op))
     {
@@ -1284,7 +1284,7 @@ nonmemory_operand (op, mode)
 int
 push_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   unsigned int rounded_size = GET_MODE_SIZE (mode);
 
@@ -1332,7 +1332,7 @@ push_operand (op, mode)
 int
 pop_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   if (GET_CODE (op) != MEM)
     return 0;
@@ -1352,7 +1352,7 @@ pop_operand (op, mode)
 
 int
 memory_address_p (mode, addr)
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      rtx addr;
 {
   if (GET_CODE (addr) == ADDRESSOF)
@@ -1374,7 +1374,7 @@ memory_address_p (mode, addr)
 int
 memory_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx inner;
 
@@ -1399,7 +1399,7 @@ memory_operand (op, mode)
 int
 indirect_operand (op, mode)
      rtx op;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   /* Before reload, a SUBREG isn't in memory (see memory_operand, above).  */
   if (! reload_completed
@@ -1434,7 +1434,7 @@ indirect_operand (op, mode)
 int
 comparison_operator (op, mode)
     rtx op;
-    enum machine_mode mode;
+    machine_mode_t mode;
 {
   return ((mode == VOIDmode || GET_MODE (op) == mode)
 	  && GET_RTX_CLASS (GET_CODE (op)) == '<');
@@ -1535,7 +1535,7 @@ decode_asm_operands (body, operands, operand_locs, constraints, modes)
      rtx *operands;
      rtx **operand_locs;
      const char **constraints;
-     enum machine_mode *modes;
+     machine_mode_t *modes;
 {
   int i;
   int noperands;
@@ -1958,14 +1958,14 @@ offsettable_nonstrict_memref_p (op)
 int
 offsettable_address_p (strictp, mode, y)
      int strictp;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx y;
 {
   enum rtx_code ycode = GET_CODE (y);
   rtx z;
   rtx y1 = y;
   rtx *y2;
-  int (*addressp) PARAMS ((enum machine_mode, rtx)) =
+  int (*addressp) PARAMS ((machine_mode_t, rtx)) =
     (strictp ? strict_memory_address_p : memory_address_p);
   unsigned int mode_sz = GET_MODE_SIZE (mode);
 
@@ -2046,7 +2046,7 @@ mode_dependent_address_p (addr)
 
 int
 mode_independent_operand (op, mode)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx op;
 {
   rtx addr;
@@ -2383,7 +2383,7 @@ constrain_operands (strict)
       for (opno = 0; opno < recog_data.n_operands; opno++)
 	{
 	  rtx op = recog_data.operand[opno];
-	  enum machine_mode mode = GET_MODE (op);
+	  machine_mode_t mode = GET_MODE (op);
 	  const char *p = constraints[opno];
 	  int offset = 0;
 	  int win = 0;
@@ -2735,7 +2735,7 @@ reg_fits_class_p (operand, class, offset, mode)
      rtx operand;
      enum reg_class class;
      int offset;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int regno = REGNO (operand);
   if (regno < FIRST_PSEUDO_REGISTER
@@ -3017,7 +3017,7 @@ rtx
 peep2_find_free_register (from, to, class_str, mode, reg_set)
      int from, to;
      const char *class_str;
-     enum machine_mode mode;
+     machine_mode_t mode;
      HARD_REG_SET *reg_set;
 {
   static int search_ofs;

@@ -1229,11 +1229,15 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    curinst = curfde->fde_inst;
 	    while (curinst) {
 		db = curinst->dfp_opcode;
-		WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db,
-			sizeof(db), sizeof(Dwarf_Ubyte));
-		data += sizeof(Dwarf_Ubyte);
 #ifdef TARG_ST // [CL] derived from pathscale
-		if (DW_CFA_advance_loc4 == db) {
+		if (DW_CFA_ST_relocation == db) {
+          db = DW_CFA_advance_loc4;
+          WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db,
+                          sizeof(db), sizeof(Dwarf_Ubyte));
+          data += sizeof(Dwarf_Ubyte);
+
+          db = DW_CFA_ST_relocation;
+
 		  res = dbg->de_reloc_pair(dbg,
 					   DEBUG_FRAME,
 					   (data-fde_start_point) +
@@ -1245,8 +1249,15 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		  if(res != DW_DLV_OK) {
 		    {_dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL); return(0);}
 		  }
-		}
+		} else {
 #endif
+            WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db,
+                            sizeof(db), sizeof(Dwarf_Ubyte));
+            data += sizeof(Dwarf_Ubyte);
+#ifdef TARG_ST
+        } /* end else DW_CFA_ST_relocation */
+#endif
+
 #if 0
 		if(curinst->dfp_sym_index) {
 		     int res;
@@ -1265,7 +1276,7 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	 	}
 #endif
 #ifdef TARG_ST // [CL] derived from pathscale
-		if (DW_CFA_advance_loc4 == db) {
+		if (DW_CFA_ST_relocation == db) {
 		  data[0] = 0;
 		  data[1] = 0;
 		  data[2] = 0;

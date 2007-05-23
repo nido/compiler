@@ -2118,7 +2118,7 @@ void PF_LG::Gen_Pref_Node (PF_SORTED_REFS* srefs, mINT16 start, mINT16 stop,
       offset = WN_store_offset (parent_ref);
       break;
     default:
-      FmtAssert (NULL, ("Parent of array ref not a load/store\n"));
+      FmtAssert (0, ("Parent of array ref not a load/store\n"));
       break;
     }
 
@@ -2448,7 +2448,7 @@ void PF_LG::Gen_Pref_Node (PF_SORTED_REFS* srefs, mINT16 start, mINT16 stop,
         PF_PTR_set_conf_2L(tmp, confidence);
         break;
       default:
-        Is_True (NULL, ("Error in level type\n"));
+        Is_True (0, ("Error in level type\n"));
         break;
       }
     }

@@ -94,6 +94,15 @@ inline ST_TLS_MODEL
 ST_tls_model (const ST* s)              { return s->tls_model; }
 inline void
 Set_ST_tls_model (ST* s, ST_TLS_MODEL tls) { s->tls_model = tls; }
+
+#ifdef TARG_STxP70
+// (cbr)
+inline ST_MEMORY_SPACE
+ST_memory_space (const ST* s)              { return s->memory_space; }
+inline void
+Set_ST_memory_space (ST* s, ST_MEMORY_SPACE space) { s->memory_space = space; }
+#endif
+
 #endif
 
 inline TY_IDX

@@ -475,3 +475,23 @@ void EETARG_Restore_Extra_Callee_Tns (
 }
 
 
+/* ====================================================================
+ * EETARG_Do_Not_Save_Callee_Reg_Class
+ * ====================================================================
+ */
+
+BOOL EETARG_Do_Not_Save_Callee_Reg_Class ( ISA_REGISTER_CLASS cl ) {
+  return FALSE;
+}
+
+/* ======================================================================
+ * EETARG_get_temp_for_spadjust
+ * Should returns a super scratch (not allocatable) or defined register.
+ * This register will be used to initialize stack pointer in entry block.
+ * ======================================================================
+ */
+
+TN *EETARG_get_temp_for_spadjust( BB *bb) {
+
+  return (TN*)NULL;
+}

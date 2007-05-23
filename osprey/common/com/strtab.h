@@ -72,6 +72,12 @@ Initialize_Strtab (const char *buf, UINT32 size);
 BE_EXPORTED extern STR_IDX
 Save_Str (const char *str);
 
+#ifdef TARG_ST
+// (cbr) add string and an int to the string table
+BE_EXPORTED extern STR_IDX
+Save_Stri (const char *str, UINT i);
+#endif
+
 // concat two strings and then add to string table
 BE_EXPORTED extern STR_IDX
 Save_Str2 (const char *s1, const char *s2);

@@ -59,7 +59,8 @@ endif # BUILD_OS = SUNOS5
 
 ifeq ($(BUILD_OS),LINUX)
 BINUTILS_GNU_LOC=/apa/gnu/Linux-RH-7.2/bin/
-COMP_GNU_LOC=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
+#COMP_GNU_LOC=/apa/gnu/Linux-RH-7.2/gcc/gcc-3.4.4/bin/
+COMP_GNU_LOC=/apa/gnu/Linux-RH-WS-3/gcc/gcc-3.2.3/bin/
 YACC_LOC=/apa/gnu/Linux-RH-7.2/.package/bison-1.35/bin/
 LEX_LOC=
 INSTALL_LOC=

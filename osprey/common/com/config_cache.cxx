@@ -222,6 +222,9 @@ void MHD_LEVEL::Compute_Effective_Size()
     else if (pct > 0.50)
       pct = 0.50;
     break;
+   default:
+    pct= 1.0;
+    break;
   }
 
   Effective_Size = pct*Size;

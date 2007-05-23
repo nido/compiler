@@ -120,6 +120,10 @@ ST_Init (ST* st, STR_IDX n, ST_CLASS sc, ST_SCLASS stc, ST_EXPORT exp,
 #ifdef TARG_ST
     // [CL]
     st->tls_model = ST_TLS_MODEL_GLOBAL_DYNAMIC;
+#ifdef TARG_STxP70
+    // (cbr)
+    st->memory_space = ST_MEMORY_DEFAULT;
+#endif
 #endif
 }
 
@@ -257,6 +261,7 @@ PU_Init (PU& pu, TY_IDX prototype, SYMTAB_IDX level)
     pu.lexical_level = level;
     pu.gp_group = 0;
     pu.src_lang = PU_UNKNOWN_LANG;
+    pu.stkaln = Target_Stack_Alignment;
     pu.unused = 0;
     pu.flags = 0;
 }

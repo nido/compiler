@@ -396,6 +396,19 @@ ST_Verify_Flags (const ST &s)
   }
 #endif
 
+#ifdef TARG_STxP70
+  // (cbr) memory_space
+  if (ST_memory_space(s) > ST_MEMORY_NONE)
+    Is_True (ST_sclass(s) == SCLASS_PSTATIC ||
+	     ST_sclass(s) == SCLASS_FSTATIC ||
+	     ST_sclass(s) == SCLASS_EXTERN  ||
+	     ST_sclass(s) == SCLASS_COMMON ||
+	     ST_sclass(s) == SCLASS_UGLOBAL ||
+	     ST_sclass(s) == SCLASS_DGLOBAL,
+	     (msg, "Storage class", Sclass_Name(ST_sclass(s)),
+	      "ST_MEMORY_SPACE"));
+#endif
+
 }
 
 // ======================================================================
@@ -451,7 +464,9 @@ ST_Verify_Fields(const ST &s)
     Fail_FmtAssertion (msg, Class_Name (ST_sym_class(s)));
     break;
   case CLASS_PREG:
-    Is_True( ((&s == Return_Val_Preg) || (0 < TY_IDX_index (ST_type(s)) && 
+    //TB: Return specific PREG to handle think like non general register in
+    //clobber asm list
+    Is_True( ((&s == Return_Val_Preg) || (&s == Untyped_Preg()) || (0 < TY_IDX_index (ST_type(s)) && 
              TY_IDX_index (ST_type(s)) < TY_Table_Size ())),
              (msg, "type")); 
     break;

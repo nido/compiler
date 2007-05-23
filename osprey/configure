@@ -36,6 +36,19 @@ subst_decl() {
     subst_vars="${subst_vars} ${var}"
 }
 
+subst_default() {
+# Change the default value for an already declared variable
+# usage: subst_decl <varname> [<default_value>]
+    var=$1
+    eval _res=\${var_declared_${var}}
+    if [ x$_res != x1 ]; then
+	echo "$0: warning: ${var} not declared while changing default."
+	exit 1
+    fi
+    eval def_val=\'$2\'
+    eval var_default_${var}=\'${def_val}\'
+}
+
 subst_var_assign() {
 # Assign the final value for the variable
 # usage: subst_var_assign <varname>
@@ -102,6 +115,37 @@ subst_all_to_sed() {
     fi
 }
 
+fatal_error()
+{
+#Emit an error message and exit on error.
+
+   echo "### Fatal error: $1" >&2
+   exit 1
+}
+
+get_extensions()
+{
+#Returns the extension list for a given core.
+#This routine is called only if CORE_EXTENSIONS
+#variable has been set on command line.
+#
+#$1: shell file name
+#
+
+   if [ ! -f $1 ] ; then
+     fatal_error "can't find file $1"
+   fi
+    
+   EXTENSION_LIST=`source $1; echo \$EXTENSION_LIST`
+   if [ "$EXTENSION_LIST" = "" ] ; then
+     fatal_error "variable EXTENSION_LIST is not defined in file $1"
+   fi
+
+   return
+}
+
+
+
 #
 # Default settings for internal variables
 #
@@ -128,18 +172,15 @@ esac
 
 #
 # Default settings for user variables
+# CORE_EXTENSIONS is only requested for extensible cores such as STxP70.
 #
 BUILD=default
 PLATFORMS=default
 TOOLDEFS=default
 SITE=${ST_SITE:-default}
 
-#
-# Declare makefile variables to substitute and default values
-# Add here any variable you want substituted in the makefile fragments
-#
-subst_decl ROOT '$(BUILD_AREA)/devimage'
-subst_decl SUBDIRS "include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil instrumentationC gccfe g++fe wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver"
+CORE_EXTENSIONS=""
+EXTENSION_LIST=""
 
 #
 # First creates config.status
@@ -157,6 +198,14 @@ echo >>config.status
 chmod 755 config.status
 
 #
+# Declare makefile variables to substitute and default values
+# Add here any variable you want substituted in the makefile fragments
+# 
+subst_decl ROOT '$(BUILD_AREA)/devimage'
+listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librcparser instrumentationC gccfe g++fe wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver"
+subst_decl SUBDIRS "$listsubdir"
+
+#
 # Parse command line
 #
 while [ $# != 0 ]; do
@@ -164,7 +213,7 @@ while [ $# != 0 ]; do
       -v) \
 	  verbose=`expr $verbose + 1`
 	  ;;
-      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*) \
+      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*|CORE_EXTENSIONS=*) \
 	  var=`echo $1 | sed 's!=.*$!!'`
 	  value=`echo $1 | sed 's!^.*=!!'`
 	  eval ${var}=\'${value}\'
@@ -182,6 +231,16 @@ while [ $# != 0 ]; do
   shift
 done
 
+# 
+# List of subdirectories is updated if CORE_EXTENSIONS variable is set.
+#
+if [ "$CORE_EXTENSIONS" != "" ]; then
+    listsubdir="$listsubdir targ_info_ext"
+fi
+subst_default SUBDIRS "$listsubdir"
+
+#
+#
 if [ x$PLATFORMS = xdefault ]; then
     echo "$0: missing PLATFORMS=[<build>-]<host>-<target> configuration" >&2
     exit 1
@@ -194,12 +253,20 @@ subst_all_assign
 subst_all_to_sed
 
 # Verbose output
+# Added variable EXTENSION is
+# only useful for cores that
+# support extensions.
 if [ $verbose -ge 1 ]; then
     echo "Configuring for:"
     echo "BUILD=$BUILD"
     echo "PLATFORMS=$PLATFORMS"
     echo "TOOLDEFS=$TOOLDEFS"
     echo "SITE=$SITE"
+
+    if [ "$CORE_EXTENSIONS" != "" ]; then
+      echo "CORE_EXTENSIONS=$CORE_EXTENSIONS"
+    fi
+
     subst_all_print
 fi
 
@@ -212,6 +279,7 @@ files_to_copy="$makepath/build/$BUILD/Makefile.build"
 files_to_copy="$files_to_copy $makepath/platforms/$PLATFORMS/Makefile.platforms"
 files_to_copy="$files_to_copy $makepath/tooldefs/$TOOLDEFS/Makefile.tooldefs"
 files_to_copy="$files_to_copy $makepath/sitedefs/$SITE/Makefile.sitedefs"
+
 for i in $files_to_copy; do
     base=`basename $i`
     if [ ! -f $i ]; then
@@ -229,16 +297,36 @@ for i in $files_to_copy; do
 done
 
 #
-# From the value of he SUBDIRS variable, we guess the diretories
+# From the value of the SUBDIRS variable, we guess the diretories
 # to configure. There is a special case for gccfe/g++fe that each require
 # an additional subdir level for the gnu directory
 #
+# For extensions, we have added a second variable conf_subdirs_extensions
+# that is used afterwards.
+#
+
 conf_subdirs=""
+conf_subdirs_extensions=""
+
 for i in ${var_subst_SUBDIRS}; do
     conf_subdirs="${conf_subdirs} $i"
+
     case $i in
-	gccfe) conf_subdirs="$conf_subdirs $i/gnu"
-	;;
+     gccfe) 
+     conf_subdirs="$conf_subdirs $i/gnu"
+     ;;
+
+     targ_info_ext) 
+     conf_subdirs="$conf_subdirs $i/$CORE_EXTENSIONS"
+     conf_subdirs_extensions="$conf_subdirs_extensions $CORE_EXTENSIONS"
+     get_extensions $makepath/extensions/$CORE_EXTENSIONS/extensions.sh
+
+     for j in $EXTENSION_LIST; do
+       conf_subdirs="$conf_subdirs $i/$CORE_EXTENSIONS/$j"
+       conf_subdirs_extensions="$conf_subdirs_extensions $CORE_EXTENSIONS/$j"
+     done
+     ;;
+
     esac
 done
 
@@ -270,16 +358,26 @@ for i in $conf_subdirs; do
     # account for the subdirs level in the case where they are relative
     # paths.
     case $i in 
-	*/*) BUILD_AREA=../..
-	    BUILD_TOT=../../$thispath
-	    ;;
-	*) BUILD_AREA=..
-	    BUILD_TOT=../$thispath
-	    ;;
+        */*/*)
+        BUILD_AREA=../../..
+        BUILD_TOT=../../../$thispath
+        ;;
+
+	*/*) 
+        BUILD_AREA=../..
+	BUILD_TOT=../../$thispath
+	;;
+
+	*) 
+        BUILD_AREA=..
+	BUILD_TOT=../$thispath
+	;;
     esac
     eval sed -e \'s!@BUILD_MOD@!${BUILD_MOD}!\' \
 	-e \'s!@BUILD_AREA@!${BUILD_AREA}!\' \
 	-e \'s!@BUILD_TOT@!${BUILD_TOT}!\' \
+        -e \'s!@CORE_EXTENSIONS@!${CORE_EXTENSIONS}!\' \
+        -e \'s!@EXTENSION_LIST@!${EXTENSION_LIST}!\' \
 	${subst_sed_args} \
 	<$input >$i/Makefile
     if [ $? != 0 ]; then
@@ -289,7 +387,7 @@ for i in $conf_subdirs; do
 done
 
 #
-# Finally, create the top level Makefile from Makefile.in.
+# Create the top level Makefile from Makefile.in.
 #
 input=${makepath}/template/Makefile.in
 if [ ! -f $input ]; then
@@ -300,9 +398,37 @@ if [ $verbose -ge 1 ]; then
     echo "Creating top level makefile: Makefile"
 fi
 eval sed \
+     -e \'s!@CORE_EXTENSIONS@!${CORE_EXTENSIONS}!\' \
     ${subst_sed_args} \
     < $input >Makefile
 if [ $? != 0 ]; then
     echo "$0: error while creating Makefile" >&2
     exit 1
+fi
+
+
+#
+# Finally, we built Makefile.extensions file
+# that is included in Makefile.gsetup
+#
+if [ "CORE_EXTENSIONS" != "" ] ; then
+
+   makefile_extensions="$absbuildpath/Makefile.extensions";
+
+
+   cat > $makefile_extensions << EOF
+
+#
+# Building BUILD_BASE_xxx for extensions.
+# This Makefile is included in top level
+# Makefile.gsetup
+#
+EOF
+
+   for i in $conf_subdirs_extensions; do
+      BUILD_MOD=`echo $i | sed 's!/!_!g'`
+      BUILD_MOD="targ_info_ext_$BUILD_MOD"
+      echo "BUILD_BASE_$BUILD_MOD = \$(BUILD_TOT)/targinfo_ext/$i" >> $makefile_extensions
+   done
+ 
 fi

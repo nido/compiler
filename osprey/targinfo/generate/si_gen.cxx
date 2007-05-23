@@ -31,6 +31,11 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+/*
+ * 
+ * This file has been modified by STMicroelectronics
+ *
+ */
 
 
 //   si_gen
@@ -48,11 +53,15 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include "W_limits.h"
 #include <stdarg.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <map>
 #include <vector>
@@ -64,12 +73,13 @@ using std::less;
 #include <list.h>
 #include <map.h>
 #include <vector.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 
 #include "topcode.h"
 #include "targ_isa_properties.h"
 #include "targ_isa_subset.h"
 #include "targ_isa_operands.h"
+#include "gen_util.h"
 
 #include "si_gen.h"
 
@@ -81,6 +91,39 @@ const int bits_per_long_long = 64;
 const bool use_long_longs = true;       // For now always
 const int max_operands = ISA_OPERAND_max_operands;
 const int max_results = ISA_OPERAND_max_results;
+
+/* Specific part for dynamic code generation */
+#ifdef DYNAMIC_CODE_GEN
+#include "dyn_isa_topcode.h"   /* Dynamic TOPcode */
+#endif
+
+// In following loops, we iterate on the number of
+// TOP. This number differs whether we generate
+// static or dynamic TOPs.
+#ifndef DYNAMIC_CODE_GEN
+static mUINT32 TOP_count_limit = TOP_static_count;
+#else
+static mUINT32 TOP_count_limit = TOP_dyn_count;
+#endif
+
+// Whether we generate code for the core (static) or for an extension.
+static bool gen_static_code = FALSE;
+
+// Extension name (or NULL if static)
+static const char *extname  = NULL;
+
+// C file generated when static code generation is done,
+// included in proc/<arch>_si.cxx files when dynamic code
+// generation is done.
+// It defines static resources.
+static FILE *cincfile = NULL;
+static char *cincfilename  = NULL;
+
+// Include file generated only in dynamic mode,
+// contaning the access interface for the dll.
+static FILE *hfile = NULL;
+static char *hfilename = NULL;
+
 
 /////////////////////////////////////
 int Mod( int i, int j )
@@ -137,6 +180,8 @@ public:
   // Generate a name that is a copy of <other>.  The name will not be unique.
   // Really only useful when <other> is about to be destructed, but we still
   // need to refer to it.
+  ~GNAME();
+  // Destructor. Release memory
   char* Gname();
   // Return the name.  This is the name under which the object is defined.
   char* Addr_Of_Gname();
@@ -146,25 +191,51 @@ public:
   // pointer to it.  After this call, Addr_Of_Gname will return 0.
 
 private:
-  char gname[16];       // Where to keep the name.  (This could be more
-                        //   hi-tech, but why?
-  bool stubbed;         // Stubbed-out?
-  static int count;     // For generating the unique names.
+  char *gname;                   // This pointer used to be a fix length
+                                 //
+  bool stubbed;                  // Stubbed-out?
+  static unsigned int count;     // For generating the unique names.
+
 };
 
-int GNAME::count = 0;
+unsigned int GNAME::count = 0;
+
 
 GNAME::GNAME() : stubbed(false) {
-  sprintf(gname,"&gname%d",count++);
+  const char * const model = "&gname%d";
+  unsigned int length;
+
+  length = strlen(model) +
+           35            + // Oversestimated even if sizeof(long long)==8
+           1;              // NULL terminated string.
+  gname = static_cast<char*>(malloc(length));
+  assert(gname!=NULL);
+  sprintf(gname,model,count++);
 }
 
 GNAME::GNAME(char* prefix) : stubbed(false) {
-  assert(strlen(prefix) <= 8);
-  sprintf(gname,"&%s%d",prefix,count++);
+  const char * const model = "&%s%d";
+  unsigned int length;
+
+  length = strlen(model) +
+           strlen(prefix)+
+           35            + // Oversestimated even if sizeof(long long)==8
+           1;              // NULL terminated string.
+          
+  gname = static_cast<char*>(malloc(length));
+  assert(gname!=NULL);
+  sprintf(gname,model,prefix,count++);
 }
 
 GNAME::GNAME(GNAME& other) : stubbed(false) {
+
+  gname = static_cast<char*>(malloc(strlen(other.gname)+1));
+  assert(gname!=NULL);
   sprintf(gname,"%s",other.gname);
+}
+
+GNAME::~GNAME() {
+  free(gname);        // Release allocated memory.
 }
 
 char* GNAME::Gname() {
@@ -307,10 +378,45 @@ void RES_WORD::Output_All(FILE* fd)
   else {
     // Important special case.  We don't need a vector of resource words at all
     // and can just use a scalar.
-    fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_initializer = 0x%llx;\n",
-               res_words.front()->initializer);
-    fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
-               res_words.front()->overuse_mask);
+    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_initializer = 0x%llx;\n",
+	    gen_static_code?"static":"dynamic",
+	    res_words.front()->initializer);
+    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_overuse_mask = 0x%llx;\n",
+	    gen_static_code?"static":"dynamic",
+	    res_words.front()->overuse_mask);
+    if (gen_static_code) {
+      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_initializer = 0x%llx;\n",
+	      res_words.front()->initializer);
+      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_overuse_mask = 0x%llx;\n",
+	      res_words.front()->overuse_mask);
+    }
+    else {
+      /* Managing dynamic extension */
+      const char * const routine_SI_RRW_initializer  = "dyn_get_SI_RRW_initializer";
+      const char * const routine_SI_RRW_overuse_mask = "dyn_get_SI_RRW_overuse_mask";
+      /* First, generate the access functions */
+      fprintf(fd,
+	      "\n"
+	      "SI_RRW %s( void )\n"
+	      "{\n"
+	      "  return (SI_RRW_dynamic_initializer);\n"
+	      "}\n",
+	      routine_SI_RRW_initializer);
+      fprintf(fd,
+	      "\n"
+	      "SI_RRW %s( void )\n"
+	      "{\n"
+	      "  return (SI_RRW_dynamic_overuse_mask);\n"
+	      "}\n\n",
+	      routine_SI_RRW_overuse_mask);
+      /* Then generate their declaration */
+      fprintf(hfile,"\n"
+	      "extern SI_RRW %s (void);\n\n",
+	      routine_SI_RRW_initializer);
+      fprintf(hfile,"\n"
+	      "extern SI_RRW %s (void);\n\n",
+	      routine_SI_RRW_overuse_mask);
+    }
   }
 }
 
@@ -357,12 +463,12 @@ public:
 private:
   const int count;          // Available per cycle
   char* const name;         // For documentation and debugging
+  const int id;             // Unique numerical identifier
   GNAME gname;              // Generated symbolic name
   int word;                 // Which word in the table?
   int field_width;          // How wide the field?
   int shift_count;          // How much to shift (starting pos of the low
                             //   order bit
-  const int id;             // Unique numerical identifier
   static int total;         // Total number of different RESs (not the the
                             //   total of their counts, 1 for each RES)
   static map <int,RES*> resources;
@@ -405,16 +511,64 @@ void RES::Output_All( FILE* fd )
 
   // [HK]
 //    fprintf(fd,"TARGINFO_EXPORTED const int SI_resource_count = %d;\n",total);
-  fprintf(fd,"TARGINFO_EXPORTED int SI_resource_count = %d;\n",total);
-  fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * TI_SI_CONST SI_resources[] = {");
+  if (gen_static_code) {
+    fprintf(fd,"static int SI_static_resource_count = %d;\n",total);
+    fprintf(fd,"TARGINFO_EXPORTED int TI_SI_resource_count = %d;\n",total);
+    fprintf(fd,"static SI_RESOURCE * TI_SI_CONST SI_static_resources[] = {");
+    fprintf(cincfile, "\n  /* Core Resources */\n");
+  } else {
+    fprintf(fd,"static int SI_dynamic_resource_count = %d;\n",total);
+    fprintf(fd,"static SI_RESOURCE * TI_SI_CONST SI_dynamic_resources[] = {");
+  }
 
   bool is_first = true;
   for ( i = 0; i < total; ++i ) {
     Maybe_Print_Comma(fd,is_first);
     fprintf(fd,"\n  %s",resources[i]->gname.Addr_Of_Gname());
   }
-
   fprintf(fd,"\n};\n");
+
+  if (gen_static_code) {
+    fprintf(fd,"TARGINFO_EXPORTED SI_RESOURCE * "
+	    "TI_SI_CONST * SI_resources = SI_static_resources;\n");
+
+    // C file generated when static code generation is done,
+    // included in proc/<arch>_si.cxx files when dynamic code
+    // generation is done.
+    // It defines static resources.
+    for ( i = 0; i < total; ++i ) {
+      fprintf(cincfile, "  RESOURCE %s = RESOURCE_Create(\"%s\", %d);\n",
+	      resources[i]->Name(), resources[i]->Name(), resources[i]->Count());
+    }
+  }
+  else {
+    /* Managing dynamic extension */
+    const char * const routine_SI_res_count = "dyn_get_SI_resource_count";
+    const char * const routine_SI_res       = "dyn_get_SI_resources";
+    /* First, generate the access functions */
+    fprintf(fd,
+	    "\n"
+	    "int %s( void )\n"
+	    "{\n"
+	    "  return (%d);\n"
+	    "}\n",
+	    routine_SI_res_count,
+	    total);
+    fprintf(fd,
+	    "\n"
+	    "SI_RESOURCE * TI_SI_CONST * %s( void )\n"
+	    "{\n"
+	    "  return (SI_dynamic_resources);\n"
+	    "}\n\n",
+	    routine_SI_res);
+    /* Then generate their declaration */
+    fprintf(hfile,"\n"
+	    "extern int %s (void);\n\n",
+	    routine_SI_res_count);
+    fprintf(hfile,"\n"
+	    "extern SI_RESOURCE * TI_SI_CONST * %s (void);\n\n",
+	    routine_SI_res);
+  }
 }
 
 /////////////////////////////////////
@@ -606,7 +760,7 @@ bool RES_REQ::Add_Resource(const RES* res, int cycle)
   CYCLE_RES cr = CYCLE_RES(cycle,res);
   int count = cycle_res_count[cr];
 
-  if ( count >= res->Count() )
+  if ( (unsigned int)count >= res->Count() )
     return false;
 
   cycle_res_count[cr] = ++count;
@@ -780,7 +934,17 @@ void ISLOT::Output_All(FILE* fd)
 {
   list<ISLOT*>::iterator isi;
 
-  fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST int SI_issue_slot_count = %d;\n",count);
+  if (gen_static_code) {
+    fprintf(fd,"static TI_SI_CONST int SI_static_issue_slot_count = %d;\n",
+	    count);
+    fprintf(fd,"TARGINFO_EXPORTED int SI_issue_slot_count = %d;\n", count);
+    fprintf(cincfile, "\n  /* Core Issue slots */\n");
+  }
+  else {
+    fprintf(fd,"static TI_SI_CONST int SI_dynamic_issue_slot_count = %d;\n",
+	    count);
+  }
+
 
   for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
     ISLOT* islot = *isi;
@@ -789,12 +953,28 @@ void ISLOT::Output_All(FILE* fd)
             islot->name,
             islot->skew,
             islot->avail_count);
+
+    if (gen_static_code) {
+      // C file generated when static code generation is done,
+      // included in proc/<arch>_si.cxx files when dynamic code
+      // generation is done.
+      // It defines static resources.
+      fprintf(cincfile, "  ISSUE_SLOT %s = ISSUE_SLOT_Create(\"%s\", %d, %d);\n",
+	      islot->name,
+	      islot->name,
+	      islot->skew,
+	      islot->avail_count);
+    }
   }
 
-  if ( count == 0 )
-    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * TI_SI_CONST SI_issue_slots[1] = {0};\n");
+  if ( count == 0 ) {
+    fprintf(fd,"static SI_ISSUE_SLOT * TI_SI_CONST SI_%s_issue_slots[1] = {0};\n",
+	    gen_static_code?"static":"dynamic");
+  }
   else {
-    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * TI_SI_CONST SI_issue_slots[%d] = {",count);
+    fprintf(fd,"static SI_ISSUE_SLOT * TI_SI_CONST SI_%s_issue_slots[%d] = {",
+	    gen_static_code?"static":"dynamic",
+	    count);
 
     bool is_first = true;
     for ( isi = islots.begin(); isi != islots.end(); ++isi ) {
@@ -804,6 +984,39 @@ void ISLOT::Output_All(FILE* fd)
     }
 
     fprintf(fd,"\n};\n");
+  }
+
+  if (gen_static_code) {
+    fprintf(fd,"TARGINFO_EXPORTED SI_ISSUE_SLOT * TI_SI_CONST * "
+	    "SI_issue_slots = SI_static_issue_slots;\n");
+  }
+  else {
+      /* Managing dynamic extension */
+      const char * const routine_SI_issue_slot_count = "dyn_get_SI_issue_slot_count";
+      const char * const routine_SI_issue_slots      = "dyn_get_SI_issue_slots";
+      /* First, generate the access functions */
+      fprintf(fd,
+	      "\n"
+	      "int %s( void )\n"
+	      "{\n"
+	      "  return (%d);\n"
+	      "}\n",
+	      routine_SI_issue_slot_count,
+	      count);
+      fprintf(fd,
+	      "\n"
+	      "SI_ISSUE_SLOT * TI_SI_CONST * %s( void )\n"
+	      "{\n"
+	      "  return (SI_dynamic_issue_slots);\n"
+	      "}\n\n",
+	      routine_SI_issue_slots);
+      /* Then generate their declaration */
+      fprintf(hfile,"\n"
+	      "extern int %s (void);\n\n",
+	      routine_SI_issue_slot_count);
+      fprintf(hfile,"\n"
+	      "extern SI_ISSUE_SLOT * TI_SI_CONST * %s (void);\n\n",
+	      routine_SI_issue_slots);
   }
 }
 
@@ -1100,7 +1313,7 @@ void INSTRUCTION_GROUP::Output_II_Info(FILE* fd)
     }
   }
 
-  for ( i = 0; i < sizeof(bad_iis) / sizeof(bad_iis[0]); ++i ) {
+  for ( i = 0; (unsigned int)i < sizeof(bad_iis) / sizeof(bad_iis[0]); ++i ) {
     bad_iis[i] = 0ULL;
   }
 
@@ -1182,7 +1395,7 @@ void INSTRUCTION_GROUP::Output_Issue_Slot_Info(FILE* fd)
 
 void INSTRUCTION_GROUP::Output(FILE* fd)
 {
-  int i;
+  unsigned int i;
 
   fprintf(fd,"\n/* Instruction group %s */\n",name);
   res_requirement.Output(fd);
@@ -1251,7 +1464,8 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
     (*iig)->Output(fd);
   }
 
-  fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST SI_ID_si[] = {");
+  fprintf(fd,"static SI * TI_SI_CONST SI_%s_ID_si[] = {",
+	  gen_static_code?"static":"dynamic");
 
   bool is_first = true;
   for (iig = instruction_groups.begin();
@@ -1264,6 +1478,35 @@ void INSTRUCTION_GROUP::Output_All(FILE* fd)
 
   fprintf(fd,"\n};\n");
 
+  if (gen_static_code) {
+    fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST * SI_ID_si = SI_static_ID_si;\n\n");
+  }
+  else {
+    /* Managing dynamic extension */
+    const char * const routine_SI_ID_count = "dyn_get_SI_ID_count";
+    const char * const routine_SI_ID_si    = "dyn_get_SI_ID_si";
+    /* First, generate the access functions */
+    fprintf(fd,"\n"
+	    "mUINT32\n"
+	    "%s ( void )\n"
+	    "{ return (mUINT32) %d;\n"
+	    "}\n\n",
+	    routine_SI_ID_count,
+	    count);
+    fprintf(fd,"\n"
+	    "SI * TI_SI_CONST *\n"
+	    "%s ( void )\n"
+	    "{ return (SI * TI_SI_CONST *) SI_dynamic_ID_si;\n"
+	    "}\n\n",
+	    routine_SI_ID_si);
+    /* Then generate their declaration */
+    fprintf(hfile,"\n"
+	    "extern mUINT32 %s (void);\n\n",
+	    routine_SI_ID_count);
+    fprintf(hfile,"\n"
+	    "extern SI * TI_SI_CONST *%s (void);\n\n",
+	    routine_SI_ID_si);
+  }
   fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST int SI_ID_count = %d;\n",count);
 
   fprintf(fd,"\n"); // One extra new line to separate from what follows.
@@ -1299,14 +1542,21 @@ private:
   static vector<bool> top_sched_info_defined;   // Which elements defined
 };
 
-vector<char*> TOP_SCHED_INFO_MAP::top_sched_info_ptr_map(TOP_count,"0");
-vector<bool> TOP_SCHED_INFO_MAP::top_sched_info_defined(TOP_count,false);
+vector<char*> TOP_SCHED_INFO_MAP::top_sched_info_ptr_map(TOP_count_limit,"0");
+vector<bool> TOP_SCHED_INFO_MAP::top_sched_info_defined(TOP_count_limit,false);
 
 void TOP_SCHED_INFO_MAP::Create_Dummies( void )
 {
   INSTRUCTION_GROUP *dummies = NULL;
 
-  for ( int i = 0; i < TOP_count; ++i ) {
+#if 0
+  if (TOP_count_limit > TOP_count) {
+    top_sched_info_ptr_map.resize(TOP_count_limit,"0");
+    top_sched_info_defined.resize(TOP_count_limit,false);
+  }
+#endif
+
+  for ( int i = 0; i < (int)TOP_count_limit; ++i ) {
     if ( TOP_is_dummy((TOP)i) ) {
       if ( !dummies ) {
 	dummies = new INSTRUCTION_GROUP("Dummy instructions");
@@ -1333,12 +1583,17 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
 {
   int i;
 
-  fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST SI_top_si[%d] = {",TOP_count);
+  fprintf(fd,"static SI * TI_SI_CONST SI_%s_top_si[%d] = {",
+	  gen_static_code?"static":"dynamic", TOP_count_limit);
 
   bool err = false;
   bool is_first = true;
-  for ( i = 0; i < TOP_count; ++i ) {
-    bool isa_member = ISA_SUBSET_Member(machine_isa, (TOP)i);
+  for ( i = 0; i < (int)TOP_count_limit; ++i ) {
+    // For extensions, we define only one (sub)set
+    // for extensions. As a result, the ISA_SUBSET_member()
+    // test is always true.
+    bool isa_member = gen_static_code ?
+                       ISA_SUBSET_Member(machine_isa, (TOP)i): true;
     bool is_dummy = TOP_is_dummy((TOP)i);
 #ifdef TARG_ST
     // Arthur: Simulated shouldn't have any scheduling info either ?
@@ -1370,6 +1625,27 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
     }
   }
   fprintf(fd,"\n};\n");
+
+  if(gen_static_code) {
+    // TODO: check const is really needed
+    fprintf(fd,"TARGINFO_EXPORTED SI * TI_SI_CONST * SI_top_si = SI_static_top_si;\n\n");
+  }
+  else {
+    /* Managing dynamic extension */
+    const char * const routine_name = "dyn_get_SI_top_si";
+    /* First, generate the access functions */
+    fprintf(fd,"\n"
+	    "SI * TI_SI_CONST *\n"
+	    "%s ( void )\n"
+	    "{ return (SI * TI_SI_CONST *) SI_dynamic_top_si;\n"
+	    "}\n\n",
+	    routine_name);
+    /* Then generate their declaration */
+    fprintf(hfile,"\n"
+	    "extern SI * TI_SI_CONST *%s (void);\n\n",
+	    routine_name);
+  }
+
   if (err) exit(EXIT_FAILURE);
 }
 
@@ -1377,7 +1653,7 @@ void TOP_SCHED_INFO_MAP::Cleanup ()
 {
   int i;
 
-  for (i = 0; i < TOP_count; ++i ) {
+  for (i = 0; i < (int)TOP_count_limit; ++i ) {
     top_sched_info_defined[i] = false;
   }
 }
@@ -1390,11 +1666,21 @@ void TOP_SCHED_INFO_MAP::Cleanup ()
 static INSTRUCTION_GROUP* current_instruction_group;
 
 /*ARGSUSED*/
+/* Usage of this routine should be deprecated and replaced by next one.*/
 void Machine(char* name, ISA_SUBSET isa, int argc, char** argv)
 {
   machine_isa = isa;
 
   TOP_SCHED_INFO_MAP::Create_Dummies();
+}
+
+/* Since three of the four parameters in previous routine are
+ * useless, we use overloading mechanism and declare a new routine.
+ */
+void Machine(ISA_SUBSET isa)
+{
+   Machine(static_cast<char*>(NULL),isa,0,static_cast<char**>(NULL));
+   return;
 }
 
 RESOURCE RESOURCE_Create(char* name, int count)
@@ -1411,12 +1697,15 @@ void Instruction_Group(char* name,...)
 {
   va_list ap;
   TOP opcode;
+  TOP TOP_limit;
+
+  TOP_limit= Is_Static_Code() ? TOP_UNDEFINED : static_cast<TOP>(-1);
 
   current_instruction_group = new INSTRUCTION_GROUP(name);
 
   va_start(ap,name);
 
-  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_UNDEFINED )
+  while ( (opcode = static_cast<TOP>(va_arg(ap,int))) != TOP_limit )
     TOP_SCHED_INFO_MAP::Add_Entry(opcode,current_instruction_group);
 
   va_end(ap);
@@ -1476,6 +1765,53 @@ void Machine_Done( char* filename )
 {
   FILE* fd = fopen(filename,"w");
 
+  // Whether we generate code for the core (static) or for an extension.
+  gen_static_code = Is_Static_Code();
+
+  // Get extension name or NULL for static code generation.
+  extname = gen_static_code ? NULL : Get_Extension_Name();
+
+  // Get basename of the output file
+  char *filename_noext = (char*)malloc(strlen(filename)+1);
+  Remove_Filename_Extension(filename, filename_noext);
+
+  if (gen_static_code) {
+    // C file generated when static code generation is done,
+    // included in C ISA_LIT_info table when dynamic code
+    // generation is done.
+    cincfilename = Gen_Build_Filename(filename_noext,
+				      NULL, /* Build at static code gen. time*/
+				      gen_util_file_type_c_i_file);
+    cincfile  = Gen_Open_File_Handle(cincfilename,"w");
+
+    fprintf(cincfile,
+	    "\n\n"
+	    "/* This file has been created automatically\n"
+	    " *  Do not modify it.\n"
+	    " */\n\n"
+	    "/* It defines static resources.\n"
+	    " */\n\n");
+  }
+  else {
+    // Include file generated only in dynamic mode,
+    // contaning the access interface for the dll.
+    hfilename = Gen_Build_Filename(filename_noext,
+				   NULL, /* Build at static code gen. time*/
+				   gen_util_file_type_hfile);
+    hfile = Gen_Open_File_Handle(hfilename, "w");
+
+    const char *interface[] = {
+      "\n\n"
+      "/* This file has been created automatically\n"
+      " *  Do not modify it.\n"
+      " */\n\n"
+      "/* It defines extension access interface for scheduling info.\n"
+      " */\n\n",
+      NULL };
+
+    Emit_Header(hfile, filename_noext, interface, extname);
+  }
+
   if ( fd == NULL ) {
     fprintf(stderr,"### Error: couldn't write %s\n",filename);
     return;
@@ -1490,8 +1826,90 @@ void Machine_Done( char* filename )
 
   //  Print_End_Boiler_Plate(fd);
 
+  if (gen_static_code) {
+    /* Closing file handlers */
+    Gen_Close_File_Handle(cincfile,cincfilename);
+    Gen_Free_Filename(cincfilename);
+  }
+  else {
+    const char * const routine_name = "dyn_get_processor_name";
+    /* First, generate the access functions */
+    fprintf(fd,"\n"
+	    "const char *\n"
+	    "%s ( void )\n"
+	    "{ return (\"%s\");\n"
+	    "}\n\n",
+	    routine_name,
+	    ISA_SUBSET_Name(machine_isa));
+    /* Then generate their declaration */
+    fprintf(hfile,"\n"
+	    "extern const char *%s (void);\n\n",
+	    routine_name);
+
+    Emit_Footer(hfile);
+    /* Closing file handlers */
+    Gen_Close_File_Handle(hfile,hfilename);
+    Gen_Free_Filename(hfilename);
+  }
+
   fclose(fd);
 
   // Arthur: clean up some things for the next ISA subset
   TOP_SCHED_INFO_MAP::Cleanup();
+}
+
+// For an extension, the name of the output file
+// is not free but is determined automatically
+// starting from the extension name.Function 
+// Machine_Done is called onwards.
+void 
+Extension_Done( void )
+{
+    const char *const    routine_name = "Extension_Done";
+    char                *name;
+    char                *extname;
+    const  char *const   bname = FNAME_TARG_ISA_SI;
+    unsigned int         length;
+
+    static unsigned int  count = 0;
+
+    /* Only for dynamic code */
+    if(!Is_Dynamic_Code())
+     { fprintf(stderr,
+         "### Fatal: function \"%s\" can only be called for extensions.\n",
+         routine_name);
+       exit(EXIT_FAILURE);
+     }
+
+   /* Only called once */
+   if(count)
+     { fprintf(stderr,
+         "### Fatal: function \"%s\" can only be called once.\n",
+         routine_name);
+       exit(EXIT_FAILURE);
+     }
+
+   ++count;
+
+   extname = Get_Extension_Name();
+   assert(extname!=NULL);
+
+   length = strlen(extname)  +
+            strlen("_")      +
+            strlen(bname)    +
+            strlen(".c")     +
+            1;
+
+    name = static_cast<char*>(malloc(length)); 
+    assert(name!=NULL);
+
+    strcpy(name,extname);
+    strcat(name,"_");
+    strcat(name,bname);
+    strcat(name,".c");
+
+    Machine_Done(name);
+
+    free(static_cast<void*>(name));
+    return;
 }

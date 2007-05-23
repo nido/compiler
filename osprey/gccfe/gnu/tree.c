@@ -122,7 +122,10 @@ static int type_hash_eq PARAMS ((const void *, const void *));
 static hashval_t type_hash_hash PARAMS ((const void *));
 static void print_type_hash_statistics PARAMS((void));
 static void finish_vector_type PARAMS((tree));
-static tree make_vector PARAMS ((enum machine_mode, tree, int));
+#ifndef TARG_ST
+/* TB: need to export make vector for dynamic machine mode */
+static tree make_vector PARAMS ((machine_mode_t, tree, int));
+#endif
 static int type_hash_marked_p PARAMS ((const void *));
 
 tree global_trees[TI_MAX];
@@ -4906,9 +4909,13 @@ build_common_tree_nodes_2 (short_double)
 /* Returns a vector tree node given a vector mode, the inner type, and
    the signness.  */
 
-static tree
+#ifndef TARG_ST
+/* TB: need to export make vector for dynamic machine mode */
+static
+#endif
+tree
 make_vector (mode, innertype, unsignedp)
-     enum machine_mode mode;
+     machine_mode_t mode;
      tree innertype;
      int unsignedp;
 {

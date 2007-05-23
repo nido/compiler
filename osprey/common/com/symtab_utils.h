@@ -115,13 +115,17 @@ Make_Array_Type(TYPE_ID element_type, INT32 ndim, INT64 len);
 //----------------------------------------------------------------------
 // TY-related utilities
 //----------------------------------------------------------------------
-BE_EXPORTED extern TY_IDX MTYPE_TO_TY_array[MTYPE_LAST+1];
+BE_EXPORTED extern TY_IDX MTYPE_TO_TY_array[MTYPE_MAX_LIMIT+1];
 #define MTYPE_To_TY(t)	MTYPE_TO_TY_array[t]
 #define Be_Type_Tbl(t)	MTYPE_TO_TY_array[t]
 		    
 // Well known predefined types
-BE_EXPORTED extern TY_IDX Void_Type, FE_int_Type, FE_double_Type;
+BE_EXPORTED extern TY_IDX Void_Type;
 BE_EXPORTED extern TY_IDX Spill_Int_Type, Spill_Ptr_Type, Spill_Float_Type;
+#ifndef TARG_ST
+// Obsolete
+BE_EXPORTED extern TY_IDX FE_int_Type, FE_double_Type;
+#endif
 
 BE_EXPORTED TY_IDX
 Copy_TY (TY_IDX ty);			// make a copy of a ty 
@@ -201,7 +205,7 @@ TY_is_unique (TY_IDX);
  * (actually only have pregs for the register-size mtypes and simulated mtypes;
  * in particular, the I1/I2/U1/U2 mtypes point to the 4-byte PREG.
  */
-BE_EXPORTED extern ST* MTYPE_TO_PREG_array[MTYPE_LAST+1];
+BE_EXPORTED extern ST* MTYPE_TO_PREG_array[MTYPE_MAX_LIMIT+1];
 #define MTYPE_To_PREG(t)	MTYPE_TO_PREG_array[t]
 #define Int32_Preg	MTYPE_To_PREG (MTYPE_I4)
 #define Int40_Preg      MTYPE_To_PREG (MTYPE_I5)
@@ -214,7 +218,11 @@ BE_EXPORTED extern ST* MTYPE_TO_PREG_array[MTYPE_LAST+1];
  * (point to one of above pregs, depending on ABI). */
 /* for pseudo-registers */
 BE_EXPORTED extern ST *Int_Preg, *Ptr_Preg, *Float_Preg, *Return_Val_Preg;	
-
+#ifdef TARG_ST
+//TB: Return specific PREG to handle think like non general register in
+//clobber asm list
+BE_EXPORTED extern ST *Untyped_Preg(void);
+#endif
 BE_EXPORTED const char *
 Preg_Name (PREG_NUM i);
 

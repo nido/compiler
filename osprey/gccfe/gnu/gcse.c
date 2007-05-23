@@ -300,7 +300,7 @@ static struct obstack gcse_obstack;
 /* Nonzero for each mode that supports (set (reg) (reg)).
    This is trivially true for integer and floating point values.
    It may or may not be true for condition codes.  */
-static char can_copy_p[(int) NUM_MACHINE_MODES];
+static char can_copy_p[(int) MAX_LIMIT_MACHINE_MODE];
 
 /* Nonzero if can_copy_p has been initialized.  */
 static int can_copy_init_p;
@@ -570,11 +570,11 @@ static int want_to_gcse_p	PARAMS ((rtx));
 static int oprs_unchanged_p	PARAMS ((rtx, rtx, int));
 static int oprs_anticipatable_p PARAMS ((rtx, rtx));
 static int oprs_available_p	PARAMS ((rtx, rtx));
-static void insert_expr_in_table PARAMS ((rtx, enum machine_mode, rtx,
+static void insert_expr_in_table PARAMS ((rtx, machine_mode_t, rtx,
 					  int, int, struct hash_table *));
 static void insert_set_in_table PARAMS ((rtx, rtx, struct hash_table *));
-static unsigned int hash_expr	PARAMS ((rtx, enum machine_mode, int *, int));
-static unsigned int hash_expr_1 PARAMS ((rtx, enum machine_mode, int *));
+static unsigned int hash_expr	PARAMS ((rtx, machine_mode_t, int *, int));
+static unsigned int hash_expr_1 PARAMS ((rtx, machine_mode_t, int *));
 static unsigned int hash_string_1 PARAMS ((const char *));
 static unsigned int hash_set	PARAMS ((int, int));
 static int expr_equiv_p	        PARAMS ((rtx, rtx));
@@ -936,7 +936,7 @@ compute_can_copy ()
 #ifdef AVOID_CCMODE_COPIES
 	can_copy_p[i] = 0;
 #else
-	reg = gen_rtx_REG ((enum machine_mode) i, LAST_VIRTUAL_REGISTER + 1);
+	reg = gen_rtx_REG ((machine_mode_t) i, LAST_VIRTUAL_REGISTER + 1);
 	insn = emit_insn (gen_rtx_SET (VOIDmode, reg, reg));
 	if (recog (PATTERN (insn), insn, NULL) >= 0)
 	  can_copy_p[i] = 1;
@@ -1557,7 +1557,7 @@ oprs_available_p (x, insn)
 static unsigned int
 hash_expr (x, mode, do_not_record_p, hash_table_size)
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int *do_not_record_p;
      int hash_table_size;
 {
@@ -1590,7 +1590,7 @@ hash_string_1 (ps)
 static unsigned int
 hash_expr_1 (x, mode, do_not_record_p)
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int *do_not_record_p;
 {
   int i, j;
@@ -1945,7 +1945,7 @@ expr_equiv_p (x, y)
 static void
 insert_expr_in_table (x, mode, insn, antic_p, avail_p, table)
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx insn;
      int antic_p, avail_p;
      struct hash_table *table;

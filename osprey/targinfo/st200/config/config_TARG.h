@@ -149,6 +149,9 @@ BE_EXPORTED extern BOOL Enable_Misaligned_Access;
 // 2: error
 BE_EXPORTED extern INT32 Warn_Misaligned_Access;
 
+//[VCdV]
+BE_EXPORTED extern int Activate_Hwloop;
+
 // [SC]: Cycle time overrides.
 BE_EXPORTED extern OPTION_LIST *Cycle_Time_Overrides;
 #endif

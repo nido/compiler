@@ -306,6 +306,15 @@ void
 EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
 {
 #ifdef TARG_ST
+  // If registers are identical we can generate a noop instead of a copy,
+  // unless we are before register allocation and one of the registers 
+  // is dedicated. In the later case we must keep the explicit dedicated
+  // use or def as it expresses parameter passing information.
+  if(tn_registers_identical (tgt_tn, src_tn) &&
+     (EBO_in_peep || (!TN_is_dedicated(tgt_tn) && !TN_is_dedicated(src_tn)))) {
+    Build_OP(TOP_noop,ops);
+    return;
+  }
   if (predicate_tn != NULL) {
     Expand_Copy(tgt_tn, predicate_tn, src_tn, ops);
     return;

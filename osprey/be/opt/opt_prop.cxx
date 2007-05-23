@@ -659,7 +659,7 @@ CODEREP::Convert_type(CODEMAP *htable, CODEREP *expr, BOOL icopy_phase)
 
 #ifdef TARG_ST
 // ====================================================================
-// CODEREP::Create_CVT - "this", a memory variable, is being
+// CODEREP::Convert_Dtyp - "this", a memory variable, is being
 // substituted by "expr"; The conversion is made according to the
 // Dtyp(), and will be later completed by a call to Convert_type which
 // works on the Dsctyp. It may generate a CVT for INTEGER types, or a
@@ -706,6 +706,10 @@ CODEREP::Convert_Dtyp(CODEMAP *htable, CODEREP *expr)
       expr = htable->Rehash(cr);
       expr->Set_isop_flag(ISOP_FOLD_EXPR_VISITED);
     }
+  } else if ((MTYPE_is_dynamic(this_type) || MTYPE_is_dynamic(rhs_type)) &&
+	   this_type != rhs_type) {
+    // Sanity check for dynamic types.
+    FmtAssert(FALSE, ("CODEREP::Create_TAS: Unexpected conversion requested for dynamic type"));
   }
 
   return expr;
@@ -2229,8 +2233,15 @@ COPYPROP::Copy_propagate(BB_NODE *bb)
       if (stmt->Is_identity_assignment_removable() && WOPT_Enable_DCE) 
 	Fix_identity_assignment(stmt);  // repair zero version chi operands
       CODEREP *lhs = stmt->Lhs();
-      if (Is_function_of_itself(stmt, Opt_stab()) &&
+      if (Is_function_of_itself(stmt, Opt_stab()) && WOPT_Enable_DCE &&
 	  Opt_stab()->Stack_elements(lhs->Aux_id()) != 0)
+	// FdF 20061115: Merged from st200/main for bug #20296
+	// FdF 20060613: But if !WOPT_Enable_DCE, this one will not be
+	// removed. The consequence is that two live ranges for the
+	// same variable will overlap, this is not allowed by
+	// conventional SSA, and will either break in verify_version,
+	// or generate incorrect code (Linked to ddts 25547).
+
 	// push the last version to be the current version because I'm sure
 	// I can substitute all current version with the last version
 	Opt_stab()->Push_coderep(lhs->Aux_id(),

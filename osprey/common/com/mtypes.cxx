@@ -36,8 +36,19 @@
 
 #include "defs.h" 
 #include "mtypes.h" 
+#ifdef TARG_ST
+#include "errors.h" // for FmtAssert()
+// [TB] Extension Support
+BE_EXPORTED TYPE_ID MTYPE_COUNT; 
+BE_EXPORTED TYPE_ID FIRST_COMPOSED_MTYPE; 
+#endif
 
+#ifndef TARG_ST
+// [TB] Extension Support
 TYPE_DESC Machine_Types[] = { 
+#else
+TYPE_DESC Machine_Types[MTYPE_MAX_LIMIT+1] = { 
+#endif
   { MTYPE_UNKNOWN, 0, 0, 0, TARG_NONE_ALIGN, 0, 0, 0, 0, 0, "",0,0, MTYPE_UNKNOWN }, 
   { MTYPE_B, 1, 0, 0, TARG_NONE_ALIGN, 0, 0, 0, 0, 0, "B", MTYPE_CLASS_INTEGER_BOOLEAN, 0, MTYPE_B }, 
   { MTYPE_I1, 8, 1, 1, TARG_BYTE_ALIGN, 1, 1, 1, 0, 0, "I1", MTYPE_CLASS_INTEGER, 1, MTYPE_U1 }, 
@@ -101,7 +112,15 @@ static TYPE_ID Machine_Next_Alignment[] = {
   /* MTYPE_C16 */ 	 MTYPE_UNKNOWN,
   /* MTYPE_I16 */ 	 MTYPE_UNKNOWN
 }; 
-
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define Machine_Next_Alignment_Access(n) \
+     (n > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Machine_Next_Alignment_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
+     : \
+       Machine_Next_Alignment[n]
+#endif
 static TYPE_ID Machine_Prev_Alignment[] = { 
   /* MTYPE_UNKNOWN */ 	 MTYPE_UNKNOWN,
   /* MTYPE_B */ 	 MTYPE_UNKNOWN,
@@ -134,6 +153,15 @@ static TYPE_ID Machine_Prev_Alignment[] = {
   /* MTYPE_I16 */ 	 MTYPE_UNKNOWN
 }; 
 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define Machine_Prev_Alignment_Access(n) \
+     (n > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Machine_Prev_Alignment_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
+     : \
+       Machine_Prev_Alignment[n]
+#endif
 MTYPE_MASK Machine_Types_Available = 0x1fdffe; 
 
 /* ==================================================================== 
@@ -317,6 +345,15 @@ static TYPE_ID Table_complex_to_real[] = {
   /* MTYPE_C16 */ 	 MTYPE_C16,
   /* MTYPE_I16 */ 	 MTYPE_I16
 }; 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define Table_complex_to_real_Access(n) \
+     (n > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Table_complex_to_real_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
+     : \
+       Table_complex_to_real[n]
+#endif
 
 /* ==================================================================== 
  * 
@@ -328,7 +365,7 @@ static TYPE_ID Table_complex_to_real[] = {
  */ 
 TYPE_ID Mtype_complex_to_real(TYPE_ID type) 
 { 
-  return Table_complex_to_real[type]; 
+  return Table_complex_to_real_Access(type); 
 } 
 
 static TYPE_ID Table_comparison[] = { 
@@ -363,6 +400,16 @@ static TYPE_ID Table_comparison[] = {
   /* MTYPE_I16 */ 	 MTYPE_I16
 }; 
 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define Table_comparison_Access(n) \
+     (n > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Table_comparison_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
+     : \
+       Table_comparison[n]
+#endif
+
 /* ==================================================================== 
  * 
  * MTYPE_comparison(TYPE_ID) 
@@ -373,7 +420,13 @@ static TYPE_ID Table_comparison[] = {
  */ 
 TYPE_ID  Mtype_comparison(TYPE_ID type) 
 { 
-  return Table_comparison[type]; 
+#ifdef TARG_ST
+  // [TB] extension support
+  if (type <= MTYPE_STATIC_COUNT)
+    return Table_comparison_Access(type); 
+  else
+#endif
+    return type;
 } 
 
 /* ==================================================================== 
@@ -387,7 +440,7 @@ TYPE_ID  Mtype_comparison(TYPE_ID type)
  */ 
 TYPE_ID Mtype_next_alignment(TYPE_ID type) 
 { 
-  return Machine_Next_Alignment[type]; 
+  return Machine_Next_Alignment_Access(type); 
 } 
 
 /* ==================================================================== 
@@ -400,7 +453,7 @@ TYPE_ID Mtype_next_alignment(TYPE_ID type)
  */ 
 TYPE_ID Mtype_prev_alignment(TYPE_ID type) 
 { 
-  return Machine_Prev_Alignment[type]; 
+  return Machine_Prev_Alignment_Access(type); 
 } 
 
 

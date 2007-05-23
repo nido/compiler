@@ -261,6 +261,14 @@
 //              of the loop trip count. It is used and updated by loop
 //              unrolling.
 //
+//      INT64  Min_Iterations
+//      INT64  Max_Iterations
+//
+//		pragma LOOPMINITERCOUNT or LOOPMAXITERCOUNT seen for
+//		this loop. Default is -1. Values gives the
+//		minimum/maximum trip count for the loop, asserted by
+//		the user.
+//
 //      mINT8 Required_Unroll
 //
 //              UNROLL pragma seen for this loop.  Default is 0.  Value, if
@@ -872,6 +880,8 @@ public:
 #ifdef TARG_ST
   mINT16 Pragma_Modulus;
   mINT16 Pragma_Residue;
+  INT64  Min_Iterations;
+  INT64  Max_Iterations;
 #endif
   mINT32 Required_Blocksize[MHD_MAX_LEVELS];
   mINT32 Tile_Size; 

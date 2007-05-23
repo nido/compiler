@@ -37,6 +37,7 @@
 #include "string_utils.h" 
 
 extern boolean keep_flag;	/* keep intermediate files */
+extern string  keep_dir;   /* keep intermediate files in 'keep_dir' directory */
 
 extern string_list_t *count_files;
 
@@ -67,3 +68,9 @@ extern void init_count_files (void );
 /* this will clean up temp files */
 extern void cleanup (void);
 
+/* Associates a source file name and an object file name */
+extern void associate_src_object ( string src, string obj );
+/* retrieves object file name associated to src */
+extern string get_associated_src_object ( string src );
+/* cleanup for object files only */
+extern void cleanup_src_objects ( void );

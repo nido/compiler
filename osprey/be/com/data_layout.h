@@ -292,6 +292,9 @@ BE_EXPORTED extern void Get_Vararg_Save_Area_Info(SF_VARARG_INFO *vararg_info);
 
 BE_EXPORTED extern void Get_Vararg_Ploc_Symbol (PLOC, ST **symbol, INT *offset);
 
+/* get preg symbols corresponding to basic types Int, Float, Ptr. */
+BE_EXPORTED extern ST * Get_Vararg_Preg_Symbol (PLOC);
+
 #endif
 
 #ifdef __cplusplus

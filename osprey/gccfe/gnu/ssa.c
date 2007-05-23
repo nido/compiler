@@ -109,7 +109,7 @@ static rtx *ssa_rename_to_pseudo;
 /* Similar, but for hard registers.  A hard register can appear in
    many modes, so we store an equivalent pseudo for each of the
    modes.  */
-static rtx ssa_rename_to_hard[FIRST_PSEUDO_REGISTER][NUM_MACHINE_MODES];
+static rtx ssa_rename_to_hard[FIRST_PSEUDO_REGISTER][MAX_LIMIT_MACHINE_MODE];
 
 /* ssa_rename_from maps pseudo registers to the original corresponding
    RTL.  It is implemented as using a hash table.  */

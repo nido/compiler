@@ -102,7 +102,12 @@ static struct winfo {
   BTYPE base_type:8;
   BTYPE comp_type:8;
   INT   size:16;
+#ifdef TARG_ST
+  //TB: extension support
+} WINFO [MTYPE_STATIC_COUNT + 1] = {
+#else
 } WINFO [MTYPE_LAST + 1] = {
+#endif
   UNKNOWN_TYPE,  UNKNOWN_TYPE,  0,  /* UNKNOWN  */
   UNKNOWN_TYPE,  UNKNOWN_TYPE,  0,  /* MTYPE_B  */
   INT_TYPE,      UINT_TYPE,     1,  /* MTYPE_I1 */
@@ -133,9 +138,30 @@ static struct winfo {
   INT_TYPE,  	 UINT_TYPE,  	0   /* MTYPE_BS */
 };
 
+#ifdef TARG_ST
+#define WTYPE_base_type(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("WTYPE_base_type: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
+     : \
+       WINFO[t].base_type)
+#define WTYPE_comp_type(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("WTYPE_comp_type: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
+     : \
+       WINFO[t].comp_type)
+#define WTYPE_size(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("WTYPE_size: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
+     : \
+       WINFO[t].size)
+
+#else
 #define WTYPE_base_type(w) WINFO[w].base_type
 #define WTYPE_comp_type(w) WINFO[w].comp_type
 #define WTYPE_size(w)      WINFO[w].size
+#endif
+
+
 
 #if (defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)) && !defined(FRONT_END_MFEF77)
 
@@ -199,7 +225,12 @@ BOOL
 Types_Are_Compatible ( TYPE_ID ltype, WN * wn )
 {
   TYPE_ID  rtype = WN_rtype(wn);
-  return (    ( WTYPE_base_type(ltype) == WTYPE_base_type(rtype) )
+#ifdef TARG_ST
+  //  TB: dynamic MTYPE 
+  if (rtype > MTYPE_STATIC_COUNT ||  ltype > MTYPE_STATIC_COUNT)
+    return (rtype == ltype);
+#endif
+  return ( ( WTYPE_base_type(ltype) == WTYPE_base_type(rtype) )
 	   || ( WTYPE_base_type(ltype) == WTYPE_comp_type(rtype) ) );
 } /* Types_Are_Compatible */
 
@@ -221,6 +252,11 @@ IPO_Types_Are_Compatible ( TYPE_ID ltype, TYPE_ID rtype )
     if ((WTYPE_base_type(ltype) == UINT_TYPE) && 
 	(WTYPE_base_type(rtype) == INT_TYPE))
 	return FALSE;
+#endif
+#ifdef TARG_ST
+  //  TB: dynamic MTYPE 
+  if (rtype > MTYPE_STATIC_COUNT ||  ltype > MTYPE_STATIC_COUNT)
+    return (rtype == ltype);
 #endif
 
     /* if the base types are the same or the base type of the stid  */
@@ -988,7 +1024,7 @@ WN_CreateLabel (
   INT nkids = 0;
   if (loop_info != NULL) nkids++;
   Is_True(loop_info == NULL || WN_opcode(loop_info) == OPC_LOOP_INFO,
-	("Bad loop_info in WN_CreateDO"));
+	("Bad loop_info in WN_CreateLabel"));
 
   wn = WN_Create(OPC_LABEL, nkids);
   WN_label_number(wn) = label_number;
@@ -2213,6 +2249,17 @@ WN *WN_CreateParm(TYPE_ID rtype, WN *parm_node, TY_IDX ty, UINT32 flag)
     return wn;
 }
 
+#ifdef TARG_ST
+WN *WN_CreateSubPart(WN *kid0, TYPE_ID rtype, TYPE_ID desc, WN_OFFSET subpart_idx)
+{
+    OPCODE opc = OPCODE_make_op(OPR_SUBPART, rtype, desc);
+    WN* wn = WN_CreateExp1(opc, kid0);
+    WN_subpart_index(wn) = subpart_idx;
+    return wn;
+}
+#endif
+
+
 WN *WN_Intconst(TYPE_ID rtype, INT64 value) 
 {
   return WN_CreateIntconst(OPR_INTCONST, rtype, MTYPE_V, value);
@@ -3087,7 +3134,9 @@ WN_set_st_addr_saved (WN* wn)
     case OPR_RSQRT:
     case OPR_PARM:
     case OPR_OPTPARM:
-
+#ifdef TARG_ST
+    case OPR_SUBPART:
+#endif
       WN_set_st_addr_saved (WN_kid0(wn));
       break;
 
@@ -3178,6 +3227,9 @@ WN_has_side_effects (const WN* wn)
     case OPR_TAS:
     case OPR_TRUNC:
     case OPR_EXTRACT_BITS:
+#ifdef TARG_ST
+    case OPR_SUBPART:
+#endif
 
       return WN_has_side_effects (WN_kid0(wn));
 

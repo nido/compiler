@@ -995,9 +995,15 @@ LOOPINFO_Trip_Count(LOOPINFO* linfo, INT* tc)
 
   if (!linfo) {
     return FALSE;
+#ifdef TARG_STxP70
+  } else if (    (trip_tn = LOOPINFO_CG_trip_count_tn(linfo))
+              && TN_is_constant(trip_tn)
+  ) {
+#else
   } else if (    (trip_tn = LOOPINFO_trip_count_tn(linfo))
               && TN_is_constant(trip_tn)
   ) {
+#endif
     *tc = TN_value(trip_tn);
     return TRUE;
   } else if (    (wn = LOOPINFO_wn(linfo))

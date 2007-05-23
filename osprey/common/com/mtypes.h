@@ -41,6 +41,7 @@ extern "C" {
 #endif
 
 #ifdef TARG_ST 
+#include "defs.h" 
 #include "config_target.h" 		 /* for ALIGN */
 #else
 #include "config_targ.h" 		 /* for ALIGN */
@@ -73,6 +74,13 @@ extern "C" {
 #define MTYPE_CLASS_STR 	 0x10
 #define MTYPE_CLASS_POINTER 	 0x20
 #define MTYPE_CLASS_BOOLEAN 	 0x40
+#ifdef TARG_ST
+#define MTYPE_CLASS_VECTOR	0x80
+#endif
+#ifdef TARG_ST
+#define MTYPE_CLASS_RANDOM	0x00
+#endif
+
 #define MTYPE_CLASS_UNSIGNED_INTEGER 	(MTYPE_CLASS_INTEGER|MTYPE_CLASS_UNSIGNED)
 #define MTYPE_CLASS_COMPLEX_FLOAT 	(MTYPE_CLASS_FLOAT|MTYPE_CLASS_COMPLEX)
 #define MTYPE_CLASS_UNSIGNED_INTEGER_POINTER 	(MTYPE_CLASS_POINTER|MTYPE_CLASS_INTEGER|MTYPE_CLASS_UNSIGNED)
@@ -113,12 +121,30 @@ extern "C" {
 #define MTYPE_U16	 29	/* 128-bit unsigned integer */
 
 /* must define MTYPE_LAST as the index of the last one defined. */
+#ifdef TARG_ST
+  // TB: extension support
+#define MTYPE_LAST	 MTYPE_COUNT
+
+#define MTYPE_STATIC_LAST  29
+#define MTYPE_STATIC_COUNT MTYPE_STATIC_LAST
+#define MTYPE_MAX_LIMIT 127
+
+// TTh: used to insure coherency of mtype encoding in datastructure
+#define MTYPE_ENCODING_BITWIDTH 7
+#define MTYPE_ENCODING_MASK     ((1<<(MTYPE_ENCODING_BITWIDTH))-1)
+#else
 #define MTYPE_LAST	 29
+#endif
 
 /* Define the type: */ 
 typedef UINT8	TYPE_ID; 
 typedef mUINT8	mTYPE_ID; 
 
+#ifdef TARG_ST
+  //TB extension support
+BE_EXPORTED extern TYPE_ID MTYPE_COUNT; 
+BE_EXPORTED extern TYPE_ID FIRST_COMPOSED_MTYPE; 
+#endif
 /* Define the type descriptor: */ 
 typedef struct type_desc { 
   mCLASS_INDEX	 id; 	 /* Type index -- MTYPE_xxx above */
@@ -135,14 +161,17 @@ typedef struct type_desc {
   mUINT8	 type_class; 	 /* The classification bits used by the simplifier */
   mUINT8	 type_order; 	 /* The order of types (I8 > I4 for example) */
   mCLASS_INDEX	 complement; 	 /* complementary signed partner (ex. U1 -> I1) */
-} TYPE_DESC; 
+} TYPE_DESC;
 
 /* Types which are not supported in memory should have memory sizes 
  * and alignment values of 0. */ 
 
 /* Declare the type descriptor table: */ 
+#ifdef TARG_ST
+BE_EXPORTED extern TYPE_DESC Machine_Types[MTYPE_MAX_LIMIT+1]; 
+#else
 BE_EXPORTED extern TYPE_DESC Machine_Types[]; 
-
+#endif
 /* Define the access functions: */ 
 #define MTYPE_id(n)	 (Machine_Types[n].id)
 #define MTYPE_bit_size(n)	 (Machine_Types[n].bit_size)
@@ -177,6 +206,10 @@ BE_EXPORTED extern TYPE_DESC Machine_Types[];
 #define MTYPE_is_m(n)		((n)==MTYPE_M) 
 #define MTYPE_is_void(n)	((n)==MTYPE_V) 
 
+#ifdef TARG_ST
+  //TB: Vector type support
+#define MTYPE_is_random(n)		(MTYPE_type_class(n)==MTYPE_CLASS_RANDOM) 
+#endif
 #define MTYPE_is_quad(n)	((n)==MTYPE_FQ || (n)==MTYPE_CQ) 
 #define MTYPE_is_pointer(n)	((n)==Pointer_type || (n)==Pointer_type2) 
 #define MTYPE_is_boolean(n)	((n)==Boolean_type || (n)==Boolean_type2) 
@@ -212,6 +245,20 @@ typedef UINT32 MTYPE_MASK;
 /* Define which types are available on the target: */ 
 BE_EXPORTED extern MTYPE_MASK Machine_Types_Available; 
 #define MTYPE_Avail(k)	TMASK_Element(Machine_Types_Available,k) 
+
+#ifdef TARG_ST
+/* 
+ * Reconfigurability: is an mtype a dynamical one?
+ * 
+ * The following relation holds by construction:
+ *   MTYPE_STATIC_LAST < FIRST_COMPOSED_MTYPE    
+ *
+ * As a result, a composed mtype is always considered
+ * as a dynamic mtype.
+ */
+#define MTYPE_is_dynamic(n)  ((n) > MTYPE_STATIC_LAST)
+#define MTYPE_is_composed(n) ((n) >= FIRST_COMPOSED_MTYPE)
+#endif
 
 /* ======================================================================= 
  * 

@@ -720,7 +720,7 @@ store_ctrl ( char *name, STR_LIST *name_list, INT flags )
 	}
 	v = (name_list) ? int_val : CI_int(a, sec_def);
 	dprintf ( "  %s: integer value %d (current %d)\n",
-		  a->name, v, a->cur_val );
+		  a->name, v, (int)a->cur_val );
 	if (v < CI_int(a, min_val) || v > CI_int(a, max_val)) {
 	  Report_Error ( EC_Ctrl_Range, v, a->name,
 			 CI_int(a,min_val), CI_int(a,max_val));
@@ -732,7 +732,7 @@ store_ctrl ( char *name, STR_LIST *name_list, INT flags )
 	  } else {
 	    if (flags & HCO_ONCE) push_cur_val(a);
 	    changed = TRUE;
-	    dprintf ( "  %s: %d (was %d)\n", a->name, v, a->cur_val );
+	    dprintf ( "  %s: %d (was %d)\n", a->name, v, (int)a->cur_val );
             Set_CI_int (a, cur_val, v);
 	  }
 	} else {
@@ -1105,7 +1105,7 @@ Print_Controls ( FILE *fp, char *tag, BOOL def )
     if ( def || !defaulted ) {
       fprintf(fp, "%s %s%s = ", tag, defaulted ? "*" : " ", a->name);
       if ( CI_is_int_type(a) )
-	fprintf ( fp, "%d\n", a->cur_val );
+	fprintf ( fp, "%d\n", (int)a->cur_val );
       else {
 	STR_LIST *s = CI_nlist(a, cur_val);
 	while (s) {

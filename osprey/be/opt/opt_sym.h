@@ -262,6 +262,13 @@ private:
   mINT8   stype;                      // Type of the symbol
   UINT32  _more_flags:8;	      // overflow field for flags field (AUXF2_FLAGS)
   UINT32  _mclass:8;                  // mtype class, e.g. INT, FLOAT, COMPLEX
+#ifdef TARG_ST
+#if (MTYPE_ENCODING_BITWIDTH > 8) // Sanity check
+#error "_mtype field too small to contain MTYPEs"
+#endif
+   UINT32  _mtype:8;                   // mtype, required for reconfigurability, as
+                                      // it cannot be retrieved from mclass
+#endif
   mINT16  _flags;                     // flags field (AUXF_FLAGS)
   ST      *st;                        // ST *
   mINT64  _st_ofst;                   // Offset from ST.
@@ -365,6 +372,7 @@ private:
 		  // was never initialized (on Default_vsym() entry
 		  // for example).
 		  _mclass = 0;
+		  _mtype  = 0;
 #endif
 		  _flags = 0;
 		  _more_flags = 0;
@@ -403,6 +411,9 @@ private:
   void     Set_st_ofst(mINT64 ofst)   { _st_ofst = ofst; }
   void     Set_stype(INT32 type)      { stype = type; }
   void     Set_mclass(INT32 mclass)   { _mclass = mclass; }
+#ifdef TARG_ST
+  void     Set_mtype(TYPE_ID ty)      { _mtype = ty; }
+#endif
   void	   Set_sym(INT32 t, WN *wn, MTYPE d, MTYPE r, TY_IDX tt);
   void     Set_synonym(AUX_ID i)      { u.synonym = i; }
   void     Set_aux_id_list(AUX_ID_LIST *a) 
@@ -415,6 +426,9 @@ private:
 public:
   OPT_VAR_TYPE  Stype(void) const     { return (OPT_VAR_TYPE) stype; }
   INT32    Mclass(void) const         { return _mclass; }
+#ifdef TARG_ST
+  TYPE_ID  Mtype(void) const          { return _mtype; }
+#endif
   ST	   *St(void) const	      { return st; }
   char     *St_name(void);
   mINT64   St_ofst(void) const        { return _st_ofst; }    // relative to the ST
@@ -1072,7 +1086,11 @@ public:
   //  Enter into AUX_STAB
   AUX_ID   Enter_symbol(OPERATOR opr, ST *st, INT64 ofst, TY_IDX wn_object_ty, 
 			BOOL is_volatile, const WN* wn = NULL);
+#ifdef TARG_ST
+  AUX_ID   Enter_ded_preg(ST *, INT64, TY_IDX, INT32, TYPE_ID);
+#else
   AUX_ID   Enter_ded_preg(ST *, INT64, TY_IDX, INT32);
+#endif
   AUX_ID   Identify_vsym(WN *);
 
   //  Enter into VER_STAB

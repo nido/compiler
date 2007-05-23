@@ -1,3 +1,4 @@
+
 //-*-c++-*-
 // ====================================================================
 // ====================================================================
@@ -1495,6 +1496,15 @@ EXP_WORKLST::Is_the_same_as(const CODEREP *cr)
       return FALSE;	// type class not the same
     if (MTYPE_size_min(cr->Dsctyp()) != MTYPE_size_min(Exp()->Dsctyp()))
       return FALSE;	// size not the same
+#ifdef TARG_ST
+    // [TTh] Reconfigurability: Never allow dynamic mtypes  to be equivalent
+    //       to any other mtypes, to avoid factorization that will introduce
+    //       unsupported conversion
+    if ((MTYPE_is_dynamic(cr->Dsctyp()) || MTYPE_is_dynamic(Exp()->Dsctyp())) &&
+	(cr->Dsctyp() != Exp()->Dsctyp())) {
+      return FALSE;     // mtype not the same, and at least one dynamic one
+    }
+#endif
 
     if (cr->Ivar_occ()->Aux_id() != Exp()->Ivar_occ()->Aux_id()) // different vsym
       return FALSE;
@@ -1568,6 +1578,10 @@ EXP_WORKLST::Is_the_same_as(const CODEREP *cr)
       return FALSE;
     else if (cr->Opr() == OPR_CVTL && cr->Offset() != Exp()->Offset())
       return FALSE;
+#ifdef TARG_ST
+    else if (cr->Opr() == OPR_SUBPART && cr->Subpart_index() != Exp()->Subpart_index())
+      return FALSE;
+#endif
     else if ((cr->Opr() == OPR_EXTRACT_BITS || cr->Opr() == OPR_COMPOSE_BITS)
 	     && (cr->Op_bit_offset() != Exp()->Op_bit_offset() ||
 		 cr->Op_bit_size() != Exp()->Op_bit_size()))
@@ -4199,6 +4213,32 @@ ETABLE::Perform_PRE_optimization(void)
     Is_Trace_cmd(Tracing(),cur_worklst->Exp()->Print(0,TFile));
     Is_Trace_cmd(Tracing(),cur_worklst->Print(TFile, Lftr()->Exp_hash(cur_worklst)));
 
+	if(WOPT_Enable_Compare_Hoisting == FALSE){
+
+	  //remove compare with only one occurence from list
+	  EXP_OCCURS_PAIR *exp_occurs_pair = Lftr()->Exp_hash(cur_worklst);
+	  EXP_OCCURS *exp_occurs;
+
+	  EXP_ALL_OCCURS_ITER exp_occ_iter(cur_worklst->Real_occurs().Head(), exp_occurs_pair, cur_worklst->Phi_occurs().Head(), cur_worklst->Phi_pred_occurs().Head(), NULL /*no exit list*/);
+
+	  int nb_occurence = 0;
+	  FOR_ALL_NODE(exp_occurs, exp_occ_iter, Init()){
+
+		switch (exp_occurs->Occ_kind()) {
+		case EXP_OCCURS::OCC_REAL_OCCUR:
+		  nb_occurence++;
+		  break;
+		default:
+		  ;
+		}
+	  }
+
+	  OPERATOR exp_opr = cur_worklst->Exp()->Opr();
+	  if ( (exp_opr == OPR_LE || exp_opr == OPR_NE || exp_opr == OPR_LT ||
+			exp_opr == OPR_EQ || exp_opr == OPR_GT || exp_opr == OPR_GE ) && nb_occurence < 2) {
+		continue;
+	  }
+	}
 
     // do stuff for each expression
     Per_worklst_cleanup(cur_worklst);
@@ -4794,6 +4834,15 @@ XTABLE::Lexically_identical(CODEREP *cr1, CODEREP *cr2) const
       return FALSE;
     if (MTYPE_size_min(cr1->Dsctyp()) != MTYPE_size_min(cr2->Dsctyp()))
       return FALSE;
+#ifdef TARG_ST
+    // [TTh] Reconfigurability: Never allow dynamic mtypes  to be equivalent
+    //       to any other mtypes, to avoid factorization that will introduce
+    //       unsupported conversion
+    if ((MTYPE_is_dynamic(cr1->Dsctyp()) || MTYPE_is_dynamic(cr2->Dsctyp())) &&
+	(cr1->Dsctyp() != cr2->Dsctyp())) {
+      return FALSE;     // mtype not the same, and at least one dynamic one
+    }
+#endif
     CODEREP *base1 = cr1->Ilod_base() ? cr1->Ilod_base() : cr1->Istr_base();
     CODEREP *base2 = cr2->Ilod_base() ? cr2->Ilod_base() : cr2->Istr_base();
     if (! Opnd_lex_identical(base1, base2)) 
@@ -4821,6 +4870,11 @@ XTABLE::Lexically_identical(CODEREP *cr1, CODEREP *cr2) const
       if (cr1->Intrinsic() != cr2->Intrinsic()) return FALSE;
     if (cr1->Opr() == OPR_CVTL)
       if (cr1->Offset() != cr2->Offset()) return FALSE;
+#ifdef TARG_ST
+    if (cr1->Opr() == OPR_SUBPART)
+      if (cr1->Subpart_index() != cr2->Subpart_index()) return FALSE;
+#endif
+
   }
   return TRUE;
 }

@@ -94,9 +94,15 @@
 
 /* Exported data:
  */
+#ifdef TARG_ST
+REGISTER_SUBCLASS_INFO REGISTER_SUBCLASS_info[ISA_REGISTER_SUBCLASS_MAX_LIMIT + 1];
+ISA_REGISTER_CLASS  REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+REGISTER_CLASS_INFO REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 REGISTER_SUBCLASS_INFO REGISTER_SUBCLASS_info[ISA_REGISTER_SUBCLASS_MAX + 1];
 ISA_REGISTER_CLASS  REGISTER_CLASS_vec[ISA_REGISTER_CLASS_MAX + 1];
 REGISTER_CLASS_INFO REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
+#endif
 
 const CLASS_REG_PAIR CLASS_REG_PAIR_undef =
   {CREATE_CLASS_N_REG(ISA_REGISTER_CLASS_UNDEFINED,REGISTER_UNDEFINED)};
@@ -133,7 +139,11 @@ enum {
   AS_not_allocatable = 2
 };
 
+#ifdef TARG_ST
+static mUINT8 reg_alloc_status[ISA_REGISTER_CLASS_MAX_LIMIT + 1][REGISTER_MAX + 1];
+#else
 static mUINT8 reg_alloc_status[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
+#endif
 
 // list of registers that should not be allocated, both globally and locally.
 static std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers;
@@ -217,7 +227,7 @@ Set_Register_Range_Not_Allocatable (
   char *regname2
 )
 {
-  char regname[8];
+  char regname[16];
   char *p;	// points to first digit in regname 
   INT count = 0;
   strcpy(regname,regname1);
@@ -252,8 +262,8 @@ Mark_Specified_Registers_As_Not_Allocatable ()
   OPTION_LIST *ol = Registers_Not_Allocatable;
   char *start;
   char *p;
-  char regname[8];
-  char regname2[8];
+  char regname[16];
+  char regname2[16];
 
   // go through global dreg list
   if (ST_ATTR_Table_Size (GLOBAL_SYMTAB)) {
@@ -528,6 +538,7 @@ Initialize_Register_Class(
 	= ISA_REGISTER_CLASS_INFO_Multiple_Save(icinfo);
 
 #ifdef TARG_ST
+  // [CG] Implemented in targ_register.cxx.
   CGTARG_Initialize_Register_Class (rclass);
 #else
   /* There are multiple integer return regs -- v0 is the lowest
@@ -598,7 +609,12 @@ REGISTER_Begin (void)
 #endif
   }
   Initialize_Register_Subclasses();
-  Init_Mtype_RegClass_Map();
+
+#ifdef TARG_ST
+  // [CG] Implemented in targ_register.cxx.
+  CGTARG_REGISTER_Begin();
+  CGTARG_DW_DEBUG_Begin();
+#endif
 }
 
 struct Dont_Allocate_Dreg
@@ -666,6 +682,11 @@ REGISTER_Pu_Begin(void)
     For_all (St_Attr_Table, CURRENT_SYMTAB, 
 	Dont_Allocate_Dreg());
   }
+
+#ifdef TARG_ST
+  // [CG] Implemented in targ_register.cxx.
+  CGTARG_REGISTER_Pu_Begin();
+#endif
 
   if ( Get_Trace(TP_MISC, 0x100) ) REGISTER_CLASS_Trace_All();
 }
@@ -1223,13 +1244,23 @@ REGISTER_CLASS_Trace_All(void)
 void
 Set_Register_Never_Allocatable (char *regname) 
 {
+#ifdef TARG_ST
+  //TB: Change the way register can be define with -ffixed-reg=%rclassname%reg_name
+  int regnum;
+  ISA_REGISTER_CLASS rclass = Register_Class_Num_From_Name(regname, &regnum);
+#else
 	ISA_REGISTER_CLASS rclass = CGTARG_Regname_Register_Class(regname);
+#endif
 	REGISTER reg;
 
 	if (rclass == ISA_REGISTER_CLASS_UNDEFINED)
 	  ErrMsg (EC_Inv_Register, regname);
 
+#ifdef TARG_ST
+	reg = REGISTER_MIN + regnum;
+#else
 	reg = REGISTER_MIN + atoi(regname+1);
+#endif
 	if (reg > REGISTER_CLASS_last_register(rclass))
 	  ErrMsg (EC_Inv_Register, regname);
 
@@ -1245,3 +1276,81 @@ Set_Register_Never_Allocatable (PREG_NUM preg)
   CGTARG_Preg_Register_And_Class(preg, &rclass, &reg);
   dont_allocate_these_registers.push_back( std::make_pair( rclass, reg ));
 }
+
+
+#ifdef TARG_ST
+/* 
+ * See interface description. 
+ */
+ISA_REGISTER_CLASS
+Register_Class_For_Mtype(TYPE_ID mtype)
+{
+  return CGTARG_Register_Class_For_Mtype(mtype);
+}
+
+ISA_REGISTER_CLASS
+Register_Subclass_For_Mtype(TYPE_ID mtype)
+{
+  return CGTARG_Register_Subclass_For_Mtype(mtype);
+}
+
+ISA_REGISTER_CLASS
+Register_Class_Num_From_Name(char *regname, INT32 *regnum)
+{
+  return CGTARG_Register_Class_Num_From_Name(regname, regnum);
+}
+
+char *
+ISA_REGISTER_CLASS_Symbol(ISA_REGISTER_CLASS rc)
+{
+  FmtAssert(0, ("Obsolete function for virtual register support. Not implemented"));
+  return NULL;
+}
+
+char *
+ISA_REGISTER_CLASS_ASM_Name(ISA_REGISTER_CLASS rc)
+{
+  FmtAssert(0, ("Obsolete function for virtual register support. Not implemented"));
+  return NULL;
+}
+
+
+/*
+ * [CG]: Comment valid up to "[CG]: End of Comment" below.
+ * These functions are not useful for our targets. 
+ * For now return a conservative answer for all target.
+ * If needed these should be put above and implemented as a call to a target
+ * dependent function CGTARG_REGISTER_...() in targ_register.cxx.
+ */
+BOOL 
+REGISTER_Is_Rotating(ISA_REGISTER_CLASS rclass, REGISTER reg)
+{
+  return FALSE;
+}
+
+REGISTER_SET
+REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLASS rclass)
+{
+  return REGISTER_SET_EMPTY_SET;
+}
+
+BOOL
+Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass)
+{
+  return FALSE;
+}
+
+BOOL
+REGISTER_Has_Stacked_Registers(ISA_REGISTER_CLASS rclass)
+{
+  return FALSE;
+}
+
+BOOL
+REGISTER_Has_Rotating_Registers(ISA_REGISTER_CLASS rclass)
+{
+  return FALSE;
+}
+/* [CG]: End of Comment on non useful functions. */
+
+#endif

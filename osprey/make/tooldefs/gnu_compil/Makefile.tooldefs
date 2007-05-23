@@ -63,7 +63,12 @@ ifeq ($(BUILD_OS),LINUX)
 GNU_OS=linux-rh-ws-3
 GNU_LOC=$(GNU_PREFIX)/$(GNU_OS)
 BINUTILS_GNU_LOC=$(GNU_LOC)/bin/
+# For STxP70 we keep gcc-3.2.3 to be compatible with extension flow
+ifeq ($(BUILD_TARGET),STxP70)
+COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.2.3/bin/
+else
 COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.4.4/bin/
+endif
 YACC_LOC=$(GNU_LOC)/.package/bison-1.35/bin/
 LEX_LOC=
 INSTALL_LOC=

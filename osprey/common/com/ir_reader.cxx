@@ -1002,6 +1002,16 @@ static void ir_put_wn(WN * wn, INT indent)
 	fprintf(ir_ofile, " %d", WN_flag(wn));
     if (OPCODE_has_sym(opcode)) {
 	ir_put_st (WN_st_idx(wn));
+#ifdef WN_VERBOSE
+	if (follow_st && opcode != OPC_FUNC_ENTRY && 
+	    WN_st_idx(wn) !=  (ST_IDX) 0) {
+	  if (ST_type(WN_st(wn)) != (TY_IDX) 0) {
+	    ir_put_ty(ST_type(WN_st(wn)));
+	  } else {
+	    fprintf(ir_ofile, " T<### ERROR1: null ptr>");
+	  }
+	}
+#endif
     }
 
     if (OPCODE_has_1ty(opcode)) {
@@ -1009,21 +1019,36 @@ static void ir_put_wn(WN * wn, INT indent)
 	   ir_put_ty(WN_ty(wn));
 	else
 	    if (opcode != OPC_IO_ITEM)
-		fprintf(ir_ofile, " T<### ERROR: null ptr>");
+	      fprintf(ir_ofile, " T<### ERROR2: null ptr>");
+#ifdef WN_VERBOSE
+	if (OPCODE_operator(opcode) == OPR_ISTORE ||
+	    OPCODE_operator(opcode) == OPR_MSTORE ||
+	    OPCODE_operator(opcode) == OPR_MLOAD ||
+	    OPCODE_operator(opcode) == OPR_ISTBITS) {
+	  if (WN_ty (wn) != (TY_IDX) 0 &&
+	      TY_pointed (WN_ty (wn)) != (TY_IDX) 0) {
+	    TY_IDX pointed = TY_pointed (WN_ty (wn));
+	    ir_put_ty(pointed);
+	  } else {
+	    fprintf(ir_ofile, " T<### ERROR3: null ptr>");
+	  }
+	}
+#endif
+
     } else if (OPCODE_has_2ty(opcode)) {
 	if (WN_ty(wn) != (TY_IDX) 0) 
 	   ir_put_ty(WN_ty(wn));
 	else
-	    fprintf(ir_ofile, " T<### ERROR: null ptr>");
+	    fprintf(ir_ofile, " T<### ERROR4: null ptr>");
 	if (WN_load_addr_ty(wn) != (TY_IDX) 0) {
 	   ir_put_ty(WN_load_addr_ty(wn));
 	   TY_IDX pointed = TY_pointed(WN_load_addr_ty(wn));
 	   if (pointed != (TY_IDX) 0)
 	     ir_put_ty(pointed);
 	   else 
-	     fprintf(ir_ofile, " T<### ERROR: null ptr>");
+	     fprintf(ir_ofile, " T<### ERROR5: null ptr>");
 	} else
-	    fprintf(ir_ofile, " T<### ERROR: null ptr>");
+	    fprintf(ir_ofile, " T<### ERROR6: null ptr>");
     }
 
     if (OPCODE_has_ndim(opcode))
@@ -1038,15 +1063,24 @@ static void ir_put_wn(WN * wn, INT indent)
 
     if (OPCODE_has_value(opcode)) {
 #ifdef WN_VERBOSE
-	fprintf(ir_ofile, " %lld", WN_const_val(wn));
-#else
 	fprintf(ir_ofile, " val:%lld", WN_const_val(wn));
+#else
+	fprintf(ir_ofile, " %lld", WN_const_val(wn));
 #endif
 	/* Also print the hex value for INTCONSTs */
 	if (OPCODE_operator(opcode) == OPR_INTCONST || opcode == OPC_PRAGMA) {
 	    fprintf(ir_ofile, " (0x%llx)", WN_const_val(wn));
 	}
     }
+#ifdef TARG_ST
+    if (OPCODE_operator(opcode) == OPR_SUBPART) {
+#ifdef WN_VERBOSE
+	fprintf(ir_ofile, " idx:%d", WN_subpart_index(wn));
+#else
+	fprintf(ir_ofile, " %d", WN_subpart_index(wn));
+#endif
+    }
+#endif
 
     if (OPCODE_has_field_id(opcode) && WN_field_id(wn)) {
 	fprintf(ir_ofile, " <field_id:%d>", WN_field_id(wn));

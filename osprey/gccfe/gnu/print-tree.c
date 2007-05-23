@@ -192,7 +192,7 @@ print_node (file, prefix, node, indent)
 {
   int hash;
   struct bucket *b;
-  enum machine_mode mode;
+  machine_mode_t mode;
   char class;
   int len;
   int first_rtl;

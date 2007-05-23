@@ -56,6 +56,7 @@
 #include "file_names.h"
 #include "run.h"
 #include "objects.h"
+#include "libiberty/libiberty.h"
 
 string help_pattern = NULL;
 boolean debug = FALSE;
@@ -101,17 +102,78 @@ static struct tms tm0, tm1;
 static clock_t time0, time1;
 
 
+#ifdef TARG_STxP70
+extern void command_line_copy(int argc, char **argv);
+#endif
+
+/* treat_one_arg: Treat one command line argument 
+ * Extracted in order to be able to call it for an
+ * argument that is not really on command line but has
+ * been build during extension command line parsing for
+ * STxP70 target.
+ */
+extern void treat_one_arg ( int * argc, char *argv[] ) {
+   int flag;
+	int base_flag;
+
+   option_name = argv[*argc];
+   flag = get_option(argc, argv);
+	if (flag == O_Unrecognized) { 
+		if (print_warnings) {
+		    /* print as error or not at all? */
+		    parse_error(option_name, "unknown flag");
+		}
+	}
+	else {
+		/* reset option name to possibly include 
+		 * 2nd part, e.g. -G 8 */
+		option_name = get_option_name(flag);
+	}
+	/* sometimes is simple alias to another flag */
+   flag = get_real_option_if_aliased (flag);
+
+	/* sometimes need to look at parent flag */
+	if (is_derived_option (flag)) {
+		base_flag = get_derived_parent(flag);
+		/* sometimes base is simple alias */
+		base_flag = get_real_option_if_aliased (base_flag);
+	}
+	else {
+		base_flag = flag;
+	}
+
+	if (is_object_option(base_flag)) {
+		/* put in separate object list */
+		add_object (base_flag, optargs);
+		source_kind = S_o;
+	} else {
+		/* add unique real flag to list */
+		add_option_seen (flag);
+	}
+	if (base_flag == O_generate_instantiation_info) {
+     /* This is a def_list_file option that is being
+		passed by the prelinker to the frontend.
+		It should not be recorded in the command
+		line. Therefore cancel the saved arg. */
+    cancel_saved_arg(1);
+	}
+
+	opt_action(base_flag);
+
+}
+
 extern int 
 main (int argc, char *argv[])
 {
 	int i;		/* index to argv */
-	int flag;
-	int base_flag;
 	string_item_t *p, *q;
 	int num_files = 0;
 
 	time0 = times(&tm0);
 	save_command_line(argc, argv);		/* for prelinker    */	
+#ifdef TARG_STxP70
+   command_line_copy(argc,argv);       /* in case V[<ver>] is invoked */
+#endif
 	program_name = drop_path(argv[0]);	/* don't print path */
 	orig_program_name = string_copy(argv[0]);
 	files = init_string_list();
@@ -158,53 +220,23 @@ main (int argc, char *argv[])
 		option_name = argv[i];
 		set_current_arg_pos(i);
 		if (argv[i][0] == '-' && !dashdash_flag) {
-			flag = get_option(&i, argv);
-			if (flag == O_Unrecognized) { 
-				if (print_warnings) {
-				    /* print as error or not at all? */
-				    parse_error(option_name, "unknown flag");
-				}
-			}
-			else {
-				/* reset option name to possibly include 
-				 * 2nd part, e.g. -G 8 */
-				option_name = get_option_name(flag);
-			}
-			/* sometimes is simple alias to another flag */
-			flag = get_real_option_if_aliased (flag);
-
-			/* sometimes need to look at parent flag */
-			if (is_derived_option (flag)) {
-				base_flag = get_derived_parent(flag);
-				/* sometimes base is simple alias */
-				base_flag = get_real_option_if_aliased (base_flag);
-			}
-			else {
-				base_flag = flag;
-			}
-
-			if (is_object_option(base_flag)) {
-				/* put in separate object list */
-				add_object (base_flag, optargs);
-				source_kind = S_o;
-			} else {
-				/* add unique real flag to list */
-				add_option_seen (flag);
-			}
-			if (base_flag == O_generate_instantiation_info) {
-			     /* This is a def_list_file option that is being
-				passed by the prelinker to the frontend.
-				It should not be recorded in the command
-				line. Therefore cancel the saved arg. */
-			    cancel_saved_arg(1);
-			}
-
-			opt_action(base_flag);
-
+         treat_one_arg(&i,argv);
+         
 		} else if (argv[i][0] == '+') {
 			check_old_CC_options(argv[i]);
 			i++;
 		} else {
+#ifdef TARG_STxP70
+         // [HC]: Trial to take .ld files as link script files and automatically
+         //       inserting -T ahead.
+         char * suffix_ptr;
+         
+         if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
+             !strcmp(suffix_ptr,"ld")) {
+            add_script_file(argv[i]);
+				add_option_seen (O_T);
+         } else {
+#endif
 			source_kind = get_source_kind(argv[i]);
 			/* if -E used, then preprocess anything, even .o's */
 			if (last_phase == P_any_cpp && source_kind == S_o) 
@@ -225,7 +257,13 @@ main (int argc, char *argv[])
 				 * If only one source file, then will
 				 * treat this as a temp file.
 				 */
-				char *obj_name = get_object_file(argv[i]);
+            /* fix #14600: reserve tempfile name for .o if 
+             *             necessary, and associate it with 
+             *             original source file 
+             */
+				char *obj_name = make_temp_file(".o");
+
+            associate_src_object(argv[i],obj_name);
 				add_object (O_object, obj_name);
 				add_ar_objects(obj_name);
 				add_string(files, argv[i]);
@@ -244,10 +282,30 @@ main (int argc, char *argv[])
 					get_suffix_string(source_kind));
 				num_files++;
 			}
+#ifdef TARG_STxP70
+         } // Associated to trial to take .ld files as link script ones 
+           // and automatically inserting -T ahead.
+#endif
 			cancel_saved_arg(1);
 			i++;
 		}
 	}
+
+#if defined( TARG_STxP70 )
+   /* At this point, add TENV for extension if it exists as if it was
+    * on standard command line...
+    */
+   {
+      extern int UserDefinedExtensionSeen;
+      extern char TENVExtension_str[];
+      if (UserDefinedExtensionSeen) {
+         char *newargv[] = { TENVExtension_str };
+         int  i = 0;
+         
+   		treat_one_arg(&i,newargv);
+      }
+   }
+#endif
 
 	/* Check target specifications for consistency: */
 	Check_Target ();
@@ -299,6 +357,9 @@ main (int argc, char *argv[])
 	}
 
 	if (argc == 1 || option_was_seen(O_help) || option_was_seen(O__help) 
+#ifdef TARG_STxP70
+      || option_was_seen(O_full_help)
+#endif
 		|| help_pattern != NULL) 
 	{
 		print_help_msg();
@@ -503,6 +564,12 @@ main (int argc, char *argv[])
 		}
 		source_kind = get_source_kind_from_suffix(q->name);
 		source_lang = get_source_lang(source_kind);
+#ifdef TARG_STxP70
+		if (source_lang ==  L_CC) {
+		  error("Compiler does not support language of source file: C++");
+		  exit(RC_OKAY);
+		}
+#endif
 		if (source_lang != invoked_lang
 			&& source_lang != L_as
 			&& (fullwarn || (source_lang == L_f90)) )
@@ -546,6 +613,7 @@ main (int argc, char *argv[])
 	}
 
 	cleanup();
+   cleanup_src_objects();
 	time1 = times(&tm1);
         if (time_flag) {
 	  double utime, stime, wtime;
@@ -662,6 +730,10 @@ print_help_msg (void)
 	string name;
 	fprintf(stdout, "usage:  %s <options> <files>\n", program_name);
 
+#ifdef TARG_STxP70
+   fprintf(stdout, "\n");
+#endif
+
 	if (help_pattern != NULL)
 	  fprintf(stdout, "available options that contain %s:\n", help_pattern);
 	else
@@ -680,8 +752,61 @@ print_help_msg (void)
 				continue;	/* to next option */
 			}
 #if defined(TARG_ST)
+#ifdef TARG_STxP70
+			if ((option_was_seen(O_full_help) || !contains_substring(msg, "[*NASTxP70*]"))
+             && !contains_substring(msg, "[*NA*]")) {
+            if (strstr(msg,name)==msg) {
+               fprintf(stdout,"%s\n",msg);
+            } else {
+               string msg_ptr;
+               string msg_ptr_end;
+               #define COLUMN_WIDTH 57
+               #define OPTION_WIDTH 20
+               
+               if (strlen(name)>=OPTION_WIDTH) {
+                  fprintf(stdout,"%s\n                    ",name);
+               } else {
+                  fprintf(stdout,"%s ",name);
+                  for (i=strlen(name)+1;i<OPTION_WIDTH;i++) {
+                     fprintf(stdout," ");
+                  }
+               }
+               msg_ptr = msg;
+               msg_ptr_end = msg + strlen(msg);
+               while (msg_ptr < msg_ptr_end) {
+                  if (strlen(msg_ptr)>COLUMN_WIDTH+1) {
+                     char * ptr1;
+                     char char_svg;
+                     
+                     char_svg = *(msg_ptr+COLUMN_WIDTH);
+                     *(msg_ptr+COLUMN_WIDTH) = 0;
+                     ptr1 = strrchr(msg_ptr,' ');
+                     *(msg_ptr+COLUMN_WIDTH) = char_svg;
+                     if (ptr1) {
+                        *ptr1++ = 0;
+                        fprintf(stdout,"%s\n                    ",msg_ptr);
+                     } else {
+                        ptr1 = msg_ptr+COLUMN_WIDTH;
+                        char_svg = *ptr1;
+                        *ptr1 = 0;
+                        fprintf(stdout,"%s\n                    ",msg_ptr);
+                        *ptr1 = char_svg;
+                     }
+                     msg_ptr = ptr1;
+                  } else {
+                     fprintf(stdout,"%s\n",msg_ptr);
+                     msg_ptr = msg_ptr_end;
+                  }
+               }
+
+               #undef COLUMN_WIDTH
+               #undef OPTION_WIDTH
+            }
+         }
+#else
 			if (!contains_substring(msg, "[*NA*]")) 
 			    fprintf(stdout, "\t%s:  %s\n", name, msg);
+#endif
 #else
 			fprintf(stderr, "\t%s:  %s\n", name, msg);
 #endif

@@ -721,6 +721,9 @@ BOOL SIMP_has_side_effects (simpnode x)
  *    d) CONST compares symbol table entries
  *    e) ARRAY compares num_dim, element_size and the children
  *    f) CVTL compares cvtl_bits first.
+ *    g) Symbol table entries are compared by examining id first, then
+ *        index.
+ *    h) SUBPART compares subpart_index before its child.
  * ====================================================================
  */
 
@@ -876,6 +879,15 @@ INT32 SIMPNODE_Simp_Compare_Trees(simpnode t1, simpnode t2)
     case OPR_CSELECT:
 
       return ((INTPS)t1 - (INTPS)t2);
+
+#ifdef TARG_ST
+   case OPR_SUBPART:
+     if (SIMPNODE_subpart_index(t1) < SIMPNODE_subpart_index(t2)) return (-1);
+     if (SIMPNODE_subpart_index(t1) > SIMPNODE_subpart_index(t2)) return (1);
+     return (SIMPNODE_Simp_Compare_Trees(SIMPNODE_kid0(t1),
+					 SIMPNODE_kid0(t2)));
+      
+#endif
 
     default:
        if (OPCODE_is_expression(SIMPNODE_opcode(t1))) {

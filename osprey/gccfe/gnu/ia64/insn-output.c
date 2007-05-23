@@ -509,36 +509,36 @@ static const char * const output_385[] = {
 };
 
 
-extern int nonimmediate_operand PARAMS ((rtx, enum machine_mode));
-extern int move_operand PARAMS ((rtx, enum machine_mode));
-extern int register_operand PARAMS ((rtx, enum machine_mode));
-extern int function_operand PARAMS ((rtx, enum machine_mode));
-extern int sdata_symbolic_operand PARAMS ((rtx, enum machine_mode));
-extern int symbolic_operand PARAMS ((rtx, enum machine_mode));
-extern int general_operand PARAMS ((rtx, enum machine_mode));
-extern int const_int_operand PARAMS ((rtx, enum machine_mode));
-extern int nonmemory_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_0_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_22bit_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_8bit_operand PARAMS ((rtx, enum machine_mode));
-extern int scratch_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_fp01_operand PARAMS ((rtx, enum machine_mode));
-extern int shift_32bit_count_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_6bit_operand PARAMS ((rtx, enum machine_mode));
-extern int shladd_operand PARAMS ((rtx, enum machine_mode));
-extern int shift_count_operand PARAMS ((rtx, enum machine_mode));
-extern int normal_comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int adjusted_comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int reg_or_8bit_adjusted_operand PARAMS ((rtx, enum machine_mode));
-extern int comparison_operator PARAMS ((rtx, enum machine_mode));
-extern int immediate_operand PARAMS ((rtx, enum machine_mode));
-extern int predicate_operator PARAMS ((rtx, enum machine_mode));
-extern int call_operand PARAMS ((rtx, enum machine_mode));
-extern int call_multiple_values_operation PARAMS ((rtx, enum machine_mode));
-extern int memory_operand PARAMS ((rtx, enum machine_mode));
-extern int fetchadd_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_14bit_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_8bit_and_adjusted_operand PARAMS ((rtx, enum machine_mode));
+extern int nonimmediate_operand PARAMS ((rtx, machine_mode_t));
+extern int move_operand PARAMS ((rtx, machine_mode_t));
+extern int register_operand PARAMS ((rtx, machine_mode_t));
+extern int function_operand PARAMS ((rtx, machine_mode_t));
+extern int sdata_symbolic_operand PARAMS ((rtx, machine_mode_t));
+extern int symbolic_operand PARAMS ((rtx, machine_mode_t));
+extern int general_operand PARAMS ((rtx, machine_mode_t));
+extern int const_int_operand PARAMS ((rtx, machine_mode_t));
+extern int nonmemory_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_0_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_22bit_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_8bit_operand PARAMS ((rtx, machine_mode_t));
+extern int scratch_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_fp01_operand PARAMS ((rtx, machine_mode_t));
+extern int shift_32bit_count_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_6bit_operand PARAMS ((rtx, machine_mode_t));
+extern int shladd_operand PARAMS ((rtx, machine_mode_t));
+extern int shift_count_operand PARAMS ((rtx, machine_mode_t));
+extern int normal_comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int adjusted_comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int reg_or_8bit_adjusted_operand PARAMS ((rtx, machine_mode_t));
+extern int comparison_operator PARAMS ((rtx, machine_mode_t));
+extern int immediate_operand PARAMS ((rtx, machine_mode_t));
+extern int predicate_operator PARAMS ((rtx, machine_mode_t));
+extern int call_operand PARAMS ((rtx, machine_mode_t));
+extern int call_multiple_values_operation PARAMS ((rtx, machine_mode_t));
+extern int memory_operand PARAMS ((rtx, machine_mode_t));
+extern int fetchadd_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_14bit_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_8bit_and_adjusted_operand PARAMS ((rtx, machine_mode_t));
 
 
 

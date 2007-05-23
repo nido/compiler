@@ -192,47 +192,15 @@
 #ifndef ti_asm_INCLUDED
 #define ti_asm_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "topcode.h"
 
 #include "targ_isa_pack.h"
 #include "targ_isa_bundle.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef _KEEP_RCS_ID
-#endif /* _KEEP_RCS_ID */
-
-#ifndef defs_INCLUDED
-#define defs_INCLUDED
-typedef signed int INT;
-typedef signed int INT32;
-typedef signed long long INT64;
-typedef signed char mINT8;
-typedef signed short mINT16;
-typedef signed int mINT32;
-typedef signed long long mINT64;
-typedef unsigned int UINT;
-typedef unsigned int UINT32;
-typedef unsigned long long UINT64;
-typedef unsigned char mUINT8;
-typedef unsigned short mUINT16;
-typedef unsigned int mUINT32;
-typedef unsigned long long mUINT64;
-typedef int BOOL;
-typedef unsigned char mBOOL;
-#ifndef TRUE
-#define TRUE    ((BOOL) 1)
-#endif
-#ifndef FALSE
-#define FALSE   ((BOOL) 0)
-#endif
-#if defined(_LANGUAGE_C) && !defined(inline)
-#define inline static __inline
-#endif
-#endif
 
 #define TI_ASM_DISASM_ABI_REGS	(0x01)
 #define TI_ASM_DISASM_TRUE_PRED	(0x02)

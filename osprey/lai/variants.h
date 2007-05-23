@@ -36,6 +36,10 @@
 #ifndef variants_INCLUDED
 #define variants_INCLUDED
 
+#ifdef TARG_ST
+#   include "errors.h"
+#endif
+
 /* ====================================================================
  * ====================================================================
  *
@@ -254,22 +258,63 @@ extern const char *BR_Variant_Name(VARIANT variant);
  * assumed (always a power of two, less than 16).  If the actual
  * alignment of the referenced datum is known, V_ALIGN_ACTUAL gives it,
  * i.e. its address modulo 16; otherwise V_ALIGN_UNKNOWN is set.
- *
+ * TARG_ST: Alignment is now encoded as follow:
+ * -------  - If field==0, assume properly-aligned data
+ *          - If field >0, assume alignment is 2^(field-1)
+ *            (+1 is added to the encoded exponent in order to
+ *             distinguish between properly-aligned data(0) and 1-byte
+ *             aligned data(1))
+ *   It allows to specify alignment up to 2^9 (in fact, 2^14 in
+ *     V_ALIGNMENT but only up to 2^9 in V_ALIGN_OFFSET).
+ *   This can be done as alignment is a power of 2.
  * ====================================================================
  */
 
 #define V_ALIGNMENT		0x000f	/* Assume this alignment (2**n) */
+#ifdef TARG_ST
+#define V_ALIGN_OFFSET		0x1ff0	/* Actual alignment if known */
+#define V_ALIGN_OFFSET_UNKNOWN	0x2000	/* Is actual alignment unknown? */
+#define V_ALIGN_OVERALIGN       0x4000  /* Is an overalignment info? */
+#define V_ALIGN_ALL		0x7fff	/* All alignment variant fields */
+#else
 #define V_ALIGN_OFFSET		0x00f0	/* Actual alignment if known */
 #define V_ALIGN_OFFSET_UNKNOWN	0x0100	/* Is actual alignment unknown? */
 #define V_ALIGN_ALL		0x01ff	/* All alignment variant fields */
+#endif
 
-#define	V_alignment(v)			((v) & V_ALIGNMENT)
-#define V_align_offset(v)		(((v) & V_ALIGN_OFFSET) >> 4)
+#ifdef TARG_ST
+// Alignment encoded as 2^(n-1) (special case if n=0)
+#define	V_alignment(v)			(((v) & V_ALIGNMENT)?(1 << (((v) & V_ALIGNMENT)-1)):0)
+#define V_overalign(v)                  ((v) & V_ALIGN_OVERALIGN)
+#define V_misalign(v)                   (!V_overalign(v))
+#else
+#define	V_alignment(v)			(((v) & V_ALIGNMENT))
+#endif
+#define V_align_offset(v)		((((v) & V_ALIGN_OFFSET) >> 4))
 #define V_align_offset_unknown(v)	((v) & V_ALIGN_OFFSET_UNKNOWN)
 #define V_align_offset_known(v)		(!V_align_offset_unknown(v))
 #define V_align_all(v)			((v) & V_ALIGN_ALL)
 
+#ifdef TARG_ST
+// Alignment encoded as 2^(n-1) (special case if n=0)
+inline UINT Compute_alignment_exponent(INT align) {
+  UINT result = 0;
+  if (!align) {
+    return (0);
+  }
+  FmtAssert(align > 0, ("An alignment cannot be negative"));
+  while ((align & 0x7) == 0) {
+    result += 3;
+    align >>= 3;
+  }
+  return result + (align >> 1) + 1;
+}
+#define	Set_V_alignment(v,a)		((v) = ((v) & ~V_ALIGNMENT) | (Compute_alignment_exponent(a)&V_ALIGNMENT))
+#define Set_V_overalign(v)              ((v) |= V_ALIGN_OVERALIGN)
+#define Set_V_misalign(v)               ((v) &= ~V_ALIGN_OVERALIGN)
+#else
 #define	Set_V_alignment(v,a)		((v) = ((v) & ~V_ALIGNMENT) | ((a)&V_ALIGNMENT))
+#endif
 #define Set_V_align_offset(v,a)		((v) = ((v) & ~V_ALIGN_OFFSET) | (((a)&V_ALIGNMENT)<<4))
 #define	Set_V_align_offset_unknown(v)	((v) |= V_ALIGN_OFFSET_UNKNOWN)
 #define Set_V_align_offset_known(v)	((v) &= ~V_ALIGN_OFFSET_UNKNOWN)
@@ -278,7 +323,11 @@ extern const char *BR_Variant_Name(VARIANT variant);
 
 /* Volatile flag: If the load/store is volatile, then this flag is set.
  */
+#ifdef TARG_ST
+#define V_VOLATILE		0x8000	/* MemOp is volatile */
+#else
 #define V_VOLATILE		0x0200	/* MemOp is volatile */
+#endif
 
 #define V_volatile(v)			((v) & V_VOLATILE)
 #define Set_V_volatile(v)		((v) |= V_VOLATILE)

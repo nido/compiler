@@ -118,6 +118,18 @@ enum ST_TLS_MODEL
   ST_TLS_MODEL_INITIAL_EXEC   = 2,
   ST_TLS_MODEL_LOCAL_EXEC     = 3
 }; // ST_TLS_MODEL
+
+#ifdef TARG_STxP70
+// (cbr) define memory spaces. 
+enum ST_MEMORY_SPACE
+{
+  ST_MEMORY_DEFAULT = 0, // use the one provided by the current memory model
+  ST_MEMORY_NONE = 1,    // no sda/da/tda memory placement
+  ST_MEMORY_DA   = 2,
+  ST_MEMORY_SDA  = 3,
+  ST_MEMORY_TDA  = 4
+}; // ST_MEMORY_SPACE
+#endif
 #endif
 
 enum ST_FLAGS
@@ -194,6 +206,10 @@ public:
     ST_EXPORT export_class : 8;		// export class of the symbol
 #ifdef TARG_ST // [SC] TLS support
     ST_TLS_MODEL tls_model : 2;         // TLS model
+#ifdef TARG_STxP70
+    // (cbr) memory space support
+    ST_MEMORY_SPACE memory_space : 3;   // memory space
+#endif
 #endif
 
     union {
@@ -233,6 +249,10 @@ public:
 	  && u2.blk == st.u2.blk
 	  && offset == st.offset
 	  && base_idx == st.base_idx
+#ifdef TARG_STxP70
+	  // (cbr)
+	  && memory_space == st.memory_space
+#endif
 	  && st_idx == st.st_idx;
     }
 #endif
@@ -628,6 +648,9 @@ public:
 #define	PU_STATIC_INITIALIZER	0x0000001000000000LL // pu is main C++ static initializer
 /* [CG] for no_instrument_function attribute. */
 #define	PU_NO_INSTRUMENT_FUNCTION 0x0000002000000000LL // pu must not be generated with instrumentation functions
+/* [CR] for interrupt attribute. */
+#define	PU_IS_INTERRUPT 0x0000004000000000LL // pu is an interrupt handler
+#define	PU_IS_INTERRUPT_NOSTKALN 0x0000008000000000LL // pu is an interrupt handler
 #endif
 
 enum PU_SRC_LANG_FLAGS
@@ -650,6 +673,7 @@ struct PU
     SYMTAB_IDX lexical_level;		// lexical level (of nested proc).
     mUINT8 gp_group;			// gp_group id
     mUINT8 src_lang;			// source language
+    mUINT64 stkaln;                     // stack alignment (0 or >8 && <=256)
 // TODO:  can put flags in 40-bit unused field and remove 64-bit flag field.
 // TODO:  do this when can make incompatible change.
     mUINT64 unused : 40;		// for alignment for flags

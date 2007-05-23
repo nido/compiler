@@ -59,6 +59,7 @@ extern BOOL PU_Has_Calls;
 extern BOOL PU_References_GP;
 #ifdef TARG_ST
 extern BOOL PU_Has_Asm;
+extern BOOL PU_Has_Hwloops;
 extern IPRA cg_ipra;
 #endif
 #ifdef KEY

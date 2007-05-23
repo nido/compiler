@@ -261,6 +261,24 @@ Print_Trace_File(OP *cand_op, BB *src_bb, BB *cand_bb, BOOL success)
 	   BB_id(src_bb), BB_id(cand_bb));
 }
 
+//
+// Returns true if op is a self add with a constant: rx = rx + cst
+//
+static BOOL
+OP_Is_Addr_Incr(OP *op)
+{
+  TOP opcode = OP_code(op);
+  INT opnd1_idx, opnd2_idx;
+  if (OP_iadd(op)) {
+    opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
+    opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+    if (TN_has_value(OP_opnd(op, opnd2_idx)) &&
+	OP_result(op, 0) == OP_opnd(op, opnd1_idx))
+      return TRUE;
+  }
+  return FALSE;
+}
+
 // =======================================================================
 // OP_Is_Expensive
 // checks to see if <cur_op> is expensive. These ops are long latency
@@ -2236,7 +2254,7 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
     // adjusting the load/store offsets back to their original form. This
     // is faster than actually calling the dep_graph builder and walking thru
     // the succ arcs.
-    if (CGTARG_Is_OP_Addr_Incr(cand_op) &&
+    if (OP_Is_Addr_Incr(cand_op) &&
 	!TN_is_sp_reg(OP_result(cand_op,0 /*???*/))) {
 	INT64 addiu_const = TN_value (OP_opnd(cand_op,1));
 	OP *succ_op;
@@ -2272,7 +2290,7 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	     succ_op != NULL; 
 	     succ_op = OP_next(succ_op))
 	  {
-	    if (CGTARG_Is_OP_Addr_Incr(succ_op)) {
+	    if (OP_Is_Addr_Incr(succ_op)) {
 	      if ((Ignore_TN_Dep && 
 		   (TN_register(OP_opnd(cand_op, base_opndnum)) ==
 		    TN_register(OP_result(succ_op,0 /*???*/)))) ||

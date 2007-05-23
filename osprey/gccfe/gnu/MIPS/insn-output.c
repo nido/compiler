@@ -3044,40 +3044,40 @@ output_513 (operands, insn)
 }
 
 
-extern int register_operand PARAMS ((rtx, enum machine_mode));
-extern int reg_or_0_operand PARAMS ((rtx, enum machine_mode));
-extern int arith_operand PARAMS ((rtx, enum machine_mode));
-extern int small_int PARAMS ((rtx, enum machine_mode));
-extern int se_reg_or_0_operand PARAMS ((rtx, enum machine_mode));
-extern int se_arith_operand PARAMS ((rtx, enum machine_mode));
-extern int scratch_operand PARAMS ((rtx, enum machine_mode));
-extern int se_register_operand PARAMS ((rtx, enum machine_mode));
-extern int extend_operator PARAMS ((rtx, enum machine_mode));
-extern int highpart_shift_operator PARAMS ((rtx, enum machine_mode));
-extern int const_float_1_operand PARAMS ((rtx, enum machine_mode));
-extern int true_reg_or_0_operand PARAMS ((rtx, enum machine_mode));
-extern int immediate_operand PARAMS ((rtx, enum machine_mode));
-extern int nonmemory_operand PARAMS ((rtx, enum machine_mode));
-extern int se_nonmemory_operand PARAMS ((rtx, enum machine_mode));
-extern int uns_arith_operand PARAMS ((rtx, enum machine_mode));
-extern int se_uns_arith_operand PARAMS ((rtx, enum machine_mode));
-extern int memory_operand PARAMS ((rtx, enum machine_mode));
-extern int nonimmediate_operand PARAMS ((rtx, enum machine_mode));
-extern int se_nonimmediate_operand PARAMS ((rtx, enum machine_mode));
-extern int general_operand PARAMS ((rtx, enum machine_mode));
-extern int movdi_operand PARAMS ((rtx, enum machine_mode));
-extern int move_operand PARAMS ((rtx, enum machine_mode));
-extern int address_operand PARAMS ((rtx, enum machine_mode));
-extern int cmp_op PARAMS ((rtx, enum machine_mode));
-extern int equality_op PARAMS ((rtx, enum machine_mode));
-extern int pc_or_label_operand PARAMS ((rtx, enum machine_mode));
-extern int pmode_register_operand PARAMS ((rtx, enum machine_mode));
-extern int call_insn_operand PARAMS ((rtx, enum machine_mode));
-extern int consttable_operand PARAMS ((rtx, enum machine_mode));
-extern int const_int_operand PARAMS ((rtx, enum machine_mode));
-extern int large_int PARAMS ((rtx, enum machine_mode));
-extern int arith32_operand PARAMS ((rtx, enum machine_mode));
-extern int comparison_operator PARAMS ((rtx, enum machine_mode));
+extern int register_operand PARAMS ((rtx, machine_mode_t));
+extern int reg_or_0_operand PARAMS ((rtx, machine_mode_t));
+extern int arith_operand PARAMS ((rtx, machine_mode_t));
+extern int small_int PARAMS ((rtx, machine_mode_t));
+extern int se_reg_or_0_operand PARAMS ((rtx, machine_mode_t));
+extern int se_arith_operand PARAMS ((rtx, machine_mode_t));
+extern int scratch_operand PARAMS ((rtx, machine_mode_t));
+extern int se_register_operand PARAMS ((rtx, machine_mode_t));
+extern int extend_operator PARAMS ((rtx, machine_mode_t));
+extern int highpart_shift_operator PARAMS ((rtx, machine_mode_t));
+extern int const_float_1_operand PARAMS ((rtx, machine_mode_t));
+extern int true_reg_or_0_operand PARAMS ((rtx, machine_mode_t));
+extern int immediate_operand PARAMS ((rtx, machine_mode_t));
+extern int nonmemory_operand PARAMS ((rtx, machine_mode_t));
+extern int se_nonmemory_operand PARAMS ((rtx, machine_mode_t));
+extern int uns_arith_operand PARAMS ((rtx, machine_mode_t));
+extern int se_uns_arith_operand PARAMS ((rtx, machine_mode_t));
+extern int memory_operand PARAMS ((rtx, machine_mode_t));
+extern int nonimmediate_operand PARAMS ((rtx, machine_mode_t));
+extern int se_nonimmediate_operand PARAMS ((rtx, machine_mode_t));
+extern int general_operand PARAMS ((rtx, machine_mode_t));
+extern int movdi_operand PARAMS ((rtx, machine_mode_t));
+extern int move_operand PARAMS ((rtx, machine_mode_t));
+extern int address_operand PARAMS ((rtx, machine_mode_t));
+extern int cmp_op PARAMS ((rtx, machine_mode_t));
+extern int equality_op PARAMS ((rtx, machine_mode_t));
+extern int pc_or_label_operand PARAMS ((rtx, machine_mode_t));
+extern int pmode_register_operand PARAMS ((rtx, machine_mode_t));
+extern int call_insn_operand PARAMS ((rtx, machine_mode_t));
+extern int consttable_operand PARAMS ((rtx, machine_mode_t));
+extern int const_int_operand PARAMS ((rtx, machine_mode_t));
+extern int large_int PARAMS ((rtx, machine_mode_t));
+extern int arith32_operand PARAMS ((rtx, machine_mode_t));
+extern int comparison_operator PARAMS ((rtx, machine_mode_t));
 
 
 

@@ -71,7 +71,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "target.h"
 #include "langhooks.h"
 #include "cfglayout.h"
-
 #if defined (DWARF2_UNWIND_INFO) || defined (DWARF2_DEBUGGING_INFO)
 #include "dwarf2out.h"
 #endif
@@ -2177,9 +2176,9 @@ compile_file ()
   {
     extern char * Orig_Src_File_Name;
     if (main_input_filename) {
-      Orig_Src_File_Name = main_input_filename;
+      Orig_Src_File_Name = (char *)main_input_filename;
     } else if (dump_base_name) {
-      Orig_Src_File_Name = dump_base_name;
+      Orig_Src_File_Name = (char *)dump_base_name;
     } else {
       Orig_Src_File_Name = filename;
     }
@@ -2346,6 +2345,7 @@ rest_of_decl_compilation (decl, asmspec, top_level, at_end)
 	  SET_DECL_RTL (decl, NULL_RTX);
 	  make_decl_rtl (decl, asmspec);
 #ifdef SGI_MONGOOSE
+	  extern void WFE_Record_Asmspec_For_ST (tree decl, const char *asmspec, int reg);
           WFE_Record_Asmspec_For_ST (decl, asmspec, decode_reg_name (asmspec));
 #endif /* SGI_MONGOOSE */
 	}
@@ -4921,6 +4921,18 @@ parse_options_and_default_flags (argc, argv)
   save_argv = argv;
 #endif
 
+#ifdef TARG_ST
+  //TB: Init GCC internal config from targinfo data: Need to be done after the Configure phase
+  extern void Configure (void);
+  Configure ();
+  //Loader init, need to be done before targ Info init to benefit
+  //from targinfo extension 
+  GCCTARG_Configure_Gcc_From_Targinfo ();
+  // Initialize internla gcc arrays using targinfo data
+  extern void WFE_Loader_Initialize_Register(void);
+  WFE_Loader_Initialize_Register();
+#endif
+
   /* Initialize register usage now so switches may override.  */
   init_reg_sets ();
 
@@ -5570,6 +5582,7 @@ toplev_main (argc, argv)
    extern char *filename;
    extern char * Orig_Src_File_Name;
 
+   WFE_Init_Errors ();
    WFE_Prepare_Gcc_Options(argc, argv, &gnu_argc, &gnu_argv);
 
 #ifdef TARG_ST

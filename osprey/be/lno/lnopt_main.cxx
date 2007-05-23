@@ -1105,6 +1105,10 @@ void DO_LOOP_INFO::Print(FILE *fp, INT indentation)
 #ifdef TARG_ST
   if (Pragma_Modulus >1) fprintf(fp,"%sPragma loopmod says trip count is multiple of %d plus %d\n", buf,
                                Pragma_Modulus, Pragma_Residue);
+  if (Min_Iterations >= 0) fprintf(fp,"%sPragma loopminitercount says trip count is at least %d\n", buf,
+                               Min_Iterations);
+  if (Max_Iterations >= 0) fprintf(fp,"%sPragma loopmaxitercount says trip count is at most %d\n", buf,
+                               Max_Iterations);
 #endif
   BOOL required_blks = FALSE;
   for (i = 0; i < MHD_MAX_LEVELS; i++)
@@ -1478,6 +1482,8 @@ DO_LOOP_INFO::DO_LOOP_INFO(MEM_POOL *pool, ACCESS_ARRAY *lb, ACCESS_ARRAY *ub,
 #ifdef TARG_ST
     Pragma_Modulus = 1;
     Pragma_Residue = 0;
+    Min_Iterations = -1;
+    Max_Iterations = -1;
 #endif
     for (INT i = 0; i < MHD_MAX_LEVELS; i++)
       Required_Blocksize[i] = -1;
@@ -1572,6 +1578,8 @@ DO_LOOP_INFO::DO_LOOP_INFO(DO_LOOP_INFO *dli, MEM_POOL *pool) {
 #ifdef TARG_ST
     Pragma_Modulus = dli->Pragma_Modulus;
     Pragma_Residue = dli->Pragma_Residue;
+    Min_Iterations = dli->Min_Iterations;
+    Max_Iterations = dli->Max_Iterations;
 #endif
     for (INT i = 0; i < MHD_MAX_LEVELS; i++)
       Required_Blocksize[i] = dli->Required_Blocksize[i];

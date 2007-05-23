@@ -200,7 +200,7 @@ ir_b_grow_map (Elf64_Word min_size, Output_File *fl)
        think is preferable.
     */
     if (ftruncate(fl->output_fd, fl->mapped_size))
-	ErrMsg (EC_IR_Write, fl->file_name, sys_errlist[errno]);
+	ErrMsg (EC_IR_Write, fl->file_name, strerror(errno));
 
 #ifdef Is_True_On
     if (getenv("MMAP_DEBUG"))
@@ -221,7 +221,7 @@ ir_b_grow_map (Elf64_Word min_size, Output_File *fl)
 				  MAP_SHARED|MAP_AUTOGROW, fl->output_fd, 0); 
 #endif
     if (fl->map_addr == (char *) (-1))
-	ErrMsg (EC_IR_Write, fl->file_name, sys_errlist[errno]);
+	ErrMsg (EC_IR_Write, fl->file_name, strerror(errno));
 
     return fl->map_addr;
 } /* ir_b_grow_map */

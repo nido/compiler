@@ -51,15 +51,15 @@ static void clear_table			PARAMS ((int));
 static int discard_useless_locs		PARAMS ((void **, void *));
 static int discard_useless_values	PARAMS ((void **, void *));
 static void remove_useless_values	PARAMS ((void));
-static rtx wrap_constant		PARAMS ((enum machine_mode, rtx));
-static unsigned int hash_rtx		PARAMS ((rtx, enum machine_mode, int));
+static rtx wrap_constant		PARAMS ((machine_mode_t, rtx));
+static unsigned int hash_rtx		PARAMS ((rtx, machine_mode_t, int));
 static cselib_val *new_cselib_val	PARAMS ((unsigned int,
-						 enum machine_mode));
+						 machine_mode_t));
 static void add_mem_for_addr		PARAMS ((cselib_val *, cselib_val *,
 						 rtx));
 static cselib_val *cselib_lookup_mem	PARAMS ((rtx, int));
 static void cselib_invalidate_regno	PARAMS ((unsigned int,
-						 enum machine_mode));
+						 machine_mode_t));
 static int cselib_mem_conflict_p	PARAMS ((rtx, rtx));
 static int cselib_invalidate_mem_1	PARAMS ((void **, void *));
 static void cselib_invalidate_mem	PARAMS ((rtx));
@@ -249,7 +249,7 @@ entry_and_rtx_equal_p (entry, x_arg)
   struct elt_loc_list *l;
   const cselib_val *v = (const cselib_val *) entry;
   rtx x = (rtx) x_arg;
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
 
   if (GET_CODE (x) == CONST_INT
       || (mode == VOIDmode && GET_CODE (x) == CONST_DOUBLE))
@@ -529,7 +529,7 @@ rtx_equal_for_cselib_p (x, y)
    mode.  */
 static rtx
 wrap_constant (mode, x)
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx x;
 {
   if (GET_CODE (x) != CONST_INT
@@ -552,7 +552,7 @@ wrap_constant (mode, x)
 static unsigned int
 hash_rtx (x, mode, create)
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int create;
 {
   cselib_val *e;
@@ -687,7 +687,7 @@ hash_rtx (x, mode, create)
 static cselib_val *
 new_cselib_val (value, mode)
      unsigned int value;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   cselib_val *e = empty_vals;
 
@@ -738,7 +738,7 @@ cselib_lookup_mem (x, create)
      rtx x;
      int create;
 {
-  enum machine_mode mode = GET_MODE (x);
+  machine_mode_t mode = GET_MODE (x);
   void **slot;
   cselib_val *addr;
   cselib_val *mem_elt;
@@ -868,7 +868,7 @@ cselib_subst_to_values (x)
 cselib_val *
 cselib_lookup (x, mode, create)
      rtx x;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int create;
 {
   void **slot;
@@ -947,7 +947,7 @@ cselib_lookup (x, mode, create)
 static void
 cselib_invalidate_regno (regno, mode)
      unsigned int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   unsigned int endregno;
   unsigned int i;

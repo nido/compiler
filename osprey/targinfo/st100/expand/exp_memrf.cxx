@@ -1205,7 +1205,7 @@ Exp_Ldst (
   }
 
   if (is_store) {
-    if (variant == V_NONE) {
+    if ((variant == V_NONE) || V_overalign(variant)) {
       Expand_Store (OPCODE_desc(opcode), tn, base_tn, ofst_tn, &newops);
     }
     else {
@@ -1214,7 +1214,7 @@ Exp_Ldst (
     }
   }
   else if (is_load) {
-    if (variant == V_NONE)
+    if ((variant == V_NONE) || V_overalign(variant))
       Expand_Load (opcode, tn, base_tn, ofst_tn, &newops);
     else 
       Expand_Misaligned_Load (opcode, tn, 

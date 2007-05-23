@@ -366,7 +366,7 @@ DST_put_assoc(const char *at_name, DST_flag flag, DST_ASSOC_INFO assoc)
    DST_put_string(at_name);
    DST_nput_char(1, '(');
    if (DST_IS_assoc_fe(flag))
-      DST_put_hex64_attribute("FE", (UINT64)DST_ASSOC_INFO_fe_ptr(assoc));
+      DST_put_hex64_attribute("FE", (UINT64)(UINT32)DST_ASSOC_INFO_fe_ptr(assoc));
    else {
       DST_put_string("ST");
       DST_put_st_id (DST_ASSOC_INFO_st_level(assoc), DST_ASSOC_INFO_st_index(assoc));

@@ -930,7 +930,13 @@ SSA::Get_zero_version_CR(AUX_ID aux_id, OPT_STAB *opt_stab, VER_ID du)
     if (st != NULL) ty = ST_type(st);
     MTYPE dtype, rtype;
     AUX_STAB_ENTRY *sym = opt_stab->Aux_stab_entry(aux_id);
+#ifdef TARG_ST
+      // Reconfigurability: Removed direct access to mclass, that is
+      //                    not supported for dynamic mtypes
+    rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
     rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), sym->Byte_size());
+#endif
     dtype = rtype;
     if (rtype != MTYPE_UNKNOWN) {
 #ifdef TARG_ST
@@ -938,9 +944,15 @@ SSA::Get_zero_version_CR(AUX_ID aux_id, OPT_STAB *opt_stab, VER_ID du)
 #else
       if (MTYPE_is_integral(rtype) &&
 #endif
-          sym->Byte_size() < (MTYPE_size_min(MTYPE_I4)/8))
+          sym->Byte_size() < (MTYPE_size_min(MTYPE_I4)/8)) {
+#ifdef TARG_ST
+        // Reconfigurability: Sanity check
+        FmtAssert((!MTYPE_is_dynamic(sym->Mtype())),
+		  ("Extension Mtype not supported here: no corresponding mclass"));
+#endif
         rtype = Mtype_from_mtype_class_and_size(sym->Mclass(),
                                                 MTYPE_size_min(MTYPE_I4)/8);
+      }
       ty = MTYPE_To_TY(rtype);
     }
     CODEREP *cr = _htable->Add_def(aux_id, 0, NULL, rtype, dtype,
@@ -1001,13 +1013,25 @@ SSA::Du2cr( CODEMAP *htable, OPT_STAB *opt_stab, VER_ID du,
 			   TRUE);
     } else {
       AUX_STAB_ENTRY *sym = opt_stab->Aux_stab_entry(vse->Aux_id());
+#ifdef TARG_ST
+      // Reconfigurability: Removed direct access to mclass, that is
+      //                    not supported for dynamic mtypes
+      rtype = Mtype_from_AUX_STAB_ENTRY(sym);
+#else
       rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), sym->Byte_size());
+#endif
       dtype = rtype;
       if (rtype != MTYPE_UNKNOWN) {
         if (MTYPE_is_integral(rtype) &&
-            sym->Byte_size() < (MTYPE_size_min(MTYPE_I4)/8))
+            sym->Byte_size() < (MTYPE_size_min(MTYPE_I4)/8)) {
+#ifdef TARG_ST
+	  // Reconfigurability: Sanity check
+	  FmtAssert((!MTYPE_is_dynamic(sym->Mtype())),
+		    ("Extension Mtype not supported here: no corresponding mclass"));
+#endif
           rtype = Mtype_from_mtype_class_and_size(sym->Mclass(),
                                                   MTYPE_size_min(MTYPE_I4)/8);
+	}
         ty = MTYPE_To_TY(rtype);
       }
       else

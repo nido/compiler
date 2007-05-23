@@ -59,6 +59,7 @@ extern "C" {
  * If verbose and non-standard path, then print path on stderr.
  */
 BE_EXPORTED extern void* load_so (char *soname, char *path, BOOL verbose);
+BE_EXPORTED extern void* load_so_no_RTLD_GLOBAL (char *soname, char *path, BOOL verbose);
 BE_EXPORTED extern void close_so (void* handler);
 
 #ifdef __cplusplus

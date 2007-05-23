@@ -144,6 +144,9 @@ INT32 Enable_Misaligned_Access;
 // 2: error
 INT32 Warn_Misaligned_Access = 0;
 
+//[VCdV]
+INT32 Activate_Hwloop;
+
 // [SC]: Cycle time overrides.
 OPTION_LIST *Cycle_Time_Overrides;
 #endif
@@ -213,6 +216,11 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_64bits", "",
     0, 0, 0,    &Enable_64_Bits_Ops, &Enable_64_Bits_Ops_Set,
     "Enable support for 64 bits" },
+
+  // [VCdV]
+  { OVK_INT32,   OV_VISIBLE,    FALSE, "activate_hwloop", "",
+    0, 0, 1,    &Activate_Hwloop, NULL,
+    "Specify HW loop support (0 = no hwloop, 1 = hwloop on " },
 
   // [CG]
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned", "",

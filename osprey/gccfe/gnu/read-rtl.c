@@ -603,7 +603,7 @@ again:
       if (j == MAX_MACHINE_MODE)
 	fatal_with_file_and_line (infile, "unknown mode `%s'", tmp_char);
 
-      PUT_MODE (return_rtx, (enum machine_mode) j);
+      PUT_MODE (return_rtx, (machine_mode_t) j);
     }
   else
     ungetc (i, infile);

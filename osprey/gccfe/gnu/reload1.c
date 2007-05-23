@@ -260,8 +260,8 @@ int reload_in_progress = 0;
 /* These arrays record the insn_code of insns that may be needed to
    perform input and output reloads of special objects.  They provide a
    place to pass a scratch register.  */
-enum insn_code reload_in_optab[NUM_MACHINE_MODES];
-enum insn_code reload_out_optab[NUM_MACHINE_MODES];
+enum insn_code reload_in_optab[MAX_LIMIT_MACHINE_MODE];
+enum insn_code reload_out_optab[MAX_LIMIT_MACHINE_MODE];
 
 /* This obstack is used for allocation of rtl during register elimination.
    The allocated storage can be freed once find_reloads has processed the
@@ -368,7 +368,7 @@ static int (*offsets_at)[NUM_ELIMINABLE_REGS];
 static int num_labels;
 
 static void replace_pseudos_in_call_usage	PARAMS ((rtx *,
-							 enum machine_mode,
+							 machine_mode_t,
 							 rtx));
 static void maybe_fix_stack_asms	PARAMS ((void));
 static void copy_reloads		PARAMS ((struct insn_chain *));
@@ -384,7 +384,7 @@ static void delete_dead_insn		PARAMS ((rtx));
 static void alter_reg			PARAMS ((int, int));
 static void set_label_offsets		PARAMS ((rtx, rtx, int));
 static void check_eliminable_occurrences	PARAMS ((rtx));
-static void elimination_effects		PARAMS ((rtx, enum machine_mode));
+static void elimination_effects		PARAMS ((rtx, machine_mode_t));
 static int eliminate_regs_in_insn	PARAMS ((rtx, int));
 static void update_eliminable_offsets	PARAMS ((void));
 static void mark_not_eliminable		PARAMS ((rtx, rtx, void *));
@@ -405,16 +405,16 @@ static void forget_old_reloads_1	PARAMS ((rtx, rtx, void *));
 static int reload_reg_class_lower	PARAMS ((const PTR, const PTR));
 static void mark_reload_reg_in_use	PARAMS ((unsigned int, int,
 						 enum reload_type,
-						 enum machine_mode));
+						 machine_mode_t));
 static void clear_reload_reg_in_use	PARAMS ((unsigned int, int,
 						 enum reload_type,
-						 enum machine_mode));
+						 machine_mode_t));
 static int reload_reg_free_p		PARAMS ((unsigned int, int,
 						 enum reload_type));
 static int reload_reg_free_for_value_p	PARAMS ((int, int, int,
 						 enum reload_type,
 						 rtx, rtx, int, int));
-static int free_for_value_p		PARAMS ((int, enum machine_mode, int,
+static int free_for_value_p		PARAMS ((int, machine_mode_t, int,
 						 enum reload_type, rtx, rtx,
 						 int, int));
 static int reload_reg_reaches_end_p	PARAMS ((unsigned int, int,
@@ -453,7 +453,7 @@ static void move2add_note_store		PARAMS ((rtx, rtx, void *));
 static void add_auto_inc_notes		PARAMS ((rtx, rtx));
 #endif
 static void copy_eh_notes		PARAMS ((rtx, rtx));
-static HOST_WIDE_INT sext_for_mode	PARAMS ((enum machine_mode,
+static HOST_WIDE_INT sext_for_mode	PARAMS ((machine_mode_t,
 						 HOST_WIDE_INT));
 static void failed_reload		PARAMS ((rtx, int));
 static int set_reload_reg		PARAMS ((int, int));
@@ -585,7 +585,7 @@ compute_use_by_pseudos (to, from)
 static void
 replace_pseudos_in_call_usage (loc, mem_mode, usage)
      rtx *loc;
-     enum machine_mode mem_mode;
+     machine_mode_t mem_mode;
      rtx usage;
 {
   rtx x = *loc;
@@ -1314,7 +1314,7 @@ maybe_fix_stack_asms ()
 {
 #ifdef STACK_REGS
   const char *constraints[MAX_RECOG_OPERANDS];
-  enum machine_mode operand_mode[MAX_RECOG_OPERANDS];
+  machine_mode_t operand_mode[MAX_RECOG_OPERANDS];
   struct insn_chain *chain;
 
   for (chain = reload_insn_chain; chain != 0; chain = chain->next)
@@ -2027,7 +2027,7 @@ alter_reg (i, from_reg)
 	{
 	  /* Compute maximum size needed, both for inherent size
 	     and for total size.  */
-	  enum machine_mode mode = GET_MODE (regno_reg_rtx[i]);
+	  machine_mode_t mode = GET_MODE (regno_reg_rtx[i]);
 	  rtx stack_slot;
 
 	  if (spill_stack_slot[from_reg])
@@ -2298,7 +2298,7 @@ set_label_offsets (x, insn, initial_p)
 rtx
 eliminate_regs (x, mem_mode, insn)
      rtx x;
-     enum machine_mode mem_mode;
+     machine_mode_t mem_mode;
      rtx insn;
 {
   enum rtx_code code = GET_CODE (x);
@@ -2682,7 +2682,7 @@ eliminate_regs (x, mem_mode, insn)
 static void
 elimination_effects (x, mem_mode)
      rtx x;
-     enum machine_mode mem_mode;
+     machine_mode_t mem_mode;
 
 {
   enum rtx_code code = GET_CODE (x);
@@ -3991,7 +3991,7 @@ reload_as_needed (live_known)
 
 		    {
 		      rtx reload_reg = rld[i].reg_rtx;
-		      enum machine_mode mode = GET_MODE (reload_reg);
+		      machine_mode_t mode = GET_MODE (reload_reg);
 		      int n = 0;
 		      rtx p;
 
@@ -4206,7 +4206,7 @@ mark_reload_reg_in_use (regno, opnum, type, mode)
      unsigned int regno;
      int opnum;
      enum reload_type type;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   unsigned int nregs = HARD_REGNO_NREGS (regno, mode);
   unsigned int i;
@@ -4271,7 +4271,7 @@ clear_reload_reg_in_use (regno, opnum, type, mode)
      unsigned int regno;
      int opnum;
      enum reload_type type;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   unsigned int nregs = HARD_REGNO_NREGS (regno, mode);
   unsigned int start_regno, end_regno, r;
@@ -5017,7 +5017,7 @@ static int
 free_for_value_p (regno, mode, opnum, type, value, out, reloadnum,
 		  ignore_address_reloads)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int opnum;
      enum reload_type type;
      rtx value, out;
@@ -5090,7 +5090,7 @@ set_reload_reg (i, r)
      This used to be one `if', but Sequent compiler can't handle that.  */
   if (HARD_REGNO_MODE_OK (regno, rld[r].mode))
     {
-      enum machine_mode test_mode = VOIDmode;
+      machine_mode_t test_mode = VOIDmode;
       if (rld[r].in)
 	test_mode = GET_MODE (rld[r].in);
       /* If rld[r].in has VOIDmode, it means we will load it
@@ -5437,7 +5437,7 @@ choose_reload_regs (chain)
 	    {
 	      int byte = 0;
 	      int regno = -1;
-	      enum machine_mode mode = VOIDmode;
+	      machine_mode_t mode = VOIDmode;
 
 	      if (rld[r].in == 0)
 		;
@@ -5485,7 +5485,7 @@ choose_reload_regs (chain)
 		{
 		  enum reg_class class = rld[r].class, last_class;
 		  rtx last_reg = reg_last_reload_reg[regno];
-		  enum machine_mode need_mode;
+		  machine_mode_t need_mode;
 
 		  i = REGNO (last_reg);
 		  i += subreg_regno_offset (i, GET_MODE (last_reg), byte, mode);
@@ -6179,7 +6179,7 @@ emit_input_reload_insns (chain, rl, old, j)
   rtx oldequiv_reg = 0;
   rtx oldequiv = 0;
   int special = 0;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx *where;
 
   /* Determine the mode to reload in.
@@ -6540,7 +6540,7 @@ emit_input_reload_insns (chain, rl, old, j)
 	  else
 	    {
 	      enum insn_code new_icode;
-	      enum machine_mode new_mode;
+	      machine_mode_t new_mode;
 
 	      if (! TEST_HARD_REG_BIT (reg_class_contents[(int) new_class],
 				       REGNO (second_reload_reg)))
@@ -6668,7 +6668,7 @@ emit_output_reload_insns (chain, rl, j)
   rtx insn = chain->insn;
   int special = 0;
   rtx old = rl->out;
-  enum machine_mode mode = GET_MODE (old);
+  machine_mode_t mode = GET_MODE (old);
   rtx p;
 
   if (rl->when_needed == RELOAD_OTHER)
@@ -8385,7 +8385,7 @@ reload_cse_simplify_operands (insn, testreg)
 
   for (i = 0; i < recog_data.n_operands; i++)
     {
-      enum machine_mode mode;
+      machine_mode_t mode;
       int regno;
       const char *p;
 
@@ -8527,7 +8527,7 @@ reload_cse_simplify_operands (insn, testreg)
 
   for (i = 0; i < recog_data.n_operands; i++)
     {
-      enum machine_mode mode = recog_data.operand_mode[i];
+      machine_mode_t mode = recog_data.operand_mode[i];
       if (op_alt_regno[i][j] == -1)
 	continue;
 
@@ -8538,7 +8538,7 @@ reload_cse_simplify_operands (insn, testreg)
   for (i = recog_data.n_dups - 1; i >= 0; i--)
     {
       int op = recog_data.dup_num[i];
-      enum machine_mode mode = recog_data.operand_mode[op];
+      machine_mode_t mode = recog_data.operand_mode[op];
 
       if (op_alt_regno[op][j] == -1)
 	continue;
@@ -8891,7 +8891,7 @@ reload_combine_note_store (dst, set, data)
 {
   int regno = 0;
   int i;
-  enum machine_mode mode = GET_MODE (dst);
+  machine_mode_t mode = GET_MODE (dst);
 
   if (GET_CODE (dst) == SUBREG)
     {
@@ -9074,7 +9074,7 @@ static int reg_set_luid[FIRST_PSEUDO_REGISTER];
    before reg_set_luid[n], calculated in mode reg_mode[n] .  */
 static HOST_WIDE_INT reg_offset[FIRST_PSEUDO_REGISTER];
 static int reg_base_reg[FIRST_PSEUDO_REGISTER];
-static enum machine_mode reg_mode[FIRST_PSEUDO_REGISTER];
+static machine_mode_t reg_mode[FIRST_PSEUDO_REGISTER];
 
 /* move2add_luid is linearily increased while scanning the instructions
    from first to last.  It is used to set reg_set_luid in
@@ -9089,7 +9089,7 @@ static int move2add_last_label_luid;
 
 static HOST_WIDE_INT
 sext_for_mode (mode, value)
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT value;
 {
   HOST_WIDE_INT cval = value & GET_MODE_MASK (mode);
@@ -9282,7 +9282,7 @@ move2add_note_store (dst, set, data)
 {
   unsigned int regno = 0;
   unsigned int i;
-  enum machine_mode mode = GET_MODE (dst);
+  machine_mode_t mode = GET_MODE (dst);
 
   if (GET_CODE (dst) == SUBREG)
     {
@@ -9319,7 +9319,7 @@ move2add_note_store (dst, set, data)
       int base_regno;
       /* This may be different from mode, if SET_DEST (set) is a
 	 SUBREG.  */
-      enum machine_mode dst_mode = GET_MODE (dst);
+      machine_mode_t dst_mode = GET_MODE (dst);
 
       switch (GET_CODE (src))
 	{

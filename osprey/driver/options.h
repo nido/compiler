@@ -112,3 +112,20 @@ extern boolean no_more_implied_options (int flag);
  * MUST BE INSIDE IMPLIED ITERATOR when calling this routine! */
 extern string get_current_implied_name (void);
 
+#ifdef TARG_STxP70
+typedef struct extension_implies_list_rec {
+   int info_index;
+	string name;
+	struct extension_implies_list_rec *next;
+} extension_implies_list_T;
+
+typedef struct {
+   string name;
+   string help;
+   string libpath;
+   string libname;
+   extension_implies_list_T * implies;
+} extension_T;
+
+extern int extract_from_sxextensionrc ( char * driver_path, extension_T ** ext_opt );
+#endif

@@ -660,7 +660,7 @@ static void
 noce_emit_move_insn (x, y)
      rtx x, y;
 {
-  enum machine_mode outmode, inmode;
+  machine_mode_t outmode, inmode;
   rtx outer, inner;
   int bitpos;
 
@@ -736,7 +736,7 @@ noce_try_store_flag_constants (if_info)
   int reversep;
   HOST_WIDE_INT itrue, ifalse, diff, tmp;
   int normalize, can_reverse;
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   if (! no_new_pseudos
       && GET_CODE (if_info->a) == CONST_INT

@@ -55,6 +55,7 @@
 #ifdef NEW_LOWER
 #include <config_TARG.h>	/* For Enable_Non_IEEE_Ops. */
 #include <config_opt.h>	/* [HK] For Finite_Math. */
+#include <betarget.h>           /* To know if operator is emulated. */
 #endif
 
 /* ====================================================================
@@ -120,8 +121,8 @@ static BOOL
 is_emulated_type (TYPE_ID type)
 {
   if (Only_32_Bit_Ops && MTYPE_is_longlong(type)) return TRUE;
-  if (Emulate_Single_Float_Ops && type == MTYPE_F4) return TRUE;
-  if (Emulate_Double_Float_Ops && MTYPE_is_double(type)) return TRUE;
+  if (Emulate_Single_Float_Type && type == MTYPE_F4) return TRUE;
+  if (Emulate_Double_Float_Type && MTYPE_is_double(type)) return TRUE;
   return FALSE;
 }
 
@@ -148,72 +149,10 @@ is_emulated_operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
     return TRUE;
   }
 #endif
-  
-  /* All long long operators require emulation if emulation is on. */
-  if (MTYPE_is_longlong(rtype) ||
-      MTYPE_is_longlong(desc)) return TRUE;
 
-  /* All double operators require emulation if emulation is on. */
-  if (MTYPE_is_double(rtype) ||
-      MTYPE_is_double(desc)) return TRUE;
-
-#ifdef TARG_ST200
-  /* For ST200, the target options may allow non-ieee architectural support. 
-   * In this case the basic operators do not require emulation. */
-  if (Enable_Non_IEEE_Ops &&
-      (rtype == MTYPE_F4 || desc == MTYPE_F4)) {
-    switch (opr) {
-    case OPR_ADD: 
-    case OPR_SUB: 
-    case OPR_MPY:
-    case OPR_ABS:
-    case OPR_NEG:
-	// [HK]
-    case OPR_MADD: 
-    case OPR_MSUB: 
-    case OPR_NMADD: 
-    case OPR_NMSUB: 
-	return FALSE;
-    case OPR_LT:
-    case OPR_LE:
-    case OPR_EQ:
-    case OPR_NE:
-    case OPR_GE:
-    case OPR_GT:
-//[HK] ST235 optimization possible in finite  arithmetic, don't emulate
-// [HK] 20051207, never emulate for ST235, as fcmp are now hardware instructions
-#if 0
-	if ( Finite_Math )
-#endif
-	    return FALSE;
-#if 0
-	else
-	    return TRUE;
-#endif
-    case OPR_CVT:
-    case OPR_TRUNC:
-// [HK]      if (rtype == MTYPE_I4 || desc == MTYPE_I4)
-      if (rtype == MTYPE_I4 || desc == MTYPE_I4 || desc == MTYPE_U4 )
-	return FALSE;
-      break;
-    default:
-      break;
-    }
-  }
-#endif
-#ifdef TARG_STxP70
-  switch (opr) {
-    case OPR_MPY:
-    case OPR_DIV:
-      return TRUE;
-  default:
-    break;
-  }
-
-#endif
-  /* All single operators require emulation if emulation is on. */
-  if (rtype == MTYPE_F4 || desc == MTYPE_F4) return TRUE;
-  return FALSE;
+  // [JV] Tests to know if operator must be emulated is moved to betarget.cxx
+  // in targinfo.
+  return BETARG_is_emulated_operator(opr,rtype,desc);
 }
 #endif
 
@@ -241,8 +180,9 @@ Should_Call_Divide (WN *tree)
     return !Can_Do_Fast_Divide(rtype, constval);
   }
 
-  if (!Emulate_Single_Float_Ops && rtype == MTYPE_F4 ||
-      !Emulate_Double_Float_Ops && rtype == MTYPE_F8 ) {
+  if (!Emulate_Single_Float_Type && rtype == MTYPE_F4 ||
+      !Emulate_Double_Float_Type && rtype == MTYPE_F8 ||
+      !Emulate_DivRem_Integer_Ops && MTYPE_is_integral(rtype)) {
       return FALSE ;
   }
 
@@ -325,6 +265,13 @@ RT_LOWER_expr (
   case OPR_LDA_LABEL:
     // nada
     return tree;
+
+#ifdef TARG_ST
+  case OPR_SUBPART:  // By symetry with other cases, we call recursively
+                     // RT_LOWER_Expr that currently does nothing on a LDID.
+    WN_kid0(new_nd) = RT_LOWER_expr (WN_kid0(tree));
+    return new_nd;
+#endif
 
   case OPR_ILOAD:
   case OPR_ILDBITS:

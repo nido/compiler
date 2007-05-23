@@ -166,6 +166,7 @@ extern void Initialize_PHI_map(OP   *phi);
 #define SSA_REMOVE_PHI   0x00000008  /* trace PHI-removal */
 #define SSA_DOM_FRONT    0x00000010  /* trace dominance frontier */
 #define SSA_COLLECT_INFO 0x00000020  /* collect statistics for SSA */
+#define SSA_CBPO         0x00000040  /* common base pointer optimization */
 
 /* FdF 20050309: Externalized for use in SSA_Optimize(). */
 

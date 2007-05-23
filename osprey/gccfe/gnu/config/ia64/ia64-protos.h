@@ -27,38 +27,38 @@ extern rtx ia64_compare_op0, ia64_compare_op1;
 /* Functions defined in ia64.c */
 
 #ifdef RTX_CODE
-extern int call_operand PARAMS((rtx, enum machine_mode));
-extern int sdata_symbolic_operand PARAMS((rtx, enum machine_mode));
-extern int symbolic_operand PARAMS((rtx, enum machine_mode));
-extern int function_operand PARAMS((rtx, enum machine_mode));
-extern int setjmp_operand PARAMS((rtx, enum machine_mode));
-extern int move_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_0_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_6bit_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_8bit_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_8bit_adjusted_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_8bit_and_adjusted_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_14bit_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_22bit_operand PARAMS((rtx, enum machine_mode));
-extern int shift_count_operand PARAMS((rtx, enum machine_mode));
-extern int shift_32bit_count_operand PARAMS((rtx, enum machine_mode));
-extern int shladd_operand PARAMS((rtx, enum machine_mode));
-extern int fetchadd_operand PARAMS((rtx, enum machine_mode));
-extern int reg_or_fp01_operand PARAMS((rtx, enum machine_mode));
-extern int normal_comparison_operator PARAMS((rtx, enum machine_mode));
-extern int adjusted_comparison_operator PARAMS((rtx, enum machine_mode));
-extern int call_multiple_values_operation PARAMS((rtx, enum machine_mode));
-extern int predicate_operator PARAMS((rtx, enum machine_mode));
+extern int call_operand PARAMS((rtx, machine_mode_t));
+extern int sdata_symbolic_operand PARAMS((rtx, machine_mode_t));
+extern int symbolic_operand PARAMS((rtx, machine_mode_t));
+extern int function_operand PARAMS((rtx, machine_mode_t));
+extern int setjmp_operand PARAMS((rtx, machine_mode_t));
+extern int move_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_0_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_6bit_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_8bit_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_8bit_adjusted_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_8bit_and_adjusted_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_14bit_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_22bit_operand PARAMS((rtx, machine_mode_t));
+extern int shift_count_operand PARAMS((rtx, machine_mode_t));
+extern int shift_32bit_count_operand PARAMS((rtx, machine_mode_t));
+extern int shladd_operand PARAMS((rtx, machine_mode_t));
+extern int fetchadd_operand PARAMS((rtx, machine_mode_t));
+extern int reg_or_fp01_operand PARAMS((rtx, machine_mode_t));
+extern int normal_comparison_operator PARAMS((rtx, machine_mode_t));
+extern int adjusted_comparison_operator PARAMS((rtx, machine_mode_t));
+extern int call_multiple_values_operation PARAMS((rtx, machine_mode_t));
+extern int predicate_operator PARAMS((rtx, machine_mode_t));
 
 extern void ia64_expand_fetch_and_op PARAMS ((enum fetchop_code,
-					      enum machine_mode, rtx []));
+					      machine_mode_t, rtx []));
 extern void ia64_expand_op_and_fetch PARAMS ((enum fetchop_code,
-					      enum machine_mode, rtx []));
+					      machine_mode_t, rtx []));
 
 extern void ia64_print_operand_address PARAMS((FILE *, rtx));
 extern void ia64_print_operand PARAMS((FILE *, rtx, int));
 extern enum reg_class ia64_secondary_reload_class PARAMS((enum reg_class,
-							  enum machine_mode,
+							  machine_mode_t,
 							  rtx));
 extern void ia64_reorg PARAMS((rtx));
 extern const char *ia64_expand_prediction PARAMS((rtx, const char *));
@@ -66,10 +66,10 @@ extern const char *ia64_expand_prediction PARAMS((rtx, const char *));
 
 #ifdef TREE_CODE
 #ifdef RTX_CODE
-extern rtx ia64_function_arg PARAMS((CUMULATIVE_ARGS *, enum machine_mode,
+extern rtx ia64_function_arg PARAMS((CUMULATIVE_ARGS *, machine_mode_t,
 				     tree, int, int));
 extern rtx ia64_expand_builtin PARAMS((tree, rtx, rtx,
-				       enum machine_mode, int));
+				       machine_mode_t, int));
 extern void ia64_va_start PARAMS((int, tree, rtx));
 extern rtx ia64_va_arg PARAMS((tree, tree));
 extern rtx ia64_function_value PARAMS((tree, tree));
@@ -78,10 +78,10 @@ extern rtx ia64_function_value PARAMS((tree, tree));
 extern void ia64_setup_incoming_varargs PARAMS((CUMULATIVE_ARGS, int, tree,
 						int *, int));
 extern int ia64_function_arg_partial_nregs PARAMS((CUMULATIVE_ARGS *,
-						   enum machine_mode,
+						   machine_mode_t,
 						   tree, int));
 extern void ia64_function_arg_advance PARAMS((CUMULATIVE_ARGS *,
-					      enum machine_mode,
+					      machine_mode_t,
 					      tree, int));
 extern int ia64_return_in_memory PARAMS((tree));
 extern void ia64_asm_output_external PARAMS((FILE *, tree, const char *));

@@ -496,7 +496,7 @@ extern unsigned int num_free_regs[N_REG_CLASSES];
    also be set here, even if R+1 itself is not OK for M.  I.e. this
    represent the possible resources which could be taken away be a value
    in mode M.  */
-extern HARD_REG_SET hardregs_for_mode[NUM_MACHINE_MODES];
+extern HARD_REG_SET hardregs_for_mode[MAX_LIMIT_MACHINE_MODE];
 /* For 0 <= I <= 255, the number of bits set in I.  Used to calculate
    the number of set bits in a HARD_REG_SET.  */
 extern unsigned char byte2bitcount[256];

@@ -206,13 +206,13 @@ variable_size (size)
    If LIMIT is nonzero, modes of wider than MAX_FIXED_MODE_SIZE will not
    be used.  */
 
-enum machine_mode
+machine_mode_t
 mode_for_size (size, class, limit)
      unsigned int size;
      enum mode_class class;
      int limit;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   if (limit && size > MAX_FIXED_MODE_SIZE)
     return BLKmode;
@@ -228,7 +228,7 @@ mode_for_size (size, class, limit)
 
 /* Similar, except passed a tree node.  */
 
-enum machine_mode
+machine_mode_t
 mode_for_size_tree (size, class, limit)
      tree size;
      enum mode_class class;
@@ -247,12 +247,12 @@ mode_for_size_tree (size, class, limit)
 /* Similar, but never return BLKmode; return the narrowest mode that
    contains at least the requested number of bits.  */
 
-enum machine_mode
+machine_mode_t
 smallest_mode_for_size (size, class)
      unsigned int size;
      enum mode_class class;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
 
   /* Get the first mode which has at least this size, in the
      specified class.  */
@@ -266,9 +266,9 @@ smallest_mode_for_size (size, class)
 
 /* Find an integer mode of the exact same size, or BLKmode on failure.  */
 
-enum machine_mode
+machine_mode_t
 int_mode_for_mode (mode)
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   switch (GET_MODE_CLASS (mode))
     {
@@ -303,7 +303,7 @@ int_mode_for_mode (mode)
 
 unsigned int
 get_mode_alignment (mode)
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   unsigned int alignment;
 
@@ -444,7 +444,7 @@ layout_decl (decl, known_align)
       && TREE_CODE (TYPE_SIZE (type)) == INTEGER_CST
       && GET_MODE_CLASS (TYPE_MODE (type)) == MODE_INT)
     {
-      enum machine_mode xmode
+      machine_mode_t xmode
 	= mode_for_size_tree (DECL_SIZE (decl), MODE_INT, 1);
 
       if (xmode != BLKmode && known_align >= GET_MODE_ALIGNMENT (xmode))
@@ -1376,7 +1376,7 @@ compute_record_mode (type)
      tree type;
 {
   tree field;
-  enum machine_mode mode = VOIDmode;
+  machine_mode_t mode = VOIDmode;
 
   /* Most RECORD_TYPEs have BLKmode, so we start off assuming that.
      However, if possible, we use a mode that fits in a register
@@ -1523,7 +1523,7 @@ finalize_type_size (type)
       tree size_unit = TYPE_SIZE_UNIT (type);
       unsigned int align = TYPE_ALIGN (type);
       unsigned int user_align = TYPE_USER_ALIGN (type);
-      enum machine_mode mode = TYPE_MODE (type);
+      machine_mode_t mode = TYPE_MODE (type);
 
       /* Copy it into all variants.  */
       for (variant = TYPE_MAIN_VARIANT (type);
@@ -2120,14 +2120,14 @@ fixup_unsigned_type (type)
    the largest mode (but a mode no wider than UNITS_PER_WORD) that meets
    all the conditions.  */
 
-enum machine_mode
+machine_mode_t
 get_best_mode (bitsize, bitpos, align, largest_mode, volatilep)
      int bitsize, bitpos;
      unsigned int align;
-     enum machine_mode largest_mode;
+     machine_mode_t largest_mode;
      int volatilep;
 {
-  enum machine_mode mode;
+  machine_mode_t mode;
   unsigned int unit = 0;
 
   /* Find the narrowest integer mode that contains the bit field.  */
@@ -2153,7 +2153,7 @@ get_best_mode (bitsize, bitpos, align, largest_mode, volatilep)
 
   if (SLOW_BYTE_ACCESS && ! volatilep)
     {
-      enum machine_mode wide_mode = VOIDmode, tmode;
+      machine_mode_t wide_mode = VOIDmode, tmode;
 
       for (tmode = GET_CLASS_NARROWEST_MODE (MODE_INT); tmode != VOIDmode;
 	   tmode = GET_MODE_WIDER_MODE (tmode))

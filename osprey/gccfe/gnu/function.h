@@ -22,7 +22,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 struct var_refs_queue GTY(())
 {
   rtx modified;
-  enum machine_mode promoted_mode;
+  machine_mode_t promoted_mode;
   int unsignedp;
   struct var_refs_queue *next;
 };

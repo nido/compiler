@@ -2634,8 +2634,8 @@ mark_set_1 (pbi, code, reg, cond, insn, flags)
     case SUBREG:
       if (GET_CODE (SUBREG_REG (reg)) == REG)
 	{
-	  enum machine_mode outer_mode = GET_MODE (reg);
-	  enum machine_mode inner_mode = GET_MODE (SUBREG_REG (reg));
+	  machine_mode_t outer_mode = GET_MODE (reg);
+	  machine_mode_t inner_mode = GET_MODE (SUBREG_REG (reg));
 
 	  /* Identify the range of registers affected.  This is moderately
 	     tricky for hard registers.  See alter_subreg.  */

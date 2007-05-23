@@ -4,6 +4,7 @@
 
 #ifdef CROSS_COMPILE
 /* linux-mingw build. */
+#ifndef _MSC_VER
 #include <stdint.h>
 
 /* Some code use u_intxx_t instead os uintxx_t. */
@@ -19,6 +20,7 @@ typedef uint8_t __uint8_t;
 typedef int32_t __int32_t;
 typedef int16_t __int16_t;
 typedef int8_t __int8_t;
+#endif
 
 #else /* if !CROSS_COMPILE */
 /* linux-linux build. */

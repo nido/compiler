@@ -123,7 +123,7 @@ message_with_line VPARAMS ((int lineno, const char *msg, ...))
 
 rtx
 gen_rtx_CONST_INT (mode, arg)
-     enum machine_mode mode ATTRIBUTE_UNUSED;
+     machine_mode_t mode ATTRIBUTE_UNUSED;
      HOST_WIDE_INT arg;
 {
   rtx rt = rtx_alloc (CONST_INT);

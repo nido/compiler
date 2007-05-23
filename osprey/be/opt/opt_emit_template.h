@@ -346,7 +346,13 @@ Gen_exp_wn(CODEREP *exp, EMITTER *emitter)
 	}
       }
       break;
-
+#ifdef TARG_ST
+      case OPR_SUBPART:
+	wn = WN_CreateSubPart( Gen_exp_wn(exp->Get_opnd(0), emitter)/* kid0*/ ,
+			       /*rtype*/exp->Dtyp(), /*desc*/exp->Dsctyp(), 
+			       exp->Subpart_index());
+	break;
+#endif
     default:
       {
 	STMTREP *proj_defstmt;

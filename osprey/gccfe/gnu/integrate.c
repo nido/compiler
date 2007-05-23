@@ -716,7 +716,7 @@ expand_inline_function (fndecl, parms, target, ignore, type,
        formal = TREE_CHAIN (formal), actual = TREE_CHAIN (actual))
     {
       tree arg;
-      enum machine_mode mode;
+      machine_mode_t mode;
 
       if (actual == 0)
 	return (rtx) (size_t) -1;
@@ -755,7 +755,7 @@ expand_inline_function (fndecl, parms, target, ignore, type,
 	 function.  */
       tree arg = convert (TREE_TYPE (formal), TREE_VALUE (actual));
       /* Mode of the variable used within the function.  */
-      enum machine_mode mode = TYPE_MODE (TREE_TYPE (formal));
+      machine_mode_t mode = TYPE_MODE (TREE_TYPE (formal));
       int invisiref = 0;
 
       arg_trees[i] = arg;
@@ -779,7 +779,7 @@ expand_inline_function (fndecl, parms, target, ignore, type,
 	  if (GET_MODE (loc) != TYPE_MODE (TREE_TYPE (arg)))
 	    {
 	      int unsignedp = TREE_UNSIGNED (TREE_TYPE (formal));
-	      enum machine_mode pmode = TYPE_MODE (TREE_TYPE (formal));
+	      machine_mode_t pmode = TYPE_MODE (TREE_TYPE (formal));
 
 	      pmode = promote_mode (TREE_TYPE (formal), pmode,
 				    &unsignedp, 0);
@@ -1096,12 +1096,12 @@ expand_inline_function (fndecl, parms, target, ignore, type,
 	 value.  Set up our target for remapping.  */
 
       /* Machine mode function was declared to return.  */
-      enum machine_mode departing_mode = TYPE_MODE (type);
+      machine_mode_t departing_mode = TYPE_MODE (type);
       /* (Possibly wider) machine mode it actually computes
 	 (for the sake of callers that fail to declare it right).
 	 We have to use the mode of the result's RTL, rather than
 	 its type, since expand_function_start may have promoted it.  */
-      enum machine_mode arriving_mode
+      machine_mode_t arriving_mode
 	= GET_MODE (DECL_RTL (DECL_RESULT (fndecl)));
       rtx reg_to_map;
 
@@ -1159,8 +1159,8 @@ expand_inline_function (fndecl, parms, target, ignore, type,
     }
   else if (GET_CODE (loc) == CONCAT)
     {
-      enum machine_mode departing_mode = TYPE_MODE (type);
-      enum machine_mode arriving_mode
+      machine_mode_t departing_mode = TYPE_MODE (type);
+      machine_mode_t arriving_mode
 	= GET_MODE (DECL_RTL (DECL_RESULT (fndecl)));
 
       if (departing_mode != arriving_mode)
@@ -1894,7 +1894,7 @@ copy_rtx_and_substitute (orig, map, for_lhs)
   rtx copy, temp;
   int i, j;
   RTX_CODE code;
-  enum machine_mode mode;
+  machine_mode_t mode;
   const char *format_ptr;
   int regno;
 
@@ -2164,7 +2164,7 @@ copy_rtx_and_substitute (orig, map, for_lhs)
 	{
 	  struct function *f = inlining ? inlining : cfun;
 	  rtx constant = get_pool_constant_for_function (f, orig);
-	  enum machine_mode const_mode = get_pool_mode_for_function (f, orig);
+	  machine_mode_t const_mode = get_pool_mode_for_function (f, orig);
 	  if (inlining)
 	    {
 	      rtx temp = force_const_mem (const_mode,
@@ -2316,7 +2316,7 @@ copy_rtx_and_substitute (orig, map, for_lhs)
 	  && GET_CODE (XEXP (orig, 0)) == SYMBOL_REF
 	  && CONSTANT_POOL_ADDRESS_P (XEXP (orig, 0)))
 	{
-	  enum machine_mode const_mode
+	  machine_mode_t const_mode
 	    = get_pool_mode_for_function (inlining, XEXP (orig, 0));
 	  rtx constant
 	    = get_pool_constant_for_function (inlining, XEXP (orig, 0));
@@ -2511,7 +2511,7 @@ subst_constants (loc, insn, map, memonly)
   const char *format_ptr;
   int num_changes = num_validated_changes ();
   rtx new = 0;
-  enum machine_mode op0_mode = MAX_MACHINE_MODE;
+  machine_mode_t op0_mode = MAX_MACHINE_MODE;
 
   code = GET_CODE (x);
 
@@ -2606,7 +2606,7 @@ subst_constants (loc, insn, map, memonly)
 	rtx *dest_loc = &SET_DEST (x);
 	rtx dest = *dest_loc;
 	rtx src, tem;
-	enum machine_mode compare_mode = VOIDmode;
+	machine_mode_t compare_mode = VOIDmode;
 
 	/* If SET_SRC is a COMPARE which subst_constants would turn into
 	   COMPARE of 2 VOIDmode constants, note the mode in which comparison
@@ -2767,7 +2767,7 @@ subst_constants (loc, insn, map, memonly)
 
       case '<':
 	{
-	  enum machine_mode op_mode = GET_MODE (XEXP (x, 0));
+	  machine_mode_t op_mode = GET_MODE (XEXP (x, 0));
 
 	  if (op_mode == VOIDmode)
 	    op_mode = GET_MODE (XEXP (x, 1));
@@ -2776,7 +2776,7 @@ subst_constants (loc, insn, map, memonly)
 #ifdef FLOAT_STORE_FLAG_VALUE
 	  if (new != 0 && GET_MODE_CLASS (GET_MODE (x)) == MODE_FLOAT)
 	    {
-	      enum machine_mode mode = GET_MODE (x);
+	      machine_mode_t mode = GET_MODE (x);
 	      if (new == const0_rtx)
 		new = CONST0_RTX (mode);
 	      else
@@ -2848,7 +2848,7 @@ mark_stores (dest, x, data)
      void *data ATTRIBUTE_UNUSED;
 {
   int regno = -1;
-  enum machine_mode mode = VOIDmode;
+  machine_mode_t mode = VOIDmode;
 
   /* DEST is always the innermost thing set, except in the case of
      SUBREGs of hard registers.  */
@@ -3126,7 +3126,7 @@ get_func_hard_reg_initial_val (fun, reg)
 
 rtx
 get_hard_reg_initial_val (mode, regno)
-     enum machine_mode mode;
+     machine_mode_t mode;
      int regno;
 {
   return get_func_hard_reg_initial_val (cfun, gen_rtx_REG (mode, regno));
@@ -3134,7 +3134,7 @@ get_hard_reg_initial_val (mode, regno)
 
 rtx
 has_hard_reg_initial_val (mode, regno)
-     enum machine_mode mode;
+     machine_mode_t mode;
      int regno;
 {
   return has_func_hard_reg_initial_val (cfun, gen_rtx_REG (mode, regno));

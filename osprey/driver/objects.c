@@ -34,6 +34,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "W_alloca.h"
 #include "basic.h"
 #include "string_utils.h"
@@ -319,6 +320,43 @@ append_ar_objects_to_list(string_list_t *list)
 extern void
 append_libraries_to_list (string_list_t *list)
 {
+#ifdef TARG_STxP70
+#ifndef COSY_LIB /* [HC] Newlib tree support. Keep former code for CoSy lib support */
+        string lib_path;
+        extern int STxP70mult;
+        string_item_t *p;
+
+        for (p = library_dirs->head; p != NULL; p = p->next) {
+		add_string(list, concat_strings("-L", p->name));
+        }
+        /*
+         * get_phase_dir(P_library) is not in library_dirs because
+         * library_dirs is also used as the search path for the crt file
+         */
+	lib_path = string_copy(get_phase_dir(P_library));
+	if (lib_short_double == TRUE) {
+	  lib_path = concat_strings(lib_path,"/spieee754");
+	}
+	if (fpx == TRUE) {
+	  lib_path = concat_strings(lib_path,"/fpx");
+	} else if (STxP70mult == TRUE) {
+	  lib_path = concat_strings(lib_path,"/mult");
+	} else {
+	  lib_path = concat_strings(lib_path,"/nomult");
+	}
+	if (lib_kind == LIB_STXP70_16) {
+	  lib_path = concat_strings(lib_path,"/reg16");
+        } else {
+	  lib_path = concat_strings(lib_path,"/reg32");
+	}
+        if (!option_was_seen(O_L)) {
+                add_string(list,
+                           concat_strings("-L", lib_path));
+        }
+	/* Add path for link scripts */
+        add_string(list,
+                   concat_strings("-L", concat_strings(get_phase_dir(P_library),"/ldscript")));
+#else
         string_item_t *p;
         for (p = library_dirs->head; p != NULL; p = p->next) {
 		add_string(list, concat_strings("-L", p->name));
@@ -331,6 +369,21 @@ append_libraries_to_list (string_list_t *list)
                 add_string(list,
                            concat_strings("-L", get_phase_dir(P_library)));
         }
+#endif
+#else
+        string_item_t *p;
+        for (p = library_dirs->head; p != NULL; p = p->next) {
+		add_string(list, concat_strings("-L", p->name));
+        }
+        /*
+         * get_phase_dir(P_library) is not in library_dirs because
+         * library_dirs is also used as the search path for the crt file
+         */
+        if (!option_was_seen(O_L)) {
+                add_string(list,
+                           concat_strings("-L", get_phase_dir(P_library)));
+        }
+#endif
 }
 
 extern void
@@ -449,13 +502,17 @@ add_library_options (void)
 #endif
 	extern string stxp70_libdir;
 
+#ifdef COSY_LIB /* [HC] Architecture is managed at toolset level. Keep for CoSy Lib compat. */
 	switch (proc) {
-	case PROC_arch_1_3_1:
-	  append_phase_dir(P_library, "/arch_1_3_1");
-	  append_phase_dir(P_startup, "/arch_1_3_1");
+	case PROC_stxp70:
+	case PROC_stxp70_ext:
+	  append_phase_dir(P_library, "/stxp70");
+	  append_phase_dir(P_startup, "/stxp70");
 	  break;
 	}
+#endif
 
+#ifdef COSY_LIB /* [HC] Only one endianness available. Keep for CoSy lib support. */
 	if (endian == ENDIAN_LITTLE) {
 	  append_phase_dir(P_library, "/le");
 	  append_phase_dir(P_startup, "/le");
@@ -464,7 +521,9 @@ add_library_options (void)
 	  append_phase_dir(P_library, "/be");
 	  append_phase_dir(P_startup, "/be");
 	}
+#endif
 
+#ifdef COSY_LIB /* [HC] Only bare machine as of now. Keep for CoSy lib support. */
 	switch (stxp70_runtime) {
 	case RUNTIME_NONE:
 	  break;
@@ -475,6 +534,7 @@ add_library_options (void)
 	default:
 	  internal_error("no runtime set? (%d)", stxp70_runtime);
 	}
+#endif
 #endif
 
 	switch (abi) {
@@ -497,6 +557,7 @@ add_library_options (void)
 	case ABI_ST200_embedded:
 	case ABI_ST200_PIC:
 	case ABI_STxP70_embedded:
+	case ABI_STxP70_fpx:
 	  break;
 	default:
 		internal_error("no abi set? (%d)", abi);
@@ -632,7 +693,7 @@ add_library_options (void)
 
 #ifdef TARG_STxP70
 #ifdef MUMBLE_STxP70_BSP
-#define DEF_CORE_NAME "arch_1_3_1"
+#define DEF_CORE_NAME "stxp70"
 #define DEF_BOARD_NAME "default"
 #define DEF_SOC_NAME "default"
 	/* set core path */
@@ -699,7 +760,7 @@ add_library_options (void)
 
 	  if (stxp70_soc && is_directory (stxp70_soc)) {
 	    stxp70_soc = concat_path (stxp70_soc, 
-				      concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+				      concat_path((proc == PROC_stxp70 || proc == PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	    flag = add_string_option(O_L__, stxp70_soc);
@@ -708,7 +769,7 @@ add_library_options (void)
 
 	  if (stxp70_board && is_directory (stxp70_board)) {
 	    stxp70_board = concat_path (stxp70_board, 
-					concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+					concat_path((proc == PROC_stxp70 || proc ==PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						    
 						    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 								stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
@@ -720,7 +781,7 @@ add_library_options (void)
 	
 	if (stxp70_libdir) {
 	  stxp70_libdir = concat_path (stxp70_libdir, 
-				       concat_path(proc == PROC_arch_1_3_1 ? "arch_1_3_1" :  "unknown",
+				       concat_path((proc == PROC_stxp70 || proc == PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							       stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	  add_library_dir (stxp70_libdir);
@@ -754,3 +815,5 @@ find_crt_path (string crtname)
     return ptr;
   }
 }
+
+

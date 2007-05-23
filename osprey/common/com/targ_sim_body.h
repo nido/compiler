@@ -195,20 +195,40 @@ Get_Current_Preg_Num (Preg_Range pr)
 }
 #endif
 
+#ifdef TARG_ST
+static PLOC Setup_Parameter_Locations (TY_IDX pu_type, BOOL first_hidden_param_is_lowered );
+#else
 static PLOC Setup_Parameter_Locations (TY_IDX pu_type);
+#endif
 static PLOC Get_Parameter_Location (TY_IDX ty, BOOL is_output);
 
+#ifdef TARG_ST
+extern PLOC
+Setup_Input_Parameter_Locations (TY_IDX pu_type, BOOL first_hidden_param_is_lowered )
+{
+  return Setup_Parameter_Locations (pu_type,first_hidden_param_is_lowered);
+}
+#else
 extern PLOC
 Setup_Input_Parameter_Locations (TY_IDX pu_type)
 {
     return Setup_Parameter_Locations (pu_type);
 }
+#endif
 
+#ifdef TARG_ST
+extern PLOC
+Setup_Output_Parameter_Locations (TY_IDX pu_type, BOOL first_hidden_param_is_lowered )
+{
+    return Setup_Parameter_Locations (pu_type,first_hidden_param_is_lowered);
+}
+#else
 extern PLOC
 Setup_Output_Parameter_Locations (TY_IDX pu_type)
 {
     return Setup_Parameter_Locations (pu_type);
 }
+#endif
 
 extern PLOC
 Get_Input_Parameter_Location (TY_IDX ty)
@@ -258,8 +278,21 @@ Get_Preg_Size (PREG_NUM p)
 		return MTYPE_RegisterSize(SIM_INFO.int_type);
 }
 
+static BOOL Is_Struct_Parameter (TY_IDX struct_ty);
 static void Setup_Struct_Parameter_Locations (TY_IDX struct_ty);
 static PLOC Get_Struct_Parameter_Location (PLOC prev);
+
+extern BOOL
+Is_Struct_Input_Parameter (TY_IDX struct_ty)
+{
+    Is_Struct_Parameter (struct_ty);
+}
+
+extern BOOL
+Is_Struct_Output_Parameter (TY_IDX struct_ty)
+{
+    Is_Struct_Parameter (struct_ty);
+}
 
 extern void
 Setup_Struct_Input_Parameter_Locations (TY_IDX struct_ty)
@@ -286,111 +319,92 @@ Get_Struct_Output_Parameter_Location (PLOC prev)
 }
 
 static TYPE_ID ploc_parm_mtype;
-static INT32 ploc_last_offset;
-
+static PLOC ploc_last;
+static INT preg_num;
 
 static PLOC
 First_PLOC_Reg (PLOC ploc, TY_IDX parm_ty)
 {
-	ploc_parm_mtype = Fix_TY_mtype (parm_ty);	/* Target type */
-	PLOC first = ploc;
-	ploc_last_offset = PLOC_total_size(ploc);
-	switch (ploc_parm_mtype) {
-	case MTYPE_M:
-		Setup_Struct_Parameter_Locations (parm_ty);
-		first = Get_Struct_Parameter_Location (ploc);
-		break;
-	case MTYPE_C4:
-		PLOC_size(first) = MTYPE_RegisterSize(MTYPE_F4);
-		break;
-	case MTYPE_C8:
-	case MTYPE_CQ:
-	case MTYPE_FQ:
-		PLOC_size(first) = MTYPE_RegisterSize(MTYPE_F8);
-		break;
-#ifdef TARG_ST
-	case MTYPE_I8:
-	case MTYPE_U8:
-	case MTYPE_F8:
-	  if (Only_32_Bit_Ops) {
-	    PLOC_size(first) = IS_INT_PREG(PLOC_reg(first)) ? MTYPE_RegisterSize(MTYPE_I4) : MTYPE_RegisterSize(MTYPE_F4);
-	  }
-	  break;
-#endif
-	}
-	return first;
+  ploc_parm_mtype = Fix_TY_mtype (parm_ty);	/* Target type */
+  ploc_last = ploc;
+
+  switch (ploc_parm_mtype) {
+  case MTYPE_M:
+    Setup_Struct_Parameter_Locations (parm_ty);
+    ploc_last = Get_Struct_Parameter_Location (ploc);
+    break;
+  case MTYPE_I8:
+  case MTYPE_U8:
+  case MTYPE_F8:
+    if (Only_32_Bit_Ops) {
+      preg_num = 2;
+      PLOC_size(ploc_last) = 4;
+    } else {
+      preg_num = 1;
+    }
+    break;
+  default:
+    preg_num = 1;
+    break;
+  }
+  if (preg_num > 0) preg_num--;
+  return ploc_last;
 }
 
 extern PLOC
 First_Input_PLOC_Reg (PLOC ploc, TY_IDX parm_ty)
 {
-    return First_PLOC_Reg (ploc, parm_ty);
+  return First_PLOC_Reg (ploc, parm_ty);
 }
 
 extern PLOC
 First_Output_PLOC_Reg (PLOC ploc, TY_IDX parm_ty)
 {
-    return First_PLOC_Reg (ploc, parm_ty);
+  return First_PLOC_Reg (ploc, parm_ty);
 }
 
 static PLOC
-Next_PLOC_Reg (PLOC prev)
+Next_PLOC_Reg (void)
 {
-	PLOC next = prev;
-	switch (ploc_parm_mtype) {
-	case MTYPE_M:
-		next = Get_Struct_Parameter_Location (prev);
-		break;
-	case MTYPE_C4:
-	case MTYPE_C8:
-	case MTYPE_CQ:
-	case MTYPE_FQ:
-		if (ploc_parm_mtype == MTYPE_C4)
-			PLOC_offset(next) += MTYPE_RegisterSize(MTYPE_F4);
-		else
-			PLOC_offset(next) += MTYPE_RegisterSize(MTYPE_F8);
-		if (PLOC_offset(next) == ploc_last_offset) {
-			// end reached
-			PLOC_size(next) = 0;
-		}
-	    	PLOC_reg(next) += PR_skip_value(SIM_INFO.flt_args);
-		if (PLOC_reg(next) > PR_last_reg(SIM_INFO.flt_args)) {
-		    PLOC_reg(next) = 0;
-		}
-		break;
-#ifdef TARG_ST
-	case MTYPE_I8:
-	case MTYPE_U8:
-	case MTYPE_F8:
-	  if (Only_32_Bit_Ops) {
-	    PLOC_offset(next) += IS_INT_PREG(PLOC_reg(next)) ? MTYPE_RegisterSize(MTYPE_I4) : MTYPE_RegisterSize(MTYPE_F4);
-	    if (PLOC_offset(next) == ploc_last_offset) {
-	      // end reached
-	      PLOC_size(next) = 0;
-	    }
-	    Preg_Range args = IS_INT_PREG(PLOC_reg(next)) ? SIM_INFO.int_args : SIM_INFO.flt_args;
-	    PLOC_reg(next) += PR_skip_value(args);
-	    if (PLOC_reg(next) > PR_last_reg(args)) {
-	      PLOC_reg(next) = 0;
-	    }
-	  }
-	  break;
-#endif
-	default:
-		PLOC_offset(next) = ploc_last_offset;
-		PLOC_size(next) = 0; 
-	}
-	return next;
+  PLOC next;
+  
+  PLOC_clear(next);
+
+  switch (ploc_parm_mtype) {
+  case MTYPE_M:
+    ploc_last = Get_Struct_Parameter_Location (ploc_last);
+    next = ploc_last;
+    break;
+  case MTYPE_I8:
+  case MTYPE_U8:
+  case MTYPE_F8:
+    next = ploc_last;
+    if (preg_num == 0) {
+      PLOC_size(next) = 0;
+    } else {
+      Preg_Range args = IS_INT_PREG(PLOC_reg(ploc_last)) ? SIM_INFO.int_args : SIM_INFO.flt_args;
+      PLOC_reg(next) = PLOC_reg(ploc_last) + PR_skip_value(args);
+      if (PLOC_reg(next) > PR_last_reg(args)) {
+	PLOC_reg(next) = 0;
+      }
+    } 
+    break;
+  default:
+    PLOC_size(next) = 0;
+    break;
+  }
+  if (preg_num > 0) preg_num--;
+  return next;
 }
 
 extern PLOC
-Next_Input_PLOC_Reg (PLOC prev)
+Next_Input_PLOC_Reg (void)
 {
-	return Next_PLOC_Reg (prev);
+  return Next_PLOC_Reg ();
 }
 
 extern PLOC
-Next_Output_PLOC_Reg (PLOC prev)
+Next_Output_PLOC_Reg (void)
 {
-	return Next_PLOC_Reg (prev);
+  return Next_PLOC_Reg ();
 }

@@ -202,6 +202,28 @@ static BOOL CG_NOPs_to_GOTO_overridden = FALSE;
 BOOL CG_nop_insertion_directives = FALSE;
 #endif
 
+#ifdef TARG_ST
+BOOL CG_AutoMod = FALSE;
+static BOOL CG_AutoMod_overridden = FALSE;
+BOOL CG_cbpo_optimize_load_imm = FALSE;
+static BOOL CG_cbpo_optimize_load_imm_overridden = FALSE;
+INT32 CG_cbpo_ratio = 50;
+static BOOL CG_cbpo_ratio_overridden = FALSE;
+INT CG_cbpo_block_method = CBPO_BLOCK_NONE;
+static BOOL CG_cbpo_block_method_overridden = FALSE;
+
+#   ifdef TARG_STxP70
+#      define DEFAULT_LOAD_IMM(opt_level, opt_space) TRUE
+#      define DEFAULT_RATIO(opt_level, opt_space) opt_level <= 2? 50: 100;
+#      define DEFAULT_BLOCK_METHOD(opt_level, opt_space) opt_space? CBPO_BLOCK_NONE: CBPO_BLOCK_GLOBAL_THEN_LOCAL;
+// No else case, since currently not used for other targets.
+#   endif
+#endif
+
+#ifdef TARG_ST
+static BOOL LOCS_POST_Scheduling_overriden;
+#endif
+
 /* Keep	a copy of the command line options for assembly	output:	*/
 static char *option_string;
 
@@ -607,6 +629,32 @@ static OPTION_DESC Options_CG[] = {
     8, 0, 8,	&CG_LOOP_stream_align, NULL },
   { OVK_BOOL, OV_INTERNAL,	TRUE, "packing_unaligned", "", 
     0, 0, 0,	&CG_LOOP_unaligned_packing, NULL },
+  { OVK_BOOL, OV_INTERNAL,	FALSE, "cbpo_optimize_load_imm", "", 
+    0, 0, 0,	&CG_cbpo_optimize_load_imm,
+    &CG_cbpo_optimize_load_imm_overridden,
+    "activate commonalization of load immediate in common base pointer "
+    "optimization" },
+  { OVK_INT32, OV_INTERNAL,	FALSE, "cbpo_ratio", "", 
+    50, 0, INT32_MAX,	&CG_cbpo_ratio, &CG_cbpo_ratio_overridden,
+    "set minmum frequency ratio to allow commonalization in common base "
+    "pointer optimization. The ratio is used in the following formula "
+    "sum(freq(sources basic blocks)) / freq(dominator) > min_cbpo_ratio. Given"
+    " value will be divided by 100.0 to allow more precise setting."
+    " E.g. for 50 it means that the optimization will be done if "
+    "sum(freq(sourcesBB) / freq(dominatorBB) > 0.5" },
+  { OVK_INT32, OV_INTERNAL,	FALSE, "cbpo_block_method", "", 
+    0, 0, 3,	&CG_cbpo_block_method, &CG_cbpo_block_method_overridden,
+    "Specify what method should be used to block common base pointer "
+    "optimization. Possible values are: 0 (none), 1 (local), 2 (global) or "
+    "3 (global then local). The 'none' method never blocks the "
+    "optimization. The 'local' method blocks the optimization, for a common "
+    "base, when sum(freq(current sources bb)) / freq(current dominator) < "
+    "cbpo_ratio. Then 'global' method blocks the optimization, for a common "
+    "base, when sum(freq(all sources bb)) / freq(global dominator) < "
+    "cbpo_ratio. Finally, the both method try the global estimation and if "
+    "it fails, it tries the local."},
+  { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
+    TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
 #endif
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
@@ -796,9 +844,12 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"hb_scheduler", "hb_sched",
     0, 0, 0, &IGLS_Enable_HB_Scheduling, NULL },
 
-  // Turns of all scheduling (LOCS, HBS, GCM) for triaging.
+  // Turns of all scheduling (LOCS, HBS, GCM) for triaging
   { OVK_BOOL,	OV_INTERNAL, TRUE,"all_scheduler", "all_sched",
     0, 0, 0, &IGLS_Enable_All_Scheduling, NULL },
+
+  { OVK_INT32,	OV_INTERNAL, TRUE,"post_scheduler", "post_sched",
+    2, 0, 3, &LOCS_POST_Scheduling, &LOCS_POST_Scheduling_overriden },
 
   // Hyperblock formation (HB) options.
 
@@ -1157,9 +1208,25 @@ Configure_CG_Options(void)
     IPFEC_Enable_LICM = 2;
   }
 
+  if ((Opt_Level >= 2) && !CG_AutoMod_overridden) {
+    CG_AutoMod = TRUE;
+  }
+
 #else
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )
     OPT_unroll_size = 128;
+#endif
+
+#ifdef TARG_STxP70
+  if(CG_opt_level >= 2 && !CG_cbpo_optimize_load_imm_overridden) {
+      CG_cbpo_optimize_load_imm = DEFAULT_LOAD_IMM(CG_opt_level, OPT_Space);
+  }
+  if(!CG_cbpo_block_method_overridden) {
+      CG_cbpo_block_method = DEFAULT_BLOCK_METHOD(CG_opt_level, OPT_Space);
+  }
+  if(!CG_cbpo_ratio_overridden) {
+      CG_cbpo_ratio = DEFAULT_RATIO(CG_opt_level, OPT_Space);
+  }
 #endif
 
   if ( OPT_Unroll_Analysis_Set )
@@ -1321,11 +1388,9 @@ Configure_CG_Options(void)
 #endif
 
 #ifdef TARG_STxP70
-  /* Use push pop by default at level > -O0 (may not work with debug). */
-  if (Opt_Level > 0) {
-    if (!CG_gen_callee_saved_regs_mask_overriden)
+  /* always push pop unless user override the value. */
+  if (!CG_gen_callee_saved_regs_mask_overriden)
       CG_gen_callee_saved_regs_mask = TRUE;
-  }
 #endif
 
   /* Set BB clone limits
@@ -1335,6 +1400,9 @@ Configure_CG_Options(void)
     // so turn off cloning altogether
     CFLOW_Enable_Clone = FALSE;
   } else if (OPT_Space) {
+#ifdef TARG_STxP70
+    if (!CFLOW_Enable_Clone_overridden) CFLOW_Enable_Clone = FALSE;
+#endif
     if (!clone_incr_overridden) CFLOW_clone_incr = 1;
     if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 1;
     if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 3;
@@ -1356,6 +1424,13 @@ Configure_CG_Options(void)
   
 #endif
 
+#ifndef TARG_STxP70
+  // Default to bacward schedule unless for STxP70.
+  if (!LOCS_POST_Scheduling_overriden) {
+    LOCS_POST_Scheduling = 1; // backward schedule
+  }
+#endif
+    
   Configure_Prefetch();
 
   // target specific CG option setting

@@ -49,7 +49,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
    register because it is live we first try to save in multi-register modes.
    If that is not possible the save is done one register at a time.  */
 
-static enum machine_mode 
+static machine_mode_t 
   regno_save_mode[FIRST_PSEUDO_REGISTER][MAX_MOVE_MAX / MIN_UNITS_PER_WORD + 1];
 
 /* For each hard register, a place on the stack where it can be saved,
@@ -65,9 +65,9 @@ static rtx
    be recognized.  */
 
 static int
-  reg_save_code[FIRST_PSEUDO_REGISTER][MAX_MACHINE_MODE];
+  reg_save_code[FIRST_PSEUDO_REGISTER][MAX_LIMIT_MACHINE_MODE];
 static int 
-  reg_restore_code[FIRST_PSEUDO_REGISTER][MAX_MACHINE_MODE];
+  reg_restore_code[FIRST_PSEUDO_REGISTER][MAX_LIMIT_MACHINE_MODE];
 
 /* Set of hard regs currently residing in save area (during insn scan).  */
 
@@ -90,9 +90,9 @@ static void mark_set_regs		PARAMS ((rtx, rtx, void *));
 static void mark_referenced_regs	PARAMS ((rtx));
 static int insert_save			PARAMS ((struct insn_chain *, int, int,
 						 HARD_REG_SET *,
-						 enum machine_mode *));
+						 machine_mode_t *));
 static int insert_restore		PARAMS ((struct insn_chain *, int, int,
-						 int, enum machine_mode *));
+						 int, machine_mode_t *));
 static struct insn_chain *insert_one_insn PARAMS ((struct insn_chain *, int,
 						   int, rtx));
 static void add_stored_regs		PARAMS ((rtx, rtx, void *));
@@ -114,7 +114,7 @@ init_caller_save ()
   int offset;
   rtx address;
   int i, j;
-  enum machine_mode mode;
+  machine_mode_t mode;
   rtx savepat, restpat;
   rtx test_reg, test_mem;
   rtx saveinsn, restinsn;
@@ -368,7 +368,7 @@ void
 save_call_clobbered_regs ()
 {
   struct insn_chain *chain, *next;
-  enum machine_mode save_mode [FIRST_PSEUDO_REGISTER];
+  machine_mode_t save_mode [FIRST_PSEUDO_REGISTER];
 
   CLEAR_HARD_REG_SET (hard_regs_saved);
   n_regs_saved = 0;
@@ -433,7 +433,7 @@ save_call_clobbered_regs ()
 
 		   if (r >= 0)
 		     {
-		       enum machine_mode mode;
+		       machine_mode_t mode;
 
 		       nregs = HARD_REGNO_NREGS (r, PSEUDO_REGNO_MODE (regno));
 		       mode = HARD_REGNO_CALLER_SAVE_MODE
@@ -500,7 +500,7 @@ mark_set_regs (reg, setter, data)
      void *data ATTRIBUTE_UNUSED;
 {
   int regno, endregno, i;
-  enum machine_mode mode = GET_MODE (reg);
+  machine_mode_t mode = GET_MODE (reg);
 
   if (GET_CODE (reg) == SUBREG)
     {
@@ -533,7 +533,7 @@ add_stored_regs (reg, setter, data)
      void *data;
 {
   int regno, endregno, i;
-  enum machine_mode mode = GET_MODE (reg);
+  machine_mode_t mode = GET_MODE (reg);
   int offset = 0;
 
   if (GET_CODE (setter) == CLOBBER)
@@ -642,7 +642,7 @@ insert_restore (chain, before_p, regno, maxrestore, save_mode)
      int before_p;
      int regno;
      int maxrestore;
-     enum machine_mode *save_mode;
+     machine_mode_t *save_mode;
 {
   int i, k;
   rtx pat = NULL_RTX;
@@ -718,7 +718,7 @@ insert_save (chain, before_p, regno, to_save, save_mode)
      int before_p;
      int regno;
      HARD_REG_SET *to_save;
-     enum machine_mode *save_mode;
+     machine_mode_t *save_mode;
 {
   int i;
   unsigned int k;

@@ -4009,7 +4009,7 @@ extern void choose_personality_routine		PARAMS ((enum languages));
 
 /* in expr.c */
 extern rtx cxx_expand_expr			PARAMS ((tree, rtx,
-							 enum machine_mode,
+							 machine_mode_t,
 							 int));
 extern tree cplus_expand_constant               PARAMS ((tree));
 

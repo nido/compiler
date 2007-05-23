@@ -128,6 +128,7 @@ typedef CODEREP * simpnode;
 #ifdef TARG_ST
 #define SIMPNODE_label_number(x)	(x)->Offset()
 #define SIMPNODE_base_ty(x)             (x)->Ilod_base_ty()
+#define SIMPNODE_subpart_index(x)             (x)->Subpart_index()
 #endif
 
 /* on/off switch and trace file */

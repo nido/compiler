@@ -95,8 +95,8 @@ static int memrefs_conflict_p		PARAMS ((int, rtx, int, rtx,
 						 HOST_WIDE_INT));
 static void record_set			PARAMS ((rtx, rtx, void *));
 static rtx find_base_term		PARAMS ((rtx));
-static int base_alias_check		PARAMS ((rtx, rtx, enum machine_mode,
-						 enum machine_mode));
+static int base_alias_check		PARAMS ((rtx, rtx, machine_mode_t,
+						 machine_mode_t));
 static rtx find_base_value		PARAMS ((rtx));
 static int mems_in_disjoint_alias_sets_p PARAMS ((rtx, rtx));
 static int insert_subset_children       PARAMS ((splay_tree_node, void*));
@@ -1398,7 +1398,7 @@ find_base_term (x)
 static int
 base_alias_check (x, y, x_mode, y_mode)
      rtx x, y;
-     enum machine_mode x_mode, y_mode;
+     machine_mode_t x_mode, y_mode;
 {
   rtx x_base = find_base_term (x);
   rtx y_base = find_base_term (y);
@@ -2068,7 +2068,7 @@ nonoverlapping_memrefs_p (x, y)
 int
 true_dependence (mem, mem_mode, x, varies)
      rtx mem;
-     enum machine_mode mem_mode;
+     machine_mode_t mem_mode;
      rtx x;
      int (*varies) PARAMS ((rtx, int));
 {
@@ -2152,7 +2152,7 @@ true_dependence (mem, mem_mode, x, varies)
 int
 canon_true_dependence (mem, mem_mode, mem_addr, x, varies)
      rtx mem, mem_addr, x;
-     enum machine_mode mem_mode;
+     machine_mode_t mem_mode;
      int (*varies) PARAMS ((rtx, int));
 {
   rtx x_addr;

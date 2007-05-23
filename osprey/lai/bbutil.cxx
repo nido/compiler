@@ -2890,6 +2890,10 @@ struct BB_REGION_SET {
       MEM_POOL_Push(&pool);
       bbs = BB_SET_Create_Empty(PU_BB_Count+2, &pool);
     }
+#ifdef TARG_ST
+    else
+      BB_SET_ClearD(bbs);
+#endif
   }
 
   BB_REGION_SET():bbs(NULL) {}

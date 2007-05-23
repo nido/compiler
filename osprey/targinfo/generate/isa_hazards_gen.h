@@ -59,6 +59,9 @@
 //	statements specify the details of the hazard. The specification
 //	is terminated by another Hazard_Group, or ISA_Hazards_End.
 //
+//      In the dynamic case (extensions), terminating TOP is -1 (and
+//      not TOP_UNDEFINED as in the static case).
+//
 //  void Hazard_Type( ISA_HAZARD isa_hazard )
 //	Indicates the type of the hazard.
 //

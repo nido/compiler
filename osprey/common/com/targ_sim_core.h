@@ -151,7 +151,8 @@ BE_EXPORTED extern TYPE_ID Get_Nested_Fn_Trampoline_Type (void);
  */
 typedef struct {
 	PREG_NUM reg;
-	INT32 start_offset;
+	INT32 formal_offset;
+	INT32 upformal_offset;
 	INT32 size;
 	PREG_NUM vararg_reg;
 #ifdef TARG_ST
@@ -159,56 +160,50 @@ typedef struct {
   //         routines.
   INT32 lpad;
   INT32 rpad;
+  INT32 lpad_overlap;	// Amount of lpad allocated to the previous segment when the object overlaps
 
   // [JV] To say if the parameter is passed by reference.
   BOOL  by_reference;
 #endif
 } PLOC;
 
-#define PLOC_reg(p)		(p.reg)
-#define PLOC_vararg_reg(p)	(p.vararg_reg)
-#define PLOC_offset(p)		(p.start_offset)
-#define PLOC_on_stack(p)	(p.reg == 0)
-#define PLOC_total_size(p)	(p.start_offset+p.size)
-#define PLOC_size(p)		(p.size)
-#define PLOC_is_empty(p)	(PLOC_size(p) == 0)
-#define PLOC_is_nonempty(p)	(PLOC_size(p) != 0)
+#define PLOC_reg(p)		    ((p).reg)
+#define PLOC_vararg_reg(p)	    ((p).vararg_reg)
+#define PLOC_on_stack(p)	    ((p).reg == 0)
+#define PLOC_offset(p)              ((PLOC_on_stack(p) ? (p).upformal_offset : (p).formal_offset) + 0)
+#define PLOC_set_offset(p,o)        if(PLOC_on_stack(p)) { (p).upformal_offset = (o); } else { (p).formal_offset = (o); }
+#define PLOC_formal_offset(p)       ((p).formal_offset)
+#define PLOC_upformal_offset(p)     ((p).upformal_offset)
+#define PLOC_size(p)		    ((p).size)
+#define PLOC_is_empty(p)	    (PLOC_size(p) == 0)
+#define PLOC_is_nonempty(p)	    (PLOC_size(p) != 0)
 #ifdef TARG_ST
-#define PLOC_lpad(p)            (p.lpad)
-#define PLOC_rpad(p)            (p.rpad)
-#define PLOC_by_reference(p)    ((p).by_reference)
+#define PLOC_lpad(p)                ((p).lpad)
+#define PLOC_rpad(p)                ((p).rpad)
+#define PLOC_by_reference(p)        ((p).by_reference)
+#define PLOC_clear(p)		    { memset(&(p), 0, sizeof(PLOC)); }
+#define PLOC_lpad_overlap(p)		    ((p).lpad_overlap)
 #endif
 
-/* 
- * When processing a parameter list,
- * we first call Setup_Parameter_Locations with the TY of the PU.
- * Setup_* returns a ploc initialized to zero's.
- * Then we iterate over each parameter with Get_Parameter_Location.
- * Get_Parameter_Location uses the parameter TY and the previous
- * location to determine the current location.  
- * Structures and register-pairs return the beginning location,
- * then First/Next_PLOC_Reg must be used to get info about each preg.
- * e.g.
-    ploc = Setup_Parameter_Locations (call_ty);
-    foreach parm
-	ploc = Get_Parameter_Location (parm_ty);
-    	ploc = First_PLOC_Reg (ploc, parm_ty);
-    	while (PLOC_is_nonempty(ploc)) {
-		do_something;
-        	ploc = Next_PLOC_Reg (ploc);
- *
- */
+#ifdef TARG_ST
+BE_EXPORTED extern PLOC Setup_Input_Parameter_Locations (TY_IDX pu_type, BOOL first_hidden_param_is_lowered = TRUE);
+#else
 BE_EXPORTED extern PLOC Setup_Input_Parameter_Locations (TY_IDX pu_type);
+#endif
 BE_EXPORTED extern PLOC Get_Input_Parameter_Location (TY_IDX ptype);
 
 BE_EXPORTED extern PLOC First_Input_PLOC_Reg (PLOC ploc, TY_IDX parm_ty);
-BE_EXPORTED extern PLOC Next_Input_PLOC_Reg (PLOC prev);
+BE_EXPORTED extern PLOC Next_Input_PLOC_Reg (void);
 
+#ifdef TARG_ST
+BE_EXPORTED extern PLOC Setup_Output_Parameter_Locations (TY_IDX pu_type, BOOL first_hidden_param_is_lowered = TRUE);
+#else
 BE_EXPORTED extern PLOC Setup_Output_Parameter_Locations (TY_IDX pu_type);
+#endif
 BE_EXPORTED extern PLOC Get_Output_Parameter_Location (TY_IDX ptype);
 
 BE_EXPORTED extern PLOC First_Output_PLOC_Reg (PLOC ploc, TY_IDX parm_ty);
-BE_EXPORTED extern PLOC Next_Output_PLOC_Reg (PLOC prev);
+BE_EXPORTED extern PLOC Next_Output_PLOC_Reg (void);
 
 /* Iterate over implicit vararg non-fixed register parameters */
 BE_EXPORTED extern PLOC Get_Vararg_Input_Parameter_Location (PLOC prev);
@@ -225,6 +220,8 @@ BE_EXPORTED extern INT32 Get_Preg_Size (PREG_NUM p);
  * then we iterate with Get_Struct_Parameter_Location until it
  * returns PLOC_is_empty.
  */
+BE_EXPORTED extern BOOL Is_Struct_Input_Parameter (TY_IDX struct_ty);
+BE_EXPORTED extern BOOL Is_Struct_Output_Parameter (TY_IDX struct_ty);
 BE_EXPORTED extern void Setup_Struct_Input_Parameter_Locations (TY_IDX struct_ty);
 BE_EXPORTED extern PLOC Get_Struct_Input_Parameter_Location ( PLOC prev );
 BE_EXPORTED extern void Setup_Struct_Output_Parameter_Locations (TY_IDX struct_ty);
@@ -244,6 +241,9 @@ BE_EXPORTED extern TYPE_ID Fix_TY_mtype(TY_IDX);
 BE_EXPORTED extern BOOL Is_Caller_Save_GP;	/* whether GP is caller-save */
 
 /* Amount of space available in stack frame to save register formals. */
+BE_EXPORTED extern INT Max_Formal_Save_Area_Size;
+
+/* Amount of space used in stack frame to save register formals. */
 BE_EXPORTED extern INT Formal_Save_Area_Size;
 
 /* Adjust all stack offsets by this amount,
@@ -252,12 +252,20 @@ BE_EXPORTED extern INT Stack_Offset_Adjustment;
 
 extern void Init_Targ_Sim (void);	/* initialize the info */
 
+
+//TB Extend PREG registers to extension
+BE_EXPORTED extern   INT Get_Static_Last_Dedicated_Preg_Offset(void);
+#define Last_Dedicated_Preg_Offset Get_Last_Dedicated_Preg_Offset_Func()
+BE_EXPORTED extern   INT Get_Last_Dedicated_Preg_Offset_Func(void);
+BE_EXPORTED extern   void Set_Last_Dedicated_Preg_Offset(INT offset);
+
 // PREG_IDX == PREG_NUM - Last_Dedicated_Preg_Offset
 
 inline PREG_IDX
 Get_Preg_Idx (PREG_NUM n)       { return n - Last_Dedicated_Preg_Offset; }
 inline PREG_NUM
 Get_Preg_Num (PREG_IDX i)       { return i + Last_Dedicated_Preg_Offset; }
+
 
 #ifndef PUSH_RETURN_ADDRESS_ON_STACK
 #define PUSH_RETURN_ADDRESS_ON_STACK FALSE

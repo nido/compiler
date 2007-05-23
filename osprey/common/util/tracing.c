@@ -206,7 +206,9 @@ static PDESC Phases[] = {
 #ifdef TARG_ST
   { TP_SSA,		"SSA",	"SSA form" },
   { TP_SELECT,		"SLC",	"Select if-conversion" },
+  { TP_EXTLOAD,		"EXT",	"Extension loader" },
   { TP_TEMP,		"TMP",	"Temporary use" },
+  { TP_TAIL,		"TAL",	"Tailmerge" },
 #endif
 
   /* This one must be last: */
@@ -554,7 +556,7 @@ Get_Trace ( INT func, INT arg )
       break;
   }
 
-  if ( result && PU_Cnt > 0 ) { /* trace for certain PUs, by name */
+  if ( result && Current_PU_Name != NULL && PU_Cnt > 0 ) { /* trace for certain PUs, by name */
     for ( i = 1; i <= PU_Cnt; i++ ) {
       if ( strcmp(PU_Enable[i], Current_PU_Name) == 0 )
 	break;

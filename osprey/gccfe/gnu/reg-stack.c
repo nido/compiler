@@ -457,7 +457,7 @@ reg_to_stack (first, file)
   /* Create the replacement registers up front.  */
   for (i = FIRST_STACK_REG; i <= LAST_STACK_REG; i++)
     {
-      enum machine_mode mode;
+      machine_mode_t mode;
       for (mode = GET_CLASS_NARROWEST_MODE (MODE_FLOAT);
 	   mode != VOIDmode;
 	   mode = GET_MODE_WIDER_MODE (mode))

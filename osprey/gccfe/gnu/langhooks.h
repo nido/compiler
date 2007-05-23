@@ -97,7 +97,7 @@ struct lang_hooks_for_types
 
   /* Given MODE and UNSIGNEDP, return a suitable type-tree with that
      mode.  */
-  tree (*type_for_mode) PARAMS ((enum machine_mode, int));
+  tree (*type_for_mode) PARAMS ((machine_mode_t, int));
 
   /* Given PRECISION and UNSIGNEDP, return a suitable type-tree for an
      integer type with at least that precision.  */
@@ -242,7 +242,7 @@ struct lang_hooks
 
   /* Called by expand_expr for language-specific tree codes.
      Fourth argument is actually an enum expand_modifier.  */
-  rtx (*expand_expr) PARAMS ((tree, rtx, enum machine_mode, int));
+  rtx (*expand_expr) PARAMS ((tree, rtx, machine_mode_t, int));
 
   /* Prepare expr to be an argument of a TRUTH_NOT_EXPR or other logical
      operation.

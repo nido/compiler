@@ -873,7 +873,7 @@ extern tree handle_format_arg_attribute		PARAMS ((tree *, tree, tree,
 							 int, bool *));
 extern void c_common_insert_default_attributes	PARAMS ((tree));
 extern int c_common_decode_option		PARAMS ((int, char **));
-extern tree c_common_type_for_mode		PARAMS ((enum machine_mode,
+extern tree c_common_type_for_mode		PARAMS ((machine_mode_t,
 							 int));
 extern tree c_common_type_for_size		PARAMS ((unsigned int, int));
 extern tree c_common_unsigned_type		PARAMS ((tree));
@@ -1222,7 +1222,7 @@ extern tree finish_label_address_expr		PARAMS ((tree));
 extern tree lookup_label			PARAMS ((tree));
 
 extern rtx c_expand_expr			PARAMS ((tree, rtx,
-							 enum machine_mode,
+							 machine_mode_t,
 							 int));
 
 extern int c_safe_from_p                        PARAMS ((rtx, tree));
@@ -1248,5 +1248,14 @@ struct c_fileinfo *get_fileinfo			PARAMS ((const char *));
 extern void dump_time_statistics		PARAMS ((void));
 
 extern int c_dump_tree				PARAMS ((void *, tree));
-
+#ifdef TARG_ST
+/* [TB] Export this function for extension support */
+extern tree builtin_function_2 PARAMS ((const char *, const char *, tree, tree,
+					int, enum built_in_class, int, int,
+					tree));
+extern tree builtin_function_2 PARAMS ((const char *, const char *, tree, tree,
+					int, enum built_in_class, int, int,
+					tree));
+extern tree c_get_gcc_attributes(bool never_returns, bool is_const, bool is_pure);
+#endif
 #endif /* ! GCC_C_COMMON_H */

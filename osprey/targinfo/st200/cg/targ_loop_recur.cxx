@@ -54,10 +54,13 @@
 TYPE_ID 
 Mtype_from_opc(TOP top)
 {
-  /*
+
   switch (top) {
+  case TOP_sub_r:
+  case TOP_add_r:
+    return (MTYPE_I4);
+    break;
   }
-  */
 
   Is_True(FALSE, ("Mtype_from_opc:  unknown opcode."));
   return MTYPE_UNKNOWN;
@@ -82,7 +85,6 @@ RECUR_OP_DESC::Init_OP ()
 ) 
 #endif
 {
-  TYPE_ID mtype;
 
   switch (OP_code(op)) {
 #if 0

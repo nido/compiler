@@ -167,8 +167,11 @@ extern const char * reg_names[FIRST_PSEUDO_REGISTER];
    it will be a MODE_FLOAT or a MODE_CC mode, whichever is valid for the
    register.  */
 
-extern enum machine_mode reg_raw_mode[FIRST_PSEUDO_REGISTER];
-
+/* #ifdef TARG_ST */
+/* extern machine_mode_t *reg_raw_mode; */
+/* #else */
+extern machine_mode_t reg_raw_mode[FIRST_PSEUDO_REGISTER];
+/* #endif */
 /* Vector indexed by regno; gives uid of first insn using that reg.
    This is computed by reg_scan for use by cse and loop.
    It is sometimes adjusted for subsequent changes during loop,

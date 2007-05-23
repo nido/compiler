@@ -71,7 +71,11 @@
 
 // From calls.cxx, maintains the global mask of callee saves used in 
 // this PU.
+#ifdef TARG_ST
+extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
 extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
+#endif
 
 INT32 GRA_local_forced_max = DEFAULT_FORCED_LOCAL_MAX;
     // How many locals to force allocate (out of the number requested by LRA)?
@@ -80,16 +84,28 @@ BOOL GRA_avoid_glue_references_for_locals = TRUE;
   // Try to grant the forced locals from the set of registers not also used in 
   // glue copies in the same block
 
+#ifdef TARG_ST
+static REGISTER_SET non_prefrenced_regs[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 static REGISTER_SET non_prefrenced_regs[ISA_REGISTER_CLASS_MAX + 1];
+#endif
   // Registers that noone prefers yet.
 
+#ifdef TARG_ST
+static REGISTER_SET callee_saves_used[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+#else
 static REGISTER_SET callee_saves_used[ISA_REGISTER_CLASS_MAX + 1];
+#endif
   // Callee saves registers that someone has already used.  This makes it free
   // for someone else to use them.
+#ifdef TARG_ST
+static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX_LIMIT + 1]; // statistics only
+#else
 static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX + 1]; // statistics only
+#endif
 
 #ifdef TARG_ST
-static REGISTER_SET prefered_regs[ISA_REGISTER_CLASS_MAX + 1];
+static REGISTER_SET prefered_regs[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
   // Sets of registers to choose first as returned by the
   // target dependent function CGTARG_Prefered_GRA_Registers().
   // This set will be look up first in Choose_N_Registers().
@@ -772,6 +788,12 @@ Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
   // so simple of a choice, particularly in the general purpose registers
   // with the register stack.
   //
+#ifdef TARG_ST
+  // Temporary: force max local to 0 for tiny register files.
+  if (REGISTER_CLASS_register_count(rc) < 4) {
+    rc_local_forced_max = 0;
+  } else
+#endif
   if (GRA_local_forced_max == DEFAULT_FORCED_LOCAL_MAX) {
     INT rc_size = (REGISTER_CLASS_last_register(rc) - REGISTER_MIN) + 1;
     rc_local_forced_max = Min(GRA_local_forced_max, rc_size/8);

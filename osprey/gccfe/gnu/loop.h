@@ -89,7 +89,7 @@ struct induction
 				   If GIV_TYPE is DEST_REG, this is 0.  */
 				/* For a biv, this is the place where add_val
 				   was found.  */
-  enum machine_mode mode;	/* The mode of this biv or giv */
+  machine_mode_t mode;	/* The mode of this biv or giv */
   rtx mem;			/* For DEST_ADDR, the memory object.  */
   rtx mult_val;			/* Multiplicative factor for src_reg.  */
   rtx add_val;			/* Additive constant for that product.  */
@@ -411,7 +411,7 @@ rtx biv_total_increment PARAMS ((const struct iv_class *));
 unsigned HOST_WIDE_INT loop_iterations PARAMS ((struct loop *));
 int precondition_loop_p PARAMS ((const struct loop *,
 				 rtx *, rtx *, rtx *,
-				 enum machine_mode *mode));
+				 machine_mode_t *mode));
 rtx final_biv_value PARAMS ((const struct loop *, struct iv_class *));
 rtx final_giv_value PARAMS ((const struct loop *, struct induction *));
 void emit_unrolled_add PARAMS ((rtx, rtx, rtx));

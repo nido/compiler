@@ -365,6 +365,10 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_swp_bundle.cxx		\
   targ_tn.cxx
 
+ifeq ($(BUILD_TARGET), STxP70)
+  COMMON_TARG_EXP_CXX_SRCS += exp_extension.cxx
+endif
+
 ifeq ($(BUILD_TARGET), IA64)
   BE_CG_TARG_CXX_SRCS += float_rf.cxx
 endif
@@ -407,6 +411,7 @@ CG_CXX_SRCS = 		\
   cgprep.cxx		\
   cg_db_op.cxx		\
   cg_dud.cxx		\
+  cg_automod.cxx	\
   cg_flags.cxx		\
   cg_flags_arch.cxx	\
   cg_ir.cxx       	\
@@ -481,6 +486,7 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
   CG_CXX_SRCS += ipra.cxx
+#  CG_CXX_SRCS += cg_tailmerge.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
@@ -501,10 +507,12 @@ ifeq ($(BUILD_TARGET),STxP70)
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
   CG_CXX_SRCS += ipra.cxx
+#  CG_CXX_SRCS += cg_tailmerge.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
  CG_CXX_SRCS +=  targ_pqs.cxx
+ CG_CXX_SRCS +=  targ_cgdwarf_utils.cxx
 
 #CGG_DEV{
   ifeq ($(BUILD_VARIANT), CGG_BUILD)

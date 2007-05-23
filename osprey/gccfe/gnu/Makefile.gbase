@@ -195,6 +195,7 @@ endif
 ifeq ($(BUILD_TARGET), IA64)
 COMMON_TARGINFO_CONFIG_DIR  = 
 endif
+COMMON_COM_DIR 		= $(BUILD_TOT)/common/com
 
 # These are the directories in which to look for source files.
 
@@ -211,7 +212,8 @@ INC_DIRS =		\
   $(GNU_TARG_DIR)	\
   $(GNU_CONFIG_DIR)	\
   $(GNU_CONFIG_TARG_DIR)\
-  $(GNU_COMMON_DIR)/include
+  $(GNU_COMMON_DIR)/include \
+  $(COMMON_COM_DIR)
 
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.
@@ -416,7 +418,7 @@ GNU_CC_OBJS = $(GNU_SRCS:.c=.o) $(GNU_CP_UNIQ_OBJS) $(GNU_CP_DUP_OBJS)
 #  List of source files for cpp. 
 #----------------------------------------------------------------------
 GNU_CPP_SRCS = \
-  gcc.o \
+  gcc.c \
   cpperror.c   \
   cppdefault.c   \
   cppfiles.c   \

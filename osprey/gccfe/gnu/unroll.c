@@ -194,7 +194,7 @@ static int *splittable_regs_updates;
 /* Forward declarations.  */
 
 static rtx simplify_cmp_and_jump_insns PARAMS ((enum rtx_code,
-						enum machine_mode,
+						machine_mode_t,
 						rtx, rtx, rtx));
 static void init_reg_map PARAMS ((struct inline_remap *, int));
 static rtx calculate_giv_inc PARAMS ((rtx, rtx, unsigned int));
@@ -209,7 +209,7 @@ static int find_splittable_givs PARAMS ((const struct loop *,
 					 struct iv_class *, enum unroll_types,
 					 rtx, int));
 static int reg_dead_after_loop PARAMS ((const struct loop *, rtx));
-static rtx fold_rtx_mult_add PARAMS ((rtx, rtx, rtx, enum machine_mode));
+static rtx fold_rtx_mult_add PARAMS ((rtx, rtx, rtx, machine_mode_t));
 static rtx remap_split_bivs PARAMS ((struct loop *, rtx));
 static rtx find_common_reg_term PARAMS ((rtx, rtx));
 static rtx subtract_reg_term PARAMS ((rtx, rtx));
@@ -846,7 +846,7 @@ unroll_loop (loop, insn_count, strength_reduce_p)
   if (unroll_type == UNROLL_NAIVE && ! splitting_not_safe && strength_reduce_p)
     {
       rtx initial_value, final_value, increment;
-      enum machine_mode mode;
+      machine_mode_t mode;
 
       if (precondition_loop_p (loop,
 			       &initial_value, &final_value, &increment,
@@ -1341,7 +1341,7 @@ unroll_loop (loop, insn_count, strength_reduce_p)
 static rtx
 simplify_cmp_and_jump_insns (code, mode, op0, op1, label)
      enum rtx_code code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx op0, op1, label;
 {
   rtx t, insn;
@@ -1391,7 +1391,7 @@ int
 precondition_loop_p (loop, initial_value, final_value, increment, mode)
      const struct loop *loop;
      rtx *initial_value, *final_value, *increment;
-     enum machine_mode *mode;
+     machine_mode_t *mode;
 {
   rtx loop_start = loop->start;
   struct loop_info *loop_info = LOOP_INFO (loop);
@@ -2412,7 +2412,7 @@ back_branch_in_range_p (loop, insn)
 static rtx
 fold_rtx_mult_add (mult1, mult2, add1, mode)
      rtx mult1, mult2, add1;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx temp, mult_res;
   rtx result;

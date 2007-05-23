@@ -794,8 +794,8 @@ CGTARG_Modify_Asm_String (
   char* asm_string, 
   UINT32 position, 
   bool memory, 
-  TN* tn
-)
+  TN* tn,
+  ISA_REGISTER_SUBCLASS sc)
 {
   char* name;
   if (TN_is_register(tn)) {

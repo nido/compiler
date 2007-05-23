@@ -299,11 +299,11 @@ static void mark_reg_store	PARAMS ((rtx, rtx, void *));
 static void mark_reg_clobber	PARAMS ((rtx, rtx, void *));
 static void mark_reg_conflicts	PARAMS ((rtx));
 static void mark_reg_death	PARAMS ((rtx));
-static void mark_reg_live_nc	PARAMS ((int, enum machine_mode));
+static void mark_reg_live_nc	PARAMS ((int, machine_mode_t));
 static void set_preference	PARAMS ((rtx, rtx));
 static void dump_conflicts	PARAMS ((FILE *));
 static void reg_becomes_live	PARAMS ((rtx, rtx, void *));
-static void reg_dies		PARAMS ((int, enum machine_mode,
+static void reg_dies		PARAMS ((int, machine_mode_t,
 				       struct insn_chain *));
 
 /* Perform allocation of pseudo-registers not allocated by local_alloc.
@@ -990,7 +990,7 @@ find_reg (num, losers, alt_regs_p, accept_call_clobbered, retrying)
   enum reg_class class = (alt_regs_p
 			  ? reg_alternate_class (allocno[num].reg)
 			  : reg_preferred_class (allocno[num].reg));
-  enum machine_mode mode = PSEUDO_REGNO_MODE (allocno[num].reg);
+  machine_mode_t mode = PSEUDO_REGNO_MODE (allocno[num].reg);
 
   if (accept_call_clobbered)
     COPY_HARD_REG_SET (used1, call_fixed_reg_set);
@@ -1579,7 +1579,7 @@ mark_reg_death (reg)
 static void
 mark_reg_live_nc (regno, mode)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   int last = regno + HARD_REGNO_NREGS (regno, mode);
   while (regno < last)
@@ -1766,7 +1766,7 @@ reg_becomes_live (reg, setter, regs_set)
 static void
 reg_dies (regno, mode, chain)
      int regno;
-     enum machine_mode mode;
+     machine_mode_t mode;
      struct insn_chain *chain;
 {
   if (regno < FIRST_PSEUDO_REGISTER)

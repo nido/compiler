@@ -300,6 +300,11 @@ CODEREP::Copy(const CODEREP &cr)
     case OPR_ASM_INPUT:
       Set_asm_constraint(cr.Asm_constraint());
       break;
+#ifdef TARG_ST
+    case OPR_SUBPART:
+      Set_subpart_index(cr.Subpart_index());
+      break;
+#endif
     }
   }
   else if (kind == CK_IVAR) {
@@ -422,6 +427,18 @@ CODEREP::Match(CODEREP* cr, INT32 mu_vsym_depth, OPT_STAB *sym)
       !(Kind() == CK_IVAR && OPCODE_is_load(Op())))
     return FALSE;
 
+#ifdef TARG_ST
+  // [TTh] Reconfigurability: Never allow dynamic mtypes  to be equivalent
+  //       to any other mtypes, to avoid factorization that will introduce
+  //       unsupported conversion
+  if (Dtyp() != cr->Dtyp() && 
+      //!inCODEKIND(Kind(),CK_CONST|CK_RCONST) && 
+      (Kind() == CK_IVAR && OPCODE_is_load(Op())) &&
+      (MTYPE_is_dynamic(Dtyp()) || MTYPE_is_dynamic(cr->Dtyp()))) {
+    return FALSE;
+  }
+#endif
+
   // in SSAPRE, this allows us to create a new node for the expr whose
   // CF_OWNED_BY_TEMP flag is set
   if (Is_flag_set(CF_OWNED_BY_TEMP))
@@ -502,6 +519,12 @@ CODEREP::Match(CODEREP* cr, INT32 mu_vsym_depth, OPT_STAB *sym)
 	if (Intrinsic() != cr->Intrinsic())
 	  return FALSE;
 	break;
+#ifdef TARG_ST
+      case OPR_SUBPART:
+	if (Subpart_index() != cr->Subpart_index())
+	  return FALSE;
+	break;
+#endif
       }
       return TRUE;
     } else
@@ -787,6 +810,11 @@ CODEREP::Print_node(INT32 indent, FILE *fp) const
     case OPR_ASM_INPUT:
       fprintf(fp, " opnd:%d", Asm_opnd_num());
       break;
+#ifdef TARG_ST
+    case OPR_SUBPART:
+      fprintf(fp, " index:%d", Subpart_index());
+      break;
+#endif
     }
     break;
   case CK_IVAR:
@@ -2781,6 +2809,13 @@ CODEMAP::Iload_folded(WN *wn, 			// the iload node
 	  0 == base_ccr->Tree()->Offset() && // TODO: not needed if canonicalize in preopt
 	  Get_mtype_class(retv->Dtyp()) == Get_mtype_class(OPCODE_rtype(op)) &&
 	  MTYPE_size_min(retv->Dsctyp()) == MTYPE_size_min(OPCODE_desc(op)) &&
+#ifdef TARG_ST
+	  // [TTh] Reconfigurability: Never allow dynamic mtypes  to be equivalent
+	  //       to any other mtypes, to avoid factorization that will introduce
+	  //       unsupported conversion
+	  ((!MTYPE_is_dynamic(retv->Dsctyp()) && !MTYPE_is_dynamic(OPCODE_desc(op))) || 
+	   (retv->Dsctyp() == OPCODE_desc(op))) &&
+#endif
 	  (opr == OPR_ILOAD && ! retv->Bit_field_valid() &&
 	   (WN_desc(wn) != MTYPE_BS && retv->Dsctyp() != MTYPE_BS ||
 	    WN_desc(wn) == MTYPE_BS && WN_field_id(wn) == retv->Field_id()) ||
@@ -3481,6 +3516,11 @@ CODEMAP::Add_expr(WN *wn, OPT_STAB *opt_stab, STMTREP *stmt, CANON_CR *ccr,
 	cr->Set_op_bit_offset(WN_bit_offset(wn));
 	cr->Set_op_bit_size(WN_bit_size(wn));
 	break;
+#ifdef TARG_ST
+    case OPR_SUBPART:
+      cr->Set_subpart_index(WN_subpart_index(wn));
+      break;
+#endif
     }
 
     BOOL do_canonicalization = TRUE;
@@ -4832,6 +4872,9 @@ CODEREP::Check_if_result_is_address(OPT_STAB *opt_stab) const
     case OPR_CVT: case OPR_TAS:
     case OPR_NEG: case OPR_PAREN: case OPR_MINPART: case OPR_MAXPART: 
     case OPR_PARM:
+#ifdef TARG_ST
+    case OPR_SUBPART:
+#endif
       return Opnd(0)->Check_if_result_is_address(opt_stab); 
     case OPR_CVTL:
     case OPR_ABS: case OPR_SQRT: case OPR_RSQRT: case OPR_RECIP: 

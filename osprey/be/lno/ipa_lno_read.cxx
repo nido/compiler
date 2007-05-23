@@ -1453,11 +1453,17 @@ static void IPA_LNO_Clip_Call_Use_Arcs(WN* wn_call)
   for (node = iter.First(); !iter.Is_Empty(); node = nnode) {
     nnode = iter.Next();
     WN* wn_use = node->Wn();
+#ifdef TARG_ST
+    if (Contains_Dedicated_Preg(wn_use)) {
+      continue;
+    }
+#else
     if (OPERATOR_has_sym(WN_operator(wn_use)) &&
         ST_class(WN_st(wn_use)) == CLASS_PREG &&
         Preg_Is_Dedicated(WN_offset(wn_use))) {
       continue;
     }
+#endif
     DEF_LIST* def_list = Du_Mgr->Ud_Get_Def(wn_use);
     if (def_list == NULL)
       continue;

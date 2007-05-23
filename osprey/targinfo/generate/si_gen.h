@@ -221,6 +221,8 @@ typedef class RES* RESOURCE;
 typedef class ISLOT* ISSUE_SLOT;
 
 extern void Machine( char* name, ISA_SUBSET isa, int argc, char** argv );
+extern void Machine( ISA_SUBSET isa );
+
 extern RESOURCE RESOURCE_Create( char* name, int count );
 extern ISSUE_SLOT ISSUE_SLOT_Create( char* name, int skew, int count );
 extern void Instruction_Group( char* name, ... );
@@ -234,6 +236,8 @@ extern void Last_Issue_Cycle( int time );
 extern void Resource_Requirement( RESOURCE resource, int time );
 extern void Valid_Issue_Slot( ISSUE_SLOT slot );
 extern void Write_Write_Interlock();
+
 extern void Machine_Done( char* filename );
+extern void Extension_Done( void );
 
 #endif

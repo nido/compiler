@@ -247,6 +247,7 @@ BE_OPT_CXX_SRCS = \
   opt_loop_trans.cxx	\
   opt_ltable.cxx	\
   opt_main.cxx		\
+  opt_tailmerge.cxx \
   opt_min_essa.cxx      \
   opt_mu_chi.cxx	\
   opt_spre_finalize.cxx \

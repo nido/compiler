@@ -85,7 +85,6 @@ ifeq ($(BUILD_TARGET), MIPS)
 # for mips use neither of the *DWARF2* defines
 LCDEFS = -D_SYSV -DSYSV -DWORDS_BIGENDIAN -DHAVE_SGIDEFS_H
 else
-ifneq ($(HOST_OS),MINGW)
 # IA32 or IA64
 # The __SYS_IA64_ELF_H__ is for a #ifdef in pro_util.h  davea
 # I'm unsure of the 'right' way to do this, but the following works.
@@ -99,7 +98,6 @@ LCDEFS += -DHAVE___UINT32_T_IN_SYS_TYPES_H
 #use the next line for cygnus, plain 32bit offset with 64bit pointer
 #dwarf2
 LCDEFS += -DHAVE_OLD_DWARF2_32BIT_OFFSET
-endif
 endif
 
 LIBRARY = libdwarf$(XTND).a

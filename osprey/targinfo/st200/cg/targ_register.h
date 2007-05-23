@@ -32,6 +32,12 @@
 
 */
 
+#ifdef TARG_ST
+// [CG] This interface is obsolete. Replaced by lai/register_targ.h.
+#error "Obsolete interface file."
+
+#else
+
 /* ====================================================================
  *   NOTE: should only be included by ../cg/register.h
  * ====================================================================
@@ -40,27 +46,20 @@
 #ifndef targ_register_INCLUDED
 #define targ_register_INCLUDED
 
-// Assembly name for this register class.
-inline char* ISA_REGISTER_CLASS_ASM_Name (ISA_REGISTER_CLASS rc) {
-  switch (rc) {
-  case ISA_REGISTER_CLASS_integer: return "dreg";
-  case ISA_REGISTER_CLASS_branch: return "breg";
-  default:
-    FmtAssert(FALSE, ("ISA_REGISTER_CLASS_ASM_Name: rclass"));
-  }
-}
-
 // Returns TRUE if the rclass is the predicate register class.
+// UNTESTED INTERFACE FOR TARG_ST
 inline BOOL Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass) {
   return FALSE;
 }
 
 // Returns TRUE if stacked register set exists for <rclass>.
+// UNTESTED INTERFACE FOR TARG_ST
 inline BOOL REGISTER_Has_Stacked_Registers(ISA_REGISTER_CLASS rclass) {
   return FALSE;
 }
 
 // Returns TRUE if rotating register set exists for <rclass>.
+// UNTESTED INTERFACE FOR TARG_ST
 inline BOOL REGISTER_Has_Rotating_Registers(ISA_REGISTER_CLASS rclass) {
   return FALSE;
 }
@@ -68,3 +67,4 @@ inline BOOL REGISTER_Has_Rotating_Registers(ISA_REGISTER_CLASS rclass) {
 // Declare target-specific register-class, register pairs:
 
 #endif /* targ_register_INCLUDED */
+#endif /* !defined(TARG_ST) */

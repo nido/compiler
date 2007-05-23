@@ -78,7 +78,20 @@ TY_IDX DRA_EC_struct_ptr_ty = (TY_IDX) NULL;
 
 #define OPC_UNKNOWN OPCODE_UNKNOWN
 
+#ifdef TARG_ST
+//TB: extension reconfiguration: check that array accesses do not
+//overlap static counter
+#define Ldid_Opcode(t) \
+     ((t > MTYPE_STATIC_COUNT) ? \
+       FmtAssert (FALSE, ("Ldid_Opcode: no access for dynamic MTYPE %d", (t))), OPC_UNKNOWN \
+     : \
+       Ldid_Opcode[t])
+#define Ldid_Opcode_set(t) \
+       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), Ldid_Opcode[t]
+static OPCODE Ldid_Opcode [MTYPE_STATIC_COUNT + 1] = {
+#else
 static OPCODE Ldid_Opcode [MTYPE_LAST + 1] = {
+#endif
   OPC_UNKNOWN,    /* MTYPE_UNKNOWN */
   OPC_UNKNOWN,    /* MTYPE_UNKNOWN */
   OPC_I4I1LDID,   /* MTYPE_I1 */
@@ -474,7 +487,7 @@ Get_Array_Dim_Size (TY& array_ty, INT dim)
     TY_IDX  lbnd_ty_idx = ST_type (lbnd_st);
 
     TYPE_ID lty_mtype = TY_mtype  (Ty_Table [lbnd_ty_idx]);
-    lb = WN_CreateLdid (Ldid_Opcode [lty_mtype],
+    lb = WN_CreateLdid (Ldid_Opcode (lty_mtype),
                         (WN_OFFSET)0, &lbnd_st, lbnd_ty_idx);
   }
 
@@ -488,7 +501,7 @@ Get_Array_Dim_Size (TY& array_ty, INT dim)
     TY_IDX  ubnd_ty_idx = ST_type (ubnd_st);
 
     TYPE_ID lty_mtype = TY_mtype  (Ty_Table [ubnd_ty_idx]);
-    ub = WN_CreateLdid (Ldid_Opcode [lty_mtype],
+    ub = WN_CreateLdid (Ldid_Opcode (lty_mtype),
                         (WN_OFFSET)0, &ubnd_st, ubnd_ty_idx);
   }
 

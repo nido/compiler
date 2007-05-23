@@ -107,7 +107,7 @@ struct gcc_target
 
     /* Select and switch to a section for X with MODE.  ALIGN is
        the desired alignment of the data.  */
-    void (* select_rtx_section) PARAMS ((enum machine_mode, rtx,
+    void (* select_rtx_section) PARAMS ((machine_mode_t, rtx,
 					 unsigned HOST_WIDE_INT));
 
     /* Select a unique section name for DECL.  RELOC is the same as
@@ -251,7 +251,7 @@ struct gcc_target
 
   /* Expand a target-specific builtin.  */
   rtx (* expand_builtin) PARAMS ((tree exp, rtx target, rtx subtarget,
-				  enum machine_mode mode, int ignore));
+				  machine_mode_t mode, int ignore));
 
   /* Given a decl, a section name, and whether the decl initializer
      has relocs, choose attributes for the section.  */

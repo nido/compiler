@@ -585,6 +585,9 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
   UINT8 bit_ofst = 0;
   UINT8 bit_size = 0;
   INT32 mclass = 0;
+#ifdef TARG_ST
+  TYPE_ID mclass_mtype = 0;
+#endif
   BOOL is_virtual = FALSE;
   BOOL is_scalar = FALSE;
   BOOL dmod = FALSE;
@@ -621,6 +624,9 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
         byte_size = TY_size(ST_type(st));
     }
     mclass = Get_mtype_class(WN_rtype(wn));
+#ifdef TARG_ST
+    mclass_mtype = WN_rtype(wn);
+#endif
     is_scalar = TRUE;
     stype = VT_NO_LDA_SCALAR;
     break;
@@ -650,6 +656,9 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
         byte_size = TY_size(ST_type(st));
     }
     mclass = Get_mtype_class(WN_desc(wn));
+#ifdef TARG_ST
+    mclass_mtype = WN_desc(wn);
+#endif
     dmod = TRUE;
     is_scalar = TRUE;
     stype = VT_NO_LDA_SCALAR;
@@ -681,8 +690,15 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
     switch (aux_stab[idx].Stype()) {
     case VT_NO_LDA_SCALAR:
     case VT_LDA_SCALAR:
+#ifdef TARG_ST
+      kind_match = ((is_scalar && 
+		     ((MTYPE_is_dynamic(mclass_mtype) && aux_stab[idx].Mtype() == mclass_mtype) ||
+		      (!MTYPE_is_dynamic(mclass_mtype) && aux_stab[idx].Mclass() == mclass)))
+		    || is_virtual);
+#else
       kind_match = ((is_scalar && aux_stab[idx].Mclass() == mclass)
 		    || is_virtual);
+#endif
       break;
     case VT_LDA_VSYM:
     case VT_UNIQUE_VSYM:
@@ -712,6 +728,9 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
 	if (!aux_stab[idx].Is_real_var())
 	  aux_stab[idx].Set_stype(VT_LDA_SCALAR);
 	aux_stab[idx].Set_mclass(mclass);
+#ifdef TARG_ST
+	aux_stab[idx].Set_mtype(mclass_mtype);
+#endif
       }
       if (is_virtual && !aux_stab[idx].Is_virtual())
 	aux_stab[idx].Set_stype(VT_LDA_SCALAR);
@@ -764,15 +783,22 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
 #ifdef TARG_ST
   // FdF 20060426: otherwise used uninitialized in opt_ssa.cxx.
   sym->Set_mclass(0);
+  sym->Set_mtype(MTYPE_UNKNOWN);
 #endif
 
   if (is_scalar) {
     sym->Set_stype(VT_NO_LDA_SCALAR);
     sym->Set_mclass(mclass);
+#ifdef TARG_ST
+    sym->Set_mtype(mclass_mtype);
+#endif
   }
   if (is_virtual) {
     sym->Set_stype(VT_LDA_VSYM);
     sym->Set_mclass(0);
+#ifdef TARG_ST
+    sym->Set_mtype(MTYPE_UNKNOWN);
+#endif
   }
   if (dmod) sym->Set_dmod();
   if ( is_volatile )   sym->Set_volatile();
@@ -828,7 +854,12 @@ OPT_STAB::Enter_symbol(OPERATOR opr, ST* st, INT64 ofst,
 
 
 AUX_ID
-OPT_STAB::Enter_ded_preg(ST *st, INT64 ofst, TY_IDX ty, INT32 mclass)
+OPT_STAB::Enter_ded_preg(ST *st, INT64 ofst, TY_IDX ty, INT32 mclass
+#ifdef TARG_ST
+			 // Reconfigurability: dynamic mtype cannot be retrieved from mclass
+			 , TYPE_ID mtype
+#endif
+			 )
 {
   ST_CHAIN_INFO *st_chain_info = st_chain_map->Lookup(ST_st_idx(st));
   AUX_ID         idx;
@@ -876,6 +907,9 @@ OPT_STAB::Enter_ded_preg(ST *st, INT64 ofst, TY_IDX ty, INT32 mclass)
 
   sym->Set_stype(VT_NO_LDA_SCALAR);
   sym->Set_mclass(mclass);
+#ifdef TARG_ST
+  sym->Set_mtype(mtype);
+#endif
   sym->Clear_flags();
   sym->Set_st(st);
   sym->Set_st_ofst(ofst);
@@ -914,6 +948,7 @@ OPT_STAB::Create_vsym(EXPR_KIND k)
 #ifdef TARG_ST
   // FdF 20060426: otherwise used uninitialized in opt_ssa.cxx
   vsym->Set_mclass(0);
+  vsym->Set_mtype(MTYPE_UNKNOWN);
 #endif
   vsym->Set_st(NULL);
   vsym->Set_st_ofst(0);
@@ -949,6 +984,9 @@ OPT_STAB::Create_preg(MTYPE preg_ty, char *name, WN *home_wn)
   sym->Set_stype(VT_NO_LDA_SCALAR);
   sym->Clear_flags();
   sym->Set_mclass(Get_mtype_class(preg_ty));
+#ifdef TARG_ST
+  sym->Set_mtype(preg_ty);
+#endif
   sym->Set_st(st);
   sym->Set_st_ofst(Alloc_preg(preg_ty,name,home_wn));
   sym->Set_nonzerophis(NULL);
@@ -1366,11 +1404,16 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
 #endif
       ret_ty = TY_ret_type(PU_prototype(Pu_Table[puidx]));
     }
-    RETURN_INFO return_info = Get_Return_Info (
+
+    // [YJ]: reconfigurability. For dynamic mtype,
+    // lowering has not been done yet, and we rely on
+    // 
+    if(!(WN_operator(wn) == OPR_INTRINSIC_CALL && MTYPE_is_dynamic(rtype))) {
+      RETURN_INFO return_info = Get_Return_Info (
 				  ret_ty,
 				  Allow_sim_type() ? Use_Simulated
 						   : Complex_Not_Simulated);
-    if (RETURN_INFO_count(return_info)
+      if (RETURN_INFO_count(return_info)
 	  <= MAX_NUMBER_OF_REGISTERS_FOR_RETURN) 
       {
 	for (i = 0; i < RETURN_INFO_count(return_info); i++) {
@@ -1383,6 +1426,7 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
 	Fail_FmtAssertion ("OPT_STAB::Convert_ST_to_AUX: more than %d return"
 			   " registers", MAX_NUMBER_OF_REGISTERS_FOR_RETURN);
     }
+   }
 
 #else
     ty[0] = MTYPE_V; // initialize it
@@ -1419,22 +1463,45 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
 #endif
 
     if (ty[0] != MTYPE_V) {
+#ifdef TARG_ST
+    if(!(WN_operator(wn) == OPR_INTRINSIC_CALL && MTYPE_is_dynamic(rtype))) {
+      Enter_ded_preg(MTYPE_To_Dedicated_PREG(rtype), 
+		     retreg[0],
+		     MTYPE_To_TY(rtype),
+		     Get_mtype_class(ty[0]),
+		     ty[0]);
+    } else {
+      // TODO: improve. We shouldn't rely on -1 value.
+      // Instead of that, we should research in the next
+      // stores statements, the next LDID with a negative PREG.
+      Enter_ded_preg(MTYPE_To_Dedicated_PREG(rtype),
+                     (INT64)-1,
+		     MTYPE_To_TY(rtype),
+	             Get_mtype_class(rtype),
+	             rtype
+                    );
+    }
+      
+#else
       Enter_ded_preg(MTYPE_To_Dedicated_PREG(rtype), 
 		     retreg[0],
 		     MTYPE_To_TY(rtype),
 		     Get_mtype_class(ty[0]));
+#endif
 
 #ifdef TARG_ST
       for (i = 0; i < MAX_NUMBER_OF_REGISTERS_FOR_RETURN; i++) {
 	ty[i] = MTYPE_V; // initialize it
       }
 
-      RETURN_INFO return_info = Get_Return_Info (
+      // Similarly as previously, we don't manage here dynamic mtypes.
+      if(!(WN_operator(wn) == OPR_INTRINSIC_CALL && MTYPE_is_dynamic(desc))) {
+       RETURN_INFO return_info = Get_Return_Info (
 				    MTYPE_To_TY(desc),
 				    Allow_sim_type() ? Use_Simulated
 						     : Complex_Not_Simulated);
 
-      if (RETURN_INFO_count(return_info)
+       if (RETURN_INFO_count(return_info)
 	    <= MAX_NUMBER_OF_REGISTERS_FOR_RETURN) 
         {
 	  for (i = 0; i < RETURN_INFO_count(return_info); i++) {
@@ -1446,7 +1513,8 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
       else {
 	Fail_FmtAssertion ("OPT_STAB::Convert_ST_to_AUX: more than %d return"
 			     " registers", MAX_NUMBER_OF_REGISTERS_FOR_RETURN);
-      }
+       }
+     }
 #else
       ty[0] = MTYPE_V; // initialize it
       ty[1] = MTYPE_V; // initialize it
@@ -1481,10 +1549,29 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
 #endif
 
       if (ty[0] != MTYPE_V) {
+#ifdef TARG_ST
+      if(!(WN_operator(wn) == OPR_INTRINSIC_CALL && MTYPE_is_dynamic(desc))) {
 	Enter_ded_preg(MTYPE_To_Dedicated_PREG(desc),
 		       retreg[0], 
 		       MTYPE_To_TY(desc),
-		       Get_mtype_class(ty[0]));
+		       Get_mtype_class(ty[0]),
+		       ty[0]);
+       }
+       else {
+        Enter_ded_preg(MTYPE_To_Dedicated_PREG(desc), 
+                       (INT64)-1,
+		       MTYPE_To_TY(desc),
+	               Get_mtype_class(desc),
+	               desc
+                      );
+       }
+#else
+	Enter_ded_preg(MTYPE_To_Dedicated_PREG(desc),
+		       retreg[0], 
+		       MTYPE_To_TY(desc),
+		       Get_mtype_class(ty[0])
+                      );
+#endif
       }
     }
   }
@@ -1531,11 +1618,21 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
     }
     if (ty[0] != MTYPE_V) {
       // exit mu list contains dedicated registers.
+#ifdef TARG_ST
+      idx = Enter_ded_preg(MTYPE_To_Dedicated_PREG(ty[0]), retreg[0],
+			   MTYPE_To_TY(ty[0]), Get_mtype_class(ty[0]), ty[0]);
+#else
       idx = Enter_ded_preg(MTYPE_To_Dedicated_PREG(ty[0]), retreg[0],
 			   MTYPE_To_TY(ty[0]), Get_mtype_class(ty[0]));
+#endif
       if (ty[1] != MTYPE_V) {
+#ifdef TARG_ST
+	idx = Enter_ded_preg(MTYPE_To_Dedicated_PREG(ty[1]), retreg[1], 
+			     MTYPE_To_TY(ty[1]), Get_mtype_class(ty[1]), ty[1]);
+#else
 	idx = Enter_ded_preg(MTYPE_To_Dedicated_PREG(ty[1]), retreg[1], 
 			     MTYPE_To_TY(ty[1]), Get_mtype_class(ty[1]));
+#endif
       }
     }
   }
@@ -1672,10 +1769,18 @@ OPT_STAB::Convert_ST_to_AUX(WN *wn, WN *block_wn)
     while (prag != NULL) {
       FmtAssert(WN_pragma(prag) == WN_PRAGMA_ASM_CONSTRAINT,
 		("Unknown pragma type for ASM output constraint"));
+#ifdef TARG_ST
+      AUX_ID idx = Enter_ded_preg(WN_st(prag),
+				  WN_pragma_asm_copyout_preg(prag),
+				  ST_type(WN_st(prag)),
+				  Get_mtype_class(TY_mtype(ST_type(WN_st(prag)))),
+				  TY_mtype(ST_type(WN_st(prag))));
+#else
       AUX_ID idx = Enter_ded_preg(WN_st(prag),
 				  WN_pragma_asm_copyout_preg(prag),
 				  ST_type(WN_st(prag)),
 				  Get_mtype_class(TY_mtype(ST_type(WN_st(prag)))));
+#endif
       WN_set_aux(prag, idx);
       prag = WN_next(prag);
     }
@@ -2493,7 +2598,11 @@ OPT_STAB::Create(COMP_UNIT *cu, REGION_LEVEL rgn_level)
   Set_BE_ST_pu_has_valid_addr_flags(Get_Current_PU_ST());
 
   // allocate a slightly larger array to avoid realloc.
+#ifdef TARG_ST
+  aux_stab.Alloc_array((mUINT32)(aux_sym_cnt*1.2)+10U);
+#else
   aux_stab.Alloc_array(aux_sym_cnt*1.2+10);
+#endif
   aux_stab.Setidx(aux_sym_cnt);
   aux_stab.Bzero_array();
 

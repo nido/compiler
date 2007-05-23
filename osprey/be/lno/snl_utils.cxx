@@ -721,8 +721,13 @@ WN* SNL_Sanity_Check_Exp(WN* wn)
 #endif
     USE_LIST* ul = Du_Mgr->Du_Get_Use(wn);
     if ((!ul || (!ul->Incomplete() && ul->Len() == 0)) &&
+#ifdef TARG_ST
+	!Contains_Dedicated_Preg(wn)
+#else
         !((ST_class(WN_st(wn))==CLASS_PREG)
-           && Preg_Is_Dedicated(WN_offset(wn)))) {
+	  && Preg_Is_Dedicated(WN_offset(wn)))
+#endif
+	) {
       fprintf(stdout,
               "sanity check warning(%s): missing uses for def (0x%p) of %s <%s>\n",
               Cur_PU_Name, wn, SYMBOL(wn).Name(),
@@ -754,7 +759,7 @@ WN* SNL_Sanity_Check_Exp(WN* wn)
   }
   else if (opr == OPR_INTRINSIC_OP) {
     FmtAssert(WN_intrinsic(wn) >= INTRINSIC_FIRST &&
-              WN_intrinsic(wn) <= INTRINSIC_LAST,
+              WN_intrinsic(wn) <= INTRINSIC_COUNT,
               ("Sanity check failed: Bad intrinsic number %d for opcode %s",
                WN_intrinsic(wn), OPCODE_name(WN_opcode(wn))));
   }

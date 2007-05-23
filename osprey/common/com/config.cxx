@@ -113,6 +113,9 @@ static INT32 Ignore_Int;
 # include "instr_reader.h"
 #endif
 
+
+//TB:
+#include "register_preg.h" // ISA_REGISTER_CLASS
 /* IR builder sometimes	needs to know whether we're in front end: */
 #ifdef SINGLE_PROCESS
 INT16 In_Front_End = TRUE;	/* Start out there */
@@ -411,11 +414,11 @@ INT32 Prefetch_Optimize = 3;
 BOOL Emulate_FloatingPoint_Ops;
 BOOL Emulate_FloatingPoint_Ops_Set;
 // [CG]: Enable Single Float Emulation
-BOOL Emulate_Single_Float_Ops = FALSE;
-BOOL Emulate_Single_Float_Ops_Set = FALSE;
+BOOL Emulate_Single_Float_Type = FALSE;
+BOOL Emulate_Single_Float_Type_Set = FALSE;
 // [CG]: Enable Double Float Emulation
-BOOL Emulate_Double_Float_Ops = FALSE;
-BOOL Emulate_Double_Float_Ops_Set = FALSE;
+BOOL Emulate_Double_Float_Type = FALSE;
+BOOL Emulate_Double_Float_Type_Set = FALSE;
 // [CM]: Enable Division or Remainder Integer Emulation
 BOOL Emulate_DivRem_Integer_Ops = FALSE;
 BOOL Emulate_DivRem_Integer_Ops_Set = FALSE;
@@ -429,6 +432,8 @@ BOOL Emulate_DivRem_Integer_Ops_Set = FALSE;
 // use front-end flag -fno-builtins for this
 BOOL Enable_Expand_Builtin = FALSE;
 BOOL Enable_Expand_Builtin_Set = FALSE;
+char *Extension_Names = NULL;
+BOOL Extension_Is_Present = FALSE;
 #endif
 
 BOOL Indexed_Loads_Allowed = FALSE;
@@ -647,11 +652,11 @@ static OPTION_DESC Options_TENV[] = {
     "Enable emulation for single and double precision floating point" },
 
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "emulate_single", "",
-    0, 0, 0,    &Emulate_Single_Float_Ops, &Emulate_Single_Float_Ops_Set,
+    0, 0, 0,    &Emulate_Single_Float_Type, &Emulate_Single_Float_Type_Set,
     "Enable emulation for single precision floating point" },
 
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "emulate_double", "",
-    0, 0, 0,    &Emulate_Double_Float_Ops, &Emulate_Double_Float_Ops_Set,
+    0, 0, 0,    &Emulate_Double_Float_Type, &Emulate_Double_Float_Type_Set,
     "Enable emulation for single precision floating point" },
 
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "emulate_divrem", "",
@@ -663,6 +668,12 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "expand_builtin", "",
     0, 0, 0,    &Enable_Expand_Builtin, &Enable_Expand_Builtin_Set,
     "Enable expansion of builtin functions into specialized code" },
+#endif
+
+#ifdef TARG_ST
+  { OVK_NAME,   OV_INTERNAL,    FALSE, "extension", NULL,
+    0, 0, 0,    &Extension_Names, &Extension_Is_Present,
+    "List of extension names to be used" },
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */
@@ -710,6 +721,10 @@ static OPTION_DESC Options_PHASE[] = {
       &Targ_Path,	NULL},
     { OVK_NAME,	OV_INTERNAL,	FALSE, "prompf_anl_path", "", 0, 0, 0,
       &Prompf_Anl_Path, NULL},
+#ifdef TARG_ST
+    { OVK_BOOL,	OV_INTERNAL,	FALSE, "extension_check_only", "", 0, 0, 0,
+      &Run_extension_check_only, NULL},
+#endif
     { OVK_COUNT}
 };
 #elif defined(QIKKI_BE)
@@ -1026,6 +1041,9 @@ BOOL Run_w2f = FALSE;		    /* run whirl2f */
 BOOL Run_w2fc_early = FALSE;	    /* run whirl2fc after LNO auto par*/
 BOOL Run_purple = FALSE;	    /* run purple code instrumenter */
 BOOL Run_prompf = FALSE;	    /* run to generate prompf analysis file */
+#ifdef TARG_ST
+BOOL Run_extension_check_only = FALSE; /* run extension compatibility check only */
+#endif
 char *LNO_Path = 0;		    /* path to lno.so */
 char *WOPT_Path = 0;		    /* path to wopt.so */
 char *CG_Path = 0;		    /* path to cg.so */
@@ -2176,6 +2194,23 @@ List_Compile_Options (
 {
   char *bar = SBar+12;	/* Shorten it a bit */
 
+
+  /* [VCdV] Dump full command line to assembly file */
+#ifdef TARG_STxP70
+  if (Cmd_Line!=NULL) {
+    FILE* fcmdline = fopen(Cmd_Line, "r");
+    char lineptr[500];
+    
+    if (fcmdline!=NULL)
+      {
+        fgets(lineptr, 500, fcmdline);
+        fclose(fcmdline);
+        fprintf(f , "\n%s%s%s Command-line: %s\n%s%s\n", pfx, bar,
+                pfx, lineptr,pfx,  bar);
+      }
+  }
+#endif
+
   fprintf ( f, "\n%s%s%s Compiling %s (%s)\n%s%s",
 	    pfx, bar, pfx, Src_File_Name, Irb_File_Name, pfx, bar ); 
   fprintf ( f, "\n%s%s%s Options:\n%s%s", pfx, bar, pfx, pfx, bar );
@@ -2207,5 +2242,57 @@ List_Compile_Options (
     Print_Option_Groups ( f, Common_Option_Groups, pfx, internal,
 			  internal ? full : List_All_Options , update );
   }
+#ifdef TARG_STxP70
+  fprintf(f, "\n\t.double%d\n", Double_Is_Short? 32: 64);
+#endif
 }
 
+// MAPPING between register class and preg
+
+typedef struct {
+  PREG_NUM min;
+  PREG_NUM max;
+} preg_range_t;
+static preg_range_t *Rclass_To_Preg_array;
+//TB:Initilaize rclass to preg mapping
+static void Initialize_RegisterClass_To_Preg(void)
+{
+  int preg_index = 1; //First PREG must not be 0
+  ISA_REGISTER_CLASS rclass;
+  Rclass_To_Preg_array = TYPE_MEM_POOL_ALLOC_N(preg_range_t, Malloc_Mem_Pool,
+					       ISA_REGISTER_CLASS_MAX+1);
+
+  FOR_ALL_ISA_REGISTER_CLASS( rclass ) {
+    const ISA_REGISTER_CLASS_INFO *icinfo = ISA_REGISTER_CLASS_Info(rclass);
+    INT first_isa_reg  = ISA_REGISTER_CLASS_INFO_First_Reg(icinfo);
+    INT last_isa_reg   = ISA_REGISTER_CLASS_INFO_Last_Reg(icinfo);
+    INT register_count = last_isa_reg - first_isa_reg + 1;
+    Rclass_To_Preg_array[rclass].min = preg_index;
+    Rclass_To_Preg_array[rclass].max = preg_index + register_count - 1;
+    // Next index
+    preg_index = preg_index + register_count;
+  }
+}
+
+//TB:Reset rclass to preg mapping This to has to be done when the
+//targinfo has loaded the extension to rebuild Rclass_To_Preg_array
+//with the new extended targinfo
+void Reset_RegisterClass_To_Preg(void)
+{
+  MEM_POOL_FREE(Malloc_Mem_Pool, Rclass_To_Preg_array);
+  Rclass_To_Preg_array = NULL;
+}
+
+PREG_NUM CGTARG_Regclass_Preg_Min(  ISA_REGISTER_CLASS rclass)
+{
+  if (Rclass_To_Preg_array == NULL)
+    Initialize_RegisterClass_To_Preg();    
+  return Rclass_To_Preg_array[rclass].min;
+}
+
+PREG_NUM CGTARG_Regclass_Preg_Max(  ISA_REGISTER_CLASS rclass)
+{
+  if (Rclass_To_Preg_array == NULL)
+    Initialize_RegisterClass_To_Preg();    
+  return Rclass_To_Preg_array[rclass].max;
+}

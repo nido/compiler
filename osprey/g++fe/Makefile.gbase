@@ -53,7 +53,7 @@ include $(COMMONDEFS)
 #----------------------------------------------------------------------
 #  Set environment variables
 #----------------------------------------------------------------------
-ifeq ($(BUILD_COMPILER), EDG)
+ifeq ($(BUILD_COMPILER), SGI)
 CVERSION = -xansi
 else
 CVERSION =
@@ -68,43 +68,12 @@ endif
 
 HOSTDEFS += -DIN_GCC -DHAVE_CONFIG_H
 
-ifeq ($(BUILD_TARGET), IA64)
-HOSTDEFS += -DTARGET_NAME=\"ia64-linux\"
-HOSTDEFS += -DPREFIX=\"/usr/ia64-sgi-linux\"
-HOSTDEFS += -DGCC_INCLUDE_DIR=\"/usr/ia64-sgi-linux/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0/include/\"
-HOSTDEFS += -DGPLUSPLUS_INCLUDE_DIR=\"/usr/ia64-sgi-linux/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0/include/\"
-endif
-ifeq ($(BUILD_TARGET), IA32)
-HOSTDEFS += -DTARGET_NAME=\"i686-pc-linux-gnu\"
-HOSTDEFS += -DPREFIX=\"/usr/ia32-sgi-linux\"
-HOSTDEFS += -DGCC_INCLUDE_DIR=\"/usr/ia32-sgi-linux/lib/gcc-lib/ia32-sgi-linux/sgicc-1.0/include/\"
-HOSTDEFS += -DGPLUSPLUS_INCLUDE_DIR=\"/usr/ia32-sgi-linux/lib/gcc-lib/ia32-sgi-linux/sgicc-1.0/include/\"
-endif
-
-ifeq ($(BUILD_TARGET), ST200)
-ifeq ($(BUILD_OS),LINUX)
-HOSTDEFS += -DTARGET_NAME=\"st200-linux\"
-else
-HOSTDEFS += -DTARGET_NAME=\"st200\"
-endif
-endif
-
-ifeq ($(BUILD_TARGET), STxP70)
-ifeq ($(BUILD_OS),LINUX)
-HOSTDEFS += -DTARGET_NAME=\"stxp70-linux\"
-else
-HOSTDEFS += -DTARGET_NAME=\"stxp70\"
-endif
-endif
-
-
 # (cbr) define gnu version
 HOSTDEFS += -DGNU_FRONT_END=33
 HOSTDEFS += -DLONGLONG
 HOSTDEFS += -DFRONT_END
 HOSTDEFS += -DUSE_DECL_SRCPOS
 HOSTDEFS += -D_NEW_SYMTAB
-
 HOSTDEFS += -DFRONT_END_CPLUSPLUS
 HOSTDEFS += -DCFE -DCIL
 HOSTDEFS += -DDO_IL_LOWERING=0
@@ -119,7 +88,7 @@ ifneq  ($(BUILD_TARGET), ST200)
 ifneq  ($(BUILD_TARGET), STxP70)
 HOSTDEFS += -DMONGOOSE_CIF
 HOSTDEFS += -DSGI_RAG_BACKEND
-ifeq ($(BUILD_COMPILER), GNU)
+ifneq ($(BUILD_COMPILER), SGI)
 HOSTDEFS += -DMIPSEL
 endif
 endif
@@ -147,13 +116,17 @@ endif
 HOSTDEFS += -DGPLUSPLUS_FE
 
 ifeq ($(DSO_MODE),DLL)
-HOSTDEFS += -DBE_EXPORTED= -DCG_EXPORTED=
+HOSTDEFS += -DBE_EXPORTED= -DCG_EXPORTED= -DTARGINFO_EXPORTED=
 endif
 
+### SHOULD GO AWAY after elf.h cleanup !!
 ifeq ($(BUILD_OS), LINUX)
 TARGDEFS = -D__MIPS_AND_IA64_ELF_H
 endif
 ifeq ($(BUILD_OS), SUNOS5)
+TARGDEFS = -D__MIPS_AND_IA64_ELF_H
+endif
+ifeq ($(BUILD_OS), CYGWIN_NT)
 TARGDEFS = -D__MIPS_AND_IA64_ELF_H
 endif
 
@@ -161,28 +134,37 @@ endif
 #  List of directories, and source files of interest
 #----------------------------------------------------------------------
 
-ifeq ($(BUILD_TARGET), ST200)
-COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
-COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-else 
-ifeq ($(BUILD_TARGET), STxP70)
-COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
-COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-else
-COMMON_COM_TARG_DIR	= $(BUILD_TOT)/common/com/$(BUILD_TARGET_DIR)
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/common/targ_info/access
-COMMON_UTIL_TARG_DIR	= $(BUILD_TOT)/common/util/$(BUILD_TARGET_DIR)
-endif
-endif
-
-FE_DIR 			= $(BUILD_TOT)/g++fe
+FE_DIR 			= $(BUILD_BASE)
+FE_COM_DIR		= $(BUILD_TOT)/gccfe
 COMMON_COM_DIR 		= $(BUILD_TOT)/common/com
 COMMON_UTIL_DIR		= $(BUILD_TOT)/common/util
 
+# ST compilers have a different target info directory structure:
+ifeq ($(BUILD_TARGET), ST100)
+COMMON_COM_TARG_DIR	    = 
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
+COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
+endif
+ifeq ($(BUILD_TARGET), ST200)
+COMMON_COM_TARG_DIR	    = 
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
+COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
+endif
+ifeq ($(BUILD_TARGET), STxP70)
+COMMON_COM_TARG_DIR	    = 
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
+COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
+endif
+ifeq ($(BUILD_TARGET), IA64)
+COMMON_COM_TARG_DIR	    = $(BUILD_TOT)/common/com/$(BUILD_TARGET_DIR)
+COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/common/targ_info/access
+COMMON_TARGINFO_CONFIG_DIR  = 
+COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/common/util/$(BUILD_TARGET_DIR)
+endif
+TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 
 ifeq ($(BUILD_OS), IRIX)
 INCLUDE_DIR 		= $(BUILD_TOT)/include
@@ -191,6 +173,7 @@ INCLUDE_DIR 		= $(BUILD_AREA)/include
 endif
 
 GNU_DIR			= $(BUILD_TOT)/gccfe/gnu
+GNU_CP_DIR		= $(BUILD_TOT)/gccfe/gnu/cp
 GNU_CONFIG_DIR		= $(BUILD_TOT)/gccfe/gnu/config
 GNU_COMMON_DIR		= $(BUILD_TOT)/gnu_common
 
@@ -203,55 +186,73 @@ ifeq ($(BUILD_TARGET), MIPS)
 GNU_CONFIG_TARG_DIR = $(GNU_CONFIG_DIR)/mips
 endif
 
-TARG_GNU_DIR            = $(TARGDIR)/gccfe/gnu
 TARG_COMUTIL_DIR	= $(TARGDIR)/libcomutil
-# TARG_LIBM_DIR		= $(TARGDIR)/libm
 TARG_CMPLRS_DIR		= $(TARGDIR)/libcmplrs
 TARG_LIBIBERTY_DIR      = $(TARGDIR)/libiberty
+TARG_GNU_DIR		= $(TARGDIR)/gccfe/gnu
 
 # These are the directories in which to look for source files.
 
 SRC_DIRS =		\
   $(FE_DIR)		\
+  $(FE_COM_DIR)		\
   $(COMMON_COM_DIR)	\
   $(COMMON_COM_TARG_DIR)\
   $(COMMON_UTIL_DIR)	\
   $(COMMON_UTIL_TARG_DIR)\
-  $(COMMON_TARG_INFO_ACCESS_DIR)\
+  $(COMMON_TARG_INFO_ACCESS_DIR) \
   $(COMMON_TARGINFO_CONFIG_DIR)
+
+# Add '-' on top of include dirs such that cross includes from gccfe to g++fe work.
+# For instance wfe_pragmas.cxx is compiled from gccfe/ but includes tree_symtab.h
+# which must be fetched from g++fe.
+# This should not be necessary anymore when include files are not duplicated between gccfe and g++fe.
 INC_DIRS =		\
+  -			\
   $(INCLUDE_DIR)	\
   $(COMMON_COM_DIR)	\
   $(COMMON_COM_TARG_DIR)\
   $(COMMON_UTIL_DIR)	\
   $(COMMON_UTIL_TARG_DIR)\
   $(COMMON_TARG_INFO_ACCESS_DIR) \
-  $(COMMON_TARGINFO_CONFIG_DIR)\
+  $(COMMON_TARGINFO_CONFIG_DIR) \
   $(FE_DIR)		\
-  $(GNU_DIR)/../		\
+  $(FE_COM_DIR)		\
   $(GNU_DIR)		\
+  $(GNU_CP_DIR)		\
   $(GNU_TARG_DIR)	\
   $(GNU_CONFIG_DIR)	\
   $(GNU_CONFIG_TARG_DIR) \
-  $(GNU_COMMON_DIR)/include
+  $(TARG_TARG_INFO_DIR) \
+  $(GNU_COMMON_DIR)/include \
+  .
 
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.
 #----------------------------------------------------------------------
 
+# Common c files from gccfe
+FE_COM_C_SRCS =
+
+# Common cxx files from gccfe
+FE_COM_CXX_SRCS =		\
+   wfe_loader.cxx		\
+   wfe_pragmas.cxx 
+
 FE_C_SRCS =		\
-  c_int_model.c		\
-  main.c
+  $(FE_COM_C_SRCS)	\
+  main.c                \
+  dso.c
 
 FE_CXX_SRCS =		\
+  $(FE_COM_CXX_SRCS)	\
   rt_symtab.cxx		\
   tree_symtab.cxx       \
   wfe_decl.cxx          \
   wfe_dst.cxx           \
   wfe_expr.cxx		\
   wfe_misc.cxx          \
-  wfe_pragmas.cxx       \
-  wfe_stmt.cxx
+  wfe_stmt.cxx		\
 
 COMMON_COM_CXX_SRCS =	\
   config.cxx		\
@@ -282,7 +283,9 @@ COMMON_COM_CXX_SRCS =	\
   wn_simp.cxx		\
   wn_util.cxx		\
   wutil.cxx		\
-  xstats.cxx
+  xstats.cxx            \
+  loader.cxx		\
+  gccfe_targinfo_interface.cxx
 
 COMMON_COM_TARG_SRCS =	\
   config_host.c		\
@@ -301,7 +304,7 @@ COMMON_COM_TARG_CXX_SRCS = \
   $(CONFIG_TARGET_NAME).cxx \
   config_elf_targ.cxx	\
   targ_const.cxx	\
-  targ_sim.cxx
+  targ_sim.cxx          
 
 FRONT_END_C_SRCS =		\
   $(COMMON_COM_SRCS)		\
@@ -319,10 +322,11 @@ FRONT_END_CXX_OBJS = $(FRONT_END_CXX_SRCS:.cxx=.o)
 
 FRONT_END_OBJS = $(FRONT_END_C_OBJS) $(FRONT_END_CXX_OBJS)
 
-CFILES = $(FRONT_END_C_SRCS)
-CXXFILES = $(FRONT_END_CXX_SRCS)
-
 VPATH    =  $(SRC_DIRS)
+
+# do not add ../include twice...
+GCINCS =
+GC++INCS = 
 
 LCOPTS = $(STD_COMPILE_OPTS)
 LCDEFS = $(HOSTDEFS) $(TARGDEFS)
@@ -330,14 +334,17 @@ LCINCS = $(addprefix -I, $(INC_DIRS))
 
 LC++OPTS = $(STD_COMPILE_OPTS)
 LC++DEFS = $(HOSTDEFS) $(TARGDEFS)
-LC++INCS = $(LCINCS)
+LC++INCS = $(addprefix -I, $(INC_DIRS))
 
-ifneq ($(BUILD_COMPILER), EDG)
-# (cbr) LCOPTS += -fwritable-strings -w
-# (cbr) LC++OPTS += -fwritable-strings -w
+ifeq ($(BUILD_COMPILER), GNU)
+# (cbr) LCOPTS += -fwritable-strings
+# (cbr) LC++OPTS += -fwritable-strings
 endif
 
 LDIRT =
+
+#Reconfigurability: Some symbols are required by extension dlls
+GFEC_LDOPTS += -Wl,--export-dynamic
 
 #------------------------------------------------------------
 #  Define target
@@ -348,20 +355,23 @@ TARGETS = gfecc$(HEXE)
 #  Variables describing additional sources, objects, and libraries
 #----------------------------------------------------------------------
 COMUTIL_OBJS = $(TARG_COMUTIL_DIR)/libcomutil.a
-# LIBM_OBJS    = $(TARG_LIBM_DIR)/libm.a
 CMPLRS_OBJS  = $(TARG_CMPLRS_DIR)/libcmplrs.a
 LIBIBERTY_OBJS = $(TARG_LIBIBERTY_DIR)/libiberty.a
 LIBSYS_OBJS = $(TARGDIR)/libSYS/libSYS.a
 LIBGNU_OBJS = $(TARG_GNU_DIR)/libgfecc.a $(TARG_GNU_DIR)/libgfec.a
 GNU_CPP_OBJS = $(TARG_GNU_DIR)/libcpp.a
+LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
+COMWFE_OBJS= 
 
 ifneq ($(HOST_OS),CYGWIN_NT)
+ifneq ($(HOST_OS),MINGW)
 # all we need is in libcygwin
-GFECC_LDLIBS +=  -lm
+GFECC_LDLIBS +=  -lm -ldl
+endif
 endif
 
 ifeq ($(HOST_OS), MINGW)
-GFECC_LDLIBS += -lwsock32
+GFECC_LDLIBS += -lwsock32 -lm
 endif
 
 default: first
@@ -375,8 +385,9 @@ first:
 	cd $(TARG_GNU_DIR) && $(MAKE)
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
+	cd $(TARG_GNU_DIR) && $(MAKE) `basename $(LIBGNU_OBJS) $(GNU_CPP_OBJS)`
 
-local: gnu_libs
+local: 
 	$(MAKE) $(TARGETS)
 
 #----------------------------------------------------------------------
@@ -392,13 +403,7 @@ install: last
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
 
-gnu_libs:
-	cd $(TARG_GNU_DIR) && $(MAKE) $(foreach obj, $(LIBGNU_OBJS) $(GNU_CPP_OBJS), $(shell basename $(obj)))
-
-$(LIBGNU_OBJS) $(GNU_CPP_OBJS): gnu_libs
-
-GFECC_OBJS=$(FRONT_END_OBJS) $(LIBGNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS) $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS)
-
+GFECC_OBJS=$(FRONT_END_OBJS) $(LIBGNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS) $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS) $(LIBTARGINFO)
 gfecc$(HEXE) : $(GFECC_OBJS)
 	$(CXXF) -o $@ $(GFECC_LDOPTS) $(LDOPTS) $(GFECC_OBJS) $(GFECC_LDLIBS) $(LDLIBS)
 

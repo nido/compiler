@@ -100,6 +100,11 @@
 #endif
 
 #include "timelib.h"
+#ifdef TARG_ST
+//TB: loder stuff
+extern void Initialize_Extension_Loader(void);
+extern void Initialize_Extension_Loader_Register(void);
+#endif
 
 // temporary placeholder until feedback is fixed
 // BOOL FB_PU_Has_Feedback = FALSE;
@@ -1179,6 +1184,10 @@ Inliner(char* input_name, char* output_name)
     MEM_POOL_Push(&MEM_local_pool); 
 
    
+#ifdef TARG_ST
+    Initialize_Extension_Loader ();
+    Initialize_Extension_Loader_Register();
+#endif
     Initialize_Symbol_Tables(FALSE);
 
     New_Scope (GLOBAL_SYMTAB, Malloc_Mem_Pool, FALSE);

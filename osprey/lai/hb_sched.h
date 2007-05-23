@@ -394,7 +394,11 @@ private:
   BB*               _epilog_bb;
   VECTOR            _ready_vector;
   VECTOR            _sched_vector;
+#ifdef TARG_ST
+  INT32 	    _Cur_Regs_Avail[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
   INT32 	    _Cur_Regs_Avail[ISA_REGISTER_CLASS_MAX+1];
+#endif
   BB*               _prolog_mbb;
   BB*               _epilog_mbb;
   hTN_MAP           _regs_map;
@@ -421,12 +425,16 @@ private:
   void Compute_BBSCH (BB*, BBSCH*);
   BOOL Can_Schedule_Op (OP *cur_op, INT cur_time);
   void Initialize (); 
-  void Schedule_Block (BB*, BBSCH*); 
+  void Schedule_Block (BB*, BBSCH*, bool = FALSE); 
   void Schedule_Blocks (std::list<BB*>&); 
   void Put_Sched_Vector_Into_BB (BB*, BBSCH*, BOOL);
   void Put_Sched_Vector_Into_HB (std::list<BB*>&);
   void Add_OP_To_Sched_Vector (OP*, BOOL);
+#ifdef TARG_ST
+  void Adjust_Ldst_Offsets (BOOL);
+#else
   void Adjust_Ldst_Offsets (void);
+#endif
   void Init_Register_Map (BB*);
   void Init_RFlag_Table (std::list<BB*>&, BOOL);
   void Update_Regs_For_OP (OP*);
@@ -480,8 +488,8 @@ public:
   void Init (std::list<BB*>, HBS_TYPE, mINT8*);
   INT Find_Schedule_Cycle(OP*, BOOL);
   void Estimate_Reg_Cost_For_OP (OP*);
-  void Schedule_BB (BB*, BBSCH*);   
-  void Schedule_HB (std::list<BB*>);   
+  void Schedule_BB (BB*, BBSCH*, bool = FALSE);
+  void Schedule_HB (std::list<BB*>);
 };
 
 

@@ -1417,9 +1417,14 @@ extern WN* Forward_Substitutable(WN* wn_ldid,
 {
   if (WN_operator(wn_ldid) != OPR_LDID)
     return NULL;
+#ifdef TARG_ST
+  if (Contains_Dedicated_Preg(wn_ldid))
+    return NULL;
+#else
   if (ST_class(WN_st(wn_ldid)) == CLASS_PREG
       && WN_offset(wn_ldid) <= Last_Dedicated_Preg_Offset)
     return NULL;
+#endif
   DEF_LIST *def_list = du->Ud_Get_Def(wn_ldid);
   if (def_list == NULL || def_list->Incomplete())
     return NULL;

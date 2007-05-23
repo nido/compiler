@@ -103,8 +103,10 @@ extern INT  CGTARG_Num_Asm_Opnd_Modifiers;
 
 extern const char* CGTARG_Modified_Asm_Opnd_Name(char, TN*, char *);
 
+//TB add subclass parameter to CGTARG_Modify_Asm_String to handle
+//registers that have different name depending on thier subclass
 extern char* CGTARG_Modify_Asm_String (char* asm_string, 
-			      UINT32 position, bool memory, TN* tn);
+			      UINT32 position, bool memory, TN* tn, ISA_REGISTER_SUBCLASS sc);
 
 /* --------------------------------------------------------------------
  *   may have to clean up the asm string 

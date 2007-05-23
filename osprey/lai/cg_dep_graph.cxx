@@ -701,7 +701,11 @@ inline BOOL has_assigned_reg(TN *tn)
 				    !TN_is_true_pred(tn)));
 }
 
+#ifdef TARG_ST
+static TN_LIST *same_reg[REGISTER_MAX+1][ISA_REGISTER_CLASS_MAX_LIMIT+1];
+#else
 static TN_LIST *same_reg[REGISTER_MAX+1][ISA_REGISTER_CLASS_MAX+1];
+#endif
 
 #define init_reg_assignments() BZERO(same_reg, sizeof(same_reg))
 
@@ -899,7 +903,10 @@ static ARC *new_arc_with_latency(CG_DEP_KIND kind, OP *pred, OP *succ,
 				 INT16 latency, UINT8 omega,
 				 UINT8 opnd, BOOL is_definite)
 {
-  ARC *arc;
+  ARC *arc = (ARC*)NULL;
+
+  if((kind == CG_DEP_REGIN || kind == CG_DEP_REGOUT) && latency == -1) { return arc; }
+
   BB_OP_MAP pmap = (BB_OP_MAP)BB_MAP_Get(_cg_dep_op_info, OP_bb(pred));
   BB_OP_MAP smap = (BB_OP_MAP)BB_MAP_Get(_cg_dep_op_info, OP_bb(succ));
 
@@ -1452,7 +1459,11 @@ CG_DEP_Trace_HB_Graph(std::list<BB*> bblist)
  */
 
 static TN_MAP defop_by_tn;
+#ifdef TARG_ST
+OP_LIST *defop_by_reg[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1];
+#else
 OP_LIST *defop_by_reg[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
+#endif
 
 #ifdef TARG_ST
 static MEM_POOL DefOp_Pool;
@@ -1823,6 +1834,9 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
 #ifdef TARG_ST
   // Don't use ARCs if not available.
   if (!CG_DEP_Addr_Analysis) return NULL;
+
+  // FdF 20060517: No support for automod addressing mode
+  if (OP_automod(op)) return NULL;
 #endif
 
 
@@ -1845,6 +1859,11 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
     if (new_defop == defop) {
       defop = NULL;
     } else defop = new_defop;
+#ifdef TARG_ST
+    // FdF 20060517: No support for automod addressing mode
+    if (defop && OP_automod(defop))
+      defop = NULL;
+#endif    
     if (defop &&
         (OP_bb(defop) == bb)) {
 
@@ -2399,10 +2418,12 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
       pred_id == OP_map_idx(pred_op) &&
       succ_id == OP_map_idx(succ_op)) {
     dbg_found = 1;
+#ifndef WIN32
     if (getenv("CGD_DBG")) {
       fprintf(stderr, "PID: %d\n", getpid());
       scanf("\n");
     }
+#endif
   }
 #endif
 
@@ -2678,7 +2699,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	  DEP dep = Current_Dep_Graph->Dep(edge);
 	  is_distance = DEP_IsDistance(dep);
 	  dir = DEP_Direction(dep);
-	  is_must = Current_Dep_Graph->Is_Must(edge);
+	  is_must = (Current_Dep_Graph->Is_Must(edge) &&
+		     !Memory_OP_Is_Partial_WN_Access(pred_op) &&
+		     !Memory_OP_Is_Partial_WN_Access(succ_op));
 	  dist = is_distance ? DEP_Distance(dep) : DEP_DistanceBound(dep);
 	}
 	if (edge == 0) {
@@ -2733,7 +2756,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	  DEP dep = Current_Dep_Graph->Dep(edge);
 	  is_distance = DEP_IsDistance(dep);
 	  dir = DEP_Direction(dep);
-	  is_must = Current_Dep_Graph->Is_Must(edge);
+	  is_must = (Current_Dep_Graph->Is_Must(edge) &&
+		     !Memory_OP_Is_Partial_WN_Access(pred_op) &&
+		     !Memory_OP_Is_Partial_WN_Access(succ_op));
 	  dist = is_distance ? DEP_Distance(dep) : DEP_DistanceBound(dep);
 	}
 	if (!lex_neg && (edge == 0 || dist > 0)) {
@@ -2756,7 +2781,9 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 	       * only be due to the LNO feature described above, so use
 	       * this "inverted" edge instead.
 	       */
-	      BOOL inv_must = Current_Dep_Graph->Is_Must(inv_edge);
+	      BOOL inv_must = (Current_Dep_Graph->Is_Must(inv_edge) &&
+			       !Memory_OP_Is_Partial_WN_Access(pred_op) &&
+			       !Memory_OP_Is_Partial_WN_Access(succ_op));
 	      if (edge) {
 		DEP udep = DEP_UnionDirection(inv_dep, dir);
 		dir = DEP_Direction(udep);
@@ -3845,6 +3872,13 @@ inline BOOL op_defines_sp(OP *op)
   return FALSE;
 }
 
+#ifdef TARG_ST
+inline BOOL op_is_alloca(OP *op)
+{
+  return op_defines_sp(op) && !OP_memory(op);
+}
+#endif
+ 
 typedef enum {
   STACKREF_NO,
   STACKREF_YES,
@@ -3974,8 +4008,15 @@ static void Add_MEM_Arcs(BB *bb)
   FOR_ALL_BB_OPs(bb, op) {
     if (OP_load(op) || OP_like_store(op))
       num_mem_ops++;
+#ifdef TARG_ST
+    if (CG_DEP_Add_Alloca_Arcs && op_is_alloca(op)) {
+      Is_True (!OP_memory(op), ("Alloca operation must not be a memory operation"));
+      ++sp_defs;
+    }
+#else
     if (CG_DEP_Add_Alloca_Arcs && op_defines_sp(op))
       ++sp_defs;
+#endif
   }
 
   /* Return if there's nothing to do */
@@ -4015,7 +4056,11 @@ static void Add_MEM_Arcs(BB *bb)
    */
   if (CG_DEP_Add_Alloca_Arcs) {
     for (op = BB_first_op(bb); op && sp_defs > 0; op = OP_next(op)) {
+#ifdef TARG_ST
+      if (op_is_alloca(op)) {
+#else 
       if (op_defines_sp(op)) {
+#endif 
 	--sp_defs;
 	for (i = 0; i < num_mem_ops; i++) {
 	  if (CG_DEP_Alloca_Aliases(mem_ops[i])) {
@@ -5020,7 +5065,11 @@ Update_Entry_For_TN(
     TN              *vtn, 
     OP              *cur_op, 
     TN_MAP          vmap, 
+#ifdef TARG_ST
+    void            *register_ops[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1], 
+#else
     void            *register_ops[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1], 
+#endif
     OP_MAP          omap, 
     BOOL            is_result)
 {
@@ -5086,7 +5135,11 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 {
   std::list<BB*>::iterator bbi;
   TN_MAP tn_usage_map = TN_MAP_Create();
+#ifdef TARG_ST
+  void *reg_ops[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1];
+#else
   void *reg_ops[ISA_REGISTER_CLASS_MAX+1][REGISTER_MAX+1];
+#endif
   OP_MAP omap = OP_MAP_Create();
   BZERO(reg_ops, sizeof(reg_ops));
 
@@ -5456,7 +5509,7 @@ CG_DEP_Compute_Region_MEM_Arcs(std::list<BB*>    bb_list,
 		OP_unrolling(pref_op) == OP_unrolling(load_op)) {
 	      ARC *pref_arc;
 	      CG_DEP_KIND kind = CG_DEP_PREFIN;
-	      BOOL pft_is_before = (op_idx < succ_idx) == OP_prefetch(op);
+	      BOOL pft_is_before = (op_idx < succ_idx) == (OP_prefetch(op) != 0);
 
 	      if (!pft_is_before)
 		pref_arc = new_arc(kind, load_op, pref_op, 0, 0, TRUE);

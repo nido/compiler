@@ -274,10 +274,11 @@ ipa_compile_init ()
 #ifdef USE_MAKE
   Is_True(infiles == 0 && outfiles == 0 && commands == 0 && comments == 0
           && makefile_name == 0 && makefile == 0 && command_map == 0,
+          ("ipa_compile_init already initialized"));
 #else
   Is_True(infiles == 0 && outfiles == 0 && command_map == 0,
-#endif
           ("ipa_compile_init already initialized"));
+#endif
 
   infiles           = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
   outfiles          = CXX_NEW (std::vector<const char*>,          Malloc_Mem_Pool);
@@ -542,11 +543,12 @@ ipacom_process_symtab (char* symtab_file)
 #ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0 && comments != 0,
+          ("ipacom_process_symtab: ipacom not yet initialized"));
 #else
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0,
-#endif
           ("ipacom_process_symtab: ipacom not yet initialized"));
+#endif
 
   Is_True(strlen(input_symtab_name) == 0 &&
           strlen(whirl_symtab_name) == 0 &&
@@ -621,10 +623,11 @@ size_t ipacom_process_file (char* input_file,
 #ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles_fullpath != 0 && commands != 0 &&
           comments != 0,
+          ("ipacom_process_file: ipacom not initialized"));
 #else
   Is_True(infiles != 0 && outfiles_fullpath != 0 && commands != 0,
-#endif
           ("ipacom_process_file: ipacom not initialized"));
+#endif
 
   Is_True(strlen(input_symtab_name) != 0 &&
           strlen(whirl_symtab_name) != 0 &&
@@ -723,13 +726,14 @@ size_t ipacom_process_file (char* input_file,
            infiles->size() == outfiles_fullpath->size() &&
            infiles->size() == commands->size() &&
            infiles->size() == comments->size(),
+           ("ipacom_process_file: inconsistent vector sizes"));
 #else
   Is_True (infiles->size() > 0 &&
            infiles->size() == outfiles->size() &&
            infiles->size() == outfiles_fullpath->size() &&
            infiles->size() == commands->size(),
-#endif
            ("ipacom_process_file: inconsistent vector sizes"));
+#endif
 
   // Set up extra args for compiling symtab, if necessary.
   if (!symtab_extra_args)
@@ -1158,23 +1162,25 @@ void ipacom_doit (const char* ipaa_filename)
 #ifdef USE_MAKE
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0 && comments != 0 && makefile != 0,
+          ("ipacom_doit: ipacom not yet initialized"));
 #else
   Is_True(infiles != 0 && outfiles != 0 && outfiles_fullpath != 0 &&
           commands != 0,
-#endif
           ("ipacom_doit: ipacom not yet initialized"));
+#endif
 
 #ifdef USE_MAKE
   Is_True(infiles->size() == outfiles->size() &&
           infiles->size() == outfiles_fullpath->size() &&
           infiles->size() == commands->size() &&
           infiles->size() == comments->size(),
+          ("ipacom_doit: vectors are inconsistent"));
 #else
   Is_True(infiles->size() == outfiles->size() &&
           infiles->size() == outfiles_fullpath->size() &&
           infiles->size() == commands->size(),
-#endif
           ("ipacom_doit: vectors are inconsistent"));
+#endif
 
 
   if (infiles->size() > 0) {

@@ -48,7 +48,7 @@
 #include <stdio.h>
 #include <assert.h>
 // [HK]
-#if __GNUC__ >=3
+#if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
 #include <vector>
 using std::list;
@@ -56,11 +56,24 @@ using std::vector;
 #else
 #include <list.h>
 #include <vector.h>
-#endif // __GNUC__ >=3
+#endif // __GNUC__ >=3 || defined(_MSC_VER)
 #include "topcode.h"
 #include "targ_isa_properties.h"
 #include "gen_util.h"
 #include "isa_pack_gen.h"
+
+// TODO: adapt for dynamic case.
+// We have just modified TOP_count into TOP_count_limit
+
+// In following loops, we iterate on the number of
+// TOP. This number differs following we generate
+// static or dynamic TOP.
+#ifndef DYNAMIC_CODE_GEN
+static const TOP TOP_count_limit = TOP_static_count;
+#else
+static const TOP TOP_count_limit = TOP_dyn_count;
+#endif
+
 
 /* The maximum number of operands and results used by ANY target.
  * (It would be better to get the max operands and results from the
@@ -122,9 +135,9 @@ struct opnd_adj_type {
 static list <ISA_PACK_TYPE> all_packs;  // all the different print formats
 static list <OPND_ADJ_TYPE> all_oadj;	// all the different opnd adjustments
 static ISA_PACK_TYPE current_pack_desc;
-static op_assembly *op_packs[TOP_count+1];
+static op_assembly *op_packs[TOP_count_limit+1];
 static list<op_assembly*> op_packs_list;
-static bool top_specified[TOP_count];
+static bool top_specified[TOP_count_limit];
 static int inst_bits;
 static int inst_words;
 static int num_adj;
@@ -467,7 +480,7 @@ void ISA_Pack_End(void)
   bool only_zero_opndpos;
   const char *info_index_type;
 
-  for (err = false, top = 0; top < TOP_count; ++top) {
+  for (err = false, top = 0; top < TOP_count_limit; ++top) {
     bool is_dummy = TOP_is_dummy((TOP)top);
     bool is_simulated = TOP_is_simulated((TOP)top);
     if (!top_specified[top]) {
@@ -620,8 +633,8 @@ void ISA_Pack_End(void)
   fprintf(efile, "ISA_PACK_info_index\n");
 
   fprintf(cfile, "\nconst %s ISA_PACK_info_index[%d] = {\n", 
-		 info_index_type, TOP_count);
-  for (top = 0; top < TOP_count; ++top ) {
+		 info_index_type, TOP_count_limit);
+  for (top = 0; top < TOP_count_limit; ++top ) {
   	op_assembly *op_pack = op_packs[top];
     	if (op_pack) {
   	    fprintf(cfile, isa_pack_index_format,
@@ -640,9 +653,9 @@ void ISA_Pack_End(void)
 
   fprintf(cfile, "\nconst mUINT%d ISA_PACK_init_mask[%d][%d] = {\n",
 		 init_digits * 4,
-		 TOP_count,
+		 TOP_count_limit,
 		 inst_words);
-  for (top = 0; top < TOP_count; ++top ) {
+  for (top = 0; top < TOP_count_limit; ++top ) {
     op_assembly *op_pack = op_packs[top];
     fprintf(cfile, "  {");
     for (w = 0; w < inst_words; ++w) {
@@ -657,8 +670,9 @@ void ISA_Pack_End(void)
   if (inst_words > 1) {
     fprintf(efile, "ISA_PACK_inst_words\n");
 
-    fprintf(cfile, "\nBE_EXPORTED const mUINT8 ISA_PACK_inst_words[%d] = {\n", TOP_count);
-    for (top = 0; top < TOP_count; ++top ) {
+    fprintf(cfile, "\nBE_EXPORTED const mUINT8 ISA_PACK_inst_words[%d] = {\n", 
+            TOP_count_limit);
+    for (top = 0; top < TOP_count_limit ; ++top ) {
       op_assembly *op_pack = op_packs[top];
       int words = op_pack ? op_pack->desc->max_word + 1 
 			  : (TOP_is_dummy(top) ? 0 : 1);
@@ -675,7 +689,7 @@ void ISA_Pack_End(void)
 		 "  return ISA_PACK_init_mask[(INT)topcode][iword];\n"
 		 "}\n",
 		 init_digits * 4,
-		 TOP_count,
+		 TOP_count_limit,
 		 inst_words);
 
   fprintf(hfile, "\ninline INT ISA_PACK_Inst_Words(TOP topcode)\n"
@@ -685,7 +699,7 @@ void ISA_Pack_End(void)
   } else {
     fprintf(hfile, "  BE_EXPORTED extern const mUINT8 ISA_PACK_inst_words[%d];\n"
 		   "  return ISA_PACK_inst_words[(INT)topcode];\n",
-		   TOP_count);
+		   TOP_count_limit);
   }
   fprintf(hfile, "}\n");
 
@@ -776,7 +790,7 @@ void ISA_Pack_End(void)
   fprintf(efile, "ISA_PACK_adj_info_index\n");
 
   fprintf(cfile, "\nconst mUINT8 ISA_PACK_adj_info_index[] = {\n");
-  for (top = 0; top < TOP_count; ++top ) {
+  for (top = 0; top < TOP_count_limit; ++top ) {
     op_assembly *op_pack = op_packs[top];
     fprintf(cfile, "  %2d,  /* %s */\n",
 		   op_pack ? op_pack->desc->adj_index : 0,

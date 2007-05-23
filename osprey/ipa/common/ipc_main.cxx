@@ -154,6 +154,11 @@ void ipa_initialize_external_symbols(struct external_symbols_list* ipa_external_
 }
 #endif
 
+#ifdef TARG_ST
+// TB: Extension loader initialization (loader.h).
+BE_EXPORTED extern void Initialize_Extension_Loader(void);
+#endif
+
 void
 #ifdef TARG_ST
 ipa_dot_so_init (INT argc, char **argv)
@@ -171,6 +176,12 @@ ipa_dot_so_init ()
     Dont_Use_WN_Free_List ();
 
     Init_Operator_To_Opcode_Table ();
+
+#ifdef TARG_ST
+    //TB: initialized mtypes and builtins for extensions 
+    Initialize_Extension_Loader ();
+#endif
+
     Initialize_Symbol_Tables (TRUE);
     Initialize_Auxiliary_Tables ();
     

@@ -417,7 +417,7 @@ expand_builtin_init_dwarf_reg_sizes (address)
      tree address;
 {
   int i;
-  enum machine_mode mode = TYPE_MODE (char_type_node);
+  machine_mode_t mode = TYPE_MODE (char_type_node);
   rtx addr = expand_expr (address, NULL_RTX, VOIDmode, 0);
   rtx mem = gen_rtx_MEM (BLKmode, addr);
 
@@ -435,7 +435,7 @@ expand_builtin_init_dwarf_reg_sizes (address)
 
 #ifdef DWARF_ALT_FRAME_RETURN_COLUMN
   {
-    enum machine_mode save_mode = Pmode;
+    machine_mode_t save_mode = Pmode;
     HOST_WIDE_INT offset = DWARF_ALT_FRAME_RETURN_COLUMN * GET_MODE_SIZE (mode);
     HOST_WIDE_INT size = GET_MODE_SIZE (save_mode);
     emit_move_insn (adjust_address (mem, mode, offset), GEN_INT (size));
@@ -3662,7 +3662,7 @@ static dw_loc_descr_ref reg_loc_descriptor PARAMS ((rtx));
 static dw_loc_descr_ref int_loc_descriptor PARAMS ((HOST_WIDE_INT));
 static dw_loc_descr_ref based_loc_descr	PARAMS ((unsigned, long));
 static int is_based_loc			PARAMS ((rtx));
-static dw_loc_descr_ref mem_loc_descriptor PARAMS ((rtx, enum machine_mode mode));
+static dw_loc_descr_ref mem_loc_descriptor PARAMS ((rtx, machine_mode_t mode));
 static dw_loc_descr_ref concat_loc_descriptor PARAMS ((rtx, rtx));
 static dw_loc_descr_ref loc_descriptor	PARAMS ((rtx));
 static dw_loc_descr_ref loc_descriptor_from_tree PARAMS ((tree, int));
@@ -8131,7 +8131,7 @@ is_based_loc (rtl)
 static dw_loc_descr_ref
 mem_loc_descriptor (rtl, mode)
      rtx rtl;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   dw_loc_descr_ref mem_loc_result = NULL;
 
@@ -8481,7 +8481,7 @@ loc_descriptor_from_tree (loc, addressp)
 	  }
 	else
 	  {
-	    enum machine_mode mode = GET_MODE (rtl);
+	    machine_mode_t mode = GET_MODE (rtl);
 
 	    if (GET_CODE (rtl) == MEM)
 	      {
@@ -8516,7 +8516,7 @@ loc_descriptor_from_tree (loc, addressp)
       {
 	tree obj, offset;
 	HOST_WIDE_INT bitsize, bitpos, bytepos;
-	enum machine_mode mode;
+	machine_mode_t mode;
 	int volatilep;
 
 	obj = get_inner_reference (loc, &bitsize, &bitpos, &offset, &mode,
@@ -9101,7 +9101,7 @@ add_const_value_attribute (die, rtl)
          constant requires more than one word in order to be adequately
          represented.  We output CONST_DOUBLEs as blocks.  */
       {
-	enum machine_mode mode = GET_MODE (rtl);
+	machine_mode_t mode = GET_MODE (rtl);
 
 	if (GET_MODE_CLASS (mode) == MODE_FLOAT)
 	  {
@@ -9353,7 +9353,7 @@ rtl_for_decl_location (decl)
 	  tree enttype = TREE_TYPE (arrtype);
 	  tree domain = TYPE_DOMAIN (arrtype);
 	  tree init = DECL_INITIAL (decl);
-	  enum machine_mode mode = TYPE_MODE (enttype);
+	  machine_mode_t mode = TYPE_MODE (enttype);
 
 	  if (GET_MODE_CLASS (mode) == MODE_INT && GET_MODE_SIZE (mode) == 1
 	      && domain
@@ -9672,7 +9672,7 @@ add_subscript_info (type_die, type)
      (e.g. Ada) we probably shouldn't do this.  */
 
   /* ??? The SGI dwarf reader fails for multidimensional arrays with a
-     const enum type.  E.g. const enum machine_mode insn_operand_mode[2][10].
+     const enum type.  E.g. const machine_mode_t insn_operand_mode[2][10].
      We work around this by disabling this feature.  See also
      gen_array_type_die.  */
 #ifndef MIPS_DEBUGGING_INFO
@@ -10239,7 +10239,7 @@ gen_array_type_die (type, context_die)
   element_type = TREE_TYPE (type);
 
   /* ??? The SGI dwarf reader fails for multidimensional arrays with a
-     const enum type.  E.g. const enum machine_mode insn_operand_mode[2][10].
+     const enum type.  E.g. const machine_mode_t insn_operand_mode[2][10].
      We work around this by disabling this feature.  See also
      add_subscript_info.  */
 #ifndef MIPS_DEBUGGING_INFO

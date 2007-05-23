@@ -11,7 +11,7 @@ extern struct obstack *rtl_obstack;
 rtx
 gen_rtx_fmt_s (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
 {
   rtx rt;
@@ -28,7 +28,7 @@ gen_rtx_fmt_s (code, mode, arg0)
 rtx
 gen_rtx_fmt_ee (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
 {
@@ -47,7 +47,7 @@ gen_rtx_fmt_ee (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_ue (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
 {
@@ -66,7 +66,7 @@ gen_rtx_fmt_ue (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_iss (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      const char *arg1;
      const char *arg2;
@@ -87,7 +87,7 @@ gen_rtx_fmt_iss (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_is (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      const char *arg1;
 {
@@ -106,7 +106,7 @@ gen_rtx_fmt_is (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_i (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
 {
   rtx rt;
@@ -123,7 +123,7 @@ gen_rtx_fmt_i (code, mode, arg0)
 rtx
 gen_rtx_fmt_isE (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      const char *arg1;
      rtvec arg2;
@@ -144,7 +144,7 @@ gen_rtx_fmt_isE (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_iE (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtvec arg1;
 {
@@ -163,7 +163,7 @@ gen_rtx_fmt_iE (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_Ess (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtvec arg0;
      const char *arg1;
      const char *arg2;
@@ -184,7 +184,7 @@ gen_rtx_fmt_Ess (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_sEss (code, mode, arg0, arg1, arg2, arg3)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      rtvec arg1;
      const char *arg2;
@@ -207,7 +207,7 @@ gen_rtx_fmt_sEss (code, mode, arg0, arg1, arg2, arg3)
 rtx
 gen_rtx_fmt_eE (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtvec arg1;
 {
@@ -226,7 +226,7 @@ gen_rtx_fmt_eE (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_E (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtvec arg0;
 {
   rtx rt;
@@ -243,7 +243,7 @@ gen_rtx_fmt_E (code, mode, arg0)
 rtx
 gen_rtx_fmt_e (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
 {
   rtx rt;
@@ -260,7 +260,7 @@ gen_rtx_fmt_e (code, mode, arg0)
 rtx
 gen_rtx_fmt_ss (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      const char *arg1;
 {
@@ -279,7 +279,7 @@ gen_rtx_fmt_ss (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_sies (code, mode, arg0, arg1, arg2, arg3)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      int arg1;
      rtx arg2;
@@ -302,7 +302,7 @@ gen_rtx_fmt_sies (code, mode, arg0, arg1, arg2, arg3)
 rtx
 gen_rtx_fmt_sse (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      const char *arg1;
      rtx arg2;
@@ -323,7 +323,7 @@ gen_rtx_fmt_sse (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_sE (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      rtvec arg1;
 {
@@ -342,7 +342,7 @@ gen_rtx_fmt_sE (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_iuuBteiee (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtx arg1;
      rtx arg2;
@@ -375,7 +375,7 @@ gen_rtx_fmt_iuuBteiee (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg
 rtx
 gen_rtx_fmt_iuuBteiee0 (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtx arg1;
      rtx arg2;
@@ -409,7 +409,7 @@ gen_rtx_fmt_iuuBteiee0 (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, ar
 rtx
 gen_rtx_fmt_iuuBteieee (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtx arg1;
      rtx arg2;
@@ -444,7 +444,7 @@ gen_rtx_fmt_iuuBteieee (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, ar
 rtx
 gen_rtx_fmt_iuu000000 (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtx arg1;
      rtx arg2;
@@ -471,7 +471,7 @@ gen_rtx_fmt_iuu000000 (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_iuuB00is (code, mode, arg0, arg1, arg2, arg3, arg4, arg5)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      rtx arg1;
      rtx arg2;
@@ -500,7 +500,7 @@ gen_rtx_fmt_iuuB00is (code, mode, arg0, arg1, arg2, arg3, arg4, arg5)
 rtx
 gen_rtx_fmt_ssiEEsi (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      const char *arg0;
      const char *arg1;
      int arg2;
@@ -529,7 +529,7 @@ gen_rtx_fmt_ssiEEsi (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 rtx
 gen_rtx_fmt_Ei (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtvec arg0;
      int arg1;
 {
@@ -548,7 +548,7 @@ gen_rtx_fmt_Ei (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_eEee0 (code, mode, arg0, arg1, arg2, arg3)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtvec arg1;
      rtx arg2;
@@ -572,7 +572,7 @@ gen_rtx_fmt_eEee0 (code, mode, arg0, arg1, arg2, arg3)
 rtx
 gen_rtx_fmt_eee (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
      rtx arg2;
@@ -593,7 +593,7 @@ gen_rtx_fmt_eee (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_ (code, mode)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx rt;
   rt = ggc_alloc_rtx (0);
@@ -608,7 +608,7 @@ gen_rtx_fmt_ (code, mode)
 rtx
 gen_rtx_fmt_w (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT arg0;
 {
   rtx rt;
@@ -625,7 +625,7 @@ gen_rtx_fmt_w (code, mode, arg0)
 rtx
 gen_rtx_fmt_wwwwww (code, mode, arg0, arg1, arg2, arg3, arg4, arg5)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      HOST_WIDE_INT arg0;
      HOST_WIDE_INT arg1;
      HOST_WIDE_INT arg2;
@@ -652,7 +652,7 @@ gen_rtx_fmt_wwwwww (code, mode, arg0, arg1, arg2, arg3, arg4, arg5)
 rtx
 gen_rtx_fmt_0 (code, mode)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
 {
   rtx rt;
   rt = ggc_alloc_rtx (1);
@@ -668,7 +668,7 @@ gen_rtx_fmt_0 (code, mode)
 rtx
 gen_rtx_fmt_i0 (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
 {
   rtx rt;
@@ -686,7 +686,7 @@ gen_rtx_fmt_i0 (code, mode, arg0)
 rtx
 gen_rtx_fmt_ei (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      int arg1;
 {
@@ -705,7 +705,7 @@ gen_rtx_fmt_ei (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_e0 (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
 {
   rtx rt;
@@ -723,7 +723,7 @@ gen_rtx_fmt_e0 (code, mode, arg0)
 rtx
 gen_rtx_fmt_u00 (code, mode, arg0)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
 {
   rtx rt;
@@ -742,7 +742,7 @@ gen_rtx_fmt_u00 (code, mode, arg0)
 rtx
 gen_rtx_fmt_eit (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      int arg1;
      union tree_node *arg2;
@@ -763,7 +763,7 @@ gen_rtx_fmt_eit (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_eeeee (code, mode, arg0, arg1, arg2, arg3, arg4)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
      rtx arg2;
@@ -788,7 +788,7 @@ gen_rtx_fmt_eeeee (code, mode, arg0, arg1, arg2, arg3, arg4)
 rtx
 gen_rtx_fmt_Ee (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtvec arg0;
      rtx arg1;
 {
@@ -807,7 +807,7 @@ gen_rtx_fmt_Ee (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_uuEiiiiiibbii (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
      rtvec arg2;
@@ -848,7 +848,7 @@ gen_rtx_fmt_uuEiiiiiibbii (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6,
 rtx
 gen_rtx_fmt_iiiiiiiitt (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      int arg0;
      int arg1;
      int arg2;
@@ -883,7 +883,7 @@ gen_rtx_fmt_iiiiiiiitt (code, mode, arg0, arg1, arg2, arg3, arg4, arg5, arg6, ar
 rtx
 gen_rtx_fmt_eti (code, mode, arg0, arg1, arg2)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      union tree_node *arg1;
      int arg2;
@@ -904,7 +904,7 @@ gen_rtx_fmt_eti (code, mode, arg0, arg1, arg2)
 rtx
 gen_rtx_fmt_bi (code, mode, arg0, arg1)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      struct bitmap_head_def *arg0;
      int arg1;
 {
@@ -923,7 +923,7 @@ gen_rtx_fmt_bi (code, mode, arg0, arg1)
 rtx
 gen_rtx_fmt_uuuu (code, mode, arg0, arg1, arg2, arg3)
      RTX_CODE code;
-     enum machine_mode mode;
+     machine_mode_t mode;
      rtx arg0;
      rtx arg1;
      rtx arg2;

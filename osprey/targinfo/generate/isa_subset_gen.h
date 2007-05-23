@@ -82,6 +82,7 @@ extern "C" {
 void ISA_Subset_Begin( const char* archname );
 typedef struct isa_subset *ISA_SUBSET;
 ISA_SUBSET ISA_Subset_Create( ISA_SUBSET subset, const char* name );
+void ISA_Subset_Is_Extensible( ISA_SUBSET subset );
 void Instruction_Group( ISA_SUBSET isa_subset, ... );
 void ISA_Subset_End(void);
 

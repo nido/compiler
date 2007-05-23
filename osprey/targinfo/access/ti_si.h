@@ -362,11 +362,16 @@ extern "C" {
 #endif
 #endif
 
+#ifndef TARG_ST
 typedef enum topcode TOPCODE;
+#endif
 
 #include <topcode.h>
 
 #ifdef TARG_ST
+/* Redefining TOP type */
+typedef TOP TOPCODE;
+
 /* Do not define types and scheduling information as const in order
  * to configure them at runtime
  */
@@ -425,12 +430,17 @@ typedef TI_SI_CONST struct {
 
 // [HK]
 // extern const INT SI_resource_count;
-BE_EXPORTED extern INT SI_resource_count;
+BE_EXPORTED extern INT SI_resource_count; // resource count variable in be executable
+extern INT TI_SI_resource_count;          // resource count variable in targinfo library
 #ifndef TARG_ST
 #pragma weak SI_resource_count
 #endif
 
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern SI_RESOURCE * TI_SI_CONST * SI_resources;
+#else
 TARGINFO_EXPORTED extern SI_RESOURCE * TI_SI_CONST SI_resources[];
+#endif
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_resources
 #endif
@@ -522,13 +532,13 @@ SI_RESOURCE_ID_SET_Intersection4_Non_Empty( SI_RESOURCE_ID_SET s0,
 {
   return (s0 & s1 & s2 & s3) != (SI_RESOURCE_ID_SET)0;
 }
-
+#ifdef BACK_END
 inline SI_RESOURCE_ID_SET
 SI_RESOURCE_ID_SET_Complement( SI_RESOURCE_ID_SET s )
 {
   return (~s) & SI_RESOURCE_ID_SET_Universe();
 }
-
+#endif
 /****************************************************************************
  ****************************************************************************/
 
@@ -605,7 +615,11 @@ TARGINFO_EXPORTED extern TI_SI_CONST INT SI_issue_slot_count;
 #pragma weak SI_issue_slot_count
 #endif
 
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern SI_ISSUE_SLOT* TI_SI_CONST * SI_issue_slots;
+#else
 TARGINFO_EXPORTED extern SI_ISSUE_SLOT* TI_SI_CONST SI_issue_slots[];
+#endif
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_issue_slots
 #endif
@@ -708,13 +722,17 @@ typedef TI_SI_CONST struct {
   TI_SI_CONST SI_RESOURCE_ID_SET * TI_SI_CONST *ii_resources_used;
   SI_BAD_II_SET bad_iis;
   mINT32 valid_issue_slot_count;
-  SI_ISSUE_SLOT * const *valid_issue_slots;
+  SI_ISSUE_SLOT * TI_SI_CONST *valid_issue_slots;
   mINT32 resource_total_vector_size;
   SI_RESOURCE_TOTAL *resource_total_vector;
   mUINT8 write_write_interlock;
 } SI;
 
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern SI* TI_SI_CONST * SI_top_si;
+#else
 TARGINFO_EXPORTED extern SI* TI_SI_CONST SI_top_si[];
+#endif
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_top_si
 #endif
@@ -842,6 +860,30 @@ TARGINFO_EXPORTED extern TI_SI_CONST INT SI_ID_count;
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_count
 #endif
+#ifdef TARG_ST
+/* For reconfigurability, need to be able to update the description */
+// TARGINFO_EXPORTED extern SI ** TI_SI_CONST SI_ID_si;
+// TARGINFO_EXPORTED extern SI ** TI_SI_CONST SI_top_si;
+
+extern INT                          Get_SI_resource_count  ();
+extern SI_RESOURCE * TI_SI_CONST*   Get_SI_resources       ();
+extern TI_SI_CONST SI_RRW           Get_SI_RRW_initializer ();
+extern TI_SI_CONST SI_RRW           Get_SI_RRW_overuse_mask();
+extern INT                          Get_SI_issue_slot_count();
+extern SI_ISSUE_SLOT * TI_SI_CONST* Get_SI_issue_slots     ();
+extern SI * TI_SI_CONST*            Get_SI_ID_si           ();
+extern SI * TI_SI_CONST*            Get_SI_top_si          ();
+
+extern void Set_SI_resource_count  (INT);
+extern void Set_SI_resources       (SI_RESOURCE * TI_SI_CONST*);
+extern void Set_SI_RRW_initializer (TI_SI_CONST SI_RRW);
+extern void Set_SI_RRW_overuse_mask(TI_SI_CONST SI_RRW);
+extern void Set_SI_issue_slot_count(INT);
+extern void Set_SI_issue_slots     (SI_ISSUE_SLOT * TI_SI_CONST*);
+extern void Set_SI_ID_si           (SI * TI_SI_CONST*);
+extern void Set_SI_top_si          (SI * TI_SI_CONST*);
+extern void Set_SI_ID_count        (INT);
+#endif
 
 #ifdef TARG_ST
 extern INT SI_ID_Count(void);
@@ -852,7 +894,11 @@ inline INT SI_ID_Count(void)
 }
 #endif
 
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern SI* TI_SI_CONST * SI_ID_si;
+#else
 TARGINFO_EXPORTED extern SI* TI_SI_CONST SI_ID_si[];
+#endif
 #ifndef _NO_WEAK_SUPPORT_
 #pragma weak SI_ID_si
 #endif

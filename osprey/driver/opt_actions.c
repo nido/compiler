@@ -49,7 +49,9 @@
 #include "objects.h"
 #include "phases.h"
 #include "run.h"
-
+
+#include "W_alloca.h"
+
 /* keep list of previous toggled option names, to give better messages */
 typedef struct toggle_name_struct {
 	int *address;
@@ -79,6 +81,10 @@ boolean Wuninitialized_is_asked = FALSE;
 #ifdef TARG_ST
 char *print_name;
 int print_kind;
+#endif
+
+#ifdef TARG_STxP70
+boolean farcall = FALSE;
 #endif
 
 
@@ -698,6 +704,32 @@ add_stxp70_phase_for_option( int flag )
     prepend_option_seen (flag);
   }
 }
+
+
+static void
+add_stxp70_int_option(char* option_name, int imm, phases_t phase)
+{
+  char *str = alloca(strlen(option_name)+16);
+  int flag;
+  sprintf(str, option_name, imm);
+  flag = add_new_option(str);
+  add_phase_for_option(flag, phase);
+  if (!already_provided(flag)) {
+    prepend_option_seen (flag);
+  }
+}
+
+static void
+check_range(char* m1, char* m2, int min1, int max1, int min2, int max2)
+{
+  if ((max1>0) && (max2>0) &&
+       ((min1<=min2 && min2<=max1) ||
+        (min2<=min1 && min1<=max2)))
+   warning("Conflict between size ranges %s [%d:%d] and "
+           "%s [%d:%d]\n",
+           m1, min1, max1, m2, min2, max2);
+}
+
 #endif /* TARG_STxP70 */
 
 /* ====================================================================
@@ -756,18 +788,139 @@ Check_Target ( void )
 
 
 #ifdef TARG_STxP70
+  /* [VCdV] Handle multiply flag processed in stxp70_options.i file
+   * and pass it to back-end
+   */
+  extern boolean STxP70mult;
+  if (STxP70mult) {
+    flag = add_new_option("-TARG:enable_mx=on");
+    add_phase_for_option(flag, P_be);
+    if (!already_provided(flag)) {
+      prepend_option_seen (flag);
+    }
+    toggle(&proc, PROC_stxp70_ext);
+  }
+
+  /*
+   * [TTh] Force processor type in presence of user
+   * defined extensions
+   */
+  extern int UserDefinedExtensionSeen;
+  if (UserDefinedExtensionSeen) {
+    toggle(&proc, PROC_stxp70_ext);
+  }
+
   switch (proc) {
   case UNDEFINED:
-    toggle(&proc, PROC_arch_1_3_1);
-    /* fallthru arch_1_3_1 default. */
-  case PROC_arch_1_3_1:
-    flag = add_new_option("-TARG:proc=arch_1_3_1");
+    toggle(&proc, PROC_stxp70);
+    /* fallthru stxp70 default. */
+  case PROC_stxp70:
+    flag = add_new_option("-TARG:proc=stxp70");
+    break;
+  case PROC_stxp70_ext:
+    flag = add_new_option("-TARG:proc=stxp70_ext");
     break;
   }
 
   if (proc != PROC_NONE) {
     add_stxp70_phase_for_option(flag);
   }
+
+  extern
+    enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
+  hwloop_mapping;
+  extern
+    unsigned int corecfg;
+    
+  /* -1 = default ; 0 : none 1: hwlooponly 2; jrgtudeconly 3: all  */
+  int core_has_hwloop = (corecfg & 0x300000) != 0;
+  /* select hwloop_mapping depending on olevel, osize and hwloop
+     option */
+  if (!core_has_hwloop) /* configuration without HW Loop */
+    {
+    if (hwloop_mapping==hwloop_all)
+  	   warning("HW loop mapping deactivated due to core configuration");
+    if (olevel>0)
+      hwloop_mapping = jrgtudeconly;
+    else
+      hwloop_mapping = hwloop_none;
+    }
+  else if (hwloop_mapping==hwloop_default)
+    {
+      if (olevel>0)
+        {
+          if (osize>0)
+            hwloop_mapping= jrgtudeconly;
+          else
+            hwloop_mapping= hwloop_all;
+        }
+      else
+        {
+          hwloop_mapping = hwloop_none;
+        }
+    }
+
+  add_stxp70_int_option("-TARG:activate_hwloop=%d", hwloop_mapping, P_be);
+  add_stxp70_int_option("-TARG:core_has_hwloop=%d", core_has_hwloop?  1 : 0, P_be);
+
+  /* pass memspace align options to back-end */
+  extern int da_mem, sda_mem, tda_mem;
+  if (da_mem>0) 
+    add_stxp70_int_option("-TARG:da_mem=%d", da_mem, P_be);
+  if (sda_mem>0) 
+    add_stxp70_int_option("-TARG:sda_mem=%d", sda_mem, P_be);
+  if (tda_mem>0) 
+    add_stxp70_int_option("-TARG:tda_mem=%d", tda_mem, P_be);
+
+  if ( (da_mem & sda_mem) || (da_mem & tda_mem) ||
+       (sda_mem & tda_mem))
+    {
+      warning("-Mda/-Msda/-Mtda options are conflicting !\n"
+              "Priority DA>SDA>TDA will be used.\n");
+    }
+
+  /* pass memspace size options to back-end */
+  extern int da_minsize, da_maxsize;
+  extern int sda_minsize, sda_maxsize;
+  extern int tda_minsize, tda_maxsize;
+  if (da_minsize>da_maxsize) {
+    warning(" da range incorrect %d > %d !", da_minsize, da_maxsize);
+    da_minsize=da_maxsize=0;
+  }
+  if (sda_minsize>sda_maxsize) {
+    warning("sda range incorrect %d > %d !", sda_minsize, sda_maxsize);
+    sda_minsize=sda_maxsize=0;
+  }
+  if (tda_minsize>tda_maxsize) {
+    warning("tda range incorrect %d > %d !", tda_minsize, tda_maxsize);
+    tda_minsize=tda_maxsize=0;
+  }
+  check_range("da", "sda", da_minsize, da_maxsize, sda_minsize, sda_maxsize);
+  check_range("da", "tda", da_minsize, da_maxsize, tda_minsize, tda_maxsize);
+  check_range("sda", "tda",sda_minsize, sda_maxsize, tda_minsize, tda_maxsize);
+              
+  if (da_minsize>0) 
+    add_stxp70_int_option("-TARG:da_minsize=%d", da_minsize, P_be);
+  if (da_maxsize>0)
+     add_stxp70_int_option("-TARG:da_maxsize=%d", da_maxsize, P_be);
+  if (sda_minsize>0) 
+    add_stxp70_int_option("-TARG:sda_minsize=%d", sda_minsize, P_be);
+  if (sda_maxsize>0)
+    add_stxp70_int_option("-TARG:sda_maxsize=%d", sda_maxsize, P_be);
+  if (tda_minsize>0) 
+    add_stxp70_int_option("-TARG:tda_minsize=%d", tda_minsize, P_be);
+  if (tda_maxsize>0)
+    add_stxp70_int_option("-TARG:tda_maxsize=%d", tda_maxsize, P_be);
+
+  if ((da_mem || sda_mem || tda_mem) &&
+      (da_minsize || da_maxsize || sda_minsize || sda_maxsize ||
+       tda_minsize || tda_maxsize))
+    {
+      warning(" use of memory placement options based on alignment\n"
+             " simultaneously with memory placement options based on size\n"
+             " is conflicting. Priority is on size then on alignment.\n");
+    }
+
 #endif
 
   if (abi == UNDEFINED) {
@@ -877,7 +1030,11 @@ Check_Target ( void )
 	toggle ( &isa, opt_val );
 	break;
       case ABI_STxP70_embedded:
-	opt_val = ISA_arch_1_3_1;
+	opt_val = ISA_stxp70;
+	toggle ( &isa, opt_val );
+	break;
+      case ABI_STxP70_fpx:
+	opt_val = ISA_stxp70_ext;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_IA32:
@@ -973,8 +1130,9 @@ Check_Target ( void )
 		opt_id = 0;	/* no proc for i64, ia32 yet */
 	}
 	/* ST100 may have more than one implementation in the future */
-	if (abi == ABI_ST100 || abi == ABI_ST200_embedded
-	    || abi == ABI_ST200_PIC || abi == ABI_STxP70_embedded) {
+	if (abi == ABI_ST100 || 
+	    abi == ABI_ST200_embedded || abi == ABI_ST200_PIC ||
+	    abi == ABI_STxP70_embedded || abi == ABI_STxP70_fpx) {
 	  opt_id = 0;
 	}
 	if (opt_id != 0) {
@@ -1146,7 +1304,7 @@ static void
 check_output_name (string name)
 {
 	if (name == NULL) return;
-	if (get_source_kind_from_suffix (get_suffix(name)) != S_o && file_exists(name)) {
+	if (get_source_kind_from_suffix (get_suffix(name)) != S_o && file_exists(name) && strcmp(option_name,name)) {
 		warning("%s %s will overwrite a file that has a source-file suffix", option_name, name);
 	}
 }
@@ -1892,7 +2050,7 @@ Process_STxP70_Targ (string option,  string targ_args )
   else if (strncasecmp (option, "-mruntime", 9) == 0) {
     for (i = 0; Runtime_Map[i].pname != NULL; i++) {
       if (same_string(targ_args, Runtime_Map[i].pname)) {
-	toggle (&stxp70_runtime, Runtime_Map[i].pid);
+	toggle ((int*)&stxp70_runtime, Runtime_Map[i].pid);
       }
     }
     if (stxp70_runtime == UNDEFINED ) {
@@ -1902,6 +2060,16 @@ Process_STxP70_Targ (string option,  string targ_args )
 
 #endif
 }
-#endif
+
+
+#endif // STXP70
+
+void
+Process_keep_dir ( char * dir ) {
+  keep_dir = string_copy(dir);
+}
+
+extern void Process_extrcdir ( string optargs );
+
 #include "opt_action.i"
 

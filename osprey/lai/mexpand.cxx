@@ -55,39 +55,155 @@ static BOOL Trace_MOP;
 
 static MEM_POOL mexpand_pool;
 
+/*
+ * For a given tuple ( TN, Nb_Register_In_Sub_TNs ), return a structure
+ * containing the list of sub TNs, each one made of Nb_Register_In_Sub_TNs
+ * registers.
+ * TN is expected to be a multi-register TN, the number of registers
+ * being a power of 2.
+ * Nb_Register_In_Sub_TNs must also be a power of 2.
+ *
+ * Example:
+ * -------
+ * Consider register hierarchy R0 = Rh0:Rh1 = Rq0:Rq1:Rq2:Rq3
+ * Multi_TN_MAP_Get(map, R0, 1) will return {Rq0:Rq1:Rq2:Rq3}
+ * Multi_TN_MAP_Get(map, R0, 2) will return {Rh0:Rh1}
+ */
 static Multi_TN_Info *
 Multi_TN_MAP_Get (
 		  TN_MAP map,
-		  const TN *tn
+		  const TN *tn,
+		  INT subtn_nbregs
 		  )
 {
   INT i;
   Multi_TN_Info *result = NULL;
 
-  if (TN_is_register (tn) && TN_nhardregs (tn) > 1) {
+  if (TN_is_register (tn) && (TN_nhardregs (tn) > 1) &&
+      (subtn_nbregs < TN_nhardregs (tn))) {
+
+    // Compute the number of subdivisions available for the parameter TN
+    // as well as the id of the wanted one
+    const INT nregs = TN_nhardregs (tn);
+    const INT nb_subtns = nregs / subtn_nbregs;
+    INT nb_subdiv = 0;
+    INT wanted_subdiv = -1;
+    for (i = nregs; i > 1 && (!(i&1)); i=i>>1) {
+      if (i == nb_subtns) {
+	wanted_subdiv = nb_subdiv;
+      }
+      nb_subdiv++;
+    }
+    FmtAssert((i==1), ("Number of registers in parameter TN is not a power of 2"));
+    FmtAssert((wanted_subdiv!=-1), ("Number of registers in sub TNs is not a power of 2"));
+
     result = (Multi_TN_Info *)TN_MAP_Get (map, tn);
     if (result == NULL) {
-      const INT nregs = TN_nhardregs (tn);
       result = (Multi_TN_Info *)
-	MEM_POOL_Alloc (&mexpand_pool, sizeof(Multi_TN_Info));
-      result->count = nregs;
-      result->element = (TN **)
-	MEM_POOL_Alloc (&mexpand_pool, nregs * sizeof(TN *));
-      ISA_REGISTER_CLASS rclass = TN_register_class (tn);
-      REGISTER reg = TN_register (tn);
-      for (i = 0; i < nregs; i++) {
-	result->element[i] = Build_RCLASS_TN (rclass);
-	if (TN_is_zero_reg (tn)) {
-	  Set_TN_register (result->element[i], reg);
-	} else {
-	  Set_TN_register (result->element[i], reg + i);
-	}
+	// Each subdivision level is associated with a Multi_TN_Info
+	MEM_POOL_Alloc (&mexpand_pool, sizeof(Multi_TN_Info)*nb_subdiv);
+
+      for (i = 0; i < nb_subdiv; i++) {
+	result[i].count = nregs >> i;
+	result[i].element = (TN **)NULL;
       }
       TN_MAP_Set (map, (TN *)tn, result);
     }
+    result = &result[wanted_subdiv];
+    if (result->element == NULL) {
+      // Sub TNS not yet created for current subdivision
+      result->element = (TN **)
+	MEM_POOL_Alloc (&mexpand_pool, nb_subtns * sizeof(TN *));
+      ISA_REGISTER_CLASS rclass = TN_register_class (tn);
+      REGISTER reg = TN_register (tn);
+      const INT subtn_size = (TN_size (tn) / nregs) * subtn_nbregs;
+      for (i = 0; i < nb_subtns; i++) {
+	result->element[i] = Gen_Register_TN (rclass, subtn_size);
+	if (TN_is_zero_reg (tn)) {
+	  Set_TN_register (result->element[i], reg);
+	} else {
+	  Set_TN_register (result->element[i], reg + (i * subtn_nbregs));
+	}
+      }
+    }
   }
   return result;
-}    
+}
+
+
+/* [TTh]
+ * Update asm information attached to new_op, which is the expanded version
+ * of old_op, that contains Multi-register TNs.
+ */
+static void Update_For_Multi_ASM_OP_ANNOT(TN_MAP multi_tn_map, OP *new_op, OP *old_op) {
+  INT i;
+  INT opndnum, resnum;
+  INT new_opndnum = 0;
+  INT new_resnum = 0;
+  INT opnd_old2new[ISA_OPERAND_max_operands]; // Associate operand rank of old_op to operand rank of new_op
+  TN *tn;
+
+  ASM_OP_ANNOT* old_annot = (ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, old_op);
+  // Create a new annotation and attach it to new_op.
+  // Note: this is required as call to OP_Copy_Properties() in caller did not
+  //       create a new annotation but rather attach the one from old_op to 
+  //       new_op.
+  ASM_OP_ANNOT* new_annot = TYPE_PU_ALLOC(ASM_OP_ANNOT);
+  *new_annot = *old_annot;
+  OP_MAP_Set(OP_Asm_Map, new_op, new_annot);
+
+  for (opndnum = 0; opndnum < OP_opnds(old_op); opndnum++) {
+    TN *tn = OP_opnd(old_op, opndnum);
+    Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn, 1);
+    opnd_old2new[opndnum] = new_opndnum;
+    // First copy info for single register TNs or first part of Multi-register TNs
+    ASM_OP_opnd_constraint(new_annot)[new_opndnum] = ASM_OP_opnd_constraint(old_annot)[opndnum];
+    ASM_OP_opnd_subclass  (new_annot)[new_opndnum] = ASM_OP_opnd_subclass  (old_annot)[opndnum];
+    ASM_OP_opnd_position  (new_annot)[new_opndnum] = ASM_OP_opnd_position  (old_annot)[opndnum];
+    ASM_OP_opnd_memory    (new_annot)[new_opndnum] = ASM_OP_opnd_memory    (old_annot)[opndnum];
+    new_opndnum++;
+    if (info) {
+      // Then initialized infos for other part of Multi-register TNs
+      for (INT i = 1; i < info->count; i++) {
+	ASM_OP_opnd_constraint(new_annot)[new_opndnum] = ASM_OP_opnd_constraint(old_annot)[opndnum];
+	ASM_OP_opnd_subclass  (new_annot)[new_opndnum] = ASM_OP_opnd_subclass  (old_annot)[opndnum];
+	ASM_OP_opnd_position  (new_annot)[new_opndnum] = ASM_OP_position_UNDEF;
+	ASM_OP_opnd_memory    (new_annot)[new_opndnum] = ASM_OP_opnd_memory    (old_annot)[opndnum];
+	new_opndnum++;
+      }
+    }
+  }
+
+  for (resnum = 0; resnum < OP_results(old_op); resnum++) {
+    TN *tn = OP_result(old_op, resnum);
+    Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn, 1);
+    // First copy info for single register TNs or first part of Multi-register TNs
+    ASM_OP_result_constraint(new_annot)[new_resnum] = ASM_OP_result_constraint(old_annot)[resnum];
+    ASM_OP_result_subclass  (new_annot)[new_resnum] = ASM_OP_result_subclass  (old_annot)[resnum];
+    ASM_OP_result_position  (new_annot)[new_resnum] = ASM_OP_result_position  (old_annot)[resnum];
+    ASM_OP_result_clobber   (new_annot)[new_resnum] = ASM_OP_result_clobber   (old_annot)[resnum];
+    ASM_OP_result_memory    (new_annot)[new_resnum] = ASM_OP_result_memory    (old_annot)[resnum];
+    ASM_OP_result_same_opnd (new_annot)[new_resnum] = ((ASM_OP_result_same_opnd(old_annot)[resnum] == -1)
+						       ? -1
+						       : opnd_old2new[ASM_OP_result_same_opnd(old_annot)[resnum]]);
+    new_resnum++;
+    if (info) {
+      // Then initialized infos for other part of Multi-register TNs
+      for (INT i = 1; i < info->count; i++) {
+	ASM_OP_result_constraint(new_annot)[new_resnum] = ASM_OP_result_constraint(old_annot)[resnum];
+	ASM_OP_result_subclass  (new_annot)[new_resnum] = ASM_OP_result_subclass  (old_annot)[resnum];
+	ASM_OP_result_position  (new_annot)[new_resnum] = ASM_OP_position_UNDEF;
+	ASM_OP_result_clobber   (new_annot)[new_resnum] = ASM_OP_result_clobber   (old_annot)[resnum];
+	ASM_OP_result_memory    (new_annot)[new_resnum] = ASM_OP_result_memory    (old_annot)[resnum];
+	ASM_OP_result_same_opnd (new_annot)[new_resnum] = ((ASM_OP_result_same_opnd(old_annot)[resnum] == -1)
+							   ? -1
+							   : opnd_old2new[ASM_OP_result_same_opnd(old_annot)[resnum]]+i);
+	new_resnum++;
+      }
+    }
+  }
+}
+
 
 static void
 Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
@@ -98,6 +214,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
   
   for (op = BB_first_op(bb); op != NULL; op = next) {
     BOOL replace = FALSE;
+    BOOL rescan_new_ops = FALSE;
     next = OP_next(op);
     OPS new_ops = OPS_EMPTY;
     TOP opr = OP_code (op);
@@ -107,10 +224,15 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       TN *source[ISA_OPERAND_max_operands];
       INT i;
       INT ncopies;
+      // Handle guarded compose/extract
+      INT first_opnd = TOP_is_predicated(opr)?1:0;
       // Set up dest and source arrays.
       if (OP_extract(op)) {
-	Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, OP_opnd(op, 0));
 	ncopies = 0;
+	INT subtn_nbregs = TN_nhardregs(OP_result (op, 0));
+	Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map,
+						OP_opnd(op, first_opnd),
+						subtn_nbregs);
 	for (i = 0; i < OP_results(op); i++) {
 	  // Extract to constant result register can be eliminated.
 	  // Note that TN_is_const_reg does not work here because
@@ -127,18 +249,21 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	// Note that TN_is_const_reg does not work here because
 	// it rejects non-dedicated TNs.
 	if (! TN_is_zero_reg (OP_result (op, 0))) {
-	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, OP_result(op, 0));
-	  for (i = 0; i < OP_opnds(op); i++) {
-	      dest[ncopies] = info->element[i];
-	      source[ncopies] = OP_opnd(op, i);
-	      ncopies++;
+	  INT subtn_nbregs = TN_nhardregs(OP_opnd (op, first_opnd));
+	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map,
+						  OP_result(op, 0),
+						  subtn_nbregs);
+	  for (i = 0; i < OP_opnds(op)-first_opnd; i++) {
+	    dest[ncopies] = info->element[i];
+	    source[ncopies] =  OP_opnd(op, i + first_opnd);
+	    ncopies++;
 	  }
 	}
       } else {
 	// widemove
 	if (! TN_is_zero_reg (OP_result (op, 0))) {
-	  Multi_TN_Info *dstinfo = Multi_TN_MAP_Get (multi_tn_map, OP_result(op, 0));
-	  Multi_TN_Info *srcinfo = Multi_TN_MAP_Get (multi_tn_map, OP_opnd(op, 0));
+	  Multi_TN_Info *dstinfo = Multi_TN_MAP_Get (multi_tn_map, OP_result(op, 0), 1);
+	  Multi_TN_Info *srcinfo = Multi_TN_MAP_Get (multi_tn_map, OP_opnd(op, 0), 1);
 	  FmtAssert (dstinfo->count == srcinfo->count,
 		     ("Destination and source mismatch expanding widemove"));
 	  ncopies = 0;
@@ -164,6 +289,9 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	      }
 	    }
 	    if (j == ncopies) {
+	      // [TTh] Inserted ops must be rescanned if they
+	      //       potentially contain Multi-register TNs
+	      rescan_new_ops |= (TN_nhardregs(dest[i]) > 1);
 	      Exp_COPY (dest[i], source[i], &new_ops);
 	      dest[i] = NULL;
 	      source[i] = NULL;
@@ -180,8 +308,30 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
     } else {
       
       TOP multi_opr = CGTARG_TOP_To_Multi (opr);
-      
-      if (multi_opr != opr) {
+
+      // [TTh] For asm statement, check if it uses multi-register TNs
+      if (opr == TOP_asm) {
+	INT opndnum;
+	INT resnum;
+	multi_opr = TOP_UNDEFINED;
+	for (opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
+	  TN *tn = OP_opnd(op, opndnum);
+	  if (TN_is_register (tn) && (TN_nhardregs (tn) > 1)) {
+	    multi_opr = TOP_asm;
+	    break;
+	  }
+	}
+	for (resnum = 0; (multi_opr != TOP_asm) && resnum < OP_results(op); resnum++) {
+	  TN *tn = OP_result(op, resnum);
+	  if (TN_is_register (tn) && (TN_nhardregs (tn) > 1)) {
+	    multi_opr = TOP_asm;
+	    break;
+	  }
+	}
+      }
+
+      if ((multi_opr != TOP_UNDEFINED) &&
+	  ((multi_opr != opr) || (multi_opr == TOP_asm))) {
 	TN *new_opnds[ISA_OPERAND_max_operands];
 	INT new_opndnum = 0;
 	TN *new_results[ISA_OPERAND_max_results];
@@ -191,7 +341,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	
 	for (opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
 	  TN *tn = OP_opnd(op, opndnum);
-	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn);
+	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn, 1);
 	  if (info) {
 	    for (INT i = 0; i < info->count; i++) {
 	      new_opnds[new_opndnum++] = info->element[i];
@@ -202,7 +352,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	}
 	for (resnum = 0; resnum < OP_results(op); resnum++) {
 	  TN *tn = OP_result(op, resnum);
-	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn);
+	  Multi_TN_Info *info = Multi_TN_MAP_Get (multi_tn_map, tn, 1);
 	  if (info) {
 	    for (INT i = 0; i < info->count; i++) {
 	      new_results[new_resnum++] = info->element[i];
@@ -217,9 +367,13 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	OP_Copy_Properties(new_op, op);
 	// Also copy WN for alias info.
 	Copy_WN_For_Memory_OP (new_op, op);
+	if (multi_opr == TOP_asm) {
+	  // Update asm annotation if any
+	  Update_For_Multi_ASM_OP_ANNOT(multi_tn_map, new_op, op);
+	}
 	OPS_Append_Op (&new_ops, new_op);
 	replace = TRUE;
-	}
+      }
     }
     if (replace) {
       OP *new_op;
@@ -229,6 +383,9 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       }
       BB_Insert_Ops_Before (bb, op, &new_ops);
       BB_Remove_Op (bb, op);
+      if (rescan_new_ops && OPS_first(&new_ops)) {
+	next = OPS_first(&new_ops);
+      }
     }
   }
 }

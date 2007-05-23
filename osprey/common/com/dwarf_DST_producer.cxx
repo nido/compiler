@@ -1862,8 +1862,9 @@ DST_mk_subrange_type(DST_flag is_lb_cval,
 		     DST_cval_ref high) 	/* upper bound */
 #else
 		     DST_cval_ref high, 	/* upper bound */
-                     DST_flag is_count,
-                     DST_count_t count) 	/* size */
+             DST_flag is_count,
+		     DST_count_t count, /* size */
+    		 DST_INFO_IDX type)
 #endif
 {
    DST_INFO_IDX       info_idx;
@@ -1898,6 +1899,7 @@ DST_mk_subrange_type(DST_flag is_lb_cval,
    	DST_SUBRANGE_TYPE_count_val(attr) = count;
    	DST_SET_count(flag);
    }
+   DST_SUBRANGE_TYPE_type(attr) = type;
 #endif
 
    return DST_init_info(info_idx, DW_TAG_subrange_type, flag, attr_idx);

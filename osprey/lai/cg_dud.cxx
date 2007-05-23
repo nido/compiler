@@ -290,10 +290,13 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	Is_True(DEF_DUD_site[defsite_idx] == DUD_SITE::makeDef(op_idx, res),
 		("DUD_REGION_Init defsites traversal is not identical to first traversal"));
 
-	DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
-	FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
-	  BS_Union1D(BB_kill, *DEFsite_iter, NULL);
-	  BS_Difference1D(BB_gen, *DEFsite_iter);
+	// FdF 20060809: Support for predication
+	if (!OP_cond_def(op)) {
+	  DEFsite_list  = (DEFsite_list_t *)TN_MAP_Get(TN_DEFsites_map, DUD_tn);
+	  FOR_ALL_DEFSITE_LIST_ITEMS(DEFsite_list, DEFsite_iter) {
+	    BS_Union1D(BB_kill, *DEFsite_iter, NULL);
+	    BS_Difference1D(BB_gen, *DEFsite_iter);
+	  }
 	}
 	BS_Union1D(BB_gen, defsite_idx, NULL);
 	defsite_idx ++;
@@ -406,7 +409,9 @@ BOOL DUD_REGION::Init(BB_REGION *bb_region, MEM_POOL *region_pool) {
 	    BS_Union1D(BS_RCHin_tmp, *DEFsite_iter, NULL);
 	  else
 	    // This def kills reaching defs from other sites
-	    BS_Difference1D(BS_RCHin_tmp, *DEFsite_iter);
+	    // FdF 20060809: Support for predication
+	    if (!OP_cond_def(op))
+	      BS_Difference1D(BS_RCHin_tmp, *DEFsite_iter);
 	}
       }
     }
@@ -563,6 +568,7 @@ DUD_REGION *Build_DUD_info(BB_REGION *bb_region, MEM_POOL *region_pool) {
 
 }
 
+/*
 static BOOL
 check_Incrop(OP *defop) {
 
@@ -659,7 +665,7 @@ void Perform_AutoMode_Opt() {
   MEM_POOL_Push (&loop_descr_pool);
   BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
-  Calculate_Dominators();		/* needed for loop recognition */
+  Calculate_Dominators();		//needed for loop recognition
 
   for (LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
        loop;
@@ -695,4 +701,5 @@ void Perform_AutoMode_Opt() {
 
   Free_Dominators_Memory ();
 }
+*/
 #endif
