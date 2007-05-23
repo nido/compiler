@@ -1662,7 +1662,7 @@ Add_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER r, INT nregs, INT cur_op)
       //
       // infinite register set used when establishing fat points.
       //
-      if (reg > REGISTER_MAX) return;
+      if (reg > REGISTER_MAX) continue;
     }
 
     /* don't put non-allocatable registers back on the free list. */
@@ -3018,22 +3018,33 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 				    result_reg,
 				    result_nregs, opnum);
 	   Set_LR_last_use (extract_source_lr, LR_first_def (clr));
-	   if (reg != REGISTER_UNDEFINED
-	       && reg <= REGISTER_MAX) {
-	     INT dest_nbregs = TN_nhardregs(OP_result(extract_op, 0));
-	     for (INT d = 0; d < OP_results(extract_op); d++) {
-	       TN *extract_dest = OP_result(extract_op, d);
-	       if (extract_dest == tn) {
-		 LRA_TN_Allocate_Register (extract_dest, reg + (d * dest_nbregs));
-	       } else {
-		 LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
-		 if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
-		   LR_prefer_reg (d_lr) = reg + (d * dest_nbregs);
+	   if (reg != REGISTER_UNDEFINED) {
+	     if (reg <= REGISTER_MAX) {
+	       INT dest_nbregs = TN_nhardregs(OP_result(extract_op, 0));
+	       for (INT d = 0; d < OP_results(extract_op); d++) {
+		 TN *extract_dest = OP_result(extract_op, d);
+		 if (extract_dest == tn) {
+		   LRA_TN_Allocate_Register (extract_dest, reg + (d * dest_nbregs));
+		 } else {
+		   LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
+		   if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
+		     LR_prefer_reg (d_lr) = reg + (d * dest_nbregs);
+		   }
+		   Add_Avail_Reg (regclass, reg + (d * dest_nbregs), dest_nbregs, opnum);
 		 }
-		 Add_Avail_Reg (regclass, reg + (d * dest_nbregs), dest_nbregs, opnum);
 	       }
+	       continue;
 	     }
-	     continue;
+	     else {
+	       FmtAssert(Calculating_Fat_Points(),
+			 ("LRA: Invalid register returned by Allocate_Register()"));
+	       // [TTh] When computing fat points, Allocate_Register()  might
+	       // "allocate" a virtual register (reg > REGISTER_MAX) if there
+	       // is no real register available.
+	       // As we don't care about such registers here, we need to free
+	       // them (mainly to decrement the fat point).
+	       Add_Avail_Reg (regclass, reg, TN_nhardregs(extract_source), opnum);
+	     }
 	   }
 	 }
       }

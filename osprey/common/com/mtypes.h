@@ -258,6 +258,8 @@ BE_EXPORTED extern MTYPE_MASK Machine_Types_Available;
  */
 #define MTYPE_is_dynamic(n)  ((n) > MTYPE_STATIC_LAST)
 #define MTYPE_is_composed(n) ((n) >= FIRST_COMPOSED_MTYPE)
+//TB: Number of pure dynamic MTYPES (not composed) mtypes 
+#define NB_PURE_DYNAMIC_MTYPES (FIRST_COMPOSED_MTYPE - MTYPE_STATIC_LAST - 1)
 #endif
 
 /* ======================================================================= 

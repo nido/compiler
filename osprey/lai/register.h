@@ -1311,15 +1311,7 @@ extern ISA_REGISTER_SUBCLASS Register_Subclass_For_Mtype(TYPE_ID mtype);
 extern ISA_REGISTER_CLASS Register_Class_Num_From_Name(char *regname, INT32 *regnum);
 extern char *ISA_REGISTER_CLASS_Symbol(ISA_REGISTER_CLASS rc);
 extern char *ISA_REGISTER_CLASS_ASM_Name(ISA_REGISTER_CLASS rc);
-#else
-inline ISA_REGISTER_CLASS Register_Class_For_Mtype(TYPE_ID mtype)
-{
-  extern mISA_REGISTER_CLASS Mtype_RegClass_Map[MTYPE_MAX_LIMIT+1];
-  return   (mtype <= MTYPE_LAST)
-	 ? (ISA_REGISTER_CLASS)Mtype_RegClass_Map[mtype] 
-	 : ISA_REGISTER_CLASS_UNDEFINED;
-}
-#endif /* !TARG_ST */
+#endif
 
 extern void Mark_Specified_Registers_As_Not_Allocatable (void);
 

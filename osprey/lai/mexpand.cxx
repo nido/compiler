@@ -135,7 +135,8 @@ Multi_TN_MAP_Get (
  * Update asm information attached to new_op, which is the expanded version
  * of old_op, that contains Multi-register TNs.
  */
-static void Update_For_Multi_ASM_OP_ANNOT(TN_MAP multi_tn_map, OP *new_op, OP *old_op) {
+static void Update_For_Multi_ASM_OP_ANNOT(TN_MAP multi_tn_map, OP *new_op, OP *old_op,
+					  INT new_res_count, INT new_opnd_count) {
   INT i;
   INT opndnum, resnum;
   INT new_opndnum = 0;
@@ -148,8 +149,8 @@ static void Update_For_Multi_ASM_OP_ANNOT(TN_MAP multi_tn_map, OP *new_op, OP *o
   // Note: this is required as call to OP_Copy_Properties() in caller did not
   //       create a new annotation but rather attach the one from old_op to 
   //       new_op.
-  ASM_OP_ANNOT* new_annot = TYPE_PU_ALLOC(ASM_OP_ANNOT);
-  *new_annot = *old_annot;
+  ASM_OP_ANNOT* new_annot = Create_Empty_ASM_OP_ANNOT(new_res_count, new_opnd_count);
+  *new_annot = *old_annot; // Note: opnds and result info not copied here
   OP_MAP_Set(OP_Asm_Map, new_op, new_annot);
 
   for (opndnum = 0; opndnum < OP_opnds(old_op); opndnum++) {
@@ -309,29 +310,29 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       
       TOP multi_opr = CGTARG_TOP_To_Multi (opr);
 
-      // [TTh] For asm statement, check if it uses multi-register TNs
-      if (opr == TOP_asm) {
+      // [TTh] For asm statement and kill dummy op, check if it uses multi-register TNs
+      if ((opr == TOP_asm) || (opr == TOP_KILL)) {
 	INT opndnum;
 	INT resnum;
 	multi_opr = TOP_UNDEFINED;
 	for (opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
 	  TN *tn = OP_opnd(op, opndnum);
 	  if (TN_is_register (tn) && (TN_nhardregs (tn) > 1)) {
-	    multi_opr = TOP_asm;
+	    multi_opr = opr;
 	    break;
 	  }
 	}
-	for (resnum = 0; (multi_opr != TOP_asm) && resnum < OP_results(op); resnum++) {
+	for (resnum = 0; (multi_opr == TOP_UNDEFINED) && resnum < OP_results(op); resnum++) {
 	  TN *tn = OP_result(op, resnum);
 	  if (TN_is_register (tn) && (TN_nhardregs (tn) > 1)) {
-	    multi_opr = TOP_asm;
+	    multi_opr = opr;
 	    break;
 	  }
 	}
       }
 
       if ((multi_opr != TOP_UNDEFINED) &&
-	  ((multi_opr != opr) || (multi_opr == TOP_asm))) {
+	  ((multi_opr != opr) || (multi_opr == TOP_asm) || (multi_opr == TOP_KILL))) {
 	TN *new_opnds[ISA_OPERAND_max_operands];
 	INT new_opndnum = 0;
 	TN *new_results[ISA_OPERAND_max_results];
@@ -369,7 +370,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	Copy_WN_For_Memory_OP (new_op, op);
 	if (multi_opr == TOP_asm) {
 	  // Update asm annotation if any
-	  Update_For_Multi_ASM_OP_ANNOT(multi_tn_map, new_op, op);
+	  Update_For_Multi_ASM_OP_ANNOT(multi_tn_map, new_op, op, new_resnum, new_opndnum);
 	}
 	OPS_Append_Op (&new_ops, new_op);
 	replace = TRUE;

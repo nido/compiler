@@ -116,7 +116,7 @@ static TYPE_ID Machine_Next_Alignment[] = {
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define Machine_Next_Alignment_Access(n) \
-     (n > MTYPE_STATIC_COUNT) ? \
+     (n > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Machine_Next_Alignment_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
      : \
        Machine_Next_Alignment[n]
@@ -157,7 +157,7 @@ static TYPE_ID Machine_Prev_Alignment[] = {
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define Machine_Prev_Alignment_Access(n) \
-     (n > MTYPE_STATIC_COUNT) ? \
+     (n > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Machine_Prev_Alignment_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
      : \
        Machine_Prev_Alignment[n]
@@ -349,7 +349,7 @@ static TYPE_ID Table_complex_to_real[] = {
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define Table_complex_to_real_Access(n) \
-     (n > MTYPE_STATIC_COUNT) ? \
+     (n > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Table_complex_to_real_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
      : \
        Table_complex_to_real[n]
@@ -404,7 +404,7 @@ static TYPE_ID Table_comparison[] = {
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define Table_comparison_Access(n) \
-     (n > MTYPE_STATIC_COUNT) ? \
+     (n > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Table_comparison_Access: no access for dynamic MTYPE %d", (n))), MTYPE_UNKNOWN \
      : \
        Table_comparison[n]
@@ -422,7 +422,7 @@ TYPE_ID  Mtype_comparison(TYPE_ID type)
 { 
 #ifdef TARG_ST
   // [TB] extension support
-  if (type <= MTYPE_STATIC_COUNT)
+  if (type <= MTYPE_STATIC_LAST)
     return Table_comparison_Access(type); 
   else
 #endif

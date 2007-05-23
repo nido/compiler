@@ -1319,12 +1319,13 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
                }
 	       break;
 
-    case ARRAY_TYPE:
 #ifdef TARG_ST
       //TB: generate dst for vector type
    case VECTOR_TYPE:
+       return Create_DST_type_For_Tree(TYPE_DEBUG_REPRESENTATION_TYPE(type_tree),
+                                       ttidx,idx);
 #endif
-		
+    case ARRAY_TYPE:
 	       {
                 dst_idx = DST_enter_array_type(type_tree, 
 			ttidx, idx, tsize);

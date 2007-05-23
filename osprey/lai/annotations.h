@@ -305,7 +305,6 @@ CG_EXPORTED extern ANNOTATION *ANNOT_Get (ANNOTATION *annot_list, ANNOTATION_KIN
 #define ANNOT_First(list,kind)	(ANNOT_Get (list, kind))
 #define ANNOT_Next(list,kind)	(ANNOT_Get (ANNOT_next(list), kind))
 
-
 struct ASM_OP_ANNOT 
 {
   const WN* wn;
@@ -317,13 +316,13 @@ struct ASM_OP_ANNOT
 #endif
 
 #ifdef TARG_ST
-  const char* result_constraint[10*REGISTER_COMPOSITE_SIZE_MAX];
-  ISA_REGISTER_SUBCLASS result_subclass[10*REGISTER_COMPOSITE_SIZE_MAX];
-  mUINT32 result_position[10*REGISTER_COMPOSITE_SIZE_MAX];
-  bool result_clobber[10*REGISTER_COMPOSITE_SIZE_MAX];
-  bool result_memory[10*REGISTER_COMPOSITE_SIZE_MAX];
+  const char*           *result_constraint;
+  ISA_REGISTER_SUBCLASS *result_subclass;
+  mUINT32               *result_position;
+  bool                  *result_clobber;
+  bool                  *result_memory;
   /* Track operand number that must match the result (or -1). */
-  mINT8 result_same_opnd[10*REGISTER_COMPOSITE_SIZE_MAX];
+  mINT8                 *result_same_opnd;
 #else
   const char* result_constraint[10];
   ISA_REGISTER_SUBCLASS result_subclass[10];
@@ -333,10 +332,10 @@ struct ASM_OP_ANNOT
 #endif
 
 #ifdef TARG_ST
-  const char* opnd_constraint[10*REGISTER_COMPOSITE_SIZE_MAX];
-  ISA_REGISTER_SUBCLASS opnd_subclass[10*REGISTER_COMPOSITE_SIZE_MAX];
-  mUINT32 opnd_position[10*REGISTER_COMPOSITE_SIZE_MAX];
-  bool opnd_memory[10*REGISTER_COMPOSITE_SIZE_MAX];
+  const char*           *opnd_constraint;
+  ISA_REGISTER_SUBCLASS *opnd_subclass;
+  mUINT32               *opnd_position;
+  bool                  *opnd_memory;
 #else
   const char* opnd_constraint[10];
   ISA_REGISTER_SUBCLASS opnd_subclass[10];
@@ -344,6 +343,11 @@ struct ASM_OP_ANNOT
   bool opnd_memory[10];
 #endif
 };
+
+#ifdef TARG_ST
+// [TTh] Constructor for ASM_OP_ANNOT
+CG_EXPORTED extern ASM_OP_ANNOT *Create_Empty_ASM_OP_ANNOT(INT num_results, INT num_opnds);
+#endif
 
 #define ASM_OP_wn(x)			((x)->wn)
 #define ASM_OP_clobber_set(x)		((x)->clobber_set)

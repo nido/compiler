@@ -82,13 +82,13 @@ TY_IDX DRA_EC_struct_ptr_ty = (TY_IDX) NULL;
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define Ldid_Opcode(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Ldid_Opcode: no access for dynamic MTYPE %d", (t))), OPC_UNKNOWN \
      : \
        Ldid_Opcode[t])
 #define Ldid_Opcode_set(t) \
-       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), Ldid_Opcode[t]
-static OPCODE Ldid_Opcode [MTYPE_STATIC_COUNT + 1] = {
+       FmtAssert (t <= MTYPE_STATIC_LAST, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), Ldid_Opcode[t]
+static OPCODE Ldid_Opcode [MTYPE_STATIC_LAST + 1] = {
 #else
 static OPCODE Ldid_Opcode [MTYPE_LAST + 1] = {
 #endif

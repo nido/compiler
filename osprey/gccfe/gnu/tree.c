@@ -4723,6 +4723,29 @@ finish_vector_type (t)
   layout_type (t);
 
   {
+#ifdef TARG_ST
+    machine_mode_t mode = TYPE_MODE(t);
+    bool isDynamic = mode > MACHINE_MODE_STATIC_LAST;
+    unsigned HOST_WIDE_INT indexVal =
+        ( isDynamic && mode_bitsize[inner_mode_array[mode]]?
+          mode_bitsize[mode] / mode_bitsize[inner_mode_array[mode]]:
+          TYPE_VECTOR_SUBPARTS (t)) - 1;
+    tree index = build_int_2 (indexVal, 0);
+    tree array = build_array_type (TREE_TYPE (t),
+				   build_index_type (index));
+    tree rt;
+    if(isDynamic)
+        {
+            rt = array;
+        }
+    else
+        {
+            rt = make_node (RECORD_TYPE);
+            TYPE_FIELDS (rt) = build_decl (FIELD_DECL, get_identifier ("f"),
+                                           array);
+            DECL_CONTEXT (TYPE_FIELDS (rt)) = rt;
+        }
+#else /* !defined TARG_ST */
     tree index = build_int_2 (TYPE_VECTOR_SUBPARTS (t) - 1, 0);
     tree array = build_array_type (TREE_TYPE (t),
 				   build_index_type (index));
@@ -4730,6 +4753,8 @@ finish_vector_type (t)
 
     TYPE_FIELDS (rt) = build_decl (FIELD_DECL, get_identifier ("f"), array);
     DECL_CONTEXT (TYPE_FIELDS (rt)) = rt;
+#endif
+
     layout_type (rt);
     TYPE_DEBUG_REPRESENTATION_TYPE (t) = rt;
     /* In dwarfout.c, type lookup uses TYPE_UID numbers.  We want to output

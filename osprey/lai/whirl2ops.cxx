@@ -102,6 +102,12 @@
 #include "register_preg.h" /* For CGTARG_Regclass_Preg_Min() */
 #endif
 
+#if   defined ( TARG_ST200  )
+#include "../gccfe/gnu/st200/insn-config.h" /* for MAX_RECOG_OPERANDS */
+#elif defined ( TARG_STxP70 )
+#include "../gccfe/gnu/stxp70/insn-config.h" /* for MAX_RECOG_OPERANDS */
+#endif
+
 #ifdef TARG_ST200
 #define ENABLE_64_BITS  /* Activate 64 bits support for st200 family. */
 #endif
@@ -981,15 +987,16 @@ PREG_To_TN (
 	((REGISTER_bit_size(rc, REGISTER_CLASS_last_register(rc))+7)/8)
       if (ST_size(preg_st)!=0 && ST_size(preg_st) != DEFAULT_RCLASS_SIZE(rclass))
 	{
-#ifdef TARG_ST200
-	  if (ST_size(preg_st) != DEFAULT_RCLASS_SIZE(rclass)*2) {
+#ifdef TARG_ST
+	  // [TTh] Check size compatibility with register class
+	  if (!ISA_OPERAND_Exist_With_Register_Class_Bitsize(rclass, ST_size(preg_st)*8)) {
 #endif
 	    unsigned line;
 	    USRCPOS usrcpos;
 	    USRCPOS_srcpos(usrcpos) = WN_Get_Linenum(wn);
 	    line = USRCPOS_linenum(usrcpos);
 	    ErrMsgSrcpos(EC_CG_Generic_Fatal, USRCPOS_srcpos(usrcpos), "type mismatch");
-#ifdef TARG_ST200
+#ifdef TARG_ST
 	  }
 #endif
 	}
@@ -5081,11 +5088,23 @@ Handle_ASM (const WN* asm_wn)
 {
   // 'result' and 'opnd' below have a fixed size as well as
   // the arrays in ASM_OP_ANNOT. Define here so we can sanity check.
+#ifdef TARG_ST
+  // [TTh] Max number of operands and results retrieved from gccfe constant
+  // Note that arrays in ASM_OP_ANNOT are now dynamically allocated
+  // when calling Create_Empty_ASM_OP_ANNOT(nb_res, nb_opnd)
+  enum { MAX_OPNDS = MAX_RECOG_OPERANDS, MAX_RESULTS = MAX_RECOG_OPERANDS };
+#else
   enum { MAX_OPNDS = 10, MAX_RESULTS = 10 };
+#endif
 
   // these two arrays may have to be reallocatable
+#ifdef TARG_ST
+  TN* result[MAX_RESULTS];
+  TN* opnd[MAX_OPNDS]; 
+#else
   TN* result[10];
   TN* opnd[10]; 
+#endif
   INT num_results = 0;
   INT num_opnds = 0;
 
@@ -5096,8 +5115,23 @@ Handle_ASM (const WN* asm_wn)
 
   CGTARG_Init_Asm_Constraints();
 
+#ifdef TARG_ST
+  // [TTh] Use new API to allocate ASM_OP_ANNOT. Need to know 
+  //       result and operand counts.
+  WN* asm_output_constraints = WN_asm_constraints(asm_wn);
+  FmtAssert(WN_operator(asm_output_constraints) == OPR_BLOCK,
+	    ("asm output constraints not a block?"));
+  for (WN* out_pragma = WN_first(asm_output_constraints);
+       out_pragma != NULL; 
+       out_pragma = WN_next(out_pragma)) {
+    num_results++;
+  }
+  ASM_OP_ANNOT* asm_info = Create_Empty_ASM_OP_ANNOT(num_results, WN_kid_count(asm_wn)-2);
+  num_results = 0;
+#else
   ASM_OP_ANNOT* asm_info = TYPE_PU_ALLOC(ASM_OP_ANNOT);
   BZERO(asm_info, sizeof(ASM_OP_ANNOT));
+#endif
 
   ASM_OP_wn(asm_info) = asm_wn;
 
@@ -5146,9 +5180,13 @@ Handle_ASM (const WN* asm_wn)
   // process ASM output parameters:
   // the out stores must directly follow the ASM,
   // while the constraints are in kid1
+#ifdef TARG_ST
+  // [TTh] Now retrieved at start of function
+#else
   WN* asm_output_constraints = WN_asm_constraints(asm_wn);
   FmtAssert(WN_operator(asm_output_constraints) == OPR_BLOCK,
             ("asm output constraints not a block?"));
+#endif
   
   for (WN* out_pragma = WN_first(asm_output_constraints);
        out_pragma != NULL; 

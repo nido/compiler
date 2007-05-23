@@ -303,6 +303,12 @@ static const char * const interface[] = {
   " *       For the instruction specified by 'topcode', give the",
   " *       result number with the use 'use'. If there is no such",
   " *       result, return -1.",
+  " *",
+  " *   BOOL ISA_OPERAND_Exist_With_Register_Class_Bitsize(",
+  " *     ISA_REGISTER_CLASS rc, INT bitsize",
+  " *   )",
+  " *       Return a boolean to specify if it exists an operand type of",
+  " *       specified register class with specified bit size.",
 #endif
   " *",
   " * ====================================================================",
@@ -980,7 +986,16 @@ void ISA_Operands_End(void)
              "#define ISA_OPERAND_TYPES_STATIC_COUNT (%d)\n",
              all_operand_types.size());
 
+     fprintf(hfile,
+             "\n"
+             "BE_EXPORTED extern INT ISA_OPERAND_types_count;\n");
+
+     fprintf(cfile,
+             "\n"
+             "BE_EXPORTED INT ISA_OPERAND_types_count = ISA_OPERAND_TYPES_STATIC_COUNT;\n");
+
      fprintf(efile, 
+	     "ISA_OPERAND_types_count\n"
              "ISA_OPERAND_operand_types\n");
     }
 
@@ -1705,6 +1720,36 @@ void ISA_Operands_End(void)
 		 "}\n");
   }                                       /* gen_static_code */
 
+
+#ifdef TARG_ST
+  // --------------------------------------------------------------------
+  //
+  //       ISA_OPERAND_Exist_With_Register_Class_Bitsize
+  //
+  // --------------------------------------------------------------------
+
+  if(gen_static_code) {
+    fprintf(hfile, "\nBE_EXPORTED extern BOOL ISA_OPERAND_Exist_With_Register_Class_Bitsize("
+		   "ISA_REGISTER_CLASS rc, INT bitsize);\n");
+    fprintf(efile, "ISA_OPERAND_Exist_With_Register_Class_Bitsize\n");
+    fprintf(cfile, "\nBOOL ISA_OPERAND_Exist_With_Register_Class_Bitsize("
+		   "ISA_REGISTER_CLASS rc, INT bitsize)\n"
+		   "{\n"
+		   "  INT i;\n"
+		   "  const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_operand_types;\n"
+		   "  for (i = 0; i < ISA_OPERAND_types_count; ++i) {\n"
+		   "    if (ISA_OPERAND_VALTYP_Is_Register(otype) &&\n"
+		   "        ISA_OPERAND_VALTYP_Register_Class(otype) == rc &&\n"
+		   "        ISA_OPERAND_VALTYP_Size(otype) == bitsize) {\n"
+		   "      return TRUE;\n"
+		   "    }\n"
+		   "    otype++;\n"
+		   "  }\n"
+		   "  return FALSE;\n"
+		   "}\n");
+   
+  }                                       /* gen_static_code */
+#endif
 
   // --------------------------------------------------------------------
   //

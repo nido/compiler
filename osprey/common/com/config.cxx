@@ -2199,14 +2199,22 @@ List_Compile_Options (
 #ifdef TARG_STxP70
   if (Cmd_Line!=NULL) {
     FILE* fcmdline = fopen(Cmd_Line, "r");
-    char lineptr[500];
+    const int bufsize = 100;
+    char buf[bufsize];
     
     if (fcmdline!=NULL)
       {
-        fgets(lineptr, 500, fcmdline);
+        int s=bufsize;
+        fprintf(f , "\n%s%s%s Command-line: ", pfx, bar,
+                pfx);
+        while (s==bufsize)
+          {
+            s=fread((char*)buf, sizeof(char), bufsize, fcmdline);
+            fwrite((char*)buf, sizeof(char), s, f);
+          }
+
         fclose(fcmdline);
-        fprintf(f , "\n%s%s%s Command-line: %s\n%s%s\n", pfx, bar,
-                pfx, lineptr,pfx,  bar);
+        fprintf(f , "\n%s%s\n", pfx,  bar);
       }
   }
 #endif

@@ -1874,13 +1874,13 @@ lower_f77_record_items (WN *, WN *, WN *, WN *, WN *, WN *,
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define fio_maskcode(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("fio_maskcode: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        fio_maskcode[t])
 #define fio_maskcode_set(t) \
-       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), fio_maskcode[t]
-static INT32 fio_maskcode [MTYPE_STATIC_COUNT + 1] = {
+       FmtAssert (t <= MTYPE_STATIC_LAST, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), fio_maskcode[t]
+static INT32 fio_maskcode [MTYPE_STATIC_LAST + 1] = {
 #else
 static INT32 fio_maskcode [MTYPE_LAST + 1] = {
 #endif

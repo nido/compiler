@@ -275,13 +275,13 @@ static BOOL save_Div_Split_Allowed ;
 //TB: extension reconfiguration: check that array accesses do not
 //overlap static counter
 #define TY_alias_array(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("TY_alias_array: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        TY_alias_array[t])
 #define TY_alias_array_set(t) \
-       FmtAssert (t <= MTYPE_STATIC_COUNT, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), TY_alias_array[t]
-static TY_IDX TY_alias_array[MTYPE_STATIC_COUNT + 1];
+       FmtAssert (t <= MTYPE_STATIC_LAST, ("MTYPE_TO_PREG: no access for dynamic MTYPE %d", (t))), TY_alias_array[t]
+static TY_IDX TY_alias_array[MTYPE_STATIC_LAST + 1];
 #endif
 
 static BOOL traceIO              = FALSE;
@@ -16653,7 +16653,7 @@ void Lower_Init(void)
 
 #ifdef TARG_ST
    // [CG] Map of mtypes to aliasing types for ansi rules
-   BZERO (TY_alias_array, sizeof(TY_IDX) * (MTYPE_STATIC_COUNT + 1));
+   BZERO (TY_alias_array, sizeof(TY_IDX) * (MTYPE_STATIC_LAST + 1));
 #endif
 }
 

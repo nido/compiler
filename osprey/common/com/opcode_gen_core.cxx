@@ -1001,12 +1001,12 @@ struct OPERATOR_info_struct OPERATOR_info[OPERATOR_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_p[t])
 static BOOL
-Is_MTYPE_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_p [MTYPE_LAST+1] = {
@@ -1045,12 +1045,12 @@ Is_MTYPE_p [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_V(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_V: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_V[t])
 static BOOL
-Is_MTYPE_V [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_V [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_V [MTYPE_LAST+1] = {
@@ -1089,12 +1089,12 @@ Is_MTYPE_V [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_b_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_b_f_i_p_z[t])
 static BOOL
-Is_MTYPE_M_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_b_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_b_f_i_p_z [MTYPE_LAST+1] = {
@@ -1133,12 +1133,12 @@ Is_MTYPE_M_b_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_b_bs_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_b_bs_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_b_bs_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -1177,12 +1177,12 @@ Is_MTYPE_M_b_bs_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_f_i_p_z[t])
 static BOOL
-Is_MTYPE_M_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_f_i_p_z [MTYPE_LAST+1] = {
@@ -1221,12 +1221,12 @@ Is_MTYPE_M_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_I4_I8_U4_U8_s(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8_s: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_I4_I8_U4_U8_s[t])
 static BOOL
-Is_MTYPE_I4_I8_U4_U8_s [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_I4_I8_U4_U8_s [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8_s [MTYPE_LAST+1] = {
@@ -1265,12 +1265,12 @@ Is_MTYPE_I4_I8_U4_U8_s [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_V_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_V_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_V_f_i_p_z[t])
 static BOOL
-Is_MTYPE_M_V_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_V_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_V_f_i_p_z [MTYPE_LAST+1] = {
@@ -1309,12 +1309,12 @@ Is_MTYPE_M_V_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_b_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_b_f_i_p_z[t])
 static BOOL
-Is_MTYPE_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_b_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_b_f_i_p_z [MTYPE_LAST+1] = {
@@ -1353,12 +1353,12 @@ Is_MTYPE_b_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_B_V(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_B_V: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_B_V[t])
 static BOOL
-Is_MTYPE_B_V [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_B_V [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_B_V [MTYPE_LAST+1] = {
@@ -1397,12 +1397,12 @@ Is_MTYPE_B_V [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_i(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_i: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_i[t])
 static BOOL
-Is_MTYPE_i [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_i [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_i [MTYPE_LAST+1] = {
@@ -1441,12 +1441,12 @@ Is_MTYPE_i [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f[t])
 static BOOL
-Is_MTYPE_f [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f [MTYPE_LAST+1] = {
@@ -1485,12 +1485,12 @@ Is_MTYPE_f [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_z[t])
 static BOOL
-Is_MTYPE_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_z [MTYPE_LAST+1] = {
@@ -1529,12 +1529,12 @@ Is_MTYPE_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_i(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_i: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_i[t])
 static BOOL
-Is_MTYPE_f_i [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_i [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_i [MTYPE_LAST+1] = {
@@ -1573,12 +1573,12 @@ Is_MTYPE_f_i [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_i_p_z[t])
 static BOOL
-Is_MTYPE_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_i_p_z [MTYPE_LAST+1] = {
@@ -1617,12 +1617,12 @@ Is_MTYPE_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_I4_I5_I8_f(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_I4_I5_I8_f: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_I4_I5_I8_f[t])
 static BOOL
-Is_MTYPE_I4_I5_I8_f [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_I4_I5_I8_f [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_I4_I5_I8_f [MTYPE_LAST+1] = {
@@ -1661,12 +1661,12 @@ Is_MTYPE_I4_I5_I8_f [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_V_b_f_i_p_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_V_b_f_i_p_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_V_b_f_i_p_z[t])
 static BOOL
-Is_MTYPE_M_V_b_f_i_p_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_V_b_f_i_p_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_V_b_f_i_p_z [MTYPE_LAST+1] = {
@@ -1705,12 +1705,12 @@ Is_MTYPE_M_V_b_f_i_p_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_z[t])
 static BOOL
-Is_MTYPE_f_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_z [MTYPE_LAST+1] = {
@@ -1749,12 +1749,12 @@ Is_MTYPE_f_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M[t])
 static BOOL
-Is_MTYPE_M [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M [MTYPE_LAST+1] = {
@@ -1793,12 +1793,12 @@ Is_MTYPE_M [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_V_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_V_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_V_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_M_V_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_V_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_V_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -1837,12 +1837,12 @@ Is_MTYPE_M_V_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_F4_F8_M_V_i_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_F4_F8_M_V_i_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_F4_F8_M_V_i_p[t])
 static BOOL
-Is_MTYPE_F4_F8_M_V_i_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_F4_F8_M_V_i_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_F4_F8_M_V_i_p [MTYPE_LAST+1] = {
@@ -1881,12 +1881,12 @@ Is_MTYPE_F4_F8_M_V_i_p [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_U4_U8(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_U4_U8[t])
 static BOOL
-Is_MTYPE_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_U4_U8 [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_U4_U8 [MTYPE_LAST+1] = {
@@ -1925,12 +1925,12 @@ Is_MTYPE_U4_U8 [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_U1_U2_U4_U8(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_U1_U2_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_U1_U2_U4_U8[t])
 static BOOL
-Is_MTYPE_U1_U2_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_U1_U2_U4_U8 [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_U1_U2_U4_U8 [MTYPE_LAST+1] = {
@@ -1969,12 +1969,12 @@ Is_MTYPE_U1_U2_U4_U8 [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_b_i_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_b_i_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_b_i_p[t])
 static BOOL
-Is_MTYPE_b_i_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_b_i_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_b_i_p [MTYPE_LAST+1] = {
@@ -2013,12 +2013,12 @@ Is_MTYPE_b_i_p [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_M_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -2057,12 +2057,12 @@ Is_MTYPE_M_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_i_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_i_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_i_p[t])
 static BOOL
-Is_MTYPE_f_i_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_i_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_i_p [MTYPE_LAST+1] = {
@@ -2101,12 +2101,12 @@ Is_MTYPE_f_i_p [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_I4_I8_U4_U8(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_I4_I8_U4_U8[t])
 static BOOL
-Is_MTYPE_I4_I8_U4_U8 [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_I4_I8_U4_U8 [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8 [MTYPE_LAST+1] = {
@@ -2145,12 +2145,12 @@ Is_MTYPE_I4_I8_U4_U8 [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_F4_F8_V_i_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_F4_F8_V_i_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_F4_F8_V_i_p[t])
 static BOOL
-Is_MTYPE_F4_F8_V_i_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_F4_F8_V_i_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_F4_F8_V_i_p [MTYPE_LAST+1] = {
@@ -2189,12 +2189,12 @@ Is_MTYPE_F4_F8_V_i_p [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_f_i_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_f_i_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_f_i_z[t])
 static BOOL
-Is_MTYPE_M_f_i_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_f_i_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_f_i_z [MTYPE_LAST+1] = {
@@ -2233,12 +2233,12 @@ Is_MTYPE_M_f_i_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_I4_I8_U4_U8_b(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_I4_I8_U4_U8_b: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_I4_I8_U4_U8_b[t])
 static BOOL
-Is_MTYPE_I4_I8_U4_U8_b [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_I4_I8_U4_U8_b [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_I4_I8_U4_U8_b [MTYPE_LAST+1] = {
@@ -2277,12 +2277,12 @@ Is_MTYPE_I4_I8_U4_U8_b [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -2321,12 +2321,12 @@ Is_MTYPE_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_V_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_V_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_V_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_V_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_V_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_V_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -2365,12 +2365,12 @@ Is_MTYPE_V_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_f_i_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_f_i_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_f_i_z[t])
 static BOOL
-Is_MTYPE_f_i_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_f_i_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_f_i_z [MTYPE_LAST+1] = {
@@ -2409,12 +2409,12 @@ Is_MTYPE_f_i_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_b(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_b: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_b[t])
 static BOOL
-Is_MTYPE_b [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_b [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_b [MTYPE_LAST+1] = {
@@ -2453,12 +2453,12 @@ Is_MTYPE_b [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_M_b_f_i_p_s_z(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_M_b_f_i_p_s_z: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_M_b_f_i_p_s_z[t])
 static BOOL
-Is_MTYPE_M_b_f_i_p_s_z [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_M_b_f_i_p_s_z [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_M_b_f_i_p_s_z [MTYPE_LAST+1] = {
@@ -2497,12 +2497,12 @@ Is_MTYPE_M_b_f_i_p_s_z [MTYPE_LAST+1] = {
 
 #ifdef TARG_ST
 #define Is_MTYPE_b_f_i_p(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("Is_MTYPE_b_f_i_p: no access for dynamic MTYPE %d", (t))), 0 \
      : \
        Is_MTYPE_b_f_i_p[t])
 static BOOL
-Is_MTYPE_b_f_i_p [MTYPE_STATIC_COUNT+1] = {
+Is_MTYPE_b_f_i_p [MTYPE_STATIC_LAST+1] = {
 #else
 static BOOL
 Is_MTYPE_b_f_i_p [MTYPE_LAST+1] = {

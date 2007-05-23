@@ -104,7 +104,7 @@ static struct winfo {
   INT   size:16;
 #ifdef TARG_ST
   //TB: extension support
-} WINFO [MTYPE_STATIC_COUNT + 1] = {
+} WINFO [MTYPE_STATIC_LAST + 1] = {
 #else
 } WINFO [MTYPE_LAST + 1] = {
 #endif
@@ -140,17 +140,17 @@ static struct winfo {
 
 #ifdef TARG_ST
 #define WTYPE_base_type(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("WTYPE_base_type: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
      : \
        WINFO[t].base_type)
 #define WTYPE_comp_type(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("WTYPE_comp_type: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
      : \
        WINFO[t].comp_type)
 #define WTYPE_size(t) \
-     ((t > MTYPE_STATIC_COUNT) ? \
+     ((t > MTYPE_STATIC_LAST) ? \
        FmtAssert (FALSE, ("WTYPE_size: no access for dynamic MTYPE %d", (t))), UNKNOWN_TYPE \
      : \
        WINFO[t].size)
@@ -227,7 +227,7 @@ Types_Are_Compatible ( TYPE_ID ltype, WN * wn )
   TYPE_ID  rtype = WN_rtype(wn);
 #ifdef TARG_ST
   //  TB: dynamic MTYPE 
-  if (rtype > MTYPE_STATIC_COUNT ||  ltype > MTYPE_STATIC_COUNT)
+  if (rtype > MTYPE_STATIC_LAST ||  ltype > MTYPE_STATIC_LAST)
     return (rtype == ltype);
 #endif
   return ( ( WTYPE_base_type(ltype) == WTYPE_base_type(rtype) )
@@ -255,7 +255,7 @@ IPO_Types_Are_Compatible ( TYPE_ID ltype, TYPE_ID rtype )
 #endif
 #ifdef TARG_ST
   //  TB: dynamic MTYPE 
-  if (rtype > MTYPE_STATIC_COUNT ||  ltype > MTYPE_STATIC_COUNT)
+  if (rtype > MTYPE_STATIC_LAST ||  ltype > MTYPE_STATIC_LAST)
     return (rtype == ltype);
 #endif
 

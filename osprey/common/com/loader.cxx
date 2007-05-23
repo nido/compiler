@@ -334,10 +334,10 @@ void Add_Composed_Mtype() {
  * OPEN64 Mtype init
  */
 void Init_Mtypes(int nb_mtype_to_add) {
-  MTYPE_COUNT = MTYPE_STATIC_COUNT;
+  MTYPE_COUNT = MTYPE_STATIC_LAST;
   FIRST_COMPOSED_MTYPE = MTYPE_COUNT + nb_mtype_to_add + 1;
   
-  if (MTYPE_STATIC_COUNT + nb_mtype_to_add > MTYPE_MAX_LIMIT) {
+  if (MTYPE_STATIC_LAST + nb_mtype_to_add > MTYPE_MAX_LIMIT) {
     FmtAssert(FALSE,
 	      ("Too much dynamic MTYPEs to add. Compilation aborted."));
   }

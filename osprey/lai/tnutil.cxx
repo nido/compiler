@@ -82,6 +82,7 @@
 #include "gra_live.h"
 //TB; for List_Software_Names
 #include "config_list.h"
+#include "lai_loader_api.h" // extension api
 #endif
 
 #ifdef TARG_ST
@@ -690,6 +691,21 @@ Build_Dedicated_TN (
   // array
   if (size == 0 || size == DEFAULT_RCLASS_SIZE(rclass)) {
     return ded_tns[rclass][reg];
+  }
+  if(rclass > ISA_REGISTER_CLASS_STATIC_MAX) {
+     ISA_REGISTER_SUBCLASS subclass;
+     FOR_ALL_ISA_REGISTER_SUBCLASS(subclass) {
+         const ISA_REGISTER_SUBCLASS_INFO * subclassInfo =
+             ISA_REGISTER_SUBCLASS_Info(subclass);
+         if(rclass == ISA_REGISTER_SUBCLASS_INFO_Class(subclassInfo) &&
+            ((EXTENSION_get_REGISTER_SUBCLASS_bit_size(subclass)+CHAR_BIT - 1)
+             / CHAR_BIT == size)) {
+                 TN *res = Gen_Register_TN(rclass, size);
+                 TN_Allocate_Register(res, reg);
+                 Set_TN_is_dedicated(res);
+                 return res;
+             }
+     }
   }
 #ifdef TARG_ST200
   if (size == DEFAULT_RCLASS_SIZE(rclass)*2) {

@@ -82,7 +82,7 @@ static mISA_REGISTER_SUBCLASS CGTARG_REGISTER_Mtype_RegSubclass_Map[MTYPE_MAX_LI
 ISA_REGISTER_CLASS
 CGTARG_Register_Class_For_Mtype(TYPE_ID mtype)
 {
-  return   (mtype <= MTYPE_LAST)
+  return   (mtype < FIRST_COMPOSED_MTYPE)
 	 ? (ISA_REGISTER_CLASS)CGTARG_REGISTER_Mtype_RegClass_Map[mtype] 
 	 : ISA_REGISTER_CLASS_UNDEFINED;
 }
@@ -90,7 +90,7 @@ CGTARG_Register_Class_For_Mtype(TYPE_ID mtype)
 ISA_REGISTER_SUBCLASS
 CGTARG_Register_Subclass_For_Mtype(TYPE_ID mtype)
 {
-  return   (mtype <= MTYPE_LAST)
+  return   (mtype < FIRST_COMPOSED_MTYPE)
 	 ? (ISA_REGISTER_CLASS)CGTARG_REGISTER_Mtype_RegSubclass_Map[mtype] 
 	 : ISA_REGISTER_CLASS_UNDEFINED;
 }
@@ -126,8 +126,8 @@ CGTARG_REGISTER_Init_Mtype_RegClass_Map ()
   }
 
   // Reconfigurability: initialize for extension mtype
-  if (MTYPE_COUNT > MTYPE_STATIC_COUNT) {
-	for (i=MTYPE_STATIC_COUNT+1; i<=MTYPE_COUNT; i++) {
+  if (NB_PURE_DYNAMIC_MTYPES > 0) {
+	for (i = MTYPE_STATIC_LAST + 1; i < FIRST_COMPOSED_MTYPE; i++) {
 	  map[i] = EXTENSION_MTYPE_to_REGISTER_CLASS(i);
 	}
   }
@@ -149,8 +149,8 @@ CGTARG_REGISTER_Init_Mtype_RegSubclass_Map ()
     map[i] = ISA_REGISTER_SUBCLASS_UNDEFINED;
 
   // Reconfigurability: initialize for extension mtype
-  if (MTYPE_COUNT > MTYPE_STATIC_COUNT) {
-    for (i=MTYPE_STATIC_COUNT+1; i<=MTYPE_COUNT; i++) {
+  if (NB_PURE_DYNAMIC_MTYPES > 0) {
+    for (i = MTYPE_STATIC_LAST + 1; i < FIRST_COMPOSED_MTYPE; i++) {
       map[i] = EXTENSION_MTYPE_to_REGISTER_SUBCLASS(i);
     }
   }
@@ -348,7 +348,7 @@ CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass)
  *   appaired register in the considered subclass.
  * ====================================================================
  */
-static mINT32
+static INT32
 CGTARG_DW_DEBUG_Get_Canonical_Index(ISA_REGISTER_CLASS rclass,
                                     INT32  index,
                                     UINT32 bit_size,
@@ -384,16 +384,16 @@ CGTARG_DW_DEBUG_Get_Canonical_Index(ISA_REGISTER_CLASS rclass,
      }
      
     // Looking for appaired registers.
-    nb_basic_reg = ISA_REGISTER_CLASS_INFO_First_Reg(cinfo) -
-                   ISA_REGISTER_CLASS_INFO_Last_Reg(cinfo)  + 
+    nb_basic_reg = ISA_REGISTER_CLASS_INFO_Last_Reg(cinfo) -
+                   ISA_REGISTER_CLASS_INFO_First_Reg(cinfo)  + 
                    1;
 
-    appaired_level = regclass_bit_size / bit_size;
+    appaired_level = bit_size / regclass_bit_size;
 
     // Size of appaired register must be a
     // power of two of the basic register size.
     FmtAssert( 0U ==(appaired_level & (appaired_level-1U)) &&
-               0U == (regclass_bit_size % bit_size),
+               0U == (bit_size % regclass_bit_size),
                ("uncorrect size for appaired registers"));
 
     // Calculate canonical index

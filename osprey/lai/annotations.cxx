@@ -125,3 +125,54 @@ ANNOT_Get (ANNOTATION *list, ANNOTATION_KIND kind)
   return list;
 }
 
+#ifdef TARG_ST
+// [TTh] Constructor for ASM_OP_ANNOT, that allocate ASM_OP_ANNOT
+//       object, as well as its set of internal arrays.
+//       All fields are initialized to 0.
+extern ASM_OP_ANNOT *
+Create_Empty_ASM_OP_ANNOT(INT num_results, INT num_opnds)
+{
+  const char **p_const_char_p;;
+  ISA_REGISTER_SUBCLASS *p_SUBCLASS;
+  mUINT32 *p_mUINT32;
+  bool *p_bool;
+
+  ASM_OP_ANNOT* asm_info = TYPE_PU_ALLOC(ASM_OP_ANNOT);
+  BZERO(asm_info, sizeof(ASM_OP_ANNOT));
+
+  /* Allocate tables 'shared' by results and operands */
+  if (num_results + num_opnds > 0) {
+    p_const_char_p = TYPE_PU_ALLOC_N(const char *, num_results + num_opnds);
+    BZERO(p_const_char_p, sizeof(const char *) *  (num_results + num_opnds));
+
+    p_SUBCLASS = TYPE_PU_ALLOC_N(ISA_REGISTER_SUBCLASS,  num_results + num_opnds);
+    BZERO(p_SUBCLASS, sizeof(ISA_REGISTER_SUBCLASS) * (num_results + num_opnds));
+
+    p_mUINT32 = TYPE_PU_ALLOC_N(mUINT32, num_results + num_opnds);
+    BZERO(p_mUINT32, sizeof(mUINT32) *  (num_results + num_opnds));
+
+    p_bool =  TYPE_PU_ALLOC_N(bool, (2 * num_results) + num_opnds);
+    BZERO(p_bool, sizeof(bool) *   ((2 * num_results) + num_opnds));
+  }
+
+  if (num_results > 0) {
+    asm_info->result_constraint = p_const_char_p;  p_const_char_p += num_results;
+    asm_info->result_subclass   = p_SUBCLASS;      p_SUBCLASS     += num_results;
+    asm_info->result_position   = p_mUINT32;       p_mUINT32      += num_results;
+    asm_info->result_clobber    = p_bool;          p_bool         += num_results;
+    asm_info->result_memory     = p_bool;          p_bool         += num_results;
+
+    asm_info->result_same_opnd  = TYPE_PU_ALLOC_N(mINT8, num_results);
+    BZERO(asm_info->result_same_opnd, sizeof(mINT8) * num_results);
+  }
+
+  if (num_opnds > 0) {
+    asm_info->opnd_constraint = p_const_char_p;
+    asm_info->opnd_subclass   = p_SUBCLASS;
+    asm_info->opnd_position   = p_mUINT32;
+    asm_info->opnd_memory     = p_bool;
+  }
+
+  return asm_info;
+}
+#endif

@@ -1,6 +1,271 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 23 16:02:21 CEST 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-trunk-for-merge
+
+Description:
+------------
+	* Merge guilon/dev-trunk-for-merge at rev #11963 into trunk with authoriz tion art #27162.
+	Merge back stxp70/main from rev #11698 to rev #11945.
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/dra_ec.cxx
+	M      osprey/be/lno/scalar_expand.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/wn_fio.cxx
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/register.h
+	M      osprey/lai/annotations.h
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/mexpand.cxx
+	M      osprey/lai/annotations.cxx
+	M      osprey/gccfe/gnu/tree.c
+	M      osprey/gccfe/gnu/config/stxp70/stxp70.c
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/mtypes.cxx
+	M      osprey/common/com/opcode_gen_core.cxx
+	M      osprey/common/com/symtab.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/mtypes.h
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/common/com/wn.cxx
+	M      osprey/ipa/main/analyze/ipa_inline.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.h
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.h
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/cg/targ_register.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue May 22 15:31:53 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27856
+
+Description:
+------------
+	* Fix for bug #27856 delivered with authorization branch #27859 
+	  -> Valid clobber list with extension register was sometimes rejected.
+
+	     (Check for allowed composite registers in PREG_To_TN() was too
+	      conservative for stxp70.   The st200 specific patch  has been 
+	      replaced by a generic code, that rely on   ISA_OPERAND_VALTYP
+	      information to determine if a given register size is supported
+	      for a given register class.)
+
+Modified Files:
+---------------
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon May 14 11:00:03 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26576
+
+Description:
+------------
+	* [branches/stxp70/main] Deliver fir for bug #26576: [Extensions] IT handlers do not save user-defined extension registers, from branches/fixes/codex-26576 rev #11856 with authorization art #27014
+
+
+Modified Files:
+---------------
+	M      osprey/lai/tnutil.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/expand/exp_targ.h
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.h
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu May 10 16:24:12 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27424
+
+Description:
+------------
+	* Fix bug #27424 with authorization branch #27426
+	  Fix in front-end to accept valid value of aligned_stack attribute
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/config/stxp70/stxp70.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May  9 12:38:10 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26551
+
+Description:
+------------
+	* [branches/stxp70/main] Deliver fix for enhancement art #26551: Debug information for extension type, from branches/fixes/codex-26551 rev #11811 with authorization art #26562
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/tree.c
+	M      osprey/gccfe/wfe_dst.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May  9 09:59:59 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27285
+
+Description:
+------------
+	fix bug #27285 .   
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/config.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri May  4 15:06:59 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-25272
+
+Description:
+------------
+	* Deliver fix for bug #25272 with authorization branch #25406 
+	  Updated backend to remove hard coded limitation of 10 ASM parameters and use gccfe limitation instead (currently defined to 30).
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/annotations.h
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/mexpand.cxx
+	M      osprey/lai/annotations.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May  2 14:11:02 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26467
+
+Description:
+------------
+	* Deliver fix for bug #26467 with authorization branch #26670 
+	  In LRA, corrected estimation of the register pressure (fat point estimation) in code involving multi-register TNs, to avoid generation of useless spill code 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Apr 30 11:21:25 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-25318
+
+Description:
+------------
+	* Deliver fix for bug #25318 with authorization art #25409, dealing with extension code generation:
+	- Extended supported code generation paths when some predefined instructions are disabled
+	- Factorized code generation path detection for move Core<->Ext (both used by load/store and move API)
+	- Extended API with 
+	   - EXTENSION_Expand_Copy_From_Core(),
+	   - EXTENSION_Expand_Copy_To_Core(),
+	   - EXTENSION_Expand_Clr()
+
+Modified Files:
+---------------
+	M      osprey/lai/mexpand.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.h
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Apr 30 10:31:23 CEST 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-25628
+
+Description:
+------------
+	* Deliver bug #25628:Valgrind issue reported in cg_spill when a user defined extension is set
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/dra_ec.cxx
+	M      osprey/be/lno/scalar_expand.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/wn_fio.cxx
+	M      osprey/lai/register.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/mtypes.cxx
+	M      osprey/common/com/opcode_gen_core.cxx
+	M      osprey/common/com/symtab.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/mtypes.h
+	M      osprey/common/com/wn.cxx
+	M      osprey/ipa/main/analyze/ipa_inline.cxx
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May 23 15:00:50 CEST 2007
 	Author:    guillon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

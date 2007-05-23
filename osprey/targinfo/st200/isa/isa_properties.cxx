@@ -1032,6 +1032,7 @@ main()
   Instruction_Group (var_opnds, 
 		 TOP_asm, 
 		 TOP_intrncall, 
+		 TOP_KILL, 
 		 TOP_phi, 
 		 TOP_psi, 
 		 TOP_pushregs, 

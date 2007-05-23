@@ -1266,7 +1266,7 @@ Create_Preg_explicit(TYPE_ID mtype, const char *name,
 	default:
 	  ;
 	  // Reconfigurability: currently consider that extension types need a single pseudo-reg
-// 	  if (mtype > MTYPE_STATIC_COUNT) {
+// 	  if (mtype > MTYPE_STATIC_LAST) {
 // 	    ;
 // 	  }
 #endif
@@ -1326,7 +1326,7 @@ Preg_Increment (TYPE_ID mtype)
 	return 2;
 #ifdef TARG_ST
     default:
-      if (mtype > MTYPE_STATIC_COUNT) {
+      if (mtype > MTYPE_STATIC_LAST) {
 	FmtAssert(FALSE, ("Unhandled dynamic mtype\n"));
       }
 #endif

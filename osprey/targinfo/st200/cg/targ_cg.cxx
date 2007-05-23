@@ -78,6 +78,10 @@
 /* for asm stmt */
 #include "register_preg.h"
 
+#ifdef TARG_ST
+#include "../../../gccfe/gnu/st200/insn-config.h" /* for MAX_RECOG_OPERANDS */
+#endif
+
 /* Import from targ_cgemit.cxx. */
 extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
 
@@ -807,9 +811,16 @@ CGTARG_Dependence_Required (
  *                          Local ASMs stuff:
  * ====================================================================
  */
+#ifdef TARG_ST
+// [TTh] Use gccfe limit for max ASM operands
+static TN* asm_constraint_tn[MAX_RECOG_OPERANDS];
+static ISA_REGISTER_SUBCLASS asm_constraint_sc[MAX_RECOG_OPERANDS];
+static char asm_constraint_name[MAX_RECOG_OPERANDS][8];
+#else
 static TN* asm_constraint_tn[10];
 static ISA_REGISTER_SUBCLASS asm_constraint_sc[10];
 static char asm_constraint_name[10][8];
+#endif
 static INT asm_constraint_index;
 
 /* ====================================================================
@@ -821,7 +832,12 @@ CGTARG_Init_Asm_Constraints (void)
 {
   // can use any type; it will be ignored
   Setup_Output_Parameter_Locations (MTYPE_To_TY(MTYPE_I8));
-  for (INT i = 0; i < 10; ++i) {
+#ifdef TARG_ST
+  for (INT i = 0; i < MAX_RECOG_OPERANDS; ++i)
+#else
+  for (INT i = 0; i < 10; ++i)
+#endif
+  {
     asm_constraint_tn[i] = NULL;
     asm_constraint_sc[i] = ISA_REGISTER_SUBCLASS_UNDEFINED;
     asm_constraint_name[i][0] = '\0';
@@ -980,6 +996,28 @@ CGTARG_TN_For_Asm_Operand (
   return ret_tn;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   strstr_No_Digit_After
+ *
+ *   Find the first occurrence of the substring needle in the string
+ *   haystack, that is not directly followed by a digit [0-9].
+ * ====================================================================
+ */
+static char *
+strstr_No_Digit_After(char *haystack, const char *needle) {
+  char *p = haystack;
+  while ((p = strstr(p, needle)) != NULL) {
+    char* leftover = p + strlen(needle);
+    if (!(*leftover >= '0' && *leftover <= '9')) {
+      return (p);
+    }
+    p = leftover;
+  }
+  return (NULL);
+}
+#endif
+
 /* ====================================================================
  *   Replace_Substring
  * ====================================================================
@@ -994,7 +1032,13 @@ Replace_Substring (
   UINT  buflen = strlen(in) + 64;
   char* buf = (char*) alloca(buflen);
   char* p;
+#ifdef TARG_ST
+  // [TTh] To handle more than 10 parameters in asm stmt, we must
+  //       ignore, for instance, %10, %11, .. when searching for %1
+  while ((p = strstr_No_Digit_After(in, from)) != NULL) {
+#else
   while ((p = strstr(in, from)) != NULL) {
+#endif
     char* leftover = p + strlen(from);
     *p = '\0';
     while (strlen(in) + strlen(to) + strlen(leftover) >= buflen) {
@@ -1076,15 +1120,25 @@ CGTARG_Modify_Asm_String (
     }
   }
   
-  char pattern[4];
+  char pattern[5];
+#ifdef TARG_ST
+  // [TTh] Handle more than 10 parameters
+  sprintf(pattern, "%%%d", position);
+#else
   sprintf(pattern, "%%%c", '0'+position);
+#endif
   
   asm_string =  Replace_Substring(asm_string, pattern, name);
 
   if (TN_is_register(tn)) {
     for (INT i = 0; i < CGTARG_Num_Asm_Opnd_Modifiers; i++) {
       char modifier = CGTARG_Asm_Opnd_Modifiers[i];
+#ifdef TARG_ST
+      // [TTh] Handle more than 10 parameters
+      sprintf(pattern, "%%%c%d", modifier, position);
+#else
       sprintf(pattern, "%%%c%c", modifier, '0'+position);
+#endif
       name = (char*) CGTARG_Modified_Asm_Opnd_Name(modifier, tn, name);
       asm_string  = Replace_Substring(asm_string, pattern, name);
     }
