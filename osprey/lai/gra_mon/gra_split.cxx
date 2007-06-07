@@ -303,9 +303,6 @@ Regs_Used( TN* tn, GRA_BB* gbb, ISA_REGISTER_CLASS rc )
     REGISTER_SET allowed_prefs = lunit->Allowed_Preferences();
 
     used = REGISTER_SET_Difference(used,allowed_prefs);
-#ifdef TARG_ST
-    used = REGISTER_SET_Union (used, lunit->SubClass_Disallowed());
-#endif
   }
 
   //
@@ -381,6 +378,13 @@ Max_Colorable_LUNIT( LUNIT** result )
     gbb_mgr.Split_LUNIT_Set(lunit->Gbb(), lunit);
 
     regs_used = Regs_Used(tn,lunit->Gbb(),rc);
+#ifdef TARG_ST
+    // [TTh] Prepare accurate allocation check
+    REGISTER_SET allowed = REGISTER_SET_Difference(all_regs, regs_used);
+    REGISTER_SET subclass_allowed =  REGISTER_SET_Difference (allowed,
+							      lunit->SubClass_Disallowed());
+    INT nregs = split_lrange->NHardRegs();
+#endif
 
     // LUNITs can be present to represent spills/restores at live range
     // split borders.  We want to skip these as seeds of splitting because:
@@ -389,7 +393,13 @@ Max_Colorable_LUNIT( LUNIT** result )
     //   2. We don't want to keep splitting it for no good reason.  This can
     //      be a compile time disaster.
     if ( lunit->Has_Exposed_Use() || lunit->Has_Def() ) {
-      if ( !REGISTER_SET_EmptyP(REGISTER_SET_Difference(all_regs,regs_used)) ) {
+#ifdef TARG_ST
+      // [TTh] Accurate allocation check for Multi-register TNs
+      if ( Can_Allocate_From (nregs, subclass_allowed, allowed) )
+#else
+      if ( !REGISTER_SET_EmptyP(REGISTER_SET_Difference(all_regs,regs_used)) )
+#endif
+      {
         if ( ! found || lunit->Priority() > maxlunit->Priority() 
 #ifdef TARG_ST // [CL] Fix floating point difference between SunOS and Linux/Cygwin
 	     && !Compare_Float_Nearly_Equal(lunit->Priority(), maxlunit->Priority())
