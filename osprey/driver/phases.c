@@ -200,10 +200,6 @@ enum {nocrt, crt0, crt1} crt_mode;
 
 static int find_crt_mode(void)
 {
-#ifdef TARG_STxP70
-  return crt0;
-#endif
-
   /* (cbr) check crtmode, in this order */
 #ifdef MUMBLE_ST200_BSP
   extern string st200_libdir;		    
@@ -228,28 +224,47 @@ static int find_crt_mode(void)
 /* (cbr) crt_mode we are using */
 enum {nocrt, crt0, crt1} crt_mode;
 
+
+/** 
+ * builds relative lib path depending on compiler options
+ * (short-double, mode16/32, mult, fpx)
+ * 
+ * 
+ * @return libpath
+ */
+static string STxP70_get_lib_relative_path ( void ) {
+    string boot_path;
+    extern int STxP70mult;
+    if (lib_short_double == TRUE) {
+      boot_path = string_copy("spieee754/");
+    } else {
+      boot_path = string_copy("");
+    }
+
+    if (fpx == TRUE) {
+      boot_path = concat_strings(boot_path,"fpx");
+    } else if (STxP70mult == TRUE) {
+      boot_path = concat_strings(boot_path,"mult");
+    } else {
+      boot_path = concat_strings(boot_path,"nomult");
+    }
+    if (lib_kind == LIB_STXP70_16) {
+      boot_path = concat_strings(boot_path,"/reg16");
+    } else {
+      boot_path = concat_strings(boot_path,"/reg32");
+    }
+    return boot_path;
+}
+
+/** 
+ * returns relative path to boot file.
+ * 
+ * 
+ * @return 
+ */
 static const char * STxP70_get_boot_fname ( void ) {
-  string boot_path;
-  extern int STxP70mult;
-  
-  if (lib_short_double == TRUE) {
-    boot_path = string_copy("spieee754/");
-  } else {
-    boot_path = string_copy("");
-  }
-  
-  if (fpx == TRUE) {
-    boot_path = concat_strings(boot_path,"fpx");
-  } else if (STxP70mult == TRUE) {
-    boot_path = concat_strings(boot_path,"mult");
-  } else {
-    boot_path = concat_strings(boot_path,"nomult");
-  }
-  if (lib_kind == LIB_STXP70_16) {
-    boot_path = concat_strings(boot_path,"/reg16");
-  } else {
-    boot_path = concat_strings(boot_path,"/reg32");
-  }
+  string boot_path = STxP70_get_lib_relative_path();
+
   if (flag_HWLOOP == TRUE) {
     return concat_strings(boot_path,"/crt0.o");
   } else {
@@ -257,6 +272,14 @@ static const char * STxP70_get_boot_fname ( void ) {
   }
   /* cannot be reached */
 }
+
+
+/** 
+ * returns full path to crt0 boot file.
+ * 
+ * 
+ * @return 
+ */
 static int find_crt_mode(void)
 {
   /* (cbr) check crtmode, in this order */
@@ -270,6 +293,55 @@ static int find_crt_mode(void)
   /* default */
   return crt0;
 }
+
+
+
+/** 
+ * internal function that build the -lc option depending on
+ * lib_nofloat option.
+ * 
+ * @param libbasename 
+ * 
+ * @return -lc or -lc-ipa-float or -lc-float
+ */
+static char* get_libc_option(char* libbasename)
+{
+  char* libc = "c";
+  if (libbasename!=NULL)
+    libc=libbasename;
+  
+  if (lib_nofloat == TRUE)
+    {
+      char* libdir = NULL;
+      extern string stxp70_libdir;		    
+      if (stxp70_libdir) {
+        libdir=stxp70_libdir;
+      }
+      else if (get_phase_dir(P_library)){
+        libdir = get_phase_dir(P_library);
+      }
+      if (libdir &&
+          file_exists
+          (concat_path(libdir,
+                       concat_path
+                       ((char *)STxP70_get_lib_relative_path(),
+                        concat_strings
+                        ("lib",
+                         concat_strings(libc, "-nofloat.a"))))))
+        {
+          libc = concat_strings(libc, "-nofloat");
+        }
+      else
+        {
+          warning ("Cannot find lib%s.a, will use lib%s.a instead.",
+                   concat_strings(libc, "-nofloat"),
+                   libc);
+        }
+    }
+
+  return concat_strings("-l", libc);
+}
+
 #endif /* TARG_STxP70 */
 
 static string_list_t *ipl_cmds = 0; /* record the user options that needed
@@ -1761,10 +1833,19 @@ add_final_ld_args (string_list_t *args)
       }
 #endif
       
+#ifdef TARG_STxP70
+      /* aux function get_libc_option() builds "-lc" linker option
+         depending on lib_nofloat driver option */
+      /* add the libc.a,so */
+      if (ipalibs == TRUE) add_string(args, get_libc_option("c-ipa"));
+      
+      add_string(args, get_libc_option("c"));
+#else
       /* add the libc.a,so */
       if (ipalibs == TRUE) add_string(args, "-lc-ipa");
       
       add_string(args, "-lc");
+#endif
       
 #ifdef MUMBLE_ST200_BSP
       if(file_exists (concat_path(get_phase_dir(P_library), "libgloss.a"))) {
@@ -1822,13 +1903,16 @@ add_final_ld_args (string_list_t *args)
 #ifdef TARG_STxP70
 
 #ifndef COSY_LIB /* [HC] dealing with newlib. Keep former code for CoSy compat. */
+      /* build -lc option depending on lib-nofloat option */
+    char* libc=get_libc_option("c");
+      
     add_string(args,"-lgloss");
     add_string(args,"-lm");
     add_string(args,"-larith");
-    add_string(args,"-lc");
+    add_string(args,libc);
     add_string(args,"-lm");
     add_string(args,"-lcfpi");
-    add_string(args,"-lc");
+    add_string(args,libc);
     add_string(args,"-larith");
     add_string(args,"-lgloss");
 #else

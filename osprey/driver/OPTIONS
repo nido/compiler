@@ -1074,6 +1074,8 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
         "use 32 register set C library"
 -mlib-short-double	toggle(&lib_short_double,TRUE);	ALL	ld	""
         "use libraries suitable for -fshort-double code generation"
+-mlib-nofloat	toggle(&lib_nofloat,TRUE);	ALL	ld	""
+        "use libraries without float support"
 #endif
 
 %

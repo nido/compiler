@@ -153,6 +153,9 @@ set_defaults (void)
 	if(lib_short_double == UNDEFINED)
 	  toggle(&lib_short_double, FALSE);
 
+	if(lib_nofloat == UNDEFINED)
+	  toggle(&lib_nofloat, FALSE);
+
 #ifdef MUMBLE_STxP70_BSP
 	if (stxp70_runtime == UNDEFINED) 
 	  toggle((int*)&stxp70_runtime, RUNTIME_BARE);

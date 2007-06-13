@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 13 14:56:05 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-lib-nofloat
+
+Description:
+------------
+	merge branch dev-lib-nofloat for stxp70:
+          add flag -mlib-nofloat that will select a libc without float support
+          in the driver.
+        authorisation art #28487  
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/phases.c
+	M      osprey/driver/special_options.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jun  7 14:57:19 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
