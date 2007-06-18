@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 18 10:24:38 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-28693
+
+Description:
+------------
+	* [trunk] Fix for bug #28693: Assertion failure in intrinsics expansion while compiling libraries.
+	Deliver fixes/codex-28693 rev #12383 with authorization branch #28703
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jun 13 17:27:45 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
