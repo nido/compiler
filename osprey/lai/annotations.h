@@ -107,6 +107,27 @@
  *	  use ANNOT_info(ant) ....
  *	}
  *
+ *  -- TARG_ST specific ----------
+ *
+ *  ASM_OP_ANNOT annotation
+ *  =======================
+ *
+ *    ASM_OP_ANNOT *
+ *    Create_Empty_ASM_OP_ANNOT(INT num_results,
+ *                              INT num_opnds)
+ *
+ *  Constructor for ASM_OP_ANNOT, that allocate ASM_OP_ANNOT object,
+ *  as well as its set of internal arrays.
+ *  All fields are initialized to 0.
+ *
+ *    void
+ *    Copy_ASM_OP_Non_Parameter_Fields(ASM_OP_ANNOT       *dest,
+ *                                     const ASM_OP_ANNOT *src)
+ *
+ *  Copy fields of <src> ASM_OP_ANNOT annotation to <dest> annotation,
+ *  except those corresponding to parameters (operands and results) description.
+ *
+ *  -- END of TARG_ST specific ----------
  * =======================================================================
  */
 
@@ -347,6 +368,7 @@ struct ASM_OP_ANNOT
 #ifdef TARG_ST
 // [TTh] Constructor for ASM_OP_ANNOT
 CG_EXPORTED extern ASM_OP_ANNOT *Create_Empty_ASM_OP_ANNOT(INT num_results, INT num_opnds);
+CG_EXPORTED extern void Copy_ASM_OP_Non_Parameter_Fields(ASM_OP_ANNOT *dest, const ASM_OP_ANNOT *src);
 #endif
 
 #define ASM_OP_wn(x)			((x)->wn)

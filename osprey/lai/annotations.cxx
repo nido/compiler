@@ -175,4 +175,15 @@ Create_Empty_ASM_OP_ANNOT(INT num_results, INT num_opnds)
 
   return asm_info;
 }
+
+// Copy fields of <src> ASM_OP_ANNOT annotation to <dest> annotation,
+// except those corresponding to parameters (operands and results) description.
+extern void
+Copy_ASM_OP_Non_Parameter_Fields(ASM_OP_ANNOT *dest, const ASM_OP_ANNOT *src)
+{
+  ASM_OP_wn(dest) = ASM_OP_wn(src);
+  memcpy(ASM_OP_clobber_set(dest),
+	 ASM_OP_clobber_set(src),
+	 sizeof(REGISTER_SET)*(ISA_REGISTER_CLASS_MAX_LIMIT+1));
+}
 #endif

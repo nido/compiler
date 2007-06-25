@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 25 14:59:33 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29540
+
+Description:
+------------
+	* Deliver fux for bug #29540 with authorization branch #29543
+	  Fix incorrect generation of ASM_OP_ANNOT annotation in Mexpand() phase, when lowering operations with Multi-register TNs. 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/annotations.h
+	M      osprey/lai/mexpand.cxx
+	M      osprey/lai/annotations.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 18 10:24:38 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

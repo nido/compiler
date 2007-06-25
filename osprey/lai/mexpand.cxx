@@ -150,7 +150,7 @@ static void Update_For_Multi_ASM_OP_ANNOT(TN_MAP multi_tn_map, OP *new_op, OP *o
   //       create a new annotation but rather attach the one from old_op to 
   //       new_op.
   ASM_OP_ANNOT* new_annot = Create_Empty_ASM_OP_ANNOT(new_res_count, new_opnd_count);
-  *new_annot = *old_annot; // Note: opnds and result info not copied here
+  Copy_ASM_OP_Non_Parameter_Fields(new_annot, old_annot);
   OP_MAP_Set(OP_Asm_Map, new_op, new_annot);
 
   for (opndnum = 0; opndnum < OP_opnds(old_op); opndnum++) {
