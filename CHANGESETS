@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 26 09:44:08 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27975
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-27975 rev #12466 with authorization branch #29625
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 25 14:59:33 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

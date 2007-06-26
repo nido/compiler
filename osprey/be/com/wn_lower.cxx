@@ -97,6 +97,11 @@
 #include "wn_lower_mul.h"
 #endif
 
+#ifdef TARG_STxP70
+#include "targ_sections.h"
+#endif
+
+
 /* My changes are a hack till blessed by Steve. (suneel) */
 #define SHORTCIRCUIT_HACK 1
 
@@ -4976,7 +4981,12 @@ static WN *lower_split_sym_addrs(WN *tree, INT64 offset, LOWER_ACTIONS actions)
       return NULL;
     }
 
-    if (ST_gprel(sym))
+    if (ST_gprel(sym)
+#ifdef TARG_STxP70
+        // we don't want to split base/offset for sda accesses on xp70.
+        || Get_Memory_Space(sym) == ST_MEMORY_SDA
+#endif
+        )
     {
       return NULL;
     }
