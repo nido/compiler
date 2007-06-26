@@ -642,7 +642,7 @@ void ISA_Registers_End(void)
 		 "  mUINT8 isa_mask;\n"
 		 "  mUINT8 min_regnum;\n"
 		 "  mUINT8 max_regnum;\n"
-		 "  mUINT8 bit_size;\n"
+		 "  mUINT16 bit_size;\n"
 		 "  mBOOL is_ptr;\n"
 		 "  mBOOL can_store;\n"
 		 "  mBOOL multiple_save;\n"
