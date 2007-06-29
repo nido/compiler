@@ -98,13 +98,17 @@
 /* FdF: Find a prefetch instruction in the current basic block which
    is a duplication of op_pref for the iteration number iter. */
 static OP *
-Get_unrolled_op(OP *op, int iter) {
+Get_unrolled_op(OP *op, LOOP_DESCR *cloop, int iter) {
   if (op) {
     WN *wn = Get_WN_From_Memory_OP(op);
-    for (OP *op_next = BB_first_op(OP_bb(op)); op_next; op_next = OP_next(op_next)) {
-      if (OP_memory(op_next) && OP_code(op_next) == OP_code(op) &&
-	  (Get_WN_From_Memory_OP(op_next) == wn) && !OP_flag1(op_next) && (OP_unrolling(op_next) == iter))
-	return op_next;
+    BB *bb;
+    FOR_ALL_BB_SET_members (LOOP_DESCR_bbset(cloop), bb) {
+      OP *op_next;
+      FOR_ALL_BB_OPs(bb, op_next) {
+	if (OP_memory(op_next) && OP_code(op_next) == OP_code(op) &&
+	    (Get_WN_From_Memory_OP(op_next) == wn) && !OP_flag1(op_next) && (OP_unrolling(op_next) == iter))
+	  return op_next;
+      }
     }
   }
   return NULL;
@@ -262,7 +266,7 @@ Schedule_Prefetch_Prepass () {
 #endif
 	  // Look for the first prefetch operation in this basic block
 	  // with the same OP_unrolling
-	  op_pref = Get_unrolled_op(op_pref, OP_unrolling(op_ref));
+	  op_pref = Get_unrolled_op(op_pref, cloop, OP_unrolling(op_ref));
 	  if (!op_pref) continue;
 	  if (OP_flag1(op_pref)) continue; // Already visited
 
@@ -304,6 +308,15 @@ Schedule_Prefetch_Prepass () {
 	    // Move the prefetch instruction after the memory
 	    // reference associated with it.
 	    if ((OP_bb(op_pref) != bb) || (OP_Ordering(op_ref, op_pref) > 0)) {
+	      // FdF 20070322: Codex #25337, in case the prefetch
+	      // instruction is moved in a different BB, all of its
+	      // TNs must be marked global
+	      if (OP_bb(op_pref) != bb) {
+		for (INT opnd = 0; opnd < OP_opnds(op_pref); opnd++) {
+		  if (TN_is_register(OP_opnd(op_pref, opnd)))
+		    Set_TN_is_global_reg(OP_opnd(op_pref, opnd));
+		}
+	      }
 	      BB_Remove_Op(OP_bb(op_pref), op_pref);
 	      BB_Insert_Op_After(bb, op_ref, op_pref);
 	      Reset_BB_scheduled (bb);
@@ -347,10 +360,11 @@ Schedule_Prefetch_Postpass () {
 
     BB *bb;
     // Compute the number of prefetchs in the loop.
-    int nb_prefetch = 0;
     int nb_cycles = CGTARG_Branch_Taken_Penalty(); // Count for the loop back-edge
     BOOL is_inner_loop = TRUE;
     float head_freq = BB_freq(LOOP_DESCR_loophead(cloop));
+    int auto_prefetch = 0;
+    int user_prefetch = 0;
 
     /* FdF: Compute the number of prefetchs in the loop, initialize a
        MAP WN_to_OP_map, and compute a mean number of cycles for
@@ -370,24 +384,34 @@ Schedule_Prefetch_Postpass () {
 
       FOR_ALL_BB_OPs(bb, op) {
 	if (OP_prefetch(op)) {
-	  nb_prefetch++;
-	  if (!Get_WN_From_Memory_OP(op)) continue;
-	  Is_True(Get_WN_From_Memory_OP(op), ("No WN associated with a PREFETCH op"));
+
+
+	  WN *op_wn = Get_WN_From_Memory_OP(op);
+	  Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+
+	  if (WN_pf_manual(op_wn))
+	    user_prefetch++;
+	  else
+	    auto_prefetch ++;
 
 	  // In case of unrolling, there may be more than one prefetch
 	  // for the same WN, from different loop iterations. Just
 	  // keep the first one, the other ones will be analyzed in a
 	  // specific way.
+	  Reset_OP_flag1(op);
 	  if (!WN_MAP_Get(WN_to_OP_map, Get_WN_From_Memory_OP(op))) {
 	    WN_MAP_Set(WN_to_OP_map, Get_WN_From_Memory_OP(op), op);
-	    Reset_OP_flag1(op);
 	  }
 	}
       }
     }
 
-    if (is_inner_loop && nb_prefetch) {
-      int nb_prefetched = 0;
+    int nb_prefetch = user_prefetch + auto_prefetch;
+    int auto_prefetched = 0;
+    int user_prefetched = 0;
+
+    if ((is_inner_loop  && (nb_prefetch > 0)) ||
+	(!is_inner_loop && (auto_prefetch > 0))) {
 
       if (Trace_PFT)
 	fprintf(TFile, "loop %d cycles, %d prefetchs\n", nb_cycles, nb_prefetch);
@@ -418,63 +442,93 @@ Schedule_Prefetch_Postpass () {
 	  if (Trace_PFT)
 	    fprintf(TFile, "igls: ref %p, found a prefetch wn %p\n", op_wn, pref_wn);
 
-          if (!WN_pf_stride(pref_wn))
-	    continue;
-
 	  op_pref = (OP*) WN_MAP_Get(WN_to_OP_map, pref_wn);
-	  op_pref = Get_unrolled_op(op_pref, OP_unrolling(op_ref));
+	  op_pref = Get_unrolled_op(op_pref, cloop, OP_unrolling(op_ref));
 	  if (!op_pref) continue;
 
 	  if (OP_flag1(op_pref)) continue;
 
-	  MHD_LEVEL* Cur_Mhd = &Mhd.L[0]; 
-	  FmtAssert(Cur_Mhd->Valid(), ("Not a valid MHD level"));
+	  int distAhead;
+	  int iterAhead = -1;
+	  float pf_stride = -1;
 
-	  int pf_latency = (int)Cur_Mhd->Clean_Miss_Penalty;
-	  if (OP_bb(op_pref) == bb)
-	    pf_latency += OP_scycle(op_pref) - OP_scycle(op_ref);
+          if (!WN_pf_stride(pref_wn)) {
+	    distAhead = PF_PTR_distance_1L(pref_info);
+	    if (distAhead < 0) distAhead *= -1;
+	  }
 
-	  float pf_stride = (float)WN_pf_stride_1L(pref_wn) / (float)(BB_unrollings(bb) ? BB_unrollings(bb) : 1);
-	  int iterAhead = (int)((pf_latency + nb_cycles - 1) / nb_cycles);
+	  else {
 
-	  // Do not prefetch too much iterations ahead if the loop
-	  // trip count is known to be small.
-	  LOOPINFO *info = LOOP_DESCR_loopinfo(cloop);
-	  INT32 max_iter;
+	    MHD_LEVEL* Cur_Mhd = &Mhd.L[0]; 
+	    FmtAssert(Cur_Mhd->Valid(), ("Not a valid MHD level"));
 
-#ifdef TARG_STxP70
-	  TN *trip_count_tn = info ? LOOPINFO_CG_trip_count_tn(info) : NULL;
+	    int pf_latency = (int)Cur_Mhd->Clean_Miss_Penalty;
+	    if (OP_bb(op_pref) == bb)
+	      pf_latency += OP_scycle(op_pref) - OP_scycle(op_ref);
+
+	    pf_stride = (float)WN_pf_stride_1L(pref_wn) / (float)(BB_unrollings(bb) ? BB_unrollings(bb) : 1);
+	    iterAhead = (int)((pf_latency + nb_cycles - 1) / nb_cycles);
+
+	    // Do not prefetch too much iterations ahead if the loop
+	    // trip count is known to be small.
+	    LOOPINFO *info = LOOP_DESCR_loopinfo(cloop);
+	    INT32 max_iter;
+
+#ifdef TARG_ST
+	    TN *trip_count_tn = info ? LOOPINFO_exact_trip_count_tn(info) : NULL;
 #else
-	  TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
+	    TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
 #endif
-	  if (trip_count_tn && TN_is_constant(trip_count_tn))
-	    max_iter = TN_value(trip_count_tn) / 2;
-	  else max_iter = WN_loop_trip_est(LOOPINFO_wn(info)) / 2;
-	  if (iterAhead > max_iter)
-	    iterAhead = max_iter;
+	    if (trip_count_tn && TN_is_constant(trip_count_tn))
+	      max_iter = TN_value(trip_count_tn) / 2;
+	    else max_iter = WN_loop_trip_est(LOOPINFO_wn(info)) / 2;
+	    if (iterAhead > max_iter)
+	      iterAhead = max_iter;
 
-	  // Do not prefetch too much iterations ahead if this will
-	  // exceed the number of prefetch buffers.
-	  if ((int)(iterAhead / pf_stride + 0.99) * nb_prefetch > Mhd.DCache_Prefetch_Buffers)
-	    iterAhead = (int)(Mhd.DCache_Prefetch_Buffers * pf_stride / nb_prefetch);
+	    // Do not prefetch too much iterations ahead if this will
+	    // exceed the number of prefetch buffers.
+	    if ((int)(iterAhead / pf_stride + 0.99) * nb_prefetch > Mhd.DCache_Prefetch_Buffers)
+	      iterAhead = (int)(Mhd.DCache_Prefetch_Buffers * pf_stride / nb_prefetch);
 
-	  if (iterAhead > Mhd.DCache_Prefetch_Buffers)
-	    iterAhead = Mhd.DCache_Prefetch_Buffers;
+	    if (iterAhead > Mhd.DCache_Prefetch_Buffers)
+	      iterAhead = Mhd.DCache_Prefetch_Buffers;
 
-          int distAhead = iterAhead * (int)(Cur_Mhd->Line_Size / pf_stride + 0.99);
-	  if (distAhead < Cur_Mhd->Line_Size) distAhead = Cur_Mhd->Line_Size;
+	    distAhead = iterAhead * (int)(Cur_Mhd->Line_Size / pf_stride + 0.99);
+	    if (distAhead < Cur_Mhd->Line_Size) distAhead = Cur_Mhd->Line_Size;
 //          else if (ANNOT_Get(BB_annotations(OP_bb(op_pref)), ANNOT_REMAINDERINFO))
 //	    distAhead = Cur_Mhd->Line_Size;
+
+	  /* FdF 20061211: In order to avoid conflicts between
+	     prefetch instructions and DMA accesses, a compiler option
+	     may limit the distance between a load operation and the
+	     associated prefetch instruction. */
+	  }
+
+	  if (Trace_PFT)
+	    fprintf(TFile, "Prefetch distance is %d\n", distAhead);
+
+	  if ((Mhd.Prefetch_Padding >= 0) && (distAhead > Mhd.Prefetch_Padding)) {
+	    distAhead = Mhd.Prefetch_Padding;
+	    if (Trace_PFT)
+	      fprintf(TFile, "\tchanged to LNO:prefetch_padding(%d)\n", distAhead);
+	  }
 
 	  if (PF_PTR_distance_1L(pref_info) < 0) distAhead *= -1;
 
 	  do {
-	    nb_prefetched ++;
 	    Set_OP_flag1(op_pref);
 	      
+	    if (WN_pf_manual(pref_wn))
+	      user_prefetched ++;
+	    else
+	      auto_prefetched ++;
+	      
+
+	    INT pft_offset_idx = TOP_Find_Operand_Use(OP_code(op_pref), OU_offset);;
+
 	    if (WN_pf_stride_1L(pref_wn)/* || ANNOT_Get(BB_annotations(OP_bb(op_pref)), ANNOT_REMAINDERINFO)*/) {
-	      int offset = TN_value(OP_opnd(op_pref, 0));
-	      int fixedOffset = TN_value(OP_opnd(op_pref, 0)) + distAhead - PF_PTR_distance_1L(pref_info);
+	      int offset = TN_value(OP_opnd(op_pref, pft_offset_idx));
+	      int fixedOffset = TN_value(OP_opnd(op_pref, pft_offset_idx)) + distAhead - PF_PTR_distance_1L(pref_info);
 	      if (Trace_PFT) {
 		fprintf(TFile, "Prefetch offset is %d\n", fixedOffset);
 		if (WN_pf_manual(pref_wn) )
@@ -483,15 +537,16 @@ Schedule_Prefetch_Postpass () {
 		  else
 		    fprintf(TFile, "Manual prefetch: Offset unchanged\n");
 	      }
-	      Set_OP_opnd(op_pref, 0, Gen_Literal_TN(fixedOffset, 4));
+	      Set_OP_opnd(op_pref, pft_offset_idx, Gen_Literal_TN(fixedOffset, 4));
 	      TOP etop;
 	      if (CGTARG_need_extended_Opcode(op_pref, &etop)) {
+		// FdF 20061211: TBD: change the opcode to etop ??
 		// Reset to previous value.
-		Set_OP_opnd(op_pref, 0, Gen_Literal_TN(offset, 4));
+		Set_OP_opnd(op_pref, pft_offset_idx, Gen_Literal_TN(offset, 4));
 		if (CGTARG_need_extended_Opcode(op_pref, &etop))
 		  // Can use the new value if olf value also required
 		  // extended offset
-		  Set_OP_opnd(op_pref, 0, Gen_Literal_TN(fixedOffset, 4));
+		  Set_OP_opnd(op_pref, pft_offset_idx, Gen_Literal_TN(fixedOffset, 4));
 	      }
 	      if (Trace_PFT)
 		fprintf(TFile, "Loop cycles %d, iterAhead %d, pft stride %f, distAhead %d\n", nb_cycles, iterAhead, pf_stride, distAhead);
@@ -500,14 +555,108 @@ Schedule_Prefetch_Postpass () {
 	  } while (op_pref);
 	}
       }
-      if (Trace_PFT && nb_prefetched != nb_prefetch) {
-	fprintf(TFile, "Found %d prefetchs, but only %d prefetched memory references\n", nb_prefetch, nb_prefetched);
+    }
+
+    if ((Mhd.Prefetch_Padding >= 0) && (auto_prefetched < auto_prefetch)) {
+      char str_line[64] = "";
+      const char *str_inner = is_inner_loop ? "" : "(non innermost) ";
+      ANNOTATION *annot = ANNOT_Get(BB_annotations(LOOP_DESCR_loophead(cloop)), ANNOT_LOOPINFO);
+      if (annot)
+	sprintf(str_line, "loop line %d, ", LOOPINFO_line(ANNOT_loopinfo(annot)));
+      else {
+	int line = Srcpos_To_Line(OP_srcpos(BB_first_op(LOOP_DESCR_loophead(cloop))));
+	if (line != 0)
+	  sprintf(str_line, "loop line %d, ", line);
+	else
+	  sprintf(str_line, "loop head BB%d, ", BB_id(LOOP_DESCR_loophead(cloop)));
+      }
+      DevWarn("%s%d automatic prefetch not mapped, discarded.", str_line, (auto_prefetch - auto_prefetched));
+    }
+
+    if ((Mhd.Prefetch_Padding >= 0) && CG_warn_prefetch_padding &&
+	(user_prefetched < user_prefetch)) {
+      char str_line[64] = "";
+      const char *str_inner = is_inner_loop ? "" : "(non innermost) ";
+      ANNOTATION *annot = ANNOT_Get(BB_annotations(LOOP_DESCR_loophead(cloop)), ANNOT_LOOPINFO);
+      if (annot)
+	sprintf(str_line, "loop line %d, ", LOOPINFO_line(ANNOT_loopinfo(annot)));
+      else {
+	int line = Srcpos_To_Line(OP_srcpos(BB_first_op(LOOP_DESCR_loophead(cloop))));
+	if (line != 0)
+	  sprintf(str_line, "loop line %d, ", line);
+	else
+	  sprintf(str_line, "loop head BB%d, ", BB_id(LOOP_DESCR_loophead(cloop)));
+      }
+      ErrMsg(EC_Warn_Prefetch, str_inner, str_line, (user_prefetch - user_prefetched));
+
+      // Finally, set the OP_flag1 for these manual prefetch instruction
+    }
+
+    if ((Mhd.Prefetch_Padding >= 0) &&
+	((auto_prefetched < auto_prefetch) ||
+	 (CG_warn_prefetch_padding && (user_prefetched < user_prefetch)))) {
+
+      FOR_ALL_BB_SET_members (LOOP_DESCR_bbset(cloop), bb) {
+	OP *op, *op_next;
+
+	if (BB_loop_head_bb(bb) != LOOP_DESCR_loophead(cloop))
+	  continue;
+
+	for (OP *op = BB_first_op(bb); op != NULL; op = op_next) {
+	  op_next = OP_next(op);
+
+	  if (OP_prefetch(op)) {
+	    WN *op_wn = Get_WN_From_Memory_OP(op);
+	    Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+
+	    if (!WN_pf_manual(op_wn) && !OP_flag1(op))
+	      BB_Remove_Op(bb, op);
+	    else {
+	      Set_OP_flag1(op);
+	    }
+	  }
+	}
       }
     }
+
     WN_MAP_Delete(WN_to_OP_map);
   }
   L_Free ();
   Free_Dominators_Memory ();
+
+  // Finally, in case prefetch_padding is activated, look in the whole
+  // function for prefetch instructions that have not been processed.
+
+  if (Mhd.Prefetch_Padding >= 0) {
+    BB *bb;
+    for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+
+      OP *op_next;
+      for (OP *op = BB_first_op(bb); op != NULL; op = op_next) {
+	op_next = OP_next(op);
+
+	if (!OP_prefetch(op) || OP_flag1(op))
+	  continue;
+
+	// This is an unvisited prefetch instruction
+	WN *op_wn = Get_WN_From_Memory_OP(op);
+	Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+
+	if (WN_pf_manual(op_wn)) {
+	  if (CG_warn_prefetch_padding) {
+	    char str_line[64] = "";
+	    const char *str_inner = "";
+	    sprintf(str_line, "line %d(outside loop), ", Srcpos_To_Line(OP_srcpos(op)));
+	    ErrMsg(EC_Warn_Prefetch, str_inner, str_line, 1);
+	  }
+	}
+	else {
+	  Is_True(0, ("Automatic prefetch found outside of a loop"));
+	  BB_Remove_Op(bb, op);
+	}
+      }
+    }
+  }  
 }
 #endif
 
@@ -850,8 +999,8 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
   if (before_regalloc) {
     Set_Error_Phase( "LAO Prepass Optimizations" );
-    if (CG_LAO_optimizations & OptimizerFlag_MustPrePass) {
-      lao_optimize_pu(CG_LAO_optimizations & OptimizerFlag_MustPrePass);
+    if (CG_LAO_optimizations & OptimizeActivation_PrePass) {
+      lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_PrePass);
       if (frequency_verify)
 	FREQ_Verify("LAO Prepass Optimizations");
     }
@@ -859,8 +1008,8 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
   else {
     // Call the LAO for postpass scheduling.
     Set_Error_Phase( "LAO Postpass Optimizations" );
-    if (CG_LAO_optimizations & OptimizerFlag_MustPostPass) {
-      lao_optimize_pu(CG_LAO_optimizations & OptimizerFlag_MustPostPass);
+    if (CG_LAO_optimizations & OptimizeActivation_PostPass) {
+      lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_PostPass);
       if (frequency_verify)
 	FREQ_Verify("LAO Postpass Optimizations");
     }

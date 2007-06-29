@@ -109,11 +109,11 @@ main()
 
   ISA_REGISTER_CLASS rc_branch = ISA_Register_Class_Create("branch", 1, false, true, false);
   ISA_Register_Set(rc_branch, 0, 7, NULL, branch_reg_names,
-    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
+    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st240));
 
   ISA_REGISTER_CLASS rc_integer = ISA_Register_Class_Create("integer", 32, true, true, false);
   ISA_Register_Set(rc_integer, 0, 63, NULL, integer_reg_names,
-    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st235));
+    (1 << (int)ISA_SUBSET_st220) | (1 << (int)ISA_SUBSET_st231) | (1 << (int)ISA_SUBSET_st240));
 
   ISA_Register_Subclass_Create("link", rc_integer, 1, integer_link, link_reg_names);
 

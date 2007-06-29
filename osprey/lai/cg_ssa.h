@@ -70,13 +70,45 @@
  * ========================================================================
  */
 extern INT32 CG_ssa_algorithm;
+extern BOOL CG_ssa_rematerialization;
 
 /* ========================================================================
  *   Mapping of TNs to their SSA definitions
  * ========================================================================
  */
+
 extern TN_MAP tn_ssa_map;
-#define TN_ssa_def(t)        ((OP *)TN_MAP_Get(tn_ssa_map, t))
+
+/*
+ * TN_ssa_def()
+ *
+ * Returns the single defining op for the TN.
+ * Returns NULL if the TN is not an SSA variable.
+ * This function can be called either in the SSA CGIR or in the non-SSA CGIR.
+ *
+ * Note that it must be used carrefully during SSA construction and SSA destruction,
+ * because tn_ssa_map may not be up-to-date there, but this is a problem private to cg_ssa.cxx.
+ */
+inline OP *
+TN_ssa_def (const TN *tn)
+{
+  DevAssert(tn != NULL, ("failed precondition"));
+  return TN_is_register (tn) ? (OP *)TN_MAP_Get (tn_ssa_map, tn): NULL;
+}
+
+/*
+ * TN_is_ssa_var()
+ *
+ * Returns true if the TN is a valid SSA variable.
+ * This is equivalent to TN_ssa_def(tn) != NULL.
+ */
+inline BOOL
+TN_is_ssa_var (const TN *tn)
+{
+  return TN_ssa_def(tn) != NULL;
+}
+
+
 /* The following function creates the SSA use-def link. It is
    automatically called when an operation is inserted in a
    block. However, this function MUST BE EXPLICITELY CALLED when the
@@ -92,20 +124,12 @@ inline void Set_TN_ssa_def(TN *t, OP *o) {
   }
 }
 
+
 /* The two following functions update the SSA use-def link when an
-   operation is inserted into or removed from a basicblock. */
-
-inline void SSA_setup(OP *o) {
-  if (tn_ssa_map)
-    for (int i = 0; i < OP_results(o); i++)
-      Set_TN_ssa_def(OP_result(o, i), o);
-}
-
-inline void SSA_unset(OP *o) {
-  if (tn_ssa_map)
-    for (int i = 0; i < OP_results(o); i++)
-      Set_TN_ssa_def(OP_result(o, i), NULL);
-}
+   operation is inserted into or removed from a basicblock. 
+*/
+extern void SSA_setup(OP *o);
+extern void SSA_unset(OP *o);
 
 //
 // Iterate over PHI-nodes in BB
@@ -166,7 +190,9 @@ extern void Initialize_PHI_map(OP   *phi);
 #define SSA_REMOVE_PHI   0x00000008  /* trace PHI-removal */
 #define SSA_DOM_FRONT    0x00000010  /* trace dominance frontier */
 #define SSA_COLLECT_INFO 0x00000020  /* collect statistics for SSA */
-#define SSA_CBPO         0x00000040  /* common base pointer optimization */
+#define SSA_DEAD_CODE    0x00000040  /* SSA dead code removal */
+#define SSA_CBPO	 0x00000080  /* common base pointer optimization */
+#define SSA_
 
 /* FdF 20050309: Externalized for use in SSA_Optimize(). */
 
@@ -201,5 +227,13 @@ extern DOM_TREE *dom_map;
 
 #define BB_dominator(bb)         (dom_map[BB_id(bb)]._M_parent)
 #define BB_children(bb)          (dom_map[BB_id(bb)]._M_kids)
+
+/* [SC] Externalized for use in range analysis. */
+
+extern BOOL BB_is_SSA_region_exit (BB *bb);
+extern BOOL BB_is_SSA_region_entry (BB *bb);
+extern const BB_SET *SSA_region_entries ();
+extern const BB_SET *SSA_region_exits ();
+
 
 #endif /* cg_ssa_INCLUDED */

@@ -97,7 +97,13 @@ typedef vector<FB_Info_Branch>	FB_Branch_Vector;
 typedef vector<FB_Info_Loop>	FB_Loop_Vector;
 typedef vector<FB_Info_Circuit> FB_Circuit_Vector;
 typedef vector<FB_Info_Call>	FB_Call_Vector;
+typedef vector<FB_Info_Icall>	FB_Icall_Vector;
 typedef vector<FB_Info_Switch>	FB_Switch_Vector;
+typedef vector<FB_Info_Edge>    FB_Edge_Vector;
+typedef vector<FB_Info_Value>   FB_Value_Vector;
+#ifdef KEY
+typedef vector<FB_Info_Value_FP_Bin>   FB_Value_FP_Bin_Vector;
+#endif
 #endif
 
 struct PU_Profile_Handle
@@ -109,10 +115,23 @@ struct PU_Profile_Handle
     FB_Loop_Vector	Loop_Profile_Table;
     FB_Circuit_Vector	Short_Circuit_Profile_Table;
     FB_Call_Vector	Call_Profile_Table;
-
+    FB_Icall_Vector	Icall_Profile_Table;
+    FB_Edge_Vector      Edge_Profile_Table;
+    FB_Value_Vector     Value_Profile_Table;
+#ifdef KEY
+    FB_Value_FP_Bin_Vector  Value_FP_Bin_Profile_Table;
+#endif
+    FB_Value_Vector     Stride_Profile_Table; 
+  
     INT32 checksum;
     
     char *pu_name;
+#ifdef KEY
+    // feedback filename from which this profile has been obtained
+    char *fb_name;
+#endif
+    INT32 pu_size;
+    UINT64 runtime_fun_address;
 
 #ifdef _BUILD_INSTR
 
@@ -133,6 +152,9 @@ struct PU_Profile_Handle
     PU_Profile_Handle (char *pname = NULL, INT32 c_sum = 0,
 		       MEM_POOL* pool = MEM_pu_nz_pool_ptr) :
 	pu_name (pname),
+#ifdef KEY
+	fb_name (NULL),
+#endif
 	checksum (c_sum),
 	Invoke_Profile_Table (pool),
 	Branch_Profile_Table (pool),
@@ -148,7 +170,12 @@ struct PU_Profile_Handle
 	}
     }
 
-    ~PU_Profile_Handle() {}
+    ~PU_Profile_Handle() 
+  {
+#ifdef KEY
+    free (fb_name);
+#endif
+  }
 
 #endif // _BUILD_INSTR
 
@@ -178,6 +205,28 @@ struct PU_Profile_Handle
 
     FB_Call_Vector& Get_Call_Table () {
 	return Call_Profile_Table;
+    }
+  
+    FB_Icall_Vector& Get_Icall_Table () {
+	return Icall_Profile_Table;
+    }
+
+    FB_Edge_Vector& Get_Edge_Table() {
+      return Edge_Profile_Table;
+    }
+
+    FB_Value_Vector& Get_Value_Table() {
+       return Value_Profile_Table;
+    }
+
+#ifdef KEY
+    FB_Value_FP_Bin_Vector& Get_Value_FP_Bin_Table() {
+       return Value_FP_Bin_Profile_Table;
+    }
+#endif
+
+    FB_Value_Vector& Get_Stride_Table() {
+       return Stride_Profile_Table;
     }
 
 };
@@ -220,7 +269,26 @@ extern void read_call_profile(    PU_PROFILE_HANDLE pu_handle,
 				  Pu_Hdr& pu_hdr_entry,
 				  long pu_ofst, FILE *fp, char *fname);
 
+extern void read_icall_profile(    PU_PROFILE_HANDLE pu_handle, 
+				  Pu_Hdr& pu_hdr_entry,
+				  long pu_ofst, FILE *fp, char *fname);
 
+extern void read_edge_profile(      PU_PROFILE_HANDLE pu_handle, 
+          Pu_Hdr& pu_hdr_entry,
+          long pu_ofst, FILE *fp, char *fname);
+
+extern void read_value_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+			       long pu_ofst, FILE *fp, char *fname);
+
+#ifdef KEY
+extern void read_value_fp_bin_profile(PU_PROFILE_HANDLE pu_handle, 
+				      Pu_Hdr& pu_hdr_entry,
+				      long pu_ofst, FILE *fp, char *fname);
+#endif
+
+extern void read_stride_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+				long pu_ofst, FILE *fp, char *fname);
+          
 #ifndef _BUILD_INSTR
 
 struct Fb_File_Info {
@@ -233,8 +301,21 @@ struct Fb_File_Info {
     Fb_File_Info() {}
     Fb_File_Info(char *nm, FILE *fptr, Fb_Hdr fhdr, Pu_Hdr *ptbl, char *stbl) :
 		 name(nm), fp(fptr), fb_hdr(fhdr), pu_hdr_table(ptbl), 
-		 str_table(stbl) {}
-    ~Fb_File_Info() {}
+		 str_table(stbl)
+    {
+#ifdef KEY
+	if ( nm ) {
+	    name = (char *) malloc (strlen (nm) + 1);
+	    strcpy(name, nm);
+	}
+#endif
+    }
+    ~Fb_File_Info()
+    {
+#ifdef KEY
+	free (name);
+#endif
+    }
 };
 
 BE_EXPORTED extern BOOL Feedback_Enabled[PROFILE_PHASE_LAST];
@@ -260,6 +341,19 @@ extern PU_PROFILE_HANDLE Get_PU_Profile(char *pu_name, char *src_fname,
 					FILE *fp, char *fb_fname, 
 					Fb_Hdr& fb_hdr, Pu_Hdr *pu_hdr_table, 
 					char *str_table); 
+					
+// added by dxq
+extern PU_PROFILE_HANDLES
+Get_CG_PU_Profile (char* srcfile_pu_name,Fb_File_Info_Vector& file_info_vector);
+
+extern PU_PROFILE_HANDLE Get_CG_PU_Profile(char* srcfile_pu_name,
+					FILE *fp, char *fb_fname, 
+					Fb_Hdr& fb_hdr, Pu_Hdr *pu_hdr_table, char* str_table); 
+					
+extern PU_PROFILE_HANDLES
+Get_CG_PU_Value_Profile (char* srcfile_pu_name, Fb_File_Info_Vector& file_info_vector);
+extern PU_PROFILE_HANDLE
+Get_CG_PU_Value_Profile(char* srcfile_pu_name,  FILE* fp, char *fb_fname, Fb_Hdr& fb_hdr, Pu_Hdr *pu_hdr_table, char* str_table);
 
 extern PROFILE_PHASE Get_Phase_Num(Fb_Hdr& fb_hdr);
 
@@ -287,6 +381,18 @@ extern size_t Get_Compgoto_Table_Size(PU_PROFILE_HANDLE pu_handle);
 extern FB_Info_Switch& Get_Compgoto_Profile(PU_PROFILE_HANDLE pu_handle,
 					    INT32 id);
 
+#ifdef KEY
+extern size_t Get_Value_Table_Size(PU_PROFILE_HANDLE pu_handle);
+
+extern FB_Info_Value& Get_Value_Profile(PU_PROFILE_HANDLE pu_handle,
+					INT32 id);
+
+extern size_t Get_Value_FP_Bin_Table_Size(PU_PROFILE_HANDLE pu_handle);
+
+extern FB_Info_Value_FP_Bin& Get_Value_FP_Bin_Profile(PU_PROFILE_HANDLE pu_handle,
+						      INT32 id);
+#endif
+
 extern size_t Get_Loop_Table_Size(PU_PROFILE_HANDLE pu_handle);
 
 extern FB_Info_Loop& Get_Loop_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
@@ -299,6 +405,19 @@ extern FB_Info_Circuit& Get_Short_Circuit_Profile(PU_PROFILE_HANDLE pu_handle,
 extern size_t Get_Call_Table_Size(PU_PROFILE_HANDLE pu_handle);
 
 extern FB_Info_Call& Get_Call_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
+
+extern FB_Info_Icall& Get_Icall_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
+
+extern size_t Get_Edge_Table_Size(PU_PROFILE_HANDLE pu_handle);
+
+extern FB_Info_Edge& Get_Edge_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
+extern FB_Info_Value& Get_Value_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
+#ifdef KEY
+extern FB_Info_Value_FP_Bin& Get_Value_FP_Bin_Profile(PU_PROFILE_HANDLE pu_handle, 
+						      INT32 id);
+#endif
+extern FB_Info_Value& Get_Stride_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id);
+
 
 #endif // _BUILD_INSTR
 

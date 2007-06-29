@@ -177,6 +177,11 @@ private:
   // private methods
   AUX_ID Elem(CHI_NODE *chi);
 
+#ifdef TARG_ST
+  // (cbr) update chis from handler pointed to by label
+  void Update_Chis(mINT32);
+#endif
+
 public:
   EXC_SCOPE_TRY_ITER(EXC_SCOPE *exc_scope);
   ~EXC_SCOPE_TRY_ITER(void) {

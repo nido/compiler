@@ -81,6 +81,7 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 #include "config_TARG.h"
+#include "exp_private.h"
 
 /* Do we force inlining of extended immediates. */
 static BOOL Inline_Extended_Immediate = FALSE;
@@ -302,14 +303,16 @@ Expand_Copy (
   INT tgt_size = TN_size(tgt_tn);
   INT src_size = TN_size(src_tn);
 
+  if (guard == NULL) guard = True_TN;
+
   switch (src_rc) {
 
     case ISA_REGISTER_CLASS_integer:
 
       if (tgt_rc == ISA_REGISTER_CLASS_integer) {
-	if (guard == NULL) {
+	if (guard == True_TN) {
 	  if (tgt_size == 4 && src_size == 4) {
-	    Build_OP(TOP_mov_r, tgt_tn, src_tn, ops);
+	    Build_OP(TOP_mov_r_r, tgt_tn, src_tn, ops);
 	    Set_OP_copy (OPS_last(ops));
 	  } else if (Enable_64_Bits_Ops &&
 		   tgt_size == 8 && src_size == 8) {
@@ -330,36 +333,45 @@ Expand_Copy (
 	}
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	if (guard != NULL) goto unsupported;
+	if (guard != True_TN) goto unsupported;
 	if (src_size != 4) goto unsupported;
-	Build_OP(TOP_mtb, tgt_tn, src_tn, ops);
+	Build_OP(TOP_targ_mov_r_b, tgt_tn, src_tn, ops);
       }
       else goto unsupported;
       break;
 
     case ISA_REGISTER_CLASS_branch:
 
-      if (guard) goto unsupported;
+      if (guard != True_TN) goto unsupported;
 
       if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	// [CG] Generating a branch copy need 2 instructions
-	// We use addcg r0, dest, r0, -1, src.
-	// The addcg instruction effectivelly performs the copy
-	// in one instruction even if the constant -1 needs an
-	// instruction. Thus we can mark the addcg as a copy op.
-	// It is not clear if generating a tmp is safe. What happens
-	// if the copy is generated after reg alloc ?
-	// We don't use a simulated instruction due to the need for
-	// a temporary register.
-	// DevWarn("generating branch copy");
-	TN *tmp;
-	tmp = Expand_Immediate_Into_Register(MTYPE_I4, Gen_Literal_TN(-1,4), ops);
-	Build_OP(TOP_addcg, Zero_TN, tgt_tn, Zero_TN, tmp, src_tn, ops);
-	Set_OP_copy (OPS_last(ops));
+	if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mov_b_b)) {
+	  Build_OP(TOP_mov_b_b, tgt_tn, src_tn, ops);
+	  Set_OP_copy (OPS_last(ops));
+	} else 
+	  {
+	  // [CG] Generating a branch copy need 2 instructions
+	  // We use addcg r0, dest, r0, -1, src.
+	  // The addcg instruction effectivelly performs the copy
+	  // in one instruction even if the constant -1 needs an
+	  // instruction. Thus we can mark the addcg as a copy op.
+	  // It is not clear if generating a tmp is safe. What happens
+	  // if the copy is generated after reg alloc ?
+	  // We don't use a simulated instruction due to the need for
+	  // a temporary register.
+	  // DevWarn("generating branch copy");
+	  TN *tmp;
+	  tmp = Expand_Immediate_Into_Register(MTYPE_I4, Gen_Literal_TN(-1,4), ops);
+	  Build_OP(TOP_targ_addcg_b_r_r_b_r, Zero_TN, tgt_tn, Zero_TN, tmp, src_tn, ops);
+	  Set_OP_copy (OPS_last(ops));
+	}
       }
       else if (tgt_rc == ISA_REGISTER_CLASS_integer) {
 	if (tgt_size != 4) goto unsupported;
-	Build_OP(TOP_mfb, tgt_tn, src_tn, ops);
+	if (TOP_targ_mov_b_r != TOP_convbi_b_r) {
+	  DevWarn("Emitting %s\n", TOP_Name(TOP_targ_mov_b_r));
+	}
+	Build_OP(TOP_targ_mov_b_r, tgt_tn, src_tn, ops);
       }
       else goto unsupported;
       break;
@@ -425,19 +437,19 @@ Expand_Convert_Length (
     if (new_length == 8) {
       // zero extension requires a sequence of shifts:
       if (signed_extension) {
-          Build_OP (TOP_sxtb, dest, src, ops);
+          Build_OP (TOP_sxtb_r_r, dest, src, ops);
       }
       else {
-	Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(0xff,4), ops);
+	Build_OP (TOP_and_i_r_r, dest, src, Gen_Literal_TN(0xff,4), ops);
       }
     }
     else if (new_length == 16) {
       // zero extension requires a sequence of shifts:
       if (signed_extension) {
-          Build_OP (TOP_sxth, dest, src, ops);
+          Build_OP (TOP_sxth_r_r, dest, src, ops);
       }
       else {
-	Build_OP (TOP_zxth, dest, src, ops);
+	Build_OP (TOP_zxth_r_r, dest, src, ops);
       }
     }
     else if (new_length < 16) {
@@ -448,7 +460,7 @@ Expand_Convert_Length (
         mask |= mask << 1;
       }
 
-      Build_OP (TOP_and_i, dest, src, Gen_Literal_TN(mask, 4), ops);
+      Build_OP (TOP_and_i_r_r, dest, src, Gen_Literal_TN(mask, 4), ops);
     }
   }
   else
@@ -599,9 +611,13 @@ Exp_Immediate (
   case ISA_REGISTER_CLASS_branch:
     FmtAssert(TN_has_value(src),("Exp_Immediate: MTYPE_B <- symbol is invalid"));
     if (val == 0) {
-      Build_OP(TOP_mtb, dest, Zero_TN, ops);
+      Build_OP(TOP_convib_r_b, dest, Zero_TN, ops);
+    } else if (val == 1
+	       || (val != 0 && TOP_targ_mov_r_b == TOP_convib_r_b)) {
+      Build_OP(TOP_cmpeq_r_r_b, dest, Zero_TN, Zero_TN, ops);
     } else {
-      Build_OP(TOP_cmpeq_r_b, dest, Zero_TN, Zero_TN, ops);
+      TN *tmp = Expand_Immediate_Into_Register (MTYPE_U4, src, ops);
+      Build_OP (TOP_targ_mov_r_b, dest, tmp, ops);
     }
     break;
     
@@ -614,10 +630,10 @@ Exp_Immediate (
       TN *high_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(high, 4), ops);
       Expand_Compose (dest, low_tn, high_tn, ops);
     } else if (TN_has_value(src) && ISA_LC_Value_In_Class (val, LC_isrc2)) {
-      if (val == 0) Build_OP (TOP_mov_r, dest, Zero_TN, ops);
-      else Build_OP (TOP_mov_i, dest, src, ops);
+      if (val == 0) Build_OP (TOP_mov_r_r, dest, Zero_TN, ops);
+      else Build_OP (TOP_mov_i_r, dest, src, ops);
     } else {
-      Build_OP (TOP_mov_ii, dest, src, ops);
+      Build_OP (TOP_mov_ii_r, dest, src, ops);
     }
     break;
     
@@ -645,7 +661,6 @@ Expand_Immediate (
 	    ("unexpected non-constant in Expand_Immediate"));
   FmtAssert((TN_has_value(src) || TN_is_symbol(src)),
 	    ("expected value or const in Expand_Immediate"));
-  //Exp_Immediate (dest, src, mtype, ops);
   Exp_Immediate (dest, src, MTYPE_signed(mtype) ? TRUE : FALSE, ops);
 }
 
@@ -716,7 +731,7 @@ Expand_Add (
 
     if (TN_has_value(src2)) {
       INT64 val = TN_value(src2);
-      new_opcode = TOP_opnd_immediate_variant(TOP_add_r, 1, val);
+      new_opcode = TOP_opnd_immediate_variant(TOP_add_r_r_r, 1, val);
     }
     // symbolic constant, gp-relative or sp-relative
     else if (TN_is_symbol(src2)) {
@@ -737,7 +752,7 @@ Expand_Add (
 	  || TN_is_reloc_gotoff_tprel (src2)
 	  || TN_is_reloc_gotoff_dtpldm (src2)
 	  || TN_is_reloc_gotoff_dtpndx (src2)) {
-	new_opcode = TOP_add_i;
+	new_opcode = TOP_add_i_r_r;
       }
       else if (ST_on_stack(TN_var(src2))) {
 #if 1
@@ -750,13 +765,13 @@ Expand_Add (
 #endif
 	// On stack symbolic offset becomes an immediate
 	// in the final code
-	new_opcode = TOP_add_i;
+	new_opcode = TOP_add_i_r_r;
       }
       else {
         // just makea and hope that 16bit offset suffices:
 	Expand_Immediate(tmp, src2, mtype, ops);
         src2 = tmp;
-	new_opcode = TOP_add_r;
+	new_opcode = TOP_add_r_r_r;
       }
     }
     else {
@@ -770,7 +785,7 @@ Expand_Add (
     FmtAssert(Register_Class_For_Mtype(mtype) == TN_register_class(src2),
 	      ("Expand_Add: mtype screwed"));
 
-    new_opcode = TOP_add_r;
+    new_opcode = TOP_add_r_r_r;
   }
 
   Build_OP (new_opcode, result, src1, src2, ops);
@@ -819,7 +834,7 @@ Expand_Sub (
   }
 
   if (TN_has_value(src1)) {
-    new_opcode = TOP_opnd_immediate_variant(TOP_sub_r, 0, TN_value(src1));
+    new_opcode = TOP_opnd_immediate_variant(TOP_sub_r_r_r, 0, TN_value(src1));
   }
   else if (TN_has_value(src2)) {
     INT64 val = (INT64)(INT32)(-TN_value(src2));
@@ -829,7 +844,7 @@ Expand_Sub (
   }
   else {
     // default both registers
-    new_opcode = TOP_sub_r;
+    new_opcode = TOP_sub_r_r_r;
   }
 
   Build_OP (new_opcode, result, src1, src2, ops);
@@ -869,13 +884,9 @@ Expand_Neg (
 	FmtAssert(0, ("Unexpected 8 bytes type"));
       }
     } else if (mtype == MTYPE_F4) {
-	if (Enable_Single_Float_Ops) {
-	    TN *value = Gen_Literal_TN(0x80000000LL, 4) ;
-	    Expand_Binary_Xor(dest, src, value, MTYPE_U4, ops);
-	    return ;
-	} else {
-	    FmtAssert(0, ("Unexpected 4 bytes type"));
-	}
+      TN *value = Gen_Literal_TN(0x80000000LL, 4) ;
+      Expand_Binary_Xor(dest, src, value, MTYPE_U4, ops);
+      return ;
     } else {
 	FmtAssert(0, ("Unexpected floating point type"));
     }
@@ -885,7 +896,7 @@ Expand_Neg (
   FmtAssert (MTYPE_is_integral(mtype) && MTYPE_byte_size(mtype) == 4,
 	     ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
 
-  Build_OP (TOP_sub_r, dest, Zero_TN, src, ops);
+  Build_OP (TOP_sub_r_r_r, dest, Zero_TN, src, ops);
   return;
 }
 
@@ -936,8 +947,8 @@ Expand_Abs (
       //            max   dest = negx, src
       //
     TN *negx = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-    Build_OP (TOP_sub_r, negx, Zero_TN, src, ops);
-    Build_OP (TOP_max_r, dest, negx, src, ops);
+    Build_OP (TOP_sub_r_r_r, negx, Zero_TN, src, ops);
+    Build_OP (TOP_max_r_r_r, dest, negx, src, ops);
   } else if (MTYPE_is_float(mtype)) {
     FmtAssert (MTYPE_byte_size(mtype) == 4,
 	       ("Unexpected MTYPE: %s", MTYPE_name(mtype)));
@@ -1000,7 +1011,7 @@ Expand_Shift (
       break;
     }
     Expand_Extract(low_src1, high_src1, src1, ops);
-    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops, 0LL);
+    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops, 0);
     Expand_Compose(result, low_res, high_res, ops);
     return;
   }
@@ -1023,13 +1034,13 @@ Expand_Shift (
   
   switch (kind) {
     case shift_left:
-      new_opcode = TOP_shl_r;
+      new_opcode = TOP_shl_r_r_r;
       break;
     case shift_aright:
-      new_opcode = TOP_shr_r;
+      new_opcode = TOP_shr_r_r_r;
       break;
     case shift_lright:
-      new_opcode = TOP_shru_r;
+      new_opcode = TOP_shru_r_r_r;
       break;
   }
 
@@ -1134,17 +1145,17 @@ Expand_Shift_Multiply (
   val = TN_value (src2);
   switch (val) {
   case 3:
-    opcode = TOP_sh1add_r;
+    opcode = TOP_sh1add_r_r_r;
     break;
   case 5:
-    opcode = TOP_sh2add_r;
+    opcode = TOP_sh2add_r_r_r;
     break;
   case 9:
-    opcode = TOP_sh3add_r;
+    opcode = TOP_sh3add_r_r_r;
     break;
   case 17:
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r)) {
-      opcode = TOP_sh4add_r;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r_r_r)) {
+      opcode = TOP_sh4add_r_r_r;
     } else {
       opcode = TOP_UNDEFINED;
     }
@@ -1238,33 +1249,35 @@ Expand_Multiply (
   }
 
   if (s1mtype == MTYPE_U2 && s2mtype == MTYPE_U2) 
-    opcode = TOP_mulllu_r;
+    opcode = TOP_mulllu_r_r_r;
   else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
-    opcode = TOP_mulll_r;
-  else if (s2mtype == MTYPE_U2) 
-    opcode = TOP_mullu_r;
+    opcode = TOP_mulll_r_r_r;
+  else if (s2mtype == MTYPE_U2
+	   && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r))
+    opcode = TOP_mullu_r_r_r;
   else if (s2mtype == MTYPE_I2) 
-    opcode = TOP_mull_r;
-  else if (!TN_has_value(src2) && s1mtype == MTYPE_U2) { 
-    opcode = TOP_mullu_r; swapped = TRUE; 
+    opcode = TOP_mull_r_r_r;
+  else if (!TN_has_value(src2) && s1mtype == MTYPE_U2
+	   && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r)) { 
+    opcode = TOP_mullu_r_r_r; swapped = TRUE; 
   } else if (!TN_has_value(src2) && s1mtype == MTYPE_I2) {
-    opcode = TOP_mull_r; swapped = TRUE; 
+    opcode = TOP_mull_r_r_r; swapped = TRUE; 
   } else {
     // 32x32 multiply
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r)) {
-	opcode = TOP_mul32_r ;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
+	opcode = TOP_mul32_r_r_r ;
     } else {
 	TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
 	TN *tmp2 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-	opcode = TOP_mullu_r;
+	opcode = TOP_mullu_r_r_r;
 	if (TN_has_value(src2))
 	    opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
 	Build_OP(opcode, tmp1, src1, src2, ops);
-	opcode = TOP_mulhs_r;
+	opcode = TOP_mulhs_r_r_r;
 	if (TN_has_value(src2))
 	    opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
 	Build_OP(opcode, tmp2, src1, src2, ops);
-	Build_OP(TOP_add_r, result, tmp1, tmp2, ops);
+	Build_OP(TOP_add_r_r_r, result, tmp1, tmp2, ops);
 	return;
     }
   }
@@ -1273,14 +1286,18 @@ Expand_Multiply (
     FmtAssert(FALSE, ("Expand_Multiply: failed"));
   
   if (swapped) {
-    if (TN_has_value(src1)) 
-      opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src1));
-    Build_OP(opcode, result, src2, src1, ops);
-  } else {
-    if (TN_has_value(src2)) 
-      opcode = TOP_opnd_immediate_variant(opcode, 1, TN_value(src2));
-    Build_OP(opcode, result, src1, src2, ops);
+    TYPE_ID tmp_mtype = s1mtype; s1mtype = s2mtype; s2mtype = tmp_mtype;
+    TN *tmp = src1; src1 = src2; src2 = tmp;
   }
+  if (TN_has_value(src2)) {
+    TOP imm_opcode = TOP_opnd_immediate_variant (opcode, 1, TN_value (src2));
+    if (imm_opcode != TOP_UNDEFINED) {
+      opcode = imm_opcode;
+    } else {
+      src2 = Expand_Immediate_Into_Register(s2mtype, src2, ops);
+    }
+  }
+  Build_OP(opcode, result, src1, src2, ops);
 
   return;
 }
@@ -1353,17 +1370,15 @@ Expand_Logical_Move (
   OPS *ops
 )
 {
-  /* dest = (src == 0) ? 1 : 0 */
+  /* dest = (src != 0) ? 1 : 0 */
 
   TOP opcode = TOP_UNDEFINED;
 
   // Trivial operand
   if (TN_Has_Value(src)) {
-    if (TN_Value(src) == 0) { 
-      Expand_Immediate(dest, Gen_Literal_TN(0, 4), MTYPE_I4, ops);
-    } else {
-      Expand_Immediate(dest, Gen_Literal_TN(1, 4), MTYPE_I4, ops);
-    }
+    INT64 val = (TN_Value(src) != 0);
+
+    Expand_Immediate(dest, Gen_Literal_TN(val, 4), MTYPE_B, ops);
     return;
   }
   
@@ -1371,11 +1386,8 @@ Expand_Logical_Move (
   if (TN_is_constant(src)) {
     src = Expand_Or_Inline_Immediate(src, MTYPE_I4, ops);
   }
-  
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch)
-    opcode = TOP_cmpne_r_b;
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_cmpne_r_r;
+
+  opcode = TOP_result_register_variant(TOP_cmpne_r_r_r, 0, TN_register_class(dest));
   
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Move"));
   
@@ -1404,11 +1416,8 @@ Expand_Logical_Not (
 
   // Trivial operand
   if (TN_Has_Value(src)) {
-    if (TN_Value(src) == 0) { 
-      Expand_Immediate(dest, Gen_Literal_TN(1, 4), MTYPE_I4, ops);
-    } else {
-      Expand_Immediate(dest, Gen_Literal_TN(0, 4), MTYPE_I4, ops);
-    }
+    INT64 val = (TN_Value(src) == 0);
+    Expand_Immediate(dest, Gen_Literal_TN(val, 4), MTYPE_B, ops);
     return;
   }
   
@@ -1416,11 +1425,8 @@ Expand_Logical_Not (
   if (TN_is_constant(src)) {
     src = Expand_Or_Inline_Immediate(src, MTYPE_I4, ops);
   }
-  
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch)
-    opcode = TOP_cmpeq_r_b;
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_cmpeq_r_r;
+
+  opcode = TOP_result_register_variant(TOP_cmpeq_r_r_r, 0, TN_register_class(dest));
   
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Not"));
 
@@ -1496,16 +1502,13 @@ Expand_Logical_And (
   }
   if (TN_Has_Value(src2)) {
     if (TN_Value(src2) == 0) 
-      Expand_Immediate(dest, Gen_Literal_TN(0, 4), MTYPE_I4, ops);
+      Expand_Immediate(dest, Gen_Literal_TN(0, 4), MTYPE_B, ops);
     else
       Expand_Logical_Move(dest, src1, 0, ops);
     return;
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch)
-    opcode = TOP_andl_r_b;
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_andl_r_r;
+  opcode = TOP_result_register_variant(TOP_andl_r_r_r, 0, TN_register_class(dest));
 
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_And"));
 
@@ -1548,14 +1551,11 @@ Expand_Logical_Or (
     if (TN_Value(src2) == 0) 
       Expand_Logical_Move(dest, src1, 0, ops);
     else
-      Expand_Immediate(dest, Gen_Literal_TN(1, 4), MTYPE_I4, ops);
+      Expand_Immediate(dest, Gen_Literal_TN(1, 4), MTYPE_B, ops);
     return;
   }
 
-  if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch)
-    opcode = TOP_orl_r_b;
-  else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_orl_r_r;
+  opcode = TOP_result_register_variant (TOP_orl_r_r_r, 0, TN_register_class(dest));
 
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Or"));
 
@@ -1595,7 +1595,7 @@ Expand_Binary_Complement (
   }
 
   /* complement == xor src 0xffffffff */
-  Build_OP (TOP_xor_i, dest, src, Gen_Literal_TN(-1, 4), ops);
+  Build_OP (TOP_xor_i_r_r, dest, src, Gen_Literal_TN(-1, 4), ops);
 }
 
 
@@ -1603,7 +1603,7 @@ Expand_Binary_Complement (
  *   Expand_Special_And_Immed
  *
  * Expand special cases of AND with an immediate. These are cases
- * where the constant is too big for TOP_and_i, but can be handled
+ * where the constant is too big for TOP_and_i_r_r, but can be handled
  * more simply than loading the constant into a register and using TOP_and.
  *
  * NOTE: that 'mix' could be used to zero fixed patterns of bytes and
@@ -1632,7 +1632,7 @@ Expand_Special_And_Immed (
     Expand_Copy(dest, NULL, src1, ops);
     return TRUE;
   } else if (imm == 0xFFFF) {
-    Build_OP(TOP_zxth, dest, src1, ops);
+    Build_OP(TOP_zxth_r_r, dest, src1, ops);
     return TRUE;
   }
   return FALSE;
@@ -1714,7 +1714,7 @@ Expand_Binary_And (
   }
   
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_and_r;
+    opcode = TOP_and_r_r_r;
   
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Binary_And"));
 
@@ -1789,7 +1789,7 @@ Expand_Binary_Or (
   }
   
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_or_r;
+    opcode = TOP_or_r_r_r;
   
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Binary_Or"));
 
@@ -1858,7 +1858,7 @@ Expand_Binary_Xor (
   }
   
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer)
-    opcode = TOP_xor_r;
+    opcode = TOP_xor_r_r_r;
   
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Binary_Xor"));
 
@@ -2182,7 +2182,23 @@ Expand_Bool_To_Int (
   OPS *ops
 )
 {
-  Build_OP (TOP_mfb, dest, src, ops);
+  Build_OP (TOP_convbi_b_r, dest, src, ops);
+  return;
+}
+
+
+/* ====================================================================
+ *   Expand_Int_To_Bool
+ * ====================================================================
+ */
+void
+Expand_Int_To_Bool (
+  TN *dest,
+  TN *src,
+  OPS *ops
+)
+{
+  Build_OP (TOP_convib_r_b, dest, src, ops);
   return;
 }
 
@@ -2201,13 +2217,7 @@ Expand_Float_Add(
 {
   TOP top = TOP_UNDEFINED;
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
-      top = TOP_addf_n;
-#if 0
-  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
-      top = TOP_addf;
-  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
-      top = TOP_addd;
-#endif
+      top = TOP_addf_n_r_r_r;
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Add: unexpected MTYPE %s", MTYPE_name(fmtype)));
 
@@ -2229,13 +2239,7 @@ Expand_Float_Sub(
 {
   TOP top = TOP_UNDEFINED;
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
-      top = TOP_subf_n;
-#if 0
-  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
-      top = TOP_subf;
-  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
-      top = TOP_subd;
-#endif
+      top = TOP_subf_n_r_r_r;
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Sub: unexpected MTYPE %s", MTYPE_name(fmtype)));
 
@@ -2256,13 +2260,7 @@ Expand_Float_Multiply(
 {
   TOP top = TOP_UNDEFINED;
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4)
-      top = TOP_mulf_n;
-#if 0
-  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
-      top = TOP_mulf;
-  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
-      top = TOP_muld;
-#endif
+      top = TOP_mulf_n_r_r_r;
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Multiply: unexpected MTYPE %s", MTYPE_name(fmtype)));
 
@@ -2284,12 +2282,6 @@ Expand_Float_Div(
 {
   TOP top = TOP_UNDEFINED;
   
-#if 0
-  if (Enable_Single_Float_Ops && fmtype == MTYPE_F4) 
-      top = TOP_divf;
-  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype))
-      top = TOP_divd;
-#endif
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_Div: unexpected MTYPE %s", MTYPE_name(fmtype))); 
 
@@ -2396,22 +2388,6 @@ Expand_Float_To_Float (
   TYPE_ID mtype, 
   OPS *ops)
 {    
-#if 0
-    if (Enable_Single_Float_Ops && Enable_Double_Float_Ops) { 
-	if (mtype == MTYPE_F4) {
-	    TOP top = TOP_convdf ;
-	    Build_OP (top, dest, src, ops);
-	    return ;
-	}
-	else if (mtype == MTYPE_F8) {
-	    TOP top = TOP_convfd ;
-	    Build_OP (top, dest, src, ops);
-	    return ; 
-	}
-	else
-	    FmtAssert(FALSE, ("NYI: Expand_Float_To_Float mtype"));      
-  }
-#endif
   FmtAssert(FALSE,("Not Implemented"));
 }
 
@@ -2429,13 +2405,7 @@ Expand_Int_To_Float (
 {
   TOP top = TOP_UNDEFINED ;
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_I4)
-      top = TOP_convif_n ;
-#if 0
-  else if (Enable_Single_Float_Ops && fmtype == MTYPE_F4)
-      top = imtype == MTYPE_I4 ? TOP_convif : imtype == MTYPE_U4 ? TOP_convuf : TOP_UNDEFINED ;
-  else if (Enable_Double_Float_Ops && MTYPE_is_double(fmtype)) 
-      top = imtype == MTYPE_I4 ? TOP_convid : imtype == MTYPE_U4 ? TOP_convud : TOP_UNDEFINED ;
-#endif
+      top = TOP_convif_n_r_r ;
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Int_To_Float: unexpected IMTYPE or FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
 
@@ -2458,20 +2428,20 @@ Expand_Unsigned_To_Float (
   TOP top = TOP_UNDEFINED ;
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_U4)
       {
-	  top = TOP_convif_n ;
+	  top = TOP_convif_n_r_r ;
 	  TN *dest1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
 	  TN *dest2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
 	  TN *dest3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
 	  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-	  Build_OP(TOP_cmplt_r_b, p1, src, Zero_TN, ops);
+	  Build_OP(TOP_cmplt_r_r_b, p1, src, Zero_TN, ops);
 	  TN *mask1 = Gen_Literal_TN(0x7fffffff, 4);
 // 	  Expand_Binary_And(dest1, src, mask1, MTYPE_I4, ops);
-	  Build_OP(TOP_and_i, dest1, src, mask1, ops);
+	  Build_OP(TOP_and_ii_r_r, dest1, src, mask1, ops);
 	  Expand_Int_To_Float(dest1, dest1, MTYPE_I4, fmtype, ops);
 	  TN *mask2 =  Gen_Literal_TN(0x4f000000, 4);
 	  dest3 = Expand_Immediate_Into_Register(MTYPE_I4, mask2, ops);
 	  Expand_Float_Add(dest2, dest1, dest3, fmtype, ops);
-	  Build_OP(TOP_slct_r, dest, p1, dest2, dest1, ops);
+	  Build_OP(TOP_targ_slct_r_r_b_r, dest, p1, dest2, dest1, ops);
       }
 
   FmtAssert(top != TOP_UNDEFINED, ("Expand_Unsigned_To_Float: unexpected IMTYPE %s or FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
@@ -2499,7 +2469,7 @@ Expand_Float_To_Int (
   if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_I4) {
     switch (rm) {
     case ROUND_CHOP:
-      top = TOP_convfi_n ;
+      top = TOP_convfi_n_r_r ;
       break;
       /* All others are not supported. */
     case ROUND_USER:
@@ -2519,10 +2489,10 @@ Expand_Float_To_Int (
   return;
 }
 
-/* ====================================================================
+/* [HK] 20070403
+ * ====================================================================
  *   Expand_Float_To_Unsigned
  *
- *   TODO how do you trap on float val too big for [u]int32?
  * ====================================================================
  */
 static void
@@ -2536,10 +2506,47 @@ Expand_Float_To_Unsigned (
 )
 {
   TOP top = TOP_UNDEFINED;
+  if (Enable_Non_IEEE_Ops && fmtype == MTYPE_F4 && imtype == MTYPE_U4) {
+      switch (rm) {
+      case ROUND_CHOP:
+	{
+	  top = TOP_convfi_n_r_r ;
+	  TN *dest1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *dest7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	  TN *p0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+	  TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+	  TN *val1 = Gen_Literal_TN(0x4f000000, 4);
+	  TN *val2 = Gen_Literal_TN(0x4f800000, 4);
+	  TN *val3 = Gen_Literal_TN(0x80000000, 4);
+	  TN *val4 = Gen_Literal_TN(0xffffffff, 4);
+	  dest3 = Expand_Immediate_Into_Register(MTYPE_I4, val1, ops);
+	  Build_OP(TOP_cmplt_ii_r_b, p0, src, val2, ops);
+	  Expand_Float_Sub(dest2, src, dest3, fmtype, ops);
+	  Build_OP(TOP_cmpge_r_r_b, p1, src, dest3, ops);
+	  Expand_Float_To_Int(rm, dest4, dest2, MTYPE_I4, fmtype, ops);
+	  Expand_Float_To_Int(rm, dest5, src, MTYPE_I4, fmtype, ops);
+	  Build_OP(TOP_or_ii_r_r, dest6, dest4, val3, ops);
+	  Build_OP(TOP_slct_i_r_b_r, dest7, p0, dest6, val4, ops);
+	  Build_OP(TOP_targ_slct_r_r_b_r, dest, p1, dest7, dest5, ops);
+	}
+	break;
+	/* All others are not supported. */
+      case ROUND_USER:
+      case ROUND_NEAREST:
+      case ROUND_NEG_INF:
+      case ROUND_PLUS_INF:
+      default:
+	  FmtAssert(FALSE, ("Expand_Float_To_Unsigned : unexpected rounding mode"));
+	break;
+      }
+    }
 
-  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_To_Int: unexpected IMTYPE %s of FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
-
-  Build_OP (top, dest, src, ops);
+  FmtAssert(top != TOP_UNDEFINED, ("Expand_Float_To_Unsigned: unexpected IMTYPE %s of FMTYPE %s", MTYPE_name(imtype), MTYPE_name(fmtype)));
 
   return;
 }
@@ -2829,7 +2836,7 @@ Expand_Select (
     
   if (TN_register_class(cond_tn) != ISA_REGISTER_CLASS_branch) {
     TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
-    Build_OP (TOP_mtb, tmp, cond_tn, ops);
+    Expand_Int_To_Bool (tmp, cond_tn, ops);
     cond_tn = tmp;
   }
 
@@ -2842,9 +2849,9 @@ Expand_Select (
     TN *dest_high_tn = Build_TN_Of_Mtype (MTYPE_U4);
     Expand_Extract (true_low_tn, true_high_tn, true_tn, ops);
     Expand_Extract (false_low_tn, false_high_tn, false_tn, ops);
-    Build_OP (TOP_slct_r, dest_low_tn, cond_tn, true_low_tn, false_low_tn,
+    Build_OP (TOP_targ_slct_r_r_b_r, dest_low_tn, cond_tn, true_low_tn, false_low_tn,
 	      ops);
-    Build_OP (TOP_slct_r, dest_high_tn, cond_tn, true_high_tn, false_high_tn,
+    Build_OP (TOP_targ_slct_r_r_b_r, dest_high_tn, cond_tn, true_high_tn, false_high_tn,
 	      ops);
     Expand_Compose (dest_tn, dest_low_tn, dest_high_tn, ops);
     return;
@@ -2866,15 +2873,15 @@ Expand_Select (
       TN *tmp;
       tmp = Expand_Immediate_Into_Register(MTYPE_I4, true_tn, ops);
       true_tn = tmp;
-      top = TOP_slct_r;
+      top = TOP_targ_slct_r_r_b_r;
     } else {
       TN *tmp = false_tn;
       false_tn = true_tn;
       true_tn = tmp;
-      top = TOP_slctf_r;
+      top = TOP_slctf_r_r_b_r;
     }
   } else {
-    top = TOP_slct_r;
+    top = TOP_targ_slct_r_r_b_r;
   }
 
   if (TN_has_value(false_tn)) 
@@ -2886,7 +2893,7 @@ Expand_Select (
   if (TN_register_class(dest_tn) == ISA_REGISTER_CLASS_branch) {
     TN *tmp_dest_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
     Build_OP (top, tmp_dest_tn, cond_tn, true_tn, false_tn, ops);
-    Build_OP(TOP_mtb, dest_tn, tmp_dest_tn, ops);
+    Build_OP(TOP_targ_mov_r_b, dest_tn, tmp_dest_tn, ops);
   }
   else {
     Build_OP (top, dest_tn, cond_tn, true_tn, false_tn, ops);
@@ -3002,10 +3009,10 @@ Expand_Min (
 
   switch (mtype) {
   case MTYPE_I4:
-    top = TOP_min_r;
+    top = TOP_min_r_r_r;
     break;
   case MTYPE_U4:
-    top = TOP_minu_r;
+    top = TOP_minu_r_r_r;
     break;
   default:
     FmtAssert(FALSE, ("Expand_Min: unexpected MTYPE %s", MTYPE_name(mtype)));
@@ -3053,10 +3060,10 @@ Expand_Max (
 
   switch (mtype) {
   case MTYPE_I4:
-    top = TOP_max_r;
+    top = TOP_max_r_r_r;
     break;
   case MTYPE_U4:
-    top = TOP_maxu_r;
+    top = TOP_maxu_r_r_r;
     break;
   default:
     FmtAssert(FALSE, ("Expand_Min: unexpected MTYPE %s", MTYPE_name(mtype)));
@@ -3155,9 +3162,9 @@ Expand_Float_Less (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLT: V_NONE;
+  case MTYPE_F4: variant = V_BR_FLT;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLT: V_NONE;
+  case MTYPE_F8: variant = V_BR_DLT;
     break;
   default:
     break;
@@ -3185,9 +3192,9 @@ Expand_Float_Greater (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGT: V_NONE;
+  case MTYPE_F4: variant = V_BR_FGT;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGT: V_NONE;
+  case MTYPE_F8: variant = V_BR_DGT;
     break;
   default:
     break;
@@ -3215,9 +3222,9 @@ Expand_Float_Less_Equal (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FLE: V_NONE;
+  case MTYPE_F4: variant = V_BR_FLE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DLE: V_NONE;
+  case MTYPE_F8: variant = V_BR_DLE;
     break;
   default:
     break;
@@ -3245,9 +3252,9 @@ Expand_Float_Greater_Equal (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FGE: V_NONE;
+  case MTYPE_F4: variant = V_BR_FGE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DGE: V_NONE;
+  case MTYPE_F8: variant = V_BR_DGE;
     break;
   default:
     break;
@@ -3275,9 +3282,9 @@ Expand_Float_Equal (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FEQ: V_NONE;
+  case MTYPE_F4: variant = V_BR_FEQ;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DEQ: V_NONE;
+  case MTYPE_F8: variant = V_BR_DEQ;
     break;
     break;
   default:
@@ -3306,9 +3313,9 @@ Expand_Float_Not_Equal (
   FmtAssert(variant == V_NONE, ("Unexpected float compare variant"));
 
   switch (mtype) {
-  case MTYPE_F4: variant = Enable_Single_Float_Ops ? V_BR_FNE: V_NONE;
+  case MTYPE_F4: variant = V_BR_FNE;
     break;
-  case MTYPE_F8: variant = Enable_Double_Float_Ops ? V_BR_DNE: V_NONE;
+  case MTYPE_F8: variant = V_BR_DNE;
     break;
   default:
     break;
@@ -3340,18 +3347,6 @@ Expand_Sqrt (
 )
 {
   TOP opcode = TOP_UNDEFINED;
-#if 0
-  switch (mtype) {
-  case MTYPE_F4: 
-    if (Enable_Single_Float_Ops) opcode = TOP_sqrtf;
-    break;
-  case MTYPE_F8: 
-    if (Enable_Double_Float_Ops) opcode = TOP_sqrtd;
-    break;
-  default:
-    break;
-  }
-#endif
   FmtAssert(opcode != TOP_UNDEFINED,("Not Implemented"));
 
   Build_OP (opcode, result, src, ops);
@@ -3433,8 +3428,8 @@ Exp_Intrinsic_Call (
   LABEL_IDX *label,
   OPS *loop_ops,
   SRCPOS srcpos
-) {
-
+)
+{
     /*
      * Currently treated as intrinsics calls:
      *  - D-cache intrinsics management
@@ -3442,7 +3437,32 @@ Exp_Intrinsic_Call (
      */
 
     switch(id) {    
-      /* Add here intrinsic that will be expanded effectively as intrinsic call */
+    case INTRN___ST220PRGINS:
+      if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
+	    /* We fall back to the usual intrinsic generation */
+	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops, srcpos) ;
+      } else {
+	// [SC] Expand to a loop of prginsset instructions.
+	// Here, the icache size is hard-coded.  Should move this
+	// cache information to config_cache_targ.
+#define ICACHE_SIZE  (32*1024)
+#define ICACHE_BANKS (4)
+#define ICACHE_BYTES_PER_LINE (64)
+#define ICACHE_LINES (ICACHE_SIZE/(ICACHE_BYTES_PER_LINE*ICACHE_BANKS))
+
+	TN *const_bytes_per_line = Gen_Literal_TN (ICACHE_BYTES_PER_LINE, 4);
+	TN *const_zero = Gen_Literal_TN (0, 4);
+        TN *const_base_init = Gen_Literal_TN (ICACHE_LINES * ICACHE_BYTES_PER_LINE, 4);
+	TN *base = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	*label = Gen_Temp_Label ();
+	TN *label_tn = Gen_Label_TN (*label, 0);
+
+	Exp_Immediate (base, const_base_init, FALSE, ops);
+	Build_OP (TOP_prginsset_r_i, const_zero, base, loop_ops);
+	Expand_Sub (base, base, const_bytes_per_line, MTYPE_I4, loop_ops);
+	Expand_Branch (label_tn, base, Zero_TN, V_BR_I4GT, loop_ops);
+      }
+	break ;
     default:
       /* Default is intrinsic op */
       Exp_Intrinsic_Op(id,num_results,num_opnds,result,opnd,ops,srcpos);
@@ -3459,7 +3479,7 @@ Exp_Intrinsic_Call (
 void
 Exp_Simulated_Op (
   const OP *op,
-  OPS *ops,
+  OPS *ops, 
   INT pc_value,
   ST **symbol_def_after_group
 )
@@ -3493,7 +3513,7 @@ Exp_Simulated_Op (
     break;
 
   case TOP_getpc:
-    Build_OP (TOP_call, OP_result(op, 0), OP_opnd (op, 0), ops);
+    Build_OP (TOP_call_i, OP_result(op, 0), OP_opnd (op, 0), ops);
     *symbol_def_after_group = TN_var( OP_opnd (op, 0));
     FOR_ALL_OPS_OPs(ops, newop) {
       OP_srcpos(newop) = OP_srcpos(op);
@@ -3581,6 +3601,16 @@ Exp_Is_Large_Stack_Sym (
     return FALSE;
   }
 
+  // [CG]: Here there is a problem, because a call to Allocate_Object() will
+  // actually reserve a stack location for the object.
+  // Thus it means that this function as a side-effect, i.e. if it is called
+  // to evaluate the cost of the access and the access is not performed, we
+  // waste a stack location.
+  // It is actually the case as this function is called from
+  // Analyze_Spilling_Live_Range().
+  // This means that we should there estimate the symbol offset without calling
+  // Allocate_Object. 
+  // TODO: do it! Currently not done to avoid regressions, must be revisited.
   Allocate_Object(sym);		/* make sure sym is allocated */
 
   Base_Symbol_And_Offset_For_Addressing (sym, ofst, &base_sym, &base_ofst);
@@ -3634,12 +3664,13 @@ Exp_GP_Init (
   TN *neg_gprel_tn;
   ST *st = New_ST (CURRENT_SYMTAB);
 
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_addpc_i)) {
+  if (Enable_AddPC
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_addpc_i_r)) {
     ST_Init (st, Save_Str ("."), CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
 	     ST_pu (fn_st));
     neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);
 
-    Build_OP (TOP_addpc_i, dest, neg_gprel_tn, ops);
+    Build_OP (TOP_addpc_i_r, dest, neg_gprel_tn, ops);
   } else {
     // Generate a symbol for the label to call.  It has
     // to be a symbol (not a label) because we need to
@@ -3680,7 +3711,7 @@ Expand_Const (
       mtype == TCON_ty(tc) &&
       (mtype == MTYPE_F4 || mtype == MTYPE_F8)) {
     if (mtype == MTYPE_F4) {
-      Build_OP(TOP_mov_i, dest, src, ops);
+      Build_OP(TOP_mov_i_r, dest, src, ops);
     } else if (Enable_64_Bits_Ops && mtype == MTYPE_F8) {
       INT64 fimm = TCON_k0(tc);
       UINT32 low = (UINT32)(fimm & 0xFFFFFFFF);
@@ -3700,5 +3731,29 @@ Expand_Const (
   dump_tn (dest);
   dump_tn (src);
   FmtAssert(FALSE,("unsupported type %s", MTYPE_name(TCON_ty(tc))));
+}
+
+
+/*
+ * Exp_Enable_Allocate_Object()
+ *
+ * Set/Unset actual object allocation.
+ */
+static BOOL can_allocate_object = TRUE;
+void
+Exp_Enable_Allocate_Object(BOOL onoff)
+{
+  can_allocate_object = onoff;
+}
+
+/*
+ * Exp_Can_Allocate_Object()
+ *
+ * See interface description in exp_private.h.
+ */
+BOOL
+Exp_Can_Allocate_Object(void)
+{
+  return can_allocate_object;
 }
 

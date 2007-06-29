@@ -232,6 +232,7 @@ static WN *lower_mload(WN *, WN *, LOWER_ACTIONS);
 static void lower_mload_formal(WN *, WN *, PLOC, LOWER_ACTIONS);
 #ifdef TARG_ST
 static void lower_mload_actual (WN *, WN *, WN *, WN *,PLOC, LOWER_ACTIONS);
+static void lower_actions_fprintf(FILE *f, LOWER_ACTIONS actions);
 #else
 static void lower_mload_actual (WN *, WN *, PLOC, LOWER_ACTIONS);
 #endif
@@ -3007,6 +3008,20 @@ lower_hilo_expr (
 			   Load_Leaf(addrN));
       }
 
+#ifdef TARG_ST
+      // (cbr) bug #19331 propagate volatile
+      if (WN_Is_Volatile_Mem(tree)) {
+        TY_IDX pointedlo = TY_pointed (WN_load_addr_ty(*lopart));
+        TY_IDX pointedhi = TY_pointed (WN_load_addr_ty(*hipart));
+
+        Set_TY_is_volatile(pointedlo);
+        Set_TY_is_volatile(pointedhi);
+
+        Set_TY_pointed (WN_load_addr_ty(*lopart), pointedlo); 
+        Set_TY_pointed (WN_load_addr_ty(*hipart), pointedhi); 
+      }
+#endif
+
       lower_hilo_maps(tree, *hipart, *lopart, actions, orig_type);
     }
     break;
@@ -4088,28 +4103,46 @@ static WN *lower_nary_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 	    expr = actual;
 	  }
 
-	  if (mpy && expr)
+	  if (WN_Madd_Allowed(type) && mpy && expr)
 	  {
 	    WN_actual(tree, mpyI)= WN_Madd(type, expr, WN_kid0(mpy),
 					   WN_kid1(mpy));
+#ifdef KEY
+	    if (Cur_PU_Feedback) {
+	      const FB_Info_Value_FP_Bin &info = Cur_PU_Feedback->Query_value_fp_bin( mpy );
+	      Cur_PU_Feedback->Annot_value_fp_bin( WN_actual(tree, mpyI), info );
+	    }
+#endif
 	    tree = WN_NaryDelete(tree, exprI);
 	    found=	TRUE;
 	    break;
 	  }
-	  else if (nmpy && expr)
+	  else if (WN_Madd_Allowed(type) && nmpy && expr)
 	  {
 	    WN_actual(tree, nmpyI)= WN_Nmsub(type, expr, WN_kid0(nmpy),
 					     WN_kid1(nmpy));
+#ifdef KEY
+	    if (Cur_PU_Feedback) {
+	      const FB_Info_Value_FP_Bin &info = Cur_PU_Feedback->Query_value_fp_bin( nmpy );
+	      Cur_PU_Feedback->Annot_value_fp_bin( WN_actual(tree, nmpyI), info );
+	    }
+#endif
 	    tree = WN_NaryDelete(tree, exprI);
 	    found=	TRUE;
 	    break;
 	  }
-	  else if (narympy && expr)
+	  else if (WN_Madd_Allowed(type) && narympy && expr)
 	  {
 	    mpy=	WN_kid0(narympy);
 	    narympy=	WN_NaryDelete(narympy, 0);
 
 	    WN_actual(tree, narympyI)= WN_Madd(type, expr, mpy, narympy);
+#ifdef KEY
+	    if (Cur_PU_Feedback) {
+	      const FB_Info_Value_FP_Bin &info = Cur_PU_Feedback->Query_value_fp_bin( mpy );
+	      Cur_PU_Feedback->Annot_value_fp_bin( WN_actual(tree, narympyI), info );
+	    }
+#endif
 	    tree = WN_NaryDelete(tree, exprI);
 	    found=	TRUE;
 	    break;
@@ -4150,8 +4183,15 @@ static WN *lower_nary_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
   TYPE_ID  type = WN_rtype(tree);
-
- /*
+#ifdef TARG_ST
+  WN* return_wn = tree;
+#endif
+#ifdef TARG_ST
+  // WN that carries the feedback
+  WN *carry_fb = NULL;
+#endif 
+  
+  /*
   *  look for madd patterns
   */
   switch (WN_operator(tree))
@@ -4159,24 +4199,55 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
   case OPR_NEG:
     {
       WN	*child = WN_kid0(tree);
-
+#ifdef TARG_ST
+      //TB: force the lowering of child to get more opportunity to catch WN such as:
+      //  F4MPY
+      // F4ADD
+      //F4NEG
+      child = lower_madd(block, child, actions);
+#endif
       switch(WN_operator(child))
       {
       case OPR_MADD:
 	WN_Delete(tree);
+#ifdef TARG_ST
+	carry_fb = child;
+	return_wn = WN_Nmadd(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#else
 	return WN_Nmadd(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#endif
+	break;
 
       case OPR_MSUB:
 	WN_Delete(tree);
+#ifdef TARG_ST
+	carry_fb = child;
+	return_wn = WN_Nmsub(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#else
 	return WN_Nmsub(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#endif
+	break;
 
       case OPR_NMADD:
 	WN_Delete(tree);
+#ifdef TARG_ST
+	carry_fb = child;
+	return_wn = WN_Madd(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#else
 	return WN_Madd(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#endif
+	break;
 
       case OPR_NMSUB:
 	WN_Delete(tree);
+#ifdef TARG_ST
+	carry_fb = child;
+	return_wn = WN_Msub(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#else
 	return WN_Msub(type, WN_kid0(child), WN_kid1(child), WN_kid2(child));
+#endif
+	break;
+	
       }
     }
     break;
@@ -4186,15 +4257,25 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
       WN	*l= WN_kid0(tree);
       WN	*r= WN_kid1(tree);
 
-      if (WN_operator_is(l, OPR_MPY))
+      if (WN_Madd_Allowed(type) && WN_operator_is(l, OPR_MPY))
       {
 	WN_Delete(tree);
+#ifdef TARG_ST
+	return_wn = WN_Madd(type, r, WN_kid0(l), WN_kid1(l));
+	carry_fb = l;
+#else
 	return WN_Madd(type, r, WN_kid0(l), WN_kid1(l));
+#endif
       }
-      else if (WN_operator_is(r, OPR_MPY))
+      else if (WN_Madd_Allowed(type) && WN_operator_is(r, OPR_MPY))
       {
 	WN_Delete(tree);
+#ifdef TARG_ST
+	return_wn = WN_Madd(type, l, WN_kid0(r), WN_kid1(r));
+	carry_fb = r;
+#else
 	return WN_Madd(type, l, WN_kid0(r), WN_kid1(r));
+#endif
       }
     }
     break;
@@ -4204,15 +4285,25 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
       WN	*l= WN_kid0(tree);
       WN	*r= WN_kid1(tree);
 
-      if (WN_operator_is(l, OPR_MPY))
+      if (WN_Madd_Allowed(type) && WN_operator_is(l, OPR_MPY))
       {
 	WN_Delete(tree);
+#ifdef TARG_ST
+	return_wn = WN_Msub(type, r, WN_kid0(l), WN_kid1(l));
+	carry_fb = l;
+#else
 	return WN_Msub(type, r, WN_kid0(l), WN_kid1(l));
+#endif
       }
-      else if (WN_operator_is(r, OPR_MPY))
+      else if (WN_Madd_Allowed(type) && WN_operator_is(r, OPR_MPY))
       {
 	WN_Delete(tree);
+#ifdef TARG_ST
+	return_wn = WN_Nmsub(type, l, WN_kid0(r), WN_kid1(r));
+	carry_fb = r;
+#else
 	return WN_Nmsub(type, l, WN_kid0(r), WN_kid1(r));
+#endif
       }
     }
     break;
@@ -4226,7 +4317,12 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 	WN	*child= WN_kid0(neg);
 
 	WN_Delete(neg);
+#ifdef TARG_ST
+	return_wn = WN_Msub(type, child, WN_kid1(tree), WN_kid2(tree));
+	carry_fb = tree;
+#else
 	return WN_Msub(type, child, WN_kid1(tree), WN_kid2(tree));
+#endif
       }
     }
     break;
@@ -4240,7 +4336,12 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 	WN	*child= WN_kid0(neg);
 
 	WN_Delete(neg);
+#ifdef TARG_ST
+	return_wn = WN_Madd(type, child, WN_kid1(tree), WN_kid2(tree));
+	carry_fb = tree;
+#else
 	return WN_Madd(type, child, WN_kid1(tree), WN_kid2(tree));
+#endif
       }
     }
     break;
@@ -4254,7 +4355,12 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 	WN	*child= WN_kid0(neg);
 
 	WN_Delete(neg);
+#ifdef TARG_ST
+	return_wn = WN_Nmsub(type, child, WN_kid1(tree), WN_kid2(tree));
+	carry_fb = tree;
+#else
 	return WN_Nmsub(type, child, WN_kid1(tree), WN_kid2(tree));
+#endif
       }
     }
     break;
@@ -4268,13 +4374,36 @@ static WN *lower_madd(WN *block, WN *tree, LOWER_ACTIONS actions)
 	WN	*child= WN_kid0(neg);
 
 	WN_Delete(neg);
+#ifdef TARG_ST
+	return_wn = WN_Nmadd(type, child, WN_kid1(tree), WN_kid2(tree));
+	carry_fb = tree;
+#else
 	return WN_Nmadd(type, child, WN_kid1(tree), WN_kid2(tree));
+#endif
       }
     }
     break;
+    
+  default:
+#ifdef TARG_ST
+    // TB: Add a recusive call to get more MADD transformation
+    for (UINT kidno=0; kidno<WN_kid_count(tree); kidno++) {
+      WN_kid(tree, kidno) = lower_madd(block, WN_kid(tree, kidno), actions);
+    }
+    break;
+#endif
   }
 
+#ifdef TARG_ST
+  if (Cur_PU_Feedback && carry_fb) {
+    const FB_Info_Value_FP_Bin &info = Cur_PU_Feedback->Query_value_fp_bin( carry_fb );
+
+    Cur_PU_Feedback->Annot_value_fp_bin( return_wn, info );
+  }
+  return return_wn;
+#else
   return tree;
+#endif
 }
 
 #ifdef TARG_ST
@@ -6378,7 +6507,145 @@ find_nested_function_trampoline (ST *sym)
   }
   return tramp_sym;
 }
-#endif /* TARG_ST
+#endif /* TARG_ST */
+
+#ifdef KEY
+//[TB] Fixes: you have to use rtype of tree when creating the new
+//contant division, otherwise integer promotion is not respected!
+// Add type_div for that
+/* Convert stmt
+      a = a / b
+   into
+      if( b == N1 ){
+         a = a / N1;
+      } else if( b == ... ){
+         ...;
+      } else {
+         a = a / b;
+      }
+   via feedback information.
+*/
+static WN* simp_remdiv( WN* block, WN* tree, LOWER_ACTIONS actions )
+{
+  if (!OPT_fb_div_simp)
+    return NULL;
+
+  if( Cur_PU_Feedback == NULL )
+    return NULL;
+
+  if( MTYPE_is_float( OPCODE_rtype(WN_opcode(tree) ) ) )
+    return NULL;
+
+  //If the integer div is not mapped on an intrinsic call, better
+  //doing nothing i think
+  if (!WN_Is_Emulated (tree))
+    return NULL;
+
+  const FB_Info_Value& info = Cur_PU_Feedback->Query_value( tree );
+
+  if( info.num_values == 0 ) {
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Integer division simplification is refused: the division is never executed.\n");
+    return NULL;
+  }
+  if( info.exe_counter < (float)Div_Exe_Counter ) {
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Integer division simplification is refused: counter %f < ratio %d.\n", info.exe_counter.Value(), Div_Exe_Counter);
+    return NULL;
+  }
+  /* Sum up the freq of the top <Div_Exe_Candidates> entries. And perform div
+     conversion only if the total freq is not less than <Div_Exe_Ratio>.
+  */
+  int items = 0;
+  const float cutoff_ratio = (float)Div_Exe_Ratio / 100;
+  const int num_candidates = MIN( info.num_values, Div_Exe_Candidates );
+  FB_FREQ freq(0.0);
+
+  for( items = 1; items <= num_candidates; items++ ){
+    freq += info.freq[items-1];
+    if( freq / info.exe_counter >= cutoff_ratio )
+      break;
+  }
+
+  if( freq / info.exe_counter < cutoff_ratio ){
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Integer division simplification is refused: value frequencies not enough %f < ratio %f\n", freq.Value() / info.exe_counter.Value(), cutoff_ratio);
+    return NULL;
+  }
+  const TYPE_ID type = WN_rtype( WN_kid(tree,1) );
+  const TYPE_ID type_div = WN_rtype(tree);
+  const PREG_NUM result = Create_Preg( type_div, ".remdiv_value" );
+
+  if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+    fprintf(TFile, "Feedback Optimizations: Integer division simplification is done: value freq is enough %f < ratio %f (value:%lld), freq = %f, counter ratio %d\n", freq.Value()/info.exe_counter.Value(), cutoff_ratio, info.value[0], info.exe_counter.Value(), Div_Exe_Counter);
+
+  for( int entry = 0; entry < items; entry++ ){
+    WN* div_tree = NULL;
+
+    WN* if_then = WN_CreateBlock();
+    {
+      WN* value = WN_CreateIntconst( OPCODE_make_op(OPR_INTCONST, type, MTYPE_V),
+				     info.value[entry] );
+      WN* tmp = WN_Binary( WN_operator(tree), type_div,
+			   WN_COPY_Tree( WN_kid(tree,0) ),
+			   value );
+      WN* stid = WN_StidIntoPreg( type_div, result, MTYPE_To_PREG( type_div ), tmp );
+      WN_copy_linenum(tree, stid);
+      WN_INSERT_BlockLast( if_then, stid );
+    }
+	  
+    WN* if_else = WN_CreateBlock();
+    {
+      div_tree = WN_Binary( WN_operator(tree), type_div,
+			    WN_COPY_Tree( WN_kid(tree,0) ),
+			    WN_COPY_Tree( WN_kid(tree,1) ) );
+      if( entry+1 == items ){
+	WN* stid = WN_StidIntoPreg( type_div, result, MTYPE_To_PREG( type_div ), div_tree );
+	WN_copy_linenum(tree, stid);
+	WN_INSERT_BlockLast( if_else, stid );
+      }
+    }
+      
+    WN* value = WN_CreateIntconst( OPCODE_make_op(OPR_INTCONST, type, MTYPE_V),
+				   info.value[entry] );
+    WN* if_tree = WN_CreateIf( WN_EQ( type, WN_COPY_Tree(WN_kid(tree,1)),
+				      value ),
+			       if_then, if_else );
+
+    Cur_PU_Feedback->Annot( if_tree, FB_EDGE_BRANCH_TAKEN, info.freq[entry] );
+    Cur_PU_Feedback->Annot( if_tree, FB_EDGE_BRANCH_NOT_TAKEN,
+			    ( info.exe_counter - info.freq[entry] ) );
+	  
+    WN_copy_linenum(tree, if_tree);
+    WN_INSERT_BlockLast( block, if_tree );
+	  
+    WN_Delete( WN_kid(tree,0) );
+    WN_Delete( WN_kid(tree,1) );
+    WN_Delete( tree );
+
+    tree = div_tree;
+    block = if_else;
+  }
+      
+  return lower_expr(block, WN_LdidPreg( type_div, result ), actions | LOWER_CNST_DIV);
+}
+#endif
+
+
+static BOOL Is_Const_Float(WN *wn)
+{
+  if (WN_operator(wn) == OPR_LDID &&
+      WN_class(wn) == CLASS_PREG &&
+      Preg_Home(WN_offset(wn)) != NULL &&
+      WN_operator_is(Preg_Home(WN_offset(wn)), OPR_CONST)) {
+    return TRUE;
+  }
+  if (WN_operator_is(wn, OPR_INTCONST)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
 
 /* ====================================================================
  *
@@ -6410,13 +6677,13 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
   *  before children are processed reassociate for madd oportunities
   */
   if (Action(LOWER_MADD)	&&
-      Madd_Allowed		&&
-#ifdef TARG_ST200 // [HK] madd not supported for double type in st200
-      Fused_Madd		&&
-      (MTYPE_id(type) == MTYPE_F4))
+#ifdef TARG_ST
+      // [CG]: This test is not at the right place. Moved to lower_madd() and lower_nary_madd()
+      1
 #else
-     (MTYPE_id(type) == MTYPE_F4 || MTYPE_id(type) == MTYPE_F8))
+     (MTYPE_id(type) == MTYPE_F4 || MTYPE_id(type) == MTYPE_F8)
 #endif 
+      )
   {
     tree = lower_nary_madd(block, tree, actions);
     tree = lower_madd(block, tree, actions);
@@ -6930,6 +7197,41 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 
       return lower_expr(block, tree, actions);
     }
+#ifdef TARG_ST
+    //TB: Change float cmp by an integer cmp
+    if  (Float_Eq_Simp && WN_desc(tree) == MTYPE_F4)
+      {
+	if (Is_Const_Float(WN_kid0(tree))) {
+	  TCON tc;
+	  if (WN_operator(WN_kid0(tree)) == OPR_LDID ) 
+	    tc = Const_Val(Preg_Home(WN_offset(WN_kid0(tree))));
+	  else
+	    tc = Const_Val(WN_kid0(tree));
+	  float val = (float)Targ_To_Host_Float(tc);
+	  union cvt {
+	    float f;
+	    INT32 i;
+	  } c;
+	  c.f = val;
+	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
+	  return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid1(tree)));
+	} else 	if (Is_Const_Float(WN_kid1(tree))) {
+	  TCON tc;
+	  if (WN_operator(WN_kid1(tree)) == OPR_LDID ) 
+	    tc = Const_Val(Preg_Home(WN_offset(WN_kid1(tree))));
+	  else
+	    tc = Const_Val(WN_kid1(tree));
+	  float val = (float)Targ_To_Host_Float(tc);
+	  union cvt {
+	    float f;
+	    INT32 i;
+	  } c;
+	  c.f = val;
+	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
+	  return WN_EQ(MTYPE_I4, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid0(tree)), value);
+	}
+      }
+#endif //TARG_ST
     break;
 
   case OPR_NE:
@@ -7155,6 +7457,15 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       WN_Delete(tree);
       return cst_rem_tree;
   }
+  // TB: division specialization with feedback info
+#ifdef KEY
+ {
+   WN* simp = simp_remdiv( block, tree, actions );
+   if( simp != NULL ){
+     return simp;
+   }
+ }
+#endif      
 
     // fallthrough to complex case below (after #endif)
 
@@ -14429,8 +14740,389 @@ static WN *lower_if(WN *block, WN *tree, LOWER_ACTIONS actions)
   return tree;
 }
 
+#ifdef KEY
+
+// float comparison to a contant (0.0 or 1.0) optimization.
+// convert floating comp to integer comp
+WN* WN_EQF_simp(TYPE_ID mtype, WN*id, double val)
+{
+//       WN* value = Make_Const(Host_To_Targ_Float(mtype,val));
+//    return WN_EQ(mtype, id, value);
+  
+  if (mtype == MTYPE_F4)
+    {
+      if (val == 1.0)
+	{
+	  // 1.0 is represent by 0x3f800000
+	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, 0x3f800000);
+	  return WN_EQ(MTYPE_I4, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), id), value);
+	} else if (val == 0.0) {
+	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, 0x0);
+	  return WN_EQ(MTYPE_I4, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), id), value);
+	} else {
+	  FmtAssert(0,
+		    ("constant floating point simplification: unexpected value %e", val));
+	  return NULL;
+	}
+    } else {
+      FmtAssert(mtype == MTYPE_F8,
+		("constant floating point simplification: unexpected type"));
+      if (val == 1.0)
+	{
+	  // 1.0 is represent by 0x3ff0000000000000;
+	  WN *value = WN_CreateIntconst(OPC_I8INTCONST, 0x3ff0000000000000LL);
+	  return WN_EQ(MTYPE_I8, WN_Tas(MTYPE_I8, Be_Type_Tbl(MTYPE_I8), id), value);
+	} else if (val == 0.0) {
+	  WN *value = WN_CreateIntconst(OPC_I8INTCONST, 0x0LL);
+	  return WN_EQ(MTYPE_I8, WN_Tas(MTYPE_I8, Be_Type_Tbl(MTYPE_I8), id), value);
+	} else {
+	  FmtAssert(0,
+		    ("constant double floating point simplification: unexpected value %e", val));
+	  return NULL;
+	}
+    }
+  FmtAssert(0,
+	    ("Float comparison simplification unexpected type in entry"));
+  return NULL;
+}
+
+// Simplification of MADD operation when one the operand id 0 or 1
+// Return the simplified expression
+static WN *
+madd_simplify(WN* madwn, double val1, double val2){
+  WN *res;
+  OPERATOR opr = WN_operator( madwn );
+  TYPE_ID mtype = WN_rtype( madwn );
+  if (opr == OPR_MADD) {
+    // MADD simplification
+    if (val1 == 0.0 || val2 == 0.0) {
+      res = WN_kid0(madwn);
+    } 
+    else if (val1 == 1.0 && val2 == 1.0) {
+      res = WN_Add(mtype, WN_kid0(madwn), Make_Const( Host_To_Targ_Float (mtype, 1.0)));
+    } 
+    else {
+      FmtAssert(val1 == 1.0 || val2 == 1.0,
+		("Madd simplification with PFO: unexpected value"));
+      res = WN_Add(mtype, WN_kid0(madwn), (val2 == 1.0) ? WN_kid(madwn,1) : WN_kid(madwn,2));
+    }
+    printf("MADD specialization");
+  } else if (opr == OPR_MSUB) {
+    // MSUB simplification
+    if (val1 == 0.0 || val2 == 0.0) {
+      res = WN_Neg(mtype, WN_kid0(madwn));
+    } 
+    else if (val1 == 1.0 && val2 == 1.0) {
+      res = WN_Add(mtype, WN_Neg(mtype, WN_kid0(madwn)), Make_Const( Host_To_Targ_Float (mtype, 1.0)));
+    } 
+    else {
+      FmtAssert(val1 == 1.0 || val2 == 1.0,
+		("Msub simplification with PFO: unexpected value"));
+      res = WN_Sub(mtype, (val2 == 1.0) ? WN_kid(madwn,1) : WN_kid(madwn,2), WN_kid0(madwn));
+    }
+    printf("MSUB specialization");
+  } else if (opr == OPR_NMSUB) {
+    // NMSUB simplification
+    if (val1 == 0.0 || val2 == 0.0) {
+      res = WN_kid0(madwn);
+    } 
+    else if (val1 == 1.0 && val2 == 1.0) {
+      res = WN_Add(mtype, WN_kid0(madwn), Make_Const( Host_To_Targ_Float (mtype, -1.0)));
+    } 
+    else {
+      FmtAssert(val1 == 1.0 || val2 == 1.0,
+		("NMsub simplification with PFO: unexpected value"));
+      res = WN_Sub(mtype, WN_kid0(madwn), (val2 == 1.0) ? WN_kid(madwn,1) : WN_kid(madwn,2));
+    }
+    printf("NMSUB specialization");
+  } else if (opr == OPR_NMADD) {
+    // NMadd simplification
+    if (val1 == 0.0 || val2 == 0.0) {
+      res = WN_Neg(mtype, WN_kid0(madwn));
+    }
+    else if (val1 == 1.0 && val2 == 1.0) {
+      res = WN_Add(mtype, WN_Neg(mtype, WN_kid0(madwn)), Make_Const( Host_To_Targ_Float (mtype, -1.0)));
+    }
+    else {
+      FmtAssert(val1 == 1.0 || val2 == 1.0,
+		("NMadd simplification with PFO: unexpected value"));
+      res = WN_Neg(mtype, WN_Add(mtype, WN_kid0(madwn), (val2 == 1.0) ? WN_kid(madwn,1) : WN_kid(madwn,2)));
+    }
+    printf("NMADD specialization");
+  } else 
+    FmtAssert(0 ,
+	      ("madd_simplify: not a MADD operation!"));
+  return res;
+}
+
+// Find MPY operation in expr and specialized then if OK
+// Retrun the nb of substitition done
+static UINT
+simplify_mpy_expr(WN* block, WN *tree, WN** expr ) {
+
+  OPERATOR oprexpr = WN_operator( *expr );
+  int nb_of_trans = 0;
+  if ( (oprexpr == OPR_MPY || oprexpr == OPR_MADD || oprexpr == OPR_MSUB || oprexpr == OPR_NMSUB || oprexpr == OPR_NMADD) &&
+       ( OPERATOR_is_load( WN_operator( WN_kid0(*expr) ) ) ||
+	 OPERATOR_is_load( WN_operator( WN_kid1(*expr) ) ) )  &&
+       (WN_rtype( *expr ) == MTYPE_F8 || WN_rtype( *expr ) == MTYPE_F4)) {
+    TYPE_ID mtype = WN_rtype( *expr ); // mtype is either float or double
+    const FB_Info_Value_FP_Bin& info = 
+      Cur_PU_Feedback->Query_value_fp_bin( *expr );
+    const float cutoff_ratio = (float)Mpy_Exe_Ratio / 100;
+    if(!info.exe_counter.Exact())
+      return 0;
+    if( info.exe_counter < (float)Mpy_Exe_Counter )
+      return 0;
+
+    //If the float MPY is not mapped on an intrinsic call, better
+    //doing nothing
+    if (!WN_Is_Emulated (*expr))
+      return 0;
+
+    BOOL binary = TRUE;
+    int operand_index = 0;
+    BOOL substitute = FALSE;
+    // For MADD operation the operand of the MPY are in position 1 and
+    // 2, so skip the first
+    if ( oprexpr == OPR_MADD || oprexpr == OPR_MSUB || oprexpr == OPR_NMSUB || oprexpr == OPR_NMADD) {
+      binary = FALSE;
+      operand_index++;
+    }
+    // Find the best operand to specialized
+    double val = -1.0;
+    FB_FREQ freq = FB_FREQ_ZERO;
+    if ( OPERATOR_is_load( WN_operator( WN_kid(*expr,operand_index))) ) {
+      if ( info.zopnd0 / info.exe_counter >= cutoff_ratio) {
+	substitute = TRUE;
+	val = 0.0;
+	freq = info.zopnd0;
+      } 
+      if (info.uopnd0 / info.exe_counter >= cutoff_ratio && 
+	  info.uopnd0 / info.exe_counter >  freq / info.exe_counter ) {
+	substitute = TRUE;
+	val = 1.0;
+	freq = info.uopnd0;
+      } 
+    } 
+    if ( OPERATOR_is_load( WN_operator( WN_kid(*expr,operand_index + 1))) ) {
+      if ( info.zopnd1 / info.exe_counter >= cutoff_ratio && 
+	   info.zopnd1 / info.exe_counter > freq / info.exe_counter) {
+	substitute = TRUE;
+	val = 0.0;
+	operand_index++;
+	freq = info.zopnd1;
+      } 
+      if (info.uopnd1 / info.exe_counter >= cutoff_ratio &&
+	  info.uopnd1 / info.exe_counter > freq / info.exe_counter) {
+	substitute = TRUE;
+	val = 1.0;
+	operand_index++;
+	freq = info.uopnd1;
+      }
+    }
+    if ( substitute ) {
+      fprintf(stdout,"infoooo:\n");
+      info.Print(stdout);
+      if (!binary)
+	fprintf(stdout,"MADD\n");
+      fprintf(stdout,"operand:%d value:%e\n Freq: ", operand_index, val);
+      freq.Print(stdout);
+
+      const PREG_NUM result = Create_Preg( mtype, ".mult_simplify" );
+      WN* if_then = WN_CreateBlock();
+      WN *value = Make_Const( Host_To_Targ_Float (mtype, val));
+      WN* tmp = NULL;
+      if (binary) {
+	if (operand_index == 0)
+	  tmp = WN_Binary( WN_operator(*expr), mtype,
+			   value,
+			   WN_COPY_Tree(WN_kid(*expr,1)));
+	else
+	  tmp = WN_Binary( WN_operator(*expr), mtype,
+			   WN_COPY_Tree(WN_kid(*expr,0)),
+			   value);
+      } else {
+	// MADD case
+	WN *tmp1;
+	if (operand_index == 1) {
+	  tmp1 = WN_Ternary( WN_operator(*expr), mtype,
+			     WN_COPY_Tree( WN_kid(*expr,0) ),
+			     value,
+			     WN_COPY_Tree( WN_kid(*expr,2)));
+	  tmp = madd_simplify(tmp1, val, -1.0);
+	} else {
+	  tmp1 = WN_Ternary( WN_operator(*expr), mtype,
+			     WN_COPY_Tree( WN_kid(*expr,0) ),
+			     WN_COPY_Tree( WN_kid(*expr,1) ),
+			     value );
+	  tmp = madd_simplify(tmp1, -1.0, val);
+	}
+	WN_Delete(tmp1);
+      }
+      WN* stid = WN_StidIntoPreg( mtype, result, MTYPE_To_PREG( mtype ), tmp );
+      WN_copy_linenum(tree, stid);
+      WN_INSERT_BlockLast( if_then, stid );
+	
+      WN* if_else = WN_CreateBlock();
+      WN* mult_tree  = WN_COPY_Tree(*expr);
+      WN* stid2 = WN_StidIntoPreg( mtype, result, MTYPE_To_PREG( mtype ), mult_tree );
+      WN_copy_linenum(tree, stid2);
+      WN_INSERT_BlockLast( if_else, stid2 );
+	
+      WN *cond_value = Make_Const( Host_To_Targ_Float (mtype, val));
+      WN *id = WN_COPY_Tree(WN_kid(*expr, operand_index));
+      WN *condition = WN_EQF_simp( mtype, id, val );
+
+//       WN *id2 = WN_COPY_Tree(WN_kid(*expr, 1));
+//       condition = WN_LIOR( condition,  WN_EQF_simp( mtype, id2, val));
 
 
+      WN* if_tree = WN_CreateIf( condition,
+				 if_then, if_else );
+	
+	
+      Cur_PU_Feedback->Annot( if_tree, FB_EDGE_BRANCH_TAKEN, freq);
+      Cur_PU_Feedback->Annot( if_tree, FB_EDGE_BRANCH_NOT_TAKEN,
+			      ( info.exe_counter - freq));
+	
+      WN_copy_linenum(tree, if_tree);
+      WN_INSERT_BlockBefore(block, tree, if_tree);
+      WN *ldid = WN_LdidPreg( mtype, result );
+
+      WN_Delete( WN_kid(*expr,0) );
+      WN_Delete( WN_kid(*expr,1) );
+      if (!binary)
+	WN_Delete( WN_kid(*expr,2) );
+      WN_Delete( *expr );
+      *expr = ldid;
+      return 1;
+    } // end of substitute
+  } // end of oprexpr == OPR_MPY
+  else {
+    for (UINT kidno=0; kidno<WN_kid_count(*expr); kidno++) {
+      nb_of_trans += simplify_mpy_expr(block, tree, &WN_kid(*expr, kidno));
+    }
+  }
+  return nb_of_trans;
+}
+
+// TB code from PathScale 2.2.1.  Differences with PathScale: The
+// floatting point multication has beem extanded to all floats.  The
+// specialization is done very early in the whirl, otherwise
+// frequencies attached to an MPY expression are lost by OPT
+// module. So we run this before WOPT Fix bug: cannot specialized all
+// the loop body otherwise when one on the operand is not a loop
+// invariant the code is wrong.
+static int Substitute_Constant_Multiplicands ( WN* block, WN* tree )
+{
+  OPERATOR opr = WN_operator( tree );
+  if (opr == OPR_DO_LOOP)
+    return Substitute_Constant_Multiplicands( block, WN_do_body( tree ));
+  else if (opr == OPR_BLOCK) {
+    int nb_of_trans = 0;
+    WN *stmt;
+    stmt = WN_first( tree );
+    for (; stmt;) {
+      WN *next_stmt;
+      next_stmt = WN_next(stmt);
+      nb_of_trans += Substitute_Constant_Multiplicands( tree, stmt );
+      stmt = next_stmt;
+    }
+    return nb_of_trans;
+  } else if ( OPCODE_is_store( WN_opcode( tree ))) {
+    return simplify_mpy_expr(block, tree, &WN_kid0(tree));
+  } // end of OPCODE_is_store( WN_opcode( tree ))
+  else  {
+    int nb_of_trans = 0;
+    for (UINT kidno=0; kidno<WN_kid_count(tree); kidno++) {
+      nb_of_trans += Substitute_Constant_Multiplicands( block, WN_kid(tree, kidno));
+    }
+    return nb_of_trans;
+  }
+  return 0;
+}
+
+static WN* simplify_multiply ( WN* loop, LOWER_ACTIONS actions ) 
+
+ /* Optimize multiplications inside a loop. 
+    For example, 
+   
+      do i 
+        ... a * b ...
+        ... c * d ...
+      enddo
+   
+    use the feedback information to optimize the multiplications as follows.
+
+      do i
+        if (a == const1 && d == const2) then
+	  ... const1 * b ...
+	  ... c * const2 ...
+        else
+	  ... a * b ...
+	  ... c * d ...
+        endif
+      enddo
+
+    We consider only the cases where the multiplicands are 0.0s or 1.0s.
+    Returns the new body of the original loop.
+ */
+{
+  int substitute;
+  WN* block = WN_while_body( loop );
+  WN *newblock = WN_COPY_Tree_With_Map(block);
+  FB_Info_Loop info_loop;
+
+  if (!OPT_fb_mpy_simp)
+    return block;
+
+  if ( !Cur_PU_Feedback ) 
+    return block;
+
+  // IEEE_Arithmetic should be set to IEEE_INEXACT for this optimization.
+  // This is because we need to opimize away '* 0.0' and '1.0 *' by calling the
+  // simplifier.
+#ifdef TARG_ST
+  if ( !Finite_Math )
+#else
+    if (IEEE_Arithmetic < IEEE_INEXACT) 
+#endif
+      return block;
+  if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+    fprintf(TFile, "Feedback Optimizations: Float multiplication inside a loop simplification is on\n");
+
+  // If the loop iteration count is not high enough then we do not attempt to 
+  // simplify the loop.
+  info_loop = Cur_PU_Feedback->Query_loop( loop );
+  if ( info_loop.freq_iterate < (float)Mpy_Exe_Counter ) {
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Float multiplication inside a loop simplification is refused: loop iteration is not enough %f for %d\n", info_loop.freq_iterate.Value(), Mpy_Exe_Counter);
+    return block;
+  }
+
+  // Substitute the multiplicands that are gleaned to be 0.0 and 1.0
+  // in block and add the list of conditions to condition. Also, update 
+  // the frequency information for this set of conditions.
+  substitute = Substitute_Constant_Multiplicands( newblock, newblock);
+
+  if ( !substitute ) {
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Float multiplication inside a loop simplification is refused: loop ratio not enough or the loop does not contain float MPY\n");
+      WN_Delete(newblock);
+      return block;
+  }
+
+    if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+      fprintf(TFile, "Feedback Optimizations: Float multiplication inside a loop simplification is done: performing mult specialization, loop iteration: %f, nb of transformation:%d\n", info_loop.freq_iterate.Value(), substitute);
+
+  // Simplify new block (optimize away 0.0s and 1.0s).
+  newblock = WN_Simplify_Tree( newblock );
+
+  // Return the optimized block.
+  return newblock;
+}
+#endif
 
 /* ====================================================================
  *
@@ -14627,9 +15319,18 @@ static WN *lower_do_while(WN *block, WN *tree, LOWER_ACTIONS actions)
   else if (NotAction(LOWER_TOP_LEVEL_ONLY))
   {
     WN *testBlock = WN_CreateBlock();
-
+ 
+#ifdef TARG_ST
     WN_while_body(tree) = lower_block(WN_while_body(tree), actions);
-
+#else
+    if (Cur_PU_Feedback) {
+      //TB: Force MADD creation before multiply simplifcation via PFO
+      WN_while_body(tree) = lower_block(WN_while_body(tree), actions | LOWER_MADD );
+      // TB: Add multiplication specialization wth PFO
+      WN_while_body(tree) = simplify_multiply( tree, actions );
+    } else
+    WN_while_body(tree) = lower_block(WN_while_body(tree), actions);
+#endif
     WN_while_test(tree) = lower_expr(testBlock, WN_while_test(tree), actions);
 
 #ifdef TARG_ST
@@ -14707,6 +15408,7 @@ static WN *lower_while_do(WN *block, WN *tree, LOWER_ACTIONS actions)
 	  ("expected WHILE_DO node, not %s", OPCODE_name(WN_opcode(tree))));
 
   ++loop_nest_depth;
+
 #ifndef SHORTCIRCUIT_HACK
   if (Action(LOWER_WHILE_DO))
 #else
@@ -14889,7 +15591,17 @@ static WN *lower_while_do(WN *block, WN *tree, LOWER_ACTIONS actions)
     WN *copytestBlock;
     WN *testBlock = WN_CreateBlock();
 
+#ifndef TARG_ST
     WN_while_body(tree) = lower_block(WN_while_body(tree), actions);
+#else
+    if (Cur_PU_Feedback) {
+      //TB: Force MADD creation before multiply simplifcation via PFO
+      WN_while_body(tree) = lower_block(WN_while_body(tree), actions | LOWER_MADD);
+      // TB: Add multiplication specialization wth PFO
+      WN_while_body(tree) = simplify_multiply( tree, actions );
+    } else
+      WN_while_body(tree) = lower_block(WN_while_body(tree), actions);
+#endif
 
     WN_while_test(tree) = lower_expr(testBlock, WN_while_test(tree), actions);
     copytestBlock = lower_copy_tree(testBlock, actions);
@@ -15785,10 +16497,12 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
 	*  Get the symbol address for the vararg register.
 	*/
 	Get_Vararg_Ploc_Symbol(ploc, &st, &offset);
+	TY_IDX vararg_type = Copy_TY(ST_type(preg_sym));
+	Set_TY_no_ansi_alias (vararg_type);
 	var_addr = WN_Lda (Pointer_type, 0, st);
 	wn = WN_Istore(type,
 		       offset,
-		       Make_Pointer_Type(ST_type(preg_sym)),
+		       Make_Pointer_Type(vararg_type),
 		       var_addr,
 		       wn);
 	WN_Set_Linenum (wn, current_srcpos);
@@ -15948,8 +16662,16 @@ static WN *lower_landing_pad_entry(WN *tree)
   WN *filter_rdx = WN_LdidPreg (MTYPE_U4, 1);
   WN *filter_stid = WN_Stid (MTYPE_U4, 0, &filter_st, ST_type(filter_st), filter_rdx);
 #endif
+#ifdef TARG_ST
+  // [TB] - copy linenumber when creating WNs.
+  WN_copy_linenum(tree, exc_ptr_stid);
+#endif
   WN_INSERT_BlockLast (block, exc_ptr_stid);
 
+#ifdef TARG_ST
+  // [TB] - copy linenumber when creating WNs.
+  WN_copy_linenum(tree, filter_stid);
+#endif
   WN_INSERT_BlockLast (block, filter_stid);
   return block;
 }

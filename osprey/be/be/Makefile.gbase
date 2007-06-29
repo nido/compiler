@@ -428,10 +428,18 @@ BE_LNO_CXX_SRCS = \
   soe.cxx \
   mat.cxx 
 
-COMMON_UTIL_CXX_SRCS = \
+COMMON_UTIL_CXX_SRCS =  \
   cxx_memory.cxx	\
   errors.cxx		\
-  options_stack.cxx
+  options_stack.cxx     \
+  lbrange.cxx             \
+  lvrange.cxx             \
+  lbvalrange.cxx             \
+  range.cxx             \
+  lbitmask.cxx          \
+  lbitvalue.cxx          \
+  paired_lattice.cxx          \
+  zint.cxx              \
 
 INSTR_COM_CXX_SRCS = \
   instr_reader.cxx 
@@ -746,6 +754,24 @@ BE_DSO_LDLIBS +=
 #
 # Please conform to the standard DSO link pattern (see gcommondefs).
 #
+# import global symbols from the target dll (e.g. st200.dll)
+BE_DLLIMPORT_FLAGS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
+BE_DLLIMPORT_FLAGS += -DDLLIMPORT=$(DLLIMPORT)
+
+# export symbols from the be dll
+BE_DLLIMPORT_FLAGS += -DBE_EXPORTED=$(DLLEXPORT)
+
+# do nothing with theses
+BE_DLLIMPORT_FLAGS += -DOPT_EXPORTED=
+BE_DLLIMPORT_FLAGS += -DW2C_EXPORTED=
+BE_DLLIMPORT_FLAGS += -DW2F_EXPORTED=
+BE_DLLIMPORT_FLAGS += -DCG_EXPORTED=
+BE_DLLIMPORT_FLAGS += -DIPL_EXPORTED=
+BE_DLLIMPORT_FLAGS += -DLNO_EXPORTED=
+
+LCDEFS+=$(BE_DLLIMPORT_FLAGS)
+LC++DEFS+=$(BE_DLLIMPORT_FLAGS)
+
 ifeq ($(DSO_MODE),SO)
 be.so: $(BE_DSO_OBJS)
 	$(CXX) $(BE_DSO_LDOPTS) $(LDDSOOPTS) $(LDOPTS) $(BE_DSO_OBJS) $(BE_DSO_LDLIBS) $(LDLIBS) -o $@
@@ -771,21 +797,6 @@ const.o : constcxx
 	rm $<
 
 LDIRT += be.exp be_dll_entry.c be_tmp_C.a
-
-# import global symbols from the target dll (e.g. st200.dll)
-BE_DLLIMPORT_FLAGS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
-BE_DLLIMPORT_FLAGS += -DDLLIMPORT=$(DLLIMPORT)
-
-# export symbols from the be dll
-BE_DLLIMPORT_FLAGS += -DBE_EXPORTED=$(DLLEXPORT)
-
-# do nothing with theses
-BE_DLLIMPORT_FLAGS += -DOPT_EXPORTED=
-BE_DLLIMPORT_FLAGS += -DW2C_EXPORTED=
-BE_DLLIMPORT_FLAGS += -DW2F_EXPORTED=
-BE_DLLIMPORT_FLAGS += -DCG_EXPORTED=
-BE_DLLIMPORT_FLAGS += -DIPL_EXPORTED=
-BE_DLLIMPORT_FLAGS += -DLNO_EXPORTED=
 
 $(BE_C_OBJS) : %.o : %.c
 	$(CC) $(CFLAGS) $(BE_DLLIMPORT_FLAGS) $< -c -o $@

@@ -57,13 +57,7 @@
 #ifndef ipc_weak_INCLUDED
 #define ipc_weak_INCLUDED
 
-#if defined(TARG_ST) //&& defined(_NO_WEAK_SUPPORT_)
-
-#ifndef LD_IPA_INTERFACE
-#define EXTERN extern
-#else
-#define EXTERN
-#endif
+#if defined(TARG_ST)
 
 #include <cmplrs/host.h> // For typedef string
 #include "defs.h"        // For INT, UINT64....
@@ -256,7 +250,7 @@ struct external_symbols_list {
 #define outfilename IPA_REF(p_outfilename)
 
 
-EXTERN struct external_symbols_list ipa_external_symbols;
+extern struct external_symbols_list ipa_external_symbols;
 
 #else
 #ifdef __PASS1_H__

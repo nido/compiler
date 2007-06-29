@@ -110,13 +110,23 @@ BE_EXPORTED extern BOOL IPA_Enable_Scalar_Euse;     /* enable scalar euse  */
 BE_EXPORTED extern BOOL IPA_Enable_Scalar_Kill;     /* enable scalar kill   */
 BE_EXPORTED extern BOOL IPA_Enable_Common_Const;    /* enable const prop of common block variables */
 BE_EXPORTED extern BOOL IPA_Enable_Relocatable_Opt; /* support -call_shared optimizations of relocatable objects */
-BE_EXPORTED extern BOOL IPA_Enable_Feedback;        /* create .prg, .dfe, .dve files */
+  //BE_EXPORTED extern BOOL IPA_Enable_Feedback;        /* create .prg, .dfe, .dve files */
 BE_EXPORTED extern BOOL IPA_Enable_Alias_Class;     /* interprocedural alias classification */
 BE_EXPORTED extern BOOL IPA_Debug_AC_Temp_Files;    /* save alias class temps til done? */
 BE_EXPORTED extern BOOL IPA_Enable_Reshape;         /* reshape analysis for arrays  */
 
 BE_EXPORTED extern BOOL IPA_Enable_Preopt;		/* call preopt during IPA */
 BE_EXPORTED extern BOOL IPA_Enable_Preopt_Set;
+
+#ifdef KEY
+BE_EXPORTED extern BOOL IPA_Enable_Icall_Opt;	// allow ipa change icall to call
+BE_EXPORTED extern BOOL IPA_Enable_Branch_Heuristic; // use branch prob. for inlining
+BE_EXPORTED extern float IPA_Min_Branch_Prob;
+#endif
+
+#ifdef KEY
+BE_EXPORTED extern BOOL IPA_Enable_EH_Region_Removal; // remove useless exception regions
+#endif
 
 /* ===== Inlining heuristics: ===== */
 
@@ -228,7 +238,6 @@ BE_EXPORTED extern BOOL     IPA_Enable_Inline_Optional_Arg;   /* Enable inlining
 BE_EXPORTED extern BOOL     IPA_Enable_Inline_Struct_Array_Actual;   /* Enable inlining of PU with F90 structures with actuals being array type */
 BE_EXPORTED extern BOOL     IPA_Enable_Inline_Var_Dim_Array;   /* Enable inlining of PU with param that is variable-dimensioned array */
 
-
 /* Maximum number of clones for a call graph node */
 BE_EXPORTED extern UINT32 IPA_Max_Node_Clones;
 BE_EXPORTED extern BOOL   IPA_Max_Node_Clones_Set;
@@ -261,6 +270,7 @@ BE_EXPORTED extern BOOL	INLINE_All;	/* Inline everything possible? */
 BE_EXPORTED extern BOOL	INLINE_All_Inline; /* Mark must-inline 'inline' functions */
 BE_EXPORTED extern BOOL	INLINE_Only_Inline; /* Mark may-inline only 'inline' functions */
 BE_EXPORTED extern BOOL	INLINE_Only_Inline_Set;
+BE_EXPORTED extern BOOL	INLINE_O0; /* Inline even at -O0 */
 #endif
 BE_EXPORTED extern BOOL	INLINE_Optimize_Alloca;	/* When inlining calls with alloca fix the stack and pop  */
 BE_EXPORTED extern BOOL	INLINE_Enable_Copy_Prop; /* Copy Propogation during stand-alone inlining? */
@@ -283,7 +293,9 @@ BE_EXPORTED extern BOOL	INLINE_Aggressive;	/* inline even non-leaf, out-of-loop
 BE_EXPORTED extern BOOL     INLINE_Enable_DFE;     /* dead function elimination */
 BE_EXPORTED extern BOOL     INLINE_Enable_Auto_Inlining;    /* automatic inline analysis */
 BE_EXPORTED extern BOOL	INLINE_Enable_Restrict_Pointers; /* allow restrict pointers */
-
+#ifdef KEY
+BE_EXPORTED extern BOOL	INLINE_Recursive;	//  do recursive inlining
+#endif
 BE_EXPORTED extern struct option_list *INLINE_List_Names;	/* Must/never/file/library 
 						   options */
 BE_EXPORTED extern struct option_list *INLINE_Spec_Files;	/* Specification files     */

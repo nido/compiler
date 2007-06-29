@@ -325,6 +325,11 @@ Generate_unwind_resume (void)
   WN_kid0 (call_wn) = arg0;
   WN_st_idx (call_wn) = ST_st_idx (st);
 
+#ifdef TARG_ST
+  /* (cbr) end of eh_region. never return */
+  //  WN_Set_Call_Never_Return(call_wn);
+#endif  
+
   WFE_Stmt_Append (call_wn, Get_Srcpos());
 }
 
@@ -415,59 +420,59 @@ Pop_Scope_And_Do_Cleanups (void)
 }       
 
 // [CL] support lexical blocks
-static LEXICAL_BLOCK_INFO **lexical_block_stack;
-static INT32	    	    lexical_block_i=-1;
-static INT32	            lexical_block_max;
+static LEXICAL_BLOCK_INFO *current_lexical_block;
+static int lexical_block_id;
+
+static BOOL
+nested_lexical_block_p (const LEXICAL_BLOCK_INFO *lexical_block)
+{
+  /*  [SC] at function scope, we will have different fndecl from
+      parent (remember nested functions).
+  */
+  return (lexical_block->parent
+	  && lexical_block->fndecl == lexical_block->parent->fndecl);
+}
 
 LEXICAL_BLOCK_INFO*
 Push_Lexical_Block ()
 {
-  LEXICAL_BLOCK_INFO* lexical_block;
   extern struct mongoose_gcc_DST_IDX DST_Create_Lexical_Block(LEXICAL_BLOCK_INFO*);
-
-  lexical_block_i++;
-
-  if (lexical_block_i == lexical_block_max) {
-    lexical_block_max = ENLARGE (lexical_block_max);
-    lexical_block_stack =
-      (LEXICAL_BLOCK_INFO **) xrealloc (lexical_block_stack,
-               lexical_block_max * sizeof (LEXICAL_BLOCK_INFO*));
-  }
+  LEXICAL_BLOCK_INFO* lexical_block;
 
   // [HK] malloc is poisoned, use xmalloc instead
   lexical_block = (LEXICAL_BLOCK_INFO*) xmalloc(sizeof(LEXICAL_BLOCK_INFO));
-  lexical_block_stack[lexical_block_i] = lexical_block;
-  lexical_block->level = lexical_block_i;
-
-  // [CL] lexical_block_i == 0 for function scope, which does not need
-  // an additional lexical block (a function is a scope itself)
-  if (lexical_block_i > 0) {
-    New_LABEL (CURRENT_SYMTAB,
-	       lexical_block->lexical_block_start_idx);
-
-    New_LABEL (CURRENT_SYMTAB,
-	       lexical_block->lexical_block_end_idx);
-
-    if(Debug_Level >= 2) {
+  lexical_block->id    = lexical_block_id++;
+  lexical_block->parent = current_lexical_block;
+  lexical_block->lexical_block_start_idx = LABEL_IDX_ZERO;
+  lexical_block->lexical_block_end_idx = LABEL_IDX_ZERO;
+  lexical_block->fndecl = current_function_decl;
+  
+  if(Debug_Level >= 2) {
+    /* [CL] Function scope does not need
+       an additional lexical block (a function is a scope itself)
+    */
+    if (nested_lexical_block_p (lexical_block)) {
       lexical_block->dst = DST_Create_Lexical_Block(lexical_block);
-    }
-
-  } else {
-    if(Debug_Level >= 2) {
-      lexical_block->dst = DECL_DST_IDX(current_function_decl);
     }
   }
 
+#if 0
+  fprintf(stderr, "Creating lexical block id:%d parent:%d fn:%s dst:(%d:%d)\n",
+	  lexical_block->id, lexical_block->parent ? lexical_block->parent->id : 0,
+	  IDENTIFIER_POINTER (DECL_NAME (current_function_decl)),
+	  lexical_block->dst.block, lexical_block->dst.offset);
+#endif
+  
+  current_lexical_block = lexical_block;
+  
   return lexical_block;
 }
 
 LEXICAL_BLOCK_INFO*
 Pop_Lexical_Block ()
 {
-  LEXICAL_BLOCK_INFO* lexical_block;
-
-  lexical_block = lexical_block_stack[lexical_block_i];
-  lexical_block_i--;
+  LEXICAL_BLOCK_INFO* lexical_block = current_lexical_block;
+  current_lexical_block = current_lexical_block->parent;
 
   return lexical_block;
 }
@@ -476,9 +481,11 @@ void Set_Current_Scope_DST(tree x)
 {
   // [CL] global scope variables get NULL scope here, so as to be
   // identified as "compilation unit" in the DST generator
-  if (lexical_block_i >= 0) {
-    LEXICAL_BLOCK_INFO* cur_lexical_block = lexical_block_stack [lexical_block_i];
-    x->common.scope = cur_lexical_block;
+  // [SC] Similarly, fn scope decls get NULL scope here,
+  // so only decls in nested lexical blocks get non-NULL.
+  if (current_lexical_block
+      && nested_lexical_block_p (current_lexical_block)) {
+    x->common.scope = current_lexical_block;
   } else {
     x->common.scope = NULL;
   }
@@ -486,21 +493,35 @@ void Set_Current_Scope_DST(tree x)
 
 void Start_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
 {
-  ++lexical_block_i;
-
-  lexical_block_stack[lexical_block_i] = lexical_block;
+  current_lexical_block = lexical_block;
 
   // [CL] create a label only for inner scopes
-  if (lexical_block && lexical_block->level > 0) {
+  if (nested_lexical_block_p (lexical_block)) {
+    New_LABEL (CURRENT_SYMTAB,
+	       lexical_block->lexical_block_start_idx);
+    
+    New_LABEL (CURRENT_SYMTAB,
+	       lexical_block->lexical_block_end_idx);
     WFE_Stmt_Append(
 		    WN_CreateLabel(lexical_block->lexical_block_start_idx,
 				   0, NULL),
 		    Get_Srcpos());
 
     if(Debug_Level >= 2) {
+      if (! nested_lexical_block_p (lexical_block->parent)) {
+	lexical_block->parent->dst = DECL_DST_IDX(lexical_block->parent->fndecl);
+#if 0
+	fprintf(stderr, "Lexical block id:%d dst:(%d:%d)\n",
+		lexical_block->parent->id, lexical_block->parent->dst.block,
+		lexical_block->parent->dst.offset);
+#endif
+      }
+#if 0
+      fprintf(stderr, "Linking block id:%d to parent id:%d\n",
+	      lexical_block->id, lexical_block->parent->id);
+#endif
       extern void DST_Link_Lexical_Block(LEXICAL_BLOCK_INFO*, LEXICAL_BLOCK_INFO*);
-      DST_Link_Lexical_Block(lexical_block_stack [lexical_block_i-1],
-			     lexical_block_stack [lexical_block_i]);
+      DST_Link_Lexical_Block(lexical_block->parent, lexical_block);
     }
   }
 }
@@ -508,13 +529,13 @@ void Start_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
 void End_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
 {
   // [CL] create a label only for inner scopes
-  if (lexical_block && lexical_block->level > 0) {
+  if (nested_lexical_block_p (lexical_block)) {
     WFE_Stmt_Append(
 		    WN_CreateLabel(lexical_block->lexical_block_end_idx,
 				   0, NULL),
 		    Get_Srcpos());
   }
-  lexical_block_i--;
+  current_lexical_block = lexical_block->parent;
 
   // [CL] end of life for this lexical block
   free(lexical_block);
@@ -551,9 +572,8 @@ WFE_Stmt_Init (void)
   scope_cleanup_stack    = (SCOPE_CLEANUP_INFO *) xmalloc (sizeof (SCOPE_CLEANUP_INFO) * scope_cleanup_max);
 
   // [CL] support for lexical blocks
-  lexical_block_max      = 32;
-  lexical_block_i  	 = -1;
-  lexical_block_stack    = (LEXICAL_BLOCK_INFO **) xmalloc (sizeof (LEXICAL_BLOCK_INFO*) * lexical_block_max);
+  current_lexical_block = NULL;
+  lexical_block_id = 0;
 #endif
 
 } /* WFE_Stmt_Init */
@@ -1022,12 +1042,17 @@ LABEL_IDX
 WFE_Get_LABEL (tree label, int def)
 {
   LABEL_IDX label_idx  = label->decl.sgi_u1.label_idx;
+#ifndef TARG_ST
+  // [SC] Unused.
   LABEL_IDX symtab_idx = label->decl.symtab_idx;
+#endif
 
   if (label_idx == 0) {
     LABEL_Init (New_LABEL (CURRENT_SYMTAB, label_idx), 0, LKIND_DEFAULT);
     label->decl.sgi_u1.label_idx = label_idx;
+#ifndef TARG_ST
     label->decl.symtab_idx   = CURRENT_SYMTAB;
+#endif
     if (!def) {
       if (++undefined_labels_i == undefined_labels_max) {
         undefined_labels_max   = ENLARGE(undefined_labels_max);
@@ -1054,8 +1079,13 @@ WFE_Get_LABEL (tree label, int def)
 /*
     else {
       if (label->decl.label_defined)
+#ifdef TARG_ST
+        FmtAssert (DECL_CONTEXT (label) == current_function_decl,
+	           ("jumping to a label not defined in current function"));
+#else
         FmtAssert (label->decl.symtab_idx == CURRENT_SYMTAB,
                    ("jumping to a label not defined in current function"));
+#endif
     }
 */
   }
@@ -1078,7 +1108,9 @@ void
 WFE_Expand_Label (tree label)
 {
   LABEL_IDX label_idx = WFE_Get_LABEL (label, TRUE);
+#ifndef TARG_ST
   label->decl.symtab_idx = CURRENT_SYMTAB;
+#endif
 //fprintf (stderr, "\n");
   if (!label->decl.label_defined) {
     WN *wn;
@@ -1095,9 +1127,9 @@ WFE_Expand_Goto (tree label)
   LABEL_IDX label_idx = WFE_Get_LABEL (label, FALSE);
 #ifdef TARG_ST
   // [CG]: no support for inter scope goto
-  FmtAssert (label->decl.symtab_idx == CURRENT_SYMTAB,
+  FmtAssert (DECL_CONTEXT (label) == current_function_decl,
 	     ("line %d: jump to a label not defined in current function currently not implemented", lineno));
-#endif
+#else
   if ((CURRENT_SYMTAB > GLOBAL_SYMTAB + 1) &&
       (label->decl.symtab_idx < CURRENT_SYMTAB)) {
 #ifdef TARG_ST
@@ -1106,6 +1138,7 @@ WFE_Expand_Goto (tree label)
 #endif
     wn = WN_CreateGotoOuterBlock (label_idx, label->decl.symtab_idx);
   }  else
+#endif
     wn = WN_CreateGoto ((ST_IDX) NULL, label_idx);
   WFE_Stmt_Append (wn, Get_Srcpos());
 } /* WFE_Expand_Goto */
@@ -1227,7 +1260,7 @@ idname_from_regnum (int gcc_reg)
 		st = Int_Preg;
 	else if (Preg_Offset_Is_Float(preg))
 		st = Float_Preg;
-#ifdef TARG_ST
+#ifdef TARG_ST200
 	else if (preg >= Branch_Preg_Min_Offset && 
 		                 preg <= Branch_Preg_Max_Offset) {
 	  st = MTYPE_To_PREG (MTYPE_B);
@@ -1788,3 +1821,13 @@ WFE_Check_Undefined_Labels (void)
   undefined_labels_i = i;
 } /* WFE_Check_Undefined_Labels */
 
+#ifdef TARG_ST
+// (cbr) returns value could be hidden (whirl generated but no rtl)
+int
+WN_Returns_Void() 
+{
+  WN * wn = WN_last (WFE_Stmt_Top ());
+
+  return (wn == NULL || WN_operator (wn) != OPR_RETURN_VAL);
+}
+#endif

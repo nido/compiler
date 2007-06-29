@@ -1277,6 +1277,14 @@ void ACCESS_ARRAY::Set_Array(WN *wn, DOLOOP_STACK *stack)
   ("ACCESS_ARRAY::Set_Array called with an inconsistent number of dimensions"));
   Too_Messy = FALSE;
 
+#ifdef TARG_ST
+  // If the base is non constant in the loop, mark the access messy.
+  if (!Is_Loop_Const_Base(WN_array_base(wn))) {
+    Too_Messy = TRUE;
+    return;
+  }
+#endif
+
   for (i=0; i<_num_vec; i++) {
     _dim[i].Set(WN_array_index(wn,i),stack,1,0,LNO_Allow_Nonlinear);
   }
@@ -2265,7 +2273,7 @@ void ACCESS_VECTOR::Update_Non_Const_Loops(WN *wn, DOLOOP_STACK *stack)
 
   for(DU_NODE *node=iter.First(); !iter.Is_Empty(); node=iter.Next()) {
     WN *def = node->Wn();
-
+    
     // find the inner loop surrounding the def
     while (def && (WN_opcode(def) != OPC_DO_LOOP)) {
       def = LWN_Get_Parent(def);
@@ -2348,7 +2356,67 @@ void ACCESS_ARRAY::Update_Non_Const_Loops(WN *wn, DOLOOP_STACK *stack)
   }
 }
 
+#ifdef TARG_ST
+// Returns whether the given array base access is constant
+// in its surrounding loop.
+// If it is not the case the array access must be set messy.
+// The base access is constant in its surrounding loop if:
+// 1. it is a LDID access
+// 2. there is no def inside the surrounding loop
+// 3. it is a LDA, thus a constant address
+bool ACCESS_ARRAY::Is_Loop_Const_Base(WN *wn)
+{
+  OPCODE opc = WN_opcode(wn);
 
+  if (OPCODE_is_load(opc)) {
+    if (OPCODE_operator(opc) != OPR_LDID) {
+      return false;
+    }
+  } else {
+    if (OPCODE_operator(opc) == OPR_LDA)
+      return true;
+    return false;
+  }
+
+  // it's an ldid
+  DEF_LIST *defs = Du_Mgr->Ud_Get_Def(wn);
+
+  // If no use-def list is available, return conservatively.
+  // defs->Incomplete() should be set only for def on entry, thus
+  // we should not check it there.
+  if (!defs) {
+    return false;
+  }
+
+  // Find the loop surrounding the ldid.
+  WN *loop = wn;
+  while (loop && (WN_opcode(loop) != OPC_DO_LOOP)) {
+    loop = LWN_Get_Parent(loop);
+  }
+  
+  // If not in loop, consider it as non constant
+  if (!loop) return false;
+
+  DEF_LIST_ITER iter(defs);
+    
+  for(const DU_NODE *node=iter.First(); !iter.Is_Empty(); node=iter.Next()) {
+    const WN *def = node->Wn();
+
+    // find the inner loop surrounding the def
+    while (def && (WN_opcode(def) != OPC_DO_LOOP)) {
+      def = LWN_Get_Parent(def);
+    }
+    // there is a do loop surrounding the def, and it is the same loop
+    // as the base access.
+    // In this case the access the base is non constant in its surrounding
+    // loop.
+    if (def && def == loop) 
+      return false;
+    
+  }
+  return true;
+}
+#endif
 
 ACCESS_VECTOR *Subtract(ACCESS_VECTOR *v1, ACCESS_VECTOR *v2,
 			MEM_POOL *mem_pool)

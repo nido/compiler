@@ -699,7 +699,7 @@ read_file (char *filename, off_t* mapped_size, char* file_revision)
 
 #ifdef Is_True_On
     if (getenv("MMAP_DEBUG"))
-      fprintf(stderr, " ** ir_b_read: size:%d\n", stat_buf.st_size);
+      fprintf(stderr, " ** ir_b_read: size:%d\n", (int)stat_buf.st_size);
 #endif
     map_addr = (char *) mmap (0, stat_buf.st_size, PROT_READ|PROT_WRITE,
 			      MAP_PRIVATE, fd, 0);

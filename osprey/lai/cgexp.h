@@ -117,6 +117,10 @@ extern void Exp_Store (
 /* Generate a copy from 'src_tn' to 'tgt_tn'. */
 extern void Exp_COPY (TN *tgt_tn, TN *src_tn, OPS *ops); 
 
+#ifdef TARG_ST
+extern void Exp_Enable_Allocate_Object(BOOL onoff);
+#endif
+
 /* Given a simulated <op>, expand it into the sequence of instructions
  * that must be generated. The <pc_value> is the PC location of the 
  * <op>. It is used to generate offsets for branches in the sequence 

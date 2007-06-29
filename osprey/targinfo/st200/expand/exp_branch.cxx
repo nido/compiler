@@ -128,73 +128,73 @@ Pick_Compare_TOP (
 
 //   case V_BR_FGE:
   case V_BR_I4GE:
-      cmp = *is_integer ? TOP_cmpge_r_r : TOP_cmpge_r_b;
+      cmp = *is_integer ? TOP_cmpge_r_r_r : TOP_cmpge_r_r_b;
       mtype = MTYPE_I4;
       break;
 
 //   case V_BR_FGT:
   case V_BR_I4GT:
-      cmp = *is_integer ? TOP_cmpgt_r_r : TOP_cmpgt_r_b;
+      cmp = *is_integer ? TOP_cmpgt_r_r_r : TOP_cmpgt_r_r_b;
       mtype = MTYPE_I4;
       break;
 
 //   case V_BR_FLE:
   case V_BR_I4LE:
-      cmp = *is_integer ? TOP_cmple_r_r : TOP_cmple_r_b;
+      cmp = *is_integer ? TOP_cmple_r_r_r : TOP_cmple_r_r_b;
       mtype = MTYPE_I4;
       break;
 
 //   case V_BR_FLT:
   case V_BR_I4LT:
-      cmp = *is_integer ? TOP_cmplt_r_r : TOP_cmplt_r_b;
+      cmp = *is_integer ? TOP_cmplt_r_r_r : TOP_cmplt_r_r_b;
       mtype = MTYPE_I4;
       break;
 
 //   case V_BR_FEQ:
   case V_BR_I4EQ:
-      cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
+      cmp = *is_integer ? TOP_cmpeq_r_r_r : TOP_cmpeq_r_r_b;
       mtype = MTYPE_I4;
       break;
 
 //   case V_BR_FNE:
   case V_BR_I4NE:
-      cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
+      cmp = *is_integer ? TOP_cmpne_r_r_r : TOP_cmpne_r_r_b;
       mtype = MTYPE_I4;
       break;
 
     case V_BR_U4GE:	
     case V_BR_A4GE:
-      cmp = *is_integer ? TOP_cmpgeu_r_r : TOP_cmpgeu_r_b;
+      cmp = *is_integer ? TOP_cmpgeu_r_r_r : TOP_cmpgeu_r_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LE:
     case V_BR_A4LE:
-      cmp = *is_integer ? TOP_cmpleu_r_r : TOP_cmpleu_r_b;
+      cmp = *is_integer ? TOP_cmpleu_r_r_r : TOP_cmpleu_r_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4LT:
     case V_BR_A4LT:
-      cmp = *is_integer ? TOP_cmpltu_r_r : TOP_cmpltu_r_b;
+      cmp = *is_integer ? TOP_cmpltu_r_r_r : TOP_cmpltu_r_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4EQ:
     case V_BR_A4EQ:
-      cmp = *is_integer ? TOP_cmpeq_r_r : TOP_cmpeq_r_b;
+      cmp = *is_integer ? TOP_cmpeq_r_r_r : TOP_cmpeq_r_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4NE:
     case V_BR_A4NE:
-      cmp = *is_integer ? TOP_cmpne_r_r : TOP_cmpne_r_b;
+      cmp = *is_integer ? TOP_cmpne_r_r_r : TOP_cmpne_r_r_b;
       mtype = MTYPE_U4;
       break;
 
     case V_BR_U4GT:
     case V_BR_A4GT:
-      cmp = *is_integer ? TOP_cmpgtu_r_r : TOP_cmpgtu_r_b;
+      cmp = *is_integer ? TOP_cmpgtu_r_r_r : TOP_cmpgtu_r_r_b;
       mtype = MTYPE_U4;
       break;
 
@@ -205,28 +205,28 @@ Pick_Compare_TOP (
     case V_BR_FLT:
     case V_BR_FEQ:
 // #if 0
-      if (Enable_Single_Float_Ops) {
+      if (Enable_Non_IEEE_Ops) {
 	mtype = MTYPE_F4;
 // 	*is_integer = TRUE;
 	switch(*variant) {
 	case V_BR_FGE:
-	  cmp = *is_integer ? TOP_cmpgef_n_r : TOP_cmpgef_n_b;
+	  cmp = *is_integer ? TOP_cmpgef_n_r_r_r : TOP_cmpgef_n_r_r_b;
 // 	  cmp = TOP_cmpgef;
 	  break;
 	case V_BR_FGT:
-	  cmp = *is_integer ? TOP_cmpgtf_n_r : TOP_cmpgtf_n_b;
+	  cmp = *is_integer ? TOP_cmpgtf_n_r_r_r : TOP_cmpgtf_n_r_r_b;
 // 	  cmp = TOP_cmpgtf;
 	  break;
 	case V_BR_FLE:
-	  cmp = *is_integer ? TOP_cmplef_n_r : TOP_cmplef_n_b;
+	  cmp = *is_integer ? TOP_cmplef_n_r_r_r : TOP_cmplef_n_r_r_b;
 // 	  cmp = TOP_cmplef;
 	  break;
 	case V_BR_FLT:
-	  cmp = *is_integer ? TOP_cmpltf_n_r : TOP_cmpltf_n_b;
+	  cmp = *is_integer ? TOP_cmpltf_n_r_r_r : TOP_cmpltf_n_r_r_b;
 // 	  cmp = TOP_cmpltf;
 	  break;
 	case V_BR_FEQ:
-	  cmp = *is_integer ? TOP_cmpeqf_n_r : TOP_cmpeqf_n_b;
+	  cmp = *is_integer ? TOP_cmpeqf_n_r_r_r : TOP_cmpeqf_n_r_r_b;
 // 	  cmp = TOP_cmpeqf;
 	  break;
 	default:
@@ -301,7 +301,7 @@ Pick_Compare_TOP (
 	 (*variant == V_BR_FGE) || (*variant == V_BR_FEQ) ||(*variant == V_BR_FNE) ) )
       {
 	  TN *src = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-	  Build_OP(TOP_subf_n, src, *src1, *src2, ops);
+	  Build_OP(TOP_subf_n_r_r_r, src, *src1, *src2, ops);
 	  *src1 = src;
 	  *src2 = Zero_TN;
       }
@@ -403,13 +403,13 @@ Expand_Branch (
     if ((cond == V_BR_ALWAYS && !false_br) ||
 	(cond == V_BR_NEVER && false_br)) {
       // Unconditional branch for ALWAYS/!false_br and NEVER/false_br
-      Build_OP (TOP_goto, targ, ops);
+      Build_OP (TOP_goto_i, targ, ops);
     }
     break;
 
   case V_BR_P_TRUE:
     Is_True(cmp == TOP_UNDEFINED, ("unexpected compare op for V_BR_P_TRUE"));
-    Build_OP (false_br ? TOP_brf : TOP_br, src1, targ, ops);
+    Build_OP (false_br ? TOP_brf_i_b : TOP_br_i_b, src1, targ, ops);
     break;
 
   default:
@@ -439,9 +439,9 @@ Expand_Branch (
        * For now I just trust it that it fits into 23 bits
        */
       if (false_br)
-	Build_OP (TOP_brf, tmp, targ, ops);
+	Build_OP (TOP_brf_i_b, tmp, targ, ops);
       else
-	Build_OP (TOP_br, tmp, targ, ops);
+	Build_OP (TOP_br_i_b, tmp, targ, ops);
     }
     break;
   }
@@ -487,7 +487,7 @@ Exp_Local_Jump (
   lab = ANNOT_label(ant);
 
   targ = Gen_Label_TN (lab, offset);
-  Build_OP (TOP_goto, targ, ops);
+  Build_OP (TOP_goto_i, targ, ops);
 #else
    FmtAssert(FALSE, ("NYI: Exp_Local_Jump"));
 #endif
@@ -551,7 +551,7 @@ Exp_Call (
 
   switch (opr) {
     case OPR_CALL:
-      Build_OP (TOP_call, RA_TN, target, ops);
+      Build_OP (TOP_call_i, RA_TN, target, ops);
       break;
 
     case OPR_ICALL:

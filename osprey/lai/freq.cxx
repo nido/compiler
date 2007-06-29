@@ -995,8 +995,8 @@ LOOPINFO_Trip_Count(LOOPINFO* linfo, INT* tc)
 
   if (!linfo) {
     return FALSE;
-#ifdef TARG_STxP70
-  } else if (    (trip_tn = LOOPINFO_CG_trip_count_tn(linfo))
+#ifdef TARG_ST
+  } else if (    (trip_tn = LOOPINFO_exact_trip_count_tn(linfo))
               && TN_is_constant(trip_tn)
   ) {
 #else
@@ -2111,6 +2111,9 @@ Compute_Frequencies(void)
      */
     BB_LIST *ent;
     INT n_entries;
+#ifdef TARG_ST
+    INT n_handlers=0;
+#endif
     BB_SET **reachable;
     BB **entries;
     INT i;
@@ -2120,6 +2123,10 @@ Compute_Frequencies(void)
     n_entries = 0;
     for (ent = Entry_BB_Head; ent != NULL; ent = BB_LIST_rest(ent)) {
       n_entries++;
+#ifdef TARG_ST
+      BB *bb = BB_LIST_first(ent);
+      if (BB_handler(bb)) n_handlers++;
+#endif
     }
 
     /* Create a set of reachable BBs for each entry point.
@@ -2147,14 +2154,23 @@ Compute_Frequencies(void)
        * all entry points are equally likely.
        */
       if (BB_handler(bb)) {
+#ifdef TARG_ST
+        freq = EH_Freq/n_handlers;
+#else
 	freq = EH_Freq;
+#endif
       } else {
-	freq = 1.0;
+#ifdef TARG_ST
+	freq = 1.0-EH_Freq;
+#endif
 	for (j = (i + 1) % n_entries; j != i; j = ++j % n_entries) {
 	  if (BB_SET_IntersectsP(reachable[i], reachable[j])) {
 	    freq += 1.0;
 	  }
 	}
+#ifdef TARG_ST
+        if (freq > 1.0)
+#endif
 	freq = 1.0 / freq;
       }
 

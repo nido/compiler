@@ -1020,6 +1020,12 @@ CSE::Repair_injury_phi_real( EXP_OCCURS *def, EXP_OCCURS *use, CODEREP *temp,
   // this function can handle real or phi-result defs
   Str_red()->Find_iv_and_mult( def, &iv_def, use, &iv_use, &multiplier);
 
+#ifdef TARG_ST
+  // FdF 20060622: Temporary fix for bug 190B/55
+  if (iv_use == NULL)
+    return use->Occurrence();
+#endif
+
   if ( Tracing() ) {
     fprintf( TFile, "Repair_injury_phi_real: iv_def: " );
     iv_def->Print(0,TFile);

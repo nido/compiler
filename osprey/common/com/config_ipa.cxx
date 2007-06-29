@@ -67,6 +67,10 @@ SKIPLIST *Build_Skiplist ( OPTION_LIST *olist );
  * ====================================================================
  */
 
+#ifdef KEY
+const float DEFAULT_MIN_PROBABILITY = 0.20;
+#endif
+
 #define DEFAULT_BLOAT_FACTOR	100
 #define DEFAULT_PU_LIMIT	2500
 #define DEFAULT_HARD_LIMIT	(2500 + (2500 >> 2))
@@ -114,7 +118,12 @@ BOOL IPA_Enable_final_link = TRUE;	/* Final link step */
 BOOL IPA_Enable_Memtrace = FALSE;	/* Memory trace */
 BOOL IPA_Enable_DST = TRUE;		/* Generate DST */
 BOOL IPA_Enable_DCE = TRUE;		/* Enable Dead Call Elimination */
+#ifdef TARG_ST
+// [CL] can't inline functions that have exceptions regions
+BOOL IPA_Enable_Exc = FALSE;		/* Enable exception handling */
+#else
 BOOL IPA_Enable_Exc = TRUE;		/* Enable exception handling */
+#endif
 BOOL IPA_Enable_Recycle = TRUE;		/* Enable recycling of variables */
 BOOL IPA_Enable_DVE = TRUE;		/* Enable Dead Variable Elimination */
 BOOL IPA_Enable_CGI = TRUE;		/* Enable Constant Global Variable
@@ -135,7 +144,7 @@ BOOL IPA_Enable_Array_Summary = FALSE;  /* Array section summary in IPL */
 BOOL IPA_Enable_Scalar_Euse = FALSE;   /* enable scalar euse  */
 BOOL IPA_Enable_Scalar_Kill = FALSE;   /* enable scalar kill   */
 BOOL IPA_Enable_Common_Const = TRUE; /* enable cprop of common block vars */
-BOOL IPA_Enable_Feedback = FALSE;       /* create pragma files, etc.      */
+//BOOL IPA_Enable_Feedback = FALSE;       /* create pragma files, etc.      */
 
 /* Echo back end command lines: */
 BOOL	IPA_Echo_Commands = FALSE;
@@ -144,6 +153,9 @@ BOOL	IPA_Echo_Commands = FALSE;
 UINT32	IPA_Bloat_Factor = DEFAULT_BLOAT_FACTOR;
 BOOL	IPA_Bloat_Factor_Set = FALSE;
 
+#ifdef KEY
+float	IPA_Min_Branch_Prob = DEFAULT_MIN_PROBABILITY;
+#endif
 UINT32	IPA_PU_Limit = DEFAULT_PU_LIMIT;/* Max nodes per PU after inlining */
 BOOL	IPA_PU_Limit_Set = FALSE;	/* if IPA_PU_Limit is set by user */
 
@@ -221,6 +233,14 @@ BOOL IPA_Enable_Keeplight = TRUE;  /* allow the user to ONLY keep the .I
 				     * and .o in the .ipakeep directory
 				     */
 
+
+#ifdef KEY
+BOOL IPA_Enable_Icall_Opt = TRUE;   /* allow ipa change icall to call */
+BOOL IPA_Enable_Branch_Heuristic = TRUE; // use branch prob. for inlining
+#endif
+#ifdef KEY
+BOOL IPA_Enable_EH_Region_Removal = FALSE; // remove useless exception regions
+#endif
 BOOL IPA_Enable_Cord = FALSE;		/* Enable procedure reordering. */
 BOOL IPA_Enable_Linearization = FALSE;  /* Enable linearization of array */
 BOOL IPA_Use_Intrinsic = FALSE;		/* load intrinsic libraries */
@@ -460,9 +480,10 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_VISIBLE,	FALSE, "use_intrinsic",	"",
 	  0, 0, 0,		&IPA_Use_Intrinsic,	NULL,
 	  "Load Intrinsic Libraries" },
-    { OVK_BOOL, OV_VISIBLE,     FALSE, "feedback",             "",
-          0, 0, 0,              &IPA_Enable_Feedback,   NULL,
-          "Create .pragma, .dfe, .dve  files, " },
+    //TB: Not yet implemented...
+//     { OVK_BOOL, OV_VISIBLE,     FALSE, "feedback",             "",
+//           0, 0, 0,              &IPA_Enable_Feedback,   NULL,
+//           "Create .pragma, .dfe, .dve  files, " },
     { OVK_BOOL, OV_VISIBLE,     FALSE, "class", "",
           0, 0, 0,              &IPA_Enable_Alias_Class, NULL,
          "Enable interprocedural alias classification" },
@@ -503,6 +524,19 @@ static OPTION_DESC Options_IPA[] = {
 	  0, 0, 0,		&Ipa_Exec_Name,		NULL,
 	  "Name of the final executable" },
 #endif
+#ifdef KEY
+    { OVK_BOOL, OV_INTERNAL,	FALSE, "icall_opt",	"",
+	  0, 0, 0,		&IPA_Enable_Icall_Opt,	NULL,
+	  "Enable conversion of icall to call"},
+    { OVK_BOOL, OV_INTERNAL,	FALSE, "branch",	"",
+	  0, 0, 0,		&IPA_Enable_Branch_Heuristic,	NULL,
+	  "Enable use of branch probabilities for inlining"},
+#endif // KEY
+#ifdef KEY
+    { OVK_BOOL, OV_INTERNAL,	FALSE, "eh_opt",	"",
+	  0, 0, 0,		&IPA_Enable_EH_Region_Removal,	NULL,
+	  "Enable removal of exception regions"},
+#endif
     { OVK_COUNT }	    /* List terminator -- must be last */
 };
 
@@ -518,7 +552,8 @@ BOOL	INLINE_All = FALSE;	/* Inline everything possible? */
 //CL: make 'inline' functions must-inline instead of may-inline
 BOOL	INLINE_All_Inline = FALSE; /* Mark must-inline 'inline' functions */
 BOOL	INLINE_Only_Inline = TRUE; /* Mark may-inline only 'inline' functions */
-BOOL INLINE_Only_Inline_Set = FALSE; /* Is only_inline set?. */
+BOOL    INLINE_Only_Inline_Set = FALSE; /* Is only_inline set?. */
+BOOL	INLINE_O0 = FALSE; /* Inline even at -O0 */
 #endif
 BOOL    INLINE_Optimize_Alloca = TRUE; /* when inlining calls with alloca fix the stack and pop */
 BOOL	INLINE_Enable_Copy_Prop = TRUE; /* Copy Propogation during stand-alone inlining? */
@@ -546,6 +581,11 @@ BOOL    INLINE_Enable_Split_Common = TRUE;  /* Enable split common: inliner */
 BOOL    INLINE_Enable_Auto_Inlining = TRUE; /* Enable automatic inlining analysis */
 BOOL	INLINE_Enable_Restrict_Pointers = FALSE; // Allow restrict pointers
 					// as formal parameter
+#ifdef KEY
+BOOL	INLINE_Recursive = TRUE;	// Do recursive inlining
+// check parameter compatibility during inlining
+BOOL    INLINE_Ignore_Bloat = TRUE;    // Ignore code bloat (-IPA:space)
+#endif
 
 OPTION_LIST *INLINE_List_Names = NULL;	/* Must/never/file options */
 OPTION_LIST *INLINE_Spec_Files = NULL;	/* Specification files */
@@ -577,6 +617,9 @@ static OPTION_DESC Options_INLINE[] = {
     { OVK_BOOL,	OV_VISIBLE,	FALSE, "only_inline",	"",
 	  0, 0, 0,	&INLINE_Only_Inline,	&INLINE_Only_Inline_Set,
 	  "Attempt to inline only 'inline' functions" },
+    { OVK_BOOL,	OV_INTERNAL,	FALSE, "O0",	"",
+	  0, 0, 0,	&INLINE_O0,	NULL,
+	  "Attempt to inline even at -O0" },
 #endif
     { OVK_BOOL,	OV_SHY,		FALSE, "alloca",	"alloca",
 	  0, 0, 0,	&INLINE_Optimize_Alloca,	NULL,
@@ -648,6 +691,11 @@ static OPTION_DESC Options_INLINE[] = {
     { OVK_BOOL, OV_INTERNAL,	FALSE,	"restrict",	"",
 	  0, 0, 0,		&INLINE_Enable_Restrict_Pointers, NULL,
 	  "Allow inlining of PUs with restrict pointer as formal parameters" },
+#ifdef KEY
+    { OVK_BOOL, OV_INTERNAL,	FALSE,	"recurse",	"",
+	  0, 0, 0,		&INLINE_Recursive, NULL,
+	  "Allow recursive inlining of PUs" },
+#endif
     { OVK_LIST,	OV_VISIBLE,	FALSE, "skip",	"s",
 	  0, 0, 0,	&INLINE_List_Names,	NULL,
 	  "Skip requested CG edges to avoid doing inlining" },

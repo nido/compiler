@@ -278,7 +278,7 @@ extern int pexecute PARAMS ((const char *, char * const *, const char *,
 
 extern int pwait PARAMS ((int, int *, int));
 
-    // [HK]
+  /* [HK] */
 #if __GNUC__ >=3 && !defined(__MINGW32__)
 #define HAVE_DECL_ASPRINTF 1
 #define HAVE_DECL_VASPRINTF 1

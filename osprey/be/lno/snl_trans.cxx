@@ -654,6 +654,17 @@ LNO_FB_Inv_Interchange(WN* wn_outer, INT permutation[], INT nloops)
   DOLOOP_STACK stack(&LNO_local_pool);
   Build_Doloop_Stack(wn_inner, &stack);
 
+#ifdef KEY
+  // TB: from PS 2.2.1
+  // Return if any of the <wn_loop> has no loop feedback info.
+  for( int i = 0; i < nloops; i++ ){
+    const WN* wn_loop = stack.Bottom_nth(outer_depth + i);
+    const FB_Info_Loop fb_info = Cur_PU_Feedback->Query_loop(wn_loop);
+    if( fb_info.freq_positive.Uninitialized() )
+      return;
+  }
+#endif
+
   INT i;
       // FB for each loop in the nest, from outermost to innermost
   FB_Info_Loop *old_fils = CXX_NEW_ARRAY(FB_Info_Loop, nloops,
@@ -685,7 +696,16 @@ LNO_FB_Inv_Interchange(WN* wn_outer, INT permutation[], INT nloops)
       new_invokes = old_fils[0].freq_zero + old_fils[0].freq_positive;
     }
 
-    Scale_FB_Info_Loop(&new_fils[idx], (new_invokes / old_invokes).Value());
+#ifdef KEY
+    // TB: from PS 2.2.1
+    /* Handle situation when the inner loop is not called.
+       IMO: lno does not update the feedback info consistently.
+    */
+    if( old_invokes.Zero() )
+      Scale_FB_Info_Loop(&new_fils[idx], old_invokes.Value());
+    else
+#endif
+      Scale_FB_Info_Loop(&new_fils[idx], (new_invokes / old_invokes).Value());
   }
 
   for (i = 0; i < nloops; i++) {  // set new FB values

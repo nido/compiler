@@ -50,8 +50,10 @@
 extern INT32 CG_select_spec_loads;
 extern BOOL CG_select_spec_stores;
 extern BOOL CG_select_allow_dup;
+extern BOOL CG_select_promote_mem;
 extern const char* CG_select_factor;
 
+extern void Optimize_Conditional_Branches();
 extern void Convert_Select(RID *, const BB_REGION&);
 extern void Select_Init(void);
 extern void draw_CFG(void);

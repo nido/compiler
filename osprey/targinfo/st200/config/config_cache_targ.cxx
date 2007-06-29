@@ -64,13 +64,14 @@ void MHD::Initialize()
 {
   if ( Is_Target_st220() ||
        Is_Target_st231() ||
-       Is_Target_st235() ) {
+       Is_Target_st240()) {
 
     Non_Blocking_Loads      = FALSE;
     Loop_Overhead_Base      = 6;
     Loop_Overhead_Memref    = 1;
     TLB_Trustworthiness     = 0;
     DCache_Prefetch_Buffers = 8;
+    Prefetch_Padding        = -1;
     TLB_NoBlocking_Model    = FALSE;
     // [HK] trick to force the use of = operator (instead of the copy constructor)
     MHD_LEVEL tmp(MHD_TYPE_CACHE,   // Type

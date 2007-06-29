@@ -53,7 +53,12 @@ extern "C" {
     LIBFB_Info_Branch_Type,
     LIBFB_Info_Circuit_Type,
     LIBFB_Info_Call_Type,
-    LIBFB_Info_Loop_Type
+    LIBFB_Info_Icall_Type,
+    LIBFB_Info_Loop_Type,
+    LIBFB_Info_Edge_Type,
+    LIBFB_Info_Stride_Type,
+    LIBFB_Info_Value_Type,
+    LIBFB_Info_Value_FP_Bin_Type
   } FB_Info_Type;
 
 
@@ -130,6 +135,39 @@ extern "C" {
     *this_c = p.ll;
   }
 
+  static void UINT64_Read(UINT64 *this_c, FILE *fp, char *fname){
+    union u {
+      UINT64 ll;
+      struct dint32 { 
+	INT32 l; 
+	INT32 h;} dint; 
+    } p;
+    INT32 first_int, sec_int;
+    ASSERT(!unneed_conversion);
+    int_Read(&first_int, fp, fname);
+    int_Read(&sec_int, fp, fname);
+    p.dint.h = first_int;
+    p.dint.l = sec_int;
+    
+    *this_c = p.ll;
+  }
+
+  static void LIBFB_TNV_Read(LIBFB_TNV *this_c, FILE *fp, char *fname){
+    int i;
+    INT32_Read( &(this_c->_id), fp, fname);
+    INT32_Read( &(this_c->_flag), fp, fname);
+    INT64_Read( &(this_c->_address), fp, fname);
+    INT64_Read( &(this_c->_exec_counter), fp, fname);
+    INT64_Read( &(this_c->_clear_counter), fp, fname);
+    INT64_Read( &(this_c->_sample_counter), fp, fname);
+    INT64_Read( &(this_c->_stride_steps), fp, fname);
+    INT64_Read( &(this_c->_zero_std_counter), fp, fname);
+    for (i = 0; i < FB_TNV_SIZE; i++)
+      INT64_Read( &(this_c->_values[i]), fp, fname);
+    for (i = 0; i < FB_TNV_SIZE; i++)
+      INT64_Read( &(this_c->_counters[i]), fp, fname);
+  }
+
   void fb_reader_INT64_list_Read(INT64 *this_c, int nitems, FILE *fp, char *fname){
     int i;
 
@@ -169,6 +207,36 @@ extern "C" {
     static void LIBFB_Info_Call_Read( LIBFB_Info_Call *this_c, FILE *fp, char *fname) {
       INT64_Read( &(this_c->freq_entry), fp, fname);
       INT64_Read( &(this_c->freq_exit), fp, fname);
+    }
+
+    static void LIBFB_Info_Icall_Read( LIBFB_Info_Icall *this_c, FILE *fp, char *fname) {
+      LIBFB_TNV_Read( &(this_c->tnv), fp, fname);
+    }
+
+    static void LIBFB_Info_Edge_Read( LIBFB_Info_Edge *this_c, FILE *fp, char *fname) {
+     INT64_Read( &(this_c->freq_edge), fp, fname);
+    }
+
+    static void LIBFB_Info_Stride_Read( LIBFB_Info_Stride *this_c, FILE *fp, char *fname) {
+      LIBFB_TNV_Read( &(this_c->tnv), fp, fname);
+    }
+
+    static void LIBFB_Info_Value_Read( LIBFB_Info_Value *this_c, FILE *fp, char *fname) {
+      int i;
+      INT64_Read( &(this_c->num_values), fp, fname);
+      INT64_Read( &(this_c->exe_counter), fp, fname);
+      for (i = 0; i < TNV; i++)
+	INT64_Read( &(this_c->value[i]), fp, fname);
+      for (i = 0; i < TNV; i++)
+	INT64_Read( &(this_c->freq[i]), fp, fname);
+    }
+
+    static void LIBFB_Info_Value_FP_Bin_Read( LIBFB_Info_Value_FP_Bin *this_c, FILE *fp, char *fname) {
+      INT64_Read( &(this_c->exe_counter), fp, fname);
+      INT64_Read( &(this_c->zopnd0), fp, fname);
+      INT64_Read( &(this_c->zopnd1), fp, fname);
+      INT64_Read( &(this_c->uopnd0), fp, fname);
+      INT64_Read( &(this_c->uopnd1), fp, fname);
     }
 
     static BOOL is_host_little_endian()
@@ -244,6 +312,8 @@ extern "C" {
       } else {
 	for (i = 0; i < nitems; i++) {
 	  INT32_Read( &(this_c[i].pu_checksum), fp, fname);
+	  INT32_Read( &(this_c[i].pu_size), fp, fname);
+	  UINT64_Read( &(this_c[i].runtime_fun_address), fp, fname);
 	  ULONG_Read( &(this_c[i].pu_name_index), fp, fname);
 	  ULONG_Read( &(this_c[i].pu_file_offset), fp, fname);
 	  ULONG_Read( &(this_c[i].pu_inv_offset), fp, fname);
@@ -262,10 +332,29 @@ extern "C" {
 	  ULONG_Read( &(this_c[i].pu_num_scircuit_entries), fp, fname);
 	  ULONG_Read( &(this_c[i].pu_call_offset), fp, fname);
 	  ULONG_Read( &(this_c[i].pu_num_call_entries), fp, fname);
+#ifdef KEY
+	  ULONG_Read( &(this_c[i].pu_value_offset), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_num_value_entries), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_value_fp_bin_offset), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_num_value_fp_bin_entries), fp, fname);
+#endif
+	  ULONG_Read( &(this_c[i].pu_icall_offset), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_num_icall_entries), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_handle), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_edge_offset), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_num_edge_entries), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_instr_count), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_instr_exec_count), fp, fname);
+#ifdef KEY
+	  ULONG_Read( &(this_c[i].pu_values_offset), fp, fname);
+	  ULONG_Read( &(this_c[i].pu_values_fp_bin_offset), fp, fname);
+#endif
+	  ULONG_Read( &(this_c[i].pu_ld_count), fp, fname);   //prefetch count
+	  ULONG_Read( &(this_c[i].pu_stride_offset), fp, fname);
 	}
       }  
     }
-
+  
     static void *FB_Info_Type_Read(FB_Info_Type type)
       {
 	switch (type) {
@@ -277,6 +366,16 @@ extern "C" {
 	  return (void *)&LIBFB_Info_Circuit_Read;
 	case LIBFB_Info_Call_Type:
 	  return (void *)&LIBFB_Info_Call_Read;
+	case LIBFB_Info_Icall_Type:
+	  return (void *)&LIBFB_Info_Icall_Read;
+	case LIBFB_Info_Edge_Type:
+	  return (void *)&LIBFB_Info_Edge_Read;
+	case LIBFB_Info_Stride_Type:
+	  return (void *)&LIBFB_Info_Stride_Read;
+	case LIBFB_Info_Value_Type:
+	  return (void *)&LIBFB_Info_Value_Read;
+	case LIBFB_Info_Value_FP_Bin_Type:
+	  return (void *)&LIBFB_Info_Value_FP_Bin_Read;
 	case LIBFB_Info_Loop_Type:
 	  return (void *)&LIBFB_Info_Loop_Read;
 	default:
@@ -371,6 +470,86 @@ extern "C" {
 	} else {
 	  for (i = 0; i < pu_hdr_entry->pu_num_call_entries; i++) {
 	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Call_Type, fp, (char *)fname);
+	  }
+	}  
+      }
+
+    void fb_reader_Info_Icall_list_Read(LIBFB_Info_Icall *this_c, Pu_Hdr* pu_hdr_entry, long pu_ofst,
+					  FILE *fp, char *fname)
+      {
+	int i;
+	FSEEK(fp, pu_ofst + pu_hdr_entry->pu_icall_offset, SEEK_SET, ERR_POS, fname);
+	if (unneed_conversion) {
+	  FREAD (this_c, sizeof(LIBFB_Info_Icall),
+		 pu_hdr_entry->pu_num_icall_entries, fp, ERR_READ, fname);
+
+	} else {
+	  for (i = 0; i < pu_hdr_entry->pu_num_icall_entries; i++) {
+	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Icall_Type, fp, (char *)fname);
+	  }
+	}  
+      }
+
+    void fb_reader_Info_Edge_list_Read(LIBFB_Info_Edge *this_c, Pu_Hdr* pu_hdr_entry, long pu_ofst,
+					  FILE *fp, char *fname)
+      {
+	int i;
+	FSEEK(fp, pu_ofst + pu_hdr_entry->pu_edge_offset, SEEK_SET, ERR_POS, fname);
+	if (unneed_conversion) {
+	  FREAD (this_c, sizeof(LIBFB_Info_Edge),
+		 pu_hdr_entry->pu_num_edge_entries, fp, ERR_READ, fname);
+
+	} else {
+	  for (i = 0; i < pu_hdr_entry->pu_num_edge_entries; i++) {
+	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Edge_Type, fp, (char *)fname);
+	  }
+	}  
+      }
+
+    void fb_reader_Info_Stride_list_Read(LIBFB_Info_Stride *this_c, Pu_Hdr* pu_hdr_entry, long pu_ofst,
+					  FILE *fp, char *fname)
+      {
+	int i;
+	FSEEK(fp, pu_ofst + pu_hdr_entry->pu_stride_offset, SEEK_SET, ERR_POS, fname);
+	if (unneed_conversion) {
+	  FREAD (this_c, sizeof(LIBFB_Info_Stride),
+		 pu_hdr_entry->pu_ld_count, fp, ERR_READ, fname);
+
+	} else {
+	  for (i = 0; i < pu_hdr_entry->pu_ld_count; i++) {
+	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Stride_Type, fp, (char *)fname);
+	  }
+	}  
+      }
+
+    void fb_reader_Info_Value_list_Read(LIBFB_Info_Value *this_c, Pu_Hdr* pu_hdr_entry, long pu_ofst,
+					  FILE *fp, char *fname)
+      {
+	int i;
+	FSEEK(fp, pu_ofst + pu_hdr_entry->pu_value_offset, SEEK_SET, ERR_POS, fname);
+	if (unneed_conversion) {
+	  FREAD (this_c, sizeof(LIBFB_Info_Value),
+		 pu_hdr_entry->pu_num_value_entries, fp, ERR_READ, fname);
+
+	} else {
+	  for (i = 0; i < pu_hdr_entry->pu_num_value_entries; i++) {
+	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Value_Type, fp, (char *)fname);
+	  }
+	}  
+      }
+
+    void fb_reader_Info_Value_FP_Bin_list_Read(LIBFB_Info_Value_FP_Bin *this_c, Pu_Hdr* pu_hdr_entry, long pu_ofst,
+					  FILE *fp, char *fname)
+      {
+	int i;
+	FSEEK(fp, pu_ofst + pu_hdr_entry-> pu_value_fp_bin_offset , SEEK_SET, ERR_POS, fname);
+	if (unneed_conversion) {
+	  FREAD (this_c, sizeof(LIBFB_Info_Value_FP_Bin),
+		 pu_hdr_entry->pu_num_value_fp_bin_entries, fp, ERR_READ, fname);
+
+	} else {
+	  for (i = 0; i < pu_hdr_entry->pu_num_value_fp_bin_entries; i++) {
+	    fb_reader_Info_Read(&(this_c[i]), LIBFB_Info_Value_FP_Bin_Type, fp, (char *)fname);
 	  }
 	}  
       }

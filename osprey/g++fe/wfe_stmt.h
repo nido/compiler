@@ -45,8 +45,11 @@ extern
 "C" {
 #endif
 void WFE_Expand_Stmt (tree stmt);
+// (cbr) returns value could be hidden (whirl generated but no rtl)
+extern int WN_Returns_Void();
+
 #ifdef _NO_WEAK_SUPPORT_
-  extern void WFE_Expand_Start_Case (tree selector, tree sel_type);
+extern void WFE_Expand_Start_Case (tree selector, tree sel_type);
 extern void WFE_Expand_End_Case (void);
 extern void WFE_Add_Case_Node (tree low, tree high, tree label);
 extern void WFE_Record_Switch_Default_Label (tree label);
@@ -99,6 +102,7 @@ extern LABEL_IDX WFE_last_label_idx;
 
 #ifdef TARG_ST
 extern bool Current_Function_Has_EH_Spec();
+
 #endif
 
 #endif

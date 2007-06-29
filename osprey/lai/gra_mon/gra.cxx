@@ -80,6 +80,9 @@ MEM_POOL* const GRA_pool = &GRA_pool_struct;
 INT GRA_pu_num = 0;
 float GRA_call_split_freq;
 float GRA_spill_count_factor;
+#ifdef TARG_ST
+float GRA_local_spill_multiplier;
+#endif
 
 static BOOL gra_spill_around_save_tn_copies;
 
@@ -190,6 +193,9 @@ Initialize_Flags()
   gra_spill_around_save_tn_copies = FALSE;
   GRA_call_split_freq = atof(GRA_call_split_freq_string);
   GRA_spill_count_factor = atof(GRA_spill_count_factor_string);
+#ifdef TARG_ST
+  GRA_local_spill_multiplier = atof(GRA_local_spill_multiplier_string);
+#endif
 }
 
 /////////////////////////////////////

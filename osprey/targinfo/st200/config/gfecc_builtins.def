@@ -411,14 +411,6 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_MAXUL,
              "__builtin___maxul",
              BT_FN_ULONGLONG_ULONGLONG_ULONGLONG,
              ATTR_PURE_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_MAXUW,
-             "__builtin___maxuw",
-             BT_FN_UNSIGNED_UNSIGNED_UNSIGNED,
-             ATTR_PURE_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_MAXW,
-             "__builtin___maxw",
-             BT_FN_INT_INT_INT,
-             ATTR_PURE_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_MIND,
              "__builtin___mind",
              BT_FN_DOUBLE_DOUBLE_DOUBLE,
@@ -442,14 +434,6 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_MINUH,
 DEF_EXT_LIB_BUILTIN (BUILT_IN_MINUL,
              "__builtin___minul",
              BT_FN_ULONGLONG_ULONGLONG_ULONGLONG,
-             ATTR_PURE_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_MINUW,
-             "__builtin___minuw",
-             BT_FN_UNSIGNED_UNSIGNED_UNSIGNED,
-             ATTR_PURE_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_MINW,
-             "__builtin___minw",
-             BT_FN_INT_INT_INT,
              ATTR_PURE_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_MODFCH,
              "__builtin___modfch",
@@ -799,21 +783,13 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220PRGADD,
              "__builtin___st220prgadd",
              BT_FN_INT_INT_INT,
              ATTR_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220PRGINS,
-             "__builtin___st220prgins",
-             BT_FN_VOID_VOID,
+DEF_EXT_LIB_BUILTIN (BUILT_IN_ST200PRGINSSET,
+             "__builtin___st200prginsset",
+             BT_FN_INT_INT_INT,
              ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220PRGSET,
              "__builtin___st220prgset",
              BT_FN_INT_INT_INT,
-             ATTR_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220SYNC,
-             "__builtin___st220sync",
-             BT_FN_VOID_VOID,
-             ATTR_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220SYNCINS,
-             "__builtin___st220syncins",
-             BT_FN_VOID_VOID,
              ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_ST220SYSCALL,
              "__builtin___st220syscall",
@@ -942,14 +918,6 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_ST200PRGINSPG,
              "__builtin___st200prginspg",
              BT_FN_INT_INT_INT,
              ATTR_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_ST200PSWCLR,
-             "__builtin___st200pswclr",
-             BT_FN_VOID_INT,
-             ATTR_NOTHROW_LIST)
-DEF_EXT_LIB_BUILTIN (BUILT_IN_ST200PSWSET,
-             "__builtin___st200pswset",
-             BT_FN_VOID_INT,
-             ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN_NMADDS,
              "__builtin___nmadds",
              BT_FN_FLOAT_FLOAT_FLOAT_FLOAT,
@@ -1051,4 +1019,7 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN_BUILTIN__MODUH,
              "__builtin__moduh",
              BT_FN_USHORT_USHORT_USHORT,
              ATTR_PURE_NOTHROW_LIST)
+#define INTRN_GFECC_BUILTINS_DEF
+#include "gen_intrinsics.inc"
+#undef INTRN_GFECC_BUILTINS_DEF
 #endif /*defined(TARG_ST)*/

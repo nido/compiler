@@ -175,6 +175,10 @@ private:
   float               pref_priority;    // Priority of allocating the same
                                         // register to this live range as to
 					// other members of its preference class
+#ifdef TARG_ST
+  ISA_REGISTER_SUBCLASS pref_subclass;  // Preferred subclass and offset.
+  INT                 pref_subclass_offset;
+#endif
   ISA_REGISTER_CLASS  rc:8;
   mREGISTER           reg;		// the register allocated
   mREGISTER           orig_reg;         // Original register before coloring
@@ -214,6 +218,7 @@ private:
       LRANGE *next_bb_local_lrange;	// internally linked BB_Local_List
 #ifdef TARG_ST
       INT nregs; // N registers for wired registers
+      ISA_REGISTER_SUBCLASS subclass;  // subclass requirement
 #endif
     } l;
   }                     u;
@@ -265,6 +270,17 @@ public:
   GRA_BB *Gbb(void)		{ return u.l.gbb; }
   GRA_REGION *Region(void)	{ return u.r.region; }
   float Pref_Priority(void)	{ return pref_priority; }
+#ifdef TARG_ST
+  ISA_REGISTER_SUBCLASS Pref_Subclass(void) { return pref_subclass; }
+  INT Pref_Subclass_Offset(void) { return pref_subclass_offset; }
+  void Set_Pref_Subclass (ISA_REGISTER_SUBCLASS sc, INT offset) {
+                                  pref_subclass = sc;
+                                  pref_subclass_offset = offset;
+                                }
+  ISA_REGISTER_SUBCLASS Sc(void) { DevAssert(type == LRANGE_TYPE_LOCAL,
+					     ("No subclass for non-local LRANGEs"));
+                                   return u.l.subclass; }
+#endif
   REGISTER Orig_Reg(void)	{ return orig_reg; }
   INT32 Priority_Queue_Index(void) { return priority_queue_index; }
   void Priority_Queue_Index_Set(INT32 index) { priority_queue_index = index; }
@@ -308,13 +324,8 @@ public:
   void Split_Deferred_Set(void) { flags = (LR_FLAG)(flags|LRANGE_FLAGS_split_deferred); }
 #endif
 
-#ifdef TARG_ST
-  void Wire_Register(REGISTER r, INT nregs){ flags = (LR_FLAG)(flags|LRANGE_FLAGS_has_wired_register);
-				  reg = r; u.l.nregs = nregs;}
-#else
   void Wire_Register(REGISTER r){ flags = (LR_FLAG)(flags|LRANGE_FLAGS_has_wired_register);
 				  reg = r; }
-#endif
 //              Give <lrange> a wired register <reg>.
   void Preallocated_Region_Invariant(REGISTER r) {
 				  flags = (LR_FLAG)(flags|LRANGE_FLAGS_region_invariant);
@@ -426,7 +437,12 @@ public:
   void Finalize(void);
   LRANGE* Create( LRANGE_TYPE type, ISA_REGISTER_CLASS rc, size_t size );
   LRANGE* Create_Complement( TN* tn );
+#ifdef TARG_ST
+  LRANGE* Create_Local( GRA_BB* gbb, ISA_REGISTER_CLASS cl, ISA_REGISTER_SUBCLASS sc,
+			INT nregs);
+#else
   LRANGE* Create_Local( GRA_BB* gbb, ISA_REGISTER_CLASS cl );
+#endif
   LRANGE* Create_Region( TN* tn, GRA_REGION* region );
   LRANGE* Create_Duplicate( LRANGE* lrange );
   void Begin_Complement_Interference(LRANGE *lrange);

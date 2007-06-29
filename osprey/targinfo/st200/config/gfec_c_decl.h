@@ -631,18 +631,6 @@ builtin_function ("__maxul",
                      tree_cons(NULL_TREE, long_long_unsigned_type_node, endlink))),
                    BUILT_IN_MAXUL, BUILT_IN_NORMAL, NULL_PTR);
 
-builtin_function ("__maxuw",
-                   build_function_type( unsigned_type_node, 
-                     tree_cons(NULL_TREE, unsigned_type_node,
-                     tree_cons(NULL_TREE, unsigned_type_node, endlink))),
-                   BUILT_IN_MAXUW, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__maxw",
-                   build_function_type( integer_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node,
-                     tree_cons(NULL_TREE, integer_type_node, endlink))),
-                   BUILT_IN_MAXW, BUILT_IN_NORMAL, NULL_PTR);
-
 builtin_function ("__mind",
                    build_function_type( double_type_node, 
                      tree_cons(NULL_TREE, double_type_node,
@@ -678,18 +666,6 @@ builtin_function ("__minul",
                      tree_cons(NULL_TREE, long_long_unsigned_type_node,
                      tree_cons(NULL_TREE, long_long_unsigned_type_node, endlink))),
                    BUILT_IN_MINUL, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__minuw",
-                   build_function_type( unsigned_type_node, 
-                     tree_cons(NULL_TREE, unsigned_type_node,
-                     tree_cons(NULL_TREE, unsigned_type_node, endlink))),
-                   BUILT_IN_MINUW, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__minw",
-                   build_function_type( integer_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node,
-                     tree_cons(NULL_TREE, integer_type_node, endlink))),
-                   BUILT_IN_MINW, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__modfch",
                    build_function_type( short_integer_type_node, 
@@ -1191,26 +1167,17 @@ builtin_function ("__st220prgadd",
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ST220PRGADD, BUILT_IN_NORMAL, NULL_PTR);
 
-builtin_function ("__st220prgins",
-                   build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, void_type_node, endlink)),
-                   BUILT_IN_ST220PRGINS, BUILT_IN_NORMAL, NULL_PTR);
-
 builtin_function ("__st220prgset",
                    build_function_type( integer_type_node, 
                      tree_cons(NULL_TREE, integer_type_node,
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ST220PRGSET, BUILT_IN_NORMAL, NULL_PTR);
 
-builtin_function ("__st220sync",
+builtin_function ("__st200prginsset",
                    build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, void_type_node, endlink)),
-                   BUILT_IN_ST220SYNC, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__st220syncins",
-                   build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, void_type_node, endlink)),
-                   BUILT_IN_ST220SYNCINS, BUILT_IN_NORMAL, NULL_PTR);
+                     tree_cons(NULL_TREE, integer_type_node,
+                     tree_cons(NULL_TREE, integer_type_node, endlink))),
+                   BUILT_IN_ST200PRGINSSET, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__st220syscall",
                    build_function_type( void_type_node, 
@@ -1383,16 +1350,6 @@ builtin_function ("__st200prginspg",
                      tree_cons(NULL_TREE, integer_type_node,
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ST200PRGINSPG, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__st200pswclr",
-                   build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node, endlink)),
-                   BUILT_IN_ST200PSWCLR, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__st200pswset",
-                   build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node, endlink)),
-                   BUILT_IN_ST200PSWSET, BUILT_IN_NORMAL, NULL_PTR);
 
 builtin_function ("__nmadds",
                    build_function_type( float_type_node, 

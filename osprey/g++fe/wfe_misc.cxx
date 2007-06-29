@@ -460,7 +460,6 @@ Prepare_Source ( void )
   return FALSE;
 }
 
-
 #ifdef TARG_ST
 void
 WFE_Init_Errors ()
@@ -472,7 +471,7 @@ WFE_Init_Errors ()
 
 
 void
-WFE_Init (INT argc, char **argv, char **envp )
+WFE_Init (INT argc, char **argv)
 {
 #ifndef TARG_ST
   // (cbr) done in toplev.c before WFE_Prepare_Gcc_Option
@@ -752,6 +751,38 @@ WFE_Stmt_Delete ()
   return last;
 } /* WFE_Stmt_Delete */
 
+#ifdef TARG_ST
+void
+WFE_Stmt_Move_To_End (WN *first_wn, WN *last_wn)
+{
+  WN * body;
+  WN * last;
+  WN * prev;
+  WN * next;
+
+  body = WFE_Stmt_Top ();
+  last = WN_last(body);
+
+  if (last == last_wn) return;
+
+  prev = WN_prev(first_wn);
+  next = WN_next(last_wn);
+
+  if (prev)
+    WN_next(prev)  = next;
+  else
+    WN_first(body) = next;
+
+  WN_prev(next) = prev;
+
+  WN_next(last) = first_wn;
+  WN_prev(first_wn) = last;
+  WN_next(last_wn) = NULL;
+  WN_last(body) = last_wn;
+
+} /* WFE_Stmt_Move_To_End */
+
+#endif
 
 WN*
 WFE_Stmt_Pop (WFE_STMT_KIND kind)

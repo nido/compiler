@@ -57,9 +57,11 @@ extern "C" {
 extern int  WFE_Keep_Zero_Length_Structs;
 
 #ifdef TARG_ST
+extern char * Orig_Src_File_Name;
 extern void WFE_Prepare_Gcc_Options(int argc, char **argv, int *gnu_argc, char ***gnu_argv);
 extern void WFE_Init_Errors ();
 #endif
+extern void WFE_Init_Errors ();
 extern void WFE_Init (INT argc, char **arrgv);
 extern void WFE_Finish (void);
 extern void WFE_File_Init (INT argc, char **argv);
@@ -114,6 +116,9 @@ extern WN*  WFE_Stmt_Top (void);
 extern void WFE_Stmt_Append (WN* wn, SRCPOS srcpos);
 extern WN*  WFE_Stmt_Last (void);
 extern WN*  WFE_Stmt_Pop (WFE_STMT_KIND kind);
+
+// FdF 20070302
+extern void WFE_Stmt_Move_To_End(WN *first_wn, WN *last_wn);
 
 #ifdef TARG_ST
 extern bool Check_For_Call_Region ();

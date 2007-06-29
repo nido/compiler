@@ -303,13 +303,13 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
 		// desc is unsigned int
 		Expand_Unsigned_To_Float (result, op1, desc, rtype, ops);
 	}
+	else if (MTYPE_is_float(desc) && MTYPE_is_signed(rtype)) {
+		// rtype is int
+	        Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
+	}
 	else if (MTYPE_is_float(desc)) {
-	  if(MTYPE_is_signed(rtype)) {
-	    Expand_Float_To_Int_Cvt (result, op1, rtype, desc, ops);
-	  }
-	  else {
-	    Expand_Float_To_Unsigned_Cvt (result, op1, rtype, desc, ops);
-	  }
+		// rtype is unsigned int
+		Expand_Float_To_Unsigned_Cvt (result, op1, rtype, desc, ops);
 	} else {
                 Expand_Convert (result, op1, op2, rtype, desc, ops);
         }
@@ -352,12 +352,18 @@ Expand_OP (OPCODE opcode, TN *result, TN *op1, TN *op2, TN *op3, VARIANT variant
 	}
 	break;
   case OPR_TRUNC:
-        if(MTYPE_is_signed(rtype)) {
-          Expand_Float_To_Int_Trunc (result, op1, rtype, desc, ops);
+#ifdef TARG_ST
+	if (MTYPE_is_float(desc) && MTYPE_is_signed(rtype)) {
+		// rtype is int
+		Expand_Float_To_Int_Trunc (result, op1, rtype, desc, ops);
 	}
-	else {
-	  Expand_Float_To_Unsigned_Trunc (result, op1, rtype, desc, ops);
+	else if (MTYPE_is_float(desc)) {
+		// rtype is unsigned int
+		Expand_Float_To_Unsigned_Trunc (result, op1, rtype, desc, ops);
 	}
+#else
+	Expand_Float_To_Int_Trunc (result, op1, rtype, desc, ops);
+#endif // TARG_ST
 	break;
   case OPR_CEIL:
         if(MTYPE_is_signed(rtype)) {

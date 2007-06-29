@@ -212,6 +212,17 @@ typedef std::set<ST_IDX, std::less<ST_IDX>, mempool_allocator<ST_IDX> > PROCESSE
 typedef set<ST_IDX, less<ST_IDX>, mempool_allocator<ST_IDX> > PROCESSED_SET;
 #endif //  __GNUC__ >= 3
 
+#ifdef KEY
+struct formal_to_replace_st
+{
+    ST * formal;
+    ST_IDX replace;
+    formal_to_replace_st (ST * f, ST_IDX r) : formal (f), replace (r) {}
+};
+
+typedef vector<formal_to_replace_st, mempool_allocator<formal_to_replace_st> >
+	replace_st_vec;
+#endif
 #include "clone.h"
 
 #include "ipa_cg.h"
@@ -231,6 +242,9 @@ struct IPO_INLINE_AUX
     WN* copy_out_block;			// copy the result back to the actual
     WN* inlined_body;			// callee's function body
     PROCESSED_SET processed_local_syms; // Set of symbols that have PRAGMA LOCAL processed
+#ifdef KEY
+    replace_st_vec replace_st;
+#endif
     
     IPO_INLINE_AUX (INT num_formals, MEM_POOL* pool) : 
 	parm_attr (pool),
@@ -245,7 +259,11 @@ struct IPO_INLINE_AUX
 	entry_label (0),
 	copy_in_block (NULL),
 	copy_out_block (NULL),
-	inlined_body (NULL) {
+	inlined_body (NULL)
+#ifdef KEY
+	, replace_st (pool)
+#endif
+    {
 
 	parm_attr.reserve (num_formals);
     }
@@ -278,6 +296,12 @@ private:
     mUINT32  _flags;			// various Boolean attribute flags
     INT _callee_cross_file_id;		// For Debugging purpose
 
+#ifdef KEY
+    // Merge callee's exception typeinfo table into caller's
+    void Merge_EH_Typeinfo_Tables (void);
+    // Merge callee's exception specification table into caller's
+    void Merge_EH_Spec_Tables (void);
+#endif
 public:
     // ======================================================================
     // member functions
@@ -387,6 +411,10 @@ public:
 
     // Insert inline pragmas, alloca-code
     void Post_Process_Caller (IPO_INLINE_AUX& aux);
+#ifdef KEY
+    // Merge callee's exception tables into caller's
+    void Merge_EH_Tables (void);
+#endif
 
 public:
     // Externally callable functions

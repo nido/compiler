@@ -788,7 +788,6 @@ Init_Dedicated_TNs (void)
     // into a psi instruction.
     ++tnum; 
     True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_branch, 0); 
-    Set_TN_register_and_class(True_TN, CLASS_AND_REG_true);
   }
 #endif
 
@@ -1596,6 +1595,51 @@ TN_Value_At_Op(
 
   return FALSE;
 }
+
+#ifdef TARG_ST
+static INT
+bits (INT64 value)
+{
+  INT msb = 0;
+  
+  if (value <= 0) {
+    msb = 1;
+  } 
+  if (value < 0) {
+    value = ~value;
+  }
+
+  while (value) {
+    value >>= 1;
+    msb++;
+  };
+  return msb;
+}
+
+/* ====================================================================
+ *
+ *  TN_bitwidth
+ *
+ *  See interface description.
+ *
+ * ====================================================================
+ */
+INT
+TN_bitwidth (const TN *tn)
+{
+  if (TN_is_register (tn)) {
+    REGISTER reg = TN_register (tn);
+    ISA_REGISTER_CLASS rclass = TN_register_class (tn);
+    if (reg == REGISTER_UNDEFINED) {
+      reg = REGISTER_CLASS_last_register (rclass);
+    }
+    return REGISTER_bit_size (rclass, reg) * TN_nhardregs (tn);
+  } else if (TN_has_value (tn)) {
+    return bits (TN_value (tn));
+  } else
+    return 8 * TN_size (tn);
+}
+#endif
 
 
 /* following routines were moved here from symconst_util */

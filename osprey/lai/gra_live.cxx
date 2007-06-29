@@ -752,7 +752,7 @@ GRA_LIVE_Init_BB_End(BB *bb)
   ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
   if (annot) {
     LOOPINFO *info = ANNOT_loopinfo(annot);
-    TN *tn = LOOPINFO_trip_count_tn(info);
+    TN *tn = LOOPINFO_primary_trip_count_tn(info);
     if (tn != NULL && TN_is_register(tn)) {
       GTN_UNIVERSE_Add_TN(tn);
       TN_BB_LIST_MAP_Add(tn_live_use_bbs_map,tn,bb);
@@ -820,7 +820,7 @@ Detect_GTNs (void)
     ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
     if (annot) {
       LOOPINFO *info = ANNOT_loopinfo(annot);
-      TN *tn = LOOPINFO_trip_count_tn(info);
+      TN *tn = LOOPINFO_primary_trip_count_tn(info);
       if (tn != NULL && TN_is_register(tn)) 
 	GTN_UNIVERSE_Add_TN(tn);
     }
@@ -1174,7 +1174,15 @@ Live_Init(
    * them live out, GRA will give the exit block greater priority than
    * it should have.
    */
+#ifdef TARG_ST
+  // [CL] ensure RA_TN is live out of BB with a noreturn call
+  if ( (!BB_exit(bb))
+       ||
+       (CG_save_return_address && (BB_call(bb) && BB_exit(bb)))
+       ) {
+#else
   if (!BB_exit(bb)) {
+#endif
     BB_live_out(bb)     = GTN_SET_CopyD(BB_live_out(bb), force_live_gtns,
 					&liveness_pool);
   } else {
@@ -2423,7 +2431,8 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
       // Arthur: we're switching to a more generic TDT interface
       // [CG] Handle case of single SSA def
       if (TN_is_dedicated(tn) || (OP_cond_def(op) && (!SSA_Active() || TN_ssa_def(tn) != op)) || 
-	  (OP_same_res(op,i) >= 0)) 
+	  (OP_same_res(op,i) >= 0) ||
+	  TN_register(tn) != REGISTER_UNDEFINED) 
 	continue;
 #else
       if (TN_is_dedicated(tn) || OP_cond_def(op) || OP_same_res(op)) continue;
@@ -2442,6 +2451,9 @@ Rename_TNs_For_BB (BB *bb, GTN_SET *multiple_defined_set)
 #endif
       else if (TN_is_global_reg(tn) &&
 	       !TN_is_const_reg(tn) &&
+#ifdef TARG_ST
+	       TN_register(tn) == REGISTER_UNDEFINED &&
+#endif
 	       !GTN_SET_MemberP(BB_live_out(bb), tn)) {
 
         // rename GTN to new local TN between op and end of bb.

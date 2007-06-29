@@ -148,7 +148,7 @@ OP_Can_Be_Tail_Call (
 {
   TOP call_top = OP_code(call_op);
   switch (call_top) {
-  case TOP_call:
+  case TOP_call_i:
     break;
   case TOP_icall:
     return FALSE;

@@ -223,6 +223,9 @@ typedef struct lno_flags {
   BOOL	Version_mp_loops;
   BOOL	Run_vintr;
   BOOL	Run_oinvar;
+#ifdef KEY
+  BOOL    Ignore_Feedback;
+#endif
   UINT32 Run_doacross;
   UINT32 Preferred_doacross_tile_size;
   UINT32 Parallel_overhead; 
@@ -333,6 +336,9 @@ BE_EXPORTED extern LNO_FLAGS Initial_LNO;
 #define LNO_Verbose			Current_LNO->Verbose
 #define LNO_Version_Mp_Loops		Current_LNO->Version_mp_loops
 #define LNO_Run_Vintr			Current_LNO->Run_vintr
+#ifdef KEY
+#define LNO_Ignore_Feedback             Current_LNO->Ignore_Feedback
+#endif
 #define LNO_Run_Oinvar			Current_LNO->Run_oinvar
 #define LNO_Run_Doacross		Current_LNO->Run_doacross
 #define LNO_Preferred_doacross_tile_size	\

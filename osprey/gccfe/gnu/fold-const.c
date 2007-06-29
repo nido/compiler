@@ -3959,6 +3959,15 @@ optimize_minmax_comparison (t)
      simplifications.  */
   switch (TREE_CODE (t))
     {
+#ifdef TARG_ST
+  /* [HK] Rather handle EQ_EXPR, LT_EXPR and GT_EXPR and do the rest
+     using inverse condition. This avoids creating spurious
+     ORIF(COND1, COND2) tree, which does not get simplified in the
+     Open64 Simplifier. */
+    case NE_EXPR:  case LE_EXPR:  case GE_EXPR: 
+      return
+	invert_truthvalue (optimize_minmax_comparison (invert_truthvalue (t)));
+#else 
     case NE_EXPR:  case LT_EXPR:  case LE_EXPR:
       return
 	invert_truthvalue (optimize_minmax_comparison (invert_truthvalue (t)));
@@ -3970,6 +3979,7 @@ optimize_minmax_comparison (t)
 		     (build (EQ_EXPR, type, arg0, comp_const)),
 		     optimize_minmax_comparison
 		     (build (GT_EXPR, type, arg0, comp_const))));
+#endif
 
     case EQ_EXPR:
       if (op_code == MAX_EXPR && consts_equal)
@@ -4014,6 +4024,27 @@ optimize_minmax_comparison (t)
       else
 	/* MIN (X, 0) > -1  ->  X > -1  */
 	return fold (build (GT_EXPR, type, inner, comp_const));
+
+#ifdef TARG_ST
+    case LT_EXPR:
+      if (op_code == MIN_EXPR && !(consts_equal || consts_lt) || consts_equal)
+	/* MIN (X, 0) < 0   ->  X < 0
+	   MIN (X, 0) < -5  ->  X < -5  */
+	return fold (build (LT_EXPR, type, inner, comp_const));
+
+      else if (op_code == MIN_EXPR)
+	/* MIN (X, 0) < 5  ->  true  */
+	return omit_one_operand (type, integer_one_node, inner);
+
+      else if (op_code == MAX_EXPR && !(consts_equal || consts_lt) || consts_equal)
+	/* MAX (X, 0) < 0   ->  false
+	   MAX (X, 0) < -5  ->  false  */
+	return omit_one_operand (type, integer_zero_node, inner);
+
+      else
+	/* MAX (X, 0) < 1  ->  X < 1  */
+	return fold (build (LT_EXPR, type, inner, comp_const));
+#endif
 
     default:
       return t;
@@ -4801,6 +4832,8 @@ fold (expr)
 	return build (COMPOUND_EXPR, type, TREE_OPERAND (arg1, 0),
 		      fold (build (code, type,
 				   arg0, TREE_OPERAND (arg1, 1))));
+#ifndef TARG_ST
+      /* [HK] 20060628: fix for ddts MBTst25258: do not distribute operators in if-then-else blocks */
       else if ((TREE_CODE (arg1) == COND_EXPR
 		|| (TREE_CODE_CLASS (TREE_CODE (arg1)) == '<'
 		    && TREE_CODE_CLASS (code) != '<'))
@@ -4812,6 +4845,7 @@ fold (expr)
 	return
 	  fold_binary_op_with_conditional_arg (code, type, arg1, arg0,
 					       /*cond_first_p=*/0);
+#endif
       else if (TREE_CODE (arg0) == COMPOUND_EXPR)
 	return build (COMPOUND_EXPR, type, TREE_OPERAND (arg0, 0),
 		      fold (build (code, type, TREE_OPERAND (arg0, 1), arg1)));
@@ -6829,7 +6863,24 @@ fold (expr)
 	      STRIP_NOPS (arg1);
 	    }
 	}
+      /* [HK] 20060509 if we are in the case A op C1 ? Min/Max(A, C2): C1,
+	 see if it can be simplified to a minmax/maxmin operator
+	 (fix for ddts MBTst16474) */
 
+      if ( (TREE_CODE (arg1) == MIN_EXPR
+	    || TREE_CODE (arg1) == MAX_EXPR)
+	   && TREE_CODE (TREE_OPERAND (arg0, 1)) == INTEGER_CST
+	   && TREE_CODE (TREE_OPERAND (t, 2)) == INTEGER_CST)
+	  if (TREE_CODE_CLASS (TREE_CODE (arg0)) == '<'
+	      && operand_equal_for_comparison_p (arg0,
+						 optimize_minmax_comparison ( build (TREE_CODE (arg0),
+										     TREE_TYPE (arg0), arg1, TREE_OPERAND (t, 2) )),
+						 TREE_OPERAND (arg0, 1))
+	      && !HONOR_SIGNED_ZEROS (TYPE_MODE (TREE_TYPE (arg1))))
+	      {
+		  arg0 = build (TREE_CODE (arg0), TREE_TYPE (arg0), arg1, TREE_OPERAND (t, 2));
+	      }
+      
       /* If we have A op B ? A : C, we may be able to convert this to a
 	 simpler expression, depending on the operation and the values
 	 of B and C.  Signed zeros prevent all of these transformations,

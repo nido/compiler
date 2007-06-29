@@ -636,7 +636,12 @@ private:
       if ( ! WOPT_Enable_Copy_Prop_Ops_Into_Array_Set )
 	WOPT_Enable_Copy_Prop_Ops_Into_Array = TRUE;
 
+#ifdef TARG_ST
+      // WOPT_Enable_Feedback_EPRE is unused
+      if (WOPT_Enable_Feedback_LPRE)
+#else
       if (WOPT_Enable_Feedback_LPRE || WOPT_Enable_Feedback_EPRE)
+#endif
 	WOPT_Enable_Zero_Version = FALSE;
 
       break; // end MAINOPT_PHASE
@@ -1283,6 +1288,11 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
   REGION_LEVEL rgn_level = (lower_fully) ? RL_MAINOPT :
   					   RID_preopt_level(phase);
 
+#ifdef TARG_ST
+  //TB: Add some fb checks
+  if (Cur_PU_Feedback)
+    Cur_PU_Feedback->Verify("After RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+#endif
   // create aux symbol table
   // cannot print WHIRL tree after this point, use dump_tree_no_st
   SET_OPT_PHASE("Create AUX Symbol table");
@@ -1332,6 +1342,11 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
   // to optimizer CFG annotation (at comp_unit->Cfg()->Feedback())
   if (Cur_PU_Feedback) {
     SET_OPT_PHASE("Annotate CFG with feedback from Whirl");
+#ifdef TARG_ST
+    // [CG] Fake entry exits must be present for feedback propagation
+    // TODO in opt_fb. Remove dependency on this.
+    comp_unit->Cfg()->Attach_fake_entryexit_arcs();
+#endif
     OPT_FEEDBACK *feedback = CXX_NEW(OPT_FEEDBACK(comp_unit->Cfg(),
 						  &Opt_global_pool),
 				     &Opt_global_pool);
@@ -1339,20 +1354,22 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
     comp_unit->Cfg()->Feedback()->Verify( comp_unit->Cfg(),
 					  "after CFG Annotation" );
     // TODO: Perhaps clear out Cur_PU_Feedback now?
+#ifdef TARG_ST
+    // [CG] Remove fake entry exits.
+    comp_unit->Cfg()->Remove_fake_entryexit_arcs();
+#endif
   }
 
 #ifdef TARG_ST
-  if(WOPT_Enable_Tailmerge)
-      {
-          SET_OPT_PHASE("Tailmerge");
-          OPT_Tailmerge(*comp_unit->Cfg(), wn_tree);
-      }
+  if(WOPT_Enable_Tailmerge) {
+    SET_OPT_PHASE("Tailmerge");
+    OPT_Tailmerge(*comp_unit->Cfg(), wn_tree);
+  }
 #endif
 
   SET_OPT_PHASE("Control Flow Analysis");
 #ifdef TARG_ST
-  // [CG] Fake entry exits must be explicitly attached now.
-  // The default is that they are disconnected.
+  // [CG] Fake entry exits must be present for dom computation.
   comp_unit->Cfg()->Attach_fake_entryexit_arcs();
 #endif
   comp_unit->Cfg()->Compute_dom_tree(TRUE); // create dominator tree
@@ -1869,6 +1886,11 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
       if (Cur_PU_Feedback)
 	Cur_PU_Feedback->Reset_Root_WN(opt_wn);
 
+#ifdef TARG_ST
+      //TB: Add some fb checks
+      if (Cur_PU_Feedback)
+	Cur_PU_Feedback->Verify("After RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+#endif
       Is_True(REGION_consistency_check(opt_wn),(""));
       Is_True(Verify_alias(alias_mgr,opt_wn),(""));
 

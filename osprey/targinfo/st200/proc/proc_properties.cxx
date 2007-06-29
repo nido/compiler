@@ -118,7 +118,7 @@ main()
   Processor_Group (has_bundles,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_counted_loops = PROC_Property_Create ("has_counted_loops");
@@ -129,7 +129,7 @@ main()
   Processor_Group (has_delayed_exception,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_dismissible_load = PROC_Property_Create ("has_dismissible_load");
@@ -142,7 +142,7 @@ main()
   Processor_Group (has_enable_prefetch,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_enable_prefetch_ahead = PROC_Property_Create ("has_enable_prefetch_ahead");
@@ -163,7 +163,7 @@ main()
 
   has_predicate_loads = PROC_Property_Create ("has_predicate_loads");
   Processor_Group (has_predicate_loads,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_predicate_returns = PROC_Property_Create ("has_predicate_returns");
@@ -172,14 +172,14 @@ main()
 
   has_predicate_stores = PROC_Property_Create ("has_predicate_stores");
   Processor_Group (has_predicate_stores,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_prefetch = PROC_Property_Create ("has_prefetch");
   Processor_Group (has_prefetch,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   has_same_cycle_branch_shadow = PROC_Property_Create ("has_same_cycle_branch_shadow");
@@ -207,14 +207,14 @@ main()
   Processor_Group (is_select,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
   is_superscalar = PROC_Property_Create ("is_superscalar");
   Processor_Group (is_superscalar,
 			PROCESSOR_st220,
 			PROCESSOR_st231,
-			PROCESSOR_st235,
+			PROCESSOR_st240,
 			PROCESSOR_UNDEFINED);
 
 

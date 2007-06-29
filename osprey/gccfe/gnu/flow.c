@@ -136,10 +136,13 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "expr.h"
 #include "ssa.h"
 #include "timevar.h"
-
 #include "obstack.h"
 #include "splay-tree.h"
 
+#ifdef TARG_ST
+#include "wfe_stmt.h"
+#endif
+ 	  	 
 /* EXIT_IGNORE_STACK should be nonzero if, when returning from a function,
    the stack pointer does not matter.  The value is tested only in
    functions that have frame pointers.
@@ -375,6 +378,10 @@ check_function_return_warnings ()
 	  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
 	    if (insn == cfun->x_clobber_return_insn)
 	      {
+#ifdef TARG_ST
+		// (cbr) returns value could be hidden (whirl generated but no rtl)
+		if (WN_Returns_Void())
+#endif
 	        warning ("control reaches end of non-void function");
 		break;
 	      }

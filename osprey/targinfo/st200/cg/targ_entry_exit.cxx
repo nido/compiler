@@ -94,8 +94,8 @@ EETARG_Build_Jump_Instead_Of_Call (
   TOP jump_top;
   TOP call_top = OP_code(call_op);
   switch (call_top) {
-  case TOP_call:
-    jump_op = Mk_OP(TOP_goto, OP_opnd(call_op, 0));
+  case TOP_call_i:
+    jump_op = Mk_OP(TOP_goto_i, OP_opnd(call_op, 0));
     break;
   case TOP_icall:
     jump_op = Mk_OP(TOP_igoto, OP_opnd(call_op, 0));
@@ -207,6 +207,7 @@ EETARG_Fixup_Entry_Code (
     OP *op = OPS_last(&ops);
     while(!OP_store(op)) op = OP_prev(op);
     Set_OP_spill(op);
+    Set_OP_spilled_tn(op, src_tn);
   }
 
   // If in the prolog a callee saved was used before the sp_adjust op
@@ -297,6 +298,7 @@ EETARG_Fixup_Exit_Code (
     OP *op = OPS_last(&ops);
     while(!OP_load(op)) op = OP_prev(op);
     Set_OP_spill(op);
+    Set_OP_spilled_tn (op, dst_tn);
   }
   
 

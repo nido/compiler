@@ -1,2 +1,2 @@
 #!/bin/sh
-../configure BUILD=gnu-default PLATFORMS=cygwin-st200 TOOLDEFS=apagnu $*
+../configure BUILD=gnu-default PLATFORMS=cygwin-st200 TOOLDEFS=gnu_compil $*

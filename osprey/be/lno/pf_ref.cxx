@@ -2254,6 +2254,50 @@ void PF_LG::Gen_Pref_Node (PF_SORTED_REFS* srefs, mINT16 start, mINT16 stop,
     // e.g. earliest reference is underneath a CAND or a COR
     BOOL drop_prefetch = FALSE;
 
+#ifdef TARG_ST
+
+    // FdF 20070206: Do not generate prefetch with distance greater
+    // than the Prefetch_Padding.
+    if ((Mhd.Prefetch_Padding >= 0) &&
+	((distance > Mhd.Prefetch_Padding) || (distance < -Mhd.Prefetch_Padding))) {
+      drop_prefetch = TRUE;
+      LWN_Delete_Tree (pfnode);
+      pfnode = NULL;
+    }
+    // FdF 20070206: Do not speculate prefetch instructions when
+    // Prefetch_Padding is used.
+    else if ((Mhd.Prefetch_Padding >= 0) &&
+	     !(Alias_Mgr && Safe_to_speculate (Alias_Mgr, pfnode))) {
+      // So we need to find the earliest of all the references (in the CFG)
+      // and insert the prefetch before that one.
+      WN *earliest_ref = ref;
+      for (INT er=start; er<stop; er++) {
+        WN *tmp_ref = Get_Ref (srefs[er].refnum);
+        tmp_ref = Get_Ref_Version(tmp_ref, curbitpos);
+        if (Is_Lex_Before (tmp_ref, earliest_ref)) earliest_ref = tmp_ref;
+      }
+      while (!OPCODE_is_stmt(WN_opcode(earliest_ref)) &&
+             !OPCODE_is_scf(WN_opcode(earliest_ref))) {
+        earliest_ref = LWN_Get_Parent(earliest_ref);
+        if (earliest_ref == NULL) {
+          DevWarn ("Where did the stmt/scf parent go?");
+        }
+        if (earliest_ref == NULL ||
+            WN_operator(earliest_ref) == OPR_CAND ||
+            WN_operator(earliest_ref) == OPR_CIOR) {
+          drop_prefetch = TRUE;
+          LWN_Delete_Tree (pfnode);
+          pfnode = NULL;
+          break;
+        }
+      }
+      if (!drop_prefetch) {
+        LWN_Insert_Block_Before (NULL, earliest_ref, pfnode);
+        wn_loop = earliest_ref;   // for use in Tlogs later
+      }
+    }
+    else
+#endif
     if ((WN_operator(WN_array_base(ref)) == OPR_LDID ||
          WN_operator(WN_array_base(ref)) == OPR_LDA) &&
         (ST_sclass(WN_st(WN_array_base(ref))) == SCLASS_FORMAL_REF  ||

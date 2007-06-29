@@ -3368,7 +3368,6 @@ DCE::Mark_block_live( BB_NODE *bb ) const
   // statements live, since the side effects of this code are
   // difficult to know (ddts 24412).
 
-  // FdF 20061115: Merged from st200/main for bug #20296
   // FdF 20060613: Do not keep scalar store to local variables. They
   // must be deleted if not used, since this is expected during copy
   // propagation (COPYPROP::Copy_propagate).

@@ -3512,7 +3512,9 @@ IPAA::Emit_Simple_IPAA ( IPA_CALL_GRAPH &cg )
 
   // Build an IPAA_FILE_DESCRIPTOR, and write the summary file:
 extern char *tmpdir;
+#ifndef TARG_ST
 #pragma weak tmpdir
+#endif
   char *Ipa_Path_Name = (char *) malloc
 	( strlen(tmpdir) + strlen(Ipa_File_Name) + 2 );
   (void) sprintf ( Ipa_Path_Name, "%s/%s", tmpdir, Ipa_File_Name );

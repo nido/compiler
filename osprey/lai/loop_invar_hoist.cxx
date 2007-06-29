@@ -133,6 +133,35 @@
 INT32 IPFEC_Enable_LICM = 0;
 #endif
 
+/* Tracing flags. */
+static BOOL LICM_Trace_Non_Profitable;
+static BOOL LICM_Trace_Profitable;
+static BOOL LICM_Trace_Candidates;
+static char diagnostic[1024];
+
+/* Parameters to the LICM. */
+//#define OLD_PARAMETERS
+#ifdef OLD_PARAMETERS
+#define TINY_LOOP_SIZE_MAX 8
+#define SMALL_LOOP_SIZE_MAX 15
+#define MEDIUM_LOOP_SIZE_MAX 31
+#define LARGE_LOOP_SIZE_MAX 127
+#define HOT_LOOP_FREQ_MIN 0
+#define VERY_HOT_LOOP_FREQ_MIN (1000000-1)
+#define LOOP_MAX_BB 8
+#define HOT_LOOP_MAX_BB 10
+#else
+#define TINY_LOOP_SIZE_MAX	8
+#define SMALL_LOOP_SIZE_MAX	64
+#define MEDIUM_LOOP_SIZE_MAX 256
+#define LARGE_LOOP_SIZE_MAX 1024
+#define HOT_LOOP_FREQ_MIN 10
+#define VERY_HOT_LOOP_FREQ_MIN 1000 
+#define LOOP_MAX_BB 8
+#define HOT_LOOP_MAX_BB 10
+#endif
+
+
     /* STL OP vector */
 typedef mempool_allocator<OP*> OP_ALLOC;
 typedef std::vector<OP*,OP_ALLOC>   OP_Vector;
@@ -292,16 +321,21 @@ public:
     INT32 BB_Num    (void) const { return (INT32)_bb_num;  } 
     INT32 OP_Num    (void) const { return (INT32)_op_num;  }
     INT32 Max_Level (void) const { return (INT32)_max_level;}
+    LOOP_DESCR *LoopDescr (void) const { return _loop;}
 
-    BOOL It_is_Tiny_Loop  (void) const {return _op_num <= 8;}
-    BOOL It_is_Small_Loop (void) const {return _op_num<16 && _op_num >=8;}
+    BOOL It_is_Tiny_Loop  (void) const {return _op_num <= TINY_LOOP_SIZE_MAX;}
+    BOOL It_is_Small_Loop (void) const {return _op_num <= SMALL_LOOP_SIZE_MAX && _op_num > TINY_LOOP_SIZE_MAX;}
     BOOL It_is_Mediate_Sized_Loop (void) const 
-                    { return _op_num < 32 && _op_num >= 16; }
-    BOOL It_is_Large_Loop (void) const { return _op_num >= 32; }
-    BOOL It_is_Huge_Loop (void) const  { return _op_num >= 128; }
+                    { return _op_num <= MEDIUM_LOOP_SIZE_MAX && _op_num > SMALL_LOOP_SIZE_MAX; }
+    BOOL It_is_Large_Loop (void) const { return _op_num <= LARGE_LOOP_SIZE_MAX && _op_num > MEDIUM_LOOP_SIZE_MAX; }
+    BOOL It_is_Huge_Loop (void) const  { return _op_num > LARGE_LOOP_SIZE_MAX; }
+    BOOL Hot_Loop (void) const { 
+                    BB* b = LOOP_DESCR_loophead(_loop); 
+                    return BB_freq(b) >= HOT_LOOP_FREQ_MIN;
+         }
     BOOL Very_Hot_Loop (void) const { 
                     BB* b = LOOP_DESCR_loophead(_loop); 
-                    return BB_freq(b) > 1000000;
+                    return BB_freq(b) >= VERY_HOT_LOOP_FREQ_MIN;
          }
 };
 
@@ -542,6 +576,7 @@ private:
 #ifdef TARG_ST
     BB* _epilog;	/* corresponding epilogue */
     LI_MEMORY_INFO *_memory_groups; /* List of memory groups. */
+    
 #endif
 
     BOOL It_Is_Constant_TN (TN* t) const {
@@ -1286,7 +1321,13 @@ LOOP_INVAR_CODE_MOTION :: It_is_Fake_Loop_Invar (OP* op) {
                 return TRUE; 
             }
 
-            if (CG_DEP_Mem_Ops_Alias (op, op_like_st, &definite)) {
+	    // FdF 20061127: Fix bug #19532. Need to check for
+	    // dependencies in the two directions, because
+	    // cross-iteration dependencies are ignored (store in one
+	    // iteration in dependence with a load in a successive
+	    // iteration).
+            if (CG_DEP_Mem_Ops_Alias (op, op_like_st, &definite) ||
+		CG_DEP_Mem_Ops_Alias (op_like_st, op, &definite)) {
                 return TRUE;
             }
         }
@@ -1413,7 +1454,7 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
     
     BB* loop_ent = LOOP_DESCR_loophead(_loop);
     BB* home = OP_bb (op);
-
+    
         /* rule 1: rule out those candidate of low reach probability 
          *    from loop entry. 
          */
@@ -1446,25 +1487,52 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
     freq1 = (freq1 < 1.0f) ? 1.0f : freq1;
     INT32 div = (INT32)(freq2 * PROG_SCALE/ freq1);
 
-    if (CGTARG_Is_Long_Latency (OP_code (op))) {
-        if (div < LOW_PROB_FOR_LONG_LATENCY) { return FALSE; }
+    if (OP_Is_Long_Latency (OP_code (op))) {
+        if (div < LOW_PROB_FOR_LONG_LATENCY) { 
+	    sprintf(diagnostic, "long latency operation, probability too low: %d/100 < %d/100",
+		    div, LOW_PROB_FOR_LONG_LATENCY);
+	    goto not_profitable;
+	}
     } else if (OP_load (op)) {
-        if (div < LOW_PROB_FOR_LD_OP) { return FALSE; }
+        if (div < LOW_PROB_FOR_LD_OP) { 
+	    sprintf(diagnostic, "load operation, probability too low: %d/100 < %d/100",
+		    div, LOW_PROB_FOR_LD_OP);
+	    goto not_profitable;
+	}
     } else {
-        if (div < LOW_PROB_FOR_ALU_OP) { return FALSE; }
+        if (div < LOW_PROB_FOR_ALU_OP) { 
+	    sprintf(diagnostic, "alu operation, probability too low: %d/100 < %d/100",
+		    div, LOW_PROB_FOR_ALU_OP);
+	    goto not_profitable;
+	}
     }
 
         /* rule 2: prevent those code motion that deteriorate reg pressure.
          */
     if (Live_Out_Of_Loop (op)) {
         /* it does not change the reg-pressure */  
-        return TRUE;
+	sprintf(diagnostic, "profitable because live out of loop");
+        goto profitable;
     }
 
-    if (_op_info.It_is_Tiny_Loop ())  { return TRUE; }
-    if (_op_info.It_is_Huge_Loop ())  { return FALSE;}
+    if (_op_info.It_is_Tiny_Loop () ||
+	_op_info.It_is_Small_Loop ())  { 
+	return TRUE; 
+    }
+    if (_op_info.It_is_Mediate_Sized_Loop () && !_op_info.Hot_Loop ()) {
+	sprintf(diagnostic, "medium loop is not hot: op num %d, freq %.2f",
+		_op_info.OP_Num(), BB_freq(LOOP_DESCR_loophead(_op_info.LoopDescr())));
+	goto not_profitable;
+    }
     if (_op_info.It_is_Large_Loop () && !_op_info.Very_Hot_Loop ()) {
-        return FALSE;
+	sprintf(diagnostic, "large loop is not very hot: op num %d, freq %.2f",
+		_op_info.OP_Num(), BB_freq(LOOP_DESCR_loophead(_op_info.LoopDescr())));
+	goto not_profitable;
+    }
+    if (_op_info.It_is_Huge_Loop ())  { 
+	sprintf(diagnostic, "huge loop: op num %d",
+		_op_info.OP_Num());
+	goto not_profitable;
     }
 
 
@@ -1492,7 +1560,20 @@ LOOP_INVAR_CODE_MOTION :: Code_Motion_Is_Profitable (OP* op) {
                         (_op_info.Max_Level () + 1);
     return potion >= 20;
     */
+    sprintf(diagnostic, "profitable for all rules");
+ profitable:
+    if (LICM_Trace_Profitable) {
+	fprintf(TFile, "<licm> operation hoisted: %s\n<licm>  ", diagnostic);
+	Print_OP_No_SrcLine(op);
+    }
     return TRUE;
+
+ not_profitable:
+    if (LICM_Trace_Non_Profitable) {
+	fprintf(TFile, "<licm> operation not hoisted: %s\n<licm>  ", diagnostic);
+	Print_OP_No_SrcLine(op);
+    }
+    return FALSE;
 }
 
     /* ================================================================
@@ -1512,6 +1593,7 @@ LOOP_INVAR_CODE_MOTION :: Ignore_Loop_With_Few_Interation (void) {
 
     BB* loop_ent = LOOP_DESCR_loophead(_loop);
     float f = 0.0f;
+    BOOL ignore_loop;
 
     BBLIST* pred;
     FOR_ALL_BB_PREDS (loop_ent,pred) {
@@ -1520,7 +1602,11 @@ LOOP_INVAR_CODE_MOTION :: Ignore_Loop_With_Few_Interation (void) {
     }
 
     f = (f < 1.0f) ? 1.0f : f;
-    return (BB_freq (loop_ent) - f) < 10^5;
+    ignore_loop = (BB_freq (loop_ent) - f) < 10^5;
+    if (ignore_loop && LICM_Trace_Non_Profitable) {
+	fprintf(TFile, "<licm> loop ignored BB:%d :to few interations\n", BB_id(loop_ent));
+    }
+    return ignore_loop;
 }
 
     /* =================================================================
@@ -1539,6 +1625,11 @@ BOOL
 LOOP_INVAR_CODE_MOTION :: Illegal_Or_Nonprofitable (OP* loopinvar) {
 
     BB* home = OP_bb (loopinvar);
+
+    if (LICM_Trace_Candidates) {
+	fprintf(TFile, "<licm> loop invariant candidate: BB:%d, OP:%d\n<licm>  ", BB_id(home), OP_map_idx(loopinvar));
+	Print_OP_No_SrcLine(loopinvar);
+    }
 
     if (!Def_Dominate_All_Use (loopinvar)) {
         return TRUE;
@@ -1754,7 +1845,10 @@ LOOP_INVAR_CODE_MOTION :: Invariant_Address (OP* op) {
     Is_True(OP_load(op) || OP_store(op), ("Must be load or store"));
 
     if (OP_volatile(op) || OP_has_implicit_interactions(op))
-        return FALSE;
+      return FALSE;
+    
+    if (!OP_plain_load(op) && !OP_plain_store(op))
+      return FALSE;
 
     offset_opnd = OP_find_opnd_use(op, OU_offset);
     base_opnd = OP_find_opnd_use(op, OU_base);
@@ -1805,7 +1899,13 @@ LOOP_INVAR_CODE_MOTION :: Ambiguous_Alias (OP *op) {
 
 	    if ((Get_Memory_Group(op) == NULL) ||
 		(Get_Memory_Group(op) != Get_Memory_Group(op_load)))
-		if (CG_DEP_Mem_Ops_Alias (op, op_load, &definite)) {
+	      // FdF 20061127: Fix bug #19532. Need to check for
+	      // dependencies in the two directions, because
+	      // cross-iteration dependencies are ignored (store in
+	      // one iteration in dependence with a load in a
+	      // successive iteration).
+		if (CG_DEP_Mem_Ops_Alias (op, op_load, &definite) ||
+		    CG_DEP_Mem_Ops_Alias (op_load, op, &definite)) {
 		    return TRUE;
             }
         }
@@ -1832,7 +1932,13 @@ LOOP_INVAR_CODE_MOTION :: Ambiguous_Alias (OP *op) {
 
 	    if ((Get_Memory_Group(op) == NULL) ||
 		(Get_Memory_Group(op) != Get_Memory_Group(op_like_st)))
-		if (CG_DEP_Mem_Ops_Alias (op, op_like_st, &definite)) {
+	      // FdF 20061127: Fix bug #19532. Need to check for
+	      // dependencies in the two directions, because
+	      // cross-iteration dependencies are ignored (store in
+	      // one iteration in dependence with a load in a
+	      // successive iteration).
+		if (CG_DEP_Mem_Ops_Alias (op, op_like_st, &definite) ||
+		    CG_DEP_Mem_Ops_Alias (op_like_st, op, &definite)) {
 		    return TRUE;
             }
         }
@@ -2004,44 +2110,18 @@ Scalarize_OP(OP *memop, TN *scalar) {
 	    TOP opcode;
 	    TN *arg2 = NULL;
 	    OP *scalar_op;
-	    if (size == 2) {
-#ifdef TARG_ST200
-		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_zxth : TOP_sxth;
-#else
-#ifdef TARG_STxP70
-		opcode = TOP_is_unsign(OP_code(memop)) ? TOP_extuh : TOP_exth;
-#else
-		opcode = TOP_UNDEFINED;
-#endif
-#endif
+	    TN *to_length_tn = Gen_Literal_TN (TN_size(scalar) * 8, 4);
+	    TYPE_ID from_mtype;
+	    BOOL is_signed = ! TOP_is_unsign(OP_code(memop));
+	    if (size == 1) {
+	      from_mtype = is_signed ? MTYPE_I1 : MTYPE_U1;
+	    } else if (size == 2) {
+	      from_mtype = is_signed ? MTYPE_I2 : MTYPE_U2;
 	    }
-	    else if (size == 1) {
-		if (TOP_is_unsign(OP_code(memop))) {
-#ifdef TARG_ST200
-		    opcode = TOP_and_i;
-#else
-#ifdef TARG_STxP70
-		    opcode = TOP_and_i8;
-#else
-		    opcode = TOP_UNDEFINED;
-#endif
-#endif
-		    arg2 = Gen_Literal_TN(0xff, 4);
-		}
-		else {
-#ifdef TARG_ST200
-		    opcode = TOP_sxtb;
-#else
-#ifdef TARG_STxP70
-		    opcode = TOP_extb;
-#else
-		    opcode = TOP_UNDEFINED;
-#endif
-#endif
-		}
-	    }
-	    scalar_op = Mk_OP(opcode, OP_result(memop, 0), scalar, arg2);
-	    OPS_Append_Op(&New_OPs, scalar_op);
+	    Expand_Convert_Length(OP_result(memop, 0), scalar,
+				  to_length_tn,
+				  from_mtype,
+				  is_signed, &New_OPs);
 	}
 	else
 	    Exp_COPY(OP_result(memop, 0), scalar, &New_OPs);
@@ -2303,8 +2383,8 @@ Count_Loop_Interation (LOOP_DESCR* l) {
 
     TN* trip_count = NULL; 
     if (li) {
-#ifdef TARG_STxP70
-        trip_count = LOOPINFO_CG_trip_count_tn(li); 
+#ifdef TARG_ST
+        trip_count = LOOPINFO_exact_trip_count_tn(li); 
 #else
         trip_count = LOOPINFO_trip_count_tn(li); 
 #endif
@@ -2353,14 +2433,13 @@ Skip_Loop_Invar_Code_Motion (LOOP_DESCR* loop) {
     BB* bb;
     BB_SET* body = LOOP_DESCR_bbset(loop);
 
-    #define HOT_LOOP_FREQ  (1000000)
-    INT32 MAX_BB = 8, MAX_OP = 64;  
+    INT32 MAX_BB = LOOP_MAX_BB, MAX_OP = LARGE_LOOP_SIZE_MAX;  
     
         /* relax the constraints for very hot loop 
          */
     bb = LOOP_DESCR_loophead(loop);
-    if (BB_freq(bb) > HOT_LOOP_FREQ) {
-        MAX_BB = 10; MAX_OP = 100; 
+    if (BB_freq(bb) > HOT_LOOP_FREQ_MIN) {
+        MAX_BB = HOT_LOOP_MAX_BB; MAX_OP = 2*LARGE_LOOP_SIZE_MAX;
     }
 
     FOR_ALL_BB_SET_members (body, bb) {
@@ -2370,34 +2449,48 @@ Skip_Loop_Invar_Code_Motion (LOOP_DESCR* loop) {
                 *   is defined or used within rotating-kernel-ed block. so
                 *   we give up.
                 */
-            return TRUE;
+            sprintf(diagnostic, "rotaing kernel loop");
+	    goto skip_loop;
         }
 
             /* rule 2: Do not perform LICM for very large loop 
              */
         if (BB_length(bb)) { ++ bb_num; }
 
-        if (bb_num > MAX_BB) { return TRUE; }
+        if (bb_num > MAX_BB) { 
+	    sprintf(diagnostic, "max number of BB reached %d", MAX_BB);
+	    goto skip_loop;
+	}
         op_num += BB_length(bb);
-        if (op_num > MAX_OP) { return TRUE; }
+        if (op_num > MAX_OP) { 
+	    sprintf(diagnostic, "max number of OP reached %d", MAX_BB);
+	    goto skip_loop;
+	}
     }
 
         /* rule 3: ignore unimportant loops.
          */
-    BB *head = LOOP_DESCR_loophead(loop);
-    LOOPINFO *info = LOOP_DESCR_loopinfo(loop);
-
-    if (info && WN_Loop_Unimportant_Misc(LOOPINFO_wn(info))) {
-        return TRUE;
+    {
+      LOOPINFO *info = LOOP_DESCR_loopinfo(loop);
+      if (info && WN_Loop_Unimportant_Misc(LOOPINFO_wn(info))) {
+	  sprintf(diagnostic, "unimportant loop in loopinfo");
+	  goto skip_loop;
+      }
     }
 #ifdef TARG_ST
     return FALSE;
 #else
+    BB *head = LOOP_DESCR_loophead(loop);
     float f1 = Count_Loop_Interation (loop);
     float f2 = BB_freq(head);
 
     return !(f1 > 1000 || f2 > 10000);
 #endif
+ skip_loop:
+    if (LICM_Trace_Non_Profitable) {
+	fprintf(TFile, "<licm> loop skiped BB:%d : %s\n", BB_id(bb), diagnostic);
+    }
+    return TRUE;
 }
 
 
@@ -2515,11 +2608,18 @@ Create_Loop_Prologue (LOOP_DESCR* l) {
     if (!like_prolog) {
 #ifdef TARG_ST
       if (LOOP_DESCR_Can_Retarget_Loop_Entrances(l)) {
-#endif
-	like_prolog = CG_LOOP_Gen_And_Prepend_To_Prolog (lhead,l);
-#ifdef TARG_ST
-	GRA_LIVE_Compute_Liveness_For_BB(like_prolog);
+	// FdF 20070604: Also check that the loop prolog can be
+	// created to fall-thru into lhead, without inserting
+	// auxiliiary node, because otherwise update of dominators is
+	// less obvious.
+	BB *ftp = BB_Fall_Thru_Predecessor(lhead);
+	if (!ftp || !BB_SET_MemberP(LOOP_DESCR_bbset(l), ftp) || (BB_branch_op(ftp) == NULL)) {
+	  like_prolog = CG_LOOP_Gen_And_Prepend_To_Prolog (lhead,l);
+	  GRA_LIVE_Compute_Liveness_For_BB(like_prolog);
+	}
       }
+#else
+      like_prolog = CG_LOOP_Gen_And_Prepend_To_Prolog (lhead,l);
 #endif
     }
               
@@ -2654,6 +2754,10 @@ Perform_Loop_Invariant_Code_Motion (void) {
     MEM_POOL loop_descr_pool;
     MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
     MEM_POOL_Push (&loop_descr_pool);
+
+    LICM_Trace_Non_Profitable = Get_Trace(TP_LICM, 0x001);
+    LICM_Trace_Profitable = Get_Trace(TP_LICM, 0x002);
+    LICM_Trace_Candidates = Get_Trace(TP_LICM, 0x004);
 
         /* make sure liveness is accurate 
          */

@@ -142,6 +142,9 @@ struct OPT_FB_NODE {
   EDGES incoming_edges;
   EDGES outgoing_edges;
 
+#ifdef KEY
+  WN* orig_wn;
+#endif
 
   INT      update_count;
   bool     in_out_same;

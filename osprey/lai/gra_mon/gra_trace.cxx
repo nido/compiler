@@ -353,6 +353,36 @@ GRA_Trace_Allowed_Registers (LRANGE *lr, REGISTER_SET subclass_allowed,
     fprintf (TFile, "\n");
   }
 }
+
+void
+GRA_Trace_Subclass_Preference (LRANGE *lr, GRA_BB* gbb)
+{
+  char buff0[80];
+
+  if ( trace_preference ) {
+    GRA_Trace(0, "Set preferred subclass for %s: %s offset %d (BB %d)\n",
+	      lr->Format(buff0),
+	      REGISTER_SUBCLASS_name (lr->Pref_Subclass()),
+	      lr->Pref_Subclass_Offset (),
+	      BB_id(gbb->Bb()));
+  }
+}
+
+void GRA_Trace_Preference_Subclass_Attempt (LRANGE *lrange,
+					    ISA_REGISTER_SUBCLASS sc,
+					    INT sc_offset,
+					    GRA_REGION *region, BOOL outcome)
+{
+  char buff0[80];
+
+  if ( trace_preference ) {
+    GRA_Trace (0, "Preference %s to subclass %s offset %d [%s]\n",
+	       lrange->Format(buff0),
+	       REGISTER_SUBCLASS_name (sc),
+	       sc_offset,
+	       outcome ? "yes" : "no");
+  }
+}
 #endif
 /////////////////////////////////////
 void
@@ -517,6 +547,10 @@ GRA_Trace_Global_Preference_Success(LRANGE* lrange0, LRANGE* lrange1)
 /////////////////////////////////////
 void GRA_Trace_Spill_Stats(float freq_restore_count, INT restore_count,
 			   float freq_spill_count, INT spill_count,
+#ifdef TARG_ST
+			   float freq_local_restore_count,
+			   float freq_local_spill_count,
+#endif
 			   float priority_count)
 /////////////////////////////////////
 //  See interface description.
@@ -525,6 +559,10 @@ void GRA_Trace_Spill_Stats(float freq_restore_count, INT restore_count,
   if ( trace_stats ) {
     GRA_Trace(0,"freq weighted restores %g spills %g allocated priority %g",
                 freq_restore_count,freq_spill_count, priority_count);
+#ifdef TARG_ST
+    GRA_Trace(0,"freq weighted local restores %g spills %g",
+	      freq_local_restore_count, freq_local_spill_count);
+#endif
     GRA_Trace(0,"absolute restores %d spills %d",restore_count,spill_count);
   } else if ( trace_perf_comp ) {
     GRA_Trace(0,"%s %g %g %d %d %g\n", ST_name(Get_Current_PU_ST()),
@@ -719,6 +757,49 @@ GRA_Trace_LRANGE_Allocate(LRANGE* lrange )
     GRA_Trace(0,"Allocated: %s", lrange->Format(buff0));
   }
 }
+
+#ifdef TARG_ST
+void
+GRA_Trace_Create_Lrange(LRANGE *lr)
+{
+  if (trace_color) {
+    char buff[80];
+    if (lr->Type() == LRANGE_TYPE_LOCAL) {
+      GRA_Trace(0, "Create local lrange for BB%d %s\n",
+		BB_id(lr->Gbb()->Bb()), lr->Format(buff));
+    }
+  }
+}
+
+void
+GRA_Trace_Interference_Graph (GRA_REGION *region)
+{
+  if (trace_color) {
+    GRA_Trace(0, "Interference graph for complement:");
+    ISA_REGISTER_CLASS           rc;
+    GRA_REGION_RC_NL_LRANGE_ITER iter;
+    FOR_ALL_ISA_REGISTER_CLASS( rc ) {
+      GRA_Trace(0, "Register class %d:", rc);
+      for (iter.Init(region,rc); ! iter.Done(); iter.Step()) {
+	GRA_Trace_Complement_LRANGE_Neighbors (iter.Current(), region);
+      }
+    }
+  }
+}
+
+void
+GRA_Trace_Local_LRange_Request (const char *str,
+				GRA_BB *gbb, ISA_REGISTER_CLASS cl,
+				ISA_REGISTER_SUBCLASS sc, INT count,
+				INT nregs, BOOL demand)
+{
+  if (trace_color) {
+    GRA_Trace(0, "%s Local LRange %s (BB%d): cl=%d sc=%d nregs=%d count=%d",
+	      str, (demand ? "demand" : "request"),
+	      BB_id(gbb->Bb()), cl, sc, nregs, count);
+  }
+}
+#endif
 
 /////////////////////////////////////
 void

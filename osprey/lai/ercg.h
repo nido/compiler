@@ -76,6 +76,9 @@
 #define EC_CG_Generic_Error	EC_BASE_CG+5	/* string, string */
 #define EC_CG_Generic_Fatal	EC_BASE_CG+6	/* string, string */
 
+/* Scheduling Prefetch warning */
+#define EC_Warn_Prefetch EC_BASE_CG+7 /* string, string, string, int */
+
 /* Start all target-specific codes here: */
 #define EC_TARGET	EC_BASE_CG+200
 

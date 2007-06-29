@@ -607,9 +607,13 @@ endif
 ifeq ($(BUILD_TARGET), ST200)
 STD_COMPILE_OPTS += -DTARG_ST -DKEY
 # Thierry : add CGO for Binary Cache Optimizer
+BCO_ENABLED=1
 STD_COMPILE_OPTS += -DBCO_ENABLED 
 #-DSPLIT_BCO_ENABLED
 # Add SPLIT_BCO_ENABLED to enable split functions when st200cc is used with  -CG:cflow_cold_threshold=0.1 -CG:use_cold_section=off
+# CG: add LAO optimizer
+LAO_ENABLED=1
+STD_COMPILE_OPTS += -DLAO_ENABLED 
 endif
 
 ifeq ($(BUILD_TARGET), STxP70)

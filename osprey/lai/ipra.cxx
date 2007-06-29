@@ -64,24 +64,8 @@ Note_Used_Registers (IPRA_INFO info)
     info->used_regs[i] = REGISTER_SET_EMPTY_SET;
   }
 
-  for (BB *bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    for (OP *op = BB_first_op(bb); op; op = OP_next(op)) {
-      for (INT resnum = 0; resnum < OP_results(op); resnum++) {
-	TN *res_tn = OP_result(op,resnum);
-	if (TN_is_register(res_tn)) {
-	  ISA_REGISTER_CLASS rc = TN_register_class(res_tn);
-	  info->used_regs[rc] = REGISTER_SET_Union(info->used_regs[rc],
-						   TN_registers (res_tn));
-	}
-      }
-    }
-    if (BB_call(bb)) {
-      FOR_ALL_ISA_REGISTER_CLASS(i) {
-	info->used_regs[i] =
-	  REGISTER_SET_Union(info->used_regs[i],
-			     BB_call_clobbered(bb, i));
-      }
-    }
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    BB_Modified_Registers(bb, info->used_regs);
   }
 
   // Remove the callee-saved registers, we assume they will be preserved.

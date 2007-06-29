@@ -65,7 +65,9 @@
 #include "ipl_summary.h"
 #include "ipl_summarize.h"
 
+#ifndef TARG_ST
 #pragma weak Aliased 
+#endif
 mINT32
 SYSTEM_OF_EQUATIONS::_work[SOE_MAX_WORK_ROWS][SOE_MAX_WORK_COLS];
 mINT64 

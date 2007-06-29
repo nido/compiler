@@ -244,6 +244,9 @@ extern EBO_OP_INFO *EBO_opinfo_table[EBO_MAX_OP_HASH];
 extern BOOL EBO_in_pre;
 extern BOOL EBO_in_loop;
 extern BOOL EBO_in_peep;
+// FdF 20061027: These are now used in targ_ebo.cxx
+extern BOOL EBO_in_before_unrolling;
+extern BOOL EBO_in_after_unrolling;
 
 extern TN_MAP EBO_tninfo_table;
 extern MEM_POOL EBO_pool;

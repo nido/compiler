@@ -427,6 +427,11 @@ endif
 #  Needs to be compatible for both C (for extension) and
 #  C++ (for loader)
 #----------------------------------------------------------------------
+ifeq (1,1)
+extension_include.h: extension_include.hin
+	$(BUILD_TOT)/scripts/common/preprocess.pl $(LCINCS) -MD $< -o $@
+	
+else	
 # -P to discard #line
 # -C to keep comments
 # -dD to keep #define definition
@@ -444,7 +449,6 @@ extension_include.h: extension_include.hin
 	echo "#endif" >> $@
 
 	echo "#ifdef __cplusplus" >> $@
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -x c++ $< -P -E -C -dD | fgrep -v -e '#define __S' | fgrep -v -e "BE_EXPORTED" | grep -v -w -e "FRONT_END">> $@
 	echo "#else /*__cplusplus */" >> $@
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -x c $< -E -P -C -dD | fgrep -v -e '#define __S' | grep -v -e "typedef .* wchar_t *;" | fgrep -v -e "BE_EXPORTED" | grep -v -w -e "FRONT_END">> $@
 	echo "#endif" >> $@
@@ -457,6 +461,6 @@ extension_include.h: extension_include.hin
 	# We replace it by extension_include.h which is the file to be rebuilt.
 	sed 's/extension_include\.o/extension_include.h/' <extension_include.d >extension_include.d2
 	mv extension_include.d2 extension_include.d
-
+endif
 
 

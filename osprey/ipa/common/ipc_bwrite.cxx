@@ -444,7 +444,16 @@ public:
   // Flushes the queue.  This frees all resources associated with any
   // pu's that have been written since the queue was last flushed, and
   // it closes the output file (if any).
+#ifdef TARG_ST
+  // [CL] delay flushing of PUs until we perform the merge of DSTs, so
+  // that we can update the filenum info in DSTs and WNs
+  PU_Info* get_head();
+  DST_TYPE IPC_merge_DSTs();
+  void flush(DST_TYPE);
+  PU_Info* pend(PU_Info* pu);
+#else
   void flush();
+#endif
 
 private:
   // Helper function for flush().
@@ -508,6 +517,7 @@ bool output_queue::should_flush(const IPA_NODE* node)
       return FALSE;
 }
 
+#ifndef TARG_ST
 // Adds a pu to the output queue.  Preconditions: the pu is not a 
 // nested pu.
 void output_queue::push(PU_Info* pu) {
@@ -543,6 +553,61 @@ void output_queue::push(PU_Info* pu) {
   Is_True(!this->empty(), ("output_queue::push() failed"));
           
 }
+
+#else
+// [CL] separate push() into push() and pend():
+
+// pend() creates a new file if necessary, allocates a memory pool,
+// copies the PU to the list of pu infos, and adds pu to the list
+// head->tail
+
+// push() actually writes pu to disk
+void output_queue::push(PU_Info* pu) {
+  Temporary_Error_Phase ephase("Writing WHIRL file");
+
+  Is_True(pu != 0, ("IPA output queue: pu must not be null"));
+  Is_True(PU_lexical_level(&St_Table[PU_Info_proc_sym(pu)]) ==
+          GLOBAL_SYMTAB + 1,
+          ("IPA output queue is only for global pu's"));
+
+  // Write pu to the file.
+  IP_write_PU_tree(out_file, pu);
+
+  Is_True(!this->empty(), ("output_queue::push() failed"));
+}
+
+PU_Info* output_queue::pend(PU_Info* pu) {
+  Temporary_Error_Phase ephase("Writing WHIRL file");
+
+  Is_True(pu != 0, ("IPA output queue: pu must not be null"));
+  Is_True(PU_lexical_level(&St_Table[PU_Info_proc_sym(pu)]) ==
+          GLOBAL_SYMTAB + 1,
+          ("IPA output queue is only for global pu's"));
+
+  // Open a new output file, if necessary.
+  if (!out_file) {
+    Is_True(head == 0 && tail == 0,
+            ("No output file, but output queue is not empty"));
+    if (nfiles == 0)            // This is the first time we've opened a file
+      MEM_POOL_Initialize(&pool, "IPA bwrite mempool", FALSE);
+    this->open_output_file();
+    MEM_POOL_Push_Freeze(&pool);
+  }
+
+  // Add a copy of this pu to the list of pu infos.
+  PU_Info* new_pu = copy_pu_tree(pu, &pool);
+  if (head == 0) {
+    head = tail = new_pu;
+  } else {
+    PU_Info_next(tail) = new_pu;
+    tail = new_pu;
+  }
+
+  Is_True(!this->empty(), ("output_queue::push() failed"));
+
+  return new_pu;
+}
+#endif
 
 size_t
 output_queue::pu_tree_add_comments(size_t index, size_t count, PU_Info* head)
@@ -580,10 +645,26 @@ output_queue::pu_tree_add_comments(size_t index, size_t count, PU_Info* head)
   return count;
 }
 
+#ifdef TARG_ST
+// [CL] helper functions
+PU_Info* output_queue::get_head() {
+  return head;
+}
+
+DST_TYPE output_queue::IPC_merge_DSTs() {
+  return ::IPC_merge_DSTs(head, &pool);
+}
+#endif
+
 // Flushes the queue.  This frees all resources associated with any
 // pu's that have been written since the queue was last flushed, and
 // it closes the output file (if any).
+#ifdef TARG_ST
+// [CL] now merged_dst has been computed before calling flush()
+void output_queue::flush(DST_TYPE merged_dst) {
+#else
 void output_queue::flush() {
+#endif
   Temporary_Error_Phase ephase("Writing WHIRL file");
 
   if (!this->empty()) {
@@ -597,7 +678,10 @@ void output_queue::flush() {
 
     // Must call IPC_merge_DSTs before WN_write_PU_Infos, because some
     // indices in the pu tree are updated in the DST merge.
+#ifndef TARG_ST
+    // [CL] now computed before
     DST_TYPE merged_dst = IPC_merge_DSTs(head, &pool);
+#endif
     WN_write_PU_Infos(head, out_file);
     WN_write_dst(merged_dst, out_file);
     WN_write_revision(out_file);
@@ -669,6 +753,12 @@ clean_up_deleted_nested_pu_info(PU_Info* pu)
   }
 }
 
+#ifdef TARG_ST
+// [CL] delay writing to disk, until the DSTs are filenum of WNs are merged
+#include <list>
+using std::list;
+static list <PU_Info*> pending_pu_list;
+#endif
 
 // Writes a pu, and enters it in the binary output queue.  The pu itself
 // is written immediately, but the pu_info and any DST information is
@@ -742,7 +832,12 @@ extern "C" void IP_WRITE_pu (IP_FILE_HDR *s , INT pindex)
       if (PU_has_global_pragmas (Get_Node_From_PU (pu)->Get_PU ())) {
 	dummy_pu_list.push_back (pu);
       } else {
-	Output_Queue.push(pu);
+#ifdef TARG_ST
+	// [CL] push pu to a list, not to disk
+	pending_pu_list.push_back(Output_Queue.pend(pu));
+#else
+       	Output_Queue.push(pu);
+#endif
 	if (Output_Queue.should_flush(node))
 	  IP_flush_output();
       }
@@ -752,5 +847,19 @@ extern "C" void IP_WRITE_pu (IP_FILE_HDR *s , INT pindex)
 
 extern "C" void IP_flush_output(void) 
 {
+#ifdef TARG_ST
+  // [CL] merge DSTs before writing PUs to disk
+  if (!Output_Queue.empty()) {
+    DST_TYPE merged_dst = Output_Queue.IPC_merge_DSTs();
+    while(!pending_pu_list.empty()) {
+      PU_Info* pu = pending_pu_list.front();
+      pending_pu_list.pop_front();
+      Output_Queue.push(pu);
+    }
+    Output_Queue.flush(merged_dst);
+    pending_pu_list.clear();
+  }
+#else
   Output_Queue.flush();
+#endif
 }

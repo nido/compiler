@@ -39,8 +39,12 @@
 #include "wn_lower.h"
 #include "wn_lower_private.h"
 #include "wn_lower_util.h"
-
-
+#ifdef TARG_ST
+#include "w2op.h"		/* For can_do_fast_divide. */
+#include "betarget.h"           /* For BETARG_... function. */
+#include "config_opt.h"		/* For Fused_FP, Fused_Madd. */
+#include "config_TARG.h"	/* For Madd_Allowed. */
+#endif
 /* ====================================================================
  * Lowering State Support.
  * ====================================================================
@@ -381,5 +385,99 @@ Is_Intconst_Val(WN *wn)
   else if (WN_operator(wn) == OPR_INTCONST)
     intconst = wn;
   return intconst != NULL ? TRUE: FALSE;
+}
+
+static BOOL
+Should_Call_Divide (WN *tree) 
+{
+  TYPE_ID rtype = WN_rtype(tree);
+
+  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
+    INT64 constval = WN_const_val(WN_kid1(tree));
+    
+    if (Can_Do_Fast_Divide(rtype, constval)) return FALSE;
+  }
+  
+  /* In all other cases, we fall back to per operator check. */
+  return WN_Is_Emulated_Operator(WN_operator(tree), rtype, WN_desc(tree));
+}
+
+static BOOL
+Should_Call_Remainder (WN *tree) 
+{
+  TYPE_ID rtype = WN_rtype(tree);
+
+  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
+    INT64 constval = WN_const_val(WN_kid1(tree));
+    
+    if (Can_Do_Fast_Remainder(rtype, constval)) return FALSE;
+  }
+
+  /* In all other cases, we fall back to per operator check. */
+  return WN_Is_Emulated_Operator(WN_operator(tree), rtype, WN_desc(tree));
+}
+
+
+BOOL
+WN_Is_Emulated(WN *tree)
+{
+  OPERATOR opr = WN_operator(tree);
+
+  /* MOD/REM/DIV are treated specifically. */
+  switch(opr) {
+  case OPR_MOD: 
+  case OPR_REM:
+    return Should_Call_Remainder(tree);
+  case OPR_DIV:
+    return Should_Call_Divide(tree);
+  default:
+    break;
+  }
+
+  TYPE_ID res = WN_rtype(tree);
+  TYPE_ID desc = WN_desc(tree);
+  return WN_Is_Emulated_Operator(opr, res, desc);
+}
+
+BOOL
+WN_Is_Emulated_Type (TYPE_ID type)
+{
+  /* This generic conditions are sufficient to decide
+     when the type is emulated. */
+  if (Only_32_Bit_Ops && MTYPE_is_longlong(type)) return TRUE;
+  if (Emulate_Single_Float_Type && type == MTYPE_F4) return TRUE;
+  if (Emulate_Double_Float_Type && MTYPE_is_double(type)) return TRUE;
+
+  /* Otherwise call a target dependent function to find more emulated types. */
+  return BETARG_is_emulated_type(type);
+}
+
+BOOL
+WN_Is_Emulated_Operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
+{
+  // If floating point emulation is requested explicitly.
+  if (Emulate_FloatingPoint_Ops && 
+      (MTYPE_is_float(rtype) || MTYPE_is_float(desc)))
+    return TRUE;
+  
+  // Tests to know if operator must be emulated is moved to betarget.cxx
+  // in targinfo.
+  return BETARG_is_emulated_operator(opr,rtype,desc);
+}
+
+BOOL
+WN_Madd_Allowed (TYPE_ID type)
+{
+  if (!Madd_Allowed) return FALSE;
+  if (MTYPE_is_float(type) && (!Fused_FP || !Fused_Madd)) return FALSE;
+						
+  /* We check availability of all MADD operators there.
+     It means that all of them must be enabled to activate
+     MADD selection.
+  */
+  return BETARG_is_enabled_operator(OPR_MADD, type, type) &&
+    BETARG_is_enabled_operator(OPR_MSUB, type, type) &&
+    BETARG_is_enabled_operator(OPR_NMADD, type, type) &&
+    BETARG_is_enabled_operator(OPR_NMSUB, type, type);
 }
 

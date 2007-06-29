@@ -83,10 +83,10 @@ Exp_Pred_Set (
   if (dest == NULL) dest = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
 
   if (TN_register_class(dest) == ISA_REGISTER_CLASS_branch) {
-    top = (val == 0) ? TOP_cmpne_r_b : TOP_cmpeq_r_b;
+    top = (val == 0) ? TOP_cmpne_r_r_b : TOP_cmpeq_r_r_b;
   }
   else if (TN_register_class(dest) == ISA_REGISTER_CLASS_integer) {
-    top = (val == 0) ? TOP_cmpne_r_r : TOP_cmpeq_r_r;
+    top = (val == 0) ? TOP_cmpne_r_r_r : TOP_cmpeq_r_r_r;
   }
   else {
     FmtAssert(FALSE,("wrong register class"));
@@ -119,9 +119,13 @@ Exp_Pred_Copy (
     return;
   }
   FmtAssert(cdest == NULL, 
-	    ("Exp_Pred_Complement, can't have 2 predicates define"));
+	    ("Exp_Pred_Copy, can't have 2 predicates define"));
 
-  Exp_COPY (dest, src, ops);
+  if (TN_register_class(src) == ISA_REGISTER_CLASS_integer) {
+    Expand_Int_To_Bool (dest, src, ops);
+  } else {
+    Exp_COPY (dest, src, ops);
+  }
   return;
 }
 
@@ -139,6 +143,7 @@ Exp_Pred_Complement (
   OPS *ops
 )
 {
+  TN *ptn;
   if (TN_is_true_pred(src)) {
     Exp_Pred_Set(dest, cdest, !1, ops);
     return;
@@ -151,14 +156,15 @@ Exp_Pred_Complement (
 	    ("Exp_Pred_Complement, can't have 2 predicates define"));
 
   OP *opb = TN_ssa_def (src);
-  if (opb && OP_code(opb) == TOP_mtb) {
-    TN *ptn = OP_opnd(opb, 0);
-    Build_OP(TOP_cmpeq_r_b, Dup_TN(src), ptn, Zero_TN, ops);
-  }
-  else {
-    TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    Exp_COPY(tmp, src, ops);
-    Build_OP(TOP_cmpeq_r_b, dest, tmp, Zero_TN, ops);
+  if (opb && OP_code(opb) == TOP_convib_r_b) {
+    ptn = OP_opnd(opb, 0);
+    Build_OP(TOP_cmpeq_r_r_b, dest, ptn, Zero_TN, ops);
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_norl_b_b_b)) {
+    Build_OP(TOP_norl_b_b_b, dest, src, src, ops);
+  } else {
+    ptn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+    Expand_Bool_To_Int (ptn, src, MTYPE_I4, ops);
+    Build_OP(TOP_cmpeq_r_r_b, dest, ptn, Zero_TN, ops);
   }
 }
 
@@ -233,15 +239,15 @@ Exp_Generic_Pred_Calc (
 	// unmodified
 	break;
       case COMPARE_TYPE_and:
-	Expand_Immediate (result1, Gen_Literal_TN(0,4), MTYPE_I4, ops);
-	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(0,4), MTYPE_I4, ops);
+	Expand_Immediate (result1, Gen_Literal_TN(0,4), MTYPE_B, ops);
+	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(0,4), MTYPE_B, ops);
 	break;
       }
     } else {
       switch (ctype) {
       case COMPARE_TYPE_or:
-	Expand_Immediate (result1, Gen_Literal_TN(1,4), MTYPE_I4, ops);
-	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(1,4), MTYPE_I4, ops);
+	Expand_Immediate (result1, Gen_Literal_TN(1,4), MTYPE_B, ops);
+	if (result2 != NULL) Expand_Immediate (result2, Gen_Literal_TN(1,4), MTYPE_B, ops);
 	break;
       case COMPARE_TYPE_and:
 	// unmodified
@@ -269,65 +275,46 @@ Exp_Generic_Pred_Calc (
   
   TN *result = result1;
   TN *input = input1;
+  TOP new_top;
   switch (ctype) {
+  default:
+    new_top = TOP_UNDEFINED;
+    break;
   case COMPARE_TYPE_or:
     //
     // sets result1 and result2 true if qual_pred is true
     //
-    do {
-      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
-	Build_OP(TOP_orl_r_b, result, qual_pred, input, ops);
-      else
-	Build_OP(TOP_orl_r_r, result, qual_pred, input, ops);
-      if (result == result2) break;
-      result = result2;
-      input = input2;
-    } while (result != NULL);
+    new_top = TOP_orl_r_r_r;
     break;
-
   case COMPARE_TYPE_orcm:
     //
     // sets result1 and result2 true if qual_pred is false
     //
-    do {
-      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
-	Build_OP(TOP_norl_r_b, result, qual_pred, input, ops);
-      else
-	Build_OP(TOP_norl_r_r, result, qual_pred, input, ops);
-      if (result == result2) break;
-      result = result2;
-      input = input2;
-    } while (result != NULL);
+    new_top = TOP_norl_r_r_r;
     break;
-
   case COMPARE_TYPE_and:
     //
     // sets result1 and result2 false if qual_pred is false
     //
-    do {
-      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
-	Build_OP(TOP_andl_r_b, result, qual_pred, input, ops);
-      else
-	Build_OP(TOP_andl_r_r, result, qual_pred, input, ops);
-      if (result == result2) break;
-      result = result2;
-      input = input2;
-    } while (result != NULL);
+    new_top = TOP_andl_r_r_r;
     break;
   case COMPARE_TYPE_andcm:
     //
     // sets result1 and result2 false if qual_pred is true
     //
+    new_top = TOP_nandl_r_r_r;
+    break;
+  }
+
+  if (new_top != TOP_UNDEFINED) {
     do {
-      if (TN_register_class(result) == ISA_REGISTER_CLASS_branch)
-	Build_OP(TOP_nandl_r_b, result, qual_pred, input, ops);
-      else
-	Build_OP(TOP_nandl_r_r, result, qual_pred, input, ops);
+      new_top = TOP_result_register_variant(new_top, 0,
+					    TN_register_class(result));
+      Build_OP(new_top, result, qual_pred, input, ops);
       if (result == result2) break;
       result = result2;
       input = input2;
     } while (result != NULL);
-    break;
   }
 
   return;

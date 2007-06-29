@@ -136,6 +136,10 @@ Split_Entry( BB* bb )
   BB_freq(new_entry) = BB_freq(bb);
 
   op = BB_last_op(bb);
+#ifdef TARG_ST
+  // [SC] Exception entry blocks can have no instructions in them.
+  if (op != NULL)
+#endif
   do {
     prev_op = OP_prev(op); 
     if (OP_Is_Copy_To_Save_TN(op)) 

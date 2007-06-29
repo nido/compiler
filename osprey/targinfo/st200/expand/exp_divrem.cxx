@@ -119,7 +119,7 @@ Pick_Compare_For_Mtype (
   switch (mtype) {
     case MTYPE_I4:
     case MTYPE_U4:
-      return (imm) ? TOP_cmpeq_r_r : TOP_cmpeq_i_r;
+      return (imm) ? TOP_cmpeq_r_r_r : TOP_cmpeq_i_r_r;
       break;
     default:
       FmtAssert(FALSE,("Pick_Compare_For_Mtype: unsupported mtype"));
@@ -157,10 +157,10 @@ Check_Divide (
     if (divisor_val == 0) {
       if (div_zero_check) {
 	TOP top = TOP_UNDEFINED;
-	if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall)) {
-	  top = TOP_syscall;
-	} else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st235_syscall)) {
-	  top = TOP_st235_syscall;
+	if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
+	  top = TOP_syscall_i;
+	} else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st240_syscall_i)) {
+	  top = TOP_st240_syscall_i;
 	}
 	Build_OP (top, Gen_Literal_TN(FPE_INTDIV_trap, 1), ops);
       }
@@ -192,10 +192,10 @@ Check_Divide (
       if (numer_val == minint_val && divisor_val == -1) {
 	if (DEBUG_Div_Oflow_Check) {
 	  TOP top = TOP_UNDEFINED;
-	  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall)) {
-	    top = TOP_syscall;
-	  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st235_syscall)) {
-	    top = TOP_st235_syscall;
+	  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
+	    top = TOP_syscall_i;
+	  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st240_syscall_i)) {
+	    top = TOP_st240_syscall_i;
 	  }
 	  Build_OP (top, Gen_Literal_TN(FPE_INTOVF_trap, 1), ops);
 	}
@@ -298,10 +298,10 @@ Expand_NonConst_DivRem (TN *quot, TN *rem, TN *x, TN *y, TYPE_ID mtype, OPS *ops
 {
     BOOL is_signed = MTYPE_is_signed(mtype);
     if (quot) {
-      TOP divop = is_signed ? TOP_div : TOP_divu ;
+      TOP divop = is_signed ? TOP_div_r_r_r : TOP_divu_r_r_r ;
       Build_OP(divop, quot, x, y, ops) ;
     } else if (rem) {
-      TOP remop = is_signed ? TOP_rem : TOP_remu ;
+      TOP remop = is_signed ? TOP_rem_r_r_r : TOP_remu_r_r_r ;
       Build_OP(remop, rem, x, y, ops) ;
     } else {
 	FmtAssert(FALSE, ("Expand_NonConst_DivRem unexpected expansion"));
@@ -345,12 +345,12 @@ Expand_Divide_By_Constant (
     INT pow2 = Get_Power_Of_2 (src2_val, mtype);
 
     if (MTYPE_is_unsigned(mtype)) {
-      Build_OP (TOP_shru_i, result,
+      Build_OP (TOP_shru_i_r_r, result,
 	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
       //
       //if (src2_val < 0) {
 	// must negate the result
-      //Build_OP (TOP_sub_r, result, Zero_TN, result, ops);
+      //Build_OP (TOP_sub_r_r_r, result, Zero_TN, result, ops);
       //}
     } else {
       // signed is more complicated
@@ -369,11 +369,11 @@ Expand_Divide_By_Constant (
 	 */
 
 	// extract the sign bit
-	Build_OP(TOP_shru_i,t0, numer, Gen_Literal_TN(31,4), ops);
+	Build_OP(TOP_shru_i_r_r,t0, numer, Gen_Literal_TN(31,4), ops);
 	// add sign to numer
-	Build_OP(TOP_add_r, t1, t0, numer, ops);
+	Build_OP(TOP_add_r_r_r, t1, t0, numer, ops);
 	// shr by 1
-	Build_OP(TOP_shr_i, t2, t1, Gen_Literal_TN(1, 4), ops);
+	Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(1, 4), ops);
       } else {
 	/* General case:
 	 *      cmp.lt p1,p2=numer,zero         -- numerator negative?
@@ -385,26 +385,26 @@ Expand_Divide_By_Constant (
 #if 1 /* CGuillon: better sequence for ST200 */
 	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
 
-	Build_OP(TOP_cmplt_r_b, p1, numer, Zero_TN, ops);
+	Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
 	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
 
-	Build_OP(TOP_slct_r, t1, p1, t0, numer, ops);
-	Build_OP(TOP_shr_i, t2, t1, Gen_Literal_TN(pow2, 4), ops);
+	Build_OP(TOP_targ_slct_r_r_b_r, t1, p1, t0, numer, ops);
+	Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(pow2, 4), ops);
 #else
 	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
 	TN *t3 = Build_TN_Of_Mtype(mtype);
 
-	Build_OP(TOP_cmplt_r_b, p1, numer, Zero_TN, ops);
+	Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
 	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
 
-	Build_OP(TOP_shr_i, t1, t0, Gen_Literal_TN(pow2, 4), ops);
-	Build_OP(TOP_shr_i, t3, numer, Gen_Literal_TN(pow2, 4), ops);
-	Build_OP(TOP_slct_r, t2, p1, t1, t3, ops);
+	Build_OP(TOP_shr_i_r_r, t1, t0, Gen_Literal_TN(pow2, 4), ops);
+	Build_OP(TOP_shr_i_r_r, t3, numer, Gen_Literal_TN(pow2, 4), ops);
+	Build_OP(TOP_targ_slct_r_r_b_r, t2, p1, t1, t3, ops);
 #endif
       }
       if (dvsr < 0) {
 	// must negate the result
-	Build_OP (TOP_sub_r, result, Zero_TN, t2, ops);
+	Build_OP (TOP_sub_r_r_r, result, Zero_TN, t2, ops);
       }
     }
 
@@ -519,15 +519,15 @@ Expand_Power_Of_2_Rem (
     // Test sign of src1
     //
     p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-    Build_OP(TOP_cmplt_r_b, p1, src1, Zero_TN, ops);
+    Build_OP(TOP_cmplt_r_r_b, p1, src1, Zero_TN, ops);
 
     //
     // Get absolute value of src1
     //
     tmp1 = Build_TN_Of_Mtype(mtype);
     tmp2 = Build_TN_Of_Mtype(mtype);
-    Build_OP(TOP_sub_r, tmp1, Zero_TN, src1, ops);
-    Build_OP(TOP_slct_r, tmp2, p1, tmp1, src1, ops);
+    Build_OP(TOP_sub_r_r_r, tmp1, Zero_TN, src1, ops);
+    Build_OP(TOP_targ_slct_r_r_b_r, tmp2, p1, tmp1, src1, ops);
 
     //
     // Perform the AND
@@ -539,8 +539,8 @@ Expand_Power_Of_2_Rem (
     // Negate the result if src1 was negative
     //
     tmp4 = Build_TN_Of_Mtype(mtype);
-    Build_OP(TOP_sub_r, tmp4, Zero_TN, tmp3, ops);
-    Build_OP(TOP_slct_r, result, p1, tmp4, tmp3, ops);
+    Build_OP(TOP_sub_r_r_r, tmp4, Zero_TN, tmp3, ops);
+    Build_OP(TOP_targ_slct_r_r_b_r, result, p1, tmp4, tmp3, ops);
   } else {
     Expand_Binary_And(result, src1, con, mtype, ops);
   }

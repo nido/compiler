@@ -60,9 +60,10 @@
 #include "betarget.h"
 #include "w2op.h"
 #ifdef TARG_ST
-//TB
-#include <config_TARG.h>	/* For Enable_Non_IEEE_Ops. */
+#include "config_TARG.h"	/* For Enable_Non_IEEE_Ops. */
+#include "wn_lower_util.h"
 #endif
+
 BOOL Targ_Lower_Float_To_Unsigned = FALSE;
 BOOL Targ_Lower_Unsigned_To_Float = FALSE;
 
@@ -162,6 +163,24 @@ TAS_To_TOP (WN *tas_wn)
   }
 }
 
+
+/* =============================================================
+ * BETARG_is_emulated_type
+ * 
+ * Returns true when the emulation is forced for the given type.
+ * When true, the operators using this type should be emulated.
+ * This is only for target specific emulation as generic
+ * support in is_emulated_type() will have find generic types
+ * that requires emulation.
+ *
+ * =============================================================
+ */
+BOOL
+BETARG_is_emulated_type(TYPE_ID type)
+{
+  return FALSE;
+}
+
 /* =============================================================
  * BETARG_is_emulated_operator
  * 
@@ -169,24 +188,41 @@ TAS_To_TOP (WN *tas_wn)
  * as runtime call or inlined by code expansion.
  * Flags like 'Emulate_Single_Float_Type' or 'Enable_Non_IEEE_Ops'
  * initialised in config_target should be used here.
+ * Some generic code have already filtered some opr before this call
+ * see the generic is_emulated_operator() function.
  *
  * =============================================================
  */
 
 BOOL
-BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc) {
-
+BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
+{
+  if(MTYPE_is_integral(rtype) || MTYPE_is_integral(desc)) {
+    // div/mod/rem are emulated in the general case on this machine.
+    switch (opr) {
+    case OPR_MOD:
+    case OPR_REM:
+    case OPR_DIV:
+      if (Emulate_DivRem_Integer_Ops ||
+	  !Is_Target_st240()) {
+	return TRUE;
+      }
+      break;
+    }
+  }
+    
   /* All long long operators require emulation if emulation is on. */
-  if (MTYPE_is_longlong(rtype) ||
-      MTYPE_is_longlong(desc)) return TRUE;
+  if (WN_Is_Emulated_Type(MTYPE_I8) &&
+      (MTYPE_is_longlong(rtype) || MTYPE_is_longlong(desc))) return TRUE;
 
   /* All double operators require emulation if emulation is on. */
-  if (MTYPE_is_double(rtype) ||
-      MTYPE_is_double(desc)) return TRUE;
-
-  /* For ST200, the target options may allow non-ieee architectural support. 
-   * In this case the basic operators do not require emulation. */
-  if (Enable_Non_IEEE_Ops &&
+  if (WN_Is_Emulated_Type(MTYPE_F8) && 
+      (MTYPE_is_double(rtype) || MTYPE_is_double(desc))) return TRUE;
+  
+  /* If the target options may allow non-ieee architectural support. 
+   * In this case even if emulation is requested, 
+   * some of the basic operators do not require emulation. */
+  if (WN_Is_Emulated_Type(MTYPE_F4) && Enable_Non_IEEE_Ops &&
       (rtype == MTYPE_F4 || desc == MTYPE_F4)) {
     switch (opr) {
     case OPR_ADD: 
@@ -194,24 +230,27 @@ BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc) {
     case OPR_MPY:
     case OPR_ABS:
     case OPR_NEG:
-	// [HK]
+	// [HK] For macs, we will use code selection.
     case OPR_MADD: 
     case OPR_MSUB: 
     case OPR_NMADD: 
     case OPR_NMSUB: 
-	return FALSE;
+      return FALSE;
+
+      // [HK] 20051207, now compares are supported in non-ieee.
     case OPR_LT:
     case OPR_LE:
     case OPR_EQ:
     case OPR_NE:
     case OPR_GE:
     case OPR_GT:
-      // [HK] 20051207, never emulate for ST235, as fcmp are now hardware instructions.
-      // Fallthru.
+      return FALSE;
+      
+      // [HK] Now all conversions F4<->[IU]A are implemented in code selector.
     case OPR_CVT:
     case OPR_TRUNC:
-// [HK]      if (rtype == MTYPE_I4 || desc == MTYPE_I4)
-      if (rtype == MTYPE_I4 || desc == MTYPE_I4 || desc == MTYPE_U4 )
+      if (rtype == MTYPE_I4 || rtype == MTYPE_U4
+	  || desc == MTYPE_I4 || desc == MTYPE_U4 )
 	return FALSE;
       break;
     default:
@@ -219,12 +258,49 @@ BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc) {
     }
   }
 
-  /* All single operators require emulation if emulation is on. */
-  if (rtype == MTYPE_F4 || desc == MTYPE_F4) return TRUE;
+  /* Otherwise, other single operators require emulation if emulation is on. */
+  if (WN_Is_Emulated_Type(MTYPE_F4) && 
+      (rtype == MTYPE_F4 || desc == MTYPE_F4)) return TRUE;
+
+  /* In other cases, no emulation is requested. */
 
   return FALSE;
 }
 
+
+/* =============================================================
+ * BETARG_is_enabled_operator
+ * 
+ * Used by wn_lower to know if the given WHIRL operator is
+ * allowed for this target.
+ * If this function returns false, wn_lower will never generate
+ * a WHIRL tree containing this operator.
+ *
+ * If the function returns true, the operator is supposed to either:
+ * - be lowered by the runtime lowering in call/intrinsic,
+ * - be selected by the code selector (expand).
+ *
+ * By default, all operators are activated. So this function 
+ * should proceed by exclusion.
+ * Currently this function is used for MADD and alike operations.
+ * =============================================================
+ */
+BOOL
+BETARG_is_enabled_operator(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
+{
+
+  BOOL is_madd = opr == OPR_MADD || opr == OPR_MSUB ||
+    opr == OPR_NMADD || opr == OPR_NMSUB;
+  
+  /* Madd activation. For the target independent flags see
+     function WN_Madd_Allowed() in wn_lower_util.cxx. */
+  if (is_madd && MTYPE_is_integral(rtype))  return FALSE;
+  if (is_madd && rtype == MTYPE_F8)  return FALSE;
+  /* For ST200, there is runtime support for MACC on single float. */
+  if (is_madd && rtype == MTYPE_F4) return TRUE;
+
+  return TRUE;
+}
 
 /* =============================================================
  *   Is_Power_Of_2 (val, mtype)

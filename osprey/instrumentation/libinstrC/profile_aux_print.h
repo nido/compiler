@@ -65,6 +65,12 @@ inline void *Type_Profile_Print(Type_Profile type)
     return (void *)&LIBFB_Info_Loop_Print;
   case Switch_Type_Profile :
     return (void *)&Switch_Profile_Print;
+  case Icall_Type_Profile :
+    return (void *)&LIBFB_Info_Icall_Print;
+  case Value_Type_Profile :
+    return (void *)&LIBFB_Info_Value_Print;
+  case Value_FP_Bin_Type_Profile :
+    return (void *)&LIBFB_Info_Value_FP_Bin_Print;
   default:
     profile_error("Unexpexted Type","");
     return 0;
@@ -72,25 +78,27 @@ inline void *Type_Profile_Print(Type_Profile type)
   }
 }
 
-typedef  void (*print_func_type)(void *, FILE*);
+typedef  void* (*print_func_type)(void *, FILE*);
 
 inline void Profile_Print(void *this, char *name, FILE *fp, Type_Profile type) {
   size_t size, i;
+  void *ptr;
   print_func_type print_func;
   if (!this) return;
   size = ((LIBFB_Info_Invoke_Vector*)this)->size;
   print_func = (print_func_type) Type_Profile_Print(type);
   if (size != 0)
     fprintf (fp, "%s Profile: %d\n", name, size);
+  ptr = &(((LIBFB_Info_Invoke_Vector*)this)->data[0]);
   for (i = 0; i < size; i++) {
     fprintf(fp, "\t%s id = %d\t", name, i);
-    print_func(&(((LIBFB_Info_Invoke_Vector*)this)->data[i]), fp);
+    ptr = print_func(ptr, fp);
     fputc ('\n', fp);
   }
 }
 
 inline void PU_Profile_Handle_Print(PU_PROFILE_HANDLE this, FILE *fp) {
-    fprintf( fp, "feedback data of %s (checksum %d)\n", this->pu_name, this->checksum);
+    fprintf( fp, "feedback data of %s (checksum %d) size: %d add0x%llx\n", this->pu_name, this->checksum, this->pu_size, this->runtime_fun_address);
     fprintf( fp, "Invoke:\n");
     Profile_Print(this->LIBFB_Info_Invoke_Table, this->pu_name, fp, Invoke_Type_Profile);
     fprintf( fp, "Branch:\n");
@@ -105,6 +113,12 @@ inline void PU_Profile_Handle_Print(PU_PROFILE_HANDLE this, FILE *fp) {
     Profile_Print( this->LIBFB_Info_Circuit_Table, this->pu_name, fp, Short_Circuit_Type_Profile);
     fprintf( fp, "Call:\n");
     Profile_Print( this->LIBFB_Info_Call_Table, this->pu_name, fp, Call_Type_Profile);
+    fprintf( fp, "Icall:\n");
+    Profile_Print( this->LIBFB_Info_Icall_Table, this->pu_name, fp, Icall_Type_Profile);
+    fprintf( fp, "Value:\n");
+    Profile_Print( this->LIBFB_Info_Value_Table, this->pu_name, fp, Value_Type_Profile);
+    fprintf( fp, "FP Bin Value:\n");
+    Profile_Print( this->LIBFB_Info_Value_FP_Bin_Table, this->pu_name, fp, Value_FP_Bin_Type_Profile);
 }
 
 #endif /* profile_aux_print_INCLUDED */

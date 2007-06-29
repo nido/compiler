@@ -118,6 +118,9 @@ BE_EXPORTED extern char * Asm_File_Name;	/* Assembly file */
 BE_EXPORTED extern char * Lai_File_Name;     /* LAI file */
 BE_EXPORTED extern char * Obj_File_Name;	/* Relocatable object file */
 BE_EXPORTED extern char * Feedback_File_Name;/* feedback file produced from prof */
+#ifdef TARG_ST
+BE_EXPORTED extern char * Object_Dir;/* Object dir */
+#endif
 #ifndef MONGOOSE_BE
 BE_EXPORTED extern char * Lib_File_Name;	/* Program library file */
 #endif

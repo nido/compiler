@@ -745,7 +745,6 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
   /* (cbr) emit .eh_frame */
   extern BOOL PU_Has_Calls;
   if (eh_fde && CXX_Exceptions_On &&
-      !TY_is_nothrow(PU_prototype(Get_Current_PU())) &&
       PU_Has_Calls) {
     if (eh_offset == DW_DLX_NO_EH_OFFSET)	/* no exception handler */
       dwarf_add_ehframe_fde_b (dw_dbg, eh_fde, PU_die,

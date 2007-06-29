@@ -39,6 +39,9 @@
 //
 //      Basically Chaiten/Briggs with hooks for preferencing and splitting.
 //
+// TARG_ST:
+//    HAS_STACKED_REGISTERS has been deprecated unser TARG_ST here, 
+//    because we never test it.
 /////////////////////////////////////
 
 
@@ -59,6 +62,7 @@
 #include "register.h"
 #include "priority_queue.h"
 #include "cg_flags.h"
+#include "cg_color.h"
 #include "gra_bb.h"
 #include "gra.h"
 #include "gra_region.h"
@@ -69,13 +73,6 @@
 #include "gra_spill.h"
 #include "gra_interfere.h"
 
-// From calls.cxx, maintains the global mask of callee saves used in 
-// this PU.
-#ifdef TARG_ST
-extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX_LIMIT+1];
-#else
-extern REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
-#endif
 
 INT32 GRA_local_forced_max = DEFAULT_FORCED_LOCAL_MAX;
     // How many locals to force allocate (out of the number requested by LRA)?
@@ -92,23 +89,18 @@ static REGISTER_SET non_prefrenced_regs[ISA_REGISTER_CLASS_MAX + 1];
   // Registers that noone prefers yet.
 
 #ifdef TARG_ST
-static REGISTER_SET callee_saves_used[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+// Deprecated callee_saves_used[]. Now use CGCOLOR interface.
 #else
 static REGISTER_SET callee_saves_used[ISA_REGISTER_CLASS_MAX + 1];
-#endif
   // Callee saves registers that someone has already used.  This makes it free
   // for someone else to use them.
-#ifdef TARG_ST
-static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX_LIMIT + 1]; // statistics only
-#else
-static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX + 1]; // statistics only
 #endif
 
 #ifdef TARG_ST
-static REGISTER_SET prefered_regs[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
-  // Sets of registers to choose first as returned by the
-  // target dependent function CGTARG_Prefered_GRA_Registers().
-  // This set will be look up first in Choose_N_Registers().
+static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX_LIMIT + 1]; // statistics only
+
+#else
+static REGISTER_SET regs_used[ISA_REGISTER_CLASS_MAX + 1]; // statistics only
 #endif
 
 static MEM_POOL prq_pool;
@@ -169,14 +161,12 @@ Initialize(void)
   FOR_ALL_ISA_REGISTER_CLASS( rc ) {
     non_prefrenced_regs[rc] = REGISTER_CLASS_allocatable(rc);
     
+#ifndef TARG_ST
     callee_saves_used[rc] = REGISTER_SET_EMPTY_SET;
+#endif
 
     regs_used[rc] = REGISTER_SET_EMPTY_SET;
 
-#ifdef TARG_ST
-    // [CG] Handle target dependent register preferences.
-    prefered_regs[rc] = CGTARG_Prefered_GRA_Registers(rc);
-#endif
   }
 }
 
@@ -205,17 +195,11 @@ Update_Register_Info( LRANGE* lrange, REGISTER reg )
   if (!lrange->Has_Wired_Register() && !lrange->Tn_Is_Save_Reg()) {
     regs_used[rc] = REGISTER_SET_Union(regs_used[rc],
                                        REGISTER_SET_Range(reg,reg+nregs-1));
-    for (i = 0; i < nregs; i++) {
-      if ((REGISTER_SET_MemberP(REGISTER_CLASS_callee_saves(rc),reg+i)
-#ifdef HAS_STACKED_REGISTERS
-         || REGISTER_Is_Stacked_Local(rc, reg+i)
-#endif
-	  )) 
-        callee_saves_used[rc] = REGISTER_SET_Union1(callee_saves_used[rc],reg+i);
-    }
+    // Don't declare save regs as they are subject to disappear after copy elimination
+    CGCOLOR_Allocate_N_Registers(rc, reg, nregs);
   }
 }
-#else
+#else /* !TARG_ST */
 {
   ISA_REGISTER_CLASS rc = lrange->Rc();
 
@@ -236,161 +220,45 @@ Update_Register_Info( LRANGE* lrange, REGISTER reg )
       callee_saves_used[rc] = REGISTER_SET_Union1(callee_saves_used[rc],reg);
   }
 }
-#endif
+#endif /* !TARG_ST */
 
 #ifdef TARG_ST
-/////////////////////////////////////
-static REGISTER
-Choose_N_Registers (INT nregs,
-		    REGISTER_SET subclass_allowed,
-		    REGISTER_SET allowed)
-/////////////////////////////////////
-//
-//  Find the best NREGS registers in ALLOWED.
-//  The first register found must be in SUBCLASS_ALLOWED.
-//
-/////////////////////////////////////
-{
-  REGISTER r;
-
-  for (r = REGISTER_SET_Choose (subclass_allowed);
-       r != REGISTER_UNDEFINED;
-       r = REGISTER_SET_Choose_Next (subclass_allowed, r)) {
-    if (REGISTER_SET_MembersP (allowed, r, nregs)) {
-      break;
-    }
-  }
-  return r;
-}
-
-/////////////////////////////////////
-static REGISTER
-Choose_N_Registers_Intersection (INT nregs,
-				 REGISTER_SET subclass_allowed,
-				 REGISTER_SET allowed,
-				 REGISTER_SET s)
-/////////////////////////////////////
-//
-//  Find the best NREGS registers in ALLOWED intersection S.
-//  The first register found must be in SUBCLASS_ALLOWED intersection S.
-//
-/////////////////////////////////////
-{
-  return Choose_N_Registers (nregs,
-			     REGISTER_SET_Intersection (subclass_allowed, s),
-			     REGISTER_SET_Intersection (allowed, s));
-}
-
 BOOL
 Can_Allocate_From (INT nregs,
 		   REGISTER_SET subclass_allowed,
 		   REGISTER_SET allowed)
-{
-  return Choose_N_Registers (nregs, subclass_allowed, allowed)
-    != REGISTER_UNDEFINED;
-}
-
-#endif
 /////////////////////////////////////
-static BOOL
+//
+//  Returns whether <nregs> can be allocated given the <subclass_allowed> set for the first
+//  register and the <allowed> set for the <nregs> continuous registers.
+//
+/////////////////////////////////////
+{
+  return CGCOLOR_Can_Allocate_N_Registers(nregs, subclass_allowed, allowed);
+}
+#endif
+
+
 #ifdef TARG_ST
+static BOOL
 Choose_Best_Register(REGISTER* reg, INT nregs, ISA_REGISTER_CLASS rc,
 		     REGISTER_SET subclass_allowed,
                      REGISTER_SET allowed , BOOL remove_global_callees,
                      BOOL prefer_caller_stacked)
 /////////////////////////////////////
 //
-//  Find the best register in <allowed>, a register set of registers in
+//  Find the best <nregs> registers in <allowed>, a register set of registers in
 //  <rc>.  If one is found (it will be if <allowd> is non-empty), return
 //  it by reference in <reg> and return TRUE.
 //
 /////////////////////////////////////
 {
-  if ( REGISTER_SET_EmptyP(allowed) )
-    return FALSE;
-
-#ifdef HAS_STACKED_REGISTERS
-  if (! REGISTER_Has_Stacked_Registers(rc)) {
-#endif
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(REGISTER_CLASS_caller_saves(rc), prefered_regs[rc]));
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, REGISTER_CLASS_caller_saves(rc));
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-      
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(callee_saves_used[rc], prefered_regs[rc]));
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, callee_saves_used[rc]);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-      
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, prefered_regs[rc]);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    *reg = Choose_N_Registers(nregs, subclass_allowed, allowed);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-    
-    return FALSE;
-#ifdef HAS_STACKED_REGISTERS
-  }
-  else {
-    // first, try to use any caller-saved regs that have already been allocated
-    REGISTER_SET callers =
-      REGISTER_SET_Union(REGISTER_CLASS_caller_saves(rc),
-                         REGISTER_Get_Stacked_Avail_Set(ABI_PROPERTY_caller,
-                                                        rc));
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed, callers);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    // If we'd prefer to use a stacked caller over anything remaining, then
-    // try to get a new one by enlarging the stack; it must not be in allowed
-    if (nregs == 1 && prefer_caller_stacked) {
-      *reg = REGISTER_Request_Stacked_Register(ABI_PROPERTY_caller, rc);
-      if ( *reg != REGISTER_UNDEFINED )
-        return TRUE;
-    }
-      
-    // next, try to use any callee-saved regs that have already been allocated
-    *reg = Choose_N_Registers_Intersection
-      (nregs, subclass_allowed, allowed,callee_saves_used[rc]);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    if (remove_global_callees) { // not using non-stacked callee-saved regs
-      allowed = REGISTER_SET_Difference(allowed,REGISTER_CLASS_callee_saves(rc));
-      subclass_allowed = REGISTER_SET_Difference(subclass_allowed,
-						 REGISTER_CLASS_callee_saves(rc));
-    }
-    // choose from previously un-used callee-saved regs
-    *reg = Choose_N_Registers(nregs, subclass_allowed, allowed);
-    if ( *reg != REGISTER_UNDEFINED )
-      return TRUE;
-
-    // try to get a new callee-saved one by enlarging the stack
-    if (nregs == 1) {
-      *reg = REGISTER_Request_Stacked_Register(ABI_PROPERTY_callee, rc);
-      if ( *reg != REGISTER_UNDEFINED )
-	return TRUE;
-    }
-  
-    return FALSE;
-  }
-#endif
+  *reg = CGCOLOR_Choose_Best_Register(rc, nregs, subclass_allowed, allowed, REGISTER_UNDEFINED);
+  if (*reg == REGISTER_UNDEFINED) return FALSE;
+  return TRUE;
 }
-#else
+#else /* !TARG_ST */
+static BOOL
 Choose_Best_Register(REGISTER* reg, ISA_REGISTER_CLASS rc,
                      REGISTER_SET allowed , BOOL remove_global_callees,
                      BOOL prefer_caller_stacked)
@@ -464,7 +332,7 @@ Choose_Best_Register(REGISTER* reg, ISA_REGISTER_CLASS rc,
   }
 #endif
 }
-#endif
+#endif /* !TARG_ST */
 
 /////////////////////////////////////
 static BOOL
@@ -502,6 +370,41 @@ Choose_Preference( LRANGE* lrange, REGISTER_SET allowed, GRA_REGION* region )
 
   return FALSE;
 }
+
+#ifdef TARG_ST
+static BOOL
+Choose_Subclass_Preference (LRANGE *lrange, REGISTER_SET subclass_allowed,
+                            REGISTER_SET allowed, GRA_REGION *region )
+/////////////////////////////////////
+//
+//  Try to find a register for <lrange> in the <allowed> set that is also
+//  in the preferred (subclass,offset) set specified in the lrange.
+//
+/////////////////////////////////////
+{
+  ISA_REGISTER_SUBCLASS sc = lrange->Pref_Subclass ();
+  INT sc_offset = lrange->Pref_Subclass_Offset ();
+  ISA_REGISTER_CLASS rc = lrange->Rc();
+  REGISTER reg;
+
+  if (sc != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+    REGISTER_SET sc_regs = (REGISTER_SET_Offset
+			    (REGISTER_SUBCLASS_members (sc), sc_offset));
+    if (Choose_Best_Register(&reg, lrange->NHardRegs(), rc,
+			     REGISTER_SET_Intersection (subclass_allowed, sc_regs),
+			     allowed,
+			     REGISTER_Has_Stacked_Registers(rc),
+			     !(lrange->Spans_A_Call() || lrange->Spans_Infreq_Call()))) {
+      Update_Register_Info(lrange,reg);
+      GRA_Trace_Preference_Subclass_Attempt (lrange, sc, sc_offset, region, TRUE);
+      return TRUE;
+    }
+    GRA_Trace_Preference_Subclass_Attempt (lrange, sc, sc_offset, region, FALSE);
+  }
+  return FALSE;
+}
+#endif
+    
 
 /////////////////////////////////////
 static BOOL
@@ -749,6 +652,9 @@ Choose_Register( LRANGE* lrange, GRA_REGION* region )
 #ifdef TARG_ST
   if ( Choose_Preference(lrange, subclass_allowed, allowed, region) )
     return TRUE;
+  else if (GRA_preference_subclass
+	   && Choose_Subclass_Preference(lrange, subclass_allowed, allowed, region) )
+    return TRUE;
   else if ( Choose_Avoiding_Neighbor_Preferences(lrange, subclass_allowed, allowed) )
     return TRUE;
   else if ( Choose_Noones_Preference(lrange,subclass_allowed, allowed) )
@@ -767,6 +673,33 @@ Choose_Register( LRANGE* lrange, GRA_REGION* region )
 #endif
 }
 
+#ifdef TARG_ST
+INT
+Forced_Locals (ISA_REGISTER_CLASS rc)
+{
+  INT rc_local_forced_max;
+  INT rc_size;
+#define RC_SIZE_THRESHOLD 8
+
+  rc_size = REGISTER_SET_Size(REGISTER_CLASS_allocatable(rc));
+  
+  // Simplified the computation.
+  // Note: GRA_local_forced_max is global while it should be a per register class value.
+  // Note: it has been observed that for small register classes, this must be set to 0.
+  // Thus we adjust it like this:
+  // 1. if GRA_local_forced_max <= RC_SIZE_THRESHOLD then set to 0,
+  // 2. otherwise, take min of GRA_local_forced_max and FLOOR(rc_size/RC_SIZE_THRESHOLD).
+  // 
+  if (REGISTER_CLASS_register_count(rc) <= RC_SIZE_THRESHOLD) {
+    rc_local_forced_max = 0;
+  } else {
+    rc_local_forced_max = Min(GRA_local_forced_max, rc_size/RC_SIZE_THRESHOLD);
+  }
+
+  return rc_local_forced_max;
+}
+#endif
+
 /////////////////////////////////////
 static void
 Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
@@ -781,6 +714,10 @@ Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
   GRA_REGION_GBB_ITER iter;
   INT rc_local_forced_max;
 
+#ifdef TARG_ST
+  rc_local_forced_max = Forced_Locals(rc);
+  if (rc_local_forced_max == 0) return;
+#else
   //
   // If it's been overridden, use that value.
   //
@@ -810,7 +747,8 @@ Force_Color_Some_Locals( GRA_REGION* region, ISA_REGISTER_CLASS rc )
       rc_local_forced_max = GRA_local_forced_max;
     }
   }
-  
+#endif
+
   for (iter.Init(region); ! iter.Done(); iter.Step()) {
     INT i;
     GRA_BB* gbb = iter.Current();
@@ -1434,15 +1372,21 @@ GRA_Color_Complement( GRA_REGION* region )
     if (! forced_locals)        // Haven't done this yet if every lrange wired
       Force_Color_Some_Locals(region,rc);
 
-    if (Is_Predicate_REGISTER_CLASS(rc) &&
-	REGISTER_SET_EmptyP(callee_saves_used[rc])
 #ifdef TARG_ST
+    if (Is_Predicate_REGISTER_CLASS(rc)) {
+      REGISTER_SET callee_used = REGISTER_SET_Intersection(REGISTER_CLASS_callee_saves(rc),
+							   regs_used[rc]);
 	// If the register class is not multiple save, we should not
 	// have generated the save of predicates into a single register.
-	&& REGISTER_CLASS_multiple_save(rc)
+	if (REGISTER_SET_EmptyP(callee_used) && 
+	    REGISTER_CLASS_multiple_save(rc))
+	  GRA_Remove_Predicates_Save_Restore();  // because they're always generated
+    }
+#else
+    if (Is_Predicate_REGISTER_CLASS(rc) &&
+	REGISTER_SET_EmptyP(callee_saves_used[rc]))
+	GRA_Remove_Predicates_Save_Restore();  // because they're always generated
 #endif
-	)
-      GRA_Remove_Predicates_Save_Restore();  // because they're always generated
   }
 
   gra_region_mgr.Complement_Region()->Set_GRA_Colored();
@@ -1468,15 +1412,4 @@ GRA_Color(void)
 
   GRA_Color_Complement(gra_region_mgr.Complement_Region());
 
-#ifdef TARG_ST
-  //
-  // count used callee saved registers
-  //
-  ISA_REGISTER_CLASS rc;
-  FOR_ALL_ISA_REGISTER_CLASS( rc ) {
-    Callee_Saved_Regs_Mask[rc] = 
-        REGISTER_SET_Union(Callee_Saved_Regs_Mask[rc], 
-			   callee_saves_used[rc]);
-  }
-#endif
 }

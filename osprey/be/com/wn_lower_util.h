@@ -164,11 +164,35 @@
  *   The Get_Intconst_Val() function returns the effective literal value
  *   of the tree. It must be used only if Is_Intconst_Val() returned true.
  *
+ * BOOL WN_Is_Emulated_Operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc);
  *
- * ==================================================================== */
+ *  Returns true if the (operator, rtype, desc) pair requires emulation.
+ *  If false is returned, the WHIRL operator tree will be kept and
+ *  must be handle by the code selector.
+ *  rtype and desc may be different for conversion operators.
+ *
+ * BOOL WN_Is_Emulated_Type (TYPE_ID type);
+ *
+ *  Returns true when the emulation is forced for the given type.
+ *  When true, the operators using this type should be emulated.
+ *
+ * BOOL WN_Is_Emulated (WN *tree);
+ *
+ *  Returns true when the emulation is required for the given tree node.
+ *  Should be used in place of WN_Is_Emulated_Operator() when possible.
+ *
+ * BOOL WN_Madd_Allowed (TYPE_ID type);
+ *
+ *  Returns true if generation of MADD and alike WHIRL operators is
+ *  activated for this type.
+ *
+ * ===================================================================
+ */
 
 #ifndef wn_lower_util_INCLUDED
 #define wn_lower_util_INCLUDED
+
+#include "wn_lower.h"
 
 /* ====================================================================
  * Lowering State Support.
@@ -251,6 +275,11 @@ extern WN *Load_Leaf(const LEAF &leaf);
 
 extern BOOL Is_Intconst_Val(WN *tree);
 extern INT64 Get_Intconst_Val(WN *tree);
+
+extern BOOL WN_Is_Emulated(WN *tree);
+extern BOOL WN_Is_Emulated_Type (TYPE_ID type);
+extern BOOL WN_Is_Emulated_Operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc);
+extern BOOL WN_Madd_Allowed (TYPE_ID type);
 
 /* ==================================================================== */
 

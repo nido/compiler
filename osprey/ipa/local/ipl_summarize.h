@@ -454,7 +454,11 @@ private:
     }
 
     void Process_alt_procedure (WN *w, INT formal_index, INT formal_count);
+#ifdef KEY
+    void Process_callsite (WN *w, INT id, INT loopnest, float probability = -1.0);
+#else
     void Process_callsite (WN *w, INT id, INT loopnest);
+#endif
     void Process_formal (WN *w, INT num_formals, SUMMARY_PROCEDURE *proc);
     void Process_formal_alt (WN *w, INT kid_count);
     void Process_actual (WN *actual);
@@ -523,6 +527,10 @@ private:
       DYN_ARRAY<SUMMARY_EXPR>* sx, BOOL constant_estimate);
     void IPL_Execution_Cost(WN* wn_func, SUMMARY_PROCEDURE* sp, 
       MEM_POOL* mem_pool, BOOL constant_estimate);
+#ifdef KEY
+    void Process_eh_globals (void);
+    void Process_eh_region (WN *);
+#endif
 
 public:
 

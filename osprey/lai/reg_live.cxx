@@ -364,8 +364,7 @@ Compute_Call_Regs (
   REGSET liveout, 
   REGSET kill
 )
-{
-  ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO);
+{  ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO);
   WN *call_wn = CALLINFO_call_wn(ANNOT_callinfo(ant));
   INT num_parms = WN_num_actuals (call_wn);
   OPERATOR opr = WN_operator(call_wn);

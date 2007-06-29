@@ -40,82 +40,7 @@
 #include "stblock.h"
 #include "whirl2ops.h"
 #include "tn.h"
-
-/* --------------------------------------------------------------------
- *    Return instruction that put the result in register class <dst2> 
- *    instead of register class <dst1>
- * --------------------------------------------------------------------
- */
-static TOP *TOP_Branch_To_Reg_Table;
-
-static void
-Init_TOP_Branch_To_Reg()
-{
-  int i;
-  TOP_Branch_To_Reg_Table = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool, (TOP_count + 1));
-
-  TOP_Branch_To_Reg_Table[TOP_UNDEFINED] = TOP_UNDEFINED;
-
-  for(i = 0; i <= TOP_count; ++i) {
-    TOP_Branch_To_Reg_Table[i] = TOP_UNDEFINED;
-  }
-
-  TOP_Branch_To_Reg_Table[TOP_cmpeq_r_b]   = TOP_cmpeq_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpeq_i_b]   = TOP_cmpeq_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpeq_ii_b]  = TOP_cmpeq_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpge_r_b]   = TOP_cmpge_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpge_i_b]   = TOP_cmpge_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpge_ii_b]  = TOP_cmpge_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgeu_r_b]  = TOP_cmpgeu_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgeu_i_b]  = TOP_cmpgeu_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgeu_ii_b] = TOP_cmpgeu_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgt_r_b]   = TOP_cmpgt_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgt_i_b]   = TOP_cmpgt_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgt_ii_b]  = TOP_cmpgt_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgtu_r_b]  = TOP_cmpgtu_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgtu_i_b]  = TOP_cmpgtu_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpgtu_ii_b] = TOP_cmpgtu_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmple_r_b]   = TOP_cmple_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmple_i_b]   = TOP_cmple_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmple_ii_b]  = TOP_cmple_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpleu_r_b]  = TOP_cmpleu_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpleu_i_b]  = TOP_cmpleu_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpleu_ii_b] = TOP_cmpleu_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmplt_r_b]   = TOP_cmplt_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmplt_i_b]   = TOP_cmplt_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmplt_ii_b]  = TOP_cmplt_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpltu_r_b]  = TOP_cmpltu_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpltu_i_b]  = TOP_cmpltu_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpltu_ii_b] = TOP_cmpltu_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpne_r_b]   = TOP_cmpne_r_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpne_i_b]   = TOP_cmpne_i_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpne_ii_b]  = TOP_cmpne_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_cmpne_ii_b]  = TOP_cmpne_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_orl_r_b]     = TOP_orl_r_r;
-  TOP_Branch_To_Reg_Table[TOP_orl_i_b]     = TOP_orl_i_r;
-  TOP_Branch_To_Reg_Table[TOP_orl_ii_b]    = TOP_orl_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_norl_r_b]    = TOP_norl_r_r;
-  TOP_Branch_To_Reg_Table[TOP_norl_i_b]    = TOP_norl_i_r;
-  TOP_Branch_To_Reg_Table[TOP_norl_ii_b]   = TOP_norl_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_andl_r_b]    = TOP_andl_r_r;
-  TOP_Branch_To_Reg_Table[TOP_andl_i_b]    = TOP_andl_i_r;
-  TOP_Branch_To_Reg_Table[TOP_andl_ii_b]   = TOP_andl_ii_r;
-  TOP_Branch_To_Reg_Table[TOP_nandl_r_b]   = TOP_nandl_r_r;
-  TOP_Branch_To_Reg_Table[TOP_nandl_i_b]   = TOP_nandl_i_r;
-  TOP_Branch_To_Reg_Table[TOP_nandl_ii_b]  = TOP_nandl_ii_r;
-}
-
-static inline 
-TOP TOP_Branch_To_Reg(TOP opr)
-{
-  static BOOL did_init = FALSE;
-  if ( ! did_init ) {
-    Init_TOP_Branch_To_Reg();
-    did_init = TRUE;
-  }
-
-  return TOP_Branch_To_Reg_Table[(INT)opr];
-}
+#include "targ_cg_private.h"
 
 /* --------------------------------------------------------------------
  *    Make sure the compare instruction returns in a general register.
@@ -131,25 +56,40 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
   // To be checked, does it impact if-conc heuristics.
   if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-    Build_OP(TOP_mfb, tn, btn, ops);
+    Build_OP(TOP_targ_convbi, tn, btn, ops);
   }
 #else
   if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
+    // (cbr) if we have the value take it.
+    if (OP_code (cmp) == TOP_convib_r_b) {
+      return OP_opnd(cmp, 0);
+    }
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-    if(TN_is_global_reg(btn)) {
-      Build_OP(TOP_mfb, tn, btn, ops);
+    if(TN_is_global_reg(btn) || TN_is_if_conv_cond(btn)) {
+      Build_OP(TOP_convbi_b_r, tn, btn, ops);
     }
     else {
       OP *op = cmp;
+
       while (op = OP_next (op)) {
         // if the btn is only used in the conditional branch, can change
-        // cmp return value type without the need od a mfb.
+        // cmp return value type without the need of a convbi.
         if (OP_cond (op))
           break;
+
+        if (OP_code (op) == TOP_convbi_b_r) {
+          for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
+            TN *res = OP_opnd(op, opndnum);
+            if (res == btn) {
+              return OP_result(op, 0);
+            }
+          }
+        }
+
         for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
           TN *res = OP_opnd(op, opndnum);
           if (res == btn) {
-            Build_OP(TOP_mfb, tn, btn, ops);
+            Build_OP(TOP_convbi_b_r, tn, btn, ops);
             return tn;
           }
         }
@@ -158,11 +98,11 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
       // the tn is not in use in the block. Can just replace the
       // compare instruction
       // This duplicates with some of the EBO work. keep it for now.
-      // could to the "mfb" above everytime and let EBO clean it up.
+      // could do the "convbi" above everytime and let EBO clean it up.
       DevAssert(cmp, ("TOP_Branch_To_Reg\n"));
-      TOP cmp_top = TOP_Branch_To_Reg (OP_code(cmp));
+      TOP cmp_top = TOP_result_register_variant(OP_code(cmp), 0, TN_register_class(tn));
       if (cmp_top == TOP_UNDEFINED) {
-	Build_OP(TOP_mfb, tn, btn, ops);
+	Build_OP(TOP_convbi_b_r, tn, btn, ops);
 	return tn;
       }
       Build_OP (cmp_top, tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
@@ -233,7 +173,7 @@ Expand_BlackHole (
 #ifdef COMMON_SELECT_STOREDUMP
   blackhole = Gen_Common_Symbol(ty, "__store_dump_area");
   TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
-  Build_OP(TOP_mov_ii, blackhole_tn, tmp, ops);
+  Build_OP(TOP_mov_ii_r, blackhole_tn, tmp, ops);
 #else
 #ifdef LOCAL_SELECT_STOREDUMP
   blackhole = Gen_Local_Symbol (ty, "__store_dump_area");
@@ -283,23 +223,23 @@ Expand_CondStoreOP (
     offset = Gen_Literal_TN (0, 4);
 
   switch (OP_code(store_op)) {
-  case TOP_stl_i:
-  case TOP_stl_ii:
+  case TOP_stl_p_r_i:
+  case TOP_stl_p_r_ii:
     desc = MTYPE_I8;
     break;
 
-  case TOP_stw_i:
-  case TOP_stw_ii:
+  case TOP_stw_r_r_i:
+  case TOP_stw_r_r_ii:
     desc = MTYPE_I4;
     break;
 
-  case TOP_sth_i:
-  case TOP_sth_ii:
+  case TOP_sth_r_r_i:
+  case TOP_sth_r_r_ii:
     desc = MTYPE_I2;
     break;
 
-  case TOP_stb_i:
-  case TOP_stb_ii:
+  case TOP_stb_r_r_i:
+  case TOP_stb_r_r_ii:
     desc = MTYPE_I1;
     break;
 
@@ -357,7 +297,7 @@ Expand_Cond_Store (
 #ifdef COMMON_SELECT_STOREDUMP
     blackhole = Gen_Common_Symbol(ty, "__store_dump_area");
     TN *tmp = Gen_Symbol_TN(blackhole, 0, 0);
-    Build_OP(TOP_mov_ii, false_tn, tmp, ops);
+    Build_OP(TOP_mov_ii_r, false_tn, tmp, ops);
 #else
 #ifdef LOCAL_SELECT_STOREDUMP
     blackhole = Gen_Local_Symbol (ty, "__store_dump_area");
@@ -409,7 +349,7 @@ Expand_Cond_Store (
   TN *ofst = tns[offsetidx];
 
   if (TN_is_register (ofst)) {
-    Build_OP (TOP_add_r, base, base, ofst, ops);
+    Build_OP (TOP_add_r_r_r, base, base, ofst, ops);
     ofst =  Gen_Literal_TN (0, 4);
   }
 
@@ -425,23 +365,23 @@ Expand_Cond_Store (
   else {
 #endif
     switch (OP_code(op1)) {
-    case TOP_stl_i:
-    case TOP_stl_ii:
+    case TOP_stl_p_r_i:
+    case TOP_stl_p_r_ii:
       desc = MTYPE_I8;
       break;
 
-    case TOP_stw_i:
-    case TOP_stw_ii:
+    case TOP_stw_r_r_i:
+    case TOP_stw_r_r_ii:
       desc = MTYPE_I4;
       break;
 
-    case TOP_sth_i:
-    case TOP_sth_ii:
+    case TOP_sth_r_r_i:
+    case TOP_sth_r_r_ii:
       desc = MTYPE_I2;
       break;
 
-    case TOP_stb_i:
-    case TOP_stb_ii:
+    case TOP_stb_r_r_i:
+    case TOP_stb_r_r_ii:
       desc = MTYPE_I1;
       break;
 

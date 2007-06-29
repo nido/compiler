@@ -315,7 +315,10 @@ dV_view_whirl(WN *wn, const char *title, BOOL show_expr, FILE *trace_fp)
   Callback callback;
   DV->Event_Loop( &callback );
 
+#if 0
+  // [CG] Don't know why commenting this out removes a segfault.
   CXX_DELETE(DV, &DV_wv_mempool);
+#endif
   DV      = NULL;
   Func_wn = NULL;
 

@@ -43,6 +43,9 @@
 #endif
 /* Enumeration of mnemonic names for the return types of intrinsic
  * functions and operators.  
+ * Warning: The mapping from INTRN_RETKIND to MTYPE is not direct.
+ * One must use INTRN_return_kind_for_mtype() and 
+ * INTRN_mtype_for_return_kind() functions.
  */
 typedef enum INTRN_RETKIND {
   IRETURN_UNKNOWN,           /* Indeterminate type */
@@ -50,21 +53,11 @@ typedef enum INTRN_RETKIND {
   IRETURN_I1,                /* MTYPE_I1 */
   IRETURN_I2,                /* MTYPE_I2 */
   IRETURN_I4,                /* MTYPE_I4 */
-#ifdef TARG_ST100
-  IRETURN_I5,                /* MTYPE_I5 */
-#endif
   IRETURN_I8,                /* MTYPE_I8 */
   IRETURN_U1,                /* MTYPE_U1 */
   IRETURN_U2,                /* MTYPE_U2 */
   IRETURN_U4,                /* MTYPE_U4 */
-#ifdef TARG_ST100
-  IRETURN_U5,                /* MTYPE_U5 */
-#endif
   IRETURN_U8,                /* MTYPE_U8 */
-#ifdef TARG_ST100
-  IRETURN_A4,                /* MTYPE_A4 */
-  IRETURN_A8,                /* MTYPE_A8 */
-#endif
   IRETURN_F4,                /* MTYPE_F4 */
   IRETURN_F8,                /* MTYPE_F8 */
   IRETURN_FQ,                /* MTYPE_FQ */
@@ -266,32 +259,8 @@ inline TYPE_ID INTRN_return_type(proto_intrn_info_t  *built_info){
 
 #ifdef TARG_ST
 //[TB] To map info for extension intrinsic from dll to return kind
-inline INTRN_RETKIND INTRN_return_kind_for_Mtype (const TYPE_ID mtype)
-{
-  if (MTYPE_is_dynamic(mtype))
-    return IRETURN_DYNAMIC;
+BE_EXPORTED INTRN_RETKIND INTRN_return_kind_for_mtype (const TYPE_ID mtype);
+BE_EXPORTED TYPE_ID INTRN_mtype_for_return_kind(const INTRN_RETKIND kind);
 
-  switch (mtype) {
-  case MTYPE_V:
-    return IRETURN_V;
-  case MTYPE_B:
-    return IRETURN_I4;
-  case MTYPE_I1:
-    return IRETURN_I1;
-  case MTYPE_I2:
-    return IRETURN_I2;
-  case MTYPE_I4:
-    return IRETURN_I4;
-  case MTYPE_I8:
-    return IRETURN_I8;
-  case MTYPE_F4:
-    return IRETURN_F4;
-  case MTYPE_F8:
-    return IRETURN_F8;
-  default:
-    FmtAssert((0),("Unexpexted mtype to intrinsic return kind conversion %s ", Mtype_Name(mtype)));
-  }
-  return IRETURN_UNKNOWN;
-}
 #endif //TARG_ST
 #endif

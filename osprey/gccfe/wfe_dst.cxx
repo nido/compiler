@@ -185,8 +185,8 @@ struct mongoose_gcc_DST_IDX DST_Create_Lexical_Block(LEXICAL_BLOCK_INFO* lexical
   struct mongoose_gcc_DST_IDX g_dst;
 
   dst = DST_mk_lexical_block(NULL,
-  			     (void*)lexical_block->lexical_block_start_idx,
-			     (void*)lexical_block->lexical_block_end_idx,
+                             &lexical_block->lexical_block_start_idx,
+                             &lexical_block->lexical_block_end_idx,
 			     DST_INVALID_IDX);
   cp_to_tree_from_dst(&g_dst, &dst);
 
@@ -198,6 +198,12 @@ void DST_Link_Lexical_Block(LEXICAL_BLOCK_INFO* parent, LEXICAL_BLOCK_INFO* chil
   DST_INFO_IDX dst, prev_dst;
   cp_to_dst_from_tree(&dst, &child->dst);
   cp_to_dst_from_tree(&prev_dst, &parent->dst);
+  //TODO_MERGE: mhy if it (void *)child->lexical_block_start_idx
+  // here and above &lexical_block->lexical_block_start_idx
+  // [SC] Label information is now correct in the child, so
+  // transfer it to the DST structure.
+  DST_lexical_block_add_low_pc (dst, (void *)child->lexical_block_start_idx);
+  DST_lexical_block_add_high_pc (dst, (void *)child->lexical_block_end_idx);
   DST_append_child(prev_dst, dst);
 }
 #endif
@@ -1771,11 +1777,12 @@ DST_Create_var(ST *var_st, tree decl)
     DST_INFO_IDX current_scope_idx;
 
     if (decl->common.scope) {
-      // local var
+      // [SC] var is in nested scope
       cp_to_dst_from_tree(&current_scope_idx, &decl->common.scope->dst);
     } else {
-      // global var
-      current_scope_idx = comp_unit_idx;
+      // [SC] var is global, or fn scope.  In both these cases,
+      // DECL_CONTEXT suffices.
+      current_scope_idx = DST_get_context(DECL_CONTEXT(decl));
     }
 #else
     DST_INFO_IDX current_scope_idx =

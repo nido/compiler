@@ -2899,7 +2899,13 @@ INT64 Finalize_Stack_Frame (void)
   //         right place, we need to reoffset it back by +lpad
   //
   if (Current_PU_Stack_Model == SMODEL_SMALL && 
-      !(SEG_SIZE(SFSEG_UPFORMAL) == 0 
+      // [SC] The upformals area can have zero size but still be used,
+      // in the case that it contains variadic arguments.  In that
+      // case we still need to adjust the offset here.
+      // In fact, we do not currently correctly set the used attribute
+      // of the upformals block, so we can enter here even if the
+      // upformals is not used; that is unnecessary but harmless.
+      !(ST_is_not_used(SF_Block(SFSEG_UPFORMAL))
 	&& ST_is_not_used(SF_Block(SFSEG_FORMAL)))) {
     INT32 lpad = ROUNDUP(Frame_Size, DEFAULT_STACK_ALIGNMENT)
                  - Frame_Size;
@@ -2909,7 +2915,9 @@ INT64 Finalize_Stack_Frame (void)
     if (! ST_is_not_used(SF_Block(SFSEG_FORMAL))) {
       Set_ST_ofst(SF_Block(SFSEG_FORMAL),ST_ofst(SF_Block(SFSEG_FORMAL))+lpad);
     }
-    Set_ST_ofst(SF_Block(SFSEG_UPFORMAL),ST_ofst(SF_Block(SFSEG_UPFORMAL))+lpad);
+    if (! ST_is_not_used(SF_Block(SFSEG_UPFORMAL))) {
+      Set_ST_ofst(SF_Block(SFSEG_UPFORMAL),ST_ofst(SF_Block(SFSEG_UPFORMAL))+lpad);
+    }
     if (Trace_Frame) {
       fprintf(TFile, "      Formals adjustment = %d\n", lpad);
     }

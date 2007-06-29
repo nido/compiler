@@ -54,14 +54,14 @@
 TYPE_ID 
 Mtype_from_opc(TOP top)
 {
-
+#if 0
   switch (top) {
   case TOP_sub_r:
   case TOP_add_r:
     return (MTYPE_I4);
     break;
   }
-
+#endif
   Is_True(FALSE, ("Mtype_from_opc:  unknown opcode."));
   return MTYPE_UNKNOWN;
 }
@@ -154,7 +154,7 @@ RECUR_OP_DESC::Init_OP ()
       break;
 #endif
 
-    case TOP_sub_r:
+    case TOP_sub_r_r_r:
     //is_add = false; 
       if (OP_result(op, 0) == OP_opnd(op, 0)) {
 	invar_opnd_num = 1;
@@ -164,7 +164,7 @@ RECUR_OP_DESC::Init_OP ()
       mtype = Mtype_from_opc(OP_code(op));
       break;
 
-    case TOP_add_r:
+    case TOP_add_r_r_r:
     //is_add = true;
       if (OP_result(op, 0) == OP_opnd(op, 1)) {
 	invar_opnd_num = 0;
@@ -203,7 +203,7 @@ OP_Apply_Back_Sub_Invariant (
       break;
     }
 
-  case TOP_adds:
+  case TOP_adds_r_r_r:
     {
       INT64 imm = TN_value(invar_tn);
       TN *new_imm_tn = Gen_Literal_TN(imm * new_omega, 4);

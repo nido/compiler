@@ -276,8 +276,11 @@ Targ_Emit_Const (FILE *fl,	    /* File to which to write */
 	  TCON lo = Extract_LongLong_Lo(tc);
 
 	  INT32 val1, val2;
-
+#if 0
+	  /* Fix #26368 (cm on the model of) (cbr) can happen, correct with packed attribute. multiple loads will
+           be issued by Expand_Misaligned_Stores */
 	  FmtAssert((loc % 4) == 0, ("unaligned access"));
+#endif
 	  if (Target_Byte_Sex == BIG_ENDIAN) {
 	    val1 = TCON_I4(hi);
 	    val2 = TCON_I4(lo);

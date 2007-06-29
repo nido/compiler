@@ -314,11 +314,19 @@ make_node (code)
       /* We have not yet computed the alias set for this declaration.  */
       DECL_POINTER_ALIAS_SET (t) = -1;
 #ifdef SGI_MONGOOSE
+#ifndef TARG_ST
+      // [SC] This code does the wrong thing for nested functions, since
+      // variable nodes are created on demand.  One may see the first
+      // reference to a variable as a non-local reference within a nested
+      // function, in which case the scope will be incorrect.
+      // I have removed the code that references this symtab_idx field
+      // in tree_symtab.cxx.
       if (code == VAR_DECL || code == FUNCTION_DECL)
         {
           extern unsigned char Current_scope;
           t->decl.symtab_idx = Current_scope;
         }
+#endif
       {
       static struct mongoose_gcc_DST_IDX de = {-1,-1};
       DECL_DST_IDX(t) = de;

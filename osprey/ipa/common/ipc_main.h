@@ -51,13 +51,11 @@ extern void ipa_dot_so_init (void);
 extern void ipa_initialize_external_symbols(struct external_symbols_list* ipa_external_symbol_list);
 #endif
 
-#ifndef TARG_ST
 #ifdef _LD_IPA_INTERFACE
 
 #pragma weak ipa_driver
 #pragma weak ipa_dot_so_init
 
-#endif
 #endif
 
 #ifdef __cplusplus

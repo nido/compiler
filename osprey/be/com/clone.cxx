@@ -62,6 +62,10 @@
 #include "clone.h"                      // IPO_CLONE, IPO_SYMTAB, 
 #include "targ_sim.h"
 
+#ifdef TARG_ST
+#include "data_layout.h" // [CL] for Find_Section_Name_For_ST()
+#endif
+
 // ======================================================================
 // For easy switching of Scope_tab
 // ======================================================================
@@ -538,6 +542,13 @@ IPO_SYMTAB::fix_table_entry<ST>::operator () (UINT idx, ST* st) const
 					 _sym->Get_cloned_level ()));
     if (ST_base_idx(st) == ST_st_idx(st))
         Set_ST_ofst(st, 0);
+#ifdef KEY
+// Certain exception handling information should have 1 instance per pu
+    if (ST_one_per_pu(st)) {
+    	Set_ST_is_not_used(st);
+	return;
+    }
+#endif
     switch (ST_sclass(st)) {
     case SCLASS_FORMAL:
     case SCLASS_FORMAL_REF:
@@ -567,8 +578,12 @@ template <>
 inline void 
 IPO_SYMTAB::fix_table_entry<ST_ATTR>::operator () (UINT idx, ST_ATTR* st_attr) const
 {
+#ifndef TARG_ST
     Is_True (ST_ATTR_kind (*st_attr) == ST_ATTR_DEDICATED_REGISTER,
 	     ("expecting ST_ATTR_DEDICATED_REGISTER"));
+#else
+    // [CL] also accept named sections
+#endif
     ST_IDX st_idx = ST_ATTR_st_idx (*st_attr);
     Set_ST_ATTR_st_idx (*st_attr, make_ST_IDX (ST_IDX_index (st_idx) +
 					 _sym->Get_cloned_st_last_idx(),
@@ -621,6 +636,31 @@ IPO_SYMTAB::Copy_Local_Tables(BOOL label_only)
 	// Need to reset _cloned_label_last_idx to reflect the current cloned SYMTAB
 	Set_cloned_label_last_idx((_cloned_scope_tab[_cloned_level].label_tab)->Size()-1);
 	Set_cloned_inito_last_idx((_cloned_scope_tab[_cloned_level].inito_tab)->Size()-1);
+#ifdef KEY
+	if (PU_src_lang (Get_Current_PU()) & PU_CXX_LANG)
+	{
+#if 0
+	// For lang other than C++, the copy below won't be done anyway 
+	// since it depends on sclass. But then prevent the unnecessary loop
+	// for other languages.
+	  for (int i=start_idx; 
+	     i<(_orig_scope_tab[_orig_level].inito_tab)->Size(); ++i)
+	  {
+	    INITO copy = (*_orig_scope_tab[_orig_level].inito_tab)[i];
+	    if (ST_sclass(INITO_st(copy)) == SCLASS_EH_REGION_SUPP)
+	    	(*_cloned_scope_tab[_cloned_level].inito_tab).Insert (copy);
+	  }
+#else
+	    // bug 4091: for C++ copy all INITOs
+	    // We really need to clone only the EH initos here, but if
+	    // we only clone them, we will need to do lots of fixups.
+            (void)Copy_array_range(*_orig_scope_tab[_orig_level].inito_tab, 
+			           *_cloned_scope_tab[_cloned_level].inito_tab, 
+			           start_idx, 
+			           (_orig_scope_tab[_orig_level].inito_tab)->Size());
+#endif
+	}
+#endif
   }
 
 
@@ -710,42 +750,37 @@ IPO_SYMTAB::Update_Symtab (BOOL label_only)
   Copy_Local_Tables(label_only);
 }
 
-// ======================================================================
-// Walk the ST list and for those that are PU-level static, move them and
-// their correcponding INITO to the Global Symtab
-// ======================================================================
-
-static void
-promote_all_initv_for_inito(INITV_IDX iv_idx, ST* old_st, ST* copy_st)
+#ifdef KEY
+// bug 3089: Fix traversal of INITVs, the original code never actually
+// traversed the tree of INITVs, so even though the ST was promoted to
+// global symtab, the ST reference in an initv was not being updated.
+// [CG] Use a while loop to avoid a recursion that cause stack overflow
+// as INITV number can be very large.
+//
+static inline void
+traverse_initvs (INITV_IDX start, ST_IDX old, ST_IDX copy)
 {
-  while (iv_idx != 0) {
-    INITV &iv = Initv_Table[iv_idx];
-    switch (INITV_kind(iv)) {
-    case INITVKIND_SYMOFF:
-      {
-	ST* initv_st = &St_Table[INITV_st(iv)];
-	if(initv_st == old_st) {
-	  Set_INITV_st(iv_idx, ST_st_idx(copy_st));
-	}
+  while(start != 0) {
+
+    switch (INITV_kind (start))
+    {
+      case INITVKIND_BLOCK:
+	traverse_initvs (INITV_blk (start), old, copy);
+        break;
+      case INITVKIND_SYMOFF:
+      {	
+	ST_IDX st = INITV_st (start);
+	if (st == old)
+	  Set_INITV_st (start, copy);
+        // fall through
       }
-      break;
-    case INITVKIND_BLOCK:
-      promote_all_initv_for_inito(INITV_blk(iv), old_st, copy_st);
-      break;
-    case INITVKIND_SYMDIFF:
-    case INITVKIND_SYMDIFF16:
-    case INITVKIND_LABEL:
-#ifdef TARG_ST
-      /* (cbr) DDTSst24451. add support for label diffs initializers */
-    case INITVKIND_LABDIFF: 
-#endif
-      break;
-    default:
-      break;
+      default:
+        break;
     }
-    iv_idx = INITV_next(iv);
+    start = INITV_next (start);
   }
 }
+#endif // KEY
 
 template <>
 inline void
@@ -769,7 +804,36 @@ IPO_SYMTAB::promote_entry<ST>::operator () (UINT idx, ST* old_st) const
         // to global symtab, update it with the new st in global symtab
 	for(INITO_IDX it_idx = 1; it_idx<(INITO_IDX)it_tab_size; it_idx++) {
 	  INITV_IDX iv_idx = (*it_tab)[it_idx].val;
-	  promote_all_initv_for_inito(iv_idx, old_st, copy_st);
+#ifdef KEY
+          traverse_initvs (iv_idx, ST_st_idx (old_st), ST_st_idx (copy_st));
+#else
+	  INITV &iv = Initv_Table[iv_idx];
+          switch (INITV_kind(iv)) {
+          case INITVKIND_SYMOFF:
+	      {
+	        ST* initv_st = &St_Table[INITV_st(iv)];
+                if(initv_st == old_st)
+                  Set_INITV_st(iv_idx, ST_st_idx(copy_st));
+              }
+              break;
+          case INITVKIND_SYMDIFF:
+          case INITVKIND_SYMDIFF16:
+          case INITVKIND_LABEL:
+          case INITVKIND_BLOCK:
+    	  default:
+              break;
+          }
+#endif // KEY
+	}
+#endif
+#ifdef TARG_ST
+	// [CL] keep attributes....
+	if (ST_has_named_section(old_st)) {
+	  STR_IDX name = Find_Section_Name_For_ST (old_st);
+	  ST_ATTR_IDX st_attr_idx;
+	  ST_ATTR&    st_attr = New_ST_ATTR (ST_level(copy_st), st_attr_idx);
+	  ST_ATTR_Init (st_attr, ST_st_idx (copy_st), ST_ATTR_SECTION_NAME,
+			name);
 	}
 #endif
 	break;

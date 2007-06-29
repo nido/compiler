@@ -1228,6 +1228,10 @@ static WN *em_exp_float(WN *block, WN *x, WN *pow, TYPE_ID type)
   {
     TCON	con = Const_Val(pow);
     BOOL	sqrt, rsqrt;
+#ifdef TARG_ST
+    // Code from PathScale 2.2.1
+    BOOL       sqrt_25, rsqrt_25, sqrt_75, rsqrt_75;
+#endif
     WN		*tree, *x_copy;
     double	n;
 
@@ -1252,6 +1256,10 @@ static WN *em_exp_float(WN *block, WN *x, WN *pow, TYPE_ID type)
     }
     n = Targ_To_Host_Float(con);
     sqrt = rsqrt = FALSE;
+#ifdef TARG_ST
+    // Code from PathScale 2.2.1
+    sqrt_25 = rsqrt_25 = sqrt_75 = rsqrt_75 = FALSE;
+#endif
 
     if (trunc__(n) == n)
     {
@@ -1269,6 +1277,33 @@ static WN *em_exp_float(WN *block, WN *x, WN *pow, TYPE_ID type)
 	sqrt = TRUE;
       x_copy = WN_COPY_Tree(x);
     }
+#ifdef TARG_ST
+    // Code from PathScale 2.2.1
+    else if ((trunc__(ABS(n))+.25) == ABS(n))
+    {
+      /*
+       *  if we need to multiply by sqrt we need a copy of x
+       *  as it might get changed underneath us.
+       */
+      if (n<0)
+	rsqrt_25 = TRUE;
+      else
+	sqrt_25 = TRUE;
+      x_copy = WN_COPY_Tree(x);
+    }    
+    else if ((trunc__(ABS(n))+.75) == ABS(n))
+    {
+      /*
+       *  if we need to multiply by sqrt we need a copy of x
+       *  as it might get changed underneath us.
+       */
+      if (n<0)
+	rsqrt_75 = TRUE;
+      else
+	sqrt_75 = TRUE;
+      x_copy = WN_COPY_Tree(x);
+    }    
+#endif
     else
     {
       return NULL;
@@ -1282,6 +1317,19 @@ static WN *em_exp_float(WN *block, WN *x, WN *pow, TYPE_ID type)
 
     if (sqrt || rsqrt)
     {
+#if 0 // Not activated
+    // Code from PathScale 2.2.1
+      // -constant float x could be negative
+      //  Do the check only for C/C++ and if
+      // -fmath-errno (-LANG:math_errno=on)
+      if (!PU_f77_lang (Get_Current_PU()) &&
+          !PU_f90_lang (Get_Current_PU()) && // ! Fortran
+	  LANG_Math_Errno && // -fmath-errno
+          MTYPE_is_float (WN_rtype (x_copy)) &&
+          (!Is_Constant (x_copy) ||
+	   Targ_To_Host_Float (Const_Val (x_copy)) < 0))
+        return NULL;
+#endif // TARG_ST
       if (tree)
       {
 	/*
@@ -1302,6 +1350,79 @@ static WN *em_exp_float(WN *block, WN *x, WN *pow, TYPE_ID type)
 		       fractional);
       }
     }
+#if 0 // Not activated
+    // Code from PathScale 2.2.1 // bug 6932 
+    // evaluate (x**0.25) as sqrt(sqrt(x))
+    if (sqrt_25 || rsqrt_25) 
+    {
+      if (!PU_f77_lang (Get_Current_PU()) &&
+          !PU_f90_lang (Get_Current_PU()) && // ! Fortran
+	  LANG_Math_Errno && // -fmath-errno
+          MTYPE_is_float (WN_rtype (x_copy)) &&
+          (!Is_Constant (x_copy) ||
+	   Targ_To_Host_Float (Const_Val (x_copy)) < 0))
+        return NULL;
+      if (tree)
+      {
+	/*
+	 *  x ** n+.25 	->	(x**n) * (x**.25)
+	 *  where the function em_exp_int has already evaluated	
+	 */
+	PREG_NUM	xN, treeN;
+	WN		*fractional;
+
+	xN = AssignExpr(block, x_copy, type);
+	treeN = AssignExpr(block, tree, type);
+
+	if (sqrt_25) 
+	  fractional = WN_Sqrt(type, WN_Sqrt(type, WN_LdidPreg(type, xN)));
+	else
+	  fractional = WN_Sqrt(type, WN_Rsqrt(type, WN_LdidPreg(type, xN)));
+
+	tree =  WN_Mpy(type,
+		       WN_LdidPreg(type, treeN),
+		       fractional);
+      }      
+    }
+    // evaluate (x**0.75) as sqrt(x)*sqrt(sqrt(x))
+    if (sqrt_75 || rsqrt_75) 
+    {
+      if (!PU_f77_lang (Get_Current_PU()) &&
+          !PU_f90_lang (Get_Current_PU()) && // ! Fortran
+	  LANG_Math_Errno && // -fmath-errno
+          MTYPE_is_float (WN_rtype (x_copy)) &&
+          (!Is_Constant (x_copy) ||
+	   Targ_To_Host_Float (Const_Val (x_copy)) < 0))
+        return NULL;
+      if (tree)
+      {
+	/*
+	 *  x ** n+.75 	->	(x**n) * (x**.75)
+	 *  where the function em_exp_int has already evaluated	
+	 */
+	PREG_NUM	xN, treeN;
+	WN		*fractional;
+
+	xN = AssignExpr(block, x_copy, type);
+	treeN = AssignExpr(block, tree, type);
+
+	if (sqrt_75) 
+	  fractional = WN_Mpy(type, 
+			      WN_Sqrt(type, WN_LdidPreg(type, xN)), 
+			      WN_Sqrt(type, 
+				      WN_Sqrt(type, WN_LdidPreg(type, xN))));
+	else
+	  fractional = WN_Mpy(type, 
+			      WN_Rsqrt(type, WN_LdidPreg(type, xN)), 
+			      WN_Rsqrt(type, 
+				       WN_Sqrt(type, WN_LdidPreg(type, xN))));
+	
+	tree =  WN_Mpy(type,
+		       WN_LdidPreg(type, treeN),
+		       fractional);
+      }      
+    }
+#endif // TARG_ST
     return tree;
   }
  
@@ -3334,12 +3455,24 @@ static WN *em_bcopy(WN *block, WN *tree, WN *src, WN *dst, WN *size)
  *  The implementation however, handles the overlap cases, so we should also,
  *  unless we can prove otherwise or the user forces us not to.
  */
+// TB:: The above comment is not true for ST targets. 
+// For memcpy, src and dest may not overlap.
 static WN *em_memcpy(WN *block, WN *tree, WN *dst, WN *src, WN *size)
 {
   if (check_size(size, src, dst))
   {
+#ifndef TARG_ST // For the moment this code is not activated...
+    // Code from PathScale 2.2.1
+    BOOL aliased = lower_is_aliased(src, dst, WN_const_val(size));
+    if (CG_memcpy_cannot_overlap) // TRUE
+      if (!aliased || // extra condition to guard against perf. regression
+        // For memcpy, we don't want to convert if size > 4
+        ((Is_Integer_Constant(size) && WN_const_val(size) <= 4) ||
+	(!Is_Integer_Constant(size) && CG_memmove_nonconst)))
+#else
     if (CG_memcpy_cannot_overlap ||
 	!lower_is_aliased(src, dst, WN_const_val(size)))
+#endif
     {
       if (WN *em = aux_memcpy(src, dst, size)) {
         aux_memory_msg("memcpy()", tree, em);

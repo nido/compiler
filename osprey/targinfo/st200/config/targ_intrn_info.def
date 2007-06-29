@@ -307,12 +307,6 @@
 { /* __maxul */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U8, "__maxul", NULL, "__maxul"}, 
-{ /* __maxuw */
-  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__maxuw", NULL, "__maxuw"}, 
-{ /* __maxw */
-  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__maxw", NULL, "__maxw"}, 
 { /* __mind */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F8, "__mind", NULL, "__mind"}, 
@@ -331,12 +325,6 @@
 { /* __minul */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U8, "__minul", NULL, "__minul"}, 
-{ /* __minuw */
-  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__minuw", NULL, "__minuw"}, 
-{ /* __minw */
-  BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__minw", NULL, "__minw"}, 
 { /* __modfch */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_I2, "__modfch", NULL, "__modfch"}, 
@@ -598,18 +586,9 @@
 { /* __st220prgadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st220prgadd", NULL, "__st220prgadd"}, 
-{ /* __st220prgins */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220prgins", NULL, "__st220prgins"}, 
 { /* __st220prgset */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st220prgset", NULL, "__st220prgset"}, 
-{ /* __st220sync */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220sync", NULL, "__st220sync"}, 
-{ /* __st220syncins */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220syncins", NULL, "__st220syncins"}, 
 { /* __st220syscall */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st220syscall", NULL, "__st220syscall"}, 
@@ -703,12 +682,6 @@
 { /* __st200prginspg */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st200prginspg", NULL, "__st200prginspg"}, 
-{ /* __st200pswclr */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200pswclr", NULL, "__st200pswclr"}, 
-{ /* __st200pswset */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200pswset", NULL, "__st200pswset"}, 
 { /* __nmadds */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
   IRETURN_F4, "__nmadds", NULL, "__nmadds"}, 
@@ -787,4 +760,10 @@
 { /* __builtin__moduh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U2, "__builtin__moduh", NULL, "__builtin__moduh"}, 
+{ /* __st200prginsset */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200prginsset", NULL, "__st200prginsset"}, 
 
+#define INTRN_INFO
+#include "gen_intrinsics.inc"
+#undef INTRN_INFO

@@ -305,8 +305,9 @@ REGISTER_SET
 CGTARG_Prefered_GRA_Registers(ISA_REGISTER_CLASS rclass)
 {
   REGISTER_SET s = REGISTER_SET_EMPTY_SET;
-  if (Is_Target_st235 () && rclass == ISA_REGISTER_CLASS_integer) {
-    /* For ST235 we first prefer over the set of callee saved the
+  if (Is_Target_st240 ()
+      && rclass == ISA_REGISTER_CLASS_integer) {
+    /* For ST240 we first prefer over the set of callee saved the
      * registers that are subject to pairing.
      * This will allow generation of paired save/restore of the
      * callee saved registers.

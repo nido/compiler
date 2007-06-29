@@ -287,7 +287,13 @@ HOIST_SUMMARY::Init_cfg_info(BB_NODE *bb, HOIST_SUMMARY *summary, ETABLE *etable
   // Solution: do not allow hoisting from a less frequent point to a higher frequent
   // point (actually call Str_red()->Update_happens_rarely_happens() to decide).
   // 
+#ifdef TARG_ST
+  // FdF 20070614: Only check different nesting levels, because with
+  // feedback, this would prevent hoisting in a same loop.
+  if (!etable->Str_red()->In_same_or_lower_nesting(bb, cd_bb))
+#else
   if (!etable->Str_red()->Update_happens_rarely_enough(cd_bb, bb, NULL))
+#endif
     return;
 
   BB_LIST_ITER bb_iter;

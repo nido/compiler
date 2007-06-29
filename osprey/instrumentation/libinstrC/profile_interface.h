@@ -73,8 +73,7 @@ extern void __profile_init(char *output_filename, int phase_num,
 // PU level initializations
 
 extern void * __profile_pu_init(char *file_name, char* pu_name,
-				long current_pc, INT32 checksum);
-
+				long current_pc, INT32 pusize, INT32 checksum);
 
 // Profile routines for invokations
 
@@ -126,6 +125,21 @@ extern void __profile_call_init(void *pu_handle, int num_calls);
 extern void __profile_call_entry(void *pu_handle, int call_id);
 extern void __profile_call_exit(void *pu_handle, int call_id);
 
+// Profile routines for icalls
+
+extern void __profile_icall_init(void *pu_handle, int num_icalls);
+extern void __profile_icall(void * pu_handle, int icall_id, void * called_fun_address);
+  
+#ifdef KEY
+  // Profile routines for value
+  extern void __profile_value_init(void *pu_handle, int num_values);
+  extern void __profile_value(void * pu_handle, int inst_id, INT64 value );
+
+  // Profile routines for value_fp_bin
+  extern void __profile_value_fp_bin_init(void *pu_handle, int num_values);
+  extern void __profile_value_fp_bin(void * pu_handle, int inst_id, 
+				     double value_fp_0, double value_fp_1 );
+#endif
 
 // PU level cleanup 
 

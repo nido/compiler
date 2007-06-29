@@ -871,7 +871,14 @@ Localize_Any_Global_TNs ( RID *rid )
 	 * Even multiple-bb leaf routines will need the save/restore
 	 * in case LRA allocates $31 to an inner block.
 	 */
+#ifdef TARG_ST
+	// [CL] accept single-bb routines: in case of noreturn
+	// functions, containing only a call, we might have a
+	// single-bb non-leaf routine
+	if (NULL != RA_TN) {
+#else
 	if (NULL != RA_TN && PU_BB_Count > 1) {
+#endif
 		Set_TN_is_global_reg(SAVE_tn(Return_Address_Reg));
 	}
 

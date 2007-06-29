@@ -195,7 +195,7 @@ endif
 ifeq ($(BUILD_TARGET), ST200)
 
 LDIRT += st220_si_gen$(BEXE) st231_si_gen$(BEXE) \
-	st235_si_gen$(BEXE)
+	st240_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
@@ -203,11 +203,11 @@ SO_TARGETS = libst220.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = st220.dll st231.dll st235.dll libtarginfo.dll
+SO_TARGETS = st220.dll st231.dll st240.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = st220.so st231.so st235.so
+SO_TARGETS = st220.so st231.so st240.so
 endif
 
 endif # ST200

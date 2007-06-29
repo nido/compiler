@@ -293,6 +293,9 @@ static const char * const interface[] = {
   " *       Initialize the register package for use with the ISA specified",
   " *       by ISA_SUBSET_Value.",
   " *",
+  " *   void ISA_REGISTER_CLASS_Set_Bit_Size(ISA_REGISTER_CLASS cl, INT bit_size)",
+  " *       Override the bit size for register class cl with bit_size.",
+  " *",
   " * ====================================================================",
   " * ====================================================================",
   " */",
@@ -658,7 +661,7 @@ void ISA_Registers_End(void)
   const char* tabname =gen_static_code? "ISA_REGISTER_CLASS_info_static" : 
                                         "ISA_REGISTER_CLASS_info_dynamic";
 
-  fprintf(cfile, "\nstatic const ISA_REGISTER_CLASS_INFO %s[] = {\n",tabname);
+  fprintf(cfile, "BE_EXPORTED ISA_REGISTER_CLASS_INFO %s[] = {\n",tabname);
   if(gen_static_code)              /* Managed UNDEFINED entry */
     fprintf(cfile, 
             "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
@@ -698,9 +701,9 @@ void ISA_Registers_End(void)
   fprintf(cfile, "};\n");
 
   if(gen_static_code)
-   { fprintf(cfile, "\nBE_EXPORTED const ISA_REGISTER_CLASS_INFO * "
+   { fprintf(cfile, "\nBE_EXPORTED ISA_REGISTER_CLASS_INFO * "
                     " ISA_REGISTER_CLASS_info = %s;\n\n",tabname);
-     fprintf(hfile, "\nBE_EXPORTED extern const ISA_REGISTER_CLASS_INFO *"
+     fprintf(hfile, "\nBE_EXPORTED extern ISA_REGISTER_CLASS_INFO *"
                     " ISA_REGISTER_CLASS_info;\n\n");
      fprintf(efile, "ISA_REGISTER_CLASS_info\n");
    }
@@ -957,7 +960,7 @@ void ISA_Registers_End(void)
 		 "  ISA_REGISTER_CLASS rc\n"
 		 ")\n"
 		 "{\n"
-		 "  BE_EXPORTED extern const ISA_REGISTER_CLASS_INFO *ISA_REGISTER_CLASS_info;\n"
+		 "  BE_EXPORTED extern ISA_REGISTER_CLASS_INFO *ISA_REGISTER_CLASS_info;\n"
 		 "  BE_EXPORTED extern mUINT8 *ISA_REGISTER_CLASS_info_index;\n"
 		 "  INT index = ISA_REGISTER_CLASS_info_index[(INT)rc];\n"
 		 "  return &ISA_REGISTER_CLASS_info[index];\n"
@@ -1100,6 +1103,17 @@ void ISA_Registers_End(void)
 //   fprintf(cfile,
 // 	  "};\n\n");
 // #endif
+
+  if (gen_static_code) {
+    fprintf(hfile, "\nBE_EXPORTED extern void ISA_REGISTER_CLASS_Set_Bit_Size(ISA_REGISTER_CLASS, INT);\n");
+    
+    fprintf(efile, "ISA_REGISTER_CLASS_Set_Bit_Size\n");
+    
+    fprintf(cfile, "\nvoid ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS cl, INT bit_size)\n"
+	    "{\n"
+	    "  ISA_REGISTER_CLASS_info[cl].bit_size = bit_size;\n"
+	    "}\n");
+  }
 
   Emit_Footer(hfile);
   Emit_C_Footer(cfile);

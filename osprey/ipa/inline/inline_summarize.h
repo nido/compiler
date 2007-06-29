@@ -397,7 +397,7 @@ SUMMARIZE<INLINER>::Process_procedure (WN *w)
 	case OPR_REGION:
 	    if (REGION_is_mp(w2))
 	      proc->Set_has_parallel_region_pragma();
-#if !defined( _LIGHTWEIGHT_INLINER ) || defined(TARG_ST) /* (cbr) can't inline functions that have exceptions regions */
+#if !defined( _LIGHTWEIGHT_INLINER ) || defined(TARG_ST)
 	    if (WN_region_is_EH(w2))
 	      proc->Set_exc_inline();
 	    if (WN_region_kind(w2)== REGION_KIND_TRY)

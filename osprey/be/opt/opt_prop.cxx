@@ -2235,7 +2235,6 @@ COPYPROP::Copy_propagate(BB_NODE *bb)
       CODEREP *lhs = stmt->Lhs();
       if (Is_function_of_itself(stmt, Opt_stab()) && WOPT_Enable_DCE &&
 	  Opt_stab()->Stack_elements(lhs->Aux_id()) != 0)
-	// FdF 20061115: Merged from st200/main for bug #20296
 	// FdF 20060613: But if !WOPT_Enable_DCE, this one will not be
 	// removed. The consequence is that two live ranges for the
 	// same variable will overlap, this is not allowed by

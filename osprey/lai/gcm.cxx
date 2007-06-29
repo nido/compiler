@@ -291,7 +291,7 @@ OP_Is_Addr_Incr(OP *op)
 static BOOL
 OP_Is_Expensive (OP *cur_op)
 {
-  return CGTARG_Is_Long_Latency(OP_code(cur_op));
+  return OP_Is_Long_Latency(OP_code(cur_op));
 }
 
 // =======================================================================
@@ -475,7 +475,7 @@ Similar_Ptr_Addrs_Match (OP *pred_op, OP *succ_op)
 static BOOL 
 OP_Has_Restrictions(OP *op, BB *source_bb, BB *target_bb, mINT32 motion_type)
 {
-  if (CGTARG_Is_OP_Intrinsic(op)) return TRUE;
+  if (OP_Is_Intrinsic(op)) return TRUE;
 
   if (OP_has_hazard(op)) return TRUE;
 

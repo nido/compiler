@@ -401,6 +401,13 @@ Expand_ST_into_base_and_ofst(ST *st, INT64 st_ofst, ST **base, INT64 *ofst)
     if (ST_sclass(tmpbase) == SCLASS_TEXT)
       break;
 
+#ifdef TARG_ST
+    if ((Gen_PIC_Shared || Gen_PIC_Call_Shared)
+       && ! ST_is_preemptible(tmpbase)
+       && ST_is_preemptible(ST_base(tmpbase)))
+      break;
+#endif
+
     tmpofst += ST_ofst(tmpbase);
     tmpbase = ST_base(tmpbase); 
   }

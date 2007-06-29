@@ -78,6 +78,9 @@ static LRANGE*      split_lranges_head;
 static BB_LIST*     region_entry_glue_bbs;
 static BB_LIST*     region_exit_glue_bbs;
 static float        freq_spill_count, freq_restore_count;
+#ifdef TARG_ST
+static float        freq_local_spill_count, freq_local_restore_count;
+#endif
 static INT32        spill_count, restore_count;
 float               priority_count;
 
@@ -2085,8 +2088,15 @@ GRA_Spill(void)
     }
   }
 
+#ifdef TARG_ST
+  GRA_Trace_Spill_Stats(freq_restore_count,restore_count,freq_spill_count,
+			spill_count,
+			freq_local_restore_count, freq_local_spill_count,
+			priority_count);
+#else
   GRA_Trace_Spill_Stats(freq_restore_count,restore_count,freq_spill_count,
 			spill_count, priority_count);
+#endif
   GRA_Trace_Memory("GRA_Spill()");
 }
 
@@ -2125,6 +2135,10 @@ GRA_Note_Spill( LRANGE* lrange )
     DevAssert(lrange->Type() == LRANGE_TYPE_LOCAL &&
 	      !lrange->Has_Wired_Register(),
               ("Spilling a LRANGE of unexpected type"));
+#ifdef TARG_ST
+    freq_local_spill_count += lrange->Gbb()->Freq();
+    freq_local_restore_count += lrange->Gbb()->Freq();
+#endif    
   }
 }
 
@@ -2136,6 +2150,9 @@ GRA_Spill_Initialize(void)
   spilled_lranges = NULL;
   split_lranges_head = NULL;
   lunits_with_spills_head = NULL;
+#ifdef TARG_ST
+  freq_local_spill_count = freq_local_restore_count = 0.0F;
+#endif
 }
 
 /////////////////////////////////////

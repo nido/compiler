@@ -1,3 +1,3 @@
 #!/bin/sh
-../configure BUILD=open64-default PLATFORMS=linux-st200-st200 TOOLDEFS=apagnu \
+../configure BUILD=open64-default PLATFORMS=linux-st200-st200 TOOLDEFS=gnu_compil \
     SUBDIRS="instrumentationC libgcov libunwind" $*

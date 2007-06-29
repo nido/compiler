@@ -108,6 +108,18 @@ BE_EXPORTED extern BOOL Enable_Cfold_Intrinsics;	/* Intrinsic constant folding? 
 BE_EXPORTED extern BOOL Cfold_Intrinsics_Set;	/* ... option seen? */
 BE_EXPORTED extern BOOL CIS_Allowed;	/* sin(x) and cos(x) => cis(x) ? */
 BE_EXPORTED extern BOOL Div_Split_Allowed;	/* Change a/b --> a*1/b ? */
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL Float_Eq_Simp;	/* change a==b (float cmp) --> a==b (integer cmp if a or b is cst)) ? */
+BE_EXPORTED extern BOOL OPT_fb_div_simp;	// Apply division simplification with feedback info 
+BE_EXPORTED extern BOOL OPT_fb_mpy_simp;	// Apply multiply simplification with feedback info 
+#endif
+#ifdef KEY
+BE_EXPORTED extern UINT32 Div_Exe_Counter;	  /* Change a/b --> a/N if b==N ?             */
+BE_EXPORTED extern UINT32 Div_Exe_Ratio;	  /* Change a/b --> a/N if b has high ratio   */
+BE_EXPORTED extern UINT32 Div_Exe_Candidates; /* The top entries that will be taken care. */
+BE_EXPORTED extern UINT32 Mpy_Exe_Counter;	/* Change a*b to a if b==N or 0.0 if b == 0.0 */
+BE_EXPORTED extern UINT32 Mpy_Exe_Ratio;	/* Change a*b to a if b==N or 0.0 if b == 0.0 */
+#endif
 BE_EXPORTED extern BOOL Fast_Exp_Allowed;	/* Avoid exp() calls? */
 BE_EXPORTED extern BOOL Fast_IO_Allowed;	/* Fast printf/scanf/printw */
 BE_EXPORTED extern BOOL Fast_Sqrt_Allowed;	/* Change sqrt(x) --> x * rsqrt(x) ? */
@@ -115,7 +127,10 @@ BE_EXPORTED extern BOOL Optimize_CVTL_Exp;	/* Optimize expansion of CVTL operato
 BE_EXPORTED extern BOOL Enable_CVT_Opt;	/* Optimize expansion of CVT operators */
 BE_EXPORTED extern BOOL Force_IEEE_Comparisons;	/* IEEE NaN comparisons? */
 BE_EXPORTED extern BOOL Inline_Intrinsics_Early;    /* Inline intrinsics just after VHO */
-BE_EXPORTED extern BOOL Enable_extract_compose;     /* Enable use of the extract/compose whirl ops */
+BE_EXPORTED extern BOOL Enable_extract;     /* Enable use of the extract whirl ops */
+BE_EXPORTED extern BOOL Enable_extract_overriden;     /* ... option seen? */
+BE_EXPORTED extern BOOL Enable_compose;     /* Enable use of the compose whirl ops */
+BE_EXPORTED extern BOOL Enable_compose_overriden;     /* ... option seen? */
 
 #ifdef TARG_ST
 /***** Floating point optimizations options *****/
@@ -129,6 +144,8 @@ BE_EXPORTED extern BOOL No_Trapping;  /* No trapping math ? */
 BE_EXPORTED extern BOOL No_Trapping_Set;  /* ... option seen? */
 BE_EXPORTED extern BOOL Unsafe_Math;  /* Unsafe math allowed ? */
 BE_EXPORTED extern BOOL Unsafe_Math_Set;  /* ... option seen? */
+BE_EXPORTED extern BOOL Fused_FP;  /* Fused FP ops allowed ? */
+BE_EXPORTED extern BOOL Fused_FP_Set;  /* ... option seen? */
 BE_EXPORTED extern BOOL Fused_Madd;  /* Fused madd allowed ? */
 BE_EXPORTED extern BOOL Fused_Madd_Set;  /* ... option seen? */
 BE_EXPORTED extern BOOL No_Denormals;  /* No denormals support  ? */
@@ -166,6 +183,10 @@ BE_EXPORTED extern BOOL OPT_shared_memory;	// assume use of shared memory
 /***** Instrumentation related options *****/
 BE_EXPORTED extern INT32 Instrumentation_Phase_Num;
 BE_EXPORTED extern BOOL Instrumentation_Enabled;
+#ifdef TARG_ST
+BE_EXPORTED extern char* disable_instrument;
+BE_EXPORTED extern char* enable_instrument;
+#endif
 BE_EXPORTED extern UINT32 Instrumentation_Actions;
 BE_EXPORTED extern BOOL Instrumentation_Unique_Output;
 BE_EXPORTED extern INT32 Feedback_Phase_Num;

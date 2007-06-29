@@ -392,9 +392,23 @@ inline UINT Compute_alignment_exponent(INT align) {
 #ifdef TARG_ST
 /* ====================================================================
  *
- * Variants for is_cond and is_select operations
+ * Variants for TOP_is_cond() and TOP_is_select() operations
  * as returned by TOP_cond_variant(top)
  *
+ * V_COND_TRUE : applies if comparison is condition != 0
+ * V_COND_FALSE : applies if comparison is condition == 0
+ * V_COND_NONE : can be used if comparison condition as a non obvious
+ * or target dependent semantic.
+ *
+ * Currently, cond property exists for conditional branch and select
+ * operation.
+ * The select (TOP_is_select()) semantic is:
+ *   (OU_condition == 0 ? OU_opnd1: OU_opnd2) if variant = V_COND_FALSE
+ *   else OU_condition != 0 ? OU_opnd1: OU_opnd2) if variant != V_COND_FALSE
+ * The cond branch (TOP_is_cond()) semantic is:
+ *   branch taken if OU_condition == 0 if variant == V_COND_FALSE
+ *   branch taken if OU_condition != 0 if variant != V_COND_FALSE
+
  * ====================================================================
  */
 #define V_COND_NONE		0

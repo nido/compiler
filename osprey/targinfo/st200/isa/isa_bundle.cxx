@@ -55,406 +55,554 @@ main()
   Instruction_Exec_Unit_Group(ALONE_Unit, 
 		 TOP_asm, 
 		 TOP_prgins, 
-		 TOP_syscall, 
-		 TOP_st235_syscall, 
+		 TOP_prginsadd_r_i, 
+		 TOP_prginsadd_r_ii, 
+		 TOP_prginsadd_l1_r_i, 
+		 TOP_prginsadd_l1_r_ii, 
+		 TOP_prginsset_r_i, 
+		 TOP_prginsset_r_ii, 
+		 TOP_prginsset_l1_r_i, 
+		 TOP_prginsset_l1_r_ii, 
+		 TOP_retention, 
+		 TOP_syscall_i, 
+		 TOP_st240_syscall_i, 
 		 TOP_UNDEFINED); 
 
  /* ===== Specification for ANYX_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE ANYX_Unit = ISA_Exec_Unit_Type_Create("ANYX_Unit", NULL); 
   Instruction_Exec_Unit_Group(ANYX_Unit, 
-		 TOP_addpc_ii, 
-		 TOP_add_ii, 
-		 TOP_andc_ii, 
-		 TOP_andl_ii_b, 
-		 TOP_andl_ii_r, 
-		 TOP_and_ii, 
-		 TOP_asm_16_ii, 
-		 TOP_asm_17_ii, 
-		 TOP_asm_18_ii, 
-		 TOP_asm_19_ii, 
-		 TOP_asm_20_ii, 
-		 TOP_asm_21_ii, 
-		 TOP_asm_22_ii, 
-		 TOP_asm_23_ii, 
-		 TOP_asm_28_ii, 
-		 TOP_asm_29_ii, 
-		 TOP_asm_30_ii, 
-		 TOP_asm_31_ii, 
-		 TOP_cmpeq_ii_b, 
-		 TOP_cmpeq_ii_r, 
-		 TOP_cmpgeu_ii_b, 
-		 TOP_cmpgeu_ii_r, 
-		 TOP_cmpge_ii_b, 
-		 TOP_cmpge_ii_r, 
-		 TOP_cmpgtu_ii_b, 
-		 TOP_cmpgtu_ii_r, 
-		 TOP_cmpgt_ii_b, 
-		 TOP_cmpgt_ii_r, 
-		 TOP_cmpleu_ii_b, 
-		 TOP_cmpleu_ii_r, 
-		 TOP_cmple_ii_b, 
-		 TOP_cmple_ii_r, 
-		 TOP_cmpltu_ii_b, 
-		 TOP_cmpltu_ii_r, 
-		 TOP_cmplt_ii_b, 
-		 TOP_cmplt_ii_r, 
-		 TOP_cmpne_ii_b, 
-		 TOP_cmpne_ii_r, 
-		 TOP_ldbc_ii, 
-		 TOP_ldbuc_ii, 
-		 TOP_ldbu_d_ii, 
-		 TOP_ldbu_ii, 
-		 TOP_ldb_d_ii, 
-		 TOP_ldb_ii, 
-		 TOP_ldhc_ii, 
-		 TOP_ldhuc_ii, 
-		 TOP_ldhu_d_ii, 
-		 TOP_ldhu_ii, 
-		 TOP_ldh_d_ii, 
-		 TOP_ldh_ii, 
-		 TOP_ldlc_ii, 
-		 TOP_ldl_ii, 
-		 TOP_ldwc_ii, 
-		 TOP_ldw_d_ii, 
-		 TOP_ldw_ii, 
-		 TOP_maxu_ii, 
-		 TOP_max_ii, 
-		 TOP_minu_ii, 
-		 TOP_min_ii, 
-		 TOP_mov_ii, 
-		 TOP_mul32_ii, 
-		 TOP_mul64hu_ii, 
-		 TOP_mul64h_ii, 
-		 TOP_mulfrac_ii, 
-		 TOP_mulhhs_ii, 
-		 TOP_mulhhu_ii, 
-		 TOP_mulhh_ii, 
-		 TOP_mulhs_ii, 
-		 TOP_mulhu_ii, 
-		 TOP_mulh_ii, 
-		 TOP_mullhus_ii, 
-		 TOP_mullhu_ii, 
-		 TOP_mullh_ii, 
-		 TOP_mulllu_ii, 
-		 TOP_mulll_ii, 
-		 TOP_mullu_ii, 
-		 TOP_mull_ii, 
-		 TOP_multi_ldlc_ii, 
-		 TOP_multi_ldl_ii, 
-		 TOP_multi_stlc_ii, 
-		 TOP_multi_stl_ii, 
-		 TOP_nandl_ii_b, 
-		 TOP_nandl_ii_r, 
-		 TOP_norl_ii_b, 
-		 TOP_norl_ii_r, 
-		 TOP_orc_ii, 
-		 TOP_orl_ii_b, 
-		 TOP_orl_ii_r, 
-		 TOP_or_ii, 
-		 TOP_pftc_ii, 
-		 TOP_pft_ii, 
-		 TOP_prgadd_ii, 
-		 TOP_prginsadd_ii, 
-		 TOP_prginspg_ii, 
-		 TOP_prgset_ii, 
-		 TOP_sh1add_ii, 
-		 TOP_sh2add_ii, 
-		 TOP_sh3add_ii, 
-		 TOP_sh4add_ii, 
-		 TOP_shl_ii, 
-		 TOP_shru_ii, 
-		 TOP_shr_ii, 
-		 TOP_slctf_ii, 
-		 TOP_slct_ii, 
-		 TOP_stbc_ii, 
-		 TOP_stb_ii, 
-		 TOP_sthc_ii, 
-		 TOP_sth_ii, 
-		 TOP_stlc_ii, 
-		 TOP_stl_ii, 
-		 TOP_stwc_ii, 
-		 TOP_stw_ii, 
-		 TOP_sub_ii, 
-		 TOP_xor_ii, 
+		 TOP_addpc_ii_r, 
+		 TOP_add_ii_r_r, 
+		 TOP_andc_ii_r_r, 
+		 TOP_andl_ii_r_b, 
+		 TOP_andl_ii_r_r, 
+		 TOP_and_ii_r_r, 
+		 TOP_asm_16_ii_r_r, 
+		 TOP_asm_17_ii_r_r, 
+		 TOP_asm_18_ii_r_r, 
+		 TOP_asm_19_ii_r_r, 
+		 TOP_asm_20_ii_r_r, 
+		 TOP_asm_21_ii_r_r, 
+		 TOP_asm_22_ii_r_r, 
+		 TOP_asm_23_ii_r_r, 
+		 TOP_asm_28_ii_r_r, 
+		 TOP_asm_29_ii_r_r, 
+		 TOP_asm_30_ii_r_r, 
+		 TOP_asm_31_ii_r_r, 
+		 TOP_cmpeq_ii_r_b, 
+		 TOP_cmpeq_ii_r_r, 
+		 TOP_cmpgeu_ii_r_b, 
+		 TOP_cmpgeu_ii_r_r, 
+		 TOP_cmpge_ii_r_b, 
+		 TOP_cmpge_ii_r_r, 
+		 TOP_cmpgtu_ii_r_b, 
+		 TOP_cmpgtu_ii_r_r, 
+		 TOP_cmpgt_ii_r_b, 
+		 TOP_cmpgt_ii_r_r, 
+		 TOP_cmpleu_ii_r_b, 
+		 TOP_cmpleu_ii_r_r, 
+		 TOP_cmple_ii_r_b, 
+		 TOP_cmple_ii_r_r, 
+		 TOP_cmpltu_ii_r_b, 
+		 TOP_cmpltu_ii_r_r, 
+		 TOP_cmplt_ii_r_b, 
+		 TOP_cmplt_ii_r_r, 
+		 TOP_cmpne_ii_r_b, 
+		 TOP_cmpne_ii_r_r, 
+		 TOP_extractlu_ii_r_r, 
+		 TOP_extractl_ii_r_r, 
+		 TOP_extractu_ii_r_r, 
+		 TOP_extract_ii_r_r, 
+		 TOP_maxu_ii_r_r, 
+		 TOP_max_ii_r_r, 
+		 TOP_minu_ii_r_r, 
+		 TOP_min_ii_r_r, 
+		 TOP_mov_ii_r, 
+		 TOP_mul32_ii_r_r, 
+		 TOP_mul64hu_ii_r_r, 
+		 TOP_mul64h_ii_r_r, 
+		 TOP_mulfrac_ii_r_r, 
+		 TOP_mulhhs_ii_r_r, 
+		 TOP_mulhhu_ii_r_r, 
+		 TOP_mulhh_ii_r_r, 
+		 TOP_mulhs_ii_r_r, 
+		 TOP_mulhu_ii_r_r, 
+		 TOP_mulh_ii_r_r, 
+		 TOP_mullhus_ii_r_r, 
+		 TOP_mullhu_ii_r_r, 
+		 TOP_mullh_ii_r_r, 
+		 TOP_mulllu_ii_r_r, 
+		 TOP_mulll_ii_r_r, 
+		 TOP_mullu_ii_r_r, 
+		 TOP_mull_ii_r_r, 
+		 TOP_st240_mull_ii_r_r, 
+		 TOP_nandl_ii_r_b, 
+		 TOP_nandl_ii_r_r, 
+		 TOP_norl_ii_r_b, 
+		 TOP_norl_ii_r_r, 
+		 TOP_orc_ii_r_r, 
+		 TOP_orl_ii_r_b, 
+		 TOP_orl_ii_r_r, 
+		 TOP_or_ii_r_r, 
+		 TOP_perm_pb_ii_r_r, 
+		 TOP_rotl_ii_r_r, 
+		 TOP_sh1add_ii_r_r, 
+		 TOP_sh2add_ii_r_r, 
+		 TOP_sh3add_ii_r_r, 
+		 TOP_sh4add_ii_r_r, 
+		 TOP_shlso_ii_r_r, 
+		 TOP_shls_ii_r_r, 
+		 TOP_shls_ph_ii_r_r, 
+		 TOP_shl_ii_r_r, 
+		 TOP_shl_ph_ii_r_r, 
+		 TOP_shrrne_ph_ii_r_r, 
+		 TOP_shrrnp_ii_r_r, 
+		 TOP_shrrnp_ph_ii_r_r, 
+		 TOP_shru_ii_r_r, 
+		 TOP_shr_ii_r_r, 
+		 TOP_shr_ph_ii_r_r, 
+		 TOP_slctf_ii_r_b_r, 
+		 TOP_slctf_pb_ii_r_b_r, 
+		 TOP_slct_ii_r_b_r, 
+		 TOP_slct_pb_ii_r_b_r, 
+		 TOP_sub_r_ii_r, 
+		 TOP_sxt_ii_r_r, 
+		 TOP_xor_ii_r_r, 
+		 TOP_zxt_ii_r_r, 
 		 TOP_UNDEFINED); 
 
  /* ===== Specification for ANY_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE ANY_Unit = ISA_Exec_Unit_Type_Create("ANY_Unit", NULL); 
   Instruction_Exec_Unit_Group(ANY_Unit, 
-		 TOP_addcg, 
-		 TOP_addpc_i, 
-		 TOP_add_r, 
-		 TOP_add_i, 
+		 TOP_abss_ph_r_r, 
+		 TOP_absubu_pb_r_r_r, 
+		 TOP_addcg_b_r_r_b_r, 
+		 TOP_addpc_i_r, 
+		 TOP_addso_r_r_r, 
+		 TOP_adds_r_r_r, 
+		 TOP_adds_ph_r_r_r, 
+		 TOP_add_r_r_r, 
+		 TOP_add_i_r_r, 
+		 TOP_add_ph_r_r_r, 
 		 TOP_spadjust, 
-		 TOP_andc_r, 
-		 TOP_andc_i, 
-		 TOP_andl_r_b, 
-		 TOP_andl_i_b, 
-		 TOP_andl_r_r, 
-		 TOP_andl_i_r, 
-		 TOP_and_r, 
-		 TOP_and_i, 
-		 TOP_asm_0, 
-		 TOP_asm_16_i, 
-		 TOP_asm_17_i, 
-		 TOP_asm_18_i, 
-		 TOP_asm_19_i, 
-		 TOP_asm_1, 
-		 TOP_asm_20_i, 
-		 TOP_asm_21_i, 
-		 TOP_asm_22_i, 
-		 TOP_asm_23_i, 
-		 TOP_asm_2, 
-		 TOP_asm_3, 
-		 TOP_asm_4, 
-		 TOP_asm_5, 
-		 TOP_asm_6, 
-		 TOP_asm_7, 
+		 TOP_andc_r_r_r, 
+		 TOP_andc_i_r_r, 
+		 TOP_andl_r_r_b, 
+		 TOP_andl_i_r_b, 
+		 TOP_andl_r_r_r, 
+		 TOP_andl_i_r_r, 
+		 TOP_andl_b_b_b, 
+		 TOP_and_r_r_r, 
+		 TOP_and_i_r_r, 
+		 TOP_asm_0_r_r_r, 
+		 TOP_asm_16_i_r_r, 
+		 TOP_asm_17_i_r_r, 
+		 TOP_asm_18_i_r_r, 
+		 TOP_asm_19_i_r_r, 
+		 TOP_asm_1_r_r_r, 
+		 TOP_asm_20_i_r_r, 
+		 TOP_asm_21_i_r_r, 
+		 TOP_asm_22_i_r_r, 
+		 TOP_asm_23_i_r_r, 
+		 TOP_asm_2_r_r_r, 
+		 TOP_asm_3_r_r_r, 
+		 TOP_asm_4_r_r_r, 
+		 TOP_asm_5_r_r_r, 
+		 TOP_asm_6_r_r_r, 
+		 TOP_asm_7_r_r_r, 
+		 TOP_avg4u_pb_r_r_b_r, 
+		 TOP_avgu_pb_r_r_b_r, 
 		 TOP_break, 
-		 TOP_bswap, 
-		 TOP_clz, 
-		 TOP_cmpeqf_n_b, 
-		 TOP_cmpeqf_n_r, 
-		 TOP_cmpeq_r_b, 
-		 TOP_cmpeq_i_b, 
-		 TOP_cmpeq_r_r, 
-		 TOP_cmpeq_i_r, 
-		 TOP_cmpgef_n_b, 
-		 TOP_cmpgef_n_r, 
-		 TOP_cmpgeu_r_b, 
-		 TOP_cmpgeu_i_b, 
-		 TOP_cmpgeu_r_r, 
-		 TOP_cmpgeu_i_r, 
-		 TOP_cmpge_r_b, 
-		 TOP_cmpge_i_b, 
-		 TOP_cmpge_r_r, 
-		 TOP_cmpge_i_r, 
-		 TOP_cmpgtf_n_b, 
-		 TOP_cmpgtf_n_r, 
-		 TOP_cmpgtu_r_b, 
-		 TOP_cmpgtu_i_b, 
-		 TOP_cmpgtu_r_r, 
-		 TOP_cmpgtu_i_r, 
-		 TOP_cmpgt_r_b, 
-		 TOP_cmpgt_i_b, 
-		 TOP_cmpgt_r_r, 
-		 TOP_cmpgt_i_r, 
-		 TOP_cmplef_n_b, 
-		 TOP_cmplef_n_r, 
-		 TOP_cmpleu_r_b, 
-		 TOP_cmpleu_i_b, 
-		 TOP_cmpleu_r_r, 
-		 TOP_cmpleu_i_r, 
-		 TOP_cmple_r_b, 
-		 TOP_cmple_i_b, 
-		 TOP_cmple_r_r, 
-		 TOP_cmple_i_r, 
-		 TOP_cmpltf_n_b, 
-		 TOP_cmpltf_n_r, 
-		 TOP_cmpltu_r_b, 
-		 TOP_cmpltu_i_b, 
-		 TOP_cmpltu_r_r, 
-		 TOP_cmpltu_i_r, 
-		 TOP_cmplt_r_b, 
-		 TOP_cmplt_i_b, 
-		 TOP_cmplt_r_r, 
-		 TOP_cmplt_i_r, 
-		 TOP_cmpne_r_b, 
-		 TOP_cmpne_i_b, 
-		 TOP_cmpne_r_r, 
-		 TOP_cmpne_i_r, 
+		 TOP_bswap_r_r, 
+		 TOP_clz_r_r, 
+		 TOP_cmpeqf_n_r_r_b, 
+		 TOP_cmpeqf_n_r_r_r, 
+		 TOP_cmpeq_r_r_b, 
+		 TOP_cmpeq_i_r_b, 
+		 TOP_cmpeq_r_r_r, 
+		 TOP_cmpeq_i_r_r, 
+		 TOP_cmpeq_pb_r_r_r, 
+		 TOP_cmpeq_pb_r_r_b, 
+		 TOP_cmpeq_ph_r_r_r, 
+		 TOP_cmpeq_ph_r_r_b, 
+		 TOP_cmpgef_n_r_r_b, 
+		 TOP_cmpgef_n_r_r_r, 
+		 TOP_cmpgeu_r_r_b, 
+		 TOP_cmpgeu_i_r_b, 
+		 TOP_cmpgeu_r_r_r, 
+		 TOP_cmpgeu_i_r_r, 
+		 TOP_cmpge_r_r_b, 
+		 TOP_cmpge_i_r_b, 
+		 TOP_cmpge_r_r_r, 
+		 TOP_cmpge_i_r_r, 
+		 TOP_cmpgtf_n_r_r_b, 
+		 TOP_cmpgtf_n_r_r_r, 
+		 TOP_cmpgtu_r_r_b, 
+		 TOP_cmpgtu_i_r_b, 
+		 TOP_cmpgtu_r_r_r, 
+		 TOP_cmpgtu_i_r_r, 
+		 TOP_cmpgtu_pb_r_r_r, 
+		 TOP_cmpgtu_pb_r_r_b, 
+		 TOP_cmpgt_r_r_b, 
+		 TOP_cmpgt_i_r_b, 
+		 TOP_cmpgt_r_r_r, 
+		 TOP_cmpgt_i_r_r, 
+		 TOP_cmpgt_ph_r_r_r, 
+		 TOP_cmpgt_ph_r_r_b, 
+		 TOP_cmplef_n_r_r_b, 
+		 TOP_cmplef_n_r_r_r, 
+		 TOP_cmpleu_r_r_b, 
+		 TOP_cmpleu_i_r_b, 
+		 TOP_cmpleu_r_r_r, 
+		 TOP_cmpleu_i_r_r, 
+		 TOP_cmple_r_r_b, 
+		 TOP_cmple_i_r_b, 
+		 TOP_cmple_r_r_r, 
+		 TOP_cmple_i_r_r, 
+		 TOP_cmpltf_n_r_r_b, 
+		 TOP_cmpltf_n_r_r_r, 
+		 TOP_cmpltu_r_r_b, 
+		 TOP_cmpltu_i_r_b, 
+		 TOP_cmpltu_r_r_r, 
+		 TOP_cmpltu_i_r_r, 
+		 TOP_cmplt_r_r_b, 
+		 TOP_cmplt_i_r_b, 
+		 TOP_cmplt_r_r_r, 
+		 TOP_cmplt_i_r_r, 
+		 TOP_cmpne_r_r_b, 
+		 TOP_cmpne_i_r_b, 
+		 TOP_cmpne_r_r_r, 
+		 TOP_cmpne_i_r_r, 
 		 TOP_composep, 
-		 TOP_divs, 
-		 TOP_divu, 
-		 TOP_div, 
+		 TOP_convbi_b_r, 
+		 TOP_convib_r_b, 
+		 TOP_dbgsbrk, 
+		 TOP_divs_b_r_r_b_r, 
+		 TOP_ext1_pb_r_r_r, 
+		 TOP_ext2_pb_r_r_r, 
+		 TOP_ext3_pb_r_r_r, 
+		 TOP_extl_pb_r_r_b_r, 
+		 TOP_extractlu_i_r_r, 
+		 TOP_extractl_i_r_r, 
 		 TOP_extractp, 
-		 TOP_ldbc_i, 
-		 TOP_ldbuc_i, 
-		 TOP_ldbu_d_i, 
-		 TOP_ldbu_i, 
-		 TOP_ldb_d_i, 
-		 TOP_ldb_i, 
-		 TOP_ldhc_i, 
-		 TOP_ldhuc_i, 
-		 TOP_ldhu_d_i, 
-		 TOP_ldhu_i, 
-		 TOP_ldh_d_i, 
-		 TOP_ldh_i, 
-		 TOP_ldlc_i, 
-		 TOP_ldl_i, 
-		 TOP_ldwc_i, 
-		 TOP_ldwl, 
-		 TOP_ldw_d_i, 
-		 TOP_ldw_i, 
-		 TOP_maxu_r, 
-		 TOP_maxu_i, 
-		 TOP_max_r, 
-		 TOP_max_i, 
-		 TOP_mfb, 
-		 TOP_minu_r, 
-		 TOP_minu_i, 
-		 TOP_min_r, 
-		 TOP_min_i, 
+		 TOP_extractu_i_r_r, 
+		 TOP_extract_i_r_r, 
+		 TOP_extr_pb_r_r_b_r, 
+		 TOP_maxu_r_r_r, 
+		 TOP_maxu_i_r_r, 
+		 TOP_max_r_r_r, 
+		 TOP_max_i_r_r, 
+		 TOP_max_ph_r_r_r, 
+		 TOP_mfb_b_r, 
+		 TOP_minu_r_r_r, 
+		 TOP_minu_i_r_r, 
+		 TOP_min_r_r_r, 
+		 TOP_min_i_r_r, 
+		 TOP_min_ph_r_r_r, 
+		 TOP_movc, 
+		 TOP_movcf, 
 		 TOP_movp, 
-		 TOP_mov_r, 
-		 TOP_mov_i, 
-		 TOP_mtb, 
-		 TOP_multi_ldlc_i, 
-		 TOP_multi_ldl_i, 
-		 TOP_multi_stlc_i, 
-		 TOP_multi_stl_i, 
-		 TOP_nandl_r_b, 
-		 TOP_nandl_i_b, 
-		 TOP_nandl_r_r, 
-		 TOP_nandl_i_r, 
+		 TOP_mov_r_r, 
+		 TOP_mov_i_r, 
+		 TOP_mov_r_b, 
+		 TOP_st240_mov_r_b, 
+		 TOP_mov_b_r, 
+		 TOP_st240_mov_b_r, 
+		 TOP_mov_b_b, 
+		 TOP_mtb_r_b, 
+		 TOP_nandl_r_r_b, 
+		 TOP_nandl_i_r_b, 
+		 TOP_nandl_r_r_r, 
+		 TOP_nandl_i_r_r, 
+		 TOP_nandl_b_b_b, 
 		 TOP_nop, 
-		 TOP_norl_r_b, 
-		 TOP_norl_i_b, 
-		 TOP_norl_r_r, 
-		 TOP_norl_i_r, 
-		 TOP_orc_r, 
-		 TOP_orc_i, 
-		 TOP_orl_r_b, 
-		 TOP_orl_i_b, 
-		 TOP_orl_r_r, 
-		 TOP_orl_i_r, 
-		 TOP_or_r, 
-		 TOP_or_i, 
-		 TOP_pftc_i, 
-		 TOP_pft_i, 
-		 TOP_prgadd_i, 
-		 TOP_prginsadd_i, 
-		 TOP_prginspg_i, 
-		 TOP_prgset_i, 
-		 TOP_remu, 
-		 TOP_rem, 
-		 TOP_sbrk, 
-		 TOP_st235_sbrk, 
-		 TOP_sh1add_r, 
-		 TOP_sh1add_i, 
-		 TOP_sh2add_r, 
-		 TOP_sh2add_i, 
-		 TOP_sh3add_r, 
-		 TOP_sh3add_i, 
-		 TOP_sh4add_r, 
-		 TOP_sh4add_i, 
-		 TOP_shl_r, 
-		 TOP_shl_i, 
-		 TOP_shru_r, 
-		 TOP_shru_i, 
-		 TOP_shr_r, 
-		 TOP_shr_i, 
-		 TOP_slctf_r, 
-		 TOP_slctf_i, 
-		 TOP_slct_r, 
-		 TOP_slct_i, 
-		 TOP_stbc_i, 
-		 TOP_stb_i, 
-		 TOP_sthc_i, 
-		 TOP_sth_i, 
-		 TOP_stlc_i, 
-		 TOP_stl_i, 
-		 TOP_stwc_i, 
-		 TOP_stwl, 
-		 TOP_stw_i, 
-		 TOP_sub_r, 
-		 TOP_sub_i, 
-		 TOP_sxtb, 
-		 TOP_sxth, 
-		 TOP_sync, 
-		 TOP_wmb, 
-		 TOP_xor_r, 
-		 TOP_xor_i, 
-		 TOP_zxtb, 
-		 TOP_zxth, 
+		 TOP_norl_r_r_b, 
+		 TOP_norl_i_r_b, 
+		 TOP_norl_r_r_r, 
+		 TOP_norl_i_r_r, 
+		 TOP_norl_b_b_b, 
+		 TOP_orc_r_r_r, 
+		 TOP_orc_i_r_r, 
+		 TOP_orl_r_r_b, 
+		 TOP_orl_i_r_b, 
+		 TOP_orl_r_r_r, 
+		 TOP_orl_i_r_r, 
+		 TOP_orl_b_b_b, 
+		 TOP_or_r_r_r, 
+		 TOP_or_i_r_r, 
+		 TOP_packrnp_phh_r_r_r, 
+		 TOP_packsu_pb_r_r_r, 
+		 TOP_packs_ph_r_r_r, 
+		 TOP_pack_pb_r_r_r, 
+		 TOP_pack_ph_r_r_r, 
+		 TOP_perm_pb_r_r_r, 
+		 TOP_perm_pb_i_r_r, 
+		 TOP_rotl_r_r_r, 
+		 TOP_rotl_i_r_r, 
+		 TOP_sadu_pb_r_r_r, 
+		 TOP_satso_r_r, 
+		 TOP_sats_r_r, 
+		 TOP_sbrk_i, 
+		 TOP_st240_sbrk_i, 
+		 TOP_sh1addso_r_r_r, 
+		 TOP_sh1adds_r_r_r, 
+		 TOP_sh1add_r_r_r, 
+		 TOP_sh1add_i_r_r, 
+		 TOP_sh1subso_r_r_r, 
+		 TOP_sh1subs_r_r_r, 
+		 TOP_sh2add_r_r_r, 
+		 TOP_sh2add_i_r_r, 
+		 TOP_sh3add_r_r_r, 
+		 TOP_sh3add_i_r_r, 
+		 TOP_sh4add_r_r_r, 
+		 TOP_sh4add_i_r_r, 
+		 TOP_shlso_r_r_r, 
+		 TOP_shlso_i_r_r, 
+		 TOP_shls_r_r_r, 
+		 TOP_shls_i_r_r, 
+		 TOP_shls_ph_r_r_r, 
+		 TOP_shls_ph_i_r_r, 
+		 TOP_shl_r_r_r, 
+		 TOP_shl_i_r_r, 
+		 TOP_shl_ph_r_r_r, 
+		 TOP_shl_ph_i_r_r, 
+		 TOP_shrrne_ph_r_r_r, 
+		 TOP_shrrne_ph_i_r_r, 
+		 TOP_shrrnp_i_r_r, 
+		 TOP_shrrnp_ph_r_r_r, 
+		 TOP_shrrnp_ph_i_r_r, 
+		 TOP_shru_r_r_r, 
+		 TOP_shru_i_r_r, 
+		 TOP_shr_r_r_r, 
+		 TOP_shr_i_r_r, 
+		 TOP_shr_ph_r_r_r, 
+		 TOP_shr_ph_i_r_r, 
+		 TOP_shuffeve_pb_r_r_r, 
+		 TOP_shuffodd_pb_r_r_r, 
+		 TOP_shuff_pbh_r_r_r, 
+		 TOP_shuff_pbl_r_r_r, 
+		 TOP_shuff_phh_r_r_r, 
+		 TOP_shuff_phl_r_r_r, 
+		 TOP_slctf_r_r_b_r, 
+		 TOP_slctf_i_r_b_r, 
+		 TOP_slctf_pb_r_r_b_r, 
+		 TOP_slctf_pb_i_r_b_r, 
+		 TOP_slct_r_r_b_r, 
+		 TOP_slct_i_r_b_r, 
+		 TOP_slct_pb_r_r_b_r, 
+		 TOP_slct_pb_i_r_b_r, 
+		 TOP_st240_slct_r_r_b_r, 
+		 TOP_subso_r_r_r, 
+		 TOP_subs_r_r_r, 
+		 TOP_subs_ph_r_r_r, 
+		 TOP_sub_r_r_r, 
+		 TOP_sub_r_i_r, 
+		 TOP_sub_ph_r_r_r, 
+		 TOP_sxtb_r_r, 
+		 TOP_sxth_r_r, 
+		 TOP_sxt_r_r_r, 
+		 TOP_sxt_i_r_r, 
+		 TOP_unpacku_pbh_r_r, 
+		 TOP_unpacku_pbl_r_r, 
+		 TOP_xor_r_r_r, 
+		 TOP_xor_i_r_r, 
+		 TOP_zxtb_r_r, 
+		 TOP_zxth_r_r, 
+		 TOP_zxt_r_r_r, 
+		 TOP_zxt_i_r_r, 
 		 TOP_UNDEFINED); 
 
  /* ===== Specification for EVEN_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE EVEN_Unit = ISA_Exec_Unit_Type_Create("EVEN_Unit", NULL); 
   Instruction_Exec_Unit_Group(EVEN_Unit, 
-		 TOP_addf_n, 
-		 TOP_asm_10, 
-		 TOP_asm_11, 
-		 TOP_asm_24_i, 
-		 TOP_asm_24_ii, 
-		 TOP_asm_25_i, 
-		 TOP_asm_25_ii, 
-		 TOP_asm_26_i, 
-		 TOP_asm_26_ii, 
-		 TOP_asm_27_i, 
-		 TOP_asm_27_ii, 
-		 TOP_asm_8, 
-		 TOP_asm_9, 
-		 TOP_convfi_n, 
-		 TOP_convif_n, 
-		 TOP_subf_n, 
+		 TOP_addf_n_r_r_r, 
+		 TOP_asm_10_r_r_r, 
+		 TOP_asm_11_r_r_r, 
+		 TOP_asm_24_i_r_r, 
+		 TOP_asm_24_ii_r_r, 
+		 TOP_asm_25_i_r_r, 
+		 TOP_asm_25_ii_r_r, 
+		 TOP_asm_26_i_r_r, 
+		 TOP_asm_26_ii_r_r, 
+		 TOP_asm_27_i_r_r, 
+		 TOP_asm_27_ii_r_r, 
+		 TOP_asm_8_r_r_r, 
+		 TOP_asm_9_r_r_r, 
+		 TOP_convfi_n_r_r, 
+		 TOP_convif_n_r_r, 
+		 TOP_subf_n_r_r_r, 
 		 TOP_UNDEFINED); 
 
  /* ===== Specification for FIRST_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE FIRST_Unit = ISA_Exec_Unit_Type_Create("FIRST_Unit", NULL); 
   Instruction_Exec_Unit_Group(FIRST_Unit, 
-		 TOP_brf, 
-		 TOP_br, 
-		 TOP_call, 
+		 TOP_brf_i_b, 
+		 TOP_br_i_b, 
+		 TOP_call_i, 
 		 TOP_getpc, 
-		 TOP_goto, 
+		 TOP_goto_i, 
 		 TOP_icall, 
 		 TOP_idle, 
 		 TOP_igoto, 
-		 TOP_pswclr, 
-		 TOP_pswset, 
+		 TOP_pswclr_r, 
+		 TOP_pswset_r, 
 		 TOP_pushregs, 
 		 TOP_return, 
 		 TOP_rfi, 
 		 TOP_syncins, 
 		 TOP_UNDEFINED); 
 
+ /* ===== Specification for MEMX_Unit Type ===== */ 
+  ISA_EXEC_UNIT_TYPE MEMX_Unit = ISA_Exec_Unit_Type_Create("MEMX_Unit", NULL); 
+  Instruction_Exec_Unit_Group(MEMX_Unit, 
+		 TOP_flushadd_r_ii, 
+		 TOP_flushadd_l1_r_ii, 
+		 TOP_invadd_r_ii, 
+		 TOP_invadd_l1_r_ii, 
+		 TOP_ldbc_r_ii_b_r, 
+		 TOP_ldbuc_r_ii_b_r, 
+		 TOP_ldbu_r_ii_r, 
+		 TOP_ldbu_d_r_ii_r, 
+		 TOP_ldb_r_ii_r, 
+		 TOP_ldb_d_r_ii_r, 
+		 TOP_ldhc_r_ii_b_r, 
+		 TOP_ldhuc_r_ii_b_r, 
+		 TOP_ldhu_r_ii_r, 
+		 TOP_ldhu_d_r_ii_r, 
+		 TOP_ldh_r_ii_r, 
+		 TOP_ldh_d_r_ii_r, 
+		 TOP_ldlc_r_ii_b_p, 
+		 TOP_ldl_r_ii_p, 
+		 TOP_ldwc_r_ii_b_r, 
+		 TOP_ldw_r_ii_r, 
+		 TOP_ldw_d_r_ii_r, 
+		 TOP_multi_ldlc_r_ii_b_r, 
+		 TOP_multi_ldl_r_ii_r, 
+		 TOP_multi_stlc_r_b_r_ii, 
+		 TOP_multi_stl_r_r_ii, 
+		 TOP_pftc_r_ii_b, 
+		 TOP_pft_r_ii, 
+		 TOP_prgadd_r_ii, 
+		 TOP_prgadd_l1_r_ii, 
+		 TOP_prginspg_r_ii, 
+		 TOP_prgset_r_ii, 
+		 TOP_pswmask_ii_r_r, 
+		 TOP_stbc_r_b_r_ii, 
+		 TOP_stb_r_r_ii, 
+		 TOP_sthc_r_b_r_ii, 
+		 TOP_sth_r_r_ii, 
+		 TOP_stlc_p_b_r_ii, 
+		 TOP_stl_p_r_ii, 
+		 TOP_stwc_r_b_r_ii, 
+		 TOP_stw_r_r_ii, 
+		 TOP_UNDEFINED); 
+
+ /* ===== Specification for MEM_Unit Type ===== */ 
+  ISA_EXEC_UNIT_TYPE MEM_Unit = ISA_Exec_Unit_Type_Create("MEM_Unit", NULL); 
+  Instruction_Exec_Unit_Group(MEM_Unit, 
+		 TOP_divu_r_r_r, 
+		 TOP_div_r_r_r, 
+		 TOP_flushadd_r_i, 
+		 TOP_flushadd_l1_r_i, 
+		 TOP_invadd_r_i, 
+		 TOP_invadd_l1_r_i, 
+		 TOP_ldbc_r_i_b_r, 
+		 TOP_ldbuc_r_i_b_r, 
+		 TOP_ldbu_r_i_r, 
+		 TOP_ldbu_d_r_i_r, 
+		 TOP_ldb_r_i_r, 
+		 TOP_ldb_d_r_i_r, 
+		 TOP_ldhc_r_i_b_r, 
+		 TOP_ldhuc_r_i_b_r, 
+		 TOP_ldhu_r_i_r, 
+		 TOP_ldhu_d_r_i_r, 
+		 TOP_ldh_r_i_r, 
+		 TOP_ldh_d_r_i_r, 
+		 TOP_ldlc_r_i_b_p, 
+		 TOP_ldl_r_i_p, 
+		 TOP_ldwc_r_i_b_r, 
+		 TOP_ldwl_r_r, 
+		 TOP_ldw_r_i_r, 
+		 TOP_ldw_d_r_i_r, 
+		 TOP_multi_ldlc_r_i_b_r, 
+		 TOP_multi_ldl_r_i_r, 
+		 TOP_multi_stlc_r_b_r_i, 
+		 TOP_multi_stl_r_r_i, 
+		 TOP_pftc_r_i_b, 
+		 TOP_pft_r_i, 
+		 TOP_prgadd_r_i, 
+		 TOP_prgadd_l1_r_i, 
+		 TOP_prginspg_r_i, 
+		 TOP_prgset_r_i, 
+		 TOP_pswmask_i_r_r, 
+		 TOP_remu_r_r_r, 
+		 TOP_rem_r_r_r, 
+		 TOP_stbc_r_b_r_i, 
+		 TOP_stb_r_r_i, 
+		 TOP_sthc_r_b_r_i, 
+		 TOP_sth_r_r_i, 
+		 TOP_stlc_p_b_r_i, 
+		 TOP_stl_p_r_i, 
+		 TOP_stwc_r_b_r_i, 
+		 TOP_stwl_r_r_b, 
+		 TOP_stw_r_r_i, 
+		 TOP_sync, 
+		 TOP_waitl, 
+		 TOP_wmb, 
+		 TOP_UNDEFINED); 
+
  /* ===== Specification for ODD_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE ODD_Unit = ISA_Exec_Unit_Type_Create("ODD_Unit", NULL); 
   Instruction_Exec_Unit_Group(ODD_Unit, 
-		 TOP_asm_12, 
-		 TOP_asm_13, 
-		 TOP_asm_14, 
-		 TOP_asm_15, 
-		 TOP_asm_28_i, 
-		 TOP_asm_29_i, 
-		 TOP_asm_30_i, 
-		 TOP_asm_31_i, 
-		 TOP_mul32_r, 
-		 TOP_mul32_i, 
-		 TOP_mul64hu_r, 
-		 TOP_mul64hu_i, 
-		 TOP_mul64h_r, 
-		 TOP_mul64h_i, 
-		 TOP_mulfrac_r, 
-		 TOP_mulfrac_i, 
-		 TOP_mulf_n, 
-		 TOP_mulhhs_r, 
-		 TOP_mulhhs_i, 
-		 TOP_mulhhu_r, 
-		 TOP_mulhhu_i, 
-		 TOP_mulhh_r, 
-		 TOP_mulhh_i, 
-		 TOP_mulhs_r, 
-		 TOP_mulhs_i, 
-		 TOP_mulhu_r, 
-		 TOP_mulhu_i, 
-		 TOP_mulh_r, 
-		 TOP_mulh_i, 
-		 TOP_mullhus_r, 
-		 TOP_mullhus_i, 
-		 TOP_mullhu_r, 
-		 TOP_mullhu_i, 
-		 TOP_mullh_r, 
-		 TOP_mullh_i, 
-		 TOP_mulllu_r, 
-		 TOP_mulllu_i, 
-		 TOP_mulll_r, 
-		 TOP_mulll_i, 
-		 TOP_mullu_r, 
-		 TOP_mullu_i, 
-		 TOP_mull_r, 
-		 TOP_mull_i, 
+		 TOP_asm_12_r_r_r, 
+		 TOP_asm_13_r_r_r, 
+		 TOP_asm_14_r_r_r, 
+		 TOP_asm_15_r_r_r, 
+		 TOP_asm_28_i_r_r, 
+		 TOP_asm_29_i_r_r, 
+		 TOP_asm_30_i_r_r, 
+		 TOP_asm_31_i_r_r, 
+		 TOP_mul32_r_r_r, 
+		 TOP_mul32_i_r_r, 
+		 TOP_mul64hu_r_r_r, 
+		 TOP_mul64hu_i_r_r, 
+		 TOP_mul64h_r_r_r, 
+		 TOP_mul64h_i_r_r, 
+		 TOP_muladdus_pb_r_r_r, 
+		 TOP_muladd_ph_r_r_r, 
+		 TOP_mulfracadds_ph_r_r_r, 
+		 TOP_mulfracrm_ph_r_r_r, 
+		 TOP_mulfracrne_ph_r_r_r, 
+		 TOP_mulfrac_r_r_r, 
+		 TOP_mulfrac_i_r_r, 
+		 TOP_mulf_n_r_r_r, 
+		 TOP_mulhhs_r_r_r, 
+		 TOP_mulhhs_i_r_r, 
+		 TOP_mulhhu_r_r_r, 
+		 TOP_mulhhu_i_r_r, 
+		 TOP_mulhh_r_r_r, 
+		 TOP_mulhh_i_r_r, 
+		 TOP_mulhs_r_r_r, 
+		 TOP_mulhs_i_r_r, 
+		 TOP_mulhu_r_r_r, 
+		 TOP_mulhu_i_r_r, 
+		 TOP_mulh_r_r_r, 
+		 TOP_mulh_i_r_r, 
+		 TOP_mullhus_r_r_r, 
+		 TOP_mullhus_i_r_r, 
+		 TOP_mullhu_r_r_r, 
+		 TOP_mullhu_i_r_r, 
+		 TOP_mullh_r_r_r, 
+		 TOP_mullh_i_r_r, 
+		 TOP_mulllu_r_r_r, 
+		 TOP_mulllu_i_r_r, 
+		 TOP_mulll_r_r_r, 
+		 TOP_mulll_i_r_r, 
+		 TOP_mullu_r_r_r, 
+		 TOP_mullu_i_r_r, 
+		 TOP_mull_r_r_r, 
+		 TOP_mull_i_r_r, 
+		 TOP_mul_ph_r_r_r, 
 		 TOP_UNDEFINED); 
 
   ISA_Bundle_Type_Create("Template_0", ".Template_0", 1);
@@ -478,171 +626,561 @@ main()
   Stop(0);
 
   ISA_Bundle_Type_Create("Template_4", ".Template_4", 1);
+  Alignment(0, 32);
+  Slot(0, MEM_Unit);
+  Stop(0);
+
+  ISA_Bundle_Type_Create("Template_5", ".Template_5", 1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_5", ".Template_5", 2);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Stop(1);
-
   ISA_Bundle_Type_Create("Template_6", ".Template_6", 2);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_7", ".Template_7", 2);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, FIRST_Unit);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_8", ".Template_8", 2);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
-  Slot(1, ODD_Unit);
+  Slot(1, ANY_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_9", ".Template_9", 2);
-  Alignment(0, 32);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
+  Alignment(32, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, EVEN_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_10", ".Template_10", 2);
-  Alignment(32, 64);
-  Slot(0, EVEN_Unit);
-  Slot(1, FIRST_Unit);
+  Alignment(0, 32);
+  Slot(0, ANY_Unit);
+  Slot(1, MEM_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_11", ".Template_11", 2);
-  Alignment(0, 32);
-  Slot(0, EVEN_Unit);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
   ISA_Bundle_Type_Create("Template_12", ".Template_12", 2);
   Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_13", ".Template_13", 2);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_14", ".Template_14", 2);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_15", ".Template_15", 2);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_16", ".Template_16", 2);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_17", ".Template_17", 2);
+  Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_13", ".Template_13", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, ANY_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_14", ".Template_14", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, EVEN_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_15", ".Template_15", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, FIRST_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_16", ".Template_16", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, ODD_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_17", ".Template_17", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, ANYX_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_18", ".Template_18", 3);
+  ISA_Bundle_Type_Create("Template_18", ".Template_18", 2);
   Alignment(0, 64);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, EVEN_Unit);
-  Stop(2);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Stop(1);
 
-  ISA_Bundle_Type_Create("Template_19", ".Template_19", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, FIRST_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_20", ".Template_20", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, ODD_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_21", ".Template_21", 3);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, FIRST_Unit);
-  Slot(2, ODD_Unit);
-  Stop(2);
-
-  ISA_Bundle_Type_Create("Template_22", ".Template_22", 3);
+  ISA_Bundle_Type_Create("Template_19", ".Template_19", 2);
   Alignment(32, 64);
-  Slot(0, ANY_Unit);
-  Slot(1, ODD_Unit);
-  Slot(2, ODD_Unit);
-  Stop(2);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Stop(1);
 
-  ISA_Bundle_Type_Create("Template_23", ".Template_23", 3);
+  ISA_Bundle_Type_Create("Template_20", ".Template_20", 2);
   Alignment(0, 64);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, EVEN_Unit);
-  Stop(2);
+  Slot(0, MEM_Unit);
+  Slot(1, ODD_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_21", ".Template_21", 2);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_22", ".Template_22", 2);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Stop(1);
+
+  ISA_Bundle_Type_Create("Template_23", ".Template_23", 2);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, MEM_Unit);
+  Stop(1);
 
   ISA_Bundle_Type_Create("Template_24", ".Template_24", 3);
-  Alignment(0, 32);
+  Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
-  Slot(2, FIRST_Unit);
+  Slot(2, ANY_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_25", ".Template_25", 3);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
-  Slot(2, ODD_Unit);
+  Slot(2, ANY_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_26", ".Template_26", 3);
   Alignment(0, 64);
-  Slot(0, EVEN_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, ODD_Unit);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, EVEN_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_27", ".Template_27", 3);
-  Alignment(0, 32);
-  Slot(0, EVEN_Unit);
-  Slot(1, FIRST_Unit);
-  Slot(2, ODD_Unit);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEM_Unit);
   Stop(2);
 
   ISA_Bundle_Type_Create("Template_28", ".Template_28", 3);
   Alignment(32, 64);
-  Slot(0, EVEN_Unit);
-  Slot(1, ODD_Unit);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_29", ".Template_29", 3);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_29", ".Template_29", 4);
+  ISA_Bundle_Type_Create("Template_30", ".Template_30", 3);
+  Alignment(0, 32);
+  Slot(0, ANY_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_31", ".Template_31", 3);
+  Alignment(32, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_32", ".Template_32", 3);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_33", ".Template_33", 3);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_34", ".Template_34", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_35", ".Template_35", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_36", ".Template_36", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_37", ".Template_37", 3);
+  Alignment(64, 128);
+  Slot(0, EVEN_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_38", ".Template_38", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_39", ".Template_39", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_40", ".Template_40", 3);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_41", ".Template_41", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_42", ".Template_42", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_43", ".Template_43", 3);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_44", ".Template_44", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_45", ".Template_45", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_46", ".Template_46", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_47", ".Template_47", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_48", ".Template_48", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_49", ".Template_49", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_50", ".Template_50", 3);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_51", ".Template_51", 3);
+  Alignment(0, 128);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_52", ".Template_52", 3);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_53", ".Template_53", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_54", ".Template_54", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_55", ".Template_55", 3);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_56", ".Template_56", 3);
+  Alignment(0, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_57", ".Template_57", 3);
+  Alignment(32, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_58", ".Template_58", 3);
+  Alignment(0, 128);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, EVEN_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_59", ".Template_59", 3);
+  Alignment(32, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_60", ".Template_60", 3);
+  Alignment(0, 32);
+  Slot(0, MEM_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_61", ".Template_61", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_62", ".Template_62", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, MEM_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_63", ".Template_63", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_64", ".Template_64", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_65", ".Template_65", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_66", ".Template_66", 3);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, ODD_Unit);
+  Stop(2);
+
+  ISA_Bundle_Type_Create("Template_67", ".Template_67", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, ANYX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_68", ".Template_68", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, ANYX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_69", ".Template_69", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_70", ".Template_70", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_71", ".Template_71", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_72", ".Template_72", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_73", ".Template_73", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_74", ".Template_74", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_75", ".Template_75", 4);
+  Alignment(0, 128);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_76", ".Template_76", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_77", ".Template_77", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, MEMX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_78", ".Template_78", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, MEMX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_79", ".Template_79", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_80", ".Template_80", 4);
+  Alignment(0, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_81", ".Template_81", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_82", ".Template_82", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_83", ".Template_83", 4);
+  Alignment(32, 64);
+  Slot(0, ANYX_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_84", ".Template_84", 4);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
@@ -650,196 +1188,580 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_30", ".Template_30", 4);
+  ISA_Bundle_Type_Create("Template_85", ".Template_85", 4);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_86", ".Template_86", 4);
+  Alignment(32, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_87", ".Template_87", 4);
+  Alignment(32, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, EVEN_Unit);
   Slot(2, ANY_Unit);
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_31", ".Template_31", 4);
-  Alignment(0, 32);
+  ISA_Bundle_Type_Create("Template_88", ".Template_88", 4);
+  Alignment(32, 64);
   Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
+  Slot(1, EVEN_Unit);
   Slot(2, ANY_Unit);
-  Slot(3, FIRST_Unit);
+  Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_32", ".Template_32", 4);
-  Alignment(0, 32);
+  ISA_Bundle_Type_Create("Template_89", ".Template_89", 4);
+  Alignment(32, 128);
   Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, MEMX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_90", ".Template_90", 4);
+  Alignment(32, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_91", ".Template_91", 4);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_92", ".Template_92", 4);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_93", ".Template_93", 4);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
   Slot(2, ANY_Unit);
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_33", ".Template_33", 4);
-  Alignment(0, 32);
+  ISA_Bundle_Type_Create("Template_94", ".Template_94", 4);
+  Alignment(0, 64);
   Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_95", ".Template_95", 4);
+  Alignment(0, 64);
+  Slot(0, ANY_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_96", ".Template_96", 4);
+  Alignment(64, 128);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_97", ".Template_97", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_98", ".Template_98", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_99", ".Template_99", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_100", ".Template_100", 4);
+  Alignment(64, 128);
+  Slot(0, EVEN_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_101", ".Template_101", 4);
+  Alignment(64, 128);
+  Slot(0, EVEN_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_102", ".Template_102", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_103", ".Template_103", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_104", ".Template_104", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_105", ".Template_105", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_106", ".Template_106", 4);
+  Alignment(0, 64);
+  Slot(0, EVEN_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_107", ".Template_107", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_108", ".Template_108", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_109", ".Template_109", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_110", ".Template_110", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_111", ".Template_111", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_112", ".Template_112", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_113", ".Template_113", 4);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_114", ".Template_114", 4);
+  Alignment(0, 32);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_115", ".Template_115", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_116", ".Template_116", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_117", ".Template_117", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_118", ".Template_118", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_119", ".Template_119", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_120", ".Template_120", 4);
+  Alignment(32, 128);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, MEMX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_121", ".Template_121", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_122", ".Template_122", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_123", ".Template_123", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_124", ".Template_124", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_125", ".Template_125", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_126", ".Template_126", 4);
+  Alignment(96, 128);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_127", ".Template_127", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_128", ".Template_128", 4);
+  Alignment(0, 128);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_129", ".Template_129", 4);
+  Alignment(0, 128);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_130", ".Template_130", 4);
+  Alignment(32, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, MEM_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_131", ".Template_131", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_132", ".Template_132", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_133", ".Template_133", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_134", ".Template_134", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_135", ".Template_135", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_136", ".Template_136", 4);
+  Alignment(0, 64);
+  Slot(0, FIRST_Unit);
+  Slot(1, ODD_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_137", ".Template_137", 4);
+  Alignment(0, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_138", ".Template_138", 4);
+  Alignment(32, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_139", ".Template_139", 4);
+  Alignment(96, 128);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_140", ".Template_140", 4);
+  Alignment(0, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_141", ".Template_141", 4);
+  Alignment(0, 128);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_142", ".Template_142", 4);
+  Alignment(0, 128);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, EVEN_Unit);
+  Slot(3, ODD_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_143", ".Template_143", 4);
+  Alignment(32, 64);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_144", ".Template_144", 4);
+  Alignment(96, 128);
+  Slot(0, MEMX_Unit);
+  Slot(1, MEMX_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_145", ".Template_145", 4);
+  Alignment(96, 128);
+  Slot(0, MEM_Unit);
+  Slot(1, ANYX_Unit);
+  Slot(2, ANYX_Unit);
+  Slot(3, EVEN_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_146", ".Template_146", 4);
+  Alignment(32, 128);
+  Slot(0, MEM_Unit);
+  Slot(1, EVEN_Unit);
   Slot(2, ANYX_Unit);
   Slot(3, ANYX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_34", ".Template_34", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
+  ISA_Bundle_Type_Create("Template_147", ".Template_147", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
-  Slot(2, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_148", ".Template_148", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, MEM_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_149", ".Template_149", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, ANY_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_150", ".Template_150", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_151", ".Template_151", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ANY_Unit);
+  Slot(3, MEM_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_152", ".Template_152", 4);
+  Alignment(32, 128);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, MEMX_Unit);
+  Slot(3, MEMX_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_153", ".Template_153", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
+  Slot(3, ANY_Unit);
+  Stop(3);
+
+  ISA_Bundle_Type_Create("Template_154", ".Template_154", 4);
+  Alignment(32, 64);
+  Slot(0, ODD_Unit);
+  Slot(1, EVEN_Unit);
+  Slot(2, ODD_Unit);
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_35", ".Template_35", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, FIRST_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_36", ".Template_36", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_37", ".Template_37", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, FIRST_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_38", ".Template_38", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANY_Unit);
-  Slot(2, ODD_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_39", ".Template_39", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, ANYX_Unit);
-  Slot(3, EVEN_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_40", ".Template_40", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, ANYX_Unit);
-  Slot(3, FIRST_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_41", ".Template_41", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, ANYX_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_42", ".Template_42", 4);
+  ISA_Bundle_Type_Create("Template_155", ".Template_155", 4);
   Alignment(32, 64);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, FIRST_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_43", ".Template_43", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_44", ".Template_44", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, FIRST_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_45", ".Template_45", 4);
-  Alignment(0, 32);
-  Slot(0, ANY_Unit);
+  Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ODD_Unit);
-  Slot(3, ODD_Unit);
+  Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_46", ".Template_46", 4);
-  Alignment(0, 64);
-  Slot(0, ANY_Unit);
-  Slot(1, FIRST_Unit);
-  Slot(2, ODD_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_47", ".Template_47", 4);
-  Alignment(0, 32);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, ANYX_Unit);
-  Slot(3, ANYX_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_48", ".Template_48", 4);
+  ISA_Bundle_Type_Create("Template_156", ".Template_156", 4);
   Alignment(32, 64);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, FIRST_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_49", ".Template_49", 4);
-  Alignment(0, 32);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, EVEN_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_50", ".Template_50", 4);
-  Alignment(0, 64);
-  Slot(0, ANYX_Unit);
-  Slot(1, ANYX_Unit);
-  Slot(2, FIRST_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_51", ".Template_51", 4);
-  Alignment(32, 64);
-  Slot(0, EVEN_Unit);
-  Slot(1, EVEN_Unit);
-  Slot(2, FIRST_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_52", ".Template_52", 4);
-  Alignment(0, 32);
-  Slot(0, EVEN_Unit);
-  Slot(1, EVEN_Unit);
+  Slot(0, ODD_Unit);
+  Slot(1, MEM_Unit);
   Slot(2, ODD_Unit);
-  Slot(3, ODD_Unit);
-  Stop(3);
-
-  ISA_Bundle_Type_Create("Template_53", ".Template_53", 4);
-  Alignment(0, 64);
-  Slot(0, EVEN_Unit);
-  Slot(1, FIRST_Unit);
-  Slot(2, ODD_Unit);
-  Slot(3, ODD_Unit);
+  Slot(3, ANY_Unit);
   Stop(3);
 
 

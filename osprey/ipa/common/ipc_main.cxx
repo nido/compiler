@@ -33,11 +33,6 @@
 */
 
 
-#ifdef TARG_ST
-// [CL] new interface with ipa_link
-#define LD_IPA_INTERFACE
-#endif
-
 #include "linker.h"			/* linker headers */
 #include "process.h"                    /* For create_tmpdir. */
 
@@ -63,6 +58,9 @@
 
 #include "ipc_weak.h"
 
+#ifdef TARG_ST
+struct external_symbols_list ipa_external_symbols;
+#endif
 
 /***************************************************************************/
 /* gets the ABI type from the linker                */

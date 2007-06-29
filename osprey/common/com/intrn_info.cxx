@@ -2378,3 +2378,88 @@ BOOL is_intrinsic_rt_name(const char *name)
 }
 #endif
 #endif
+
+#ifdef TARG_ST
+/*
+ * Maps TYPE_ID to INTR_RETKIND and the reverse.
+ * This should be either:
+ * 1. generated along with the MTYPE as the information is basically the same.
+ * 2. removed. I.e. use directly the TYPE_ID instead of the INTR_RETKIND in
+ * intrinsics definition.
+ * The second solution is used by the dynamic intrinsics and the multi results
+ * intrinsics.
+ * Dynamic mtypes are mapped to IRETURN_DYNAMIC.
+ * IRETURN__DYNAMIC is mapped to MTYPE_UNKNOWN.
+ * The mapping is partial as we don't use all the possible types in the intrinsinc
+ * definitions. Though it should be complete if automated.
+ *
+ * TODO: Merge the extension/multi result intrinsic dfinition with the standard
+ * intrinsic definition.
+ *
+ * [CG] Note that there are very few types supported here for the return value.
+ * In particular MTYPE_B is not supported. This is not really a problem, though
+ * it is actually a constraint on the poccible intrinsincs definitions.
+ */
+INTRN_RETKIND
+INTRN_return_kind_for_mtype (const TYPE_ID mtype)
+{
+  if (MTYPE_is_dynamic(mtype))
+    return IRETURN_DYNAMIC;
+  
+  switch (mtype) {
+  case MTYPE_V:
+    return IRETURN_V;
+  case MTYPE_I1:
+    return IRETURN_I1;
+  case MTYPE_I2:
+    return IRETURN_I2;
+  case MTYPE_I4:
+    return IRETURN_I4;
+  case MTYPE_I8:
+    return IRETURN_I8;
+  case MTYPE_U1:
+    return IRETURN_U1;
+  case MTYPE_U2:
+    return IRETURN_U2;
+  case MTYPE_U4:
+    return IRETURN_U4;
+  case MTYPE_U8:
+    return IRETURN_U8;
+  case MTYPE_F4:
+    return IRETURN_F4;
+  case MTYPE_F8:
+    return IRETURN_F8;
+  default:
+    FmtAssert((0),("Unexpexted mtype to intrinsic return kind conversion: %s ", Mtype_Name(mtype)));
+  }
+  return IRETURN_UNKNOWN;
+}
+
+TYPE_ID
+INTRN_mtype_for_return_kind(const INTRN_RETKIND kind)
+{
+  switch (kind) {
+  case IRETURN_UNKNOWN:
+    return MTYPE_UNKNOWN;
+  case IRETURN_V:
+    return MTYPE_V;
+  case IRETURN_I1:
+    return MTYPE_I1;
+  case IRETURN_I2:
+    return MTYPE_I2;
+  case IRETURN_I4:
+    return MTYPE_I4;
+  case IRETURN_U1:
+    return MTYPE_U1;
+  case IRETURN_U2:
+    return MTYPE_I2;
+  case IRETURN_U4:
+    return MTYPE_U4;
+  case IRETURN_DYNAMIC:
+    return MTYPE_UNKNOWN;
+  default:
+    FmtAssert(0, ("unexpected return kind: %i", kind));
+  }
+  return MTYPE_UNKNOWN;
+}
+#endif

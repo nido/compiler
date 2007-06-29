@@ -29,7 +29,10 @@ typedef enum Type_Profile {
   Short_Circuit_Type_Profile,
   Call_Type_Profile,
   Loop_Type_Profile,
-  Switch_Type_Profile
+  Switch_Type_Profile,
+  Icall_Type_Profile,
+  Value_Type_Profile,
+  Value_FP_Bin_Type_Profile
 }Type_Profile;
 
 // All the information about an invoke node is stored in the
@@ -132,6 +135,23 @@ typedef struct LIBFB_Info_Call_Vector {
   size_t size;
 } LIBFB_Info_Call_Vector;
 
+typedef struct LIBFB_Info_Icall_Vector {
+  LIBFB_Info_Icall* data; 
+  size_t size;
+} LIBFB_Info_Icall_Vector;
+
+#ifdef KEY
+typedef struct LIBFB_Info_Value_Vector {
+  LIBFB_Info_Value* data; 
+  size_t size;
+} LIBFB_Info_Value_Vector;
+
+typedef struct LIBFB_Info_Value_FP_Bin_Vector {
+  LIBFB_Info_Value_FP_Bin* data; 
+  size_t size;
+} LIBFB_Info_Value_FP_Bin_Vector;
+
+#endif
 typedef struct PU_Profile_Handle {
     LIBFB_Info_Invoke_Vector	*LIBFB_Info_Invoke_Table;
     LIBFB_Info_Branch_Vector	*LIBFB_Info_Branch_Table;
@@ -140,11 +160,17 @@ typedef struct PU_Profile_Handle {
     LIBFB_Info_Loop_Vector		*LIBFB_Info_Loop_Table;
     LIBFB_Info_Circuit_Vector *LIBFB_Info_Circuit_Table;
     LIBFB_Info_Call_Vector		*LIBFB_Info_Call_Table;
+    LIBFB_Info_Icall_Vector		*LIBFB_Info_Icall_Table;
+#ifdef KEY
+    LIBFB_Info_Value_Vector		*LIBFB_Info_Value_Table;
+    LIBFB_Info_Value_FP_Bin_Vector	*LIBFB_Info_Value_FP_Bin_Table;
+#endif
 
     INT32 checksum;
     char *file_name;
     char *pu_name;
-
+    INT32 pu_size;
+    UINT64 runtime_fun_address;
 }PU_Profile_Handle;
 
 typedef struct PU_Profile_Handle * PU_PROFILE_HANDLE;

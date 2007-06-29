@@ -65,6 +65,7 @@
 #include "cg_spill.h"
 #ifdef TARG_ST
 #include "cg_flags.h"
+#include "cgtarget.h"
 #endif
 
 #include "gra_bb.h"
@@ -75,6 +76,9 @@
 #include "gra_lrange_subuniverse.h"
 #include "gra_grant.h"
 #include "gra_interfere.h"
+#ifdef TARG_ST
+#include "gra_color.h"
+#endif
 
 LRANGE_MGR lrange_mgr;
 
@@ -120,6 +124,10 @@ LRANGE_MGR::Create( LRANGE_TYPE type, ISA_REGISTER_CLASS rc, size_t size )
   result->mark = 0;
   result->pref = NULL;
   result->pref_priority = 0.0;
+#ifdef TARG_ST
+  result->pref_subclass = ISA_REGISTER_SUBCLASS_UNDEFINED;
+  result->pref_subclass_offset = 0;
+#endif
 
   return result;
 }
@@ -179,15 +187,30 @@ LRANGE_MGR::Create_Region( TN* tn, GRA_REGION* region )
 
 /////////////////////////////////////
 // Create and return a new local LRANGE for the given <bb> and <cl>
+#ifdef TARG_ST
+LRANGE*
+LRANGE_MGR::Create_Local( GRA_BB* gbb, ISA_REGISTER_CLASS cl,
+			  ISA_REGISTER_SUBCLASS sc, INT nregs)
+#else
 LRANGE*
 LRANGE_MGR::Create_Local( GRA_BB* gbb, ISA_REGISTER_CLASS cl )
+#endif
 {
   LRANGE* result = Create(LRANGE_TYPE_LOCAL, cl, sizeof(LRANGE) -
                                    sizeof(result->u.c) + sizeof(result->u.l));
   ++local_lrange_count;
   result->u.l.gbb = gbb;
+#ifdef TARG_ST
+  result->priority = gbb->Freq() * (CGSPILL_DEFAULT_STORE_COST + CGSPILL_DEFAULT_RESTORE_COST) * GRA_local_spill_multiplier;
+#else
   result->priority = gbb->Freq() * 2.0F;
+#endif
+#ifdef TARG_ST
+  result->u.l.subclass = sc;
+  result->u.l.nregs = nregs;
+#endif
   gra_region_mgr.Complement_Region()->Add_LRANGE(result);
+  GRA_Trace_Create_Lrange (result);
   return result;
 }
 
@@ -462,7 +485,14 @@ LRANGE::Calculate_Priority(void)
   if ( Must_Allocate() )
     priority = FLT_MAX;
   else if ( Type() == LRANGE_TYPE_LOCAL )
+#ifdef TARG_ST
+    // [SC] The cost of spilling a local live range is estimated
+    // as one store and one load, assuming we choose to spill a global live
+    // range at the start of the BB and reload it at the end of the BB.
+    priority = u.l.gbb->Freq() * (CGSPILL_DEFAULT_STORE_COST + CGSPILL_DEFAULT_RESTORE_COST) * GRA_local_spill_multiplier;
+#else
     priority = u.l.gbb->Freq() * 2.0F;
+#endif
   else if ( Type() == LRANGE_TYPE_REGION )
     priority = 0.0;
   else {
@@ -636,6 +666,11 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
 #ifdef TARG_ST
     allowed = REGISTER_SET_Difference (allowed,
                                      CGTARG_Forbidden_LRA_Registers (rc));
+    if (include_subclass_requirements
+	&& Sc () != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+      allowed = REGISTER_SET_Intersection (allowed,
+					   REGISTER_SUBCLASS_members (Sc ()));
+    }
 #endif
     return
       REGISTER_SET_Difference(allowed, Gbb()->Registers_Used(rc));
@@ -895,6 +930,7 @@ LRANGE::Initialize_Local_Colorability (GRA_REGION *region)
     LRANGE *neighbor = iter.Current ();
     conflict += Conflict (neighbor);
   }
+  conflict += Forced_Locals (Rc ());
   REGISTER_SET subclass_allowed =
     SubClass_Allowed_Registers (region);
   candidates = REGISTER_SET_Size (subclass_allowed);
@@ -1430,8 +1466,12 @@ LRANGE::Format( char* buff )
   switch ( Type() ) {
   case LRANGE_TYPE_LOCAL:
 #ifdef TARG_ST
-    count = sprintf(buff,"[LRANGE %c%d rc %d  BB:%d", "LW"[Has_Wired_Register()],
-		    Id(), Rc(), BB_id(Gbb()->Bb()));
+    count = sprintf(buff,"[LRANGE %c%d rc %d", "LW"[Has_Wired_Register()],
+		    Id(), Rc());
+    if (Sc() != ISA_REGISTER_SUBCLASS_UNDEFINED) {
+      count += sprintf(buff+count, " sc %d", Sc());
+    }
+    count += sprintf(buff+count, " BB:%d", BB_id(Gbb()->Bb()));
 #else
     count = sprintf(buff,"[LRANGE L rc %d  BB:%d", Rc(), BB_id(Gbb()->Bb()));
 #endif

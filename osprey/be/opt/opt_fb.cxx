@@ -794,6 +794,33 @@ OPT_FEEDBACK::OPT_FEEDBACK( CFG *cfg, MEM_POOL *pool )
 		  FB_FREQ_UNINIT ); 
     } else {
       OPERATOR opr = WN_operator( wn_last );
+
+#ifdef KEY
+      //TB: ICALL node
+      node.orig_wn = NULL;
+
+      if( opr == OPR_ICALL ){
+	node.orig_wn = wn_last;
+
+      } else if( !cfg->Calls_break() ){
+	STMT_ITER stmt_iter;
+	WN* wn = NULL;
+	int num_icalls = 0;
+	FOR_ALL_ELEM ( wn, stmt_iter, Init( bb->Firststmt(), bb->Laststmt() ) ) {
+	  if( WN_operator( wn ) == OPR_ICALL ){
+	    node.orig_wn = wn;
+	    num_icalls++;
+	  }
+	}
+
+	if( num_icalls > 1 ){
+	  //FmtAssert( false, ("more than one icall") );
+	  DevWarn( "OPT_FEEDBACK::OPT_FEEDBACK(ICALL) more than one icall in a bb" );
+	  node.orig_wn = NULL;
+	}
+      }
+#endif
+
       switch ( opr ) {
 
       case OPR_PRAGMA:
@@ -874,7 +901,6 @@ OPT_FEEDBACK::OPT_FEEDBACK( CFG *cfg, MEM_POOL *pool )
 	    } else {
 	      Add_edge( nx_bb, nx_body, FB_EDGE_LOOP_ITERATE,  freq_iterate );
 	    }
-
 	    break;
 	  }
 	}
@@ -1156,6 +1182,54 @@ OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb ) const
     // Cur_PU_Feedback->Annot(wn, FB_EDGE_CALL_OUTGOING, node.freq_total_in );
     // Cur_PU_Feedback->Annot(wn, FB_EDGE_CALL_INCOMING, node.freq_total_out);
     }
+#ifdef KEY
+    //TB: ICALL nodes
+    if( opr == OPR_ICALL &&
+	node.orig_wn != NULL ){
+      FB_Info_Icall fb_info_icall = Cur_PU_Feedback->Query_icall(node.orig_wn);
+      Cur_PU_Feedback->Annot_icall( wn, fb_info_icall );
+
+      if( !fb_info_icall.Is_uninit() ){
+	FmtAssert( fb_info_icall.tnv._exec_counter >= fb_info_icall.tnv._counters[0],
+		   ("icall execution counter is invalid") );
+	//TB: fix: when orig_wn has been split into 2 nodes, icall fb
+	//info for the wn is not the same has for the original one.
+	FB_Info_Call fb_info_call = Cur_PU_Feedback->Query_call(wn);
+	if (fb_info_icall.tnv._exec_counter != fb_info_call.freq_entry._value){
+	  //  Re-emit fb_info_icall with adequate values:
+	  // rescale fb_info_icall with the scale factor got with fb_info_call
+	  float scale = (float)fb_info_call.freq_entry._value / (float)fb_info_icall.tnv._exec_counter;
+	  UINT64 total = 0;
+	  int i;
+	  for(i = 0; i < FB_TNV_SIZE; i ++ ){
+	    if( fb_info_icall.tnv._values[i] == 0 )
+	      break;
+	    fb_info_icall.tnv._counters[i] =
+	      (UINT64)(fb_info_icall.tnv._counters[i] * scale);
+	    total += fb_info_icall.tnv._counters[i];
+	  }
+	  fb_info_icall.tnv._exec_counter = (UINT64)(fb_info_icall.tnv._exec_counter * scale);
+// 	  FmtAssert( total  == fb_info_icall.tnv._exec_counter,
+// 		     ("icall total exec counters don't match sum of sub counters") );
+	  if (total != fb_info_icall.tnv._exec_counter)
+	    fb_info_icall.tnv._counters[0] = fb_info_icall.tnv._counters[0] + (fb_info_icall.tnv._exec_counter - total); 
+	}
+	Cur_PU_Feedback->Annot_icall( wn, fb_info_icall );
+ 	FmtAssert( fb_info_icall.tnv._exec_counter == fb_info_call.freq_entry._value,
+ 		   ("icall and call exec counters don't match") );
+	/* We cannot do the following checking, because the representation of
+	   _exec_counter is UINT64, and node.freq_total_in is float.
+	   TODO:
+	   Modify FB_TNV by using FB_FREQ!!! And perform this same checking
+	   at Convert_Feedback_Info().
+
+	   const UINT64 exec_counter = (UINT64)ceilf( node.freq_total_in.Value() );
+	   FmtAssert( fb_info_icall.tnv._exec_counter == exec_counter,
+	   ("icall counter is not updated") );
+	*/
+      }
+    }
+#endif // KEY
     break;
 
   case OPR_IO:

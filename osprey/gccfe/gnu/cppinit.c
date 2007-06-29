@@ -1100,6 +1100,9 @@ cpp_finish_options (pfile)
   extern int flag_no_inline;
   optimize = 0;
   flag_no_inline = 0;
+  /* [CL] */
+  extern int warn_inline;
+  warn_inline = 0;
 #endif
 
   pfile->first_unused_line = pfile->line;

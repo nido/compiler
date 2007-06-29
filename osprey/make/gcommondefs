@@ -438,7 +438,7 @@ endif
 
 ifeq ($(BUILD_OS), CYGWIN_NT)
 GASOPTS		+= -funsigned-char
-GCOPT		+= -Wformat -funsigned-char
+GCOPTS		+= -Wformat -funsigned-char
 GC++OPTS	+= -Wformat -funsigned-char -D_NOTHREADS
 endif
 
@@ -854,5 +854,15 @@ endif
 ifeq ($(GNU_VERSION), 4)
 # OK
 endif
+
+#
+# Some GNU compiler work around
+#
+ifneq ($(findstring mingw32-gcc-3.4.2,$(COMPILER_LOC)),)
+# Removes a code generation bug in be/be/driver.cxx with this compiler (gcc x-mingw32 3.4.2)
+GCOPTS += -fno-gcse
+GC++OPTS += -fno-gcse
+endif
+
 
 endif

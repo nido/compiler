@@ -180,12 +180,11 @@ IPO_Clone (IPA_NODE* orig_node, IPA_NODE* clone_node)
 					 orig_fb->pu_num_loop_entries,
 					 orig_fb->pu_num_scircuit_entries,
 					 orig_fb->pu_num_call_entries,
-// 					 orig_fb->pu_num_icall_entries,
-					 orig_fb->pu_num_switch_entries
-// 					 , orig_fb->pu_num_value_entries,
-// 					 orig_fb->pu_num_value_fp_bin_entries,
-					 // orig_fb->runtime_fun_address
-					 ), 
+					 orig_fb->pu_num_icall_entries,
+					 orig_fb->pu_num_switch_entries,
+					 orig_fb->pu_num_value_entries,
+					 orig_fb->pu_num_value_fp_bin_entries,
+					 orig_fb->runtime_fun_address), 
       			       clone_node->Mem_Pool());
       clone_node->Set_Feedback_Info (fb);
       // original frequency, i.e. sum of invocations of original-node and

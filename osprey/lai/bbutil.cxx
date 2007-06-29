@@ -881,9 +881,14 @@ Print_LOOPINFO(LOOPINFO *info)
   if (WN_Loop_Nz_Trip(loop_info)) fprintf(TFile, "NZ_TRIP ");
   if (WN_Loop_Symb_Trip(loop_info)) fprintf(TFile, "SYMB_TRIP ");
   fprintf(TFile, "\n");
-  if (LOOPINFO_trip_count_tn(info)) {
-    fprintf(TFile, "    trip count TN = ");
-    Print_TN(LOOPINFO_trip_count_tn(info),FALSE);
+  if (LOOPINFO_primary_trip_count_tn(info)) {
+    fprintf(TFile, "    primary trip count TN = ");
+    Print_TN(LOOPINFO_primary_trip_count_tn(info),FALSE);
+    fprintf(TFile, "\n");
+  }
+  if (LOOPINFO_exact_trip_count_tn(info)) {
+    fprintf(TFile, "    exact trip count TN = ");
+    Print_TN(LOOPINFO_exact_trip_count_tn(info),FALSE);
     fprintf(TFile, "\n");
   }
 }
@@ -1994,9 +1999,14 @@ BB_MAP BB_Depth_First_Map(BB_SET *region, BB *entry)
   } else {
     BB_LIST *entries;
     INT32 max_id = 0;
-    for (entries = Entry_BB_Head; entries; entries = BB_LIST_rest(entries))
+    for (entries = Entry_BB_Head; entries; entries = BB_LIST_rest(entries)) {
+#ifdef TARG_ST
+      // (cbr) don't visit blocks reached by multiple entries twice
+      if(! BB_MAP32_Get( dfo_map, BB_LIST_first(entries)))
+#endif
       max_id = map_depth_first(dfo_map, region, BB_LIST_first(entries),
 			       max_id);
+    }
   }
   return dfo_map;
 }
@@ -2053,6 +2063,10 @@ BB_MAP BB_Postorder_Map(BB_SET *region, BB *entry)
     BB_LIST *entries;
     INT32 max_id = 0;
     for (entries = Entry_BB_Head; entries; entries = BB_LIST_rest(entries))
+#ifdef TARG_ST
+      // (cbr) don't visit blocks reached by multiple entries twice
+      if(! BB_MAP32_Get(por_map, BB_LIST_first(entries)))
+#endif
       max_id = map_postorder(por_map, region, BB_LIST_first(entries),
                              max_id);
   }
@@ -2667,9 +2681,11 @@ REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
     ANNOTATION *annot = ANNOT_Get(BB_annotations(bb),ANNOT_CALLINFO);
     if (annot) {
       ST *st = CALLINFO_call_st(ANNOT_callinfo(annot));
+
       if (st &&
 	  (! ST_is_preemptible(st)
-	   || (! Gen_PIC_Shared && ! ST_is_weak_symbol (st)))) {
+           // (cbr) linkonce can be compiled with other regs
+	   || (! ST_is_comdat (st) && ! Gen_PIC_Shared && ! ST_is_weak_symbol (st)))) {
 	IPRA_INFO info = cg_ipra.Get_Info (st);
 	if (info) {
 	  return info->used_regs[rc];
@@ -2697,13 +2713,19 @@ static void Split_BB(BB *bb)
   const INT len = BB_length(bb);
   const INT high  = (INT)(CG_split_BB_length * 1.25);
   const INT low = (len <= high) ? (CG_split_BB_length / 2) : (INT)(CG_split_BB_length * .75);
+#ifndef TARG_ST
   mINT8 fatpoint[ISA_REGISTER_CLASS_MAX+1];
+#endif
   INT* regs_in_use = (INT *)alloca(sizeof(INT) * (len+1));
   INT* splits = (INT *)alloca(sizeof(INT) * ((len / low)+1));
   OP** op_vec = (OP **)alloca(sizeof(OP*) * (len+1));
 					       
   MEM_POOL_Push(&MEM_local_pool);
+#ifdef TARG_ST
+  LRA_Estimate_Fat_Points(bb, NULL, regs_in_use, &MEM_local_pool);
+#else
   LRA_Estimate_Fat_Points(bb, fatpoint, regs_in_use, &MEM_local_pool);
+#endif
   MEM_POOL_Pop(&MEM_local_pool);
 
   //
@@ -3247,3 +3269,47 @@ verify_flow_graph(void)
   MEM_POOL_Pop(&MEM_local_pool);
 }
  
+
+#ifdef TARG_ST
+/*
+ * See interface description
+ */
+void
+BB_Modified_Registers(BB *bb, REGISTER_SET *register_sets, BOOL self)
+{
+  OP *op;
+  ISA_REGISTER_CLASS rc;
+
+  FOR_ALL_BB_OPs_FWD (bb, op) {
+    for (INT resnum = 0; resnum < OP_results(op); resnum++) {
+      TN *res_tn = OP_result(op,resnum);
+      if (TN_is_register(res_tn)) {
+	rc = TN_register_class(res_tn);
+	register_sets[rc] = REGISTER_SET_Union(register_sets[rc],
+					       TN_registers (res_tn));
+      }
+    }
+  }
+
+  /* We ignore call clobbered if we wnat only modified by the function itself. */
+  if (!self && BB_call(bb)) {
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      REGISTER_SET clobbers = BB_call_clobbered(bb, rc);
+      register_sets[rc] = REGISTER_SET_Union(register_sets[rc],
+					     clobbers);
+    }
+  }
+  
+  if (BB_asm(bb)) {
+    ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_ASMINFO);
+    Is_True(ant, ("ASMINFO annotation info not present"));
+    ASMINFO *annot_info = ANNOT_asminfo(ant);
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      REGISTER_SET clobbers = ASMINFO_kill(annot_info)[rc];
+      register_sets[rc] = REGISTER_SET_Union(register_sets[rc],
+					     clobbers);
+    }
+  }
+}
+
+#endif

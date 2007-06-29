@@ -2148,6 +2148,10 @@ WFE_Expand_Loop (tree stmt)
 
   WFE_Record_Loop_Switch (TREE_CODE(stmt));
 
+#ifdef TARG_ST
+  void *p_pragmas;
+#endif
+
   switch (TREE_CODE(stmt)) {
     case WHILE_STMT:
       cond = WHILE_COND(stmt);
@@ -2163,8 +2167,20 @@ WFE_Expand_Loop (tree stmt)
       incr = FOR_EXPR(stmt);
       cond = FOR_COND(stmt);
       body = FOR_BODY(stmt);
+
+#ifdef TARG_ST
+      /* FdF 20070302: WFE_Stmt_Top should be a WN BLOCK. Remove the
+	 last pragmas from the BLOCK, and insert them just before the
+	 loop body. */
+      p_pragmas = WFE_Save_Pragmas();
+#endif
+
       for (init = FOR_INIT_STMT(stmt); init; init = TREE_CHAIN(init))
 	WFE_Expand_Stmt(init);
+
+#ifdef TARG_ST
+      WFE_Move_Pragmas(p_pragmas);
+#endif
       break;
 
     default:
@@ -2443,6 +2459,12 @@ WFE_Expand_Label (tree label)
   }
 } /* WFE_Expand_Label */
 
+#ifdef TARG_ST
+/* (cbr) pro-fe3.3-c++/50 make sure to catch cleanup code that can throw
+   instead of unwinding it and recalling cleanup again */
+bool can_cleanup=true;
+#endif
+
 #if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
 static 
 #endif
@@ -2531,7 +2553,7 @@ WFE_Expand_Return (tree stmt, tree retval)
 	int j = hi.scope->size()-1;
 	while (j != -1) {
 	    if (TREE_CODE((*hi.scope)[j].stmt) == (enum tree_code)CLEANUP_STMT &&
-			!(*hi.scope)[j].cleanup_eh_only)
+                !(*hi.scope)[j].cleanup_eh_only)
         	WFE_One_Stmt_Cleanup (CLEANUP_EXPR((*hi.scope) [j].stmt));
 	    --j;
 	}
@@ -2909,7 +2931,12 @@ WFE_Expand_End_Case (void)
   WN    *wn;
   LABEL_IDX exit_label_idx;
 
+#ifdef TARG_ST
+  // [TB]: fixed computation of num_entries
+  n = 0;
+#else
   n = case_info_i - switch_info_stack [switch_info_i].start_case_index;
+#endif
   if (break_continue_info_stack [break_continue_info_i].break_label_idx)
     exit_label_idx = break_continue_info_stack [break_continue_info_i].break_label_idx;
   else
@@ -2929,6 +2956,10 @@ WFE_Expand_End_Case (void)
          case_value++) {
       case_entry = WN_CreateCasegoto (case_value, case_label_idx);
       WN_INSERT_BlockLast (case_block, case_entry);
+#ifdef TARG_ST
+      // [TB]: fixed computation of num_entries
+      n++;
+#endif
     }
   }
   switch_wn = WN_CreateSwitch (n,
@@ -3319,7 +3350,12 @@ lookup_cleanups (INITV_IDX& iv)
   {
     t = scope_cleanup_stack[scope_index].stmt;
     if (TREE_CODE(t) == (enum tree_code)CLEANUP_STMT)
-      cleanups->push_back (t);
+#ifdef TARG_ST
+      /* (cbr) pro-fe3.3-c++/50 make sure to catch cleanup code that can throw
+         instead of unwinding it and recalling cleanup again */
+      if (can_cleanup)
+#endif
+        cleanups->push_back (t);
     if (TREE_CODE(t) == (enum tree_code)TRY_BLOCK)
       if (CLEANUP_P(t)) cleanups->push_back (TRY_HANDLERS(t));
       else break;
@@ -3840,6 +3876,12 @@ Call_Named_Function (ST * st)
   WN * call_wn = WN_Create (OPR_CALL, MTYPE_V, MTYPE_V, 0);
   WN_st_idx (call_wn) = ST_st_idx (st);
   WFE_Stmt_Append (call_wn, Get_Srcpos());
+
+#ifdef TARG_ST
+  /* (cbr) end of eh_region. never return.*/
+  // carrefull: always called for terminate
+  WN_Set_Call_Never_Return(call_wn);
+#endif  
 }
 
 void
@@ -3907,6 +3949,11 @@ Generate_cxa_call_unexpected (void)
   WN * call_wn = WN_Create (OPR_CALL, Pointer_Mtype, MTYPE_V, 1);
   WN_kid0 (call_wn) = arg0;
   WN_st_idx (call_wn) = ST_st_idx (st);
+
+#ifdef TARG_ST
+  /* (cbr) end of eh_region. never return */
+  WN_Set_Call_Never_Return(call_wn);
+#endif  
   return call_wn;
 }
 
@@ -3933,7 +3980,7 @@ Generate_unwind_resume (void)
 
 #ifdef TARG_ST
   /* (cbr) end of eh_region. never return */
-  WN_Set_Call_Never_Return(call_wn);
+  //  WN_Set_Call_Never_Return(call_wn);
 #endif  
 
 // Before calling _Unwind_Resume(), if we have eh-spec, compare filter with
@@ -4320,3 +4367,13 @@ bool Current_Function_Has_EH_Spec()
   return !eh_spec_vector.empty();
 }
 
+#ifdef TARG_ST
+// (cbr) returns value could be hidden (whirl generated but no rtl)
+int
+WN_Returns_Void() 
+{
+  WN * wn = WN_last (WFE_Stmt_Top ());
+
+  return (wn == NULL || WN_operator (wn) != OPR_RETURN_VAL);
+}
+#endif

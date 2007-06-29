@@ -40,12 +40,7 @@
 extern "C" {
 #endif
 
-#ifdef TARG_ST 
 #include "defs.h" 
-#include "config_target.h" 		 /* for ALIGN */
-#else
-#include "config_targ.h" 		 /* for ALIGN */
-#endif
 
 /* ==================================================================== 
  * ==================================================================== 

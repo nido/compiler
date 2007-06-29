@@ -166,6 +166,9 @@ Create_block_stmt(BB_NODE *ff, BB_NODE *ll)
   //  is to rely on STMTREP * to screen out empty BBs.
   // 
   while (ff->First_stmtrep() == NULL &&
+#ifdef KEY
+         ff->Firststmt() == NULL &&
+#endif
 	 ff->Kind() == BB_GOTO &&
 	 ff != ll)
     ff = ff->Next();
@@ -1000,6 +1003,9 @@ Raise_whiledo_stmt_to_doloop(EMITTER *emitter, BB_NODE *bb, BB_NODE *prev_bb, BB
     prev_bb->Set_laststmt(WN_prev(init_stmt));
   WN_prev(init_stmt) = WN_next(init_stmt) = NULL;
 
+#ifdef KEY
+  if (preheader->Last_stmtrep())
+#endif
   preheader->Remove_stmtrep( preheader->Last_stmtrep());
 
   STMTREP *goto_end = loopback->Branch_stmtrep();
@@ -1079,6 +1085,43 @@ Raise_whiledo_stmt_to_doloop(EMITTER *emitter, BB_NODE *bb, BB_NODE *prev_bb, BB
 }
 
 
+#ifdef TARG_ST
+static void
+Move_wn_before(BB_NODE *from, BB_NODE *to, WN* point, WN *wn)
+{
+  if (WN_prev(wn))
+    WN_next(WN_prev(wn)) = WN_next(wn);
+  if (WN_next(wn))
+    WN_prev(WN_next(wn)) = WN_prev(wn);
+
+  if (from->Firststmt() == wn)
+    from->Set_firststmt(WN_next(wn));
+  if (from->Laststmt() == wn)
+    from->Set_laststmt(WN_prev(wn));
+
+  to->Insert_wn_before(wn, point);
+}
+
+static BOOL
+is_loop_pragma(WN *wn) {
+  if (WN_operator(wn) == OPR_PRAGMA) {
+    WN_PRAGMA_ID pragma = (WN_PRAGMA_ID)WN_pragma(wn);
+    switch (pragma) {
+    case WN_PRAGMA_IVDEP:
+    case WN_PRAGMA_UNROLL:
+    case WN_PRAGMA_LOOPDEP:
+    case WN_PRAGMA_LOOPMOD:
+    case WN_PRAGMA_LOOPTRIP:
+    case WN_PRAGMA_PIPELINE:
+    case WN_PRAGMA_LOOPSEQ:
+    case WN_PRAGMA_STREAM_ALIGNMENT:
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+#endif
+
 static WN*
 Raise_whiledo_stmt(EMITTER *emitter, BB_NODE *bb, BB_NODE *prev_bb, BB_NODE **next_bb)
 {
@@ -1087,8 +1130,42 @@ Raise_whiledo_stmt(EMITTER *emitter, BB_NODE *bb, BB_NODE *prev_bb, BB_NODE **ne
   if (WOPT_Enable_While_Loop && 
       Can_raise_to_doloop(bb->Loop(), FALSE, emitter->Htable()))
     rwn = Raise_whiledo_stmt_to_doloop(emitter, bb, prev_bb, next_bb);
-  else 
+  else {
     rwn = Raise_whiledo_stmt_to_whileloop(emitter, bb, next_bb);
+#ifdef TARG_ST
+    // Then, move pragmas from prev_bb just before while_do in rwn
+    // Look_for WhileDO in rwn
+    if ((prev_bb != NULL) && (prev_bb->Branch_stmtrep() == NULL) && (WN_operator(rwn) == OPR_BLOCK)) {
+      WN *point = WN_first(rwn);
+      for (point; point && (WN_operator(point) != OPR_WHILE_DO); point = WN_next(point));
+      Is_True(point, ("Raise_whiledo_stmt: WHILE_DO not found in rwn"));
+
+      WN *wn, *wn_prev, *wn_pragma = NULL;
+      for (wn = prev_bb->Laststmt(); wn; wn = wn_prev) {
+	wn_prev = WN_prev(wn);
+	if (is_loop_pragma(wn)) {
+	  // Move pragma before wn_while_do
+	  wn_pragma = wn;
+	  if ((WN_prev(wn) == NULL) && (WN_next(wn) == NULL)) {
+	    // FdF 20070330: Do not remove the unique pragma
+	    // instruction of a basic block, otherwise it raises
+	    // assertions later (see wmaprolsl_lowrate_commonstd.i
+	    // from DVD_ACC_PERF, and comment "Raymond 12/24/97" in
+	    // this file.).
+	  }
+	  else {
+	    Move_wn_before(prev_bb, bb, point, wn);
+	    if (point == WN_first(rwn))
+	      WN_first(rwn) = wn;
+	    point = wn;
+	  }
+	}
+	else if ((WN_operator(wn) != OPR_STID) || (wn_pragma != NULL))
+	  break;
+      }
+    }
+#endif
+  }
 
   if (Run_prompf && 
       bb->Loop()->Orig_wn() != NULL &&
@@ -1443,6 +1520,23 @@ EMITTER::Gen_wn(BB_NODE *first_bb, BB_NODE *last_bb)
 	  } else {
 	    prev_bb->Set_firststmt(bb->Firststmt());
 	    prev_bb->Set_laststmt(bb->Laststmt());
+#ifdef KEY // bug 1294
+	    if (bb != last_bb && bb->Succ() && !bb->Succ()->Multiple_bbs() &&
+		bb->Succ()->Node() == bb->Next()) { 
+	      // only 1 successor: delete this BB
+	      // fix up predecessor list of successor
+	      BB_LIST *pred = bb->Next()->Pred();
+	      while (pred->Node() != bb)
+		pred = pred->Next();
+	      pred->Set_node(prev_bb);
+
+	      // fix up successor list of predecessor
+	      prev_bb->Succ()->Set_node(bb->Next());
+
+	      bb = bb->Next(); // delete this BB
+	      break;
+	    }
+#endif
 	  }
 	}
       }

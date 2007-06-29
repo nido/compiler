@@ -38,7 +38,10 @@
 #ifndef tree_symtab_INCLUDED
 #define tree_symtab_INCLUDED
 
+#if defined(TARG_ST) && defined(__cplusplus)
+// (cbr) only used in translator.
 #include <cmplrs/rcodes.h>
+#endif
 
 #if defined(TARG_ST) && !defined(__cplusplus)
 // [CL] Create_ST_For_Tree() is used from gnu/stmt.c, so this

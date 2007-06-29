@@ -134,9 +134,10 @@ gcov_open (const char *name, int mode)
 /*       fprintf(stdout,"gcov_open w+b\n"); */
       gcov_var.file = fopen (name, "w+b");
 /*       fprintf(stdout,"gcov_open: switch to unbuffered writing\n"); */
-      setbuf (gcov_var.file, (char *)0);
-      if (gcov_var.file)
+      if (gcov_var.file) {
+	setbuf (gcov_var.file, (char *)0);
 	gcov_var.mode = mode * 2 + 1;
+      }
     }
   if (!gcov_var.file)
     return 0;

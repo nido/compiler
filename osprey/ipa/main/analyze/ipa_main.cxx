@@ -174,6 +174,62 @@ Perform_Interprocedural_Analysis ()
 	
 	Build_Call_Graph ();
 
+#ifdef KEY
+	if( IPA_Enable_Icall_Opt ){
+	  if (Get_Trace(TP_FEEDBACK, TP_FEEDBACK_VALUE))
+	    fprintf(TFile, "Feedback Optimizations: IPA icall devitualization is on\n"); 
+	  
+	  if( has_nested_pu ){
+	    Build_Nested_Pu_Relations();
+	    if (Verbose) {
+		fprintf (stderr, "Building Nested PU Relations...");
+		fflush (stderr);
+	    }
+	    has_nested_pu = FALSE;
+	  }
+
+	  IPA_Convert_Icalls( IPA_Call_Graph );
+	}
+#endif // KEY
+
+#ifdef KEY
+        {
+          IPA_NODE_ITER cg_iter(IPA_Call_Graph, POSTORDER);
+	  // Traverse the call graph and mark C++ nodes as PU_Can_Throw
+	  // appropriately.
+          for (cg_iter.First(); !cg_iter.Is_Empty(); cg_iter.Next())
+	  {
+	    if (!IPA_Enable_EH_Region_Removal/* [CL] not yet && !IPA_Enable_Pure_Call_Opt*/)
+	    	break;
+
+	    IPA_NODE * node = cg_iter.Current();
+	    if (!node)	continue;
+
+	    if (node->PU_Can_Throw() ||
+	        node->Summary_Proc()->Has_side_effect())
+	    { // Mark its callers appropriately
+	    	IPA_PRED_ITER preds (node->Node_Index());
+		for (preds.First(); !preds.Is_Empty(); preds.Next())
+		{
+		    IPA_EDGE * edge = preds.Current_Edge();
+		    if (edge)
+		    {
+			IPA_NODE * caller = IPA_Call_Graph->Caller (edge);
+
+			PU caller_pu = Pu_Table[ST_pu((caller)->Func_ST())];
+			if (IPA_Enable_EH_Region_Removal &&
+			    node->PU_Can_Throw() &&
+			    PU_src_lang (caller_pu) & PU_CXX_LANG)
+		    	  caller->Set_PU_Can_Throw();
+
+		        if (node->Summary_Proc()->Has_side_effect())
+			  caller->Summary_Proc()->Set_has_side_effect();
+		    }
+		}
+	    }
+	  }
+        }
+#endif
 	if (has_nested_pu) {
 	    Build_Nested_Pu_Relations();
 	    if (Verbose) {

@@ -1464,12 +1464,6 @@ void ISA_Operands_End(void)
 		 "  return (ISA_ENUM_CLASS)otype->eclass;\n"
 		 "}\n");
 
-  fprintf(hfile, "\ninline INT ISA_OPERAND_VALTYP_Size("
-		   "const ISA_OPERAND_VALTYP *otype)\n"
-		 "{\n"
-		 "  return otype->size;\n"
-		 "}\n");
-
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Register("
 		   "const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
@@ -1511,6 +1505,14 @@ void ISA_Operands_End(void)
 		   "  return FALSE;\n"
 		   "}\n");
   }
+
+  fprintf(hfile, "\ninline INT ISA_OPERAND_VALTYP_Size("
+		   "const ISA_OPERAND_VALTYP *otype)\n"
+		 "{\n"
+	         "  if (otype->size == (mUINT16)-1 && ISA_OPERAND_VALTYP_Is_Register (otype))\n"
+                 "    return ISA_REGISTER_CLASS_INFO_Bit_Size (ISA_REGISTER_CLASS_Info (ISA_OPERAND_VALTYP_Register_Class (otype)));\n"
+		 "  return otype->size;\n"
+		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_PCRel("
 		   "const ISA_OPERAND_VALTYP *otype)\n"

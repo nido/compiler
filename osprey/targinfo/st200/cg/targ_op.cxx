@@ -52,6 +52,8 @@
 
 #include "cg.h"
 #include "opt_alias_mgr.h"
+#include "targ_cg_private.h"
+#include "targ_isa_variants.h"
 
 /* ====================================================================
  *   OP_Is_Barrier
@@ -300,6 +302,13 @@ OP_Copy_Operand (
     }
   }
 
+  // [HK] treat case or/and y = x, x <=> mov y = x
+  if (OP_iand(op) || OP_ior(op)) {
+    if (TN_is_register(OP_opnd(op,0)) && TN_is_register(OP_opnd(op,1)) \
+	&& TNs_Are_Equivalent(OP_opnd(op,0), OP_opnd(op,1)))
+      return 0;
+  }
+
   if (TOP_is_move(opcode)) {
     return TOP_Find_Operand_Use(opcode, OU_opnd1);
   }
@@ -310,7 +319,7 @@ OP_Copy_Operand (
   // mov_i t, -1
   // addcg r0, dst = r0, t, src (copy)
   if (OP_copy(op)) {
-    if (opcode == TOP_addcg) return 2;
+    if (opcode == TOP_targ_addcg_b_r_r_b_r) return 2;
   }
     
   return -1;
@@ -335,7 +344,7 @@ OP_Copy_Result (
   // mov_i t, -1
   // addcg r0, dst = r0, t, src (copy)
   if (OP_copy(op)) {
-    if (OP_code(op) == TOP_addcg) return 1;
+    if (OP_code(op) == TOP_targ_addcg_b_r_r_b_r) return 1;
   }
   return 0;
 }
@@ -372,8 +381,8 @@ OP_is_associative(OP *op)
   TOP top = OP_code(op);
 
   switch (top) {
-  case TOP_add_r:
-  case TOP_sub_r:
+  case TOP_add_r_r_r:
+  case TOP_sub_r_r_r:
     return true;
   }
 
@@ -392,11 +401,11 @@ TOP
 TOP_opposite(TOP top)
 {
   switch (top) {
-  case TOP_add_r:
-    return TOP_sub_r;
+  case TOP_add_r_r_r:
+    return TOP_sub_r_r_r;
 
-  case TOP_sub_r:
-    return TOP_add_r;
+  case TOP_sub_r_r_r:
+    return TOP_add_r_r_r;
   }
 
   return TOP_UNDEFINED;
@@ -414,11 +423,10 @@ TOP
 TOP_immediate(TOP top)
 {
   switch (top) {
-  case TOP_add_r:
-    return TOP_add_i;
-
-  case TOP_sub_r:
-    return TOP_sub_i;
+  case TOP_add_r_r_r:
+    return TOP_opnd_immediate_variant (top, 1, 1);
+  case TOP_sub_r_r_r:
+    return TOP_opnd_immediate_variant (top, 0, 1);
   }
 
   return TOP_UNDEFINED;
@@ -448,7 +456,7 @@ CGTARG_Which_OP_Select (
   BOOL is_fcc 
 )
 {
-  if (!is_float && !is_fcc) return TOP_slct_r;
+  if (!is_float && !is_fcc) return TOP_targ_slct_r_r_b_r;
   return TOP_UNDEFINED;
 }
 
@@ -481,10 +489,10 @@ OP_opnd_can_be_reassociated (
   TOP top = OP_code(op);
 
   switch (top) {
-  case TOP_add_r:
+  case TOP_add_r_r_r:
     return (opnd == 0 || opnd == 1);
 
-  case TOP_sub_r:
+  case TOP_sub_r_r_r:
     return (opnd == 0);
   }
     
@@ -501,8 +509,8 @@ INT
 OP_other_opnd(OP *op, INT this_opnd)
 {
   switch (OP_code(op)) {
-  case TOP_add_r:
-  case TOP_sub_r:
+  case TOP_add_r_r_r:
+  case TOP_sub_r_r_r:
     if (this_opnd == 1) return 0;
     if (this_opnd == 0) return 1;
     break;
@@ -543,7 +551,6 @@ OP_Is_Unconditional_Compare (
 {
   return (OP_icmp(op));
 }
-
 
 /*
  * TOP_opnd_immediate_variant_default
@@ -607,136 +614,49 @@ TOP_opnd_immediate_variant_default(TOP regform, int opnd, INT64 imm)
 TOP
 TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
 {
-  int s9 = 0;
-  if (imm >= -(1<<8) && imm < (1<<8)) s9 = 1;
 
-#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii: \
-			return s9 ? TOP_##top##_i : TOP_##top##_ii;
-#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii: \
-			return s9 ? TOP_##top##_i : TOP_##top##_ii;
-#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
-			return s9 ? TOP_##top##_i_r : TOP_##top##_ii_r; \
-		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b: \
-			return s9 ? TOP_##top##_i_b : TOP_##top##_ii_b;
-#define CASE_TOP_ASM(n, nplus16) case TOP_asm_##n : \
-				return s9 ? TOP_asm_##nplus16##_i : TOP_asm_##nplus16##_ii;
-
-  if (opnd == 0) {
-    switch(regform) {
-      CASE_TOP(mov);
-      CASE_TOP(sub);
-      CASE_TOP_I(stl);
-      CASE_TOP_I(stw);
-      CASE_TOP_I(sth);
-      CASE_TOP_I(stb);
-      CASE_TOP_I(ldl);
-      CASE_TOP_I(ldw);
-      CASE_TOP_I(ldh);
-      CASE_TOP_I(ldb);
-      CASE_TOP_I(ldhu);
-      CASE_TOP_I(ldbu);
-      CASE_TOP_I(ldw_d);
-      CASE_TOP_I(ldh_d);
-      CASE_TOP_I(ldb_d);
-      CASE_TOP_I(ldhu_d);
-      CASE_TOP_I(ldbu_d);
-      CASE_TOP_I(pft);
-    }
-  } else if (opnd == 1) {
-    switch(regform) {
-      CASE_TOP(add);
-      CASE_TOP(shl);
-      CASE_TOP(shr);
-      CASE_TOP(shru);
-      CASE_TOP(sh1add);
-      CASE_TOP(sh2add);
-      CASE_TOP(sh3add);
-      CASE_TOP(sh4add);
-      CASE_TOP(and);
-      CASE_TOP(andc);
-      CASE_TOP(or);
-      CASE_TOP(orc);
-      CASE_TOP(xor);
-      CASE_TOP(mullhus);
-      CASE_TOP(max);
-      CASE_TOP(maxu);
-      CASE_TOP(min);
-      CASE_TOP(minu);
-      CASE_TOP(mulhhs);
-      CASE_TOP(mull);
-      CASE_TOP(mullu);
-      CASE_TOP(mulh);
-      CASE_TOP(mulhu);
-      CASE_TOP(mulll);
-      CASE_TOP(mulllu);
-      CASE_TOP(mullh);
-      CASE_TOP(mullhu);
-      CASE_TOP(mulhh);
-      CASE_TOP(mulhhu);
-      CASE_TOP(mulhs);
-      CASE_TOP(mul32);
-      CASE_TOP(mul64h);
-      CASE_TOP(mul64hu);
-      CASE_TOP(mulfrac);
-      CASE_TOP_BR(cmpeq);
-      CASE_TOP_BR(cmpne);
-      CASE_TOP_BR(cmpge);
-      CASE_TOP_BR(cmpgeu);
-      CASE_TOP_BR(cmpgt);
-      CASE_TOP_BR(cmpgtu);
-      CASE_TOP_BR(cmple);
-      CASE_TOP_BR(cmpleu);
-      CASE_TOP_BR(cmplt);
-      CASE_TOP_BR(cmpltu);
-      CASE_TOP_BR(andl);
-      CASE_TOP_BR(nandl);
-      CASE_TOP_BR(orl);
-      CASE_TOP_BR(norl);
-      /* (cbr) support for conditional loads */
-      CASE_TOP_I(ldlc);
-      CASE_TOP_I(ldwc);
-      CASE_TOP_I(ldhc);
-      CASE_TOP_I(ldbc);
-      CASE_TOP_I(ldhuc);
-      CASE_TOP_I(ldbuc);
-      /* support for asm */
-      CASE_TOP_ASM(0 , 16) ;
-      CASE_TOP_ASM(1 , 17) ;
-      CASE_TOP_ASM(2 , 18) ;
-      CASE_TOP_ASM(3 , 19) ;
-      CASE_TOP_ASM(4 , 20) ;
-      CASE_TOP_ASM(5 , 21) ;
-      CASE_TOP_ASM(6 , 22) ;
-      CASE_TOP_ASM(7 , 23) ;
-      CASE_TOP_ASM(8 , 24) ;
-      CASE_TOP_ASM(9 , 25) ;
-      CASE_TOP_ASM(10, 26) ;
-      CASE_TOP_ASM(11, 27) ;
-      CASE_TOP_ASM(12, 28) ;
-      CASE_TOP_ASM(13, 29) ;
-      CASE_TOP_ASM(14, 30) ;
-      CASE_TOP_ASM(15, 31) ;
-    }
-  } else if (opnd == 2) {
-    switch(regform) {
-      CASE_TOP(slct);
-      CASE_TOP(slctf);
-      /* (cbr) support for conditional stores */
-      CASE_TOP_I(stlc);
-      CASE_TOP_I(stwc);
-      CASE_TOP_I(sthc);
-      CASE_TOP_I(stbc);
+  // [SC] Special case: mul32_i can act as mull_i, the immediate
+  // variant table does not catch this.
+  if (opnd == 1
+      && (regform == TOP_mull_r_r_r || regform == TOP_mull_i_r_r || regform == TOP_mull_ii_r_r)) {
+    int s9 = (imm >= -(1<<8) && imm < (1<<8)) ? 1 : 0;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_i_r_r)) {
+      return s9 ? TOP_mul32_i_r_r : TOP_mul32_ii_r_r;
+    } else {
+      return s9 ? TOP_mull_i_r_r : TOP_mull_ii_r_r;
     }
   }
 
-  /* MERGE TODO */
+  TOP immform = TOP_get_variant(regform, VARATT_immediate);
+
+  while (immform != TOP_UNDEFINED) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (immform);
+    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    INT osize = ISA_OPERAND_VALTYP_Size (otype);
+    INT64 minval, maxval;
+    // [SC] Hack for the osize == 32 case.  The operand type for a
+    // ldw imm.offset is marked as signed, but we can use it to
+    // contain an unsigned address.  It effectively wraps around the
+    // address space.
+    if (osize == 32) { minval = imm; maxval = imm; }
+    if (ISA_OPERAND_VALTYP_Is_Signed (otype)) {
+      maxval = (1 << (osize - 1)) - 1;
+      minval = -maxval - 1;
+    } else {
+      minval = 0;
+      maxval = (1 << osize) - 1;
+    }
+    if (ISA_OPERAND_VALTYP_Is_Literal(otype)
+	&& ((osize == 32) || (imm >= minval && imm <= maxval))
+	&& ISA_SUBSET_Member (ISA_SUBSET_Value, immform))
+      break;
+    immform = TOP_get_variant(immform, VARATT_next_immediate);
+  }
+
+  /* TODO_MERGE */
   /* return TOP_opnd_immediate_variant_default() */ 
 
-  return TOP_UNDEFINED;
-#undef CASE_TOP
-#undef CASE_TOP_I
-#undef CASE_TOP_BR
-#undef CASE_TOP_ASM
+  return immform;
 }
 
 
@@ -744,37 +664,29 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
  * TOP_opnd_register_variant_default
  *
  * Default target independent implementation for
- * TOP_opend_register_variant.
+ * TOP_opnd_register_variant.
  * The implementation is driven by the targinfo variant 
  * description (see isa_variant.cxx).
- * VARATT_immediate gives for any register or immediate operator the first immediate form.
- * VARATT_next_immediate gives the next larger immediate form.
- * We use these two variants to generate the reverse mapping which
- * gives for each top immediate or immediate next the initial register variant.
+ * VARATT_register gives for any register or immediate operator a register form.
+ * VARATT_next_register gives the next register form if there 
+ * are multiple register files matching.
+ *
  */
-extern TOP CGTARG_TOP_Register_Variant(TOP immform_top); /* Defined in targ_cg.cxx. */
-static TOP
-TOP_opnd_register_variant_default(TOP immform, int opnd, ISA_REGISTER_CLASS regclass)
+TOP
+TOP_opnd_register_variant_default(TOP op, int opnd, ISA_REGISTER_CLASS cl)
 {
   TOP regform;
- 
-  // Check if already a register variant.
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, immform)) {
-    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (immform);
-    const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
-    if (ISA_OPERAND_VALTYP_Is_Register(otype) &&
-	regclass == ISA_OPERAND_VALTYP_Register_Class(otype))
-      return immform;
-  }
-  regform = CGTARG_TOP_Register_Variant(immform);
-  
-  if (regform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, regform)) {
+
+  for (regform = TOP_get_variant(op, VARATT_register);
+       regform != TOP_UNDEFINED;
+       regform = TOP_get_variant(op, VARATT_next_register)) {
     const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (regform);
     const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
-    if (ISA_OPERAND_VALTYP_Is_Register(otype)) {
-      if (regclass == ISA_OPERAND_VALTYP_Register_Class(otype))
-	return regform;
-    }
+    if (ISA_OPERAND_VALTYP_Is_Register (otype)
+	&& (cl == ISA_REGISTER_CLASS_UNDEFINED
+	    || cl == ISA_OPERAND_VALTYP_Register_Class(otype))
+	&& ISA_SUBSET_Member (ISA_SUBSET_Value, regform))
+      return regform;
   }
   return TOP_UNDEFINED;
 }
@@ -784,16 +696,19 @@ TOP_opnd_register_variant_default(TOP immform, int opnd, ISA_REGISTER_CLASS regc
  *
  * Returns the TOP register variant, matching the given register class.
  * Target dependent.
- * opnd is the operand number that may be replaced (0..2).
- * regclass is the requested register class.
- * Returns TOP_UNDEFINED, if no register variant is available.
+ * The OP may be a register or immediate opcode.
+ * OPND is the operand number that we want to be a register.
+ * CL is the register class we want, if ISA_REGISTER_CLASS_UNDEFINED then
+ * any register class is matched.
+ * Returns TOP_UNDEFINED if no register variant is available.
  */
 TOP
-TOP_opnd_register_variant(TOP regform, int opnd, ISA_REGISTER_CLASS regclass)
+TOP_opnd_register_variant(TOP op, int opnd, ISA_REGISTER_CLASS cl)
 {
   // No target dependent specificities.
-  return TOP_opnd_register_variant_default(regform, opnd, regclass);
+  return TOP_opnd_register_variant_default(op, opnd, cl);
 }
+
 
 
 /*
@@ -805,77 +720,110 @@ TOP_opnd_register_variant(TOP regform, int opnd, ISA_REGISTER_CLASS regclass)
 TOP
 TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 {
-#define CASE_TOP(top) case TOP_##top##_r: \
-			return TOP_##top##_r;
-#define CASE_TOP_INV(top,newtop) case TOP_##top##_r: \
-			return TOP_##newtop##_r;
-#define CASE_TOP_BR(top) case TOP_##top##_r_r: \
-			return TOP_##top##_r_r; \
-		       case TOP_##top##_r_b: \
-       			return TOP_##top##_r_b;
-#define CASE_TOP_BR_INV(top,newtop) case TOP_##top##_r_r: \
-			return TOP_##newtop##_r_r; \
-		       case TOP_##top##_r_b: \
-       			return TOP_##newtop##_r_b;
-#define CASE_TOP_FBR_INV(top,newtop) case TOP_##top##_r: \
-			return TOP_##newtop##_r; \
-		       case TOP_##top##_b: \
-       			return TOP_##newtop##_b;
+#define CASE_TOP(top) case TOP_##top##_r_r_r: \
+			return TOP_##top##_r_r_r
+#define CASE_TOP_INV(top,newtop) case TOP_##top: \
+			return TOP_##newtop; \
+                      case TOP_##newtop: \
+			return TOP_##top
+#define CASE_TOP_BR_INV(top,newtop) case TOP_##top##_r_r_r: \
+			return TOP_##newtop##_r_r_r; \
+		       case TOP_##top##_r_r_b: \
+       			return TOP_##newtop##_r_r_b; \
+                       case TOP_##newtop##_r_r_r: \
+			return TOP_##top##_r_r_r; \
+		       case TOP_##newtop##_r_r_b: \
+       			return TOP_##top##_r_r_b
+#define CASE_TOP_FBR(top) case TOP_##top##_r_r_r: \
+			return TOP_##top##_r_r_r; \
+		       case TOP_##top##_r_r_b: \
+       			return TOP_##top##_r_r_b
+#define CASE_TOP_FBR_INV(top,newtop) case TOP_##top##_r_r_r: \
+			return TOP_##newtop##_r_r_r; \
+		       case TOP_##top##_r_r_b: \
+       			return TOP_##newtop##_r_r_b; \
+                       case TOP_##newtop##_r_r_r: \
+			return TOP_##top##_r_r_r; \
+		       case TOP_##newtop##_r_r_b: \
+       			return TOP_##top##_r_r_b
+#define CASE_TOP_PBR(top) CASE_TOP_FBR(top)
+
   if (opnd1 > opnd2) {
     int tmp = opnd1;
     opnd1 = opnd2;
     opnd2 = tmp;
   }
-  
+  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+  const ISA_OPERAND_VALTYP *otype1 = ISA_OPERAND_INFO_Operand(oinfo, opnd1);
+  const ISA_OPERAND_VALTYP *otype2 = ISA_OPERAND_INFO_Operand(oinfo, opnd2);
+  // Operands must both be registers, of the same class.
+  if (! ISA_OPERAND_VALTYP_Is_Register(otype1)
+      || ! ISA_OPERAND_VALTYP_Is_Register(otype2)
+      || (ISA_OPERAND_VALTYP_Register_Class(otype1)
+	  != ISA_OPERAND_VALTYP_Register_Class(otype2))) {
+    return TOP_UNDEFINED;
+  }
   if (opnd1 == 0 && opnd2 == 1) {
+    if (TOP_is_add(top) || TOP_is_and(top) || TOP_is_or(top)
+	|| TOP_is_xor(top) || TOP_is_max(top) || TOP_is_min(top)
+	|| TOP_is_fmul(top)) {
+      // top is commutative.
+      return top;
+    }
+    if (TOP_is_mul(top)
+	&& TOP_opnd_use_bits(top, 0) == TOP_opnd_use_bits(top, 1))
+      return top;
+    if (TOP_is_cmp(top) && TOP_is_intop(top)) {
+      VARIANT v = TOP_cmp_variant(top);
+      if (v == V_CMP_EQ || v == V_CMP_NE || v == V_CMP_ANDL
+	  || v == V_CMP_NANDL || v == V_CMP_ORL || v == V_CMP_NORL) {
+	return top;
+      }
+    }
+
     switch(top) {
-      CASE_TOP(add);
-      CASE_TOP(and);
-      CASE_TOP(or);
-      CASE_TOP(xor);
-      CASE_TOP(max);
-      CASE_TOP(maxu);
-      CASE_TOP(min);
-      CASE_TOP(minu);
-      CASE_TOP(mulll);
-      CASE_TOP(mulllu);
       CASE_TOP(mulhh);
       CASE_TOP(mulhhu);
-      CASE_TOP(mul32);
       CASE_TOP(mul64h);
       CASE_TOP(mul64hu);
       CASE_TOP(mulfrac);
-      CASE_TOP_BR(cmpeq);
-      CASE_TOP_BR(cmpne);
-      CASE_TOP_BR(andl);
-      CASE_TOP_BR(orl);
-      CASE_TOP_BR(nandl);
-      CASE_TOP_BR(norl);
+      CASE_TOP_FBR(cmpeqf_n);
       CASE_TOP_BR_INV(cmpge,cmple);
       CASE_TOP_BR_INV(cmpgeu,cmpleu);
       CASE_TOP_BR_INV(cmpgt,cmplt);
       CASE_TOP_BR_INV(cmpgtu,cmpltu);
-      CASE_TOP_BR_INV(cmple,cmpge);
-      CASE_TOP_BR_INV(cmpleu,cmpgeu);
-      CASE_TOP_BR_INV(cmplt,cmpgt);
-      CASE_TOP_BR_INV(cmpltu,cmpgtu);
       CASE_TOP_FBR_INV(cmpgef_n,cmplef_n);
       CASE_TOP_FBR_INV(cmpgtf_n,cmpltf_n);
-      CASE_TOP_FBR_INV(cmplef_n,cmpgef_n);
-      CASE_TOP_FBR_INV(cmpltf_n,cmpgtf_n);
+      case TOP_addcg_b_r_r_b_r: return top;
+      case TOP_addso_r_r_r: return top;
+      case TOP_adds_r_r_r: return top;
+      case TOP_adds_ph_r_r_r: return top;
+      case TOP_add_ph_r_r_r: return top;
+      case TOP_max_ph_r_r_r: return top;
+      case TOP_min_ph_r_r_r: return top;
+      case TOP_mulfracrm_ph_r_r_r: return top;
+      case TOP_mulfracrne_ph_r_r_r: return top;
+      case TOP_mul_ph_r_r_r: return top;
+      CASE_TOP_PBR(cmpeq_pb);
+      CASE_TOP_PBR(cmpeq_ph);
     }
   } else if (opnd1 == 1 && opnd2 == 2) {
     switch(top) {
-      CASE_TOP_INV(slct, slctf);
-      CASE_TOP_INV(slctf, slct);
+      case TOP_slct_r_r_b_r:       return TOP_slctf_r_r_b_r;
+      case TOP_st240_slct_r_r_b_r: return TOP_slctf_r_r_b_r;
+      case TOP_slctf_r_r_b_r:      return TOP_targ_slct_r_r_b_r;
+      CASE_TOP_INV(slctf_pb_r_r_b_r, slct_pb_r_r_b_r);
+      case TOP_avg4u_pb_r_r_b_r: return top;
+      case TOP_avgu_pb_r_r_b_r: return top;
     }
   }
   return TOP_UNDEFINED;
 #undef CASE_TOP
 #undef CASE_TOP_INV
-#undef CASE_TOP_BR
 #undef CASE_TOP_BR_INV
+#undef CASE_TOP_FBR
 #undef CASE_TOP_FBR_INV
+#undef CASE_TOP_PBR
 }
 
 /*
@@ -888,16 +836,20 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 TOP
 TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
 {
+  TOP top = TOP_UNDEFINED;
+#define CASE_TOP(x) case TOP_##x##_r_r_b: case TOP_##x##_r_r_r: \
+                        top = regclass == ISA_REGISTER_CLASS_branch ? TOP_##x##_r_r_b : TOP_##x##_r_r_r; \
+			break; \
+		      case TOP_##x##_i_r_b: case TOP_##x##_i_r_r: \
+			top = regclass == ISA_REGISTER_CLASS_branch ? TOP_##x##_i_r_b : TOP_##x##_i_r_r; \
+			break; \
+		      case TOP_##x##_ii_r_b: case TOP_##x##_ii_r_r: \
+                        top = regclass == ISA_REGISTER_CLASS_branch ? TOP_##x##_ii_r_b : TOP_##x##_ii_r_r; \
+			break
 
-#define CASE_TOP(top) case TOP_##top##_r_b: case TOP_##top##_r_r: \
-			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_r_b : TOP_##top##_r_r; \
-		      case TOP_##top##_i_b: case TOP_##top##_i_r: \
-			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_i_b : TOP_##top##_i_r; \
-		      case TOP_##top##_ii_b: case TOP_##top##_ii_r: \
-			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_ii_b : TOP_##top##_ii_r; \
-
-#define CASE_TOPF(top) case TOP_##top##_n_b: case TOP_##top##_n_r: \
-			return regclass == ISA_REGISTER_CLASS_branch ? TOP_##top##_n_b : TOP_##top##_n_r; \
+#define CASE_TOPF(x) case TOP_##x##_r_r_r: case TOP_##x##_r_r_b: \
+			top = regclass == ISA_REGISTER_CLASS_branch ? TOP_##x##_r_r_b : TOP_##x##_r_r_r; \
+			break
 
   if (rslt == 0) {
     switch(regform) {
@@ -915,19 +867,39 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
       CASE_TOP(nandl);
       CASE_TOP(orl);
       CASE_TOP(norl);
-      CASE_TOPF(cmpeqf);
-      CASE_TOPF(cmpgef);
-      CASE_TOPF(cmpgtf);
-      CASE_TOPF(cmplef);
-      CASE_TOPF(cmpltf);
-      case TOP_mtb:
-      case TOP_mov_r:
-	return regclass == ISA_REGISTER_CLASS_branch ? TOP_mtb : TOP_mov_r;
-      case TOP_mfb:
-	return regclass == ISA_REGISTER_CLASS_branch ? TOP_UNDEFINED : TOP_mfb;
+      CASE_TOPF(cmpeqf_n);
+      CASE_TOPF(cmpgef_n);
+      CASE_TOPF(cmpgtf_n);
+      CASE_TOPF(cmplef_n);
+      CASE_TOPF(cmpltf_n);
+      case TOP_convib_r_b:
+      case TOP_mtb_r_b: // [SC] Checked mtb
+      case TOP_mov_r_b:
+      case TOP_st240_mov_r_b:
+        top = regclass == ISA_REGISTER_CLASS_branch ? regform : TOP_mov_r_r;
+	break;
+      case TOP_mov_r_r:
+	top = regclass == ISA_REGISTER_CLASS_branch ? TOP_targ_mov_r_b : TOP_mov_r_r;
+	break;
+      case TOP_convbi_b_r:
+      case TOP_mfb_b_r: // [SC] Checked mfb
+	top = regclass == ISA_REGISTER_CLASS_integer ? regform : TOP_UNDEFINED;
+	break;
+      case TOP_mov_b_b:
+	top = regclass == ISA_REGISTER_CLASS_branch ? TOP_mov_b_b : TOP_targ_mov_b_r;
+	break;
+      case TOP_mov_b_r:
+      case TOP_st240_mov_b_r:
+        top = regclass == ISA_REGISTER_CLASS_integer ? regform : TOP_mov_b_b;
+	break;
+    default:
+      break;
     }
   }
-  return TOP_UNDEFINED;
+  if (top == TOP_UNDEFINED || !ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    top = TOP_UNDEFINED;
+  }
+  return top;
 #undef CASE_TOP
 #undef CASE_TOPF
 }
@@ -942,11 +914,11 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
 INT
 TOP_opnd_use_bits(TOP top, int opnd)
 {
-#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii
-#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
-#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
-		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
-#define CASE_TOP_FBR(top) case TOP_##top##_r: case TOP_##top##_b
+#define CASE_TOP_I(top) case TOP_##top##_r_r_i: case TOP_##top##_r_r_ii
+#define CASE_TOP_CI(top) case TOP_##top##_r_b_r_i: case TOP_##top##_r_b_r_ii
+#define CASE_TOP_PI(top) case TOP_##top##_p_r_i: case TOP_##top##_p_r_ii
+#define CASE_TOP_PCI(top) case TOP_##top##_p_b_r_i: case TOP_##top##_p_b_r_ii
+#define CASE_TOP(top) case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
 
   int use_bits;
   const ISA_OPERAND_INFO *oinfo;
@@ -961,21 +933,26 @@ TOP_opnd_use_bits(TOP top, int opnd)
 
   use_bits = ISA_OPERAND_VALTYP_Size(vtype);
 
+  if (TOP_is_store (top)
+      && opnd == TOP_Find_Operand_Use(top, OU_storeval)) {
+    use_bits = TOP_Mem_Bytes (top) * 8;
+  }
+
   switch(top) {
   case TOP_movp:
     use_bits = 64;
     break;
-  case TOP_sxth:
-  case TOP_zxth:
+  case TOP_sxth_r_r:
+  case TOP_zxth_r_r:
     use_bits =  16;
     break;
-  case TOP_sxtb:
-  case TOP_zxtb:
+  case TOP_sxtb_r_r:
+  case TOP_zxtb_r_r:
     use_bits =  8;
     break;
     CASE_TOP(shl):
-      CASE_TOP(shr):
-      CASE_TOP(shru):
+    CASE_TOP(shr):
+    CASE_TOP(shru):
       // This is the size of the bits fetched by the shifts.
       if (opnd == 1) use_bits = 8;
     break;
@@ -995,38 +972,14 @@ TOP_opnd_use_bits(TOP top, int opnd)
     CASE_TOP(mullhu):
       if (opnd == 0) use_bits = 16;
     break;
-
-    CASE_TOP_I(stl):
-      if (opnd == 2) use_bits = 64;
-    break;
-    CASE_TOP_I(stw):
-      if (opnd == 2) use_bits = 32;
-    break;
-    CASE_TOP_I(sth):
-      if (opnd == 2) use_bits = 16;
-    break;
-    CASE_TOP_I(stb):
-      if (opnd == 2) use_bits = 8;
-    break;
-    CASE_TOP_I(stlc):
-      if (opnd == 3) use_bits = 64;
-    break;
-    CASE_TOP_I(stwc):
-      if (opnd == 3) use_bits = 32;
-    break;
-    CASE_TOP_I(sthc):
-      if (opnd == 3) use_bits = 16;
-    break;
-    CASE_TOP_I(stbc):
-      if (opnd == 3) use_bits = 8;
-    break;
   }
   
   return use_bits;
 #undef CASE_TOP
+#undef CASE_TOP_CI
+#undef CASE_TOP_PI
+#undef CASE_TOP_PCI
 #undef CASE_TOP_I
-#undef CASE_TOP_BR
-#undef CASE_TOP_FBR
 }
 
 /*
@@ -1045,10 +998,9 @@ TOP_opnd_use_bits(TOP top, int opnd)
 INT
 TOP_opnd_use_signed(TOP top, int opnd)
 {
-#define CASE_TOP_I(top) case TOP_##top##_i: case TOP_##top##_ii
-#define CASE_TOP(top) case TOP_##top##_r: case TOP_##top##_i: case TOP_##top##_ii
-#define CASE_TOP_BR(top) case TOP_##top##_r_r: case TOP_##top##_i_r: case TOP_##top##_ii_r: \
-		       case TOP_##top##_r_b: case TOP_##top##_i_b: case TOP_##top##_ii_b
+#define CASE_TOP(top) case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
+#define CASE_TOP_BR(top) case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r: \
+		       case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b
   INT is_signed;
   const ISA_OPERAND_INFO *oinfo;
   const ISA_OPERAND_VALTYP *vtype;
@@ -1071,8 +1023,8 @@ TOP_opnd_use_signed(TOP top, int opnd)
       is_signed = FALSE;
     break;
     
-  case TOP_zxth:
-  case TOP_zxtb:
+  case TOP_zxth_r_r:
+  case TOP_zxtb_r_r:
     is_signed = FALSE;
     break;
     
@@ -1097,11 +1049,198 @@ TOP_opnd_use_signed(TOP top, int opnd)
   
   return is_signed;
 #undef CASE_TOP
-#undef CASE_TOP_I
 #undef CASE_TOP_BR
 }
 
 TOP
-TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass) {
+TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass)
+{
   return TOP_UNDEFINED;
+}
+
+INT
+targ_cg_TOP_shadd_amount(TOP opcode) {
+  switch(opcode) {
+  case TOP_sh1add_r_r_r:
+  case TOP_sh1add_i_r_r:
+  case TOP_sh1add_ii_r_r:
+    return 1;
+  case TOP_sh2add_r_r_r:
+  case TOP_sh2add_i_r_r:
+  case TOP_sh2add_ii_r_r:
+    return 2;
+  case TOP_sh3add_r_r_r:
+  case TOP_sh3add_i_r_r:
+  case TOP_sh3add_ii_r_r:
+    return 3;
+  case TOP_sh4add_r_r_r:
+  case TOP_sh4add_i_r_r:
+  case TOP_sh4add_ii_r_r:
+    return 4;
+  default:
+    return 0;
+  }
+}
+
+BOOL
+targ_cg_TOP_is_shadd(TOP opcode) { 
+  return targ_cg_TOP_shadd_amount(opcode) > 0; 
+}
+
+static const MulProperties mul_properties [] = {
+  //  The entries in this table are carefully ordered, so that
+  //  the "best" (i.e. most constrained) instructions are nearer the start
+  //  of the table.
+  //  This is so that a linear scan in targ_cg_find_mul_with_properties
+  //  will find the "best" instruction.
+
+  { TOP_mulllu_r_r_r,   TOP_mulllu_i_r_r,   TOP_mulllu_ii_r_r,  0, 16, 0,  0, 16, 0,   0 },
+  { TOP_mulll_r_r_r,    TOP_mulll_i_r_r,    TOP_mulll_ii_r_r,   0, 16, 1,  0, 16, 1,   0 },
+  { TOP_mulhhu_r_r_r,   TOP_mulhhu_i_r_r,   TOP_mulhhu_ii_r_r, 16, 16, 0, 16, 16, 0,   0 },
+  { TOP_mulhh_r_r_r,    TOP_mulhh_i_r_r,    TOP_mulhh_ii_r_r,  16, 16, 1, 16, 16, 1,   0 },
+  { TOP_mullhu_r_r_r,   TOP_mullhu_i_r_r,   TOP_mullhu_ii_r_r,  0, 16, 0, 16, 16, 0,   0 },
+  { TOP_mullh_r_r_r,    TOP_mullh_i_r_r,    TOP_mullh_ii_r_r,   0, 16, 1, 16, 16, 1,   0 },
+  { TOP_mullu_r_r_r,    TOP_mullu_i_r_r,    TOP_mullu_ii_r_r,   0, 32, 0,  0, 16, 0,   0 },
+  { TOP_mull_r_r_r,     TOP_mull_i_r_r,     TOP_mull_ii_r_r,    0, 32, 1,  0, 16, 1,   0 },
+  { TOP_mullhus_r_r_r,  TOP_mullhus_i_r_r,  TOP_mullhus_ii_r_r, 0, 32, 1,  0, 16, 0,  32 },
+  { TOP_mulhhs_r_r_r,   TOP_mulhhs_i_r_r,   TOP_mulhhs_ii_r_r,  0, 32, 1, 16, 16, 1,  16 },
+  { TOP_mulhu_r_r_r,    TOP_mulhu_i_r_r,    TOP_mulhu_ii_r_r,   0, 32, 0, 16, 16, 0,   0 },
+  { TOP_mulh_r_r_r,     TOP_mulh_i_r_r,     TOP_mulh_ii_r_r,    0, 32, 1, 16, 16, 1,   0 },
+  { TOP_mulhs_r_r_r,    TOP_mulhs_i_r_r,    TOP_mulhs_ii_r_r,   0, 32, 1, 16, 16, 0, -16 },
+  { TOP_mul32_r_r_r,    TOP_mul32_i_r_r,    TOP_mul32_ii_r_r,   0, 32, 1,  0, 32, 1,   0 },
+  { TOP_mul64hu_r_r_r,  TOP_mul64hu_i_r_r,  TOP_mul64hu_ii_r_r, 0, 32, 0,  0, 32, 0,  32 },
+  { TOP_mul64h_r_r_r,   TOP_mul64h_i_r_r,   TOP_mul64h_ii_r_r,  0, 32, 1,  0, 32, 1,  32 },
+};
+
+const MulProperties *
+targ_cg_mul_properties (const OP *op)
+{
+  size_t i;
+  TOP opcode = OP_code (op);
+  for (i = 0; i < (sizeof(mul_properties)/sizeof(mul_properties[0]));
+       i++) {
+    if (mul_properties[i].r_op == opcode
+	|| mul_properties[i].i_op == opcode
+	|| mul_properties[i].ii_op == opcode) {
+      return &mul_properties[i];
+    }
+  }
+  return NULL;
+}
+
+TOP
+targ_cg_find_mul_with_properties (const TN *opnd1, const TN *opnd2,
+				INT opnd1_shift, INT opnd1_width,
+				BOOL opnd1_signed,
+				INT opnd2_shift, INT opnd2_width,
+				BOOL opnd2_signed,
+				INT result_shift,
+				BOOL &swap_operands)
+{
+  size_t i;
+  
+  for (i = 0;
+       i < (sizeof(mul_properties)/sizeof(mul_properties[0]));
+       i++) {
+    const struct MulProperties *props = &mul_properties[i];
+    if (props->result_shift == result_shift) {
+      for (int swap = 0; swap < 2; swap++) {
+	const TN *o1   = swap ? opnd2        : opnd1;
+	const TN *o2   = swap ? opnd1        : opnd2;
+	INT o1_shift   = swap ? opnd2_shift  : opnd1_shift;
+	INT o1_width   = swap ? opnd2_width  : opnd1_width;
+	BOOL o1_signed = swap ? opnd2_signed : opnd1_signed;
+	INT o2_shift   = swap ? opnd1_shift  : opnd2_shift;
+	INT o2_width   = swap ? opnd1_width  : opnd2_width;
+	BOOL o2_signed = swap ? opnd1_signed : opnd2_signed;
+	// match if the value is of same signedness and no wider than
+	// the multiply operand,
+	// OR if the value is unsigned and is narrower than the
+	// multiply operand (since an unsigned value can be
+	// made into a signed value by adding a leading zero bit).
+	if (TN_is_register (o1)
+	    && props->opnd1_shift == o1_shift
+	    && ((props->opnd1_signed == o1_signed
+		 && props->opnd1_width >= o1_width)
+		|| (! o1_signed && props->opnd1_width > o1_width))
+	    && props->opnd2_shift == o2_shift
+	    && ((props->opnd2_signed == o2_signed
+		 && props->opnd2_width >= o2_width)
+		|| (! o2_signed && props->opnd2_width > o2_width))) {
+	  TOP new_opcode = props->r_op;
+	  if (TN_has_value (o2))
+	    new_opcode = TOP_opnd_immediate_variant (new_opcode, 1,
+						     TN_value (o2));
+	  else
+	    FmtAssert (TN_is_register (o2),
+		       ("make_mul_from_properties unexpected opnd2"));
+	  if (ISA_SUBSET_Member (ISA_SUBSET_Value, new_opcode)) {
+	    swap_operands = swap ? TRUE : FALSE;
+	    return new_opcode;
+	  }
+	}
+      }
+    }
+  }
+  return TOP_UNDEFINED;
+}
+
+void
+targ_cg_init_targ_op ()
+{
+#if 0
+  // For debugging purpose
+  INT i;
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      printf ("TOP_opnd_swapped_variant(%s, 0, 1) = %s\n",
+	      TOP_Name (top), TOP_Name(TOP_opnd_swapped_variant (top, 0, 1)));
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      printf ("TOP_opnd_swapped_variant(%s, 1, 2) = %s\n",
+	      TOP_Name (top), TOP_Name(TOP_opnd_swapped_variant (top, 1, 2)));
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      printf ("TOP_result_register_variant(%s, 0, ISA_REGISTER_CLASS_integer) = %s\n",
+	      TOP_Name (top), TOP_Name(TOP_result_register_variant (top, 0, ISA_REGISTER_CLASS_integer)));
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      printf ("TOP_result_register_variant(%s, 0, ISA_REGISTER_CLASS_branch) = %s\n",
+	      TOP_Name (top), TOP_Name(TOP_result_register_variant (top, 0, ISA_REGISTER_CLASS_branch)));
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+      for (INT j = 0; j < ISA_OPERAND_INFO_Operands(oinfo); j++) {
+	printf ("TOP_opnd_use_bits(%s, %d) = %d\n",
+		TOP_Name (top), j, TOP_opnd_use_bits(top, j));
+      }
+    }
+  }
+  for (i = 0; i < TOP_count; i++) {
+    TOP top = (TOP)i;
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+      for (INT j = 0; j < ISA_OPERAND_INFO_Operands(oinfo); j++) {
+	printf ("TOP_opnd_immediate_variant(%s, %d, 0) = %s\n",
+		TOP_Name (top), j, TOP_Name (TOP_opnd_immediate_variant(top, j, 0)));
+	printf ("TOP_opnd_immediate_variant(%s, %d, 1000) = %s\n",
+	      TOP_Name (top), j, TOP_Name (TOP_opnd_immediate_variant(top, j, 1000)));
+      }
+    }
+  }
+#endif
+	    
 }

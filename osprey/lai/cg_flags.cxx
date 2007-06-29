@@ -73,9 +73,17 @@ BOOL CG_gen_callee_saved_regs_mask = FALSE; /* generate register mask */
 BOOL FREQ_enable = TRUE;
 BOOL FREQ_view_cfg = FALSE;
 const char *FREQ_frequent_never_ratio = "1000.0";
+#ifdef TARG_ST
+// (cbr) this is enough
+const char *FREQ_eh_freq = "0.01";
+#else
 const char *FREQ_eh_freq = "0.1";
+#endif
 
 BOOL CG_enable_rename = TRUE;
+#ifdef TARG_ST
+BOOL CG_enable_rename_after_GRA = TRUE;
+#endif
 BOOL CG_enable_prefetch = FALSE;
 BOOL CG_enable_z_conf_prefetch  = FALSE;
 BOOL CG_enable_nz_conf_prefetch = FALSE;
@@ -86,19 +94,35 @@ BOOL CG_enable_pf_L2_st = FALSE;
 BOOL CG_exclusive_prefetch = FALSE;
 BOOL CG_enable_peephole = FALSE;
 BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
+#ifdef TARG_ST
+// FdF 20070206
+BOOL  CG_warn_prefetch_padding = 0;
+#endif
+
 BOOL CG_enable_select = FALSE;
+BOOL CG_enable_range_propagation = FALSE;
+INT32 CG_range_recompute_limit = 2;
+BOOL CG_enable_cbpo;
+
 INT32 CG_LAO_optimizations = 0;
-INT32 CG_LAO_schedkind = 0;
-INT32 CG_LAO_allockind = 0;
 INT32 CG_LAO_regiontype = 0;
+INT32 CG_LAO_conversion = 0;
+INT32 CG_LAO_predication = 0;
+INT32 CG_LAO_scheduling = 0;
+INT32 CG_LAO_allocation = 0;
+INT32 CG_LAO_formulation = 0;
+INT32 CG_LAO_preloading = 0;
+INT32 CG_LAO_l1missextra = 0;
 INT32 CG_LAO_compensation = 0;
 INT32 CG_LAO_speculation = 0;
 INT32 CG_LAO_relaxation = 0;
 INT32 CG_LAO_pipelining = 0;
 INT32 CG_LAO_renaming = 0;
-INT32 CG_LAO_loopdep = 1;
+INT32 CG_LAO_boosting = 0;
+INT32 CG_LAO_aliasing = 0;
 INT32 CG_LAO_prepadding = 0;
 INT32 CG_LAO_postpadding = 0;
+INT32 CG_LAO_overrun = 0;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;
@@ -123,9 +147,15 @@ BOOL CG_warn_bad_freqs = FALSE;
 BOOL CG_enable_loop_optimizations = FALSE;
 #ifdef BCO_ENABLED /* Thierry */
 BOOL CG_emit_bb_freqs = FALSE;
+BOOL CG_emit_bb_freqs_arcs = FALSE;
 #endif /* BCO_Enabled Thierry */
 BOOL CG_enable_feedback = FALSE;
 BOOL CG_tail_call = FALSE;
+#ifdef TARG_ST
+// [CL] force spill of return address (RA) so that
+// unwinding/backtracing is still possible
+BOOL CG_save_return_address = FALSE;
+#endif
 
 // TODO: set the default value here and ovewrite in target-specific
 //       initialization part.
@@ -170,6 +200,10 @@ UINT32 CFLOW_clone_incr=10;
 UINT32 CFLOW_clone_min_incr = 15;
 UINT32 CFLOW_clone_max_incr = 100;
 const char *CFLOW_cold_threshold;
+#ifdef TARG_ST
+// [CL]
+BOOL CFLOW_Enable_Favor_Branches_Condition = FALSE;
+#endif
 
 // ====================================================================
 //   CGSPILL:
@@ -243,6 +277,7 @@ BOOL LRA_do_reorder = FALSE;
 #ifdef TARG_ST
 BOOL LRA_minregs    = FALSE;
 BOOL LRA_merge_extract = TRUE;
+BOOL LRA_resched_check = FALSE;
 #endif
 
 // ====================================================================
@@ -267,6 +302,9 @@ BOOL GRA_recalc_liveness = FALSE;
 BOOL GRA_use_runeson_nystrom_spill_metric = FALSE;
 BOOL GRA_use_interprocedural_info = TRUE;
 BOOL GRA_spill_to_caller_save = TRUE;
+BOOL GRA_preference_subclass = TRUE;
+BOOL GRA_use_subclass_register_request = TRUE;
+const char *GRA_local_spill_multiplier_string = "1.0";
 #endif
 INT32 GRA_non_home_hi = -1;
 INT32 GRA_non_home_lo = INT32_MAX;

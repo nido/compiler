@@ -1156,6 +1156,10 @@ Synch_Pu_With_Pu (PU& merged_pu, const PU& original_pu)
     merged_pu.flags = merged_flags;
 
     merged_pu.src_lang |= original_pu.src_lang;
+#ifdef KEY
+    if (!merged_pu.unused)
+    	merged_pu.unused = original_pu.unused; // EH information
+#endif
 } // Synch_Pu_With_Pu
 
 
@@ -1173,8 +1177,13 @@ Synch_TY_IDX (TY_IDX merged_ty_idx, TY_IDX original_ty_idx)
     if (TY_is_volatile (merged_ty_idx) || TY_is_volatile (original_ty_idx))
 	Set_TY_is_volatile (result);
 
+#ifdef KEY
+    Set_TY_align_exp (result, MAX (TY_align_exp (merged_ty_idx),
+				   TY_align_exp (original_ty_idx)));
+#else
     Set_TY_align_exp (result, max (TY_align_exp (merged_ty_idx),
 				   TY_align_exp (original_ty_idx)));
+#endif
     return result;
 } // Synch_TY_IDX
 
@@ -1791,7 +1800,7 @@ Merge_Global_Initv(UINT                  initv_idx,
   if (initv_map[initv_idx] != 0)
     return initv_map[initv_idx];
 
-  INITV &original_initv = original_tabs.initv_tab[initv_idx];
+  INITV original_initv = original_tabs.initv_tab[initv_idx];
   INITV_IDX  first_new_idx = Initv_Table.Insert(original_initv);
   INITV_IDX  new_idx = first_new_idx;
   
@@ -1857,17 +1866,22 @@ Merge_Global_Initv(UINT                  initv_idx,
     // Process iteratively INITV chains
     INITV_IDX new_nested_idx;
     INITV_IDX nested_idx = INITV_next(original_initv);
+
     INITV &nested_initv = original_tabs.initv_tab[nested_idx];
+
     if (initv_map[nested_idx] != 0) {
       new_nested_idx = initv_map[nested_idx];
     } else {
       new_nested_idx = Initv_Table.Insert(nested_initv);
       initv_map.set_map (nested_idx, new_nested_idx);
     }
+
     Set_INITV_next(new_initv, new_nested_idx);
+
     new_idx = new_nested_idx;
     initv_idx = nested_idx;
     original_initv = original_tabs.initv_tab[initv_idx];
+
   } // end of while(1);
 
   return first_new_idx;
@@ -2354,18 +2368,26 @@ Sync_symbol_attributes (ST_IDX st_idx, UINT32 sym_attr, BOOL is_weak,
     switch (export_type) {
     case STO_DEFAULT:
     case STO_OPTIONAL:
+	if (Trace_IPA || Trace_Perf)
+	    fprintf(TFile, "%s is marked PREEMPTIBLE\n", ST_name (st));
 	Set_ST_export (st, EXPORT_PREEMPTIBLE);
 	break;
 
     case STO_PROTECTED:
+	if (Trace_IPA || Trace_Perf)
+	    fprintf(TFile, "%s is marked PROTECTED\n", ST_name (st));
 	Set_ST_export (st, EXPORT_PROTECTED);
 	break;
 
     case STO_HIDDEN:
+	if (Trace_IPA || Trace_Perf)
+	    fprintf(TFile, "%s is marked HIDDEN\n", ST_name (st));
 	Set_ST_export (st, EXPORT_HIDDEN);
 	break;
 
     case STO_INTERNAL:
+	if (Trace_IPA || Trace_Perf)
+	    fprintf(TFile, "%s is marked INTERNAL\n", ST_name (st));
 	Set_ST_export (st, EXPORT_INTERNAL);
 	break;
     }

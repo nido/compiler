@@ -56,7 +56,9 @@
 
 #include "linker.h"
 
+#ifndef TARG_ST
 #pragma weak outfilename	/* So elfdump doesn't barf */
+#endif
 
 #define USE_STANDARD_TYPES
 #include "defs.h"

@@ -156,10 +156,20 @@ extern DEP DEP_SetDistance(INT32 distance)
 
   if (distance > MAX_DISTANCE_PRIVATE) {
      dep = DEP_MAKE_DIST_NON_CONST_PRIVATE(dep);
+#ifdef TARG_ST
+     // FdF 20060521: Bug 190B/58
+     distance = MAX_DISTANCE_PRIVATE;
+#else
      distance = MAX_BOUND_PRIVATE;
+#endif
   } else if (distance < MIN_DISTANCE_PRIVATE) {
      dep = DEP_MAKE_DIST_NON_CONST_PRIVATE(dep);
+#ifdef TARG_ST
+     // FdF 20060521: Bug 190B/58
+     distance = MIN_DISTANCE_PRIVATE;
+#else
      distance = MAX_BOUND_PRIVATE;
+#endif
   } else {
      dep = DEP_MAKE_DIST_CONST_PRIVATE(dep);
   }

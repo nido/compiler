@@ -91,6 +91,9 @@
 #include "ipa_nested_pu.h" // Build_Nested_Pu_Relations
 #include "privatize_common.h"   // for Rename_Privatized_COMMON
 #include "inline_split_common.h"
+#ifdef KEY
+#include "ipo_inline_util.h"	// for Get_enclosing_region
+#endif
 
 #include "mempool.h"         // MEM_Trace
 
@@ -529,6 +532,11 @@ Inline_callees_into_caller(IPA_NODE* caller)
 	IPA_NODE* callee = IPA_Call_Graph->Callee(call);
 
 	Current_Map_Tab = PU_Info_maptab(caller->PU_Info());
+#ifdef KEY
+// Current_Map_Tab is set to the proper value above, and is required in
+// Get_enclosing_region(). Parent_Map is set in the function
+	Get_enclosing_region (caller, e);
+#endif
 
 	BOOL inline_performed = FALSE;
 	if (Is_do_inline(call, e->Array_Index()) && !caller->Is_Deletable()) {
@@ -910,6 +918,17 @@ Inliner_Write_PUs (PU_Info *pu_tree, INT *p_num_PU)
 #else
         if (IPA_Enable_DFE && deletable) {
 #endif
+
+#ifdef TARG_ST
+	  // [CL] delete verbosely
+	  if (INLINE_List_Actions) {
+	    fprintf (stderr, "%s deleted\n", node->Name());
+	  }
+	  if (Verbose) {
+	    fprintf (stderr, "   %s [d]\n", node->Name());
+	  }
+#endif
+
             if (prev_pu) {
                 PU_Info_next(prev_pu) = PU_Info_next(current_pu);
             } 

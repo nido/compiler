@@ -41,7 +41,7 @@
  * ====================================================================
  */
 
-#ifndef TARG_STxP70 // TODO POST MERGE: sync with targinfo/stxp70/cg/targ_cgdwarf.cxx
+#if !defined(TARG_ST) // TODO POST MERGE: sync with targinfo/stxp70/cg/targ_cgdwarf.cxx
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -2177,4 +2177,4 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   return fde;
 }
 
-#endif // !TARG_STxP70
+#endif // !defined(TARG_ST)

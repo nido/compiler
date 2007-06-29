@@ -133,15 +133,6 @@ endif
 endif
 #}CGG_DEV
 
-ifeq ($(BUILD_TARGET),ST200)
-# Build LAO support ?
-LAO_ENABLED=1
-endif
-
-ifdef LAO_ENABLED
-  HOSTDEFS += -DLAO_ENABLED
-endif
-
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
 
@@ -363,7 +354,9 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_register.cxx		\
   targ_swp.cxx			\
   targ_swp_bundle.cxx		\
-  targ_tn.cxx
+  targ_tn.cxx                   \
+  targ_range_analysis.cxx       \
+  targ_range_prop.cxx
 
 ifeq ($(BUILD_TARGET), STxP70)
   COMMON_TARG_EXP_CXX_SRCS += exp_extension.cxx
@@ -486,7 +479,10 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
   CG_CXX_SRCS += ipra.cxx
+  CG_CXX_SRCS += range_analysis.cxx
+  CG_CXX_SRCS += range_prop.cxx
 #  CG_CXX_SRCS += cg_tailmerge.cxx
+  CG_CXX_SRCS += cg_color.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
@@ -507,7 +503,10 @@ ifeq ($(BUILD_TARGET),STxP70)
   CG_CXX_SRCS += top_properties.cxx
   CG_CXX_SRCS += mexpand.cxx
   CG_CXX_SRCS += ipra.cxx
+  CG_CXX_SRCS += range_analysis.cxx
+  CG_CXX_SRCS += range_prop.cxx
 #  CG_CXX_SRCS += cg_tailmerge.cxx
+  CG_CXX_SRCS += cg_color.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx

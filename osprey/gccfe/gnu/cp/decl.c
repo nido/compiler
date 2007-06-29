@@ -7006,6 +7006,11 @@ cxx_init_decl_processing ()
       flag_inline_functions = 0;
     }
 
+#ifdef TARG_ST
+  /* [CL] let the whirl backend do the inlining. */
+  flag_inline_trees = 0;
+#endif
+
   /* Force minimum function alignment if using the least significant
      bit of function pointers to store the virtual bit.  */
   if (TARGET_PTRMEMFUNC_VBIT_LOCATION == ptrmemfunc_vbit_in_pfn

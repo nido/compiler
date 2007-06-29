@@ -1217,7 +1217,51 @@ DST_mk_lexical_block(char         *name,         /* NULL if unnamed */
    return DST_init_info(info_idx, DW_TAG_lexical_block, flag, attr_idx);
 }
 
+#ifdef TARG_ST
+void
+DST_lexical_block_add_low_pc (DST_INFO_IDX idx, void *low_pc)
+{
+  DST_INFO *info = DST_INFO_IDX_TO_PTR(idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(info);
+  DST_LEXICAL_BLOCK *attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_LEXICAL_BLOCK);
+  /* pc fields points to front-end labels, and are later converted
+   * to point to the corresponding back-end LABELs.
+   */
+#if defined(_SUPPORT_IPA) || defined(_STANDALONE_INLINER) || defined(_LEGO_CLONER)
+  /* for IPA, low_pc and high_pc are pointers
+   * to struct st_idx
+   *   Get_ST_id ((ST *)low_pc, &id, &index);
+   * has already been called before calling this routine
+   */
+  DST_ASSOC_INFO_st_idx(DST_LEXICAL_BLOCK_low_pc (attr)) 
+    = pDST_ASSOC_INFO_st_idx((DST_ASSOC_INFO *)low_pc);
+#else
+  DST_ASSOC_INFO_fe_ptr(DST_LEXICAL_BLOCK_low_pc(attr)) = low_pc;
+#endif
+}
 
+void
+DST_lexical_block_add_high_pc (DST_INFO_IDX idx, void *high_pc)
+{
+  DST_INFO *info = DST_INFO_IDX_TO_PTR(idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(info);
+  DST_LEXICAL_BLOCK *attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_LEXICAL_BLOCK);
+  /* pc fields points to front-end labels, and are later converted
+   * to point to the corresponding back-end LABELs.
+   */
+#if defined(_SUPPORT_IPA) || defined(_STANDALONE_INLINER) || defined(_LEGO_CLONER)
+  /* for IPA, low_pc and high_pc are pointers
+   * to struct st_idx
+   *   Get_ST_id ((ST *)low_pc, &id, &index);
+   * has already been called before calling this routine
+   */
+  DST_ASSOC_INFO_st_idx(DST_LEXICAL_BLOCK_high_pc (attr)) 
+    = pDST_ASSOC_INFO_st_idx((DST_ASSOC_INFO *)high_pc);
+#else
+  DST_ASSOC_INFO_fe_ptr(DST_LEXICAL_BLOCK_high_pc(attr)) = high_pc;
+#endif
+}
+#endif
 
 /* Creates a DW_TAG_label entry and returns its idx.
 */

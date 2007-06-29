@@ -399,8 +399,11 @@ typedef struct MHD {
   BOOL      TLB_NoBlocking_Model;
 #ifdef TARG_ST
   // FdF 20050110: Parameterize the number of prefetch buffers
-  // available on a ST200 processor.
+  // available if it is limited.
   INT32     DCache_Prefetch_Buffers;
+  // FdF 20070206: Set the maximum prefetch distance to avoid
+  // accessing memory in special areas.
+  INT32     Prefetch_Padding;
 #endif
   MHD_LEVEL L[MHD_MAX_LEVELS];
 
@@ -415,8 +418,9 @@ typedef struct MHD {
           Loop_Overhead_Base(-1),
 	  Loop_Overhead_Memref(-1),
           TLB_Trustworthiness(-1),
-#ifdef TARG_ST200
+#ifdef TARG_ST
           DCache_Prefetch_Buffers(-1),
+          Prefetch_Padding(-1),
 #endif
           TLB_NoBlocking_Model(-1) {}
   ~MHD() {}

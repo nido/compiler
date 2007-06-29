@@ -505,6 +505,8 @@ enum OP_COND_DEF_KIND {
 				     iteration. */
 #define OP_MASK_NOP2GOTO   0x0020 /* A goto operation replacing two
 				     NOPs, for scheduling/bundling. */
+// BD3 20073008
+#define OP_MASK_PRELOAD    0x0040 /* A load that must be scheduled at L1 miss latency */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -590,6 +592,9 @@ enum OP_COND_DEF_KIND {
 # define OP_nop2goto(o)		(OP_flags2(o) & OP_MASK_NOP2GOTO)
 # define Set_OP_nop2goto(o)	(OP_flags2(o) |= OP_MASK_NOP2GOTO)
 # define Reset_OP_nop2goto(o)	(OP_flags2(o) &= ~OP_MASK_NOP2GOTO)
+# define OP_preload(o)		(OP_flags2(o) & OP_MASK_PRELOAD)
+# define Set_OP_preload(o)	(OP_flags2(o) |= OP_MASK_PRELOAD)
+# define Reset_OP_preload(o)	(OP_flags2(o) &= ~OP_MASK_PRELOAD)
 #endif
 
 extern BOOL OP_cond_def( const OP*);
@@ -611,11 +616,25 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #endif
 #endif
 
+#ifdef TARG_ST
+/* [SC] Sugar for finding OU_xxxx operands. */
+#define OP_findopnd(op,type) ((OP_find_opnd_use((op),type) == (-1)) \
+                              ? NULL \
+                              : OP_opnd((op), OP_find_opnd_use((op),type)))
+#define OP_Opnd1(op)      OP_findopnd(op,OU_opnd1)
+#define OP_Opnd2(op)      OP_findopnd(op,OU_opnd2)
+#define OP_Condition(op)  OP_findopnd(op,OU_condition)
+#define OP_Storeval(op)   OP_findopnd(op,OU_storeval)
+#endif
+
 /*
  * OP semantics in alphabetical order. Corresponding TOP_is_xxx
  * macroes are generated form isa_properties description file.
  */
 #define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
+#ifdef TARG_ST200
+#define OP_address(o)		(TOP_is_address(OP_code(o)))
+#endif
 #define OP_branch_predict(o)	(TOP_is_branch_predict(OP_code(o)))
 #define OP_call(o)		(TOP_is_call(OP_code(o)))
 #ifdef TARG_STxP70
@@ -658,6 +677,8 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_ishru(o)		(TOP_is_shru(OP_code(o)) && OP_intop(o))
 #define OP_sext(o)		(TOP_is_sext(OP_code(o)))
 #define OP_zext(o)		(TOP_is_zext(OP_code(o)))
+#define OP_phi(o)               (OP_code(o) == TOP_phi)
+#define OP_psi(o)               (OP_code(o) == TOP_psi)
 
 //[SC]: Added multi-op queries
 #define OP_multi(o)             (TOP_is_multi(OP_code(o)))
@@ -730,6 +751,19 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define TOP_fixed_opnds(o)	(ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(o)))
 #define OP_fixed_results(o)	(TOP_fixed_results(OP_code(o)))
 #define OP_fixed_opnds(o)	(TOP_fixed_opnds(OP_code(o)))
+
+#ifdef TARG_ST
+/*
+ * Returns whether the operations are plain load or store.
+ * A plain load or store is defined by:
+ * - is OP_load() or OP_store(),
+ * - no implicit interaction,
+ * - no partial definition,
+ * - not predicated, or statically proved not conditional.
+ */
+extern BOOL OP_plain_load(OP *op);
+extern BOOL OP_plain_store(OP *op);
+#endif
 
 /*
  * If 'op' performs a copy operation, return the index of
@@ -821,7 +855,6 @@ extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
 
 extern BOOL TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm);
 extern TOP TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass);
-
 extern VARIANT TOP_cond_variant(TOP top);
 extern VARIANT TOP_cmp_variant(TOP top);
 
@@ -855,6 +888,10 @@ inline INT OP_same_res(OP *op, INT i) {
 inline INT OP_result_size(OP *op, INT result)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (result < ISA_OPERAND_INFO_Results(oinfo),
+	     ("Invalid result (%d) in OP_result_size", result));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, result);
   return ISA_OPERAND_VALTYP_Size(otype);
 }
@@ -862,6 +899,10 @@ inline INT OP_result_size(OP *op, INT result)
 inline INT OP_opnd_size(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_size", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Size(otype);
 }
@@ -869,6 +910,10 @@ inline INT OP_opnd_size(OP *op, INT opnd)
 inline BOOL OP_result_is_reg(OP *op, INT result)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (result < ISA_OPERAND_INFO_Results(oinfo),
+	     ("Invalid result (%d) in OP_result_is_reg", result));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, result);
   return ISA_OPERAND_VALTYP_Is_Register(otype);
 }
@@ -876,6 +921,10 @@ inline BOOL OP_result_is_reg(OP *op, INT result)
 inline BOOL OP_opnd_is_reg(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_reg", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_Register(otype);
 }
@@ -883,6 +932,10 @@ inline BOOL OP_opnd_is_reg(OP *op, INT opnd)
 inline BOOL OP_opnd_is_literal(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_literal", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_Literal(otype);
 }
@@ -890,6 +943,10 @@ inline BOOL OP_opnd_is_literal(OP *op, INT opnd)
 inline BOOL OP_opnd_is_enum(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_enum", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_Enum(otype);
 }
@@ -897,6 +954,10 @@ inline BOOL OP_opnd_is_enum(OP *op, INT opnd)
 inline BOOL OP_result_is_signed(OP *op, INT result)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (result < ISA_OPERAND_INFO_Results(oinfo),
+	     ("Invalid result (%d) in OP_result_is_signed", result));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, result);
   return ISA_OPERAND_VALTYP_Is_Signed(otype);
 }
@@ -904,6 +965,10 @@ inline BOOL OP_result_is_signed(OP *op, INT result)
 inline BOOL OP_opnd_is_signed(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_signed", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_Signed(otype);
 }
@@ -911,6 +976,10 @@ inline BOOL OP_opnd_is_signed(OP *op, INT opnd)
 inline BOOL OP_result_is_fpu_int(OP *op, INT result)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (result < ISA_OPERAND_INFO_Results(oinfo),
+	     ("Invalid result (%d) in OP_result_is_fpu_int", result));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, result);
   return ISA_OPERAND_VALTYP_Is_FPU_Int(otype);
 }
@@ -918,6 +987,10 @@ inline BOOL OP_result_is_fpu_int(OP *op, INT result)
 inline BOOL OP_opnd_is_fpu_int(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_fpu_int", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_FPU_Int(otype);
 }
@@ -925,6 +998,10 @@ inline BOOL OP_opnd_is_fpu_int(OP *op, INT opnd)
 inline BOOL OP_opnd_is_pcrel(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_is_pcrel", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Is_PCRel(otype);
 }
@@ -932,6 +1009,10 @@ inline BOOL OP_opnd_is_pcrel(OP *op, INT opnd)
 inline ISA_LIT_CLASS OP_opnd_lit_class(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_lit_class", opnd));
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Literal_Class(otype);
 }
@@ -939,6 +1020,12 @@ inline ISA_LIT_CLASS OP_opnd_lit_class(OP *op, INT opnd)
 inline ISA_REGISTER_CLASS OP_opnd_reg_class(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  if (opnd >= ISA_OPERAND_INFO_Operands(oinfo)) {
+    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_opnd_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
+    return ISA_REGISTER_CLASS_UNDEFINED;
+  }
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Register_Class(otype);
 }
@@ -946,6 +1033,12 @@ inline ISA_REGISTER_CLASS OP_opnd_reg_class(OP *op, INT opnd)
 inline ISA_REGISTER_CLASS OP_result_reg_class(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  if (opnd >= ISA_OPERAND_INFO_Results(oinfo)) {
+    FmtAssert (OP_var_opnds (op), ("Invalid result number (%d) in OP_result_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
+    return ISA_REGISTER_CLASS_UNDEFINED;
+  }
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Register_Class(otype);
 }
@@ -953,6 +1046,12 @@ inline ISA_REGISTER_CLASS OP_result_reg_class(OP *op, INT opnd)
 inline ISA_REGISTER_SUBCLASS OP_opnd_reg_subclass(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  if (opnd >= ISA_OPERAND_INFO_Operands(oinfo)) {
+    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_opnd_reg_subclass", opnd));
+    return ISA_REGISTER_SUBCLASS_UNDEFINED;
+  }
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Register_Subclass(otype);
 }
@@ -960,6 +1059,12 @@ inline ISA_REGISTER_SUBCLASS OP_opnd_reg_subclass(OP *op, INT opnd)
 inline ISA_REGISTER_SUBCLASS OP_result_reg_subclass(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  if (opnd >= ISA_OPERAND_INFO_Results(oinfo)) {
+    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_result_reg_subclass", opnd));
+    return ISA_REGISTER_SUBCLASS_UNDEFINED;
+  }
+#endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Result(oinfo, opnd);
   return ISA_OPERAND_VALTYP_Register_Subclass(otype);
 }
@@ -967,6 +1072,10 @@ inline ISA_REGISTER_SUBCLASS OP_result_reg_subclass(OP *op, INT opnd)
 inline ISA_OPERAND_USE OP_opnd_use(OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+#ifdef TARG_ST
+  FmtAssert (opnd < ISA_OPERAND_INFO_Operands(oinfo),
+	     ("Invalid operand (%d) in OP_opnd_use", opnd));
+#endif
   return ISA_OPERAND_INFO_Use(oinfo, opnd);
 }
 
@@ -978,7 +1087,7 @@ extern TOP CGTARG_Noop_Top (ISA_EXEC_UNIT_PROPERTY);
 extern void CGTARG_Init_OP_cond_def_kind(OP *);
 
 // Return a boolean indicating if 'op' performs a copy operation.
-inline BOOL CGTARG_Is_Copy(OP *op)
+inline BOOL OP_Is_Copy(OP *op)
 {
 #ifdef TARG_ST
   return OP_Copy_Operand(op) >= 0;
@@ -990,11 +1099,11 @@ inline BOOL CGTARG_Is_Copy(OP *op)
 // Return a boolean indicating if 'op' performs a copy operation
 // that is a candidate for preferencing.  Does extra consistency
 // checks.  This is the preferred method for testing for a copy
-// before invoking CGTARG_Copy_Operand() and friends.
-inline BOOL CGTARG_Is_Preference_Copy (OP* op) 
+// before invoking OP_Copy_Operand() and friends.
+inline BOOL OP_Is_Preference_Copy (OP* op) 
 {
   if (OP_copy(op)) {
-    if (CGTARG_Is_Copy(op)) {
+    if (OP_Is_Copy(op)) {
       return TRUE;
     } else {
       //
@@ -1011,7 +1120,7 @@ inline BOOL CGTARG_Is_Preference_Copy (OP* op)
 
 // Returns the right opcode for simulated TOP which matches 
 // ISA_EXEC_UNIT_PROPERTY.
-inline TOP CGTARG_Simulated_Top (OP *op, ISA_EXEC_UNIT_PROPERTY unit)
+inline TOP OP_Simulated_Top (OP *op, ISA_EXEC_UNIT_PROPERTY unit)
 {
   TOP top = OP_code(op);
  
@@ -1051,7 +1160,7 @@ inline TN *CGTARG_Copy_Operand_TN(OP *op)
 }
 #endif
 
-inline BOOL CGTARG_Is_OP_Intrinsic(OP *op) { 
+inline BOOL OP_Is_Intrinsic(OP *op) { 
   return OP_code(op) == TOP_intrncall; 
 }
 
@@ -1066,7 +1175,7 @@ extern UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop);
 // TODO: define a cut-out latency CGTARG_long_latency_limit and
 //       a compiler switch allowing to change it. Then implement
 //       this routine.
-inline BOOL CGTARG_Is_Long_Latency (TOP opcode)
+inline BOOL OP_Is_Long_Latency (TOP opcode)
 {
   return FALSE;
 }
@@ -1533,6 +1642,25 @@ TN_Opernum_In_OP (OP* op, struct tn *tn)
              ("TN_Opernum_in_OP: Could not find <tn> in operands list\n"));
   return -1;
 }
+
+#ifdef TARG_ST
+/* =====================================================================
+ * OPs_Are_Equivalent
+ *
+ * Returns true is 2 ops are equivalent.
+ * If true, it is useless to replace one by hte other
+ * for instance.
+ * 2 ops are equivalent if the intruction is the same
+ * and arguments are the same that is:
+ * 1. opcode are the same
+ * 2. all non register operands are the same
+ * 3. all register operands are the same, or if allocated
+ *    allocated registers are the same.
+ * Note that flags attached to ops are not tested.
+ * =====================================================================
+ */
+extern BOOL OPs_Are_Equivalent(OP *op1, OP *op2);
+#endif
 
 #endif /* op_INCLUDED */
 

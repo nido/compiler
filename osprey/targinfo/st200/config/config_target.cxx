@@ -69,6 +69,11 @@
 #include "stab.h"
 #include "targ_sim.h"
 /* #include "ti_init.h" */
+#ifdef TARG_ST
+#if defined(BACK_END)
+#include "config_cache.h"
+#endif
+#endif
 
 #if defined(FRONT_END_C) || defined(FRONT_END_CPLUSPLUS)
 typedef unsigned char an_integer_kind;
@@ -218,7 +223,7 @@ Isa_Name ( TARGET_ISA b)
   switch ( b ) {
     case TARGET_ISA_ST220: return "ST220";
     case TARGET_ISA_ST231: return "ST231";
-    case TARGET_ISA_ST235: return "ST235";
+    case TARGET_ISA_ST240: return "ST240";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -236,7 +241,7 @@ Targ_Name ( TARGET_PROCESSOR b)
     case TARGET_st220: return "st220";
     case TARGET_st221: return "st221";
     case TARGET_st231: return "st231";
-    case TARGET_st235: return "st235";
+    case TARGET_st240: return "st240";
     default:
       r = bnb[bnb_used].name;
       bnb_used = (bnb_used + 1) % 4;
@@ -298,9 +303,9 @@ Prepare_Target ( void )
       isa = TARGET_ISA_ST231;
       targ_default = TARGET_st231;
     }
-    else if ( strcasecmp ( ISA_Name, "ST235" ) == 0 ) {
-      isa = TARGET_ISA_ST235;
-      targ_default = TARGET_st235;
+    else if ( strcasecmp ( ISA_Name, "ST240" ) == 0 ) {
+      isa = TARGET_ISA_ST240;
+      targ_default = TARGET_st240;
     }
     else {
       ErrMsg ( EC_Inv_TARG, "isa", ISA_Name );
@@ -335,8 +340,8 @@ Prepare_Target ( void )
     else if ( strcasecmp ( Processor_Name, "st231" ) == 0 ) {
       targ = TARGET_st231;
     }
-    else if ( strcasecmp ( Processor_Name, "st235" ) == 0 ) {
-      targ = TARGET_st235;
+    else if ( strcasecmp ( Processor_Name, "st240" ) == 0 ) {
+      targ = TARGET_st240;
     }
     else {
       ErrMsg ( EC_Inv_TARG, "processor", Processor_Name );
@@ -362,8 +367,8 @@ Prepare_Target ( void )
     case TARGET_st231:
       if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST231;
       break;
-   case TARGET_st235:
-      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST235;
+   case TARGET_st240:
+      if (Target_ISA == TARGET_ISA_UNDEF) Target_ISA = TARGET_ISA_ST240;
       break;
     case TARGET_UNDEF:
       Target = targ_default;
@@ -440,14 +445,9 @@ Preconfigure_Target ( void )
   // Target provides only 32-bit instructions
   Only_32_Bit_Ops = TRUE;
 
-#ifndef TARG_ST
-  // [CG] Defined below as a core specific value
-  // Target does not support floating point arithmetic
-  Emulate_FloatingPoint_Ops = TRUE;
-#endif
-
   // Do not use the extract/compose whirl ops
-  Enable_extract_compose = FALSE;
+  Enable_extract = FALSE;
+  Enable_compose = FALSE;
 
   // Do not generate cis() INTRISIC_OPs
   // Otherwise, WOPT converts calls to sin()/cos() into
@@ -526,6 +526,13 @@ Preconfigure_Target ( void )
 
 
 #endif
+
+  // Default configuration for floating point and div/rem
+  // on this machine.
+  Emulate_Single_Float_Type = TRUE;
+  Emulate_Double_Float_Type = TRUE;
+  Emulate_DivRem_Integer_Ops = TRUE;
+  Enable_Non_IEEE_Ops = FALSE;
 
   return;
 }
@@ -635,35 +642,22 @@ Configure_Target ()
     }
   }
 
-#ifdef TARG_ST
-  // [CG]: Configuration for floating point
-  Emulate_FloatingPoint_Ops = TRUE;
-  Emulate_Single_Float_Type = TRUE;
-  Emulate_Double_Float_Type = TRUE;
 
   // [CG]: Configuration for non-ieee ops
-  if (Is_Target_st235()) {
+  if (Is_Target_st240()) {
     if (!Enable_Non_IEEE_Ops_Set) 
       Enable_Non_IEEE_Ops = TRUE;
-  } else {
-    Enable_Non_IEEE_Ops = FALSE;
   }
 
   // [CG]: Configuration for 64 bits
-  if (Is_Target_st235()) {
+  if (Is_Target_st240()) {
     if (!Enable_64_Bits_Ops_Set) {
       Enable_64_Bits_Ops = TRUE;
     }    
-    Enable_Single_Float_Ops = TRUE;
-    Enable_Double_Float_Ops = TRUE && Enable_64_Bits_Ops;
-  } else {
-    Enable_64_Bits_Ops = FALSE;
-    Enable_Single_Float_Ops = FALSE;
-    Enable_Double_Float_Ops = FALSE;
-  }
+  } 
 
   // [CM]: Configuration for dismissible loads
-  if (Is_Target_st235()) {
+  if (Is_Target_st240()) {
     //BD3 if (!Enable_Dismissible_Load_Set) {
       //BD3 Enable_Dismissible_Load = FALSE;
     //BD3 }    
@@ -673,10 +667,11 @@ Configure_Target ()
     if (!Enable_Conditional_Store_Set) {
       Enable_Conditional_Store = TRUE;
     }    
-#if 0
+
     // (cbr) keep conditional prefetch disabled by default
+#if defined(BACK_END)
     if (!Enable_Conditional_Prefetch_Set) {
-      Enable_Conditional_Prefetch = TRUE;
+      Enable_Conditional_Prefetch = (Mhd_Options.Prefetch_Padding >= 0);
     }    
 #endif
 
@@ -692,12 +687,10 @@ Configure_Target ()
   }
 
   // [CM]: Configuration for integer division and modulus operations
-  if (Is_Target_st235()) {
+  if (Is_Target_st240()) {
     if (!Emulate_DivRem_Integer_Ops_Set) {
       Emulate_DivRem_Integer_Ops = FALSE;
     }    
-  } else {      
-    Emulate_DivRem_Integer_Ops = TRUE;
   }
 
   /* For ST200 enables const div but not const mul. */
@@ -708,7 +701,13 @@ Configure_Target ()
     OPT_Cnst_Mul = FALSE;
   }
 
+
+#if 0
+  // Enable the extract whirl op for st240 only
+  if (Is_Target_st240() && !Enable_extract_overriden) 
+    Enable_extract = TRUE;
 #endif
+
 
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 

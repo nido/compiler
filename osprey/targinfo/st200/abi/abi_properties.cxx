@@ -129,6 +129,40 @@ main()
 
   Reg_Property(zero, ISA_REGISTER_CLASS_integer, 0, -1);
 
+  ///////////////////////////////////////
+  Begin_ABI("PIC");
+
+
+  Reg_Property(allocatable, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
+  Reg_Property(allocatable, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
+
+  Reg_Property(callee, ISA_REGISTER_CLASS_integer, 1, 2, 3, 4, 5, 6, 7, -1);
+
+  Reg_Property(caller, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
+  Reg_Property(caller, ISA_REGISTER_CLASS_integer, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
+
+  Reg_Property(frame_ptr, ISA_REGISTER_CLASS_integer, 7, -1);
+
+  Reg_Property(func_arg, ISA_REGISTER_CLASS_integer, 16, 17, 18, 19, 20, 21, 22, 23, -1);
+
+  Reg_Property(func_val, ISA_REGISTER_CLASS_integer, 16, 17, 18, 19, 20, 21, 22, 23, -1);
+
+  Reg_Property(fzero, ISA_REGISTER_CLASS_integer, 0, -1);
+
+  Reg_Property(global_ptr, ISA_REGISTER_CLASS_integer, 14, -1);
+
+  Reg_Property(ret_addr, ISA_REGISTER_CLASS_integer, 63, -1);
+
+  Reg_Property(ret_struct, ISA_REGISTER_CLASS_integer, 15, -1);
+
+  Reg_Property(stack_ptr, ISA_REGISTER_CLASS_integer, 12, -1);
+
+  Reg_Property(static_link, ISA_REGISTER_CLASS_integer, 8, -1);
+
+  Reg_Property(thread_ptr, ISA_REGISTER_CLASS_integer, 13, -1);
+
+  Reg_Property(zero, ISA_REGISTER_CLASS_integer, 0, -1);
+
 
   ABI_Properties_End();
 }

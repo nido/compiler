@@ -34,6 +34,9 @@ Process_Feedback_File(char *fb_name)
   fb_hdr = (Fb_Hdr *)MYMALLOC(sizeof(Fb_Hdr));
   fb_reader_Fb_Hdr_Read(fb_hdr, fp, fb_name);
 
+  if (fb_hdr->fb_version != INSTR_CURRENT)
+    profile_error("feedback file %s not right version", fb_name); 
+
   pu_hdr_table = (Pu_Hdr *) MYMALLOC(sizeof(Pu_Hdr)*fb_hdr->fb_pu_hdr_num);
 
   fb_reader_Pu_Hdr_list_Read(pu_hdr_table, fb_hdr, fp, fb_name);
@@ -100,7 +103,10 @@ int main(int argc, char **argv)
 	ofile = fopen(output_file, "w");
       } else ofile = stdout;
 
-      fprintf( ofile, "\nFeedback data of %s (checksum %d)\n", entry_name, pu_hdr_entry.pu_checksum);
+#ifdef INSTR_DEBUG
+      Pu_Hdr_Print( &pu_hdr_entry, ofile);
+#endif
+      fprintf( ofile, "\nFeedback data of %s (checksum %d, pu_size %d, runtime add 0x%llx))\n", entry_name, pu_hdr_entry.pu_checksum, pu_hdr_entry.pu_size, pu_hdr_entry.runtime_fun_address);
       {
 	LIBFB_Info_Invoke *fb_info;
 	size_t size = pu_hdr_entry.pu_num_inv_entries, i;
@@ -202,6 +208,25 @@ int main(int argc, char **argv)
       }
 
       {
+	LIBFB_Info_Icall *fb_info;
+	size_t size = pu_hdr_entry.pu_num_icall_entries, i;
+	fb_info = (LIBFB_Info_Icall *)MYMALLOC(sizeof(LIBFB_Info_Icall) * size);;
+
+	fb_reader_Info_Icall_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fb_fname);
+
+	/* Dump fb_info */
+	if (size)
+	  fprintf( ofile, "Icall = ");
+	for (i = 0; i < size; i++) {
+	  fprintf(ofile, "\n\tid = %d\t", i);
+	  LIBFB_Info_Icall_Print(&(fb_info[i]), ofile);
+	}
+	MYFREE (fb_info);
+	if (size)
+	  fprintf(ofile, "\n");
+      }
+
+      {
 	INT32 *target;
 	size_t size = pu_hdr_entry.pu_num_switch_entries, i;
 	target = (INT32 *)MYMALLOC(sizeof(INT32) * size);;
@@ -258,6 +283,44 @@ int main(int argc, char **argv)
 	  MYFREE(freq_targets);
 	}
 	MYFREE (target);
+	if (size)
+	  fprintf(ofile, "\n");
+      }
+
+      {
+	LIBFB_Info_Value *fb_info;
+	size_t size = pu_hdr_entry.pu_num_value_entries, i;
+	fb_info = (LIBFB_Info_Value *)MYMALLOC(sizeof(LIBFB_Info_Value) * size);;
+
+	fb_reader_Info_Value_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fb_fname);
+
+	/* Dump fb_info */
+	if (size)
+	  fprintf( ofile, "Value = ");
+	for (i = 0; i < size; i++) {
+	  fprintf(ofile, "\n\tid = %d\t", i);
+	  LIBFB_Info_Value_Print(&(fb_info[i]), ofile);
+	}
+	MYFREE (fb_info);
+	if (size)
+	  fprintf(ofile, "\n");
+      }
+
+      {
+	LIBFB_Info_Value_FP_Bin *fb_info;
+	size_t size = pu_hdr_entry.pu_num_value_fp_bin_entries, i;
+	fb_info = (LIBFB_Info_Value_FP_Bin *)MYMALLOC(sizeof(LIBFB_Info_Value_FP_Bin) * size);;
+
+	fb_reader_Info_Value_FP_Bin_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fb_fname);
+
+	/* Dump fb_info */
+	if (size)
+	  fprintf( ofile, "Value FP Bin = ");
+	for (i = 0; i < size; i++) {
+	  fprintf(ofile, "\n\tid = %d\t", i);
+	  LIBFB_Info_Value_FP_Bin_Print(&(fb_info[i]), ofile);
+	}
+	MYFREE (fb_info);
 	if (size)
 	  fprintf(ofile, "\n");
       }

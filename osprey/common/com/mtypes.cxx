@@ -37,6 +37,7 @@
 #include "defs.h" 
 #include "mtypes.h" 
 #ifdef TARG_ST
+#include "config_target.h" 		 /* for ALIGN */
 #include "errors.h" // for FmtAssert()
 // [TB] Extension Support
 BE_EXPORTED TYPE_ID MTYPE_COUNT; 

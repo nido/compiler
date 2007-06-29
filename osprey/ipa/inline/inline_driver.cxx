@@ -225,7 +225,7 @@ Process_Command_Line (INT argc, char **argv)
     if (Opt_Level == 0) {
       if (!IPA_Enable_DFE_Set)
 	IPA_Enable_DFE = FALSE;
-      if (!INLINE_All) {
+      if (!INLINE_O0) {
 	INLINE_None = TRUE;
       }
       Opt_Level = 1; // Revert to original default value

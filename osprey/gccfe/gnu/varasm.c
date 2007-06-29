@@ -775,6 +775,23 @@ decode_reg_name (asmspec)
 	      }
 	    if (! strcasecmp (asmspec, whole_name))
 	      return Additional_Register_Names[i].number;
+#ifdef TARG_ST200
+	    // [CG]: We want to have the '$' optional in '$r12' for ST200
+	    // when parsing the register name.
+	    // TODO: handle this in targinfo parsing description.
+	    const char *ignored = "$";
+	    while(*ignored != '\0') {
+	      if (asmspec[0] == *ignored) {
+		if (!strcasecmp (&asmspec[1], whole_name))
+		  return Additional_Register_Names[i].number;
+	      }
+	      if (whole_name[0] == *ignored) {
+		if (!strcasecmp (asmspec, &whole_name[1]))
+		  return Additional_Register_Names[i].number;
+	      }
+	      ignored++;
+	    }
+#endif
 	  } else {
 	    if (! strcasecmp (asmspec, Additional_Register_Names[i].name))
 	      return Additional_Register_Names[i].number;

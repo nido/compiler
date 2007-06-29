@@ -294,10 +294,11 @@ public:
 
   // non-inlined
   INT Register_Girth( ISA_REGISTER_CLASS rc );
-  void Create_Local_LRANGEs(ISA_REGISTER_CLASS  cl, INT32 coun);
 #ifdef TARG_ST
+  void Create_Local_LRANGEs();
   LRANGE* Create_Wired_LRANGE(ISA_REGISTER_CLASS  cl, REGISTER reg, INT nregs);
 #else
+  void Create_Local_LRANGEs(ISA_REGISTER_CLASS  cl, INT32 coun);
   LRANGE* Create_Wired_LRANGE(ISA_REGISTER_CLASS  cl, REGISTER reg);
 #endif
   void Create_Global_Interferences(void);

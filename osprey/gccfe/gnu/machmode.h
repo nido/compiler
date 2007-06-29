@@ -27,9 +27,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define DEF_MACHMODE(SYM, NAME, TYPE, BITSIZE, SIZE, UNIT, WIDER, INNER)  SYM,
 
 #ifndef TARG_ST
-enum machine_mode {
-#include "machmode.def"
-MAX_MACHINE_MODE };
+//enum machine_mode {
+//#include "machmode.def"
+//MAX_MACHINE_MODE };
 #else
 enum machine_mode {
 #include "machmode.def"

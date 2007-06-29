@@ -67,6 +67,12 @@ typedef enum {
 
 extern void WFE_Expand_Pragma (tree);
 
+#ifdef TARG_ST
+// FdF 20070302
+extern void *WFE_Save_Pragmas();
+extern void  WFE_Move_Pragmas(void *);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

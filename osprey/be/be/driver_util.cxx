@@ -346,6 +346,16 @@ Process_Command_Line (INT argc, char **argv)
 		opt_set = TRUE;
 		break;
 
+#ifdef TARG_ST
+		//TB: Add object dir repository
+	    case 'o':
+	      if (*(cp) != ',' && *(cp) != ':')
+		ErrMsg (EC_File_Name, *cp, argv[i]);
+	      else
+	        Object_Dir = cp +1;
+	      break;
+#endif
+
 	    case 's':
 		if (strcmp (cp, "how") == 0) {
 		    Show_Progress = TRUE;

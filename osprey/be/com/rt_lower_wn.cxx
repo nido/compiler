@@ -49,13 +49,8 @@
 #include "w2op.h"
 
 #ifdef TARG_ST
-#define NEW_LOWER // [CG] Enables paired support
-#endif
-
-#ifdef NEW_LOWER
-#include <config_TARG.h>	/* For Enable_Non_IEEE_Ops. */
-#include <config_opt.h>	/* [HK] For Finite_Math. */
-#include <betarget.h>           /* To know if operator is emulated. */
+#include "wn_lower_util.h" 	/* For Is_Emulated */
+#include "config_opt.h"		/* For Finite_Math. */
 #endif
 
 /* ====================================================================
@@ -108,107 +103,6 @@ RT_LOWER_form_node(WN *new_nd, WN *old_nd) { return new_nd; }
  * End of specialized support routines
  * ==================================================================== 
  */
-
-#ifdef NEW_LOWER
-/* ===================================================================
- *   is_emulated_type
- *
- * Returns true if the given type requires at least partial
- * emulation.
- * ===================================================================
- */
-static BOOL
-is_emulated_type (TYPE_ID type)
-{
-  if (Only_32_Bit_Ops && MTYPE_is_longlong(type)) return TRUE;
-  if (Emulate_Single_Float_Type && type == MTYPE_F4) return TRUE;
-  if (Emulate_Double_Float_Type && MTYPE_is_double(type)) return TRUE;
-  return FALSE;
-}
-
-/* ===================================================================
- *  is_emulated_operator
- *
- * Returns true if the (operator, rtype, desc) pair requires emulation.
- * If false is returned, the WHIRL operator tree will be kept and
- * must be handle by the code selector.
- * rtype and desc may be different for conversion operators.
- * ===================================================================
- */
-static BOOL
-is_emulated_operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
-{
-#ifndef TARG_STxP70
-  if (!is_emulated_type(rtype) &&
-      !is_emulated_type(desc)) {
-    return FALSE;
-  }
-#else
-  if (is_emulated_type(rtype) ||
-      is_emulated_type(desc)) {
-    return TRUE;
-  }
-#endif
-
-  // [JV] Tests to know if operator must be emulated is moved to betarget.cxx
-  // in targinfo.
-  return BETARG_is_emulated_operator(opr,rtype,desc);
-}
-#endif
-
-
-static BOOL
-Should_Call_Divide (WN *tree) 
-{
-  TYPE_ID rtype = WN_rtype(tree);
-
-#ifdef NEW_LOWER
-  if (is_emulated_operator(WN_operator(tree), rtype, WN_desc(tree)))
-#else
-  if ((Emulate_FloatingPoint_Ops && MTYPE_is_float(rtype)) ||
-      (Only_32_Bit_Ops && (MTYPE_is_longlong(rtype) || MTYPE_is_double(rtype))))
-#endif
-    return TRUE;
-
-  if (!Emulate_DivRem_Integer_Ops && MTYPE_is_integral(rtype)) {
-      return FALSE ;
-  }
-
-  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
-    INT64 constval = WN_const_val(WN_kid1(tree));
-
-    return !Can_Do_Fast_Divide(rtype, constval);
-  }
-
-  if (!Emulate_Single_Float_Type && rtype == MTYPE_F4 ||
-      !Emulate_Double_Float_Type && rtype == MTYPE_F8 ||
-      !Emulate_DivRem_Integer_Ops && MTYPE_is_integral(rtype)) {
-      return FALSE ;
-  }
-
-  return TRUE;
-}
-
-static BOOL
-Should_Call_Remainder (WN *tree) 
-{
-#ifdef NEW_LOWER
-  if (is_emulated_operator(WN_operator(tree), WN_rtype(tree), WN_desc(tree))) return TRUE;
-#else
-  if (Only_32_Bit_Ops && MTYPE_is_longlong(WN_rtype(tree))) return TRUE;
-#endif
-
-  if(!Emulate_DivRem_Integer_Ops && MTYPE_is_integral(WN_rtype(tree)))
-    return FALSE ;
-
-  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
-    TYPE_ID rtype = OPCODE_rtype(WN_opcode(tree));
-    INT64 constval = WN_const_val(WN_kid1(tree));
-    return !Can_Do_Fast_Remainder(rtype, constval);
-  }
-
-  return TRUE;
-}
 
 /* ====================================================================
  * Lowers operations on long long, float, and double types to runtime
@@ -282,8 +176,8 @@ RT_LOWER_expr (
 
   case OPR_NEG:
 
-#ifdef NEW_LOWER
-    if (MTYPE_is_longlong(res) && is_emulated_operator(opr, res, desc)) 
+#ifdef TARG_ST
+    if (MTYPE_is_longlong(res) && WN_Is_Emulated(tree)) 
 #else
     if (Only_32_Bit_Ops && MTYPE_is_longlong(res)) 
 #endif
@@ -307,8 +201,8 @@ RT_LOWER_expr (
       return nd;
     }
 
-#ifdef NEW_LOWER
-    if (MTYPE_is_float(res) && is_emulated_operator(opr, res, desc)) 
+#ifdef TARG_ST
+    if (MTYPE_is_float(res) && WN_Is_Emulated(tree)) 
 #else
     if ((Only_32_Bit_Ops && MTYPE_is_double(res)) ||
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(res))) 
@@ -359,7 +253,15 @@ RT_LOWER_expr (
     // shifts will be simplified in the wn_simp_code.h ... back
     // into extract/compose and we have an infinite loop.
     //
-    FmtAssert(FALSE,("shouldn't see extract/compose operator"));
+    // The ST240 has indeed a extract operator, thus do not generate 
+    // the assert for extract operator
+    //
+    if (opr == OPR_EXTRACT_BITS && Enable_extract ||
+        opr == OPR_COMPOSE_BITS && Enable_compose) {
+      RT_LOWER_set_kid0(new_nd, RT_LOWER_expr(WN_kid0(tree)));
+    } else {
+      FmtAssert(FALSE,("shouldn't see extract/compose operator")); 	     
+    }
     return new_nd;
 
   case OPR_BNOT: 
@@ -377,7 +279,6 @@ RT_LOWER_expr (
   case OPR_LIOR:
   case OPR_CAND: 
   case OPR_CIOR:
-
     // should be implemented without runtime function call
     RT_LOWER_set_kid0(new_nd, RT_LOWER_expr(WN_kid0(tree)));
     RT_LOWER_set_kid1(new_nd, RT_LOWER_expr(WN_kid1(tree)));
@@ -440,8 +341,8 @@ RT_LOWER_expr (
       return new_nd;
     }
 
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree)) 
 #else
     if ((Only_32_Bit_Ops && (MTYPE_is_longlong(res) || MTYPE_is_longlong(desc) || MTYPE_is_double(res) || MTYPE_is_double(desc))) ||
 	(Emulate_FloatingPoint_Ops && (MTYPE_is_float(res) || MTYPE_is_float(desc)))) 
@@ -473,8 +374,8 @@ RT_LOWER_expr (
 
     FmtAssert(MTYPE_signed_type(res), ("ABS for unsigned type"));
 
-#ifdef NEW_LOWER
-    if (MTYPE_is_longlong(res) && is_emulated_operator(opr, res, desc)) 
+#ifdef TARG_ST
+    if (MTYPE_is_longlong(res) && WN_Is_Emulated(tree))  
 #else
     if (Only_32_Bit_Ops && res == MTYPE_I8)
 #endif
@@ -497,8 +398,8 @@ RT_LOWER_expr (
       return nd;
     }
 
-#ifdef NEW_LOWER
-    else if (MTYPE_is_float(res) && is_emulated_operator(opr, res, desc)) 
+#ifdef TARG_ST
+    else if (MTYPE_is_float(res) && WN_Is_Emulated(tree)) 
 #else
     else if (Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) 
 #endif
@@ -542,8 +443,8 @@ RT_LOWER_expr (
   case OPR_MPY:
 
 
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree)) 
 #else
     if ((Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) ||
 	(Only_32_Bit_Ops && (MTYPE_is_longlong(res) || MTYPE_is_double(res))))
@@ -597,8 +498,8 @@ RT_LOWER_expr (
     // [HK] add code for MADD, MSUB
   case OPR_MADD:
   case OPR_MSUB:
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
     if ((Only_32_Bit_Ops && MTYPE_is_size_double(desc)) ||
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(desc)))
@@ -645,8 +546,8 @@ RT_LOWER_expr (
     // [HK] add code for NMADD, NMSUB
   case OPR_NMADD:
   case OPR_NMSUB:
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
     if ((Only_32_Bit_Ops && MTYPE_is_size_double(desc)) ||
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(desc)))
@@ -698,8 +599,8 @@ RT_LOWER_expr (
   case OPR_LE: 
   case OPR_LT:
 
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
     if ((Only_32_Bit_Ops && MTYPE_is_size_double(desc)) ||
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(desc)))
@@ -745,8 +646,11 @@ RT_LOWER_expr (
 
   case OPR_DIV: 
 
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree)) {
+#else
     if (Should_Call_Divide(tree)) {
-
+#endif
       TYPE_ID parm0ty = WN_rtype(WN_kid0(tree));
       TYPE_ID parm1ty = WN_rtype(WN_kid1(tree));
 
@@ -784,8 +688,11 @@ RT_LOWER_expr (
   case OPR_MOD: 
   case OPR_REM:
 
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree)) {
+#else
     if (Should_Call_Remainder(tree)) {
-
+#endif
       TYPE_ID parm0ty = WN_rtype(WN_kid0(tree));
       TYPE_ID parm1ty = WN_rtype(WN_kid1(tree));
 
@@ -827,8 +734,8 @@ RT_LOWER_expr (
   case OPR_ASHR: 
   case OPR_LSHR:
     // These are only good for long long
-#ifdef NEW_LOWER
-    if (MTYPE_is_longlong(res) && is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (MTYPE_is_longlong(res) && WN_Is_Emulated(tree))
 #else
     if (Only_32_Bit_Ops && MTYPE_is_longlong(res)) 
 #endif
@@ -869,8 +776,8 @@ RT_LOWER_expr (
 
   case OPR_MAX: 
   case OPR_MIN: 
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
     if ((Only_32_Bit_Ops && (MTYPE_is_longlong(res) || MTYPE_is_double(res))) ||
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(res))) 
@@ -909,8 +816,8 @@ RT_LOWER_expr (
 
   case OPR_SQRT: 
 
-#ifdef NEW_LOWER
-    if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
     if (Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) 
 #endif
@@ -941,8 +848,8 @@ RT_LOWER_expr (
   case OPR_RECIP: 
   case OPR_RSQRT: 
 
-#ifdef NEW_LOWER
-      if (is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (WN_Is_Emulated(tree))
 #else
       if (Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) 
 #endif
@@ -986,8 +893,8 @@ RT_LOWER_expr (
     //
     // If this is not a hilo type or we're not emulating, get out
     //
-#ifdef NEW_LOWER
-    if (!is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (!WN_Is_Emulated(tree))
 #else
     if (!(Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) && 
 	!(Only_32_Bit_Ops && (MTYPE_is_longlong(res) || MTYPE_is_double(res))))
@@ -1004,9 +911,9 @@ RT_LOWER_expr (
 //     return new_nd;
 
   case OPR_TRUNC: 
-#ifdef NEW_LOWER
-    if (MTYPE_is_float(res) && is_emulated_operator(opr, res, desc) ||
-	MTYPE_is_float(desc) && is_emulated_operator(opr, res, desc))
+#ifdef TARG_ST
+    if (MTYPE_is_float(res) && WN_Is_Emulated(tree) ||
+	MTYPE_is_float(desc) && WN_Is_Emulated(tree))
 #else
     if (Emulate_FloatingPoint_Ops) 
 #endif

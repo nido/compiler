@@ -75,10 +75,12 @@ inline INT32 Min(INT32 i, INT32 j)
 // retrieve the profile handle for the PU. If the handle is
 // NULL, create it.
 
-static PU_PROFILE_HANDLE PU_Profile_Handle_new(char *fname, char *pname, INT32 c_sum) {
+static PU_PROFILE_HANDLE PU_Profile_Handle_new(char *fname, char *pname, long current_pc, INT32 pusize, INT32 c_sum) {
   PU_PROFILE_HANDLE pu_profile_handle;
   pu_profile_handle = (PU_PROFILE_HANDLE) MYMALLOC(sizeof(struct PU_Profile_Handle));
   (pu_profile_handle)->checksum = c_sum;
+  (pu_profile_handle)->runtime_fun_address = current_pc;
+  (pu_profile_handle)->pu_size = pusize;
   (pu_profile_handle)->file_name = (char *)MYMALLOC(strlen(fname) + 1);
   (pu_profile_handle)->pu_name = (char *)MYMALLOC(strlen(pname) + strlen("/") + strlen(fname) + 1);
   strcpy((pu_profile_handle)->file_name, fname);
@@ -93,6 +95,10 @@ static PU_PROFILE_HANDLE PU_Profile_Handle_new(char *fname, char *pname, INT32 c
   (pu_profile_handle)->LIBFB_Info_Loop_Table = NULL;
   (pu_profile_handle)->LIBFB_Info_Circuit_Table = NULL;
   (pu_profile_handle)->LIBFB_Info_Call_Table = NULL;
+  (pu_profile_handle)->LIBFB_Info_Icall_Table = NULL;
+  (pu_profile_handle)->LIBFB_Info_Value_Table = NULL;
+  (pu_profile_handle)->LIBFB_Info_Value_FP_Bin_Table = NULL;
+
   return pu_profile_handle;
 }
 
@@ -162,6 +168,24 @@ static PU_PROFILE_HANDLE PU_Profile_Handle_del(PU_PROFILE_HANDLE pu_profile_hand
     pu_profile_handle->LIBFB_Info_Call_Table = NULL; 
   }
   
+  if (pu_profile_handle->LIBFB_Info_Icall_Table) {
+    MYFREE(pu_profile_handle->LIBFB_Info_Icall_Table->data);
+    MYFREE(pu_profile_handle->LIBFB_Info_Icall_Table);
+    pu_profile_handle->LIBFB_Info_Icall_Table = NULL; 
+  }
+
+  if (pu_profile_handle->LIBFB_Info_Value_Table) {
+    MYFREE(pu_profile_handle->LIBFB_Info_Value_Table->data);
+    MYFREE(pu_profile_handle->LIBFB_Info_Value_Table);
+    pu_profile_handle->LIBFB_Info_Value_Table = NULL; 
+  }
+
+  if (pu_profile_handle->LIBFB_Info_Value_FP_Bin_Table) {
+    MYFREE(pu_profile_handle->LIBFB_Info_Value_FP_Bin_Table->data);
+    MYFREE(pu_profile_handle->LIBFB_Info_Value_FP_Bin_Table);
+    pu_profile_handle->LIBFB_Info_Value_FP_Bin_Table = NULL; 
+  }
+
   MYFREE (pu_profile_handle);
   return NULL;
 }
@@ -589,6 +613,9 @@ __profile_call_init(void *pu_handle, INT32 num_calls)
   if (IN_LIBINSTR == TRUE) return;
   IN_LIBINSTR = TRUE;
 
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_call_init num_calls:%d \n",num_calls);
+#endif
   Call_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Call_Table;
   if (Call_Table == NULL) {
     Call_Table = (LIBFB_Info_Call_Vector *)MYMALLOC(sizeof(LIBFB_Info_Call_Vector));
@@ -596,6 +623,29 @@ __profile_call_init(void *pu_handle, INT32 num_calls)
     Call_Table->data = (LIBFB_Info_Call*)MYMALLOC(num_calls * sizeof(LIBFB_Info_Call));
     memset(Call_Table->data, 0, num_calls * sizeof(LIBFB_Info_Call));
     ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Call_Table = Call_Table;
+  }
+  IN_LIBINSTR = FALSE;
+}
+
+void 
+__profile_icall_init(void *pu_handle, INT32 num_calls)
+{
+  LIBFB_Info_Icall_Vector *Icall_Table = NULL;
+
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_icall_init num_call:%d\n",num_calls);
+#endif
+  Icall_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Icall_Table;
+  if (Icall_Table == NULL) {
+    Icall_Table = (LIBFB_Info_Icall_Vector *)MYMALLOC(sizeof(LIBFB_Info_Icall_Vector));
+    Icall_Table->size = num_calls;
+    Icall_Table->data = (LIBFB_Info_Icall*)MYMALLOC(num_calls * sizeof(LIBFB_Info_Icall));
+    memset(Icall_Table->data, 0, num_calls * sizeof(LIBFB_Info_Icall));
+    ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Icall_Table = Icall_Table;
   }
   IN_LIBINSTR = FALSE;
 }
@@ -609,6 +659,9 @@ __profile_call_entry(void *pu_handle, INT32 call_id)
   if (LIB_STATE != STARTED) return;
   if (IN_LIBINSTR == TRUE) return;
   IN_LIBINSTR = TRUE;
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_call_entry id:%d \n",call_id);
+#endif
 
   Call_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Call_Table;
   Call_Table->data[call_id].freq_entry++;
@@ -625,11 +678,283 @@ __profile_call_exit(void *pu_handle, INT32 call_id)
   if (LIB_STATE != STARTED) return;
   if (IN_LIBINSTR == TRUE) return;
   IN_LIBINSTR = TRUE;
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_call_exit id:%d \n",call_id);
+#endif
 
   Call_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Call_Table;
   Call_Table->data[call_id].freq_exit++;
   IN_LIBINSTR = FALSE;
 }
+
+void 
+__profile_icall(void *pu_handle, INT32 icall_id, void *called_fun_address)
+{
+  LIBFB_Info_Icall_Vector *Icall_Table = NULL;
+  LIBFB_TNV *ptnv;
+  UINT64 value;
+  int i, j;
+  UINT64 clear_interval;
+
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_icall id:%d call_add:0x%x\n",icall_id, (INT32)called_fun_address);
+#endif
+  Icall_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Icall_Table;
+  ptnv = &(Icall_Table->data[icall_id].tnv);
+  ptnv->_id = icall_id; //actually this is no use.
+  ptnv->_exec_counter++; //execution counter.
+  ptnv->_flag = 0;
+  ptnv->_clear_counter++;
+  value = (UINTPS)called_fun_address;
+ 
+  //now the tnv table info update.
+  //We use the first 6 items as "steady part", the last 4 items as "clear part".
+  // clear_interval is the sum of _exec_counter of the middle two in the steady part.
+  clear_interval = ptnv->_counters[3] + ptnv->_counters[4]; 
+  if (ptnv->_clear_counter >= clear_interval)
+    {
+      //resort tnv
+      UINT64 tmpvalues[10], tmpcounters[10];
+      int a, b;
+      ptnv->_clear_counter = 0;
+      for (i=0; i<10; i++)
+	{
+	  tmpvalues[i] = ptnv->_values[i];
+	  tmpcounters[i] = ptnv->_counters[i];
+	}
+      a = 0; 
+      b = 6;
+      i = 0;
+      while ( a < 6 && b < 10 )
+	{
+	  while ( a < 6 && tmpcounters[a] >= tmpcounters[b] )
+	    {
+	      ptnv->_values[i] = tmpvalues[a];
+	      ptnv->_counters[i] = tmpcounters[a];
+	      i++; 
+	      a++;
+	    }
+	  while ( b < 10 && tmpcounters[b] >= tmpcounters[a] )
+	    {
+	      ptnv->_values[i] = tmpvalues[b];
+	      ptnv->_counters[i] = tmpcounters[b];
+	      i++; 
+	      b++;
+	    }
+	}
+      while ( a < 6 )
+	{
+	  ptnv->_values[i] = tmpvalues[a];
+	  ptnv->_counters[i] = tmpcounters[a];
+	  i++; 
+	  a++;
+	}
+      while ( b < 10 )
+	{
+	  ptnv->_values[i] = tmpvalues[b];
+	  ptnv->_counters[i] = tmpcounters[b];
+	  i++; 
+	  b++;
+	}
+      //clear the clear_part
+      for (i=6; i< 10; i++)
+	{
+	  ptnv->_values[i] = 0;
+	  ptnv->_counters[i] = 0;
+	}
+    }
+  
+  //see if the value can be put into first 6 values (steady part)
+  for (i=0;i<6;i++)
+    {
+      if (value == ptnv->_values[i] && ptnv->_counters[i]>0)
+	{
+	  ptnv->_counters[i]++;
+	  j = i;
+	  while (j>0 && ptnv->_counters[j-1]<ptnv->_counters[j])
+	    {
+	      UINT64 tmp;
+	      tmp = ptnv->_values[j-1];
+	      ptnv->_values[j-1] = ptnv->_values[j];
+	      ptnv->_values[j] = tmp;
+	      
+	      tmp = ptnv->_counters[j-1];
+	      ptnv->_counters[j-1] = ptnv->_counters[j];
+	      ptnv->_counters[j] = tmp;
+	    }
+	  break;
+	}
+      else if (ptnv->_counters[i]==0)
+	{
+	  ptnv->_values[i] = value;
+	  ptnv->_counters[i] = 1;
+	  break;
+	}
+    }
+  
+  //if the value can be put in first 6 values (steady part)
+  //then it is ok. 
+  if (i < 6)
+    {
+      IN_LIBINSTR = FALSE;
+      return;
+    }
+  
+  //put the value into last 4 values (clear part)
+  for (i=6;i<10;i++)
+    {
+      if (value == ptnv->_values[i] && ptnv->_counters[i]>0)
+	{
+	  ptnv->_counters[i]++;
+	  j = i;
+	  while (j>6 && ptnv->_counters[j-1]<ptnv->_counters[j])
+	    {
+	      UINT64 tmp;
+	      tmp = ptnv->_values[j-1];
+	      ptnv->_values[j-1] = ptnv->_values[j];
+	      ptnv->_values[j] = tmp;
+	      
+	      tmp = ptnv->_counters[j-1];
+	      ptnv->_counters[j-1] = ptnv->_counters[j];
+	      ptnv->_counters[j] = tmp;
+	    }
+	  break;
+	}
+      else if (ptnv->_counters[i]==0)
+	{
+	  ptnv->_values[i] = value;
+	  ptnv->_counters[i] = 1;
+	  break;
+	}
+    }
+  IN_LIBINSTR = FALSE;
+} 
+#ifdef KEY
+void __profile_value_init( void *pu_handle, INT32 num_values )
+{
+  LIBFB_Info_Value_Vector *Value_Table = NULL;
+
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+  Value_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_Table;
+  if (Value_Table == NULL) {
+    Value_Table = (LIBFB_Info_Value_Vector *)MYMALLOC(sizeof(LIBFB_Info_Value_Vector));
+    Value_Table->size = num_values;
+    Value_Table->data = (LIBFB_Info_Value*)MYMALLOC(num_values * sizeof(LIBFB_Info_Value));
+    memset(Value_Table->data, 0, num_values * sizeof(LIBFB_Info_Value));
+    ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_Table = Value_Table;
+  }
+  IN_LIBINSTR = FALSE;
+}
+
+// Update appropriate profile information for a value.
+
+void __profile_value( void* pu_handle, INT32 inst_id, INT64 value )
+{
+  LIBFB_Info_Value_Vector *Value_Table = NULL;
+  LIBFB_Info_Value *entry;
+  int i;
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+  Value_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_Table;
+
+  entry = &Value_Table->data[inst_id];
+
+  entry->exe_counter++;
+
+  for( i = 0; i < entry->num_values; i++ ){
+    if( entry->value[i] == value ){
+      int j;
+      entry->freq[i]++;
+      for( j = i - 1; j >= 0; j-- ){
+	INT64 tmp_value;
+	INT64 tmp_freq;
+	if( entry->freq[j] >= entry->freq[i] )
+	  break;
+
+	tmp_value = entry->value[j];
+	tmp_freq  = entry->freq[j];
+
+	entry->freq[j] = entry->freq[i];
+	entry->value[j] = entry->value[i];
+	entry->freq[i] = tmp_freq;
+	entry->value[i] = tmp_value;
+
+	i = j;
+      }
+
+      IN_LIBINSTR = FALSE;
+      return;
+    }
+  }
+
+  if( entry->num_values < TNV ){
+    entry->value[entry->num_values] = value;
+    entry->freq[entry->num_values]  = 1;
+    entry->num_values++;
+
+  } else {
+    // Clean up the lower half TNV entries.
+    if( entry->exe_counter > ( 2 * entry->freq[0] ) ){
+      entry->num_values = TNV / 2;
+    }
+  }    
+  IN_LIBINSTR = FALSE;
+}
+
+void __profile_value_fp_bin_init( void* pu_handle, INT32 num_values )
+{
+  LIBFB_Info_Value_FP_Bin_Vector *Value_FP_Bin_Table = NULL;
+
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+  Value_FP_Bin_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_FP_Bin_Table;
+  if (Value_FP_Bin_Table == NULL) {
+    Value_FP_Bin_Table = (LIBFB_Info_Value_FP_Bin_Vector *)MYMALLOC(sizeof(LIBFB_Info_Value_FP_Bin_Vector));
+    Value_FP_Bin_Table->size = num_values;
+    Value_FP_Bin_Table->data = (LIBFB_Info_Value_FP_Bin*)MYMALLOC(num_values * sizeof(LIBFB_Info_Value_FP_Bin));
+    memset(Value_FP_Bin_Table->data, 0, num_values * sizeof(LIBFB_Info_Value_FP_Bin));
+    ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_FP_Bin_Table = Value_FP_Bin_Table;
+  }
+  IN_LIBINSTR = FALSE;
+}
+
+// Update appropriate profile information for a value.
+
+void __profile_value_fp_bin( void *pu_handle, INT32 inst_id, 
+			   double value_fp_0, double value_fp_1 )
+{
+  LIBFB_Info_Value_FP_Bin_Vector *Value_FP_Bin_Table = NULL;
+  LIBFB_Info_Value_FP_Bin* entry;
+  if (LIB_STATE != STARTED) return;
+  if (IN_LIBINSTR == TRUE) return;
+  IN_LIBINSTR = TRUE;
+
+  Value_FP_Bin_Table = ((PU_PROFILE_HANDLE)pu_handle)->LIBFB_Info_Value_FP_Bin_Table;
+
+  entry = &(Value_FP_Bin_Table->data[inst_id]);
+
+  entry->exe_counter++;
+  if (value_fp_0 == 0.0) entry->zopnd0 ++;
+  if (value_fp_1 == 0.0) entry->zopnd1 ++;
+  if (value_fp_0 == 1.0) entry->uopnd0 ++;
+  if (value_fp_1 == 1.0) entry->uopnd1 ++;
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_value_fp_bin id %d counter %lld\n", inst_id, entry->exe_counter);
+#endif
+  IN_LIBINSTR = FALSE;
+}
+#endif
 
 static void
 Set_Instrumentation_Phase_Num(PROFILE_PHASE phase_num)
@@ -693,7 +1018,7 @@ void __profile_init(char *fname, int phase_num, BOOL unique_name)
 
 void *
 __profile_pu_init(char *file_name, char* pu_name, long current_pc,
-		  INT32 checksum)
+		  INT32 pusize, INT32 checksum)
 {
   hash_bucket_t bucket;
   PU_PROFILE_HANDLE *data=NULL;
@@ -707,7 +1032,7 @@ __profile_pu_init(char *file_name, char* pu_name, long current_pc,
     *key = current_pc;
     bucket = hash_insert_bucket(PU_Profile_Handle_Table, (const char *)key, sizeof(long));
     data = (PU_PROFILE_HANDLE*)hash_bucket_data(bucket);
-    *data = PU_Profile_Handle_new(file_name, pu_name, checksum);
+    *data = PU_Profile_Handle_new(file_name, pu_name, current_pc, pusize, checksum);
   } else {
     data = (PU_PROFILE_HANDLE *)hash_bucket_data(bucket);
   }
@@ -742,7 +1067,9 @@ void __profile_finish(void)
      IN_LIBINSTR = FALSE;
      return;
   } 
-
+#ifdef INSTR_DEBUG1
+  fprintf(stdout,"__profile_finishL prepare to dump\n");
+#endif
   Dump_all(fp, output_filename);
   
   /* Free allcated memory*/

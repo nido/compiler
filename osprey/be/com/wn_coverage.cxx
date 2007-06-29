@@ -36,6 +36,7 @@
 #include "fb_whirl.h" // For Cur_PU_Feedback
 #include "sections.h" // For_SEC_TEXT
 #include "file_util.h" // For Remove_Extension
+#include "SYS.h"
 // memory for this module
 static MEM_POOL MEM_coverage_pool_val, *MEM_coverage_pool;
 static MEM_POOL MEM_coverage_pool_pu_val, *MEM_coverage_pool_pu;
@@ -85,6 +86,9 @@ typedef struct basic_block
   WN *last_wn;
   // Branch wn
   WN *branch_wn;
+
+  // Block that contains all stmt of this BB
+  WN *block;
 
   // List of successor for that BB
   pbasic_block_list_t succs;
@@ -392,7 +396,7 @@ dump_instrumented_whirl_with_bb( WN *tree )
   basic_block_list_t *lbb = NULL;
   basic_block_list_t *last_lbb = NULL;
 
-  Is_True(WN_opcode( tree ) == OPC_FUNC_ENTRY, ("Coverage_Tree_Walk, unknown root node opcode"));
+  Is_True(WN_opcode( tree ) == OPC_FUNC_ENTRY, ("dump_instrumented_whirl_with_bb, unknown root node opcode"));
 
   stmt = WN_entry_first( tree );
 
@@ -412,7 +416,7 @@ dump_instrumented_whirl_with_bb( WN *tree )
 }
 #endif
 static void 
-Add_Stmt_To_Cur_BB(WN *stmt) {
+Add_Stmt_To_Cur_BB(WN *stmt, WN* block) {
 
   wnode_list_t *list_wn, *new_list_wn;
 
@@ -430,6 +434,8 @@ Add_Stmt_To_Cur_BB(WN *stmt) {
   else
     Cur_BB->wn_list = new_list_wn;
   Cur_BB->last_wn = stmt;
+  Is_True((Cur_BB->block == NULL || Cur_BB->block == block),("Unexpected block for the current BB"));
+  Cur_BB->block = block;
 }
 
 static void 
@@ -496,6 +502,9 @@ Link_Pred_Succ(basic_block_t *pred, basic_block_t *succ)
 static void
 Start_New_Basic_Block (void)
 {
+  // if the cuurent BB is empty nothing to do
+  if (Cur_BB && (Cur_BB->wn_list == NULL))
+    return;
 //   fprintf(TraceCovFile,"new BB\n");
   // Add current BB to current PU if exists (does not exist for entry
   // WN)
@@ -537,7 +546,8 @@ Handle_Branch (
 
 static void
 Handle_Call_Site (
-  WN **call
+   WN **call,
+   WN *block	  
 )
 {
 //   fprintf(TraceCovFile,"call site\n");
@@ -558,7 +568,7 @@ Handle_Call_Site (
   }
   for ( WN *wn = *call; wn != insert_point; /* NOTHING */) {
     wn = WN_next(wn);
-    Add_Stmt_To_Cur_BB(wn);
+    Add_Stmt_To_Cur_BB(wn, block);
   }
   // Set the call to the next of the current statement
   *call = insert_point;
@@ -568,7 +578,8 @@ Handle_Call_Site (
 
 static void
 Expand_Expr (
-  WN **expr
+  WN **expr,
+  WN *block
 )
 {
   OPERATOR opr;
@@ -579,7 +590,7 @@ Expand_Expr (
   case OPR_PICCALL:
   case OPR_INTRINSIC_CALL:
   case OPR_IO:
-    Handle_Call_Site (expr);
+    Handle_Call_Site (expr, block);
     return;
   default:
     break;
@@ -607,7 +618,7 @@ Handle_Label (void)
 }
 
 static void
-Expand_Statement(WN **stmt)
+Expand_Statement(WN **stmt, WN *block)
 {
   OPCODE opc = WN_opcode(*stmt);
   switch (opc) {
@@ -626,12 +637,48 @@ Expand_Statement(WN **stmt)
   case OPC_LABEL:
     Handle_Label ();
     break;
-
   default:
-    Expand_Expr (stmt);
+#if 1
+    Is_True(WN_opcode( *stmt ) != OPC_REGION, ("Expand_Statement, REGION whirl node unexpected"));
+#endif
+    Expand_Expr (stmt, block);
     break;
   }
 }  
+
+static void
+Expand_Statement_List(WN **pstmt, WN *block)
+{
+  WN *next_stmt;
+  WN *stmt = *pstmt;
+  for( ; stmt; stmt = next_stmt ) {
+    switch( WN_opcode( stmt ) ) {
+    case OPC_REGION:
+      // For the moment skip REGION
+#if 1
+      break;
+#else
+      // To be continued to support REGION
+      WN *first = WN_first( WN_region_body(stmt) );
+      Start_New_Basic_Block ();
+      // This BB is a possible entry point
+      Cur_BB->is_entry = 1;
+      Expand_Statement_List(&first, WN_region_body(stmt));
+      /* When a region is ended, always force to create a new bb */
+      Start_New_Basic_Block();
+      break;
+#endif
+    default:
+      if (WN_opcode(stmt) != OPC_LABEL)
+	Add_Stmt_To_Cur_BB(stmt, block);
+      Expand_Statement(&stmt, block);
+      if (WN_opcode(stmt) == OPC_LABEL)
+	Add_Stmt_To_Cur_BB(stmt, block);
+      break;
+    }
+    next_stmt = WN_next(stmt);
+  }
+}
 
 static void
 Coverage_Tree_Walk( WN *tree ) 
@@ -639,6 +686,10 @@ Coverage_Tree_Walk( WN *tree )
   WN *stmt;
   WN *next_stmt;
 #ifdef DEBUG_COVERAGE
+  fprintf(TraceCovFile, "==========================================\n");
+  fprintf(TraceCovFile, "DUMP COVERAGE INFO for PU : %d\n", current_function_funcdef_no);
+  fprintf(TraceCovFile, "==========================================\n");
+
   fprintf(TraceCovFile, "WHIRL tree input to Coverage_Tree_Walk:\n");
 //   fdump_tree_with_freq(TraceCovFile, tree, WN_MAP_UNDEFINED);
   dump_tree(tree);
@@ -648,21 +699,13 @@ Coverage_Tree_Walk( WN *tree )
   Start_New_Function();
   Handle_Entry( tree );
   stmt = WN_entry_first( tree );
+  // Expand the statement list beginning with stmt
+  Expand_Statement_List( &stmt, WN_func_body(tree));
 
-  for( ; stmt; stmt = next_stmt ) {
-    // For a label add stmt to next BB
-    if (WN_opcode(stmt) != OPC_LABEL)
-	Add_Stmt_To_Cur_BB(stmt);
-    Expand_Statement( &stmt );
-    if (WN_opcode(stmt) == OPC_LABEL)
-	Add_Stmt_To_Cur_BB(stmt);
-    next_stmt = WN_next(stmt);
-  }
   /* Because of the way Start_New_Basic_Block works, we almost
    * certainly end up with one extra BB. Verify that we have an extra
    * BB, and add it if so. */
-  if (Cur_BB && Cur_BB->wn_list)
-    Add_BB_To_Cur_Function(Cur_BB);
+  Add_BB_To_Cur_Function(Cur_BB);
 
   /* Build the control flow graph */
   Build_CFG();
@@ -762,7 +805,7 @@ static void Build_CFG(void)
       }
     }
 #ifdef DEBUG_COVERAGE
-  wn_coverage_Print_All_BBs(0);
+  wn_coverage_Print_All_BBs(1);
 #endif
 }
 
@@ -839,6 +882,11 @@ coverage_checksum_string (unsigned chksum, const char *string)
 {
   int i;
   char *dup = NULL;
+
+#ifdef TARG_ST
+  // [CL] string can be NULL for compiler-generated PUs: the associated file is NULL
+  if (!string) return 0;
+#endif
 
   /* Look for everything that looks if it were produced by
      get_file_function_name_long and zero out the second part
@@ -1580,12 +1628,13 @@ get_fall_thru_edge_to(basic_block_t *bb)
 // Add code for edge src->dest. num_edge is the identifier of the edge
 // If src is null, insert code at start of dst
 static void
-insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
+insert_insn_on_edge (edge_t e,unsigned num_edge)
 {
   basic_block_t *src = e->src;
   basic_block_t *dst = e->dest;
   unsigned  n_succs_src = src->n_succs;
   unsigned  n_preds_dst =  dst->n_preds;
+  WN *block_comment = NULL;
   // Figure out where to put these things.  
   //If the destination has one predecessor, insert there.
 #ifdef DEBUG_COVERAGE
@@ -1597,6 +1646,7 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
   WN *edge_profile = NULL;;
   if (src == First_BB || n_preds_dst == 1)
     {
+      block_comment = dst->block;
       // insert edge_profile at start of dst
       // Generate code to increment this edge
       sprintf(str,"%s code inserted in dest BB%d",
@@ -1604,7 +1654,7 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
       edge_profile = gen_edge_profiler (num_edge);
       if (!dst->is_a_label){
 	WN_copy_linenum(dst->wn_list->wn, edge_profile);
-	WN_INSERT_BlockBefore(block, dst->wn_list->wn, edge_profile);
+	WN_INSERT_BlockBefore(dst->block, dst->wn_list->wn, edge_profile);
       }
       else if (src == First_BB) {
 	// Case of Pragma PREAMBLE_END: insert inst after the pragma
@@ -1621,12 +1671,12 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
 	       ( "FB_CFG::Walk_WN_statement found no PREAMBLE_END PRAGMA" ) );
 	
 	WN_copy_linenum(preamble_end, edge_profile);
-	WN_INSERT_BlockAfter(block, preamble_end, edge_profile);
+	WN_INSERT_BlockAfter(dst->block, preamble_end, edge_profile);
       } else {
 	FmtAssert(dst->wn_list->next == NULL || WN_opcode(dst->wn_list->next->wn) != OPC_LABEL, 
 		  ("gcov coverage: A label follows a label! "));
 	WN_copy_linenum(dst->wn_list->wn, edge_profile);
-	WN_INSERT_BlockAfter(block, dst->wn_list->wn, edge_profile);
+	WN_INSERT_BlockAfter(dst->block, dst->wn_list->wn, edge_profile);
       }
     }
   // If the source has one successor insert there.  
@@ -1634,18 +1684,19 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
     {
       sprintf(str,"%s code inserted in src BB%d",
 	      str, src->index);
+      block_comment = src->block;
       // Generate code to increment this edge
       edge_profile = gen_edge_profiler (num_edge);
       // Insert edge profile at start of src
       if (!src->is_a_label) {
 	WN_copy_linenum(src->wn_list->wn, edge_profile);
-	WN_INSERT_BlockBefore(block, src->wn_list->wn, edge_profile);
+	WN_INSERT_BlockBefore(src->block, src->wn_list->wn, edge_profile);
       }
       else{
 	FmtAssert(src->wn_list->next == NULL || WN_opcode(src->wn_list->next->wn) != OPC_LABEL, 
 		  ("gcov coverage: A label follows a label! "));
 	WN_copy_linenum(src->wn_list->wn, edge_profile);
- 	WN_INSERT_BlockAfter(block, src->wn_list->wn, edge_profile);
+ 	WN_INSERT_BlockAfter(src->block, src->wn_list->wn, edge_profile);
       }
     }
   // edge is critical
@@ -1655,6 +1706,7 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
 	// Case of igoto with more than 2 successors 
 	// Here we need to split the edge to add the code for
 	// the counter. 
+	block_comment = dst->block;
 	sprintf(str,"%s case of a switch code inserted in a new BB",
 		str);
 	// Create a WN that contain a LABEL
@@ -1663,11 +1715,11 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
 	WN *wn_label = WN_CreateLabel (label, 0, NULL);
 	// insert edge_profile at start of dst
 	WN_copy_linenum(dst->wn_list->wn, wn_label);
-	WN_INSERT_BlockBefore(block, dst->wn_list->wn, wn_label);
+	WN_INSERT_BlockBefore(dst->block, dst->wn_list->wn, wn_label);
 	// Insert increment code after the new label
 	edge_profile = gen_edge_profiler (num_edge);
 	WN_copy_linenum(dst->wn_list->wn, edge_profile);
-	WN_INSERT_BlockAfter(block, wn_label, edge_profile);
+	WN_INSERT_BlockAfter(dst->block, wn_label, edge_profile);
 	// Patch the switch table
 	if (Change_COMPGOTO_Entries(src->last_wn,	/* WN for the switch table */
 				    WN_label_number(dst->wn_list->wn),	/* the old target label */
@@ -1682,18 +1734,19 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
 	if (e) {
 	  WN *branch = WN_CreateGoto((ST_IDX) 0, WN_label_number(dst->wn_list->wn));
 	  WN_copy_linenum(e->src->last_wn, edge_profile);
-	  WN_INSERT_BlockAfter(block, e->src->last_wn, branch);
+	  WN_INSERT_BlockAfter(e->src->block, e->src->last_wn, branch);
 	}
 
       } else {
 	sprintf(str,"%s edge is critical: conditional counter added at end of BB%d",
 		str, src->index);
-	// Generate conditional code to increment this edge
+	block_comment = src->block;
+      // Generate conditional code to increment this edge
 	edge_profile = gen_critical_edge_profiler (num_edge, src, dst);
 	// insert code before the branch
 	WN *edge_profile0 = WN_kid0(edge_profile);
 	WN_copy_linenum(src->last_wn, edge_profile);
-	WN_INSERT_BlockBefore(block, src->last_wn, edge_profile);
+	WN_INSERT_BlockBefore(src->block, src->last_wn, edge_profile);
 	// Edge profile is a block, keep trace of the first kid to
 	// insert a comment after.
 	edge_profile = edge_profile0;
@@ -1702,12 +1755,12 @@ insert_insn_on_edge (edge_t e,unsigned num_edge, WN *block)
   // Add a comment
   WN *comment = WN_CreateComment(str);
   WN_copy_linenum(edge_profile, comment);
-  WN_INSERT_BlockBefore(block, edge_profile, comment);
+  WN_INSERT_BlockBefore(block_comment, edge_profile, comment);
 }
 /* Add edge instrumentation code to the entire insn chain.
  */
 static unsigned
-instrument_edges (struct edge_list *el, WN *block)
+instrument_edges (struct edge_list *el)
 {
   unsigned num_instr_edges = 0;
   int x;
@@ -1715,7 +1768,7 @@ instrument_edges (struct edge_list *el, WN *block)
   for (x = 0; x < el->num_edges; x++) {
     edge_t e = el->index_to_edge[x];
     if (!e->fake && !e->on_tree)
-      insert_insn_on_edge (e, num_instr_edges++, block);
+      insert_insn_on_edge (e, num_instr_edges++);
   }
   return num_instr_edges;
 }
@@ -1979,7 +2032,36 @@ coverage_begin_output (WN *wn)
       path = incl_table[cur_file->incl_index];
       file = cur_file->filename;
       line = USRCPOS_linenum(usrcpos);
-
+      if (line == 0) {
+	// We cancel the gcov intrumentation if no line info can be
+	// found in this PU
+	basic_block_list_t *list_bb;
+	for ( list_bb = Cur_Function->bb_list; list_bb != NULL; 
+	      list_bb = list_bb->next) { 
+	  basic_block_t *bb = list_bb->bb;
+	  wnode_list_t *list_wn;
+	  for ( list_wn = bb->wn_list; list_wn != NULL; 
+		list_wn = list_wn->next) {
+	    USRCPOS usrcpos;
+	    SRCPOS srcpos;
+	    srcpos = WN_Get_Linenum(list_wn->wn);
+	    USRCPOS_srcpos(usrcpos) = srcpos;
+	    unsigned line;
+	    line = USRCPOS_linenum(usrcpos);
+	    if (line != 0) 
+	      {
+		//we found at least one correct line info
+		// Keep this one for file and path
+		cur_file = &file_table[USRCPOS_filenum(usrcpos)];
+		path = incl_table[cur_file->incl_index];
+		file = cur_file->filename;
+		goto end_check_line_info;
+	      }
+	  }
+	}
+	return  0;
+      }
+    end_check_line_info:
       // Write general info in gcno file: function filename, function
       // name, line...
       
@@ -2004,10 +2086,20 @@ coverage_begin_output (WN *wn)
       gcov_write_unsigned (compute_checksum ());
       gcov_write_string (ST_name(pu));
 
-      complete_name = (char *)alloca(strlen (path) + strlen (file) + 2);
-      strcpy (complete_name, path);
-      strcat (complete_name, "/");
-      strcat (complete_name, file);
+#ifdef TARG_ST
+      // [CL] file can be NULL for compiler-generated PUs
+      if (file) {
+#endif
+	complete_name = (char *)alloca(strlen (path) + strlen (file) + 2);
+	strcpy (complete_name, path);
+	strcat (complete_name, "/");
+	strcat (complete_name, file);
+#ifdef TARG_ST
+	// [CL]
+      } else {
+	complete_name = NULL;
+      }
+#endif
 
       gcov_write_string (complete_name);
       gcov_write_unsigned (line);
@@ -2141,12 +2233,12 @@ coverage_arcs (struct edge_list *edges_list) {
 
 /* for a given BB in the CFG, add gcov line info 
  */
-static void
+static int
 coverage_lines (basic_block_t *bb) {
   gcov_position_t offset;
   SRCPOS srcpos;
   USRCPOS usrcpos;
-
+  int nb = 0;
   offset = 0;
 
 #if 0
@@ -2186,6 +2278,7 @@ coverage_lines (basic_block_t *bb) {
       {
 	continue;
       }
+    nb++;
     // last_srcpos is remanent within a function, put to 0 for a new
     // function
     // If the position is different from last one.
@@ -2227,6 +2320,7 @@ coverage_lines (basic_block_t *bb) {
       gcov_write_string (NULL);
       gcov_write_length (offset);
     }
+  return nb;
 }
 
 /* P is a string that will be used in a symbol.  Mask out any characters
@@ -2439,11 +2533,13 @@ wn_coverage_init ()
   // When be is called by ipa_link, the name of gcda and gcno filename
   // are the named of the final executal + the nb of the .s file that
   // is compiled
-  const char *filename = Remove_Extension(Ipa_Exec_Name ? Ipa_Exec_Name : Src_File_Name);
+
+  char *gcov_basename = Object_Dir ? SYS_makePath(Object_Dir, SYS_baseptr(Src_File_Name)) : Src_File_Name;
+  const char *filename = Remove_Extension(Ipa_Exec_Name ? Ipa_Exec_Name : gcov_basename);
   // add _x for ipa
   if (Ipa_Exec_Name) {
-    char *filename_ipa = (char*) alloca( strlen(filename) + strlen(Remove_Extension(Src_File_Name)) + 1);
-    sprintf(filename_ipa,"%s_%s",filename, Remove_Extension(Src_File_Name));
+    char *filename_ipa = (char*) alloca( strlen(filename) + strlen(Remove_Extension(SYS_baseptr(Src_File_Name))) + 1);
+    sprintf(filename_ipa,"%s_%s",filename, Remove_Extension(SYS_baseptr(Src_File_Name)));
     filename = filename_ipa;
   }
   int len = strlen (filename);
@@ -2595,7 +2691,7 @@ wn_coverage_pu(WN *pu)
     if (coverage_begin_output (pu)) {
       coverage_blocks();
     } else {
-      fprintf (stderr, "Cancel coverage instrumentation\n");
+      //      fprintf (stderr, "Cancel coverage instrumentation\n");
       goto finish;
     }
     
@@ -2607,10 +2703,14 @@ wn_coverage_pu(WN *pu)
     if (Test_Coverage_Enabled) {
       /* Line numbers.  */
       if (coverage_begin_output (pu)) {
+	int nb =0;
 	basic_block_list_t *list_bb;
 	for ( list_bb = Cur_Function->bb_list; list_bb != NULL; 
 	      list_bb = list_bb->next) { 
-	  coverage_lines(list_bb->bb);
+	  nb += coverage_lines(list_bb->bb);
+	}
+	if (nb == 0) {
+	  goto finish;
 	}
       }
     }
@@ -2643,7 +2743,7 @@ wn_coverage_pu(WN *pu)
   if (Profile_Arcs_Enabled && 
       coverage_counter_alloc (GCOV_COUNTER_ARCS, num_instrumented))
     {
-      unsigned n_instrumented = instrument_edges (edges_list, WN_func_body(pu));
+      unsigned n_instrumented = instrument_edges (edges_list);
       if (n_instrumented != num_instrumented)
 	FmtAssert(FALSE, ("gcov_pu: invalid instrumented nb of edges"));
       if (Trace_Coverage) {
@@ -3066,7 +3166,7 @@ wn_coverage_branch_probabilities(void)
 
   if (Trace_Coverage) {
     fprintf(TraceCovFile, "wn_coverage_pu: CFG after reading %s before freq propagation:\n", da_file_name);
-    wn_coverage_Print_All_BBs(0);  
+    wn_coverage_Print_All_BBs(1);  
   }
   /* For every block in the file,
      - if every exit/entrance edge has a known count, then set the block count
@@ -3410,7 +3510,7 @@ Annotate_Node (WN *wn, basic_block_list_t *list_bb)
   OPERATOR opr = WN_operator( wn );
   if ( opr == OPR_BLOCK ) {
     // Special traversal case for BLOCK structure: for compgoto add
-    // frequencie for goto wn inside eack block
+    // frequencie for goto wn inside each block
     WN *node;
     for ( node = WN_first( wn ); node; node = WN_next( node ) )
       if (OPCODE_has_label(WN_opcode(node))) {

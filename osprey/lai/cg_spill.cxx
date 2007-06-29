@@ -689,22 +689,40 @@ CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc,
 
     *store_cost = 0.0F;
 
+#ifdef TARG_ST
+    // Turn off object allocation done by expand. We do not want to allocate the object if it
+    // is not actually spilled.
+    Exp_Enable_Allocate_Object(FALSE);	
+#endif
+    
     switch (WN_operator(home))
     {
     case OPR_LDID:
       {
+#ifdef TARG_ST
+	OPCODE opcode = WN_opcode(home);
+
+	Exp_Load (OPCODE_rtype(opcode), OPCODE_desc(opcode), tn, WN_st(home),
+		  WN_offset(home), &OPs, V_NONE);
+	*restore_cost = OPS_spill_estimate (&OPs);
+
+	OPS_Remove_All(&OPs);
+	Exp_Store (OPCODE_desc(opcode), tn, WN_st(home),
+		   WN_offset(home), &OPs, V_NONE);
+
+	*store_cost = OPS_spill_estimate (&OPs);
+
+#else
 	OPCODE opcode = WN_opcode(home);
 	Exp_Load (OPCODE_rtype(opcode), OPCODE_desc(opcode), tn, WN_st(home),
 		  WN_offset(home), &OPs, V_NONE);
-#ifdef TARG_ST
-	*restore_cost = OPS_spill_estimate (&OPs);
-#else
 	*restore_cost = OPS_length(&OPs);
-#endif
 	*store_cost = *restore_cost;
+#endif
       }
       break;
     case OPR_LDA:
+      Exp_Enable_Allocate_Object(TRUE);	
       Exp_Lda(	WN_rtype(home),
 		result,
 		WN_st(home),
@@ -712,6 +730,7 @@ CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc,
 		OPERATOR_UNKNOWN,
 		&OPs);
       *restore_cost = OPS_length(&OPs);
+      Exp_Enable_Allocate_Object(FALSE);	
       break; 
     case OPR_INTCONST:
       *restore_cost = 1.0F;
@@ -719,10 +738,17 @@ CGSPILL_Cost_Estimate (TN *tn, ST *mem_loc,
 	*restore_cost += 1.0F;
       break;
     case OPR_CONST:
+      Exp_Enable_Allocate_Object(TRUE);	
       Exp_OP1 (WN_opcode(home), result, Gen_Symbol_TN(WN_st(home),0,0), &OPs);
       *restore_cost = OPS_length(&OPs) + .25F;
+      Exp_Enable_Allocate_Object(FALSE);	
       break;
     }
+
+#ifdef TARG_ST
+    // Re-enable object allocation done by expand.
+    Exp_Enable_Allocate_Object(TRUE);	
+#endif
   }
   else
   {

@@ -1025,6 +1025,8 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 #ifdef TARG_ST
   // (cbr) handle may_alias attribute
   if (lookup_attribute ("may_alias", TYPE_ATTRIBUTES (type_tree))) {
+    // [CL] don't apply the attribute to the predefined type
+    idx = Copy_TY(idx);
     Set_TY_no_ansi_alias(idx);
   }
 #endif
@@ -1105,10 +1107,16 @@ Create_ST_For_Tree (tree decl_node)
         sclass = SCLASS_EXTERN;
 #ifdef TARG_ST
 	eclass = Get_Export_Class_For_Tree(decl_node, CLASS_FUNC, sclass);
+
+	if (DECL_CONTEXT (decl_node) == 0) {
+	  level = GLOBAL_SYMTAB + 1;
+	} else {
+	  level = PU_lexical_level (Get_ST (DECL_CONTEXT (decl_node))) +1;
+	}
 #else
         eclass = TREE_PUBLIC(decl_node) ? EXPORT_PREEMPTIBLE : EXPORT_LOCAL;
-#endif
         level  = GLOBAL_SYMTAB+1;
+#endif
 
         PU_IDX pu_idx;
         PU&    pu = New_PU (pu_idx);
@@ -1204,8 +1212,12 @@ Create_ST_For_Tree (tree decl_node)
               }
               else {
 		sclass = SCLASS_AUTO;
+#ifdef TARG_ST
+		level = PU_lexical_level (Get_ST (DECL_CONTEXT (decl_node)));
+#else
 		level = decl_node->decl.symtab_idx ?
                         decl_node->decl.symtab_idx : CURRENT_SYMTAB;
+#endif
               }
               eclass = EXPORT_LOCAL;
             }

@@ -123,7 +123,7 @@ typedef enum {
   TARGET_st220,	        /* st220 */
   TARGET_st221,	        /* st221 */
   TARGET_st231,	        /* st231 */
-  TARGET_st235,	        /* st235 */
+  TARGET_st240	        /* st240 */
 } TARGET_PROCESSOR;
 
 BE_EXPORTED extern TARGET_PROCESSOR Target;		/* -Tc */
@@ -134,7 +134,7 @@ BE_EXPORTED extern char *Targ_Name (TARGET_PROCESSOR target);
 #define Is_Target_st220()	(Target==TARGET_st220)
 #define Is_Target_st221()	(Target==TARGET_st221)
 #define Is_Target_st231()	(Target==TARGET_st231)
-#define Is_Target_st235()	(Target==TARGET_st235)
+#define Is_Target_st240()	(Target==TARGET_st240)
 
 /* ========== */
 /* Target ISA */
@@ -144,7 +144,7 @@ typedef enum {
   TARGET_ISA_UNDEF,	/* Undefined */
   TARGET_ISA_ST220,
   TARGET_ISA_ST231,
-  TARGET_ISA_ST235
+  TARGET_ISA_ST240
 } TARGET_ISA;
 
 BE_EXPORTED extern TARGET_ISA Target_ISA;	/* -Tc.Rc */
@@ -154,7 +154,7 @@ BE_EXPORTED extern char *Isa_Name (TARGET_ISA target_isa);
 
 #define Is_Target_ISA_ST220()	(Target_ISA==TARGET_ISA_ST220)
 #define Is_Target_ISA_ST231()	(Target_ISA==TARGET_ISA_ST231)
-#define Is_Target_ISA_ST235()	(Target_ISA==TARGET_ISA_ST235)
+#define Is_Target_ISA_ST240()	(Target_ISA==TARGET_ISA_ST240)
 
 /* What is the floating point format? */
 #define IEEE_FP_FORMAT	TRUE
@@ -338,7 +338,17 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
  * ====================================================================
  */
 #ifdef TARG_ST
+#define TOP_targ_mov_r_b (Is_Target_st240() ? TOP_st240_mov_r_b : TOP_convib_r_b)
+#define TOP_targ_mov_b_r (Is_Target_st240() ? TOP_st240_mov_b_r : TOP_convbi_b_r)
 
+#define TOP_targ_form(top)  (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_##top) ? TOP_##top : TOP_st240_##top)
+#define TOP_targ_form2(top)  (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_##top) ? TOP_##top : TOP_UNDEFINED)
+
+#define TOP_targ_addcg_b_r_r_b_r TOP_addcg_b_r_r_b_r
+#define TOP_targ_slct_r_r_b_r TOP_targ_form(slct_r_r_b_r)
+#endif //TARG_ST
+
+#ifdef TARG_ST
   //[TB] Support for asm stmt with dynamic mtype
 /* ====================================================================
  *
@@ -351,6 +361,7 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
 BE_EXPORTED extern BOOL Check_Asm_Constraints(char* constraint_string, UINT8 mtype);
 
 #endif //TARG_ST
+
 #ifdef __cplusplus
 }
 #endif

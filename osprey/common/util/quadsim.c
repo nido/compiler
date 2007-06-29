@@ -127,7 +127,7 @@ extern	double	trunc(double x);
 
 /* quad to INT32 */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_ji_qint = __c_ji_qint
 #else
 extern INT32 c_ji_qint(QUAD x, INT *p_err ) __attribute__((alias("__c_ji_qint")));
@@ -171,7 +171,7 @@ INT32	result;
 
 /* quad to UINT32 */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_ji_quint = __c_ji_quint
 #else
 extern UINT32 c_ji_quint(QUAD x, INT *p_err ) __attribute__((alias("__c_ji_quint")));
@@ -226,7 +226,7 @@ UINT32	result;
 
 /* quad to INT64 */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_ki_qint = __c_ki_qint
 #else
 extern INT64 c_ki_qint(QUAD x, INT *p_err ) __attribute__((alias("__c_ki_qint")));
@@ -299,7 +299,7 @@ INT64	t;
 
 /* quad to UINT64 */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_ki_quint = __c_ki_quint
 #else
 extern UINT64 c_ki_quint(QUAD x, INT *p_err ) __attribute__((alias("__c_ki_quint")));
@@ -376,7 +376,7 @@ UINT64	t;
 
 /* quad to float */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_sngl_q = __c_sngl_q
 #else
 extern float c_sngl_q(QUAD x, INT *p_err ) __attribute__((alias("__c_sgnl_q")));
@@ -393,7 +393,7 @@ c_sngl_q(QUAD x, INT *p_err )
 
 /* quad to double */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_dble_q = __c_dble_q
 #else
 extern double c_dble_q(QUAD x, INT *p_err ) __attribute__((alias("__c_dble_q")));
@@ -410,7 +410,7 @@ c_dble_q(QUAD x, INT *p_err )
 
 /* INT32 to quad */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_flotj = __c_q_flotj
 #else
 extern QUAD c_q_flotj(INT32 n, INT *p_err ) __attribute__((alias("__c_q_flotj")));
@@ -431,7 +431,7 @@ QUAD	result;
 
 /* UINT32 to quad */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_flotju = __c_q_flotju
 #else
 extern QUAD c_q_flotju(UINT32 n, INT *p_err ) __attribute__((alias("__c_q_flotju")));
@@ -452,7 +452,7 @@ QUAD	result;
 
 /* INT64 to quad */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_flotk = __c_q_flotk
 #else
 extern QUAD c_q_flotk(INT64 n, INT *p_err ) __attribute__((alias("__c_q_flotk")));
@@ -485,7 +485,7 @@ QUAD  result;
 
 /* UINT64 to QUAD */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_flotku = __c_q_flotku
 #else
 extern QUAD c_q_flotku(UINT64 n, INT *p_err ) __attribute__((alias("__c_q_flotku")));
@@ -518,7 +518,7 @@ QUAD  result;
 
 /* float to quad */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_ext = __c_q_ext
 #else
 extern QUAD c_q_ext(float x, INT *p_err ) __attribute__((alias("__c_q_ext")));
@@ -539,7 +539,7 @@ QUAD	result;
 
 /* double to quad */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_extd = __c_q_extd
 #else
 extern QUAD c_q_extd(double x, INT *p_err ) __attribute__((alias("__c_q_extd")));
@@ -562,7 +562,7 @@ QUAD	result;
    a long double
 */
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_q_trunc = __c_q_trunc
 #else
 extern QUAD c_q_trunc(QUAD x, INT *p_err ) __attribute__((alias("__c_q_trunc")));
@@ -700,7 +700,7 @@ QUAD	result;
  */
 
 
-#ifndef _NO_WEAK_SUPPORT_
+#if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_fp_class_q = __c_fp_class_q
 #else
 extern INT32 c_fp_class_q( QUAD x ) __attribute__((alias("__c_fp_class_q")));

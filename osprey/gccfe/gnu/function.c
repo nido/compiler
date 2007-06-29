@@ -5964,6 +5964,10 @@ identify_blocks_1 (insns, block_vector, end_block_vector, orig_block_stack)
 void
 reorder_blocks ()
 {
+#ifdef TARG_ST // [CL] don't create rtls
+  return;
+#endif
+
   tree block = DECL_INITIAL (current_function_decl);
   varray_type block_stack;
 

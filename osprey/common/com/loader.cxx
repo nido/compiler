@@ -279,7 +279,7 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
 
     //Initialize returned type
     Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].return_type = MachineMode_To_Mtype(btypes[i].return_type);
-    intrn_info[i + INTRINSIC_COUNT + 1].return_kind = INTRN_return_kind_for_Mtype(MachineMode_To_Mtype(btypes[i].return_type));
+    intrn_info[i + INTRINSIC_COUNT + 1].return_kind = INTRN_return_kind_for_mtype(MachineMode_To_Mtype(btypes[i].return_type));
 
     if (verbose) {
       fprintf(TFile, "    intrinsic[%d] = %s\n",
@@ -306,7 +306,7 @@ void Add_Composed_Mtype() {
 	  if (INTRN_is_out_param(arg, proto)) {
 	    proto->return_type = proto->arg_type[arg];
 	    //Set return kind
-	    intrn_info[intr].return_kind = INTRN_return_kind_for_Mtype(proto->return_type);
+	    intrn_info[intr].return_kind = INTRN_return_kind_for_mtype(proto->return_type);
 	  }
 	continue;
       }
@@ -325,7 +325,7 @@ void Add_Composed_Mtype() {
 		/* mtype*/ MTYPE_COUNT+1, /*alignement*/TARG_NONE_ALIGN);
 
       //Set return kind
-      intrn_info[intr].return_kind = INTRN_return_kind_for_Mtype(proto->return_type);
+      intrn_info[intr].return_kind = INTRN_return_kind_for_mtype(proto->return_type);
     }
 }
 
@@ -924,11 +924,18 @@ TYPE_ID MachineMode_To_Mtype(machine_mode_t mode) {
   if (mode >= STATIC_COUNT_MACHINE_MODE) {
     return (Extension_MachineMode_To_Mtype_Array[mode - STATIC_COUNT_MACHINE_MODE]);
   }
+  /* Modes other than those standard ones should never be seen, 
+     the current callers to this function are:
+     - the loader when creating new dynamic types.
+     - the intrinsics arguments results mapping for extension/multi result
+     intrinsincs. For the intrinsincs we restrict the types to the simple ones below.
+     Note that unsigned types and bool type are not present, 
+     which is not a problem for extension intrinscs but may be necessary
+     for standard intrinsincs if the two flow are merged.
+  */
   switch (mode) {
   case VOIDmode:
     return MTYPE_V;
-  case BImode:
-    return MTYPE_B;
   case QImode:
     return MTYPE_I1;
   case HImode:

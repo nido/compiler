@@ -861,7 +861,7 @@ WN_write_feedback (PU_Info* pu, Output_File* fl)
 	return;
     }
     
-
+//     Cur_PU_Feedback->Print();
     // leave room for the Pu_Hdr
     fl->file_size += sizeof(Pu_Hdr);
     fl->file_size = ir_b_align (fl->file_size, sizeof(mINT64), 0);
@@ -872,6 +872,10 @@ WN_write_feedback (PU_Info* pu, Output_File* fl)
     pu_hdr.pu_checksum = Convert_Feedback_Info (Cur_PU_Feedback,
 						PU_Info_tree_ptr (pu),
 						pu_handle);
+#ifdef KEY
+    pu_hdr.pu_size = 0;
+    pu_hdr.runtime_fun_address = Cur_PU_Feedback->Get_Runtime_Func_Addr();
+#endif
     
     pu_hdr.pu_name_index = 0;
     pu_hdr.pu_file_offset = 0;
@@ -901,6 +905,20 @@ WN_write_feedback (PU_Info* pu, Output_File* fl)
     write_profile (feedback_base, pu_handle.Get_Call_Table (), fl,
 		   pu_hdr.pu_num_call_entries,
 		   pu_hdr.pu_call_offset);
+
+#ifdef KEY
+    write_profile (feedback_base, pu_handle.Get_Icall_Table (), fl,
+		   pu_hdr.pu_num_icall_entries,
+		   pu_hdr.pu_icall_offset);
+
+    write_profile (feedback_base, pu_handle.Get_Value_Table (), fl,
+		   pu_hdr.pu_num_value_entries,
+		   pu_hdr.pu_value_offset);   
+
+    write_profile (feedback_base, pu_handle.Get_Value_FP_Bin_Table (), fl,
+		   pu_hdr.pu_num_value_fp_bin_entries,
+		   pu_hdr.pu_value_fp_bin_offset);   
+#endif
 
     BCOPY (&pu_hdr, fl->map_addr + feedback_base, sizeof(pu_hdr));
     

@@ -54,7 +54,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "ggc.h"
 #include "langhooks.h"
 #include "predict.h"
-
+#ifdef TARG_ST
+#include "c-common.h"
+#endif
 #ifdef SGI_MONGOOSE
 #include "real.h"
 #include "wfe_expr.h"
@@ -3098,10 +3100,6 @@ expand_null_return ()
 {
   rtx last_insn;
 
-#ifdef TARG_ST
-  WFE_Expand_Return (NULL);
-#endif 
-
   last_insn = get_last_insn ();
 
   /* If this function was declared to return a value, but we
@@ -3110,6 +3108,10 @@ expand_null_return ()
   clobber_return_register ();
 
   expand_null_return_1 (last_insn);
+
+#ifdef TARG_ST
+  WFE_Expand_Return (NULL);
+#endif 
 }
 
 /* Try to guess whether the value of return means error code.  */
@@ -3357,6 +3359,11 @@ expand_return (retval)
 	      emit_move_insn (dst, CONST0_RTX (GET_MODE (dst)));
 	    }
 
+#ifdef TARG_ST
+      // (cbr) could always return while generating whirl
+	  if (!result_val)
+	    return;
+#endif
 	  /* We need a new source operand each time bitpos is on a word
 	     boundary.  */
 	  if (bitpos % BITS_PER_WORD == 0)
@@ -3411,6 +3418,16 @@ expand_return (retval)
 	   && (GET_CODE (result_rtl) == REG
 	       || (GET_CODE (result_rtl) == PARALLEL)))
     {
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. don't replicate anon aggregate creation with translator. */
+      if (TREE_CODE (retval_rhs) == COMPOUND_LITERAL_EXPR) {
+	tree d = COMPOUND_LITERAL_EXPR_DECL (retval_rhs);
+	if (TREE_CODE (d) == VAR_DECL) 
+	  if (!DECL_ASSEMBLER_NAME_SET_P (d)) {
+	    return;
+	  }
+      }
+#endif
       /* Calculate the return value into a temporary (usually a pseudo
          reg).  */
       tree ot = TREE_TYPE (DECL_RESULT (current_function_decl));
@@ -3418,6 +3435,11 @@ expand_return (retval)
 
       val = assign_temp (nt, 0, 0, 1);
       val = expand_expr (retval_rhs, val, GET_MODE (val), 0);
+#ifdef TARG_ST
+      // (cbr) could always return while generating whirl
+      emit_queue ();
+      return;
+#endif
       val = force_not_mem (val);
       emit_queue ();
       /* Return the calculated value, doing cleanups first.  */
@@ -4244,13 +4266,10 @@ expand_decl (decl)
 #ifdef TARG_ST
   // [CL] Ensure that even unused variables are present in the symbol
   // table. This is required for debugging. (DDTS MBTst23502)
- {
-   // (cbr) must check the current scope is not closed (24272) 
-   extern unsigned char Current_scope;
-   if (decl->decl.symtab_idx == Current_scope
-       && ! alloca_done)
-     (void)Create_ST_For_Tree(decl);
- }
+  // [SC] Reworked to avoid using symtab_idx, which is not set
+  // correctly in nested functions.
+  if (! alloca_done)
+    (void)Create_ST_For_Tree(decl);
 #endif
 }
 
@@ -4284,11 +4303,28 @@ expand_decl_init (decl)
     }
   else if (DECL_INITIAL (decl) && TREE_CODE (DECL_INITIAL (decl)) != TREE_LIST)
     {
-      emit_line_note (DECL_SOURCE_FILE (decl), DECL_SOURCE_LINE (decl));
-      expand_assignment (decl, DECL_INITIAL (decl), 0, 0);
-      emit_queue ();
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. don't replicate anon aggregate creation with translator. */
+      if (TREE_CODE (DECL_INITIAL (decl)) == COMPOUND_LITERAL_EXPR) {
+	tree d = COMPOUND_LITERAL_EXPR_DECL (DECL_INITIAL(decl));
+	if (TREE_CODE (d) == VAR_DECL) {
+	  if (!DECL_ASSEMBLER_NAME_SET_P (d)) {
+	    goto dontexpand;
+	  }
+	}
+      }
+      else
+#endif
+	{
+	emit_line_note (DECL_SOURCE_FILE (decl), DECL_SOURCE_LINE (decl));
+	expand_assignment (decl, DECL_INITIAL (decl), 0, 0);
+	emit_queue ();
+      }
     }
 
+#ifdef TARG_ST
+ dontexpand:
+#endif
   /* Don't let the initialization count as "using" the variable.  */
   TREE_USED (decl) = was_used;
 

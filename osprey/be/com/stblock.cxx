@@ -612,13 +612,26 @@ Base_Symbol_And_Offset_For_Addressing (
    *    reference to a text address.
    * 2. For preemptible symbols, we cannot use the base where the symbol
    *    is allocated since it could be preempted. 
+#ifdef TARG_ST
+   * 3. For non-preemptible symbols, do not use a preemptible base_sym.
+   *    This sounds strange, but happens in some ungainly programming
+   *    tricks in the glibc dynamic linker, where a non-preemptible
+   *    alias is made of a preemptible symbol, to force GP-relative
+   *    addressing for the symbol until the GOT has been initialized.
+#endif
    */
   INT64 tofst = 0;
   ST *base = sym;
 
   while ( (ST_base(base) != base  ) 
 	&& (ST_sclass(base) != SCLASS_TEXT) 
+#ifdef TARG_ST
+       && !((Gen_PIC_Shared || Gen_PIC_Call_Shared)
+            && (ST_is_preemptible(base)
+                || ST_is_preemptible(ST_base(base)))) )
+#else
 	&& !((Gen_PIC_Shared || Gen_PIC_Call_Shared) && ST_is_preemptible(base)) )
+#endif
   {
       tofst += ST_ofst(base);
       base = ST_base(base); 

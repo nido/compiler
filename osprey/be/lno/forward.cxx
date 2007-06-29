@@ -789,6 +789,10 @@ static BOOL BS_Has_Varying_Access_Array_In_Region(WN* wn_store)
     return FALSE;
   WN* wn_array = WN_kid1(wn_store); 
   ACCESS_ARRAY *array = (ACCESS_ARRAY *) WN_MAP_Get(LNO_Info_Map, wn_array);
+#ifdef TARG_ST
+  // Can't conclude if the access array is too messy
+  if (array->Too_Messy) return TRUE;
+#endif
   INT varying_depth = array->Non_Const_Loops() - 1; 
   return (varying_depth >= Do_Depth(wn_enclosing_loop)); 
 }

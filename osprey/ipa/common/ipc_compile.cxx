@@ -71,7 +71,7 @@
 #include "dwarf_DST_mem.h"              // needed by ipc_file.h
 #include "ipc_file.h"                   // for IP_FILE_HDR
 #include "ipa_option.h"                 // ipa option flags
-#include "ipc_link.h"                   // for ipa_link_link_argv
+#include "ipc_link.h"                   // for ipa_link_line_argv
 
 #if defined(TARG_ST) && defined(__CYGWIN__)
 #include <signal.h>
@@ -1063,7 +1063,13 @@ static void cleanup()
     remove_file(elf_symtab_name);
   }
 
-  rmdir(tmpdir);
+  // [CL] go out of tmpdir before removing it
+  chdir(current_dir);
+  int res = rmdir(tmpdir);
+  if (res) {
+    fprintf(stderr, "Couldn't remove %s", tmpdir);
+    perror("");
+  }
 }
 
 // [CL] code cloned from the driver
@@ -1217,7 +1223,7 @@ void ipacom_doit (const char* ipaa_filename)
     ARGV link_argv;
 
     // remember current dir
-    if ((current_dir = getcwd(current_dir, 0)) == NULL) {
+    if ((current_dir = getcwd(NULL, PATH_MAX)) == NULL) {
       internal_error("could not find current working directory");
     }
 #endif
@@ -1470,9 +1476,23 @@ void ipacom_doit (const char* ipaa_filename)
     }
 
 #ifdef USE_MAKE
+#if 0
     fprintf(makefile, "\tcd %s; %s%s %s -TENV:ipa_suffix=%d_%d %s\n\n",
 	    tmpdir_macro, relativepath, (*command_map)["cc"],
 	    symtab_command_line, ipa_time, getpid(), symtab_extra_args);
+#else
+    // [CG] Allow user given -TENV:ipa_suffix to override by passing ipa_suffix before 
+    // the original command line
+    if (Ipa_Label_Suffix[0] == '\0') {
+      fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d %s %s\n\n",
+	      tmpdir_macro, relativepath, (*command_map)["cc"],
+	      ipa_time, getpid(), symtab_command_line, symtab_extra_args);
+    } else {
+      fprintf(makefile, "\tcd %s; %s%s  %s %s\n\n",
+	      tmpdir_macro, relativepath, (*command_map)["cc"],
+	      symtab_command_line, symtab_extra_args);
+    }
+#endif
 #endif
 #else
     fprintf(makefile, "\tcd %s; %s %s\n\n",
@@ -1514,11 +1534,21 @@ void ipacom_doit (const char* ipaa_filename)
     sprintf(symtab_buf1, "%s%s", relativepath, (*command_map)["cc"]);
     string2argv(symtab_buf1, myargv);
 
+#if 0
     string2argv(symtab_command_line, myargv);
 
     char symtab_buf2[100];
     sprintf(symtab_buf2, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
     myargv.push_back(symtab_buf2);
+#else
+    if (Ipa_Label_Suffix[0] == '\0') {
+      char symtab_buf2[100];
+      sprintf(symtab_buf2, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
+      myargv.push_back(symtab_buf2);
+    }
+
+    string2argv(symtab_command_line, myargv);
+#endif
 
     string2argv(symtab_extra_args, myargv);
 
@@ -1536,7 +1566,11 @@ void ipacom_doit (const char* ipaa_filename)
 
 #ifndef USE_MAKE
   char file_buf1[100];
-  sprintf(file_buf1, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
+  if (Ipa_Label_Suffix[0] == '\0') {
+    sprintf(file_buf1, "-TENV:ipa_suffix=%d_%d", ipa_time, getpid());
+  } else {
+    sprintf(file_buf1, "");
+  }
 
   char file_buf2[strlen(Ipa_Exec_Name) + strlen("-TENV::ipa_exec_name=") + 1];
   sprintf(file_buf2, "-TENV::ipa_exec_name=%s", Ipa_Exec_Name);
@@ -1554,9 +1588,15 @@ void ipacom_doit (const char* ipaa_filename)
     fprintf(makefile, "\tcd %s; %s %s\n",
             tmpdir_macro, (*commands)[i], extra_args);
 #elif defined(TARG_ST)
-    fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d -TENV::ipa_exec_name=%s %s\n",
-	    tmpdir_macro, relativepath, (*commands)[i], ipa_time, getpid(),
-	    Ipa_Exec_Name, extra_args);
+    if (Ipa_Label_Suffix[0] == '\0') {
+      fprintf(makefile, "\tcd %s; %s%s -TENV:ipa_suffix=%d_%d -TENV::ipa_exec_name=%s %s\n",
+	      tmpdir_macro, relativepath, (*commands)[i], ipa_time, getpid(),
+	      Ipa_Exec_Name, extra_args);
+    } else {
+      fprintf(makefile, "\tcd %s; %s%s -TENV::ipa_exec_name=%s %s\n",
+	      tmpdir_macro, relativepath, (*commands)[i], 
+	      Ipa_Exec_Name, extra_args);
+    }
 #else
     fprintf(makefile, "\tcd -P %s; %s %s\n",
             tmpdir_macro, (*commands)[i], extra_args);
@@ -1592,7 +1632,11 @@ void ipacom_doit (const char* ipaa_filename)
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
       fprintf(stderr, "cd %s\n", current_dir);
     }
-  chdir(current_dir);
+  int res = chdir(current_dir);
+  if (res) {
+    fprintf(stderr, "Couldn't change dir to %s", current_dir);
+    perror("");
+  }
   int status = run_program(link_argv);
   if (status != RC_OKAY) {
     cleanup();
@@ -1777,7 +1821,8 @@ void ipacom_doit (const char* ipaa_filename)
   fprintf(sh_wrappercmdfile, "status=$?\n");
 
   if (!ld_ipa_opt[LD_IPA_KEEP_TEMPS].flag) {
-    fprintf(sh_wrappercmdfile, "'rm' -rf %s %s > /dev/null 2>&1 ; true\n", tmpdir, sh_wrappercmdfile_name);
+    fprintf(sh_wrappercmdfile, "'rm' -rf %s %s > /dev/null 2>&1 ; true\n",
+	    tmpdir, sh_wrappercmdfile_name);
   }
 
   fprintf(sh_wrappercmdfile, "exit $status\n");

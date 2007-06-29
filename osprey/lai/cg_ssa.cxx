@@ -44,10 +44,11 @@
 #include "dominate.h"
 #include "gra_live.h"
 #include "cgexp.h"
+#include "cg_spill.h"	// for Attach_IntConst_Remat()
 #include "cg_ssa.h"
-#include "cg_ssaopt.h"
 
 INT32 CG_ssa_algorithm = 2;
+BOOL CG_ssa_rematerialization = TRUE;
 
 //
 // Memory pool for allocating things during SSA construction.
@@ -70,6 +71,57 @@ static BOOL Trace_dom_frontier;               /* -Wb,-tt60:0x010 */
 static TN_MAP tn_def_map = NULL;
 
 #define TN_is_def_in(t)        ((BB_LIST *)TN_MAP_Get(tn_def_map,t))
+
+/* ================================================================
+ *
+ *   TNs  use/def managment.
+ *
+ * ================================================================
+ */
+static void
+OP_Attach_Rematerialization(OP *op)
+{
+  if (!CG_ssa_rematerialization) return;
+  
+  if (OP_Is_Copy(op)) {
+    TN *src = OP_opnd(op, OP_Copy_Operand(op));
+    TN *dst = OP_result(op, OP_Copy_Result(op));
+    // FdF 20070523: dst must be an SSA var to propagate the
+    // Rematerializable property.
+    if (TN_is_ssa_var(dst) && !TN_is_rematerializable(dst) &&
+	TN_size(src) == TN_size(dst) &&
+	(TN_size(src) <= 4 || TN_size(src) == 8)) {
+      if (TN_has_value(src)) {
+	CGSPILL_Attach_Intconst_Remat(dst, TN_size(src) <= 4 ? MTYPE_I4 : MTYPE_I8, 
+				      TN_value(src));
+      } else if (TN_is_register(src) && TN_is_rematerializable(src)) {
+	Set_TN_is_rematerializable(dst);
+	Set_TN_home(dst, TN_home(src));
+      }
+    }
+  }
+}
+
+void 
+SSA_setup(OP *o) 
+{
+  if (tn_ssa_map == NULL) return;
+  
+  for (int i = 0; i < OP_results(o); i++)
+      Set_TN_ssa_def(OP_result(o, i), o);
+  
+  /* Update on the fly rematerialization information. */
+  OP_Attach_Rematerialization(o);
+}
+
+void
+SSA_unset(OP *o) 
+{
+  if (tn_ssa_map)
+    for (int i = 0; i < OP_results(o); i++)
+      Set_TN_ssa_def(OP_result(o, i), NULL);
+}
+
 
 /* ================================================================
  *
@@ -190,13 +242,13 @@ Insert_Kill_op (
 )
 {
   // FdF: Create a pseudo-def for uninitialized uses.
-  OP* psi_op = Mk_VarOP(TOP_psi, 1, 0, &tn, NULL);
+  OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &tn, NULL);
   if (point)
-    BB_Insert_Op_Before(bb, point, psi_op);
+    BB_Insert_Op_Before(bb, point, kill_op);
   else
-    BB_Append_Op(bb, psi_op);
-  // ssa_map is set, but psi_op has not been renamed yet
-  SSA_unset(psi_op);
+    BB_Append_Op(bb, kill_op);
+  // ssa_map is set, but kill_op has not been renamed yet
+  SSA_unset(kill_op);
   TN *new_tn = Copy_TN(tn);
   tn_stack_push(tn, new_tn);
 }
@@ -278,8 +330,6 @@ DOM_TREE_Initialize ()
   INT i;
   BB *bb;
 
-  // First, calculate the dominator/postdominator information:
-  Calculate_Dominators();
 
   // initialize dominator tree
   dom_map = (DOM_TREE *)TYPE_MEM_POOL_ALLOC_N(DOM_TREE, 
@@ -360,8 +410,6 @@ DOM_TREE_Initialize ()
 static void
 DOM_TREE_Finalize()
 { 
-  // Clean up the dominator/posdominator information:
-  Free_Dominators_Memory();
 }
 
 //
@@ -418,6 +466,30 @@ Set_Entries_Exits(
   }
   ssa_scope_rid = rid;
   return;
+}
+
+BOOL
+BB_is_SSA_region_entry (BB *bb)
+{
+  return BB_SET_MemberP (region_entry_set, bb);
+}
+
+BOOL
+BB_is_SSA_region_exit (BB *bb)
+{
+  return BB_SET_MemberP (region_exit_set, bb);
+}
+
+const BB_SET *
+SSA_region_entries ()
+{
+  return region_entry_set;
+}
+
+const BB_SET *
+SSA_region_exits ()
+{
+  return region_exit_set;
 }
 
 
@@ -965,12 +1037,12 @@ Convert_PHI_to_PSI (
   return psi_op;
 }
 
-#if 1
 // [CG]: We use a temporary pseudo TOP_movc for repairs
 // as it has a predicate information and thus avoid
 // multiple repairs (see repair code below).
 // After the out of SSA all movc are replaced by select
-// operations
+// operations or the corresponding target dependent conditional
+// move
 
 void
 OP_Make_movc (
@@ -990,30 +1062,9 @@ OP_Make_movc (
   return OPS_first(&cmov_ops);
 #endif
 #else
-  FmtAssert(0,("Not implemented"));
-#endif
-}
-#else
-void
-OP_Make_movc (
-  TN *guard,
-  TN *dst,
-  TN *src,
-  OPS *cmov_ops
-)
-{
-#ifdef TARG_ST200
-  if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
-    DevWarn("Conditional MOV should use a branch register");
-#endif
   Expand_Copy(dst, guard, src, cmov_ops);
-#if 0
-  if (OPS_length(&cmov_ops) != 1)
-    Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
-  return OPS_first(&cmov_ops);
 #endif
 }
-#endif
 
 //
 // dominance frontier blocks for each BB in the region
@@ -1363,12 +1414,14 @@ Copy_TN (
   // registers marked gra_homeable to the same home location should
   // be renamed into the same global TN, or if there is an
   // interference, the gra_homeable property must be removed.
-
+#if 0
+  // FdF 20061206: Now performed in SSA_UNIVERSE_Finalize in order to
+  // reset the property only when the TN is merged with other TNs.
   if (TN_is_gra_homeable(tn)) {
     Reset_TN_is_gra_homeable(new_tn);
     Set_TN_spill(new_tn, NULL);
   }
-
+#endif
   return new_tn;
 }
 
@@ -1441,9 +1494,9 @@ SSA_Rename_BB (
     ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
     if (annot) {
       LOOPINFO *info = ANNOT_loopinfo(annot);
-      TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+      TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(info);
       if ((trip_count_tn != NULL) && TN_is_register(trip_count_tn)) {
-	LOOPINFO_trip_count_tn(info) = tn_stack_top(trip_count_tn);
+	LOOPINFO_primary_trip_count_tn(info) =  tn_stack_top(trip_count_tn);
       }
     }
   }
@@ -1726,30 +1779,38 @@ SSA_Enter (
 
   MEM_POOL_Push (&MEM_local_pool);
 
+  // First, calculate the dominator/postdominator information:
+  Calculate_Dominators();
+
   //initialize_tn_stack();
   DOM_TREE_Initialize();
 
   SSA_Rename();
 
-  SSA_Optimize();
-
+  // Finalize dominator tree for SSA construction.
+  // Note that this does not destroy Dominator information itself.
   DOM_TREE_Finalize();
 
+#if 0
   if (Get_Trace(TP_TEMP, 0x8)) {
-  BB *bb;
-  OP *op;
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    FOR_ALL_BB_OPs_FWD(bb,op) {
-      if (OP_code(op) != TOP_phi)
-	break;
-      Sort_PHI_opnds(op); // PSI experimentation
+    BB *bb;
+    OP *op;
+    for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+      FOR_ALL_BB_OPs_FWD(bb,op) {
+	if (OP_code(op) != TOP_phi)
+	  break;
+	Sort_PHI_opnds(op); // PSI experimentation
+      }
     }
   }
-  }
+#endif
   //Trace_IR(TP_SSA, "After the SSA Conversion", NULL);
 
   MEM_POOL_Pop (&MEM_local_pool);
 
+  // NOTE: On exit from this routine, the dominator information is valid.
+  // It will have to be released when not used anymore by the caller of this function.
+  
   return;
 }
 
@@ -1790,6 +1851,7 @@ SSA_Check (
  *     2. ssa_def->bb link
  *     3. ssa_def defines tn and only once.
  *     4. op->results->tn->ssa_def returns the op itself (unicity)
+ *     5. if dominators are availables check that def dominates use
  * ================================================================ */
 
 static BOOL
@@ -1851,8 +1913,6 @@ SSA_Verify (
   BOOL ok = TRUE;
 
 #ifdef Is_True_On  
-  // First, calculate the dominator/postdominator information:
-  Calculate_Dominators();
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
@@ -1887,14 +1947,16 @@ SSA_Verify (
 		ok = FALSE;
 	      }
 	      else {
-
-		/* Check that the definition of a PHI operand dominates its
-		   associated predecessor. */
-		TN *opnd_tn = OP_opnd(op, opnd_idx);
-		OP *def_op = TN_ssa_def(opnd_tn);
-		if (def_op && !BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op))) {
-		  DevWarn("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx);
-		  ok = FALSE;
+		/* Domination check: only done if dominators are available. */
+		if (PU_Has_Dominator_Info()) {
+		  /* Check that the definition of a PHI operand dominates its
+		     associated predecessor. */
+		  TN *opnd_tn = OP_opnd(op, opnd_idx);
+		  OP *def_op = TN_ssa_def(opnd_tn);
+		  if (def_op && !BB_SET_MemberP(BB_dom_set(bp), OP_bb(def_op))) {
+		    DevWarn("SSA_Verify: BB:%d opnd %d in PHI, definition does not dominate predecessor block.", BB_id(bb), opnd_idx);
+		    ok = FALSE;
+		  }
 		}
 	      }
 	    }
@@ -1939,8 +2001,6 @@ SSA_Verify (
     }
   }
 
-  // Clean up the dominator/posdominator information:
-  Free_Dominators_Memory();
 
   if (!ok) DevWarn("*** SSA_Verify FAILED");
 #endif
@@ -2608,6 +2668,21 @@ PHI_CONGRUENCE_CLASS_Print (
 }
 
 /* ================================================================
+ *   PHI_CONGRUENCE_CLASS_TN_is_unique
+ * ================================================================
+ */
+static BOOL
+PHI_CONGRUENCE_CLASS_TN_is_unique (
+  PHI_CONGRUENCE_CLASS *cc
+)
+{
+  // Returns whether there is only one TN is this congruence class or
+  // not
+  Is_True(cc != NULL,("empty congruence class"));
+  return TN_LIST_rest(PHI_CONGRUENCE_CLASS_gtns(cc)) == NULL;
+}
+
+/* ================================================================
  *   merge_psiCongruenceClasses
  *
  *   merge the psiCongruenceClass[] corresponding to all
@@ -2707,7 +2782,7 @@ Normalize_Psi_Operations()
 	TN *tn_opndi = PSI_opnd(op, opndi);
 	TN *tn_guardi = PSI_guard(op, opndi);
 	OP *op_defi = TN_ssa_def(tn_opndi);
-	Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
+        Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
 
 	int opndj;
 	for (opndj = opndi-1; opndj >= 0; opndj --) {
@@ -2773,7 +2848,10 @@ Normalize_Psi_Operations()
 	// [CG]: Memory operations can not be moved without checking
 	// aliasing with all crossed operations. For the moment
 	// disable move of any memory operation
-	else if (!OP_volatile(op_defi) /*[CG]*/&& !OP_memory(op_defi)) {
+	// FdF 20070528: Cannot duplicate an operation for repair if
+	// the op has multiple or implicit results.
+	else if (!OP_volatile(op_defi) /*[CG]*/&& !OP_memory(op_defi) &&
+		 (OP_results(op_defi) == 1) && !OP_has_implicit_interactions(op_defi)) {
 	  /* 1/ Move duplicate of defi below defi-1. */
 
 	  if (Trace_SSA_Out && opndi != opndj)
@@ -2826,7 +2904,7 @@ Normalize_Psi_Operations()
 	tn_opndi = PSI_opnd(op, opndi);
 	tn_guardi = PSI_guard(op, opndi);
 	op_defi = TN_ssa_def(tn_opndi);
-	Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
+        Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
 
 	if (OP_guard(op_defi) != True_TN) {
 	  /* Currently, we do not support "partial" speculation, which
@@ -2845,7 +2923,7 @@ Normalize_Psi_Operations()
 
 	TN *tn_movi = Copy_TN(tn_opndi);
 
-        if (TN_is_true_pred (tn_guardi)) {
+        if (TN_is_true (tn_guardi)) {
           OPS mov_ops = OPS_EMPTY;  
           Exp_COPY (tn_movi, tn_opndi, &mov_ops);          
           BB_Insert_Ops_Before(OP_bb(op), op, &mov_ops);
@@ -3188,7 +3266,7 @@ map_phi_resources_to_new_names()
 	Print_OP_No_SrcLine(op);
 	fprintf(TFile, "\n");
       }
-
+#if 0
       // if a PHI-node, do nothing - it will be removed
       if (OP_code(op) != TOP_phi) {
 
@@ -3211,7 +3289,10 @@ map_phi_resources_to_new_names()
 	    }
 	  }
 	}
-
+      }
+#else
+      // FdF 20061206: Better to process all the defs, but only the
+      // defs
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
 	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
@@ -3229,9 +3310,68 @@ map_phi_resources_to_new_names()
 		fprintf(TFile,"\n");
 	      }
 	    }
+	    // FdF 20070515: Also, set the property OP_ALWAYS_UNC_DEF
+	    // on predicated definitions not dominated by other
+	    // definitions in the same congruence class.
+	    if (OP_cond_def(op) && (OP_results(op) == 1)) {
+	      BOOL dominated = FALSE;
+	      TN_LIST *p;
+	      for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
+		   p != NULL;
+		   p = TN_LIST_rest(p)) {
+		OP *tn_def = TN_ssa_def(TN_LIST_first(p));
+		if ((tn_def != op) && OP_dominate(tn_def, op)) {
+		  dominated = TRUE;
+		  break;
+		}
+	      }
+	      if (!dominated) {
+		Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+	      }
+	    }
+	    
+	    // FdF 20061206: Remove the Homeable and Rematerializable
+	    // property on the new_tn if there is more than one TN in
+	    // the congruence class.
+	    if ((TN_new_name(tn) == tn) &&
+		!PHI_CONGRUENCE_CLASS_TN_is_unique(phiCongruenceClass(tn))) {
+	      if (TN_is_gra_homeable(tn)) {
+		// Discard the property unless all TNs are homeable with
+		// the same value.
+		TN_LIST *p;
+		for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
+		     p != NULL;
+		     p = TN_LIST_rest(p)) {
+		  TN *cc_tn = TN_LIST_first(p);
+		  if (!TN_is_gra_homeable(cc_tn) ||
+		      TN_home(cc_tn) != TN_home(tn)) {
+		    Reset_TN_is_gra_homeable(tn);
+		    Set_TN_home(tn, NULL);
+		    break;
+		  }
+		}
+	      }
+	      if (TN_is_rematerializable(tn)) {
+		// Discard the property unless all TNs are
+		// rematerializable with the same value.
+		TN_LIST *p;
+		for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
+		     p != NULL;
+		     p = TN_LIST_rest(p)) {
+		  TN *cc_tn = TN_LIST_first(p);
+		  if (!TN_is_rematerializable(cc_tn) ||
+		      TN_home(cc_tn) != TN_home(tn)) {
+		    Reset_TN_is_rematerializable(tn);
+		    Set_TN_home(tn, NULL);
+		    break;
+		  }
+		}
+	      }
+	    }
 	  }
 	}
-      } /* else not a TOP_phi */
+	//      } /* else not a TOP_phi */
+#endif
     } /* FOR_ALL_BB_OPs_FWD */
   } /* for (bb = REGION_First_BB ... */
 
@@ -3830,6 +3970,15 @@ SSA_Remove_Pseudo_OPs (
 
   Trace_phi_removal = Get_Trace(TP_SSA, SSA_REMOVE_PHI);
 
+  // FdF 20070322: Discard these maps first, to avoid looking for or
+  // recreating SSA use-def information which are no longer valid
+  // after we started to rename variables.
+
+  TN_MAP_Delete(tn_ssa_map);
+  tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
+  OP_MAP_Delete(phi_op_map);
+  phi_op_map = NULL;
+
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
     if (Trace_phi_removal) {
@@ -3842,10 +3991,10 @@ SSA_Remove_Pseudo_OPs (
       ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
       if (annot) {
 	LOOPINFO *info = ANNOT_loopinfo(annot);
-	TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+	TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(info);
 	if ((trip_count_tn != NULL) && TN_is_register(trip_count_tn)) {
 	  if (TN_new_name(trip_count_tn) != NULL)
-	    LOOPINFO_trip_count_tn(info) = TN_new_name(trip_count_tn);
+	    LOOPINFO_primary_trip_count_tn(info) = TN_new_name(trip_count_tn);
 	}
       }
     }
@@ -3948,6 +4097,14 @@ SSA_Remove_Pseudo_OPs (
 	    GRA_LIVE_Add_Live_Out_GTN(bb, new_tn);
 #endif
 	  }
+	  else if (OP_cond_def(op) && (OP_results(op) == 1)) {
+	    // FdF 20070514: This TN is not involved in any PSI or PHI
+	    // operations, so it will be defined only once outside of
+	    // SSA. It is safe to mark this definition UNC_DEF because
+	    // it cannot be permuted with another definition of this
+	    // TN.
+	    Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+	  }
 	}
       } /* else not a TOP_phi */
 
@@ -3960,9 +4117,6 @@ SSA_Remove_Pseudo_OPs (
   //
   FmtAssert(tn_to_new_name_map != NULL,("tn_to_new_name_map not deleted"));
   MEM_POOL_Pop(&tn_map_pool);
-  TN_MAP_Delete(tn_ssa_map);
-  tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
-  OP_MAP_Delete(phi_op_map);
   MEM_POOL_Pop (&ssa_pool);
 
   //

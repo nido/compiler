@@ -463,7 +463,6 @@ extern BOOL CG_LOOP_unroll_remainder_after;
 extern BOOL CG_LOOP_unroll_multi_bb;
 extern INT32 CG_LOOP_unroll_heuristics;
 extern INT32 CG_LOOP_load_store_packing;
-extern INT32 CG_LOOP_unaligned_packing;
 extern INT32 CG_LOOP_stream_align;
 #endif
 /* Exported functions.
@@ -474,8 +473,8 @@ extern void CG_LOOP_Finish();
 inline TN *CG_LOOP_Trip_Count(LOOP_DESCR *loop)
 {
   LOOPINFO *info = LOOP_DESCR_loopinfo(loop);
-#ifdef TARG_STxP70
-  return info ? LOOPINFO_CG_trip_count_tn(info) : NULL;
+#ifdef TARG_ST
+  return info ? LOOPINFO_exact_trip_count_tn(info) : NULL;
 #else
   return info ? LOOPINFO_trip_count_tn(info) : NULL;
 #endif
@@ -553,6 +552,9 @@ enum CG_LOOP_FLAGS {
   CG_LOOP_HAS_PROLOG = 0x1,
   CG_LOOP_HAS_EPILOG = 0x2,
   CG_LOOP_EPILOG_REACHABLE = 0x4,  // epilog reachable from loop
+#ifdef TARG_ST
+  CG_LOOP_IS_WHILE_LOOP = 0x8, // this is a while loop
+#endif  
 };
 
 class CG_LOOP {
@@ -561,9 +563,9 @@ private:
   LOOP_DESCR *loop;
   BOOL        unroll_fully;
 #ifdef TARG_ST
-  INT32	      unroll_sched_est;
   BOOL	      even_factor; // Unroll the loop an even number of times, for packing
   BOOL	      remainder_after; // Put remainder loop after the unrolled loop, for packing
+  INT32	      unroll_sched_est;
   INT	      special_streams; // -1 means cond peeling, -2 means uncond peeling, 1..4 means specialization.
   OP *        stream_op[4];    // Load or store operation that represents the peeled stream.
   TN *	      stream_tn[4];    // TN that must be checked and modified for alignment
@@ -587,6 +589,10 @@ public:
   BOOL Has_prolog_epilog() const { return Has_prolog() && Has_epilog(); }
   void Set_has_prolog()   { flags |= CG_LOOP_HAS_PROLOG; }
   void Set_has_epilog()   { flags |= CG_LOOP_HAS_EPILOG; }
+#ifdef TARG_ST
+  BOOL Is_while_loop() const { return flags & CG_LOOP_IS_WHILE_LOOP; }
+  void Set_is_while_loop()   { flags |= CG_LOOP_IS_WHILE_LOOP; }
+#endif
   BB  *Prolog_start() const { return prolog_start; }
   BB  *Prolog_end() const { return prolog_end; }
   BB  *Epilog_start() const { return epilog_start; }

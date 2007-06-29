@@ -86,6 +86,10 @@
 % The file is first preprocessed by cpp to expand macros, and then sorted
 % by option names.
 
+#if !defined(GNU_FRONT_END) || GNU_FRONT_END < 33
+#error "OPTIONS file is no more compatible with pre 3.3 front-end."
+#endif
+
 % the letter keys for languages and phases must match what is in lang_defs.c
 % ALL and NONE can be used for both languages and phases.
 #define	ALL	A
@@ -120,7 +124,7 @@
 #define mpc	M
 % GRP: All the pieces that swallow regular group options
 #define GRP	ffe,b,i
-#if defined(TARG_ST) && (GNU_FRONT_END==33)
+#if defined(TARG_ST)
 % In new front-end, FE is run as part of the cpp phase, thus we must add
 % cpp phase to the CMP phases
 #define CMP	cpp,FE,ipl,be
@@ -258,13 +262,8 @@
 -F	dash_F_option();	 f77	NONE	""
 	"stop after RATFOR (f77 only)"
 % just parse and then stop
-#if GNU_FRONT_END==33
 -parse	last_phase=earliest_phase(P_any_fe,last_phase);  Cc cpp,cfe	self
 	""
-#else
--parse	last_phase=earliest_phase(P_any_fe,last_phase);  Cc cfe	self
-	""
-#endif
 -I%D		;		ALL	cpp	"-I%D -include=%D"
    "-I<incdir>          add <incdir> directory to the include search path list"
 -x%s		;		F90	ffe	"-x%s"
@@ -477,16 +476,11 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 -DEBUG:%s	;		ALL	GRP	"-DEBUG:%s"
 	NA__"option group to debugging options"
 
-#if defined(TARG_ST) && (GNU_FRONT_END==33)
+#if defined(TARG_ST)
 /* (cbr) -TARG, -TENV now propagated to cpp */
 -TENV:%s	;		ALL	GRP,cfe,cpp,ipap	"-TENV:%s"
 	NA__"option group to control target environment"
 -TARG:%s	Process_Targ_Group(optargs); 	ALL	GRP,cfe,cpp "-TARG:%s"
-	NA__"option group to control compilation target"
-#else
--TENV:%s	;		ALL	GRP,cfe,ipap	"-TENV:%s"
-	NA__"option group to control target environment"
--TARG:%s	Process_Targ_Group(optargs); 	ALL	GRP,cfe	"-TARG:%s"
 	NA__"option group to control compilation target"
 #endif
 -SWP:%s		;		ALL	be	"-SWP:%s"
@@ -540,13 +534,8 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 	NA__"option group to control features while testing"
 -DEFAULT:%s	Process_Default_Group(optargs);		ALL	N	""
 	NA__"default options (abi,isa,proc)"
-#if GNU_FRONT_END==33
 -fverify-tree ;           CC     cpp,FE  "-fverify-tree"
         NA__"Run verification routine before tree-to-whirl conversion"
-#else
--fverify-tree ;           CC     FE  "-fverify-tree"
-        NA__"Run verification routine before tree-to-whirl conversion"
-#endif
 % Linker Option Group(s)
 -LMSG:%s	;		ALL	ld	"-LMSG:%s"
 	NA__"option group to control error/warning messages in ld"
@@ -774,21 +763,12 @@ I-cpp_krdefs_mingwin	;		Cc	NONE	KRDEFS_mingwin
 -X*a	toggle(&ansi,EXTENDED_ANSI);		cc	NONE	XANSI XTENDEFS 
 	"extended ansi C"
 
-#if GNU_FRONT_END==33
 -ansi	toggle(&ansi,STRICT_ANSI);		cc,FTN	cpp,FE	self 
 	"strict ansi"
 -ansiE		;		FTN,Cc	cpp,FE	self
 	"issue error message for non standard features"
 -ansiW		;		FTN,Cc	cpp,FE	self
 	"issue warning messages for non standard features"
-#else
--ansi	toggle(&ansi,STRICT_ANSI);		cc,FTN	cpp,FE	self ANSI
-	"strict ansi"
--ansiE		;		FTN,Cc	FE	self
-	"issue error message for non standard features"
--ansiW		;		FTN,Cc	FE	self
-	"issue warning messages for non standard features"
-#endif
 -X*c	toggle(&ansi,STRICT_ANSI);		cc	NONE	ANSI
 	"strict ansi C"
 -cckr	toggle(&ansi,KR_ANSI);		cc	NONE	CCKR XTENDEFS KRDEFS
@@ -948,6 +928,8 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 	"global optimization"
 -O*s	toggle(&osize,1);toggle(&olevel,2);	ALL	CMP,f	self 
 	"optimization for size"
+#endif
+
 #   ifdef TARG_STxP70
 -g	toggle(&glevel,2);		ALL	CMP	"-g2 -CG:emit_asm_dwarf=on -CG:emit_unwind_info=on -TARG:enable_full_debug_info"
 	"full debug info"
@@ -971,6 +953,14 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 -g3	toggle(&glevel,3);		ALL	CMP	self "-CG:emit_asm_dwarf=on -CG:emit_unwind_info=on"
 	NA__"add some debugging to optimized code"
 #   endif
+
+#ifdef TARG_ST
+// [CL] force spill of return address (RA) so that unwinding/backtracing
+// is still possible
+-msave-return-address	;			ALL	CMP	"-CG:save_return_address=on"
+	"force save of return address for backtracing"
+#endif
+
 -gslim	toggle(&glevel,2);		Cc	CMP	self "-CG:emit_asm_dwarf=on -CG:emit_unwind_info=on"
 	NA__"put out slim class debug info"
 -gslim0	toggle(&glevel,2);		Cc	CMP	self "-CG:emit_asm_dwarf=on -CG:emit_unwind_info=on"
@@ -987,34 +977,6 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 	""
 -gdwarf-23	toggle(&glevel,3);	ALL	cpp	self "-DEBUG:format=dwarf2 -g3 -CG:emit_asm_dwarf=on -CG:emit_unwind_info=on"
 	""
-#else
--g	toggle(&glevel,2);		ALL	CMP	"-g2"
-	"full debug info"
--g0	toggle(&glevel,0);		ALL	CMP	self
-	"no debug info"
--g1	toggle(&glevel,1);		ALL	CMP	self
-	""
--g2	toggle(&glevel,2);		ALL	CMP	self
-	""
--g3	toggle(&glevel,3);		ALL	CMP	self
-	"add some debugging to optimized code"
--gslim	toggle(&glevel,2);		Cc	CMP	self
-	"put out slim class debug info"
--gslim0	toggle(&glevel,2);		Cc	CMP	self
-	"put out slim class debug info"
--gslim2	toggle(&glevel,2);		Cc	CMP	self
-	"put out slim class debug info"
--gdwarf-2	;		ALL	cpp	self "-DEBUG:format=dwarf2"
-	""
--gdwarf-20	toggle(&glevel,0);	ALL	cpp	self "-DEBUG:format=dwarf2 -g0"
-	""
--gdwarf-21	toggle(&glevel,1);	ALL	cpp	self "-DEBUG:format=dwarf2 -g1"
-	""
--gdwarf-22	toggle(&glevel,2);	ALL	cpp	self "-DEBUG:format=dwarf2 -g2"
-	""
--gdwarf-23	toggle(&glevel,3);	ALL	cpp	self "-DEBUG:format=dwarf2 -g3"
-	""
-#endif
 -gstabs		;		ALL	cpp	self "-DEBUG:format=stabs"
 	""
 -gstabs0	toggle(&glevel,0);	ALL	cpp	self "-DEBUG:format=stabs -g0"
@@ -1081,17 +1043,10 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 %
 % These two options are passed to the C front end only
 %
-#if GNU_FRONT_END==33
 -meb		;		ALL	cpp,cfe	self
-	""	
+	NA__STxP70__""	
 -mel		;		ALL	cpp,cfe	self
-	""	
-#else
--meb		;		ALL	cfe	self
 	NA__STxP70__""	
--mel		;		ALL	cfe	self
-	NA__STxP70__""	
-#endif
 I-m0		;		ALL	GRP	self
 	""
 I-m1		;		ALL	GRP	self
@@ -1115,17 +1070,10 @@ I-m2		;		ALL	GRP	self
 
 % need to pass the right option to gfec
 %-float		;		cc	cfe	self
-#if GNU_FRONT_END==33
 -float		;		cc	cpp,cfe	"-fallow-single-precision"
 	NA__"don't automatically promote floats to doubles"
 -float_const	;		cc	cpp,cfe	self
 	NA__"treat floating point constants as floats rather than doubles"
-#else
--float		;		cc	cfe	"-fallow-single-precision"
-	NA__"don't automatically promote floats to doubles"
--float_const	;		cc	cfe	self
-	NA__"treat floating point constants as floats rather than doubles"
-#endif
 -common		;		cc	NONE	""
 	NA__"default:  use relaxed ref/def model"
 % can be argument to cc, CC, or a cpp flag for fortran.
@@ -1304,13 +1252,8 @@ I-cvs_nosrc,%D	;		FTN	F	"-cvs_nosrc,%D"
 -dsm_check		;		ALL	be	self
 	NA__"generate code to do reshape consistency check for args at run-time"
 
-#if GNU_FRONT_END==33
 -dsm_recompile		;		ALL	cpp,ffe,cfe,be,ipl	self
 	NA__"tell the fe and be to not touch rii files"
-#else
--dsm_recompile		;		ALL	ffe,cfe,be,ipl	self
-	NA__"tell the fe and be to not touch rii files"
-#endif
 
 -memsim			;		ALL	N	"-LNO:mem_sim=TRUE -lmemsim"
 	NA__"instrument for memsim"
@@ -1451,24 +1394,12 @@ I-scan%s		;		FTN	PFA	self
 
 -noinline	Process_Inline();		Cc	NONE	"-INLINE:=OFF"
 	"suppress inline processing"
-#if GNU_FRONT_END==33
 -nobool	;		CC 	cpp,cfe	self
 	"disallow bool keyword"
-#else
--nobool	;		CC 	cfe	self
-	"disallow bool keyword"
-#endif
-#if GNU_FRONT_END==33
 -exceptions	;	CC	cpp,cfe,be	"-LANG:exc"
 	"turn on support for exception-handling"
 -no_exceptions	;	CC	cpp,cfe,be	"-LANG:exc=OFF"
 	"turn off support for exception-handling (default)"
-#else
--exceptions	;	CC	cfe,be	"-LANG:exc"
-	"turn on support for exception-handling"
--no_exceptions	;	CC	cfe,be	"-LANG:exc=OFF"
-	"turn off support for exception-handling (default)"
-#endif
 -noisam		warn_no_longer_supported(option_name);  FTN NONE ""
 	""
 
@@ -1485,39 +1416,21 @@ I-scan%s		;		FTN	PFA	self
 -oldcpp		warn_no_longer_supported(option_name);  Cc NONE ""
 	""
 
-#if (GNU_FRONT_END==33)
 -pch		;		Cc	cpp,cfe	self
 	""
 -pch_dir%s		;		Cc	cpp,cfe	"-pch_dir%s"
 	""
-#else
--pch		;		Cc	cfe	self
-	""
--pch_dir%s		;		Cc	cfe	"-pch_dir%s"
-	""
-#endif
 -prototypes	warn_no_longer_supported2(option_name,"-fullwarn");  Cc NONE ""
 	""
 -noprototypes	warn_no_longer_supported(option_name);  Cc NONE ""
 	""
-#ifdef TARG_ST
 -pedantic		;		Cc	cpp,cfe	self
 	"issue all warnings demanded by strict ISO C"
-#else
--pedantic		;		Cc	cfe	self
-	""
-#endif
-#if (GNU_FRONT_END==33)
+
 -use_readonly_const	;		Cc,FTN	cpp,cfe	self
 	""
 -use_readwrite_const	;		Cc,FTN	cpp,cfe	self
 	""
-#else
--use_readonly_const	;		Cc,FTN	cfe	self
-	""
--use_readwrite_const	;		Cc,FTN	cfe	self
-	""
-#endif
 -change_const		;		FTN	NONE	""
 	""
 -noalias	warn_no_longer_supported2(option_name,"-OPT:alias=restrict");  cc NONE ""
@@ -1550,7 +1463,6 @@ I-scan%s		;		FTN	PFA	self
 % for kernel folks
 -jalr		;		ALL	NONE	"-TARG:force_jalr"
 	""
-#if GNU_FRONT_END==33
 -align8		;		Cc,f77	cpp,FE,be	self
 	NA__"align data in common blocks to 8-bit boundaries"
 -align16	;		Cc,f77	cpp,FE,be	self
@@ -1561,18 +1473,6 @@ I-scan%s		;		FTN	PFA	self
 	NA__"align data in common blocks to 64-bit boundaries"
 -align128	;		Cc,f77	cpp,FE,be	self
 	NA__"align data in common blocks to 128-bit boundaries"
-#else
--align8		;		Cc,f77	FE,be	self
-	NA__"align data in common blocks to 8-bit boundaries"
--align16	;		Cc,f77	FE,be	self
-	NA__"align data in common blocks to 16-bit boundaries"
--align32	;		Cc,FTN	FE,be	self
-	NA__"align data in common blocks to 32-bit boundaries"
--align64	;		Cc,FTN	FE,be	self
-	NA__"align data in common blocks to 64-bit boundaries"
--align128	;		Cc,f77	FE,be	self
-	NA__"align data in common blocks to 128-bit boundaries"
-#endif
 % -u can have two different meanings, so escape to hand-code
 -u*		;		ALL	NONE	""
 	""
@@ -1723,17 +1623,10 @@ I-u%s		;		Cc	ld	"-u %s"
 	""
 
 % CC options:
-#if GNU_FRONT_END==33
 -cfront		;		CC	cpp,cfe	self
 	"cfront-compatible"
 -anach		;		CC	cpp,cfe	self
 	"allow anachronisms"
-#else
--cfront		;		CC	cfe	self
-	"cfront-compatible"
--anach		;		CC	cfe	self
-	"allow anachronisms"
-#endif
 -nofilt	warn_ignored(option_name);	 	CC	NONE	""
 	""
 #ifndef TARG_ST
@@ -1743,24 +1636,14 @@ I-u%s		;		Cc	ld	"-u %s"
 #endif
 -auto_include 	;		CC	NONE	""
 	""
-#if GNU_FRONT_END==33
 -no_auto_include ;		CC	cpp,cfe	"-no_implicit_template_inclusion"
 	""
-#else
--no_auto_include ;		CC	cfe	"-no_implicit_template_inclusion"
-	""
-#endif
 I-no_implicit_template_inclusion	;		CC	cfe	self
 	""
 -prelink	;		CC	NONE	""
 	"use prelinker (default)"
-#if GNU_FRONT_END==33
 -no_prelink	prelink_flag=FALSE;		CC	cpp,cfe	self
 	"do not use prelinker (i.e. instantiate all templates immediately)"
-#else
--no_prelink	prelink_flag=FALSE;		CC	cfe	self
-	"do not use prelinker (i.e. instantiate all templates immediately)"
-#endif
 -pta		;		CC	NONE	"-template_all"
 	""
 -ptall		;		CC	NONE	"-template_all"
@@ -1832,11 +1715,11 @@ I-template_used		;		CC	cfe	self
 -framepointer	warn_no_longer_supported2(option_name,"-TENV:large_stack");  ALL	NONE ""
 	""
 -trapuv 		;		Cc,FTN	be	"-DEBUG:trap_uninitialized"
-	NA__STxP70__"trap uninitialized variables"
+	"trap uninitialized variables"
 #ifdef TARG_ST
 %%% TB Add -zerouv option from PathScale 2.1	
 -zerouv 		;		Cc,FTN	be	"-DEBUG:zero_uninitialized"
-	NA__STxP70__"set uninitialized variables to zero"
+	"set uninitialized variables to zero"
 #endif
 
 #if defined(linux) || defined(sun) || defined(__CYGWIN__) || defined(__MINGW32__)
@@ -1906,19 +1789,11 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -ignore_suffix	ignore_suffix=TRUE;	ALL	NONE	""
 	"ignore source suffix when determining compiler language"
 
-#if GNU_FRONT_END==33
 -cif    keep_cif=TRUE;       F90,Cc	cpp,FE      self
         ""
 
 -cif=%d 	;	Cc	cpp,cfe	"-cif=%d"
         ""
-#else
--cif    keep_cif=TRUE;       F90,Cc	FE      self
-        ""
-
--cif=%d 	;	Cc	cfe	"-cif=%d"
-        ""
-#endif
 
 -ar	;		ALL	NONE	""
 	NA__"create an archive (instead of a shared object or executable) using ar"
@@ -1929,13 +1804,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -promp	;	 	FTN,Cc	 be	"-PHASE:prompf -PROMP:=on"
 	NA__"Activate promp generation of .anl and .m files"
 
-#if GNU_FRONT_END==33
 -generate_instantiation_info ;  CC	cpp,cfe    self
 	NA__"Internal option - Used by the C++ prelinker to the frontend"
-#else
--generate_instantiation_info ;  CC	cfe    self
-	NA__"Internal option - Used by the C++ prelinker to the frontend"
-#endif
 %%% gcc compiler options
 -pipe	;		ALL	NONE	""
 	""
@@ -1958,7 +1828,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #endif
 #endif
 
-#ifdef TARG_ST
 %%% C++ language options
 -frtti				;		CC	f,cpp	self
 	"enable generation of rtti information"
@@ -2016,6 +1885,10 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"omit creating a temporary which is only used to initialize another object of the same type"
 -fno-elide-constructors 	;		CC	f,cpp	self
 	"forces compiler to call the copy constructor even when it could be optimized out"
+-fenforce-eh-specs 	;		CC	f,cpp	self
+	"Generate code to check for violation of exception specifications at runtime (default)"
+-fno-enforce-eh-specs 	;		CC	f,cpp	self
+	"Don't generate code to check for violation of exception specifications at runtime"
 -ftemplate-depth-%d		;		CC	f,cpp	-ftemplate-depth-%d
 	"set the maximum instantiation depth for template classes to n"
 -ffor-scope		;		CC	f,cpp	self
@@ -2033,7 +1906,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"warn when compiler generates code that is probably not compatible with the vendor-neutral C++ ABI"
 -Wctor-dtor-privacy 		;		CC	f,cpp	self
 	"warn when a class seems unusable because all the constructors or destructors in that class are private"
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
+#if defined (TARG_ST)
 // (cbr) ddts st24831
 -Wno-ctor-dtor-privacy 		;		CC	f,cpp	self
 	"Warn when a class seems unusable because all the constructors or destructors in that class are private"
@@ -2054,17 +1927,16 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Woverloaded-virtual		;		CC	f,cpp	self
 	"warn when a function declaration hides virtual functions from a base class"
 	/* (cbr) */
-#if (GNU_FRONT_END==33)
 -Wno-deprecated			;		CC	f,cpp	self
 	"do not warn about usage of deprecated features"
-#else
--Wno-deprecated			;		CC	f	self
-	"do not warn about usage of deprecated features"
-#endif
 -Wno-pmf-conversions		;		CC	f,cpp	self
 	"disable the diagnostic for converting a bound pointer to member function to a plain pointer"
 -Wreorder			;		CC	f,cpp	self
 	"warn when the order of member initializers given in the code does not match the order in which they must be executed"
+#ifdef TARG_ST
+-Wno-reorder			;		CC	f,cpp	self
+	"Don't warn when the order of member initializers given in the code does not match the order in which they must be executed"
+#endif
 -Wno-non-template-friend			;		CC	f,cpp	self
 	"disable warnings when non-templatized friend functions are declared within a template"
 %%% C++ Diagnostic options
@@ -2073,7 +1945,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fdiagnostics-show-location=%s	;		CC	f,cpp	-fdiagnostics-show-location=%s
 	"instructs the diagnostic messages reporter to emit 'once' or 'every-line' source location information"
 
-#if (GNU_FRONT_END==33)
 /* (cbr) pass to front end for cpp macros */
 %%% C language options
 -flang-isoc9x	;		Cc	f,cpp	self
@@ -2097,65 +1968,21 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"do not recognise any built in functions"
 -ffreestanding 	;		Cc	cpp	self
 	"assume that standard libraries & main might not exist"
-#if GNU_FRONT_END==33
 -fno-freestanding	toggle(&hosted,1);		Cc	cpp,f	self
 	""
-#else
--fno-freestanding	toggle(&hosted,1);		Cc	f	self
-	""
+#ifdef TARG_ST
+  // (cbr) 
+-fno-pragmas	;		Cc	cpp,f	self
+	"Do not process #pragmas"
 #endif
 -fhosted	;		Cc	cpp	self
 	"assume normal C execution environment"
 -fno-hosted	;		Cc	cpp	self
 	""
-#else
-%%% C language options
--flang-isoc9x	;		Cc	f	self
-	""
--fallow-single-precision	;		Cc	f	self
-	NA__"Do not promote floats to double if using -traditional"
--fcond-mismatch	;		Cc	f	self
-	NA__"Allow different types as args of ? operator"
--fno-cond-mismatch	;		Cc	f	self
-	""
--fasm	;		Cc	f	self
-	""
--fno-asm	;		Cc	f	self
-	"do not recognise the 'asm' keyword"
--fbuiltin	;		Cc	f	self
-	""
--fno-builtin	;		Cc	f	self
--ffreestanding 	;		Cc	cpp	self
-	"assume that standard libraries & main might not exist"
--fno-freestanding	toggle(&hosted,1);		Cc	f	self
-	""
--fhosted	toggle(&hosted,1);		Cc	f	self
-	"assume normal C execution environment"
--fno-hosted	toggle(&hosted,0);		Cc	f	self
-	""
-#endif
-#else
--ffreestanding	;		Cc	f	self
-	"assume that standard libraries & main might not exist"
--fno-freestanding	;		Cc	f	self
-	""
--fhosted	;		Cc	f	self
-	"assume normal C execution environment"
--fno-hosted	;		Cc	f	self
-	""
-#endif
-#if GNU_FRONT_END==33
 -fsigned-bitfields	;		Cc	cpp,f	self
 	""
 -fno-signed-bitfields	;		Cc	cpp,f	self
 	""
-#else
--fsigned-bitfields	;		Cc	f	self
-	""
--fno-signed-bitfields	;		Cc	f	self
-	""
-#endif
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
 -fsigned-char		;	Cc	cpp,FE	self
 	"make 'char' be signed by default"
 -fno-signed-char	;	Cc	cpp,FE	self
@@ -2168,31 +1995,14 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"make 'char' be unsigned by default"
 -fno-unsigned-char 	;	Cc	cpp,FE	self
 	"make 'char' be signed by default"
-#else
--fsigned-char		toggle(&signed_char,TRUE);	Cc	NONE	""
-	"make 'char' be signed by default"
--fno-signed-char	toggle(&signed_char,FALSE);	Cc	NONE	""
-	"make 'char' be unsigned by default"
--funsigned-bitfields	;		Cc	f	self
-	"make bitfields by unsigned by default"
--fno-unsigned-bitfields	;		Cc	f	self
-	""
--funsigned-char	toggle(&signed_char,FALSE);	Cc	NONE	""
-	"make 'char' be unsigned by default"
--fno-unsigned-char toggle(&signed_char,TRUE);	Cc	NONE	""
-	"make 'char' be signed by default"
-#endif
 
-#ifdef TARG_ST
 	/* (cbr) not supported */
 -fwritable-strings warn_ignored(option_name); Cc	cpp,f	self
 	NA__"Attempt to support writable-strings K&R style C"
-#else
--fwritable-strings	;		Cc	f	self
-	NA__"Attempt to support writable-strings K&R style C"
-#endif
+
 -fno-writable-strings	;		Cc	f,cpp	self
 	""
+
 -ftraditional	;		Cc	f,cpp	self
 	""
 -fno-traditional ;		Cc	f,cpp	self
@@ -2206,7 +2016,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -no-traditional	;		Cc	f,cpp	self
 	""
 % cpp is also a define, so trick cpp
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
+#if defined (TARG_ST)
    /* (cbr) use embedded cc1 cpp */
 -traditional-c/**/pp	;	Cc	cpp	"-traditional-cpp"
 	""
@@ -2233,20 +2043,10 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #endif
 
 %%% Warning Options
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
 -syntax-only	;		Cc	cpp,f	self
 	""
-#else
--syntax-only	;		Cc	f	self
-	""
-#endif
-#ifdef TARG_ST
 -pedantic-errors	;		Cc	cpp,f	self
 	"issue -pedantic warnings as errors instead"
-#else
--pedantic-errors	;		Cc	f	self
-	"issue warnings needed by strict compliance to ANSI C"
-#endif
 -W	;		Cc	f,cpp	self
 	"enable extra warnings"
 -Wall	Add_Wuninitialized();		Cc	cpp,f	self
@@ -2375,7 +2175,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wno-padded	;		Cc	f,cpp	self
 	""
 #endif
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
 // (cbr) ddts st24453 .
 -Wunused-function ;		Cc	f,cpp	self
 	"Warn when a function is unused"
@@ -2405,7 +2204,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Warn about text following #else/#endif"
 -Wno-endif-labels ;		Cc	f,cpp	self
 	""
-#endif
 -Wredundant-decls	;		Cc	f,cpp	self
 	"warn about multiple declarations of the same object"
 -Wno-redundant-decls	;		Cc	f,cpp	self
@@ -2441,17 +2239,10 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wno-undef	;		Cc	cpp,f	self
 	"do not warn about testing undefined macros"
 %%% // TB: from PathScale 2.1: add -Wuninitialized support
-#if GNU_FRONT_END==33
 -Wuninitialized	Wuninitialized_is_asked=TRUE;		Cc	cpp,f	-WOPT:warn_uninit=on
 	"warn about unitialized automatic variables"
 -Wno-uninitialized	;		Cc	cpp,f	-WOPT:warn_uninit=off
 	""
-#else
--Wuninitialized	Wuninitialized_is_asked=TRUE;		Cc	f	-WOPT:warn_uninit=on
-	"Warn about unitialized automatic variables"
--Wno-uninitialized	;		Cc	f	-WOPT:warn_uninit=off
-	""
-#endif
 -Wunknown-pragmas	;		Cc	f,cpp	self
 	""
 -Wno-unknown-pragmas	;		Cc	f,cpp	self
@@ -2477,7 +2268,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fbranch-probabilities	;		Cc	f,cpp	self
 	NA__"use profiling information for branch probabilities"
 #endif
-#if  GNU_FRONT_END==33
 -foptimize-register-moves	;		Cc	cpp,f	self
 	""
 -fcaller-saves	;		Cc	cpp,f	self
@@ -2490,26 +2280,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	NA__"Attempt to fill delay slots of branch instructions"
 -fexpensive-optimizations	;		Cc	cpp,f	self
 	NA__"Perform a number of minor, expensive optimisations"
-#else
--foptimize-register-moves	;		Cc	f	self
-	""
--fcaller-saves	;		Cc	f	self
-	NA__"Enable saving registers around function calls"
--fcse-follow-jumps	;		Cc	f	self
-	NA__"When running CSE, follow jumps to their targets"
--fcse-skip-blocks	;		Cc	f	self
-	NA__"When running CSE, follow conditional jumps"
--fdelayed-branch	;		Cc	f	self
-	NA__"Attempt to fill delay slots of branch instructions"
--fexpensive-optimizations	;		Cc	f	self
-	NA__"Perform a number of minor, expensive optimisations"
-#endif
-#ifndef TARG_ST
--ffast-math	;		Cc	f	"-D__FAST_MATH__ -OPT:IEEE_arithmetic=2"
-	"improve FP speed by violating ANSI & IEEE rules"
-#else
-#if  GNU_FRONT_END==33
--ffast-math	;		Cc	cpp	self "-OPT:No_math_errno=1 -OPT:Finite_math_only=1  -OPT:IEEE_NaN_Inf=0 -OPT:No_rounding_math=1 -OPT:No_trapping_math=1 -OPT:Reassoc_Level=3 -OPT:Unsafe_math_opt=1 -OPT:No_denormals=1 -OPT:Fused_madd=1"
+-ffast-math	;		Cc	cpp	self "-OPT:No_math_errno=1 -OPT:Finite_math_only=1  -OPT:IEEE_NaN_Inf=0 -OPT:No_rounding_math=1 -OPT:No_trapping_math=1 -OPT:Reassoc_Level=3 -OPT:Unsafe_math_opt=1 -OPT:No_denormals=1 -OPT:Fused_fp=1 -OPT:Fused_madd=1"
 	"Improve FP speed by violating ANSI & IEEE rules"
 -fmath-errno	;		Cc	cpp,f	"-OPT:No_math_errno=0"
 	"Set ERRNO after calling math functions"
@@ -2531,32 +2302,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Enable support for IEEE user-visible FP traps"
 -fno-trapping-math	;		Cc	cpp,f	"-OPT:No_trapping_math=1"
 	"Disable compiler support for IEEE user-visible FP traps"
-#else
--ffast-math	;		Cc	f	"-D__FAST_MATH__ -OPT:No_math_errno=1 -OPT:Finite_math_only=1  -OPT:IEEE_NaN_Inf=0 -OPT:No_rounding_math=1 -OPT:No_trapping_math=1 -OPT:Reassoc_Level=3 -OPT:Unsafe_math_opt=1 -OPT:No_denormals=1 -OPT:Fused_madd=1"
-	"Improve FP speed by violating ANSI & IEEE rules"
--fmath-errno	;		Cc	f	"-OPT:No_math_errno=0"
-	"Set ERRNO after calling math functions"
--fno-math-errno	;		Cc	f	"-OPT:No_math_errno=1"
-	"Do not set ERRNO after calling math functions"
--ffinite-math-only	;		Cc	f	"-OPT:Finite_math_only=1 -OPT:IEEE_NaN_Inf=0"
-	"Allows FP optimizations assuming arguments and results are not NaNs or +-Infs"
--fno-finite-math-only	;		Cc	f	"-OPT:Finite_math_only=0"
-	"Do not perform FP finite arithmetic optimizations"
--fno-rounding-math	;		Cc	f	"-OPT:No_rounding_math=1"
-	"Enable optimizations based on default FP rounding behavior assumption"
--fno-unsafe-math-optimizations	;		Cc	f	"-OPT:Unsafe_math_opt=0"
-	"Do not allow unsafe FP math optimizations"
--funsafe-math-optimizations	;		Cc	f	"-OPT:Unsafe_math_opt=1"
-	"Allow unsafe FP math optimizations"
--frounding-math	;		Cc	f	"-OPT:No_rounding_math=0"
-	"Disable optimizations based on default FP rounding behavior assumption"
--ftrapping-math	;		Cc	f	"-OPT:No_trapping_math=0"
-	"Enable support for IEEE user-visible FP traps"
--fno-trapping-math	;		Cc	f	"-OPT:No_trapping_math=1"
-	"Disable compiler support for IEEE user-visible FP traps"
-#endif
-#endif
-#if GNU_FRONT_END==33
 -ffloat-store	;		Cc	cpp,f	"-OPT:IEEE_arithmetic=1"
 	NA__"Do not store floats in registers"
 -fforce-addr	;		Cc	cpp,f	self
@@ -2569,22 +2314,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	NA__"place each function into its own section"
 -fgcse		;		Cc	cpp,f	self
 	""
-#else
--ffloat-store	;		Cc	f	"-OPT:IEEE_arithmetic=1"
-	NA__"Do not store floats in registers"
--fforce-addr	;		Cc	f	self
-	NA__"Copy memory address constants into regs before using"
--fforce-mem	;		Cc	f	self
-	NA__"Copy memory operands into registers before using"
--fdata-sections	;		Cc	f	self
-	""
--ffunction-sections	;		Cc	f	self
-	NA__"place each function into its own section"
--fgcse		;		Cc	f	self
-	""
-#endif
 
-#if GNU_FRONT_END==33
 #   ifdef TARG_ST
 -finline-functions	Process_Inline();		Cc	NONE self "-INLINE:only_inline=off" 
 	"Integrate simple functions into their callers"
@@ -2596,21 +2326,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fno-inline-functions	;		Cc	cpp,f	self "-INLINE:only_inline=on"
 	"Do not integrate simple functions into their callers"
 #   endif
-#else
-#   ifdef TARG_ST
--finline-functions	Process_Inline();		Cc	NONE "-INLINE:only_inline=off" 
-	"Integrate simple functions into their callers"
--fno-inline-functions	;		Cc	NONE "-INLINE:only_inline=on"
-	"Do not integrate simple functions into their callers"
-#   else
--finline-functions	;		Cc	f	self "-INLINE:only_inline=off" 
-	"Integrate simple functions into their callers"
--fno-inline-functions	;		Cc	f	self "-INLINE:only_inline=on"
-	"Do not integrate simple functions into their callers"
-#   endif
-#endif
 
-#if GNU_FRONT_END==33
 -finline-limit-%d	;		Cc	cpp,f	self
 	""
 -fkeep-inline-functions	;		Cc	cpp,f	self
@@ -2621,17 +2337,9 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 -fno-function-cse	;		Cc	cpp,f	self
 	""
-#else
--finline-limit-%d	;		Cc	f	self
-	""
--fkeep-inline-functions	;		Cc	f	self
-	NA__"Generate code for funcs even if they are fully inlined"
--fno-default-inline	;		Cc	f	self
-	""
--fno-defer-pop		;		Cc	f	self
-	""
--fno-function-cse	;		Cc	f	self
-	""
+#ifdef TARG_ST
+-finline		;		Cc	f,cpp	self "-INLINE:O0=on"
+	"Enable inlining even at -O0"
 #endif
 #ifdef TARG_ST
 -fno-inline		;		Cc	f,cpp	self "-INLINE:none"
@@ -2641,21 +2349,12 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 #endif
 #ifdef TARG_ST
-#if GNU_FRONT_END==33
 -mmemcpy		;		Cc	cpp,cfe	"-TENV:use_memcpy=on"
 	"use memcpy instead of inlined copy"	
 
 -mno-memcpy		;		Cc	cpp,cfe	"-TENV:use_memcpy=off"
 	"Use inline copy instead of memcpy"
-#else
--mmemcpy		;		Cc	cpp,cfe	"-TENV:use_memcpy=on"
-	"Use memcpy instead of inlined copy"	
-
--mno-memcpy		;		Cc	cfe	"-TENV:use_memcpy=off"
-	"use inline copy instead of memcpy"
 #endif
-#endif
-#if GNU_FRONT_END==33
 -fno-peephole		;		Cc	cpp,f	self
 	""
 -fomit-frame-pointer	;		Cc	cpp,f	self
@@ -2680,34 +2379,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	NA__"Perform jump threading optimisations"
 -funroll-all-loops	;		Cc	cpp,f	self
 	NA__"Peform loop onrolling for all loops"
-#else
--fno-peephole		;		Cc	f	self
-	""
--fomit-frame-pointer	;		Cc	f	self
-	NA__"When possible do not generate stack frames"
--fno-omit-frame-pointer	;		Cc	f	self
-	""
--fregmove	;		Cc	f	self
-	""
--frerun-cse-after-loop	;		Cc	f	self
-	NA__"Run CSE pass after loop optimisations"
--frerun-loop-opt	;		Cc	f	self
-	""
--fschedule-insns	;		Cc	f	self
-	NA__"Reschedule instructions to avoid pipeline stalls"
--fschedule-insns2	;		Cc	f	self
-	NA__"Run two passes of the instruction scheduler"
--fstrength-reduce	;		Cc	f	self
-	NA__"Perform strength reduction optimisations"
--fno-strength-reduce	;		Cc	f	self
-	""
--fthread-jumps	;		Cc	f	self
-	NA__"Perform jump threading optimisations"
--funroll-all-loops	;		Cc	f	self
-	NA__"Peform loop unrolling for all loops"
-#endif
 #ifdef TARG_ST
-#if GNU_FRONT_END==33
 -funroll-loops	;		Cc	cpp,f	self "-TENV:unroll_loops=1"
 	"unroll-loops"
 -fno-unroll-loops	;	Cc	cpp,f	"-TENV:unroll_loops=0"
@@ -2718,34 +2390,16 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fno-unroll-loops	;	Cc	f	"-TENV:unroll_loops=0"
 	"no-unroll-loops"
 #endif
-#else
--funroll-loops	;		Cc	f	self
-	NA__"unroll-loops"
-#endif
-#if GNU_FRONT_END==33
 -fmove-all-movables	;		Cc	cpp,f	self
 	""
 -freduce-all-givs	;		Cc	cpp,f	self
 	""
-#else
--fmove-all-movables	;		Cc	f	self
-	""
--freduce-all-givs	;		Cc	f	self
-	""
-#endif
 
 %%% [CG]: Link to aliasing rules 
-#if GNU_FRONT_END==33
 -fstrict-aliasing	toggle(&aliasing,STRICT_ALIAS);		Cc	cpp,f	self "-OPT:alias=typed"
 	"Conform to ANSI C aliasing rules"
 -fno-strict-aliasing	toggle(&aliasing,NOSTRICT_ALIAS);		Cc	cpp,f	self "-OPT:alias=no_typed"
 	"Ignore ANSI C aliasing rules"
-#else
--fstrict-aliasing	toggle(&aliasing,STRICT_ALIAS);		Cc	f	self "-OPT:alias=typed"
-	"conform to ANSI C aliasing rules"
--fno-strict-aliasing	toggle(&aliasing,NOSTRICT_ALIAS);		Cc	f	self "-OPT:alias=no_typed"
-	"Ignore ANSI C aliasing rules"
-#endif
 
 #ifdef TARG_ST
 % gcc-3.3
@@ -2865,38 +2519,21 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -finhibit-size-directive	;		Cc	NONE	""
 	NA__"Do not generate .size directives"
 #ifdef TARG_ST
-#ifdef TARG_STxP70
--finstrument-functions	;		Cc	NONE	""
-	""
-#else
 -finstrument-functions	;		Cc	NONE	"-TENV:instrument_functions"
-	NA__STxP70__"Generate instrumentation calls for entry and exit to functions."
-#endif
+	"Generate instrumentation calls for entry and exit to functions."
 #endif
 #ifdef TARG_ST
-#ifdef TARG_STxP70
--minstrument-calls	;		Cc	NONE	""
-	""
-#else
 -minstrument-calls	;		Cc	NONE	"-TENV:profile_call"
 	"generate instrumentation calls for function calls."
-#endif
 #endif
 -fcheck-memory-usage	;		Cc	NONE	""
 	NA__"Generate code to check every memory access"
 -fprefix-function-name	;		Cc	NONE	""
 	NA__"Add a prefix to all function names"
-#if GNU_FRONT_END==33
 -fno-common	;		Cc	cpp,cfe	self
 	"Do not put uninitialized globals in the common section"
 -fno-ident	;		Cc	cpp,cfe	self
 	NA__"Ignore #ident directives"
-#else
--fno-common	;		Cc	cfe	self
-	"do not put uninitialized globals in the common section"
--fno-ident	;		Cc	cfe	self
-	NA__"Ignore #ident directives"
-#endif
 -fno-gnu-linker	;		Cc	NONE	""
 	""
 -fpcc-struct-return	;		Cc	NONE	""
@@ -3106,7 +2743,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 #endif /*MKERNEL_SUPPORTED*/
 -mcore=%s	Process_ST200_Targ(option_name,optargs);		ALL	as	-mcore=%s
-	"Specifies core specific file paths [st220,st230,st231,st235]"
+	"Specifies core specific file paths [st220,st230,st231,st240]"
 #ifdef MUMBLE_ST200_BSP
 -mboard=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mboard=%s
 	"Specifies core specific file paths"
@@ -3116,6 +2753,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Specifies runtime execution"
 -mtargetdir=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mtargetdir=%s
 	"Specifies alternate target directory"
+-mtargetname=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mtargetname=%s
+	"Specifies alternate target directory name"
 #endif
 -mlibdir=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mlibdir=%s
 	"Specifies alternate library directory"
@@ -3169,11 +2808,11 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -x*assembler	ignore_suffix=TRUE;default_source_kind=S_s;	ALL NONE ""
 	"assume that the following input sources are in assembler"
 -x*c++-c/**/pp-output	ignore_suffix=TRUE;default_source_kind=S_ii;	ALL NONE ""
-	"Assume that the following input sources are CPP output of C++"
+	"assume that the following input sources are CPP output of C++"
 -x*assembler-with-c/**/pp	ignore_suffix=TRUE;default_source_kind=S_S;	ALL NONE ""
-	"Assume that the following input sources are in assembler with CPP commands"
+	"assume that the following input sources are in assembler with CPP commands"
 -x*f	ignore_suffix=TRUE;default_source_kind=S_f;	ALL NONE ""
-	NA__"Assume that the following input sources are in FORTRAN"
+	NA__"assume that the following input sources are in FORTRAN"
 -x*none		ignore_suffix=FALSE;default_source_kind=S_NONE;	ALL	NONE ""
 	"assume nothing about the following input sources language"
 #else
@@ -3319,23 +2958,26 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 --write-user-dependencies	;	ALL	NONE	"-MMD"
 	""
 #if defined(TARG_ST)
-#if GNU_FRONT_END==33
--mno-builtin-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on"
-	"Ignore any built in prefetch functions"
 -mbuiltin-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=off"
-	"Activate built in prefetch functions"
--mno-auto-prefetch	;	Cc	cpp,cfe	"-LNO:prefetch=0"
-	"Do not generate automatic prefetch instructions"
+	NA__STxP70__"Activate built in prefetch functions"
+-mno-builtin-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on"
+	NA__STxP70__"Ignore any built in prefetch functions"
 -mauto-prefetch	;	Cc	cpp,cfe	"-LNO:prefetch=2"
-	"Generate automatic prefetch instructions"
--mno-user-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on"
-	"Discard user prefetch instructions"
+	NA__STxP70__"Generate automatic prefetch instructions"
+-mno-auto-prefetch	;	Cc	cpp,cfe	"-LNO:prefetch=0"
+	NA__STxP70__"Do not generate automatic prefetch instructions"
 -muser-prefetch	;	Cc	cpp,cfe	"-LNO:prefetch_manual=TRUE"
-	"Optimize user prefetch instructions"
--mno-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on -LNO:prefetch=0"
-	"Do not generate any prefetch instructions"
+	NA__STxP70__"Optimize user prefetch instructions"
+-mno-user-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on"
+	NA__STxP70__"Discard user prefetch instructions"
 -mprefetch	;	Cc	cpp,cfe	"-LNO:prefetch_manual=TRUE -LNO:prefetch=2"
-	"Generate user and auomatic prefetch instructions"
+	NA__STxP70__"Generate user and automatic prefetch instructions"
+-mno-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on -LNO:prefetch=0"
+	NA__STxP70__"Do not generate any prefetch instructions"
+-mfused-fp	;		Cc	cpp,f	"-OPT:Fused_fp=1"
+	"Enable fused FP operations usage in code generation"
+-mno-fused-fp	;		Cc	cpp,f	"-OPT:Fused_fp=0"
+	"Disable fused FP operations usage in code generation"
 -mfused-madd	;		Cc	cpp,f	"-OPT:Fused_madd=1"
 	"Enable fused madd usage in code generation"
 -mno-fused-madd	;		Cc	cpp,f	"-OPT:Fused_madd=0"
@@ -3346,34 +2988,6 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Assume denormals are not supported in FP low-level runtime arithmetic"
 -mreassoc=%d	;		Cc	cpp,f	"-OPT:Reassoc_level=%d"
 	"Set the FP reassociations optimization level"
-#else
--mno-builtin-prefetch	;	Cc	cfe	"-TENV:no_builtin_prefetch=on"
-	NA__STxP70__"Ignore any built in prefetch functions"
--mbuiltin-prefetch	;	Cc	cfe	"-TENV:no_builtin_prefetch=off"
-	NA__STxP70__"Activate built in prefetch functions"
--mno-auto-prefetch	;	Cc	cfe	"-LNO:prefetch=0"
-	NA__STxP70__"Do not generate automatic prefetch instructions"
--mauto-prefetch	;	Cc	cfe	"-LNO:prefetch=2"
-	NA__STxP70__"Generate automatic prefetch instructions"
--mno-user-prefetch	;	Cc	cfe	"-TENV:no_builtin_prefetch=on"
-	NA__STxP70__"Discard user prefetch instructions"
--muser-prefetch	;	Cc	cfe	"-LNO:prefetch_manual=TRUE"
-	NA__STxP70__"Optimize user prefetch instructions"
--mno-prefetch	;	Cc	cfe	"-TENV:no_builtin_prefetch=on -LNO:prefetch=0"
-	NA__STxP70__"Do not generate any prefetch instructions"
--mprefetch	;	Cc	cfe	"-LNO:prefetch_manual=TRUE -LNO:prefetch=2"
-	NA__STxP70__"Generate user and auomatic prefetch instructions"
--mfused-madd	;		Cc	f	"-OPT:Fused_madd=1"
-	"Enable fused madd usage in code generation"
--mno-fused-madd	;		Cc	f	"-OPT:Fused_madd=0"
-	"Disable fused madd usage in code generation"
--mdenormals	;		Cc	f	"-OPT:No_denormals=0"
-	"Assume denormals support in FP low-level runtime arithmetic"
--mno-denormals	;		Cc	f	"-OPT:No_denormals=1"
-	"Assume denormals are not supported in FP low-level runtime arithmetic"
--mreassoc=%d	;		Cc	f	"-OPT:Reassoc_level=%d"
-	"Set the FP reassociations optimization level"
-#endif
 #endif
 
 

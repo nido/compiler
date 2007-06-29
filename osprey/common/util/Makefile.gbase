@@ -158,11 +158,30 @@ HFILES	= \
 	vspec.h \
 	vspec_parse.h \
 	vspec_token.h \
-	vstring.h
+	vstring.h \
+	worklist.h \
+	zint.h \
+	lattice.h \
+	range.h	\
+	lrange.h \
+	lvrange.h \
+	lbrange.h \
+	lbvalrange.h \
+	paired_lattice.h \
+	lbitvalue.h	\
+	lbitmask.h
 
 CXXFILES = \
-   cxx_memory.cxx	\
-   errors.cxx		
+   	cxx_memory.cxx	\
+   	errors.cxx	\
+   	zint.cxx	\
+   	lvrange.cxx	\
+   	lbrange.cxx	\
+   	lbvalrange.cxx	\
+   	range.cxx	\
+	paired_lattice.cxx \
+	lbitvalue.cxx	\
+	lbitmask.cxx
 
 default: first
 	$(MAKE) local last

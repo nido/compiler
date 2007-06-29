@@ -522,7 +522,7 @@ struct process_compile_time_addr_saved
     }
 }; // process_compile_time_addr_saved
 
-    
+
 template <PROGRAM program>
 struct set_global_addr_taken_attrib
 {
@@ -846,6 +846,190 @@ Last_Node (WN_TREE_ITER<PRE_ORDER, WN*> i)
     i.Skip ();
     return i.Wn () == NULL;
 }
+
+#ifdef KEY
+template <PROGRAM program>
+void
+SUMMARIZE<program>::Process_eh_globals (void)
+{
+    if (!(PU_src_lang (Get_Current_PU()) & PU_CXX_LANG) || 
+    	!Get_Current_PU().unused)
+    	return;
+
+    INITV_IDX i = INITV_next (INITV_next (INITO_val (Get_Current_PU().unused)));
+    INITO_IDX idx = TCON_uval (INITV_tc_val(i));
+    if (idx)	// typeinfo
+    {
+      INITO* ino = &Inito_Table[idx];
+      INITV_IDX blk = INITO_val (*ino);
+      do
+      {
+        INITV_IDX st_entry = INITV_blk (blk);
+	ST_IDX st_idx = 0;
+	if (INITV_kind (st_entry) != INITVKIND_ZERO)
+	{
+	  st_idx = TCON_uval (INITV_tc_val (st_entry));
+	  FmtAssert (st_idx != 0, ("Invalid st idx"));
+	}
+	if (st_idx <= 0)
+	{
+	  blk = INITV_next (blk);
+	  continue;
+	}
+	INT32 index = Get_symbol_index (&St_Table [st_idx]);
+	INITV_IDX filter = INITV_next (st_entry); // for backup
+	FmtAssert (index >= 0, ("Unexpected summary id for eh symbol"));
+	INITV_Set_VAL (Initv_Table[st_entry], Enter_tcon (
+	               Host_To_Targ (MTYPE_U4, index)), 1);
+        Set_INITV_next (st_entry, filter);
+	blk = INITV_next (blk);
+      } while (blk);
+    }
+
+    i = INITV_next (i);
+    idx = TCON_uval (INITV_tc_val (i));
+    if (idx)	// eh-spec
+    {
+      INITO* ino = &Inito_Table[idx];
+      INITV_IDX st_entry = INITV_blk (INITO_val (*ino));
+      do
+      {
+	ST_IDX st_idx = 0;
+	if (INITV_kind (st_entry) != INITVKIND_ZERO)
+	{
+          st_idx = TCON_uval (INITV_tc_val (st_entry));
+	  FmtAssert (st_idx > 0, ("Invalid eh-spec entry"));
+	}
+	if (st_idx == 0)
+	{
+	  st_entry = INITV_next (st_entry);
+	  continue;
+	}
+	INT32 index = Get_symbol_index (&St_Table[st_idx]);
+	INITV_IDX next = INITV_next (st_entry); // for backup
+	FmtAssert (index >= 0, ("Unexpected summary id for eh symbol"));
+	INITV_Set_VAL (Initv_Table[st_entry], Enter_tcon (
+	               Host_To_Targ (MTYPE_U4, index)), 1);
+	Set_INITV_next (st_entry, next);
+        st_entry = INITV_next (st_entry);
+      } while (st_entry);
+    }
+}
+
+template <PROGRAM program>
+void
+SUMMARIZE<program>::Process_eh_region (WN * wn)
+{
+    // !empty => try-region without any symbol worth summarizing.
+    if (!WN_ereg_supp (wn) || !WN_block_empty (WN_region_pragmas (wn)))
+    	return;
+#ifdef TARG_ST
+    FmtAssert (INITO_val (WN_ereg_supp (wn)) && 
+    	       INITV_blk (INITO_val (WN_ereg_supp (wn))),
+	       ("No exception info attached to EH region"));
+#else
+    FmtAssert (INITO_val (WN_ereg_supp (wn)) && 
+    	       INITV_blk (INITO_val (WN_ereg_supp (wn))) &&
+	       INITV_next (INITV_blk (INITO_val (WN_ereg_supp (wn)))),
+	       ("No exception info attached to EH region"));
+#endif
+    INITV_IDX blk = INITO_val (WN_ereg_supp (wn));
+
+    // Return if we have already summarized this block of initv's
+    if (INITV_flags (Initv_Table[blk]) == INITVFLAGS_SUMMARIZED)
+      return;
+
+    Set_INITV_flags (blk, INITVFLAGS_SUMMARIZED);
+
+    INITV_IDX types = INITV_next (INITV_blk (blk));
+    for (; types; types = INITV_next (types))
+    {
+      int sym = 0;
+      if (INITV_kind (types) != INITVKIND_ZERO)
+        sym = TCON_uval (INITV_tc_val (types));
+      if (sym > 0)
+      {
+      	INT32 index = Get_symbol_index (&St_Table[sym]);
+	INITV_IDX next = INITV_next (types);	// for backup
+	// We don't expect index==0 since at least Process_eh_globals is 
+	// called before this.
+	FmtAssert (index > 0, ("Unexpected summary id for eh symbol"));
+	INITV_Set_VAL (Initv_Table[types], Enter_tcon (
+		       Host_To_Targ (MTYPE_U4, index)), 1);
+	Set_INITV_next (types, next);
+      }
+    }
+}
+#endif
+
+#ifdef KEY
+#include <ext/hash_map>
+
+namespace Local
+{
+  struct hashfn
+  {
+    size_t operator() (const WN * w) const
+    {
+      return reinterpret_cast<size_t>(w);
+    }
+  };
+
+  struct eqnode
+  {
+    bool operator()(WN * w1, WN * w2) const
+    {
+      return w1 == w2;
+    }
+  };
+};
+
+struct branch_dir
+{
+  float taken, not_taken;
+};
+__GNUEXT::hash_map<WN*, branch_dir, Local::hashfn, Local::eqnode> if_map;
+
+inline void get_parent_if ( WN ** p, WN ** b )
+{
+  WN * parent = *p;
+  WN * block;
+  while ( parent && WN_operator (parent) != OPR_IF )
+  {
+    if ( WN_operator ( parent ) == OPR_BLOCK )
+	block = parent;
+    parent = LWN_Get_Parent ( parent );
+  }
+  *p = parent;
+  *b = block;
+}
+
+// Return the loop-nesting containing the node w. If it is inside 1 loop,
+// return 1, and ..
+static inline INT get_loopnest (WN * w)
+{
+  WN * parent = LWN_Get_Parent (w);
+  INT loopnest = 0;
+
+  while (parent)
+  {
+    switch (WN_operator (parent))
+    {
+	case OPR_DO_LOOP:
+	case OPR_WHILE_DO:
+	case OPR_DO_WHILE:
+	    loopnest++;
+	    break;
+        default:
+	    break;
+    }
+    parent = LWN_Get_Parent (parent);
+  }
+
+  return loopnest;
+}
+#endif
+
 static BOOL
 is_variable_dim_array(TY_IDX ty)
 {
@@ -881,9 +1065,11 @@ void
 SUMMARIZE<program>::Process_procedure (WN* w)
 {
     SUMMARY_PROCEDURE *proc = New_procedure ();
-    WN* w2, *alt_wn;
+    WN* w2, *alt_wn = NULL;
     ST *st = WN_st (w);
+#ifndef KEY
     INT loopnest = 0;
+#endif // !KEY
     INT pu_first_formal_idx = 0;
     INT pu_last_formal_idx = 0;
     INT pu_first_actual_idx = 0;
@@ -894,6 +1080,10 @@ SUMMARIZE<program>::Process_procedure (WN* w)
     BOOL Has_return_already = FALSE;
     BOOL Has_pdo_pragma = FALSE;
     BOOL Has_local_pragma = FALSE;
+#ifdef KEY
+    INT icall_site[1000];
+    INT icall_cnt = 0;
+#endif // KEY
 
     Trace_Modref = Get_Trace ( TP_IPL, TT_IPL_MODREF );
     
@@ -971,26 +1161,59 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 
 #ifdef TARG_ST
     // [CL] Match inlining rules of standalone inliner
-    if (PU_is_inline_function (pu) && INLINE_All_Inline)
-      proc->Set_must_inline();
 
-    if ((INLINE_Static || !INLINE_Only_Inline) &&
-	(ST_is_export_local(st) ||
-	 (ST_export(st) == EXPORT_INTERNAL) ||
-	 (ST_export(st) == EXPORT_HIDDEN) ||
+    else {
+      // CL: why distinguish between C and C++?
+      if ( (PU_src_lang(pu) == PU_CXX_LANG)
+	   || (PU_src_lang(pu) == PU_C_LANG) ) {
+	if ((Opt_Level > 1) && !INLINE_Static_Set)
+	  INLINE_Static = TRUE;
+	if (!IPA_Enable_DFE_Set)
+	  IPA_Enable_DFE_Set = TRUE;
+      }
+
+      // for C/C++ only those specified with the inline function
+      // attribute
+      if ((PU_src_lang(pu) == PU_C_LANG) ||
+	  ((PU_src_lang(pu) == PU_CXX_LANG))) {
+	if (PU_is_inline_function (pu)) {
+	  // for 7.2 don't inline functions marked weak inline
+	  // [CL] include fix from 0.15
+	  if (ST_is_weak_symbol(st) && ST_export(st) != EXPORT_PROTECTED) {
+	    DevWarn("Inliner encountered a function marked weak inline; NOT inlining it");
+	    proc->Set_no_inline();
+	  } else {
+	    // CL: force inlining of 'inline' functions
+	    if (INLINE_All_Inline) {
+	      proc->Set_must_inline();
+	    } else {
+	      proc->Set_may_inline();
+	    }
+	  }
+	}
+
+	if (PU_is_inline_function (pu) && INLINE_All_Inline)
+	  proc->Set_must_inline();
+
+	if ((INLINE_Static || !INLINE_Only_Inline) &&
+	    (ST_is_export_local(st) ||
+	     (ST_export(st) == EXPORT_INTERNAL) ||
+	     (ST_export(st) == EXPORT_HIDDEN) ||
 	 (ST_export(st) == EXPORT_PROTECTED)) &&
-	(!PU_is_inline_function(pu)) &&
-	(ST_addr_not_passed(st)) &&
-	(ST_addr_not_saved(st)) &&
-	(!ST_is_weak_symbol(st))) {
-      proc->Set_may_inline();
-    }
-    // CL: allow inlining of non-static (ie extern) functions
-    // in non Gen_PIC_Shared model
-    if (!Gen_PIC_Shared &&
-	!INLINE_Only_Inline &&
-	!ST_is_weak_symbol(st)) {
-      proc->Set_may_inline();
+	    (!PU_is_inline_function(pu)) &&
+	    (ST_addr_not_passed(st)) &&
+	    (ST_addr_not_saved(st)) &&
+	    (!ST_is_weak_symbol(st))) {
+	  proc->Set_may_inline();
+	}
+	// CL: allow inlining of non-static (ie extern) functions
+	// in non Gen_PIC_Shared model
+	if (!Gen_PIC_Shared &&
+	    !INLINE_Only_Inline &&
+	    !ST_is_weak_symbol(st)) {
+	  proc->Set_may_inline();
+	}
+      }
     }
 #endif
 
@@ -1029,6 +1252,9 @@ SUMMARIZE<program>::Process_procedure (WN* w)
     if (DoPreopt)
 	phi_index = Get_phi_idx ();	// record initial phi node index
     
+#ifdef KEY
+    Process_eh_globals ();
+#endif
 
     BOOL found = FALSE;
 
@@ -1068,9 +1294,57 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 	case OPR_DO_LOOP:
 	case OPR_WHILE_DO:
 	case OPR_DO_WHILE:
+#ifndef KEY // disable buggy loopnest computation
 	    loopnest++;
+#endif // !KEY
 	    break;
 
+#ifdef KEY
+	case OPR_IF:
+	    {
+		// Remove the use of this flag in future
+		if ( ! IPA_Enable_Branch_Heuristic || ! Cur_PU_Feedback ) break;
+
+		FB_Info_Branch info = Cur_PU_Feedback->Query_branch ( w2 );
+		if (!info.freq_taken.Known() || !info.freq_not_taken.Known())
+		{
+		    if_map[w2].taken = if_map[w2].not_taken = -1;
+		    break;
+		}
+		float taken = info.freq_taken.Value() / info.Total().Value();
+		float not_taken = info.freq_not_taken.Value() / info.Total().Value();
+		// Check if we are inside another 'if', then adjust the 
+		// probabilities.
+		if ( !if_map.empty() )
+		{
+		  WN * block;
+		  WN * parent = LWN_Get_Parent ( w2 );
+
+		  get_parent_if ( &parent, &block );
+
+		  if ( parent )
+		  {
+		    Is_True (block && WN_operator (block) == OPR_BLOCK, ("kid of if stmt wrong"));
+		    // OPR_IF
+		    if ( WN_kid1 (parent) == block )
+		    {
+		      taken *= if_map[parent].taken;
+		      not_taken *= if_map[parent].taken;
+		    }
+		    else
+		    {
+		      Is_True ( WN_kid2 (parent) == block, ("kid of if stmt wrong"));
+		      taken *= if_map[parent].not_taken;
+		      not_taken *= if_map[parent].not_taken;
+		    }
+		  }
+		}
+		
+		if_map[w2].taken = taken;
+		if_map[w2].not_taken = not_taken;
+	    }
+	    break;
+#endif
 	case OPR_ICALL:
 	case OPR_CALL: {
             // ignore fake call from exception handling block
@@ -1079,10 +1353,42 @@ SUMMARIZE<program>::Process_procedure (WN* w)
               break;
 
             proc->Incr_call_count ();
+#ifdef KEY
+	    float probability = -1;
+	    // Remove the use of this flag in future
+	    if ( IPA_Enable_Branch_Heuristic && Cur_PU_Feedback && 
+	    	 WN_operator (w2) == OPR_CALL )
+	    {
+	      WN * block, * parent = LWN_Get_Parent ( w2 );
+
+	      get_parent_if ( &parent, &block );
+
+	      if (parent)
+	      { // we are inside an if stmt
+	    	Is_True (block && WN_operator (block) == OPR_BLOCK, ("kid of if stmt wrong"));
+		if ( WN_kid1 (parent) == block )
+		    probability = if_map[parent].taken;
+		else
+		    probability = if_map[parent].not_taken;
+	      }
+	    }
+            Process_callsite (w2, proc->Get_callsite_count (), get_loopnest (w2), probability);
+#else
             Process_callsite (w2, proc->Get_callsite_count (), loopnest);
+#endif
             proc->Incr_callsite_count ();
             Direct_Mod_Ref = TRUE;
-	      
+
+#ifdef KEY
+	    if( Cur_PU_Feedback != NULL &&
+		WN_operator(w2) == OPR_ICALL ){
+	      FB_FREQ freq = Cur_PU_Feedback->Query(w2, FB_EDGE_CALL_INCOMING);
+	      if( freq.Known() ){
+		icall_site[icall_cnt] =  Get_callsite_idx();
+		icall_cnt++;
+	      }
+	    }
+#endif	      
             // update actual parameter count
             if (Do_common_const && 
                 !Process_control_dependence (w2, Get_callsite_idx())) {
@@ -1092,7 +1398,11 @@ SUMMARIZE<program>::Process_procedure (WN* w)
         } 
 
 	case OPR_INTRINSIC_CALL:
+#ifdef KEY
+	    Process_callsite (w2, proc->Get_callsite_count (), get_loopnest (w2));
+#else
 	    Process_callsite (w2, proc->Get_callsite_count (), loopnest);
+#endif
 	    proc->Incr_callsite_count ();
 	    Direct_Mod_Ref = TRUE;
 	    break;
@@ -1155,8 +1465,13 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 	    break;
 
 	case OPR_REGION:
-	    if (WN_region_is_EH(w2))
+	    if (WN_region_is_EH(w2)) 
+	      {
+#ifdef KEY
+		Process_eh_region (w2);
+#endif
 		proc->Set_exc_inline();
+	      }
 	    if (WN_region_kind(w2)== REGION_KIND_TRY)
 		proc->Set_exc_try();
 	    break;
@@ -1288,8 +1603,10 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 		    case OPC_DO_LOOP:
 		    case OPC_WHILE_DO:
 		    case OPC_DO_WHILE:
+#ifndef KEY // disable buggy loopnest computation
 			loopnest--;
-		    }
+#endif // !KEY
+		    ;}
 		}
 	    }
 	}
@@ -1309,6 +1626,35 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 
     }
 
+#ifdef KEY
+    if_map.clear ();
+    /* Append a list of free slots to the current callsite_array for
+       the future use by IPA_Convert_Icalls.
+    */
+    FmtAssert( icall_cnt < sizeof(icall_site) / sizeof(icall_site[0]),
+	       ("icall array is too small.") );
+    for( int i = 0; i < icall_cnt; i++ ){
+      SUMMARY_CALLSITE* icall_info = Get_callsite (icall_site[i]);
+      SUMMARY_CALLSITE* callsite = New_callsite ();
+
+      callsite->Set_callsite_id( proc->Get_callsite_count()  );
+      callsite->Set_icall_slot();
+
+      callsite->Set_param_count( icall_info->Get_param_count() );
+      callsite->Set_return_type( icall_info->Get_return_type() );
+      callsite->Set_map_id( icall_info->Get_map_id() );
+      callsite->Set_loopnest( icall_info->Get_loopnest() );
+      callsite->Set_probability( icall_info->Get_probability() );
+
+      if( callsite->Get_param_count() > 0 ){
+	callsite->Set_actual_index( icall_info->Get_actual_index() );
+      }
+
+      proc->Incr_callsite_count();
+    }
+#endif // KEY    
+
+    /*loop_count_stack may not be empty! and loopnest may not be empty!!*/
     if (proc->Get_callsite_count () > 0)
 	proc->Set_callsite_index (Get_callsite_idx () -
 				  proc->Get_callsite_count () + 1);
@@ -1320,9 +1666,17 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 	if (Cur_PU_Feedback) { // was FB_PU_Has_Feedback
 	    INT bb_count = 0;
 	    INT stmt_count = 0;
+#ifdef KEY
+ 	    FB_FREQ cycle_count(0.0);
+#else
  	    FB_FREQ cycle_count(0);
-		UINT16 WN_Count = 0; //INLINING_TUNING
-		FB_FREQ Cycle_Count2(0); //INLINING_TUNING
+#endif
+	    UINT16 WN_Count = 0; //INLINING_TUNING
+#ifdef KEY
+	    FB_FREQ Cycle_Count2(0.0); //INLINING_TUNING
+#else
+	    FB_FREQ Cycle_Count2(0); //INLINING_TUNING
+#endif
 	    SUMMARY_FEEDBACK *fb = Get_feedback (proc->Get_feedback_index ());
  	    FB_FREQ freq_count = fb->Get_frequency_count();
 //	    Count_tree_size (*Cur_PU_Feedback, Get_entry_point (), bb_count, stmt_count, cycle_count, freq_count);
@@ -1431,7 +1785,11 @@ SUMMARIZE<program>::Update_call_pragmas (SUMMARY_CALLSITE *callsite)
 //-----------------------------------------------------------
 template <PROGRAM program>
 void
+#ifdef KEY
+SUMMARIZE<program>::Process_callsite (WN *w, INT id, INT loopnest, float probability)
+#else
 SUMMARIZE<program>::Process_callsite (WN *w, INT id, INT loopnest)
+#endif
 {
     INT count;
     SUMMARY_CALLSITE *callsite = New_callsite ();
@@ -1441,6 +1799,9 @@ SUMMARIZE<program>::Process_callsite (WN *w, INT id, INT loopnest)
 
     callsite->Set_callsite_id (id);
     callsite->Set_loopnest (loopnest);
+#ifdef KEY
+    callsite->Set_probability (probability);
+#endif
     callsite->Set_param_count (WN_num_actuals(w));
     callsite->Set_return_type (WN_rtype(w));
 
@@ -1724,6 +2085,14 @@ SUMMARIZE<program>::Process_actual (WN* w)
           actual->Set_ty(parm_ty);
           if (OPERATOR_has_sym(opr)) {
             actual->Set_symbol_index(Get_symbol_index(WN_st(kid))); 
+#ifdef KEY
+          // bug 6229: Process any constant string instead of 
+          // treating it as an indirect ref.
+          ST * actual_st = WN_st (kid);
+          if (opr == OPR_LDA && ST_class (actual_st) == CLASS_CONST &&
+              TY_kind (ST_type (actual_st)) == KIND_ARRAY)
+            w = WN_kid0(w);
+#endif
           }
         }
       }

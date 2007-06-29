@@ -85,6 +85,11 @@
  *           the set of machine registers that are assigned to TN.
  *           IF TN_register is REGISTER_UNDEFINED, returns an empty set.
  *
+ *         TN_bitwidth(tn)
+ *           Return best guess at the number of bits required
+ *           to represent the value in tn.
+ *           Where we do not know exactly, must be conservative.
+ *
 #endif
  *	   TN_register_and_class(tn)
  *	     TN_register_class and TN_register combined into a single
@@ -467,6 +472,14 @@ CG_EXPORTED extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER
 #define TN_is_fzero_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_fzero)
 #define TN_is_fone_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_fone)
 
+
+#ifdef TARG_ST200
+// (cbr) if-conversion psi-ssa. need a True_TN
+#define TN_is_true(r) ((r) == True_TN || TN_is_true_pred(r))
+#else
+#define TN_is_true(r) (TN_is_true_pred(r))
+#endif
+
 // Check if the TN is either a constant zero or the zero register TN.
 // If you know it is a register TN, use TN_is_zero_reg directly.
 inline BOOL TN_is_zero (const TN *r) 
@@ -495,6 +508,8 @@ inline REGISTER_SET TN_registers (const TN *tn)
     return REGISTER_SET_Range (reg, reg + TN_nhardregs (tn) - 1);
   }
 }
+
+extern INT TN_bitwidth (const TN *tn);
 #endif
 
 // Returns TRUE if the TN represents a hardwired registers.

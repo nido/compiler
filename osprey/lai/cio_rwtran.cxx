@@ -1582,6 +1582,7 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
   TN *tn_safe_base  = Build_TN_Like( tn_base );
   TOP code = CGTARG_Which_OP_Select( TN_size( tn_base ) * 8, FALSE, FALSE );
   OP *op_select = Mk_OP( code, tn_safe_base, tn_predicate, tn_base, tn_hole_base );
+  // TODO: Fix use of Get_ZERO_TN
   OP *op_select = Mk_OP( code, tn_safe_base, Get_Zero_TN(TN_size(tn_base)), Get_Zero_TN(TN_size(tn_base)), Get_Zero_TN(TN_size(tn_base)) );
   Set_OP_selcondopnd( op_select, tn_predicate );
   // I MAY HAVE THESE NEXT TWO BACKWARDS
@@ -1912,7 +1913,9 @@ CIO_RWTRAN::Read_CICSE_Candidate_Op( OP *op )
        // from happening (pv647031).
 
 #ifdef TARG_ST
-       OP_Mem_Ref_Bytes(op) < 4 )
+       // FdF 20070523: Add suport for char and short types
+       // OP_Mem_Ref_Bytes(op) < 4 )
+       0)
 #else
        CGTARG_Mem_Ref_Bytes( op ) < 4 )
 #endif
@@ -1935,7 +1938,9 @@ CIO_RWTRAN::Write_Candidate_Op( OP *op )
 		  // from happening (pv647031).
 
 #ifdef TARG_ST
-		  OP_Mem_Ref_Bytes( op ) < 4 ) );
+		  // FdF 20070606: Add suport for char and short types
+	          // (OP_Mem_Ref_Bytes( op ) < 4 ) ) );
+		  0 ) );
 #else
 		  CGTARG_Mem_Ref_Bytes( op ) < 4 ) );
 #endif
@@ -2297,6 +2302,10 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   // for read/write elimination or cicse elimination.
   INT index;
   op = BB_first_op( body );
+#ifdef TARG_ST
+  int const INT_size = 4;
+  BOOL INT_candidates = TRUE;
+#endif
   for ( index = 1; index <= op_count; ++index ) {
 
     // Initialize the table entry for this OP
@@ -2312,6 +2321,10 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     if ( Read_CICSE_Candidate_Op( op ) ) {
       Set_OP_flag1( op );
       entry.source = index;
+#ifdef TARG_ST
+      if (OP_memory(op) && OP_Mem_Ref_Bytes(op) < INT_size)
+	INT_candidates = FALSE;
+#endif
     } else {
       Reset_OP_flag1( op );
       entry.source = 0;
@@ -2365,6 +2378,37 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     CICSE_entry& entry = cicse_table[index];
     if ( OP_load( entry.op ) && OP_flag1( entry.op ) ) {
 
+#ifdef TARG_ST
+      BOOL same_size = TRUE;
+      if (!INT_candidates) {
+	// FdF 20070523: Add support for char and short types
+	int mem_size = OP_Mem_Ref_Bytes(entry.op);
+	// Do not allow optimizations between operations of different
+	// size
+	ARC_LIST *arcs = OP_preds( entry.op );
+	while ( arcs ) {
+	  ARC *arc = ARC_LIST_first( arcs );
+	  arcs = ARC_LIST_rest( arcs );
+	  if ( Read_Candidate_Arc( arc ) && OP_flag1( ARC_pred( arc ) ) ) {
+	    INT index_pred = CICSE_Lookup_Op( cicse_table,
+					      op_count, ARC_pred( arc ) );
+	    Is_True( index_pred > 0,
+		     ( "CIO_RWTRAN::CICSE_Transform didn't find op_pred" ) );
+	    int pred_mem_size = OP_Mem_Ref_Bytes(ARC_pred( arc ));
+	    if (pred_mem_size != mem_size) {
+	      same_size = FALSE;
+	      break;
+	    }
+	  }
+	}
+	if (!same_size && (mem_size != INT_size)) {
+	  Reset_OP_flag1( entry.op );
+	  entry.source = 0;
+	  entry.basis = FALSE;
+	}
+      }
+#endif
+
       ARC_LIST *arcs = OP_preds( entry.op );
       while ( arcs ) {
 	ARC *arc = ARC_LIST_first( arcs );
@@ -2376,6 +2420,18 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 					    op_count, ARC_pred( arc ) );
 	  Is_True( index_pred > 0,
 		   ( "CIO_RWTRAN::CICSE_Transform didn't find op_pred" ) );
+#ifdef TARG_ST
+	  // FdF 20070523
+	  if (!same_size) {
+	    int pred_mem_size = OP_Mem_Ref_Bytes(ARC_pred( arc ));
+	    if (pred_mem_size != INT_size) {
+	      Reset_OP_flag1( ARC_pred( arc ) );
+	      cicse_table[index_pred].source = 0;
+	      cicse_table[index_pred].basis = FALSE;
+	    }
+	    continue;
+	  }
+#endif
 	  entry.source = index_pred;
 	  entry.omega = ARC_omega( arc );
 	  entry.basis = TRUE;
@@ -2837,14 +2893,13 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
     if ((OP_has_predicate(change.source) &&
 	 (OP_opnd(change.source, OP_find_opnd_use(change.source, OU_predicate) ) != True_TN)) ||
 	(OP_has_predicate(change.op) &&
-	 (OP_opnd(change.op, OP_find_opnd_use(change.op, OU_predicate)) != True_TN))) {
-      change.okay = FALSE;
-      continue;
-    }
-#endif
-
+	 (OP_opnd(change.op, OP_find_opnd_use(change.op, OU_predicate)) != True_TN)) ||
+	! Backpatch_Op_In_Prolog( change.op, change.new_tns,
+				  1, change.omega ) ) {
+#else
     if ( ! Backpatch_Op_In_Prolog( change.op, change.new_tns,
 				   1, change.omega ) ) {
+#endif
 
       // Cancel all optimizations with this source
       for ( INT ch_index = oppor_count; ch_index >= 0; --ch_index )
@@ -3087,6 +3142,11 @@ CIO_RWTRAN::Sort_Ops_Preorder( OP *op_current, BOOL current_has_arc )
     // Is this ARC potentially optimizable and its predecessor OP unvisited?
     ARC *arc = ARC_LIST_first( arclist );
     if ( ! Write_Candidate_Arc( arc ) ) continue;
+#ifdef TARG_ST
+    // FdF 20070606: Add suport for char and short types
+    if (OP_Mem_Ref_Bytes(ARC_pred(arc)) != OP_Mem_Ref_Bytes(ARC_succ(arc)))
+      continue;
+#endif
     OP *op_pred = ARC_pred( arc );
     if ( ! OP_flag1( op_pred ) ) continue;
 
@@ -3146,6 +3206,11 @@ CIO_RWTRAN::Sort_Ops( BB *body )
 	// Is this arc and successor OP potentially optimizable?
 	ARC *arc = ARC_LIST_first( arclist );
 	if ( ! Write_Candidate_Arc( arc ) ) continue;
+#ifdef TARG_ST
+	// FdF 20070606: Add suport for char and short types
+	if (OP_Mem_Ref_Bytes(ARC_pred(arc)) != OP_Mem_Ref_Bytes(ARC_succ(arc)))
+	  continue;
+#endif
 	OP *op_succ = ARC_succ( arc );
 	if ( ! OP_flag1( op_succ ) ) continue;
 
@@ -3184,7 +3249,13 @@ CIO_RWTRAN::Sort_Arcs( void )
     for ( ARC_LIST *arcs = OP_preds( op_succ );
 	  arcs != NULL; arcs = ARC_LIST_rest( arcs ) ) {
       ARC *arc = ARC_LIST_first( arcs );
+#ifdef TARG_ST
+      // FdF 20070606: Add suport for char and short types
+      if ( ARC_pred( arc ) == op_pred && Write_Candidate_Arc( arc ) &&
+	   (OP_Mem_Ref_Bytes(ARC_pred(arc)) == OP_Mem_Ref_Bytes(ARC_succ(arc))) ) {
+#else
       if ( ARC_pred( arc ) == op_pred && Write_Candidate_Arc( arc ) ) {
+#endif
 	_arc_ordering[t - 1] = arc;
 	break;
       }

@@ -54,10 +54,12 @@ extern "C" {
 extern int  WFE_Keep_Zero_Length_Structs;
 
 #ifdef TARG_ST
+extern char * Orig_Src_File_Name;
 extern void WFE_Prepare_Gcc_Options(int argc, char **argv, int *gnu_argc, char ***gnu_argv);
 extern void WFE_Init_Errors ();
 #endif
-extern void WFE_Init (INT argc, char **arrgv, char **envp);
+extern void WFE_Init_Errors ();
+extern void WFE_Init (INT argc, char **arrgv);
 extern void WFE_Finish (void);
 extern void WFE_File_Init (INT argc, char **argv);
 extern void WFE_File_Finish (void);
@@ -116,6 +118,11 @@ extern void WFE_Stmt_Append (WN* wn, SRCPOS srcpos);
 extern WN*  WFE_Stmt_Last (void);
 extern WN*  WFE_Stmt_Pop (WFE_STMT_KIND kind);
 
+#ifdef TARG_ST
+// FdF 20070302
+extern void WFE_Stmt_Move_To_End(WN *first_wn, WN *last_wn);
+#endif
+
 #ifdef KEY
 extern bool Check_For_Call_Region (int cleanup=0);
 #endif
@@ -133,6 +140,14 @@ Get_Srcpos (void)
   SRCPOS_clear(s);
 #ifdef TARG_ST // [CL] use GCC's global vars as reference
   WFE_Set_Line_And_File (lineno, input_filename);
+#endif
+#ifdef TARG_ST
+  // [CL] do not record artificial filenames (eg compiler-generated functions)
+  if (input_filename && (strcmp(input_filename, "<built-in>")== 0
+			 || strcmp(input_filename, "<internal>") == 0) ) {
+    current_file = 0;
+    lineno = 0;
+  }
 #endif
   SRCPOS_filenum(s) = current_file;
   SRCPOS_linenum(s) = lineno;

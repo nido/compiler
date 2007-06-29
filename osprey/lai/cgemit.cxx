@@ -512,6 +512,14 @@ Init_Section (
     scn_flags |= SHF_MIPS_NODUPE;
   }
 	
+#ifdef TARG_ST
+  // (cbr) support exceptions in pic
+  char *s =  ST_name(em_scn[last_scn].sym);
+  if (!strcmp (s, ".except_table") &&
+      (Gen_PIC_Call_Shared || Gen_PIC_Shared))
+    scn_flags |= SHF_WRITE;
+#endif
+
   scn_entsize = Get_Section_Elf_Entsize(STB_section_idx(st));
 
   if (generate_elf_symbols) {
@@ -530,6 +538,7 @@ Init_Section (
     /* set dummy value just so don't redo this */
     Set_ST_elf_index(st, 1);
   }
+
 
 #if 0
   if (Lai_Code) {
@@ -2197,9 +2206,12 @@ Generate_Exception_Table_Header (INT scn_idx, Elf64_Xword scn_ofst, LABEL_IDX *l
 
     // Generate TType format
     TCON ttype;
+#ifndef TARG_ST200
+    // (cbr) keep 0 encoding value (pro-release-1-9-0-B/65)
     if (Gen_PIC_Call_Shared || Gen_PIC_Shared)
     	ttype = Host_To_Targ (MTYPE_I1, 0x9b);
     else
+#endif
     	ttype = Host_To_Targ (MTYPE_I1, 0);
     scn_ofst = Write_TCON (&ttype, scn_idx, scn_ofst, 1);
 
@@ -3955,7 +3967,7 @@ r_assemble_opnd (
 #elif defined( TARG_STxP70 )
     if ( (OP_cond(op) && i == OP_find_opnd_use(op,OU_condition)) || 
 	 (OP_has_predicate(op) && i == OP_find_opnd_use(op,OU_predicate)) ||
-	 (OP_result_reg_class(op,0) == ISA_REGISTER_CLASS_gr && i == 0 &&
+	 (OP_fixed_results(op) > 0 && OP_result_reg_class(op,0) == ISA_REGISTER_CLASS_gr && i == 0 &&
 	  !OP_load(op))) {
 #else
     if (OP_has_predicate(op) && i == OP_find_opnd_use(op,OU_predicate)) {
@@ -5389,8 +5401,8 @@ Emit_Loop_Note (
 
     if (info) {
       WN *wn = LOOPINFO_wn(info);
-#ifdef TARG_STxP70
-      TN *trip_tn = LOOPINFO_CG_trip_count_tn(info);
+#ifdef TARG_ST
+      TN *trip_tn = LOOPINFO_exact_trip_count_tn(info);
 #else
       TN *trip_tn = LOOPINFO_trip_count_tn(info);
 #endif
@@ -5467,6 +5479,10 @@ static BB_NUM PU_BB_current_idx_for_profile = 0; /* Current index of BB being tr
 #define PI_FUNCBEGIN 0x01 
 #define PI_FUNCEND 0x02 
 
+#define PIA_FUNCBEGIN 0x01 
+#define PIA_FUNCEND 0x02 
+#define PIA_BBBEGIN 0x03 
+#define PIA_BBEND 0x04
 
 /* ====================================================================
  *   get_char_from_float
@@ -5548,6 +5564,96 @@ EMT_ProfileInfo_BB (
 }
 
 /* ====================================================================
+ *   EMT_ProfileInfoArc_BB
+ *
+ *   Emit .profile_info_arc for this BB.
+ *   Emit frequency info about BB.
+ *
+ * ====================================================================
+ */
+static int
+EMT_ProfileInfoArc_BB ( 
+  BB *bb, 
+  WN *rwn 
+)
+{
+  // BB begin, size of the bb section, address, number, nb of succs, flags, freq
+  // SUCCINFO:
+  // succ1, proba, flag
+  // succ2, proba, flag
+  // ....
+  // END_BB
+  char * label_name;
+  ANNOTATION *ant;
+  LABEL_IDX lab;
+  FILE *file = Asm_File;
+  char buf[4];
+  float f;
+  const char *prefix = file == Asm_File ? ASM_CMNT_LINE : "";
+  BBLIST *bl;
+  int bbflag = BB_flag(bb);
+#define BBM_ICALL          0x400000
+  //Add icall flag to the bb
+  if (BB_call(bb)) {
+    ANNOTATION *ant;
+    CALLINFO *call_info;
+    ST *call_st;
+    ant = ANNOT_Get(BB_annotations(bb), ANNOT_CALLINFO);
+    call_info = ANNOT_callinfo(ant);
+    call_st = CALLINFO_call_st(call_info);
+    if (call_st == NULL)
+      bbflag |= BBM_ICALL;
+  }
+#undef BBM_ICALL
+  if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return 0;
+  FmtAssert(Assembly && CG_emit_bb_freqs_arcs, ("EMT_ProfileInfoArc_BB calls only with -CG:emit-bb-freqs"));
+
+  /* first get a label attached to this BB */
+
+  ant = ANNOT_First (BB_annotations(bb), ANNOT_LABEL);
+  assert(ant != NULL);
+  lab = ANNOT_label(ant);
+  label_name = LABEL_name(lab);
+    
+  /* Convert BB frequency into 4 bytes */
+  f = BB_freq(bb);
+  get_char_from_float(&f, buf);
+
+  // Get BB number of succs
+  int BB_count_succ = 0;
+  FOR_ALL_BB_SUCCS (bb, bl) {
+    ++BB_count_succ;
+  }
+
+  int  bb_section_size = 8 * 4 + BB_count_succ*(3*4);
+  /* Dump profile info */
+  fprintf(file, "\t%s\t0x%x, 0x%x, %s, 0x%x, 0x%x, 0x%x\n", AS_WORD,
+	  PIA_BBBEGIN, bb_section_size, label_name, BB_id(bb), BB_count_succ, bbflag);
+#ifdef TARG_ST
+  // [CL]
+  Set_LABEL_emitted(lab);
+#endif
+  
+  fprintf(file, "\t%s\t0x%x, 0x%x, 0x%x, 0x%x\n", AS_BYTE,
+	  buf[0], buf[1], buf[2], buf[3]);
+  //Dump SUCC info
+  FOR_ALL_BB_SUCCS (bb, bl) {
+    /* Convert arc proba into 4 bytes */
+    f = BBLIST_prob(bl);
+    get_char_from_float(&f, buf);
+    fprintf(file, "\t%s\t0x%x\n", AS_WORD, BB_id(BBLIST_item(bl)));
+    fprintf(file, "\t%s\t0x%x, 0x%x, 0x%x, 0x%x\n", AS_BYTE,
+	  buf[0], buf[1], buf[2], buf[3]);
+    int flagsucc=0;
+    fprintf(file, "\t%s\t0x%x\n", AS_WORD, flagsucc);
+  }
+  fprintf(file, "\t%s\t0x%x\n", AS_WORD,
+	  PIA_BBEND);
+  return bb_section_size;
+}
+
+
+/* ====================================================================
  *   EMT_ProfileInfo_Header_PU
  *
  *   Emit .profile_info header for this PU.
@@ -5561,7 +5667,7 @@ EMT_ProfileInfo_PU (
 )
 {
   BB *bb; 
-  
+  int total_count_succ = 0;
   if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return;
   FmtAssert( Assembly && CG_emit_bb_freqs, ("EMT_ProfileInfo_Header_PU calls only with -CG:emit-bb-freqs"));
   /* Emit header of .profile_info for this PU */
@@ -5573,6 +5679,10 @@ EMT_ProfileInfo_PU (
   PU_BB_Count_for_profile = 0;
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     PU_BB_Count_for_profile++;
+    BBLIST *bl;
+    FOR_ALL_BB_SUCCS (bb, bl) {
+      ++total_count_succ;
+    }
   }
   fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ".profile_info");
   fprintf (Asm_File, "\t%s\t0x%x, %s, 0x%x \n",AS_WORD,
@@ -5585,7 +5695,29 @@ EMT_ProfileInfo_PU (
 
   // FOOTER
   fprintf(Asm_File, "\t%s\t0x%x\n", AS_WORD, PI_FUNCEND);
-
+  if (CG_emit_bb_freqs_arcs) {
+    //TB: Create a new .profile_info_section with control flow info
+    // Format:
+    // FUNCTION begin, size of the function section, address, number, nb of BB, flags
+    // BBINFO
+    //END_FUNCTION
+    int size = 0;
+    int function_section_size = 6 * 4 + PU_BB_Count_for_profile * (8*4) + total_count_succ*(3*4);
+    fprintf (Asm_File, "\t%s %s\n", AS_SECTION, ".profile_info_arc");
+    fprintf (Asm_File, "\t%s\t0x%x, 0x%x, %s, 0x%x, 0x%x\n",AS_WORD,
+	     PIA_FUNCBEGIN, function_section_size, ST_name(pu), PU_BB_Count_for_profile, 0x0);
+    size += 5*4;
+    // BBS
+    /* Emit profile_info_section for each basic block in the PU */
+    for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      size += EMT_ProfileInfoArc_BB (bb, rwn);
+    }
+    // FOOTER
+    fprintf(Asm_File, "\t%s\t0x%x\n", AS_WORD, PIA_FUNCEND);
+    size += 4;
+    FmtAssert(size == function_section_size ,
+	      ("size of .profile_info_arc section mismatches"));
+  }
 }
 #endif /* BCO_Enabled Thierry */
 
@@ -6423,7 +6555,7 @@ EMT_Begin_File (
   return;
 }
 
-#ifdef TARG_STxP70
+#ifdef TARG_ST
 static OP*
 Create_Asm_Macro(const char* macro)
 {
@@ -6440,6 +6572,43 @@ Create_Asm_Macro(const char* macro)
     ASM_OP_wn(asm_info) = asm_wn;
     OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
     return asm_op;
+}
+#endif
+
+#ifdef TARG_ST
+// (cbr)
+static bool nop_needed(BB *bb) {
+  OP *op_last;
+
+  if (!bb)
+    return false;
+
+  if (BB_succs(bb))
+    return false;
+
+  if ((op_last = BB_xfer_op (bb)) && OP_call(op_last)) {
+    BB *bb_next = BB_next(bb);
+    if (!bb_next) return true;
+
+#if 1
+    if (BB_has_label(bb_next)) {  
+      ANNOTATION *ant;
+      for (ant = ANNOT_First(BB_annotations(bb_next), ANNOT_LABEL);
+           ant != NULL;
+           ant = ANNOT_Next(ant, ANNOT_LABEL)) {
+        LABEL_IDX lab = ANNOT_label(ant);
+        if (LABEL_kind(Label_Table[lab]) == LKIND_END_EH_RANGE) {
+          if (WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO))))) {
+            if (!BB_next(bb_next) || BB_entry(BB_next(bb_next)))
+                return true;
+          }
+        }
+      }
+    }
+#endif
+  }
+
+  return false;
 }
 #endif
 
@@ -6630,8 +6799,8 @@ EMT_Emit_PU (
 
   if (Assembly) {
     if (cur_section != PU_base) {
-	/* reset to text section */
-    	fprintf (Asm_File, "\n\t%s %s\n", AS_SECTION, ST_name(PU_base));
+	/* reset to text section */ 
+   	fprintf (Asm_File, "\n\t%s %s\n", AS_SECTION, ST_name(PU_base));
 	cur_section = PU_base;
     }
   }
@@ -6708,16 +6877,14 @@ EMT_Emit_PU (
     Setup_Text_Section_For_BB(bb);
     EMT_Assemble_BB (bb, rwn);
     bb_last = bb;
-  }
 
 #ifdef TARG_ST
+  // (cbr) generalize for all regions
   // 20051010: Fix for ddts 23277: Insert a word at the end of a
   // function that ends with a procedure call (must be noreturn), so
   // that $r63 is set with an address in the current function (needed
   // for unwinding).
-  OP *op_last;
-  if (bb_last && (op_last = (BB_xfer_op (bb_last))) &&
-      OP_call(op_last)) {
+  if (nop_needed (bb_last)) {
     ISA_BUNDLE bundle[ISA_PACK_MAX_INST_WORDS];
     OP *noop = Mk_OP(TOP_nop);
     Set_OP_end_group(noop);
@@ -6725,30 +6892,25 @@ EMT_Emit_PU (
     Assemble_OP(noop, bb_last, bundle, 0);
   }
 #endif
+  }
 
 
 #ifdef TARG_ST
-  /* (cbr) last instructions can't be a call for unwinder. (ddts 23277) */
-  if ((op_last = (BB_branch_op (bb_last))) && OP_call(op_last))
-    fprintf(Output_File, "\t%s %d\n",  AS_SPACE, 4);
-#endif
-
-#ifdef TARG_ST
-  // [CL] record end of final BB for this PU, so that this PU and the
-  // next one can be reordered later without invalidating Dwarf
-  // information (otherwise, the final text_sequence of the current PU
-  // would be ended when starting the next PU, resulting in a size of
-  // the final text_sequence dependent upon the location of the
-  // beginning of the next PU)
-  if (CG_emit_asm_dwarf) 
-  if (generate_dwarf) {
-    if (Last_Label > 0) {
+  // [CL] make sure at least one debug label is emitted: for
+  // compiler-generated PUs, we have no line information, so we may
+  // have no debug_line label generated which confuses
+  // Cg_Dwarf_Process_PU below
+  if (CG_emit_asm_dwarf) {
+    if (Last_Label == 0) {
+      New_Debug_Line_Set_Label(PC2Addr(PC));
+    } else {
       cache_last_label_info (Last_Label,
 			     Em_Create_Section_Symbol(PU_section),
-			     ST_pu(pu),
+			     current_pu,
 			     PC2Addr(Offset_From_Last_Label));
-      end_previous_text_region(PU_section, PC);
-    
+      pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+      end_previous_text_region(old_PU_section, 
+			       PC);
     }
   }
 #endif

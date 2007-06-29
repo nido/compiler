@@ -227,7 +227,7 @@ void MHD_LEVEL::Compute_Effective_Size()
     break;
   }
 
-  Effective_Size = pct*Size;
+  Effective_Size = (INT64)(pct*Size);
 }
 
 void MHD_LEVEL::Print(FILE* f) const
@@ -285,9 +285,11 @@ void MHD::Merge_Options(const MHD& o)
     Loop_Overhead_Base = o.Loop_Overhead_Base;
   if (o.Loop_Overhead_Memref >= 0)
     Loop_Overhead_Memref = o.Loop_Overhead_Memref;
-#ifdef TARG_ST200
+#ifdef TARG_ST
   if (o.DCache_Prefetch_Buffers >= 0)
     DCache_Prefetch_Buffers = o.DCache_Prefetch_Buffers;
+  if (o.Prefetch_Padding >= 0)
+    Prefetch_Padding = o.Prefetch_Padding;
 #endif
 }
 
@@ -295,6 +297,10 @@ void MHD::Print(FILE* f) const
 {
   fprintf(f, "CACHE PARAMETERS: non_blocking_loads=%d loop_overhead=(%d,%d)\n",
           Non_Blocking_Loads, Loop_Overhead_Base, Loop_Overhead_Memref);
+#ifdef TARG_ST
+  fprintf(f, "\tPrefetch_Buffers=%d Prefetch_Padding=%d\n",
+	  DCache_Prefetch_Buffers, Prefetch_Padding);
+#endif
   for (INT i = 0; i < MHD_MAX_LEVELS; i++) {
     if (L[i].Valid()) {
       fprintf(f, "L[%d]: ", i);

@@ -905,6 +905,12 @@ precompute_register_parameters (num_actuals, args, reg_parm_seen)
 	    /* ANSI doesn't require a sequence point here,
 	       but PCC has one, so this will avoid some problems.  */
 	    emit_queue ();
+
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. sometime we prefer parameters to be created by translator */
+	    if (args[i].value == 0)
+	      continue;
+#endif
 	  }
 
 	/* If the value is a non-legitimate constant, force it into a
@@ -1268,7 +1274,6 @@ initialize_argument_information (num_actuals, args, args_size, n_named_args,
 	      /* In the V3 C++ ABI, parameters are destroyed in the caller.
 		 We implement this by passing the address of the temporary
 	         rather than expanding it into another allocated slot.  */
-
 	      args[i].tree_value = build1 (ADDR_EXPR,
 					   build_pointer_type (type),
 					   args[i].tree_value);
@@ -1552,8 +1557,15 @@ precompute_arguments (flags, num_actuals, args)
 	   but PCC has one, so this will avoid some problems.  */
 	emit_queue ();
 
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. sometime we prefer parameters to be created by translator */
+	if (args[i].value == 0)
+	  continue;
+#endif
+
 	args[i].initial_value = args[i].value
 	  = protect_from_queue (args[i].value, 0);
+
 
 	mode = TYPE_MODE (TREE_TYPE (args[i].tree_value));
 	if (mode != args[i].mode)
@@ -1771,6 +1783,11 @@ load_register_parameters (args, num_actuals, call_fusage, flags)
       int partial = args[i].partial;
       int nregs;
 
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. sometime we prefer parameters to be created by translator */
+      if (args[i].value == 0)
+	continue;
+#endif
       if (reg)
 	{
 	  /* Set to non-negative if must move a word at a time, even if just

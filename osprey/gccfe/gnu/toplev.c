@@ -1386,6 +1386,9 @@ documented_lang_options[] =
   { "-Wwrite-strings",
     N_("Mark strings as 'const char *'") },
   { "-Wno-write-strings", "" },
+  { "-fpragmas", "" },
+  { "-fno-pragmas", N_("Do not process #pragmas") },
+
 
 #define DEFINE_LANG_NAME(NAME) { NULL, NAME },
 
@@ -5580,7 +5583,6 @@ toplev_main (argc, argv)
  {
    int gnu_argc; char **gnu_argv;
    extern char *filename;
-   extern char * Orig_Src_File_Name;
 
    WFE_Init_Errors ();
    WFE_Prepare_Gcc_Options(argc, argv, &gnu_argc, &gnu_argv);

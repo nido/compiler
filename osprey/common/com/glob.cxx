@@ -116,6 +116,9 @@ char *Asm_File_Name = NULL;	/* Assembly file */
 char *Lai_File_Name = NULL;     /* LAI file */
 char *Obj_File_Name = NULL;	/* Relocatable object file */
 char *Feedback_File_Name = NULL; /* Feedback file */
+#ifdef TARG_ST
+char *Object_Dir = NULL;/* Object dir */
+#endif
 #ifndef MONGOOSE_BE
 char *Lib_File_Name = NULL;	/* Program library file	*/
 #endif 

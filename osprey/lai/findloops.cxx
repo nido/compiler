@@ -141,8 +141,8 @@ LOOP_DESCR_Is_Exit_Edge(BB *bb, BB *succ)
 	 * trip counts that aren't necessarily correct because of early exits!
 	 */
 	LOOPINFO *info = LOOP_DESCR_loopinfo(loop);
-#ifdef TARG_STxP70
-	if (info) LOOPINFO_is_CG_trip_count(info) = FALSE;
+#ifdef TARG_ST
+	if (info) LOOPINFO_is_exact_trip_count(info) = FALSE;
 #else
 	if (info) LOOPINFO_trip_count_tn(info) = NULL;
 #endif

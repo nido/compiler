@@ -37,9 +37,6 @@
 
 extern void init_objects (void);
 
-/* need to init crt paths if doing ipa link */
-extern void init_crt_paths (void);
-
 /*
  * Whether option is an object or not.
  * Our definition of "object" includes libraries and library path options,

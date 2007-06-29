@@ -663,6 +663,8 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 #ifdef TARG_ST
                 // (cbr) handle may_alias attribute
                 if (lookup_attribute ("may_alias", TYPE_ATTRIBUTES (type_tree))) {
+		  // [CL] don't apply the attribute to the predefined type
+		  idx = Copy_TY(idx);
                   Set_TY_no_ansi_alias(idx);
                 }
 #endif
@@ -1571,13 +1573,24 @@ Create_ST_For_Tree (tree decl_node)
             level = GLOBAL_SYMTAB;
           }
           else {
-            if (DECL_EXTERNAL(decl_node) ||
 #ifdef TARG_ST
                 /* (cbr) static data member or static data in function member 
                    has external linkage */
-                (DECL_CONTEXT (decl_node) && TREE_STATIC (decl_node) &&
-                 DECL_COMDAT (DECL_CONTEXT (decl_node))) ||
+            if (DECL_CONTEXT (decl_node) && TREE_STATIC (decl_node) &&
+                DECL_COMDAT (DECL_CONTEXT (decl_node))) {
+              tree init = DECL_INITIAL (decl_node);
+              // (cbr) will be constructed at runtime. reserve space only
+              if (!init)
+                sclass = SCLASS_COMMON;
+              else
+                sclass = SCLASS_EXTERN;                
+
+	      level  = GLOBAL_SYMTAB;
+	      eclass = Get_Export_Class_For_Tree(decl_node, CLASS_VAR, sclass);
+            }
+            else
 #endif
+            if (DECL_EXTERNAL(decl_node) ||
                 DECL_WEAK (decl_node)) {
 
 	      sclass = SCLASS_EXTERN;

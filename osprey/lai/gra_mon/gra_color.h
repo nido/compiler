@@ -54,6 +54,9 @@
 //          registers from ALLOWED, whose first register is in
 //          SUBCLASS_ALLOWED.
 //
+//      INT Forced_Locals (ISA_REGISTER_CLASS rc)
+//          Return the number of local registers of class rc that should
+//          be force-allocated locally.
 #endif
 /////////////////////////////////////
 
@@ -76,6 +79,8 @@ extern BOOL
 Can_Allocate_From (INT nregs,
 		   REGISTER_SET subclass_allowed,
 		   REGISTER_SET allowed);
+extern INT
+Forced_Locals (ISA_REGISTER_CLASS rc);
 #endif
 
 #endif

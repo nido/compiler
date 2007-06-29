@@ -1086,6 +1086,9 @@ private:
   INT Delinearize(DOLOOP_STACK *stack, INT dim, const SYMBOL *delin_symbol);
 #endif
   void Update_Non_Const_Loops(WN *wn,DOLOOP_STACK *stack);
+#ifdef TARG_ST
+  bool Is_Loop_Const_Base(WN *wn);
+#endif
 };
 
 extern INT  Num_Mins(WN *wn);

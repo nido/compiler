@@ -898,6 +898,8 @@ DSE::Add_EH_exposed_use(WN *call) const
   FOR_ALL_NODE(exc_scope, exc_scope_iter, Init()) {
     AUX_ID     var;
     VER_ID     vse;
+#ifndef TARG_ST
+    /* (cbr) pro-fe3.3-c++/50 handler might not be pointed to from pragma region*/
     if (exc_scope->Is_cleanup_region()) {
       EXC_SCOPE_CLEANUP_ITER cleanup_iter(exc_scope);
       FOR_ALL_ELEM(var, cleanup_iter, Init()) {
@@ -914,7 +916,9 @@ DSE::Add_EH_exposed_use(WN *call) const
         }
       }
     }
-    else if (exc_scope->Is_try_region()) { // try region
+    else
+#else
+      if (exc_scope->Is_try_region()) { // try region
       EXC_SCOPE_TRY_ITER try_iter(exc_scope);
       FOR_ALL_ELEM(var, try_iter, Init()) {
         if (var != 0) {
@@ -929,6 +933,7 @@ DSE::Add_EH_exposed_use(WN *call) const
         }
       }
     }
+#endif
   }
 }
 

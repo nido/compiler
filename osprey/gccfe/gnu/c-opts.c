@@ -50,6 +50,11 @@ static bool deps_seen;
 /* Dependency output file.  */
 static const char *deps_file;
 
+#ifdef TARG_ST
+// (cbr) don't process pragmas 
+static int flag_no_pragmas;
+#endif
+
 /* Number of deferred options, deferred options array size.  */
 static size_t deferred_count, deferred_size;
 
@@ -232,6 +237,7 @@ static void sanitize_cpp_opts PARAMS ((void));
   OPT("foperator-names",	CL_CXX,   OPT_foperator_names)		     \
   OPT("foptional-diags",	CL_CXX,   OPT_foptional_diags)		     \
   OPT("fpermissive",		CL_CXX,   OPT_fpermissive)		     \
+  OPT("fpragmas",		CL_ALL,   OPT_fpragmas)                      \
   OPT("fpreprocessed",		CL_ALL,   OPT_fpreprocessed)		     \
   OPT("frepo",			CL_CXX,   OPT_frepo)			     \
   OPT("frtti",			CL_CXX,   OPT_frtti)			     \
@@ -280,7 +286,7 @@ static void sanitize_cpp_opts PARAMS ((void));
   OPT("trigraphs",              CL_ALL,   OPT_trigraphs)		     \
   OPT("undef",			CL_ALL,   OPT_undef)			     \
   OPT("v",                      CL_ALL,   OPT_v)			     \
-  OPT("w",                      CL_ALL,   OPT_w)
+  OPT("w",                      CL_ALL,   OPT_w) 
 
 #define OPT(text, flags, code) code,
 enum opt_code
@@ -1068,6 +1074,12 @@ c_common_decode_option (argc, argv)
 	warn_main = 0;
       break;
 
+#ifdef TARG_ST
+    case OPT_fpragmas:
+      flag_no_pragmas = !on;
+      break;
+#endif
+
     case OPT_fshort_double:
       flag_short_double = on;
       break;
@@ -1366,10 +1378,7 @@ c_common_post_options ()
 
   sanitize_cpp_opts ();
 
-#ifndef TARG_ST
-  /* (cbr) let the whirl backend do the inlining. */
   flag_inline_trees = 1;
-#endif
 
   /* Use tree inlining if possible.  Function instrumentation is only
      done in the RTL level, so we disable tree inlining.  */
@@ -1383,6 +1392,11 @@ c_common_post_options ()
 	  flag_inline_functions = 0;
 	}
     }
+
+#ifdef TARG_ST
+  /* [CL] let the whirl backend do the inlining. */
+  flag_inline_trees = 0;
+#endif
 
   /* Special format checking options don't work without -Wformat; warn if
      they are used.  */
@@ -1453,7 +1467,13 @@ c_common_init (filename)
      the one supplied.  */
   filename = init_c_lex (in_fname);
 
+#ifdef TARG_ST
+  // (cbr) for internal use, don't process pragmas
+  if (!flag_no_pragmas)
+    init_pragma ();
+#else
   init_pragma ();
+#endif
 
   return filename;
 }

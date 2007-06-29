@@ -74,6 +74,8 @@
 #include "config_asm.h"
 #include "hb_sched.h"
 #include "targ_isa_variants.h"
+#include "cgemit.h"
+#include "targ_cg_private.h"
 
 /* for asm stmt */
 #include "register_preg.h"
@@ -174,89 +176,65 @@ TOP_br_variant (
   TOP opcode
 )
 {
+#define CASE_TOPB(top) \
+          case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
+          case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
+
+#define CASE_TOPF(top) \
+          case TOP_##top##_r_r_r: case TOP_##top##_r_r_b
+
   switch (opcode) {
-  case TOP_cmpeq_r_b:
-  case TOP_cmpeq_i_b:
-  case TOP_cmpeq_ii_b:
-  case TOP_cmpeq_r_r:
-  case TOP_cmpeq_i_r:
-  case TOP_cmpeq_ii_r:
+  CASE_TOPB(cmpeq):
     return V_BR_I4EQ;
 
-  case TOP_cmpge_r_b:
-  case TOP_cmpge_i_b:
-  case TOP_cmpge_ii_b:
-  case TOP_cmpge_r_r:
-  case TOP_cmpge_i_r:
-  case TOP_cmpge_ii_r:
+  CASE_TOPB(cmpge):
     return V_BR_I4GE;
 
-  case TOP_cmpgeu_r_b:
-  case TOP_cmpgeu_i_b:
-  case TOP_cmpgeu_ii_b:
-  case TOP_cmpgeu_r_r:
-  case TOP_cmpgeu_i_r:
-  case TOP_cmpgeu_ii_r:
+  CASE_TOPB(cmpgeu):
     return V_BR_U4GE;
 
-  case TOP_cmpgt_r_b:
-  case TOP_cmpgt_i_b:
-  case TOP_cmpgt_ii_b:
-  case TOP_cmpgt_r_r:
-  case TOP_cmpgt_i_r:
-  case TOP_cmpgt_ii_r:
+  CASE_TOPB(cmpgt):
     return V_BR_I4GT;
 
-  case TOP_cmpgtu_r_b:
-  case TOP_cmpgtu_i_b:
-  case TOP_cmpgtu_ii_b:
-  case TOP_cmpgtu_r_r:
-  case TOP_cmpgtu_i_r:
-  case TOP_cmpgtu_ii_r:
+  CASE_TOPB(cmpgtu):
     return V_BR_U4GT;
 
-  case TOP_cmple_r_b:
-  case TOP_cmple_i_b:
-  case TOP_cmple_ii_b:
-  case TOP_cmple_r_r:
-  case TOP_cmple_i_r:
-  case TOP_cmple_ii_r:
+  CASE_TOPB(cmple):
     return V_BR_I4LE;
 
-  case TOP_cmpleu_r_b:
-  case TOP_cmpleu_i_b:
-  case TOP_cmpleu_ii_b:
-  case TOP_cmpleu_r_r:
-  case TOP_cmpleu_i_r:
-  case TOP_cmpleu_ii_r:
+  CASE_TOPB(cmpleu):
     return V_BR_U4LE;
 
-  case TOP_cmplt_r_b:
-  case TOP_cmplt_i_b:
-  case TOP_cmplt_ii_b:
-  case TOP_cmplt_r_r:
-  case TOP_cmplt_i_r:
-  case TOP_cmplt_ii_r:
+  CASE_TOPB(cmplt):
     return V_BR_I4LT;
 
-  case TOP_cmpltu_r_b:
-  case TOP_cmpltu_i_b:
-  case TOP_cmpltu_ii_b:
-  case TOP_cmpltu_r_r:
-  case TOP_cmpltu_i_r:
-  case TOP_cmpltu_ii_r:
+  CASE_TOPB(cmpltu):
     return V_BR_U4LT;
 
-  case TOP_cmpne_r_b:
-  case TOP_cmpne_i_b:
-  case TOP_cmpne_ii_b:
-  case TOP_cmpne_r_r:
-  case TOP_cmpne_i_r:
-  case TOP_cmpne_ii_r:
+  CASE_TOPB(cmpne):
     return V_BR_I4NE;
     
-  case TOP_mtb:
+  CASE_TOPF(cmpeqf_n):
+    return V_BR_FEQ;
+
+  CASE_TOPF(cmpgtf_n):
+    return V_BR_FGT;
+
+  CASE_TOPF(cmpgef_n):
+    return V_BR_FGE;
+
+  CASE_TOPF(cmplef_n):
+    return V_BR_FLE;
+
+  CASE_TOPF(cmpltf_n):
+    return V_BR_FLT;
+
+  case TOP_mtb_r_b:  // [SC] Checked mtb
+  case TOP_convib_r_b:
     return V_BR_I4NE0;
+
+#undef CASE_TOPF
+#undef CASE_TOPB
   }
 
   return V_BR_NONE;
@@ -275,122 +253,57 @@ TOP_br_variant (
 VARIANT
 TOP_cmp_variant(TOP top)
 {
+#define CASE_TOPB(top) \
+          case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
+          case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
+
   switch (top) {
-  case TOP_cmpeq_r_b:
-  case TOP_cmpeq_i_b:
-  case TOP_cmpeq_ii_b:
-  case TOP_cmpeq_r_r:
-  case TOP_cmpeq_i_r:
-  case TOP_cmpeq_ii_r:
+  CASE_TOPB(cmpeq):
     return V_CMP_EQ;
 
-  case TOP_cmpne_r_b:
-  case TOP_cmpne_i_b:
-  case TOP_cmpne_ii_b:
-  case TOP_cmpne_r_r:
-  case TOP_cmpne_i_r:
-  case TOP_cmpne_ii_r:
+  CASE_TOPB(cmpne):
     return V_CMP_NE;
 
-  case TOP_cmpge_r_b:
-  case TOP_cmpge_i_b:
-  case TOP_cmpge_ii_b:
-  case TOP_cmpge_r_r:
-  case TOP_cmpge_i_r:
-  case TOP_cmpge_ii_r:
+  CASE_TOPB(cmpge):
     return V_CMP_GE;
 
-  case TOP_cmpgeu_r_b:
-  case TOP_cmpgeu_i_b:
-  case TOP_cmpgeu_ii_b:
-  case TOP_cmpgeu_r_r:
-  case TOP_cmpgeu_i_r:
-  case TOP_cmpgeu_ii_r:
+  CASE_TOPB(cmpgeu):
     return V_CMP_GEU;
 
-  case TOP_cmpgt_r_b:
-  case TOP_cmpgt_i_b:
-  case TOP_cmpgt_ii_b:
-  case TOP_cmpgt_r_r:
-  case TOP_cmpgt_i_r:
-  case TOP_cmpgt_ii_r:
+  CASE_TOPB(cmpgt):
     return V_CMP_GT;
 
-  case TOP_cmpgtu_r_b:
-  case TOP_cmpgtu_i_b:
-  case TOP_cmpgtu_ii_b:
-  case TOP_cmpgtu_r_r:
-  case TOP_cmpgtu_i_r:
-  case TOP_cmpgtu_ii_r:
+  CASE_TOPB(cmpgtu):
     return V_CMP_GTU;
 
-  case TOP_cmple_r_b:
-  case TOP_cmple_i_b:
-  case TOP_cmple_ii_b:
-  case TOP_cmple_r_r:
-  case TOP_cmple_i_r:
-  case TOP_cmple_ii_r:
+  CASE_TOPB(cmple):
     return V_CMP_LE;
 
-  case TOP_cmpleu_r_b:
-  case TOP_cmpleu_i_b:
-  case TOP_cmpleu_ii_b:
-  case TOP_cmpleu_r_r:
-  case TOP_cmpleu_i_r:
-  case TOP_cmpleu_ii_r:
+  CASE_TOPB(cmpleu):
     return V_CMP_LEU;
 
-  case TOP_cmplt_r_b:
-  case TOP_cmplt_i_b:
-  case TOP_cmplt_ii_b:
-  case TOP_cmplt_r_r:
-  case TOP_cmplt_i_r:
-  case TOP_cmplt_ii_r:
+  CASE_TOPB(cmplt):
     return V_CMP_LT;
 
-  case TOP_cmpltu_r_b:
-  case TOP_cmpltu_i_b:
-  case TOP_cmpltu_ii_b:
-  case TOP_cmpltu_r_r:
-  case TOP_cmpltu_i_r:
-  case TOP_cmpltu_ii_r:
+  CASE_TOPB(cmpltu):
     return V_CMP_LTU;
 
-  case TOP_andl_r_b:
-  case TOP_andl_i_b:
-  case TOP_andl_ii_b:
-  case TOP_andl_r_r:
-  case TOP_andl_i_r:
-  case TOP_andl_ii_r:
+  CASE_TOPB(andl):
     return V_CMP_ANDL;
 
-  case TOP_nandl_r_b:
-  case TOP_nandl_i_b:
-  case TOP_nandl_ii_b:
-  case TOP_nandl_r_r:
-  case TOP_nandl_i_r:
-  case TOP_nandl_ii_r:
+  CASE_TOPB(nandl):
     return V_CMP_NANDL;
 
-  case TOP_orl_r_b:
-  case TOP_orl_i_b:
-  case TOP_orl_ii_b:
-  case TOP_orl_r_r:
-  case TOP_orl_i_r:
-  case TOP_orl_ii_r:
+  CASE_TOPB(orl):
     return V_CMP_ORL;
 
-  case TOP_norl_r_b:
-  case TOP_norl_i_b:
-  case TOP_norl_ii_b:
-  case TOP_norl_r_r:
-  case TOP_norl_i_r:
-  case TOP_norl_ii_r:
+  CASE_TOPB(norl):
     return V_CMP_NORL;
   }
 
   FmtAssert(0, ("TOP_cmp_variant undefined for TOP %s", TOP_Name(top)));
   return V_CMP_NONE;
+#undef CASE_TOPB
 }
 
 /* ====================================================================
@@ -399,13 +312,8 @@ TOP_cmp_variant(TOP top)
  *   Returns the variant for the interpretation of the OU_condition operand
  *   for an opcode having the TOP_is_select or TOP_is_cond semantic.
  *
- *   Possible values of variants are V_COND_TRUE or V_COND_FALSE.
- *   The select semantic is:
- *   (OU_condition == 0 ? OU_opnd1: OU_opnd2) if variant = V_COND_FALSE
- *   else OU_condition != 0 ? OU_opnd1: OU_opnd2) if variant != V_COND_FALSE
- *   The cond branch semantic is:
- *   branch taken if OU_condition == 0 if variant == V_COND_FALSE
- *   branch taken if OU_condition != 0 if variant != V_COND_FALSE
+ *   Possible values of variants are V_COND_TRUE, V_COND_FALSE or V_COND_UNKNOWN.
+ *   See lai/variants.h for the actual semantic.
  *
  * ====================================================================
  */
@@ -413,21 +321,25 @@ TOP_cmp_variant(TOP top)
 VARIANT
 TOP_cond_variant(TOP top)
 {
+#define CASE_TOP(top) \
+          case TOP_##top##_r_r_b_r: case TOP_##top##_i_r_b_r: case TOP_##top##_ii_r_b_r
+#define CASE_BR(top) \
+          case TOP_##top##_i_b
+
   switch (top) {
-  case TOP_slct_r:
-  case TOP_slct_i:
-  case TOP_slct_ii:
-  case TOP_br:
+  CASE_TOP(slct):
+  case TOP_st240_slct_r_r_b_r:
+  CASE_BR(br):
     return V_COND_TRUE;
 
-  case TOP_slctf_r:
-  case TOP_slctf_i:
-  case TOP_slctf_ii:
-  case TOP_brf:
+  CASE_TOP(slctf):  
+  CASE_BR(brf):
     return V_COND_FALSE;
   }
   FmtAssert(0, ("TOP_cond_variant undefined for TOP %s", TOP_Name(top)));
   return V_COND_NONE;
+#undef CASE_BR
+#undef CASE_TOP
 }
 
 
@@ -462,8 +374,8 @@ Make_Branch_Conditional (
   }
 
   switch (OP_code(br_op)) {
-  case TOP_goto:
-    new_top = cond ? TOP_br : TOP_brf;
+  case TOP_goto_i:
+    new_top = cond ? TOP_br_i_b : TOP_brf_i_b;
     break;
   case TOP_igoto:
     FmtAssert(FALSE,("Can't handle igoto -> contitional"));
@@ -625,17 +537,23 @@ CGTARG_Analyze_Branch (
   *tn2 = NULL;
 
   switch (top) {
-  case TOP_br:
+  case TOP_br_i_b:
     variant = V_BR_P_TRUE;
     Set_V_true_br(variant);
     *tn1 = OP_opnd(br, 0);
     break;
-  case TOP_brf:
+  case TOP_brf_i_b:
     variant = V_BR_P_TRUE;
     Set_V_false_br(variant);
     // Should really return 'tn2' but until CFLOW is fixed ...
     //*tn2 = OP_opnd(br, 0);
     *tn1 = OP_opnd(br, 0);
+    break;
+  case TOP_goto_i:
+  case TOP_igoto:
+  case TOP_return:
+    variant = V_BR_ALWAYS;
+    *tn1 = NULL;
     break;
 
   default:
@@ -729,6 +647,49 @@ CGTARG_Get_unc_Variant (
 }
 
 /* ====================================================================
+ *   st200_encode_extract_mask
+ * ====================================================================
+ */
+UINT
+st200_encode_extract_mask (UINT bit_size, UINT bit_offset,
+			   TOP *extract_op)
+{
+  if (bit_size > 16) {
+    switch (*extract_op) {
+    case TOP_extract_i_r_r: *extract_op = TOP_extractl_i_r_r; break;
+    case TOP_extractu_i_r_r: *extract_op = TOP_extractlu_i_r_r; break;
+    default:
+      FmtAssert (FALSE,
+		 ("Unexpected extract op (%d) in st200_encode_extract_mask",
+		  *extract_op));
+    }
+    bit_size -= 16;
+  }
+  --bit_size;
+  if (bit_size > 7) {
+    // Force sign extension, otherwise we would have to use a long immediate.
+    bit_size |= 0xfffffff8;
+  }
+  return (bit_size << 5) | bit_offset;
+}
+
+/* ====================================================================
+ *   st200_decode_extract_mask
+ * ====================================================================
+ */
+void
+st200_decode_extract_mask (TOP extract_op, UINT extract_mask,
+			   UINT *bit_size, UINT *bit_offset)
+{
+  *bit_offset = extract_mask & 0x1f;
+  *bit_size = ((extract_mask >> 5) & 0xf) + 1;
+  if (extract_op == TOP_extractl_i_r_r
+      || extract_op == TOP_extractlu_i_r_r) {
+    *bit_size += 16;
+  }
+}
+
+/* ====================================================================
  *                           Properties:
  * ====================================================================
  */
@@ -736,13 +697,18 @@ CGTARG_Get_unc_Variant (
 TOP 
 CGTARG_Invert(TOP opr)
 {
-  return CGTARG_Invert_Table[(INT)opr];
+  TOP top = CGTARG_Invert_Table[(INT)opr];
+  if (! ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    top = TOP_UNDEFINED;
+  }
+
+  return top;
 }
 
 BOOL
 CGTARG_Is_OP_Inter_RegClass_Copy(OP *op) {
 
-  return (OP_code(op) == TOP_mtb || OP_code(op) == TOP_mfb);
+  return OP_code(op) == TOP_targ_mov_r_b || OP_code(op) == TOP_targ_mov_b_r;
 }
 
 /* ====================================================================
@@ -760,6 +726,13 @@ CGTARG_Dependence_Required (
   // Force asm to stay at end of block
   if (OP_code(succ_op) == TOP_asm) {
     *latency = 1;
+    return TRUE;
+  }
+
+  if (FORCE_NOOPS
+      && OP_code(succ_op) == TOP_syncins
+      && OP_code(pred_op) == TOP_prgins) {
+    *latency = 4;
     return TRUE;
   }
 
@@ -1188,7 +1161,7 @@ void CGTARG_Load_From_Memory (
      */
     TN *temp_tn = Build_TN_Of_Mtype (mtype);
     Exp_Load (MTYPE_I4, mtype, temp_tn, mem_loc, 0, ops, V_NONE);
-    Build_OP(TOP_mtb, tn, temp_tn, ops);
+    Build_OP(TOP_targ_mov_r_b, tn, temp_tn, ops);
     DevWarn("Spill of branch register: reload\n");
   }
   else {
@@ -1215,7 +1188,7 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
      * an integer register and then store.
      */
     TN *temp_tn = Build_TN_Of_Mtype (mtype);
-    Build_OP(TOP_mfb, temp_tn, tn, ops);
+    Build_OP(TOP_targ_mov_b_r, temp_tn, tn, ops);
     Exp_Store (mtype, temp_tn, mem_loc, 0, ops, V_NONE);
     DevWarn("Spill of branch register: store\n");
   }
@@ -1240,35 +1213,35 @@ CGTARG_Speculative_Load (OP *op)
   TOP ld = TOP_UNDEFINED;
 
   switch (opcode) {
-  case TOP_ldw_i: 
-    ld = TOP_ldw_d_i;
+  case TOP_ldw_r_i_r: 
+    ld = TOP_ldw_d_r_i_r;
     break;
-  case TOP_ldw_ii:
-    ld = TOP_ldw_d_ii;
+  case TOP_ldw_r_ii_r:
+    ld = TOP_ldw_d_r_ii_r;
     break;
-  case TOP_ldh_i:
-    ld = TOP_ldh_d_i;
+  case TOP_ldh_r_i_r:
+    ld = TOP_ldh_d_r_i_r;
     break;
-  case TOP_ldh_ii:
-    ld = TOP_ldh_d_ii;
+  case TOP_ldh_r_ii_r:
+    ld = TOP_ldh_d_r_ii_r;
     break;
-  case TOP_ldhu_i:
-    ld = TOP_ldhu_d_i;
+  case TOP_ldhu_r_i_r:
+    ld = TOP_ldhu_d_r_i_r;
     break;
-  case TOP_ldhu_ii:
-    ld = TOP_ldhu_d_ii;
+  case TOP_ldhu_r_ii_r:
+    ld = TOP_ldhu_d_r_ii_r;
     break;
-  case TOP_ldb_i:
-    ld = TOP_ldb_d_i;
+  case TOP_ldb_r_i_r:
+    ld = TOP_ldb_d_r_i_r;
     break;
-  case TOP_ldb_ii:
-    ld = TOP_ldb_d_ii;
+  case TOP_ldb_r_ii_r:
+    ld = TOP_ldb_d_r_ii_r;
     break;
-  case TOP_ldbu_i:
-    ld = TOP_ldbu_d_i;
+  case TOP_ldbu_r_i_r:
+    ld = TOP_ldbu_d_r_i_r;
     break;
-  case TOP_ldbu_ii:
-    ld = TOP_ldbu_d_ii;
+  case TOP_ldbu_r_ii_r:
+    ld = TOP_ldbu_d_r_ii_r;
     break;
   }
 
@@ -1286,29 +1259,29 @@ CGTARG_Predicated_Store (OP *op)
   TOP stw = TOP_UNDEFINED;
 
   switch (opcode) {
-  case TOP_stl_i: 
-    stw = TOP_stlc_i;
+  case TOP_stl_p_r_i: 
+    stw = TOP_stlc_p_b_r_i;
     break;
-  case TOP_stl_ii:
-    stw = TOP_stlc_ii;
+  case TOP_stl_p_r_ii:
+    stw = TOP_stlc_p_b_r_ii;
     break;
-  case TOP_stw_i: 
-    stw = TOP_stwc_i;
+  case TOP_stw_r_r_i: 
+    stw = TOP_stwc_r_b_r_i;
     break;
-  case TOP_stw_ii:
-    stw = TOP_stwc_ii;
+  case TOP_stw_r_r_ii:
+    stw = TOP_stwc_r_b_r_ii;
     break;
-  case TOP_sth_i:
-    stw = TOP_sthc_i;
+  case TOP_sth_r_r_i:
+    stw = TOP_sthc_r_b_r_i;
     break;
-  case TOP_sth_ii:
-    stw = TOP_sthc_ii;
+  case TOP_sth_r_r_ii:
+    stw = TOP_sthc_r_b_r_ii;
     break;
-  case TOP_stb_i:
-    stw = TOP_stbc_i;
+  case TOP_stb_r_r_i:
+    stw = TOP_stbc_r_b_r_i;
     break;
-  case TOP_stb_ii:
-    stw = TOP_stbc_ii;
+  case TOP_stb_r_r_ii:
+    stw = TOP_stbc_r_b_r_ii;
     break;
   }
 
@@ -1326,47 +1299,47 @@ CGTARG_Predicated_Load (OP *op)
   TOP ld = TOP_UNDEFINED;
 
   switch (opcode) {
-  case TOP_ldl_i: 
-    ld = TOP_ldlc_i;
+  case TOP_ldl_r_i_p: 
+    ld = TOP_ldlc_r_i_b_p;
     break;
-  case TOP_ldl_ii:
-    ld = TOP_ldlc_ii;
+  case TOP_ldl_r_ii_p:
+    ld = TOP_ldlc_r_ii_b_p;
     break;
-  case TOP_ldw_i: 
-    ld = TOP_ldwc_i;
+  case TOP_ldw_r_i_r: 
+    ld = TOP_ldwc_r_i_b_r;
     break;
-  case TOP_ldw_ii:
-    ld = TOP_ldwc_ii;
+  case TOP_ldw_r_ii_r:
+    ld = TOP_ldwc_r_ii_b_r;
     break;
-  case TOP_ldh_i:
-    ld = TOP_ldhc_i;
+  case TOP_ldh_r_i_r:
+    ld = TOP_ldhc_r_i_b_r;
     break;
-  case TOP_ldh_ii:
-    ld = TOP_ldhc_ii;
+  case TOP_ldh_r_ii_r:
+    ld = TOP_ldhc_r_ii_b_r;
     break;
-  case TOP_ldhu_i:
-    ld = TOP_ldhuc_i;
+  case TOP_ldhu_r_i_r:
+    ld = TOP_ldhuc_r_i_b_r;
     break;
-  case TOP_ldhu_ii:
-    ld = TOP_ldhuc_ii;
+  case TOP_ldhu_r_ii_r:
+    ld = TOP_ldhuc_r_ii_b_r;
     break;
-  case TOP_ldb_i:
-    ld = TOP_ldbc_i;
+  case TOP_ldb_r_i_r:
+    ld = TOP_ldbc_r_i_b_r;
     break;
-  case TOP_ldb_ii:
-    ld = TOP_ldbc_ii;
+  case TOP_ldb_r_ii_r:
+    ld = TOP_ldbc_r_ii_b_r;
     break;
-  case TOP_ldbu_i:
-    ld = TOP_ldbuc_i;
+  case TOP_ldbu_r_i_r:
+    ld = TOP_ldbuc_r_i_b_r;
     break;
-  case TOP_ldbu_ii:
-    ld = TOP_ldbuc_ii;
+  case TOP_ldbu_r_ii_r:
+    ld = TOP_ldbuc_r_ii_b_r;
     break;
-  case TOP_pft_i: 
-    ld = TOP_pftc_i;
+  case TOP_pft_r_i:
+    ld = TOP_pftc_r_i_b;
     break;
-  case TOP_pft_ii: 
-    ld = TOP_pftc_ii;
+  case TOP_pft_r_ii:
+    ld = TOP_pftc_r_ii_b;
     break;
   }
 
@@ -1490,6 +1463,7 @@ CGTARG_Generate_Branch_Cloop(OP *br_op,
   // Related option: -TARG:activate_hwloop (Activate_Hwloop variable in config_TARG.cxx).
   return FALSE;
 }
+
 
 /* ====================================================================
  * ====================================================================
@@ -1733,11 +1707,14 @@ CGTARG_Max_RES_Latency (
       opnd_used = get_earliest_assigned_reg_use(TN_register_class(OP_result(op,idx)),
 						TN_register(OP_result(op,idx)));
     }
-  } else {
+  } else if (idx < OP_fixed_results(op))  {
     ISA_REGISTER_CLASS c = OP_result_reg_class (op, idx);
     ISA_REGISTER_SUBCLASS sc = OP_result_reg_subclass (op, idx);
     opnd_used = get_earliest_regclass_use (c, sc);
+  } else {
+    return 1;
   }
+  
   INT latency = result_avail - opnd_used;
   // ALU ops reading r63 still need an extra cycle of latency because
   // there is no forwarding of the alu result to the SLR used by a branch op.
@@ -1769,14 +1746,14 @@ CGTARG_Adjust_Latency (
 
   // 1. Instructions writing into a branch register must be followed
   //    by 2 cycle (bundle) before 
-  //         TOP_br 
-  //         TOP_brf 
+  //         TOP_br_i_b 
+  //         TOP_brf_i_b 
   //    can be issued that uses this register.
   //	Treated by ti_si.
 
 
   // 2. Instructions writing into a PC must be followed
-  //    by 1 cycle (bundle) before a TOP_br can be issued.
+  //    by 1 cycle (bundle) before a TOP_br_i_b can be issued.
   //	Treated by ti_si.
 
   // 3. Load instructions (resp arith instruction) writing LR register
@@ -1869,6 +1846,30 @@ CGTARG_Bundle_Stop_Bit_Available(TI_BUNDLE *bundle, INT slot)
 }
 
 /* ====================================================================
+ *   Get_Extended_Opcode
+ * ====================================================================
+ */
+static TOP
+Get_Extended_Opcode (
+  TOP opcode
+)
+{
+  return TOP_get_variant (opcode, VARATT_next_immediate);
+}
+
+/* =========================================================================
+ *   CGTARG_Get_Info_For_Common_Base_Opt
+ *   Get information on memory op used in common base pointer optimisation.
+ * =========================================================================
+ */
+void
+CGTARG_Get_Info_For_Common_Base_Opt( INT *min_offset_alignment, INT *min_offset, INT *max_offset) {
+  *min_offset_alignment = 1; /* char offset alignment. No scaling constraint on offset. */
+  *min_offset = ISA_LC_Min (LC_isrc2); /* LC_imm_isrc2 for word memory accesses. */
+  *max_offset = ISA_LC_Max (LC_isrc2);
+}
+
+/* ====================================================================
  *   CGTARG_offset_is_extended
  *   Does this offset TN is an extended immediate operand ?
  * ====================================================================
@@ -1898,32 +1899,6 @@ CGTARG_offset_is_extended(TN *offset, INT64 *val) {
   }
 
   return FALSE;
-}
-  
-/* ====================================================================
- *   Get_Extended_Opcode
- * ====================================================================
- */
-static TOP
-Get_Extended_Opcode (
-  TOP opcode
-)
-{
-  // Arthur: a hack -- I use the fact that all _ii opcodes follow
-  //         immediately corresponding _i opcodes ...
-  return (TOP) (opcode+1);
-}
-
-/* =========================================================================
- *   CGTARG_Get_Info_For_Common_Base_Opt
- *   Get information on memory op used in common base pointer optimisation.
- * =========================================================================
- */
-void
-CGTARG_Get_Info_For_Common_Base_Opt( INT *min_offset_alignment, INT *min_offset, INT *max_offset) {
-  *min_offset_alignment = 1; /* char offset alignment. No scaling constraint on offset. */
-  *min_offset = ISA_LC_Min (LC_isrc2); /* LC_imm_isrc2 for word memory accesses. */
-  *max_offset = ISA_LC_Max (LC_isrc2);
 }
   
 /* ====================================================================
@@ -1965,7 +1940,9 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	    extra_slot_reqd = TRUE;
 	  }
 	}
-	else if (ST_gprel(base_st) && !OP_xfer(op)) {
+	else if (TN_relocs(opnd)) {
+	  // [SC] Anything with a non-null relocation needs
+	  // an extra slot.
 	  extra_slot_reqd = TRUE;
 	}
 	else if (ST_class(st) == CLASS_CONST) {
@@ -2045,6 +2022,8 @@ find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_MAX_SLOTS],
 			BOOL allow_subset)
 {
   for (INT t = 0; t < ISA_MAX_BUNDLES; ++t) {
+    if (ISA_EXEC_Base(t)/8 > DEFAULT_TEXT_ALIGNMENT)
+      continue;
     if (match_alignment
 	&& ((pc % (ISA_EXEC_Base(t)/8)) != (ISA_EXEC_Bias(t)/8))) {
       continue;
@@ -2221,7 +2200,7 @@ NOPs2Goto (
 {
   OP *goto_op;
 
-  goto_op = Mk_OP(TOP_goto, Gen_Label_TN(lab_PC, 0));
+  goto_op = Mk_OP(TOP_goto_i, Gen_Label_TN(lab_PC, 0));
   BB_Insert_Op(OP_bb(op), op, goto_op, FALSE);
   
   // It is guarantee that OP_scyle(op) is correct in case it is the
@@ -2252,6 +2231,12 @@ static void NOPs_to_GOTO (
   bool bundle_NOP; // Did we find a NOP bundle
   bool bundle_start; // Is the current OP the first one in a bundle
   LABEL_IDX label_PC;
+  /* The number of bundles which must follow prgins, before a syncins
+     may be issued.  The instructions introduced by the nop2goto
+     transformation are syncins instructions, so we must take care not
+     to issue them in the shadow of a prgins. */
+#define PRGINS_SHADOW 3
+  INT bundles_since_prgins = PRGINS_SHADOW;
 
   // Create a new label for each basic block. It would be possible to
   // create only one by PU, but the bundler works currently at the
@@ -2264,8 +2249,15 @@ static void NOPs_to_GOTO (
   
   while (op != NULL) {
 
+    if (OP_code(op) == TOP_prgins) {
+      bundles_since_prgins = 0;
+    } else if (bundle_start) {
+      bundles_since_prgins++;
+    }
+
     // Previous bundle is a NOP, and the current one also
-    if (bundle_NOP && Bundle_is_NOP(op, bundle_start))
+    if (bundle_NOP && Bundle_is_NOP(op, bundle_start)
+	&& bundles_since_prgins > PRGINS_SHADOW)
       op = NOPs2Goto(op, label_PC);
 
     // Set the state for the next operation.
@@ -2401,6 +2393,9 @@ static void Pad_Bundles_With_NOPs (
     pc = &hot_addr;
   }
 
+  INT align_bb = Check_If_Should_Align_BB(bb);
+  if (align_bb > 1)
+    *pc = ((*pc + align_bb - 1) / align_bb) * align_bb;
   OP *bundle_start = BB_first_op(bb);
   INT free_slots_in_previous_bundle = 0;
   while (bundle_start) {
@@ -2446,7 +2441,7 @@ void CGTARG_Resize_Instructions ()
       TOP etop;
       INT old_size = OP_inst_words(op), new_size = 1;
       if (old_size == 2)
-	OP_Change_Opcode(op, (TOP)(OP_code(op)-1));
+	OP_Change_Opcode(op, TOP_get_variant(OP_code(op), VARATT_prev_immediate));
       if (CGTARG_need_extended_Opcode(op, &etop)) {
 	Is_True(OP_inst_words(op) == 1, ("CGTARG_Resize_Instructions: Internal Error"));
 	OP_Change_Opcode(op, etop);
@@ -3101,6 +3096,9 @@ Init_TOP_Variant_Tables() {
 	  TOP_To_Multi_Table[top] = top;
 	}
 
+#if 0
+	// TODO_MERGE: merge variant model from stxp70 / must update MDS
+	// Skip this for now for ST200 that uses ATT_register
 	top_immediate = TOP_get_variant(top, VARATT_immediate);
 	// In some description the immediate form reference itself. 
 	// We must skip this.
@@ -3112,6 +3110,7 @@ Init_TOP_Variant_Tables() {
 	    top_immediate = TOP_get_variant(top_immediate, VARATT_next_immediate);
 	  }
 	}
+#endif
   }
 }
 
@@ -3234,98 +3233,75 @@ CGTARG_Initialize ()
 
   /* Init table for CGTARG_Invert:
    */
-  CGTARG_Invert_Table[TOP_br]          = TOP_brf;
-  CGTARG_Invert_Table[TOP_brf]         = TOP_br;
-  CGTARG_Invert_Table[TOP_slct_r]      = TOP_slctf_r;
-  CGTARG_Invert_Table[TOP_slct_i]      = TOP_slctf_i;
-  CGTARG_Invert_Table[TOP_slct_ii]     = TOP_slctf_ii;
-  CGTARG_Invert_Table[TOP_slctf_r]     = TOP_slct_r;
-  CGTARG_Invert_Table[TOP_slctf_i]     = TOP_slct_i;
-  CGTARG_Invert_Table[TOP_slctf_ii]    = TOP_slct_ii;
-  CGTARG_Invert_Table[TOP_cmpeq_r_b]   = TOP_cmpne_r_b;
-  CGTARG_Invert_Table[TOP_cmpeq_i_b]   = TOP_cmpne_i_b;
-  CGTARG_Invert_Table[TOP_cmpeq_ii_b]  = TOP_cmpne_ii_b;
-  CGTARG_Invert_Table[TOP_cmpge_r_b]   = TOP_cmplt_r_b;
-  CGTARG_Invert_Table[TOP_cmpge_i_b]   = TOP_cmplt_i_b;
-  CGTARG_Invert_Table[TOP_cmpge_ii_b]  = TOP_cmplt_ii_b;
-  CGTARG_Invert_Table[TOP_cmpgeu_r_b]  = TOP_cmpltu_r_b;
-  CGTARG_Invert_Table[TOP_cmpgeu_i_b]  = TOP_cmpltu_i_b;
-  CGTARG_Invert_Table[TOP_cmpgeu_ii_b] = TOP_cmpltu_ii_b;
-  CGTARG_Invert_Table[TOP_cmpgt_r_b]   = TOP_cmple_r_b;
-  CGTARG_Invert_Table[TOP_cmpgt_i_b]   = TOP_cmple_i_b;
-  CGTARG_Invert_Table[TOP_cmpgt_ii_b]  = TOP_cmple_ii_b;
-  CGTARG_Invert_Table[TOP_cmpgtu_r_b]  = TOP_cmpleu_r_b;
-  CGTARG_Invert_Table[TOP_cmpgtu_i_b]  = TOP_cmpleu_i_b;
-  CGTARG_Invert_Table[TOP_cmpgtu_ii_b] = TOP_cmpleu_ii_b;
-  CGTARG_Invert_Table[TOP_cmple_r_b]   = TOP_cmpgt_r_b;
-  CGTARG_Invert_Table[TOP_cmple_i_b]   = TOP_cmpgt_i_b;
-  CGTARG_Invert_Table[TOP_cmple_ii_b]  = TOP_cmpgt_ii_b;
-  CGTARG_Invert_Table[TOP_cmpleu_r_b]  = TOP_cmpgtu_r_b;
-  CGTARG_Invert_Table[TOP_cmpleu_i_b]  = TOP_cmpgtu_i_b;
-  CGTARG_Invert_Table[TOP_cmpleu_ii_b] = TOP_cmpgtu_ii_b;
-  CGTARG_Invert_Table[TOP_cmplt_r_b]   = TOP_cmpge_r_b;
-  CGTARG_Invert_Table[TOP_cmplt_i_b]   = TOP_cmpge_i_b;
-  CGTARG_Invert_Table[TOP_cmplt_ii_b]  = TOP_cmpge_ii_b;
-  CGTARG_Invert_Table[TOP_cmpltu_r_b]  = TOP_cmpgeu_r_b;
-  CGTARG_Invert_Table[TOP_cmpltu_i_b]  = TOP_cmpgeu_i_b;
-  CGTARG_Invert_Table[TOP_cmpltu_ii_b] = TOP_cmpgeu_ii_b;
-  CGTARG_Invert_Table[TOP_cmpne_r_b]   = TOP_cmpeq_r_b;
-  CGTARG_Invert_Table[TOP_cmpne_i_b]   = TOP_cmpeq_i_b;
-  CGTARG_Invert_Table[TOP_cmpne_ii_b]  = TOP_cmpeq_ii_b;
-  CGTARG_Invert_Table[TOP_cmpeq_r_r]   = TOP_cmpne_r_r;
-  CGTARG_Invert_Table[TOP_cmpeq_i_r]   = TOP_cmpne_i_r;
-  CGTARG_Invert_Table[TOP_cmpeq_ii_r]  = TOP_cmpne_ii_r;
-  CGTARG_Invert_Table[TOP_cmpge_r_r]   = TOP_cmplt_r_r;
-  CGTARG_Invert_Table[TOP_cmpge_i_r]   = TOP_cmplt_i_r;
-  CGTARG_Invert_Table[TOP_cmpge_ii_r]  = TOP_cmplt_ii_r;
-  CGTARG_Invert_Table[TOP_cmpgeu_r_r]  = TOP_cmpltu_r_r;
-  CGTARG_Invert_Table[TOP_cmpgeu_i_r]  = TOP_cmpltu_i_r;
-  CGTARG_Invert_Table[TOP_cmpgeu_ii_r] = TOP_cmpltu_ii_r;
-  CGTARG_Invert_Table[TOP_cmpgt_r_r]   = TOP_cmple_r_r;
-  CGTARG_Invert_Table[TOP_cmpgt_i_r]   = TOP_cmple_i_r;
-  CGTARG_Invert_Table[TOP_cmpgt_ii_r]  = TOP_cmple_ii_r;
-  CGTARG_Invert_Table[TOP_cmpgtu_r_r]  = TOP_cmpleu_r_r;
-  CGTARG_Invert_Table[TOP_cmpgtu_i_r]  = TOP_cmpleu_i_r;
-  CGTARG_Invert_Table[TOP_cmpgtu_ii_r] = TOP_cmpleu_ii_r;
-  CGTARG_Invert_Table[TOP_cmple_r_r]   = TOP_cmpgt_r_r;
-  CGTARG_Invert_Table[TOP_cmple_i_r]   = TOP_cmpgt_i_r;
-  CGTARG_Invert_Table[TOP_cmple_ii_r]  = TOP_cmpgt_ii_r;
-  CGTARG_Invert_Table[TOP_cmpleu_r_r]  = TOP_cmpgtu_r_r;
-  CGTARG_Invert_Table[TOP_cmpleu_i_r]  = TOP_cmpgtu_i_r;
-  CGTARG_Invert_Table[TOP_cmpleu_ii_r] = TOP_cmpgtu_ii_r;
-  CGTARG_Invert_Table[TOP_cmplt_r_r]   = TOP_cmpge_r_r;
-  CGTARG_Invert_Table[TOP_cmplt_i_r]   = TOP_cmpge_i_r;
-  CGTARG_Invert_Table[TOP_cmplt_ii_r]  = TOP_cmpge_ii_r;
-  CGTARG_Invert_Table[TOP_cmpltu_r_r]  = TOP_cmpgeu_r_r;
-  CGTARG_Invert_Table[TOP_cmpltu_i_r]  = TOP_cmpgeu_i_r;
-  CGTARG_Invert_Table[TOP_cmpltu_ii_r] = TOP_cmpgeu_ii_r;
-  CGTARG_Invert_Table[TOP_cmpne_r_r]   = TOP_cmpeq_r_r;
-  CGTARG_Invert_Table[TOP_cmpne_i_r]   = TOP_cmpeq_i_r;
-  CGTARG_Invert_Table[TOP_cmpne_ii_r]  = TOP_cmpeq_ii_r;
-  CGTARG_Invert_Table[TOP_andl_r_r]  = TOP_nandl_r_r;
-  CGTARG_Invert_Table[TOP_andl_i_r]  = TOP_nandl_i_r;
-  CGTARG_Invert_Table[TOP_andl_ii_r]  = TOP_nandl_ii_r;
-  CGTARG_Invert_Table[TOP_nandl_r_r]  = TOP_andl_r_r;
-  CGTARG_Invert_Table[TOP_nandl_i_r]  = TOP_andl_i_r;
-  CGTARG_Invert_Table[TOP_nandl_ii_r]  = TOP_andl_ii_r;
-  CGTARG_Invert_Table[TOP_orl_r_r]  = TOP_norl_r_r;
-  CGTARG_Invert_Table[TOP_orl_i_r]  = TOP_norl_i_r;
-  CGTARG_Invert_Table[TOP_orl_ii_r]  = TOP_norl_ii_r;
-  CGTARG_Invert_Table[TOP_norl_r_r]  = TOP_orl_r_r;
-  CGTARG_Invert_Table[TOP_norl_i_r]  = TOP_orl_i_r;
-  CGTARG_Invert_Table[TOP_norl_ii_r]  = TOP_orl_ii_r;
-  CGTARG_Invert_Table[TOP_andl_r_b]  = TOP_nandl_r_b;
-  CGTARG_Invert_Table[TOP_andl_i_b]  = TOP_nandl_i_b;
-  CGTARG_Invert_Table[TOP_andl_ii_b]  = TOP_nandl_ii_b;
-  CGTARG_Invert_Table[TOP_nandl_r_b]  = TOP_andl_r_b;
-  CGTARG_Invert_Table[TOP_nandl_i_b]  = TOP_andl_i_b;
-  CGTARG_Invert_Table[TOP_nandl_ii_b]  = TOP_andl_ii_b;
-  CGTARG_Invert_Table[TOP_orl_r_b]  = TOP_norl_r_b;
-  CGTARG_Invert_Table[TOP_orl_i_b]  = TOP_norl_i_b;
-  CGTARG_Invert_Table[TOP_orl_ii_b]  = TOP_norl_ii_b;
-  CGTARG_Invert_Table[TOP_norl_r_b]  = TOP_orl_r_b;
-  CGTARG_Invert_Table[TOP_norl_i_b]  = TOP_orl_i_b;
-  CGTARG_Invert_Table[TOP_norl_ii_b]  = TOP_orl_ii_b;
+#define CASE_TOP(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1] = TOP_##top2; \
+  CGTARG_Invert_Table[TOP_##top2] = TOP_##top1
+
+#define CASE_TOP_BR(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1##_i_b] = TOP_##top2##_i_b; \
+  CGTARG_Invert_Table[TOP_##top2##_i_b] = TOP_##top1##_i_b
+
+#define CASE_TOP_IR(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1##_r] = TOP_##top2##_r; \
+  CGTARG_Invert_Table[TOP_##top1##_i] = TOP_##top2##_i; \
+  CGTARG_Invert_Table[TOP_##top1##_ii] = TOP_##top2##_ii; \
+  CGTARG_Invert_Table[TOP_##top2##_r] = TOP_##top1##_r; \
+  CGTARG_Invert_Table[TOP_##top2##_i] = TOP_##top1##_i; \
+  CGTARG_Invert_Table[TOP_##top2##_ii] = TOP_##top1##_ii
+
+#define CASE_TOP_SLCT(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1##_r_r_b_r] = TOP_##top2##_r_r_b_r; \
+  CGTARG_Invert_Table[TOP_##top1##_i_r_b_r] = TOP_##top2##_i_r_b_r; \
+  CGTARG_Invert_Table[TOP_##top1##_ii_r_b_r] = TOP_##top2##_ii_r_b_r; \
+  CGTARG_Invert_Table[TOP_##top2##_r_r_b_r] = TOP_##top1##_r_r_b_r; \
+  CGTARG_Invert_Table[TOP_##top2##_i_r_b_r] = TOP_##top1##_i_r_b_r; \
+  CGTARG_Invert_Table[TOP_##top2##_ii_r_b_r] = TOP_##top1##_ii_r_b_r
+
+#define CASE_TOP_IRB(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1##_r_r_b] = TOP_##top2##_r_r_b; \
+  CGTARG_Invert_Table[TOP_##top2##_r_r_b] = TOP_##top1##_r_r_b; \
+  CGTARG_Invert_Table[TOP_##top1##_i_r_b] = TOP_##top2##_i_r_b; \
+  CGTARG_Invert_Table[TOP_##top2##_i_r_b] = TOP_##top1##_i_r_b; \
+  CGTARG_Invert_Table[TOP_##top1##_ii_r_b] = TOP_##top2##_ii_r_b; \
+  CGTARG_Invert_Table[TOP_##top2##_ii_r_b] = TOP_##top1##_ii_r_b; \
+  CGTARG_Invert_Table[TOP_##top1##_r_r_r] = TOP_##top2##_r_r_r; \
+  CGTARG_Invert_Table[TOP_##top2##_r_r_r] = TOP_##top1##_r_r_r; \
+  CGTARG_Invert_Table[TOP_##top1##_i_r_r] = TOP_##top2##_i_r_r; \
+  CGTARG_Invert_Table[TOP_##top2##_i_r_r] = TOP_##top1##_i_r_r; \
+  CGTARG_Invert_Table[TOP_##top1##_ii_r_r] = TOP_##top2##_ii_r_r; \
+  CGTARG_Invert_Table[TOP_##top2##_ii_r_r] = TOP_##top1##_ii_r_r
+
+#define CASE_TOP_CMP(top1,top2) \
+  CASE_TOP_IRB(top1,top2); \
+  CGTARG_Invert_Table[TOP_st240_##top1##_r_b] = TOP_st240_##top2##_r_b; \
+  CGTARG_Invert_Table[TOP_st240_##top2##_r_b] = TOP_st240_##top1##_r_b; \
+  CGTARG_Invert_Table[TOP_st240_##top1##_i_b] = TOP_st240_##top2##_i_b; \
+  CGTARG_Invert_Table[TOP_st240_##top2##_i_b] = TOP_st240_##top1##_i_b; \
+  CGTARG_Invert_Table[TOP_st240_##top1##_ii_b] = TOP_st240_##top2##_ii_b; \
+  CGTARG_Invert_Table[TOP_st240_##top2##_ii_b] = TOP_st240_##top1##_ii_b
+
+#define CASE_TOP_CMPF(top1,top2) \
+  CGTARG_Invert_Table[TOP_##top1##_r_r_r] = CGTARG_Invert_Table[TOP_##top2##_r_r_r]; \
+  CGTARG_Invert_Table[TOP_##top2##_r_r_r] = CGTARG_Invert_Table[TOP_##top1##_r_r_r]; \
+  CGTARG_Invert_Table[TOP_##top1##_r_r_b] = CGTARG_Invert_Table[TOP_##top2##_r_r_b]; \
+  CGTARG_Invert_Table[TOP_##top2##_r_r_b] = CGTARG_Invert_Table[TOP_##top1##_r_r_b]
+
+  CASE_TOP_BR(br,brf);
+  CASE_TOP_SLCT(slct,slctf);
+  if (Is_Target_st240 ()) {
+    CASE_TOP(st240_slct_r_r_b_r,slctf_r_r_b_r);
+  }
+  CASE_TOP_IRB(cmpeq,cmpne);
+  CASE_TOP_IRB(cmpge,cmplt);
+  CASE_TOP_IRB(cmpgeu,cmpltu);
+  CASE_TOP_IRB(cmpgt,cmple);
+  CASE_TOP_IRB(cmpgtu,cmpleu);
+  CASE_TOP_IRB(andl,nandl);
+  CASE_TOP_IRB(orl,norl);
+  CASE_TOP_CMPF(cmpgef_n,cmpltf_n);
+  CASE_TOP_CMPF(cmpgtf_n,cmplef_n);
+
+  targ_cg_init_targ_op ();
 
   init_templates();
 
@@ -3334,12 +3310,17 @@ CGTARG_Initialize ()
   if (CGTARG_max_issue_width_overriden) 
     init_max_issue_width(CGTARG_max_issue_width);
 
+  if (Is_Target_st220 () || Is_Target_st231 ())
+    ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 1);
+  else
+    ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 4);
+    
   return;
+#undef CASE_TOP
+#undef CASE_TOP_IR
+#undef CASE_TOP_IRB
+#undef CASE_TOP_CMP
+#undef CASE_TOP_CMPF
+
 }
 
-BOOL
-CGTARG_Is_Simple_Jump(const OP* op)
-{
-    // targeting not done, but not needed for the moment
-    return FALSE;
-}

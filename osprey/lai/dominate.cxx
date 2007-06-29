@@ -812,3 +812,20 @@ Free_Dominators_Memory(void)
   bb_dom_map.size = 0;
   pool_inited = FALSE;
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ *  PU_Has_Dominator_Info
+ *
+ *  See interface description
+ *
+ * ====================================================================
+ */
+BOOL
+PU_Has_Dominator_Info(void)
+{
+  return pool_inited;
+}
+
+#endif

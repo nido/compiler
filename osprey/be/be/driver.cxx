@@ -127,7 +127,9 @@
 #include "wn_instrument.h"          /* whirl instrumenter */
 #include "wn_coverage.h"          /* whirl coverage */
 #include "mem_ctr.h"
-
+#ifdef TARG_ST
+#include "W_alloca.h"             // alloca
+#endif
 #ifdef TARG_ST
 //TB: loader stuff
 BE_EXPORTED extern void Initialize_Extension_Loader(void);
@@ -1193,15 +1195,18 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 	  Emulate_Double_Float_Type ||
           Emulate_DivRem_Integer_Ops ||
 	  Only_32_Bit_Ops) {
+	/* [CG] This piece of code makes gcc mingwin32 3.4.2 generate
+	 * wrong code (actions gets an unexpected value).
+	 * The work around is to compile with -fno-gcse (see make/gcommondefs)
+	 * on this compiler.
+	 */
 	LOWER_ACTIONS actions = 0;
 	/* [CG] We always lower fast div/rem */
 	actions |= LOWER_FAST_DIV;
 	/* [CG] We also always lower cnst  div/rem */
 	actions |= LOWER_CNST_DIV;
-#ifndef TARG_STxP70
 	/* Lower madd before RT for madd instrinsics. */
 	actions |= LOWER_MADD; 
-#endif
 #ifdef TARG_STxP70
 	/* Lower array before RT to catch MUL that are emulated on STxP70. */
 	actions |= LOWER_ARRAY;
@@ -1464,8 +1469,19 @@ Backend_Processing (PU_Info *current_pu, WN *pu)
 	        ("-INTERNAL:return_val and -INTERNAL:mldid_mstid must be on the same time"));
 	actions |= LOWER_RETURN_VAL | LOWER_MLDID_MSTID;
       }
+#ifdef TARG_ST
+  //TB: Add some fb checks
+      if (Cur_PU_Feedback)
+	Cur_PU_Feedback->Verify("Before RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+#endif
       pu = WN_Lower (pu, actions, NULL,
 		     "RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+
+#ifdef TARG_ST
+  //TB: Add some fb checks
+      if (Cur_PU_Feedback)
+	Cur_PU_Feedback->Verify("After RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+#endif
     }
 #else
     /* Make sure that RETURN_VAL nodes, Return_Val_Preg references and
@@ -1588,6 +1604,7 @@ Preprocess_PU (PU_Info *current_pu)
     if (PU_Info_state (current_pu, WT_FEEDBACK) == Subsect_InMem) {
 	const Pu_Hdr* pu_hdr = (const Pu_Hdr*)
 	    PU_Info_feedback_ptr (current_pu);
+#ifdef KEY
 	Cur_PU_Feedback = CXX_NEW (FEEDBACK (PU_Info_tree_ptr (current_pu),
 					     MEM_pu_nz_pool_ptr,
 					     pu_hdr->pu_num_inv_entries,
@@ -1595,8 +1612,24 @@ Preprocess_PU (PU_Info *current_pu)
 					     pu_hdr->pu_num_loop_entries,
 					     pu_hdr->pu_num_scircuit_entries,
 					     pu_hdr->pu_num_call_entries,
+					     pu_hdr->pu_num_icall_entries,
+					     pu_hdr->pu_num_switch_entries,
+					     pu_hdr->pu_num_value_entries,
+					     pu_hdr->pu_num_value_fp_bin_entries,
+					     pu_hdr->runtime_fun_address),
+				   MEM_pu_nz_pool_ptr);
+#else
+	Cur_PU_Feedback = CXX_NEW (FEEDBACK (PU_Info_tree_ptr (current_pu),
+					     MEM_pu_nz_pool_ptr,
+					     pu_hdr->pu_num_inv_entries,
+					     pu_hdr->pu_num_br_entries,
+					     pu_hdr->pu_num_loop_entries,
+					     pu_hdr->pu_num_scircuit_entries,
+					     pu_hdr->pu_num_call_entries,
+					     pu_hdr->pu_num_icall_entries,
 					     pu_hdr->pu_num_switch_entries),
 				   MEM_pu_nz_pool_ptr);
+#endif
 	Read_Feedback_Info (Cur_PU_Feedback, PU_Info_tree_ptr (current_pu),
 			    *pu_hdr);
 	// turn off other feedback I/O
@@ -1643,6 +1676,32 @@ Preprocess_PU (PU_Info *current_pu)
    */
   pu = PU_Info_tree_ptr(current_pu);
 #ifdef TARG_ST
+  //TB: Add the possibility to desactivate instrumentation for a
+  //psecific function for debug purpose
+  if (Instrumentation_Enabled && disable_instrument != NULL) {
+    int len;
+    if (strstr(ST_name(WN_st(pu)),".."))
+      len = strstr(ST_name(WN_st(pu)),"..") - ST_name(WN_st(pu));
+    else
+      len = strlen(ST_name(WN_st(pu)));
+    if (strncmp(disable_instrument, ST_name(WN_st(pu)), len) == 0) {
+      fprintf(stdout,"Disabling profiling instrumentation for %s\n", ST_name(WN_st(pu)));
+      Instrumentation_Enabled = FALSE;
+    }
+  } else if (!Instrumentation_Enabled && enable_instrument != NULL) {
+    int len;
+    if (strstr(ST_name(WN_st(pu)),".."))
+      len = strstr(ST_name(WN_st(pu)),"..") - ST_name(WN_st(pu));
+    else
+      len = strlen(ST_name(WN_st(pu)));
+    if (strncmp(enable_instrument, ST_name(WN_st(pu)), len) == 0) {
+      char *instr_filename = (char *)alloca(len + 7);
+      fprintf(stdout,"Enabling profiling instrumentation for %s\n", enable_instrument);
+      sprintf(instr_filename,"%s.instr",ST_name(WN_st(pu)));
+      Set_Instrumentation_File_Name(instr_filename);
+      Instrumentation_Enabled = TRUE;
+    }
+  }
   /* Disable instrumentation for asm functions. */
   if (ST_asm_function_st(*WN_st(pu))) {
     Instrumentation_Enabled = FALSE;

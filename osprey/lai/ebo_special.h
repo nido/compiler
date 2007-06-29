@@ -170,6 +170,18 @@ extern BOOL EBO_condition_redundant(OP *elim_op,
 				    EBO_OP_INFO *prev_opinfo,
 				    OPS *ops);
 
+BOOL EBO_Try_To_Simplify_Operand0 (OP *op,
+				   TN *tnr,
+				   TN *tn0,
+				   TN *tn1,
+				   OPS *ops);
+
+BOOL EBO_Try_To_Simplify_Operand1 (OP *op,
+				   TN *tnr,
+				   TN *tn0,
+				   TN *tn1,
+				   OPS *ops);
+
 // 'op' has one of its operands of 'const_val' -- try to replace 
 // with a more effcient opcode
 extern OP* EBO_simplify_operand0 (OP *op,

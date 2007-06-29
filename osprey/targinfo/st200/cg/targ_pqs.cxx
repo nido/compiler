@@ -46,41 +46,21 @@ PQSTARG_get_top_info(
   PQS_RELOPTYPE &relop
 )
 {
-   relop = PQS_RELOPTYPE_OTHER;
-   itype = PQS_ITYPE_INVALID;
+  itype = PQS_ITYPE_NOPREDICATES;
+  relop = PQS_RELOPTYPE_OTHER;
 
-   switch (x) {
-   case	TOP_cmpne_r_b:
-   case TOP_cmpne_r_r:
-   case TOP_cmpne_i_b:
-   case TOP_cmpne_i_r:
-   case TOP_cmpeq_r_b:
-   case TOP_cmpeq_r_r:
-   case TOP_cmpeq_i_b:
-   case TOP_cmpeq_i_r:
+  if (TOP_is_cmp(x) && TOP_is_intop(x)) {
+   VARIANT v = TOP_cmp_variant (x);
+
+   switch (v) {
+   case V_CMP_NE:
      itype = PQS_ITYPE_NORM;
-     
-    default: 
-      itype = PQS_ITYPE_NOPREDICATES;
-      break;
-   }
-
-   switch (x) {
-   case	TOP_cmpne_r_b:
-   case TOP_cmpne_r_r:
-   case TOP_cmpne_i_b:
-   case TOP_cmpne_i_r:
      relop = PQS_RELOPTYPE_NE;
      break;
-
-   case TOP_cmpeq_r_b:
-   case TOP_cmpeq_r_r:
-   case TOP_cmpeq_i_b:
-   case TOP_cmpeq_i_r:
+   case V_CMP_EQ:
+     itype = PQS_ITYPE_NORM;
      relop = PQS_RELOPTYPE_EQ;
      break;
    }
-
-   return;
+  }
 }
-

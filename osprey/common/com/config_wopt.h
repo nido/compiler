@@ -124,7 +124,7 @@ BE_EXPORTED extern BOOL WOPT_Enable_DCE_Label;	/* delete unref'd labels */
 BE_EXPORTED extern BOOL WOPT_Enable_Dse_Aggressive;
 BE_EXPORTED extern BOOL WOPT_Enable_DU_Full;	/* full DU-info for indirects */
 BE_EXPORTED extern BOOL WOPT_Enable_DU_Union;	/* fix DU w/unions */
-BE_EXPORTED extern BOOL WOPT_Enable_Estr_FB_Injury; /* use feedback frequency to */
+//BE_EXPORTED extern BOOL WOPT_Enable_Estr_FB_Injury; /* use feedback frequency to */
 					/* decide when IV updates are */
 					/* reparable injuries */
 BE_EXPORTED extern BOOL WOPT_Enable_Exp_PRE;
@@ -244,7 +244,7 @@ BE_EXPORTED extern BOOL  WOPT_Enable_Extra_Rename_Pass_Set;
 BE_EXPORTED extern UINT32 WOPT_Enable_Extra_Preopt_Pass; // additional iterations of preopt
 BE_EXPORTED extern BOOL  WOPT_Enable_Bool_Simp; 
 BE_EXPORTED extern BOOL  WOPT_Enable_Feedback_LPRE;
-BE_EXPORTED extern BOOL  WOPT_Enable_Feedback_EPRE;
+//BE_EXPORTED extern BOOL  WOPT_Enable_Feedback_EPRE;
 BE_EXPORTED extern BOOL  WOPT_Enable_CFG_Opt;
 BE_EXPORTED extern BOOL  WOPT_Enable_CFG_Display;
 BE_EXPORTED extern BOOL  WOPT_Enable_CFG_Merge_Multi_Zone;

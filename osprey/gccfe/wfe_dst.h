@@ -116,8 +116,10 @@ extern struct mongoose_gcc_DST_IDX Create_DST_decl_For_Tree(
 typedef struct lexical_block_info_t {
   LABEL_IDX         lexical_block_start_idx;
   LABEL_IDX         lexical_block_end_idx;
+  struct lexical_block_info_t *parent;
   struct mongoose_gcc_DST_IDX dst;
-  int               level;
+  int               id;
+  tree              fndecl;  
 } LEXICAL_BLOCK_INFO;
 #endif
 

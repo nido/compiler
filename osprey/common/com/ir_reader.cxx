@@ -439,6 +439,9 @@ static file_info *file_table = NULL;
 static char **incl_table;
 static INT cur_file_index = 0;
 static BOOL file_table_generated = FALSE;
+#ifdef TARG_ST
+static INT file_table_size;
+#endif
 
 // separated the following functionality from IR_Dwarf_Gen_File_Table
 // ir_print_filename allows us to print path names from DST onto the
@@ -456,7 +459,9 @@ static void ir_print_filename(BOOL dump_filenames)
   DST_IDX idx;
   DST_FILE_NAME *file;
   char *name;
+#ifndef TARG_ST
   INT file_table_size;
+#endif
   INT new_size;
 
 
@@ -524,7 +529,12 @@ extern void IR_Dwarf_Gen_File_Table (BOOL dump_filenames)
 
   if (file_table_generated && file_table != NULL) {
 	/* only need to reset the fileptr and line_printed info */
+#ifdef TARG_ST
+  	for (count = 1; count < file_table_size; count++) {
+	  if (file_table[count].fileptr)
+#else
   	for (count = 1; file_table[count].fileptr != NULL; count++) {
+#endif
       		fclose (file_table[count].fileptr);
       		file_table[count].fileptr = NULL;
 		file_table[count].max_line_printed = 0;

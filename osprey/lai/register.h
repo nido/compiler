@@ -349,6 +349,17 @@
  *      REGISTER_SET REGISTER_SET_Range(UINT low, UINT high)
  *          Returns the register set created from range [low..high]
  *
+#ifdef TARG_ST
+ *	REGISTER_SET REGISTER_SET_Offset(
+ *	    REGISTER_SET set,
+ *          INT offset
+ *	)
+ *
+ *	    Returns the set of registers in the given set
+ *          offset by offset.  i.e. if r27 is in SET, and the
+ *          offset is 2, then r29 is in the returned set.
+ *
+#endif
  *
  *  Looping over the elements in a REGISTER_SET:
  *
@@ -1007,6 +1018,10 @@ REGISTER_CLASS_OP_Update_Mapping(
 
 extern REGISTER_SET REGISTER_SET_Range(UINT low, UINT high);
 
+#ifdef TARG_ST
+extern REGISTER_SET REGISTER_SET_Offset (REGISTER_SET set, INT offset);
+#endif
+
 inline BOOL
 REGISTER_SET_EqualP(
   REGISTER_SET set1,
@@ -1244,6 +1259,13 @@ REGISTER_SET_Size(
 
 extern void
 REGISTER_SET_Print(
+  REGISTER_SET  set,
+  FILE         *f
+);
+
+extern void
+REGISTER_SET_Print_Name(
+  ISA_REGISTER_CLASS rc,		       
   REGISTER_SET  set,
   FILE         *f
 );

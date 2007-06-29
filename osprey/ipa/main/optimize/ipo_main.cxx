@@ -110,6 +110,10 @@
 
 #include "ipc_option.h" 
 
+#ifdef KEY
+#include "ipo_parent.h"
+#endif
+
 #ifndef TARG_ST
 extern "C" void add_to_tmp_file_list (char*);
 #pragma weak add_to_tmp_file_list
@@ -838,6 +842,93 @@ Perform_Alias_Class_Annotation(void)
   }
 }
 
+#ifdef KEY
+static void
+IPA_Remove_Regions (IPA_NODE_VECTOR v, IPA_CALL_GRAPH * cg)
+{
+    SCOPE * old_scope = Scope_tab;
+
+    for (IPA_NODE_VECTOR::iterator node = v.begin ();
+	 node != v.end (); ++node)
+    
+    {
+      PU pu = Pu_Table[ST_pu((*node)->Func_ST())];
+
+      if (!(PU_src_lang (pu) & PU_CXX_LANG) || !PU_has_region (pu))
+      	continue;
+
+      IPA_NODE_CONTEXT context (*node);	// switch to the node context
+      cg->Map_Callsites (*node);
+      WN_MAP Node_Parent_Map = (*node)->Parent_Map();
+      WN_MAP_TAB * Node_Map_Tab = PU_Info_maptab ((*node)->PU_Info());
+
+      IPA_SUCC_ITER succ_iter (*node);
+      BOOL changed = false;
+      for (succ_iter.First(); !succ_iter.Is_Empty(); succ_iter.Next())
+      {
+	IPA_EDGE *edge = succ_iter.Current_Edge ();
+	IPA_NODE *callee = cg->Callee (edge);
+
+	if (callee->PU_Can_Throw())
+	  continue;
+	
+	// Remove any region immediately surrounding this edge at caller
+	WN * call = edge->Whirl_Node();
+	Is_True (call, ("Call whirl node absent in IPA edge"));
+	WN * parent = WN_Get_Parent (call, Node_Parent_Map, Node_Map_Tab);
+	for (; parent; parent = WN_Get_Parent (parent, Node_Parent_Map, Node_Map_Tab))
+	{
+	    if (WN_operator(parent) != OPR_REGION || !WN_region_is_EH(parent))
+	    	continue;
+	    if (WN_block_empty (WN_region_pragmas (parent)))
+	    {
+	      WN * body = WN_region_body (parent);
+	      if (WN_first (body) == WN_last (body) && 
+	      	  WN_first (body) == call)
+		{ // remove the region
+		    changed = true;
+
+      		    WN * parent_of_region = WN_Get_Parent (parent, 
+		    				Node_Parent_Map, Node_Map_Tab);
+		    
+		    Is_True (parent_of_region, 
+		    	     ("Region node not within any block"));
+		    Is_True (WN_prev (parent) || 
+		    	     (WN_operator (parent_of_region) == 
+			     OPR_BLOCK && WN_first (parent_of_region) == 
+			     parent), ("Error removing EH region"));
+
+		    // if region is the 1st stmt
+		    if (!WN_prev (parent))
+		      WN_first (parent_of_region) = call;
+		    else
+		      WN_next (WN_prev (parent)) = call;
+		    WN_prev (call) = WN_prev (parent);
+
+		    // if region is the last stmt
+		    if (!WN_next (parent))
+		      WN_last (parent_of_region) = call;
+		    else
+		      WN_prev (WN_next (parent)) = call;
+		    WN_next (call) = WN_next (parent);
+		    // remove the call node from the region body
+		    WN_first (body) = WN_last (body) = NULL;
+		    // detach the region
+		    WN_prev (parent) = WN_next (parent) = NULL;
+		}
+	    }
+	}
+      }
+      if (changed)
+      {
+	WN_Parentize ((*node)->Whirl_Tree (FALSE), Node_Parent_Map, Node_Map_Tab);
+      	changed = false;
+      }
+    }
+    Scope_tab = old_scope;
+}
+#endif // KEY
+
 static void
 IPO_main (IPA_CALL_GRAPH* cg)
 {
@@ -865,6 +956,11 @@ IPO_main (IPA_CALL_GRAPH* cg)
     IPA_NODE_VECTOR walk_order;
 
     Build_Transformation_Order (walk_order, cg->Graph(), cg->Root());
+
+#ifdef KEY
+    if (IPA_Enable_EH_Region_Removal)
+    	IPA_Remove_Regions (walk_order, cg); // Remove EH regions that are not required
+#endif
 
 #ifdef TARG_ST
     Init_Pending_Writes (walk_order);

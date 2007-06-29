@@ -285,7 +285,7 @@ inline INT Min(INT i, INT j)
 }
 
 #ifdef TARG_ST
-#include "float.h"
+#include <float.h>
 
 inline
 BOOL KnuthCompare(float af, float bf, float relError)

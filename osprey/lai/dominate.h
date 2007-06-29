@@ -84,6 +84,11 @@
  *	a call to Calculate_Dominators or for all BBs once
  *	Free_Dominators_Memory is called.
  *
+ *   BOOL PU_Has_Dominator_Info()
+ *	Returns a boolean value to indicate if the dominator information is
+ *	globally available for the PU. I.e, in between Calculate_Dominators()
+ *	and Free_Dominators_Memory().
+ *
  * ====================================================================
  * ====================================================================
  */
@@ -119,5 +124,7 @@ CG_EXPORTED extern void Calculate_Dominators(void);
 extern void BB_REGION_Calculate_Dominators(const BB_REGION& region);
 extern void BB_SET_Calculate_Dominators(BB_SET *bbset, BOOL compute_dom, BOOL compute_pdom);
 CG_EXPORTED extern void Free_Dominators_Memory(void);
-
+#ifdef TARG_ST
+CG_EXPORTED extern BOOL PU_Has_Dominator_Info(void);
+#endif
 #endif /* DOMINATE_INCLUDED */

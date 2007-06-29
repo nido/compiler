@@ -1277,7 +1277,7 @@ Handle_Bundle_Hazards(
 
     // Process simulated ops
     if (OP_simulated(op)) {
-      TOP adjust_top = CGTARG_Simulated_Top(op, prop);
+      TOP adjust_top = OP_Simulated_Top(op, prop);
       OP_Change_Opcode(op, adjust_top);
     }
 

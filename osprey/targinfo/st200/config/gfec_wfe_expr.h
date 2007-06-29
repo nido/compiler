@@ -427,14 +427,6 @@
       iopc = INTRN_MAXUL ;
       intrinsic_op = TRUE ;
     break;
-    case BUILT_IN_MAXUW:
-      iopc = INTRN_MAXUW ;
-      intrinsic_op = TRUE ;
-    break;
-    case BUILT_IN_MAXW:
-      iopc = INTRN_MAXW ;
-      intrinsic_op = TRUE ;
-    break;
     case BUILT_IN_MIND:
       iopc = INTRN_MIND ;
       intrinsic_op = TRUE ;
@@ -457,14 +449,6 @@
     break;
     case BUILT_IN_MINUL:
       iopc = INTRN_MINUL ;
-      intrinsic_op = TRUE ;
-    break;
-    case BUILT_IN_MINUW:
-      iopc = INTRN_MINUW ;
-      intrinsic_op = TRUE ;
-    break;
-    case BUILT_IN_MINW:
-      iopc = INTRN_MINW ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_MODFCH:
@@ -815,20 +799,12 @@
       iopc = INTRN_ST220PRGADD ;
       intrinsic_op = FALSE ;
     break;
-    case BUILT_IN_ST220PRGINS:
-      iopc = INTRN_ST220PRGINS ;
-      intrinsic_op = FALSE ;
-    break;
     case BUILT_IN_ST220PRGSET:
       iopc = INTRN_ST220PRGSET ;
       intrinsic_op = FALSE ;
     break;
-    case BUILT_IN_ST220SYNC:
-      iopc = INTRN_ST220SYNC ;
-      intrinsic_op = FALSE ;
-    break;
-    case BUILT_IN_ST220SYNCINS:
-      iopc = INTRN_ST220SYNCINS ;
+    case BUILT_IN_ST200PRGINSSET:
+      iopc = INTRN_ST200PRGINSSET ;
       intrinsic_op = FALSE ;
     break;
     case BUILT_IN_ST220SYSCALL:
@@ -957,14 +933,6 @@
       iopc = INTRN_ST200PRGINSPG ;
       intrinsic_op = FALSE ;
     break;
-    case BUILT_IN_ST200PSWCLR:
-      iopc = INTRN_ST200PSWCLR ;
-      intrinsic_op = FALSE ;
-    break;
-    case BUILT_IN_ST200PSWSET:
-      iopc = INTRN_ST200PSWSET ;
-      intrinsic_op = FALSE ;
-    break;
     case BUILT_IN_NMADDS:
       iopc = INTRN_NMADDS ;
       intrinsic_op = TRUE ;
@@ -1050,6 +1018,9 @@
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_VA_START:
+      iopc = INTRN_VA_START;
+      break;
+
       {
 	tree arg1, arg2;
 
@@ -1154,4 +1125,7 @@
       }
     break;
 
+#define INTRN_GFEC_WFE_EXPR
+#include "gen_intrinsics.inc"
+#undef INTRN_GFEC_WFE_EXPR
 #endif /* defined(TARG_ST200) */

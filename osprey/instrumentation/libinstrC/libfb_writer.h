@@ -20,7 +20,10 @@ typedef enum FB_Info_Type {
   LIBFB_Info_Branch_Type,
   LIBFB_Info_Circuit_Type,
   LIBFB_Info_Call_Type,
-  LIBFB_Info_Loop_Type
+  LIBFB_Info_Loop_Type,
+  LIBFB_Info_Value_Type,
+  LIBFB_Info_Value_FP_Bin_Type,
+  LIBFB_Info_Icall_Type
 } FB_Info_Type;
 
 #ifdef __cplusplus

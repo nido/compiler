@@ -69,5 +69,10 @@ extern BOOL  VHO_Call_Opt;
 extern BOOL  VHO_Check_Tree;
 extern BOOL  VHO_Single_Loop_Test;
 extern BOOL  VHO_Use_Do_While;
+#ifdef KEY
+extern BOOL  VHO_Icall_Devir;
+extern BOOL  VHO_Enable_Misc_Loop_Transformation; // Enable loop transformation
+extern BOOL  VHO_Enable_Misc_Loop_Fusion; // Enable loop fusion
+#endif
 #endif /* config_vho_INCLUDED */
 

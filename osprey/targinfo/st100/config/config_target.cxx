@@ -409,7 +409,8 @@ Preconfigure_Target ( void )
   Emulate_FloatingPoint_Ops = TRUE;
 
   // Do not use the extract/compose whirl ops
-  Enable_extract_compose = FALSE;
+  Enable_extract = FALSE;
+  Enable_compose = FALSE;
 
   // These are only necessary in the BACK_END
   // Can they be used elsewhere, eg. IPA ??

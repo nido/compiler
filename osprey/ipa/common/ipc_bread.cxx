@@ -714,6 +714,7 @@ IP_READ_pu (IPA_NODE* node, IP_FILE_HDR& s, INT p_index, MEM_POOL *pool)
     if (PU_Info_state (pu, WT_FEEDBACK) == Subsect_InMem) {
 	const Pu_Hdr* pu_hdr = (const Pu_Hdr*)
 	    PU_Info_feedback_ptr (pu);
+#ifdef KEY
 	Cur_PU_Feedback = CXX_NEW (FEEDBACK (PU_Info_tree_ptr (pu),
 					     pool,
 					     pu_hdr->pu_num_inv_entries,
@@ -721,8 +722,24 @@ IP_READ_pu (IPA_NODE* node, IP_FILE_HDR& s, INT p_index, MEM_POOL *pool)
 					     pu_hdr->pu_num_loop_entries,
 					     pu_hdr->pu_num_scircuit_entries,
 					     pu_hdr->pu_num_call_entries,
+					     pu_hdr->pu_num_icall_entries,
+					     pu_hdr->pu_num_switch_entries,
+					     pu_hdr->pu_num_value_entries,
+					    pu_hdr->pu_num_value_fp_bin_entries,
+					     pu_hdr->runtime_fun_address),
+				   pool);
+#else
+	Cur_PU_Feedback = CXX_NEW (FEEDBACK (PU_Info_tree_ptr (pu),
+					     pool,
+					     pu_hdr->pu_num_inv_entries,
+					     pu_hdr->pu_num_br_entries,
+					     pu_hdr->pu_num_loop_entries,
+					     pu_hdr->pu_num_scircuit_entries,
+					     pu_hdr->pu_num_call_entries,
+					     pu_hdr->pu_num_icall_entries,
 					     pu_hdr->pu_num_switch_entries),
 				   pool);
+#endif
 	Read_Feedback_Info (Cur_PU_Feedback, PU_Info_tree_ptr (pu), *pu_hdr);
 	// FB_PU_Has_Feedback = TRUE;
 	IPA_Has_Feedback = TRUE;

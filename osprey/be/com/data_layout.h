@@ -211,7 +211,7 @@ BE_EXPORTED extern ST *Get_Reg_Save_Area(void);
  *
  * This type collects information on the vararg area status.
  * It is used to communicate to the va_arg/va_start emulation
- * the status of the vararg araes.
+ * the status of the vararg areas.
  * Once the lowering of entry/exit formals have been done.
  * the function Get_Vararg_Save_Area_Info() can be called
  * to fill a SF_VARARG_INFO type.
@@ -221,12 +221,12 @@ BE_EXPORTED extern ST *Get_Reg_Save_Area(void);
  *   INT SF_VARARG_INFO_flags(x)
  *   Retuns the flags for interpreting this information.
  *   if SF_VARARG_INFO_flags(x) & SF_VARARG_INFO_HAS_INT
- *	then the vararg area as a in register save area base
+ *	then the vararg area has an int register save area base
  *   if SF_VARARG_INFO_flags(x) & SF_VARARG_INFO_HAS_FLOAT
- *	then the vararg area as a float register save area base
+ *	then the vararg area has a float register save area base
  *
  *   if SF_VARARG_INFO_flags(x) & SF_VARARG_INFO_HAS_STACK
- *	then the vararg area as a variable stack area base
+ *	then the vararg area has a variable stack area base
  *
  *   INT SF_VARARG_INFO_fixed_int_params(x)
  *   Returns the number of fixed int slots used by the function.
@@ -252,11 +252,10 @@ BE_EXPORTED extern ST *Get_Reg_Save_Area(void);
  *   start (low memory) of the variable float registers save area.
  *   The first variable float register should be homed at that location.
  *
- *   ST *SF_VARARG_INFO_var_float_save_base(x)
- *   INT SF_VARARG_INFO_var_float_save_offset(x)
+ *   ST *SF_VARARG_INFO_var_stack_base(x)
+ *   INT SF_VARARG_INFO_var_stack_offset(x)
  *   Returns the base+offset address location to the
- *   start (low memory) of the variable float registers save area.
- *   The first variable float register should be homed at that location.
+ *   start (low memory) of the stack area.
  */
 
 #define SF_VARARG_INFO_HAS_INT 1

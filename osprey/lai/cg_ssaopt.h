@@ -31,6 +31,9 @@
  *
  * Utilities:
  *
+ *   SSA_DeadCode
+ *
+ *     Perform dead-code elimination over the current SSA region.
  *
  * ====================================================================
  * ====================================================================
@@ -40,5 +43,7 @@
 #define SSAOPT_H_INCLUDED
 
 extern void SSA_Optimize(void);
+
+extern void SSA_DeadCode (void);
 
 #endif /* SSAOPT_H_INCLUDED */

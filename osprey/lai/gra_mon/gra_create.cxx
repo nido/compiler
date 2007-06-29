@@ -516,10 +516,14 @@ Create_LRANGEs(void)
       gbb->Check_Loop_Border();
     }
 
+#ifdef TARG_ST
+    gbb->Create_Local_LRANGEs ();
+#else
     FOR_ALL_ISA_REGISTER_CLASS( rc ) {
       if ( gbb->Register_Girth(rc) > 0 )
         gbb->Create_Local_LRANGEs(rc,gbb->Register_Girth(rc));
     }
+#endif
   }
 
   // All the other global TNs have corresponding complement live ranges:
@@ -854,6 +858,31 @@ Complement_Copy( OP* op, GRA_BB *gbb, std::list<GRA_PREF_CAND*>& pref_list )
   if (OP_compose (op) || OP_extract (op)) {
     // [SC] For compose and extract, preference
     // first operand to first result.
+    // [SC] Note if a complement lr is used in extract/compose,
+    // and save in the lr the subclass of the wide operand/result,
+    // so that we can prefer it when allocating.
+    if (OP_compose (op)) {
+      for (INT j = 0; j < OP_opnds(op); j++) {
+	LRANGE *opnd_lr;
+	opnd = OP_opnd(op, j);
+	if (Get_Possibly_Wired_Reference(opnd, &opnd_lr)
+	    && opnd_lr->Type() == LRANGE_TYPE_COMPLEMENT) {
+	  opnd_lr->Set_Pref_Subclass (OP_result_reg_subclass(op, 0), j);
+	  GRA_Trace_Subclass_Preference (opnd_lr, gbb);
+	}
+      }
+    } else {
+      // OP_extract (op)
+      for (INT j = 0; j < OP_results(op); j++) {
+	LRANGE *result_lr;
+	result = OP_result (op, j);
+	if (Get_Possibly_Wired_Reference(result, &result_lr)
+	    && result_lr->Type() == LRANGE_TYPE_COMPLEMENT) {
+	  result_lr->Set_Pref_Subclass (OP_opnd_reg_subclass(op, 0), j);
+	  GRA_Trace_Subclass_Preference (result_lr, gbb);
+	}
+      }
+    }
     result = OP_result (op, 0);
     opnd = OP_opnd (op, 0);
   } else {
@@ -1311,7 +1340,7 @@ Scan_Complement_BB_For_Referenced_TNs( GRA_BB* gbb )
 #endif
 
 #ifdef TARG_ST
-    if ( CGTARG_Is_Preference_Copy(xop)
+    if ( OP_Is_Preference_Copy(xop)
 	 || OP_extract(xop)
 	 || OP_compose(xop) )
 #else

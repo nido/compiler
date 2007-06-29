@@ -257,6 +257,7 @@
 
 #include "config_host.h"	/* in TARGET/com */
 /* #include "config_targ.h" */	/* in TARGET/com */
+#include "config_target.h"	/* in TARGET/com */
 #include "mtypes.h"             /* includes config_targ.h" */
 
 #if defined(sun) || defined(__CYGWIN__) || defined(__MINGW32__)

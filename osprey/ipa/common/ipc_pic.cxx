@@ -57,11 +57,20 @@ Create_Unique_Name (const char* name)
 {
     static UINT32 g_count = 0;
 #ifdef TARG_ST
+    const char *suffix;
+    int suffix_size;
+    if (Ipa_Label_Suffix[0] != '\0') {
+      suffix = Ipa_Label_Suffix;
+      suffix_size =  strlen(Ipa_Label_Suffix);
+    } else {
+      suffix = NULL;
+      suffix_size = 10 + 10;
+    }
     // [CL] in case we are generating a relocatable object,
     // the same name may also be generated in another
     // relocatable object, so ensure different names
     // for different compilations
-    char *new_name = (char *) alloca (strlen (name) + 10 + 10 + 10);
+    char *new_name = (char *) alloca (strlen (name) + 10 + suffix_size + 1);
 #else
     char *new_name = (char *) alloca (strlen (name) + 10);
 #endif
@@ -86,6 +95,13 @@ Create_Unique_Name (const char* name)
         i /= 16;
     } while (i > 0);
 
+#ifdef TARG_ST
+    // [CG] If suffix provided, used it.
+    if (suffix != NULL) {
+      strcpy(p, suffix);
+      return Save_Str(new_name);
+    } 
+#endif
 #ifdef TARG_ST
     i = time(0);
     *p++ = '.';

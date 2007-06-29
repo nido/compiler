@@ -344,6 +344,78 @@ IPA_Do_Linearization (IPA_NODE* callee_node, WN* call, SCOPE* caller_scope)
 
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))
 
+#ifdef KEY
+static BOOL 
+Match_Loop_Indexes (WN* wn, vector<ST*> formals, INT num_formals)
+{
+  OPCODE opc = WN_opcode(wn);
+  if (opc == OPC_DO_LOOP) {
+    WN* index = WN_index(wn);
+
+    for (INT i = 0; i < num_formals; ++i) {
+      ST* formal_st = formals[i];
+      if (ST_sclass (formal_st) != SCLASS_FORMAL_REF)
+	continue;
+      if (formal_st == WN_st(index))
+	return TRUE;
+    }
+  } else if (opc == OPC_BLOCK) {
+    for (WN* stmt = WN_first(wn); stmt; stmt = WN_next(stmt)) {
+      if (WN_opcode(stmt) == OPC_DO_LOOP) {
+	WN* index = WN_index(stmt);
+
+	for (INT i = 0; i < num_formals; ++i) {
+	  ST* formal_st = formals[i];
+	  if (ST_sclass (formal_st) != SCLASS_FORMAL_REF)
+	    continue;
+	  if (formal_st == WN_st(index))
+	    return TRUE;
+	}	
+      }      
+      for (UINT kidno = 0; kidno < WN_kid_count(stmt); kidno++) {
+	if (Match_Loop_Indexes (WN_kid(stmt, kidno), formals, num_formals))
+	  return TRUE;
+      }
+    }
+  } else {
+    for (UINT kidno = 0; kidno < WN_kid_count(wn); kidno++) {
+      if (Match_Loop_Indexes(WN_kid(wn, kidno), formals, num_formals))
+	return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+static BOOL
+Formal_Is_Loop_Index (IPA_NODE* callee, const IPA_EDGE* edge)
+{
+  WN * call = edge->Whirl_Node();
+  WN* callee_wn = callee->Whirl_Tree(FALSE);
+  INT num_formals = WN_num_formals(callee_wn);
+  INT count_formals_to_test = 0;
+
+  // now that we allow inlining even if there is a mismatch..
+  if (edge->Num_Actuals() < num_formals)
+    num_formals = edge->Num_Actuals();
+
+  vector<ST*> formals;
+  formals.reserve (num_formals);
+
+  for (INT j = 0; j < num_formals; ++j) {
+    WN* actual = WN_kid(call, j);
+    if (WN_operator(actual) == OPR_PARM &&
+	WN_operator(WN_kid0(actual)) == OPR_ARRAY) {
+      formals.push_back (WN_st(WN_formal(callee_wn,j)));
+      count_formals_to_test ++;
+    }
+  }
+
+  if (Match_Loop_Indexes(callee_wn, formals, count_formals_to_test))
+    return TRUE;
+
+  return FALSE;
+}
+#endif
 // Final verification for incompatible parameters, etc.
 // Should move to inline analysis phase.
 BOOL
@@ -351,6 +423,18 @@ Can_Inline_Call (IPA_NODE* caller, IPA_NODE* callee, const IPA_EDGE* edge)
 {
   SCOPE_CONTEXT switch_scope(callee->Scope());
 
+#ifdef KEY
+  // Bug 110
+  // If the callee uses the formal parameter as a loop index variable then we 
+  // can not inline the call because we can not transform the IDNAME in a 
+  // meaningful way.
+  if ( Formal_Is_Loop_Index(callee, edge) ) {
+    Report_Reason ( callee, caller,
+                    "formal parameter is a loop index ", edge );
+    callee->Set_Noinline_Attrib();
+    return FALSE;
+  }
+#endif
   // if we end up linearizing certain references in fortran
   // then we should not inline
   if (! (edge->Has_Must_Inline_Attrib () ||
@@ -588,6 +672,16 @@ Get_actual_st_if_passed (WN *actual)
 		    break;
 		return st;
 	    }
+#ifdef KEY
+	case OPR_BLOCK:
+	    {
+	        WN * parent = p.Get_parent_wn();
+	    	if (parent && WN_operator(parent) == OPR_COMMA) {
+	    	    p.Skip ();
+	    	    continue;
+	        }
+	    }
+#endif
 	}
 	++p;
     }
@@ -1709,7 +1803,90 @@ IPO_INLINE::Process_OPR_REGION(WN* wn, IPA_NODE* caller_node)
 		Set_INITO_val(init_idx,
 		    Symtab()->Clone_INITVs_For_EH(INITO_val(init_idx), init_idx)); 
 	    }
-	    
+#ifdef KEY
+// For certain cases we don't have enclosing EH regions across a function
+// call. e.g. a function with empty specification is NOT supposed to throw,
+// so we do not enclose a call to it inside an EH region.
+	    if (WN_block_empty (WN_region_pragmas (wn)) &&
+	    	Call_edge()->EH_Whirl_Node()) {// not a try-region
+	    	INITV_IDX initv = INITV_blk (INITO_val (init_idx));
+
+		INITO_IDX enclosing = WN_ereg_supp (Call_edge()->EH_Whirl_Node());
+		INITV_IDX e_initv = INITV_blk (INITO_val (enclosing));
+		if (INITV_kind(initv) == INITVKIND_ZERO) {
+		// copy all the information from caller.
+		    if (INITV_kind(e_initv) != INITVKIND_ZERO) {
+		      INITV_IDX insert = New_INITV();
+		      INITV_Init_Block (INITO_val(init_idx), insert);
+		      while (e_initv) {
+		      	memcpy (&Initv_Table[insert], &Initv_Table[e_initv], sizeof(INITV));
+			e_initv = INITV_next (e_initv);
+			if (e_initv) {
+			    INITV_IDX prev = insert;
+			    insert = New_INITV();
+			    Set_INITV_next (prev, insert);
+			} // if
+		      } // while
+		    } // != INITVKIND_ZERO
+		} else {
+		// merge: we don't need to do anything with the caller landing
+		// pad (should be taken care of while handling _unwind_resume).
+		// Merge typeinfos: maintain their declaration order
+		    INITV_IDX last_initv = INITV_IDX_ZERO;
+		    while (initv)
+		    {
+			if (INITV_kind (initv) == INITVKIND_VAL)
+			{
+			  int sym = TCON_uval (INITV_tc_val (initv));
+			  if (sym < 0)
+			  {
+			    int new_ofst = -(mINT32)(-sym + 
+			    			caller_node->EH_spec_size());
+			    INITV_IDX bkup = INITV_next (initv);
+			    INITV_Set_VAL (Initv_Table[initv],
+					   Enter_tcon (Host_To_Targ (MTYPE_I4, 
+					   new_ofst)), 1);
+			    Set_INITV_next (initv, bkup);
+			  }
+			}
+			last_initv = initv;
+		    	initv = INITV_next(initv);
+		    }
+		    initv = last_initv;
+		    // remember: e_initv points to the landing-pad, the next
+		    // field is the typeinfo
+		    e_initv = INITV_next (e_initv);
+		    while (e_initv) {
+		        INITV_IDX insert = New_INITV();
+			memcpy (&Initv_Table[insert], &Initv_Table[e_initv], sizeof(INITV));
+			Set_INITV_next (initv, insert);
+			initv = insert;
+		    	e_initv = INITV_next (e_initv);
+		    }
+		}
+	    } else if (WN_block_empty (WN_region_pragmas (wn))) {
+	    // Call_edge()->EH_Whirl_Node() == NULL (no eh region around 
+	    // this callsite). Fix any eh-spec offsets
+	    	INITV_IDX initv = INITV_blk (INITO_val (init_idx));
+		if (INITV_kind (initv) != INITVKIND_ZERO) {
+		    while (initv) {
+			if (INITV_kind (initv) == INITVKIND_VAL) {
+			  int sym = TCON_uval (INITV_tc_val (initv));
+			  if (sym < 0) {
+			    int new_ofst = -(mINT32)(-sym + 
+			    			caller_node->EH_spec_size());
+			    INITV_IDX bkup = INITV_next (initv);
+			    INITV_Set_VAL (Initv_Table[initv],
+					   Enter_tcon (Host_To_Targ (MTYPE_I4, 
+					   new_ofst)), 1);
+			    Set_INITV_next (initv, bkup);
+			  }
+			}
+		    	initv = INITV_next(initv);
+		    }
+		}
+	    }
+#endif	    
 	}
     }
 
@@ -1775,6 +1952,13 @@ void
 IPO_INLINE::Process_Op_Code (TREE_ITER& iter, IPO_INLINE_AUX& aux)
 {
     WN* wn = iter.Wn ();
+#if defined(KEY) && !defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER)
+    // bug 3060
+    // Give everything the linenum of the callsite
+    // bug 6170: for lw-inliner, maintain the callee's line# information
+//     if (OPERATOR_has_next_prev(WN_operator(wn)))
+//       WN_Set_Linenum (wn, WN_Get_Linenum (Call_Wn()));
+#endif // KEY && !_STANDALONE_INLINER && !_LIGHTWEIGHT_INLINER
     OPERATOR oper = WN_operator (wn);
     switch(oper) {
     case OPR_RETURN_VAL:
@@ -1901,7 +2085,104 @@ IPO_INLINE::Process_Op_Code (TREE_ITER& iter, IPO_INLINE_AUX& aux)
 	   fix_var_dim_array(WN_ty(wn), Symtab());
 	break;
 #endif
+#ifdef KEY
+    case OPR_CALL:
+    {
+        WN * kid0;
+	if (WN_kid_count(wn) == 1 && (kid0 = WN_kid0 (WN_kid0 (wn))))
+	{
+	    if (WN_operator (kid0) == OPR_LDID &&
+	        ST_one_per_pu (&St_Table[WN_st_idx (kid0)]))
+	    {
+    		ST_IDX i = WN_st_idx (wn);
+		char * func_name = ST_name (St_Table[i]);
+		FmtAssert (func_name && 
+			   (!strcmp (func_name, "_Unwind_Resume") || 
+			    !strcmp (func_name, "__cxa_call_unexpected") || 
+			    !strcmp (func_name, "__cxa_begin_catch")), 
+			   ("Function %s has one-per-pu paramter", func_name));
+	    	// Fixup parameter
+	    	INITV_IDX exc_ptr = INITO_val ((INITO_IDX) Get_Current_PU ().unused);
+		WN_st_idx (kid0) = TCON_uval (INITV_tc_val (exc_ptr));
+	    }
+	}
+    }
+	break;
+    case OPR_EQ:
+        if (WN_operator (WN_kid0 (wn)) == OPR_LDID &&
+	    ST_one_per_pu (&St_Table[WN_st_idx (WN_kid0 (wn))]))
+	{
+// We have something like: cmp <LDID from_address>, <filter_integer>
+// (1) Get the correct from_address from Get_Current_PU()
+// (2) The filter value is obtained from the typeinfo table for the PU.
+// The callee typeinfo table must have been merged already into the 
+// caller typeinfo table.
+// (2a) From the callee PU information, find out the ST_IDX corresponding to
+// the current filter value.
+// (2b) Get the corresponding typeinfo in the caller table.
+// (2c) From the caller typeinfo table, get the filter value.
+//
+	    // fix the first parameter, take the proper input from runtime
+	    // (1)
+	    INITV_IDX first = INITO_val ((INITO_IDX) Get_Current_PU ().unused);
+	    WN_st_idx (WN_kid0 (wn)) = TCON_uval (INITV_tc_val (INITV_next (first)));
+	    // fix the 2nd parameter -- filter value
+	    int current_filter = WN_const_val (WN_kid1 (wn));
 
+	    if (current_filter < 0)
+	    { // filter for exception specification
+	    	WN_const_val (WN_kid1 (wn)) = - (mINT32)(-current_filter + Caller_node()->EH_spec_size());
+		break;
+	    }
+	    Set_Tables (Callee_node());
+
+	    INITO_IDX ino = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+	    INITV_IDX tinfo = INITV_next (INITV_next (INITO_val (ino)));
+	    INITV_IDX ttable = INITO_val (TCON_uval (INITV_tc_val (tinfo)));
+	    int filter;
+	    // (2a)
+	    while (ttable)
+	    {
+	    	filter = TCON_uval (INITV_tc_val (INITV_next (INITV_blk (ttable))));
+		if (filter == current_filter)
+		    break;
+		ttable = INITV_next (ttable);
+	    }
+	    FmtAssert (filter == current_filter, ("No matching ST for exception filter in callee typeinfo-table"));
+	    ST_IDX current_st = 0;
+	    {
+	      INITV_IDX i = INITV_blk (ttable);
+	      FmtAssert (INITV_kind (i) != INITVKIND_ZERO, ("Unexpected 0 st_idx for cmp operand"));
+	      current_st = TCON_uval (INITV_tc_val (i));
+	    }
+#ifdef Is_True_On
+	    {// DGLOBAL: user defined types. EXTERN: builtin types like 'char'
+	    	ST_SCLASS s = ST_sclass (St_Table[current_st]);
+	    	FmtAssert (s == SCLASS_DGLOBAL || s == SCLASS_EXTERN, ("Typeinfo symbol should be global"));
+	    }
+#endif
+	    Set_Tables (Caller_node());
+
+	    ttable = INITO_val (TCON_uval (INITV_tc_val (INITV_next (INITV_next (first)))));
+	    // (2b)
+	    ST_IDX search;
+	    while (ttable)
+	    {
+		INITV_IDX i = INITV_blk (ttable);
+		if (INITV_kind (i) == INITVKIND_ZERO)
+		    search = 0;
+		else
+	    	    search = TCON_uval (INITV_tc_val (i));
+		if (search == current_st)
+		    break;
+		ttable = INITV_next (ttable);
+	    }
+	    FmtAssert (search == current_st, ("No matching ST for exception filter in merged caller typeinfo-table"));
+	    // (2c)
+	    WN_const_val (WN_kid1 (wn)) = TCON_uval (INITV_tc_val (INITV_next (INITV_blk (ttable))));
+	}
+        break;
+#endif
     default:
 	break;
     }
@@ -2430,8 +2711,31 @@ Create_Assert (ST* formal, WN* const_wn, TYPE_ID desc)
 void
 IPO_INLINE::Process_Formal_ST (TREE_ITER& iter, ST* cp, IPO_INLINE_AUX& aux)
 { 
+#ifdef KEY
+    WN *wn = iter.Wn ();
+    PARM_ITER p = Lookup_Parm (aux.parm_attr, cp);
+    if (p == aux.parm_attr.end())
+    { // There is no match for this parameter, so this must be a case where
+      // # of parameters at the callsite < # of formals, and we are looking
+      // for the parameter missing at the callsite.
+	ST_IDX idx = 0;
+	for (replace_st_vec::iterator i=aux.replace_st.begin(); 
+	     i!=aux.replace_st.end(); ++i)
+	    if ((*i).formal == cp)
+	    {
+	    	idx = (*i).replace;
+	    	break;
+	    }
+	Is_True (idx, ("No ST to replace formal"));
+	WN_st_idx (wn) = idx;
+    	iter++;
+	return;
+    }
+    PARAMETER_ATTRIBUTES& parm = *p;
+#else
     PARAMETER_ATTRIBUTES& parm = *(Lookup_Parm (aux.parm_attr, cp));
     WN *wn = iter.Wn ();
+#endif
 
     switch (parm.Fixup_Method ()) {
 	WN* new_wn;
@@ -2687,6 +2991,9 @@ IPO_INLINE::Create_Copy_In_Symbol (ST* formal_st)
     Clear_ST_is_not_used (copy_st);
     Clear_ST_is_optional_argument (copy_st);
     Set_ST_is_temp_var (copy_st);
+#ifdef KEY // bug 6674
+    Clear_TY_is_restrict (copy_st->u2.type);
+#endif
 
     // update the caller pragma list
     SUMMARY_PROCEDURE* caller_proc = Caller_node()->Summary_Proc ();
@@ -3112,7 +3419,15 @@ IPO_INLINE::Process_Formals (IPO_INLINE_AUX& aux)
 
     // initialize the vector holding all the aux. data structures for each
     // parameter 
-    for (INT j=0; j < WN_num_formals(callee); ++j) {
+#ifdef KEY
+    INT num_params = Call_edge()->Num_Actuals() < WN_num_formals(callee) ?
+    		Call_edge()->Num_Actuals() : WN_num_formals(callee);
+
+    for (INT j=0; j < num_params; ++j)
+#else
+    for (INT j=0; j < WN_num_formals(callee); ++j)
+#endif
+    {
         ST* ste = get_formal(Callee_Scope(), WN_formal(callee,j));
 	ste = Symtab()->Get_ST(ste);	// Get the ST version in the caller side
 	Is_True (ST_sclass (ste) == SCLASS_FORMAL ||
@@ -3127,6 +3442,21 @@ IPO_INLINE::Process_Formals (IPO_INLINE_AUX& aux)
 	    has_array = TRUE;
 	parm_attr.push_back (PARAMETER_ATTRIBUTES (actual, ste)); 
     }
+
+#ifdef KEY
+    // For formals that are missing from the list of actuals, store the
+    // dummy ST with which to replace it.
+    for (; num_params < WN_num_formals(callee); ++num_params)
+    {
+        ST* ste = get_formal(Callee_Scope(), WN_formal(callee, num_params));
+	ste = Symtab()->Get_ST(ste);	// Get the ST version in the caller side
+	std::pair<ST*, WN_OFFSET> sym = Create_Copy_In_Symbol (ste); 
+	Is_True (!sym.second, ("Non-zero offset not handled yet"));
+
+	formal_to_replace_st param (ste, ST_st_idx (sym.first));
+	aux.replace_st.push_back (param);
+    }
+#endif
 
     aux.copy_in_block = WN_CreateBlock(); // Empty block into which assignments
 					  // to formals will go
@@ -3206,6 +3536,223 @@ IPO_INLINE::Walk_and_Update_Callee (IPO_INLINE_AUX& aux)
     aux.inlined_body = Simplify_Tree(aux.inlined_body);
 }
 
+#ifdef KEY
+void
+IPO_INLINE::Merge_EH_Spec_Tables (void)
+{
+    INITV_IDX start, blk;
+    // callee side
+    INITO_IDX tmp = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+    if (tmp)
+    	start = INITO_val (tmp);
+    else return;
+
+    const INITO_IDX callee_spec = TCON_uval (INITV_tc_val (INITV_next (INITV_next (INITV_next (start)))));
+    if (!callee_spec)
+    	return;		// no callee specification
+
+    blk = INITV_blk (INITO_val (callee_spec));
+    mUINT32 callee_spec_size=0;
+    vector<ST_IDX> callee_spec_types;
+    while (blk)
+    {
+    	callee_spec_size++;
+	if (INITV_kind (blk) == INITVKIND_ZERO)
+	    callee_spec_types.push_back (0);
+	else
+	    callee_spec_types.push_back (TCON_uval (INITV_tc_val (blk)));
+	blk = INITV_next (blk);
+    }
+    if (!Callee_node()->EH_spec_size())
+    	Callee_node()->Set_EH_spec_size (callee_spec_size);
+#ifdef Is_True_On
+    else FmtAssert (Callee_node()->EH_spec_size() == callee_spec_size, ("EH specification size mismatch"));
+    FmtAssert (!callee_spec_types.empty(), ("EH Specification merge error"));
+#endif
+
+    // caller side, change tables temporarily
+    Set_Tables (Caller_node());
+    start = INITO_val (Pu_Table [ST_pu (Caller_node()->Func_ST())].unused);
+    const INITO_IDX caller_spec = TCON_uval (INITV_tc_val (INITV_next (INITV_next (INITV_next (start)))));
+    if (caller_spec)
+    	blk = INITV_blk (INITO_val (caller_spec));
+    else
+    	blk = 0;	// no specification in caller
+    mUINT32 caller_spec_size=0;
+    INITV_IDX last_ti = INITV_IDX_ZERO;
+    while (blk)
+    {
+    	caller_spec_size++;
+	last_ti = blk;
+	blk = INITV_next (blk);
+    }
+    if (!Caller_node()->EH_spec_size())
+    	Caller_node()->Set_EH_spec_size (caller_spec_size);
+#ifdef Is_True_On
+    else FmtAssert (Caller_node()->EH_spec_size() == caller_spec_size, ("EH specification size mismatch"));
+#endif
+
+    INITV_IDX first_insert = INITV_IDX_ZERO, prev_insert = INITV_IDX_ZERO;
+    for (vector<ST_IDX>::iterator i = callee_spec_types.begin();
+    	 i != callee_spec_types.end();
+	 i++)
+    {
+	INITV_IDX insert = New_INITV();
+	if (*i == 0)
+	  INITV_Set_ZERO (Initv_Table[insert], MTYPE_U4, 1);
+	else
+	  INITV_Set_VAL (Initv_Table[insert], 
+		         Enter_tcon (Host_To_Targ (MTYPE_U4, *i)), 1);
+        if (prev_insert)
+	    Set_INITV_next (prev_insert, insert);
+	else
+	    first_insert = insert;
+	prev_insert = insert;
+    }
+    if (!caller_spec_size)
+    { // no table in caller
+	IPO_SYMTAB* cloned = Callee_node()->Cloned_Symtab();
+	// return the already cloned inito and get its ST
+	INITO_IDX cloned_spec = cloned->Get_INITO_IDX (callee_spec);
+	ST * new_st = Copy_ST (INITO_st (cloned_spec), CURRENT_SYMTAB);
+	INITV_IDX begin = New_INITV();
+	INITV_Init_Block (begin, first_insert);
+	INITO_IDX new_spec = New_INITO (ST_st_idx (new_st), begin);
+
+	// now insert it
+	INITV_IDX pos = INITV_next (INITV_next (INITV_next (start)));
+	INITV_IDX bkup = INITV_next (pos);
+	FmtAssert (!bkup, ("Exception specification info not last entry"));
+	INITV_Set_VAL (Initv_Table[pos],
+	               Enter_tcon (Host_To_Targ (MTYPE_U4, new_spec)), 1);
+    	Set_INITV_next (pos, bkup);
+    }
+    else
+    	Set_INITV_next (last_ti, first_insert);
+    Set_Tables (Callee_node());
+}
+
+void
+IPO_INLINE::Merge_EH_Typeinfo_Tables (void)
+{
+    vector<ST_IDX> callee_typeinfos, caller_typeinfos;
+    INITV_IDX start, blk, last_blk=0;
+    // callee side
+    INITO_IDX tmp = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+    if (tmp)
+    	start = INITO_val (tmp);
+    else
+    	return;
+    const INITO_IDX callee_ttable = TCON_uval (INITV_tc_val (INITV_next (INITV_next (start))));
+    if (!callee_ttable) // nothing to merge
+	return;
+    blk = INITO_val (callee_ttable);
+    while (blk)
+    {
+	INITV_IDX ti = INITV_blk (blk);
+	if (INITV_kind (ti) == INITVKIND_ZERO)
+	  callee_typeinfos.push_back (0);
+	else
+          callee_typeinfos.push_back (TCON_uval (INITV_tc_val (ti)));
+        blk = INITV_next (blk);
+    }
+    // caller side
+    // change tables temporarily
+    Set_Tables (Caller_node());
+    start = INITO_val (Pu_Table [ST_pu (Caller_node()->Func_ST())].unused);
+    INITO_IDX caller_ttable = TCON_uval (INITV_tc_val (INITV_next (INITV_next (start))));
+    if (caller_ttable) blk = INITO_val (caller_ttable);
+    else blk = 0;
+    while (blk)
+    {
+	INITV_IDX ti = INITV_blk (blk);
+	if (INITV_kind (ti) == INITVKIND_ZERO)
+	  caller_typeinfos.push_back (0);
+	else
+          caller_typeinfos.push_back (TCON_uval (INITV_tc_val (ti)));
+        last_blk = blk;
+        blk = INITV_next (blk);
+    }
+    sort (caller_typeinfos.begin(), caller_typeinfos.end());
+    int last_caller_filter = caller_typeinfos.size();
+    if (!last_caller_filter)
+    { // special case, there is no typeinfo table in caller
+        FmtAssert (!last_blk && !caller_ttable, ("EH Tables processing error in inliner"));
+	IPO_SYMTAB* cloned = Callee_node()->Cloned_Symtab();
+	// return the already cloned inito and get its st
+	INITO_IDX cloned_ttable = cloned->Get_INITO_IDX (callee_ttable);
+	ST * new_st = Copy_ST (INITO_st (cloned_ttable), CURRENT_SYMTAB);
+	INITV_IDX to_iter = New_INITV();
+	INITO_IDX new_ttable = New_INITO (ST_st_idx (new_st), to_iter);
+    	INITV_IDX from_iter = INITO_val (cloned_ttable);
+    	while (from_iter)
+    	{
+	    memcpy (&Initv_Table[to_iter], &Initv_Table[from_iter], sizeof(INITV));
+
+	    INITV_IDX from = INITV_blk (from_iter);
+	    INITV_IDX to_ti = New_INITV();
+	    INITV_Init_Block (to_iter, to_ti);
+
+	    memcpy (&Initv_Table[to_ti], &Initv_Table[from], sizeof(INITV));
+	    from = INITV_next (from);
+	    INITV_IDX to_filter = New_INITV();
+	    memcpy (&Initv_Table[to_filter], &Initv_Table[from], sizeof(INITV));
+	    Set_INITV_next (to_ti, to_filter);
+	    from_iter = INITV_next (from_iter);
+	    if (from_iter)
+	    {
+	        INITV_IDX tmp = New_INITV();
+	        Set_INITV_next (to_iter, tmp);
+	        to_iter = tmp;
+	    }
+        }
+
+	INITV_IDX insert = INITV_next (INITV_next (start));
+	INITV_IDX bkup = INITV_next (insert);
+	INITV_Set_VAL (Initv_Table[insert],
+	               Enter_tcon (Host_To_Targ (MTYPE_U4, new_ttable)), 1);
+    	Set_INITV_next (insert, bkup);
+    }
+    else
+    {
+        FmtAssert (last_blk, ("EH Tables processing error in inliner"));
+        int filter = last_caller_filter+1;
+        vector<ST_IDX>::iterator i = callee_typeinfos.begin();
+        for (; i!=callee_typeinfos.end(); ++i)
+        {
+            if (!binary_search (caller_typeinfos.begin(),
+                                caller_typeinfos.end(), (*i)))
+            { // insert the entry
+		INITV_IDX st = New_INITV();
+		if (*i == 0)
+		  INITV_Set_ZERO (Initv_Table[st], MTYPE_U4, 1);
+		else
+                  INITV_Set_VAL (Initv_Table[st],
+			       Enter_tcon (Host_To_Targ (MTYPE_U4, *i)), 1);
+                INITV_IDX f = New_INITV();
+                INITV_Set_VAL (Initv_Table[f],
+                        Enter_tcon (Host_To_Targ (MTYPE_U4, filter)), 1);
+                Set_INITV_next (st, f);
+
+		INITV_IDX next_blk = New_INITV();
+                INITV_Init_Block (next_blk, st);
+                Set_INITV_next (last_blk, next_blk);
+                last_blk = next_blk;
+		filter++;
+            }
+        }
+    }
+    // change back tables to callee
+    Set_Tables (Callee_node());
+}
+void
+IPO_INLINE::Merge_EH_Tables (void)
+{
+    Merge_EH_Typeinfo_Tables ();
+    Merge_EH_Spec_Tables ();
+}
+#endif
+
 void
 IPO_INLINE::Process_Callee (IPO_INLINE_AUX& aux, BOOL same_file)
 {
@@ -3216,12 +3763,18 @@ IPO_INLINE::Process_Callee (IPO_INLINE_AUX& aux, BOOL same_file)
 	     Caller_Summary_Proc()->Use_lowered_return_preg (),
 	     ("Incompatible WHIRL between caller and callee"));
 
+#ifndef KEY
+// The following modifies the caller to change the store of return value
+// after the callee is inlined. For recursive inlining, caller == callee.
+// So, change the caller (i.e. the callee) after the callee is cloned below.
+//
     // CALLEE SIDE OPTIMIZATION
     Compute_Return_Preg_Offset (Callee_Wn (), aux.rp, use_lowered_return_preg,
 				Caller_Scope(), Caller_level()); 
 
     if (aux.rp.size () > 0 && WN_opcode (Call_Wn ()) != OPC_VCALL)
 	Fix_Return_Pregs(Call_Wn (), aux.rp);
+#endif // !KEY
 
     Set_Tables (Callee_node ());
 
@@ -3234,7 +3787,18 @@ IPO_INLINE::Process_Callee (IPO_INLINE_AUX& aux, BOOL same_file)
     WN_Parentize (aux.inlined_body, Caller_node()->Parent_Map(),
 		  Caller_Map_Table()); 
 
+#ifdef KEY
+    Merge_EH_Tables();
+#endif
     Set_Tables (Caller_node ());
+#ifdef KEY
+    // CALLEE SIDE OPTIMIZATION
+    Compute_Return_Preg_Offset (Callee_Wn (), aux.rp, use_lowered_return_preg,
+				Caller_Scope(), Caller_level()); 
+
+    if (aux.rp.size () > 0 && WN_opcode (Call_Wn ()) != OPC_VCALL)
+	Fix_Return_Pregs(Call_Wn (), aux.rp);
+#endif // !KEY
     Walk_and_Update_Callee (aux);
     
     // This walk involves:
@@ -3272,6 +3836,11 @@ IPO_INLINE::Post_Process_Caller (IPO_INLINE_AUX& aux)
 {
     Set_Tables (Caller_node ());	// Set the globals: Scope_tab,
 					// Current_scope, Current_pu  
+
+#ifdef KEY
+    Caller_node()->Set_EH_spec_size (Caller_node()->EH_spec_size() +
+    				     Callee_node()->EH_spec_size());
+#endif
     WN* call = Call_Wn ();
     WN* parent_wn = WN_Get_Parent(call, Parent_Map, Current_Map_Tab);
 
@@ -3285,15 +3854,34 @@ IPO_INLINE::Post_Process_Caller (IPO_INLINE_AUX& aux)
 	ST* cp = Callee_node ()->Func_ST ();
 	// pragma node that mark the begin and end of the inlined block
 
+#ifdef TARG_ST
+	// [CL] record the callee's DST in the pragma, this is useful
+	// when merging DSTs
+	DST_TYPE dst = IP_FILE_HDR_dst(Callee_node()->File_Header());
+	WN* pragma_node_begin =
+	  WN_CreatePragma (WN_PRAGMA_INLINE_BODY_START, cp, lang, (INT32)dst);
+#else
 	WN* pragma_node_begin =
 	    WN_CreatePragma (WN_PRAGMA_INLINE_BODY_START, cp, lang, 0); 
+#endif
   
 	// everything from here to the inlined body uses the line number of 
 	// the call
 	WN_Set_Linenum (pragma_node_begin, WN_Get_Linenum (call));
 
+#ifdef TARG_ST
+	// [CL] record the callee's DST in the pragma, this is useful
+	// when merging DSTs
+	WN* pragma_node_end =
+	  WN_CreatePragma (WN_PRAGMA_INLINE_BODY_END, cp, lang, (INT32)dst);
+
+	// [CL] also record the appropriate line number for the 'end'
+	// pragma
+	WN_Set_Linenum (pragma_node_end, WN_Get_Linenum (call));
+#else
 	WN* pragma_node_end =
 	    WN_CreatePragma (WN_PRAGMA_INLINE_BODY_END, cp, lang, 0);  
+#endif
     
 	Insert_Block_Around (parent_wn, call, pragma_node_begin,
 			     pragma_node_end);
@@ -3393,16 +3981,22 @@ IPO_INLINE::Process()
 #endif
 
   if (Cur_PU_Feedback) {
-#ifdef TARG_ST // [CL] merge from ORC-2.1
+#ifdef KEY
+    const FB_VERIFY_STATUS status = Cur_PU_Feedback->Verify("IPA/inline");
+    if( status == FB_VERIFY_UNBALANCED ){
+      ;
+
+    } else if( status == FB_VERIFY_INVALID ){
+      DevWarn( "Feedback Verify fails after inlining %s to %s",
+	       Callee_node()->Name(), Caller_node()->Name() );
+    }
+#else
     BOOL not_pass = Cur_PU_Feedback->Verify("IPA/inline");
     if ( not_pass ) { //FB_VERIFY_CONSISTENT = 0 
-#else
-      BOOL pass = Cur_PU_Feedback->Verify("IPA/inline");
-      if ( ! pass ) {
-#endif
-	  DevWarn("Feedback Verify fails after inlining %s to %s",
-		  Callee_node()->Name (), Caller_node()->Name ());
-      }
+      DevWarn("Feedback Verify fails after inlining %s to %s",
+	      Callee_node()->Name (), Caller_node()->Name ());
+    }
+#endif // KEY
   }
 
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))

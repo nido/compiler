@@ -3076,6 +3076,127 @@ Optimize_Branches(void)
 
   return pass > 1;
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Favor_Branches_Condition
+ *
+ * If the target has only limited predication support, it may be worth
+ * prefering the condition of branches such that operations can be
+ * scheduled sooner (especially long latency ops such as loads).
+ * 
+ * For instance, at the end of a loop, select branch on true condition
+ * such that instructions guarded on false condition can be scheduled
+ * before the branch.
+ * 
+ * Conversely, within a branch, select branch on false condition for
+ * early exits.
+ *
+ * The return value indicates if we made any changes.
+ *
+ * ====================================================================
+ */
+static BOOL
+Favor_Branches_Condition(void)
+{
+  INT pass;
+  BOOL changed;
+
+  pass = 0;
+  do {
+    BB *bp;
+    changed = FALSE;
+    pass++;
+    for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
+      BB *old_tgt, *new_tgt;
+      ST *st;
+      INT i;
+      RID *rid = BB_rid(bp);
+
+     /* Avoid modifying any block in a region that has already
+      * been scheduled.
+      */
+     if (rid && RID_level(rid) >= RL_CGSCHED) continue;
+
+      switch (BBINFO_kind(bp)) {
+      case BBKIND_LOGIF:
+
+	BB* loop_head = BB_loop_head_bb(bp);
+
+	VARIANT br_variant = V_br_condition(BBINFO_variant(bp));
+	BOOL false_br = V_false_br(BBINFO_variant(bp)) != 0;
+
+	OP *br_op = BB_branch_op(bp);
+	OP* compare_op = BBINFO_compare_op(bp);
+
+	if (br_op == compare_op) {
+	  // This occurs when the compare_op is in another BB
+	  continue;
+	}
+
+	TOP new_br_top  = CGTARG_Invert(OP_code(br_op));
+	TOP new_cmp_top = CGTARG_Invert(OP_code(compare_op));
+
+	INT opnd;
+	INT opnd_count;
+	CGTARG_Branch_Info(br_op, &opnd, &opnd_count);
+	if (opnd_count <= 0) {
+	  // Skip indirect branches
+	  continue;
+	}
+	TN *br_targ = OP_opnd(br_op, opnd);
+	Is_True(opnd_count == 1, ("Branch with multiple bbs"));
+	BOOL is_backedge = loop_head ?
+	  Is_Label_For_BB(TN_label(br_targ), loop_head)
+	  : false;
+
+	/* If we can invert both the branch AND the comparison */
+	if ( (new_br_top != TOP_UNDEFINED)
+	     && (new_cmp_top != TOP_UNDEFINED) ) {
+
+	  // In we are handling a loop backedge, we want to convert
+	  // the final brf into a br.  Otherwise, we want the opposite
+	  if ( (is_backedge && (false_br))
+	       || (!is_backedge && (!false_br))
+	       ) {
+	    OP* new_cmp_op = Dup_OP(compare_op);
+	    TN *result = OP_result(compare_op,0);
+
+	    FmtAssert( result == OP_opnd(br_op, 0),
+		       ("Branch does not use result of compare") );
+
+	    DEF_KIND kind;
+	    OP* use_op = TN_Reaching_Value_At_Op(result, compare_op,
+						 &kind, FALSE);
+
+	    if (use_op != br_op) {
+	      continue;
+	    }
+
+	    TN* new_result = Build_TN_Like(result);
+	    Set_OP_result(new_cmp_op, 0, new_result);
+	    OP_Change_Opcode(new_cmp_op, new_cmp_top);
+
+	    // hope that the other variant will be dead-coded....
+	    BB_Insert_Op_After(bp, compare_op, new_cmp_op);
+
+	    Negate_Branch(br_op);
+	    Set_OP_opnd(br_op, 0, new_result);
+
+	    Set_BBINFO_compare_op(bp, new_cmp_op);
+
+	  } else {
+	  }
+	}
+	break;
+      }
+    }
+  } while (changed);
+
+  return pass > 1;
+}
+#endif
 
 /* ====================================================================
  * ====================================================================
@@ -7035,6 +7156,27 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       }
     }
     flow_change |= change;
+
+#ifdef TARG_ST
+    // [CL]
+    if (current_flags & CFLOW_FAVOR_BRANCH_COND) {
+      if (CFLOW_Trace_Branch) {
+#pragma mips_frequency_hint NEVER
+	fprintf(TFile, "\n%s CFLOW_Optimize: favoring branches condition\n%s",
+		DBar, DBar);
+      }
+      change = Favor_Branches_Condition();
+      if (CFLOW_Trace_Branch) {
+#pragma mips_frequency_hint NEVER
+	if (change) {
+	  Print_Cflow_Graph("CFLOW_Optimize flow graph -- after favoring branches condition");
+	} else {
+	  fprintf(TFile, "No changes.\n");
+	}
+      }
+      flow_change |= change;
+    }
+#endif
   }
 
   if (current_flags & CFLOW_UNREACHABLE) {
@@ -7304,6 +7446,7 @@ CFLOW_Initialize(void)
   if (!CFLOW_Enable_Merge) flags |= CFLOW_MERGE;
 #ifdef TARG_ST
   if (!CFLOW_Enable_Merge) flags |= CFLOW_MERGE_EMPTY;
+  if (!CFLOW_Enable_Favor_Branches_Condition) flags |= CFLOW_FAVOR_BRANCH_COND;
 #endif
   if (!CFLOW_Enable_Reorder) flags |= CFLOW_REORDER;
   if (!CFLOW_Enable_Clone) flags |= CFLOW_CLONE;

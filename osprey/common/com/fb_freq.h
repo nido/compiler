@@ -132,11 +132,7 @@ enum FB_FREQ_TYPE {
 const float FB_FREQ_EPSILON = 0.0001;
 
 class FB_FREQ {
-#if 1 // [CL]
 public:
-#else
-private:
-#endif
 
   FB_FREQ_TYPE  _type;
   float         _value;
@@ -162,6 +158,23 @@ public:
     : _type( exact ? FB_FREQ_TYPE_EXACT : FB_FREQ_TYPE_GUESS ),
       _value( value )
     { Is_True( value >= 0.0, ( "FB_FREQ: negative value %f", value ) ); }
+
+#ifdef KEY
+  FB_FREQ( double value )
+    : _type( FB_FREQ_TYPE_EXACT ),
+      _value( (float) value )
+    { Is_True( value >= 0.0, ( "FB_FREQ: negative value %.2f", value ) ); }
+
+  FB_FREQ( float value )
+    : _type( FB_FREQ_TYPE_EXACT ),
+      _value( value )
+    { Is_True( value >= 0.0, ( "FB_FREQ: negative value %.2f", value ) ); }
+
+  FB_FREQ( INT value )
+    : _type( FB_FREQ_TYPE_EXACT ),
+      _value( (float) value )
+    { Is_True( value >= 0, ( "FB_FREQ: negative value %d", value ) ); }
+#endif
 
   FB_FREQ( INT64 value )
     : _type( FB_FREQ_TYPE_EXACT ),
@@ -367,6 +380,10 @@ public:
 
     // [HK]
 #if __GNUC__ >=3
+  friend bool operator>=( const FB_FREQ freq1, const FB_FREQ freq2 ) {
+    return ( freq1._value >= freq2._value );
+  }
+
   friend bool operator<= ( const FB_FREQ freq1, const FB_FREQ freq2 ) {
     return ( freq1._value <= freq2._value );
   }
@@ -395,6 +412,10 @@ public:
       Is_True( FALSE, ("FB_FREQ: Unexpected type %d", _type ));
       break;
     }
+  }
+
+  void Print_simple (FILE * fp) const {
+    fprintf(fp, "_type = %d   |  _value = %f \n", _type, _value);
   }
 
   INT Sprintf( char *buffer ) const {

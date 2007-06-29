@@ -351,7 +351,11 @@ WFE_Start_Function (tree fndecl)
     if (CURRENT_SYMTAB != GLOBAL_SYMTAB) {
 
       Set_PU_uplevel (Get_Current_PU ());
+#ifndef TARG_ST
+      // [SC] We should be allowed to inline nested functions,
+      // and code in glibc requires it.
       Set_PU_no_inline (Get_Current_PU ());
+#endif
     }
 #ifdef TARG_ST
     else {
@@ -668,7 +672,11 @@ WFE_Finish_Function (void)
       DevWarn ("Encountered nested function");
 #endif
       Set_PU_is_nested_func (Get_Current_PU ());
+#ifndef TARG_ST
+      // [SC] We should be allowed to inline nested functions,
+      // and code in glibc requires it.
       Set_PU_no_inline (Get_Current_PU ());
+#endif
     }
 
 #ifdef TARG_ST
@@ -1016,7 +1024,7 @@ WFE_Add_Aggregate_Init_Labeldiff (LABEL_IDX lab1, LABEL_IDX lab2)
 {
 #ifdef WFE_DEBUG
     fprintf(stdout,"====================================================\n");
-//     fprintf(stdout,"      WFE_Add_Aggregate_Init_Labeldiff %s \n\n", ST_name(st));
+    fprintf(stdout,"      WFE_Add_Aggregate_Init_Labeldiff %d %d \n\n", (int)lab1, (int)lab2);
     fprintf(stdout,"  last_aggregate_initv = %d\n", last_aggregate_initv);
     fprintf(stdout,"====================================================\n");
 #endif
@@ -1122,7 +1130,7 @@ WFE_Add_Aggregate_Init_Address (tree init)
 	 	LABEL_IDX label_idx = WFE_Get_LABEL (init, FALSE);
 #ifdef TARG_ST
 		// [CG] Assert we are at same scope
-		FmtAssert (init->decl.symtab_idx == CURRENT_SYMTAB,
+		FmtAssert (DECL_CONTEXT (init) == current_function_decl,
 			   ("line %d: taking address of a label not defined in current function currently not implemented", lineno));
 #endif
 		WFE_Add_Aggregate_Init_Label (label_idx);

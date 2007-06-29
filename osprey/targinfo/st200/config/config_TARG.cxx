@@ -86,7 +86,7 @@ char *FP_Excp_Max = NULL;		/* Max FP trap enables */
 char *FP_Excp_Min = NULL;		/* Min FP trap enables */
 
 /* Miscellaneous target instruction features: */
-BOOL Madd_Allowed = TRUE;		/* Generate madd instructions? */
+BOOL Madd_Allowed = TRUE;		/* Generate madd instructions? See also BETARG_is_enabled_operator(). */
 BOOL Force_Jalr = FALSE;	/* Force calls via address in register */
 static BOOL Slow_CVTDL_Set = FALSE;
 
@@ -121,12 +121,6 @@ BOOL Enable_Non_IEEE_Ops_Set = FALSE;
 BOOL Enable_64_Bits_Ops = FALSE;
 BOOL Enable_64_Bits_Ops_Set = FALSE;
 
-// [CG]: Generation of IEEE single enabled.
-BOOL Enable_Single_Float_Ops;
-
-// [CG]: Generation of IEEE double enabled.
-BOOL Enable_Double_Float_Ops;
-
 // [CG]: Generation of misaligned load/store:
 // FALSE: Generate composed load/store when a misaligned access is encountered
 // TRUE: Let the misaligned access be generated
@@ -136,6 +130,11 @@ BOOL Enable_Double_Float_Ops;
  * accesses. Thus we are obliged to force it.
  */
 INT32 Enable_Misaligned_Access;
+
+// Individual flags for finer control of load and store.
+// Note that we generate misaligned load if
+//   (Enable_Misaligned_Access||Enable_Misaligned_Load).
+INT32 Enable_Misaligned_Load, Enable_Misaligned_Store;
 
 
 // [CG]: Error level on proved misaligned accesses:
@@ -149,6 +148,12 @@ INT32 Activate_Hwloop;
 
 // [SC]: Cycle time overrides.
 OPTION_LIST *Cycle_Time_Overrides;
+
+BOOL Enable_AddPC = TRUE;
+BOOL Enable_AddPC_Set;
+
+BOOL Enable_Sh1AddS = TRUE;
+BOOL Enable_Sh1AddS_Set;
 #endif
 
 /* Target machine specification options.  This group defines the target
@@ -223,12 +228,18 @@ static OPTION_DESC Options_TARG[] = {
     "Specify HW loop support (0 = no hwloop, 1 = hwloop on " },
 
   // [CG]
-  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned", "",
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned", "enable_misaligned",
     0, 0, 0,    &Enable_Misaligned_Access, NULL,
     "Enable generation of faulting memory accesses when proved misaligned" },
   { OVK_INT32,   OV_VISIBLE,    FALSE, "warn_misaligned", "",
     0, 0, 2,    &Warn_Misaligned_Access, NULL,
     "Warning level on misaligned access (0 = no warning, 1 = warning, 2 = error" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned_load", "enable_misaligned_load",
+    0, 0, 0,    &Enable_Misaligned_Load, NULL,
+    "Enable generation of memory loads when proven misaligned" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "enable_misaligned_store", "enable_misaligned_store",
+    0, 0, 0,    &Enable_Misaligned_Store, NULL,
+    "Enable generation of memory stores when proven misaligned" },
   { OVK_LIST,    OV_VISIBLE,   FALSE, "op1_read", "",
     -1, 0, 255, &Cycle_Time_Overrides, NULL,
     "Override operand access cycle" },
@@ -253,6 +264,13 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_LIST,    OV_VISIBLE,   FALSE, "result3_avail", "",
     -1, 0, 255, &Cycle_Time_Overrides, NULL,
     "Override result available cycle" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "addpc", "",
+    0, 0, 0,    &Enable_AddPC, &Enable_AddPC_Set,
+    "Enable generation of addpc" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "sh1adds", "",
+    0, 0, 0,    &Enable_Sh1AddS, &Enable_Sh1AddS_Set,
+    "Enable generation of sh1adds and sh1subs" },
+
 #endif
 
   /* Unimplemented options: */

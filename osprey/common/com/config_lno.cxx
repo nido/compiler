@@ -151,6 +151,9 @@ static LNO_FLAGS Default_LNO = {
   FALSE,	/* Verbose */
   TRUE,		/* Version_mp_loops */
   TRUE,		/* Run_vintr */
+#ifdef KEY
+  FALSE,		/* Ignore_Feedback */
+#endif
   TRUE,		/* Run_oinvar */
   1,		/* Run_doacross */
   0,		/* Preferred_doacross_tile_size */
@@ -234,6 +237,9 @@ LNO_FLAGS Initial_LNO = {
   FALSE,	/* Verbose */
   TRUE,		/* Version_mp_loops */
   TRUE,		/* Run_vintr */
+#ifdef KEY
+  FALSE,	 	/* Ignore_Feedback */
+#endif
   TRUE,		/* Run_oinvar */
   1,		/* Run_doacross */
   0,		/* Preferred_doacross_tile_size */
@@ -446,6 +452,10 @@ static OPTION_DESC Options_LNO[] = {
   // available on a ST200 processor.
   MHOPT_I32  ( "dcache_prefetch_buffers",	NULL,	1,0,1000,
 					DCache_Prefetch_Buffers ),  
+  // FdF 20070206: Set the maximum prefetch distance to avoid
+  // accessing memory in special areas.
+  MHOPT_I32  ( "prefetch_padding",	NULL,	0,0,32768,
+	                                Prefetch_Padding ),  
 #endif
   LNOPT_BOOL ( "trapezoidal_outer_unroll", NULL,
 					Trapezoidal_outer_unroll ),
@@ -453,6 +463,9 @@ static OPTION_DESC Options_LNO[] = {
   LNOPT_BOOL ( "use_parm",		NULL,	Use_parm ),
   LNOPT_BOOL ( "version_mp_loops",	NULL,	Version_mp_loops ),
   LNOPT_BOOL ( "vintr",			NULL,	Run_vintr ),
+#ifdef KEY
+  LNOPT_BOOL ( "ignore_feedback",	NULL,	Ignore_Feedback ),
+#endif
   LNOPT_BOOL ( "oinvar",		NULL,	Run_oinvar ),
   LNOPT_U32  ( "doacross",		NULL,	1,0,4,Run_doacross),
   LNOPT_U32  ( "preferred_doacross_tile_size",

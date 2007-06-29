@@ -68,6 +68,9 @@ using std::vector;
 #ifdef TARG_ST
 #include "whirl2ops.h"
 #endif
+#include "targ_cg_private.h"
+#include "config_opt.h"
+#include "exp_private.h"
 
 /*
  * [CG] temporary flag 
@@ -109,14 +112,14 @@ Pick_Load_Imm_Instruction (
   TOP top = TOP_UNDEFINED;
 
   switch (desc) {
-  case MTYPE_I1: top = TOP_ldb_i; break;
-  case MTYPE_U1: top = TOP_ldbu_i; break;
-  case MTYPE_I2: top = TOP_ldh_i; break;
-  case MTYPE_U2: top = TOP_ldhu_i; break;
+  case MTYPE_I1: top = TOP_ldb_r_i_r; break;
+  case MTYPE_U1: top = TOP_ldbu_r_i_r; break;
+  case MTYPE_I2: top = TOP_ldh_r_i_r; break;
+  case MTYPE_U2: top = TOP_ldhu_r_i_r; break;
   case MTYPE_I4:
   case MTYPE_U4:
   case MTYPE_F4: 
-  case MTYPE_A4: top = TOP_ldw_i; break;
+  case MTYPE_A4: top = TOP_ldw_r_i_r; break;
   case MTYPE_V:
     if (rtype != MTYPE_V) {
       // use rtype to pick load (e.g. if lda)
@@ -124,11 +127,11 @@ Pick_Load_Imm_Instruction (
     }
     break;
   case MTYPE_F8: 
-    if (Enable_64_Bits_Ops) top = TOP_ldl_i; 
+    if (Enable_64_Bits_Ops) top = TOP_ldl_r_i_p; 
     break;
   case MTYPE_I8: 
   case MTYPE_U8: 
-    if (Enable_64_Bits_Ops) top = TOP_ldl_i; 
+    if (Enable_64_Bits_Ops) top = TOP_ldl_r_i_p; 
     break;
   default:
     break;
@@ -225,19 +228,19 @@ Pick_Store_Imm_Instruction (
 
   switch (mtype) {
   case MTYPE_I1:
-  case MTYPE_U1: top = TOP_stb_i; break;
+  case MTYPE_U1: top = TOP_stb_r_r_i; break;
   case MTYPE_I2:
-  case MTYPE_U2: top = TOP_sth_i; break;
+  case MTYPE_U2: top = TOP_sth_r_r_i; break;
   case MTYPE_I4:
   case MTYPE_U4:
   case MTYPE_F4:
-  case MTYPE_A4: top = TOP_stw_i; break;
+  case MTYPE_A4: top = TOP_stw_r_r_i; break;
   case MTYPE_F8: 
-    if (Enable_64_Bits_Ops) top = TOP_stl_i; 
+    if (Enable_64_Bits_Ops) top = TOP_stl_p_r_i; 
     break;
   case MTYPE_I8: 
   case MTYPE_U8: 
-    if (Enable_64_Bits_Ops) top = TOP_stl_i; 
+    if (Enable_64_Bits_Ops) top = TOP_stl_p_r_i; 
     break;
   default:
     break;
@@ -579,7 +582,7 @@ Expand_Misaligned_Load (
 {
   DevWarn("misaligned load encountered: TODO : differenciate between compiler an user generated");
 
-  if (Enable_Misaligned_Access)
+  if (Enable_Misaligned_Access || Enable_Misaligned_Load)
     Expand_Forced_Misaligned_Load(op, result, base, disp, ops);
   else 
     Expand_Composed_Load (op, result, base, disp, variant, ops);
@@ -709,7 +712,7 @@ Expand_Misaligned_Store (
 {
   DevWarn("misaligned store encountered: TODO : differenciate between compiler an user generated");
 
-  if (Enable_Misaligned_Access) 
+  if (Enable_Misaligned_Access  || Enable_Misaligned_Store)
     Expand_Forced_Misaligned_Store (mtype, obj_tn, base_tn, disp_tn, ops);
   else
     Expand_Composed_Store (mtype, obj_tn, base_tn, disp_tn, variant, ops);
@@ -752,7 +755,8 @@ Exp_Ldst (
       fprintf(TFile, "%lld (%s)\n", ofst, ST_name(sym));
   }
 
-  Allocate_Object(sym);         /* make sure sym is allocated */
+  if (Exp_Can_Allocate_Object())
+    Allocate_Object(sym);         /* make sure sym is allocated */
 
   Base_Symbol_And_Offset_For_Addressing (sym, ofst, &base_sym, &base_ofst);
 
@@ -768,7 +772,7 @@ Exp_Ldst (
     // So only use FP if already based on FP.
     base_tn = (base_sym == FP_Sym) ? FP_TN : SP_TN;
 
-    if (sym == base_sym) {
+    if (sym == base_sym && (sym == SP_Sym || sym == FP_Sym)) {
       // can have direct reference to SP or FP,
       // e.g. if actual stored to stack.
       ofst_tn = Gen_Literal_TN (base_ofst, Pointer_Size);
@@ -874,7 +878,7 @@ Exp_Ldst (
            (((ST_class(base_sym) == CLASS_BLOCK || 
 	      ST_class(base_sym) == CLASS_VAR) &&
 	     ST_gprel(base_sym))
-	    || (is_own_func_p(base_sym) && ! Is_Caller_Save_GP))) {
+	    || (is_own_func_p(sym) && ! Is_Caller_Save_GP))) {
     // gp-relative reference
     PU_References_GP = TRUE;
     base_tn = GP_TN;
@@ -945,7 +949,7 @@ Exp_Ldst (
     }
 
     // because it is not GP-relative, just make the address
-    Build_OP (TOP_mov_ii, tmp1, 
+    Build_OP (TOP_mov_ii_r, tmp1, 
                          Gen_Symbol_TN (sym, 0, TN_RELOC_NONE), &newops);
 
     // load is of address, not of result type
@@ -1069,7 +1073,7 @@ void Exp_Prefetch (
   FmtAssert(opc == TOP_UNDEFINED,
             ("Prefetch opcode should be selected in Exp_Prefetch"));
   
-  opc = TOP_pft_i;
+  opc = TOP_pft_r_i;
   if (!TN_has_value(src2)) {
     TN* tmp = Build_TN_Like(src1);
     Expand_Add (tmp, src1, src2, Pointer_Mtype, ops);
@@ -1086,6 +1090,12 @@ void Exp_Prefetch (
 /* ======================================================================
  *   Exp_Extract_Bits
  * ======================================================================*/
+
+/* ======================================================================
+ * Exp_Extract_Bits
+ *
+ * ======================================================================*/
+
 void
 Exp_Extract_Bits (
   TYPE_ID rtype, 
@@ -1099,37 +1109,51 @@ Exp_Extract_Bits (
 {
   TOP extr_op;
   TN *tmp;
-  UINT bit_ofst;
   UINT left_shift;
   UINT right_shift;
+  BOOL is_signed, is_long_extract, is_half;
+  UINT bitmask;
+  TOP etop;
 
   FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	    ("can't handle"));
 
-  if (Target_Byte_Sex == LITTLE_ENDIAN) {
-      // for LX as LITTLE_ENDIAN:
-      bit_ofst = bit_offset;
-  } else {
-      // for LX as BIG_ENDIAN:
-      bit_ofst = MTYPE_bit_size(desc) - bit_size - bit_offset;
-  }
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_extract_i_r_r) && Enable_extract){
 
-  // shift left -> clear the bits bit_offset+size -> 31
-  left_shift = 32 - bit_ofst - bit_size;
-  if (left_shift) {
+    FmtAssert(bit_size <= 32 && bit_offset < 32,
+	    ("can't handle bit_size > 32 or bit_offset > 31"));  
+    is_signed = MTYPE_signed(rtype);
+    if (bit_offset == 0 && (bit_size == 16 || bit_size == 8)) {
+      is_half = (bit_size  == 16) ;
+      extr_op = is_signed ? 
+	(is_half ? TOP_sxth_r_r : TOP_sxtb_r_r):
+	(is_half ? TOP_zxth_r_r : TOP_zxtb_r_r);
+      Build_OP(extr_op, tgt_tn, src_tn, ops);
+    }
+    else {
+      extr_op = is_signed ? TOP_extract_i_r_r : TOP_extractu_i_r_r;
+      bitmask = st200_encode_extract_mask (bit_size, bit_offset, &extr_op);
+      Build_OP(extr_op, tgt_tn, src_tn, 
+	       Gen_Literal_TN(bitmask, 4), ops);
+    }
+  } else {
+    
+    // shift left -> clear the bits bit_offset+size -> 31
+    left_shift = 32 - bit_offset - bit_size;
+    if (left_shift) {
       tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-      Build_OP(TOP_shl_i, tmp, src_tn, 
-               Gen_Literal_TN(left_shift, 4), ops);
-  } else {
+      Build_OP(TOP_shl_i_r_r, tmp, src_tn, 
+	       Gen_Literal_TN(left_shift, 4), ops);
+    } else {
       tmp = src_tn;
+    }
+    
+    // move the bits to be extracted to position 0
+    right_shift = 32 - bit_size;
+    extr_op = MTYPE_signed(desc) ? TOP_shr_i_r_r : TOP_shru_i_r_r;
+    Build_OP(extr_op, tgt_tn, tmp, 
+	     Gen_Literal_TN(right_shift,4), ops);
   }
-
-  // move the bits to be extracted to position 0
-  right_shift = 32 - bit_size;
-  extr_op = MTYPE_signed(desc) ? TOP_shr_i : TOP_shru_i;
-  Build_OP(extr_op, tgt_tn, tmp, 
-           Gen_Literal_TN(right_shift,4), ops);
-
   return;
 }
 
@@ -1154,7 +1178,6 @@ Exp_Deposit_Bits (
   OPS *ops
 )
 {
-    UINT bit_ofst;
     UINT right_shift_val;
 
   FmtAssert(bit_size != 0, ("size of bit field cannot be 0"));
@@ -1162,14 +1185,6 @@ Exp_Deposit_Bits (
   // Registers are always 32 bits in size
   FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	  ("Exp_Deposit_Bits: mtype cannot be %s", MTYPE_name(rtype)));
-
-  if (Target_Byte_Sex == LITTLE_ENDIAN) {
-      // for LX as LITTLE_ENDIAN:
-      bit_ofst = bit_offset;
-  } else  {
-      // for LX as BIG_ENDIAN
-      bit_ofst = MTYPE_bit_size(desc) - bit_size - bit_offset;
-  }
 
   //
   // generate the following sequence (if there is a faster one,
@@ -1185,28 +1200,28 @@ Exp_Deposit_Bits (
   TN *mask = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
   
   // set mask to all 1    111....111
-  Build_OP(TOP_mov_i, mask, Gen_Literal_TN(-1, 4), ops);
+  Build_OP(TOP_mov_i_r, mask, Gen_Literal_TN(-1, 4), ops);
   // only keep bit_size bits to 1
-  Build_OP(TOP_shru_i, mask, mask, 
+  Build_OP(TOP_shru_i_r_r, mask, mask, 
            Gen_Literal_TN(32-bit_size,4), ops);
   
   // shift left to position the bit_size bits to the required position
-  Build_OP(TOP_shl_i, mask, mask, Gen_Literal_TN(bit_ofst,4), ops);
+  Build_OP(TOP_shl_i_r_r, mask, mask, Gen_Literal_TN(bit_offset,4), ops);
   
   // clear bits
   TN *val = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_shl_i, val, src2, Gen_Literal_TN(32-bit_size,4), ops);
+  Build_OP(TOP_shl_i_r_r, val, src2, Gen_Literal_TN(32-bit_size,4), ops);
 
   // place value in position
-  right_shift_val = 32-bit_size-bit_ofst;
-  Build_OP(TOP_shru_i, val, val,
+  right_shift_val = 32-bit_size-bit_offset;
+  Build_OP(TOP_shru_i_r_r, val, val,
            Gen_Literal_TN(right_shift_val,4), ops);
 
   TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-  Build_OP(TOP_and_r, tmp1, mask, src1, ops);
-  Build_OP(TOP_xor_r, tmp1, tmp1, src1, ops);
+  Build_OP(TOP_and_r_r_r, tmp1, mask, src1, ops);
+  Build_OP(TOP_xor_r_r_r, tmp1, tmp1, src1, ops);
       
-  Build_OP(TOP_or_r, tgt_tn, tmp1, val, ops);
+  Build_OP(TOP_or_r_r_r, tgt_tn, tmp1, val, ops);
   
   return;
 }
@@ -1251,7 +1266,7 @@ Expand_Lda_Label (
   else {
     // [CG]: On the ST200 base model, address of a label
     // is the absolute address
-    Build_OP (TOP_mov_ii, dest, lab, ops);
+    Build_OP (TOP_mov_ii_r, dest, lab, ops);
   }
 
 #if 0

@@ -396,6 +396,11 @@ HB_Schedule::Update_Regs_For_OP (OP *op)
     if (!REG_ENTRY_reg_assigned(reginfo)) {
       ISA_REGISTER_CLASS cl = TN_register_class(opnd_tn);
       _Cur_Regs_Avail[cl]--;
+#ifdef TARG_ST
+      if (_Cur_Regs_Avail[cl] < _Min_Cur_Regs_Avail[cl]) {
+	_Min_Cur_Regs_Avail[cl] = _Cur_Regs_Avail[cl];
+      }
+#endif
       REG_ENTRY_reg_assigned(reginfo) = TRUE;
       hTN_MAP_Set (_regs_map, opnd_tn, REG_ENTRY_ptr(reginfo));
     }
@@ -1433,8 +1438,40 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
   if (Trace_HB)
     fprintf(TFile, "BB:%d, hbs_type:0x%04x: cycles=%d fwd: %d, max_sched: %d\n", BB_id(bb), type(), cur_cycle, is_fwd, _max_sched);
 
+  // [SC] When HBS_Minimize_Regs, the schedule is better if it reduces
+  // the register pressure for a nominated class.
+  // Otherwise, the schedule is better if it reduces the cycle count.
+  BOOL sched_is_better;
+
+  if (HBS_Minimize_Regs ()) {
+    if (minimize_regs_class != ISA_REGISTER_CLASS_UNDEFINED) {
+      // Threshold is set to be the number of excess registers we had
+      // before rescheduling.  Usually, this value will be negative,
+      // since we are lacking registers.
+      // min_cur_regs_avail gives the number of registers available at
+      // the point of highest register pressure in the BB, after
+      // rescheduling.  If this value is greater than the threshold, then
+      // we have reduced register pressure.
+      sched_is_better = (_Min_Cur_Regs_Avail[minimize_regs_class]
+			 > minimize_regs_threshold);
+      if (Trace_HB) {
+	fprintf (TFile, "Scheduled to minimize regs: new regs avail = %d, threshold = %d,  max length = %d cycles, new length = %d cycles\n",
+		 _Min_Cur_Regs_Avail[minimize_regs_class],
+		 minimize_regs_threshold,
+		 _max_sched, cur_cycle);
+      }
+    } else {
+      sched_is_better = TRUE;
+    }
+  } else {
+    sched_is_better = (cur_cycle < _max_sched);
+  }
+  if (Trace_HB) {
+    fprintf (TFile, "sched_is_better = %d\n", (int)sched_is_better);
+  }
+
   // FdF: update OP_scycle only if the new scheduled is better
-  if (cur_cycle < _max_sched) {
+  if (sched_is_better) {
 #endif
 
   // Set the OP_scycle field for all the OPs. Also, reset the OPSCH_visited
@@ -1447,7 +1484,7 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
   }
 #ifdef TARG_ST
   }
-  FmtAssert ((cur_cycle >= _max_sched) || (cur_cycle == (OP_scycle(BB_last_op(bb)) + 1)),
+  FmtAssert (HBS_Minimize_Regs() || (cur_cycle >= _max_sched) || (cur_cycle == (OP_scycle(BB_last_op(bb)) + 1)),
 	     ("HB_SCHED: Inconsistent scycle."));
 #else
 
@@ -1457,7 +1494,12 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
   // If current cycle estimate is better than <max_sched>, then ONLY dump
   // the Sched_Vector buffer. Otherwise, preserve the previous one.
 
-  if (cur_cycle < _max_sched) {
+#ifdef TARG_ST
+  if (sched_is_better)
+#else
+  if (cur_cycle < _max_sched)
+#endif
+  {
 #ifdef TARG_ST
     Adjust_Ldst_Offsets (is_fwd);
 #else
@@ -2169,6 +2211,9 @@ HB_Schedule::HB_Schedule()
 {
   _prolog_bb = NULL;
   _epilog_bb = NULL;
+#ifdef TARG_ST
+  minimize_regs_class = ISA_REGISTER_CLASS_UNDEFINED;
+#endif
 
   // Initialize memory pool for use in the scheduling this bb.
   MEM_POOL_Initialize (&_hb_pool, "HB_pool", FALSE);
@@ -2180,6 +2225,32 @@ HB_Schedule::HB_Schedule()
   Trace_HB = Get_Trace (TP_SCHED, 1);
 }
 
+#ifdef TARG_ST
+void
+HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type, INT32 max_sched,
+		  BBSCH *bbsch, mINT8 *regs_avail,
+		  ISA_REGISTER_CLASS cl, INT32 cl_limit)
+{
+  Init (bb, hbs_type, max_sched, bbsch, regs_avail);
+  minimize_regs_class = cl;
+  // cl_limit is the number of registers LRA wants to allocate the BB.
+  // regs_avail[cl] is the number of registers GRA has granted to LRA.
+  // We set the threshold to be the number of excess registers we have,
+  // i.e. regs_avail - cl_limit.  Usually, this value will be negative,
+  // since we are lacking registers.
+  // During scheduling, we track cur_regs_avail(i), the number of
+  // registers available at instruction i, and also its minimum,
+  // min_cur_regs_avail.
+  // When min_cur_regs_avail is negative, e.g. -5, it means we are lacking
+  // 5 registers at the point of highest register pressure in the BB.
+  // If min_cur_regs_avail > threshold, it means
+  // we are lacking fewer registers than before, so the rescheduling
+  // has reduced register pressure, which is what we want.
+  if (cl != ISA_REGISTER_CLASS_UNDEFINED)
+    minimize_regs_threshold = regs_avail[cl] - cl_limit;
+}
+#endif
+
 void
 HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type, INT32 max_sched,
 		  BBSCH *bbsch, mINT8 *regs_avail)
@@ -2188,7 +2259,14 @@ HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type, INT32 max_sched,
   _max_sched = max_sched;
   if (regs_avail) {
     for (INT i = ISA_REGISTER_CLASS_MIN;i <= ISA_REGISTER_CLASS_MAX; i++)   
+#ifdef TARG_ST
+      {
+	_Cur_Regs_Avail[i] = regs_avail[i];
+	_Min_Cur_Regs_Avail[i] = regs_avail[i];
+      }
+#else
       _Cur_Regs_Avail[i] = regs_avail[i];
+#endif
   }
 
   BB_OP_MAP omap = BB_OP_MAP_Create(bb, &_hb_map_pool);
@@ -2203,7 +2281,14 @@ HB_Schedule::Init(std::list<BB*> bblist, HBS_TYPE hbs_type, mINT8 *regs_avail)
   _hbs_type = hbs_type;
   if (regs_avail) {
     for (INT i = ISA_REGISTER_CLASS_MIN;i <= ISA_REGISTER_CLASS_MAX; i++)   
+#ifdef TARG_ST
+      {
+	_Cur_Regs_Avail[i] = regs_avail[i];
+	_Min_Cur_Regs_Avail[i] = regs_avail[i];
+      }
+#else
       _Cur_Regs_Avail[i] = regs_avail[i];
+#endif
   }
 
   UINT32 length = 0;
@@ -2285,7 +2370,11 @@ HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch, bool is_fwd)
 
       // Assumes that <bbsch> is computed fopass      
       mINT8 *fatpoint = (_hbs_type & HBS_FROM_PRE_GCM_SCHED_AGAIN) ?
+#ifdef TARG_ST
+      BBSCH_local_regcost(bbsch) : LRA_Compute_Register_Request(bb, &_hb_pool)->summary;
+#else
       BBSCH_local_regcost(bbsch) : LRA_Compute_Register_Request(bb, &_hb_pool);
+#endif
       if (HBS_From_Pre_GCM_Sched()) {
         Set_BB_local_regcost(bbsch, fatpoint);
       }

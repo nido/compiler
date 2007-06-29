@@ -6501,7 +6501,15 @@ store_parm_decls ()
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("store_parm_decls", fndecl);
+#ifdef TARG_ST
+  /* [SC] Do not call WFE_Start_Function here for nested fns, call
+     it later when we expand the nested function body */
+  if (! context) {
+    WFE_Start_Function (fndecl);
+  }
+#else
   WFE_Start_Function (fndecl);
+#endif
 #endif /* SGI_MONGOOSE */
 }
 
@@ -7080,7 +7088,16 @@ c_expand_decl_stmt (t)
   if (TREE_CODE (decl) == FUNCTION_DECL
       && DECL_CONTEXT (decl) == current_function_decl
       && DECL_SAVED_TREE (decl))
+#ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+    {
+      WFE_Start_Function (decl);
+       c_expand_body (decl, /*nested_p=*/1, /*can_defer_p=*/0);
+    }
+#endif
+#else
     c_expand_body (decl, /*nested_p=*/1, /*can_defer_p=*/0);
+#endif
 }
 
 /* Return the IDENTIFIER_GLOBAL_VALUE of T, for use in common code, since

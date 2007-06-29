@@ -48,6 +48,8 @@
  * -CG:select_factor="1.1"      factor to reduce the cost of the 
  *                              ifconverted region
  *
+ * -CG:select_promote_mem=false  base or offset memory load promotion
+ *
  * -CG:select_freq=TRUE         heuristic based on execution frequency (optimize  *                              speed) or size of block (optimize space).
  *
  * -TARG:conditional_load=TRUE    enable predicated loads
@@ -62,8 +64,10 @@
 // [HK]
 #if __GNUC__ >=3
 #include <list>
+#include <map>
 #else
 #include <list.h>
+#include <map.h>
 #endif // __GNUC__ >=3
 #include "namespace_trans.h"
 
@@ -125,23 +129,24 @@ static OP_MAP phi_op_map;
 // Stores are mapped with their equivalent.
 // Loads are just recorded. They will be replaced with their dismissible form
 // in BB_Fix_Spec_Loads.
-// I keep these operation in a list because we don't want to touch the basic
+// I record these operation in a map because we don't want to touch the basic
 // blocks now. (we don't know yet if the hammock will be reduced).
 // OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
 
-typedef struct {
-  OP *memop;
-  TN *predtn;
-} pred_t;
-
-typedef std::list<pred_t>    PredOp_Lst;
-typedef PredOp_Lst::iterator       PredOp_Lst_Iter;
-typedef PredOp_Lst::const_iterator PredOp_Lst_ConstIter;
-
-PredOp_Lst pred_i;
+typedef std::map<OP*, TN*> PredOp_Map;
+typedef PredOp_Map::iterator PredOp_Map_Iter;
+typedef PredOp_Map::const_iterator PredOp_Map_ConstIter;
+static PredOp_Map pred_i;
 
 // Mapping of register class equivalent tns
 static TN_MAP btn_map = NULL;
+
+static PredOp_Map_Iter pred_erase(PredOp_Map_Iter i_iter)
+{
+  PredOp_Map_Iter temp=i_iter++;
+  pred_i.erase(temp);
+  return i_iter;
+}
 
 /* ====================================================================
  *   flags:
@@ -149,6 +154,7 @@ static TN_MAP btn_map = NULL;
  */
 BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_allow_dup = TRUE;
+BOOL CG_select_promote_mem = FALSE;
 INT32 CG_select_spec_loads = 1;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
@@ -281,7 +287,6 @@ Initialize_Hammock_Memory()
 static void
 Finalize_Hammock_Memory()
 {
-
   OP_MAP_Delete(phi_op_map);
   TN_MAP_Delete(btn_map);
 }
@@ -416,15 +421,8 @@ Need_Predicate_Op (OP *op)
     return FALSE;
 
   if (Can_Predicate_Op (op)) {
-    PredOp_Lst_ConstIter i_iter;
-    PredOp_Lst_ConstIter i_end;
-
-    i_iter = pred_i.begin();
-    i_end = pred_i.end();
-    while(i_iter != i_end) {
-      if ((*i_iter).memop == op) return !OP_has_predicate(op);
-      i_iter++;
-    }
+    if (pred_i.find(op) != pred_i.end())
+      return !OP_has_predicate(op);
   }
   return FALSE;
 }
@@ -446,8 +444,8 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
 
   if (!opt || !opf || (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf))) {
 #if 1
-    if (opt && opf && OP_code (opt) == TOP_psi && OP_code (opf) == TOP_psi &&
-        OP_opnd (opt, 0) == True_TN && OP_opnd (opf, 0) == True_TN) {
+    if (opt && opf && OP_psi (opt) && OP_psi (opf) &&
+        TN_is_true(OP_opnd (opt, 0)) && TN_is_true(OP_opnd (opf, 0))) {
       true_tn = OP_opnd (opt, 1);
       false_tn = OP_opnd (opf, 1); 
       TN *sel_tn = Dup_TN (target_tn);
@@ -479,14 +477,15 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
                              result,
                              opnd);
 
-      BB_Remove_Op(OP_bb(opt), opt);
-      BB_Remove_Op(OP_bb(opf), opf);
+      if (OP_bb(opt) && !TN_is_global_reg(OP_result(opt, 0)))
+        BB_Remove_Op(OP_bb(opt), opt);
+      if (OP_bb(opf) && !TN_is_global_reg(OP_result(opf, 0)))
+        BB_Remove_Op(OP_bb(opf), opf);
 
       OPS_Append_Op(cmov_ops, psi_op);
       return;
     }
-    else if (opt && OP_code(opt) == TOP_psi &&
-             OP_opnd (opt, 0) == True_TN) {
+    else if (opt && OP_psi(opt) && TN_is_true(OP_opnd (opt, 0))) {
       true_tn = OP_opnd (opt, 1); 
       TN *sel_tn = Dup_TN (target_tn);
 
@@ -511,12 +510,12 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
                              result,
                              opnd);
 
-      BB_Remove_Op(OP_bb(opt), opt);
+      if (!TN_is_global_reg(OP_result(opt, 0)))
+        BB_Remove_Op(OP_bb(opt), opt);
       OPS_Append_Op(cmov_ops, psi_op);
       return;
     }
-    else if (opf && OP_code(opf) == TOP_psi && 
-             OP_opnd (opf, 0) == True_TN) {
+    else if (opf && OP_psi(opf) && TN_is_true(OP_opnd (opf, 0))) {
       false_tn = OP_opnd (opf, 1); 
       TN *sel_tn = Dup_TN (target_tn);
 
@@ -541,7 +540,8 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
                              result,
                              opnd);
 
-      BB_Remove_Op(OP_bb(opf), opf);
+      if (!TN_is_global_reg(OP_result(opf, 0)))
+        BB_Remove_Op(OP_bb(opf), opf);
       OPS_Append_Op(cmov_ops, psi_op);
       return;
     }
@@ -566,47 +566,28 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
     if (opf) Print_OP (opf);
   }
 
-  PredOp_Lst_ConstIter i_iter;
-  PredOp_Lst_ConstIter i_end;
-
-  i_iter = pred_i.begin();
-  i_end = pred_i.end();
-  while(i_iter != i_end) {
-    if ((*i_iter).memop == opt) {
-      cond_tn = (*i_iter).predtn;
-      //      break;
-    }
-    if ((*i_iter).memop == opf) {
-      fcond_tn = (*i_iter).predtn;
-      //      break;
-    }
-    i_iter++;
-  }
-
-  // this can happen if the conditional load dominates one of the 
-  // thenelse blocks
-  if (OP_memory (opf) && cond_tn == True_TN && fcond_tn == True_TN) {
-    Exp_Pred_Complement(Dup_TN(test_tn), NULL, test_tn, cmov_ops);
-    cond_tn = OP_result(OPS_last(cmov_ops), 0);
-  }
-
-  if (OP_memory (opt) && cond_tn == True_TN && fcond_tn == True_TN) {
-    fcond_tn = test_tn;
-  }
+  if (pred_i.find(opt) != pred_i.end())
+    cond_tn = pred_i[opt];
+  if (pred_i.find(opf) != pred_i.end())
+    fcond_tn = pred_i[opf];
 
   result[0] = target_tn;
-  
-  if (cond_tn == True_TN) {
+
+  if (TN_is_true (fcond_tn) &&
+      (TN_is_true (cond_tn) &&
+       (TN_is_global_reg (false_tn) &&
+        (!TN_ssa_def(true_tn) || GTN_SET_MemberP(BB_live_in(OP_bb(TN_ssa_def(true_tn))), false_tn)))) ||
+      !TN_is_true (cond_tn)) {
+    opnd[0] = fcond_tn;
+    opnd[1] = false_tn;
+    opnd[2] = cond_tn;
+    opnd[3] = true_tn;    
+  }
+  else {
     opnd[0] = cond_tn;
     opnd[1] = true_tn;
     opnd[2] = fcond_tn;
     opnd[3] = false_tn;
-  }
-  else {
-    opnd[0] = fcond_tn;
-    opnd[1] = false_tn;
-    opnd[2] = cond_tn;
-    opnd[3] = true_tn;
   }
 
   OP *psi_op = Mk_VarOP (TOP_psi,
@@ -636,7 +617,16 @@ static OP *
 BB_Create_And_Map_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
                        OP *old_phi, phi_t *phi_info) 
 {
-  phi_info->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+  Is_True(OP_code(old_phi) == TOP_phi,("not a PHI function"));
+
+  if (nopnds == 1) {
+    OPS ops = OPS_EMPTY;
+    Expand_Copy (result[0], True_TN, opnd[0], &ops);
+    phi_info->phi = OPS_last(&ops);
+  }
+  else
+    phi_info->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
+
   OP_MAP_Set(phi_op_map, old_phi, phi_info);
 }
      
@@ -648,7 +638,7 @@ BB_Update_Phis(BB *bb)
 {
   OP *phi;
 
-  for (phi = BB_first_op(bb); phi && OP_code(phi) == TOP_phi; ) {
+  for (phi = BB_first_op(bb); phi && OP_phi(phi); ) {
     phi_t *phi_info = (phi_t *)OP_MAP_Get(phi_op_map, phi);
 
     OP *next = OP_next(phi);
@@ -658,13 +648,15 @@ BB_Update_Phis(BB *bb)
       OP *new_phi = phi_info->phi;
 
       BB_Prepend_Op(bb, new_phi);
-      Initialize_PHI_map(new_phi);
+      if (OP_phi(new_phi))
+        Initialize_PHI_map(new_phi);
 
       int i=0;
       while(!phi_info->bbs.empty())
         {
           BB *pred = phi_info->bbs.back();
-          Set_PHI_Predecessor (new_phi, i++, pred);
+          if (OP_phi(new_phi))
+            Set_PHI_Predecessor (new_phi, i++, pred);
           phi_info->bbs.pop_back();
         }
 
@@ -708,7 +700,7 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
     // cond_tn1 need to be a pred register
 #ifdef TARG_ST200
     // must improve interface.
-    if (OP_code(TN_ssa_def (cond_tn1)) == TOP_mfb)
+    if (TN_ssa_def (cond_tn1) && OP_code(TN_ssa_def (cond_tn1)) == TOP_convbi_b_r)
       cond_tn1 = OP_opnd(TN_ssa_def (cond_tn1), 0);
 #else
     FmtAssert(Is_Predicate_REGISTER_CLASS( TN_register_class(cond_tn1)),
@@ -794,6 +786,7 @@ static BOOL
 Can_Speculate_BB(BB *bb)
 {
   OP* op;
+  bool pred_av = false;
 
   if (BB_Has_Exc_Label(bb) ||
       BB_Has_Addr_Taken_Label(bb) ||
@@ -814,10 +807,8 @@ Can_Speculate_BB(BB *bb)
     /* check if we are trying to speculate predicated ops */
     if (OP_has_predicate (op)) {
       TN *cond_tn = OP_opnd(op, OP_find_opnd_use(op, OU_predicate));
-      pred_t memi;
-      memi.memop = op;
-      memi.predtn = cond_tn;
-      pred_i.push_back(memi);
+      pred_i[op] = cond_tn;
+      Set_TN_is_if_conv_cond(cond_tn);
     }
 
     else if (OP_load (op)) {
@@ -825,8 +816,20 @@ Can_Speculate_BB(BB *bb)
         continue;
       else if (CG_select_spec_loads == 1) {
         WN *wn = Get_WN_From_Memory_OP(op);
+        TN *base   = OP_opnd(op, OP_find_opnd_use(op, OU_base));
+        bool can_speculate=true;
+
+        if (TN_is_register (base)) {
+          OP *op_def = TN_ssa_def(base);
+          if (op_def && Need_Predicate_Op(op_def))
+            can_speculate=false;
+        }
+
+        if (OP_volatile(op))
+          can_speculate=false;
+
         if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn) &&
-	    !OP_volatile(op)) {
+            can_speculate && !pred_av) {
           continue;
 	}
       }
@@ -836,10 +839,8 @@ Can_Speculate_BB(BB *bb)
 	   !OP_volatile(op)) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())) {
         if (!OP_has_predicate (op) && !OP_Is_Speculative(op)) {
-          pred_t memi;
-          memi.memop = op;
-          memi.predtn = 0;
-          pred_i.push_back(memi);
+          pred_i[op] = 0;
+          pred_av = true;
         }
       }
       else if (!OP_Can_Be_Speculative(op)) {
@@ -855,10 +856,8 @@ Can_Speculate_BB(BB *bb)
 	  return FALSE;	  
 
         if (!OP_has_predicate (op)) {
-          pred_t memi;
-          memi.memop = op;
-          memi.predtn = 0;
-          pred_i.push_back(memi);
+          pred_i[op] = 0;
+          pred_av = true;
         }
       }
 
@@ -867,18 +866,62 @@ Can_Speculate_BB(BB *bb)
     }
     
     else if (OP_prefetch (op) && Enable_Conditional_Prefetch && PROC_has_predicate_loads()) {
-      pred_t memi;
-      memi.memop = op;
-      memi.predtn = 0;
-      pred_i.push_back(memi);
+      // FdF 20070209: If safe_to_speculate, then this will save the
+      // computation of the guard register
+      WN *wn = Get_WN_From_Memory_OP(op);
+      if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
+	continue;
+
+      pred_i[op] = 0;
+      pred_av = true;
     }
     
     else if (!OP_Can_Be_Speculative(op))
       return FALSE;
-
   }
 
   return TRUE;
+}
+
+bool
+Same_Tns (TN* tn1, TN *tn2)
+{
+  if (TN_has_value (tn1)) {
+    if (!TN_has_value (tn2))
+      return false;
+    else
+      return (TN_value (tn1) == TN_value(tn2));
+  }
+
+  if (TNs_Are_Equivalent (tn1, tn2))
+    return true;
+
+  return false;
+}
+
+// 
+// Check wether 2 memory operations differ only by one element.
+//
+static bool
+Have_Same_Offset_Or_Base(OP* op1, OP* op2)
+{
+  if (! CG_select_promote_mem)
+    return false;
+
+  if (OP_memory(op1) && OP_memory(op2)) {
+    TN *offsetTN1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_offset));
+    TN *offsetTN2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_offset));
+    TN *baseTN1   = OP_opnd(op1, OP_find_opnd_use(op1, OU_base));
+    TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
+
+    if (!Same_Tns (offsetTN1, offsetTN2) && Same_Tns (baseTN1, baseTN2))
+      return TN_is_constant (baseTN1);
+
+    if (Same_Tns (offsetTN1, offsetTN2) && !Same_Tns (baseTN1, baseTN2))
+      return TN_is_constant (offsetTN1); 
+  }
+
+  return false;
 }
 
 // 
@@ -1019,7 +1062,11 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
+#ifdef TARG_ST200
+  CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r_r_r);
+#else
   CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r);
+#endif
 
   cycles1 = CG_SCHED_EST_Cycles(se1);
 
@@ -1351,7 +1398,7 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
   OP *op;
 
   FOR_ALL_BB_OPs_FWD(bp, op) {
-    if (OP_code (op) != TOP_phi) {
+    if (!OP_phi (op)) {
       for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
         TN *res = OP_opnd(op, opndnum);
         if (TN_is_register(res) && !TN_is_dedicated(res)) {
@@ -1363,17 +1410,10 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
       }
 
       if (OP_has_predicate (op) || TOP_is_select (OP_code (op))) {
-        PredOp_Lst_Iter i_iter = pred_i.begin();
-        PredOp_Lst_Iter i_end  = pred_i.end();
-
-        while(i_iter != i_end) {
-          if ((*i_iter).memop == op) {
-            TN *cond_tn = (*i_iter).predtn;
-            new_tn = (TN*) hTN_MAP_Get(dup_tn_map, cond_tn);
-            (*i_iter).predtn = new_tn;
-            break;
-          }
-          i_iter++;
+        if (pred_i.find(op) != pred_i.end()) {
+          new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_i[op]);
+          pred_i[op] = new_tn;
+          Set_TN_is_if_conv_cond(new_tn);
         }
       }
     }
@@ -1383,17 +1423,9 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
 static void 
 Update_Predicates (OP *op, OP *new_op)
 {
-  PredOp_Lst_Iter i_iter;
-  PredOp_Lst_Iter i_end;
-
-  i_iter = pred_i.begin();
-  i_end = pred_i.end();
-  while(i_iter != i_end) {
-    if ((*i_iter).memop == op) {
-      (*i_iter).memop = new_op;
-      break;
-    }
-    i_iter++;
+  if (pred_i.find(op) != pred_i.end()) {
+    pred_i[new_op] = pred_i[op];
+    pred_i.erase(op);
   }
 }
 
@@ -1562,6 +1594,19 @@ static bool Interferes_Ops(OP *op1, OP *op2)
   return false;
 }
 
+static void 
+BB_Replace_Op (OP *op, OPS *ops)
+{
+  BB *bb = OP_bb(op);
+  OP *op_point = OP_next(op);
+
+  BB_Remove_Op (bb, op);
+  if (!op_point)
+    BB_Append_Ops(bb, ops);
+  else
+    BB_Insert_Ops_Before(bb, op_point, ops);
+}
+
 static void BB_Sort_Psi_Ops(BB *head)
 {
   OP *psi;
@@ -1569,7 +1614,7 @@ static void BB_Sort_Psi_Ops(BB *head)
   BB_Update_OP_Order(head);
 
   FOR_ALL_BB_OPs_FWD(head, psi) {
-    if (OP_code (psi) == TOP_psi && OP_opnd(psi, 0) == True_TN) {
+    if (OP_psi (psi) && TN_is_true(OP_opnd(psi, 0))) {
       OP *dom = TN_ssa_def(OP_opnd(psi, 1));
       if (dom && OP_bb(dom) == head) {
         for (INT i = 3; i < OP_opnds(psi); i+=2) {
@@ -1579,8 +1624,8 @@ static void BB_Sort_Psi_Ops(BB *head)
               BB_Remove_Op(head, op);
               BB_Insert_Op_After(head, dom, op);
             }
+            dom = op;
           }
-          dom = op;
         }
       }
     }
@@ -1622,7 +1667,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
     //
     OP *op;
     FOR_ALL_BB_OPs_FWD(bp, op) {
-      if (OP_code (op) == TOP_phi) {
+      if (OP_phi (op)) {
         UINT8 nopnds = 0;
         TN *opnd[BB_preds_len(bp)];
       
@@ -1779,15 +1824,37 @@ Promote_BB_Chain (BB *head, BB *bb, BB *tail)
 }
 
 static void
-Rename_Local_Tns (TN *tn, TN *new_tn, OP*op)
+Check_Psi_Uses (OP *op, BB *bb, TN *new_tn)
 {
-  do {
-    for (int i = 0; i < OP_opnds(op); i++) {
-      if (OP_opnd(op, i) == tn) {
-        Set_OP_opnd (op, i, new_tn);
+  for (int i = 0; i < OP_results(op); i++) {
+    TN *res = OP_result(op, i);
+    OP *opn;
+
+    for (opn = BB_first_op(bb); opn;  opn = OP_next(opn))
+      if (OP_psi(opn))
+        for (int j = 0; j < OP_opnds(opn); j++) {
+          if (OP_opnd(opn, j) == res)
+            Set_OP_opnd (opn, j-1, new_tn);
+        }
+  }
+}
+
+static void
+Rename_Cond_Tns (TN *tn, TN *new_tn, OP*op)
+{
+  while (op = OP_next(op)) {
+    if (OP_psi (op))
+      for (int i = 0; i < OP_opnds(op); i++) {
+        if (OP_opnd(op, i) == tn) {
+          Set_OP_opnd (op, i, new_tn);
+        }
       }
+    else if (OP_has_predicate(op)) {
+      int i = OP_find_opnd_use(op, OU_predicate);
+      if (OP_opnd(op, i) == tn)
+        Set_OP_opnd (op, i, new_tn);
     }
-  } while (op = OP_next(op));
+  } 
 }
 
 static TN*
@@ -1798,7 +1865,7 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
 #ifdef TARG_ST200
   // must improve interface
   OP *opb = TN_ssa_def (tn);
-  if (opb && OP_code(opb) == TOP_mtb) {
+  if (opb && OP_code(opb) == TOP_convib_r_b) {
     tn = OP_opnd(opb, 0);
   }
   else
@@ -1807,7 +1874,7 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
       TN *tn2 = tn;
       if (!(tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
         tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-        Exp_COPY(tn, tn2, ops);
+        Expand_Bool_To_Int (tn, tn2, MTYPE_I4, ops);
         TN_MAP_Set(btn_map, tn, tn2);
       }
     }
@@ -1815,7 +1882,7 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
 #ifdef TARG_ST200
   // must improve interface
   opb = TN_ssa_def (pred_tn);
-  if (opb && OP_code(opb) == TOP_mtb) {
+  if (opb && OP_code(opb) == TOP_convib_r_b) {
     pred_tn = OP_opnd(opb, 0);
   }
   else
@@ -1824,7 +1891,7 @@ Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
       TN *tn2 = pred_tn;
       if (!(pred_tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
         pred_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-        Exp_COPY(pred_tn, tn2, ops);
+        Expand_Bool_To_Int (pred_tn, tn2, MTYPE_I4, ops);
         TN_MAP_Set(btn_map, pred_tn, tn2);
       }
     }
@@ -1842,26 +1909,26 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   if (pred_i.empty())
     return;
 
-  TN *tn2;
-  Exp_Pred_Complement(Dup_TN(cond_tn), NULL, cond_tn, ops);
-  tn2 = OP_result (OPS_last(ops), 0);  
+  TN *tn2=Dup_TN(cond_tn);
+  Exp_Pred_Complement(tn2, NULL, cond_tn, ops);
 
   hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
 
-  PredOp_Lst_Iter i_iter;
-  PredOp_Lst_Iter i_end;
+  PredOp_Map_Iter i_iter;
+  PredOp_Map_Iter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
 
   while(i_iter != i_end) {
-    OP* op = (*i_iter).memop;
-    
+
+    OP* op = (*i_iter).first;
+
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
-      TN *pred_tn = (*i_iter).predtn;
+      TN *pred_tn = (*i_iter).second;
 
       if (!pred_tn) {
-        (*i_iter).predtn = false_br ? tn2 : cond_tn;
+        (*i_iter).second = false_br ? tn2 : cond_tn;
       }
       else {
         TN *tn = false_br ? tn2 : cond_tn;
@@ -1870,28 +1937,28 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
           TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_tn);
 
           if (!new_tn) {
-            OPS ops = OPS_EMPTY;  
+            OPS mops = OPS_EMPTY;  
 
             new_tn = Generate_Merged_Predicates (pred_tn, tn, 
                                                  false_br ? V_BR_FALSE : V_BR_NONE,
-                                                 &ops);
+                                                 &mops);
 
             hTN_MAP_Set(dup_tn_map, pred_tn, new_tn);
               
             OP* opb = TN_ssa_def (pred_tn);
-            BB_Insert_Ops_After(OP_bb(opb), opb, &ops);
-            Rename_Local_Tns((*i_iter).predtn, new_tn, OPS_last(&ops));
+            BB_Insert_Ops_After(OP_bb(opb), opb, &mops);
+            Rename_Cond_Tns((*i_iter).second, new_tn, OPS_last(&mops));
           }
             
-          (*i_iter).predtn = new_tn;
+          (*i_iter).second = new_tn;
         }
       }
     }
     else if (BB_SET_MemberP(ft_set, OP_bb (op))) {
-      TN *pred_tn = (*i_iter).predtn;
+      TN *pred_tn = (*i_iter).second;
 
       if (!pred_tn) {
-        (*i_iter).predtn = false_br ? cond_tn : tn2;
+        (*i_iter).second = false_br ? cond_tn : tn2;
       }
       else  {
         TN *tn = false_br ? cond_tn : tn2;
@@ -1900,20 +1967,20 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
           TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_tn);
 
           if (!new_tn) {
-            OPS ops = OPS_EMPTY;  
+            OPS mops = OPS_EMPTY;  
 
             new_tn = Generate_Merged_Predicates (pred_tn, tn, 
                                                  false_br ? V_BR_FALSE : V_BR_NONE,
-                                                 &ops);
+                                                 &mops);
 
             hTN_MAP_Set(dup_tn_map, pred_tn, new_tn);
               
             OP* opb = TN_ssa_def (pred_tn);
-            BB_Insert_Ops_After(OP_bb(opb), opb, &ops);
-            Rename_Local_Tns((*i_iter).predtn, new_tn, OPS_last(&ops));
+            BB_Insert_Ops_After(OP_bb(opb), opb, &mops);
+            Rename_Cond_Tns((*i_iter).second, new_tn, OPS_last(&mops));
           }
             
-          (*i_iter).predtn = new_tn;
+          (*i_iter).second = new_tn;
         }
       }
     }
@@ -1924,17 +1991,73 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   }
 }
 
-static void 
-BB_Replace_Op (OP *op, OPS *ops)
+static bool
+Can_Mem_Conflicts(OP *op1, OP *op2)
 {
-  BB *bb = OP_bb(op);
-  OP *op_point = OP_next(op);
+  OP *first;
+  OP *last;
 
-  BB_Remove_Op (bb, op);
-  if (!op_point)
-    BB_Append_Ops(bb, ops);
+  if (OP_Follows(op2, op1)) {
+    first = op1;
+    last = op2;
+  }
+  else {
+    first = op2;
+    last = op1;
+  }
+
+  for (OP *iop = OP_next(first);
+       iop!= NULL && iop != last;
+       iop = OP_next(iop)) {
+    if (OP_store (iop) && !Are_Not_Aliased (first, iop)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static void
+Promote_Mem_Based_On (TN *condTN1, TN *condTN2, int index, OP *psi_op, OP *op1, OP *op2)
+{
+  TN *sel_tn;
+
+  if (TN_is_register(condTN1))
+    sel_tn = Dup_TN (condTN1);
   else
-    BB_Insert_Ops_Before(bb, op_point, ops);
+    sel_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 
+                              TN_size(condTN1) == 8 ? MTYPE_I8: MTYPE_I4); 
+
+  BB *bb = OP_bb(psi_op);
+  OPS ops = OPS_EMPTY;  
+
+  DevAssert(BB_id(OP_bb(psi_op)) == BB_id(OP_bb(op1)) &&
+            BB_id(OP_bb(psi_op)) == BB_id(OP_bb(op2)),
+            ("wrong candidate for memory promotion"));
+  
+  TN *pred_tn = PSI_guard(psi_op, 0);
+
+  Expand_Select (sel_tn, pred_tn, condTN1, condTN2, 
+                 TN_size(condTN1) == 8 ? MTYPE_I8: MTYPE_I4,
+                 FALSE, &ops);
+
+  if (OP_Precedes(op1, op2)) {
+    OP *tmp = op1;
+    op1 = op2;
+    op2 = tmp;
+  }
+
+  if (OP_no_alias (op1) && !OP_no_alias (op2))
+    Reset_OP_no_alias(op1);
+
+  OP_MAP_Set(OP_to_WN_map, op1, NULL);
+
+  Set_OP_result(op1, 0, OP_result(psi_op, 0));
+  Set_OP_opnd(op1, OP_find_opnd_use(op1, index), sel_tn);
+
+  BB_Insert_Ops_Before(bb, op1, &ops);
+  BB_Remove_Op (bb, op2);
+  BB_Remove_Op (bb, psi_op);
 }
 
 static void
@@ -1943,8 +2066,8 @@ Optimize_Spec_Loads(BB *bb)
   TN *tn1=NULL;
   TN *tn2=NULL;
 
-  PredOp_Lst_Iter i_iter;
-  PredOp_Lst_Iter i_end;
+  PredOp_Map_Iter i_iter;
+  PredOp_Map_Iter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -1955,11 +2078,11 @@ Optimize_Spec_Loads(BB *bb)
 
   while(i_iter != i_end) {
 
-    PredOp_Lst_Iter i_iter2=i_iter;
+    PredOp_Map_Iter i_iter2=i_iter;
     i_iter2++;
 
-    OP *op1 = (*i_iter).memop;
-    TN *tn1 = (*i_iter).predtn;
+    OP *op1 = (*i_iter).first;
+    TN *tn1 = (*i_iter).second;
 
     if (OP_store (op1)) {
       i_iter++;
@@ -1967,32 +2090,17 @@ Optimize_Spec_Loads(BB *bb)
     }
 
     while (i_iter2 != i_end) {
-      OP *op2 = (*i_iter2).memop;
-      TN *tn2 = (*i_iter2).predtn;
+      OP *op2 = (*i_iter2).first;
+      TN *tn2 = (*i_iter2).second;
 
       if (OP_load (op2) && 
           Are_Same_Location (op1, op2) && tn1 != tn2 &&
           !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
 
         // check that we don't cross an aliasing memory operation
-        OP *first;
-        OP *last;
-        if (OP_Follows(op2, op1)) {
-          first = op1;
-          last = op2;
-        }
-        else {
-          first = op2;
-          last = op1;
-        }
-
-        for (OP *iop = OP_next(first);
-             iop!= NULL && iop != last;
-             iop = OP_next(iop)) {
-          if (OP_store (iop) && !Are_Not_Aliased (first, iop)) {
-            i_iter++;
-            goto next_load;
-          }
+        if (Can_Mem_Conflicts(op1, op2)) {
+          i_iter++;
+          goto next_load;
         }
 
         OPS ops = OPS_EMPTY;  
@@ -2001,8 +2109,8 @@ Optimize_Spec_Loads(BB *bb)
           TN *new_res = OP_result(op2, 0);
           Exp_COPY (new_res, res, &ops);
           BB_Replace_Op (op2, &ops);
-          i_iter2 = pred_i.erase(i_iter2);
-          i_iter = pred_i.erase(i_iter);
+          i_iter2 = pred_erase(i_iter2);
+          i_iter = pred_erase(i_iter);
           goto next_load;
         }
         else {
@@ -2010,14 +2118,78 @@ Optimize_Spec_Loads(BB *bb)
           TN *new_res = OP_result(op1, 0);
           Exp_COPY (new_res, res, &ops);
           BB_Replace_Op (op1, &ops);
-          i_iter2 = pred_i.erase(i_iter2);
-          i_iter = pred_i.erase(i_iter);
+          i_iter2 = pred_erase(i_iter2);
+          i_iter = pred_erase(i_iter);
           goto next_load;
         }
       }
-      else
-        i_iter2++;          
+      else if (OP_load (op2) && 
+               Have_Same_Offset_Or_Base (op1, op2) && tn1 != tn2 &&
+               !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
+
+        // check that we don't cross an aliasing memory operation
+        if (Can_Mem_Conflicts(op1, op2)) {
+          i_iter++;
+          goto next_load;
+        }
+
+        TN* res1 = OP_result(op1, 0);
+        TN* res2 = OP_result(op2, 0);
+        bool found1 = false;
+        bool found2 = false;
+
+        // Does those loads merge ?
+        OP *psi;
+        FOR_ALL_BB_OPs_FWD(bb, psi) {
+          if (OP_psi (psi)) {
+            if (PSI_opnds(psi) == 2) {
+              for (int i = 0; i < PSI_opnds(psi); i++) {
+                if (PSI_opnd(psi, i) == res1) {
+                  found1 = true;
+                  if (found2) goto found;
+                }
+                else if (PSI_opnd(psi, i) == res2) {
+                  found2 = true;
+                  if (found1) goto found;
+                }
+              }
+            }
+            else {
+              // todo: reduce phi if nops > 2
+              DevWarn("promote_memory with phis. not yet");
+            }
+          }
+        }
+
+      found:
+        if (found1 && found2) {
+          TN *offsetTN1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_offset));
+          TN *offsetTN2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_offset));
+          TN *baseTN1   = OP_opnd(op1, OP_find_opnd_use(op1, OU_base));
+          TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
+
+          if(Same_Tns (offsetTN1, offsetTN2)) {
+            Promote_Mem_Based_On (baseTN1, baseTN2, OU_base, psi,
+                                  op1, op2);
+
+            i_iter2 = pred_erase(i_iter2);
+            i_iter = pred_erase(i_iter);
+            goto next_load;         
+          }
+          else if(Same_Tns (baseTN1, baseTN2)) {
+            Promote_Mem_Based_On (offsetTN1, offsetTN2, OU_offset, psi,
+                                  op1, op2);
+            
+            i_iter2 = pred_erase(i_iter2);
+            i_iter = pred_erase(i_iter);
+            goto next_load;         
+          }
+        }
+      }
+
+      i_iter2++;
     }
+        
     i_iter++;
   }
 }
@@ -2025,17 +2197,17 @@ Optimize_Spec_Loads(BB *bb)
 static void
 BB_Fix_Spec_Loads (BB *bb)
 {
-   Optimize_Spec_Loads (bb);
+  Optimize_Spec_Loads (bb);
 
-  PredOp_Lst_ConstIter i_iter;
-  PredOp_Lst_ConstIter i_end;
+  PredOp_Map_ConstIter i_iter;
+  PredOp_Map_ConstIter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
   while(i_iter != i_end) {
 
     OPS ops = OPS_EMPTY;  
-    OP* op = (*i_iter).memop;
+    OP* op = (*i_iter).first;
 
     TOP ld_top = TOP_UNDEFINED;
 
@@ -2051,9 +2223,9 @@ BB_Fix_Spec_Loads (BB *bb)
       }
 
       else if (PROC_has_predicate_loads()) {
-        TN *btn = (*i_iter).predtn;
+        TN *btn = (*i_iter).second;
 
-        if (btn != True_TN) {
+        if (!TN_is_true(btn)) {
           ld_top = OP_has_predicate(op) ? OP_code(op) :
             CGTARG_Predicated_Load (op);
 
@@ -2069,13 +2241,15 @@ BB_Fix_Spec_Loads (BB *bb)
 	    Set_OP_volatile(OPS_last(&ops));
 
           BB_Replace_Op (op, &ops);
+
+          Check_Psi_Uses(op, bb, btn);
         }
       }
 
       disloads_count++;
     }
     else if (OP_prefetch (op)) {
-      TN *btn = (*i_iter).predtn;
+      TN *btn = (*i_iter).second;
 
       ld_top = OP_has_predicate(op) ? OP_code(op) : CGTARG_Predicated_Load (op);
 
@@ -2098,8 +2272,8 @@ Optimize_Spec_Stores(BB *bb)
   TN *tn1=NULL;
   TN *tn2=NULL;
 
-  PredOp_Lst_Iter i_iter;
-  PredOp_Lst_Iter i_end;
+  PredOp_Map_Iter i_iter;
+  PredOp_Map_Iter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -2110,11 +2284,11 @@ Optimize_Spec_Stores(BB *bb)
 
   while(i_iter != i_end) {
 
-    PredOp_Lst_Iter i_iter2=i_iter;
+    PredOp_Map_Iter i_iter2=i_iter;
     i_iter2++;
 
-    OP *op1 = (*i_iter).memop;
-    TN *tn1 = (*i_iter).predtn;
+    OP *op1 = (*i_iter).first;
+    TN *tn1 = (*i_iter).second;
 
     if (OP_load (op1)) {
       i_iter++;
@@ -2123,8 +2297,8 @@ Optimize_Spec_Stores(BB *bb)
 
     while (i_iter2 != i_end) {
 
-        OP *op2 = (*i_iter2).memop;
-        TN *tn2 = (*i_iter2).predtn;
+        OP *op2 = (*i_iter2).first;
+        TN *tn2 = (*i_iter2).second;
 
         if (OP_store (op2) && 
             Are_Same_Location (op1, op2) && tn1 != tn2 &&
@@ -2181,8 +2355,8 @@ Optimize_Spec_Stores(BB *bb)
             BB_Remove_Op (bb, op2);
           }
 
-          i_iter2 = pred_i.erase(i_iter2);
-          i_iter = pred_i.erase(i_iter);
+          i_iter2 = pred_erase(i_iter2);
+          i_iter = pred_erase(i_iter);
           goto next_store;
         }
         else
@@ -2198,8 +2372,8 @@ BB_Fix_Spec_Stores (BB *bb)
 {
   Optimize_Spec_Stores (bb);
 
-  PredOp_Lst_ConstIter i_iter;
-  PredOp_Lst_ConstIter i_end;
+  PredOp_Map_ConstIter i_iter;
+  PredOp_Map_ConstIter i_end;
 
   i_iter = pred_i.begin();
   i_end = pred_i.end();
@@ -2207,8 +2381,8 @@ BB_Fix_Spec_Stores (BB *bb)
   while(i_iter != i_end) {
 
     OPS ops = OPS_EMPTY;  
-    OP* op = (*i_iter).memop;
-    TN *btn = (*i_iter).predtn;
+    OP* op = (*i_iter).first;
+    TN *btn = (*i_iter).second;
 
     if (OP_store (op)) {
       if (PROC_has_predicate_stores() && Enable_Conditional_Store) {
@@ -2252,20 +2426,19 @@ Negate_Cmp_BB (OP *br)
 {
   TN *btn = OP_opnd(br, 0);
 
-  if (TN_is_global_reg(btn)) {
+  OP *cmp_op = TN_ssa_def(btn);
+  TOP new_cmp;
+
+  if (TN_is_global_reg(btn) 
+      || (new_cmp = CGTARG_Invert(OP_code(cmp_op))) == TOP_UNDEFINED) {
     OPS ops = OPS_EMPTY;
 
-    Exp_Pred_Complement(Dup_TN(btn), NULL, btn, &ops);
+    TN *tn2=Dup_TN(btn);
+    Exp_Pred_Complement(tn2, NULL, btn, &ops);
     BB_Insert_Ops_Before(OP_bb(br), br, &ops);
-    btn = OP_result (OPS_last(&ops), 0);  
-    Set_OP_opnd(br, 0, btn);    
+    Set_OP_opnd(br, 0, tn2);
     return TRUE;
   }
-  
-  OP *cmp_op = TN_ssa_def(btn);
-  TOP new_cmp = CGTARG_Invert(OP_code(cmp_op));
-  if (new_cmp == TOP_UNDEFINED)
-    return FALSE;
 
   OP_Change_Opcode(cmp_op, new_cmp);
   return TRUE;
@@ -2307,30 +2480,23 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
   }
 
   if (target1 == *fall_thru2 || fall_thru1 == *target2) {
+    BB *tmpbb = *fall_thru2;
+    *fall_thru2 = *target2;
+    *target2 = tmpbb;
+
+    logif_info *logif = (logif_info *)BB_MAP_Get(if_bb_map, bb2);
+    DevAssert(logif, ("Select: unmapped logif"));
+
+    logif->target = *target2;
+    logif->fall_thru = *fall_thru2;
+
     // if needInvert, just swap the branches
-    if (needInvert) {
-      BB *tmpbb = *fall_thru2;
-      *fall_thru2 = *target2;
-      *target2 = tmpbb;
-
-      logif_info *logif = (logif_info *)BB_MAP_Get(if_bb_map, bb2);
-      DevAssert(logif, ("Select: unmapped logif"));
-
-      logif->target = *target2;
-      logif->fall_thru = *fall_thru2;
-
-      if (Trace_Select_Gen) {
-        fprintf (Select_TFile, "\nNormalize Jumps OK (noinvert)\n");
-      }
-      *cmp_invert = FALSE;
-      return TRUE;
-    }
+    *cmp_invert = !needInvert;
 
     if (Trace_Select_Gen) {
       fprintf (Select_TFile, "\nNormalize Jumps OK (invert)\n");
     }
 
-    *cmp_invert = TRUE;
     return TRUE;
   }
 
@@ -2369,19 +2535,19 @@ Is_Double_Logif(BB* bb)
         && Can_Speculate_BB(target)
         && Prep_And_Normalize_Jumps(bb, target, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
-        && sec_fall_thru == fall_thru) {
+        && ((sec_fall_thru == fall_thru)
+            || (cmp_invert && sec_target == fall_thru))) {
 
-      if (! Check_Profitable_Logif(bb, target)) {
+      if (! Check_Profitable_Logif(bb, target) ||
+          (cmp_invert && ! Negate_Cmp_BB(BB_branch_op (target)))) {
         BB_MAP_Set(if_bb_map, target, NULL);
         return NULL;
       }
 
-      if (cmp_invert) {
-        if (! Negate_Cmp_BB(BB_branch_op (target)))
-          return NULL;
-      }
       return target;
     }
+
+    BB_MAP_Set(if_bb_map, target, NULL); 
   }
 
   // try the other side
@@ -2390,19 +2556,19 @@ Is_Double_Logif(BB* bb)
         && Can_Speculate_BB(fall_thru)
         && Prep_And_Normalize_Jumps(bb, fall_thru, fall_thru, target,
                                     &sec_fall_thru, &sec_target, &cmp_invert)
-        && sec_target == target) {
+        && ((sec_target == target)
+            || (cmp_invert && sec_fall_thru == target))) {
 
-      if (! Check_Profitable_Logif(bb, fall_thru)) {
+      if (! Check_Profitable_Logif(bb, fall_thru) ||
+          (cmp_invert && ! Negate_Cmp_BB(BB_branch_op (fall_thru)))) {
         BB_MAP_Set(if_bb_map, fall_thru, NULL);
         return NULL;
       }
 
-      if (cmp_invert) {
-        if (! Negate_Cmp_BB(BB_branch_op (fall_thru))) 
-          return NULL;
-      }
       return fall_thru;
     }
+
+    BB_MAP_Set(if_bb_map, fall_thru, NULL); 
   }
   
   return NULL;
@@ -2765,7 +2931,6 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       BB_Lst *bbs = &phi_info->bbs;
 
       select_tn = Dup_TN(select_tn);
-      Set_TN_is_global_reg (select_tn);
       
       BB* tpred = Get_BB_Pos_in_PHI (phi, true_bb);
       BB* fpred = Get_BB_Pos_in_PHI (phi, false_bb);
@@ -3126,6 +3291,8 @@ Node(BB* bb)
   char *p = buffer;
   OP* op;
 
+  sprintf(p, "\\n");
+
   FOR_ALL_BB_OPs_FWD(bb, op) {  
     int i;
  
@@ -3208,4 +3375,5 @@ draw_CFG(void)
   dv.Event_Loop (NULL);
 }
 
-#endif /* SUPPOTS_SELECT */
+#endif /* SUPPORTS_SELECT */
+

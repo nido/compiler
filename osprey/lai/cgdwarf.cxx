@@ -102,6 +102,10 @@
 #    include "config_TARG.h"
 #endif
 
+#ifdef TARG_ST
+#include "whirl2ops.h" // [CL] needed for Find_PREG_For_Symbol()
+#endif
+
 BOOL Trace_Dwarf;
 
 static Dwarf_P_Debug dw_dbg;
@@ -742,14 +746,12 @@ put_location (
 
   expr = dwarf_new_expr (dw_dbg, &dw_error);
 
-#ifndef TARG_ST // [CL] needed for anonymous unions
   if (st == base_st && ST_class(st) != CLASS_BLOCK 
 	&& ST_sclass(st) != SCLASS_COMMON && ST_sclass(st) != SCLASS_EXTERN) 
   {
 	/* symbol was not allocated, so doesn't have dwarf location */
 	return;
   }
-#endif
 
   switch (ST_sclass(st)) {
     case SCLASS_FORMAL:
@@ -4773,7 +4775,6 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 				      Dwarf_Unsigned        reloc_count,
 				      BOOL                  is_64bit)
 {
-
   // [re]establish the section this is part of.
   //
   CGEMIT_Prn_Scn_In_Asm(asm_file, section_name, section_type,
@@ -4874,10 +4875,13 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	break;
 
       case dwarf_drt_segment_rel:
-	// need unaligned AS_ADDRESS for dwarf, so add .ua
-	fprintf(asm_file, "\t%s\t%s", reloc_name,
-		Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
-	break;
+	{
+	  // need unaligned AS_ADDRESS for dwarf, so add .ua
+	  char *n = Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index);
+	  fprintf(asm_file, "\t%s\t%s", reloc_name,
+	          Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
+	  break;
+	}
 #ifdef KEY
       case dwarf_drt_cie_label: // bug 2463
         fprintf(asm_file, "\t%s\t%s", reloc_name, ".LCIE");
@@ -4885,11 +4889,14 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	break;
       case dwarf_drt_data_reloc_by_str_id:
 	// it should be __gxx_personality_v0
+#ifndef TARG_ST
+        // (cbr) on st200 we use PCabs
         if ((Gen_PIC_Call_Shared || Gen_PIC_Shared) && 
 	     !strcmp (&Str_Table[reloc_buffer[k].drd_symbol_index], 
 	     "__gxx_personality_v0"))
 	    fprintf (asm_file, "\t%s\tDW.ref.__gxx_personality_v0-.", reloc_name);
  	else
+#endif
 	fprintf(asm_file, "\t%s\t%s", reloc_name,
 		&Str_Table[reloc_buffer[k].drd_symbol_index]);
 	break;

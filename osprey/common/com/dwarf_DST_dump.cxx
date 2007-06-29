@@ -1217,7 +1217,15 @@ DST_dump(DST_DIR_IDX  incl_dirs,
       DST_write_line();
       DST_put_string("------------<<<<<< DST INFO >>>>>------------");
       DST_write_line();
+#ifdef TARG_ST
+      // [CL] after IPA, there might be several compilation units
+      while(!DST_IS_NULL(compile_unit)) {
+#endif
       DST_preorder_visit(compile_unit, 0, &DST_dump_info);
+#ifdef TARG_ST 
+      compile_unit = DST_INFO_sibling(DST_INFO_IDX_TO_PTR(compile_unit));
+      }
+#endif
    }
    DST_put_string("------------<<<< BLOCK INFO >>>------------");
    DST_write_line();

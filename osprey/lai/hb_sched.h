@@ -396,6 +396,9 @@ private:
   VECTOR            _sched_vector;
 #ifdef TARG_ST
   INT32 	    _Cur_Regs_Avail[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+  INT32             _Min_Cur_Regs_Avail[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+  ISA_REGISTER_CLASS minimize_regs_class;
+  INT32              minimize_regs_threshold;
 #else
   INT32 	    _Cur_Regs_Avail[ISA_REGISTER_CLASS_MAX+1];
 #endif
@@ -486,6 +489,11 @@ public:
   // Exported functions:
   void Init (BB*, HBS_TYPE, INT32, BBSCH*, mINT8*);
   void Init (std::list<BB*>, HBS_TYPE, mINT8*);
+#ifdef TARG_ST
+  // [SC] Variant that accepts a threshold for reg usage minimization.
+  void Init (BB*, HBS_TYPE, INT32, BBSCH*, mINT8*,
+	     ISA_REGISTER_CLASS, INT32);
+#endif
   INT Find_Schedule_Cycle(OP*, BOOL);
   void Estimate_Reg_Cost_For_OP (OP*);
   void Schedule_BB (BB*, BBSCH*, bool = FALSE);

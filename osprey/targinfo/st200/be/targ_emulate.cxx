@@ -81,6 +81,80 @@ WN_arg(WN *tree, INT32 arg)
  *
  * ============================================================ */
 
+/*
+ * em_st200_va_start()
+ *
+ * st200 emulation of va_start intrinsic op.
+ *
+ * Little-endian:
+ *   The va_list is a pointer to memory copy of register args.
+ *
+ * Big-endian:
+ *   The va_list is:
+ *  struct {
+ *   char * reg_base;      -> Base pointer to memory copy of register
+ *                           arguments.
+ *   char * stack_base;    -> Base pointer to stacked arguments
+ *  };
+ */
+
+static WN *
+em_st200_va_start(WN *block, WN *arg_wn)
+{
+  // arg_wn is pointer to a variable of type va_list struct.
+
+  WN *wn;
+
+  // load pointer to vararg save area.
+  ST *int_save_area_sym;
+  SF_VARARG_INFO vinfo;
+  Get_Vararg_Save_Area_Info (&vinfo);
+  int_save_area_sym = SF_VARARG_INFO_var_int_save_base(&vinfo);
+  if (int_save_area_sym) {
+    wn = WN_Lda (Pointer_Mtype,
+		 SF_VARARG_INFO_var_int_save_offset(&vinfo),
+		 int_save_area_sym);
+  } else {
+    wn = WN_Lda (Pointer_Mtype,
+		 SF_VARARG_INFO_var_stack_offset(&vinfo),
+		 SF_VARARG_INFO_var_stack_base(&vinfo));
+  }
+ 
+  if (WN_operator (arg_wn) == OPR_LDA) {
+    wn = WN_Stid (Pointer_Mtype, WN_offset (arg_wn),
+		  WN_st (arg_wn), MTYPE_To_TY(Pointer_Mtype), wn);
+  } else {
+    wn = WN_Istore (Pointer_Mtype, 0,
+		    MTYPE_To_TY(Pointer_Mtype),
+		    arg_wn, wn);
+  }
+
+  /* Set the class to formal if there is no fix parameter in up formal
+     area that will initialize upformal block with their classes ( normally
+     SCLASS_FORMAL). */
+  if (ST_sclass(SF_VARARG_INFO_var_stack_base(&vinfo)) == SCLASS_UNKNOWN)
+    Set_ST_sclass (SF_VARARG_INFO_var_stack_base(&vinfo), SCLASS_FORMAL);
+
+  if (Target_Byte_Sex == BIG_ENDIAN) {
+    WN_INSERT_BlockLast (block, wn);
+
+    // Load pointer to first byte of stack area.
+    wn = WN_Lda (Pointer_Mtype,
+		 SF_VARARG_INFO_var_stack_offset(&vinfo),
+		 SF_VARARG_INFO_var_stack_base(&vinfo));
+    
+    if (WN_operator (arg_wn) == OPR_LDA) {
+      wn = WN_Stid (Pointer_Mtype,
+		    WN_offset (arg_wn) + MTYPE_byte_size(Pointer_Mtype),
+		    WN_st (arg_wn), MTYPE_To_TY(Pointer_Mtype), wn);
+    } else {
+      wn = WN_Istore (Pointer_Mtype, MTYPE_byte_size (Pointer_Mtype),
+		      MTYPE_To_TY(Pointer_Mtype),
+		      WN_COPY_Tree (arg_wn), wn);
+    }
+  }
+  return wn;
+}
 
 /* ============================================================
  *
@@ -107,7 +181,8 @@ BETARG_emulate_intrinsic_op(WN *block, WN *tree)
 	    ("cannot emulate INTRN_is_actual"));
   
   switch(id) {
-    /* Nothing specific for ST200. */
+  case INTRN_VA_START:
+    return em_st200_va_start(block, WN_arg(tree,0));
   default:
     break;
   }

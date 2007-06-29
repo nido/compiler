@@ -184,32 +184,57 @@ typedef struct annotation {
 #define ANNOT_remainderinfo(a)	((REMAINDERINFO *)ANNOT_info(a))
 #endif
 
+/* ======================================================================
+ * LOOPINFO
+ *
+ * Loopinfo annotation collects a summary of loop information.
+ * It is attached to loop head bb. This annotation must be kept
+ * correct from code selection until code emition.
+ * 
+ * LOOPINFO_wn(): link to LOOP_INFO WHIRL node.
+ * LOOPINFO_primary_trip_count_tn(): trip count TN. either a variable or a 
+ *   literal TN which correspond to the primary loop exit test.
+ *   The actual trip count may be less than this value in case of
+ *   early exit from counted loops. Returns NULL if not trip count tn
+ *   is available.
+ * LOOPINFO_exact_trip_count_tn(): returns the trip count TN iif the
+ *   loop has a primary trip count TN and it does not have early exit. If this
+ *   value is not NULL, the trip count is exact (i.e. it is always reached).
+ * LOOPINFO_is_exact_trip_count(): returns true wjhen the counted loop does
+ *   not have early exit.
+ * LOOPINFO_is_HWLoop(): return whether the loop is harware managed or not.
+ *   The actual branch operations and primary induction variable is then
+ *   implementation dependent. Though the trip count TN is still preserved
+ *   and valid until after the end of loop optimizations and swp.
+ * LOOPINFO_trip_min(): returns an estimate of the minimum loop trip count.
+ *   This is an estimated information and not a lower bound. Set to 0 if 
+ *   no estimate has been made.
+ *
+ */
 typedef struct loopinfo {
- WN *wn;			/* LOOP_INFO WHIRL node */
- struct tn *trip_count_tn;	/* TN holding trip count (if any) */
-#ifdef TARG_STxP70
-  bool is_CG_trip_count;
-  bool is_HWLoop;
-#endif
+  WN *wn;			/* LOOP_INFO WHIRL node */
 #ifdef TARG_ST
-  int trip_min;
+  struct tn *primary_trip_count_tn;	/* TN holding primary trip count (if any) */
+  bool is_exact_trip_count;	/* true is the tripcount is exact because the loop does not contain early exit. */
+  bool is_HWLoop;		/* loop has been mapped to HW loop. */
+  int trip_min;			/* estimate of min trip count or 0. */
+#else
+  struct tn *primary_trip_count_tn;	/* TN holding trip count (if any) */
 #endif
- SRCPOS srcpos;			/* source position of start of body */
+  SRCPOS srcpos;			/* source position of start of body */
 } LOOPINFO;
 
 #define LOOPINFO_wn(x)			((x)->wn)
 #define LOOPINFO_srcpos(x)		((x)->srcpos)
 #define LOOPINFO_line(x)		(Srcpos_To_Line(LOOPINFO_srcpos(x)))
-#ifndef TARG_STxP70
-#define LOOPINFO_trip_count_tn(x)	((x)->trip_count_tn)
+#ifdef TARG_ST
+#define LOOPINFO_primary_trip_count_tn(x)	((x)->primary_trip_count_tn)
+#define LOOPINFO_exact_trip_count_tn(x)	((x)->is_exact_trip_count ? (x)->primary_trip_count_tn : NULL)
+#define LOOPINFO_is_exact_trip_count(x)	((x)->is_exact_trip_count)
+#define LOOPINFO_is_HWLoop(x)		((x)->is_HWLoop)
+#define LOOPINFO_trip_min(x)		((x)->trip_min)
 #else
 #define LOOPINFO_trip_count_tn(x)	((x)->trip_count_tn)
-#define LOOPINFO_CG_trip_count_tn(x)	((x)->is_CG_trip_count ? (x)->trip_count_tn : NULL)
-#define LOOPINFO_is_CG_trip_count(x)	((x)->is_CG_trip_count)
-#define LOOPINFO_is_HWLoop(x)		((x)->is_HWLoop)
-#endif
-#ifdef TARG_ST
-#define LOOPINFO_trip_min(x)		((x)->trip_min)
 #endif
 
 #ifdef TARG_ST

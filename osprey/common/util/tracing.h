@@ -221,22 +221,31 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TP_HBF		57	/* Hyperblock formation */
 #define TP_PQS		58	/* Predicate query system */
 #define TP_THR		59	/* Tree-Height reduction */
-#ifdef TARG_ST
-#   define TP_SSA          60	/* SSA representation */
-#   define TP_SELECT       61	/* Select generation */
-#   define TP_EXTLOAD      62  /* Extension loader */
-#   define TP_TEMP         63	/* Temporary use */
-#   define TP_TAIL         64	/* Tailmerge */
 
+#ifdef TARG_ST
+#define TP_SSA          60	/* SSA representation */
+#define TP_SELECT       61	/* Select generation */
+#define TP_RANGE        62      /* Range analysis */
+#define TP_LICM         63      /* Loop invariant Code motion */
+#define TP_EXTLOAD      64      /* Extension loader */
+#define TP_TAIL         65	/* Tailmerge */
+#endif
+
+#ifdef TARG_ST
+/* Keep it last. */
+#define TP_TEMP         99	/* Temporary use */
+#endif
+
+#ifdef TARG_ST
 /* WARNING: TP_LAST must be at least as large as the largest phase
  * number above, and TP_COUNT must be at least one larger.
  */
-#   define TP_LAST         TP_TAIL	  /* Largest valid phase number */
+#define TP_LAST         TP_TEMP   /* Largest valid phase number */
 #else
 /* WARNING: TP_LAST must be at least as large as the largest phase
  * number above, and TP_COUNT must be at least one larger.
  */
-#   define TP_LAST         TP_THR	  /* Largest valid phase number */
+#define TP_LAST         TP_THR	  /* Largest valid phase number */
 #endif
 
 #define TP_COUNT	TP_LAST+1 /* Number of valid phase numbers */

@@ -4377,7 +4377,16 @@ c_expand_expr (exp, target, tmode, modifier)
       {
 	/* Initialize the anonymous variable declared in the compound
 	   literal, then return the variable.  */
+
 	tree decl = COMPOUND_LITERAL_EXPR_DECL (exp);
+#ifdef TARG_ST
+      /* (cbr) ddts MBTst26044. don't replicate anon aggregate creation with translator. */
+	if (TREE_CODE (decl) == VAR_DECL) {
+	  if (!DECL_ASSEMBLER_NAME_SET_P (decl)) {
+	    return NULL;
+	  }
+	}
+#endif
 	emit_local_var (decl);
 	return expand_expr (decl, target, tmode, modifier);
       }

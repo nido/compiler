@@ -55,10 +55,24 @@
 #include "fb_info.h"
 #include "libfb_reader.h"
 
+template <class _Key> struct hash { };
+template <> struct hash<UINT64> {
+  size_t operator()(const UINT64 x)const{return (size_t)x;}
+};
+
+typedef __GNUEXT::hash_map<UINT64, char*, hash<UINT64> > ADDRESS_NAME_MAP;
+typedef __GNUEXT::hash_map<UINT64, INT32, hash<UINT64> > ADDRESS_PUSIZE_MAP;
+
+extern ADDRESS_NAME_MAP PU_Addr_Name_Map;
+extern ADDRESS_PUSIZE_MAP PU_Addr_Pusize_Map;
+
+static char* ERR_POS = "Error in positioning within %s";
+static char* ERR_READ = "Error in reading from %s";
+
 
 #ifndef _BUILD_INSTR
 
-BOOL Feedback_Enabled[PROFILE_PHASE_LAST] = {FALSE,FALSE,FALSE,FALSE};
+BOOL Feedback_Enabled[PROFILE_PHASE_LAST] = {FALSE,FALSE,FALSE,FALSE,FALSE};
 Fb_File_Info_Vector Feedback_File_Info[PROFILE_PHASE_LAST];
 
 void
@@ -75,6 +89,8 @@ Process_Feedback_File(char *fb_name)
   }
 
   Get_File_Header(fp, fb_name, &fb_hdr);
+
+  Is_True(fb_hdr.fb_version == INSTR_CURRENT, ("feedback file not right version") ); 
 
   pu_hdr_table = CXX_NEW_ARRAY(Pu_Hdr, fb_hdr.fb_pu_hdr_num,
 			       MEM_pu_nz_pool_ptr);
@@ -159,6 +175,7 @@ Get_PU_Profile(char *pu_name, char *src_fname, FILE *fp, char *fb_fname,
   Pu_Hdr pu_hdr_entry;
   long pu_ofst;
   char *entry_name=NULL;
+  int pu_size;
 
   // Concatenate the file name and pu_name and look for the resultant string
   // in the pu header table.
@@ -170,6 +187,15 @@ Get_PU_Profile(char *pu_name, char *src_fname, FILE *fp, char *fb_fname,
   strcpy(s,src_fname);
   strcat(s,"/");
   strcat(s,pu_name);
+
+  // Build the ADDRESS_NAME_MAP
+  for (long j = 0; j < fb_hdr.fb_pu_hdr_num; j++) {
+    pu_hdr_entry = pu_hdr_table[j];
+    entry_name = str_table + pu_hdr_entry.pu_name_index;
+    pu_size = pu_hdr_entry.pu_size;
+    PU_Addr_Name_Map[pu_hdr_entry.runtime_fun_address] = entry_name;
+    PU_Addr_Pusize_Map[pu_hdr_entry.runtime_fun_address] = pu_size;
+  }
 
   // Search the PU header table
 
@@ -187,6 +213,15 @@ Get_PU_Profile(char *pu_name, char *src_fname, FILE *fp, char *fb_fname,
 
   pu_handle = CXX_NEW(PU_Profile_Handle(entry_name, pu_hdr_entry.pu_checksum),
 		      MEM_pu_nz_pool_ptr);
+#ifdef KEY
+  pu_handle->pu_size = pu_hdr_entry.pu_size;
+  pu_handle->runtime_fun_address = pu_hdr_entry.runtime_fun_address;
+  if (fb_fname) 
+  {
+    pu_handle->fb_name = (char *) malloc (strlen (fb_fname) + 1);
+    strcpy (pu_handle->fb_name, fb_fname);
+  }
+#endif
 
   read_invoke_profile(   pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
   read_branch_profile(   pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
@@ -195,8 +230,117 @@ Get_PU_Profile(char *pu_name, char *src_fname, FILE *fp, char *fb_fname,
   read_loop_profile(     pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
   read_scircuit_profile( pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
   read_call_profile(     pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+#ifdef KEY
+  read_value_profile(    pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+  read_value_fp_bin_profile(pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+#endif
+  read_icall_profile(    pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
 
   return pu_handle;
+}
+
+PU_PROFILE_HANDLES
+Get_CG_PU_Profile (char* srcfile_pu_name, Fb_File_Info_Vector& file_info_vector)
+{
+    PU_PROFILE_HANDLES handles (MEM_pu_nz_pool_ptr);
+    
+    for (File_Info_Iterator i (file_info_vector.begin ());
+	 i != file_info_vector.end (); ++i) {
+	Fb_File_Info* file_info = *i;
+	PU_PROFILE_HANDLE handle = Get_CG_PU_Profile (srcfile_pu_name, 
+						   file_info->fp,
+						   file_info->name,
+						   file_info->fb_hdr,
+						   file_info->pu_hdr_table,
+						   file_info->str_table);
+	if (handle)
+	    handles.push_back (handle);
+    }
+   return handles;
+}
+
+PU_PROFILE_HANDLE
+Get_CG_PU_Profile(char* srcfile_pu_name,  FILE* fp, char *fb_fname, Fb_Hdr& fb_hdr,Pu_Hdr *pu_hdr_table, char* str_table) 
+{
+  PU_PROFILE_HANDLE pu_handle;
+  Pu_Hdr pu_hdr_entry;
+  long pu_ofst;
+  long i;
+  char* entry_name;
+  // Search the PU header table
+  for (long i = 0; i < fb_hdr.fb_pu_hdr_num; i++) {
+    pu_hdr_entry = pu_hdr_table[i];
+    entry_name = str_table + pu_hdr_entry.pu_name_index;
+    if (strcmp(srcfile_pu_name, entry_name) == 0) break;
+  }
+
+  // Make sure PU was found.
+  if (strcmp(srcfile_pu_name, entry_name) != 0) 
+    return NULL;
+
+  // if no edge profile info,return NULL    
+  if (pu_hdr_entry.pu_num_edge_entries == 0)
+    return NULL;
+
+  pu_ofst = fb_hdr.fb_profile_offset + pu_hdr_entry.pu_file_offset;
+
+  pu_handle = CXX_NEW(PU_Profile_Handle(NULL, pu_hdr_entry.pu_checksum),
+		      MEM_pu_nz_pool_ptr);
+  read_edge_profile(pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+  return pu_handle;
+}
+
+PU_PROFILE_HANDLE
+Get_CG_PU_Value_Profile(char* srcfile_pu_name,  FILE* fp, char *fb_fname, Fb_Hdr& fb_hdr,
+                Pu_Hdr *pu_hdr_table, char* str_table) 
+{
+  PU_PROFILE_HANDLE pu_handle;
+  Pu_Hdr pu_hdr_entry;
+  long pu_ofst;
+  long i;
+  char* entry_name;
+  // Search the PU header table
+  for (long i = 0; i < fb_hdr.fb_pu_hdr_num; i++) {
+    pu_hdr_entry = pu_hdr_table[i];
+    entry_name = str_table + pu_hdr_entry.pu_name_index;
+    if (strcmp(srcfile_pu_name, entry_name) == 0) break;
+  }
+
+  // Make sure PU was found.
+  if (strcmp(srcfile_pu_name, entry_name) != 0) 
+    return NULL;
+    
+  pu_ofst = fb_hdr.fb_profile_offset + pu_hdr_entry.pu_file_offset;
+
+  pu_handle = CXX_NEW(PU_Profile_Handle(NULL, pu_hdr_entry.pu_checksum),
+		      MEM_pu_nz_pool_ptr);
+#ifndef KEY
+  read_value_profile(pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+#endif
+  read_stride_profile(pu_handle, pu_hdr_entry, pu_ofst, fp, fb_fname );
+
+  return pu_handle;
+}
+
+
+PU_PROFILE_HANDLES
+Get_CG_PU_Value_Profile (char* srcfile_pu_name, Fb_File_Info_Vector& file_info_vector)
+{
+    PU_PROFILE_HANDLES handles (MEM_pu_nz_pool_ptr);
+    
+    for (File_Info_Iterator i (file_info_vector.begin ());
+	 i != file_info_vector.end (); ++i) {
+	Fb_File_Info* file_info = *i;
+	PU_PROFILE_HANDLE handle = Get_CG_PU_Value_Profile (srcfile_pu_name, 
+						   file_info->fp,
+						   file_info->name,
+						   file_info->fb_hdr,
+						   file_info->pu_hdr_table,
+						   file_info->str_table);
+	if (handle)
+	    handles.push_back (handle);
+    }
+   return handles;
 }
 
 // Given a PU handle, return the pu_name
@@ -241,6 +385,39 @@ Get_Branch_Table_Size(PU_PROFILE_HANDLE pu_handle)
    FB_Branch_Vector& Br_Table = pu_handle->Get_Branch_Table();
    return Br_Table.size();
 }
+
+#ifdef KEY
+FB_Info_Value_FP_Bin& Get_Value_FP_Bin_Profile(PU_PROFILE_HANDLE pu_handle, 
+					       INT32 id)
+{
+  FB_Value_FP_Bin_Vector& Value_FP_Bin_Table = 
+    pu_handle->Get_Value_FP_Bin_Table();
+  return Value_FP_Bin_Table[id];
+}
+
+// Given a PU handle, returns the size of the branch table for that PU.
+
+size_t Get_Value_FP_Bin_Table_Size(PU_PROFILE_HANDLE pu_handle)
+{
+  FB_Value_FP_Bin_Vector& Value_FP_Bin_Table = 
+    pu_handle->Get_Value_FP_Bin_Table();
+  return Value_FP_Bin_Table.size();
+}
+
+FB_Info_Value& Get_Value_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
+{
+  FB_Value_Vector& Value_Table = pu_handle->Get_Value_Table();
+  return Value_Table[id];
+}
+
+// Given a PU handle, returns the size of the branch table for that PU.
+
+size_t Get_Value_Table_Size(PU_PROFILE_HANDLE pu_handle)
+{
+  FB_Value_Vector& Value_Table = pu_handle->Get_Value_Table();
+  return Value_Table.size();
+}
+#endif // KEY
 
 // Given a PU handle and a branch id, returns the profile data for that id.
 
@@ -344,6 +521,48 @@ Get_Call_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
    return Call_Table[id];
 }
 
+// Given a PU handle, returns the size of the icall table for that PU.
+
+size_t
+Get_Icall_Table_Size(PU_PROFILE_HANDLE pu_handle)
+{
+   FB_Icall_Vector& Icall_Table = pu_handle->Get_Icall_Table();
+   return Icall_Table.size();
+}
+
+// Given a PU handle and a icall id, return the profile data for that id.
+
+FB_Info_Icall&
+Get_Icall_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
+{
+   FB_Icall_Vector& Icall_Table = pu_handle->Get_Icall_Table();
+   return Icall_Table[id];
+}
+
+// Given a PU handle and a edge id, return the profile data for that id.
+
+ FB_Info_Edge&
+ Get_Edge_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
+ {
+    FB_Edge_Vector& Edge_Table = pu_handle->Get_Edge_Table();
+    return Edge_Table[id];
+  }
+
+#ifndef KEY
+ FB_Info_Value&
+ Get_Value_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
+ {
+    FB_Value_Vector& Value_Table = pu_handle->Get_Value_Table();
+    return Value_Table[id];
+  }
+#endif // !KEY
+
+ FB_Info_Value&
+ Get_Stride_Profile(PU_PROFILE_HANDLE pu_handle, INT32 id)
+ {
+    FB_Value_Vector& Stride_Table = pu_handle->Get_Stride_Table();
+    return Stride_Table[id];
+  }
 #endif // _BUILD_INSTR
 
 // Read the main header in the feedback file
@@ -435,7 +654,6 @@ read_branch_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
 // PU handle and update it with data from feedback file.
 
 void
-
 read_switch_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
                     long pu_ofst, FILE *fp, char *fname)
 {
@@ -525,8 +743,8 @@ read_loop_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
       zero_trips++;
     }
 
-    int tmp = fb_info[i].invocation_count - zero_trips;
-    int tmp1 = fb_info[i].total_trip_count - fb_info[i].invocation_count + zero_trips;
+    INT64 tmp = fb_info[i].invocation_count - zero_trips;
+    INT64 tmp1 = fb_info[i].total_trip_count - fb_info[i].invocation_count + zero_trips;
     Loop_Table.push_back(FB_Info_Loop(FB_FREQ (zero_trips),
 				    FB_FREQ ( tmp),
 				    FB_FREQ (FB_FREQ_TYPE_UNKNOWN),
@@ -557,7 +775,9 @@ read_scircuit_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
   fb_info = (LIBFB_Info_Circuit *)malloc(sizeof(LIBFB_Info_Circuit) * size);;
   fb_reader_Info_Circuit_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fname);
   for (i = 0; i < size; i++) {
-    Scircuit_Table.push_back(FB_Info_Circuit (FB_FREQ (fb_info[i].freq_left),
+    //TB: Fix: freq left is never computed bu feedback info, so put it
+    //to unknown and leave the freq propagation compte it
+    Scircuit_Table.push_back(FB_Info_Circuit (FB_FREQ_UNKNOWN,
 					      FB_FREQ (fb_info[i].freq_right),
 					      FB_FREQ (fb_info[i].freq_neither)));
   }
@@ -597,3 +817,155 @@ read_call_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
   fb_reader_Info_Call_list_Read(&(Call_Table.front ()), &pu_hdr_entry, pu_ofst, fp, fname);
 #endif
 }
+// Given a PU handle, allocate storage for the Icall Table in 
+// PU handle and update it with data from feedback file.
+
+void
+read_icall_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+                    long pu_ofst, FILE *fp, char *fname)
+{
+  FB_Icall_Vector& Icall_Table = pu_handle->Get_Icall_Table();
+
+  Is_True (Icall_Table.empty (), ("pu_handle not empty"));
+
+
+#ifdef TARG_ST
+  Icall_Table.reserve(pu_hdr_entry.pu_num_icall_entries);
+  LIBFB_Info_Icall *fb_info;
+  size_t size = pu_hdr_entry.pu_num_icall_entries, i;
+  fb_info = (LIBFB_Info_Icall *)malloc(sizeof(LIBFB_Info_Icall) * size);;
+  fb_reader_Info_Icall_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fname);
+
+  for (i = 0; i < size; i++) {
+    Icall_Table.push_back(FB_Info_Icall (fb_info[i].tnv));
+  }
+  free (fb_info);
+#else
+  Icall_Table.resize(pu_hdr_entry.pu_num_icall_entries);
+
+  FSEEK(fp, pu_ofst + pu_hdr_entry.pu_icall_offset, SEEK_SET, ERR_POS, fname);
+ 
+  FREAD (&(Icall_Table.front ()), sizeof(FB_Info_Icall),
+	 pu_hdr_entry.pu_num_icall_entries, fp, ERR_READ, fname);
+#endif
+}
+
+#ifdef KEY
+void read_value_fp_bin_profile( PU_PROFILE_HANDLE pu_handle, 
+				Pu_Hdr& pu_hdr_entry,
+				long pu_ofst, FILE *fp, char *fname )
+{
+  FB_Value_FP_Bin_Vector& Value_FP_Bin_Table = 
+    pu_handle->Get_Value_FP_Bin_Table();
+
+  Is_True (Value_FP_Bin_Table.empty (), ("pu_handle not empty"));
+
+#ifdef TARG_ST
+  Value_FP_Bin_Table.reserve(pu_hdr_entry.pu_num_value_fp_bin_entries);
+  LIBFB_Info_Value_FP_Bin *fb_info;
+  size_t size = pu_hdr_entry.pu_num_value_fp_bin_entries, i;
+  fb_info = (LIBFB_Info_Value_FP_Bin *)malloc(sizeof(LIBFB_Info_Value_FP_Bin) * size);;
+  fb_reader_Info_Value_FP_Bin_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fname);
+
+  for (i = 0; i < size; i++) {
+    Value_FP_Bin_Table.push_back( FB_Info_Value_FP_Bin(fb_info[i].exe_counter, fb_info[i].zopnd0, 
+						       fb_info[i].zopnd1, fb_info[i].uopnd0, 
+						       fb_info[i].uopnd1));
+  }
+  free (fb_info);
+
+#else
+  Value_FP_Bin_Table.resize(pu_hdr_entry.pu_num_value_fp_bin_entries);
+
+  FSEEK(fp, pu_ofst + pu_hdr_entry.pu_value_fp_bin_offset, 
+	SEEK_SET, ERR_POS, fname);
+ 
+  FREAD (&(Value_FP_Bin_Table.front ()), sizeof(FB_Info_Value_FP_Bin),
+	 pu_hdr_entry.pu_num_value_fp_bin_entries, fp, ERR_READ, fname);
+#endif
+}
+
+void read_value_profile( PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+			 long pu_ofst, FILE *fp, char *fname )
+{
+  FB_Value_Vector& Value_Table = pu_handle->Get_Value_Table();
+
+  Is_True (Value_Table.empty (), ("pu_handle not empty"));
+
+#ifdef TARG_ST
+  Value_Table.reserve(pu_hdr_entry.pu_num_value_entries);
+  LIBFB_Info_Value *fb_info;
+  size_t size = pu_hdr_entry.pu_num_value_entries, i;
+  fb_info = (LIBFB_Info_Value *)malloc(sizeof(LIBFB_Info_Value) * size);;
+  fb_reader_Info_Value_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fname);
+
+  for (i = 0; i < size; i++) {
+    Value_Table.push_back( FB_Info_Value(fb_info[i].num_values, fb_info[i].exe_counter, 
+					 fb_info[i].value, fb_info[i].freq));
+  }
+  free (fb_info);
+#else
+  Value_Table.resize(pu_hdr_entry.pu_num_value_entries);
+
+  FSEEK(fp, pu_ofst + pu_hdr_entry.pu_value_offset, SEEK_SET, ERR_POS, fname);
+ 
+  FREAD (&(Value_Table.front ()), sizeof(FB_Info_Value),
+	 pu_hdr_entry.pu_num_value_entries, fp, ERR_READ, fname);
+#endif
+}
+#endif // KEY
+
+// Given a PU handle, allocate storage for the edge Table in 
+// PU handle and update it with data from feedback file.
+void
+read_edge_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+                    long pu_ofst, FILE *fp, char *fname)
+{
+  FB_Edge_Vector& Edge_Table = pu_handle->Get_Edge_Table();
+
+  Is_True (Edge_Table.empty (), ("pu_handle not empty"));
+
+#ifdef TARG_ST
+  Edge_Table.reserve(pu_hdr_entry.pu_num_edge_entries);
+  LIBFB_Info_Edge *fb_info;
+  size_t size = pu_hdr_entry.pu_num_edge_entries, i;
+  fb_info = (LIBFB_Info_Edge *)malloc(sizeof(LIBFB_Info_Edge) * size);;
+  fb_reader_Info_Edge_list_Read(fb_info, &pu_hdr_entry, pu_ofst, fp, fname);
+
+  for (i = 0; i < size; i++) {
+    Edge_Table.push_back( FB_Info_Edge(FB_FREQ(fb_info[i].freq_edge)));
+  }
+  free (fb_info);
+#else
+  Edge_Table.resize(pu_hdr_entry.pu_num_edge_entries);
+
+  
+  FSEEK(fp, pu_ofst + pu_hdr_entry.pu_edge_offset, SEEK_SET, ERR_POS, fname);
+
+  FREAD (&(Edge_Table.front ()), sizeof(FB_Info_Edge),
+	 pu_hdr_entry.pu_num_edge_entries, fp, ERR_READ, fname);
+#endif
+}
+
+
+void
+read_stride_profile(PU_PROFILE_HANDLE pu_handle, Pu_Hdr& pu_hdr_entry,
+                    long pu_ofst, FILE *fp, char *fname)
+{
+  FB_Value_Vector& tnv_table = pu_handle->Get_Stride_Table();
+
+  Is_True (tnv_table.empty (), ("TNV table in pu_handle not empty"));
+
+#ifdef TARG_ST
+  FmtAssert( FALSE,
+	     ("Intrumentation reader: stride reader not yet implemented")); 
+
+#else
+  tnv_table.resize(pu_hdr_entry.pu_ld_count);
+
+  FSEEK(fp, pu_hdr_entry.pu_stride_offset, SEEK_SET, ERR_POS, fname);
+
+  FREAD (&(tnv_table.front ()), sizeof(FB_Info_Stride),
+	 pu_hdr_entry.pu_ld_count, fp, ERR_READ, fname);
+#endif
+  }

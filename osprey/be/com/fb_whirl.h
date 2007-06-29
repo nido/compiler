@@ -77,6 +77,8 @@
 #include <vector.h>
 #endif // __GNUC__ >=3
 
+#include <vector>             // STL vector for hash_map.
+
 #ifndef instr_reader_INCLUDED
 #include "instr_reader.h"
 #endif
@@ -100,7 +102,22 @@
 #define TP_CG_FEEDBACK_DRAW    0x2000
 #ifdef TARG_ST
 #define TP_FEEDBACK_COVERAGE   0x4000
+#define TP_FEEDBACK_VALUE   0x8000 //[TB]:Tracing for value profiling optimizations
 #endif
+
+#ifdef KEY
+//TB: need for icall to call optim
+// ==================================================================
+// Map to record <pu_runtime_address, pu_name> pair.
+// 
+
+template <class _Key> struct hash { };
+template <> struct hash<UINT64> {
+  size_t operator()(const UINT64 x)const{return (size_t)x;}
+};
+#endif
+typedef __GNUEXT::hash_map<UINT64, char*, hash<UINT64> > ADDRESS_NAME_MAP;
+typedef __GNUEXT::hash_map<UINT64, INT32, hash<UINT64> > ADDRESS_PUSIZE_MAP;
 
 // ====================================================================
 
@@ -126,6 +143,10 @@ private:
   bool        _trace;      // Get_Trace(TP_FEEDBACK, TP_FEEDBACK_WN)
   bool        _trace_draw; // Get_Trace(TP_FEEDBACK, TP_FEEDBACK_WN_DRAW)
 
+#ifdef KEY
+  UINT64     _runtime_func_addr;  // run time function address
+#endif
+
   // For Whirl nodes, the map WN_MAP_FEEDBACK holds an index into
   // one of the following vectors:
 
@@ -134,21 +155,42 @@ private:
   vector< FB_Info_Loop,    mempool_allocator<FB_Info_Loop>    >  _loops;
   vector< FB_Info_Circuit, mempool_allocator<FB_Info_Circuit> >  _circuits;
   vector< FB_Info_Call,    mempool_allocator<FB_Info_Call>    >  _calls;
+#ifdef KEY
+  vector< FB_Info_Icall,   mempool_allocator<FB_Info_Icall>   >  _icalls;
+#endif
   vector< FB_Info_Switch,  mempool_allocator<FB_Info_Switch>  >  _switches;
+#ifdef KEY
+  vector< FB_Info_Value,   mempool_allocator<FB_Info_Value>    >  _values;
+  vector< FB_Info_Value_FP_Bin,mempool_allocator<FB_Info_Value_FP_Bin> > _values_fp_bin;
+#endif
 
   INT32 Get_index_invoke  ( const WN *wn ) const;
   INT32 Get_index_branch  ( const WN *wn ) const;
   INT32 Get_index_loop    ( const WN *wn ) const;
   INT32 Get_index_circuit ( const WN *wn ) const;
   INT32 Get_index_call    ( const WN *wn ) const;
+#ifdef KEY
+  INT32 Get_index_icall   ( const WN *wn ) const;
+#endif  
   INT32 Get_index_switch  ( const WN *wn ) const;
+#ifdef KEY
+  INT32 Get_index_value   ( const WN *wn ) const;
+  INT32 Get_index_value_fp_bin( const WN *wn ) const;
+#endif
 
   INT32 Add_index_invoke  ( WN *wn );
   INT32 Add_index_branch  ( WN *wn );
   INT32 Add_index_loop    ( WN *wn );
   INT32 Add_index_circuit ( WN *wn );
   INT32 Add_index_call    ( WN *wn );
+#ifdef KEY
+  INT32 Add_index_icall   ( WN *wn );
+#endif
   INT32 Add_index_switch  ( WN *wn );
+#ifdef KEY
+  INT32 Add_index_value   ( WN *wn );
+  INT32 Add_index_value_fp_bin( WN *wn );
+#endif
 
 public:
 
@@ -158,10 +200,23 @@ public:
 	    INT32 loop_size = 1,
 	    INT32 circuit_size = 1,
 	    INT32 call_size = 1,
+#ifdef KEY
+	    INT32 icall_size = 1,
+#endif
 	    INT32 switch_size = 1,
+#ifdef KEY
+	    INT32 value_size = 1,
+	    INT32 value_fp_bin_size = 1,
+	    UINT64 runtime_fun_address = 0x0,
+#endif
 	    WN_MAP_TAB *maptab = Current_Map_Tab );
 
   BE_EXPORTED_METHOD void  Reset_Root_WN( WN *root_wn ) { _root_wn = root_wn; }
+
+#ifdef KEY
+   BE_EXPORTED_METHOD void Set_Runtime_Func_Addr( UINT64 addr ) { _runtime_func_addr = addr; }
+   BE_EXPORTED_METHOD UINT64 Get_Runtime_Func_Addr() { return _runtime_func_addr; }
+#endif
 
   BE_EXPORTED_METHOD bool  Same_in_out( const WN *wn );
   BE_EXPORTED_METHOD void  FB_set_in_out_same_node( WN *wn );
@@ -175,7 +230,14 @@ public:
   BE_EXPORTED_METHOD const FB_Info_Loop&    Query_loop    ( const WN *wn ) const;
   BE_EXPORTED_METHOD const FB_Info_Circuit& Query_circuit ( const WN *wn ) const;
   BE_EXPORTED_METHOD const FB_Info_Call&    Query_call    ( const WN *wn ) const;
+#ifdef KEY
+  BE_EXPORTED_METHOD const FB_Info_Icall&   Query_icall   ( const WN *wn ) const;
+#endif
   BE_EXPORTED_METHOD const FB_Info_Switch&  Query_switch  ( const WN *wn ) const;
+#ifdef KEY
+  const FB_Info_Value&    Query_value   ( const WN *wn ) const;
+  const FB_Info_Value_FP_Bin& Query_value_fp_bin( const WN *wn ) const;
+#endif
 
   BE_EXPORTED_METHOD FB_FREQ Query      ( const WN *wn, const FB_EDGE_TYPE type ) const;
   BE_EXPORTED_METHOD FB_FREQ Query_prob ( const WN *wn, const FB_EDGE_TYPE type ) const;
@@ -186,7 +248,14 @@ public:
   BE_EXPORTED_METHOD void Annot_loop    ( WN *wn, const FB_Info_Loop   & fb_info );
   BE_EXPORTED_METHOD void Annot_circuit ( WN *wn, const FB_Info_Circuit& fb_info );
   BE_EXPORTED_METHOD void Annot_call    ( WN *wn, const FB_Info_Call   & fb_info );
+#ifdef KEY
+  BE_EXPORTED_METHOD void Annot_icall   ( WN *wn, const FB_Info_Icall  & fb_info );
+#endif
   BE_EXPORTED_METHOD void Annot_switch  ( WN *wn, const FB_Info_Switch & fb_info );
+#ifdef KEY
+  BE_EXPORTED_METHOD void Annot_value   ( WN *wn, const FB_Info_Value  & fb_info );
+  BE_EXPORTED_METHOD void Annot_value_fp_bin( WN *wn, const FB_Info_Value_FP_Bin  & fb_info );
+#endif
 
   BE_EXPORTED_METHOD void Annot         ( WN *wn, const FB_EDGE_TYPE type, FB_FREQ freq );
 
@@ -218,10 +287,15 @@ public:
   BE_EXPORTED_METHOD void FB_lower_compgoto ( WN *wn_compgoto, WN *wn_xgoto, WN *wn_branch );
 
   BE_EXPORTED_METHOD void FB_lower_call ( WN *wn_call, WN *wn_new_call );
+#ifdef KEY
+  BE_EXPORTED_METHOD void FB_lower_icall( WN *wn_icall, WN *wn_new_icall, WN * wn_new_call, WN * wn_new_if );
+#endif
   BE_EXPORTED_METHOD void FB_lower_return_val ( WN *wn_return_val, WN *wn_return );
 
   BE_EXPORTED_METHOD void FB_lower_mstore_to_loop ( WN *wn_mstore, WN *wn_loop, INT64 nMoves );
-
+#ifdef KEY
+  BE_EXPORTED_METHOD void FB_hoist_case( WN *wn_switch, vector<FB_FREQ>::size_type wcase);
+#endif
   // Goto conversion
 
   BE_EXPORTED_METHOD void FB_move_goto_out( WN *wn_branch, WN *wn_inner_br, WN *wn_outer_br );
@@ -293,6 +367,10 @@ extern "C" void dump_fb ( const FEEDBACK *feedback, const WN *wn );
 
 BE_EXPORTED extern FEEDBACK *Cur_PU_Feedback;
 
+#ifdef KEY
+BE_EXPORTED extern ADDRESS_NAME_MAP PU_Addr_Name_Map;
+BE_EXPORTED extern ADDRESS_PUSIZE_MAP PU_Addr_Pusize_Map;
+#endif
 BE_EXPORTED extern INT
 Convert_Feedback_Info (const FEEDBACK* fb, const WN* tree,
 		       PU_Profile_Handle& pu_handle);

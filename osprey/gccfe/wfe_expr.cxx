@@ -78,6 +78,10 @@ extern void error (char*,...);	// from gnu
 #include "wfe_stmt.h"
 #include <cmplrs/rcodes.h>
 #ifdef TARG_ST
+#include <list>
+extern "C" {
+#include "gnu/tree-inline.h"
+}
 #include "wfe_pragmas.h"
 // [HK] needed for No_Math_Errno
 #include "config_opt.h"
@@ -2246,6 +2250,105 @@ Setup_EH_Region ()
 }
 #endif
 
+#ifdef TARG_ST
+struct WFE_Common_Save_Expr_Data {
+  INT first_seen;
+  INT last_seen;
+  tree exp;
+};
+
+class WFE_Eval_Common_Save_Exprs_Data {
+public:
+  INT current_operand;
+  std::list<WFE_Common_Save_Expr_Data *> save_exprs;
+  MEM_POOL pool;
+  
+  WFE_Eval_Common_Save_Exprs_Data () : current_operand (0),
+				       save_exprs (std::list<WFE_Common_Save_Expr_Data *>())
+  {
+    MEM_POOL_Initialize (&pool, "WFE_Eval_Common_Save_Exprs_Data pool", FALSE);
+  }
+  ~WFE_Eval_Common_Save_Exprs_Data () {
+    MEM_POOL_Delete (&pool);
+  }
+  void Visit_TreeNode (tree exp);
+};
+
+void
+WFE_Eval_Common_Save_Exprs_Data::Visit_TreeNode (tree save_exp)
+  // EXP is a SAVE_EXPR tree: note that we have seen it in the
+  // current operand.
+{
+  std::list<WFE_Common_Save_Expr_Data *>::iterator it;
+  WFE_Common_Save_Expr_Data *entry = NULL;
+  
+  tree exp = TREE_OPERAND (save_exp, 0);
+  // Look up the entry for this tree.
+  for (it = save_exprs.begin ();
+       it != save_exprs.end ();
+       it++) {
+    if (TREE_OPERAND ((*it)->exp, 0) == exp) {
+      entry = *it;
+      break;
+    }
+  }
+  if (! entry) {
+    // Not found, create a new entry.
+    entry = TYPE_MEM_POOL_ALLOC (WFE_Common_Save_Expr_Data, &pool);
+    entry->exp = save_exp;
+    entry->first_seen = current_operand;
+    save_exprs.push_back (entry);
+  }
+  // Note that entry has been seen in current operand.
+  entry->last_seen = current_operand;
+}
+
+tree WFE_Eval_Common_Save_Exprs_Visit_Node (tree *tp,
+					    int *walk_subtrees,
+					    void *data)
+{
+  WFE_Eval_Common_Save_Exprs_Data *Data =
+    (WFE_Eval_Common_Save_Exprs_Data *)data;
+  
+  if (TREE_CODE (*tp) == SAVE_EXPR) {
+    Data->Visit_TreeNode (*tp);
+  }
+  
+  return NULL;
+}
+
+void
+WFE_Eval_Common_Save_Exprs (tree exp, INT noperands)
+{
+  INT opd;
+  WFE_Eval_Common_Save_Exprs_Data Data;
+  // First find the common save_exprs.
+  for (opd = 0; opd < noperands; opd++) {
+    Data.current_operand = opd;
+    walk_tree_without_duplicates (& TREE_OPERAND (exp, opd),
+				  WFE_Eval_Common_Save_Exprs_Visit_Node,
+				  & Data);
+  }
+  
+  // Now evaluate the save_exprs that appeared in multiple
+  // operands.
+  std::list<WFE_Common_Save_Expr_Data *>::iterator it;
+  for (it = Data.save_exprs.begin ();
+       it != Data.save_exprs.end ();
+       it++) {
+    if ((*it)->first_seen != (*it)->last_seen) {
+      // This one seen in multiple operands, so evaluate it.
+      // Ignore the returned whirl tree - we do not need it.
+#ifdef WFE_DEBUG
+      printf("\nEvaluating common save_expr of ");
+      print_tree (stdout, exp);
+#endif
+      (void)WFE_Save_Expr ((*it)->exp);
+    }
+  }
+}
+#endif
+
 /* expand gnu expr tree into symtab & whirl */
 WN *
 WFE_Expand_Expr (tree exp, 
@@ -2276,6 +2379,12 @@ WFE_Expand_Expr (tree exp,
   fprintf(stdout, "\n");
 #endif /* WFE_DEBUG */
 
+#ifdef TARG_ST
+  if (TREE_CODE_CLASS(code) == '2') {
+    WFE_Eval_Common_Save_Exprs (exp, 2);
+  }
+#endif
+  
   switch (code)
     {
     // leaves
@@ -2357,8 +2466,13 @@ WFE_Expand_Expr (tree exp,
 	      DevWarn ("taking address of a label at line %d", lineno);
 #endif
               LABEL_IDX label_idx = WFE_Get_LABEL (arg0, FALSE);
+#ifdef TARG_ST
+	      FmtAssert (DECL_CONTEXT(arg0) == current_function_decl,
+                         ("line %d: taking address of a label not defined in current function currently not implemented", lineno));
+#else
               FmtAssert (arg0->decl.symtab_idx == CURRENT_SYMTAB,
                          ("line %d: taking address of a label not defined in current function currently not implemented", lineno));
+#endif
               wn = WN_LdaLabel (Pointer_Mtype, label_idx);
 	      Set_LABEL_addr_saved (label_idx);
               Set_PU_no_inline (Get_Current_PU ());
@@ -5299,7 +5413,9 @@ WFE_Expand_Expr (tree exp,
         {
           tree label = LABEL_STMT_LABEL (exp);
           LABEL_IDX label_idx = WFE_Get_LABEL (label, TRUE);
+#ifndef TARG_ST
           label->decl.symtab_idx = CURRENT_SYMTAB;
+#endif
           label->decl.label_defined = TRUE;
           WFE_Stmt_Append (WN_CreateLabel ((ST_IDX) 0, label_idx, 0, NULL),
                            Get_Srcpos ());
@@ -5430,25 +5546,25 @@ WFE_Expand_Expr (tree exp,
            ")} WFE_Expand_Expr: %s\n", Operator_From_Tree [code].name);
 #endif /* WFE_DEBUG */
 
-        // ifdef pattern cannot exist in macro expansion for gcc 3.2.3
-        BOOL tmp_predicate = TRUE;
-#ifdef TARG_ST
-               /* (cbr) ddts 24439 */
-        tmp_predicate =
-        code == (enum tree_code)RETURN_STMT || 
-        code == (enum tree_code)ASM_STMT || 
-        code == (enum tree_code)COMPOUND_STMT || 
-        code == (enum tree_code)STMT_EXPR;
-#endif
-  if (need_result)
-    FmtAssert (wn != 0 || code == (enum tree_code)CALL_EXPR || code == (enum tree_code)BIND_EXPR ||
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
+    /* (cbr) gcc 3.3 upgrade */
+  if (need_result) {
+    FmtAssert (wn != 0 || 
+	       code == (enum tree_code)CALL_EXPR || 
+	       code == (enum tree_code)BIND_EXPR ||
                code == (enum tree_code)COMPOUND_EXPR ||
                code == (enum tree_code)INDIRECT_REF ||
                code == (enum tree_code)COMPONENT_REF ||
-               tmp_predicate ||
+	       code == (enum tree_code)FOR_STMT || 
+	       code == (enum tree_code)RETURN_STMT || 
+	       code == (enum tree_code)ASM_STMT || 
+	       code == (enum tree_code)COMPOUND_STMT || 
+	       code == (enum tree_code)STMT_EXPR ||
                ((code == (enum tree_code)COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
 	       ("WFE_Expand_Expr: NULL WHIRL tree for %s at line %d",
 		Operator_From_Tree [code].name, lineno));
+   }
+#endif
 
   return wn;
 }

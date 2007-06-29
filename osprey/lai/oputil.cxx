@@ -858,6 +858,10 @@ Mk_OP(TOP opr, ...)
 
   FmtAssert(!TOP_is_var_opnds(opr), ("Mk_OP not allowed with variable operands"));
 
+#ifdef TARG_ST
+  FmtAssert(ISA_SUBSET_Member (ISA_SUBSET_Value, opr),
+	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
+#endif
   Set_OP_code(op, opr);
 
   va_start(ap, opr);
@@ -891,6 +895,8 @@ Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
     FmtAssert(TOP_is_var_opnds(opr) && opnds > ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr)),
 	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
   }
+  FmtAssert(ISA_SUBSET_Member (ISA_SUBSET_Value, opr),
+	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
 #else
   if (results != TOP_fixed_results(opr)) {
     FmtAssert(TOP_is_var_opnds(opr) && results > TOP_fixed_results(opr),
@@ -1499,4 +1505,72 @@ OP_same_res(OP *op, INT i) {
   }
   return opnd_idx;
 } 
+
+/* ====================================================================
+ *
+ * OPs_Are_Equivalent()
+ *
+ * See interface description
+ * ====================================================================
+ */
+BOOL
+OPs_Are_Equivalent(OP *op1, OP *op2)
+{
+  if (OP_code(op1) != OP_code(op2)) return FALSE;
+  for (int i = 0; i < OP_opnds(op1); i++) {
+    if (TN_is_register(OP_opnd(op1, i)) &&
+	TN_is_register(OP_opnd(op2, i)) &&
+	!TNs_Are_Equivalent(OP_opnd(op1, i), OP_opnd(op2, i)))
+      return FALSE;
+    else if (OP_opnd(op1, i) != OP_opnd(op2, i)) return FALSE;
+  }
+  return TRUE;
+}
+
+/* ====================================================================
+ *
+ * OP_plain_load()
+ *
+ * See interface description
+ * ====================================================================
+ */
+BOOL
+OP_plain_load(OP *op)
+{
+
+  int offset_opnd, base_opnd;
+
+  if (!OP_load(op)) return FALSE;
+  offset_opnd = OP_find_opnd_use(op, OU_offset);
+  base_opnd = OP_find_opnd_use(op, OU_base);
+  if (offset_opnd < 0 || base_opnd < 0) return FALSE;
+  if (OP_results(op) != 1) return FALSE;
+  if (OP_opnds(op) != 2) return FALSE;
+  if (OP_has_implicit_interactions(op)) return FALSE;
+  if (OP_cond_def(op)) return FALSE;
+  return TRUE;
+}
+
+/* ====================================================================
+ *
+ * OP_plain_store()
+ *
+ * See interface description
+ * ====================================================================
+ */
+BOOL
+OP_plain_store(OP *op)
+{
+  int offset_opnd, base_opnd, storeval_opnd;
+  if (!OP_store(op)) return FALSE;
+  offset_opnd = OP_find_opnd_use(op, OU_offset);
+  base_opnd = OP_find_opnd_use(op, OU_base);
+  storeval_opnd = OP_find_opnd_use(op, OU_storeval);
+  if (offset_opnd < 0 || base_opnd < 0) return FALSE;
+  if (OP_results(op) != 0) return FALSE;
+  if (OP_opnds(op) != 3) return FALSE;
+  if (OP_has_implicit_interactions(op)) return FALSE;
+  if (OP_cond_def(op)) return FALSE;
+  return TRUE;
+}
 #endif

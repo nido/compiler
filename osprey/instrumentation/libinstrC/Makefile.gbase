@@ -242,7 +242,7 @@ target_install_st200_core_endian_libraries_:
 	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
 
 install_all_stxp70: 
-	$(MAKE) HOSTDEFS='-EL -mcore=arch_1_3_1' INSTALL_DIR=arch_1_3_1/le/bare clean _install
+	$(MAKE) HOSTDEFS='$(HOSTDEFS) -EL -mcore=arch_1_3_1' INSTALL_DIR=arch_1_3_1/le/bare clean _install
 
 ifeq ($(BUILD_COMPILER), OPEN64)
 

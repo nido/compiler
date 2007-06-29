@@ -708,6 +708,7 @@ Allocate_Result_TN (
   else return Build_TN_Of_Mtype (WN_rtype(wn));
 
 #else 
+  FmtAssert (WN_rtype(wn) != MTYPE_V, ("Unexpected allocation of result void type result"));
   return Build_TN_Of_Mtype (WN_rtype(wn));
 #endif
 }
@@ -826,6 +827,7 @@ Preg_Is_Rematerializable (
 	ST_class(sym) == CLASS_VAR) {
       if (((ST_gprel(basesym) ||
 	   (ST_is_split_common(basesym) && ST_gprel(ST_full(basesym))))
+	   && ! ST_is_const_var (sym)
 	   && CGTARG_GP_Expressions_Are_Rematerializable_p)
 	  || ST_on_stack(sym)) {
 	*gra_homeable = TRUE;
@@ -1426,10 +1428,7 @@ Handle_Call_Site (
   // FdF 20041105: A "noreturn" call is also an exit block, so as to
   // enable tail call optimization and optimization of the call
   // sequence.
-  if (WN_Call_Never_Return( call )
-      /* (cbr) need return for unwinder */
-      && !PU_has_region(Get_Current_PU())
-      ) {
+  if (WN_Call_Never_Return( call ) && !PU_has_region(Get_Current_PU())) {
     EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
     EXITINFO_srcpos(exit_info) = current_srcpos;
     BB_Add_Annotation (Cur_BB, ANNOT_EXITINFO, exit_info);
@@ -1868,6 +1867,7 @@ Handle_LDBITS (
 )
 {
   TN *src_tn;
+  UINT bit_ofst;
 
   if (result == NULL) result = Allocate_Result_TN (ldbits, NULL);
 
@@ -1893,7 +1893,15 @@ Handle_LDBITS (
 	variant);
     Set_OP_To_WN_Map(ldbits);
   }
-  Exp_Extract_Bits(WN_rtype(ldbits), WN_desc(ldbits), WN_bit_offset(ldbits), 
+
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = WN_bit_offset(ldbits);
+  } else {
+      // for LX as BIG_ENDIAN:
+      bit_ofst = MTYPE_bit_size(WN_desc(ldbits)) - WN_bit_size(ldbits) - WN_bit_offset(ldbits);
+  }
+  Exp_Extract_Bits(WN_rtype(ldbits), WN_desc(ldbits), bit_ofst, 
 		   WN_bit_size(ldbits), result, src_tn, &New_OPs);
   return result;
 }
@@ -2960,6 +2968,7 @@ Handle_STBITS (
   TN *result;
   TN *field_tn;
   TN *bits_tn = Allocate_Result_TN (kid, NULL);
+  UINT bit_ofst;
   const TYPE_ID desc = Mtype_TransferSign(MTYPE_U4, WN_desc(stbits));
   const TYPE_ID rtype = Mtype_TransferSize(WN_rtype(kid), desc);
 
@@ -2984,8 +2993,16 @@ Handle_STBITS (
     result = Allocate_Result_TN (kid, NULL);
   }
 
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = WN_bit_offset(stbits);
+  } else {
+      // for LX as BIG_ENDIAN:
+      bit_ofst = MTYPE_bit_size(WN_desc(stbits)) - WN_bit_size(stbits) - WN_bit_offset(stbits);
+  }
+
   // deposit bits_tn into field_tn returning result in result
-  Exp_Deposit_Bits(rtype, desc, WN_bit_offset(stbits),
+  Exp_Deposit_Bits(rtype, desc, bit_ofst,
 		   WN_bit_size(stbits), result, field_tn, bits_tn, &New_OPs);
 
   if (WN_class(stbits) != CLASS_PREG) 
@@ -3520,47 +3537,27 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
     *opnds = TYPE_MEM_POOL_REALLOC_N(TN*, Malloc_Mem_Pool,*opnds,allocated_opnds_nb,new_size); \
     allocated_opnds_nb = new_size;					\
   }
+
+  TYPE_ID result_mtype = WN_rtype(expr);
   
-
-#ifdef ENABLE_64_BITS
-  if (Enable_64_Bits_Ops) {
-    if (rkind != IRETURN_UNKNOWN) {
-      // [JV] not true for IRETURN_V
-      if (*result == NULL &&  rkind != IRETURN_V) {
-	*result = Allocate_Result_TN(expr, NULL);
-      }
-
-      if(rkind != IRETURN_V) {
-	if (TN_size(*result) == 8) {
-	  *numrests = 2;
-	  CHECK_RESULTS(*numrests);
-	  (*res)[0] = Build_TN_Of_Mtype (MTYPE_U4);
-	  (*res)[1] = Build_TN_Of_Mtype (MTYPE_U4);
-	} else {
-	  *numrests = 1;
-	  CHECK_RESULTS(*numrests);
-	  (*res)[0] = *result;
-	}
-      }
-
-      *numopnds = 0;
-      for (i = 0; i < numkids; i++) {
-	TN *kid = Expand_Expr(WN_kid(expr,i), expr, NULL);
-	if (TN_size(kid) == 8) {
-	  CHECK_OPNDS((*numopnds)+2);
-	  (*opnds)[*numopnds] = Build_TN_Of_Mtype (MTYPE_U4);
-	  (*opnds)[(*numopnds)+1] = Build_TN_Of_Mtype (MTYPE_U4);
-	  Expand_Extract((*opnds)[*numopnds], (*opnds)[(*numopnds)+1], kid, &New_OPs);
-	  (*numopnds) += 2;
-	} else {
-	  CHECK_OPNDS((*numopnds)+1);
-	  (*opnds)[*numopnds] = kid;
-	  (*numopnds) += 1;
-	}
-      }
-    }
-  } else
+#ifdef TARG_ST  
+  // This function is now common to intrinsic call and intrinsic call.
+  // For intrinsic call, the actual result may be void in the following cases:
+  // 1. the intrinsic call is a void result
+  // 2. the intrinsic call is a non-void result but the actual tree as
+  // been forced to MTYPE_V because the result is not used.
+  // For the second case we must anyway create an artificial result
+  // because the intrinsic expaansion function must have all results
+  // available as TNs even if they are dead.
+  if (WN_operator_is(expr,OPR_INTRINSIC_CALL) &&
+      rkind != IRETURN_UNKNOWN && rkind != IRETURN_V && 
+      WN_rtype(expr) == MTYPE_V) {
+    // The node was forced to a VOID rtype.
+    // Get the result mtype from the intrinsic description
+    result_mtype = INTRN_mtype_for_return_kind(rkind);
+  }
 #endif
+
 #ifdef TARG_ST
   //
   // Handling dynamic mtype (whether composed or not)
@@ -3631,6 +3628,44 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
 
    } else
 #endif
+#ifdef ENABLE_64_BITS
+  if (Enable_64_Bits_Ops) {
+    if (rkind != IRETURN_UNKNOWN) {
+      if (*result == NULL && rkind != IRETURN_V) {
+	*result = Build_TN_Of_Mtype (result_mtype);
+      }
+
+      if(rkind != IRETURN_V) {
+	if (TN_size(*result) == 8) {
+	  *numrests = 2;
+	  CHECK_RESULTS(*numrests);
+	  (*res)[0] = Build_TN_Of_Mtype (MTYPE_U4);
+	  (*res)[1] = Build_TN_Of_Mtype (MTYPE_U4);
+	} else {
+	  *numrests = 1;
+	  CHECK_RESULTS(*numrests);
+	  (*res)[0] = *result;
+	}
+      }
+
+      *numopnds = 0;
+      for (i = 0; i < numkids; i++) {
+	TN *kid = Expand_Expr(WN_kid(expr,i), expr, NULL);
+	if (TN_size(kid) == 8) {
+	  CHECK_OPNDS((*numopnds)+2);
+	  (*opnds)[*numopnds] = Build_TN_Of_Mtype (MTYPE_U4);
+	  (*opnds)[(*numopnds)+1] = Build_TN_Of_Mtype (MTYPE_U4);
+	  Expand_Extract((*opnds)[*numopnds], (*opnds)[(*numopnds)+1], kid, &New_OPs);
+	  (*numopnds) += 2;
+	} else {
+	  CHECK_OPNDS((*numopnds)+1);
+	  (*opnds)[*numopnds] = kid;
+	  (*numopnds) += 1;
+	}
+      }
+    }
+  } else
+#endif
   if (Only_32_Bit_Ops && 
       (MTYPE_is_longlong(WN_rtype(expr)) || MTYPE_is_double(WN_rtype(expr))))
   {
@@ -3656,9 +3691,8 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
     }
   }
   else if (rkind != IRETURN_UNKNOWN) {
-    // [JV] not true for IRETURN_V
     if (*result == NULL &&  rkind != IRETURN_V) {
-      *result = Allocate_Result_TN(expr, NULL);
+      *result = Build_TN_Of_Mtype (result_mtype);
     }
 
     if (rkind != IRETURN_V) {
@@ -4742,15 +4776,39 @@ static void Build_CFG(void)
 	Link_Pred_Succ (bb, region_entry);
       } 
       else if (BB_call(bb)
-      /* (cbr) need return for unwinder */
-        && !PU_has_region(Get_Current_PU())
 	&& WN_Call_Never_Return( CALLINFO_call_wn(ANNOT_callinfo(
 		ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO) ))) )
       {
 	continue;	// no successor
       } 
       else {
-	Link_Pred_Succ (bb, BB_next(bb));
+#ifdef TARG_ST
+        // (cbr) call to Unwind_Resume is followed by a end_eh_range bblock.
+        // will not be caught on preceding test. catch it here.
+        if (BB_has_label(bb)) {
+          ANNOTATION *ant;
+          for (ant = ANNOT_First(BB_annotations(bb), ANNOT_LABEL);
+               ant != NULL;
+               ant = ANNOT_Next(ant, ANNOT_LABEL)) {
+            LABEL_IDX lab = ANNOT_label(ant);
+            if (LABEL_kind(Label_Table[lab]) == 
+                LKIND_END_EH_RANGE) {
+              BB *pred = BB_prev(bb);
+              if (BB_call(pred) && WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(pred), ANNOT_CALLINFO)))))
+                {
+                  if (BB_Is_Unique_Predecessor (bb, pred)) {
+                    EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
+                    EXITINFO_srcpos(exit_info) = current_srcpos;
+                    BB_Add_Annotation (bb, ANNOT_EXITINFO, exit_info);
+                    Set_BB_exit(bb);
+                  } 
+                }
+            }
+          }
+        }
+        if (!BB_exit(bb))
+#endif
+          Link_Pred_Succ (bb, BB_next(bb));
       }
     }
   }
@@ -5529,9 +5587,9 @@ Expand_Statement (
       info = TYPE_P_ALLOC(LOOPINFO);
       LOOPINFO_wn(info) = loop_info;
       LOOPINFO_srcpos(info) = srcpos;
-      LOOPINFO_trip_count_tn(info) = trip_tn;
-#ifdef TARG_STxP70
-      LOOPINFO_is_CG_trip_count(info) = TRUE;
+      LOOPINFO_primary_trip_count_tn(info) = trip_tn;
+#ifdef TARG_ST
+      LOOPINFO_is_exact_trip_count(info) = TRUE;
       LOOPINFO_is_HWLoop(info) = FALSE;
 #endif
 #ifdef TARG_ST
@@ -5586,19 +5644,8 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_HWLOOP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMINITERCOUNT) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMAXITERCOUNT)) {
-	WN *pragma = stmt;
-	if (WN_pragma(pragma) == WN_PRAGMA_IVDEP) {
-	    // [HK] using typedef-name  after `enum' is no more allowed in gcc-3-4-0
-//  	  enum LOOPDEP loopdep;
-	  LOOPDEP loopdep;
-	  if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
-	  else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
-	  else loopdep = LOOPDEP_PARALLEL;
-	  pragma = WN_CreatePragma(WN_PRAGMA_LOOPDEP, (ST_IDX) NULL,
-				   loopdep, 0);
-	}
 	ANNOTATION *loop_pragmas = (ANNOTATION *)BB_MAP_Get(loop_pragma_map, Cur_BB);
-	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)pragma, &MEM_pu_pool);
+	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)stmt, &MEM_pu_pool);
 	BB_MAP_Set(loop_pragma_map, Cur_BB, loop_pragmas);
 
 	// [CL] Mark prologue for debug output
@@ -6119,6 +6166,18 @@ Convert_WHIRL_To_OPs (
       ANNOTATION *ant, *next;
       for (ant = ANNOT_First(loop_pragmas, ANNOT_PRAGMA); ant; ant = next) {
 	next = ANNOT_Next(ant, ANNOT_PRAGMA);
+#ifdef TARG_ST
+	if (WN_pragma(ANNOT_pragma(ant)) == WN_PRAGMA_IVDEP) {
+	  // FdF: Canonicalize a pragma IVDEP into its LOOPDEP form
+	  LOOPDEP loopdep;
+	  if (Cray_Ivdep) loopdep = LOOPDEP_VECTOR;
+	  else if (Liberal_Ivdep) loopdep = LOOPDEP_LIBERAL;
+	  else loopdep = LOOPDEP_PARALLEL;
+	  WN *pragma = WN_CreatePragma(WN_PRAGMA_LOOPDEP, (ST_IDX) NULL,
+				       loopdep, 0);
+	  ANNOT_info(ant) = pragma;
+	}
+#endif
 	BB_Add_Annotation(loop_head, ANNOT_PRAGMA, ANNOT_info(ant));
 	ANNOT_Unlink(loop_pragmas, ant);
       }
@@ -6133,8 +6192,8 @@ Convert_WHIRL_To_OPs (
 	LOOPINFO *info = annot ? ANNOT_loopinfo(annot) : NULL;
 	if (info) {
 	  WN *wn = ANNOT_pragma(ant);
-#ifdef TARG_STxP70
-	  TN *trip_count = LOOPINFO_CG_trip_count_tn(info);
+#ifdef TARG_ST
+	  TN *trip_count = LOOPINFO_exact_trip_count_tn(info);
 #else
 	  TN *trip_count = LOOPINFO_trip_count_tn(info);
 #endif

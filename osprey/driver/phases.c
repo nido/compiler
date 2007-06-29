@@ -767,8 +767,10 @@ add_file_args (string_list_t *args, phases_t index)
 	    add_string(args, output_d_file);
 
 	    /* (cbr) add object dependency. DDTS 27224 */
-	    add_string(args, "-MQ");
-	    add_string(args, outfile);
+	    if (outfile) {
+		add_string(args, "-MQ");
+		add_string(args, outfile);
+	    }
 
 	    /* (cbr) handle -MF here. DDTS 21439 */
 	    if (option_was_seen(O_MF)) {  
@@ -1647,6 +1649,8 @@ add_file_args (string_list_t *args, phases_t index)
 	    }
 	    if (shared == RELOCATABLE) {
 	      add_string(args, "--relocatable");
+	    } else if (shared == DSO_SHARED ) {
+		add_string(args, "--ignore-start");
 	    }
 	    if (keep_flag) {
 	      add_string(args, "--deadcodefile");
@@ -2567,10 +2571,10 @@ run_ld (void)
 		error ("ipa"__SO_EXT" is not installed on %s", get_phase_dir (ldphase));
 		return;
 	    }
-#ifdef TARG_ST // [CL]
+#ifndef TARG_ST // [CL] useless for us, the necessary paths are added by add_library_options()
 	    if (!option_was_seen(O_nostartfiles))
+	      	    init_crt_paths ();
 #endif
-	    init_crt_paths ();
 #ifdef TARG_ST
 	    // [CL] generate a file which contains the command to invoke
 	    // subsequent compilation phases.

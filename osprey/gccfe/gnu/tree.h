@@ -2008,7 +2008,11 @@ struct tree_decl GTY(())
   struct lang_decl *lang_specific;
 
 #if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#ifndef TARG_ST
+  // [SC] Remove use of this field since it is not always set
+  // correctly for symbols inside nested functions.
   unsigned symtab_idx    : 8;  /* whirl SYMTAB_IDX */
+#endif
   unsigned label_defined : 1;
 
   union {

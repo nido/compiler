@@ -114,8 +114,11 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#include "cg_ssaopt.h"
+#include "dominate.h"
 #include "loop_invar_hoist.h"
 #include "ipra.h"
+#include "cg_color.h"
 #endif
 
 #ifdef LAO_ENABLED
@@ -229,6 +232,11 @@ CG_PU_Initialize (
   Init_Entry_Exit_Code (wn_pu);
   REGISTER_Reset_FP();	// in case $fp is used, must be after entry_exit init
 
+#ifdef TARG_ST
+  /* Initialize cg_color module. */
+  CGCOLOR_Initialize_For_PU();
+#endif
+
   /* Initialize global tn universe */
   GTN_UNIVERSE_Pu_Begin();
 
@@ -276,6 +284,7 @@ CG_PU_Finalize(void)
   TAG_Finish();
   GTN_UNIVERSE_Pu_End ();
   OP_MAP_Finish();
+  CGCOLOR_Finalize_For_PU();
   CGSPILL_Finalize_For_PU();
 
   if (CG_enable_peephole) EBO_Finalize();
@@ -553,6 +562,9 @@ CG_Generate_Code(
   // loop invariant code motion, because it uses these frequencies to
   // compute the profitability of code motion.
 #ifdef BCO_ENABLED /* Thierry */
+  //TB: CG_emit_bb_freqs_arcs trigger CG_emit_bb_freqs
+  if (CG_emit_bb_freqs_arcs)
+    CG_emit_bb_freqs = CG_emit_bb_freqs_arcs;
   // THierry begin : Enable compute bb frequencies even if opt_level <= 1 when -CG:emit_bb_freqs=on
   if (CG_opt_level > 1 || CG_emit_bb_freqs)
 #else
@@ -578,6 +590,7 @@ CG_Generate_Code(
     if (IPFEC_Enable_LICM && CG_opt_level > 1 && !CG_localize_tns) {
       Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
       Perform_Loop_Invariant_Code_Motion ();
+      Check_for_Dump ( TP_LICM, NULL );
     }
 #endif
   // Invoke global optimizations before register allocation at -O2 and above.
@@ -586,31 +599,53 @@ CG_Generate_Code(
     if (CG_enable_ssa)
       CG_enable_ssa = SSA_Check(region ? REGION_get_rid(rwn) : NULL, region);
     if (CG_enable_ssa) {
+      // Enter SSA.
+      // Precondition: live-analysis ok.
       Set_Error_Phase( "CG SSA Construction");
       SSA_Enter (region ? REGION_get_rid(rwn) : NULL, region);
       SSA_Verify (region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
+      // Postcondition: code in PSI-SSA, dominators ok, live-analysis ok.
+
+      // Perform SSA dataflow optimizations
+      // Precondition: code in PSI-SSA, dominators ok, live-analysis ok.
+      Set_Error_Phase( "CG SSA DataFlow Optimizations");
+      SSA_Optimize();
+      SSA_Verify (region ? REGION_get_rid(rwn) : NULL, region);
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+      Check_for_Dump(TP_SSA, NULL);
+      // Postcondition: code in PSI-SSA, dominators ok, live-analysis ok.
+
+      // Clean up the dominator/posdominator information before control flow optimizations.
+      Free_Dominators_Memory();
+      // Postcondition: code in PSI-SSA, live-analysis ok. dominators freed.
     }
 #endif
   } //CG_opt_level > 1
   
   if (CG_opt_level > 1 && !CG_localize_tns) {
 #ifdef TARG_ST
+      if (CG_enable_ssa) {
+	// Perform SSA controlflow optimizations
+	// Precondition: code in PSI-SSA, live-analysis ok.
+	Set_Error_Phase( "CG SSA ControlFlow Optimizations");
 #ifdef SUPPORTS_SELECT
-    if (CG_enable_ssa && CG_enable_select) {
-      // Perform select generation (partial predication if-conversion). 
-      Start_Timer(T_Select_CU);
-      Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
-      Stop_Timer(T_Select_CU);
-      if (frequency_verify)
-	FREQ_Verify("Select Conversion");
-      Check_for_Dump(TP_SELECT, NULL);
-    }
+	if (CG_enable_select) {
+	  // Perform select generation (partial predication if-conversion). 
+	  Start_Timer(T_Select_CU);
+	  Convert_Select(region ? REGION_get_rid(rwn) : NULL, NULL);
+	  Stop_Timer(T_Select_CU);
+	  if (frequency_verify)
+	    FREQ_Verify("Select Conversion");
+	  Check_for_Dump(TP_SELECT, NULL);
+	}
 #endif
+	// Postcondition: code in PSI-SSA, live-analysis ok.
+      }
 #endif
   }
-
+  
   if (CG_opt_level > 1 && !CG_localize_tns) {
 #if defined(TARG_IA64)
     //
@@ -633,11 +668,14 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
     if (CG_enable_ssa && !CG_localize_tns) {
+      // Exit SSA.
+      // Precondition: code in PSI-SSA, live-analysis ok, dominator freed.
       Set_Error_Phase("Out of SSA Translation");
       SSA_Make_Conventional (region ? REGION_get_rid(rwn) : NULL, region);
       SSA_Remove_Pseudo_OPs(region ? REGION_get_rid(rwn) : NULL, region);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
+      // Postcondition: live-analysis ok, dominator freed.
     }
 #endif
 
@@ -659,6 +697,13 @@ CG_Generate_Code(
 	EBO_Pre_Process_Region (region ? REGION_get_rid(rwn) : NULL);
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
+      }
+      if (IPFEC_Enable_LICM) {
+	// Another pass of invariant code motion is useful after if-conversion
+	// as there are more speculated instructions in loop to hoist.
+	Set_Error_Phase("Perform_Loop_Invariant_Code_Motion after SSA");
+	Perform_Loop_Invariant_Code_Motion ();
+	Check_for_Dump ( TP_LICM, NULL );
       }
     }
 #endif
@@ -751,7 +796,7 @@ CG_Generate_Code(
 
 #ifdef LAO_ENABLED
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations & OptimizerFlag_MustPrePass) {
+  if (CG_LAO_optimizations & OptimizeActivation_PrePass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
@@ -775,16 +820,14 @@ CG_Generate_Code(
 
   // Register Allocation Phase
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizerFlag_MustRegAlloc) {
+  if (CG_LAO_optimizations & OptimizeActivation_RegAlloc) {
     // Live analysis and tn renaming
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_pu(CG_LAO_optimizations & OptimizerFlag_MustRegAlloc);
+    lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_RegAlloc);
     Check_for_Dump (TP_ALLOC, NULL);
-  }
-  if (CG_LAO_optimizations & OptimizerFlag_Allocate) {
-    if (CG_LAO_schedkind != ConfigureAllocKind_Localize) {
+    if (CG_LAO_allocation > 0) {
     // Full register allocation performed by LAO.
     } else  {
       // Localization performed by LAO, run LRA
@@ -823,6 +866,14 @@ CG_Generate_Code(
     GRA_Allocate_Global_Registers( region );
     // Arthur: moved here rather than in gra.cxx
     Check_for_Dump (TP_GRA, NULL);
+#ifdef TARG_ST
+    if (CG_enable_rename_after_GRA) {
+      // [SC] To split the local live ranges introduced
+      // by GRA spilling.
+      GRA_LIVE_Rename_TNs();
+      Check_for_Dump (TP_LOCALIZE, NULL);
+    }
+#endif
   }
 
   LRA_Allocate_Registers (!region);
@@ -872,7 +923,7 @@ CG_Generate_Code(
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }
 
-  if (OPT_Space)
+  if (OPT_Space) 
     CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY, "CFLOW (merge ops)");
 
   if (CG_enable_peephole) {
@@ -889,7 +940,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizerFlag_MustPostPass) {
+  if (CG_LAO_optimizations & OptimizeActivation_PostPass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
   } else {

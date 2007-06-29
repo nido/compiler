@@ -71,9 +71,30 @@ static void enum_Write(int this_c, FILE *fp, char *fname) {
   FWRITE (&this_c, sizeof(INT32), 1, fp, ERR_WRITE, fname);
 }
 
+static void UINT64_Write(UINT64 this_c, FILE *fp, char *fname){
+  FWRITE (&this_c, sizeof(UINT64), 1, fp, ERR_WRITE, fname);
+}
+
 static void INT64_Write(INT64 this_c, FILE *fp, char *fname){
   FWRITE (&this_c, sizeof(INT64), 1, fp, ERR_WRITE, fname);
 }
+
+static void LIBFB_TNV_Write(LIBFB_TNV this_c, FILE *fp, char *fname){
+  int i;
+  INT32_Write( this_c._id, fp, fname);
+  INT32_Write( this_c._flag, fp, fname);
+  INT64_Write( this_c._address, fp, fname);
+  INT64_Write( this_c._exec_counter, fp, fname);
+  INT64_Write( this_c._clear_counter, fp, fname);
+  INT64_Write( this_c._sample_counter, fp, fname);
+  INT64_Write( this_c._stride_steps, fp, fname);
+  INT64_Write( this_c._zero_std_counter, fp, fname);
+  for (i = 0; i < FB_TNV_SIZE; i++)
+    INT64_Write( this_c._values[i], fp, fname);
+  for (i = 0; i < FB_TNV_SIZE; i++)
+    INT64_Write( this_c._counters[i], fp, fname);
+}
+
 
 void INT64_list_Write(const INT64 *this_c, int nitems, FILE *fp, char *fname){
 /*   int i; */
@@ -113,6 +134,28 @@ static void LIBFB_Info_Call_Write( LIBFB_Info_Call *this_c, FILE *fp, char *fnam
   INT64_Write( this_c->freq_exit, fp, fname);
 }
 
+static void LIBFB_Info_Icall_Write( LIBFB_Info_Icall *this_c, FILE *fp, char *fname) {
+  LIBFB_TNV_Write( this_c->tnv, fp, fname);
+}
+
+static void LIBFB_Info_Value_Write( LIBFB_Info_Value *this_c, FILE *fp, char *fname) {
+  int i;
+  INT64_Write( this_c->num_values, fp, fname);
+  INT64_Write( this_c->exe_counter, fp, fname);
+  for (i = 0; i < TNV; i++)
+    INT64_Write( this_c->value[i], fp, fname);
+  for (i = 0; i < TNV; i++)
+    INT64_Write( this_c->freq[i], fp, fname);
+}
+
+static void LIBFB_Info_Value_FP_Bin_Write( LIBFB_Info_Value_FP_Bin *this_c, FILE *fp, char *fname) {
+  INT64_Write( this_c->exe_counter, fp, fname);
+  INT64_Write( this_c->zopnd0, fp, fname);
+  INT64_Write( this_c->zopnd1, fp, fname);
+  INT64_Write( this_c->uopnd0, fp, fname);
+  INT64_Write( this_c->uopnd1, fp, fname);
+}
+
 void Fb_Hdr_Write(const Fb_Hdr *this_c, FILE *fp, char *fname){
 
   FWRITE(this_c->fb_ident, FB_NIDENT, 1, fp, ERR_WRITE, fname);
@@ -128,6 +171,8 @@ void Fb_Hdr_Write(const Fb_Hdr *this_c, FILE *fp, char *fname){
 
 void Pu_Hdr_Write(const Pu_Hdr *this_c, FILE *fp, char *fname){
   INT32_Write( this_c->pu_checksum, fp, fname);
+  INT32_Write( this_c->pu_size, fp, fname);
+  UINT64_Write( this_c->runtime_fun_address, fp, fname);
   ULONG_Write( this_c->pu_name_index, fp, fname);
   ULONG_Write( this_c->pu_file_offset, fp, fname);
   ULONG_Write( this_c->pu_inv_offset, fp, fname);
@@ -146,6 +191,25 @@ void Pu_Hdr_Write(const Pu_Hdr *this_c, FILE *fp, char *fname){
   ULONG_Write( this_c->pu_num_scircuit_entries, fp, fname);
   ULONG_Write( this_c->pu_call_offset, fp, fname);
   ULONG_Write( this_c->pu_num_call_entries, fp, fname);
+#ifdef KEY
+  ULONG_Write( this_c->pu_value_offset, fp, fname);
+  ULONG_Write( this_c->pu_num_value_entries, fp, fname);
+  ULONG_Write( this_c->pu_value_fp_bin_offset, fp, fname);
+  ULONG_Write( this_c->pu_num_value_fp_bin_entries, fp, fname);
+#endif
+  ULONG_Write( this_c->pu_icall_offset, fp, fname);
+  ULONG_Write( this_c->pu_num_icall_entries, fp, fname);
+  ULONG_Write( this_c->pu_handle, fp, fname);
+  ULONG_Write( this_c->pu_edge_offset, fp, fname);
+  ULONG_Write( this_c->pu_num_edge_entries, fp, fname);
+  ULONG_Write( this_c->pu_instr_count, fp, fname);
+  ULONG_Write( this_c->pu_instr_exec_count, fp, fname);
+#ifdef KEY
+  ULONG_Write( this_c->pu_values_offset, fp, fname);
+  ULONG_Write( this_c->pu_values_fp_bin_offset, fp, fname);
+#endif
+  ULONG_Write( this_c->pu_ld_count, fp, fname);   //prefetch count
+  ULONG_Write( this_c->pu_stride_offset, fp, fname);
 }
 
 typedef  void (*dump_func_type)(void *, FILE*, char*);
@@ -163,6 +227,12 @@ static void *FB_Info_Type_Write(FB_Info_Type type)
     return (void *)&LIBFB_Info_Call_Write;
   case LIBFB_Info_Loop_Type:
     return (void *)&LIBFB_Info_Loop_Write;
+  case LIBFB_Info_Value_Type:
+    return (void *)&LIBFB_Info_Value_Write;
+  case LIBFB_Info_Value_FP_Bin_Type:
+    return (void *)&LIBFB_Info_Value_FP_Bin_Write;
+  case LIBFB_Info_Icall_Type:
+    return (void *)&LIBFB_Info_Icall_Write;
   default:
     profile_error("Unexpexted Type","");
     return 0;

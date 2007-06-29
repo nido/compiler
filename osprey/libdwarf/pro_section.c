@@ -256,8 +256,8 @@ dwarf_transform_to_disk_form (
 #ifdef KEY
 	    case EH_FRAME:
                 if (dbg->eh_frame_cies == NULL) continue;
-#ifdef TARG_ST200
-		flags = SHF_ALLOC;
+#ifdef TARG_ST
+		flags = SHF_ALLOC|SHF_WRITE;
 #else
 		flags = SHF_MIPS_NOSTRIP;
 #endif

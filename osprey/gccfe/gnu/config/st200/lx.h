@@ -172,9 +172,11 @@ extern int target_flags;
 /* Sometimes certain combinations of command options do not make sense on a
    particular target machine.  You can define a macro `OVERRIDE_OPTIONS' to
    take account of this.  This macro, if defined, is executed once just after
-   all the command options have been parsed.  */
+   all the command options have been parsed. 
+   // (cbr) not needed for open64
 extern int override_options (void);
 #define OVERRIDE_OPTIONS      override_options ();
+ */
 
 /* Some machines may desire to change what optimizations are performed for
    various optimization levels.  This macro, if defined, is executed once just

@@ -1125,6 +1125,30 @@ IPA_Propagate_Constants (IPA_NODE* n, BOOL delete_const_param)
 	}
     }
 
+#ifdef TARG_ST // [CL] from open64-3.0
+    if(k < i) {
+      // Need to Change function prototype
+      TY_IDX old_prototype = n->Get_PU().prototype;
+      TY_IDX new_prototype = Copy_TY( old_prototype );
+      TY& old_ty = Ty_Table[old_prototype];
+      TY& new_ty = Ty_Table[new_prototype];
+      TYLIST_IDX old_idx = old_ty.Tylist();
+      TYLIST_IDX new_idx;
+      New_TYLIST(new_idx) = Tylist_Table[old_idx++]; // For return type
+      new_ty.Set_tylist(new_idx);
+      for (i = 0; i < WN_num_formals(w); i++) {
+	WN* id = WN_kid(w,i);
+	if ((*cprop_annot)[i].Is_remove_param ())
+	  ++old_idx; // Skip this parameter
+        else
+	  New_TYLIST(new_idx) = Tylist_Table[old_idx++]; // For remained parameter
+      }
+      New_TYLIST(new_idx) = 0; // End of the list.
+
+      n->Get_PU().prototype = new_prototype;
+    }
+#endif
+
     if (n->Has_Aliased_Formal ()) {
 	// there are STs that are based on the deleted formals, so we
 	// need to change their storage_class to SCLASS_AUTO
@@ -1207,6 +1231,9 @@ Reset_param_list (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *edge,
     WN* new_call = WN_Call (rtype, desc, used_param_count + fake_param_count,
 			    WN_st(call));
     WN_call_flag (new_call) = WN_call_flag (call);
+#ifdef KEY
+    WN_Set_Linenum (new_call, WN_Get_Linenum (call));
+#endif // KEY
 
     if (caller->Has_frequency ())
 	IPA_WN_MAP32_Set (Current_Map_Tab, WN_MAP_FEEDBACK, new_call,
@@ -1245,6 +1272,17 @@ Reset_param_list (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *edge,
 	    
 	} 
     }
+
+#ifdef KEY
+    // bug 2636
+    // We have created used_param_count+fake_param_count kids, but it won't
+    // always have that many kids.
+    if (WN_kid_count (new_call) > last)
+    	WN_set_kid_count (new_call, last);
+
+    // Also update the # of parameters in the summary_callsite.
+    edge->Summary_Callsite()->Set_param_count (WN_kid_count (new_call));
+#endif
 
     if (Trace_IPA || Trace_Perf)
 	fputc ('\n', TFile);

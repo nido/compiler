@@ -1162,9 +1162,49 @@ static void Guard_Dos_Rec(WN *wn, HASH_TABLE<WN *,BOOL> *htable)
     }
   }
 }
-
-
-
+#ifdef TARG_ST
+//TB: Fix a bug: pragma preamble_end was moved in a wrong place.
+//Need to differenciate llop pragma from others
+//Return True for loop pragma
+static BOOL
+Loop_Pragma(WN_PRAGMA_ID pragma)
+{
+  switch (pragma) {
+    case WN_PRAGMA_AGGRESSIVE_INNER_LOOP_FISSION:
+    case WN_PRAGMA_BLOCKABLE:
+    case WN_PRAGMA_BLOCKING_SIZE:
+    case WN_PRAGMA_CRI_CNCALL:
+    case WN_PRAGMA_FISSION:
+    case WN_PRAGMA_FISSIONABLE:
+    case WN_PRAGMA_FUSE:
+    case WN_PRAGMA_FUSEABLE:
+    case WN_PRAGMA_INTERCHANGE:
+    case WN_PRAGMA_IVDEP:
+    case WN_PRAGMA_KAP_ASSERT_CONCURRENT_CALL:
+    case WN_PRAGMA_KAP_ASSERT_DO:
+    case WN_PRAGMA_KAP_ASSERT_DOPREFER:
+    case WN_PRAGMA_NEXT_SCALAR:
+    case WN_PRAGMA_NORECURRENCE:
+    case WN_PRAGMA_NO_BLOCKING:
+    case WN_PRAGMA_NO_FISSION:
+    case WN_PRAGMA_NO_FUSION:
+    case WN_PRAGMA_NO_INTERCHANGE:
+    case WN_PRAGMA_UNROLL:
+#ifdef TARG_ST
+    /* FdF 23/04/2004 */
+    case WN_PRAGMA_LOOPDEP:
+    case WN_PRAGMA_LOOPMOD:
+    /* FdF 30/09/2004 */
+    case WN_PRAGMA_LOOPTRIP:
+    case WN_PRAGMA_LOOPSEQ:
+    /* FdF 07/04/2006 */
+    case WN_PRAGMA_STREAM_ALIGNMENT:
+#endif
+      return TRUE;
+  }
+  return FALSE;
+}
+#endif
 // Guard a particular do
 extern WN* Guard_A_Do(WN *do_wn)
 {
@@ -1247,8 +1287,17 @@ extern WN* Guard_A_Do(WN *do_wn)
     LWN_Insert_Block_Before(new_then, NULL,LWN_Extract_From_Block(highest_wn));
 #ifdef TARG_ST
     // FdF 23/04/2004: Put PRAGMA preceeding the loop inside the guard
+    // FdF 20070316: Allow some STIDs in between
     WN *wn = WN_prev(new_if);
+    while (wn && WN_operator(wn) == OPR_STID)
+      wn = WN_prev(wn);
+#ifdef TARG_ST
+    //TB: Fix a bug: pragma preamble_end was moved in a wrong place.
+    //Need to differenciate loop pragmas from others
+    while (wn && WN_operator(wn) == OPR_PRAGMA && Loop_Pragma((WN_PRAGMA_ID)WN_pragma(wn))) {
+#else
     while (wn && WN_operator(wn) == OPR_PRAGMA) {
+#endif
       WN *prev = WN_prev(wn);
       LWN_Insert_Block_After(WN_then(new_if),NULL,LWN_Extract_From_Block(wn));
       wn = prev;

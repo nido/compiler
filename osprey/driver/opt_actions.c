@@ -149,7 +149,7 @@ static struct {
   { "st220",    PROC_ST220 },
   { "st221",    PROC_ST221 },
   { "st231",    PROC_ST231 },
-  { "st235",    PROC_ST235 },
+  { "st240",    PROC_ST240 },
   { NULL,	PROC_NONE }
 };
 
@@ -377,7 +377,11 @@ Process_Opt_Group ( string opt_args )
   if ( debug ) {
     fprintf ( stderr, "Process_Opt_Group: %s\n", opt_args );
   }
-  
+
+#ifdef TARG_ST
+  if (strncmp("enable_instrument", opt_args, strlen("enable_instrument")) == 0)
+     instrumentation_invoked = TRUE;
+#endif  
   /* Go look for -OPT:instrument */
   optval = Get_Group_Option_Value ( opt_args, "instrumentation", "instr");
   if (optval != NULL) {
@@ -773,8 +777,8 @@ Check_Target ( void )
   case PROC_ST231:
     flag = add_new_option("-TARG:proc=st231");
     break;
-  case PROC_ST235:
-    flag = add_new_option("-TARG:proc=st235");
+  case PROC_ST240:
+    flag = add_new_option("-TARG:proc=st240");
     break;
   case PROC_ST210:
     flag = add_new_option("-TARG:proc=st210");
@@ -1913,13 +1917,34 @@ Process_ST200_Targ (string option,  string targ_args )
       warning("libdir %s undefined. ", targ_args);
   }
 
+  if (strncasecmp (option, "-mtargetname", 12) == 0) {
+      /* 
+	 This option overrides the 'target' default target tree name
+	 We accept to do this only if we find it as a sibling of the
+	 default 'target' name
+      */    
+      string defaulttargbase = string_copy(get_phase_dir(P_alt_library)) ;
+      string droptargetdefault = strrchr(defaulttargbase, SYS_getDirSeparator()) ;
+      if (droptargetdefault) {
+	  string alttargetdir ;
+	  *droptargetdefault = '\0' ;
+	  alttargetdir = concat_path(defaulttargbase, targ_args) ;
+	  if (is_directory(alttargetdir))
+	      set_phase_dir(get_phase_mask(P_alt_library), alttargetdir) ;
+	  else
+	    warning("targetname %s not found. setting to default", targ_args);	
+      } else 
+	  warning("targetname %s not found. setting to default", targ_args);	
+  }
+
   if (strncasecmp (option, "-mtargetdir", 11) == 0) {
+      /* is_directory successes if it is a file that is existing locally */
       if (is_directory(targ_args)) {
 	/* Substitution should happen only if core/soc/board hiearchy exists */
 	/* So we cannot use the obvious set_phase_dir (get_phase_mask(P_alt_library), targ_args) ; */
 	st200_targetdir = string_copy (targ_args);
-      } else {
-	warning("targetdir %s undefined. setting to default", targ_args);
+      } else {	  
+	    warning("targetdir %s not found. setting to default", targ_args);
       }
   }
 

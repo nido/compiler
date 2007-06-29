@@ -106,16 +106,12 @@
     case BUILT_IN_MAXS:
     case BUILT_IN_MAXUH:
     case BUILT_IN_MAXUL:
-    case BUILT_IN_MAXUW:
-    case BUILT_IN_MAXW:
     case BUILT_IN_MIND:
     case BUILT_IN_MINH:
     case BUILT_IN_MINL:
     case BUILT_IN_MINS:
     case BUILT_IN_MINUH:
     case BUILT_IN_MINUL:
-    case BUILT_IN_MINUW:
-    case BUILT_IN_MINW:
     case BUILT_IN_MODFCH:
     case BUILT_IN_MODFCM:
     case BUILT_IN_MODFCW:
@@ -203,10 +199,7 @@
     case BUILT_IN_ST220MULLU:
     case BUILT_IN_ST220PFT:
     case BUILT_IN_ST220PRGADD:
-    case BUILT_IN_ST220PRGINS:
     case BUILT_IN_ST220PRGSET:
-    case BUILT_IN_ST220SYNC:
-    case BUILT_IN_ST220SYNCINS:
     case BUILT_IN_ST220SYSCALL:
     case BUILT_IN_STOD:
     case BUILT_IN_STOL:
@@ -238,8 +231,6 @@
     case BUILT_IN_ST200MUL64HU:
     case BUILT_IN_ST200MULFRAC:
     case BUILT_IN_ST200PRGINSPG:
-    case BUILT_IN_ST200PSWCLR:
-    case BUILT_IN_ST200PSWSET:
     case BUILT_IN_NMADDS:
     case BUILT_IN_NMSUBS:
     case BUILT_IN_SQUARES:
@@ -261,5 +252,9 @@
     case BUILT_IN_ASM_13:
     case BUILT_IN_ASM_14:
     case BUILT_IN_ASM_15:
+    case BUILT_IN_ST200PRGINSSET:
+#define INTRN_GFEC_BUILTINS_H
+#include "gen_intrinsics.inc"
+#undef INTRN_GFEC_BUILTINS_H
   break;
 #endif /* defined(TARG_ST) */

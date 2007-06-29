@@ -99,14 +99,10 @@ INT32 Callee_Saved_Regs_Count;
 
 #ifdef TARG_ST
 /* 
- * regs that need to be saved at prolog and restored at epilog.
+ * Regs that need to be saved at prolog and restored at epilog when 
+ * CG_gen_callee_saved_regs_mask is true
  */
-#ifdef TARG_ST
 REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX_LIMIT+1];
-#else
-REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
-REGISTER_SET Caller_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX+1];
-#endif
 #endif
 
 /* Special PREGs associated with save locations for Callee Saved registers */
@@ -394,12 +390,6 @@ Init_Callee_Saved_Regs_for_REGION (
 
   Callee_Saved_Regs_Count = i;
 
-#ifdef TARG_ST
-  // Arthur: initialize callee saved regs mask also
-  FOR_ALL_ISA_REGISTER_CLASS(cl) {
-    Callee_Saved_Regs_Mask[cl] = REGISTER_SET_EMPTY_SET;
-  }
-#endif
 
   return;
 }
@@ -529,17 +519,10 @@ Generate_Entry (BB *bb, BOOL gra_run)
     }
     else {
 #ifdef TARG_ST
-      //
-      // Arthur: RA_TN is part of callee saves. Always add to the
-      //         push/pop sequence if such is being generated.
-      //
-      if (CG_gen_callee_saved_regs_mask &&
-	  (PU_Has_Calls || CG_localize_tns)) {
-	ISA_REGISTER_CLASS cl = TN_register_class(RA_TN);
-	Callee_Saved_Regs_Mask[cl] = 
-	  REGISTER_SET_Union1(Callee_Saved_Regs_Mask[cl], TN_register(RA_TN));
-      }
-      else {
+      /*
+       * RA_TN must be saved as a callee saved TN whatever is actual classification.
+       */
+      if (!CG_gen_callee_saved_regs_mask) {
         Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
         Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -680,8 +663,6 @@ Can_Be_Tail_Call (
   PLOC ploc;
   TY_IDX func_type;
   ST *st;
-  INT addr_opnd;
-  OP *addr_op;
   ANNOTATION *ant;
   CALLINFO *call_info;
   ST *call_st;
@@ -728,7 +709,6 @@ Can_Be_Tail_Call (
    * the relocation for the symbol so it is treated as a data reference,
    * and no stub is generated.
    */
-  addr_op = NULL;
   if (   call_st && !Is_Caller_Save_GP
       && (Gen_PIC_Call_Shared || Gen_PIC_Shared)
       && ST_visible_outside_dso(pu_st))
@@ -736,6 +716,8 @@ Can_Be_Tail_Call (
     if (!ST_visible_outside_dso(call_st)) return NULL;
 
     if (ST_is_preemptible(call_st)) {
+      // [SC] Original open64 has code here to cope with some cases
+      // of preemptible calls.
       return NULL;
     }
   }
@@ -818,50 +800,85 @@ Can_Be_Tail_Call (
 #endif
 
   FOR_ALL_BB_OPs_FWD(exit_bb, op) {
-    if (OP_copy(op)) {
-      TN *src = OP_opnd(op, OP_Copy_Operand(op));
-#ifdef TARG_ST
-      TN *dst = OP_result(op, OP_Copy_Result(op));
-#else
-      TN *dst = OP_result(op,0);
-#endif
-      BOOL src_is_fval = Is_Function_Value(src);
-      BOOL dst_is_fval = Is_Function_Value(dst);
+    // [SC] 20070201: codex bug #23066.  Loop body rewritten to handle
+    // compose and extract ops.
+    if (OP_copy(op) || OP_widemove(op)) {
+      TN *src = OP_opnd(op, OP_copy(op) ? OP_Copy_Operand(op) : 0);
+      TN *dst = OP_result(op, OP_copy(op) ? OP_Copy_Result(op) : 0);
 
-      if (!src_is_fval) {
+      if (! Is_Function_Value(src)) {
 	src = (TN *) hTN_MAP_Get(fvals, src);
-	if (src) src_is_fval = TRUE;
       }
-
-      if (dst_is_fval) {
-	if (   src_is_fval
-	    && (TN_register_and_class(src) == TN_register_and_class(dst))
-	) continue;
-      } else if (src_is_fval) {
+      // Here src is either a function value TN, or NULL.
+      if (!src) goto failure;
+      if (Is_Function_Value(dst)) {
+	if (TN_register_and_class(src) != TN_register_and_class(dst))
+	  goto failure;
+      } else {
 	hTN_MAP_Set(fvals, dst, src);
-	continue;
       }
     }
-
-    MEM_POOL_Pop(&MEM_local_pool);
-    return NULL;
+    else if (OP_compose(op)) {
+      TN *src[ISA_OPERAND_max_operands];
+      BOOL all_src_fvals = TRUE;
+      INT opnd;
+      for (opnd = 0; opnd < OP_opnds(op); opnd++) {
+	src[opnd] = OP_opnd(op,opnd);
+	if (! Is_Function_Value(src[opnd])) {
+	  src[opnd] = (TN *) hTN_MAP_Get(fvals, src[opnd]);
+	}
+      }
+      // All sources must map to consecutive registers
+      if (! src[0]) goto failure;
+      REGISTER next_reg = TN_register(src[0]);
+      for (opnd = 0; opnd < OP_opnds(op); opnd++) {
+	if (!src[opnd]
+	    || TN_register(src[opnd]) != next_reg) {
+	  goto failure;
+	}
+	next_reg += TN_nhardregs(src[opnd]);
+      }
+      TN *dst = OP_result(op,0);
+      if (Is_Function_Value(dst)) {
+	if (TN_register_and_class(src[0]) != TN_register_and_class(dst))
+	  goto failure;
+      } else {
+	hTN_MAP_Set(fvals, dst, src[0]);
+      }
+    } else if (OP_extract(op)) {
+      TN *dst[ISA_OPERAND_max_results];
+      TN *src = OP_opnd(op, 0);
+      if (! Is_Function_Value(src)) {
+	src = (TN *) hTN_MAP_Get(fvals, src);
+      }
+      if (!src) goto failure;
+      REGISTER next_reg = TN_register(src);
+      for (INT res = 0; res < OP_results(op); res++) {
+	TN *dst = OP_result(op,res);
+	if (Is_Function_Value(dst)) {
+	  if (TN_register(dst) != next_reg) {
+	    goto failure;
+	  } else {
+	    next_reg += TN_nhardregs(dst);
+	  }
+	} else {
+	  // extract must write to function results, else we
+	  // give up.  We could support it with more
+	  // effort, but we would have to track the individual
+	  // register elements of dst.
+	  goto failure;
+	}
+      }
+    } else
+      goto failure;
   }
   MEM_POOL_Pop(&MEM_local_pool);
 
-#ifdef TARG_ST200
-  /* If we had preemptible symbol for the callee, then change
-   * its relocation so we avoid generating a stub for it.
-   */
-  if (addr_op) {
-    TN *old_tn = OP_opnd(addr_op, addr_opnd);
-    TN *new_tn = Dup_TN(old_tn);
-    Set_TN_is_reloc_got_disp(new_tn);
-    Set_OP_opnd(addr_op, addr_opnd, new_tn);
-    Set_ST_is_weak_symbol(call_st);
-  }
-#endif
-
   return pred;
+
+ failure:
+  MEM_POOL_Pop(&MEM_local_pool);
+  return NULL;
 }
 
 /* ====================================================================
@@ -1238,8 +1255,6 @@ Generate_Exit (
 #ifdef TARG_ST
   // FdF 20041105: No need for an epilog in case of a "noreturn" call.
   if (BB_call(bb) &&
-      /* (cbr) need return for unwinder */
-      !PU_has_region(Get_Current_PU()) &&
       WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO)))))
     return;
 #endif
@@ -1327,13 +1342,10 @@ Generate_Exit (
     else {
 #ifdef TARG_ST
       //
-      // If we're generating the push/pop mask and need to save
-      // the RA_TN, do not make a move
-      //
-      if (CG_gen_callee_saved_regs_mask && 
-	  (PU_Has_Calls || CG_localize_tns)) {
-      }
-      else {
+      /*
+       * RA_TN must be saved as a callee saved TN whatever is actual classification.
+       */
+      if (!CG_gen_callee_saved_regs_mask) {
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -2089,8 +2101,39 @@ Adjust_Entry (
    */
   ENTRYINFO_sp_adj(ent_info) = ent_adj;
 
+#ifdef TARG_ST
+  if ( Trace_EE ) {
+#pragma mips_frequency_hint NEVER
+    fprintf(TFile, "\nEntry sequence before EETARG_Fixup_Entry_Code:\n");
+    OP *op, *sp_op = ENTRYINFO_sp_adj(ent_info);
+    if (sp_op == NULL) fprintf(TFile, "\n--- empty sp_adjust sequence\n");
+    else {
+      BOOL emit = TRUE;
+      FOR_ALL_BB_OPs_FWD(bb, op) {
+	if (emit) Print_OP_No_SrcLine(op);
+	if (sp_op == op) emit = FALSE;
+      }
+    }
+  }
+  
   // possible do target-dependent fixups
   EETARG_Fixup_Entry_Code (bb);
+
+  if ( Trace_EE ) {
+#pragma mips_frequency_hint NEVER
+    fprintf(TFile, "\nEntry sequence after EETARG_Fixup_Entry_Code:\n");
+    OP *op, *sp_op = ENTRYINFO_sp_adj(ent_info);
+    if (sp_op == NULL) fprintf(TFile, "\n--- empty sp_adjust sequence\n");
+    else {
+      BOOL emit = TRUE;
+      FOR_ALL_BB_OPs_FWD(bb, op) {
+	if (emit) Print_OP_No_SrcLine(op);
+	if (sp_op == op) emit = FALSE;
+      }
+    }
+  }
+#endif
+
 }
 
 
@@ -2463,11 +2506,53 @@ INT Cgdwarf_Num_Callee_Saved_Regs (void)
 #endif
 
 #ifdef TARG_ST
+/*
+ * Update callee saved registers usages.
+ */
+static void
+Compute_Callee_Saved_Registers(void)
+{
+  ISA_REGISTER_CLASS rc;
+  
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    Callee_Saved_Regs_Mask[rc] = REGISTER_SET_EMPTY_SET;
+  }
+  
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    /* Do not account for call clobbered at it may contain RA_TN for instance
+       that we want to ignore here as it is explicitly added below. */
+    BB_Modified_Registers(bb, Callee_Saved_Regs_Mask, TRUE /* self */);
+  }
+
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    REGISTER_SET potential_saved = REGISTER_CLASS_callee_saves(rc);
+    if (RA_TN != NULL && TN_register_class(RA_TN) == rc) {
+      potential_saved = REGISTER_SET_Union1(potential_saved, TN_register(RA_TN));
+    }
+    Callee_Saved_Regs_Mask[rc] = REGISTER_SET_Intersection (Callee_Saved_Regs_Mask[rc],
+							    potential_saved);
+  }
+  
+  /* Here we use this global flag to find out wether RA_TN needs saving or not.
+     We use this because:
+     - RA_TN ressource is not explicit and thus BB_Modified_Registers will not have it,
+     - tail call optimization will have set it to FALSE if there is no need to save it.
+  */
+  if ((PU_Has_Calls || CG_localize_tns) && RA_TN != NULL) {
+    rc = TN_register_class(RA_TN);
+    Callee_Saved_Regs_Mask[rc] = REGISTER_SET_Union1(Callee_Saved_Regs_Mask[rc], TN_register(RA_TN));
+  }
+}
+
 void
 Adjust_Stack_Frame ( 
   ST *pu 
 )
 {
+  /* In case of CG_gen_callee_saved_regs_mask, compute tha actual callee saved usage. */
+  if (CG_gen_callee_saved_regs_mask)
+    Compute_Callee_Saved_Registers();
+    
   EETARG_Fixup_Stack_Frame ();
 }
 #endif

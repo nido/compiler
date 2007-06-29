@@ -48,6 +48,7 @@
  * ====================================================================
  */
 
+#ifndef TARG_ST // [CL]
 #pragma weak Assign_alias_id
 #pragma weak Copy_alias_info
 #pragma weak Get_symbol_info_for_cvt_io
@@ -55,3 +56,4 @@
 #pragma weak Points_to_copy
 #pragma weak Valid_alias
 #pragma weak Aliased
+#endif

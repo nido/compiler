@@ -72,9 +72,22 @@ BOOL    VHO_Cselect_Opt                 = FALSE;
 BOOL    VHO_Iload_Opt                   = FALSE;
 BOOL    VHO_Istore_Opt                  = FALSE;
 BOOL    VHO_Call_Opt                    = FALSE;
+#ifdef TARG_ST
+/* Turn icall to call conversion inside vho_lower to FALSE by default,
+   because (1) the original implementation is buggy; and (2) we can now
+   do icall to call conversion inside ipa.
+*/
+BOOL    VHO_Icall_Devir			= FALSE;
+#endif  // KEY
 BOOL    VHO_Check_Tree                  = FALSE;
 BOOL    VHO_Single_Loop_Test            = FALSE;
 BOOL    VHO_Use_Do_While                = FALSE;
+#ifdef KEY
+/* enable misc. loop distribution and interchange at VHO lower time */
+BOOL    VHO_Enable_Misc_Loop_Transformation = FALSE;
+/* enable misc. loop fusion at VHO lower time */
+BOOL    VHO_Enable_Misc_Loop_Fusion = FALSE;
+#endif
 
 /* List of global variables to turn on and off various optimizations */
 
@@ -111,11 +124,21 @@ static OPTION_DESC Options_VHO[] = {
     TRUE, 0, 0,  &VHO_Istore_Opt,      NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "call_opt",           "call",
     TRUE, 0, 0,  &VHO_Call_Opt,      NULL },
+#ifdef KEY
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "icall_devir",          "icall",
+    TRUE, 0, 0,  &VHO_Icall_Devir,      NULL },
+#endif
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "check_tree",         "check_tree",
     TRUE, 0, 0,  &VHO_Check_Tree,      NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "single_loop_test",   "single_loop_test",
     TRUE, 0, 0,  &VHO_Single_Loop_Test,      NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "use_do_while",       "use_do_while",
     TRUE, 0, 0,  &VHO_Use_Do_While,      NULL },
+#ifdef KEY
+  { OVK_BOOL,   OV_INTERNAL,    TRUE, "misc_loop_transformation", "",
+    0, 0, 0,    &VHO_Enable_Misc_Loop_Transformation, NULL },
+  { OVK_BOOL,   OV_INTERNAL,    TRUE, "misc_loop_fusion", "",
+    0, 0, 0,    &VHO_Enable_Misc_Loop_Fusion, NULL },
+#endif
   { OVK_COUNT }		/* List terminator -- must be last */
 };

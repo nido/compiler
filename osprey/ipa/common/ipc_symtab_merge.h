@@ -81,7 +81,9 @@ enum AUX_ST_FLAG
 extern "C" void
 Sync_symbol_attributes (ST_IDX st_idx, UINT32 sym_attr, BOOL is_weak,
 			UINT32 export_class);
+#ifndef TARG_ST
 #pragma weak Sync_symbol_attributes
+#endif
 
 #ifdef TARG_ST
 extern "C" BOOL symbol_comdat (ST_IDX st_idx); // [CL] support for comdat
@@ -90,7 +92,9 @@ extern "C" BOOL symbol_linkonce (ST_IDX st_idx); // [CL] support for linkonce
 
 extern "C" void
 Linker_mark_not_gp_rel (ST_IDX st_idx);
+#ifndef TARG_ST
 #pragma weak Linker_mark_not_gp_rel
+#endif
 
 #endif 
 

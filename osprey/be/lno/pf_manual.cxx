@@ -298,6 +298,7 @@ Set_Pref_Node(PF_POINTER* pf_info, WN *ref_wn, WN* pf_wn, PF_LOOPNODE *loopnode)
 
   UINT32 flag = 0;
   PF_SET_READ(flag);
+  Is_True(WN_pf_manual(pf_wn), ("Manual prefetch not marked manual"));
   PF_SET_MANUAL(flag);
   PF_SET_CONFIDENCE (flag, 3);
 
@@ -486,6 +487,7 @@ void SINGLE_LOOP::Insert_Pref (WN* pragma_wn, WN* pf_wn) {
            dump_tree (pf_wn));
 
   /* make the prefetch legal */
+  Is_True(WN_pf_manual(pf_wn), ("Manual prefetch not marked manual"));
   WN_pf_set_manual(pf_wn);
   WN_pf_set_confidence(pf_wn, 3);
 

@@ -107,7 +107,7 @@ MAP::Hash(POINTER k)
 {
   mUINT32      retval;
 
-  retval = ((mINT64)k) % size;
+  retval = ((UINT64)k) % size;
   return retval;
 }
 

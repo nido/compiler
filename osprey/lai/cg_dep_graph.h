@@ -667,7 +667,7 @@ inline BOOL OP_like_barrier(OP *op)
 
 inline BOOL OP_like_store(OP *op)
 {
-  BOOL like_store = (OP_store(op) || CGTARG_Is_OP_Intrinsic(op) ||
+  BOOL like_store = (OP_store(op) || OP_Is_Intrinsic(op) ||
 #ifdef TARG_ST
 		     OP_like_barrier(op));
 #else

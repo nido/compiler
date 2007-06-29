@@ -1152,7 +1152,9 @@ void DEPV_COMPUTE::Compute(DEPV_LIST *result,WN *ref1, ARA_REF *ara_ref1,
     debug = 0;
   }
   if (debug >= 2) {
-    fprintf(TFile,"Dependence analysis comparing two array references\n");
+    fprintf(TFile,"Dependence analysis comparing two array references: common_nest = %d, dv_dim = %d\n", common_nest, dv_dim);
+    fprintf(TFile, "ref1: "); Dump_WN(ref1,TFile,TRUE,0,0);
+    fprintf(TFile, "ref2: "); Dump_WN(ref2,TFile,TRUE,0,0);
   }
 
 

@@ -172,25 +172,38 @@ static BOOL clone_incr_overridden = FALSE;
 static BOOL clone_min_incr_overridden = FALSE;
 static BOOL clone_max_incr_overridden = FALSE;
 static BOOL CFLOW_Enable_Clone_overridden = FALSE;
+#ifdef TARG_ST
+static BOOL CFLOW_Enable_Favor_Branches_Condition_overridden = FALSE;
+#endif
 
 static BOOL CG_enable_ssa_overridden = FALSE;
 static BOOL CG_enable_select_overridden = FALSE;
+static BOOL CG_enable_range_propagation_overridden = FALSE;
+static BOOL CG_range_recompute_limit_overridden = FALSE;
 static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 static BOOL CG_LOOP_unroll_multi_bb_overridden = FALSE;
 static BOOL IPFEC_Enable_LICM_overridden = FALSE;
+static BOOL CG_enable_cbpo_overriden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
-static BOOL CG_LAO_schedkind_overridden = FALSE;
-static BOOL CG_LAO_allockind_overridden = FALSE;
 static BOOL CG_LAO_regiontype_overridden = FALSE;
+static BOOL CG_LAO_conversion_overridden = FALSE;
+static BOOL CG_LAO_predication_overridden = FALSE;
+static BOOL CG_LAO_scheduling_overridden = FALSE;
+static BOOL CG_LAO_allocation_overridden = FALSE;
+static BOOL CG_LAO_formulation_overridden = FALSE;
+static BOOL CG_LAO_preloading_overridden = FALSE;
+static BOOL CG_LAO_l1missextra_overridden = FALSE;
 static BOOL CG_LAO_compensation_overridden = FALSE;
 static BOOL CG_LAO_speculation_overridden = FALSE;
 static BOOL CG_LAO_relaxation_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
 static BOOL CG_LAO_renaming_overridden = FALSE;
-static BOOL CG_LAO_loopdep_overridden = FALSE;
+static BOOL CG_LAO_boosting_overridden = FALSE;
+static BOOL CG_LAO_aliasing_overridden = FALSE;
 static BOOL CG_LAO_prepadding_overridden = FALSE;
 static BOOL CG_LAO_postpadding_overridden = FALSE;
+static BOOL CG_LAO_overrun_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
@@ -199,7 +212,7 @@ static BOOL CG_gen_callee_saved_regs_mask_overriden = FALSE;
 #ifdef TARG_ST200
 BOOL CG_NOPs_to_GOTO = FALSE;
 static BOOL CG_NOPs_to_GOTO_overridden = FALSE;
-BOOL CG_nop_insertion_directives = FALSE;
+BOOL CG_nop_insertion_directives = TRUE;
 #endif
 
 #ifdef TARG_ST
@@ -398,6 +411,18 @@ static OPTION_DESC Options_GRA[] = {
     0, 0, 0,    &GRA_spill_to_caller_save, NULL,
     "Use interprocedural information during register allocation",
   },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"preference_subclass", "",
+    0, 0, 0,    &GRA_preference_subclass, NULL,
+    "Preference to subclass members",
+  },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"use_subclass_register_request", "",
+    0, 0, 0,    &GRA_use_subclass_register_request, NULL,
+    "Use subclass information in the LRA register request",
+  },
+  { OVK_NAME,   OV_INTERNAL, TRUE,"local_spill_multiplier", "",
+    0, 0, 0,	&GRA_local_spill_multiplier_string, NULL,
+    "Multiplier for GRA estimate of cost of spilling a local live range [Default 1.0]"
+  },    
 #endif
   { OVK_COUNT }		/* List terminator -- must be last */
 };
@@ -406,20 +431,6 @@ static OPTION_DESC Options_GRA[] = {
 static OPTION_DESC Options_CG[] = {
 
   // Generic CG options.
-
-#ifdef BCO_ENABLED /* Thierry */
-  /* Thierry */
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "emit_bb_freqs", "",
-    0, 0, 0,	&CG_emit_bb_freqs, NULL, "Emit .profile_info with basic block frequncies (estimated or feedback)" },
-
-#endif /* BCO_Enabled Thierry */
-
-#ifdef TARG_ST /* [JV] */
-  
-  { OVK_BOOL,	OV_INTERNAL, FALSE, "use_push_pop", "",
-    0, 0, 0,	&CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden, "Use push/pop instructions for callee saved registers. If disabled use spill code." },
-
-#endif
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_bad_freqs", "",
     0, 0, 0,	&CG_warn_bad_freqs, NULL },
@@ -441,102 +452,46 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_skip_local_loop, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_swp", "",
     0, 0, 0,	&CG_skip_local_swp, NULL },
-  /*
   { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_ebo", "",
     0, 0, 0,	&CG_skip_local_ebo, NULL },
-  */
   { OVK_BOOL,	OV_INTERNAL, TRUE, "skip_local_sched", "",
     0, 0, 0,	&CG_skip_local_sched, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "optimization_level", "",
     0, 0, MAX_OPT_LEVEL,
                 &CG_opt_level, &cg_opt_level_overridden },
 
-  { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
-    CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, &CG_split_BB_length_overridden,
-    "Restrict BB length by splitting longer BBs" },
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
-    0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
-
-  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
-    1, 1, 3, &CG_ssa_algorithm, NULL,
-    "Specify method for translating out of the SSA" },
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_if_convert", "",
-    0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
-    "Enable if conversion using select op"},
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
-    0, 0, 0,	&CG_select_allow_dup, NULL,
-    "Allow basic blocks duplication for select if conversion"},
-
-  { OVK_INT32,	OV_INTERNAL, TRUE, "select_spec_loads", "",
-    0, 0, 2,	&CG_select_spec_loads, NULL,
-    "Allow load speculation for select if conversion"},
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_stores", "",
-    0, 0, 0,	&CG_select_spec_stores, NULL,
-    "Allow store speculation using black holes stack slots"},
-
-  { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
-    0, 0, 0,	&CG_select_factor, NULL,
-    "Extra gain in cycles for flattening a branch"},
-
-#ifdef TARG_ST
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimizations", "",
-    0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_schedkind", "",
-    2, 0, 3,	&CG_LAO_schedkind, &CG_LAO_schedkind_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_allockind", "",
-    2, 0, 3,	&CG_LAO_allockind, &CG_LAO_allockind_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
-    1, 0, 3,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_compensation", "",
-    0, 0, 3,	&CG_LAO_compensation, &CG_LAO_compensation_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
-    2, 0, 3,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_relaxation", "",
-    2, 0, 3,	&CG_LAO_relaxation, &CG_LAO_relaxation_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
-    2, 0, 3,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
-    2, 0, 2,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_loopdep", "",
-    1, 0, 3,	&CG_LAO_loopdep, &CG_LAO_loopdep_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_prepadding", "",
-    0, 0, 65536,	&CG_LAO_prepadding, &CG_LAO_prepadding_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_postpadding", "",
-    0, 0, 65536,	&CG_LAO_postpadding, &CG_LAO_postpadding_overridden },
-#endif
-
-#ifdef CGG_ENABLED
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "cgg_opt", "",
-    0, 0, 0,	&CG_enable_cgg, NULL },
-
-  { OVK_INT32,  OV_INTERNAL, TRUE, "cgg_level", "",
-    0, 0, 2, &CG_cgg_level, NULL,
-    "Specify optimization level for the code selector" },
-#endif
-
   // EBO options:
-
   { OVK_BOOL,	OV_INTERNAL, TRUE, "peephole_optimize", "",
     0, 0, 0,	&CG_enable_peephole, &Enable_CG_Peephole_overridden },
-
+  { OVK_INT32,  OV_INTERNAL, TRUE,"ebo_level", "ebo",
+    0, INT32_MIN, INT32_MAX, &EBO_Opt_Level, &EBO_Opt_Level_overridden },
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "create_madds", "create_madd",
     0, 0, 0,  &CG_create_madds, NULL },
 
   // CG Dependence Graph related options.
 
-  // CGPREP options.
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "enable_feedback", "",
-    0, 0, 0,	&CG_enable_feedback, NULL },
-
-  // Cross Iteration Loop Optimization options.
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ignore_lno", "",
+    0, 0, 0,	&CG_DEP_Ignore_LNO, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ignore_wopt", "",
+    0, 0, 0,	&CG_DEP_Ignore_WOPT, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "addr_analysis", "",
+    0, 0, 0,	&CG_DEP_Addr_Analysis, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "verify_mem_deps", "",
+    0, 0, 0,	&CG_DEP_Verify_Mem_Deps, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "add_alloca_arcs", "",
+    0, 0, 0,	&CG_DEP_Add_Alloca_Arcs, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "relax_xfer_depndnce", "",
+    0, 0, 0,	&CG_DEP_Relax_Xfer_Dependence, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "adjust_ooo_latency", "adjust_ooo_latency",
+    0, 0, 0,	&CG_DEP_Adjust_OOO_Latency, NULL },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "prune_mem", "",
+    0, 0, INT32_MAX, &CG_DEP_Mem_Arc_Pruning,
+    &CG_DEP_Mem_Arc_Pruning_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "prune_depndnce", "",
+    0, 0, 0,	&CG_DEP_Prune_Dependence, NULL },
 
   // Prefetching and load latency options.
-
+ 
   { OVK_BOOL,	OV_INTERNAL, TRUE,"prefetch", "",
     0, 0, 0, &CG_enable_prefetch, &CG_enable_prefetch_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"z_conf_prefetch", "",
@@ -569,6 +524,10 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CG_z_conf_L2_ld_latency, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE, "ld_latency", "",
     0, 0, INT32_MAX, &CG_ld_latency, NULL },
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_prefetch_padding", "",
+    1, 0, 0, &CG_warn_prefetch_padding, NULL },
+#endif
 
   // CGLOOP options.
 
@@ -624,17 +583,18 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
-    0xa7, 0, 255,	&CG_LOOP_load_store_packing, NULL },
+    0x7B, 0, 0x2FF,	&CG_LOOP_load_store_packing, NULL },
   { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
     8, 0, 8,	&CG_LOOP_stream_align, NULL },
-  { OVK_BOOL, OV_INTERNAL,	TRUE, "packing_unaligned", "", 
-    0, 0, 0,	&CG_LOOP_unaligned_packing, NULL },
-  { OVK_BOOL, OV_INTERNAL,	FALSE, "cbpo_optimize_load_imm", "", 
+  { OVK_BOOL, OV_INTERNAL,	TRUE, "cbpo_opt", "cbpo", 
+    0, 0, 0, &CG_enable_cbpo, &CG_enable_cbpo_overriden,
+    "activate common base pointer optimization" },
+  { OVK_BOOL, OV_INTERNAL,	TRUE, "cbpo_optimize_load_imm", NULL, 
     0, 0, 0,	&CG_cbpo_optimize_load_imm,
     &CG_cbpo_optimize_load_imm_overridden,
     "activate commonalization of load immediate in common base pointer "
     "optimization" },
-  { OVK_INT32, OV_INTERNAL,	FALSE, "cbpo_ratio", "", 
+  { OVK_INT32, OV_INTERNAL,	TRUE, "cbpo_ratio", NULL, 
     50, 0, INT32_MAX,	&CG_cbpo_ratio, &CG_cbpo_ratio_overridden,
     "set minmum frequency ratio to allow commonalization in common base "
     "pointer optimization. The ratio is used in the following formula "
@@ -642,7 +602,7 @@ static OPTION_DESC Options_CG[] = {
     " value will be divided by 100.0 to allow more precise setting."
     " E.g. for 50 it means that the optimization will be done if "
     "sum(freq(sourcesBB) / freq(dominatorBB) > 0.5" },
-  { OVK_INT32, OV_INTERNAL,	FALSE, "cbpo_block_method", "", 
+  { OVK_INT32, OV_INTERNAL,	TRUE, "cbpo_block_method", NULL, 
     0, 0, 3,	&CG_cbpo_block_method, &CG_cbpo_block_method_overridden,
     "Specify what method should be used to block common base pointer "
     "optimization. Possible values are: 0 (none), 1 (local), 2 (global) or "
@@ -656,13 +616,14 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
     TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
 #endif
+
 #ifdef TARG_ST200
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop2goto", "",
     TRUE, 0, 0, &CG_NOPs_to_GOTO, &CG_NOPs_to_GOTO_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "nop_insertion_directives", "",
     TRUE, 0, 0, &CG_nop_insertion_directives, NULL,
     "control emission of assembler nop insertion directives" },
-#endif
+#endif /* TARG_ST200 */
 
   // Cross Iteration Loop Optimization options.
 
@@ -679,6 +640,10 @@ static OPTION_DESC Options_CG[] = {
 
   // Control flow optimizations (CFLOW) options.
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "unique_exit", "",
+    0, 0, 0,	&CG_unique_exit, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "tail_call", "",
+    0, 0, 0,	&CG_tail_call, &CG_tail_call_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_before_cgprep", NULL,
     0, 0, 0, &CFLOW_opt_before_cgprep, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_after_cgprep", "cflow_after_cgprep",
@@ -713,12 +678,11 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CFLOW_clone_max_incr, &clone_max_incr_overridden },
   { OVK_NAME,	OV_INTERNAL, TRUE,"cflow_cold_threshold", "",
     0, 0, 0, &CFLOW_cold_threshold, NULL },
-
-
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "unique_exit", "",
-    0, 0, 0,	&CG_unique_exit, NULL },
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "tail_call", "",
-    0, 0, 0,	&CG_tail_call, &CG_tail_call_overridden },
+#ifdef TARG_ST
+  // [CL]
+  { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_favor_branches_condition", "",
+    0, 0, 0, &CFLOW_Enable_Favor_Branches_Condition, &CFLOW_Enable_Favor_Branches_Condition_overridden },
+#endif
 
   // Frequency heuristic/feedback options.
 
@@ -756,6 +720,21 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"float_div_by_const", "",
     0, 0, 0, &CGEXP_opt_float_div_by_const, NULL },
 
+#ifndef TARG_ST
+  { OVK_NAME,	OV_INTERNAL, TRUE,"lfhint_L1", "",
+    0, 0, 0, &CGEXP_lfhint_L1, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"lfhint_L2", "",
+    0, 0, 0, &CGEXP_lfhint_L2, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"ldhint_L1", "",
+    0, 0, 0, &CGEXP_ldhint_L1, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"ldhint_L2", "",
+    0, 0, 0, &CGEXP_ldhint_L2, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"sthint_L1", "",
+    0, 0, 0, &CGEXP_sthint_L1, NULL },
+  { OVK_NAME,	OV_INTERNAL, TRUE,"sthint_L2", "",
+    0, 0, 0, &CGEXP_sthint_L2, NULL },
+#endif
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "localize", "localize",
     0, 0, 0, &CG_localize_tns, &CG_localize_tns_Set},
   { OVK_BOOL,	OV_INTERNAL, TRUE, "localize_using_stacked_regs", "localize_using_stack",
@@ -776,7 +755,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_merge_extract", "",
     0, 0, 0, &LRA_merge_extract, NULL,
     "allocate extract sources early in local register allocation" },
-#endif
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"lra_resched_check", "",
+    0, 0, 0, &LRA_resched_check, NULL,
+    "check that the LRA rescheduling reduces register pressure" },
+#endif /* TARG_ST (LRA) */
 
   // Global Code Motion (GCM) options.
 
@@ -823,15 +805,18 @@ static OPTION_DESC Options_CG[] = {
 
   // Local Scheduling (LOCS) and HyperBlock Scheduling (HBS) options.
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE,"fill_delay_slots", "fill_delay",
-    0, 0, 0, &Enable_Fill_Delay_Slots, NULL },
-
   { OVK_BOOL,	OV_INTERNAL, TRUE,"local_scheduler", "local_sched",
     0, 0, 0, &LOCS_Enable_Scheduling, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"pre_local_scheduler", "pre_local_sched",
     0, 0, 0, &LOCS_PRE_Enable_Scheduling, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"post_local_scheduler", "post_local_sched",
     0, 0, 0, &LOCS_POST_Enable_Scheduling, NULL },
+#ifndef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"branch_likely", "branch_l",
+    0, 0, 0, &CGTARG_Enable_Brlikely, NULL },
+#endif
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"fill_delay_slots", "fill_delay",
+    0, 0, 0, &Enable_Fill_Delay_Slots, NULL },
   { OVK_NAME,   OV_INTERNAL, TRUE,"branch_taken_prob", "",
     0, 0, 0,	&CGTARG_Branch_Taken_Prob,
 		&CGTARG_Branch_Taken_Prob_overridden},
@@ -847,7 +832,7 @@ static OPTION_DESC Options_CG[] = {
   // Turns of all scheduling (LOCS, HBS, GCM) for triaging
   { OVK_BOOL,	OV_INTERNAL, TRUE,"all_scheduler", "all_sched",
     0, 0, 0, &IGLS_Enable_All_Scheduling, NULL },
-
+  
   { OVK_INT32,	OV_INTERNAL, TRUE,"post_scheduler", "post_sched",
     2, 0, 3, &LOCS_POST_Scheduling, &LOCS_POST_Scheduling_overriden },
 
@@ -932,11 +917,6 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE, "loop_force_ifc", "",
     0, 0, 2,    &CG_LOOP_force_ifc, NULL },
 
-  // EBO Options
-
-  { OVK_INT32,  OV_INTERNAL, TRUE,"ebo_level", "ebo",
-    0, INT32_MIN, INT32_MAX, &EBO_Opt_Level, &EBO_Opt_Level_overridden },
-
   // Emit options
   { OVK_INT32,	OV_INTERNAL, TRUE,"longbranch_limit", "",
     DEFAULT_LONG_BRANCH_LIMIT, 0, INT32_MAX, &EMIT_Long_Branch_Limit, NULL },
@@ -968,23 +948,27 @@ static OPTION_DESC Options_CG[] = {
     0,0,0,      &GRA_LIVE_Predicate_Aware, NULL,
     "Allow GRA_LIVE to be predicate-aware [Default ON]"
   },
-
+  { OVK_BOOL,	OV_INTERNAL, TRUE,  "pqs_disable", "",
+    0,0,0,      &PQS_disabled, NULL,
+    "Force PQS to be disabled [Default OFF]"
+  },
   { OVK_INT32,	OV_INTERNAL, TRUE,"branch_taken_penalty", "",
     0, 0, INT32_MAX, &CGTARG_branch_taken_penalty,
     &CGTARG_branch_taken_penalty_overridden },
-
-#ifdef TARG_ST
-  { OVK_INT32,	OV_INTERNAL, TRUE,"max_issue_width", "",
-    0, 0, INT32_MAX, &CGTARG_max_issue_width, &CGTARG_max_issue_width_overriden },
-#endif
-
+  { OVK_BOOL,   OV_INTERNAL, TRUE, "sched_est_calc_dep_graph", "",
+    0, 0, 0,    &CG_SCHED_EST_calc_dep_graph, NULL },
+  { OVK_BOOL,   OV_INTERNAL, TRUE, "sched_est_use_locs", "",
+    0, 0, 0,    &CG_SCHED_EST_use_locs, NULL },
+  { OVK_INT32,   OV_INTERNAL, TRUE, "sched_est_call_cost", "",
+    0, 0, INT32_MAX, &CG_SCHED_EST_call_cost, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "enable_feedback", "",
+    0, 0, 0,	&CG_enable_feedback, NULL },
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_branch", "mispredict",
     0, 0, INT32_MAX, &CG_branch_mispredict_penalty, NULL },
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_factor", "",
     0, 0, INT32_MAX, &CG_branch_mispredict_factor, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"enable_thr", "",
     0, 0, 0,	&CG_enable_thr, NULL },
-
   { OVK_BOOL,	OV_INTERNAL, TRUE,"reverse_if_conversion", "",
     0, 0, 0,	&CG_enable_reverse_if_conversion,
 	       	&CG_enable_reverse_if_conversion_overridden },
@@ -992,9 +976,157 @@ static OPTION_DESC Options_CG[] = {
     0, 0, INT32_MAX, &CG_maxinss, &CG_maxinss_overridden },
   { OVK_INT32,	OV_INTERNAL, TRUE,"body_blocks_count_max", "",
     0, 0, INT32_MAX, &CG_maxblocks, NULL },
+#ifndef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"spec_imul_idiv", "",
+    0, 0, 0, &CG_enable_spec_imul, 
+      &CG_enable_spec_imul_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"spec_idiv", "",
+    0, 0, 0, &CG_enable_spec_idiv, 
+	     &CG_enable_spec_idiv_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"spec_fdiv", "",
+    0, 0, 0, &CG_enable_spec_fdiv, 
+	     &CG_enable_spec_fdiv_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "spec_fsqrt", "",
+    0, 0, 0, &CG_enable_spec_fsqrt, 
+	     &CG_enable_spec_fsqrt_overridden },
+#endif
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"cond_defs", "cond_defs",
+    0, 0, 0, &CG_cond_defs_allowed, NULL },
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"rename", "",
+    0, 0, 0, &CG_enable_rename, NULL },
+
+#ifdef TARG_ST
+  // Misc TARG_ST part
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"GRA_rename", "",
+    0, 0, 0, &CG_enable_rename_after_GRA, NULL },
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
+    CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, &CG_split_BB_length_overridden,
+    "Restrict BB length by splitting longer BBs" },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"callee_reg_mask", "callee_reg_mask",
     0, 0, 0, &CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "use_push_pop", "",
+    0, 0, 0,	&CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden, "Use push/pop instructions for callee saved registers. If disabled use spill code." },
+  { OVK_INT32,	OV_INTERNAL, TRUE,"max_issue_width", "",
+    0, 0, INT32_MAX, &CGTARG_max_issue_width, &CGTARG_max_issue_width_overriden },
+#endif /* TARG_ST (Misc.) */
+
+
+#ifdef TARG_ST
+  // LAO TARG_ST part
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimizations", "",
+    0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
+    1, 0, 2,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_conversion", "",
+    0, 0, 127,	&CG_LAO_conversion, &CG_LAO_conversion_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_predication", "",
+    0, 0, 127,	&CG_LAO_predication, &CG_LAO_predication_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scheduling", "",
+    2, 0, 3,	&CG_LAO_scheduling, &CG_LAO_scheduling_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_allocation", "",
+    2, 0, 3,	&CG_LAO_allocation, &CG_LAO_allocation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_formulation", "",
+    0, 0, 65536,	&CG_LAO_formulation, &CG_LAO_formulation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_preloading", "",
+    0, 0, 65536,	&CG_LAO_preloading, &CG_LAO_preloading_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_l1missextra", "",
+    7, 0, 255,	&CG_LAO_l1missextra, &CG_LAO_l1missextra_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_compensation", "",
+    0, 0, 2,	&CG_LAO_compensation, &CG_LAO_compensation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
+    3, 0, 4,	&CG_LAO_speculation, &CG_LAO_speculation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_relaxation", "",
+    2, 0, 3,	&CG_LAO_relaxation, &CG_LAO_relaxation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
+    2, 0, 4,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
+    2, 0, 3,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_boosting", "",
+    0, 0, 2,	&CG_LAO_boosting, &CG_LAO_boosting_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_aliasing", "",
+    1, 0, 3,	&CG_LAO_aliasing, &CG_LAO_aliasing_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_prepadding", "",
+    0, 0, 65536,	&CG_LAO_prepadding, &CG_LAO_prepadding_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_postpadding", "",
+    0, 0, 65536,	&CG_LAO_postpadding, &CG_LAO_postpadding_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_overrun", "",
+    0, 0, 65536,	&CG_LAO_overrun, &CG_LAO_overrun_overridden },
+#endif /* TARG_ST (LAO) */
+
+#ifdef BCO_ENABLED
+  /* Cache Optimizer TARG_ST part. */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "emit_bb_freqs", "",
+    0, 0, 0,	&CG_emit_bb_freqs, NULL, "Emit .profile_info with basic block frequncies (estimated or feedback)" },
+  /* Cache Optimizer TARG_ST part. */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "emit_arcs", "",
+    0, 0, 0,	&CG_emit_bb_freqs_arcs, NULL, "Emit .profile_info_arc with basic block frequncies and arc frequencies (estimated or feedback)" },
+#endif /* BCO_ENABLED */
+
+#ifdef CGG_ENABLED
+  /* Code Generator Generator TARG_ST part. */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "cgg_opt", "",
+    0, 0, 0,	&CG_enable_cgg, NULL },
+
+  { OVK_INT32,  OV_INTERNAL, TRUE, "cgg_level", "",
+    0, 0, 2, &CG_cgg_level, NULL,
+    "Specify optimization level for the code selector" },
+#endif /* CGG_ENABLED */
+
+#ifdef TARG_ST
+  /* SSA related TARG_ST part. */
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
+    0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
+
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
+    1, 1, 3, &CG_ssa_algorithm, NULL,
+    "Specify method for translating out of the SSA" },
+
+  { OVK_BOOL,  OV_INTERNAL,	TRUE,	"ssa_remat", "",
+    0, 0, 0, &CG_ssa_rematerialization, NULL,
+    "Enable rematerialization information computation in SSA form" },
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_if_convert", "",
+    0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
+    "Enable if conversion using select op"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "range_propagation", "",
+    0, 0, 0,	&CG_enable_range_propagation, &CG_enable_range_propagation_overridden,
+    "Enable range analysis"},
+
+  { OVK_INT32,  OV_INTERNAL, TRUE, "range_recompute_limit", "",
+    2, 1, INT32_MAX, &CG_range_recompute_limit, &CG_range_recompute_limit_overridden,
+    "Limit on the number of times a value range is recomputed" },
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
+    0, 0, 0,	&CG_select_allow_dup, NULL,
+    "Allow basic blocks duplication for select if conversion"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_promote_mem", "",
+    0, 0, 0,	&CG_select_promote_mem, NULL,
+    "Promotion of base/offset conditional memory loads"},
+
+  { OVK_INT32,	OV_INTERNAL, TRUE, "select_spec_loads", "",
+    0, 0, 2,	&CG_select_spec_loads, NULL,
+    "Allow load speculation for select if conversion"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_stores", "",
+    0, 0, 0,	&CG_select_spec_stores, NULL,
+    "Allow store speculation using black holes stack slots"},
+
+  { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
+    0, 0, 0,	&CG_select_factor, NULL,
+    "Extra gain in cycles for flattening a branch"},
+
+#endif /* TARG_ST (SSA) */
+
+#ifdef TARG_ST
+  // [CL] force spill of return address (RA) so that
+  // unwinding/backtracing is still possible
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "save_return_address", "",
+    0, 0, 0,	&CG_save_return_address, NULL },
+
+#endif
 
   { OVK_COUNT }
 };
@@ -1200,9 +1332,12 @@ Configure_CG_Options(void)
   }
 
 #ifdef TARG_ST
+#ifdef LAO_ENABLED
+  // Activate Multi BB unroll only with cyclic scheduling
   if ((Opt_Level >= 2) && !CG_LOOP_unroll_multi_bb_overridden) {
     CG_LOOP_unroll_multi_bb = TRUE;
   }
+#endif
 
   if ((Opt_Level >= 2) && !IPFEC_Enable_LICM_overridden) {
     IPFEC_Enable_LICM = 2;
@@ -1260,6 +1395,11 @@ Configure_CG_Options(void)
   if (!Kernel_Code && !CG_tail_call_overridden && CG_opt_level >= 2) CG_tail_call = TRUE;
 #endif
   if (Kernel_Code && !CG_tail_call_overridden) CG_tail_call = FALSE;
+
+#ifdef TARG_ST
+  // [CL] disable tail call optim if safe unwinding is requested
+  if (CG_save_return_address) CG_tail_call = FALSE;
+#endif
 
   if (Kernel_Code && !GCM_Speculative_Ptr_Deref_Set)
     GCM_Eager_Ptr_Deref = FALSE;
@@ -1323,11 +1463,32 @@ Configure_CG_Options(void)
     CG_enable_select = FALSE;
   }
 
+  // [SC] range analysis
+  if (!CG_enable_range_propagation_overridden) {
+    CG_enable_range_propagation =  (CG_opt_level > 1) ? TRUE : FALSE;
+  }
+
+  if (CG_enable_range_propagation && !CG_enable_ssa) {
+    DevWarn("CG: Ignoring range_propagation=ON, need ssa");
+    CG_enable_range_propagation = FALSE;
+  }
+
+  // Enable CBPO at > -O1
+  if (!CG_enable_cbpo_overriden) {
+    CG_enable_cbpo =  (CG_opt_level > 1) ? TRUE : FALSE;
+  }
+
+  if (CG_enable_cbpo && !CG_enable_ssa) {
+    DevWarn("CG: Ignoring enable_cbpo=ON, need ssa");
+    CG_enable_cbpo = FALSE;
+  }
+
   /* If not overidden, set LAO_optimization according to Opt_Level. */
 
 #ifdef LAO_ENABLED
   if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
-    CG_LAO_optimizations = OptimizerFlag_PreSched+OptimizerFlag_PostSched;
+    CG_LAO_optimizations = OptimizeActivation_PrePass
+                         + OptimizeActivation_PostPass;
 
   // [FdF]: Ignore LAO options if opt_level < 2
   
@@ -1384,6 +1545,14 @@ Configure_CG_Options(void)
   if (Enable_64_Bits_Ops && Opt_Level >= 2) {
     if (!CG_gen_callee_saved_regs_mask_overriden)
       CG_gen_callee_saved_regs_mask = TRUE;
+  }
+#endif
+
+#ifdef TARG_ST200
+  // CL: Favor branches condition to give more opportunities to LAO
+  // boosting
+  if (!CFLOW_Enable_Favor_Branches_Condition_overridden) {
+    CFLOW_Enable_Favor_Branches_Condition = FALSE;
   }
 #endif
 
@@ -1723,21 +1892,31 @@ CG_Init (void)
 
 #ifdef LAO_ENABLED
   if (CG_LAO_optimizations != 0) {
-    if (!CG_LAO_schedkind_overridden) CG_LAO_schedkind = 2;
-    if (!CG_LAO_allockind_overridden) CG_LAO_allockind = 2;
     if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
+    if (!CG_LAO_conversion_overridden) CG_LAO_conversion = 0;
+    if (!CG_LAO_predication_overridden) CG_LAO_predication = 0;
+    if (!CG_LAO_scheduling_overridden) CG_LAO_scheduling = 2;
+    if (!CG_LAO_allocation_overridden) CG_LAO_allocation = 2;
+    if (!CG_LAO_formulation_overridden) CG_LAO_formulation = 0;
+    if (!CG_LAO_preloading_overridden) CG_LAO_preloading = 0;
+    if (!CG_LAO_l1missextra_overridden) CG_LAO_l1missextra = 7;
     if (!CG_LAO_compensation_overridden) CG_LAO_compensation = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
-      else if (!Enable_Dismissible_Load) CG_LAO_speculation = 1;
-      else CG_LAO_speculation = 2;
+      else if (!Enable_Dismissible_Load) CG_LAO_speculation = 2;
+      else CG_LAO_speculation = 3;
     }
     if (!CG_LAO_relaxation_overridden) CG_LAO_relaxation = 2;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
-    if (!CG_LAO_renaming_overridden) CG_LAO_renaming = 2;
-    if (!CG_LAO_loopdep_overridden) CG_LAO_loopdep = 1;
+    if (!CG_LAO_renaming_overridden) {
+	if (CG_LOOP_unroll_times_max <= 1) CG_LAO_renaming = 1;
+	else CG_LAO_renaming = 2;
+    }
+    if (!CG_LAO_boosting_overridden) CG_LAO_boosting = 1;
+    if (!CG_LAO_aliasing_overridden) CG_LAO_aliasing = 1;
     if (!CG_LAO_prepadding_overridden) CG_LAO_prepadding = 0;
     if (!CG_LAO_postpadding_overridden) CG_LAO_postpadding = 0;
+    if (!CG_LAO_overrun_overridden) CG_LAO_overrun = 0;
     lao_init();
   }
 #endif

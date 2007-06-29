@@ -532,11 +532,23 @@ genrtl_for_stmt (t)
   if (NEW_FOR_SCOPE_P (t))
     genrtl_do_pushlevel ();
 
+  /* FdF 20070302: WFE_Stmt_Top should be a WN BLOCK. Remove the last
+     pragmas from the BLOCK, and insert them just before the loop
+     body. */
+#ifdef TARG_ST
+  void *p_pragmas = WFE_Save_Pragmas();
+#endif
+
   expand_stmt (FOR_INIT_STMT (t));
+
+#ifdef TARG_ST
+  WFE_Move_Pragmas(p_pragmas);
+#endif
 
   /* Expand the initialization.  */
   emit_nop ();
   emit_line_note (input_filename, lineno);
+
   expand_start_loop_continue_elsewhere (1); 
   genrtl_do_pushlevel ();
   cond = expand_cond (FOR_COND (t));

@@ -44,6 +44,7 @@ static const char rcs_id[] = "";
 #include "defs.h"
 #include "resource.h"
 #include "config.h"
+#include "config_TARG.h"
 #include "errors.h"
 #include "mempool.h"
 #include "cg.h"
@@ -94,7 +95,7 @@ LOOP_IVS::OPND_IV_cycle(INT op_idx, INT opnd_idx) {
   return Find_IV(op_idx, opnd_idx);
 }
 
-// For a TN used in an operation, returns theoffset from the value of
+// For a TN used in an operation, returns the offset from the value of
 // the IV at loop entry to this use.
 INT
 LOOP_IVS::OPND_IV_offset(INT op_idx, INT opnd_idx) {
@@ -671,7 +672,7 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
       break;
     }
 
-    if (OP_copy(def_base)) {
+    if (OP_Is_Copy(def_base)) {
       base_tn = OP_opnd(def_base, OP_Copy_Operand(def_base));
       opnd_tn = Zero_TN;
     }
@@ -736,7 +737,6 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
     else {
       base_alignment = ST_alignment(base_sym);
     }
-    //    fprintf(TFile, "alignment(=%d), ", base_alignment);
   }
 
   /* aligned_memop:
@@ -845,18 +845,17 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
   DefID_t IV_index = loop_ivs->OPND_IV_cycle(load_index, TOP_Find_Operand_Use(OP_code(load_op), OU_base));
   int IV_offset = loop_ivs->OPND_IV_offset(load_index, TOP_Find_Operand_Use(OP_code(load_op), OU_base));;
+  INT64 IV_step = loop_ivs->IV_step(IV_index);
   OP *IV_op = loop_ivs->Op(DEFID_idx(IV_index));
   TN *IV_addr_tn = OP_result(IV_op, DEFID_res(IV_index));
 
   /* Compute the aligned boolean */
-  INT64 IV_step = loop_ivs->IV_step(IV_index);
 
-  /* load_alignment:
+  /* aligned:
      -1 means no compile time alignment.
-     0 means load address % 8 is 0
-     4 means load address % 8 is 4
+      1 means load address % 8 == (step > 0 ? 0 : 4)
+      0 means load address % 8 == (step > 0 ? 4 : 0)
   */
-  INT load_alignment =  memop_table[0].alignment;
 
   /* span_iteration:
      -1 means that a ldp may span an iteration
@@ -890,12 +889,11 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
   TN *offset_tn = OP_opnd(load_op, offset_idx);
   TN *ldw_offset_tn = Adjust_Offset_TN(offset_tn, IV_offset);
 
-
   /* Generate a load operation in the loop prolog if the ldp may or
      will span an iteration. */
 
   OP *point = BB_last_op(CG_LOOP_prolog);
-  BOOL before = (point != NULL && OP_xfer(point));
+  BOOL before = (point != NULL) && OP_xfer(point);
   TN *t0 = NULL;
 
   if (span_iteration != 0) {
@@ -917,9 +915,12 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
   /* Get the offset from the value of IV_addr_tn at the entry of the
      loop to the effective address of the first load operation. */
   TN *aligned;
-  OPS ops = OPS_EMPTY;
-  switch (span_iteration) {
-  case -1: {
+  TN *ldp_addr_tn = NULL; // New base for the ldp instruction
+  TN *ldp_offset_tn = NULL; // New offset for the ldp instruction
+  INT adjust_offset = 0; // Adjustment to the original offset
+
+  if (span_iteration == -1) {
+    OPS ops = OPS_EMPTY;
     INT64 ldw_offset = memop_table[0].offset;
     Is_True((ldw_offset & 3) == 0, ("Misaligned ldw"));
     TN *breg_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 4);
@@ -929,46 +930,75 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
       Expand_Copy(aligned, NULL, breg_tn, &ops); // aligned = (breg_tn != 0)
     else
       Expand_Logical_Not(aligned, breg_tn, V_NONE, &ops); // aligned = (breg_tn == 0)
-    break;
+
+    /* Compute the addr expression at the loop entry. ldp_offset_tn is
+       the expression of the address at loop entry, to be defined
+       according to the aligned boolean. */
+
+    TN *adjust_addr_tn = Dup_TN(IV_addr_tn);
+    if (IV_step > 0) {
+      Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(4, 4), MTYPE_I4, &ops);
+      ldp_offset_tn = ldw_offset_tn;
+    }
+    else {
+      Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(-4, 4), MTYPE_I4, &ops);
+      ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, -4);
+    }
+
+    ldp_addr_tn = Dup_TN(IV_addr_tn);
+    Generate_Select_Or_Copy(ldp_addr_tn, aligned, IV_addr_tn, adjust_addr_tn, &ops);    
+    BB_Insert_Ops(CG_LOOP_prolog, point, &ops, before);
   }
-  case 0:
+
+  /*
+    When span_iteration is 0 or 1, the addr and offst of the original
+    operation will be used, to avoid creating a new induction
+    variable. The offset of the ldp operation will be adjusted from
+    the offset of the original operation.
+
+    span == 0, step > 0 ==> ldp @addr1(offst1)   or ldp @addr2(offst2-4)
+    span == 0, step < 0 ==> ldp @addr1(offst1-4) or ldp @addr2(offst2)
+    span == 1, step > 0 ==> ldp @addr1(offst1+4) or ldp @addr2(offst2)
+    span == 1, step < 0 ==> ldp @addr1(offst1-8) or ldp @addr2(offst2-4)
+
+    adjust_offset is computed for addr1(offst1), and will be
+    adjusted if the ldp operation uses addr2(offst2)
+  */
+
+  else if (span_iteration == 0) {
     aligned = Gen_Literal_TN(1, 4);
-    break;
-  case 1:
+    adjust_offset = (IV_step > 0) ? 0 : -4;
+  }
+
+  else { /* span_iteration == 1 */
     aligned = Gen_Literal_TN(0, 4);
-    break;
+    adjust_offset = (IV_step > 0) ? 4 : -8;
   }
 
-  /* Compute the addr expression at the loop entry. ldp_offset_tn is
-     the expression of the address at loop entry, to be defined
-     according to the aligned boolean. */
+  INT last_ldp_index = INT_MAX;
+  OP *last_ldp = NULL;
 
-  TN *ldp_addr_tn = Dup_TN(IV_addr_tn);
-  TN *ldp_offset_tn;
+  TN *last_tn = t0 ? Dup_TN(t0) : NULL;
+  TN *prev_tn = last_tn;
 
-  TN *adjust_addr_tn = Dup_TN(IV_addr_tn);
-  if (IV_step > 0) {
-    Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(4, 4), MTYPE_I4, &ops);
-    ldp_offset_tn = ldw_offset_tn;
-  }
-  else {
-    Expand_Add(adjust_addr_tn, IV_addr_tn, Gen_Literal_TN(-4, 4), MTYPE_I4, &ops);
-    ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, -4);
-  }
+  // Loop in reverse order because there is a dependence between a ldp
+  // and the next one, in case of unaligned accesses.
 
-  Generate_Select_Or_Copy(ldp_addr_tn, aligned, IV_addr_tn, adjust_addr_tn, &ops);
+  for (int candidate_index = memop_count-2; candidate_index >= 0; candidate_index -= 2) {
 
-  BB_Insert_Ops(CG_LOOP_prolog, point, &ops, before);
+    INT load1_index = memop_table[candidate_index].index;
+    INT load2_index = memop_table[candidate_index+1].index;
+    BOOL in_order = (load1_index < load2_index);
+    INT ldp_index = in_order ? load1_index : load2_index;
+    OP *ldp_point = loop_ivs->Op(ldp_index);;
 
-  // Now, update load operations by pairs
-  TN *prev_tn = t0;
+    // Also, the current ldp must be moved before the previous one in
+    // case the ldp is or may be unaligned.
 
-  for (int candidate_index = 0; candidate_index < memop_count; candidate_index += 2) {
-
-    OP *load1_op = loop_ivs->Op(memop_table[candidate_index].index);
-    OP *load2_op = loop_ivs->Op(memop_table[candidate_index+1].index);
-
-    // TBD: Also update the dep graph
+    if ((span_iteration != 0) && (ldp_index > last_ldp_index)) {
+      ldp_index = last_ldp_index;
+      ldp_point = last_ldp;
+    }
 
     // Replace the load operations in the loop.
 
@@ -984,14 +1014,49 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
     OPS ops_ldp = OPS_EMPTY;
 
+    // FdF 20061027: Resuse the induction variable of the ldw if span
+    // != -1
+    if (span_iteration != -1) {
+      INT load_index = in_order ? load1_index : load2_index;
+      OP *load_op = loop_ivs->Op(load_index);
+      base_idx = TOP_Find_Operand_Use(OP_code(load_op), OU_base);
+      offset_idx = TOP_Find_Operand_Use(OP_code(load_op), OU_offset);
+      ldp_addr_tn = OP_opnd(load_op, base_idx);
+      ldw_offset_tn = OP_opnd(load_op, offset_idx);
+      if (in_order)
+	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, adjust_offset);
+      else
+	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, adjust_offset + (IV_step > 0) ? -4 : 4);
+      // Also, if ldp is moved before load_op, take into account the
+      // modification of the IV between these two locations.
+      if ((span_iteration == 1) && (ldp_index == last_ldp_index)) {
+	INT IV_offset_load = loop_ivs->OPND_IV_offset(load_index, base_idx);
+	INT IV_offset_lastldp = loop_ivs->OPND_IV_offset(ldp_index, TOP_Find_Operand_Use(OP_code(loop_ivs->Op(ldp_index)), OU_base));
+	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, IV_offset_load-IV_offset_lastldp);
+      }
+    }
+
+    OP *load1_op = loop_ivs->Op(load1_index);
+    OP *load2_op = loop_ivs->Op(load2_index);
     TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
-    TN *t1 = Dup_TN(OP_result(load_op, 0));
-    TN *t2 = Dup_TN(OP_result(load_op, 0));
+
+    TN *t1 = Dup_TN(OP_result(load1_op, 0));
+    TN *t2;
+    if (span_iteration == 0) {
+      t2 = Dup_TN(OP_result(load2_op, 0));
+      prev_tn = NULL;
+    }
+    else {
+      t2 = prev_tn;
+      prev_tn = candidate_index ? Dup_TN(OP_result(load2_op, 0)) : t0;
+    }
 
     Expand_Load(OPC_I8I8LDID, t64,
 		ldp_addr_tn,
 		ldp_offset_tn,
 		&ops_ldp);
+
+
     OP_srcpos(OPS_first(&ops_ldp)) = OP_srcpos(load1_op);
 
     extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
@@ -1032,12 +1097,10 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
       }
     }
 
-    // Insert ops_ldp before load1 or load2, depending on which one
-    // dominates the other.
-    if (memop_table[candidate_index].index < memop_table[candidate_index+1].index)
-      BB_Insert_Ops(body, load1_op, &ops_ldp, TRUE);
-    else
-      BB_Insert_Ops(body, load2_op, &ops_ldp, TRUE);
+    // Insert ops_ldp after (ldp_index-1)
+    BB_Insert_Ops(body, ldp_point, &ops_ldp, TRUE);
+    last_ldp = OPS_first(&ops_ldp);
+    last_ldp_index = ldp_index;
 
     OPS ops_ldw1 = OPS_EMPTY;
     Generate_Select_Or_Copy(OP_result(load1_op, 0), aligned, t1, prev_tn, &ops_ldw1);
@@ -1061,7 +1124,7 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
      * tn2 = ldw ofst2($addr_tn)
      * by
      * tn2 = slct aligned, t2, t1
-     * t0 = t2
+     * prev_tn = t2
      */
 
     OPS ops_ldw2 = OPS_EMPTY;
@@ -1071,42 +1134,40 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
     BB_Insert_Ops(body, load2_op, &ops_ldw2, TRUE);
 
-    if ((candidate_index+2) < memop_count) {
-      if (span_iteration != 0)
-	prev_tn = t2;
-    }
-    else {
-      OPS ops_last = OPS_EMPTY;
-      if (span_iteration != 0)
-	Expand_Copy(t0, NULL, t2, &ops_last);
-
-      // Also, increment the ldp_base_addr
-      Expand_Add(ldp_addr_tn, ldp_addr_tn, Gen_Literal_TN(IV_step, 4), MTYPE_I4, &ops_last);
-
-      CG_LOOP_Init_OPS(&ops_last);
-      {
-	OP *new_op;
-	FOR_ALL_OPS_OPs_FWD(&ops_last, new_op) {
-	  for (int i = 0; i < OP_opnds(new_op); i++) {
-	    if (OP_opnd(new_op, i) == ldp_addr_tn)
-	      Set_OP_omega(new_op, i, 1);
-	  }
-	}
-      }
-
-      // Insert ops_last before load1 or load2, depending on which one
-      // is dominated by the other.
-      if (memop_table[candidate_index].index < memop_table[candidate_index+1].index)
-	BB_Insert_Ops(body, load2_op, &ops_last, TRUE);
-      else
-	BB_Insert_Ops(body, load1_op, &ops_last, TRUE);
-    }
-
     ldp_offset_tn = Adjust_Offset_TN(ldp_offset_tn, (IV_step > 0 ? 8 : -8));
+  }
 
-    BB_Remove_Op(body, load1_op);
-    BB_Remove_Op(body, load2_op);
+  // Then add at the end of the loop:
+  // IV_addr += step;
+  // t0 = last_tn;
 
+  OPS ops_last = OPS_EMPTY;
+  if (span_iteration != 0)
+    Expand_Copy(t0, NULL, last_tn, &ops_last);
+
+  if (span_iteration == -1) {
+    // Also, increment the ldp_base_addr
+    Expand_Add(ldp_addr_tn, ldp_addr_tn, Gen_Literal_TN(IV_step, 4), MTYPE_I4, &ops_last);
+  }
+
+  CG_LOOP_Init_OPS(&ops_last);
+  {
+    OP *new_op;
+    FOR_ALL_OPS_OPs_FWD(&ops_last, new_op) {
+      for (int i = 0; i < OP_opnds(new_op); i++) {
+	if (OP_opnd(new_op, i) == ldp_addr_tn)
+	  Set_OP_omega(new_op, i, 1);
+      }
+    }
+  }
+
+  point = BB_last_op(body);
+  before = (point != NULL) && OP_xfer(point);
+  BB_Insert_Ops(body, point, &ops_last, before);
+  
+  // And remove all loads operations
+  for (int candidate_index = 0; candidate_index < memop_count; candidate_index++) {
+    BB_Remove_Op(body, loop_ivs->Op(memop_table[candidate_index].index));
   }
 
   return TRUE;
@@ -1119,64 +1180,30 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
      a step > 0, the first store must be aligned on 0%8, and aligned on
      4%8 for a step < 0. */
 
+  if (Get_Trace(TP_TEMP, 0x20))
+    return FALSE;
+
   INT memop_count = memop_table[0].count;
 
   int store_index = memop_table[0].index;
   OP *store_op = loop_ivs->Op(store_index);
 
   DefID_t IV_index = loop_ivs->OPND_IV_cycle(store_index, TOP_Find_Operand_Use(OP_code(store_op), OU_base));
-  int IV_offset = loop_ivs->OPND_IV_offset(store_index, TOP_Find_Operand_Use(OP_code(store_op), OU_base));
-  OP *IV_op = loop_ivs->Op(DEFID_idx(IV_index));
-  TN *IV_addr_tn = OP_result(IV_op, DEFID_res(IV_index));
 
   Is_True(CG_LOOP_prolog != NULL, ("Incorrect loop: Missing loop prolog"));
   BB *body = OP_bb(store_op);
 
-  int offset_idx = TOP_Find_Operand_Use(OP_code(store_op), OU_offset);
-  TN *offset_tn = OP_opnd(store_op, offset_idx);
-
-  TN *stw_offset_tn = Adjust_Offset_TN(offset_tn, IV_offset);
-
   INT64 IV_step = loop_ivs->IV_step(IV_index);
-
-  /* store_alignment:
-     -1 means no compile time alignment.
-     0 means store address % 8 is 0
-     4 means store address % 8 is 4
-  */
-  INT store_alignment = memop_table[0].alignment;
-  Is_True( (IV_step > 0) == (store_alignment == 0),
-	       ( "Combine_Adjacent_Stores: Illegal alignment for store operation" ) );
 
   if (Get_Trace(TP_CGLOOP, 0x10))
     fprintf(TFile, "<ivs packing> Combine adjacent %d Stores\n", memop_count);
 
-  // Get the offset of the value of IV_addr_tn at the entry of the
-  // loop to the effective address of the first store operation.
-  TN *aligned = Gen_Literal_TN(1, 4);
-  OPS ops = OPS_EMPTY;
-
-  /* Compute the addr expression at the loop entry. stp_offset_tn is
-     the expression of the address at loop entry, to be defined
-     according to the aligned boolean. */
-
-  TN *stp_addr_tn = Dup_TN(IV_addr_tn);
-  Exp_COPY(stp_addr_tn, IV_addr_tn, &ops);
-  OP *point = BB_last_op(CG_LOOP_prolog);
-  BOOL before = (point != NULL && OP_xfer(point));
-  BB_Insert_Ops(CG_LOOP_prolog, point, &ops, before);
-
-  TN *stp_offset_tn;
-  if (IV_step > 0)
-    stp_offset_tn = stw_offset_tn;
-  else
-    stp_offset_tn = Adjust_Offset_TN(stw_offset_tn, -4);
-
   // Now, update store operations by pairs
   for (int candidate_index = 0; candidate_index < memop_count; candidate_index += 2) {
 
-    OP *store1_op = loop_ivs->Op(memop_table[candidate_index].index);
-    OP *store2_op = loop_ivs->Op(memop_table[candidate_index+1].index);
+    INT store1_index = memop_table[candidate_index].index;
+    INT store2_index = memop_table[candidate_index+1].index;
+    BOOL in_order = (store1_index < store2_index);
 
     // TBD: Also update the dep graph
 
@@ -1191,6 +1218,8 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
      *   stp ofst2($addr_tn), t2,t1
      */
 
+    OP *store1_op = loop_ivs->Op(store1_index);
+    OP *store2_op = loop_ivs->Op(store2_index);
     OPS ops_stp = OPS_EMPTY;
 
     TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
@@ -1204,8 +1233,34 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
     else
       Expand_Compose(t64, t2, t1, &ops_stp);
 
+    OP *store_op = in_order ? store2_op : store1_op;
+    INT base_idx = TOP_Find_Operand_Use(OP_code(store_op), OU_base);
+    INT offset_idx = TOP_Find_Operand_Use(OP_code(store_op), OU_offset);
+    TN *stp_addr_tn = OP_opnd(store_op, base_idx);
+    TN *stp_offset_tn;
+    TN *stw_offset_tn;
+    stw_offset_tn = OP_opnd(store_op, offset_idx);
+
+    /*
+      The addr and offst of the original operation will be used, to
+      avoid creating a new induction variable. The offset of the stp
+      operation will be adjusted from the offset of the original
+      operation.
+
+      span == 0, step > 0 ==> stp @addr2(offst2-4) or stp @addr1(offst1)
+      span == 0, step < 0 ==> stp @addr2(offst2)   or stp @addr1(offst1-4)
+
+      adjust_offset is computed for addr1(offst1), and will be
+      adjusted if the ldp operation uses addr2(offst2)
+     */
+
+    if (in_order == (IV_step > 0))
+      stp_offset_tn = Adjust_Offset_TN(stw_offset_tn, -4);
+    else
+      stp_offset_tn = stw_offset_tn;
+
     Expand_Store(MTYPE_I8,
-		t64,		 
+		t64,
 		stp_addr_tn,
 		stp_offset_tn,
 		&ops_stp);
@@ -1244,37 +1299,10 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 
     // Insert ops_stp before store1 or store2, depending on which one
     // dominates the other.
-    if (memop_table[candidate_index].index < memop_table[candidate_index+1].index)
+    if (in_order)
       BB_Insert_Ops(body, store2_op, &ops_stp, TRUE);
     else
       BB_Insert_Ops(body, store1_op, &ops_stp, TRUE);
-
-    if ((candidate_index+2) == memop_count) {
-      OPS ops_last = OPS_EMPTY;
-
-      // Increment the stp_base_addr
-      Expand_Add(stp_addr_tn, stp_addr_tn, Gen_Literal_TN(IV_step, 4), MTYPE_I4, &ops_last);
-
-      CG_LOOP_Init_OPS(&ops_last);
-      {
-	OP *new_op;
-	FOR_ALL_OPS_OPs_FWD(&ops_last, new_op) {
-	  for (int i = 0; i < OP_opnds(new_op); i++) {
-	    if (OP_opnd(new_op, i) == stp_addr_tn)
-	      Set_OP_omega(new_op, i, 1);
-	  }
-	}
-      }
-
-      // Insert ops_last after load1 or load2, depending on which one
-      // dominates the other.
-      if (memop_table[candidate_index].index < memop_table[candidate_index+1].index)
-	BB_Insert_Ops(body, store2_op, &ops_last, FALSE);
-      else
-	BB_Insert_Ops(body, store1_op, &ops_last, FALSE);
-    }
-
-    stp_offset_tn = Adjust_Offset_TN(stp_offset_tn, (IV_step > 0 ? 8 : -8));
 
     BB_Remove_Op(body, store1_op);
     BB_Remove_Op(body, store2_op);
@@ -1466,7 +1494,9 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
       continue;
 
     int alignment;
-    if (CG_LOOP_unaligned_packing)
+    if (Enable_Misaligned_Access ||
+	(OP_load(loop_ivs->Op(memop_table[0].index)) && Enable_Misaligned_Load) ||
+	(OP_store(loop_ivs->Op(memop_table[0].index)) && Enable_Misaligned_Store))
       alignment = (step > 0) ? 0 : 4;
     else {
       alignment = Pack32_Get_Alignment(loop_ivs->Op(memop_table[0].index), memop_table[0].offset);
@@ -1544,7 +1574,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   }
   int resource_II = CG_SCHED_EST_Resource_Cycles(se);
 
-  if ((CG_LOOP_load_store_packing & 0x40) && (mem_cnt < resource_II))
+  if ((CG_LOOP_load_store_packing & 0x80) && (mem_cnt < resource_II))
     return FALSE;
 
   INT load_stream_count = 0, store_stream_count = 0;
@@ -1606,7 +1636,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       }
     }
 
-    if (OP_load(loop_ivs->Op(candidate_stream->index)) && ((CG_LOOP_load_store_packing&0x4) != 0)) {
+    if (OP_load(loop_ivs->Op(candidate_stream->index)) && ((CG_LOOP_load_store_packing&0x4) == 0)) {
       // Check also that alignment is statically known
       if (candidate_stream->alignment == -1)
 	continue;
@@ -1746,38 +1776,56 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   BOOL doPeeling = FALSE;
   BOOL doSpecialize = FALSE;
 
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+  LOOPINFO *info = ANNOT_loopinfo(annot);
+#ifdef TARG_ST
+  TN *trip_count_tn = LOOPINFO_exact_trip_count_tn(info);
+#else
+  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
+#endif
+
   // Peeling can be applied if there is only one load stream with
   // unknown alignment, and other streams are store streams.
 
-  if ((load_stream_count == 1) &&
-      (static_aligned_load_count == 0)) {
-    // Look for this load stream
-    for (candidate_stream = memop_table;
-	 candidate_stream->count > 0;
-	 candidate_stream += candidate_stream->count)
-      if (OP_load(loop_ivs->Op(candidate_stream->index)))
-	break;
-    // Peeling can be applied only on a stream with one memory operation
-    if (candidate_stream->count == 1)
-      doPeeling = TRUE;
-  }
+  if (CG_LOOP_load_store_packing&0x8) {
 
-  // Peeling can also be applied if there is only one store stream,
-  // with unknown or misaligned alignment.
+    if ((load_stream_count == 1) &&
+	(static_aligned_load_count == 0)) {
+      // Look for this load stream
+      for (candidate_stream = memop_table;
+	   candidate_stream->count > 0;
+	   candidate_stream += candidate_stream->count)
+	if (OP_load(loop_ivs->Op(candidate_stream->index)))
+	  break;
+      // Peeling can be applied only on a stream with one memory
+      // operation
+      if (candidate_stream->count == 1)
+	doPeeling = TRUE;
+    }
 
-  else if ((load_stream_count == 0) && (store_stream_count == 1) &&
-	   ((static_aligned_store_count == 0) || (misaligned_store_count == 1))) {
-    candidate_stream = memop_table;
-    // Peeling can be applied only on a stream with one memory operation
-    if (candidate_stream->count == 1)
-      doPeeling = TRUE;
+    // Peeling can also be applied if there is only one store stream,
+    // with unknown or misaligned alignment.
+
+    else if ((load_stream_count == 0) && (store_stream_count == 1) &&
+	     ((static_aligned_store_count == 0) || (misaligned_store_count == 1))) {
+      candidate_stream = memop_table;
+      // Peeling can be applied only on a stream with one memory operation
+      if (candidate_stream->count == 1)
+	doPeeling = TRUE;
+    }
+
+    if (doPeeling &&
+	(trip_count_tn != NULL) &&
+	TN_has_value(trip_count_tn) &&
+	((CG_LOOP_load_store_packing&0x20) == 0))
+      doPeeling = FALSE;
   }
 
   // In case the loop is not candidate for peeling, we can do loop
   // specialization if statically aligned store streams are well
   // aligned, and there are streams with unknown alignment.
 
-  if ((CG_LOOP_load_store_packing&0x80) && !doPeeling &&
+  if ((CG_LOOP_load_store_packing&0x10) && !doPeeling &&
       (misaligned_store_count == 0) &&
       ((static_aligned_load_count + static_aligned_store_count) != stream_count)) {
     // Currently, only up to 4 streams can be managed for loop specialization
@@ -1795,15 +1843,6 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   // Chek if the loop iterates enough for transformations such as
   // peeling or specialization to be profitable.
   INT loop_iter = 100;
-
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
-  LOOPINFO *info = ANNOT_loopinfo(annot);
-  WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
-#ifdef TARG_STxP70
-  TN *trip_count_tn = LOOPINFO_CG_trip_count_tn(info);
-#else
-  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
-#endif
 
   if (trip_count_tn != NULL && TN_has_value(trip_count_tn))
     loop_iter = TN_value(trip_count_tn);
@@ -1823,24 +1862,26 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     DefID_t IV_index = loop_ivs->OPND_IV_cycle(memop_index, TOP_Find_Operand_Use(OP_code(base_op), OU_base));
     INT64 IV_step = loop_ivs->IV_step(IV_index);
 
-    cg_loop.Set_peel_op(base_op);
-    // TBD: check peel_tn is available at loop entry
-    Is_True(OP_opnd(base_op, TOP_Find_Operand_Use(OP_code(base_op), OU_base)) == OP_result(loop_ivs->Op(DEFID_idx(IV_index)), DEFID_res(IV_index)),
-	    ("Loop peeling requires that the base adress is available at loop entry."));
-    cg_loop.Set_peel_tn(OP_opnd(base_op, TOP_Find_Operand_Use(OP_code(base_op), OU_base)));
-    cg_loop.Set_even_factor();
-    cg_loop.Set_remainder_after();
+    // Check that base address for base_op is available at loop entry
+    if (OP_opnd(base_op, TOP_Find_Operand_Use(OP_code(base_op), OU_base)) ==
+	OP_result(loop_ivs->Op(DEFID_idx(IV_index)), DEFID_res(IV_index))) {
 
-    int aligned = (IV_step > 0) ? 0 : 4;
-    int alignment = candidate_stream->alignment;
+      cg_loop.Set_peel_op(base_op);
+      cg_loop.Set_peel_tn(OP_opnd(base_op, TOP_Find_Operand_Use(OP_code(base_op), OU_base)));
+      cg_loop.Set_even_factor();
+      cg_loop.Set_remainder_after();
 
-    if ((candidate_stream->offset&4) == 0) {
-      cg_loop.Set_peel_stream(alignment == -1);
-      cg_loop.Set_peel_align(aligned);
-    }
-    else if ((candidate_stream->offset&4) == 4) {
-      cg_loop.Set_peel_stream(alignment == -1);
-      cg_loop.Set_peel_align(4-aligned);
+      int aligned = (IV_step > 0) ? 0 : 4;
+      int alignment = candidate_stream->alignment;
+
+      if ((candidate_stream->offset&4) == 0) {
+	cg_loop.Set_peel_stream(alignment == -1);
+	cg_loop.Set_peel_align(aligned);
+      }
+      else if ((candidate_stream->offset&4) == 4) {
+	cg_loop.Set_peel_stream(alignment == -1);
+	cg_loop.Set_peel_align(4-aligned);
+      }
     }
   }
   else if (doSpecialize) {
@@ -1882,7 +1923,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       // For load streams, all or only static aligned ones will be packed.
       if (OP_load(loop_ivs->Op(candidate_stream->index)) &&
 	  (candidate_stream->alignment == -1) &&
-	  (CG_LOOP_load_store_packing&0x4) != 0)
+	  (CG_LOOP_load_store_packing&0x4) == 0)
 	continue;
 
       // For store streams, only statically well aligned streams will
@@ -1895,7 +1936,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
       // If one of the stream contains an odd number of memory access,
       // set the even_factor.
-	
+
       if (candidate_stream->count&1)
 	cg_loop.Set_even_factor();
 
@@ -1936,6 +1977,12 @@ BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop )
   {
     // Invoke Read/CSE/Write Removal
     BB *head = LOOP_DESCR_loophead( loop );
+
+    Is_True(CG_LOOP_prolog == BB_Other_Predecessor(head, head), ("Illegal CG_LOOP_prolog"));
+    Is_True(CG_LOOP_epilog == BB_Other_Successor(head, head), ("Illegal CG_LOOP_epilog"));
+    //    Is_True(CG_LOOP_prolog == cg_loop.Prolog_end(), ("Illegal CG_LOOP_prolog"));
+    //    Is_True(CG_LOOP_epilog == cg_loop.Epilog_start(), ("Illegal CG_LOOP_epilog"));
+    
 
     BOOL save_CG_DEP_Addr_Analysis = CG_DEP_Addr_Analysis;
     CG_DEP_Addr_Analysis = FALSE;

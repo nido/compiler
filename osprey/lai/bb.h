@@ -409,12 +409,23 @@
  *	Return the symbol associated with the start of the BB, returning
  *	NULL if there is none.
  *
-#ifdef TARG_ST
-*    REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
-*       Returns the set of registers in class RC clobbered by a call at
-*       the end of BB.  Returns empty set if !BB_call(bb).
-*
-#endif
+ *
+ * TARG_ST ADDENDUM:
+ *
+ *    REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
+ *       Returns the set of registers in class RC clobbered by a call at
+ *       the end of BB.  Returns empty set if !BB_call(bb).
+ *
+ *
+ *   void BB_Modified_Registers(BB *bb, REGISTER_SET *register_sets, BOOL self = FALSE)
+ *	Fill the set of registers modified in the basicblock.
+ *	The register_sets is an array of REGISTER_SET indexed by ISA_REGISTER_CLASS
+ *	It must be cleared before calling this function.
+ *	Note that the set of Modified register includes only explicitly
+ *	defined operands and clobber registers for BB_asm.
+ *	It also include clobbered from called functions unless self is TRUE.
+ *	It will not include implicitly modified resources.
+ *
  * TODO: Complete this interface description.
  *
  * ====================================================================
@@ -1146,9 +1157,6 @@ BOOL BB_Is_Cold(BB *bb);
 
 ST *Gen_ST_For_BB(BB *bb);
 ST *BB_st(BB *bb);
-#ifdef TARG_ST
-REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc);
-#endif
 
 void Split_BBs();
 
@@ -1170,5 +1178,10 @@ inline BOOL BB_compile(BB *bb)
 /* Routine for displaying the flow graph using DaVinci */
 void draw_flow_graph(void);
 void verify_flow_graph(void);
+
+#ifdef TARG_ST
+extern REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc);
+extern void BB_Modified_Registers(BB *bb, REGISTER_SET *register_sets, BOOL self = FALSE);
+#endif
 
 #endif /* bb_INCLUDED */

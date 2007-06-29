@@ -290,6 +290,14 @@ DST_mk_lexical_block(char        *name,         /* NULL if unnamed */
                      void        *high_pc,      /* ptr to front-end label */
 		     DST_INFO_IDX abstract_origin); /* NULL if none */
 
+#ifdef TARG_ST
+/* [SC] Update low_pc/high_pc in a DW_TAG_lexical_block entry. */
+extern void
+DST_lexical_block_add_low_pc (DST_INFO_IDX, void *);
+
+extern void
+DST_lexical_block_add_high_pc (DST_INFO_IDX, void *);
+#endif
 
 
 /* Creates a DW_TAG_label entry and returns its idx.

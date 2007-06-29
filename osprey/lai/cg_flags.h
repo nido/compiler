@@ -63,6 +63,11 @@
  *	Emit Basic Block frequencies in .profile_info sextion
  *
  */
+/*
+ *  BOOL CG_emit_bb_freqs_arcs
+ *	Emit Basic Block frequencies + arc info in .profile_info_arc sextion
+ *
+ */
 #endif /* BCO_Enabled Thierry */
  /*
  *  BOOL CG_enable_loop_optimizations
@@ -172,6 +177,7 @@
 extern BOOL CG_warn_bad_freqs;
 #ifdef BCO_ENABLED /* Thierry */
 extern BOOL CG_emit_bb_freqs;
+extern BOOL CG_emit_bb_freqs_arcs;
 #endif /* BCO_Enabled Thierry */
 
 extern INT32 CG_skip_after;
@@ -191,6 +197,10 @@ extern BOOL LOCALIZE_using_stacked_regs;
 
 extern BOOL CG_gen_callee_saved_regs_mask; /* generate register mask */
 
+#ifdef TARG_ST
+// [CL] force spill of return address (RA) so that unwinding/backtracing is still possible
+extern BOOL CG_save_return_address;
+#endif
 extern BOOL CG_tail_call;
 extern BOOL CG_unique_exit;
 extern BOOL CG_cond_defs_allowed;
@@ -203,18 +213,32 @@ extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
-extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
-CG_EXPORTED extern INT32 CG_LAO_schedkind;	/* LAO scheduling algorithm */
-CG_EXPORTED extern INT32 CG_LAO_allockind;	/* LAO allocation algorithm */
+#ifdef TARG_ST
+extern BOOL CG_enable_range_propagation;
+// In range analysis, ee will lower values at most this number of times.
+// After this, they decay to Bottom.
+extern INT32 CG_range_recompute_limit;
+extern BOOL CG_enable_rename_after_GRA;
+#endif
+CG_EXPORTED extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
 CG_EXPORTED extern INT32 CG_LAO_regiontype;	/* LAO scheduling region type */
-CG_EXPORTED extern INT32 CG_LAO_compensation;	/* LAO control compensation level */
-CG_EXPORTED extern INT32 CG_LAO_speculation;	/* LAO control speculation level */
-CG_EXPORTED extern INT32 CG_LAO_relaxation;	/* LAO control relaxation level */
+CG_EXPORTED extern INT32 CG_LAO_conversion;	/* LAO SSA construction and destruction */
+CG_EXPORTED extern INT32 CG_LAO_predication;	/* LAO predication algorithm */
+CG_EXPORTED extern INT32 CG_LAO_scheduling;	/* LAO scheduling algorithm */
+CG_EXPORTED extern INT32 CG_LAO_allocation;	/* LAO allocation algorithm */
+CG_EXPORTED extern INT32 CG_LAO_formulation;	/* LAO integer formulation flags */
+CG_EXPORTED extern INT32 CG_LAO_preloading;	/* LAO memory preloading level */
+CG_EXPORTED extern INT32 CG_LAO_l1missextra;	/* LAO extra latency for preloading */
+CG_EXPORTED extern INT32 CG_LAO_compensation;	/* LAO compensation level */
+CG_EXPORTED extern INT32 CG_LAO_speculation;	/* LAO speculation level */
+CG_EXPORTED extern INT32 CG_LAO_relaxation;	/* LAO relaxation level */
 CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
-CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO software renaming level */
-CG_EXPORTED extern INT32 CG_LAO_loopdep;	/* LAO loop dependence level */
+CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO register renaming level */
+CG_EXPORTED extern INT32 CG_LAO_boosting;	/* LAO operation boosting level */
+CG_EXPORTED extern INT32 CG_LAO_aliasing;	/* LAO memory aliasing level */
 CG_EXPORTED extern INT32 CG_LAO_prepadding;	/* LAO data pre-padding in bytes */
 CG_EXPORTED extern INT32 CG_LAO_postpadding;	/* LAO data post-padding in bytes */
+CG_EXPORTED extern INT32 CG_LAO_overrun;	/* LAO pipeline overrun */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */
@@ -252,6 +276,9 @@ extern UINT32 CFLOW_clone_incr;
 extern UINT32 CFLOW_clone_max_incr;
 extern UINT32 CFLOW_clone_min_incr;
 extern const char *CFLOW_cold_threshold;
+#ifdef TARG_ST
+extern BOOL CFLOW_Enable_Favor_Branches_Condition;
+#endif
 
 /* FREQ: */
 extern BOOL FREQ_enable;
@@ -269,6 +296,11 @@ extern BOOL CG_enable_pf_L1_st;
 extern BOOL CG_enable_pf_L2_ld;
 extern BOOL CG_enable_pf_L2_st;
 extern BOOL CG_exclusive_prefetch;
+#ifdef TARG_ST
+// FdF 20070206: Raise a warning when prefetch distance of user
+// prefetch cannot be checked against the Prefetch_Padding value.
+extern BOOL  CG_warn_prefetch_padding;
+#endif
 
 extern INT32 CG_L1_ld_latency;
 extern INT32 CG_L2_ld_latency;
@@ -322,6 +354,7 @@ extern BOOL LRA_do_reorder;
 #ifdef TARG_ST
 extern BOOL LRA_minregs;
 extern BOOL LRA_merge_extract;
+extern BOOL LRA_resched_check;
 #endif
 
 /* GRA: */
@@ -343,6 +376,9 @@ extern BOOL GRA_recalc_liveness;
 extern BOOL GRA_use_runeson_nystrom_spill_metric;
 extern BOOL GRA_use_interprocedural_info;
 extern BOOL GRA_spill_to_caller_save;
+extern BOOL GRA_preference_subclass;
+extern BOOL GRA_use_subclass_register_request;
+extern const char* GRA_local_spill_multiplier_string;
 #endif
 extern INT32 GRA_non_home_hi;
 extern INT32 GRA_non_home_lo;
@@ -395,6 +431,7 @@ extern BOOL CG_emit_unwind_directives;
 
 #ifdef TARG_ST
 /* CBPO */
+extern BOOL CG_enable_cbpo;
 extern BOOL CG_cbpo_optimize_load_imm;
 extern INT32 CG_cbpo_ratio;
 extern INT CG_cbpo_block_method;

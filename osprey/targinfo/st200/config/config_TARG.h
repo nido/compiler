@@ -133,27 +133,30 @@ BE_EXPORTED extern BOOL Enable_Non_IEEE_Ops_Set;
 BE_EXPORTED extern BOOL Enable_64_Bits_Ops;
 BE_EXPORTED extern BOOL Enable_64_Bits_Ops_Set;
 
-// [CG]: Generation of IEEE single enabled.
-BE_EXPORTED extern BOOL Enable_Single_Float_Ops;
-// [CG]: Generation of IEEE double enabled.
-BE_EXPORTED extern BOOL Enable_Double_Float_Ops;
-
 // [CG]: Generation of misaligned accesses:
 // FALSE: Generate composed load/store when a misaligned access is encountered
 // TRUE: Let the misaligned access be generated
 BE_EXPORTED extern BOOL Enable_Misaligned_Access;
+BE_EXPORTED extern BOOL Enable_Misaligned_Load, Enable_Misaligned_Store;
 
 // [CG]: Error level on proved misaligned accesses:
 // 0: no warning
 // 1: warning
 // 2: error
 BE_EXPORTED extern INT32 Warn_Misaligned_Access;
+BE_EXPORTED extern INT32 Warn_Misaligned_Load, Warn_Misaligned_Store;
 
 //[VCdV]
 BE_EXPORTED extern int Activate_Hwloop;
 
 // [SC]: Cycle time overrides.
 BE_EXPORTED extern OPTION_LIST *Cycle_Time_Overrides;
+
+BE_EXPORTED extern BOOL Enable_AddPC;
+BE_EXPORTED extern BOOL Enable_AddPC_Set;
+
+BE_EXPORTED extern BOOL Enable_Sh1AddS;
+BE_EXPORTED extern BOOL Enable_Sh1AddS_Set;
 #endif
 
 /* ====================================================================

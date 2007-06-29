@@ -122,10 +122,7 @@ BOOL
 OP_effectively_copy(OP *op)
 {
   if (OP_copy(op)) return TRUE;
-  if (CGTARG_Is_Copy(op)) return TRUE;
-  // Arthur: suppressed it.
-  //         CGTARG_Copy_Operand() should take care of all of them
-  //  if (EBO_Copy_Operand(op) >= 0) return TRUE;
+  if (OP_Is_Copy(op)) return TRUE;
   return FALSE;
 }
 

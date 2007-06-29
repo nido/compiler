@@ -53,6 +53,7 @@ main (int argc, char *argv[])
   RESOURCE Resource_st231_CTL = RESOURCE_Create("Resource_st231_CTL", 1);
   RESOURCE Resource_st231_ODD = RESOURCE_Create("Resource_st231_ODD", 2);
   RESOURCE Resource_st231_EVEN = RESOURCE_Create("Resource_st231_EVEN", 2);
+  RESOURCE Resource_st231_LANE0 = RESOURCE_Create("Resource_st231_LANE0", 2);
 
   /* ======================================================
    * Resource description for the ISA_SUBSET_st231
@@ -62,11 +63,11 @@ main (int argc, char *argv[])
   Machine("st200", ISA_SUBSET_st231, argc, argv);
 
   Instruction_Group("group0",
-		TOP_brf,
-		TOP_br,
+		TOP_brf_i_b,
+		TOP_br_i_b,
 		TOP_UNDEFINED);
 
-  Any_Operand_Access_Time(0);
+  Operand_Access_Time (0, 0);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_CTL, 0);
   Resource_Requirement(Resource_st231_ODD, 0);
@@ -78,7 +79,7 @@ main (int argc, char *argv[])
 		TOP_return,
 		TOP_UNDEFINED);
 
-  Any_Operand_Access_Time(1);
+  Operand_Access_Time (0, 1);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_CTL, 0);
   Resource_Requirement(Resource_st231_ODD, 0);
@@ -86,11 +87,11 @@ main (int argc, char *argv[])
 
 
   Instruction_Group("group2",
-		TOP_pswclr,
-		TOP_pswset,
+		TOP_pswclr_r,
+		TOP_pswset_r,
 		TOP_UNDEFINED);
 
-  Any_Operand_Access_Time(2);
+  Operand_Access_Time (0, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_CTL, 0);
   Resource_Requirement(Resource_st231_ODD, 0);
@@ -99,16 +100,13 @@ main (int argc, char *argv[])
 
 
   Instruction_Group("group3",
-		TOP_pft_ii,
-		TOP_prgadd_ii,
-		TOP_prginspg_ii,
-		TOP_prgset_ii,
-		TOP_stb_ii,
-		TOP_sth_ii,
-		TOP_stw_ii,
+		TOP_stb_r_r_ii,
+		TOP_sth_r_r_ii,
+		TOP_stw_r_r_ii,
 		TOP_UNDEFINED);
 
-  Any_Operand_Access_Time(2);
+  Operand_Access_Time (1, 2);
+  Operand_Access_Time (2, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_MEM, 0);
@@ -117,452 +115,55 @@ main (int argc, char *argv[])
 
 
   Instruction_Group("group4",
-		TOP_pft_i,
-		TOP_prgadd_i,
-		TOP_prginspg_i,
-		TOP_prgset_i,
-		TOP_stb_i,
-		TOP_sth_i,
-		TOP_stw_i,
+		TOP_stb_r_r_i,
+		TOP_sth_r_r_i,
+		TOP_stw_r_r_i,
 		TOP_UNDEFINED);
 
-  Any_Operand_Access_Time(2);
+  Operand_Access_Time (1, 2);
+  Operand_Access_Time (2, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_MEM, 0);
 
 
   Instruction_Group("group5",
-		TOP_icall,
+		TOP_pft_r_ii,
+		TOP_prgadd_r_ii,
+		TOP_prginspg_r_ii,
+		TOP_prgset_r_ii,
 		TOP_UNDEFINED);
 
-  Any_Result_Available_Time(3);
-  Any_Operand_Access_Time(1);
+  Operand_Access_Time (1, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_CTL, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
   Resource_Requirement(Resource_st231_ODD, 0);
   Resource_Requirement(Resource_st231_EVEN, 0);
 
 
   Instruction_Group("group6",
-		TOP_addcg,
-		TOP_add_r,
-		TOP_add_i,
-		TOP_spadjust,
-		TOP_andc_r,
-		TOP_andc_i,
-		TOP_andl_r_b,
-		TOP_andl_i_b,
-		TOP_andl_r_r,
-		TOP_andl_i_r,
-		TOP_and_r,
-		TOP_and_i,
-		TOP_asm_0,
-		TOP_asm_16_i,
-		TOP_asm_17_i,
-		TOP_asm_18_i,
-		TOP_asm_19_i,
-		TOP_asm_1,
-		TOP_asm_20_i,
-		TOP_asm_21_i,
-		TOP_asm_22_i,
-		TOP_asm_23_i,
-		TOP_asm_2,
-		TOP_asm_3,
-		TOP_asm_4,
-		TOP_asm_5,
-		TOP_asm_6,
-		TOP_asm_7,
-		TOP_bswap,
-		TOP_clz,
-		TOP_cmpeq_r_b,
-		TOP_cmpeq_i_b,
-		TOP_cmpeq_r_r,
-		TOP_cmpeq_i_r,
-		TOP_cmpgeu_r_b,
-		TOP_cmpgeu_i_b,
-		TOP_cmpgeu_r_r,
-		TOP_cmpgeu_i_r,
-		TOP_cmpge_r_b,
-		TOP_cmpge_i_b,
-		TOP_cmpge_r_r,
-		TOP_cmpge_i_r,
-		TOP_cmpgtu_r_b,
-		TOP_cmpgtu_i_b,
-		TOP_cmpgtu_r_r,
-		TOP_cmpgtu_i_r,
-		TOP_cmpgt_r_b,
-		TOP_cmpgt_i_b,
-		TOP_cmpgt_r_r,
-		TOP_cmpgt_i_r,
-		TOP_cmpleu_r_b,
-		TOP_cmpleu_i_b,
-		TOP_cmpleu_r_r,
-		TOP_cmpleu_i_r,
-		TOP_cmple_r_b,
-		TOP_cmple_i_b,
-		TOP_cmple_r_r,
-		TOP_cmple_i_r,
-		TOP_cmpltu_r_b,
-		TOP_cmpltu_i_b,
-		TOP_cmpltu_r_r,
-		TOP_cmpltu_i_r,
-		TOP_cmplt_r_b,
-		TOP_cmplt_i_b,
-		TOP_cmplt_r_r,
-		TOP_cmplt_i_r,
-		TOP_cmpne_r_b,
-		TOP_cmpne_i_b,
-		TOP_cmpne_r_r,
-		TOP_cmpne_i_r,
-		TOP_divs,
-		TOP_maxu_r,
-		TOP_maxu_i,
-		TOP_max_r,
-		TOP_max_i,
-		TOP_mfb,
-		TOP_minu_r,
-		TOP_minu_i,
-		TOP_min_r,
-		TOP_min_i,
-		TOP_mov_r,
-		TOP_mtb,
-		TOP_nandl_r_b,
-		TOP_nandl_i_b,
-		TOP_nandl_r_r,
-		TOP_nandl_i_r,
-		TOP_norl_r_b,
-		TOP_norl_i_b,
-		TOP_norl_r_r,
-		TOP_norl_i_r,
-		TOP_orc_r,
-		TOP_orc_i,
-		TOP_orl_r_b,
-		TOP_orl_i_b,
-		TOP_orl_r_r,
-		TOP_orl_i_r,
-		TOP_or_r,
-		TOP_or_i,
-		TOP_sh1add_r,
-		TOP_sh1add_i,
-		TOP_sh2add_r,
-		TOP_sh2add_i,
-		TOP_sh3add_r,
-		TOP_sh3add_i,
-		TOP_sh4add_r,
-		TOP_sh4add_i,
-		TOP_shl_r,
-		TOP_shl_i,
-		TOP_shru_r,
-		TOP_shru_i,
-		TOP_shr_r,
-		TOP_shr_i,
-		TOP_slctf_r,
-		TOP_slctf_i,
-		TOP_slct_r,
-		TOP_slct_i,
-		TOP_sub_r,
-		TOP_sub_i,
-		TOP_sxtb,
-		TOP_sxth,
-		TOP_xor_r,
-		TOP_xor_i,
-		TOP_zxtb,
-		TOP_zxth,
+		TOP_pft_r_i,
+		TOP_prgadd_r_i,
+		TOP_prginspg_r_i,
+		TOP_prgset_r_i,
 		TOP_UNDEFINED);
 
-  Any_Result_Available_Time(3);
-  Any_Operand_Access_Time(2);
+  Operand_Access_Time (1, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
 
 
   Instruction_Group("group7",
-		TOP_pushregs,
+		TOP_break,
+		TOP_nop,
+		TOP_sbrk_i,
 		TOP_UNDEFINED);
 
-  Any_Result_Available_Time(3);
-  Any_Operand_Access_Time(2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_CTL, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
 
 
   Instruction_Group("group8",
-		TOP_add_ii,
-		TOP_andc_ii,
-		TOP_andl_ii_b,
-		TOP_andl_ii_r,
-		TOP_and_ii,
-		TOP_asm_16_ii,
-		TOP_asm_17_ii,
-		TOP_asm_18_ii,
-		TOP_asm_19_ii,
-		TOP_asm_20_ii,
-		TOP_asm_21_ii,
-		TOP_asm_22_ii,
-		TOP_asm_23_ii,
-		TOP_cmpeq_ii_b,
-		TOP_cmpeq_ii_r,
-		TOP_cmpgeu_ii_b,
-		TOP_cmpgeu_ii_r,
-		TOP_cmpge_ii_b,
-		TOP_cmpge_ii_r,
-		TOP_cmpgtu_ii_b,
-		TOP_cmpgtu_ii_r,
-		TOP_cmpgt_ii_b,
-		TOP_cmpgt_ii_r,
-		TOP_cmpleu_ii_b,
-		TOP_cmpleu_ii_r,
-		TOP_cmple_ii_b,
-		TOP_cmple_ii_r,
-		TOP_cmpltu_ii_b,
-		TOP_cmpltu_ii_r,
-		TOP_cmplt_ii_b,
-		TOP_cmplt_ii_r,
-		TOP_cmpne_ii_b,
-		TOP_cmpne_ii_r,
-		TOP_maxu_ii,
-		TOP_max_ii,
-		TOP_minu_ii,
-		TOP_min_ii,
-		TOP_nandl_ii_b,
-		TOP_nandl_ii_r,
-		TOP_norl_ii_b,
-		TOP_norl_ii_r,
-		TOP_orc_ii,
-		TOP_orl_ii_b,
-		TOP_orl_ii_r,
-		TOP_or_ii,
-		TOP_sh1add_ii,
-		TOP_sh2add_ii,
-		TOP_sh3add_ii,
-		TOP_sh4add_ii,
-		TOP_shl_ii,
-		TOP_shru_ii,
-		TOP_shr_ii,
-		TOP_slctf_ii,
-		TOP_slct_ii,
-		TOP_sub_ii,
-		TOP_xor_ii,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(3);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group9",
-		TOP_mov_i,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-
-
-  Instruction_Group("group10",
-		TOP_call,
-		TOP_getpc,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_CTL, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group11",
-		TOP_mov_ii,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(3);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group12",
-		TOP_asm_10,
-		TOP_asm_11,
-		TOP_asm_24_i,
-		TOP_asm_24_ii,
-		TOP_asm_25_i,
-		TOP_asm_25_ii,
-		TOP_asm_26_i,
-		TOP_asm_26_ii,
-		TOP_asm_27_i,
-		TOP_asm_27_ii,
-		TOP_asm_8,
-		TOP_asm_9,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(4);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group13",
-		TOP_asm_28_ii,
-		TOP_asm_29_ii,
-		TOP_asm_30_ii,
-		TOP_asm_31_ii,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(4);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group14",
-		TOP_asm_12,
-		TOP_asm_13,
-		TOP_asm_14,
-		TOP_asm_15,
-		TOP_asm_28_i,
-		TOP_asm_29_i,
-		TOP_asm_30_i,
-		TOP_asm_31_i,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(4);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-
-
-  Instruction_Group("group15",
-		TOP_ldbu_d_ii,
-		TOP_ldbu_ii,
-		TOP_ldb_d_ii,
-		TOP_ldb_ii,
-		TOP_ldhu_d_ii,
-		TOP_ldhu_ii,
-		TOP_ldh_d_ii,
-		TOP_ldh_ii,
-		TOP_ldw_d_ii,
-		TOP_ldw_ii,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(5);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_MEM, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group16",
-		TOP_mul32_ii,
-		TOP_mul64hu_ii,
-		TOP_mul64h_ii,
-		TOP_mulfrac_ii,
-		TOP_mulhhs_ii,
-		TOP_mulhhu_ii,
-		TOP_mulhh_ii,
-		TOP_mulhs_ii,
-		TOP_mulhu_ii,
-		TOP_mulh_ii,
-		TOP_mullhus_ii,
-		TOP_mullhu_ii,
-		TOP_mullh_ii,
-		TOP_mulllu_ii,
-		TOP_mulll_ii,
-		TOP_mullu_ii,
-		TOP_mull_ii,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(5);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-  Resource_Requirement(Resource_st231_EVEN, 0);
-
-
-  Instruction_Group("group17",
-		TOP_ldbu_d_i,
-		TOP_ldbu_i,
-		TOP_ldb_d_i,
-		TOP_ldb_i,
-		TOP_ldhu_d_i,
-		TOP_ldhu_i,
-		TOP_ldh_d_i,
-		TOP_ldh_i,
-		TOP_ldwl,
-		TOP_ldw_d_i,
-		TOP_ldw_i,
-		TOP_stwl,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(5);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_MEM, 0);
-
-
-  Instruction_Group("group18",
-		TOP_mul32_r,
-		TOP_mul32_i,
-		TOP_mul64hu_r,
-		TOP_mul64hu_i,
-		TOP_mul64h_r,
-		TOP_mul64h_i,
-		TOP_mulfrac_r,
-		TOP_mulfrac_i,
-		TOP_mulhhs_r,
-		TOP_mulhhs_i,
-		TOP_mulhhu_r,
-		TOP_mulhhu_i,
-		TOP_mulhh_r,
-		TOP_mulhh_i,
-		TOP_mulhs_r,
-		TOP_mulhs_i,
-		TOP_mulhu_r,
-		TOP_mulhu_i,
-		TOP_mulh_r,
-		TOP_mulh_i,
-		TOP_mullhus_r,
-		TOP_mullhus_i,
-		TOP_mullhu_r,
-		TOP_mullhu_i,
-		TOP_mullh_r,
-		TOP_mullh_i,
-		TOP_mulllu_r,
-		TOP_mulllu_i,
-		TOP_mulll_r,
-		TOP_mulll_i,
-		TOP_mullu_r,
-		TOP_mullu_i,
-		TOP_mull_r,
-		TOP_mull_i,
-		TOP_UNDEFINED);
-
-  Any_Result_Available_Time(5);
-  Any_Operand_Access_Time(2);
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-  Resource_Requirement(Resource_st231_ODD, 0);
-
-
-  Instruction_Group("group19",
-		TOP_break,
-		TOP_nop,
-		TOP_sbrk,
-		TOP_UNDEFINED);
-
-  Resource_Requirement(Resource_st231_ISSUE, 0);
-
-
-  Instruction_Group("group20",
-		TOP_goto,
+		TOP_goto_i,
 		TOP_idle,
 		TOP_UNDEFINED);
 
@@ -572,7 +173,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st231_EVEN, 0);
 
 
-  Instruction_Group("group21",
+  Instruction_Group("group9",
 		TOP_rfi,
 		TOP_syncins,
 		TOP_UNDEFINED);
@@ -584,10 +185,10 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st231_MEM, 0);
 
 
-  Instruction_Group("group22",
+  Instruction_Group("group10",
 		TOP_asm,
 		TOP_prgins,
-		TOP_syscall,
+		TOP_syscall_i,
 		TOP_UNDEFINED);
 
   Resource_Requirement(Resource_st231_ISSUE, 0);
@@ -596,11 +197,547 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st231_ISSUE, 0);
 
 
-  Instruction_Group("group23",
+  Instruction_Group("group11",
 		TOP_sync,
 		TOP_wmb,
 		TOP_UNDEFINED);
 
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
+
+
+  Instruction_Group("group12",
+		TOP_icall,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 1);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_CTL, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group13",
+		TOP_slctf_r_r_b_r,
+		TOP_slct_r_r_b_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Operand_Access_Time (2, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group14",
+		TOP_add_r_r_r,
+		TOP_andc_r_r_r,
+		TOP_andl_r_r_b,
+		TOP_andl_r_r_r,
+		TOP_and_r_r_r,
+		TOP_asm_0_r_r_r,
+		TOP_asm_1_r_r_r,
+		TOP_asm_2_r_r_r,
+		TOP_asm_3_r_r_r,
+		TOP_asm_4_r_r_r,
+		TOP_asm_5_r_r_r,
+		TOP_asm_6_r_r_r,
+		TOP_asm_7_r_r_r,
+		TOP_cmpeq_r_r_b,
+		TOP_cmpeq_r_r_r,
+		TOP_cmpgeu_r_r_b,
+		TOP_cmpgeu_r_r_r,
+		TOP_cmpge_r_r_b,
+		TOP_cmpge_r_r_r,
+		TOP_cmpgtu_r_r_b,
+		TOP_cmpgtu_r_r_r,
+		TOP_cmpgt_r_r_b,
+		TOP_cmpgt_r_r_r,
+		TOP_cmpleu_r_r_b,
+		TOP_cmpleu_r_r_r,
+		TOP_cmple_r_r_b,
+		TOP_cmple_r_r_r,
+		TOP_cmpltu_r_r_b,
+		TOP_cmpltu_r_r_r,
+		TOP_cmplt_r_r_b,
+		TOP_cmplt_r_r_r,
+		TOP_cmpne_r_r_b,
+		TOP_cmpne_r_r_r,
+		TOP_maxu_r_r_r,
+		TOP_max_r_r_r,
+		TOP_minu_r_r_r,
+		TOP_min_r_r_r,
+		TOP_nandl_r_r_b,
+		TOP_nandl_r_r_r,
+		TOP_norl_r_r_b,
+		TOP_norl_r_r_r,
+		TOP_orc_r_r_r,
+		TOP_orl_r_r_b,
+		TOP_orl_r_r_r,
+		TOP_or_r_r_r,
+		TOP_sh1add_r_r_r,
+		TOP_sh2add_r_r_r,
+		TOP_sh3add_r_r_r,
+		TOP_sh4add_r_r_r,
+		TOP_shl_r_r_r,
+		TOP_shru_r_r_r,
+		TOP_shr_r_r_r,
+		TOP_slctf_i_r_b_r,
+		TOP_slct_i_r_b_r,
+		TOP_sub_r_r_r,
+		TOP_xor_r_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group15",
+		TOP_slctf_ii_r_b_r,
+		TOP_slct_ii_r_b_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group16",
+		TOP_add_i_r_r,
+		TOP_spadjust,
+		TOP_andc_i_r_r,
+		TOP_andl_i_r_b,
+		TOP_andl_i_r_r,
+		TOP_and_i_r_r,
+		TOP_asm_16_i_r_r,
+		TOP_asm_17_i_r_r,
+		TOP_asm_18_i_r_r,
+		TOP_asm_19_i_r_r,
+		TOP_asm_20_i_r_r,
+		TOP_asm_21_i_r_r,
+		TOP_asm_22_i_r_r,
+		TOP_asm_23_i_r_r,
+		TOP_bswap_r_r,
+		TOP_clz_r_r,
+		TOP_cmpeq_i_r_b,
+		TOP_cmpeq_i_r_r,
+		TOP_cmpgeu_i_r_b,
+		TOP_cmpgeu_i_r_r,
+		TOP_cmpge_i_r_b,
+		TOP_cmpge_i_r_r,
+		TOP_cmpgtu_i_r_b,
+		TOP_cmpgtu_i_r_r,
+		TOP_cmpgt_i_r_b,
+		TOP_cmpgt_i_r_r,
+		TOP_cmpleu_i_r_b,
+		TOP_cmpleu_i_r_r,
+		TOP_cmple_i_r_b,
+		TOP_cmple_i_r_r,
+		TOP_cmpltu_i_r_b,
+		TOP_cmpltu_i_r_r,
+		TOP_cmplt_i_r_b,
+		TOP_cmplt_i_r_r,
+		TOP_cmpne_i_r_b,
+		TOP_cmpne_i_r_r,
+		TOP_convbi_b_r,
+		TOP_convib_r_b,
+		TOP_maxu_i_r_r,
+		TOP_max_i_r_r,
+		TOP_mfb_b_r,
+		TOP_minu_i_r_r,
+		TOP_min_i_r_r,
+		TOP_mov_r_r,
+		TOP_mov_r_b,
+		TOP_mov_b_r,
+		TOP_mtb_r_b,
+		TOP_nandl_i_r_b,
+		TOP_nandl_i_r_r,
+		TOP_norl_i_r_b,
+		TOP_norl_i_r_r,
+		TOP_orc_i_r_r,
+		TOP_orl_i_r_b,
+		TOP_orl_i_r_r,
+		TOP_or_i_r_r,
+		TOP_sh1add_i_r_r,
+		TOP_sh2add_i_r_r,
+		TOP_sh3add_i_r_r,
+		TOP_sh4add_i_r_r,
+		TOP_shl_i_r_r,
+		TOP_shru_i_r_r,
+		TOP_shr_i_r_r,
+		TOP_sxtb_r_r,
+		TOP_sxth_r_r,
+		TOP_xor_i_r_r,
+		TOP_zxtb_r_r,
+		TOP_zxth_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group17",
+		TOP_add_ii_r_r,
+		TOP_andc_ii_r_r,
+		TOP_andl_ii_r_b,
+		TOP_andl_ii_r_r,
+		TOP_and_ii_r_r,
+		TOP_asm_16_ii_r_r,
+		TOP_asm_17_ii_r_r,
+		TOP_asm_18_ii_r_r,
+		TOP_asm_19_ii_r_r,
+		TOP_asm_20_ii_r_r,
+		TOP_asm_21_ii_r_r,
+		TOP_asm_22_ii_r_r,
+		TOP_asm_23_ii_r_r,
+		TOP_cmpeq_ii_r_b,
+		TOP_cmpeq_ii_r_r,
+		TOP_cmpgeu_ii_r_b,
+		TOP_cmpgeu_ii_r_r,
+		TOP_cmpge_ii_r_b,
+		TOP_cmpge_ii_r_r,
+		TOP_cmpgtu_ii_r_b,
+		TOP_cmpgtu_ii_r_r,
+		TOP_cmpgt_ii_r_b,
+		TOP_cmpgt_ii_r_r,
+		TOP_cmpleu_ii_r_b,
+		TOP_cmpleu_ii_r_r,
+		TOP_cmple_ii_r_b,
+		TOP_cmple_ii_r_r,
+		TOP_cmpltu_ii_r_b,
+		TOP_cmpltu_ii_r_r,
+		TOP_cmplt_ii_r_b,
+		TOP_cmplt_ii_r_r,
+		TOP_cmpne_ii_r_b,
+		TOP_cmpne_ii_r_r,
+		TOP_maxu_ii_r_r,
+		TOP_max_ii_r_r,
+		TOP_minu_ii_r_r,
+		TOP_min_ii_r_r,
+		TOP_nandl_ii_r_b,
+		TOP_nandl_ii_r_r,
+		TOP_norl_ii_r_b,
+		TOP_norl_ii_r_r,
+		TOP_orc_ii_r_r,
+		TOP_orl_ii_r_b,
+		TOP_orl_ii_r_r,
+		TOP_or_ii_r_r,
+		TOP_sh1add_ii_r_r,
+		TOP_sh2add_ii_r_r,
+		TOP_sh3add_ii_r_r,
+		TOP_sh4add_ii_r_r,
+		TOP_shl_ii_r_r,
+		TOP_shru_ii_r_r,
+		TOP_shr_ii_r_r,
+		TOP_xor_ii_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group18",
+		TOP_sub_r_i_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group19",
+		TOP_sub_r_ii_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group20",
+		TOP_mov_i_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group21",
+		TOP_call_i,
+		TOP_getpc,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_CTL, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group22",
+		TOP_mov_ii_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group23",
+		TOP_addcg_b_r_r_b_r,
+		TOP_divs_b_r_r_b_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Result_Available_Time (1, 3);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Operand_Access_Time (2, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+
+
+  Instruction_Group("group24",
+		TOP_pushregs,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 3);
+  Result_Available_Time (1, 3);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_CTL, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group25",
+		TOP_asm_10_r_r_r,
+		TOP_asm_11_r_r_r,
+		TOP_asm_8_r_r_r,
+		TOP_asm_9_r_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 4);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group26",
+		TOP_asm_12_r_r_r,
+		TOP_asm_13_r_r_r,
+		TOP_asm_14_r_r_r,
+		TOP_asm_15_r_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 4);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+
+
+  Instruction_Group("group27",
+		TOP_asm_24_i_r_r,
+		TOP_asm_24_ii_r_r,
+		TOP_asm_25_i_r_r,
+		TOP_asm_25_ii_r_r,
+		TOP_asm_26_i_r_r,
+		TOP_asm_26_ii_r_r,
+		TOP_asm_27_i_r_r,
+		TOP_asm_27_ii_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 4);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group28",
+		TOP_asm_28_ii_r_r,
+		TOP_asm_29_ii_r_r,
+		TOP_asm_30_ii_r_r,
+		TOP_asm_31_ii_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 4);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group29",
+		TOP_asm_28_i_r_r,
+		TOP_asm_29_i_r_r,
+		TOP_asm_30_i_r_r,
+		TOP_asm_31_i_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 4);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+
+
+  Instruction_Group("group30",
+		TOP_stwl_r_r_b,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
+
+
+  Instruction_Group("group31",
+		TOP_mul32_r_r_r,
+		TOP_mul64hu_r_r_r,
+		TOP_mul64h_r_r_r,
+		TOP_mulfrac_r_r_r,
+		TOP_mulhhs_r_r_r,
+		TOP_mulhhu_r_r_r,
+		TOP_mulhh_r_r_r,
+		TOP_mulhs_r_r_r,
+		TOP_mulhu_r_r_r,
+		TOP_mulh_r_r_r,
+		TOP_mullhus_r_r_r,
+		TOP_mullhu_r_r_r,
+		TOP_mullh_r_r_r,
+		TOP_mulllu_r_r_r,
+		TOP_mulll_r_r_r,
+		TOP_mullu_r_r_r,
+		TOP_mull_r_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+
+
+  Instruction_Group("group32",
+		TOP_mul32_ii_r_r,
+		TOP_mul64hu_ii_r_r,
+		TOP_mul64h_ii_r_r,
+		TOP_mulfrac_ii_r_r,
+		TOP_mulhhs_ii_r_r,
+		TOP_mulhhu_ii_r_r,
+		TOP_mulhh_ii_r_r,
+		TOP_mulhs_ii_r_r,
+		TOP_mulhu_ii_r_r,
+		TOP_mulh_ii_r_r,
+		TOP_mullhus_ii_r_r,
+		TOP_mullhu_ii_r_r,
+		TOP_mullh_ii_r_r,
+		TOP_mulllu_ii_r_r,
+		TOP_mulll_ii_r_r,
+		TOP_mullu_ii_r_r,
+		TOP_mull_ii_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group33",
+		TOP_ldwl_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
+
+
+  Instruction_Group("group34",
+		TOP_mul32_i_r_r,
+		TOP_mul64hu_i_r_r,
+		TOP_mul64h_i_r_r,
+		TOP_mulfrac_i_r_r,
+		TOP_mulhhs_i_r_r,
+		TOP_mulhhu_i_r_r,
+		TOP_mulhh_i_r_r,
+		TOP_mulhs_i_r_r,
+		TOP_mulhu_i_r_r,
+		TOP_mulh_i_r_r,
+		TOP_mullhus_i_r_r,
+		TOP_mullhu_i_r_r,
+		TOP_mullh_i_r_r,
+		TOP_mulllu_i_r_r,
+		TOP_mulll_i_r_r,
+		TOP_mullu_i_r_r,
+		TOP_mull_i_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+
+
+  Instruction_Group("group35",
+		TOP_ldbu_r_ii_r,
+		TOP_ldbu_d_r_ii_r,
+		TOP_ldb_r_ii_r,
+		TOP_ldb_d_r_ii_r,
+		TOP_ldhu_r_ii_r,
+		TOP_ldhu_d_r_ii_r,
+		TOP_ldh_r_ii_r,
+		TOP_ldh_d_r_ii_r,
+		TOP_ldw_r_ii_r,
+		TOP_ldw_d_r_ii_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (1, 2);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_MEM, 0);
+  Resource_Requirement(Resource_st231_ODD, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
+
+
+  Instruction_Group("group36",
+		TOP_ldbu_r_i_r,
+		TOP_ldbu_d_r_i_r,
+		TOP_ldb_r_i_r,
+		TOP_ldb_d_r_i_r,
+		TOP_ldhu_r_i_r,
+		TOP_ldhu_d_r_i_r,
+		TOP_ldh_r_i_r,
+		TOP_ldh_d_r_i_r,
+		TOP_ldw_r_i_r,
+		TOP_ldw_d_r_i_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (1, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
   Resource_Requirement(Resource_st231_MEM, 0);
 

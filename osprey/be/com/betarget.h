@@ -74,7 +74,10 @@ extern INT Copy_Quantum_Ratio(void);
 #ifdef TARG_ST
   // [JV]: Add wn_is_emulated_opr that used to know if a whirl operator
   // must be lowered as runtime call or inlined by code expansion.
-BE_EXPORTED extern BOOL BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc);
+BE_EXPORTED extern BOOL BETARG_is_emulated_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc );
+BE_EXPORTED extern BOOL BETARG_is_emulated_type( TYPE_ID rtype );
+  // [CG]: Add query for activation of WHIRL operators.
+BE_EXPORTED extern BOOL BETARG_is_enabled_operator( OPERATOR opr, TYPE_ID rtype, TYPE_ID desc );
 #endif
 
 #ifdef TARG_ST

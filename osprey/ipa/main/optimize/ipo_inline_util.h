@@ -186,4 +186,10 @@ Compute_Return_Preg_Offset(WN *, RETURN_PREG& rp, BOOL use_lowered_return_preg,
 extern void      
 Fix_Return_Pregs(WN *, const RETURN_PREG& rp);
 
+#ifdef KEY
+#include "ipa_cg.h"
+extern void
+Get_enclosing_region (IPA_NODE *, IPA_EDGE *);
+#endif
+
 #endif // cxx_ipo_inline_util_INCLUDED

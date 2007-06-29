@@ -218,6 +218,10 @@ void GRA_Trace_Global_Preference_Success(LRANGE* lrange0,
                                          LRANGE* lrange1);
 void GRA_Trace_Spill_Stats( float freq_restore_count, INT restore_count,
                             float freq_spill_count, INT spill_count,
+#ifdef TARG_ST
+			    float freq_local_restore_count,
+			    float freq_local_spill_count,
+#endif
 			    float priority_count );
 void GRA_Trace_LRANGE_Stats( INT32 complement_count,
                              INT32 region_count,
@@ -253,5 +257,16 @@ void GRA_Trace_Local_Colorability (LRANGE *lrange);
 void GRA_Trace_Local_Colorability_Benefit (LRANGE *lr, LRANGE *neighbor, float b);
 void GRA_Trace_Allowed_Registers (LRANGE *lr, REGISTER_SET subclass_allowed,
 				  REGISTER_SET allowed);
+void GRA_Trace_Subclass_Preference (LRANGE *lr, GRA_BB* gbb);
+void GRA_Trace_Preference_Subclass_Attempt (LRANGE *lrange,
+					    ISA_REGISTER_SUBCLASS sc,
+					    INT sc_offset,
+					    GRA_REGION *region, BOOL outcome);
+void GRA_Trace_Create_Lrange(LRANGE *lrange);
+void GRA_Trace_Interference_Graph (GRA_REGION *region);
+void GRA_Trace_Local_LRange_Request (const char *str,
+				     GRA_BB *gbb, ISA_REGISTER_CLASS cl,
+				     ISA_REGISTER_SUBCLASS sc, INT count,
+				     INT nregs, BOOL demand);
 #endif
 #endif

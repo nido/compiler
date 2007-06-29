@@ -131,6 +131,20 @@ set_defaults (void)
 	}
 #endif
 
+#ifdef TARG_ST
+	/* Disable LNO and LAO when C++ and exceptions are enabled.  */
+	/* This disabling should be removed in the long term after LNO (resp. LAO) support are validated (resp. fixed).  */
+	if (invoked_lang == L_CC  && (!is_toggled(noexceptions) || (noexceptions==FALSE)) && (olevel >= 3)) {
+	    flag = add_string_option(O_PHASE_, "LNO=off");
+	    prepend_option_seen(flag);
+#ifdef LAO_ENABLED
+	    // Only when LAO is enabled.
+	    flag = add_string_option(O_CG_, "LAO_optimization=0");
+	    prepend_option_seen(flag);
+#endif
+	}
+#endif
+
 #ifdef TARG_ST200
 	if (endian == UNDEFINED) 
 	  toggle(&endian, ENDIAN_LITTLE);
@@ -753,6 +767,14 @@ add_special_options (void)
 	  }
 	}
 #endif
+#ifdef TARG_ST
+	/* TB: with -fprofile-arcs option, tell be where to generate .gcno files */
+	if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)) {
+	  flag = add_new_option(concat_strings("-o,",outfile ? SYS_adirname(outfile) : SYS_getcwd()));
+	  add_phase_for_option(flag, P_be);
+	  prepend_option_seen (flag);
+	}
+#endif
 
 	if ((mpkind == NORMAL_MP || auto_parallelize) && !Disable_open_mp) {
 		flag = add_string_option(O_D, "_OPENMP=199810");
@@ -998,10 +1020,10 @@ add_special_options (void)
  	      flag = add_string_option(O_D, "__st231__");
 	      prepend_option_seen (flag);
 	    } 	    
-	    else if (proc == PROC_ST235) {
- 	      flag = add_string_option(O_D, "__ST235__");
+	    else if (proc == PROC_ST240) {
+ 	      flag = add_string_option(O_D, "__ST240__");
 	      prepend_option_seen (flag);
- 	      flag = add_string_option(O_D, "__st235__");
+ 	      flag = add_string_option(O_D, "__st240__");
 	      prepend_option_seen (flag);
 	    } 	    
 #ifdef MUMBLE_ST200_BSP
@@ -1030,6 +1052,11 @@ add_special_options (void)
 	    
 	    flag = add_string_option(O_D, "__open64__");
 	    prepend_option_seen (flag);
+
+	    // (cbr) we are in a elf environment, say it
+	    flag = add_string_option(O_D, "__ELF__");
+	    prepend_option_seen (flag);
+
 #ifdef TARG_ST200
 	    /* This part depends on macro defined only for TARG_ST200
 	       thus we conditionalize it.  */
@@ -1094,6 +1121,10 @@ add_special_options (void)
 	    }
 	    
 	    flag = add_string_option(O_D, "__open64__");
+	    prepend_option_seen (flag);
+
+	    // (cbr) we are in a elf environment, say it
+	    flag = add_string_option(O_D, "__ELF__");
 	    prepend_option_seen (flag);
 
 	    flag = add_string_option(O_D, "__LITTLE_ENDIAN__");

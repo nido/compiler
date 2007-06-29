@@ -239,7 +239,7 @@ template<>
 static bool
 IsJump<PU, BB, OP>(const OP* op, const PU* a_pu, const BB* tgt)
 {
-    return CGTARG_Is_Simple_Jump(op);
+    return OP_xfer(op) && OP_cond(op);
 }
 
 template<>

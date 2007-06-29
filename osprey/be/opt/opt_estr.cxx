@@ -1263,6 +1263,13 @@ STR_RED::Find_iv_and_mult_phi_res( const EXP_OCCURS *def, CODEREP **iv_def,
       }
     }
     else {
+#ifdef TARG_ST
+      // FdF 20060622: Temporary fix for bug 190B/55: Do not perform
+      // strength reduction in this case. See also
+      // opt_cse.cxx:Repair_injury_phi_real
+      *iv_use = NULL;
+      return;
+#endif
       FmtAssert( FALSE,
 	("STR_RED::Find_iv_and_mult_phi_res: not a candidate") );
     }

@@ -133,6 +133,8 @@ BOOL No_Trapping = TRUE;  /* No trapping math ? */
 BOOL No_Trapping_Set = FALSE;  /* ... option seen? */
 BOOL Unsafe_Math = FALSE;  /* Unsafe math allowed ? */
 BOOL Unsafe_Math_Set = FALSE;  /* ... option seen? */
+BOOL Fused_FP = TRUE;  /* Fused FP ops allowed ? */
+BOOL Fused_FP_Set = FALSE;  /* ... option seen? */
 BOOL Fused_Madd = TRUE;  /* Fused madd allowed ? */
 BOOL Fused_Madd_Set = FALSE;  /* ... option seen? */
 BOOL No_Denormals = TRUE;  /* No denormals support  ? */
@@ -149,12 +151,22 @@ BOOL Enable_Cfold_Reassociate = FALSE;	/* Re-association allowed? */
 static BOOL Cfold_Reassoc_Set = FALSE;	/* ... option seen? */
 BOOL Enable_Cfold_Intrinsics = FALSE;	/* Intrinsic constant folding? */
 BOOL Cfold_Intrinsics_Set = FALSE;	/* ... option seen? */
+// [HK] 20070531 fix for codex bug #28633
+// as the CIS optim is not disabled on the different ST targets,
+// disable it by default
+#ifdef TARG_ST
+BOOL CIS_Allowed = FALSE;	/* combine sin(x) and cos(x) to cis(x) */
+#else
 BOOL CIS_Allowed = TRUE;	/* combine sin(x) and cos(x) to cis(x) */
+#endif
 static BOOL CIS_Set = FALSE;	/* ... option seen? */
 BOOL Enable_CVT_Opt= FALSE;	/* Remove useless convert operators */
 BOOL Enable_CVT_Opt_Set= FALSE;	/* ... option seen? */
 BOOL Optimize_CVTL_Exp = FALSE;	/* Optimize expansion of CVTL operators */
 BOOL Div_Split_Allowed = FALSE;		/* change a/b --> a*1/b ? */
+#ifdef TARG_ST
+BOOL Float_Eq_Simp = TRUE;		/* change a==b (float cmp) --> a==b (integer cmp if a or b is cst)) ? */
+#endif
 static BOOL Div_Split_Set = FALSE;	/* ... option seen? */
 BOOL Fast_Exp_Allowed = FALSE;		/* Avoid exp() calls? */
 static BOOL Fast_Exp_Set = FALSE;	/* ... option seen? */
@@ -237,7 +249,10 @@ BOOL OPT_shared_memory = TRUE;	// assume use of shared memory
 /* Put each function in its own text section */
 BOOL Section_For_Each_Function = FALSE;
 BOOL Inline_Intrinsics_Early=FALSE;    /* Inline intrinsics just after VHO */
-BOOL Enable_extract_compose=TRUE;     /* This is also forced off for MIPS and IA32 in
+BOOL Enable_extract=FALSE;
+BOOL Enable_extract_overriden=FALSE;
+BOOL Enable_compose=FALSE;     
+BOOL Enable_compose_overriden=FALSE; /* This is also forced off for MIPS and IA32 in
 					  config_targ.cxx */
 #if defined(__linux__) || defined(__sun__) || defined(__CYGWIN__) || defined(__MINGW32__)
 BOOL Enable_WFE_DFE = FALSE;
@@ -245,11 +260,29 @@ BOOL Enable_WFE_DFE = FALSE;
 
 
 /***** Instrummentation Related Options *****/
-INT32 Instrumentation_Phase_Num = 0;
+INT32 Instrumentation_Phase_Num = 0; /*PROFILE_PHASE_BEFORE_VHO */
 BOOL Instrumentation_Enabled = FALSE;
 UINT32 Instrumentation_Actions = 0;
 BOOL Instrumentation_Unique_Output = FALSE; // always create unique output
 OPTION_LIST *Feedback_Option = NULL;
+
+#ifdef TARG_ST //TB
+char *disable_instrument = NULL;		/* -OPT:disable_instrument=%d function name */
+char *enable_instrument = NULL;		/* -OPT:enable_instrument=%d function name */
+#endif
+
+#ifdef TARG_ST
+BOOL OPT_fb_div_simp = TRUE;	// Apply division simplification with feedback info 
+BOOL OPT_fb_mpy_simp = TRUE;	// Apply multiply simplification with feedback info 
+#endif
+#ifdef KEY
+UINT32 Div_Exe_Counter = 10;  /* A number that can avoid regression on facerec. */
+UINT32 Div_Exe_Ratio = 24;      /* A cut-off percentage for value profiling. */
+UINT32 Div_Exe_Candidates = 2;  /* The top entries that will be considered. */
+UINT32 Mpy_Exe_Counter = 1000; // Nb of loop iteration to do float mpy
+			       // specialization with feedback info
+UINT32 Mpy_Exe_Ratio = 12;      /* A cut-off percentage for value profiling. */
+#endif
 
 /***** Obsolete options *****/
 static BOOL Fprop_Limit_Set = FALSE;
@@ -324,6 +357,34 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_BOOL,	OV_VISIBLE,	TRUE, "div_split",		"div_split",
     0, 0, 0,	&Div_Split_Allowed, &Div_Split_Set ,
     "Allow splitting of a/b into a*recip(b)" },
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_VISIBLE,	TRUE, "fb_div_simp",		"fb_div_simp",
+    0, 0, 0,	&OPT_fb_div_simp, NULL ,
+    "Allow division simplification with feedback info" },
+  { OVK_BOOL,	OV_VISIBLE,	TRUE, "fb_mpy_simp",		"fb_mpy_simp",
+    0, 0, 0,	&OPT_fb_mpy_simp, NULL ,
+    "Allow multiply simplification with feedback info" },
+#endif
+#ifdef KEY
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "float_eq_simp",	"",
+    0, 0, 0,	&Float_Eq_Simp, NULL ,
+    "transform float eq into integer eq" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "div_exe_counter",	"",
+    0, 0, UINT32_MAX,	&Div_Exe_Counter, NULL ,
+    "Restrict div/rem/mod optimization via value profiling" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "div_exe_ratio",	"",
+    0, 0, 100,	&Div_Exe_Ratio, NULL ,
+    "Restrict div/rem/mod optimization via value profiling" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "div_exe_candidates",	"",
+    0, 0, 10,	&Div_Exe_Candidates, NULL ,
+    "Restrict div/rem/mod optimization via value profiling" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "mpy_exe_counter",	"",
+    0, 0, UINT32_MAX,	&Mpy_Exe_Counter, NULL ,
+    "Restrict mpy optimization via value profiling" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "mpy_exe_ratio",	"",
+    0, 0, 100,	&Mpy_Exe_Ratio, NULL ,
+    "Restrict mpy optimization via value profiling" },
+#endif
 
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "early_mp",		"early_mp",
     0, 0, 0,	&Early_MP_Processing, NULL,
@@ -423,6 +484,10 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_BOOL,	OV_VISIBLE,	TRUE, "Unsafe_math_opt",		"Unsafe_math",
     0, 0, 0,	&Unsafe_Math, &Unsafe_Math_Set,
     "Allow unsafe FP math optimizations" },
+
+  { OVK_BOOL,	OV_VISIBLE,	TRUE, "Fused_fp",		"Fused_fp",
+    1, 0, 0,	&Fused_FP, &Fused_FP_Set,
+    "Enable fused FP operators usage in code generation" },
 
   { OVK_BOOL,	OV_VISIBLE,	TRUE, "Fused_madd",		"Fused_ma",
     1, 0, 0,	&Fused_Madd, &Fused_Madd_Set,
@@ -613,6 +678,14 @@ static OPTION_DESC Options_OPT[] = {
     0, 0, 0,	&OPT_recompute_addr_flags, NULL,
     "Recompute address flags in the backend (for debugging)"},
 
+#ifdef TARG_ST
+  { OVK_NAME,	OV_SHY,		FALSE, "disable_instrument",			"disable_instrument",
+    0, 0, 0,	&disable_instrument,		NULL,
+    "Function for which the PFO instrumention is disabled" },
+  { OVK_NAME,	OV_SHY,		FALSE, "enable_instrument",			"enable_instrument",
+    0, 0, 0,	&enable_instrument,		NULL,
+    "Function for which the PFO instrumention is enabled" },
+#endif
   { OVK_INT32,  OV_VISIBLE,	TRUE, "instrument",		"instr",
     0, 0, 3,	&Instrumentation_Phase_Num, &Instrumentation_Enabled,
     "Phases in the compiler where instrumentation needs to be done" },
@@ -637,9 +710,13 @@ static OPTION_DESC Options_OPT[] = {
     0, 0, 0,	&Delay_U64_Lowering, NULL,
     "Delay unsigned 64-bit lowering to after wopt" },
 
-  { OVK_BOOL,	OV_INTERNAL,	TRUE, "extract_deposit",	"extr",
-    0, 0, 0,	&Enable_extract_compose,	NULL,
-    "Enable use of extract/compose opcodes" },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "extract",	"extr",
+    0, 0, 0,	&Enable_extract,	&Enable_extract_overriden,
+    "Enable use of extract opcode" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "compose",	"comp",
+    0, 0, 0,	&Enable_compose,	&Enable_compose_overriden,
+    "Enable use of compose opcode" },
 
   { OVK_BOOL, OV_VISIBLE,     FALSE, "ansi_setjmp",           "ansi_setjmp",
     0, 0, 0,  &LANG_Ansi_Setjmp_On,   &LANG_Ansi_Setjmp_Set,

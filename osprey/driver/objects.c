@@ -96,78 +96,7 @@ init_objects (void)
 #endif
 }
 
-#ifndef TARG_ST
-/* static void */
-/* init_given_crt_path (string crt_name, string prog_name, string tmp_name) */
-/* { */
-/* 	FILE *path_file; */
-/* 	char path[512]; */
-/* 	char *p; */
-/* 	char **argv = (char **) alloca(3*sizeof(char*)); */
-/* 	buffer_t buf; */
-/* 	argv[0] = prog_name; */
-/* 	sprintf(buf, "-print-file-name=%s", crt_name); */
-/* 	argv[1] = buf; */
-/* 	argv[2] = NULL; */
-/* 	run_simple_program (argv[0], argv, tmp_name); */
 
-/* 	/\* now read the path *\/ */
-/* 	path_file = fopen(tmp_name, "r"); */
-/* 	if (path_file == NULL) { */
-/* 		internal_error("couldn't open %s tmp file", crt_name); */
-/* 		return; */
-/* 	} */
-/* 	if (fgets (path, 512, path_file) == NULL) { */
-/* 		internal_error("couldn't read %s tmp file", crt_name); */
-/* 	} */
-/* 	fclose(path_file); */
-/* 	if (path[0] != '/') { */
-/* 		internal_error("%s path not found", crt_name); */
-/* 	} */
-/* 	else { */
-/* 		/\* drop file name and add path to library list *\/ */
-/* 		p = drop_path (path); */
-/* 		*p = '\0'; */
-/* 		if (debug) fprintf(stderr, "%s found in %s\n", crt_name, path); */
-/* 		add_library_dir (path); */
-/* 	} */
-/* } */
-#endif
-
-/* only need to init crt paths if doing ipa link */
-extern void
-init_crt_paths (void)
-{
-#ifndef TARG_ST
-	/*
-	 * Have to find out where crt files are stored.
-	 * Invoke gcc -print-file-name=crt* to find the path.
-	 * Assume are two paths, one for crt{1,i,n} and one for crt{begin,end}.
-	 */
-	string tmp_name = create_temp_file_name("gc");
-	string gcc_name = get_full_phase_name(P_ld);
-	init_given_crt_path ("crtbegin.o", gcc_name, tmp_name);
-	init_given_crt_path ("crt1.o", gcc_name, tmp_name);
-#else
-#ifdef TARG_ST200
-	char *path;
-	char *p;
-
-	path = find_crt_path("crt0.o");
-	p = drop_path (path);
-	*p = '\0';
-	add_library_dir (path);
-#else
-	char *path;
-	char *p;
-
-	path = find_crt_path("boot.o");
-	p = drop_path (path);
-	*p = '\0';
-	add_library_dir (path);
-#endif
-#endif /* TARG_ST */
-}
 
 /* whether option is an object or not */
 extern boolean
@@ -463,9 +392,9 @@ add_library_options (void)
 	  append_phase_dir(P_library, "st231");
 	  append_phase_dir(P_startup, "st231");
 	  break;
-	case PROC_ST235:
-	  append_phase_dir(P_library, "st235");
-	  append_phase_dir(P_startup, "st235");
+	case PROC_ST240:
+	  append_phase_dir(P_library, "st240");
+	  append_phase_dir(P_startup, "st240");
 	  break;
 	}
 
@@ -651,7 +580,7 @@ add_library_options (void)
 	    st200_soc = concat_path (st200_soc, 
 				     concat_path(proc == PROC_ST220 ? "st220" :  
 						 proc == PROC_ST231 ? "st231" : 
-						 proc == PROC_ST235 ? "st235" : "st220" ,
+						 proc == PROC_ST240 ? "st240" : "st220" ,
 						 concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							     (st200_runtime == RUNTIME_OS21 || 
 							      st200_runtime == RUNTIME_OS21_DEBUG) ? 
@@ -664,7 +593,7 @@ add_library_options (void)
 	    st200_board = concat_path (st200_board, 
 				       concat_path(proc == PROC_ST220 ? "st220" :  
 						   proc == PROC_ST231 ? "st231" : 
-						   proc == PROC_ST235 ? "st235" : "st220" ,
+						   proc == PROC_ST240 ? "st240" : "st220" ,
 						   
 						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							     (st200_runtime == RUNTIME_OS21 || 
@@ -679,7 +608,7 @@ add_library_options (void)
 	  st200_libdir = concat_path (st200_libdir, 
 				      concat_path(proc == PROC_ST220 ? "st220" :  
 						  proc == PROC_ST231 ? "st231" : 
-						  proc == PROC_ST235 ? "st235" : "st220" ,
+						  proc == PROC_ST240 ? "st240" : "st220" ,
 						  
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      (st200_runtime == RUNTIME_OS21 || 

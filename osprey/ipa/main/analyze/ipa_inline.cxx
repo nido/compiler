@@ -1421,6 +1421,15 @@ do_inline (IPA_EDGE *ed, IPA_NODE *caller,
       reason = "function is not declared 'inline'";
     }
 #endif
+#ifdef KEY
+    // This can only arise with ipa
+    else if (callee->Is_Lang_CXX() && !caller->Is_Lang_CXX() &&
+             PU_has_exc_scopes (callee->Get_PU())) {
+            result = FALSE;
+            reason = "not inlining C++ with exceptions into non-C++";
+            ed->Set_reason_id (36);
+    }
+#endif
     else if (!IPA_Enable_Lang) {
 	if ((callee->Summary_Proc()->Get_lang() == LANG_F77) || 
 	    (caller->Summary_Proc()->Get_lang() == LANG_F77)) {

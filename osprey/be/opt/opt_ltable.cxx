@@ -309,7 +309,11 @@ ETABLE::Perform_LPRE_optimization(void)
 #endif
 
   EXP_WORKLST *cur_worklst;
+# ifdef KEY
+  INT32 cur_worklst_idx = 0;
+# else
   INT32 cur_worklst_idx = -1;
+# endif
   INT total_phi_count = 0;
   INT total_opt_ssa_count = 0;
   INT total_dense_ssa_count = 0;
@@ -367,7 +371,10 @@ ETABLE::Perform_LPRE_optimization(void)
       cur_worklst->Rename_expression(this); // Step 3
 
       if (use_feedback) {
-	
+#ifdef TARG_ST
+	if (Tracing())
+	  fprintf(TFile, "Feedback optimization:feedback for OPT LPRE (-WOPT:fb_lpre=1) is on\n");
+#endif
 	cur_worklst->Save_flags();
 
 	SET_OPT_REPEAT_PHASE(Downsafe_prop_phase, "LPRE: Var anticipation");

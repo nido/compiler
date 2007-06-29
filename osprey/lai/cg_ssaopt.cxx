@@ -82,10 +82,18 @@
 #include "dominate.h"
 #include "gra_live.h"
 #include "cgexp.h"
+#include "range_prop.h"
 #include "cg_ssa.h"
 #include "cg_ssaopt.h"
 
 #include "cg_spill.h"
+
+/* ================================================================
+ *
+ *   Common Base Pointer Optimization.
+ *
+ * ================================================================
+ */
 
 static BOOL
 Retrieve_Base_Offset(OP* op, TN*& tn_base, TN*& tn_offset);
@@ -230,12 +238,6 @@ Lookup_Ops_List(vec_base_ops& Base_Ops_List, TN *tn_base) {
 }
 
 /* ====================================================================
- * Returns true if the value does not fit in range
- * 
- * ====================================================================
- */
-
-/* ====================================================================
  * For a sublist of operations in the form 'offset[base_tn]', replace
  * the base_tn by a new base and update the offsets, such that they
  * are now within [MIN_OFFSET, MAX_OFFSET].
@@ -280,42 +282,34 @@ Dup_Rematerializable_TN(TN *tn, INT64 adjust) {
 static BOOL
 Use_TN(const OPS& ops, TN *tn)
 {
-    OP* op;
-    BOOL result = FALSE;
-    for(op = OPS_first(&ops); op && !result; op = OP_next(op))
-        {
-            for(INT i = 0; i < OP_opnds(op); ++i)
-                {
-                    result |= tn == OP_opnd(op, i);
-                }
-        }
-    return result;
+  OP* op;
+  BOOL result = FALSE;
+  for(op = OPS_first(&ops); op && !result; op = OP_next(op)) {
+    for(INT i = 0; i < OP_opnds(op); ++i) {
+      result |= tn == OP_opnd(op, i);
+    }
+  }
+  return result;
 }
 
 static BOOL
 Set_Remat(TN* result_tn, TN* oldBase)
 {
-    BOOL result = !TN_is_dedicated(result_tn);
-    if(result && !TN_is_rematerializable(result_tn))
-        {
-            if(TN_is_symbol(oldBase))
-                {
-                    // Pointer are seen as unsigned int
-                    CGSPILL_Attach_Lda_Remat(result_tn, MTYPE_U4,
-                                             TN_offset(oldBase),
-                                             TN_var(oldBase));
-                }
-            else if(TN_has_value(oldBase))
-                {
-                    CGSPILL_Attach_Intconst_Remat(result_tn, MTYPE_I4,
-                                                  TN_value(oldBase));
-                }
-            else
-                {
-                    result = FALSE;
-                }
-        }
-    return result;
+  BOOL result = !TN_is_dedicated(result_tn);
+  if(result && !TN_is_rematerializable(result_tn)) {
+    if(TN_is_symbol(oldBase))	{
+      // Pointer are seen as unsigned int
+      CGSPILL_Attach_Lda_Remat(result_tn, MTYPE_U4,
+			       TN_offset(oldBase),
+			       TN_var(oldBase));
+    } else if(TN_has_value(oldBase)) {
+      CGSPILL_Attach_Intconst_Remat(result_tn, MTYPE_I4,
+				    TN_value(oldBase));
+    } else {
+      result = FALSE;
+    }
+  }
+  return result;
 }
 
 static BOOL
@@ -323,150 +317,150 @@ Update_Expensive_Load_Im(OP *&op, INT index, INT64 offset_val, TN *new_base_tn,
                          TN *new_offset_tn)
 {
 
-    OPS ops = OPS_EMPTY;
-    TN *result_tn = OP_result(op, 0);
-    OP *point = OP_next(op);
-    BB *bb = OP_bb(op);
-    TN *oldBase = OP_opnd(op, index);
-    BOOL result;
-    BOOL tnIsRemat = TN_is_rematerializable(result_tn) != 0;
-    if((result = Set_Remat(result_tn, oldBase)))
-        {
-            BB_Remove_Op(OP_bb(op), op);
-            if(offset_val < 0)
-                {
-                    Exp_SUB(MTYPE_I4, result_tn, new_base_tn,
-                            Gen_Literal_TN(-offset_val, 4), &ops);
-                }
-            else if(offset_val > 0)
-                {
-                    Exp_ADD(MTYPE_I4, result_tn, new_base_tn,
-                            new_offset_tn, &ops);
-                }
-            else
-                {
-                    Expand_Copy(result_tn, True_TN, new_base_tn, &ops);
-                }
-            if(!CGTARG_sequence_is_cheaper_than_load_imm(&ops, op))
-                {
-                    result = FALSE;
-                    OPS_Remove_All(&ops);
-                    OPS_Append_Op(&ops, op);
-                    if(!tnIsRemat)
-                        {
-                            Reset_TN_is_rematerializable(result_tn);
-                        }
-                }
-            if(point)
-                {
-                    BB_Insert_Ops(bb, point, &ops, TRUE);
-                }
-            else
-                {
-                    // else op was the last instruction of the basic block
-                    BB_Append_Ops(bb, &ops);
-                }
-            op = ops.last;
-        }
-    return result;
+  OPS ops = OPS_EMPTY;
+  TN *result_tn = OP_result(op, 0);
+  OP *point = OP_next(op);
+  BB *bb = OP_bb(op);
+  TN *oldBase = OP_opnd(op, index);
+  BOOL result;
+  BOOL tnIsRemat = TN_is_rematerializable(result_tn) != 0;
+  if((result = Set_Remat(result_tn, oldBase)))
+    {
+      BB_Remove_Op(OP_bb(op), op);
+      if(offset_val < 0)
+	{
+	  Exp_SUB(MTYPE_I4, result_tn, new_base_tn,
+		  Gen_Literal_TN(-offset_val, 4), &ops);
+	}
+      else if(offset_val > 0)
+	{
+	  Exp_ADD(MTYPE_I4, result_tn, new_base_tn,
+		  new_offset_tn, &ops);
+	}
+      else
+	{
+	  Expand_Copy(result_tn, True_TN, new_base_tn, &ops);
+	}
+      if(!CGTARG_sequence_is_cheaper_than_load_imm(&ops, op))
+	{
+	  result = FALSE;
+	  OPS_Remove_All(&ops);
+	  OPS_Append_Op(&ops, op);
+	  if(!tnIsRemat)
+	    {
+	      Reset_TN_is_rematerializable(result_tn);
+	    }
+	}
+      if(point)
+	{
+	  BB_Insert_Ops(bb, point, &ops, TRUE);
+	}
+      else
+	{
+	  // else op was the last instruction of the basic block
+	  BB_Append_Ops(bb, &ops);
+	}
+      op = ops.last;
+    }
+  return result;
 }
 
 static TN *
 Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_dist, INT& nbDone) {
-    INT base_idx = OP_find_opnd_use(op, OU_base);
-    INT offset_idx = OP_find_opnd_use(op, OU_offset);
+  INT base_idx = OP_find_opnd_use(op, OU_base);
+  INT offset_idx = OP_find_opnd_use(op, OU_offset);
     
-    TN *base_tn = NULL;
-    TN *offset_tn = NULL;
-    BOOL result = Retrieve_Base_Offset(op, base_tn, offset_tn);
-    DevAssert(result, ("We should not be here if Retrieve_Base_Offset returns "
-                       "false!!!"));
+  TN *base_tn = NULL;
+  TN *offset_tn = NULL;
+  BOOL result = Retrieve_Base_Offset(op, base_tn, offset_tn);
+  DevAssert(result, ("We should not be here if Retrieve_Base_Offset returns "
+		     "false!!!"));
     
-    TN *new_offset_tn;
+  TN *new_offset_tn;
     
-    INT64 offset_val = addr_dist - base_offset;
-    new_offset_tn = Gen_Literal_TN(offset_val, 4);
-    if (TN_is_register(offset_tn) && offset_idx >= 0) {
-        TOP new_top;
-        new_top = TOP_opnd_immediate_variant(OP_code(op), offset_idx, offset_val);
-        FmtAssert(new_top != TOP_UNDEFINED,("Unable to get TOP immediate variant"));
-        OP_Change_Opcode(op, new_top);
-    }
+  INT64 offset_val = addr_dist - base_offset;
+  new_offset_tn = Gen_Literal_TN(offset_val, 4);
+  if (TN_is_register(offset_tn) && offset_idx >= 0) {
+    TOP new_top;
+    new_top = TOP_opnd_immediate_variant(OP_code(op), offset_idx, offset_val);
+    FmtAssert(new_top != TOP_UNDEFINED,("Unable to get TOP immediate variant"));
+    OP_Change_Opcode(op, new_top);
+  }
     
 #ifdef Is_True_On
-    if(offset_idx >= 0) {
-        FmtAssert(TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val),("new offset does not fit in immediate"));
-    }
+  if(offset_idx >= 0) {
+    FmtAssert(TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val),("new offset does not fit in immediate"));
+  }
 #endif
     
-    if (Trace_SSA_CBPO) {
-        fprintf(TFile, ">>> Replacing OLD op by NEW op:\n    OLD ");
-        Print_OP_No_SrcLine (op);
-    }
+  if (Trace_SSA_CBPO) {
+    fprintf(TFile, ">>> Replacing OLD op by NEW op:\n    OLD ");
+    Print_OP_No_SrcLine (op);
+  }
     
-    if(base_idx < 0 || offset_idx < 0) {
-        INT index = CGTARG_expensive_load_imm_immediate_index(op);
-        if(index >= 0) {
-            if(!Update_Expensive_Load_Im(op, index, offset_val, new_base_tn,
-                                         new_offset_tn)) {
-                if(Trace_SSA_CBPO) {
-                    fprintf(TFile, "Do not update expensive load\n");
-                }
-            } else {
-                ++nbDone;
-            }
-        }
-    } else {
-        ++nbDone;
-        Set_OP_opnd(op, base_idx, new_base_tn);
-        Set_OP_opnd(op, offset_idx, new_offset_tn);
+  if(base_idx < 0 || offset_idx < 0) {
+    INT index = CGTARG_expensive_load_imm_immediate_index(op);
+    if(index >= 0) {
+      if(!Update_Expensive_Load_Im(op, index, offset_val, new_base_tn,
+				   new_offset_tn)) {
+	if(Trace_SSA_CBPO) {
+	  fprintf(TFile, "Do not update expensive load\n");
+	}
+      } else {
+	++nbDone;
+      }
     }
-    if (Trace_SSA_CBPO) {
-        fprintf(TFile, "    NEW ");
-        Print_OP_No_SrcLine (op);
-    }
+  } else {
+    ++nbDone;
+    Set_OP_opnd(op, base_idx, new_base_tn);
+    Set_OP_opnd(op, offset_idx, new_offset_tn);
+  }
+  if (Trace_SSA_CBPO) {
+    fprintf(TFile, "    NEW ");
+    Print_OP_No_SrcLine (op);
+  }
 
-    return new_offset_tn;
+  return new_offset_tn;
 }
 
 
 static TN *
 Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_dist, BB* common_dom, float sum, INT& nbDone, const std::set<int>& alreadyDone) {
-    TN *result = NULL;
-    BB *bb = OP_bb(op);
-    BB *common_dom_new = BB_get_common_dom(common_dom, bb);
-    if(Trace_SSA_CBPO) {
-        fprintf(TFile, "BB%d frequency: %f\nDominator (BB%d) frequency: %f\n",
-                BB_id(bb), BB_freq(bb), BB_id(common_dom_new),
-                BB_freq(common_dom_new));
-    }
+  TN *result = NULL;
+  BB *bb = OP_bb(op);
+  BB *common_dom_new = BB_get_common_dom(common_dom, bb);
+  if(Trace_SSA_CBPO) {
+    fprintf(TFile, "BB%d frequency: %f\nDominator (BB%d) frequency: %f\n",
+	    BB_id(bb), BB_freq(bb), BB_id(common_dom_new),
+	    BB_freq(common_dom_new));
+  }
 
-    if(alreadyDone.find(BB_id(bb)) == alreadyDone.end()) {
-        sum += BB_freq(bb);
+  if(alreadyDone.find(BB_id(bb)) == alreadyDone.end()) {
+    sum += BB_freq(bb);
+  }
+  // Here we check that the frequency of the basic block, that will receive
+  // the initialization of the new base, does not have a too big difference
+  // with the source one. Moreover, if frequencies are too different but we
+  // do not change the dominator and we have already had to emit the new base
+  // initialization or we do not change the destination basic block, then
+  // performs the optimization.
+  // FdF 20061027: In case of operations in exception handlers,
+  // there will be no common dominator. Some operations will not be
+  // optimized in this case. (common_dom_new == NULL)
+  if(common_dom_new &&
+     (!(CG_cbpo_block_method & CBPO_BLOCK_LOCAL) ||
+      ((sum / BB_freq(common_dom_new)) > min_frequency_ratio) ||
+      (common_dom_new == common_dom && nbDone) || common_dom_new == bb)) {
+    result = Update_Op_With_New_Base(op, new_base_tn, base_offset,
+				     addr_dist, nbDone);
+  } else {
+    if(Trace_SSA_CBPO) {
+      fprintf(TFile, "Do not update load: Frequencies are too "
+	      "different: Sum %f\tDominator %f\n", sum,
+	      BB_freq(common_dom_new));
     }
-    // Here we check that the frequency of the basic block, that will receive
-    // the initialization of the new base, does not have a too big difference
-    // with the source one. Moreover, if frequencies are too different but we
-    // do not change the dominator and we have already had to emit the new base
-    // initialization or we do not change the destination basic block, then
-    // performs the optimization.
-    // FdF 20061027: In case of operations in exception handlers,
-    // there will be no common dominator. Some operations will not be
-    // optimized in this case. (common_dom_new == NULL)
-    if(common_dom_new &&
-       (!(CG_cbpo_block_method & CBPO_BLOCK_LOCAL) ||
-        ((sum / BB_freq(common_dom_new)) > min_frequency_ratio) ||
-        (common_dom_new == common_dom && nbDone) || common_dom_new == bb)) {
-        result = Update_Op_With_New_Base(op, new_base_tn, base_offset,
-                                         addr_dist, nbDone);
-    } else {
-        if(Trace_SSA_CBPO) {
-            fprintf(TFile, "Do not update load: Frequencies are too "
-                    "different: Sum %f\tDominator %f\n", sum,
-                    BB_freq(common_dom_new));
-        }
-    }
-    return result;
+  }
+  return result;
 }
 
 static INT
@@ -483,34 +477,34 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   float sum = 0.0;
   BB *tmp_dom = common_dom;
   for (int i = first; i <= last; i++) {
-      shouldRedo.push_back(i);
-      BB* bb = OP_bb(BO_op(op_offset[i]));
-      if(alreadyDone.find(BB_id(bb)) == alreadyDone.end()) {
-          alreadyDone.insert(BB_id(bb));
-          sum += BB_freq(bb);
-          tmp_dom = BB_get_common_dom(tmp_dom, bb);
-      }
+    shouldRedo.push_back(i);
+    BB* bb = OP_bb(BO_op(op_offset[i]));
+    if(alreadyDone.find(BB_id(bb)) == alreadyDone.end()) {
+      alreadyDone.insert(BB_id(bb));
+      sum += BB_freq(bb);
+      tmp_dom = BB_get_common_dom(tmp_dom, bb);
+    }
   }
 
   // Save block method value
   INT CG_cbpo_block_method_save = CG_cbpo_block_method;
 
   if(CG_cbpo_block_method & CBPO_BLOCK_GLOBAL) {
-      if((sum / BB_freq(tmp_dom)) < min_frequency_ratio) {
-          if(Trace_SSA_CBPO) {
-              fprintf(TFile, "Do not globaly optimize: Sum %f\tDominator "
-                      "(BB%d) %f\n",
-                      sum, BB_id(tmp_dom), BB_freq(tmp_dom));
-          }
-          if(CG_cbpo_block_method == CBPO_BLOCK_GLOBAL) {
-              return 0;
-          }
-          // Else: Global has failed, but user set method global then local, so
-          // continue
-      } else {
-          // Global will work, so do not apply local block method
-          CG_cbpo_block_method = CBPO_BLOCK_GLOBAL;
+    if((sum / BB_freq(tmp_dom)) < min_frequency_ratio) {
+      if(Trace_SSA_CBPO) {
+	fprintf(TFile, "Do not globaly optimize: Sum %f\tDominator "
+		"(BB%d) %f\n",
+		sum, BB_id(tmp_dom), BB_freq(tmp_dom));
       }
+      if(CG_cbpo_block_method == CBPO_BLOCK_GLOBAL) {
+	return 0;
+      }
+      // Else: Global has failed, but user set method global then local, so
+      // continue
+    } else {
+      // Global will work, so do not apply local block method
+      CG_cbpo_block_method = CBPO_BLOCK_GLOBAL;
+    }
   }
 
   alreadyDone.clear();
@@ -533,18 +527,18 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
                               BO_addr_dist(op_offset[*it]), common_dom, sum,
                               nbDone, alreadyDone);
       if(nbDone != nbDoneOld) {
-          if(Trace_SSA_CBPO) {
-              fprintf(TFile, "Update dominator (%d)\n", nbPhase);
-          }
-          // Increase the sum for this group of operations unless it has been
-          // done
-          if(alreadyDone.find(BB_id(OP_bb(op))) == alreadyDone.end()) {
-              alreadyDone.insert(BB_id(OP_bb(op)));
-              sum += BB_freq(OP_bb(op));
-          }
-          common_dom = BB_get_common_dom(common_dom, OP_bb(op));
+	if(Trace_SSA_CBPO) {
+	  fprintf(TFile, "Update dominator (%d)\n", nbPhase);
+	}
+	// Increase the sum for this group of operations unless it has been
+	// done
+	if(alreadyDone.find(BB_id(OP_bb(op))) == alreadyDone.end()) {
+	  alreadyDone.insert(BB_id(OP_bb(op)));
+	  sum += BB_freq(OP_bb(op));
+	}
+	common_dom = BB_get_common_dom(common_dom, OP_bb(op));
       } else {
-          tmp.push_back(*it);
+	tmp.push_back(*it);
       }
     }
     ++nbPhase;
@@ -606,60 +600,60 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
   INT64 init_adjust = base_offset - base_adjust;
 
   if(Trace_SSA_CBPO) {
-      fprintf(TFile,"*** nbDone %d\n", nbDone);
+    fprintf(TFile,"*** nbDone %d\n", nbDone);
   }
 
   if(nbDone) {
-      if (base_tn == NULL)
-          Expand_Immediate(new_base_tn, Gen_Literal_TN(init_adjust, 4), MTYPE_I4, &ops);
-      else if (!TN_is_register(base_tn))
-          Expand_Immediate(new_base_tn, Gen_Adjusted_TN(base_tn, init_adjust), MTYPE_I4, &ops);
-      else if (init_adjust < 0)
-          Exp_SUB(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(-init_adjust, 4), &ops);
-      else if (init_adjust > 0)
-          Exp_ADD(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(init_adjust, 4), &ops);
-      else {
-          Expand_Copy(new_base_tn, True_TN, base_tn, &ops);
-      }
+    if (base_tn == NULL)
+      Expand_Immediate(new_base_tn, Gen_Literal_TN(init_adjust, 4), MTYPE_I4, &ops);
+    else if (!TN_is_register(base_tn))
+      Expand_Immediate(new_base_tn, Gen_Adjusted_TN(base_tn, init_adjust), MTYPE_I4, &ops);
+    else if (init_adjust < 0)
+      Exp_SUB(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(-init_adjust, 4), &ops);
+    else if (init_adjust > 0)
+      Exp_ADD(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(init_adjust, 4), &ops);
+    else {
+      Expand_Copy(new_base_tn, True_TN, base_tn, &ops);
+    }
       
-      if (Trace_SSA_CBPO) {
-          fprintf(TFile, ">>> Inserting new OP in BB %d:\n", BB_id(common_dom));
-          Print_OPS_No_SrcLines(&ops);
-      }
+    if (Trace_SSA_CBPO) {
+      fprintf(TFile, ">>> Inserting new OP in BB %d:\n", BB_id(common_dom));
+      Print_OPS_No_SrcLines(&ops);
+    }
       
-      // If operations to be inserted do not use base_tn, we must not insert them
-      // after the definition of that tn. E.g.
-      // base_tn :- load_im cst
-      // Is replace by
-      // base_tn :- move new_base_tn
-      // So operations to be inserted define new_base_tn, so we have to insert
-      // them before first usage of new_base_tn (i.e. operation which define
-      // base_tn) or in dominator bb.
-      // This is not true with other load operations, since new_base_tn is
-      // defined from base_tn, that is why we check base_tn usage.
-      OP *op_base = (base_tn && TN_is_register(base_tn) &&
-                     Use_TN(ops, base_tn))? TN_ssa_def(base_tn): NULL;
-      OP *point = (op_base && (common_dom == OP_bb(op_base)))? OP_next(op_base):
-          BB_first_op(common_dom);
+    // If operations to be inserted do not use base_tn, we must not insert them
+    // after the definition of that tn. E.g.
+    // base_tn :- load_im cst
+    // Is replace by
+    // base_tn :- move new_base_tn
+    // So operations to be inserted define new_base_tn, so we have to insert
+    // them before first usage of new_base_tn (i.e. operation which define
+    // base_tn) or in dominator bb.
+    // This is not true with other load operations, since new_base_tn is
+    // defined from base_tn, that is why we check base_tn usage.
+    OP *op_base = (base_tn && TN_is_register(base_tn) &&
+		   Use_TN(ops, base_tn))? TN_ssa_def(base_tn): NULL;
+    OP *point = (op_base && (common_dom == OP_bb(op_base)))? OP_next(op_base):
+      BB_first_op(common_dom);
 
-      // FdF 20061124: Be careful not to insert code before spadjust
-      while (point && (OP_code(point) == TOP_phi ||
-                       point == BB_entry_sp_adj_op(OP_bb(point)))) {
-          point = OP_next(point);
-      }
+    // FdF 20061124: Be careful not to insert code before spadjust
+    while (point && (OP_code(point) == TOP_phi ||
+		     point == BB_entry_sp_adj_op(OP_bb(point)))) {
+      point = OP_next(point);
+    }
 
-      OP* sp_adjust;
-      if ((point != NULL) &&
-          !(op_base && common_dom == OP_bb(op_base)) && // In this case, insertion point is after op_base. So necessary after sp_adjust.
-          ( ( sp_adjust = BB_entry_sp_adj_op(OP_bb(point)) ) != NULL))  {
-          // [JV] In case of double sp_adjust, the last one is marked
-          // sp_adjust.
-          point = OP_next(sp_adjust);
-      }
-      BOOL before = (point != NULL);
-      BB_Insert_Ops(common_dom, point, &ops, before);
+    OP* sp_adjust;
+    if ((point != NULL) &&
+	!(op_base && common_dom == OP_bb(op_base)) && // In this case, insertion point is after op_base. So necessary after sp_adjust.
+	( ( sp_adjust = BB_entry_sp_adj_op(OP_bb(point)) ) != NULL))  {
+      // [JV] In case of double sp_adjust, the last one is marked
+      // sp_adjust.
+      point = OP_next(sp_adjust);
+    }
+    BOOL before = (point != NULL);
+    BB_Insert_Ops(common_dom, point, &ops, before);
       
-      Optimized_Extended_Immediate = TRUE;
+    Optimized_Extended_Immediate = TRUE;
   }
 }
 
@@ -869,40 +863,40 @@ Propagate_Base_Offset( void ) {
 static BOOL
 Retrieve_Base_Offset(OP* op, TN*& tn_base, TN*& tn_offset)
 {
-    INT base_idx = OP_find_opnd_use(op, OU_base);
-    INT offset_idx = OP_find_opnd_use(op, OU_offset);
-    BOOL result = FALSE;
+  INT base_idx = OP_find_opnd_use(op, OU_base);
+  INT offset_idx = OP_find_opnd_use(op, OU_offset);
+  BOOL result = FALSE;
 
-    if (base_idx < 0 || offset_idx < 0)
-        {
-            INT index;
-            if((index = CGTARG_expensive_load_imm_immediate_index(op)) >= 0 &&
-               CG_cbpo_optimize_load_imm)
-                {
-                    TN* tn = OP_opnd(op, index);
-                    result = TRUE;
-                    if(TN_is_symbol(tn))
-                        {
-                            tn_base = Gen_Symbol_TN(TN_var(tn), 0,
-                                                    TN_relocs(tn));
-                            tn_offset = Gen_Literal_TN(TN_offset(tn), 4);
-                        }
-                    else
-                        {
-                            tn_base = tn;
-                            tn_offset = Gen_Literal_TN(0, 4);
-                            // Currently, we do not optimize known constant
-                            result = FALSE;
-                        }
-                }
-        }
-    else
-        {
-            tn_base = OP_opnd(op, base_idx);
-            tn_offset = OP_opnd(op, offset_idx);
-            result = TRUE;
-        }
-    return result;
+  if (base_idx < 0 || offset_idx < 0)
+    {
+      INT index;
+      if((index = CGTARG_expensive_load_imm_immediate_index(op)) >= 0 &&
+	 CG_cbpo_optimize_load_imm)
+	{
+	  TN* tn = OP_opnd(op, index);
+	  result = TRUE;
+	  if(TN_is_symbol(tn))
+	    {
+	      tn_base = Gen_Symbol_TN(TN_var(tn), 0,
+				      TN_relocs(tn));
+	      tn_offset = Gen_Literal_TN(TN_offset(tn), 4);
+	    }
+	  else
+	    {
+	      tn_base = tn;
+	      tn_offset = Gen_Literal_TN(0, 4);
+	      // Currently, we do not optimize known constant
+	      result = FALSE;
+	    }
+	}
+    }
+  else
+    {
+      tn_base = OP_opnd(op, base_idx);
+      tn_offset = OP_opnd(op, offset_idx);
+      result = TRUE;
+    }
+  return result;
 }
 
 /* ====================================================================
@@ -919,9 +913,9 @@ Collect_Base_Offset(vec_base_ops& Base_Ops_List) {
     OP *op;
     FOR_ALL_BB_OPs(bb, op) {
 
-        TN *tn_base = NULL;
-        TN *tn_offset = NULL;
-        if(!Retrieve_Base_Offset(op, tn_base, tn_offset)) continue;
+      TN *tn_base = NULL;
+      TN *tn_offset = NULL;
+      if(!Retrieve_Base_Offset(op, tn_base, tn_offset)) continue;
 
       Addr_Exp_Info addr_exp;
       if (!Compute_Addr_Exp(addr_exp, tn_base, tn_offset, FALSE, FALSE))
@@ -1089,9 +1083,8 @@ Generate_Common_Base(vec_base_ops Base_Ops_List) {
 static void
 Optimize_Extended_Offset()
 {
-#ifdef Is_True_On
-  if(!getenv("NO_CBPO")) {
-#endif
+
+  if (!CG_enable_cbpo) return;
 
   Trace_SSA_CBPO = Get_Trace(TP_SSA, SSA_CBPO);
   min_frequency_ratio = CG_cbpo_ratio / 100.0;
@@ -1142,9 +1135,108 @@ Optimize_Extended_Offset()
   MEM_POOL_Pop(&base_offset_pool);
   MEM_POOL_Delete(&base_offset_pool);
 
-#ifdef Is_True_On
-  } /* !getenv("NO_CBPO") */
-#endif
+}
+
+
+/* ================================================================
+ *
+ *   Dead Code Elimination.
+ *
+ * ================================================================
+ */
+typedef Worklist<OP *> OP_Worklist;
+
+static void
+Trace_Op_Removal (OP *op, BOOL replace_with_noop)
+{
+  fprintf (TFile, "SSA_DeadCode: %s ",
+	   (replace_with_noop ? "Replace " : "Remove "));
+  Print_OP_No_SrcLine (op);
+  if (replace_with_noop)
+    fputs (" ==> noop", TFile);
+  fputc ('\n', TFile);
+}
+
+static BOOL
+is_Op_Required (OP *op)
+{
+  for (INT i = 0; i < OP_results (op); i++) {
+    TN *result = OP_result (op, i);
+    if (! TN_ssa_def (result))
+      return TRUE;
+  }
+  if (! OP_has_result (op)
+      || OP_xfer (op)
+      || (OP_memory (op)  && ! OP_load (op))
+      || OP_has_implicit_interactions (op)
+      || OP_glue (op)
+      || OP_Is_Intrinsic (op)
+      || op == BB_exit_sp_adj_op (OP_bb (op))
+      || op == BB_entry_sp_adj_op (OP_bb (op)))
+    return TRUE;
+  return FALSE;
+}
+
+static TN *
+Trip_Count_TN (BB *bb)
+{
+  ANNOTATION *annot = ANNOT_Get (BB_annotations (bb), ANNOT_LOOPINFO);
+  if (annot) {
+    LOOPINFO *info = ANNOT_loopinfo (annot);
+    return LOOPINFO_primary_trip_count_tn (info);
+  }
+  return NULL;
+}
+
+class DCAnalysis {
+private:
+  BOOL tracing;
+  OP_MAP op_useful;
+  void Set_Op_Useful (OP *op) { OP_MAP32_Set(op_useful, op, TRUE); }
+public:
+  void Find_Useful_Ops ();
+  BOOL Op_Marked_Useful (OP *op) { return OP_MAP32_Get(op_useful, op) != 0; }
+  DCAnalysis () {
+    op_useful = OP_MAP32_Create ();
+    tracing = Get_Trace(TP_SSA, SSA_DEAD_CODE);
+  }
+  ~DCAnalysis () { OP_MAP_Delete (op_useful); }
+};
+
+
+void
+DCAnalysis::Find_Useful_Ops ()
+{
+  OP_Worklist op_work;
+  BB *bb;
+  OP *op;
+
+  FmtAssert (op_work.empty (), ("Find_Useful_Ops: worklist not empty"));
+  
+  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    // Preserve trip counts, even if they appear unused.
+    TN *trip_count_tn = Trip_Count_TN (bb);
+    if (trip_count_tn != NULL && TN_is_ssa_var (trip_count_tn)) {
+      op_work.push (TN_ssa_def (trip_count_tn));
+    }
+    FOR_ALL_BB_OPs_FWD (bb, op) {
+      if (is_Op_Required (op)) {
+	op_work.push (op);
+      }
+    }
+  }
+  while (! op_work.empty ()) {
+    OP *op = op_work.choose ();
+    Set_Op_Useful (op);
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      TN *opnd = OP_opnd(op, i);
+      if (TN_is_register (opnd)) {
+	OP *def = TN_ssa_def (opnd);
+	if (def && ! Op_Marked_Useful (def))
+	  op_work.push (def);
+      }
+    }
+  }
 }
 
 /* ================================================================
@@ -1157,5 +1249,34 @@ void
 SSA_Optimize()
 {
   Optimize_Extended_Offset();
+
+  RangePropagate();
 }
 
+void
+SSA_DeadCode ()
+{
+  BB *bb;
+  OP *op;
+  OP *next;
+  DCAnalysis dc_analysis;
+  BOOL tracing = Get_Trace(TP_SSA, SSA_DEAD_CODE);
+
+  dc_analysis.Find_Useful_Ops ();
+
+  for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+    BOOL in_delay_slot = FALSE;
+    for (op = BB_first_op (bb); op != NULL; op = next) {
+      next = OP_next (op);
+      if (! dc_analysis.Op_Marked_Useful (op)) {
+	if (tracing) Trace_Op_Removal (op, in_delay_slot);
+	if (in_delay_slot) {
+	  OP_Change_To_Noop (op);
+	} else {
+	  BB_Remove_Op (bb, op);
+	}
+      }
+      if (OP_xfer (op)) in_delay_slot = TRUE;
+    }
+  }
+}

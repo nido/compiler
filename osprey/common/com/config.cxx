@@ -411,17 +411,30 @@ INT32 Prefetch_Optimize = 3;
 
 #ifdef TARG_ST
 // [CG]: Enable emulation for all floating point ops
+// If this is set it disable any floating point op mapping, whatever the target dependent flags.
+// Thus it guarantees that any floating point operation is emulated.
+// This flag should be always FALSE by default, and used only to force emulation when the target has some support for floating point.
 BOOL Emulate_FloatingPoint_Ops;
 BOOL Emulate_FloatingPoint_Ops_Set;
 // [CG]: Enable Single Float Emulation
-BOOL Emulate_Single_Float_Type = FALSE;
-BOOL Emulate_Single_Float_Type_Set = FALSE;
+// If this is set, the default for 'float' operations is to be emulated unless a target dependent flag forces a specific
+// operator to not be emulated.
+// Thus, this flag is not a guarantee that any 'float' operation is emulated. It is an optimization hint only.
+// This flag should be FALSE by default for target with IEEE float support, TRUE otherwise. (must be set in config_target.cxx).
+BOOL Emulate_Single_Float_Type;
+BOOL Emulate_Single_Float_Type_Set;
 // [CG]: Enable Double Float Emulation
-BOOL Emulate_Double_Float_Type = FALSE;
-BOOL Emulate_Double_Float_Type_Set = FALSE;
+// If this is set, the default for 'double' operations is to be emulated unless a target dependent flag forces a specific
+// operator to not be emulated.
+// Thus, this flag is not a guarantee that any 'double' operation is emulated. It is an optimization hint only.
+// This flag should be FALSE by default for target with IEEE double support, TRUE otherwise. (must be set in config_target.cxx).
+BOOL Emulate_Double_Float_Type;
+BOOL Emulate_Double_Float_Type_Set;
 // [CM]: Enable Division or Remainder Integer Emulation
-BOOL Emulate_DivRem_Integer_Ops = FALSE;
-BOOL Emulate_DivRem_Integer_Ops_Set = FALSE;
+// Optimization hint that Div/rem are available on the target.
+// This flag should be FALSE by default for target with div/rem support, TRUE otherwise. (must be set in config_target.cxx).
+BOOL Emulate_DivRem_Integer_Ops;
+BOOL Emulate_DivRem_Integer_Ops_Set;
 #endif
 
 #ifdef TARG_ST
@@ -593,7 +606,7 @@ static OPTION_DESC Options_TENV[] = {
   // - prefetch in the code generator
    { OVK_INT32, OV_INTERNAL, FALSE, "prefetch_optimize", NULL,
      3, 0, 3,   &Prefetch_Optimize, NULL,
-     "Fine tuning of prefetch optimizatin" },
+     "Fine tuning of prefetch optimization" },
 #endif
 
   /***** Options moved elsewhere -- retained for compatibility: *****/
@@ -1000,7 +1013,7 @@ BOOL Profile_Arcs_Enabled = FALSE; /* Create data files for the `gcov' code-cove
 BOOL Test_Coverage_Enabled = FALSE; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BOOL Profile_Arcs_Enabled_Cgir = FALSE; /* Create data files for the `gcov' code-coverage utility and instrument code in the cgir. */
 BOOL Coverage_Counter64 = FALSE; /* Use 64 bits counters instead of 32. */
-BOOL Branch_Probabilities = FALSE; /* Use .gcda file ad feedback. */
+BOOL Branch_Probabilities = FALSE; /* Use .gcda file as feedback. */
 #endif
 
 BOOL GP_Is_Preserved = FALSE;	/* GP is neither caller or callee-save */
@@ -1597,6 +1610,10 @@ Configure_Source ( char	*filename )
       No_Trapping = IEEE_Arithmetic >= IEEE_ACCURATE;
   if ( ! Unsafe_Math_Set )
       Unsafe_Math = IEEE_Arithmetic >= IEEE_ANY;
+  if ( ! Fused_FP_Set ) {
+      Fused_FP = IEEE_Arithmetic >= IEEE_ACCURATE;
+  }
+  Rsqrt_Allowed &= Fused_FP;
   if ( ! Fused_Madd_Set )
       Fused_Madd = IEEE_Arithmetic >= IEEE_ACCURATE;
   if ( ! No_Denormals_Set )
@@ -1626,8 +1643,12 @@ Configure_Source ( char	*filename )
     if (!Fast_trunc_Set)
       Fast_trunc_Allowed = Roundoff_Level >= ROUNDOFF_SIMPLE;
 
+// [HK] 20070531 fix for codex bug #28633
+// what's the point of activating the CIS if the roundoff level is sufficient ?
+#ifndef TARG_ST
     if ( ! CIS_Set )
       CIS_Allowed |= Roundoff_Level >= ROUNDOFF_SIMPLE;
+#endif
 
   }
 

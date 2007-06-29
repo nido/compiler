@@ -140,6 +140,9 @@ Dump_all(FILE *fp, char *output_filename)
   Pu_Hdr **Pu_Hdr_Table = (Pu_Hdr **)alloca(hash_count(PU_Profile_Handle_Table) * sizeof(Pu_Hdr *));
   char **Str_Table = (char **)alloca(hash_count(PU_Profile_Handle_Table) * sizeof(char *));
   Fb_Hdr fb_hdr;
+#ifdef INSTR_DEBUG
+  fprintf(stderr,"Dump_all for %s\n", output_filename);
+#endif
   memset (fb_hdr.fb_ident,0,FB_NIDENT);
   strcpy ((char *) fb_hdr.fb_ident, INSTR_MAG);
   fb_hdr.fb_endianness = is_host_little_endian();
@@ -159,7 +162,10 @@ Dump_all(FILE *fp, char *output_filename)
     PU_PROFILE_HANDLE *pu_handle = (PU_PROFILE_HANDLE*)hash_bucket_data(bucket);
 
 #ifdef INSTR_DEBUG
+  fprintf(stderr,"####################################### \n");
+  fprintf(stderr,"Dump_all for %s \n",(*pu_handle)->pu_name );
     PU_Profile_Handle_Print(*pu_handle, stdout);
+  fprintf(stderr,"####################################### \n");
 #endif
     Dump_PU_Profile(fp, *pu_handle, output_filename, Pu_Hdr_Table, Str_Table);
   }
@@ -206,6 +212,12 @@ static int Type_fbinfo_size_of(FB_Info_Type type)
     return sizeof(LIBFB_Info_Call);
   case LIBFB_Info_Loop_Type:
     return sizeof(LIBFB_Info_Loop);
+  case LIBFB_Info_Value_Type:
+    return sizeof(LIBFB_Info_Value);
+  case LIBFB_Info_Value_FP_Bin_Type:
+    return sizeof(LIBFB_Info_Value_FP_Bin);
+  case LIBFB_Info_Icall_Type:
+    return sizeof(LIBFB_Info_Icall);
   default:
     profile_error("Unexpexted Type","");
     return 0;
@@ -303,6 +315,8 @@ Dump_PU_Profile(FILE *fp, PU_PROFILE_HANDLE pu_handle, char * fname,
   realign_file (fp, &PU_Offset, sizeof(mINT64), fname);
   
   pu_hdr->pu_checksum = pu_handle->checksum;
+  pu_hdr->pu_size = pu_handle->pu_size;
+  pu_hdr->runtime_fun_address = pu_handle->runtime_fun_address;
   pu_hdr->pu_name_index = Str_Offset;
   pu_hdr->pu_file_offset = PU_Offset;
 
@@ -420,7 +434,110 @@ Dump_PU_Profile(FILE *fp, PU_PROFILE_HANDLE pu_handle, char * fname,
 #endif
   }
 
+  {
+    Dump_PU_Profile_bis (&pos, fp, &offset, pu_handle->LIBFB_Info_Value_Table,
+			   fname, LIBFB_Info_Value_Type);
+    pu_hdr->pu_value_offset = pos.offset;
+    pu_hdr->pu_num_value_entries = pos.num_entries;
+#ifdef INSTR_DEBUG
+    /* Dump fb_info */
+    if (pu_handle->LIBFB_Info_Value_Table)
+    {
+      size_t i;
+      fprintf( stdout, "fb_info value = " );
+      for (i = 0; i < pu_handle->LIBFB_Info_Value_Table->size; i++) {
+	fprintf(stdout, "\tid = %d\t", i);
+	LIBFB_Info_Value_Print(&(pu_handle->LIBFB_Info_Value_Table->data[i]), stdout);
+      }
+      fprintf(stdout, "\n");
+    }
+#endif
+  }
+
+  {
+    Dump_PU_Profile_bis (&pos, fp, &offset, pu_handle->LIBFB_Info_Value_Table,
+			   fname, LIBFB_Info_Value_Type);
+    pu_hdr->pu_value_offset = pos.offset;
+    pu_hdr->pu_num_value_entries = pos.num_entries;
+#ifdef INSTR_DEBUG
+    /* Dump fb_info */
+    if (pu_handle->LIBFB_Info_Value_Table)
+    {
+      size_t i;
+      fprintf( stdout, "fb_info value = " );
+      for (i = 0; i < pu_handle->LIBFB_Info_Value_Table->size; i++) {
+	fprintf(stdout, "\tid = %d\t", i);
+	LIBFB_Info_Value_Print(&(pu_handle->LIBFB_Info_Value_Table->data[i]), stdout);
+      }
+      fprintf(stdout, "\n");
+    }
+#endif
+  }
+
+  {
+    Dump_PU_Profile_bis (&pos, fp, &offset, pu_handle->LIBFB_Info_Value_Table,
+			   fname, LIBFB_Info_Value_Type);
+    pu_hdr->pu_value_offset = pos.offset;
+    pu_hdr->pu_num_value_entries = pos.num_entries;
+#ifdef INSTR_DEBUG
+    /* Dump fb_info */
+    if (pu_handle->LIBFB_Info_Value_Table)
+    {
+      size_t i;
+      fprintf( stdout, "fb_info value = " );
+      for (i = 0; i < pu_handle->LIBFB_Info_Value_Table->size; i++) {
+	fprintf(stdout, "\tid = %d\t", i);
+	LIBFB_Info_Value_Print(&(pu_handle->LIBFB_Info_Value_Table->data[i]), stdout);
+      }
+      fprintf(stdout, "\n");
+    }
+#endif
+  }
+
+  {
+    Dump_PU_Profile_bis (&pos, fp, &offset, pu_handle->LIBFB_Info_Value_FP_Bin_Table,
+			   fname, LIBFB_Info_Value_FP_Bin_Type);
+    pu_hdr->pu_value_fp_bin_offset = pos.offset;
+    pu_hdr->pu_num_value_fp_bin_entries = pos.num_entries;
+#ifdef INSTR_DEBUG
+    /* Dump fb_info */
+    if (pu_handle->LIBFB_Info_Value_FP_Bin_Table)
+    {
+      size_t i;
+      fprintf( stdout, "fb_info value_fp_bin = " );
+      for (i = 0; i < pu_handle->LIBFB_Info_Value_FP_Bin_Table->size; i++) {
+	fprintf(stdout, "\tid = %d\t", i);
+	LIBFB_Info_Value_FP_Bin_Print(&(pu_handle->LIBFB_Info_Value_FP_Bin_Table->data[i]), stdout);
+      }
+      fprintf(stdout, "\n");
+    }
+#endif
+  }
+
+  {
+    Dump_PU_Profile_bis (&pos, fp, &offset, pu_handle->LIBFB_Info_Icall_Table,
+			   fname, LIBFB_Info_Icall_Type);
+    pu_hdr->pu_icall_offset = pos.offset;
+    pu_hdr->pu_num_icall_entries = pos.num_entries;
+#ifdef INSTR_DEBUG
+    /* Dump fb_info */
+    if (pu_handle->LIBFB_Info_Icall_Table)
+    {
+      size_t i;
+      fprintf( stdout, "fb_info icall = " );
+      for (i = 0; i < pu_handle->LIBFB_Info_Icall_Table->size; i++) {
+	fprintf(stdout, "\tid = %d\t", i);
+	LIBFB_Info_Icall_Print(&(pu_handle->LIBFB_Info_Icall_Table->data[i]), stdout);
+      }
+      fprintf(stdout, "\n");
+    }
+#endif
+  }
+
   // Enter the PU header
+#ifdef INSTR_DEBUG
+  Pu_Hdr_Print(pu_hdr, stdout);
+#endif
   Pu_Hdr_Table[Pu_Hdr_Table_Index] = pu_hdr;
   Pu_Hdr_Table_Index++;
   Str_Offset += strlen(pu_handle->pu_name) + 1;
@@ -451,7 +568,7 @@ Dump_Fb_File_Pu_Table(FILE *fp, char *fname, Pu_Hdr **Pu_Hdr_Table, size_t Pu_Hd
  
   for (i = 0; i < Pu_Hdr_Table_Size; i++) {
     Pu_Hdr *pu_hdr_entry = Pu_Hdr_Table[i];
-      FWRITE(pu_hdr_entry, sizeof(Pu_Hdr), 1, fp, ERR_WRITE, fname);
+    FWRITE(pu_hdr_entry, sizeof(Pu_Hdr), 1, fp, ERR_WRITE, fname);
   }
 }
 

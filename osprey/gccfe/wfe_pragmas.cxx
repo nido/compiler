@@ -761,6 +761,60 @@ void WFE_Expand_Pragma(tree stmt)
   return;
 }
 
+#ifdef TARG_ST
+// FdF 20070302: Returns a pointer to the pragma at the end of a
+// BLOCK.
+
+void *
+WFE_Save_Pragmas(void) {
+
+  WN *wn_top = WFE_Stmt_Top();
+  WN *wn = WN_last(wn_top);
+  if (wn && (WN_opcode(wn) == OPC_PRAGMA))
+    return (void *)wn;
+  return NULL;
+}
+
+static BOOL
+is_pragma_loop(WN *wn) {
+  switch((WN_PRAGMA_ID)WN_pragma(wn)) {
+  case WN_PRAGMA_IVDEP:
+  case WN_PRAGMA_UNROLL:
+  case WN_PRAGMA_LOOPDEP:
+  case WN_PRAGMA_LOOPMOD:
+  case WN_PRAGMA_LOOPTRIP:
+  case WN_PRAGMA_PIPELINE:
+  case WN_PRAGMA_LOOPSEQ:
+  case WN_PRAGMA_STREAM_ALIGNMENT:
+    return TRUE;
+  }
+  return FALSE;
+}
+
+// FdF 20070302: Move consecutive pragmas, whose last is pointed to
+// by p_pragmas, at the end of the current block.
+
+void
+WFE_Move_Pragmas(void *p_pragmas) {
+
+  if (p_pragmas == NULL)
+    return;
+
+  WN *first_loop_pragma = NULL;
+  WN *last_loop_pragma = (WN *)p_pragmas;
+
+  WN *wn;
+  for (wn = last_loop_pragma; wn; wn = WN_prev(wn)) {
+    if (WN_opcode(wn) != OPC_PRAGMA) break;
+    if (!is_pragma_loop(wn)) break;
+    first_loop_pragma = wn;
+  }
+
+  if (first_loop_pragma)
+    WFE_Stmt_Move_To_End(first_loop_pragma, last_loop_pragma);
+}
+#endif
+
 struct idents * idents_strs;
 void add_ident(const char * str, int comment)
 {
@@ -803,4 +857,3 @@ WFE_Idents (void)
       idents_strs = id;
     }
 }
-

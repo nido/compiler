@@ -2640,10 +2640,9 @@ Create_Special_Global_Symbols ()
 	MTYPE_To_TY (i) = ty_idx;
     }
 
-  /* Arthur: it's a hack !
-   * I must do it after the above loop since I might see MTYPE_A4/A8
-   * before MTYPE_V. I do not want to depend on MTYPE definition 
-   * order.
+  /* Creation of pointer types as pointer to void.
+   * I must do it after the above loop since MTYPE_To_TY(MTYPE_V)
+   * must be set.
    */
   Is_True (MTYPE_To_TY (MTYPE_V) != 0,
 	   ("Create_Special_Global_Symbols() assumes MTYPE_V is set"));

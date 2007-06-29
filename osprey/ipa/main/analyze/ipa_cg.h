@@ -203,6 +203,14 @@ private:
 #ifdef TARG_ST
   static const mUINT32 _intrinsic_impl =    0x100000;
 #endif
+#ifdef KEY
+  static const mUINT32 _pu_write_complete = 0x200000;	// all EH info processed
+  static const mUINT32 _can_throw = 	   0x1000000;   // PU can throw exc.
+  static const mUINT32 _ehinfo_updated =   0x2000000;   // summary updated
+#endif
+#ifdef KEY
+  static const mUINT32 _recursive =	    0x800000;	// recursive
+#endif
 
   // map to the file I/O info
   mINT32 _file_index;			// index into the file header structure
@@ -219,6 +227,10 @@ private:
   CALLEE_STATE      *_callee_state;	// callee state
 
   PU_SIZE            _pu_size;		// estimated size of this PU
+
+#ifdef KEY
+  mUINT32	    _sizeof_eh_spec;	// # of types in eh-specification
+#endif
 
   IPAA_NODE_INFO*        _mod_ref_info; // mod/ref information
   VALUE_DYN_ARRAY*       _cprop_annot;  // annotation for parameter constants
@@ -279,6 +291,9 @@ public:
     _inlined_list (),
 #endif // _LIGHTWEIGHT_INLINER
     _flags (0)
+#ifdef KEY
+    ,_sizeof_eh_spec (0)
+#endif
   {
     SUMMARY_PROCEDURE* summary_proc = this->Summary_Proc();
     _pu_size.Set_PU_Size (summary_proc->Get_bb_count (), 
@@ -482,6 +497,27 @@ public:
   void Set_Preoptimized ()      { _flags |= _preoptimized; }
   BOOL Is_Preoptimized () const { return _flags & _preoptimized; }
 
+#ifdef KEY
+  // PU has been written out, i.e. all EH info have been fixed, don't try
+  // to fix again.
+  void Set_PU_Write_Complete () { _flags |= _pu_write_complete; }
+  BOOL Is_PU_Write_Complete () const { return _flags & _pu_write_complete; }
+  // number of typeinfos in exception specification for this PU
+  void Set_EH_spec_size (mUINT32 s) { _sizeof_eh_spec = s; }
+  mUINT32 EH_spec_size () const	    { return _sizeof_eh_spec; }
+
+  void Set_PU_Can_Throw () { _flags |= _can_throw; }
+  BOOL PU_Can_Throw () { return _flags & _can_throw; }
+
+  void Set_EHinfo_Updated () { _flags |= _ehinfo_updated; }
+  BOOL EHinfo_Updated () { return _flags & _ehinfo_updated; }
+#endif
+
+#ifdef KEY
+  // is node recursive?
+  void Set_Recursive () { _flags |= _recursive; }
+  BOOL Is_Recursive () { return _flags & _recursive; }
+#endif
   // node contains SCLASS_FORMAL variables that are based on another formal.
   // When we convert a formal parameter to a local variable, we need to know
   // if there are other STs that based on this variable, and convert their
@@ -569,7 +605,9 @@ public:
 
   BOOL Is_Lang_F77() const      { return PU_f77_lang (Get_PU()); }
   BOOL Is_Lang_F90() const      { return PU_f90_lang (Get_PU()); }
-
+#ifdef KEY
+  BOOL Is_Lang_CXX() const      { return PU_cxx_lang (Get_PU()); }
+#endif
 
   UINT32 Weight (void) const	{ return _pu_size.Weight (); }
 
@@ -752,7 +790,10 @@ private:
   IPA_EDGE_INDEX _array_index;		// index into the IPA_EDGE_ARRAY
   SUMMARY_CALLSITE *_c;                 // summary information
   WN *_w;				// WHIRL node of the callsite
-
+#ifdef KEY
+  WN *_eh_wn;				// enclosing eh-region wn
+  LABEL_IDX try_label;			// try label from enclosing try-region if any
+#endif
   VALUE_DYN_ARRAY       *_cprop_annot;  // constant propagation annotation
 
   mUINT32 _flags;			// various attributes of edge
@@ -773,6 +814,10 @@ public:
     _array_index (array_index),
     _c(c),
     _w(0),
+#ifdef KEY
+    _eh_wn(0),
+    try_label(0),
+#endif
     _cprop_annot(0),
     _flags(0),
     _readonly_actuals(0),
@@ -800,6 +845,15 @@ public:
 
   void Set_Whirl_Node (WN* w)   { _w = w; }
   WN* Whirl_Node () const       { return _w; }
+
+#ifdef KEY
+  void Set_EH_Whirl_Node (WN* w) { _eh_wn = w; }
+  WN* EH_Whirl_Node () const	 { return _eh_wn; }
+
+  // try_label is not being used currently
+  void Set_Try_Label (LABEL_IDX l) { try_label = l; }
+  LABEL_IDX Try_Label () const	   { return try_label; }
+#endif
 
   void Set_Cprop_Annot (VALUE_DYN_ARRAY* annot)	{ _cprop_annot = annot; }
   VALUE_DYN_ARRAY* Cprop_Annot () const	        { return _cprop_annot; }
@@ -1090,6 +1144,10 @@ extern BOOL IPA_Call_Graph_Built;
 
 extern void IPA_Process_File (IP_FILE_HDR& hdr);
 extern void Build_Call_Graph ();
+#ifdef KEY
+extern IPA_CALL_GRAPH *IPA_Graph_Undirected;
+extern void IPA_Convert_Icalls( IPA_CALL_GRAPH* );
+#endif
 
 //INLINING_TUNING^
 extern UINT32 Orig_Prog_WN_Count;

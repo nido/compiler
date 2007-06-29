@@ -203,6 +203,19 @@ REGISTER_SET_Range(UINT low, UINT high)
 #endif /* ISA_REGISTER_MAX < 64 */
 }
 
+#ifdef TARG_ST
+REGISTER_SET REGISTER_SET_Offset (REGISTER_SET set, INT offset)
+{
+  REGISTER_SET result = REGISTER_SET_EMPTY_SET;
+  for (REGISTER i = REGISTER_SET_Choose (set);
+       i != REGISTER_UNDEFINED;
+       i = REGISTER_SET_Choose_Next (set, i)) {
+    result = REGISTER_SET_Union1 (result, i + offset);
+  }
+  return result;
+}
+#endif
+
 /* ====================================================================
  *   Mark_Specified_Registers_As_Not_Allocatable
  *
@@ -1048,7 +1061,7 @@ REGISTER_Set_Allocatable(
  *
  * =======================================================================
  */
-static void
+extern void
 REGISTER_SET_Print_Name(
   ISA_REGISTER_CLASS rclass,
   REGISTER_SET regset,

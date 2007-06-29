@@ -362,7 +362,7 @@ ifneq ($(build_OS), IRIX)
 	for h in $(TARGETS); do \
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
-	if [ ! -h $(STD_MONGOOSE_OS_LOC)/ipl ]; then ln -s be $(STD_MONGOOSE_OS_LOC)/ipl; fi
+	if [ ! -h $(STD_MONGOOSE_OS_LOC)/ipl ]; then ln -sf be $(STD_MONGOOSE_OS_LOC)/ipl; fi
 else
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) ipl.so
 	$(STD_INSTALL) -lns be -F $(STD_MONGOOSE_LOC) ipl

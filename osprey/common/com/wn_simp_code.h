@@ -2572,6 +2572,7 @@ static simpnode  simp_times( OPCODE opc,
    Simplifications for /
 
 -x/-y 			x/y
+!0 / 0                  0
 x / 1			x
 x / (-1)		-x
 1.0/a			RECIP(a)
@@ -2608,6 +2609,17 @@ static simpnode  simp_div( OPCODE opc,
       SIMP_DELETE(k0);
       SIMP_DELETE(k1);
       return (r);
+   }
+
+   if (SIMP_IS_TYPE_INTEGRAL(ty) && k0const 
+       && !(k1const && (SIMP_Int_ConstVal(k1) == 0))) {
+      c1 = SIMP_Int_ConstVal(k0);
+      if (c1 == 0) {      
+	SHOW_RULE(" 0/!0 ");
+	r = SIMP_INTCONST(ty,0);
+	SIMP_DELETE(k0);
+	return (r);
+      }
    }
 
    if (k1const && SIMP_IS_TYPE_INTEGRAL(ty)) {
@@ -3051,16 +3063,27 @@ static simpnode  simp_band( OPCODE opc,
 	 r = SIMPNODE_SimpCreateExp2(opc,SIMPNODE_kid0(k0),k1);
 	 SIMP_DELETE(SIMPNODE_kid1(k0));
 	 SIMP_DELETE(k0);
+#ifdef TARG_ST
+      } else if ((SIMPNODE_operator(k0) == OPR_LSHR || SIMPNODE_operator(k0) == OPR_ASHR) &&
+#else
       } else if ((SIMPNODE_operator(k0) == OPR_LSHR) &&
+#endif
 		 SIMP_Is_Constant(SIMPNODE_kid1(k0)) &&
 		 (MTYPE_bit_size(SIMPNODE_rtype(k0)) == MTYPE_bit_size(ty))) {
 	 INT32 shift_count = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
          mask_bits = create_bitmask(MTYPE_bit_size(ty) - shift_count);
-	 if ((mask_bits & c1) == mask_bits) {
+	 if ((SIMPNODE_operator(k0) == OPR_LSHR) && (mask_bits & c1) == mask_bits) {
 	   SHOW_RULE("(j LSHR c2) & c1)");
 	   r = k0;
 	   SIMP_DELETE(k1);
-	 } else if (Enable_extract_compose && IS_POWER_OF_2(c1+1)) {
+#ifdef TARG_ST
+	   // current ST target do not have 64-bit extract instrs
+	 } else if (Enable_extract && IS_POWER_OF_2(c1+1) 
+		    && MTYPE_bit_size(ty) == 32 
+		    && (mask_bits & c1) == c1) {
+#else
+	 } else if (Enable_extract && IS_POWER_OF_2(c1+1)) {
+#endif
 	   r = SIMPNODE_SimpCreateExtract(MTYPE_bit_size(ty) == 32 ? OPC_U4EXTRACT_BITS : OPC_U8EXTRACT_BITS,
 					  shift_count,loga2(c1+1),
 					  SIMPNODE_kid0(k0));
@@ -3279,7 +3302,7 @@ static simpnode  simp_bior( OPCODE opc,
        SIMP_DELETE(k1);
      }
    }
-   if (Enable_extract_compose && SIMPNODE_operator(k0) == OPR_BAND && SIMPNODE_operator(k1) == OPR_BAND
+   if (Enable_compose && SIMPNODE_operator(k0) == OPR_BAND && SIMPNODE_operator(k1) == OPR_BAND
        && SIMP_Is_Constant(SIMPNODE_kid1(k0)) && SIMP_Is_Constant(SIMPNODE_kid1(k1)))
    {
      c1 = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
@@ -3856,7 +3879,13 @@ static simpnode  simp_shift( OPCODE opc,
 	    SIMP_DELETE(SIMPNODE_kid1(k0));
 	    SIMP_DELETE(k0);
 	    SIMP_DELETE(k1);
-	 } else if (firstop == OPR_SHL && op == OPR_LSHR && Enable_extract_compose && c1 > c2) {
+#ifdef TARG_ST
+	   // current ST target do not have 64-bit extract instrs
+	 } else if (firstop == OPR_SHL && op == OPR_LSHR && Enable_extract 
+		    && c1 > c2 && shift_size == 32) {
+#else
+	 } else if (firstop == OPR_SHL && op == OPR_LSHR && Enable_extract && c1 > c2) {
+#endif
 	   SHOW_RULE("(j << c1) LSHR c2");
 	   INT16 boffset = c1 - c2;
 	   INT16 bsize = shift_size - c1;
@@ -3878,7 +3907,13 @@ static simpnode  simp_shift( OPCODE opc,
 	   }
 	   // This next one must follow this preceeding one, so that we preference
 	   // the case c1 == c2 == 32
-	 } else if (firstop == OPR_SHL && op == OPR_ASHR && Enable_extract_compose && c1 >= c2) {
+#ifdef TARG_ST
+	   // current ST target do not have 64-bit extract instrs
+	 } else if (firstop == OPR_SHL && op == OPR_ASHR && Enable_extract 
+		    && c1 >= c2 && shift_size == 32) {
+#else
+	 } else if (firstop == OPR_SHL && op == OPR_ASHR && Enable_extract && c1 >= c2) {
+#endif
 	   SHOW_RULE("(j << c1) ASHR c2");
 	   INT16 boffset = c1 - c2;
 	   INT16 bsize = shift_size - c1;
@@ -3901,7 +3936,7 @@ static simpnode  simp_shift( OPCODE opc,
 	    SIMP_DELETE(SIMPNODE_kid1(k0));
 	    SIMP_DELETE(k0);
 	    return (r);
-	 } else if (Enable_extract_compose && IS_POWER_OF_2(c2+1)) {
+	 } else if (Enable_compose && IS_POWER_OF_2(c2+1)) {
 	   SHOW_RULE("(j & mask) << c1 -> COMPOSE");
 	   c2 = loga2(c2+1);
 	   r = SIMPNODE_SimpCreateDeposit(OPC_FROM_OPR(OPR_COMPOSE_BITS,ty),c1,c2,
