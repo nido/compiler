@@ -1841,7 +1841,7 @@ CTailmerge<Cfg, BasicBlock, Operation>::DestinationBlock(TmNode& a_node,
 {
     BasicBlock* willReceivedOp = InvalidBasicBlock<BasicBlock>();
     typename TmNode::BasicBlocks* toBeRemoved = &a_node.EmptySources();
-    if(!a_node.EmptySources().empty() && a_node.Children().size() != 1)
+    if(!a_node.EmptySources().empty())
         {
             // Optimization: We do not use empty sources at
             // first level (bCreate is false) to avoid useless jump creation.

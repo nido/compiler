@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul  3 15:42:36 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29682
+
+Description:
+------------
+	* [trunk] Fix for bug #29682: tailmerge performs incorrect code factorization.
+	Deliver fixes/codex-29682 rev #12579 with authorization branch #29722
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/tailmerge.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul  3 14:07:33 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
