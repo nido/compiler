@@ -738,6 +738,8 @@ static const struct {
   INTRN_VA_START,               "VA_START",
 
 #ifdef TARG_ST
+  INTRN_KILL,                   "KILL",
+
 #include "targ_wutil.def"
 #endif
 

@@ -16799,6 +16799,10 @@ static WN *lower_scf(WN *block, WN *tree, LOWER_ACTIONS actions)
 
 static WN *lower_trapuv(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
+#ifdef TARG_STxP70
+  // [TTh] On stxp70, by default, introduces a KILL for scalar variables
+  //       if neither Trap_Uv nor Zero_Uv
+#else
   if ( DEBUG_Trap_Uv == FALSE
 #ifdef TARG_ST
 	  // TB Add -zerouv option from PathScale 2.1
@@ -16806,7 +16810,7 @@ static WN *lower_trapuv(WN *block, WN *tree, LOWER_ACTIONS actions)
 #endif
        )
     return block;
-
+#endif
   {
     ST	*st;
     ST  *slink = Find_Slink_Symbol(CURRENT_SYMTAB);
@@ -16841,6 +16845,21 @@ static WN *lower_trapuv(WN *block, WN *tree, LOWER_ACTIONS actions)
 
       Is_True(ST_pu_defined(st), ("trapuv auto or temp not ST_pu_defined"));
 
+#ifdef TARG_ST
+      // [TTh] When neither Trap_Uv nor Zero_Uv, a KILL initialization is introduce
+      //       only for unaliased locals with scalar, pointer and function types.
+      if (!DEBUG_Zero_Uv                &&
+	  !DEBUG_Trap_Uv                &&
+	  (ST_addr_saved(st)    ||
+	   (TY_kind(type) != KIND_SCALAR  &&
+	    TY_kind(type) != KIND_POINTER &&
+	    TY_kind(type) != KIND_FUNCTION)
+	   )
+	  ) {
+	continue;
+      }
+#endif
+
       switch(TY_kind(type))
       {
       case KIND_SCALAR:
@@ -16853,8 +16872,29 @@ static WN *lower_trapuv(WN *block, WN *tree, LOWER_ACTIONS actions)
 		  ("bad size for scalar/pointer"));;
 
 #ifdef TARG_ST
+	  // [TTh] By default, add pseudo KILL initialization
+	  if (!DEBUG_Zero_Uv && !DEBUG_Trap_Uv) {
+	    TYPE_ID ret_mtype = btype;
+	    if (MTYPE_byte_size(ret_mtype) < MTYPE_byte_size(Max_Int_Mtype) &&
+		(!MTYPE_is_dynamic(ret_mtype))) {
+	      // Note: INTRINSIC_OP rtype cannot be < I4/U4, except for extension type.
+	      ret_mtype = MTYPE_signed(ret_mtype) ? Max_Int_Mtype : Max_Uint_Mtype;
+	    }
+	    // Each KILL instance has a unique id parameter, to insure they are
+	    // not factorize, except with copy of themselves. This is required to:
+	    // (1) Avoid useless move introduce after factorization
+	    //         KILL a ; KILL b     -> no code generated
+	    //     but KILL a ; move a->b  -> 1 useless move generated
+	    // (2) Avoid factorization of instance returning different MTYPE,
+	    //     that will lead to inconsistant IR afterwards
+	    static INT kill_id = 0;
+	    con = WN_Intconst(MTYPE_I4, kill_id++);
+	    con = WN_CreateParm(MTYPE_I4, con, MTYPE_To_TY(MTYPE_I4), WN_PARM_BY_VALUE);
+	    WN *param[1] = {con};
+	    con = WN_Create_Intrinsic(OPR_INTRINSIC_OP, ret_mtype, MTYPE_V, INTRN_KILL, 1, param);
+	  }
 	  // TB Add -zerouv option from PathScale 2.1
-	  if (DEBUG_Zero_Uv) {
+	  else if (DEBUG_Zero_Uv) {
 	    con = MTYPE_is_integral(btype) ?
 	      WN_Intconst(Mtype_comparison(btype), 0) : WN_Floatconst(btype, 0.0);
 	  } else if (TY_kind(type) == KIND_POINTER) {

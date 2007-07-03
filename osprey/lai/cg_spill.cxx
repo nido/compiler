@@ -275,7 +275,7 @@ LOCAL_SPILLS_Get_Spill_Location (LOCAL_SPILLS *slc, char *root)
  *
  * =======================================================================
  */
-static INT
+INT
 Spill_Type_Index(TN *tn)
 {
   INT i;

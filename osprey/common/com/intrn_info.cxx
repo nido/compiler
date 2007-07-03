@@ -2351,6 +2351,10 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
         IRETURN_V, "__builtin_va_start", NULL, NULL},
 
 #ifdef TARG_ST
+  { /* [TTh] KILL */
+	BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+	IRETURN_DYNAMIC, "__builtin__KILL", NULL, "__builtin__KILL"},
+
 #include "targ_intrn_info.def"
 #endif
 };

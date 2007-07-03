@@ -1061,8 +1061,16 @@ extern "C" {
   /* vararg support */
   INTRN_VA_START  = 763,
 
+#ifdef TARG_ST
+/* [TTh] Compiler generated intrinsic */
+  INTRN_KILL      = 764,
+
+/* More C intrinsics */
+  INTRINSIC_GENERAL_LAST = 764,
+#else
 /* More C intrinsics */
   INTRINSIC_GENERAL_LAST = 763,
+#endif
 
 #ifdef TARG_ST
 #include "targ_wintrinsic.h"  /* should at least define INTRINSIC_TARG_LAST */

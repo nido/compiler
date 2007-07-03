@@ -1049,6 +1049,72 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
   return idx;
 }
 
+
+/** 
+  *  This function resets attributes based "properties" on variable.
+  * it is used by Get_ST(). It is run at each call of get_st to
+  * guarantee proper properties in case of forward declarations.
+  * 
+  * @param decl_node 
+  */
+void
+set_variable_attributes(tree decl_node)
+  {
+    ST *st = DECL_ST(decl_node);
+
+    FmtAssert (st!=NULL, ("st cannot be NULL in set_variable_attributes()"));
+
+    TY_IDX ty_idx = Get_TY(TREE_TYPE(decl_node));
+    if (DECL_USER_ALIGN (TREE_TYPE(decl_node))) {
+      UINT align = DECL_ALIGN(decl_node) / BITSPERBYTE;
+      if (align) {
+        Set_TY_align (ty_idx, align);
+        Set_ST_type (st, ty_idx);
+      }
+    }
+    
+    if (DECL_USER_ALIGN (decl_node)) {
+      UINT align = DECL_ALIGN(decl_node) / BITSPERBYTE;
+      if (align) {
+        Set_TY_align (ty_idx, align);
+        Set_ST_type (st, ty_idx);
+      }
+    }
+#ifdef TARG_STxP70
+    // (cbr) memory_space support
+    tree attr;
+    ST_MEMORY_SPACE kind=ST_MEMORY_DEFAULT;
+    attr = lookup_attribute ("memory", DECL_ATTRIBUTES (decl_node));
+    if (attr) {
+      attr = TREE_VALUE (TREE_VALUE (attr));
+      FmtAssert (TREE_CODE (attr) == STRING_CST, ("Malformed memory attribute"));
+      if (!strcmp (TREE_STRING_POINTER (attr), "da")) {
+        kind = ST_MEMORY_DA;
+      } else if (!strcmp (TREE_STRING_POINTER (attr), "sda")) {
+        kind = ST_MEMORY_SDA;
+      } else if (!strcmp (TREE_STRING_POINTER (attr), "tda")) {
+        kind = ST_MEMORY_TDA;
+      } else if (!strcmp (TREE_STRING_POINTER (attr), "none")) {
+        kind = ST_MEMORY_NONE;
+      } else {
+        FmtAssert (FALSE, ("Malformed tls_model attribute"));
+      }
+    } 
+    Set_ST_memory_space (*st, kind);
+#endif        
+    if (DECL_SECTION_NAME (decl_node)) {
+      SYMTAB_IDX level = ST_level(st);
+      if (TREE_CODE (decl_node) == FUNCTION_DECL)
+        level = GLOBAL_SYMTAB;
+      ST_ATTR_IDX st_attr_idx;
+      ST_ATTR&    st_attr = New_ST_ATTR (level, st_attr_idx);
+      ST_ATTR_Init (st_attr, ST_st_idx (st), ST_ATTR_SECTION_NAME,
+                    Save_Str (TREE_STRING_POINTER (DECL_SECTION_NAME (decl_node))));
+      Set_ST_has_named_section (st);
+    }
+  }
+
+
 ST*
 Create_ST_For_Tree (tree decl_node)
 {
@@ -1242,15 +1308,6 @@ Create_ST_For_Tree (tree decl_node)
 	if (TREE_THIS_VOLATILE(decl_node))
 		Set_TY_is_volatile (ty_idx);
 #ifdef TARG_ST
-        // (cbr) alignment can be changed by attribute
-        if (DECL_USER_ALIGN (TREE_TYPE(decl_node))) {
-          UINT align = DECL_ALIGN(decl_node) / BITSPERBYTE;
-          if (align) Set_TY_align (ty_idx, align);
-        }
-        if (DECL_USER_ALIGN (decl_node)) {
-          UINT align = DECL_ALIGN(decl_node) / BITSPERBYTE;
-          if (align) Set_TY_align (ty_idx, align);
-        }
 	if (TYPE_RESTRICT(decl_node))
 	    Set_TY_is_restrict (ty_idx) ;
 #endif /* TARG_ST */
@@ -1368,28 +1425,6 @@ Create_ST_For_Tree (tree decl_node)
 
   DECL_ST(decl_node) = st;
 
-#ifdef TARG_STxP70
-  // (cbr) memory_space support
-  tree attr;
-  ST_MEMORY_SPACE kind=ST_MEMORY_DEFAULT;
-  attr = lookup_attribute ("memory", DECL_ATTRIBUTES (decl_node));
-  if (attr) {
-    attr = TREE_VALUE (TREE_VALUE (attr));
-    FmtAssert (TREE_CODE (attr) == STRING_CST, ("Malformed memory attribute"));
-    if (!strcmp (TREE_STRING_POINTER (attr), "da"))
-      kind = ST_MEMORY_DA;
-    else if (!strcmp (TREE_STRING_POINTER (attr), "sda"))
-      kind = ST_MEMORY_SDA;
-    else if (!strcmp (TREE_STRING_POINTER (attr), "tda"))
-      kind = ST_MEMORY_TDA;
-    else if (!strcmp (TREE_STRING_POINTER (attr), "none"))
-      kind = ST_MEMORY_NONE;
-    else
-      FmtAssert (FALSE, ("Malformed tls_model attribute"));
-  } 
-  Set_ST_memory_space (*st, kind);
-#endif
-
   if ((DECL_WEAK (decl_node)) && (TREE_CODE (decl_node) != PARM_DECL)) {
     Set_ST_is_weak_symbol (st);
 /*
@@ -1398,15 +1433,18 @@ Create_ST_For_Tree (tree decl_node)
 */
   }
 
-  if (DECL_SECTION_NAME (decl_node)) {
-    if (TREE_CODE (decl_node) == FUNCTION_DECL)
-      level = GLOBAL_SYMTAB;
-    ST_ATTR_IDX st_attr_idx;
-    ST_ATTR&    st_attr = New_ST_ATTR (level, st_attr_idx);
-    ST_ATTR_Init (st_attr, ST_st_idx (st), ST_ATTR_SECTION_NAME,
-                  Save_Str (TREE_STRING_POINTER (DECL_SECTION_NAME (decl_node))));
-    Set_ST_has_named_section (st);
-  }
+//   if (DECL_SECTION_NAME (decl_node)) {
+//     fprintf(stderr, "specify attribute in CreateST\n");
+//     if (TREE_CODE (decl_node) == FUNCTION_DECL)
+//       level = GLOBAL_SYMTAB;
+//     ST_ATTR_IDX st_attr_idx;
+//     ST_ATTR&    st_attr = New_ST_ATTR (level, st_attr_idx);
+//     ST_ATTR_Init (st_attr, ST_st_idx (st), ST_ATTR_SECTION_NAME,
+//                   Save_Str (TREE_STRING_POINTER (DECL_SECTION_NAME (decl_node))));
+//     Set_ST_has_named_section (st);
+//   }
+//  set_variable_attributes(decl_node);
+
 
   if (DECL_SYSCALL_LINKAGE (decl_node)) {
 	Set_PU_has_syscall_linkage (Pu_Table [ST_pu(st)]);

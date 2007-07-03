@@ -245,6 +245,13 @@
  *	    Currenlty used by the LAO->CGIR interface to generate spill
  *	    symbols for LAO generated spill.
  *
+ *  For TARG_ST [TTh]:
+ *	INT Spill_Type_Index ( TN *tn )
+ *	    
+ *	    Return an index into the CGTARG_Spill_Type[] array for the
+ *	    appropriate spill location type for 'tn'. This index is also
+ *	    compatible with CGTARG_Spill_MType[] array.
+ *
  * =======================================================================
  * =======================================================================
  */
@@ -305,6 +312,8 @@ extern void CGSPILL_Attach_Floatconst_Remat(TN *tn, TYPE_ID typ, double val);
 extern void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st);
 
 #ifdef TARG_ST
+CG_EXPORTED INT
+Spill_Type_Index(TN *tn);
 CG_EXPORTED ST *
 CGSPILL_Gen_Spill_Symbol (TY_IDX ty, const char *root);
 #endif

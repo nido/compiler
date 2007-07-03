@@ -42,6 +42,7 @@
 // (cbr) only used in translator.
 #include <cmplrs/rcodes.h>
 #endif
+#include "W_values.h" // for BITSPERBYTE
 
 #if defined(TARG_ST) && !defined(__cplusplus)
 // [CL] Create_ST_For_Tree() is used from gnu/stmt.c, so this
@@ -55,6 +56,7 @@ extern "C" ST* Create_ST_For_Tree (tree);
 
 #ifdef TARG_ST
 // (cbr) 
+extern void set_variable_attributes(tree decl_node);
 ST*& DECL_ST(tree);
 extern "C" void Update_TY (tree);
 #endif
@@ -106,7 +108,7 @@ Get_ST (tree decl_tree)
 		    !Has_Base_Block(st) &&
 		    !ST_emit_symbol(st) &&
 #endif
-		    !DECL_EXTERNAL(decl_tree)       
+                    !DECL_EXTERNAL(decl_tree)       
 #ifndef TARG_ST
 		    /* (cbr) (DDTSst22530) must adjust type size */
 		    && !DECL_INITIAL(decl_tree)
@@ -128,24 +130,16 @@ Get_ST (tree decl_tree)
 #endif
 		}
 #ifdef TARG_ST
-		/* (cbr) adjust attribute in case the symbol was forward declared */
-		if (DECL_SECTION_NAME (decl_tree) &&
-		    !ST_has_named_section (st)) { 
-		  SYMTAB_IDX level = ST_level(st);
-		  DevWarn("Change section for symbol %s",
-			  TREE_STRING_POINTER (DECL_SECTION_NAME (decl_tree)));
-		  ST_ATTR_IDX st_attr_idx;
-		  ST_ATTR&    st_attr = New_ST_ATTR (level, st_attr_idx);
-		  ST_ATTR_Init (st_attr, ST_st_idx (st), ST_ATTR_SECTION_NAME,
-				Save_Str (TREE_STRING_POINTER (DECL_SECTION_NAME (decl_tree))));
-		  Set_ST_has_named_section (st);
-		}
+		/* (cbr) adjust attribute in case the symbol was
+                   forward declared */
+                set_variable_attributes(decl_tree);
 #endif
-
-
         }
 	else {
 	  st = Create_ST_For_Tree (decl_tree);
+#ifdef TARG_ST
+          set_variable_attributes(decl_tree);
+#endif
 	}
 	if ((CURRENT_SYMTAB > GLOBAL_SYMTAB + 1) &&
 	    ((TREE_CODE(decl_tree) == VAR_DECL) ||

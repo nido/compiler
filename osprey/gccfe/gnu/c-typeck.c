@@ -4088,6 +4088,15 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
     (TREE_CODE(TREE_TYPE (rhs)) == POINTER_TYPE ||
      TREE_CODE(TREE_TYPE (rhs)) == INTEGER_TYPE) &&
      TYPE_PRECISION(TREE_TYPE(type)) == TYPE_PRECISION(TREE_TYPE(rhs));
+
+  /* For extension builtins with reference parameters, reject
+     them if they use indirect pointer accesses */
+  if (( is_extension_builtin(fundecl)  ) &&
+      ( codel == REFERENCE_TYPE        ) &&
+      ( TREE_CODE(rhs) == INDIRECT_REF ) ) {
+    error ("Unsupported dereferenced expression as out parameter of multi-result builtins");
+    return error_mark_node;
+  }
 #endif                                      /* TARG_ST */ 
 
   /* A type converts to a reference to it.  

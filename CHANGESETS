@@ -1,6 +1,180 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul  3 19:02:49 CEST 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-trunk-for-merge
+
+Description:
+------------
+	* Merge stxp70/main up to rev #12347 into trunk. Authorization artifact art #27162.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/driver/stxp70_options.i
+	M      osprey/lai/cg_spill.h
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/gnu/c-typeck.c
+	M      osprey/gccfe/tree_symtab.h
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/symtab_defs.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Jun 13 17:28:03 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26078
+
+Description:
+------------
+	* Deliver fix for bug #29023 with autorization branch #29024
+	- Fixed computation of stack size taken by guard registers
+	  (misalign stack was possible on interrupt functions)
+	- Added immediate variant for Vx extension loads/stores
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_variants.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Jun 12 13:47:15 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26078
+
+Description:
+------------
+	* Deliver fix for bug #26346 with autorization branch #28353
+	  Register allocation improvement: fix in GRA to enable Live-range splitting of Multi-register TNs
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gra_mon/gra_split.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jun  4 14:15:41 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26078
+
+Description:
+------------
+	* Deliver fix for bug #26078 with authorization branch #27522 
+	  Added pseudo initialization (KILL intrinsic) for uninitialized local variables
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jun  4 11:17:35 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-memory-move-core-ext
+
+Description:
+------------
+	* Reconf: deliver development to support move between GPR and Extension reg through memory (authorization branch #27143)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_spill.h
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jun  4 10:54:18 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-28405
+
+Description:
+------------
+	* Fix bug #28405 with authorization branch #28455 
+	  In front-end, added a check to reject in a clean way dereferenced pointers when used as out parameter of a multi-result builtin.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/c-typeck.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri May 25 12:40:43 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-23040
+
+Description:
+------------
+	deliver branch fixes/codex-23040 un der authorisation #28022
+        (fixes for bug #23040 and bug #27935) 
+
+
+Modified Files:
+---------------
+	M      osprey/driver/stxp70_options.i
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/tree_symtab.h
+	M      osprey/common/com/symtab_defs.h
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu May 24 10:48:23 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26892
+
+Description:
+------------
+	* [branches/stxp70/main] Deliver fix for nug #26892: Bad code selection on some inlined intrinsics, from branches/fixes/codex-26892 rev #11981 with authorization art #27608
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul  3 15:42:36 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

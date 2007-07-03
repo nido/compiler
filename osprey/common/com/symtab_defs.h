@@ -125,7 +125,10 @@ enum ST_MEMORY_SPACE
 {
   ST_MEMORY_DEFAULT = 0, // use the one provided by the current memory model
   ST_MEMORY_NONE = 1,    // no sda/da/tda memory placement
-  ST_MEMORY_DA   = 2,
+  ST_MEMORY_DA   = 2,    // Note that  ST_MEMORY_DA must be the first
+                         // special memory space in this enum,
+                         // selection of memspace is done using
+                         // [x-ST_MEMORY_DA] selector in targ_sections.cxx
   ST_MEMORY_SDA  = 3,
   ST_MEMORY_TDA  = 4
 }; // ST_MEMORY_SPACE
