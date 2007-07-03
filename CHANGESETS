@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul  3 14:07:33 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29723
+
+Description:
+------------
+	* [trunk] Fix for bug #29723: [QMx] Incorrect generation of dwarf2 debug information.
+	Deliver fixes/codex-29723 rev #12569 with authorization branch #29724
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jun 29 10:09:27 CEST 2007
 	Author:    guillon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
