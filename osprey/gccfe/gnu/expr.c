@@ -4163,6 +4163,12 @@ expand_assignment (to, from, want_value, suggest_reg)
       free_temp_slots ();
       pop_temp_slots ();
 
+#ifdef TARG_ST
+      // (cbr) we don't necessary generate rtl with whirls
+      if (!result)
+	return NULL_RTX;
+#endif
+
       /* If the value is meaningful, convert RESULT to the proper mode.
 	 Otherwise, return nothing.  */
       return (want_value ? convert_modes (TYPE_MODE (TREE_TYPE (to)),
@@ -4338,7 +4344,13 @@ store_expr (exp, target, want_value)
 	 part.  */
       expand_expr (TREE_OPERAND (exp, 0), const0_rtx, VOIDmode,
 		   want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
+
       emit_queue ();
+#ifdef TARG_ST
+      // (cbr) we don't necessary generate rtl with whirls
+      if (!exp)
+	return NULL_RTX;
+#endif
       return store_expr (TREE_OPERAND (exp, 1), target, want_value);
     }
   else if (TREE_CODE (exp) == COND_EXPR && GET_MODE (target) == BLKmode)
@@ -4389,6 +4401,12 @@ store_expr (exp, target, want_value)
 			    (want_value & 2
 			     ? EXPAND_STACK_PARM : EXPAND_NORMAL));
 
+#ifdef TARG_ST
+      // (cbr) we don't necessary generate rtl with whirls
+      if (!temp)
+	return NULL_RTX;
+#endif
+
       /* If target is volatile, ANSI requires accessing the value
 	 *from* the target, if it is accessed.  So make that happen.
 	 In no case return the target itself.  */
@@ -4408,6 +4426,11 @@ store_expr (exp, target, want_value)
     {
       temp = expand_expr (exp, target, GET_MODE (target),
 			  want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
+#ifdef TARG_ST
+      // (cbr) we don't necessary generate rtl with whirls
+      if (!temp)
+	return NULL_RTX;
+#endif
       if (GET_MODE (temp) != BLKmode && GET_MODE (temp) != VOIDmode)
 	{
 	  /* If TEMP is already in the desired TARGET, only copy it from
@@ -4454,6 +4477,12 @@ store_expr (exp, target, want_value)
 
       temp = expand_expr (exp, inner_target, VOIDmode,
 			  want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
+
+#ifdef TARG_ST
+      // (cbr) we don't necessary generate rtl with whirls
+      if (!temp)
+	return NULL_RTX;
+#endif
 
       /* If TEMP is a volatile MEM and we want a result value, make
 	 the access now so it gets done only once.  Likewise if
@@ -4512,7 +4541,7 @@ store_expr (exp, target, want_value)
 #ifdef TARG_ST
       // (cbr) we don't necessary generate rtl with whirls
       if (!temp)
-	return NULL;
+	return NULL_RTX;
 #endif
       
       if (!(target && GET_CODE (target) == REG

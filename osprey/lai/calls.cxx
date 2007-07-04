@@ -2556,3 +2556,113 @@ Adjust_Stack_Frame (
   EETARG_Fixup_Stack_Frame ();
 }
 #endif
+
+
+#ifdef TARG_ST
+
+/* Prolog ops are:
+ * - any copy from a dedicated register that is not constant.
+ * - copy, add or adjust that defines the frame pointer
+ * - first copy, add or adjust that defines the stack pointer
+ */
+
+void
+Check_Prolog(BB *bb) {
+  OP *entry_sp_adj = BB_entry_sp_adj_op(bb);
+  OP *stack_op = NULL;
+  OP *op;
+
+  // Entries of exception handlers do not have an sp_adj operation
+  if ((entry_sp_adj == NULL) && BB_handler(bb))
+    return;
+
+  FmtAssert(entry_sp_adj!=NULL, ("sp_adjust op not set for entry BB:%d in PU:%s", BB_id(bb), Cur_PU_Name));
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+
+    if (op == entry_sp_adj)
+      break;
+
+    if (OP_Is_Copy(op)) {
+      TN *argument = OP_Copy_Operand_TN(op);
+      if (TN_is_register(argument) &&
+	  TN_is_dedicated(argument) &&
+	  !TN_is_const_reg(argument))
+	continue;
+    }
+
+    if (OP_results(op) == 1) {
+      TN *result = OP_result(op, 0);
+      if (result == FP_TN) {
+	if (OP_Is_Copy(op) || OP_iadd(op))
+	  continue;
+      }
+      if ((result == SP_TN) && (stack_op == NULL)) {
+	stack_op = op;
+	if (OP_Is_Copy(op) || OP_iadd(op) || (OP_code(op) == TOP_spadjust))
+	  continue;
+      }
+    }
+
+    FmtAssert(0, ("Illegal prolog sequence in BB:%d, PU:%s\n", BB_id(bb), Cur_PU_Name));
+  }
+}
+
+/* Epilog ops are:
+ * - last control operation
+ * - any copy to a dedicated register
+ * - last copy, add or adjust of stack pointer
+ */
+void
+Check_Epilog(BB *bb) {
+  OP *stack_op = NULL;
+  OP *branch_op = NULL;
+  OP *op;
+  OP *exit_sp_adj = BB_exit_sp_adj_op(bb);
+
+  if (exit_sp_adj == NULL)
+    return;
+
+  FOR_ALL_BB_OPs_REV(bb, op) {
+
+    if (op == exit_sp_adj)
+      break;
+
+    if (OP_xfer(op) && (branch_op == NULL)) {
+      branch_op = op;
+      continue;
+    }
+
+    if (OP_Is_Copy(op)) {
+      TN *result = OP_Copy_Result_TN(op);
+      if (TN_is_dedicated(result))
+	continue;
+    }
+
+    if (OP_results(op) == 1) {
+      TN *result = OP_result(op, 0);
+      if ((result == SP_TN) && (stack_op == NULL)) {
+	stack_op = op;
+	if (OP_Is_Copy(op) || OP_iadd(op) || (OP_code(op) == TOP_spadjust))
+	  continue;
+      }
+    }
+
+    FmtAssert(0, ("Illegal epilog sequence in BB:%d, PU:%s\n", BB_id(bb), Cur_PU_Name));
+  }
+}
+
+void
+Check_Prolog_Epilog () {
+
+  for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+
+    if (BB_entry(bb))
+      Check_Prolog(bb);
+
+    if (BB_exit(bb))
+      Check_Epilog(bb);
+
+  }
+}
+#endif

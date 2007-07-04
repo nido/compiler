@@ -204,13 +204,13 @@ Schedule_Prefetch_Prepass () {
 
       FOR_ALL_BB_OPs(bb, op) {
 	if (OP_prefetch(op)) {
-	  nb_prefetch++;
+	  // FdF 20070627: There may not be a WN associated with a prefetch (codex #26872)
 	  if (!Get_WN_From_Memory_OP(op)) {
 	    if (Trace_PFT)
 	      fprintf(TFile, "No WN associated with a PREFETCH op\n");
 	    continue;
 	  }
-	  Is_True(Get_WN_From_Memory_OP(op), ("No WN associated with a PREFETCH op"));
+	  nb_prefetch++;
 
 	  // In case of unrolling, there may be more than one prefetch
 	  // for the same WN, from different loop iterations. Just
@@ -385,9 +385,8 @@ Schedule_Prefetch_Postpass () {
       FOR_ALL_BB_OPs(bb, op) {
 	if (OP_prefetch(op)) {
 
-
 	  WN *op_wn = Get_WN_From_Memory_OP(op);
-	  Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+	  if (op_wn == NULL) continue;
 
 	  if (WN_pf_manual(op_wn))
 	    user_prefetch++;
@@ -471,19 +470,22 @@ Schedule_Prefetch_Postpass () {
 
 	    // Do not prefetch too much iterations ahead if the loop
 	    // trip count is known to be small.
-	    LOOPINFO *info = LOOP_DESCR_loopinfo(cloop);
-	    INT32 max_iter;
+	    if (LOOP_DESCR_loopinfo(cloop) != NULL) {
+	      LOOPINFO *info = LOOP_DESCR_loopinfo(cloop);
+	      INT32 max_iter;
 
 #ifdef TARG_ST
-	    TN *trip_count_tn = info ? LOOPINFO_exact_trip_count_tn(info) : NULL;
+		TN *trip_count_tn = LOOPINFO_exact_trip_count_tn(info);
 #else
-	    TN *trip_count_tn = info ? LOOPINFO_trip_count_tn(info) : NULL;
+		TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
 #endif
-	    if (trip_count_tn && TN_is_constant(trip_count_tn))
-	      max_iter = TN_value(trip_count_tn) / 2;
-	    else max_iter = WN_loop_trip_est(LOOPINFO_wn(info)) / 2;
-	    if (iterAhead > max_iter)
-	      iterAhead = max_iter;
+	      if (trip_count_tn && TN_is_constant(trip_count_tn))
+		max_iter = TN_value(trip_count_tn) / 2;
+	      else
+		max_iter = WN_loop_trip_est(LOOPINFO_wn(info)) / 2;
+	      if (iterAhead > max_iter)
+		iterAhead = max_iter;
+	    }
 
 	    // Do not prefetch too much iterations ahead if this will
 	    // exceed the number of prefetch buffers.
@@ -607,7 +609,7 @@ Schedule_Prefetch_Postpass () {
 
 	  if (OP_prefetch(op)) {
 	    WN *op_wn = Get_WN_From_Memory_OP(op);
-	    Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+	    if (op_wn == NULL) continue;
 
 	    if (!WN_pf_manual(op_wn) && !OP_flag1(op))
 	      BB_Remove_Op(bb, op);
@@ -640,7 +642,7 @@ Schedule_Prefetch_Postpass () {
 
 	// This is an unvisited prefetch instruction
 	WN *op_wn = Get_WN_From_Memory_OP(op);
-	Is_True(op_wn, ("No WN for a PREFETCH instruction.\n"));
+	if (op_wn == NULL) continue;
 
 	if (WN_pf_manual(op_wn)) {
 	  if (CG_warn_prefetch_padding) {

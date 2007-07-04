@@ -2756,6 +2756,7 @@ Handle_ILDBITS (WN *ildbits, TN *result, OPCODE opcode)
   VARIANT variant = Memop_Variant(ildbits);
   WN *kid0 = WN_kid0(ildbits);
   ST *st;
+  UINT bit_ofst;
   TN *src_tn = Allocate_Result_TN (ildbits, NULL);
   if (result == NULL) result = Allocate_Result_TN (ildbits, NULL);
 
@@ -2782,7 +2783,15 @@ Handle_ILDBITS (WN *ildbits, TN *result, OPCODE opcode)
   }
   Set_OP_To_WN_Map(ildbits);
 
-  Exp_Extract_Bits(WN_rtype(ildbits), WN_desc(ildbits), WN_bit_offset(ildbits),
+
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = WN_bit_offset(ildbits);
+  } else {
+      // for LX as BIG_ENDIAN:
+      bit_ofst = MTYPE_bit_size(WN_desc(ildbits)) - WN_bit_size(ildbits) - WN_bit_offset(ildbits);
+  }
+  Exp_Extract_Bits(WN_rtype(ildbits), WN_desc(ildbits), bit_ofst,
 		   WN_bit_size(ildbits), result, src_tn, &New_OPs);
   return result;
 }
@@ -3112,6 +3121,7 @@ Handle_ISTBITS (
   TN *result = Allocate_Result_TN (kid0, NULL);
   TYPE_ID desc = Mtype_TransferSign(MTYPE_U4, WN_desc(istbits));
   TYPE_ID rtype = desc;
+  UINT bit_ofst;
   /*
   TN *field_tn = Build_TN_Of_Mtype (desc);
   TN *result = Build_TN_Of_Mtype (desc);
@@ -3122,6 +3132,14 @@ Handle_ISTBITS (
     rtype = Mtype_TransferSize(MTYPE_U4, rtype);
   if (MTYPE_byte_size(WN_rtype(kid0)) > MTYPE_byte_size(rtype)) 
     rtype = Mtype_TransferSize(WN_rtype(kid0), rtype);
+
+  if (Target_Byte_Sex == LITTLE_ENDIAN) {
+      // for LX as LITTLE_ENDIAN:
+      bit_ofst = WN_bit_offset(istbits);
+  } else {
+      // for LX as BIG_ENDIAN:
+      bit_ofst = MTYPE_bit_size(WN_desc(istbits)) - WN_bit_size(istbits) - WN_bit_offset(istbits);
+  }
 
   /* if the kid1 is an LDA, treat the ISTBITS as an STBITS */
   if (WN_operator_is(kid1, OPR_LDA)) {
@@ -3137,7 +3155,7 @@ Handle_ISTBITS (
     Set_OP_To_WN_Map(istbits);
 
     // deposit bits_tn into field_tn returning result in result
-    Exp_Deposit_Bits(rtype, desc, WN_bit_offset(istbits), 
+    Exp_Deposit_Bits(rtype, desc, bit_ofst, 
 		     WN_bit_size(istbits), result, field_tn, bits_tn, &New_OPs);
 
     Last_Mem_OP = OPS_last(&New_OPs);
@@ -3155,7 +3173,7 @@ Handle_ISTBITS (
     Set_OP_To_WN_Map(istbits);
 
     // deposit bits_tn into field_tn returning result in result
-    Exp_Deposit_Bits(rtype, desc, WN_bit_offset(istbits),
+    Exp_Deposit_Bits(rtype, desc, bit_ofst,
          WN_bit_size(istbits), result, field_tn, bits_tn, &New_OPs);
 
     Last_Mem_OP = OPS_last(&New_OPs);

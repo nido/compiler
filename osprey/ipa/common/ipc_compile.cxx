@@ -73,6 +73,10 @@
 #include "ipa_option.h"                 // ipa option flags
 #include "ipc_link.h"                   // for ipa_link_line_argv
 
+#ifdef TARG_ST
+#include "ipc_symtab.h"                 // [CL] for unmap_all()
+#endif
+
 #if defined(TARG_ST) && defined(__CYGWIN__)
 #include <signal.h>
 #endif
@@ -1041,6 +1045,8 @@ static void cleanup()
     closedir(dirp);
   }
 
+  unmap_all();
+
   if (ld_ipa_opt[LD_IPA_KEEP_TEMPS].flag) {
     return;
   }
@@ -1065,9 +1071,35 @@ static void cleanup()
 
   // [CL] go out of tmpdir before removing it
   chdir(current_dir);
+
+  // [CL] remove all files in tmpdir (ie archive members compiled with
+  // -ipa, that have been extracted by the linker, and not removed
+  // yet)
+  dirp = opendir(tmpdir);
+  if (dirp) {
+    struct dirent* direntp;
+
+    while ((direntp = readdir(dirp)) != NULL) {
+      if (direntp->d_name[0] == '.') {
+	if ( ((direntp->d_name[1] == '.')
+	      && (direntp->d_name[2] == '\0'))
+	     || (direntp->d_name[1] == '\0')
+	     ) {
+	  continue;
+	}
+      }
+	     
+      char* srcname = (char*)malloc(strlen(tmpdir)+strlen(direntp->d_name)+2);
+      sprintf(srcname, "%s/%s", tmpdir, direntp->d_name);
+      remove_file(srcname);
+      free(srcname);
+    }
+    closedir(dirp);
+  }
+
   int res = rmdir(tmpdir);
   if (res) {
-    fprintf(stderr, "Couldn't remove %s", tmpdir);
+    fprintf(stderr, "Couldn't remove %s: ", tmpdir);
     perror("");
   }
 }
@@ -1634,7 +1666,7 @@ void ipacom_doit (const char* ipaa_filename)
     }
   int res = chdir(current_dir);
   if (res) {
-    fprintf(stderr, "Couldn't change dir to %s", current_dir);
+    fprintf(stderr, "Couldn't change dir to %s: ", current_dir);
     perror("");
   }
   int status = run_program(link_argv);

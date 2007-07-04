@@ -6903,15 +6903,14 @@ EMT_Emit_PU (
   if (CG_emit_asm_dwarf) {
     if (Last_Label == 0) {
       New_Debug_Line_Set_Label(PC2Addr(PC));
-    } else {
-      cache_last_label_info (Last_Label,
-			     Em_Create_Section_Symbol(PU_section),
-			     current_pu,
-			     PC2Addr(Offset_From_Last_Label));
-      pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
-      end_previous_text_region(old_PU_section, 
-			       PC);
     }
+    cache_last_label_info (Last_Label,
+			   Em_Create_Section_Symbol(PU_section),
+			   current_pu,
+			   PC2Addr(Offset_From_Last_Label));
+    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+    end_previous_text_region(old_PU_section, 
+			     PC);
   }
 #endif
 

@@ -151,6 +151,7 @@ set_defaults (void)
 #ifdef MUMBLE_ST200_BSP
 	if (st200_runtime == UNDEFINED) 
 	  toggle(&st200_runtime, RUNTIME_BARE);
+	/* At this point we let st200_syscall undefined, since it is 'autodetected' later on*/
 #endif
 #endif /* TARG_ST200 */
 

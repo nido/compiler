@@ -702,11 +702,9 @@ Configure_Target ()
   }
 
 
-#if 0
   // Enable the extract whirl op for st240 only
   if (Is_Target_st240() && !Enable_extract_overriden) 
     Enable_extract = TRUE;
-#endif
 
 
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */

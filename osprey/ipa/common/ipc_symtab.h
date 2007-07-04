@@ -77,14 +77,20 @@ process_whirl64 (an_object_file_ptr p_obj, int nsec,
 
 #else /* _LD_IPA_INTERFACE */
 
+#ifndef TARG_ST // [CL] we need to include this file in
+		// ipc_compile.cxx, but LD_OBJECT_FILE isn't known
 extern void enter_mext32 (ST *st, LD_OBJECT_FILE *p_obj);
 extern void enter_mext64 (ST *st, LD_OBJECT_FILE *p_obj);
-
+#endif
 
 #endif /* _LD_IPA_INTERFACE */
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef TARG_ST
+void unmap_all();
 #endif
 
 #else // _STANDALONE_INLINER || _LIGHTWEIGHT_INLINER

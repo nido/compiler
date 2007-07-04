@@ -557,7 +557,11 @@ class LOOP_INVAR_CODE_MOTION : public CXX_MEM_POOL {
      */
 private:
     LOOP_DESCR* _loop;  /* currently handled loop */
+#ifdef TARG_ST
+    BB_Lst _prolog;      /* corresponding prologue */
+#else
     BB* _prolog;      /* corresponding prologue */
+#endif
     MEM_POOL* _mp;    /* underlying MEM_POOL*/
 
     TN_SET*  _def_within_loop; /* all TNs that are defined within loop */
@@ -673,6 +677,12 @@ private:
     BOOL Ambiguous_Alias (OP *);
     LI_MEMORY_INFO *Lookup_Memory (OP *);
     BOOL Dom_All_Loop_Exits (LI_MEMORY_INFO* );
+    BOOL is_in_prolog_p (BB *bb) {
+      for (BB_Lst_Iter it = _prolog.begin (); it != _prolog.end (); ++it) {
+        if (*it == bb) return TRUE;
+      }
+      return FALSE;
+    }
 #endif
 
 public:
@@ -949,10 +959,12 @@ LOOP_INVAR_CODE_MOTION::LOOP_INVAR_CODE_MOTION (LOOP_DESCR* l, BB* prolog):
     _ld_ops (_mp), _store_ops(_mp), _call_ops(_mp),
     _loop(l), _op_info(l, _mp) {
 
-    _prolog   = prolog; 
 #ifdef TARG_ST
+    _prolog.push_back (prolog); 
     _memory_groups = NULL;
     _epilog   = epilog; 
+#else
+    _prolog = prolog;
 #endif
 
     Init ();
@@ -1197,6 +1209,50 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
 	    if (OP_has_implicit_interactions(op))
 	      it_is = FALSE;
 
+#ifdef TARG_ST
+	    /*
+	     * [CG]: We must first iterate over all results to determine
+	     * if the operation is loop invariant or not.
+	     * Then only we will mark each results are loop invariant or not.
+	     * The original loop did both in the same time which is wrong.
+	     * For instance:
+	     * R1 , R2 = op ...
+	     * If R2 is determined to be loop invariant (Inloop_Def_Num() > 1),
+	     * we must mark both R2 _and_ R1 as not loop invariant, even
+	     * if R1 is actually loop invariant. 
+	     */
+            for (INT i = OP_results (op) - 1; i >= 0; i--) {
+	      TN* res = OP_result (op, i);
+	      
+	      if (It_Is_Constant_TN (res)) continue; 
+	      
+	      LI_TN_INFO* tninfo;
+	      tninfo = (LI_TN_INFO*) hTN_MAP_Get (_tn_info, res);
+	      if (tninfo->Inloop_Def_Num () != 1) {
+		it_is = FALSE; 
+	      }
+	    }
+	    /*
+	     * Mark all results TN as non loop invariants if the 
+	     * op is non loop invariant.
+	     */
+            for (INT i = OP_results (op) - 1; i >= 0; i--) {
+	      TN* res = OP_result (op, i);
+	      
+	      if (It_Is_Constant_TN (res)) continue; 
+
+	      LI_TN_INFO* tninfo;
+	      tninfo = (LI_TN_INFO*) hTN_MAP_Get (_tn_info, res);
+	      if (it_is) {
+		tninfo->Set_Loop_Invar ();
+	      } else {
+		tninfo->Reset_Loop_Invar ();
+	      }
+	    }
+	    
+#else /* !TARG_ST */
+	    /* [CG] : This loop is wrong, see the replacement code above. */
+
                 /* mark all non-constant results as loop-invariant or 
                  * non-loop-invariant accordingly
                  */
@@ -1213,11 +1269,14 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
                     tninfo->Set_Loop_Invar ();
                 } else {
                     tninfo->Reset_Loop_Invar ();
+		    /* [CG] : Why is this break for? All results shgould be
+		     * reset, not the first one. It seems wrong to me. */
                     break;
                 }
 
              }/* end of for(INT...) */
-
+#endif /* !TARG_ST */
+	    
              if (it_is) {
                 /* Memorize this loop-invar definition. Since we traverse
                  * the CFG in topolocal order, and each loop-invar-def we 
@@ -1891,7 +1950,11 @@ LOOP_INVAR_CODE_MOTION :: Ambiguous_Alias (OP *op) {
             OP* op_load = *ld_iter;
 
 	    /* Operation was already moved out of loop or removed. */
+#ifdef TARG_ST
+	    if (is_in_prolog_p (OP_bb(op_load)) || OP_bb(op_load) == NULL)
+#else
 	    if (OP_bb(op_load) == _prolog || OP_bb(op_load) == NULL)
+#endif
 	      continue;
 
 	    /* Ignore aliasing with load operations in the same MEMORY
@@ -1958,7 +2021,11 @@ LOOP_INVAR_CODE_MOTION :: Identify_Memory_Groups (void) {
 	 st_iter != _ld_ops.end (); st_iter ++) {
 	OP* op_load = *st_iter;
 	/* op_load may have already been hoisted. */
+#ifdef TARG_ST
+	if (is_in_prolog_p (OP_bb(op_load))) continue;
+#else
 	if (OP_bb(op_load) == _prolog) continue;
+#endif
 	if (Invariant_Address (op_load)) {
 	    Set_Memory_Group (op_load);
 	}
@@ -2052,6 +2119,11 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
             perform = FALSE;
         }
 
+#ifdef TARG_ST
+	if (perform && (! _prolog.back () || BB_asm (_prolog.back ()))) {
+	  perform = FALSE;
+	}
+#endif
         if (perform && Illegal_Or_Nonprofitable (linvar)) {
             perform = FALSE;
         }
@@ -2074,7 +2146,8 @@ LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (void) {
        them by hoisting the loads and sinking the stores. */
 
 #ifdef TARG_ST
-    if (IPFEC_Enable_LICM < 2)
+    if (IPFEC_Enable_LICM < 2
+	|| BB_asm (_prolog.back ()))
       return code_motion_num;
 
 #ifdef TARG_ST200
@@ -2288,7 +2361,11 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 #endif
 		memory->Set_Addr(addrTN);
 		Expand_BlackHole(mem_op, addrTN, &New_OPs);
+#ifdef TARG_ST
+		BB_Append_Ops(_prolog.back (), &New_OPs);
+#else
 		BB_Append_Ops(_prolog, &New_OPs);
+#endif
 
 		/* Generate a store operation in the epilog. */
 		OPS_Remove_All(&New_OPs);
@@ -2321,11 +2398,16 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
     if (speculate && !memory->Hoisted()) {
         OPS New_OPs = OPS_EMPTY;
 	Expand_Immediate (memory->Get_Scalar(), Gen_Literal_TN(0, 4), FALSE, &New_OPs);
-        BB_Append_Ops(_prolog, &New_OPs);
+        BB_Append_Ops(_prolog.back(), &New_OPs);
     }
 
     return code_motion_num;
 }
+
+static BB* Create_Loop_Prologue (LOOP_DESCR* l); // forward
+static void Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, BB* epilog,
+				     MEM_POOL* mp); // forward
+
 #endif
 
     /* ==============================================================
@@ -2339,27 +2421,40 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 void
 LOOP_INVAR_CODE_MOTION :: Perform_Code_Motion (OP* linvar) {
 
+    if (LICM_Trace_Candidates) {
+      fprintf (TFile, "<licm> candidate hoisted: BB:%d, OP:%d\n",
+	       BB_id(OP_bb(linvar)), OP_map_idx(linvar));
+    }
+
 #ifdef TARG_ST
-  BB* tgt = NULL;
-  BB* src = OP_bb(linvar);
+  BB *tgt = NULL;
+  BB *src = OP_bb(linvar);
   if (OP_store(linvar)) {
-    BB_Move_Op_To_Start (_epilog, OP_bb(linvar), linvar);
     tgt = _epilog;
+    BB_Move_Op_To_Start (tgt, OP_bb(linvar), linvar);
   }
   else {
-#endif
-    BB_Move_Op_To_End (_prolog, OP_bb(linvar), linvar);
-#ifdef TARG_ST
-    tgt = _prolog;
+    tgt = _prolog.back();
+    BB_Move_Op_To_End (tgt, OP_bb(linvar), linvar);
   }
   // Fix for bug #20894: Assertion failure "TOP_asm not in BB_asm" in cgemit
   if(OP_code(linvar) == TOP_asm) {
-      Set_BB_asm(tgt);
-      // A basic block can have at most one asm instruction, so we have just to
-      // transfer the information
-      BB_Transfer_Asminfo(src, tgt);
+    Set_BB_asm(tgt);
+    // A basic block can have at most one asm instruction, so we have just to
+    // transfer the information
+    BB_Transfer_Asminfo(src, tgt);
+    // Now create a new prolog BB.
+    BB *new_prolog = Create_Loop_Prologue (_loop);
+    if (new_prolog) {
+      Reset_BB_gra_spill (new_prolog);
+      _prolog.push_back (new_prolog);
+      Maintain_Dominator_Info (_loop, new_prolog, NULL, _mp);
+    }
   }
+#else
+    BB_Move_Op_To_End (_prolog, OP_bb(linvar), linvar);
 #endif
+
 
     /* we need to change the result TNs to be global version since 
      * later on we will recaculate liveness from scratch.
@@ -2592,6 +2687,9 @@ Create_Loop_Prologue (LOOP_DESCR* l) {
 
     if (like_prolog) {
         if (BB_kind (like_prolog) != BBKIND_GOTO || 
+#ifdef TARG_ST
+	    BB_asm (like_prolog) ||
+#endif
             BB_branch_op (like_prolog)) {
             like_prolog = NULL;
         }

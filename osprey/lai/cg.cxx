@@ -794,6 +794,11 @@ CG_Generate_Code(
   CGTARG_Resize_Instructions ();
 #endif
 
+  Set_Error_Phase( "Prepass Scheduling" );
+
+  extern void Check_Prolog_Epilog ();
+  Check_Prolog_Epilog();
+
 #ifdef LAO_ENABLED
   // Call the LAO for software pipelining and prepass scheduling.
   if (CG_LAO_optimizations & OptimizeActivation_PrePass) {

@@ -44,6 +44,9 @@
 #include "cxx_memory.h"			// needed by ipc_symtab_merge.h
 #include "erglob.h"			// error codes
 #include "symtab.h"			// symbol table
+#ifdef TARG_ST
+#include "W_mman.h"		    /* for mmap() */
+#endif
 
 #include "ld_ipa_interface.h"		// for interface routine
 #include "ipc_link.h"			// for ipa_insert_whirl_obj_marker
@@ -450,7 +453,19 @@ process_whirl64 (an_object_file_ptr p_obj, INT nsec,
     process_whirl (p_obj, nsec, section_table, check_whirl_revision,
 		   file_name, tag); 
 }
-#if defined(TARG_IA64) || defined(TARG_ST200) // [CL]
+
+#ifdef TARG_ST
+// [CL] keep track of open files, for later cleanup
+struct open_input {
+  void* addr;
+  off_t size;
+  struct open_input* next;
+} ;
+
+static struct open_input* open_input_list=NULL;
+#endif
+
+#if defined(TARG_IA64) || defined(TARG_ST) // [CL]
     /* This is just a door to the be.so open routines. */
 extern "C" void *
 #ifdef TARG_ST
@@ -465,10 +480,35 @@ ipa_open_input(char *name, off_t *p_size)
 	ipa_dot_so_init (argc, argv);
   }
 #endif
-    return WN_open_input(name,p_size);
+
+#ifdef TARG_ST
+  // [CL] keep track of mmap()ed files, used at cleanup time
+  void* mm = WN_open_input(name,p_size);
+  struct open_input* new_input = (struct open_input*)malloc(sizeof(struct open_input));
+  new_input->addr = mm;
+  new_input->size = *p_size;
+  new_input->next = open_input_list;
+  open_input_list = new_input;
+  return mm;
+#else
+  return WN_open_input(name,p_size);
+#endif
 }
 
-#endif // TARG_IA64 */
+#ifdef TARG_ST
+// [CL] unmap all mmaped files
+void unmap_all() {
+  struct open_input* input = open_input_list;
+  while(input) {
+    if (munmap(input->addr, input->size)) {
+      perror("Couldn't munmap: ");
+    }
+    input = input->next;
+  }
+}
+#endif
+
+#endif // TARG_IA64 || TARG_ST */
 
 #else // _STANDALONE_INLINER
 

@@ -173,6 +173,12 @@ typedef enum {
   RUNTIME_OS21_DEBUG = 3
 } RUNTIME;
 extern RUNTIME st200_runtime;
+typedef enum {
+  SYSCALL_NONE 	   = 0,
+  SYSCALL_LIBGLOSS = 1,
+  SYSCALL_LIBDTF   = 2
+} SYSCALL;
+extern SYSCALL st200_syscall;
 #endif
 
 #ifdef MUMBLE_STxP70_BSP

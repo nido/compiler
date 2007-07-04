@@ -164,6 +164,15 @@ static struct {
   { "os21_d",	RUNTIME_OS21_DEBUG },
   { NULL,	RUNTIME_NONE }
 };
+static struct {
+  string pname;
+  SYSCALL pid;
+} Syscall_Map[] =
+{
+  { "libgloss",	SYSCALL_LIBGLOSS },
+  { "libdtf",	SYSCALL_LIBDTF },
+  { NULL,      	SYSCALL_NONE }
+};
 #endif
 
 #ifdef MUMBLE_STxP70_BSP
@@ -1891,6 +1900,7 @@ void Add_Wuninitialized() {
 string st200_core, st200_soc, st200_board;
 string st200_core_name, st200_soc_name, st200_board_name;
 RUNTIME st200_runtime = UNDEFINED;
+SYSCALL st200_syscall = UNDEFINED ;
 string st200_targetdir ; /* Set iff targetdir is command-line overriden */
 string st200_libdir;
 #endif
@@ -1990,6 +2000,17 @@ Process_ST200_Targ (string option,  string targ_args )
     if (st200_runtime == UNDEFINED ) {
       st200_runtime = RUNTIME_BARE;
       warning("runtime %s undefined. setting to bare", targ_args);
+    }
+  }
+
+  else if (strncasecmp (option, "-msyscall", 9) == 0) {
+    for (i = 0; Syscall_Map[i].pname != NULL; i++) {
+      if (same_string(targ_args, Syscall_Map[i].pname)) {
+	toggle (&st200_syscall, Syscall_Map[i].pid);
+      }
+    }
+    if (st200_syscall == UNDEFINED ) {
+      warning("system call model %s unknown. switching to default", targ_args);
     }
   }
 

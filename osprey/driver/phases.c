@@ -1852,8 +1852,45 @@ add_final_ld_args (string_list_t *args)
 #endif
       
 #ifdef MUMBLE_ST200_BSP
-      if(file_exists (concat_path(get_phase_dir(P_library), "libgloss.a"))) {
-	add_string(args, "-lgloss");
+      {
+	// Unless overridden by -msyscall option, we base the syscall model decision 
+	// On the detection of the presence of specific files in the library directory  
+	int libgloss_present = file_exists (concat_path(get_phase_dir(P_library), "libgloss.a")) ;
+	int libdtf_present = file_exists (concat_path(get_phase_dir(P_library), "libdtf.a")) ;
+
+        // If there is no specification to the runtime mode we look at the presence of libraries
+        // To deduce a st200_syscall runtime model
+        if (st200_syscall == UNDEFINED) {
+	  // If only libgloss is present we swtich to SYSCALL_LIBGLOSS
+	  // If only libdtf is present we switch to SYSCALL_LIBDTF
+	  // If libdtf and libgloss are present at the same time, at this stage we switch to SYSCALL_LIBDTF
+	  // If there is no libdtf neither libgloss, we also switch to SYSCALL_LIBDTF
+	  // In that case the rest of the treatments will give the appropriate diagnostics
+	  // If the user wants to use the libgloss with the nwe driver libraries, he has to use the -msyscall option
+	  // In that case the st200_syscall variable would not have been UNDEFINED there
+	  // To summarize, if only libgloss is there, we are in compatibility mode
+          // Otherwise we are in libdtf mode.
+	  if (libgloss_present && !libdtf_present)
+	    st200_syscall = SYSCALL_LIBGLOSS ;
+	  else
+	    st200_syscall = SYSCALL_LIBDTF ;
+        }
+      
+        if (st200_syscall == SYSCALL_LIBDTF) {
+	  if (libdtf_present) 
+	    add_string(args, "-ldtf");
+	  else
+	    warning("system call mode is 'libdtf' but cannot find libdtf.a in %s",
+		    get_phase_dir(P_library)) ;
+        }  else if (st200_syscall == SYSCALL_LIBGLOSS) {
+	  if (libgloss_present)
+	    add_string(args, "-lgloss");
+	  else
+	    warning("system call mode is 'libgloss' but cannot find ligloss.a in %s",
+		    get_phase_dir(P_library)) ;
+        } else {
+	  error("system call mode is not properly defined") ;
+        }
       }
       
       {
@@ -1865,6 +1902,32 @@ add_final_ld_args (string_list_t *args)
 	ofile = concat_path (st200_board, "libboard.a");
 	if (file_exists (ofile)) {
 	  add_string (args, "-lboard");
+	}
+
+	// This block is used to manage the additional libraries that are needed
+	// Under os21 mode, in the new syscall model,a la ST40
+	if ((st200_runtime == RUNTIME_OS21) || (st200_runtime == RUNTIME_OS21_DEBUG)) {
+	  extern string st200_board_name ;
+	  if (!same_string(st200_board_name, "default"/*DEF_BOARD_NAME*/)) {
+	    buffer_t libboardname ;
+	    buffer_t libboardarg ;
+	    if (st200_runtime == RUNTIME_OS21) {
+	      sprintf(libboardname,"lib%s.a",st200_board_name) ;
+	      sprintf(libboardarg,"-l%s",st200_board_name) ;
+	    } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
+	      sprintf(libboardname,"lib%s_d.a",st200_board_name) ;
+	      sprintf(libboardarg,"-l%s_d",st200_board_name) ;	    
+	    } 
+	    ofile = concat_path (st200_board, libboardname) ;
+	    if (file_exists (ofile)) {
+	      add_string (args, libboardarg);
+	    } else {
+	      warning("The %s library cannot be found in %s, skipping the addition of %s", 
+		      libboardname,
+		      st200_board,
+		      libboardarg) ;
+	    }
+	  }
 	}
 	
 	ofile = concat_path (st200_soc, "libsoc.a");

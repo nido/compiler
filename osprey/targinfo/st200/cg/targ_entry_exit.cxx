@@ -216,32 +216,51 @@ EETARG_Fixup_Entry_Code (
   // This happens for the frame pointer that is moved to a temporary
   // before the sp adjust code. It happens that this temporary is
   // allocated top a preserved register
+  // FdF 20070604: Add recoloration code to support instructions moved
+  // before the spadjust operation.
   if (point != NULL) {
     REGISTER_SET avail_temps[ISA_REGISTER_CLASS_MAX+1];
     REG_LIVE_Prolog_Temps(bb, BB_first_op(bb), point, avail_temps);
     TN_TN_PAIR_VECTOR copy_vector;
+    TN_MAP callee_to_caller_map = TN_MAP_Create();
     OP *op;
+    TN *caller_tn;
     FOR_ALL_BB_OPs_FWD(bb, op) {
       if (op == point) break;
+
+      for (i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op, i);
+	if (TN_is_register(tn) && (TN_register(tn) != REGISTER_UNDEFINED) &&
+	    ((caller_tn = (TN *)TN_MAP_Get(callee_to_caller_map, tn)) != NULL))
+	  Set_OP_opnd(op, i, caller_tn);
+      }
+
       for (i = 0; i < OP_results(op); i++) {
 	TN *tn = OP_result(op, i);
 	if (TN_is_register(tn) && TN_register(tn) != REGISTER_UNDEFINED) {
-	  ISA_REGISTER_CLASS rc = TN_register_class(tn);
-	  REGISTER reg = TN_register(tn);
-	  if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[rc], reg)) {
-	    REGISTER new_reg = REGISTER_SET_Choose(avail_temps[rc]);
-	    avail_temps[rc] = REGISTER_SET_Difference1(avail_temps[rc],
-						       new_reg);
-	    TN *caller_tn = Build_Dedicated_TN(rc, new_reg, TN_size(tn));
-	    copy_vector.push_back(TN_TN_PAIR(tn, caller_tn));
+	  if ((caller_tn = (TN *)TN_MAP_Get(callee_to_caller_map, tn)) != NULL) 
 	    Set_OP_result(op, i, caller_tn);
+	  else {
+	    ISA_REGISTER_CLASS rc = TN_register_class(tn);
+	    REGISTER reg = TN_register(tn);
+	    if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[rc], reg)) {
+	      REGISTER new_reg = REGISTER_SET_Choose(avail_temps[rc]);
+	      FmtAssert(new_reg != REGISTER_UNDEFINED, ("Not enough caller save register for code before spadjust"));
+	      avail_temps[rc] = REGISTER_SET_Difference1(avail_temps[rc],
+							 new_reg);
+	      TN *caller_tn = Build_Dedicated_TN(rc, new_reg, TN_size(tn));
+	      copy_vector.push_back(TN_TN_PAIR(tn, caller_tn));
+	      TN_MAP_Set(callee_to_caller_map, tn, caller_tn);
+	      Set_OP_result(op, i, caller_tn);
+	    }
 	  }
 	}
-      }
+      } 
     }
     for (INT i = 0; i < copy_vector.size(); i++) {
       Exp_COPY(copy_vector[i].first, copy_vector[i].second, &ops);
     }
+    TN_MAP_Delete(callee_to_caller_map);
   }
 
   if (Get_Trace (TP_CGEXP, 64)) {
