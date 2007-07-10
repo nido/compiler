@@ -397,11 +397,24 @@ ALIAS_CLASSIFICATION::New_base_id(const ST *st, TY_IDX ty)
 
   // If this base_id is a local variable or parameter, it gets its
   // own class.
+#ifdef TARG_ST
+  // [SC] If the symbol has a nested ref, then it goes to the global class.
+  // Furthermore, I do not understand why the original code does not check
+  // ST_IDX_level == CURRENT_SYMTAB on FORMAL and FORMAL_REF also, since there
+  // could, I suppose, be up-level references to formals.
+  if (((storage_class == SCLASS_AUTO &&
+	ST_IDX_level(ST_st_idx(st)) == CURRENT_SYMTAB) ||
+       storage_class == SCLASS_FORMAL                  ||
+       storage_class == SCLASS_FORMAL_REF              ||
+       storage_class == SCLASS_REG)
+      && ! ST_has_nested_ref (st)) {
+#else
   if ((storage_class == SCLASS_AUTO &&
        ST_IDX_level(ST_st_idx(st)) == CURRENT_SYMTAB) ||
       storage_class == SCLASS_FORMAL                  ||
       storage_class == SCLASS_FORMAL_REF              ||
       storage_class == SCLASS_REG) {
+#endif
     // Set up the LDA and LDID classes for this variable...
     ALIAS_CLASS_MEMBER *ldid_item = New_alias_class_member(id);
     ALIAS_CLASS_REP    *ldid_class = New_alias_class(ldid_item);
@@ -474,6 +487,14 @@ ALIAS_CLASSIFICATION::New_base_id(const ST *st, TY_IDX ty)
 	   storage_class == SCLASS_COMMON  ||
 	   storage_class == SCLASS_UGLOBAL ||
 	   storage_class == SCLASS_DGLOBAL ||
+#ifdef TARG_ST
+	   // [SC] storage class FORMAL, FORMAL_REF or AUTO could be
+	   // because the base_id has a nested ref (i.e. an uplevel ref
+	   // in another PU).  In that case we treat
+	   // it as a global.
+	   storage_class == SCLASS_FORMAL     ||
+	   storage_class == SCLASS_FORMAL_REF ||
+#endif
 	   // storage class AUTO here signifies that the item is an
 	   // uplevel reference and therefore must be treated as
 	   // global because its address can be stored into a global,
@@ -1534,7 +1555,14 @@ ALIAS_CLASSIFICATION::Handle_call_of_nested_PU(ST *const callee_st)
 {
   if (Tracing()) {
     fprintf(TFile, "Handling nested call of ");
+#ifdef TARG_ST
+    if (! callee_st)
+      fprintf (TFile, "<unknown callee>");
+    else
+      Print_ST(TFile, callee_st, FALSE);
+#else
     Print_ST(TFile, callee_st, FALSE);
+#endif
     fflush(TFile);
   }
 
