@@ -4364,7 +4364,14 @@ op_match_lnot(OP *op,
       *op0_tninfo = opnd_tninfo[0];
       return TRUE;
     }
-  }
+  } else if ((top == TOP_norl_r_r_r || top == TOP_norl_r_r_b
+	      || top == TOP_norl_b_b_b || top == TOP_nandl_r_r_r
+	      || top == TOP_nandl_r_r_b || top == TOP_nandl_b_b_b)
+	     && OP_opnd(op, 0) == OP_opnd(op, 1)) {
+    *op0_tn = OP_opnd (op, 0);
+    *op0_tninfo = opnd_tninfo[0];
+    return TRUE;
+   }
   return FALSE;
 }
 
@@ -4387,6 +4394,10 @@ op_match_lmove(OP *op,
       *op0_tninfo = opnd_tninfo[0];
       return TRUE;
     }
+  } else if (top == TOP_convib_r_b || top == TOP_convbi_b_r) {
+    *op0_tn = OP_opnd(op, 0);
+    *op0_tninfo = opnd_tninfo[0];
+    return TRUE;
   }
   return FALSE;
 }
@@ -5708,7 +5719,11 @@ predicate_invert_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   EBO_TN_INFO *lhs_tninfo, *rhs_tninfo;
   EBO_OP_INFO *def_opinfo;
   
-  if ((top != TOP_norl_b_b_b && top != TOP_nandl_b_b_b)
+  // [SC] This transformation can obscure some andl/orl simplifications, since
+  // it disassociates a tn from its complement.  So when EBO_in_pre, I suppress
+  // this transformation to allow andl_orl_sequence to find its opportunities first.
+  if (EBO_in_pre
+      || (top != TOP_norl_b_b_b && top != TOP_nandl_b_b_b)
       || opnd_tn[0] != opnd_tn[1]) {
     return FALSE;
   }
@@ -5778,8 +5793,9 @@ convbi_op_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   } else return FALSE;
   
   BOOL inverted = FALSE;
-  if ((OP_code(def_opinfo->in_op) == TOP_norl_b_b_b
-       || OP_code(def_opinfo->in_op) == TOP_nandl_b_b_b)
+  if (! EBO_in_pre
+      && (OP_code(def_opinfo->in_op) == TOP_norl_b_b_b
+	  || OP_code(def_opinfo->in_op) == TOP_nandl_b_b_b)
       && lhs_tn != NULL
       && lhs_tn == rhs_tn) {
     // This instruction is complementing the branch register.
@@ -5989,6 +6005,8 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   
   if (!TN_is_register(lhs_tn) || !TN_is_register(rhs_tn)) return FALSE;
   
+  if (TN_register_class(lhs_tn) != TN_register_class(rhs_tn)) return FALSE;
+
   if ((lhs_tninfo != NULL && !EBO_tn_available (bb, lhs_tninfo)) ||
       (rhs_tninfo != NULL && !EBO_tn_available (bb, rhs_tninfo)))
     return FALSE;
@@ -6026,12 +6044,24 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     case V_CMP_NANDL: new_top = TOP_nandl_r_r_r; break;
     case V_CMP_NORL: new_top = TOP_norl_r_r_r; break;
     }
-    if (new_top == TOP_UNDEFINED) return FALSE;
     
     TN *result;
     result = OP_result(op, 0);
     new_top = TOP_result_register_variant(new_top, 0, 
 					  TN_register_class(result));
+    if (TN_register_class(lhs_tn) == ISA_REGISTER_CLASS_branch) {
+      switch (new_top) {
+      case TOP_andl_r_r_b:  new_top = TOP_andl_b_b_b;  break;
+      case TOP_orl_r_r_b:   new_top = TOP_orl_b_b_b;   break;
+      case TOP_nandl_r_r_b: new_top = TOP_nandl_b_b_b; break;
+      case TOP_norl_r_r_b:  new_top = TOP_norl_b_b_b;  break;
+      default: new_top = TOP_UNDEFINED;                break;
+      }
+      if (!ISA_SUBSET_Member (ISA_SUBSET_Value, new_top)) {
+	new_top = TOP_UNDEFINED;
+      }
+    }
+    if (new_top == TOP_UNDEFINED) return FALSE;
     new_op = Mk_OP(new_top, result, lhs_tn, rhs_tn);
     OP_srcpos(new_op) = OP_srcpos(op);
     if (EBO_in_loop) EBO_Set_OP_omega (new_op, lhs_tninfo, rhs_tninfo);
