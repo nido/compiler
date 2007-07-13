@@ -234,6 +234,9 @@ ERROR_DESC EDESC_Globals[] = {
   { EC_Inv_Register,	EM_User | ES_ERRABORT,	RAG_EN_NONE,
     "Register name specified is invalid: %s",
     1, ET_STRING, 0,0,0,0,0 },
+  { EC_Inv_Register_Range, EM_User | ES_ERRABORT,	RAG_EN_NONE,
+    "Register range specified is invalid: %s-%s",
+    1, ET_STRING, ET_STRING,0,0,0,0 },
 #endif
 
   /* Control processing: */

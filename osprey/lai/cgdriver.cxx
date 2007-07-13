@@ -1856,6 +1856,30 @@ CG_Process_Command_Line (
   /* Perform preliminary command line processing: */
   Build_Option_String (be_argc, be_argv);
   Process_Command_Line (cg_argc, cg_argv);
+#ifdef TARG_ST
+  // [TTh] Append content of Disabled_Registers within Registers_Not_Allocatable,
+  // to insure that Registers_Not_Allocatable is a superset of Disable_Registers
+  char *p;
+  OPTION_LIST *pred_olist    = Registers_Not_Allocatable;
+  OPTION_LIST *disabled_regs = Disabled_Registers;
+  OPTION_LIST *dup;
+
+  for ( ; disabled_regs != NULL; disabled_regs = OLIST_next(disabled_regs)) {
+    dup = (OPTION_LIST *) malloc ( sizeof(OPTION_LIST) );
+    OLIST_val(dup)  = OLIST_val(disabled_regs) ? strdup ( OLIST_val(disabled_regs) ) : NULL;
+    OLIST_opt(dup)  = OLIST_opt(disabled_regs) ? strdup ( OLIST_opt(disabled_regs) ) : NULL;
+    OLIST_next(dup) = NULL;
+    
+    if (pred_olist == NULL) {
+      // First element of the list
+      Registers_Not_Allocatable = dup;
+    } else {
+      // Chain new element to existing list
+      OLIST_next(pred_olist) = dup;
+    }
+    pred_olist = dup;
+  }
+#endif
 
   CG_Configure_Opt_Level(Opt_Level);
 

@@ -352,6 +352,7 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_loop_recur.cxx		\
   targ_op.cxx			\
   targ_register.cxx		\
+  targ_register_common.cxx	\
   targ_swp.cxx			\
   targ_swp_bundle.cxx		\
   targ_tn.cxx                   \

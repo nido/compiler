@@ -304,7 +304,8 @@ COMMON_COM_TARG_CXX_SRCS = \
   $(CONFIG_TARGET_NAME).cxx \
   config_elf_targ.cxx	\
   targ_const.cxx	\
-  targ_sim.cxx          
+  targ_sim.cxx          \
+  targ_register_common.cxx
 
 FRONT_END_C_SRCS =		\
   $(COMMON_COM_SRCS)		\

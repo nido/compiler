@@ -390,6 +390,12 @@ BOOL Force_Large_Stack_Model = FALSE;
 BOOL Force_GP_Prolog;	/* force usage of gp prolog */
 
 OPTION_LIST *Registers_Not_Allocatable = NULL;
+#ifdef TARG_ST
+// [TTh] List of disabled registers (neither allocatable
+// nor usable in asm stmt clobber list or variable decl
+// with register keyword)
+OPTION_LIST *Disabled_Registers = NULL;
+#endif
 
 /* Unique ident from IPA */
 INT32 Ipa_Ident_Number = 0;
@@ -585,6 +591,11 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_LIST,	OV_VISIBLE,	FALSE, "registers_not_allocatable",	NULL,
     0, 0, 0, &Registers_Not_Allocatable, NULL,
     "list of registers that are reserved and not available for allocation" },
+#ifdef TARG_ST
+  { OVK_LIST,	OV_VISIBLE,	FALSE, "disabled_registers",	NULL,
+    0, 0, 0, &Disabled_Registers, NULL,
+    "list of registers that are neither available for allocation nor for manual usage in asm stmt clobber list or variable decl with register keyword" },
+#endif
   { OVK_BOOL,	OV_SHY,		FALSE, "GPREL",	NULL,
     0, 0, 0, &Gen_GP_Relative, NULL,
     "do not generate GP-relative memory accesses" },

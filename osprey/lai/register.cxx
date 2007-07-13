@@ -240,6 +240,28 @@ Set_Register_Range_Not_Allocatable (
   char *regname2
 )
 {
+#ifdef TARG_ST
+  // [TTh] Replace initial implementation that was not compatible with naming
+  // convention of extension regiters.
+  // Default   reg naming: <regtype><regid>
+  // Extension reg naming: <regtype><regid>_<subregtype><subregid>
+  int regnum1, regnum2;
+  ISA_REGISTER_CLASS rclass1, rclass2;
+  rclass1 = Register_Class_Num_From_Name(regname1, &regnum1);
+  rclass2 = Register_Class_Num_From_Name(regname2, &regnum2);
+
+  REGISTER reg, reg2;
+  reg  = REGISTER_MIN + regnum1;
+  reg2 = REGISTER_MIN + regnum2;
+
+  if (rclass1 == ISA_REGISTER_CLASS_UNDEFINED || rclass1 != rclass2 || regnum1 > regnum2) {
+    ErrMsg (EC_Inv_Register_Range, regname1, regname2);
+  }
+
+  for (; reg <= reg2; reg++) {
+    dont_allocate_these_registers.push_back( std::make_pair( rclass1, reg ));
+  }
+#else
   char regname[16];
   char *p;	// points to first digit in regname 
   INT count = 0;
@@ -257,6 +279,7 @@ Set_Register_Range_Not_Allocatable (
 	++count; if (count > 200) break;	// avoid infinite loop
   }
   Set_Register_Never_Allocatable (regname);
+#endif
 }
 
 struct Set_DREG_Not_Allocatable 
@@ -309,7 +332,15 @@ Mark_Specified_Registers_As_Not_Allocatable ()
 	strncpy (regname2, start, p-start+1);
 	regname2[p-start] = '\0';
 	Set_Register_Range_Not_Allocatable (regname, regname2);
-	if (*p == 0) return;
+	if (*p == 0) {
+#ifdef TARG_ST
+	  // [TTh] We must continue on next olist element, if exist
+	  start = 0;
+	  break;
+#else
+	  return;
+#endif
+	}
 	++p;
 	start = p;
       }
@@ -317,8 +348,14 @@ Mark_Specified_Registers_As_Not_Allocatable ()
 	++p;
       }
     }
+#ifdef TARG_ST
+    if (start != 0) {
+#endif
     strncpy (regname, start, p-start+1);
     Set_Register_Never_Allocatable (regname);
+#ifdef TARG_ST
+    }
+#endif
   }
 }
 

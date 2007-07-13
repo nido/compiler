@@ -45,6 +45,9 @@
 
 #include "defs.h"
 #include "targ_isa_registers.h"
+#ifdef TARG_ST
+#include "targ_register_common.h"
+#endif
 
 // Initialization for targ_register.
 extern void CGTARG_REGISTER_Begin(void);
@@ -54,7 +57,11 @@ extern void CGTARG_Initialize_Register_Class(ISA_REGISTER_CLASS rclass);
 // Target dependent implemetation of some functions above.
 extern ISA_REGISTER_CLASS CGTARG_Register_Class_For_Mtype(TYPE_ID mtype);
 extern ISA_REGISTER_CLASS CGTARG_Register_Subclass_For_Mtype(TYPE_ID mtype);
+#ifdef TARG_ST
+// [TTh] Now defined in 'targ_register_common.h'
+#else
 extern ISA_REGISTER_CLASS CGTARG_Register_Class_Num_From_Name (char *regname, int *regnum);
+#endif
 
 
 // Returns the set of forbidden registers for GRA.

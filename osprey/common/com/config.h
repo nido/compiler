@@ -746,6 +746,13 @@ BE_EXPORTED extern BOOL  Section_For_Each_Function;
 /* list of registers that are not allocatable */
 BE_EXPORTED extern OPTION_LIST *Registers_Not_Allocatable;
 
+#ifdef TARG_ST
+/* list of registers that are disabled (not allocatable and not available
+ * in asm statement clobber list and declaration with register keyword)
+ */
+BE_EXPORTED extern OPTION_LIST *Disabled_Registers;
+#endif
+
 /* Unique ident from IPA */
 BE_EXPORTED extern INT32 Ipa_Ident_Number;
 #ifdef TARG_ST

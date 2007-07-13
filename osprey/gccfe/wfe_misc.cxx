@@ -574,6 +574,13 @@ WFE_File_Init (INT argc, char **argv)
   Prepare_Source();
   MEM_POOL_Push (&MEM_src_pool);
 
+#ifdef TARG_ST
+  /* [TTh] Mark disabled Gcc registers based on command line options
+   * processed within Prepare_Source()
+   */
+  GCCTARG_Mark_Disabled_Gcc_Reg();
+#endif
+
   Restore_Cmd_Line_Ctrls();
 
   /* If the user forgot to specify sources, complain: */

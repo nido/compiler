@@ -724,6 +724,13 @@ strip_reg_name (name)
    or -4 if ASMSPEC is `memory' and is not recognized.
    Accept an exact spelling or a decimal number.
    Prefixes such as % are optional.  */
+#ifdef TARG_ST
+// [TTh] Use constants to avoid hardcoded immediates, at least in ST modified code..
+#define ASMSPEC_EMPTY              (-1)
+#define ASMSPEC_NOT_RECOGNIZED     (-2)
+#define ASMSPEC_CC_NOT_RECOGNIZED  (-3)
+#define ASMSPEC_MEM_NOT_RECOGNIZED (-4)
+#endif
 
 int
 decode_reg_name (asmspec)
@@ -774,7 +781,11 @@ decode_reg_name (asmspec)
 		whole_name++;
 	      }
 	    if (! strcasecmp (asmspec, whole_name))
-	      return Additional_Register_Names[i].number;
+	      if (!Additional_Register_Names[i].disabled) {
+		return Additional_Register_Names[i].number;
+	      } else {
+		return (ASMSPEC_NOT_RECOGNIZED);
+	      }
 #ifdef TARG_ST200
 	    // [CG]: We want to have the '$' optional in '$r12' for ST200
 	    // when parsing the register name.
@@ -794,7 +805,11 @@ decode_reg_name (asmspec)
 #endif
 	  } else {
 	    if (! strcasecmp (asmspec, Additional_Register_Names[i].name))
-	      return Additional_Register_Names[i].number;
+	      if (!Additional_Register_Names[i].disabled) {
+		return Additional_Register_Names[i].number;
+	      } else {
+		return (ASMSPEC_NOT_RECOGNIZED);
+	      }
 	  }
 #endif//TARG_ST
       }
@@ -810,6 +825,12 @@ decode_reg_name (asmspec)
 
   return -1;
 }
+#ifdef TARG_ST
+#undef ASMSPEC_EMPTY
+#undef ASMSPEC_NOT_RECOGNIZED
+#undef ASMSPEC_CC_NOT_RECOGNIZED
+#undef ASMSPEC_MEM_NOT_RECOGNIZED
+#endif
 
 /* Create the DECL_RTL for a VAR_DECL or FUNCTION_DECL.  DECL should
    have static storage duration.  In other words, it should not be an

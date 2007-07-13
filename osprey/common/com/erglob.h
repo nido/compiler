@@ -155,6 +155,7 @@ extern "C" {
 #define EC_Inv_Opt_Val	EC_Undef_Code+65	/* str */
 #ifdef TARG_ST
 #define EC_Inv_Register EC_Undef_Code+66	/* str */
+#define EC_Inv_Register_Range EC_Undef_Code+67	/* str, str */
 #endif
 
 /* Control processing: */
