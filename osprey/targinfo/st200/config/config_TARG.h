@@ -157,6 +157,9 @@ BE_EXPORTED extern BOOL Enable_AddPC_Set;
 
 BE_EXPORTED extern BOOL Enable_Sh1AddS;
 BE_EXPORTED extern BOOL Enable_Sh1AddS_Set;
+
+BE_EXPORTED extern BOOL Enable_Speculate_DivRem;
+BE_EXPORTED extern BOOL Enable_Speculate_DivRem_Set;
 #endif
 
 /* ====================================================================

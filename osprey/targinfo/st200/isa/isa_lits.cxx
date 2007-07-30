@@ -42,13 +42,7 @@
 
 main () 
 { 
-  LIT_RANGE lr_wrap32;
-  
   ISA_Lits_Begin(); 
-
-  // Range for 32 bit immediate taking either signed or unsigned form
-  lr_wrap32 = ISA_Create_Lit_Range("wrap32", -0x80000000LL, 0xFFFFFFFFLL);
-
 
   // ISA_Create_Lit_Class(name, type, [range,...] LIT_RANGE_END) 
 
@@ -57,6 +51,7 @@ main ()
   ISA_Create_Lit_Class("imm", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("isrc2", SIGNED, SignedBitRange(9), LIT_RANGE_END);
   ISA_Create_Lit_Class("sbrknum", UNSIGNED, UnsignedBitRange(21), LIT_RANGE_END);
+  LIT_RANGE lr_wrap32 = ISA_Create_Lit_Range("wrap32", -0x80000000LL, 0xffffffffLL);
   ISA_Create_Lit_Class("xsrc2", SIGNED, lr_wrap32, LIT_RANGE_END);
  
   ISA_Lits_End(); 

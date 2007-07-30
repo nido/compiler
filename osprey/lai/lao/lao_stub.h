@@ -6,6 +6,7 @@
 
 
 
+
 /*
  * OptimizeActivation --	Activation of LAO phases.
  */
@@ -15,6 +16,7 @@ typedef enum {
   OptimizeActivation_RegAlloc = 0x4, // Register allocation
   OptimizeActivation_PrePass = 0x8, // Pre-pass optimizations.
 } OptimizeActivation;
+
 
 /*
  * OptimizeRegionType --	enumerates the OptimizeRegionType types.
@@ -35,6 +37,7 @@ extern const char *
 OptimizeRegionType_NAME_[];
 #define OptimizeRegionType_NAME_(type) OptimizeRegionType_NAME_[type]
 
+
 /*
  * OptimizeProfiling --	Enumeration of the code profiling levels.
  */
@@ -49,6 +52,7 @@ typedef uint8_t short_OptimizeProfiling;
 extern const char *
 OptimizeProfiling_NAME_[];
 #define OptimizeProfiling_NAME_(type) OptimizeProfiling_NAME_[type]
+
 
 /*
  * OptimizeScheduling --	Enumeration of the pre- and post-scheduler levels.
@@ -65,8 +69,23 @@ extern const char *
 OptimizeScheduling_NAME_[];
 #define OptimizeScheduling_NAME_(type) OptimizeScheduling_NAME_[type]
 
+
 /*
- * OptimizeScoreboarding --	Scoreboarder levels.
+ * OptimizeAllocation --	Enumeration of the register allocation levels.
+ */
+typedef enum {
+  OptimizeAllocation_, // No scheduling.
+  OptimizeAllocation_GraphColoring, // GraphColoring allocation
+  OptimizeAllocation__
+} OptimizeAllocation;
+typedef uint8_t short_OptimizeAllocation;
+extern const char *
+OptimizeAllocation_NAME_[];
+#define OptimizeAllocation_NAME_(type) OptimizeAllocation_NAME_[type]
+
+
+/*
+ * OptimizeScoreboarding --	Scoreboarder scheduling levels.
  */
 typedef enum {
   OptimizeScoreboarding_, // No scoreboard schedule.
@@ -79,6 +98,7 @@ typedef uint8_t short_OptimizeScoreboarding;
 extern const char *
 OptimizeScoreboarding_NAME_[];
 #define OptimizeScoreboarding_NAME_(type) OptimizeScoreboarding_NAME_[type]
+
 
 /*
  * OptimizeLiveness --	Liveness analysis precision level.
@@ -94,20 +114,40 @@ extern const char *
 OptimizeLiveness_NAME_[];
 #define OptimizeLiveness_NAME_(type) OptimizeLiveness_NAME_[type]
 
+
 /*
  * OptimizeConversion --	SSA form conversion flags.
  */
 typedef enum {
-  OptimizeConversion_Enable = 0x1, // Enable SSA conversion.
-  OptimizeConversion_Folding = 0x2, // Copy Folding during SSA construction.
-  OptimizeConversion_Cleaning = 0x4, // Code Cleaning during SSA construction.
-  OptimizeConversion_Numbering = 0x8, // Value Numbering during SSA construction.
-  OptimizeConversion_MethodIII = 0x10, // Sreedhar method III for SSA destruction.
-  OptimizeConversion_Coalescing = 0x20, // Copy coalescing before SSA destruction.
+  OptimizeConversion_Folding = 0x1, // Copy Folding during SSA construction.
+  OptimizeConversion_Cleaning = 0x2, // Code Cleaning during SSA construction.
+  OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
+  OptimizeConversion_Coalescing = 0x8, // Sreedhar coalescing before SSA destruction.
+  OptimizeConversion_Sreedhar = 0x10, // Sreedhar method III for congruence classes.
+  OptimizeConversion_Budimlic = 0x20, // Use Budimlic to build congruence classes.
+  OptimizeConversion_SSAWebs = 0x100, // Use SSAWebs to build congruence classes.
+  OptimizeConversion_DForest = 0x200, // Use Dominance Forest to check interferences.
 } OptimizeConversion;
 
+
 /*
- * OptimizePredication --	Predication level.
+ * OptimizeNumbering --	Value Numbering flags.
+ */
+typedef enum {
+  OptimizeNumbering_Basic = 0x1, // Basic value numbering.
+} OptimizeNumbering;
+
+
+/*
+ * OptimizePropagation --	Fact Propagation flags.
+ */
+typedef enum {
+  OptimizePropagation_Constant = 0x1, // Sparse conditional constant propagation.
+} OptimizePropagation;
+
+
+/*
+ * OptimizePredication --	Code Predication level.
  */
 typedef enum {
   OptimizePredication_, // Disable code predication.
@@ -118,6 +158,7 @@ typedef uint8_t short_OptimizePredication;
 extern const char *
 OptimizePredication_NAME_[];
 #define OptimizePredication_NAME_(type) OptimizePredication_NAME_[type]
+
 
 /*
  * OptimizeFormulation --	Enumerate the Formulation flags.
@@ -141,6 +182,7 @@ typedef uint16_t short_OptimizeFormulations;
 
 
 
+
 /*
  * OptimizeItem --	Enumerate the Optimize items.
  *
@@ -154,6 +196,8 @@ typedef enum {
   OptimizeItem_RegionType, // See OptimizeRegionType.
   OptimizeItem_Liveness, // See OptimizeLiveness.
   OptimizeItem_Conversion, // See OptimizeConversion.
+  OptimizeItem_Numbering, // See OptimizeNumbering.
+  OptimizeItem_Propagation, // See OptimizePropagation.
   OptimizeItem_Predication, // See OptimizePredication.
   OptimizeItem_Scheduling, // See OptimizeScheduling.
   OptimizeItem_Allocation, // See OptimizeAllocation.
@@ -170,6 +214,7 @@ extern const char *
 OptimizeItem_NAME_[];
 #define OptimizeItem_NAME_(type) OptimizeItem_NAME_[type]
 
+
 /*
  * ConfigureCompensation --	Enumeration of the code compensation levels.
  *
@@ -185,6 +230,7 @@ typedef uint8_t short_ConfigureCompensation;
 extern const char *
 ConfigureCompensation_NAME_[];
 #define ConfigureCompensation_NAME_(type) ConfigureCompensation_NAME_[type]
+
 
 /*
  * ConfigureSpeculation --	Enumeration of the control speculation levels.
@@ -204,6 +250,7 @@ extern const char *
 ConfigureSpeculation_NAME_[];
 #define ConfigureSpeculation_NAME_(type) ConfigureSpeculation_NAME_[type]
 
+
 /*
  * ConfigureRelaxation --	Enumeration of the inductive relaxation levels.
  *
@@ -220,6 +267,7 @@ extern const char *
 ConfigureRelaxation_NAME_[];
 #define ConfigureRelaxation_NAME_(type) ConfigureRelaxation_NAME_[type]
 
+
 /*
  * ConfigureRenaming --	Enumeration of the register renaming levels.
  */
@@ -234,6 +282,7 @@ typedef uint8_t short_ConfigureRenaming;
 extern const char *
 ConfigureRenaming_NAME_[];
 #define ConfigureRenaming_NAME_(type) ConfigureRenaming_NAME_[type]
+
 
 /*
  * ConfigureBoosting --	Enumeration of the operation boosting levels.
@@ -250,6 +299,7 @@ typedef uint8_t short_ConfigureBoosting;
 extern const char *
 ConfigureBoosting_NAME_[];
 #define ConfigureBoosting_NAME_(type) ConfigureBoosting_NAME_[type]
+
 
 /*
  * ConfigureAliasing --	Memory aliasing level.
@@ -269,6 +319,7 @@ extern const char *
 ConfigureAliasing_NAME_[];
 #define ConfigureAliasing_NAME_(type) ConfigureAliasing_NAME_[type]
 
+
 /*
  * ConfigurePreLoading --	Memory pre-loading level.
  */
@@ -282,6 +333,7 @@ typedef uint8_t short_ConfigurePreLoading;
 extern const char *
 ConfigurePreLoading_NAME_[];
 #define ConfigurePreLoading_NAME_(type) ConfigurePreLoading_NAME_[type]
+
 
 /*
  * ConfigureItem --	Enumerate the Configure items.
@@ -310,6 +362,7 @@ typedef uint8_t short_ConfigureItem;
 extern const char *
 ConfigureItem_NAME_[];
 #define ConfigureItem_NAME_(type) ConfigureItem_NAME_[type]
+
 
 /*
  * DependenceKind --	Enumerates the Dependence kinds.

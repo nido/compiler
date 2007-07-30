@@ -54,6 +54,7 @@
 #include "opt_alias_mgr.h"
 #include "targ_cg_private.h"
 #include "targ_isa_variants.h"
+#include "config_TARG.h"
 
 /* ====================================================================
  *   OP_Is_Barrier
@@ -147,6 +148,46 @@ OP_Is_Speculative (
 }
 
 /* ====================================================================
+ *   OP_Performance_Effects
+ *
+ *   True if the op has performance effects that make its
+ *   speculation undesirable.
+ *   False otherwise.
+ * ====================================================================
+ */
+BOOL OP_Performance_Effects (
+  OP *op
+)
+{
+  TOP opcode = OP_code(op);
+  if (TOP_is_div(opcode) || TOP_is_rem(opcode)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/* ====================================================================
+ *   OP_Safe_Effects
+ *
+ *   True if the op normally has performance effects that make its
+ *   speculation undesirable, but these should be ignored in this case.
+ *   False otherwise.
+ * ====================================================================
+ */
+BOOL OP_Safe_Effects (
+  OP *op
+)
+{
+  TOP opcode = OP_code(op);
+  if (TOP_is_div(opcode) || TOP_is_rem(opcode)) {
+    return Enable_Speculate_DivRem ? TRUE : FALSE;
+  }
+
+  return FALSE;
+}
+
+/* ====================================================================
  *   OP_Can_Be_Speculative
  *
  *   determines if the TOP can be speculatively executed taking 
@@ -167,6 +208,8 @@ BOOL OP_Can_Be_Speculative (
   if (OP_code(op) == TOP_asm) return FALSE;
 
   if (OP_Is_Barrier(op)) return FALSE;
+
+  if (OP_Performance_Effects(op)) return OP_Safe_Effects (op);
 
   switch (Eager_Level) {
    case EAGER_NONE:

@@ -1192,6 +1192,8 @@ extern BOOL OP_Is_Check_Load(OP* memop);
 extern BOOL OP_Is_Speculative(OP *op);
 extern BOOL OP_Can_Be_Speculative (OP *op);
 extern BOOL OP_Is_Unconditional_Compare (OP *op);
+extern BOOL OP_Performance_Effects (OP *op);
+extern BOOL OP_Safe_Effects (OP *op);
 #else
 inline BOOL CGTARG_Is_OP_Barrier(OP *op) { return FALSE; }
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);

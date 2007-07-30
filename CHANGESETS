@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jul 30 11:58:29 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-22867
+
+Description:
+------------
+	*  Deliver fix for bug #22867, artifact #30316.
+(disable speculation of blocking div/rem)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/op.h
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_lits.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jul 13 08:48:13 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

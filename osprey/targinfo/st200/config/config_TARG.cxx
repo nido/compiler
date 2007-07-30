@@ -154,6 +154,9 @@ BOOL Enable_AddPC_Set;
 
 BOOL Enable_Sh1AddS = TRUE;
 BOOL Enable_Sh1AddS_Set;
+
+BOOL Enable_Speculate_DivRem = FALSE;
+BOOL Enable_Speculate_DivRem_Set;
 #endif
 
 /* Target machine specification options.  This group defines the target
@@ -269,6 +272,9 @@ static OPTION_DESC Options_TARG[] = {
     "Enable generation of addpc" },
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "sh1adds", "",
     0, 0, 0,    &Enable_Sh1AddS, &Enable_Sh1AddS_Set,
+    "Enable generation of sh1adds and sh1subs" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "speculate_divrem", "",
+    0, 0, 0,    &Enable_Speculate_DivRem, &Enable_Speculate_DivRem_Set,
     "Enable generation of sh1adds and sh1subs" },
 
 #endif

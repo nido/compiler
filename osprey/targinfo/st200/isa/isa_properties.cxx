@@ -29,7 +29,7 @@
 
   http: 
 */ 
- 
+
 // AUTOMATICALLY GENERATED FROM MDS DATA BASE !!! 
 
 //  Generate ISA properties information 
@@ -46,10 +46,10 @@ main()
     Xor, 
     access_reg_bank, 
     add, 
-    automod, 
     address, 
     asmop, 
     atomicseq, 
+    automod, 
     barrier, 
     branch_predict, 
     cache, 
@@ -86,6 +86,7 @@ main()
     noop, 
     prefetch, 
     refs_fcr, 
+    rem, 
     select, 
     sext, 
     shl, 
@@ -1064,6 +1065,13 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  rem = ISA_Property_Create ("rem"); 
+  Instruction_Group (rem, 
+		 TOP_remu_r_r_r, 
+		 TOP_rem_r_r_r, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   select = ISA_Property_Create ("select"); 
   Instruction_Group (select, 
 		 TOP_slctf_r_r_b_r, 
@@ -1316,6 +1324,11 @@ main()
 		 TOP_igoto, 
 		 TOP_return, 
 		 TOP_rfi, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  xmove = ISA_Property_Create ("xmove"); 
+  Instruction_Group (xmove, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
