@@ -271,8 +271,15 @@ typedef struct live_range {
 inline INT32 LR_first_def (const LIVE_RANGE *lr) {
   return lr->first_def;
 }
-static void Set_LR_first_def (LIVE_RANGE *lr, INT32 v) {
+inline BOOL LR_early_clobber (const LIVE_RANGE *lr); // forward
+static void Set_LR_early_clobber (LIVE_RANGE *lr); // forward
+static void Set_LR_first_def (LIVE_RANGE *lr, INT32 v,
+			      BOOL early_clobber = FALSE) {
   lr->first_def = v;
+  if (early_clobber) {
+    Set_LR_early_clobber (lr);
+    --v;
+  }
   TN *tn = LR_tn(lr);
   if (!TN_is_local_reg(tn)
       && TN_register (tn) != REGISTER_UNDEFINED) {
@@ -284,6 +291,9 @@ static void Set_LR_first_def (LIVE_RANGE *lr, INT32 v) {
       }
     }
   }
+}
+inline INT32 LR_effective_first_def (const LIVE_RANGE *lr) {
+  return lr->first_def - (LR_early_clobber(lr) ? 1 : 0);
 }
 inline INT32 LR_last_use (const LIVE_RANGE *lr) {
   return lr->last_use;
@@ -347,6 +357,9 @@ static void Push_LR_spill_tns (LIVE_RANGE *lr, TN *tn, MEM_POOL *pool) {
 #define LR_RELOADABLE    0x4    /* LR is reloadable. */
 #define LR_FAT_ALLOCATED 0x8	// LR was allocated real register by fat point
                                 // calculation
+#ifdef TARG_ST
+#define LR_EARLY_CLOBBER 0x10   // LR is written early at its first def.
+#endif
 #define LR_assigned(lr)         (LR_flags(lr) & LR_ASSIGNED)
 #define Set_LR_assigned(lr)     (LR_flags(lr) |= LR_ASSIGNED)
 #define LR_added(lr)            (LR_flags(lr) & LR_ADDED)
@@ -361,6 +374,15 @@ static void Push_LR_spill_tns (LIVE_RANGE *lr, TN *tn, MEM_POOL *pool) {
 #define LR_subclass(lr)         ((lr)->sc)
 #define Set_LR_subclass(lr,s)  ((lr)->sc = (s))
 #define LR_singleton_ref(lr)    (Single_Register_Subclass(LR_subclass(lr)) != REGISTER_UNDEFINED)
+inline BOOL LR_early_clobber (const LIVE_RANGE *lr) {
+  return (LR_flags(lr) & LR_EARLY_CLOBBER) != 0;
+}
+static void Set_LR_early_clobber(LIVE_RANGE *lr) {
+  LR_flags(lr) |= LR_EARLY_CLOBBER;
+}
+static void Reset_LR_early_clobber(LIVE_RANGE *lr) {
+  LR_flags(lr) &= ~LR_EARLY_CLOBBER;
+}
 #endif
 
 #define LR_Is_Undefined_Local(lr) \
@@ -715,7 +737,7 @@ Print_Live_Across()
 
   for (INT i = 0; i < VECTOR_count(Live_LRs_Vector); i++) {
     LIVE_RANGE *lr = LR_VECTOR_element (Live_LRs_Vector, i);
-    if (LR_first_def(lr) < trace_op && LR_last_use(lr) > trace_op) {
+    if (LR_effective_first_def(lr) < trace_op && LR_last_use(lr) > trace_op) {
       cnt++;
       fprintf(TFile," TN%d", TN_number(LR_tn(lr)));
     }
@@ -1161,9 +1183,10 @@ static void
 Print_Live_Range (LIVE_RANGE *lr)
 {
 #ifdef TARG_ST
-  fprintf (TFile, "  %s_LR>TN%d  %3d(%d) to %3d(%d), exposed:%d ",
+  fprintf (TFile, "  %s_LR>TN%d  %3d%s(%d) to %3d(%d), exposed:%d ",
                 TN_is_local_reg(LR_tn(lr)) ? "LOCAL" : "GLOBAL",
-                TN_number(LR_tn(lr)), LR_first_def(lr), LR_def_cnt(lr),
+                TN_number(LR_tn(lr)), LR_first_def(lr),
+                (LR_early_clobber(lr) ? "E" : ""), LR_def_cnt(lr),
 	        LR_last_use(lr), LR_use_cnt(lr), LR_exposed_use(lr));
   if (LR_prefer_reg (lr) != REGISTER_UNDEFINED) {
     fprintf (TFile, "prefer ");
@@ -1352,7 +1375,13 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
       }
       if (LR_def_cnt(clr) == 0) {
 #ifdef TARG_ST
-        Set_LR_first_def (clr, opnum);
+	if (asm_info
+	    && ASM_OP_result_clobber(asm_info)[resnum]) {
+	  // [SC] an early-clobber result
+	  Set_LR_first_def (clr, opnum, TRUE);
+	} else {
+	  Set_LR_first_def (clr, opnum);
+	}
 #else
         LR_first_def(clr) = opnum;
 #endif
@@ -1945,7 +1974,7 @@ Is_Reg_Available (ISA_REGISTER_CLASS regclass,
     if (LR_Is_Undefined_Local(lr)) {
       lr_def = LR_exposed_use(lr);
     } else {
-      lr_def = LR_first_def(lr);
+      lr_def = LR_effective_first_def(lr);
     }
     REGISTER r;
     FOR_ALL_NREGS (reg, nregs, r) {
@@ -2065,7 +2094,7 @@ Is_Non_Allocatable_Reg_Available (
   REGISTER r;
   FOR_ALL_NREGS (reg, nregs, r) {
     if (REGISTER_allocatable (regclass, r) ||
-	LR_first_def(lr) < ded_reg_exposed_use(regclass, r) ||
+	LR_effective_first_def(lr) < ded_reg_exposed_use(regclass, r) ||
 	LR_last_use(lr) > ded_reg_first_def(regclass, r)) {
       return FALSE;
     }
@@ -2109,8 +2138,8 @@ Is_Non_Allocatable_Reg_Available (
 
   if (!REGISTER_allocatable (regclass, reg) &&
       ded_lr != NULL &&
-      LR_first_def(lr) >= LR_exposed_use(ded_lr) &&
-      LR_last_use(lr) <= LR_first_def(ded_lr))
+      LR_effective_first_def(lr) >= LR_exposed_use(ded_lr) &&
+      LR_last_use(lr) <= LR_effective_first_def(ded_lr))
   {
     /* extend the exposed use of the non-allocatable TN */
     LR_exposed_use(ded_lr) = LR_last_use(lr);
