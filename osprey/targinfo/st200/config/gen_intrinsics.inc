@@ -807,6 +807,21 @@ Expand___st220prgadd_l1(
   }
 } /* Expand___st220prgadd_l1 */
 
+/* Expansion of __st200prgadd_l1 from MDS */
+static void
+Expand___st200prgadd_l1(
+ TN *i0,
+ TN *i1,
+ OPS *ops
+)
+{
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgadd_l1_r_ii)) {
+    Build_OP( TOP_prgadd_l1_r_ii,	i0,	i1,	ops);
+  } else {
+    Expand_Unimplemented_Intrinsic ( TOP_prgadd_l1_r_ii, ops);
+  }
+} /* Expand___st200prgadd_l1 */
+
 /* Expansion of __st220prgins from MDS */
 static void
 Expand___st220prgins(
@@ -819,6 +834,19 @@ Expand___st220prgins(
     Expand_Unimplemented_Intrinsic ( TOP_prgins, ops);
   }
 } /* Expand___st220prgins */
+
+/* Expansion of __st200prgins from MDS */
+static void
+Expand___st200prgins(
+ OPS *ops
+)
+{
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
+    Build_OP( TOP_prgins,	ops);
+  } else {
+    Expand_Unimplemented_Intrinsic ( TOP_prgins, ops);
+  }
+} /* Expand___st200prgins */
 
 /* Expansion of __st200prginsadd from MDS */
 static void
@@ -1287,6 +1315,19 @@ Expand___st220sync(
   }
 } /* Expand___st220sync */
 
+/* Expansion of __st200sync from MDS */
+static void
+Expand___st200sync(
+ OPS *ops
+)
+{
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sync)) {
+    Build_OP( TOP_sync,	ops);
+  } else {
+    Expand_Unimplemented_Intrinsic ( TOP_sync, ops);
+  }
+} /* Expand___st200sync */
+
 /* Expansion of __st220syncins from MDS */
 static void
 Expand___st220syncins(
@@ -1299,6 +1340,19 @@ Expand___st220syncins(
     Expand_Unimplemented_Intrinsic ( TOP_syncins, ops);
   }
 } /* Expand___st220syncins */
+
+/* Expansion of __st200syncins from MDS */
+static void
+Expand___st200syncins(
+ OPS *ops
+)
+{
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syncins)) {
+    Build_OP( TOP_syncins,	ops);
+  } else {
+    Expand_Unimplemented_Intrinsic ( TOP_syncins, ops);
+  }
+} /* Expand___st200syncins */
 
 /* Expansion of __st200unpacku_pbh from MDS */
 static void
@@ -1884,10 +1938,24 @@ Expand___st200waitl(
         Expand___st220prgadd_l1(opnd[0],opnd[1],ops);
         break;
       }
+    case INTRN___ST200PRGADD_L1: {
+        FmtAssert(num_opnds == 2,("INTRN___ST200PRGADD_L1: there is %d operands instead of 2\n",num_opnds));
+        FmtAssert(num_results == 0,("INTRN___ST200PRGADD_L1: there is %d results instead of 0\n",num_results));
+        opnd[0] = Check_Opd_Literal(opnd[0], LC_xsrc2, 0, "__builtin___st200prgadd_l1", srcpos);
+        opnd[1] = Check_Opd_RClass(opnd[1], ISA_REGISTER_CLASS_integer, ops);
+        Expand___st200prgadd_l1(opnd[0],opnd[1],ops);
+        break;
+      }
     case INTRN___ST220PRGINS: {
         FmtAssert(num_opnds == 0,("INTRN___ST220PRGINS: there is %d operands instead of 0\n",num_opnds));
         FmtAssert(num_results == 0,("INTRN___ST220PRGINS: there is %d results instead of 0\n",num_results));
         Expand___st220prgins(ops);
+        break;
+      }
+    case INTRN___ST200PRGINS: {
+        FmtAssert(num_opnds == 0,("INTRN___ST200PRGINS: there is %d operands instead of 0\n",num_opnds));
+        FmtAssert(num_results == 0,("INTRN___ST200PRGINS: there is %d results instead of 0\n",num_results));
+        Expand___st200prgins(ops);
         break;
       }
     case INTRN___ST200PRGINSADD: {
@@ -2239,10 +2307,22 @@ Expand___st200waitl(
         Expand___st220sync(ops);
         break;
       }
+    case INTRN___ST200SYNC: {
+        FmtAssert(num_opnds == 0,("INTRN___ST200SYNC: there is %d operands instead of 0\n",num_opnds));
+        FmtAssert(num_results == 0,("INTRN___ST200SYNC: there is %d results instead of 0\n",num_results));
+        Expand___st200sync(ops);
+        break;
+      }
     case INTRN___ST220SYNCINS: {
         FmtAssert(num_opnds == 0,("INTRN___ST220SYNCINS: there is %d operands instead of 0\n",num_opnds));
         FmtAssert(num_results == 0,("INTRN___ST220SYNCINS: there is %d results instead of 0\n",num_results));
         Expand___st220syncins(ops);
+        break;
+      }
+    case INTRN___ST200SYNCINS: {
+        FmtAssert(num_opnds == 0,("INTRN___ST200SYNCINS: there is %d operands instead of 0\n",num_opnds));
+        FmtAssert(num_results == 0,("INTRN___ST200SYNCINS: there is %d results instead of 0\n",num_results));
+        Expand___st200syncins(ops);
         break;
       }
     case INTRN___ST200UNPACKU_PBH: {
@@ -2322,42 +2402,46 @@ INTRN___ST200PACK_PB	=	INTRINSIC_GENERIC_LAST+40,
 INTRN___ST200PACK_PH	=	INTRINSIC_GENERIC_LAST+41,
 INTRN___ST200PERM_PB	=	INTRINSIC_GENERIC_LAST+42,
 INTRN___ST220PRGADD_L1	=	INTRINSIC_GENERIC_LAST+43,
-INTRN___ST220PRGINS	=	INTRINSIC_GENERIC_LAST+44,
-INTRN___ST200PRGINSADD	=	INTRINSIC_GENERIC_LAST+45,
-INTRN___ST200PRGINSADD_L1	=	INTRINSIC_GENERIC_LAST+46,
-INTRN___ST200PRGINSSET_L1	=	INTRINSIC_GENERIC_LAST+47,
-INTRN___ST200PSWCLR	=	INTRINSIC_GENERIC_LAST+48,
-INTRN___ST200PSWMASK	=	INTRINSIC_GENERIC_LAST+49,
-INTRN___ST200PSWSET	=	INTRINSIC_GENERIC_LAST+50,
-INTRN___ST200RETENTION	=	INTRINSIC_GENERIC_LAST+51,
-INTRN___ST200SADU_PB	=	INTRINSIC_GENERIC_LAST+52,
-INTRN___ST200SATSO	=	INTRINSIC_GENERIC_LAST+53,
-INTRN___ST200SH1ADDSO	=	INTRINSIC_GENERIC_LAST+54,
-INTRN___ST200SH1SUBSO	=	INTRINSIC_GENERIC_LAST+55,
-INTRN___ST200SHLSO	=	INTRINSIC_GENERIC_LAST+56,
-INTRN___ST200SHLS	=	INTRINSIC_GENERIC_LAST+57,
-INTRN___ST200SHLS_PH	=	INTRINSIC_GENERIC_LAST+58,
-INTRN___ST200SHL_PH	=	INTRINSIC_GENERIC_LAST+59,
-INTRN___ST200SHRRNE_PH	=	INTRINSIC_GENERIC_LAST+60,
-INTRN___ST200SHRRNP	=	INTRINSIC_GENERIC_LAST+61,
-INTRN___ST200SHRRNP_PH	=	INTRINSIC_GENERIC_LAST+62,
-INTRN___ST200SHR_PH	=	INTRINSIC_GENERIC_LAST+63,
-INTRN___ST200SHUFFEVE_PB	=	INTRINSIC_GENERIC_LAST+64,
-INTRN___ST200SHUFFODD_PB	=	INTRINSIC_GENERIC_LAST+65,
-INTRN___ST200SHUFF_PBH	=	INTRINSIC_GENERIC_LAST+66,
-INTRN___ST200SHUFF_PBL	=	INTRINSIC_GENERIC_LAST+67,
-INTRN___ST200SHUFF_PHH	=	INTRINSIC_GENERIC_LAST+68,
-INTRN___ST200SHUFF_PHL	=	INTRINSIC_GENERIC_LAST+69,
-INTRN___ST200SLCT_PB	=	INTRINSIC_GENERIC_LAST+70,
-INTRN___ST200SUBSO	=	INTRINSIC_GENERIC_LAST+71,
-INTRN___ST200SUBS_PH	=	INTRINSIC_GENERIC_LAST+72,
-INTRN___ST200SUB_PH	=	INTRINSIC_GENERIC_LAST+73,
-INTRN___ST220SYNC	=	INTRINSIC_GENERIC_LAST+74,
-INTRN___ST220SYNCINS	=	INTRINSIC_GENERIC_LAST+75,
-INTRN___ST200UNPACKU_PBH	=	INTRINSIC_GENERIC_LAST+76,
-INTRN___ST200UNPACKU_PBL	=	INTRINSIC_GENERIC_LAST+77,
-INTRN___ST200WAITL	=	INTRINSIC_GENERIC_LAST+78,
-INTRINSIC_TARG_LAST	=	INTRINSIC_GENERIC_LAST+78,
+INTRN___ST200PRGADD_L1	=	INTRINSIC_GENERIC_LAST+44,
+INTRN___ST220PRGINS	=	INTRINSIC_GENERIC_LAST+45,
+INTRN___ST200PRGINS	=	INTRINSIC_GENERIC_LAST+46,
+INTRN___ST200PRGINSADD	=	INTRINSIC_GENERIC_LAST+47,
+INTRN___ST200PRGINSADD_L1	=	INTRINSIC_GENERIC_LAST+48,
+INTRN___ST200PRGINSSET_L1	=	INTRINSIC_GENERIC_LAST+49,
+INTRN___ST200PSWCLR	=	INTRINSIC_GENERIC_LAST+50,
+INTRN___ST200PSWMASK	=	INTRINSIC_GENERIC_LAST+51,
+INTRN___ST200PSWSET	=	INTRINSIC_GENERIC_LAST+52,
+INTRN___ST200RETENTION	=	INTRINSIC_GENERIC_LAST+53,
+INTRN___ST200SADU_PB	=	INTRINSIC_GENERIC_LAST+54,
+INTRN___ST200SATSO	=	INTRINSIC_GENERIC_LAST+55,
+INTRN___ST200SH1ADDSO	=	INTRINSIC_GENERIC_LAST+56,
+INTRN___ST200SH1SUBSO	=	INTRINSIC_GENERIC_LAST+57,
+INTRN___ST200SHLSO	=	INTRINSIC_GENERIC_LAST+58,
+INTRN___ST200SHLS	=	INTRINSIC_GENERIC_LAST+59,
+INTRN___ST200SHLS_PH	=	INTRINSIC_GENERIC_LAST+60,
+INTRN___ST200SHL_PH	=	INTRINSIC_GENERIC_LAST+61,
+INTRN___ST200SHRRNE_PH	=	INTRINSIC_GENERIC_LAST+62,
+INTRN___ST200SHRRNP	=	INTRINSIC_GENERIC_LAST+63,
+INTRN___ST200SHRRNP_PH	=	INTRINSIC_GENERIC_LAST+64,
+INTRN___ST200SHR_PH	=	INTRINSIC_GENERIC_LAST+65,
+INTRN___ST200SHUFFEVE_PB	=	INTRINSIC_GENERIC_LAST+66,
+INTRN___ST200SHUFFODD_PB	=	INTRINSIC_GENERIC_LAST+67,
+INTRN___ST200SHUFF_PBH	=	INTRINSIC_GENERIC_LAST+68,
+INTRN___ST200SHUFF_PBL	=	INTRINSIC_GENERIC_LAST+69,
+INTRN___ST200SHUFF_PHH	=	INTRINSIC_GENERIC_LAST+70,
+INTRN___ST200SHUFF_PHL	=	INTRINSIC_GENERIC_LAST+71,
+INTRN___ST200SLCT_PB	=	INTRINSIC_GENERIC_LAST+72,
+INTRN___ST200SUBSO	=	INTRINSIC_GENERIC_LAST+73,
+INTRN___ST200SUBS_PH	=	INTRINSIC_GENERIC_LAST+74,
+INTRN___ST200SUB_PH	=	INTRINSIC_GENERIC_LAST+75,
+INTRN___ST220SYNC	=	INTRINSIC_GENERIC_LAST+76,
+INTRN___ST200SYNC	=	INTRINSIC_GENERIC_LAST+77,
+INTRN___ST220SYNCINS	=	INTRINSIC_GENERIC_LAST+78,
+INTRN___ST200SYNCINS	=	INTRINSIC_GENERIC_LAST+79,
+INTRN___ST200UNPACKU_PBH	=	INTRINSIC_GENERIC_LAST+80,
+INTRN___ST200UNPACKU_PBL	=	INTRINSIC_GENERIC_LAST+81,
+INTRN___ST200WAITL	=	INTRINSIC_GENERIC_LAST+82,
+INTRINSIC_TARG_LAST	=	INTRINSIC_GENERIC_LAST+82,
 #endif /* INTRN_DEFINES */
 
 #ifdef INTRN_INFO
@@ -2491,9 +2575,15 @@ INTRINSIC_TARG_LAST	=	INTRINSIC_GENERIC_LAST+78,
 { /* __st220prgadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st220prgadd_l1", NULL, "__st220prgadd_l1"},
+{ /* __st200prgadd_l1 */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200prgadd_l1", NULL, "__st200prgadd_l1"},
 { /* __st220prgins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st220prgins", NULL, "__st220prgins"},
+{ /* __st200prgins */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200prgins", NULL, "__st200prgins"},
 { /* __st200prginsadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st200prginsadd", NULL, "__st200prginsadd"},
@@ -2584,9 +2674,15 @@ INTRINSIC_TARG_LAST	=	INTRINSIC_GENERIC_LAST+78,
 { /* __st220sync */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st220sync", NULL, "__st220sync"},
+{ /* __st200sync */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200sync", NULL, "__st200sync"},
 { /* __st220syncins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_V, "__st220syncins", NULL, "__st220syncins"},
+{ /* __st200syncins */
+  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+  IRETURN_V, "__st200syncins", NULL, "__st200syncins"},
 { /* __st200unpacku_pbh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_I4, "__st200unpacku_pbh", NULL, "__st200unpacku_pbh"},
@@ -2643,7 +2739,9 @@ INTRN___ST200PACK_PB,	"__ST200PACK_PB",
 INTRN___ST200PACK_PH,	"__ST200PACK_PH",
 INTRN___ST200PERM_PB,	"__ST200PERM_PB",
 INTRN___ST220PRGADD_L1,	"__ST220PRGADD_L1",
+INTRN___ST200PRGADD_L1,	"__ST200PRGADD_L1",
 INTRN___ST220PRGINS,	"__ST220PRGINS",
+INTRN___ST200PRGINS,	"__ST200PRGINS",
 INTRN___ST200PRGINSADD,	"__ST200PRGINSADD",
 INTRN___ST200PRGINSADD_L1,	"__ST200PRGINSADD_L1",
 INTRN___ST200PRGINSSET_L1,	"__ST200PRGINSSET_L1",
@@ -2674,7 +2772,9 @@ INTRN___ST200SUBSO,	"__ST200SUBSO",
 INTRN___ST200SUBS_PH,	"__ST200SUBS_PH",
 INTRN___ST200SUB_PH,	"__ST200SUB_PH",
 INTRN___ST220SYNC,	"__ST220SYNC",
+INTRN___ST200SYNC,	"__ST200SYNC",
 INTRN___ST220SYNCINS,	"__ST220SYNCINS",
+INTRN___ST200SYNCINS,	"__ST200SYNCINS",
 INTRN___ST200UNPACKU_PBH,	"__ST200UNPACKU_PBH",
 INTRN___ST200UNPACKU_PBL,	"__ST200UNPACKU_PBL",
 INTRN___ST200WAITL,	"__ST200WAITL",
@@ -2854,8 +2954,16 @@ INTRN___ST200WAITL,	"__ST200WAITL",
       iopc = INTRN___ST220PRGADD_L1;
       intrinsic_op = FALSE;
     break;
+    case BUILT_IN___ST200PRGADD_L1:
+      iopc = INTRN___ST200PRGADD_L1;
+      intrinsic_op = FALSE;
+    break;
     case BUILT_IN___ST220PRGINS:
       iopc = INTRN___ST220PRGINS;
+      intrinsic_op = FALSE;
+    break;
+    case BUILT_IN___ST200PRGINS:
+      iopc = INTRN___ST200PRGINS;
       intrinsic_op = FALSE;
     break;
     case BUILT_IN___ST200PRGINSADD:
@@ -2978,8 +3086,16 @@ INTRN___ST200WAITL,	"__ST200WAITL",
       iopc = INTRN___ST220SYNC;
       intrinsic_op = FALSE;
     break;
+    case BUILT_IN___ST200SYNC:
+      iopc = INTRN___ST200SYNC;
+      intrinsic_op = FALSE;
+    break;
     case BUILT_IN___ST220SYNCINS:
       iopc = INTRN___ST220SYNCINS;
+      intrinsic_op = FALSE;
+    break;
+    case BUILT_IN___ST200SYNCINS:
+      iopc = INTRN___ST200SYNCINS;
       intrinsic_op = FALSE;
     break;
     case BUILT_IN___ST200UNPACKU_PBH:
@@ -3170,8 +3286,16 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220PRGADD_L1,
             "__builtin___st220prgadd_l1",
              BT_FN_VOID_INT_INT,
              ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGADD_L1,
+            "__builtin___st200prgadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220PRGINS,
             "__builtin___st220prgins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINS,
+            "__builtin___st200prgins",
              BT_FN_VOID,
              ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINSADD,
@@ -3294,8 +3418,16 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220SYNC,
             "__builtin___st220sync",
              BT_FN_VOID,
              ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SYNC,
+            "__builtin___st200sync",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220SYNCINS,
             "__builtin___st220syncins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SYNCINS,
+            "__builtin___st200syncins",
              BT_FN_VOID,
              ATTR_NOTHROW_LIST)
 DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200UNPACKU_PBH,
@@ -3357,7 +3489,9 @@ DEF_BUILTIN (BUILT_IN___ST200PACK_PB)
 DEF_BUILTIN (BUILT_IN___ST200PACK_PH)
 DEF_BUILTIN (BUILT_IN___ST200PERM_PB)
 DEF_BUILTIN (BUILT_IN___ST220PRGADD_L1)
+DEF_BUILTIN (BUILT_IN___ST200PRGADD_L1)
 DEF_BUILTIN (BUILT_IN___ST220PRGINS)
+DEF_BUILTIN (BUILT_IN___ST200PRGINS)
 DEF_BUILTIN (BUILT_IN___ST200PRGINSADD)
 DEF_BUILTIN (BUILT_IN___ST200PRGINSADD_L1)
 DEF_BUILTIN (BUILT_IN___ST200PRGINSSET_L1)
@@ -3388,7 +3522,9 @@ DEF_BUILTIN (BUILT_IN___ST200SUBSO)
 DEF_BUILTIN (BUILT_IN___ST200SUBS_PH)
 DEF_BUILTIN (BUILT_IN___ST200SUB_PH)
 DEF_BUILTIN (BUILT_IN___ST220SYNC)
+DEF_BUILTIN (BUILT_IN___ST200SYNC)
 DEF_BUILTIN (BUILT_IN___ST220SYNCINS)
+DEF_BUILTIN (BUILT_IN___ST200SYNCINS)
 DEF_BUILTIN (BUILT_IN___ST200UNPACKU_PBH)
 DEF_BUILTIN (BUILT_IN___ST200UNPACKU_PBL)
 DEF_BUILTIN (BUILT_IN___ST200WAITL)
@@ -3439,7 +3575,9 @@ DEF_BUILTIN (BUILT_IN___ST200WAITL)
     case BUILT_IN___ST200PACK_PH:
     case BUILT_IN___ST200PERM_PB:
     case BUILT_IN___ST220PRGADD_L1:
+    case BUILT_IN___ST200PRGADD_L1:
     case BUILT_IN___ST220PRGINS:
+    case BUILT_IN___ST200PRGINS:
     case BUILT_IN___ST200PRGINSADD:
     case BUILT_IN___ST200PRGINSADD_L1:
     case BUILT_IN___ST200PRGINSSET_L1:
@@ -3470,7 +3608,9 @@ DEF_BUILTIN (BUILT_IN___ST200WAITL)
     case BUILT_IN___ST200SUBS_PH:
     case BUILT_IN___ST200SUB_PH:
     case BUILT_IN___ST220SYNC:
+    case BUILT_IN___ST200SYNC:
     case BUILT_IN___ST220SYNCINS:
+    case BUILT_IN___ST200SYNCINS:
     case BUILT_IN___ST200UNPACKU_PBH:
     case BUILT_IN___ST200UNPACKU_PBL:
     case BUILT_IN___ST200WAITL:

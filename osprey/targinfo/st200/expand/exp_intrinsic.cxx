@@ -7099,36 +7099,46 @@ Exp_Intrinsic_Op (
 	Expand__st200prginspg(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220ADDCG:
+    case INTRN_ST200ADDCG:
       Expand__st220addcg(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
     break ;
     case INTRN_ST220DIVS:
+    case INTRN_ST200DIVS:
       Expand__st220divs(result[0],result[1],opnd[0],opnd[1],opnd[2],ops) ;
     break ;
     case INTRN_ST220MULHHS:
+    case INTRN_ST200MULHHS:
       Expand__st220mulhhs(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220MULHS:
+    case INTRN_ST200MULHS:
       Expand__st220mulhs(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220MULLHUS:
+    case INTRN_ST200MULLHUS:
       Expand__st220mullhus(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220MULLU:
+    case INTRN_ST200MULLU:
       Expand__st220mullu(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220PFT:
+    case INTRN_ST200PFT:
       Expand__st220pft(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220PRGADD:
+    case INTRN_ST200PRGADD:
       Expand__st220prgadd(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST200PRGINSSET:
       Expand__st200prginsset(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220PRGSET:
+    case INTRN_ST200PRGSET:
       Expand__st220prgset(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220SYSCALL:
+    case INTRN_ST200SYSCALL:
       Expand__st220syscall(opnd[0],ops) ;
     break ;
     case INTRN_ABSCH:

@@ -3438,6 +3438,7 @@ Exp_Intrinsic_Call (
 
     switch(id) {    
     case INTRN___ST220PRGINS:
+    case INTRN___ST200PRGINS:
       if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
 	    /* We fall back to the usual intrinsic generation */
 	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops, srcpos) ;

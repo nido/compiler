@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul 31 18:24:13 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27253
+
+Description:
+------------
+	*  Deliver fix for bug #27253 with authorization art #30715.
+        Add __st200xxx() intrinsics as well as __st220xxx() intrinsics.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/config/targ_intrn_info.def
+	M      osprey/targinfo/st200/config/gfec_c_decl.h
+	M      osprey/targinfo/st200/config/gen_intrinsics.inc
+	M      osprey/targinfo/st200/config/gfec_wfe_expr.h
+	M      osprey/targinfo/st200/config/targ_wintrinsic.h
+	M      osprey/targinfo/st200/config/gfec_builtins.h
+	M      osprey/targinfo/st200/config/gfec_builtins.def
+	M      osprey/targinfo/st200/config/gfecc_builtins.def
+	M      osprey/targinfo/st200/config/targ_wutil.def
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul 31 17:29:15 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -771,36 +771,72 @@
       iopc = INTRN_ST220ADDCG ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_ST200ADDCG:
+      iopc = INTRN_ST200ADDCG ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_ST220DIVS:
       iopc = INTRN_ST220DIVS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200DIVS:
+      iopc = INTRN_ST200DIVS ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_ST220MULHHS:
       iopc = INTRN_ST220MULHHS ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_ST200MULHHS:
+      iopc = INTRN_ST200MULHHS ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_ST220MULHS:
       iopc = INTRN_ST220MULHS ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200MULHS:
+      iopc = INTRN_ST200MULHS ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_ST220MULLHUS:
       iopc = INTRN_ST220MULLHUS ;
       intrinsic_op = TRUE ;
     break;
+    case BUILT_IN_ST200MULLHUS:
+      iopc = INTRN_ST200MULLHUS ;
+      intrinsic_op = TRUE ;
+    break;
     case BUILT_IN_ST220MULLU:
       iopc = INTRN_ST220MULLU ;
+      intrinsic_op = TRUE ;
+    break;
+    case BUILT_IN_ST200MULLU:
+      iopc = INTRN_ST200MULLU ;
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_ST220PFT:
       iopc = INTRN_ST220PFT ;
       intrinsic_op = FALSE ;
     break;
+    case BUILT_IN_ST200PFT:
+      iopc = INTRN_ST200PFT ;
+      intrinsic_op = FALSE ;
+    break;
     case BUILT_IN_ST220PRGADD:
       iopc = INTRN_ST220PRGADD ;
       intrinsic_op = FALSE ;
     break;
+    case BUILT_IN_ST200PRGADD:
+      iopc = INTRN_ST200PRGADD ;
+      intrinsic_op = FALSE ;
+    break;
     case BUILT_IN_ST220PRGSET:
       iopc = INTRN_ST220PRGSET ;
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST200PRGSET:
+      iopc = INTRN_ST200PRGSET ;
       intrinsic_op = FALSE ;
     break;
     case BUILT_IN_ST200PRGINSSET:
@@ -809,6 +845,10 @@
     break;
     case BUILT_IN_ST220SYSCALL:
       iopc = INTRN_ST220SYSCALL ;
+      intrinsic_op = FALSE ;
+    break;
+    case BUILT_IN_ST200SYSCALL:
+      iopc = INTRN_ST200SYSCALL ;
       intrinsic_op = FALSE ;
     break;
     case BUILT_IN_STOD:
