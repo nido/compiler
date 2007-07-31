@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul 31 18:55:13 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30771
+
+Description:
+------------
+	*  Deliver fix for bug #30771 with authorization art #30941.
+        Fix range analysis failure.
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/range.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul 31 18:24:13 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
