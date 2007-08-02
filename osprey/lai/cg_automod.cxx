@@ -1260,8 +1260,7 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	   * check that incremented TN is not used between increment and memory operation
 	   * check that increment TN is not live-out between increment and memory operation
 	   */
-	  if (OP_load(op)  // store not allowed
-		  && (OP_iadd(defop) || OP_isub(defop))
+	  if ((OP_iadd(defop) || OP_isub(defop))
  		  && check_OffsetIncrOffset(defop, op)
 		  && is_NotUsed_PreIncr(dud, op, defop) 
 		  && check_LiveOut(bbRegion_set, defop, op, tn_base)
@@ -1505,11 +1504,6 @@ static BOOL BaseOffset_Combine(OP *mem_op, OP *inc_op, OPS *ops) {
 
   if(top_baseoffset == TOP_UNDEFINED){
 	return FALSE;
-  }
-
-  if (OP_store(mem_op)) {
-    /* Store not supported in Rn+Rp mode */
-    return FALSE;
   }
 
   OP *new_mem_op = Dup_OP(mem_op);
