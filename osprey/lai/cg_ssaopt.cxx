@@ -1217,23 +1217,26 @@ DCAnalysis::Find_Useful_Ops ()
     // Preserve trip counts, even if they appear unused.
     TN *trip_count_tn = Trip_Count_TN (bb);
     if (trip_count_tn != NULL && TN_is_ssa_var (trip_count_tn)) {
+      Set_Op_Useful (TN_ssa_def (trip_count_tn));
       op_work.push (TN_ssa_def (trip_count_tn));
     }
     FOR_ALL_BB_OPs_FWD (bb, op) {
       if (is_Op_Required (op)) {
+	Set_Op_Useful (op);
 	op_work.push (op);
       }
     }
   }
   while (! op_work.empty ()) {
     OP *op = op_work.choose ();
-    Set_Op_Useful (op);
     for (INT i = 0; i < OP_opnds(op); i++) {
       TN *opnd = OP_opnd(op, i);
       if (TN_is_register (opnd)) {
 	OP *def = TN_ssa_def (opnd);
-	if (def && ! Op_Marked_Useful (def))
+	if (def && ! Op_Marked_Useful (def)) {
+	  Set_Op_Useful (def);
 	  op_work.push (def);
+	}
       }
     }
   }
