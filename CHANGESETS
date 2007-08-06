@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug  6 13:02:30 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29784
+
+Description:
+------------
+	* Deliver fix for bug #29784 (assertion failure in Mexpend) with authorization branch #30499
+	  - Extended Mexpand phase to support expansion of compose/extract containing cyclic dependencies
+	  - When generating store for extension TNs, insure that temporary TNs have only one def
+
+
+Modified Files:
+---------------
+	M      osprey/lai/mexpand.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug  2 18:36:55 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

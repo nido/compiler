@@ -264,7 +264,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	// widemove
 	if (! TN_is_zero_reg (OP_result (op, 0))) {
 	  Multi_TN_Info *dstinfo = Multi_TN_MAP_Get (multi_tn_map, OP_result(op, 0), 1);
-	  Multi_TN_Info *srcinfo = Multi_TN_MAP_Get (multi_tn_map, OP_opnd(op, 0), 1);
+	  Multi_TN_Info *srcinfo = Multi_TN_MAP_Get (multi_tn_map, OP_opnd(op, first_opnd), 1);
 	  FmtAssert (dstinfo->count == srcinfo->count,
 		     ("Destination and source mismatch expanding widemove"));
 	  ncopies = 0;
@@ -276,6 +276,8 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	}
       }
       INT to_do = ncopies;
+      TN *tempo_reg       = NULL;
+      TN *tempo_reg_saved = NULL;
       while (to_do > 0) {
 	INT copies_done_this_pass = 0;
 	for (i = 0; i < ncopies; i++) {
@@ -293,10 +295,53 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	      // [TTh] Inserted ops must be rescanned if they
 	      //       potentially contain Multi-register TNs
 	      rescan_new_ops |= (TN_nhardregs(dest[i]) > 1);
+	      // Keep description of first move, as its source register
+	      // might be used to break a cyclic dependency between
+	      // remaining moves.
+	      if ((tempo_reg == NULL) && (TN_register(source[i]) != rd)) {
+		tempo_reg = source[i];
+		tempo_reg_saved = dest[i];
+	      }
+	      // Perform the actual copy
 	      Exp_COPY (dest[i], source[i], &new_ops);
 	      dest[i] = NULL;
 	      source[i] = NULL;
 	      copies_done_this_pass++;
+	    }
+	  }
+	}
+	if ((copies_done_this_pass == 0) && (tempo_reg != NULL)) {
+	  // No copy done this pass, meaning we are probably facing a
+	  // cycle dependency between remaining moves. We can use the
+	  // source register of a previous copy, if any,  as  a tempo
+	  // register to break the cycle.
+	  // Note: this code should be seldom used as the regalloc should
+	  //       normally avoid generating cyclic dependencies.
+	  for (i = 0; i < ncopies; i++) {
+	    // ...Select any remaining copy
+	    if (dest[i]) {
+	      // Inserted ops must be rescanned if they
+	      // potentially contain Multi-register TNs
+	      rescan_new_ops |= (TN_nhardregs(dest[i]) > 1);
+	      // ...Save dest of selected copy to tempo location
+	      Exp_COPY (tempo_reg, dest[i], &new_ops);
+	      // ...Then expand the selected copy
+	      Exp_COPY (dest[i], source[i], &new_ops);
+	      copies_done_this_pass++;
+	      // ...Update the remaining copy list
+	      int j;
+	      for (j = 0; j < ncopies; j++) {
+		if ((j != i) && (source[j] != NULL) && (TN_register(source[j]) == TN_register(dest[i]))) {
+		  source[j] = tempo_reg;
+		}
+	      }
+	      // ...Plan to restore the value of the tempo register
+	      //    Required because without liveness analysis we cannot insure
+	      //    that the initial value will not be used afterwards
+	      source[i] = tempo_reg_saved;
+	      dest[i]   = tempo_reg;
+	      to_do++;
+	      break;
 	    }
 	  }
 	}
