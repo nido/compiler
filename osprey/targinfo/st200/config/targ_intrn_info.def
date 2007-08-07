@@ -790,9 +790,6 @@
 { /* __builtin__moduh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
   IRETURN_U2, "__builtin__moduh", NULL, "__builtin__moduh"}, 
-{ /* __st200prginsset */
-  BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prginsset", NULL, "__st200prginsset"}, 
 
 #define INTRN_INFO
 #include "gen_intrinsics.inc"

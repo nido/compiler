@@ -262,7 +262,6 @@
     case BUILT_IN_ASM_13:
     case BUILT_IN_ASM_14:
     case BUILT_IN_ASM_15:
-    case BUILT_IN_ST200PRGINSSET:
 #define INTRN_GFEC_BUILTINS_H
 #include "gen_intrinsics.inc"
 #undef INTRN_GFEC_BUILTINS_H

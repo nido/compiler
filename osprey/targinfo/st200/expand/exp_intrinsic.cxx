@@ -1954,33 +1954,6 @@ Expand__st220prgadd(
 */
 
 /*
-/*
- * Expansion of st200prginsset based on validated and scheduled basic assembly source.
-*/
-static void
-Expand__st200prginsset(
- TN* o0,
- TN* i0,
- TN* i1,
- OPS* ops
-)
-{
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginsset_r_i)) { 
-    TN *c0 = Gen_Literal_TN(0LL, 4) ;
-    Build_OP (	TOP_add_r_r_r,	o0,	i0,	i1,	ops) ;
-    Build_OP (	TOP_prginsset_r_i, c0,	o0,	ops) ;
-  } else {
-    Expand_Unimplemented_Intrinsic (TOP_prginsset_r_i, ops);
-  }
-} /* Expand__st200prginsset */
-
-/*
-@@@  case INTRN_ST200PRGINSSET:
-@@@    Expand__st200prginsset(result[0],opnd[0],opnd[1],ops) ;
-@@@  break ;
-*/
-
-/*
  * Expansion of st220prgset based on validated and scheduled basic assembly source.
 */
 static void
@@ -7129,9 +7102,6 @@ Exp_Intrinsic_Op (
     case INTRN_ST220PRGADD:
     case INTRN_ST200PRGADD:
       Expand__st220prgadd(result[0],opnd[0],opnd[1],ops) ;
-    break ;
-    case INTRN_ST200PRGINSSET:
-      Expand__st200prginsset(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_ST220PRGSET:
     case INTRN_ST200PRGSET:

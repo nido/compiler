@@ -1217,18 +1217,6 @@ builtin_function ("__st200prgadd",
                      tree_cons(NULL_TREE, integer_type_node, endlink))),
                    BUILT_IN_ST200PRGADD, BUILT_IN_NORMAL, NULL_PTR);
 
-builtin_function ("__st200prgset",
-                   build_function_type( integer_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node,
-                     tree_cons(NULL_TREE, integer_type_node, endlink))),
-                   BUILT_IN_ST200PRGSET, BUILT_IN_NORMAL, NULL_PTR);
-
-builtin_function ("__st200prginsset",
-                   build_function_type( void_type_node, 
-                     tree_cons(NULL_TREE, integer_type_node,
-                     tree_cons(NULL_TREE, integer_type_node, endlink))),
-                   BUILT_IN_ST200PRGINSSET, BUILT_IN_NORMAL, NULL_PTR);
-
 builtin_function ("__st220syscall",
                    build_function_type( void_type_node, 
                      tree_cons(NULL_TREE, integer_type_node, endlink)),

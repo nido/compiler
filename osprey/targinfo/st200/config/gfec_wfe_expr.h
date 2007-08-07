@@ -835,14 +835,6 @@
       iopc = INTRN_ST220PRGSET ;
       intrinsic_op = FALSE ;
     break;
-    case BUILT_IN_ST200PRGSET:
-      iopc = INTRN_ST200PRGSET ;
-      intrinsic_op = FALSE ;
-    break;
-    case BUILT_IN_ST200PRGINSSET:
-      iopc = INTRN_ST200PRGINSSET ;
-      intrinsic_op = FALSE ;
-    break;
     case BUILT_IN_ST220SYSCALL:
       iopc = INTRN_ST220SYSCALL ;
       intrinsic_op = FALSE ;
