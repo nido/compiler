@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Aug  7 19:02:08 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30763
+
+Description:
+------------
+	*  Deliver fix for bug #30763 with authorization art #31329.
+        Segmentation fault in Select Region Formation phase.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Aug  7 16:26:04 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

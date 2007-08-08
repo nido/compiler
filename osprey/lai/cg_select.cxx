@@ -1412,8 +1412,11 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
       if (OP_has_predicate (op) || TOP_is_select (OP_code (op))) {
         if (pred_i.find(op) != pred_i.end()) {
           new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_i[op]);
-          pred_i[op] = new_tn;
-          Set_TN_is_if_conv_cond(new_tn);
+	  // [SC] Care: the TN may not be mapped.
+	  if (new_tn != NULL) {
+	    pred_i[op] = new_tn;
+	    Set_TN_is_if_conv_cond(new_tn);
+	  }
         }
       }
     }
