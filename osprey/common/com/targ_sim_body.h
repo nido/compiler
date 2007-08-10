@@ -285,13 +285,13 @@ static PLOC Get_Struct_Parameter_Location (PLOC prev);
 extern BOOL
 Is_Struct_Input_Parameter (TY_IDX struct_ty)
 {
-    Is_Struct_Parameter (struct_ty);
+    return Is_Struct_Parameter (struct_ty);
 }
 
 extern BOOL
 Is_Struct_Output_Parameter (TY_IDX struct_ty)
 {
-    Is_Struct_Parameter (struct_ty);
+    return Is_Struct_Parameter (struct_ty);
 }
 
 extern void

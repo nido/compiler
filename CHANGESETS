@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 10 15:18:20 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30223
+
+Description:
+------------
+	* [trunk] Fix for bug #30223: Assertion failure while compiling dhrystone with Fpx, long-double, on W32.
+	Deliver fixes/codex-30223 rev #12957 with authorization branch #30978
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/targ_sim_body.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 10 14:28:59 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
