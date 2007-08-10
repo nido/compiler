@@ -1197,7 +1197,11 @@ build_indirect_ref (ptr, errorstring)
       else
 	{
 	  tree t = TREE_TYPE (type);
+#ifdef TARG_ST
+	  tree ref = build1 (INDIRECT_REF, /*TYPE_MAIN_VARIANT*/ (t), pointer);
+#else
 	  tree ref = build1 (INDIRECT_REF, TYPE_MAIN_VARIANT (t), pointer);
+#endif
 
 	  if (!COMPLETE_OR_VOID_TYPE_P (t) && TREE_CODE (t) != ARRAY_TYPE)
 	    {
