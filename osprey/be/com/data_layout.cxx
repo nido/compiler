@@ -1248,7 +1248,12 @@ Assign_ST_To_Named_Section (ST *st, STR_IDX name)
     // [CG] Treat all nobits sections, not only bss.
     //    if (SEC_is_nobits(sec) && !STB_nobits(newblk)) {
     // (cbr) check if old object was uninitialzed global.
-    if (!ST_is_initialized(st) && !STB_nobits(newblk)) {
+
+    // [VL] Handling Zeroinit_in_bss to fix #30279 Step 1
+    if (!STB_nobits(newblk) &&
+        (!ST_is_initialized(st) || 
+         (Zeroinit_in_bss && ST_is_initialized(st) && ST_init_value_zero(st))) ) {
+
 #else
     // if object was supposed to go into bss,
     // but was assigned to initialized data section,
@@ -1256,6 +1261,14 @@ Assign_ST_To_Named_Section (ST *st, STR_IDX name)
     if (sec == _SEC_BSS && STB_section_idx(newblk) != _SEC_BSS) {
       DevWarn("change bss symbol to be initialized to 0");
 #endif
+
+#ifdef TARG_ST
+      // [VL] Fix for #30279 Step 2
+      if(ST_init_value_zero(st)) {
+        Clear_ST_init_value_zero (st);
+      }
+#endif
+
       Set_ST_sclass(st, SCLASS_DGLOBAL);
       Set_ST_is_initialized(st);
       INITO_IDX ino = New_INITO(st);

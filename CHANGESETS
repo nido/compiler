@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 16 12:25:50 CEST 2007
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30279
+
+Description:
+------------
+	* [trunk] Deliver fix for art #30279 after rebase from trunk at rev #12960 with authorization branch #30970 
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/data_layout.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 10 15:18:20 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
