@@ -6575,43 +6575,6 @@ Create_Asm_Macro(const char* macro)
 }
 #endif
 
-#ifdef TARG_ST
-// (cbr)
-static bool nop_needed(BB *bb) {
-  OP *op_last;
-
-  if (!bb)
-    return false;
-
-  if (BB_succs(bb))
-    return false;
-
-  if ((op_last = BB_xfer_op (bb)) && OP_call(op_last)) {
-    BB *bb_next = BB_next(bb);
-    if (!bb_next) return true;
-
-#if 1
-    if (BB_has_label(bb_next)) {  
-      ANNOTATION *ant;
-      for (ant = ANNOT_First(BB_annotations(bb_next), ANNOT_LABEL);
-           ant != NULL;
-           ant = ANNOT_Next(ant, ANNOT_LABEL)) {
-        LABEL_IDX lab = ANNOT_label(ant);
-        if (LABEL_kind(Label_Table[lab]) == LKIND_END_EH_RANGE) {
-          if (WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO))))) {
-            if (!BB_next(bb_next) || BB_entry(BB_next(bb_next)))
-                return true;
-          }
-        }
-      }
-    }
-#endif
-  }
-
-  return false;
-}
-#endif
-
 /* ====================================================================
  *    EMT_Emit_PU (pu, pu_dst, rwn)
  * ====================================================================
@@ -6878,20 +6841,6 @@ EMT_Emit_PU (
     EMT_Assemble_BB (bb, rwn);
     bb_last = bb;
 
-#ifdef TARG_ST
-  // (cbr) generalize for all regions
-  // 20051010: Fix for ddts 23277: Insert a word at the end of a
-  // function that ends with a procedure call (must be noreturn), so
-  // that $r63 is set with an address in the current function (needed
-  // for unwinding).
-  if (nop_needed (bb_last)) {
-    ISA_BUNDLE bundle[ISA_PACK_MAX_INST_WORDS];
-    OP *noop = Mk_OP(TOP_nop);
-    Set_OP_end_group(noop);
-    OP_scycle(noop) = -1;
-    Assemble_OP(noop, bb_last, bundle, 0);
-  }
-#endif
   }
 
 

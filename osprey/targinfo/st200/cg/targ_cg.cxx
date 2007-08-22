@@ -2287,6 +2287,38 @@ update_bundle_pc (
   return pc;
 }
 
+static bool trailing_nop_needed(BB *bb) {
+  OP *op_last;
+
+  if (!bb)
+    return false;
+
+  if (BB_succs(bb))
+    return false;
+
+  if ((op_last = BB_xfer_op (bb)) && OP_call(op_last)) {
+    BB *bb_next = BB_next(bb);
+    if (!bb_next) return true;
+
+    if (BB_has_label(bb_next)) {  
+      ANNOTATION *ant;
+      for (ant = ANNOT_First(BB_annotations(bb_next), ANNOT_LABEL);
+           ant != NULL;
+           ant = ANNOT_Next(ant, ANNOT_LABEL)) {
+        LABEL_IDX lab = ANNOT_label(ant);
+        if (LABEL_kind(Label_Table[lab]) == LKIND_END_EH_RANGE) {
+          if (WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO))))) {
+            if (!BB_next(bb_next) || BB_entry(BB_next(bb_next)))
+                return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 static OP *
 Pad_Bundle (
 	    UINT32 *pc,
@@ -2382,6 +2414,22 @@ static void Pad_Bundles_With_NOPs (
   static PU_IDX pad_bundles_current_pu = 0;
   UINT32 *pc;
 
+  // [SC] Moved here from cgemit, so that the nop is inserted before
+  // bundle formation is complete.
+  // (cbr) generalize for all regions
+  // 20051010: Fix for ddts 23277: Insert a word at the end of a
+  // function that ends with a procedure call (must be noreturn), so
+  // that $r63 is set with an address in the current function (needed
+  // for unwinding).
+  if (trailing_nop_needed (bb)) {
+    // Append a nop bundle to the bb.
+    OP *noop = Mk_OP(TOP_nop);
+    Set_OP_end_group(noop);
+    Set_OP_bundled(noop);
+    OP_scycle(noop) = OP_scycle(BB_last_op(bb));
+    if (OP_scycle(noop) != -1) OP_scycle(noop)++;
+    BB_Insert_Op_After(bb, BB_last_op(bb), noop);
+  }
   if (pad_bundles_current_pu != ST_pu(Get_Current_PU_ST())) {
     cold_addr = 0;
     hot_addr = 0;
@@ -2402,7 +2450,6 @@ static void Pad_Bundles_With_NOPs (
     bundle_start = Pad_Bundle (pc, bundle_start, &free_slots_in_previous_bundle,
 			       scycle_delta);
   }
-
 }
 
 /* ====================================================================

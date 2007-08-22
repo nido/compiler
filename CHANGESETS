@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 22 18:01:10 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31436
+
+Description:
+------------
+	*  Deliver fix for bug #31436 with authorization art #31269.
+        "nop inserted after bundle formation, causing later bundles to be
+        misaligned".
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 22 14:45:57 CEST 2007
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
