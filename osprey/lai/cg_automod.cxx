@@ -303,6 +303,7 @@ check_PreIncrOffset(OP *incrop, OP *memop){
 
 /*
  * Check that base TN is not used between memop and incrop
+ * If TN is used, check that it can be repared
  */
 static BOOL
 is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
@@ -343,6 +344,7 @@ is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
     OP *useop = du_link.op(i);
 
     if(useop != NULL && useop != memop && useop != incrop){
+	  INT useidx = du_link.idx(i);
       BB *usebb = OP_bb(useop);
 
       BS *DOM = BB_dom_set(usebb);
@@ -358,6 +360,8 @@ is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 
 		// offset if operation is a load/store
 		INT offset_idx = OP_find_opnd_use(useop, OU_offset);
+		// stored value if operation is a store
+		INT storeval_idx = OP_find_opnd_use(useop, OU_storeval);
 
 		// immediate operand if operation has an immediate
 		INT useopnd_1 = OP_find_opnd_use(useop, OU_opnd1);
@@ -369,8 +373,14 @@ is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 		else if(useopnd_2 > 0 && TN_has_value(OP_opnd(useop, useopnd_2)))
 		  useopnd = useopnd_2;
 
+		// Check for operation that cannot be repaired
+ 		// - base TN is used as stored value in store
+		if(storeval_idx > -1 && OP_opnd(useop, storeval_idx) == OP_opnd(memop, base_idx)){
+		  return FALSE;
+		}
+
 		// Check that operation can be repaired at no cost:
-		// -load/store with immediate deplacemnt when increment is a constant
+		// -load/store with immediate deplacement when increment is a constant
 		// -immediate operation when increment is a constant
 		if (TN_has_value(OP_opnd(incrop, incropnd))){  // Rn+imm
 
@@ -471,6 +481,7 @@ is_NotDefined_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 
 /*
  * Check that base TN is not used on a path between incrop and memop
+ * If it is used, check that operation can be repared
  */
 static BOOL 
 is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
@@ -499,6 +510,7 @@ is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
     OP *useop = du_link.op(i); 
 
     if(useop != NULL && useop != memop && useop != incrop){
+	  INT useidx = du_link.idx(i);
       BB *usebb = OP_bb(useop);
 
       // Do not count instructions before the memory operation in the basicblock
@@ -516,6 +528,8 @@ is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 
 		// offset if operation is a load/store
 		INT offset_idx = OP_find_opnd_use(useop, OU_offset);
+		// stored value if operation is a store
+		INT storeval_idx = OP_find_opnd_use(useop, OU_storeval);
 
 		// immediate operand if operation has an immediate
 		INT useopnd_1 = OP_find_opnd_use(useop, OU_opnd1);
@@ -527,8 +541,14 @@ is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 		else if(useopnd_2 > 0 && TN_has_value(OP_opnd(useop, useopnd_2)))
 		  useopnd = useopnd_2;
 
+		// Check for operation that cannot be repaired
+ 		// - base TN is used as stored value in store
+		if(storeval_idx > -1 && OP_opnd(useop, storeval_idx) == OP_opnd(incrop, useopnd)){
+		  return FALSE;
+		}
+
 		// Check that operation can be repaired at no cost:
-		// -load/store with immediate deplacemnt when increment is a constant
+		// -load/store with immediate deplacement when increment is a constant
 		// -immediate operation when increment is a constant
 		if (TN_has_value(OP_opnd(incrop, incropnd))){  //Rn+imm
 
@@ -799,7 +819,7 @@ postincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 		  useopnd = useopnd_2;
 
 		// Check that operation can be repaired at no cost:
-		// -load/store with immediate deplacemnt when increment is a constant
+		// -load/store with immediate deplacement when increment is a constant
 		// -immediate operation when increment is a constant
 		if (TN_has_value(OP_opnd(incrop, incropnd))){  //Rn+imm
 
@@ -910,7 +930,7 @@ preincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 		  useopnd = useopnd_2;
 
 		// Check that operation can be repaired at no cost:
-		// -load/store with immediate deplacemnt when increment is a constant
+		// -load/store with immediate deplacement when increment is a constant
 		// -immediate operation when increment is a constant
 		if (TN_has_value(OP_opnd(incrop, incropnd))){  //Rn+imm
 
@@ -1390,7 +1410,7 @@ void Perform_AutoMod_Optimization() {
     BB *head = LOOP_DESCR_loophead(loop);
 
     // Restrict to innermost loop to avoid processing large amount of code
-//     if (!BB_innermost(head)) continue;
+    // if (!BB_innermost(head)) continue;
 
     BB_REGION bbRegion(LOOP_DESCR_bbset(loop), &loop_descr_pool);
 
@@ -1405,9 +1425,9 @@ void Perform_AutoMod_Optimization() {
       M_PreIncr2Mem.clear();
       M_OffsetIncr2Mem.clear();
 
-	  // Automod
-	  for (OP *op = dudRegion->Begin_op(); op != dudRegion->End_op(); op = dudRegion->Next_op(op)) {
-		Memop_to_Incrop(&bbRegion, bbRegion_set, dudRegion, op);
+      // Automod
+      for (OP *op = dudRegion->Begin_op(); op != dudRegion->End_op(); op = dudRegion->Next_op(op)) {
+            Memop_to_Incrop(&bbRegion, bbRegion_set, dudRegion, op);
       }
 
       // Code repair and motion
@@ -1767,7 +1787,7 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 		  useopnd = useopnd_2;
 
 		// Check that operation can be repaired at no cost:
-		// -load/store with immediate deplacemnt when increment is a constant
+		// -load/store with immediate deplacement when increment is a constant
 		// -immediate operation when increment is a constant
 		if (TN_has_value(OP_opnd(incrop, opnd1_idx)) || TN_has_value(OP_opnd(incrop, opnd2_idx))){  //Rn+imm
 

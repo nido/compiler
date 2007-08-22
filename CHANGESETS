@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 22 14:45:57 CEST 2007
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30272
+
+Description:
+------------
+	* [trunk] Deliver fix for art #30272 after rebase from trunk at rev #12987 with authorization branch #30424  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 16 12:25:50 CEST 2007
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
