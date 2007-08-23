@@ -55,6 +55,11 @@ static OP *single_use (const RangeAnalysis &range_analysis,
     return NULL;
 }
 
+static BOOL no_uses_p (const RangeAnalysis &range_analysis, TN *tn)
+{
+  return TN_is_ssa_var (tn) && range_analysis.Uses (tn) == NULL;
+}
+
 static BOOL
 match_add_mul_sequence (const RangeAnalysis &range_analysis,
 			const OP *l1_op,
@@ -480,7 +485,50 @@ match_shl_or_sequence (const RangeAnalysis &range_analysis,
     Expand_Add(result, opnd1, opnd2, mtype, ops);
     return TRUE;
   }
+  return FALSE;
 }
+
+static BOOL
+match_addcg (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  TN *source, *dest;
+
+  if (OP_code(l1_op) != TOP_addcg_b_r_r_b_r)
+    return FALSE;
+
+  LRange_p r1 = range_analysis.Get_Value (OP_opnd (l1_op, 0));
+  LRange_p r2 = range_analysis.Get_Value (OP_opnd (l1_op, 1));
+  LRange_p r3 = range_analysis.Get_Value (OP_opnd (l1_op, 2));
+
+  if ( (int(r1->isZero ())
+	+ int (r2->isZero ())
+	+ int (r3->isZero ())) == 2) {
+    // Two of three sources are zero, so we effectively have
+    // a copy from the third source to the first result, and the
+    // second result is zeroed.
+    source = (! r1->isZero () ? OP_opnd (l1_op, 0)
+	      : ! r2->isZero () ? OP_opnd (l1_op, 1)
+	      : OP_opnd (l1_op, 2));
+    if (no_uses_p (range_analysis, OP_result (l1_op, 1))) {
+      // The second result is unused, so we do not need to set it.
+      dest = OP_result (l1_op, 0);
+    } else
+      dest = NULL;
+    if (source && dest) {
+      // Transform to a copy from source to dest.
+      if (TN_register_class (source) == ISA_REGISTER_CLASS_branch) {
+	Expand_Bool_To_Int (dest, source, MTYPE_I4, ops);
+      } else {
+	Expand_Copy (dest, NULL, source, ops);
+      }
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+  
 
 static BOOL
 match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
@@ -596,6 +644,9 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
       return TRUE;
     }
     if (match_compare_subsph_to_zero (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_addcg (range_analysis, op, ops)) {
       return TRUE;
     }
   }
