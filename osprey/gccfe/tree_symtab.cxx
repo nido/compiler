@@ -1050,6 +1050,7 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 }
 
 
+#ifdef TARG_ST
 /** 
   *  This function resets attributes based "properties" on variable.
   * it is used by Get_ST(). It is run at each call of get_st to
@@ -1102,7 +1103,10 @@ set_variable_attributes(tree decl_node)
     } 
     Set_ST_memory_space (*st, kind);
 #endif        
-    if (DECL_SECTION_NAME (decl_node)) {
+    if (DECL_SECTION_NAME (decl_node) &&
+	!ST_has_named_section (st)) { // [TTh] Insure that attributes are updated
+                                      // only once to avoid multiple memory
+                                      // allocation for same variable
       SYMTAB_IDX level = ST_level(st);
       if (TREE_CODE (decl_node) == FUNCTION_DECL)
         level = GLOBAL_SYMTAB;
@@ -1113,6 +1117,7 @@ set_variable_attributes(tree decl_node)
       Set_ST_has_named_section (st);
     }
   }
+#endif  // TARG_ST
 
 
 ST*

@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 23 09:59:56 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31241
+
+Description:
+------------
+	* Deliver fix for bug #31241 with authorization branch #31263
+	  -> Insure that attributes are updated only once to avoid multiple memory allocation for same variable
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/tree_symtab.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 22 18:01:10 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
