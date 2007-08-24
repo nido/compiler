@@ -4163,12 +4163,6 @@ expand_assignment (to, from, want_value, suggest_reg)
       free_temp_slots ();
       pop_temp_slots ();
 
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!result)
-	return NULL_RTX;
-#endif
-
       /* If the value is meaningful, convert RESULT to the proper mode.
 	 Otherwise, return nothing.  */
       return (want_value ? convert_modes (TYPE_MODE (TREE_TYPE (to)),
@@ -4346,11 +4340,6 @@ store_expr (exp, target, want_value)
 		   want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
 
       emit_queue ();
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!exp)
-	return NULL_RTX;
-#endif
       return store_expr (TREE_OPERAND (exp, 1), target, want_value);
     }
   else if (TREE_CODE (exp) == COND_EXPR && GET_MODE (target) == BLKmode)
@@ -4401,12 +4390,6 @@ store_expr (exp, target, want_value)
 			    (want_value & 2
 			     ? EXPAND_STACK_PARM : EXPAND_NORMAL));
 
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!temp)
-	return NULL_RTX;
-#endif
-
       /* If target is volatile, ANSI requires accessing the value
 	 *from* the target, if it is accessed.  So make that happen.
 	 In no case return the target itself.  */
@@ -4426,11 +4409,7 @@ store_expr (exp, target, want_value)
     {
       temp = expand_expr (exp, target, GET_MODE (target),
 			  want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!temp)
-	return NULL_RTX;
-#endif
+
       if (GET_MODE (temp) != BLKmode && GET_MODE (temp) != VOIDmode)
 	{
 	  /* If TEMP is already in the desired TARGET, only copy it from
@@ -4477,12 +4456,6 @@ store_expr (exp, target, want_value)
 
       temp = expand_expr (exp, inner_target, VOIDmode,
 			  want_value & 2 ? EXPAND_STACK_PARM : EXPAND_NORMAL);
-
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!temp)
-	return NULL_RTX;
-#endif
 
       /* If TEMP is a volatile MEM and we want a result value, make
 	 the access now so it gets done only once.  Likewise if
@@ -4538,11 +4511,6 @@ store_expr (exp, target, want_value)
 	 Otherwise, if TEMP is not TARGET, return TEMP
 	 if it is constant (for efficiency),
 	 or if we really want the correct value.  */
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!temp)
-	return NULL_RTX;
-#endif
       
       if (!(target && GET_CODE (target) == REG
 	    && REGNO (target) < FIRST_PSEUDO_REGISTER)
@@ -7415,11 +7383,6 @@ expand_expr (exp, target, tmode, modifier)
 
 	/* If this is a constant, put it into a register if it is a
 	   legitimate constant and OFFSET is 0 and memory if it isn't.  */
-#ifdef TARG_ST
-	if (!op0)
-	  return op0;
-#endif
-
 	if (CONSTANT_P (op0))
 	  {
 	    machine_mode_t mode = TYPE_MODE (TREE_TYPE (tem));
@@ -9177,12 +9140,6 @@ expand_expr (exp, target, tmode, modifier)
 	  if (ignore)
 	    return op0;
 
-#ifdef TARG_ST
-	  // (cbr) no rtl generated. couln't we always return while generating whirl ?
-	  if (!op0)
-	    return op0;
-#endif
-
 	  /* Pass 1 for MODIFY, so that protect_from_queue doesn't get
 	     clever and returns a REG when given a MEM.  */
 	  op0 = protect_from_queue (op0, 1);
@@ -9497,12 +9454,6 @@ expand_expr (exp, target, tmode, modifier)
  binop2:
   if (modifier == EXPAND_STACK_PARM)
     target = 0;
-
-#ifdef TARG_ST
-  // (cbr) no rtl generated. couln't we always return while generating whirl ?
-  if (!op0 || !op1)
-    return NULL;
-#endif
 
   temp = expand_binop (mode, this_optab, op0, op1, target,
 		       unsignedp, OPTAB_LIB_WIDEN);
@@ -10332,11 +10283,6 @@ do_jump (exp, if_false_label, if_true_label)
     default:
     normal:
       temp = expand_expr (exp, NULL_RTX, VOIDmode, 0);
-#ifdef TARG_ST
-      // (cbr) no rtl generated. couln't we always return while generating whirl ?
-      if (!temp)
-	return;
-#endif
 #if 0
       /* This is not needed any more and causes poor code since it causes
 	 comparisons and tests from non-SI objects to have different code
@@ -10743,12 +10689,6 @@ do_compare_and_jump (exp, signed_code, unsigned_code, if_false_label,
   if (TREE_CODE (TREE_OPERAND (exp, 1)) == ERROR_MARK)
     return;
 
-#ifdef TARG_ST
-  // (cbr) no rtl generated. couln't we always return while generating whirl ?
-  if (!op0 || !op1)
-    return;
-#endif
-
   type = TREE_TYPE (TREE_OPERAND (exp, 0));
   mode = TYPE_MODE (type);
   if (TREE_CODE (TREE_OPERAND (exp, 0)) == INTEGER_CST
@@ -10996,12 +10936,6 @@ do_store_flag (exp, target, mode, only_cheap)
 	subtarget = 0;
 
       op0 = expand_expr (inner, subtarget, VOIDmode, 0);
-
-#ifdef TARG_ST
-      // (cbr) we don't necessary generate rtl with whirls
-      if (!op0)
-	return NULL;
-#endif
 
       if (bitnum != 0)
 	op0 = expand_shift (RSHIFT_EXPR, operand_mode, op0,

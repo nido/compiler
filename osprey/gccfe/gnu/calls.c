@@ -399,13 +399,10 @@ prepare_call_address (funexp, fndecl, call_fusage, reg_parm_seen, sibcallp)
 
   if (static_chain_value != 0)
     {
-#ifndef TARG_ST
-      /* (cbr) don't create rtls */
       emit_move_insn (static_chain_rtx, static_chain_value);
 
       if (GET_CODE (static_chain_rtx) == REG)
 	use_reg (call_fusage, static_chain_rtx);
-#endif
     }
 
   return funexp;
@@ -1785,8 +1782,9 @@ load_register_parameters (args, num_actuals, call_fusage, flags)
 
 #ifdef TARG_ST
       /* (cbr) ddts MBTst26044. sometime we prefer parameters to be created by translator */
-      if (args[i].value == 0)
+      if (args[i].value == 0) {
 	continue;
+      }
 #endif
       if (reg)
 	{

@@ -4505,6 +4505,14 @@ assign_parms (fndecl)
 
       promoted_mode = passed_mode;
 
+#ifdef TARG_ST
+      /* (cbr) don't generate rtl */
+      SET_DECL_RTL (parm, gen_rtx_MEM (nominal_mode, const0_rtx));
+      DECL_INCOMING_RTL (parm) = DECL_RTL (parm);
+      TREE_USED (parm) = 1;
+      continue;
+#endif
+
 #ifdef PROMOTE_FUNCTION_ARGS
       /* Compute the mode in which the arg is actually extended to.  */
       unsignedp = TREE_UNSIGNED (passed_type);
@@ -5964,10 +5972,6 @@ identify_blocks_1 (insns, block_vector, end_block_vector, orig_block_stack)
 void
 reorder_blocks ()
 {
-#ifdef TARG_ST // [CL] don't create rtls
-  return;
-#endif
-
   tree block = DECL_INITIAL (current_function_decl);
   varray_type block_stack;
 
@@ -6568,15 +6572,11 @@ expand_function_start (subr, parms_have_cleanups)
     {
       last_ptr = assign_stack_local (Pmode, GET_MODE_SIZE (Pmode), 0);
 
-#ifndef TARG_ST
-      /* (cbr) don't create rtls */
-
       /* Delay copying static chain if it is not a register to avoid
 	 conflicts with regs used for parameters.  */
       if (! SMALL_REGISTER_CLASSES
 	  || GET_CODE (static_chain_incoming_rtx) == REG)
 	emit_move_insn (last_ptr, static_chain_incoming_rtx);
-#endif
     }
 
   /* If the parameters of this function need cleaning up, get a label
@@ -6688,9 +6688,6 @@ expand_function_start (subr, parms_have_cleanups)
 	 static_chain_incoming_rtx is a REG.  */
       if (tem)
 	{
-#ifndef TARG_ST
-      /* (cbr) don't create rtls */
-
 	  /* If the static chain originally came in a register, put it back
 	     there, then move it out in the next insn.  The reason for
 	     this peculiar code is to satisfy function integration.  */
@@ -6698,7 +6695,6 @@ expand_function_start (subr, parms_have_cleanups)
 	      && GET_CODE (static_chain_incoming_rtx) == REG)
 	    emit_move_insn (static_chain_incoming_rtx, last_ptr);
 	  last_ptr = copy_to_reg (static_chain_incoming_rtx);
-#endif
 	}
 
       while (tem)

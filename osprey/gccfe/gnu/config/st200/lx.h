@@ -421,6 +421,7 @@ extern int override_options (void);
 //macro comes now from targinfo
 #define FIRST_PSEUDO_REGISTER 1024/*GCCTARG_UNUSED*/
 #define FIRST_PSEUDO_REGISTER_USED GCCTARG_Initial_Number_Of_Registers()
+
 #define LAST_GR_REGNUM        0/*GCCTARG_UNUSED*/
 
 #define GR_REGNO_P(REGNO)   ((REGNO) >= GCCTARG_First_Int_Regnum() &&  (REGNO) <= GCCTARG_Last_Int_Regnum())
@@ -742,10 +743,10 @@ extern int lx_elimination_offset ();
 #define STACK_POINTER_REGNUM   GCCTARG_Stack_Pointer_Regnum()
 
 /* Base register for access to local variables of the function.  */
-#define FRAME_POINTER_REGNUM   72
+#define FRAME_POINTER_REGNUM   0
 
 /* Base register for access to arguments of the function.  */
-#define ARG_POINTER_REGNUM     73
+#define ARG_POINTER_REGNUM     0
 
 //TB: Reconf
 /* The last reg number for the core.  */
@@ -771,7 +772,7 @@ extern int lx_elimination_offset ();
    Do not define this macro if it would be the same as
    `FRAME_POINTER_REGNUM'. */
 #undef  HARD_FRAME_POINTER_REGNUM
-#define HARD_FRAME_POINTER_REGNUM 14
+#define HARD_FRAME_POINTER_REGNUM 0
 
 /* A C expression which is nonzero if a function must have and use a frame
    pointer.  This expression is evaluated in the reload pass.  If its value is

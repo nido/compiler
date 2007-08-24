@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 24 15:18:02 CEST 2007
+	Author:    bruel
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bruel/dev-codex-31933
+
+Description:
+------------
+	*  Merge [ Branch #31985 ] fixes/codex-31933. 
+	front end invalid rtl handling
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/function.c
+	M      osprey/gccfe/gnu/calls.c
+	M      osprey/gccfe/gnu/c-common.c
+	M      osprey/gccfe/gnu/expr.c
+	M      osprey/gccfe/gnu/config/stxp70/stxp70.h
+	M      osprey/gccfe/gnu/config/st200/lx.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 24 14:01:44 CEST 2007
 	Author:    guillon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
