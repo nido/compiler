@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 24 11:29:46 CEST 2007
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31205
+
+Description:
+------------
+	* Delivered fix for bug #31205 after rebase from trunk at rev #13059, with approval
+	  in branch #31363 
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 23 12:17:48 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
