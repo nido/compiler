@@ -700,6 +700,23 @@ dwarf_add_fde_inst(
 
     switch (op) {
 
+#if defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)
+      // [CG] Hot fix to restore previous ST200 behavior of DW_CFA_advance_loc4
+	case DW_CFA_advance_loc4:
+	  // We use 2 words to copy the labels; cg will later
+	  // fix the relocatable symbols.
+	  dw = val1;
+	  ptr = (char *) _dwarf_p_get_alloc(NULL, 8);
+	  if (ptr == NULL) {
+	    _dwarf_p_error(NULL, error, DW_DLE_STRING_ALLOC);
+	    return((Dwarf_P_Fde)DW_DLV_BADADDR);
+	  }
+	  memcpy((void *)ptr, (const void *)&dw,4);
+	  dw = val2;
+	  memcpy((void *)ptr+4, (const void *)&dw,4);
+	  nbytes = 4;
+	  break;
+#else /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
 #ifdef TARG_ST // [CL] derived from pathscale, but we use 2 words
 	case DW_CFA_advance_loc4: /* Backward compatibility */
         op = DW_CFA_ST_relocation;
@@ -718,6 +735,7 @@ dwarf_add_fde_inst(
 	  nbytes = 4;
 	  break;
 #endif // TARG_ST
+#endif /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
         case DW_CFA_advance_loc:
 	    if (val1 <= 0x3f) {
 	        db = val1;

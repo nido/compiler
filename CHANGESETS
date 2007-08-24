@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 24 14:01:44 CEST 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-ticpp-exceptions
+
+Description:
+------------
+	Hot fix HOTFIX_TICPP_EXCEPTIONS.
+        Solves incompatibility problem with libunwind for C++ exceptions.
+        This is a transitional fix that must be reworked as part of the dwarf support.
+        Delivered with approval art #32225.  
+
+
+Modified Files:
+---------------
+	M      osprey/make/gcommondefs
+	M      osprey/libdwarf/pro_section.c
+	M      osprey/libdwarf/pro_frame.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 24 13:34:13 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

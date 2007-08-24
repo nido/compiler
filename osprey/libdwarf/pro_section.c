@@ -1229,6 +1229,26 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    curinst = curfde->fde_inst;
 	    while (curinst) {
 		db = curinst->dfp_opcode;
+#if defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)
+		WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db,
+			sizeof(db), sizeof(Dwarf_Ubyte));
+		data += sizeof(Dwarf_Ubyte);
+#ifdef TARG_ST // [CL] derived from pathscale
+		if (DW_CFA_advance_loc4 == db) {
+		  res = dbg->de_reloc_pair(dbg,
+					   DEBUG_FRAME,
+					   (data-fde_start_point) +
+					   cur_off, /* r_offset */
+					   *(unsigned long *)(&curinst->dfp_args[0]),
+					   *(unsigned long *)(&curinst->dfp_args[4]),
+					   dwarf_drt_first_of_length_pair,
+					   upointer_size);
+		  if(res != DW_DLV_OK) {
+		    {_dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL); return(0);}
+		  }
+		}
+#endif
+#else /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
 #ifdef TARG_ST // [CL] derived from pathscale
 		if (DW_CFA_ST_relocation == db) {
           db = DW_CFA_advance_loc4;
@@ -1257,6 +1277,7 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 #ifdef TARG_ST
         } /* end else DW_CFA_ST_relocation */
 #endif
+#endif /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
 
 #if 0
 		if(curinst->dfp_sym_index) {
@@ -1276,12 +1297,21 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	 	}
 #endif
 #ifdef TARG_ST // [CL] derived from pathscale
+#if defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)
+		if (DW_CFA_advance_loc4 == db) {
+		  data[0] = 0;
+		  data[1] = 0;
+		  data[2] = 0;
+		  data[3] = 0;
+		} else		  
+#else /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
 		if (DW_CFA_ST_relocation == db) {
 		  data[0] = 0;
 		  data[1] = 0;
 		  data[2] = 0;
 		  data[3] = 0;
 		} else		  
+#endif /* !(defined(HOTFIX_TICPP_EXCEPTIONS) && defined (TARG_ST200)) */
 #endif	    
 		memcpy((void *)data, 
 			(const void *)curinst->dfp_args,
