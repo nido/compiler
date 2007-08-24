@@ -198,6 +198,8 @@ BOOL OP_Can_Be_Speculative (
   OP *op
 )
 {
+  WN *wn;
+  TN *offset;
   TOP opcode = OP_code(op);
 
   // can never speculate a call.
@@ -268,9 +270,36 @@ BOOL OP_Can_Be_Speculative (
 
   if (!OP_load(op)) return FALSE;
 
+  /* Try to identify simple scalar loads than can be safely speculated:
+   *  a) read only loads (literals, GOT-loads, etc.)
+   *  b) load of a fixed variable (directly referenced)
+   *  c) load of a fixed variable (base address is constant or
+   *     known to be in bounds)
+   *  d) speculative, advanced and advanced-speculative loads are safe.
+   */
+
+  /*  a) read only loads (literals, GOT-loads, etc.)
+   */
+  if (OP_no_alias(op)) goto scalar_load;
+
+  /*  b) load of a fixed variable (directly referenced); this
+   *     includes spill-restores.
+   *  b') exclude cases of direct loads of weak symbols (#622949).
+   */
+  if ((offset = OP_Offset(op))
+      && TN_is_symbol(offset)
+      && ! ST_is_weak_symbol(TN_var(offset))) goto scalar_load;
+
+  /*  c) load of a fixed variable (base address is constant or
+   *     known to be in bounds).
+   */
+  if ((wn = Get_WN_From_Memory_OP(op))
+      && Alias_Manager
+      && Safe_to_speculate(Alias_Manager, wn)) goto scalar_load;
+
   /* we can't speculate a load unless it is marked as dismissable */
   /* it is the client's responsability to do that. */
-  if (OP_Is_Speculative(op)) return TRUE;
+  if (OP_Is_Speculative(op)) goto scalar_load;
   
   /* If we got to here, we couldn't convince ourself that we have
    * a scalar load -- no speculation this time...

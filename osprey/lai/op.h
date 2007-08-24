@@ -625,6 +625,8 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_Opnd2(op)      OP_findopnd(op,OU_opnd2)
 #define OP_Condition(op)  OP_findopnd(op,OU_condition)
 #define OP_Storeval(op)   OP_findopnd(op,OU_storeval)
+#define OP_Base(op)       OP_findopnd(op,OU_base)
+#define OP_Offset(op)     OP_findopnd(op,OU_offset)
 #endif
 
 /*

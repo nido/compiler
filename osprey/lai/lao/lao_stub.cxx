@@ -481,6 +481,29 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
   return temporary;
 }
 
+static BOOL OP_Safe_Access (CGIR_OP cgir_op)
+{
+  WN *wn;
+  TN *base;
+
+  if (!OP_memory (cgir_op)) return FALSE;
+
+  if (OP_Can_Be_Speculative (cgir_op)) return TRUE;
+
+  if (OP_store (cgir_op)) {
+
+    if ((base = OP_Base(cgir_op))
+	&& TN_is_symbol(base)
+	&& ! ST_is_weak_symbol(TN_var(base))) return TRUE;
+
+    if ((wn = Get_WN_From_Memory_OP(cgir_op))
+	&& Alias_Manager
+	&& Safe_to_speculate(Alias_Manager, wn)) return TRUE;
+  }
+
+  return FALSE;
+}
+
 // Convert CGIR_OP to LIR Operation.
 static Operation
 CGIR_OP_to_Operation(CGIR_OP cgir_op)
@@ -523,8 +546,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op)
     int iteration = OP_unrolling(cgir_op);
     operation = O64_Interface_makeOperation(interface, cgir_op, OPERATOR, iteration,
 	argCount, arguments, resCount, results, clobberCount, clobbers);
-    WN *wn = Get_WN_From_Memory_OP(cgir_op);
-    if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn)) {
+    if (OP_Safe_Access (cgir_op)) {
       O64_Interface_Operation_setSafeAccess(interface, operation);
     }
     if (OP_hoisted(cgir_op)) O64_Interface_Operation_setHoisted(interface, operation);
