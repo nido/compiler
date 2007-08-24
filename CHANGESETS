@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 24 12:38:18 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30810
+
+Description:
+------------
+	* [trunk] Fix for bug #30810: [aX2] MP4 Segmentation fault in phase Range Analysis when -O2.
+	Deliver fixes/codex-30810 rev #13094 with authorization branch #31331
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 24 11:29:46 CEST 2007
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
