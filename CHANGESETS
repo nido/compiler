@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 27 14:00:44 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30840
+
+Description:
+------------
+	* [trunk] Fix for bug #30840: [aX2] MP3 accuracy fails when -Mtda=1 or -Mtda=2  + -O3.
+	Deliver fixes/codex-30840 rev #13129 with authorization branch #31516
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 24 15:18:02 CEST 2007
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -741,6 +741,7 @@ CG_Generate_Code(
       if (CG_AutoMod) {
 	Perform_AutoMod_Optimization();
 	EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
       }
 #endif
 #ifdef TARG_IA64
