@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 29 14:01:18 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31529
+
+Description:
+------------
+	*  Deliver fix for bug #31529 (STISS hits compiler assertion compiling with -ipa)
+	   branch fixes/codex-31529 at rev #13142, branch tracker #32222
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/common/ipc_dst_merge.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Aug 27 14:00:44 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

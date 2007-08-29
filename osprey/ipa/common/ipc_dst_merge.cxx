@@ -637,13 +637,15 @@ void update_wn(WN* wn, dst_hash_file_map& M_files)
       V_files = V_files_stack.front();
       V_files_stack.pop_front();
     }
-    // [CL] handle the case of a label inserted just before the pragma
-    // "end": switch to the previous DST, but do not pop, it will
-    // performed by the following pragma "end"
-    else if ( (WN_opcode(wn) == OPC_LABEL) && (WN_next(wn) != NULL) &&
-	      (WN_opcode(WN_next(wn)) == OPC_PRAGMA) &&
-	      (WN_pragma(WN_next(wn)) == WN_PRAGMA_INLINE_BODY_END) ) {
-      V_files = V_files_stack.front();
+
+    // [CL] it seems that labels are inserted at some time after
+    // inlining, and they sometimes belong to the caller, sometimes to
+    // the callee. I don't know how to know which case we are
+    // facing. It is safer to clear source line info on all labels
+    if (WN_opcode(wn) == OPC_LABEL) {
+      USRCPOS srcpos;
+      USRCPOS_srcpos (srcpos) = 0;
+      WN_Set_Linenum(wn, USRCPOS_srcpos(srcpos));
     }
 
     USRCPOS srcpos;
