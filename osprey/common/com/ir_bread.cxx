@@ -92,6 +92,11 @@
 #include "pf_cg.h"
 #endif
 
+#ifdef TARG_ST
+#include <list>
+#include <algorithm>
+#endif
+
 #ifdef BACK_END
 extern "C" {
 extern void Init_Dep_Graph(void *g);
@@ -731,6 +736,31 @@ Get_Elf_Section_Size (void *handle, Elf64_Word type, Elf64_Word info)
     return shdr.size;
 }
 
+#ifdef TARG_ST
+// [CL] keep track of open files, for later cleanup
+typedef struct open_input {
+  void* addr;
+  off_t size;
+  open_input(void* add, off_t sz) : addr(add), size(sz) {}
+} ;
+
+static std::list < open_input > open_input_list;
+
+// [CL] unmap all mmapped files
+static void unmap_open_input(const open_input& oi)
+{
+  if (munmap(oi.addr, oi.size)) {
+    perror("Couldn't munmap: ");
+  }
+}
+
+void Unmap_All() {
+  std::for_each(open_input_list.begin(), open_input_list.end(),
+		unmap_open_input);
+  open_input_list.clear();
+}
+#endif
+
 /*
  * Specify the name of the WHIRL file for reading.  If successful, a handle
  * will be returned.  If the binary was a different revision than what we
@@ -748,7 +778,14 @@ WN_open_input (char *filename, off_t *mapped_size)
 
     errno = 0;
 
+#ifdef TARG_ST
+    // [CL] keep track of mmap()ed files, used at cleanup time
+    void* mm = read_file (filename, mapped_size, file_revision);
+    open_input_list.push_back(open_input(mm, *mapped_size));
+    return mm;
+#else
     return read_file (filename, mapped_size, file_revision);
+#endif
     
 } /* WN_open_input */
 

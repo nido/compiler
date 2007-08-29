@@ -89,10 +89,6 @@ extern void enter_mext64 (ST *st, LD_OBJECT_FILE *p_obj);
 }
 #endif
 
-#ifdef TARG_ST
-void unmap_all();
-#endif
-
 #else // _STANDALONE_INLINER || _LIGHTWEIGHT_INLINER
 extern void Process_Global_Symtab (void* handle, IP_FILE_HDR& file_header);
 #endif // _STANDALONE_INLINER

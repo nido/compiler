@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 29 14:44:47 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-ipa-lib-w32
+
+Description:
+------------
+	* [CL] deliver branch dev-ipa-lib-w32 Fix library support by IPA under Win32
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/ir_bread.h
+	M      osprey/common/com/ir_bread.cxx
+	M      osprey/ipa/common/ipc_compile.cxx
+	M      osprey/ipa/common/ipc_symtab.cxx
+	M      osprey/ipa/common/ipc_symtab.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 29 14:01:18 CEST 2007
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

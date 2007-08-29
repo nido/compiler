@@ -76,6 +76,10 @@ BE_EXPORTED extern Elf64_Word Get_Elf_Section_Size (void *handle, Elf64_Word typ
 BE_EXPORTED extern void *WN_inline_open_file (char* file_name, off_t *mapped_size,
 				  char* file_revision); 
 
+#ifdef TARG_ST
+BE_EXPORTED extern void Unmap_All();
+#endif
+
 BE_EXPORTED extern void *
 WN_open_input (char *filename, off_t *mapped_size);
 

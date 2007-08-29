@@ -73,10 +73,6 @@
 #include "ipa_option.h"                 // ipa option flags
 #include "ipc_link.h"                   // for ipa_link_line_argv
 
-#ifdef TARG_ST
-#include "ipc_symtab.h"                 // [CL] for unmap_all()
-#endif
-
 #if defined(TARG_ST) && defined(__CYGWIN__)
 #include <signal.h>
 #endif
@@ -1045,7 +1041,7 @@ static void cleanup()
     closedir(dirp);
   }
 
-  unmap_all();
+  Unmap_All();
 
   if (ld_ipa_opt[LD_IPA_KEEP_TEMPS].flag) {
     return;
