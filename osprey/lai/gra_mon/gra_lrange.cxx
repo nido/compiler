@@ -549,7 +549,18 @@ Global_Preferenced_Regs(LRANGE* lrange, GRA_BB* gbb)
 	 tn = GTN_SET_Choose_Next(lrange->Global_Pref_Set(), tn)) {
       LRANGE *plrange = lrange_mgr.Get(tn);
       if (plrange->Contains_BB(gbb) && plrange->Allocated()) {
-	global_prefs = REGISTER_SET_Union1(global_prefs, plrange->Reg());
+#ifdef TARG_ST
+	// [TTh] In case of multi-register TNs, all sub-registers
+	// must be added to the global preference set.
+	INT nhardregs = TN_nhardregs(tn);
+	if ( nhardregs > 1) {
+	  REGISTER_SET allocated;
+	  allocated    = REGISTER_SET_Range(plrange->Reg(), plrange->Reg()+nhardregs-1);
+	  global_prefs = REGISTER_SET_Union(global_prefs, allocated);
+	}
+	else
+#endif
+	  global_prefs = REGISTER_SET_Union1(global_prefs, plrange->Reg());
       }
     }
   }

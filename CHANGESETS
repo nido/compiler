@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 29 15:16:10 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29822
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-29822 rev #13150 with authorization branch #29890
+          - GRA: Enable coalescing of Multi-register TNS that were preferenced to each other
+
+Modified Files:
+---------------
+	M      osprey/lai/gra_mon/gra_lrange.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 29 14:44:47 CEST 2007
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
