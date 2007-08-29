@@ -484,6 +484,10 @@ Spill_Homeable_TN(
 	//
 	if (!op_is_homing_load) {
 	  need_store = TRUE;
+#ifdef KEY
+          if (OP_cond_def(op) && !def_seen)
+            need_load = TRUE;
+#endif
 	}
 	def_seen = TRUE;
 	Set_OP_result(op, i, new_tn);
