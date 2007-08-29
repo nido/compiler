@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug 29 16:18:22 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31435
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-31435 rev #13155 with authorization branch #31717
+          - Improvement in LRA: some dedicated registers might be made available to LRA at the BB exit point if they are only used by GTNs that are not live-out of current BB.
+	  This lead to less spill code in case of constrained register set (mainly useful for extensions).
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 29 15:16:10 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

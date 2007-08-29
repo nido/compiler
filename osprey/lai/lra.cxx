@@ -961,6 +961,72 @@ static void Init_Avail_Set (BB *bb)
   OP *op;
   INT i;
 
+#ifdef TARG_ST
+  // [TTh] Compute set of dedicated registers that are used by GTNs in the BB
+  // but that are not live-out. Those registers might be marked as available
+  // for LRA, the reverse traversal of the BB will insure that they are not
+  // allocated to local TNs if they conflict with the corresponding GTNs.
+  REGISTER_SET ded_reg_live_out_set[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+  REGISTER_SET ded_reg_non_live_out_set[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+  BOOL use_improved_avail_set = FALSE;
+  // Refinement done only if liveness has been computed
+  if (BB_bbregs(bb) && BB_live_in(bb) && BB_live_out(bb) &&
+      !BB_entry(bb) && !BB_exit(bb) && !BB_call(bb)) {
+    ISA_REGISTER_CLASS cl;
+    TN *tn;
+    
+    use_improved_avail_set = TRUE;
+
+    FOR_ALL_ISA_REGISTER_CLASS(cl) {
+      ded_reg_non_live_out_set[cl] = REGISTER_SET_EMPTY_SET;
+      ded_reg_live_out_set[cl] = REGISTER_SET_EMPTY_SET;
+    }
+    // Build list of dedicated registers used by GTN that are live-in but not live-out
+    for (tn  = GTN_SET_Choose(BB_live_in(bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn  = GTN_SET_Choose_Next(BB_live_in(bb), tn)) {
+      if (LRA_TN_register(tn) != REGISTER_UNDEFINED) {
+	if (!GTN_SET_MemberP(BB_live_out(bb), tn)) {
+	  ded_reg_non_live_out_set[TN_register_class(tn)] =
+	    REGISTER_SET_Union(ded_reg_non_live_out_set[TN_register_class(tn)],
+			       REGISTER_SET_Range(LRA_TN_register(tn), LRA_TN_register(tn) + TN_nhardregs(tn) - 1));
+	}
+      }
+    }
+    // Build list of dedicated registers used by GTN that are live-out
+    for (tn  = GTN_SET_Choose(BB_live_out(bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn  = GTN_SET_Choose_Next(BB_live_out(bb), tn)) {
+      if (LRA_TN_register(tn) != REGISTER_UNDEFINED) {
+	ded_reg_live_out_set[TN_register_class(tn)] =
+	  REGISTER_SET_Union(ded_reg_live_out_set[TN_register_class(tn)],
+			     REGISTER_SET_Range(LRA_TN_register(tn), LRA_TN_register(tn) + TN_nhardregs(tn) - 1));
+      }
+    }
+    // Need to subtract live-out dedicated registers list from non-live-out registers list,
+    // as several GTNs might use the same dedicated registers (they are then aliased).
+    FOR_ALL_ISA_REGISTER_CLASS(cl) {
+      ded_reg_non_live_out_set[cl] =
+	REGISTER_SET_Difference(ded_reg_non_live_out_set[cl],
+				ded_reg_live_out_set[cl]);
+      // Also remove forbidden registers
+      ded_reg_non_live_out_set[cl] =
+	REGISTER_SET_Difference(ded_reg_non_live_out_set[cl],
+				CGTARG_Forbidden_LRA_Registers(cl));
+      
+      if (Do_LRA_Trace(Trace_LRA)) {
+	if (!REGISTER_SET_EmptyP(ded_reg_non_live_out_set[cl])) {
+	  fprintf (TFile, "(BB:%d, cl:%d) Non-live out registers used by GTNs:", BB_id(bb), cl);
+	  FOR_ALL_REGISTER_SET_members (ded_reg_non_live_out_set[cl], reg) {
+	    fprintf (TFile, " %s", REGISTER_name (cl, reg));
+	  }
+	  fprintf (TFile, "\n");
+	}
+      }
+    }
+  }
+#endif // TARG_ST
+
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
     if (CG_localize_tns) {
       /* Don't include callee save registers that have not already been
@@ -991,6 +1057,12 @@ static void Init_Avail_Set (BB *bb)
     else {
       /* Use the registers granted by GRA */
       avail_set[cl] = GRA_Local_Register_Grant (bb, cl);
+#ifdef TARG_ST
+      /* [TTh] Free dedicated registers used by GTNs in the BB but that are not live out of it */
+      if (use_improved_avail_set) {
+	avail_set[cl] = REGISTER_SET_Union(avail_set[cl], ded_reg_non_live_out_set[cl]);
+      }
+#endif // TARG_ST
       exclude_set[cl] = REGISTER_SET_EMPTY_SET;
       if (BB_call(bb)) {
         /* Note: all this code may be unnecessary because gra_grant already
@@ -1222,7 +1294,8 @@ Print_Live_Ranges (BB *bb)
     REGISTER r;
     for (r = REGISTER_MIN; r <= REGISTER_CLASS_last_register(cl); r++) {
       if (ded_reg_first_def (cl, r) != INT32_MAX
-	  || ded_reg_last_use (cl, r) != 0) {
+	  || ded_reg_last_use (cl, r) != 0
+	  || ded_reg_exposed_use (cl, r) != 0) { // [TTh]: Also display dedicated reg used but not live out of current BB
 	fprintf (TFile, "  DED_LR>%s  %3d to %3d, exposed:%d \n",
 		 REGISTER_name(cl, r), ded_reg_first_def (cl, r),
 		 ded_reg_last_use(cl, r), ded_reg_exposed_use(cl, r));
@@ -4530,7 +4603,7 @@ Add_Spill_Load_Before_Use (TN *tn, ST *spill_loc, OP *reload_op, INT use, BB *bb
   }
 
   if (use == VECTOR_size(Insts_Vector)) {
-    // append at at of bb.
+    // append at END of bb.
     CGSPILL_Append_Ops (bb, &spill_ops);
     if (Do_LRA_Trace(Trace_LRA_Spill)) {
       fprintf (TFile, "LRA_SPILL>>    load TN%d at end of bb\n", TN_number(tn));
