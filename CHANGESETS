@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 30 13:03:51 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31761
+
+Description:
+------------
+	* [trunk] Fix for bug #31761: Opportunities to make use of TFBIT/TTBIT instructions missed with unsigned data types - from EEMBC-Net.
+	Deliver fixes/codex-31761 rev #13180 with authorization branch #32094
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 30 11:27:46 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
