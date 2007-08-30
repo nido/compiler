@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 30 11:27:46 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32204
+
+Description:
+------------
+	* [trunk] Fix for bug #32204: Trivial txxbit instructions not mapped.
+	Deliver fixes/codex-32204 rev #13174 with authorization branch #32218
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug 29 17:51:58 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
