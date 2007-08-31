@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug 31 12:31:14 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32061
+
+Description:
+------------
+	* [trunk] Fix for bug #32061: -finline-functions broken with IPA.
+	Deliver fixes/codex-32061 rev #13208 with authorization branch #32106
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 30 13:03:51 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

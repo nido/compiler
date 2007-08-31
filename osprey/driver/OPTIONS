@@ -2316,7 +2316,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 
 #   ifdef TARG_ST
--finline-functions	Process_Inline();		Cc	NONE self "-INLINE:only_inline=off" 
+-finline-functions	;		Cc	NONE self "-INLINE:only_inline=off" 
 	"Integrate simple functions into their callers"
 -fno-inline-functions	;		Cc	NONE "-INLINE:only_inline=on"
 	"Do not integrate simple functions into their callers"
