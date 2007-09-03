@@ -482,7 +482,7 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += ipra.cxx
   CG_CXX_SRCS += range_analysis.cxx
   CG_CXX_SRCS += range_prop.cxx
-#  CG_CXX_SRCS += cg_tailmerge.cxx
+  CG_CXX_SRCS += cg_tailmerge.cxx
   CG_CXX_SRCS += cg_color.cxx
 
  CG_CXX_SRCS +=  pqs.cxx
@@ -506,7 +506,7 @@ ifeq ($(BUILD_TARGET),STxP70)
   CG_CXX_SRCS += ipra.cxx
   CG_CXX_SRCS += range_analysis.cxx
   CG_CXX_SRCS += range_prop.cxx
-#  CG_CXX_SRCS += cg_tailmerge.cxx
+  CG_CXX_SRCS += cg_tailmerge.cxx
   CG_CXX_SRCS += cg_color.cxx
 
  CG_CXX_SRCS +=  pqs.cxx

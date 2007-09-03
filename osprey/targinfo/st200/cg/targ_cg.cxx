@@ -3371,3 +3371,10 @@ CGTARG_Initialize ()
 
 }
 
+BOOL 	 
+CGTARG_Is_Simple_Jump(const OP* op)
+{
+    TOP top = OP_code(op);
+    // not yet tested
+    return top == TOP_br_i_b || top == TOP_brf_i_b ||top == TOP_goto_i;
+}

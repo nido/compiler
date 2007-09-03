@@ -225,12 +225,23 @@ static BOOL CG_cbpo_ratio_overridden = FALSE;
 INT CG_cbpo_block_method = CBPO_BLOCK_NONE;
 static BOOL CG_cbpo_block_method_overridden = FALSE;
 
+
 #   ifdef TARG_STxP70
 #      define DEFAULT_LOAD_IMM(opt_level, opt_space) TRUE
 #      define DEFAULT_RATIO(opt_level, opt_space) opt_level <= 2? 50: 100;
 #      define DEFAULT_BLOCK_METHOD(opt_level, opt_space) opt_space? CBPO_BLOCK_NONE: CBPO_BLOCK_GLOBAL_THEN_LOCAL;
 // No else case, since currently not used for other targets.
 #   endif
+
+static BOOL CG_tailmerge_overridden = FALSE;
+static BOOL CG_simp_flow_in_tailmerge_overridden = FALSE;
+
+#   ifdef TARG_STxP70
+#      define DEFAULT_TAILMERGE(opt_level, opt_space) 1
+#      define DEFAULT_SIMP_FLOW_TAILMERGE(opt_level, opt_space) 1
+// No else case, since currently not used for other targets.
+#   endif
+
 #endif
 
 #ifdef TARG_ST
@@ -615,6 +626,14 @@ static OPTION_DESC Options_CG[] = {
     "it fails, it tries the local."},
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
     TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "tailmerge", "", 
+    0, 0, 255,	&CG_tailmerge, &CG_tailmerge_overridden,
+    "Activate tailmerge optimization for phases (mask)" },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "simp_flow_in_tailmerge", "", 
+    0, 0, 255,	&CG_simp_flow_in_tailmerge,
+    &CG_simp_flow_in_tailmerge_overridden, "Activate flow simplification"
+    " in tailmerge for phases (mask). Note that it has an effect only for "
+    "related activated tailmerge phases" },
 #endif
 
 #ifdef TARG_ST200
@@ -1361,6 +1380,13 @@ Configure_CG_Options(void)
   }
   if(!CG_cbpo_ratio_overridden) {
       CG_cbpo_ratio = DEFAULT_RATIO(CG_opt_level, OPT_Space);
+  }
+
+  if(CG_opt_level >= 2 && !CG_tailmerge_overridden) {
+      CG_tailmerge = DEFAULT_TAILMERGE(CG_opt_level, OPT_Space);
+  }
+  if(CG_opt_level >= 2 && !CG_simp_flow_in_tailmerge_overridden) {
+      CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, OPT_Space);
   }
 #endif
 

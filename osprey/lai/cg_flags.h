@@ -500,6 +500,14 @@ extern BOOL Use_Page_Zero;  /* set bit in object to allow use of page 0 */
  * =======================================================================
  */
 
+/* ====================================================================
+ *   TAILMERGE:
+ * ====================================================================
+ */
+#ifdef TARG_ST
+extern INT CG_tailmerge;
+extern INT CG_simp_flow_in_tailmerge;
+#endif
 
 #endif /* cg_flags_INCLUDED */
 

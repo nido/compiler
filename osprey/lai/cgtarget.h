@@ -530,6 +530,10 @@
  *        The TN is the load-result of the OP, so use of TN has the
  *        latency of a load
  *
+ *  BOOL CGTARG_Is_Simple_Jump(const OP* op); 	 
+ *    Check whether given op is a simple jump, i.e. a jump with a known label
+ *    (OU_target operand)
+ *
  * ====================================================================
  * ==================================================================== */
 
@@ -960,6 +964,10 @@ extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
 // that is no more constant (reconfigurability)
 extern TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
 extern CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
+#endif
+
+#ifdef TARG_ST 	 
+extern BOOL CGTARG_Is_Simple_Jump(const OP* op);
 #endif
 
 #endif /* CGTARGET_INCLUDED */

@@ -119,6 +119,7 @@
 #include "loop_invar_hoist.h"
 #include "ipra.h"
 #include "cg_color.h"
+#include "cg_tailmerge.h"
 #endif
 
 #ifdef LAO_ENABLED
@@ -930,7 +931,15 @@ CG_Generate_Code(
     Adjust_Entry_Exit_Code ( Get_Current_PU_ST() );
   }
 
-  if (OPT_Space) 
+#ifdef TARG_ST
+  // We have to pass after adjust entry exit code, because for stxp70 target,
+  // we cannot update gra liveness between regalloc and the adjustment (pb
+  // invalid avail temps in adjust entry code (R14 sets as available!))
+  Set_Error_Phase ( "Tailmerge 1" );
+  Tailmerge(1);
+#endif
+
+  if (OPT_Space)
     CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY, "CFLOW (merge ops)");
 
   if (CG_enable_peephole) {

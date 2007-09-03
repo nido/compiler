@@ -268,6 +268,7 @@ BE_EXPORTED extern BOOL  WOPT_Enable_FPFSA; // Enables fix point flow sensitive 
 BE_EXPORTED extern BOOL WOPT_Enable_Warn_Uninit;   // enable warning for detected uninitialized locals
 BE_EXPORTED extern BOOL WOPT_Enable_Tailmerge;   // enable tailmerge optimization
 BE_EXPORTED extern BOOL WOPT_Enable_Compare_Hoisting;   // enable hoisting of compare expression
+BE_EXPORTED extern BOOL WOPT_Enable_Flow_Simplification_In_Tailmerge;   // enable flow simplification in tailmerge optimization
 #endif
 #endif /* config_wopt_INCLUDED */
 

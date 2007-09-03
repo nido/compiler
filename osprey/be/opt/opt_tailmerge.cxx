@@ -41,7 +41,7 @@
 
 #include <map>                // For map usage
 #include <list>               // For list usage
-#include <set>                // For set usage
+#include <utility>            // For pair usage
 
 #include "opt_tailmerge.h"
 #include "opt_cfg.h"           // For CFG
@@ -50,6 +50,7 @@
 #include "wn.h"                // For WN manipulation
 #include "tailmerge.h"         // For tailmerge algorithm
 #include "tracing.h"           // For tracing
+#include "glob.h"              // For Cur_PU_Name
 
 
 // Override tailmerge condition to activate specific traces
@@ -74,11 +75,25 @@ typedef LabelToBBs::iterator ItLabelToBBs;
 typedef std::list<LABEL_IDX> Labels;
 typedef Labels::const_iterator CItLabels;
 
+typedef TAILMERGE_NAMESPACE::CNode<BB_NODE, WN>::BasicBlocks BBs;
+typedef BBs::const_iterator CItBBs;
+
+typedef std::pair<BBs, BB_NODE*> TgtOfBBs;
+
+typedef std::map<BB_NODE*, TgtOfBBs> OldTgtOfBBs;
+typedef OldTgtOfBBs::const_iterator CItOldTgtOfBBs;
+
 /**
  * Map the identifier of created label with the list of basic blocks, which jump
  * on that label
  */
-LabelToBBs g_createdLabels;
+static LabelToBBs g_createdLabels;
+
+/**
+ * Map a simple basic block to the pair: list of its predecessors before
+ * simplification and the simplified target
+ */
+static OldTgtOfBBs g_oldTgtOfBBs;
 
 //------------------------------------------------------------------------------
 // Tailmerge functions to be targeted declaration
@@ -133,7 +148,7 @@ BasicBlockId<CFG, BB_NODE>(const CFG& cfg, const BB_NODE& bb);
 template<>
 static void
 ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
-                       bool jumpHere);
+                          bool jumpHere);
 
 /**
  * @see tailmerge.h
@@ -155,7 +170,8 @@ IsJump<CFG, BB_NODE, WN>(const WN* op, const CFG* a_cfg, const BB_NODE* tgt);
 template<>
 static void
 RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::
-                                                BasicBlocks& a_toRemove);
+                                                BasicBlocks& a_toRemove,
+                                                bool isEasy);
 
 /**
  * @see tailmerge.h
@@ -192,6 +208,29 @@ GetPredecessorsList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfPreds, CFG& a_cfg,
 template<>
 static BB_NODE*
 GenAndInsertBB<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& a_bb, bool bBefore);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static void
+GetExitBasicBlocks<CFG, BB_NODE>(std::list<BB_NODE*>& exitBBs, CFG& a_cfg);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
+IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
+ReplaceSimpleJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt,
+                                BB_NODE& origBb);
+
 } // End TAILMERGE_NAMESPACE
 
 //------------------------------------------------------------------------------
@@ -240,20 +279,40 @@ static BB_NODE*
 CreateBb(CFG& a_cfg, BB_NODE& a_fixedPoint, bool bBefore,
          const char* msg = NULL);
 
+static void
+RestoreSimplifiedBBs(CFG& a_cfg);
+
+static void
+RestoreTrivialPath(CFG& a_cfg, BB_NODE* src, BB_NODE* tgt, BB_NODE* oldTgt,
+                   bool& bRemove);
+
+static bool
+IsFallThrough(CFG& a_cfg, BB_NODE* bb);
 
 //------------------------------------------------------------------------------
 // Functions definition
 //------------------------------------------------------------------------------
 void
-OPT_Tailmerge(CFG& a_cfg, WN* wn_tree)
+OPT_Tailmerge(CFG& a_cfg, WN* wn_tree, int phase)
 {
+    // LNO does not support empty basic blocks under certain circumstances
+    // (loopinfo invalid) so avoid calling tailmerge.
+    if(phase == PREOPT_LNO_PHASE) return;
+
     MEM_POOL mempool;
     MEM_POOL_Initialize(&mempool, "Tailmerge optimization", TRUE);
     MEM_POOL_Push (&mempool);
     Trace_Tailmerge = Get_Trace(TP_TAIL, 1);
-    DbgPrintTailmerge((TAILMERGE_NAMESPACE::debugOutput,
-                       "%sCFG Before Tailmerge\n%s", DBar, DBar));
-    DbgTailmerge(a_cfg.Print, (TAILMERGE_NAMESPACE::debugOutput));
+    DevAssert(a_cfg.Verify_cfg(), ("CFG is not in a good shape before "
+                                   "tailmerge!"));
+
+    if(Get_Trace(TKIND_IR, TP_TAIL))
+        {
+            fprintf(TAILMERGE_NAMESPACE::debugOutput,
+                    "%sCFG Before Tailmerge for PU: %s\n%s", DBar,
+                    Cur_PU_Name, DBar);
+            a_cfg.Print(TAILMERGE_NAMESPACE::debugOutput);
+        }
 
     InitializeTailmerge(a_cfg);
 
@@ -261,9 +320,12 @@ OPT_Tailmerge(CFG& a_cfg, WN* wn_tree)
         // Insertion point is set to false, to avoid to break flow with
         // falsebr and truebr branches and thus have to create fallthrough basic
         // blocks
-        TAILMERGE_NAMESPACE::CTailmerge<CFG, BB_NODE, WN>
+        TAILMERGE_NAMESPACE::CExtendedTailmerge<CFG, BB_NODE, WN>
             tailmergeOpt(a_cfg, true, true, Trace_Tailmerge, false,
-                         &mempool);
+                         &mempool, false);
+
+        if(WOPT_Enable_Flow_Simplification_In_Tailmerge)
+            tailmergeOpt.SimplifyControlFlowGraph();
         tailmergeOpt.Optimize();
     }
 
@@ -272,9 +334,15 @@ OPT_Tailmerge(CFG& a_cfg, WN* wn_tree)
     MEM_POOL_Pop(&mempool);
     MEM_POOL_Delete(&mempool);
 
-    DbgPrintTailmerge((TAILMERGE_NAMESPACE::debugOutput,
-                       "%sCFG After Tailmerge\n%s", DBar,DBar));
-    DbgTailmerge(a_cfg.Print, (TAILMERGE_NAMESPACE::debugOutput));
+    if(Get_Trace(TKIND_IR, TP_TAIL))
+        {
+            fprintf(TAILMERGE_NAMESPACE::debugOutput,
+                    "%sCFG After Tailmerge For PU: %s\n%s", DBar,
+                    Cur_PU_Name, DBar);
+            a_cfg.Print(TAILMERGE_NAMESPACE::debugOutput);
+        }
+    DevAssert(a_cfg.Verify_cfg(), ("CFG is not in a good shape after "
+                                   "tailmerge!"));
 }
 
 /**
@@ -429,7 +497,7 @@ static void
 InitializeTailmerge(CFG& a_cfg)
 {
     g_createdLabels.clear();
-//    ExplicitJump(a_cfg);
+    g_oldTgtOfBBs.clear();
 }
 
 /**
@@ -451,6 +519,7 @@ InitializeTailmerge(CFG& a_cfg)
 static void
 FinalizeTailmerge(CFG& a_cfg)
 {
+    RestoreSimplifiedBBs(a_cfg);
     RemoveTrivialGoto(a_cfg);
     RemoveUselessLabels(a_cfg);
     EnsureBBsKind(a_cfg);
@@ -732,6 +801,131 @@ CreateBb(CFG& a_cfg, BB_NODE& a_fixedPoint, bool bBefore, const char* msg)
     return res;
 }
 
+/**
+ * Restore simplified basic blocks that are still on a trivial path.
+ * During the simplification of the control flow, some basic blocks becomes
+ * useless since they are simple. The purpose of this function is to restore
+ * them, since their presence may enhance later lowering phase like RVI.
+ * A basic block is restored when at least one of its predecessors before the
+ * flow simplifications points to the same successor as it. Thus, when these
+ * predecessors have not been tailmerged.
+ * Work of this function uses g_oldTgtOfBBs information
+ *
+ * @param  a_cfg Current control flow graph
+ *
+ * @pre    information contained in g_oldTgtOfBBs are compatible with a_cfg
+ * @post   Simple basic blocks on trivial path have been restored and
+ *         g_oldTgtOfBBs.empty()
+ */
+static void
+RestoreSimplifiedBBs(CFG& a_cfg)
+{
+    using namespace TAILMERGE_NAMESPACE;
+    CItOldTgtOfBBs it;
+    BBs toRemove;
+    DbgPrintTailmerge((debugOutput, "*** Start %s\n", __FUNCTION__));
+
+    for(it = g_oldTgtOfBBs.begin(); it != g_oldTgtOfBBs.end(); ++it)
+        {
+            CItBBs itBB;
+            BB_NODE* tgt = it->second.second;
+            bool bRemove = true;
+            DbgPrintTailmerge((debugOutput, "Simple BB%d - tgt BB%d\n",
+                               BasicBlockId<CFG, BB_NODE>(a_cfg,
+                                                          *(it->first)),
+                               BasicBlockId<CFG, BB_NODE>(a_cfg, *tgt)));
+
+            for(itBB = it->second.first.begin();
+                itBB != it->second.first.end(); ++itBB)
+                {
+                    RestoreTrivialPath(a_cfg, *itBB, tgt, it->first, bRemove);
+                }
+
+            if(bRemove && !IsFallThrough(a_cfg, it->first))
+                {
+                    DbgPrintTailmerge((debugOutput,
+                                       "-> Set BB%d as removable\n",
+                                       BasicBlockId<CFG, BB_NODE>(a_cfg,
+                                                                  *(it->first))));
+                    toRemove.push_back(it->first);
+                }
+        }
+    g_oldTgtOfBBs.clear();
+    // Remove not restored bbs
+    RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(a_cfg, toRemove, true);
+    DbgPrintTailmerge((debugOutput, "*** End %s\n", __FUNCTION__));
+}
+
+/**
+ * Restore the link src to oldTgt when the target of src is tgt.
+ *
+ * @param  a_cfg Current control flow graph
+ * @param  src Source basic block
+ * @param  tgt Expected target of src basic block to allow restoring of trivial
+ *         path
+ * @param  oldTgt Old target of src that leads on a trivial path to tgt
+ * @param  bRemove [out] Will contain false when the trivial path has been
+ *         restored, ie oldTgt is not removable
+ *
+ * @pre    src, tgt and oldTgt are in a_cfg
+ * @post   src@pre->succs = tgt implies src->succs = oldTgt and bRemove = false
+ *
+ */
+static void
+RestoreTrivialPath(CFG& a_cfg, BB_NODE* src, BB_NODE* tgt, BB_NODE* oldTgt,
+                   bool& bRemove)
+{
+    WN* op = NULL;
+    BB_NODE* newtgt;
+    using namespace TAILMERGE_NAMESPACE;
+    DbgPrintTailmerge((debugOutput, "-> Pred BB%d\n",
+                       BasicBlockId<CFG, BB_NODE>(a_cfg, *src)));
+    
+    if(!IsEmpty<BB_NODE>(*src) && (op = GetLastOp<BB_NODE, WN>(*src)) &&
+       IsJump<CFG, BB_NODE, WN>(op))
+        {
+            newtgt = a_cfg.Get_bb_from_label(WN_label_number(op));
+            DbgPrintTailmerge((debugOutput, "-> Has jump\n"));
+        }
+    else
+        {
+            newtgt = src->Next();
+        }
+    if(newtgt == tgt)
+        {
+            DbgPrintTailmerge((debugOutput,  "-> restore trivial path\n"));
+            bRemove = false;
+            if(op)
+                {
+                    RemoveOp<CFG, BB_NODE, WN>(a_cfg, *src, op);
+                }
+            ReplaceJump<CFG, BB_NODE>(a_cfg, *src, *oldTgt, *tgt, false);
+        }
+}
+
+/**
+ * Check whether given basic block is a fall through or not.
+ *
+ * @param  a_cfg Current control flow graph
+ * @param  bb Basic block to be checked
+ *
+ * @pre    bb is in a_cfg
+ * @post   true
+ *
+ * @return true if bb is a fall through, false otherwise
+ */
+static bool
+IsFallThrough(CFG& a_cfg, BB_NODE* bb)
+{
+    BB_NODE* prevFall = bb->Prev();
+    WN* op;
+    using namespace TAILMERGE_NAMESPACE;
+    return prevFall && (IsEmpty<BB_NODE>(*prevFall) ||
+                        ((op = GetLastOp<BB_NODE, WN>(*prevFall)) &&
+                         IsJump<CFG, BB_NODE, WN>(op) &&
+                         a_cfg.Get_bb_from_label(WN_label_number(op)) == bb));
+}
+
 //------------------------------------------------------------------------------
 // Tailmerge functions to be targeted definition
 //------------------------------------------------------------------------------
@@ -826,25 +1020,28 @@ BasicBlockId<CFG, BB_NODE>(const CFG& cfg, const BB_NODE& bb)
 template<>
 static void
 ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
-                       bool jumpHere)
+                          bool jumpHere)
 {
     // Avoid duplicat in succ/pred list.
     // Is it needed?
-    if(src.Succ()->Contains(&tgt))
+    if(src.Succ()->Contains(&origBb))
         {
-            src.Remove_succ(&origBb, cfg.Mem_pool());
+            if(src.Succ()->Contains(&tgt))
+                {
+                    src.Remove_succ(&origBb, cfg.Mem_pool());
+                }
+            else
+                {
+                    src.Replace_succ(&origBb, &tgt);
+                }
         }
-    else
+    else if(!src.Succ()->Contains(&tgt))
         {
-            src.Replace_succ(&origBb, &tgt);
+            src.Append_succ(&tgt, cfg.Mem_pool());
         }
-    if(origBb.Pred()->Contains(&tgt))
+    if(origBb.Pred()->Contains(&src))
         {
             origBb.Remove_pred(&src, cfg.Mem_pool());
-        }
-    else
-        {
-            origBb.Replace_pred(&src, &tgt);
         }
     InternalAddGoto(cfg, src, tgt, jumpHere);
 }
@@ -871,8 +1068,26 @@ IsJump<CFG, BB_NODE, WN>(const WN* op, const CFG* a_cfg, const BB_NODE* tgt)
 
 template<>
 static void
-RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::BasicBlocks& a_toRemove)
+ RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::BasicBlocks& a_toRemove,
+                                                 bool isEasy)
 {
+    if(isEasy)
+        {
+            CNode<BB_NODE, WN>::ItBasicBlocks it;
+            for(it = a_toRemove.begin(); it != a_toRemove.end(); ++it)
+                {
+                    // In fact, we do not remove the basic block because we do
+                    // not want to update all 'if info', 'loop info', etc.
+                    // The simplier version to handle that suppression is to
+                    // set the related basic block as empty
+                    if(g_oldTgtOfBBs.find(*it) == g_oldTgtOfBBs.end())
+                        {
+                            (*it)->Set_firststmt(NULL);
+                            (*it)->Set_laststmt(NULL);
+                        }
+                    //      a_cfg.Remove_bb(*it);
+                }
+        }
     // It is complicate to remove empty basic blocks at this points (basic
     // blocks statements are not all set) and a little use.
     // Deadcode while do the proper job
@@ -887,21 +1102,40 @@ RemoveOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op)
         {
             if(it == op)
                 {
-                    if(WN_prev(it))
+                    // Save value of firststmt, since it may be modified
+                    WN *first = a_bb.Firststmt();
+                    if(it == a_bb.Firststmt())
+                        {
+                            if(it == a_bb.Laststmt())
+                                {
+                                    a_bb.Set_firststmt(NULL);
+                                }
+                            else
+                                {
+                                    a_bb.Set_firststmt(WN_next(it));
+                                }
+                        }
+                    else
                         {
                             WN_next(WN_prev(it)) = WN_next(it);
                         }
-                    if(WN_next(it))
+
+                    if(it == a_bb.Laststmt())
+                        {
+                            if(it == first)
+                                {
+                                    // WN_prev(it) may point on the last
+                                    // instruction of the previous basic block
+                                    a_bb.Set_laststmt(NULL);
+                                }
+                            else
+                                {
+                                    a_bb.Set_laststmt(WN_prev(it));
+                                }
+                        }
+                    else
                         {
                             WN_prev(WN_next(it)) = WN_prev(it);
-                        }
-                    if(it ==  a_bb.Laststmt())
-                        {
-                            a_bb.Set_laststmt(WN_prev(it));
-                        }
-                    if(it == a_bb.Firststmt())
-                        {
-                            a_bb.Set_firststmt(WN_next(it));
                         }
                     break;
                 }
@@ -962,6 +1196,83 @@ GenAndInsertBB<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& a_bb, bool bBefore)
     BB_NODE* res = CreateBb(a_cfg, a_bb, bBefore, " for gen and insert");
     SetLabel(a_cfg, *res, false);
     return res;
+}
+
+template<>
+static void
+GetExitBasicBlocks<CFG, BB_NODE>(std::list<BB_NODE*>& exitBBs, CFG& a_cfg)
+{
+    if(a_cfg.Exit_bb())
+        {
+            if(a_cfg.Exit_bb() == a_cfg.Fake_exit_bb())
+                {
+                    for(BB_LIST* tmp = a_cfg.Exit_bb()->Pred(); tmp;
+                        tmp = tmp->Next())
+                        {
+                            if(tmp->Node()->Kind() == BB_EXIT)
+                                {
+                                    exitBBs.push_back(tmp->Node());
+                                }
+                        }
+                }
+            else
+                {
+                    exitBBs.push_back(a_cfg.Exit_bb());
+                }
+        }
+    // Exit information may not be available at this point
+    else
+        {
+            CFG_ITER cfg_iter(&a_cfg);
+            BB_NODE *bb;
+
+            FOR_ALL_NODE(bb, cfg_iter, Init())
+            {
+                if(bb->Kind() == BB_EXIT)
+                    {
+                        exitBBs.push_back(bb);
+                    }
+            }
+        }
+}
+
+template<>
+static bool
+IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb)
+{
+    bool result = bb.Kind() == BB_GOTO;
+    if(result)
+        {
+            WN* curStmt = bb.Firststmt();
+            while(curStmt && result)
+                {
+                    result &= WN_opcode(curStmt) == OPC_GOTO ||
+                        WN_opcode(curStmt) == OPC_LABEL;
+                    curStmt = WN_next(curStmt);
+                }
+        }
+    return result;
+}
+
+template<>
+static bool
+ReplaceSimpleJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt,
+                                BB_NODE& origBb)
+{
+    bool result = src.Kind() == BB_GOTO;
+    if(result && &tgt != &origBb)
+        {
+            g_oldTgtOfBBs[&origBb].first.push_back(&src);
+            g_oldTgtOfBBs[&origBb].second = &tgt;
+            WN* lastop = !IsEmpty<BB_NODE>(src)? GetLastOp<BB_NODE, WN>(src):
+                NULL;
+            if(lastop && WN_opcode(lastop) == OPC_GOTO)
+                {
+                    RemoveOp<CFG, BB_NODE, WN>(cfg, src, lastop);
+                }
+            ReplaceJump<CFG, BB_NODE>(cfg, src, tgt, origBb, false);
+        }
+    return result;
 }
 
 } // End TAILMERGE_NAMESPACE

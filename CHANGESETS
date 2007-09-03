@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep  3 16:25:43 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cq1/dev-tailmerge-integration
+
+Description:
+------------
+	* [trunk] Fix for bug #21708: Tailmerge optimization development.
+	Deliver cq1/dev-tailmerge-integration rev #13244 with authorization branch #32131
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_tailmerge.h
+	M      osprey/be/opt/opt_tailmerge.cxx
+	M      osprey/be/opt/opt_main.cxx
+	M      osprey/lai/cg_tailmerge.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/cg_flags.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/common/com/tailmerge.h
+	M      osprey/common/com/config_wopt.cxx
+	M      osprey/common/com/config_wopt.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep  3 13:52:29 CEST 2007
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

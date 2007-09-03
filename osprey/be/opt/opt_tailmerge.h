@@ -49,6 +49,7 @@ class WN;
  *
  * @param  cfg Control graph flow of the given whirl representation
  * @param  wn_tree WOPT whirl representation
+ * @param  phase current processing phase
  *
  * @pre    cfg represents wn_tree and wn_tree <> NULL
  * @post   cfg has been tailmerged
@@ -56,6 +57,6 @@ class WN;
  * @see    tailmerge.h for the detail of tailmerge algorithm (CTailmerge class)
  */
 extern void
-OPT_Tailmerge(CFG& cfg, WN* wn_tree);
+OPT_Tailmerge(CFG& cfg, WN* wn_tree, int phase);
 
 #endif

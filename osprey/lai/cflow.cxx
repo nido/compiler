@@ -95,6 +95,10 @@
 #include "targ_proc_properties.h"
 /* #include "hb_cflow.h" */
 
+#ifdef TARG_ST
+#   include <set>
+#endif
+
 #include "cflow.h"
 
 #define DEBUG_CFLOW Is_True_On
@@ -1772,6 +1776,63 @@ BB_HWLoop_tail(BB *bb) {
     return BB_loop_head_bb(bb);
   return NULL;
 }
+#endif
+
+#ifdef TARG_ST
+
+typedef std::set<BB*> SetOfBBs;
+typedef SetOfBBs::const_iterator CItSetOfBBs;
+
+/**
+ * Set of basic blocks to be re-scheduled after cflow
+ */
+static SetOfBBs g_toBeSched;
+
+/**
+ * Add bb in to be scheduled set (g_toBeSched), if bb was already scheduled.
+ *
+ * @param  bb A basic block
+ *
+ * @pre    true
+ * @post   BB_scheduled(bb@pre) implies g_toBeSched->contains(bb) and
+ *         !BB_scheduled(bb) and !BB_scheduled_hbs(bb)
+ */
+static void
+AddBBToSchedule(BB* bb)
+{
+    if(bb && BB_scheduled(bb))
+        {
+            Reset_BB_scheduled(bb);
+            Reset_BB_scheduled_hbs(bb);
+            g_toBeSched.insert(bb);
+        }
+}
+
+/**
+ * Call backward scheduler on all basic blocks contained in g_toBeSched.
+ *
+ * @pre    g_toBeSched->forAll(!BB_scheduled(bb))
+ * @post   g_toBeSched@pre->forAll(BB_scheduled(bb))
+ */
+static void
+ScheduleBBs()
+{
+    CItSetOfBBs it;
+    HBS_TYPE hbs_type = HBS_CRITICAL_PATH;
+    if(PROC_has_bundles())
+        {
+            hbs_type |= HBS_MINIMIZE_BUNDLES;
+        }
+    for(it = g_toBeSched.begin(); it != g_toBeSched.end(); ++it)
+        {
+            HB_Schedule sched;
+            DevAssert(!BB_scheduled(*it), ("test"));
+           	sched.Init(*it, hbs_type, INT32_MAX, NULL, NULL);
+            sched.Schedule_BB(*it, NULL, FALSE);
+        }
+    g_toBeSched.clear();
+}
+
 #endif
 
 
@@ -3975,6 +4036,13 @@ Append_Succ(
       }
     }
   }
+#ifdef TARG_ST
+  // CQ1: Basic block content changed, so rescheduling should be done to
+  // avoid assertion failure during scheduling phase
+  // Note: This call should be placed in all functions that perform operation
+  // motion
+  AddBBToSchedule(b);
+#endif
   if (!CG_localize_tns) {
     GRA_LIVE_Merge_Blocks(b, b, suc);
 #ifdef TARG_ST
@@ -7049,6 +7117,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   BOOL change;
 #ifdef TARG_ST
   BOOL merge_change = FALSE;
+  g_toBeSched.clear();
 #endif
   const char *prev_phase;
   BOOL flow_change = FALSE;
@@ -7354,6 +7423,9 @@ nothing:
   Set_Error_Phase(prev_phase);
 
 #ifdef TARG_ST
+
+  ScheduleBBs();
+
   if (OPT_Space && merge_change && (current_flags & CFLOW_MERGE)) {
     // TB: For code size, make a several passes CFLOW_MERGE
     // Optim We hope to catch more opportunities to remove unuseful

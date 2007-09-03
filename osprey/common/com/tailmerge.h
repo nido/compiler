@@ -54,6 +54,7 @@
 
 #   include <list>           // For list usage
 #   include <set>            // For set usage
+#   include <map>            // For map usage
 #   include <stdio.h>        // For fprintf, FILE*
 
 /**
@@ -308,9 +309,13 @@ GetLastOp(BasicBlock& bb);
  *
  * @param  a_cfg Control graph flow that contains all basic blocks of a_toRemove
  *         list
- * @param  a_toRemove Contains the list of basic block that are no more used.
- *         After the function call, this list contains the basic blocks that
- *         have not been removed
+ * @param  a_toRemove [in/out] Contains the list of basic block that are no
+ *         more used. After the function call, this list contains the basic
+ *         blocks that have not been removed
+ * @param  isEasy Specify whether the removal (if done) must update branch
+ *         operations or not (isEasy == true). In the second case (isEasy is
+ *         true) we expect only the removal of given basic block from the given
+ *         a_cfg and from all predecessors/successors list without any checks.
  *
  * @pre    a_cfg contains all basic blocks of the a_toRemove list
  * @post   a_toRemove contains the list of the basic blocks that have not been
@@ -320,7 +325,7 @@ GetLastOp(BasicBlock& bb);
  */
 template<typename Cfg, typename BasicBlocks>
 extern void
-RemoveBBs(Cfg& a_cfg, BasicBlocks& a_toRemove);
+RemoveBBs(Cfg& a_cfg, BasicBlocks& a_toRemove, bool isEasy = false);
 
 /**
  * Remove given operation in given basic block.
@@ -422,6 +427,73 @@ GetPredecessorsList(std::list<BasicBlock*>& listOfPreds, Cfg& a_cfg,
 template<typename Cfg, typename BasicBlock>
 extern BasicBlock*
 GenAndInsertBB(Cfg& a_cfg, BasicBlock& a_bb, bool bBefore);
+
+/**
+ * Get the list of exit basic blocks of given cfg.
+ *
+ * @param  exitBBs [out] Will contains the list of exit basic blocks of a_cfg
+ * @param  a_cfg Control flow graph
+ *
+ * @pre    true
+ * @post   exitBBs contains all exits blocks of a_cfg
+ *
+ * @todo   Targetting to be done
+ */
+template<typename Cfg, typename BasicBlock>
+extern void
+GetExitBasicBlocks(std::list<BasicBlock*>& exitBBs, Cfg& a_cfg);
+
+/**
+ * Check whether given basic block is simple.
+ * A basic block is simple when it does contain any useful instruction than a
+ * simple goto to the next basic block. The goal of this function is to
+ * determine which basic block may be useless, thus removable (after the
+ * proper update of branching instructions)
+ *
+ * @param  a_cfg Control flow graph
+ * @param  bb [in] Basic block to be checked
+ *
+ * @pre    true
+ * @post   result = bb is simple
+ *
+ * @return true if bb is simple in a_cfg, false otherwise
+ *
+ * @remarks Due to API problem in targeting, we cannot set bb as const
+ *
+ * @todo   Targetting to be done
+ */
+template<typename Cfg, typename BasicBlock>
+extern bool
+IsSimpleBB(const Cfg& a_cfg, BasicBlock& bb);
+
+/**
+ * Replace a simple jump (unconditionnal jump) from src to origBb by a jump
+ * from src to tgt.
+ * This function must correctly update predecessor/successor list of src, tgt
+ * and origBb. Unlike ReplaceJump, this function call occurs when the cfg is in
+ * a good shape (all instructions are at the right place), so the jump
+ * replacement (i.e. the modification of the jump instruction of src) is
+ * expected. The replacement must not occur if the jump instruction of src is
+ * not simple. In that case, it must return false
+ *
+ * @param  a_cfg Control flow graph
+ * @param  src Basic block source to be updated
+ * @param  tgt Target of the new jump
+ * @param  origBb Original target of the jump
+ *
+ * @pre    src, tgt and origBb are basic blocks of a_cfg
+ * @post   src jump instruction target's is tgt and tgt.Preds contains src and
+ *         src.Succs contains tgt and origBb.Preds =
+ *         origBb.Preds->excluding(src)
+ *
+ * @return true if a simple jump replacement occured, false otherwise
+ *
+ * @todo   Targetting to be done
+ */
+template<typename Cfg, typename BasicBlock>
+extern bool
+ReplaceSimpleJump(Cfg& a_cfg, BasicBlock& src, BasicBlock& tgt,
+                  BasicBlock& origBb);
 
 /**
  * Check whether two lists are the same.
@@ -1095,7 +1167,7 @@ class CTailmerge
     const bool
     Before() const;
 
- private:
+ protected:
 
     // Shortcuts used for flexibility and readability
     typedef CNode<BasicBlock, Operation> TmNode;
@@ -1104,6 +1176,21 @@ class CTailmerge
     typedef typename TmNodes::const_iterator CItTmNodes;
     typedef typename TmNodes::reverse_iterator RItTmNodes;
     typedef typename TmNodes::const_reverse_iterator CRItTmNodes;
+
+    /**
+     * Getter for m_cfg member.
+     *
+     * @pre    true
+     * @post   true
+     *
+     * @return m_cfg member
+     *
+     * @see    m_cfg member
+     */
+    Cfg&
+    CFG();
+
+ private:
 
     typedef std::set<int> Ids;
 
@@ -1319,19 +1406,6 @@ class CTailmerge
                           BasicBlock& a_target);
 
     /**
-     * Getter for m_cfg member.
-     *
-     * @pre    true
-     * @post   true
-     *
-     * @return m_cfg member
-     *
-     * @see    m_cfg member
-     */
-    Cfg&
-    CFG();
-
-    /**
      * Has explicit jump member.
      * Specify whether control graph flow has explicit (true) or implicit
      * (false) jump.
@@ -1372,6 +1446,304 @@ class CTailmerge
      */
     Cfg& m_cfg;
 };
+
+
+/**
+ * @class CExtendedTailmerge
+ * Extend the tailmerging mecanism by providing a simplification of the control
+ * flow graph before applying the optimization. Note that the simplification of
+ * the control flow graph can be called separately.
+ * The simplification of the control flow graph consists in suppressing indirect
+ * useless jump. A jump is considered as useless when it leads to a simple basic
+ * block. A basic block is simple when its execution does not modify the
+ * behavior of the program. Typically, such basic blocks are empty one or
+ * contain only an unconditional jump.
+ *
+ * E.g. Assume the two following branching:
+ * BB1->BB2->BB4
+ * BB3->BB4
+ * Where BB2 is a simple goto to BB4.
+ *
+ * Without the simplification, tailmerge will apply on BB2 and BB3. Since BB2 is
+ * empty (or so), it did nothing.
+ * With the simplification, we get the following branching:
+ * BB1->BB4
+ * BB3->BB4
+ * Thus, tailmerge will apply on BB1 and BB3.
+ */
+template<typename Cfg, typename BasicBlock, typename Operation>
+class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
+{
+ public:
+    // Shortcut
+    typedef typename CTailmerge<Cfg, BasicBlock, Operation>::TmNode ExtTmNode;
+
+    /**
+     * SSimplifyInfo structure stores information used by the control flow
+     * simplification.
+     * This information will be used in a map that gives for a basic block
+     * its simplification
+     */
+    struct SSimplifyInfo
+    {
+        /**
+         * One of the successor
+         */
+        BasicBlock* succ;
+        
+        /**
+         * Target of the basic block.
+         * When the mapped basic block is simple, this field contains the first
+         * non simple basic block on its trivial path.
+         * When the mapped basic block is not simple, this field contains itself
+         */
+        BasicBlock* target;
+
+        /**
+         * Visit marker
+         */
+        bool visited;
+
+        /**
+         * Specify whether Mapped basic block is simple or not
+         */
+        bool isSimple;
+
+        /**
+         * List of the predecessors of the mapped basic block
+         */
+        typename ExtTmNode::BasicBlocks listOfPreds;
+
+        /**
+         * Default constructor.
+         * Initialize all members with given values
+         *
+         * @param  a_succ Value to be set to succ
+         * @param  a_target Value to be set to target
+         * @param  a_visited Value to be set to visited
+         * @param  a_isSimple Value to be set to isSimple
+         *
+         * @pre    true
+         * @post   succ = a_succ and target = a_target and visited = a_visited 
+         *         and isSimple = a_isSimple and listOfPreds.empty()
+         */
+        SSimplifyInfo(BasicBlock* a_succ = NULL,
+                      BasicBlock* a_target = NULL,
+                      bool a_visited = false, bool a_isSimple = false)
+            :succ(a_succ), target(a_target), visited(a_visited),
+             isSimple(a_isSimple), listOfPreds()
+        {}
+    };
+
+    // Shortcut
+    typedef std::map<BasicBlock*, SSimplifyInfo> BBsSimplifyInfo;
+    typedef typename BBsSimplifyInfo::const_iterator CItBBsSimplifyInfo;
+    typedef typename BBsSimplifyInfo::iterator ItBBsSimplifyInfo;
+
+    /**
+     * CExtendedTailmerge constructor.
+     * @see CTailmerge::CTailmerge
+     *
+     * @param  a_cfg 
+     * @param  a_hasExplicitJump 
+     * @param  a_createBb 
+     * @param  a_trace 
+     * @param  a_before 
+     * @param  a_memPool 
+     * @param  a_simplifyFlow New parameter to specify whether applying or not
+     *         the control flow simplification before tailmerge. When set to
+     *         false, the behavior is exactly the same as CTailmerge::CTailmerge
+     */
+    CExtendedTailmerge(Cfg& a_cfg, bool a_hasExplicitJump, bool a_createBb,
+                       bool a_trace, bool a_before, MEM_POOL* a_memPool,
+                       bool a_simplifyFlow);
+
+    /**
+     * Apply tailmerge algorithm plus optionally control flow simplification.
+     *
+     * @see CTailmerge::Optimize
+     */
+    void
+    Optimize();
+
+    /**
+     * Simplify control flow graph.
+     * The simplification is split in two phases:
+     * @li First we gather the simplification information (see
+     *     CExtendedTailmerge::GatherSimplifyInfo)
+     * @li Second we apply the simplification using collected information (see
+     *     CExtendedTailmerge::DoSimplifyControlFlowGraph)
+     * This is done this way to perform only one update of the CFG.
+     *
+     * See the description of CExtendedTailmerge class for details of on the
+     * performed simplification.
+     *
+     * @pre    true
+     * @post   CFG() has been simplified
+     */
+    void
+    SimplifyControlFlowGraph();
+
+    /**
+     * Getter for m_simplifyFlow member.
+     *
+     * @pre    true
+     * @post   true
+     *
+     * @return The value of m_simplifyFlow
+     *
+     * @see m_simplifyFlow for details
+     */
+    const bool
+    SimplifyFlow() const;
+
+ protected:
+
+    /**
+     * @see CTailmerge::CFG. This function has been set to avoid compilation
+     * problem with gcc. In fact, it is useless
+     */
+    Cfg&
+    CFG();
+
+ private:
+
+    /**
+     * Initialize given simplify information for current CFG().
+     * The initialization consists in setting an entry for all exit basic
+     * blocks of CFG(). Each entry will have the following properties:
+     * @li succ: NULL
+     * @li target: itself
+     * @li visited: true
+     * @li isSimple: false
+     *
+     * @param  bbsSimplifyInfo [out] Will contain the added entries
+     *
+     * @pre    true
+     * @post   bbsSimplifyInfo contains an entry for each exit blocks of CFG()
+     */
+    void
+    InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo);
+
+    /**
+     * Gather simplification information for all basic blocks of CFG().
+     * The gathering will traverse all basic blocks in reverse order (exit bb
+     * then predecessor of exit bb, then predecessor of predecessor of exit bb,
+     * etc.) and will build for each of them an entry in bbsSimplifyInfo.
+     *
+     * The building of these entries is based on all information already
+     * collected for successors. The idea is to propagate the farest possible
+     * target accross all simple basic blocks. To do that, we compute the
+     * simplification information for a basic block and we use that information
+     * to create the one of all its predecessors
+     *
+     * @see CExtendedTailmerge::GatherSimplifyInfoBB for more details on
+     *      predecessors information setting
+     *
+     * @param  bbsSimplifyInfo
+     *         @li in: Contains the start point of the analyse, thus all basic
+     *             blocks that may be exit basic blocks of CFG()
+     *         @li out: Contains an entry for each basic blocks reached using 
+     *             a recursive predecessors link from bbsSimplifyInfo@pre
+     *             entries
+     *
+     * @pre    true
+     * @post   bbsSimplifyInfo contains simplification information for all basic
+     *         blocks reached using recursively the predecessors link from
+     *         bbsSimplifyInfo@pre entries
+     */
+    void
+    GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo);
+
+    /**
+     * Gather simplification information for listOfPreds using succ information.
+     * For a basic block, its simplification information is set according two
+     * cases:
+     * @li First: this basic block is a simple one (IsSimpleBB targeting
+     *     function), then by definition it has, at most, one successor (succ).
+     *     Since it is simple, this means all its predecessors can be directly
+     *     branched to its successor. But its successor may be simple, so they
+     *     can be branched directly to the successor of this successor, etc.
+     *     Therefore, the simplification information for that basic block are:
+     *     @li  succ: succ (true successor)
+     *     @li target: succ's simplification information target (that is the
+     *         propagation introduced in CExtendedTailmerge::GatherSimplifyInfo)
+     *     @li visited: true
+     *     @li isSimple: true
+     * @li Second: this basic block is not simple.
+     *     @li succ: succ
+     *     @li target: itself
+     *     @li visited: true
+     *     @li isSimple: false
+     *     
+     *
+     * @param  listOfPreds List of basic blocks to be checked. They must have
+     *         succ in their successors list.
+     * @param  succ Basic block successor of all elements of listOfPreds
+     * @param  bbs [in/out] Contains the list of basic blocks which predecessors
+     *         have to be checked
+     * @param  bbsSimplifyInfo [in/out] Contains simplification information
+     *
+     * @pre    listOfPreds->forAll(bb | bb.succs->includes(succ)) and
+     *         bbsSimplifyInfo[&succ] has already been set
+     * @post   let newBbs = listOfPreds@pre->collect(visited = false) in
+     *         newBbs->forAll(visited = true) and newBbs->forAll(bb |
+     *         bbsSimplifyInfo[&bb] is set)
+     */
+    void
+    GatherSimplifyInfoBB(const typename ExtTmNode::BasicBlocks& listOfPreds,
+                         BasicBlock& succ,
+                         typename ExtTmNode::BasicBlocks& bbs,
+                         BBsSimplifyInfo& bbsSimplifyInfo);
+
+    /**
+     * Simplify control flow graph using bbsSimplifyInfo.
+     * The simplification consists in applying DoSimplifyControlFlowGraphBB
+     * on all basic blocks that are marked as simple
+     *
+     * @param  bbsSimplifyInfo Collected simplification information
+     *
+     * @pre    bbsSimplifyInfo is compatible with CFG()
+     * @post   CFG() has been simplified according to bbsSimplifyInfo
+     *
+     */
+    void
+    DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo);
+
+    /**
+     * Simplify control flow paths traversing simpleBb.
+     * The simplification consists in setting the target of the jump of all the
+     * predecessors of simpleBb to bbsSimplifyInfo[&simpleBb].target. If at
+     * least one of these updating is not possible, then simpleBb is not
+     * appended to the list of removable basic block.
+     * The updating is considered as imposible when either:
+     * @li the predecessor is simpleBb
+     * @li ReplaceSimpleJump return false for predecessor as src,
+     *     bbsSimplifyInfo[&simpleBb].target as new target and simpleBb as old
+     *     target
+     *
+     * @param  simpleBb 
+     * @param  bbsSimplifyInfo Gathered simplification information
+     * @param  toBeRemoved [out] Contains the list of basic block that can be
+     *         removed
+     *
+     * @pre    bbsSimplifyInfo[&simpleBb].listOfPreds = simpleBb.preds and
+     *         bbsSimplifyInfo[&simpleBb].isSimple
+     * @post   All updatable path using simpleBb have been updated to point on
+     *         bbsSimplifyInfo[&simpleBb].target
+     */
+    void
+    DoSimplifyControlFlowGraphBB(BasicBlock& simpleBb,
+                                 const BBsSimplifyInfo& bbsSimplifyInfo,
+                                 typename ExtTmNode::BasicBlocks& toBeRemoved);
+
+    /**
+     * Specify whether SimplifyControlFlowGraph must be called before applying
+     * tailmerge algorithm or not
+     */
+    const bool m_simplifyFlow;
+};
+
 
 //------------------------------------------------------------------------------
 // Classes definition
@@ -1790,14 +2162,13 @@ CTailmerge<Cfg, BasicBlock, Operation>::BuildTailmergedCFlow
 
     for(it = a_tailmergeNodes.rbegin(); it != a_tailmergeNodes.rend(); ++it)
         {
+            DbgPrintTailmerge((debugOutput, "-> Considered operation:\n"));
+            DbgTailmerge(DumpOperation, (debugOutput,(*it)->EquivOp()));
+
             // Special case for jump last basic block operation
             bool isLastOp = HasExplicitJump() && !(*it)->Parent();
             BasicBlock* willReceivedOp = DestinationBlock(**it, !isLastOp,
                                                          a_origBb);
-
-            DbgPrintTailmerge((debugOutput, "Considered operation:\n"));
-            DbgTailmerge(DumpOperation, (debugOutput,(*it)->EquivOp()));
-
             (*it)->JoinSources();
             if(willReceivedOp != InvalidBasicBlock<BasicBlock>())
                 {
@@ -2041,6 +2412,234 @@ CTailmerge<Cfg, BasicBlock, Operation>::SetEquivalence(TmNode& a_node,
             result = *it;
         }
     return result;
+}
+
+
+//----------------------
+// CExtendedTailmerge class
+//----------------------
+template<typename Cfg, typename BasicBlock, typename Operation>
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ CExtendedTailmerge(Cfg& a_cfg,
+                    bool a_hasExplicitJump,
+                    bool a_createBb,
+                    bool a_trace,
+                    bool a_before,
+                    MEM_POOL* a_memPool,
+                    bool a_simplifyFlow)
+    : CTailmerge<Cfg, BasicBlock, Operation>(a_cfg, a_hasExplicitJump,
+                                             a_createBb, a_trace, a_before,
+                                             a_memPool),
+      m_simplifyFlow(a_simplifyFlow)
+{
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::Optimize()
+{
+    if(SimplifyFlow())
+        {
+            SimplifyControlFlowGraph();
+        }
+    CTailmerge<Cfg, BasicBlock, Operation>::Optimize();
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+const bool
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::SimplifyFlow() const
+{
+    return m_simplifyFlow;
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+Cfg&
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::CFG()
+{
+    return CTailmerge<Cfg, BasicBlock, Operation>::CFG();
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::SimplifyControlFlowGraph()
+{
+    BBsSimplifyInfo bbsSimplifyInfo;
+    InitSimplifyControlFlowGraph(bbsSimplifyInfo);
+    GatherSimplifyInfo(bbsSimplifyInfo);
+    DoSimplifyControlFlowGraph(bbsSimplifyInfo);
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo)
+{
+    typename ExtTmNode::BasicBlocks exits;
+    typename ExtTmNode::CItBasicBlocks it;
+    DbgPrintTailmerge((debugOutput, "*** Start %s\n", __FUNCTION__));
+
+    GetExitBasicBlocks<Cfg, BasicBlock>(exits, CFG());
+
+    for(it = exits.begin(); it != exits.end(); ++it)
+        {
+            bbsSimplifyInfo[*it] = SSimplifyInfo(NULL, *it, true, false);
+            DbgPrintTailmerge((debugOutput, "Add exit to simplify information: "
+                               "BB%d\n", BasicBlockId(CFG(), **it)));
+        }
+    DbgPrintTailmerge((debugOutput, "*** End %s\n", __FUNCTION__));
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo)
+{
+    typename ExtTmNode::BasicBlocks bbs;
+
+    // This piece of code can be optimized by keeping the list use in
+    // InitSimplifyControlFlowGraph. I did not do that, because I think it is
+    // less understandable
+    {
+        CItBBsSimplifyInfo itSimplifyInfo;
+        for(itSimplifyInfo = bbsSimplifyInfo.begin();
+            itSimplifyInfo != bbsSimplifyInfo.end(); ++itSimplifyInfo)
+            {
+                bbs.push_back(itSimplifyInfo->first);
+            }
+    }
+    
+    // We must keep a list of basic blocks even if bbsSimplifyInfo already has
+    // this information, because using a ++it traversing method does not
+    // ensure we visit all elements of the map (elements may be inserted before
+    // current iterator position)
+    typename ExtTmNode::ItBasicBlocks it;
+    for(it = bbs.begin(); it != bbs.end(); ++it)
+        {
+            GetPredecessorsList(bbsSimplifyInfo[*it].listOfPreds, CFG(), **it);
+            GatherSimplifyInfoBB(bbsSimplifyInfo[*it].listOfPreds, **it, bbs,
+                                 bbsSimplifyInfo);
+        }
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ GatherSimplifyInfoBB(const typename ExtTmNode::BasicBlocks& listOfPreds,
+                      BasicBlock& succ,
+                      typename ExtTmNode::BasicBlocks& bbs,
+                      BBsSimplifyInfo& bbsSimplifyInfo)
+{
+    typename ExtTmNode::CItBasicBlocks it;
+    DbgPrintTailmerge((debugOutput, "*** Start %s for BB%d\n", __FUNCTION__,
+                       BasicBlockId(CFG(), succ)));
+
+    for(it = listOfPreds.begin(); it != listOfPreds.end(); ++it)
+        {
+            SSimplifyInfo& simplifyInfo = bbsSimplifyInfo[*it];
+            DbgPrintTailmerge((debugOutput, "Check pred: BB%d\n- Visited: %d\n",
+                               BasicBlockId(CFG(), **it),
+                               (int)simplifyInfo.visited));
+
+            if(!simplifyInfo.visited)
+                {
+                    simplifyInfo.visited = true;
+                    simplifyInfo.succ = &succ;
+
+                    bbs.push_back(*it);
+
+                    if((simplifyInfo.isSimple =
+                        IsSimpleBB<Cfg, BasicBlock>(CFG(), **it)))
+                        {
+                            DevAssert(bbsSimplifyInfo[&succ].target,
+                                      ("Succ has not been proceed!!!"));
+                            // bb is simple, so its target is the target of its
+                            // successor
+                            simplifyInfo.target = bbsSimplifyInfo[&succ].target;
+                        }
+                    else
+                        {
+                            // No simplification possible, target remains
+                            // current examined bb
+                            simplifyInfo.target = *it;
+                        }
+                    DbgPrintTailmerge((debugOutput, "- Simplify info:\n"
+                                       " * succ: BB%d\n"
+                                       " * target: BB%d\n"
+                                       " * isSimple: %d\n",
+                                       BasicBlockId(CFG(),
+                                                    *simplifyInfo.succ),
+                                       BasicBlockId(CFG(),
+                                                    *simplifyInfo.target),
+                                       (int)simplifyInfo.isSimple));
+
+                }
+        }
+    DbgPrintTailmerge((debugOutput, "*** End %s for BB%d\n", __FUNCTION__,
+                       BasicBlockId(CFG(), succ)));
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo)
+{
+    CItBBsSimplifyInfo it;
+    typename ExtTmNode::BasicBlocks toBeRemoved;
+    for(it = bbsSimplifyInfo.begin(); it != bbsSimplifyInfo.end(); ++it)
+        {
+            if(it->second.isSimple)
+                {
+                    DoSimplifyControlFlowGraphBB(*(it->first), bbsSimplifyInfo,
+                                                 toBeRemoved);
+                }
+        }
+    RemoveBBs(CFG(), toBeRemoved, true);
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+void
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+ DoSimplifyControlFlowGraphBB(BasicBlock& simpleBb,
+                              const BBsSimplifyInfo& bbsSimplifyInfo,
+                              typename ExtTmNode::BasicBlocks& toBeRemoved)
+{
+    typename ExtTmNode::CItBasicBlocks it;
+    const SSimplifyInfo& simplifyInfo = bbsSimplifyInfo.find(&simpleBb)->second;
+    bool canBeRemoved = true;
+    DbgPrintTailmerge((debugOutput, "*** Start %s for BB%d\n", __FUNCTION__,
+                       BasicBlockId(CFG(), simpleBb)));
+    for(it = simplifyInfo.listOfPreds.begin();
+        it != simplifyInfo.listOfPreds.end(); ++it)
+        {
+            const SSimplifyInfo& predInfo = bbsSimplifyInfo.find(*it)->second;
+            DbgPrintTailmerge((debugOutput, "Examined BB%d\n",
+                                       BasicBlockId(CFG(), **it)));
+            if(*it == &simpleBb ||
+               !(predInfo.isSimple ||
+                 ReplaceSimpleJump(CFG(), **it, *(simplifyInfo.target),
+                                   simpleBb)))
+                {
+                    DbgPrintTailmerge((debugOutput, "BB%d not removable\n",
+                                       BasicBlockId(CFG(), simpleBb)));
+
+                    canBeRemoved = false;
+                }
+        }
+    if(canBeRemoved)
+        {
+            DbgPrintTailmerge((debugOutput, "Set BB%d as removable\n",
+                               BasicBlockId(CFG(), simpleBb)));
+            toBeRemoved.push_back(&simpleBb);
+        }
+    else
+        {
+            DevAssert(simplifyInfo.succ, ("A basic block cannot be simple if it"
+                                          " has not a successor"));
+            ReplaceSimpleJump(CFG(), simpleBb, *(simplifyInfo.target),
+                              *(simplifyInfo.succ));
+        }
+    DbgPrintTailmerge((debugOutput, "*** End %s for BB%d\n", __FUNCTION__,
+                       BasicBlockId(CFG(), simpleBb)));
 }
 
 //------------------------------------------------------------------------------

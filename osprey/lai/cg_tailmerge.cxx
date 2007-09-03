@@ -38,6 +38,9 @@
  *         the facilities to apply this algorithm to the CGIR representation.
  */
 
+#include <map>                 // For map usage
+#include <set>                 // For set usage
+
 #include "defs_exported.h"     // For common type definition (needed by op.h)
 #include "op.h"                // For operation usage
 #include "bb.h"                // For basicblock usage
@@ -53,89 +56,221 @@
 #include "tn.h"                // For TN usage
 #include "cg_tailmerge.h"
 #include "tailmerge.h"         // For tailmerge algorithm
-#include "cgtarget.h"
+#include "cgtarget.h"          // For target specific function
+#include "gra_live.h"          // For GRA_LIVE_Recalc_Liveness
+#include "hb_sched.h"          // For scheduler usage
 
 static bool Trace_Tailmerge = false;
 
+typedef std::map<int, BBKIND> KindOfBB;
+typedef KindOfBB::const_iterator CItKindOfBB;
+
+typedef std::set<BB*> SetOfBBs;
+typedef SetOfBBs::const_iterator CItSetOfBBs;
+
+/**
+ * Map a basic block to its kind. This mapping is used during tailmerge
+ * algorithm to access true kind of a basic block. We store this information
+ * because BB_kind determines dynamically the kind of a basic block, which may
+ * not be possible during tailmerge.
+ */
+static KindOfBB g_saveOfBBKind;
+
+/**
+ * Set of basic blocks to be re-scheduled after tailmerge
+ */
+static SetOfBBs g_toBeSched;
+
+//------------------------------------------------------------------------------
+// Tailmerge functions to be targeted declaration
+//------------------------------------------------------------------------------
 namespace TAILMERGE_NAMESPACE
 {
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static bool
 IsEmpty<BB>(const BB& a_bb);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static BB*
 InvalidBasicBlock<BB>();
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static bool
 AreEquivalent<OP>(OP* op1, OP* op2);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static OP*
 GetLastOp<BB, OP>(BB& bb);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 DumpOperation<OP>(FILE* a_file, OP* op);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static int
 BasicBlockId<PU, BB>(const PU& pu, const BB& bb);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
                       bool jumpHere);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 AddGoto<PU, BB>(PU& pu, BB& src, BB& tgt, bool forExplicit);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static bool
 IsJump<PU, BB, OP>(const OP* op, const PU*, const BB*);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
-RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>(PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove);
+RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>(PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove, bool isEasy);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 RemoveOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 GetBasicBlocksList<PU, BB>(std::list<BB*>& listOfBBs, PU& a_pu);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static void
 GetPredecessorsList<PU, BB>(std::list<BB*>& listOfPreds, PU& a_cfg,
                               const BB& a_bb);
 
+/**
+ * @see tailmerge.h
+ */
 template<>
 static BB*
 GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static void
+GetExitBasicBlocks<PU, BB>(std::list<BB*>& exitBBs, PU& a_cfg);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
+IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
+ReplaceSimpleJump<PU, BB>(PU& a_cfg, BB& src, BB& tgt, BB& origBb);
 } // End TAILMERGE_NAMESPACE
 
-static
-BB*
+//------------------------------------------------------------------------------
+// Functions declared in this files
+//------------------------------------------------------------------------------
+static void
+InitializeTailmerge(PU& pu);
+
+static void
+FinalizeTailmerge(PU& pu);
+
+static bool
+IsUnconditionalJump(OP* op);
+
+static void
+ScheduleBBs();
+
+//------------------------------------------------------------------------------
+// Functions definition
+//------------------------------------------------------------------------------
+/**
+ * Get basic block from jump operation.
+ *
+ * @param  a_jump Jump operation
+ *
+ * @pre    a_jump is a jump operation
+ * @post   result is the target basic block of a_jump operation
+ *
+ * @return The target of the jump operation
+ */
+static BB*
 GetBBFromJump(const OP* a_jump)
 {
-    DevAssert(TAILMERGE_NAMESPACE::IsJump<PU, BB, OP>(a_jump),
+    DevAssert((TAILMERGE_NAMESPACE::IsJump<PU, BB, OP>(a_jump)),
               ("Given operation is not a jump one"));
     TN* tgt = OP_opnd(a_jump, OP_find_opnd_use(a_jump, OU_target));
     DevAssert(TN_is_label(tgt), ("Target is not a label!"));
     return Get_Label_BB(TN_label(tgt));
 }
 
+/**
+ * Check tn equivalence.
+ * Two tns are equivalent either:
+ * @li When they point to the same tn
+ * @li Or they represent the same register
+ *
+ * @param  tn1 A tn
+ * @param  tn2 A tn
+ *
+ * @pre    true
+ * @post   result implies tn1 and tn2 are equivalent (tn1 can be used instead of
+ *         tn2 and vice versa)
+ *
+ * @return true if tn1 and tn2 are equivalent, false otherwise
+ */
 static bool
-TNequiv(const TN* tn1, const TN* tn2)
+TNequiv(TN* tn1, TN* tn2)
 {
     bool result = tn1 == tn2;
 
@@ -157,15 +292,48 @@ Tailmerge(INT phase)
             MEM_POOL mempool;
             MEM_POOL_Initialize(&mempool, "Tailmerge optimization", TRUE);
             MEM_POOL_Push (&mempool);
-            
+            Check_for_Dump(TP_TAIL, NULL);
+            InitializeTailmerge(Get_Current_PU());
+
             Trace_Tailmerge = Get_Trace(TP_TAIL, 1) == TRUE;
             
             {
-                TAILMERGE_NAMESPACE::CTailmerge<PU, BB, OP>
+                TAILMERGE_NAMESPACE::CExtendedTailmerge<PU, BB, OP>
                     tailmergeOpt(Get_Current_PU(), true, true, Trace_Tailmerge,
-                                 true, &mempool);
+                                 true, &mempool, false);
+
+                if(CG_simp_flow_in_tailmerge & phase)
+                    tailmergeOpt.SimplifyControlFlowGraph();
                 tailmergeOpt.Optimize();
             }
+
+            FinalizeTailmerge(Get_Current_PU());
+            
+            MEM_POOL_Pop(&mempool);
+            MEM_POOL_Delete(&mempool);
+            Check_for_Dump(TP_TAIL, NULL);
+        }
+    // Perform a second call only to simplify generated control flow graph
+    if(CG_tailmerge & phase)
+        {
+            MEM_POOL mempool;
+            MEM_POOL_Initialize(&mempool, "Tailmerge optimization", TRUE);
+            MEM_POOL_Push (&mempool);
+            Check_for_Dump(TP_TAIL, NULL);
+            InitializeTailmerge(Get_Current_PU());
+
+            Trace_Tailmerge = Get_Trace(TP_TAIL, 1) == TRUE;
+            
+            {
+                TAILMERGE_NAMESPACE::CExtendedTailmerge<PU, BB, OP>
+                    tailmergeOpt(Get_Current_PU(), true, true, Trace_Tailmerge,
+                                 true, &mempool, false);
+
+                if(CG_simp_flow_in_tailmerge & phase)
+                    tailmergeOpt.SimplifyControlFlowGraph();
+            }
+
+            FinalizeTailmerge(Get_Current_PU());
             
             MEM_POOL_Pop(&mempool);
             MEM_POOL_Delete(&mempool);
@@ -173,7 +341,124 @@ Tailmerge(INT phase)
         }
 }
 
+/**
+ * Initialize structures of current tailmerge targeting.
+ *
+ * @param  pu Program unit to be tailmerged
+ *
+ * @pre    true
+ * @post   g_saveOfBBKind and g_toBeSched are properly initialized
+ *
+ */
+static void
+InitializeTailmerge(PU& pu)
+{
+    g_saveOfBBKind.clear();
+    g_toBeSched.clear();
 
+    BB* bb;
+    for(bb = REGION_First_BB; bb; bb = BB_next(bb))
+        {
+            using namespace TAILMERGE_NAMESPACE;
+            g_saveOfBBKind[BasicBlockId<PU, BB>(pu, *bb)] = BB_kind(bb);
+        }
+}
+
+/**
+ * Finalize PU after tailmerge processing.
+ *
+ * @param  pu Program unit tailmerged
+ *
+ * @pre    true
+ * @post   pu can be in next compiler optimizations
+ */
+static void
+FinalizeTailmerge(PU& pu)
+{
+    BB* bb;
+    for(bb = REGION_First_BB; bb; bb = BB_next(bb))
+        {
+            if(BB_kind(bb) == BBKIND_GOTO && BB_succs(bb))
+                {
+                    using namespace TAILMERGE_NAMESPACE;
+                    OP* branchOp = BB_branch_op(bb);
+                    BB *target = BBLIST_item(BB_succs(bb));
+                    int predicateIdx;
+                    if(!branchOp)
+                        {
+                            if(target && target != BB_next(bb))
+                                {
+                                    AddGoto<PU, BB>(pu, *bb, *target, false);
+                                }
+                        }
+                    else if(IsUnconditionalJump(branchOp) && target && 
+                            target == BB_next(bb))
+                        {
+                            RemoveOp<PU, BB, OP>(pu, *bb, branchOp);
+                            BB_succs(bb) = NULL;
+                            Target_Simple_Fall_Through_BB(bb, target);
+                        }
+                }
+        }
+    GRA_LIVE_Recalc_Liveness(NULL);
+    ScheduleBBs();
+    g_saveOfBBKind.clear();
+    g_toBeSched.clear();
+}
+
+/**
+ * Call backward scheduler on all basic blocks contained in g_toBeSched.
+ *
+ * @pre    g_toBeSched->forAll(!BB_scheduled(bb))
+ * @post   g_toBeSched->forAll(BB_scheduled(bb))
+ */
+static void
+ScheduleBBs()
+{
+    CItSetOfBBs it;
+    HBS_TYPE hbs_type = HBS_CRITICAL_PATH;
+    if(PROC_has_bundles())
+        {
+            hbs_type |= HBS_MINIMIZE_BUNDLES;
+        }
+    for(it = g_toBeSched.begin(); it != g_toBeSched.end(); ++it)
+        {
+            HB_Schedule sched;
+            DevAssert(!BB_scheduled(*it), ("test"));
+           	sched.Init(*it, hbs_type, INT32_MAX, NULL, NULL);
+            sched.Schedule_BB(*it, NULL, FALSE);
+        }
+}
+
+/**
+ * Check whether given operation is an unconditional jump or not.
+ *
+ * @remarks If OP_bb(op) is not in a good shape (eg during tailmerge algorithm),
+ * it must be set to NULL to avoid development warnings.
+ *
+ * @param  op Operation to be checked
+ *
+ * @pre    op <> NULL
+ * @post   true
+ *
+ * @return true is op is an unconditional jump, false otherwise
+ */
+static bool
+IsUnconditionalJump(OP* op)
+{
+    int opndIdx;
+    return TAILMERGE_NAMESPACE::IsJump<PU, BB, OP>(op) &&
+        ((OP_bb(op) && BB_kind(OP_bb(op)) == BBKIND_GOTO) ||
+         (((opndIdx = OP_find_opnd_use(op,OU_predicate)) < 0 ||
+           OP_opnd(op, opndIdx) == True_TN) &&
+          ((opndIdx = OP_find_opnd_use(op,OU_condition)) < 0 ||
+           OP_opnd(op, opndIdx) == True_TN)));
+}
+
+
+//------------------------------------------------------------------------------
+// Tailmerge functions to be targeted definition
+//------------------------------------------------------------------------------
 namespace TAILMERGE_NAMESPACE
 {
 
@@ -201,6 +486,8 @@ AreEquivalent<OP>(OP* op1, OP* op2)
             if(IsJump<PU, BB, OP>(op1))
                 {
                     TN *tgt1, *tgt2;
+                    DevAssert(OP_find_opnd_use(op1, OU_target) != -1,
+                              ("IsJump specification may be wrong"));
                     tgt1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_target));
                     tgt2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_target));
                     DevAssert(TN_is_label(tgt1) &&  TN_is_label(tgt2),
@@ -208,6 +495,27 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                     result = Get_Label_BB(TN_label(tgt1)) == 
                         Get_Label_BB(TN_label(tgt2)) &&
                         TN_offset(tgt1) == TN_offset(tgt2);
+                    int i;
+                    for(i = 0; i < OP_results(op1) && result; ++i)
+                        {
+                            result &= TNequiv(OP_result(op1, i),
+                                              OP_result(op2, i));
+                        }
+                    for(i = 0; i < OP_opnds(op1) && result; ++i)
+                        {
+                            if(OP_opnd(op1, i) == tgt1 ||
+                               OP_opnd(op2, i) == tgt2)
+                                {
+                                    continue;
+                                }
+                            result &= TNequiv(OP_opnd(op1, i), OP_opnd(op2, i));
+                        }
+                    // BB_kind may be invalid, so temporary removes the
+                    // reference for the test
+                    BB* saved = OP_bb(op1);
+                    op1->bb = NULL;
+                    result &= IsUnconditionalJump(op1);
+                    op1->bb = saved;
                 }
             else
                 {
@@ -230,8 +538,27 @@ AreEquivalent<OP>(OP* op1, OP* op2)
 template<>
 static void
 RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>
- (PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove)
+ (PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove, bool isEasy)
 {
+    if(isEasy)
+        {
+            CNode<BB, WN>::ItBasicBlocks it;
+            for(it = a_toRemove.begin(); it != a_toRemove.end(); ++it)
+                {
+                    while(BB_preds(*it))
+                        {
+                            BB* tmp = BBLIST_item(BB_preds(*it));
+                            Unlink_Pred_Succ(tmp, *it);
+                        }
+
+                    while(BB_succs(*it))
+                        {
+                            BB* tmp = BBLIST_item(BB_succs(*it));
+                            Unlink_Pred_Succ(*it, tmp);
+                        }
+                    Remove_BB(*it);
+                }
+        }
     // Too complicate
 }
 
@@ -239,7 +566,9 @@ template<>
 static bool
 IsJump<PU, BB, OP>(const OP* op, const PU* a_pu, const BB* tgt)
 {
-    return OP_xfer(op) && OP_cond(op);
+    // Warning, not the same meaning as OP_xfer && OP_cond
+    // Simple jump are mergeable
+    return CGTARG_Is_Simple_Jump(op);
 }
 
 template<>
@@ -247,6 +576,29 @@ static void
 AddGoto<PU, BB>(PU& pu, BB& src, BB& tgt, bool forExplicit)
 {
     Add_Goto(&src, &tgt);
+    if(BB_Find_Succ(&src, &tgt))
+        {
+            if(!forExplicit)
+                {
+                    // src to tgt edge is unconditional
+                    BBLIST_prob(BB_Find_Succ(&src, &tgt)) = 1.0F;
+                }
+            else
+                {
+                    // remove goto frequency
+                    BBLIST_prob(BB_Find_Succ(&src, &tgt)) -= 1.0F;
+                }
+        }
+    OP* opGoto = BB_last_op(&src);
+    if(OP_prev(opGoto))
+        {
+            // Schedule unconditional jump instruction
+            OP_scycle(opGoto) = OP_scycle(OP_prev(opGoto)) + 1;
+        }
+    else
+        {
+            OP_scycle(opGoto) = 1;
+        }
 }
 
 template<>
@@ -255,8 +607,19 @@ ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
                       bool jumpHere)
 {
     DevAssert(!jumpHere, ("Not yet implemented"));
-    Change_Succ(&src, &origBb, &tgt);
-    Add_Goto(&src, &tgt);
+    if(BB_in_succs(&src, &origBb))
+        {
+            if(BB_in_succs(&src, &tgt))
+                {
+                    Unlink_Pred_Succ(&src, &origBb);
+                }
+            else
+                {
+                    Change_Succ(&src, &origBb, &tgt);
+                }
+        }
+    // else link will be done by add goto
+    AddGoto<PU, BB>(pu, src, tgt);
 }
 
 template<>
@@ -285,16 +648,40 @@ static void
 RemoveOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 {
     BB_Remove_Op(&a_bb, op);
+    // keep original location block to avoid useless scheduling
+    op->bb = &a_bb;
 }
 
 template<>
 static void
 AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 {
-    if(IsJump<PU, BB, OP>(op))
+    // Here OP_bb(op) contains the original basic block of op
+    if(OP_bb(op) != &a_bb)
         {
-            BB* tgt = GetBBFromJump(op);
-            Link_Pred_Succ_with_Prob(&a_bb, tgt, 1.0F);
+            // Content of a_bb will change so invalidate scheduling
+            Reset_BB_scheduled(&a_bb);
+            Reset_BB_scheduled_hbs(&a_bb);
+            g_toBeSched.insert(&a_bb);
+
+            // Set new arcs
+            if(IsJump<PU, BB, OP>(op))
+                {
+                    BB* tgt = GetBBFromJump(op);
+                    Link_Pred_Succ(&a_bb, tgt);
+                    if(BB_Find_Succ(&a_bb, tgt))
+                        {
+                            // remove reference to origin bb
+                            op->bb = NULL;
+                            if(IsUnconditionalJump(op) &&
+                               !BBLIST_prob(BB_Find_Succ(&a_bb, tgt)))
+                                {
+                                    // src to tgt edge is unconditional
+                                    BBLIST_prob(BB_Find_Succ(&a_bb, tgt)) =
+                                        1.0F;
+                                }
+                        }
+                }
         }
     BB_Append_Op(&a_bb, op);
 }
@@ -326,8 +713,98 @@ template<>
 static BB*
 GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore)
 {
-    return bBefore? Gen_And_Insert_BB_Before(&a_bb):
-        Gen_And_Insert_BB_After(&a_bb);
+    BB* fixedBb = &a_bb;
+    CItKindOfBB it;
+    if(bBefore && BB_prev(fixedBb) &&
+       // Kind may be unknown since branch op may have been removed (temporary)
+       // so, use "save" map
+       ((it = g_saveOfBBKind.find(BasicBlockId<>(a_cfg, *BB_prev(fixedBb)))) ==
+        g_saveOfBBKind.end() || it->second == BBKIND_LOGIF ||
+        it->second == BBKIND_UNKNOWN))
+        {
+            // This should not happen, otherwise the g_saveOfBBKind has not
+            // been updated for all created bb
+            DevAssert(it != g_saveOfBBKind.end(), ("Problem during build of"
+                                                   " information"));
+            bBefore = false;
+            while(BB_next(fixedBb))
+                {
+                    fixedBb = BB_next(fixedBb);
+                }
+        }
+    BB* result = bBefore? Gen_And_Insert_BB_Before(fixedBb):
+        Gen_And_Insert_BB_After(fixedBb);
+    // By construction we create only goto BB.
+    g_saveOfBBKind[BasicBlockId<PU, BB>(a_cfg, *result)] = BBKIND_GOTO;
+    g_toBeSched.insert(result);
+    return result;
+}
+
+
+template<>
+static void
+GetExitBasicBlocks<PU, BB>(std::list<BB*>& exitBBs, PU& a_cfg)
+{
+    BB_LIST* bbList;
+    for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
+        {
+            exitBBs.push_back(BB_LIST_first(bbList));
+        }
+}
+
+template<>
+static bool
+IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb)
+{
+    // bb must not be part of a hwloop or something else
+    bool result = BB_kind(&bb) == BBKIND_GOTO && !BB_Has_Addr_Taken_Label(&bb)
+        && !BB_Has_Exc_Label(&bb);
+    if(result)
+        {
+            OP* curStmt = BB_first_op(&bb);
+            while(curStmt && result)
+                {
+                    result &= IsUnconditionalJump(curStmt);
+                    curStmt = OP_next(curStmt);
+                }
+        }
+    return result;
+}
+
+template<>
+static bool
+ReplaceSimpleJump<PU, BB>(PU& a_cfg, BB& src, BB& tgt, BB& origBb)
+{
+    bool result = true;
+    if(&tgt != &origBb)
+        {
+            OP* lastop = !IsEmpty<BB>(src)? GetLastOp<BB, OP>(src):
+                NULL;
+            if(BB_kind(&src) == BBKIND_GOTO)
+                {
+                    if(lastop && IsUnconditionalJump(lastop))
+                        {
+                            RemoveOp<PU, BB, OP>(a_cfg, src, lastop);
+                        }
+                    ReplaceJump<PU, BB>(a_cfg, src, tgt, origBb, false);
+                }
+            else if(lastop && BB_kind(&src) == BBKIND_LOGIF &&
+                    // In this case, we are sure we are not on the not
+                    // updatable fall through path
+                    IsJump<PU, BB, OP>(lastop) &&
+                    GetBBFromJump(lastop) == &origBb)
+                {
+                    TN *tgtLbl = Gen_Label_TN(Gen_Label_For_BB(&tgt),0);
+                    Set_OP_opnd(lastop, OP_find_opnd_use(lastop, OU_target),
+                                tgtLbl);
+                    Change_Succ(&src, &origBb, &tgt);                    
+                }
+            else
+                {
+                    result = false;
+                }
+        }
+    return result;
 }
    
 } // End namespace TAILMERGE_NAMESPACE

@@ -408,3 +408,11 @@ INT32 CG_LOOP_recurrence_min_omega = 0;
 const char *CGTARG_Branch_Taken_Prob = NULL;
 double CGTARG_Branch_Taken_Probability;
 BOOL CGTARG_Branch_Taken_Prob_overridden;
+
+// ====================================================================
+//   TAILMERGE:
+// ====================================================================
+#ifdef TARG_ST
+INT CG_tailmerge = 0;
+INT CG_simp_flow_in_tailmerge = 0;
+#endif

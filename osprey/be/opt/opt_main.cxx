@@ -1363,7 +1363,7 @@ Pre_Optimizer(INT32 phase, WN *wn_tree, DU_MANAGER *du_mgr,
 #ifdef TARG_ST
   if(WOPT_Enable_Tailmerge) {
     SET_OPT_PHASE("Tailmerge");
-    OPT_Tailmerge(*comp_unit->Cfg(), wn_tree);
+    OPT_Tailmerge(*comp_unit->Cfg(), wn_tree, phase);
   }
 #endif
 
