@@ -1782,11 +1782,16 @@ Expand__st220divs(
  OPS* ops
 )
 {
-  TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
-  Build_OP (    TOP_convib_r_b,        b0_0_0, i2,     ops) ;
-  Build_OP (    TOP_divs_b_r_r_b_r,       ol0,    b0_0_1, i0,     i1,     b0_0_0, ops) ;
-  Build_OP (    TOP_convbi_b_r,        oh0,    b0_0_1, ops) ;
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_divs_b_r_r_b_r)) {
+    TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+    TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+    Build_OP (    TOP_convib_r_b,        b0_0_0, i2,     ops) ;
+    Build_OP (    TOP_divs_b_r_r_b_r,       ol0,    b0_0_1, i0,     i1,     b0_0_0, ops) ;
+    Build_OP (    TOP_convbi_b_r,        oh0,    b0_0_1, ops) ;
+  } else {
+      // Unsupported on st240
+    Expand_Unimplemented_Intrinsic (TOP_divs_b_r_r_b_r, ops);
+  }
 } /* Expand__st220divs */
 
 /*
