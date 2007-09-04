@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  4 12:19:50 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32408
+
+Description:
+------------
+	*  Deliver fix for bug #32408 with authorization art #32409.
+        Nested fns broken on trunk since rev #13116.
+        
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/config/st200/lx.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep  3 16:25:43 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

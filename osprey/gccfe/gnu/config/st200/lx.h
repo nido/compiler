@@ -748,6 +748,9 @@ extern int lx_elimination_offset ();
 /* Base register for access to arguments of the function.  */
 #define ARG_POINTER_REGNUM     0
 
+/* Register number used for passing a function's static chain pointer.  */
+#define STATIC_CHAIN_REGNUM    0
+
 //TB: Reconf
 /* The last reg number for the core.  */
 #define STATIC_LAST_REGNUM  GCCTARG_Static_last_Regnum()
