@@ -52,6 +52,7 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
 {
   TOP opcode = OP_code(op); 
   TN *result = OP_result(op, result_idx);
+  INT result_width = TN_bitwidth (result);
   static const struct MulProperties *mul_properties;
 
   if ((mul_properties = targ_cg_mul_properties (op)) != NULL) {
@@ -191,6 +192,27 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
 	extracted = MakeUnsigned (extracted, TN_bitwidth (extracted_tn));
     }
     new_value = SignedRightShift (extracted, rshiftcount);
+    return TRUE;
+  }
+  else if (opcode == TOP_addcg_b_r_r_b_r){
+    // addcg.
+    TN *tn0 = OP_opnd(op, 0);
+    TN *tn1 = OP_opnd(op, 1);
+    TN *tn2 = OP_opnd(op, 2);
+    LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
+    LRange_pc opnd1 = ZeroExtend (Value (tn1), TN_bitwidth (tn1));
+    LRange_pc opnd2 = Ne (ZeroExtend (Value (tn2), TN_bitwidth (tn2)), 
+			  lattice->makeRangeValue (0));
+    new_value = Add (Add (opnd0, opnd1), opnd2);
+    if (result_idx == 0){ // non-carry part of the addcg result
+      new_value = ZeroExtend (new_value, 32);
+    }
+    else if (result_idx == 1){ // carry part of the addcg result
+      new_value = ZeroExtend (SignedRightShift ( new_value, 32), 1);
+    }
+    else // we should not go through there (only 2 results in addcg)
+      FmtAssert(FALSE,
+	    ("Bad result index for TOP_addcg_b_r_r_b_r"));  
     return TRUE;
   }
   return FALSE;

@@ -138,6 +138,47 @@ is_mul32_by_sign (const RangeAnalysis &range_analysis,
     }
   return FALSE;
 }
+ 
+static BOOL
+match_addcg (const RangeAnalysis &range_analysis,
+		 OP *op,
+		 OPS *ops)
+{
+  // Match cases when op is an addcg with carry-in zero
+  // and no use of carry-out, and then replace it by 
+  // a simple add
+  // Also catch the case where first two operands of the addcg 
+  // are zero, and replace it by a convib
+  if (OP_code (op) != TOP_addcg_b_r_r_b_r)
+    return FALSE;
+
+  TN *result_b = OP_result (op, 1);
+  TN *result_r = OP_result (op, 0);
+  TN *opnd_b = OP_opnd(op, 2);
+  TN *opnd_r1 = OP_opnd(op, 0);
+  TN *opnd_r2 = OP_opnd(op, 1);
+
+  FmtAssert (TN_size (result_r) == 4,
+	       ("addcg not of size 4"));
+  
+  BOOL is_signed = OP_result_is_signed(op, 0);
+  TYPE_ID mtype = is_signed ? MTYPE_I4 : MTYPE_U4;
+  LRange_pc rb_in = range_analysis.Get_Value (opnd_b);
+  LRange_pc r1_in = range_analysis.Get_Value (opnd_r1);
+  LRange_pc r2_in = range_analysis.Get_Value (opnd_r2);
+  if (no_uses_p (range_analysis, result_b)){
+    if (rb_in->isZero ()){
+      // addcg=>add transform
+      Expand_Add(result_r, opnd_r1, opnd_r2, mtype, ops);
+      return TRUE;
+    } else if (r1_in->isZero () && r2_in->isZero ()) {
+      // addcg=>convib transform
+      Expand_Bool_To_Int (result_r, opnd_b, MTYPE_I4, ops);
+      return TRUE;
+    }      
+  }
+  return FALSE;
+}
 
 static BOOL
 match_mul64h_sequence (const RangeAnalysis &range_analysis,
@@ -487,48 +528,6 @@ match_shl_or_sequence (const RangeAnalysis &range_analysis,
   }
   return FALSE;
 }
-
-static BOOL
-match_addcg (const RangeAnalysis &range_analysis,
-		       OP *l1_op,
-		       OPS *ops)
-{
-  TN *source, *dest;
-
-  if (OP_code(l1_op) != TOP_addcg_b_r_r_b_r)
-    return FALSE;
-
-  LRange_p r1 = range_analysis.Get_Value (OP_opnd (l1_op, 0));
-  LRange_p r2 = range_analysis.Get_Value (OP_opnd (l1_op, 1));
-  LRange_p r3 = range_analysis.Get_Value (OP_opnd (l1_op, 2));
-
-  if ( (int(r1->isZero ())
-	+ int (r2->isZero ())
-	+ int (r3->isZero ())) == 2) {
-    // Two of three sources are zero, so we effectively have
-    // a copy from the third source to the first result, and the
-    // second result is zeroed.
-    source = (! r1->isZero () ? OP_opnd (l1_op, 0)
-	      : ! r2->isZero () ? OP_opnd (l1_op, 1)
-	      : OP_opnd (l1_op, 2));
-    if (no_uses_p (range_analysis, OP_result (l1_op, 1))) {
-      // The second result is unused, so we do not need to set it.
-      dest = OP_result (l1_op, 0);
-    } else
-      dest = NULL;
-    if (source && dest) {
-      // Transform to a copy from source to dest.
-      if (TN_register_class (source) == ISA_REGISTER_CLASS_branch) {
-	Expand_Bool_To_Int (dest, source, MTYPE_I4, ops);
-      } else {
-	Expand_Copy (dest, NULL, source, ops);
-      }
-      return TRUE;
-    }
-  }
-  return FALSE;
-}
-  
 
 static BOOL
 match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,

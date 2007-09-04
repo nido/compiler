@@ -3357,11 +3357,6 @@ CGTARG_Initialize ()
   if (CGTARG_max_issue_width_overriden) 
     init_max_issue_width(CGTARG_max_issue_width);
 
-  if (Is_Target_st220 () || Is_Target_st231 ())
-    ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 1);
-  else
-    ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 4);
-    
   return;
 #undef CASE_TOP
 #undef CASE_TOP_IR

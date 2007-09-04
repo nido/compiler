@@ -379,12 +379,12 @@ Initialize_Register_Class(
 )
 {
   INT32              i;
-  const ISA_REGISTER_CLASS_INFO *icinfo = ISA_REGISTER_CLASS_Info(rclass);
-  const char        *rcname         = ISA_REGISTER_CLASS_INFO_Name(icinfo);
-  INT		     bit_size       = ISA_REGISTER_CLASS_INFO_Bit_Size(icinfo);
-  INT                first_isa_reg  = ISA_REGISTER_CLASS_INFO_First_Reg(icinfo);
-  INT                last_isa_reg   = ISA_REGISTER_CLASS_INFO_Last_Reg(icinfo);
-  INT                register_count = last_isa_reg - first_isa_reg + 1;
+  const ISA_REGISTER_CLASS_INFO *icinfo;
+  const char        *rcname;
+  INT		     bit_size;
+  INT                first_isa_reg;
+  INT                last_isa_reg;
+  INT                register_count;
 
   REGISTER_SET       allocatable    = REGISTER_SET_EMPTY_SET;
   REGISTER_SET       caller         = REGISTER_SET_EMPTY_SET;
@@ -395,6 +395,17 @@ Initialize_Register_Class(
   REGISTER_SET	     stacked        = REGISTER_SET_EMPTY_SET;
   REGISTER_SET	     rotating       = REGISTER_SET_EMPTY_SET;
 
+#ifdef TARG_ST
+  // Call first target dependent initialization for the register class
+  CGTARG_Initialize_Register_Class (rclass);
+#endif
+
+  icinfo         = ISA_REGISTER_CLASS_Info(rclass);
+  rcname         = ISA_REGISTER_CLASS_INFO_Name(icinfo);
+  bit_size       = ISA_REGISTER_CLASS_INFO_Bit_Size(icinfo);
+  first_isa_reg  = ISA_REGISTER_CLASS_INFO_First_Reg(icinfo);
+  last_isa_reg   = ISA_REGISTER_CLASS_INFO_Last_Reg(icinfo);
+  register_count = last_isa_reg - first_isa_reg + 1;
 
   /* Verify we have a valid rclass and that the type used to implement 
    * a register set is large enough.
@@ -587,10 +598,9 @@ Initialize_Register_Class(
   REGISTER_CLASS_multiple_save(rclass)
 	= ISA_REGISTER_CLASS_INFO_Multiple_Save(icinfo);
 
-#ifdef TARG_ST
-  // [CG] Implemented in targ_register.cxx.
-  CGTARG_Initialize_Register_Class (rclass);
-#else
+#ifndef TARG_ST
+  // [CG] Now done in   CGTARG_Initialize_Register_Class () called
+  // at the start of this function.
   /* There are multiple integer return regs -- v0 is the lowest
    * of the set.
    */

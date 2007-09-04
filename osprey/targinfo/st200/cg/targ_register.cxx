@@ -161,8 +161,14 @@ CGTARG_REGISTER_Init_Mtype_RegSubclass_Map ()
 /* ====================================================================
  *  CGTARG_Initialize_Register_Class
  *
- *  Initialize the register class 'rclass'. A register class may be
- *  intialized multiple times.
+ *  Initialize the register class 'rclass'. This function may be
+ *  called multiple time for the same register class. Thus it must be
+ *  idempotent.
+ *
+ *  This function is called at the start of the target independent
+ *  function Initialize_Register_Class in lai/register.cxx.
+ *  Thus it can be used to modify ISA_REGISTER_CLASS_INFO just before it
+ *  is cached into the REGISTER_CLASS_INFO structure in register.cxx.
  * ====================================================================
  */
 void
@@ -170,6 +176,7 @@ CGTARG_Initialize_Register_Class(
   ISA_REGISTER_CLASS rclass
 )
 {
+  
   /* There are multiple integer return regs -- v0 is the lowest
    * of the set.
    */
@@ -177,10 +184,34 @@ CGTARG_Initialize_Register_Class(
      known by the ABI.
   */
   if (rclass == ISA_REGISTER_CLASS_integer) {
-    Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_v0, 
-			   REGISTER_SET_Choose(REGISTER_CLASS_function_value(rclass)));
-    Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_v0, rclass);
+    const ISA_REGISTER_CLASS_INFO *rcinfo = ISA_REGISTER_CLASS_Info(rclass);
+    INT i;
+    INT first_isa_reg = ISA_REGISTER_CLASS_INFO_First_Reg(rcinfo);
+    INT last_isa_reg = ISA_REGISTER_CLASS_INFO_Last_Reg(rcinfo);
+
+    // Find the first integer function value register and set v0 if found
+    for (i = 0; i < last_isa_reg - first_isa_reg + 1; ++i) {
+      INT isa_reg = i + first_isa_reg;
+      REGISTER reg = i + REGISTER_MIN;
+      BOOL is_func_value = ABI_PROPERTY_Is_func_val(rclass, isa_reg);
+      if (is_func_value) {
+	Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_v0, reg);
+	Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_v0, rclass);
+	break;
+      }
+    }
   }
+
+  // Adjust size of register for the branch register class.
+  // This must be done here, before the lai/register.cxx
+  // function creates the REGISTER_CLASS_INFO cache.
+  if (rclass == ISA_REGISTER_CLASS_branch) {
+    if (Is_Target_st220 () || Is_Target_st231 ())
+      ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 1);
+    else
+      ISA_REGISTER_CLASS_Set_Bit_Size (ISA_REGISTER_CLASS_branch, 4);
+  }
+
   return;
 }
 
