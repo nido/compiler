@@ -1597,6 +1597,13 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
     const bool
     SimplifyFlow() const;
 
+    /**
+     * @see CTailmerge::Trace. This function has been set to avoid compilation
+     * problem with gcc. In fact, it is useless
+     */
+    const bool
+    Trace() const;
+
  protected:
 
     /**
@@ -2450,6 +2457,13 @@ const bool
 CExtendedTailmerge<Cfg, BasicBlock, Operation>::SimplifyFlow() const
 {
     return m_simplifyFlow;
+}
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+const bool
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::Trace() const
+{
+    return CTailmerge<Cfg, BasicBlock, Operation>::Trace();
 }
 
 template<typename Cfg, typename BasicBlock, typename Operation>
