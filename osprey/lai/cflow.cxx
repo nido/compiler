@@ -3161,14 +3161,11 @@ Optimize_Branches(void)
 static BOOL
 Favor_Branches_Condition(void)
 {
-  INT pass;
   BOOL changed;
 
-  pass = 0;
-  do {
     BB *bp;
     changed = FALSE;
-    pass++;
+
     for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
       BB *old_tgt, *new_tgt;
       ST *st;
@@ -3191,13 +3188,19 @@ Favor_Branches_Condition(void)
 	OP *br_op = BB_branch_op(bp);
 	OP* compare_op = BBINFO_compare_op(bp);
 
-	if (br_op == compare_op) {
-	  // This occurs when the compare_op is in another BB
+	// HK: 20070529: Finally block the optimization when the
+	// compare bb and the branch bb are different, because it
+	// triggers an assertion in LRA (same local TN used in 2
+	// different BBs)
+	if (br_op == compare_op 
+	    || OP_bb(br_op) != OP_bb(compare_op)) {
+	  // This occurs when the compare_op is unknown, 
+	  // or when br_op and compare_op are in distinct BBs
 	  continue;
 	}
 
 	TOP new_br_top  = CGTARG_Invert(OP_code(br_op));
-	TOP new_cmp_top = CGTARG_Invert(OP_code(compare_op));
+	OP* new_cmp_op = CGTARG_Invert_OP(compare_op);
 
 	INT opnd;
 	INT opnd_count;
@@ -3214,14 +3217,13 @@ Favor_Branches_Condition(void)
 
 	/* If we can invert both the branch AND the comparison */
 	if ( (new_br_top != TOP_UNDEFINED)
-	     && (new_cmp_top != TOP_UNDEFINED) ) {
+	     && (new_cmp_op != NULL) ) {
 
 	  // In we are handling a loop backedge, we want to convert
 	  // the final brf into a br.  Otherwise, we want the opposite
 	  if ( (is_backedge && (false_br))
 	       || (!is_backedge && (!false_br))
 	       ) {
-	    OP* new_cmp_op = Dup_OP(compare_op);
 	    TN *result = OP_result(compare_op,0);
 
 	    FmtAssert( result == OP_opnd(br_op, 0),
@@ -3235,17 +3237,15 @@ Favor_Branches_Condition(void)
 	      continue;
 	    }
 
-	    TN* new_result = Build_TN_Like(result);
-	    Set_OP_result(new_cmp_op, 0, new_result);
-	    OP_Change_Opcode(new_cmp_op, new_cmp_top);
-
 	    // hope that the other variant will be dead-coded....
-	    BB_Insert_Op_After(bp, compare_op, new_cmp_op);
+	    BB_Insert_Op_After(OP_bb(compare_op), compare_op, new_cmp_op);
 
 	    Negate_Branch(br_op);
-	    Set_OP_opnd(br_op, 0, new_result);
+	    Set_OP_opnd(br_op, 0, OP_result(new_cmp_op, 0));
 
 	    Set_BBINFO_compare_op(bp, new_cmp_op);
+
+	    changed = TRUE;
 
 	  } else {
 	  }
@@ -3253,9 +3253,8 @@ Favor_Branches_Condition(void)
 	break;
       }
     }
-  } while (changed);
 
-  return pass > 1;
+  return changed;
 }
 #endif
 

@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  4 16:37:36 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-brf2
+
+Description:
+------------
+	*  deliver branch lyon/dev-brf2 with aut #32062.
+	It fixes bug #30438 (Favor_Branches_Condition missed opportunity).
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  4 14:06:30 CEST 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

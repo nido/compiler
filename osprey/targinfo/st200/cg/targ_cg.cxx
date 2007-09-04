@@ -711,6 +711,30 @@ CGTARG_Is_OP_Inter_RegClass_Copy(OP *op) {
   return OP_code(op) == TOP_targ_mov_r_b || OP_code(op) == TOP_targ_mov_b_r;
 }
 
+// [CL] try to invert an operation, able to deal with cases where it
+// is not sufficient to invert the TOP, but also change operands
+OP*
+CGTARG_Invert_OP(OP* op)
+{
+  OP* new_op = NULL;
+
+  TOP new_top = CGTARG_Invert(OP_code(op));
+  TN *result = OP_result(op,0);
+  TN* new_result = Build_TN_Like(result);
+
+  if (new_top != TOP_UNDEFINED) {
+    new_op = Dup_OP(op);
+    OP_Change_Opcode(new_op, new_top);
+    Set_OP_result(new_op, 0, new_result);
+  } else {
+    if (OP_code(op) == TOP_convib_r_b) {
+      TN *opnd = OP_opnd(op, 0);
+      new_op = Mk_OP(TOP_cmpeq_r_r_b, new_result, opnd, Zero_TN);
+    }
+  }
+  return new_op;
+}
+
 /* ====================================================================
  *   CGTARG_Dependence_Required
  * ====================================================================

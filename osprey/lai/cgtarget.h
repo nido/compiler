@@ -652,6 +652,11 @@ CGTARG_Text_Alignment (void) {
  */
 extern TOP CGTARG_Invert(TOP opr);
 
+#ifdef TARG_ST
+// [CL] handle inverses that involve using ops with a different number
+// of arguments
+extern OP* CGTARG_Invert_OP(OP* op);
+#endif
 
 
 /* ====================================================================

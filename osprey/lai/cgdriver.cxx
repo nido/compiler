@@ -1578,7 +1578,7 @@ Configure_CG_Options(void)
   // CL: Favor branches condition to give more opportunities to LAO
   // boosting
   if (!CFLOW_Enable_Favor_Branches_Condition_overridden) {
-    CFLOW_Enable_Favor_Branches_Condition = FALSE;
+    CFLOW_Enable_Favor_Branches_Condition = TRUE;
   }
 #endif
 
