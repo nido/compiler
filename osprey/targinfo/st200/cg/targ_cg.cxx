@@ -1173,6 +1173,9 @@ void CGTARG_Load_From_Memory (
   TN *tn, 
   ST *mem_loc, 
   OPS *ops
+#ifdef TARG_ST
+  , VARIANT variant
+#endif
 )
 {
   TYPE_ID mtype = TY_mtype(ST_type(mem_loc));
@@ -1192,7 +1195,11 @@ void CGTARG_Load_From_Memory (
     /* 
      * Non-predicate TNs are just a simple load.
      */
+#ifdef TARG_ST
+    Exp_Load (mtype, mtype, tn, mem_loc, 0, ops, variant);
+#else
     Exp_Load (mtype, mtype, tn, mem_loc, 0, ops, V_NONE);
+#endif
   }
 
   return;
@@ -1202,7 +1209,14 @@ void CGTARG_Load_From_Memory (
  *   CGTARG_Store_To_Memory
  * ====================================================================
  */
-void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
+void CGTARG_Store_To_Memory(
+  TN *tn,
+  ST *mem_loc,
+  OPS *ops
+#ifdef TARG_ST
+  , VARIANT variant
+#endif
+)
 {
   TYPE_ID mtype = TY_mtype(ST_type(mem_loc));
 
@@ -1220,7 +1234,11 @@ void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops)
     /* 
      * Non-predicate TNs are just a simple store.
      */
+#ifdef TARG_ST
+    Exp_Store (mtype, tn, mem_loc, 0, ops, variant);
+#else
     Exp_Store (mtype, tn, mem_loc, 0, ops, V_NONE);
+#endif
   }
 
   return;

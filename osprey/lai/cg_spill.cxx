@@ -76,6 +76,9 @@
 #include "opt_alias_interface.h"
 #include "cgtarget.h"
 #include "targ_proc_properties.h"
+#ifdef TARG_ST
+#include "lai_loader_api.h" /* needed for EXTENSION_Get_REGISTER_CLASS_Optimal_Alignment() */
+#endif
 
 static BOOL Trace_Remat; /* Trace rematerialization */
 static BOOL Trace_GRA_spill_placement;
@@ -497,6 +500,18 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
       const char *root;
 #ifdef TARG_ST
       TY_IDX mem_type = CGTARG_Spill_Type[Spill_Type_Index(tn)];
+      // [TTh] For extension register classes, use the highest spill alignment based
+      //  on constraint of available instructions and current alignment of the stack
+      if ((EXTENSION_Is_Extension_REGISTER_CLASS(TN_register_class(tn))) &&
+	  (DEFAULT_STACK_ALIGNMENT > TY_align(mem_type))) {
+	INT optimal_align = EXTENSION_Get_REGISTER_CLASS_Optimal_Alignment(TN_register_class(tn), TN_size(tn));
+	if (optimal_align > DEFAULT_STACK_ALIGNMENT) {
+	  Set_TY_align(mem_type, DEFAULT_STACK_ALIGNMENT);
+	}
+	else if (optimal_align > TY_align(mem_type)) {
+	  Set_TY_align(mem_type, optimal_align);
+	}
+      }
 #else
       TY_IDX mem_type = TN_is_float(tn) || TN_is_fcc_register(tn) ? 
 		        Spill_Float_Type : Spill_Int_Type;
@@ -873,7 +888,21 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
 
     /* Must actually load it from memory
      */
+#ifdef TARG_ST
+    VARIANT variant = V_NONE;
+    TY_IDX idx = ST_type(mem_loc);
+    INT required_alignment = MTYPE_alignment(TY_mtype(ST_type(mem_loc)));
+    if (TY_align(idx) > required_alignment) {
+      // [TTh] Create an alignment variant in case of 'overaligned'
+      // access, to benefit from this information at code selection.
+      Set_V_overalign(variant);
+      Set_V_alignment(variant, TY_align(idx));
+      Set_V_align_offset_unknown(variant); 
+    }
+    CGTARG_Load_From_Memory(tn, mem_loc, ops, variant);
+#else
     CGTARG_Load_From_Memory(tn, mem_loc, ops);
+#endif
     //
     // Mark the actual load as a spill
     //
@@ -933,7 +962,21 @@ CGSPILL_Store_To_Memory (TN *src_tn, ST *mem_loc, OPS *ops,
     return;
   }
 
+#ifdef TARG_ST
+  VARIANT variant = V_NONE;
+  TY_IDX idx = ST_type(mem_loc);
+  INT required_alignment = MTYPE_alignment(TY_mtype(ST_type(mem_loc)));
+  if (TY_align(idx) > required_alignment) {
+      // [TTh] Create an alignment variant in case of 'overaligned'
+      // access, to benefit from this information at code selection.
+      Set_V_overalign(variant);
+      Set_V_alignment(variant, TY_align(idx));
+      Set_V_align_offset_unknown(variant); 
+  }
+  CGTARG_Store_To_Memory(src_tn, mem_loc, ops, variant);
+#else
   CGTARG_Store_To_Memory(src_tn, mem_loc, ops);
+#endif
   //
   // Mark the actual store as a spill
   //

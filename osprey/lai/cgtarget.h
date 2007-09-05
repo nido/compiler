@@ -664,8 +664,13 @@ extern OP* CGTARG_Invert_OP(OP* op);
  * ====================================================================
  */
 
+#ifdef TARG_ST
+extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops, VARIANT variant=V_NONE);
+extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops, VARIANT variant=V_NONE);
+#else
 extern void CGTARG_Load_From_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
+#endif
 
 /*
  * Get speculative load opcode given 'op'
