@@ -120,7 +120,7 @@ init_callee_saved_symbols(void)
     TN *tn = CALLEE_tn(callee_num);
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
-    if (EETARG_Save_With_Regmask (Callee_Saved_Regs_Mask[cl], reg)
+    if (EETARG_Save_With_Regmask (cl, reg)
 	&& REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[cl], reg)) 
       save_creg_vector.push_back(TN_save_creg(tn));
   }
