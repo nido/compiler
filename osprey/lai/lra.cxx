@@ -5918,7 +5918,8 @@ Prolog_save_code(BB *entrybb)
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
 #ifdef TARG_ST
-    if (REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
+    if (! EETARG_Save_With_Regmask (cl, reg) &&
+	REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
 				 REGISTER_SET_Range (reg, reg + TN_nhardregs(tn) - 1))) {
 #else
     if (REGISTER_SET_MemberP(Callee_Saved_Regs_Used[cl], reg)) {
@@ -5957,7 +5958,8 @@ Epilog_restore_code(BB *exitbb)
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
 #ifdef TARG_ST
-    if (REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
+    if (! EETARG_Save_With_Regmask (cl, reg)
+	&& REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
 				 REGISTER_SET_Range (reg, 
 						     reg + TN_nhardregs(tn) - 1))) {
 #else
@@ -6379,7 +6381,11 @@ LRA_Allocate_Registers (BOOL lra_for_pu)
   // If we are not running GRA, we need to generate the instructions to
   // save and restore callee saved registers.
   // This is done elsewhere when CG_gen_callee_saved_regs_mask is true.
+#ifdef TARG_ST
+  if (lra_for_pu && CG_localize_tns) {
+#else
   if (lra_for_pu && CG_localize_tns && !CG_gen_callee_saved_regs_mask) {
+#endif
     Spill_Callee_Saved_Regs ();
   }
 

@@ -974,6 +974,10 @@ extern void CGTARG_Operand_Live_Range( void * lrange, INT opnd, OP* op,
 // that is no more constant (reconfigurability)
 extern TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
 extern CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
+
+
+// Should we save reg with regmask mechanism?
+extern BOOL EETARG_Save_With_Regmask (ISA_REGISTER_CLASS cl, REGISTER reg);
 #endif
 
 #ifdef TARG_ST 	 

@@ -120,12 +120,14 @@ init_callee_saved_symbols(void)
     TN *tn = CALLEE_tn(callee_num);
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
-    if (REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[cl], reg)) 
+    if (EETARG_Save_With_Regmask (Callee_Saved_Regs_Mask[cl], reg)
+	&& REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[cl], reg)) 
       save_creg_vector.push_back(TN_save_creg(tn));
   }
   if (RA_TN != NULL &&
-      REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[REGISTER_CLASS_ra], 
-			   REGISTER_ra)) {
+      EETARG_Save_With_Regmask (REGISTER_CLASS_ra, REGISTER_ra)
+      && REGISTER_SET_MemberP(Callee_Saved_Regs_Mask[REGISTER_CLASS_ra], 
+			      REGISTER_ra)) {
     save_creg_vector.push_back(TN_class_reg(RA_TN));
   }
     
@@ -145,22 +147,28 @@ init_callee_saved_symbols(void)
 	{
 	  TY_IDX ty = MTYPE_To_TY(MTYPE_I8);
 	  ST *st = CGSPILL_Gen_Spill_Symbol(ty, "callee_paired_spill");
-	  callee_saved_vector.push_back(TN_SYMBOL_PAIR(Build_Dedicated_TN(CLASS_REG_PAIR_rclass(creg1), CLASS_REG_PAIR_reg(creg1), 8),st));
+	  TN *tn = Gen_Register_TN (CLASS_REG_PAIR_rclass (creg1), 8);
+	  Set_TN_register (tn, CLASS_REG_PAIR_reg (creg1));
+	  Set_TN_save_creg (tn, creg1);
+	  Set_TN_spill (tn, st);
+	  callee_saved_vector.push_back(TN_SYMBOL_PAIR(tn,st));
 	  i++;
 	  continue;
 	}
     }
     TY_IDX ty = MTYPE_To_TY(MTYPE_I4);
     ST *st = CGSPILL_Gen_Spill_Symbol(ty, "callee_spill");
-    callee_saved_vector.push_back(TN_SYMBOL_PAIR(Build_Dedicated_TN(CLASS_REG_PAIR_rclass(creg1), CLASS_REG_PAIR_reg(creg1), 4),st));
+    TN *tn = Gen_Register_TN (CLASS_REG_PAIR_rclass (creg1), 4);
+    Set_TN_register (tn, CLASS_REG_PAIR_reg (creg1));
+    Set_TN_save_creg (tn, creg1);
+    Set_TN_spill (tn, st);
+    callee_saved_vector.push_back(TN_SYMBOL_PAIR(tn,st));
   }
 }
 
 void
 EETARG_Fixup_Stack_Frame (void)
 {
-  if (!CG_gen_callee_saved_regs_mask) return;
-  
   init_callee_saved_symbols();
 }
 
@@ -187,9 +195,6 @@ EETARG_Fixup_Entry_Code (
   BB *bb
 )
 {
-  // if push mask is not required -- nada
-  if (!CG_gen_callee_saved_regs_mask) return;
-
   if (callee_saved_vector.size() == 0) return;
 
   ANNOTATION *ant = ANNOT_Get(BB_annotations(bb), ANNOT_ENTRYINFO);
@@ -294,7 +299,6 @@ EETARG_Fixup_Exit_Code (
 )
 {
   /* check for need to generate restore code for callee-saved regs */
-  if (!CG_gen_callee_saved_regs_mask) return;
 
   if (callee_saved_vector.size() == 0) return;
 
@@ -405,9 +409,6 @@ EETARG_Callee_Saved_Regs_Mask_Size ()
 {
   INT size = 0;
 
-  /* check for need to generate restore code for callee-saved regs */
-  if (!CG_gen_callee_saved_regs_mask) return 0;
-  
   return size;
 }
 
@@ -515,4 +516,21 @@ BOOL EETARG_Do_Not_Save_Callee_Reg_Class ( ISA_REGISTER_CLASS cl ) {
 TN *EETARG_get_temp_for_spadjust( BB *bb) {
 
   return (TN*)NULL;
+}
+
+/* ======================================================================
+ * EETARG_Save_With_Regmask
+ * Return TRUE if (cl,reg) should be saved using the regmask mechanism
+ * rather than the save_reg mechanism.
+ * 
+ * ======================================================================
+ */
+
+BOOL EETARG_Save_With_Regmask (ISA_REGISTER_CLASS cl, REGISTER reg)
+{
+  // Never save return address register with regmask.
+  if (cl == REGISTER_CLASS_ra && reg == REGISTER_ra)
+    return FALSE;
+  // Otherwise, we are controlled by the flag.
+  return CG_gen_callee_saved_regs_mask;
 }

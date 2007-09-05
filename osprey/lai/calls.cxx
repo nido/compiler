@@ -99,8 +99,8 @@ INT32 Callee_Saved_Regs_Count;
 
 #ifdef TARG_ST
 /* 
- * Regs that need to be saved at prolog and restored at epilog when 
- * CG_gen_callee_saved_regs_mask is true
+ * Regs that need to be saved at prolog and restored at epilog using
+ * the regmask mechanism.
  */
 REGISTER_SET Callee_Saved_Regs_Mask[ISA_REGISTER_CLASS_MAX_LIMIT+1];
 #endif
@@ -479,14 +479,16 @@ Generate_Entry (BB *bb, BOOL gra_run)
     ENTRYINFO_sp_adj(ent_info) = OPS_last(&ops);
   }
 
-  if (gra_run && !CG_gen_callee_saved_regs_mask) {
+  if (gra_run) {
     /* Copy from the callee saves registers to register TNs */
     for (callee_num = 0; 
 	 callee_num < Callee_Saved_Regs_Count; 
 	 ++callee_num ) {
       TN *callee_tn = CALLEE_tn(callee_num);
       if (TN_is_save_reg(callee_tn) &&
-	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn))) {
+	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn))
+	  && ! EETARG_Save_With_Regmask (TN_register_class(callee_tn),
+					  TN_register(callee_tn))) {
 	Exp_COPY ( callee_tn, CALLEE_ded_tn(callee_num), &ops );
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -522,7 +524,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
       /*
        * RA_TN must be saved as a callee saved TN whatever is actual classification.
        */
-      if (!CG_gen_callee_saved_regs_mask) {
+      if (! EETARG_Save_With_Regmask (REGISTER_CLASS_ra, REGISTER_ra)) {
         Exp_COPY (SAVE_tn(Return_Address_Reg), RA_TN, &ops);
         Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -552,7 +554,7 @@ Generate_Entry (BB *bb, BOOL gra_run)
     }
   }
 
-  if ( gra_run && !CG_gen_callee_saved_regs_mask) 
+  if ( gra_run ) 
     EETARG_Save_Extra_Callee_Tns (&ops);
 
   /* Save the old GP and setup a new GP if required */
@@ -1318,7 +1320,7 @@ Generate_Exit (
     }
   }
 
-  if ( gra_run && !CG_gen_callee_saved_regs_mask)
+  if ( gra_run )
     EETARG_Restore_Extra_Callee_Tns (&ops);
 
   if (RA_TN != NULL) {
@@ -1345,7 +1347,7 @@ Generate_Exit (
       /*
        * RA_TN must be saved as a callee saved TN whatever is actual classification.
        */
-      if (!CG_gen_callee_saved_regs_mask) {
+      if (!EETARG_Save_With_Regmask (REGISTER_CLASS_ra, REGISTER_ra)) {
 	Exp_COPY (RA_TN, SAVE_tn(Return_Address_Reg), &ops);
 	Set_OP_no_move_before_gra(OPS_last(&ops));
       }
@@ -1372,14 +1374,16 @@ Generate_Exit (
     }
   }
 
-  if (gra_run && !CG_gen_callee_saved_regs_mask) {
+  if (gra_run) {
     /* Copy from register TNs to the callee saves registers */
     for ( callee_num = 0; 
 	  callee_num < Callee_Saved_Regs_Count; 
 	  ++callee_num ) {
       TN *callee_tn = CALLEE_tn(callee_num);
       if (TN_is_save_reg(callee_tn) &&
-	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn)))
+	  !REGISTER_CLASS_multiple_save(TN_register_class(callee_tn))
+	  && ! EETARG_Save_With_Regmask (TN_register_class(callee_tn),
+					 TN_register(callee_tn)))
       {
         Exp_COPY ( CALLEE_ded_tn(callee_num), callee_tn, &ops );
 	Set_OP_no_move_before_gra(OPS_last(&ops));
@@ -2549,9 +2553,8 @@ Adjust_Stack_Frame (
   ST *pu 
 )
 {
-  /* In case of CG_gen_callee_saved_regs_mask, compute tha actual callee saved usage. */
-  if (CG_gen_callee_saved_regs_mask)
-    Compute_Callee_Saved_Registers();
+  /* Compute the actual callee saved usage. */
+  Compute_Callee_Saved_Registers();
     
   EETARG_Fixup_Stack_Frame ();
 }

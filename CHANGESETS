@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep  5 12:04:49 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31850
+
+Description:
+------------
+	*  Deliver fix for bug #31850 with authorization art #32291.
+        "Unnecessary spill of r63 for st240 in bit-processing video kernel"
+
+
+Modified Files:
+---------------
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/st200/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep  5 09:20:30 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
