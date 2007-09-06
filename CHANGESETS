@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep  6 17:29:05 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31965
+
+Description:
+------------
+	* [trunk] Fix for bug #31965: Assertion failure while bulding Dwarf information[UNIMAC].
+	Deliver fixes/codex-31965 rev #13321 with authorization branch #32446
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep  5 12:04:49 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
