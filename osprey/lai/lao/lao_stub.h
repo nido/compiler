@@ -122,11 +122,13 @@ typedef enum {
   OptimizeConversion_Folding = 0x1, // Copy Folding during SSA construction.
   OptimizeConversion_Cleaning = 0x2, // Code Cleaning during SSA construction.
   OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
-  OptimizeConversion_Coalescing = 0x8, // Sreedhar coalescing before SSA destruction.
-  OptimizeConversion_Sreedhar = 0x10, // Sreedhar method III for congruence classes.
-  OptimizeConversion_Budimlic = 0x20, // Use Budimlic to build congruence classes.
-  OptimizeConversion_SSAWebs = 0x100, // Use SSAWebs to build congruence classes.
-  OptimizeConversion_DForest = 0x200, // Use Dominance Forest to check interferences.
+  OptimizeConversion_SigmaGoTo = 0x8, // Sigma operations for the GoTo conditions.
+  OptimizeConversion_Coalescing = 0x10, // Sreedhar coalescing before SSA destruction.
+  OptimizeConversion_Dominance = 0x20, // Use dominance to prune interference tests.
+  OptimizeConversion_Sreedhar = 0x40, // Sreedhar method III for congruence classes.
+  OptimizeConversion_Budimlic = 0x100, // Use Budimlic to build congruence classes.
+  OptimizeConversion_SSAWebs = 0x200, // Use SSAWebs to build congruence classes.
+  OptimizeConversion_DForest = 0x400, // Use Dominance Forest to check interferences.
 } OptimizeConversion;
 
 
@@ -135,6 +137,8 @@ typedef enum {
  */
 typedef enum {
   OptimizeNumbering_Basic = 0x1, // Basic value numbering.
+  OptimizeNumbering_SCCVN = 0x2, // Simpson's SCCVN improved by Cooper.
+  OptimizeNumbering_Avail = 0x4, // AVAIL-based removal (else use Dominance).
 } OptimizeNumbering;
 
 

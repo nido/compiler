@@ -486,6 +486,7 @@ main()
 		 TOP_prgadd_l1_r_ii, 
 		 TOP_prginspg_r_ii, 
 		 TOP_prgset_r_ii, 
+		 TOP_prgset_l1_r_ii, 
 		 TOP_pswmask_ii_r_r, 
 		 TOP_stbc_r_b_r_ii, 
 		 TOP_stb_r_r_ii, 
@@ -500,6 +501,7 @@ main()
  /* ===== Specification for MEM_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE MEM_Unit = ISA_Exec_Unit_Type_Create("MEM_Unit", NULL); 
   Instruction_Exec_Unit_Group(MEM_Unit, 
+		 TOP_dib, 
 		 TOP_divu_r_r_r, 
 		 TOP_div_r_r_r, 
 		 TOP_flushadd_r_i, 
@@ -534,6 +536,7 @@ main()
 		 TOP_prgadd_l1_r_i, 
 		 TOP_prginspg_r_i, 
 		 TOP_prgset_r_i, 
+		 TOP_prgset_l1_r_i, 
 		 TOP_pswmask_i_r_r, 
 		 TOP_remu_r_r_r, 
 		 TOP_rem_r_r_r, 

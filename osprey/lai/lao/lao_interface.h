@@ -146,7 +146,7 @@ typedef enum {
   O64_OperationCGIR_Preload = 0x10,
   O64_OperationCGIR_Barrier = 0x20,
   O64_OperationCGIR_SpillCode = 0x40,
-  O64_OperationCGIR_SafeEffects = 0x80,
+  O64_OperationCGIR_SafePerfs = 0x80,
 } O64_OperationCGIR;
 
 
@@ -458,7 +458,7 @@ struct O64_Interface_ {
   void (*Interface_Operation_setPrefetch)(struct Interface_* this, Operation operation);
   void (*Interface_Operation_setPreload)(struct Interface_* this, Operation operation);
   void (*Interface_Operation_setBarrier)(struct Interface_* this, Operation operation);
-  void (*Interface_Operation_setSafeEffects)(struct Interface_* this, Operation operation);
+  void (*Interface_Operation_setSafePerfs)(struct Interface_* this, Operation operation);
   void (*Interface_Operation_setSpillCode)(struct Interface_* this, Operation operation,
                                            Symbol symbol);
   BasicBlock (*Interface_makeBasicBlock)(struct Interface_* this, CGIR_BB cgir_bb,
@@ -616,8 +616,8 @@ typedef struct O64_Interface_ * restrict_O64_Interface;
 #define O64_Interface__Interface_Operation_setPreload(this) (&(this)->Interface_Operation_setPreload)
 #define O64_Interface_Interface_Operation_setBarrier(this) ((this)->Interface_Operation_setBarrier)
 #define O64_Interface__Interface_Operation_setBarrier(this) (&(this)->Interface_Operation_setBarrier)
-#define O64_Interface_Interface_Operation_setSafeEffects(this) ((this)->Interface_Operation_setSafeEffects)
-#define O64_Interface__Interface_Operation_setSafeEffects(this) (&(this)->Interface_Operation_setSafeEffects)
+#define O64_Interface_Interface_Operation_setSafePerfs(this) ((this)->Interface_Operation_setSafePerfs)
+#define O64_Interface__Interface_Operation_setSafePerfs(this) (&(this)->Interface_Operation_setSafePerfs)
 #define O64_Interface_Interface_Operation_setSpillCode(this) ((this)->Interface_Operation_setSpillCode)
 #define O64_Interface__Interface_Operation_setSpillCode(this) (&(this)->Interface_Operation_setSpillCode)
 #define O64_Interface_Interface_makeBasicBlock(this) ((this)->Interface_makeBasicBlock)
@@ -725,7 +725,7 @@ O64_getInstance(void);
 #define O64_Interface_Operation_setPrefetch (*O64_instance->Interface_Operation_setPrefetch)
 #define O64_Interface_Operation_setPreload (*O64_instance->Interface_Operation_setPreload)
 #define O64_Interface_Operation_setBarrier (*O64_instance->Interface_Operation_setBarrier)
-#define O64_Interface_Operation_setSafeEffects (*O64_instance->Interface_Operation_setSafeEffects)
+#define O64_Interface_Operation_setSafePerfs (*O64_instance->Interface_Operation_setSafePerfs)
 #define O64_Interface_Operation_setSpillCode (*O64_instance->Interface_Operation_setSpillCode)
 #define O64_Interface_makeBasicBlock (*O64_instance->Interface_makeBasicBlock)
 #define O64_Interface_findBasicBlock (*O64_instance->Interface_findBasicBlock)
@@ -1134,10 +1134,10 @@ Interface_Operation_setSafeAccess(Interface this, Operation operation);
 
 
 /*
- * Interface_Operation_setSafeEffects --	Set an Operation as safe performance effects.
+ * Interface_Operation_setSafePerfs --	Set an Operation as safe performance effects.
  */
 void
-Interface_Operation_setSafeEffects(Interface this, Operation operation);
+Interface_Operation_setSafePerfs(Interface this, Operation operation);
 
 
 /*

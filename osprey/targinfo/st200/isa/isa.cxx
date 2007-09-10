@@ -219,6 +219,7 @@ main ()
 		 "convif_n_r_r",
 		 "COPY",	 // dummy
 		 "dbgsbrk",
+		 "dib",
 		 "divs_b_r_r_b_r",
 		 "divu_r_r_r",
 		 "div_r_r_r",
@@ -442,6 +443,8 @@ main ()
 		 "prginsset_l1_r_ii",
 		 "prgset_r_i",
 		 "prgset_r_ii",
+		 "prgset_l1_r_i",
+		 "prgset_l1_r_ii",
 		 "psi",	 // ssa
 		 "pswclr_r",
 		 "pswmask_i_r_r",

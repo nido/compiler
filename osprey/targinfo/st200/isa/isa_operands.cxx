@@ -173,6 +173,7 @@ main()
 		 TOP_bwd_bar,
 		 TOP_COPY,
 		 TOP_dbgsbrk,
+		 TOP_dib,
 		 TOP_end_pregtn,
 		 TOP_fwd_bar,
 		 TOP_asm,
@@ -242,6 +243,7 @@ main()
 		 TOP_prginsset_r_i,
 		 TOP_prginsset_l1_r_i,
 		 TOP_prgset_r_i,
+		 TOP_prgset_l1_r_i,
 		 TOP_UNDEFINED);
 
   Operand (0, Opd_isrc2, offset);
@@ -359,6 +361,7 @@ main()
 		 TOP_prginsset_r_ii,
 		 TOP_prginsset_l1_r_ii,
 		 TOP_prgset_r_ii,
+		 TOP_prgset_l1_r_ii,
 		 TOP_UNDEFINED);
 
   Operand (0, Opd_xsrc2, offset);

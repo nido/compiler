@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 10 13:42:30 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-st240-chess-1-11-0
+
+Description:
+------------
+	*  Deliver st240 chess 1.11.0 to trunk with authorization art #32268.
+        ("Update the st200 tools to st240 arch rev 1.11.0").
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/targinfo/st200/proc/st240_si.cxx
+	M      osprey/targinfo/st200/config/gen_intrinsics.inc
+	M      osprey/targinfo/st200/isa/isa_decode.cxx
+	M      osprey/targinfo/st200/isa/isa_variants.cxx
+	M      osprey/targinfo/st200/isa/isa_print.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_subset.cxx
+	M      osprey/targinfo/st200/isa/isa_bundle.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      osprey/targinfo/st200/isa/isa_pack.cxx
+	M      osprey/targinfo/st200/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep  6 17:29:05 CEST 2007
 	Author:    cq1
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

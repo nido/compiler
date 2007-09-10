@@ -241,6 +241,7 @@ main (int argc, char *argv[])
 		TOP_prgadd_r_ii,
 		TOP_prgadd_l1_r_ii,
 		TOP_prgset_r_ii,
+		TOP_prgset_l1_r_ii,
 		TOP_UNDEFINED);
 
   Operand_Access_Time (1, 2);
@@ -262,6 +263,7 @@ main (int argc, char *argv[])
 		TOP_prgadd_r_i,
 		TOP_prgadd_l1_r_i,
 		TOP_prgset_r_i,
+		TOP_prgset_l1_r_i,
 		TOP_UNDEFINED);
 
   Operand_Access_Time (1, 2);
@@ -317,6 +319,7 @@ main (int argc, char *argv[])
 
 
   Instruction_Group("group17",
+		TOP_dib,
 		TOP_sync,
 		TOP_waitl,
 		TOP_wmb,

@@ -554,7 +554,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op)
     if (OP_prefetch(cgir_op)) O64_Interface_Operation_setPrefetch(interface, operation);
     if (OP_preload(cgir_op)) O64_Interface_Operation_setPreload(interface, operation);
     if (OP_barrier(cgir_op)) O64_Interface_Operation_setBarrier(interface, operation);
-    if (OP_Performance_Effects (cgir_op) && OP_Safe_Effects (cgir_op)) O64_Interface_Operation_setSafeEffects (interface, operation);
+    if (OP_Performance_Effects (cgir_op) && OP_Safe_Effects (cgir_op)) O64_Interface_Operation_setSafePerfs (interface, operation);
     ST *spill_st = CGSPILL_OP_Spill_Location(cgir_op);
     if (spill_st != NULL && OP_spill(cgir_op)) {
       Symbol symbol = CGIR_SYM_to_Symbol(ST_st_idx(*spill_st));

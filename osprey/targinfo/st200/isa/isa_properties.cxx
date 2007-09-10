@@ -224,6 +224,8 @@ main()
 		 TOP_prginsset_l1_r_ii, 
 		 TOP_prgset_r_i, 
 		 TOP_prgset_r_ii, 
+		 TOP_prgset_l1_r_i, 
+		 TOP_prgset_l1_r_ii, 
 		 TOP_stbc_r_b_r_i, 
 		 TOP_stbc_r_b_r_ii, 
 		 TOP_stb_r_r_i, 
@@ -313,6 +315,7 @@ main()
 		 TOP_break, 
 		 TOP_bwd_bar, 
 		 TOP_dbgsbrk, 
+		 TOP_dib, 
 		 TOP_flushadd_r_i, 
 		 TOP_flushadd_r_ii, 
 		 TOP_flushadd_l1_r_i, 
@@ -340,6 +343,8 @@ main()
 		 TOP_prginsset_l1_r_ii, 
 		 TOP_prgset_r_i, 
 		 TOP_prgset_r_ii, 
+		 TOP_prgset_l1_r_i, 
+		 TOP_prgset_l1_r_ii, 
 		 TOP_pswclr_r, 
 		 TOP_pswmask_i_r_r, 
 		 TOP_pswmask_ii_r_r, 
@@ -393,6 +398,8 @@ main()
 		 TOP_prginsset_l1_r_ii, 
 		 TOP_prgset_r_i, 
 		 TOP_prgset_r_ii, 
+		 TOP_prgset_l1_r_i, 
+		 TOP_prgset_l1_r_ii, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
@@ -1117,6 +1124,7 @@ main()
   /* ====================================== */ 
   side_effects = ISA_Property_Create ("side_effects"); 
   Instruction_Group (side_effects, 
+		 TOP_dib, 
 		 TOP_flushadd_r_i, 
 		 TOP_flushadd_r_ii, 
 		 TOP_flushadd_l1_r_i, 
@@ -1143,6 +1151,8 @@ main()
 		 TOP_prginsset_l1_r_ii, 
 		 TOP_prgset_r_i, 
 		 TOP_prgset_r_ii, 
+		 TOP_prgset_l1_r_i, 
+		 TOP_prgset_l1_r_ii, 
 		 TOP_pswclr_r, 
 		 TOP_pswmask_i_r_r, 
 		 TOP_pswmask_ii_r_r, 

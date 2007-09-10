@@ -380,6 +380,8 @@ main()
   ISA_Instruction_Variant ( TOP_prginsset_l1_r_ii, TOP_prginsset_l1_r_i, att_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prgset_r_i, TOP_prgset_r_i, att_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prgset_r_ii, TOP_prgset_r_i, att_immediate, 0 );
+  ISA_Instruction_Variant ( TOP_prgset_l1_r_i, TOP_prgset_l1_r_i, att_immediate, 0 );
+  ISA_Instruction_Variant ( TOP_prgset_l1_r_ii, TOP_prgset_l1_r_i, att_immediate, 0 );
   ISA_Instruction_Variant ( TOP_pswmask_i_r_r, TOP_pswmask_i_r_r, att_immediate, 0 );
   ISA_Instruction_Variant ( TOP_pswmask_ii_r_r, TOP_pswmask_i_r_r, att_immediate, 0 );
   ISA_Instruction_Variant ( TOP_rotl_r_r_r, TOP_rotl_i_r_r, att_immediate, 0 );
@@ -592,6 +594,7 @@ main()
   ISA_Instruction_Variant ( TOP_prginsset_r_i, TOP_prginsset_r_ii, att_next_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prginsset_l1_r_i, TOP_prginsset_l1_r_ii, att_next_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prgset_r_i, TOP_prgset_r_ii, att_next_immediate, 0 );
+  ISA_Instruction_Variant ( TOP_prgset_l1_r_i, TOP_prgset_l1_r_ii, att_next_immediate, 0 );
   ISA_Instruction_Variant ( TOP_pswmask_i_r_r, TOP_pswmask_ii_r_r, att_next_immediate, 0 );
   ISA_Instruction_Variant ( TOP_rotl_i_r_r, TOP_rotl_ii_r_r, att_next_immediate, 0 );
   ISA_Instruction_Variant ( TOP_sh1add_i_r_r, TOP_sh1add_ii_r_r, att_next_immediate, 0 );
@@ -738,6 +741,7 @@ main()
   ISA_Instruction_Variant ( TOP_prginsset_r_ii, TOP_prginsset_r_i, att_prev_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prginsset_l1_r_ii, TOP_prginsset_l1_r_i, att_prev_immediate, 0 );
   ISA_Instruction_Variant ( TOP_prgset_r_ii, TOP_prgset_r_i, att_prev_immediate, 0 );
+  ISA_Instruction_Variant ( TOP_prgset_l1_r_ii, TOP_prgset_l1_r_i, att_prev_immediate, 0 );
   ISA_Instruction_Variant ( TOP_pswmask_ii_r_r, TOP_pswmask_i_r_r, att_prev_immediate, 0 );
   ISA_Instruction_Variant ( TOP_rotl_ii_r_r, TOP_rotl_i_r_r, att_prev_immediate, 0 );
   ISA_Instruction_Variant ( TOP_sh1add_ii_r_r, TOP_sh1add_i_r_r, att_prev_immediate, 0 );

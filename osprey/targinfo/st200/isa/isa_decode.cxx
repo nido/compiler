@@ -1630,6 +1630,8 @@ main()
   STATE st240_unit_12_3_8_1_3_1 = Create_Inst_State("st240_unit_12_3_8_1_3_1", 0, 8, 4);
   STATE st240_unit_12_3_8_1_4 = Create_Inst_State("st240_unit_12_3_8_1_4", 0, 0, 8);
   STATE st240_unit_12_3_8_1_4_1 = Create_Inst_State("st240_unit_12_3_8_1_4_1", 0, 8, 4);
+  STATE st240_unit_12_3_8_1_6 = Create_Inst_State("st240_unit_12_3_8_1_6", 0, 0, 8);
+  STATE st240_unit_12_3_8_1_6_1 = Create_Inst_State("st240_unit_12_3_8_1_6_1", 0, 8, 4);
   STATE st240_unit_12_3_8_2 = Create_Inst_State("st240_unit_12_3_8_2", 0, 12, 3);
   STATE st240_unit_12_3_8_2_1 = Create_Inst_State("st240_unit_12_3_8_2_1", 0, 31, 1);
   STATE st240_unit_12_3_8_2_2 = Create_Inst_State("st240_unit_12_3_8_2_2", 0, 31, 1);
@@ -2378,6 +2380,7 @@ main()
 
   Transitions(st240_unit_12_3_2,
 	0, Final(TOP_prgset_r_i),
+	1, Final(TOP_prgset_l1_r_i),
 	END_TRANSITIONS);
 
   Transitions(st240_unit_12_3_3,
@@ -2412,6 +2415,7 @@ main()
 	3, st240_unit_12_3_8_1_3,
 	4, st240_unit_12_3_8_1_4,
 	5, Final(TOP_ldwl_r_r),
+	6, st240_unit_12_3_8_1_6,
 	END_TRANSITIONS);
 
   Transitions(st240_unit_12_3_8_1_1,
@@ -2444,6 +2448,14 @@ main()
 
   Transitions(st240_unit_12_3_8_1_4_1,
 	0, Final(TOP_waitl),
+	END_TRANSITIONS);
+
+  Transitions(st240_unit_12_3_8_1_6,
+	0, st240_unit_12_3_8_1_6_1,
+	END_TRANSITIONS);
+
+  Transitions(st240_unit_12_3_8_1_6_1,
+	0, Final(TOP_dib),
 	END_TRANSITIONS);
 
   Transitions(st240_unit_12_3_8_2,

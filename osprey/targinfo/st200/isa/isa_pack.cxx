@@ -58,6 +58,7 @@ main()
   Instruction_Pack_Group(p1,
 	TOP_break, 0x1fe00000UL, 
 	TOP_dbgsbrk, 0xafe08000UL, 
+	TOP_dib, 0x2fe06000UL, 
 	TOP_icall, 0x30800000UL, 
 	TOP_idle, 0x31000000UL, 
 	TOP_igoto, 0x31800000UL, 
@@ -114,6 +115,7 @@ main()
 	TOP_prginsset_r_i, 0x2f600000UL, 
 	TOP_prginsset_l1_r_i, 0x2f600040UL, 
 	TOP_prgset_r_i, 0x27800000UL, 
+	TOP_prgset_l1_r_i, 0x2f200040UL, 
 	TOP_UNDEFINED);
 
   /* ===== p6: ===== */
@@ -136,6 +138,7 @@ main()
 	TOP_prginsset_r_ii, 0x2f600000UL, 0UL, 
 	TOP_prginsset_l1_r_ii, 0x2f600040UL, 0UL, 
 	TOP_prgset_r_ii, 0x27800000UL, 0UL, 
+	TOP_prgset_l1_r_ii, 0x2f200040UL, 0UL, 
 	TOP_UNDEFINED);
 
   /* ===== p7: ===== */

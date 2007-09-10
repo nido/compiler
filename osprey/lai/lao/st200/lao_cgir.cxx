@@ -328,6 +328,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_convif_n_r_r] = Operator_st200_convif_n_1nolink_2general;
     TOP__Operator[TOP_COPY] = Operator_COPY;
     TOP__Operator[TOP_dbgsbrk] = Operator_st200_dbgsbrk;
+    TOP__Operator[TOP_dib] = Operator_st200_dib;
     TOP__Operator[TOP_divs_b_r_r_b_r] = Operator_st200_divs_1general_2branch_3general_4general_5branch;
     TOP__Operator[TOP_divu_r_r_r] = Operator_st200_divu_1nolink_2general_3general;
     TOP__Operator[TOP_div_r_r_r] = Operator_st200_div_1nolink_2general_3general;
@@ -551,6 +552,8 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_prginsset_l1_r_ii] = Operator_st200_prginsset_l1_1xsrc2_2general;
     TOP__Operator[TOP_prgset_r_i] = Operator_st200_prgset_1isrc2_2general;
     TOP__Operator[TOP_prgset_r_ii] = Operator_st200_prgset_1xsrc2_2general;
+    TOP__Operator[TOP_prgset_l1_r_i] = Operator_st200_prgset_l1_1isrc2_2general;
+    TOP__Operator[TOP_prgset_l1_r_ii] = Operator_st200_prgset_l1_1xsrc2_2general;
     TOP__Operator[TOP_psi] = Operator_PSI;
     TOP__Operator[TOP_pswclr_r] = Operator_st200_pswclr_1general;
     TOP__Operator[TOP_pswmask_i_r_r] = Operator_st200_pswmask_1nolink_2general_3isrc2;

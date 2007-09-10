@@ -2116,6 +2116,7 @@ Instance_st240_cmpne_ibdest_src1_xsrc2,
 Instance_st240_convfi_n_nldest_src1,
 Instance_st240_convif_n_nldest_src1,
 Instance_st240_dbgsbrk_brknum,
+Instance_st240_dib,
 Instance_st240_div_nldest_src1_src2,
 Instance_st240_divu_nldest_src1_src2,
 Instance_st240_extract_idest_src1_isrc2,
@@ -2232,6 +2233,8 @@ Instance_st240_prginsset_l1_isrc2_src1,
 Instance_st240_prginsset_l1_xsrc2_src1,
 Instance_st240_prgset_isrc2_src1,
 Instance_st240_prgset_xsrc2_src1,
+Instance_st240_prgset_l1_isrc2_src1,
+Instance_st240_prgset_l1_xsrc2_src1,
 Instance_st240_pswmask_nlidest_src1_isrc2,
 Instance_st240_pswmask_nlidest_src1_xsrc2,
 Instance_st240_rem_nldest_src1_src2,
@@ -3742,6 +3745,9 @@ Operator_st200_convif_n_1nolink_2general,
 Operator_st200_dbgsbrk,
 
 
+Operator_st200_dib,
+
+
 Operator_st200_div_1nolink_2general_3general,
 
 
@@ -3899,6 +3905,12 @@ Operator_st200_prginsset_l1_1isrc2_2general,
 
 
 Operator_st200_prginsset_l1_1xsrc2_2general,
+
+
+Operator_st200_prgset_l1_1isrc2_2general,
+
+
+Operator_st200_prgset_l1_1xsrc2_2general,
 
 
 Operator_st200_pswmask_1nolink_2general_3isrc2,
@@ -10117,9 +10129,6 @@ Operator_memoryAccessSize(Operator this);
 
 
 
-#define Operator_isPerformanceEffect(this) ( Operator_isBlocking(this) )
-
-
 #define Operator_isConditional(this) (Operator_attributes(this)>>OperatorAttribute_Conditional & 1)
 
 
@@ -10258,10 +10267,13 @@ Operator_isMemoryBarrier(Operator this);
 
 
 /*
- * Operator_isBlocking --	Test if this Operator is blocking.
+ * Operator_isStalling --	Test if this Operator is stalling the processor.
+ *
+ * Should be true for Operators that almost always stall the processor, and not true for
+ * Operators that occasionally stall like memory accesses with cache misses.
  */
 bool
-Operator_isBlocking(Operator this);
+Operator_isStalling(Operator this);
 
 
 /*
