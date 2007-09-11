@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 11 14:35:03 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30096
+
+Description:
+------------
+	*  Added an option to control DoWhile conversion. DoWhile conversion is now by default tuned for size on STxP70 under -Os. This fixes bug #30096.
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_main.cxx
+	M      osprey/be/opt/opt_cfg.cxx
+	M      osprey/common/com/config_wopt.cxx
+	M      osprey/common/com/config_wopt.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/st200/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 10 13:42:30 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

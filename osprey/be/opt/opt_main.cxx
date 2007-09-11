@@ -643,7 +643,6 @@ private:
       if (WOPT_Enable_Feedback_LPRE || WOPT_Enable_Feedback_EPRE)
 #endif
 	WOPT_Enable_Zero_Version = FALSE;
-
       break; // end MAINOPT_PHASE
     case PREOPT_LNO_PHASE: 
       if (Run_autopar && Current_LNO->IPA_Enabled) { 

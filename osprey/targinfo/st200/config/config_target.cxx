@@ -642,6 +642,10 @@ Configure_Target ()
     }
   }
 
+  // FdF 20070731
+  if (!WOPT_Enable_DoWhile_Conversion_Set) {
+    WOPT_Enable_DoWhile_Conversion = DOWHILE_CONV_FOR_PERF;
+  }
 
   // [CG]: Configuration for non-ieee ops
   if (Is_Target_st240()) {

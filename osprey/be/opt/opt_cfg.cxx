@@ -740,6 +740,30 @@ Loop_Pragma_Nz_Trip(BB_NODE *pragma_bb) {
   return FALSE;
 }
 
+// Because we want to perform dowhile conversion when the loop is
+// likely to have a non zero trip count.
+static BOOL
+While_Test_is_simple(WN *while_test) {
+  if (WN_kid_count(while_test) == 2) {
+    WN *kid0 = WN_kid(while_test, 0), *kid1 = WN_kid(while_test, 1);
+    if ((WN_kid_count(kid0) == 0) && (WN_kid_count(kid1) == 0))
+      if ((WN_operator(kid0) == OPR_INTCONST) || (WN_operator(kid1) == OPR_INTCONST))
+	return TRUE;
+  }
+  return FALSE;
+}
+
+static INT
+Loop_Pragma_Unroll(BB_NODE *pragma_bb) {
+  WN *wn;
+  for (wn = pragma_bb->Firststmt(); wn; wn = WN_next(wn)) {
+    if ((WN_operator(wn) == OPR_PRAGMA) &&
+	((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_UNROLL))
+      return WN_pragma_arg1(wn);
+  }
+  return -1;
+}
+
 static void
 Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
 {
@@ -917,42 +941,108 @@ CFG::Lower_while_do( WN *wn, END_BLOCK *ends_bb )
   //    dotail block
   // Exit:
 
+#ifdef TARG_ST
+  // FdF 20070615: For !doWhile_conversion, generate instead the following
+  // control flow.
+
+  //    goto Exit_test;
+  // Head:
+  //    dohead block
+  // Body:
+  //    statements in original loop body
+  // Exit_test:
+  //    if (cond)
+  //      goto Body;
+  // Tail:
+  //    dotail block
+  // Exit:
+#endif
+
   // create, but do not connect, the exit bb
   BB_NODE *exit_bb = Create_labelled_bb();
   BB_NODE *dohead_bb = Create_labelled_bb( BB_DOHEAD );
+  WN *wn_top_branch = NULL;
 
 #ifdef TARG_ST
-  WN *wn_top_branch = NULL;
-  BB_NODE *entry_test_bb = _current_bb;
   BOOL nz_trip_count = Loop_Pragma_Nz_Trip(_current_bb);
-  if (!nz_trip_count) {
-#endif
 
+  BOOL doWhile_conversion;
+  switch (WOPT_Enable_DoWhile_Conversion) {
+    // Never
+  case DOWHILE_CONV_NEVER:
+    doWhile_conversion = FALSE;
+    break;
+
+    // If better for size
+  case DOWHILE_CONV_FOR_SIZE:
+    doWhile_conversion =
+      (Loop_Pragma_Unroll(_current_bb) > 1) ||
+      (OPT_unroll_times > 1) ||
+      nz_trip_count ||
+      While_Test_is_simple(WN_while_test(wn));
+    break;
+
+    // If better for perf
+  case DOWHILE_CONV_FOR_PERF: // Fall-through
+    // Always
+  case DOWHILE_CONV_ALWAYS:
+    doWhile_conversion = TRUE;
+    break;
+    
+  }
+  
+  BB_NODE *exit_test_bb = NULL;
+  if (!doWhile_conversion) {
+    exit_test_bb = Create_labelled_bb();
+    // Add an edge from _current_bb to dohead_bb
+    Connect_predsucc( _current_bb, dohead_bb );
+    Append_bb( dohead_bb );
+    
+    // Connect dohead_bb to exit_test_bb
+    WN *goto_wn = WN_CreateGoto(exit_test_bb->Labnam());
+    Add_one_stmt( goto_wn, NULL );
+  }
+  else {
+    BB_NODE *entry_test_bb = _current_bb;
+    if (!nz_trip_count) {
+      // Create loop entry test bb, and make a copy of original expn.
+      WN *testcopy = WN_copy(WN_while_test(wn));
+      WN_copy_stmap(WN_while_test(wn), testcopy);
+      if (Cur_PU_Feedback)
+	Cur_PU_Feedback->FB_clone_loop_test( WN_while_test(wn), testcopy, wn );
+
+      // Connect _current_bb to a conditional BB that goes to dohead_bb or exit_bb
+      BB_NODE *entry_test_bb = 
+	Create_conditional( testcopy, dohead_bb, exit_bb, FALSE , &wn_top_branch);
+    }
+
+    Connect_predsucc( entry_test_bb, dohead_bb );
+    Append_bb( dohead_bb );
+
+    /* FdF 13/04/2004: Move the LOOP pragmas from the entry_test_bb to
+       the dohead_bb, to move them closer to the real loop. */
+    Move_Loop_Pragma(this, entry_test_bb, dohead_bb);
+  }
+#else
   // Create loop entry test bb, and make a copy of original expn.
   WN *testcopy = WN_copy(WN_while_test(wn));
   WN_copy_stmap(WN_while_test(wn), testcopy);
   if (Cur_PU_Feedback)
     Cur_PU_Feedback->FB_clone_loop_test( WN_while_test(wn), testcopy, wn );
 
-  entry_test_bb = 
+  BB_NODE *entry_test_bb = 
     Create_conditional( testcopy, dohead_bb, exit_bb, FALSE , &wn_top_branch);
-
-#ifdef TARG_ST
-  }
-#endif
 
   // Create and connect the loop head
   Connect_predsucc( entry_test_bb, dohead_bb );
   Append_bb( dohead_bb );
-
-#ifdef TARG_ST
-  /* FdF 13/04/2004: Move the LOOP pragmas from the entry_test_bb to
-     the dohead_bb, to move them closer to the real loop. */
-  Move_Loop_Pragma(this, entry_test_bb, dohead_bb);
 #endif
 
   // Create the loop body
   BB_NODE *body_bb = Create_loopbody(WN_while_body(wn));
+#ifdef TARG_ST
+  if (doWhile_conversion)
+#endif
   Connect_predsucc(dohead_bb, body_bb);
 
   // Create a LOOP_INFO node and attach to the body label
@@ -960,6 +1050,13 @@ CFG::Lower_while_do( WN *wn, END_BLOCK *ends_bb )
 
   // Create the loop tail
   BB_NODE *dotail_bb = Create_labelled_bb( BB_DOTAIL );
+
+#ifdef TARG_ST
+  if (!doWhile_conversion) {
+    Connect_predsucc(_current_bb, exit_test_bb);
+    Append_bb(exit_test_bb);
+  }
+#endif
 
   // Create the loop exit test
   WN *wn_back_branch;
@@ -2523,7 +2620,6 @@ void
 CFG::Process_multi_entryexit( BOOL is_whirl )
 {
   Is_Trace(Trace(), (TFile,"CFG::Process_multi_entryexit\n"));
-
 
   // For our purposes "is_whirl" also means we can disconnect
   // unreachable blocks because we have not yet inserted phi nodes.

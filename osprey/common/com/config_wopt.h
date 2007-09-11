@@ -268,6 +268,15 @@ BE_EXPORTED extern BOOL  WOPT_Enable_FPFSA; // Enables fix point flow sensitive 
 BE_EXPORTED extern BOOL WOPT_Enable_Warn_Uninit;   // enable warning for detected uninitialized locals
 BE_EXPORTED extern BOOL WOPT_Enable_Tailmerge;   // enable tailmerge optimization
 BE_EXPORTED extern BOOL WOPT_Enable_Compare_Hoisting;   // enable hoisting of compare expression
+// FdF
+enum DOWHILE_CONV {
+  DOWHILE_CONV_NEVER,	 /* Never perform do-while conversion */
+  DOWHILE_CONV_FOR_SIZE, /* Perform do-while conversion if it reduces code size */
+  DOWHILE_CONV_FOR_PERF, /* Perform do-while conversion if this increase performance */
+  DOWHILE_CONV_ALWAYS	 /* Always perform do-while conversion */
+};
+BE_EXPORTED extern INT32 WOPT_Enable_DoWhile_Conversion;   // enable warning for detected uninitialized locals
+BE_EXPORTED extern BOOL WOPT_Enable_DoWhile_Conversion_Set;
 BE_EXPORTED extern BOOL WOPT_Enable_Flow_Simplification_In_Tailmerge;   // enable flow simplification in tailmerge optimization
 #endif
 #endif /* config_wopt_INCLUDED */
