@@ -1250,6 +1250,43 @@ ALIAS_RESULT Overlapped_base(const ALIAS_MANAGER *am, const WN *wn1, const WN *w
   // if (!pt2.Base_is_fixed())
   pt2.Set_ofst_kind(OFST_IS_UNKNOWN);
 
+  // FdF 20070717: If references are not aliased, they may however
+  // have the same base and be candidate for loop carried dependencies
+  // (See call in dep.cxx:DEPV_COMPUTE::Base_Test) (Bug #30153)
+
+  // FdF 20070824: This fix is required because Aliased_Memop does not
+  // return the expected value in case of two load accesses. In
+  // particular, the rules Aliased_Attribute_Rule and
+  // Aliased_Qualifier_Rule consider that if one of the memory
+  // accesses is Const, then there is no alias, which is true only if
+  // at least one access is a store. TODO: Check if Aliased_Memop must
+  // be fixed to return correct alias information on load-load
+  // accesses.
+
+#ifdef TARG_ST
+  if (pt1.Same_base(&pt2)) {
+    //  if the base is the same, then try to analyze the array range
+    //  i.e., this would handle sections of a common block.
+    Check_range(&pt1, wn1);
+    Check_range(&pt2, wn2);
+
+    // Convert the following assertion to return POSSILBY_ALIASED.
+    // Fix 379050.  LNO converts a pointer expr into nested ARRAY expr
+    // that wopt does not handle.  We will simply return POSSILBY_ALIASED, but it
+    // should not affect performance because LNO does not handle them too.
+    // Is_True(pt1.Base() == pt2.Base(), ("Overlapped_base: Inconsistent data layout detected."));
+    if (pt1.Base() != pt2.Base())
+      return POSSIBLY_ALIASED;
+      
+    if (pt1.Overlap(&pt2))
+      return POSSIBLY_ALIASED;
+    else
+      return NOT_ALIASED;
+  } else if (am->Rule()->Aliased_Memop(&pt1, &pt2, WN_object_ty(wn1), WN_object_ty(wn2))) {
+    return POSSIBLY_ALIASED;
+  } else
+    return NOT_ALIASED;
+#else
   if (am->Rule()->Aliased_Memop(&pt1, &pt2, WN_object_ty(wn1), WN_object_ty(wn2))) {
     if (pt1.Same_base(&pt2)) {
       //  if the base is the same, then try to analyze the array range
@@ -1273,6 +1310,7 @@ ALIAS_RESULT Overlapped_base(const ALIAS_MANAGER *am, const WN *wn1, const WN *w
     return POSSIBLY_ALIASED;
   } else
     return NOT_ALIASED;
+#endif
 }
 
 

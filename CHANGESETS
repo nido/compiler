@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 11 15:35:05 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30153
+
+Description:
+------------
+	*  Fixed to take into account aliasing between two loads, so as to correctly detect dependencies between accesses across iterations. Fixes bug #30153.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/opt_alias_mgr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 11 14:35:03 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
