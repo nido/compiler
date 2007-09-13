@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 13 18:11:19 CEST 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32082
+
+Description:
+------------
+	* [fixes/codex-32082] Deliver fix for codex bug #32082 to trunk with authorization art #32725
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 11 15:35:05 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

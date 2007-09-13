@@ -530,6 +530,82 @@ match_shl_or_sequence (const RangeAnalysis &range_analysis,
 }
 
 static BOOL
+match_shl_mullh_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //   r1 = mullh(u) r2, r3
+  //   ...
+  //   r3 = shl r1, 16  
+  // and transform to
+  //   r3 = mulhs r2, r3
+  //  
+  // provided that r2 is a 16-bit operand
+  //
+  OP *l2_op;
+  TN *opnd1, *opnd2, *result;
+  INT shiftcount;
+
+  TOP opcode = OP_code(l1_op);
+
+
+  if (opcode != TOP_shl_i_r_r)
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+
+  // shl must be by 16 bits
+  if (!TN_has_value(opnd2) || TN_value(opnd2) != 16)
+    return FALSE;
+
+  l2_op = TN_ssa_def (opnd1);
+
+  if (! l2_op) return FALSE;
+
+
+  if (OP_code(l2_op) != TOP_mullh_i_r_r &&
+      OP_code(l2_op) != TOP_mullh_ii_r_r &&
+      OP_code(l2_op) != TOP_mullh_r_r_r &&
+      OP_code(l2_op) != TOP_mullhu_i_r_r &&
+      OP_code(l2_op) != TOP_mullhu_ii_r_r &&
+      OP_code(l2_op) != TOP_mullhu_r_r_r) return FALSE;
+  
+
+  // if we get here, then we have an opportunity to catch a mulhs 
+  // We must now verify that the 1st operand of the mullh(u) is
+  // not larger than 16-bit
+
+  LRange_p r = range_analysis.Get_Value (OP_Opnd1(l2_op));
+  
+  
+  result = OP_result (l1_op, 0);
+
+  if (r->bits() <= 16){
+    // Determine new opcode:
+    TOP new_opcode;
+    switch (OP_code(l2_op)) {
+    case TOP_mullh_i_r_r: 
+    case TOP_mullhu_i_r_r: 
+      new_opcode = TOP_mulhs_i_r_r; break;
+    case TOP_mullh_ii_r_r: 
+    case TOP_mullhu_ii_r_r: 
+      new_opcode = TOP_mulhs_ii_r_r; break;
+    case TOP_mullh_r_r_r: 
+    case TOP_mullhu_r_r_r: 
+      new_opcode = TOP_mulhs_r_r_r; break;
+    default:
+      FmtAssert(FALSE, (" wrong opcode %s\n", TOP_Name(OP_code(l2_op))));
+    }
+
+    Build_OP (new_opcode, result, OP_Opnd1(l2_op), OP_Opnd2(l2_op), ops);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static BOOL
 match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
 		       OP *l1_op,
 		       OPS *ops)
@@ -640,6 +716,9 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
       return TRUE;
     }
     if (match_shl_or_sequence (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_shl_mullh_sequence (range_analysis, op, ops)) {
       return TRUE;
     }
     if (match_compare_subsph_to_zero (range_analysis, op, ops)) {
