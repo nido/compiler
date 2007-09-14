@@ -46,6 +46,7 @@
 #include "cgexp.h"
 #include "cg_spill.h"	// for Attach_IntConst_Remat()
 #include "cg_ssa.h"
+#include "wn_map.h"
 
 INT32 CG_ssa_algorithm = 2;
 BOOL CG_ssa_rematerialization = TRUE;
@@ -553,6 +554,17 @@ static hTN_MAP tn_to_new_name_map = NULL;
 
 #define TN_new_name(t)       ((TN *)hTN_MAP_Get(tn_to_new_name_map,t))
 #define Set_TN_new_name(t,n) (hTN_MAP_Set(tn_to_new_name_map,t,n))
+
+// FdF 20070829: Keep track of registers with a
+// TN_home. A same TN_home must be used for only one TN. So, associate
+// on the first TN, the Home with the TN, and on further references,
+// if Home is used with another TN, reset the gra_homeable property.
+static WN_MAP tn_home_map = NULL;
+static BOOL TN_home_Used(TN *tn) {
+  TN *tn_use = (TN *)WN_MAP_Get(tn_home_map, TN_home(tn));
+  return (tn_use != NULL) && (tn_use != tn);
+}
+#define Set_TN_home_Used(tn) (WN_MAP_Set(tn_home_map, TN_home(tn), tn))
 
 /* ================================================================
  *   Initialize_PHI_map
@@ -3252,6 +3264,8 @@ map_phi_resources_to_new_names()
   OP *op;
   BB *bb;
 
+  tn_home_map = WN_MAP_Create(&tn_map_pool);
+
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
 
     if (Trace_SSA_Out) {
@@ -3295,6 +3309,21 @@ map_phi_resources_to_new_names()
       // defs
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
+	  if (!TN_can_be_renamed(tn))
+	    continue;
+
+	  // FdF 20070829: For SSA registers with no congruence class,
+	  // check that a TN_home is used for only one TN. (#31388)
+	  if ((phiCongruenceClass(tn) == NULL) && TN_is_gra_homeable(tn)) {
+	    if (!TN_home_Used(tn)) {
+	      Set_TN_home_Used(tn);
+	    }
+	    else {
+	      Reset_TN_is_gra_homeable(tn);
+	      Set_TN_home(tn, NULL);
+	    }
+	  }
+
 	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
 	    if (TN_new_name(tn) == NULL) {
 	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
@@ -3333,25 +3362,38 @@ map_phi_resources_to_new_names()
 	    // FdF 20061206: Remove the Homeable and Rematerializable
 	    // property on the new_tn if there is more than one TN in
 	    // the congruence class.
-	    if ((TN_new_name(tn) == tn) &&
-		!PHI_CONGRUENCE_CLASS_TN_is_unique(phiCongruenceClass(tn))) {
+	    if (TN_new_name(tn) == tn) {
+
+	      // FdF 20070829: Also check that no two different TNs
+	      // have the same TN_home. (#31388)
 	      if (TN_is_gra_homeable(tn)) {
-		// Discard the property unless all TNs are homeable with
-		// the same value.
-		TN_LIST *p;
-		for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
-		     p != NULL;
-		     p = TN_LIST_rest(p)) {
-		  TN *cc_tn = TN_LIST_first(p);
-		  if (!TN_is_gra_homeable(cc_tn) ||
-		      TN_home(cc_tn) != TN_home(tn)) {
-		    Reset_TN_is_gra_homeable(tn);
-		    Set_TN_home(tn, NULL);
-		    break;
+		if (!PHI_CONGRUENCE_CLASS_TN_is_unique(phiCongruenceClass(tn))) {
+		  // Discard the property unless all TNs are homeable with
+		  // the same value.
+		  TN_LIST *p;
+		  for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
+		       p != NULL;
+		       p = TN_LIST_rest(p)) {
+		    TN *cc_tn = TN_LIST_first(p);
+		    if (!TN_is_gra_homeable(cc_tn) ||
+			TN_home(cc_tn) != TN_home(tn)) {
+		      Reset_TN_is_gra_homeable(tn);
+		      Set_TN_home(tn, NULL);
+		      break;
+		    }
 		  }
 		}
+		if (TN_is_gra_homeable(tn)) {
+		  if (TN_home_Used(tn)) {
+		    Reset_TN_is_gra_homeable(tn);
+		    Set_TN_home(tn, NULL);
+		  }
+		  else
+		    Set_TN_home_Used(tn);
+		}
 	      }
-	      if (TN_is_rematerializable(tn)) {
+	      if (TN_is_rematerializable(tn) &&
+		  !PHI_CONGRUENCE_CLASS_TN_is_unique(phiCongruenceClass(tn))) {
 		// Discard the property unless all TNs are
 		// rematerializable with the same value.
 		TN_LIST *p;
