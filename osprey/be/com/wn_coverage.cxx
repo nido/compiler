@@ -1172,6 +1172,27 @@ build_ctr_info_value (INITV_IDX inv, INITO_IDX inito,
   return prev_inv;
 }
 
+// [TB] Fix bug #32631 
+#if defined(__CYGWIN__) || defined(__MINGW32__)
+
+#define IS_DIR_SEPARATOR(c)     ((c) == '/' || (c) == '\\')
+/* Note that IS_ABSOLUTE_PATH accepts d:foo as well, although it is
+   only semi-absolute.  This is because the users of IS_ABSOLUTE_PATH
+   want to know whether to prepend the current working directory to
+   a file name, which should not be done with a name like d:foo.  */
+/* The 1st character may also be a double quote */
+#define IS_ABSOLUTE_PATH(f)     (IS_DIR_SEPARATOR((f)[0]) || \
+				 (((f)[0]) && ((f)[1] == ':')) || \
+				 (((f)[0] == '"') && ((f)[1]) && ((f)[2] == ':')) \
+    )
+
+#else
+
+#define IS_DIR_SEPARATOR(c)     ((c) == '/')
+#define IS_ABSOLUTE_PATH(f)     (IS_DIR_SEPARATOR((f)[0]))
+
+#endif
+
 // Creates a symbol of type gcov_info_idx. Insert a reference to fn_st
 //   for the functions field
 static void
@@ -1209,7 +1230,8 @@ build_gcov_info_value (TY_IDX gcov_info_idx, ST *fn_st, unsigned n_fns)
   /* Filename */
   char *filename;
   int filename_len;
-  if (cwdname && da_file_name[0] != '/') {
+  // [TB] Fix bug #32631 
+  if (cwdname && !IS_ABSOLUTE_PATH(da_file_name)) {
     filename = TYPE_MEM_POOL_ALLOC_N(char,
 				     MEM_coverage_pool,
 				     strlen(cwdname) + strlen(da_file_name) + 2);
