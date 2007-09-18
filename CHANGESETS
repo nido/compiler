@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 18 13:40:13 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31904
+
+Description:
+------------
+	* Deliver fix for codex bug #31904 to trunk with authorization art #32635
+	  Support usage of stacked parameters in function with aligned_stack attribute, by switching to a frame pointer based stack model
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/data_layout.cxx
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 17 10:46:40 CEST 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -2434,6 +2434,14 @@ Choose_Stack_Model (INT64 frame_size)
   else if (Force_Large_Stack_Model) {
     return SMODEL_LARGE;
   }
+#ifdef TARG_STxP70
+  else if (( PU_aligned_stack(Get_Current_PU())!=Target_Stack_Alignment ) &&
+	   ( Upformal_Area_Size > 0 || TY_is_varargs (ST_pu_type ((Get_Current_PU_ST()))))) {
+    // [TTh] Dynamic stack alignment requires the creation of a frame pointer
+    // to access formal on stack
+    return SMODEL_LARGE;
+  }
+#endif
 #ifdef TARG_ST
   else if (frame_size < MAX_SMALL_FRAME_OFFSET) {
 #else
