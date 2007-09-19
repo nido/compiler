@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 19 16:28:42 CEST 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31632
+
+Description:
+------------
+	* [fixes/codex-31632] Deliver fix for codex bug #31632 to trunk with authorization art #32732
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/const.cxx
+	M      osprey/common/com/targ_const.h
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 18 13:40:13 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

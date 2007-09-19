@@ -3712,9 +3712,12 @@ Expand_Const (
       mtype == TCON_ty(tc) &&
       (mtype == MTYPE_F4 || mtype == MTYPE_F8)) {
     if (mtype == MTYPE_F4) {
-      Build_OP(TOP_mov_i_r, dest, src, ops);
+      TCON int_const = Targ_Reinterpret_Cast(MTYPE_U4, tc); /* Explicit Type Cast to U4. */
+      UINT32 int_literal = TCON_uval(int_const); 
+      Exp_Immediate(dest, Gen_Literal_TN(int_literal, 4), FALSE, ops);
     } else if (Enable_64_Bits_Ops && mtype == MTYPE_F8) {
-      INT64 fimm = TCON_k0(tc);
+      TCON int_const = Targ_Reinterpret_Cast(MTYPE_U8, tc); /* Explicit Type Cast to U8. */
+      INT64 fimm = TCON_k0(int_const);
       UINT32 low = (UINT32)(fimm & 0xFFFFFFFF);
       UINT32 high = (UINT32)((fimm>>32) & 0xFFFFFFFF);
       TN *low_tn = Expand_Immediate_Into_Register(MTYPE_U4, Gen_Literal_TN(low, 4), ops);

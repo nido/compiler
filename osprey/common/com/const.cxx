@@ -3574,6 +3574,80 @@ Targ_Conv (
   return r;
 } /* Targ_Conv */
 
+/* ====================================================================
+ *   Targ_Reinterpret_Cast
+ *
+ *   Cast a TCON's value to a new type.  
+ * ====================================================================
+ */
+TCON
+Targ_Reinterpret_Cast ( 
+  TYPE_ID ty_to, 
+  TCON c 
+)
+{
+  TYPE_ID ty_from;
+  TCON r;
+
+  FmtAssert(offsetof(TCON, vals.f.fval) == offsetof(TCON, vals.uval.u0),
+	    ("Targ_Reinterpret_Cast: Overlay mismatch in TCON between MTYPE_F4 and MTYPE_U4"));
+
+  FmtAssert(offsetof(TCON, vals.f.fval) == offsetof(TCON, vals.ival.v0),
+	    ("Targ_Reinterpret_Cast: Overlay mismatch in TCON between MTYPE_F4 and MTYPE_I4"));
+
+  FmtAssert(offsetof(TCON, vals.uval.u0) == offsetof(TCON, vals.ival.v0),
+	    ("Targ_Reinterpret_Cast: Overlay mismatch in TCON between MTYPE_I4 and MTYPE_U4"));
+
+#ifdef TARG_ST
+// [TB] Extension support
+#define FROM_TO(type_from, type_to) (type_from)*(MTYPE_MAX_LIMIT+1)+(type_to)
+#else
+#define FROM_TO(type_from, type_to) (type_from)*(MTYPE_LAST+1)+(type_to)
+#endif
+  r = MTYPE_size_min(ty_to) <= 32 ? Zero_I4_Tcon : Zero_I8_Tcon;
+
+  TCON_v0(r) = 0;
+  TCON_v1(r) = 0;
+  TCON_v2(r) = 0;
+  TCON_v3(r) = 0;
+  TCON_iv0(r) = 0;
+  TCON_iv1(r) = 0;
+  TCON_iv2(r) = 0;
+  TCON_iv3(r) = 0;
+  ty_from = TCON_ty(c);
+
+  Is_True ( ty_to > MTYPE_UNKNOWN && ty_to <= MTYPE_LAST,	
+	    ("Bad dest type in Targ_Reinterpret_Cast: %s", Mtype_Name(ty_to)) );
+  Is_True ( ty_from > MTYPE_UNKNOWN && ty_from <= MTYPE_LAST,	
+	    ("Bad dest type in Targ_Reinterpret_Cast: %s", Mtype_Name(ty_from)) );
+
+  if (ty_from == ty_to) 
+    return c;
+
+  switch ( FROM_TO(ty_from, ty_to) ) {
+    case FROM_TO(MTYPE_F4, MTYPE_U4):
+    case FROM_TO(MTYPE_F4, MTYPE_I4):
+    case FROM_TO(MTYPE_F8, MTYPE_U8):
+    case FROM_TO(MTYPE_F8, MTYPE_I8):
+    case FROM_TO(MTYPE_U4, MTYPE_F4):
+    case FROM_TO(MTYPE_I4, MTYPE_F4):
+    case FROM_TO(MTYPE_U8, MTYPE_F8):
+    case FROM_TO(MTYPE_I8, MTYPE_F8):
+    case FROM_TO(MTYPE_I4, MTYPE_U4):
+    case FROM_TO(MTYPE_U4, MTYPE_I4):
+    case FROM_TO(MTYPE_I8, MTYPE_U8):
+    case FROM_TO(MTYPE_U8, MTYPE_I8):
+      r = c;
+      break;
+
+    default:
+      Is_True ( FALSE, ( "Targ_Reinterpret_Cast can not type-cast from %s to %s",
+			  Mtype_Name(ty_from), Mtype_Name(ty_to) ) );
+  }
+  TCON_ty(r) = ty_to;
+  return r;
+} /* Targ_Reinterpret_Cast */
+
 #ifndef MONGOOSE_BE
 /* ====================================================================
  *

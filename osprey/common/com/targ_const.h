@@ -268,7 +268,7 @@ BE_EXPORTED extern TCON Targ_Pow ( TCON mantissa, TCON exponent );
 BE_EXPORTED extern TCON Targ_Conv ( TYPE_ID newtype, TCON cvalue );
 
 /* Typecast between target constants (must be of same sizes): */
-BE_EXPORTED extern TCON Targ_Cast ( TYPE_ID newtype, TCON cvalue );
+BE_EXPORTED extern TCON Targ_Reinterpret_Cast ( TYPE_ID newtype, TCON cvalue );
 
 /* Convert (char *) representation of host to target constant: */
 BE_EXPORTED extern TCON Targ_Atoc ( TYPE_ID ctype, char *ascii );
