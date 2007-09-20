@@ -71,6 +71,7 @@ using std::vector;
 #include "targ_cg_private.h"
 #include "config_opt.h"
 #include "exp_private.h"
+#include "ebo_info.h"
 
 /*
  * [CG] temporary flag 
@@ -1088,10 +1089,6 @@ void Exp_Prefetch (
 }
 
 /* ======================================================================
- *   Exp_Extract_Bits
- * ======================================================================*/
-
-/* ======================================================================
  * Exp_Extract_Bits
  *
  * ======================================================================*/
@@ -1223,6 +1220,78 @@ Exp_Deposit_Bits (
       
   Build_OP(TOP_or_r_r_r, tgt_tn, tmp1, val, ops);
   
+  return;
+}
+
+/* ======================================================================
+ *   Exp_LRotate 
+ *
+ *   rotate-left src1_tn from the value src2_tn
+ *   
+ * ======================================================================
+ */
+void
+Exp_LRotate (
+  TYPE_ID rtype, 
+  TN *tgt_tn, 
+  TN *src1_tn, 
+  TN *src2_tn, 
+  OPS *ops
+)
+{
+
+  FmtAssert(MTYPE_bit_size(rtype) == 32, ("size of bit field must be 32"));
+
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_r_r_r) && Enable_Rotate){
+    TOP top = TOP_rotl_r_r_r;
+    if (TN_Has_Value(src2_tn)){
+      if ((TN_Value(src2_tn) & 0x1F) == 0) {
+	Expand_Copy(tgt_tn, NULL, src1_tn, ops);
+	return;
+      }
+      top = TOP_opnd_immediate_variant(top, 1, TN_value(src2_tn));
+    }
+    Build_OP(top, tgt_tn, src1_tn, src2_tn, ops);
+  } else
+    FmtAssert(FALSE, ("Exp_LRotate: unexpected attempt to generate a rotate-left instruction"));
+  return;
+}
+
+/* ======================================================================
+ *   Exp_RRotate 
+ *
+ *   rotate-right src1_tn from the value src2_tn
+ *   
+ * ======================================================================
+ */
+void
+Exp_RRotate (
+  TYPE_ID rtype, 
+  TN *tgt_tn, 
+  TN *src1_tn, 
+  TN *src2_tn, 
+  OPS *ops
+)
+{
+
+  FmtAssert(MTYPE_bit_size(rtype) == 32, ("size of bit field must be 32"));
+
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_r_r_r) && Enable_Rotate){
+    TOP top = TOP_rotl_r_r_r;
+    if (TN_Has_Value(src2_tn)){
+      if ((TN_Value(src2_tn) & 0x1F) == 0) {
+	Expand_Copy(tgt_tn, NULL, src1_tn, ops);
+	return;
+      }
+      top = TOP_opnd_immediate_variant(top, 1, 32 - TN_value(src2_tn));
+      Build_OP(top, tgt_tn, src1_tn, Gen_Literal_TN(32 - TN_Value(src2_tn),4), ops);
+    } else {
+      TN *val = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+      Build_OP(TOP_sub_r_i_r, val, Gen_Literal_TN(32, 4), src2_tn, ops);
+      Build_OP(top, tgt_tn, src1_tn, val, ops);
+    }
+  } else
+    FmtAssert(FALSE, ("Exp_RRotate: unexpected attempt to generate a rotate-right instruction"));
   return;
 }
 

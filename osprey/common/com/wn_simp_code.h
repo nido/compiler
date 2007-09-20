@@ -653,6 +653,7 @@ BOOL SIMP_has_side_effects (simpnode x)
     case OPR_PAIR:
 #ifdef TARG_ST
   case OPR_RROTATE:
+  case OPR_LROTATE:
 #endif
     case OPR_REM:
     case OPR_SHL:
@@ -3177,7 +3178,7 @@ j | -1			-1
 
 x & mask1 | compose (0,y) (if appropriate)
                          compose (x,y)
-
+		
  Aggressive:
 ~j | j			-1
 j | j 			j
@@ -3257,6 +3258,7 @@ static simpnode  simp_bior( OPCODE opc,
       SIMP_DELETE(k0);
       SIMP_DELETE(SIMPNODE_kid1(k1));
       SIMP_DELETE(k1);
+
    }
 
    if (!Enable_Cfold_Aggressive || r) return (r);

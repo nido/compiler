@@ -3839,15 +3839,9 @@ WFE_Expand_Expr (tree exp,
 
     case LROTATE_EXPR:
       {
-	ty_idx = Get_TY(TREE_TYPE(exp));
-	TYPE_ID mtype = TY_mtype (ty_idx);
         wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
         wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1));
-	wn1 = WN_Binary (OPR_SUB, Widen_Mtype (mtype),
-			 WN_Intconst (Widen_Mtype (mtype),
-				      TY_size (ty_idx) * 8),
-			 wn1);
-	wn  = WN_Rrotate (TY_mtype(Get_TY(TREE_TYPE(exp))), wn0, wn1);
+	wn  = WN_Lrotate (TY_mtype(Get_TY(TREE_TYPE(exp))), wn0, wn1);
       }
       break;
 

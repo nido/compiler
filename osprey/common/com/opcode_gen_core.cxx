@@ -996,6 +996,12 @@ struct OPERATOR_info_struct OPERATOR_info[OPERATOR_LAST+1] = {
    1 /* nkids */,
    OPERATOR_MAPCAT_OEXP /* mapcat */,
    OPERATOR_PROPERTY_expression},
+
+  // [HK] New operator for left-rotate
+  {"OPR_LROTATE", 
+   2 /* nkids */,
+   OPERATOR_MAPCAT_OEXP /* mapcat */,
+   OPERATOR_PROPERTY_expression},
 #endif
 };
 
@@ -2945,6 +2951,20 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         }
         break;
 
+      case OPR_LROTATE:
+        if (   (rtype == MTYPE_U4 && desc == MTYPE_U8)
+          || (rtype == MTYPE_U8 && desc == MTYPE_U1)
+          || (rtype == MTYPE_U8 && desc == MTYPE_U2)
+          || (rtype == MTYPE_U8 && desc == MTYPE_U4)) {
+
+          valid = FALSE;
+        }
+        else {
+          // [RTYPE]: U4,U8 [DESC]: U1,U2,U4,U8 
+          valid = Is_MTYPE_U4_U8[rtype] && Is_MTYPE_U1_U2_U4_U8[desc];
+        }
+        break;
+
       case OPR_INTCONST:
         // (RTYPE): b,i,p (DESC): V 
         valid = Is_MTYPE_b_i_p(rtype) && Is_MTYPE_V(desc);
@@ -3391,6 +3411,11 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
 
       case OPR_RROTATE:
         // (RTYPE): U4,U8 (DESC): U1,U2,U4,U8 
+        sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
+        break;
+
+      case OPR_LROTATE:
+        // [RTYPE]: U4,U8 [DESC]: U1,U2,U4,U8 
         sprintf (buffer, "OPC_%s%s%s", MTYPE_name(rtype), MTYPE_name(desc), &OPERATOR_info [opr]._name [4]);
         break;
 

@@ -131,6 +131,10 @@ BE_EXPORTED extern BOOL Enable_extract;     /* Enable use of the extract whirl o
 BE_EXPORTED extern BOOL Enable_extract_overriden;     /* ... option seen? */
 BE_EXPORTED extern BOOL Enable_compose;     /* Enable use of the compose whirl ops */
 BE_EXPORTED extern BOOL Enable_compose_overriden;     /* ... option seen? */
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL Enable_Rotate;     /* Enable use of the rotate whirl ops */
+BE_EXPORTED extern BOOL Enable_Rotate_overriden;     /* ... option seen? */
+#endif
 
 #ifdef TARG_ST
 /***** Floating point optimizations options *****/

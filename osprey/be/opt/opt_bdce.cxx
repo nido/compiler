@@ -636,6 +636,12 @@ BITWISE_DCE::Mark_tree_bits_live(CODEREP *cr, UINT64 live_bits,
       Mark_tree_bits_live(cr->Opnd(1), new_livebits, stmt_visit);
       return;
 
+    case OPR_RROTATE: 
+    case OPR_LROTATE: 
+      Mark_tree_bits_live(cr->Opnd(0), Bits_in_type(dsctyp), stmt_visit);
+      Mark_tree_bits_live(cr->Opnd(1), Bits_in_type(dsctyp), stmt_visit);
+      return;
+      
     // ternary ops
 
     // ternary and n-ary ops

@@ -3841,18 +3841,39 @@ vho_lower_expr ( WN * wn, WN * block, BOOL_INFO * bool_info )
 
     case OPR_RROTATE:
     {
-      TYPE_ID  desc  = WN_desc(wn);
-      TYPE_ID  rtype = WN_rtype(wn);
-      INT32    size  = 8 * TY_size (Be_Type_Tbl (desc));
       WN      *wn0   = vho_lower_expr (WN_kid0(wn), block, NULL);
       WN      *wn1   = vho_lower_expr (WN_kid1(wn), block, NULL);
-      TYPE_ID  shift_rtype = WN_rtype(wn1);
-      WN      *rshift = WN_Lshr (rtype, WN_COPY_Tree (wn0), WN_COPY_Tree (wn1));
-      WN      *lshift = WN_Shl  (rtype, wn0,
-                                 WN_Binary (OPR_SUB, shift_rtype,
-                                            WN_Intconst (shift_rtype, size),
-                                            wn1));
-      wn  = WN_Bior (rtype, lshift, rshift);
+      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4){
+	TYPE_ID  desc  = WN_desc(wn);
+	TYPE_ID  rtype = WN_rtype(wn);
+	TYPE_ID  shift_rtype = WN_rtype(wn1);
+	INT32    size  = 8 * TY_size (Be_Type_Tbl (desc));
+	WN      *rshift = WN_Lshr (rtype, WN_COPY_Tree (wn0), WN_COPY_Tree (wn1));
+	WN      *lshift = WN_Shl  (rtype, wn0,
+				   WN_Binary (OPR_SUB, shift_rtype,
+					      WN_Intconst (shift_rtype, size),
+					      wn1));
+	wn  = WN_Bior (rtype, lshift, rshift);
+      }
+      break;
+    }
+
+    case OPR_LROTATE:
+    {
+      WN      *wn0   = vho_lower_expr (WN_kid0(wn), block, NULL);
+      WN      *wn1   = vho_lower_expr (WN_kid1(wn), block, NULL);
+      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4){
+	TYPE_ID  desc  = WN_desc(wn);
+	TYPE_ID  rtype = WN_rtype(wn);
+	TYPE_ID  shift_rtype = WN_rtype(wn1);
+	INT32    size  = 8 * TY_size (Be_Type_Tbl (desc));
+	WN      *rshift = WN_Shl (rtype, WN_COPY_Tree (wn0), WN_COPY_Tree (wn1));
+	WN      *lshift = WN_Lshr  (rtype, wn0,
+				    WN_Binary (OPR_SUB, shift_rtype,
+					       WN_Intconst (shift_rtype, size),
+					       wn1));
+	wn  = WN_Bior (rtype, lshift, rshift);
+      }
       break;
     }
 

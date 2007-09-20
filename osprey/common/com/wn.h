@@ -1519,6 +1519,7 @@ BE_EXPORTED extern void WN_set_st_addr_saved (WN *);
 BE_EXPORTED extern BOOL WN_has_side_effects (const WN*);
 
 BE_EXPORTED extern WN *WN_Rrotate (TYPE_ID desc, WN *src, WN *cnt);
+BE_EXPORTED extern WN *WN_Lrotate (TYPE_ID desc, WN *src, WN *cnt);
 
 #endif /* wn_INCLUDED */
 

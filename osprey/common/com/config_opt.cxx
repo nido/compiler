@@ -254,6 +254,11 @@ BOOL Enable_extract_overriden=FALSE;
 BOOL Enable_compose=FALSE;     
 BOOL Enable_compose_overriden=FALSE; /* This is also forced off for MIPS and IA32 in
 					  config_targ.cxx */
+#ifdef TARG_ST
+BOOL Enable_Rotate=FALSE;
+BOOL Enable_Rotate_overriden=FALSE;
+#endif
+
 #if defined(__linux__) || defined(__sun__) || defined(__CYGWIN__) || defined(__MINGW32__)
 BOOL Enable_WFE_DFE = FALSE;
 #endif /* __linux __ */
@@ -717,6 +722,12 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "compose",	"comp",
     0, 0, 0,	&Enable_compose,	&Enable_compose_overriden,
     "Enable use of compose opcode" },
+
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "rotate",	"rot",
+    0, 0, 0,	&Enable_Rotate,	&Enable_Rotate_overriden,
+    "Enable use of rotate opcodes" },
+#endif
 
   { OVK_BOOL, OV_VISIBLE,     FALSE, "ansi_setjmp",           "ansi_setjmp",
     0, 0, 0,  &LANG_Ansi_Setjmp_On,   &LANG_Ansi_Setjmp_Set,

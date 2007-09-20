@@ -3042,6 +3042,38 @@ Handle_COMPOSE_BITS (WN *compbits, TN *result, OPCODE opcode)
 }
 
 /* ====================================================================
+ *   Handle_LROTATE
+ * ====================================================================
+ */
+static TN *
+Handle_LROTATE (WN *lrotate, TN *result, OPCODE opcode)
+{
+  TN *kid0_tn = Expand_Expr (WN_kid0(lrotate), lrotate, NULL);
+  TN *kid1_tn = Expand_Expr (WN_kid1(lrotate), lrotate, NULL);
+  if (result == NULL) result = Allocate_Result_TN (lrotate, NULL);
+
+  Exp_LRotate(OPCODE_rtype(opcode), result, kid0_tn, kid1_tn, &New_OPs);
+
+  return result;
+}
+
+/* ====================================================================
+ *   Handle_RROTATE
+ * ====================================================================
+ */
+static TN *
+Handle_RROTATE (WN *rrotate, TN *result, OPCODE opcode)
+{
+  TN *kid0_tn = Expand_Expr (WN_kid0(rrotate), rrotate, NULL);
+  TN *kid1_tn = Expand_Expr (WN_kid1(rrotate), rrotate, NULL);
+  if (result == NULL) result = Allocate_Result_TN (rrotate, NULL);
+
+  Exp_RRotate(OPCODE_rtype(opcode), result, kid0_tn, kid1_tn, &New_OPs);
+
+  return result;
+}
+
+/* ====================================================================
  *   Handle_ISTORE
  * ====================================================================
  */
@@ -4121,6 +4153,12 @@ Expand_Expr (
 
   case OPR_COMPOSE_BITS:
     return Handle_COMPOSE_BITS (expr, result, opcode);
+
+  case OPR_LROTATE:
+    return Handle_LROTATE (expr, result, opcode);
+
+  case OPR_RROTATE:
+    return Handle_RROTATE (expr, result, opcode);
 
   case OPR_SELECT:
     return Handle_SELECT(expr, result, opcode);

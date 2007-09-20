@@ -259,7 +259,7 @@ struct operator_from_tree_t {
   FFS_EXPR,                "ffs_expr",                '1', 1,  OPERATOR_UNKNOWN,
   LSHIFT_EXPR,             "lshift_expr",             '2', 2,  OPR_SHL,
   RSHIFT_EXPR,             "rshift_expr",             '2', 2,  OPERATOR_UNKNOWN,
-  LROTATE_EXPR,            "lrotate_expr",            '2', 2,  OPR_RROTATE,
+  LROTATE_EXPR,            "lrotate_expr",            '2', 2,  OPR_LROTATE,
   RROTATE_EXPR,            "rrotate_expr",            '2', 2,  OPR_RROTATE,
   BIT_IOR_EXPR,            "bit_ior_expr",            '2', 2,  OPR_BIOR,
   BIT_XOR_EXPR,            "bit_xor_expr",            '2', 2,  OPR_BXOR,
@@ -646,6 +646,7 @@ WFE_Set_ST_Addr_Saved (WN *wn)
     case OPR_COMPLEX:
     case OPR_HIGHMPY:
     case OPR_RROTATE:
+    case OPR_LROTATE:
     case OPR_COMPOSE_BITS:
 
       WFE_Set_ST_Addr_Saved (WN_kid0(wn));
@@ -3471,15 +3472,9 @@ WFE_Expand_Expr (tree exp,
 
     case LROTATE_EXPR:
       {
-	ty_idx = Get_TY(TREE_TYPE(exp));
-	TYPE_ID mtype = TY_mtype (ty_idx);
         wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
         wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1));
-	wn1 = WN_Binary (OPR_SUB, Widen_Mtype (mtype),
-			 WN_Intconst (Widen_Mtype (mtype),
-				      TY_size (ty_idx) * 8),
-			 wn1);
-	wn  = WN_Rrotate (TY_mtype(Get_TY(TREE_TYPE(exp))), wn0, wn1);
+	wn  = WN_Lrotate (TY_mtype(Get_TY(TREE_TYPE(exp))), wn0, wn1);
       }
       break;
 

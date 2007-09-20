@@ -264,6 +264,25 @@ RT_LOWER_expr (
     }
     return new_nd;
 
+  case OPR_LROTATE:
+    if (Enable_Rotate){
+      RT_LOWER_set_kid0(new_nd, RT_LOWER_expr(WN_kid0(tree)));
+      RT_LOWER_set_kid1(new_nd, RT_LOWER_expr(WN_kid1(tree)));
+    } else {
+      FmtAssert(FALSE,("shouldn't see rotate-left operator")); 	     
+    }
+    return new_nd;
+    
+  case OPR_RROTATE:
+    if (Enable_Rotate){
+      RT_LOWER_set_kid0(new_nd, RT_LOWER_expr(WN_kid0(tree)));
+      RT_LOWER_set_kid1(new_nd, RT_LOWER_expr(WN_kid1(tree)));
+    } else {
+      FmtAssert(FALSE,("shouldn't see rotate-right operator")); 	     
+    }
+    return new_nd;
+    
+
   case OPR_BNOT: 
   case OPR_LNOT:
 

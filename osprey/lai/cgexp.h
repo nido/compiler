@@ -219,6 +219,14 @@ extern void Exp_Deposit_Bits (TYPE_ID rtype, TYPE_ID desc,
 			      UINT bit_offset, UINT bit_size, 
 			      TN *tgt_tn, TN *src1_tn, TN *src2_tn, OPS *ops);
 
+/* generate instructions to rotate-left a bit field */
+extern void Exp_LRotate (TYPE_ID rtype,
+			 TN *tgt_tn, TN *src1_tn, TN *src2_tn, OPS *ops);
+
+/* generate instructions to rotate-right a bit field */
+extern void Exp_RRotate (TYPE_ID rtype,
+			 TN *tgt_tn, TN *src1_tn, TN *src2_tn, OPS *ops);
+
 /* expand return instruction */
 extern void Exp_Return (TN *return_address, OPS *ops);
 extern void Exp_Return_Interrupt (TN *return_address, OPS *ops);

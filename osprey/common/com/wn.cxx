@@ -3259,7 +3259,8 @@ WN_has_side_effects (const WN* wn)
     case OPR_PAIR:
     case OPR_REM:
 #ifdef TARG_ST
-  case OPR_RROTATE:
+    case OPR_RROTATE:
+    case OPR_LROTATE:
 #endif
     case OPR_SHL:
     case OPR_SUB:
@@ -3401,4 +3402,11 @@ WN_Rrotate (TYPE_ID desc, WN *src, WN *cnt)
 {
   Set_PU_has_very_high_whirl (Get_Current_PU ());
   return WN_CreateExp2 (OPR_RROTATE, Mtype_comparison (desc), desc, src, cnt);
+} /* WN_Rotate */
+
+WN *
+WN_Lrotate (TYPE_ID desc, WN *src, WN *cnt)
+{
+  Set_PU_has_very_high_whirl (Get_Current_PU ());
+  return WN_CreateExp2 (OPR_LROTATE, Mtype_comparison (desc), desc, src, cnt);
 } /* WN_Rotate */

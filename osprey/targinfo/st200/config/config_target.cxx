@@ -710,6 +710,9 @@ Configure_Target ()
   if (Is_Target_st240() && !Enable_extract_overriden) 
     Enable_extract = TRUE;
 
+  // Enable the rotate whirl op for st240 only
+  if (Is_Target_st240() && !Enable_Rotate_overriden) 
+    Enable_Rotate = TRUE;
 
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 
