@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 20 12:58:37 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32221
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-32221 rev #13539 with authorization branch #32249
+	  Propagate the stack alignment attribute to the parent function
+	  when inlining stack aligned functions
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/ipa/main/optimize/ipo_inline.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 20 10:37:42 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

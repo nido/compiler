@@ -1470,6 +1470,7 @@ IPO_INLINE::IPO_INLINE (IPA_NODE *caller_node,
 // TODO: PU_CALLS_SETJMP PU_CALLS_LONGJMP
 // Propagate also File_info flags from callee to caller (cross-file inlining)
 // FI_NEEDS_LNO,  FI_HAS_INLINES,  FI_HAS_MP
+// TARG_ST: Propagate also the stack alignment info
 // ======================================================================
 static void
 Propagate_Flags (IPA_NODE* caller_node, IPA_NODE* callee_node)
@@ -1495,6 +1496,13 @@ Propagate_Flags (IPA_NODE* caller_node, IPA_NODE* callee_node)
                                       PU_HAS_NAMELIST |
                                       PU_HAS_REGION ));
 
+#ifdef TARG_ST
+  // [TTh] Propagate the stack alignment info, as the caller must inherit the strongest
+  // alignment considering itself and its inlined children.
+  if (PU_aligned_stack(Pu_Table[caller_pu_idx]) < PU_aligned_stack(Pu_Table[callee_pu_idx])) {
+    Set_PU_aligned_stack(Pu_Table[caller_pu_idx], PU_aligned_stack(Pu_Table[callee_pu_idx]));
+  }
+#endif
 }
 
 

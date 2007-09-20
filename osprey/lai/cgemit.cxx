@@ -6620,13 +6620,14 @@ EMT_Emit_PU (
       macrolength += 5;
       align = (char*)alloca(macrolength);
 
-      if (PU_is_interrupt(Get_Current_PU())) {
-	sprintf(align, "%s 7", ASM_PROLOG_STKALN_STR);
-      }
       if (PU_aligned_stack(Get_Current_PU())!=0) {
 	sprintf(align, "%s %d", ASM_PROLOG_STKALN_STR,
 		(int)(PU_aligned_stack(Get_Current_PU())-1));
       }
+      else if (PU_is_interrupt(Get_Current_PU())) {
+	sprintf(align, "%s 7", ASM_PROLOG_STKALN_STR);
+      }
+
       for(bbList = Entry_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
           {
               OP* asmOp = Create_Asm_Macro(align);
