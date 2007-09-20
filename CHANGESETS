@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 20 09:57:52 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33042
+
+Description:
+------------
+	*  Fixed target specific copy propagation between booleans and general registers, for bug #33042.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep 19 16:28:42 CEST 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

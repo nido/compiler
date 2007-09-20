@@ -5577,7 +5577,8 @@ copy_r_b_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   }
 
   if (OP_code(def_opinfo->in_op) == TOP_targ_mov_b_r
-      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mov_b_b)) {
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mov_b_b) &&
+      EBO_tn_available(OP_bb(op), lhs_tninfo)) {
     OPS ops = OPS_EMPTY;
     Exp_COPY(OP_result(op, 0), lhs_tn, &ops);
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
