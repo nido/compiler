@@ -6228,15 +6228,27 @@ Convert_WHIRL_To_OPs (
       // FdF 20060912: Set LOOPINFO_trip_min with the value of #pragma
       // LOOPMINITERCOUNT
       ant = ANNOT_Get(BB_annotations(loop_head), ANNOT_PRAGMA);
-      while (ant && (WN_pragma(ANNOT_pragma(ant)) != WN_PRAGMA_LOOPMINITERCOUNT))
+      int loopmin = 0;
+      ANNOTATION *ant_loopmin = NULL;
+      while (ant) {
+	if (WN_pragma(ANNOT_pragma(ant)) == WN_PRAGMA_LOOPMINITERCOUNT) {
+	  ant_loopmin = ant;
+	  loopmin = MAX(loopmin, WN_pragma_arg1(ANNOT_pragma(ant)));
+	}
+	// FdF 20070914: LOOPMOD also defines a minimum iteration
+	// count with its second argument
+	else if (WN_pragma(ANNOT_pragma(ant)) == WN_PRAGMA_LOOPMOD)
+	  loopmin = MAX(loopmin, WN_pragma_arg2(ANNOT_pragma(ant)));
 	ant = ANNOT_Get(ANNOT_next(ant), ANNOT_PRAGMA);
-      if (ant) {
+      }
+      if (loopmin > 0) {
 	ANNOTATION *annot = ANNOT_Get(BB_annotations(loop_head), ANNOT_LOOPINFO);
 	LOOPINFO *info = annot ? ANNOT_loopinfo(annot) : NULL;
 	if (info)
-	  LOOPINFO_trip_min(info) = WN_pragma_arg1(ANNOT_pragma(ant));
+	  LOOPINFO_trip_min(info) = loopmin;
 	// FdF 20060913: Then remove this pragma
-	BB_annotations(loop_head) = ANNOT_Unlink(BB_annotations(loop_head), ant);
+	if (ant_loopmin != NULL)
+	  BB_annotations(loop_head) = ANNOT_Unlink(BB_annotations(loop_head), ant_loopmin);
       }
       
     }

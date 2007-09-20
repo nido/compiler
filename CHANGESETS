@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 20 10:37:42 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31425
+
+Description:
+------------
+	*  Fixed bug #31425. #pragma loopmin are now correctly taken into account. #pragma loopmod is also used to get information on the minimum iteration count of a loop.
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_dce.cxx
+	M      osprey/be/opt/opt_emit.cxx
+	M      osprey/be/opt/opt_cfg.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/gccfe/wfe_pragmas.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 20 09:57:52 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -2015,6 +2015,10 @@ DCE::Loop_pragma(WN_PRAGMA_ID pragma) const
     case WN_PRAGMA_LOOPSEQ:
     /* FdF 07/04/2006 */
     case WN_PRAGMA_STREAM_ALIGNMENT:
+    /* FdF 30/08/2007 */
+    case WN_PRAGMA_HWLOOP:
+    case WN_PRAGMA_LOOPMINITERCOUNT:
+    case WN_PRAGMA_LOOPMAXITERCOUNT:
 #endif
       return TRUE;
   }
@@ -3428,23 +3432,37 @@ DCE::Mark_block_live( BB_NODE *bb ) const
   // loops must be marked live.
   // FdF 10/05/2004: Search also in predecessors of the preheader (or
   // start) node.
+  BB_NODE *preloop = NULL;
   if (bb->Kind() == BB_DOEND || bb->Kind() == BB_WHILEEND || bb->Kind() == BB_REPEATEND) {
-    BB_NODE *preloop = NULL;
     if (bb->Loopstart())
       preloop = bb->Loopstart();
     else if (bb->Loop() && bb->Loop()->Preheader())
       preloop = bb->Loop()->Preheader();
-
-    while (preloop) {
-      if (!preloop->Reached())
-	Mark_block_live( preloop );
-      // Go up, while the block has a unique predecessor that has a
-      // unique successor.
-      if ((preloop->Pred()->Len() == 1) && (preloop->Pred()->Node()->Succ()->Len() == 1))
-	preloop = preloop->Pred()->Node();
-      else
-	preloop = NULL;
+  }
+  // FdF 20070831: Loops made from gotos in the WHIRL may also have
+  // loop pragmas
+  else if ((bb->Loop() != NULL) && (bb->Loop()->Header() == bb)) {
+    BB_LOOP *loop = bb->Loop();
+    // Look for the predecessor node outside this loop
+    BB_NODE *pred;
+    BB_LIST_ITER bb_pred_iter;
+    FOR_ALL_ELEM(pred, bb_pred_iter, Init(bb->Pred()) ) {
+      if (!loop->True_body_set()->MemberP(pred)) {
+	preloop = pred;
+	break;
+      }
     }
+  }
+
+  while (preloop) {
+    if (!preloop->Reached())
+      Mark_block_live( preloop );
+    // Go up, while the block has a unique predecessor that has a
+    // unique successor.
+    if ((preloop->Pred()->Len() == 1) && (preloop->Pred()->Node()->Succ()->Len() == 1))
+      preloop = preloop->Pred()->Node();
+    else
+      preloop = NULL;
   }
 #else
 

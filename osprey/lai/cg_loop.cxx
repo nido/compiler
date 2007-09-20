@@ -5516,6 +5516,13 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	if (modulus % ntimes == 0) {
 	  remainder_trip_count_val = residue % ntimes;
 	}
+
+	// FdF 20070914: A do-loop runs at least once, and a guard
+	// against 0 has already been inserted before the loop if
+	// needed. A LOOPMOD says a loop runs a multiple of modulus
+	// times, so a do-loop will run at least modulus times. When
+	// ntimes<=modulus, the unrolled loop will run at least once.
+	gen_unrolled_loop_guard = FALSE;
       }
 
       else /* ntimes > modulus */ {

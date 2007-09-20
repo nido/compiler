@@ -15382,6 +15382,24 @@ Move_Loop_Pragmas(WN *wn_orig, WN *block_orig, WN *block_dest)
       break;
   }
 }
+
+static BOOL
+Loop_Pragma_Nz_Trip(WN *wn_orig) {
+  WN *wn;
+  int loopmin = 0;
+  for (wn = WN_prev(wn_orig); wn; wn = WN_prev(wn)) {
+    if (WN_operator(wn) != OPR_PRAGMA)
+      break;
+    if ((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMINITERCOUNT)
+      loopmin = MAX(loopmin, WN_pragma_arg1(wn));
+    // FdF 20070914: LOOPMOD also defines a minimum iteration count
+    // with its second argument
+    else if ((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMOD)
+      loopmin = MAX(loopmin, WN_pragma_arg2(wn));
+  }
+  return (loopmin > 0);
+}
+
 #endif
 
 /* ====================================================================
@@ -15425,7 +15443,7 @@ static WN *lower_while_do(WN *block, WN *tree, LOWER_ACTIONS actions)
     *	(GOTO <top_lbl>)
     *  (LABEL <cont_lbl>)
     */
-    if (OPT_Space) {
+    if (OPT_Space && !Loop_Pragma_Nz_Trip(tree)) {
 #if 1
       LABEL_IDX top_lbl, cont_lbl;
       top_lbl  = NewLabel();
@@ -15546,15 +15564,19 @@ static WN *lower_while_do(WN *block, WN *tree, LOWER_ACTIONS actions)
     {
       actions = RemoveScfAction(actions);
     }
-
     WN *wn_top_branch = NULL;
+#ifdef TARG_ST
+    // FdF 20070830: If a loopminitercount says the loop iters at
+    // least once, do not create the FALSEBR
+    if (!Loop_Pragma_Nz_Trip(tree)) {
+#endif
     WN *top_branch_block = lower_falsebr(cont_lbl, test, &wn_top_branch,
 					 actions);
     WN_INSERT_BlockLast(block, top_branch_block);
-
 #ifdef TARG_ST
     // FdF 21/11/2005 Move loop pragmas close to the new loop head
     Move_Loop_Pragmas(tree, block, block);
+    }
 #endif
     setCurrentState(WN_while_body(tree), actions);
     WN *wn_top_lbl = WN_Label(top_lbl);

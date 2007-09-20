@@ -732,12 +732,17 @@ Remove_wn_in(BB_NODE *bb, WN* wn)
 static BOOL
 Loop_Pragma_Nz_Trip(BB_NODE *pragma_bb) {
   WN *wn;
+  int loopmin = 0;
   for (wn = pragma_bb->Firststmt(); wn; wn = WN_next(wn)) {
-    if ((WN_operator(wn) == OPR_PRAGMA) &&
-	((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMINITERCOUNT))
-      return (WN_pragma_arg1(wn) > 0);
+    if (WN_operator(wn) == OPR_PRAGMA)
+      if ((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMINITERCOUNT)
+	loopmin = MAX(loopmin, WN_pragma_arg1(wn));
+      // FdF 20070914: LOOPMOD also defines a minimum iteration count
+      // with its second argument
+      else if ((WN_PRAGMA_ID)WN_pragma(wn) == WN_PRAGMA_LOOPMOD)
+	loopmin = MAX(loopmin, WN_pragma_arg2(wn));
   }
-  return FALSE;
+  return (loopmin > 0);
 }
 
 // Because we want to perform dowhile conversion when the loop is

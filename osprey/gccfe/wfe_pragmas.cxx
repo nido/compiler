@@ -786,6 +786,9 @@ is_pragma_loop(WN *wn) {
   case WN_PRAGMA_PIPELINE:
   case WN_PRAGMA_LOOPSEQ:
   case WN_PRAGMA_STREAM_ALIGNMENT:
+  case WN_PRAGMA_HWLOOP:
+  case WN_PRAGMA_LOOPMINITERCOUNT:
+  case WN_PRAGMA_LOOPMAXITERCOUNT:
     return TRUE;
   }
   return FALSE;
