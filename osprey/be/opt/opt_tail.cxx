@@ -107,6 +107,7 @@
 
 #ifdef TARG_ST
 #   include <set>
+#   include <list>
 #endif
 
 // ====================================================================
@@ -848,10 +849,16 @@ OPT_TAIL::MayBeReturnValueLoadOrStore(WN* stmt, int& countStore,
 void
 OPT_TAIL::FindCandidates(BB_NODE* exitBB, WN* returnValLoadStore)
 {
-    SetOfBBs candidates;
-    candidates.insert(exitBB);
+    typedef std::list<BB_NODE*> ListOfBBs;
+    typedef ListOfBBs::const_iterator CItListOfBBs;
 
-    ItSetOfBBs itCandidates;
+    ListOfBBs candidates;
+    SetOfBBs doneBBs;
+
+    candidates.push_back(exitBB);
+    doneBBs.insert(exitBB);
+
+    CItListOfBBs itCandidates;
     for(itCandidates = candidates.begin(); itCandidates != candidates.end();
         ++itCandidates)
         {
@@ -862,10 +869,11 @@ OPT_TAIL::FindCandidates(BB_NODE* exitBB, WN* returnValLoadStore)
                         tmp = tmp->Next())
                         {
                             // Not goto basic blocks are not simple
-                            if(tmp->Node()->Kind() == BB_GOTO)
+                            if(tmp->Node()->Kind() == BB_GOTO &&
+                               doneBBs.find(tmp->Node()) == doneBBs.end())
                                 {
-                                    candidates.insert(itCandidates,
-                                                      tmp->Node());
+                                    candidates.push_back(tmp->Node());
+                                    doneBBs.insert(tmp->Node());
                                 }
                         }
                 }
@@ -967,4 +975,4 @@ OPT_TAIL::UndoAndRemoveModifications(BB_NODE* bb)
         }
 }
 
-#endif
+#endif // ifdef TARG_ST
