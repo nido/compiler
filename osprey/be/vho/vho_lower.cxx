@@ -1097,14 +1097,26 @@ VHO_Get_Field_List ( WN_OFFSET offset, TY_IDX sty_idx )
             VHO_Struct_Offset_Table [VHO_Struct_Nfields-1] = field_offset;
 #endif
             }
+	    // Overlapping field with same start offset and smaller
+	    // or equal size, ignore it. */
           }
 
           else
           if (   field_offset + TY_size (Ty_Table [fty_idx]) 
                > VHO_Struct_Last_Field_Offset + VHO_Struct_Last_Field_Size ) {
 
+	    // Overlapping field, but not included and does not
+	    // include current field, cancel lowering
+
             VHO_Struct_Can_Be_Lowered = FALSE;
           }
+#ifdef TARG_ST
+	  // FdF 20070913: Overlapping with current or previous field,
+	  // but not included and does not include current field,
+	  // cancel lowering
+	  else if (field_offset < VHO_Struct_Last_Field_Offset)
+	    VHO_Struct_Can_Be_Lowered = FALSE;
+#endif
         }
 
         else {
@@ -1152,6 +1164,7 @@ VHO_Get_Field_List ( WN_OFFSET offset, TY_IDX sty_idx )
         if(VHO_Struct_Nfields) {
           if ( field_offset >=   VHO_Struct_Last_Field_Offset
                                  + VHO_Struct_Last_Field_Size ) { 
+	    /* new fields */
             for(int i=0; i<array_elem_num; i++) {
               VHO_Struct_Offset_Table [VHO_Struct_Nfields] = field_offset + i*TY_size(Ty_Table [ety_idx]);
               VHO_Struct_Fld_Table [VHO_Struct_Nfields++] = ety_idx;
@@ -1159,7 +1172,21 @@ VHO_Get_Field_List ( WN_OFFSET offset, TY_IDX sty_idx )
             VHO_Struct_Last_Field_Offset = field_offset;
             VHO_Struct_Last_Field_Size   = TY_size(Ty_Table [fty_idx]); 
           } else if ( field_offset == VHO_Struct_Last_Field_Offset ) {
+            /* overlapping field with same start offset */
             if ( TY_size (Ty_Table [fty_idx]) > VHO_Struct_Last_Field_Size ) {
+#ifdef TARG_ST
+	      if (array_elem_num == 1)
+		// FdF 20070913: This is not really an array, just
+		// analyze the unique element
+		VHO_Get_Field_List (field_offset, ety_idx);
+	      else if ((TY_kind(ety_idx) != KIND_SCALAR) && (TY_kind(ety_idx) != KIND_POINTER))
+		// FdF 20070913: There may be padding inside array
+		// elements, for example when ety_idx is a STRUCT (see
+		// codex #29209), so cancel lowering.
+		VHO_Struct_Can_Be_Lowered = FALSE;
+	      else {
+#endif
+		/* overlapping field with larger size */
               VHO_Struct_Nfields--;
               for(int i=0; i<array_elem_num; i++) {
                 VHO_Struct_Offset_Table [VHO_Struct_Nfields] = field_offset + i*TY_size(Ty_Table [ety_idx]);
@@ -1167,13 +1194,27 @@ VHO_Get_Field_List ( WN_OFFSET offset, TY_IDX sty_idx )
               }
               VHO_Struct_Last_Field_Offset = field_offset;
               VHO_Struct_Last_Field_Size   = TY_size(Ty_Table [fty_idx]); 
-            } 
+#ifdef TARG_ST
+	      }
+#endif
+            }
+	    // else, Overlapping field with same start offset and
+	    // smaller or equal size, ignore it. */
+
           } else if ( field_offset + TY_size (Ty_Table [fty_idx])
                       > VHO_Struct_Last_Field_Offset + VHO_Struct_Last_Field_Size ) {
             VHO_Struct_Can_Be_Lowered = FALSE;
           }           
+#ifdef TARG_ST
+	  // FdF 20070913: Overlapping with current or previous field,
+	  // but not included and does not include current field,
+	  // cancel lowering
+	  else if (field_offset < VHO_Struct_Last_Field_Offset)
+	    VHO_Struct_Can_Be_Lowered = FALSE;
+#endif
         }
         else {
+	  /* new fields */
           for(int i=0; i<array_elem_num; i++) {
             VHO_Struct_Offset_Table [VHO_Struct_Nfields] = field_offset + i*TY_size(Ty_Table [ety_idx]); 
             VHO_Struct_Fld_Table [VHO_Struct_Nfields++] = ety_idx;
@@ -6386,6 +6427,10 @@ WN * VHO_Lower_Driver (PU_Info* pu_info,
      // Here is the old symtab code:
      // Trace_SYMTAB (TFile, Global_Symtab, TRUE);
      // Trace_SYMTAB (TFile, Current_Symtab, TRUE);
+     Print_global_symtab(TFile);
+     SYMTAB_IDX level =
+       PU_lexical_level (&St_Table[PU_Info_proc_sym (pu_info)]);
+     Print_local_symtab (TFile, Scope_tab[level]);
    }
 
    if (Inline_Intrinsics_Early) {
