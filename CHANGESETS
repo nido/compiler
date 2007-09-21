@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 21 12:49:12 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-29955
+
+Description:
+------------
+	*  Second fix for bug #29955 ("Failure with pointer to nested fn").
+	Delier fixes/codex-29955 with authorization branch #32808.
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/main/optimize/ipo_const.cxx
+	M      osprey/ipa/main/analyze/ipa_cprop.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 21 11:43:45 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -629,6 +629,18 @@ Connect_indirect_call (IPA_NODE* caller)
 	if (ST_is_weak_symbol (func_st))
 	    func_st = ST_strong (func_st);
 
+#ifdef TARG_ST
+	// [SC] Do not transform calls to nested functions, since they
+	// may reference symbols that are not in scope at the call site.
+
+	Is_True(ST_pu (func_st) < PU_Table_Size(),
+		("Replace_Formal_By_LDA: bad pu index %d, not in range 0 <= idx < %d",
+		 ST_pu (func_st), PU_Table_Size()));
+	if (ST_pu (func_st) > PU_IDX_ZERO &&
+	    PU_is_nested_func (Pu_Table[ST_pu (func_st)]))
+	  continue;
+#endif
+
 	NODE_INDEX callee_idx = AUX_PU_node (Aux_Pu_Table[ST_pu (func_st)]);
 
 	if (callee_idx != INVALID_NODE_INDEX) {

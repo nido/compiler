@@ -826,6 +826,20 @@ Replace_Formal_By_LDA (WN* func_body, ST_IDX formal, ST* actual)
 	case OPR_ICALL:
 	    {
 		const WN* func_addr = WN_kid (wn, WN_kid_count (wn) - 1);
+#ifdef TARG_ST
+		if (ST_sym_class (actual) == CLASS_FUNC) {
+		  PU_IDX pu_idx = ST_pu(actual);
+
+		  Is_True(pu_idx < PU_Table_Size(),
+			  ("Replace_Formal_By_LDA: bad pu index %d, not in range 0 <= idx < %d",
+			   pu_idx, PU_Table_Size()));
+		  if (pu_idx > PU_IDX_ZERO && 
+		      PU_is_nested_func (Pu_Table[ST_pu(actual)])) {
+		    ++fail_count;
+		    break;
+		  }
+		}
+#endif
 		if (WN_operator (func_addr) == OPR_LDID &&
 		    WN_st_idx (func_addr) == formal) {
 		    if (WN_offset (func_addr) == 0) {
