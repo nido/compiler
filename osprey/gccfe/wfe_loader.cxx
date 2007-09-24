@@ -10,7 +10,7 @@
 extern "C" {
 #include "tree.h"
 }
-#include "dyn_dll_api.h"
+#include "dyn_dll_api_access.h"
 #include "loader.h"
 #include "wfe_loader.h"
 #include "tracing.h"
@@ -30,7 +30,7 @@ extern "C" {
 #include "W_dlfcn.h"		    /* for sgidladd(), dlerror() */
 };
 
-#include "gccfe_targinfo_interface.h" // TB: Draft of aan ABI between targinfo and gccfe
+#include "gccfe_targinfo_interface.h" // TB: Draft of an ABI between targinfo and gccfe
 #ifdef TARG_ST
 //FOR ISA_REGISTER_CLASS_INFO
 #include "targ_isa_registers.h"
@@ -493,12 +493,12 @@ static void Gccfe_Initialize_Extension_Loader () {
 #endif
  // Allocate and initialize wfe specific extension table
   wfe_ext_info_table = TYPE_MEM_POOL_ALLOC_N(Lai_Loader_Info_t, Malloc_Mem_Pool, 1);
-  // Load extension dlls and count extnesion specific mtypes and intrinsics
+  // Load extension dlls and count extension specific mtypes and intrinsics
   Load_Extension_dlls(&extension_tab, &(wfe_ext_info_table->nb_ext), verbose);
   wfe_ext_info_table->trace_on  = verbose;
   int extension_count = wfe_ext_info_table->nb_ext;
-  const extension_hooks_t **ext_tab;
-  ext_tab = TYPE_MEM_POOL_ALLOC_N(const extension_hooks_t*, Malloc_Mem_Pool, extension_count);
+  const EXTENSION_HighLevel_Info **ext_tab;
+  ext_tab = TYPE_MEM_POOL_ALLOC_N(const EXTENSION_HighLevel_Info*, Malloc_Mem_Pool, extension_count);
   for (i=0; i<extension_count; i++) {
     ext_tab[i] = extension_tab[i].hooks;
   }
@@ -510,8 +510,7 @@ static void Gccfe_Initialize_Extension_Loader () {
   }
 
   // Base offset for each element of each extension
-  // Base offset for each element of each extension
-  wfe_ext_info_table->ISA_tab                = TYPE_MEM_POOL_ALLOC_N(const ISA_EXT_Interface_t*, Malloc_Mem_Pool, extension_count);
+  wfe_ext_info_table->ISA_tab                = TYPE_MEM_POOL_ALLOC_N(EXTENSION_ISA_Info*, Malloc_Mem_Pool, extension_count);
   wfe_ext_info_table->base_REGISTER_CLASS    = TYPE_MEM_POOL_ALLOC_N(int, Malloc_Mem_Pool, extension_count);
   wfe_ext_info_table->base_PREG              = TYPE_MEM_POOL_ALLOC_N(int, Malloc_Mem_Pool, extension_count);
   
@@ -519,21 +518,11 @@ static void Gccfe_Initialize_Extension_Loader () {
   // ------------------------
   int rc_max    = ISA_REGISTER_CLASS_STATIC_MAX;
   int preg_max = Get_Static_Last_Dedicated_Preg_Offset();
+  // TODO: to be shared with lai_loader instance
   for (i=0; i < extension_count; i++) {
-    get_isa_extension_instance_t get_instance;
-    get_instance = (get_isa_extension_instance_t)Get_dll_Symbol(&extension_tab[i], "get_isa_extension_instance");
-    if (get_instance == NULL)
-      Fatal_Error("Unable to find synbol get_isa_extension_instance (%s)",dlerror());
-    wfe_ext_info_table->ISA_tab[i] = (*get_instance)();
-    
-    /* Coherency check - magic number */
-    if (MAGIC_NUMBER_EXT_ISA_API != wfe_ext_info_table->ISA_tab[i]->magic) {
-      char err_msg[256];
-      sprintf(err_msg,
-	      "Incompatible magic number (lib:0x%08x, API:0x%08x).\n",
-	      wfe_ext_info_table->ISA_tab[i]->magic, MAGIC_NUMBER_EXT_ISA_API);
-      RaiseErrorIncompatibleLibrary(extension_tab[i].dllname, err_msg);
-    }
+
+    // Get ISA Extension description accessor
+    wfe_ext_info_table->ISA_tab[i] = Generate_EXTENSION_ISA_Info(&extension_tab[i], wfe_ext_info_table->trace_on);
 
     wfe_ext_info_table->base_REGISTER_CLASS[i] = rc_max+1;
     int rc_in_ext    = wfe_ext_info_table->ISA_tab[i]->get_ISA_REGISTER_CLASS_tab_sz();

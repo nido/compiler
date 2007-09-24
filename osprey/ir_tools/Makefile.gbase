@@ -224,6 +224,8 @@ COMMON_COM_CXX_SRC =	\
 	wutil.cxx	\
 	xstats.cxx	\
 	loader.cxx      \
+	dyn_dll_api_access.cxx \
+	dyn_isa_api_access.cxx \
 	intrn_info.cxx
 
 # there is no way to distinguish between config_targ.cxx and

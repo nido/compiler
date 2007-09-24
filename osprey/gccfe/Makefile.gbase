@@ -267,6 +267,8 @@ COMMON_COM_CXX_SRCS =	\
   wutil.cxx		\
   xstats.cxx            \
   loader.cxx		\
+  dyn_dll_api_access.cxx \
+  dyn_isa_api_access.cxx \
   gccfe_targinfo_interface.cxx
 
 COMMON_COM_TARG_SRCS =	\
@@ -431,7 +433,7 @@ endif
 ifeq (1,1)
 extension_include.h: extension_include.hin
 	$(BUILD_TOT)/scripts/common/preprocess.pl $(LCINCS) -MD $< -o $@
-	
+
 else	
 # -P to discard #line
 # -C to keep comments
@@ -458,8 +460,8 @@ extension_include.h: extension_include.hin
 	echo  "};        /* extern \"C\" */ ">> $@
 	echo  "#endif" >> $@
 	echo  "#endif  /* _EXTENSION_INCLUDE_H_ */" >> $@
-	# The just executed CC generated a dependent file but with a wrong target extension_include.o.
-	# We replace it by extension_include.h which is the file to be rebuilt.
+#	The just executed CC generated a dependent file but with a wrong target extension_include.o.
+#	We replace it by extension_include.h which is the file to be rebuilt.
 	sed 's/extension_include\.o/extension_include.h/' <extension_include.d >extension_include.d2
 	mv extension_include.d2 extension_include.d
 endif

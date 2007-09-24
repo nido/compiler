@@ -285,6 +285,8 @@ COMMON_COM_CXX_SRCS =	\
   wutil.cxx		\
   xstats.cxx            \
   loader.cxx		\
+  dyn_dll_api_access.cxx \
+  dyn_isa_api_access.cxx \
   gccfe_targinfo_interface.cxx
 
 COMMON_COM_TARG_SRCS =	\

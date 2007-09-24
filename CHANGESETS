@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 24 13:11:19 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-ext-lib-compatibility
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-ext-lib-compatibility rev #13539 with authorization branch #32249
+	  Maintain compatibility with extension libraries built with stxp70 toolset release 3.0, and define a new API to ease compatibility maintenance when modifying the dll API.
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/lai_loader.cxx
+	A  +   osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/loader.cxx
+	A  +   osprey/common/com/dyn_dll_api_access.h
+	M      osprey/common/com/loader.h
+	A  +   osprey/common/com/dyn_dll_api_access.cxx
+	A  +   osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/common/com/loader_internal.h
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 21 12:49:12 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

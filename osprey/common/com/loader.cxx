@@ -37,7 +37,7 @@
 
 #include "../gccfe/extension_include.h"
 #include "erglob.h"
-#include "dyn_dll_api.h"
+#include "dyn_dll_api_access.h"
 //TB Extend PREG registers to extension
 extern "C"
 {
@@ -75,7 +75,7 @@ extern "C" {
 #endif
 
 //TB: variable common to gcc and lai loader
-const extension_regclass_t **extension_regclass_table = (const extension_regclass_t**)NULL;
+const EXTENSION_Regclass_Info **extension_regclass_table = (const EXTENSION_Regclass_Info**)NULL;
 //TB: tables to save PREG-> reg class association
 static ISA_REGISTER_CLASS *extension_Preg_To_RegClass_table;
 //TB: tables to save PREG-> reg number association
@@ -184,7 +184,7 @@ TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance, int **mtype_to_locrclass
     if (verbose) {
       fprintf(TFile, "  Extension '%s': Associate dynamic Mtype '%s'"
 	      " to Mtype id %d (machine mode: %d)\n",
-	      dll_instance->dllname, modes[i].name, new_mtype, new_mmode);
+	      dll_instance->extname, modes[i].name, new_mtype, new_mmode);
     }
     Add_Mtype(new_mmode, 
 	      modes[i].name, 
@@ -220,7 +220,7 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
   const extension_builtins_t* btypes = dll_instance->hooks->get_builtins();
   if (verbose) {
     fprintf(TFile, "  Extension '%s': Adding %d intrinsics starting at id %d\n",
-	    dll_instance->dllname, count, INTRINSIC_COUNT + 1);
+	    dll_instance->extname, count, INTRINSIC_COUNT + 1);
   }
   for (i = 0; i < count; i++) {
     intrn_info[i + INTRINSIC_COUNT + 1].is_by_val = btypes[i].is_by_val;
@@ -274,8 +274,14 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
     Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_out_count = nb_out;
     Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_in_count = nb_in;
 
-    if (btypes[i].return_type != VOIDmode && (nb_out != 0))
-      Fatal_Error("Incompatible prototype for built-in %s. A buit-in cannot have out parameters and not returning void",btypes[i].c_name);
+    if (btypes[i].return_type != VOIDmode && (nb_out != 0)) {
+      char err_msg[256];
+      sprintf(err_msg,
+	      "Incompatible prototype for built-in %s. "
+	      "A built-in cannot have out parameters and not returning void.",
+	      btypes[i].c_name);
+      RaiseErrorIncompatibleLibrary(dll_instance->dllname, err_msg);
+    }
 
     //Initialize returned type
     Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].return_type = MachineMode_To_Mtype(btypes[i].return_type);
@@ -400,18 +406,20 @@ extension_dll_close( Extension_dll_t *ext )
  * Retrieve a symbol from argument dll and return a pointer to it
  * (NULL if undefined)
  */
-void *Get_dll_Symbol(const Extension_dll_t *dll_instance,
-		     const char *symbol) {
+static void *
+Get_dll_Symbol(const Extension_dll_t *dll_instance,
+	       const char *symbol) {
   void *symb_ptr;
 
-  if (symbol == NULL) {
-    return (NULL);
-  }
+  FmtAssert((symbol != NULL),
+	    ("Unexpected NULL string for symbol name in Get_dll_Symbol()"));
 
   symb_ptr = dlsym(dll_instance->handler, symbol);
   if(symb_ptr == NULL) {
-    DevWarn("Unable to find symbol %s (%s)\n", symbol, dlerror());
-    return (NULL);
+    char err_msg[256];
+    sprintf(err_msg,
+	    "Unable to find symbol %s (%s)", symbol, dlerror());
+    RaiseErrorIncompatibleLibrary(dll_instance->dllname, err_msg);
   }
 
   return (symb_ptr);
@@ -449,37 +457,37 @@ Load_Extension_dll(const char *basename,
   /* Retrieve machine type and builtin interface */
   get_type_extension_instance_t get_instance;
   get_instance = (get_type_extension_instance_t)Get_dll_Symbol(&ext_dll, "get_type_extension_instance");
-  if (get_instance == NULL)
-    Fatal_Error("Unable to find synbol get_type_extension_instance (%s)",dlerror());
-  ext_dll.hooks = (*get_instance)();
-  if (ext_dll.hooks == NULL) {
+  const extension_hooks_t *hooks = (*get_instance)();
+  if (hooks == NULL) {
     FmtAssert((FALSE),
 	      ("Symbol 'type_ext_interface' not found in extension dll '%s'\n",
 	       ext_dll.dllname));
+  }
+
+  // Check extension hooks compatibility and initialize the access API
+  INT magic = hooks->magic;
+  if (EXTENSION_Is_Supported_HighLevel_Revision(magic)) {
+    if (verbose) {
+      fprintf(TFile, "  HL API revision: lib=%d, compiler=%d\n", magic, MAGIC_NUMBER_EXT_API);
+    }
+    ext_dll.hooks = new EXTENSION_HighLevel_Info(hooks);
+  }
+  else {
+    char err_msg[256];
+    sprintf(err_msg,
+	    "Incompatible HL API revision: lib=%d, compiler=%d.\n",
+	    magic, MAGIC_NUMBER_EXT_API);
+    RaiseErrorIncompatibleLibrary(ext_dll.dllname, err_msg);
   }
 
   /* Retrieve extension name */
   get_extension_name_t get_name;
   const char *extname_in_dll;
   get_name = (get_extension_name_t)Get_dll_Symbol(&ext_dll, "get_extension_name");
-  if (get_name == NULL) {
-    Fatal_Error("Unable to find synbol get_extension_name (%s)",dlerror());
-  }
   extname_in_dll = (*get_name)();
-  ext_dll.extname = (char*)malloc(strlen(extname_in_dll)+1);
+  ext_dll.extname = TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool, strlen(extname_in_dll)+1);
   strcpy(ext_dll.extname, extname_in_dll);
 
-  /* Coherency check - magic number */
-  if (MAGIC_NUMBER_EXT_API != ext_dll.hooks->magic) {
-    char err_msg[256];
-    sprintf(err_msg,
-	    "Failed to load extension library '%s'.\n"
-	    "### Incompatible magic number (lib:0x%08x, API:0x%08x).\n"
-	    "### Please provide a compatible library.\n",
-	    ext_dll.dllname, ext_dll.hooks->magic, MAGIC_NUMBER_EXT_API);
-    ErrMsg(EC_Misc_String, "Compiler initialization", err_msg);
-  }
-  
   return (ext_dll);
 }
 
@@ -559,7 +567,8 @@ Load_Extension_dlls( Extension_dll_t **ext_tab, int *ext_count, BOOL verbose )
  * Main function responsible for loading the extension library and
  * initializing dynamic mtypes and intrinsics
  */
-void Initialize_Extension_Loader ()
+void
+Initialize_Extension_Loader ()
 {
   int i;
   int nb_ext_mtypes;
@@ -602,27 +611,20 @@ void Initialize_Extension_Loader ()
  * This function is responsible for settting PREG info To be called by
  * the inliner or ir_b2a (not the front end neither the back end)
  */
-void Initialize_Extension_Loader_Register ()
-{
+void
+Initialize_Extension_Loader_Register () {
   int i;
   int nb_ext_mtypes;
   int nb_ext_intrinsics;
-  Extension_dll_t *ext_inter_tab = extension_tab;
 
   if (Extension_Is_Present) {
     for (i=0; i < extension_count; i++) {
       int j;
-      const ISA_REGISTER_CLASS_INFO*   (*get_register_tab)        (void);
-      const mUINT32                    (*get_register_tab_size)      (void);
+      EXTENSION_ISA_Info* isa_ext_access;
       const ISA_REGISTER_CLASS_INFO* rc_tab;
-      get_register_tab = (const ISA_REGISTER_CLASS_INFO* (*)())Get_dll_Symbol(&ext_inter_tab[i], "dyn_get_ISA_REGISTER_CLASS_tab");
-      if (get_register_tab == NULL)
-	Fatal_Error("Unable to find synbol get_register_tab (%s)",dlerror());
-      get_register_tab_size = (const mUINT32 (*)())Get_dll_Symbol(&ext_inter_tab[i], "dyn_get_ISA_REGISTER_CLASS_tab_sz");
-      if (get_register_tab_size == NULL)
-	Fatal_Error("Unable to find synbol get_register_tab_size (%s)",dlerror());
-      rc_tab = get_register_tab();
-      const mUINT32 rc_tab_size = get_register_tab_size();
+      isa_ext_access = Generate_EXTENSION_ISA_Info(&extension_tab[i], 0);
+      rc_tab = isa_ext_access->get_ISA_REGISTER_CLASS_tab();
+      const mUINT32 rc_tab_size = isa_ext_access->get_ISA_REGISTER_CLASS_tab_sz();
       for (j=0; j < rc_tab_size; j++) {
 	int first_isa_reg  = rc_tab[j].min_regnum;
 	int last_isa_reg   = rc_tab[j].max_regnum;
@@ -630,6 +632,7 @@ void Initialize_Extension_Loader_Register ()
 	// Set the PREG max bound
 	Set_Last_Dedicated_Preg_Offset( Get_Last_Dedicated_Preg_Offset_Func() + register_count);
       }
+      delete isa_ext_access;
     }
   }
 }
@@ -687,7 +690,7 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
 				 (static_size + nb_added_rclass));
   memcpy(rc_tab, ISA_REGISTER_CLASS_info, static_size * sizeof(ISA_REGISTER_CLASS_INFO));
   
-  extension_regclass_table =  TYPE_MEM_POOL_ALLOC_N(const extension_regclass_t*,
+  extension_regclass_table =  TYPE_MEM_POOL_ALLOC_N(const EXTENSION_Regclass_Info*,
 						    Malloc_Mem_Pool,
 						    nb_added_rclass);
     
@@ -764,7 +767,7 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
 
       for (j=0; j<rc_in_ext; j++) {
 	// Retrieve extension API
-	extension_regclass_table[ext_info.base_REGISTER_CLASS[ext]+j-(ISA_REGISTER_CLASS_STATIC_MAX+1)] = &(ext_info.ISA_tab[ext]->get_REGISTER_CLASS_info_tab()[j]);
+	extension_regclass_table[ext_info.base_REGISTER_CLASS[ext]+j-(ISA_REGISTER_CLASS_STATIC_MAX+1)] = &(ext_info.ISA_tab[ext]->get_Regclass_Info_tab()[j]);
 	
 	// Fill index table (one regclass can have several regsets)
 	// TODO: if several entries of the ISA_REGISTER_CLASS_info table are
@@ -891,15 +894,47 @@ void Initialize_ABI_Properties(Lai_Loader_Info_t &ext_info) {
 }
 
 /*
+ * Return a pointer to the newly allocated API used to access to the 
+ * ISA description of the specified extension.
+ */
+EXTENSION_ISA_Info *
+Generate_EXTENSION_ISA_Info(const Extension_dll_t *dll_instance, BOOL verbose) {
+  INT i;
+  EXTENSION_ISA_Info  *isa_ext_access = NULL;
+  const ISA_EXT_Interface_t *isa_ext;
+  get_isa_extension_instance_t get_instance;
+  get_instance = (get_isa_extension_instance_t)Get_dll_Symbol(dll_instance, "get_isa_extension_instance");
+  isa_ext = (*get_instance)();
+
+  // Check ISA extension compatibility and initialize the access API
+  INT magic = isa_ext->magic;
+  if (EXTENSION_Is_Supported_ISA_Revision(magic)) {
+    if (verbose) {
+      fprintf(TFile, "  ISA API revision: lib=%d, compiler=%d\n", magic, MAGIC_NUMBER_EXT_API);
+    }
+    isa_ext_access = new EXTENSION_ISA_Info(isa_ext);
+  }
+  else {
+    char err_msg[256];
+    sprintf(err_msg,
+	    "Incompatible ISA API revision: lib=%d, compiler=%d.\n",
+	    magic, MAGIC_NUMBER_EXT_ISA_API);
+    RaiseErrorIncompatibleLibrary(dll_instance->dllname, err_msg);
+  }
+
+  return (isa_ext_access);
+}
+
+/*
  * Function called when an extension is incompatible with the core description
  */
 void RaiseErrorIncompatibleLibrary(const char *name, const char *error_msg) {
   char err_msg[512];
   sprintf(err_msg,
-	  "Failed to load extension library '%s'.\n"
+	  "Failure.\n"
 	  "### %s\n"
 	  "### Please provide a compatible library.\n",
-	  name, error_msg);
+	  error_msg);
   ErrMsg(EC_Lib_Ext_Load, name, err_msg);
 }
 
