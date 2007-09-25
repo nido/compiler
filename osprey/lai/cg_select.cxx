@@ -843,8 +843,8 @@ Can_Speculate_BB(BB *bb)
   return TRUE;
 }
 
-bool
-Same_Tns (TN* tn1, TN *tn2)
+static bool
+Same_Reg_Or_Value (TN* tn1, TN *tn2)
 {
   if (TN_has_value (tn1)) {
     if (!TN_has_value (tn2))
@@ -853,7 +853,8 @@ Same_Tns (TN* tn1, TN *tn2)
       return (TN_value (tn1) == TN_value(tn2));
   }
 
-  if (TNs_Are_Equivalent (tn1, tn2))
+  if (TN_is_register (tn1) && TN_is_register (tn2)
+      && TNs_Are_Equivalent (tn1, tn2))
     return true;
 
   return false;
@@ -874,10 +875,10 @@ Have_Same_Offset_Or_Base(OP* op1, OP* op2)
     TN *baseTN1   = OP_opnd(op1, OP_find_opnd_use(op1, OU_base));
     TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
 
-    if (!Same_Tns (offsetTN1, offsetTN2) && Same_Tns (baseTN1, baseTN2))
+    if (!Same_Reg_Or_Value (offsetTN1, offsetTN2) && Same_Reg_Or_Value (baseTN1, baseTN2))
       return TN_is_constant (baseTN1);
 
-    if (Same_Tns (offsetTN1, offsetTN2) && !Same_Tns (baseTN1, baseTN2))
+    if (Same_Reg_Or_Value (offsetTN1, offsetTN2) && !Same_Reg_Or_Value (baseTN1, baseTN2))
       return TN_is_constant (offsetTN1); 
   }
 
@@ -1981,15 +1982,19 @@ Can_Mem_Conflicts(OP *op1, OP *op2)
 }
 
 static void
-Promote_Mem_Based_On (TN *condTN1, TN *condTN2, int index, OP *psi_op, OP *op1, OP *op2)
+Promote_Mem_Based_On (int index, OP *psi_op)
 {
   TN *sel_tn;
+  OP *op1 = TN_ssa_def (PSI_opnd (psi_op, 0));
+  OP *op2 = TN_ssa_def (PSI_opnd (psi_op, 1));
+  TN *cond_TN0 = OP_opnd (op1, OP_find_opnd_use(op1, index));
+  TN *cond_TN1 = OP_opnd (op2, OP_find_opnd_use(op2, index));
 
-  if (TN_is_register(condTN1))
-    sel_tn = Dup_TN (condTN1);
+  if (TN_is_register(cond_TN0))
+    sel_tn = Dup_TN (cond_TN0);
   else
     sel_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 
-                              TN_size(condTN1) == 8 ? MTYPE_I8: MTYPE_I4); 
+                              TN_size(cond_TN0) == 8 ? MTYPE_I8: MTYPE_I4); 
 
   BB *bb = OP_bb(psi_op);
   OPS ops = OPS_EMPTY;  
@@ -1998,10 +2003,14 @@ Promote_Mem_Based_On (TN *condTN1, TN *condTN2, int index, OP *psi_op, OP *op1, 
             BB_id(OP_bb(psi_op)) == BB_id(OP_bb(op2)),
             ("wrong candidate for memory promotion"));
   
-  TN *pred_tn = PSI_guard(psi_op, 0);
+  DevAssert(TN_size(cond_TN0) == TN_size(cond_TN1),
+            ("wrong candidate for memory promotion"));
+            
+  DevAssert (PSI_opnds (psi_op) == 2,
+             ("wrong candidate for memory promotion"));
 
-  Expand_Select (sel_tn, pred_tn, condTN1, condTN2, 
-                 TN_size(condTN1) == 8 ? MTYPE_I8: MTYPE_I4,
+  Expand_Select (sel_tn, PSI_guard(psi_op, 0), cond_TN0, cond_TN1, 
+                 TN_size(cond_TN0) == 8 ? MTYPE_I8: MTYPE_I4,
                  FALSE, &ops);
 
   if (OP_Precedes(op1, op2)) {
@@ -2131,17 +2140,15 @@ Optimize_Spec_Loads(BB *bb)
           TN *baseTN1   = OP_opnd(op1, OP_find_opnd_use(op1, OU_base));
           TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
 
-          if(Same_Tns (offsetTN1, offsetTN2)) {
-            Promote_Mem_Based_On (baseTN1, baseTN2, OU_base, psi,
-                                  op1, op2);
+          if(Same_Reg_Or_Value (offsetTN1, offsetTN2)) {
+            Promote_Mem_Based_On (OU_base, psi);
 
             i_iter2 = pred_erase(i_iter2);
             i_iter = pred_erase(i_iter);
             goto next_load;         
           }
-          else if(Same_Tns (baseTN1, baseTN2)) {
-            Promote_Mem_Based_On (offsetTN1, offsetTN2, OU_offset, psi,
-                                  op1, op2);
+          else if(Same_Reg_Or_Value (baseTN1, baseTN2)) {
+            Promote_Mem_Based_On (OU_offset, psi);
             
             i_iter2 = pred_erase(i_iter2);
             i_iter = pred_erase(i_iter);
