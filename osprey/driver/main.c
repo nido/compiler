@@ -330,7 +330,7 @@ main (int argc, char *argv[])
 	  FILE *output=stdout;
 	  if (execute_flag) output=stderr;
 	  if (!dump_version) {
-	      fprintf(output, "HPC Compilers: Version %s\n", compiler_version);
+	      fprintf(output, "STMicroelectronics Compilers: Version %s\n", compiler_version);
 	      fprintf(output, "Pro64 OpenSource 0.01.0-13\n");
 	      fprintf(output, "Thread model: %s\n", thread_model) ;
 	      if (invoked_lang == L_CC)
