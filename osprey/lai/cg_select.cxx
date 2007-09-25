@@ -439,13 +439,33 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
   TN *result[num_results];
   TN *opnd[num_opnds];
 
+  /* easy case first */
+  if (TNs_Are_Equivalent (true_tn, false_tn)) {
+    Expand_Copy (target_tn, True_TN, true_tn, cmov_ops);
+    return;
+  }
+
   OP *opt = TN_ssa_def(true_tn);
   OP *opf = TN_ssa_def(false_tn);
 
   if (!opt || !opf || (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf))) {
 #if 1
+    /* transform region guarded by p
+       (p)  ? tn1 = psi(T:x, p0:b) 
+       (!p) ? tn2 = psi(T:y, p1:c)
+       tn3 = phi(tn1, tn2)
+       if converted as:
+       tn1 = psi(T:x, (p0&p):b) 
+       tn2 = psi(T:y, (p1&!p):c)
+       tn3 = select(p ? tn1, tn2)
+       in:
+       tn4 = select(p ? x : y)
+       tn3 = psi(T:tn4, (p0&p):b, (p1&!p):c)
+    */
+ 
     if (opt && opf && OP_psi (opt) && OP_psi (opf) &&
         TN_is_true(OP_opnd (opt, 0)) && TN_is_true(OP_opnd (opf, 0))) {
+
       true_tn = OP_opnd (opt, 1);
       false_tn = OP_opnd (opf, 1); 
       TN *sel_tn = Dup_TN (target_tn);
@@ -482,66 +502,6 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
       if (OP_bb(opf) && !TN_is_global_reg(OP_result(opf, 0)))
         BB_Remove_Op(OP_bb(opf), opf);
 
-      OPS_Append_Op(cmov_ops, psi_op);
-      return;
-    }
-    else if (opt && OP_psi(opt) && TN_is_true(OP_opnd (opt, 0))) {
-      true_tn = OP_opnd (opt, 1); 
-      TN *sel_tn = Dup_TN (target_tn);
-
-      INT num_opnds = OP_opnds(opt);
-      TN *opnd[num_opnds];
-
-      Expand_Select (sel_tn, test_tn, true_tn, false_tn, 
-                     TN_size(target_tn) == 8 ? MTYPE_I8: MTYPE_I4,
-                     FALSE, cmov_ops);
-
-      result[0] = target_tn;
-      opnd[0] = True_TN;
-      opnd[1] = sel_tn;
-
-      for (int i = 2; i < OP_opnds(opt); i++) {
-        opnd[i] = OP_opnd(opt, i);
-      }
-
-      OP *psi_op = Mk_VarOP (TOP_psi,
-                             num_results,
-                             num_opnds,
-                             result,
-                             opnd);
-
-      if (!TN_is_global_reg(OP_result(opt, 0)))
-        BB_Remove_Op(OP_bb(opt), opt);
-      OPS_Append_Op(cmov_ops, psi_op);
-      return;
-    }
-    else if (opf && OP_psi(opf) && TN_is_true(OP_opnd (opf, 0))) {
-      false_tn = OP_opnd (opf, 1); 
-      TN *sel_tn = Dup_TN (target_tn);
-
-      INT num_opnds = OP_opnds(opf);
-      TN *opnd[num_opnds];
-
-      Expand_Select (sel_tn, test_tn, true_tn, false_tn, 
-                     TN_size(target_tn) == 8 ? MTYPE_I8: MTYPE_I4,
-                     FALSE, cmov_ops);
-
-      result[0] = target_tn;
-      opnd[0] = True_TN;
-      opnd[1] = sel_tn;
-
-      for (int i = 2; i < OP_opnds(opf); i++) {
-        opnd[i] = OP_opnd(opf, i);
-      }
-
-      OP *psi_op = Mk_VarOP (TOP_psi,
-                             num_results,
-                             num_opnds,
-                             result,
-                             opnd);
-
-      if (!TN_is_global_reg(OP_result(opf, 0)))
-        BB_Remove_Op(OP_bb(opf), opf);
       OPS_Append_Op(cmov_ops, psi_op);
       return;
     }
