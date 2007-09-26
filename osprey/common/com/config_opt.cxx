@@ -195,6 +195,10 @@ BOOL GCM_Speculative_Ptr_Deref= TRUE;  /* allow load speculation of a memory
 					  offset from some reference location */
 BOOL GCM_Speculative_Ptr_Deref_Set=FALSE;   /* ... option seen? */
 
+#ifdef TARG_ST
+BOOL Enable_simplify_comparisons_per_minmax = TRUE;
+#endif
+
 /***** Limits on optimization *****/
 #define DEFAULT_OLIMIT		3000
 #define DEFAULT_O3_OLIMIT	4000	/* allow more time for -O3 compiles */
@@ -455,6 +459,11 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_INT32,	OV_VISIBLE,	TRUE, "IEEE_arithmetic",	"IEEE_a",
     1, 1, 4,	&IEEE_Arithmetic, &IEEE_Arith_Set,
     "Level of conformance to IEEE-754 arithmetic rules" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "SimplifyComparisonsMinMax",	"SimplifyComparisonsMinMax",
+    0, 0, 0,	&Enable_simplify_comparisons_per_minmax, NULL,
+    "Enable optimisation of comparisons using minmax" },
+
 #else
   { OVK_INT32,	OV_VISIBLE,	TRUE, "IEEE_arithmetic",	"IEEE_a",
     1, 1, 3,	&IEEE_Arithmetic, &IEEE_Arith_Set,

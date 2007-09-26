@@ -189,6 +189,8 @@ static simpnode SIMPNODE_SimpCreateExtract(OPCODE opc, INT16 boffset, INT16 bsiz
 static simpnode SIMPNODE_SimpCreateDeposit(OPCODE opc, INT16 boffset, INT16 bsize,
 					   simpnode k0, simpnode k1);
 
+static simpnode SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1);
+
 #ifdef SIMPNODE_SimpCreateCvtl
 static simpnode SIMPNODE_SimpCreateCvtl(OPCODE opc, INT16 bits, simpnode k0);
 #endif
@@ -5166,9 +5168,21 @@ static simpnode SIMPNODE_SimplifyExp2_h(OPCODE opc, simpnode k0, simpnode k1)
 /* This just calls the above routine. It's done this way to simplify my debugging */
 simpnode SIMPNODE_SimplifyExp2(OPCODE opc, simpnode k0, simpnode k1) 
 {
-   simpnode  result;
+  simpnode  result, result2;
    result = SIMPNODE_SimplifyExp2_h(opc, k0,k1);
    SHOW_TREE(opc,k0,k1,result);
+   if (result!=NULL)
+     {
+       opc= SIMPNODE_opcode(result);
+       k0= SIMPNODE_kid0(result);
+       k1= SIMPNODE_kid1(result);
+     }
+#ifdef TARG_ST
+   result2 = SIMPNODE_SimplifyComparisons(opc, k0, k1);
+   if (result2!=NULL)
+     result=result2;
+#endif
+
    return (result);
 }
    
@@ -5748,5 +5762,493 @@ simpnode SIMPNODE_SimplifyIstore(OPCODE opc, WN_OFFSET offset,
    }
    return (r);
 }
+#endif
+
+#ifdef TARG_ST
+/*
+ * SIMPNODE_SimplifyComparisons optimisation of
+ * conjonction/disjonctions of comparisons using min/max operators.
+ * [development by vcdv 09/2007]
+ *  (SIMPNODE_SimplifyComparisons() is the main function)
+ */
+
+/** 
+ * function computes equivalent comparison relation when switching
+ * left and right operand.
+ * 
+ * @param opc 
+ * 
+ * @return 
+ *
+ * @pre opc is >,>=,< or <= comparison.
+ */
+static OPCODE get_symetric_relop( OPCODE opc )
+{
+   OPCODE iopc;
+   OPERATOR iopr;
+
+   switch (OPCODE_operator(opc)) {
+   case OPR_LT: iopr = OPR_GT; break;
+   case OPR_LE: iopr = OPR_GE; break;
+   case OPR_GT: iopr = OPR_LT; break;
+   case OPR_GE: iopr = OPR_LE; break;
+   default: return OPCODE_UNKNOWN;
+   }
+
+   iopc = OPCODE_make_op(iopr, OPCODE_rtype(opc), OPCODE_desc(opc));
+   return iopc;
+}
+
+/** 
+ * functions check if parameter <opr> is comparison of
+ * type ge/gt/lt/le
+ * 
+ * @param opr 
+ * 
+ * @return 
+ */
+static BOOL
+SIMPNODE_is_GTGELTLE(OPERATOR opr)
+{
+  return (opr==OPR_GT || opr==OPR_GE || opr==OPR_LT || opr==OPR_LE);
+}
+
+/* min-max optimizer uses stl list data structures */
+#include <list>
+
+/* enum used to position a var use in a tree
+ * a correct position is an integer of the form 
+ * ((((var_equal<<0x2)|var_kidx)<<0x2)|var_kidx)
+ * Access to the position is done using the 3 accessors functions:
+ * get_next_res(), shift_res() and add_to_res().
+ */
+typedef enum {
+  var_not_found = 0,
+  var_equal,
+  var_kid0,
+  var_kid1
+} var_search_res;
+#define res_mask 0x3
+#define res_nbbits 0x2
+#define res_overflow_mask (res_mask<<(32-res_nbbits))  // 0xC0000000
+
+static unsigned int get_next_res(unsigned int res) { return res&res_mask; }
+static unsigned int shift_res(unsigned int res) { return res>>res_nbbits; }
+static unsigned int add_to_res(unsigned int res, var_search_res val)
+{
+  int r = (res<<res_nbbits);
+  if ((res&res_overflow_mask) != 0) /* res holder already full. overfull */
+    return var_not_found; 
+  return (r|val);
+}
+
+
+/** 
+ * Function search parameter <var> in the parameter <tree> and returns
+ * the position of <var> in the <tree> using the  var_search_res enum.
+ *
+ * It also returns the predicted cmp-relation after potential
+ * normalisation of "var" isolated in kid1 of tree.
+ * 
+ * @param var the variable to be searched
+ * @param tree the tree to search
+ * @param relation result parameter returning the predicted
+ *        cmp-relation after potential normalisation
+ * 
+ * @return the position in tree if found or var_not_found
+ *
+ * @bug ignore opcode other than add/sub/neg/cmp
+ *      ignore multi-occurence of var
+ *
+ * @pre var is an LDID node.
+ */
+static unsigned int
+SIMPNODE_Search_Variable_In_Tree (simpnode var, simpnode tree, OPCODE* relation)
+{
+  FmtAssert((var!=NULL && SIMPNODE_operator(var)==OPR_LDID),
+            ("parameter var must be of kind LDID."));
+  FmtAssert((tree!=NULL),
+            ("parameter tree must be a proper node."));
+
+  /* if var and tree are the same nodes, success */
+  if (SIMPNODE_Simp_Compare_Trees(var, tree)==0) {
+    return var_equal;
+  }
+  
+  OPERATOR opr = SIMPNODE_operator(tree);
+
+  /* only the following nodes are handled */
+  if (! (opr==OPR_NEG || opr==OPR_ADD || opr==OPR_SUB ||
+         SIMPNODE_is_GTGELTLE(opr))) {
+    return var_not_found;
+  }
+
+  if (SIMPNODE_is_GTGELTLE(opr)) {
+    if (*relation != OPCODE_UNKNOWN) {
+      return  var_not_found;  // multiple comparisons in tree !
+    }
+    *relation = SIMPNODE_opcode(tree);
+  }
+
+  int i;
+  int n = SIMPNODE_kid_count(tree);
+  
+  FmtAssert((n<=2),
+            ("only add/sub/neg/cmp binary/unary operations"));
+  /* parse all kid nodes until var is found */
+  for (i=0; i<n; i++) {
+    OPCODE opc = *relation;
+    unsigned int r =
+      SIMPNODE_Search_Variable_In_Tree(var, SIMPNODE_kid(tree, i), &opc);
+    if (r!=0) { /* means <var> has been found in <SIMPNODE_kid(tree, i)> */
+      if (opr == OPR_NEG ||
+          (opr == OPR_SUB && i==1) ||
+          (SIMPNODE_is_GTGELTLE(opr) && i==0)) {
+        /* in these cases, we need to inverse the comparison operands
+         * and thus to switch the comparision relation
+         */
+        opc = get_symetric_relop(opc);
+      }
+      *relation= opc; /* set cmp <relation> result. */
+
+      r = add_to_res(r, (var_search_res)(i+var_kid0));
+      /* encode position of found variable, (assumes i<2!) */
+      return r;
+    }
+  }
+  return var_not_found;
+}
+
+/** 
+ * Function searches common variable use between trees k0 and k1.
+ * 
+ * @param res list that holds found common variables
+ * @param k0 
+ * @param k1 
+ * 
+ * @return number of found variables.
+ *
+ * @pre <ko> and <k1> are comparison nodes.
+ */
+static int
+SIMPNODE_Find_Common_Variable_Load(std::list<simpnode>* common_variables,
+                                   simpnode k0, simpnode k1)
+{
+  std::list<simpnode> nodes_to_search;
+  std::list<simpnode> candidate_variables;
+  int nb_common_variables = 0;
+
+  FmtAssert((common_variables!=NULL),("NULL result list\n"));
+  FmtAssert((k0!=NULL && SIMPNODE_kid_count(k0)==2),
+            ("k0 should be a comparison node (having 2 kids)."));
+  FmtAssert((k1!=NULL && SIMPNODE_kid_count(k1)==2),
+            ("k1 should be a comparison node (having 2 kids)."));
+
+  nodes_to_search.push_back(SIMPNODE_kid0(k0));
+  nodes_to_search.push_back(SIMPNODE_kid1(k0));
+  
+  /* parses recursively node k0 to find candidate variables */
+  while (! nodes_to_search.empty()) {
+    simpnode tree =  nodes_to_search.front();
+    nodes_to_search.pop_front();
+    
+    OPERATOR opr = SIMPNODE_operator(tree);
+    if (opr == OPR_LDID) {
+      if (!SIMP_has_side_effects(tree))  /* we don't want to optimize
+                                          * volatile variables
+                                          */
+        candidate_variables.push_back(tree);
+    } else if (opr==OPR_NEG) {
+      nodes_to_search.push_back(SIMPNODE_kid0(tree));
+    } else if (opr==OPR_ADD || opr==OPR_SUB) {
+      nodes_to_search.push_back(SIMPNODE_kid0(tree));
+      nodes_to_search.push_back(SIMPNODE_kid1(tree));
+    }
+  }
+  
+  /* parse candidate_variables list to find all variable that are also
+   * available in k1 node (does not handle multi-occurence). */
+  while (!candidate_variables.empty()) {
+    simpnode var = candidate_variables.front();
+    candidate_variables.pop_front();
+    OPCODE relation = OPCODE_UNKNOWN;
+    unsigned int r = SIMPNODE_Search_Variable_In_Tree(var, k1, &relation);
+    if (r>1) {  /* as k1 is a comparison r==1==var_equal is not
+                   possible may not occur */
+      common_variables->push_back(var);
+      nb_common_variables++;
+    }
+  }
+  return nb_common_variables;
+}
+
+/** 
+ * Normalize <tree> so that <var> is kid1 node of normalized tree.
+ * 
+ * the idea is to transform <tree> comparison into a form
+ *     "<expr> <cmp> <var>"
+ *    <cmp> has already been computed in
+ *        SIMPNODE_Search_Variable_In_Tree() function. 
+ *    <var> is given as input
+ *    <expr> is the expression computed by the function.
+ * The function only returns the <expr> part as returning the full
+ *     normalized tree would be useless for the following code.
+ *
+ * @param var  : var to be isolated.
+ * @param tree : comparison tree.
+ * @param search : the position of <var> in <tree>.
+ * 
+ * @return 
+ *
+ * @pre <var> is present in <tree> and <tree> can be normalized.
+ */
+static simpnode
+SIMPNODE_NormalizeCmp(simpnode var, simpnode tree, unsigned int search)
+{
+  
+  FmtAssert((var!=NULL &&tree!=NULL),
+            ("parameters must be non NULL"));
+  FmtAssert((SIMPNODE_operator(var)==OPR_LDID),
+            ("var must be an LDID node"));
+
+  simpnode k0 = SIMPNODE_kid0(tree);
+  simpnode k1 = SIMPNODE_kid1(tree);
+
+  /* First ensure var is in k1 part of node, else switch k1/k0 nodes */
+  if ((get_next_res(search)) != var_kid1) {
+    simpnode aux = k0;
+    k0=k1;
+    k1=aux;
+  }
+
+  /* pass to next kid */
+  search = shift_res(search);
+
+  /* Ensure in this loop that no add/sub/neg are present on k1 kid */
+  while (search != var_equal) {
+    simpnode aux =  k1;
+    int nb = SIMPNODE_kid_count(k1);
+    OPERATOR opr =  SIMPNODE_operator(k1);
+
+    /* handle neg operator */
+    if (nb==1 && opr==OPR_NEG) {
+      k0 = SIMPNODE_SimpCreateExp1(SIMPNODE_opcode(k1), k0);
+      k1 = SIMPNODE_kid0(k1);
+    } else if (nb==2 && opr== OPR_SUB) {
+      /* handle sub operator */
+      if (get_next_res(search) == var_kid0) {
+        k0 = SIMPNODE_SimpCreateExp2(OPCODE_make_op(OPR_ADD,
+                                                    SIMPNODE_rtype(k1),
+                                                    SIMPNODE_desc(k1)),
+                                     k0, SIMPNODE_kid1(k1));
+        k1 = SIMPNODE_kid0(k1);
+      } else {
+        k0 = SIMPNODE_SimpCreateExp2(SIMPNODE_opcode(k1), SIMPNODE_kid0(k1),
+                                     k0);
+        k1 = SIMPNODE_kid1(k1);
+      }
+      /* handle add operator */
+    } else if (nb==2 &&opr== OPR_ADD) {
+      if (get_next_res(search) == var_kid0) {
+        k0 = SIMPNODE_SimpCreateExp2(OPCODE_make_op(OPR_SUB,
+                                                    SIMPNODE_rtype(k1),
+                                                    SIMPNODE_desc(k1)),
+                                     k0, SIMPNODE_kid1(k1));
+        k1 = SIMPNODE_kid0(k1);
+      } else {
+        k0 = SIMPNODE_SimpCreateExp2(OPCODE_make_op(OPR_SUB,
+                                                    SIMPNODE_rtype(k1),
+                                                    SIMPNODE_desc(k1)),
+                                     k0, SIMPNODE_kid0(k1));
+        k1 = SIMPNODE_kid1(k1);
+      }
+    } else {
+      FmtAssert((FALSE), ("Unable to normalize tree"));
+      return NULL;
+    }
+    
+    SIMPNODE_DELETE(aux);
+    /* pass to next kid */
+    search = shift_res(search);
+  }
+  return k0;
+}
+
+/** 
+ * This function matched conjonction/disjonction of comparisons with a
+ * common variable that may be optimized using min/max operators.
+ * 
+ * The algorithm:
+ *  + filters out all non qualifying nodes.
+ *  + finds common variables between the 2 subtrees <k0> and <k1>
+ *  + foreach common variables <var>
+ *    + check if <k0> and <k1> can be normalized to a standard form
+ *         <expr> <cmp> <var>
+ *    + check that <k0> and <k1> comparisons are similar.
+ *    + normalize <k0> and <k1> and returns only the left nodes of the
+ *      normalized trees. (right nodes values is already known as
+ *                         being <var>)
+ *    + build the replacing minmax node and returns it.
+ *
+ *
+ * @param opc CAND/CIOR opcode
+ * @param k0  left kid
+ * @param k1  right kid
+ * 
+ * @return new optimized node or NULL.
+ */
+
+static simpnode
+SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
+{
+  simpnode result = NULL;
+  
+  if (!Enable_simplify_comparisons_per_minmax) {
+    return result;
+  }
+
+  /* filters || and && opcodes */
+  if (! (OPCODE_operator(opc) == OPR_CAND ||
+         OPCODE_operator(opc) == OPR_CIOR)) {
+    return result;
+  }
+
+  /* precomputes whether we should create a min or max */
+  /* assumes comparison relations are GE/GT */
+  BOOL usemin = (OPCODE_operator(opc) == OPR_CAND);
+
+  OPERATOR op_k0 = SIMPNODE_operator(k0);
+  OPERATOR op_k1 = SIMPNODE_operator(k1);
+
+ /* filters comparison opcodes  >,<,>=,<= */
+  if (! (SIMPNODE_is_GTGELTLE(op_k0) &&
+         SIMPNODE_is_GTGELTLE(op_k1))) {
+    return result;
+  }
+
+  /* filters types: both comparisons must compare same type data */
+  if (SIMPNODE_rtype(SIMPNODE_kid0(k0)) != SIMPNODE_rtype(SIMPNODE_kid0(k1))) {
+    return result;
+  }
+
+  /* filter floating point type */
+  if (Force_IEEE_Comparisons &&
+      SIMP_IS_TYPE_FLOATING(SIMPNODE_rtype(SIMPNODE_kid0(k0)))) {
+    return result;
+  }
+      
+  std::list<simpnode> common_variables;
+
+  /* finds common variables between k0 and k1 nodes */
+  if (SIMPNODE_Find_Common_Variable_Load(&common_variables, k0, k1) == 0)
+    {
+      return result; /* no common variable found */
+    }
+
+  /* parse all common variables */
+  while (! common_variables.empty()) {
+    unsigned int search0, search1;
+    OPCODE opc0 = OPCODE_UNKNOWN, opc1 = OPCODE_UNKNOWN;
+    OPERATOR minmax_opr;
+    simpnode k0_0, k1_0, minmax;
+    simpnode item = common_variables.front();
+    TYPE_ID item_type = SIMPNODE_rtype(item);
+    common_variables.pop_front();
+
+    /* checks whether nodes k0 (resp k1) may be normalized under the form
+     *   <expr> <opc0/1> <item>
+     *  with <expr>   a simpnode
+     *       <opc0/1> a comparison opcode
+     *       <item>   the common_variable
+     */
+    search0 = SIMPNODE_Search_Variable_In_Tree(item, k0, &opc0);
+    search1 = SIMPNODE_Search_Variable_In_Tree(item, k1, &opc1);
+
+
+    /* filters unsigned int since wrapping may imply a change of
+     * behavior.
+     * Optimisation is only possible if no arithmetic normalisation
+     * has occured !
+     */
+    if (MTYPE_is_unsigned(item_type) &&
+        (shift_res(search0) != var_equal ||
+         shift_res(search1) != var_equal)) {
+      return result;
+    }
+    
+    
+    /* as it is possible to switch comparisons between LT and LE (resp GT
+     * and GE) here by adding 1 to expr. we need to
+     * generalize this equality here 
+     */
+    BOOL k0_0_plusone = FALSE; 
+    BOOL k1_0_plusone = FALSE; 
+    OPCODE opcplusone = OPCODE_UNKNOWN;
+    if (MTYPE_is_integral(item_type) && opc0!=opc1) {
+      // we only need to deal with cases where
+      // comparisons are different.
+      // on integer types only (not valid for floats!)
+      OPERATOR opr0 = OPCODE_operator(opc0);
+      OPERATOR opr1 = OPCODE_operator(opc1);
+      simpnode k = SIMPNODE_kid0(k0);
+      if (opr0==OPR_LT) {
+        k0_0_plusone = TRUE;
+        opc0 = OPCODE_make_op(OPR_LE, OPCODE_rtype(opc0), OPCODE_desc(opc0));
+      } else if (opr1==OPR_LT) {
+        k1_0_plusone = TRUE;
+        opc1 = OPCODE_make_op(OPR_LE, OPCODE_rtype(opc1), OPCODE_desc(opc1));
+      }
+      if (opr0==OPR_GE) {
+        k0_0_plusone = TRUE;
+        opc0 = OPCODE_make_op(OPR_GT, OPCODE_rtype(opc0), OPCODE_desc(opc0));
+      } else if (opr1==OPR_GE) {
+        k1_0_plusone = TRUE;
+        opc1 = OPCODE_make_op(OPR_GT, OPCODE_rtype(opc1), OPCODE_desc(opc1));
+      }
+      opcplusone = OPCODE_make_op(OPR_ADD, item_type, MTYPE_V);
+    }
+
+    /* if resulting relations opc0 and opc1 are equal, the
+     * optimisation is possible.
+     */
+    if (opc0!=opc1)
+      continue;
+    
+    /* SIMPNODE_NormalizeCmp returns the 0th kid node of the normalized
+     * version of k0(resp k1)
+     */
+    k0_0 = SIMPNODE_NormalizeCmp(item, k0, search0);
+    k1_0 = SIMPNODE_NormalizeCmp(item, k1, search1);
+
+    /* finish normalisation k0_0 or k1_0 by adding a constant "1" if
+       necessary */
+    if (k0_0_plusone) {
+      k0_0 = SIMPNODE_SimpCreateExp2(opcplusone, k0_0,
+                                     SIMP_INTCONST(SIMPNODE_rtype(k0_0), 1));
+    } else if (k1_0_plusone) {
+      k1_0 = SIMPNODE_SimpCreateExp2(opcplusone, k1_0,
+                                     SIMP_INTCONST(SIMPNODE_rtype(k1_0), 1));
+    }
+
+    if (OPCODE_operator(opc0)== OPR_LT ||
+        OPCODE_operator(opc0)== OPR_LE) {
+      /* refine min/max choice if opr if lt/le instead of ge/gt */
+      usemin = !usemin;
+    }
+    minmax_opr= (usemin?OPR_MIN:OPR_MAX);
+    
+    minmax = SIMPNODE_SimpCreateExp2(OPCODE_make_op(minmax_opr,
+                                                    SIMPNODE_rtype(k0_0),
+                                                    MTYPE_V),
+                                     k0_0, k1_0);
+    result = SIMPNODE_SimpCreateExp2(opc0, minmax, item);
+    SIMPNODE_DELETE(k0);
+    SIMPNODE_DELETE(k1);
+    break;
+  }
+
+  return result;
+}
+
 #endif
 

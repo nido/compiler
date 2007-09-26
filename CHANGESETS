@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 26 13:53:24 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31972
+
+Description:
+------------
+	* [trunk] Fix for bug #31972: For loops with combined &lt; or &gt; exit conditions could make use of Min/Max instead.
+	Deliver fixes/codex-31972 rev #13653 with authorization branch #32552
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/config_opt.h
+	M      osprey/common/com/config_opt.cxx
+	M      osprey/common/com/wn_simp_code.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 25 09:35:49 CEST 2007
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
