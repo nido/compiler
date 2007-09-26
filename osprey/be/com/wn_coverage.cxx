@@ -1106,6 +1106,10 @@ build_fn_info_value (TY_IDX fn_info_type_idx, unsigned *nfns)
     sprintf(buf, "%s%d", ".LPFI", n_fns);
     ST_Init (st, Save_Str(buf), CLASS_VAR
 	     , SCLASS_FSTATIC, EXPORT_LOCAL, fn_info_type_idx);
+    //TB: Fix bug #30725 with -s/tda option
+#ifdef TARG_STxP70
+    Set_ST_memory_space (*st, ST_MEMORY_NONE);
+#endif
     Set_ST_is_initialized (st);
     Set_ST_is_const_var (st);
     INITO_IDX inito = New_INITO(st);
@@ -1297,6 +1301,10 @@ create_coverage (TY_IDX counter_type)
   ST_Init (init_st, Save_Str2i ("__ctors_for_cov", "_", 0),
            CLASS_VAR, SCLASS_FSTATIC,
            EXPORT_LOCAL, Make_Pointer_Type(MTYPE_To_TY(MTYPE_V)));
+#ifdef TARG_STxP70
+  //TB: Fix bug #30725 with -s/tda option
+  Set_ST_memory_space (*init_st, ST_MEMORY_NONE);
+#endif
   Set_ST_is_initialized (init_st);
   INITO_IDX inito = New_INITO(init_st);
   INITV_IDX initv = New_INITV ();
@@ -2423,6 +2431,10 @@ coverage_counter_alloc (unsigned counter, unsigned num)
 	      Make_Pointer_Type(MTYPE_To_TY(MTYPE_U4)));
       // To tell allocate_object not to allocate it (whirl2ops call
       // allocate object for all used objects!)
+#ifdef TARG_STxP70
+      //TB: Fix bug #30725 with -s/tda option
+      Set_ST_memory_space (*newst, ST_MEMORY_NONE);
+#endif
       Set_ST_is_not_sized(newst);
       ctr_labels[counter] = newst;
       // Create an intrinsic symbol for each merge function
@@ -3706,6 +3718,10 @@ wn_coverage_Generate_Func_Start_Profiler_PU(PU_Info** _pu_tree_p)
     ST_Init(gcov_info_st, 
 	    Save_Str(buf),
 	    CLASS_VAR, SCLASS_FSTATIC, EXPORT_LOCAL,  Be_Type_Tbl(MTYPE_U4));
+#ifdef TARG_STxP70
+    //TB: Fix bug #30725 with -s/tda option
+    Set_ST_memory_space (*gcov_info_st, ST_MEMORY_NONE);
+#endif
     Set_ST_is_initialized(gcov_info_st);
     // to tell Allocate_Object not to allocate it:
     Set_ST_is_not_sized(gcov_info_st);

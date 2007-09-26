@@ -1,3 +1,25 @@
+[TB] Fix bug #30725
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Sep 26 16:52:36 CEST 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30725
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+----------y
+
+-----
+	M      osprey/be/com/wn_coverage.cxx
+
+
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
