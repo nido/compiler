@@ -95,13 +95,9 @@ UINT32 CGTARG_max_issue_width;
 BOOL CGTARG_max_issue_width_overriden = FALSE;
 #endif
 
-#ifdef TARG_ST
+UINT32 CGTARG_NUM_SPILL_TYPES = 0;
 TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
 CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
-#else
-TY_IDX CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES];
-CLASS_INDEX CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES];
-#endif
 static TOP *CGTARG_Invert_Table;
 
 static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
@@ -3285,16 +3281,22 @@ CGTARG_Initialize ()
 {
   INT32 i;
 
+  CGTARG_NUM_SPILL_TYPES = 0;
+
   // Spill type for integer registers
-  CGTARG_Spill_Type[0] = Spill_Int_Type;
-  CGTARG_Spill_Mtype[0] = Spill_Int_Mtype;
+  CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES] = Spill_Int_Type;
+  CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES] = Spill_Int_Mtype;
+  CGTARG_NUM_SPILL_TYPES++;
+
   // Spill type for branch registers
-  CGTARG_Spill_Type[1] = MTYPE_To_TY (MTYPE_I1);
-  CGTARG_Spill_Mtype[1] = MTYPE_I1;
+  CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES] = MTYPE_To_TY (MTYPE_I1);
+  CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES] = MTYPE_I1;
+  CGTARG_NUM_SPILL_TYPES++;
+
   // Spill type for paired registers
-  CGTARG_Spill_Type[2] = MTYPE_To_TY (MTYPE_I8);
-  CGTARG_Spill_Mtype[2] = MTYPE_I8;
-  FmtAssert (CGTARG_NUM_SPILL_TYPES == 3, ("CGTARG_NUM_SPILL_TYPES mismatch"));
+  CGTARG_Spill_Type[CGTARG_NUM_SPILL_TYPES] = MTYPE_To_TY (MTYPE_I8);
+  CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES] = MTYPE_I8;
+  CGTARG_NUM_SPILL_TYPES++;
 
   /* TODO: tabulate in the arch data base */
 

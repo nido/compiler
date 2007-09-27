@@ -74,15 +74,15 @@ extern "C" {
 #include "targ_isa_registers.h"
 #endif
 
-//TB: variable common to gcc and lai loader
-const EXTENSION_Regclass_Info **extension_regclass_table = (const EXTENSION_Regclass_Info**)NULL;
-//TB: tables to save PREG-> reg class association
+// Variables common to gcc and lai loader
+// --------------------------------------
+// Table to save PREG -> reg class association
 static ISA_REGISTER_CLASS *extension_Preg_To_RegClass_table;
-//TB: tables to save PREG-> reg number association
+// Table to save PREG -> reg number association
 int *extension_Preg_To_RegNum_table;
-//TB: rclass to preg min offset
+// Table containing Rclass to preg min offset
 INT *extension_RegClass_To_Preg_Min_Offset_table;
-//TB: MMOCHE=>MTYPE mapping
+// Table containing MMODE to MTYPE mapping
 static TYPE_ID *Extension_MachineMode_To_Mtype_Array;
 
 /*
@@ -690,11 +690,6 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
 				 (static_size + nb_added_rclass));
   memcpy(rc_tab, ISA_REGISTER_CLASS_info, static_size * sizeof(ISA_REGISTER_CLASS_INFO));
   
-  extension_regclass_table =  TYPE_MEM_POOL_ALLOC_N(const EXTENSION_Regclass_Info*,
-						    Malloc_Mem_Pool,
-						    nb_added_rclass);
-    
-
   extension_Preg_To_RegClass_table =  TYPE_MEM_POOL_ALLOC_N(ISA_REGISTER_CLASS,
 						      Malloc_Mem_Pool,
 						      nb_added_preg);
@@ -766,9 +761,6 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
       }
 
       for (j=0; j<rc_in_ext; j++) {
-	// Retrieve extension API
-	extension_regclass_table[ext_info.base_REGISTER_CLASS[ext]+j-(ISA_REGISTER_CLASS_STATIC_MAX+1)] = &(ext_info.ISA_tab[ext]->get_Regclass_Info_tab()[j]);
-	
 	// Fill index table (one regclass can have several regsets)
 	// TODO: if several entries of the ISA_REGISTER_CLASS_info table are
 	//       associated to the same register class name,

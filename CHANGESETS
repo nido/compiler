@@ -1,6 +1,32 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 27 09:42:56 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32957
+
+Description:
+------------
+	* [trunk] Deliver tt2/codex-32957 rev #13675 with authorization branch #32958
+	Improved generation of local spill code by enabling LD/ST greater than 64 bits, depending on available stack alignment.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/loader_internal.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/generate/isa_registers_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 27 08:52:19 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

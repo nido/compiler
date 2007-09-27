@@ -64,7 +64,7 @@ CGTARG_Use_Brlikely(float branch_taken_probability)
 #define CGSPILL_DEFAULT_STORE_COST 1.25F
 #define CGSPILL_DEFAULT_RESTORE_COST 3.25F
 
-#define CGTARG_NUM_SPILL_TYPES 3
+extern UINT32 CGTARG_NUM_SPILL_TYPES;
 
 /* When (Gen_GP_Relative && Is_Caller_Save_GP && !Constant_GP),
    the CGIR contains instructions to restore the GP after a

@@ -162,6 +162,22 @@ static const char * const interface[] = {
   " *       Iterate over all the register class values in reverse order using",
   " *       the ISA_REGISTER_CLASS variable <cl>.",
   " *",
+  " *   (macro) FOR_ALL_STATIC_ISA_REGISTER_CLASS(cl)",
+  " *       Iterate over all the statically defined register class values using",
+  " *       the ISA_REGISTER_CLASS variable <cl>.",
+  " *",
+  " *   (macro) FOR_ALL_STATIC_ISA_REGISTER_CLASS_IN_REVERSE(cl)",
+  " *       Iterate over all the statically defined register class values in",
+  " *       reverse order using the ISA_REGISTER_CLASS variable <cl>.",
+  " *",
+  " *   (macro) FOR_ALL_DYNAMIC_ISA_REGISTER_CLASS(cl)",
+  " *       Iterate over all the dynamically defined register class values using",
+  " *       the ISA_REGISTER_CLASS variable <cl>.",
+  " *",
+  " *   (macro) FOR_ALL_DYNAMIC_ISA_REGISTER_CLASS_IN_REVERSE(cl)",
+  " *       Iterate over all the dynamically defined register class values in",
+  " *       reverse order using the ISA_REGISTER_CLASS variable <cl>.",
+  " *",
   " *   const INT ISA_REGISTER_MAX",
   " *       The maximum (highest) register number of all classes.",
   " *       NOTE: the lowest number register is implicitly 0.",
@@ -639,6 +655,26 @@ void ISA_Registers_End(void)
   fprintf(hfile, "\n#define FOR_ALL_ISA_REGISTER_CLASS_IN_REVERSE(cl) \\\n"
 		 "\tfor (cl = ISA_REGISTER_CLASS_MAX; \\\n"
 		 "\t     cl >= ISA_REGISTER_CLASS_MIN; \\\n"
+		 "\t     cl = (ISA_REGISTER_CLASS)(cl - 1))\n");
+
+  fprintf(hfile, "\n#define FOR_ALL_STATIC_ISA_REGISTER_CLASS(cl) \\\n"
+		 "\tfor (cl = ISA_REGISTER_CLASS_MIN; \\\n"
+		 "\t     cl <= ISA_REGISTER_CLASS_STATIC_MAX; \\\n"
+		 "\t     cl = (ISA_REGISTER_CLASS)(cl + 1))\n");
+
+  fprintf(hfile, "\n#define FOR_ALL_STATIC_ISA_REGISTER_CLASS_IN_REVERSE(cl) \\\n"
+		 "\tfor (cl = ISA_REGISTER_CLASS_STATIC_MAX; \\\n"
+		 "\t     cl >= ISA_REGISTER_CLASS_MIN; \\\n"
+		 "\t     cl = (ISA_REGISTER_CLASS)(cl - 1))\n");
+
+  fprintf(hfile, "\n#define FOR_ALL_DYNAMIC_ISA_REGISTER_CLASS(cl) \\\n"
+		 "\tfor (cl = ISA_REGISTER_CLASS_STATIC_MAX+1; \\\n"
+		 "\t     cl <= ISA_REGISTER_CLASS_MAX; \\\n"
+		 "\t     cl = (ISA_REGISTER_CLASS)(cl + 1))\n");
+
+  fprintf(hfile, "\n#define FOR_ALL_DYNAMIC_ISA_REGISTER_CLASS_IN_REVERSE(cl) \\\n"
+		 "\tfor (cl = ISA_REGISTER_CLASS_MAX; \\\n"
+		 "\t     cl >= ISA_REGISTER_CLASS_STATIC_MAX+1; \\\n"
 		 "\t     cl = (ISA_REGISTER_CLASS)(cl - 1))\n");
 
   fprintf(hfile, "\ntypedef struct {\n"
