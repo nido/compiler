@@ -239,9 +239,7 @@ public:
 			  	  return u.c.tn; }
 #ifdef TARG_ST
   INT NHardRegs(void)           { return (type == LRANGE_TYPE_LOCAL ? 
-					  (Has_Wired_Register() ? 
-					   u.l.nregs:
-					   1) :
+					  u.l.nregs : 
 					  TN_nhardregs(u.c.tn)); }
 #endif
   INTERFERE Neighbors(void)	{ return u.c.neighbors; }
