@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 27 12:24:21 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30279
+
+Description:
+------------
+	* [trunk] Fix for bug #30279: uninitialized/zero-initialized data placed in tda_data/data instead of tda_bss/bss.
+	Deliver fixes/codex-30279 rev #13680 with authorization branch #33191
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 27 09:42:56 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
