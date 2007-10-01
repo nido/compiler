@@ -1908,25 +1908,27 @@ add_final_ld_args (string_list_t *args)
 	// Under os21 mode, in the new syscall model,a la ST40
 	if ((st200_runtime == RUNTIME_OS21) || (st200_runtime == RUNTIME_OS21_DEBUG)) {
 	  extern string st200_board_name ;
-	  if (!same_string(st200_board_name, "default"/*DEF_BOARD_NAME*/)) {
-	    buffer_t libboardname ;
-	    buffer_t libboardarg ;
-	    if (st200_runtime == RUNTIME_OS21) {
-	      sprintf(libboardname,"lib%s.a",st200_board_name) ;
-	      sprintf(libboardarg,"-l%s",st200_board_name) ;
-	    } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
-	      sprintf(libboardname,"lib%s_d.a",st200_board_name) ;
-	      sprintf(libboardarg,"-l%s_d",st200_board_name) ;	    
-	    } 
-	    ofile = concat_path (st200_board, libboardname) ;
-	    if (file_exists (ofile)) {
-	      add_string (args, libboardarg);
-	    } else {
-	      warning("The %s library cannot be found in %s, skipping the addition of %s", 
-		      libboardname,
-		      st200_board,
-		      libboardarg) ;
-	    }
+	  // Either board has a name and we build the libraries names based on it
+	  // Or it is the "default" board (when -mboard is not defined or when -mboard=default)
+	  // In *both* cases we add a library that is named by the board name to the link line
+	  // In *both* cases st200_board_name contains the board name (including "default" as a possible value")
+	  buffer_t libboardname ;
+	  buffer_t libboardarg ;
+	  if (st200_runtime == RUNTIME_OS21) {
+	    sprintf(libboardname,"lib%s.a",st200_board_name) ;
+	    sprintf(libboardarg,"-l%s",st200_board_name) ;
+	  } else if (st200_runtime == RUNTIME_OS21_DEBUG) {
+	    sprintf(libboardname,"lib%s_d.a",st200_board_name) ;
+	    sprintf(libboardarg,"-l%s_d",st200_board_name) ;	    
+	  } 
+	  ofile = concat_path (st200_board, libboardname) ;
+	  if (file_exists (ofile)) {
+	    add_string (args, libboardarg);
+	  } else {
+	    warning("The %s library cannot be found in %s, skipping the addition of %s", 
+		    libboardname,
+		    st200_board,
+		    libboardarg) ;
 	  }
 	}
 	
