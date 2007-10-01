@@ -122,7 +122,7 @@ static const char source_file[] = __FILE__;
                             OP_code(o) == TOP_mulfrac_i_r_r ||   \
                             OP_code(o) == TOP_mulfrac_ii_r_r ||  \
                             OP_code(o) == TOP_mulfrac_r_r_r)  
-                         
+                        
 
 /* ============================================================
  * opcode_benefit
@@ -4614,6 +4614,40 @@ op_match_compare(OP *op,
 }
 
 static BOOL
+op_match_min(OP *op, 
+		 EBO_TN_INFO **opnd_tninfo, 
+		 TN **op0_tn, 
+		 EBO_TN_INFO **op0_tninfo, 
+		 TN **op1_tn, 
+		 EBO_TN_INFO **op1_tninfo)
+{
+  if (!OP_imin(op)) return FALSE;
+
+  *op0_tn = OP_opnd(op, 0);
+  *op0_tninfo = opnd_tninfo[0];
+  *op1_tn = OP_opnd(op, 1);
+  *op1_tninfo = opnd_tninfo[1];
+  return TRUE;
+}
+
+static BOOL
+op_match_max(OP *op, 
+		 EBO_TN_INFO **opnd_tninfo, 
+		 TN **op0_tn, 
+		 EBO_TN_INFO **op0_tninfo, 
+		 TN **op1_tn, 
+		 EBO_TN_INFO **op1_tninfo)
+{
+  if (!OP_imax(op)) return FALSE;
+
+  *op0_tn = OP_opnd(op, 0);
+  *op0_tninfo = opnd_tninfo[0];
+  *op1_tn = OP_opnd(op, 1);
+  *op1_tninfo = opnd_tninfo[1];
+  return TRUE;
+}
+
+static BOOL
 op_match_neg(OP *op, 
 	     EBO_TN_INFO **opnd_tninfo, 
 	     TN **op0_tn, 
@@ -4692,6 +4726,12 @@ op_match_binary(OP *op,
  * (select (cmpgt x y) x y)
  * and generates:
  * (max x y)
+ * 
+ * [HK] 20070918 Augment the function to catch the
+ * following cases:
+ * (select (cmp x c2) (max/min x,c1) c2)
+ * and generate:
+ * (min (max x, c1) c2) depending on the value of c1 and c2
  */
 static BOOL
 min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
@@ -4711,6 +4751,8 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   
   // Get defining op for cond
   EBO_OP_INFO *cond_opinfo;
+  TN *min_tn0, *min_tn1, *max_tn0, *max_tn1;
+  EBO_TN_INFO *min_tninfo0, *min_tninfo1, *max_tninfo0, *max_tninfo1;
   if (!find_def_opinfo(cond_tninfo, &cond_opinfo)) return FALSE;
   if (!op_match_compare(cond_opinfo->in_op, 
 			cond_opinfo->actual_opnd, 
@@ -4720,7 +4762,76 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     inverted = FALSE;
   } else if (lhs_tn == false_tn && rhs_tn == true_tn) {
     inverted = TRUE;
-  } else return FALSE;
+  } else if (lhs_tn == true_tn && TN_Has_Value(lhs_tn)) {
+    EBO_OP_INFO *false_opinfo;
+    if (!find_def_opinfo(false_tninfo, &false_opinfo)) return FALSE;
+    if (op_match_min(false_opinfo->in_op, 
+		     false_opinfo->actual_opnd, 
+		     &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
+      if (min_tn0 == false_tn && TN_Has_Value(min_tn1)
+	  && TN_Value(min_tn1) < TN_Value(lhs_tn))
+	inverted = FALSE;  
+    } else if (op_match_max(false_opinfo->in_op, 
+			    false_opinfo->actual_opnd, 
+			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
+      if (max_tn0 == false_tn && TN_Has_Value(max_tn1)
+	  && TN_Value(max_tn1) > TN_Value(lhs_tn))
+	inverted = FALSE;  
+    } else
+      return FALSE;
+  } else if (lhs_tn == false_tn && TN_Has_Value(lhs_tn)) {
+    EBO_OP_INFO *true_opinfo;
+    if (!find_def_opinfo(true_tninfo, &true_opinfo)) return FALSE;
+    if (op_match_min(true_opinfo->in_op, 
+		      true_opinfo->actual_opnd, 
+		      &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
+      if (min_tn0 == true_tn && TN_Has_Value(min_tn1)
+	  && TN_Value(min_tn1) < TN_Value(lhs_tn))
+	inverted = TRUE;  
+    } else if (op_match_max(true_opinfo->in_op, 
+			    true_opinfo->actual_opnd, 
+			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
+      if (max_tn0 == true_tn && TN_Has_Value(max_tn1)
+	  && TN_Value(max_tn1) > TN_Value(lhs_tn))
+	inverted = TRUE;  
+    } else
+      return FALSE;
+  }  else if (rhs_tn == true_tn && TN_Has_Value(rhs_tn)) {
+    EBO_OP_INFO *false_opinfo;
+    if (!find_def_opinfo(false_tninfo, &false_opinfo)) return FALSE;
+    if (op_match_min(false_opinfo->in_op, 
+		     false_opinfo->actual_opnd, 
+		     &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
+      if (min_tn0 == false_tn && TN_Has_Value(min_tn1)
+	  && TN_Value(min_tn1) < TN_Value(rhs_tn))
+	inverted = TRUE;  
+    } else if (op_match_max(false_opinfo->in_op, 
+			    false_opinfo->actual_opnd, 
+			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
+      if (max_tn0 == false_tn && TN_Has_Value(max_tn1)
+	  && TN_Value(max_tn1) > TN_Value(rhs_tn))
+	inverted = TRUE;  
+    } else
+      return FALSE;
+  } else if (rhs_tn == false_tn && TN_Has_Value(rhs_tn)) {
+    EBO_OP_INFO *true_opinfo;
+    if (!find_def_opinfo(true_tninfo, &true_opinfo)) return FALSE;
+    if (op_match_min(true_opinfo->in_op, 
+		      true_opinfo->actual_opnd, 
+		      &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
+      if (min_tn0 == true_tn && TN_Has_Value(min_tn1)
+	  && TN_Value(min_tn1) < TN_Value(rhs_tn))
+	inverted = FALSE;  
+    } else if (op_match_max(true_opinfo->in_op, 
+			    true_opinfo->actual_opnd, 
+			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
+      if (max_tn0 == true_tn && TN_Has_Value(max_tn1)
+	  && TN_Value(max_tn1) > TN_Value(rhs_tn))
+	inverted = FALSE;  
+    } else
+      return FALSE;
+  } else 
+    return FALSE;
   
   TN *new_tn0 = NULL, *new_tn1 = NULL;
   EBO_TN_INFO *new_tninfo0 = NULL, *new_tninfo1 = NULL;
@@ -4820,6 +4931,119 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
 }
 
+
+/*
+ * minmax_sats_sequence
+ *
+ * Detect the min(x, 32767)/max(x, -32768) sequences
+ * and generates:
+ * (sats x )
+ */
+static BOOL
+minmax_sats_sequence (OP *l1_op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  OP *l2_op;
+  TN *opnd1, *opnd2, *result, *opnd_sat;
+  INT shiftcount;
+  INT64 val1, val2;
+  BOOL min = FALSE, max = FALSE;
+  TN *minmax_tn0, *minmax_tn1;
+  EBO_TN_INFO *minmax_tninfo, *minmax_tninfo0, *minmax_tninfo1;
+  EBO_OP_INFO *minmax_opinfo;
+
+  // Check if the target has a sats instruction
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sats_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+
+  // check if l1_op is a min or a max
+  if (op_match_min(l1_op, 
+		   opnd_tninfo, 
+		   &minmax_tn0, &minmax_tninfo0, &minmax_tn1, &minmax_tninfo1))
+    min = TRUE;
+  else if (op_match_max(l1_op, 
+			opnd_tninfo, 
+			&minmax_tn0, &minmax_tninfo0, &minmax_tn1, &minmax_tninfo1))
+    max = TRUE;
+  else
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+
+  // check if one of the operand of l1_op is a literal
+  if (TN_Has_Value(opnd1)){
+    val1 = TN_Value(opnd1);
+    minmax_tninfo = minmax_tninfo1;
+  }
+  else if (TN_Has_Value(opnd2)){
+    val1 = TN_Value(opnd2);
+    minmax_tninfo = minmax_tninfo0;
+  }
+  else
+    return FALSE;
+
+  // check that l1_op is either max(x, -32768) or min(x, 32767)
+  if (min && val1 != 32767 
+      || max && val1 != -32768)
+    return FALSE;
+
+  if (!find_def_opinfo(minmax_tninfo, &minmax_opinfo)) 
+    return FALSE;
+ 
+  l2_op = minmax_opinfo->in_op;
+
+  if (!l2_op) return FALSE;
+  
+  opnd1 = OP_Opnd1(l2_op);
+  opnd2 = OP_Opnd2(l2_op);
+
+  // check if we have a min / max sequence
+  if (min && OP_imax(l2_op)){
+    if (TN_Has_Value(opnd1)){
+      opnd_sat = opnd2;
+      val2 = TN_Value(opnd1);
+    } else if (TN_Has_Value(opnd2)){
+      opnd_sat = opnd1;
+      val2 = TN_Value(opnd2);
+    }
+    if (val2 != -32768)
+      return FALSE;
+  // check if we have a max / min sequence
+  } else if (max && OP_imin(l2_op)){
+    if (TN_Has_Value(opnd1)){
+      opnd_sat = opnd2;
+      val2 = TN_Value(opnd1);
+    } else if (TN_Has_Value(opnd2)){
+      opnd_sat = opnd1;
+      val2 = TN_Value(opnd2);
+    }
+    if (val2 != 32767)
+      return FALSE;
+  } else
+    return FALSE;
+
+
+  // if we get here, we have the adequate min/max sequence 
+  // to produce a sats
+
+  result = OP_result (l1_op, 0);  
+  BB *bb = OP_bb(l1_op);
+  if (minmax_tninfo != NULL && !EBO_tn_available (bb, minmax_tninfo)) {
+    return FALSE;
+  }
+  OP *new_op;
+  TOP new_top = TOP_sats_r_r;
+  new_op = Mk_OP(new_top , result, opnd_sat);
+  OP_srcpos(new_op) = OP_srcpos(l1_op);
+  if (EBO_in_loop) EBO_Set_OP_omega (new_op, minmax_tninfo);
+  if (!EBO_Verify_Op(new_op)) return FALSE;
+  BB_Insert_Op_After(bb, l1_op, new_op);
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Convert min/max to %s\n", TOP_Name(new_top));
+  return TRUE;
+}
 
 static BOOL
 match_adds_X_X (EBO_TN_INFO *tninfo, BB *bb, TN **X_tn, EBO_TN_INFO **X_tninfo)
@@ -6687,6 +6911,8 @@ EBO_Special_Sequence (
   if (operand_special_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
   if (shadds_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+
+  if (minmax_sats_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
 
 #if 0 //Was a tentative
   if (!EBO_in_pre && !inline_extended_immediate &&
