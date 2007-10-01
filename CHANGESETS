@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct  1 17:11:55 CEST 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33342
+
+Description:
+------------
+	*  deliver fix for bug #33342 (	IPA handling of COMDAT functions )
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/flags.c
+	M      osprey/ipa/main/analyze/ipa_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct  1 16:57:44 CEST 2007
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

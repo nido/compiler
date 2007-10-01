@@ -2006,18 +2006,18 @@ IPA_NODE::Is_Externally_Callable ()
 	return FALSE;
     }
 
-#ifdef TARG_ST
-    // (cbr) pretend it's not callable from outside so it can be deleted
-    if (ST_is_comdat (func_st))
-      return FALSE;
-#endif
-
 #ifndef _LIGHTWEIGHT_INLINER
     const AUX_ST& aux_st = Aux_St_Table[ST_st_idx (func_st)];
 
     if (AUX_ST_flags (aux_st, USED_IN_OBJ|USED_IN_DSO|ADDR_TAKEN_IN_OBJ))
 	return TRUE;
 #endif // _LIGHTWEIGHT_INLINER
+
+#ifdef TARG_ST
+    // (cbr) pretend it's not callable from outside so it can be deleted
+    if (ST_is_comdat (func_st))
+      return FALSE;
+#endif
 
 #ifdef TARG_ST
     // clarkes: "Externally" callable means
@@ -2602,6 +2602,8 @@ IPA_CALL_GRAPH::Quasi_To_Real_Clone (IPA_NODE* clone)
     SUMMARY_FEEDBACK *fb = CXX_NEW (SUMMARY_FEEDBACK(), clone->Mem_Pool());
     fb->Init();
     clone->Set_Clone_Summary_Feedback(fb);
+  } else {
+    clone->Set_Clone_Summary_Feedback(NULL);
   }
 #endif
   // this performs actual tree and symtab cloning and

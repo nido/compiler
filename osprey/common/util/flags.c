@@ -1046,7 +1046,7 @@ Modified_Option ( OPTION_DESC *odesc )
       return ( *((void**)var) != ODA_last_p(aux) );
     default:
 #ifdef TARG_ST // [CL] avoid UMR on cur
-      //      return FALSE;
+      return FALSE;
 #endif
       break;
   }
