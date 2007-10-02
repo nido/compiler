@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct  2 10:53:48 CEST 2007
+	Author:    cq1
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33587
+
+Description:
+------------
+	* [trunk] Fix for bug #33587: [debug] Dwarf relocations are wrong for extensions registers.
+	Deliver fixes/codex-33587 rev #13752 with authorization branch #33591
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/lai_loader.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct  1 17:11:55 CEST 2007
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
