@@ -213,6 +213,16 @@ Split_Exit( BB* bb )
   BB_Transfer_Exitinfo(bb,new_exit);
   BB_freq(new_exit) = BB_freq(bb);
 
+#ifdef TARG_ST
+  // [SC] First op could be the sp adjust op.
+  for (op = BB_first_op (bb);
+       op != NULL && op != BB_exit_sp_adj_op (new_exit);
+       op = next_op) {
+    next_op = OP_next(op); 
+    if (OP_Is_Copy_From_Save_TN(op)) 
+      BB_Move_Op_To_End(new_exit, bb, op);
+  }
+#else  
   op = BB_first_op(bb);
   do {
     next_op = OP_next(op); 
@@ -220,6 +230,7 @@ Split_Exit( BB* bb )
       BB_Move_Op_To_End(new_exit, bb, op);
     op = next_op;
   } while (op != NULL && op != BB_exit_sp_adj_op(new_exit));
+#endif
 
   for (op = BB_exit_sp_adj_op (new_exit); op != NULL; op = next_op) {
     next_op = OP_next(op);
