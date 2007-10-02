@@ -6525,10 +6525,8 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[0];
     if (tninfo == NULL) return FALSE;
     if (!EBO_tn_available(OP_bb(op), tninfo)) return FALSE;
-#ifdef TARG_ST
     /* Reconfigurability: compose/extract must operate on same sub-TN count */
     if (OP_results(def_opinfo->in_op) != OP_opnds(op)) return FALSE;
-#endif
     OPS ops = OPS_EMPTY;
     Exp_COPY(OP_result(op, 0), tninfo->local_tn, &ops);
     BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
@@ -6544,14 +6542,25 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     EBO_OP_INFO *def_opinfo = locate_opinfo_entry(tninfo);
     if (def_opinfo == NULL || def_opinfo->in_op == NULL) return FALSE;
     if (!OP_compose(def_opinfo->in_op)) return FALSE;
-#ifdef TARG_ST
     /* Reconfigurability: compose/extract must operate on same sub-TN count */
     if (OP_opnds(def_opinfo->in_op) != OP_results(op)) return FALSE;
-#endif
     OPS ops = OPS_EMPTY;
     for (INT i = 0; i < OP_results(op); i++) {
       EBO_TN_INFO *tninfo = def_opinfo->actual_opnd[i];
       if (!EBO_tn_available(OP_bb(op), tninfo)) return FALSE;
+      // Suppress the expansion into a series of copies if a copy needs to
+      // read a value that has been overwritten by an earlier copy in the
+      // sequence.
+      OP *prev_copy;
+      FOR_ALL_OPS_OPs_FWD (&ops, prev_copy) {
+	if ((has_assigned_reg (tninfo->local_tn) &&
+	     OP_Defs_Regs (prev_copy, TN_register_class(tninfo->local_tn),
+			   TN_register (tninfo->local_tn),
+			   TN_nhardregs (tninfo->local_tn)))
+	    || OP_Defs_TN (prev_copy, tninfo->local_tn)) {
+	  return FALSE;
+	}
+      }
       Exp_COPY(OP_result(op, i), tninfo->local_tn, &ops);
     }
     BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);

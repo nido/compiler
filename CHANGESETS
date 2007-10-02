@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct  2 12:49:23 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33442
+
+Description:
+------------
+	*  Fix for bug #33442 Incorrect code generation on call passing
+        long long argument.
+        Deliver fixes/codex-33442 with authorization branch #33499.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Oct  2 12:31:34 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
