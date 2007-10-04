@@ -1383,8 +1383,12 @@ IVR::Substitute_IV(const IV_CAND *iv,
     STMTREP_ITER      stmt_iter(bb->Stmtlist());
     STMTREP          *stmt;
     FOR_ALL_NODE(stmt, stmt_iter, Init()) {
-      if (stmt != iv->Incr_var()->Defstmt() && (stmt->Rhs() != NULL))
-	subst_cr_occurrences(stmt->Rhs(), iv, new_iv);
+      if (stmt != iv->Incr_var()->Defstmt()) {
+	if (stmt->Lhs())
+	  stmt->Set_lhs(subst_cr_occurrences(stmt->Lhs(), iv, new_iv));
+	if (stmt->Rhs())
+	  stmt->Set_rhs(subst_cr_occurrences(stmt->Rhs(), iv, new_iv));
+      }
     }
   }
   if (loop->Iv() == iv->Var())

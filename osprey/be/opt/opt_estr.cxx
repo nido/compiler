@@ -164,6 +164,16 @@
 BOOL
 STR_RED::Is_cvt_linear( const CODEREP *cr ) const
 {
+#ifdef TARG_ST
+  // FdF 20070921: Allow conversion between signed types into IV
+  // cycles, so as to better handle signed char and short induction
+  // variables. (Enhancement #18858)
+  if (Allow_wrap_around_opt &&
+      ((cr->Dsctyp() == MTYPE_I1) || (cr->Dsctyp() == MTYPE_I2)) &&
+      (cr->Dtyp() == MTYPE_I4))
+    return TRUE;
+#endif
+
   // screen out non-register size types
   if (MTYPE_size_min(cr->Dsctyp()) < MTYPE_size_min(MTYPE_I4))
     return FALSE;

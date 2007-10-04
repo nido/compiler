@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct  4 11:08:01 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-18858
+
+Description:
+------------
+	*  Improved optimization of short linear induction variables.
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_estr.cxx
+	M      osprey/be/opt/opt_ivr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct  4 10:13:02 CEST 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
