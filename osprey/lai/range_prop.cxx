@@ -580,19 +580,19 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	opnd = opnd1;
 	val = TN_Value (opnd2) & rres->getBitMask();
       }
-      else if (TN_is_rematerializable(opnd2) &&  TN_home(opnd2) != NULL
-	       && WN_operator(TN_home(opnd2)) == OPR_INTCONST) {
+      else if (TN_is_rematerializable(opnd2) &&  TN_remat(opnd2) != NULL
+	       && WN_operator(TN_remat(opnd2)) == OPR_INTCONST) {
 	opnd = opnd1;
-	val = WN_const_val(TN_home(opnd2)) & rres->getBitMask();
+	val = WN_const_val(TN_remat(opnd2)) & rres->getBitMask();
       }
       else if (TN_Has_Value (opnd1)) {
 	opnd = opnd2;
  	val = TN_Value (opnd1) & rres->getBitMask();
       }
-      else if (TN_is_rematerializable(opnd1) &&  TN_home(opnd1) != NULL
-	       && WN_operator(TN_home(opnd1)) == OPR_INTCONST) {
+      else if (TN_is_rematerializable(opnd1) &&  TN_remat(opnd1) != NULL
+	       && WN_operator(TN_remat(opnd1)) == OPR_INTCONST) {
 	opnd = opnd2;
-	val = WN_const_val(TN_home(opnd1)) & rres->getBitMask();
+	val = WN_const_val(TN_remat(opnd1)) & rres->getBitMask();
       }
       else
 	return FALSE;

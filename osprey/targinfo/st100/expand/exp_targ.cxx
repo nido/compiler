@@ -1252,9 +1252,9 @@ Expand_Multiply (
     // Two constants can sometimes occur because of DIVREM production in 
     TN *val_tn;
     constant = TN_has_value(src1) ? 
-                           TN_value(src1) : WN_const_val(TN_home(src1));
+                           TN_value(src1) : WN_const_val(TN_remat(src1));
     constant *= TN_has_value(src2) ? 
-                           TN_value(src2) : WN_const_val(TN_home(src2));
+                           TN_value(src2) : WN_const_val(TN_remat(src2));
     // Need to get the constant of the right length
     constant = Targ_To_Host(Host_To_Targ(rmtype, constant));
     val_tn = Gen_Literal_TN(constant, 8);

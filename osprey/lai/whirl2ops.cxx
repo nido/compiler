@@ -1610,7 +1610,7 @@ Handle_LDA (
     if (CGSPILL_Rematerialize_Constants
 	&& CGTARG_Address_Constants_Are_Rematerializable_p) {
       Set_TN_is_rematerializable(result);
-      Set_TN_home (result, lda);
+      Set_TN_remat (result, lda);
     }
   }
 
@@ -4174,7 +4174,7 @@ Expand_Expr (
       result = Allocate_Result_TN (expr, NULL);
       if (CGSPILL_Rematerialize_Constants) {
 	Set_TN_is_rematerializable(result);
-	Set_TN_home (result, expr);
+	Set_TN_remat (result, expr);
       }
     }
     opnd_tn[0] = Gen_Symbol_TN (WN_st(expr), 0, 0);
@@ -4266,7 +4266,7 @@ Expand_Expr (
     if (CGSPILL_Rematerialize_Constants && result == NULL) {
       result = Allocate_Result_TN (expr, NULL);
       Set_TN_is_rematerializable(result);
-      Set_TN_home (result, expr);
+      Set_TN_remat (result, expr);
     }
 
     opnd_tn[0] = const_tn;

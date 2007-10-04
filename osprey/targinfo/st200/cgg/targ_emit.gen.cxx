@@ -10430,7 +10430,7 @@ static void emit_rule_action_INTCONST (NBG_Link LINK, void *STATE)
     GEN_RESULT(RTYPE(WN_LK));
     if (CGSPILL_Rematerialize_Constants) {
       Set_TN_is_rematerializable(TN_LK);
-      Set_TN_home (TN_LK, WN_LK);
+      Set_TN_remat (TN_LK, WN_LK);
     }
   }
   op0 = Gen_Literal_TN ((INT32) WN_const_val(WN_LK), 4);
@@ -10461,7 +10461,7 @@ static void emit_rule_action_CONST (NBG_Link LINK, void *STATE)
     GEN_RESULT(RTYPE(WN_LK));
     if (CGSPILL_Rematerialize_Constants) {
       Set_TN_is_rematerializable(TN_LK);
-      Set_TN_home (TN_LK, WN_LK);
+      Set_TN_remat (TN_LK, WN_LK);
     }
   }
   op0 = Gen_Symbol_TN (WN_st(WN_LK), 0, 0);
@@ -11277,7 +11277,7 @@ static void emit_rule_action_reg_LDA (NBG_Link LINK, void *STATE)
     result = TN_LK;
     if (CGSPILL_Rematerialize_Constants) {
       Set_TN_is_rematerializable(result);
-      Set_TN_home (result, WN_LK);
+      Set_TN_remat (result, WN_LK);
     }
   }
   TN_LK = result;

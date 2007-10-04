@@ -673,8 +673,8 @@ static BOOL Is_Pointer(TN *tn, OP *use_op)
       /* If it's rematerializable we know exactly what it is -- an
        * address or some kind of constant.
        */
-      WN *home = TN_home(use_tn);
-      OPERATOR opr = WN_operator(home);
+      WN *remat = TN_remat(use_tn);
+      OPERATOR opr = WN_operator(remat);
       return opr == OPR_LDA;
     } else if (use_op && (def_op = TN_Reaching_Value_At_Op(use_tn, use_op, &kind, TRUE))) {
       if (   (OP_iadd(def_op) || OP_ior(def_op))

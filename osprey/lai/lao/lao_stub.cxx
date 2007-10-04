@@ -342,9 +342,9 @@ static inline Temporary CGIR_TN_to_Temporary(CGIR_TN cgir_tn);
 static Temporary
 CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
 {
-  WN *home = TN_home(cgir_tn);
+  WN *remat = TN_remat(cgir_tn);
   Temporary temporary = NULL;
-  switch (WN_operator(home)) {
+  switch (WN_operator(remat)) {
   case OPR_LDA: {
 #ifdef TARG_ST200
     O64_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
@@ -354,16 +354,16 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
 #error TARGET
 #endif
 
-    ST *var_st = WN_st(home);
+    ST *var_st = WN_st(remat);
     ST_IDX st_idx = ST_st_idx(*var_st);
-    int64_t offset = WN_lda_offset(home);
+    int64_t offset = WN_lda_offset(remat);
     TN * tn = Gen_Symbol_TN (var_st, offset, 0);
     temporary = CGIR_TN_to_Temporary(tn);
   } break;
   case OPR_INTCONST: {
-    if (WN_rtype(home) == MTYPE_I4 ||
-	WN_rtype(home) == MTYPE_U4) {
-      TN *tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
+    if (WN_rtype(remat) == MTYPE_I4 ||
+	WN_rtype(remat) == MTYPE_U4) {
+      TN *tn = Gen_Literal_TN ((INT32) WN_const_val(remat), 4);
       temporary = CGIR_TN_to_Temporary(tn);
     } else {
       // Currently not handled.

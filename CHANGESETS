@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct  4 10:13:02 CEST 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31388
+
+Description:
+------------
+	*  Ensure that TN_rematerializable and TN_home are not TRUE at the same time. This situation was created by the cg_ssa code. Also, created a TN_remat, in union with TN_home, for better clarity of the code.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/tn.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/freq.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/range_prop.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/st100/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/cgg/targ_emit.gen.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Oct  2 12:49:23 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

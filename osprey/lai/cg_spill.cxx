@@ -1535,7 +1535,7 @@ CGSPILL_Force_Rematerialization_For_BB(BB *bb)
 	OP *new_op;
 	OPS ops = OPS_EMPTY;
 	TN *new_tn = Dup_TN(tn);
-	CGSPILL_Load_From_Memory(new_tn, (ST *)TN_home(new_tn), &ops,
+	CGSPILL_Load_From_Memory(new_tn, (ST *)TN_remat(new_tn), &ops,
 				 CGSPILL_LCL, bb);
 
         if (Is_CG_LOOP_Op(op)) {
@@ -1552,7 +1552,7 @@ CGSPILL_Force_Rematerialization_For_BB(BB *bb)
 	// }
 
 	Reset_TN_is_rematerializable(new_tn);
-	Set_TN_home(new_tn, NULL);
+	Set_TN_remat(new_tn, NULL);
 
 	Set_OP_opnd(op, k, new_tn);
 	// if (CG_DEP_Has_Graph(bb)) {
@@ -1618,7 +1618,7 @@ void CGSPILL_Attach_Lda_Remat(TN *tn, TYPE_ID typ, INT64 offset, ST *st)
     WN *wn = WN_CreateLda(opc, offset, (TY_IDX) NULL, st);
     if (wn) {
       Set_TN_is_rematerializable(tn);
-      Set_TN_home(tn, wn);
+      Set_TN_remat(tn, wn);
     }
   }
 }
@@ -1646,7 +1646,7 @@ void CGSPILL_Attach_Intconst_Remat(TN *tn, INT64 val)
 #endif
     if (wn) {
       Set_TN_is_rematerializable(tn);
-      Set_TN_home(tn, wn);
+      Set_TN_remat(tn, wn);
     }
   }
 }
@@ -1681,7 +1681,7 @@ void CGSPILL_Attach_Const_Remat(TN *tn, TYPE_ID typ, ST *st)
     WN *wn = WN_CreateConst(opc, st);
     if (wn) {
       Set_TN_is_rematerializable(tn);
-      Set_TN_home(tn, wn);
+      Set_TN_remat(tn, wn);
     }
   }
 }

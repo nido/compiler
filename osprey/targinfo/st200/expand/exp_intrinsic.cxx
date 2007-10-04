@@ -2012,7 +2012,7 @@ Expand__st220syscall(
       top = TOP_st240_syscall_i;
     }
     if (TN_is_rematerializable(i0)) {
-	WN *wn = TN_home(i0) ;
+	WN *wn = TN_remat(i0) ;
 	if (WN_operator_is(wn, OPR_INTCONST)) {
 	    TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
 	    Build_OP (	top,	cunknown, 	ops) ;
@@ -4174,7 +4174,7 @@ Expand__mpfcw(
   BOOL overflow_possible = TRUE;
 
   if (TN_is_rematerializable (i0)) {
-    WN *wn = TN_home (i0);
+    WN *wn = TN_remat (i0);
     if (WN_operator_is (wn, OPR_INTCONST)) {
       INT64 co0 = WN_const_val (wn);
       if ((co0 & 0xffff) != 0x8000) {
@@ -4183,7 +4183,7 @@ Expand__mpfcw(
     }
   }
   if (TN_is_rematerializable (i1)) {
-    WN *wn = TN_home (i1);
+    WN *wn = TN_remat (i1);
     if (WN_operator_is (wn, OPR_INTCONST)) {
       INT64 co1 = WN_const_val (wn);
       if ((co1 & 0xffff) != 0x8000) {
@@ -6247,7 +6247,7 @@ Expand__shlcw(
   }
 
   if (TN_is_rematerializable (i1)) {
-    WN *wn = TN_home (i1);
+    WN *wn = TN_remat (i1);
     if (WN_operator_is (wn, OPR_INTCONST)) {
       INT64 co1 = WN_const_val (wn);
       if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)
@@ -6963,7 +6963,7 @@ Expand__asm_n(
     } else {
 	/* Can we produce the immediates ? */
 	if (TN_is_rematerializable(i1)) {
-	    WN *wn = TN_home(i1) ;
+	    WN *wn = TN_remat(i1) ;
 	    if (WN_operator_is(wn, OPR_INTCONST)) {
 		TN *cunknown = Gen_Literal_TN(WN_const_val(wn), 4) ;
 		TOP top_ = TOP_opnd_immediate_variant(top, 1, WN_const_val(wn) ) ;	   

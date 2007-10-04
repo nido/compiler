@@ -263,7 +263,10 @@ struct tn {
     ST		*var;		/* Symbolic constant (user variable) */
     union {			/* Spill location */
       ST	*spill;		/* ...for register TN */
-      WN        *home;		/* Whirl home if rematerializable */
+      WN        *home;		/* Whirl home if homeable */
+#ifdef TARG_ST
+      WN	*remat;		/* Whirl rematerialization if rematerializable */
+#endif
     } u3;
   } u2;
 };
@@ -342,6 +345,8 @@ inline TN * CAN_USE_REG_TN (const TN *t)
 #define Set_TN_var(t,x)		(CAN_USE_TN(t)->u2.var = (x))
 #define     TN_home(t)		(CAN_USE_TN(t)->u2.u3.home)
 #define Set_TN_home(t,x)        (CAN_USE_TN(t)->u2.u3.home = (x))
+#define     TN_remat(t)		(CAN_USE_TN(t)->u2.u3.remat)
+#define Set_TN_remat(t,x)	(CAN_USE_TN(t)->u2.u3.remat = (x))
 
 /* Define the TN_flags access functions: */
 #define       TN_has_value(r)	(TN_flags(r) &   TN_HAS_VALUE)
@@ -371,12 +376,27 @@ inline TN * CAN_USE_REG_TN (const TN *t)
 #define  Set_TN_is_if_conv_cond(r)  (TN_flags(r) |=  TN_IF_CONV_COND)
 #define Reset_TN_is_if_conv_cond(r) (TN_flags(r) &= ~TN_IF_CONV_COND)
 
+// FdF 20070917: Automatically reset the other property when setting
+// either TN_REMATERIALIZABLE or TN_GRA_HOMEABLE. The original problem
+// is that it occurs, in cg_ssa.cxx for example, that
+// TN_REMATERIALIZABLE is set on a TN with TN_GRA_HOMEABLE. Then, if
+// TN_REMATERIALIZABLE is reset for some reason, the TN_GRA_HOMEABLE
+// remains, but the home location is NULL.
+
 #define      TN_is_rematerializable(r)  (TN_flags(r) &   TN_REMATERIALIZABLE)
+#ifdef TARG_ST
+#define  Set_TN_is_rematerializable(r)  (TN_flags(r) = (TN_flags(r) | TN_REMATERIALIZABLE) & ~TN_GRA_HOMEABLE)
+#else
 #define  Set_TN_is_rematerializable(r)  (TN_flags(r) |=  TN_REMATERIALIZABLE)
+#endif
 #define Reset_TN_is_rematerializable(r) (TN_flags(r) &= ~TN_REMATERIALIZABLE)
 
 #define      TN_is_gra_homeable(r)  (TN_flags(r) &   TN_GRA_HOMEABLE)
+#ifdef TARG_ST
+#define  Set_TN_is_gra_homeable(r)  (TN_flags(r) = (TN_flags(r) | TN_GRA_HOMEABLE) & ~TN_REMATERIALIZABLE)
+#else
 #define  Set_TN_is_gra_homeable(r)  (TN_flags(r) |=  TN_GRA_HOMEABLE)
+#endif
 #define Reset_TN_is_gra_homeable(r) (TN_flags(r) &= ~TN_GRA_HOMEABLE)
 
 #define      TN_is_gra_cannot_split(r)  (TN_flags(r) &   TN_GRA_CANNOT_SPLIT)

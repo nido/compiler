@@ -255,15 +255,15 @@ Dup_Rematerializable_TN(TN *tn, INT64 adjust) {
 
   if (TN_is_rematerializable(tn)) {
     Is_True(TN_is_rematerializable(new_tn), ("Dup_TN did not propagate rematerializable attribute."));
-    WN *wn_home = TN_home(tn);
-    if (wn_home && WN_operator(wn_home) == OPR_LDA) {
-      WN *new_wn_home = WN_CreateLda(WN_opcode(wn_home), WN_lda_offset(wn_home) + adjust,
-				     WN_ty(wn_home), WN_st_idx(wn_home), WN_field_id(wn_home));
-      Set_TN_home(new_tn, new_wn_home);
+    WN *wn_remat = TN_remat(tn);
+    if (wn_remat && WN_operator(wn_remat) == OPR_LDA) {
+      WN *new_wn_remat = WN_CreateLda(WN_opcode(wn_remat), WN_lda_offset(wn_remat) + adjust,
+				     WN_ty(wn_remat), WN_st_idx(wn_remat), WN_field_id(wn_remat));
+      Set_TN_remat(new_tn, new_wn_remat);
     }
     else {
       Reset_TN_is_rematerializable(new_tn);
-      Set_TN_home(new_tn, NULL);
+      Set_TN_remat(new_tn, NULL);
     }
   }
 

@@ -4241,7 +4241,7 @@ Analyze_Spilling_Live_Range (
   // that reason as well.
   if (restore_cost > 3.0 && TN_is_rematerializable(spill_tn)) {
     Reset_TN_is_rematerializable (spill_tn);
-    Set_TN_home(spill_tn, NULL);
+    Set_TN_remat(spill_tn, NULL);
     CGSPILL_Cost_Estimate (spill_tn, NULL, &store_cost, &restore_cost, CGSPILL_LRA);
   }
 
@@ -4798,7 +4798,7 @@ last_def = -1;
 	    last_use > LR_first_def(gp_lr))
 	{
 	  Reset_TN_is_rematerializable (spill_tn);
-	  Set_TN_home(spill_tn, NULL);
+	  Set_TN_remat(spill_tn, NULL);
 	}
       }
       spill_loc = CGSPILL_Get_TN_Spill_Location (spill_tn, 

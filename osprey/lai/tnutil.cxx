@@ -1501,16 +1501,16 @@ Rematerializable_IntConst(
 {
   OPCODE opcode;
   OPERATOR opr;
-  WN *home = TN_home(tn);
+  WN *remat = TN_remat(tn);
 
   if (!TN_is_rematerializable(tn)) return FALSE;
 
-  if (!home) {
+  if (!remat) {
     DevWarn("No home for rematerializable TN%d", TN_number(tn));
     return FALSE;
   }
 
-  opcode = WN_opcode(home);
+  opcode = WN_opcode(remat);
   opr = OPCODE_operator(opcode);
 
   if (opr != OPR_INTCONST) return FALSE;
@@ -1518,7 +1518,7 @@ Rematerializable_IntConst(
   switch (opcode) {
   case OPC_I8INTCONST:
   case OPC_U8INTCONST:
-    *val = WN_const_val(home);
+    *val = WN_const_val(remat);
     break;
   case OPC_I4INTCONST:
   case OPC_U4INTCONST:
@@ -1526,7 +1526,7 @@ Rematerializable_IntConst(
     /* Even for U4 we sign-extend the value
      * so it matches what we want register to look like
      */
-    *val = (INT32)WN_const_val(home);
+    *val = (INT32)WN_const_val(remat);
     break;
   default:
     return FALSE;

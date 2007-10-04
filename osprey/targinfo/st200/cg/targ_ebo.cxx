@@ -3014,10 +3014,10 @@ Get_Constant_Value(EBO_TN_INFO *tninfo)
   if (TN_Has_Value(tn))
     const_tn = tn;
   else if (TN_is_rematerializable(tn)) {
-    WN *home = TN_home(tn);
-    if (WN_opcode (home) == OPC_I4INTCONST ||
-	WN_opcode (home) == OPC_U4INTCONST) {
-      const_tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
+    WN *remat = TN_remat(tn);
+    if (WN_opcode (remat) == OPC_I4INTCONST ||
+	WN_opcode (remat) == OPC_U4INTCONST) {
+      const_tn = Gen_Literal_TN ((INT32) WN_const_val(remat), 4);
     }
   }
   return const_tn;

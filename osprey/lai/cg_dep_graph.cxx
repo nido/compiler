@@ -3902,8 +3902,8 @@ static STACKREF_KIND Memory_OP_References_Stack(OP *op)
       && TN_is_rematerializable(OP_result(op,0)))
   {
     TN *result = OP_result(op,0);
-    WN *home = TN_home(result);
-    ST *st = WN_st(home);
+    WN *remat = TN_remat(result);
+    ST *st = WN_st(remat);
     return (ST_sclass(st) == SCLASS_AUTO) ? STACKREF_YES : STACKREF_NO;
   }
 

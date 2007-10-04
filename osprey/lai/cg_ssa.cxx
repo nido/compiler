@@ -97,7 +97,7 @@ OP_Attach_Rematerialization(OP *op)
 				      TN_value(src));
       } else if (TN_is_register(src) && TN_is_rematerializable(src)) {
 	Set_TN_is_rematerializable(dst);
-	Set_TN_home(dst, TN_home(src));
+	Set_TN_remat(dst, TN_remat(src));
       }
     }
   }
@@ -3402,9 +3402,9 @@ map_phi_resources_to_new_names()
 		     p = TN_LIST_rest(p)) {
 		  TN *cc_tn = TN_LIST_first(p);
 		  if (!TN_is_rematerializable(cc_tn) ||
-		      TN_home(cc_tn) != TN_home(tn)) {
+		      TN_remat(cc_tn) != TN_remat(tn)) {
 		    Reset_TN_is_rematerializable(tn);
-		    Set_TN_home(tn, NULL);
+		    Set_TN_remat(tn, NULL);
 		    break;
 		  }
 		}
