@@ -25,8 +25,8 @@ extern int isdigit(int);
 #include "cp-tree.h"
 #endif
 #include "gnu/output.h"         // For decode_reg_name
-}
 #include "gnu/flags.h"
+}
 #undef TARGET_PENTIUM  // hack around macro definition in gnu
 #include "insn-config.h"	// MAX_RECOG_OPERANDS
 #include "wfe_misc.h"

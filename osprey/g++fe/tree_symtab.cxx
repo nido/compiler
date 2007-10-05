@@ -45,7 +45,9 @@
 #include "defs.h"
 #include "errors.h"
 #include "gnu_config.h"
+extern "C" {
 #include "gnu/flags.h"
+}
   // [HK]
 #if __GNUC__ >=3
 #include "symtab.h"

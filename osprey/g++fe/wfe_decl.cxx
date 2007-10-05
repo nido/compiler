@@ -41,12 +41,12 @@
 #include "defs.h"
 #include "errors.h"
 #include "gnu_config.h"
-#include "gnu/flags.h"
   // [HK]
 #if __GNUC__ >=3
 #include "wn.h"
 #endif // __GNUC__ >=3
 extern "C" {
+#include "gnu/flags.h"
 #include "gnu/system.h"
 #include "gnu/toplev.h"
 #include "gnu/tree.h"

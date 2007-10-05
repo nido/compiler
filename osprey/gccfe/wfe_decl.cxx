@@ -40,8 +40,8 @@
 #include <elf.h>
 
 #include "gnu_config.h"
-#include "gnu/flags.h"
 extern "C" {
+#include "gnu/flags.h"
 #include "gnu/system.h"
 #include "gnu/tree.h"
 #include "gnu/c-common.h"

@@ -57,10 +57,10 @@
 
 #include "opt_du.h"                     // for DU-manager
 
+#include "ipl_main.h"			// for Stmt_Map
 #include "ipl_summary.h"		// for summary info structures
 #include "ipl_summarize.h"		// for SUMMARY
 #include "ipl_summarize_util.h"		// for SUMMARY_ENTRY_CACHE
-#include "ipl_main.h"			// for Stmt_Map
 
 #ifndef opt_emit_INCLUDED
 #include "opt_emit.h"			// for EMITTER class

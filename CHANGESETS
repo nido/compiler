@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct  5 17:21:32 CEST 2007
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32046
+
+Description:
+------------
+	Deliver fixes/codex-32046 with authorization branch #33788
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ipa_section.cxx
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_stmt.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/ipa/main/optimize/ipo_defs.h
+	M      osprey/ipa/local/ipl_linex.cxx
+	M      osprey/ipa/local/ipl_main.cxx
+	M      osprey/ipa/local/ipl_summarize_util.h
+	M      osprey/ipa/local/ipl_summarize_util.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct  5 17:10:47 CEST 2007
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

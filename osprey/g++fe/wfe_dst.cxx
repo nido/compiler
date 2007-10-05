@@ -71,12 +71,12 @@ static char *source_file = __FILE__;
 #include "srcpos.h"
 #include "symtab.h"
 #include "gnu_config.h"
-#include "gnu/flags.h"
   // [HK]
 #if __GNUC__ >=3
 #include <string>
 #endif // __GNUC__ >=3
 extern "C" {
+#include "gnu/flags.h"
 #include "gnu/system.h"
 #include "gnu/tree.h"
 #ifdef TARG_ST

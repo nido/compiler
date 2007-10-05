@@ -64,6 +64,7 @@
 #include "cxx_hash.h"
 #include "wn_util.h"
 #include "lwn_util.h"
+#include "ipl_main.h"
 #include "ipl_summary.h"
 #include "ipl_summarize.h"
 #include "ipl_summarize_util.h"

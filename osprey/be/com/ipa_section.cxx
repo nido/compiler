@@ -64,6 +64,7 @@
 #include "loop_info.h"
 #include "soe.h"
 #include "lno_bv.h"
+#include "ipl_main.h"
 #include "ipl_summary.h"
 #include "ipl_summarize.h"
 #include "ipl_summarize_util.h"

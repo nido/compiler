@@ -45,7 +45,9 @@
 #include "gnu/system.h"
 
 #ifdef KEY
+extern "C" {
 #include "gnu/flags.h"
+}
 #endif
 
 extern "C" {

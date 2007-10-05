@@ -81,13 +81,14 @@
 #include "config_debug.h"
 #include "config_opt.h"
 #include "config_ipa.h"
-#include "ipl_summarize_template.h" // put these two template files
-#include "ipl_analyze_template.h"   // last in the include list
+#include "ipl_main.h"
 #include "ipl_cost_template.h" 	    // execution cost analysis 
 #include "ipl_outline.h"	    // outline analysis
 #include "wb_ipl.h" 
 #include "ipa_section_main.h" 	    // utilities
 #include "ipl_elfsym.h"		    // for IPL_Write_Elf_Symtab
+#include "ipl_summarize_template.h" // put these two template files
+#include "ipl_analyze_template.h"   // last in the include list
 
 /* General progress trace: */
 BOOL Trace_IPA = FALSE;

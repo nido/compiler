@@ -36,8 +36,10 @@
 #include "W_values.h"
 
 #include "gnu_config.h"
+extern "C" {
 #include "gnu/flags.h"
 #include "gnu/system.h"
+}
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 extern "C" {
 #include "gnu/machmode.h"

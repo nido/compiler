@@ -49,7 +49,9 @@
 #include "ipa_cg.h"
 #endif
 
+extern "C" {
 BE_EXPORTED extern WN_MAP RID_map;		// #include "region_util.h" 
+}
 extern WN_MAP Parent_Map;		// #include "ipo_main.h" 
 
 //----------------------------------------------------------------------
