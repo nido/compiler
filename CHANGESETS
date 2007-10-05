@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct  5 17:10:47 CEST 2007
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32040
+
+Description:
+------------
+	Deliver fixes/codex-32040 with authorization branch #33780
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/quadsim.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct  5 17:00:57 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

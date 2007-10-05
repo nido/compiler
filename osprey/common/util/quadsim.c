@@ -379,7 +379,7 @@ UINT64	t;
 #if !defined(_NO_WEAK_SUPPORT_) && !defined(TARG_ST)
 #pragma weak c_sngl_q = __c_sngl_q
 #else
-extern float c_sngl_q(QUAD x, INT *p_err ) __attribute__((alias("__c_sgnl_q")));
+extern float c_sngl_q(QUAD x, INT *p_err ) __attribute__((alias("__c_sngl_q")));
 #endif
 #define	c_sngl_q __c_sngl_q
 
