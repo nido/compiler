@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct  5 17:00:57 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-32832
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-32832 rev #13852 with authorization branch #32954 
+	  Fix missed automod opportunity outside loop in O3/Os
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct  5 16:51:39 CEST 2007
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
