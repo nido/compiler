@@ -144,28 +144,28 @@
 #ifndef id_map_INCLUDED
 #define id_map_INCLUDED "id_map.h"
 
-extern "C"
-{
-#include <math.h>
-}
-
+#ifdef TARG_ST
+// Fixes codex bug #18108. Avoid issues with contradicting `floor' an `ceil' prototypes
+#include "W_math.h"
+#else
 // Bring in declaration of floor and ceil from /usr/include/math.h
 // Can't include math.h directly because of defs.h!
 
 #if defined(_LP64) && defined(_MATH_H)
 #else
 extern "C" {
-/*extern double   floor(double);*/
+extern double   floor(double);
 #ifdef __MATH_HAS_NO_SIDE_EFFECTS
 #pragma no side effects (floor)
 #endif /* __MATH_HAS_NO_SIDE_EFFECTS */
 
-/*extern double   ceil(double);*/
+extern double   ceil(double);
 #ifdef __MATH_HAS_NO_SIDE_EFFECTS
 #pragma no side effects (ceil)
 #endif /* __MATH_HAS_NO_SIDE_EFFECTS */
 }
 #endif /* defined(_LP64) && defined(_MATH_H) */
+#endif
 
 #include "defs.h"
 #include "cxx_template.h"
