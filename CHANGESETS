@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct  8 14:55:46 CEST 2007
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-switch-expansion
+
+Description:
+------------
+	* [trunk] Deliver new control of switch expansion in Os (STxP70 only for the time being)
+          Correspond to record art #26891 in bug tracker. Approval art #30320. Revision of the
+          branch branches/lv21/dev-switch-expansion is rev #13879.
+
+Modified Files:
+---------------
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/common/com/config_vho.cxx
+	M      osprey/common/com/config_vho.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct  5 17:21:32 CEST 2007
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

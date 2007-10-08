@@ -68,6 +68,10 @@ INT32   VHO_Switch_Density              = 12;
 INT32   VHO_Switch_If_Else_Limit        = 6;
 INT32   VHO_Switch_Compgoto_Limit       = 3;
 BOOL    VHO_Switch_Opt                  = FALSE;
+#ifdef TARG_ST
+INT32   VHO_Switch_If_Else_Limit_Space  = 7;
+INT32   VHO_Switch_Density_Limit_Space  = 98; 
+#endif
 BOOL    VHO_Cselect_Opt                 = FALSE;
 BOOL    VHO_Iload_Opt                   = FALSE;
 BOOL    VHO_Istore_Opt                  = FALSE;
@@ -114,6 +118,12 @@ static OPTION_DESC Options_VHO[] = {
     12, 1, INT32_MAX,    &VHO_Switch_Density,   NULL },
   { OVK_INT32,	OV_INTERNAL,	FALSE, "switch_compgoto",     "switch_compgoto",
     3, 1, INT32_MAX,    &VHO_Switch_Compgoto_Limit,   NULL },
+#ifdef TARG_ST
+  { OVK_INT32,  OV_INTERNAL,    FALSE, "switch_if_else_space", "switch_if_else_space",
+    7, 1,  INT32_MAX,   &VHO_Switch_If_Else_Limit_Space,   NULL },
+  { OVK_INT32,  OV_INTERNAL,    FALSE, "switch_density_space", "switch_density_space",
+    98, 1, INT32_MAX,   &VHO_Switch_Density_Limit_Space,   NULL },
+#endif
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "switch_opt",         "switch",
     TRUE, 0, 0,  &VHO_Switch_Opt,      NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "cselect_opt",        "cselect",

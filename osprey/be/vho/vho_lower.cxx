@@ -808,6 +808,13 @@ VHO_Lower_Switch ( WN * wn )
   SRCPOS     srcpos;
   INT32      count;
 
+#ifdef TARG_ST
+  // VL: Needed to control switch expansion in Os
+  INT64      first_case_value = INT64_MAX;
+  INT64      last_case_value  = INT64_MIN;
+  INT32      switch_density;
+#endif
+
   LABEL_IDX  last_label;
 
   srcpos = WN_Get_Linenum(wn);
@@ -937,7 +944,48 @@ VHO_Lower_Switch ( WN * wn )
     case_goto = VHO_SWITCH_wn(i);
   }
 
-  if ( VHO_Switch_Ncases <= VHO_Switch_If_Else_Limit ) {
+#ifdef TARG_STxP70
+  // VL 2007/09/12: 
+  // To address art #26891 and limit size expansion in -Os we precompute 
+  // actual switch density. Currently enabled on STxP70 only until a full
+  // evaluation is acrried out on ST200.
+  if(OPT_Space) {
+
+    for ( i = 0,  case_goto = WN_first(block); 
+          i < VHO_Switch_Ncases; 
+          i++, case_goto = WN_next(case_goto) ) {
+
+      if(WN_const_val(case_goto)<first_case_value) 
+        first_case_value = WN_const_val(case_goto); 
+
+      if(WN_const_val(case_goto)>last_case_value)  
+        last_case_value = WN_const_val(case_goto); 
+
+    }
+    switch_density=(INT32)(100.0*VHO_Switch_Ncases/(abs(last_case_value-first_case_value)+1));
+
+#ifdef VHO_DEBUG
+    if ( VHO_Switch_Debug )
+      fprintf ( TFile, "Case values [%lld->%lld], Ncase=%d (%d), density=%d (%d)\n",
+                first_case_value, last_case_value, 
+                VHO_Switch_Ncases, VHO_Switch_If_Else_Limit_Space,
+                switch_density, VHO_Switch_Density_Limit_Space);
+#endif // VHO_DEBUG
+
+  } // End if OPT_Space
+
+  // VL: If code is optimized for space, we prefer If-Else expansion, 
+  // except if density and number of cases are high, in which case we 
+  // expand the switch as CompGoto.
+  if ( (OPT_Space && 
+         (switch_density < VHO_Switch_Density_Limit_Space || 
+          VHO_Switch_Ncases < VHO_Switch_If_Else_Limit_Space)) 
+       ||
+       (!OPT_Space && 
+         (VHO_Switch_Ncases <= VHO_Switch_If_Else_Limit)) ) {
+#else
+  if ( (VHO_Switch_Ncases <= VHO_Switch_If_Else_Limit) ) {
+#endif // TARG_ST
 
 #ifdef VHO_DEBUG
     if ( VHO_Switch_Debug )
@@ -951,7 +999,15 @@ VHO_Lower_Switch ( WN * wn )
 
     VHO_Switch_Find_Clusters ();
 
+#ifdef TARG_STxP70
+    // VL: If we are optilmizing for space, all remaining cases expanded 
+    // as CompGoto - We avoid binary search trees that are space consuming
+    // Enabled on STxP70 only until evaluation on ST200. To be modified if
+    // first stage of the fix for #26891 is enabled on ST200.
+    if ( OPT_Space || VHO_Switch_Nclusters == 1 ) {
+#else
     if ( VHO_Switch_Nclusters == 1 ) {
+#endif
 
 #ifdef VHO_DEBUG
       if ( VHO_Switch_Debug )
