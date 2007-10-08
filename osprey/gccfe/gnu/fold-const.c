@@ -6196,6 +6196,9 @@ fold (expr)
 	  }
       }
 
+      // [HK] 20071001 this transformation avoids detecting min/max cases after 
+      // if-conversion
+#ifndef TARG_ST
       /* Change X >= C to X > (C - 1) and X < C to X <= (C - 1) if C > 0.
 	 This transformation affects the cases which are handled in later
 	 optimizations involving comparisons with non-negative constants.  */
@@ -6221,6 +6224,7 @@ fold (expr)
 	      break;
 	    }
 	}
+#endif
 
       /* Comparisons with the highest or lowest possible integer of
 	 the specified size will have known values.  */
