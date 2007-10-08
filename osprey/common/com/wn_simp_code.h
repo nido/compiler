@@ -700,7 +700,6 @@ BOOL SIMP_has_side_effects (simpnode x)
   }
 
 } /* SIMP_has_side_effects */
-
 #endif
 
 
@@ -924,6 +923,24 @@ static BOOL SIMPNODE_Simp_Trees_Have_Same_Value(simpnode t1, simpnode t2)
 	  && ! SIMP_has_side_effects (t1));
 }
 
+
+/* ====================================================================
+ *
+ * BOOL rotate_condition(simpnode t1, simpnode t2, TYPE_ID ty)
+ *
+ * Returns TRUE if the tree is a rotate pattern candidate
+ * ====================================================================
+ */
+static BOOL rotate_condition(simpnode k0, simpnode k1, TYPE_ID ty){
+  return ((SIMPNODE_operator(SIMPNODE_kid1(k1)) == OPR_SUB 
+	   && SIMP_Is_Constant(SIMPNODE_kid0(SIMPNODE_kid1(k1)))
+	   && SIMP_Int_ConstVal(SIMPNODE_kid0(SIMPNODE_kid1(k1))) == MTYPE_bit_size(ty)
+	   && SIMPNODE_Simp_Compare_Trees(SIMPNODE_kid1(k0), SIMPNODE_kid1(SIMPNODE_kid1(k1))) == 0) ||
+	  (SIMPNODE_operator(SIMPNODE_kid1(k0)) == OPR_SUB 
+	   && SIMP_Is_Constant(SIMPNODE_kid0(SIMPNODE_kid1(k0)))
+	   && SIMP_Int_ConstVal(SIMPNODE_kid0(SIMPNODE_kid1(k0))) == MTYPE_bit_size(ty)
+	   && SIMPNODE_Simp_Compare_Trees(SIMPNODE_kid1(k1), SIMPNODE_kid1(SIMPNODE_kid1(k0))) == 0));
+}
 #endif
 
 /* ====================================================================
@@ -1621,7 +1638,15 @@ static simpnode  simp_cvt(OPCODE opc, simpnode k0, simpnode k1,
    if (OPCODE_desc(k0opc) == MTYPE_BS)
      return (NULL);
 
+   
 #ifdef WN_SIMP_WORKING_ON_WHIRL
+   /* Converts from integer types of same size are nops and can be removed right away */
+   if (opc == OPC_I8U8CVT || opc == OPC_U8I8CVT
+       || opc == OPC_I4U4CVT || opc == OPC_U4I4CVT) {
+     SHOW_RULE("Removed CVT");
+     return (k0);
+   }
+   
    /* Several converts are nops and can be removed right away */
    if (!WHIRL_Keep_Cvt_On) {
       if (opc == OPC_I8I4CVT || opc == OPC_U8I4CVT) {
@@ -1866,6 +1891,10 @@ x - (-y)                x + y
 x + (-y)                x - y
 -x - y                  -(x+y)
 x - c                   x + (-c)
+(x << n) + (x >> 32-n)  rotl(x, n)
+(x << 32-n) + (x >> n)  rotl(x, 32-n)
+(x >> n) + (x << 32-n)  rotl(x, 32-n)
+(x >> 32-n) + (x >> n)  rotl(x, n)
 
 Aggressive:
 x - x                   0   R:2 for floating point (so that Inf-Inf=0 is acceptable)
@@ -1984,6 +2013,45 @@ static simpnode  simp_add_sub(OPCODE opc,
       }
    }
    if (r) return (r);
+
+
+   if (Enable_Rotate && ((SIMPNODE_operator(k0) == OPR_SHL 
+			  && SIMPNODE_operator(k1) == OPR_LSHR) ||
+			 (SIMPNODE_operator(k1) == OPR_SHL 
+			  && SIMPNODE_operator(k0) == OPR_LSHR))
+       && SIMPNODE_Simp_Trees_Have_Same_Value(SIMPNODE_kid0(k0),SIMPNODE_kid0(k1))
+       && MTYPE_bit_size(ty) == 32) 
+     {
+       if (rotate_condition(k0, k1, ty))
+	 {
+	   SHOW_RULE("(x << n) + (x >> 32-n) or (x >> n) + (x << 32-n)");
+	   r = SIMPNODE_SimpCreateExp2(OPC_U4U4LROTATE,
+				       SIMPNODE_kid0(k0),
+				       SIMPNODE_kid1(k0));
+	   SIMP_DELETE(k0);
+	   SIMP_DELETE(k1);
+	 } 
+     }
+
+   if (Enable_Rotate && ((SIMPNODE_operator(k0) == OPR_SHL 
+			  && SIMPNODE_operator(k1) == OPR_ASHR) ||
+			 (SIMPNODE_operator(k1) == OPR_SHL 
+			  && SIMPNODE_operator(k0) == OPR_ASHR))
+       && SIMPNODE_Simp_Trees_Have_Same_Value(SIMPNODE_kid0(k0),SIMPNODE_kid0(k1))
+       && (SIMPNODE_opcode(SIMPNODE_kid0(k0)) == OPC_U4U2LDID ||
+	   SIMPNODE_opcode(SIMPNODE_kid0(k0)) == OPC_U4U1LDID)
+       && MTYPE_bit_size(ty) == 32) 
+     {
+       if (rotate_condition(k0, k1, ty))
+	 {
+	   SHOW_RULE("(x << n) + (x >> 32-n) or (x >> n) + (x << 32-n)");
+	   r = SIMPNODE_SimpCreateExp2(OPC_U4U4LROTATE,
+				       SIMPNODE_kid0(k0),
+				       SIMPNODE_kid1(k0));
+	   SIMP_DELETE(k0);
+	   SIMP_DELETE(k1);
+	 } 
+     }
 
    /* This must be done after the previous opts */
    if (Enable_Cfold_Aggressive && reassoc) {
@@ -3180,6 +3248,11 @@ j | -1			-1
 
 x & mask1 | compose (0,y) (if appropriate)
                          compose (x,y)
+
+(x << n) | (x >> 32-n)  rotl(x, n)
+(x << 32-n) | (x >> n)  rotl(x, 32-n)
+(x >> n) | (x << 32-n)  rotl(x, 32-n)
+(x >> 32-n) | (x >> n)  rotl(x, n)
 		
  Aggressive:
 ~j | j			-1
@@ -3291,46 +3364,86 @@ static simpnode  simp_bior( OPCODE opc,
    if (SIMPNODE_operator(k0) == OPR_BAND && SIMPNODE_operator(k1) == OPR_COMPOSE_BITS &&
        SIMP_Is_Constant(SIMPNODE_kid1(k0)) && SIMP_Is_Constant(SIMPNODE_kid0(k1)) &&
        SIMP_Int_ConstVal(SIMPNODE_kid0(k1)) == 0)
-   {
-     
-     UINT64 dep_mask = create_bitmask(SIMPNODE_op_bit_size(k1))<<SIMPNODE_op_bit_offset(k1);
-     UINT64 type_mask = create_bitmask(MTYPE_bit_size(ty));
-     c1 = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
-     if (((dep_mask & c1) == 0) && (((dep_mask | c1) & type_mask) == type_mask)) {
-       SHOW_RULE("(j&mask)|compose(0,k)");
-       r = SIMPNODE_SimpCreateDeposit(SIMPNODE_opcode(k1),SIMPNODE_op_bit_offset(k1),
-				      SIMPNODE_op_bit_size(k1),SIMPNODE_kid0(k0),SIMPNODE_kid1(k1));
-       SIMP_DELETE(SIMPNODE_kid1(k0));
-       SIMP_DELETE(SIMPNODE_kid0(k1));
-       SIMP_DELETE(k0);
-       SIMP_DELETE(k1);
+     {
+       
+       UINT64 dep_mask = create_bitmask(SIMPNODE_op_bit_size(k1))<<SIMPNODE_op_bit_offset(k1);
+       UINT64 type_mask = create_bitmask(MTYPE_bit_size(ty));
+       c1 = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
+       if (((dep_mask & c1) == 0) && (((dep_mask | c1) & type_mask) == type_mask)) {
+	 SHOW_RULE("(j&mask)|compose(0,k)");
+	 r = SIMPNODE_SimpCreateDeposit(SIMPNODE_opcode(k1),SIMPNODE_op_bit_offset(k1),
+					SIMPNODE_op_bit_size(k1),SIMPNODE_kid0(k0),SIMPNODE_kid1(k1));
+	 SIMP_DELETE(SIMPNODE_kid1(k0));
+	 SIMP_DELETE(SIMPNODE_kid0(k1));
+	 SIMP_DELETE(k0);
+	 SIMP_DELETE(k1);
+       }
      }
-   }
    if (Enable_compose && SIMPNODE_operator(k0) == OPR_BAND && SIMPNODE_operator(k1) == OPR_BAND
        && SIMP_Is_Constant(SIMPNODE_kid1(k0)) && SIMP_Is_Constant(SIMPNODE_kid1(k1)))
-   {
-     c1 = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
-     c2 = SIMP_Int_ConstVal(SIMPNODE_kid1(k1));
-     UINT64 type_mask = create_bitmask(MTYPE_bit_size(ty));
-     
-     if (IS_POWER_OF_2(c1+1) && ((c2 & c1) == 0) && (((c2 | c1) & type_mask) == type_mask)) {
-       SHOW_RULE("(J&mask1) | (k & mask2)");
-       r = SIMPNODE_SimpCreateDeposit(OPC_FROM_OPR(OPR_COMPOSE_BITS,ty),0,loga2(c1+1),
-				      SIMPNODE_kid0(k1),SIMPNODE_kid0(k0));
-       SIMP_DELETE(SIMPNODE_kid1(k0));
-       SIMP_DELETE(SIMPNODE_kid1(k1));
-       SIMP_DELETE(k0);
-       SIMP_DELETE(k1);
-     } else if (IS_POWER_OF_2(c2+1) && ((c2 & c1) == 0) && (((c2 | c1) & type_mask) == type_mask)) {
-       SHOW_RULE("(J&mask2) | (k & mask1)");
-       r = SIMPNODE_SimpCreateDeposit(OPC_FROM_OPR(OPR_COMPOSE_BITS,ty),0,loga2(c2+1),
-				      SIMPNODE_kid0(k0),SIMPNODE_kid0(k1));
-       SIMP_DELETE(SIMPNODE_kid1(k0));
-       SIMP_DELETE(SIMPNODE_kid1(k1));
-       SIMP_DELETE(k0);
-       SIMP_DELETE(k1);
+     {
+       c1 = SIMP_Int_ConstVal(SIMPNODE_kid1(k0));
+       c2 = SIMP_Int_ConstVal(SIMPNODE_kid1(k1));
+       UINT64 type_mask = create_bitmask(MTYPE_bit_size(ty));
+       
+       if (IS_POWER_OF_2(c1+1) && ((c2 & c1) == 0) && (((c2 | c1) & type_mask) == type_mask)) {
+	 SHOW_RULE("(J&mask1) | (k & mask2)");
+	 r = SIMPNODE_SimpCreateDeposit(OPC_FROM_OPR(OPR_COMPOSE_BITS,ty),0,loga2(c1+1),
+					SIMPNODE_kid0(k1),SIMPNODE_kid0(k0));
+	 SIMP_DELETE(SIMPNODE_kid1(k0));
+	 SIMP_DELETE(SIMPNODE_kid1(k1));
+	 SIMP_DELETE(k0);
+	 SIMP_DELETE(k1);
+       } else if (IS_POWER_OF_2(c2+1) && ((c2 & c1) == 0) && (((c2 | c1) & type_mask) == type_mask)) {
+	 SHOW_RULE("(J&mask2) | (k & mask1)");
+	 r = SIMPNODE_SimpCreateDeposit(OPC_FROM_OPR(OPR_COMPOSE_BITS,ty),0,loga2(c2+1),
+					SIMPNODE_kid0(k0),SIMPNODE_kid0(k1));
+	 SIMP_DELETE(SIMPNODE_kid1(k0));
+	 SIMP_DELETE(SIMPNODE_kid1(k1));
+	 SIMP_DELETE(k0);
+	 SIMP_DELETE(k1);
+       }
      }
-   }
+
+   if (Enable_Rotate && ((SIMPNODE_operator(k0) == OPR_SHL 
+			  && SIMPNODE_operator(k1) == OPR_LSHR) ||
+			 (SIMPNODE_operator(k1) == OPR_SHL 
+			  && SIMPNODE_operator(k0) == OPR_LSHR))
+       && SIMPNODE_Simp_Trees_Have_Same_Value(SIMPNODE_kid0(k0),SIMPNODE_kid0(k1))
+       && MTYPE_bit_size(ty) == 32) 
+     {
+       if (rotate_condition(k0, k1, ty))
+	 {
+	   SHOW_RULE("(x << n) | (x >> 32-n) or (x >> n) | (x << 32-n)");
+	   r = SIMPNODE_SimpCreateExp2(OPC_U4U4LROTATE,
+				       SIMPNODE_kid0(k0),
+				       SIMPNODE_kid1(k0));
+	   SIMP_DELETE(k0);
+	   SIMP_DELETE(k1);
+	 } 
+     }
+
+   if (Enable_Rotate && ((SIMPNODE_operator(k0) == OPR_SHL 
+			  && SIMPNODE_operator(k1) == OPR_ASHR) ||
+			 (SIMPNODE_operator(k1) == OPR_SHL 
+			  && SIMPNODE_operator(k0) == OPR_ASHR))
+       && SIMPNODE_Simp_Trees_Have_Same_Value(SIMPNODE_kid0(k0),SIMPNODE_kid0(k1))
+       && (SIMPNODE_opcode(SIMPNODE_kid0(k0)) == OPC_U4U2LDID ||
+	   SIMPNODE_opcode(SIMPNODE_kid0(k0)) == OPC_U4U1LDID)
+       && MTYPE_bit_size(ty) == 32) 
+     {
+       if (rotate_condition(k0, k1, ty))
+	 {
+	   SHOW_RULE("(x << n) | (x >> 32-n) or (x >> n) | (x << 32-n)");
+	   r = SIMPNODE_SimpCreateExp2(OPC_U4U4LROTATE,
+				       SIMPNODE_kid0(k0),
+				       SIMPNODE_kid1(k0));
+	   SIMP_DELETE(k0);
+	   SIMP_DELETE(k1);
+	 } 
+     }
+
+   
    if (r) return (r);
 
    r = simp_factor(k0,k1,OPR_BAND,opc,ty,FACTOR_ALL);

@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct  8 17:11:31 CEST 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33242
+
+Description:
+------------
+	* [fixes/codex-33242] Deliver fix for codex bug #33242 to trunk with authorization art #33496
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/wn_simp_code.h
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct  8 14:55:46 CEST 2007
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
