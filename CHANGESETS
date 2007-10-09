@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct  9 17:03:21 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33692
+
+Description:
+------------
+	*  [trunk] Fix for bug #33692: Missed tailcall opportunity
+	Deliver fixes/codex-33692 rev #13917 with authorization branch #33727.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/calls.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct  8 17:20:45 CEST 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

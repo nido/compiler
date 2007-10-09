@@ -860,16 +860,16 @@ Can_Be_Tail_Call (
 	if (Is_Function_Value(dst)) {
 	  if (TN_register(dst) != next_reg) {
 	    goto failure;
-	  } else {
-	    next_reg += TN_nhardregs(dst);
 	  }
 	} else {
-	  // extract must write to function results, else we
-	  // give up.  We could support it with more
-	  // effort, but we would have to track the individual
-	  // register elements of dst.
-	  goto failure;
+	  if (TN_register(dst) != REGISTER_UNDEFINED)
+	    goto failure;
+	  // Fabricate a TN to represent this result of the extract.
+	  hTN_MAP_Set(fvals, dst, Build_Dedicated_TN (TN_register_class (dst),
+						      next_reg,
+						      TN_size (dst)));
 	}
+	next_reg += TN_nhardregs (dst);
       }
     } else
       goto failure;
