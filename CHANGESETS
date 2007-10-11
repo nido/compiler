@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 11 16:59:40 CEST 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-SectionSymbol
+
+Description:
+------------
+	* [trunk] Deliver bidaultt/dev-SectionSymbol rev #13963 with authorization branch #33707
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 10 09:27:43 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
