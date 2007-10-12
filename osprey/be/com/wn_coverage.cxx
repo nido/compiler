@@ -442,6 +442,10 @@ static void
 Add_BB_To_Cur_Function(basic_block_t *bb) {
   basic_block_list_t *list_bb, *new_list_bb;
 
+  //TB:fix. When bb is empty no need to add it.
+  if (bb->wn_list == NULL) {
+    return;
+  }
   // Add bb to the end of bb_list of current function.
   for ( list_bb = Cur_Function->bb_list; list_bb != NULL && list_bb->next != NULL; list_bb = list_bb->next) 
     /* NOTHING*/ ;
@@ -983,28 +987,42 @@ build_ctr_info_type(TY_IDX counter_type) {
 // };
 static TY_IDX
 build_fn_info_type() {
-  unsigned ix;
   TY_IDX gcov_fn_info_idx;
-  FLD_HANDLE first_field, field;
+  FLD_HANDLE first_field, field, last_field;
   TY& gcov_fn_info = New_TY(gcov_fn_info_idx);
+  const struct function_list *function;
+  unsigned n_fns = 0;
+  
+  mUINT32 offset = 0;
+  for (function = functions_head, n_fns = 0; function; function = function->next, 
+	 n_fns++) {
+    unsigned ix;
+    char buf[32];
+    first_field = New_FLD ();
+    sprintf(buf, "ident%d", n_fns);
+    FLD_Init (first_field, Save_Str(buf), 
+	      Be_Type_Tbl(MTYPE_U4), offset);
+    offset += TY_size(Be_Type_Tbl(MTYPE_U4));
+    
+    field = New_FLD ();
+    sprintf(buf, "checksum%d", n_fns);
+    FLD_Init (field, Save_Str(buf), 
+	      Be_Type_Tbl(MTYPE_U4), offset);
+    offset += TY_size(Be_Type_Tbl(MTYPE_U4));
 
-  first_field = New_FLD ();
-  FLD_Init (first_field, Save_Str("ident"), 
-	    Be_Type_Tbl(MTYPE_U4), 0);
-
-  field = New_FLD ();
-  FLD_Init (field, Save_Str("checksum"), 
-	    Be_Type_Tbl(MTYPE_U4), 4);
-
-  for (ix = 0; ix != GCOV_COUNTERS; ix++)
-    if (prg_ctr_mask & (1 << ix))
-      {
-	field = New_FLD ();
-	FLD_Init (field, Save_Str("n_ctrs"), 
-		  Be_Type_Tbl(MTYPE_U4), 8);
-      }
-  Set_FLD_last_field(field);
-  TY_Init (gcov_fn_info, 3*TY_size(Be_Type_Tbl(MTYPE_U4)),
+    for (ix = 0; ix != GCOV_COUNTERS; ix++)
+      if (prg_ctr_mask & (1 << ix))
+	{
+	  field = New_FLD ();
+	  sprintf(buf, "n_ctrs%d%d", n_fns, ix);
+	  FLD_Init (field, Save_Str(buf), 
+		    Be_Type_Tbl(MTYPE_U4), offset);
+	  offset += TY_size(Be_Type_Tbl(MTYPE_U4));
+	}
+  }
+  last_field = field;
+  Set_FLD_last_field(last_field);
+  TY_Init (gcov_fn_info, offset,
 	   KIND_STRUCT, MTYPE_M, Save_Str ("gcov_fn_info"));
   Set_TY_align(gcov_fn_info_idx, 4);
   Set_TY_fld(gcov_fn_info, first_field);
@@ -1091,39 +1109,37 @@ static ST *
 build_fn_info_value (TY_IDX fn_info_type_idx, unsigned *nfns)
 {
   INITV_IDX inv;
-  INITV_IDX prev_inv;
+  INITV_IDX prev_inv = INITV_IDX_ZERO;
   const struct function_list *function;
-  unsigned n_fns;
-  ST *first_st;
+  unsigned n_fns = 0;
+  // create new constant
+  ST *st = New_ST (GLOBAL_SYMTAB);
+  // Create a new symbol 
+  char buf[32];
+  sprintf(buf, ".LPFI%d", n_fns);
+  ST_Init (st, Save_Str(buf), CLASS_VAR
+	   , SCLASS_FSTATIC, EXPORT_LOCAL, fn_info_type_idx);
+  //TB: Fix bug #30725 with -s/tda option
+#ifdef TARG_STxP70
+  Set_ST_memory_space (*st, ST_MEMORY_NONE);
+#endif
+  Set_ST_is_initialized (st);
+  Set_ST_is_const_var (st);
+  INITO_IDX inito = New_INITO(st);
+  
   for (function = functions_head, n_fns = 0; function; function = function->next, 
 	 n_fns++) {
-    // create new constant
-    ST *st = New_ST (GLOBAL_SYMTAB);
-    // Create a new symbol 
-    char *buf;
-    /* Name this symbol: */
-    buf = (char *)alloca(32);
-    sprintf(buf, "%s%d", ".LPFI", n_fns);
-    ST_Init (st, Save_Str(buf), CLASS_VAR
-	     , SCLASS_FSTATIC, EXPORT_LOCAL, fn_info_type_idx);
-    //TB: Fix bug #30725 with -s/tda option
-#ifdef TARG_STxP70
-    Set_ST_memory_space (*st, ST_MEMORY_NONE);
-#endif
-    Set_ST_is_initialized (st);
-    Set_ST_is_const_var (st);
-    INITO_IDX inito = New_INITO(st);
     unsigned ix;
     /* ident */
     inv = New_INITV ();
     INITV_Init_Integer (inv, MTYPE_U4, function->ident);
-    prev_inv = Append_INITV (inv, inito, INITV_IDX_ZERO);
-
+    prev_inv = Append_INITV (inv, inito, prev_inv);
+    
     /* checksum */
     inv = New_INITV ();
     INITV_Init_Integer (inv, MTYPE_U4, function->checksum);
     prev_inv = Append_INITV (inv, inito, prev_inv);
-
+    
     /* counters */
     for (ix = 0; ix != GCOV_COUNTERS; ix++)
       if (prg_ctr_mask & (1 << ix))
@@ -1132,14 +1148,11 @@ build_fn_info_value (TY_IDX fn_info_type_idx, unsigned *nfns)
 	  INITV_Init_Integer (inv, MTYPE_U4, function->n_ctrs[ix]);
 	  prev_inv = Append_INITV (inv, inito, prev_inv);
 	}
-
-    Allocate_Object(st);
-    // Keep a trace on the start of this rodata area
-    if (n_fns == 0)
-      first_st = st;
   }
+  Allocate_Object(st);
   *nfns = n_fns;
-  return first_st;
+  // Return a pointer on the start of this rodata area
+  return st;
 }
 
 /* Creates a CONSTRUCTOR for a gcov_ctr_info. COUNTER is
@@ -2063,7 +2076,7 @@ coverage_begin_output (WN *wn)
       file = cur_file->filename;
       line = USRCPOS_linenum(usrcpos);
       if (line == 0) {
-	// We cancel the gcov intrumentation if no line info can be
+	// We cancel the gcov instrumentation if no line info can be
 	// found in this PU
 	basic_block_list_t *list_bb;
 	for ( list_bb = Cur_Function->bb_list; list_bb != NULL; 
@@ -2416,11 +2429,10 @@ coverage_counter_alloc (unsigned counter, unsigned num)
     {
       unsigned ix;
       /* Create a new symbol to access the counter.  */
-      char *buf;
+      char buf[32];
       ST *newst;
       /* Name this symbol: */
-      buf = (char *)alloca(32);
-      sprintf(buf, "%s%d", ".LPBX", counter + 1);
+      sprintf(buf, ".LPBX%d", counter + 1);
 
       // add a st for instrumentation with a dummy type 
       // the real symbol will be allocated at end of file
@@ -2586,15 +2598,16 @@ wn_coverage_init ()
   Trace_Coverage = Get_Trace( TP_FEEDBACK, TP_FEEDBACK_COVERAGE );
   randomize();
   if (Branch_Probabilities || Profile_Arcs_Enabled) {
-    char *pwdname = (char*) alloca(PATH_MAX);
+    char pwdname[PATH_MAX];
     if (getcwd(pwdname, PATH_MAX) == NULL) {
       fprintf(stderr, "error getting current dir: pwd is too long");
-      pwdname = NULL;
-    }
-    cwdname = TYPE_MEM_POOL_ALLOC_N(char,
+      cwdname = NULL;
+    } else {
+      cwdname = TYPE_MEM_POOL_ALLOC_N(char,
 				    MEM_coverage_pool,
 				    strlen (pwdname)+1);
-    strcpy(cwdname, pwdname);
+      strcpy(cwdname, pwdname);
+    }
     //   Name of da file.
     da_file_name = TYPE_MEM_POOL_ALLOC_N(char,
 					 MEM_coverage_pool,
@@ -3713,8 +3726,8 @@ wn_coverage_Generate_Func_Start_Profiler_PU(PU_Info** _pu_tree_p)
     // the real symbol will be allocated at finalization of the module 
     gcov_info_st = New_ST(GLOBAL_SYMTAB);
     /* Name this symbol: */
-    char *buf = (char *)alloca(32);
-    sprintf(buf, "%s%d", ".LPBX", 0);
+    char buf[32];
+    sprintf(buf, ".LPBX%d", 0);
     ST_Init(gcov_info_st, 
 	    Save_Str(buf),
 	    CLASS_VAR, SCLASS_FSTATIC, EXPORT_LOCAL,  Be_Type_Tbl(MTYPE_U4));
