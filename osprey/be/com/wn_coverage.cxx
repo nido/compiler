@@ -1284,6 +1284,10 @@ build_gcov_info_value (TY_IDX gcov_info_idx, ST *fn_st, unsigned n_fns)
   for (ix = 0; ix != GCOV_COUNTERS; ix++)
     if (prg_ctr_mask & (1 << ix))
       prev_inv = build_ctr_info_value(inv, inito, prev_inv, ix);
+
+  //TB: Allocate const string object
+  Allocate_Object (const_st);
+
 }
 
 /* Write out the structure which libgcov uses to locate all the

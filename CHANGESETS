@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 12 16:42:54 CEST 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-moveable-string
+
+Description:
+------------
+	* [trunk] Deliver bidaultt/dev-moveable-string rev #14007 with authorization branch #34075
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_coverage.cxx
+	M      osprey/lai/cgemit.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 12 16:29:50 CEST 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

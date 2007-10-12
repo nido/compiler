@@ -964,11 +964,9 @@ Print_Label (
       moveable = TRUE;
     }
     
+    fprintf (pfile, ", %s", AS_TYPE_OBJECT);
     if (moveable) {
-      fprintf (pfile, ", %s, %s", AS_TYPE_OBJECT, AS_MOVEABLE);
-    }
-    else {
-      fprintf (pfile, ", %s", AS_TYPE_OBJECT);
+      fprintf (pfile, ", %s", AS_MOVEABLE);
     }
 #  ifdef AS_USED
     /* TB: add gnu used  attibute when needed */
@@ -977,7 +975,7 @@ Print_Label (
     }
 #endif
     fprintf (pfile, "\n");
-#  else
+#  else //AS_MOVEABLE
     fprintf (pfile, ", %s\n", AS_TYPE_OBJECT);
 #  endif
 #else
@@ -2689,9 +2687,62 @@ Process_Initos_And_Literals (
 	  }
 #endif
       }
+      fprintf (Output_File, "\t%s\t", AS_TYPE);
+      EMT_Write_Qualified_Tcon_Name (Output_File, st);
+#  ifdef AS_MOVEABLE
+      BOOL moveable;
+      int size = TY_size(ST_type(st));
+      
+      if (Emit_Global_Data) {
+	/* TB: Tell this symbol is moveable when not in Emit_Global_Data (ipa) */
+	moveable = FALSE;
+      }
+      else if (ST_is_initialized (st)) {
+	/* [SC]: Not moveable if initializer is larger than symbol size */
+	INITV_IDX inito_idx = ST_has_inito (st);
+	if (inito_idx != 0 && Get_INITO_Size (inito_idx) > size)
+	  moveable = FALSE;
+	else
+	  moveable = TRUE;
+      }
+      else {
+	moveable = TRUE;
+      }
+      
+      fprintf (Output_File, ", %s", AS_TYPE_OBJECT);
+      if (moveable) {
+	fprintf (Output_File, ", %s", AS_MOVEABLE);
+      }
+#  ifdef AS_USED
+      /* TB: add gnu used  attibute when needed */
+      if (ST_is_used(st)) {
+	fprintf (Output_File, ", %s", AS_USED);
+      }
+#endif
+      fprintf (Output_File, "\n");
+#  else //AS_MOVEABLE
+      fprintf (Output_File, ", %s\n", AS_TYPE_OBJECT);
+#  endif 
+#ifdef AS_SIZE
+      {
+	TCON tcon = ST_tcon_val(st);
+	BOOL add_null = TCON_add_null(tcon);
+	int size = 0;
+	if ( TCON_ty(tcon) == MTYPE_STRING )
+	  size = (Targ_String_Length (tcon) + (add_null ? 1 : 0));
+	else
+	  size = TY_size(Be_Type_Tbl(TCON_ty(tcon)));
+	if (size != 0) {
+	  /* if size is given, then emit value for asm */
+	  fprintf (Output_File, "\t%s\t", AS_SIZE);
+	  EMT_Write_Qualified_Tcon_Name(Output_File, st);
+	  fprintf (Output_File, ", %d\n", size);
+	}
+      }
+#endif
       EMT_Write_Qualified_Tcon_Name(Output_File, st);
       fprintf(Output_File, ":\n");
-#else
+#else //Not TARG_ST
       fprintf(Output_File, "%s_UNNAMED_CONST_%d:\n", Local_Label_Prefix, ST_tcon(st));
 #endif
       ofst = Write_TCON (&ST_tcon_val(st), STB_scninfo_idx(base), ofst, 1);
