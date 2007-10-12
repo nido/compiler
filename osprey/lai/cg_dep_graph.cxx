@@ -1847,7 +1847,29 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
   *initial_sym = NULL;
   *sym = NULL;
   *base_tn = OP_opnd(op, base_num);
+#ifdef TARG_ST
+  // [VCdV] bug #34093. the offset is only meaningfull when it is an
+  // immediate value.
+  TN* offset_operand = OP_opnd(op, offset_num);
+  if (TN_is_register(offset_operand)) {
+    if (TN_is_rematerializable(offset_operand)) {
+      WN *wn_remat = TN_remat(offset_operand);
+      if (WN_operator(wn_remat) == OPR_INTCONST) {
+        *offset = WN_const_val(wn_remat);
+      } else {
+        return NULL;
+      }
+    } else {
+      return NULL;
+    }
+  } else if (TN_has_value(offset_operand)) {
+    *offset = (offset_num < 0) ? 0 : TN_value(offset_operand);
+  } else {
+    return NULL;
+  }
+#else
   *offset = (offset_num < 0) ? 0 : TN_value(OP_opnd(op, offset_num));
+#endif
   defop_base_tn = *base_tn;
   defop = op;
 

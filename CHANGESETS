@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 12 08:58:51 CEST 2007
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34093
+
+Description:
+------------
+	* [trunk] Fix for bug #34093: Wrong handling of Rn+Rp address mode in addr_base_offset()/cg_dep_graph.cxx.
+	Deliver fixes/codex-34093 rev #13980 with authorization branch #34111
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_dep_graph.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 11 16:59:40 CEST 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
