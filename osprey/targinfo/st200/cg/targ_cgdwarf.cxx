@@ -329,8 +329,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -340,8 +339,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -379,8 +377,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(otn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(otn))));
+	      TN_Get_Debug_Reg_Id(otn));
 #endif
 	return otn;
     }
@@ -394,8 +391,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is a save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(tn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -408,8 +404,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (BB_entry(bb) && TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -418,8 +413,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -451,8 +445,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(otn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(otn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return otn;
     }
@@ -496,15 +489,17 @@ static void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when)
     ue->qp = 0;
 #if 0
     if (OP_has_predicate(op)) {
-      ue.qp = REGISTER_machine_id (ISA_REGISTER_CLASS_predicate,
-			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
+      //TB: better use TN_Get_Debug_Reg_Id
+      ue.qp = TN_Get_Debug_Reg_Id(OP_opnd(op, OP_PREDICATE_OPND));
+      //       ue.qp = REGISTER_machine_id (ISA_REGISTER_CLASS_predicate,
+      // 			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
     }
 #endif
 #if 0
     if (ue.kind == UE_SAVE_GR) {
       ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue.save_rc_reg);
       REGISTER reg = CLASS_REG_PAIR_reg(ue.save_rc_reg);
-      if (ABI_PROPERTY_Is_stacked(rc, REGISTER_machine_id(rc, reg))
+      if (ABI_PROPERTY_Is_stacked(rc, REGISTER_Get_Debug_Reg_Id(rc, reg))
 	  && ! BB_rotating_kernel(bb)
 	  && REGISTER_Is_Stacked_Output(rc, reg) )
 	{
@@ -583,9 +578,9 @@ static void Record_Register_Save(OP* op, INT opndnum, BB* bb, UNWIND_ELEM* ue,
 	}
 
 #ifdef DEBUG_UNWIND
-	fprintf(TFile, "** %s register %d offset = %lld\n", __FUNCTION__,
-		REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
-				    CLASS_REG_PAIR_reg(ue->rc_reg)),
+	fprintf(TFile, "** %s register %llu offset = %lld\n", __FUNCTION__,
+		REGISTER_Get_Debug_Reg_Id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+					  CLASS_REG_PAIR_reg(ue->rc_reg)),
 		ue->offset);
 #endif
       }
@@ -658,10 +653,10 @@ static void Record_Register_Restore(OP* op, INT opndnum, BB* bb,
 
 #ifdef DEBUG_UNWIND
 	if (ue->kind != UE_UNDEFINED) {
-	  fprintf(TFile, "** %s restore register %d from mem offset %lld\n",
+	  fprintf(TFile, "** %s restore register %llu from mem offset %lld\n",
 		  __FUNCTION__,
-		  REGISTER_machine_id(CLASS_REG_PAIR_rclass(ue->rc_reg),
-				      CLASS_REG_PAIR_reg(ue->rc_reg)),
+		  REGISTER_Get_Debug_Reg_Id(CLASS_REG_PAIR_rclass(ue->rc_reg),
+					    CLASS_REG_PAIR_reg(ue->rc_reg)),
 		  ue->offset);
 	}
 #endif
@@ -2436,7 +2431,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 						 scn_index),
 			   &dw_error);
       }
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 STACK_OFFSET_ADJUSTMENT,
 			 &dw_error);
       if (Trace_Unwind) {
@@ -2463,9 +2458,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa,
-			 REGISTER_machine_id(
-					     CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_sp),
-					     CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp)),
+			 REGISTER_Get_Debug_Reg_Id(CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_sp),
+						   CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp)),
 			 STACK_OFFSET_ADJUSTMENT,
 			 &dw_error);
 
@@ -2509,7 +2503,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_Get_Debug_Reg_Id(rc,reg),
 		 frame_offset / Data_Alignment_Factor,
 			 &dw_error);
 
@@ -2522,10 +2516,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile,
-	      "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
+	      "** %s label %s to %s adv loc + save reg %llu at offset %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_machine_id(rc,reg),
+	      REGISTER_Get_Debug_Reg_Id(rc,reg),
 	      frame_offset);
 #endif
 
@@ -2547,7 +2541,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 0, &dw_error);
 
       if (Trace_Unwind) {
@@ -2558,10 +2552,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %d\n",
+      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %llu\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_machine_id(rc,reg));
+	      REGISTER_Get_Debug_Reg_Id(rc,reg));
 #endif
 
       break;
@@ -2580,8 +2574,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_register, REGISTER_machine_id(rc,reg),
-			 REGISTER_machine_id(save_rc,save_reg),
+      dwarf_add_fde_inst(fde, DW_CFA_register, REGISTER_Get_Debug_Reg_Id(rc,reg),
+			 REGISTER_Get_Debug_Reg_Id(save_rc,save_reg),
 			 &dw_error);
 
       if (Trace_Unwind) {
@@ -2618,7 +2612,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 0, &dw_error);
 
       if (Trace_Unwind) {
@@ -2750,4 +2744,26 @@ extern BOOL Is_Dwarf_Section_To_Emit(const char *name)
 	  }
 	}
         return TRUE;
+}
+
+/**
+ * Give the debug register identifier of given tn. This translation is needed
+ * because we have to be backward compatible with debugger developed for CoSy
+ * framework
+ *
+ * @param  tn [in] Machine register
+ *
+ * @pre    TN_is_register(tn)
+ * @post   true
+ *
+ * @return The debug identifier that represents tn in dwarf information
+ */
+DebugRegId
+Get_Debug_Reg_Id_From_TN(TN* tn)
+{
+    DevAssert(TN_is_register(tn), ("%s: Must be called only with register",
+                                   __FUNCTION__));
+    return Get_Debug_Reg_Id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
+                            CLASS_REG_PAIR_reg(TN_class_reg(tn)),
+                            TN_size(tn) * CHAR_BIT);
 }

@@ -1360,6 +1360,13 @@ extern REGISTER_SET REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLAS
 #define REGISTER_COMPOSITE_SIZE_MAX  4
 #endif
 
+
+#ifdef TARG_ST
+//[TB]:Add a macro that returns the dwarf register ID as implemented
+//in targinfo/abi/abi_properties.cxx. Do not use any more machine_id for that.
+#define REGISTER_Get_Debug_Reg_Id(rclass,reg)  Get_Debug_Reg_Id(rclass, reg, TN_size(Build_Dedicated_TN(rclass, reg, 0)) * CHAR_BIT)
+#endif
+
 /* ====================================================================
  *   These are defined in the target dependent part of compiler
  * ==================================================================== 

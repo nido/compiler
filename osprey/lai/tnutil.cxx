@@ -1899,8 +1899,8 @@ Gen_Literal_TN_Pair (
 
 #ifdef TARG_ST
 //TB: Return the name of a register, given a tn and a subclass Useful
-//for register whose name depends on the register subclass. For
-//instance on the VX extension register 6 is V6 or D3 dependin on the
+//for registers whose name depends on the register subclass. For
+//instance on the VX extension register 6 is V6 or D3 depending on the
 //subclass
 const char *REGISTER_extended_name(TN* tn,
 				   ISA_REGISTER_SUBCLASS sc) 

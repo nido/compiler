@@ -4274,7 +4274,7 @@ WFE_Expand_Expr (tree exp,
               break;
             }
             case BUILT_IN_DWARF_SP_COLUMN: {
-              int v = DWARF_FRAME_REGNUM (STACK_POINTER_REGNUM);
+	      int v = DWARF_FRAME_REGNUM (STACK_POINTER_REGNUM);
               wn = WN_Intconst(MTYPE_I4, v);
               whirl_generated = TRUE;
               break;

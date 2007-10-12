@@ -699,4 +699,10 @@ extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
 extern const char *REGISTER_extended_name(TN* tn,
 					  ISA_REGISTER_SUBCLASS sc) ;
 #endif
+#ifdef TARG_ST
+//[TB]:Add a macro that returns the dwarf register ID as implemented
+//in targinfo/abi/abi_properties.cxx..
+// This function is defined in targinfo/.../cg/cgdwarf_targ.h
+#define TN_Get_Debug_Reg_Id(tn)  Get_Debug_Reg_Id_From_TN((tn))
+#endif
 #endif /* tn_INCLUDED */

@@ -1417,7 +1417,7 @@ do {                                              \
 
 #endif
 
-#define DWARF_FRAME_REGNUM(REG) (REG)
+#define DWARF_FRAME_REGNUM(REG) GCCTARG_Dwarf_Get_Reg_Id_From_Gcc_Reg((REG))
 
 /* Describe how we implement __builtin_eh_return.  */
 #define INCOMING_RETURN_ADDR_RTX gen_rtx_REG (Pmode, RETURN_POINTER_REGNUM)

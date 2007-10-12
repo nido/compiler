@@ -39,10 +39,12 @@
 #include <elfaccess.h>
 #include <libelf.h>
 #include <libdwarf.h>
-#include "targ_em_dwarf.h"
 #include <assert.h>	// temporary
 #define USE_STANDARD_TYPES 1
 #include "defs.h"
+#include "errors.h"
+#include "register.h" // For REGISTER_MIN and CGTARG_DW_DEBUG_Get_Extension_Id
+#include "targ_em_dwarf.h"
 
 #pragma pack(1)
 struct UINT32_unaligned {
@@ -100,4 +102,16 @@ Em_Dwarf_Symbolic_Relocs_To_Elf(next_buffer_retriever     get_buffer,
   Dwarf_Ptr      buffer = NULL;
 
   return (Dwarf_Ptr) result_buf;
+}
+
+//TB: Add Get_Debug_Reg_Id from stxp70
+DebugRegId
+Get_Debug_Reg_Id(ISA_REGISTER_CLASS reg_class, INT reg, INT bitSize)
+{
+    // Input register identifier are given for REGISTER API. To use it with
+    // ISA_REGISTER API and so have a machine representation, we have to applied
+    // the offset used between the two APIs.
+    reg -= REGISTER_MIN;
+    mINT32 regId = CGTARG_DW_DEBUG_Get_Reg_Id(reg_class, reg, bitSize);
+    return DebugRegId(regId);
 }

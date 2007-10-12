@@ -275,8 +275,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -286,8 +285,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -325,8 +323,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(otn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(otn))));
+	      TN_Get_Debug_Reg_Id(otn));
 #endif
 	return otn;
     }
@@ -340,8 +337,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is a save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(tn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -354,8 +350,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (BB_entry(bb) && TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -364,8 +359,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_class_reg(tn)),
-				  CLASS_REG_PAIR_reg(TN_class_reg(tn))));
+	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -397,8 +391,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      REGISTER_machine_id(CLASS_REG_PAIR_rclass(TN_save_creg(otn)),
-				  CLASS_REG_PAIR_reg(TN_save_creg(otn))));
+	      TN_Get_Debug_Reg_Id(otn));
 #endif
 	return otn;
     }
@@ -413,7 +406,7 @@ void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when)
     ue->qp = 0;
 #if 0
     if (OP_has_predicate(op)) {
-      ue.qp = REGISTER_machine_id (ISA_REGISTER_CLASS_predicate,
+      ue.qp = REGISTER_Get_Debug_Reg_Id (ISA_REGISTER_CLASS_predicate,
 			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
     }
 #endif
@@ -1931,7 +1924,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 						 scn_index),
 			   &dw_error);
       }
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 STACK_OFFSET_ADJUSTMENT,
 			 &dw_error);
       if (Trace_Unwind) {
@@ -1958,7 +1951,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
       dwarf_add_fde_inst(fde, DW_CFA_def_cfa,
-			 REGISTER_machine_id(
+			 REGISTER_Get_Debug_Reg_Id(
 					     CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_sp),
 					     CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp)),
 			 STACK_OFFSET_ADJUSTMENT,
@@ -2002,7 +1995,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_Get_Debug_Reg_Id(rc,reg),
 		 frame_offset / Data_Alignment_Factor,
 			 &dw_error);
 
@@ -2015,10 +2008,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile,
-	      "** %s label %s to %s adv loc + save reg %d at offset %lld\n",
+	      "** %s label %s to %s adv loc + save reg %d at offset %llu\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_machine_id(rc,reg),
+	      REGISTER_Get_Debug_Reg_Id(rc,reg),
 	      frame_offset);
 #endif
 
@@ -2039,7 +2032,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 0, &dw_error);
 
       if (Trace_Unwind) {
@@ -2050,10 +2043,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %d\n",
+      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %llu\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_machine_id(rc,reg));
+	      REGISTER_Get_Debug_Reg_Id(rc,reg));
 #endif
 
       break;
@@ -2072,8 +2065,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_register, REGISTER_machine_id(rc,reg),
-			 REGISTER_machine_id(save_rc,save_reg),
+      dwarf_add_fde_inst(fde, DW_CFA_register, REGISTER_Get_Debug_Reg_Id(rc,reg),
+			 REGISTER_Get_Debug_Reg_Id(save_rc,save_reg),
 			 &dw_error);
 
       if (Trace_Unwind) {
@@ -2110,7 +2103,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_machine_id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
 			 0, &dw_error);
 
       if (Trace_Unwind) {

@@ -162,7 +162,9 @@ main()
   Reg_Property(thread_ptr, ISA_REGISTER_CLASS_integer, 13, -1);
 
   Reg_Property(zero, ISA_REGISTER_CLASS_integer, 0, -1);
-
+  // Debug infornmation for core registers.
+  //  DW_DEBUG_Extension_Reg(ISA_REGISTER_CLASS_branch     ,NULL,0 /*DWARF base index */);
+  // DW_DEBUG_Extension_Reg(ISA_REGISTER_CLASS_integer    ,NULL,8  /*DWARF base index */);
 
   ABI_Properties_End();
 }

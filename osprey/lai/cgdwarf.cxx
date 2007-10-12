@@ -815,13 +815,7 @@ put_location (
 	  ISA_REGISTER_CLASS rclass;
 	  REGISTER reg;
 	  if (CGTARG_Preg_Register_And_Class(preg, &rclass, &reg)) {
-#   ifdef TARG_STxP70
-	    // Ther should have another way to retrieve size information!
-	    int size = TN_size(Build_Dedicated_TN(rclass, reg, 0)) * CHAR_BIT;
-	    DebugRegId reg_num = Get_Debug_Reg_Id(rclass, reg, size);
-#   else
- 	    int reg_num = REGISTER_machine_id(rclass, reg);
-#   endif
+	    DebugRegId reg_num = REGISTER_Get_Debug_Reg_Id(rclass, reg);
 	    dwarf_add_expr_gen (expr, DW_OP_regx, reg_num,0, &dw_error);
 	  } else {
 	    DevWarn("Could not find dedicated register for variable %s", ST_name(st));
@@ -2249,11 +2243,21 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   expr = dwarf_new_expr (dw_dbg, &dw_error);
   if (Current_PU_Stack_Model != SMODEL_SMALL)
     dwarf_add_expr_gen (expr, DW_OP_bregx,
-	REGISTER_machine_id (TN_register_class(FP_TN), TN_register(FP_TN)),
-	0, &dw_error);
+#ifdef TARG_ST
+			//TB: better DWARF register support
+			TN_Get_Debug_Reg_Id(FP_TN),
+#else
+			REGISTER_machine_id (TN_register_class(FP_TN), TN_register(FP_TN)),
+#endif
+			0, &dw_error);
   else
     dwarf_add_expr_gen (expr, DW_OP_bregx,
-	REGISTER_machine_id (TN_register_class(SP_TN), TN_register(SP_TN)),
+#ifdef TARG_ST
+			//TB: better DWARF register support
+			TN_Get_Debug_Reg_Id (SP_TN),
+#else
+			REGISTER_machine_id (TN_register_class(SP_TN), TN_register(SP_TN)),
+#endif
 	Frame_Len, &dw_error);
 
 #ifdef TARG_ST
