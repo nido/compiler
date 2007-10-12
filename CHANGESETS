@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 12 16:14:10 CEST 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-fixes-28405
+
+Description:
+------------
+	* [trunk] Fix for bug #28405: iaccept f(*a) with f a bultin.
+	Deliver bidaultt/dev-fixes-28405 rev #13999 with authorization branch #33506  
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/c-typeck.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 12 15:03:08 CEST 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

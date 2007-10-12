@@ -2437,9 +2437,16 @@ WFE_Expand_Expr (tree exp,
 		wn = WN_Intconst (Pointer_Mtype, 0);
 	      }
 	      else
-	        wn = WN_Lda (Pointer_Mtype, ST_ofst(st), st);
+		wn = WN_Lda (Pointer_Mtype, ST_ofst(st), st);
 	    }
 	    break;
+
+#ifdef TARG_ST
+	    //TB: [ bug #28405 ]
+	  case INDIRECT_REF:
+	    wn = WFE_Expand_Expr (TREE_OPERAND(arg0, 0));
+	    break;
+#endif
 
 	  case STRING_CST:
 	    {
