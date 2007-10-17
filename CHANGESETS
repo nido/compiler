@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 17 16:45:49 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34315
+
+Description:
+------------
+	*  [trunk] Fix for bug #34315: (st200) No instrinsics for ldwl, stwl
+	Deliver fixes/codex-34315 rev #14044 with authorization branch #34331.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/config/gen_intrinsics.inc
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 17 09:19:07 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
