@@ -1526,9 +1526,19 @@ Memop_Variant (
     align = ty_align;
     if (offset) {
 #ifdef TARG_ST
-      // Fix for bug #23667. Offset can be negative, hence offset_align too.
+      // [TTh] Do not use directly the offset as an alignment,
+      //       as it is not always a power of 2.
+      INT offset_align = 0;
+      // Fix for bug #23667. Offset can be negative, hence offset_abs too.
       // But negative values are meaningless for alignment.
-      INT offset_align = (offset < 0? -offset: offset) % required_alignment;
+      INT offset_abs = (offset < 0? -offset: offset) % required_alignment;
+      if (offset_abs) {
+	offset_align = 1;
+	while (!(offset_abs & 0x1)) {
+	  offset_align <<= 1;
+	  offset_abs   >>= 1;
+	}
+      }
 #else
       INT offset_align = offset % required_alignment;
 #endif

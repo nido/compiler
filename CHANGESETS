@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 17 09:19:07 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33867
+
+Description:
+------------
+	* [trunk] Fix for bug #33867: Wrong assembly code generation on "packed" structures
+	          -> Fix alignment computation in Memop_Variant(): offsets of  data  memory
+		     accesses were directly used as an alignment, while they are not always
+		     a power of 2, leading to overestimation of data alignments.
+	  Deliver fixes/codex-33867 rev #14034 with authorization branch #33872
+
+
+Modified Files:
+---------------
+	M      osprey/lai/whirl2ops.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 12 16:42:54 CEST 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
