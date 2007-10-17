@@ -85,6 +85,78 @@ static INT32        spill_count, restore_count;
 float               priority_count;
 
 
+#ifdef TARG_ST
+// Data structures to maintain a list of spill locations
+// so that we can reuse a location for multiple TNs.
+class Spill_TN_Info {
+public:
+  BB_SET *live_bb_set;
+  BB_SET *Live_BB_Set () { return live_bb_set; }
+  void Add_Live_BBs (BB_SET *bbs) { live_bb_set = BB_SET_UnionD (live_bb_set, bbs,
+								 GRA_pool); }
+  Spill_TN_Info () {
+    live_bb_set = BB_SET_Create_Empty (PU_BB_Count, GRA_pool); 
+  }
+};
+
+static TN_MAP spill_tn_map;
+
+class GRA_Spill_Location {
+public:
+  ST *sym;
+  BB_SET *live_bb_set;
+  GRA_Spill_Location (ST *s, BB_SET *bbs) : sym (s) {
+    live_bb_set = BB_SET_Copy (bbs, GRA_pool);
+  }
+};
+
+typedef std::list<GRA_Spill_Location *,
+		  mempool_allocator<GRA_Spill_Location *> > GRA_SPILL_LIST;
+typedef GRA_SPILL_LIST::iterator GRA_SPILL_ITER;
+static  GRA_SPILL_LIST gra_spills[MTYPE_MAX_LIMIT+1];
+
+static ST *
+Get_GRA_TN_Spill_Symbol (TN *tn)
+{
+  if (TN_spill (tn)) return TN_spill (tn);
+
+  // Try to reuse an existing spill location.
+  Spill_TN_Info *info = (Spill_TN_Info *)TN_MAP_Get (spill_tn_map, tn);
+  BB_SET *live_bb_set = info->Live_BB_Set ();
+  INT spill_type_idx = Spill_Type_Index(tn);
+  GRA_SPILL_ITER it;
+  GRA_SPILL_ITER end = gra_spills[spill_type_idx].end ();
+  for (it = gra_spills[spill_type_idx].begin (); it != end; it++) {
+    GRA_Spill_Location *loc = *it;
+    if (! BB_SET_IntersectsP (loc->live_bb_set, live_bb_set)) {
+      GRA_Trace_Reuse_Spill_Location (tn, live_bb_set, loc->sym, loc->live_bb_set);
+      loc->live_bb_set = BB_SET_Union (loc->live_bb_set, live_bb_set, GRA_pool);
+      return loc->sym; // found an existing spill location to use.
+    }
+  }
+
+  // Create a new spill location.
+  ST *spill_sym = CGSPILL_Get_TN_Spill_Location (tn, CGSPILL_GRA);
+  GRA_Spill_Location *new_spill_location = CXX_NEW (GRA_Spill_Location (spill_sym,
+									live_bb_set),
+						    GRA_pool);
+  gra_spills[spill_type_idx].push_back (new_spill_location);
+  GRA_Trace_New_Spill_Location (tn, live_bb_set, spill_sym);
+  return spill_sym;
+}
+
+static void
+Add_Spill_Tn_Bbs (TN *tn, BB_SET *bbs)
+{
+  Spill_TN_Info *info = (Spill_TN_Info *)TN_MAP_Get (spill_tn_map, tn);
+  if (! info) {
+    info = CXX_NEW(Spill_TN_Info, GRA_pool);
+    TN_MAP_Set (spill_tn_map, tn, info);
+  }
+  info->Add_Live_BBs (bbs);
+}
+#endif
+
 // Data structures and functions to manipulate a list
 // of spill locations for Optimize_Placement.  It keeps
 // track of spills after the initial movement optimization
@@ -685,7 +757,6 @@ LUNIT_Spill(LUNIT* lunit)
     }
   }
 }
-
 
 /////////////////////////////////////
 static void
@@ -2057,6 +2128,36 @@ GRA_Spill(void)
   freq_spill_count = freq_restore_count = 0.0F;
 
   Identify_Initialize_Glue_Blocks();
+
+#ifdef TARG_ST
+  if (GRA_overlay_spills) {
+    // Calculate the full live range extent of spilled/split live ranges.
+    // We make a map from original TN to the set of BBs in the live range.
+    spill_tn_map = TN_MAP_Create ();
+    for (l = spilled_lranges; l != NULL; l = LRANGE_LIST_rest(l)) {
+      LRANGE *lr = LRANGE_LIST_first(l);
+      Add_Spill_Tn_Bbs (lr->Original_TN (), lr->Live_BB_Set ());
+    }
+    for (lu_iter.Init(lunits_with_spills_head); ! lu_iter.Done(); lu_iter.Step()){
+      LUNIT* lunit = lu_iter.Current();
+      LRANGE *lr = lunit->Lrange();
+      Add_Spill_Tn_Bbs (lr->Original_TN (), lr->Live_BB_Set ());
+    }
+    // Now allocate a spill location to each original TN.
+    TN_NUM i;
+    for (i = First_Regular_TN; i <= Last_TN; i++) {
+      TN *tn = TNvec(i);
+      Spill_TN_Info *info = (Spill_TN_Info *)TN_MAP_Get (spill_tn_map, tn);
+      if (info) {
+	Set_TN_spill (tn, Get_GRA_TN_Spill_Symbol (tn));
+      }
+    }
+    TN_MAP_Delete (spill_tn_map);
+    for (INT i = 0; i < (sizeof(gra_spills)/sizeof(gra_spills[0])); i++) {
+      gra_spills[i].clear ();
+    }
+  }
+#endif
 
   // Spill all the LUNITs with actual references in every live range with a
   // spill

@@ -154,7 +154,11 @@ GTN_UNIVERSE_TN_int( TN *tn)
 	   (TN_number(tn) < tn_int_map_allocated_size),
 		("Invalid TN%d in GTN_UNIVERSE_TN_int", TN_number(tn)));
 #else
+#ifdef TARG_ST
+  if (!(tn && TN_is_register(tn) && 
+#else
   if (!(TN_is_register(tn) && 
+#endif
 	TN_is_global_reg(tn) &&
 	(TN_number(tn) < tn_int_map_allocated_size)))
     return 0;

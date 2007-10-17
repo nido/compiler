@@ -305,6 +305,7 @@ BOOL GRA_spill_to_caller_save = TRUE;
 BOOL GRA_preference_subclass = TRUE;
 BOOL GRA_use_subclass_register_request = TRUE;
 const char *GRA_local_spill_multiplier_string = "1.0";
+BOOL GRA_overlay_spills = TRUE;
 #endif
 INT32 GRA_non_home_hi = -1;
 INT32 GRA_non_home_lo = INT32_MAX;

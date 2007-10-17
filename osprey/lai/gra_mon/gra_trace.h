@@ -82,6 +82,19 @@
 //          Trace if high detail placement is being traced.  Print a
 //          representation of the <lrange> and <gbb> following by the comment
 //          <str>.
+#ifdef TARG_ST
+//
+//      void GRA_Trace_Split_BB_Sets ( LRANGE *alloc_lrange,
+//                                     LRANGE *deferred_lrange )
+//          Trace the BB set separation after a split.
+//
+//      void GRA_Trace_New_Spill_Location (TN *tn, BB_SET *bbs, ST *sym)
+//          Trace allocation of spill location to spilled live range.
+//
+//      void GRA_Trace_Reuse_Spill_Location (TN *tn, BB_SET *bbs, ST *sym,
+//                                           BB_SET *prev_bbs)
+//          Trace reuse of spill location for spilled live range.
+#endif
 //
 //      void GRA_Trace_Preference_Attempt( const LRANGE* lrange0,
 //                                         const LRANGE* lrange1,
@@ -268,5 +281,9 @@ void GRA_Trace_Local_LRange_Request (const char *str,
 				     GRA_BB *gbb, ISA_REGISTER_CLASS cl,
 				     ISA_REGISTER_SUBCLASS sc, INT count,
 				     INT nregs, BOOL demand);
+void GRA_Trace_Split_BB_Sets (LRANGE *alloc_lrange, LRANGE *deferred_lrange);
+void GRA_Trace_New_Spill_Location (TN *tn, BB_SET *bbs, ST *sym);
+void GRA_Trace_Reuse_Spill_Location (TN *tn, BB_SET *bbs, ST *sym,
+				     BB_SET *prev_bbs);
 #endif
 #endif

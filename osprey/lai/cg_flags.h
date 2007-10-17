@@ -379,6 +379,7 @@ extern BOOL GRA_spill_to_caller_save;
 extern BOOL GRA_preference_subclass;
 extern BOOL GRA_use_subclass_register_request;
 extern const char* GRA_local_spill_multiplier_string;
+extern BOOL GRA_overlay_spills;
 #endif
 extern INT32 GRA_non_home_hi;
 extern INT32 GRA_non_home_lo;

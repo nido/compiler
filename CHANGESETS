@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 17 17:04:07 CEST 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-30401
+
+Description:
+------------
+	*  [trunk] Fix for bug #30401: Reduce stack consumption by overlaying local variables
+    Deliver fixes/codex-30401 rev #14049 with authorization branch #34041.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/data_layout.cxx
+	M      osprey/lai/gtn_tn_set.cxx
+	M      osprey/lai/gtn_universe.h
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/gra_mon/gra_split.cxx
+	M      osprey/lai/gra_mon/gra_spill.cxx
+	M      osprey/lai/gra_mon/gra_trace.cxx
+	M      osprey/lai/gra_mon/gra_trace.h
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 17 16:45:49 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

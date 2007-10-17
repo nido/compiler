@@ -289,6 +289,41 @@ GRA_Trace_Place_LRANGE_GBB( const char* str, LRANGE* lrange,
   }
 }
     
+#ifdef TARG_ST
+/////////////////////////////////////
+void
+GRA_Trace_New_Spill_Location (TN *tn, BB_SET *bbs, ST *sym)
+/////////////////////////////////////
+//  See interface description.
+/////////////////////////////////////
+{
+  if (trace_place) {
+    fprintf (TFile, "Creating new spill location ");
+    sym->Print (TFile, FALSE);
+    fprintf (TFile, " for TN%d in BBs ", TN_number (tn));
+    BB_SET_Print (bbs, TFile);
+    fprintf (TFile, "\n");
+  }
+}
+
+/////////////////////////////////////
+void
+GRA_Trace_Reuse_Spill_Location (TN *tn, BB_SET *bbs, ST *sym, BB_SET *prev_bbs)
+/////////////////////////////////////
+//  See interface description.
+/////////////////////////////////////
+{
+  if (trace_place) {
+    fprintf (TFile, "Reuse spill location ");
+    sym->Print (TFile, FALSE);
+    fprintf (TFile, " for TN%d in BBs ", TN_number (tn));
+    BB_SET_Print (bbs, TFile);
+    fprintf (TFile, "(prev bbs = ");
+    BB_SET_Print (prev_bbs, TFile);
+    fprintf (TFile, ")\n");
+  }
+}
+#endif
 
 /////////////////////////////////////
 static void
@@ -310,6 +345,22 @@ print_lr( LRANGE *lr)
 }
 
 #ifdef TARG_ST
+void
+GRA_Trace_Split_BB_Sets (LRANGE *alloc_lrange, LRANGE *deferred_lrange)
+{
+  if (trace_split) {
+    fprintf (TFile, "<gra> After split, ");
+    print_lr (alloc_lrange);
+    fprintf (TFile, ": ");
+    BB_SET_Print (alloc_lrange->Live_BB_Set (), TFile);
+    fprintf (TFile, "\n");
+    print_lr (deferred_lrange);
+    fprintf (TFile, ": ");
+    BB_SET_Print (deferred_lrange->Live_BB_Set (), TFile);
+    fprintf (TFile, "\n");
+  }
+}
+
 /////////////////////////////////////
 void
 GRA_Trace_Local_Colorability (LRANGE *lrange)

@@ -112,7 +112,10 @@ GTN_TN_SET_Print(GTN_SET *gtn_set, FILE *file)
 	tn != GTN_SET_CHOOSE_FAILURE;
 	tn = GTN_SET_Choose_Next(gtn_set,tn)) 
   {
-    tn_set = TN_SET_Union1D(tn_set, tn, &local_pool);
+#ifdef TARG_ST
+    if (tn != NULL)
+#endif
+      tn_set = TN_SET_Union1D(tn_set, tn, &local_pool);
   }
 
   TN_SET_Print(tn_set,file);

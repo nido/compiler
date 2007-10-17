@@ -434,6 +434,10 @@ static OPTION_DESC Options_GRA[] = {
     0, 0, 0,	&GRA_local_spill_multiplier_string, NULL,
     "Multiplier for GRA estimate of cost of spilling a local live range [Default 1.0]"
   },    
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"overlay_spills", "",
+    0, 0, 0,    &GRA_overlay_spills, NULL,
+    "Overlay spill locations",
+  },
 #endif
   { OVK_COUNT }		/* List terminator -- must be last */
 };

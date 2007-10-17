@@ -1347,9 +1347,12 @@ Calc_Actual_Area ( TY_IDX pu_type, WN *pu_tree )
   INT num_parms;
   INT regsize = MTYPE_RegisterSize(Spill_Int_Mtype);
   INTRINSIC	id;
+  const char *symname = (WN_has_sym (pu_tree)
+			 ? ST_name(WN_st(pu_tree))
+			 : OPCODE_name (WN_opcode(pu_tree)));
 
   if (Trace_Frame) {
-    fprintf(TFile, "<lay> %s for %s: \n", __FUNCTION__,  ST_name(WN_st(pu_tree)));
+    fprintf(TFile, "<lay> %s for %s: \n", __FUNCTION__, symname);
   }
 
   switch (WN_operator(pu_tree)) {
@@ -1381,7 +1384,7 @@ Calc_Actual_Area ( TY_IDX pu_type, WN *pu_tree )
   }
 
   if (Trace_Frame)
-    fprintf(TFile, "<lay> %s for call to %s. actual_arg_area = %d\n", __FUNCTION__, ST_name(WN_st(pu_tree)), size);
+    fprintf(TFile, "<lay> %s for call to %s. actual_arg_area = %d\n", __FUNCTION__, symname, size);
   
   return size;
 }

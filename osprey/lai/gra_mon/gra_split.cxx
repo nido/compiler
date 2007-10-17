@@ -1375,6 +1375,9 @@ Calculate_Live_BB_Sets(void)
     alloc_lrange->Add_Live_BB(gbb);
     deferred_lrange->Remove_Live_BB(gbb);
   }
+#ifdef TARG_ST
+  GRA_Trace_Split_BB_Sets (alloc_lrange, deferred_lrange);
+#endif
 }
 
 /////////////////////////////////////
