@@ -4042,6 +4042,7 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
 
 #ifdef TARG_ST
   bool convert_param_for_extension_builtin;
+  bool limited_convert;
 #endif
 
   /* Strip NON_LVALUE_EXPRs since we aren't using as an lvalue.  */
@@ -4092,6 +4093,14 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
     (TREE_CODE(TREE_TYPE (rhs)) == POINTER_TYPE ||
      TREE_CODE(TREE_TYPE (rhs)) == INTEGER_TYPE) &&
      TYPE_PRECISION(TREE_TYPE(type)) == TYPE_PRECISION(TREE_TYPE(rhs));
+
+  /* For extension builtins arguments, do not perform a full type
+     conversion in order to keep potential overalignment defined
+   */
+  limited_convert =
+      is_extension_builtin(fundecl) &&
+      TREE_CODE(TREE_TYPE (rhs))  == VECTOR_TYPE &&
+      TREE_CODE(TREE_TYPE (type)) == VECTOR_TYPE;
 #endif                                      /* TARG_ST */ 
 
   /* A type converts to a reference to it.  
@@ -4131,6 +4140,9 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
 #else
       rhs = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (rhs)), rhs);
 #endif
+#ifdef TARG_ST
+      if (!limited_convert) {
+#endif
       /* We already know that these two types are compatible, but they
 	 may not be exactly identical.  In fact, `TREE_TYPE (type)' is
 	 likely to be __builtin_va_list and `TREE_TYPE (rhs)' is
@@ -4140,6 +4152,9 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
 	rhs = build1 (NOP_EXPR, build_pointer_type (TREE_TYPE (type)), rhs);
 
       rhs = build1 (NOP_EXPR, type, rhs);
+#ifdef TARG_ST
+      }
+#endif
       return rhs;
     }
   /* Arithmetic types all interconvert, and enum is treated like int.  */

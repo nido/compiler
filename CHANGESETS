@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 18 14:48:53 CEST 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33680
+
+Description:
+------------
+	* [trunk] Fix for bug #33680 : data alignment lost in front-end
+                  -> Avoid strong type conversion of builtins arguments
+		     in order to keep overalignment information
+     	  Deliver fixes/codex-33680 rev #14061 with authorization branch #33712
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/c-typeck.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 17 17:04:07 CEST 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
