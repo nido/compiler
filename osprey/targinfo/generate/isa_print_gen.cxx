@@ -64,11 +64,12 @@ using std::vector;
 
 #ifdef DYNAMIC_CODE_GEN
 #include "dyn_isa_topcode.h"   /* Dynamic TOPcode */
+#include "dyn_isa_properties.h" /* For TOP_is_...() on dynamic TOPcode */
 #else
 #include "topcode.h"
+#include "targ_isa_properties.h"
 #endif
 
-#include "targ_isa_properties.h"
 #include "targ_isa_operands.h"
 #include "gen_util.h"
 #include "isa_print_gen.h"

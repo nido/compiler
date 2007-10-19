@@ -73,6 +73,7 @@ using std::vector;
 #ifdef DYNAMIC_CODE_GEN
 #include "dyn_isa_topcode.h"
 #include "dyn_stub3.h"
+#include "dyn_isa_properties.h" /* For TOP_is_...() on dynamic TOPcode */
 #endif
 
 // In following loops, we iterate on the number of

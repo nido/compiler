@@ -455,22 +455,16 @@ DEPS_dyn_isa_variants.h  = dyn_isa_variants.h $(EXTN)_targ_isa_variants.h
 ## xxx_targ_isa_print.[ch]   ##
 ###############################
 
-$(EXTN)_isa_print_gen.$(BOBJ): isa_print_gen.cxx isa_print_gen.h $(EXTN)_topcode.h
+$(EXTN)_isa_print_gen.$(BOBJ): isa_print_gen.cxx isa_print_gen.h $(DEPS_dyn_isa_topcode.h) $(DEPS_dyn_isa_properties.h)
 	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
 $(EXTN)_isa_print.$(BOBJ): $(EXTN)_isa_print.cxx $(EXTN)_topcode.h
-	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
-
-$(EXTN)_dyn_stub2.$(BOBJ) : dyn_stub2.cxx                 \
-                      $(EXTN)_topcode.h             \
-                      $(EXTN)_targ_isa_properties.h
 	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
 $(EXTN)_isa_print_gen$(BEXE): $(EXTN)_isa_print_gen.$(BOBJ)                    \
                               $(EXTN)_isa_print.$(BOBJ)                        \
                               $(EXTN)_gen_util.$(BOBJ)                         \
                               $(EXTN)_dyn_stub1.$(BOBJ)                        \
-                              $(EXTN)_dyn_stub2.$(BOBJ)                        \
                               $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
                               $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ)
 	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
@@ -649,6 +643,7 @@ DEPS_dyn_isa_enums.h = dyn_isa_enums.h $(EXTN)_targ_isa_enums.h
 $(EXTN)_isa_operands_gen.$(BOBJ): isa_operands_gen.cxx \
                             isa_operands_gen.h   \
                             $(DEPS_dyn_isa_topcode.h) \
+			    $(DEPS_dyn_isa_properties.h) \
                             $(ISA_CORE_REGISTER)
 	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
@@ -670,7 +665,6 @@ $(EXTN)_isa_operands_gen$(BEXE): $(EXTN)_isa_operands_gen.$(BOBJ)               
                                  $(EXTN)_isa_operands.$(BOBJ)                     \
                                  $(EXTN)_gen_util.$(BOBJ)                         \
                                  $(EXTN)_dyn_stub1.$(BOBJ)                        \
-                                 $(EXTN)_dyn_stub2.$(BOBJ)                        \
                                  $(EXTN)_dyn_stub3.$(BOBJ)                        \
                                  $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
                                  $(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ)  \
@@ -815,6 +809,7 @@ DEPS_dyn_isa_hazards.h = dyn_isa_hazards.h $(EXTN)_targ_isa_hazards.h
 $(EXTN)_si_gen.$(BOBJ): si_gen.cxx            \
                   si_gen.h              \
                   $(DEPS_dyn_isa_topcode.h)     \
+                  $(DEPS_dyn_isa_properties.h)     \
                   gen_util.h
 	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
@@ -829,7 +824,6 @@ $(EXTN)_si_gen$(BEXE):  $(EXTN)_si_gen.$(BOBJ)                           \
                         $(EXTN)_si.$(BOBJ)                               \
                         $(EXTN)_gen_util.$(BOBJ)                         \
                         $(EXTN)_dyn_stub1.$(BOBJ)                        \
-                        $(EXTN)_dyn_stub2.$(BOBJ)                        \
                         $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
                         $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ) \
                         $(ISA_CORE_SUBSET)

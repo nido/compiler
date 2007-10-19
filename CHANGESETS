@@ -1,6 +1,50 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 19 13:22:51 CEST 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-mds-sync
+
+Description:
+------------
+	* Synchronized with MDS at trunk rev #mds:812. Improved scalability of targinfo properties. Merge branch guilln/dev-mds-sync at rev #14080 with authorization art #34326.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/lai/op.h
+	M      osprey/common/com/lai_loader.cxx
+	A  +   osprey/common/com/attribute_map_template.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/loader_internal.h
+	M      osprey/targinfo/stxp70/proc/stxp70_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_print.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	A  +   osprey/targinfo/st200/intrn
+	A  +   osprey/targinfo/st200/intrn/builtins_header.h
+	A  +   osprey/targinfo/st200/intrn/intrn_test.cxx
+	M      osprey/targinfo/st200/abi/abi_properties.cxx
+	M      osprey/targinfo/generate/si_gen.cxx
+	M      osprey/targinfo/generate/isa_properties_gen.cxx
+	M      osprey/targinfo/generate/isa_print_gen.cxx
+	M      osprey/targinfo/generate/dyn/dyn_stub2.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 19 09:12:47 CEST 2007
 	Author:    torrett
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

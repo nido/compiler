@@ -88,10 +88,8 @@ struct isa_property {
   vector <bool> members;    // set of opcodes that have this property
 };
 
-// special values for bit_position above:
 enum {
-  BIT_POS_ALL = -1,         // all members have this property
-  BIT_POS_NONE = -2         // no members have this property
+  BIT_POS_NONE = -1
 };
 
 static list<ISA_PROPERTY> properties; // All the properties
@@ -115,6 +113,35 @@ static const char * const interface[] = {
   " *",
   " *   const ISA_PROPERTIES_ATTRIBUTE *ISA_PROPERTIES_get_attribute_table()",
   " *       Return the table describing properties used by TOPs",
+  " *",
+  " *",
+  " *    Interface for dynamic extension DDLs:",
+  " *",
+  " *    For the extensions, there is no restriction on the number of used property,",
+  " *    though the TOP_prop_tab table of TOP properties is a pointer to a variable",
+  " *    length property mask. Depending on the number of properties as returned by",
+  " *    ISA_PROPERTIES_attribute_tab_sz, the mask for each top is scaled to the",
+  " *    corresponding multiple of 64 bits.",
+  " *",
+  " *    EXTENSION_ISA_PROPERTY_FLAGS* dyn_get_TOP_prop_tab(void)",
+  " *        Get the mask of properties indexed by the TOP (extension top index).",
+  " *        The kask is the set of active properties (indexed by extension property index).",
+  " *        The mapping between the core properties index and the extension",
+  " *        properties index is done by the loader with the interface below.",
+  " *",
+  " *    mUINT32 dyn_get_ISA_PROPERTIES_attribute_tab_sz();",
+  " *        Get the size of the properties table. This correspond to the actual",
+  " *        number of used properties in the extension.",
+  " *",
+  " *    ",
+  " *    EXTENSION_ISA_PROPERTIES_ATTRIBUTE* dyn_get_ISA_PROPERTIES_attribute_tab();",
+  " *        The table of properties, defined as a pair (name, identifier).",
+  " *",
+  " *   Important note: to keep backward compatibility with older extensions (previous to 20070901),",
+  " *   we store in the properties attribute the mask value (1UL<<identifier) when the number of properties",
+  " *   used by the extension is <= 64. Otherwise we store the actual identifier as a UINT64.",
+  " *   Also, the loader must accept mask value of all 0 which means unused properties. In newer extension",
+  " *   DLLs the unused properties are not referenced in the attribute table.",
   " *",
   " * ====================================================================",
   " * ====================================================================",
@@ -262,7 +289,10 @@ void Instruction_Group( ISA_PROPERTY property, ... )
 void ISA_Properties_End(void)
 {
   list<ISA_PROPERTY>::iterator isi;
-  int isa_property_count;	// How many non-constant properties?
+  // How many non-constant properties?
+  // Actually, now, for the core, it counts all declared properties, constant or not.
+  // For an extension, only used properties are counted.
+  int isa_property_count;	
   unsigned int code;
 
   static FILE* hfile    = NULL ;
@@ -305,37 +335,44 @@ void ISA_Properties_End(void)
   Emit_Header (hfile, FNAME_TARG_ISA_PROPERTIES, interface, extname);
   fprintf(hfile,"#include \"topcode.h\"\n\n");
 
+  // For the static ISA we index all properties even the
+  // ones that are always or never used.
+  // - always used need am index in order to be matched
+  // by name with the extension conterpart.
+  // - never used need also an index as it may be used
+  // by an extension.
+  // For extensions ISA we index only used properties,
+  // indeed in this case the non used property can be 
+  // removed because it will never match the extension 
+  // tops anyway and the static ISA as already defined 
+  // an index for it. 
+  // There is no more restriction concerning always FALSE
+  // or always TRUE property in an extension or in the static
+  // ISA. Every property defined in the static ISA get an index
+  // and thus can be either always TRUE or always FALSE
+  // in the core and/or in the extensions.
   isa_property_count = 0;
   for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
     ISA_PROPERTY property = *isi;
-    bool member = true;     // dummy init. to avoid gcc warning messages.
-    bool prev_member = property->members[0];
-
-    for (code = 1; code < TOP_count_limit ; code++) {
-      member = property->members[code];
-      if (member != prev_member) break;
+    bool used = false;
+    for (code = 0; code < TOP_count_limit ; code++) {
+      used = property->members[code];
+      if (used) break;
     }
-
-    // For dynamic code, we don't set BIT_POS_ALL
-    if (member != prev_member || (!gen_static_code && member)) {
-      property->bit_position = isa_property_count++;
-    } else if (!gen_static_code) {
-      property->bit_position = BIT_POS_NONE;
+    if (used || gen_static_code) {
+      property->bit_position = isa_property_count;
       isa_property_count++;
     } else {
-      property->bit_position = member ? BIT_POS_ALL : BIT_POS_NONE;
+      /* Non used properties in extension are ignored. */
+      property->bit_position = BIT_POS_NONE;
     }
-   }
+  }
 
-
-  // Here we make two important assumptions:
-  // 1 - we assume that properties that are always TRUE for the static
-  //     isa are also TRUE for the dynamic isa.
-  // 2 - we assume that properties that are always FALSE for the static
-  //     isa are also FALSE for the dynamic isa.
-  //
-  // In the following, we generate the property list for extension.
-  if(gen_static_code)
+  // In the following, we generate the property list for extension
+  // into a header file. At definition of the extension the header
+  // can be include to provide the whole set of available 
+  // properties (as defined by the static ISA).
+  if(gen_static_code) 
    { FILE *cincfile;
      char *cincfilename;
  
@@ -349,14 +386,12 @@ void ISA_Properties_End(void)
               " * This file lists the isa properties.\n"
               " */\n\n");
 
-     for(isi = properties.begin(); isi != properties.end(); ++isi )
-      { ISA_PROPERTY property = *isi;
-        if (property->bit_position >= 0) {
-           fprintf(cincfile,
-                   "ISA_PROPERTY prop_%-15s = ISA_Property_Create(\"%s\");\n",
-                   property->name,property->name);
-        }
-      }
+     for(isi = properties.begin(); isi != properties.end(); ++isi ) {
+       ISA_PROPERTY property = *isi;
+       fprintf(cincfile,
+	       "ISA_PROPERTY prop_%-15s = ISA_Property_Create(\"%s\");\n",
+	       property->name,property->name);
+     }
 
     fprintf(cincfile,"\n\n");
 
@@ -364,139 +399,182 @@ void ISA_Properties_End(void)
    }
   
 
-  char *int_type;
-  char *int_suffix;
-  int int_size;
+  const char *ident_int_type;
+  const char *ident_int_suffix;
+  int ident_int_size;
+  const char *mask_int_type;
+  const char *mask_int_suffix;
+  int mask_word_size;
+  int mask_word_count;
+  int mask_size;
+  
+  // Type for the properties masks used to be dynamically
+  // defined as a function of the number of properties. 
+  //
+  // From now, there is two distinct types: 
+  // 1. the property mask as in the TOP properties tables:
+  //    used to store a set of properties,
+  //    defined below by the mask_int_type and the
+  //    mask_word_count. The length of the property mask
+  //    is variable and depends on the property count.
+  //    Note that the mask for the static ISA and the mask
+  //    for an extension can differ in size. Inded, in extensions
+  //    only the used properties are counted.
+  // 2. the property identifier (or value) as in the properties
+  //    attributes table: it used to be stored as a mask
+  //    computed as (1<<identifier) on UINT64 (type identified by
+  //    ident_int_type). 
+  //    There are now two distinct cases:
+  //    2a. Static ISA: the representation has been changed to store
+  //        the actual property identifier in a UINT64.
+  //    2b. Extension: for backward compatibility we keep this "mask"
+  //        representation while the number of used properties is <= 64. 
+  //        Above 64 properties in the extension, the identifier 
+  //        is stored as its actual value on UINT64.
+  //        Also to keep backward compatibility, a loader must keep interpreting
+  //        a property "mask" identifier of all zero as an unused
+  //        property (or identifier -1). Though in newly generated DLL,
+  //        the property attributes are not generated at all.
+  
+  ident_int_type = "mUINT64";
+  ident_int_suffix = "ULL";
+  ident_int_size = 64;
 
-#if 0
-  if (isa_property_count <= 8) {
-    int_type = "mUINT8";
-    int_suffix = "";
-    int_size = 8;
-  } else if (isa_property_count <= 16) {
-    int_type = "mUINT16";
-    int_suffix = "";
-    int_size = 16;
-  } else if (isa_property_count <= 32) {
-    int_type = "mUINT32";
-    int_suffix = "U";
-    int_size = 32;
+  
+  /* Compute mask word_count and size for storing properties set. */
+  mask_word_size = 64;
+  mask_int_type = "mUINT64";
+  mask_int_suffix = "ULL";
+  mask_word_count = (isa_property_count + (mask_word_size - 1)) / mask_word_size;
+  mask_size = mask_word_size * mask_word_count;
+  assert(isa_property_count <= mask_size);
+
+  // Statically defined property tables.
+  // The static ISA table uses the full property set.
+  // The extension ISA table uses a limited set.
+  // We use a technical type for the non exported implementation.
+  fprintf (cfile,"\ntypedef struct { %s mask[%d]; } LOCAL_ISA_PROPERTY_FLAGS; /* A %d bits property set. */\n\n", mask_int_type, mask_word_count, mask_size);
+  if(gen_static_code) {
+    fprintf (cfile,"static const LOCAL_ISA_PROPERTY_FLAGS ISA_PROPERTIES_static_flags[] = {\n");
   } else {
-    assert (isa_property_count <= 64);
-    int_type = "mUINT64";
-    int_suffix = "ULL";
-    int_size = 64;
+    fprintf (cfile,"static const LOCAL_ISA_PROPERTY_FLAGS ISA_PROPERTIES_dynamic_flags[] = {\n");
   }
-#endif
-
-  // Type used to be dynamically defined as a function of
-  // the number of properties. For the sake of simplicity,
-  // we work in all cases with unsigned long long.
-  assert(isa_property_count <= 64);
-  int_type = "mUINT64";
-  int_suffix = "ULL";
-  int_size = 64;
-
-
-  // Table ISA_PROPERTIES_flags
-  if(gen_static_code)
-   {fprintf (cfile,"static const %s ISA_PROPERTIES_static_flags[] = {\n", int_type);
-   }
-  else
-   {fprintf (cfile,"static const %s ISA_PROPERTIES_dynamic_flags[] = {\n",int_type);
-   }
 
   const char* top_name_template = gen_static_code ? " /* TOP_%-25s */  " :  " /* TOP_dyn_%-25s */  " ;
-
+  
   for (code = 0; code < TOP_count_limit; code++) {
-    bool               no_prop    = true; // True as long as as no
-                                          // property has been detected.
-
+    const char *sep;
+    unsigned long long flag_value[mask_word_count]; // variable length flag, low indexes in low words.
+    int i;
+    
+    memset(flag_value, 0, sizeof(unsigned long long)*mask_word_count);
+    
     fprintf(cfile,top_name_template, TOP_Name((TOP)code));
 
     for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
       ISA_PROPERTY property = *isi;
-      if (property->bit_position >= 0 && property->members[code]) {
-
-        // When property is not the first one,
-        // add '|' bitwise operator in generated code.
-        fprintf(cfile,no_prop==false? " | PROP_%s" : "PROP_%s",property->name);
-        no_prop = false;   /* Now we've got at least one prop. for the TOP */
+      if (property->members[code]) {
+	int word_idx = property->bit_position / mask_word_size;
+	int bit_pos = property->bit_position % mask_word_size;
+	flag_value[word_idx] |= (1ULL << bit_pos);
       }
-    }    /* End for isi=... */
-
-    if(true == no_prop)
-    { fprintf(cfile, "0x%0*x%s",int_size/4,0,int_suffix);
     }
+    
+    fprintf (cfile, "{ ");
+    sep = "";
+    for (i = 0; i < mask_word_count; i++) {
+      fprintf (cfile, "%s0x%0*llx%s", sep, mask_word_size / 4, flag_value[i], mask_int_suffix);
+      sep = ", ";
+    }
+    fprintf (cfile, " }, ");
 
-    fprintf(cfile,",\n");  // Add final ',' for the TOP
+    fprintf (cfile, "/* ");
+    sep = "";
+    for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
+      ISA_PROPERTY property = *isi;
+      if (property->members[code]) {
+	fprintf(cfile, "%sPROP_%s", sep, property->name);
+	sep = ", ";
+      }
+    }
+    fprintf (cfile, " */\n");
   }        // End of for(code...) loop.
 
   if(gen_static_code) {
     // don't forget the one for TOP_UNDEFINED !
-    fprintf (cfile, top_name_template , "UNDEFINED");
-    fprintf (cfile, "0x%0*x%s,\n", 
-             int_size / 4,
-             0,
-	     int_suffix);
-   }
+    const char *sep;
+    int i;
+    
+    fprintf(cfile,top_name_template, "TOP_UNDEFINED");
+    fprintf (cfile, "{ ");
+    sep = "";
+    for (i = 0; i < mask_word_count; i++) {
+      fprintf (cfile, "%s0x%0*llx%s", sep, mask_word_size / 4, 0ULL, mask_int_suffix);
+      sep = ", ";
+    }
+    fprintf (cfile, " },\n");
+  }
   fprintf(cfile, "};\n");   // Ending table.
 
-  if(gen_static_code)
-   { fprintf(cfile,"const %s *ISA_PROPERTIES_flags = ISA_PROPERTIES_static_flags ;\n",int_type);
-     fprintf(hfile, "BE_EXPORTED extern const %s *ISA_PROPERTIES_flags;\n\n", int_type);
-     fprintf(efile, "ISA_PROPERTIES_flags\n");
-   }
- else
-   { // Definition of interface routine.
-     const char * const name_routine = "dyn_get_TOP_prop_tab";
-
-     fprintf(cfile,"\n"
-                   "const %s* %s( void ) {\n"
-                   " return (const %s*) ISA_PROPERTIES_dynamic_flags;\n"
-                   "}\n\n",
-                   int_type,
-                   name_routine,
-                   int_type);
-
-     fprintf(hfile,"\n\n"
-                   "/* API routine for dll */\n"
-                   "extern const %s* %s( void );\n\n",
-                   int_type,
-                   name_routine);
-   }
-
-  // Emit PROP_xxx bits in header file.
   if(gen_static_code) {
-    for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
-    ISA_PROPERTY property = *isi;
-    int bit_position = property->bit_position;
-    if (bit_position >= 0) {
-      fprintf (hfile, "#define PROP_%-16s 0x%llx%s\n", 
-		      property->name, 
-		      (1ULL << bit_position),
-		      int_suffix);
-    }
-   }
+    // Global properties mask type, this type is used for the static ISA only.
+    fprintf(cfile,"const ISA_PROPERTY_FLAGS *ISA_PROPERTIES_flags = (const ISA_PROPERTY_FLAGS *)ISA_PROPERTIES_static_flags ;\n");
+    fprintf(hfile, "\ntypedef struct { %s mask[%d]; } ISA_PROPERTY_FLAGS;  /* A %d bits property set. */\n\n", mask_int_type, mask_word_count, mask_size); 
+    fprintf(hfile, "BE_EXPORTED extern const ISA_PROPERTY_FLAGS *ISA_PROPERTIES_flags;\n\n");
+    fprintf(efile, "ISA_PROPERTIES_flags\n");
+  } else { 
+    // Definition of interface routine.
+    const char * const name_routine = "dyn_get_TOP_prop_tab";
+    
+    fprintf(cfile,"\n"
+	    "const EXTENSION_ISA_PROPERTY_FLAGS * %s( void ) {\n"
+	    " return (const EXTENSION_ISA_PROPERTY_FLAGS *) ISA_PROPERTIES_dynamic_flags;\n"
+	    "}\n\n", name_routine);
+    
+    fprintf(hfile,"\n\n"
+	    "/* Variable length type for the properties mask. */\n"
+	    "typedef struct { %s flags[1]; } EXTENSION_ISA_PROPERTY_FLAGS;\n\n", 
+	    mask_int_type);
+    fprintf(hfile,"\n\n"
+	    "/* API routine for dll */\n"
+	    "extern const EXTENSION_ISA_PROPERTY_FLAGS * %s( void );\n\n", 
+	    name_routine);
   }
 
   if(gen_static_code) {
     fprintf (hfile, "\n\n");
     for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
       ISA_PROPERTY property = *isi;
-      int bit_position = property->bit_position;
-      if (bit_position < 0) {
-        fprintf (hfile, "#define TOP_is_%s(t)\t (%s)\n",
-     		      property->name, 
-		      bit_position == BIT_POS_ALL ? "TRUE" : "FALSE");
-     } else {
-      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t] & PROP_%s)\n",
-		      property->name, 
-		      property->name);
-     }
-   }
- }
-
+      int word_idx = property->bit_position / mask_word_size;
+      int bit_pos = property->bit_position % mask_word_size;
+      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & 0x%llx%s)\n",
+	       property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
+    }
+  } else {
+    // For extension we generate the TOP_is_ macro but just at
+    // extension generation time. Thus we use the DYNAMIC_CODE_GEN macro.
+    // For instsance isa_print_gen.cxx need TOP_is_simulated() to be available
+    // both for the STATIC ISA or for the extension when generating the extension
+    // itself.
+    fprintf (hfile, "\n\n");
+    fprintf (hfile, "/* Available at extension generation time only. */\n");
+    fprintf (hfile, "#ifdef DYNAMIC_CODE_GEN\n");
+    fprintf (hfile, "/* We undef first the static ISA definition of each TOP_is...(). */\n");
+    for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
+      ISA_PROPERTY property = *isi;
+      fprintf (hfile, "#undef TOP_is_%s\n", property->name);
+      if (property->bit_position == BIT_POS_NONE) {
+	fprintf (hfile, "#define TOP_is_%s(t)\t (0)\n", property->name);
+      } else { 
+	int word_idx = property->bit_position / mask_word_size;
+	int bit_pos = property->bit_position % mask_word_size;
+	fprintf (hfile, "#define TOP_is_%s(t)\t (dyn_get_TOP_prop_tab()[(INT)t].flags[%d] & 0x%llx%s)\n",
+		 property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
+      }
+    }
+    fprintf (hfile, "#endif /* DYNAMIC_CODE_GEN */\n");
+  }
+  
   // Emit the memory access properties:
   if(gen_static_code) {
   fprintf (hfile, "\n\n");
@@ -730,9 +808,6 @@ void ISA_Properties_End(void)
   //
   // --------------------------------------------------------------------
 
-  fprintf (hfile,
-	   "\n"
-	   "/* Description of Used attributes */");
   fprintf (cfile,
 	   "/* ============================================================\n"
 	   " *  ISA PROPERTIES attributes description\n"
@@ -741,32 +816,58 @@ void ISA_Properties_End(void)
 
   // Generate datatype specification
   if (gen_static_code) {
+    fprintf (hfile,"\n/* Description of all statically defined attributes */\n");
     fprintf(hfile,
-	    "typedef struct { const char *name; UINT64 attribute; } ISA_PROPERTIES_ATTRIBUTE;\n");
+	    "typedef struct { const char *name; %s ident; } ISA_PROPERTIES_ATTRIBUTE;\n", ident_int_type);
+  } else {
+    fprintf (hfile,"\n/* Description of attributes used by the extension */\n");
+    fprintf(hfile,
+	    "/* Variable length type for the properties attributes. */\n"
+	    "typedef struct { const char *name; %s ident; } EXTENSION_ISA_PROPERTIES_ATTRIBUTE;\n", 
+	    ident_int_type);
   }
   
   // Generate attribute description table
-  fprintf (cfile, "static const ISA_PROPERTIES_ATTRIBUTE ISA_PROPERTIES_attribute_tab[] = {\n");
+  fprintf (cfile,"typedef struct { const char *name; %s ident;} LOCAL_ISA_PROPERTIES_ATTRIBUTE;\n", ident_int_type);
+  fprintf (cfile, "static const LOCAL_ISA_PROPERTIES_ATTRIBUTE ISA_PROPERTIES_attribute_tab[] = {\n");
   for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
     ISA_PROPERTY property = *isi;
-    if (property->bit_position >= 0) {
-      fprintf (cfile, "  { \"%s\", PROP_%s},\n", property->name, property->name);
-    } else if (!gen_static_code) {
-      fprintf (cfile, "  { \"%s\", 0ULL},  \t/* Not used in extension */\n", property->name);
+    if (property->bit_position != BIT_POS_NONE) {
+      unsigned long long identifier_value;
+      bool store_mask = false;
+
+      /* For the static ISA, the actual identifier is always stored. 
+       * For extensions, if property count <= 64, a mask is stored (backward compatibility),
+       * otherwise the actual identifier is stored.
+       */
+      if (!gen_static_code && isa_property_count <= ident_int_size) {
+	store_mask = true;
+      }
+
+      fprintf (cfile, "  { \"%s\", ", property->name);
+      if (store_mask) {
+	fprintf (cfile, "0x%0*llx%s /* (1%s << %d) */ },\n", ident_int_size / 4, 
+		 (1ULL << property->bit_position), ident_int_suffix,
+		 ident_int_suffix, property->bit_position);
+      } else {
+	fprintf (cfile, "0x%0*x%s /* (%d%s) */ },\n", ident_int_size / 4, 
+		 property->bit_position, ident_int_suffix,
+		 property->bit_position, ident_int_suffix);
+      }
     }
   }
   fprintf (cfile, "};\n\n");
   
   // Generate access to attribute description table
   if (gen_static_code) {
-
+    
     fprintf (
      hfile,
      "\n"
      "#define ISA_PROPERTIES_ATTRIBUTE_COUNT (%d)\n", isa_property_count);
 
     fprintf (
-     hfile,
+	     hfile,
      "\n"
      "BE_EXPORTED extern const ISA_PROPERTIES_ATTRIBUTE * ISA_PROPERTIES_get_attribute_table();\n"
      "\n");
@@ -774,7 +875,7 @@ void ISA_Properties_End(void)
     fprintf (
      cfile,
      "BE_EXPORTED const ISA_PROPERTIES_ATTRIBUTE * ISA_PROPERTIES_get_attribute_table() {\n"
-     "  return (ISA_PROPERTIES_attribute_tab);\n"
+     "  return (const ISA_PROPERTIES_ATTRIBUTE *)ISA_PROPERTIES_attribute_tab;\n"
      "}\n"
      "\n");
 
@@ -785,17 +886,17 @@ void ISA_Properties_End(void)
 	     "\n"
 	     "extern const mUINT32 dyn_get_ISA_PROPERTIES_attribute_tab_sz();\n"
 	     "\n"
-	     "extern const ISA_PROPERTIES_ATTRIBUTE* dyn_get_ISA_PROPERTIES_attribute_tab();\n"
+	     "extern const EXTENSION_ISA_PROPERTIES_ATTRIBUTE* dyn_get_ISA_PROPERTIES_attribute_tab();\n"
 	     "\n");
     fprintf (cfile,
 	     "\n"
 	     "const mUINT32 dyn_get_ISA_PROPERTIES_attribute_tab_sz() {\n"
 	     "  return (%d);\n"
 	     "}\n"
-	     "\n", properties.size());
+	     "\n", isa_property_count);
     fprintf (cfile,
-	     "const ISA_PROPERTIES_ATTRIBUTE* dyn_get_ISA_PROPERTIES_attribute_tab() {\n"
-	     "  return (ISA_PROPERTIES_attribute_tab);\n"
+	     "const EXTENSION_ISA_PROPERTIES_ATTRIBUTE* dyn_get_ISA_PROPERTIES_attribute_tab() {\n"
+	     "  return (const EXTENSION_ISA_PROPERTIES_ATTRIBUTE *)ISA_PROPERTIES_attribute_tab;\n"
 	     "}\n"
 	     "\n");
   }
@@ -814,6 +915,6 @@ void ISA_Properties_End(void)
   Gen_Free_Filename(hfilename);
   if(efilename)
     Gen_Free_Filename(efilename);
-
+  
   return;
 }

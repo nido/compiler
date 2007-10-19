@@ -57,9 +57,13 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 #include "mtypes.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "loader.h"
 #include "lai_loader_api.h"
+
+/* Include local helpers. */
+#include "attribute_map_template.cxx"
 
 #if defined(__MINGW32__) || defined(__CYGWIN__)
 #define SO_EXT ".dll"
@@ -820,8 +824,8 @@ void Initialize_ABI_Properties(Lai_Loader_Info_t &ext_info) {
   // ABI_PROPERTIES table for extension.
   for (abi_idx=0; abi_idx<=ABI_PROPERTIES_ABI_MAX; abi_idx++) {
     mUINT32     **reg_flags_tab;
-    const char ***reg_names_tab;
-    const mUINT32 ext_abi_idx=0;     /* ABI index for extension */
+    const char * const **reg_names_tab;
+    const mUINT32 ext_abi_idx=0;     /* ABI index for extension. (Forced to 0). */
 
     reg_flags_tab = TYPE_MEM_POOL_ALLOC_N(mUINT32*, Malloc_Mem_Pool,
 					  (ISA_REGISTER_CLASS_MAX+1));
@@ -829,52 +833,45 @@ void Initialize_ABI_Properties(Lai_Loader_Info_t &ext_info) {
 	   (ISA_REGISTER_CLASS_STATIC_MAX+1) * sizeof(mUINT32*));
     abi[abi_idx].reg_flags = reg_flags_tab;
 
-    reg_names_tab = TYPE_MEM_POOL_ALLOC_N(const char**, Malloc_Mem_Pool,
+    reg_names_tab = TYPE_MEM_POOL_ALLOC_N(const char* const *, Malloc_Mem_Pool,
 					  (ISA_REGISTER_CLASS_MAX+1));
-    memcpy(reg_names_tab, ABI_PROPERTIES_base_props[abi_idx].reg_flags,
-	   (ISA_REGISTER_CLASS_STATIC_MAX+1) * sizeof(const char **));
-    abi[abi_idx].reg_names = (const char *const**)reg_names_tab;
+    memcpy(reg_names_tab, ABI_PROPERTIES_base_props[abi_idx].reg_names,
+	   (ISA_REGISTER_CLASS_STATIC_MAX+1) * sizeof(const char * const*));
+    abi[abi_idx].reg_names = reg_names_tab;
     
     for (ext=0; ext<ext_info.nb_ext; ext++) {
       int nb_rc = ext_info.ISA_tab[ext]->get_ISA_REGISTER_CLASS_tab_sz();
       if (nb_rc > 0) {
 	const ABI_PROPERTIES *old_abi;
 	old_abi = &ext_info.ISA_tab[ext]->get_ABI_PROPERTIES_tab()[ext_abi_idx];
-	memcpy(&reg_flags_tab[ext_info.base_REGISTER_CLASS[ext]],
-	       old_abi->reg_flags, nb_rc * sizeof(mUINT32*));
-	memcpy(&reg_names_tab[ext_info.base_REGISTER_CLASS[ext]],
-	       old_abi->reg_names, nb_rc * sizeof(const char**));
+	for (int rc = 0; rc < nb_rc; rc++) {
+	  reg_flags_tab[ext_info.base_REGISTER_CLASS[ext]+rc] = old_abi->reg_flags[rc];
+	  reg_names_tab[ext_info.base_REGISTER_CLASS[ext]+rc] = old_abi->reg_names[rc];
+	}
 
-	{ // Remap ABI properties attributes if necessary
-	  INT    nb_remap;
+	{ 
+	  // Remap ABI properties attributes. 
+	  // Core and Extension ABI properties identifiers are stored on mUINT32 as a mask (1<<id).
+	  typedef ATTRIBUTE_MAP<mUINT32> CORE_ATTR_MAP;
+	  typedef ATTRIBUTE_MAP<mUINT32> EXT_ATTR_MAP;
+	  // The ABI properties mask for registers are stored both on mUINT32 in extension and core.
+	  typedef ATTRIBUTE_REMAPPER<EXT_ATTR_MAP, CORE_ATTR_MAP, mUINT32, mUINT32 > EXT_ATTR_REMAPPER;
+	  const NAME_VALUE<mUINT32> *core_attr_tab = (const NAME_VALUE<mUINT32> *)ABI_PROPERTIES_get_attribute_table();
+	  const NAME_VALUE<mUINT32> *ext_attr_tab  = (const NAME_VALUE<mUINT32> *)ext_info.ISA_tab[ext]->get_ABI_PROPERTIES_attribute_tab();
 	  INT    ext_attr_count = ext_info.ISA_tab[ext]->get_ABI_PROPERTIES_attribute_tab_sz();
-	  const ABI_PROPERTIES_ATTRIBUTE *core_attr_tab = ABI_PROPERTIES_get_attribute_table();
-	  const ABI_PROPERTIES_ATTRIBUTE *ext_attr_tab  = ext_info.ISA_tab[ext]->get_ABI_PROPERTIES_attribute_tab();
-	  COMPUTE_ATTR_REMAP_TABLE ( /* in_EXT_NAME        */ ext_info.dll_tab[ext].dllname,
-				     /* in_COMPONENT_NAME  */ "ABI properties",
-				     /* in_ATTR_TYPE       */ mUINT32,
-				     /* in_ATTR_SUFFIX     */ UL,
-				     /* in_ATTR_FORMAT     */ "%x",
-				     /* in_CORE_ATTR_COUNT */ ABI_PROPERTIES_ATTRIBUTE_COUNT,
-				     /* in_CORE_ATTR_TAB   */ core_attr_tab,
-				     /* in_EXT_ATTR_COUNT  */ ext_attr_count,
-				     /* in_EXT_ATTR_TAB    */ ext_attr_tab,
-				     /* out_NB_REMAP       */ nb_remap
-							      );
-	  if (nb_remap>0) {
-	    for (int rc = 0; rc < nb_rc; rc++) {
-	      mUINT32 *attr_walker = &reg_flags_tab[ext_info.base_REGISTER_CLASS[ext]][rc];
-	      for (int reg=0; reg<ISA_REGISTER_MAX; reg++) {
-		REMAP_ATTR ( /* in_ATTR_TYPE   */ mUINT32,
-			     /* in_ATTR_SUFFIX */ UL,
-			     /* in_ATTR        */ *attr_walker,
-			     /* out_ATTR       */ *attr_walker
-						  );
-		attr_walker++;
-	      }
+	  CORE_ATTR_MAP core_attr_map(core_attr_tab, ABI_PROPERTIES_ATTRIBUTE_COUNT, CORE_ATTR_MAP::KIND_MASK);
+	  EXT_ATTR_MAP ext_attr_map(ext_attr_tab, ext_attr_count, CORE_ATTR_MAP::KIND_MASK);
+	  EXT_ATTR_REMAPPER remapper(ext_attr_map, core_attr_map);
+
+	  for (int rc = 0; rc < nb_rc; rc++) {
+	    mUINT32 *attr_walker = reg_flags_tab[ext_info.base_REGISTER_CLASS[ext]+rc];
+	    for (int reg=0; reg<=ISA_REGISTER_MAX; reg++) {
+	      if (!remapper.remapMask(attr_walker[reg], attr_walker[reg])) 
+		RaiseErrorIncompatibleLibrary(ext_info.dll_tab[ext].dllname, 
+					      "Incompatible target description,"
+					      "ABI_PROPERTY attribute name in Extension not found in Core.");
 	    }
 	  }
-	  CLEANUP_ATTR_REMAP_TABLE();
 	}
       }
     }
@@ -929,7 +926,6 @@ void RaiseErrorIncompatibleLibrary(const char *name, const char *error_msg) {
 	  error_msg);
   ErrMsg(EC_Lib_Ext_Load, name, err_msg);
 }
-
 
 
 /*

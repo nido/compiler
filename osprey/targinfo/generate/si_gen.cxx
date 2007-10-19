@@ -95,6 +95,7 @@ const int max_results = ISA_OPERAND_max_results;
 /* Specific part for dynamic code generation */
 #ifdef DYNAMIC_CODE_GEN
 #include "dyn_isa_topcode.h"   /* Dynamic TOPcode */
+#include "dyn_isa_properties.h"   /* For TOP_is_...() on dynamic TOPcode */
 #endif
 
 // In following loops, we iterate on the number of
