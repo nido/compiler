@@ -124,6 +124,20 @@ CCPREFIX=st200
 
 endif # HOST_ARCH = ST200
 
+ifeq ($(HOST_ARCH),STxP70)
+
+ifeq ($(BUILD_OS),LINUX)
+GNU_OS=linux-rh-ws-3
+RUNNER=/undef
+COMPILER_LOC=/undef
+BINUTILS_LOC=$(COMPILER_LOC)
+endif
+
+PREFIX=stxp70-
+CCPREFIX=stxp70
+
+endif # HOST_ARCH = STxP70
+
 GNU_PREFIX=/sw/st/gnu_compil/gnu
 GNU_LOC=$(GNU_PREFIX)/$(GNU_OS)
 COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.4.4/bin/

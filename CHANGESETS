@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 19 09:12:47 CEST 2007
+	Author:    torrett
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/torrett/dev-libopen
+
+Description:
+------------
+	* [trunk] Deliver torrett/dev-libopen rev #14070 with authorization branch #28607
+
+
+Modified Files:
+---------------
+	M      osprey/instrumentation/libgcov/Makefile.gbase
+	M      osprey/make/tooldefs/clarkes-bristol/Makefile.tooldefs
+	M      osprey/make/tooldefs/crolles/Makefile.tooldefs
+	M      osprey/make/tooldefs/default/Makefile.tooldefs
+	M      osprey/make/tooldefs/apagnu/Makefile.tooldefs
+	M      osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	A  +   osprey/make/platforms/linux-stxp70-stxp70
+	A  +   osprey/make/platforms/linux-stxp70-stxp70/Makefile.platforms
+	A  +   osprey/targstxp70_stxp70
+	A  +   osprey/targstxp70_stxp70/configure
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 18 14:48:53 CEST 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

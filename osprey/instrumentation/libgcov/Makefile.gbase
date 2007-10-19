@@ -86,6 +86,12 @@ target_install_st200_core_endian_libraries_:
 	HOSTDEFS+="-mcore=$(TARGET_CORE) $(addprefix -,$(subst be,EB,$(subst le,EL,$(TARGET_ENDIANESS))))" \
 	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
 
+
+install_stxp70:
+	$(MAKE) \
+	HOSTDEFS+="$(TARGET_LIBGCOV_COPTS)" \
+	INSTALL_DIR=$(TARGET_LIBGCOV_INSTALL_DIR) clean _install
+
 ifeq ($(HOST_ARCH), ST200)
 ifeq (x$(TARGET_LIBGCOV_CORES)x,xx)
 $(error no target is defined. choose a subset of st220/st231/st235 for TARGET_LIBGCOV_CORES)
@@ -95,11 +101,15 @@ $(error no endianess is defined. Need to define TARGET_LIBGCOV_ENDIANESS anong l
 endif
 install: install_all_st200
 else
+ifeq ($(HOST_ARCH), STxP70)
+install: install_stxp70
+else
 install: local
 	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
 	for h in $(TARGETS); do \
 	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
 	done
+endif
 endif
 
 _install: default 
