@@ -843,6 +843,155 @@ match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
     return FALSE;
 }
 
+
+static BOOL
+match_rotl_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //   r1 = shl r2, c1
+  //   r3 = shru r2, c2
+  //   (where 0 < c1 < 32
+  //         0 < c2 < 32
+  //   and c1 + c2 = 32)
+  //   r4 = or r1, r3 
+  // and transform to
+  //   r4 = rotl r2, c1
+  //  
+  //
+  OP *l21_op, *l22_op;
+  TN *opnd1, *opnd2, *result;
+  INT64 shiftcount1, shiftcount2, rotcount;
+
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_i_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+
+  if (opcode != TOP_or_r_r_r)
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+
+  l21_op = TN_ssa_def (opnd1);
+  l22_op = TN_ssa_def (opnd2);
+
+  if (!l21_op || !l22_op) return FALSE;
+
+
+  if (!((OP_code(l21_op) == TOP_shl_i_r_r &&
+       OP_code(l22_op) == TOP_shru_i_r_r) ||
+      (OP_code(l22_op) == TOP_shl_i_r_r &&
+       OP_code(l21_op) == TOP_shru_i_r_r)))
+    return FALSE;
+
+  opnd1 = OP_Opnd2(l21_op);
+  opnd2 = OP_Opnd2(l22_op);
+
+  shiftcount1 = TN_Value(opnd1);
+  shiftcount2 = TN_Value(opnd2);
+
+  if (!TNs_Are_Equivalent(OP_Opnd1(l21_op), OP_Opnd1(l22_op)))
+    return FALSE;
+
+  if (!(shiftcount1 > 0 && shiftcount1 < 32 &&
+	shiftcount2 > 0 && shiftcount2 < 32 &&
+	shiftcount1 + shiftcount2 == 32))
+    return FALSE;
+
+  // if we get here, then we have a rotl pattern
+  result = OP_result (l1_op, 0);
+  rotcount = OP_ishl(l21_op) ? shiftcount1 : shiftcount2;
+
+  Build_OP (TOP_rotl_i_r_r, result, OP_Opnd1(l21_op), Gen_Literal_TN (rotcount, TN_size(result)) , ops);
+  return TRUE;
+}
+
+static BOOL
+match_swapbh_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //   r1 = shl r2, 8
+  //   r3 = shru r2, 8
+  //   r4 = or r1, r3 
+  //   r5 = and r4, 0xffff / r5 = zxth r4 / r5 = zxt r4, 16
+  // where r2 is in (forward) range [0, USHORT_MAX]
+  // and transform to
+  //   r4 = perm.pb r2, 225
+  //  
+  //
+  OP *l2_op, *l31_op, *l32_op;
+  TN *opnd1, *opnd2, *result;
+  INT64 shiftcount1, shiftcount2;
+  LRange_p r1, rushort;
+
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_perm_pb_i_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+
+  if (!((OP_iand(l1_op) && range_analysis.Get_Value (OP_Opnd2(l1_op))->hasValue ()
+	 && range_analysis.Get_Value (OP_Opnd2(l1_op))->getValue () == 0xffff) ||
+	(opcode == TOP_zxth_r_r) ||
+	(opcode == TOP_zxt_i_r_r && TN_Value(OP_Opnd2(l1_op)) == 16)))
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+
+  l2_op = TN_ssa_def (opnd1);
+
+  if (!l2_op)	     
+     return FALSE;	
+
+  if (OP_code(l2_op) != TOP_or_r_r_r)
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l2_op);
+  opnd2 = OP_Opnd2(l2_op);
+
+  l31_op = TN_ssa_def (opnd1);
+  l32_op = TN_ssa_def (opnd2);
+
+  if (!l31_op || !l32_op) return FALSE;
+
+
+  if (!((OP_code(l31_op) == TOP_shl_i_r_r &&
+       OP_code(l32_op) == TOP_shru_i_r_r) ||
+      (OP_code(l32_op) == TOP_shl_i_r_r &&
+       OP_code(l31_op) == TOP_shru_i_r_r)))
+    return FALSE;
+
+  opnd1 = OP_Opnd2(l31_op);
+  opnd2 = OP_Opnd2(l32_op);
+
+  shiftcount1 = TN_Value(opnd1);
+  shiftcount2 = TN_Value(opnd2);
+
+  if (!TNs_Are_Equivalent(OP_Opnd1(l31_op), OP_Opnd1(l32_op)))
+    return FALSE;
+
+  if (!(shiftcount1 == 8 && shiftcount2 == 8))
+    return FALSE;
+
+  // if we get here, then we have a swapbh pattern candidate
+  // Now, we must assert that the first operand of the shifts
+  // is in range [0, USHORT_MAX]
+  r1 = range_analysis.Get_Value (OP_Opnd1(l31_op));
+  rushort = range_analysis.getLattice ()->makeRangeMinMax (0, (1 << 16) - 1);
+  
+  if (!rushort->ContainsOrEqual(r1))
+    return FALSE;
+
+  result = OP_result (l1_op, 0);
+
+  Build_OP (TOP_perm_pb_i_r_r, result, OP_Opnd1(l31_op), Gen_Literal_TN (225, TN_size(result)) , ops);
+  return TRUE;
+}
+
 BOOL
 TARG_RangePropagate (const RangeAnalysis &range_analysis,
 		     OP *op,
@@ -880,6 +1029,12 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
       return TRUE;
     }
     if (match_addcg (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_rotl_sequence (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_swapbh_sequence (range_analysis, op, ops)) {
       return TRUE;
     }
     if (match_zeroextend_sequence (range_analysis, op, ops)) {
