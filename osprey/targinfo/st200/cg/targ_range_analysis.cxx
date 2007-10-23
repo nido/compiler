@@ -215,6 +215,24 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
 	    ("Bad result index for TOP_addcg_b_r_r_b_r"));  
     return TRUE;
   }
+  else if (opcode == TOP_zxt_i_r_r){
+    // zxt
+    TN *tn0 = OP_opnd(op, 0);
+    TN *tn1 = OP_opnd(op, 1);
+    LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
+    LRange_pc opnd1 = ZeroExtend (Value (tn1), 8);
+    new_value = ZeroExtend (new_value, opnd1->getValue ());
+    return TRUE;
+  }
+  else if (opcode == TOP_sxt_i_r_r){
+    // sxt
+    TN *tn0 = OP_opnd(op, 0);
+    TN *tn1 = OP_opnd(op, 1);
+    LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
+    LRange_pc opnd1 = ZeroExtend (Value (tn1), 8);
+    new_value = SignExtend (new_value, opnd1->getValue ());
+    return TRUE;
+  }
   return FALSE;
 }
 

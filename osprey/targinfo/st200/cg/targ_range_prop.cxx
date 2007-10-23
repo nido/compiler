@@ -44,6 +44,7 @@
 
 #define SWAP_OP(op1, op2) do { OP *tmp = op1; op1 = op2; op2 = tmp; } while (0)
 #define SWAP_TN(tn1, tn2) do { TN *tmp = tn1; tn1 = tn2; tn2 = tmp; } while (0)
+#define IS_POWER_OF_2(x) ({ __typeof__(x) x_ = x ; x_ && !(x_ & (x_-1)) ; })
 
 static OP *single_use (const RangeAnalysis &range_analysis,
 		       TN *tn)
@@ -606,6 +607,160 @@ match_shl_mullh_sequence (const RangeAnalysis &range_analysis,
 }
 
 static BOOL
+match_zeroextend_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //
+  //   r3 = and r1, c
+  //   where c + 1 is a power of two 
+  //   and r5 = nb of significant bits(c)
+  //
+  //   match also,
+  //
+  //   r4 = sub 32, r5
+  //   r2 = shru r6, r4
+  //   r3 = and r1, r2
+  //   where r6 = -1
+  // and transform both expressions to
+  //   r3 = zxt r1, r5
+  //
+  //
+  OP *l2_op, *l3_op;
+  TN *opnd1, *opnd2, *result;
+  INT shiftcount;
+  INT bits;
+
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_zxt_r_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+  
+
+  if (opcode != TOP_and_r_r_r && opcode != TOP_and_ii_r_r)
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+  result = OP_result (l1_op, 0);
+
+
+  // Check if we have a pattern : r2 = and r1, mask
+  if (range_analysis.Get_Value (OP_Opnd2(l1_op))->hasValue ()
+      && IS_POWER_OF_2(range_analysis.Get_Value (OP_Opnd2(l1_op))->getValue () + 1)){
+    bits = range_analysis.Get_Value (OP_Opnd2(l1_op))->bits ();
+    Build_OP (TOP_zxt_i_r_r, result, opnd1, Gen_Literal_TN(bits, 4), ops);
+    return TRUE;
+  }
+
+  // Get level-2 data
+  l2_op = TN_ssa_def (opnd2);
+
+  if (!l2_op) 
+    return FALSE;
+  
+  if (!OP_ishru(l2_op)     
+      || !range_analysis.Get_Value (OP_Opnd1(l2_op))->hasValue ()
+      || range_analysis.Get_Value (OP_Opnd1(l2_op))->getValue () != -1)
+    return FALSE;
+
+  opnd2 = OP_Opnd2(l2_op);
+
+  // Get level-3 data
+  l3_op = TN_ssa_def (opnd2);
+
+  if (!l3_op) 
+    return FALSE;
+
+  if (!OP_isub(l3_op) 
+      || !range_analysis.Get_Value (OP_Opnd1(l3_op))->hasValue ()
+      || range_analysis.Get_Value (OP_Opnd1(l3_op))->getValue () != 32)
+    return FALSE;
+
+  // if we get here, then we have a zxt sequence 
+  Build_OP (TOP_zxt_r_r_r, result, opnd1, OP_Opnd2(l3_op), ops);
+  return TRUE;
+}
+
+static BOOL
+match_extend_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //   r4 = sub 32, r5
+  //   r2 = shl r1, r4
+  //   r3 = shr(u) r2, r4
+  // and transform to
+  //   r3 = s/zxt r1, r5
+  //
+  // Note: this is just an SSA-based peephole: it does not
+  // require any range information.
+  //
+  OP *l21_op, *l22_op, *l3_op;
+  TN *opnd1, *opnd2, *result;
+  INT shiftcount;
+  BOOL is_signed;
+
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_zxt_r_r_r) || 
+      !ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sxt_r_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+  
+
+  if (opcode != TOP_shr_r_r_r && opcode != TOP_shru_r_r_r)
+    return FALSE;
+
+  is_signed = opcode == TOP_shr_r_r_r;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+
+  l22_op = TN_ssa_def (opnd2);
+
+  if (!l22_op) 
+    return FALSE;
+
+  if (!OP_isub(l22_op) 
+      || !range_analysis.Get_Value (OP_Opnd1(l22_op))->hasValue ()
+      || range_analysis.Get_Value (OP_Opnd1(l22_op))->getValue () != 32)
+    return FALSE;
+
+  l21_op = TN_ssa_def (opnd1);
+
+  if (!l21_op) 
+    return FALSE;
+
+  if (!OP_ishl(l21_op))
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l21_op);
+  opnd2 = OP_Opnd2(l21_op);
+
+  l3_op = TN_ssa_def (opnd2);
+
+  if (!l3_op) 
+    return FALSE;
+
+  if (!OP_isub(l3_op) 
+      || !range_analysis.Get_Value (OP_Opnd1(l3_op))->hasValue ()
+      || range_analysis.Get_Value (OP_Opnd1(l3_op))->getValue () != 32)
+    return FALSE;
+
+  if (!TNs_Are_Equivalent(OP_Opnd2(l22_op), OP_Opnd2(l3_op)))
+    return FALSE;
+
+  // if we get here, then we have either a zxt or sxt sequence 
+  
+  result = OP_result (l1_op, 0);
+
+  Build_OP (is_signed ? TOP_sxt_r_r_r : TOP_zxt_r_r_r, result, opnd1, OP_Opnd2(l3_op), ops);
+  return TRUE;
+}
+
+static BOOL
 match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
 		       OP *l1_op,
 		       OPS *ops)
@@ -725,6 +880,12 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
       return TRUE;
     }
     if (match_addcg (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_zeroextend_sequence (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_extend_sequence (range_analysis, op, ops)) {
       return TRUE;
     }
   }
