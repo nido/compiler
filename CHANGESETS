@@ -8,7 +8,8 @@
 
 Description:
 ------------
-	*  
+	*  Fixed bug #29818: Exp_Deposit_Bits: mtype cannot be U8.
+	   Delivered with approval of branch art #34780.
 
 
 Modified Files:
